@@ -11,7 +11,7 @@ bấm thử giao diện và phát hiện chỗ chưa hợp lý **trước khi** 
 
 ## 1. Cần chuẩn bị gì
 
-Chỉ cần **Node.js phiên bản 20.11 trở lên**.
+Chỉ cần **Node.js phiên bản 20 trở lên** (khuyến nghị bản **LTS**).
 
 Kiểm tra bằng cách mở Terminal (macOS) hoặc PowerShell (Windows) và gõ:
 
@@ -122,6 +122,7 @@ Bạn có thể chạy ngay cả khi ứng dụng đang chạy — giao diện s
 | `npm run dev` | Chạy giao diện + máy chủ dữ liệu |
 | `npm run seed` | Xoá và tạo lại dữ liệu mẫu |
 | `npm test` | Chạy các kiểm tra tự động (dùng database riêng, không đụng dữ liệu bạn đang thử) |
+| `npm run build:server` | Biên dịch lại mã máy chủ (thường không cần gọi trực tiếp) |
 | `npm run typecheck` | Kiểm tra lỗi kiểu dữ liệu trong mã nguồn |
 | `npm run build` | Đóng gói bản giao diện |
 
@@ -129,8 +130,17 @@ Bạn có thể chạy ngay cả khi ứng dụng đang chạy — giao diện s
 
 ## 9. Nếu gặp trục trặc
 
-**Mở trang thấy trắng hoặc báo chưa có dữ liệu**
-→ Bạn chưa chạy `npm run seed`. Chạy lệnh đó rồi tải lại trang.
+**Mở trang nhưng không thấy tài khoản nào để chọn**
+→ Bạn chưa chạy `npm run seed`. Trang sẽ hiện sẵn hướng dẫn từng bước — làm theo là được.
+
+**Gõ lệnh nhưng báo lỗi `ENOENT ... package.json`**
+→ Bạn đang đứng sai thư mục. Lệnh phải được gõ trong thư mục **có tệp `package.json`**.
+Mẹo: mở thư mục đó trong File Explorer, bấm vào thanh địa chỉ, gõ `powershell` rồi Enter —
+cửa sổ lệnh sẽ mở sẵn đúng chỗ. Gõ `dir` để kiểm tra: phải thấy `package.json` trong danh sách.
+
+**Lệnh `npm run seed` bị dừng giữa chừng, hiện `Assertion failed` và một loạt dòng khó hiểu**
+→ Lỗi này xảy ra với các bản cũ của dự án trên Windows, đã được sửa. Hãy tải lại bản mới nhất,
+xoá thư mục `node_modules`, rồi chạy lại `npm install` và `npm run seed`.
 
 **Báo `EADDRINUSE` (cổng đang bị chiếm)**
 → Có một bản ứng dụng khác đang chạy. Đóng Terminal cũ, hoặc đổi cổng máy chủ:
