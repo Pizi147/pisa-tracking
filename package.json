@@ -3,20 +3,23 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "engines": { "node": ">=20.11" },
+  "engines": {
+    "node": ">=20.11"
+  },
   "scripts": {
-    "dev": "concurrently -n API,WEB -c cyan,magenta \"npm:dev:api\" \"npm:dev:web\"",
-    "dev:api": "tsx watch server/src/index.ts",
+    "dev": "node scripts/check-node.mjs && concurrently -n API,WEB -c cyan,magenta \"npm:dev:api\" \"npm:dev:web\"",
+    "dev:api": "node scripts/dev-api.mjs",
     "dev:web": "vite",
-    "seed": "tsx server/src/seed/run.ts",
-    "reset": "tsx server/src/seed/run.ts --force",
-    "build": "tsc -p tsconfig.web.json --noEmit && vite build",
+    "seed": "node scripts/check-node.mjs && node scripts/build-server.mjs && node dist-server/seed/run.js",
+    "reset": "npm run seed",
+    "build:server": "node scripts/build-server.mjs",
+    "build": "tsc -p tsconfig.web.json --noEmit && vite build && node scripts/build-server.mjs",
     "typecheck": "tsc -p tsconfig.web.json --noEmit && tsc -p tsconfig.server.json --noEmit",
-    "test": "tsx server/src/tests/run.ts",
+    "test": "node scripts/build-server.mjs && node dist-server/tests/run.js",
     "preview": "vite preview"
   },
   "dependencies": {
-    "better-sqlite3": "11.10.0",
+    "better-sqlite3": "12.11.1",
     "cookie-parser": "1.4.7",
     "express": "4.21.2",
     "multer": "1.4.5-lts.1",
@@ -38,8 +41,8 @@
     "concurrently": "9.1.2",
     "postcss": "8.4.49",
     "tailwindcss": "3.4.17",
-    "tsx": "4.19.2",
     "typescript": "5.6.3",
-    "vite": "5.4.20"
+    "vite": "5.4.20",
+    "esbuild": "0.25.10"
   }
 }
