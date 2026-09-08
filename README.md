@@ -160,4 +160,4 @@ Tài liệu liên quan:
 
 - `PRODUCT_DEMO_SPEC.md` — cấu trúc thông tin, quyết định giao diện, ma trận quyền, quan hệ dữ liệu
 - `DEMO_ASSUMPTIONS.md` — toàn bộ giả định thử nghiệm và điểm cần chốt
-- `DEMO_SCENARIOS.md` — 17 tình huống cụ thể để bạn bấm thử
+- `DEMO_SCENARIOS.md` — 25 tình huống cụ thể để bạn bấm thử

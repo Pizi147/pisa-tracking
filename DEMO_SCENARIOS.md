@@ -1,4 +1,7 @@
-# 17 tình huống nên bấm thử
+# 25 tình huống nên bấm thử
+
+Bao gồm đầy đủ 17 tình huống học vụ được yêu cầu, cộng thêm các tình huống về phân quyền,
+vận hành và nhập liệu.
 
 Mỗi mục ghi rõ: **dùng tài khoản nào → mở màn nào → làm gì → kỳ vọng thấy gì**.
 Tất cả mã học viên, mã lớp và mã công việc dưới đây là mã thật trong dữ liệu mẫu.
