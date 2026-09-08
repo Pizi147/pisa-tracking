@@ -4,489 +4,264 @@ import { demoToday } from './demoConfig.ts';
 import { forbidden } from './util.ts';
 
 /**
- * Mô hình quyền: Permission + Scope + Assignment.
+ * Quyền = Permission của role × Phạm vi chi nhánh của CHÍNH grant đó × Phân công lớp/kỹ năng.
  *
- * Nguyên tắc bất biến: quyền được xét theo TỪNG GRANT.
- * Một grant chỉ mở các permission của role trong grant đó, và chỉ trong scope của
- * chính grant đó. Không bao giờ lấy permission của role này ghép scope của role khác.
+ * Không có role nào mặc định thấy toàn hệ thống: chỉ grant có branch_id = NULL mới toàn hệ thống,
+ * và điều đó do dữ liệu quyết định chứ không suy từ tên role.
  */
-
-export type ScopeType =
-  | 'global' | 'branch' | 'reporting_unit'
-  | 'assignment' | 'consultant_caseload' | 'consultant_team';
 
 export type Grant = {
   id: number;
-  role_key: string;
-  role_name: string;
-  scope_type: ScopeType;
-  scope_id: number | null;
-  scope_label: string | null;
+  roleKey: string;
+  roleName: string;
+  branchId: number | null;      // null = toàn hệ thống
+  branchName: string | null;
   permissions: Set<string>;
 };
 
-export type TeacherAssignment = {
+export type Assignment = {
   id: number;
-  class_id: number;
+  classId: number;
   skill: string | null;
-  is_core: number;
-  effective_from: string;
-  effective_to: string | null;
-  status: string;
+  isCore: boolean;
+  effectiveFrom: string;
+  effectiveTo: string | null;
 };
 
 export type Principal = {
   userId: number;
   code: string;
   fullName: string;
-  email: string | null;
   title: string | null;
   grants: Grant[];
   roleKeys: string[];
-  teacherAssignments: TeacherAssignment[];
-  consultantStudentIds: Set<number>;
-  teamConsultantIds: number[];
-  teamStudentIds: Set<number>;
+  assignments: Assignment[];
 };
 
-export type PermissionContext = {
+export type Ctx = {
   branchId?: number | null;
-  reportingUnitId?: number | null;
   classId?: number | null;
   studentId?: number | null;
   skill?: string | null;
+  /** Kiểm tra ở mức màn hình: nội dung bên trong vẫn được lọc lại theo phạm vi. */
+  anyScope?: boolean;
   date?: string;
-  /**
-   * Kiểm tra ở mức "có được vào màn hình này không", khi bản thân đối tượng không
-   * thuộc riêng một chi nhánh (ví dụ kỳ họp toàn hệ thống). Nội dung bên trong VẪN
-   * phải được lọc lại theo viewScope — cờ này không nới quyền đọc dữ liệu.
-   */
-  scopeLevel?: boolean;
 };
-
-/** Với scope 'assignment', mỗi permission cần loại phân công nào. */
-const ASSIGNMENT_REQUIREMENT: Record<string, 'any' | 'skill' | 'core'> = {
-  [PERMISSIONS.ACADEMIC_VIEW]: 'any',
-  [PERMISSIONS.NOTE_INTERNAL_VIEW]: 'any',
-  [PERMISSIONS.WEEKLY_EDIT]: 'skill',
-  [PERMISSIONS.ESTIMATE_EDIT]: 'skill',
-  [PERMISSIONS.SUMMARY_EDIT]: 'core',
-  [PERMISSIONS.ISSUE_VIEW]: 'any',
-  [PERMISSIONS.TASK_VIEW]: 'any',
-  [PERMISSIONS.TASK_UPDATE_ASSIGNED]: 'any',
-};
-
-function assignmentActive(a: TeacherAssignment, date: string): boolean {
-  if (a.status !== 'active') return false;
-  if (a.effective_from > date) return false;
-  if (a.effective_to && a.effective_to < date) return false;
-  return true;
-}
 
 export function loadPrincipal(userId: number): Principal {
   const conn = db();
   const user = conn.prepare('SELECT * FROM users WHERE id = ?').get(userId) as any;
   if (!user) throw forbidden('Tài khoản không tồn tại');
 
-  const grantRows = conn
-    .prepare(
-      `SELECT g.id, g.scope_type, g.scope_id, g.label, r.key AS role_key, r.name_vi AS role_name
-         FROM user_role_grants g JOIN roles r ON r.id = g.role_id
-        WHERE g.user_id = ? AND g.status = 'active'
-        ORDER BY g.id`,
-    )
-    .all(userId) as any[];
-
   const permsByRole = new Map<string, Set<string>>();
   for (const row of conn
     .prepare(
-      `SELECT r.key AS role_key, p.key AS perm_key
-         FROM role_permissions rp
-         JOIN roles r ON r.id = rp.role_id
-         JOIN permissions p ON p.id = rp.permission_id`,
+      `SELECT r.key AS role_key, p.key AS perm_key FROM role_permissions rp
+         JOIN roles r ON r.id = rp.role_id JOIN permissions p ON p.id = rp.permission_id`,
     )
     .all() as any[]) {
     if (!permsByRole.has(row.role_key)) permsByRole.set(row.role_key, new Set());
     permsByRole.get(row.role_key)!.add(row.perm_key);
   }
 
-  const grants: Grant[] = grantRows.map((g) => ({
-    id: g.id,
-    role_key: g.role_key,
-    role_name: g.role_name,
-    scope_type: g.scope_type,
-    scope_id: g.scope_id,
-    scope_label: g.label,
-    permissions: permsByRole.get(g.role_key) ?? new Set<string>(),
-  }));
-
-  const teacherAssignments = conn
+  const grants: Grant[] = (conn
     .prepare(
-      `SELECT id, class_id, skill, is_core, effective_from, effective_to, status
-         FROM teacher_assignments WHERE user_id = ?`,
+      `SELECT ur.id, ur.branch_id, r.key AS role_key, r.name_vi AS role_name, b.name AS branch_name
+         FROM user_roles ur JOIN roles r ON r.id = ur.role_id
+         LEFT JOIN branches b ON b.id = ur.branch_id
+        WHERE ur.user_id = ? AND ur.status = 'active' ORDER BY ur.id`,
     )
-    .all(userId) as TeacherAssignment[];
+    .all(userId) as any[]).map((g) => ({
+      id: g.id,
+      roleKey: g.role_key,
+      roleName: g.role_name,
+      branchId: g.branch_id,
+      branchName: g.branch_name,
+      permissions: permsByRole.get(g.role_key) ?? new Set<string>(),
+    }));
 
-  const today = demoToday();
-  const consultantStudentIds = new Set<number>(
-    (conn
-      .prepare(
-        `SELECT student_id FROM consultant_assignments
-          WHERE user_id = ? AND status = 'active'
-            AND effective_from <= ? AND (effective_to IS NULL OR effective_to >= ?)`,
-      )
-      .all(userId, today, today) as any[]).map((r) => r.student_id),
-  );
-
-  const teamConsultantIds = (conn
+  const assignments: Assignment[] = (conn
     .prepare(
-      `SELECT consultant_user_id FROM consultant_team_members
-        WHERE manager_user_id = ? AND status = 'active'`,
+      `SELECT id, class_id, skill, is_core, effective_from, effective_to
+         FROM teacher_assignments WHERE user_id = ? AND status = 'active'`,
     )
-    .all(userId) as any[]).map((r) => r.consultant_user_id);
-
-  const teamStudentIds = new Set<number>();
-  if (teamConsultantIds.length) {
-    const ph = teamConsultantIds.map(() => '?').join(',');
-    for (const r of conn
-      .prepare(
-        `SELECT DISTINCT student_id FROM consultant_assignments
-          WHERE user_id IN (${ph}) AND status = 'active'
-            AND effective_from <= ? AND (effective_to IS NULL OR effective_to >= ?)`,
-      )
-      .all(...teamConsultantIds, today, today) as any[]) {
-      teamStudentIds.add(r.student_id);
-    }
-  }
+    .all(userId) as any[]).map((a) => ({
+      id: a.id,
+      classId: a.class_id,
+      skill: a.skill,
+      isCore: a.is_core === 1,
+      effectiveFrom: a.effective_from,
+      effectiveTo: a.effective_to,
+    }));
 
   return {
     userId: user.id,
     code: user.code,
     fullName: user.full_name,
-    email: user.email,
     title: user.title,
     grants,
-    roleKeys: [...new Set(grants.map((g) => g.role_key))],
-    teacherAssignments,
-    consultantStudentIds,
-    teamConsultantIds,
-    teamStudentIds,
+    roleKeys: [...new Set(grants.map((g) => g.roleKey))],
+    assignments,
   };
 }
 
-// ---------- tra cứu ngữ cảnh ----------
+const activeAt = (a: Assignment, date: string) =>
+  a.effectiveFrom <= date && (!a.effectiveTo || a.effectiveTo >= date);
 
-function classInfo(classId: number) {
-  return db()
-    .prepare(
-      `SELECT c.id, c.branch_id, ru.id AS reporting_unit_id
-         FROM classes c
-         LEFT JOIN reporting_units ru ON ru.branch_id = c.branch_id AND ru.kind = 'branch'
-        WHERE c.id = ?`,
-    )
-    .get(classId) as { id: number; branch_id: number; reporting_unit_id: number | null } | undefined;
+function branchOfClass(classId: number): number | null {
+  const r = db().prepare('SELECT branch_id FROM classes WHERE id = ?').get(classId) as any;
+  return r?.branch_id ?? null;
 }
 
-function studentBranchIds(studentId: number): number[] {
+function branchesOfStudent(studentId: number): number[] {
   const rows = db()
     .prepare(
-      `SELECT DISTINCT c.branch_id AS b FROM enrollments e
-         JOIN classes c ON c.id = e.class_id WHERE e.student_id = ?
+      `SELECT DISTINCT c.branch_id AS b FROM enrollments e JOIN classes c ON c.id = e.class_id
+        WHERE e.student_id = ?
        UNION SELECT branch_id AS b FROM students WHERE id = ? AND branch_id IS NOT NULL`,
     )
     .all(studentId, studentId) as any[];
   return rows.map((r) => r.b).filter((b) => b != null);
 }
 
-function studentClassIds(studentId: number): number[] {
+function classesOfStudent(studentId: number): number[] {
   return (db().prepare('SELECT DISTINCT class_id FROM enrollments WHERE student_id = ?').all(studentId) as any[])
     .map((r) => r.class_id);
 }
 
-/** Bổ sung branch/unit suy ra từ class hoặc student vào ngữ cảnh. */
-function resolveContext(ctx: PermissionContext) {
-  const branchIds = new Set<number>();
-  const unitIds = new Set<number>();
-  const classIds = new Set<number>();
-  if (ctx.branchId) branchIds.add(ctx.branchId);
-  if (ctx.reportingUnitId) unitIds.add(ctx.reportingUnitId);
-  if (ctx.classId) {
-    classIds.add(ctx.classId);
-    const ci = classInfo(ctx.classId);
-    if (ci) {
-      branchIds.add(ci.branch_id);
-      if (ci.reporting_unit_id) unitIds.add(ci.reporting_unit_id);
-    }
-  }
-  if (ctx.studentId) {
-    for (const b of studentBranchIds(ctx.studentId)) branchIds.add(b);
-    for (const c of studentClassIds(ctx.studentId)) classIds.add(c);
-  }
-  if (ctx.branchId) {
-    const u = db()
-      .prepare("SELECT id FROM reporting_units WHERE branch_id = ? AND kind = 'branch'")
-      .get(ctx.branchId) as any;
-    if (u) unitIds.add(u.id);
-  }
-  if (ctx.reportingUnitId) {
-    const u = db().prepare('SELECT branch_id FROM reporting_units WHERE id = ?').get(ctx.reportingUnitId) as any;
-    if (u?.branch_id) branchIds.add(u.branch_id);
-  }
-  return { branchIds, unitIds, classIds };
+/** Chi nhánh mà ngữ cảnh đang nói tới. */
+function ctxBranches(ctx: Ctx): number[] {
+  const set = new Set<number>();
+  if (ctx.branchId) set.add(ctx.branchId);
+  if (ctx.classId) { const b = branchOfClass(ctx.classId); if (b) set.add(b); }
+  if (ctx.studentId) for (const b of branchesOfStudent(ctx.studentId)) set.add(b);
+  return [...set];
 }
 
-/** Grant này có mở `permission` trong ngữ cảnh `ctx` không? */
-function grantAllows(
-  p: Principal,
-  grant: Grant,
-  permission: string,
-  ctx: PermissionContext,
-  resolved: ReturnType<typeof resolveContext>,
-): boolean {
-  if (!grant.permissions.has(permission)) return false;
+/** Giáo viên có được phân công đúng lớp (và đúng kỹ năng nếu ngữ cảnh nêu kỹ năng) không? */
+export function hasAssignment(p: Principal, ctx: Ctx, need: 'any' | 'skill' | 'core'): boolean {
   const date = ctx.date ?? demoToday();
+  const classIds = ctx.classId ? [ctx.classId] : ctx.studentId ? classesOfStudent(ctx.studentId) : [];
+  if (!classIds.length) return false;
+  const mine = p.assignments.filter((a) => activeAt(a, date) && classIds.includes(a.classId));
+  if (!mine.length) return false;
+  if (need === 'core') return mine.some((a) => a.isCore);
+  if (need === 'skill') return ctx.skill ? mine.some((a) => a.skill === ctx.skill) : false;
+  return true;
+}
 
-  switch (grant.scope_type) {
-    case 'global':
-      return true;
+/** Grant này có phủ ngữ cảnh không? Grant toàn hệ thống phủ mọi thứ. */
+function grantCovers(g: Grant, ctx: Ctx): boolean {
+  if (g.branchId === null) return true;
+  const branches = ctxBranches(ctx);
+  if (!branches.length) return ctx.anyScope === true;
+  return branches.every((b) => b === g.branchId);
+}
 
-    case 'branch': {
-      if (!grant.scope_id) return false;
-      if (resolved.branchIds.size === 0) return ctx.scopeLevel === true;
-      // Ngữ cảnh phải nằm hoàn toàn trong chi nhánh được cấp.
-      return [...resolved.branchIds].every((b) => b === grant.scope_id);
-    }
+export function can(p: Principal, permission: string, ctx: Ctx = {}): boolean {
+  for (const g of p.grants) {
+    if (!g.permissions.has(permission)) continue;
+    if (!grantCovers(g, ctx)) continue;
 
-    case 'reporting_unit': {
-      if (!grant.scope_id) return false;
-      if (resolved.unitIds.size === 0) return ctx.scopeLevel === true;
-      return [...resolved.unitIds].some((u) => u === grant.scope_id);
-    }
-
-    case 'assignment': {
-      const need = ASSIGNMENT_REQUIREMENT[permission];
-      if (!need) return false;
-      const targetClasses = ctx.classId
-        ? [ctx.classId]
-        : ctx.studentId
-          ? studentClassIds(ctx.studentId)
-          : [];
-      if (targetClasses.length === 0) return false;
-      const active = p.teacherAssignments.filter(
-        (a) => assignmentActive(a, date) && targetClasses.includes(a.class_id),
-      );
-      if (active.length === 0) return false;
-      if (need === 'core') return active.some((a) => a.is_core === 1);
-      if (need === 'skill') {
-        if (!ctx.skill) return false;
-        return active.some((a) => a.skill === ctx.skill);
+    // Giáo viên bị giới hạn thêm bởi phân công lớp/kỹ năng.
+    if (g.roleKey === 'teacher') {
+      if (permission === PERMISSIONS.SCORE_EDIT) {
+        if (!hasAssignment(p, ctx, 'skill')) continue;
+      } else if (permission === PERMISSIONS.MOCK_SCHEDULE) {
+        if (!hasAssignment(p, ctx, 'core')) continue;      // chỉ GVCN được dời lịch
+      } else if (
+        permission === PERMISSIONS.MOCK_VIEW ||
+        permission === PERMISSIONS.STUDENT_VIEW ||
+        permission === PERMISSIONS.SOS_EDIT
+      ) {
+        if (ctx.anyScope !== true && !hasAssignment(p, ctx, 'any')) continue;
       }
-      return true;
     }
-
-    case 'consultant_caseload': {
-      if (!ctx.studentId) return false;
-      return p.consultantStudentIds.has(ctx.studentId);
-    }
-
-    case 'consultant_team': {
-      if (!ctx.studentId) return false;
-      if (!p.teamStudentIds.has(ctx.studentId)) return false;
-      if (grant.scope_id) {
-        // Grant giới hạn thêm theo chi nhánh: giao của chính grant này, không mượn scope khác.
-        return studentBranchIds(ctx.studentId).includes(grant.scope_id);
-      }
-      return true;
-    }
+    return true;
   }
   return false;
 }
 
-export function can(p: Principal, permission: string, ctx: PermissionContext = {}): boolean {
-  const resolved = resolveContext(ctx);
-  return p.grants.some((g) => grantAllows(p, g, permission, ctx, resolved));
-}
-
-export function require_(p: Principal, permission: string, ctx: PermissionContext = {}, message?: string) {
+export function require_(p: Principal, permission: string, ctx: Ctx = {}, message?: string) {
   if (!can(p, permission, ctx)) {
     throw forbidden(message ?? 'Bạn không có quyền thực hiện thao tác này.', {
-      permission,
-      context: ctx,
-      hint: explainDenial(p, permission, ctx),
+      hint: explain(p, permission, ctx),
     });
   }
 }
 
-/** Câu giải thích ngắn để hiển thị tại chỗ trong UI, không lộ mã permission. */
-export function explainDenial(p: Principal, permission: string, ctx: PermissionContext): string {
+export function explain(p: Principal, permission: string, ctx: Ctx): string {
   const holders = p.grants.filter((g) => g.permissions.has(permission));
-  if (holders.length === 0) return 'Vai trò hiện tại của bạn không có chức năng này.';
-  const scopes = holders.map((g) => g.scope_type);
-  if (scopes.includes('assignment')) {
-    const need = ASSIGNMENT_REQUIREMENT[permission];
-    if (need === 'skill') return 'Bạn chỉ được sửa skill mình được phân công tại lớp này.';
-    if (need === 'core') return 'Thao tác này dành cho giáo viên chủ nhiệm (GVCN) của lớp.';
+  if (!holders.length) return 'Vai trò hiện tại của bạn không có chức năng này.';
+  if (holders.every((g) => g.roleKey === 'teacher')) {
+    if (permission === PERMISSIONS.SCORE_EDIT) return 'Bạn chỉ nhập được điểm của kỹ năng mình được phân công.';
+    if (permission === PERMISSIONS.MOCK_SCHEDULE) return 'Chỉ giáo viên chủ nhiệm của lớp mới dời được lịch Mock.';
     return 'Bạn chỉ thao tác được trong lớp mình được phân công.';
   }
-  if (scopes.includes('branch') || scopes.includes('reporting_unit'))
-    return 'Đối tượng này nằm ngoài chi nhánh/đơn vị bạn được cấp quyền.';
-  if (scopes.includes('consultant_caseload') || scopes.includes('consultant_team'))
-    return 'Bạn chỉ xem được học viên mình phụ trách và không sửa dữ liệu học vụ.';
-  return 'Ngoài phạm vi được cấp quyền.';
+  return 'Đối tượng này nằm ngoài chi nhánh bạn được cấp quyền.';
 }
 
-// ---------- scope cho truy vấn danh sách ----------
+// ---------------------------------------------------------------- phạm vi cho danh sách
 
-export type ViewScope = {
-  all: boolean;
-  branchIds: number[];
-  unitIds: number[];
-  classIds: number[];
-  studentIds: number[];
-  /** true nếu mọi grant đều là kiểu chỉ-xem-việc-của-mình (assignment/caseload). */
-  selfOnly: boolean;
-  none: boolean;
-};
+export type Scope = { all: boolean; branchIds: number[]; classIds: number[]; none: boolean };
 
-/** Tập đối tượng người dùng được XEM với một permission, để dựng WHERE cho list. */
-export function viewScope(p: Principal, permission: string, date = demoToday()): ViewScope {
-  const scope: ViewScope = {
-    all: false, branchIds: [], unitIds: [], classIds: [], studentIds: [], selfOnly: true, none: false,
-  };
+/** Tập chi nhánh/lớp người dùng được xem với một permission. */
+export function scopeFor(p: Principal, permission: string, date = demoToday()): Scope {
   const branchIds = new Set<number>();
-  const unitIds = new Set<number>();
   const classIds = new Set<number>();
-  const studentIds = new Set<number>();
+  let all = false;
   let found = false;
 
   for (const g of p.grants) {
     if (!g.permissions.has(permission)) continue;
     found = true;
-    switch (g.scope_type) {
-      case 'global':
-        scope.all = true;
-        scope.selfOnly = false;
-        break;
-      case 'branch':
-        if (g.scope_id) branchIds.add(g.scope_id);
-        scope.selfOnly = false;
-        break;
-      case 'reporting_unit':
-        if (g.scope_id) unitIds.add(g.scope_id);
-        scope.selfOnly = false;
-        break;
-      case 'assignment':
-        for (const a of p.teacherAssignments) {
-          if (assignmentActive(a, date)) classIds.add(a.class_id);
-        }
-        break;
-      case 'consultant_caseload':
-        for (const s of p.consultantStudentIds) studentIds.add(s);
-        break;
-      case 'consultant_team':
-        for (const s of p.teamStudentIds) {
-          if (!g.scope_id || studentBranchIds(s).includes(g.scope_id)) studentIds.add(s);
-        }
-        break;
+    if (g.roleKey === 'teacher') {
+      for (const a of p.assignments) if (activeAt(a, date)) classIds.add(a.classId);
+      continue;
     }
+    if (g.branchId === null) all = true;
+    else branchIds.add(g.branchId);
   }
-
-  // Đơn vị báo cáo dạng chi nhánh: mở kèm chi nhánh tương ứng.
-  for (const u of unitIds) {
-    const row = db().prepare('SELECT branch_id FROM reporting_units WHERE id = ?').get(u) as any;
-    if (row?.branch_id) branchIds.add(row.branch_id);
-  }
-  for (const b of branchIds) {
-    const row = db().prepare("SELECT id FROM reporting_units WHERE branch_id = ? AND kind='branch'").get(b) as any;
-    if (row) unitIds.add(row.id);
-  }
-
-  scope.branchIds = [...branchIds];
-  scope.unitIds = [...unitIds];
-  scope.classIds = [...classIds];
-  scope.studentIds = [...studentIds];
-  scope.none = !found || (!scope.all && !scope.branchIds.length && !scope.classIds.length && !scope.studentIds.length && !scope.unitIds.length);
-  return scope;
+  return {
+    all,
+    branchIds: [...branchIds],
+    classIds: [...classIds],
+    none: !found || (!all && !branchIds.size && !classIds.size),
+  };
 }
 
-/**
- * Mảnh SQL lọc học viên theo scope.
- * Yêu cầu truy vấn có alias `s` (students) và cho phép subquery trên enrollments.
- */
-export function studentScopeSql(scope: ViewScope): { sql: string; params: unknown[] } {
+/** Mảnh SQL lọc theo phạm vi, dùng alias lớp `c`. */
+export function classScopeSql(scope: Scope, alias = 'c'): { sql: string; params: unknown[] } {
   if (scope.all) return { sql: '1=1', params: [] };
-  const clauses: string[] = [];
+  const parts: string[] = [];
   const params: unknown[] = [];
   if (scope.branchIds.length) {
-    const ph = scope.branchIds.map(() => '?').join(',');
-    clauses.push(
-      `EXISTS (SELECT 1 FROM enrollments e2 JOIN classes c2 ON c2.id = e2.class_id
-                WHERE e2.student_id = s.id AND c2.branch_id IN (${ph}))`,
-    );
-    params.push(...scope.branchIds);
-    clauses.push(`s.branch_id IN (${ph})`);
+    parts.push(`${alias}.branch_id IN (${scope.branchIds.map(() => '?').join(',')})`);
     params.push(...scope.branchIds);
   }
   if (scope.classIds.length) {
-    const ph = scope.classIds.map(() => '?').join(',');
-    clauses.push(
-      `EXISTS (SELECT 1 FROM enrollments e3 WHERE e3.student_id = s.id AND e3.class_id IN (${ph}))`,
-    );
+    parts.push(`${alias}.id IN (${scope.classIds.map(() => '?').join(',')})`);
     params.push(...scope.classIds);
   }
-  if (scope.studentIds.length) {
-    const ph = scope.studentIds.map(() => '?').join(',');
-    clauses.push(`s.id IN (${ph})`);
-    params.push(...scope.studentIds);
-  }
-  if (!clauses.length) return { sql: '1=0', params: [] };
-  return { sql: '(' + clauses.join(' OR ') + ')', params };
+  return parts.length ? { sql: '(' + parts.join(' OR ') + ')', params } : { sql: '1=0', params: [] };
 }
 
-export function classScopeSql(scope: ViewScope, alias = 'c'): { sql: string; params: unknown[] } {
-  if (scope.all) return { sql: '1=1', params: [] };
-  const clauses: string[] = [];
-  const params: unknown[] = [];
-  if (scope.branchIds.length) {
-    clauses.push(`${alias}.branch_id IN (${scope.branchIds.map(() => '?').join(',')})`);
-    params.push(...scope.branchIds);
-  }
-  if (scope.classIds.length) {
-    clauses.push(`${alias}.id IN (${scope.classIds.map(() => '?').join(',')})`);
-    params.push(...scope.classIds);
-  }
-  if (scope.studentIds.length) {
-    clauses.push(
-      `EXISTS (SELECT 1 FROM enrollments e4 WHERE e4.class_id = ${alias}.id AND e4.student_id IN (${scope.studentIds
-        .map(() => '?')
-        .join(',')}))`,
-    );
-    params.push(...scope.studentIds);
-  }
-  if (!clauses.length) return { sql: '1=0', params: [] };
-  return { sql: '(' + clauses.join(' OR ') + ')', params };
-}
-
-/** Các skill người dùng được sửa tại một lớp (rỗng nếu không được sửa gì). */
-export function editableSkills(p: Principal, classId: number, allSkills: readonly string[]): string[] {
-  return allSkills.filter((skill) => can(p, PERMISSIONS.WEEKLY_EDIT, { classId, skill }));
+/** Các kỹ năng người dùng được nhập điểm ở một lớp. */
+export function editableSkills(p: Principal, classId: number, skills: readonly string[]): string[] {
+  return skills.filter((skill) => can(p, PERMISSIONS.SCORE_EDIT, { classId, skill }));
 }
 
 export function isCoreTeacherOf(p: Principal, classId: number, date = demoToday()): boolean {
-  return p.teacherAssignments.some(
-    (a) => a.class_id === classId && a.is_core === 1 && assignmentActive(a, date),
-  );
+  return p.assignments.some((a) => a.classId === classId && a.isCore && activeAt(a, date));
 }
 
-/** Danh sách permission + scope để hiển thị trong UI (không dùng để quyết định quyền ở backend). */
 export function permissionSummary(p: Principal) {
   return p.grants.map((g) => ({
     id: g.id,
-    role: g.role_key,
-    roleName: g.role_name,
-    scopeType: g.scope_type,
-    scopeId: g.scope_id,
-    scopeLabel: g.scope_label,
+    role: g.roleKey,
+    roleName: g.roleName,
+    branchId: g.branchId,
+    branchName: g.branchName,
     permissions: [...g.permissions].sort(),
   }));
 }

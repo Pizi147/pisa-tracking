@@ -1,6 +1,6 @@
 /**
- * Kiểm tra ít nhưng nhắm đúng rủi ro của bản demo.
- * Chạy trên một database riêng (data/test.sqlite) để không đụng dữ liệu bạn đang thử.
+ * Kiểm tra nghiệp vụ theo 10 kịch bản nghiệm thu của bản overhaul.
+ * Chạy trên database riêng (data/test.sqlite) để không đụng dữ liệu bạn đang thử.
  */
 import path from 'node:path';
 import fs from 'node:fs';
@@ -14,19 +14,18 @@ for (const suffix of ['', '-wal', '-shm']) {
   if (fs.existsSync(p)) fs.rmSync(p);
 }
 
-const { db, tx } = await import('../db.ts');
+const { db } = await import('../db.ts');
 const { runSeed } = await import('../seed/seed.ts');
-const { loadPrincipal, can, viewScope } = await import('../permissions.ts');
+const { loadPrincipal, can } = await import('../permissions.ts');
 const { PERMISSIONS } = await import('../../../shared/domain.ts');
-const weekly = await import('../services/weekly.ts');
+const scoring = await import('../services/scoring.ts');
+const week = await import('../services/week.ts');
+const mock = await import('../services/mock.ts');
+const sos = await import('../services/sos.ts');
 const students = await import('../services/students.ts');
-const classes = await import('../services/classes.ts');
-const meetings = await import('../services/meetings.ts');
-const admin = await import('../services/admin.ts');
-const importSvc = await import('../services/import.ts');
-const assessments = await import('../services/assessments.ts');
+const meeting = await import('../services/meeting.ts');
+const dashboard = await import('../services/dashboard.ts');
 const { demoToday } = await import('../demoConfig.ts');
-const { weekStartOf } = await import('../util.ts');
 
 runSeed();
 
@@ -40,357 +39,500 @@ function check(name: string, fn: () => void) {
 function assert(cond: unknown, msg: string) { if (!cond) throw new Error(msg); }
 function assertThrows(fn: () => unknown, match: RegExp, msg: string) {
   let threw = false;
-  try { fn(); } catch (e: any) { threw = true; assert(match.test(e.message), `${msg} — thông báo lỗi không khớp: "${e.message}"`); }
+  try { fn(); } catch (e: any) {
+    threw = true;
+    assert(match.test(e.message), `${msg} — thông báo lỗi không khớp: "${e.message}"`);
+  }
   assert(threw, `${msg} — thao tác đáng lẽ phải bị từ chối nhưng lại thành công`);
 }
 
 const conn = db();
-const userId = (code: string) => (conn.prepare('SELECT id FROM users WHERE code = ?').get(code) as any).id;
+const TODAY = demoToday();
 const classId = (code: string) => (conn.prepare('SELECT id FROM classes WHERE code = ?').get(code) as any).id;
-const studentByName = (name: string) => conn.prepare('SELECT * FROM students WHERE full_name = ? ORDER BY id').get(name) as any;
-const WEEK = weekStartOf(demoToday());
+
+/** Tìm người dùng theo vai trò + chi nhánh, không phụ thuộc tên giả sinh ngẫu nhiên. */
+function userByRole(roleKey: string, branchCode: string | null) {
+  const row = conn
+    .prepare(
+      `SELECT ur.user_id AS id FROM user_roles ur JOIN roles r ON r.id = ur.role_id
+         LEFT JOIN branches b ON b.id = ur.branch_id
+        WHERE r.key = ? AND ${branchCode ? 'b.code = ?' : 'ur.branch_id IS NULL'} ORDER BY ur.user_id LIMIT 1`,
+    )
+    .get(...(branchCode ? [roleKey, branchCode] : [roleKey])) as any;
+  assert(row, `Seed thiếu tài khoản ${roleKey} của ${branchCode ?? 'toàn hệ thống'}`);
+  return row.id as number;
+}
+/** Giáo viên được phân công đúng một kỹ năng ở một lớp. */
+function teacherOfSkill(classCode: string, skill: string) {
+  const row = conn
+    .prepare(
+      `SELECT user_id AS id FROM teacher_assignments WHERE class_id = ? AND skill = ? AND status='active' LIMIT 1`,
+    )
+    .get(classId(classCode), skill) as any;
+  assert(row, `Seed thiếu GVBM ${skill} của lớp ${classCode}`);
+  return row.id as number;
+}
+function coreTeacherOf(classCode: string) {
+  const row = conn
+    .prepare(`SELECT user_id AS id FROM teacher_assignments WHERE class_id = ? AND is_core = 1 LIMIT 1`)
+    .get(classId(classCode)) as any;
+  assert(row, `Seed thiếu GVCN của lớp ${classCode}`);
+  return row.id as number;
+}
 
 const P = {
-  admin: loadPrincipal(userId('U001')),
-  managerA: loadPrincipal(userId('U002')),      // Manager chỉ Cầu Giấy
-  multi: loadPrincipal(userId('U003')),         // Manager CG + GV Speaking lớp Hà Đông
-  lisTeacher: loadPrincipal(userId('U004')),    // Chỉ Listening FT-A01
-  coreTeacher: loadPrincipal(userId('U005')),   // GVCN FT-A01, Speaking FT-A01 + FT-B01
-  consultant: loadPrincipal(userId('U006')),
-  consultantMgr: loadPrincipal(userId('U007')),
-  substitute: loadPrincipal(userId('U018')),    // phân công đã hết hiệu lực
+  admin: loadPrincipal(userByRole('admin', null)),
+  mbAdmin: loadPrincipal(userByRole('branch_admin', 'MB')),
+  mbManager: loadPrincipal(userByRole('manager', 'MB')),
+  cpManager: loadPrincipal(userByRole('manager', 'CP')),
+  w1Teacher: loadPrincipal(teacherOfSkill('MB-FT 101', 'writing1')),
+  w2Teacher: loadPrincipal(teacherOfSkill('MB-FT 101', 'writing2')),
+  coreTeacher: loadPrincipal(coreTeacherOf('MB-FT 101')),
 };
 
-console.log('\n1. GVBM: xem được mọi skill, chỉ sửa skill được giao');
-check('GVBM xem được dữ liệu skill không phụ trách', () => {
-  assert(can(P.lisTeacher, PERMISSIONS.ACADEMIC_VIEW, { classId: classId('FT-A01'), skill: 'speaking' }),
-    'GVBM phải xem được toàn bộ dữ liệu học vụ của lớp mình');
+// ==================================================================== 1
+
+console.log('\n1. Quy đổi số câu đúng → band');
+check('Bảng quy đổi đúng các mốc trong nguồn', () => {
+  assert(scoring.bandFromRaw('listening', 0) === 0 && scoring.bandFromRaw('reading', 0) === 0, 'raw 0 phải ra band 0');
+  assert(scoring.bandFromRaw('listening', 3) === 2.5, 'L raw 3 phải là 2.5');
+  assert(scoring.bandFromRaw('reading', 3) === 1.5, 'R raw 3 phải là 1.5');
+  assert(scoring.bandFromRaw('listening', 15) === 4.5, 'L raw 15 phải là 4.5');
+  assert(scoring.bandFromRaw('reading', 15) === 5, 'R raw 15 phải là 5');
+  assert(scoring.bandFromRaw('listening', 19) === 5, 'L raw 19 phải là 5');
+  assert(scoring.bandFromRaw('reading', 19) === 5.5, 'R raw 19 phải là 5.5');
+  assert(scoring.bandFromRaw('listening', 40) === 9 && scoring.bandFromRaw('reading', 40) === 9, 'raw 40 phải là 9');
+  assert(scoring.LISTENING_BY_RAW.length === 41 && scoring.READING_BY_RAW.length === 41, 'Bảng quy đổi phải có 41 phần tử');
 });
-check('API từ chối sửa skill không được giao', () => {
-  const rec = weekly.ensureWeeklyRecord(
-    (conn.prepare('SELECT id FROM enrollments WHERE class_id = ? LIMIT 1').get(classId('FT-A01')) as any).id,
-    'speaking', WEEK);
-  assertThrows(() => weekly.saveWeeklyRecord(P.lisTeacher, rec.id, { attended: 1 }, 1),
-    /không có quyền/i, 'GVBM Listening sửa được Speaking');
+check('Từ chối số câu ngoài khoảng và số lẻ', () => {
+  assertThrows(() => scoring.bandFromRaw('listening', -1), /0–40/, 'raw −1');
+  assertThrows(() => scoring.bandFromRaw('reading', 41), /0–40/, 'raw 41');
+  assertThrows(() => scoring.bandFromRaw('listening', 12.5), /số nguyên/, 'raw 12.5');
 });
-check('API từ chối lớp ngoài phân công', () => {
-  assert(!can(P.lisTeacher, PERMISSIONS.WEEKLY_EDIT, { classId: classId('FT-C01'), skill: 'listening' }),
-    'GVBM sửa được lớp mình không dạy');
-  assert(!can(P.lisTeacher, PERMISSIONS.ACADEMIC_VIEW, { classId: classId('FT-C01') }),
-    'GVBM xem được lớp mình không được giao');
-});
-check('Phân công hết hiệu lực thì mất quyền sửa', () => {
-  assert(!can(P.substitute, PERMISSIONS.WEEKLY_EDIT, { classId: classId('FT-A01'), skill: 'reading' }),
-    'Giáo viên dạy thay hết hạn vẫn sửa được dữ liệu');
+check('Ô trống vẫn là trống, không thành 0', () => {
+  const r = scoring.evaluateMock(6.5, 1, {});
+  assert(r.bands.listening === null && r.overall === null, 'Chưa nhập điểm mà đã có band');
+  assert(r.completed === 0, 'Đếm sai số kỹ năng đã có');
 });
 
-console.log('\n2. GVCN và multi-role không làm rò scope');
-check('GVCN chỉ mở quyền tổng hợp đúng lớp chủ nhiệm', () => {
-  assert(can(P.coreTeacher, PERMISSIONS.SUMMARY_EDIT, { classId: classId('FT-A01') }),
-    'GVCN không tổng hợp được lớp mình chủ nhiệm');
-  assert(!can(P.coreTeacher, PERMISSIONS.SUMMARY_EDIT, { classId: classId('FT-B01') }),
-    'GVCN của lớp này lại tổng hợp được lớp chỉ dạy Speaking');
+// ==================================================================== 2
+
+console.log('\n2. Kỳ vọng và mức SOS');
+check('Kỳ vọng theo lần MT: 6.5 → 5.5 / 6.0 / 6.5', () => {
+  assert(scoring.expectationFor(6.5, 1) === 5.5, 'MT1 phải là cam kết − 1.0');
+  assert(scoring.expectationFor(6.5, 2) === 6, 'MT2 phải là cam kết − 0.5');
+  for (const n of [3, 4, 5]) assert(scoring.expectationFor(6.5, n) === 6.5, `MT${n} phải bằng cam kết`);
 });
-check('Quyền chủ nhiệm không tự cấp quyền sửa mọi skill', () => {
-  assert(can(P.coreTeacher, PERMISSIONS.WEEKLY_EDIT, { classId: classId('FT-A01'), skill: 'speaking' }),
-    'GVCN không sửa được skill mình dạy');
-  assert(!can(P.coreTeacher, PERMISSIONS.WEEKLY_EDIT, { classId: classId('FT-A01'), skill: 'reading' }),
-    'GVCN sửa được cả skill mình không dạy');
+check('Bằng kỳ vọng là đạt, dưới kỳ vọng mới tính trượt', () => {
+  const eq = scoring.evaluateMock(6.5, 3, { listening: 6.5, reading: 6.5, writing1: 6.5, writing2: 6.5, speaking: 6.5 });
+  assert(eq.sosLevel === 0, 'Bằng kỳ vọng phải là Đạt kỳ vọng');
+  const below = scoring.evaluateMock(6.5, 3, { listening: 6, reading: 6.5, writing1: 6.5, writing2: 6.5, speaking: 6.5 });
+  assert(below.sosLevel === 1, 'Một kỹ năng dưới kỳ vọng phải là SOS 1');
 });
-check('Multi-role: quyền quản lý không tràn sang chi nhánh khác', () => {
-  assert(can(P.multi, PERMISSIONS.WEEKLY_EDIT, { classId: classId('FT-A01'), skill: 'reading' }),
-    'Quản lý không sửa được lớp trong chi nhánh của mình');
-  assert(!can(P.multi, PERMISSIONS.WEEKLY_EDIT, { classId: classId('FT-B01'), skill: 'reading' }),
-    'Quyền quản lý Cầu Giấy tràn sang lớp Hà Đông');
-  assert(can(P.multi, PERMISSIONS.WEEKLY_EDIT, { classId: classId('FT-B01'), skill: 'speaking' }),
-    'Không dùng được quyền giáo viên tại lớp được phân công');
-  assert(!can(P.multi, PERMISSIONS.STUDENT_TRANSFER, { classId: classId('FT-B01') }),
-    'Quyền chuyển lớp của quản lý tràn sang chi nhánh khác');
-});
-check('Manager chi nhánh A không thấy lớp chi nhánh B', () => {
-  const codes = classes.listClasses(P.managerA, {}).map((c: any) => c.code);
-  assert(codes.every((c: string) => c.includes('-A')), `Manager A thấy lớp ngoài phạm vi: ${codes.join(', ')}`);
+check('0/1/2/3/4 kỹ năng dưới kỳ vọng → 0/1/2/3/3', () => {
+  const build = (fails: number) => {
+    const low = 6, ok = 6.5;
+    const v = ['listening', 'reading', 'speaking'].map((_, i) => (i < fails ? low : ok));
+    const wFail = fails >= 4;
+    return scoring.evaluateMock(6.5, 3, {
+      listening: v[0], reading: v[1], speaking: v[2],
+      writing1: wFail ? low : ok, writing2: wFail ? low : ok,
+    });
+  };
+  assert(build(0).sosLevel === 0, '0 trượt phải là Đạt kỳ vọng');
+  assert(build(1).sosLevel === 1, '1 trượt phải là SOS 1');
+  assert(build(2).sosLevel === 2, '2 trượt phải là SOS 2');
+  assert(build(3).sosLevel === 3, '3 trượt phải là SOS 3');
+  assert(build(4).sosLevel === 3 && build(4).failedCount === 4, '4 trượt vẫn là SOS 3');
 });
 
-console.log('\n3. Tư vấn viên: chỉ đọc, không nhận ghi chú nội bộ');
-check('Tư vấn viên không sửa được học vụ', () => {
-  const rec = conn.prepare('SELECT id FROM weekly_learning_records LIMIT 1').get() as any;
-  assertThrows(() => weekly.saveWeeklyRecord(P.consultant, rec.id, { attended: 0 }, 1),
-    /không có quyền/i, 'Tư vấn viên sửa được dữ liệu học tập');
+// ==================================================================== 3
+
+console.log('\n3. Thiếu điểm, tiêu chí S/W và Overall');
+check('Chưa đủ bốn kỹ năng thì không kết luận SOS', () => {
+  const partial = scoring.evaluateMock(6.5, 2, { listening: 7 });
+  assert(partial.sosLevel === null, 'Mới một kỹ năng đã kết luận SOS');
+  assert(partial.complete === false && partial.completed === 1, 'Tiến độ n/4 sai');
+  assert(partial.overall === null, 'Chưa đủ bốn band mà đã có Overall');
 });
-check('API không trả ghi chú nội bộ cho tư vấn viên', () => {
-  const sid = [...P.consultant.consultantStudentIds][0];
-  conn.prepare(`INSERT INTO teacher_notes (student_id, body, visibility, author_user_id, created_at)
-                VALUES (?, 'BÍ MẬT NỘI BỘ', 'internal', ?, datetime())`).run(sid, userId('U005'));
-  const detail = students.getStudentDetail(P.consultant, sid);
-  assert(!JSON.stringify(detail).includes('BÍ MẬT NỘI BỘ'), 'Ghi chú nội bộ lọt vào response của tư vấn viên');
-  const journey = students.getJourney(P.consultant, sid);
-  assert(!JSON.stringify(journey).includes('BÍ MẬT NỘI BỘ'), 'Ghi chú nội bộ lọt vào hành trình của tư vấn viên');
-  const forTeacher = students.getStudentDetail(P.admin, sid);
-  assert(JSON.stringify(forTeacher).includes('BÍ MẬT NỘI BỘ'), 'Người có quyền lại không xem được ghi chú nội bộ');
+check('Band W/S từ bốn tiêu chí; Writing = (W1 + W2×2)/3', () => {
+  assert(scoring.bandFromCriteria([6, 6.5, 5.5, 6]) === 6, 'Trung bình bốn tiêu chí sai');
+  assert(scoring.bandFromCriteria([6, 6.5, 5.5, null]) === null, 'Thiếu tiêu chí phải trả về trống');
+  assert(scoring.writingBand(6, 7) === 6.5, '(6 + 14)/3 = 6.67 phải làm tròn về 6.5');
+  assert(scoring.writingBand(7, 6) === 6.5, '(7 + 12)/3 = 6.33 phải làm tròn về 6.5');
+  assert(scoring.writingBand(6, null) === null, 'Thiếu W2 thì chưa có band Writing');
 });
-check('Tìm kiếm không trả học viên ngoài phạm vi tư vấn viên', () => {
-  const all = students.listStudents(P.consultant, { limit: 500 });
-  assert(all.total === P.consultant.consultantStudentIds.size,
-    `Tư vấn viên thấy ${all.total} học viên nhưng chỉ được phân công ${P.consultant.consultantStudentIds.size}`);
-});
-check('Quản lý tư vấn có scope rộng hơn nhưng không phải toàn hệ thống', () => {
-  const scope = viewScope(P.consultantMgr, PERMISSIONS.ACADEMIC_VIEW);
-  const total = (conn.prepare('SELECT COUNT(*) AS n FROM students').get() as any).n;
-  assert(!scope.all, 'Quản lý tư vấn được cấp quyền toàn hệ thống');
-  assert(scope.studentIds.length > P.consultant.consultantStudentIds.size, 'Quản lý tư vấn không rộng hơn tư vấn viên');
-  assert(scope.studentIds.length < total, 'Quản lý tư vấn thấy toàn bộ học viên');
+check('Overall làm tròn nửa điểm, không làm tròn về số chẵn', () => {
+  assert(scoring.roundToHalf(6.25) === 6.5, '6.25 phải lên 6.5');
+  assert(scoring.roundToHalf(5.75) === 6, '5.75 phải lên 6');
+  const r = scoring.evaluateMock(6.5, 3, { listening: 6, reading: 6.5, writing1: 6.5, writing2: 6.5, speaking: 7 });
+  assert(r.overall === 6.5, `Overall phải là 6.5, đang là ${r.overall}`);
 });
 
-console.log('\n4. Autosave, bulk update và thứ tự request');
-check('Ghi rồi đọc lại vẫn còn dữ liệu', () => {
-  const rec = weekly.ensureWeeklyRecord(
-    (conn.prepare('SELECT id FROM enrollments WHERE class_id = ? LIMIT 1').get(classId('FT-A01')) as any).id,
-    'listening', WEEK);
-  tx(() => weekly.saveWeeklyRecord(P.lisTeacher, rec.id, { attended: 1, note: 'ghi chú kiểm tra' }, 10));
-  const again = conn.prepare('SELECT * FROM weekly_learning_records WHERE id = ?').get(rec.id) as any;
-  assert(again.attended_main_sessions === 1 && again.note_short === 'ghi chú kiểm tra', 'Dữ liệu không được lưu');
+// ==================================================================== 4
+
+console.log('\n4. Tuần, mã tuần và hạn nhập điểm');
+check('Tuần thuộc tháng chứa thứ Năm', () => {
+  assert(week.weekInfo('2026-09-28').code === 'W1 OCT', '28/09–04/10/2026 phải là W1 OCT');
+  assert(week.weekInfo('2026-09-07').code === 'W2 SEP', '07/09–13/09/2026 phải là W2 SEP');
+  assert(week.weekInfo('2026-09-13').weekStart === '2026-09-07', 'Chủ nhật phải thuộc tuần bắt đầu thứ Hai trước đó');
+  assert(week.weekInfo('2026-09-16').code === 'W3 SEP', '16/09/2026 phải thuộc W3 SEP');
+  // Tuần 28/12/2026–03/01/2027 có thứ Năm là 31/12 nên vẫn thuộc tháng 12.
+  assert(week.weekInfo('2027-01-01').code === 'W5 DEC', '01/01/2027 phải thuộc W5 DEC, không phải W1 JAN');
+  assert(week.weekInfo('2027-01-01').year === 2026, 'Năm sở hữu tuần phải là 2026');
+  assert(week.weekInfo('2027-01-04').code === 'W1 JAN', 'Tuần sau đó mới là W1 JAN');
 });
-check('Request cũ không ghi đè request mới', () => {
-  const rec = conn.prepare(`SELECT * FROM weekly_learning_records WHERE class_id = ? AND skill = 'listening' AND week_start = ? LIMIT 1`)
-    .get(classId('FT-A01'), WEEK) as any;
-  tx(() => weekly.saveWeeklyRecord(P.lisTeacher, rec.id, { attended: 1 }, 50));
-  const stale = tx(() => weekly.saveWeeklyRecord(P.lisTeacher, rec.id, { attended: 0 }, 20));
-  assert(stale.stale === true, 'Request cũ không bị đánh dấu là lỗi thời');
-  const after = conn.prepare('SELECT attended_main_sessions FROM weekly_learning_records WHERE id = ?').get(rec.id) as any;
-  assert(after.attended_main_sessions === 1, 'Request cũ đã ghi đè giá trị mới');
+check('Hạn nhập điểm là thứ Tư của tuần kế tiếp', () => {
+  assert(week.scoreDeadline('2026-09-13') === '2026-09-16', 'Mock 13/09 phải có hạn 16/09');
+  assert(week.isOverdue('2026-09-16', '2026-09-16') === false, 'Trong ngày 16/09 chưa được tính quá hạn');
+  assert(week.isOverdue('2026-09-16', '2026-09-17') === true, 'Sang 17/09 phải tính quá hạn');
 });
-check('Bulk update kiểm tra quyền theo từng dòng', () => {
-  const ids = (conn.prepare(`SELECT id FROM weekly_learning_records WHERE class_id = ? AND skill = 'speaking' AND week_start = ? LIMIT 3`)
-    .all(classId('FT-A01'), WEEK) as any[]).map((r) => r.id);
-  const res = weekly.bulkApply(P.lisTeacher, ids, { attended: 1 });
-  assert(res.applied.length === 0 && res.failed.length === ids.length,
-    'Bulk update bỏ qua kiểm tra quyền cho skill không được giao');
-  const ok = weekly.bulkApply(P.coreTeacher, ids, { attended: 1 });
-  assert(ok.applied.length === ids.length, 'GVBM Speaking không bulk update được skill của mình');
-});
-check('Không cho nhập vượt số buổi kỳ vọng hoặc số bài được giao', () => {
-  const rec = conn.prepare(`SELECT * FROM weekly_learning_records WHERE class_id = ? AND skill = 'listening' AND week_start = ? LIMIT 1`)
-    .get(classId('FT-A01'), WEEK) as any;
-  assertThrows(() => weekly.saveWeeklyRecord(P.lisTeacher, rec.id, { attended: (rec.expected_main_sessions ?? 1) + 3 }, 100),
-    /không được vượt/i, 'Cho phép buổi đã học vượt số buổi kỳ vọng');
-  assertThrows(() => weekly.saveWeeklyRecord(P.lisTeacher, rec.id, { homeworkAssigned: 1, homeworkCompleted: 5 }, 101),
-    /không được vượt/i, 'Cho phép số bài hoàn thành vượt số bài được giao');
+check('Hạn bám NGÀY THI THỰC TẾ của từng kỹ năng', () => {
+  const a = { status: 'completed', planned_date: '2026-09-17' };
+  const early = mock.skillDeadline({ test_date: '2026-09-10' } as any, a);
+  const late = mock.skillDeadline({ test_date: '2026-09-17' } as any, a);
+  assert(early === '2026-09-16', `Kỹ năng thi 10/09 phải có hạn 16/09, đang là ${early}`);
+  assert(late === '2026-09-23', `Kỹ năng thi 17/09 phải có hạn 23/09, đang là ${late}`);
 });
 
-console.log('\n5. Chuyển lớp, template version, carry-over');
-check('Chuyển lớp giữ nguyên enrollment cũ', () => {
-  const s = studentByName('Nguyễn Minh Anh');
-  const before = conn.prepare('SELECT COUNT(*) AS n FROM enrollments WHERE student_id = ?').get(s.id) as any;
-  const res = students.transferStudent(P.admin, s.id, { toClassId: classId('FT-A02'), effectiveDate: demoToday(), reason: 'kiểm tra' });
-  const after = conn.prepare('SELECT * FROM enrollments WHERE student_id = ? ORDER BY id').all(s.id) as any[];
-  assert(after.length === before.n + 1, 'Chuyển lớp không tạo lần học mới');
-  const old = after.find((e) => e.id === res.closedEnrollmentId);
-  assert(old && old.status === 'transferred' && old.transferred_to_enrollment_id === res.newEnrollmentId,
-    'Lần học cũ bị mất hoặc không liên kết tới lần học mới');
-  const kept = conn.prepare('SELECT COUNT(*) AS n FROM weekly_learning_records WHERE enrollment_id = ?').get(old.id) as any;
-  assert(kept.n > 0, 'Dữ liệu học tập của lần học cũ bị mất sau khi chuyển lớp');
+// ==================================================================== 5
+
+console.log('\n5. Lập lịch, dời lịch và huỷ');
+const mbClass = classId('MB-FT 101');
+check('Dời lịch cập nhật chính lượt đó, không tạo lượt mới', () => {
+  const target = conn
+    .prepare(`SELECT * FROM mock_attempts WHERE class_id = ? AND status='planned' ORDER BY id LIMIT 1`)
+    .get(mbClass) as any;
+  const before = (conn.prepare('SELECT COUNT(*) AS n FROM mock_attempts WHERE student_id = ?').get(target.student_id) as any).n;
+  mock.rescheduleMock(P.mbManager, target.id, '2026-10-07', 'Trùng lịch phòng thi');
+  const after = conn.prepare('SELECT * FROM mock_attempts WHERE id = ?').get(target.id) as any;
+  const count = (conn.prepare('SELECT COUNT(*) AS n FROM mock_attempts WHERE student_id = ?').get(target.student_id) as any).n;
+  assert(count === before, 'Dời lịch đã tạo thêm một lượt Mock');
+  assert(after.planned_date === '2026-10-07' && after.attempt_no === target.attempt_no, 'Dời lịch không giữ nguyên số lần MT');
+  const hist = conn.prepare(`SELECT * FROM mock_schedule_history WHERE attempt_id = ? AND action='rescheduled'`).all(target.id) as any[];
+  assert(hist.length >= 1 && hist[0].old_date && hist[0].new_date, 'Thiếu lịch sử dời lịch');
 });
-check('Học viên chuyển từ Normal lên FT giữ cả hai lần học và điểm cũ', () => {
-  const s = studentByName('Hoàng Diệu Linh');
-  const enr = conn.prepare('SELECT * FROM enrollments WHERE student_id = ? ORDER BY id').all(s.id) as any[];
-  assert(enr.length >= 2, 'Không giữ đủ hai lần học');
-  const scores = conn.prepare(`SELECT scale FROM assessments WHERE student_id = ?`).all(s.id) as any[];
-  assert(scores.some((x) => x.scale === 'score10'), 'Điểm thang 10 của lớp Normal bị mất');
-  assert(scores.some((x) => x.scale === 'ielts'), 'Điểm IELTS của lớp FT bị mất');
+check('Không huỷ được lượt đã thi, huỷ giữ nguyên dấu vết', () => {
+  const done = conn.prepare(`SELECT * FROM mock_attempts WHERE status='completed' ORDER BY id LIMIT 1`).get() as any;
+  assertThrows(() => mock.cancelMock(P.mbManager, done.id, ''), /lý do/, 'Huỷ mà không ghi lý do');
+  const planned = conn
+    .prepare(`SELECT * FROM mock_attempts WHERE class_id = ? AND status='planned' ORDER BY id DESC LIMIT 1`)
+    .get(mbClass) as any;
+  mock.cancelMock(P.mbManager, planned.id, 'Học sinh nghỉ ốm');
+  const after = conn.prepare('SELECT * FROM mock_attempts WHERE id = ?').get(planned.id) as any;
+  assert(after.status === 'cancelled' && after.cancel_reason === 'Học sinh nghỉ ốm', 'Huỷ không lưu lý do');
+  assertThrows(() => mock.rescheduleMock(P.mbManager, planned.id, '2026-10-20'), /đã huỷ/, 'Dời lịch lượt đã huỷ');
 });
-check('Tạo version mới không sửa lớp đang dùng version cũ', () => {
-  const cls = conn.prepare('SELECT * FROM classes WHERE code = ?').get('NM-A01') as any;
-  const versionBefore = cls.template_version_id;
-  const stagesBefore = classes.resolveClassStages(cls.id).length;
-  const tpl = conn.prepare("SELECT id FROM course_templates WHERE code = 'NM-FOUND'").get() as any;
-  admin.createTemplateVersion(P.admin, tpl.id, { basedOnVersionId: versionBefore, notes: 'v3 kiểm tra' });
-  const clsAfter = conn.prepare('SELECT * FROM classes WHERE id = ?').get(cls.id) as any;
-  assert(clsAfter.template_version_id === versionBefore, 'Lớp bị đổi sang phiên bản mới ngoài ý muốn');
-  assert(classes.resolveClassStages(cls.id).length === stagesBefore, 'Chương trình của lớp cũ bị thay đổi');
+check('Không tạo trùng lần MT cho cùng học sinh', () => {
+  const a = conn.prepare('SELECT * FROM mock_attempts ORDER BY id LIMIT 1').get() as any;
+  assertThrows(
+    () => mock.createMock(P.admin, { studentId: a.student_id, attemptNo: a.attempt_no, plannedDate: '2026-11-02' }),
+    /đã có lịch/, 'Tạo trùng lần MT',
+  );
 });
-check('Override chỉ ảnh hưởng đúng lớp được chọn', () => {
-  const a = classes.classProgress(classId('NM-A01')).stages.find((s) => s.stageKey === 'f1-w4')!;
-  const b = classes.classProgress(classId('NM-B01')).stages.find((s) => s.stageKey === 'f1-w4')!;
-  assert(a.dueDate !== null, 'Lớp không override lại mất hạn');
-  assert(b.dueDate === null, 'Override bỏ hạn không có tác dụng ở lớp được chọn');
+
+// ==================================================================== 6
+
+console.log('\n6. Quyền theo vai trò × chi nhánh × phân công');
+check('GVBM chỉ sửa kỹ năng được phân công, vẫn đọc được kỹ năng khác', () => {
+  assert(can(P.w1Teacher, PERMISSIONS.SCORE_EDIT, { classId: mbClass, skill: 'writing1' }), 'GV W1 phải sửa được Writing 1');
+  assert(!can(P.w1Teacher, PERMISSIONS.SCORE_EDIT, { classId: mbClass, skill: 'writing2' }), 'GV W1 không được sửa Writing 2');
+  assert(can(P.w1Teacher, PERMISSIONS.MOCK_VIEW, { classId: mbClass }), 'GV phải xem được lớp mình dạy');
+  const a = conn.prepare(`SELECT * FROM mock_attempts WHERE class_id = ? AND status='completed' ORDER BY id LIMIT 1`).get(mbClass) as any;
+  assertThrows(
+    () => mock.saveScore(P.w1Teacher, a.id, 'writing2', { criteria: [6, 6, 6, 6] }),
+    /phân công/, 'GV W1 nhập điểm Writing 2',
+  );
 });
-check('Lớp FT không có mốc kèm hạn thì không bị đánh giá chậm', () => {
-  const p = classes.classProgress(classId('FT-A01'));
-  assert(p.summary.hasDeadlines === false, 'Lớp FT linh hoạt lại có mốc kèm hạn');
-  assert(p.summary.delayed === false, 'Lớp FT không có hạn vẫn bị đánh dấu chậm');
+check('GVCN dời được lịch nhưng không vì thế sửa được mọi điểm', () => {
+  assert(can(P.coreTeacher, PERMISSIONS.MOCK_SCHEDULE, { classId: mbClass }), 'GVCN phải dời được lịch');
+  const skills = ['listening', 'reading', 'writing1', 'writing2', 'speaking']
+    .filter((s) => can(P.coreTeacher, PERMISSIONS.SCORE_EDIT, { classId: mbClass, skill: s }));
+  assert(skills.length < 5, `GVCN đang sửa được cả 5 kỹ năng: ${skills.join(', ')}`);
+  assert(!can(P.w1Teacher, PERMISSIONS.MOCK_SCHEDULE, { classId: mbClass }), 'GVBM không phải GVCN thì không được dời lịch');
 });
-check('Carry-over dùng lại chính task cũ, không nhân bản', () => {
-  const periods = meetings.listMeetingPeriods();
-  const latest = periods[0];
-  const before = (conn.prepare('SELECT COUNT(*) AS n FROM tasks').get() as any).n;
-  const detail = meetings.meetingDetail(P.admin, latest.id);
-  const after = (conn.prepare('SELECT COUNT(*) AS n FROM tasks').get() as any).n;
-  assert(before === after, 'Xem kỳ họp lại tạo thêm bản ghi công việc');
-  assert(detail.carryOverTasks.length > 0, 'Không có việc tồn nào để kiểm tra');
-  for (const t of detail.carryOverTasks) {
-    assert(t.originMeeting !== latest.label, `Task ${t.code} bị gán sai kỳ họp gốc`);
-    const row = conn.prepare('SELECT source_meeting_period_id FROM tasks WHERE id = ?').get(t.id) as any;
-    assert(row.source_meeting_period_id !== latest.id, `Task ${t.code} bị chuyển nguồn sang kỳ hiện tại`);
+check('API chặn thao tác ngoài chi nhánh, không chỉ ẩn nút', () => {
+  const cpAttempt = conn
+    .prepare('SELECT a.* FROM mock_attempts a JOIN classes c ON c.id=a.class_id WHERE c.code = ? ORDER BY a.id LIMIT 1')
+    .get('CP-FT 110') as any;
+  assertThrows(() => mock.mockDetail(P.mbManager, cpAttempt.id), /phạm vi/, 'Quản lý MB xem Mock của CP');
+  assertThrows(() => mock.rescheduleMock(P.mbManager, cpAttempt.id, '2026-10-09'), /quyền/, 'Quản lý MB dời lịch của CP');
+  assert(mock.mockDetail(P.cpManager, cpAttempt.id).id === cpAttempt.id, 'Quản lý CP phải xem được Mock của CP');
+});
+check('Nhiều quản lý cùng chi nhánh đều vận hành được', () => {
+  const ids = conn
+    .prepare(
+      `SELECT ur.user_id AS id FROM user_roles ur JOIN roles r ON r.id=ur.role_id JOIN branches b ON b.id=ur.branch_id
+        WHERE r.key='manager' AND b.code='MB'`,
+    )
+    .all() as any[];
+  assert(ids.length >= 2, 'Chi nhánh MB phải có từ 2 quản lý trở lên');
+  for (const r of ids) {
+    assert(can(loadPrincipal(r.id), PERMISSIONS.MOCK_SCHEDULE, { classId: mbClass }), 'Một quản lý MB không lập được lịch');
   }
 });
-
-console.log('\n6. Buổi bổ trợ, dữ liệu thiếu, Writing 1/2');
-check('Buổi bổ trợ không làm tỷ lệ chuyên cần vượt 100%', () => {
-  const s = studentByName('Bùi Hà My');
-  const rows = students.getStudentWeekly(P.admin, s.id, 2).filter((r: any) => r.weekStart === WEEK && r.supplemental > 0);
-  assert(rows.length > 0, 'Không tìm thấy tuần có buổi bổ trợ');
-  for (const r of rows) {
-    assert(r.attendanceRate === null || r.attendanceRate <= 100, `Tỷ lệ chuyên cần ${r.attendanceRate}% vượt 100%`);
-    assert(r.totalSessions === (r.attended ?? 0) + (r.supplemental ?? 0), 'Tổng buổi tính sai');
-  }
-  const total = rows.reduce((n: number, r: any) => n + r.supplemental, 0);
-  assert(total === 7, `Kịch bản cần đúng 7 buổi bổ trợ trong tuần, đang có ${total}`);
-});
-check('Chưa nhập khác với nhập 0', () => {
-  const notUpdated = studentByName('Trịnh Bảo Trâm');
-  const zero = studentByName('Cao Minh Quang');
-  const nu = weekly.computeSignals([notUpdated.id]).get(notUpdated.id)!;
-  const z = weekly.computeSignals([zero.id]).get(zero.id)!;
-  assert(nu.missingUpdates > 0, 'Học viên chưa cập nhật không được đưa vào diện cần cập nhật');
-  const nuRows = students.getStudentWeekly(P.admin, notUpdated.id, 2);
-  assert(nuRows.some((r: any) => r.dataState === 'not_updated'), 'Dòng chưa nhập không được đánh dấu đúng');
-  assert(z.attendance.rate === 0, 'Học viên nhập 0 buổi lại không tính ra 0%');
-  assert(z.concern === true, 'Học viên nhập 0 buổi không sinh tín hiệu cần chú ý');
-});
-check('Skill không đăng ký hiển thị "không áp dụng", không tính là thiếu dữ liệu', () => {
-  const s = studentByName('Ngô Tuấn Kiệt');
-  const rows = students.getStudentWeekly(P.admin, s.id, 2);
-  const na = rows.filter((r: any) => !r.applicable);
-  assert(na.length > 0, 'Học viên chỉ học 2 skill nhưng không có dòng "không áp dụng"');
-  assert(na.every((r: any) => r.dataState === 'not_applicable'), 'Dòng không áp dụng bị coi là thiếu dữ liệu');
-  const sig = weekly.computeSignals([s.id]).get(s.id)!;
-  assert(sig.missingUpdates === 0, 'Skill không áp dụng bị tính vào diện chưa cập nhật');
-});
-check('Writing 1 và Writing 2 giữ riêng, không thành điểm Writing chính thức', () => {
-  const s = studentByName('Dương Quốc Việt');
-  const d = students.getStudentDetail(P.admin, s.id);
-  const w1 = d.estimates.find((e: any) => e.teachingSkill === 'writing1');
-  const w2 = d.estimates.find((e: any) => e.teachingSkill === 'writing2');
-  assert(w1 && w2 && w1.band !== w2.band, 'Không có hai ước lượng Writing khác nhau');
-  const official = d.officialScore!.scores.writing;
-  assert(official !== (w1!.band + w2!.band) / 2, 'Điểm Writing chính thức bị lấy trung bình từ ước lượng');
-  assert(!d.estimates.some((e: any) => e.teachingSkill === 'writing'), 'Xuất hiện skill "writing" gộp trong ước lượng');
-});
-check('Bài official thiếu skill hiển thị "chưa có", không tự ghép từ bài khác', () => {
-  const s = studentByName('Đinh Gia Huy');
-  const o = students.latestOfficialAssessment(s.id)!;
-  assert(o.scores.speaking === null, 'Skill thiếu bị điền bằng điểm của bài khác');
-  assert(o.missingSkills.includes('speaking'), 'Không báo skill còn thiếu');
-});
-check('Học viên chưa có bài official chỉ hiện ước lượng', () => {
-  const s = studentByName('Lý Thảo Nguyên');
-  const d = students.getStudentDetail(P.admin, s.id);
-  assert(d.officialScore === null, 'Học viên chưa thi lại có điểm official');
-  assert(d.estimates.length > 0, 'Không có ước lượng nào để hiển thị');
-});
-check('Điểm thang 10 của lớp Normal không bị quy đổi sang band IELTS', () => {
-  const s = studentByName('Hoàng Diệu Linh');
-  const d = students.getStudentDetail(P.admin, s.id);
-  const progress = d.assessments.find((a: any) => a.testType === 'progress')!;
-  assert(progress.scale === 'score10', 'Progress Test bị đổi thang điểm');
-  assert(progress.scores.some((x: any) => x.score > 9), 'Không còn điểm nào vượt thang IELTS để chứng minh không quy đổi');
-});
-check('Hệ thống không tự tạo ghi nhận cảnh báo từ tín hiệu', () => {
-  const s = studentByName('Trần Bảo Long');
-  const sig = weekly.computeSignals([s.id]).get(s.id)!;
-  const warnings = conn.prepare('SELECT COUNT(*) AS n FROM warning_references WHERE student_id = ?').get(s.id) as any;
-  assert(sig.concern === true, 'Học viên chuyên cần thấp không sinh tín hiệu');
-  assert(warnings.n === 0, 'Hệ thống tự tạo ghi nhận cảnh báo từ tín hiệu học tập');
-});
-check('Ghi nhận cảnh báo chỉ do người có quyền tạo', () => {
-  const s = studentByName('Trần Bảo Long');
-  assertThrows(() => assessments.createWarningReference(P.lisTeacher, { studentId: s.id, reason: 'thử' }),
-    /không có quyền|GVCN/i, 'GVBM không chủ nhiệm vẫn ghi nhận được cảnh báo');
-  const ok = assessments.createWarningReference(P.coreTeacher, { studentId: s.id, reason: 'kiểm tra' });
-  assert(ok, 'GVCN không ghi nhận được cảnh báo cho lớp mình');
+check('Không vai trò nào mặc định thấy toàn hệ thống', () => {
+  assert(!can(P.mbManager, PERMISSIONS.MOCK_VIEW, { classId: classId('CP-FT 110') }), 'Quản lý MB đang thấy lớp CP');
+  assert(can(P.admin, PERMISSIONS.MOCK_VIEW, { classId: classId('CP-FT 110') }), 'Admin toàn hệ thống phải thấy mọi lớp');
 });
 
-console.log('\n7. Import Excel/CSV');
-const mapping = { className: 'Lớp', fullName: 'Họ tên', dob: 'Ngày sinh', targetBand: 'Target', consultant: 'Tư vấn viên', skills: 'Skill' };
-const rowsOk = [
-  { 'Lớp': 'FT-A01', 'Họ tên': 'Nguyễn Test Một', 'Ngày sinh': '14/03/2007', 'Target': '6.5', 'Tư vấn viên': '', 'Skill': '' },
-  { 'Lớp': 'FT-A01', 'Họ tên': 'Nguyễn Test Hai', 'Ngày sinh': '02/11/2006', 'Target': '7.0', 'Tư vấn viên': '', 'Skill': '' },
-];
-check('Báo lỗi rõ ràng cho dòng hỏng, không nhập âm thầm', () => {
-  const bad = [
-    { 'Lớp': 'FT-A01', 'Họ tên': '', 'Ngày sinh': '11/01/2007', 'Target': '', 'Tư vấn viên': '', 'Skill': '' },
-    { 'Lớp': 'KHONG-CO', 'Họ tên': 'Đỗ Test Ba', 'Ngày sinh': '19/04/2006', 'Target': '', 'Tư vấn viên': '', 'Skill': '' },
-    { 'Lớp': 'FT-A01', 'Họ tên': 'Vũ Test Bốn', 'Ngày sinh': '30/13/2007', 'Target': '', 'Tư vấn viên': '', 'Skill': '' },
-    { 'Lớp': 'FT-A01', 'Họ tên': 'Vũ Test Năm', 'Ngày sinh': '01/02/2007', 'Target': '', 'Tư vấn viên': 'Không Có Thật', 'Skill': '' },
-  ];
-  const res = importSvc.validateStudentImport(P.admin, bad, mapping);
-  assert(res.summary.errors === 4, `Cần bắt 4 dòng lỗi, chỉ bắt được ${res.summary.errors}`);
-  assert(/Thiếu họ tên/.test(res.rows[0].errors.join()), 'Không báo lỗi thiếu họ tên');
-  assert(/không tồn tại/.test(res.rows[1].errors.join()), 'Không báo lỗi lớp không tồn tại');
-  assert(/Ngày sinh/.test(res.rows[2].errors.join()), 'Không báo lỗi ngày sinh không hợp lệ');
-  assert(/Tư vấn viên/.test(res.rows[3].errors.join()), 'Không báo lỗi tư vấn viên không hợp lệ');
-});
-check('Import ngoài phạm vi quyền bị chặn', () => {
-  const res = importSvc.validateStudentImport(P.managerA, [
-    { 'Lớp': 'FT-B01', 'Họ tên': 'Trần Test Sáu', 'Ngày sinh': '01/02/2007', 'Target': '', 'Tư vấn viên': '', 'Skill': '' },
-  ], mapping);
-  assert(/ngoài phạm vi/.test(res.rows[0].errors.join()), 'Manager nhập được học viên vào chi nhánh khác');
-});
-check('Trùng tên + ngày sinh chỉ tạo candidate, không tự gộp', () => {
-  const dup = conn.prepare("SELECT full_name, dob, COUNT(*) AS n FROM students GROUP BY normalized_name, dob HAVING n > 1").all() as any[];
-  assert(dup.length > 0, 'Seed không có cặp trùng tên + ngày sinh để kiểm tra');
-  const res = importSvc.validateStudentImport(P.admin, [
-    { 'Lớp': 'FT-A01', 'Họ tên': dup[0].full_name, 'Ngày sinh': dup[0].dob.slice(8, 10) + '/' + dup[0].dob.slice(5, 7) + '/' + dup[0].dob.slice(0, 4), 'Target': '', 'Tư vấn viên': '', 'Skill': '' },
-  ], mapping);
-  assert(res.rows[0].duplicates.length >= 2, 'Không phát hiện được hồ sơ trùng');
-  assert(res.rows[0].duplicates[0].matchOn.includes('Ngày sinh'), 'Không nêu rõ tiêu chí trùng khớp');
-  assert(res.rows[0].decision !== 'create', 'Dòng nghi trùng bị mặc định tạo mới');
-});
-check('Bấm xác nhận hai lần không tạo dữ liệu trùng', () => {
-  const before = (conn.prepare('SELECT COUNT(*) AS n FROM students').get() as any).n;
-  const token = 'test-token-idempotency';
-  const first = importSvc.commitStudentImport(P.admin, { token, fileName: 't.xlsx', rows: rowsOk, mapping, decisions: [] });
-  const mid = (conn.prepare('SELECT COUNT(*) AS n FROM students').get() as any).n;
-  const second = importSvc.commitStudentImport(P.admin, { token, fileName: 't.xlsx', rows: rowsOk, mapping, decisions: [] });
-  const after = (conn.prepare('SELECT COUNT(*) AS n FROM students').get() as any).n;
-  assert(first.created === 2, `Lần nhập đầu tạo ${first.created} học viên, cần 2`);
-  assert(mid === before + 2, 'Số học viên sau lần nhập đầu không đúng');
-  assert(after === mid, 'Bấm lần hai tạo thêm dữ liệu trùng');
-  assert(second.alreadyCommitted === true, 'Không nhận ra phiên nhập đã được ghi');
-});
-check('Student ID sinh ở server, duy nhất và đúng định dạng', () => {
-  const codes = (conn.prepare('SELECT student_code FROM students').all() as any[]).map((r) => r.student_code);
-  assert(new Set(codes).size === codes.length, 'Có mã học viên bị trùng');
-  assert(codes.every((c: string) => /^PISA-\d{6}$/.test(c)), 'Có mã học viên sai định dạng');
-});
-check('Liên kết vào hồ sơ có sẵn chỉ thêm lần học, không ghi đè', () => {
-  const target = studentByName('Nguyễn Test Một');
-  const nameBefore = target.full_name, dobBefore = target.dob;
-  const enrBefore = (conn.prepare('SELECT COUNT(*) AS n FROM enrollments WHERE student_id = ?').get(target.id) as any).n;
-  importSvc.commitStudentImport(P.admin, {
-    token: 'test-token-link', fileName: 't2.xlsx',
-    rows: [{ 'Lớp': 'FT-A02', 'Họ tên': 'Nguyễn Test Một', 'Ngày sinh': '14/03/2007', 'Target': '8.0', 'Tư vấn viên': '', 'Skill': '' }],
-    mapping, decisions: [{ rowIndex: 0, decision: 'link', linkStudentId: target.id }],
+// ==================================================================== 7
+
+console.log('\n7. Nhập điểm và hành động SOS');
+check('Nhập đủ bốn kỹ năng mới mở case, sửa điểm không xoá lịch sử xử lý', () => {
+  const s = conn
+    .prepare(
+      `SELECT s.* FROM students s JOIN enrollments e ON e.student_id=s.id
+        WHERE e.class_id = ? AND s.committed_score IS NOT NULL ORDER BY s.id LIMIT 1`,
+    )
+    .get(classId('CP-FT 110')) as any;
+  const attempt = mock.createMock(P.cpManager, {
+    studentId: s.id, attemptNo: 4, plannedDate: '2026-11-09', classId: classId('CP-FT 110'),
+  }) as any;
+  const exp = s.committed_score;   // MT4 → kỳ vọng bằng cam kết
+  const lTeacher = loadPrincipal(teacherOfSkill('CP-FT 110', 'listening'));
+  const rTeacher = loadPrincipal(teacherOfSkill('CP-FT 110', 'reading'));
+  const w1 = loadPrincipal(teacherOfSkill('CP-FT 110', 'writing1'));
+  const w2 = loadPrincipal(teacherOfSkill('CP-FT 110', 'writing2'));
+  const sp = loadPrincipal(teacherOfSkill('CP-FT 110', 'speaking'));
+
+  const low = exp - 0.5;
+  mock.saveScore(lTeacher, attempt.id, 'listening', { testDate: '2026-11-09', rawScore: scoring.LISTENING_BY_RAW.indexOf(low) });
+  let after = mock.mockDetail(P.cpManager, attempt.id);
+  assert(after.result.sosLevel === null, 'Mới một kỹ năng đã chốt SOS');
+  assert(!after.sosCase, 'Mới một kỹ năng đã mở case');
+
+  mock.saveScore(rTeacher, attempt.id, 'reading', { testDate: '2026-11-09', rawScore: scoring.READING_BY_RAW.indexOf(low) });
+  mock.saveScore(w1, attempt.id, 'writing1', { testDate: '2026-11-09', criteria: [low, low, low, low] });
+  mock.saveScore(w2, attempt.id, 'writing2', { testDate: '2026-11-09', criteria: [low, low, low, low] });
+  after = mock.mockDetail(P.cpManager, attempt.id);
+  assert(after.result.sosLevel === null, 'Thiếu Speaking mà đã chốt SOS');
+
+  mock.saveScore(sp, attempt.id, 'speaking', { testDate: '2026-11-09', criteria: [exp, exp, exp, exp] });
+  after = mock.mockDetail(P.cpManager, attempt.id);
+  assert(after.result.sosLevel === 3, `Ba kỹ năng dưới kỳ vọng phải là SOS 3, đang là ${after.result.sosLevel}`);
+  assert(after.sosCase && after.sosCase.sos_level === 3, 'Chưa mở case SOS 3');
+
+  // Ghi nhận xử lý rồi sửa điểm cho đổi mức SOS: mức đổi, hành động và lịch sử phải còn.
+  sos.updateCase(P.cpManager, after.sosCase.id, {
+    talk_student_person: 'GVCN Thu Trang', talk_student_date: '2026-11-12', status: 'in_progress',
   });
-  const after = conn.prepare('SELECT * FROM students WHERE id = ?').get(target.id) as any;
-  const enrAfter = (conn.prepare('SELECT COUNT(*) AS n FROM enrollments WHERE student_id = ?').get(target.id) as any).n;
-  assert(after.full_name === nameBefore && after.dob === dobBefore, 'Liên kết đã ghi đè tên hoặc ngày sinh gốc');
-  assert(enrAfter === enrBefore + 1, 'Liên kết không thêm lần học mới');
+  mock.saveScore(w1, attempt.id, 'writing1', { criteria: [exp, exp, exp, exp] });
+  mock.saveScore(w2, attempt.id, 'writing2', { criteria: [exp, exp, exp, exp] });
+  const reread = mock.mockDetail(P.cpManager, attempt.id);
+  assert(reread.result.sosLevel === 2, `Sau khi sửa Writing phải còn SOS 2, đang là ${reread.result.sosLevel}`);
+  assert(reread.sosCase.id === after.sosCase.id, 'Sửa điểm đã nhân đôi case');
+  assert(reread.sosCase.talk_student_date === '2026-11-12', 'Sửa điểm đã xoá ghi nhận xử lý');
+  assert(reread.caseHistory.length > 0, 'Thiếu lịch sử thay đổi của case');
+});
+check('Bảng hành động đúng theo MT × mức SOS', () => {
+  const keys = (n: number, l: 1 | 2 | 3) => sos.stepsFor(n, l).map((s) => s.key);
+  assert(!keys(1, 2).includes('meeting'), 'MT1 SOS 2 không có meeting bổ sung');
+  assert(sos.stepsFor(1, 3).find((s) => s.key === 'meeting')!.detail.includes('GVCN'), 'MT1 SOS 3 phải là GVCN gặp HS');
+  assert(sos.stepsFor(2, 3).find((s) => s.key === 'meeting')!.detail.includes('CX'), 'MT2 SOS 3 phải là CX/GĐCN gặp HS');
+  assert(!keys(2, 2).includes('ops'), 'MT2 SOS 2 chưa có hỗ trợ vận hành');
+  assert(keys(3, 2).includes('ops'), 'MT3 SOS 2 phải có hỗ trợ vận hành');
+  assert(keys(3, 1).includes('ops') === false, 'MT3 SOS 1 không có hỗ trợ vận hành');
+  assert(sos.stepsFor(2, 3).find((s) => s.key === 'academic')!.detail.includes('HOẶC'),
+    'MT2 SOS 3 phải là hai phương án chọn một, không phải hai việc bắt buộc');
+  assert(!/\d+\s*buổi/.test(sos.stepsFor(5, 1).find((s) => s.key === 'academic')!.detail),
+    'MT5 không được tự sinh thời lượng tutor');
+  for (const n of [1, 2, 3, 4, 5]) {
+    for (const l of [1, 2, 3] as const) {
+      assert(keys(n, l).includes('talk_parent'), `MT${n} SOS ${l} phải giữ bước trao đổi phụ huynh`);
+    }
+  }
+});
+check('Có tên người làm nhưng chưa có ngày thì chưa tính là đã thực hiện', () => {
+  const steps = sos.caseProgress(
+    { talk_student_person: 'GVCN Thu Trang', talk_parent_date: '2026-12-31', academic_start_date: '2026-09-01' },
+    2, 2, TODAY,
+  );
+  const byKey = Object.fromEntries(steps.map((s) => [s.key, s.state]));
+  assert(byKey.talk_student === 'named_only', 'Có tên chưa có ngày phải là "chưa thực hiện"');
+  assert(byKey.talk_parent === 'scheduled', 'Ngày ở tương lai chỉ là đã xếp lịch');
+  assert(byKey.academic === 'done', 'Ngày đã qua mới tính là đã bắt đầu');
 });
 
-console.log('\n8. Nhật ký và lưu trữ');
-check('Thay đổi quan trọng được ghi nhật ký kèm giá trị trước/sau', () => {
-  const rows = conn.prepare("SELECT * FROM audit_logs WHERE action = 'student.transfer' ORDER BY id DESC LIMIT 1").get() as any;
-  assert(rows, 'Chuyển lớp không được ghi nhật ký');
-  assert(rows.before_json && rows.after_json, 'Nhật ký thiếu giá trị trước/sau');
-  assert(rows.actor_user_id && rows.created_at, 'Nhật ký thiếu người thực hiện hoặc thời điểm');
+// ==================================================================== 8
+
+console.log('\n8. Họp tuần và công việc');
+const currentPeriod = week.ensurePeriod(TODAY);
+check('Ô chưa nhập là "Chưa báo cáo", không quy thành Ổn', () => {
+  const board = meeting.meetingBoard(P.admin, currentPeriod.id);
+  const blank = board.units.flatMap((u) => u.cells).filter((c) => c.status === null);
+  assert(blank.length > 0, 'Seed không còn ô nào chưa báo cáo để kiểm tra');
+  assert(board.totals.notReported === blank.length, 'Đếm sai số ô chưa báo cáo');
+  assert(board.totals.ok + board.totals.watch + board.totals.problem + board.totals.notReported === board.totals.total,
+    'Tổng số ô không khớp');
 });
-check('Lưu trữ thay vì xoá cứng', () => {
-  const b = conn.prepare("SELECT id FROM branches WHERE code = 'VI'").get() as any;
-  admin.archiveEntity(P.admin, 'branches', b.id);
-  const after = conn.prepare('SELECT status, archived_at FROM branches WHERE id = ?').get(b.id) as any;
-  assert(after && after.status === 'archived' && after.archived_at, 'Bản ghi bị xoá cứng thay vì lưu trữ');
+check('Tutor part-time là đơn vị riêng, mẫu số tính lại theo danh mục', () => {
+  const board = meeting.meetingBoard(P.admin, currentPeriod.id);
+  const tutor = board.units.find((u) => u.unitCode === 'TUTOR');
+  assert(tutor && tutor.branchId === null, 'Tutor part-time không được là chi nhánh thứ sáu');
+  assert(tutor!.cells.length === 3 && tutor!.cells[0].key === 'tutor_count', 'Tutor phải dùng bộ nhóm riêng');
+  const branches = board.units.filter((u) => u.kind === 'branch');
+  assert(branches.length === 5, 'Phải có đúng 5 đơn vị chi nhánh');
+  assert(board.totals.total === branches.length * 3 + 3, `Mẫu số phải tính lại từ danh mục, đang là ${board.totals.total}`);
+});
+check('Trạng thái hạn tính riêng, việc hoàn thành không bị báo trễ', () => {
+  const rows = meeting.listTasks(P.admin, {}).rows;
+  const doneLate = rows.find((t) => t.progress === 'done' && t.dueDate && t.dueDate < TODAY);
+  assert(doneLate && doneLate.dueState === 'closed', 'Việc đã hoàn thành sau hạn vẫn bị báo quá hạn');
+  const noDue = rows.find((t) => !t.dueDate);
+  assert(noDue && noDue.dueState === 'no_due', 'Việc không có hạn bị tính quá hạn');
+  assert(rows.some((t) => t.dueState === 'overdue'), 'Seed thiếu việc quá hạn để kiểm tra');
+  assert(rows.some((t) => t.dueState === 'due_soon'), 'Seed thiếu việc sắp đến hạn để kiểm tra');
+});
+check('Việc tồn từ kỳ trước vẫn hiện khi xem tuần này, không clone', () => {
+  const inPeriod = meeting.listTasks(P.admin, { periodId: currentPeriod.id }).rows;
+  const carried = inPeriod.filter((t) => t.periodId !== currentPeriod.id);
+  assert(carried.length > 0, 'Việc tồn từ kỳ trước biến mất khi đổi tuần');
+  assert(carried.some((t) => t.taskType === 'long_term'), 'Việc dài hạn chưa xong phải xét xuyên kỳ');
+  const codes = inPeriod.map((t) => t.code);
+  assert(new Set(codes).size === codes.length, 'Có việc bị nhân bản sang tuần mới');
+});
+check('Cập nhật báo cáo và công việc lưu lại được', () => {
+  const unit = (conn.prepare("SELECT * FROM reporting_units WHERE code = 'MB'").get()) as any;
+  meeting.saveUnitReport(P.mbManager, unit.id, currentPeriod.id, 'teachers',
+    { status: 'problem', note: 'Thiếu 1 giáo viên Writing ca tối' });
+  const board = meeting.meetingBoard(P.mbManager, currentPeriod.id);
+  const cell = board.units.find((u) => u.unitId === unit.id)!.cells.find((c) => c.key === 'teachers')!;
+  assert(cell.status === 'problem' && cell.note?.includes('Writing'), 'Báo cáo đơn vị không lưu được');
+
+  const task = meeting.createTask(P.mbManager, {
+    title: 'Bổ sung giáo viên Writing ca tối', unitId: unit.id, periodId: currentPeriod.id,
+    dueDate: '2026-09-30', assigneeUserId: P.mbManager.userId,
+  }) as any;
+  meeting.updateTask(P.mbManager, task.id, { progress: 'doing' });
+  const again = meeting.listTasks(P.mbManager, {}).rows.find((t) => t.id === task.id)!;
+  assert(again.progress === 'doing', 'Cập nhật tiến độ không lưu được');
+  assert(meeting.taskHistory(task.id).length > 0, 'Thiếu lịch sử thay đổi công việc');
+});
+check('Quản lý chi nhánh không sửa được báo cáo của đơn vị khác', () => {
+  const cp = conn.prepare("SELECT * FROM reporting_units WHERE code = 'CP'").get() as any;
+  assertThrows(
+    () => meeting.saveUnitReport(P.mbManager, cp.id, currentPeriod.id, 'teachers', { status: 'ok' }),
+    /quyền/, 'Quản lý MB sửa báo cáo của CP',
+  );
+});
+
+// ==================================================================== 9
+
+console.log('\n9. Tổng quan tuần');
+check('Phân biệt lịch dự kiến, lượt đã thi và học sinh duy nhất', () => {
+  const o = dashboard.overview(P.admin, currentPeriod.id);
+  assert(o.kpis.week.scheduled >= o.kpis.week.taken, 'Số đã thi không thể lớn hơn số có lịch');
+  assert(o.kpis.week.uniqueStudents <= o.kpis.week.scheduled, 'Học sinh duy nhất phải ≤ số lượt');
+  assert(typeof o.kpis.week.cancelled === 'number', 'Thiếu số lượt đã huỷ');
+});
+check('Thiếu điểm khác quá hạn, lượt đã huỷ không tính vào cả hai', () => {
+  const o = dashboard.overview(P.admin, currentPeriod.id);
+  assert(o.kpis.scoring.overdue <= o.kpis.scoring.missing + o.kpis.scoring.complete,
+    'Số quá hạn vượt quá số lượt còn hiệu lực');
+  const all = mock.listMocks(P.admin, {}).rows;
+  const cancelled = all.filter((m) => m.status === 'cancelled');
+  assert(cancelled.length > 0, 'Seed thiếu lượt đã huỷ để kiểm tra');
+  assert(!cancelled.some((m) => m.overdueSkills > 0), 'Lượt đã huỷ vẫn bị tính quá hạn');
+});
+check('Case cũ không biến mất khi chuyển sang tuần khác', () => {
+  const periods = week.listPeriods(30);
+  const other = periods.find((p) => p.id !== currentPeriod.id)!;
+  const a = dashboard.overview(P.admin, currentPeriod.id);
+  const b = dashboard.overview(P.admin, other.id);
+  assert(a.kpis.cases.open === b.kpis.cases.open, 'Đổi tuần làm mất case còn tồn');
+  assert(a.tasks.overdue === b.tasks.overdue, 'Đổi tuần làm mất việc quá hạn');
+});
+check('Mỗi KPI mở được đúng danh sách bản ghi', () => {
+  const o = dashboard.overview(P.admin, currentPeriod.id);
+  assert(mock.listMocks(P.admin, { need: 'overdue' }).rows.length === o.kpis.scoring.overdue, 'Bộ lọc quá hạn lệch KPI');
+  assert(mock.listMocks(P.admin, { need: 'missing_scores' }).rows.length === o.kpis.scoring.missing, 'Bộ lọc thiếu điểm lệch KPI');
+  assert(mock.listMocks(P.admin, { need: 'sos_open' }).rows.length === o.kpis.cases.open, 'Bộ lọc case lệch KPI');
+});
+check('Thời gian trả kết quả khác số ngày quá hạn', () => {
+  const o = dashboard.overview(P.admin, currentPeriod.id);
+  assert(o.support.avgResultDays === null || o.support.avgResultDays >= 0, 'Thời gian trả kết quả âm');
+  assert('talkedStudent' in o.support && 'academicStarted' in o.support, 'Thiếu số liệu hỗ trợ');
+});
+check('Tuần có kỹ năng thi lệch tuần dùng ngày thi thực tế', () => {
+  const split = conn
+    .prepare(
+      `SELECT attempt_id FROM mock_scores GROUP BY attempt_id HAVING COUNT(DISTINCT test_date) > 1 LIMIT 1`,
+    )
+    .get() as any;
+  assert(split, 'Seed thiếu trường hợp thi lệch tuần');
+  const row = mock.listMocks(P.admin, {}).rows.find((m) => m.id === split.attempt_id)!;
+  const dates = (conn.prepare('SELECT MIN(test_date) AS d FROM mock_scores WHERE attempt_id = ?').get(split.attempt_id) as any).d;
+  assert(row.firstTestDate === dates, 'Tuần hiển thị không lấy theo ngày thi sớm nhất');
+});
+
+// ==================================================================== 10
+
+console.log('\n10. Hồ sơ học viên và lưu dữ liệu');
+check('Hành trình giữ chuyển lớp, tạm dừng, quay lại và chỉ có ba bộ lọc', () => {
+  const s = conn
+    .prepare(`SELECT student_id AS id FROM journey_events WHERE event_type='transfer' LIMIT 1`)
+    .get() as any;
+  const all = students.journey(P.admin, s.id);
+  assert(all.some((e) => e.eventType === 'transfer'), 'Chuyển lớp phải nằm trong "Tất cả"');
+  const assessment = students.journey(P.admin, s.id, 'assessment');
+  assert(assessment.every((e) => e.group === 'assessment'), 'Bộ lọc Assessment lẫn sự kiện khác');
+  const p = conn.prepare(`SELECT student_id AS id FROM journey_events WHERE event_type='pause' LIMIT 1`).get() as any;
+  const paused = students.journey(P.admin, p.id);
+  assert(paused.some((e) => e.eventType === 'pause') && paused.some((e) => e.eventType === 'resume'),
+    'Tạm dừng và quay lại học phải còn trong hành trình');
+  const w = conn.prepare(`SELECT student_id AS id FROM journey_events WHERE event_type='warning' LIMIT 1`).get() as any;
+  const warn = students.journey(P.admin, w.id, 'warning');
+  assert(warn.length > 0 && warn.every((e) => e.group === 'warning'), 'Bộ lọc Warning/WL sai');
+});
+check('Chuyển lớp giữ lớp cũ cho lượt đã thi, chuyển lịch chưa thi', () => {
+  const s = conn
+    .prepare(
+      `SELECT s.* FROM students s JOIN enrollments e ON e.student_id=s.id
+        WHERE e.class_id = ? AND s.committed_score IS NOT NULL AND e.status='active' ORDER BY s.id LIMIT 1`,
+    )
+    .get(classId('BC-FT 205')) as any;
+  const before = conn
+    .prepare(`SELECT id, class_id, status FROM mock_attempts WHERE student_id = ?`).all(s.id) as any[];
+  const takenBefore = before.filter((a) => a.status === 'completed');
+  const target = classId('BC-BE 80');
+  students.transferStudent(P.admin, s.id, target, '2026-09-21', 'Đổi ca học');
+  const after = conn.prepare('SELECT id, class_id, status FROM mock_attempts WHERE student_id = ?').all(s.id) as any[];
+  for (const t of takenBefore) {
+    assert(after.find((a) => a.id === t.id)!.class_id === t.class_id, 'Lượt đã thi bị viết lại lớp');
+  }
+  for (const a of after.filter((x) => x.status === 'planned')) {
+    assert(a.class_id === target, 'Lịch chưa thi không chuyển sang lớp mới');
+  }
+  const detail = students.studentDetail(P.admin, s.id);
+  assert(detail.enrollments.length >= 2, 'Lịch sử lớp bị ghi đè thay vì mở dòng mới');
+});
+check('Điểm, lịch và việc vừa sửa vẫn còn sau khi đọc lại từ database', () => {
+  const a = conn.prepare(`SELECT * FROM mock_attempts WHERE status='completed' ORDER BY id LIMIT 1`).get() as any;
+  const teacher = loadPrincipal(teacherOfSkill(
+    (conn.prepare('SELECT code FROM classes WHERE id = ?').get(a.class_id) as any).code, 'listening'));
+  mock.saveScore(teacher, a.id, 'listening', { rawScore: 30, testDate: a.planned_date });
+  const row = conn.prepare(`SELECT * FROM mock_scores WHERE attempt_id = ? AND skill='listening'`).get(a.id) as any;
+  assert(row.raw_score === 30 && row.band === scoring.bandFromRaw('listening', 30), 'Điểm không lưu đúng');
+  assert(row.entered_by === teacher.userId && row.entered_at, 'Thiếu dấu vết người nhập và thời điểm nhập');
+});
+check('Gửi null xoá điểm về trống, không biến thành 0', () => {
+  const a = conn.prepare(`SELECT * FROM mock_attempts WHERE status='completed' ORDER BY id LIMIT 1`).get() as any;
+  const code = (conn.prepare('SELECT code FROM classes WHERE id = ?').get(a.class_id) as any).code;
+  const teacher = loadPrincipal(teacherOfSkill(code, 'listening'));
+  mock.saveScore(teacher, a.id, 'listening', { rawScore: null });
+  const row = conn.prepare(`SELECT * FROM mock_scores WHERE attempt_id = ? AND skill='listening'`).get(a.id) as any;
+  assert(row.raw_score === null && row.band === null, 'Xoá điểm lại thành 0');
+  mock.saveScore(teacher, a.id, 'listening', { rawScore: 30 });
+});
+check('Điểm cam kết tại lần thi được chốt, sửa hồ sơ không viết lại lịch sử', () => {
+  const a = conn.prepare(`SELECT * FROM mock_attempts WHERE status='completed' ORDER BY id LIMIT 1`).get() as any;
+  const before = a.committed_score_at_test;
+  students.updateStudent(P.admin, a.student_id, { committedScore: 8 });
+  const after = conn.prepare('SELECT * FROM mock_attempts WHERE id = ?').get(a.id) as any;
+  assert(after.committed_score_at_test === before, 'Sửa cam kết đã viết lại lịch sử lần thi');
+  assert((conn.prepare('SELECT committed_score FROM students WHERE id = ?').get(a.student_id) as any).committed_score === 8,
+    'Hồ sơ hiện tại chưa cập nhật');
 });
 
 console.log(`\n${'='.repeat(60)}`);

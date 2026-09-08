@@ -3,10 +3,12 @@ import { useApi } from '../lib/useApi.ts';
 import { useSession } from '../lib/session.tsx';
 import { Pill } from '../components/ui.tsx';
 
+import { ROLES, ROLE_LABEL, type Role } from '@shared/domain.ts';
+
 type Account = {
   id: number; code: string; fullName: string; title: string | null;
-  roles: { role: string; roleName: string; scopeType: string; scopeLabel: string | null }[];
-  teacherAssignmentCount: number; consultantStudentCount: number;
+  grants: { role: string; roleName: string; scope: string }[];
+  assignmentCount: number;
 };
 
 /** Hướng dẫn tại chỗ khi bản demo chưa có dữ liệu — viết cho người không rành kỹ thuật. */
@@ -41,7 +43,7 @@ function SetupHelp({ serverDown, onRetry }: { serverDown: boolean; onRetry: () =
           <pre className="surface-2 mt-1.5 px-3 py-2 rounded text-teal-300 text-xs">npm run seed</pre>
           <div className="text-slate-400 text-xs mt-1">
             Đợi tới khi thấy dòng <span className="text-teal-300">Hoàn tất</span> kèm bảng liệt kê số lượng
-            (khoảng 121 học viên, 12 lớp). Nếu hiện chữ đỏ, hãy chụp màn hình lại.
+            (khoảng 71 học viên, 10 lớp). Nếu hiện chữ đỏ, hãy chụp màn hình lại.
           </div>
         </li>
         <li>
@@ -80,8 +82,9 @@ export default function WelcomePage() {
           <div className="ml-auto"><Pill tone="warn">Dữ liệu demo</Pill></div>
         </div>
         <p className="text-sm text-slate-400 mt-4 mb-4 leading-relaxed">
-          Chọn một tài khoản mẫu để bắt đầu. Mỗi tài khoản có phạm vi quyền khác nhau, giúp bạn thử xem cùng một màn hình
-          trông như thế nào với quản lý, giáo viên và tư vấn viên. Toàn bộ dữ liệu trong bản demo là dữ liệu giả.
+          Chọn một tài khoản mẫu để bắt đầu. Bản demo có bốn nhóm tài khoản: Admin, Admin chi nhánh, Quản lý và Giáo viên.
+          Mỗi tài khoản có phạm vi khác nhau, giúp bạn thử cùng một màn hình dưới nhiều góc nhìn.
+          Toàn bộ dữ liệu trong bản demo là dữ liệu giả.
         </p>
         {accounts.loading && <div className="text-slate-400">Đang tải danh sách tài khoản…</div>}
 
@@ -91,24 +94,35 @@ export default function WelcomePage() {
           <SetupHelp serverDown={accounts.error?.status === 500 || accounts.error?.status === 502} onRetry={accounts.reload} />
         )}
 
-        <div className="grid sm:grid-cols-2 gap-2">
-          {(accounts.data ?? []).map((a) => (
-            <button
-              key={a.id}
-              disabled={busy !== null}
-              className="text-left card p-3 hover:border-teal-500/40 disabled:opacity-50"
-              onClick={async () => { setBusy(a.id); await switchAccount(a.id); }}
-            >
-              <div className="font-medium text-slate-100">{a.fullName}</div>
-              <div className="text-xs text-slate-400 mb-2">{a.title}</div>
-              <div className="flex flex-wrap gap-1">
-                {a.roles.map((r, i) => (
-                  <Pill key={i} tone="neutral">{r.roleName}{r.scopeLabel ? ` · ${r.scopeLabel}` : ''}</Pill>
+        {/* Nhóm theo bốn loại tài khoản để dễ tìm đúng góc nhìn muốn thử. */}
+        {ROLES.map((role) => {
+          const group = (accounts.data ?? []).filter((a) => a.grants.some((g) => g.role === role));
+          if (!group.length) return null;
+          return (
+            <section key={role} className="mb-4">
+              <h2 className="text-xs uppercase tracking-wide text-slate-500 font-semibold mb-2">
+                {ROLE_LABEL[role as Role]} <span className="text-slate-600">({group.length})</span>
+              </h2>
+              <div className="grid sm:grid-cols-2 gap-2">
+                {group.map((a) => (
+                  <button
+                    key={a.id}
+                    disabled={busy !== null}
+                    className="text-left card p-3 hover:border-teal-500/40 disabled:opacity-50"
+                    onClick={async () => { setBusy(a.id); await switchAccount(a.id); }}
+                  >
+                    <div className="font-medium text-slate-100">{a.fullName}</div>
+                    <div className="text-xs text-slate-400 mb-2">{a.title}</div>
+                    <div className="flex flex-wrap gap-1">
+                      {a.grants.map((r, i) => <Pill key={i} tone="neutral">{r.roleName} · {r.scope}</Pill>)}
+                      {a.assignmentCount > 0 && <Pill tone="info">{a.assignmentCount} phân công</Pill>}
+                    </div>
+                  </button>
                 ))}
               </div>
-            </button>
-          ))}
-        </div>
+            </section>
+          );
+        })}
       </div>
     </div>
   );

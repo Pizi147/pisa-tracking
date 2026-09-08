@@ -11,7 +11,6 @@ const DEFAULTS: Record<string, string> = {
   demo_date: '',
   scenario_mode: 'normal',
   seeded_at: '',
-  signal_policy_version: '2',
 };
 
 export function getConfig(key: string): string {
@@ -47,35 +46,4 @@ export function scenarioMode(): ScenarioMode {
   return (['normal', 'loading', 'empty', 'error', 'save_failure'].includes(v)
     ? v
     : 'normal') as ScenarioMode;
-}
-
-export type SignalPolicy = {
-  id: number;
-  version: number;
-  label: string;
-  attendance_min_rate: number;
-  homework_min_rate: number;
-  lookback_weeks: number;
-  due_soon_days: number;
-  long_running_days: number;
-  is_experimental: number;
-  status: string;
-};
-
-export function activeSignalPolicy(): SignalPolicy {
-  let row: SignalPolicy | undefined;
-  try {
-    row = db()
-      .prepare("SELECT * FROM signal_policies WHERE status = 'active' ORDER BY version DESC LIMIT 1")
-      .get() as SignalPolicy | undefined;
-  } catch {
-    row = undefined;   // chưa seed
-  }
-  if (row) return row;
-  return {
-    id: 0, version: 0, label: 'Mặc định',
-    attendance_min_rate: 0.8, homework_min_rate: 0.7,
-    lookback_weeks: 4, due_soon_days: 3, long_running_days: 21,
-    is_experimental: 1, status: 'active',
-  };
 }

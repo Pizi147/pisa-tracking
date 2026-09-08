@@ -9,8 +9,8 @@ import { fmtDate } from '../lib/format.ts';
 
 type Account = {
   id: number; code: string; fullName: string; title: string | null;
-  roles: { role: string; roleName: string; scopeType: string; scopeLabel: string | null }[];
-  teacherAssignmentCount: number; consultantStudentCount: number;
+  grants: { role: string; roleName: string; scope: string }[];
+  assignmentCount: number;
 };
 
 const SCENARIOS = [
@@ -87,11 +87,10 @@ export function DemoBar() {
                 {session?.user?.id === a.id && <Pill tone="ok">Đang dùng</Pill>}
               </div>
               <div className="flex flex-wrap gap-1 mt-2">
-                {a.roles.map((r, i) => (
-                  <Pill key={i} tone="neutral">{r.roleName}{r.scopeLabel ? ` · ${r.scopeLabel}` : ''}</Pill>
+                {a.grants.map((r, i) => (
+                  <Pill key={i} tone="neutral">{r.roleName} · {r.scope}</Pill>
                 ))}
-                {a.teacherAssignmentCount > 0 && <Pill tone="info">{a.teacherAssignmentCount} phân công lớp/skill</Pill>}
-                {a.consultantStudentCount > 0 && <Pill tone="info">{a.consultantStudentCount} học viên phụ trách</Pill>}
+                {a.assignmentCount > 0 && <Pill tone="info">{a.assignmentCount} phân công lớp/kỹ năng</Pill>}
               </div>
             </button>
           ))}
