@@ -129,8 +129,13 @@ Bạn có thể chạy ngay cả khi ứng dụng đang chạy — giao diện s
 
 ## 9. Nếu gặp trục trặc
 
-**Mở trang thấy trắng hoặc báo chưa có dữ liệu**
-→ Bạn chưa chạy `npm run seed`. Chạy lệnh đó rồi tải lại trang.
+**Mở trang nhưng không thấy tài khoản nào để chọn**
+→ Bạn chưa chạy `npm run seed`. Trang sẽ hiện sẵn hướng dẫn từng bước — làm theo là được.
+
+**Gõ lệnh nhưng báo lỗi `ENOENT ... package.json`**
+→ Bạn đang đứng sai thư mục. Lệnh phải được gõ trong thư mục **có tệp `package.json`**.
+Mẹo: mở thư mục đó trong File Explorer, bấm vào thanh địa chỉ, gõ `powershell` rồi Enter —
+cửa sổ lệnh sẽ mở sẵn đúng chỗ. Gõ `dir` để kiểm tra: phải thấy `package.json` trong danh sách.
 
 **Báo `EADDRINUSE` (cổng đang bị chiếm)**
 → Có một bản ứng dụng khác đang chạy. Đóng Terminal cũ, hoặc đổi cổng máy chủ:

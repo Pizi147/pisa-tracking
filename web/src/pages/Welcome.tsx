@@ -9,6 +9,60 @@ type Account = {
   teacherAssignmentCount: number; consultantStudentCount: number;
 };
 
+/** Hướng dẫn tại chỗ khi bản demo chưa có dữ liệu — viết cho người không rành kỹ thuật. */
+function SetupHelp({ serverDown, onRetry }: { serverDown: boolean; onRetry: () => void }) {
+  return (
+    <div className="card p-5 border-amber-500/40">
+      <h2 className="text-base font-semibold text-amber-300">
+        {serverDown ? 'Chưa kết nối được máy chủ dữ liệu' : 'Chưa có dữ liệu mẫu trong máy'}
+      </h2>
+      <p className="text-sm text-slate-300 mt-2 leading-relaxed">
+        {serverDown
+          ? 'Giao diện đã chạy nhưng phần máy chủ dữ liệu thì chưa. Thường là do cửa sổ dòng lệnh đã bị đóng hoặc bị dừng.'
+          : 'Ứng dụng đã chạy đúng, chỉ là chưa có tài khoản và dữ liệu mẫu nào để hiển thị. Bạn cần tạo dữ liệu mẫu một lần.'}
+      </p>
+
+      <ol className="mt-4 space-y-3 text-sm text-slate-300">
+        <li>
+          <span className="text-slate-100 font-medium">1. Mở cửa sổ dòng lệnh đang chạy ứng dụng</span>
+          <div className="text-slate-400 text-xs mt-0.5">
+            Đó là cửa sổ màu xanh đen bạn đã gõ lệnh lúc nãy. Nếu đã đóng, mở lại theo hướng dẫn ở tệp README.
+          </div>
+        </li>
+        <li>
+          <span className="text-slate-100 font-medium">2. Dừng ứng dụng</span>
+          <div className="text-slate-400 text-xs mt-0.5">
+            Bấm <kbd className="surface-2 px-1.5 py-0.5 rounded border">Ctrl</kbd> +{' '}
+            <kbd className="surface-2 px-1.5 py-0.5 rounded border">C</kbd> trong cửa sổ đó.
+          </div>
+        </li>
+        <li>
+          <span className="text-slate-100 font-medium">3. Gõ lệnh tạo dữ liệu mẫu, rồi bấm Enter</span>
+          <pre className="surface-2 mt-1.5 px-3 py-2 rounded text-teal-300 text-xs">npm run seed</pre>
+          <div className="text-slate-400 text-xs mt-1">
+            Đợi tới khi thấy dòng <span className="text-teal-300">Hoàn tất</span> kèm bảng liệt kê số lượng
+            (khoảng 121 học viên, 12 lớp). Nếu hiện chữ đỏ, hãy chụp màn hình lại.
+          </div>
+        </li>
+        <li>
+          <span className="text-slate-100 font-medium">4. Chạy lại ứng dụng</span>
+          <pre className="surface-2 mt-1.5 px-3 py-2 rounded text-teal-300 text-xs">npm run dev</pre>
+        </li>
+        <li>
+          <span className="text-slate-100 font-medium">5. Quay lại trang này và bấm nút bên dưới</span>
+        </li>
+      </ol>
+
+      <button className="btn btn-primary mt-4" onClick={onRetry}>Tải lại danh sách tài khoản</button>
+
+      <p className="text-[11px] text-slate-500 mt-3 leading-relaxed">
+        Lưu ý: phải gõ lệnh trong thư mục có tệp <code className="text-slate-400">package.json</code>.
+        Nếu báo lỗi <code className="text-slate-400">ENOENT ... package.json</code> nghĩa là bạn đang đứng sai thư mục.
+      </p>
+    </div>
+  );
+}
+
 export default function WelcomePage() {
   const accounts = useApi<Account[]>('/demo/accounts');
   const { switchAccount } = useSession();
@@ -30,7 +84,13 @@ export default function WelcomePage() {
           trông như thế nào với quản lý, giáo viên và tư vấn viên. Toàn bộ dữ liệu trong bản demo là dữ liệu giả.
         </p>
         {accounts.loading && <div className="text-slate-400">Đang tải danh sách tài khoản…</div>}
-        {accounts.error && <div className="text-red-300">Không tải được danh sách. Hãy chạy <code>npm run seed</code> rồi tải lại trang.</div>}
+
+        {/* Chưa có tài khoản nào: có thể do chưa tạo dữ liệu mẫu, hoặc máy chủ dữ liệu chưa chạy.
+            Trường hợp nào cũng phải nói rõ người dùng cần làm gì, không được để trang trắng. */}
+        {!accounts.loading && (accounts.error || (accounts.data && accounts.data.length === 0)) && (
+          <SetupHelp serverDown={accounts.error?.status === 500 || accounts.error?.status === 502} onRetry={accounts.reload} />
+        )}
+
         <div className="grid sm:grid-cols-2 gap-2">
           {(accounts.data ?? []).map((a) => (
             <button

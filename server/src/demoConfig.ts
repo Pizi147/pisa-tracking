@@ -15,10 +15,16 @@ const DEFAULTS: Record<string, string> = {
 };
 
 export function getConfig(key: string): string {
-  const row = db().prepare('SELECT value FROM demo_config WHERE key = ?').get(key) as
-    | { value: string }
-    | undefined;
-  return row?.value ?? DEFAULTS[key] ?? '';
+  // Database có thể chưa được seed (chưa có bảng nào). Khi đó dùng giá trị mặc định
+  // thay vì ném lỗi, để ứng dụng vẫn mở được và hiển thị hướng dẫn tạo dữ liệu.
+  try {
+    const row = db().prepare('SELECT value FROM demo_config WHERE key = ?').get(key) as
+      | { value: string }
+      | undefined;
+    return row?.value ?? DEFAULTS[key] ?? '';
+  } catch {
+    return DEFAULTS[key] ?? '';
+  }
 }
 
 export function setConfig(key: string, value: string) {
@@ -57,9 +63,14 @@ export type SignalPolicy = {
 };
 
 export function activeSignalPolicy(): SignalPolicy {
-  const row = db()
-    .prepare("SELECT * FROM signal_policies WHERE status = 'active' ORDER BY version DESC LIMIT 1")
-    .get() as SignalPolicy | undefined;
+  let row: SignalPolicy | undefined;
+  try {
+    row = db()
+      .prepare("SELECT * FROM signal_policies WHERE status = 'active' ORDER BY version DESC LIMIT 1")
+      .get() as SignalPolicy | undefined;
+  } catch {
+    row = undefined;   // chưa seed
+  }
   if (row) return row;
   return {
     id: 0, version: 0, label: 'Mặc định',

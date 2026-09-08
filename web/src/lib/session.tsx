@@ -16,6 +16,7 @@ export type Session = {
   consultantStudentCount?: number;
   demoDate: string;
   scenario: string;
+  needsSeed?: boolean;
   signalPolicy?: any;
   capabilities?: Record<string, boolean>;
 };
@@ -41,10 +42,17 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
 
   const reload = useCallback(async () => {
-    const s = await api.get<Session>('/demo/session');
-    setSession(s);
-    setLoading(false);
-    setViewRoleState((prev) => (prev && s.roles?.includes(prev) ? prev : (s.roles?.[0] ?? null)));
+    try {
+      const s = await api.get<Session>('/demo/session');
+      setSession(s);
+      setViewRoleState((prev) => (prev && s.roles?.includes(prev) ? prev : (s.roles?.[0] ?? null)));
+    } catch {
+      // Không gọi được máy chủ (chưa seed, hoặc máy chủ dữ liệu chưa chạy).
+      // Vẫn phải thoát trạng thái tải để màn hình chào hiển thị hướng dẫn xử lý.
+      setSession({ authenticated: false, demoDate: '', scenario: 'normal' });
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => { void reload(); }, [reload]);

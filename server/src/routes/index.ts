@@ -1,9 +1,9 @@
 import { Router } from 'express';
 import multer from 'multer';
-import { db, tx } from '../db.ts';
+import { db, isInitialised, tx } from '../db.ts';
 import { PERMISSIONS, TEACHING_SKILLS } from '../../../shared/domain.ts';
 import { demoToday, getConfig, scenarioMode, setConfig, activeSignalPolicy } from '../demoConfig.ts';
-import { badRequest, isIsoDate, notFound, nowIso, weekStartOf, toInt } from '../util.ts';
+import { HttpError, badRequest, isIsoDate, notFound, nowIso, weekStartOf, toInt } from '../util.ts';
 import { SESSION_COOKIE, createSession, destroySession, principalOf, requireAuth } from '../auth.ts';
 import { can, permissionSummary, viewScope, loadPrincipal } from '../permissions.ts';
 import { maybeSimulateReadError, maybeSimulateSaveFailure, pInt, qInt, qStr, wrap } from './helpers.ts';
@@ -26,6 +26,9 @@ const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 8 *
 // ============ Demo session & tools ============
 
 api.get('/demo/accounts', wrap(() => {
+  if (!isInitialised()) {
+    throw new HttpError(503, 'Chưa có dữ liệu demo trong máy.', { needsSeed: true });
+  }
   const conn = db();
   const users = conn.prepare("SELECT * FROM users WHERE status = 'active' ORDER BY id").all() as any[];
   return users.map((u) => {
@@ -40,6 +43,9 @@ api.get('/demo/accounts', wrap(() => {
 }));
 
 api.get('/demo/session', wrap((req) => {
+  if (!isInitialised()) {
+    return { authenticated: false, needsSeed: true, demoDate: demoToday(), scenario: 'normal' };
+  }
   const p = req.principal;
   if (!p) return { authenticated: false, demoDate: demoToday(), scenario: scenarioMode() };
   return {
