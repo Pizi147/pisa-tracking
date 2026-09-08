@@ -7,15 +7,15 @@
     "node": ">=20.11"
   },
   "scripts": {
-    "dev": "node scripts/check-node.mjs && concurrently -n API,WEB -c cyan,magenta \"npm:dev:api\" \"npm:dev:web\"",
-    "dev:api": "node scripts/dev-api.mjs",
+    "dev": "node scripts/check-node.mjs && npm run build:server && concurrently -k -n API,WEB -c cyan,magenta \"npm:dev:api\" \"npm:dev:web\"",
+    "dev:api": "node dist-server/server/src/index.js",
     "dev:web": "vite",
-    "seed": "node scripts/check-node.mjs && node scripts/build-server.mjs && node dist-server/seed/run.js",
+    "build:server": "tsc -p tsconfig.build.json",
+    "seed": "node scripts/check-node.mjs && npm run build:server && node dist-server/server/src/seed/run.js",
     "reset": "npm run seed",
-    "build:server": "node scripts/build-server.mjs",
-    "build": "tsc -p tsconfig.web.json --noEmit && vite build && node scripts/build-server.mjs",
-    "typecheck": "tsc -p tsconfig.web.json --noEmit && tsc -p tsconfig.server.json --noEmit",
-    "test": "node scripts/build-server.mjs && node dist-server/tests/run.js",
+    "build": "tsc -p tsconfig.web.json --noEmit && npm run build:server && vite build",
+    "typecheck": "tsc -p tsconfig.web.json --noEmit && tsc -p tsconfig.build.json --noEmit",
+    "test": "npm run build:server && node dist-server/server/src/tests/run.js",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -41,8 +41,7 @@
     "concurrently": "9.1.2",
     "postcss": "8.4.49",
     "tailwindcss": "3.4.17",
-    "typescript": "5.6.3",
-    "vite": "5.4.20",
-    "esbuild": "0.25.10"
+    "typescript": "5.9.3",
+    "vite": "5.4.20"
   }
 }
