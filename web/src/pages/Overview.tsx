@@ -10,10 +10,10 @@ type Overview = {
   today: string;
   period: { id: number; code: string; weekStart: string; weekEnd: string; range: string };
   kpis: {
-    week: { scheduled: number; taken: number; cancelled: number; uniqueStudents: number };
+    week: { scheduled: number; done: number; cancelled: number; uniqueStudents: number; needsDate: number };
     scoring: { missing: number; overdue: number; complete: number };
-    sos: { s0: number; s1: number; s2: number; s3: number; inWeek: number };
-    cases: { open: number; done: number };
+    sos: { s0: number; s1: number; s2: number; s3: number };
+    caseNew: number; caseHandling: number; caseDone: number;
   };
   meeting: { notReported: number; problem: number; watch: number; total: number } | null;
   tasks: { overdue: number; dueSoon: number; open: number };
@@ -65,37 +65,38 @@ export default function OverviewPage() {
         <>
           <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <KpiTile
-              label={`Lịch Mock ${data.period.code}`}
+              label={`Lịch MT ${data.period.code}`}
               value={data.kpis.week.scheduled}
-              sub={`${data.kpis.week.taken} lượt đã thi · ${data.kpis.week.uniqueStudents} học sinh · ${data.kpis.week.cancelled} đã huỷ`}
+              tone={data.kpis.week.needsDate > 0 ? 'warn' : 'neutral'}
+              sub={`${data.kpis.week.done} lượt đã xong · ${data.kpis.week.uniqueStudents} học viên · ${data.kpis.week.needsDate} chưa có ngày`}
               to={`/mock-test${week}${branch}`}
             />
             <KpiTile
               label="Chưa nhập đủ điểm"
               value={data.kpis.scoring.missing}
-              tone={data.kpis.scoring.missing > 0 ? 'warn' : 'neutral'}
+              tone={data.kpis.scoring.overdue > 0 ? 'danger' : data.kpis.scoring.missing > 0 ? 'warn' : 'neutral'}
               sub={`${data.kpis.scoring.overdue} lượt đã quá hạn · ${data.kpis.scoring.complete} lượt đủ điểm`}
               to={`/mock-test?need=missing_scores${branch}`}
             />
             <KpiTile
-              label="Lượt SOS đã chốt"
-              value={data.kpis.sos.s1 + data.kpis.sos.s2 + data.kpis.sos.s3}
-              tone={data.kpis.sos.s3 > 0 ? 'danger' : 'warn'}
-              sub={`SOS 1: ${data.kpis.sos.s1} · SOS 2: ${data.kpis.sos.s2} · SOS 3: ${data.kpis.sos.s3}`}
+              label="Case SOS chưa xử lý"
+              value={data.kpis.caseNew}
+              tone={data.kpis.caseNew > 0 ? 'danger' : 'ok'}
+              sub="Chưa ai bắt đầu xử lý · tính đến hôm nay, không theo tuần"
               to={`/mock-test?need=sos_open${branch}`}
             />
             <KpiTile
-              label="Case cần xử lý"
-              value={data.kpis.cases.open}
-              tone={data.kpis.cases.open > 0 ? 'danger' : 'ok'}
-              sub={`${data.kpis.cases.done} case đã xong · tính đến hôm nay, không theo tuần`}
+              label="Case SOS đang xử lý"
+              value={data.kpis.caseHandling}
+              tone={data.kpis.caseHandling > 0 ? 'warn' : 'neutral'}
+              sub={`${data.kpis.caseDone} case đã xong · SOS 1: ${data.kpis.sos.s1} · 2: ${data.kpis.sos.s2} · 3: ${data.kpis.sos.s3}`}
               to={`/mock-test?need=sos_open${branch}`}
             />
           </section>
 
           <div className="grid gap-4 lg:grid-cols-3">
             <Card className="lg:col-span-2" title="Việc cần làm trước"
-              action={<Link className="btn btn-sm no-underline" to={`/mock-test${week}${branch}`}>Mở danh sách Mock</Link>}>
+              action={<Link className="btn btn-sm no-underline" to={`/mock-test${week}${branch}`}>Mở danh sách MT</Link>}>
               {data.priority.length === 0 ? (
                 <Empty title="Không có việc nào đang chờ" hint="Điểm đã nhập đủ và các case SOS đã được xử lý xong." />
               ) : (
@@ -110,8 +111,9 @@ export default function OverviewPage() {
                         }}
                       >
                         <span className="mt-0.5">
+                          {p.kind === 'sos_new' && <Pill tone="danger">SOS chưa xử lý</Pill>}
                           {p.kind === 'overdue_score' && <Pill tone="danger">Quá hạn điểm</Pill>}
-                          {p.kind === 'sos_case' && <Pill tone="warn">Case SOS</Pill>}
+                          {p.kind === 'needs_date' && <Pill tone="warn">Cần xếp ngày</Pill>}
                           {p.kind === 'overdue_task' && <Pill tone="danger">Việc quá hạn</Pill>}
                         </span>
                         <span className="min-w-0 flex-1">
@@ -138,16 +140,16 @@ export default function OverviewPage() {
                     <li className="flex justify-between"><span className="text-slate-400">Chưa báo cáo</span>
                       <strong className="tabular-nums">{data.meeting.notReported}/{data.meeting.total}</strong></li>
                     <li className="flex justify-between"><span className="text-slate-400">Có vấn đề</span>
-                      <strong className="tabular-nums text-red-300">{data.meeting.problem}</strong></li>
+                      <strong className="tabular-nums text-rose-200">{data.meeting.problem}</strong></li>
                     <li className="flex justify-between"><span className="text-slate-400">Cần theo dõi</span>
-                      <strong className="tabular-nums text-amber-300">{data.meeting.watch}</strong></li>
+                      <strong className="tabular-nums text-amber-200">{data.meeting.watch}</strong></li>
                   </ul>
                   <div className="border-t mt-3 pt-3" style={{ borderColor: 'var(--line)' }}>
                     <ul className="text-sm space-y-1.5 list-none p-0 m-0">
                       <li className="flex justify-between"><span className="text-slate-400">Việc quá hạn</span>
-                        <strong className="tabular-nums text-red-300">{data.tasks.overdue}</strong></li>
+                        <strong className="tabular-nums text-rose-200">{data.tasks.overdue}</strong></li>
                       <li className="flex justify-between"><span className="text-slate-400">Sắp đến hạn</span>
-                        <strong className="tabular-nums text-amber-300">{data.tasks.dueSoon}</strong></li>
+                        <strong className="tabular-nums text-amber-200">{data.tasks.dueSoon}</strong></li>
                       <li className="flex justify-between"><span className="text-slate-400">Đang mở</span>
                         <strong className="tabular-nums">{data.tasks.open}</strong></li>
                     </ul>
@@ -172,7 +174,7 @@ export default function OverviewPage() {
                     <li className="flex justify-between"><span className="text-slate-400">Thời gian bắt đầu can thiệp</span>
                       <strong className="tabular-nums">{fmtNum(data.support.avgInterventionDays)} ngày</strong></li>
                     <li className="pt-2"><SectionNote>
-                      Thời gian trả kết quả là số ngày từ ngày thi tới ngày có điểm — không phải số ngày quá hạn.
+                      Thời gian trả kết quả là số ngày từ buổi mock tới lúc có điểm — không phải số ngày quá hạn.
                       Dấu “—” nghĩa là chưa đủ dữ liệu, không phải 0 ngày.
                     </SectionNote></li>
                   </ul>
@@ -182,8 +184,9 @@ export default function OverviewPage() {
           </div>
 
           <SectionNote>
-            Tuần {data.period.code} ({data.period.range}). Số lượt Mock khác số học sinh duy nhất; lượt đã huỷ
-            không tính vào “đã thi” hay “thiếu điểm”. Đổi tuần không làm mất case và công việc còn tồn.
+            Tuần {data.period.code} ({data.period.range}). Tuần kết quả là TUẦN KẾ HOẠCH của lượt MT, nên
+            Speaking mock khác tuần cũng không làm lượt bị đếm hai lần. Số lượt khác số học viên duy nhất;
+            lượt đã huỷ không tính vào “đã xong” hay “thiếu điểm”. Đổi tuần không làm mất case và việc còn tồn.
           </SectionNote>
         </>
       )}

@@ -5,17 +5,37 @@
 @layer base {
   :root {
     color-scheme: dark;
-    --bg: #080f16;
-    --surface: #0f1a24;
-    --surface-2: #13212d;
-    --line: rgba(148, 180, 200, 0.14);
-    --line-strong: rgba(148, 180, 200, 0.26);
+    /*
+     * Hệ màu nền xanh mực nhạt, accent xanh pastel.
+     * Bỏ accent xanh lá cũ vì chói và làm mọi thứ trông như cảnh báo.
+     * Màu mạnh chỉ dành cho việc cần chú ý; trạng thái luôn kèm chữ, không chỉ dựa vào màu.
+     */
+    --bg: #0c1220;
+    --surface: #141d2f;
+    --surface-2: #1a2437;
+    --line: rgba(160, 178, 214, 0.14);
+    --line-strong: rgba(160, 178, 214, 0.26);
+
+    --accent: #7db3f0;          /* xanh pastel — nhấn chính */
+    --accent-strong: #a9cdf7;
+    --accent-ink: #0b1626;      /* chữ trên nền accent */
+    --accent-soft: rgba(125, 179, 240, 0.14);
+    --accent-line: rgba(125, 179, 240, 0.38);
+
+    --text: #dde5f2;
+    --text-dim: #93a3c0;
+    --text-faint: #6c7c9c;
+
+    --ok: #7fd6bb;
+    --warn: #f0c987;
+    --danger: #f2a1a1;
+    --info: #9db8ec;
   }
   html, body, #root { height: 100%; }
   body {
     margin: 0;
     background: var(--bg);
-    color: #e2ecf3;
+    color: var(--text);
     font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
     font-size: 14px;
     -webkit-font-smoothing: antialiased;
@@ -23,11 +43,11 @@
   * { border-color: var(--line); }
   ::-webkit-scrollbar { width: 10px; height: 10px; }
   ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: rgba(148, 180, 200, 0.2); border-radius: 6px; }
-  ::-webkit-scrollbar-thumb:hover { background: rgba(148, 180, 200, 0.35); }
+  ::-webkit-scrollbar-thumb { background: rgba(160, 178, 214, 0.2); border-radius: 6px; }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(160, 178, 214, 0.35); }
 
   :focus-visible {
-    outline: 2px solid #2dd4bf;
+    outline: 2px solid var(--accent);
     outline-offset: 2px;
     border-radius: 4px;
   }
@@ -47,46 +67,49 @@
     display: inline-flex; align-items: center; gap: 0.4rem;
     padding: 0.45rem 0.85rem; border-radius: 0.5rem;
     border: 1px solid var(--line-strong);
-    background: var(--surface-2); color: #cfe0ea;
+    background: var(--surface-2); color: var(--text);
     font-weight: 500; white-space: nowrap;
     transition: background 120ms, border-color 120ms, color 120ms;
   }
-  .btn:hover:not(:disabled) { background: #1b2c3a; color: #eaf4fa; }
+  .btn:hover:not(:disabled) { background: #24304a; border-color: var(--accent-line); }
   .btn:disabled { opacity: 0.45; cursor: not-allowed; }
   .btn-primary {
-    background: #0d9488; border-color: #14b8a6; color: #04201d; font-weight: 600;
+    background: var(--accent); border-color: var(--accent-strong); color: var(--accent-ink); font-weight: 600;
   }
-  .btn-primary:hover:not(:disabled) { background: #14b8a6; color: #032a26; }
-  .btn-danger { border-color: rgba(248,113,113,0.4); color: #fca5a5; }
-  .btn-danger:hover:not(:disabled) { background: rgba(248,113,113,0.12); }
+  .btn-primary:hover:not(:disabled) { background: var(--accent-strong); color: var(--accent-ink); }
+  .btn-danger { border-color: rgba(242,161,161,0.42); color: var(--danger); }
+  .btn-danger:hover:not(:disabled) { background: rgba(242,161,161,0.12); }
   .btn-sm { padding: 0.25rem 0.6rem; font-size: 12px; border-radius: 0.4rem; }
   .btn-ghost { background: transparent; border-color: transparent; }
-  .btn-ghost:hover:not(:disabled) { background: rgba(148,180,200,0.1); }
+  .btn-ghost:hover:not(:disabled) { background: rgba(160,178,214,0.1); }
 
   .field {
     width: 100%; padding: 0.45rem 0.6rem; border-radius: 0.5rem;
-    background: #0b141d; border: 1px solid var(--line-strong); color: #e2ecf3;
+    background: #0e1727; border: 1px solid var(--line-strong); color: var(--text);
   }
-  .field:focus { border-color: #2dd4bf; }
-  .field:disabled { opacity: 0.55; background: #0a1219; }
-  .label { display: block; font-size: 12px; color: #8fa9ba; margin-bottom: 0.25rem; font-weight: 500; }
+  .field:focus { border-color: var(--accent); }
+  .field:disabled { opacity: 0.6; background: #0b1322; }
+  .label { display: block; font-size: 12px; color: var(--text-dim); margin-bottom: 0.25rem; font-weight: 500; }
 
   .th {
     position: sticky; top: 0; z-index: 10;
-    background: #13212d; color: #9fb8c8;
+    background: var(--surface-2); color: var(--text-dim);
     font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase;
     padding: 0.6rem 0.75rem; text-align: left;
     border-bottom: 1px solid var(--line-strong); white-space: nowrap;
   }
   .td { padding: 0.55rem 0.75rem; border-bottom: 1px solid var(--line); vertical-align: middle; }
-  .row-hover:hover { background: rgba(45, 212, 191, 0.045); }
+  .row-hover:hover { background: var(--accent-soft); }
+  /* Học viên đã kết thúc: làm dịu nhưng vẫn phải đọc rõ, không hạ opacity tới mức mất chữ. */
+  .row-muted { color: var(--text-faint); }
+  .row-muted .link { color: var(--text-dim); }
 
   .sticky-col { position: sticky; left: 0; z-index: 5; background: var(--surface); }
-  .th.sticky-col { z-index: 15; background: #13212d; }
+  .th.sticky-col { z-index: 15; background: var(--surface-2); }
 
-  .link { color: #5eead4; text-decoration: none; }
+  .link { color: var(--accent); text-decoration: none; }
   .link:hover { text-decoration: underline; }
 
-  .skel { background: linear-gradient(90deg, #13212d 25%, #1b2c3a 50%, #13212d 75%); background-size: 200% 100%; animation: shimmer 1.4s infinite; border-radius: 0.375rem; }
+  .skel { background: linear-gradient(90deg, #1a2437 25%, #24304a 50%, #1a2437 75%); background-size: 200% 100%; animation: shimmer 1.4s infinite; border-radius: 0.375rem; }
   @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
 }

@@ -8,8 +8,8 @@ import { setConfig } from '../demoConfig.ts';
 import { LISTENING_BY_RAW, READING_BY_RAW, roundToHalf } from '../services/scoring.ts';
 import { ensurePeriod, mondayOf, weekInfo } from '../services/week.ts';
 import {
-  BRANCHES, CASE_PATTERNS, CLASSES, COMMITTED_SCORES, DEMO_DATE, GIVEN_NAMES,
-  MIDDLE_NAMES, MT_OUTCOMES, ROLES, ROLE_PERMISSIONS, SURNAMES,
+  BRANCHES, CASE_PATTERNS, CLASSES, DEMO_DATE, GIVEN_NAMES, MIDDLE_NAMES, MT_OUTCOMES,
+  ROLES, ROLE_PERMISSIONS, SURNAMES, TARGET_SCORES,
   type CasePattern, type ClassSeed, type Outcome,
 } from './data.ts';
 
@@ -152,9 +152,9 @@ export function runSeed() {
     });
 
     // ---------------------------------------------------------------- kỳ báo cáo
-    // Đủ các tuần từ lớp mở sớm nhất tới một tháng sau ngày demo.
+    // Đủ các tuần từ lớp mở sớm nhất tới ba tháng sau ngày demo, để còn lập kế hoạch trước.
     let cursor = mondayOf('2026-05-25');
-    const lastWeek = mondayOf(addDays(DEMO_DATE, 35));
+    const lastWeek = mondayOf(addDays(DEMO_DATE, 98));
     while (cursor <= lastWeek) {
       ensurePeriod(cursor);
       cursor = addDays(cursor, 7);
@@ -169,23 +169,21 @@ export function runSeed() {
       return padCode('PISA', row.next_value);
     };
 
-    const counts = { students: 0, attempts: 0, scores: 0, cases: 0 };
+    const counts = { students: 0, cycles: 0, attempts: 0, scores: 0, cases: 0, estimates: 0, skips: 0 };
     const allStudents: { id: number; classCode: string; branch: string }[] = [];
 
     CLASSES.forEach((c, classIdx) => {
       const cid = classId.get(c.code)!;
       for (let i = 0; i < c.students; i += 1) {
         const name = fakeName();
-        // Chỉ lớp FT LT1/LT2 có điểm cam kết — kỳ vọng và SOS chỉ áp dụng cho lộ trình này.
-        const committed = c.route ? COMMITTED_SCORES[i % COMMITTED_SCORES.length] : null;
         const info = conn
           .prepare(
-            `INSERT INTO students (student_code, full_name, normalized_name, dob, committed_score, route,
-                                   exam_date, branch_id, status, note, created_at)
-             VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
+            `INSERT INTO students (student_code, full_name, normalized_name, dob, branch_id, status,
+                                   consultant_name, note, created_at)
+             VALUES (?,?,?,?,?, 'active', ?,?,?)`,
           )
-          .run(nextStudentCode(), name, normalizeName(name), null, committed, c.route,
-               c.route ? addDays(c.startDate, 200) : null, branchId.get(c.branch)!, 'active', null, NOW);
+          .run(nextStudentCode(), name, normalizeName(name), null, branchId.get(c.branch)!,
+               `TV ${SURNAMES[i % SURNAMES.length]}`, null, NOW);
         const sid = Number(info.lastInsertRowid);
         counts.students += 1;
         allStudents.push({ id: sid, classCode: c.code, branch: c.branch });
@@ -199,7 +197,26 @@ export function runSeed() {
           )
           .run(sid, 'enrollment', c.startDate, `Vào lớp ${c.code}`, null, adminId, NOW);
 
-        seedMocks(conn, { c, classIdx, cid, sid, studentIdx: i, committed, adminId, branchAdmins, counts });
+        // Lộ trình: chỉ lớp FT mới có target và kỳ vọng. Lớp thường chưa áp dụng ở PR này.
+        if (!c.route) continue;
+        const target = TARGET_SCORES[i % TARGET_SCORES.length];
+        const cycleInfo = conn
+          .prepare(
+            `INSERT INTO learning_cycles (student_id, seq, route, target_score, exam_date, started_at, status, created_at)
+             VALUES (?, 1, ?, ?, ?, ?, 'active', ?)`,
+          )
+          .run(sid, c.route, target, addDays(c.startDate, 200), c.startDate, NOW);
+        const cycleId = Number(cycleInfo.lastInsertRowid);
+        counts.cycles += 1;
+        conn
+          .prepare(
+            `INSERT INTO journey_events (student_id, event_type, event_date, title, detail, ref_table, ref_id, created_by, created_at)
+             VALUES (?, 'cycle_start', ?, ?, ?, 'learning_cycles', ?, ?, ?)`,
+          )
+          .run(sid, c.startDate, `Bắt đầu lộ trình ${c.route}`, `Target ${target}`, cycleId, adminId, NOW);
+
+        seedAttempts(conn, { c, classIdx, cid, sid, cycleId, studentIdx: i, target, adminId, branchAdmins, counts });
+        seedEstimates(conn, { sid, cid, target, studentIdx: i, teacherPool: teacherPool.get(c.branch)!, classIdx, counts });
       }
     });
 
@@ -218,8 +235,11 @@ export function runSeed() {
       'Lớp': CLASSES.length,
       'Người dùng': userSeq,
       'Học viên': counts.students,
+      'Lộ trình': counts.cycles,
       'Lượt Mock': counts.attempts,
       'Ô điểm': counts.scores,
+      'Kỹ năng không mock': counts.skips,
+      'Ước lượng GV': counts.estimates,
       'Case SOS': counts.cases,
       'Kỳ họp tuần': (conn.prepare('SELECT COUNT(*) AS n FROM report_periods').get() as any).n,
       'Công việc': tasks,
@@ -247,95 +267,162 @@ function criteriaFor(band: number): [number, number, number, number] {
 const OUTCOME_SKILL_ORDER: ('listening' | 'reading' | 'writing' | 'speaking')[] =
   ['listening', 'reading', 'writing', 'speaking'];
 
-function seedMocks(conn: any, ctx: {
-  c: ClassSeed; classIdx: number; cid: number; sid: number; studentIdx: number;
-  committed: number | null; adminId: number; branchAdmins: Map<string, number>;
-  counts: { students: number; attempts: number; scores: number; cases: number };
+function seedAttempts(conn: any, ctx: {
+  c: ClassSeed; classIdx: number; cid: number; sid: number; cycleId: number; studentIdx: number;
+  target: number; adminId: number; branchAdmins: Map<string, number>;
+  counts: { students: number; cycles: number; attempts: number; scores: number; cases: number; estimates: number; skips: number };
 }) {
-  const { c, classIdx, cid, sid, studentIdx, committed, adminId, counts } = ctx;
-  if (!c.plan.length || committed === null) return;
+  const { c, classIdx, cid, sid, cycleId, studentIdx, target, adminId, counts } = ctx;
+  if (!c.plan.length) return;
   const recorder = ctx.branchAdmins.get(c.branch)!;
+  const manager = ctx.adminId;
 
   for (const step of c.plan) {
     const outcome: Outcome = MT_OUTCOMES[studentIdx % MT_OUTCOMES.length][step.attemptNo - 1] ?? { fails: 0 };
+    const periodId = (conn.prepare('SELECT id FROM report_periods WHERE week_start = ?').get(step.week) as any)?.id ?? null;
     const info = conn
       .prepare(
-        `INSERT INTO mock_attempts (student_id, attempt_no, class_id, planned_date, status,
-                                    committed_score_at_test, note, created_by, created_at)
-         VALUES (?,?,?,?,?,?,?,?,?)`,
+        `INSERT INTO assessment_attempts (cycle_id, student_id, attempt_no, kind, class_id, planned_period_id,
+                                          lrw_scheduled_at, speaking_scheduled_at, status, target_at_attempt,
+                                          created_by, created_at)
+         VALUES (?,?,?, 'mock', ?,?,?,?,?,?,?,?)`,
       )
-      .run(sid, step.attemptNo, cid, step.date, step.taken ? 'completed' : 'planned', committed, null, adminId, NOW);
+      .run(cycleId, sid, step.attemptNo, cid, periodId, step.lrwAt ?? null, step.speakingAt ?? null,
+           step.done ? 'done' : 'planned', target, manager, NOW);
     const attemptId = Number(info.lastInsertRowid);
     counts.attempts += 1;
-    conn
-      .prepare(
-        `INSERT INTO mock_schedule_history (attempt_id, action, new_date, reason, actor_user_id, created_at)
-         VALUES (?, 'created', ?, ?, ?, ?)`,
-      )
-      .run(attemptId, step.date, 'Kế hoạch đầu khoá', adminId, NOW);
+
+    // Lịch sử: Quản lý chốt tuần trước, Admin chi nhánh chốt ngày sau.
+    conn.prepare(
+      `INSERT INTO attempt_schedule_history (attempt_id, action, field, new_value, reason, actor_user_id, created_at)
+       VALUES (?, 'created', 'planned_period', ?, ?, ?, ?)`,
+    ).run(attemptId, step.week, 'Kế hoạch đầu khoá', manager, NOW);
+    if (step.lrwAt) {
+      conn.prepare(
+        `INSERT INTO attempt_schedule_history (attempt_id, action, field, new_value, actor_user_id, created_at)
+         VALUES (?, 'lrw_set', 'lrw_scheduled_at', ?, ?, ?)`,
+      ).run(attemptId, step.lrwAt, recorder, NOW);
+    }
+    if (step.speakingAt) {
+      conn.prepare(
+        `INSERT INTO attempt_schedule_history (attempt_id, action, field, new_value, actor_user_id, created_at)
+         VALUES (?, 'speaking_set', 'speaking_scheduled_at', ?, ?, ?)`,
+      ).run(attemptId, step.speakingAt, recorder, NOW);
+    }
     conn
       .prepare(
         `INSERT INTO journey_events (student_id, event_type, event_date, title, ref_table, ref_id, created_by, created_at)
-         VALUES (?, 'mock_scheduled', ?, ?, 'mock_attempts', ?, ?, ?)`,
+         VALUES (?, 'mock_scheduled', ?, ?, 'assessment_attempts', ?, ?, ?)`,
       )
-      .run(sid, step.date, `Lên lịch MT${step.attemptNo}`, attemptId, adminId, NOW);
+      .run(sid, step.week, `Lên kế hoạch MT${step.attemptNo}`, attemptId, manager, NOW);
 
-    if (!step.taken) continue;
+    // Kỹ năng được đánh dấu KHÔNG MOCK. Đây là ngoại lệ do Quản lý ghi, không phải mặc định.
+    const skipped = outcome.skip ?? null;
+    if (skipped) {
+      conn.prepare(
+        'INSERT INTO attempt_skill_skips (attempt_id, skill, reason, created_by, created_at) VALUES (?,?,?,?,?)',
+      ).run(attemptId, skipped, 'Học viên vắng buổi kỹ năng này', manager, NOW);
+      conn.prepare(
+        `INSERT INTO attempt_schedule_history (attempt_id, action, field, new_value, reason, actor_user_id, created_at)
+         VALUES (?, 'skill_skipped', ?, 'skipped', ?, ?, ?)`,
+      ).run(attemptId, skipped, 'Học viên vắng buổi kỹ năng này', manager, NOW);
+      counts.skips += 1;
+    }
 
-    const expectation = committed - (step.attemptNo === 1 ? 1 : step.attemptNo === 2 ? 0.5 : 0);
+    if (!step.done) continue;
+
+    const expectation = target - (step.attemptNo === 1 ? 1 : step.attemptNo === 2 ? 0.5 : 0);
     const missing = new Set(outcome.missing ?? []);
-    // Kỹ năng trượt lấy từ cuối danh sách để mỗi mức SOS có tổ hợp kỹ năng khác nhau.
-    const failing = new Set(OUTCOME_SKILL_ORDER.slice(4 - outcome.fails));
+    const performedOnly = new Set(outcome.performedOnly ?? []);
+    const assessedOrder = OUTCOME_SKILL_ORDER.filter((sk) => sk !== skipped);
+    const failing = new Set(assessedOrder.slice(Math.max(0, assessedOrder.length - outcome.fails)));
 
     const bandOf = (assessed: string) =>
       failing.has(assessed as any) ? Math.max(1, expectation - 0.5) : expectation + (studentIdx % 2 === 0 ? 0.5 : 0);
 
-    // Speaking thi trước một tuần khi splitWeek — mỗi kỹ năng có ngày thi riêng.
-    const dateOf = (skill: EntrySkill) =>
-      outcome.splitWeek && skill === 'speaking' ? addDays(step.date, -7) : step.date;
-
     for (const skill of ENTRY_SKILLS) {
-      if (missing.has(skill)) continue;
-      const testDate = dateOf(skill);
-      const resultDate = addDays(testDate, 2 + (studentIdx % 3));
+      const assessed = skill === 'writing1' || skill === 'writing2' ? 'writing' : skill;
+      if (assessed === skipped) continue;          // không mock thì không có dòng điểm
+      if (missing.has(skill)) continue;            // chưa mock: không có dòng nào
+
+      // Ngày mock thực tế: Speaking theo lịch Speaking nếu có, còn lại theo buổi chính.
+      const scheduled = (skill === 'speaking' ? step.speakingAt : step.lrwAt) ?? step.lrwAt ?? step.week;
+      const takenOn = String(scheduled).slice(0, 10);
+
+      if (performedOnly.has(skill)) {
+        // Đã mock nhưng CHƯA nhập điểm — có dòng, có ngày, chưa có band.
+        conn.prepare(
+          'INSERT INTO assessment_scores (attempt_id, skill, taken_on, entered_by, entered_at) VALUES (?,?,?,?,?)',
+        ).run(attemptId, skill, takenOn, recorder, NOW);
+        continue;
+      }
+
+      const resultDate = addDays(takenOn, 2 + (studentIdx % 3));
       if (skill === 'listening' || skill === 'reading') {
         const band = bandOf(skill);
         const raw = rawFor(skill, band);
         const realBand = (skill === 'listening' ? LISTENING_BY_RAW : READING_BY_RAW)[raw];
         conn
           .prepare(
-            `INSERT INTO mock_scores (attempt_id, skill, test_date, raw_score, band, result_date, entered_by, entered_at)
-             VALUES (?,?,?,?,?,?,?,?)`,
+            `INSERT INTO assessment_scores (attempt_id, skill, taken_on, raw_score, raw_total, band, result_date, entered_by, entered_at)
+             VALUES (?,?,?,?,40,?,?,?,?)`,
           )
-          .run(attemptId, skill, testDate, raw, realBand, resultDate, recorder, NOW);
+          .run(attemptId, skill, takenOn, raw, realBand, resultDate, recorder, NOW);
       } else {
-        const assessed = skill === 'speaking' ? 'speaking' : 'writing';
-        const target = bandOf(assessed);
-        // Band Writing = (W1 + W2×2)/3: đặt W1 cao hơn nửa band vẫn cho ra đúng band mục tiêu.
-        const band = skill === 'writing1' ? Math.min(9, target + 0.5) : target;
+        const target2 = bandOf(skill === 'speaking' ? 'speaking' : 'writing');
+        // Band Writing = (W1 + W2×2)/3: đặt W1 cao hơn nửa band vẫn ra đúng band mục tiêu.
+        const band = skill === 'writing1' ? Math.min(9, target2 + 0.5) : target2;
         const crit = criteriaFor(band);
         conn
           .prepare(
-            `INSERT INTO mock_scores (attempt_id, skill, test_date, c1, c2, c3, c4, band, result_date, entered_by, entered_at)
+            `INSERT INTO assessment_scores (attempt_id, skill, taken_on, c1, c2, c3, c4, band, result_date, entered_by, entered_at)
              VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
           )
-          .run(attemptId, skill, testDate, crit[0], crit[1], crit[2], crit[3],
+          .run(attemptId, skill, takenOn, crit[0], crit[1], crit[2], crit[3],
                roundToHalf((crit[0] + crit[1] + crit[2] + crit[3]) / 4), resultDate, recorder, NOW);
       }
       counts.scores += 1;
     }
 
-    if (missing.size === 0 && outcome.fails > 0) {
+    if (missing.size === 0 && performedOnly.size === 0 && outcome.fails > 0) {
       const pattern = CASE_PATTERNS[(classIdx + studentIdx + step.attemptNo) % CASE_PATTERNS.length];
       seedCase(conn, {
         attemptId, sid, attemptNo: step.attemptNo, level: Math.min(3, outcome.fails),
-        testDate: step.date, pattern, recorder, counts,
+        testDate: String(step.lrwAt ?? step.week).slice(0, 10), pattern, recorder, counts,
       });
     }
   }
 }
 
-/** Tên người thực hiện từng bước. CS làm ngoài hệ thống nên chỉ ghi tên, không cần tài khoản. */
+/** Ước lượng giáo viên: dữ liệu RIÊNG, không bao giờ ghi đè điểm Mock. */
+function seedEstimates(conn: any, o: {
+  sid: number; cid: number; target: number; studentIdx: number; teacherPool: number[]; classIdx: number;
+  counts: { estimates: number };
+}) {
+  const cycle = conn.prepare('SELECT id FROM learning_cycles WHERE student_id = ? ORDER BY seq DESC LIMIT 1').get(o.sid) as any;
+  const pick = (offset: number) => o.teacherPool[(o.classIdx + offset) % o.teacherPool.length];
+  const plan: [string, number, string][] = [
+    ['listening', o.target - 0.5, '2026-08-28'],
+    ['reading', o.target, '2026-08-28'],
+    ['writing1', o.target - 0.5, '2026-09-04'],
+    ['writing2', o.target - 0.5, '2026-09-04'],
+    ['speaking', o.target + (o.studentIdx % 2 === 0 ? 0.5 : 0), '2026-09-11'],
+  ];
+  const owner: Record<string, number> = {
+    listening: pick(1), reading: pick(1), writing1: pick(2), writing2: pick(3), speaking: pick(4),
+  };
+  for (const [skill, band, on] of plan) {
+    if ((o.studentIdx + skill.length) % 3 === 0) continue;   // không phải em nào cũng có đủ ước lượng
+    conn
+      .prepare(
+        `INSERT INTO teacher_estimates (student_id, cycle_id, skill, band, assessed_on, assessed_by, class_id, created_at)
+         VALUES (?,?,?,?,?,?,?,?)`,
+      )
+      .run(o.sid, cycle?.id ?? null, skill, Math.max(1, Math.min(9, band)), on, owner[skill], o.cid, NOW);
+    o.counts.estimates += 1;
+  }
+}
+
 const TEACHER_HANDLERS = ['GVCN Thu Trang', 'GVBM Minh Khoa', 'GVCN Bảo Nam', 'GVBM Gia Hân', 'GVCN Quang Duy'];
 const CS_HANDLERS = ['CS Ngọc Diệp', 'CS Hải Yến', 'CS Thanh Vân', 'CS Bảo Ngân'];
 
@@ -389,7 +476,7 @@ function seedCase(conn: any, o: {
   conn
     .prepare(
       `INSERT INTO journey_events (student_id, event_type, event_date, title, detail, ref_table, ref_id, created_by, created_at)
-       VALUES (?, 'mock_result', ?, ?, ?, 'mock_attempts', ?, ?, ?)`,
+       VALUES (?, 'mock_result', ?, ?, ?, 'assessment_attempts', ?, ?, ?)`,
     )
     .run(o.sid, o.testDate, `MT${o.attemptNo}: SOS ${o.level}`, `${o.level} kỹ năng dưới kỳ vọng`,
          o.attemptId, o.recorder, NOW);
@@ -401,71 +488,81 @@ function seedSpecialCases(conn: any, ctx: {
   classId: Map<string, number>;
   allStudents: { id: number; classCode: string; branch: string }[];
   adminId: number; branchAdmins: Map<string, number>; managers: Map<string, number[]>;
-  counts: { students: number; attempts: number; scores: number; cases: number };
+  counts: { students: number; cycles: number; attempts: number; scores: number; cases: number; estimates: number; skips: number };
 }) {
-  const { classId, allStudents, adminId, managers } = ctx;
+  const { classId, allStudents, adminId, managers, counts } = ctx;
   const inClass = (code: string) => allStudents.filter((s) => s.classCode === code);
+  const periodOf = (week: string) =>
+    (conn.prepare('SELECT id FROM report_periods WHERE week_start = ?').get(week) as any)?.id ?? null;
 
-  // 1) Dời lịch: cùng một lần MT, đổi ngày, giữ lịch sử — KHÔNG tạo lượt thi mới.
-  const rescheduled = inClass('CP-FT 110')[0];
-  if (rescheduled) {
-    const a = conn.prepare(`SELECT * FROM mock_attempts WHERE student_id = ? AND status='planned' LIMIT 1`)
-      .get(rescheduled.id) as any;
+  // 1) Đổi TUẦN kế hoạch: cùng một lượt, giữ lịch sử, KHÔNG tạo lượt mới.
+  const moved = inClass('CP-FT 110')[0];
+  if (moved) {
+    const a = conn.prepare(`SELECT * FROM assessment_attempts WHERE student_id = ? AND status='planned' LIMIT 1`)
+      .get(moved.id) as any;
     if (a) {
-      const newDate = addDays(a.planned_date, 2);
-      conn.prepare('UPDATE mock_attempts SET planned_date = ?, updated_at = ? WHERE id = ?').run(newDate, NOW, a.id);
-      conn
-        .prepare(
-          `INSERT INTO mock_schedule_history (attempt_id, action, old_date, new_date, reason, actor_user_id, created_at)
-           VALUES (?, 'rescheduled', ?, ?, ?, ?, ?)`,
-        )
-        .run(a.id, a.planned_date, newDate, 'Trùng lịch phòng thi', managers.get('CP')![0], NOW);
-      conn
-        .prepare(
-          `INSERT INTO journey_events (student_id, event_type, event_date, title, detail, ref_table, ref_id, created_by, created_at)
-           VALUES (?, 'mock_rescheduled', ?, ?, ?, 'mock_attempts', ?, ?, ?)`,
-        )
-        .run(rescheduled.id, newDate, 'Dời lịch MT2', 'Trùng lịch phòng thi', a.id, managers.get('CP')![0], NOW);
+      const newWeek = '2026-10-26';
+      conn.prepare('UPDATE assessment_attempts SET planned_period_id = ?, updated_at = ? WHERE id = ?')
+        .run(periodOf(newWeek), NOW, a.id);
+      conn.prepare(
+        `INSERT INTO attempt_schedule_history (attempt_id, action, field, old_value, new_value, reason, actor_user_id, created_at)
+         VALUES (?, 'week_set', 'planned_period', ?, ?, ?, ?, ?)`,
+      ).run(a.id, '2026-10-19', newWeek, 'Trùng lịch phòng thi', managers.get('CP')![0], NOW);
     }
   }
 
-  // 2) Huỷ lịch: giữ nguyên dấu vết, không tính vào "đã thi" hay "thiếu điểm".
+  // 2) Huỷ lượt: giữ nguyên dấu vết, không tính vào "đã xong" hay "thiếu điểm".
   const cancelled = inClass('HD-FT 302')[1];
   if (cancelled) {
-    const a = conn.prepare(`SELECT * FROM mock_attempts WHERE student_id = ? AND status='planned' LIMIT 1`)
+    const a = conn.prepare(`SELECT * FROM assessment_attempts WHERE student_id = ? AND status='planned' LIMIT 1`)
       .get(cancelled.id) as any;
     if (a) {
-      conn.prepare(`UPDATE mock_attempts SET status='cancelled', cancel_reason=?, cancelled_at=?, updated_at=? WHERE id=?`)
-        .run('Học sinh nghỉ ốm dài ngày', NOW, NOW, a.id);
-      conn
-        .prepare(
-          `INSERT INTO mock_schedule_history (attempt_id, action, old_date, reason, actor_user_id, created_at)
-           VALUES (?, 'cancelled', ?, ?, ?, ?)`,
-        )
-        .run(a.id, a.planned_date, 'Học sinh nghỉ ốm dài ngày', managers.get('HD')![0], NOW);
+      conn.prepare(`UPDATE assessment_attempts SET status='cancelled', cancel_reason=?, cancelled_at=?, updated_at=? WHERE id=?`)
+        .run('Học viên nghỉ ốm dài ngày', NOW, NOW, a.id);
+      conn.prepare(
+        `INSERT INTO attempt_schedule_history (attempt_id, action, reason, actor_user_id, created_at)
+         VALUES (?, 'cancelled', ?, ?, ?)`,
+      ).run(a.id, 'Học viên nghỉ ốm dài ngày', managers.get('HD')![0], NOW);
     }
   }
 
-  // 3) Chuyển lớp: lần Mock ĐÃ THI giữ lớp cũ, lịch chưa thi chuyển sang lớp mới.
-  const moved = inClass('MB-FT 101')[2];
+  // 3) Hạn nhập điểm riêng do Admin chi nhánh đặt, thay cho hạn mặc định.
+  const overridden = inClass('MB-FT 101')[1];
+  if (overridden) {
+    const a = conn.prepare(`SELECT * FROM assessment_attempts WHERE student_id = ? AND attempt_no = 2`)
+      .get(overridden.id) as any;
+    if (a) {
+      conn.prepare(
+        `UPDATE assessment_attempts SET deadline_override=?, deadline_override_by=?, deadline_override_at=?,
+                deadline_override_reason=? WHERE id=?`,
+      ).run('2026-09-30', ctx.branchAdmins.get('MB')!, NOW, 'Giáo viên Writing nghỉ phép, gia hạn tới cuối tháng', a.id);
+      conn.prepare(
+        `INSERT INTO attempt_schedule_history (attempt_id, action, field, new_value, reason, actor_user_id, created_at)
+         VALUES (?, 'deadline_set', 'deadline_override', '2026-09-30', ?, ?, ?)`,
+      ).run(a.id, 'Giáo viên Writing nghỉ phép, gia hạn tới cuối tháng', ctx.branchAdmins.get('MB')!, NOW);
+    }
+  }
+
+  // 4) Chuyển lớp: lượt ĐÃ XONG giữ lớp cũ, lượt chưa xong chuyển sang lớp mới.
+  const transferred = inClass('MB-FT 101')[2];
   const toClass = classId.get('MB-FT 102');
-  if (moved && toClass) {
-    const cur = conn.prepare(`SELECT * FROM enrollments WHERE student_id = ? AND status='active'`).get(moved.id) as any;
+  if (transferred && toClass) {
+    const cur = conn.prepare(`SELECT * FROM enrollments WHERE student_id = ? AND status='active'`).get(transferred.id) as any;
     conn.prepare(`UPDATE enrollments SET status='transferred', ended_at=?, end_reason=? WHERE id=?`)
       .run('2026-09-14', 'Chuyển ca học buổi chiều', cur.id);
     conn.prepare(`INSERT INTO enrollments (student_id, class_id, status, started_at, created_at) VALUES (?,?, 'active', ?, ?)`)
-      .run(moved.id, toClass, '2026-09-14', NOW);
-    conn.prepare(`UPDATE mock_attempts SET class_id = ? WHERE student_id = ? AND status = 'planned'`)
-      .run(toClass, moved.id);
+      .run(transferred.id, toClass, '2026-09-14', NOW);
+    conn.prepare(`UPDATE assessment_attempts SET class_id = ? WHERE student_id = ? AND status = 'planned'`)
+      .run(toClass, transferred.id);
     conn
       .prepare(
         `INSERT INTO journey_events (student_id, event_type, event_date, title, detail, created_by, created_at)
          VALUES (?, 'transfer', ?, ?, ?, ?, ?)`,
       )
-      .run(moved.id, '2026-09-14', 'Chuyển sang lớp MB-FT 102', 'Chuyển ca học buổi chiều', adminId, NOW);
+      .run(transferred.id, '2026-09-14', 'Chuyển sang lớp MB-FT 102', 'Chuyển ca học buổi chiều', adminId, NOW);
   }
 
-  // 4) Tạm dừng rồi quay lại học — hai sự kiện này phải còn trong bộ lọc "Tất cả".
+  // 5) Tạm dừng rồi quay lại học.
   const paused = inClass('BC-FT 205')[4];
   if (paused) {
     for (const e of [
@@ -481,8 +578,7 @@ function seedSpecialCases(conn: any, ctx: {
     }
   }
 
-  // 5) Warning / WL và ước lượng giáo viên: dữ liệu lịch sử để thử bộ lọc hành trình.
-  //    MVP không phát hành WL mới, chỉ đọc lại những gì đã có.
+  // 6) Warning/WL và ước lượng cũ — dữ liệu lịch sử để thử bộ lọc hành trình.
   const warned = inClass('UB-FT 401')[5];
   if (warned) {
     for (const e of [
@@ -496,6 +592,84 @@ function seedSpecialCases(conn: any, ctx: {
         )
         .run(warned.id, e.type, e.date, e.title, e.detail, adminId, NOW);
     }
+  }
+
+  // 7) HỌC LẠI TRONG CÙNG LỘ TRÌNH: số MT tăng tiếp (MT5), target giữ nguyên,
+  //    nên kỳ vọng vẫn bằng target chứ không quay lại mức trừ của MT1.
+  const repeater = inClass('UB-FT 401')[6];
+  if (repeater) {
+    const cycle = conn.prepare('SELECT * FROM learning_cycles WHERE student_id = ? ORDER BY seq DESC LIMIT 1')
+      .get(repeater.id) as any;
+    const info = conn
+      .prepare(
+        `INSERT INTO assessment_attempts (cycle_id, student_id, attempt_no, kind, class_id, planned_period_id,
+                                          status, target_at_attempt, note, created_by, created_at)
+         VALUES (?,?,5,'mock',?,?, 'planned', ?, ?, ?, ?)`,
+      )
+      .run(cycle.id, repeater.id, classId.get('UB-FT 401'), periodOf('2026-11-02'), cycle.target_score,
+           'Học tiếp lộ trình sau khi chưa đạt aim', adminId, NOW);
+    conn.prepare(
+      `INSERT INTO attempt_schedule_history (attempt_id, action, field, new_value, reason, actor_user_id, created_at)
+       VALUES (?, 'created', 'planned_period', '2026-11-02', ?, ?, ?)`,
+    ).run(Number(info.lastInsertRowid), 'Học tiếp lộ trình, MT tăng tiếp', managers.get('UB')![0], NOW);
+    counts.attempts += 1;
+    conn
+      .prepare(
+        `INSERT INTO journey_events (student_id, event_type, event_date, title, detail, created_by, created_at)
+         VALUES (?, 'repeat', ?, ?, ?, ?, ?)`,
+      )
+      .run(repeater.id, '2026-09-21', 'Học tiếp lộ trình LT2', 'Chưa đạt target, học thêm trước khi thi', adminId, NOW);
+  }
+
+  // 8) SANG LỘ TRÌNH MỚI: LT1 xong, thi thật, mở LT2 với target mới nên MT đánh lại từ 1.
+  const promoted = inClass('MB-FT 101')[3];
+  if (promoted) {
+    const old = conn.prepare('SELECT * FROM learning_cycles WHERE student_id = ? ORDER BY seq DESC LIMIT 1')
+      .get(promoted.id) as any;
+    conn.prepare(`UPDATE learning_cycles SET status='completed', ended_at=? WHERE id=?`).run('2026-09-14', old.id);
+    const newTarget = (old.target_score ?? 6) + 0.5;
+    const cyc = conn
+      .prepare(
+        `INSERT INTO learning_cycles (student_id, seq, route, target_score, exam_date, started_at, status, note, created_at)
+         VALUES (?,?, 'LT2', ?, ?, ?, 'active', ?, ?)`,
+      )
+      .run(promoted.id, old.seq + 1, newTarget, '2027-03-06', '2026-09-15',
+           'Đã thi xong LT1, sang lộ trình mới với target cao hơn', NOW);
+    const cycleId = Number(cyc.lastInsertRowid);
+    counts.cycles += 1;
+    const info = conn
+      .prepare(
+        `INSERT INTO assessment_attempts (cycle_id, student_id, attempt_no, kind, class_id, planned_period_id,
+                                          status, target_at_attempt, created_by, created_at)
+         VALUES (?,?,1,'mock',?,?, 'planned', ?, ?, ?)`,
+      )
+      .run(cycleId, promoted.id, classId.get('MB-FT 102'), periodOf('2026-11-02'), newTarget, adminId, NOW);
+    conn.prepare(
+      `INSERT INTO attempt_schedule_history (attempt_id, action, field, new_value, reason, actor_user_id, created_at)
+       VALUES (?, 'created', 'planned_period', '2026-11-02', ?, ?, ?)`,
+    ).run(Number(info.lastInsertRowid), 'Lộ trình mới, MT đánh lại từ 1', managers.get('MB')![0], NOW);
+    counts.attempts += 1;
+    conn
+      .prepare(
+        `INSERT INTO journey_events (student_id, event_type, event_date, title, detail, ref_table, ref_id, created_by, created_at)
+         VALUES (?, 'cycle_start', ?, ?, ?, 'learning_cycles', ?, ?, ?)`,
+      )
+      .run(promoted.id, '2026-09-15', 'Bắt đầu lộ trình LT2', `Target mới ${newTarget}`, cycleId, adminId, NOW);
+  }
+
+  // 9) Hai học viên đã kết thúc: một em mới xong (còn hiện, làm dịu màu), một em đã quá
+  //    hai tuần nên tới lượt vào lưu trữ. Lưu trữ chỉ ẩn khỏi danh sách, không xoá gì.
+  for (const [idx, date] of [[6, '2026-09-04'], [7, '2026-09-18']] as [number, string][]) {
+    const finished = inClass('BC-FT 205')[idx];
+    if (!finished) continue;
+    conn.prepare(`UPDATE students SET status='finished', finished_at=? WHERE id=?`).run(date, finished.id);
+    conn.prepare(`UPDATE enrollments SET status='completed' WHERE student_id=? AND status='active'`).run(finished.id);
+    conn
+      .prepare(
+        `INSERT INTO journey_events (student_id, event_type, event_date, title, detail, created_by, created_at)
+         VALUES (?, 'finish', ?, ?, ?, ?, ?)`,
+      )
+      .run(finished.id, date, 'Kết thúc học', 'Đã thi IELTS chính thức', adminId, NOW);
   }
 }
 
@@ -594,7 +768,7 @@ function seedMeeting(conn: any, ctx: {
   const someCase = conn.prepare('SELECT * FROM sos_cases WHERE sos_level = 3 ORDER BY id LIMIT 1').get() as any;
   if (someCase) {
     const at = conn
-      .prepare('SELECT a.*, c.branch_id, c.code AS class_code, s.full_name FROM mock_attempts a JOIN classes c ON c.id=a.class_id JOIN students s ON s.id=a.student_id WHERE a.id = ?')
+      .prepare('SELECT a.*, c.branch_id, c.code AS class_code, s.full_name FROM assessment_attempts a JOIN classes c ON c.id=a.class_id JOIN students s ON s.id=a.student_id WHERE a.id = ?')
       .get(someCase.attempt_id) as any;
     const unit = units.find((u) => u.branch_id === at.branch_id) ?? null;
     n += 1;

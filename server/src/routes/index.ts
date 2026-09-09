@@ -8,7 +8,9 @@ import { HttpError, badRequest, isIsoDate, notFound, toInt } from '../util.ts';
 import { SESSION_COOKIE, createSession, destroySession, principalOf, requireAuth } from '../auth.ts';
 import { can, loadPrincipal, permissionSummary, scopeFor } from '../permissions.ts';
 import { maybeSimulateReadError, maybeSimulateSaveFailure, pInt, qInt, qStr, wrap } from './helpers.ts';
-import * as mockSvc from '../services/mock.ts';
+import * as attemptSvc from '../services/attempts.ts';
+import * as cycleSvc from '../services/cycles.ts';
+import * as estimateSvc from '../services/estimates.ts';
 import * as sosSvc from '../services/sos.ts';
 import * as studentSvc from '../services/students.ts';
 import * as meetingSvc from '../services/meeting.ts';
@@ -55,14 +57,19 @@ api.get('/demo/session', wrap((req) => {
     demoDate: demoToday(),
     scenario: scenarioMode(),
     /*
-     * Trang mở đầu: giáo viên vào thẳng các Mock cần nhập điểm thuộc phân công của mình,
-     * còn lại mở Tổng quan. Chỉ đổi điểm vào, không đổi quyền.
+     * Trang mở đầu theo việc thường làm nhất: giáo viên vào thẳng các kỹ năng cần nhập điểm,
+     * Admin chi nhánh vào danh sách cần chốt ngày giờ, còn lại mở Tổng quan.
+     * Chỉ đổi điểm vào, không đổi quyền.
      */
-    landing: p.roleKeys.length === 1 && p.roleKeys[0] === 'teacher' ? '/mock-test?need=my_scores' : '/',
+    landing: p.roleKeys.length === 1
+      ? p.roleKeys[0] === 'teacher' ? '/mock-test?need=my_scores'
+        : p.roleKeys[0] === 'branch_admin' ? '/mock-test?need=needs_date'
+        : '/'
+      : '/',
     // Bốn mục điều hướng + một lối phụ. Ẩn/hiện theo quyền, không theo tên vai trò.
     nav: {
       overview: true,
-      mocks: !scopeFor(p, PERMISSIONS.MOCK_VIEW).none,
+      mocks: !scopeFor(p, PERMISSIONS.ATTEMPT_VIEW).none,
       students: !scopeFor(p, PERMISSIONS.STUDENT_VIEW).none,
       meeting: !scopeFor(p, PERMISSIONS.MEETING_VIEW).none,
       admin: can(p, PERMISSIONS.ADMIN_CONFIG, { anyScope: true }),
@@ -113,7 +120,7 @@ api.put('/demo/config', requireAuth, wrap((req) => {
 
 api.get('/ref/branches', requireAuth, wrap((req) => {
   const p = principalOf(req);
-  const scope = scopeFor(p, PERMISSIONS.MOCK_VIEW);
+  const scope = scopeFor(p, PERMISSIONS.ATTEMPT_VIEW);
   const all = db().prepare("SELECT id, code, name FROM branches WHERE status='active' ORDER BY id").all() as any[];
   if (scope.all) return all;
   const viaClass = scope.classIds.length
@@ -126,7 +133,7 @@ api.get('/ref/branches', requireAuth, wrap((req) => {
 
 api.get('/ref/classes', requireAuth, wrap((req) => {
   const p = principalOf(req);
-  const scope = scopeFor(p, PERMISSIONS.MOCK_VIEW);
+  const scope = scopeFor(p, PERMISSIONS.ATTEMPT_VIEW);
   if (scope.none) return [];
   const branchId = qInt(req, 'branchId');
   const rows = db()
@@ -180,10 +187,9 @@ api.get('/overview', requireAuth, wrap((req) => {
 
 // ============================================================ Mock Test
 
-api.get('/mocks', requireAuth, wrap((req) => {
+api.get('/attempts', requireAuth, wrap((req) => {
   maybeSimulateReadError();
-  const p = principalOf(req);
-  return mockSvc.listMocks(p, {
+  return attemptSvc.listAttempts(principalOf(req), {
     periodId: qInt(req, 'periodId'),
     branchId: qInt(req, 'branchId'),
     classId: qInt(req, 'classId'),
@@ -194,45 +200,109 @@ api.get('/mocks', requireAuth, wrap((req) => {
   });
 }));
 
-api.get('/mocks/:id', requireAuth, wrap((req) => {
+api.get('/attempts/:id', requireAuth, wrap((req) => {
   maybeSimulateReadError();
-  return mockSvc.mockDetail(principalOf(req), pInt(req, 'id'));
+  return attemptSvc.attemptDetail(principalOf(req), pInt(req, 'id'));
 }));
 
-api.post('/mocks', requireAuth, wrap((req) => {
+/** Quản lý lập kế hoạch: chốt TUẦN, chưa cần ngày. */
+api.post('/attempts', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
-  return mockSvc.createMock(principalOf(req), req.body ?? {});
+  const periodId = toInt(req.body?.periodId);
+  if (!periodId) throw badRequest('Cần chọn tuần kế hoạch.');
+  return attemptSvc.createAttempt(principalOf(req), { ...req.body, periodId });
 }));
 
-api.post('/mocks/:id/reschedule', requireAuth, wrap((req) => {
+/** Đổi TUẦN kế hoạch — chỉ Quản lý. */
+api.post('/attempts/:id/week', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
-  const { plannedDate, reason } = req.body ?? {};
-  if (!plannedDate) throw badRequest('Cần ngày mới.');
-  return mockSvc.rescheduleMock(principalOf(req), pInt(req, 'id'), plannedDate, reason);
+  const periodId = toInt(req.body?.periodId);
+  if (!periodId) throw badRequest('Cần chọn tuần.');
+  return attemptSvc.setPlanningWeek(principalOf(req), pInt(req, 'id'), periodId, req.body?.reason);
 }));
 
-api.post('/mocks/:id/cancel', requireAuth, wrap((req) => {
+/** Chốt NGÀY–GIỜ trong tuần đã duyệt. Lịch chính do Admin CN, lịch Speaking có thể do GV Speaking. */
+api.post('/attempts/:id/schedule', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
-  return mockSvc.cancelMock(principalOf(req), pInt(req, 'id'), String(req.body?.reason ?? ''));
+  return attemptSvc.setSchedule(principalOf(req), pInt(req, 'id'), {
+    lrwAt: req.body?.lrwAt,
+    speakingAt: req.body?.speakingAt,
+    reason: req.body?.reason,
+  });
 }));
 
-api.post('/mocks/:id/reopen', requireAuth, wrap((req) => {
+/** Đánh dấu một kỹ năng đánh giá là không mock ở lượt này, hoặc bỏ đánh dấu. */
+api.post('/attempts/:id/skills/:skill/skip', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
-  return mockSvc.reopenMock(principalOf(req), pInt(req, 'id'));
+  return attemptSvc.setSkillSkip(principalOf(req), pInt(req, 'id'), String(req.params.skill),
+    req.body?.skipped !== false, req.body?.reason);
 }));
 
-/** Ghi điểm MỘT kỹ năng. Gửi null để xoá về "chưa nhập" — không bao giờ tự điền 0. */
-api.put('/mocks/:id/scores/:skill', requireAuth, wrap((req) => {
+api.post('/attempts/:id/deadline', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return attemptSvc.setDeadlineOverride(principalOf(req), pInt(req, 'id'),
+    req.body?.deadline ?? null, req.body?.reason);
+}));
+
+api.post('/attempts/:id/cancel', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return attemptSvc.cancelAttempt(principalOf(req), pInt(req, 'id'), String(req.body?.reason ?? ''));
+}));
+
+api.post('/attempts/:id/reopen', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return attemptSvc.reopenAttempt(principalOf(req), pInt(req, 'id'));
+}));
+
+/**
+ * Ghi điểm MỘT kỹ năng. Payload KHÔNG nhận trường lịch — quyền nhập điểm không kèm
+ * quyền sửa ngày kế hoạch. `takenOn` là ngày mock thực tế, khác ngày lịch.
+ */
+api.put('/attempts/:id/scores/:skill', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   const skill = String(req.params.skill);
   if (!(ENTRY_SKILLS as readonly string[]).includes(skill)) throw badRequest('Kỹ năng không hợp lệ.');
-  return mockSvc.saveScore(principalOf(req), pInt(req, 'id'), skill, req.body ?? {});
+  const b = req.body ?? {};
+  return attemptSvc.saveScore(principalOf(req), pInt(req, 'id'), skill, {
+    takenOn: b.takenOn, rawScore: b.rawScore, rawTotal: b.rawTotal,
+    criteria: b.criteria, resultDate: b.resultDate, note: b.note,
+  });
 }));
 
-/** Bảng nhập điểm theo lớp: một dòng một học sinh, cột là kỹ năng. */
 api.get('/classes/:id/score-sheet', requireAuth, wrap((req) => {
   maybeSimulateReadError();
-  return mockSvc.classScoreSheet(principalOf(req), pInt(req, 'id'), qInt(req, 'periodId') ?? null);
+  return attemptSvc.classScoreSheet(principalOf(req), pInt(req, 'id'), qInt(req, 'periodId') ?? null);
+}));
+
+// ============================================================ Lộ trình và ước lượng
+
+api.get('/students/:id/cycles', requireAuth, wrap((req) => {
+  const p = principalOf(req);
+  const id = pInt(req, 'id');
+  studentSvc.studentDetail(p, id);        // kiểm tra phạm vi trước khi trả dữ liệu
+  return cycleSvc.cyclesOf(id);
+}));
+
+api.post('/students/:id/cycles', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return cycleSvc.createCycle(principalOf(req), { ...req.body, studentId: pInt(req, 'id') });
+}));
+
+api.patch('/cycles/:id', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return cycleSvc.updateCycle(principalOf(req), pInt(req, 'id'), req.body ?? {});
+}));
+
+api.get('/students/:id/estimates', requireAuth, wrap((req) =>
+  estimateSvc.estimateHistory(principalOf(req), pInt(req, 'id'), qStr(req, 'skill'))));
+
+api.get('/students/:id/estimate-comparison', requireAuth, wrap((req) =>
+  estimateSvc.compareEstimates(principalOf(req), pInt(req, 'id'))));
+
+/** Ước lượng là dữ liệu riêng, không bao giờ ghi đè điểm Mock. */
+api.post('/students/:id/estimates', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return estimateSvc.saveEstimate(principalOf(req), { ...req.body, studentId: pInt(req, 'id') });
 }));
 
 // ============================================================ Xử lý sau Mock (SOS)
@@ -280,11 +350,11 @@ api.post('/students/:id/transfer', requireAuth, wrap((req) => {
     effectiveDate ?? demoToday(), reason);
 }));
 
-api.post('/students/:id/enrollment-status', requireAuth, wrap((req) => {
+api.post('/students/:id/status', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   const status = req.body?.status;
-  if (status !== 'paused' && status !== 'active') throw badRequest('Trạng thái không hợp lệ.');
-  return studentSvc.setEnrollmentStatus(principalOf(req), pInt(req, 'id'), status,
+  if (!['active', 'inactive', 'finished'].includes(status)) throw badRequest('Trạng thái không hợp lệ.');
+  return studentSvc.setStudentStatus(principalOf(req), pInt(req, 'id'), status,
     req.body?.date ?? demoToday(), req.body?.reason);
 }));
 
@@ -376,7 +446,9 @@ api.get('/admin/overview', requireAuth, wrap((req) => {
     counts: {
       students: (conn.prepare('SELECT COUNT(*) AS n FROM students').get() as any).n,
       classes: (conn.prepare('SELECT COUNT(*) AS n FROM classes').get() as any).n,
-      attempts: (conn.prepare('SELECT COUNT(*) AS n FROM mock_attempts').get() as any).n,
+      attempts: (conn.prepare('SELECT COUNT(*) AS n FROM assessment_attempts').get() as any).n,
+      cycles: (conn.prepare('SELECT COUNT(*) AS n FROM learning_cycles').get() as any).n,
+      estimates: (conn.prepare('SELECT COUNT(*) AS n FROM teacher_estimates').get() as any).n,
       cases: (conn.prepare('SELECT COUNT(*) AS n FROM sos_cases').get() as any).n,
     },
     audit: conn

@@ -57,7 +57,7 @@ export default function AdminPage() {
                   {data.roles.map((r) => (
                     <td key={r.key} className="td text-center">
                       {data.matrix[r.key]?.includes(p.key)
-                        ? <span className="text-teal-300">có</span>
+                        ? <span className="text-sky-200">có</span>
                         : <span className="text-slate-600">—</span>}
                     </td>
                   ))}

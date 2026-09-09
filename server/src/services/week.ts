@@ -67,11 +67,11 @@ export function weekInfo(date: string): WeekInfo {
 }
 
 /**
- * Hạn nhập điểm: thứ Tư của tuần KẾ TIẾP sau tuần thi.
+ * Hạn nhập điểm MẶC ĐỊNH: thứ Tư của tuần KẾ TIẾP sau tuần diễn ra buổi mock.
  * Hết ngày thứ Tư mới tính quá hạn, không đánh quá hạn ngay đầu ngày.
  */
-export function scoreDeadline(testDate: string): string {
-  return addDays(mondayOf(testDate), 7 + 2);
+export function defaultScoreDeadline(baseDate: string): string {
+  return addDays(mondayOf(baseDate), 7 + 2);
 }
 
 export function isOverdue(deadline: string, today: string): boolean {
@@ -107,4 +107,22 @@ export function periodById(id: number) {
   const row = db().prepare('SELECT * FROM report_periods WHERE id = ?').get(id) as any;
   if (!row) return null;
   return { ...row, ...weekInfo(row.week_start) };
+}
+
+/**
+ * Hạn có hiệu lực của một kỹ năng.
+ *
+ * Chỉ MỘT hạn có hiệu lực tại một thời điểm: nếu lượt MT có hạn tự đặt thì dùng hạn đó,
+ * không thì lấy hạn mặc định tính từ tuần diễn ra buổi mock của chính kỹ năng đó
+ * (LRW theo lịch chính, Speaking theo lịch Speaking).
+ *
+ * Chưa có ngày lịch nào thì KHÔNG có hạn — trả về null thay vì dựng một hạn giả.
+ */
+export function effectiveDeadline(input: {
+  scheduledFor: string | null;
+  override: string | null;
+}): { date: string | null; source: 'override' | 'default' | 'none' } {
+  if (input.override) return { date: input.override, source: 'override' };
+  if (input.scheduledFor) return { date: defaultScoreDeadline(input.scheduledFor), source: 'default' };
+  return { date: null, source: 'none' };
 }

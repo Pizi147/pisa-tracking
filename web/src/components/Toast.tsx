@@ -24,10 +24,10 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             key={t.id}
             className={`card px-4 py-3 shadow-xl text-sm border ${
               t.kind === 'error'
-                ? 'border-red-500/40 text-red-200'
+                ? 'border-rose-300/40 text-red-200'
                 : t.kind === 'ok'
-                  ? 'border-teal-500/40 text-teal-200'
-                  : 'border-sky-500/40 text-sky-200'
+                  ? 'border-sky-300/40 text-sky-200'
+                  : 'border-sky-300/40 text-sky-200'
             }`}
           >
             {t.text}

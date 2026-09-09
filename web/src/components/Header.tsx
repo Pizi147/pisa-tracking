@@ -41,8 +41,8 @@ export function Header() {
   const skills = (session?.assignments ?? []).filter((a) => a.skill);
 
   return (
-    <div className="flex items-center gap-2" ref={boxRef}>
-      <div className="relative w-40 sm:w-64">
+    <div className="flex items-center gap-2 min-w-0" ref={boxRef}>
+      <div className="relative w-28 sm:w-52 lg:w-64 shrink">
         <input
           className="field"
           placeholder="Tìm học viên…"
@@ -51,7 +51,7 @@ export function Header() {
           aria-label="Tìm học viên trong phạm vi được cấp quyền"
         />
         {hits.length > 0 && (
-          <ul className="absolute z-40 mt-1 w-72 right-0 card overflow-hidden shadow-2xl list-none p-0 m-0">
+          <ul className="absolute z-40 mt-1 w-[min(18rem,calc(100vw-2rem))] right-0 card overflow-hidden shadow-2xl list-none p-0 m-0">
             {hits.map((h) => (
               <li key={h.id}>
                 <button
@@ -69,12 +69,14 @@ export function Header() {
       </div>
 
       <div className="relative">
-        <button className="btn btn-sm" onClick={() => setOpenMenu(openMenu === 'notif' ? null : 'notif')}>
-          Thông báo
-          {unread > 0 && <span className="ml-1 rounded bg-teal-500/25 text-teal-200 px-1.5 text-[10px]">{unread}</span>}
+        <button className="btn btn-sm" onClick={() => setOpenMenu(openMenu === 'notif' ? null : 'notif')}
+          aria-label="Thông báo">
+          <span className="hidden sm:inline">Thông báo</span>
+          <span className="sm:hidden" aria-hidden>🔔</span>
+          {unread > 0 && <span className="ml-1 rounded bg-sky-300/25 text-sky-200 px-1.5 text-[10px]">{unread}</span>}
         </button>
         {openMenu === 'notif' && (
-          <div className="absolute right-0 mt-1 w-96 card z-40 shadow-2xl max-h-96 overflow-y-auto">
+          <div className="absolute right-0 mt-1 w-[min(24rem,calc(100vw-2rem))] card z-40 shadow-2xl max-h-96 overflow-y-auto">
             {(notifications.data ?? []).length === 0 && <div className="p-4 text-sm text-slate-500">Không có thông báo nào.</div>}
             {(notifications.data ?? []).map((n) => (
               <button
@@ -89,7 +91,7 @@ export function Header() {
                 }}
               >
                 <div className="text-sm text-slate-200 flex items-center gap-2">
-                  {!n.read_at && <span className="w-1.5 h-1.5 rounded-full bg-teal-400 shrink-0" />}
+                  {!n.read_at && <span className="w-1.5 h-1.5 rounded-full bg-sky-300 shrink-0" />}
                   {n.title}
                 </div>
                 {n.body && <div className="text-xs text-slate-500 mt-0.5">{n.body}</div>}
@@ -101,10 +103,10 @@ export function Header() {
 
       <div className="relative">
         <button className="btn btn-sm" onClick={() => setOpenMenu(openMenu === 'account' ? null : 'account')}>
-          <span className="text-slate-200 truncate max-w-[10rem]">{session?.user?.fullName}</span>
+          <span className="text-slate-200 truncate max-w-[6rem] sm:max-w-[10rem]">{session?.user?.fullName}</span>
         </button>
         {openMenu === 'account' && (
-          <div className="absolute right-0 mt-1 w-80 card p-3 z-40 shadow-2xl">
+          <div className="absolute right-0 mt-1 w-[min(20rem,calc(100vw-2rem))] card p-3 z-40 shadow-2xl">
             <div className="text-sm font-medium text-slate-100">{session?.user?.fullName}</div>
             <div className="text-xs text-slate-500 mb-3">{session?.user?.title}</div>
 

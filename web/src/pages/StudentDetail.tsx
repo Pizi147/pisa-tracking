@@ -5,15 +5,29 @@ import { api, invalidate } from '../lib/api.ts';
 import { useToast } from '../components/Toast.tsx';
 import { Card, Empty, ErrorState, Pill, SectionNote, Skeleton } from '../components/ui.tsx';
 import { ConfirmDialog } from '../components/Drawer.tsx';
-import { fmtBand, fmtDate, mockStatusLabel, sosLabel, sosTone } from '../lib/format.ts';
+import {
+  attemptStatusLabel, attemptStatusTone, fmtBand, fmtDate, fmtSlot, skillLabel, sosLabel, sosTone,
+  studentStatusLabel,
+} from '../lib/format.ts';
 import { JOURNEY_EVENT_LABEL, JOURNEY_FILTERS } from '@shared/domain.ts';
 
 type Detail = {
-  id: number; studentCode: string; fullName: string;
-  committedScore: number | null; route: string | null; examDate: string | null; note: string | null;
+  id: number; studentCode: string; fullName: string; dob: string | null;
+  status: string; finishedAt: string | null; archivedAt: string | null;
+  consultantName: string | null; note: string | null;
+  cycle: { id: number; seq: number; route: string | null; target: number | null; examDate: string | null } | null;
+  cycles: any[];
+  estimates: Record<string, { band: number; assessedOn: string; assessedByName: string | null }>;
   currentClass: { id: number; code: string; branchName: string } | null;
   enrollments: any[]; attempts: any[]; nextMock: any; openTasks: any[];
-  viewer: { canEdit: boolean; canSchedule: boolean };
+  viewer: { canEdit: boolean; canPlanWeek: boolean; canSetDate: boolean };
+};
+
+type Comparison = {
+  skill: string;
+  estimate: { band: number; on: string; by: string | null } | null;
+  mock: { band: number; on: string | null; attemptNo: number; source: string } | null;
+  delta: number | null;
 };
 
 export default function StudentDetailPage() {
@@ -23,6 +37,7 @@ export default function StudentDetailPage() {
   const { data, loading, error, reload } = useApi<Detail>(id ? `/students/${id}` : null);
   const [filter, setFilter] = useState('all');
   const journey = useApi<any[]>(id ? `/students/${id}/journey?filter=${filter}` : null, [filter]);
+  const comparison = useApi<Comparison[]>(id ? `/students/${id}/estimate-comparison` : null);
   const [transferOpen, setTransferOpen] = useState(false);
 
   if (error) return <ErrorState message={error.message} hint={error.hint} onRetry={reload} />;
@@ -35,8 +50,12 @@ export default function StudentDetailPage() {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <button className="btn btn-sm btn-ghost mb-1" onClick={() => navigate(-1)}>← Quay lại</button>
-          <h1 className="text-lg font-semibold text-slate-100">
+          <h1 className="text-lg font-semibold text-slate-100 flex flex-wrap items-center gap-2">
             {data.fullName} <span className="text-slate-500 text-sm">· {data.studentCode}</span>
+            <Pill tone={data.status === 'active' ? 'ok' : data.status === 'inactive' ? 'warn' : 'muted'}>
+              {studentStatusLabel(data.status)}
+            </Pill>
+            {data.archivedAt && <Pill tone="muted">Đã lưu trữ</Pill>}
           </h1>
         </div>
         {data.viewer.canEdit && (
@@ -49,12 +68,18 @@ export default function StudentDetailPage() {
           <Info label="Lớp hiện tại">
             {data.currentClass ? `${data.currentClass.code} · ${data.currentClass.branchName}` : '—'}
           </Info>
-          <Info label="Lộ trình">{data.route ?? '—'}</Info>
-          <Info label="Điểm cam kết">{fmtBand(data.committedScore)}</Info>
-          <Info label="Ngày thi thật dự kiến">{fmtDate(data.examDate)}</Info>
-          <Info label="Mock tiếp theo">
+          <Info label="Lộ trình hiện tại">
+            {data.cycle ? `${data.cycle.route ?? `Đợt ${data.cycle.seq}`}` : '—'}
+            {data.cycles.length > 1 && <span className="text-slate-500 text-xs"> · {data.cycles.length} đợt</span>}
+          </Info>
+          <Info label="Target lộ trình">{fmtBand(data.cycle?.target ?? null)}</Info>
+          <Info label="Ngày thi IELTS chính thức">{fmtDate(data.cycle?.examDate ?? null)}</Info>
+          <Info label="MT tiếp theo">
             {data.nextMock
-              ? <Link className="link" to={`/mock-test/${data.nextMock.id}`}>MT{data.nextMock.attemptNo} · {fmtDate(data.nextMock.plannedDate)}</Link>
+              ? <Link className="link" to={`/mock-test/${data.nextMock.id}`}>
+                  MT{data.nextMock.attemptNo} · {data.nextMock.periodCode ?? 'chưa có tuần'}
+                  {data.nextMock.needsDate ? ' · chưa có ngày' : ` · ${fmtSlot(data.nextMock.scheduledAt)}`}
+                </Link>
               : '—'}
           </Info>
         </dl>
@@ -87,9 +112,10 @@ export default function StudentDetailPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr>
+                  <th className="th">Lộ trình</th>
                   <th className="th">MT</th>
-                  <th className="th">Lớp tại lần thi</th>
-                  <th className="th">Tuần / ngày</th>
+                  <th className="th">Lớp lúc đánh giá</th>
+                  <th className="th">Tuần · lịch</th>
                   <th className="th">Trạng thái</th>
                   <th className="th">L</th><th className="th">R</th><th className="th">W</th><th className="th">S</th>
                   <th className="th">Overall</th>
@@ -100,10 +126,14 @@ export default function StudentDetailPage() {
               <tbody>
                 {data.attempts.map((a) => (
                   <tr key={a.id} className="row-hover cursor-pointer" onClick={() => navigate(`/mock-test/${a.id}`)}>
+                    <td className="td text-slate-400 text-xs whitespace-nowrap">{a.route ?? `Đợt ${a.cycleSeq}`}</td>
                     <td className="td tabular-nums">MT{a.attemptNo}</td>
                     <td className="td text-slate-300">{a.classCode ?? '—'}</td>
-                    <td className="td whitespace-nowrap">{a.week.code} <span className="text-slate-500 text-xs">{fmtDate(a.plannedDate)}</span></td>
-                    <td className="td"><Pill tone={a.status === 'cancelled' ? 'muted' : a.status === 'completed' ? 'info' : 'neutral'}>{mockStatusLabel(a.status)}</Pill></td>
+                    <td className="td whitespace-nowrap">
+                      {a.periodCode ?? <Pill tone="muted">Chưa có tuần</Pill>}
+                      <div className="text-slate-500 text-xs">{a.lrwScheduledAt ? fmtSlot(a.lrwScheduledAt) : 'chưa có ngày'}</div>
+                    </td>
+                    <td className="td"><Pill tone={attemptStatusTone(a.status)}>{attemptStatusLabel(a.status)}</Pill></td>
                     <td className="td tabular-nums">{fmtBand(a.bands.listening)}</td>
                     <td className="td tabular-nums">{fmtBand(a.bands.reading)}</td>
                     <td className="td tabular-nums">{fmtBand(a.bands.writing)}</td>
@@ -111,7 +141,10 @@ export default function StudentDetailPage() {
                     <td className="td tabular-nums text-slate-100">{fmtBand(a.overall)}</td>
                     <td className="td tabular-nums">{fmtBand(a.expectation)}</td>
                     <td className="td">
-                      <Pill tone={sosTone(a.sosLevel)}>{a.complete ? sosLabel(a.sosLevel) : `Chờ ${4 - a.completed} kỹ năng`}</Pill>
+                      <Pill tone={sosTone(a.sosLevel)}>
+                        {a.evaluable ? sosLabel(a.sosLevel) : `Chờ ${a.requiredCount - a.scoredRequired} kỹ năng`}
+                      </Pill>
+                      {a.scopeNote && <div className="text-[10px] text-slate-500">{a.scopeNote}</div>}
                     </td>
                   </tr>
                 ))}
@@ -119,7 +152,62 @@ export default function StudentDetailPage() {
             </table>
           </div>
         )}
-        <div className="p-3"><SectionNote>Lớp ghi ở đây là lớp TẠI THỜI ĐIỂM THI. Chuyển lớp không viết lại lịch sử này.</SectionNote></div>
+        <div className="p-3">
+          <SectionNote>
+            Lớp ghi ở đây là lớp TẠI LÚC ĐÁNH GIÁ. Chuyển lớp không viết lại lịch sử này.
+            Số MT đánh lại từ 1 khi học viên sang lộ trình mới, còn học tiếp trong cùng lộ trình thì tăng tiếp.
+          </SectionNote>
+        </div>
+      </Card>
+
+      <Card title="Ước lượng giáo viên so với điểm Mock"
+        action={<span className="text-xs text-slate-500">Ước lượng là dữ liệu riêng, không ghi đè điểm Mock</span>}
+        bodyClass="p-0">
+        {comparison.loading && <div className="p-4"><Skeleton rows={3} /></div>}
+        {comparison.data && comparison.data.every((c) => !c.estimate && !c.mock) && (
+          <Empty title="Chưa có ước lượng hay điểm Mock nào để so sánh" />
+        )}
+        {comparison.data && comparison.data.some((c) => c.estimate || c.mock) && (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr>
+                  <th className="th">Kỹ năng</th>
+                  <th className="th">Ước lượng GV</th>
+                  <th className="th">Ngày ước lượng</th>
+                  <th className="th">Điểm Mock</th>
+                  <th className="th">Nguồn điểm Mock</th>
+                  <th className="th">Chênh lệch</th>
+                </tr>
+              </thead>
+              <tbody>
+                {comparison.data.map((c) => (
+                  <tr key={c.skill}>
+                    <td className="td text-slate-200 whitespace-nowrap">{skillLabel(c.skill)}</td>
+                    <td className="td tabular-nums">{fmtBand(c.estimate?.band ?? null)}</td>
+                    <td className="td text-xs text-slate-500 whitespace-nowrap">
+                      {c.estimate ? `${fmtDate(c.estimate.on)}${c.estimate.by ? ` · ${c.estimate.by}` : ''}` : '—'}
+                    </td>
+                    <td className="td tabular-nums">{fmtBand(c.mock?.band ?? null)}</td>
+                    <td className="td text-xs text-slate-500 whitespace-nowrap">
+                      {c.mock ? `${c.mock.source}${c.mock.on ? ` · ${fmtDate(c.mock.on)}` : ''}` : '—'}
+                    </td>
+                    <td className="td tabular-nums">
+                      {c.delta === null ? '—' : (c.delta > 0 ? `+${c.delta}` : String(c.delta))}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+        <div className="p-3">
+          <SectionNote>
+            Hai cột có thể đến từ hai thời điểm khác nhau nên luôn kèm ngày. Điểm Mock của từng kỹ năng có thể
+            thuộc các lượt khác nhau — cột “Nguồn” ghi rõ, và các ô này KHÔNG được ghép thành một bài Mock
+            hay một Overall chung. Chênh lệch chỉ là khoảng cách hai con số, không tự nó chứng minh tiến bộ.
+          </SectionNote>
+        </div>
       </Card>
 
       <Card title="Hành trình học viên"
@@ -202,7 +290,7 @@ function TransferDialog({ open, onClose, studentId, currentClassId, onDone }: {
             <input className="field" value={reason} onChange={(e) => setReason(e.target.value)} />
           </label>
           <SectionNote>
-            Lịch Mock CHƯA thi sẽ chuyển sang lớp mới. Các lần đã thi giữ nguyên lớp cũ để không viết lại lịch sử.
+            Lượt MT chưa xong sẽ chuyển sang lớp mới. Lượt đã xong giữ nguyên lớp cũ để không viết lại lịch sử.
           </SectionNote>
         </div>
       }
@@ -211,7 +299,7 @@ function TransferDialog({ open, onClose, studentId, currentClassId, onDone }: {
         setBusy(true);
         try {
           await api.post(`/students/${studentId}/transfer`, { toClassId, effectiveDate: date || undefined, reason });
-          invalidate('/students'); invalidate('/mocks'); invalidate('/overview');
+          invalidate('/students'); invalidate('/attempts'); invalidate('/overview');
           onDone(); onClose(); toast.push('ok', 'Đã chuyển lớp');
         } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
       }}

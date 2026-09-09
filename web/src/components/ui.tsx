@@ -19,13 +19,14 @@ export function Card({ title, action, children, className = '', bodyClass = 'p-4
 
 type Tone = 'ok' | 'warn' | 'danger' | 'info' | 'neutral' | 'muted';
 
+/** Màu chỉ hỗ trợ; mọi trạng thái đều đi kèm chữ nên đọc được cả khi không phân biệt màu. */
 const TONE_CLASS: Record<Tone, string> = {
-  ok: 'bg-teal-500/12 text-teal-300 border-teal-500/35',
-  warn: 'bg-amber-500/12 text-amber-300 border-amber-500/35',
-  danger: 'bg-red-500/12 text-red-300 border-red-500/35',
-  info: 'bg-sky-500/12 text-sky-300 border-sky-500/35',
-  neutral: 'bg-slate-500/12 text-slate-300 border-slate-500/30',
-  muted: 'bg-transparent text-slate-400 border-slate-600/40 border-dashed',
+  ok: 'bg-emerald-300/10 text-emerald-200 border-emerald-300/30',
+  warn: 'bg-amber-300/10 text-amber-200 border-amber-300/30',
+  danger: 'bg-rose-300/10 text-rose-200 border-rose-300/30',
+  info: 'bg-sky-300/10 text-sky-200 border-sky-300/30',
+  neutral: 'bg-slate-300/8 text-slate-300 border-slate-300/20',
+  muted: 'bg-transparent text-slate-400 border-slate-500/35 border-dashed',
 };
 
 /** Trạng thái luôn đi kèm nhãn chữ — màu chỉ hỗ trợ, không mang thông tin một mình. */
@@ -50,7 +51,7 @@ export function Empty({ title, hint, action }: { title: string; hint?: string; a
 export function ErrorState({ message, hint, onRetry }: { message: string; hint?: string; onRetry?: () => void }) {
   return (
     <div className="flex flex-col items-center justify-center gap-2 py-10 px-6 text-center">
-      <div className="text-red-300 font-medium">{message}</div>
+      <div className="text-rose-200 font-medium">{message}</div>
       {hint && <p className="text-slate-400 text-xs max-w-md">{hint}</p>}
       {onRetry && <button className="btn btn-sm mt-2" onClick={onRetry}>Thử lại</button>}
     </div>
@@ -60,7 +61,7 @@ export function ErrorState({ message, hint, onRetry }: { message: string; hint?:
 export function Forbidden({ message, hint }: { message?: string; hint?: string }) {
   return (
     <div className="card p-6 text-center">
-      <div className="text-amber-300 font-medium">{message ?? 'Bạn không có quyền xem nội dung này'}</div>
+      <div className="text-amber-200 font-medium">{message ?? 'Bạn không có quyền xem nội dung này'}</div>
       <p className="text-slate-400 text-xs mt-1 max-w-lg mx-auto">{hint ?? 'Quyền được xác định theo vai trò, phạm vi và phân công của tài khoản đang dùng.'}</p>
     </div>
   );
@@ -80,13 +81,13 @@ export function KpiTile({ label, value, tone = 'neutral', to, sub }: {
   label: string; value: ReactNode; tone?: Tone; to?: string; sub?: string;
 }) {
   const inner = (
-    <div className={`card p-4 h-full transition-colors ${to ? 'hover:border-teal-500/40 cursor-pointer' : ''}`}>
+    <div className={`card p-4 h-full transition-colors ${to ? 'hover:border-sky-300/40 cursor-pointer' : ''}`}>
       <div className="text-[11px] uppercase tracking-wide text-slate-400 font-semibold">{label}</div>
       <div className={`mt-2 text-2xl font-semibold tabular-nums ${
-        tone === 'danger' ? 'text-red-300' : tone === 'warn' ? 'text-amber-300' : tone === 'ok' ? 'text-teal-300' : 'text-slate-100'
+        tone === 'danger' ? 'text-rose-200' : tone === 'warn' ? 'text-amber-200' : tone === 'ok' ? 'text-sky-200' : 'text-slate-100'
       }`}>{value}</div>
       {sub && <div className="text-[11px] text-slate-500 mt-1">{sub}</div>}
-      {to && <div className="text-[11px] text-teal-400 mt-2">Xem danh sách →</div>}
+      {to && <div className="text-[11px] text-sky-300 mt-2">Xem danh sách →</div>}
     </div>
   );
   return to ? <Link to={to} className="block h-full no-underline">{inner}</Link> : inner;
@@ -95,7 +96,7 @@ export function KpiTile({ label, value, tone = 'neutral', to, sub }: {
 export function Field({ label, children, hint, required }: { label: string; children: ReactNode; hint?: string; required?: boolean }) {
   return (
     <label className="block">
-      <span className="label">{label}{required && <span className="text-red-400"> *</span>}</span>
+      <span className="label">{label}{required && <span className="text-rose-300"> *</span>}</span>
       {children}
       {hint && <span className="block text-[11px] text-slate-500 mt-1">{hint}</span>}
     </label>

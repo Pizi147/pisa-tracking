@@ -2,7 +2,7 @@ import { db } from '../db.ts';
 import { PERMISSIONS, SOS_LABEL } from '../../../shared/domain.ts';
 import { demoToday } from '../demoConfig.ts';
 import { scopeFor, type Principal } from '../permissions.ts';
-import { listMocks } from './mock.ts';
+import { listAttempts } from './attempts.ts';
 import { listTasks, meetingBoard } from './meeting.ts';
 import { periodById } from './week.ts';
 
@@ -18,38 +18,49 @@ export function overview(p: Principal, periodId: number, branchId?: number) {
   const period = periodById(periodId);
   if (!period) throw new Error('Không tìm thấy kỳ');
 
-  const all = listMocks(p, { branchId }).rows;
-  const inWeek = all.filter((m) => {
-    const d = m.firstTestDate ?? m.plannedDate;
-    return d >= period.week_start && d <= period.week_end;
-  });
+  const all = listAttempts(p, { branchId }).rows;
 
+  // Tuần kết quả LUÔN là tuần kế hoạch của lượt, nên LRW/Speaking lệch tuần không làm
+  // một lượt bị đếm hai lần.
+  const inWeek = all.filter((m) => m.period?.id === periodId);
   const scheduled = inWeek.filter((m) => m.status !== 'cancelled');
   const cancelled = inWeek.filter((m) => m.status === 'cancelled');
-  const taken = inWeek.filter((m) => m.status === 'completed');
+  const done = inWeek.filter((m) => m.status === 'done');
   const uniqueStudents = new Set(scheduled.map((m) => m.studentId)).size;
+  const needsDate = scheduled.filter((m) => m.needsDate).length;
 
-  // Thiếu điểm và quá hạn là hai chuyện khác nhau. Lượt đã huỷ không tính vào cả hai.
   const active = all.filter((m) => m.status !== 'cancelled');
-  const missingScores = active.filter((m) => m.status === 'completed' && m.enteredSkills < m.applicableSkills);
+  const missingScores = active.filter((m) => !m.complete && m.scoredRequired > 0);
   const overdueScores = active.filter((m) => m.overdueSkills > 0);
 
-  const completedResults = active.filter((m) => m.complete);
+  // Hai cụm case KHÔNG chồng nhau: 'open' là chưa xử lý, 'in_progress' là đang xử lý.
+  // Đã ghi nhận GVCN nhận nhưng chưa bắt đầu vẫn nằm ở nhóm chưa xử lý.
+  const withCase = active.filter((m) => m.caseId);
+  const caseNew = withCase.filter((m) => m.caseStatus === 'open');
+  const caseHandling = withCase.filter((m) => m.caseStatus === 'in_progress');
+  const caseDone = withCase.filter((m) => m.caseStatus === 'done');
+
   const sosCounts = { s0: 0, s1: 0, s2: 0, s3: 0 };
-  for (const m of completedResults) {
+  for (const m of active.filter((x) => x.evaluable)) {
     if (m.sosLevel === 0) sosCounts.s0++;
     else if (m.sosLevel === 1) sosCounts.s1++;
     else if (m.sosLevel === 2) sosCounts.s2++;
     else if (m.sosLevel === 3) sosCounts.s3++;
   }
-  const sosInWeek = inWeek.filter((m) => m.complete && (m.sosLevel ?? 0) > 0);
-  const openCases = active.filter((m) => m.caseId && m.caseStatus !== 'done');
 
   const tasks = listTasks(p, {}).rows;
   const board = scopeFor(p, PERMISSIONS.MEETING_VIEW).none ? null : meetingBoard(p, periodId);
 
   const priority: any[] = [];
-  for (const m of overdueScores.slice(0, 20)) {
+  for (const m of caseNew.slice(0, 12)) {
+    priority.push({
+      kind: 'sos_new', studentId: m.studentId, studentName: m.studentName, studentCode: m.studentCode,
+      classCode: m.classCode, attemptId: m.id, attemptNo: m.attemptNo,
+      reason: `${SOS_LABEL[(m.sosLevel ?? 1) as 1 | 2 | 3]} · MT${m.attemptNo} chưa ai xử lý`,
+      action: 'Mở chi tiết để ghi nhận xử lý',
+    });
+  }
+  for (const m of overdueScores.slice(0, 12)) {
     priority.push({
       kind: 'overdue_score', studentId: m.studentId, studentName: m.studentName, studentCode: m.studentCode,
       classCode: m.classCode, attemptId: m.id, attemptNo: m.attemptNo,
@@ -57,18 +68,18 @@ export function overview(p: Principal, periodId: number, branchId?: number) {
       action: 'Nhắc giáo viên bộ môn nhập điểm',
     });
   }
-  for (const m of openCases.slice(0, 20)) {
+  for (const m of scheduled.filter((x) => x.needsDate).slice(0, 8)) {
     priority.push({
-      kind: 'sos_case', studentId: m.studentId, studentName: m.studentName, studentCode: m.studentCode,
+      kind: 'needs_date', studentId: m.studentId, studentName: m.studentName, studentCode: m.studentCode,
       classCode: m.classCode, attemptId: m.id, attemptNo: m.attemptNo,
-      reason: `${SOS_LABEL[(m.sosLevel ?? 1) as 1 | 2 | 3]} · MT${m.attemptNo} chưa xử lý xong`,
-      action: 'Mở chi tiết Mock để ghi nhận xử lý',
+      reason: `MT${m.attemptNo} đã có tuần ${m.period?.code ?? ''} nhưng chưa có ngày`,
+      action: 'Admin chi nhánh chốt ngày giờ',
     });
   }
-  for (const t of tasks.filter((t) => t.dueState === 'overdue').slice(0, 10)) {
+  for (const t of tasks.filter((t) => t.dueState === 'overdue').slice(0, 8)) {
     priority.push({
       kind: 'overdue_task', taskId: t.id, taskCode: t.code, title: t.title,
-      reason: `Công việc quá hạn ${t.dueDate}`, action: t.assigneeName ?? 'Chưa giao',
+      reason: `Ghi chú hành động quá hạn ${t.dueDate}`, action: t.assigneeName ?? 'Chưa giao',
     });
   }
 
@@ -78,20 +89,21 @@ export function overview(p: Principal, periodId: number, branchId?: number) {
     kpis: {
       week: {
         scheduled: scheduled.length,
-        taken: taken.length,
+        done: done.length,
         cancelled: cancelled.length,
         uniqueStudents,
+        needsDate,
       },
       scoring: {
         missing: missingScores.length,
         overdue: overdueScores.length,
         complete: active.filter((m) => m.complete).length,
       },
-      sos: { ...sosCounts, inWeek: sosInWeek.length },
-      cases: {
-        open: openCases.length,
-        done: active.filter((m) => m.caseId && m.caseStatus === 'done').length,
-      },
+      sos: sosCounts,
+      /** Hai tập rời nhau theo trạng thái case, đếm CASE chứ không phải học viên. */
+      caseNew: caseNew.length,
+      caseHandling: caseHandling.length,
+      caseDone: caseDone.length,
     },
     meeting: board
       ? { notReported: board.totals.notReported, problem: board.totals.problem, watch: board.totals.watch, total: board.totals.total }
@@ -102,7 +114,6 @@ export function overview(p: Principal, periodId: number, branchId?: number) {
       open: tasks.filter((t) => t.progress !== 'done').length,
     },
     priority: priority.slice(0, 15),
-    /** Số liệu hỗ trợ, để trong phần mở rộng. */
     support: supportMetrics(active, inWeek),
   };
 }
@@ -122,18 +133,18 @@ function supportMetrics(active: any[], inWeek: any[]) {
   // Thời gian trả kết quả = ngày có kết quả − ngày thi (không phải số ngày quá hạn).
   const diffs: number[] = [];
   for (const m of inWeek) {
-    const rows = conn.prepare('SELECT test_date, result_date FROM mock_scores WHERE attempt_id = ?').all(m.id) as any[];
+    const rows = conn.prepare('SELECT taken_on, result_date FROM assessment_scores WHERE attempt_id = ?').all(m.id) as any[];
     for (const r of rows) {
-      if (r.test_date && r.result_date) {
-        diffs.push(Math.round((Date.parse(r.result_date) - Date.parse(r.test_date)) / 86400000));
+      if (r.taken_on && r.result_date) {
+        diffs.push(Math.round((Date.parse(r.result_date) - Date.parse(r.taken_on)) / 86400000));
       }
     }
   }
   const interv: number[] = [];
   for (const c of cases) {
-    const a = conn.prepare('SELECT id FROM mock_attempts WHERE id = ?').get(c.attempt_id) as any;
+    const a = conn.prepare('SELECT id FROM assessment_attempts WHERE id = ?').get(c.attempt_id) as any;
     if (!a) continue;
-    const first = conn.prepare('SELECT MIN(test_date) AS d FROM mock_scores WHERE attempt_id = ?').get(c.attempt_id) as any;
+    const first = conn.prepare('SELECT MIN(taken_on) AS d FROM assessment_scores WHERE attempt_id = ?').get(c.attempt_id) as any;
     const dates = [c.talk_student_date, c.talk_parent_date].filter(Boolean).sort();
     if (first?.d && dates.length) {
       interv.push(Math.round((Date.parse(dates[0]) - Date.parse(first.d)) / 86400000));

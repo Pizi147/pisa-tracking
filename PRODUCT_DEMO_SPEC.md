@@ -1,5 +1,10 @@
 # PISA Progress — Product / Web Design
 
+> **Trạng thái:** vòng overhaul **A — nền tảng** đã code và chạy (dữ liệu, quyền lịch, thuật ngữ, hệ màu).
+> Vòng **B** (Học viên class-first, Tiến độ học viên, nhập nhanh) và vòng **C** (lớp thường FOU/BE/ELE,
+> workflow Report/WL, Tiến trình công việc) chưa làm.
+> Sổ quyết định đầy đủ nằm ở `PISA_Design_Master_Reference.md`.
+
 Tài liệu thiết kế của bản demo local sau đợt overhaul lấy **Mock Test và xử lý SOS** làm trọng tâm.
 Ba phần: **A. Current MVP** (đã build), **B. Simplify / Remove** (đã gộp hoặc bỏ),
 **C. Future Design** (ghi lại, chưa build).
@@ -32,6 +37,37 @@ SOS trong chi tiết Mock; báo cáo và công việc trong Họp tuần.
 
 Bộ lọc mặc định là **tuần**. Bộ lọc chi nhánh **chỉ hiện khi tài khoản có nhiều hơn một chi nhánh**.
 Bấm một KPI sẽ mở đúng danh sách bản ghi cấu thành số đó.
+
+## A1b. Lịch MT: TUẦN và NGÀY là hai việc khác nhau
+
+Đây là thay đổi lớn nhất của vòng A.
+
+| Bước | Ai làm | Quyền | Ghi chú |
+|---|---|---|---|
+| Chốt **tuần kế hoạch** (`MT2 → W3 OCT`) | Quản lý | `plan.week` | Chốt sớm, có thể chưa có ngày. Hệ thống **không** tự điền thứ Hai làm ngày mock giả |
+| Chốt **ngày giờ** buổi chính L/R/W | Admin chi nhánh | `schedule.date` | Chỉ trong tuần đã duyệt. Ngày ngoài tuần **bị từ chối** kèm gợi ý đề nghị Quản lý đổi tuần |
+| Chốt **ngày giờ Speaking** | Admin chi nhánh, hoặc GV Speaking của lớp | `schedule.date` / `schedule.speaking` | Speaking khác ngày vẫn là **cùng một lượt MT**, không tách lượt mới |
+| Huỷ lượt | Quản trị hệ thống · Admin CN · Quản lý | `attempt.cancel` | Giữ lý do và lịch sử, không đổi số MT |
+
+- **GVCN chỉ đọc lịch.** Là chủ nhiệm không tự cấp quyền lịch, và cũng không cấp quyền sửa mọi kỹ năng.
+- **Quyền nhập điểm không kèm quyền sửa lịch**: payload lưu điểm không có trường lịch nào, nên giáo viên
+  L/R/W không thể đổi ngày qua đường nhập điểm.
+- Đổi tuần khi ngày cũ nằm ngoài tuần mới: hệ thống **bỏ ngày để xếp lại**, không tự dịch bảy ngày.
+  Điểm và lịch sử giữ nguyên.
+- `Ngày giờ theo lịch` khác `ngày mock thực tế` khác `ngày thi IELTS chính thức` — ba trường riêng.
+
+### Hạn nhập điểm
+
+Mặc định là **thứ Tư của tuần kế tiếp** sau buổi mock **của chính kỹ năng đó** (LRW theo lịch chính,
+Speaking theo lịch Speaking). Quản lý và Admin chi nhánh đặt được **hạn riêng** cho cả lượt, có ghi
+người đặt, thời điểm và lý do, kèm thao tác *Dùng lại hạn mặc định*. Chỉ một hạn có hiệu lực tại một
+thời điểm. **Chưa có lịch thì không có hạn** — hiển thị "Chưa có lịch", không dựng hạn giả. Hết ngày hạn
+mới tính quá hạn.
+
+## A1c. Quy tắc thuật ngữ
+
+Trong toàn hệ thống **không dùng từ "thi" cho Mock Test**. Chỉ dùng `MT1…MTn`, `Mock`, `Mock Test`.
+Từ "thi" dành riêng cho **kỳ thi IELTS chính thức**. Trạng thái một lượt là `Đã lên lịch · Đã xong · Đã huỷ`.
 
 ## A2. Tổ chức, lớp và quyền
 
@@ -71,21 +107,31 @@ Quyền = permission của vai trò
 
 | Permission | Quản trị hệ thống | Admin chi nhánh | Quản lý | Giáo viên |
 |---|:--:|:--:|:--:|:--:|
-| `mock.view` | ✓ | ✓ | ✓ | ✓ (lớp được phân công) |
-| `mock.schedule` | ✓ | ✓ | ✓ | ✓ (chỉ lớp mình chủ nhiệm) |
-| `mock.cancel` | ✓ | ✓ | ✓ | — |
-| `score.edit` | ✓ | ✓ | — | ✓ (chỉ kỹ năng được phân công) |
+| `attempt.view` | ✓ | ✓ | ✓ | ✓ (lớp được phân công) |
+| `plan.week` — chốt tuần | ✓ | — | ✓ | — |
+| `schedule.date` — chốt ngày giờ | ✓ | ✓ | — | — |
+| `schedule.speaking` | ✓ | ✓ | — | ✓ (GV Speaking của lớp) |
+| `attempt.cancel` | ✓ | ✓ | ✓ | — |
+| `attempt.skip_skill` — đánh dấu không mock | ✓ | ✓ | ✓ | — |
+| `deadline.override` | ✓ | ✓ | ✓ | — |
+| `score.edit` — đúng phân công | — | — | — | ✓ (chỉ kỹ năng được giao) |
+| `score.override` — nhập bù | ✓ | ✓ | — | — |
+| `estimate.edit` | — | — | — | ✓ (chỉ kỹ năng được giao) |
 | `sos.edit` | ✓ | ✓ | ✓ | ✓ (lớp được phân công) |
 | `sos.confirm` — **Head** | ✓ | — | ✓ | — |
 | `student.view` / `student.edit` | ✓ | ✓ | ✓ | xem |
-| `meeting.view` / `meeting.edit` | ✓ | ✓ | ✓ | — |
+| `meeting.view` / `meeting.edit` | ✓ | — | ✓ | — |
 | `admin.config` | ✓ | — | — | — |
 
-Hai điểm đã chốt trong bảng trên:
+Những điểm đáng chú ý:
 
-- **Huỷ lịch Mock**: Quản trị hệ thống, Admin chi nhánh và Quản lý. Giáo viên — kể cả GVCN — **không** huỷ được.
-- **Xác nhận Head**: **Head chính là Quản lý**, không tách thêm vai trò riêng. Admin chi nhánh là nhân sự
-  văn phòng nên **không** xác nhận Head. Quản trị hệ thống giữ quyền này với tư cách đường sửa sai cuối cùng.
+- **Chốt tuần và chốt ngày là hai quyền khác nhau.** Quyền tuần không tự kéo theo quyền ngày và ngược lại.
+- **Xác nhận Head**: Head chính là Quản lý, không tách thêm vai trò riêng.
+- **Nhập bù điểm** đi qua `score.override` riêng, ghi nhật ký riêng (`score.override` thay vì `score.edit`),
+  nên siết lại chỉ là một dòng dữ liệu — ai được nhập bù vẫn chờ bạn chốt (O05).
+- **Admin chi nhánh không vào Tiến trình công việc.** Họ theo dõi lịch và điểm qua Mock Test và Học viên.
+- Trang mở đầu theo việc thường làm nhất: Giáo viên → *Điểm tôi cần nhập*; Admin chi nhánh → *Cần xếp lịch*;
+  Quản lý và Quản trị hệ thống → *Tổng quan*. Chỉ đổi lối vào, không đổi quyền.
 
 ## A3. Tuần và kỳ báo cáo
 
@@ -142,12 +188,46 @@ Làm tròn theo kiểu Excel (`.25`/`.75` lên), **không** làm tròn về số
 **Writing tách W1/W2 thành hai kỹ năng nhập điểm riêng** vì có giáo viên chỉ dạy một trong hai task;
 phân công giáo viên theo từng task. Đánh giá vẫn theo **bốn kỹ năng** L/R/W/S.
 
-### Chờ đủ điểm (Q2)
+### Kỹ năng không mock và điều kiện chốt SOS
 
-**SOS chỉ được chốt khi có đủ cả bốn kỹ năng đánh giá.** Học sinh có thể thi Speaking một tuần và
-ba kỹ năng còn lại tuần sau; trong lúc chờ, giao diện hiển thị tiến độ `n/4` và nhãn "Chờ k kỹ năng"
-thay vì kết luận sớm là "Đạt kỳ vọng". Kỳ vọng chỉ áp dụng cho lộ trình **FT LT1/LT2** —
-học sinh không có điểm cam kết thì không có kỳ vọng và không phát sinh SOS.
+**Mặc định mọi kỹ năng đánh giá đều bắt buộc.** Khi thực tế học viên không mock một kỹ năng,
+Quản lý hoặc Admin chi nhánh **đánh dấu "không mock"** cho chính lượt đó; SOS khi ấy tính trên các kỹ
+năng còn lại, giữ nguyên ngưỡng 1/2/≥3, kèm nhãn *Đánh giá trên N kỹ năng*.
+**Không ai đánh dấu thì hệ thống chờ đủ bốn**, không tự suy.
+
+- `Missing` (đáng lẽ phải mock mà chưa có) khác `Không mock` (đã được quyết định là không cần) khác `0`.
+- Đánh dấu sau khi đã có điểm thì **giữ nguyên điểm cũ** và ghi lịch sử; không dùng "không mock" như
+  cách âm thầm xoá quá hạn.
+- Lượt có kỹ năng bị loại thì **không có Overall IELTS** — lượt đó không còn là bài bốn kỹ năng.
+  Band cũ của kỹ năng bị loại vẫn hiện để tra lại.
+- Bỏ Writing là bỏ **cả W1 và W2**; chưa cho bỏ riêng một task.
+
+### Sáu trạng thái của một ô kỹ năng
+
+`Không mock` · `Chờ xếp lịch` · `Sắp tới` · `Chưa ghi nhận` · `Đã mock, chưa nhập điểm` · `Đã có điểm`.
+
+**Ngày lịch trôi qua KHÔNG chứng minh đã mock**: một kỹ năng đến hạn mà chưa có ghi nhận nào thì là
+*Chưa ghi nhận*, còn *Đã mock, chưa nhập điểm* chỉ khi có người ghi ngày mock thực tế.
+
+### Lộ trình và số lần MT
+
+Mỗi **lộ trình** (`learning_cycles`) có target và ngày thi IELTS riêng. Học tiếp hoặc học lại **trong cùng
+lộ trình** thì số MT **tăng tiếp** (MT6, MT7…) và target giữ nguyên, nên kỳ vọng vẫn bằng target.
+Sang **lộ trình mới** (LT1 → LT2) thì **đánh số lại từ MT1** vì đã có target mới.
+Định danh là `học viên + lộ trình + lần thứ mấy`.
+
+Kỳ vọng chỉ áp dụng cho lộ trình FT LT1/LT2. Lộ trình chưa có target thì vẫn nhập điểm và tính hoàn thành
+bình thường, chỉ là chưa kết luận được SOS — không treo trạng thái nhập điểm vì thiếu target.
+
+### Teacher Estimate
+
+Ước lượng của giáo viên là **dữ liệu riêng**, không bao giờ ghi đè điểm Mock. Mỗi lần cập nhật ghi thêm một
+dòng nên có sẵn lịch sử. Giáo viên chỉ ước lượng được kỹ năng mình phụ trách; W1/W2 giữ riêng theo task.
+
+So sánh *ước lượng mới nhất ↔ điểm Mock mới nhất của chính kỹ năng đó* đặt ở Hồ sơ học viên, luôn kèm
+**ngày của cả hai** và **nguồn** của từng ô điểm. Điểm từng kỹ năng có thể thuộc các lượt khác nhau nên
+không được ghép thành một bài Mock hay một Overall chung. Chênh lệch chỉ là khoảng cách hai con số,
+không tự nó chứng minh tiến bộ.
 
 ## A5. Chi tiết Mock và xử lý SOS
 
@@ -263,17 +343,24 @@ Không có filter riêng cho từng loại sự kiện. Nhấp sự kiện mở 
 ## A9. Dữ liệu
 
 Bảng chính: `branches` · `reporting_units` · `classes` · `class_skills` · `users` · `roles` ·
-`permissions` · `role_permissions` · `user_roles` · `teacher_assignments` · `students` · `enrollments` ·
-`journey_events` · `report_periods` · `mock_attempts` · `mock_schedule_history` · `mock_scores` ·
-`sos_cases` · `sos_case_history` · `unit_reports` · `tasks` · `task_history` · `notifications` ·
-`audit_logs` · `demo_config` · `demo_sessions`.
+`permissions` · `role_permissions` · `user_roles` · `teacher_assignments` · `students` ·
+**`learning_cycles`** · `enrollments` · `journey_events` · `report_periods` ·
+**`assessment_attempts`** · **`attempt_schedule_history`** · **`attempt_skill_skips`** ·
+**`assessment_scores`** · **`teacher_estimates`** · `sos_cases` · `sos_case_history` ·
+`unit_reports` · `tasks` · `task_history` · `notifications` · `audit_logs` · `demo_config` · `demo_sessions`.
+
+Nâng cấp database đang có: `npm run migrate` (giữ nguyên dữ liệu, chạy lại lần hai không làm gì thêm).
+`npm run seed` là lệnh **xoá và tạo lại**, chỉ chạy khi bạn chủ động gọi.
 
 Quyết định schema đáng chú ý:
 
-- **Không có cột MT1…MT5 cố định** trong bảng học sinh — mỗi lần Mock là một dòng `mock_attempts`.
-- `mock_scores` là **một dòng cho mỗi kỹ năng**, có `test_date` và `result_date` **riêng của kỹ năng đó**.
-- `mock_attempts.committed_score_at_test` chốt căn cứ kỳ vọng tại lần thi; sửa hồ sơ hiện tại
-  **không viết lại lịch sử**.
+- **Không có cột MT1…MT5 cố định** — mỗi lượt là một dòng `assessment_attempts`, khoá `UNIQUE(cycle_id, attempt_no)`.
+- Target và ngày thi IELTS thuộc **`learning_cycles`**, không phải hồ sơ học viên.
+- `assessment_scores` là **một dòng cho mỗi kỹ năng**, có `taken_on` (ngày mock thực tế) và `result_date` riêng.
+  Có dòng với `taken_on` mà chưa có band nghĩa là **đã mock, chưa nhập điểm**.
+- `attempt_skill_skips` chỉ ghi **ngoại lệ**; không có dòng nào nghĩa là phải đủ bốn kỹ năng.
+- `assessment_attempts.target_at_attempt` chốt căn cứ kỳ vọng tại lượt đó; sửa lộ trình **không viết lại lịch sử**.
+- `teacher_estimates` chỉ thêm dòng, không sửa — lịch sử có sẵn.
 - `unit_reports.status = NULL` nghĩa là **chưa báo cáo**, khác hẳn `'ok'`.
 - `report_periods.week_start` là khoá thật; `code` chỉ là nhãn.
 - `sos_cases` dùng **cột cố định** phản chiếu đúng các ô của `Nhap diem`, không phải bảng key–value tự do.
@@ -308,6 +395,9 @@ Các service đã xoá khỏi mã nguồn: `weekly` · `classes` · `tasks` (b�
 
 Ghi lại để bàn sau. **Chưa tạo menu trống, route mẫu hay schema lớn cho các ý này.**
 
+- **Lớp thường FOU/BE/ELE** dùng chung engine assessment với scoring policy riêng (score/total, ≥60% đạt) — vòng C.
+- **Học viên class-first**, Tiến độ học viên, nhập nhanh paste/Excel — vòng B.
+- **Workflow Report/WL** và Tiến trình công việc sinh từ dữ liệu — vòng C.
 - **Tách Head khỏi Quản lý** nếu sau này trung tâm phân thêm cấp duyệt. Hiện tại Head và Quản lý
   là một, `sos.confirm` gắn thẳng vào vai trò Quản lý.
 - **Consultant / Consultant Manager có tài khoản riêng**, phối hợp CS / CX / Vận hành trong hệ thống;

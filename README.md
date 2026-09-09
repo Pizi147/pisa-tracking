@@ -45,8 +45,8 @@ npm run seed
 ```
 
 Lệnh này tạo lại toàn bộ dữ liệu giả: **5 chi nhánh** (Monbay, Bãi Cháy, Cẩm Phả, Hải Dương, Uông Bí),
-**10 lớp**, **43 tài khoản**, khoảng **71 học viên**, gần **170 lượt Mock Test** kèm điểm từng kỹ năng,
-các case SOS ở đủ mức tiến độ, báo cáo họp tuần và công việc.
+**10 lớp**, **43 tài khoản**, khoảng **71 học viên**, **57 lộ trình**, hơn **170 lượt Mock Test** kèm điểm
+từng kỹ năng và ước lượng giáo viên, các case SOS ở đủ mức tiến độ, báo cáo họp tuần và công việc.
 
 Màn hình sẽ in ra bảng tóm tắt số lượng bản ghi đã tạo.
 
@@ -89,14 +89,19 @@ Gợi ý tài khoản nên dùng đầu tiên:
 | Muốn xem gì | Chọn tài khoản |
 |---|---|
 | Toàn cảnh cả hệ thống + phần quản trị | **Đặng Quang Nhi** — Quản trị hệ thống |
-| Toàn cảnh một chi nhánh, họp tuần, xử lý SOS | **Đặng Quang Vy** — Quản lý Monbay |
+| Chốt **tuần** kế hoạch MT, họp tuần, xử lý SOS | **Đặng Quang Vy** — Quản lý Monbay |
 | Quản lý thứ hai cùng chi nhánh (thử nhiều quản lý) | **Trần Quang Nam** — Quản lý Monbay |
 | Màn hình nhập điểm của giáo viên bộ môn | **Trần Hải Đạt** — dạy Listening + Reading lớp MB-FT 101 |
 | Giáo viên chỉ dạy Writing Task 1 | **Hoàng Khánh Huy** — W1 lớp MB-FT 101 |
 | Góc nhìn giáo viên chủ nhiệm | **Đinh Bảo Vy** — GVCN lớp MB-FT 101 |
-| Nhân sự văn phòng một chi nhánh | **Đặng Ngọc Phúc** — Admin chi nhánh Monbay |
+| Chốt **ngày giờ** trong tuần đã duyệt | **Đặng Ngọc Phúc** — Admin chi nhánh Monbay |
 
-Giáo viên đăng nhập sẽ vào thẳng danh sách **Mock cần nhập điểm** của mình; các vai trò khác vào **Tổng quan**.
+Mỗi vai trò mở vào đúng việc thường làm nhất: Giáo viên → **Điểm tôi cần nhập**;
+Admin chi nhánh → **Cần xếp lịch**; Quản lý và Quản trị hệ thống → **Tổng quan**.
+Đây chỉ là lối vào, không đổi quyền.
+
+> **Lịch MT tách làm hai bước:** Quản lý chốt **tuần** trước (`MT2 → W3 OCT`), Admin chi nhánh chốt
+> **ngày giờ** khi tới gần tuần đó (`14/10, 18:00`). Speaking có thể khác ngày nhưng vẫn là cùng một lượt MT.
 
 Muốn đổi tài khoản bất cứ lúc nào: bấm nút **"Đổi tài khoản demo"** ở thanh trên cùng.
 
@@ -137,7 +142,8 @@ Bạn có thể chạy ngay cả khi ứng dụng đang chạy — giao diện s
 | Lệnh | Tác dụng |
 |---|---|
 | `npm run dev` | Chạy giao diện + máy chủ dữ liệu |
-| `npm run seed` | Xoá và tạo lại dữ liệu mẫu |
+| `npm run seed` | **Xoá** và tạo lại dữ liệu mẫu |
+| `npm run migrate` | Nâng cấp database đang có lên schema mới, **không xoá dữ liệu** |
 | `npm test` | Chạy các kiểm tra tự động (dùng database riêng, không đụng dữ liệu bạn đang thử) |
 | `npm run build:server` | Biên dịch lại mã máy chủ (thường không cần gọi trực tiếp) |
 | `npm run typecheck` | Kiểm tra lỗi kiểu dữ liệu trong mã nguồn |
@@ -200,6 +206,7 @@ Hệ thống **không bao giờ** tự sinh lỗi ngẫu nhiên khi bạn dùng 
 
 Tài liệu liên quan:
 
+- `PISA_Design_Master_Reference.md` — sổ quyết định: trạng thái từng quyết định, cái gì đã chốt, cái gì còn chờ
 - `PRODUCT_DEMO_SPEC.md` — Product / Web Design: **A. Current MVP · B. Simplify–Remove · C. Future Design**
 - `DEMO_ASSUMPTIONS.md` — các câu đã chốt (Q1–Q4) và những điểm còn cần bạn xác nhận
 - `DEMO_SCENARIOS.md` — **ba luồng chính** để bấm thử, bảng kiểm tra quyền, các tình huống cài sẵn

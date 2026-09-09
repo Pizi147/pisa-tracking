@@ -7,23 +7,30 @@ import { useToast } from '../components/Toast.tsx';
 import { Card, Empty, ErrorState, Pill, SectionNote, Skeleton } from '../components/ui.tsx';
 import { WeekBranchFilter, usePeriods, type Branch } from '../components/Filters.tsx';
 import { Modal } from '../components/Drawer.tsx';
-import { fmtBand, fmtDay, mockStatusLabel, skillShort, sosLabel, sosTone } from '../lib/format.ts';
+import {
+  attemptStatusLabel, attemptStatusTone, fmtBand, fmtSlot, skillShort, sosLabel, sosTone,
+} from '../lib/format.ts';
 import { PERMISSIONS } from '@shared/domain.ts';
 
 type Row = {
   id: number; studentId: number; studentName: string; studentCode: string;
   classId: number | null; classCode: string | null; branchCode: string | null;
-  attemptNo: number; plannedDate: string; firstTestDate: string | null;
-  week: { code: string; range: string };
-  status: string; expectation: number | null;
-  overall: number | null; completed: number; complete: boolean; sosLevel: number | null;
-  enteredSkills: number; applicableSkills: number; overdueSkills: number;
+  cycleSeq: number; route: string | null;
+  attemptNo: number;
+  period: { id: number; code: string; weekStart: string; weekEnd: string } | null;
+  lrwScheduledAt: string | null; speakingScheduledAt: string | null; needsDate: boolean;
+  status: string; expectation: number | null; target: number | null;
+  overall: number | null; sosLevel: number | null; scopeNote: string | null;
+  required: string[]; skipped: string[];
+  scoredRequired: number; requiredCount: number; complete: boolean; evaluable: boolean;
+  overdueSkills: number;
   myPendingSkills: string[]; caseStatus: string | null; caseId: number | null;
 };
 
 const NEEDS = [
   { key: '', label: 'Tất cả' },
   { key: 'my_scores', label: 'Điểm tôi cần nhập' },
+  { key: 'needs_date', label: 'Cần xếp lịch' },
   { key: 'missing_scores', label: 'Thiếu điểm' },
   { key: 'overdue', label: 'Quá hạn' },
   { key: 'sos_open', label: 'Case SOS chưa xong' },
@@ -56,9 +63,8 @@ export default function MocksPage() {
   const classes = useApi<any[]>('/ref/classes');
   const branches = useApi<Branch[]>('/ref/branches');
   // Giáo viên chỉ dời/lập lịch được ở lớp mình chủ nhiệm — không bày nút cho GVBM thuần.
-  const teacherOnly = (session?.roles ?? []).length === 1 && session?.roles?.[0] === 'teacher';
-  const canSchedule = can(PERMISSIONS.MOCK_SCHEDULE)
-    && (!teacherOnly || (session?.assignments ?? []).some((a) => a.isCore));
+  // Chỉ Quản lý lập được kế hoạch tuần; Admin chi nhánh chốt ngày ở chi tiết từng lượt.
+  const canPlan = can(PERMISSIONS.PLAN_WEEK);
 
   const qs = useMemo(() => {
     const p = new URLSearchParams();
@@ -67,7 +73,7 @@ export default function MocksPage() {
     if (branchId) p.set('branchId', String(branchId));
     if (classId) p.set('classId', String(classId));
     if (q.trim()) p.set('q', q.trim());
-    return `/mocks?${p.toString()}`;
+    return `/attempts?${p.toString()}`;
   }, [byWeek, periodId, need, branchId, classId, q]);
 
   const { data, loading, error, reload } = useApi<{ rows: Row[]; scopeEmpty: boolean }>(qs);
@@ -99,8 +105,8 @@ export default function MocksPage() {
               }}
             />
           )}
-          {canSchedule && (
-            <button className="btn btn-primary" onClick={() => setCreateOpen(true)}>Lên lịch Mock</button>
+          {canPlan && (
+            <button className="btn btn-primary" onClick={() => setCreateOpen(true)}>Lên kế hoạch MT</button>
           )}
         </div>
       </div>
@@ -164,7 +170,8 @@ export default function MocksPage() {
                     <th className="th">Học viên</th>
                     <th className="th">Lớp</th>
                     <th className="th">MT</th>
-                    <th className="th">Tuần / ngày</th>
+                    <th className="th">Tuần kế hoạch</th>
+                    <th className="th">Ngày giờ</th>
                     <th className="th">Trạng thái</th>
                     <th className="th">Tiến độ điểm</th>
                     <th className="th">Kỳ vọng</th>
@@ -181,24 +188,37 @@ export default function MocksPage() {
                         <div className="text-[11px] text-slate-500">{r.studentCode}</div>
                       </td>
                       <td className="td text-slate-300 whitespace-nowrap">{r.classCode ?? '—'}</td>
-                      <td className="td tabular-nums">MT{r.attemptNo}</td>
+                      <td className="td tabular-nums whitespace-nowrap">
+                        MT{r.attemptNo}
+                        {r.route && <div className="text-[11px] text-slate-500">{r.route}</div>}
+                      </td>
                       <td className="td whitespace-nowrap">
-                        <div className="text-slate-200">{r.week.code}</div>
-                        <div className="text-[11px] text-slate-500">
-                          {r.firstTestDate ? `Thi ${fmtDay(r.firstTestDate)}` : `Dự kiến ${fmtDay(r.plannedDate)}`}
-                        </div>
+                        {r.period
+                          ? <span className="text-slate-200">{r.period.code}</span>
+                          : <Pill tone="muted">Chưa có tuần</Pill>}
+                      </td>
+                      <td className="td whitespace-nowrap text-xs">
+                        {r.needsDate
+                          ? <Pill tone="warn">Chưa xếp ngày</Pill>
+                          : (
+                            <>
+                              <div className="text-slate-300">{fmtSlot(r.lrwScheduledAt)}</div>
+                              {r.speakingScheduledAt && r.speakingScheduledAt.slice(0, 10) !== (r.lrwScheduledAt ?? '').slice(0, 10) && (
+                                <div className="text-slate-500">S {fmtSlot(r.speakingScheduledAt)}</div>
+                              )}
+                            </>
+                          )}
                       </td>
                       <td className="td">
-                        <Pill tone={r.status === 'cancelled' ? 'muted' : r.status === 'completed' ? 'info' : 'neutral'}>
-                          {mockStatusLabel(r.status)}
-                        </Pill>
+                        <Pill tone={attemptStatusTone(r.status)}>{attemptStatusLabel(r.status)}</Pill>
                       </td>
                       <td className="td whitespace-nowrap">
                         {r.status === 'cancelled' ? (
                           <span className="text-slate-600 text-xs">—</span>
                         ) : (
-                          <span className="tabular-nums text-slate-200">
-                            {r.enteredSkills}/{r.applicableSkills}
+                          <span className="tabular-nums text-slate-200 inline-flex items-center gap-1">
+                            {r.scoredRequired}/{r.requiredCount}
+                            {r.skipped.length > 0 && <Pill tone="muted">bỏ {r.skipped.length}</Pill>}
                             {r.overdueSkills > 0 && <Pill tone="danger">Quá hạn {r.overdueSkills}</Pill>}
                           </span>
                         )}
@@ -208,14 +228,21 @@ export default function MocksPage() {
                       <td className="td">
                         {r.status === 'cancelled'
                           ? <span className="text-slate-600 text-xs">—</span>
-                          : <Pill tone={sosTone(r.sosLevel)}>{r.complete ? sosLabel(r.sosLevel) : `Chờ ${4 - r.completed} kỹ năng`}</Pill>}
+                          : (
+                            <span className="inline-flex flex-col gap-0.5">
+                              <Pill tone={sosTone(r.sosLevel)}>
+                                {r.evaluable ? sosLabel(r.sosLevel) : `Chờ ${r.requiredCount - r.scoredRequired} kỹ năng`}
+                              </Pill>
+                              {r.scopeNote && <span className="text-[10px] text-slate-500">{r.scopeNote}</span>}
+                            </span>
+                          )}
                       </td>
                       <td className="td text-xs text-slate-400">
                         {r.myPendingSkills.length > 0 && (
-                          <span className="text-teal-300">Nhập {r.myPendingSkills.map(skillShort).join(', ')}</span>
+                          <span style={{ color: 'var(--accent)' }}>Nhập {r.myPendingSkills.map(skillShort).join(', ')}</span>
                         )}
-                        {r.myPendingSkills.length === 0 && r.caseId && r.caseStatus !== 'done' && 'Ghi nhận xử lý SOS'}
-                        {r.myPendingSkills.length === 0 && !r.caseId && r.status === 'planned' && 'Chờ đến ngày thi'}
+                        {r.myPendingSkills.length === 0 && r.needsDate && 'Chờ chốt ngày giờ'}
+                        {r.myPendingSkills.length === 0 && !r.needsDate && r.caseId && r.caseStatus !== 'done' && 'Ghi nhận xử lý SOS'}
                       </td>
                     </tr>
                   ))}
@@ -226,11 +253,15 @@ export default function MocksPage() {
         </Card>
       )}
 
-      <CreateMockModal
+      <PlanAttemptModal
         open={createOpen}
         onClose={() => setCreateOpen(false)}
         classes={classes.data ?? []}
-        onDone={(id) => { invalidate('/mocks'); invalidate('/overview'); toast.push('ok', 'Đã lên lịch Mock'); navigate(`/mock-test/${id}`); }}
+        onDone={(id) => {
+          invalidate('/attempts'); invalidate('/overview');
+          toast.push('ok', 'Đã chốt tuần kế hoạch. Admin chi nhánh sẽ chốt ngày giờ sau.');
+          navigate(`/mock-test/${id}`);
+        }}
       />
       {branches.data && branches.data.length > 1 && (
         <SectionNote>Bạn được cấp {branches.data.length} chi nhánh nên bộ lọc chi nhánh được bật.</SectionNote>
@@ -239,14 +270,18 @@ export default function MocksPage() {
   );
 }
 
-function CreateMockModal({ open, onClose, classes, onDone }: {
+/**
+ * Lên kế hoạch MT = chốt TUẦN. Ngày giờ để Admin chi nhánh chốt sau, khi gần tới tuần đó,
+ * nên form này cố ý KHÔNG có ô ngày.
+ */
+function PlanAttemptModal({ open, onClose, classes, onDone }: {
   open: boolean; onClose: () => void; classes: any[]; onDone: (id: number) => void;
 }) {
   const toast = useToast();
+  const periods = usePeriods();
   const [classId, setClassId] = useState<number | null>(null);
   const [studentId, setStudentId] = useState<number | null>(null);
-  const [attemptNo, setAttemptNo] = useState(1);
-  const [date, setDate] = useState('');
+  const [periodId, setPeriodId] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const students = useApi<{ rows: any[] }>(open && classId ? `/students?classId=${classId}` : null);
 
@@ -254,7 +289,7 @@ function CreateMockModal({ open, onClose, classes, onDone }: {
     if (busy) return;                       // chặn bấm hai lần tạo trùng bản ghi
     setBusy(true);
     try {
-      const r = await api.post<any>('/mocks', { studentId, classId, attemptNo, plannedDate: date });
+      const r = await api.post<any>('/attempts', { studentId, classId, periodId });
       onDone(r.id);
       onClose();
     } catch (e: any) {
@@ -265,11 +300,11 @@ function CreateMockModal({ open, onClose, classes, onDone }: {
   };
 
   return (
-    <Modal open={open} onClose={onClose} title="Lên lịch Mock Test"
+    <Modal open={open} onClose={onClose} title="Lên kế hoạch Mock Test"
       footer={<>
         <button className="btn" onClick={onClose} disabled={busy}>Huỷ</button>
-        <button className="btn btn-primary" onClick={submit} disabled={busy || !studentId || !date}>
-          {busy ? 'Đang lưu…' : 'Lưu lịch'}
+        <button className="btn btn-primary" onClick={submit} disabled={busy || !studentId || !periodId}>
+          {busy ? 'Đang lưu…' : 'Chốt tuần'}
         </button>
       </>}>
       <div className="space-y-3">
@@ -287,21 +322,19 @@ function CreateMockModal({ open, onClose, classes, onDone }: {
             {(students.data?.rows ?? []).map((s) => <option key={s.id} value={s.id}>{s.fullName} · {s.studentCode}</option>)}
           </select>
         </label>
-        <div className="grid grid-cols-2 gap-3">
-          <label className="block">
-            <span className="label">Lần Mock</span>
-            <select className="field" value={attemptNo} onChange={(e) => setAttemptNo(Number(e.target.value))}>
-              {[1, 2, 3, 4, 5].map((n) => <option key={n} value={n}>MT{n}</option>)}
-            </select>
-          </label>
-          <label className="block">
-            <span className="label">Ngày dự kiến</span>
-            <input type="date" className="field" value={date} onChange={(e) => setDate(e.target.value)} />
-          </label>
-        </div>
+        <label className="block">
+          <span className="label">Tuần kế hoạch</span>
+          <select className="field" value={periodId ?? ''} onChange={(e) => setPeriodId(Number(e.target.value) || null)}>
+            <option value="">Chọn tuần…</option>
+            {(periods.data ?? []).map((p) => <option key={p.id} value={p.id}>{p.code} · {p.range}</option>)}
+          </select>
+        </label>
         <SectionNote>
-          Tuần học FT chỉ dùng để gợi ý (MT1 tuần 6, MT2 tuần 12, MT3 tuần 16, MT4 tuần 20, MT5 tuần 24).
-          Ngày cụ thể vẫn do quản lý xác nhận.
+          Số lần MT tự tăng tiếp trong lộ trình hiện tại của học viên. Mốc tuần HỌC của FT
+          (MT1 tuần 6, MT2 tuần 12, MT3 tuần 16, MT4 tuần 20, MT5 tuần 24) chỉ để gợi ý —
+          tuần học và tuần lịch là hai khái niệm khác nhau.
+          <br />
+          Ngày giờ cụ thể do Admin chi nhánh chốt sau, khi tới gần tuần này.
         </SectionNote>
       </div>
     </Modal>
