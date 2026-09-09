@@ -693,15 +693,19 @@ check('Mở case ngay khi kết luận được; mức tăng dần không nhân 
   assert(after.status === 'done', 'Đủ điểm mọi kỹ năng bắt buộc phải chuyển sang Đã xong');
   assert(after.sosCase, 'Chưa mở case SOS');
 
-  sos.updateCase(P.cpManager, after.sosCase.id, {
-    talk_student_person: 'GVCN Thu Trang', talk_student_date: '2026-11-12', status: 'in_progress',
+  // Ghi một việc đã làm, rồi sửa điểm — việc đã làm KHÔNG được biến mất theo.
+  cases.recordIntervention(P.cpManager, after.sosCase.id, {
+    kind: 'talk_student', description: 'GVCN trao đổi với em sau lần này',
+    performerSelf: true, status: 'completed', completedDate: '2026-11-12',
   });
   attempts.saveScore(t('writing1'), attempt.id, 'writing1', { criteria: [exp, exp, exp, exp] });
   attempts.saveScore(t('writing2'), attempt.id, 'writing2', { criteria: [exp, exp, exp, exp] });
   const reread = attempts.attemptDetail(P.cpManager, attempt.id);
   assert(reread.result.sosLevel === 2, `Sau khi sửa Writing phải còn SOS 2, đang là ${reread.result.sosLevel}`);
   assert(reread.sosCase.id === after.sosCase.id, 'Sửa điểm đã nhân đôi case');
-  assert(reread.sosCase.talk_student_date === '2026-11-12', 'Sửa điểm đã xoá ghi nhận xử lý');
+  const kept = cases.caseDetail(P.cpManager, after.sosCase.id) as any;
+  assert(kept.interventions.some((i: any) => i.completedDate === '2026-11-12'),
+    'Sửa điểm đã xoá mất việc đã làm để hỗ trợ');
   assert(reread.caseHistory.length > 0, 'Thiếu lịch sử thay đổi của case');
 });
 check('Đánh dấu không mock sau khi đã có điểm thì giữ điểm và tính lại kết quả', () => {
@@ -1815,6 +1819,44 @@ check('Hành trình ghi ngày SỰ VIỆC XẢY RA, và lưu lại nhiều lần
     .get(c.id) as any).n;
   assert(n === 1, `Gửi lại tạo thêm sự kiện hành trình (${n} sự kiện)`);
   void before;
+});
+
+check('Case sinh từ điểm ghi thẳng học viên và lộ trình, không chỉ dựa vào bài', () => {
+  /*
+   * Hồ sơ học viên tra case theo `student_id`. Case chỉ có `attempt_id` thì hồ sơ không
+   * thấy chính vấn đề vừa sinh ra từ điểm của em đó — lỗi im lặng, không ai báo gì.
+   */
+  const orphan = conn
+    .prepare(`SELECT COUNT(*) n FROM sos_cases WHERE student_id IS NULL`)
+    .get() as any;
+  assert(orphan.n === 0, `${orphan.n} case không gắn học viên`);
+
+  // Nhập điểm mới cũng phải sinh ra case đủ hai cột đó.
+  const a = conn
+    .prepare(
+      `SELECT a.* FROM assessment_attempts a
+        WHERE a.status = 'planned' AND a.target_at_attempt IS NOT NULL
+          AND NOT EXISTS (SELECT 1 FROM sos_cases sc WHERE sc.attempt_id = a.id)
+          AND NOT EXISTS (SELECT 1 FROM assessment_scores s WHERE s.attempt_id = a.id)
+        ORDER BY a.id LIMIT 1`,
+    )
+    .get() as any;
+  assert(a, 'Dữ liệu mẫu thiếu một lượt chưa chấm để thử');
+  // Một kỹ năng dưới kỳ vọng là đủ để mở case ngay.
+  attempts.saveScore(P.admin, a.id, 'listening', { rawScore: 10 });
+  const made = conn.prepare('SELECT * FROM sos_cases WHERE attempt_id = ?').get(a.id) as any;
+  assert(made, 'Nhập điểm dưới kỳ vọng mà không mở vấn đề nào');
+  assert(made.student_id === a.student_id, 'Case mới không ghi học viên');
+  assert(made.cycle_id === a.cycle_id, 'Case mới không ghi lộ trình');
+  assert(made.origin_kind === 'mock', 'Case sinh từ điểm phải mang nguồn "mock"');
+  // Ngày phát hiện là NGÀY LÀM BÀI, không phải ngày nhập điểm.
+  if (a.lrw_scheduled_at) {
+    assert(made.detected_at === a.lrw_scheduled_at.slice(0, 10),
+      `Ngày phát hiện ${made.detected_at} khác ngày làm bài ${a.lrw_scheduled_at.slice(0, 10)}`);
+  }
+  // Và hồ sơ học viên phải thấy nó.
+  const prof = profile.studentProfile(P.admin, a.student_id) as any;
+  assert(prof.cases.some((c: any) => c.id === made.id), 'Hồ sơ học viên không thấy vấn đề vừa sinh ra');
 });
 
 check('Bằng chứng phải thuộc đúng học viên của case', () => {

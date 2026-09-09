@@ -375,8 +375,15 @@ export function refreshRegularOutcome(p: Principal, attemptId: number) {
 
   if (!existing) {
     conn
-      .prepare(`INSERT INTO sos_cases (attempt_id, sos_level, status, created_at) VALUES (?,?, 'open', ?)`)
-      .run(attemptId, r.sosLevel, nowIso());
+      .prepare(
+        // Ghi thẳng học viên và khoá học: hồ sơ học viên tra theo `student_id`, và lớp
+        // thường dùng CHUNG bảng case với lớp FT nên phải điền đủ như nhau.
+        `INSERT INTO sos_cases (attempt_id, student_id, cycle_id, origin_kind, detected_at,
+                                sos_level, status, created_at)
+         VALUES (?,?,?, 'mock', ?,?, 'open', ?)`,
+      )
+      .run(attemptId, a.student_id, a.cycle_id,
+           (a.lrw_scheduled_at ?? '').slice(0, 10) || demoToday(), r.sosLevel, nowIso());
   } else if (existing.sos_level !== r.sosLevel) {
     conn.prepare('UPDATE sos_cases SET sos_level = ?, updated_at = ? WHERE id = ?')
       .run(r.sosLevel, nowIso(), existing.id);

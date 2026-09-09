@@ -15,7 +15,6 @@ import * as checkinSvc from '../services/checkins.ts';
 import * as profileSvc from '../services/profile.ts';
 import * as classSvc from '../services/classes.ts';
 import * as intakeSvc from '../services/intake.ts';
-import * as sosSvc from '../services/sos.ts';
 import * as studentSvc from '../services/students.ts';
 import * as meetingSvc from '../services/meeting.ts';
 import * as dashboardSvc from '../services/dashboard.ts';
@@ -548,13 +547,6 @@ api.patch('/cases/:id/disposition', requireAuth, wrap((req) => {
 api.get('/ref/issue-taxonomy', requireAuth, wrap(() => ({
   branches: ISSUE_TAXONOMY, contexts: ISSUE_CONTEXTS,
 })));
-
-// ============================================================ Xử lý sau Mock (SOS)
-
-api.patch('/sos-cases/:id', requireAuth, wrap((req) => {
-  maybeSimulateSaveFailure();
-  return sosSvc.updateCase(principalOf(req), pInt(req, 'id'), req.body ?? {});
-}));
 
 // ============================================================ Học viên
 

@@ -9,12 +9,11 @@ import {
   CriteriaButton, DeadlinePill, RawScoreInput, TakenOnInput, useSaveScore, type Cell,
 } from '../components/ScoreEntry.tsx';
 import {
-  attemptStatusLabel, attemptStatusTone, caseStatusLabel, caseTone, fmtBand, fmtDate, fmtDateTime,
+  attemptStatusLabel, attemptStatusTone, fmtBand, fmtDate, fmtDateTime,
   fmtSlot, progressLabel, progressTone, skillLabel, sosLabel, sosTone,
 } from '../lib/format.ts';
-import {
-  ACADEMIC_SUPPORTS, ASSESSED_SKILLS, ASSESSED_SKILL_LABEL, CASE_STATUSES, MEETING_KINDS, OPS_POLICIES,
-} from '@shared/domain.ts';
+import { CasePanel } from '../components/CasePanel.tsx';
+import { ASSESSED_SKILLS, ASSESSED_SKILL_LABEL } from '@shared/domain.ts';
 import { usePeriods } from '../components/Filters.tsx';
 
 type Detail = {
@@ -255,14 +254,42 @@ export default function MockDetailPage() {
         )}
       </Card>
 
-      {/* 3–4. SOS và ghi nhận xử lý */}
-      {d.result.evaluable && (d.result.sosLevel ?? 0) > 0 && (
-        <CaseSection detail={d} onSaved={reload} />
-      )}
-      {d.result.evaluable && d.result.sosLevel === 0 && (
+      {/*
+        3–4. VẤN ĐỀ HỌC VỤ.
+        Hiện bất cứ khi nào bài này ĐANG CÓ một vấn đề — kể cả khi điểm sau đó đã sửa lên
+        thành đạt. Giấu nó đi thì mọi việc đã làm để hỗ trợ em cũng biến mất khỏi màn hình,
+        trong khi đó chính là phần đáng đọc nhất.
+      */}
+      {d.sosCase ? (
+        <Card title="Vấn đề học vụ" action={
+          <Link className="btn btn-sm" to={`/hoc-thuat/case/${d.sosCase.id}`}>Mở trang riêng</Link>
+        }>
+          {d.result.evaluable && d.result.sosLevel === 0 && (
+            <p className="text-xs text-slate-400 mt-0 mb-3">
+              Điểm hiện tại đã đạt kỳ vọng ở mọi kỹ năng. Vấn đề này vẫn còn đây để tra lại đã
+              hỗ trợ những gì — người có quyền quyết định có kết thúc theo dõi hay không.
+            </p>
+          )}
+          <CasePanel caseId={d.sosCase.id} compact />
+          {d.caseSteps.length > 0 && <Playbook steps={d.caseSteps} />}
+          {d.tasks.length > 0 && (
+            <div className="border-t pt-3 mt-3" style={{ borderColor: 'var(--line)' }}>
+              <div className="label">Công việc gắn với vấn đề này</div>
+              <ul className="text-xs space-y-1 list-none p-0 m-0">
+                {d.tasks.map((t) => (
+                  <li key={t.id} className="text-slate-300">
+                    <Link className="link" to="/tien-trinh">{t.code}</Link> · {t.title}
+                    <span className="text-slate-500"> · {t.assignee_name ?? 'Chưa giao'} · hạn {fmtDate(t.due_date)}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </Card>
+      ) : d.result.evaluable && d.result.sosLevel === 0 ? (
         <Card title="Kết quả"><Empty title={`Đạt kỳ vọng ở cả ${d.result.required.length} kỹ năng được đánh giá`}
-          hint="Không phát sinh case cần xử lý." /></Card>
-      )}
+          hint="Không phát sinh vấn đề nào cần theo dõi." /></Card>
+      ) : null}
 
       {/* 5. Lịch sử */}
       <Card title="Lịch sử thay đổi"
@@ -319,172 +346,35 @@ function Info({ label, children }: { label: string; children: React.ReactNode })
   );
 }
 
-// ---------------------------------------------------------------- SOS
+// ---------------------------------------------------------------- vấn đề học vụ
 
-const STEP_TONE: Record<string, any> = { done: 'ok', scheduled: 'info', named_only: 'warn', empty: 'muted' };
-const STEP_STATE: Record<string, string> = {
-  done: 'Đã thực hiện', scheduled: 'Đã xếp lịch', named_only: 'Có tên, chưa có ngày', empty: 'Chưa ghi nhận',
-};
-
-function CaseSection({ detail, onSaved }: { detail: Detail; onSaved: () => void }) {
-  const toast = useToast();
-  const c = detail.sosCase;
-  const [busy, setBusy] = useState(false);
-  const [draft, setDraft] = useState<Record<string, any>>({});
-  const editable = detail.viewer.canEditSos;
-
-  const value = (k: string) => (k in draft ? draft[k] : c?.[k] ?? '');
-  const set = (k: string, v: any) => setDraft((d) => ({ ...d, [k]: v }));
-  const dirty = Object.keys(draft).length > 0;
-
-  const submit = async () => {
-    if (!c || busy) return;
-    setBusy(true);
-    try {
-      await api.patch(`/sos-cases/${c.id}`, draft);
-      setDraft({});
-      invalidate('/attempts'); invalidate('/overview');
-      onSaved();
-      toast.push('ok', 'Đã lưu ghi nhận xử lý');
-    } catch (e: any) {
-      toast.push('error', e.message);      // giữ nguyên bản nháp để thử lại
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  if (!c) return null;
-
+/**
+ * HƯỚNG DẪN PHỐI HỢP theo lần MT × mức SOS, lấy từ quy trình của trung tâm.
+ *
+ * Đây là GỢI Ý, không phải việc đã làm. Trước đây hai thứ này nằm chung một chỗ: điền tên
+ * vào ô hướng dẫn là case trông như đã xử lý xong, dù chưa ai làm gì. Nay việc đã làm nằm
+ * ở phần trên — có người thực hiện, có ngày thật, có lần xem lại — còn đây chỉ nhắc nên
+ * làm gì tiếp.
+ */
+function Playbook({ steps }: { steps: any[] }) {
   return (
-    <Card
-      title={<span className="flex items-center gap-2">
-        Xử lý sau Mock <Pill tone={sosTone(detail.result.sosLevel)}>{sosLabel(detail.result.sosLevel)}</Pill>
-        <Pill tone={caseTone(c.status)}>{caseStatusLabel(c.status)}</Pill>
-      </span>}
-      action={dirty && <button className="btn btn-primary btn-sm" onClick={submit} disabled={busy}>
-        {busy ? 'Đang lưu…' : 'Lưu ghi nhận'}
-      </button>}
-    >
-      <div className="space-y-4">
-        <div className="grid gap-2">
-          {detail.caseSteps.map((s: any) => (
-            <div key={s.key} className="surface-2 rounded-lg p-3">
-              <div className="flex flex-wrap items-center gap-2">
-                <strong className="text-sm text-slate-100">{s.label}</strong>
-                {!s.required && <Pill tone="neutral">Theo từng case</Pill>}
-                <Pill tone={STEP_TONE[s.state]}>{STEP_STATE[s.state]}</Pill>
-              </div>
-              <p className="text-xs text-slate-400 mt-1 mb-2">{s.detail}</p>
-              <StepFields stepKey={s.key} value={value} set={set} editable={editable} />
-            </div>
-          ))}
-        </div>
-
-        <div className="grid gap-3 sm:grid-cols-3 border-t pt-4" style={{ borderColor: 'var(--line)' }}>
-          <label className="block">
-            <span className="label">Trạng thái xử lý</span>
-            <select className="field" value={value('status')} disabled={!editable}
-              onChange={(e) => set('status', e.target.value)}>
-              {CASE_STATUSES.map((s) => <option key={s} value={s}>{caseStatusLabel(s)}</option>)}
-            </select>
-          </label>
-          <label className="block sm:col-span-2">
-            <span className="label">Ghi chú</span>
-            <input className="field" value={value('note') ?? ''} disabled={!editable}
-              onChange={(e) => set('note', e.target.value)} placeholder="Thông tin cụ thể để người sau đọc hiểu" />
-          </label>
-        </div>
-
-        {/*
-          * "Head xác nhận" ĐÃ BỎ. Bước đó chỉ ghi tên và ngày: không khoá điểm, không là điều
-          * kiện đổi trạng thái, không mở khoá bước nào — một cửa duyệt không bảo vệ gì.
-          * Case kết thúc bằng chính TRẠNG THÁI XỬ LÝ ở trên.
-          * Dấu xác nhận cũ vẫn hiện để tra lại, chỉ không tạo mới nữa.
-          */}
-        {c.head_confirmed_at && (
-          <div className="border-t pt-3 text-xs text-slate-500" style={{ borderColor: 'var(--line)' }}>
-            Dấu xác nhận cũ: {c.head_name ?? 'đã xác nhận'} · {fmtDate(c.head_confirmed_at)}
-            <span className="text-slate-600"> — bước xác nhận này đã bỏ khỏi quy trình.</span>
-          </div>
-        )}
-
-        {detail.tasks.length > 0 && (
-          <div className="border-t pt-3" style={{ borderColor: 'var(--line)' }}>
-            <div className="label">Công việc gắn với case này</div>
-            <ul className="text-xs space-y-1 list-none p-0 m-0">
-              {detail.tasks.map((t) => (
-                <li key={t.id} className="text-slate-300">
-                  <Link className="link" to="/tien-trinh">{t.code}</Link> · {t.title}
-                  <span className="text-slate-500"> · {t.assignee_name ?? 'Chưa giao'} · hạn {fmtDate(t.due_date)}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-
-        <SectionNote>
-          Đây là checklist cần phối hợp. Hệ thống không tự cấp buổi học, không tự lùi lịch thi, không tự đóng case
-          và không tự xác nhận Head. Trao đổi phụ huynh do CS thực hiện ngoài hệ thống — ghi lại tên người làm và ngày.
-        </SectionNote>
-      </div>
-    </Card>
-  );
-}
-
-function StepFields({ stepKey, value, set, editable }: {
-  stepKey: string; value: (k: string) => any; set: (k: string, v: any) => void; editable: boolean;
-}) {
-  const pair = (personKey: string, dateKey: string, personLabel: string, options?: readonly string[]) => (
-    <div className="grid gap-2 sm:grid-cols-2">
-      <label className="block">
-        <span className="label">{personLabel}</span>
-        {options ? (
-          <select className="field" value={value(personKey) ?? ''} disabled={!editable} onChange={(e) => set(personKey, e.target.value)}>
-            <option value="">Chưa chọn</option>
-            {options.map((o) => <option key={o} value={o}>{o}</option>)}
-          </select>
-        ) : (
-          <input className="field" value={value(personKey) ?? ''} disabled={!editable}
-            onChange={(e) => set(personKey, e.target.value)} placeholder="Tên người thực hiện" />
-        )}
-      </label>
-      <label className="block">
-        <span className="label">Ngày</span>
-        <input type="date" className="field" value={(value(dateKey) ?? '').slice(0, 10)} disabled={!editable}
-          onChange={(e) => set(dateKey, e.target.value)} />
-      </label>
+    <div className="border-t pt-3 mt-3" style={{ borderColor: 'var(--line)' }}>
+      <div className="label">Quy trình gợi ý cho mức này</div>
+      <ul className="mt-1 space-y-1 list-none p-0 m-0">
+        {steps.map((s: any) => (
+          <li key={s.key} className="text-xs text-slate-400">
+            <span className="text-slate-200">{s.label}</span>
+            {!s.required && <span className="text-slate-500"> (theo từng trường hợp)</span>}
+            {' — '}{s.detail}
+          </li>
+        ))}
+      </ul>
+      <SectionNote>
+        Hệ thống không tự cấp buổi học, không tự lùi lịch thi và không tự kết thúc theo dõi.
+        Trao đổi phụ huynh do CS thực hiện ngoài hệ thống — ghi lại tên người làm và ngày thật.
+      </SectionNote>
     </div>
   );
-
-  if (stepKey === 'talk_student') return pair('talk_student_person', 'talk_student_date', 'Người trao đổi');
-  if (stepKey === 'talk_parent') return pair('talk_parent_person', 'talk_parent_date', 'Người trao đổi (CS)');
-  if (stepKey === 'academic') {
-    return (
-      <div className="grid gap-2 sm:grid-cols-3">
-        <label className="block">
-          <span className="label">Hình thức hỗ trợ</span>
-          <select className="field" value={value('academic_support') ?? ''} disabled={!editable}
-            onChange={(e) => set('academic_support', e.target.value)}>
-            <option value="">Chưa chọn</option>
-            {ACADEMIC_SUPPORTS.map((o) => <option key={o} value={o}>{o}</option>)}
-          </select>
-        </label>
-        <label className="block">
-          <span className="label">Người phụ trách</span>
-          <input className="field" value={value('academic_person') ?? ''} disabled={!editable}
-            onChange={(e) => set('academic_person', e.target.value)} />
-        </label>
-        <label className="block">
-          <span className="label">Ngày bắt đầu</span>
-          <input type="date" className="field" value={(value('academic_start_date') ?? '').slice(0, 10)} disabled={!editable}
-            onChange={(e) => set('academic_start_date', e.target.value)} />
-        </label>
-      </div>
-    );
-  }
-  if (stepKey === 'ops') return pair('ops_policy', 'ops_date', 'Chính sách áp dụng', OPS_POLICIES);
-  if (stepKey === 'meeting') return pair('meeting_kind', 'meeting_date', 'Hình thức meeting', MEETING_KINDS);
-  return null;
 }
 
 // ---------------------------------------------------------------- thao tác lịch

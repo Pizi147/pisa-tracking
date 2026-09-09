@@ -66,17 +66,16 @@ export function stepsFor(attemptNo: number, level: SosLevel): SosStep[] {
   return steps;
 }
 
-const CASE_FIELDS = [
-  'coordinator_user_id', 'talk_student_person', 'talk_student_date', 'talk_parent_person', 'talk_parent_date',
-  'academic_support', 'academic_person', 'academic_start_date', 'ops_policy', 'ops_date',
-  'meeting_kind', 'meeting_date', 'status', 'note',
-] as const;
-type CaseField = (typeof CASE_FIELDS)[number];
-
-/**
- * Tạo hoặc cập nhật case khi kết quả đã chốt.
- * Sửa điểm làm đổi mức SOS thì cập nhật mức, GIỮ NGUYÊN hành động và lịch sử đã ghi.
+/*
+ * NĂM CỘT HỖ TRỢ CŨ (trao đổi HS / trao đổi PH / hỗ trợ học thuật / chính sách / meeting)
+ * KHÔNG CÒN ĐƯỜNG GHI NÀO.
+ *
+ * Chúng chỉ còn tồn tại trong bảng để dữ liệu cũ của trung tâm không mất, và bước nâng cấp
+ * đọc chúng một lần để dựng lại thành các bản ghi tác động. Mọi việc đã làm từ nay ghi qua
+ * `cases.recordIntervention` — có người thực hiện, ngày thật, trạng thái và lần xem lại,
+ * là những thứ năm cột kia không tả được.
  */
+
 export function upsertCaseForResult(p: Principal, attempt: any, result: AttemptResult) {
   /*
    * Mở/cập nhật case NGAY khi đã kết luận được trên phần điểm đang có — không chờ đủ mọi
@@ -99,11 +98,28 @@ export function upsertCaseForResult(p: Principal, attempt: any, result: AttemptR
 
   if (!existing) {
     const info = conn
-      .prepare(`INSERT INTO sos_cases (attempt_id, sos_level, status, created_at) VALUES (?,?, 'open', ?)`)
-      .run(attempt.id, result.sosLevel, nowIso());
+      .prepare(
+        /*
+         * GHI THẲNG học viên và lộ trình, không chỉ dựa vào bài đánh giá.
+         *
+         * Case do giáo viên báo không có bài nào, nên hai cột này là đường duy nhất chung
+         * cho cả hai nguồn. Bỏ trống ở đây thì hồ sơ học viên — vốn tra theo `student_id` —
+         * sẽ không thấy chính những vấn đề vừa sinh ra từ điểm của em đó.
+         *
+         * NGÀY PHÁT HIỆN là ngày làm bài, không phải ngày nhập điểm: nhập bù một tuần sau
+         * thì vấn đề vẫn đã tồn tại từ hôm làm bài.
+         */
+        `INSERT INTO sos_cases (attempt_id, student_id, cycle_id, origin_kind, detected_at,
+                                sos_level, status, created_at)
+         VALUES (?,?,?, 'mock', ?,?, 'open', ?)`,
+      )
+      .run(attempt.id, attempt.student_id, attempt.cycle_id,
+           (attempt.lrw_scheduled_at ?? '').slice(0, 10) || demoToday(),
+           result.sosLevel, nowIso());
     const id = Number(info.lastInsertRowid);
     addJourney({
-      studentId: attempt.student_id, eventType: 'mock_result', eventDate: demoToday(),
+      studentId: attempt.student_id, cycleId: attempt.cycle_id,
+      eventType: 'mock_result', eventDate: demoToday(),
       title: `MT${attempt.attempt_no}: ${SOS_LABEL[result.sosLevel]}`,
       detail: [
         result.overall !== null ? `Overall ${result.overall}` : null,
@@ -113,6 +129,8 @@ export function upsertCaseForResult(p: Principal, attempt: any, result: AttemptR
         result.scopeNote,
       ].filter(Boolean).join(' · '),
       refTable: 'assessment_attempts', refId: attempt.id, createdBy: p.userId,
+      // Lưu lại nhiều lần vẫn chỉ MỘT sự kiện: mỗi bài chỉ mở case một lần.
+      dedupKey: `mock_result:${attempt.id}`,
     });
     notifyTeachers(attempt, result.sosLevel);
     writeAudit({ actorUserId: p.userId, action: 'sos.open', entityType: 'sos_case', entityId: id,
@@ -153,47 +171,6 @@ function notifyTeachers(attempt: any, level: SosLevel) {
   }
 }
 
-export function updateCase(p: Principal, caseId: number, patch: Partial<Record<CaseField, any>>) {
-  const conn = db();
-  const c = conn
-    .prepare(
-      `SELECT sc.*, a.class_id, a.student_id, a.attempt_no FROM sos_cases sc
-         JOIN assessment_attempts a ON a.id = sc.attempt_id WHERE sc.id = ?`,
-    )
-    .get(caseId) as any;
-  if (!c) throw notFound('Không tìm thấy case');
-  require_(p, PERMISSIONS.SOS_EDIT, { classId: c.class_id, studentId: c.student_id },
-    'Bạn không có quyền ghi nhận xử lý cho case này.');
-
-  const sets: string[] = [];
-  const params: unknown[] = [];
-  const changes: [string, any, any][] = [];
-
-  for (const field of CASE_FIELDS) {
-    if (!(field in patch)) continue;
-    let value = (patch as any)[field];
-    if (field.endsWith('_date') && value) {
-      if (!isIsoDate(value)) throw badRequest('Ngày không hợp lệ.');
-    }
-    if (value === '') value = null;
-    if (c[field] === value) continue;
-    sets.push(`${field} = ?`);
-    params.push(value);
-    changes.push([field, c[field], value]);
-  }
-  if (!sets.length) return c;
-
-  return tx(() => {
-    sets.push('updated_at = ?');
-    params.push(nowIso(), caseId);
-    conn.prepare(`UPDATE sos_cases SET ${sets.join(', ')} WHERE id = ?`).run(...params);
-    for (const [f, o, n] of changes) recordChange(caseId, f, o === null ? null : String(o), n === null ? null : String(n), p.userId);
-    writeAudit({ actorUserId: p.userId, action: 'sos.update', entityType: 'sos_case', entityId: caseId,
-      entityLabel: `MT${c.attempt_no}`, before: Object.fromEntries(changes.map(([f, o]) => [f, o])),
-      after: Object.fromEntries(changes.map(([f, , n]) => [f, n])) });
-    return conn.prepare('SELECT * FROM sos_cases WHERE id = ?').get(caseId);
-  });
-}
 
 /*
  * "Head xác nhận" ĐÃ BỎ khỏi luồng xử lý case.
@@ -206,29 +183,3 @@ export function updateCase(p: Principal, caseId: number, patch: Partial<Record<C
  * Dữ liệu xác nhận cũ (`head_confirmed_by/at` và các dòng lịch sử) được GIỮ NGUYÊN để tra
  * lại, chỉ không còn thao tác tạo mới.
  */
-
-/**
- * Tiến độ checklist. Có tên người mà chưa có ngày thì CHƯA tính là đã làm;
- * ngày ở tương lai tính là "đã xếp" chứ chưa phải "đã bắt đầu".
- */
-export function caseProgress(c: any, attemptNo: number, level: SosLevel, today = demoToday()) {
-  const steps = stepsFor(attemptNo, level);
-  return steps.map((s) => {
-    let person: string | null = null;
-    let date: string | null = null;
-    let value: string | null = null;
-    switch (s.key) {
-      case 'talk_student': person = c?.talk_student_person; date = c?.talk_student_date; break;
-      case 'talk_parent': person = c?.talk_parent_person; date = c?.talk_parent_date; break;
-      case 'academic': person = c?.academic_person; date = c?.academic_start_date; value = c?.academic_support; break;
-      case 'ops': date = c?.ops_date; value = c?.ops_policy; break;
-      case 'meeting': date = c?.meeting_date; value = c?.meeting_kind; break;
-    }
-    const scheduled = !!date;
-    const started = !!date && date <= today;
-    return {
-      ...s, person: person ?? null, date: date ?? null, value: value ?? null,
-      state: started ? 'done' : scheduled ? 'scheduled' : person || value ? 'named_only' : 'empty',
-    };
-  });
-}

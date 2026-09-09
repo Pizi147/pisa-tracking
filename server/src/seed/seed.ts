@@ -903,8 +903,14 @@ function seedRegularClasses(conn: any, ctx: {
           if (failed > 0) {
             const level = failed >= 3 ? 3 : failed;
             conn
-              .prepare(`INSERT INTO sos_cases (attempt_id, sos_level, status, created_at) VALUES (?,?,?,?)`)
-              .run(attemptId, level, ci === 0 ? 'in_progress' : 'open', NOW);
+              .prepare(
+                // Lớp thường dùng CHUNG bảng case với lớp FT, nên phải điền đủ học viên,
+                // khoá học và ngày phát hiện như nhau — hồ sơ học viên tra theo `student_id`.
+                `INSERT INTO sos_cases (attempt_id, student_id, cycle_id, origin_kind, detected_at,
+                                        sos_level, status, created_at)
+                 VALUES (?,?,?, 'mock', ?,?,?,?)`,
+              )
+              .run(attemptId, st.id, cycleId, taken, level, ci === 0 ? 'in_progress' : 'open', NOW);
             counts.cases += 1;
           }
         }

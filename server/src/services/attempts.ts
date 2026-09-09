@@ -14,7 +14,7 @@ import {
   isCriteriaSkill, isRawSkill, type AttemptResult,
 } from './scoring.ts';
 import { effectiveDeadline, isOverdue, weekInfo } from './week.ts';
-import { caseProgress, stepsFor, upsertCaseForResult } from './sos.ts';
+import { stepsFor, upsertCaseForResult } from './sos.ts';
 import { currentCycle, cycleById, nextAttemptNo } from './cycles.ts';
 import { allProgrammes, evaluateRegular } from './regular.ts';
 
@@ -458,11 +458,14 @@ export function attemptDetail(p: Principal, attemptId: number) {
       reason: h.reason, actorName: h.actor_name, createdAt: h.created_at,
     })),
     sosCase: sos ?? null,
-    caseSteps: sos && sos.sos_level > 0
-      ? caseProgress(sos, a.attempt_no, sos.sos_level)
-      : result.evaluable && (result.sosLevel ?? 0) > 0
-        ? stepsFor(a.attempt_no, result.sosLevel!).map((s) => ({ ...s, person: null, date: null, value: null, state: 'empty' as const }))
-        : [],
+    /*
+     * HƯỚNG DẪN phối hợp cho mức này — GỢI Ý, không phải việc đã làm.
+     * Việc đã làm nằm ở `case_interventions` với người thực hiện và ngày thật; trộn hai
+     * thứ vào một danh sách chính là chỗ mô hình cũ làm người đọc hiểu sai.
+     */
+    caseSteps: (sos?.sos_level ?? result.sosLevel ?? 0) > 0
+      ? stepsFor(a.attempt_no, (sos?.sos_level ?? result.sosLevel) as any)
+      : [],
     caseHistory: caseHistory.map((h) => ({
       id: h.id, field: h.field, oldValue: h.old_value, newValue: h.new_value,
       actorName: h.actor_name, createdAt: h.created_at,
