@@ -6,6 +6,7 @@ import { Skeleton } from './components/ui.tsx';
 import OverviewPage from './pages/Overview.tsx';
 import MockDetailPage from './pages/MockDetail.tsx';
 import ScoreSheetPage from './pages/ScoreSheet.tsx';
+import RegularSheetPage from './pages/RegularSheet.tsx';
 import StudentsPage from './pages/Students.tsx';
 import ClassOverviewPage from './pages/ClassOverview.tsx';
 import StudentDetailPage from './pages/StudentDetail.tsx';
@@ -96,6 +97,8 @@ export default function App() {
           <Route path="/hoc-vien/lop/:classId" element={<ClassOverviewPage />} />
           <Route path="/hoc-vien/:id" element={<StudentDetailPage />} />
           <Route path="/nhap-diem/:classId" element={<ScoreSheetPage />} />
+          {/* Lớp thường chấm theo số câu đúng nên có bảng điểm riêng, không dùng bảng band IELTS. */}
+          <Route path="/bang-diem-thuong/:classId" element={<RegularSheetPage />} />
           <Route path="/mock-test/:id" element={<MockDetailPage />} />
           <Route path="/tien-trinh" element={<MeetingPage />} />
           <Route path="/quan-tri" element={<AdminPage />} />

@@ -1,10 +1,14 @@
 import { db } from '../db.ts';
-import { ENTRY_SKILLS, PERMISSIONS, type AssessedSkill } from '../../../shared/domain.ts';
+import {
+  ATTEMPT_KIND_SHORT, ENTRY_SKILLS, PERMISSIONS,
+  type AssessedSkill, type AttemptKind,
+} from '../../../shared/domain.ts';
 import { demoToday } from '../demoConfig.ts';
 import { notFound } from '../util.ts';
-import { can, classScopeSql, editableSkills, require_, scopeFor, type Principal } from '../permissions.ts';
+import { can, classScopeSql, editableSkills, isCoreTeacherOf, require_, scopeFor, type Principal } from '../permissions.ts';
 import { loadBundle, resultOf, skillCells } from './attempts.ts';
 import { latestEstimates } from './estimates.ts';
+import { allProgrammes, evaluateRegular, programmeOfClass } from './regular.ts';
 
 /**
  * Màn Học viên lấy LỚP làm gốc.
@@ -24,6 +28,11 @@ export type ClassSummary = {
   openCases: number;
   /** Số LƯỢT đã chốt tuần nhưng chưa có ngày giờ. */
   needsDate: number;
+  programmeCode: string | null;
+  programmeName: string | null;
+  scoringMode: string | null;
+  mySkills: string[];
+  myCoreClass: boolean;
 };
 
 /** Một truy vấn cho mỗi loại dữ liệu, không hỏi lại theo từng lớp. */
@@ -38,11 +47,14 @@ export function listClassSummaries(p: Principal, f: { branchId?: number; q?: str
 
   const classes = conn
     .prepare(
-      `SELECT c.id, c.code, c.kind, c.route, c.branch_id, c.start_date,
+      `SELECT c.id, c.code, c.kind, c.programme_code, c.route, c.branch_id, c.start_date,
               b.code AS branch_code, b.name AS branch_name,
+              pg.name AS programme_name, pg.scoring_mode,
               (SELECT COUNT(*) FROM enrollments e JOIN students s ON s.id = e.student_id
                 WHERE e.class_id = c.id AND e.status = 'active' AND s.archived_at IS NULL) AS student_count
-         FROM classes c JOIN branches b ON b.id = c.branch_id
+         FROM classes c
+         JOIN branches b ON b.id = c.branch_id
+         LEFT JOIN programmes pg ON pg.code = c.programme_code
         WHERE ${where.join(' AND ')} ORDER BY b.id, c.code`,
     )
     .all(...params) as any[];
@@ -66,8 +78,21 @@ export function listClassSummaries(p: Principal, f: { branchId?: number; q?: str
   const needScores = new Map<number, number>();
   const openCases = new Map<number, number>();
   const needsDate = new Map<number, number>();
+  /*
+   * Lớp FT và lớp thường có bộ kỹ năng khác nhau, nên phải hỏi quyền theo đúng bộ của lớp
+   * đó — hỏi bằng bộ kỹ năng IELTS cho một lớp Foundation thì luôn ra rỗng.
+   */
   const editableByClass = new Map<number, string[]>();
-  for (const c of classes) editableByClass.set(c.id, editableSkills(p, c.id, ENTRY_SKILLS));
+  const skillsByClass = new Map<number, string[]>();
+  const ratioClasses = new Set<number>();
+  const programmes = allProgrammes();          // ba câu lệnh cho cả bảng, không phải ba câu mỗi lớp
+  for (const c of classes) {
+    const prog = c.programme_code ? programmes.get(c.programme_code) ?? null : null;
+    const skills = prog?.skills ?? [...ENTRY_SKILLS];
+    if (prog?.scoringMode === 'ratio') ratioClasses.add(c.id);
+    skillsByClass.set(c.id, skills);
+    editableByClass.set(c.id, editableSkills(p, c.id, skills));
+  }
 
   const bump = (m: Map<number, number>, k: number) => m.set(k, (m.get(k) ?? 0) + 1);
   for (const a of attempts) {
@@ -84,6 +109,22 @@ export function listClassSummaries(p: Principal, f: { branchId?: number; q?: str
 
     const editable = editableByClass.get(a.class_id) ?? [];
     if (!editable.length) continue;
+
+    if (ratioClasses.has(a.class_id)) {
+      /*
+       * Lớp thường: "cần nhập điểm" là kỹ năng người này phụ trách mà chưa có điểm, và bài
+       * đã tới ngày làm. Thiếu điểm KHÁC trượt, nên chỉ đếm là việc phải làm chứ không kết luận.
+       */
+      const rows = bundle.scores.get(a.id) ?? [];
+      const dueForEntry = !!a.lrw_scheduled_at && String(a.lrw_scheduled_at).slice(0, 10) <= today;
+      const missingMine = editable.some((k) => {
+        const row = rows.find((r) => r.skill === k);
+        return row?.raw_score === null || row?.raw_score === undefined;
+      });
+      if (dueForEntry && missingMine) bump(needScores, a.class_id);
+      continue;
+    }
+
     const cells = skillCells(p, a, bundle.scores.get(a.id) ?? [], bundle.skips.get(a.id) ?? [], today);
     if (cells.some((x) => x.canEdit && x.band === null && (x.progress === 'performed' || x.progress === 'due'))) {
       bump(needScores, a.class_id);
@@ -92,12 +133,24 @@ export function listClassSummaries(p: Principal, f: { branchId?: number; q?: str
 
   let rows: ClassSummary[] = classes.map((c) => ({
     id: c.id, code: c.code, kind: c.kind, route: c.route,
+    programmeCode: c.programme_code ?? null,
+    programmeName: c.programme_name ?? null,
+    /** Lớp thường chấm theo số câu đúng; lớp FT chấm theo band IELTS. */
+    scoringMode: c.scoring_mode ?? null,
     branchId: c.branch_id, branchCode: c.branch_code, branchName: c.branch_name,
     startDate: c.start_date,
     studentCount: c.student_count,
     needScores: needScores.get(c.id) ?? 0,
     openCases: openCases.get(c.id) ?? 0,
     needsDate: needsDate.get(c.id) ?? 0,
+    /*
+     * Kỹ năng người ĐANG XEM dạy ở chính lớp này.
+     *
+     * Một giáo viên dạy nhiều lớp và ở mỗi lớp có thể ôm bộ kỹ năng khác nhau — nhìn danh
+     * sách lớp mà không biết mình phụ trách gì ở đâu thì phải mở từng lớp ra dò.
+     */
+    mySkills: editableByClass.get(c.id) ?? [],
+    myCoreClass: isCoreTeacherOf(p, c.id),
   }));
 
   // Tìm theo tên học viên phải trả về đúng LỚP chứa em đó, không phải danh sách rỗng.
@@ -160,14 +213,51 @@ export function classRoster(p: Principal, classId: number, q?: string) {
     byStudent.get(a.student_id)!.push(a);
   }
 
+  // Lớp thường chấm khác lớp FT, nên đọc chương trình một lần rồi dùng lại cho mọi dòng.
+  const prog = programmeOfClass(classId);
+  const isRatio = prog?.scoringMode === 'ratio';
+  const myRegularSkills = isRatio ? editableSkills(p, classId, prog!.skills) : [];
+
   return students.map((s) => {
     const list = byStudent.get(s.id) ?? [];
     const timeline = list.map((a) => {
       const scores = bundle.scores.get(a.id) ?? [];
+      const c = bundle.cases.get(a.id);
+
+      if (isRatio) {
+        /*
+         * Bài kiểm tra lớp thường: không có band, không có Overall, không có kỳ vọng theo
+         * target. Chỉ có đạt/trượt theo tỷ lệ số câu đúng, và số môn trượt ra mức SOS.
+         */
+        const r = evaluateRegular(prog!.skills, scores);
+        const dueForEntry = !!a.lrw_scheduled_at && String(a.lrw_scheduled_at).slice(0, 10) <= today;
+        return {
+          id: a.id, attemptNo: a.attempt_no, cycleSeq: a.cycle_seq, route: null,
+          kind: a.kind, kindLabel: ATTEMPT_KIND_SHORT[a.kind as AttemptKind] ?? a.kind,
+          periodCode: a.period_code, lrwScheduledAt: a.lrw_scheduled_at,
+          status: a.status,
+          needsDate: a.status === 'planned' && !a.lrw_scheduled_at
+            && !!a.week_start && a.week_start <= today,
+          scoredRequired: r.scored, requiredCount: r.required,
+          // Lớp thường KHÔNG có Overall IELTS — để trống thay vì dựng một con số giả.
+          overall: null,
+          passedCount: r.complete ? r.required - (r.failedCount ?? 0) : null,
+          failedCount: r.failedCount,
+          sosLevel: r.sosLevel, evaluable: r.complete,
+          caseStatus: c?.status ?? null,
+          myPending: dueForEntry
+            ? myRegularSkills.filter((k) => {
+                const row = scores.find((x) => x.skill === k);
+                return row?.raw_score === null || row?.raw_score === undefined;
+              })
+            : [],
+          overdueSkills: 0,
+        };
+      }
+
       const skips = bundle.skips.get(a.id) ?? [];
       const result = resultOf(a, scores, skips);
       const cells = skillCells(p, a, scores, skips, today);
-      const c = bundle.cases.get(a.id);
       return {
         id: a.id, attemptNo: a.attempt_no, cycleSeq: a.cycle_seq, route: a.route,
         periodCode: a.period_code, lrwScheduledAt: a.lrw_scheduled_at,
@@ -175,8 +265,11 @@ export function classRoster(p: Principal, classId: number, q?: string) {
         // Cùng quy tắc thời điểm với badge của lớp: chưa đến tuần thì chưa phải việc.
         needsDate: a.status === 'planned' && !a.lrw_scheduled_at
           && !!a.week_start && a.week_start <= today,
+        kind: a.kind, kindLabel: `MT${a.attempt_no}`,
         scoredRequired: result.scoredRequired, requiredCount: result.required.length,
-        overall: result.overall, sosLevel: result.sosLevel, evaluable: result.evaluable,
+        overall: result.overall,
+        passedCount: null, failedCount: result.failedCount,
+        sosLevel: result.sosLevel, evaluable: result.evaluable,
         caseStatus: c?.status ?? null,
         myPending: cells.filter((x) => x.canEdit && x.band === null && (x.progress === 'performed' || x.progress === 'due'))
           .map((x) => x.skill),
@@ -220,10 +313,15 @@ export function classOverview(p: Principal, classId: number) {
     .all(classId) as any[];
   const skills = (conn.prepare('SELECT skill, sessions_per_week FROM class_skills WHERE class_id = ?').all(classId) as any[]);
 
+  // Bộ kỹ năng của lớp lấy theo CHƯƠNG TRÌNH của lớp đó, không mặc định là bộ IELTS.
+  const prog = programmeOfClass(classId);
+  const classSkills = prog?.skills ?? [...ENTRY_SKILLS];
+
   return {
     id: cls.id, code: cls.code, kind: cls.kind, route: cls.route,
     isFulltime: cls.is_fulltime === 1, startDate: cls.start_date, note: cls.note,
     branchId: cls.branch_id, branchCode: cls.branch_code, branchName: cls.branch_name,
+    programme: prog ? { code: prog.code, name: prog.name, weeks: prog.weeks, scoringMode: prog.scoringMode } : null,
     summary,
     skills: skills.map((s) => ({ skill: s.skill, sessionsPerWeek: s.sessions_per_week })),
     coreTeachers: assignments.filter((a) => a.is_core === 1).map((a) => ({ id: a.user_id, name: a.full_name })),
@@ -232,7 +330,8 @@ export function classOverview(p: Principal, classId: number) {
       canPlanWeek: can(p, PERMISSIONS.PLAN_WEEK, { classId }),
       canSetDate: can(p, PERMISSIONS.SCHEDULE_DATE, { classId }),
       canAddStudents: can(p, PERMISSIONS.STUDENT_EDIT, { classId }),
-      editableSkills: editableSkills(p, classId, ENTRY_SKILLS),
+      editableSkills: editableSkills(p, classId, classSkills),
+      isCoreTeacher: isCoreTeacherOf(p, classId),
     },
   };
 }

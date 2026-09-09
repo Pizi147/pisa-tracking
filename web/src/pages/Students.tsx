@@ -10,13 +10,20 @@ import { IntakePanel } from '../components/IntakePanel.tsx';
 import { ClassRoster } from '../components/ClassRoster.tsx';
 import { DateDutyPanel } from '../components/DateDutyPanel.tsx';
 import { MockPlanPanel } from '../components/MockPlanPanel.tsx';
-import { PERMISSIONS } from '@shared/domain.ts';
+import { PERMISSIONS, skillShort } from '@shared/domain.ts';
 
 export type ClassSummary = {
   id: number; code: string; kind: string; route: string | null;
   branchId: number; branchCode: string; branchName: string;
   startDate: string | null;
   studentCount: number; needScores: number; openCases: number; needsDate: number;
+  /** `ratio` = lớp thường chấm theo số câu đúng; `ielts_band` = lớp FT. */
+  scoringMode: string | null;
+  programmeName: string | null;
+  /** Kỹ năng người đang xem dạy ở CHÍNH lớp này. */
+  mySkills: string[];
+  /** Người đang xem có phải GVCN của lớp này không. */
+  myCoreClass: boolean;
 };
 
 /**
@@ -245,10 +252,24 @@ function ClassRow({ cls, expanded, studentQuery, onToggle, onAddStudents }: {
           {cls.code}
         </Link>
         <span className="text-xs text-slate-500 shrink-0">
-          {cls.branchName}{cls.route ? ` · ${cls.route}` : ''} · {cls.studentCount} HV
+          {cls.branchName}
+          {cls.route ? ` · ${cls.route}` : ''}
+          {/* Lớp thường ghi rõ tên chương trình để không nhầm với lớp FT. */}
+          {!cls.route && cls.programmeName && cls.scoringMode === 'ratio' ? ` · ${cls.programmeName}` : ''}
+          {' · '}{cls.studentCount} HV
         </span>
 
         <span className="flex flex-wrap items-center gap-1.5 flex-1 min-w-0">
+          {/*
+            * Giáo viên dạy nhiều lớp và ở mỗi lớp có thể ôm bộ kỹ năng khác nhau. Ghi thẳng
+            * ra đây để không phải mở từng lớp mới biết mình phụ trách gì ở đâu.
+            */}
+          {cls.mySkills.length > 0 && (
+            <Pill tone="info" title={`Bạn dạy ${cls.mySkills.map(skillShort).join(', ')} ở lớp này`}>
+              {cls.mySkills.map(skillShort).join(' ')}
+            </Pill>
+          )}
+          {cls.myCoreClass && <Pill tone="neutral" title="Bạn là giáo viên chủ nhiệm lớp này">GVCN</Pill>}
           {cls.needScores > 0 && (
             <button className="appearance-none bg-transparent border-0 p-0" onClick={go(`/hoc-vien?view=my_scores&classId=${cls.id}`)}>
               <Pill tone="warn">{cls.needScores} cần nhập điểm</Pill>

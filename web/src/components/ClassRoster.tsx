@@ -6,9 +6,16 @@ import { ENTRY_SKILL_SHORT, type EntrySkill } from '@shared/domain.ts';
 
 type Timeline = {
   id: number; attemptNo: number; cycleSeq: number; route: string | null;
+  /** `mock` với lớp FT; `progress` / `final` với lớp thường. */
+  kind: string;
+  /** Nhãn ngắn để hiện trên dải: "MT2", "Giữa khoá", "Cuối khoá". */
+  kindLabel: string;
   periodCode: string | null; lrwScheduledAt: string | null; status: string; needsDate: boolean;
   scoredRequired: number; requiredCount: number;
-  overall: number | null; sosLevel: number | null; evaluable: boolean;
+  /** Lớp thường KHÔNG có Overall IELTS — luôn null, không dựng số giả. */
+  overall: number | null;
+  passedCount: number | null; failedCount: number | null;
+  sosLevel: number | null; evaluable: boolean;
   caseStatus: string | null; myPending: string[]; overdueSkills: number;
 };
 
@@ -77,7 +84,7 @@ export function ClassRoster({ classId, studentQuery, onAddStudents }: {
                 </div>
               </td>
               <td className="td tabular-nums whitespace-nowrap">{fmtBand(s.cycle?.target ?? null)}</td>
-              <td className="td"><MockTrail timeline={s.timeline} /></td>
+              <td className="td"><MockTrail timeline={s.timeline} classId={classId} /></td>
               <td className="td whitespace-nowrap">
                 {s.latest
                   ? <>
@@ -106,20 +113,23 @@ export function ClassRoster({ classId, studentQuery, onAddStudents }: {
 }
 
 /**
- * Chuỗi MT quá khứ → hiện tại → tương lai, ví dụ `MT1 ✓ · MT2 ✓ · MT3 W4 OCT`.
+ * Chuỗi bài đánh giá quá khứ → hiện tại → tương lai.
+ *
+ * Lớp FT: `MT1 ✓ · MT2 ✓ · MT3 W4 OCT`.
+ * Lớp thường: `Giữa khoá ✓ · Cuối khoá W2 OCT` — cùng một dải, chỉ đổi nhãn.
  * Lượt tương lai hiện MÃ TUẦN, không hiện "tuần học 10" để tránh nhầm hai khái niệm.
  */
-function MockTrail({ timeline }: { timeline: Timeline[] }) {
-  if (!timeline.length) return <span className="text-slate-600 text-xs">Chưa có kế hoạch MT</span>;
+function MockTrail({ timeline, classId }: { timeline: Timeline[]; classId: number }) {
+  if (!timeline.length) return <span className="text-slate-600 text-xs">Chưa có kế hoạch đánh giá</span>;
   return (
     <span className="flex flex-wrap items-center gap-1">
       {timeline.map((t, i) => (
         <span key={t.id} className="flex items-center gap-1">
           {i > 0 && <span className="text-slate-700" aria-hidden>·</span>}
           <Link
-            to={`/mock-test/${t.id}`}
+            to={t.kind === 'mock' ? `/mock-test/${t.id}` : `/bang-diem-thuong/${classId}?kind=${t.kind}`}
             className="no-underline"
-            title={`${t.route ? `${t.route} · ` : ''}MT${t.attemptNo}${t.periodCode ? ` · ${t.periodCode}` : ''}`}
+            title={`${t.kindLabel}${t.periodCode ? ` · ${t.periodCode}` : ''}`}
           >
             <Pill tone={
               t.status === 'cancelled' ? 'muted'
@@ -127,10 +137,10 @@ function MockTrail({ timeline }: { timeline: Timeline[] }) {
                 : t.needsDate ? 'warn'
                 : t.status === 'done' ? 'info' : 'neutral'
             }>
-              MT{t.attemptNo}
+              {t.kindLabel}
               {t.status === 'cancelled' ? ' huỷ'
                 : t.evaluable ? ' ✓'
-                : t.status === 'done' ? ` ${t.scoredRequired}/${t.requiredCount}`
+                : t.scoredRequired > 0 ? ` ${t.scoredRequired}/${t.requiredCount}`
                 : t.periodCode ? ` ${t.periodCode}` : ''}
             </Pill>
           </Link>

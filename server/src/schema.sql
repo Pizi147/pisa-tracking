@@ -20,11 +20,47 @@ CREATE TABLE reporting_units (
   status TEXT NOT NULL DEFAULT 'active'
 );
 
+-- ===================== CHƯƠNG TRÌNH HỌC =====================
+-- FT dùng Mock Test và band IELTS. Lớp thường (FOU/BE/ELE) dùng bài kiểm tra chấm theo
+-- số câu đúng trên tổng số câu, KHÔNG đi qua bảng quy đổi IELTS.
+--
+-- Để bảng riêng thay vì viết cứng trong code: sau này chương trình đổi, hoặc trung tâm mở
+-- một chương trình mới, thì thêm dữ liệu chứ không phải sửa mã nguồn. Nhưng CHỈ đến thế —
+-- không dựng một công cụ thiết kế chương trình kéo thả.
+CREATE TABLE programmes (
+  code TEXT PRIMARY KEY,              -- FT | FOU | BE | ELE | mã tự đặt
+  name TEXT NOT NULL,
+  weeks INTEGER,                      -- số tuần của khoá; NULL với FT vì không cố định
+  scoring_mode TEXT NOT NULL,         -- ielts_band | ratio
+  status TEXT NOT NULL DEFAULT 'active',
+  created_at TEXT NOT NULL
+);
+
+-- Kỹ năng chương trình có đánh giá, theo đúng thứ tự hiển thị.
+CREATE TABLE programme_skills (
+  programme_code TEXT NOT NULL REFERENCES programmes(code),
+  skill TEXT NOT NULL,
+  seq INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (programme_code, skill)
+);
+
+-- Mốc kiểm tra tính theo TUẦN HỌC của lớp, không phải tuần thứ mấy của tháng.
+-- FOU: giữa khoá tuần 4, cuối khoá tuần 8. BE/ELE: tuần 5 và tuần 10.
+CREATE TABLE programme_checkpoints (
+  programme_code TEXT NOT NULL REFERENCES programmes(code),
+  kind TEXT NOT NULL,                 -- progress | final
+  study_week INTEGER NOT NULL,
+  PRIMARY KEY (programme_code, kind)
+);
+
 CREATE TABLE classes (
   id INTEGER PRIMARY KEY,
   code TEXT NOT NULL UNIQUE,          -- luôn bắt đầu bằng mã chi nhánh: "CP-FT 110"
   branch_id INTEGER NOT NULL REFERENCES branches(id),
-  kind TEXT NOT NULL,                 -- nhãn tự do do quản lý đặt: FT, FOUND, BE, ELE...
+  kind TEXT NOT NULL,                 -- nhãn gốc do quản lý đặt: FT, FOUND, BE, ELE...
+  -- Mã chương trình đã CHUẨN HOÁ. `kind` giữ nguyên chữ người dùng gõ (kể cả "FOUND" cũ),
+  -- còn mọi tính toán đọc cột này. Không đổi mã lớp lịch sử chỉ vì đổi mã chương trình.
+  programme_code TEXT REFERENCES programmes(code),
   route TEXT,                         -- LT1 | LT2, chỉ áp dụng lớp FT
   is_fulltime INTEGER NOT NULL DEFAULT 0,
   start_date TEXT,
@@ -259,8 +295,10 @@ CREATE TABLE assessment_scores (
   attempt_id INTEGER NOT NULL REFERENCES assessment_attempts(id),
   skill TEXT NOT NULL,                -- listening | reading | writing1 | writing2 | speaking
   taken_on TEXT,                      -- ngày MOCK thực tế của riêng kỹ năng này
-  raw_score INTEGER,                  -- 0..40, chỉ với listening/reading
-  raw_total INTEGER,                  -- tổng số câu, dành cho lớp thường (score/total)
+  raw_score INTEGER,                  -- FT: 0..40 với listening/reading. Lớp thường: số câu đúng.
+  -- Tổng số câu của chính đề đó. Lớp thường bắt buộc có, vì số câu KHÔNG cố định giữa các
+  -- kỹ năng và các đề; không có tổng thì không tính được tỷ lệ đạt.
+  raw_total INTEGER,
   c1 REAL, c2 REAL, c3 REAL, c4 REAL, -- bốn tiêu chí, chỉ với writing1/writing2/speaking
   band REAL,                          -- band IELTS, hoặc NULL khi chưa nhập điểm
   result_date TEXT,                   -- ngày có kết quả, để đo thời gian chấm

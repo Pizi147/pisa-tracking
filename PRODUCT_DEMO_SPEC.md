@@ -59,6 +59,10 @@ Quy tắc tương tác trên dòng lớp — ba vùng bấm phải tách bạch:
 - **Nền dòng / chevron** → đóng mở danh sách học viên ngay tại chỗ.
 
 Badge và tên lớp phải chặn nổi bọt sự kiện, nếu không bấm badge sẽ đồng thời đóng mở roster.
+
+**Badge kỹ năng của người đang xem.** Một giáo viên dạy nhiều lớp và ở mỗi lớp có thể ôm bộ kỹ năng
+khác nhau. Mỗi dòng lớp ghi thẳng `L R` hay `R W1` — kỹ năng người **đang xem** phụ trách ở **chính
+lớp đó** — kèm `GVCN` nếu là chủ nhiệm. Không có badge này thì phải mở từng lớp ra dò.
 Dòng lớp là `role="button"` có `aria-expanded`, mở được bằng Enter và Space.
 
 **Badge chỉ hiện khi có việc cần làm.** Không có việc thì ghi "Không có việc cần chú ý", không hiện
@@ -568,10 +572,73 @@ Badge *"Đơn vị độc lập"* đã bỏ. Báo cáo của chi nhánh là **đ
 nhiều chi nhánh cùng ghi nhận về một tutor thì đó vẫn là một tutor, không phải ba. Phần này giữ **nhẹ**,
 không dựng một hệ quản lý nhân sự tutor.
 
+## A8g. Lớp thường: Foundation · Beginner · Elementary
+
+Ngoài lớp FT, trung tâm có ba chương trình dùng **bài kiểm tra riêng**, không dùng Mock Test.
+
+| | FOUNDATION (`FOU`) | BEGINNER (`BE`) · ELEMENTARY (`ELE`) |
+|---|---|---|
+| Thời lượng | 8 tuần | 10 tuần |
+| Bài giữa khoá | **tuần học 4** | **tuần học 5** |
+| Bài cuối khoá | **tuần học 8** | **tuần học 10** |
+| Kỹ năng | Listening · Reading · Prep-Writing · **Pronunciation** | Listening · Reading · Prep-Writing · **Speaking** |
+
+"Tuần học 4" là **tuần thứ tư kể từ ngày khai giảng của lớp**, không phải "W4" của một tháng.
+Lớp chưa có ngày khai giảng thì hệ thống **không đoán** — báo để điền vào trước.
+
+### Cách chấm
+
+Nhập **`số câu đúng / tổng số câu`** cho từng kỹ năng. Đạt từ **60%** trở lên.
+
+Cả hai ô đều phải nhập: số câu **không cố định** giữa các kỹ năng và giữa các đề, nên tự điền
+tổng là đoán bừa — mà đoán sai tổng thì đạt/trượt sai theo. Có thể đặt **tổng chung cho cả lớp**
+một lần rồi sửa lại ở dòng có đề khác, vì cả lớp thường làm cùng một đề.
+
+Hệ thống xét trên **tỷ lệ chính xác**, không làm tròn phần trăm rồi mới so:
+`25/42` hiện ra "60%" nhưng thực tế là 59,5% nên vẫn là **chưa đạt**.
+
+Ràng buộc kiểm ở **máy chủ**, không chỉ ở giao diện: tổng phải là số nguyên lớn hơn 0, số câu đúng
+là số nguyên không âm và không lớn hơn tổng.
+
+### Thiếu điểm ≠ Trượt
+
+| | Thiếu điểm | Trượt |
+|---|---|---|
+| Nghĩa | Chưa nhập | Đã nhập, dưới 60% |
+| Kết luận được chưa | **Chưa** | Có |
+| Có sinh SOS không | **Không** | Có |
+
+Phải **đủ điểm mọi kỹ năng** thì bài mới chuyển sang *đã xong* và mới kết luận. Đếm ô trống thành
+một môn trượt là đẩy học viên lên SOS oan.
+
+### SOS dùng chung hệ thống với lớp FT
+
+Số môn chưa đạt ra mức SOS theo **đúng ngưỡng cũ**: 1 môn → SOS 1 · 2 môn → SOS 2 · từ 3 môn → SOS 3.
+Case nằm trong **cùng bảng `sos_cases`**, nên hai card SOS ở Tổng quan đếm được cả lớp thường.
+Sửa điểm làm đổi mức thì **giữ case và ghi lịch sử**, không xoá đi làm lại.
+
+Lớp thường **không có** band IELTS, **không có** kỳ vọng theo target, **không có** Overall — vì bài
+này không phải bài IELTS bốn kỹ năng. Để trống thay vì dựng một con số giả.
+
+### Chương trình nằm trong dữ liệu
+
+Bảng `programmes` + `programme_skills` + `programme_checkpoints`. Mở một chương trình mới là **thêm
+dữ liệu**, không phải sửa mã nguồn — nhưng chỉ đến thế, không dựng công cụ thiết kế chương trình kéo thả.
+
+Mã canonical là **`FOU`**; mã cũ **`FOUND`** chỉ được **ánh xạ khi đọc**. Cột `kind` của lớp giữ nguyên
+chữ đã gõ, cột `programme_code` là mã chuẩn hoá mà mọi tính toán đọc vào — **không đổi mã lớp lịch sử**.
+
+### Chuyển từ lớp FT sang lớp thường
+
+Mở **khoá mới**, không mượn lộ trình IELTS đang có. Đó là một khoá khác: cách chấm khác, không có
+target. Gắn bài Foundation vào lộ trình LT1 cũ thì lịch sử học thành một mớ lẫn lộn.
+Lộ trình cũ vẫn giữ nguyên để tra lại.
+
 ## A9. Dữ liệu
 
 Bảng chính: `branches` · `reporting_units` · `classes` · `class_skills` · `users` · `roles` ·
 `permissions` · `role_permissions` · `user_roles` · `teacher_assignments` · `students` ·
+**`programmes`** · **`programme_skills`** · **`programme_checkpoints`** · **`task_followers`** ·
 **`learning_cycles`** · `enrollments` · `journey_events` · `report_periods` ·
 **`assessment_attempts`** · **`attempt_schedule_history`** · **`attempt_skill_skips`** ·
 **`assessment_scores`** · **`teacher_estimates`** · `sos_cases` · `sos_case_history` ·

@@ -41,7 +41,11 @@ Các mục O04 (Report/WL, ai đóng case), O07 (lớp thường), O10, O11 thu�
 | — | **Bỏ hẳn "Head xác nhận"** | Đã gỡ quyền, hàm, endpoint và nút; giữ nguyên dữ liệu cũ | Đã đối chiếu code: bước này không khoá điểm, không là điều kiện đổi trạng thái, không mở khoá gì. Nếu có mục đích nghiệp vụ nào tôi chưa biết thì nói, khôi phục được |
 | — | **Bỏ trường "Loại" của công việc** | Đã gỡ khỏi form; cột cũ giữ giá trị lịch sử | Chỗ duy nhất nó tác động là một nhánh lọc yếu ("việc dài hạn chưa xong" luôn coi là cần chú ý) — điều mà chính hạn của việc đã nói rồi |
 | — | **Tổng hợp Tutor** | Báo cáo chi nhánh là đầu vào; tutor là đơn vị được tổng hợp. Giữ **nhẹ**, không dựng hồ sơ tutor riêng | Prompt nói nếu chưa thiết yếu thì giữ nhẹ. Muốn có hồ sơ tutor thật (danh sách tutor, gắn từng ghi nhận vào từng người) thì cần bảng riêng |
-| — | **Lớp thường FOU/BE/ELE** | **Chưa triển khai.** Đã đặt sẵn mô hình chương trình và cách chấm `score/total ≥ 60%` trong `shared/domain.ts`, chưa nối vào luồng nhập điểm | Prompt lần này tập trung vào 19 nhóm UX/logic khác. Lớp thường vẫn hiện "Chưa có kế hoạch MT" — trung thực, không dựng số giả |
+| — | **Chiều của Δ** | Chỉ là **khoảng cách** giữa hai con số, **không** tô màu tốt/xấu | Anh/chị đã xác nhận: điểm Mock và Đánh giá GV là hai thứ khác hẳn nhau, bên nào cao hơn cũng không phải cảnh báo |
+| — | **Hạn nhập điểm lớp thường** | Chưa có hạn riêng | Nguồn chưa nói. Hiện chỉ đánh dấu "chưa đủ điểm", không tính quá hạn như lớp FT |
+| — | **Miễn kỹ năng ở bài kiểm tra lớp thường** | Chưa có | Lớp FT có "không yêu cầu kỹ năng"; lớp thường hiện bắt buộc đủ bộ kỹ năng của chương trình. Cần thì thêm được |
+| — | **Tiêu chí đóng case của lớp thường** | Dùng chung ba trạng thái với lớp FT | Nguồn nói "workflow ngắn hơn nhưng logic tương tự". Nếu lớp thường cần bước xử lý khác thì cho biết |
+| — | **Tổng số câu mỗi kỹ năng** | Không cố định, phải nhập từng bài; có đặt tổng chung cho cả lớp | Nguồn nói số câu không cố định. Nếu thực tế mỗi kỹ năng luôn cố định một con số thì khai báo sẵn trong chương trình được |
 
 ## 3. Giả định kỹ thuật của bản demo (không phải quy tắc nghiệp vụ)
 

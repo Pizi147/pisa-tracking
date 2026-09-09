@@ -22,15 +22,21 @@ const CRITERIA_LABEL: Record<string, string[]> = {
 };
 
 /**
- * Δ đọc THEO HỌC VIÊN: dương = em đang thể hiện TỐT HƠN mức giáo viên đang đánh giá.
+ * Δ chỉ là KHOẢNG CÁCH giữa hai con số, KHÔNG phải một lời khen hay một cảnh báo.
  *
- * Màu phải nói đúng điều đáng quan tâm, không phải dấu của phép trừ: em làm dưới mức thầy
- * cô đang đánh giá mới là thứ cần chú ý. Dùng sắc nhạt để không át phần còn lại của bảng.
+ * Điểm Mock và Đánh giá GV là hai thứ khác hẳn nhau: một bên là kết quả một bài làm trong
+ * một buổi, một bên là nhận định của giáo viên qua cả quá trình dạy. Bên nào cao hơn cũng
+ * KHÔNG tự nó là tốt hay xấu — nên tuyệt đối không tô màu tốt/xấu theo dấu của phép trừ.
+ *
+ * Chỉ dùng sắc trung tính, đủ để mắt bắt được chỗ hai số lệch nhau nhiều.
  */
 function deltaStyle(d: number): { cls: string; hint: string } {
-  if (d > 0) return { cls: 'text-emerald-300', hint: 'Đang thể hiện tốt hơn mức giáo viên đánh giá' };
-  if (d < 0) return { cls: 'text-amber-300', hint: 'Đang thể hiện thấp hơn mức giáo viên đánh giá' };
-  return { cls: 'text-slate-400', hint: 'Đúng với mức giáo viên đánh giá' };
+  if (d === 0) return { cls: 'text-slate-500', hint: 'Hai con số bằng nhau' };
+  const far = Math.abs(d) >= 1;
+  return {
+    cls: far ? 'text-slate-100' : 'text-slate-300',
+    hint: `Hai con số lệch nhau ${Math.abs(d)} band — chỉ là khoảng cách, không phải đánh giá tốt hay xấu`,
+  };
 }
 
 function detailText(skill: EntrySkill, s: Side | null): string | null {
@@ -150,10 +156,11 @@ export function SkillComparison({ studentId, canEditSkills = [] }: {
 
       <div className="p-3">
         <SectionNote>
-          <strong>Δ = Mock − Đánh giá GV</strong>, đọc theo học viên: dương là em đang thể hiện tốt hơn mức
-          giáo viên đang đánh giá, âm là thấp hơn. Hai cột có thể đến từ hai thời điểm khác nhau nên luôn kèm
-          ngày; điểm Mock từng kỹ năng có thể thuộc các lượt khác nhau, và các ô này KHÔNG được ghép thành một
-          bài Mock hay một Overall chung. Chênh lệch chỉ là khoảng cách hai con số, tự nó không chứng minh tiến bộ.
+          <strong>Δ chỉ là khoảng cách giữa hai con số</strong> (Mock − Đánh giá GV), không phải lời khen cũng
+          không phải cảnh báo. Đây là hai thứ khác hẳn nhau: một bên là kết quả một bài làm trong một buổi,
+          một bên là nhận định của giáo viên qua cả quá trình dạy — bên nào cao hơn cũng không tự nó nói lên
+          điều gì. Hai cột có thể đến từ hai thời điểm khác nhau nên luôn kèm ngày; điểm Mock từng kỹ năng có
+          thể thuộc các lượt khác nhau, và các ô này KHÔNG được ghép thành một bài Mock hay một Overall chung.
         </SectionNote>
       </div>
     </>

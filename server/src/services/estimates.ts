@@ -163,12 +163,11 @@ export type Comparison = {
     raw: number | null; criteria: (number | null)[] | null;
   } | null;
   /**
-   * Δ = ĐIỂM MOCK − ĐÁNH GIÁ GV.
+   * Δ = ĐIỂM MOCK − ĐÁNH GIÁ GV. Chỉ là KHOẢNG CÁCH giữa hai con số.
    *
-   * Chiều này đọc theo học viên, không theo giáo viên: dương nghĩa là em ĐANG THỂ HIỆN
-   * TỐT HƠN mức giáo viên đang đánh giá; âm nghĩa là thấp hơn, tức là cần chú ý.
-   * Đảo chiều lại thì màu xanh sẽ rơi vào đúng trường hợp đáng lo, nên chiều này là chiều
-   * duy nhất khớp với ý nghĩa cần đọc ra.
+   * KHÔNG phải một kết luận tốt/xấu: điểm Mock là kết quả một bài làm trong một buổi, còn
+   * Đánh giá GV là nhận định của giáo viên qua cả quá trình dạy. Hai thứ khác hẳn nhau,
+   * nên bên nào cao hơn cũng không tự nó nói lên điều gì đáng khen hay đáng lo.
    */
   delta: number | null;
 };

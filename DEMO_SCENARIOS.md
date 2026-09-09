@@ -247,6 +247,41 @@ Giáo viên **Speaking** sửa được **ngày Speaking**, nhưng vẫn không 
 
 ---
 
+## Luồng 13 — Lớp thường: nhập điểm Foundation
+
+**Vai:** `Đặng Quang Nhi` (Quản trị hệ thống) hoặc giáo viên của lớp `MB-FOUND 12`.
+
+1. **Học viên** → mở lớp **MB-FOUND 12**. Dòng lớp ghi rõ **Foundation**, không phải lớp FT.
+2. Roster hiện **Giữa khoá ✓ · Cuối khoá W1 OCT** — không còn "Chưa có kế hoạch".
+3. Bấm vào một bài → mở **bảng điểm lớp thường**. Cột kỹ năng là
+   **Listening · Reading · Prep-Writing · Pronunciation** — có Pronunciation, không có Writing task 1/2.
+4. Mỗi ô là **số câu đúng / tổng số câu**. Nhập `39` và `40` → hiện ngay **97.5% · Đạt**.
+5. Thử nhập `45/40` → bị từ chối: số câu đúng không thể lớn hơn tổng.
+   Thử để trống tổng → bị từ chối: nhập số câu đúng thì phải nhập cả tổng.
+6. Bỏ trống một kỹ năng → dòng đó hiện **Chờ 1 môn · Chưa đủ điểm để kết luận**, và **không** sinh case SOS.
+   Đây là điểm mấu chốt: **thiếu điểm khác với trượt**.
+7. Nhập nốt kỹ năng cuối, cho một em trượt 2 môn → dòng đó thành **SOS 2**, dùng đúng hệ thống case
+   của lớp FT.
+
+**Thử thêm:** đặt **tổng số câu chung** ở đầu bảng (ví dụ Listening 40) → các ô còn trống lấy sẵn con
+số đó, dòng nào đề khác thì sửa riêng.
+
+**Ca đáng chú ý:** `25/42` hiện ra **60%** nhưng thực tế là 59,5% nên vẫn là **Chưa đạt** — hệ thống
+xét trên tỷ lệ chính xác, không xét trên số đã làm tròn.
+
+---
+
+## Luồng 14 — Giáo viên biết mình dạy gì ở lớp nào
+
+**Vai:** bất kỳ giáo viên nào.
+
+1. Mở **Học viên**. Mỗi dòng lớp có một badge nhỏ ghi kỹ năng bạn phụ trách ở **chính lớp đó**:
+   `L Pron` ở lớp này, `W1` ở lớp kia, `R` ở lớp nữa. Kèm `GVCN` nếu bạn là chủ nhiệm.
+2. Không phải mở từng lớp ra dò — một giáo viên dạy nhiều lớp và ở mỗi lớp có thể ôm bộ kỹ năng khác nhau.
+3. Mở **Class Overview** của một lớp: đầu trang nhắc lại **"Bạn phụ trách: L · Pron"**.
+
+---
+
 ## Kiểm tra quyền (bấm nhanh)
 
 | Thử | Tài khoản | Kỳ vọng |
@@ -259,6 +294,7 @@ Giáo viên **Speaking** sửa được **ngày Speaking**, nhưng vẫn không 
 | Không thấy dữ liệu ngoài chi nhánh | `Đặng Quang Vy` (Quản lý MB) | Không thấy lớp `CP-FT 110`; gọi thẳng URL của Mock lớp CP bị **API từ chối**, không chỉ ẩn nút |
 | Nhiều quản lý cùng chi nhánh | `Trần Quang Nam`, `Đinh Bảo Lam` (đều là Quản lý MB) | Cả ba quản lý MB đều thao tác được |
 | Giáo viên không có Tiến trình công việc | bất kỳ giáo viên nào | Menu chỉ còn **3 mục**, không có *Tiến trình công việc* |
+| Lớp thường: GV chỉ nhập kỹ năng mình dạy | GV Listening lớp `MB-FOUND 12` | Nhập được Listening; gọi API nhập Pronunciation bị từ chối; nhập `writing1` bị từ chối vì chương trình Foundation không có kỹ năng đó |
 | Nhập hàng loạt ngoài phạm vi bị chặn ở máy chủ | `Đặng Quang Vy` (Quản lý MB) | Dán dòng có lớp `CP-FT 110`: xem trước báo *nằm ngoài phạm vi*, bấm Thêm thì dòng đó bị bỏ qua và **không** có học viên nào được tạo |
 | Không còn bước *Xác nhận (Head)* | bất kỳ tài khoản nào | Chi tiết case **không** còn nút *Xác nhận (Head)*; case kết thúc bằng chính trạng thái xử lý. Dấu xác nhận cũ vẫn hiện để tra lại |
 | Quản lý cập nhật được ngày MT | `Đặng Quang Vy` | Có cả **Đổi tuần** lẫn cập nhật **ngày thực tế** — học viên nghỉ thì sửa được ngay |

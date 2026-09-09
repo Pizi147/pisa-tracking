@@ -75,7 +75,7 @@ export type ClassSeed = {
 export const CLASSES: ClassSeed[] = [
   {
     code: 'MB-FT 101', branch: 'MB', kind: 'FT', route: 'LT1', isFulltime: true,
-    startDate: '2026-06-22', students: 8,
+    startDate: '2026-06-22', students: 12,
     plan: [
       { attemptNo: 1, week: '2026-07-27', lrwAt: '2026-07-27 18:00', done: true },
       // W2 SEP — hạn mặc định 16/09, đã quá hạn so với ngày demo 23/09.
@@ -86,7 +86,7 @@ export const CLASSES: ClassSeed[] = [
   },
   {
     code: 'MB-FT 102', branch: 'MB', kind: 'FT', route: 'LT2', isFulltime: true,
-    startDate: '2026-06-29', students: 8,
+    startDate: '2026-06-29', students: 12,
     plan: [
       { attemptNo: 1, week: '2026-08-03', lrwAt: '2026-08-03 18:00', done: true },
       // W3 SEP — hạn mặc định rơi đúng ngày demo 23/09, chưa quá hạn.
@@ -96,11 +96,11 @@ export const CLASSES: ClassSeed[] = [
   },
   {
     code: 'MB-FOUND 12', branch: 'MB', kind: 'FOUND', route: null, isFulltime: false,
-    startDate: '2026-08-10', students: 5, plan: [],
+    startDate: '2026-08-10', students: 8, plan: [],
   },
   {
     code: 'BC-FT 205', branch: 'BC', kind: 'FT', route: 'LT1', isFulltime: true,
-    startDate: '2026-06-22', students: 8,
+    startDate: '2026-06-22', students: 12,
     plan: [
       { attemptNo: 1, week: '2026-07-27', lrwAt: '2026-07-27 18:00', done: true },
       { attemptNo: 2, week: '2026-09-07', lrwAt: '2026-09-10 18:00', done: true },
@@ -109,11 +109,11 @@ export const CLASSES: ClassSeed[] = [
   },
   {
     code: 'BC-BE 80', branch: 'BC', kind: 'BE', route: null, isFulltime: false,
-    startDate: '2026-07-13', students: 5, plan: [],
+    startDate: '2026-07-13', students: 8, plan: [],
   },
   {
     code: 'CP-FT 110', branch: 'CP', kind: 'FT', route: 'LT1', isFulltime: true,
-    startDate: '2026-07-06', students: 8,
+    startDate: '2026-07-06', students: 12,
     plan: [
       { attemptNo: 1, week: '2026-08-10', lrwAt: '2026-08-10 18:00', done: true },
       // W4 SEP — tuần đang xem, vừa mock xong, hạn 30/09 chưa tới.
@@ -123,7 +123,7 @@ export const CLASSES: ClassSeed[] = [
   },
   {
     code: 'CP-FT 111', branch: 'CP', kind: 'FT', route: 'LT2', isFulltime: true,
-    startDate: '2026-06-29', students: 8,
+    startDate: '2026-06-29', students: 12,
     plan: [
       { attemptNo: 1, week: '2026-08-03', lrwAt: '2026-08-03 18:00', done: true },
       { attemptNo: 2, week: '2026-09-14', lrwAt: '2026-09-17 18:00', done: true },
@@ -132,7 +132,7 @@ export const CLASSES: ClassSeed[] = [
   },
   {
     code: 'HD-FT 302', branch: 'HD', kind: 'FT', route: 'LT1', isFulltime: true,
-    startDate: '2026-07-06', students: 8,
+    startDate: '2026-07-06', students: 12,
     plan: [
       { attemptNo: 1, week: '2026-08-10', lrwAt: '2026-08-10 18:00', done: true },
       { attemptNo: 2, week: '2026-09-21', lrwAt: '2026-09-25 18:00', done: false },
@@ -140,11 +140,11 @@ export const CLASSES: ClassSeed[] = [
   },
   {
     code: 'HD-ELE 01', branch: 'HD', kind: 'ELE', route: null, isFulltime: false,
-    startDate: '2026-08-24', students: 5, plan: [],
+    startDate: '2026-08-24', students: 8, plan: [],
   },
   {
     code: 'UB-FT 401', branch: 'UB', kind: 'FT', route: 'LT2', isFulltime: true,
-    startDate: '2026-05-25', students: 8,
+    startDate: '2026-05-25', students: 12,
     plan: [
       { attemptNo: 1, week: '2026-06-29', lrwAt: '2026-06-29 18:00', done: true },
       { attemptNo: 2, week: '2026-08-17', lrwAt: '2026-08-17 18:00', done: true },

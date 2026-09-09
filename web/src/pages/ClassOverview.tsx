@@ -7,6 +7,7 @@ import { ClassRoster } from '../components/ClassRoster.tsx';
 import { IntakePanel } from '../components/IntakePanel.tsx';
 import { usePeriods } from '../components/Filters.tsx';
 import { fmtDate, skillLabel } from '../lib/format.ts';
+import { skillShort } from '@shared/domain.ts';
 import { useSession } from '../lib/session.tsx';
 
 type Overview = {
@@ -17,7 +18,11 @@ type Overview = {
   skills: { skill: string; sessionsPerWeek: number }[];
   coreTeachers: { id: number; name: string }[];
   skillTeachers: { skill: string; id: number; name: string }[];
-  viewer: { canPlanWeek: boolean; canSetDate: boolean; canAddStudents: boolean; editableSkills: string[] };
+  programme: { code: string; name: string; weeks: number | null; scoringMode: string } | null;
+  viewer: {
+    canPlanWeek: boolean; canSetDate: boolean; canAddStudents: boolean;
+    editableSkills: string[]; isCoreTeacher: boolean;
+  };
 };
 
 /** Trang một lớp: thông tin lớp, phân công, việc cần chú ý và danh sách học viên. */
@@ -48,12 +53,29 @@ export default function ClassOverviewPage() {
           <button className="btn btn-sm btn-ghost mb-1" onClick={() => navigate(-1)}>← Quay lại</button>
           <h1 className="text-lg font-semibold text-slate-100">{data.code}</h1>
           <p className="text-xs text-slate-500 mt-0.5">
-            {data.branchName} · {data.kind}{data.route ? ` · ${data.route}` : ''}
+            {data.branchName} · {data.programme?.name ?? data.kind}{data.route ? ` · ${data.route}` : ''}
+            {data.programme?.weeks ? ` · khoá ${data.programme.weeks} tuần` : ''}
             {data.startDate && ` · khai giảng ${fmtDate(data.startDate)}`}
           </p>
+          {/* Nhắc ngay ở đầu trang: bạn phụ trách gì ở chính lớp này. */}
+          {(data.viewer.editableSkills.length > 0 || data.viewer.isCoreTeacher) && (
+            <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
+              <span className="text-[11px] text-slate-500">Bạn phụ trách:</span>
+              {data.viewer.editableSkills.map((k) => (
+                <Pill key={k} tone="info">{skillShort(k)}</Pill>
+              ))}
+              {data.viewer.isCoreTeacher && <Pill tone="neutral">GVCN</Pill>}
+            </div>
+          )}
         </div>
         <div className="flex flex-wrap gap-2">
-          <Link className="btn no-underline" to={`/nhap-diem/${data.id}${periodId ? `?periodId=${periodId}` : ''}`}>
+          {/* Lớp thường chấm theo số câu đúng nên có bảng điểm riêng. */}
+          <Link
+            className="btn no-underline"
+            to={data.programme?.scoringMode === 'ratio'
+              ? `/bang-diem-thuong/${data.id}`
+              : `/nhap-diem/${data.id}${periodId ? `?periodId=${periodId}` : ''}`}
+          >
             Nhập điểm cả lớp
           </Link>
           {data.viewer.canAddStudents && (

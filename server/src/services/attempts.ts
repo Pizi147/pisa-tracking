@@ -16,6 +16,7 @@ import {
 import { effectiveDeadline, isOverdue, weekInfo } from './week.ts';
 import { caseProgress, stepsFor, upsertCaseForResult } from './sos.ts';
 import { currentCycle, cycleById, nextAttemptNo } from './cycles.ts';
+import { allProgrammes, evaluateRegular } from './regular.ts';
 
 export type ScoreRow = {
   id: number; skill: EntrySkill; taken_on: string | null;
@@ -209,7 +210,7 @@ export type AttemptFilters = {
 const ATTEMPT_SELECT = `
   SELECT a.*, s.full_name, s.student_code,
          cy.route, cy.target_score, cy.exam_date, cy.seq AS cycle_seq,
-         c.code AS class_code, c.branch_id, b.name AS branch_name, b.code AS branch_code,
+         c.code AS class_code, c.programme_code, c.branch_id, b.name AS branch_name, b.code AS branch_code,
          pr.code AS period_code, pr.week_start AS period_start, pr.week_end AS period_end
     FROM assessment_attempts a
     JOIN students s ON s.id = a.student_id
@@ -243,9 +244,77 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
 
   const today = demoToday();
   const bundle = loadBundle(rows.map((r) => r.id));
+
+  /*
+   * Lớp thường chấm theo số câu đúng chứ không theo band, nên KHÔNG được đo bằng bộ kỹ năng
+   * IELTS. Hỏi nhầm bộ thì hàng đợi "cần nhập điểm" sẽ đòi giáo viên Foundation nhập một ô
+   * Writing task 1 không tồn tại. Đọc chương trình một lần cho mỗi lớp rồi dùng lại.
+   */
+  const programmes = allProgrammes();          // đọc một lượt, không phải mỗi lớp một lượt
+  const progOfClass = new Map<number, string | null>();
+  for (const r of rows) {
+    if (r.class_id !== null && !progOfClass.has(r.class_id)) progOfClass.set(r.class_id, r.programme_code ?? null);
+  }
+  const skillsOfClass = (classId: number | null): string[] | null => {
+    if (!classId) return null;
+    const code = progOfClass.get(classId);
+    const prog = code ? programmes.get(code) : null;
+    return prog?.scoringMode === 'ratio' ? prog.skills : null;
+  };
+
   let mapped = rows.map((a) => {
     const scores = bundle.scores.get(a.id) ?? [];
     const skips = bundle.skips.get(a.id) ?? [];
+    const regularSkills = skillsOfClass(a.class_id);
+
+    if (regularSkills) {
+      const r = evaluateRegular(regularSkills, scores);
+      const editable = a.class_id ? editableSkills(p, a.class_id, regularSkills) : [];
+      const dueForEntry = !!a.lrw_scheduled_at && String(a.lrw_scheduled_at).slice(0, 10) <= today
+        && a.status !== 'cancelled';
+      const c = bundle.cases.get(a.id);
+      return {
+        id: a.id,
+        kind: a.kind,
+        studentId: a.student_id, studentName: a.full_name, studentCode: a.student_code,
+        classId: a.class_id, classCode: a.class_code, branchId: a.branch_id, branchName: a.branch_name,
+        cycleId: a.cycle_id, cycleSeq: a.cycle_seq, route: null,
+        attemptNo: a.attempt_no,
+        target: null,
+        period: a.planned_period_id
+          ? { id: a.planned_period_id, code: a.period_code, weekStart: a.period_start, weekEnd: a.period_end }
+          : null,
+        lrwScheduledAt: a.lrw_scheduled_at,
+        speakingScheduledAt: null,
+        needsDate: a.status === 'planned' && !a.lrw_scheduled_at
+          && !!a.period_start && a.period_start <= today,
+        dateOverdue: a.status === 'planned' && !a.lrw_scheduled_at
+          && !!a.period_end && a.period_end < today,
+        status: a.status,
+        // Lớp thường không có kỳ vọng theo target, không có band, không có Overall.
+        expectation: null, bands: null, overall: null,
+        required: regularSkills, skipped: [],
+        scoredRequired: r.scored, requiredCount: r.required,
+        complete: r.complete, evaluable: r.complete,
+        sosLevel: r.sosLevel,
+        scopeNote: null, scopeDetail: null,
+        overdueSkills: 0,
+        myPendingSkills: dueForEntry
+          ? editable.filter((k) => {
+              const row = scores.find((x) => x.skill === k);
+              return row?.raw_score === null || row?.raw_score === undefined;
+            })
+          : [],
+        caseStatus: c?.status ?? null,
+        caseId: c?.id ?? null,
+        caseLevel: c?.sos_level ?? null,
+        caseFollowUp: c?.followUp ?? null,
+        canPlanWeek: can(p, PERMISSIONS.PLAN_WEEK, { classId: a.class_id }),
+        canSetDate: can(p, PERMISSIONS.SCHEDULE_DATE, { classId: a.class_id }),
+        activeSkillCount: regularSkills.length,
+      };
+    }
+
     const result = resultOf(a, scores, skips);
     const cells = skillCells(p, a, scores, skips, today);
     const active = cells.filter((c) => c.required);

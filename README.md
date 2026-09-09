@@ -48,8 +48,8 @@ npm run seed
 ```
 
 Lệnh này tạo lại toàn bộ dữ liệu giả: **5 chi nhánh** (Monbay, Bãi Cháy, Cẩm Phả, Hải Dương, Uông Bí),
-**10 lớp**, **43 tài khoản**, khoảng **71 học viên**, **57 lộ trình**, hơn **170 lượt Mock Test** kèm điểm
-từng kỹ năng và ước lượng giáo viên, các case SOS ở đủ mức tiến độ, báo cáo họp tuần và công việc.
+**10 lớp** (7 lớp FT + 3 lớp thường Foundation/Beginner/Elementary), **26 tài khoản** (mỗi chi nhánh 1 Quản lý + 1 Admin văn phòng + 3 giáo viên), khoảng **108 học viên**, **109 lộ trình/khoá**, **261 lượt Mock Test** và **48 bài kiểm tra lớp thường** kèm điểm
+từng kỹ năng và Đánh giá GV, các case SOS ở đủ mức tiến độ, báo cáo tuần và công việc.
 
 Màn hình sẽ in ra bảng tóm tắt số lượng bản ghi đã tạo.
 
@@ -212,4 +212,4 @@ Tài liệu liên quan:
 - `PISA_Design_Master_Reference.md` — sổ quyết định: trạng thái từng quyết định, cái gì đã chốt, cái gì còn chờ
 - `PRODUCT_DEMO_SPEC.md` — Product / Web Design: **A. Current MVP · B. Simplify–Remove · C. Future Design**
 - `DEMO_ASSUMPTIONS.md` — các câu đã chốt (Q1–Q4) và những điểm còn cần bạn xác nhận
-- `DEMO_SCENARIOS.md` — **mười hai luồng** để bấm thử, bảng kiểm tra quyền, các tình huống cài sẵn
+- `DEMO_SCENARIOS.md` — **mười bốn luồng** để bấm thử, bảng kiểm tra quyền, các tình huống cài sẵn

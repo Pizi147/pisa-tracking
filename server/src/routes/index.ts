@@ -20,6 +20,7 @@ import * as dashboardSvc from '../services/dashboard.ts';
 import { ensurePeriod, listPeriods, periodById, periodWindow, reportEditWindow } from '../services/week.ts';
 import * as planningSvc from '../services/planning.ts';
 import { signalsFor } from '../services/signals.ts';
+import * as regularSvc from '../services/regular.ts';
 
 export const api = Router();
 
@@ -398,6 +399,30 @@ api.get('/classes/:id/suggested-weeks', requireAuth, wrap((req) => {
   const cls = db().prepare('SELECT start_date FROM classes WHERE id = ?').get(pInt(req, 'id')) as any;
   return { weeks: intakeSvc.suggestMockWeeks(cls?.start_date ?? null, qInt(req, 'count') ?? 3) };
 }));
+
+// ============================================================ Lớp thường (FOU/BE/ELE)
+
+/** Bảng nhập điểm của lớp thường: số câu đúng / tổng số câu, đạt từ 60%. */
+api.get('/regular/classes/:classId/sheet', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return regularSvc.regularSheet(principalOf(req), pInt(req, 'classId'), qStr(req, 'kind'));
+}));
+
+/** Tạo hai bài kiểm tra của khoá theo đúng mốc TUẦN HỌC của chương trình. */
+api.post('/regular/classes/:classId/plan', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return regularSvc.planRegularTests(principalOf(req), pInt(req, 'classId'));
+}));
+
+/** Nhập điểm một kỹ năng: cả số câu đúng và tổng số câu, không tự điền tổng. */
+api.put('/regular/attempts/:id/scores/:skill', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return regularSvc.saveRegularScore(principalOf(req), pInt(req, 'id'), req.params.skill, req.body ?? {});
+}));
+
+/** Danh sách chương trình học đang dùng. */
+api.get('/ref/programmes', requireAuth, wrap(() =>
+  db().prepare(`SELECT code, name, weeks, scoring_mode AS scoringMode FROM programmes WHERE status='active' ORDER BY code`).all()));
 
 // ============================================================ Lộ trình và Đánh giá GV
 

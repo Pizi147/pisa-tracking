@@ -31,6 +31,8 @@ const classesSvc = await import('../services/classes.ts');
 const intake = await import('../services/intake.ts');
 const planning = await import('../services/planning.ts');
 const signals = await import('../services/signals.ts');
+const regular = await import('../services/regular.ts');
+const { ratioResult: domainRatio } = await import('../../../shared/domain.ts');
 const { demoToday } = await import('../demoConfig.ts');
 const { addDays } = await import('../util.ts');
 
@@ -463,10 +465,7 @@ check('So sánh ghi rõ ngày, nguồn và căn cứ của cả hai phía', () =
   const one = cmp.find((c) => c.estimate && c.mock);
   assert(one, 'Không tìm được cặp Đánh giá GV ↔ điểm Mock để so');
   assert(one!.estimate!.on && one!.mock!.source, 'Thiếu ngày đánh giá hoặc nguồn điểm Mock');
-  /*
-   * Δ đọc THEO HỌC VIÊN: dương = em đang thể hiện TỐT HƠN mức giáo viên đang đánh giá.
-   * Đảo chiều thì màu xanh sẽ rơi vào đúng trường hợp đáng lo.
-   */
+  // Δ chỉ là khoảng cách hai con số, không phải một kết luận tốt/xấu.
   assert(one!.delta === Math.round((one!.mock!.band - one!.estimate!.band) * 10) / 10,
     'Chênh lệch phải là Mock trừ Đánh giá GV');
   // Nguồn điểm không nhắc lại lộ trình: cột Target ngay cạnh đã nói rồi.
@@ -1071,6 +1070,276 @@ check('Đã bỏ trường "Loại" khỏi việc mới, giữ nguyên dữ li�
   assert(t.task_type === 'in_period', 'Vẫn nhận trường Loại từ form');
   const old = conn.prepare(`SELECT COUNT(*) n FROM tasks WHERE task_type = 'long_term'`).get() as any;
   assert(old.n > 0, 'Dữ liệu Loại cũ bị xoá mất');
+});
+
+// ==================================================================== 14
+
+console.log('\n14. Lớp thường: Foundation / Beginner / Elementary');
+const fouClass = (conn.prepare(`SELECT id, code, start_date FROM classes WHERE programme_code = 'FOU' LIMIT 1`).get() as any);
+const beClass = (conn.prepare(`SELECT id, code, start_date FROM classes WHERE programme_code = 'BE' LIMIT 1`).get() as any);
+
+check('Chương trình nằm trong dữ liệu, mã cũ FOUND ánh xạ về FOU mà không đổi mã lớp', () => {
+  const fou = regular.programmeByCode('FOU');
+  assert(fou && fou.weeks === 8, 'Foundation phải là khoá 8 tuần');
+  assert(JSON.stringify(fou!.skills) === JSON.stringify(['listening', 'reading', 'prep_writing', 'pronunciation']),
+    `Kỹ năng Foundation sai: ${fou!.skills.join(', ')}`);
+  assert(JSON.stringify(fou!.checkpoints) === JSON.stringify([{ kind: 'progress', studyWeek: 4 }, { kind: 'final', studyWeek: 8 }]),
+    'Mốc kiểm tra Foundation phải là tuần học 4 và 8');
+  const be = regular.programmeByCode('BE');
+  assert(be && be.weeks === 10 && be.skills.includes('speaking') && !be.skills.includes('pronunciation'),
+    'Beginner phải 10 tuần và có Speaking thay cho Pronunciation');
+  assert(JSON.stringify(be!.checkpoints.map((c: any) => c.studyWeek)) === '[5,10]', 'Mốc BE phải là tuần học 5 và 10');
+  // Mã cũ chỉ được ÁNH XẠ khi đọc, không được viết đè lên mã lớp lịch sử.
+  const cls = conn.prepare('SELECT kind, programme_code FROM classes WHERE id = ?').get(fouClass.id) as any;
+  assert(cls.kind === 'FOUND' && cls.programme_code === 'FOU',
+    `Mã lớp gốc phải giữ nguyên "FOUND", chương trình chuẩn hoá là "FOU" — đang là ${cls.kind}/${cls.programme_code}`);
+});
+
+check('Đạt từ 60%, xét trên tỷ lệ CHÍNH XÁC chứ không làm tròn phần trăm rồi mới so', () => {
+  assert(domainRatio(24, 40).outcome === 'pass', '24/40 = 60% phải là đạt');
+  assert(domainRatio(23, 40).outcome === 'fail', '23/40 = 57.5% phải là trượt');
+  /*
+   * Ca bẫy thật sự: 25/42 = 59.52%, hiển thị làm tròn thành "60%" nhưng vẫn phải là TRƯỢT.
+   * Nếu xét trên số phần trăm ĐÃ LÀM TRÒN thì em này thành đạt — đó chính là lỗi cần tránh.
+   */
+  const tricky = domainRatio(25, 42);
+  assert(Math.round(tricky.ratio! * 100) === 60, 'Ca này chỉ có nghĩa khi hiển thị làm tròn ra 60%');
+  assert(tricky.outcome === 'fail', '25/42 = 59.52% phải là trượt, dù hiển thị ra 60%');
+  assert(domainRatio(12, 20).outcome === 'pass', '12/20 = 60% phải là đạt');
+  assert(domainRatio(11, 20).outcome === 'fail', '11/20 = 55% phải là trượt');
+});
+
+check('Thiếu điểm KHÁC trượt: chưa đủ thì chưa kết luận, không đẩy lên SOS oan', () => {
+  const skills = ['listening', 'reading', 'prep_writing', 'pronunciation'];
+  const partial = regular.evaluateRegular(skills, [
+    { skill: 'listening', raw_score: 10, raw_total: 40 },     // trượt
+    { skill: 'reading', raw_score: 30, raw_total: 40 },       // đạt
+  ]);
+  assert(!partial.complete, 'Mới hai kỹ năng mà đã coi là xong');
+  assert(partial.failedCount === null && partial.sosLevel === null,
+    'Thiếu điểm mà đã kết luận SOS — học viên bị đẩy lên SOS oan');
+  assert(partial.scored === 2 && partial.required === 4, 'Đếm sai số kỹ năng đã có điểm');
+
+  const full = regular.evaluateRegular(skills, skills.map((skill) => ({ skill, raw_score: 10, raw_total: 40 })));
+  assert(full.complete && full.failedCount === 4 && full.sosLevel === 3, 'Đủ điểm rồi phải kết luận được');
+});
+
+check('Số môn trượt ra mức SOS theo đúng ngưỡng 1 / 2 / từ 3', () => {
+  const skills = ['listening', 'reading', 'prep_writing', 'pronunciation'];
+  const mk = (fails: number) => regular.evaluateRegular(skills,
+    skills.map((skill, i) => ({ skill, raw_score: i < fails ? 10 : 30, raw_total: 40 })));
+  assert(mk(0).sosLevel === 0, 'Đạt hết phải là 0');
+  assert(mk(1).sosLevel === 1, 'Trượt 1 môn phải là SOS 1');
+  assert(mk(2).sosLevel === 2, 'Trượt 2 môn phải là SOS 2');
+  assert(mk(3).sosLevel === 3 && mk(4).sosLevel === 3, 'Từ 3 môn trở lên đều là SOS 3');
+});
+
+check('Lớp thường KHÔNG dùng band, kỳ vọng hay Overall của FT', () => {
+  const sheet = regular.regularSheet(P.admin, fouClass.id) as any;
+  assert(sheet.programme.scoringMode === 'ratio', 'Lớp Foundation phải chấm theo tỷ lệ');
+  assert(sheet.rows.length > 0, 'Dữ liệu mẫu thiếu bài kiểm tra lớp thường');
+  for (const r of sheet.rows) {
+    for (const sk of r.result.skills) {
+      assert(!('band' in sk), 'Lớp thường không được có band IELTS');
+    }
+  }
+  // Danh sách lượt cũng phải trả về đúng như vậy, không dựng Overall giả.
+  const rows = attempts.listAttempts(P.admin, { classId: fouClass.id }).rows as any[];
+  assert(rows.length > 0, 'Không thấy bài kiểm tra lớp thường trong danh sách lượt');
+  for (const r of rows) {
+    assert(r.overall === null && r.expectation === null,
+      'Lớp thường không có Overall hay kỳ vọng — không được dựng số giả');
+    assert(r.kind === 'progress' || r.kind === 'final', `Loại bài sai: ${r.kind}`);
+  }
+});
+
+check('Mốc kiểm tra tính theo TUẦN HỌC của lớp, không phải tuần thứ mấy của tháng', () => {
+  const rows = conn
+    .prepare(
+      `SELECT a.kind, rp.week_start FROM assessment_attempts a
+         JOIN report_periods rp ON rp.id = a.planned_period_id
+        WHERE a.class_id = ? ORDER BY rp.week_start`,
+    )
+    .all(fouClass.id) as any[];
+  const progress = rows.find((r) => r.kind === 'progress');
+  const final = rows.find((r) => r.kind === 'final');
+  assert(progress && final, 'Thiếu bài giữa khoá hoặc cuối khoá');
+  // Tuần học 4 = 3 tuần sau khai giảng; tuần học 8 = 7 tuần sau.
+  assert(progress.week_start === week.mondayOf(addDays(fouClass.start_date, 3 * 7)),
+    `Bài giữa khoá phải rơi vào tuần học 4, đang là ${progress.week_start}`);
+  assert(final.week_start === week.mondayOf(addDays(fouClass.start_date, 7 * 7)),
+    `Bài cuối khoá phải rơi vào tuần học 8, đang là ${final.week_start}`);
+  // BE/ELE là tuần học 5 và 10.
+  const be = conn
+    .prepare(`SELECT a.kind, rp.week_start FROM assessment_attempts a
+                JOIN report_periods rp ON rp.id = a.planned_period_id WHERE a.class_id = ?`)
+    .all(beClass.id) as any[];
+  assert(be.find((r) => r.kind === 'progress')?.week_start === week.mondayOf(addDays(beClass.start_date, 4 * 7)),
+    'Bài giữa khoá BE phải rơi vào tuần học 5');
+  assert(be.find((r) => r.kind === 'final')?.week_start === week.mondayOf(addDays(beClass.start_date, 9 * 7)),
+    'Bài cuối khoá BE phải rơi vào tuần học 10');
+});
+
+check('Nhập điểm phải có cả số câu đúng và tổng; không tự điền tổng', () => {
+  const rows = (regular.regularSheet(P.admin, fouClass.id) as any).rows;
+  // Phải chọn một ô CHƯA có điểm: ô đã có tổng rồi thì sửa mỗi số câu đúng là hợp lệ.
+  const row = rows.find((r: any) => r.result.skills.find((k: any) => k.skill === 'listening')?.total === null) ?? rows[0];
+  const teacher = conn
+    .prepare(`SELECT user_id FROM teacher_assignments WHERE class_id = ? AND skill = 'listening' AND status='active'`)
+    .get(fouClass.id) as any;
+  const T = loadPrincipal(teacher.user_id);
+
+  const fresh = conn
+    .prepare(
+      `SELECT a.id FROM assessment_attempts a
+        WHERE a.class_id = ? AND NOT EXISTS
+          (SELECT 1 FROM assessment_scores sc WHERE sc.attempt_id = a.id AND sc.skill = 'listening') LIMIT 1`,
+    )
+    .get(fouClass.id) as any;
+  if (fresh) {
+    assertThrows(() => regular.saveRegularScore(T, fresh.id, 'listening', { score: 20 }),
+      /tổng số câu/, 'Nhập số câu đúng mà không có tổng');
+  }
+  assertThrows(() => regular.saveRegularScore(T, row.attemptId, 'listening', { score: 45, total: 40 }),
+    /không thể lớn hơn/, 'Số câu đúng lớn hơn tổng');
+  assertThrows(() => regular.saveRegularScore(T, row.attemptId, 'listening', { score: 10, total: 0 }),
+    /lớn hơn 0/, 'Tổng số câu bằng 0');
+  assertThrows(() => regular.saveRegularScore(T, row.attemptId, 'listening', { score: 10.5, total: 40 }),
+    /số nguyên/, 'Số câu đúng lẻ');
+
+  const ok = regular.saveRegularScore(T, row.attemptId, 'listening', { score: 30, total: 40 }) as any;
+  assert(ok.score.raw_score === 30 && ok.score.raw_total === 40, 'Không lưu được số câu đúng và tổng');
+});
+
+check('Giáo viên chỉ nhập được kỹ năng mình phụ trách, và không nhập kỹ năng lớp không có', () => {
+  const row = (regular.regularSheet(P.admin, fouClass.id) as any).rows[0];
+  const lTeacher = conn
+    .prepare(`SELECT user_id FROM teacher_assignments WHERE class_id = ? AND skill = 'listening' AND status='active'`)
+    .get(fouClass.id) as any;
+  const T = loadPrincipal(lTeacher.user_id);
+  const other = conn
+    .prepare(`SELECT skill FROM teacher_assignments WHERE class_id = ? AND skill IS NOT NULL AND user_id != ? LIMIT 1`)
+    .get(fouClass.id, lTeacher.user_id) as any;
+  if (other) {
+    assertThrows(() => regular.saveRegularScore(T, row.attemptId, other.skill, { score: 10, total: 20 }),
+      /phân công/, `GV Listening nhập hộ ${other.skill}`);
+  }
+  // Foundation không có Writing task 1 — không được nhập một ô không tồn tại trong chương trình.
+  assertThrows(() => regular.saveRegularScore(P.admin, row.attemptId, 'writing1', { score: 5, total: 10 }),
+    /không có kỹ năng/, 'Nhập kỹ năng ngoài chương trình');
+});
+
+check('Case SOS của lớp thường dùng CHUNG hệ thống case với lớp FT', () => {
+  const cases = conn
+    .prepare(
+      `SELECT sc.sos_level, COUNT(*) n FROM sos_cases sc
+         JOIN assessment_attempts a ON a.id = sc.attempt_id
+        WHERE a.kind != 'mock' GROUP BY sc.sos_level ORDER BY sc.sos_level`,
+    )
+    .all() as any[];
+  assert(cases.length >= 3, 'Dữ liệu mẫu cần đủ cả ba mức SOS của lớp thường');
+  for (const c of cases) assert(c.sos_level >= 1 && c.sos_level <= 3, `Mức SOS lạ: ${c.sos_level}`);
+  // Cùng một bảng, nên hai card SOS ở Tổng quan phải đếm được cả case của lớp thường.
+  const one = conn
+    .prepare(`SELECT sc.id FROM sos_cases sc JOIN assessment_attempts a ON a.id = sc.attempt_id
+               WHERE a.kind != 'mock' AND sc.status != 'done' LIMIT 1`)
+    .get() as any;
+  assert(one, 'Không có case lớp thường nào đang mở để kiểm tra');
+});
+
+check('Sửa điểm làm đổi mức SOS thì GIỮ case và ghi lịch sử, không xoá làm lại', () => {
+  const target = conn
+    .prepare(
+      `SELECT sc.id AS case_id, sc.sos_level, a.id AS attempt_id, a.class_id
+         FROM sos_cases sc JOIN assessment_attempts a ON a.id = sc.attempt_id
+        WHERE a.kind != 'mock' AND sc.sos_level >= 2 LIMIT 1`,
+    )
+    .get() as any;
+  assert(target, 'Cần một case lớp thường mức từ 2 trở lên để thử');
+  const prog = regular.programmeOfClass(target.class_id)!;
+  // Nâng mọi kỹ năng lên mức đạt: SOS phải về 0 nhưng case vẫn còn để tra lịch sử.
+  for (const skill of prog.skills) {
+    regular.saveRegularScore(P.admin, target.attempt_id, skill, { score: 38, total: 40 });
+  }
+  const after = conn.prepare('SELECT * FROM sos_cases WHERE id = ?').get(target.case_id) as any;
+  assert(after, 'Case bị xoá mất khi điểm đổi');
+  assert(after.sos_level === 0, `Mức SOS phải tính lại về 0, đang là ${after.sos_level}`);
+  const hist = conn.prepare(`SELECT * FROM sos_case_history WHERE case_id = ? AND field = 'sos_level'`)
+    .all(target.case_id) as any[];
+  assert(hist.length > 0, 'Đổi mức SOS mà không ghi lịch sử');
+});
+
+check('Đủ điểm mọi kỹ năng thì bài mới chuyển sang đã xong', () => {
+  const planned = conn
+    .prepare(
+      `SELECT a.id, a.class_id FROM assessment_attempts a
+        WHERE a.kind != 'mock' AND a.status = 'planned' AND a.lrw_scheduled_at IS NOT NULL LIMIT 1`,
+    )
+    .get() as any;
+  if (!planned) return;
+  const prog = regular.programmeOfClass(planned.class_id)!;
+  prog.skills.forEach((skill, i) => {
+    if (i === prog.skills.length - 1) return;      // cố tình bỏ trống kỹ năng cuối
+    regular.saveRegularScore(P.admin, planned.id, skill, { score: 30, total: 40 });
+  });
+  let st = conn.prepare('SELECT status FROM assessment_attempts WHERE id = ?').get(planned.id) as any;
+  assert(st.status === 'planned', 'Thiếu một kỹ năng mà đã coi là xong');
+  regular.saveRegularScore(P.admin, planned.id, prog.skills[prog.skills.length - 1], { score: 30, total: 40 });
+  st = conn.prepare('SELECT status FROM assessment_attempts WHERE id = ?').get(planned.id) as any;
+  assert(st.status === 'done', 'Đủ điểm rồi mà bài vẫn chưa chuyển sang đã xong');
+});
+
+check('Badge của lớp thường đếm đúng theo bộ kỹ năng của chương trình', () => {
+  const teacher = conn
+    .prepare(`SELECT user_id FROM teacher_assignments WHERE class_id = ? AND skill = 'listening' AND status='active'`)
+    .get(fouClass.id) as any;
+  const T = loadPrincipal(teacher.user_id);
+  const summary = (classesSvc.listClassSummaries(T, {}) as any).rows.find((c: any) => c.id === fouClass.id);
+  assert(summary, 'Giáo viên lớp Foundation phải thấy lớp của mình');
+  assert(summary.scoringMode === 'ratio', 'Danh sách lớp phải cho biết lớp này chấm theo tỷ lệ');
+  const queue = attempts.listAttempts(T, { classId: fouClass.id, need: 'my_scores' }).rows.length;
+  assert(summary.needScores === queue,
+    `Badge ${summary.needScores} khác hàng đợi ${queue} của chính giáo viên đó`);
+});
+
+check('Chạy lại kế hoạch không tạo bài trùng cho em đã có', () => {
+  const first = regular.planRegularTests(P.admin, beClass.id) as any;
+  const before = (conn.prepare(`SELECT COUNT(*) n FROM assessment_attempts WHERE class_id = ?`).get(beClass.id) as any).n;
+  const again = regular.planRegularTests(P.admin, beClass.id) as any;
+  assert(again.created === 0, `Chạy lại đã tạo thêm ${again.created} bài kiểm tra trùng`);
+  const after = (conn.prepare(`SELECT COUNT(*) n FROM assessment_attempts WHERE class_id = ?`).get(beClass.id) as any).n;
+  assert(after === before, 'Số bài kiểm tra thay đổi sau khi chạy lại');
+  void first;
+  // Lớp FT không dùng đường này.
+  assertThrows(() => regular.planRegularTests(P.admin, mbClass), /không phải lớp thường/, 'Lớp FT gọi lịch lớp thường');
+});
+check('Chuyển từ lớp FT sang lớp thường thì mở KHOÁ MỚI, không mượn lộ trình IELTS cũ', () => {
+  /*
+   * Một em chuyển từ lớp FT sang Foundation là bắt đầu một khoá khác: cách chấm khác, không
+   * có target. Gắn bài Foundation vào lộ trình LT1 cũ thì lịch sử học thành một mớ lẫn lộn.
+   */
+  const moved = conn
+    .prepare(
+      `SELECT a.student_id, a.cycle_id, cy.route FROM assessment_attempts a
+         JOIN learning_cycles cy ON cy.id = a.cycle_id
+        WHERE a.class_id = ? AND a.kind != 'mock' LIMIT 200`,
+    )
+    .all(beClass.id) as any[];
+  for (const m of moved) {
+    assert(m.route === null,
+      `Bài kiểm tra lớp thường đang gắn vào lộ trình ${m.route} — phải mở khoá riêng`);
+  }
+  // Và lộ trình IELTS cũ của em đó vẫn còn nguyên để tra lại.
+  const both = conn
+    .prepare(
+      `SELECT student_id, COUNT(*) n FROM learning_cycles
+        WHERE status = 'active' GROUP BY student_id HAVING n > 1 LIMIT 1`,
+    )
+    .get() as any;
+  if (both) {
+    const routes = conn.prepare('SELECT route FROM learning_cycles WHERE student_id = ?').all(both.student_id) as any[];
+    assert(routes.some((r) => r.route === null), 'Em chuyển lớp phải có một khoá lớp thường riêng');
+  }
 });
 
 console.log(`\n${'='.repeat(60)}`);

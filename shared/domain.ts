@@ -167,6 +167,17 @@ export const REGULAR_SKILL_LABEL: Record<RegularSkill, string> = {
 };
 
 /**
+ * Viết tắt dùng trên badge, ví dụ `L R` hay `R W1`.
+ * Gộp cả kỹ năng của lớp FT và lớp thường vào một bảng để nơi hiển thị không phải đoán
+ * lớp nào dùng bộ nào.
+ */
+export const SKILL_SHORT: Record<string, string> = {
+  listening: 'L', reading: 'R', writing1: 'W1', writing2: 'W2', speaking: 'S',
+  prep_writing: 'PrepW', pronunciation: 'Pron',
+};
+export const skillShort = (k: string) => SKILL_SHORT[k] ?? k;
+
+/**
  * Mốc kiểm tra tính theo TUẦN HỌC của lớp, không phải tuần thứ mấy của tháng.
  * FOU 8 tuần: giữa khoá tuần 4, cuối khoá tuần 8.
  * BE/ELE 10 tuần: giữa khoá tuần 5, cuối khoá tuần 10.
