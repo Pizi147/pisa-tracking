@@ -42,6 +42,48 @@ export function skipsOf(attemptId: number): AssessedSkill[] {
     .filter((s) => (ASSESSED_SKILLS as readonly string[]).includes(s));
 }
 
+/**
+ * Nạp điểm, kỹ năng không mock và case của NHIỀU lượt bằng ba truy vấn.
+ * Danh sách lớp và danh sách lượt đều dùng hàm này thay vì hỏi lại theo từng dòng.
+ */
+export type AttemptBundle = {
+  scores: Map<number, ScoreRow[]>;
+  skips: Map<number, AssessedSkill[]>;
+  cases: Map<number, { id: number; status: string; sos_level: number }>;
+};
+
+export function loadBundle(attemptIds: number[]): AttemptBundle {
+  const bundle: AttemptBundle = { scores: new Map(), skips: new Map(), cases: new Map() };
+  if (!attemptIds.length) return bundle;
+  const conn = db();
+  // SQLite giới hạn số tham số của một câu lệnh, nên chia lô thay vì nối một danh sách dài.
+  for (let i = 0; i < attemptIds.length; i += 400) {
+    const chunk = attemptIds.slice(i, i + 400);
+    const ph = chunk.map(() => '?').join(',');
+    for (const r of conn
+      .prepare(
+        `SELECT s.*, u.full_name AS entered_by_name FROM assessment_scores s
+           LEFT JOIN users u ON u.id = s.entered_by WHERE s.attempt_id IN (${ph})`,
+      )
+      .all(...chunk) as any[]) {
+      if (!bundle.scores.has(r.attempt_id)) bundle.scores.set(r.attempt_id, []);
+      bundle.scores.get(r.attempt_id)!.push(r);
+    }
+    for (const r of conn
+      .prepare(`SELECT attempt_id, skill FROM attempt_skill_skips WHERE attempt_id IN (${ph})`)
+      .all(...chunk) as any[]) {
+      if (!bundle.skips.has(r.attempt_id)) bundle.skips.set(r.attempt_id, []);
+      bundle.skips.get(r.attempt_id)!.push(r.skill as AssessedSkill);
+    }
+    for (const r of conn
+      .prepare(`SELECT id, attempt_id, status, sos_level FROM sos_cases WHERE attempt_id IN (${ph})`)
+      .all(...chunk) as any[]) {
+      bundle.cases.set(r.attempt_id, { id: r.id, status: r.status, sos_level: r.sos_level });
+    }
+  }
+  return bundle;
+}
+
 export function entryBandsOf(rows: ScoreRow[]) {
   const map: Partial<Record<EntrySkill, number | null>> = {};
   for (const r of rows) map[r.skill] = r.band;
@@ -175,9 +217,10 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
     .all(...params) as any[];
 
   const today = demoToday();
+  const bundle = loadBundle(rows.map((r) => r.id));
   let mapped = rows.map((a) => {
-    const scores = scoresOf(a.id);
-    const skips = skipsOf(a.id);
+    const scores = bundle.scores.get(a.id) ?? [];
+    const skips = bundle.skips.get(a.id) ?? [];
     const result = resultOf(a, scores, skips);
     const cells = skillCells(p, a, scores, skips, today);
     const active = cells.filter((c) => c.required);
@@ -219,8 +262,8 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
       myPendingSkills: cells
         .filter((c) => c.canEdit && c.band === null && (c.progress === 'performed' || c.progress === 'due'))
         .map((c) => c.skill),
-      caseStatus: (conn.prepare('SELECT status FROM sos_cases WHERE attempt_id = ?').get(a.id) as any)?.status ?? null,
-      caseId: (conn.prepare('SELECT id FROM sos_cases WHERE attempt_id = ?').get(a.id) as any)?.id ?? null,
+      caseStatus: bundle.cases.get(a.id)?.status ?? null,
+      caseId: bundle.cases.get(a.id)?.id ?? null,
       canPlanWeek: can(p, PERMISSIONS.PLAN_WEEK, { classId: a.class_id }),
       canSetDate: can(p, PERMISSIONS.SCHEDULE_DATE, { classId: a.class_id }),
       activeSkillCount: active.length,
@@ -740,9 +783,11 @@ export function classScoreSheet(p: Principal, classId: number, periodId: number 
     classId, classCode: cls.code, branchName: cls.branch_name,
     period: period ? { id: period.id, code: period.code, weekStart: period.week_start, weekEnd: period.week_end } : null,
     editableSkills: editableSkills(p, classId, ENTRY_SKILLS),
-    rows: attempts.map((a) => {
-      const scores = scoresOf(a.id);
-      const skips = skipsOf(a.id);
+    rows: (() => {
+      const bundle = loadBundle(attempts.map((a) => a.id));
+      return attempts.map((a) => {
+      const scores = bundle.scores.get(a.id) ?? [];
+      const skips = bundle.skips.get(a.id) ?? [];
       return {
         attemptId: a.id,
         studentId: a.student_id,
@@ -755,7 +800,8 @@ export function classScoreSheet(p: Principal, classId: number, periodId: number 
         cells: skillCells(p, a, scores, skips),
         result: resultOf(a, scores, skips),
       };
-    }),
+      });
+    })(),
   };
 }
 

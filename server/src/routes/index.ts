@@ -11,6 +11,8 @@ import { maybeSimulateReadError, maybeSimulateSaveFailure, pInt, qInt, qStr, wra
 import * as attemptSvc from '../services/attempts.ts';
 import * as cycleSvc from '../services/cycles.ts';
 import * as estimateSvc from '../services/estimates.ts';
+import * as classSvc from '../services/classes.ts';
+import * as intakeSvc from '../services/intake.ts';
 import * as sosSvc from '../services/sos.ts';
 import * as studentSvc from '../services/students.ts';
 import * as meetingSvc from '../services/meeting.ts';
@@ -62,8 +64,8 @@ api.get('/demo/session', wrap((req) => {
      * Chỉ đổi điểm vào, không đổi quyền.
      */
     landing: p.roleKeys.length === 1
-      ? p.roleKeys[0] === 'teacher' ? '/mock-test?need=my_scores'
-        : p.roleKeys[0] === 'branch_admin' ? '/mock-test?need=needs_date'
+      ? p.roleKeys[0] === 'teacher' ? '/hoc-vien?view=my_scores'
+        : p.roleKeys[0] === 'branch_admin' ? '/hoc-vien?view=needs_date'
         : '/'
       : '/',
     // Bốn mục điều hướng + một lối phụ. Ẩn/hiện theo quyền, không theo tên vai trò.
@@ -272,6 +274,63 @@ api.put('/attempts/:id/scores/:skill', requireAuth, wrap((req) => {
 api.get('/classes/:id/score-sheet', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   return attemptSvc.classScoreSheet(principalOf(req), pInt(req, 'id'), qInt(req, 'periodId') ?? null);
+}));
+
+// ============================================================ Lớp (Học viên lấy lớp làm gốc)
+
+api.get('/classes', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return classSvc.listClassSummaries(principalOf(req), {
+    branchId: qInt(req, 'branchId'),
+    q: qStr(req, 'q'),
+  });
+}));
+
+/** Danh sách học viên của lớp — chỉ gọi khi người dùng mở rộng lớp đó. */
+api.get('/classes/:id/roster', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return classSvc.classRoster(principalOf(req), pInt(req, 'id'), qStr(req, 'q'));
+}));
+
+api.get('/classes/:id/overview', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return classSvc.classOverview(principalOf(req), pInt(req, 'id'));
+}));
+
+api.post('/classes', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return intakeSvc.createClass(principalOf(req), req.body ?? {});
+}));
+
+// ============================================================ Thêm học viên hàng loạt
+
+/** Tách dòng từ nội dung dán ở Excel/Google Sheets. Không ghi gì vào database. */
+api.post('/intake/parse', requireAuth, wrap((req) => {
+  const text = String(req.body?.text ?? '');
+  if (!text.trim()) throw badRequest('Chưa có nội dung để đọc.');
+  return intakeSvc.parsePaste(text);
+}));
+
+/** Xem trước: soát lỗi từng dòng, gợi ý trùng hồ sơ. Vẫn không ghi gì. */
+api.post('/intake/preview', requireAuth, wrap((req) => {
+  const b = req.body ?? {};
+  return intakeSvc.previewIntake(principalOf(req), {
+    rows: b.rows ?? [], defaultClassId: b.defaultClassId ?? null, dateFormat: b.dateFormat,
+  });
+}));
+
+api.post('/intake/commit', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  const b = req.body ?? {};
+  return intakeSvc.commitIntake(principalOf(req), {
+    rows: b.rows ?? [], defaultClassId: b.defaultClassId ?? null, dateFormat: b.dateFormat,
+    skipRows: b.skipRows ?? [], idempotencyKey: b.idempotencyKey,
+  });
+}));
+
+api.get('/classes/:id/suggested-weeks', requireAuth, wrap((req) => {
+  const cls = db().prepare('SELECT start_date FROM classes WHERE id = ?').get(pInt(req, 'id')) as any;
+  return { weeks: intakeSvc.suggestMockWeeks(cls?.start_date ?? null, qInt(req, 'count') ?? 3) };
 }));
 
 // ============================================================ Lộ trình và ước lượng

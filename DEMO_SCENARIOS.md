@@ -62,11 +62,11 @@ Ví dụ hay để mở: các dòng `Case SOS` của lớp `CP-FT 110` (thi 22/0
 
 ---
 
-## Luồng 3 — Quản lý cập nhật Họp tuần và công việc tồn
+## Luồng 3 — Quản lý cập nhật Tiến trình công việc và việc tồn
 
 **Tài khoản:** `Đặng Quang Vy` (Quản lý Monbay)
 
-1. Mở **Họp tuần**. Quản lý Monbay chỉ thấy **Monbay** và **Tutor part-time** —
+1. Mở **Tiến trình công việc**. Quản lý Monbay chỉ thấy **Monbay** và **Tutor part-time** —
    Tutor là *đơn vị độc lập*, **không phải chi nhánh thứ sáu**.
 2. Dòng tổng kết bên phải đếm theo danh mục thật: `Chưa báo cáo / Ổn / Cần theo dõi / Có vấn đề`
    **trên 6 mục** (2 đơn vị × 3 nhóm). Với Admin là **trên 18 mục** (5×3 + 3) — mẫu số tính lại, không hardcode.
@@ -140,6 +140,48 @@ GVCN chỉ đọc lịch.
 
 ---
 
+## Luồng 7 — Lớp là gốc: từ danh sách lớp tới nhập điểm
+
+**Vai:** `Hoàng Khánh Huy` (giáo viên W1, lớp MB-FT 101) hoặc `Đặng Ngọc Phúc` (Admin chi nhánh MB).
+
+1. Mở **Học viên**. Màn hình mở ra là **danh sách lớp**, không phải danh sách 400 học viên.
+   Mỗi dòng lớp có badge — và **chỉ có badge khi thật sự có việc cần làm**.
+2. Bấm **nền dòng** một lớp → danh sách học viên mở ra ngay tại chỗ. Mỗi em hiện chuỗi
+   `MT1 ✓ · MT2 ✓ · MT3 W4 OCT`, kết quả gần nhất và ước lượng giáo viên.
+   Đây chính là phần *tiến độ / mock test* trước đây tách riêng.
+3. Bấm **nền dòng lớp thứ hai** → lớp thứ nhất **vẫn mở**. Hai lớp đặt cạnh nhau mà so.
+4. Bấm **badge** `N cần nhập điểm` → chuyển sang hàng đợi đã lọc sẵn theo lớp đó.
+   Roster **không** bị đóng mở theo — badge và nền dòng là hai vùng bấm khác nhau.
+5. Bấm **tên lớp** → mở Class Overview (trang riêng của lớp), cũng không kích hoạt đóng mở.
+6. Gõ tên một học viên vào ô **Tìm** → trả về đúng **lớp chứa em đó**.
+7. Mở hồ sơ một em rồi bấm **Back** → ô tìm kiếm, bộ lọc và **các lớp đang mở** còn nguyên.
+
+**Bằng bàn phím:** Tab tới dòng lớp, **Enter** mở, **Space** đóng. Dòng lớp có `aria-expanded`
+để trình đọc màn hình đọc đúng trạng thái.
+
+---
+
+## Luồng 8 — Thêm học viên hàng loạt từ Excel
+
+**Vai:** `Đặng Ngọc Phúc` (Admin chi nhánh Monbay).
+
+1. **Học viên** → **Thêm học viên**. Dán thẳng vùng bảng từ Excel/Google Sheets vào ô dán,
+   hoặc gõ thẳng vào lưới.
+2. Chọn **định dạng ngày** đúng với dữ liệu. `12/05/2008` là mơ hồ — hệ thống **không đoán**.
+3. Xem trước **tự chạy**, không phải bấm nút nào: dòng thiếu họ tên, lớp không tồn tại, ngày
+   không đọc được đều hiện lỗi ngay tại ô.
+4. Nút ghi rõ **Thêm 1 học viên** chứ không phải 3 — nó đếm đúng số dòng sẽ được ghi.
+   Nút bị khoá khi còn dòng lỗi; bấm **Bỏ qua N dòng lỗi** là gỡ xong trong một lần.
+5. Bấm Thêm → báo *"Đã thêm 1 học viên, bỏ qua 2 dòng"*. Mở lại lớp thấy em vừa thêm;
+   hai dòng hỏng **không** để lại rác trong dữ liệu.
+6. Bấm Thêm lần nữa với đúng lô đó → **không** tạo thêm học viên trùng.
+
+**Thử thêm:** dòng bỏ trống cột **Lộ trình** vẫn được tạo lộ trình **kế thừa từ lớp**
+(vào lớp LT1 thì đang học LT1), chỉ cảnh báo *"Chưa có target — nhập được nhưng chưa tính
+được kỳ vọng"*. Hệ thống không tự đoán target.
+
+---
+
 ## Kiểm tra quyền (bấm nhanh)
 
 | Thử | Tài khoản | Kỳ vọng |
@@ -148,10 +190,11 @@ GVCN chỉ đọc lịch.
 | GVCN **không** có quyền lịch | `Đinh Bảo Vy` (GVCN MB-FT 101) | Không có nút **Đổi tuần** lẫn **Chốt ngày giờ**; gọi thẳng API cũng bị từ chối |
 | Quản lý chốt tuần nhưng không chốt ngày | `Đặng Quang Vy` | Có **Đổi tuần**, không có **Chốt ngày giờ** |
 | Admin CN chốt ngày nhưng không chốt tuần | `Đặng Ngọc Phúc` | Có **Chốt ngày giờ**, không có **Đổi tuần** |
-| Admin CN **không** vào Tiến trình công việc | `Đặng Ngọc Phúc` | Menu chỉ còn 3 mục, không có *Họp tuần*; gọi API báo cáo bị từ chối |
+| Admin CN **không** vào Tiến trình công việc | `Đặng Ngọc Phúc` | Menu chỉ còn 3 mục, không có *Tiến trình công việc*; gọi API báo cáo bị từ chối |
 | Không thấy dữ liệu ngoài chi nhánh | `Đặng Quang Vy` (Quản lý MB) | Không thấy lớp `CP-FT 110`; gọi thẳng URL của Mock lớp CP bị **API từ chối**, không chỉ ẩn nút |
 | Nhiều quản lý cùng chi nhánh | `Trần Quang Nam`, `Đinh Bảo Lam` (đều là Quản lý MB) | Cả ba quản lý MB đều thao tác được |
-| Giáo viên không có Họp tuần | bất kỳ giáo viên nào | Menu chỉ còn **3 mục**, không có *Họp tuần* |
+| Giáo viên không có Tiến trình công việc | bất kỳ giáo viên nào | Menu chỉ còn **3 mục**, không có *Tiến trình công việc* |
+| Nhập hàng loạt ngoài phạm vi bị chặn ở máy chủ | `Đặng Quang Vy` (Quản lý MB) | Dán dòng có lớp `CP-FT 110`: xem trước báo *nằm ngoài phạm vi*, bấm Thêm thì dòng đó bị bỏ qua và **không** có học viên nào được tạo |
 | Chỉ Quản lý xác nhận được Head | `Đặng Ngọc Phúc` (Admin chi nhánh MB) | **Không** thấy nút *Xác nhận (Head)*; các thao tác văn phòng khác (dời lịch, nhập bù điểm, sửa hồ sơ) vẫn làm được |
 | Giáo viên không huỷ được lịch | `Đinh Bảo Vy` (GVCN MB-FT 101) | Có nút **Dời lịch**, **không** có nút *Huỷ lịch* |
 | Quản trị hệ thống thấy phần quản trị | `Đặng Quang Nhi` | Menu tài khoản có mục **Quản trị hệ thống** |

@@ -3,8 +3,11 @@
 Đây là **bản demo nội bộ** của hệ thống quản lý học vụ và vận hành PISA IELTS, dùng để bạn
 bấm thử giao diện và phát hiện chỗ chưa hợp lý **trước khi** xây sản phẩm thật.
 
-Bản demo lấy **Mock Test** làm trung tâm và nối liền: lịch thi → nhập điểm từng kỹ năng →
-kết luận SOS → ghi nhận xử lý → công việc trong họp tuần.
+Bản demo lấy **lớp** làm gốc và nối liền: lớp → học viên → tiến độ MT → xếp lịch → nhập điểm
+từng kỹ năng → kết luận SOS → ghi nhận xử lý → công việc trong Tiến trình công việc.
+
+Ba mục điều hướng, không hơn: **Tổng quan** · **Tiến trình công việc** · **Học viên**.
+Mock test không còn là menu riêng — lịch và điểm nằm ngay trong lớp của học viên.
 
 > **Toàn bộ dữ liệu trong bản demo là dữ liệu giả.** Không có tên, số điện thoại hay thông tin
 > thật của học viên. Bản demo chỉ chạy trên máy của bạn, không kết nối internet,
@@ -209,4 +212,4 @@ Tài liệu liên quan:
 - `PISA_Design_Master_Reference.md` — sổ quyết định: trạng thái từng quyết định, cái gì đã chốt, cái gì còn chờ
 - `PRODUCT_DEMO_SPEC.md` — Product / Web Design: **A. Current MVP · B. Simplify–Remove · C. Future Design**
 - `DEMO_ASSUMPTIONS.md` — các câu đã chốt (Q1–Q4) và những điểm còn cần bạn xác nhận
-- `DEMO_SCENARIOS.md` — **ba luồng chính** để bấm thử, bảng kiểm tra quyền, các tình huống cài sẵn
+- `DEMO_SCENARIOS.md` — **tám luồng** để bấm thử, bảng kiểm tra quyền, các tình huống cài sẵn

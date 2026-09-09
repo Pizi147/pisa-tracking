@@ -17,23 +17,72 @@ Trạng thái các câu cần chốt nằm ở `DEMO_ASSUMPTIONS.md`.
 
 ## A1. Kiến trúc thông tin
 
-Bốn mục nghiệp vụ, không hơn. Quản trị là lối vào phụ trong menu tài khoản.
+**Ba** mục nghiệp vụ, không hơn. Quản trị là lối vào phụ trong menu tài khoản.
 
 | Mục | Nội dung | Thao tác trọng tâm |
 |---|---|---|
-| **Tổng quan** | Tuần đang xem, tiến độ Mock, thiếu điểm/quá hạn, SOS cần xử lý | Bấm số liệu hoặc học sinh để mở đúng danh sách |
-| **Mock Test** | Lịch và kết quả Mock trong cùng một danh sách | Lên lịch, dời lịch, nhập điểm, mở chi tiết, ghi nhận SOS |
-| **Học viên** | Tìm học sinh, hồ sơ, lịch Mock, hành trình | Xem tiến trình và các lần Mock của một em |
-| **Họp tuần** | Tình hình từng đơn vị và công việc theo dõi | Cập nhật ngắn, phân công, cập nhật tiến độ |
+| **Tổng quan** | Tuần đang xem, tiến độ MT, thiếu điểm/quá hạn, SOS cần xử lý | Bấm số liệu hoặc học sinh để mở đúng danh sách |
+| **Tiến trình công việc** | Tình hình từng đơn vị và công việc theo dõi | Cập nhật ngắn, phân công, cập nhật tiến độ |
+| **Học viên** | Lớp → học viên → tiến độ MT → nhập điểm, tất cả trong một mục | Mở lớp, nhập điểm, xếp lịch, thêm học viên hàng loạt |
 | *(phụ)* Quản trị hệ thống | Ma trận quyền, đơn vị báo cáo, nhật ký, tài khoản | Chỉ xem, dành cho Quản trị hệ thống |
 
-**Không có menu riêng cho SOS, báo cáo, sự việc, agenda hay công việc.** Chúng nằm tại nơi phát sinh:
-SOS trong chi tiết Mock; báo cáo và công việc trong Họp tuần.
+**Không có menu riêng cho SOS, báo cáo, sự việc, agenda, công việc — và từ vòng B, cũng không còn
+menu riêng cho Mock test.** Chúng nằm tại nơi phát sinh: SOS trong chi tiết MT; báo cáo và công việc
+trong Tiến trình công việc; lịch và điểm MT trong chính lớp của học viên.
+
+Đường dẫn cũ không bị bỏ rơi: `/mock-test` → `/hoc-vien`, `/mock-test/lop/:id` → màn nhập điểm của
+lớp đó, `/hop-tuan` → `/tien-trinh`. Người đã lưu bookmark vẫn vào đúng chỗ.
 
 Điểm mở đầu theo vai trò (chỉ đổi lối vào, không đổi quyền):
 
-- Giáo viên → `Mock Test` với bộ lọc **Điểm tôi cần nhập** (xuyên tuần).
+- Giáo viên → `Học viên` với bộ lọc **Cần nhập điểm** (xuyên tuần).
 - Các vai trò còn lại → `Tổng quan` tuần hiện tại.
+
+### A1a. Học viên lấy LỚP làm gốc
+
+Giáo viên và Admin CN không nghĩ theo "danh sách 400 học viên", họ nghĩ theo lớp mình phụ trách.
+Nên màn Học viên mở ra là **danh sách lớp**, mỗi lớp một dòng, mở ra tại chỗ để xem học viên.
+
+Bốn cách xem của **cùng một màn hình**, không phải bốn module:
+
+| Cách xem | Trả lời câu hỏi |
+|---|---|
+| **Theo lớp** *(mặc định)* | "Lớp tôi phụ trách đang thế nào?" |
+| **Cần nhập điểm** | "Còn điểm nào tôi chưa nhập?" — xuyên tuần, xuyên lớp |
+| **Cần xếp lịch** | "Lượt MT nào đã chốt tuần mà chưa có ngày giờ?" |
+| **Case SOS** | "Case nào chưa xử lý xong?" |
+
+Quy tắc tương tác trên dòng lớp — ba vùng bấm phải tách bạch:
+
+- **Tên lớp** → mở Class Overview (trang riêng của lớp).
+- **Badge** → mở đúng tập bản ghi tạo nên con số đó, đã lọc sẵn theo lớp.
+- **Nền dòng / chevron** → đóng mở danh sách học viên ngay tại chỗ.
+
+Badge và tên lớp phải chặn nổi bọt sự kiện, nếu không bấm badge sẽ đồng thời đóng mở roster.
+Dòng lớp là `role="button"` có `aria-expanded`, mở được bằng Enter và Space.
+
+**Badge chỉ hiện khi có việc cần làm.** Không có việc thì ghi "Không có việc cần chú ý", không hiện
+badge số 0. "Case SOS" đếm **case**, không phải học viên — một em có thể có nhiều case.
+Badge "cần nhập điểm" đếm theo **phân công của chính người đang xem**, nên hai người mở cùng một lớp
+có thể thấy hai con số khác nhau — đó là đúng, không phải lỗi.
+
+**Nhiều lớp mở cùng lúc và độc lập nhau.** Mở lớp thứ hai không đóng lớp thứ nhất, vì việc thật là
+đặt hai lớp cạnh nhau mà so. Danh sách lớp đang mở, ô tìm kiếm và bộ lọc chi nhánh đều nằm trên URL,
+nên nút Back của trình duyệt khôi phục đúng ngữ cảnh cũ chứ không trả về màn hình trắng.
+
+Roster **chỉ nạp khi mở lớp**, không nạp trước cho cả trang. Danh sách lớp dùng **một nhóm truy vấn**
+cho toàn bộ số liệu badge, không hỏi lại theo từng lớp.
+
+Tìm theo **tên học viên** trả về đúng **lớp chứa em đó** — người dùng gõ tên em, không gõ mã lớp.
+
+### A1b. Tiến độ MT nằm trong lớp, không phải màn hình riêng
+
+Mỗi dòng học viên trong roster hiện: target · **chuỗi tiến trình MT** (`MT1 ✓ · MT2 ✓ · MT3 W4 OCT`) ·
+kết quả gần nhất · ước lượng của giáo viên · việc cần làm. Đó chính là phần "tiến độ / mock test"
+trước đây tách riêng — nay gộp vào nơi người dùng đang đứng, không bắt họ nhảy màn hình.
+
+Lớp thường (FOU/BE/ELE) hiện "Chưa có kế hoạch MT" — đó là **trung thực**, vì hình thức đánh giá của
+lớp thường thuộc phạm vi vòng C, không phải MT bốn kỹ năng.
 
 Bộ lọc mặc định là **tuần**. Bộ lọc chi nhánh **chỉ hiện khi tài khoản có nhiều hơn một chi nhánh**.
 Bấm một KPI sẽ mở đúng danh sách bản ghi cấu thành số đó.
@@ -296,7 +345,7 @@ Số liệu hỗ trợ (trao đổi HS/PH có ngày, hỗ trợ đã bắt đầ
 nằm trong phần mở rộng, mặc định đóng. **Thời gian trả kết quả = ngày có điểm − ngày thi**, không phải
 số ngày quá hạn. Không có dữ liệu thì hiện dấu `—`, không phải `0 ngày`.
 
-## A7. Họp tuần
+## A7. Tiến trình công việc *(trước đây gọi là Họp tuần)*
 
 Một màn hình, hai khối.
 
@@ -340,6 +389,47 @@ Hành trình giữ chuyển lớp, tạm dừng, quay lại học. **Chỉ ba b�
 `Assessment` (kết quả Mock + ước lượng giáo viên) · `Warning / WL` (cảnh báo + WL).
 Không có filter riêng cho từng loại sự kiện. Nhấp sự kiện mở đúng bản ghi liên quan.
 
+## A8b. Thêm học viên hàng loạt và tạo lớp
+
+Danh sách lớp đến từ Excel hoặc Google Sheets. Bắt Admin CN gõ tay từng em là đẩy việc sai chỗ,
+nên màn nhập là một **lưới kiểu bảng tính** dán thẳng vùng bảng vào được.
+
+**Đọc dữ liệu dán vào**
+
+- Nhận TSV có hoặc không có dòng tiêu đề — tự nhận ra dòng tiêu đề, không bắt khai báo.
+- Ngày đọc theo **định dạng người dùng chọn** (`d/m/y` · `m/d/y` · ISO). `12/05/2008` là mơ hồ,
+  hệ thống **không đoán**: chọn sai định dạng thì thà báo lỗi còn hơn ghi nhầm ngày sinh của học viên.
+- Chuỗi không đọc được thì báo lỗi ngay tại ô, không âm thầm bỏ trống.
+
+**Xem trước chạy tự động, không đợi bấm nút.** Người nhập phải thấy dòng nào hỏng ngay khi vừa dán
+hoặc vừa gõ xong, chứ không phải đến lúc bấm Thêm mới biết.
+
+**Nhãn nút nói đúng số dòng sẽ ghi.** Dán 40 dòng mà 2 dòng hỏng thì nút ghi "Thêm 38 học viên",
+không phải 40. Còn dòng lỗi thì nút bị **khoá** — để không dòng nào âm thầm biến mất khỏi lô nhập —
+nhưng gỡ được trong **một lần bấm** bằng "Bỏ qua N dòng lỗi".
+
+**Trùng hồ sơ chỉ là GỢI Ý.** Trùng tên và ngày sinh thì nêu ra để người nhập tự quyết.
+Hệ thống **không tự gộp hồ sơ**: gộp nhầm hai em trùng tên là hỏng dữ liệu học vụ của cả hai.
+
+**Lộ trình kế thừa từ lớp.** Dòng không ghi lộ trình thì lấy lộ trình của lớp — học viên vào lớp LT1
+thì đang học LT1, bắt gõ lại là thừa. Thiếu target vẫn nhập được, chỉ cảnh báo "chưa tính được
+kỳ vọng"; hệ thống **không tự đoán target**.
+
+**Quyền được kiểm ở máy chủ, không chỉ ở giao diện.** Dòng trỏ vào lớp ngoài phạm vi được cấp quyền
+bị **bỏ qua và báo lý do**, không ghi gì — nhưng cũng **không làm hỏng cả lô**: một dòng sai không
+được kéo theo 39 dòng đúng. Máy chủ kiểm hai lớp: khi xem trước và một lần nữa ngay trước khi ghi.
+
+**Tuần MT đề xuất chỉ thành KẾ HOẠCH khi người nhập có quyền chốt tuần.** Người không có quyền vẫn
+thêm được học viên, nhưng tuần đề xuất bị bỏ qua — để đường nhập hàng loạt không thành lối vượt
+quyền lập kế hoạch. Tuần đề xuất lấy theo mốc **tuần HỌC** của chương trình (MT1 tuần 6, MT2 tuần 12,
+MT3 tuần 16…), và là **đề xuất**, Quản lý sửa được.
+
+**Bấm hai lần không tạo học viên trùng.** Mỗi lần mở lưới sinh một khoá idempotency giữ nguyên suốt
+lần nhập đó, nên bấm đúp hoặc thử lại sau lỗi mạng đều trả về đúng kết quả lần đầu.
+
+**Tạo lớp**: mã lớp phải bắt đầu bằng mã chi nhánh và không trùng — để mã lớp tự nó nói được lớp
+thuộc chi nhánh nào, không phải tra bảng.
+
 ## A9. Dữ liệu
 
 Bảng chính: `branches` · `reporting_units` · `classes` · `class_skills` · `users` · `roles` ·
@@ -373,10 +463,11 @@ Quyết định schema đáng chú ý:
 |---|---|
 | Consultant / Consultant Manager | **Bỏ hẳn** khỏi tài khoản demo, navigation và UI. Bước trao đổi PH giữ nguyên, người thực hiện ghi bằng tên (Q4) |
 | Vai trò "Head" riêng | Không tạo. **Head chính là Quản lý** |
-| Trang "Viết báo cáo" độc lập | Gộp trạng thái + ghi chú vào **Họp tuần** |
+| Trang "Viết báo cáo" độc lập | Gộp trạng thái + ghi chú vào **Tiến trình công việc** |
 | Ghi nhận sự việc / Issue Center | **Bỏ workflow độc lập**. Ghi chú báo cáo và case SOS liên kết thẳng tới công việc |
 | Ghi nhận cảnh báo độc lập | SOS xuất hiện trong Mock. Lịch sử Warning/WL chỉ **đọc lại** trong hồ sơ, không phát hành mới |
-| Menu SOS / agenda / công việc trùng nhau | Gộp vào **Chi tiết Mock** và **Họp tuần** |
+| Menu SOS / agenda / công việc trùng nhau | Gộp vào **Chi tiết MT** và **Tiến trình công việc** |
+| Menu **Mock test** riêng | Gộp vào **Học viên**: lớp → học viên → tiến độ MT → nhập điểm |
 | Bảng tổng hợp hàng chục cột | KPI ít, danh sách hành động ngắn, số liệu hỗ trợ xuống phần mở rộng |
 | Filter riêng từng loại sự kiện timeline | Còn **ba** lựa chọn |
 | Nhãn "chỉ xem" rải ở từng kỹ năng | Thể hiện bằng khả năng tương tác; quyền kiểm ở API |

@@ -1,146 +1,323 @@
-import { useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useApi } from '../lib/useApi.ts';
 import { useSession } from '../lib/session.tsx';
-import { Card, Empty, ErrorState, Pill, Skeleton } from '../components/ui.tsx';
+import { invalidate } from '../lib/api.ts';
+import { Card, Empty, ErrorState, Pill, SectionNote, Skeleton } from '../components/ui.tsx';
 import type { Branch } from '../components/Filters.tsx';
-import { fmtBand, fmtSlot, sosLabel, sosTone, studentStatusLabel } from '../lib/format.ts';
+import { IntakePanel } from '../components/IntakePanel.tsx';
+import { ClassRoster } from '../components/ClassRoster.tsx';
+import { PERMISSIONS } from '@shared/domain.ts';
 
-type Row = {
-  id: number; studentCode: string; fullName: string; status: string;
-  cycleId: number | null; route: string | null; target: number | null; examDate: string | null;
-  classCode: string | null; branchName: string | null;
-  latest: { attemptNo: number; route: string | null; overall: number | null; sosLevel: number | null; scopeNote: string | null } | null;
-  nextMock: { id: number; attemptNo: number; periodCode: string | null; scheduledAt: string | null; needsDate: boolean } | null;
-  openCase: { id: number; sos_level: number; status: string } | null;
+export type ClassSummary = {
+  id: number; code: string; kind: string; route: string | null;
+  branchId: number; branchCode: string; branchName: string;
+  startDate: string | null;
+  studentCount: number; needScores: number; openCases: number; needsDate: number;
 };
 
+/**
+ * Ba cách xem của cùng một màn hình.
+ * "Cần nhập điểm" và "Cần xếp lịch" là HÀNG ĐỢI CÔNG VIỆC, không phải module riêng,
+ * nên chúng là view ở đây chứ không phải một mục điều hướng.
+ */
+const VIEWS = [
+  { key: 'classes', label: 'Theo lớp' },
+  { key: 'my_scores', label: 'Cần nhập điểm' },
+  { key: 'needs_date', label: 'Cần xếp lịch' },
+  { key: 'sos_open', label: 'Case SOS' },
+] as const;
+
 export default function StudentsPage() {
-  const { branchCount } = useSession();
-  const [q, setQ] = useState('');
-  const [branchId, setBranchId] = useState<number | null>(null);
-  const [classId, setClassId] = useState<number | null>(null);
-  const [attention, setAttention] = useState(false);
+  const { session, can, branchCount } = useSession();
+  const [params, setParams] = useSearchParams();
+  const view = (params.get('view') ?? 'classes') as (typeof VIEWS)[number]['key'];
+  const q = params.get('q') ?? '';
+  const branchId = params.get('branchId') ? Number(params.get('branchId')) : null;
+  /*
+   * Nhiều lớp mở cùng lúc và độc lập nhau: mở lớp thứ hai không được đóng lớp thứ nhất,
+   * vì việc thật là đặt hai lớp cạnh nhau mà so. Danh sách lớp đang mở nằm trên URL nên
+   * nút Back khôi phục đúng những lớp vừa mở, không chỉ lớp cuối cùng.
+   */
+  const openIds = useMemo(
+    () => new Set((params.get('open') ?? '').split(',').map(Number).filter((n) => Number.isFinite(n) && n > 0)),
+    [params],
+  );
+  const [intakeOpen, setIntakeOpen] = useState(false);
+  const [intakeFor, setIntakeFor] = useState<ClassSummary | null>(null);
+  const [draftQ, setDraftQ] = useState(q);
 
   const branches = useApi<Branch[]>('/ref/branches');
-  const classes = useApi<any[]>('/ref/classes');
-
-  const qs = useMemo(() => {
-    const p = new URLSearchParams();
-    if (q.trim()) p.set('q', q.trim());
-    if (branchId) p.set('branchId', String(branchId));
-    if (classId) p.set('classId', String(classId));
-    if (attention) p.set('need', 'attention');
-    return `/students?${p.toString()}`;
-  }, [q, branchId, classId, attention]);
-
-  const { data, loading, error, reload } = useApi<{ rows: Row[]; scopeEmpty: boolean }>(qs);
-  const rows = data?.rows ?? [];
   const showBranch = (branches.data?.length ?? 0) > 1 && branchCount > 1;
 
+  // Đổi bộ lọc bằng cách sửa URL, nên nút Back của trình duyệt giữ đúng ngữ cảnh cũ.
+  const setParam = useCallback((patch: Record<string, string | null>) => {
+    const next = new URLSearchParams(params);
+    for (const [k, v] of Object.entries(patch)) {
+      if (v === null || v === '') next.delete(k); else next.set(k, v);
+    }
+    setParams(next, { replace: true });
+  }, [params, setParams]);
+
+  useEffect(() => {
+    const t = setTimeout(() => { if (draftQ !== q) setParam({ q: draftQ || null }); }, 300);
+    return () => clearTimeout(t);
+  }, [draftQ, q, setParam]);
+
+  const qs = useMemo(() => {
+    const s = new URLSearchParams();
+    if (branchId) s.set('branchId', String(branchId));
+    if (q.trim()) s.set('q', q.trim());
+    return `/classes?${s.toString()}`;
+  }, [branchId, q]);
+  const classes = useApi<{ rows: ClassSummary[]; scopeEmpty: boolean }>(view === 'classes' ? qs : null);
+
   return (
-    <div className="space-y-4 max-w-[1400px]">
+    <div className="space-y-4 max-w-[1500px]">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-lg font-semibold text-slate-100">Học viên</h1>
-          <p className="text-xs text-slate-500 mt-0.5">Chỉ hiện học viên thuộc phạm vi bạn được cấp quyền.</p>
+          <p className="text-xs text-slate-500 mt-0.5">
+            Lớp là gốc. Mở một lớp để xem học viên và tiến độ; tìm theo tên học viên cũng ra đúng lớp chứa em đó.
+          </p>
         </div>
         <div className="flex flex-wrap items-end gap-2">
           <label className="block">
             <span className="label">Tìm</span>
-            <input className="field w-56" placeholder="Tên (có/không dấu) hoặc mã HV" value={q} onChange={(e) => setQ(e.target.value)} />
+            <input
+              className="field w-56"
+              placeholder="Mã lớp hoặc tên / mã học viên"
+              value={draftQ}
+              onChange={(e) => setDraftQ(e.target.value)}
+            />
           </label>
           {showBranch && (
             <label className="block">
               <span className="label">Chi nhánh</span>
-              <select className="field w-40" value={branchId ?? ''} onChange={(e) => setBranchId(e.target.value ? Number(e.target.value) : null)}>
+              <select className="field w-40" value={branchId ?? ''}
+                onChange={(e) => setParam({ branchId: e.target.value || null })}>
                 <option value="">Tất cả</option>
                 {(branches.data ?? []).map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
               </select>
             </label>
           )}
-          <label className="block">
-            <span className="label">Lớp</span>
-            <select className="field w-44" value={classId ?? ''} onChange={(e) => setClassId(e.target.value ? Number(e.target.value) : null)}>
-              <option value="">Tất cả lớp</option>
-              {(classes.data ?? []).map((c) => <option key={c.id} value={c.id}>{c.code}</option>)}
-            </select>
-          </label>
-          <button className={`btn ${attention ? 'btn-primary' : ''}`} onClick={() => setAttention((a) => !a)}>
-            Đang có case SOS
-          </button>
         </div>
       </div>
 
-      {error && <ErrorState message={error.message} hint={error.hint} onRetry={reload} />}
-      {loading && <Skeleton rows={8} />}
+      <div className="flex flex-wrap items-center gap-1">
+        {VIEWS.map((v) => (
+          <button
+            key={v.key}
+            className={`btn btn-sm ${view === v.key ? 'btn-primary' : ''}`}
+            onClick={() => setParam({ view: v.key === 'classes' ? null : v.key, open: null })}
+          >
+            {v.label}
+          </button>
+        ))}
+        <div className="flex-1" />
+        {can(PERMISSIONS.STUDENT_EDIT) && view === 'classes' && (
+          <button className="btn btn-primary btn-sm" onClick={() => { setIntakeFor(null); setIntakeOpen(true); }}>
+            Thêm học viên
+          </button>
+        )}
+      </div>
 
-      {data && !loading && (
-        <Card bodyClass="p-0">
-          {rows.length === 0 ? (
-            <Empty
-              title={data.scopeEmpty ? 'Bạn chưa được cấp phạm vi nào' : 'Không tìm thấy học viên nào'}
-              hint={data.scopeEmpty ? 'Tài khoản này chưa có chi nhánh hoặc phân công lớp.' : 'Thử bỏ bớt bộ lọc.'}
-            />
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr>
-                    <th className="th">Học viên</th>
-                    <th className="th">Lớp</th>
-                    <th className="th">Lộ trình / target</th>
-                    <th className="th">Kết quả gần nhất</th>
-                    <th className="th">MT tiếp theo</th>
-                    <th className="th">Case đang mở</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {rows.map((s) => (
-                    <tr key={s.id} className={`row-hover ${s.status === 'finished' ? 'row-muted' : ''}`}>
-                      <td className="td">
-                        <Link className="link" to={`/hoc-vien/${s.id}`}>{s.fullName}</Link>
-                        <div className="text-[11px] text-slate-500">
-                          {s.studentCode}
-                          {s.status !== 'active' && ` · ${studentStatusLabel(s.status)}`}
-                        </div>
-                      </td>
-                      <td className="td whitespace-nowrap">
-                        <div className="text-slate-200">{s.classCode ?? '—'}</div>
-                        <div className="text-[11px] text-slate-500">{s.branchName ?? ''}</div>
-                      </td>
-                      <td className="td whitespace-nowrap">
-                        {s.route ?? '—'} <span className="text-slate-500">· {fmtBand(s.target)}</span>
-                      </td>
-                      <td className="td whitespace-nowrap">
-                        {s.latest
-                          ? <>{s.latest.route ? `${s.latest.route} · ` : ''}MT{s.latest.attemptNo} ·{' '}
-                              <span className="tabular-nums">{fmtBand(s.latest.overall)}</span>{' '}
-                              <Pill tone={sosTone(s.latest.sosLevel)}>{sosLabel(s.latest.sosLevel)}</Pill></>
-                          : <span className="text-slate-500">Chưa có kết quả đủ điểm</span>}
-                      </td>
-                      <td className="td whitespace-nowrap text-slate-300">
-                        {s.nextMock
-                          ? <>MT{s.nextMock.attemptNo} · {s.nextMock.periodCode ?? 'chưa có tuần'}
-                              {s.nextMock.needsDate
-                                ? <Pill tone="warn">Chưa có ngày</Pill>
-                                : <span className="text-slate-500 text-xs"> · {fmtSlot(s.nextMock.scheduledAt)}</span>}
-                            </>
-                          : '—'}
-                      </td>
-                      <td className="td">
-                        {s.openCase
-                          ? <Pill tone={sosTone(s.openCase.sos_level)}>{sosLabel(s.openCase.sos_level)}</Pill>
-                          : <span className="text-slate-600">—</span>}
-                      </td>
-                    </tr>
+      {view !== 'classes' && <WorkQueue view={view} branchId={branchId} q={q} />}
+
+      {view === 'classes' && (
+        <>
+          {classes.error && <ErrorState message={classes.error.message} hint={classes.error.hint} onRetry={classes.reload} />}
+          {classes.loading && <Skeleton rows={6} />}
+          {classes.data && (
+            <Card bodyClass="p-0">
+              {classes.data.rows.length === 0 ? (
+                <Empty
+                  title={classes.data.scopeEmpty ? 'Bạn chưa được cấp phạm vi nào' : 'Không tìm thấy lớp nào'}
+                  hint={classes.data.scopeEmpty
+                    ? 'Tài khoản này chưa có vai trò kèm chi nhánh hoặc phân công lớp nào.'
+                    : 'Thử bỏ bớt từ khoá, hoặc đổi chi nhánh.'}
+                />
+              ) : (
+                <ul className="divide-y list-none p-0 m-0" style={{ borderColor: 'var(--line)' }}>
+                  {classes.data.rows.map((c) => (
+                    <ClassRow
+                      key={c.id}
+                      cls={c}
+                      expanded={openIds.has(c.id)}
+                      studentQuery={q}
+                      onToggle={() => {
+                        const next = new Set(openIds);
+                        if (next.has(c.id)) next.delete(c.id); else next.add(c.id);
+                        setParam({ open: next.size ? [...next].join(',') : null });
+                      }}
+                      onAddStudents={() => { setIntakeFor(c); setIntakeOpen(true); }}
+                    />
                   ))}
-                </tbody>
-              </table>
-            </div>
+                </ul>
+              )}
+            </Card>
           )}
-        </Card>
+          <SectionNote>
+            Badge chỉ xuất hiện khi có việc cần làm. “Case SOS” đếm <strong>case</strong>, không phải học viên —
+            một em có thể có nhiều case. Bấm badge để mở đúng những bản ghi tạo nên con số đó.
+          </SectionNote>
+        </>
+      )}
+
+      {intakeOpen && (
+        <IntakePanel
+          defaultClass={intakeFor}
+          onClose={() => { setIntakeOpen(false); setIntakeFor(null); }}
+          onDone={() => { invalidate('/classes'); invalidate('/students'); classes.reload(); }}
+        />
       )}
     </div>
+  );
+}
+
+/**
+ * Một dòng lớp.
+ *
+ * Ba vùng bấm tách nhau rõ: tên lớp mở Class Overview, badge mở danh sách tương ứng,
+ * chevron (và nền dòng) đóng/mở danh sách học viên ngay tại chỗ. Badge và tên lớp phải
+ * chặn nổi bọt sự kiện, nếu không bấm badge sẽ đồng thời mở/đóng roster.
+ */
+function ClassRow({ cls, expanded, studentQuery, onToggle, onAddStudents }: {
+  cls: ClassSummary; expanded: boolean; studentQuery: string;
+  onToggle: () => void; onAddStudents: () => void;
+}) {
+  const navigate = useNavigate();
+  const rowRef = useRef<HTMLDivElement>(null);
+  const go = (to: string) => (e: React.MouseEvent) => { e.stopPropagation(); navigate(to); };
+
+  return (
+    <li>
+      <div
+        ref={rowRef}
+        role="button"
+        tabIndex={0}
+        aria-expanded={expanded}
+        aria-label={`Lớp ${cls.code}, ${expanded ? 'đang mở' : 'đang đóng'} danh sách học viên`}
+        className="w-full text-left px-4 py-3 hover:bg-white/5 flex flex-wrap items-center gap-x-3 gap-y-2 cursor-pointer"
+        onClick={onToggle}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onToggle(); }
+        }}
+      >
+        <span className="shrink-0 text-slate-500 w-4 text-center" aria-hidden>{expanded ? '▾' : '▸'}</span>
+        <Link
+          to={`/hoc-vien/lop/${cls.id}`}
+          className="link font-medium shrink-0"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {cls.code}
+        </Link>
+        <span className="text-xs text-slate-500 shrink-0">
+          {cls.branchName}{cls.route ? ` · ${cls.route}` : ''} · {cls.studentCount} HV
+        </span>
+
+        <span className="flex flex-wrap items-center gap-1.5 flex-1 min-w-0">
+          {cls.needScores > 0 && (
+            <button className="appearance-none bg-transparent border-0 p-0" onClick={go(`/hoc-vien?view=my_scores&classId=${cls.id}`)}>
+              <Pill tone="warn">{cls.needScores} cần nhập điểm</Pill>
+            </button>
+          )}
+          {cls.openCases > 0 && (
+            <button className="appearance-none bg-transparent border-0 p-0" onClick={go(`/hoc-vien?view=sos_open&classId=${cls.id}`)}>
+              <Pill tone="danger">{cls.openCases} case SOS</Pill>
+            </button>
+          )}
+          {cls.needsDate > 0 && (
+            <button className="appearance-none bg-transparent border-0 p-0" onClick={go(`/hoc-vien?view=needs_date&classId=${cls.id}`)}>
+              <Pill tone="info">{cls.needsDate} cần xếp lịch</Pill>
+            </button>
+          )}
+          {cls.needScores + cls.openCases + cls.needsDate === 0 && (
+            <span className="text-xs text-slate-600">Không có việc cần chú ý</span>
+          )}
+        </span>
+      </div>
+
+      {expanded && (
+        <div className="px-4 pb-4">
+          <ClassRoster classId={cls.id} studentQuery={studentQuery} onAddStudents={onAddStudents} />
+        </div>
+      )}
+    </li>
+  );
+}
+
+/** Hàng đợi công việc: cùng dữ liệu lượt MT, chỉ đổi bộ lọc. */
+function WorkQueue({ view, branchId, q }: { view: string; branchId: number | null; q: string }) {
+  const [params] = useSearchParams();
+  const classId = params.get('classId');
+  const qs = useMemo(() => {
+    const s = new URLSearchParams();
+    s.set('need', view === 'sos_open' ? 'sos_open' : view);
+    if (branchId) s.set('branchId', String(branchId));
+    if (classId) s.set('classId', classId);
+    if (q.trim()) s.set('q', q.trim());
+    return `/attempts?${s.toString()}`;
+  }, [view, branchId, classId, q]);
+  const { data, loading, error, reload } = useApi<{ rows: any[]; scopeEmpty: boolean }>(qs);
+  const navigate = useNavigate();
+
+  if (error) return <ErrorState message={error.message} hint={error.hint} onRetry={reload} />;
+  if (loading) return <Skeleton rows={6} />;
+  if (!data) return null;
+
+  const label = view === 'my_scores' ? 'cần nhập điểm'
+    : view === 'needs_date' ? 'cần xếp ngày giờ' : 'case SOS chưa xử lý xong';
+
+  return (
+    <Card bodyClass="p-0"
+      title={<span>{data.rows.length} lượt {label}{classId ? ' của lớp đang chọn' : ''}</span>}
+      action={classId && <Link className="btn btn-sm no-underline" to={`/hoc-vien?view=${view}`}>Bỏ lọc lớp</Link>}>
+      {data.rows.length === 0 ? (
+        <Empty title={`Không còn việc nào ${label}`} hint="Xem tiếp bằng cách đổi cách xem hoặc bỏ bộ lọc." />
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr>
+                <th className="th">Học viên</th>
+                <th className="th">Lớp</th>
+                <th className="th">MT</th>
+                <th className="th">Tuần</th>
+                <th className="th">Việc cần làm</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.rows.map((r) => (
+                <tr key={r.id} className="row-hover cursor-pointer" onClick={() => navigate(`/mock-test/${r.id}`)}>
+                  <td className="td">
+                    <div className="text-slate-100">{r.studentName}</div>
+                    <div className="text-[11px] text-slate-500">{r.studentCode}</div>
+                  </td>
+                  <td className="td text-slate-300 whitespace-nowrap">{r.classCode ?? '—'}</td>
+                  <td className="td tabular-nums whitespace-nowrap">
+                    {r.route ? `${r.route} · ` : ''}MT{r.attemptNo}
+                  </td>
+                  <td className="td whitespace-nowrap text-slate-300">{r.period?.code ?? '—'}</td>
+                  <td className="td text-xs">
+                    {view === 'my_scores' && (
+                      <span style={{ color: 'var(--accent)' }}>Nhập {r.myPendingSkills.join(', ')}</span>
+                    )}
+                    {view === 'needs_date' && <Pill tone="warn">Chưa có ngày giờ</Pill>}
+                    {view === 'sos_open' && <Pill tone="danger">Ghi nhận xử lý SOS</Pill>}
+                    {r.overdueSkills > 0 && <Pill tone="danger">Quá hạn {r.overdueSkills}</Pill>}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      <div className="p-3">
+        <SectionNote>
+          Danh sách này xét <strong>xuyên tuần</strong>, nên việc còn tồn từ tuần trước không biến mất khi đổi tuần ở nơi khác.
+        </SectionNote>
+      </div>
+    </Card>
   );
 }

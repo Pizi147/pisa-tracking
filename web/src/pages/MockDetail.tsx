@@ -71,7 +71,7 @@ export default function MockDetailPage() {
         <div className="flex flex-wrap gap-2">
           <Link className="btn no-underline" to={`/hoc-vien/${d.student.id}`}>Hồ sơ học viên</Link>
           {d.classId && (
-            <Link className="btn no-underline" to={`/mock-test/lop/${d.classId}`}>Nhập điểm cả lớp</Link>
+            <Link className="btn no-underline" to={`/nhap-diem/${d.classId}`}>Nhập điểm cả lớp</Link>
           )}
           {d.viewer.canPlanWeek && d.status !== 'cancelled' && (
             <button className="btn" onClick={() => setWeekOpen(true)}>Đổi tuần</button>
@@ -421,7 +421,7 @@ function CaseSection({ detail, onSaved }: { detail: Detail; onSaved: () => void 
             <ul className="text-xs space-y-1 list-none p-0 m-0">
               {detail.tasks.map((t) => (
                 <li key={t.id} className="text-slate-300">
-                  <Link className="link" to="/hop-tuan">{t.code}</Link> · {t.title}
+                  <Link className="link" to="/tien-trinh">{t.code}</Link> · {t.title}
                   <span className="text-slate-500"> · {t.assignee_name ?? 'Chưa giao'} · hạn {fmtDate(t.due_date)}</span>
                 </li>
               ))}

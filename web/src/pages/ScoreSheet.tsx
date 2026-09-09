@@ -60,7 +60,7 @@ export default function ScoreSheetPage() {
     <div className="space-y-4 max-w-[1500px]">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <Link className="btn btn-sm btn-ghost mb-1 no-underline" to="/mock-test">← Danh sách Mock</Link>
+          <Link className="btn btn-sm btn-ghost mb-1 no-underline" to="/hoc-vien">← Danh sách lớp</Link>
           <h1 className="text-lg font-semibold text-slate-100">
             Nhập điểm · {data?.classCode ?? '…'}
           </h1>
