@@ -32,7 +32,7 @@ lưu thật xuống database.
 
 ## Luồng 2 — Quản lý: từ Tổng quan tới xử lý SOS
 
-**Tài khoản:** `Đặng Quang Vy` (Quản lý Monbay) hoặc `Đặng Quang Nhi` (Admin toàn hệ thống)
+**Tài khoản:** `Đặng Quang Vy` (Quản lý Monbay) hoặc `Đặng Quang Nhi` (Quản trị hệ thống)
 
 1. Mở **Tổng quan**. Bốn cụm số:
    - *Lịch Mock W4 SEP* — số lượt có lịch, kèm dòng phụ tách **đã thi / học sinh duy nhất / đã huỷ**.
@@ -46,7 +46,9 @@ lưu thật xuống database.
 5. Ở khối **Xử lý sau Mock**: điền tên người trao đổi HS nhưng **để trống ngày** → trạng thái bước đó là
    *"Có tên, chưa có ngày"*, **chưa** tính là đã làm. Điền thêm ngày ở tương lai → *"Đã xếp lịch"*.
    Điền ngày đã qua → *"Đã thực hiện"*. Bấm **Lưu ghi nhận**.
-6. Bấm **Xác nhận (Head)** — đây là thao tác riêng, không tự suy ra từ trạng thái case.
+6. Bấm **Xác nhận (Head)** — thao tác riêng, không tự suy ra từ trạng thái case.
+   **Head chính là Quản lý**: đăng nhập bằng `Đặng Ngọc Phúc` (Admin chi nhánh) thì nút này không hiện,
+   và gọi thẳng API cũng bị từ chối.
 7. Mở **Lịch sử thay đổi** ở cuối trang để xem lịch sử dời lịch và lịch sử cập nhật xử lý.
 
 **Cần thấy:** mỗi KPI mở đúng danh sách · đổi tuần không mất việc cũ · checklist đúng bảng nguồn ·
@@ -88,7 +90,9 @@ Ví dụ hay để mở: các dòng `Case SOS` của lớp `CP-FT 110` (thi 22/0
 | Không thấy dữ liệu ngoài chi nhánh | `Đặng Quang Vy` (Quản lý MB) | Không thấy lớp `CP-FT 110`; gọi thẳng URL của Mock lớp CP bị **API từ chối**, không chỉ ẩn nút |
 | Nhiều quản lý cùng chi nhánh | `Trần Quang Nam`, `Đinh Bảo Lam` (đều là Quản lý MB) | Cả ba quản lý MB đều thao tác được |
 | Giáo viên không có Họp tuần | bất kỳ giáo viên nào | Menu chỉ còn **3 mục**, không có *Họp tuần* |
-| Admin thấy phần Quản trị | `Đặng Quang Nhi` | Menu tài khoản có mục **Quản trị** |
+| Chỉ Quản lý xác nhận được Head | `Đặng Ngọc Phúc` (Admin chi nhánh MB) | **Không** thấy nút *Xác nhận (Head)*; các thao tác văn phòng khác (dời lịch, nhập bù điểm, sửa hồ sơ) vẫn làm được |
+| Giáo viên không huỷ được lịch | `Đinh Bảo Vy` (GVCN MB-FT 101) | Có nút **Dời lịch**, **không** có nút *Huỷ lịch* |
+| Quản trị hệ thống thấy phần quản trị | `Đặng Quang Nhi` | Menu tài khoản có mục **Quản trị hệ thống** |
 
 ---
 

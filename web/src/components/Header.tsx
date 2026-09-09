@@ -139,7 +139,7 @@ export function Header() {
 
             {session?.nav?.admin && (
               <Link to="/quan-tri" className="btn btn-sm w-full justify-center mb-2 no-underline"
-                onClick={() => setOpenMenu(null)}>Quản trị</Link>
+                onClick={() => setOpenMenu(null)}>Quản trị hệ thống</Link>
             )}
             <button className="btn btn-sm w-full justify-center" onClick={signOut}>Thoát tài khoản demo</button>
           </div>

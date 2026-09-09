@@ -13,7 +13,7 @@ type AdminData = {
   audit: { id: number; action: string; entityType: string; entityLabel: string | null; createdAt: string; actorName: string | null }[];
 };
 
-/** Lối vào phụ, chỉ dành cho Admin. Đây là nơi xem cấu hình, không phải một mục nghiệp vụ. */
+/** Lối vào phụ, chỉ dành cho Quản trị hệ thống. Nơi xem cấu hình, không phải một mục nghiệp vụ. */
 export default function AdminPage() {
   const { data, loading, error, reload } = useApi<AdminData>('/admin/overview');
   if (error) return <ErrorState message={error.message} hint={error.hint} onRetry={reload} />;
@@ -22,8 +22,11 @@ export default function AdminPage() {
   return (
     <div className="space-y-4 max-w-[1300px]">
       <div>
-        <h1 className="text-lg font-semibold text-slate-100">Quản trị</h1>
-        <p className="text-xs text-slate-500 mt-0.5">Xem cấu hình vai trò, phạm vi và nhật ký thay đổi của bản demo.</p>
+        <h1 className="text-lg font-semibold text-slate-100">Quản trị hệ thống</h1>
+        <p className="text-xs text-slate-500 mt-0.5">
+          Xem cấu hình vai trò, phạm vi và nhật ký thay đổi của bản demo.
+          Đây là quản trị <strong>phần mềm</strong> — khác với Admin chi nhánh là nhân sự văn phòng.
+        </p>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-4">

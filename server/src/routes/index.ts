@@ -347,7 +347,7 @@ api.post('/notifications/:id/read', requireAuth, wrap((req) => {
 api.get('/admin/overview', requireAuth, wrap((req) => {
   const p = principalOf(req);
   if (!can(p, PERMISSIONS.ADMIN_CONFIG, { anyScope: true })) {
-    throw new HttpError(403, 'Chỉ Admin mới xem được phần Quản trị.');
+    throw new HttpError(403, 'Chỉ Quản trị hệ thống mới xem được phần này.');
   }
   const conn = db();
   const roles = conn.prepare('SELECT id, key, name_vi AS name FROM roles ORDER BY id').all() as any[];

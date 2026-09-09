@@ -82,8 +82,8 @@ export function runSeed() {
       conn.prepare('INSERT INTO user_roles (user_id, role_id, branch_id, status, created_at) VALUES (?,?,?,?,?)')
         .run(userId, roleId.get(role)!, branch ? branchId.get(branch)! : null, 'active', NOW);
 
-    const adminId = addUser(fakeName(), 'Admin hệ thống');
-    grant(adminId, 'admin', null);
+    const adminId = addUser(fakeName(), 'Quản trị hệ thống');
+    grant(adminId, 'system_admin', null);
 
     const branchAdmins = new Map<string, number>();
     const managers = new Map<string, number[]>();
@@ -92,7 +92,7 @@ export function runSeed() {
     const MANAGER_COUNT: Record<string, number> = { MB: 3, BC: 2, CP: 3, HD: 2, UB: 2 };
 
     for (const b of BRANCHES) {
-      const ba = addUser(fakeName(), `Admin chi nhánh ${b.name}`);
+      const ba = addUser(fakeName(), `Admin văn phòng ${b.name}`);
       grant(ba, 'branch_admin', b.code);
       branchAdmins.set(b.code, ba);
 

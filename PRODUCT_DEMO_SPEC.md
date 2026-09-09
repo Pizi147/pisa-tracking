@@ -20,7 +20,7 @@ Bốn mục nghiệp vụ, không hơn. Quản trị là lối vào phụ trong 
 | **Mock Test** | Lịch và kết quả Mock trong cùng một danh sách | Lên lịch, dời lịch, nhập điểm, mở chi tiết, ghi nhận SOS |
 | **Học viên** | Tìm học sinh, hồ sơ, lịch Mock, hành trình | Xem tiến trình và các lần Mock của một em |
 | **Họp tuần** | Tình hình từng đơn vị và công việc theo dõi | Cập nhật ngắn, phân công, cập nhật tiến độ |
-| *(phụ)* Quản trị | Ma trận quyền, đơn vị báo cáo, nhật ký, tài khoản | Chỉ xem, dành cho Admin |
+| *(phụ)* Quản trị hệ thống | Ma trận quyền, đơn vị báo cáo, nhật ký, tài khoản | Chỉ xem, dành cho Quản trị hệ thống |
 
 **Không có menu riêng cho SOS, báo cáo, sự việc, agenda hay công việc.** Chúng nằm tại nơi phát sinh:
 SOS trong chi tiết Mock; báo cáo và công việc trong Họp tuần.
@@ -35,8 +35,18 @@ Bấm một KPI sẽ mở đúng danh sách bản ghi cấu thành số đó.
 
 ## A2. Tổ chức, lớp và quyền
 
-Bốn nhóm tài khoản: **Admin · Admin chi nhánh · Quản lý · Giáo viên**.
+Bốn nhóm tài khoản: **Quản trị hệ thống · Admin chi nhánh · Quản lý · Giáo viên**.
 GVCN/GVBM là **phân công trong lớp**, không phải loại tài khoản riêng.
+
+| Vai trò | Key | Là ai trong trung tâm |
+|---|---|---|
+| **Quản trị hệ thống** | `system_admin` | Người quản trị **phần mềm**: tài khoản, vai trò, cấu hình, nhật ký. Không phải một chức danh vận hành |
+| **Admin chi nhánh** | `branch_admin` | Nhân sự **văn phòng** của chi nhánh: quản danh sách lớp và giáo viên, tổng hợp việc trung gian giữa các phòng ban |
+| **Quản lý** | `manager` | Người điều hành chuyên môn của chi nhánh. **Chính là "Head"** trong quy trình SOS |
+| **Giáo viên** | `teacher` | GVCN và/hoặc GVBM, quyền phụ thuộc phân công lớp và kỹ năng |
+
+Hai vai trò đầu **không dùng chung chữ "Admin" trong nhãn hiển thị** để tránh gọi nhầm:
+"Quản trị hệ thống" là người quản phần mềm, "Admin chi nhánh" là người làm văn phòng.
 
 Chi nhánh: Monbay (MB) · Bãi Cháy (BC) · Cẩm Phả (CP) · Hải Dương (HD) · Uông Bí (UB).
 Mỗi chi nhánh có 2–3 quản lý.
@@ -59,17 +69,23 @@ Quyền = permission của vai trò
 - GVCN được dời lịch Mock, nhưng việc là GVCN **không** tự cấp quyền sửa mọi kỹ năng.
 - Kiểm tra quyền nằm ở API. Giao diện chỉ ẩn/hiện, không phải lớp bảo vệ.
 
-| Permission | Admin | Admin chi nhánh | Quản lý | Giáo viên |
+| Permission | Quản trị hệ thống | Admin chi nhánh | Quản lý | Giáo viên |
 |---|:--:|:--:|:--:|:--:|
 | `mock.view` | ✓ | ✓ | ✓ | ✓ (lớp được phân công) |
 | `mock.schedule` | ✓ | ✓ | ✓ | ✓ (chỉ lớp mình chủ nhiệm) |
 | `mock.cancel` | ✓ | ✓ | ✓ | — |
 | `score.edit` | ✓ | ✓ | — | ✓ (chỉ kỹ năng được phân công) |
 | `sos.edit` | ✓ | ✓ | ✓ | ✓ (lớp được phân công) |
-| `sos.confirm` | ✓ | ✓ | ✓ | — |
+| `sos.confirm` — **Head** | ✓ | — | ✓ | — |
 | `student.view` / `student.edit` | ✓ | ✓ | ✓ | xem |
 | `meeting.view` / `meeting.edit` | ✓ | ✓ | ✓ | — |
 | `admin.config` | ✓ | — | — | — |
+
+Hai điểm đã chốt trong bảng trên:
+
+- **Huỷ lịch Mock**: Quản trị hệ thống, Admin chi nhánh và Quản lý. Giáo viên — kể cả GVCN — **không** huỷ được.
+- **Xác nhận Head**: **Head chính là Quản lý**, không tách thêm vai trò riêng. Admin chi nhánh là nhân sự
+  văn phòng nên **không** xác nhận Head. Quản trị hệ thống giữ quyền này với tư cách đường sửa sai cuối cùng.
 
 ## A3. Tuần và kỳ báo cáo
 
@@ -269,6 +285,7 @@ Quyết định schema đáng chú ý:
 | Thành phần cũ | Xử lý trong bản này |
 |---|---|
 | Consultant / Consultant Manager | **Bỏ hẳn** khỏi tài khoản demo, navigation và UI. Bước trao đổi PH giữ nguyên, người thực hiện ghi bằng tên (Q4) |
+| Vai trò "Head" riêng | Không tạo. **Head chính là Quản lý** |
 | Trang "Viết báo cáo" độc lập | Gộp trạng thái + ghi chú vào **Họp tuần** |
 | Ghi nhận sự việc / Issue Center | **Bỏ workflow độc lập**. Ghi chú báo cáo và case SOS liên kết thẳng tới công việc |
 | Ghi nhận cảnh báo độc lập | SOS xuất hiện trong Mock. Lịch sử Warning/WL chỉ **đọc lại** trong hồ sơ, không phát hành mới |
@@ -291,6 +308,8 @@ Các service đã xoá khỏi mã nguồn: `weekly` · `classes` · `tasks` (b�
 
 Ghi lại để bàn sau. **Chưa tạo menu trống, route mẫu hay schema lớn cho các ý này.**
 
+- **Tách Head khỏi Quản lý** nếu sau này trung tâm phân thêm cấp duyệt. Hiện tại Head và Quản lý
+  là một, `sos.confirm` gắn thẳng vào vai trò Quản lý.
 - **Consultant / Consultant Manager có tài khoản riêng**, phối hợp CS / CX / Vận hành trong hệ thống;
   bước trao đổi PH khi đó chuyển từ "ghi tên" sang "giao việc cho tài khoản".
 - **Nhiều chương trình / lộ trình**, quy tắc đánh giá riêng cho từng loại lớp (hiện kỳ vọng chỉ áp dụng FT LT1/LT2).

@@ -81,7 +81,7 @@ function coreTeacherOf(classCode: string) {
 }
 
 const P = {
-  admin: loadPrincipal(userByRole('admin', null)),
+  admin: loadPrincipal(userByRole('system_admin', null)),
   mbAdmin: loadPrincipal(userByRole('branch_admin', 'MB')),
   mbManager: loadPrincipal(userByRole('manager', 'MB')),
   cpManager: loadPrincipal(userByRole('manager', 'CP')),
@@ -270,6 +270,33 @@ check('Nhiều quản lý cùng chi nhánh đều vận hành được', () => {
   for (const r of ids) {
     assert(can(loadPrincipal(r.id), PERMISSIONS.MOCK_SCHEDULE, { classId: mbClass }), 'Một quản lý MB không lập được lịch');
   }
+});
+check('Huỷ lịch: Quản trị hệ thống, Admin chi nhánh và Quản lý được, Giáo viên thì không', () => {
+  for (const [who, p] of [['Quản trị hệ thống', P.admin], ['Admin chi nhánh', P.mbAdmin], ['Quản lý', P.mbManager]] as const) {
+    assert(can(p, PERMISSIONS.MOCK_CANCEL, { classId: mbClass }), `${who} phải huỷ được lịch Mock`);
+  }
+  assert(!can(P.coreTeacher, PERMISSIONS.MOCK_CANCEL, { classId: mbClass }), 'GVCN không được huỷ lịch Mock');
+  assert(!can(P.w1Teacher, PERMISSIONS.MOCK_CANCEL, { classId: mbClass }), 'GVBM không được huỷ lịch Mock');
+});
+check('Head chính là Quản lý: Admin chi nhánh và Giáo viên không xác nhận được case', () => {
+  assert(can(P.mbManager, PERMISSIONS.SOS_CONFIRM, { classId: mbClass }), 'Quản lý phải xác nhận được case');
+  assert(can(P.admin, PERMISSIONS.SOS_CONFIRM, { classId: mbClass }), 'Quản trị hệ thống phải xác nhận được case');
+  assert(!can(P.mbAdmin, PERMISSIONS.SOS_CONFIRM, { classId: mbClass }), 'Admin chi nhánh không được xác nhận Head');
+  assert(!can(P.coreTeacher, PERMISSIONS.SOS_CONFIRM, { classId: mbClass }), 'Giáo viên không được xác nhận Head');
+  const c = conn.prepare('SELECT sc.id FROM sos_cases sc JOIN mock_attempts a ON a.id = sc.attempt_id WHERE a.class_id = ? LIMIT 1')
+    .get(mbClass) as any;
+  assert(c, 'Seed thiếu case SOS ở lớp MB-FT 101');
+  assertThrows(() => sos.confirmCase(P.mbAdmin, c.id, true), /quyền/, 'Admin chi nhánh xác nhận case');
+  sos.confirmCase(P.mbManager, c.id, true);
+  const after = conn.prepare('SELECT head_confirmed_by FROM sos_cases WHERE id = ?').get(c.id) as any;
+  assert(after.head_confirmed_by === P.mbManager.userId, 'Quản lý xác nhận nhưng không lưu được');
+});
+check('Admin chi nhánh vẫn làm được việc văn phòng: lịch, điểm và hồ sơ', () => {
+  assert(can(P.mbAdmin, PERMISSIONS.MOCK_SCHEDULE, { classId: mbClass }), 'Admin chi nhánh phải lập/dời được lịch');
+  assert(can(P.mbAdmin, PERMISSIONS.SCORE_EDIT, { classId: mbClass, skill: 'writing1' }), 'Admin chi nhánh phải nhập bù được điểm');
+  assert(can(P.mbAdmin, PERMISSIONS.STUDENT_EDIT, { classId: mbClass }), 'Admin chi nhánh phải sửa được hồ sơ học viên');
+  assert(!can(P.mbAdmin, PERMISSIONS.ADMIN_CONFIG, { anyScope: true }), 'Admin chi nhánh không có quyền quản trị hệ thống');
+  assert(can(P.admin, PERMISSIONS.ADMIN_CONFIG, { anyScope: true }), 'Quản trị hệ thống phải có quyền quản trị');
 });
 check('Không vai trò nào mặc định thấy toàn hệ thống', () => {
   assert(!can(P.mbManager, PERMISSIONS.MOCK_VIEW, { classId: classId('CP-FT 110') }), 'Quản lý MB đang thấy lớp CP');

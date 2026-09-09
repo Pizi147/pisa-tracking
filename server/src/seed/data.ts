@@ -16,7 +16,7 @@ export const BRANCHES = [
 ] as const;
 
 export const ROLES = [
-  { key: 'admin', name: 'Admin' },
+  { key: 'system_admin', name: 'Quản trị hệ thống' },
   { key: 'branch_admin', name: 'Admin chi nhánh' },
   { key: 'manager', name: 'Quản lý' },
   { key: 'teacher', name: 'Giáo viên' },
@@ -27,14 +27,18 @@ export const ROLES = [
  * một Quản lý chỉ toàn hệ thống khi grant của họ có branch_id = NULL.
  */
 export const ROLE_PERMISSIONS: Record<string, string[]> = {
-  admin: [
+  // Quản trị phần mềm: toàn quyền, là đường sửa sai cuối cùng.
+  system_admin: [
     'mock.view', 'mock.schedule', 'mock.cancel', 'score.edit', 'sos.edit', 'sos.confirm',
     'student.view', 'student.edit', 'meeting.view', 'meeting.edit', 'admin.config',
   ],
+  // Văn phòng chi nhánh: danh sách lớp/giáo viên, lịch thi, nhập bù điểm.
+  // KHÔNG có sos.confirm — xác nhận Head là việc của Quản lý.
   branch_admin: [
-    'mock.view', 'mock.schedule', 'mock.cancel', 'score.edit', 'sos.edit', 'sos.confirm',
+    'mock.view', 'mock.schedule', 'mock.cancel', 'score.edit', 'sos.edit',
     'student.view', 'student.edit', 'meeting.view', 'meeting.edit',
   ],
+  // Quản lý CHÍNH LÀ Head trong quy trình SOS.
   manager: [
     'mock.view', 'mock.schedule', 'mock.cancel', 'sos.edit', 'sos.confirm',
     'student.view', 'student.edit', 'meeting.view', 'meeting.edit',

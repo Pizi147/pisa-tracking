@@ -82,9 +82,10 @@ export default function WelcomePage() {
           <div className="ml-auto"><Pill tone="warn">Dữ liệu demo</Pill></div>
         </div>
         <p className="text-sm text-slate-400 mt-4 mb-4 leading-relaxed">
-          Chọn một tài khoản mẫu để bắt đầu. Bản demo có bốn nhóm tài khoản: Admin, Admin chi nhánh, Quản lý và Giáo viên.
-          Mỗi tài khoản có phạm vi khác nhau, giúp bạn thử cùng một màn hình dưới nhiều góc nhìn.
-          Toàn bộ dữ liệu trong bản demo là dữ liệu giả.
+          Chọn một tài khoản mẫu để bắt đầu. Bốn nhóm tài khoản: <strong>Quản trị hệ thống</strong> (quản phần mềm),{' '}
+          <strong>Admin chi nhánh</strong> (nhân sự văn phòng), <strong>Quản lý</strong> (điều hành chuyên môn, cũng
+          chính là Head khi xác nhận case SOS) và <strong>Giáo viên</strong>. Mỗi tài khoản có phạm vi khác nhau,
+          giúp bạn thử cùng một màn hình dưới nhiều góc nhìn. Toàn bộ dữ liệu trong bản demo là dữ liệu giả.
         </p>
         {accounts.loading && <div className="text-slate-400">Đang tải danh sách tài khoản…</div>}
 

@@ -14,7 +14,7 @@ import AdminPage from './pages/Admin.tsx';
 import WelcomePage from './pages/Welcome.tsx';
 
 /**
- * Bốn mục nghiệp vụ, không hơn. Quản trị là lối vào phụ, chỉ hiện với người có quyền.
+ * Bốn mục nghiệp vụ, không hơn. Quản trị hệ thống là lối vào phụ, chỉ hiện với người có quyền.
  * SOS, báo cáo, công việc KHÔNG có menu riêng — chúng nằm ngay nơi phát sinh.
  */
 const NAV = [

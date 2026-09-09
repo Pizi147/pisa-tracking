@@ -75,20 +75,26 @@ thì mở trình duyệt và vào địa chỉ: **<http://localhost:5173>**
 Màn hình đầu tiên là danh sách **tài khoản mẫu**. Bấm vào một tài khoản là vào luôn,
 không cần mật khẩu.
 
-Bản demo có **bốn nhóm tài khoản**: Admin · Admin chi nhánh · Quản lý · Giáo viên.
-Màn hình chọn tài khoản đã nhóm sẵn theo bốn loại này.
+Bản demo có **bốn nhóm tài khoản**. Màn hình chọn tài khoản đã nhóm sẵn theo bốn loại này:
+
+| Nhóm | Là ai |
+|---|---|
+| **Quản trị hệ thống** | Người quản trị **phần mềm**: tài khoản, vai trò, cấu hình. Không phải chức danh vận hành |
+| **Admin chi nhánh** | Nhân sự **văn phòng** chi nhánh: danh sách lớp, giáo viên, việc trung gian giữa các phòng ban |
+| **Quản lý** | Điều hành chuyên môn của chi nhánh. **Chính là "Head"** khi xác nhận case SOS |
+| **Giáo viên** | GVCN và/hoặc GVBM, quyền theo phân công lớp và kỹ năng |
 
 Gợi ý tài khoản nên dùng đầu tiên:
 
 | Muốn xem gì | Chọn tài khoản |
 |---|---|
-| Toàn cảnh cả hệ thống + phần Quản trị | **Đặng Quang Nhi** — Admin |
+| Toàn cảnh cả hệ thống + phần quản trị | **Đặng Quang Nhi** — Quản trị hệ thống |
 | Toàn cảnh một chi nhánh, họp tuần, xử lý SOS | **Đặng Quang Vy** — Quản lý Monbay |
 | Quản lý thứ hai cùng chi nhánh (thử nhiều quản lý) | **Trần Quang Nam** — Quản lý Monbay |
 | Màn hình nhập điểm của giáo viên bộ môn | **Trần Hải Đạt** — dạy Listening + Reading lớp MB-FT 101 |
 | Giáo viên chỉ dạy Writing Task 1 | **Hoàng Khánh Huy** — W1 lớp MB-FT 101 |
 | Góc nhìn giáo viên chủ nhiệm | **Đinh Bảo Vy** — GVCN lớp MB-FT 101 |
-| Quyền trong phạm vi một chi nhánh | **Đặng Ngọc Phúc** — Admin chi nhánh Monbay |
+| Nhân sự văn phòng một chi nhánh | **Đặng Ngọc Phúc** — Admin chi nhánh Monbay |
 
 Giáo viên đăng nhập sẽ vào thẳng danh sách **Mock cần nhập điểm** của mình; các vai trò khác vào **Tổng quan**.
 

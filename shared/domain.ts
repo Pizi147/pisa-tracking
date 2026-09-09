@@ -136,10 +136,19 @@ export const DUE_LABEL: Record<DueState, string> = {
 
 // ---------------------------------------------------------------- Quyền
 
-export const ROLES = ['admin', 'branch_admin', 'manager', 'teacher'] as const;
+/*
+ * Bốn nhóm tài khoản.
+ *
+ * `system_admin` là người quản trị PHẦN MỀM (tài khoản, vai trò, cấu hình).
+ * `branch_admin` là nhân sự VĂN PHÒNG của chi nhánh: quản danh sách lớp, giáo viên và
+ * tổng hợp việc trung gian giữa các phòng ban. Hai vai trò này khác hẳn nhau nên không
+ * dùng chung chữ "Admin" trong nhãn hiển thị.
+ */
+export const ROLES = ['system_admin', 'branch_admin', 'manager', 'teacher'] as const;
 export type Role = (typeof ROLES)[number];
 export const ROLE_LABEL: Record<Role, string> = {
-  admin: 'Admin', branch_admin: 'Admin chi nhánh', manager: 'Quản lý', teacher: 'Giáo viên',
+  system_admin: 'Quản trị hệ thống', branch_admin: 'Admin chi nhánh',
+  manager: 'Quản lý', teacher: 'Giáo viên',
 };
 
 export const PERMISSIONS = {
@@ -148,7 +157,7 @@ export const PERMISSIONS = {
   MOCK_CANCEL: 'mock.cancel',
   SCORE_EDIT: 'score.edit',           // nhập điểm — còn phải khớp phân công kỹ năng
   SOS_EDIT: 'sos.edit',               // ghi nhận xử lý sau Mock
-  SOS_CONFIRM: 'sos.confirm',         // Head xác nhận
+  SOS_CONFIRM: 'sos.confirm',         // Head xác nhận — Head chính là Quản lý
   STUDENT_VIEW: 'student.view',
   STUDENT_EDIT: 'student.edit',
   MEETING_VIEW: 'meeting.view',
@@ -163,12 +172,12 @@ export const PERMISSION_LABEL: Record<string, string> = {
   'mock.cancel': 'Huỷ lịch Mock',
   'score.edit': 'Nhập điểm Mock',
   'sos.edit': 'Ghi nhận xử lý sau Mock',
-  'sos.confirm': 'Head xác nhận case',
+  'sos.confirm': 'Xác nhận case (Head)',
   'student.view': 'Xem hồ sơ học viên',
   'student.edit': 'Sửa hồ sơ học viên',
   'meeting.view': 'Xem họp tuần',
   'meeting.edit': 'Cập nhật báo cáo và công việc',
-  'admin.config': 'Quản trị cấu hình',
+  'admin.config': 'Quản trị hệ thống',
 };
 
 /** Sự kiện hành trình học viên. Bộ lọc chỉ có 3 lựa chọn, xem JOURNEY_FILTERS. */
