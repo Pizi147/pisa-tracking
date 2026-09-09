@@ -30,7 +30,7 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
   // Quản trị phần mềm: toàn quyền, kể cả các ngoại lệ sửa sai về lịch.
   system_admin: [
     'plan.week', 'schedule.date', 'schedule.speaking', 'attempt.cancel', 'attempt.skip_skill',
-    'deadline.override', 'attempt.view', 'score.override', 'sos.edit',
+    'deadline.override', 'attempt.view', 'score.override', 'sos.edit', 'case.close',
     'student.view', 'student.edit', 'meeting.view', 'meeting.edit', 'admin.config',
   ],
   // Văn phòng chi nhánh: CẬP NHẬT NGÀY MT thực tế theo lịch bộ phận xếp lịch đã bố trí,
@@ -46,7 +46,8 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
   manager: [
     'plan.week', 'schedule.date', 'schedule.speaking', 'attempt.cancel', 'attempt.skip_skill',
     'deadline.override', 'attempt.view',
-    'sos.edit', 'student.view', 'student.edit', 'meeting.view', 'meeting.edit',
+    // Quản lý đóng được case trong chi nhánh mình; GVCN đóng case lớp mình (kiểm theo phân công).
+    'sos.edit', 'case.close', 'student.view', 'student.edit', 'meeting.view', 'meeting.edit',
   ],
   // Giáo viên: nhập điểm và đánh giá ĐÚNG kỹ năng được phân công.
   // GVCN không vì chủ nhiệm mà có thêm quyền lịch; riêng GV Speaking sửa được NGÀY Speaking

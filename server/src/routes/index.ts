@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { db, isInitialised } from '../db.ts';
 import {
-  ENTRY_SKILLS, PERMISSIONS, ROLE_LABEL, type Role,
+  ENTRY_SKILLS, ISSUE_CONTEXTS, ISSUE_TAXONOMY, PERMISSIONS, ROLE_LABEL, type Role,
 } from '../../../shared/domain.ts';
 import { demoToday, getConfig, scenarioMode, setConfig } from '../demoConfig.ts';
 import { HttpError, badRequest, isIsoDate, notFound, toInt } from '../util.ts';
@@ -24,6 +24,7 @@ import {
 import * as planningSvc from '../services/planning.ts';
 import { signalsFor } from '../services/signals.ts';
 import { weeklyRollup } from '../services/weekly.ts';
+import * as caseSvc from '../services/cases.ts';
 import * as regularSvc from '../services/regular.ts';
 
 export const api = Router();
@@ -467,6 +468,62 @@ api.post('/students/:id/estimates', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return estimateSvc.saveEstimate(principalOf(req), { ...req.body, studentId: pInt(req, 'id') });
 }));
+
+// ============================================================ Case học vụ
+
+/**
+ * Giáo viên báo vấn đề — KHÔNG cần chờ Mock, không tạo bài đánh giá giả.
+ * `sos_level` để trống: SOS 1/2/3 là số kỹ năng dưới kỳ vọng ở một bài, ở đây chưa có bài.
+ */
+api.post('/cases/report', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return caseSvc.reportIssue(principalOf(req), req.body ?? {});
+}));
+
+api.get('/cases', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return caseSvc.listCases(principalOf(req), {
+    branchId: toInt(req.query?.branchId), classId: toInt(req.query?.classId),
+    studentId: toInt(req.query?.studentId),
+    status: qStr(req, 'status'), origin: qStr(req, 'origin'),
+    group: qStr(req, 'group'), skill: qStr(req, 'skill'), queue: qStr(req, 'queue'),
+  });
+}));
+
+api.get('/cases/queues', requireAuth, wrap((req) => caseSvc.caseQueueCounts(principalOf(req), {
+  branchId: toInt(req.query?.branchId), classId: toInt(req.query?.classId),
+})));
+
+api.get('/cases/:id', requireAuth, wrap((req) => caseSvc.caseDetail(principalOf(req), pInt(req, 'id'))));
+
+/** Phân loại vấn đề: tối đa MỘT vấn đề chính, kèm yếu tố đi kèm và hoàn cảnh. */
+api.put('/cases/:id/issues', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return caseSvc.setIssues(principalOf(req), pInt(req, 'id'), req.body ?? {});
+}));
+
+/** Ghi một tác động. Một case có nhiều tác động. */
+api.post('/cases/:id/interventions', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return caseSvc.recordIntervention(principalOf(req), pInt(req, 'id'), req.body ?? {});
+}));
+
+/** Ghi một lần xem lại sau hỗ trợ. Một tác động có thể xem lại nhiều lần. */
+api.post('/cases/:id/followups', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return caseSvc.recordFollowUp(principalOf(req), pInt(req, 'id'), req.body ?? {});
+}));
+
+/** Đổi hướng xử lý, hoặc đóng case. Đóng thì bắt buộc có hướng xử lý. */
+api.patch('/cases/:id/disposition', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return caseSvc.setDisposition(principalOf(req), pInt(req, 'id'), req.body ?? {});
+}));
+
+/** Bộ phân loại vấn đề để dựng ô chọn. Dữ liệu, không viết cứng trong giao diện. */
+api.get('/ref/issue-taxonomy', requireAuth, wrap(() => ({
+  branches: ISSUE_TAXONOMY, contexts: ISSUE_CONTEXTS,
+})));
 
 // ============================================================ Xử lý sau Mock (SOS)
 
