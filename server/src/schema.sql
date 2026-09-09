@@ -278,6 +278,10 @@ CREATE TABLE teacher_estimates (
   student_id INTEGER NOT NULL REFERENCES students(id),
   cycle_id INTEGER REFERENCES learning_cycles(id),
   skill TEXT NOT NULL,                -- entry skill: listening | reading | writing1 | writing2 | speaking
+  -- Nhập GIỐNG HỆT Mock để hai con số so được với nhau: L/R nhập số câu đúng trên 40,
+  -- W/S nhập bốn tiêu chí IELTS. Band là kết quả TÍNH RA, không phải con số gõ tay.
+  raw_score INTEGER,                  -- 0..40, chỉ với listening/reading
+  c1 REAL, c2 REAL, c3 REAL, c4 REAL, -- bốn tiêu chí, chỉ với writing1/writing2/speaking
   band REAL NOT NULL,
   assessed_on TEXT NOT NULL,          -- NGÀY đánh giá, khác ngày nhập vào hệ thống
   assessed_by INTEGER REFERENCES users(id),
@@ -310,6 +314,11 @@ CREATE TABLE sos_cases (
   meeting_date TEXT,
 
   status TEXT NOT NULL DEFAULT 'open',    -- open | in_progress | done
+  -- GVCN đã nhận case: METADATA, không phải trạng thái thứ tư. Nhận không nghĩa là đã xử lý,
+  -- và có thể ghi hành động thực tế trước rồi mới xác nhận đã nhận.
+  acknowledged_by INTEGER REFERENCES users(id),
+  acknowledged_at TEXT,
+  -- Dấu xác nhận cũ. Bước "Head xác nhận" ĐÃ BỎ khỏi quy trình; hai cột này chỉ để tra lại.
   head_confirmed_by INTEGER REFERENCES users(id),
   head_confirmed_at TEXT,
   note TEXT,
@@ -364,6 +373,19 @@ CREATE TABLE tasks (
 );
 CREATE INDEX idx_task_period ON tasks(period_id);
 CREATE INDEX idx_task_assignee ON tasks(assignee_user_id);
+
+-- Người THEO DÕI một công việc: không phải người làm, không chịu trách nhiệm hoàn thành,
+-- nhưng được cập nhật khi tiến độ đổi. Nhiều người một việc nên phải là bảng riêng,
+-- không nhét vào một cột trên tasks.
+CREATE TABLE task_followers (
+  task_id INTEGER NOT NULL REFERENCES tasks(id),
+  user_id INTEGER NOT NULL REFERENCES users(id),
+  -- auto = hệ thống tự thêm (Quản lý của chi nhánh), manual = người tạo chọn thêm.
+  source TEXT NOT NULL DEFAULT 'manual',
+  created_at TEXT NOT NULL,
+  PRIMARY KEY (task_id, user_id)
+);
+CREATE INDEX idx_task_follower_user ON task_followers(user_id);
 
 CREATE TABLE task_history (
   id INTEGER PRIMARY KEY,

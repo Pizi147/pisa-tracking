@@ -182,6 +182,71 @@ GVCN chỉ đọc lịch.
 
 ---
 
+## Luồng 9 — Admin CN: cập nhật ngày MT hàng loạt
+
+**Vai:** `Đặng Ngọc Phúc` (Admin chi nhánh Monbay). Ngày demo **23/09/2026** = W4 SEP.
+
+1. **Học viên → Cần cập nhật ngày MT**. Chỉ hiện MT **đã đến tuần**: nhóm *Tuần này* (W4 SEP) và
+   nhóm *Quá hạn* (W3 SEP còn sót). MT của W2 OCT trở đi **không** xuất hiện — chưa đến lượt thì
+   chưa phải việc.
+2. Tick vài em → chọn **Buổi L/R/W** → chọn ngày → **Cập nhật N lượt**.
+   Ô ngày bị chặn trong đúng tuần kế hoạch của những em đang chọn.
+3. Không có ô nhập **giờ** ở bất cứ đâu — giờ mock đã bỏ.
+4. Chọn các em thuộc **hai tuần khác nhau** → hệ thống nói rõ một ngày không thể nằm trong mọi tuần.
+
+**Thử thêm:** đăng nhập bằng một **giáo viên Writing** rồi gọi thẳng API cập nhật ngày → bị từ chối.
+Giáo viên **Speaking** sửa được **ngày Speaking**, nhưng vẫn không sửa được ngày L/R/W.
+
+---
+
+## Luồng 10 — Quản lý: lên kế hoạch MT hàng loạt
+
+**Vai:** `Đặng Quang Vy` (Quản lý Monbay).
+
+1. **Học viên → Lên kế hoạch MT**. Panel **trượt từ phải**, đủ rộng để vừa thấy danh sách vừa đặt tuần.
+2. Mặc định chỉ liệt kê em **chưa có tuần MT tiếp theo** — đó là việc đang tồn của Quản lý.
+   Bấm **Xem cả lớp để xếp trước** khi muốn xếp sẵn lượt sau cho cả lớp.
+3. Chọn tuần bằng `← W4 OCT ▼ →`, tick nhiều em, rồi chọn **kỹ năng lượt này yêu cầu**.
+4. Bỏ tick **Speaking** → lượt này **ngay từ đầu không yêu cầu Speaking**. Mở chi tiết lượt vừa tạo:
+   Speaking nằm ở nhóm *không yêu cầu*, và lượt được coi là **xong khi đủ L/R/W** — không chờ Speaking.
+5. Bỏ tick **cả bốn** kỹ năng → hệ thống từ chối: một lượt không có kỹ năng nào thì không đánh giá được gì.
+
+---
+
+## Luồng 11 — Giáo viên: Đánh giá GV và so với điểm Mock
+
+**Vai:** `Trần Hải Đạt` (GV Listening + Reading, lớp MB-FT 101).
+
+1. Mở lớp → mở hồ sơ một học viên → bảng **Điểm Mock và Đánh giá GV**.
+   Một bảng, hai cột, kèm cột **Δ**.
+2. Δ **dương** (xanh) = em đang thể hiện **tốt hơn** mức giáo viên đánh giá; **âm** (hổ phách) = **thấp hơn**.
+3. Bấm **Đánh giá** ở dòng Listening → nhập **số câu đúng / 40**, hệ thống tự quy ra band.
+   Dòng Writing/Speaking thì nhập **bốn tiêu chí**.
+4. Bấm vào một ô điểm → mở **căn cứ**: raw hoặc bốn tiêu chí.
+5. Thử sửa kỹ năng **không** được phân công → không có nút, và gọi thẳng API cũng bị từ chối.
+
+**Lưu ý:** giáo viên cập nhật được **bất kỳ lúc nào**, không phụ thuộc tuần MT hay hạn nhập điểm.
+
+---
+
+## Luồng 12 — Tiến trình công việc: dữ kiện tự sinh và khoá thời gian
+
+**Vai:** `Đặng Quang Vy` (Quản lý).
+
+1. **Tiến trình công việc** → mục **Việc hệ thống nhìn ra**. Mỗi dòng ghi rõ **việc của ai**
+   (tuần MT → Quản lý, ngày MT → Admin chi nhánh) và bấm vào mở đúng bản ghi cấu thành.
+2. Nhập đủ điểm cho một lượt ở màn khác rồi quay lại → con số *thiếu điểm* **tự giảm**.
+   Không có nút "Đã xong" — đánh dấu chỉ che một con số vẫn đang đúng.
+3. Chọn tuần bằng `←` `→` thay vì mở dropdown. Danh sách chỉ khoảng **hai tháng** quanh tuần đang xem
+   và **một tuần tới**; chọn một tuần cũ thì cửa sổ **dịch theo**.
+4. Mở một tuần **tương lai** → không nhập được báo cáo, và hệ thống **nói rõ vì sao**.
+   Gọi thẳng API cũng bị từ chối — quy tắc nằm ở máy chủ, không phải chỉ làm mờ nút.
+5. **Thêm việc** → không còn trường *Loại*; **Người phụ trách** là ô **gõ để tìm** kèm vai trò và chi nhánh;
+   **Người theo dõi** đã có sẵn Quản lý của chi nhánh đó.
+6. Sau `Tutor part-time` không còn badge *Đơn vị độc lập*. Nhóm báo cáo là **Học sinh / Phụ huynh**.
+
+---
+
 ## Kiểm tra quyền (bấm nhanh)
 
 | Thử | Tài khoản | Kỳ vọng |
@@ -195,8 +260,12 @@ GVCN chỉ đọc lịch.
 | Nhiều quản lý cùng chi nhánh | `Trần Quang Nam`, `Đinh Bảo Lam` (đều là Quản lý MB) | Cả ba quản lý MB đều thao tác được |
 | Giáo viên không có Tiến trình công việc | bất kỳ giáo viên nào | Menu chỉ còn **3 mục**, không có *Tiến trình công việc* |
 | Nhập hàng loạt ngoài phạm vi bị chặn ở máy chủ | `Đặng Quang Vy` (Quản lý MB) | Dán dòng có lớp `CP-FT 110`: xem trước báo *nằm ngoài phạm vi*, bấm Thêm thì dòng đó bị bỏ qua và **không** có học viên nào được tạo |
-| Chỉ Quản lý xác nhận được Head | `Đặng Ngọc Phúc` (Admin chi nhánh MB) | **Không** thấy nút *Xác nhận (Head)*; các thao tác văn phòng khác (dời lịch, nhập bù điểm, sửa hồ sơ) vẫn làm được |
+| Không còn bước *Xác nhận (Head)* | bất kỳ tài khoản nào | Chi tiết case **không** còn nút *Xác nhận (Head)*; case kết thúc bằng chính trạng thái xử lý. Dấu xác nhận cũ vẫn hiện để tra lại |
+| Quản lý cập nhật được ngày MT | `Đặng Quang Vy` | Có cả **Đổi tuần** lẫn cập nhật **ngày thực tế** — học viên nghỉ thì sửa được ngay |
+| Báo cáo tuần tương lai bị chặn ở máy chủ | `Đặng Quang Vy` | Mở một tuần cuối năm: ô nhập khoá, và gọi thẳng API vẫn bị từ chối |
 | Giáo viên không huỷ được lịch | `Đinh Bảo Vy` (GVCN MB-FT 101) | Có nút **Dời lịch**, **không** có nút *Huỷ lịch* |
+| GV L/R/W không sửa được ngày MT | `Hoàng Khánh Huy` (GV W1) | Gọi API cập nhật ngày L/R/W **và** ngày Speaking đều bị từ chối |
+| GV Speaking chỉ sửa ngày Speaking | `Ngô Khánh Bình` (GV S) | Sửa được **ngày Speaking**; ngày L/R/W bị từ chối |
 | Quản trị hệ thống thấy phần quản trị | `Đặng Quang Nhi` | Menu tài khoản có mục **Quản trị hệ thống** |
 
 ---

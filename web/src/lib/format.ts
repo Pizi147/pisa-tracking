@@ -1,5 +1,5 @@
 import {
-  ASSESSED_SKILL_LABEL, ATTEMPT_STATUS_LABEL, CASE_STATUS_LABEL, DUE_LABEL, ENTRY_SKILL_LABEL,
+  ASSESSED_SKILL_LABEL, ATTEMPT_STATUS_LABEL, CASE_STATUS_LABEL, CASE_STATUS_TONE, DUE_LABEL, ENTRY_SKILL_LABEL,
   ENTRY_SKILL_SHORT, ROLE_LABEL, SKILL_PROGRESS_LABEL, SOS_LABEL, STUDENT_STATUS_LABEL,
   TASK_PROGRESS_LABEL, TASK_TYPE_LABEL, UNIT_STATUS_LABEL,
   type AssessedSkill, type EntrySkill, type SkillProgress, type SosLevel, type StudentStatus,
@@ -65,6 +65,10 @@ export type Tone = 'ok' | 'warn' | 'danger' | 'info' | 'neutral' | 'muted';
 export function sosTone(level: number | null): Tone {
   if (level === null) return 'muted';
   return level === 0 ? 'ok' : level === 1 ? 'info' : level === 2 ? 'warn' : 'danger';
+}
+/** Ba trạng thái case phải khác nhau ngay từ màu, không cần mở chi tiết mới biết. */
+export function caseStatusTone(status: string | null): Tone {
+  return (CASE_STATUS_TONE[status as keyof typeof CASE_STATUS_TONE] ?? 'neutral') as Tone;
 }
 export function dueTone(state: string): Tone {
   return state === 'overdue' ? 'danger' : state === 'due_soon' ? 'warn' : state === 'closed' ? 'ok' : 'neutral';

@@ -1,5 +1,5 @@
 import { db, tx } from '../db.ts';
-import { ARCHIVE_AFTER_DAYS, JOURNEY_GROUP, PERMISSIONS, STUDENT_STATUSES } from '../../../shared/domain.ts';
+import { ARCHIVE_AFTER_DAYS, ENTRY_SKILLS, JOURNEY_GROUP, PERMISSIONS, STUDENT_STATUSES } from '../../../shared/domain.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addDays, badRequest, isIsoDate, normalizeName, notFound, nowIso, padCode } from '../util.ts';
 import { can, classScopeSql, require_, scopeFor, type Principal } from '../permissions.ts';
@@ -198,6 +198,12 @@ export function studentDetail(p: Principal, studentId: number) {
       canEdit: can(p, PERMISSIONS.STUDENT_EDIT, { studentId }),
       canPlanWeek: can(p, PERMISSIONS.PLAN_WEEK, { studentId }),
       canSetDate: can(p, PERMISSIONS.SCHEDULE_DATE, { studentId }),
+      /*
+       * Kỹ năng người đang xem được cập nhật Đánh giá GV — đúng kỹ năng mình phụ trách,
+       * không phụ thuộc tuần MT hay hạn nhập điểm.
+       */
+      estimateSkills: ENTRY_SKILLS.filter((k) =>
+        can(p, PERMISSIONS.ESTIMATE_EDIT, { classId: current?.class_id ?? null, studentId, skill: k })),
     },
   };
 }

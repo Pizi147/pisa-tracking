@@ -24,7 +24,7 @@ type RosterRow = {
  * Danh sách học viên của một lớp, chỉ tải khi lớp được mở rộng.
  *
  * Mỗi dòng cho thấy học viên đang ở đâu trong lộ trình mà không phải mở chi tiết:
- * chuỗi MT quá khứ → hiện tại → tương lai, kết quả gần nhất và chênh lệch ước lượng.
+ * chuỗi MT quá khứ → hiện tại → tương lai, kết quả gần nhất và chênh lệch với Đánh giá GV.
  */
 export function ClassRoster({ classId, studentQuery, onAddStudents }: {
   classId: number; studentQuery?: string; onAddStudents?: () => void;
@@ -61,7 +61,7 @@ export function ClassRoster({ classId, studentQuery, onAddStudents }: {
             <th className="th">Target</th>
             <th className="th">Tiến trình MT</th>
             <th className="th">Kết quả gần nhất</th>
-            <th className="th">Ước lượng GV</th>
+            <th className="th">Đánh giá GV</th>
             <th className="th">Việc cần làm</th>
           </tr>
         </thead>
@@ -93,7 +93,7 @@ export function ClassRoster({ classId, studentQuery, onAddStudents }: {
                     Nhập {s.myPending.map((k) => ENTRY_SKILL_SHORT[k as EntrySkill] ?? k).join(', ')}
                   </span>
                 )}
-                {s.myPending.length === 0 && s.timeline.some((t) => t.needsDate) && <Pill tone="warn">Cần xếp lịch</Pill>}
+                {s.myPending.length === 0 && s.timeline.some((t) => t.needsDate) && <Pill tone="warn">Cần cập nhật ngày</Pill>}
                 {s.myPending.length === 0 && !s.timeline.some((t) => t.needsDate)
                   && s.timeline.some((t) => t.caseStatus && t.caseStatus !== 'done') && <Pill tone="danger">Case SOS</Pill>}
               </td>
@@ -140,14 +140,14 @@ function MockTrail({ timeline }: { timeline: Timeline[] }) {
   );
 }
 
-/** Chênh lệch ước lượng ↔ điểm Mock gần nhất của CÙNG kỹ năng, chỉ hiện khi có cả hai. */
+/** Chênh lệch Đánh giá GV ↔ điểm Mock gần nhất của CÙNG kỹ năng, chỉ hiện khi có cả hai. */
 function EstimateChips({ row }: { row: RosterRow }) {
   const entries = Object.entries(row.estimates ?? {}) as [EntrySkill, { band: number; assessedOn: string }][];
   if (!entries.length) return <span className="text-slate-600">—</span>;
   return (
     <span className="flex flex-wrap gap-1">
       {entries.map(([skill, est]) => (
-        <Pill key={skill} tone="neutral" title={`Ước lượng ngày ${est.assessedOn}`}>
+        <Pill key={skill} tone="neutral" title={`Đánh giá ngày ${est.assessedOn}`}>
           {ENTRY_SKILL_SHORT[skill] ?? skill} {est.band.toFixed(1)}
         </Pill>
       ))}

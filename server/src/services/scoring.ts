@@ -92,6 +92,7 @@ export type AttemptResult = {
   overall: number | null;
   /** Nhãn cho biết đang đánh giá trên mấy kỹ năng, ví dụ "Đánh giá trên 3 kỹ năng". */
   scopeNote: string | null;
+  scopeDetail: string | null;
 };
 
 /**
@@ -146,7 +147,14 @@ export function evaluateAttempt(
   return {
     expectation, bands, verdicts, required, skipped,
     scoredRequired, complete, evaluable, failedCount, sosLevel, overall,
-    scopeNote: skipped.length ? `Đánh giá trên ${required.length} kỹ năng` : null,
+    /*
+     * Ở danh sách chỉ cần con số. "Đánh giá trên 3 kỹ năng" là một câu giải thích, và giải
+     * thích thuộc về màn chi tiết — ở overview nó chỉ làm dòng dài ra và khó quét.
+     */
+    scopeNote: skipped.length ? `${required.length} kỹ năng` : null,
+    scopeDetail: skipped.length
+      ? `Đánh giá trên ${required.length} kỹ năng — ${skipped.length} kỹ năng không yêu cầu ở lượt này`
+      : null,
   };
 }
 

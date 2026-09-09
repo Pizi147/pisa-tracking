@@ -7,7 +7,7 @@ import { demoToday } from '../demoConfig.ts';
 import { badRequest, diffDays, isIsoDate, notFound, nowIso, padCode } from '../util.ts';
 import { can, require_, scopeFor, type Principal } from '../permissions.ts';
 import { writeAudit } from './audit.ts';
-import { periodById } from './week.ts';
+import { periodById, reportEditWindow } from './week.ts';
 
 export const DUE_SOON_DAYS = 3;
 
@@ -88,6 +88,15 @@ export function saveUnitReport(
     'Bạn không có quyền cập nhật báo cáo của đơn vị này.');
   const cat = categoriesFor(unit).find((c) => c.key === categoryKey);
   if (!cat) throw badRequest('Nhóm báo cáo không thuộc đơn vị này.');
+
+  /*
+   * Cửa sổ thời gian được kiểm ở ĐÂY, tại máy chủ — không chỉ làm mờ nút ở giao diện.
+   * Nút mờ chặn được người dùng bình thường, không chặn được một request gửi thẳng.
+   */
+  const period = conn.prepare('SELECT * FROM report_periods WHERE id = ?').get(periodId) as any;
+  if (!period) throw notFound('Không tìm thấy tuần báo cáo');
+  const window = reportEditWindow(period);
+  if (!window.open) throw badRequest(window.reason ?? 'Ngoài thời gian cập nhật báo cáo tuần.');
   if (patch.status && !(UNIT_STATUSES as readonly string[]).includes(patch.status)) {
     throw badRequest('Tình trạng không hợp lệ.');
   }
@@ -171,8 +180,26 @@ export function listTasks(p: Principal, f: TaskFilters = {}) {
 
   const today = demoToday();
   const period = f.periodId ? periodById(f.periodId) : null;
+
+  // Người theo dõi đọc một lượt cho cả danh sách, không hỏi lại theo từng việc.
+  const followers = new Map<number, { userId: number; name: string; source: string }[]>();
+  if (rows.length) {
+    const ids = rows.map((t) => t.id);
+    for (const r of conn
+      .prepare(
+        `SELECT f.task_id, f.user_id, f.source, u.full_name
+           FROM task_followers f JOIN users u ON u.id = f.user_id
+          WHERE f.task_id IN (${ids.map(() => '?').join(',')}) ORDER BY u.full_name`,
+      )
+      .all(...ids) as any[]) {
+      if (!followers.has(r.task_id)) followers.set(r.task_id, []);
+      followers.get(r.task_id)!.push({ userId: r.user_id, name: r.full_name, source: r.source });
+    }
+  }
+
   let mapped = rows.map((t) => ({
     id: t.id, code: t.code, title: t.title, taskType: t.task_type,
+    followers: followers.get(t.id) ?? [],
     unitId: t.reporting_unit_id, unitName: t.unit_name, branchId: t.branch_id,
     assigneeId: t.assignee_user_id, assigneeName: t.assignee_name,
     dueDate: t.due_date, progress: t.progress, note: t.note,
@@ -185,11 +212,15 @@ export function listTasks(p: Principal, f: TaskFilters = {}) {
   }));
 
   if (period) {
-    // Giữ lại: việc của kỳ này, việc dài hạn chưa xong, và mọi việc quá hạn/sắp đến hạn.
+    /*
+     * Giữ lại: việc của kỳ này, và mọi việc quá hạn hoặc sắp đến hạn.
+     *
+     * Trước đây còn giữ "việc dài hạn chưa xong" theo trường `Loại`. Trường đó đã bỏ khỏi
+     * form vì nó không đổi routing, quyền, hạn hay cách tổng hợp — chỉ thêm một ô phải
+     * chọn. Việc còn hạn và chưa xong đã được chính hạn của nó nói lên rồi.
+     */
     mapped = mapped.filter((t) =>
-      t.periodId === period.id ||
-      (t.taskType === 'long_term' && t.progress !== 'done') ||
-      t.dueState === 'overdue' || t.dueState === 'due_soon');
+      t.periodId === period.id || t.dueState === 'overdue' || t.dueState === 'due_soon');
   }
   switch (f.view) {
     case 'mine': mapped = mapped.filter((t) => t.assigneeId === p.userId); break;
@@ -208,7 +239,8 @@ export function createTask(p: Principal, input: any) {
   require_(p, PERMISSIONS.MEETING_EDIT, { branchId, anyScope: branchId === null }, 'Bạn không có quyền tạo công việc.');
   if (!input.title?.trim()) throw badRequest('Cần nội dung công việc.');
   if (input.dueDate && !isIsoDate(input.dueDate)) throw badRequest('Hạn không hợp lệ.');
-  const taskType = (TASK_TYPES as readonly string[]).includes(input.taskType) ? input.taskType : 'in_period';
+  // `Loại` đã bỏ khỏi form; cột cũ giữ nguyên giá trị lịch sử, việc mới ghi mặc định.
+  const taskType = 'in_period';
 
   return tx(() => {
     const n = (conn.prepare('SELECT COUNT(*) AS n FROM tasks').get() as any).n as number;
@@ -225,10 +257,53 @@ export function createTask(p: Principal, input: any) {
            input.sourceType ?? 'manual', input.sourceUnitReportId ?? null, input.sourceSosCaseId ?? null,
            p.userId, nowIso());
     const id = Number(info.lastInsertRowid);
+    setFollowers(conn, id, p.userId, branchId, input.followerIds);
     writeAudit({ actorUserId: p.userId, action: 'task.create', entityType: 'task', entityId: id,
       entityLabel: code, after: { title: input.title, dueDate: input.dueDate } });
     return conn.prepare('SELECT * FROM tasks WHERE id = ?').get(id);
   });
+}
+
+/**
+ * Ghi danh sách người theo dõi.
+ *
+ * QUẢN LÝ CỦA CHÍNH CHI NHÁNH ĐÓ được thêm sẵn: việc thuộc chi nhánh nào thì quản lý chi
+ * nhánh ấy đương nhiên cần biết, bắt người tạo chọn lại mỗi lần là bắt làm một việc mà
+ * hệ thống đã biết câu trả lời. Người tạo vẫn thêm được người khác.
+ */
+function setFollowers(
+  conn: ReturnType<typeof db>, taskId: number, actorId: number,
+  branchId: number | null, manualIds: unknown,
+) {
+  const wanted = new Map<number, string>();
+  if (branchId) {
+    for (const r of conn
+      .prepare(
+        `SELECT DISTINCT ur.user_id FROM user_roles ur
+           JOIN roles r ON r.id = ur.role_id
+          WHERE r.key = 'manager' AND ur.status = 'active'
+            AND (ur.branch_id = ? OR ur.branch_id IS NULL)`,
+      )
+      .all(branchId) as any[]) {
+      wanted.set(r.user_id, 'auto');
+    }
+  }
+  for (const id of Array.isArray(manualIds) ? manualIds : []) {
+    const n = Number(id);
+    if (Number.isFinite(n) && n > 0) wanted.set(n, 'manual');
+  }
+  // Người theo dõi không phải người làm: nếu đã là người phụ trách thì không nhân đôi.
+  const t = conn.prepare('SELECT assignee_user_id FROM tasks WHERE id = ?').get(taskId) as any;
+  if (t?.assignee_user_id) wanted.delete(t.assignee_user_id);
+
+  conn.prepare('DELETE FROM task_followers WHERE task_id = ?').run(taskId);
+  for (const [userId, source] of wanted) {
+    const ok = conn.prepare(`SELECT 1 FROM users WHERE id = ? AND status = 'active'`).get(userId);
+    if (!ok) continue;
+    conn.prepare('INSERT INTO task_followers (task_id, user_id, source, created_at) VALUES (?,?,?,?)')
+      .run(taskId, userId, source, nowIso());
+  }
+  void actorId;
 }
 
 const ASSIGNEE_EDITABLE = new Set(['progress', 'note']);
@@ -264,6 +339,10 @@ export function updateTask(p: Principal, taskId: number, patch: any) {
     conn.prepare('INSERT INTO task_history (task_id, field, old_value, new_value, actor_user_id, created_at) VALUES (?,?,?,?,?,?)')
       .run(taskId, map[k], t[map[k]] === null ? null : String(t[map[k]]), v === null ? null : String(v), p.userId, nowIso());
   }
+  if (patch.followerIds !== undefined) {
+    if (!manage) throw badRequest('Chỉ người quản lý công việc mới đổi được người theo dõi.');
+    setFollowers(conn, taskId, p.userId, t.branch_id, patch.followerIds);
+  }
   if (patch.progress === 'done' && t.progress !== 'done') { sets.push('completed_at = ?'); params.push(nowIso()); }
   if (patch.progress && patch.progress !== 'done' && t.progress === 'done') sets.push('completed_at = NULL');
   if (!sets.length) return t;
@@ -283,4 +362,82 @@ export function taskHistory(taskId: number) {
         WHERE h.task_id = ? ORDER BY h.id DESC`,
     )
     .all(taskId) as any[];
+}
+
+
+/**
+ * Danh sách người để chọn Người phụ trách / Người theo dõi.
+ *
+ * Trả về kèm vai trò và chi nhánh, vì trong một trung tâm có người trùng tên — một ô chọn
+ * chỉ có tên là một ô chọn nhầm người. Gõ để lọc, không phải kéo một dropdown dài.
+ */
+export function searchPeople(p: Principal, q?: string, limit = 20) {
+  require_(p, PERMISSIONS.MEETING_VIEW, { anyScope: true }, 'Bạn không có quyền xem danh sách người dùng.');
+  const conn = db();
+  const term = (q ?? '').trim();
+  const params: unknown[] = [];
+  let where = `u.status = 'active'`;
+  if (term) { where += ' AND (u.full_name LIKE ? OR u.code LIKE ?)'; params.push(`%${term}%`, `%${term}%`); }
+  const rows = conn
+    .prepare(
+      `SELECT u.id, u.full_name, u.title,
+              (SELECT GROUP_CONCAT(DISTINCT r.name_vi) FROM user_roles ur JOIN roles r ON r.id = ur.role_id
+                WHERE ur.user_id = u.id AND ur.status = 'active') AS roles,
+              (SELECT GROUP_CONCAT(DISTINCT b.code) FROM user_roles ur JOIN branches b ON b.id = ur.branch_id
+                WHERE ur.user_id = u.id AND ur.status = 'active') AS branches
+         FROM users u WHERE ${where} ORDER BY u.full_name LIMIT ?`,
+    )
+    .all(...params, limit) as any[];
+  return rows.map((r) => ({
+    id: r.id, name: r.full_name, title: r.title,
+    role: (r.roles ?? '').split(',')[0] || null,
+    branches: r.branches ? String(r.branches).split(',') : [],
+  }));
+}
+
+/**
+ * Tổng hợp Tutor part-time theo TỪNG TUTOR, không phải theo từng chi nhánh.
+ *
+ * Nhiều chi nhánh cùng làm việc với một tutor và cùng ghi nhận về người đó. Nếu mỗi chi
+ * nhánh thành một bản ghi độc lập rồi cộng cơ học thì một tutor sẽ hoá thành ba tutor trên
+ * dashboard. Báo cáo của chi nhánh là ĐẦU VÀO; tutor mới là đơn vị được tổng hợp.
+ *
+ * Ở bản demo, phần này giữ NHẸ: gom ghi nhận theo đơn vị Tutor, không dựng một hệ quản lý
+ * nhân sự tutor.
+ */
+export function tutorRollup(p: Principal, periodId: number) {
+  require_(p, PERMISSIONS.MEETING_VIEW, { anyScope: true }, 'Bạn không có quyền xem báo cáo tutor.');
+  const conn = db();
+  const unit = conn.prepare(`SELECT * FROM reporting_units WHERE code = 'TUTOR'`).get() as any;
+  if (!unit) return { unit: null, categories: [], contributions: [] };
+
+  const reports = conn
+    .prepare(
+      `SELECT ur.*, u.full_name AS reporter_name,
+              (SELECT GROUP_CONCAT(DISTINCT b.code) FROM user_roles r2 JOIN branches b ON b.id = r2.branch_id
+                WHERE r2.user_id = ur.reporter_user_id AND r2.status = 'active') AS reporter_branches
+         FROM unit_reports ur
+         LEFT JOIN users u ON u.id = ur.reporter_user_id
+        WHERE ur.reporting_unit_id = ? AND ur.period_id = ?`,
+    )
+    .all(unit.id, periodId) as any[];
+
+  const byCategory = new Map<string, any[]>();
+  for (const r of reports) {
+    if (!byCategory.has(r.category_key)) byCategory.set(r.category_key, []);
+    byCategory.get(r.category_key)!.push({
+      status: r.status, note: r.note,
+      reporter: r.reporter_name,
+      // Chi nhánh của người ghi nhận — để thấy nhận định đến từ đâu, không tách thành đơn vị riêng.
+      fromBranches: r.reporter_branches ? String(r.reporter_branches).split(',') : [],
+      updatedAt: r.updated_at,
+    });
+  }
+  return {
+    unit: { id: unit.id, name: unit.name },
+    categories: TUTOR_REPORT_CATEGORIES.map((c) => ({
+      key: c.key, label: c.label, entries: byCategory.get(c.key) ?? [],
+    })),
+    contributions: reports.length,
+  };
 }

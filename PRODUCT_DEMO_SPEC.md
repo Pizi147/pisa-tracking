@@ -430,6 +430,144 @@ lần nhập đó, nên bấm đúp hoặc thử lại sau lỗi mạng đều t
 **Tạo lớp**: mã lớp phải bắt đầu bằng mã chi nhánh và không trùng — để mã lớp tự nó nói được lớp
 thuộc chi nhánh nào, không phải tra bảng.
 
+## A8c. Lịch MT: xếp TUẦN và cập nhật NGÀY là hai việc của hai người
+
+| | Xếp tuần MT | Cập nhật ngày MT thực tế |
+|---|---|---|
+| **Ai** | Quản lý | Admin chi nhánh **và** Quản lý |
+| **Quyết định gì** | Em sẽ MT vào tuần nào (`MT2 → W3 OCT`) | Em thực sự làm bài ngày nào (`LRW → 15/10`) |
+| **Khi nào** | Từ trước, thường đã có kế hoạch mặc định | Khi đã đến tuần đó |
+| **Thiếu thì ai lo** | Quản lý — *"3 học viên chưa có tuần MT"* | Admin chi nhánh — *"Cần cập nhật ngày MT"* |
+
+Admin chi nhánh **không phải người "chốt lịch"**. Lịch buổi học do bộ phận xếp lịch bố trí từ Chủ nhật
+tuần trước; việc ở đây là **ghi lại ngày em thực sự làm bài** theo lịch tổng của chi nhánh, và cập nhật
+lại khi em nghỉ và được dời.
+
+**Chỉ ngày, không giờ.** Giờ mock đã bỏ hoàn toàn — nó không giúp gì cho việc theo dõi tiến độ,
+chỉ thêm một ô phải nhập.
+
+**Quyền sửa ngày:**
+
+- **L/R/W** — chỉ Admin chi nhánh và Quản lý.
+- **Speaking** — thêm **giáo viên Speaking của chính học viên đó**, vì Speaking thường khác ngày với
+  buổi L/R/W.
+- Giáo viên L/R/W **không bao giờ** sửa được ngày. **GVCN cũng không** — chủ nhiệm không phải quyền lịch.
+
+### Việc phụ thuộc THỜI ĐIỂM
+
+"Cần cập nhật ngày" chỉ là việc khi **đã đến tuần MT đó**. Hôm nay W4 SEP mà MT3 xếp W2 OCT thì chưa
+ai phải làm gì. Đưa nó vào danh sách chỉ tạo một con số lúc nào cũng đỏ, và người dùng học cách phớt lờ.
+
+| Tình huống | Có phải việc không |
+|---|---|
+| MT3 = W2 OCT, hôm nay W4 SEP | **Không** — chưa đến lượt |
+| MT2 = W4 SEP (tuần này), chưa có ngày | **Có** — Admin chi nhánh làm trong tuần |
+| MT2 = W3 SEP (tuần trước), vẫn chưa có ngày | **Quá hạn** — nghĩa vụ tuần trước còn sót |
+
+Vì thế badge **"Chưa có ngày" đã bỏ khỏi mọi nơi**. Chuyện thiếu ngày chỉ xuất hiện ở đúng một chỗ:
+màn **Cần cập nhật ngày MT** trong Học viên, và nó là màn **thao tác hàng loạt** — chọn nhiều em,
+một ngày, một lần bấm, không mở từng hồ sơ.
+
+### Kỹ năng lượt này YÊU CẦU, chọn ngay khi lên kế hoạch
+
+Panel **Lên kế hoạch MT** trượt từ phải, chọn nhiều em, đặt tuần, và tick kỹ năng lượt này yêu cầu
+(mặc định đủ bốn). Bỏ tick Speaking nghĩa là lượt này **ngay từ đầu không yêu cầu Speaking**.
+
+| | Không yêu cầu | Thiếu điểm |
+|---|---|---|
+| Nghĩa | Ngay từ đầu lượt này không có kỹ năng đó | Có yêu cầu nhưng chưa nhập |
+| Lượt xong chưa | **Xong** khi đủ các kỹ năng được yêu cầu | **Chưa**, còn phải chờ |
+| SOS | Tính trên các kỹ năng được yêu cầu | Chưa kết luận được |
+
+Một lượt **không thể** không yêu cầu kỹ năng nào — không đánh giá được gì.
+
+## A8d. Đánh giá GV *(trước gọi là Ước lượng GV)*
+
+Đây là **nhận định chủ quan hiện tại** của giáo viên về trình độ học viên ở kỹ năng mình phụ trách.
+Giáo viên cập nhật **bất kỳ lúc nào** — không phụ thuộc tuần MT, hạn nhập điểm hay lịch assessment.
+Chỉ sửa được kỹ năng mình phụ trách.
+
+**Nhập giống hệt Mock**, để hai con số nằm cùng một thang:
+
+- **L / R** → nhập `số câu đúng / 40`, hệ thống quy ra band.
+- **W / S** → nhập đủ **bốn tiêu chí IELTS**, hệ thống tính band.
+
+Band là kết quả **tính ra**, không phải con số gõ tay — một band trơ trọi không có căn cứ thì không so
+được với gì.
+
+**Một bảng chung, không phải hai bảng rời.** Việc thật lúc nào cũng là so hai con số ấy; hai bảng riêng
+bắt người đọc tự ghép từng dòng trong đầu.
+
+| Kỹ năng | Mock gần nhất | Đánh giá GV | Δ |
+|---|---:|---:|---:|
+| Listening | 6.0 | 6.5 | −0.5 |
+| Reading | 6.5 | 6.5 | 0 |
+
+**Δ = Mock − Đánh giá GV**, đọc **theo học viên**: dương là em **đang thể hiện tốt hơn** mức giáo viên
+đánh giá (màu tích cực), âm là **thấp hơn** (màu cảnh báo), bằng nhau là trung tính.
+
+> Bảng ví dụ trong prompt ghi Δ = +0.5 khi Đánh giá GV cao hơn Mock, nhưng quy tắc màu ngay dưới lại
+> nói "Mock < Đánh giá GV → warning". Hai điều đó ngược nhau. Đã theo **quy tắc màu**, vì nó nói rõ ý
+> nghĩa cần đọc ra; nếu anh/chị muốn chiều ngược lại thì đổi một dòng.
+
+Bấm vào một ô điểm mở **căn cứ**: số câu đúng, hoặc bốn tiêu chí.
+
+## A8e. Case SOS: nhìn là biết đã làm tới đâu
+
+Ba trạng thái, ba màu khác nhau ngay ở danh sách: **Chưa xử lý** · **Đang xử lý** · **Đã xử lý**.
+Kèm một dòng ngữ cảnh — mốc follow-up gần nhất, hoặc *"Chưa có follow-up"*. Không phải mở chi tiết
+mới biết case đã được làm hay chưa. Số liệu trên Tổng quan lấy từ chính trạng thái này.
+
+"GVCN đã nhận" là **metadata**, không phải trạng thái thứ tư: nhận tài liệu không tự nó nghĩa là đã xử lý.
+
+### "Head xác nhận" — đã bỏ
+
+Đối chiếu code: `confirmCase` chỉ ghi tên và ngày. Nó **không** khoá điểm, **không** là điều kiện để
+đổi trạng thái case, **không** mở khoá bước nào, và **không** gắn với một trách nhiệm riêng nào —
+tức là một cửa duyệt không bảo vệ điều gì. Case kết thúc bằng chính **trạng thái xử lý**.
+
+Dữ liệu xác nhận cũ được **giữ nguyên** để tra lại, chỉ không còn thao tác tạo mới.
+
+## A8f. Tiến trình công việc: dữ kiện tự sinh + nhận định của quản lý
+
+**Việc hệ thống nhìn ra** đọc thẳng từ dữ liệu và **tự hết khi nguồn được xử lý** — giáo viên nhập đủ
+điểm thì *"thiếu điểm"* biến mất. Không có nút "Đã xong", vì đánh dấu chỉ che một con số vẫn đang đúng.
+Mỗi tín hiệu ghi rõ **việc của ai** (xếp tuần MT là của Quản lý, cập nhật ngày là của Admin chi nhánh),
+và bấm vào mở đúng những bản ghi tạo nên con số.
+
+Đọc tín hiệu **không tạo bản ghi mới**. Mỗi tín hiệu có khoá ổn định theo nguồn.
+
+**Việc quản lý đặc thù** (liên hệ phụ huynh, tổ chức bổ trợ…) mới nhập tay, vì không suy ra được từ dữ liệu.
+
+### Chọn tuần
+
+`← W2 SEP ▼ →`. Phần lớn thao tác là đi sang tuần liền kề — bắt mở dropdown rồi tìm đúng dòng là ba
+thao tác cho một bước. Danh sách là **cửa sổ trượt** khoảng hai tháng lịch sử quanh tuần đang xem và
+**một tuần tới**; chọn một tuần cũ thì cửa sổ dịch theo. Không có lý do mở báo cáo của nhiều tháng sau.
+
+### Khoá thời gian cập nhật báo cáo tuần
+
+Báo cáo tuần **chỉ cập nhật được trong hai ngày cuối của chính tuần đó**. Đầu tuần chưa có gì để báo cáo;
+tuần tương lai lại càng không. Quy tắc này **enforce ở máy chủ**, không chỉ làm mờ nút — nút mờ chặn được
+người dùng bình thường, không chặn được một request gửi thẳng.
+
+### Công việc
+
+- **Người phụ trách** là ô **gõ để tìm**, kèm vai trò và chi nhánh (`Nguyễn A · Admin CN · CP`) —
+  một danh sách chỉ có tên là một danh sách chọn nhầm người.
+- **Người theo dõi** (nhiều người): không phải người làm, không chịu trách nhiệm hoàn thành, nhưng được
+  cập nhật khi tiến độ đổi. **Quản lý của chính chi nhánh được thêm sẵn** — đó là câu trả lời hệ thống
+  đã biết.
+- **Trường "Loại" đã bỏ.** Nó không đổi routing, quyền, hạn hay cách tổng hợp; chỗ duy nhất nó tác động
+  là một nhánh lọc yếu ("việc dài hạn chưa xong" luôn được coi là cần chú ý), mà điều đó chính hạn của
+  việc đã nói rồi. Cột cũ giữ nguyên giá trị lịch sử.
+
+### Tutor part-time
+
+Badge *"Đơn vị độc lập"* đã bỏ. Báo cáo của chi nhánh là **đầu vào**; **tutor mới là đơn vị được tổng hợp** —
+nhiều chi nhánh cùng ghi nhận về một tutor thì đó vẫn là một tutor, không phải ba. Phần này giữ **nhẹ**,
+không dựng một hệ quản lý nhân sự tutor.
+
 ## A9. Dữ liệu
 
 Bảng chính: `branches` · `reporting_units` · `classes` · `class_skills` · `users` · `roles` ·

@@ -69,7 +69,7 @@ export default function OverviewPage() {
               value={data.kpis.week.scheduled}
               tone={data.kpis.week.needsDate > 0 ? 'warn' : 'neutral'}
               sub={`${data.kpis.week.done} lượt đã xong · ${data.kpis.week.uniqueStudents} học viên · ${data.kpis.week.needsDate} chưa có ngày`}
-              to={data.kpis.week.needsDate > 0 ? '/hoc-vien?view=needs_date' : '/hoc-vien'}
+              to={data.kpis.week.needsDate > 0 ? '/hoc-vien?view=need_date' : '/hoc-vien'}
             />
             <KpiTile
               label="Chưa nhập đủ điểm"
@@ -113,7 +113,7 @@ export default function OverviewPage() {
                         <span className="mt-0.5">
                           {p.kind === 'sos_new' && <Pill tone="danger">SOS chưa xử lý</Pill>}
                           {p.kind === 'overdue_score' && <Pill tone="danger">Quá hạn điểm</Pill>}
-                          {p.kind === 'needs_date' && <Pill tone="warn">Cần xếp ngày</Pill>}
+                          {p.kind === 'needs_date' && <Pill tone="warn">Cần cập nhật ngày</Pill>}
                           {p.kind === 'overdue_task' && <Pill tone="danger">Việc quá hạn</Pill>}
                         </span>
                         <span className="min-w-0 flex-1">

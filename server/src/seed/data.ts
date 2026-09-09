@@ -30,24 +30,27 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
   // Quản trị phần mềm: toàn quyền, kể cả các ngoại lệ sửa sai về lịch.
   system_admin: [
     'plan.week', 'schedule.date', 'schedule.speaking', 'attempt.cancel', 'attempt.skip_skill',
-    'deadline.override', 'attempt.view', 'score.override', 'sos.edit', 'sos.confirm',
+    'deadline.override', 'attempt.view', 'score.override', 'sos.edit',
     'student.view', 'student.edit', 'meeting.view', 'meeting.edit', 'admin.config',
   ],
-  // Văn phòng chi nhánh: chốt NGÀY–GIỜ trong tuần đã duyệt, nhập bù điểm, giữ danh sách lớp.
-  // KHÔNG chốt tuần (việc của Quản lý) và KHÔNG vào Tiến trình công việc (module quản lý).
+  // Văn phòng chi nhánh: CẬP NHẬT NGÀY MT thực tế theo lịch bộ phận xếp lịch đã bố trí,
+  // nhập bù điểm, giữ danh sách lớp. KHÔNG chốt tuần (việc của Quản lý) và KHÔNG vào
+  // Tiến trình công việc (module quản lý).
   branch_admin: [
     'schedule.date', 'schedule.speaking', 'attempt.cancel', 'attempt.skip_skill',
     'deadline.override', 'attempt.view', 'score.override', 'sos.edit',
     'student.view', 'student.edit',
   ],
-  // Quản lý: chốt TUẦN kế hoạch, là Head khi xác nhận case, và xem Tiến trình công việc.
-  // Không mặc định gộp quyền chốt ngày vào quyền chốt tuần.
+  // Quản lý: chốt TUẦN kế hoạch, và CŨNG cập nhật được ngày MT thực tế — khi học viên nghỉ
+  // và phải dời, Quản lý sửa ngay chứ không phải chờ Admin chi nhánh.
   manager: [
-    'plan.week', 'attempt.cancel', 'attempt.skip_skill', 'deadline.override', 'attempt.view',
-    'sos.edit', 'sos.confirm', 'student.view', 'student.edit', 'meeting.view', 'meeting.edit',
+    'plan.week', 'schedule.date', 'schedule.speaking', 'attempt.cancel', 'attempt.skip_skill',
+    'deadline.override', 'attempt.view',
+    'sos.edit', 'student.view', 'student.edit', 'meeting.view', 'meeting.edit',
   ],
-  // Giáo viên: nhập điểm và ước lượng ĐÚNG kỹ năng được phân công.
-  // GVCN không vì chủ nhiệm mà có thêm quyền lịch; riêng GV Speaking đổi được lịch Speaking.
+  // Giáo viên: nhập điểm và đánh giá ĐÚNG kỹ năng được phân công.
+  // GVCN không vì chủ nhiệm mà có thêm quyền lịch; riêng GV Speaking sửa được NGÀY Speaking
+  // vì Speaking thường diễn ra khác ngày với buổi L/R/W.
   teacher: ['attempt.view', 'score.edit', 'estimate.edit', 'schedule.speaking', 'sos.edit', 'student.view'],
 };
 

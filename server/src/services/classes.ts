@@ -53,8 +53,11 @@ export function listClassSummaries(p: Principal, f: { branchId?: number; q?: str
   const attempts = conn
     .prepare(
       `SELECT a.id, a.class_id, a.status, a.planned_period_id, a.lrw_scheduled_at, a.speaking_scheduled_at,
-              a.deadline_override, a.target_at_attempt, a.attempt_no
-         FROM assessment_attempts a WHERE a.class_id IN (${ph}) AND a.status != 'cancelled'`,
+              a.deadline_override, a.target_at_attempt, a.attempt_no,
+              rp.week_start AS period_start, rp.week_end AS period_end
+         FROM assessment_attempts a
+         LEFT JOIN report_periods rp ON rp.id = a.planned_period_id
+        WHERE a.class_id IN (${ph}) AND a.status != 'cancelled'`,
     )
     .all(...ids) as any[];
   const bundle = loadBundle(attempts.map((a) => a.id));
@@ -68,7 +71,14 @@ export function listClassSummaries(p: Principal, f: { branchId?: number; q?: str
 
   const bump = (m: Map<number, number>, k: number) => m.set(k, (m.get(k) ?? 0) + 1);
   for (const a of attempts) {
-    if (a.status === 'planned' && a.planned_period_id && !a.lrw_scheduled_at) bump(needsDate, a.class_id);
+    /*
+     * "Cần cập nhật ngày MT" chỉ tính khi ĐÃ ĐẾN tuần MT đó (hoặc đã qua mà vẫn thiếu).
+     * MT còn cách vài tuần thì chưa ai phải làm gì — đếm nó vào đây chỉ tạo một con số to
+     * lúc nào cũng đỏ, và người dùng học cách phớt lờ badge.
+     */
+    if (a.status === 'planned' && !a.lrw_scheduled_at && a.period_start && a.period_start <= today) {
+      bump(needsDate, a.class_id);
+    }
     const c = bundle.cases.get(a.id);
     if (c && c.sos_level > 0 && c.status !== 'done') bump(openCases, a.class_id);
 
@@ -162,7 +172,9 @@ export function classRoster(p: Principal, classId: number, q?: string) {
         id: a.id, attemptNo: a.attempt_no, cycleSeq: a.cycle_seq, route: a.route,
         periodCode: a.period_code, lrwScheduledAt: a.lrw_scheduled_at,
         status: a.status,
-        needsDate: a.status === 'planned' && !!a.planned_period_id && !a.lrw_scheduled_at,
+        // Cùng quy tắc thời điểm với badge của lớp: chưa đến tuần thì chưa phải việc.
+        needsDate: a.status === 'planned' && !a.lrw_scheduled_at
+          && !!a.week_start && a.week_start <= today,
         scoredRequired: result.scoredRequired, requiredCount: result.required.length,
         overall: result.overall, sosLevel: result.sosLevel, evaluable: result.evaluable,
         caseStatus: c?.status ?? null,

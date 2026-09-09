@@ -212,4 +212,4 @@ Tài liệu liên quan:
 - `PISA_Design_Master_Reference.md` — sổ quyết định: trạng thái từng quyết định, cái gì đã chốt, cái gì còn chờ
 - `PRODUCT_DEMO_SPEC.md` — Product / Web Design: **A. Current MVP · B. Simplify–Remove · C. Future Design**
 - `DEMO_ASSUMPTIONS.md` — các câu đã chốt (Q1–Q4) và những điểm còn cần bạn xác nhận
-- `DEMO_SCENARIOS.md` — **tám luồng** để bấm thử, bảng kiểm tra quyền, các tình huống cài sẵn
+- `DEMO_SCENARIOS.md` — **mười hai luồng** để bấm thử, bảng kiểm tra quyền, các tình huống cài sẵn

@@ -5,6 +5,7 @@ import { api, invalidate } from '../lib/api.ts';
 import { useToast } from '../components/Toast.tsx';
 import { Card, Empty, ErrorState, Pill, SectionNote, Skeleton } from '../components/ui.tsx';
 import { ConfirmDialog } from '../components/Drawer.tsx';
+import { SkillComparison } from '../components/SkillComparison.tsx';
 import {
   attemptStatusLabel, attemptStatusTone, fmtBand, fmtDate, fmtSlot, skillLabel, sosLabel, sosTone,
   studentStatusLabel,
@@ -20,15 +21,9 @@ type Detail = {
   estimates: Record<string, { band: number; assessedOn: string; assessedByName: string | null }>;
   currentClass: { id: number; code: string; branchName: string } | null;
   enrollments: any[]; attempts: any[]; nextMock: any; openTasks: any[];
-  viewer: { canEdit: boolean; canPlanWeek: boolean; canSetDate: boolean };
+  viewer: { canEdit: boolean; canPlanWeek: boolean; canSetDate: boolean; estimateSkills: string[] };
 };
 
-type Comparison = {
-  skill: string;
-  estimate: { band: number; on: string; by: string | null } | null;
-  mock: { band: number; on: string | null; attemptNo: number; source: string } | null;
-  delta: number | null;
-};
 
 export default function StudentDetailPage() {
   const { id } = useParams();
@@ -37,7 +32,6 @@ export default function StudentDetailPage() {
   const { data, loading, error, reload } = useApi<Detail>(id ? `/students/${id}` : null);
   const [filter, setFilter] = useState('all');
   const journey = useApi<any[]>(id ? `/students/${id}/journey?filter=${filter}` : null, [filter]);
-  const comparison = useApi<Comparison[]>(id ? `/students/${id}/estimate-comparison` : null);
   const [transferOpen, setTransferOpen] = useState(false);
 
   if (error) return <ErrorState message={error.message} hint={error.hint} onRetry={reload} />;
@@ -160,54 +154,12 @@ export default function StudentDetailPage() {
         </div>
       </Card>
 
-      <Card title="Ước lượng giáo viên so với điểm Mock"
-        action={<span className="text-xs text-slate-500">Ước lượng là dữ liệu riêng, không ghi đè điểm Mock</span>}
-        bodyClass="p-0">
-        {comparison.loading && <div className="p-4"><Skeleton rows={3} /></div>}
-        {comparison.data && comparison.data.every((c) => !c.estimate && !c.mock) && (
-          <Empty title="Chưa có ước lượng hay điểm Mock nào để so sánh" />
-        )}
-        {comparison.data && comparison.data.some((c) => c.estimate || c.mock) && (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr>
-                  <th className="th">Kỹ năng</th>
-                  <th className="th">Ước lượng GV</th>
-                  <th className="th">Ngày ước lượng</th>
-                  <th className="th">Điểm Mock</th>
-                  <th className="th">Nguồn điểm Mock</th>
-                  <th className="th">Chênh lệch</th>
-                </tr>
-              </thead>
-              <tbody>
-                {comparison.data.map((c) => (
-                  <tr key={c.skill}>
-                    <td className="td text-slate-200 whitespace-nowrap">{skillLabel(c.skill)}</td>
-                    <td className="td tabular-nums">{fmtBand(c.estimate?.band ?? null)}</td>
-                    <td className="td text-xs text-slate-500 whitespace-nowrap">
-                      {c.estimate ? `${fmtDate(c.estimate.on)}${c.estimate.by ? ` · ${c.estimate.by}` : ''}` : '—'}
-                    </td>
-                    <td className="td tabular-nums">{fmtBand(c.mock?.band ?? null)}</td>
-                    <td className="td text-xs text-slate-500 whitespace-nowrap">
-                      {c.mock ? `${c.mock.source}${c.mock.on ? ` · ${fmtDate(c.mock.on)}` : ''}` : '—'}
-                    </td>
-                    <td className="td tabular-nums">
-                      {c.delta === null ? '—' : (c.delta > 0 ? `+${c.delta}` : String(c.delta))}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-        <div className="p-3">
-          <SectionNote>
-            Hai cột có thể đến từ hai thời điểm khác nhau nên luôn kèm ngày. Điểm Mock của từng kỹ năng có thể
-            thuộc các lượt khác nhau — cột “Nguồn” ghi rõ, và các ô này KHÔNG được ghép thành một bài Mock
-            hay một Overall chung. Chênh lệch chỉ là khoảng cách hai con số, không tự nó chứng minh tiến bộ.
-          </SectionNote>
-        </div>
+      <Card
+        title="Điểm Mock và Đánh giá GV"
+        action={<span className="text-xs text-slate-500">Hai nguồn khác nhau, đặt cạnh nhau để so</span>}
+        bodyClass="p-0"
+      >
+        <SkillComparison studentId={Number(id)} canEditSkills={data.viewer.estimateSkills ?? []} />
       </Card>
 
       <Card title="Hành trình học viên"

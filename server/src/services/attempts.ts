@@ -49,7 +49,11 @@ export function skipsOf(attemptId: number): AssessedSkill[] {
 export type AttemptBundle = {
   scores: Map<number, ScoreRow[]>;
   skips: Map<number, AssessedSkill[]>;
-  cases: Map<number, { id: number; status: string; sos_level: number }>;
+  cases: Map<number, {
+    id: number; status: string; sos_level: number;
+    /** Câu tóm tắt "đã có ai làm gì chưa" — để nhìn danh sách là biết, không phải mở chi tiết. */
+    followUp: string | null;
+  }>;
 };
 
 export function loadBundle(attemptIds: number[]): AttemptBundle {
@@ -76,9 +80,30 @@ export function loadBundle(attemptIds: number[]): AttemptBundle {
       bundle.skips.get(r.attempt_id)!.push(r.skill as AssessedSkill);
     }
     for (const r of conn
-      .prepare(`SELECT id, attempt_id, status, sos_level FROM sos_cases WHERE attempt_id IN (${ph})`)
+      .prepare(
+        `SELECT c.id, c.attempt_id, c.status, c.sos_level, c.acknowledged_at,
+                c.talk_student_date, c.talk_parent_date, c.academic_start_date, c.meeting_date,
+                u.full_name AS ack_name
+           FROM sos_cases c LEFT JOIN users u ON u.id = c.acknowledged_by
+          WHERE c.attempt_id IN (${ph})`,
+      )
       .all(...chunk) as any[]) {
-      bundle.cases.set(r.attempt_id, { id: r.id, status: r.status, sos_level: r.sos_level });
+      /*
+       * Người dùng phải nhìn một case là biết đã được làm hay chưa. Ưu tiên mốc mới nhất
+       * đã thực sự xảy ra; không có gì thì nói thẳng "chưa có follow-up".
+       */
+      const marks: [string, string | null][] = [
+        ['Đã nhận', r.acknowledged_at], ['Đã trao đổi HS', r.talk_student_date],
+        ['Đã trao đổi PH', r.talk_parent_date], ['Đã vào hỗ trợ', r.academic_start_date],
+        ['Đã họp', r.meeting_date],
+      ];
+      const latest = marks.filter(([, d]) => !!d).sort((a, b) => (b[1]! > a[1]! ? 1 : -1))[0];
+      bundle.cases.set(r.attempt_id, {
+        id: r.id, status: r.status, sos_level: r.sos_level,
+        followUp: latest
+          ? `${latest[0]}${latest[0] === 'Đã nhận' && r.ack_name ? ` (${r.ack_name})` : ''} · ${latest[1]!.slice(8, 10)}/${latest[1]!.slice(5, 7)}`
+          : null,
+      });
     }
   }
   return bundle;
@@ -245,7 +270,16 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
         : null,
       lrwScheduledAt: a.lrw_scheduled_at,
       speakingScheduledAt: a.speaking_scheduled_at,
-      needsDate: a.status === 'planned' && !a.lrw_scheduled_at,
+      /*
+       * "Cần cập nhật ngày" là VIỆC CẦN LÀM, nên chỉ đúng khi đã ĐẾN tuần MT đó.
+       * Hôm nay W2 SEP mà MT3 xếp W4 OCT thì chưa ai phải làm gì — surface nó chỉ tạo
+       * một danh sách dài vô nghĩa mà Admin chi nhánh học cách phớt lờ.
+       */
+      needsDate: a.status === 'planned' && !a.lrw_scheduled_at
+        && !!a.period_start && a.period_start <= today,
+      /** Đã qua tuần MT mà vẫn chưa có ngày — quá hạn nghĩa vụ hàng tuần của Admin chi nhánh. */
+      dateOverdue: a.status === 'planned' && !a.lrw_scheduled_at
+        && !!a.period_end && a.period_end < today,
       status: a.status,
       expectation: result.expectation,
       bands: result.bands,
@@ -264,6 +298,8 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
         .map((c) => c.skill),
       caseStatus: bundle.cases.get(a.id)?.status ?? null,
       caseId: bundle.cases.get(a.id)?.id ?? null,
+      caseLevel: bundle.cases.get(a.id)?.sos_level ?? null,
+      caseFollowUp: bundle.cases.get(a.id)?.followUp ?? null,
       canPlanWeek: can(p, PERMISSIONS.PLAN_WEEK, { classId: a.class_id }),
       canSetDate: can(p, PERMISSIONS.SCHEDULE_DATE, { classId: a.class_id }),
       activeSkillCount: active.length,
@@ -379,7 +415,6 @@ export function attemptDetail(p: Principal, attemptId: number) {
       canSkipSkill: can(p, PERMISSIONS.ATTEMPT_SKIP_SKILL, { classId: a.class_id }),
       canOverrideDeadline: can(p, PERMISSIONS.DEADLINE_OVERRIDE, { classId: a.class_id }),
       canEditSos: can(p, PERMISSIONS.SOS_EDIT, { classId: a.class_id, studentId: a.student_id }),
-      canConfirm: can(p, PERMISSIONS.SOS_CONFIRM, { classId: a.class_id }),
       editableSkills: a.class_id ? editableSkills(p, a.class_id, ENTRY_SKILLS) : [],
     },
   };
@@ -503,8 +538,15 @@ export function setPlanningWeek(p: Principal, attemptId: number, periodId: numbe
 }
 
 /**
- * Admin chi nhánh chốt NGÀY–GIỜ trong tuần đã duyệt.
- * Ngày ngoài tuần bị từ chối — muốn đổi tuần phải qua Quản lý, không âm thầm thay.
+ * CẬP NHẬT NGÀY MT THỰC TẾ trong tuần kế hoạch đã chốt.
+ *
+ * Đây không phải "chốt lịch": bộ phận xếp lịch đã bố trí buổi học từ Chủ nhật tuần trước.
+ * Việc ở đây là ghi lại ngày học viên THỰC SỰ làm bài, theo lịch tổng của chi nhánh — và
+ * cập nhật lại khi em nghỉ và được dời.
+ *
+ * CHỈ NGÀY, KHÔNG GIỜ. Giờ không giúp ích cho việc theo dõi tiến độ, chỉ thêm một ô phải nhập.
+ * Ngày ngoài tuần kế hoạch bị từ chối — muốn xếp ngoài tuần phải để Quản lý đổi tuần trước,
+ * không âm thầm thay tuần qua đường cập nhật ngày.
  */
 export function setSchedule(
   p: Principal,
@@ -517,14 +559,17 @@ export function setSchedule(
   const touchSpeaking = input.speakingAt !== undefined;
   if (!touchLrw && !touchSpeaking) throw badRequest('Không có thay đổi lịch nào.');
 
-  // Lịch chính cần quyền chốt ngày; riêng Speaking thì giáo viên Speaking của lớp cũng được.
+  // Ngày buổi L/R/W: chỉ Admin chi nhánh và Quản lý. Giáo viên L/R/W không sửa được ngày,
+  // GVCN cũng không — chủ nhiệm không phải là quyền lịch.
   if (touchLrw) {
     require_(p, PERMISSIONS.SCHEDULE_DATE, { classId: a.class_id, studentId: a.student_id },
-      'Chỉ Admin chi nhánh mới chốt được ngày giờ buổi chính trong tuần đã duyệt.');
+      'Chỉ Admin chi nhánh và Quản lý mới cập nhật được ngày buổi L/R/W.');
   }
+  // Speaking thường diễn ra khác ngày với L/R/W, nên GV Speaking của chính học viên đó
+  // cũng cập nhật được ngày Speaking.
   if (touchSpeaking && !can(p, PERMISSIONS.SCHEDULE_DATE, { classId: a.class_id, studentId: a.student_id })) {
     require_(p, PERMISSIONS.SCHEDULE_SPEAKING, { classId: a.class_id, studentId: a.student_id },
-      'Chỉ giáo viên Speaking của lớp hoặc Admin chi nhánh mới đổi được lịch Speaking.');
+      'Chỉ Admin chi nhánh, Quản lý hoặc giáo viên Speaking của lớp mới cập nhật được ngày Speaking.');
   }
 
   const period = a.planned_period_id
@@ -534,6 +579,7 @@ export function setSchedule(
 
   const check = (v: string | null | undefined, label: string) => {
     if (v === null || v === undefined || v === '') return null;
+    // Cắt về NGÀY. Dữ liệu cũ có thể còn kèm giờ; đọc vào thì bỏ giờ đi luôn.
     const day = String(v).slice(0, 10);
     if (!isIsoDate(day)) throw badRequest(`${label} không hợp lệ.`);
     if (day < period.week_start || day > period.week_end) {
@@ -542,11 +588,11 @@ export function setSchedule(
         + 'Muốn xếp ngoài tuần thì đề nghị Quản lý đổi tuần kế hoạch trước.',
       );
     }
-    return String(v);
+    return day;
   };
 
-  const nextLrw = touchLrw ? check(input.lrwAt, 'Ngày giờ buổi chính') : a.lrw_scheduled_at;
-  const nextSpeaking = touchSpeaking ? check(input.speakingAt, 'Ngày giờ Speaking') : a.speaking_scheduled_at;
+  const nextLrw = touchLrw ? check(input.lrwAt, 'Ngày buổi L/R/W') : a.lrw_scheduled_at;
+  const nextSpeaking = touchSpeaking ? check(input.speakingAt, 'Ngày Speaking') : a.speaking_scheduled_at;
 
   return tx(() => {
     db()

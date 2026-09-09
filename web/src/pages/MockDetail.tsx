@@ -32,7 +32,7 @@ type Detail = {
   viewer: {
     canPlanWeek: boolean; canSetDate: boolean; canSetSpeaking: boolean; canCancel: boolean;
     canSkipSkill: boolean; canOverrideDeadline: boolean;
-    canEditSos: boolean; canConfirm: boolean; editableSkills: string[];
+    canEditSos: boolean; editableSkills: string[];
   };
 };
 
@@ -232,10 +232,11 @@ export default function MockDetailPage() {
               </div>
             </div>
 
-            {d.result.scopeNote && (
+            {d.result.scopeDetail && (
               <SectionNote>
-                {d.result.scopeNote}. Kỹ năng đã đánh dấu không mock không tính vào mẫu số SOS và không bị coi
-                là thiếu điểm. Vì lượt này không còn đủ bốn kỹ năng nên không có Overall IELTS.
+                {d.result.scopeDetail}. Kỹ năng <strong>không được yêu cầu</strong> ở lượt này không tính vào
+                mẫu số SOS và không bị coi là thiếu điểm — khác hẳn kỹ năng có yêu cầu mà chưa có điểm.
+                Vì lượt này không còn đủ bốn kỹ năng nên không có Overall IELTS.
               </SectionNote>
             )}
             {!d.result.complete && (
@@ -394,26 +395,18 @@ function CaseSection({ detail, onSaved }: { detail: Detail; onSaved: () => void 
           </label>
         </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-3 border-t pt-4" style={{ borderColor: 'var(--line)' }}>
-          <div className="text-sm">
-            <span className="text-slate-400">Head xác nhận: </span>
-            {c.head_confirmed_at
-              ? <span className="text-sky-200">{c.head_name ?? 'Đã xác nhận'} · {fmtDate(c.head_confirmed_at)}</span>
-              : <span className="text-slate-500">Chưa xác nhận</span>}
+        {/*
+          * "Head xác nhận" ĐÃ BỎ. Bước đó chỉ ghi tên và ngày: không khoá điểm, không là điều
+          * kiện đổi trạng thái, không mở khoá bước nào — một cửa duyệt không bảo vệ gì.
+          * Case kết thúc bằng chính TRẠNG THÁI XỬ LÝ ở trên.
+          * Dấu xác nhận cũ vẫn hiện để tra lại, chỉ không tạo mới nữa.
+          */}
+        {c.head_confirmed_at && (
+          <div className="border-t pt-3 text-xs text-slate-500" style={{ borderColor: 'var(--line)' }}>
+            Dấu xác nhận cũ: {c.head_name ?? 'đã xác nhận'} · {fmtDate(c.head_confirmed_at)}
+            <span className="text-slate-600"> — bước xác nhận này đã bỏ khỏi quy trình.</span>
           </div>
-          {detail.viewer.canConfirm && (
-            <button className="btn btn-sm" disabled={busy} onClick={async () => {
-              setBusy(true);
-              try {
-                await api.post(`/sos-cases/${c.id}/confirm`, { confirmed: !c.head_confirmed_at });
-                onSaved();
-                toast.push('ok', c.head_confirmed_at ? 'Đã bỏ xác nhận' : 'Đã xác nhận');
-              } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
-            }}>
-              {c.head_confirmed_at ? 'Bỏ xác nhận' : 'Xác nhận (Head)'}
-            </button>
-          )}
-        </div>
+        )}
 
         {detail.tasks.length > 0 && (
           <div className="border-t pt-3" style={{ borderColor: 'var(--line)' }}>

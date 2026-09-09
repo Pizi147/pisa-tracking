@@ -4,9 +4,12 @@ import { useApi } from '../lib/useApi.ts';
 import { useSession } from '../lib/session.tsx';
 import { invalidate } from '../lib/api.ts';
 import { Card, Empty, ErrorState, Pill, SectionNote, Skeleton } from '../components/ui.tsx';
+import { caseStatusLabel, caseStatusTone, sosTone } from '../lib/format.ts';
 import type { Branch } from '../components/Filters.tsx';
 import { IntakePanel } from '../components/IntakePanel.tsx';
 import { ClassRoster } from '../components/ClassRoster.tsx';
+import { DateDutyPanel } from '../components/DateDutyPanel.tsx';
+import { MockPlanPanel } from '../components/MockPlanPanel.tsx';
 import { PERMISSIONS } from '@shared/domain.ts';
 
 export type ClassSummary = {
@@ -18,13 +21,16 @@ export type ClassSummary = {
 
 /**
  * Ba cách xem của cùng một màn hình.
- * "Cần nhập điểm" và "Cần xếp lịch" là HÀNG ĐỢI CÔNG VIỆC, không phải module riêng,
+ * "Cần nhập điểm" và "Cần cập nhật ngày" là HÀNG ĐỢI CÔNG VIỆC, không phải module riêng,
  * nên chúng là view ở đây chứ không phải một mục điều hướng.
  */
 const VIEWS = [
   { key: 'classes', label: 'Theo lớp' },
   { key: 'my_scores', label: 'Cần nhập điểm' },
-  { key: 'needs_date', label: 'Cần xếp lịch' },
+  // Không còn "cần xếp lịch": lịch đã do bộ phận xếp lịch bố trí. Việc ở đây là CẬP NHẬT
+  // ngày thực tế, và chỉ với những MT đã đến tuần.
+  { key: 'need_date', label: 'Cần cập nhật ngày MT' },
+  { key: 'no_plan', label: 'Chưa có tuần MT' },
   { key: 'sos_open', label: 'Case SOS' },
 ] as const;
 
@@ -44,6 +50,7 @@ export default function StudentsPage() {
     [params],
   );
   const [intakeOpen, setIntakeOpen] = useState(false);
+  const [planOpen, setPlanOpen] = useState(false);
   const [intakeFor, setIntakeFor] = useState<ClassSummary | null>(null);
   const [draftQ, setDraftQ] = useState(q);
 
@@ -115,6 +122,9 @@ export default function StudentsPage() {
           </button>
         ))}
         <div className="flex-1" />
+        {can(PERMISSIONS.PLAN_WEEK) && (
+          <button className="btn btn-sm" onClick={() => setPlanOpen(true)}>Lên kế hoạch MT</button>
+        )}
         {can(PERMISSIONS.STUDENT_EDIT) && view === 'classes' && (
           <button className="btn btn-primary btn-sm" onClick={() => { setIntakeFor(null); setIntakeOpen(true); }}>
             Thêm học viên
@@ -122,7 +132,20 @@ export default function StudentsPage() {
         )}
       </div>
 
-      {view !== 'classes' && <WorkQueue view={view} branchId={branchId} q={q} />}
+      {/* Cập nhật ngày là thao tác HÀNG LOẠT, không phải một danh sách để bấm vào từng em. */}
+      {view === 'need_date' && (
+        <DateDutyPanel branchId={branchId} classId={params.get('classId') ? Number(params.get('classId')) : null} />
+      )}
+      {view === 'no_plan' && (
+        <Card title="Chưa có tuần MT tiếp theo" bodyClass="p-4">
+          <p className="text-sm text-slate-400 mb-3">
+            Đây là việc của <strong>Quản lý</strong>: quyết định em sẽ MT tiếp theo vào tuần nào.
+            Lên kế hoạch cho nhiều em một lần thay vì mở từng hồ sơ.
+          </p>
+          <button className="btn btn-primary btn-sm" onClick={() => setPlanOpen(true)}>Lên kế hoạch MT</button>
+        </Card>
+      )}
+      {(view === 'my_scores' || view === 'sos_open') && <WorkQueue view={view} branchId={branchId} q={q} />}
 
       {view === 'classes' && (
         <>
@@ -162,6 +185,15 @@ export default function StudentsPage() {
             một em có thể có nhiều case. Bấm badge để mở đúng những bản ghi tạo nên con số đó.
           </SectionNote>
         </>
+      )}
+
+      {planOpen && (
+        <MockPlanPanel
+          branchId={branchId}
+          classId={params.get('classId') ? Number(params.get('classId')) : null}
+          onClose={() => setPlanOpen(false)}
+          onDone={() => { invalidate('/classes'); invalidate('/attempts'); classes.reload(); }}
+        />
       )}
 
       {intakeOpen && (
@@ -228,8 +260,8 @@ function ClassRow({ cls, expanded, studentQuery, onToggle, onAddStudents }: {
             </button>
           )}
           {cls.needsDate > 0 && (
-            <button className="appearance-none bg-transparent border-0 p-0" onClick={go(`/hoc-vien?view=needs_date&classId=${cls.id}`)}>
-              <Pill tone="info">{cls.needsDate} cần xếp lịch</Pill>
+            <button className="appearance-none bg-transparent border-0 p-0" onClick={go(`/hoc-vien?view=need_date&classId=${cls.id}`)}>
+              <Pill tone="info">{cls.needsDate} cần cập nhật ngày</Pill>
             </button>
           )}
           {cls.needScores + cls.openCases + cls.needsDate === 0 && (
@@ -266,8 +298,7 @@ function WorkQueue({ view, branchId, q }: { view: string; branchId: number | nul
   if (loading) return <Skeleton rows={6} />;
   if (!data) return null;
 
-  const label = view === 'my_scores' ? 'cần nhập điểm'
-    : view === 'needs_date' ? 'cần xếp ngày giờ' : 'case SOS chưa xử lý xong';
+  const label = view === 'my_scores' ? 'cần nhập điểm' : 'case SOS chưa xử lý xong';
 
   return (
     <Card bodyClass="p-0"
@@ -295,16 +326,28 @@ function WorkQueue({ view, branchId, q }: { view: string; branchId: number | nul
                     <div className="text-[11px] text-slate-500">{r.studentCode}</div>
                   </td>
                   <td className="td text-slate-300 whitespace-nowrap">{r.classCode ?? '—'}</td>
-                  <td className="td tabular-nums whitespace-nowrap">
-                    {r.route ? `${r.route} · ` : ''}MT{r.attemptNo}
-                  </td>
+                  {/* Lộ trình đã hiện ở cột Target ngay cạnh — nhắc lại chỉ là chữ thừa. */}
+                  <td className="td tabular-nums whitespace-nowrap">MT{r.attemptNo}</td>
                   <td className="td whitespace-nowrap text-slate-300">{r.period?.code ?? '—'}</td>
                   <td className="td text-xs">
                     {view === 'my_scores' && (
                       <span style={{ color: 'var(--accent)' }}>Nhập {r.myPendingSkills.join(', ')}</span>
                     )}
-                    {view === 'needs_date' && <Pill tone="warn">Chưa có ngày giờ</Pill>}
-                    {view === 'sos_open' && <Pill tone="danger">Ghi nhận xử lý SOS</Pill>}
+                    {/*
+                      * Nhìn là biết case đã được làm hay chưa: mức SOS · trạng thái, rồi mốc
+                      * follow-up gần nhất. Không phải mở chi tiết mới rõ.
+                      */}
+                    {view === 'sos_open' && (
+                      <div className="flex flex-col items-start gap-0.5">
+                        <span className="flex items-center gap-1">
+                          <Pill tone={sosTone(r.caseLevel)}>SOS {r.caseLevel}</Pill>
+                          <Pill tone={caseStatusTone(r.caseStatus)}>{caseStatusLabel(r.caseStatus ?? 'open')}</Pill>
+                        </span>
+                        <span className="text-[10px] text-slate-500">
+                          {r.caseFollowUp ?? 'Chưa có follow-up'}
+                        </span>
+                      </div>
+                    )}
                     {r.overdueSkills > 0 && <Pill tone="danger">Quá hạn {r.overdueSkills}</Pill>}
                   </td>
                 </tr>

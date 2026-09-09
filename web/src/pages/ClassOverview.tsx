@@ -82,8 +82,8 @@ export default function ClassOverviewPage() {
           </div>
         </Link>
         <Link className="card p-4 no-underline hover:border-[color:var(--accent-line)]"
-          to={`/hoc-vien?view=needs_date&classId=${data.id}`}>
-          <div className="text-[11px] uppercase tracking-wide text-slate-400 font-semibold">Cần xếp lịch</div>
+          to={`/hoc-vien?view=need_date&classId=${data.id}`}>
+          <div className="text-[11px] uppercase tracking-wide text-slate-400 font-semibold">Cần cập nhật ngày</div>
           <div className={`mt-1 text-2xl font-semibold tabular-nums ${s?.needsDate ? 'text-sky-200' : 'text-slate-100'}`}>
             {s?.needsDate ?? 0}
           </div>

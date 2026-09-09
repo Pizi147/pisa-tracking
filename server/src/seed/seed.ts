@@ -239,7 +239,7 @@ export function runSeed() {
       'Lượt Mock': counts.attempts,
       'Ô điểm': counts.scores,
       'Kỹ năng không mock': counts.skips,
-      'Ước lượng GV': counts.estimates,
+      'Đánh giá GV': counts.estimates,
       'Case SOS': counts.cases,
       'Kỳ họp tuần': (conn.prepare('SELECT COUNT(*) AS n FROM report_periods').get() as any).n,
       'Công việc': tasks,
@@ -394,7 +394,7 @@ function seedAttempts(conn: any, ctx: {
   }
 }
 
-/** Ước lượng giáo viên: dữ liệu RIÊNG, không bao giờ ghi đè điểm Mock. */
+/** Đánh giá GV: dữ liệu RIÊNG, không bao giờ ghi đè điểm Mock. */
 function seedEstimates(conn: any, o: {
   sid: number; cid: number; target: number; studentIdx: number; teacherPool: number[]; classIdx: number;
   counts: { estimates: number };
@@ -412,7 +412,7 @@ function seedEstimates(conn: any, o: {
     listening: pick(1), reading: pick(1), writing1: pick(2), writing2: pick(3), speaking: pick(4),
   };
   for (const [skill, band, on] of plan) {
-    if ((o.studentIdx + skill.length) % 3 === 0) continue;   // không phải em nào cũng có đủ ước lượng
+    if ((o.studentIdx + skill.length) % 3 === 0) continue;   // không phải em nào cũng có đủ đánh giá
     conn
       .prepare(
         `INSERT INTO teacher_estimates (student_id, cycle_id, skill, band, assessed_on, assessed_by, class_id, created_at)
@@ -578,11 +578,53 @@ function seedSpecialCases(conn: any, ctx: {
     }
   }
 
-  // 6) Warning/WL và ước lượng cũ — dữ liệu lịch sử để thử bộ lọc hành trình.
+  /*
+   * 5b) NGHĨA VỤ HÀNG TUẦN CỦA ADMIN CHI NHÁNH.
+   *
+   * Ngày demo là 23/09/2026, tức W4 SEP. Phải có sẵn cả ba tình huống của §11 thì màn
+   * "Cần cập nhật ngày MT" mới thể hiện được đúng việc thật:
+   *   - MT tuần này (W4 SEP) chưa có ngày  → Admin chi nhánh cần làm ngay;
+   *   - MT tuần trước (W3 SEP) vẫn thiếu   → đã quá hạn;
+   *   - MT các tuần sau                     → KHÔNG hiện, vì chưa đến lượt.
+   */
+  const dutyWeeks: { week: string; classCode: string; take: number }[] = [
+    { week: '2026-09-21', classCode: 'MB-FT 101', take: 3 },   // W4 SEP — tuần hiện tại
+    { week: '2026-09-21', classCode: 'MB-FT 102', take: 2 },
+    { week: '2026-09-14', classCode: 'CP-FT 110', take: 2 },   // W3 SEP — đã quá hạn
+  ];
+  for (const d of dutyWeeks) {
+    const pid = periodOf(d.week);
+    const cid = classId.get(d.classCode);
+    if (!pid || !cid) continue;
+    for (const st of inClass(d.classCode).slice(0, d.take)) {
+      const cycle = conn.prepare(`SELECT * FROM learning_cycles WHERE student_id = ? AND status='active' LIMIT 1`)
+        .get(st.id) as any;
+      if (!cycle) continue;
+      const nextNo = ((conn.prepare('SELECT MAX(attempt_no) m FROM assessment_attempts WHERE cycle_id = ?')
+        .get(cycle.id) as any)?.m ?? 0) + 1;
+      const info = conn
+        .prepare(
+          `INSERT INTO assessment_attempts (cycle_id, student_id, attempt_no, kind, class_id, planned_period_id,
+                                            status, target_at_attempt, created_by, created_at)
+           VALUES (?,?,?, 'mock', ?,?, 'planned', ?,?,?)`,
+        )
+        .run(cycle.id, st.id, nextNo, cid, pid, cycle.target_score, managers.get(st.branch)?.[0] ?? adminId, NOW);
+      conn
+        .prepare(
+          `INSERT INTO attempt_schedule_history (attempt_id, action, field, new_value, reason, actor_user_id, created_at)
+           VALUES (?, 'created', 'planned_period', ?, ?, ?, ?)`,
+        )
+        .run(Number(info.lastInsertRowid), d.week, 'Kế hoạch tuần, chờ cập nhật ngày thực tế',
+             managers.get(st.branch)?.[0] ?? adminId, NOW);
+      counts.attempts += 1;
+    }
+  }
+
+  // 6) Warning/WL và đánh giá cũ — dữ liệu lịch sử để thử bộ lọc hành trình.
   const warned = inClass('UB-FT 401')[5];
   if (warned) {
     for (const e of [
-      { type: 'estimate', date: '2026-08-31', title: 'Ước lượng giáo viên: 5.5', detail: 'GVCN đánh giá giữa kỳ' },
+      { type: 'estimate', date: '2026-08-31', title: 'Đánh giá GV: 5.5', detail: 'GVCN đánh giá giữa kỳ' },
       { type: 'warning', date: '2026-09-07', title: 'Cảnh báo chuyên cần', detail: 'Vắng 3 buổi liên tiếp' },
     ]) {
       conn
