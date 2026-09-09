@@ -189,6 +189,13 @@ export function setIssues(p: Principal, caseId: number, input: {
  */
 export function recordIntervention(p: Principal, caseId: number, input: {
   kind: string; description?: string | null;
+  /**
+   * `performerSelf` là lời khai TƯỜNG MINH "việc này chính tôi làm". Có nó thì người thực
+   * hiện là tài khoản đang đăng nhập. Không có nó thì hệ thống KHÔNG tự suy — người nhập
+   * và người làm là hai vai khác nhau, và CS gọi phụ huynh thì người làm là CS chứ không
+   * phải giáo viên đang gõ.
+   */
+  performerSelf?: boolean;
   performerUserId?: number | null; performerName?: string | null;
   status?: string; plannedDate?: string | null; startedDate?: string | null;
   completedDate?: string | null; followupDue?: string | null;
@@ -208,7 +215,9 @@ export function recordIntervention(p: Principal, caseId: number, input: {
   if (status === 'completed' && !input.completedDate && !input.startedDate) {
     throw badRequest('Ghi "đã xong" thì phải có ngày thực hiện. Chưa có ngày thì chọn "đang thực hiện".');
   }
-  if (!input.performerUserId && !input.performerName?.trim() && status !== 'planned') {
+  const performerUserId = input.performerUserId
+    ?? (input.performerSelf && !input.performerName?.trim() ? p.userId : null);
+  if (!performerUserId && !input.performerName?.trim() && status !== 'planned') {
     throw badRequest('Cần ghi ai là người thực hiện — người nhập không mặc định là người làm.');
   }
 
@@ -221,7 +230,7 @@ export function recordIntervention(p: Principal, caseId: number, input: {
          VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
       )
       .run(caseId, input.kind, input.description ?? null,
-           input.performerUserId ?? null, input.performerName?.trim() || null, p.userId, status,
+           performerUserId, input.performerName?.trim() || null, p.userId, status,
            input.plannedDate ?? null, input.startedDate ?? null, input.completedDate ?? null,
            input.followupDue ?? null, nowIso());
     const id = Number(info.lastInsertRowid);

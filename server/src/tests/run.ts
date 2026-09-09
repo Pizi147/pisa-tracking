@@ -436,9 +436,16 @@ check('Đã bỏ hẳn bước "Head xác nhận" khỏi hệ thống', () => {
   // không mở khoá bước nào. Case kết thúc theo chính trạng thái xử lý.
   assert(!('SOS_CONFIRM' in PERMISSIONS), 'Vẫn còn quyền xác nhận Head trong bộ quyền');
   assert(!('confirmCase' in (sos as any)), 'Vẫn còn hàm confirmCase');
-  // Dữ liệu xác nhận cũ vẫn phải tra lại được, không bị xoá theo.
-  const old = conn.prepare('SELECT COUNT(*) n FROM sos_cases WHERE head_confirmed_at IS NOT NULL').get() as any;
-  assert(old.n > 0, 'Lịch sử xác nhận cũ phải được giữ lại để tra cứu');
+  /*
+   * Dữ liệu mẫu MỚI không ghi bước này nữa — bỏ rồi thì không dựng lại trong dữ liệu giả.
+   * Nhưng CỘT vẫn phải còn: database của trung tâm đang có lịch sử xác nhận cũ, và nâng
+   * cấp phần mềm không được xoá lịch sử đó đi.
+   */
+  const cols = (conn.prepare('PRAGMA table_info(sos_cases)').all() as any[]).map((c) => c.name);
+  assert(cols.includes('head_confirmed_at') && cols.includes('head_confirmed_by'),
+    'Đã xoá cột lưu lịch sử xác nhận cũ — dữ liệu cũ sẽ mất khi nâng cấp');
+  const fresh = conn.prepare('SELECT COUNT(*) n FROM sos_cases WHERE head_confirmed_at IS NOT NULL').get() as any;
+  assert(fresh.n === 0, 'Dữ liệu mẫu mới vẫn dựng lại bước đã bỏ');
 });
 
 // ==================================================================== 7
@@ -1655,6 +1662,25 @@ check('"Đã xong" phải có ngày thực tế; người nhập không mặc đ
     }),
     /người thực hiện/, 'Không ghi ai làm mà vẫn lưu được',
   );
+  /*
+   * Nhưng KHAI TƯỜNG MINH "chính tôi làm" thì hợp lệ. Đây là điều khác hẳn việc hệ thống
+   * âm thầm lấy người nhập làm người thực hiện: một bên là lời khai, một bên là suy đoán.
+   */
+  const mine = cases.recordIntervention(P.coreTeacher, c.id, {
+    kind: 'talk_student', description: 'Tôi đã trao đổi với em', performerSelf: true,
+    status: 'completed', completedDate: TODAY,
+  }) as any;
+  const saved = mine.interventions.find((i: any) => i.description === 'Tôi đã trao đổi với em');
+  assert(saved && saved.performer, 'Khai "chính tôi làm" mà vẫn không ghi được người thực hiện');
+  assert(!saved.byProxy, 'Việc tự mình làm lại bị đánh dấu là nhập hộ');
+  // Có tên người ngoài thì tên đó thắng, không bị ghi đè bằng người đang đăng nhập.
+  const proxy = cases.recordIntervention(P.coreTeacher, c.id, {
+    kind: 'talk_parent', description: 'CS gọi phụ huynh', performerSelf: true,
+    performerName: 'CS Ngọc Diệp', status: 'completed', completedDate: TODAY,
+  }) as any;
+  const p2 = proxy.interventions.find((i: any) => i.description === 'CS gọi phụ huynh');
+  assert(p2.performer === 'CS Ngọc Diệp', `Người ngoài hệ thống bị thay bằng "${p2.performer}"`);
+  assert(p2.byProxy, 'Nhập hộ người ngoài mà không được đánh dấu là nhập hộ');
 });
 
 check('Chỉ hẹn ngày xem lại mới có quá hạn; theo dõi không hẹn thì không bao giờ quá hạn', () => {

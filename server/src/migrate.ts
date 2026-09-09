@@ -385,6 +385,28 @@ function migrateCaseEngine(applied: string[], skipped: string[]) {
       .run();
     if (j.changes) applied.push(`Gắn lộ trình cho ${j.changes} sự kiện hành trình`);
 
+    /*
+     * 8. Khoá của lớp thường thiếu MÃ CHƯƠNG TRÌNH.
+     *
+     * Thiếu mã này thì không biết khoá chấm theo tỷ lệ hay theo band, nên hồ sơ học viên
+     * dựng ra bảng band IELTS cho một lớp Foundation — bốn cột L/R/W/S trống trơn.
+     * Suy lại từ lớp của chính các bài kiểm tra trong khoá, và CHỈ khi mọi bài đều thuộc
+     * cùng một chương trình; mập mờ thì để trống chứ không đoán.
+     */
+    const prog = conn
+      .prepare(
+        `UPDATE learning_cycles SET programme_code = (
+            SELECT MIN(c.programme_code) FROM assessment_attempts a
+              JOIN classes c ON c.id = a.class_id
+             WHERE a.cycle_id = learning_cycles.id AND c.programme_code IS NOT NULL)
+          WHERE programme_code IS NULL AND route IS NULL
+            AND (SELECT COUNT(DISTINCT c.programme_code) FROM assessment_attempts a
+                   JOIN classes c ON c.id = a.class_id
+                  WHERE a.cycle_id = learning_cycles.id AND c.programme_code IS NOT NULL) = 1`,
+      )
+      .run();
+    if (prog.changes) applied.push(`Gắn mã chương trình cho ${prog.changes} khoá lớp thường`);
+
     conn.prepare("INSERT OR REPLACE INTO demo_config (key, value, updated_at) VALUES ('case_engine_migrated_at', ?, ?)")
       .run(nowIso(), nowIso());
   })();

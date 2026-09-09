@@ -39,14 +39,40 @@ type SkillPoint = {
 
 function cycleLabel(c: any): string {
   if (c.route) return c.route;
-  const prog = programmeByCode(c.programme_code);
+  const prog = programmeByCode(c.programme_code)
+    ?? (isRatioCycle(c) ? programmeByCode(programmeCodeOfCycle(c.id)) : null);
   return prog ? prog.name : `Lộ trình ${c.seq}`;
 }
 
-/** Lớp học chấm theo tỷ lệ hay theo band — quyết định dùng bộ máy kết luận nào. */
+function programmeCodeOfCycle(cycleId: number): string | null {
+  const row = db()
+    .prepare(
+      `SELECT c.programme_code AS code FROM assessment_attempts a
+         JOIN classes c ON c.id = a.class_id
+        WHERE a.cycle_id = ? AND c.programme_code IS NOT NULL LIMIT 1`,
+    )
+    .get(cycleId) as any;
+  return row?.code ?? null;
+}
+
+/**
+ * Khoá này chấm theo TỶ LỆ SỐ CÂU ĐÚNG hay theo BAND — quyết định dùng bộ máy kết luận nào.
+ *
+ * Ưu tiên mã chương trình ghi trên chính khoá. Dữ liệu cũ có thể thiếu mã đó, nên còn một
+ * đường tra dự phòng: lớp của các bài kiểm tra trong khoá. Không có căn cứ nào thì coi là
+ * lớp band — đó là mặc định của trung tâm.
+ */
 function isRatioCycle(c: any): boolean {
-  if (c.route) return false;
-  return programmeByCode(c.programme_code)?.scoringMode === 'ratio';
+  if (!c || c.route) return false;
+  if (c.programme_code) return programmeByCode(c.programme_code)?.scoringMode === 'ratio';
+  const row = db()
+    .prepare(
+      `SELECT c.programme_code AS code FROM assessment_attempts a
+         JOIN classes c ON c.id = a.class_id
+        WHERE a.cycle_id = ? AND c.programme_code IS NOT NULL LIMIT 1`,
+    )
+    .get(c.id) as any;
+  return programmeByCode(row?.code)?.scoringMode === 'ratio';
 }
 
 /**

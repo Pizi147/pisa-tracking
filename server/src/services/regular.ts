@@ -209,10 +209,14 @@ export function planRegularTests(p: Principal, classId: number) {
         const seq = ((conn.prepare('SELECT MAX(seq) m FROM learning_cycles WHERE student_id = ?').get(st.id) as any)?.m ?? 0) + 1;
         const info = conn
           .prepare(
-            `INSERT INTO learning_cycles (student_id, seq, route, target_score, started_at, status, note, created_at)
-             VALUES (?,?, NULL, NULL, ?, 'active', ?, ?)`,
+            // GHI RÕ CHƯƠNG TRÌNH vào khoá học. Thiếu nó thì sau này không biết khoá này
+            // chấm theo tỷ lệ hay theo band, và hồ sơ học viên sẽ dựng ra bảng band IELTS
+            // cho một lớp Foundation.
+            `INSERT INTO learning_cycles (student_id, seq, route, programme_code, target_score,
+                                          started_at, status, note, created_at)
+             VALUES (?,?, NULL, ?, NULL, ?, 'active', ?, ?)`,
           )
-          .run(st.id, seq, cls.start_date, `Khoá ${prog.name} — lớp ${cls.code}`, nowIso());
+          .run(st.id, seq, prog.code, cls.start_date, `Khoá ${prog.name} — lớp ${cls.code}`, nowIso());
         cycle = conn.prepare('SELECT * FROM learning_cycles WHERE id = ?').get(Number(info.lastInsertRowid));
         addJourney({
           studentId: st.id, eventType: 'cycle_start', eventDate: cls.start_date,

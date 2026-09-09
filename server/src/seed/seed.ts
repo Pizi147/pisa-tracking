@@ -420,7 +420,7 @@ function seedAttempts(conn: any, ctx: {
     if (missing.size === 0 && performedOnly.size === 0 && outcome.fails > 0) {
       const pattern = CASE_PATTERNS[(classIdx + studentIdx + step.attemptNo) % CASE_PATTERNS.length];
       seedCase(conn, {
-        attemptId, sid, attemptNo: step.attemptNo, level: Math.min(3, outcome.fails),
+        attemptId, sid, cycleId, attemptNo: step.attemptNo, level: Math.min(3, outcome.fails),
         testDate: String(step.lrwAt ?? step.week).slice(0, 10), pattern, recorder, counts,
       });
     }
@@ -486,59 +486,104 @@ const TEACHER_HANDLERS = ['GVCN Thu Trang', 'GVBM Minh Khoa', 'GVCN Bảo Nam', 
 const CS_HANDLERS = ['CS Ngọc Diệp', 'CS Hải Yến', 'CS Thanh Vân', 'CS Bảo Ngân'];
 
 function seedCase(conn: any, o: {
-  attemptId: number; sid: number; attemptNo: number; level: number; testDate: string;
+  attemptId: number; sid: number; cycleId: number | null; attemptNo: number; level: number; testDate: string;
   pattern: CasePattern; recorder: number;
   counts: { students: number; attempts: number; scores: number; cases: number };
 }) {
-  const cols: Record<string, unknown> = { status: 'open' };
   const h = TEACHER_HANDLERS[(o.attemptId + o.level) % TEACHER_HANDLERS.length];
   const cs = CS_HANDLERS[(o.attemptId + 2) % CS_HANDLERS.length];
 
-  if (o.pattern === 'named_only') {
-    // Có tên người làm nhưng CHƯA có ngày → chưa được tính là đã thực hiện.
-    cols.talk_student_person = h;
-    cols.talk_parent_person = cs;
-    cols.status = 'open';
-  } else if (o.pattern === 'in_progress') {
-    cols.talk_student_person = h;
-    cols.talk_student_date = addDays(o.testDate, 4);
-    cols.talk_parent_person = cs;
-    cols.talk_parent_date = addDays(o.testDate, 5);
-    cols.academic_support = o.level === 3 ? 'Học tutor đến lần mock sau' : 'Xếp tự học 1 tháng';
-    cols.academic_person = h;
-    cols.academic_start_date = addDays(o.testDate, 7);
-    cols.status = 'in_progress';
-  } else if (o.pattern === 'done') {
-    cols.talk_student_person = h;
-    cols.talk_student_date = addDays(o.testDate, 3);
-    cols.talk_parent_person = cs;
-    cols.talk_parent_date = addDays(o.testDate, 3);
-    cols.academic_support = o.level === 3 ? 'Học tutor đến lúc thi' : 'Xếp tự học 1 tháng';
-    cols.academic_person = h;
-    cols.academic_start_date = addDays(o.testDate, 6);
-    if (o.attemptNo >= 3 && o.level >= 2) {
-      cols.ops_policy = 'Buổi bổ trợ với tutor';
-      cols.ops_date = addDays(o.testDate, 8);
-    }
-    if (o.level === 3 && o.attemptNo >= 2) { cols.meeting_kind = 'CX / GĐCN meeting HS'; cols.meeting_date = addDays(o.testDate, 5); }
-    else if (o.level === 3 || (o.level === 2 && o.attemptNo >= 2)) { cols.meeting_kind = 'GVCN meeting HS'; cols.meeting_date = addDays(o.testDate, 5); }
-    cols.status = 'done';
-    cols.head_confirmed_by = o.recorder;
-    cols.head_confirmed_at = addDays(o.testDate, 10);
-  }
+  /*
+   * VIẾT THẲNG VÀO MÔ HÌNH MỚI.
+   *
+   * Bản cũ nhét mọi việc đã làm vào năm cột cố định của `sos_cases` — trao đổi HS, trao
+   * đổi PH, hỗ trợ học thuật, chính sách, buổi gặp. Năm cột ấy không tả được một case có
+   * hai buổi tutor, và cũng không phân biệt được "đã hẹn" với "đã làm". Những cột đó nay
+   * chỉ còn để nâng cấp dữ liệu cũ; dữ liệu mẫu mới đi thẳng vào `case_interventions`.
+   */
+  const status = o.pattern === 'named_only' ? 'open' : o.pattern === 'in_progress' ? 'in_progress' : 'done';
+  const disposition = o.pattern === 'done'
+    ? (o.level >= 2 ? 'action' : 'monitor')
+    : o.pattern === 'in_progress' ? 'action' : null;
 
-  const keys = ['attempt_id', 'sos_level', ...Object.keys(cols), 'created_at'];
-  const values = [o.attemptId, o.level, ...Object.values(cols), NOW];
-  conn.prepare(`INSERT INTO sos_cases (${keys.join(',')}) VALUES (${keys.map(() => '?').join(',')})`).run(...values);
+  const info = conn
+    .prepare(
+      `INSERT INTO sos_cases (attempt_id, student_id, cycle_id, origin_kind, detected_at,
+                              sos_level, status, disposition, disposition_note,
+                              closed_by, closed_at, created_at)
+       VALUES (?,?,?, 'mock', ?,?,?,?,?,?,?,?)`,
+    )
+    .run(o.attemptId, o.sid, o.cycleId, o.testDate, o.level, status, disposition,
+         o.pattern === 'done' ? 'Đã hỗ trợ xong đợt này, theo dõi tiếp ở lần đánh giá sau' : null,
+         o.pattern === 'done' ? o.recorder : null,
+         o.pattern === 'done' ? addDays(o.testDate, 10) : null, NOW);
+  const caseId = Number(info.lastInsertRowid);
   o.counts.cases += 1;
+
+  const iv = (
+    kind: string, description: string, performerName: string,
+    st: 'planned' | 'started' | 'completed', dates: { started?: string; completed?: string; due?: string } = {},
+  ) => conn
+    .prepare(
+      `INSERT INTO case_interventions (case_id, kind, description, performer_name, recorded_by,
+                                       status, started_date, completed_date, followup_due, created_at)
+       VALUES (?,?,?,?,?,?,?,?,?,?)`,
+    )
+    .run(caseId, kind, description, performerName, o.recorder, st,
+         dates.started ?? null, dates.completed ?? null, dates.due ?? null, NOW);
+
+  if (o.pattern === 'named_only') {
+    /*
+     * CÓ TÊN NGƯỜI LÀM NHƯNG CHƯA CÓ NGÀY = MỚI LÊN KẾ HOẠCH, chưa phải đã làm.
+     * Đây đúng là chỗ mô hình cũ nói sai: điền tên vào ô là case trông như đã xử lý.
+     */
+    iv('talk_student', 'Sẽ trao đổi với em sau buổi tới', h, 'planned');
+    iv('talk_parent', 'Sẽ nhờ CS gọi phụ huynh', cs, 'planned');
+  } else if (o.pattern === 'in_progress') {
+    iv('talk_student', 'Trao đổi với em về kết quả lần này', h, 'completed',
+       { completed: addDays(o.testDate, 4) });
+    iv('talk_parent', 'CS gọi phụ huynh trao đổi tình hình', cs, 'completed',
+       { completed: addDays(o.testDate, 5) });
+    // Hỗ trợ học thuật MỚI BẮT ĐẦU: có ngày bắt đầu, chưa có ngày xong.
+    iv(o.level === 3 ? 'tutor' : 'self_study',
+       o.level === 3 ? 'Học tutor đến lần đánh giá sau' : 'Xếp tự học một tháng', h, 'started',
+       { started: addDays(o.testDate, 7), due: addDays(o.testDate, 35) });
+  } else {
+    iv('talk_student', 'Trao đổi với em về kết quả lần này', h, 'completed',
+       { completed: addDays(o.testDate, 3) });
+    iv('talk_parent', 'CS gọi phụ huynh trao đổi tình hình', cs, 'completed',
+       { completed: addDays(o.testDate, 3) });
+    iv(o.level === 3 ? 'tutor' : 'self_study',
+       o.level === 3 ? 'Học tutor đến lúc thi' : 'Xếp tự học một tháng', h, 'completed',
+       { started: addDays(o.testDate, 6), completed: addDays(o.testDate, 30) });
+    if (o.attemptNo >= 3 && o.level >= 2) {
+      iv('ops_policy', 'Buổi bổ trợ với tutor', h, 'completed', { completed: addDays(o.testDate, 8) });
+    }
+    if (o.level === 3 && o.attemptNo >= 2) {
+      iv('meeting', 'CX / GĐCN gặp riêng học viên', cs, 'completed', { completed: addDays(o.testDate, 5) });
+    } else if (o.level === 3 || (o.level === 2 && o.attemptNo >= 2)) {
+      iv('meeting', 'GVCN gặp riêng học viên', h, 'completed', { completed: addDays(o.testDate, 5) });
+    }
+    // Case đã đóng thì phải có ít nhất một lần XEM LẠI, nếu không thì đóng dựa trên cái gì.
+    conn
+      .prepare(
+        `INSERT INTO case_followups (case_id, intervention_id, observed_on, observer_user_id, outcome, note, created_at)
+         VALUES (?, NULL, ?, ?, ?, ?, ?)`,
+      )
+      .run(caseId, addDays(o.testDate, 28), o.recorder,
+           o.level === 3 ? 'partial' : 'improved',
+           o.level === 3 ? 'Có chuyển biến ở một kỹ năng, hai kỹ năng còn lại chưa rõ'
+             : 'Làm bài đều hơn, kết quả trên lớp khá hơn', NOW);
+  }
 
   conn
     .prepare(
-      `INSERT INTO journey_events (student_id, event_type, event_date, title, detail, ref_table, ref_id, created_by, created_at)
-       VALUES (?, 'mock_result', ?, ?, ?, 'assessment_attempts', ?, ?, ?)`,
+      `INSERT INTO journey_events (student_id, cycle_id, event_type, event_date, title, detail,
+                                   ref_table, ref_id, dedup_key, created_by, created_at)
+       VALUES (?,?, 'mock_result', ?, ?, ?, 'assessment_attempts', ?, ?, ?, ?)`,
     )
-    .run(o.sid, o.testDate, `MT${o.attemptNo}: SOS ${o.level}`, `${o.level} kỹ năng dưới kỳ vọng`,
-         o.attemptId, o.recorder, NOW);
+    .run(o.sid, o.cycleId, o.testDate, `MT${o.attemptNo}: SOS ${o.level}`,
+         `${o.level} kỹ năng dưới kỳ vọng`, o.attemptId, `mock_result:${o.attemptId}`, o.recorder, NOW);
 }
 
 // ==================================================================== tình huống riêng
@@ -806,10 +851,11 @@ function seedRegularClasses(conn: any, ctx: {
       // Lớp thường vẫn cần một "lộ trình" để gắn bài kiểm tra vào — đó chính là khoá học này.
       const cyc = conn
         .prepare(
-          `INSERT INTO learning_cycles (student_id, seq, route, target_score, started_at, status, note, created_at)
-           VALUES (?, 1, NULL, NULL, ?, 'active', ?, ?)`,
+          `INSERT INTO learning_cycles (student_id, seq, route, programme_code, target_score,
+                                        started_at, status, note, created_at)
+           VALUES (?, 1, NULL, ?, NULL, ?, 'active', ?, ?)`,
         )
-        .run(st.id, cls.startDate, `Khoá ${tpl.name} — lớp ${cls.code}`, NOW);
+        .run(st.id, programme, cls.startDate, `Khoá ${tpl.name} — lớp ${cls.code}`, NOW);
       counts.cycles += 1;
       const cycleId = Number(cyc.lastInsertRowid);
 
