@@ -3,9 +3,12 @@
 Đây là **bản demo nội bộ** của hệ thống quản lý học vụ và vận hành PISA IELTS, dùng để bạn
 bấm thử giao diện và phát hiện chỗ chưa hợp lý **trước khi** xây sản phẩm thật.
 
+Bản demo lấy **Mock Test** làm trung tâm và nối liền: lịch thi → nhập điểm từng kỹ năng →
+kết luận SOS → ghi nhận xử lý → công việc trong họp tuần.
+
 > **Toàn bộ dữ liệu trong bản demo là dữ liệu giả.** Không có tên, số điện thoại hay thông tin
-> thật của học viên. Email mẫu dùng đuôi `example.com`. Bản demo chỉ chạy trên máy của bạn,
-> không kết nối internet, không cần tài khoản dịch vụ nào.
+> thật của học viên. Bản demo chỉ chạy trên máy của bạn, không kết nối internet,
+> không cần tài khoản dịch vụ nào.
 
 ---
 
@@ -41,8 +44,9 @@ Lệnh này tải các thư viện cần thiết. Lần đầu có thể mất 1
 npm run seed
 ```
 
-Lệnh này tạo lại toàn bộ dữ liệu giả: 5 chi nhánh, 12 lớp, khoảng 120 học viên,
-8 tuần dữ liệu học tập, các vấn đề, công việc và kỳ họp.
+Lệnh này tạo lại toàn bộ dữ liệu giả: **5 chi nhánh** (Monbay, Bãi Cháy, Cẩm Phả, Hải Dương, Uông Bí),
+**10 lớp**, **43 tài khoản**, khoảng **71 học viên**, gần **170 lượt Mock Test** kèm điểm từng kỹ năng,
+các case SOS ở đủ mức tiến độ, báo cáo họp tuần và công việc.
 
 Màn hình sẽ in ra bảng tóm tắt số lượng bản ghi đã tạo.
 
@@ -71,15 +75,28 @@ thì mở trình duyệt và vào địa chỉ: **<http://localhost:5173>**
 Màn hình đầu tiên là danh sách **tài khoản mẫu**. Bấm vào một tài khoản là vào luôn,
 không cần mật khẩu.
 
+Bản demo có **bốn nhóm tài khoản**. Màn hình chọn tài khoản đã nhóm sẵn theo bốn loại này:
+
+| Nhóm | Là ai |
+|---|---|
+| **Quản trị hệ thống** | Người quản trị **phần mềm**: tài khoản, vai trò, cấu hình. Không phải chức danh vận hành |
+| **Admin chi nhánh** | Nhân sự **văn phòng** chi nhánh: danh sách lớp, giáo viên, việc trung gian giữa các phòng ban |
+| **Quản lý** | Điều hành chuyên môn của chi nhánh. **Chính là "Head"** khi xác nhận case SOS |
+| **Giáo viên** | GVCN và/hoặc GVBM, quyền theo phân công lớp và kỹ năng |
+
 Gợi ý tài khoản nên dùng đầu tiên:
 
 | Muốn xem gì | Chọn tài khoản |
 |---|---|
-| Toàn cảnh quản lý một chi nhánh | **Nguyễn Thu Hà** — Quản lý Cầu Giấy |
-| Màn hình nhập liệu của giáo viên | **Lê Minh Tú** — chỉ dạy Listening lớp FT-A01 |
-| Góc nhìn giáo viên chủ nhiệm | **Vũ Hải Yến** — GVCN FT-A01 |
-| Góc nhìn tư vấn viên (chỉ đọc) | **Đặng Kim Chi** |
-| Toàn quyền, xem phần Quản trị | **Trần Quốc Bảo** |
+| Toàn cảnh cả hệ thống + phần quản trị | **Đặng Quang Nhi** — Quản trị hệ thống |
+| Toàn cảnh một chi nhánh, họp tuần, xử lý SOS | **Đặng Quang Vy** — Quản lý Monbay |
+| Quản lý thứ hai cùng chi nhánh (thử nhiều quản lý) | **Trần Quang Nam** — Quản lý Monbay |
+| Màn hình nhập điểm của giáo viên bộ môn | **Trần Hải Đạt** — dạy Listening + Reading lớp MB-FT 101 |
+| Giáo viên chỉ dạy Writing Task 1 | **Hoàng Khánh Huy** — W1 lớp MB-FT 101 |
+| Góc nhìn giáo viên chủ nhiệm | **Đinh Bảo Vy** — GVCN lớp MB-FT 101 |
+| Nhân sự văn phòng một chi nhánh | **Đặng Ngọc Phúc** — Admin chi nhánh Monbay |
+
+Giáo viên đăng nhập sẽ vào thẳng danh sách **Mock cần nhập điểm** của mình; các vai trò khác vào **Tổng quan**.
 
 Muốn đổi tài khoản bất cứ lúc nào: bấm nút **"Đổi tài khoản demo"** ở thanh trên cùng.
 
@@ -157,6 +174,10 @@ Nếu máy bạn không nhận lệnh đầu tiên, dùng: `npm rebuild better-s
 → Có một bản ứng dụng khác đang chạy. Đóng Terminal cũ, hoặc đổi cổng máy chủ:
 `PORT=4001 npm run dev` (nhớ sửa cổng tương ứng trong `vite.config.ts`).
 
+**Đăng nhập bằng tài khoản giáo viên nhưng danh sách trống**
+→ Bình thường: giáo viên chỉ thấy lớp mình được phân công, và bộ lọc tuần có thể đang ở tuần không có
+lượt Mock nào. Bấm **"Điểm tôi cần nhập"** để xem xuyên tuần, hoặc **"Tất cả"** rồi đổi ô **Tuần**.
+
 **Đổi tài khoản nhưng vẫn thấy dữ liệu của tài khoản cũ**
 → Không nên xảy ra: hệ thống tự xoá bộ nhớ đệm khi đổi tài khoản. Nếu gặp, hãy chụp màn hình
 và báo lại — đây là lỗi cần sửa.
@@ -179,6 +200,6 @@ Hệ thống **không bao giờ** tự sinh lỗi ngẫu nhiên khi bạn dùng 
 
 Tài liệu liên quan:
 
-- `PRODUCT_DEMO_SPEC.md` — cấu trúc thông tin, quyết định giao diện, ma trận quyền, quan hệ dữ liệu
-- `DEMO_ASSUMPTIONS.md` — toàn bộ giả định thử nghiệm và điểm cần chốt
-- `DEMO_SCENARIOS.md` — 25 tình huống cụ thể để bạn bấm thử
+- `PRODUCT_DEMO_SPEC.md` — Product / Web Design: **A. Current MVP · B. Simplify–Remove · C. Future Design**
+- `DEMO_ASSUMPTIONS.md` — các câu đã chốt (Q1–Q4) và những điểm còn cần bạn xác nhận
+- `DEMO_SCENARIOS.md` — **ba luồng chính** để bấm thử, bảng kiểm tra quyền, các tình huống cài sẵn

@@ -1,187 +1,174 @@
-/** Dữ liệu tĩnh cho seed. Tất cả tên người và sự kiện đều là GIẢ. */
-
-export const DEMO_DATE = '2026-09-10';
-export const WEEKS = 8;
+/**
+ * Dữ liệu tĩnh cho seed. Toàn bộ tên người là GIẢ, không lấy từ tài liệu nguồn.
+ *
+ * Ngày demo 23/09/2026 là thứ Tư của tuần W4 SEP. Chọn ngày này để thấy đủ ba mốc hạn
+ * trong cùng một màn hình: tuần W2 SEP đã quá hạn, tuần W3 SEP đúng hạn hôm nay
+ * (chưa quá hạn), tuần W4 SEP và W1 OCT còn ở phía trước.
+ */
+export const DEMO_DATE = '2026-09-23';
 
 export const BRANCHES = [
-  { code: 'CG', name: 'PISA Cầu Giấy', address: 'Quận Cầu Giấy' },
-  { code: 'HD', name: 'PISA Hà Đông', address: 'Quận Hà Đông' },
-  { code: 'TX', name: 'PISA Thanh Xuân', address: 'Quận Thanh Xuân' },
-  { code: 'LB', name: 'PISA Long Biên', address: 'Quận Long Biên' },
-  { code: 'VI', name: 'PISA Vinh', address: 'Thành phố Vinh' },
-];
+  { code: 'MB', name: 'Monbay' },
+  { code: 'BC', name: 'Bãi Cháy' },
+  { code: 'CP', name: 'Cẩm Phả' },
+  { code: 'HD', name: 'Hải Dương' },
+  { code: 'UB', name: 'Uông Bí' },
+] as const;
 
-export const CLASS_TYPES = [
-  { code: 'FT5', name: 'FT 5 buổi/tuần', category: 'FT' },
-  { code: 'FT10', name: 'FT 10 buổi/tuần', category: 'FT' },
-  { code: 'FT16', name: 'FT 16 buổi/tuần', category: 'FT' },
-  { code: 'FOUND', name: 'Foundation', category: 'NORMAL' },
-  { code: 'ELEM', name: 'Elementary', category: 'NORMAL' },
-  { code: 'PET', name: 'PET', category: 'NORMAL' },
-];
+export const ROLES = [
+  { key: 'system_admin', name: 'Quản trị hệ thống' },
+  { key: 'branch_admin', name: 'Admin chi nhánh' },
+  { key: 'manager', name: 'Quản lý' },
+  { key: 'teacher', name: 'Giáo viên' },
+] as const;
 
-/** dueOffsetDays = null nghĩa là mốc KHÔNG có hạn → không bao giờ tự đánh giá chậm. */
-export const TEMPLATES = [
-  {
-    code: 'FT-FLEX', name: 'FT — Lộ trình linh hoạt theo stage', category: 'FT',
-    versions: [
-      {
-        versionNo: 1, notes: 'Bản gốc: stage/milestone không gắn hạn cố định.',
-        stages: [
-          { stageKey: 'ft-s1', name: 'Stage 1 — Nền tảng & chẩn đoán', kind: 'stage', dueOffsetDays: null },
-          { stageKey: 'ft-s2', name: 'Stage 2 — Xây kỹ năng lõi', kind: 'stage', dueOffsetDays: null },
-          { stageKey: 'ft-m1', name: 'Mốc — Mock Test lần 1', kind: 'milestone', dueOffsetDays: null },
-          { stageKey: 'ft-s3', name: 'Stage 3 — Nâng band theo skill yếu', kind: 'stage', dueOffsetDays: null },
-          { stageKey: 'ft-m2', name: 'Mốc — Mock Test lần 2', kind: 'milestone', dueOffsetDays: null },
-          { stageKey: 'ft-s4', name: 'Stage 4 — Luyện đề & chiến thuật phòng thi', kind: 'stage', dueOffsetDays: null },
-        ],
-      },
-    ],
-  },
-  {
-    code: 'FT-MILE', name: 'FT — Lộ trình có mốc thời gian', category: 'FT',
-    versions: [
-      {
-        versionNo: 1, notes: 'Có hạn cho từng mốc để theo dõi tiến độ.',
-        stages: [
-          { stageKey: 'ftm-s1', name: 'Stage 1 — Chẩn đoán đầu vào', kind: 'stage', dueOffsetDays: 14 },
-          { stageKey: 'ftm-m1', name: 'Mốc — Hoàn thành khảo sát skill', kind: 'milestone', dueOffsetDays: 21 },
-          { stageKey: 'ftm-s2', name: 'Stage 2 — Kỹ năng lõi', kind: 'stage', dueOffsetDays: 49 },
-          { stageKey: 'ftm-m2', name: 'Mốc — Mock Test giữa kỳ', kind: 'milestone', dueOffsetDays: 63 },
-          { stageKey: 'ftm-s3', name: 'Stage 3 — Luyện đề', kind: 'stage', dueOffsetDays: 98 },
-        ],
-      },
-    ],
-  },
-  {
-    code: 'NM-FOUND', name: 'Foundation', category: 'NORMAL',
-    versions: [
-      {
-        versionNo: 1, notes: 'Chương trình 8 tuần (bản đang áp dụng cho các lớp cũ).',
-        stages: Array.from({ length: 8 }, (_, i) => ({
-          stageKey: `f1-w${i + 1}`, name: `Tuần ${i + 1}${i === 3 ? ' — Progress Test' : ''}${i === 7 ? ' — Final Test' : ''}`,
-          kind: i === 3 || i === 7 ? 'checkpoint' : 'week',
-          weekFrom: i + 1, weekTo: i + 1, dueOffsetDays: (i + 1) * 7,
-        })),
-      },
-      {
-        versionNo: 2, notes: 'Bản mở rộng 10 tuần, áp dụng cho lớp mở mới.',
-        stages: Array.from({ length: 10 }, (_, i) => ({
-          stageKey: `f2-w${i + 1}`, name: `Tuần ${i + 1}${i === 4 ? ' — Progress Test' : ''}${i === 9 ? ' — Final Test' : ''}`,
-          kind: i === 4 || i === 9 ? 'checkpoint' : 'week',
-          weekFrom: i + 1, weekTo: i + 1, dueOffsetDays: (i + 1) * 7,
-        })),
-      },
-    ],
-  },
-  {
-    code: 'NM-ELEM', name: 'Elementary', category: 'NORMAL',
-    versions: [
-      {
-        versionNo: 1, notes: 'Chương trình 12 tuần.',
-        stages: Array.from({ length: 12 }, (_, i) => ({
-          stageKey: `e1-w${i + 1}`, name: `Tuần ${i + 1}${i === 5 ? ' — Progress Test' : ''}${i === 11 ? ' — Final Test' : ''}`,
-          kind: i === 5 || i === 11 ? 'checkpoint' : 'week',
-          weekFrom: i + 1, weekTo: i + 1, dueOffsetDays: (i + 1) * 7,
-        })),
-      },
-    ],
-  },
-  {
-    code: 'NM-PET', name: 'PET', category: 'NORMAL',
-    versions: [
-      {
-        versionNo: 1, notes: 'Chương trình PET 10 tuần.',
-        stages: Array.from({ length: 10 }, (_, i) => ({
-          stageKey: `p1-w${i + 1}`, name: `Tuần ${i + 1}${i === 9 ? ' — Final Test' : ''}`,
-          kind: i === 9 ? 'checkpoint' : 'week',
-          weekFrom: i + 1, weekTo: i + 1, dueOffsetDays: (i + 1) * 7,
-        })),
-      },
-    ],
-  },
-];
-
-/** Số buổi chính/tuần theo skill — cấu hình dữ liệu, không suy ra từ tên lớp. */
-export const SKILL_CONFIG: Record<string, Record<string, number>> = {
-  FT5: { listening: 1, reading: 1, writing1: 1, writing2: 1, speaking: 1 },
-  FT10: { listening: 2, reading: 2, writing1: 2, writing2: 2, speaking: 2 },
-  FT16: { listening: 3, reading: 3, writing1: 3, writing2: 3, speaking: 4 },
-  FOUND: { listening: 1, reading: 1, speaking: 1 },
-  ELEM: { listening: 1, reading: 1, writing1: 1, speaking: 1 },
-  PET: { listening: 1, reading: 1, writing1: 1, speaking: 1 },
-};
-
-export const CLASSES = [
-  { code: 'FT-A01', name: 'FT Cầu Giấy A01', branch: 'CG', type: 'FT5', template: 'FT-FLEX', versionNo: 1, startOffsetWeeks: -10 },
-  { code: 'FT-A02', name: 'FT Cầu Giấy A02', branch: 'CG', type: 'FT10', template: 'FT-MILE', versionNo: 1, startOffsetWeeks: -14 },
-  { code: 'FT-B01', name: 'FT Hà Đông B01', branch: 'HD', type: 'FT5', template: 'FT-FLEX', versionNo: 1, startOffsetWeeks: -9 },
-  { code: 'FT-B02', name: 'FT Hà Đông B02', branch: 'HD', type: 'FT16', template: 'FT-FLEX', versionNo: 1, startOffsetWeeks: -7 },
-  { code: 'FT-C01', name: 'FT Thanh Xuân C01', branch: 'TX', type: 'FT5', template: 'FT-MILE', versionNo: 1, startOffsetWeeks: -16 },
-  { code: 'FT-D01', name: 'FT Long Biên D01', branch: 'LB', type: 'FT10', template: 'FT-FLEX', versionNo: 1, startOffsetWeeks: -6 },
-  { code: 'NM-A01', name: 'Foundation Cầu Giấy A01', branch: 'CG', type: 'FOUND', template: 'NM-FOUND', versionNo: 1, startOffsetWeeks: -7 },
-  { code: 'NM-A02', name: 'Elementary Cầu Giấy A02', branch: 'CG', type: 'ELEM', template: 'NM-ELEM', versionNo: 1, startOffsetWeeks: -9 },
-  { code: 'NM-B01', name: 'Foundation Hà Đông B01', branch: 'HD', type: 'FOUND', template: 'NM-FOUND', versionNo: 1, startOffsetWeeks: -8 },
-  { code: 'NM-B02', name: 'PET Hà Đông B02', branch: 'HD', type: 'PET', template: 'NM-PET', versionNo: 1, startOffsetWeeks: -5 },
-  { code: 'NM-C01', name: 'Foundation Thanh Xuân C01', branch: 'TX', type: 'FOUND', template: 'NM-FOUND', versionNo: 2, startOffsetWeeks: -3 },
-  { code: 'NM-D01', name: 'Elementary Long Biên D01', branch: 'LB', type: 'ELEM', template: 'NM-ELEM', versionNo: 1, startOffsetWeeks: -6 },
-];
-
-export const REPORT_CATEGORIES = [
-  { key: 'enrollment_class', label: 'Sĩ số & tình hình lớp', seq: 1 },
-  { key: 'teaching_quality', label: 'Chất lượng dạy học', seq: 2 },
-  { key: 'students_parents', label: 'Học viên & phụ huynh', seq: 3 },
-  { key: 'teacher_staffing', label: 'Nhân sự giáo viên', seq: 4 },
-  { key: 'curriculum', label: 'Giáo trình / chương trình học', seq: 5 },
-];
-
+/**
+ * Quyền theo vai trò. Phạm vi chi nhánh nằm ở từng grant, không suy từ tên vai trò:
+ * một Quản lý chỉ toàn hệ thống khi grant của họ có branch_id = NULL.
+ */
 export const ROLE_PERMISSIONS: Record<string, string[]> = {
-  admin: [
-    'academic.view', 'academic.weekly.edit', 'academic.summary.edit', 'academic.official_score.edit',
-    'academic.estimate.edit', 'academic.note_internal.view', 'student.transfer', 'student.import',
-    'class.progress.edit', 'class.override.edit', 'issue.view', 'issue.manage', 'task.view', 'task.manage',
-    'task.update_assigned', 'ops.branch_report.view', 'ops.branch_report.manage', 'ops.meeting.view',
-    'ops.meeting.manage', 'admin.config', 'admin.users', 'audit.view',
+  // Quản trị phần mềm: toàn quyền, là đường sửa sai cuối cùng.
+  system_admin: [
+    'mock.view', 'mock.schedule', 'mock.cancel', 'score.edit', 'sos.edit', 'sos.confirm',
+    'student.view', 'student.edit', 'meeting.view', 'meeting.edit', 'admin.config',
   ],
+  // Văn phòng chi nhánh: danh sách lớp/giáo viên, lịch thi, nhập bù điểm.
+  // KHÔNG có sos.confirm — xác nhận Head là việc của Quản lý.
+  branch_admin: [
+    'mock.view', 'mock.schedule', 'mock.cancel', 'score.edit', 'sos.edit',
+    'student.view', 'student.edit', 'meeting.view', 'meeting.edit',
+  ],
+  // Quản lý CHÍNH LÀ Head trong quy trình SOS.
   manager: [
-    'academic.view', 'academic.weekly.edit', 'academic.summary.edit', 'academic.official_score.edit',
-    'academic.estimate.edit', 'academic.note_internal.view', 'student.transfer', 'student.import',
-    'class.progress.edit', 'class.override.edit', 'issue.view', 'issue.manage', 'task.view', 'task.manage',
-    'task.update_assigned', 'ops.branch_report.view', 'ops.branch_report.manage', 'ops.meeting.view',
-    'ops.meeting.manage', 'audit.view',
+    'mock.view', 'mock.schedule', 'mock.cancel', 'sos.edit', 'sos.confirm',
+    'student.view', 'student.edit', 'meeting.view', 'meeting.edit',
   ],
-  teacher: [
-    'academic.view', 'academic.weekly.edit', 'academic.estimate.edit', 'academic.summary.edit',
-    'academic.note_internal.view', 'issue.view', 'task.view', 'task.update_assigned',
-  ],
-  consultant: ['academic.view', 'task.view', 'task.update_assigned'],
-  consultant_manager: ['academic.view', 'task.view', 'task.update_assigned', 'issue.view'],
+  // Giáo viên còn bị siết thêm bởi phân công lớp/kỹ năng, xem permissions.ts.
+  teacher: ['mock.view', 'mock.schedule', 'score.edit', 'sos.edit', 'student.view'],
 };
 
-export const PERMISSION_GROUPS: Record<string, string> = {
-  'academic.view': 'Học vụ', 'academic.weekly.edit': 'Học vụ', 'academic.summary.edit': 'Học vụ',
-  'academic.official_score.edit': 'Học vụ', 'academic.estimate.edit': 'Học vụ', 'academic.note_internal.view': 'Học vụ',
-  'student.transfer': 'Học viên', 'student.import': 'Học viên',
-  'class.progress.edit': 'Lớp học', 'class.override.edit': 'Lớp học',
-  'issue.view': 'Vận hành', 'issue.manage': 'Vận hành',
-  'task.view': 'Vận hành', 'task.manage': 'Vận hành', 'task.update_assigned': 'Vận hành',
-  'ops.branch_report.view': 'Vận hành', 'ops.branch_report.manage': 'Vận hành',
-  'ops.meeting.view': 'Vận hành', 'ops.meeting.manage': 'Vận hành',
-  'admin.config': 'Quản trị', 'admin.users': 'Quản trị', 'audit.view': 'Quản trị',
+/** Mã lớp luôn bắt đầu bằng mã chi nhánh. Loại lớp là nhãn tự do do quản lý đặt. */
+export type ClassSeed = {
+  code: string; branch: string; kind: string; route: 'LT1' | 'LT2' | null;
+  isFulltime: boolean; startDate: string; students: number;
+  /** Kế hoạch Mock của cả lớp: ngày dự kiến theo từng lần MT. */
+  plan: { attemptNo: number; date: string; taken: boolean }[];
 };
 
-export const FIRST_NAMES = [
-  'An', 'Anh', 'Bảo', 'Bình', 'Chi', 'Cường', 'Dung', 'Duy', 'Đạt', 'Đức',
-  'Giang', 'Hà', 'Hải', 'Hạnh', 'Hiếu', 'Hoa', 'Hùng', 'Huy', 'Hương', 'Khanh',
-  'Khôi', 'Lâm', 'Linh', 'Long', 'Mai', 'Minh', 'Nam', 'Nga', 'Ngọc', 'Nhi',
-  'Phong', 'Phúc', 'Quân', 'Quỳnh', 'Sơn', 'Tâm', 'Thảo', 'Thịnh', 'Thu', 'Trang',
-  'Trí', 'Trúc', 'Tú', 'Tuấn', 'Uyên', 'Vân', 'Việt', 'Vy', 'Yến', 'Ánh',
+export const CLASSES: ClassSeed[] = [
+  {
+    code: 'MB-FT 101', branch: 'MB', kind: 'FT', route: 'LT1', isFulltime: true,
+    startDate: '2026-06-22', students: 8,
+    plan: [
+      { attemptNo: 1, date: '2026-07-27', taken: true },
+      { attemptNo: 2, date: '2026-09-10', taken: true },   // W2 SEP — hạn 16/09, đã quá hạn
+      { attemptNo: 3, date: '2026-10-05', taken: false },
+    ],
+  },
+  {
+    code: 'MB-FT 102', branch: 'MB', kind: 'FT', route: 'LT2', isFulltime: true,
+    startDate: '2026-06-29', students: 8,
+    plan: [
+      { attemptNo: 1, date: '2026-08-03', taken: true },
+      { attemptNo: 2, date: '2026-09-17', taken: true },   // W3 SEP — hạn đúng hôm nay 23/09
+      { attemptNo: 3, date: '2026-10-12', taken: false },
+    ],
+  },
+  {
+    code: 'MB-FOUND 12', branch: 'MB', kind: 'FOUND', route: null, isFulltime: false,
+    startDate: '2026-08-10', students: 5, plan: [],
+  },
+  {
+    code: 'BC-FT 205', branch: 'BC', kind: 'FT', route: 'LT1', isFulltime: true,
+    startDate: '2026-06-22', students: 8,
+    plan: [
+      { attemptNo: 1, date: '2026-07-27', taken: true },
+      { attemptNo: 2, date: '2026-09-10', taken: true },
+      { attemptNo: 3, date: '2026-10-05', taken: false },
+    ],
+  },
+  {
+    code: 'BC-BE 80', branch: 'BC', kind: 'BE', route: null, isFulltime: false,
+    startDate: '2026-07-13', students: 5, plan: [],
+  },
+  {
+    code: 'CP-FT 110', branch: 'CP', kind: 'FT', route: 'LT1', isFulltime: true,
+    startDate: '2026-07-06', students: 8,
+    plan: [
+      { attemptNo: 1, date: '2026-08-10', taken: true },
+      { attemptNo: 2, date: '2026-09-22', taken: true },  // W4 SEP — vừa thi, hạn 30/09 chưa tới
+      { attemptNo: 3, date: '2026-10-19', taken: false },
+    ],
+  },
+  {
+    code: 'CP-FT 111', branch: 'CP', kind: 'FT', route: 'LT2', isFulltime: true,
+    startDate: '2026-06-29', students: 8,
+    plan: [
+      { attemptNo: 1, date: '2026-08-03', taken: true },
+      { attemptNo: 2, date: '2026-09-17', taken: true },
+      { attemptNo: 3, date: '2026-10-12', taken: false },
+    ],
+  },
+  {
+    code: 'HD-FT 302', branch: 'HD', kind: 'FT', route: 'LT1', isFulltime: true,
+    startDate: '2026-07-06', students: 8,
+    plan: [
+      { attemptNo: 1, date: '2026-08-10', taken: true },
+      { attemptNo: 2, date: '2026-09-25', taken: false }, // W4 SEP
+    ],
+  },
+  {
+    code: 'HD-ELE 01', branch: 'HD', kind: 'ELE', route: null, isFulltime: false,
+    startDate: '2026-08-24', students: 5, plan: [],
+  },
+  {
+    code: 'UB-FT 401', branch: 'UB', kind: 'FT', route: 'LT2', isFulltime: true,
+    startDate: '2026-05-25', students: 8,
+    plan: [
+      { attemptNo: 1, date: '2026-06-29', taken: true },
+      { attemptNo: 2, date: '2026-08-17', taken: true },
+      { attemptNo: 3, date: '2026-09-14', taken: true },  // W3 SEP — MT3 mở nhóm case có vận hành
+      { attemptNo: 4, date: '2026-10-05', taken: false },
+    ],
+  },
 ];
-export const MIDDLE_NAMES = [
-  'Thị', 'Văn', 'Minh', 'Gia', 'Hoàng', 'Ngọc', 'Thanh', 'Quang', 'Nhật', 'Bảo',
-  'Đình', 'Hữu', 'Khánh', 'Phương', 'Thu', 'Xuân', 'Diệu', 'Tuấn',
+
+// ---------------------------------------------------------------- tên giả
+
+export const SURNAMES = [
+  'Nguyễn', 'Trần', 'Lê', 'Phạm', 'Hoàng', 'Vũ', 'Đặng', 'Bùi', 'Đỗ', 'Hồ',
+  'Ngô', 'Dương', 'Lý', 'Phan', 'Đinh',
 ];
-export const LAST_NAMES = [
-  'Nguyễn', 'Trần', 'Lê', 'Phạm', 'Hoàng', 'Huỳnh', 'Phan', 'Vũ', 'Võ', 'Đặng',
-  'Bùi', 'Đỗ', 'Hồ', 'Ngô', 'Dương', 'Lý', 'Đinh', 'Trịnh', 'Cao', 'Mai',
+export const MIDDLE_NAMES = ['Minh', 'Thu', 'Quang', 'Khánh', 'Bảo', 'Gia', 'Hải', 'Thanh', 'Tuấn', 'Ngọc'];
+export const GIVEN_NAMES = [
+  'An', 'Bình', 'Chi', 'Dũng', 'Giang', 'Hà', 'Huy', 'Khoa', 'Lam', 'Linh',
+  'Mai', 'Nam', 'Nhi', 'Phong', 'Quân', 'Sơn', 'Thảo', 'Trang', 'Uyên', 'Vy',
+  'Yến', 'Đạt', 'Hưng', 'Kiên', 'Loan', 'My', 'Ninh', 'Phúc', 'Quyên', 'Trâm',
 ];
+
+export const COMMITTED_SCORES = [6.0, 6.5, 7.0, 6.5, 5.5];
+
+/**
+ * Kịch bản kết quả theo vị trí học sinh trong lớp.
+ *
+ *  - `fails`: số kỹ năng dưới kỳ vọng, quyết định mức SOS (0 → đạt, 1 → SOS 1, ...).
+ *  - `missing`: các kỹ năng CHƯA nhập điểm, để thấy tiến độ n/4 và trạng thái quá hạn.
+ *  - `splitWeek`: Speaking thi trước một tuần, bốn kỹ năng còn lại thi tuần sau.
+ */
+export type Outcome = { fails: number; missing?: string[]; splitWeek?: boolean };
+
+export const MT_OUTCOMES: Outcome[][] = [
+  // [MT1, MT2, MT3, MT4] cho từng vị trí học sinh trong lớp
+  [{ fails: 0 }, { fails: 0 }, { fails: 0 }, { fails: 0 }],
+  [{ fails: 1 }, { fails: 0 }, { fails: 1 }, { fails: 0 }],
+  [{ fails: 0 }, { fails: 1 }, { fails: 0 }, { fails: 1 }],
+  [{ fails: 2 }, { fails: 2 }, { fails: 2 }, { fails: 2 }],
+  [{ fails: 1 }, { fails: 3, splitWeek: true }, { fails: 3 }, { fails: 1 }],
+  [{ fails: 3 }, { fails: 2 }, { fails: 2 }, { fails: 3 }],
+  [{ fails: 0 }, { fails: 0, missing: ['writing2'] }, { fails: 0 }, { fails: 0 }],
+  [{ fails: 4 }, { fails: 1, missing: ['speaking', 'reading'] }, { fails: 1 }, { fails: 2 }],
+];
+
+/** Trạng thái ghi nhận xử lý, xoay vòng để mỗi mức tiến độ đều có mẫu để xem. */
+export const CASE_PATTERNS = ['none', 'named_only', 'in_progress', 'done'] as const;
+export type CasePattern = (typeof CASE_PATTERNS)[number];

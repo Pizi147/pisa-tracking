@@ -1,329 +1,325 @@
-# PISA Progress — đặc tả bản demo
+# PISA Progress — Product / Web Design
 
-Tài liệu mô tả **cái đã được xây trong bản demo**: cấu trúc thông tin, quyết định giao diện,
-ma trận quyền, quan hệ dữ liệu chính và phần nằm ngoài phạm vi.
+Tài liệu thiết kế của bản demo local sau đợt overhaul lấy **Mock Test và xử lý SOS** làm trọng tâm.
+Ba phần: **A. Current MVP** (đã build), **B. Simplify / Remove** (đã gộp hoặc bỏ),
+**C. Future Design** (ghi lại, chưa build).
 
-Nguồn sự thật về business decision là file context bàn giao. Các giả định thử nghiệm nằm ở
-`DEMO_ASSUMPTIONS.md`.
-
----
-
-## 1. Hai luồng chính
-
-```
-Học vụ:    Student → Enrollment → WeeklyLearningRecord → Signal ─┐
-                                                                 ├→ Issue → Task → Follow-up
-Vận hành:  ReportingUnit → BranchReport → MeetingDecision ───────┘
-```
-
-Hai luồng hội tụ tại **Trung tâm Vấn đề** và **Trung tâm Công việc**. Tín hiệu học tập
-*không* tự tạo Vấn đề — con người quyết định.
+Trạng thái các câu cần chốt nằm ở `DEMO_ASSUMPTIONS.md`.
 
 ---
 
-## 2. Kiến trúc
+# A. CURRENT MVP
 
-```
-Trình duyệt (React + TypeScript + Vite, Tailwind)
-        │  gọi /api, cookie phiên do máy chủ cấp
-        ▼
-Express  ├─ routes/      xác thực đầu vào, ánh xạ HTTP
-         ├─ permissions  Permission × Scope × Assignment
-         ├─ services/    toàn bộ business rule và phép tính
-         └─ db.ts        SQLite (better-sqlite3), transaction
-        ▼
-data/pisa-demo.sqlite   một tệp trên máy, giữ dữ liệu qua restart
-```
+## A1. Kiến trúc thông tin
 
-**Nguyên tắc đã áp dụng**
+Bốn mục nghiệp vụ, không hơn. Quản trị là lối vào phụ trong menu tài khoản.
 
-- Business rule và phép tính nằm ở `services/`, **không** nằm trong component React.
-  Ví dụ: tỷ lệ chuyên cần, trạng thái hạn, tín hiệu cần chú ý, tiến độ chương trình
-  đều tính một lần ở máy chủ và dùng chung cho mọi màn hình.
-- Một bộ trang/component dùng chung cho **mọi chi nhánh, lớp và loại lớp**.
-  Không có `if (className === 'FT5')` ở bất kỳ đâu — khác biệt do **dữ liệu và cấu hình** quyết định.
-- Validate hai lớp: giao diện chặn sớm cho dễ dùng, **máy chủ luôn kiểm tra lại** trước khi ghi.
-- Mọi mutation chạm nhiều bảng đều nằm trong **transaction** (chuyển lớp, import, tạo version…).
-- `localStorage` **không** được dùng làm nơi lưu dữ liệu học vụ hay để kiểm tra quyền.
-
----
-
-## 3. Cấu trúc thông tin (IA)
-
-Sidebar tối đa **8 mục**, tự lọc theo quyền thực tế:
-
-| Mục | Đường dẫn | Ai thấy |
+| Mục | Nội dung | Thao tác trọng tâm |
 |---|---|---|
-| Tổng quan | `/` | mọi tài khoản (nội dung khác nhau theo vai trò) |
-| Học viên | `/hoc-vien` | có quyền xem học vụ |
-| Lớp học | `/lop-hoc` | có quyền xem học vụ, trừ tài khoản chỉ tư vấn |
-| Vấn đề | `/van-de` | có quyền xem vấn đề |
-| Công việc | `/cong-viec` | có quyền xem công việc |
-| Báo cáo | `/bao-cao` | có quyền xem báo cáo hoặc học vụ |
-| Cuộc họp | `/cuoc-hop` | có quyền xem cuộc họp |
-| Quản trị | `/quan-tri` | có quyền quản trị |
+| **Tổng quan** | Tuần đang xem, tiến độ Mock, thiếu điểm/quá hạn, SOS cần xử lý | Bấm số liệu hoặc học sinh để mở đúng danh sách |
+| **Mock Test** | Lịch và kết quả Mock trong cùng một danh sách | Lên lịch, dời lịch, nhập điểm, mở chi tiết, ghi nhận SOS |
+| **Học viên** | Tìm học sinh, hồ sơ, lịch Mock, hành trình | Xem tiến trình và các lần Mock của một em |
+| **Họp tuần** | Tình hình từng đơn vị và công việc theo dõi | Cập nhật ngắn, phân công, cập nhật tiến độ |
+| *(phụ)* Quản trị hệ thống | Ma trận quyền, đơn vị báo cáo, nhật ký, tài khoản | Chỉ xem, dành cho Quản trị hệ thống |
 
-**Không** có menu riêng cho Attendance, Homework, Mock Test, Warning hay Teacher Notes —
-các dữ liệu này nằm trong Học viên và Lớp học. **Branch Overview** nằm trong Tổng quan,
-không phải một mục menu riêng.
+**Không có menu riêng cho SOS, báo cáo, sự việc, agenda hay công việc.** Chúng nằm tại nơi phát sinh:
+SOS trong chi tiết Mock; báo cáo và công việc trong Họp tuần.
 
-Mẫu điều hướng chung: **danh sách → drawer xem nhanh → trang chi tiết**.
-Bộ lọc, sắp xếp và vị trí cuộn được giữ trong URL nên quay lại không mất.
+Điểm mở đầu theo vai trò (chỉ đổi lối vào, không đổi quyền):
 
----
+- Giáo viên → `Mock Test` với bộ lọc **Điểm tôi cần nhập** (xuyên tuần).
+- Các vai trò còn lại → `Tổng quan` tuần hiện tại.
 
-## 4. Ma trận quyền đã cài đặt
+Bộ lọc mặc định là **tuần**. Bộ lọc chi nhánh **chỉ hiện khi tài khoản có nhiều hơn một chi nhánh**.
+Bấm một KPI sẽ mở đúng danh sách bản ghi cấu thành số đó.
 
-Quyền = **Permission của vai trò** × **Scope của chính grant đó** × **Assignment**.
-Không có `switch(role)` nào quyết định quyền.
+## A2. Tổ chức, lớp và quyền
 
-### 4.1. Các loại phạm vi (scope)
+Bốn nhóm tài khoản: **Quản trị hệ thống · Admin chi nhánh · Quản lý · Giáo viên**.
+GVCN/GVBM là **phân công trong lớp**, không phải loại tài khoản riêng.
 
-| Scope | Ý nghĩa |
+| Vai trò | Key | Là ai trong trung tâm |
+|---|---|---|
+| **Quản trị hệ thống** | `system_admin` | Người quản trị **phần mềm**: tài khoản, vai trò, cấu hình, nhật ký. Không phải một chức danh vận hành |
+| **Admin chi nhánh** | `branch_admin` | Nhân sự **văn phòng** của chi nhánh: quản danh sách lớp và giáo viên, tổng hợp việc trung gian giữa các phòng ban |
+| **Quản lý** | `manager` | Người điều hành chuyên môn của chi nhánh. **Chính là "Head"** trong quy trình SOS |
+| **Giáo viên** | `teacher` | GVCN và/hoặc GVBM, quyền phụ thuộc phân công lớp và kỹ năng |
+
+Hai vai trò đầu **không dùng chung chữ "Admin" trong nhãn hiển thị** để tránh gọi nhầm:
+"Quản trị hệ thống" là người quản phần mềm, "Admin chi nhánh" là người làm văn phòng.
+
+Chi nhánh: Monbay (MB) · Bãi Cháy (BC) · Cẩm Phả (CP) · Hải Dương (HD) · Uông Bí (UB).
+Mỗi chi nhánh có 2–3 quản lý.
+
+Mã lớp luôn bắt đầu bằng mã chi nhánh: `MB-FT 101`, `CP-FT 110`, `BC-BE 80`, `HD-ELE 01`, `MB-FOUND 12`.
+Loại lớp là **nhãn tự do do quản lý đặt** — không chia cứng FT5/FT10. Kỹ năng lớp học và số buổi
+chính mỗi tuần được cấu hình trong `class_skills`, không suy từ tên lớp.
+
+### Công thức quyền
+
+```
+Quyền = permission của vai trò
+      × phạm vi chi nhánh của CHÍNH grant đó
+      × phân công lớp / kỹ năng (chỉ áp dụng cho vai trò Giáo viên)
+```
+
+- **Không vai trò nào mặc định thấy toàn hệ thống.** Chỉ grant có `branch_id = NULL` mới phủ toàn bộ.
+- Quyền của grant này không dùng được ở phạm vi của grant khác.
+- Giáo viên **đọc** mọi kỹ năng của lớp mình dạy, nhưng chỉ **sửa** kỹ năng được phân công.
+- GVCN được dời lịch Mock, nhưng việc là GVCN **không** tự cấp quyền sửa mọi kỹ năng.
+- Kiểm tra quyền nằm ở API. Giao diện chỉ ẩn/hiện, không phải lớp bảo vệ.
+
+| Permission | Quản trị hệ thống | Admin chi nhánh | Quản lý | Giáo viên |
+|---|:--:|:--:|:--:|:--:|
+| `mock.view` | ✓ | ✓ | ✓ | ✓ (lớp được phân công) |
+| `mock.schedule` | ✓ | ✓ | ✓ | ✓ (chỉ lớp mình chủ nhiệm) |
+| `mock.cancel` | ✓ | ✓ | ✓ | — |
+| `score.edit` | ✓ | ✓ | — | ✓ (chỉ kỹ năng được phân công) |
+| `sos.edit` | ✓ | ✓ | ✓ | ✓ (lớp được phân công) |
+| `sos.confirm` — **Head** | ✓ | — | ✓ | — |
+| `student.view` / `student.edit` | ✓ | ✓ | ✓ | xem |
+| `meeting.view` / `meeting.edit` | ✓ | ✓ | ✓ | — |
+| `admin.config` | ✓ | — | — | — |
+
+Hai điểm đã chốt trong bảng trên:
+
+- **Huỷ lịch Mock**: Quản trị hệ thống, Admin chi nhánh và Quản lý. Giáo viên — kể cả GVCN — **không** huỷ được.
+- **Xác nhận Head**: **Head chính là Quản lý**, không tách thêm vai trò riêng. Admin chi nhánh là nhân sự
+  văn phòng nên **không** xác nhận Head. Quản trị hệ thống giữ quyền này với tư cách đường sửa sai cuối cùng.
+
+## A3. Tuần và kỳ báo cáo
+
+- Tuần chạy **thứ Hai → Chủ nhật**.
+- Tuần thuộc **tháng chứa thứ Năm** của tuần đó (tương đương "tháng có nhiều ngày hơn").
+- Các tuần cùng tháng đánh số theo thứ tự thời gian, bắt đầu từ **W1**.
+- Mã tuần (`W1 SEP`) chỉ là **nhãn**. Khoá thật luôn là **ngày thứ Hai kèm năm** (`report_periods.week_start UNIQUE`).
+
+Ví dụ đã kiểm chứng: `28/09–04/10/2026 → W1 OCT`; `07/09–13/09/2026 → W2 SEP`;
+`28/12/2026–03/01/2027 → W5 DEC` (không phải W1 JAN).
+
+**Hạn nhập điểm = thứ Tư của tuần KẾ TIẾP sau tuần thi**, tính theo **ngày thi thực tế của từng kỹ năng**.
+Hết ngày thứ Tư mới tính quá hạn: Mock 13/09/2026 → hạn 16/09; trong ngày 16 chưa quá hạn, sang 17 mới quá hạn.
+
+Ngày nghiệp vụ tính theo `Asia/Ho_Chi_Minh`. Bản demo dùng **đồng hồ demo** cố định (mặc định `23/09/2026`)
+để trạng thái quá hạn ổn định khi xem lại; đổi được trong **Công cụ demo**.
+
+## A4. Lịch Mock và nhập điểm
+
+- Mỗi học sinh có **2–5 lần Mock**, không ép đủ năm lần. Quản lý lập kế hoạch.
+- Mốc tuần học FT chỉ để **gợi ý** (MT1→tuần 6, MT2→12, MT3→16, MT4→20, MT5→24).
+  **Tuần học FT và mã tuần lịch là hai khái niệm khác nhau.** Ngày cụ thể do quản lý xác nhận.
+- Một lần Mock có danh tính ổn định: `UNIQUE(student_id, attempt_no)`.
+  **Dời lịch cập nhật chính lần Mock đó** — không tạo lượt mới, không tăng số MT, có ghi lịch sử.
+- Huỷ giữ nguyên dấu vết (`cancel_reason`), cần lý do, và **không** tính vào "đã thi" hay "thiếu điểm".
+- Ba trạng thái: `planned · completed · cancelled`. **"Đã thi" chỉ được đặt khi có điểm** —
+  không suy ra từ việc ngày dự kiến đã trôi qua. "Dời lịch" là sự kiện lịch sử, không phải trạng thái.
+
+### Bảng nhập điểm
+
+Một dòng một học sinh, cột là kỹ năng, điều hướng bằng bàn phím (Enter/↓ xuống dòng dưới cùng cột, ↑ lên).
+
+- **Listening / Reading**: nhập **số câu đúng nguyên 0–40**, quy đổi bằng bảng nội bộ của trung tâm
+  (`Bang quy doi`, 41 phần tử mỗi bảng). Từ chối −1, 41 và số lẻ.
+- **Writing Task 1 / Task 2 / Speaking**: mở **bốn tiêu chí** trong khung riêng.
+  Bảng mặc định không bày 16 cột tiêu chí.
+- **Ô trống KHÁC số 0.** Gửi rỗng là xoá về "chưa nhập", không bao giờ tự điền 0.
+  Không có trạng thái "không áp dụng" để tự bỏ kỹ năng khỏi mẫu số SOS.
+- Lưu lại **ai nhập, lúc nào, ngày thi và ngày có kết quả của từng kỹ năng**.
+
+### Công thức điểm (đã chốt)
+
+| Đại lượng | Công thức |
 |---|---|
-| `global` | Toàn hệ thống |
-| `branch` | Đúng một chi nhánh |
-| `reporting_unit` | Đúng một đơn vị báo cáo (kể cả đơn vị ngoài chi nhánh) |
-| `assignment` | Chỉ các lớp/skill người đó được phân công, **còn hiệu lực theo thời gian** |
-| `consultant_caseload` | Chỉ học viên được phân công |
-| `consultant_team` | Học viên của nhóm tư vấn được cấp (có thể giới hạn thêm theo chi nhánh) |
+| Band L / R | Tra bảng quy đổi nội bộ theo số câu đúng |
+| Band W1 / W2 / S | Trung bình **bốn tiêu chí**, làm tròn về mức 0.5 |
+| **Band Writing** | `(W1 + W2 × 2) / 3`, làm tròn về 0.5 |
+| Overall Mock | `ROUND(AVERAGE(L, R, W, S) × 2, 0) / 2` — **chỉ khi đủ bốn band** |
+| Kỳ vọng | MT1 = cam kết − 1.0 · MT2 = cam kết − 0.5 · MT3–MT5 = cam kết |
+| Mức SOS | Đếm kỹ năng **nhỏ hơn** kỳ vọng: 0 → Đạt · 1 → SOS 1 · 2 → SOS 2 · ≥3 → SOS 3 |
 
-**Quy tắc bất biến:** mỗi grant chỉ mở permission của vai trò trong grant đó, và chỉ trong
-scope của chính grant đó. Một người vừa là Quản lý chi nhánh A vừa là GV Speaking một lớp ở
-chi nhánh B thì **không** dùng được quyền quản lý ở B, và **không** dùng được quyền giáo viên ở A.
+Làm tròn theo kiểu Excel (`.25`/`.75` lên), **không** làm tròn về số chẵn. Bằng kỳ vọng là **đạt**.
 
-### 4.2. Ma trận
+**Writing tách W1/W2 thành hai kỹ năng nhập điểm riêng** vì có giáo viên chỉ dạy một trong hai task;
+phân công giáo viên theo từng task. Đánh giá vẫn theo **bốn kỹ năng** L/R/W/S.
 
-| Tác vụ | Admin | Manager/Head | Teacher (GVBM) | Consultant | Consultant Manager |
-|---|---|---|---|---|---|
-| Xem học vụ | Scope được cấp | Chi nhánh/đơn vị được cấp | **Toàn bộ dữ liệu của lớp được giao** | HV được giao, view đã lọc | Nhóm/chi nhánh được cấp, view đã lọc |
-| Sửa dữ liệu tuần theo skill | Có | Trong scope | **Chỉ skill + lớp + thời gian phân công** | Không | Không |
-| Tổng hợp thái độ, báo cáo tiến độ, ghi nhận cảnh báo | Có | Trong scope | **Chỉ lớp có phân công GVCN** | Không | Không |
-| Nhập điểm official, chuyển lớp | Có | Trong scope | Mặc định không | Không | Không |
-| Tạo/quản lý vấn đề, báo cáo vận hành | Có | Trong scope | Chỉ xem phần được giao | Không | Không |
-| Công việc | Quản lý theo grant | Quản lý trong scope | Cập nhật việc được giao, field được phép | Việc được giao | Việc được giao |
-| Chi nhánh, người dùng, phân quyền, template | Có | Chỉ override lớp nếu được cấp | Không | Không | Không |
+### Chờ đủ điểm (Q2)
 
-### 4.3. Chi tiết đã thực thi ở API
+**SOS chỉ được chốt khi có đủ cả bốn kỹ năng đánh giá.** Học sinh có thể thi Speaking một tuần và
+ba kỹ năng còn lại tuần sau; trong lúc chờ, giao diện hiển thị tiến độ `n/4` và nhãn "Chờ k kỹ năng"
+thay vì kết luận sớm là "Đạt kỳ vọng". Kỳ vọng chỉ áp dụng cho lộ trình **FT LT1/LT2** —
+học sinh không có điểm cam kết thì không có kỳ vọng và không phát sinh SOS.
 
-- **GVBM xem toàn bộ, sửa một phần.** `academic.view` với scope `assignment` mở **cả lớp**;
-  `academic.weekly.edit` yêu cầu **khớp đúng skill**. Ẩn nút ở giao diện *không* phải cơ chế bảo vệ —
-  API từ chối độc lập và trả về câu giải thích để hiển thị tại chỗ.
-- **GVCN không phải role.** `academic.summary.edit` với scope `assignment` yêu cầu
-  phân công có cờ `is_core` tại **đúng lớp đó**.
-- **Phân công có thời gian hiệu lực.** Phân công hết hạn thì mất quyền ngay.
-  Việc được ghi tên trong buổi bổ trợ **không** cấp quyền.
-- **Tư vấn viên nhận projection riêng**, không phải bản đầy đủ bị ẩn bớt ở giao diện:
-  ghi chú nội bộ, nguyên văn ghi nhận sự việc, và nhật ký trước/sau **không có trong response**.
-- **Người được giao công việc** chỉ sửa được `status`, `note`, `pausedReason`; các field khác bị API từ chối.
-- **Đổi "Góc nhìn"** chỉ đổi menu và trang mở đầu, không đổi quyền.
+## A5. Chi tiết Mock và xử lý SOS
 
-### 4.4. Xác thực của bản demo
+Một trang duy nhất, chia khối ngắn, không dùng tab:
 
-Máy chủ cấp cookie phiên trỏ tới một tài khoản mẫu. **Request không thể tự khai báo vai trò
-hay quyền** — mọi quyền đọc lại từ database theo `user_id` của phiên.
-Đổi tài khoản sẽ huỷ phiên cũ, **xoá toàn bộ bộ nhớ đệm phía trình duyệt**, tải lại phạm vi mới
-và điều hướng về trang được phép.
+1. Học sinh · lớp **tại lần thi** · lộ trình · cam kết chốt tại lần thi · MT · tuần · ngày dự kiến · kỳ vọng.
+2. Điểm từng kỹ năng: ngày thi riêng, số câu / tiêu chí, band, hạn nhập, người nhập.
+   Bên dưới là bốn kỹ năng đánh giá + Overall + kết luận.
+3. SOS và **checklist hành động theo đúng MT × mức SOS**.
+4. Người thực hiện, ngày, nội dung hỗ trợ, meeting, ghi chú, trạng thái xử lý, Head xác nhận.
+5. Lịch sử sửa lịch / sửa điểm / cập nhật xử lý trong phần phụ mở được.
 
-> Đây **không phải** xác thực dùng cho production. Auth thật nằm ngoài phạm vi bản demo.
+### Bảng hành động (nguồn: `Quy trình phối hợp SOS Mock Test` + sheet `Quy trinh SOS`)
 
----
+| MT | SOS | Học thuật | Vận hành | Meeting bổ sung |
+|---|---|---|---|---|
+| MT1 | 1–2 | Xếp tự học 1 tháng | — | — |
+| MT1 | 3 | Tutor đến MT2 | — | GVCN gặp HS |
+| MT2 | 1 | Xếp tự học 1 tháng | — | — |
+| MT2 | 2 | Xếp tự học 1 tháng | — | GVCN gặp HS |
+| MT2 | 3 | Ưu tiên tutor đến MT3 **HOẶC** đề xuất lùi lịch thi | — | CX / GĐCN gặp HS |
+| MT3–MT4 | 1 | Tutor đến lúc thi | — | — |
+| MT3–MT4 | 2 | Tutor đến lúc thi | Chính sách theo case | GVCN gặp HS |
+| MT3–MT4 | 3 | Ưu tiên tutor đến lúc thi | Chính sách theo case | CX / GĐCN gặp HS |
+| MT5 | 1 | Hỗ trợ chuyên môn (nguồn chưa quy định hình thức/thời lượng) | — | — |
+| MT5 | 2 | như trên | Chính sách theo case | GVCN gặp HS |
+| MT5 | 3 | như trên | Chính sách theo case | CX / GĐCN gặp HS |
 
-## 5. Quan hệ dữ liệu chính
+Mọi mức SOS đều có: trao đổi HS · trao đổi PH · hỗ trợ học thuật · thông báo GVCN/GVBM.
+Người trao đổi HS ở **SOS 2 từ MT2 trở đi là GVBM**; các trường hợp còn lại là GVCN + GVBM.
 
-### 5.1. Định danh và phân quyền
+Ghi chú nguồn: dòng **MT2 SOS3** trong bảng DOCX không nhắc bước CS–PH, nhưng bước chung của DOCX và
+dòng tương ứng trong sheet `Quy trinh SOS` thì có. Bản demo **giữ bước trao đổi PH ở mọi mức SOS**.
 
-```
-User ──< UserRoleGrant >── Role ──< RolePermission >── Permission
- │         (scope_type, scope_id — phạm vi riêng của từng grant)
- ├──< TeacherAssignment (class_id, skill | is_core, effective_from/to)
- ├──< ConsultantAssignment (student_id, effective_from/to)
- └──< ConsultantTeamMember
-```
+### Nguyên tắc ghi nhận
 
-### 5.2. Tổ chức và chương trình
+- Đây là **checklist cần phối hợp**, không phải việc hệ thống tự làm. SOS **không** tự cấp buổi học,
+  **không** tự lùi lịch thi thật, **không** tự đóng case, **không** tự xác nhận Head.
+- MT2 SOS3 là **hai phương án chọn một**, không phải hai việc đều bắt buộc.
+- Bốn trạng thái mỗi bước: `Chưa ghi nhận` · `Có tên, chưa có ngày` · `Đã xếp lịch` (ngày ở tương lai) ·
+  `Đã thực hiện` (ngày đã qua). **Có tên người làm mà chưa có ngày thì chưa tính là đã làm.**
+- Trao đổi PH do **CS thực hiện ngoài hệ thống** (Q4): ghi lại **tên người làm và ngày**, không cần tài khoản CS.
+  Người điều phối case, người thực hiện từng bước và tài khoản ghi nhận là ba thứ tách rời.
+- Sửa điểm làm đổi mức SOS thì **cập nhật mức, giữ nguyên hành động và lịch sử**; không nhân đôi case,
+  không tự đóng việc.
+- Khi mở case, hệ thống tạo **thông báo trong ứng dụng** cho GVCN/GVBM của lớp. Không gửi email/Zalo.
+- SOS học thuật **không** trở thành Warning/WL kỷ luật.
 
-```
-Branch ──< ReportingUnit          (Tutor Part-time: đơn vị không thuộc chi nhánh nào)
-Branch ──< Class >── ClassType    (FT | NORMAL)
-Class  ──< ClassSkillConfig       (số buổi kỳ vọng theo skill — nguồn của mọi phép tính)
-Class  ──> CourseTemplateVersion  (bất biến sau khi phát hành)
-             └──< TemplateStage   (stage | milestone | checkpoint | week; due_offset_days có thể NULL)
-Class  ──< ClassStageOverride     (chỉ ảnh hưởng đúng lớp này)
-Class  ──< ClassStageProgress     (tiến độ thực tế do người nhập)
-```
+## A6. Tổng quan tuần
 
-Chương trình thực dùng của một lớp = **TemplateVersion + Override của lớp**, gộp lúc đọc.
-Cùng một renderer cho FT (stage/milestone) và Normal (timeline/checkpoint) — khác nhau ở dữ liệu.
+Bốn cụm số nhỏ + một danh sách ưu tiên (tên học sinh · lý do · hành động tiếp theo). Mỗi số mở được danh sách.
 
-### 5.3. Học viên và học tập
+Hai lát cắt được tách rõ:
 
-```
-Student (student_code PISA-000001, UNIQUE)
-   └──< Enrollment (nhiều lần học theo thời gian, có attempt_no, liên kết chuyển lớp hai chiều)
-          ├──< EnrollmentSkill        (registered = 0 → "Không áp dụng")
-          ├──< WeeklyLearningRecord   UNIQUE (enrollment, skill, week_start)
-          │       ├──< AttendanceRecord      (nguồn chi tiết cho chuyên cần)
-          │       ├──< HomeworkAssignment    (nguồn chi tiết cho bài tập, có cờ completed riêng)
-          │       └──< LearningActivity      (buổi bổ trợ: học ghép | tutor | 1-1)
-          ├──< TeacherEstimate        (theo skill GIẢNG DẠY, có writing1 và writing2 riêng)
-          └──< Assessment >──< AssessmentScore  (theo skill BÀI THI, có scale riêng)
-Student ──< JourneyEvent · TeacherNote(visibility) · StudentProgressReport
-        ──< WarningReference · IncidentReference
-```
-
-Ràng buộc quan trọng đã cài đặt:
-
-- Không có dòng tuần trùng `(enrollment, skill, week)` — ràng buộc UNIQUE ở database.
-- **Không dùng tên học viên làm khoá ngoại** ở bất kỳ đâu.
-- `student_code` sinh **ở máy chủ trong transaction**, kể cả import hàng loạt.
-- Chuyển lớp đóng lần học cũ và mở lần học mới **trong cùng transaction**, ghi journey event.
-- Lần học tương lai hoặc đã kết thúc **không** làm sai sĩ số đang hoạt động —
-  bảng nhập tuần lọc theo khoảng thời gian thực của lần học.
-
-### 5.4. Vận hành
-
-```
-ReportPeriod ─┬─ BranchReport ──< BranchReportCategory (snapshot nhãn + version)
-              └─ MeetingPeriod ──< MeetingAgendaItem
-                                ──< MeetingDecision ──> Issue
-Issue ──< IssueNote · IssueMeetingLink · Task
-Task  ──> Issue | MeetingPeriod | BranchReport | Student | Class   (liên kết bằng ID)
-Task  ──< TaskHistory (đổi hạn, đổi trạng thái, lý do)
-```
-
-**Carry-over là truy vấn, không phải bản sao.** Kỳ họp hiện tại tìm các Task có
-`source_meeting_period_id` thuộc kỳ trước và chưa hoàn thành. Task giữ nguyên mã, ngày tạo,
-hạn gốc và kỳ họp gốc.
-
-### 5.5. Hỗ trợ
-
-```
-AuditLog (actor, action, entity, before, after, sensitivity)
-Notification (dedup_key UNIQUE theo user — render lại không tạo bản sao)
-SignalPolicy (versioned, gắn nhãn thử nghiệm)
-DemoConfig (ngày demo, kịch bản giao diện)
-```
-
-Nhật ký được **lọc theo quyền khi đọc**: người không có quyền xem nội bộ không nhận được
-giá trị trước/sau; bản ghi nhạy cảm đánh dấu `restricted`.
-
----
-
-## 6. Quyết định giao diện
-
-### 6.1. Phong cách
-
-Dashboard tối chuyên nghiệp: nền xanh đen (`#080f16`), bề mặt tương phản vừa đủ, accent teal,
-viền mảnh, bo góc vừa. **Màu chỉ hỗ trợ trạng thái và luôn đi kèm nhãn chữ** — người dùng
-không phải đoán ý nghĩa của một chấm màu. Wordmark chữ đơn giản, không giả nhận diện chính thức.
-
-Desktop-first ở 1440px, dùng tốt ở 1280px. Dưới 1100px sidebar tự thu về dạng icon;
-bảng cuộn ngang **trong khung của chính nó**, không co toàn bộ thành chữ nhỏ và không làm
-trang bị cuộn ngang.
-
-### 6.2. Bảng
-
-Tiêu đề dính khi cuộn, **cột danh tính cố định** khi cuộn ngang, chiều cao dòng đủ thao tác,
-và tuỳ chọn **"Hiện cột bổ sung"** để bạn tự thử mật độ thông tin.
-
-### 6.3. Autosave
-
-- Debounce **700ms** cho ô số, **900ms** cho ghi chú; lưu theo từng ô, không reload trang.
-- Trạng thái hiển thị: **Đang lưu… / Đã lưu / Lưu lỗi — Thử lại**.
-- **Chống ghi đè theo thứ tự:** mỗi ô gửi `clientSeq` tăng dần; máy chủ lưu `last_client_seq`
-  và **bỏ qua request cũ đến sau**, trả về bản hiện tại thay vì ghi đè.
-- **Lỗi giữ nguyên bản nháp** của người dùng và hiện nút Thử lại — không bao giờ báo "đã lưu" giả.
-
-### 6.4. Thao tác cần xác nhận (không autosave)
-
-Chuyển lớp · Ghi nhận cảnh báo · Import · Cấp/gỡ quyền · Lưu trữ dữ liệu ·
-Gửi báo cáo chi nhánh. Mỗi hộp thoại tóm tắt lại **chính xác điều gì sẽ xảy ra** trước khi ghi.
-
-### 6.5. Bulk update
-
-Chọn nhiều dòng → xem trước **số dòng bị ảnh hưởng và danh sách tên** → áp dụng.
-Chỉ áp dụng cho **các dòng đã chọn**, không đụng dòng đang bị bộ lọc ẩn.
-**Mỗi dòng vẫn được kiểm tra quyền riêng ở máy chủ**; kết quả báo rõ dòng nào thành công,
-dòng nào thất bại và vì sao — không có trạng thái "nửa lưu" im lặng.
-Mặc định **không** đánh dấu cả lớp đã đi học hay đã làm bài.
-
-### 6.6. Trạng thái màn hình
-
-Mỗi màn có đủ: **đang tải** (skeleton) · **rỗng** (kèm hướng dẫn) · **lỗi** (kèm nút Thử lại) ·
-**không có quyền** (kèm lý do cụ thể, ví dụ *"Bạn chỉ được sửa skill mình được phân công tại lớp này"*) ·
-**chưa có dữ liệu** (phân biệt với số 0 và với "không áp dụng").
-
-Không có nút trang trí không hoạt động. Tính năng ngoài phạm vi thì không đặt CTA gây hiểu nhầm.
-
-### 6.7. Ngôn ngữ
-
-Giao diện tiếng Việt có dấu, dùng thuật ngữ quen thuộc: **GVCN, GVBM, Điểm kiểm tra,
-Ước lượng của giáo viên, Buổi chính, Buổi bổ trợ**. Tên skill giữ tiếng Anh.
-**Không** đưa tên bảng database hay mã permission vào luồng người dùng — thông báo lỗi
-được viết lại thành câu người dùng hiểu được.
-
----
-
-## 7. Các màn hình đã xây
-
-| Màn | Nội dung chính |
+| Lát cắt | Nội dung |
 |---|---|
-| **Tổng quan — Quản lý** | 6 KPI việc-cần-xử-lý (mỗi KPI mở danh sách đã lọc đúng đối tượng) + 12 số liệu mở rộng; bảng Tình hình chi nhánh theo 5 nhóm; danh sách việc cần xử lý có owner/hạn/nguồn; học viên cần chú ý kèm số thực và lý do; lớp chậm theo mốc có căn cứ. Bộ lọc chi nhánh / FT-Normal / giáo viên cập nhật **cả KPI lẫn danh sách**. |
-| **Tổng quan — Giáo viên** | Lớp của tôi (badge GVCN, skill được giao, tình trạng cập nhật tuần) → Học viên cần chú ý → Dữ liệu cần cập nhật. Một click từ lớp tới đúng bảng nhập skill/tuần. |
-| **Tổng quan — Tư vấn viên** | Danh sách học viên phụ trách với view đã lọc. |
-| **Học viên** | Bảng mặc định: họ tên/mã · lớp hiện tại · chi nhánh · target · điểm official gần nhất kèm ngày · tín hiệu · tư vấn viên. Tìm có/không dấu và theo mã. Lọc theo phạm vi, loại lớp, lớp, tình trạng. Nút Import ở đây. |
-| **Hồ sơ học viên** | Header trả lời ngay: ai · đang học đâu · target · lịch thi · điểm official · ước lượng (nhãn riêng) · điều cần chú ý · bước tiếp theo. 5 tab: Tổng quan · Hành trình (lọc theo loại sự kiện) · Học tập theo tuần · Điểm & đánh giá · Báo cáo & ghi nhận. |
-| **Lớp học** | Tên · loại · chi nhánh · GVCN · sĩ số · giai đoạn/tuần · tiến độ · tình trạng cập nhật · phân công của tôi. |
-| **Chi tiết lớp** | 4 tab: Tổng quan · **Cập nhật tuần** · Tiến độ chương trình · Phân công. Giáo viên vào thẳng Cập nhật tuần; quản lý vào Tổng quan. |
-| **Vấn đề** | List gọn + drawer: ghi chú, liên kết nguồn, lịch sử, công việc. Tạo từ màn Vấn đề hoặc từ học viên/lớp/báo cáo với liên kết điền sẵn. |
-| **Công việc** | Bảng và bố cục cột trạng thái. 8 view: Tất cả · Của tôi · Quá hạn · Sắp đến hạn · Đang làm · Tạm dừng · Hoàn thành · Kéo dài. |
-| **Báo cáo** | Hai tab tách biệt: Báo cáo chi nhánh (5 nhóm, xem kỳ trước, tạo vấn đề/công việc) và Báo cáo tiến độ học viên. |
-| **Cuộc họp** | Báo cáo liên quan · chương trình họp · vấn đề thảo luận · quyết định · công việc mới · **việc chưa xong từ kỳ trước (cùng mã)** · việc đã hoàn thành kỳ trước. |
-| **Quản trị** | 6 tab: Chi nhánh & đơn vị · Chương trình & phiên bản · Người dùng & phân quyền · Phân công · Ngưỡng tín hiệu · Nhật ký. |
-| **Công cụ demo** | Tách hẳn khỏi nghiệp vụ: đổi tài khoản, xem/đổi ngày demo, chuyển kịch bản giao diện, hướng dẫn nạp lại dữ liệu. |
+| **Của tuần đang xem** | Lịch Mock trong tuần: số lượt có lịch / đã thi / đã huỷ / **số học sinh duy nhất** |
+| **Còn tồn đến hôm nay** | Thiếu điểm, quá hạn, mức SOS, case chưa xong, việc quá hạn — **không mất khi đổi tuần** |
+
+- Số lượt Mock **khác** số học sinh duy nhất.
+- Lượt đã huỷ **không** tính là đã thi hay thiếu điểm.
+- **Thiếu điểm khác quá hạn**: quá hạn phải dựa trên deadline của từng kỹ năng.
+- Đổi tuần/tháng **không** làm đổi số lần MT.
+
+Số liệu hỗ trợ (trao đổi HS/PH có ngày, hỗ trợ đã bắt đầu, thời gian trả kết quả, thời gian can thiệp)
+nằm trong phần mở rộng, mặc định đóng. **Thời gian trả kết quả = ngày có điểm − ngày thi**, không phải
+số ngày quá hạn. Không có dữ liệu thì hiện dấu `—`, không phải `0 ngày`.
+
+## A7. Họp tuần
+
+Một màn hình, hai khối.
+
+**Tình hình đơn vị** — mỗi dòng một đơn vị, mỗi ô một nhóm nội dung:
+`Chưa báo cáo` (mặc định) · `Ổn` · `Cần theo dõi` · `Có vấn đề`, kèm ghi chú ngắn và người báo cáo.
+Ô trống là **CHƯA BÁO CÁO**, không quy thành "Ổn".
+
+Danh mục đang bật (Q3 = ba nhóm):
+
+| Loại đơn vị | Nhóm nội dung |
+|---|---|
+| Chi nhánh (5) | Giáo viên · Học sinh · Giáo trình |
+| Tutor part-time (1) | Số lượng tutor · Chất lượng dạy học · Các vấn đề khác |
+
+`Tutor part-time` là **đơn vị báo cáo riêng, không phải chi nhánh thứ sáu**.
+Mẫu số được **tính lại từ danh mục** (hiện tại 5×3 + 3 = 18), không hardcode 28.
+Bộ năm nhóm cũ (Sĩ số & tình hình lớp · Chất lượng dạy học · Học viên & phụ huynh · Nhân sự giáo viên ·
+Giáo trình) vẫn cấu hình được trong dữ liệu, nhưng UI chỉ dựng **một bộ** — không có hai bộ song song.
+
+**Công việc** — nội dung · đơn vị · người phụ trách · hạn · tiến độ · ghi chú.
+
+- Loại: `Trong kỳ` / `Dài hạn` — **do người dùng chọn**, không tự đổi theo tuổi của việc.
+- Tiến độ: `Chưa bắt đầu` · `Đang làm` · `Hoàn thành` · `Tạm dừng`.
+- Trạng thái hạn tính riêng: `Quá hạn` · `Sắp đến hạn` (≤3 ngày) · `Trong hạn` · `Chưa có hạn` · `Đã đóng`.
+  Việc hoàn thành **không** bị gắn quá hạn. Thiếu hạn **không** dùng ngày 0. Việc tạm dừng vẫn tính quá hạn
+  (chưa có quyết định nghiệp vụ miễn trừ).
+- Việc chưa xong từ kỳ trước **giữ nguyên mã và lịch sử**, không clone sang tuần mới.
+  Việc dài hạn chưa xong và việc quá hạn/sắp đến hạn được xét **xuyên kỳ**, vẫn giới hạn theo quyền.
+- Tạo việc thẳng từ ghi chú báo cáo hoặc từ case SOS, **giữ liên kết nguồn** (`source_sos_case_id`).
+  Không bắt buộc đi qua chuỗi "Ghi nhận sự việc → Issue → Agenda → Task". Nội dung "Có vấn đề"
+  **không** tự sinh entity Issue.
+
+## A8. Hồ sơ và Student Journey
+
+Đầu hồ sơ: nhận diện · lớp hiện tại · lộ trình/cam kết · Mock tiếp theo · case và việc đang mở.
+
+Lịch sử Mock giữ **lớp tại thời điểm thi**. Chuyển lớp mở dòng enrollment mới, chuyển các lượt
+**chưa thi** sang lớp mới và **giữ nguyên lớp cũ cho lượt đã thi**.
+
+Hành trình giữ chuyển lớp, tạm dừng, quay lại học. **Chỉ ba bộ lọc**: `Tất cả` ·
+`Assessment` (kết quả Mock + ước lượng giáo viên) · `Warning / WL` (cảnh báo + WL).
+Không có filter riêng cho từng loại sự kiện. Nhấp sự kiện mở đúng bản ghi liên quan.
+
+## A9. Dữ liệu
+
+Bảng chính: `branches` · `reporting_units` · `classes` · `class_skills` · `users` · `roles` ·
+`permissions` · `role_permissions` · `user_roles` · `teacher_assignments` · `students` · `enrollments` ·
+`journey_events` · `report_periods` · `mock_attempts` · `mock_schedule_history` · `mock_scores` ·
+`sos_cases` · `sos_case_history` · `unit_reports` · `tasks` · `task_history` · `notifications` ·
+`audit_logs` · `demo_config` · `demo_sessions`.
+
+Quyết định schema đáng chú ý:
+
+- **Không có cột MT1…MT5 cố định** trong bảng học sinh — mỗi lần Mock là một dòng `mock_attempts`.
+- `mock_scores` là **một dòng cho mỗi kỹ năng**, có `test_date` và `result_date` **riêng của kỹ năng đó**.
+- `mock_attempts.committed_score_at_test` chốt căn cứ kỳ vọng tại lần thi; sửa hồ sơ hiện tại
+  **không viết lại lịch sử**.
+- `unit_reports.status = NULL` nghĩa là **chưa báo cáo**, khác hẳn `'ok'`.
+- `report_periods.week_start` là khoá thật; `code` chỉ là nhãn.
+- `sos_cases` dùng **cột cố định** phản chiếu đúng các ô của `Nhap diem`, không phải bảng key–value tự do.
 
 ---
 
-## 8. Bảng nhập tuần — màn ưu tiên cao nhất
+# B. SIMPLIFY / REMOVE
 
-Bộ chọn **tuần** (điều hướng ← →) và **skill** (skill không được giao có nhãn *"chỉ xem"*).
+| Thành phần cũ | Xử lý trong bản này |
+|---|---|
+| Consultant / Consultant Manager | **Bỏ hẳn** khỏi tài khoản demo, navigation và UI. Bước trao đổi PH giữ nguyên, người thực hiện ghi bằng tên (Q4) |
+| Vai trò "Head" riêng | Không tạo. **Head chính là Quản lý** |
+| Trang "Viết báo cáo" độc lập | Gộp trạng thái + ghi chú vào **Họp tuần** |
+| Ghi nhận sự việc / Issue Center | **Bỏ workflow độc lập**. Ghi chú báo cáo và case SOS liên kết thẳng tới công việc |
+| Ghi nhận cảnh báo độc lập | SOS xuất hiện trong Mock. Lịch sử Warning/WL chỉ **đọc lại** trong hồ sơ, không phát hành mới |
+| Menu SOS / agenda / công việc trùng nhau | Gộp vào **Chi tiết Mock** và **Họp tuần** |
+| Bảng tổng hợp hàng chục cột | KPI ít, danh sách hành động ngắn, số liệu hỗ trợ xuống phần mở rộng |
+| Filter riêng từng loại sự kiện timeline | Còn **ba** lựa chọn |
+| Nhãn "chỉ xem" rải ở từng kỹ năng | Thể hiện bằng khả năng tương tác; quyền kiểm ở API |
+| Phân loại FT5/FT10 cố định | Cấu hình lớp gọn: loại lớp, lộ trình, kỹ năng, số buổi |
+| Điểm danh / homework tổng quát, CRM, billing, LMS, trình dựng báo cáo, pipeline duyệt nhiều tầng | **Không đưa vào UI MVP** |
+| 8 mục điều hướng | Còn **4** mục + 1 lối phụ |
+| Demo Scene | Giữ nguyên cơ chế thử, cập nhật dữ liệu cho scope mới |
 
-Mỗi dòng là một học viên: danh tính · buổi chính đã học/kỳ vọng · bổ trợ ·
-bài hoàn thành/được giao · ước lượng · ghi chú ngắn · trạng thái lưu · nút mở chi tiết.
-
-- Dòng tổng cuối bảng chỉ tính trên **dòng đã nhập**.
-- Skill không đăng ký hiển thị **"Không áp dụng"**, ô bị khoá, không tính là thiếu dữ liệu.
-- Drawer chi tiết là **tuỳ chọn** — nhập nhanh không bắt buộc đi qua drawer.
-- Trong drawer: buổi học chi tiết, danh sách bài tập, buổi bổ trợ. Khi bật chi tiết,
-  hệ thống cảnh báo chênh lệch, chuyển nguồn và **khoá ô tổng hợp tương ứng** —
-  không bao giờ cộng cả hai.
-
----
-
-## 9. Đã kiểm tra tự động
-
-`npm test` chạy **39 kiểm tra** trên database riêng, nhắm đúng các rủi ro:
-
-GVBM sửa được skill khác · lớp ngoài phân công · phân công hết hạn · GVCN mở nhầm lớp ·
-multi-role rò scope · tư vấn viên sửa được dữ liệu · ghi chú nội bộ lọt response và hành trình ·
-tìm kiếm vượt phạm vi · request cũ ghi đè bản mới · bulk update bỏ qua kiểm tra quyền ·
-nhập vượt số buổi/số bài · chuyển lớp làm mất lần học cũ · điểm thang 10 bị quy đổi ·
-version mới sửa lớp cũ · override lan sang lớp khác · FT bị đánh chậm oan ·
-carry-over nhân bản task · bổ trợ đếm trùng · chưa nhập bị coi là 0 ·
-Writing 1/2 bị gộp · bài official thiếu skill bị lấp · import lỗi/trùng/bấm hai lần ·
-Student ID trùng hoặc sai định dạng · liên kết import ghi đè lịch sử ·
-nhật ký thiếu before/after · xoá cứng thay vì lưu trữ.
+Các service đã xoá khỏi mã nguồn: `weekly` · `classes` · `tasks` (bản cũ) · `issues` · `reports` ·
+`meetings` (bản cũ) · `assessments` · `import` · `admin`. Các trang đã xoá: `Dashboard` · `Classes` ·
+`ClassDetail` · `Issues` · `Tasks` · `Reports` · `Meetings` (bản cũ) · `ImportWizard` · `WeeklyGrid`.
 
 ---
 
-## 10. Ngoài phạm vi
+# C. FUTURE DESIGN
 
-**Không xây** (và không đặt CTA gây hiểu nhầm): CRM · học phí · tuyển sinh · cổng phụ huynh ·
-thời khóa biểu đầy đủ · gửi tin nhắn · tóm tắt bằng AI · phát hành văn bản Warning Letter.
+Ghi lại để bàn sau. **Chưa tạo menu trống, route mẫu hay schema lớn cho các ý này.**
 
-**Chưa có trong bản demo, kiến trúc không chặn:** import điểm số lịch sử ·
-chuyển hàng loạt lớp sang version chương trình mới · quy trình duyệt báo cáo nhiều cấp.
+- **Tách Head khỏi Quản lý** nếu sau này trung tâm phân thêm cấp duyệt. Hiện tại Head và Quản lý
+  là một, `sos.confirm` gắn thẳng vào vai trò Quản lý.
+- **Consultant / Consultant Manager có tài khoản riêng**, phối hợp CS / CX / Vận hành trong hệ thống;
+  bước trao đổi PH khi đó chuyển từ "ghi tên" sang "giao việc cho tài khoản".
+- **Nhiều chương trình / lộ trình**, quy tắc đánh giá riêng cho từng loại lớp (hiện kỳ vọng chỉ áp dụng FT LT1/LT2).
+- **Attendance / homework**, bài kiểm tra ngoài Mock, nhập ước lượng giáo viên và phát hành Warning/WL
+  khi có scope được xác nhận.
+- **Quy trình xử lý sự việc tổng quát**, điều phối meeting, phê duyệt nhiều cấp — chỉ khi vận hành chứng minh cần.
+- **Import dữ liệu hàng loạt**, xuất báo cáo theo mẫu, thông báo ngoài hệ thống (email/Zalo), phân tích xu hướng sâu.
+- **Tổng hợp theo tháng** dùng lại chính `report_periods` (đã lưu `year`/`month`), không tách module riêng.
 
-**Thuộc giai đoạn sản phẩm thật:** xác thực và quản lý mật khẩu · database dùng chung ·
-triển khai online · sao lưu và giám sát · di chuyển dữ liệu thật.
+Nền tảng nhẹ đã chuẩn bị sẵn để mở rộng sau: ID ổn định · phân công nhiều người trên một lớp ·
+lịch sử enrollment · kết quả theo từng attempt và từng kỹ năng · liên kết việc với nguồn ·
+các hàm tính luật tập trung (`services/scoring.ts`, `services/week.ts`, `permissions.ts`).
+**Không** dựng workflow engine hay hệ thống cấu hình mọi thứ.
