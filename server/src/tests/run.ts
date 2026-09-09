@@ -32,6 +32,7 @@ const intake = await import('../services/intake.ts');
 const planning = await import('../services/planning.ts');
 const signals = await import('../services/signals.ts');
 const regular = await import('../services/regular.ts');
+const weekly = await import('../services/weekly.ts');
 const { ratioResult: domainRatio } = await import('../../../shared/domain.ts');
 const { demoToday } = await import('../demoConfig.ts');
 const { addDays } = await import('../util.ts');
@@ -163,11 +164,32 @@ check('Bằng kỳ vọng là đạt; 0/1/2/3/4 kỹ năng trượt → 0/1/2/3/
 // ==================================================================== 3
 
 console.log('\n3. Kỹ năng không mock và tiến độ');
-check('Không đánh dấu gì thì phải CHỜ đủ bốn kỹ năng mới chốt SOS', () => {
+check('Kết luận NGAY trên phần điểm đang có, và nói rõ đó là kết luận tạm thời', () => {
+  /*
+   * Chờ đủ bốn kỹ năng mới kết luận nghĩa là một giáo viên nhập muộn thì việc hỗ trợ học
+   * viên dừng theo. Nay chỉ cần một kỹ năng đã chấm là kết luận được trên phần đang có.
+   */
   const partial = scoring.evaluateAttempt(6.5, 2, { listening: 7, reading: 7, writing1: 7, writing2: 7 });
-  assert(partial.sosLevel === null, 'Thiếu Speaking mà đã chốt SOS');
+  assert(partial.sosLevel === 0, `Ba kỹ năng đều đạt thì phải kết luận được, đang là ${partial.sosLevel}`);
   assert(partial.complete === false && partial.scoredRequired === 3, 'Tiến độ trên tập bắt buộc sai');
+  assert(partial.provisional, 'Thiếu Speaking mà không đánh dấu là kết luận tạm thời');
   assert(partial.required.length === 4, 'Mặc định phải là đủ bốn kỹ năng bắt buộc');
+
+  // Một kỹ năng dưới kỳ vọng là ra SOS 1 ngay, dù ba kỹ năng kia chưa có điểm.
+  const oneLow = scoring.evaluateAttempt(6.5, 3, { listening: 5.5 });
+  assert(oneLow.sosLevel === 1 && oneLow.provisional, 'Một kỹ năng dưới kỳ vọng phải ra SOS 1 ngay');
+  assert(oneLow.scoredRequired === 1, 'Đếm sai số kỹ năng đã có điểm');
+
+  // Đủ cả bốn thì hết tạm thời.
+  const full = scoring.evaluateAttempt(6.5, 3, { listening: 5.5, reading: 7, writing1: 7, writing2: 7, speaking: 7 });
+  assert(full.complete && !full.provisional && full.evaluable, 'Đủ điểm rồi mà vẫn coi là tạm thời');
+
+  // CHƯA CÓ ĐIỂM NÀO thì tuyệt đối không kết luận — thiếu điểm vẫn khác trượt.
+  const none = scoring.evaluateAttempt(6.5, 3, {});
+  assert(none.sosLevel === null && !none.provisional, 'Chưa có điểm nào mà đã kết luận');
+  // Thiếu target cũng không kết luận được, dù đã có điểm.
+  const noTarget = scoring.evaluateAttempt(null, 3, { listening: 5.5 });
+  assert(noTarget.sosLevel === null, 'Thiếu target mà vẫn chốt SOS');
 });
 check('Đánh dấu không mock Speaking: đủ 3/3 là hoàn thành và SOS tính trên ba kỹ năng', () => {
   const low = 6, ok = 6.5;
@@ -553,7 +575,7 @@ check('Case cũ và việc quá hạn không biến mất khi đổi tuần', ()
 // ==================================================================== 10
 
 console.log('\n10. Xử lý sau Mock và lưu dữ liệu');
-check('Nhập đủ kỹ năng bắt buộc mới mở case; sửa điểm giữ nguyên lịch sử xử lý', () => {
+check('Mở case ngay khi kết luận được; mức tăng dần không nhân đôi case', () => {
   const s = conn
     .prepare(
       `SELECT s.id, cy.id AS cycle_id, cy.target_score FROM students s
@@ -566,21 +588,30 @@ check('Nhập đủ kỹ năng bắt buộc mới mở case; sửa điểm giữ
   const attempt = attempts.createAttempt(P.cpManager, {
     studentId: s.id, cycleId: s.cycle_id, classId: classId('CP-FT 111'), periodId: cpPeriod,
   }) as any;
-  attempts.setSchedule(P.cpAdmin, attempt.id, { lrwAt: '2026-11-09 18:00' });
+  attempts.setSchedule(P.cpAdmin, attempt.id, { lrwAt: '2026-11-09' });
 
   const exp = s.target_score;           // từ MT3 trở đi kỳ vọng bằng target
   const low = exp - 0.5;
   const t = (skill: string) => loadPrincipal(teacherOfSkill('CP-FT 111', skill));
+
+  // Một kỹ năng dưới kỳ vọng là mở case NGAY, không chờ ba kỹ năng còn lại.
   attempts.saveScore(t('listening'), attempt.id, 'listening', { rawScore: scoring.LISTENING_BY_RAW.indexOf(low) });
-  assert(attempts.attemptDetail(P.cpManager, attempt.id).result.sosLevel === null, 'Mới một kỹ năng đã chốt SOS');
+  const early = attempts.attemptDetail(P.cpManager, attempt.id);
+  assert(early.result.sosLevel === 1, `Một kỹ năng dưới kỳ vọng phải mở SOS 1 ngay, đang là ${early.result.sosLevel}`);
+  assert(early.result.provisional, 'Chưa đủ điểm thì phải đánh dấu là kết luận tạm thời');
+  assert(early.sosCase, 'Chưa mở case dù đã kết luận được');
+  const firstCaseId = early.sosCase.id;
 
   attempts.saveScore(t('reading'), attempt.id, 'reading', { rawScore: scoring.READING_BY_RAW.indexOf(low) });
   attempts.saveScore(t('writing1'), attempt.id, 'writing1', { criteria: [low, low, low, low] });
   attempts.saveScore(t('writing2'), attempt.id, 'writing2', { criteria: [low, low, low, low] });
-  assert(attempts.attemptDetail(P.cpManager, attempt.id).result.sosLevel === null, 'Thiếu Speaking mà đã chốt SOS');
+  const three = attempts.attemptDetail(P.cpManager, attempt.id);
+  assert(three.result.sosLevel === 3, `Ba kỹ năng dưới kỳ vọng phải lên SOS 3, đang là ${three.result.sosLevel}`);
+  assert(three.sosCase.id === firstCaseId, 'Mức SOS tăng mà lại mở case thứ hai');
 
   attempts.saveScore(t('speaking'), attempt.id, 'speaking', { criteria: [exp, exp, exp, exp] });
   const after = attempts.attemptDetail(P.cpManager, attempt.id);
+  assert(!after.result.provisional, 'Đủ điểm rồi mà vẫn coi là tạm thời');
   assert(after.result.sosLevel === 3, `Ba kỹ năng dưới kỳ vọng phải là SOS 3, đang là ${after.result.sosLevel}`);
   assert(after.status === 'done', 'Đủ điểm mọi kỹ năng bắt buộc phải chuyển sang Đã xong');
   assert(after.sosCase, 'Chưa mở case SOS');
@@ -985,14 +1016,22 @@ check('Chưa có tuần MT là việc của Quản lý, và chỉ tính em đang
     assert(r.canPlan, 'Quản lý phải lên được kế hoạch cho em trong phạm vi của mình');
   }
 });
-check('Báo cáo tuần chỉ mở trong hai ngày cuối tuần, chặn ở máy chủ', () => {
+check('Báo cáo tuần: mở hai ngày cuối tuần, bù đến hết thứ Tư tuần sau, rồi khoá hẳn', () => {
   const cur = conn.prepare('SELECT * FROM report_periods WHERE week_start <= ? AND week_end >= ?')
     .get(demoToday(), demoToday()) as any;
-  const w = week.reportEditWindow(cur, cur.week_start);          // thứ Hai
-  assert(!w.open && /hai ngày cuối/.test(w.reason ?? ''), 'Đầu tuần vẫn mở cho nhập báo cáo');
-  assert(week.reportEditWindow(cur, cur.week_end).open, 'Chủ nhật phải mở');
+  assert(!week.reportEditWindow(cur, cur.week_start).open, 'Đầu tuần vẫn mở cho nhập báo cáo');
   assert(week.reportEditWindow(cur, addDays(cur.week_end, -1)).open, 'Thứ Bảy phải mở');
-  // Tuần tương lai: đây chính là lỗi cũ — mở một tuần cuối năm và vẫn nhập bình thường.
+  assert(week.reportEditWindow(cur, cur.week_end).open, 'Chủ nhật phải mở');
+
+  // Thời gian bù: hết thứ Tư tuần sau, tức Chủ nhật + 3 ngày.
+  const wed = addDays(cur.week_end, 3);
+  assert(week.reportEditWindow(cur, wed).open, `Thứ Tư tuần sau (${wed}) vẫn phải nhập bù được`);
+  const thu = addDays(cur.week_end, 4);
+  const closed = week.reportEditWindow(cur, thu);
+  assert(!closed.open && closed.locked, `Từ thứ Năm (${thu}) phải khoá hẳn`);
+  assert(/Quản trị hệ thống/.test(closed.reason ?? ''), 'Phải nói rõ ai mở lại được');
+
+  // Tuần tương lai vẫn không nhập được.
   const future = conn.prepare('SELECT * FROM report_periods WHERE week_start > ? ORDER BY week_start DESC LIMIT 1')
     .get(cur.week_end) as any;
   if (future) {
@@ -1003,6 +1042,25 @@ check('Báo cáo tuần chỉ mở trong hai ngày cuối tuần, chặn ở má
       /chưa bắt đầu|chưa có gì/, 'Ghi báo cáo cho tuần tương lai',
     );
   }
+});
+check('Tuần đã khoá chỉ Quản trị hệ thống mở lại được, và chặn ở máy chủ', () => {
+  const old = conn
+    .prepare('SELECT * FROM report_periods WHERE week_end < ? ORDER BY week_end DESC LIMIT 1')
+    .get(addDays(demoToday(), -7)) as any;
+  assert(old, 'Dữ liệu mẫu thiếu một tuần đã qua hẳn');
+  const unit = conn.prepare(`SELECT * FROM reporting_units WHERE kind='branch' LIMIT 1`).get() as any;
+
+  assert(week.reportEditWindow(old).locked, 'Tuần cũ phải đang khoá');
+  assertThrows(() => meeting.saveUnitReport(P.admin, unit.id, old.id, 'teachers', { status: 'ok' }),
+    /quá hạn|Quản trị hệ thống/, 'Ghi báo cáo tuần đã khoá');
+
+  week.setPeriodUnlocked(old.id, true, P.admin.userId);
+  const opened = week.reportEditWindow(old);
+  assert(opened.open && opened.unlocked, 'Mở lại rồi mà vẫn không ghi được');
+  meeting.saveUnitReport(P.admin, unit.id, old.id, 'teachers', { status: 'ok' });   // giờ phải chạy được
+
+  week.setPeriodUnlocked(old.id, false, P.admin.userId);
+  assert(!week.reportEditWindow(old).open, 'Khoá lại rồi mà vẫn ghi được');
 });
 check('Ô chọn tuần là cửa sổ trượt, không phải toàn bộ lịch sử', () => {
   const now = week.periodWindow(null);
@@ -1109,19 +1167,49 @@ check('Đạt từ 60%, xét trên tỷ lệ CHÍNH XÁC chứ không làm tròn
   assert(domainRatio(11, 20).outcome === 'fail', '11/20 = 55% phải là trượt');
 });
 
-check('Thiếu điểm KHÁC trượt: chưa đủ thì chưa kết luận, không đẩy lên SOS oan', () => {
+check('Kết luận ngay trên phần đã chấm; ô trống KHÔNG bị đếm thành môn chưa đạt', () => {
   const skills = ['listening', 'reading', 'prep_writing', 'pronunciation'];
   const partial = regular.evaluateRegular(skills, [
-    { skill: 'listening', raw_score: 10, raw_total: 40 },     // trượt
+    { skill: 'listening', raw_score: 10, raw_total: 40 },     // chưa đạt
     { skill: 'reading', raw_score: 30, raw_total: 40 },       // đạt
   ]);
   assert(!partial.complete, 'Mới hai kỹ năng mà đã coi là xong');
-  assert(partial.failedCount === null && partial.sosLevel === null,
-    'Thiếu điểm mà đã kết luận SOS — học viên bị đẩy lên SOS oan');
+  assert(partial.provisional, 'Chưa đủ điểm thì phải đánh dấu là kết luận tạm thời');
+  /*
+   * Đây là ranh giới quan trọng: chỉ MỘT môn đã chấm và chưa đạt → SOS 1.
+   * Hai ô còn trống KHÔNG được đếm thành hai môn chưa đạt, nếu không em này thành SOS 3 oan.
+   */
+  assert(partial.failedCount === 1 && partial.sosLevel === 1,
+    `Chỉ đếm môn đã chấm mà chưa đạt: kỳ vọng SOS 1, đang là ${partial.sosLevel} (${partial.failedCount} môn)`);
   assert(partial.scored === 2 && partial.required === 4, 'Đếm sai số kỹ năng đã có điểm');
 
+  // Chưa chấm môn nào thì tuyệt đối không kết luận.
+  const none = regular.evaluateRegular(skills, []);
+  assert(none.sosLevel === null && !none.provisional, 'Chưa có điểm nào mà đã kết luận');
+
   const full = regular.evaluateRegular(skills, skills.map((skill) => ({ skill, raw_score: 10, raw_total: 40 })));
-  assert(full.complete && full.failedCount === 4 && full.sosLevel === 3, 'Đủ điểm rồi phải kết luận được');
+  assert(full.complete && !full.provisional && full.failedCount === 4 && full.sosLevel === 3,
+    'Đủ điểm rồi phải là kết luận cuối');
+});
+check('Hạn nhập điểm lớp thường là hết Chủ nhật của chính tuần đó', () => {
+  const a = conn
+    .prepare(
+      `SELECT a.id, a.planned_period_id, a.deadline_override, rp.week_start, rp.week_end
+         FROM assessment_attempts a JOIN report_periods rp ON rp.id = a.planned_period_id
+        WHERE a.kind != 'mock' LIMIT 1`,
+    )
+    .get() as any;
+  assert(a, 'Dữ liệu mẫu thiếu bài kiểm tra lớp thường');
+  const dl = regular.regularDeadline(a);
+  assert(dl.date === a.week_end && dl.source === 'week_end',
+    `Hạn phải là Chủ nhật ${a.week_end} của tuần đó, đang là ${dl.date}`);
+  // Chủ nhật là ngày cuối tuần theo lịch tuần thứ Hai–Chủ nhật của hệ thống.
+  assert(week.mondayOf(a.week_end) === a.week_start, 'week_end phải là Chủ nhật của chính tuần đó');
+  // Chưa có tuần kế hoạch thì KHÔNG dựng hạn giả.
+  assert(regular.regularDeadline({ planned_period_id: null }).date === null, 'Chưa có tuần mà vẫn có hạn');
+  // Hạn tự đặt đè lên hạn mặc định.
+  assert(regular.regularDeadline({ planned_period_id: a.planned_period_id, deadline_override: '2026-12-25' }).date === '2026-12-25',
+    'Hạn tự đặt phải được ưu tiên');
 });
 
 check('Số môn trượt ra mức SOS theo đúng ngưỡng 1 / 2 / từ 3', () => {
@@ -1340,6 +1428,54 @@ check('Chuyển từ lớp FT sang lớp thường thì mở KHOÁ MỚI, không
     const routes = conn.prepare('SELECT route FROM learning_cycles WHERE student_id = ?').all(both.student_id) as any[];
     assert(routes.some((r) => r.route === null), 'Em chuyển lớp phải có một khoá lớp thường riêng');
   }
+});
+
+// ==================================================================== 15
+
+console.log('\n15. Tổng hợp theo tuần');
+check('Bốn cột kết quả cộng lại đúng bằng số lượt có kết quả', () => {
+  const r = weekly.weeklyRollup(P.admin, {});
+  assert(r.rows.length > 0, 'Không có tuần nào có dữ liệu');
+  for (const row of r.rows) {
+    assert(row.onTarget + row.sos1 + row.sos2 + row.sos3 === row.attempts,
+      `Tuần ${row.code}: ${row.onTarget}+${row.sos1}+${row.sos2}+${row.sos3} khác ${row.attempts} lượt`);
+  }
+});
+check('Chỉ đếm lượt ĐÃ CHẤM, và chỉ hiện tuần có dữ liệu', () => {
+  const r = weekly.weeklyRollup(P.admin, {});
+  for (const row of r.rows) {
+    assert(row.attempts > 0 || row.cases > 0, `Tuần ${row.code} rỗng mà vẫn hiện — file Excel cũ mới in dòng trống`);
+  }
+  // Lượt chưa chấm gì thì không được tính là "lượt có kết quả".
+  const planned = (conn.prepare(
+    `SELECT COUNT(*) n FROM assessment_attempts a
+      WHERE a.status = 'planned'
+        AND NOT EXISTS (SELECT 1 FROM assessment_scores s WHERE s.attempt_id = a.id AND s.band IS NOT NULL)`,
+  ).get() as any).n;
+  assert(planned > 0, 'Cần có lượt chưa chấm để phép kiểm tra này có nghĩa');
+  const total = r.rows.reduce((z, x) => z + x.attempts, 0);
+  const scoredAttempts = (conn.prepare(
+    `SELECT COUNT(DISTINCT a.id) n FROM assessment_attempts a
+       JOIN assessment_scores s ON s.attempt_id = a.id
+       JOIN report_periods rp ON rp.id = a.planned_period_id
+      WHERE a.status != 'cancelled' AND (s.band IS NOT NULL OR s.raw_score IS NOT NULL)`,
+  ).get() as any).n;
+  assert(total <= scoredAttempts, `Đếm ${total} lượt nhưng chỉ có ${scoredAttempts} lượt đã chấm`);
+});
+check('Tổng hợp tuần chỉ trong phạm vi được cấp quyền', () => {
+  const mine = weekly.weeklyRollup(P.mbManager, {});
+  const all = weekly.weeklyRollup(P.admin, {});
+  const mineTotal = mine.rows.reduce((z, x) => z + x.attempts, 0);
+  const allTotal = all.rows.reduce((z, x) => z + x.attempts, 0);
+  assert(mineTotal < allTotal, 'Quản lý một chi nhánh lại thấy đúng bằng toàn hệ thống');
+  assert(mineTotal > 0, 'Quản lý MB không thấy số nào');
+});
+check('Trễ chấm để trống khi chưa đủ căn cứ, không hiện số 0 giả', () => {
+  const r = weekly.weeklyRollup(P.admin, {});
+  for (const row of r.rows) {
+    assert(row.scoreLagDays === null || row.scoreLagDays >= 0, `Trễ chấm âm ở tuần ${row.code}`);
+  }
+  assert(r.rows.some((x) => x.scoreLagDays === null), 'Tuần chưa có căn cứ phải để trống thay vì 0');
 });
 
 console.log(`\n${'='.repeat(60)}`);

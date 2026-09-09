@@ -78,8 +78,14 @@ type CaseField = (typeof CASE_FIELDS)[number];
  * Sửa điểm làm đổi mức SOS thì cập nhật mức, GIỮ NGUYÊN hành động và lịch sử đã ghi.
  */
 export function upsertCaseForResult(p: Principal, attempt: any, result: AttemptResult) {
-  // Chỉ mở/cập nhật case khi đã đủ căn cứ kết luận: đủ điểm mọi kỹ năng BẮT BUỘC và biết target.
-  if (!result.evaluable || result.sosLevel === null) return null;
+  /*
+   * Mở/cập nhật case NGAY khi đã kết luận được trên phần điểm đang có — không chờ đủ mọi
+   * kỹ năng. Chờ đủ nghĩa là một giáo viên nhập muộn thì việc hỗ trợ học viên dừng theo.
+   *
+   * Mức SOS có thể tăng khi các kỹ năng còn lại vào; case giữ nguyên và ghi lịch sử đổi mức,
+   * không mở case thứ hai.
+   */
+  if (result.sosLevel === null) return null;
   const conn = db();
   const existing = conn.prepare('SELECT * FROM sos_cases WHERE attempt_id = ?').get(attempt.id) as any;
 
@@ -102,6 +108,8 @@ export function upsertCaseForResult(p: Principal, attempt: any, result: AttemptR
       detail: [
         result.overall !== null ? `Overall ${result.overall}` : null,
         `kỳ vọng ${result.expectation ?? '—'}`,
+        // Kết luận tạm thời phải nói rõ ngay trong hành trình, không để đọc lại tưởng đã chốt.
+        result.provisional ? `mới có ${result.scoredRequired}/${result.required.length} kỹ năng` : null,
         result.scopeNote,
       ].filter(Boolean).join(' · '),
       refTable: 'assessment_attempts', refId: attempt.id, createdBy: p.userId,

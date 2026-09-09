@@ -492,7 +492,7 @@ export function attemptDetail(p: Principal, attemptId: number) {
 // ---------------------------------------------------------------- tạo lượt
 
 /**
- * Tạo một lượt MT. Quản lý chốt TUẦN ở bước này; ngày giờ để Admin chi nhánh chốt sau,
+ * Tạo một lượt MT. Quản lý chốt TUẦN ở bước này; ngày thực tế do Admin chi nhánh hoặc Quản lý cập nhật sau,
  * nên `periodId` là bắt buộc còn ngày thì không.
  */
 export function createAttempt(p: Principal, input: {

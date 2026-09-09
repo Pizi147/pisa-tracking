@@ -6,7 +6,8 @@ import {
 import { demoToday, getConfig, scenarioMode, setConfig } from '../demoConfig.ts';
 import { HttpError, badRequest, isIsoDate, notFound, toInt } from '../util.ts';
 import { SESSION_COOKIE, createSession, destroySession, principalOf, requireAuth } from '../auth.ts';
-import { can, loadPrincipal, permissionSummary, scopeFor } from '../permissions.ts';
+import { can, loadPrincipal, permissionSummary, require_, scopeFor } from '../permissions.ts';
+import { writeAudit } from '../services/audit.ts';
 import { maybeSimulateReadError, maybeSimulateSaveFailure, pInt, qInt, qStr, wrap } from './helpers.ts';
 import * as attemptSvc from '../services/attempts.ts';
 import * as cycleSvc from '../services/cycles.ts';
@@ -17,9 +18,12 @@ import * as sosSvc from '../services/sos.ts';
 import * as studentSvc from '../services/students.ts';
 import * as meetingSvc from '../services/meeting.ts';
 import * as dashboardSvc from '../services/dashboard.ts';
-import { ensurePeriod, listPeriods, periodById, periodWindow, reportEditWindow } from '../services/week.ts';
+import {
+  ensurePeriod, listPeriods, periodById, periodWindow, reportEditWindow, setPeriodUnlocked,
+} from '../services/week.ts';
 import * as planningSvc from '../services/planning.ts';
 import { signalsFor } from '../services/signals.ts';
+import { weeklyRollup } from '../services/weekly.ts';
 import * as regularSvc from '../services/regular.ts';
 
 export const api = Router();
@@ -63,7 +67,7 @@ api.get('/demo/session', wrap((req) => {
     scenario: scenarioMode(),
     /*
      * Trang mở đầu theo việc thường làm nhất: giáo viên vào thẳng các kỹ năng cần nhập điểm,
-     * Admin chi nhánh vào danh sách cần chốt ngày giờ, còn lại mở Tổng quan.
+     * Admin chi nhánh vào danh sách cần cập nhật ngày, còn lại mở Tổng quan.
      * Chỉ đổi điểm vào, không đổi quyền.
      */
     landing: p.roleKeys.length === 1
@@ -270,6 +274,12 @@ api.post('/attempts/bulk-date', requireAuth, wrap((req) => {
   return planningSvc.bulkSetDate(principalOf(req), req.body ?? {});
 }));
 
+/** Tổng hợp theo tuần cho Quản lý: mỗi tuần một dòng, mọi con số bấm được. */
+api.get('/weekly-rollup', requireAuth, wrap((req) => weeklyRollup(principalOf(req), {
+  branchId: toInt(req.query?.branchId),
+  weeks: toInt(req.query?.weeks) ?? undefined,
+})));
+
 /** Việc sinh ra từ dữ liệu — tự hết khi nguồn được xử lý, không có nút đóng giả. */
 api.get('/signals', requireAuth, wrap((req) => signalsFor(principalOf(req), {
   branchId: toInt(req.query?.branchId), periodId: toInt(req.query?.periodId),
@@ -290,7 +300,7 @@ api.post('/attempts/:id/week', requireAuth, wrap((req) => {
   return attemptSvc.setPlanningWeek(principalOf(req), pInt(req, 'id'), periodId, req.body?.reason);
 }));
 
-/** Chốt NGÀY–GIỜ trong tuần đã duyệt. Lịch chính do Admin CN, lịch Speaking có thể do GV Speaking. */
+/** Cập nhật NGÀY thực tế trong tuần kế hoạch. Lịch chính do Admin CN, lịch Speaking có thể do GV Speaking. */
 api.post('/attempts/:id/schedule', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return attemptSvc.setSchedule(principalOf(req), pInt(req, 'id'), {
@@ -515,6 +525,27 @@ api.get('/meeting/board', requireAuth, wrap((req) => {
   const period = periodById(periodId);
   // Giao diện phải biết tuần này có đang mở để cập nhật không, và nếu không thì vì sao.
   return { ...board, editWindow: period ? reportEditWindow(period) : null };
+}));
+
+/**
+ * Quản trị hệ thống mở lại một tuần báo cáo đã khoá.
+ * Đây là ngoại lệ, nên chỉ một vai trò được làm và có ghi nhật ký.
+ */
+api.post('/meeting/periods/:periodId/unlock', requireAuth, wrap((req) => {
+  const p = principalOf(req);
+  require_(p, PERMISSIONS.ADMIN_CONFIG, { anyScope: true },
+    'Chỉ Quản trị hệ thống mới mở lại được tuần báo cáo đã khoá.');
+  const periodId = pInt(req, 'periodId');
+  const on = req.body?.unlocked !== false;
+  setPeriodUnlocked(periodId, on, p.userId);
+  writeAudit({
+    actorUserId: p.userId, action: on ? 'report.unlock' : 'report.relock',
+    entityType: 'report_period', entityId: periodId,
+    entityLabel: periodById(periodId)?.code ?? String(periodId),
+    after: { unlocked: on },
+  });
+  const period = periodById(periodId);
+  return period ? reportEditWindow(period) : { open: false };
 }));
 
 api.put('/meeting/units/:unitId/reports/:categoryKey', requireAuth, wrap((req) => {

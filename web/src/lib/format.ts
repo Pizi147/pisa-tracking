@@ -30,12 +30,14 @@ export function fmtDay(d?: string | null): string {
   return `${d.slice(8, 10)}/${d.slice(5, 7)}`;
 }
 
-/** Ngày kèm giờ nếu lịch có ghi giờ, ví dụ "14/10 18:00". */
+/**
+ * Ngày của một buổi đánh giá — CHỈ NGÀY, không bao giờ có giờ.
+ *
+ * Giờ mock đã bỏ khỏi nghiệp vụ. Dữ liệu cũ có thể còn đuôi giờ, nên cắt ở đây luôn
+ * để không có màn hình nào lỡ hiện lại.
+ */
 export function fmtSlot(v?: string | null): string {
-  if (!v) return '—';
-  const day = fmtDay(v.slice(0, 10));
-  const time = v.length > 10 ? v.slice(11, 16) : '';
-  return time ? `${day} ${time}` : day;
+  return fmtDay(v ? v.slice(0, 10) : null);
 }
 
 export function fmtDateTime(d?: string | null): string {

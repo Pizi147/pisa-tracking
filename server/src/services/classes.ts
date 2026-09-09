@@ -26,7 +26,7 @@ export type ClassSummary = {
   needScores: number;
   /** Số CASE SOS chưa xử lý xong — đếm case, không phải học viên. */
   openCases: number;
-  /** Số LƯỢT đã chốt tuần nhưng chưa có ngày giờ. */
+  /** Số LƯỢT đã chốt tuần nhưng chưa có ngày thực tế. */
   needsDate: number;
   programmeCode: string | null;
   programmeName: string | null;

@@ -7,6 +7,7 @@ import OverviewPage from './pages/Overview.tsx';
 import MockDetailPage from './pages/MockDetail.tsx';
 import ScoreSheetPage from './pages/ScoreSheet.tsx';
 import RegularSheetPage from './pages/RegularSheet.tsx';
+import WeeklyRollupPage from './pages/WeeklyRollup.tsx';
 import StudentsPage from './pages/Students.tsx';
 import ClassOverviewPage from './pages/ClassOverview.tsx';
 import StudentDetailPage from './pages/StudentDetail.tsx';
@@ -99,6 +100,8 @@ export default function App() {
           <Route path="/nhap-diem/:classId" element={<ScoreSheetPage />} />
           {/* Lớp thường chấm theo số câu đúng nên có bảng điểm riêng, không dùng bảng band IELTS. */}
           <Route path="/bang-diem-thuong/:classId" element={<RegularSheetPage />} />
+          {/* Tổng hợp theo tuần cho Quản lý — thay cho sheet cùng tên trong workbook. */}
+          <Route path="/tong-hop-tuan" element={<WeeklyRollupPage />} />
           <Route path="/mock-test/:id" element={<MockDetailPage />} />
           <Route path="/tien-trinh" element={<MeetingPage />} />
           <Route path="/quan-tri" element={<AdminPage />} />

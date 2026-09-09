@@ -87,8 +87,10 @@ export type RegularResult = {
   /** Số kỹ năng đã có điểm hợp lệ trên tổng số kỹ năng của chương trình. */
   scored: number;
   required: number;
-  /** Đủ điểm mọi kỹ năng — mới kết luận được. Thiếu điểm KHÁC trượt. */
+  /** Đủ điểm mọi kỹ năng của chương trình. */
   complete: boolean;
+  /** Đã kết luận được nhưng chưa đủ điểm — mức SOS còn có thể tăng. */
+  provisional: boolean;
   failedCount: number | null;
   sosLevel: SosLevel | null;
   passThreshold: number;
@@ -97,8 +99,13 @@ export type RegularResult = {
 /**
  * Kết luận một bài kiểm tra của lớp thường.
  *
- * THIẾU ĐIỂM KHÁC TRƯỢT. Chưa nhập thì chưa kết luận được, không được đếm thành một môn
- * trượt rồi đẩy học viên lên SOS oan. Vì vậy chỉ chốt khi đã đủ điểm mọi kỹ năng.
+ * KẾT LUẬN NGAY TRÊN PHẦN ĐIỂM ĐANG CÓ (owner chốt 09/09/2026). Chỉ cần một kỹ năng đã
+ * chấm là tính được; mức SOS có thể tăng khi các kỹ năng còn lại vào, và `provisional`
+ * cho giao diện biết để ghi rõ "mới có 2/4 kỹ năng".
+ *
+ * THIẾU ĐIỂM VẪN KHÁC TRƯỢT: kỹ năng chưa chấm không bị đếm thành một môn chưa đạt.
+ * Lớp thường KHÔNG có cơ chế miễn kỹ năng — dời lịch sang tuần khác thì được, nhưng bộ
+ * kỹ năng của chương trình luôn đủ.
  */
 export function evaluateRegular(skills: string[], rows: { skill: string; raw_score: number | null; raw_total: number | null }[]): RegularResult {
   const results: RegularSkillResult[] = skills.map((skill) => {
@@ -114,14 +121,31 @@ export function evaluateRegular(skills: string[], rows: { skill: string; raw_sco
   });
   const scored = results.filter((r) => r.outcome !== 'missing').length;
   const complete = skills.length > 0 && scored === skills.length;
-  const failedCount = complete ? results.filter((r) => r.outcome === 'fail').length : null;
+  const failedCount = scored > 0 ? results.filter((r) => r.outcome === 'fail').length : null;
   return {
     skills: results,
     scored, required: skills.length, complete,
+    provisional: scored > 0 && !complete,
     failedCount,
     sosLevel: failedCount === null ? null : sosFromFailCount(failedCount),
     passThreshold: RATIO_PASS_THRESHOLD,
   };
+}
+
+/**
+ * Hạn nhập điểm của một bài kiểm tra lớp thường: HẾT CHỦ NHẬT của chính tuần đó.
+ *
+ * Khác lớp FT (hạn là thứ Tư tuần kế tiếp): lớp thường làm bài và chấm ngay trong tuần,
+ * không có buổi Speaking lệch ngày phải chờ. Chưa có tuần kế hoạch thì KHÔNG có hạn —
+ * trả về null thay vì dựng một hạn giả.
+ */
+export function regularDeadline(attempt: { planned_period_id?: number | null; deadline_override?: string | null }): {
+  date: string | null; source: 'override' | 'week_end' | 'none';
+} {
+  if (attempt.deadline_override) return { date: attempt.deadline_override, source: 'override' };
+  if (!attempt.planned_period_id) return { date: null, source: 'none' };
+  const rp = db().prepare('SELECT week_end FROM report_periods WHERE id = ?').get(attempt.planned_period_id) as any;
+  return rp ? { date: rp.week_end, source: 'week_end' } : { date: null, source: 'none' };
 }
 
 export function regularResultOf(attemptId: number): RegularResult {
@@ -324,12 +348,13 @@ export function refreshRegularOutcome(p: Principal, attemptId: number) {
   const r = regularResultOf(attemptId);
   const a = conn.prepare('SELECT * FROM assessment_attempts WHERE id = ?').get(attemptId) as any;
 
-  // Đủ điểm mọi kỹ năng mới coi là xong. Thiếu một môn thì vẫn đang chờ.
+  // "Đã xong" vẫn cần ĐỦ điểm mọi kỹ năng — đó là trạng thái của bài, không phải kết luận.
   if (r.complete && a.status === 'planned') {
     conn.prepare(`UPDATE assessment_attempts SET status = 'done', updated_at = ? WHERE id = ?`)
       .run(nowIso(), attemptId);
   }
-  if (!r.complete || r.sosLevel === null) return r;
+  // Nhưng CASE thì mở ngay khi kết luận được, không chờ đủ.
+  if (r.sosLevel === null) return r;
 
   const existing = conn.prepare('SELECT * FROM sos_cases WHERE attempt_id = ?').get(attemptId) as any;
   if (r.sosLevel === 0) {
@@ -433,8 +458,13 @@ export function regularSheet(p: Principal, classId: number, kind?: string) {
       const rows = byAttempt.get(a.id) ?? [];
       const result = evaluateRegular(prog.skills, rows);
       const c = cases.get(a.id);
+      const dl = regularDeadline(a);
       return {
         attemptId: a.id,
+        deadline: dl.date,
+        deadlineSource: dl.source,
+        // Quá hạn khi đã hết ngày hạn mà vẫn còn kỹ năng chưa chấm.
+        overdue: !!dl.date && dl.date < demoToday() && !result.complete,
         kind: a.kind as AttemptKind,
         kindLabel: ATTEMPT_KIND_LABEL[a.kind as AttemptKind] ?? a.kind,
         studentId: a.student_id, studentName: a.full_name, studentCode: a.student_code,

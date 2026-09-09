@@ -77,7 +77,7 @@ export default function MockDetailPage() {
             <button className="btn" onClick={() => setWeekOpen(true)}>Đổi tuần</button>
           )}
           {(d.viewer.canSetDate || d.viewer.canSetSpeaking) && d.status !== 'cancelled' && (
-            <button className="btn" onClick={() => setScheduleOpen(true)}>Chốt ngày giờ</button>
+            <button className="btn" onClick={() => setScheduleOpen(true)}>Cập nhật ngày</button>
           )}
           {d.viewer.canCancel && d.status === 'planned' && (
             <button className="btn btn-danger" onClick={() => setCancelOpen(true)}>Huỷ lịch</button>
@@ -536,7 +536,7 @@ function WeekModal({ open, onClose, attemptId, currentPeriodId, onDone }: {
   );
 }
 
-/** Chốt NGÀY–GIỜ trong tuần đã duyệt. Ngày ngoài tuần bị từ chối. */
+/** Cập nhật NGÀY thực tế trong tuần kế hoạch. Ngày ngoài tuần bị từ chối. */
 function ScheduleModal({ open, onClose, detail, onDone }: {
   open: boolean; onClose: () => void; detail: Detail; onDone: () => void;
 }) {
@@ -545,11 +545,12 @@ function ScheduleModal({ open, onClose, detail, onDone }: {
   const [speaking, setSpeaking] = useState(detail.speakingScheduledAt ?? '');
   const [reason, setReason] = useState('');
   const [busy, setBusy] = useState(false);
-  const toLocal = (v: string) => (v ? v.replace(' ', 'T').slice(0, 16) : '');
+  // Chỉ NGÀY. Dữ liệu cũ có thể còn đuôi giờ nên cắt luôn khi đổ vào ô nhập.
+  const toDay = (v: string) => (v ? v.slice(0, 10) : '');
   const fromLocal = (v: string) => (v ? v.replace('T', ' ') : null);
 
   return (
-    <Modal open={open} onClose={onClose} title="Chốt ngày giờ trong tuần" width="max-w-lg"
+    <Modal open={open} onClose={onClose} title="Cập nhật ngày trong tuần" width="max-w-lg"
       footer={<>
         <button className="btn" onClick={onClose} disabled={busy}>Đóng</button>
         <button className="btn btn-primary" disabled={busy} onClick={async () => {
@@ -574,16 +575,18 @@ function ScheduleModal({ open, onClose, detail, onDone }: {
           <p className="text-xs text-amber-200">Chưa có tuần kế hoạch. Quản lý cần chốt tuần trước.</p>
         )}
         <label className="block">
-          <span className="label">Buổi chính — Listening / Reading / Writing</span>
-          <input type="datetime-local" className="field" value={toLocal(lrw)} disabled={!detail.viewer.canSetDate}
+          <span className="label">Ngày buổi chính — Listening / Reading / Writing</span>
+          <input type="date" className="field" value={toDay(lrw)} disabled={!detail.viewer.canSetDate}
             onChange={(e) => setLrw(e.target.value)} />
           {!detail.viewer.canSetDate && (
-            <span className="block text-[11px] text-slate-500 mt-1">Chỉ Admin chi nhánh chốt được buổi chính.</span>
+            <span className="block text-[11px] text-slate-500 mt-1">
+              Chỉ Admin chi nhánh và Quản lý cập nhật được ngày buổi chính.
+            </span>
           )}
         </label>
         <label className="block">
-          <span className="label">Buổi Speaking (có thể khác ngày)</span>
-          <input type="datetime-local" className="field" value={toLocal(speaking)}
+          <span className="label">Ngày buổi Speaking (có thể khác ngày)</span>
+          <input type="date" className="field" value={toDay(speaking)}
             onChange={(e) => setSpeaking(e.target.value)} />
         </label>
         <label className="block">

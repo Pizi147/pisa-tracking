@@ -11,7 +11,7 @@ export type Cell = {
   assessedSkill: string;
   /** false khi Quản lý/Admin CN đã đánh dấu kỹ năng này là không mock ở lượt đó. */
   required: boolean;
-  /** Ngày giờ theo LỊCH của kỹ năng này. Nhập điểm không sửa được trường này. */
+  /** Ngày theo LỊCH của kỹ năng này. Nhập điểm không sửa được trường này. */
   scheduledAt: string | null;
   /** Ngày mock THỰC TẾ, do người nhập điểm ghi. */
   takenOn: string | null;
