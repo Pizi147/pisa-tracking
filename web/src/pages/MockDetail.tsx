@@ -5,35 +5,47 @@ import { api, invalidate } from '../lib/api.ts';
 import { useToast } from '../components/Toast.tsx';
 import { Card, Empty, ErrorState, Pill, SectionNote, Skeleton } from '../components/ui.tsx';
 import { ConfirmDialog, Modal } from '../components/Drawer.tsx';
-import { CriteriaButton, DeadlinePill, RawScoreInput, useSaveScore, type Cell } from '../components/ScoreEntry.tsx';
 import {
-  caseStatusLabel, caseTone, fmtBand, fmtDate, fmtDateTime, mockStatusLabel,
-  skillLabel, sosLabel, sosTone,
+  CriteriaButton, DeadlinePill, RawScoreInput, TakenOnInput, useSaveScore, type Cell,
+} from '../components/ScoreEntry.tsx';
+import {
+  attemptStatusLabel, attemptStatusTone, caseStatusLabel, caseTone, fmtBand, fmtDate, fmtDateTime,
+  fmtSlot, progressLabel, progressTone, skillLabel, sosLabel, sosTone,
 } from '../lib/format.ts';
 import {
-  ACADEMIC_SUPPORTS, ASSESSED_SKILL_LABEL, CASE_STATUSES, MEETING_KINDS, OPS_POLICIES,
+  ACADEMIC_SUPPORTS, ASSESSED_SKILLS, ASSESSED_SKILL_LABEL, CASE_STATUSES, MEETING_KINDS, OPS_POLICIES,
 } from '@shared/domain.ts';
+import { usePeriods } from '../components/Filters.tsx';
 
 type Detail = {
   id: number;
-  student: { id: number; name: string; code: string; committedScore: number | null; route: string | null; examDate: string | null };
-  classId: number | null; classCode: string | null; classKind: string | null; branchName: string | null;
-  attemptNo: number; committedScoreAtTest: number | null; ftWeek: number | null;
-  plannedDate: string; week: { code: string; range: string };
-  status: string; cancelReason: string | null;
-  result: any; cells: Cell[];
+  student: { id: number; name: string; code: string };
+  cycle: { id: number; seq: number; route: string | null; target: number | null; examDate: string | null };
+  classId: number | null; classCode: string | null; branchName: string | null;
+  attemptNo: number; targetAtAttempt: number | null; studyWeekHint: number | null;
+  period: { id: number; code: string; weekStart: string; weekEnd: string; range: string } | null;
+  lrwScheduledAt: string | null; speakingScheduledAt: string | null;
+  deadlineOverride: { date: string; reason: string | null; at: string | null; by: string | null } | null;
+  status: string; cancelReason: string | null; note: string | null;
+  result: any; cells: Cell[]; skips: any[];
   history: any[]; sosCase: any; caseSteps: any[]; caseHistory: any[]; tasks: any[];
-  viewer: { canSchedule: boolean; canCancel: boolean; canEditSos: boolean; canConfirm: boolean; editableSkills: string[] };
+  viewer: {
+    canPlanWeek: boolean; canSetDate: boolean; canSetSpeaking: boolean; canCancel: boolean;
+    canSkipSkill: boolean; canOverrideDeadline: boolean;
+    canEditSos: boolean; canConfirm: boolean; editableSkills: string[];
+  };
 };
 
 export default function MockDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const toast = useToast();
-  const { data, loading, error, reload } = useApi<Detail>(id ? `/mocks/${id}` : null);
+  const { data, loading, error, reload } = useApi<Detail>(id ? `/attempts/${id}` : null);
   const { save } = useSaveScore(Number(id), reload);
   const [showHistory, setShowHistory] = useState(false);
-  const [reschedOpen, setReschedOpen] = useState(false);
+  const [weekOpen, setWeekOpen] = useState(false);
+  const [scheduleOpen, setScheduleOpen] = useState(false);
+  const [deadlineOpen, setDeadlineOpen] = useState(false);
   const [cancelOpen, setCancelOpen] = useState(false);
 
   if (error) return <ErrorState message={error.message} hint={error.hint} onRetry={reload} />;
@@ -52,8 +64,8 @@ export default function MockDetailPage() {
             {d.student.name} <span className="text-slate-500 text-sm">· {d.student.code}</span>
           </h1>
           <p className="text-xs text-slate-500 mt-0.5">
-            MT{d.attemptNo} · Lớp tại lần thi: {d.classCode ?? '—'} · {d.branchName ?? '—'}
-            {d.student.route && ` · Lộ trình ${d.student.route}`}
+            MT{d.attemptNo} · Lớp lúc đánh giá: {d.classCode ?? '—'} · {d.branchName ?? '—'}
+            {d.cycle.route && ` · Lộ trình ${d.cycle.route}`}
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -61,40 +73,65 @@ export default function MockDetailPage() {
           {d.classId && (
             <Link className="btn no-underline" to={`/mock-test/lop/${d.classId}`}>Nhập điểm cả lớp</Link>
           )}
-          {d.viewer.canSchedule && d.status !== 'cancelled' && (
-            <button className="btn" onClick={() => setReschedOpen(true)}>Dời lịch</button>
+          {d.viewer.canPlanWeek && d.status !== 'cancelled' && (
+            <button className="btn" onClick={() => setWeekOpen(true)}>Đổi tuần</button>
+          )}
+          {(d.viewer.canSetDate || d.viewer.canSetSpeaking) && d.status !== 'cancelled' && (
+            <button className="btn" onClick={() => setScheduleOpen(true)}>Chốt ngày giờ</button>
           )}
           {d.viewer.canCancel && d.status === 'planned' && (
             <button className="btn btn-danger" onClick={() => setCancelOpen(true)}>Huỷ lịch</button>
           )}
           {d.viewer.canCancel && d.status === 'cancelled' && (
             <button className="btn" onClick={async () => {
-              await api.post(`/mocks/${d.id}/reopen`);
-              invalidate('/mocks'); reload(); toast.push('ok', 'Đã mở lại lịch Mock');
-            }}>Mở lại lịch</button>
+              await api.post(`/attempts/${d.id}/reopen`);
+              invalidate('/attempts'); reload(); toast.push('ok', 'Đã mở lại lượt MT');
+            }}>Mở lại</button>
           )}
         </div>
       </div>
 
-      {/* 1. Nhận diện, lịch và hạn */}
-      <Card title="Lịch thi và cam kết">
-        <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-3 lg:grid-cols-5 m-0">
+      {/* 1. Nhận diện, lịch và target */}
+      <Card title="Kế hoạch và lịch">
+        <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 m-0">
           <Info label="Trạng thái">
-            <Pill tone={d.status === 'cancelled' ? 'muted' : d.status === 'completed' ? 'info' : 'neutral'}>
-              {mockStatusLabel(d.status)}
-            </Pill>
+            <Pill tone={attemptStatusTone(d.status)}>{attemptStatusLabel(d.status)}</Pill>
           </Info>
-          <Info label="Tuần">{d.week.code} <span className="text-slate-500 text-xs">({d.week.range})</span></Info>
-          <Info label="Ngày dự kiến">{fmtDate(d.plannedDate)}</Info>
-          <Info label="Điểm cam kết tại lần thi">{fmtBand(d.committedScoreAtTest)}</Info>
+          <Info label="Tuần kế hoạch">
+            {d.period
+              ? <>{d.period.code} <span className="text-slate-500 text-xs">({d.period.range})</span></>
+              : <Pill tone="muted">Chưa chốt tuần</Pill>}
+          </Info>
+          <Info label="Buổi chính L/R/W">
+            {d.lrwScheduledAt ? fmtSlot(d.lrwScheduledAt) : <Pill tone="warn">Chưa chốt ngày</Pill>}
+          </Info>
+          <Info label="Buổi Speaking">
+            {d.speakingScheduledAt
+              ? fmtSlot(d.speakingScheduledAt)
+              : <span className="text-slate-500 text-xs">Theo buổi chính</span>}
+          </Info>
+          <Info label="Target lúc đánh giá">{fmtBand(d.targetAtAttempt)}</Info>
           <Info label="Kỳ vọng MT này">{fmtBand(d.result.expectation)}</Info>
         </dl>
-        {d.cancelReason && (
-          <p className="text-xs text-red-300 mt-3">Đã huỷ: {d.cancelReason}</p>
-        )}
-        {d.ftWeek && (
+        {d.cancelReason && <p className="text-xs text-rose-200 mt-3">Đã huỷ: {d.cancelReason}</p>}
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          {d.deadlineOverride ? (
+            <Pill tone="info" title={d.deadlineOverride.reason ?? undefined}>
+              Hạn riêng {fmtDate(d.deadlineOverride.date)}{d.deadlineOverride.by ? ` · ${d.deadlineOverride.by}` : ''}
+            </Pill>
+          ) : (
+            <span className="text-xs text-slate-500">Đang dùng hạn mặc định: thứ Tư tuần kế tiếp sau buổi mock.</span>
+          )}
+          {d.viewer.canOverrideDeadline && (
+            <button className="btn btn-sm" onClick={() => setDeadlineOpen(true)}>
+              {d.deadlineOverride ? 'Sửa hạn riêng' : 'Đặt hạn riêng'}
+            </button>
+          )}
+        </div>
+        {d.studyWeekHint && (
           <SectionNote>
-            Mốc gợi ý cho MT{d.attemptNo} là tuần học FT {d.ftWeek}. Tuần học FT và mã tuần lịch là hai khái niệm khác nhau.
+            Mốc gợi ý cho MT{d.attemptNo} là <strong>tuần học</strong> FT {d.studyWeekHint}.
+            Tuần học của chương trình và mã tuần lịch là hai khái niệm khác nhau.
           </SectionNote>
         )}
       </Card>
@@ -102,7 +139,8 @@ export default function MockDetailPage() {
       {/* 2. Điểm từng kỹ năng */}
       <Card title="Điểm theo kỹ năng"
         action={<span className="text-xs text-slate-500">
-          Đã nhập {d.result.completed}/4 kỹ năng đánh giá
+          Đã nhập {d.result.scoredRequired}/{d.result.required.length} kỹ năng bắt buộc
+          {d.result.skipped.length > 0 && ` · ${d.result.skipped.length} kỹ năng không mock`}
         </span>}>
         {d.cells.length === 0 ? (
           <Empty title="Lớp này chưa cấu hình kỹ năng nào" />
@@ -113,26 +151,32 @@ export default function MockDetailPage() {
                 <thead>
                   <tr>
                     <th className="th">Kỹ năng</th>
-                    <th className="th">Ngày thi</th>
+                    <th className="th">Lịch</th>
+                    <th className="th">Ngày mock thực tế</th>
                     <th className="th">Số câu đúng / tiêu chí</th>
                     <th className="th">Band</th>
+                    <th className="th">Tiến độ</th>
                     <th className="th">Hạn nhập</th>
                     <th className="th">Người nhập</th>
                   </tr>
                 </thead>
                 <tbody>
                   {[...raw, ...crit].map((c) => (
-                    <tr key={c.skill}>
+                    <tr key={c.skill} className={c.required ? '' : 'row-muted'}>
                       <td className="td text-slate-200 whitespace-nowrap">{skillLabel(c.skill)}</td>
+                      <td className="td text-xs text-slate-400 whitespace-nowrap">{fmtSlot(c.scheduledAt)}</td>
                       <td className="td">
-                        <TestDateInput cell={c} onSave={(p) => save(c.skill, p)} />
+                        <TakenOnInput cell={c} onSave={(p) => save(c.skill, p)} />
                       </td>
                       <td className="td">
-                        {c.skill === 'listening' || c.skill === 'reading'
-                          ? <RawScoreInput cell={c} onSave={(p) => save(c.skill, p)} />
-                          : <CriteriaButton cell={c} onSave={(p) => save(c.skill, p)} />}
+                        {!c.required
+                          ? <span className="text-slate-500 text-xs">—</span>
+                          : c.skill === 'listening' || c.skill === 'reading'
+                            ? <RawScoreInput cell={c} onSave={(p) => save(c.skill, p)} />
+                            : <CriteriaButton cell={c} onSave={(p) => save(c.skill, p)} />}
                       </td>
                       <td className="td tabular-nums text-slate-100">{fmtBand(c.band)}</td>
+                      <td className="td"><Pill tone={progressTone(c.progress)}>{progressLabel(c.progress)}</Pill></td>
                       <td className="td"><DeadlinePill cell={c} /></td>
                       <td className="td text-xs text-slate-500">
                         {c.enteredByName ?? '—'}
@@ -145,31 +189,65 @@ export default function MockDetailPage() {
             </div>
 
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5 border-t pt-4" style={{ borderColor: 'var(--line)' }}>
-              {Object.entries(ASSESSED_SKILL_LABEL).map(([key, label]) => {
+              {ASSESSED_SKILLS.map((key) => {
                 const v = d.result.verdicts.find((x: any) => x.skill === key);
+                const skipped = d.result.skipped.includes(key);
                 return (
-                  <div key={key} className="surface-2 rounded-lg p-3">
-                    <div className="text-[11px] uppercase tracking-wide text-slate-500 font-semibold">{label}</div>
+                  <div key={key} className={`surface-2 rounded-lg p-3 ${skipped ? 'opacity-80' : ''}`}>
+                    <div className="text-[11px] uppercase tracking-wide text-slate-500 font-semibold">
+                      {ASSESSED_SKILL_LABEL[key]}
+                    </div>
                     <div className="text-xl tabular-nums mt-1 text-slate-100">{fmtBand(v?.band)}</div>
                     <div className="mt-1">
-                      {v?.passed === null
-                        ? <Pill tone="muted">Chưa đủ điểm</Pill>
-                        : v?.passed ? <Pill tone="ok">Đạt kỳ vọng</Pill> : <Pill tone="danger">Dưới kỳ vọng</Pill>}
+                      {skipped
+                        ? <Pill tone="muted">Không mock</Pill>
+                        : v?.passed === null
+                          ? <Pill tone="muted">Chưa đủ điểm</Pill>
+                          : v?.passed ? <Pill tone="ok">Đạt kỳ vọng</Pill> : <Pill tone="danger">Dưới kỳ vọng</Pill>}
                     </div>
+                    {d.viewer.canSkipSkill && d.status !== 'cancelled' && (
+                      <button
+                        className="btn btn-sm btn-ghost mt-2 px-0"
+                        onClick={async () => {
+                          try {
+                            await api.post(`/attempts/${d.id}/skills/${key}/skip`, {
+                              skipped: !skipped,
+                              reason: skipped ? undefined : 'Học viên không mock kỹ năng này',
+                            });
+                            invalidate('/attempts'); invalidate('/overview'); reload();
+                            toast.push('ok', skipped ? `Đã tính lại ${ASSESSED_SKILL_LABEL[key]}` : `Đã đánh dấu không mock ${ASSESSED_SKILL_LABEL[key]}`);
+                          } catch (e: any) { toast.push('error', e.message); }
+                        }}
+                      >
+                        {skipped ? 'Tính lại kỹ năng này' : 'Đánh dấu không mock'}
+                      </button>
+                    )}
                   </div>
                 );
               })}
-              <div className="surface-2 rounded-lg p-3 border border-teal-500/25">
+              <div className="surface-2 rounded-lg p-3 border border-sky-300/25">
                 <div className="text-[11px] uppercase tracking-wide text-slate-500 font-semibold">Overall</div>
                 <div className="text-xl tabular-nums mt-1 text-slate-100">{fmtBand(d.result.overall)}</div>
                 <div className="mt-1"><Pill tone={sosTone(d.result.sosLevel)}>{sosLabel(d.result.sosLevel)}</Pill></div>
               </div>
             </div>
 
+            {d.result.scopeNote && (
+              <SectionNote>
+                {d.result.scopeNote}. Kỹ năng đã đánh dấu không mock không tính vào mẫu số SOS và không bị coi
+                là thiếu điểm. Vì lượt này không còn đủ bốn kỹ năng nên không có Overall IELTS.
+              </SectionNote>
+            )}
             {!d.result.complete && (
               <SectionNote>
-                Chưa chốt kết quả vì còn thiếu kỹ năng. Học sinh có thể thi Speaking một tuần và ba kỹ năng còn lại
-                tuần sau — mỗi kỹ năng có ngày thi và hạn nhập riêng. Ô trống là chưa nhập, không phải điểm 0.
+                Chưa chốt kết quả vì còn thiếu kỹ năng bắt buộc. Speaking có thể mock khác ngày với buổi chính —
+                mỗi kỹ năng có lịch và hạn nhập riêng. Ô trống là chưa nhập, không phải điểm 0.
+                “Đã mock, chưa nhập điểm” khác hẳn “chưa mock”.
+              </SectionNote>
+            )}
+            {d.result.complete && !d.result.evaluable && (
+              <SectionNote>
+                Đã đủ điểm các kỹ năng bắt buộc nhưng lộ trình chưa có target, nên chưa tính được kỳ vọng và SOS.
               </SectionNote>
             )}
           </div>
@@ -177,11 +255,12 @@ export default function MockDetailPage() {
       </Card>
 
       {/* 3–4. SOS và ghi nhận xử lý */}
-      {d.result.complete && (d.result.sosLevel ?? 0) > 0 && (
+      {d.result.evaluable && (d.result.sosLevel ?? 0) > 0 && (
         <CaseSection detail={d} onSaved={reload} />
       )}
-      {d.result.complete && d.result.sosLevel === 0 && (
-        <Card title="Kết quả"><Empty title="Đạt kỳ vọng ở cả bốn kỹ năng" hint="Không phát sinh case cần xử lý." /></Card>
+      {d.result.evaluable && d.result.sosLevel === 0 && (
+        <Card title="Kết quả"><Empty title={`Đạt kỳ vọng ở cả ${d.result.required.length} kỹ năng được đánh giá`}
+          hint="Không phát sinh case cần xử lý." /></Card>
       )}
 
       {/* 5. Lịch sử */}
@@ -192,12 +271,12 @@ export default function MockDetailPage() {
         ) : (
           <div className="grid gap-4 md:grid-cols-2">
             <div>
-              <div className="label">Lịch thi</div>
+              <div className="label">Lịch và phạm vi</div>
               <ul className="space-y-1.5 text-xs list-none p-0 m-0">
                 {d.history.map((h) => (
                   <li key={h.id} className="text-slate-400">
                     <span className="text-slate-200">{actionLabel(h.action)}</span>
-                    {h.oldDate && <> {fmtDate(h.oldDate)} →</>} {h.newDate && fmtDate(h.newDate)}
+                    {h.oldValue && <> {h.oldValue} →</>} {h.newValue && <> {h.newValue}</>}
                     {h.reason && <> · {h.reason}</>}
                     <span className="text-slate-600"> · {h.actorName ?? '—'}</span>
                   </li>
@@ -221,8 +300,10 @@ export default function MockDetailPage() {
         )}
       </Card>
 
-      <RescheduleModal open={reschedOpen} onClose={() => setReschedOpen(false)} attemptId={d.id}
-        current={d.plannedDate} onDone={reload} />
+      <WeekModal open={weekOpen} onClose={() => setWeekOpen(false)} attemptId={d.id}
+        currentPeriodId={d.period?.id ?? null} onDone={reload} />
+      <ScheduleModal open={scheduleOpen} onClose={() => setScheduleOpen(false)} detail={d} onDone={reload} />
+      <DeadlineModal open={deadlineOpen} onClose={() => setDeadlineOpen(false)} detail={d} onDone={reload} />
       <CancelDialog open={cancelOpen} onClose={() => setCancelOpen(false)} attemptId={d.id} onDone={reload} />
     </div>
   );
@@ -234,21 +315,6 @@ function Info({ label, children }: { label: string; children: React.ReactNode })
       <dt className="text-[11px] uppercase tracking-wide text-slate-500 font-semibold">{label}</dt>
       <dd className="text-sm text-slate-100 mt-1 m-0">{children}</dd>
     </div>
-  );
-}
-
-function TestDateInput({ cell, onSave }: { cell: Cell; onSave: (p: any) => Promise<boolean> }) {
-  const [value, setValue] = useState(cell.testDate ?? '');
-  if (!cell.canEdit) return <span className="text-slate-400 text-sm">{fmtDate(cell.testDate)}</span>;
-  return (
-    <input
-      type="date"
-      className="field w-36"
-      value={value}
-      aria-label={`Ngày thi ${skillLabel(cell.skill)}`}
-      onChange={(e) => setValue(e.target.value)}
-      onBlur={() => { if (value !== (cell.testDate ?? '')) void onSave({ testDate: value || null }); }}
-    />
   );
 }
 
@@ -276,7 +342,7 @@ function CaseSection({ detail, onSaved }: { detail: Detail; onSaved: () => void 
     try {
       await api.patch(`/sos-cases/${c.id}`, draft);
       setDraft({});
-      invalidate('/mocks'); invalidate('/overview');
+      invalidate('/attempts'); invalidate('/overview');
       onSaved();
       toast.push('ok', 'Đã lưu ghi nhận xử lý');
     } catch (e: any) {
@@ -332,7 +398,7 @@ function CaseSection({ detail, onSaved }: { detail: Detail; onSaved: () => void 
           <div className="text-sm">
             <span className="text-slate-400">Head xác nhận: </span>
             {c.head_confirmed_at
-              ? <span className="text-teal-300">{c.head_name ?? 'Đã xác nhận'} · {fmtDate(c.head_confirmed_at)}</span>
+              ? <span className="text-sky-200">{c.head_name ?? 'Đã xác nhận'} · {fmtDate(c.head_confirmed_at)}</span>
               : <span className="text-slate-500">Chưa xác nhận</span>}
           </div>
           {detail.viewer.canConfirm && (
@@ -430,37 +496,161 @@ function StepFields({ stepKey, value, set, editable }: {
 
 // ---------------------------------------------------------------- thao tác lịch
 
-function RescheduleModal({ open, onClose, attemptId, current, onDone }: {
-  open: boolean; onClose: () => void; attemptId: number; current: string; onDone: () => void;
+/** Đổi TUẦN kế hoạch — việc của Quản lý. Ngày cũ ngoài tuần mới sẽ bị bỏ để xếp lại. */
+function WeekModal({ open, onClose, attemptId, currentPeriodId, onDone }: {
+  open: boolean; onClose: () => void; attemptId: number; currentPeriodId: number | null; onDone: () => void;
 }) {
   const toast = useToast();
-  const [date, setDate] = useState(current);
+  const periods = usePeriods();
+  const [periodId, setPeriodId] = useState<number | null>(currentPeriodId);
   const [reason, setReason] = useState('');
   const [busy, setBusy] = useState(false);
 
   return (
-    <Modal open={open} onClose={onClose} title="Dời lịch Mock" width="max-w-md"
+    <Modal open={open} onClose={onClose} title="Đổi tuần kế hoạch" width="max-w-md"
       footer={<>
         <button className="btn" onClick={onClose} disabled={busy}>Huỷ</button>
-        <button className="btn btn-primary" disabled={busy || !date} onClick={async () => {
+        <button className="btn btn-primary" disabled={busy || !periodId || periodId === currentPeriodId} onClick={async () => {
           setBusy(true);
           try {
-            await api.post(`/mocks/${attemptId}/reschedule`, { plannedDate: date, reason });
-            invalidate('/mocks'); invalidate('/overview');
-            onDone(); onClose(); toast.push('ok', 'Đã dời lịch');
+            const r = await api.post<any>(`/attempts/${attemptId}/week`, { periodId, reason });
+            invalidate('/attempts'); invalidate('/overview');
+            onDone(); onClose();
+            toast.push('ok', r?.droppedDates
+              ? 'Đã đổi tuần. Ngày cũ nằm ngoài tuần mới nên đã bỏ để Admin chi nhánh xếp lại.'
+              : 'Đã đổi tuần kế hoạch');
           } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
         }}>{busy ? 'Đang lưu…' : 'Lưu'}</button>
       </>}>
       <div className="space-y-3">
         <label className="block">
-          <span className="label">Ngày mới</span>
-          <input type="date" className="field" value={date} onChange={(e) => setDate(e.target.value)} />
+          <span className="label">Tuần mới</span>
+          <select className="field" value={periodId ?? ''} onChange={(e) => setPeriodId(Number(e.target.value) || null)}>
+            <option value="">Chọn tuần…</option>
+            {(periods.data ?? []).map((p) => <option key={p.id} value={p.id}>{p.code} · {p.range}</option>)}
+          </select>
         </label>
         <label className="block">
           <span className="label">Lý do</span>
           <input className="field" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Ví dụ: trùng lịch phòng thi" />
         </label>
-        <SectionNote>Dời lịch cập nhật chính lần Mock này. Không tạo lượt mới và không tăng số MT.</SectionNote>
+        <SectionNote>
+          Đổi tuần cập nhật chính lượt MT này, không tạo lượt mới và không tăng số MT.
+          Ngày đã chốt mà nằm ngoài tuần mới sẽ được bỏ để xếp lại — hệ thống không tự dịch bảy ngày.
+        </SectionNote>
+      </div>
+    </Modal>
+  );
+}
+
+/** Chốt NGÀY–GIỜ trong tuần đã duyệt. Ngày ngoài tuần bị từ chối. */
+function ScheduleModal({ open, onClose, detail, onDone }: {
+  open: boolean; onClose: () => void; detail: Detail; onDone: () => void;
+}) {
+  const toast = useToast();
+  const [lrw, setLrw] = useState(detail.lrwScheduledAt ?? '');
+  const [speaking, setSpeaking] = useState(detail.speakingScheduledAt ?? '');
+  const [reason, setReason] = useState('');
+  const [busy, setBusy] = useState(false);
+  const toLocal = (v: string) => (v ? v.replace(' ', 'T').slice(0, 16) : '');
+  const fromLocal = (v: string) => (v ? v.replace('T', ' ') : null);
+
+  return (
+    <Modal open={open} onClose={onClose} title="Chốt ngày giờ trong tuần" width="max-w-lg"
+      footer={<>
+        <button className="btn" onClick={onClose} disabled={busy}>Đóng</button>
+        <button className="btn btn-primary" disabled={busy} onClick={async () => {
+          setBusy(true);
+          try {
+            const body: any = { reason };
+            if (detail.viewer.canSetDate) body.lrwAt = fromLocal(lrw);
+            body.speakingAt = fromLocal(speaking);
+            await api.post(`/attempts/${detail.id}/schedule`, body);
+            invalidate('/attempts'); invalidate('/overview');
+            onDone(); onClose(); toast.push('ok', 'Đã chốt lịch');
+          } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
+        }}>{busy ? 'Đang lưu…' : 'Lưu lịch'}</button>
+      </>}>
+      <div className="space-y-3">
+        {detail.period ? (
+          <p className="text-xs text-slate-400">
+            Tuần đã duyệt: <strong className="text-slate-200">{detail.period.code}</strong>{' '}
+            ({fmtDate(detail.period.weekStart)} – {fmtDate(detail.period.weekEnd)}). Ngày phải nằm trong tuần này.
+          </p>
+        ) : (
+          <p className="text-xs text-amber-200">Chưa có tuần kế hoạch. Quản lý cần chốt tuần trước.</p>
+        )}
+        <label className="block">
+          <span className="label">Buổi chính — Listening / Reading / Writing</span>
+          <input type="datetime-local" className="field" value={toLocal(lrw)} disabled={!detail.viewer.canSetDate}
+            onChange={(e) => setLrw(e.target.value)} />
+          {!detail.viewer.canSetDate && (
+            <span className="block text-[11px] text-slate-500 mt-1">Chỉ Admin chi nhánh chốt được buổi chính.</span>
+          )}
+        </label>
+        <label className="block">
+          <span className="label">Buổi Speaking (có thể khác ngày)</span>
+          <input type="datetime-local" className="field" value={toLocal(speaking)}
+            onChange={(e) => setSpeaking(e.target.value)} />
+        </label>
+        <label className="block">
+          <span className="label">Lý do / ghi chú</span>
+          <input className="field" value={reason} onChange={(e) => setReason(e.target.value)} />
+        </label>
+        <SectionNote>
+          Speaking khác ngày vẫn thuộc CÙNG lượt MT{detail.attemptNo} này, không tách thành lượt riêng.
+          Muốn xếp ngoài tuần thì đề nghị Quản lý đổi tuần kế hoạch trước.
+        </SectionNote>
+      </div>
+    </Modal>
+  );
+}
+
+/** Hạn nhập điểm riêng, thay hạn mặc định. Chỉ một hạn có hiệu lực tại một thời điểm. */
+function DeadlineModal({ open, onClose, detail, onDone }: {
+  open: boolean; onClose: () => void; detail: Detail; onDone: () => void;
+}) {
+  const toast = useToast();
+  const [date, setDate] = useState(detail.deadlineOverride?.date ?? '');
+  const [reason, setReason] = useState(detail.deadlineOverride?.reason ?? '');
+  const [busy, setBusy] = useState(false);
+
+  const submit = async (value: string | null) => {
+    setBusy(true);
+    try {
+      await api.post(`/attempts/${detail.id}/deadline`, { deadline: value, reason });
+      invalidate('/attempts'); invalidate('/overview');
+      onDone(); onClose();
+      toast.push('ok', value ? 'Đã đặt hạn riêng' : 'Đã quay lại hạn mặc định');
+    } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
+  };
+
+  return (
+    <Modal open={open} onClose={onClose} title="Hạn nhập điểm" width="max-w-md"
+      footer={<>
+        <button className="btn" onClick={onClose} disabled={busy}>Đóng</button>
+        {detail.deadlineOverride && (
+          <button className="btn" disabled={busy} onClick={() => submit(null)}>Dùng lại hạn mặc định</button>
+        )}
+        <button className="btn btn-primary" disabled={busy || !date} onClick={() => submit(date)}>
+          {busy ? 'Đang lưu…' : 'Lưu hạn riêng'}
+        </button>
+      </>}>
+      <div className="space-y-3">
+        <label className="block">
+          <span className="label">Hạn riêng</span>
+          <input type="date" className="field" value={date} onChange={(e) => setDate(e.target.value)} />
+        </label>
+        <label className="block">
+          <span className="label">Lý do</span>
+          <input className="field" value={reason ?? ''} onChange={(e) => setReason(e.target.value)}
+            placeholder="Ví dụ: giáo viên Writing nghỉ phép" />
+        </label>
+        <SectionNote>
+          Hạn mặc định là thứ Tư của tuần kế tiếp sau buổi mock của từng kỹ năng. Đặt hạn riêng sẽ thay
+          hạn mặc định cho cả lượt này; hết ngày hạn mới tính quá hạn.
+          Phạm vi hạn riêng theo từng kỹ năng còn chờ chốt (O02).
+        </SectionNote>
       </div>
     </Modal>
   );
@@ -477,15 +667,15 @@ function CancelDialog({ open, onClose, attemptId, onDone }: {
       open={open} onClose={onClose} danger busy={busy} title="Huỷ lịch Mock" confirmLabel="Huỷ lịch"
       body={
         <div className="space-y-2">
-          <p>Huỷ vẫn giữ nguyên lịch sử. Lượt đã huỷ không tính vào “đã thi” hay “thiếu điểm”.</p>
+          <p>Huỷ vẫn giữ nguyên lịch sử và không đổi số MT. Lượt đã huỷ không tính vào “đã xong” hay “thiếu điểm”.</p>
           <input className="field" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Lý do huỷ (bắt buộc)" />
         </div>
       }
       onConfirm={async () => {
         setBusy(true);
         try {
-          await api.post(`/mocks/${attemptId}/cancel`, { reason });
-          invalidate('/mocks'); invalidate('/overview');
+          await api.post(`/attempts/${attemptId}/cancel`, { reason });
+          invalidate('/attempts'); invalidate('/overview');
           onDone(); onClose(); toast.push('ok', 'Đã huỷ lịch');
         } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
       }}
@@ -494,7 +684,12 @@ function CancelDialog({ open, onClose, attemptId, onDone }: {
 }
 
 const actionLabel = (a: string) =>
-  ({ created: 'Tạo lịch', rescheduled: 'Dời lịch', cancelled: 'Huỷ lịch', reopened: 'Mở lại' }[a] ?? a);
+  ({
+    created: 'Tạo kế hoạch', week_set: 'Đổi tuần', lrw_set: 'Chốt buổi chính',
+    speaking_set: 'Chốt buổi Speaking', cancelled: 'Huỷ lượt', reopened: 'Mở lại',
+    skill_skipped: 'Đánh dấu không mock', skill_restored: 'Tính lại kỹ năng',
+    deadline_set: 'Đặt hạn riêng', deadline_cleared: 'Bỏ hạn riêng',
+  }[a] ?? a);
 
 const fieldLabel = (f: string) =>
   ({

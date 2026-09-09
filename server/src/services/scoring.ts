@@ -1,5 +1,5 @@
 import {
-  ASSESSED_SKILLS, CRITERIA_SKILLS, EXPECTATION_DELTA, RAW_SCORE_SKILLS,
+  ASSESSED_SKILLS, CRITERIA_SKILLS, RAW_SCORE_SKILLS, expectationDelta,
   type AssessedSkill, type EntrySkill, type SosLevel,
 } from '../../../shared/domain.ts';
 
@@ -60,59 +60,94 @@ export function assessedBands(entry: EntryBands): Record<AssessedSkill, number |
   };
 }
 
-export function expectationFor(committedScore: number | null, attemptNo: number): number | null {
-  if (committedScore === null || committedScore === undefined) return null;
-  const delta = EXPECTATION_DELTA[attemptNo];
-  if (delta === undefined) return null;
-  return committedScore - delta;
+export function expectationFor(target: number | null, attemptNo: number): number | null {
+  if (target === null || target === undefined) return null;
+  return target - expectationDelta(attemptNo);
 }
 
-export type SkillVerdict = { skill: AssessedSkill; band: number | null; passed: boolean | null };
+export type SkillVerdict = {
+  skill: AssessedSkill;
+  band: number | null;
+  /** true đạt, false dưới kỳ vọng, null chưa đủ căn cứ. */
+  passed: boolean | null;
+  required: boolean;
+};
 
-export type MockResult = {
+export type AttemptResult = {
   expectation: number | null;
   bands: Record<AssessedSkill, number | null>;
   verdicts: SkillVerdict[];
-  /** Số kỹ năng đã có band, trên tổng 4. */
-  completed: number;
+  /** Các kỹ năng phải mock ở lượt này (đã trừ kỹ năng được đánh dấu không mock). */
+  required: AssessedSkill[];
+  skipped: AssessedSkill[];
+  /** Đã nhập điểm bao nhiêu trên tổng số kỹ năng BẮT BUỘC. */
+  scoredRequired: number;
+  /** Đủ điểm mọi kỹ năng bắt buộc — đây là "hoàn thành", chưa nói gì về SOS. */
   complete: boolean;
+  /** Đủ căn cứ để kết luận: hoàn thành VÀ đã biết kỳ vọng. */
+  evaluable: boolean;
   failedCount: number | null;
-  /** null khi chưa đủ 4 kỹ năng — SOS chỉ chốt khi đủ điểm. */
   sosLevel: SosLevel | null;
+  /** Chỉ có khi đủ CẢ BỐN kỹ năng — không dựng Overall từ hai/ba kỹ năng. */
   overall: number | null;
+  /** Nhãn cho biết đang đánh giá trên mấy kỹ năng, ví dụ "Đánh giá trên 3 kỹ năng". */
+  scopeNote: string | null;
 };
 
 /**
- * Kết luận của một lần Mock.
+ * Kết luận của một lượt đánh giá.
  *
- * SOS CHỈ được chốt khi đủ cả bốn kỹ năng. Học sinh có thể thi Speaking một tuần và ba
- * kỹ năng còn lại tuần sau, nên trong lúc chờ phải hiển thị tiến độ n/4 thay vì kết luận
- * sớm là "Đạt kỳ vọng".
+ * Mặc định phải đủ CẢ BỐN kỹ năng mới chốt SOS. Khi Quản lý/Admin chi nhánh đã đánh dấu
+ * một kỹ năng là KHÔNG MOCK, kỹ năng đó rời khỏi mẫu số và SOS tính trên các kỹ năng còn
+ * lại. Không ai đánh dấu thì hệ thống chờ đủ, không tự suy.
+ *
+ * Ngưỡng giữ nguyên: 1 kỹ năng dưới kỳ vọng → SOS 1, 2 → SOS 2, từ 3 → SOS 3.
  */
-export function evaluateMock(committedScore: number | null, attemptNo: number, entry: EntryBands): MockResult {
-  const expectation = expectationFor(committedScore, attemptNo);
+export function evaluateAttempt(
+  target: number | null,
+  attemptNo: number,
+  entry: EntryBands,
+  skippedSkills: readonly string[] = [],
+): AttemptResult {
+  const expectation = expectationFor(target, attemptNo);
   const bands = assessedBands(entry);
+  const skipped = ASSESSED_SKILLS.filter((s) => skippedSkills.includes(s));
+  const required = ASSESSED_SKILLS.filter((s) => !skippedSkills.includes(s));
+
   const verdicts: SkillVerdict[] = ASSESSED_SKILLS.map((skill) => {
     const band = bands[skill];
+    const isRequired = required.includes(skill);
     return {
       skill,
       band,
-      passed: band === null || expectation === null ? null : band >= expectation,
+      passed: !isRequired || band === null || expectation === null ? null : band >= expectation,
+      required: isRequired,
     };
   });
-  const completed = verdicts.filter((v) => v.band !== null).length;
-  const complete = completed === 4 && expectation !== null;
-  const failedCount = complete ? verdicts.filter((v) => v.passed === false).length : null;
+
+  const scoredRequired = verdicts.filter((v) => v.required && v.band !== null).length;
+  const complete = required.length > 0 && scoredRequired === required.length;
+  const evaluable = complete && expectation !== null;
+
+  const failedCount = evaluable ? verdicts.filter((v) => v.passed === false).length : null;
   const sosLevel: SosLevel | null =
     failedCount === null ? null : failedCount === 0 ? 0 : failedCount === 1 ? 1 : failedCount === 2 ? 2 : 3;
 
-  // Overall chỉ có khi đủ bốn band, theo đúng công thức của form.
+  /*
+   * Overall IELTS chỉ có nghĩa khi lượt này thực sự đánh giá đủ BỐN kỹ năng.
+   * Kỹ năng đã bị loại khỏi phạm vi đánh giá thì lượt không còn là bài bốn kỹ năng nữa,
+   * nên không dựng Overall — kể cả khi điểm cũ của kỹ năng đó vẫn còn để tra lại.
+   */
   const all = ASSESSED_SKILLS.map((s) => bands[s]);
-  const overall = all.every((b) => b !== null)
+  const overall = skipped.length === 0 && all.every((b) => b !== null)
     ? roundToHalf((all as number[]).reduce((a, b) => a + b, 0) / 4)
     : null;
 
-  return { expectation, bands, verdicts, completed, complete, failedCount, sosLevel, overall };
+  return {
+    expectation, bands, verdicts, required, skipped,
+    scoredRequired, complete, evaluable, failedCount, sosLevel, overall,
+    scopeNote: skipped.length ? `Đánh giá trên ${required.length} kỹ năng` : null,
+  };
 }
 
 export function isRawSkill(skill: string): skill is 'listening' | 'reading' {
@@ -120,4 +155,15 @@ export function isRawSkill(skill: string): skill is 'listening' | 'reading' {
 }
 export function isCriteriaSkill(skill: string): boolean {
   return (CRITERIA_SKILLS as string[]).includes(skill);
+}
+
+/** Kỹ năng nhập điểm nào thuộc về một kỹ năng đánh giá. Writing gồm cả hai task. */
+export function entrySkillsOf(assessed: AssessedSkill): EntrySkill[] {
+  if (assessed === 'writing') return ['writing1', 'writing2'];
+  return [assessed as EntrySkill];
+}
+
+/** Kỹ năng đánh giá tương ứng với một ô nhập điểm. */
+export function assessedSkillOf(entry: string): AssessedSkill {
+  return entry === 'writing1' || entry === 'writing2' ? 'writing' : (entry as AssessedSkill);
 }

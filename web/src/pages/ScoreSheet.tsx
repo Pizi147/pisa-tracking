@@ -5,7 +5,9 @@ import { useSession } from '../lib/session.tsx';
 import { Card, Empty, ErrorState, Pill, SectionNote, Skeleton } from '../components/ui.tsx';
 import { usePeriods } from '../components/Filters.tsx';
 import { CriteriaButton, DeadlinePill, RawScoreInput, useSaveScore, type Cell } from '../components/ScoreEntry.tsx';
-import { fmtBand, fmtDay, mockStatusLabel, skillShort, sosLabel, sosTone } from '../lib/format.ts';
+import {
+  attemptStatusLabel, attemptStatusTone, fmtBand, fmtSlot, skillShort, sosLabel, sosTone,
+} from '../lib/format.ts';
 import { ENTRY_SKILLS } from '@shared/domain.ts';
 
 type Sheet = {
@@ -14,7 +16,8 @@ type Sheet = {
   editableSkills: string[];
   rows: {
     attemptId: number; studentId: number; studentName: string; studentCode: string;
-    attemptNo: number; plannedDate: string; status: string; expectation: number | null;
+    attemptNo: number; status: string;
+    lrwScheduledAt: string | null; speakingScheduledAt: string | null;
     cells: Cell[]; result: any;
   }[];
 };
@@ -92,7 +95,7 @@ export default function ScoreSheetPage() {
                   <tr>
                     <th className="th sticky-col">Học viên</th>
                     <th className="th">MT</th>
-                    <th className="th">Ngày thi</th>
+                    <th className="th">Lịch</th>
                     {rawSkills.map((s) => <th key={s} className="th">{skillShort(s)} <span className="normal-case text-slate-500">(số câu)</span></th>)}
                     {critSkills.map((s) => <th key={s} className="th">{skillShort(s)} <span className="normal-case text-slate-500">(band)</span></th>)}
                     <th className="th">Kỳ vọng</th>
@@ -125,7 +128,8 @@ export default function ScoreSheetPage() {
 
       <SectionNote>
         Ô để trống nghĩa là chưa nhập, không phải điểm 0. Chỉ những kỹ năng bạn được phân công mới sửa được;
-        các kỹ năng khác vẫn đọc được để đối chiếu. Hạn nhập tính theo ngày thi thực tế của từng kỹ năng.
+        các kỹ năng khác vẫn đọc được để đối chiếu. Hạn nhập tính theo buổi mock của từng kỹ năng, nên
+        Speaking khác ngày sẽ có hạn riêng. Kỹ năng đã đánh dấu không mock hiện mờ và không bị tính thiếu điểm.
       </SectionNote>
     </div>
   );
@@ -140,8 +144,8 @@ function SheetRow({ row, rowIndex, rawSkills, critSkills, onReload, register, on
 }) {
   const { save } = useSaveScore(row.attemptId, onReload);
   const cellOf = (skill: string) => row.cells.find((c) => c.skill === skill);
-  const testDates = [...new Set(row.cells.map((c) => c.testDate).filter(Boolean))].sort();
-  const firstTest = testDates[0] ?? null;
+  const split = !!row.speakingScheduledAt
+    && row.speakingScheduledAt.slice(0, 10) !== (row.lrwScheduledAt ?? '').slice(0, 10);
 
   return (
     <tr className="row-hover">
@@ -151,10 +155,12 @@ function SheetRow({ row, rowIndex, rawSkills, critSkills, onReload, register, on
       </td>
       <td className="td tabular-nums whitespace-nowrap">MT{row.attemptNo}</td>
       <td className="td whitespace-nowrap text-xs text-slate-400">
-        {firstTest ? fmtDay(firstTest) : `dự kiến ${fmtDay(row.plannedDate)}`}
-        <div><Pill tone={row.status === 'completed' ? 'info' : 'neutral'}>{mockStatusLabel(row.status)}</Pill></div>
-        {testDates.length > 1 && (
-          <div className="mt-1"><Pill tone="info" title={testDates.map(fmtDay).join(' · ')}>Thi lệch ngày</Pill></div>
+        {row.lrwScheduledAt ? fmtSlot(row.lrwScheduledAt) : <Pill tone="warn">Chưa xếp ngày</Pill>}
+        <div><Pill tone={attemptStatusTone(row.status)}>{attemptStatusLabel(row.status)}</Pill></div>
+        {split && (
+          <div className="mt-1">
+            <Pill tone="info" title={`Speaking ${fmtSlot(row.speakingScheduledAt)}`}>Speaking khác ngày</Pill>
+          </div>
         )}
       </td>
       {rawSkills.map((s, ci) => {
@@ -185,12 +191,15 @@ function SheetRow({ row, rowIndex, rawSkills, critSkills, onReload, register, on
           </td>
         );
       })}
-      <td className="td tabular-nums">{fmtBand(row.expectation)}</td>
+      <td className="td tabular-nums">{fmtBand(row.result.expectation)}</td>
       <td className="td tabular-nums text-slate-100">{fmtBand(row.result.overall)}</td>
       <td className="td">
         <Pill tone={sosTone(row.result.sosLevel)}>
-          {row.result.complete ? sosLabel(row.result.sosLevel) : `Chờ ${4 - row.result.completed} kỹ năng`}
+          {row.result.evaluable
+            ? sosLabel(row.result.sosLevel)
+            : `Chờ ${row.result.required.length - row.result.scoredRequired} kỹ năng`}
         </Pill>
+        {row.result.scopeNote && <div className="text-[10px] text-slate-500 mt-0.5">{row.result.scopeNote}</div>}
       </td>
     </tr>
   );

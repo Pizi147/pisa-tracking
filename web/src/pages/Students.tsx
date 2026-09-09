@@ -4,14 +4,14 @@ import { useApi } from '../lib/useApi.ts';
 import { useSession } from '../lib/session.tsx';
 import { Card, Empty, ErrorState, Pill, Skeleton } from '../components/ui.tsx';
 import type { Branch } from '../components/Filters.tsx';
-import { fmtBand, fmtDate, sosLabel, sosTone } from '../lib/format.ts';
+import { fmtBand, fmtSlot, sosLabel, sosTone, studentStatusLabel } from '../lib/format.ts';
 
 type Row = {
-  id: number; studentCode: string; fullName: string;
-  committedScore: number | null; route: string | null; examDate: string | null;
+  id: number; studentCode: string; fullName: string; status: string;
+  cycleId: number | null; route: string | null; target: number | null; examDate: string | null;
   classCode: string | null; branchName: string | null;
-  latest: { attemptNo: number; overall: number | null; sosLevel: number | null } | null;
-  nextMock: { attempt_no: number; planned_date: string; week: { code: string } } | null;
+  latest: { attemptNo: number; route: string | null; overall: number | null; sosLevel: number | null; scopeNote: string | null } | null;
+  nextMock: { id: number; attemptNo: number; periodCode: string | null; scheduledAt: string | null; needsDate: boolean } | null;
   openCase: { id: number; sos_level: number; status: string } | null;
 };
 
@@ -89,34 +89,44 @@ export default function StudentsPage() {
                   <tr>
                     <th className="th">Học viên</th>
                     <th className="th">Lớp</th>
-                    <th className="th">Lộ trình / cam kết</th>
+                    <th className="th">Lộ trình / target</th>
                     <th className="th">Kết quả gần nhất</th>
-                    <th className="th">Mock tiếp theo</th>
+                    <th className="th">MT tiếp theo</th>
                     <th className="th">Case đang mở</th>
                   </tr>
                 </thead>
                 <tbody>
                   {rows.map((s) => (
-                    <tr key={s.id} className="row-hover">
+                    <tr key={s.id} className={`row-hover ${s.status === 'finished' ? 'row-muted' : ''}`}>
                       <td className="td">
                         <Link className="link" to={`/hoc-vien/${s.id}`}>{s.fullName}</Link>
-                        <div className="text-[11px] text-slate-500">{s.studentCode}</div>
+                        <div className="text-[11px] text-slate-500">
+                          {s.studentCode}
+                          {s.status !== 'active' && ` · ${studentStatusLabel(s.status)}`}
+                        </div>
                       </td>
                       <td className="td whitespace-nowrap">
                         <div className="text-slate-200">{s.classCode ?? '—'}</div>
                         <div className="text-[11px] text-slate-500">{s.branchName ?? ''}</div>
                       </td>
                       <td className="td whitespace-nowrap">
-                        {s.route ?? '—'} <span className="text-slate-500">· {fmtBand(s.committedScore)}</span>
+                        {s.route ?? '—'} <span className="text-slate-500">· {fmtBand(s.target)}</span>
                       </td>
                       <td className="td whitespace-nowrap">
                         {s.latest
-                          ? <>MT{s.latest.attemptNo} · <span className="tabular-nums">{fmtBand(s.latest.overall)}</span>{' '}
+                          ? <>{s.latest.route ? `${s.latest.route} · ` : ''}MT{s.latest.attemptNo} ·{' '}
+                              <span className="tabular-nums">{fmtBand(s.latest.overall)}</span>{' '}
                               <Pill tone={sosTone(s.latest.sosLevel)}>{sosLabel(s.latest.sosLevel)}</Pill></>
                           : <span className="text-slate-500">Chưa có kết quả đủ điểm</span>}
                       </td>
                       <td className="td whitespace-nowrap text-slate-300">
-                        {s.nextMock ? `MT${s.nextMock.attempt_no} · ${s.nextMock.week.code} · ${fmtDate(s.nextMock.planned_date)}` : '—'}
+                        {s.nextMock
+                          ? <>MT{s.nextMock.attemptNo} · {s.nextMock.periodCode ?? 'chưa có tuần'}
+                              {s.nextMock.needsDate
+                                ? <Pill tone="warn">Chưa có ngày</Pill>
+                                : <span className="text-slate-500 text-xs"> · {fmtSlot(s.nextMock.scheduledAt)}</span>}
+                            </>
+                          : '—'}
                       </td>
                       <td className="td">
                         {s.openCase

@@ -158,25 +158,37 @@ function grantCovers(g: Grant, ctx: Ctx): boolean {
   return branches.every((b) => b === g.branchId);
 }
 
+/**
+ * Ràng buộc thêm cho vai trò Giáo viên. Quyền lịch KHÔNG còn đi kèm quyền chấm điểm,
+ * và GVCN không vì chủ nhiệm mà có quyền lịch hay quyền sửa mọi kỹ năng.
+ */
+function teacherAllows(p: Principal, permission: string, ctx: Ctx): boolean {
+  switch (permission) {
+    // Nhập điểm: phải đúng kỹ năng được phân công ở đúng lớp.
+    case PERMISSIONS.SCORE_EDIT:
+    case PERMISSIONS.ESTIMATE_EDIT:
+      return hasAssignment(p, ctx, 'skill');
+
+    // Ngoại lệ có chủ đích: giáo viên Speaking đổi được lịch Speaking của lớp mình dạy.
+    case PERMISSIONS.SCHEDULE_SPEAKING:
+      return hasAssignment(p, { ...ctx, skill: 'speaking' }, 'skill');
+
+    // Xem và ghi nhận xử lý: chỉ trong lớp được phân công.
+    case PERMISSIONS.ATTEMPT_VIEW:
+    case PERMISSIONS.STUDENT_VIEW:
+    case PERMISSIONS.SOS_EDIT:
+      return ctx.anyScope === true || hasAssignment(p, ctx, 'any');
+
+    default:
+      return true;
+  }
+}
+
 export function can(p: Principal, permission: string, ctx: Ctx = {}): boolean {
   for (const g of p.grants) {
     if (!g.permissions.has(permission)) continue;
     if (!grantCovers(g, ctx)) continue;
-
-    // Giáo viên bị giới hạn thêm bởi phân công lớp/kỹ năng.
-    if (g.roleKey === 'teacher') {
-      if (permission === PERMISSIONS.SCORE_EDIT) {
-        if (!hasAssignment(p, ctx, 'skill')) continue;
-      } else if (permission === PERMISSIONS.MOCK_SCHEDULE) {
-        if (!hasAssignment(p, ctx, 'core')) continue;      // chỉ GVCN được dời lịch
-      } else if (
-        permission === PERMISSIONS.MOCK_VIEW ||
-        permission === PERMISSIONS.STUDENT_VIEW ||
-        permission === PERMISSIONS.SOS_EDIT
-      ) {
-        if (ctx.anyScope !== true && !hasAssignment(p, ctx, 'any')) continue;
-      }
-    }
+    if (g.roleKey === 'teacher' && !teacherAllows(p, permission, ctx)) continue;
     return true;
   }
   return false;
@@ -192,10 +204,15 @@ export function require_(p: Principal, permission: string, ctx: Ctx = {}, messag
 
 export function explain(p: Principal, permission: string, ctx: Ctx): string {
   const holders = p.grants.filter((g) => g.permissions.has(permission));
-  if (!holders.length) return 'Vai trò hiện tại của bạn không có chức năng này.';
+  if (!holders.length) {
+    if (permission === PERMISSIONS.PLAN_WEEK) return 'Chỉ Quản lý mới chốt được tuần kế hoạch.';
+    if (permission === PERMISSIONS.SCHEDULE_DATE) return 'Chỉ Admin chi nhánh mới chốt được ngày giờ trong tuần.';
+    return 'Vai trò hiện tại của bạn không có chức năng này.';
+  }
   if (holders.every((g) => g.roleKey === 'teacher')) {
     if (permission === PERMISSIONS.SCORE_EDIT) return 'Bạn chỉ nhập được điểm của kỹ năng mình được phân công.';
-    if (permission === PERMISSIONS.MOCK_SCHEDULE) return 'Chỉ giáo viên chủ nhiệm của lớp mới dời được lịch Mock.';
+    if (permission === PERMISSIONS.ESTIMATE_EDIT) return 'Bạn chỉ ước lượng được kỹ năng mình được phân công.';
+    if (permission === PERMISSIONS.SCHEDULE_SPEAKING) return 'Chỉ giáo viên Speaking của lớp mới đổi được lịch Speaking.';
     return 'Bạn chỉ thao tác được trong lớp mình được phân công.';
   }
   return 'Đối tượng này nằm ngoài chi nhánh bạn được cấp quyền.';
@@ -246,9 +263,21 @@ export function classScopeSql(scope: Scope, alias = 'c'): { sql: string; params:
   return parts.length ? { sql: '(' + parts.join(' OR ') + ')', params } : { sql: '1=0', params: [] };
 }
 
-/** Các kỹ năng người dùng được nhập điểm ở một lớp. */
+/**
+ * Các kỹ năng người dùng được nhập điểm ở một lớp.
+ * Gồm cả đường nhập bù (`score.override`) để văn phòng còn sửa được khi GVBM vắng — xem O05.
+ */
 export function editableSkills(p: Principal, classId: number, skills: readonly string[]): string[] {
-  return skills.filter((skill) => can(p, PERMISSIONS.SCORE_EDIT, { classId, skill }));
+  return skills.filter(
+    (skill) => can(p, PERMISSIONS.SCORE_EDIT, { classId, skill }) || can(p, PERMISSIONS.SCORE_OVERRIDE, { classId }),
+  );
+}
+
+/** Người dùng đang sửa điểm bằng đường nào — dùng để ghi nhật ký cho đúng. */
+export function scoreEditPath(p: Principal, classId: number, skill: string): 'assigned' | 'override' | null {
+  if (can(p, PERMISSIONS.SCORE_EDIT, { classId, skill })) return 'assigned';
+  if (can(p, PERMISSIONS.SCORE_OVERRIDE, { classId })) return 'override';
+  return null;
 }
 
 export function isCoreTeacherOf(p: Principal, classId: number, date = demoToday()): boolean {

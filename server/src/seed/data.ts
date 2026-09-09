@@ -27,32 +27,46 @@ export const ROLES = [
  * một Quản lý chỉ toàn hệ thống khi grant của họ có branch_id = NULL.
  */
 export const ROLE_PERMISSIONS: Record<string, string[]> = {
-  // Quản trị phần mềm: toàn quyền, là đường sửa sai cuối cùng.
+  // Quản trị phần mềm: toàn quyền, kể cả các ngoại lệ sửa sai về lịch.
   system_admin: [
-    'mock.view', 'mock.schedule', 'mock.cancel', 'score.edit', 'sos.edit', 'sos.confirm',
+    'plan.week', 'schedule.date', 'schedule.speaking', 'attempt.cancel', 'attempt.skip_skill',
+    'deadline.override', 'attempt.view', 'score.override', 'sos.edit', 'sos.confirm',
     'student.view', 'student.edit', 'meeting.view', 'meeting.edit', 'admin.config',
   ],
-  // Văn phòng chi nhánh: danh sách lớp/giáo viên, lịch thi, nhập bù điểm.
-  // KHÔNG có sos.confirm — xác nhận Head là việc của Quản lý.
+  // Văn phòng chi nhánh: chốt NGÀY–GIỜ trong tuần đã duyệt, nhập bù điểm, giữ danh sách lớp.
+  // KHÔNG chốt tuần (việc của Quản lý) và KHÔNG vào Tiến trình công việc (module quản lý).
   branch_admin: [
-    'mock.view', 'mock.schedule', 'mock.cancel', 'score.edit', 'sos.edit',
-    'student.view', 'student.edit', 'meeting.view', 'meeting.edit',
+    'schedule.date', 'schedule.speaking', 'attempt.cancel', 'attempt.skip_skill',
+    'deadline.override', 'attempt.view', 'score.override', 'sos.edit',
+    'student.view', 'student.edit',
   ],
-  // Quản lý CHÍNH LÀ Head trong quy trình SOS.
+  // Quản lý: chốt TUẦN kế hoạch, là Head khi xác nhận case, và xem Tiến trình công việc.
+  // Không mặc định gộp quyền chốt ngày vào quyền chốt tuần.
   manager: [
-    'mock.view', 'mock.schedule', 'mock.cancel', 'sos.edit', 'sos.confirm',
-    'student.view', 'student.edit', 'meeting.view', 'meeting.edit',
+    'plan.week', 'attempt.cancel', 'attempt.skip_skill', 'deadline.override', 'attempt.view',
+    'sos.edit', 'sos.confirm', 'student.view', 'student.edit', 'meeting.view', 'meeting.edit',
   ],
-  // Giáo viên còn bị siết thêm bởi phân công lớp/kỹ năng, xem permissions.ts.
-  teacher: ['mock.view', 'mock.schedule', 'score.edit', 'sos.edit', 'student.view'],
+  // Giáo viên: nhập điểm và ước lượng ĐÚNG kỹ năng được phân công.
+  // GVCN không vì chủ nhiệm mà có thêm quyền lịch; riêng GV Speaking đổi được lịch Speaking.
+  teacher: ['attempt.view', 'score.edit', 'estimate.edit', 'schedule.speaking', 'sos.edit', 'student.view'],
 };
 
 /** Mã lớp luôn bắt đầu bằng mã chi nhánh. Loại lớp là nhãn tự do do quản lý đặt. */
+export type PlanStep = {
+  attemptNo: number;
+  /** Tuần kế hoạch do Quản lý chốt. Luôn có khi lượt đã được lên kế hoạch. */
+  week: string;                 // ngày thứ Hai của tuần
+  /** Ngày giờ buổi chính do Admin chi nhánh chốt. Bỏ trống = đã có tuần, chưa có ngày. */
+  lrwAt?: string;
+  /** Speaking có thể khác ngày, vẫn thuộc cùng lượt MT này. */
+  speakingAt?: string;
+  done: boolean;
+};
+
 export type ClassSeed = {
   code: string; branch: string; kind: string; route: 'LT1' | 'LT2' | null;
   isFulltime: boolean; startDate: string; students: number;
-  /** Kế hoạch Mock của cả lớp: ngày dự kiến theo từng lần MT. */
-  plan: { attemptNo: number; date: string; taken: boolean }[];
+  plan: PlanStep[];
 };
 
 export const CLASSES: ClassSeed[] = [
@@ -60,18 +74,21 @@ export const CLASSES: ClassSeed[] = [
     code: 'MB-FT 101', branch: 'MB', kind: 'FT', route: 'LT1', isFulltime: true,
     startDate: '2026-06-22', students: 8,
     plan: [
-      { attemptNo: 1, date: '2026-07-27', taken: true },
-      { attemptNo: 2, date: '2026-09-10', taken: true },   // W2 SEP — hạn 16/09, đã quá hạn
-      { attemptNo: 3, date: '2026-10-05', taken: false },
+      { attemptNo: 1, week: '2026-07-27', lrwAt: '2026-07-27 18:00', done: true },
+      // W2 SEP — hạn mặc định 16/09, đã quá hạn so với ngày demo 23/09.
+      { attemptNo: 2, week: '2026-09-07', lrwAt: '2026-09-10 18:00', speakingAt: '2026-09-11 09:00', done: true },
+      // Đã chốt tuần, CHƯA có ngày — việc của Admin chi nhánh.
+      { attemptNo: 3, week: '2026-10-05', done: false },
     ],
   },
   {
     code: 'MB-FT 102', branch: 'MB', kind: 'FT', route: 'LT2', isFulltime: true,
     startDate: '2026-06-29', students: 8,
     plan: [
-      { attemptNo: 1, date: '2026-08-03', taken: true },
-      { attemptNo: 2, date: '2026-09-17', taken: true },   // W3 SEP — hạn đúng hôm nay 23/09
-      { attemptNo: 3, date: '2026-10-12', taken: false },
+      { attemptNo: 1, week: '2026-08-03', lrwAt: '2026-08-03 18:00', done: true },
+      // W3 SEP — hạn mặc định rơi đúng ngày demo 23/09, chưa quá hạn.
+      { attemptNo: 2, week: '2026-09-14', lrwAt: '2026-09-17 18:00', done: true },
+      { attemptNo: 3, week: '2026-10-12', done: false },
     ],
   },
   {
@@ -82,9 +99,9 @@ export const CLASSES: ClassSeed[] = [
     code: 'BC-FT 205', branch: 'BC', kind: 'FT', route: 'LT1', isFulltime: true,
     startDate: '2026-06-22', students: 8,
     plan: [
-      { attemptNo: 1, date: '2026-07-27', taken: true },
-      { attemptNo: 2, date: '2026-09-10', taken: true },
-      { attemptNo: 3, date: '2026-10-05', taken: false },
+      { attemptNo: 1, week: '2026-07-27', lrwAt: '2026-07-27 18:00', done: true },
+      { attemptNo: 2, week: '2026-09-07', lrwAt: '2026-09-10 18:00', done: true },
+      { attemptNo: 3, week: '2026-10-05', done: false },
     ],
   },
   {
@@ -95,26 +112,27 @@ export const CLASSES: ClassSeed[] = [
     code: 'CP-FT 110', branch: 'CP', kind: 'FT', route: 'LT1', isFulltime: true,
     startDate: '2026-07-06', students: 8,
     plan: [
-      { attemptNo: 1, date: '2026-08-10', taken: true },
-      { attemptNo: 2, date: '2026-09-22', taken: true },  // W4 SEP — vừa thi, hạn 30/09 chưa tới
-      { attemptNo: 3, date: '2026-10-19', taken: false },
+      { attemptNo: 1, week: '2026-08-10', lrwAt: '2026-08-10 18:00', done: true },
+      // W4 SEP — tuần đang xem, vừa mock xong, hạn 30/09 chưa tới.
+      { attemptNo: 2, week: '2026-09-21', lrwAt: '2026-09-22 18:00', done: true },
+      { attemptNo: 3, week: '2026-10-19', done: false },
     ],
   },
   {
     code: 'CP-FT 111', branch: 'CP', kind: 'FT', route: 'LT2', isFulltime: true,
     startDate: '2026-06-29', students: 8,
     plan: [
-      { attemptNo: 1, date: '2026-08-03', taken: true },
-      { attemptNo: 2, date: '2026-09-17', taken: true },
-      { attemptNo: 3, date: '2026-10-12', taken: false },
+      { attemptNo: 1, week: '2026-08-03', lrwAt: '2026-08-03 18:00', done: true },
+      { attemptNo: 2, week: '2026-09-14', lrwAt: '2026-09-17 18:00', done: true },
+      { attemptNo: 3, week: '2026-10-12', done: false },
     ],
   },
   {
     code: 'HD-FT 302', branch: 'HD', kind: 'FT', route: 'LT1', isFulltime: true,
     startDate: '2026-07-06', students: 8,
     plan: [
-      { attemptNo: 1, date: '2026-08-10', taken: true },
-      { attemptNo: 2, date: '2026-09-25', taken: false }, // W4 SEP
+      { attemptNo: 1, week: '2026-08-10', lrwAt: '2026-08-10 18:00', done: true },
+      { attemptNo: 2, week: '2026-09-21', lrwAt: '2026-09-25 18:00', done: false },
     ],
   },
   {
@@ -125,10 +143,10 @@ export const CLASSES: ClassSeed[] = [
     code: 'UB-FT 401', branch: 'UB', kind: 'FT', route: 'LT2', isFulltime: true,
     startDate: '2026-05-25', students: 8,
     plan: [
-      { attemptNo: 1, date: '2026-06-29', taken: true },
-      { attemptNo: 2, date: '2026-08-17', taken: true },
-      { attemptNo: 3, date: '2026-09-14', taken: true },  // W3 SEP — MT3 mở nhóm case có vận hành
-      { attemptNo: 4, date: '2026-10-05', taken: false },
+      { attemptNo: 1, week: '2026-06-29', lrwAt: '2026-06-29 18:00', done: true },
+      { attemptNo: 2, week: '2026-08-17', lrwAt: '2026-08-17 18:00', done: true },
+      { attemptNo: 3, week: '2026-09-14', lrwAt: '2026-09-14 18:00', done: true },
+      { attemptNo: 4, week: '2026-10-05', done: false },
     ],
   },
 ];
@@ -146,16 +164,18 @@ export const GIVEN_NAMES = [
   'Yến', 'Đạt', 'Hưng', 'Kiên', 'Loan', 'My', 'Ninh', 'Phúc', 'Quyên', 'Trâm',
 ];
 
-export const COMMITTED_SCORES = [6.0, 6.5, 7.0, 6.5, 5.5];
+/** Target của lộ trình. Kỳ vọng từng lần MT tính từ đây. */
+export const TARGET_SCORES = [6.0, 6.5, 7.0, 6.5, 5.5];
 
 /**
  * Kịch bản kết quả theo vị trí học sinh trong lớp.
  *
  *  - `fails`: số kỹ năng dưới kỳ vọng, quyết định mức SOS (0 → đạt, 1 → SOS 1, ...).
- *  - `missing`: các kỹ năng CHƯA nhập điểm, để thấy tiến độ n/4 và trạng thái quá hạn.
- *  - `splitWeek`: Speaking thi trước một tuần, bốn kỹ năng còn lại thi tuần sau.
+ *  - `missing`: các kỹ năng CHƯA nhập điểm, để thấy tiến độ n/n và trạng thái quá hạn.
+ *  - `skip`: kỹ năng ĐÁNH GIÁ được Quản lý đánh dấu không mock, SOS tính trên phần còn lại.
+ *  - `performedOnly`: đã mock nhưng chưa nhập điểm — khác hẳn chưa mock.
  */
-export type Outcome = { fails: number; missing?: string[]; splitWeek?: boolean };
+export type Outcome = { fails: number; missing?: string[]; skip?: string; performedOnly?: string[] };
 
 export const MT_OUTCOMES: Outcome[][] = [
   // [MT1, MT2, MT3, MT4] cho từng vị trí học sinh trong lớp
@@ -163,10 +183,12 @@ export const MT_OUTCOMES: Outcome[][] = [
   [{ fails: 1 }, { fails: 0 }, { fails: 1 }, { fails: 0 }],
   [{ fails: 0 }, { fails: 1 }, { fails: 0 }, { fails: 1 }],
   [{ fails: 2 }, { fails: 2 }, { fails: 2 }, { fails: 2 }],
-  [{ fails: 1 }, { fails: 3, splitWeek: true }, { fails: 3 }, { fails: 1 }],
-  [{ fails: 3 }, { fails: 2 }, { fails: 2 }, { fails: 3 }],
+  [{ fails: 1 }, { fails: 3 }, { fails: 3 }, { fails: 1 }],
+  // Học sinh không mock Speaking ở MT2: Quản lý đánh dấu không mock, SOS tính trên 3 kỹ năng.
+  [{ fails: 3 }, { fails: 2, skip: 'speaking' }, { fails: 2 }, { fails: 3 }],
   [{ fails: 0 }, { fails: 0, missing: ['writing2'] }, { fails: 0 }, { fails: 0 }],
-  [{ fails: 4 }, { fails: 1, missing: ['speaking', 'reading'] }, { fails: 1 }, { fails: 2 }],
+  // Đã mock Speaking nhưng chưa nhập điểm, và Reading thì chưa mock — hai trạng thái khác nhau.
+  [{ fails: 4 }, { fails: 1, missing: ['reading'], performedOnly: ['speaking'] }, { fails: 1 }, { fails: 2 }],
 ];
 
 /** Trạng thái ghi nhận xử lý, xoay vòng để mỗi mức tiến độ đều có mẫu để xem. */

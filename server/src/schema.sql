@@ -106,19 +106,40 @@ CREATE TABLE student_code_seq (
 
 CREATE TABLE students (
   id INTEGER PRIMARY KEY,
-  student_code TEXT NOT NULL UNIQUE,
+  student_code TEXT NOT NULL UNIQUE,  -- ID ổn định, giữ nguyên khi chuyển lớp hoặc học lại
   full_name TEXT NOT NULL,
   normalized_name TEXT NOT NULL,
   dob TEXT,
-  committed_score REAL,               -- điểm cam kết, gốc để tính kỳ vọng
-  route TEXT,                         -- LT1 | LT2
-  exam_date TEXT,
   branch_id INTEGER REFERENCES branches(id),
+  -- Chỉ ba trạng thái: active đang học | inactive tạm dừng | finished dừng hẳn.
+  -- LT1/LT2 là lộ trình, KHÔNG phải trạng thái học viên.
   status TEXT NOT NULL DEFAULT 'active',
+  finished_at TEXT,                   -- mốc tính thời điểm đưa vào lưu trữ
+  archived_at TEXT,                   -- lưu trữ là cách ẩn khỏi danh sách, không phải trạng thái thứ tư
+  consultant_name TEXT,               -- metadata hồ sơ, KHÔNG phải một vai trò tài khoản
   note TEXT,
   created_at TEXT NOT NULL
 );
 CREATE INDEX idx_student_name ON students(normalized_name);
+
+-- Lộ trình học. Mỗi lộ trình có TARGET và ngày thi IELTS riêng.
+-- Học tiếp/học lại trong cùng lộ trình: số MT tăng tiếp, target giữ nguyên.
+-- Sang lộ trình mới (LT1 -> LT2): đánh số MT lại từ 1 vì đã có target mới.
+CREATE TABLE learning_cycles (
+  id INTEGER PRIMARY KEY,
+  student_id INTEGER NOT NULL REFERENCES students(id),
+  seq INTEGER NOT NULL,               -- thứ tự lộ trình của học viên: 1, 2, ...
+  route TEXT,                         -- LT1 | LT2 với FT; NULL với lớp thường
+  target_score REAL,                  -- điểm cam kết của CHÍNH lộ trình này
+  exam_date TEXT,                     -- ngày thi IELTS chính thức của lộ trình này
+  started_at TEXT NOT NULL,
+  ended_at TEXT,
+  status TEXT NOT NULL DEFAULT 'active',   -- active | completed | abandoned
+  note TEXT,
+  created_at TEXT NOT NULL,
+  UNIQUE (student_id, seq)
+);
+CREATE INDEX idx_cycle_student ON learning_cycles(student_id);
 
 -- Lịch sử lớp. Chuyển lớp mở dòng mới, không ghi đè.
 CREATE TABLE enrollments (
@@ -162,59 +183,114 @@ CREATE TABLE report_periods (
 );
 CREATE INDEX idx_period_code ON report_periods(year, month, week_no);
 
--- ===================== MOCK TEST =====================
-CREATE TABLE mock_attempts (
+-- ===================== LƯỢT ĐÁNH GIÁ (MOCK TEST) =====================
+-- Định danh = học viên + LỘ TRÌNH + lần thứ mấy trong lộ trình đó.
+-- Không dùng từ "thi" cho Mock; "thi" chỉ dành cho kỳ IELTS chính thức.
+CREATE TABLE assessment_attempts (
   id INTEGER PRIMARY KEY,
+  cycle_id INTEGER NOT NULL REFERENCES learning_cycles(id),
   student_id INTEGER NOT NULL REFERENCES students(id),
-  attempt_no INTEGER NOT NULL,        -- 1..5, tương ứng MT1..MT5
-  class_id INTEGER REFERENCES classes(id),        -- lớp tại thời điểm thi
-  planned_date TEXT NOT NULL,
-  status TEXT NOT NULL DEFAULT 'planned',         -- planned | completed | cancelled
+  attempt_no INTEGER NOT NULL,        -- MT1, MT2, ... trong CHÍNH lộ trình này
+  kind TEXT NOT NULL DEFAULT 'mock',  -- mock (FT); progress | final dành cho lớp thường
+  class_id INTEGER REFERENCES classes(id),        -- lớp tại thời điểm đánh giá
+
+  -- TUẦN KẾ HOẠCH do Quản lý chốt. Đây là tuần kết quả dùng cho mọi báo cáo và
+  -- tổng hợp, nên một lượt chỉ thuộc đúng một tuần dù các kỹ năng mock lệch tuần.
+  -- Có thể đã có tuần mà chưa có ngày; KHÔNG tự điền thứ Hai làm ngày mock giả.
+  planned_period_id INTEGER REFERENCES report_periods(id),
+
+  -- NGÀY–GIỜ cụ thể do Admin chi nhánh chốt trong tuần đã duyệt.
+  -- LRW đi chung một buổi; Speaking có thể khác ngày nhưng vẫn cùng lượt MT này.
+  lrw_scheduled_at TEXT,              -- 'YYYY-MM-DD' hoặc 'YYYY-MM-DD HH:MM'
+  speaking_scheduled_at TEXT,
+
+  status TEXT NOT NULL DEFAULT 'planned',         -- planned | done | cancelled
   cancel_reason TEXT,
   cancelled_at TEXT,
-  committed_score_at_test REAL,       -- chốt tại lần thi, đổi hồ sơ sau này không viết lại lịch sử
+  target_at_attempt REAL,             -- target chốt tại lượt này, đổi hồ sơ không viết lại lịch sử
+
+  -- Hạn nhập điểm riêng, ghi đè hạn mặc định (thứ Tư tuần kế tiếp).
+  deadline_override TEXT,
+  deadline_override_by INTEGER REFERENCES users(id),
+  deadline_override_at TEXT,
+  deadline_override_reason TEXT,
+
   note TEXT,
   created_by INTEGER REFERENCES users(id),
   created_at TEXT NOT NULL,
   updated_at TEXT,
-  UNIQUE (student_id, attempt_no)
+  UNIQUE (cycle_id, attempt_no)
 );
-CREATE INDEX idx_mock_student ON mock_attempts(student_id);
-CREATE INDEX idx_mock_planned ON mock_attempts(planned_date);
+CREATE INDEX idx_attempt_student ON assessment_attempts(student_id);
+CREATE INDEX idx_attempt_period ON assessment_attempts(planned_period_id);
+CREATE INDEX idx_attempt_class ON assessment_attempts(class_id);
 
-CREATE TABLE mock_schedule_history (
+CREATE TABLE attempt_schedule_history (
   id INTEGER PRIMARY KEY,
-  attempt_id INTEGER NOT NULL REFERENCES mock_attempts(id),
-  action TEXT NOT NULL,               -- created | rescheduled | cancelled | reopened
-  old_date TEXT,
-  new_date TEXT,
+  attempt_id INTEGER NOT NULL REFERENCES assessment_attempts(id),
+  action TEXT NOT NULL,               -- created | week_set | lrw_set | speaking_set | cancelled | reopened | skill_skipped | skill_restored | deadline_set | deadline_cleared
+  field TEXT,
+  old_value TEXT,
+  new_value TEXT,
   reason TEXT,
   actor_user_id INTEGER REFERENCES users(id),
   created_at TEXT NOT NULL
 );
-CREATE INDEX idx_msh_attempt ON mock_schedule_history(attempt_id);
+CREATE INDEX idx_ash_attempt ON attempt_schedule_history(attempt_id);
 
--- Mỗi kỹ năng có NGÀY THI RIÊNG: học sinh có thể thi Speaking tuần này, ba kỹ năng còn lại tuần sau.
-CREATE TABLE mock_scores (
+-- Mặc định MỌI kỹ năng đánh giá đều bắt buộc. Bảng này chỉ ghi NGOẠI LỆ:
+-- khi thực tế học viên không mock một kỹ năng, Quản lý/Admin CN đánh dấu ở đây và
+-- SOS được tính trên các kỹ năng còn lại. Không có dòng nào = phải chờ đủ bốn kỹ năng.
+-- Skill ở đây là kỹ năng ĐÁNH GIÁ (writing là một môn, không tách W1/W2).
+CREATE TABLE attempt_skill_skips (
   id INTEGER PRIMARY KEY,
-  attempt_id INTEGER NOT NULL REFERENCES mock_attempts(id),
+  attempt_id INTEGER NOT NULL REFERENCES assessment_attempts(id),
+  skill TEXT NOT NULL,                -- listening | reading | writing | speaking
+  reason TEXT,
+  created_by INTEGER REFERENCES users(id),
+  created_at TEXT NOT NULL,
+  UNIQUE (attempt_id, skill)
+);
+
+-- Mỗi kỹ năng NHẬP ĐIỂM một dòng, có ngày mock thực tế riêng.
+-- Có dòng với taken_on mà chưa có band = ĐÃ MOCK, CHƯA NHẬP ĐIỂM.
+CREATE TABLE assessment_scores (
+  id INTEGER PRIMARY KEY,
+  attempt_id INTEGER NOT NULL REFERENCES assessment_attempts(id),
   skill TEXT NOT NULL,                -- listening | reading | writing1 | writing2 | speaking
-  test_date TEXT,                     -- ngày thi thực tế của riêng kỹ năng này
+  taken_on TEXT,                      -- ngày MOCK thực tế của riêng kỹ năng này
   raw_score INTEGER,                  -- 0..40, chỉ với listening/reading
+  raw_total INTEGER,                  -- tổng số câu, dành cho lớp thường (score/total)
   c1 REAL, c2 REAL, c3 REAL, c4 REAL, -- bốn tiêu chí, chỉ với writing1/writing2/speaking
-  band REAL,                          -- tính từ raw_score hoặc bốn tiêu chí
-  result_date TEXT,                   -- ngày có kết quả, để đo thời gian trả điểm
+  band REAL,                          -- band IELTS, hoặc NULL khi chưa nhập điểm
+  result_date TEXT,                   -- ngày có kết quả, để đo thời gian chấm
   entered_by INTEGER REFERENCES users(id),
   entered_at TEXT,
   note TEXT,
   UNIQUE (attempt_id, skill)
 );
-CREATE INDEX idx_score_attempt ON mock_scores(attempt_id);
+CREATE INDEX idx_score_attempt ON assessment_scores(attempt_id);
+
+-- Ước lượng của giáo viên. Tách hoàn toàn khỏi điểm chính thức, chỉ ghi thêm dòng mới
+-- nên có sẵn lịch sử. Không bao giờ ghi đè điểm Mock.
+CREATE TABLE teacher_estimates (
+  id INTEGER PRIMARY KEY,
+  student_id INTEGER NOT NULL REFERENCES students(id),
+  cycle_id INTEGER REFERENCES learning_cycles(id),
+  skill TEXT NOT NULL,                -- entry skill: listening | reading | writing1 | writing2 | speaking
+  band REAL NOT NULL,
+  assessed_on TEXT NOT NULL,          -- NGÀY đánh giá, khác ngày nhập vào hệ thống
+  assessed_by INTEGER REFERENCES users(id),
+  class_id INTEGER REFERENCES classes(id),
+  note TEXT,
+  created_at TEXT NOT NULL
+);
+CREATE INDEX idx_estimate_student ON teacher_estimates(student_id, skill);
 
 -- ===================== CASE SOS =====================
 CREATE TABLE sos_cases (
   id INTEGER PRIMARY KEY,
-  attempt_id INTEGER NOT NULL REFERENCES mock_attempts(id) UNIQUE,
+  attempt_id INTEGER NOT NULL REFERENCES assessment_attempts(id) UNIQUE,
   sos_level INTEGER NOT NULL,         -- 1..3
   coordinator_user_id INTEGER REFERENCES users(id),   -- người điều phối case
 

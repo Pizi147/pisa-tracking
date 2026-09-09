@@ -1,10 +1,14 @@
-# Ba luồng chính để bạn bấm thử
+# Các luồng để bạn bấm thử
+
+> Vòng overhaul **A — nền tảng**. Trọng tâm lần này: tách **tuần kế hoạch** với **ngày giờ**,
+> đánh dấu **kỹ năng không mock**, **lộ trình** và số lần MT, **ước lượng giáo viên**, hệ màu mới,
+> và bỏ chữ "thi" cho Mock.
 
 Ngày demo mặc định: **23/09/2026** (thứ Tư, tuần `W4 SEP · 21/09 – 27/09`).
-Chọn ngày này để thấy đủ ba mốc hạn cùng lúc: tuần `W2 SEP` đã quá hạn nhập điểm,
-tuần `W3 SEP` **đúng hạn hôm nay** (chưa quá hạn), tuần `W4 SEP` và `W1 OCT` còn ở phía trước.
-
 Đổi tài khoản bất cứ lúc nào bằng nút **Đổi tài khoản demo** ở thanh trên cùng.
+
+Mỗi vai trò mở vào đúng việc của mình: Giáo viên → *Điểm tôi cần nhập*;
+Admin chi nhánh → *Cần xếp lịch*; Quản lý và Quản trị hệ thống → *Tổng quan*.
 
 ---
 
@@ -81,12 +85,70 @@ Ví dụ hay để mở: các dòng `Case SOS` của lớp `CP-FT 110` (thi 22/0
 
 ---
 
+## Luồng 4 — Tuần kế hoạch và ngày giờ là hai việc khác nhau
+
+**Tài khoản:** `Đặng Quang Vy` (Quản lý Monbay) và `Đặng Ngọc Phúc` (Admin chi nhánh Monbay)
+
+1. Đăng nhập `Đặng Ngọc Phúc` — vào thẳng **Cần xếp lịch**: các lượt đã có tuần nhưng chưa có ngày.
+2. Mở một dòng. Khối *Kế hoạch và lịch* cho thấy đã có **Tuần kế hoạch** còn **Buổi chính** ghi
+   *Chưa chốt ngày*. Admin chi nhánh thấy nút **Chốt ngày giờ** nhưng **không** thấy **Đổi tuần**.
+3. Bấm **Chốt ngày giờ**, nhập một ngày **ngoài tuần** đó → hệ thống từ chối và nói rõ phải để Quản lý
+   đổi tuần trước. Nhập ngày trong tuần → lưu được.
+4. Nhập thêm **Buổi Speaking** ở ngày khác. Vẫn là **cùng một lượt MT**, không tách thành lượt mới.
+5. Đổi sang `Đặng Quang Vy` (Quản lý), mở đúng lượt đó: thấy **Đổi tuần** nhưng **không** thấy
+   **Chốt ngày giờ**. Đổi sang một tuần khác → ngày cũ nằm ngoài tuần mới nên **bị bỏ để xếp lại**,
+   hệ thống không tự dịch bảy ngày.
+6. Đổi sang một tài khoản giáo viên và mở cùng lượt: **không có nút lịch nào**, kể cả GVCN.
+   Giáo viên Speaking của lớp thì đổi được **riêng** lịch Speaking.
+
+**Cần thấy:** tuần chốt sớm không cần ngày · ngày ngoài tuần bị chặn · Speaking khác ngày vẫn cùng lượt ·
+GVCN chỉ đọc lịch.
+
+---
+
+## Luồng 5 — Học viên không mock một kỹ năng
+
+**Tài khoản:** `Đặng Quang Vy` (Quản lý Monbay)
+
+1. Mở một lượt đã xong đủ bốn kỹ năng. Ghi lại **Overall** và mức **SOS** hiện tại.
+2. Ở khối bốn kỹ năng đánh giá, bấm **Đánh dấu không mock** dưới Speaking.
+3. Kết quả: Speaking chuyển sang *Không mock*, mức SOS **tính lại trên ba kỹ năng còn lại**,
+   và **Overall biến mất** vì lượt này không còn là bài bốn kỹ năng. **Band cũ của Speaking vẫn hiện**
+   để tra lại — đánh dấu không mock không xoá điểm.
+4. Dòng ghi chú nói rõ *Đánh giá trên 3 kỹ năng*. Ô Speaking không còn bị tính thiếu điểm hay quá hạn.
+5. Thử nhập điểm cho Speaking → bị từ chối vì kỹ năng đã đánh dấu không mock.
+6. Bấm **Tính lại kỹ năng này** để hoàn tác; mọi thứ trở lại như cũ và lịch sử ghi cả hai lần thay đổi.
+
+**Cần thấy:** không đánh dấu thì hệ thống **chờ đủ bốn**, chỉ khi có đánh dấu mới rút gọn mẫu số.
+
+---
+
+## Luồng 6 — Lộ trình, số lần MT và ước lượng giáo viên
+
+**Tài khoản:** `Đặng Quang Vy`, mở `/hoc-vien/4`
+
+1. Bảng **Các lần Mock Test** có cột **Lộ trình**: LT1 có MT1–MT3, rồi LT2 **bắt đầu lại từ MT1**
+   vì đã có target mới. Kỳ vọng LT2 MT1 = target mới − 1.0.
+2. Xem một học viên ở lớp `UB-FT 401` để thấy trường hợp ngược lại: **học tiếp trong cùng lộ trình**
+   thì MT **tăng tiếp** (MT5) và target giữ nguyên, nên kỳ vọng bằng đúng target.
+3. Khối **Ước lượng giáo viên so với điểm Mock**: mỗi kỹ năng có ước lượng, **ngày ước lượng và người
+   đánh giá**, điểm Mock kèm **nguồn** (`LT1 · MT2 · 10/09/2026`) và chênh lệch.
+4. Hành trình ghi cả `Bắt đầu lộ trình LT1`, `Bắt đầu lộ trình LT2` kèm target, các lần lên kế hoạch
+   và đổi tuần.
+
+**Cần thấy:** hai cột so sánh luôn có ngày và nguồn riêng; không có Overall ghép từ nhiều lượt.
+
+---
+
 ## Kiểm tra quyền (bấm nhanh)
 
 | Thử | Tài khoản | Kỳ vọng |
 |---|---|---|
 | Chỉ sửa được kỹ năng được phân công | `Hoàng Khánh Huy` (W1 lớp MB-FT 101) | Chỉ ô **W1** mở được khung tiêu chí; W2 chỉ đọc |
-| GVCN dời lịch nhưng không sửa mọi điểm | `Đinh Bảo Vy` (GVCN MB-FT 101, dạy Speaking MB-FT 102) | Có nút **Dời lịch**; ở MB-FT 101 chỉ đọc điểm, không sửa |
+| GVCN **không** có quyền lịch | `Đinh Bảo Vy` (GVCN MB-FT 101) | Không có nút **Đổi tuần** lẫn **Chốt ngày giờ**; gọi thẳng API cũng bị từ chối |
+| Quản lý chốt tuần nhưng không chốt ngày | `Đặng Quang Vy` | Có **Đổi tuần**, không có **Chốt ngày giờ** |
+| Admin CN chốt ngày nhưng không chốt tuần | `Đặng Ngọc Phúc` | Có **Chốt ngày giờ**, không có **Đổi tuần** |
+| Admin CN **không** vào Tiến trình công việc | `Đặng Ngọc Phúc` | Menu chỉ còn 3 mục, không có *Họp tuần*; gọi API báo cáo bị từ chối |
 | Không thấy dữ liệu ngoài chi nhánh | `Đặng Quang Vy` (Quản lý MB) | Không thấy lớp `CP-FT 110`; gọi thẳng URL của Mock lớp CP bị **API từ chối**, không chỉ ẩn nút |
 | Nhiều quản lý cùng chi nhánh | `Trần Quang Nam`, `Đinh Bảo Lam` (đều là Quản lý MB) | Cả ba quản lý MB đều thao tác được |
 | Giáo viên không có Họp tuần | bất kỳ giáo viên nào | Menu chỉ còn **3 mục**, không có *Họp tuần* |
@@ -100,17 +162,24 @@ Ví dụ hay để mở: các dòng `Case SOS` của lớp `CP-FT 110` (thi 22/0
 
 | Tình huống | Ở đâu |
 |---|---|
-| **Thi lệch tuần** — Speaking thi trước 1 tuần, 4 kỹ năng còn lại tuần sau, mỗi kỹ năng một hạn riêng | `Đinh Thu Đạt`, lớp `MB-FT 101`, MT2 (nhãn *Thi lệch ngày* trong bảng nhập điểm) |
-| **Quá hạn nhập điểm** | Các lượt MT2 tuần `W2 SEP` còn thiếu kỹ năng (`MB-FT 101`, `BC-FT 205`) |
-| **Đúng hạn hôm nay, chưa quá hạn** | Các lượt MT2 tuần `W3 SEP` (`MB-FT 102`, `CP-FT 111`) |
-| **Đã huỷ lịch** | Một học sinh lớp `HD-FT 302` — không tính vào "đã thi" hay "thiếu điểm" |
-| **Đã dời lịch** | Một học sinh lớp `CP-FT 110` — xem *Lịch sử thay đổi* trong chi tiết Mock |
-| **Chuyển lớp** | `Hồ Gia Hà` (`/hoc-vien/3`) — MT1/MT2 giữ lớp cũ `MB-FT 101`, MT3 chuyển sang `MB-FT 102` |
-| **Tạm dừng rồi quay lại học** | Một học sinh lớp `BC-FT 205` — cả hai sự kiện nằm trong bộ lọc *Tất cả* |
-| **Warning / WL và ước lượng giáo viên** | Một học sinh lớp `UB-FT 401` — thử bộ lọc *Warning / WL* và *Assessment* |
-| **Case SOS ở đủ bốn mức tiến độ** | Chưa ghi nhận · Có tên chưa có ngày · Đang xử lý · Đã xong + Head xác nhận |
-| **MT3 có hỗ trợ vận hành** | Lớp `UB-FT 401` MT3 mức SOS 2/3 |
-| **Lớp không thuộc FT** | `MB-FOUND 12`, `BC-BE 80`, `HD-ELE 01` — không có điểm cam kết nên không có kỳ vọng và SOS |
+| **Đã chốt tuần, chưa có ngày** | Nhiều lượt — mở lối tắt *Cần xếp lịch* của Admin chi nhánh |
+| **Speaking mock khác ngày với buổi chính** | Lớp `MB-FT 101` MT2 — vẫn là một lượt MT, mỗi kỹ năng một hạn |
+| **Kỹ năng không mock** | Một số lượt MT2 — SOS tính trên ba kỹ năng, không có Overall |
+| **Đã mock nhưng chưa nhập điểm** | Khác hẳn *chưa mock*: cột **Tiến độ** trong chi tiết phân biệt rõ |
+| **Hạn nhập điểm riêng** | Một lượt ở `MB-FT 101` — Admin chi nhánh gia hạn tới 30/09 kèm lý do |
+| **Quá hạn nhập điểm** | Các lượt tuần `W2 SEP` còn thiếu kỹ năng |
+| **Đúng hạn hôm nay, chưa quá hạn** | Các lượt tuần `W3 SEP` |
+| **Đã huỷ lượt** | Một học viên `HD-FT 302` — không tính vào "đã xong" hay "thiếu điểm" |
+| **Đổi tuần kế hoạch** | Một học viên `CP-FT 110` — xem *Lịch sử thay đổi* trong chi tiết |
+| **Sang lộ trình mới, MT đánh lại từ 1** | `/hoc-vien/4` — LT1 có MT1–MT3, LT2 bắt đầu lại MT1 với target cao hơn |
+| **Học tiếp cùng lộ trình, MT tăng tiếp** | Một học viên `UB-FT 401` — MT5, target giữ nguyên |
+| **Ước lượng giáo viên** | Hầu hết học viên FT, tách theo W1/W2 và có ngày đánh giá |
+| **Chuyển lớp** | `/hoc-vien/3` — lượt đã xong giữ lớp cũ, lượt chưa xong sang lớp mới |
+| **Tạm dừng rồi quay lại học** | Một học viên `BC-FT 205` |
+| **Kết thúc học và lưu trữ** | Hai học viên `BC-FT 205`: một em vừa xong (còn hiện, làm dịu màu), một em đã quá hai tuần |
+| **Warning / WL** | Một học viên `UB-FT 401` — thử bộ lọc *Warning / WL* |
+| **Case SOS ở đủ bốn mức tiến độ** | Chưa ghi nhận · Có tên chưa có ngày · Đang xử lý · Đã xong |
+| **Lớp không thuộc FT** | `MB-FOUND 12`, `BC-BE 80`, `HD-ELE 01` — chưa có lộ trình nên chưa có MT (vòng C) |
 
 ---
 
@@ -120,7 +189,18 @@ Ví dụ hay để mở: các dòng `Case SOS` của lớp `CP-FT 110` (thi 22/0
 npm test
 ```
 
-Chạy **40 kiểm tra** trên một database riêng (`data/test.sqlite`), phủ 10 nhóm kịch bản nghiệm thu:
-quy đổi điểm · kỳ vọng và mức SOS · thiếu điểm và tiêu chí S/W · tuần và hạn nhập ·
-lập/dời/huỷ lịch · quyền theo vai trò × chi nhánh × phân công · nhập điểm và hành động SOS ·
-họp tuần và công việc · tổng quan tuần · hồ sơ học viên và lưu dữ liệu.
+Chạy **51 kiểm tra** trên một database riêng (`data/test.sqlite`), phủ 10 nhóm:
+quy đổi điểm và công thức · kỳ vọng theo lộ trình · kỹ năng không mock và tiến độ ·
+tuần/lịch/hạn nhập · quyền lịch tách tuần với ngày · quyền theo vai trò × chi nhánh × phân công ·
+lộ trình và số lần MT · ước lượng giáo viên · tổng quan và hai nhóm case SOS ·
+xử lý sau Mock và lưu dữ liệu.
+
+### Nâng cấp dữ liệu đang có
+
+```bash
+npm run migrate
+```
+
+Chuyển database cũ sang mô hình mới mà **không xoá gì**: giữ nguyên mã học viên, enrollment, từng lượt MT,
+điểm W1/W2 và lịch sử SOS. Những thứ không suy ra được (kỹ năng không mock, ước lượng giáo viên,
+lịch Speaking riêng) được để trống chứ không bịa. Chạy lại lần hai thì không làm gì thêm.

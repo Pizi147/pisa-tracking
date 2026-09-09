@@ -14,8 +14,8 @@ type Account = {
 /** Hướng dẫn tại chỗ khi bản demo chưa có dữ liệu — viết cho người không rành kỹ thuật. */
 function SetupHelp({ serverDown, onRetry }: { serverDown: boolean; onRetry: () => void }) {
   return (
-    <div className="card p-5 border-amber-500/40">
-      <h2 className="text-base font-semibold text-amber-300">
+    <div className="card p-5 border-amber-300/40">
+      <h2 className="text-base font-semibold text-amber-200">
         {serverDown ? 'Chưa kết nối được máy chủ dữ liệu' : 'Chưa có dữ liệu mẫu trong máy'}
       </h2>
       <p className="text-sm text-slate-300 mt-2 leading-relaxed">
@@ -40,15 +40,15 @@ function SetupHelp({ serverDown, onRetry }: { serverDown: boolean; onRetry: () =
         </li>
         <li>
           <span className="text-slate-100 font-medium">3. Gõ lệnh tạo dữ liệu mẫu, rồi bấm Enter</span>
-          <pre className="surface-2 mt-1.5 px-3 py-2 rounded text-teal-300 text-xs">npm run seed</pre>
+          <pre className="surface-2 mt-1.5 px-3 py-2 rounded text-sky-200 text-xs">npm run seed</pre>
           <div className="text-slate-400 text-xs mt-1">
-            Đợi tới khi thấy dòng <span className="text-teal-300">Hoàn tất</span> kèm bảng liệt kê số lượng
+            Đợi tới khi thấy dòng <span className="text-sky-200">Hoàn tất</span> kèm bảng liệt kê số lượng
             (khoảng 71 học viên, 10 lớp). Nếu hiện chữ đỏ, hãy chụp màn hình lại.
           </div>
         </li>
         <li>
           <span className="text-slate-100 font-medium">4. Chạy lại ứng dụng</span>
-          <pre className="surface-2 mt-1.5 px-3 py-2 rounded text-teal-300 text-xs">npm run dev</pre>
+          <pre className="surface-2 mt-1.5 px-3 py-2 rounded text-sky-200 text-xs">npm run dev</pre>
         </li>
         <li>
           <span className="text-slate-100 font-medium">5. Quay lại trang này và bấm nút bên dưới</span>
@@ -74,7 +74,7 @@ export default function WelcomePage() {
     <div className="min-h-full flex items-center justify-center p-6">
       <div className="w-full max-w-3xl">
         <div className="flex items-center gap-3 mb-1">
-          <div className="w-9 h-9 rounded-lg bg-teal-500/15 border border-teal-500/40 grid place-items-center text-teal-300 font-bold">P</div>
+          <div className="w-9 h-9 rounded-lg bg-sky-300/12 border border-sky-300/40 grid place-items-center text-sky-200 font-bold">P</div>
           <div>
             <h1 className="text-xl font-semibold text-slate-100">PISA Progress</h1>
             <div className="text-xs text-slate-500">Hệ thống quản lý học vụ và vận hành — bản demo chạy local</div>
@@ -109,7 +109,7 @@ export default function WelcomePage() {
                   <button
                     key={a.id}
                     disabled={busy !== null}
-                    className="text-left card p-3 hover:border-teal-500/40 disabled:opacity-50"
+                    className="text-left card p-3 hover:border-sky-300/40 disabled:opacity-50"
                     onClick={async () => { setBusy(a.id); await switchAccount(a.id); }}
                   >
                     <div className="font-medium text-slate-100">{a.fullName}</div>

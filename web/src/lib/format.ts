@@ -1,13 +1,17 @@
 import {
-  ASSESSED_SKILL_LABEL, CASE_STATUS_LABEL, DUE_LABEL, ENTRY_SKILL_LABEL, ENTRY_SKILL_SHORT,
-  MOCK_STATUS_LABEL, ROLE_LABEL, SOS_LABEL, TASK_PROGRESS_LABEL, TASK_TYPE_LABEL,
-  UNIT_STATUS_LABEL, type AssessedSkill, type EntrySkill, type SosLevel,
+  ASSESSED_SKILL_LABEL, ATTEMPT_STATUS_LABEL, CASE_STATUS_LABEL, DUE_LABEL, ENTRY_SKILL_LABEL,
+  ENTRY_SKILL_SHORT, ROLE_LABEL, SKILL_PROGRESS_LABEL, SOS_LABEL, STUDENT_STATUS_LABEL,
+  TASK_PROGRESS_LABEL, TASK_TYPE_LABEL, UNIT_STATUS_LABEL,
+  type AssessedSkill, type EntrySkill, type SkillProgress, type SosLevel, type StudentStatus,
 } from '@shared/domain.ts';
 
 export const skillLabel = (s: string) => ENTRY_SKILL_LABEL[s as EntrySkill] ?? ASSESSED_SKILL_LABEL[s as AssessedSkill] ?? s;
 export const skillShort = (s: string) => ENTRY_SKILL_SHORT[s as EntrySkill] ?? s;
 export const roleLabel = (s: string) => ROLE_LABEL[s as keyof typeof ROLE_LABEL] ?? s;
-export const mockStatusLabel = (s: string) => MOCK_STATUS_LABEL[s as keyof typeof MOCK_STATUS_LABEL] ?? s;
+/** Không dùng từ "thi" cho Mock — "thi" chỉ dành cho kỳ IELTS chính thức. */
+export const attemptStatusLabel = (s: string) => ATTEMPT_STATUS_LABEL[s as keyof typeof ATTEMPT_STATUS_LABEL] ?? s;
+export const progressLabel = (s: string) => SKILL_PROGRESS_LABEL[s as SkillProgress] ?? s;
+export const studentStatusLabel = (s: string) => STUDENT_STATUS_LABEL[s as StudentStatus] ?? s;
 export const caseStatusLabel = (s: string) => CASE_STATUS_LABEL[s as keyof typeof CASE_STATUS_LABEL] ?? s;
 export const unitStatusLabel = (s: string | null) => (s === null ? 'Chưa báo cáo' : UNIT_STATUS_LABEL[s as keyof typeof UNIT_STATUS_LABEL] ?? s);
 export const taskProgressLabel = (s: string) => TASK_PROGRESS_LABEL[s as keyof typeof TASK_PROGRESS_LABEL] ?? s;
@@ -24,6 +28,14 @@ export function fmtDate(d?: string | null): string {
 export function fmtDay(d?: string | null): string {
   if (!d) return '—';
   return `${d.slice(8, 10)}/${d.slice(5, 7)}`;
+}
+
+/** Ngày kèm giờ nếu lịch có ghi giờ, ví dụ "14/10 18:00". */
+export function fmtSlot(v?: string | null): string {
+  if (!v) return '—';
+  const day = fmtDay(v.slice(0, 10));
+  const time = v.length > 10 ? v.slice(11, 16) : '';
+  return time ? `${day} ${time}` : day;
 }
 
 export function fmtDateTime(d?: string | null): string {
@@ -57,6 +69,19 @@ export function sosTone(level: number | null): Tone {
 export function dueTone(state: string): Tone {
   return state === 'overdue' ? 'danger' : state === 'due_soon' ? 'warn' : state === 'closed' ? 'ok' : 'neutral';
 }
+export function progressTone(p: string): Tone {
+  return p === 'scored' ? 'ok'
+    : p === 'performed' ? 'warn'
+    : p === 'due' ? 'danger'
+    : p === 'upcoming' ? 'info'
+    : p === 'skipped' ? 'muted'
+    : 'neutral';
+}
+
+export function attemptStatusTone(s: string): Tone {
+  return s === 'cancelled' ? 'muted' : s === 'done' ? 'info' : 'neutral';
+}
+
 export function unitTone(status: string | null): Tone {
   return status === null ? 'muted' : status === 'problem' ? 'danger' : status === 'watch' ? 'warn' : 'ok';
 }

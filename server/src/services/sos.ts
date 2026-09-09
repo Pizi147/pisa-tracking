@@ -4,7 +4,7 @@ import { demoToday } from '../demoConfig.ts';
 import { badRequest, isIsoDate, notFound, nowIso } from '../util.ts';
 import { require_, type Principal } from '../permissions.ts';
 import { addJourney, notify, writeAudit } from './audit.ts';
-import type { MockResult } from './scoring.ts';
+import type { AttemptResult } from './scoring.ts';
 
 /**
  * Hành động phối hợp theo Lần MT × mức SOS, lấy nguyên từ 'Quy trinh SOS' của trung tâm.
@@ -77,8 +77,9 @@ type CaseField = (typeof CASE_FIELDS)[number];
  * Tạo hoặc cập nhật case khi kết quả đã chốt.
  * Sửa điểm làm đổi mức SOS thì cập nhật mức, GIỮ NGUYÊN hành động và lịch sử đã ghi.
  */
-export function upsertCaseForResult(p: Principal, attempt: any, result: MockResult) {
-  if (!result.complete || result.sosLevel === null) return null;
+export function upsertCaseForResult(p: Principal, attempt: any, result: AttemptResult) {
+  // Chỉ mở/cập nhật case khi đã đủ căn cứ kết luận: đủ điểm mọi kỹ năng BẮT BUỘC và biết target.
+  if (!result.evaluable || result.sosLevel === null) return null;
   const conn = db();
   const existing = conn.prepare('SELECT * FROM sos_cases WHERE attempt_id = ?').get(attempt.id) as any;
 
@@ -98,8 +99,12 @@ export function upsertCaseForResult(p: Principal, attempt: any, result: MockResu
     addJourney({
       studentId: attempt.student_id, eventType: 'mock_result', eventDate: demoToday(),
       title: `MT${attempt.attempt_no}: ${SOS_LABEL[result.sosLevel]}`,
-      detail: `Overall ${result.overall ?? '—'} · kỳ vọng ${result.expectation ?? '—'}`,
-      refTable: 'mock_attempts', refId: attempt.id, createdBy: p.userId,
+      detail: [
+        result.overall !== null ? `Overall ${result.overall}` : null,
+        `kỳ vọng ${result.expectation ?? '—'}`,
+        result.scopeNote,
+      ].filter(Boolean).join(' · '),
+      refTable: 'assessment_attempts', refId: attempt.id, createdBy: p.userId,
     });
     notifyTeachers(attempt, result.sosLevel);
     writeAudit({ actorUserId: p.userId, action: 'sos.open', entityType: 'sos_case', entityId: id,
@@ -135,7 +140,7 @@ function notifyTeachers(attempt: any, level: SosLevel) {
     notify({
       userId: t.user_id, kind: 'sos', title: `${SOS_LABEL[level]} — ${student.full_name}`,
       body: `MT${attempt.attempt_no} · ${student.student_code}`,
-      entityType: 'mock_attempt', entityId: attempt.id, dedupKey: `sos:${attempt.id}:${level}`,
+      entityType: 'assessment_attempt', entityId: attempt.id, dedupKey: `sos:${attempt.id}:${level}`,
     });
   }
 }
@@ -145,7 +150,7 @@ export function updateCase(p: Principal, caseId: number, patch: Partial<Record<C
   const c = conn
     .prepare(
       `SELECT sc.*, a.class_id, a.student_id, a.attempt_no FROM sos_cases sc
-         JOIN mock_attempts a ON a.id = sc.attempt_id WHERE sc.id = ?`,
+         JOIN assessment_attempts a ON a.id = sc.attempt_id WHERE sc.id = ?`,
     )
     .get(caseId) as any;
   if (!c) throw notFound('Không tìm thấy case');
@@ -186,7 +191,7 @@ export function updateCase(p: Principal, caseId: number, patch: Partial<Record<C
 export function confirmCase(p: Principal, caseId: number, confirmed: boolean) {
   const conn = db();
   const c = conn
-    .prepare(`SELECT sc.*, a.class_id FROM sos_cases sc JOIN mock_attempts a ON a.id = sc.attempt_id WHERE sc.id = ?`)
+    .prepare(`SELECT sc.*, a.class_id FROM sos_cases sc JOIN assessment_attempts a ON a.id = sc.attempt_id WHERE sc.id = ?`)
     .get(caseId) as any;
   if (!c) throw notFound();
   require_(p, PERMISSIONS.SOS_CONFIRM, { classId: c.class_id }, 'Bạn không có quyền xác nhận case.');

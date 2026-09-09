@@ -72,7 +72,7 @@ export function DemoBar() {
           {(accounts.data ?? []).map((a) => (
             <button
               key={a.id}
-              className={`text-left card p-3 hover:border-teal-500/40 ${session?.user?.id === a.id ? 'border-teal-500/60' : ''}`}
+              className={`text-left card p-3 hover:border-sky-300/40 ${session?.user?.id === a.id ? 'border-sky-300/60' : ''}`}
               onClick={async () => {
                 setPickerOpen(false);
                 await switchAccount(a.id);
@@ -118,7 +118,7 @@ export function DemoBar() {
           <div className="border-t pt-3" style={{ borderColor: 'var(--line)' }}>
             <div className="label">Nạp lại dữ liệu mẫu</div>
             <p className="text-[11px] text-slate-500 mb-2">
-              Xoá toàn bộ thay đổi bạn đã nhập và tạo lại dữ liệu gốc. Chạy trong terminal: <code className="text-teal-300">npm run seed</code>
+              Xoá toàn bộ thay đổi bạn đã nhập và tạo lại dữ liệu gốc. Chạy trong terminal: <code className="text-sky-200">npm run seed</code>
             </p>
             <button className="btn btn-danger btn-sm" onClick={() => setResetOpen(true)}>Hướng dẫn nạp lại</button>
           </div>
@@ -133,7 +133,7 @@ export function DemoBar() {
           <div className="space-y-2">
             <p>Bản demo không cho phép xoá cơ sở dữ liệu từ giao diện để tránh mất dữ liệu thử nghiệm ngoài ý muốn.</p>
             <p>Dừng ứng dụng, chạy lệnh sau rồi khởi động lại:</p>
-            <pre className="surface-2 p-2 rounded text-teal-300 text-xs">npm run seed</pre>
+            <pre className="surface-2 p-2 rounded text-sky-200 text-xs">npm run seed</pre>
           </div>
         }
         onConfirm={() => { setBusy(false); setResetOpen(false); }}

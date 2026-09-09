@@ -24,6 +24,24 @@ const NAV = [
   { to: '/hop-tuan', label: 'Họp tuần', key: 'meeting' as const },
 ];
 
+function NavItem({ to, label }: { to: string; label: string }) {
+  return (
+    <NavLink
+      to={to}
+      end={to === '/'}
+      className={({ isActive }) =>
+        `px-3 py-1.5 rounded-lg text-sm no-underline whitespace-nowrap transition-colors border ${
+          isActive
+            ? 'bg-[color:var(--accent-soft)] text-[color:var(--accent-strong)] border-[color:var(--accent-line)]'
+            : 'text-slate-300 border-transparent hover:bg-white/5'
+        }`
+      }
+    >
+      {label}
+    </NavLink>
+  );
+}
+
 export default function App() {
   const { session, loading } = useSession();
   const location = useLocation();
@@ -37,36 +55,29 @@ export default function App() {
   return (
     <div className="h-full flex flex-col">
       <DemoBar />
-      <header className="shrink-0 border-b bg-[#0b141d]" style={{ borderColor: 'var(--line)' }}>
-        <div className="flex items-center gap-3 px-4 h-14">
+      {/*
+        Màn hẹp: xếp thành hai hàng — nhận diện + tài khoản ở trên, điều hướng cuộn ngang ở dưới.
+        Ép cả ba khối vào một hàng ở 390px sẽ làm tràn ngang toàn trang.
+      */}
+      <header className="shrink-0 border-b bg-[color:var(--surface)]" style={{ borderColor: 'var(--line)' }}>
+        <div className="flex items-center gap-3 px-3 sm:px-4 h-14 min-w-0">
           <div className="flex items-center gap-2 shrink-0">
-            <div className="w-7 h-7 rounded-md bg-teal-500/15 border border-teal-500/40 grid place-items-center text-teal-300 font-bold text-xs">P</div>
+            <div className="w-7 h-7 rounded-md border grid place-items-center font-bold text-xs"
+              style={{ background: 'var(--accent-soft)', borderColor: 'var(--accent-line)', color: 'var(--accent)' }}>P</div>
             <div className="leading-tight hidden sm:block">
               <div className="text-sm font-semibold text-slate-100">PISA Progress</div>
               <div className="text-[10px] text-slate-500">Bản demo nội bộ</div>
             </div>
           </div>
-          <nav aria-label="Điều hướng chính" className="flex items-center gap-1 overflow-x-auto">
-            {items.map((n) => (
-              <NavLink
-                key={n.to}
-                to={n.to}
-                end={n.to === '/'}
-                className={({ isActive }) =>
-                  `px-3 py-1.5 rounded-lg text-sm no-underline whitespace-nowrap transition-colors ${
-                    isActive
-                      ? 'bg-teal-500/12 text-teal-200 border border-teal-500/30'
-                      : 'text-slate-300 border border-transparent hover:bg-white/5'
-                  }`
-                }
-              >
-                {n.label}
-              </NavLink>
-            ))}
+          <nav aria-label="Điều hướng chính" className="hidden md:flex items-center gap-1 min-w-0 overflow-x-auto">
+            {items.map((n) => <NavItem key={n.to} to={n.to} label={n.label} />)}
           </nav>
-          <div className="flex-1" />
+          <div className="flex-1 min-w-0" />
           <Header />
         </div>
+        <nav aria-label="Điều hướng chính" className="md:hidden flex items-center gap-1 px-3 pb-2 overflow-x-auto">
+          {items.map((n) => <NavItem key={n.to} to={n.to} label={n.label} />)}
+        </nav>
       </header>
 
       <main className="flex-1 overflow-y-auto p-4 md:p-5" key={location.pathname.split('/')[1]}>

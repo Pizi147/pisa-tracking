@@ -45,29 +45,86 @@ export function criteriaSetFor(skill: EntrySkill): 'writing' | 'speaking' | null
   return null;
 }
 
+// ---------------------------------------------------------------- Học viên
+
+/** Chỉ ba trạng thái. LT1/LT2 là lộ trình, không phải trạng thái học viên. */
+export const STUDENT_STATUSES = ['active', 'inactive', 'finished'] as const;
+export type StudentStatus = (typeof STUDENT_STATUSES)[number];
+export const STUDENT_STATUS_LABEL: Record<StudentStatus, string> = {
+  active: 'Đang học', inactive: 'Tạm dừng', finished: 'Đã kết thúc',
+};
+
+/** Học viên kết thúc bao lâu thì đưa vào lưu trữ. Mốc chính xác còn chờ chốt — xem O08. */
+export const ARCHIVE_AFTER_DAYS = 14;
+
+// ---------------------------------------------------------------- Lộ trình học
+
+/**
+ * Một lộ trình (cycle) có target và ngày thi IELTS riêng.
+ *
+ * Học tiếp / học lại TRONG cùng một lộ trình thì số MT tăng tiếp và target giữ nguyên.
+ * Chỉ khi sang lộ trình mới (LT1 → LT2) mới đánh số lại từ MT1, vì lúc đó đã có target mới.
+ */
+export const ROUTES = ['LT1', 'LT2'] as const;
+export type Route = (typeof ROUTES)[number];
+
+export const CYCLE_STATUSES = ['active', 'completed', 'abandoned'] as const;
+export type CycleStatus = (typeof CYCLE_STATUSES)[number];
+export const CYCLE_STATUS_LABEL: Record<CycleStatus, string> = {
+  active: 'Đang học', completed: 'Đã hoàn thành', abandoned: 'Đã dừng',
+};
+
 // ---------------------------------------------------------------- Mock Test
 
-export const MOCK_ATTEMPTS = [1, 2, 3, 4, 5] as const;
 export const mockLabel = (n: number) => `MT${n}`;
 
-/** Kỳ vọng = điểm cam kết − mức trừ theo lần MT (nguồn: Quy trình SOS mục 3). */
-export const EXPECTATION_DELTA: Record<number, number> = { 1: 1.0, 2: 0.5, 3: 0, 4: 0, 5: 0 };
-/** Tuần học FT dự kiến của từng lần Mock, dùng để gợi ý khi lập lịch. */
-export const MOCK_FT_WEEK: Record<number, number> = { 1: 6, 2: 12, 3: 16, 4: 20, 5: 24 };
+/**
+ * Kỳ vọng của một lần MT = target của lộ trình − mức trừ theo LẦN THỨ MẤY trong lộ trình đó.
+ * MT1 trừ 1.0, MT2 trừ 0.5, từ MT3 trở đi bằng đúng target (nguồn: Quy trình SOS mục 3).
+ * Học lại trong cùng lộ trình làm số MT tăng tiếp, nên MT6, MT7… cũng bằng target.
+ */
+export function expectationDelta(attemptNo: number): number {
+  if (attemptNo <= 0) return 0;
+  return attemptNo === 1 ? 1.0 : attemptNo === 2 ? 0.5 : 0;
+}
 
-export const MOCK_STATUSES = ['planned', 'completed', 'cancelled'] as const;
-export type MockStatus = (typeof MOCK_STATUSES)[number];
-export const MOCK_STATUS_LABEL: Record<MockStatus, string> = {
-  planned: 'Đã lên lịch', completed: 'Đã thi', cancelled: 'Đã huỷ',
+/** Tuần HỌC của chương trình FT, chỉ dùng để gợi ý tuần lịch khi lập kế hoạch. */
+export const MOCK_FT_STUDY_WEEK: Record<number, number> = { 1: 6, 2: 12, 3: 16, 4: 20, 5: 24 };
+
+/**
+ * Trạng thái một lượt đánh giá.
+ * KHÔNG dùng từ "thi" cho Mock — "thi" chỉ dành cho kỳ thi IELTS chính thức.
+ */
+export const ATTEMPT_STATUSES = ['planned', 'done', 'cancelled'] as const;
+export type AttemptStatus = (typeof ATTEMPT_STATUSES)[number];
+export const ATTEMPT_STATUS_LABEL: Record<AttemptStatus, string> = {
+  planned: 'Đã lên lịch', done: 'Đã xong', cancelled: 'Đã huỷ',
+};
+
+/** Kỹ năng của một lượt: mặc định bắt buộc, chỉ Quản lý/Admin CN mới đánh dấu không mock. */
+export const SKILL_REQUIREMENTS = ['required', 'skipped'] as const;
+export type SkillRequirement = (typeof SKILL_REQUIREMENTS)[number];
+export const SKILL_REQUIREMENT_LABEL: Record<SkillRequirement, string> = {
+  required: 'Có mock', skipped: 'Không mock',
+};
+
+/** Tiến độ thực hiện của một kỹ năng — tách rõ "chưa mock" với "đã mock, chưa nhập điểm". */
+export const SKILL_PROGRESS = ['skipped', 'not_scheduled', 'upcoming', 'due', 'performed', 'scored'] as const;
+export type SkillProgress = (typeof SKILL_PROGRESS)[number];
+export const SKILL_PROGRESS_LABEL: Record<SkillProgress, string> = {
+  skipped: 'Không mock',
+  not_scheduled: 'Chờ xếp lịch',
+  upcoming: 'Sắp tới',
+  /** Đã tới ngày trong lịch nhưng chưa có ghi nhận nào — ngày trôi qua KHÔNG chứng minh đã mock. */
+  due: 'Chưa ghi nhận',
+  performed: 'Đã mock, chưa nhập điểm',
+  scored: 'Đã có điểm',
 };
 
 export type SosLevel = 0 | 1 | 2 | 3;
 export const SOS_LABEL: Record<SosLevel, string> = {
   0: 'Đạt kỳ vọng', 1: 'SOS 1', 2: 'SOS 2', 3: 'SOS 3',
 };
-
-export const ROUTES = ['LT1', 'LT2'] as const;
-export type Route = (typeof ROUTES)[number];
 
 // ---------------------------------------------------------------- Xử lý SOS
 
@@ -152,12 +209,33 @@ export const ROLE_LABEL: Record<Role, string> = {
 };
 
 export const PERMISSIONS = {
-  MOCK_VIEW: 'mock.view',
-  MOCK_SCHEDULE: 'mock.schedule',     // lập và dời lịch
-  MOCK_CANCEL: 'mock.cancel',
-  SCORE_EDIT: 'score.edit',           // nhập điểm — còn phải khớp phân công kỹ năng
-  SOS_EDIT: 'sos.edit',               // ghi nhận xử lý sau Mock
-  SOS_CONFIRM: 'sos.confirm',         // Head xác nhận — Head chính là Quản lý
+  // --- Lịch: tuần và ngày là hai quyền KHÁC NHAU ---
+  /** Chốt và đổi TUẦN kế hoạch của một lượt MT. Việc của Quản lý. */
+  PLAN_WEEK: 'plan.week',
+  /** Chốt và đổi NGÀY–GIỜ trong tuần đã được duyệt. Việc của Admin chi nhánh. */
+  SCHEDULE_DATE: 'schedule.date',
+  /** Đổi riêng lịch Speaking. Giáo viên Speaking được cấp trong phạm vi phân công. */
+  SCHEDULE_SPEAKING: 'schedule.speaking',
+  ATTEMPT_CANCEL: 'attempt.cancel',
+  /** Đánh dấu một kỹ năng là KHÔNG MOCK cho chính lượt đó. */
+  ATTEMPT_SKIP_SKILL: 'attempt.skip_skill',
+  /** Đặt hạn nhập điểm khác mặc định. */
+  DEADLINE_OVERRIDE: 'deadline.override',
+
+  // --- Điểm và đánh giá ---
+  ATTEMPT_VIEW: 'attempt.view',
+  /** Nhập điểm ĐÚNG kỹ năng được phân công. Không kèm quyền sửa lịch. */
+  SCORE_EDIT: 'score.edit',
+  /** Nhập bù / sửa điểm NGOÀI phân công. Tách riêng để còn siết lại được — xem O05. */
+  SCORE_OVERRIDE: 'score.override',
+  /** Giáo viên cập nhật ước lượng của kỹ năng mình phụ trách. */
+  ESTIMATE_EDIT: 'estimate.edit',
+
+  // --- Sau đánh giá ---
+  SOS_EDIT: 'sos.edit',
+  SOS_CONFIRM: 'sos.confirm',
+
+  // --- Hồ sơ và vận hành ---
   STUDENT_VIEW: 'student.view',
   STUDENT_EDIT: 'student.edit',
   MEETING_VIEW: 'meeting.view',
@@ -167,16 +245,22 @@ export const PERMISSIONS = {
 export type PermissionKey = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
 
 export const PERMISSION_LABEL: Record<string, string> = {
-  'mock.view': 'Xem lịch và kết quả Mock',
-  'mock.schedule': 'Lập và dời lịch Mock',
-  'mock.cancel': 'Huỷ lịch Mock',
-  'score.edit': 'Nhập điểm Mock',
-  'sos.edit': 'Ghi nhận xử lý sau Mock',
+  'plan.week': 'Chốt tuần kế hoạch MT',
+  'schedule.date': 'Chốt ngày giờ trong tuần',
+  'schedule.speaking': 'Đổi lịch Speaking',
+  'attempt.cancel': 'Huỷ lượt MT',
+  'attempt.skip_skill': 'Đánh dấu kỹ năng không mock',
+  'deadline.override': 'Đặt hạn nhập điểm riêng',
+  'attempt.view': 'Xem lịch và kết quả MT',
+  'score.edit': 'Nhập điểm kỹ năng được phân công',
+  'score.override': 'Nhập bù điểm ngoài phân công',
+  'estimate.edit': 'Cập nhật ước lượng giáo viên',
+  'sos.edit': 'Ghi nhận xử lý sau MT',
   'sos.confirm': 'Xác nhận case (Head)',
   'student.view': 'Xem hồ sơ học viên',
   'student.edit': 'Sửa hồ sơ học viên',
-  'meeting.view': 'Xem họp tuần',
-  'meeting.edit': 'Cập nhật báo cáo và công việc',
+  'meeting.view': 'Xem tiến trình công việc',
+  'meeting.edit': 'Cập nhật báo cáo và ghi chú',
   'admin.config': 'Quản trị hệ thống',
 };
 
@@ -192,10 +276,14 @@ export const JOURNEY_EVENT_LABEL: Record<string, string> = {
   transfer: 'Chuyển lớp',
   pause: 'Tạm dừng học',
   resume: 'Quay lại học',
-  mock_scheduled: 'Lên lịch Mock',
-  mock_rescheduled: 'Dời lịch Mock',
-  mock_cancelled: 'Huỷ Mock',
-  mock_result: 'Kết quả Mock',
+  finish: 'Kết thúc học',
+  cycle_start: 'Bắt đầu lộ trình',
+  repeat: 'Học tiếp lộ trình',
+  exam_date_changed: 'Đổi ngày thi IELTS',
+  mock_scheduled: 'Lên kế hoạch MT',
+  mock_rescheduled: 'Đổi lịch MT',
+  mock_cancelled: 'Huỷ lượt MT',
+  mock_result: 'Kết quả MT',
   estimate: 'Ước lượng giáo viên',
   warning: 'Cảnh báo',
   wl: 'Warning Letter',
