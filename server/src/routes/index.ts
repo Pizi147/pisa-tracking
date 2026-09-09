@@ -11,7 +11,8 @@ import { writeAudit } from '../services/audit.ts';
 import { maybeSimulateReadError, maybeSimulateSaveFailure, pInt, qInt, qStr, wrap } from './helpers.ts';
 import * as attemptSvc from '../services/attempts.ts';
 import * as cycleSvc from '../services/cycles.ts';
-import * as estimateSvc from '../services/estimates.ts';
+import * as checkinSvc from '../services/checkins.ts';
+import * as profileSvc from '../services/profile.ts';
 import * as classSvc from '../services/classes.ts';
 import * as intakeSvc from '../services/intake.ts';
 import * as sosSvc from '../services/sos.ts';
@@ -440,7 +441,7 @@ api.get('/ref/programmes', requireAuth, wrap(() =>
 api.get('/students/:id/cycles', requireAuth, wrap((req) => {
   const p = principalOf(req);
   const id = pInt(req, 'id');
-  studentSvc.studentDetail(p, id);        // kiểm tra phạm vi trước khi trả dữ liệu
+  require_(p, PERMISSIONS.STUDENT_VIEW, { studentId: id }, 'Học viên này nằm ngoài phạm vi bạn được xem.');
   return cycleSvc.cyclesOf(id);
 }));
 
@@ -454,19 +455,42 @@ api.patch('/cycles/:id', requireAuth, wrap((req) => {
   return cycleSvc.updateCycle(principalOf(req), pInt(req, 'id'), req.body ?? {});
 }));
 
-api.get('/students/:id/estimates', requireAuth, wrap((req) =>
-  estimateSvc.estimateHistory(principalOf(req), pInt(req, 'id'), qStr(req, 'skill'))));
+/** Điểm xuất phát của lộ trình — phải ghi rõ NGUỒN, không lấy MT1 làm điểm đầu vào. */
+api.put('/cycles/:id/baseline', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return cycleSvc.setBaseline(principalOf(req), pInt(req, 'id'), req.body ?? {});
+}));
 
-api.get('/students/:id/estimate-comparison', requireAuth, wrap((req) =>
-  estimateSvc.compareEstimates(principalOf(req), pInt(req, 'id'))));
+/** Kết luận cuối lộ trình. Đóng lộ trình về hành chính KHÁC với đạt mục tiêu. */
+api.put('/cycles/:id/outcome', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return cycleSvc.setOutcome(principalOf(req), pInt(req, 'id'), req.body ?? {});
+}));
+
+/** Đổi mục tiêu: có hiệu lực từ ngày ghi trở đi, KHÔNG chấm lại các lượt đã chốt. */
+api.post('/cycles/:id/target-revision', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return cycleSvc.reviseTarget(principalOf(req), pInt(req, 'id'), req.body ?? {});
+}));
+
+// ============================================================ Ghi nhận nhanh của giáo viên
+
+api.get('/students/:id/checkins', requireAuth, wrap((req) =>
+  checkinSvc.checkinHistory(principalOf(req), pInt(req, 'id'), {
+    skill: qStr(req, 'skill'), cycleId: qInt(req, 'cycleId'),
+  })));
+
+api.get('/students/:id/checkin-comparison', requireAuth, wrap((req) =>
+  checkinSvc.compareCheckins(principalOf(req), pInt(req, 'id'), qInt(req, 'cycleId'))));
 
 /**
- * Đánh giá GV là dữ liệu riêng, không bao giờ ghi đè điểm Mock.
- * Giáo viên cập nhật BẤT KỲ LÚC NÀO — không phụ thuộc tuần MT hay hạn nhập điểm.
+ * Ghi nhận là dữ liệu RIÊNG, không bao giờ ghi đè điểm chính thức.
+ * Giáo viên ghi BẤT KỲ LÚC NÀO — không phụ thuộc tuần MT hay hạn nhập điểm, và cũng
+ * không bị khoá theo cửa sổ sửa báo cáo tuần.
  */
-api.post('/students/:id/estimates', requireAuth, wrap((req) => {
+api.post('/students/:id/checkins', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
-  return estimateSvc.saveEstimate(principalOf(req), { ...req.body, studentId: pInt(req, 'id') });
+  return checkinSvc.saveCheckin(principalOf(req), { ...req.body, studentId: pInt(req, 'id') });
 }));
 
 // ============================================================ Case học vụ
@@ -544,13 +568,16 @@ api.get('/students', requireAuth, wrap((req) => {
   });
 }));
 
+/**
+ * HỒ SƠ HỌC VIÊN theo ĐÚNG MỘT LỘ TRÌNH.
+ *
+ * `cycleId` gửi tường minh; không có thì lấy lộ trình đang chạy. Không bao giờ trộn dữ
+ * liệu hai lộ trình vào một khung nhìn, vì mục tiêu và thang điểm của chúng khác nhau.
+ */
 api.get('/students/:id', requireAuth, wrap((req) => {
   maybeSimulateReadError();
-  return studentSvc.studentDetail(principalOf(req), pInt(req, 'id'));
+  return profileSvc.studentProfile(principalOf(req), pInt(req, 'id'), qInt(req, 'cycleId'));
 }));
-
-api.get('/students/:id/journey', requireAuth, wrap((req) =>
-  studentSvc.journey(principalOf(req), pInt(req, 'id'), qStr(req, 'filter'))));
 
 api.patch('/students/:id', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
@@ -687,7 +714,7 @@ api.get('/admin/overview', requireAuth, wrap((req) => {
       classes: (conn.prepare('SELECT COUNT(*) AS n FROM classes').get() as any).n,
       attempts: (conn.prepare('SELECT COUNT(*) AS n FROM assessment_attempts').get() as any).n,
       cycles: (conn.prepare('SELECT COUNT(*) AS n FROM learning_cycles').get() as any).n,
-      estimates: (conn.prepare('SELECT COUNT(*) AS n FROM teacher_estimates').get() as any).n,
+      estimates: (conn.prepare('SELECT COUNT(*) AS n FROM skill_checkins').get() as any).n,
       cases: (conn.prepare('SELECT COUNT(*) AS n FROM sos_cases').get() as any).n,
     },
     audit: conn

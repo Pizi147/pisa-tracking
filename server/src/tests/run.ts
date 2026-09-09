@@ -22,7 +22,8 @@ const scoring = await import('../services/scoring.ts');
 const week = await import('../services/week.ts');
 const attempts = await import('../services/attempts.ts');
 const cycles = await import('../services/cycles.ts');
-const estimates = await import('../services/estimates.ts');
+const checkins = await import('../services/checkins.ts');
+const profile = await import('../services/profile.ts');
 const sos = await import('../services/sos.ts');
 const students = await import('../services/students.ts');
 const meeting = await import('../services/meeting.ts');
@@ -481,67 +482,113 @@ check('Mở lộ trình mới không đụng ràng buộc số MT của lộ tr�
 
 // ==================================================================== 8
 
-console.log('\n8. Đánh giá GV');
-check('Đánh giá là dữ liệu riêng, không ghi đè điểm Mock', () => {
-  const row = conn.prepare('SELECT * FROM teacher_estimates LIMIT 1').get() as any;
-  assert(row, 'Seed thiếu đánh giá của giáo viên');
+console.log('\n8. Ghi nhận nhanh của giáo viên');
+check('Ghi nhận là dữ liệu riêng, không ghi đè điểm chính thức', () => {
+  const row = conn.prepare('SELECT * FROM skill_checkins LIMIT 1').get() as any;
+  assert(row, 'Seed thiếu ghi nhận của giáo viên');
   const a = conn.prepare(`SELECT * FROM assessment_attempts WHERE student_id = ? AND status='done' LIMIT 1`)
     .get(row.student_id) as any;
   if (a) {
     const before = conn.prepare('SELECT band FROM assessment_scores WHERE attempt_id = ? AND skill = ?')
       .get(a.id, row.skill) as any;
-    const teacher = loadPrincipal(row.assessed_by);
-    estimates.saveEstimate(teacher, { studentId: row.student_id, skill: row.skill, band: 8, assessedOn: TODAY });
+    const teacher = loadPrincipal(row.author_user_id);
+    checkins.saveCheckin(teacher, {
+      studentId: row.student_id, skill: row.skill, band: 8, basis: 'judgement', observedOn: TODAY,
+    });
     const after = conn.prepare('SELECT band FROM assessment_scores WHERE attempt_id = ? AND skill = ?')
       .get(a.id, row.skill) as any;
-    assert(JSON.stringify(before) === JSON.stringify(after), 'Lưu đánh giá đã làm đổi điểm Mock');
+    assert(JSON.stringify(before) === JSON.stringify(after), 'Lưu ghi nhận đã làm đổi điểm chính thức');
   }
 });
-check('Mỗi lần cập nhật ghi thêm dòng mới nên có sẵn lịch sử', () => {
-  const row = conn.prepare('SELECT * FROM teacher_estimates ORDER BY id DESC LIMIT 1') .get() as any;
-  const hist = estimates.estimateHistory(P.admin, row.student_id, row.skill);
-  assert(hist.length >= 2, 'Cập nhật đánh giá phải tạo dòng mới, không ghi đè');
-  assert(hist[0].assessedOn >= hist[1].assessedOn, 'Lịch sử phải sắp theo ngày đánh giá');
-  assert(hist[0].assessedByName, 'Thiếu người đánh giá');
+check('Ghi nhận ĐỊNH TÍNH không cần điểm — nhận định bằng lời là đủ', () => {
+  const s = conn
+    .prepare(`SELECT s.id FROM students s JOIN enrollments e ON e.student_id=s.id WHERE e.class_id=? LIMIT 1`)
+    .get(mbClass) as any;
+  const k = checkins.saveCheckin(P.sTeacher, {
+    studentId: s.id, skill: 'speaking',
+    judgement: 'Part 2 nói đủ thời gian, còn ngập ngừng khi đổi chủ đề.',
+  }) as any;
+  assert(k.band === null, 'Ghi nhận bằng lời mà hệ thống lại tự dựng ra một band');
+  assert(k.judgement, 'Mất nội dung nhận định');
+  // Nhưng một dòng trống rỗng thì vô nghĩa: không nhận định, không điểm.
+  assertThrows(() => checkins.saveCheckin(P.sTeacher, { studentId: s.id, skill: 'speaking' }),
+    /nhận định|điểm ước lượng/, 'Ghi nhận rỗng vẫn lưu được');
+});
+check('Mỗi lần ghi nhận là một dòng mới nên có sẵn lịch sử', () => {
+  const row = conn.prepare('SELECT * FROM skill_checkins ORDER BY id DESC LIMIT 1').get() as any;
+  const hist = checkins.checkinHistory(P.admin, row.student_id, { skill: row.skill });
+  assert(hist.length >= 2, 'Ghi nhận mới phải tạo dòng mới, không ghi đè');
+  assert(hist[0].observedOn >= hist[1].observedOn, 'Lịch sử phải sắp theo ngày quan sát');
+  assert(hist[0].authorName, 'Thiếu người ghi nhận');
 });
 check('So sánh ghi rõ ngày, nguồn và căn cứ của cả hai phía', () => {
-  const row = conn.prepare('SELECT * FROM teacher_estimates ORDER BY id DESC LIMIT 1').get() as any;
-  const cmp = estimates.compareEstimates(P.admin, row.student_id);
-  const one = cmp.find((c) => c.estimate && c.mock);
-  assert(one, 'Không tìm được cặp Đánh giá GV ↔ điểm Mock để so');
-  assert(one!.estimate!.on && one!.mock!.source, 'Thiếu ngày đánh giá hoặc nguồn điểm Mock');
+  const row = conn.prepare('SELECT * FROM skill_checkins WHERE band IS NOT NULL ORDER BY id DESC LIMIT 1').get() as any;
+  const cmp = checkins.compareCheckins(P.admin, row.student_id);
+  const one = cmp.find((c) => c.checkin && c.checkin.band !== null && c.official);
+  assert(one, 'Không tìm được cặp Ghi nhận ↔ điểm chính thức để so');
+  assert(one!.checkin!.on && one!.official!.source, 'Thiếu ngày ghi nhận hoặc nguồn điểm chính thức');
   // Δ chỉ là khoảng cách hai con số, không phải một kết luận tốt/xấu.
-  assert(one!.delta === Math.round((one!.mock!.band - one!.estimate!.band) * 10) / 10,
-    'Chênh lệch phải là Mock trừ Đánh giá GV');
+  assert(one!.delta === Math.round((one!.official!.band - one!.checkin!.band!) * 10) / 10,
+    'Chênh lệch phải là điểm chính thức trừ ghi nhận');
   // Nguồn điểm không nhắc lại lộ trình: cột Target ngay cạnh đã nói rồi.
-  assert(!/LT[12]/.test(one!.mock!.source), `Nguồn Mock còn nhắc lại lộ trình: "${one!.mock!.source}"`);
+  assert(!/LT[12]/.test(one!.official!.source), `Nguồn điểm còn nhắc lại lộ trình: "${one!.official!.source}"`);
+  // Ghi nhận bằng lời KHÔNG bị quy ra số để trừ.
+  for (const c of cmp) {
+    if (c.checkin && c.checkin.band === null) assert(c.delta === null, 'Nhận định bằng lời bị quy ra số để so');
+  }
 });
-check('Đánh giá GV nhập giống Mock: raw/40 cho L/R, bốn tiêu chí cho W/S', () => {
+check('Có căn cứ thì nhập giống điểm chính thức: raw/40 cho L/R, bốn tiêu chí cho W/S', () => {
   const s = conn
     .prepare(`SELECT s.id FROM students s JOIN enrollments e ON e.student_id=s.id WHERE e.class_id=? LIMIT 1`)
     .get(mbClass) as any;
   // L/R: nhập số câu đúng, hệ thống tự quy ra band.
-  const l = estimates.saveEstimate(P.lrTeacher, { studentId: s.id, skill: 'listening', raw: 30 }) as any;
-  assert(l.raw_score === 30 && l.band === scoring.bandFromRaw('listening', 30),
-    `Band phải quy từ raw, thực tế raw=${l.raw_score} band=${l.band}`);
+  const l = checkins.saveCheckin(P.lrTeacher, { studentId: s.id, skill: 'listening', basis: 'raw', raw: 30 }) as any;
+  assert(l.raw === 30 && l.band === scoring.bandFromRaw('listening', 30),
+    `Band phải quy từ raw, thực tế raw=${l.raw} band=${l.band}`);
+  assert(l.basis === 'raw', 'Phải ghi rõ căn cứ là bài làm, không phải nhận định');
   // W/S: nhập bốn tiêu chí, hệ thống tự tính band.
-  const w = estimates.saveEstimate(P.w1Teacher, { studentId: s.id, skill: 'writing1', criteria: [6, 6, 5.5, 6] }) as any;
-  assert(w.c1 === 6 && w.c4 === 6 && w.band === scoring.bandFromCriteria([6, 6, 5.5, 6]),
+  const w = checkins.saveCheckin(P.w1Teacher, {
+    studentId: s.id, skill: 'writing1', basis: 'criteria', criteria: [6, 6, 5.5, 6],
+  }) as any;
+  assert(w.criteria![0] === 6 && w.band === scoring.bandFromCriteria([6, 6, 5.5, 6]),
     `Band Writing phải tính từ bốn tiêu chí, thực tế band=${w.band}`);
   // Thiếu tiêu chí thì KHÔNG được đoán ra một band.
-  assertThrows(() => estimates.saveEstimate(P.w1Teacher, { studentId: s.id, skill: 'writing1', criteria: [6, 6, null, null] }),
-    /bốn tiêu chí/, 'Thiếu tiêu chí mà vẫn tính ra band');
-  assertThrows(() => estimates.saveEstimate(P.lrTeacher, { studentId: s.id, skill: 'listening', raw: 45 }),
+  assertThrows(() => checkins.saveCheckin(P.w1Teacher, {
+    studentId: s.id, skill: 'writing1', basis: 'criteria', criteria: [6, 6, null, null],
+  }), /bốn tiêu chí/, 'Thiếu tiêu chí mà vẫn tính ra band');
+  assertThrows(() => checkins.saveCheckin(P.lrTeacher, { studentId: s.id, skill: 'listening', basis: 'raw', raw: 45 }),
     /0 đến 40/, 'Raw ngoài thang 40');
 });
-check('Giáo viên chỉ đánh giá được kỹ năng mình phụ trách', () => {
+check('Giáo viên chỉ ghi nhận được kỹ năng mình phụ trách', () => {
   const s = conn
     .prepare(`SELECT s.id FROM students s JOIN enrollments e ON e.student_id=s.id WHERE e.class_id=? LIMIT 1`)
     .get(mbClass) as any;
-  assertThrows(() => estimates.saveEstimate(P.w1Teacher, { studentId: s.id, skill: 'speaking', band: 7 }),
-    /phân công/, 'GV W1 đánh giá Speaking');
-  const ok = estimates.saveEstimate(P.w1Teacher, { studentId: s.id, skill: 'writing1', band: 6.5 }) as any;
-  assert(ok.band === 6.5, 'GV W1 phải đánh giá được W1');
+  assertThrows(() => checkins.saveCheckin(P.w1Teacher, { studentId: s.id, skill: 'speaking', band: 7 }),
+    /phân công/, 'GV W1 ghi nhận Speaking');
+  const ok = checkins.saveCheckin(P.w1Teacher, { studentId: s.id, skill: 'writing1', band: 6.5 }) as any;
+  assert(ok.band === 6.5, 'GV W1 phải ghi nhận được W1');
+  assert(ok.basis === 'judgement', 'Band gõ thẳng phải được đánh dấu là NHẬN ĐỊNH, không phải số đo');
+});
+check('Ghi bù chọn đúng lộ trình của NGÀY QUAN SÁT, không phải lộ trình hôm nay', () => {
+  const row = conn
+    .prepare(
+      `SELECT c1.student_id AS sid, c1.id AS old_id, c1.started_at AS old_start, c2.id AS new_id,
+              (SELECT ta.user_id FROM enrollments e
+                 JOIN teacher_assignments ta ON ta.class_id = e.class_id
+                WHERE e.student_id = c1.student_id AND e.status='active'
+                  AND ta.skill = 'listening' AND ta.status='active' LIMIT 1) AS teacher_id
+         FROM learning_cycles c1 JOIN learning_cycles c2
+              ON c2.student_id = c1.student_id AND c2.seq = c1.seq + 1
+        WHERE c1.ended_at IS NOT NULL AND c1.started_at < c1.ended_at LIMIT 1`,
+    )
+    .get() as any;
+  if (!row?.teacher_id) return;           // dữ liệu mẫu chưa có em nào sang lộ trình thứ hai
+  const k = checkins.saveCheckin(loadPrincipal(row.teacher_id), {
+    studentId: row.sid, skill: 'listening', judgement: 'Ghi bù buổi của lộ trình trước',
+    observedOn: row.old_start,
+  }) as any;
+  assert(k.cycleId === row.old_id,
+    `Ghi bù bị gán vào lộ trình ${k.cycleId}, đáng lẽ phải là lộ trình ${row.old_id} đang chạy hôm đó`);
 });
 
 // ==================================================================== 9
@@ -692,7 +739,7 @@ check('Chuyển lớp giữ lớp cũ cho lượt đã xong, chuyển lượt ch
   for (const a of after.filter((x) => x.status === 'planned')) {
     assert(a.class_id === target, 'Lượt chưa xong không chuyển sang lớp mới');
   }
-  assert(students.studentDetail(P.admin, s.id).enrollments.length >= 2, 'Lịch sử lớp bị ghi đè');
+  assert(profile.studentProfile(P.admin, s.id).enrollments.length >= 2, 'Lịch sử lớp bị ghi đè');
 });
 check('Ba trạng thái học viên; lưu trữ chỉ ẩn, không đóng việc còn dở', () => {
   const s = conn.prepare(`SELECT * FROM students WHERE status='finished' LIMIT 1`).get() as any;
@@ -709,15 +756,34 @@ check('Ba trạng thái học viên; lưu trữ chỉ ẩn, không đóng việc
       WHERE a.student_id = ? AND sc.status != 'done'`).get(s.id) as any).n;
   assert(openAfter === openBefore, 'Lưu trữ đã âm thầm đóng case còn dở');
 });
-check('Hành trình giữ đủ sự kiện lộ trình và chỉ có ba bộ lọc', () => {
+check('Hành trình gom thành CHƯƠNG: mọi việc quanh một vấn đề nằm chung một chỗ', () => {
   const s = conn.prepare(`SELECT student_id AS id FROM journey_events WHERE event_type='cycle_start' LIMIT 1`).get() as any;
-  const all = students.journey(P.admin, s.id);
-  assert(all.some((e) => e.eventType === 'cycle_start'), 'Thiếu sự kiện bắt đầu lộ trình');
-  const t = conn.prepare(`SELECT student_id AS id FROM journey_events WHERE event_type='transfer' LIMIT 1`).get() as any;
-  assert(students.journey(P.admin, t.id).some((e) => e.eventType === 'transfer'), 'Chuyển lớp phải nằm trong "Tất cả"');
-  const w = conn.prepare(`SELECT student_id AS id FROM journey_events WHERE event_type='warning' LIMIT 1`).get() as any;
-  const warn = students.journey(P.admin, w.id, 'warning');
-  assert(warn.length > 0 && warn.every((e) => e.group === 'warning'), 'Bộ lọc Warning/WL sai');
+  const eps = profile.studentProfile(P.admin, s.id).episodes;
+  assert(eps.some((e: any) => e.events.some((x: any) => x.eventType === 'cycle_start')),
+    'Thiếu sự kiện bắt đầu lộ trình');
+  // Một chương phải xếp sự kiện theo đúng thứ tự xảy ra, để đọc được như một mạch chuyện.
+  for (const ep of eps) {
+    for (let i = 1; i < ep.events.length; i += 1) {
+      assert(ep.events[i - 1].eventDate <= ep.events[i].eventDate,
+        `Chương "${ep.title}" xếp sự kiện sai thứ tự thời gian`);
+    }
+  }
+  // Chương của một vấn đề phải mở được đúng vấn đề đó.
+  const caseEp = eps.find((e: any) => e.kind === 'case');
+  if (caseEp) assert(/^\/hoc-thuat\/case\/\d+$/.test(caseEp.link), `Chương vấn đề thiếu đường dẫn: ${caseEp.link}`);
+});
+check('Nhiều việc quanh MỘT vấn đề gom lại thành MỘT chương, không thành nhiều dòng rời', () => {
+  const row = conn
+    .prepare(
+      `SELECT sc.student_id AS sid, sc.id AS cid FROM sos_cases sc
+        WHERE (SELECT COUNT(*) FROM case_interventions ci WHERE ci.case_id = sc.id) >= 1
+        ORDER BY sc.id LIMIT 1`,
+    )
+    .get() as any;
+  assert(row, 'Dữ liệu mẫu thiếu vấn đề đã có tác động');
+  const eps = profile.studentProfile(P.admin, row.sid).episodes;
+  const mine = eps.filter((e: any) => e.link === `/hoc-thuat/case/${row.cid}`);
+  assert(mine.length <= 1, `Vấn đề ${row.cid} bị tách thành ${mine.length} chương rời nhau`);
 });
 check('Target chốt tại lượt: sửa lộ trình không viết lại lịch sử', () => {
   const a = conn.prepare(`SELECT * FROM assessment_attempts WHERE status='done' ORDER BY id LIMIT 1`).get() as any;

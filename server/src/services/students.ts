@@ -7,7 +7,7 @@ import { addJourney, writeAudit } from './audit.ts';
 import { entryBandsOf, scoresOf, skipsOf } from './attempts.ts';
 import { evaluateAttempt } from './scoring.ts';
 import { currentCycle, cyclesOf } from './cycles.ts';
-import { latestEstimates } from './estimates.ts';
+
 import { weekInfo } from './week.ts';
 
 export function nextStudentCode(): string {
@@ -112,119 +112,6 @@ export function latestResult(studentId: number) {
     }
   }
   return null;
-}
-
-export function studentDetail(p: Principal, studentId: number) {
-  const conn = db();
-  const s = conn.prepare('SELECT * FROM students WHERE id = ?').get(studentId) as any;
-  if (!s) throw notFound('Không tìm thấy học viên');
-  require_(p, PERMISSIONS.STUDENT_VIEW, { studentId }, 'Học viên này nằm ngoài phạm vi bạn được xem.');
-
-  const enrollments = conn
-    .prepare(
-      `SELECT e.*, c.code AS class_code, c.kind AS class_kind, b.name AS branch_name
-         FROM enrollments e JOIN classes c ON c.id = e.class_id JOIN branches b ON b.id = c.branch_id
-        WHERE e.student_id = ? ORDER BY e.started_at DESC, e.id DESC`,
-    )
-    .all(studentId) as any[];
-
-  const attempts = (conn
-    .prepare(
-      `SELECT a.*, c.code AS class_code, cy.seq AS cycle_seq, cy.route,
-              pr.code AS period_code, pr.week_start
-         FROM assessment_attempts a
-         JOIN learning_cycles cy ON cy.id = a.cycle_id
-         LEFT JOIN classes c ON c.id = a.class_id
-         LEFT JOIN report_periods pr ON pr.id = a.planned_period_id
-        WHERE a.student_id = ? ORDER BY cy.seq, a.attempt_no`,
-    )
-    .all(studentId) as any[]).map((a) => {
-      const rows = scoresOf(a.id);
-      const result = evaluateAttempt(a.target_at_attempt, a.attempt_no, entryBandsOf(rows), skipsOf(a.id));
-      const sos = conn.prepare('SELECT id, sos_level, status FROM sos_cases WHERE attempt_id = ?').get(a.id) as any;
-      return {
-        id: a.id, attemptNo: a.attempt_no, cycleSeq: a.cycle_seq, route: a.route, status: a.status,
-        classCode: a.class_code,        // lớp TẠI LÚC đánh giá, không đổi khi HS chuyển lớp
-        periodCode: a.period_code,
-        lrwScheduledAt: a.lrw_scheduled_at,
-        speakingScheduledAt: a.speaking_scheduled_at,
-        expectation: result.expectation, bands: result.bands, overall: result.overall,
-        scoredRequired: result.scoredRequired, requiredCount: result.required.length,
-        complete: result.complete, evaluable: result.evaluable,
-        sosLevel: result.sosLevel, scopeNote: result.scopeNote,
-        caseId: sos?.id ?? null, caseStatus: sos?.status ?? null,
-      };
-    });
-
-  const openTasks = conn
-    .prepare(
-      `SELECT t.id, t.code, t.title, t.due_date, t.progress, u.full_name AS assignee_name
-         FROM tasks t LEFT JOIN users u ON u.id = t.assignee_user_id
-         JOIN sos_cases sc ON sc.id = t.source_sos_case_id
-         JOIN assessment_attempts a ON a.id = sc.attempt_id
-        WHERE a.student_id = ? AND t.progress != 'done'`,
-    )
-    .all(studentId) as any[];
-
-  const current = enrollments.find((e) => e.status === 'active') ?? null;
-  const nextMock = attempts.find((a) => a.status === 'planned') ?? null;
-
-  const cycles = cyclesOf(studentId);
-  const cycle = currentCycle(studentId);
-
-  return {
-    id: s.id, studentCode: s.student_code, fullName: s.full_name, dob: s.dob,
-    status: s.status, finishedAt: s.finished_at, archivedAt: s.archived_at,
-    consultantName: s.consultant_name, note: s.note,
-    // Target và ngày thi IELTS thuộc về LỘ TRÌNH, không phải hồ sơ học viên.
-    cycle: cycle
-      ? { id: cycle.id, seq: cycle.seq, route: cycle.route, target: cycle.target_score,
-          examDate: cycle.exam_date, startedAt: cycle.started_at, status: cycle.status }
-      : null,
-    cycles: cycles.map((c) => ({
-      id: c.id, seq: c.seq, route: c.route, target: c.target_score,
-      examDate: c.exam_date, startedAt: c.started_at, endedAt: c.ended_at, status: c.status,
-    })),
-    estimates: latestEstimates(studentId),
-    currentClass: current ? { id: current.class_id, code: current.class_code, branchName: current.branch_name } : null,
-    enrollments: enrollments.map((e) => ({
-      id: e.id, classId: e.class_id, classCode: e.class_code, branchName: e.branch_name,
-      status: e.status, startedAt: e.started_at, endedAt: e.ended_at, endReason: e.end_reason,
-    })),
-    attempts,
-    nextMock,
-    openTasks,
-    viewer: {
-      canEdit: can(p, PERMISSIONS.STUDENT_EDIT, { studentId }),
-      canPlanWeek: can(p, PERMISSIONS.PLAN_WEEK, { studentId }),
-      canSetDate: can(p, PERMISSIONS.SCHEDULE_DATE, { studentId }),
-      /*
-       * Kỹ năng người đang xem được cập nhật Đánh giá GV — đúng kỹ năng mình phụ trách,
-       * không phụ thuộc tuần MT hay hạn nhập điểm.
-       */
-      estimateSkills: ENTRY_SKILLS.filter((k) =>
-        can(p, PERMISSIONS.ESTIMATE_EDIT, { classId: current?.class_id ?? null, studentId, skill: k })),
-    },
-  };
-}
-
-/** Hành trình chỉ có ba lựa chọn lọc: Tất cả · Assessment · Warning/WL. */
-export function journey(p: Principal, studentId: number, filter?: string) {
-  require_(p, PERMISSIONS.STUDENT_VIEW, { studentId });
-  const rows = db()
-    .prepare(
-      `SELECT j.*, u.full_name AS actor_name FROM journey_events j LEFT JOIN users u ON u.id = j.created_by
-        WHERE j.student_id = ? ORDER BY j.event_date DESC, j.id DESC`,
-    )
-    .all(studentId) as any[];
-  const mapped = rows.map((e) => ({
-    id: e.id, eventType: e.event_type, eventDate: e.event_date, title: e.title,
-    detail: e.detail, refTable: e.ref_table, refId: e.ref_id, actorName: e.actor_name,
-    group: JOURNEY_GROUP[e.event_type] ?? 'other',
-  }));
-  if (filter === 'assessment') return mapped.filter((e) => e.group === 'assessment');
-  if (filter === 'warning') return mapped.filter((e) => e.group === 'warning');
-  return mapped;
 }
 
 export function transferStudent(p: Principal, studentId: number, toClassId: number, effectiveDate: string, reason?: string) {

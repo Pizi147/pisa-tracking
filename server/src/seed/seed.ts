@@ -199,7 +199,7 @@ export function runSeed() {
       return padCode('PISA', row.next_value);
     };
 
-    const counts = { students: 0, cycles: 0, attempts: 0, scores: 0, cases: 0, estimates: 0, skips: 0 };
+    const counts = { students: 0, cycles: 0, attempts: 0, scores: 0, cases: 0, checkins: 0, skips: 0 };
     const allStudents: { id: number; classCode: string; branch: string }[] = [];
 
     CLASSES.forEach((c, classIdx) => {
@@ -246,7 +246,7 @@ export function runSeed() {
           .run(sid, c.startDate, `Bắt đầu lộ trình ${c.route}`, `Target ${target}`, cycleId, adminId, NOW);
 
         seedAttempts(conn, { c, classIdx, cid, sid, cycleId, studentIdx: i, target, adminId, branchAdmins, counts });
-        seedEstimates(conn, { sid, cid, target, studentIdx: i, teacherPool: teacherPool.get(c.branch)!, classIdx, counts });
+        seedCheckins(conn, { sid, cid, target, studentIdx: i, teacherPool: teacherPool.get(c.branch)!, classIdx, counts });
       }
     });
 
@@ -269,7 +269,6 @@ export function runSeed() {
       'Lượt Mock': counts.attempts,
       'Ô điểm': counts.scores,
       'Kỹ năng không mock': counts.skips,
-      'Đánh giá GV': counts.estimates,
       'Case SOS từ điểm': counts.cases,
       'Giáo viên báo vấn đề': (conn.prepare("SELECT COUNT(*) AS n FROM sos_cases WHERE origin_kind='teacher_report'").get() as any).n,
       'Tác động đã ghi': (conn.prepare('SELECT COUNT(*) AS n FROM case_interventions').get() as any).n,
@@ -304,7 +303,7 @@ const OUTCOME_SKILL_ORDER: ('listening' | 'reading' | 'writing' | 'speaking')[] 
 function seedAttempts(conn: any, ctx: {
   c: ClassSeed; classIdx: number; cid: number; sid: number; cycleId: number; studentIdx: number;
   target: number; adminId: number; branchAdmins: Map<string, number>;
-  counts: { students: number; cycles: number; attempts: number; scores: number; cases: number; estimates: number; skips: number };
+  counts: { students: number; cycles: number; attempts: number; scores: number; cases: number; checkins: number; skips: number };
 }) {
   const { c, classIdx, cid, sid, cycleId, studentIdx, target, adminId, counts } = ctx;
   if (!c.plan.length) return;
@@ -429,9 +428,9 @@ function seedAttempts(conn: any, ctx: {
 }
 
 /** Đánh giá GV: dữ liệu RIÊNG, không bao giờ ghi đè điểm Mock. */
-function seedEstimates(conn: any, o: {
+function seedCheckins(conn: any, o: {
   sid: number; cid: number; target: number; studentIdx: number; teacherPool: number[]; classIdx: number;
-  counts: { estimates: number };
+  counts: { checkins: number };
 }) {
   const cycle = conn.prepare('SELECT id FROM learning_cycles WHERE student_id = ? ORDER BY seq DESC LIMIT 1').get(o.sid) as any;
   const plan: [string, number, string][] = [
@@ -451,16 +450,35 @@ function seedEstimates(conn: any, o: {
     .prepare(`SELECT skill, user_id FROM teacher_assignments WHERE class_id = ? AND skill IS NOT NULL AND status='active'`)
     .all(o.cid) as any[]) owner[r.skill] = r.user_id;
 
+  /*
+   * Không phải ghi nhận nào cũng có điểm. Phần lớn nhận xét trên lớp là NHẬN ĐỊNH BẰNG
+   * LỜI — dữ liệu mẫu phải phản ánh đúng như thế, nếu không giao diện chỉ được thử với
+   * trường hợp dễ nhất là mọi ô đều có số.
+   */
+  const notes: Record<string, string> = {
+    listening: 'Bắt được ý chính, còn hụt ở phần nói nhanh cuối bài.',
+    reading: 'Làm matching ổn, mất điểm ở TRUE/FALSE/NOT GIVEN.',
+    writing1: 'Chọn số liệu để mô tả còn dàn trải, chưa nêu xu hướng chính.',
+    writing2: 'Có quan điểm rõ, phần triển khai ví dụ còn ngắn.',
+    speaking: 'Part 2 nói đủ thời gian, còn ngập ngừng khi đổi chủ đề.',
+  };
+
   for (const [skill, band, on] of plan) {
     if (!owner[skill]) continue;                            // lớp này không dạy kỹ năng đó
-    if ((o.studentIdx + skill.length) % 3 === 0) continue;   // không phải em nào cũng có đủ đánh giá
+    if ((o.studentIdx + skill.length) % 3 === 0) continue;   // không phải em nào cũng có đủ ghi nhận
+    // Cứ ba em thì một em chỉ có nhận định bằng lời, không kèm điểm ước lượng.
+    const qualitative = (o.studentIdx + skill.length) % 3 === 1;
     conn
       .prepare(
-        `INSERT INTO teacher_estimates (student_id, cycle_id, skill, band, assessed_on, assessed_by, class_id, created_at)
-         VALUES (?,?,?,?,?,?,?,?)`,
+        `INSERT INTO skill_checkins (student_id, cycle_id, class_id, skill, observed_on, author_user_id,
+                                     judgement, band, estimate_basis, created_at)
+         VALUES (?,?,?,?,?,?,?,?,?,?)`,
       )
-      .run(o.sid, cycle?.id ?? null, skill, Math.max(1, Math.min(9, band)), on, owner[skill], o.cid, NOW);
-    o.counts.estimates += 1;
+      .run(o.sid, cycle?.id ?? null, o.cid, skill, on, owner[skill],
+           notes[skill] ?? null,
+           qualitative ? null : Math.max(1, Math.min(9, band)),
+           qualitative ? 'judgement' : 'judgement', NOW);
+    o.counts.checkins += 1;
   }
 }
 
@@ -756,7 +774,7 @@ function seedRegularClasses(conn: any, ctx: {
   classId: Map<string, number>;
   allStudents: { id: number; classCode: string; branch: string }[];
   adminId: number; managers: Map<string, number[]>;
-  counts: { students: number; cycles: number; attempts: number; scores: number; cases: number; estimates: number; skips: number };
+  counts: { students: number; cycles: number; attempts: number; scores: number; cases: number; checkins: number; skips: number };
 }) {
   const { classId, allStudents, adminId, managers, counts } = ctx;
 
@@ -853,7 +871,7 @@ function seedSpecialCases(conn: any, ctx: {
   classId: Map<string, number>;
   allStudents: { id: number; classCode: string; branch: string }[];
   adminId: number; branchAdmins: Map<string, number>; managers: Map<string, number[]>;
-  counts: { students: number; cycles: number; attempts: number; scores: number; cases: number; estimates: number; skips: number };
+  counts: { students: number; cycles: number; attempts: number; scores: number; cases: number; checkins: number; skips: number };
 }) {
   const { classId, allStudents, adminId, managers, counts } = ctx;
   const inClass = (code: string) => allStudents.filter((s) => s.classCode === code);
