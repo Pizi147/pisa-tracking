@@ -187,19 +187,17 @@ export function updateCase(p: Principal, caseId: number, patch: Partial<Record<C
   });
 }
 
-/** Head xác nhận là thao tác riêng, không suy ra từ trạng thái case. */
-export function confirmCase(p: Principal, caseId: number, confirmed: boolean) {
-  const conn = db();
-  const c = conn
-    .prepare(`SELECT sc.*, a.class_id FROM sos_cases sc JOIN assessment_attempts a ON a.id = sc.attempt_id WHERE sc.id = ?`)
-    .get(caseId) as any;
-  if (!c) throw notFound();
-  require_(p, PERMISSIONS.SOS_CONFIRM, { classId: c.class_id }, 'Bạn không có quyền xác nhận case.');
-  conn.prepare('UPDATE sos_cases SET head_confirmed_by = ?, head_confirmed_at = ?, updated_at = ? WHERE id = ?')
-    .run(confirmed ? p.userId : null, confirmed ? demoToday() : null, nowIso(), caseId);
-  recordChange(caseId, 'head_confirmed', c.head_confirmed_at ?? null, confirmed ? demoToday() : null, p.userId);
-  return conn.prepare('SELECT * FROM sos_cases WHERE id = ?').get(caseId);
-}
+/*
+ * "Head xác nhận" ĐÃ BỎ khỏi luồng xử lý case.
+ *
+ * Đối chiếu code cũ: `confirmCase` chỉ ghi tên và ngày; nó không khoá điểm, không là điều
+ * kiện để đổi trạng thái case, không mở khoá bước nào và không gắn với một trách nhiệm
+ * riêng nào. Tức là một bước duyệt không bảo vệ điều gì. Case kết thúc dựa trên chính
+ * TRẠNG THÁI XỬ LÝ (chưa xử lý / đang xử lý / đã xử lý), không cần thêm một người bấm nút.
+ *
+ * Dữ liệu xác nhận cũ (`head_confirmed_by/at` và các dòng lịch sử) được GIỮ NGUYÊN để tra
+ * lại, chỉ không còn thao tác tạo mới.
+ */
 
 /**
  * Tiến độ checklist. Có tên người mà chưa có ngày thì CHƯA tính là đã làm;

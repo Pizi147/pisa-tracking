@@ -62,11 +62,11 @@ Ví dụ hay để mở: các dòng `Case SOS` của lớp `CP-FT 110` (thi 22/0
 
 ---
 
-## Luồng 3 — Quản lý cập nhật Họp tuần và công việc tồn
+## Luồng 3 — Quản lý cập nhật Tiến trình công việc và việc tồn
 
 **Tài khoản:** `Đặng Quang Vy` (Quản lý Monbay)
 
-1. Mở **Họp tuần**. Quản lý Monbay chỉ thấy **Monbay** và **Tutor part-time** —
+1. Mở **Tiến trình công việc**. Quản lý Monbay chỉ thấy **Monbay** và **Tutor part-time** —
    Tutor là *đơn vị độc lập*, **không phải chi nhánh thứ sáu**.
 2. Dòng tổng kết bên phải đếm theo danh mục thật: `Chưa báo cáo / Ổn / Cần theo dõi / Có vấn đề`
    **trên 6 mục** (2 đơn vị × 3 nhóm). Với Admin là **trên 18 mục** (5×3 + 3) — mẫu số tính lại, không hardcode.
@@ -140,6 +140,148 @@ GVCN chỉ đọc lịch.
 
 ---
 
+## Luồng 7 — Lớp là gốc: từ danh sách lớp tới nhập điểm
+
+**Vai:** `Hoàng Khánh Huy` (giáo viên W1, lớp MB-FT 101) hoặc `Đặng Ngọc Phúc` (Admin chi nhánh MB).
+
+1. Mở **Học viên**. Màn hình mở ra là **danh sách lớp**, không phải danh sách 400 học viên.
+   Mỗi dòng lớp có badge — và **chỉ có badge khi thật sự có việc cần làm**.
+2. Bấm **nền dòng** một lớp → danh sách học viên mở ra ngay tại chỗ. Mỗi em hiện chuỗi
+   `MT1 ✓ · MT2 ✓ · MT3 W4 OCT`, kết quả gần nhất và ước lượng giáo viên.
+   Đây chính là phần *tiến độ / mock test* trước đây tách riêng.
+3. Bấm **nền dòng lớp thứ hai** → lớp thứ nhất **vẫn mở**. Hai lớp đặt cạnh nhau mà so.
+4. Bấm **badge** `N cần nhập điểm` → chuyển sang hàng đợi đã lọc sẵn theo lớp đó.
+   Roster **không** bị đóng mở theo — badge và nền dòng là hai vùng bấm khác nhau.
+5. Bấm **tên lớp** → mở Class Overview (trang riêng của lớp), cũng không kích hoạt đóng mở.
+6. Gõ tên một học viên vào ô **Tìm** → trả về đúng **lớp chứa em đó**.
+7. Mở hồ sơ một em rồi bấm **Back** → ô tìm kiếm, bộ lọc và **các lớp đang mở** còn nguyên.
+
+**Bằng bàn phím:** Tab tới dòng lớp, **Enter** mở, **Space** đóng. Dòng lớp có `aria-expanded`
+để trình đọc màn hình đọc đúng trạng thái.
+
+---
+
+## Luồng 8 — Thêm học viên hàng loạt từ Excel
+
+**Vai:** `Đặng Ngọc Phúc` (Admin chi nhánh Monbay).
+
+1. **Học viên** → **Thêm học viên**. Dán thẳng vùng bảng từ Excel/Google Sheets vào ô dán,
+   hoặc gõ thẳng vào lưới.
+2. Chọn **định dạng ngày** đúng với dữ liệu. `12/05/2008` là mơ hồ — hệ thống **không đoán**.
+3. Xem trước **tự chạy**, không phải bấm nút nào: dòng thiếu họ tên, lớp không tồn tại, ngày
+   không đọc được đều hiện lỗi ngay tại ô.
+4. Nút ghi rõ **Thêm 1 học viên** chứ không phải 3 — nó đếm đúng số dòng sẽ được ghi.
+   Nút bị khoá khi còn dòng lỗi; bấm **Bỏ qua N dòng lỗi** là gỡ xong trong một lần.
+5. Bấm Thêm → báo *"Đã thêm 1 học viên, bỏ qua 2 dòng"*. Mở lại lớp thấy em vừa thêm;
+   hai dòng hỏng **không** để lại rác trong dữ liệu.
+6. Bấm Thêm lần nữa với đúng lô đó → **không** tạo thêm học viên trùng.
+
+**Thử thêm:** dòng bỏ trống cột **Lộ trình** vẫn được tạo lộ trình **kế thừa từ lớp**
+(vào lớp LT1 thì đang học LT1), chỉ cảnh báo *"Chưa có target — nhập được nhưng chưa tính
+được kỳ vọng"*. Hệ thống không tự đoán target.
+
+---
+
+## Luồng 9 — Admin CN: cập nhật ngày MT hàng loạt
+
+**Vai:** `Đặng Ngọc Phúc` (Admin chi nhánh Monbay). Ngày demo **23/09/2026** = W4 SEP.
+
+1. **Học viên → Cần cập nhật ngày MT**. Chỉ hiện MT **đã đến tuần**: nhóm *Tuần này* (W4 SEP) và
+   nhóm *Quá hạn* (W3 SEP còn sót). MT của W2 OCT trở đi **không** xuất hiện — chưa đến lượt thì
+   chưa phải việc.
+2. Tick vài em → chọn **Buổi L/R/W** → chọn ngày → **Cập nhật N lượt**.
+   Ô ngày bị chặn trong đúng tuần kế hoạch của những em đang chọn.
+3. Không có ô nhập **giờ** ở bất cứ đâu — giờ mock đã bỏ.
+4. Chọn các em thuộc **hai tuần khác nhau** → hệ thống nói rõ một ngày không thể nằm trong mọi tuần.
+
+**Thử thêm:** đăng nhập bằng một **giáo viên Writing** rồi gọi thẳng API cập nhật ngày → bị từ chối.
+Giáo viên **Speaking** sửa được **ngày Speaking**, nhưng vẫn không sửa được ngày L/R/W.
+
+---
+
+## Luồng 10 — Quản lý: lên kế hoạch MT hàng loạt
+
+**Vai:** `Đặng Quang Vy` (Quản lý Monbay).
+
+1. **Học viên → Lên kế hoạch MT**. Panel **trượt từ phải**, đủ rộng để vừa thấy danh sách vừa đặt tuần.
+2. Mặc định chỉ liệt kê em **chưa có tuần MT tiếp theo** — đó là việc đang tồn của Quản lý.
+   Bấm **Xem cả lớp để xếp trước** khi muốn xếp sẵn lượt sau cho cả lớp.
+3. Chọn tuần bằng `← W4 OCT ▼ →`, tick nhiều em, rồi chọn **kỹ năng lượt này yêu cầu**.
+4. Bỏ tick **Speaking** → lượt này **ngay từ đầu không yêu cầu Speaking**. Mở chi tiết lượt vừa tạo:
+   Speaking nằm ở nhóm *không yêu cầu*, và lượt được coi là **xong khi đủ L/R/W** — không chờ Speaking.
+5. Bỏ tick **cả bốn** kỹ năng → hệ thống từ chối: một lượt không có kỹ năng nào thì không đánh giá được gì.
+
+---
+
+## Luồng 11 — Giáo viên: Đánh giá GV và so với điểm Mock
+
+**Vai:** `Trần Hải Đạt` (GV Listening + Reading, lớp MB-FT 101).
+
+1. Mở lớp → mở hồ sơ một học viên → bảng **Điểm Mock và Đánh giá GV**.
+   Một bảng, hai cột, kèm cột **Δ**.
+2. Δ **dương** (xanh) = em đang thể hiện **tốt hơn** mức giáo viên đánh giá; **âm** (hổ phách) = **thấp hơn**.
+3. Bấm **Đánh giá** ở dòng Listening → nhập **số câu đúng / 40**, hệ thống tự quy ra band.
+   Dòng Writing/Speaking thì nhập **bốn tiêu chí**.
+4. Bấm vào một ô điểm → mở **căn cứ**: raw hoặc bốn tiêu chí.
+5. Thử sửa kỹ năng **không** được phân công → không có nút, và gọi thẳng API cũng bị từ chối.
+
+**Lưu ý:** giáo viên cập nhật được **bất kỳ lúc nào**, không phụ thuộc tuần MT hay hạn nhập điểm.
+
+---
+
+## Luồng 12 — Tiến trình công việc: dữ kiện tự sinh và khoá thời gian
+
+**Vai:** `Đặng Quang Vy` (Quản lý).
+
+1. **Tiến trình công việc** → mục **Việc hệ thống nhìn ra**. Mỗi dòng ghi rõ **việc của ai**
+   (tuần MT → Quản lý, ngày MT → Admin chi nhánh) và bấm vào mở đúng bản ghi cấu thành.
+2. Nhập đủ điểm cho một lượt ở màn khác rồi quay lại → con số *thiếu điểm* **tự giảm**.
+   Không có nút "Đã xong" — đánh dấu chỉ che một con số vẫn đang đúng.
+3. Chọn tuần bằng `←` `→` thay vì mở dropdown. Danh sách chỉ khoảng **hai tháng** quanh tuần đang xem
+   và **một tuần tới**; chọn một tuần cũ thì cửa sổ **dịch theo**.
+4. Mở một tuần **tương lai** → không nhập được báo cáo, và hệ thống **nói rõ vì sao**.
+   Gọi thẳng API cũng bị từ chối — quy tắc nằm ở máy chủ, không phải chỉ làm mờ nút.
+5. **Thêm việc** → không còn trường *Loại*; **Người phụ trách** là ô **gõ để tìm** kèm vai trò và chi nhánh;
+   **Người theo dõi** đã có sẵn Quản lý của chi nhánh đó.
+6. Sau `Tutor part-time` không còn badge *Đơn vị độc lập*. Nhóm báo cáo là **Học sinh / Phụ huynh**.
+
+---
+
+## Luồng 13 — Lớp thường: nhập điểm Foundation
+
+**Vai:** `Đặng Quang Nhi` (Quản trị hệ thống) hoặc giáo viên của lớp `MB-FOUND 12`.
+
+1. **Học viên** → mở lớp **MB-FOUND 12**. Dòng lớp ghi rõ **Foundation**, không phải lớp FT.
+2. Roster hiện **Giữa khoá ✓ · Cuối khoá W1 OCT** — không còn "Chưa có kế hoạch".
+3. Bấm vào một bài → mở **bảng điểm lớp thường**. Cột kỹ năng là
+   **Listening · Reading · Prep-Writing · Pronunciation** — có Pronunciation, không có Writing task 1/2.
+4. Mỗi ô là **số câu đúng / tổng số câu**. Nhập `39` và `40` → hiện ngay **97.5% · Đạt**.
+5. Thử nhập `45/40` → bị từ chối: số câu đúng không thể lớn hơn tổng.
+   Thử để trống tổng → bị từ chối: nhập số câu đúng thì phải nhập cả tổng.
+6. Bỏ trống một kỹ năng → dòng đó hiện **Chờ 1 môn · Chưa đủ điểm để kết luận**, và **không** sinh case SOS.
+   Đây là điểm mấu chốt: **thiếu điểm khác với trượt**.
+7. Nhập nốt kỹ năng cuối, cho một em trượt 2 môn → dòng đó thành **SOS 2**, dùng đúng hệ thống case
+   của lớp FT.
+
+**Thử thêm:** đặt **tổng số câu chung** ở đầu bảng (ví dụ Listening 40) → các ô còn trống lấy sẵn con
+số đó, dòng nào đề khác thì sửa riêng.
+
+**Ca đáng chú ý:** `25/42` hiện ra **60%** nhưng thực tế là 59,5% nên vẫn là **Chưa đạt** — hệ thống
+xét trên tỷ lệ chính xác, không xét trên số đã làm tròn.
+
+---
+
+## Luồng 14 — Giáo viên biết mình dạy gì ở lớp nào
+
+**Vai:** bất kỳ giáo viên nào.
+
+1. Mở **Học viên**. Mỗi dòng lớp có một badge nhỏ ghi kỹ năng bạn phụ trách ở **chính lớp đó**:
+   `L Pron` ở lớp này, `W1` ở lớp kia, `R` ở lớp nữa. Kèm `GVCN` nếu bạn là chủ nhiệm.
+2. Không phải mở từng lớp ra dò — một giáo viên dạy nhiều lớp và ở mỗi lớp có thể ôm bộ kỹ năng khác nhau.
+3. Mở **Class Overview** của một lớp: đầu trang nhắc lại **"Bạn phụ trách: L · Pron"**.
+
+---
+
 ## Kiểm tra quyền (bấm nhanh)
 
 | Thử | Tài khoản | Kỳ vọng |
@@ -148,12 +290,18 @@ GVCN chỉ đọc lịch.
 | GVCN **không** có quyền lịch | `Đinh Bảo Vy` (GVCN MB-FT 101) | Không có nút **Đổi tuần** lẫn **Chốt ngày giờ**; gọi thẳng API cũng bị từ chối |
 | Quản lý chốt tuần nhưng không chốt ngày | `Đặng Quang Vy` | Có **Đổi tuần**, không có **Chốt ngày giờ** |
 | Admin CN chốt ngày nhưng không chốt tuần | `Đặng Ngọc Phúc` | Có **Chốt ngày giờ**, không có **Đổi tuần** |
-| Admin CN **không** vào Tiến trình công việc | `Đặng Ngọc Phúc` | Menu chỉ còn 3 mục, không có *Họp tuần*; gọi API báo cáo bị từ chối |
+| Admin CN **không** vào Tiến trình công việc | `Đặng Ngọc Phúc` | Menu chỉ còn 3 mục, không có *Tiến trình công việc*; gọi API báo cáo bị từ chối |
 | Không thấy dữ liệu ngoài chi nhánh | `Đặng Quang Vy` (Quản lý MB) | Không thấy lớp `CP-FT 110`; gọi thẳng URL của Mock lớp CP bị **API từ chối**, không chỉ ẩn nút |
 | Nhiều quản lý cùng chi nhánh | `Trần Quang Nam`, `Đinh Bảo Lam` (đều là Quản lý MB) | Cả ba quản lý MB đều thao tác được |
-| Giáo viên không có Họp tuần | bất kỳ giáo viên nào | Menu chỉ còn **3 mục**, không có *Họp tuần* |
-| Chỉ Quản lý xác nhận được Head | `Đặng Ngọc Phúc` (Admin chi nhánh MB) | **Không** thấy nút *Xác nhận (Head)*; các thao tác văn phòng khác (dời lịch, nhập bù điểm, sửa hồ sơ) vẫn làm được |
+| Giáo viên không có Tiến trình công việc | bất kỳ giáo viên nào | Menu chỉ còn **3 mục**, không có *Tiến trình công việc* |
+| Lớp thường: GV chỉ nhập kỹ năng mình dạy | GV Listening lớp `MB-FOUND 12` | Nhập được Listening; gọi API nhập Pronunciation bị từ chối; nhập `writing1` bị từ chối vì chương trình Foundation không có kỹ năng đó |
+| Nhập hàng loạt ngoài phạm vi bị chặn ở máy chủ | `Đặng Quang Vy` (Quản lý MB) | Dán dòng có lớp `CP-FT 110`: xem trước báo *nằm ngoài phạm vi*, bấm Thêm thì dòng đó bị bỏ qua và **không** có học viên nào được tạo |
+| Không còn bước *Xác nhận (Head)* | bất kỳ tài khoản nào | Chi tiết case **không** còn nút *Xác nhận (Head)*; case kết thúc bằng chính trạng thái xử lý. Dấu xác nhận cũ vẫn hiện để tra lại |
+| Quản lý cập nhật được ngày MT | `Đặng Quang Vy` | Có cả **Đổi tuần** lẫn cập nhật **ngày thực tế** — học viên nghỉ thì sửa được ngay |
+| Báo cáo tuần tương lai bị chặn ở máy chủ | `Đặng Quang Vy` | Mở một tuần cuối năm: ô nhập khoá, và gọi thẳng API vẫn bị từ chối |
 | Giáo viên không huỷ được lịch | `Đinh Bảo Vy` (GVCN MB-FT 101) | Có nút **Dời lịch**, **không** có nút *Huỷ lịch* |
+| GV L/R/W không sửa được ngày MT | `Hoàng Khánh Huy` (GV W1) | Gọi API cập nhật ngày L/R/W **và** ngày Speaking đều bị từ chối |
+| GV Speaking chỉ sửa ngày Speaking | `Ngô Khánh Bình` (GV S) | Sửa được **ngày Speaking**; ngày L/R/W bị từ chối |
 | Quản trị hệ thống thấy phần quản trị | `Đặng Quang Nhi` | Menu tài khoản có mục **Quản trị hệ thống** |
 
 ---

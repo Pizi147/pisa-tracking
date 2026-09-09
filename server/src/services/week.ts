@@ -1,5 +1,6 @@
 import { db } from '../db.ts';
 import { addDays, nowIso, parseDate } from '../util.ts';
+import { demoToday } from '../demoConfig.ts';
 
 /**
  * Mã tuần dạng "W1 SEP".
@@ -101,6 +102,60 @@ export function listPeriods(limit = 20): (WeekInfo & { id: number })[] {
     .prepare('SELECT * FROM report_periods ORDER BY week_start DESC LIMIT ?')
     .all(limit) as any[];
   return rows.map((r) => ({ id: r.id, ...weekInfo(r.week_start) }));
+}
+
+/** Cửa sổ tuần quanh tuần đang xem: hai tháng lịch sử, một tuần tương lai. */
+export const PERIOD_WINDOW_BACK_WEEKS = 9;
+export const PERIOD_WINDOW_FORWARD_WEEKS = 1;
+
+/**
+ * Danh sách tuần cho ô chọn tuần — một CỬA SỔ TRƯỢT, không phải toàn bộ lịch sử.
+ *
+ * Đây là báo cáo vận hành: người dùng cần vài tuần quanh chỗ mình đang đứng, không cần
+ * kéo tới cuối năm. Cửa sổ trượt theo tuần đang xem, nên chọn một tuần cũ thì danh sách
+ * dịch theo — vẫn đi tiếp về quá khứ được, chỉ là mỗi lần một đoạn.
+ *
+ * Tương lai chỉ mở MỘT tuần: mở báo cáo của tháng sau thì chẳng có gì để báo cáo.
+ */
+export function periodWindow(anchorId?: number | null): (WeekInfo & { id: number; isAnchor: boolean })[] {
+  const conn = db();
+  const anchor = anchorId
+    ? (conn.prepare('SELECT * FROM report_periods WHERE id = ?').get(anchorId) as any)
+    : null;
+  const center = anchor?.week_start ?? mondayOf(demoToday());
+  const from = addDays(center, -7 * PERIOD_WINDOW_BACK_WEEKS);
+  const to = addDays(center, 7 * PERIOD_WINDOW_FORWARD_WEEKS);
+  const rows = conn
+    .prepare('SELECT * FROM report_periods WHERE week_start >= ? AND week_start <= ? ORDER BY week_start DESC')
+    .all(from, to) as any[];
+  return rows.map((r) => ({ id: r.id, ...weekInfo(r.week_start), isAnchor: r.week_start === center }));
+}
+
+/** Số ngày cuối tuần mà báo cáo tuần được phép cập nhật. */
+export const REPORT_EDIT_WINDOW_DAYS = 2;
+
+/**
+ * Báo cáo tuần chỉ được cập nhật trong HAI NGÀY CUỐI của chính tuần đó.
+ *
+ * Đầu tuần thì chưa có gì để báo cáo — mở sẵn ô nhập chỉ mời người ta ghi phỏng đoán.
+ * Tuần tương lai lại càng không: hiện tại vẫn mở được một tuần cuối năm và nhập bình
+ * thường, đó là lỗi. Tuần đã qua thì đóng lại, sửa hồi tố là quyết định vận hành riêng
+ * chứ không phải mặc định.
+ */
+export function reportEditWindow(period: { week_start: string; week_end: string; code?: string }, today = demoToday()): {
+  open: boolean; reason: string | null; opensOn: string;
+} {
+  const opensOn = addDays(period.week_end, -(REPORT_EDIT_WINDOW_DAYS - 1));
+  if (today < period.week_start) {
+    return { open: false, reason: `Tuần ${period.code ?? ''} chưa bắt đầu — chưa có gì để báo cáo.`.trim(), opensOn };
+  }
+  if (today > period.week_end) {
+    return { open: false, reason: 'Tuần này đã kết thúc. Sửa lại báo cáo cũ cần quyết định riêng của quản lý.', opensOn };
+  }
+  if (today < opensOn) {
+    return { open: false, reason: `Báo cáo tuần mở từ ${opensOn} (hai ngày cuối tuần).`, opensOn };
+  }
+  return { open: true, reason: null, opensOn };
 }
 
 export function periodById(id: number) {

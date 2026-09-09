@@ -69,34 +69,34 @@ export default function OverviewPage() {
               value={data.kpis.week.scheduled}
               tone={data.kpis.week.needsDate > 0 ? 'warn' : 'neutral'}
               sub={`${data.kpis.week.done} lượt đã xong · ${data.kpis.week.uniqueStudents} học viên · ${data.kpis.week.needsDate} chưa có ngày`}
-              to={`/mock-test${week}${branch}`}
+              to={data.kpis.week.needsDate > 0 ? '/hoc-vien?view=need_date' : '/hoc-vien'}
             />
             <KpiTile
               label="Chưa nhập đủ điểm"
               value={data.kpis.scoring.missing}
               tone={data.kpis.scoring.overdue > 0 ? 'danger' : data.kpis.scoring.missing > 0 ? 'warn' : 'neutral'}
               sub={`${data.kpis.scoring.overdue} lượt đã quá hạn · ${data.kpis.scoring.complete} lượt đủ điểm`}
-              to={`/mock-test?need=missing_scores${branch}`}
+              to="/hoc-vien?view=my_scores"
             />
             <KpiTile
               label="Case SOS chưa xử lý"
               value={data.kpis.caseNew}
               tone={data.kpis.caseNew > 0 ? 'danger' : 'ok'}
               sub="Chưa ai bắt đầu xử lý · tính đến hôm nay, không theo tuần"
-              to={`/mock-test?need=sos_open${branch}`}
+              to="/hoc-vien?view=sos_open"
             />
             <KpiTile
               label="Case SOS đang xử lý"
               value={data.kpis.caseHandling}
               tone={data.kpis.caseHandling > 0 ? 'warn' : 'neutral'}
               sub={`${data.kpis.caseDone} case đã xong · SOS 1: ${data.kpis.sos.s1} · 2: ${data.kpis.sos.s2} · 3: ${data.kpis.sos.s3}`}
-              to={`/mock-test?need=sos_open${branch}`}
+              to="/hoc-vien?view=sos_open"
             />
           </section>
 
           <div className="grid gap-4 lg:grid-cols-3">
             <Card className="lg:col-span-2" title="Việc cần làm trước"
-              action={<Link className="btn btn-sm no-underline" to={`/mock-test${week}${branch}`}>Mở danh sách MT</Link>}>
+              action={<Link className="btn btn-sm no-underline" to="/hoc-vien">Mở danh sách lớp</Link>}>
               {data.priority.length === 0 ? (
                 <Empty title="Không có việc nào đang chờ" hint="Điểm đã nhập đủ và các case SOS đã được xử lý xong." />
               ) : (
@@ -107,13 +107,13 @@ export default function OverviewPage() {
                         className="w-full text-left py-2.5 px-1 hover:bg-white/5 flex items-start gap-3"
                         onClick={() => {
                           if (p.attemptId) navigate(`/mock-test/${p.attemptId}`);
-                          else navigate('/hop-tuan');
+                          else navigate('/tien-trinh');
                         }}
                       >
                         <span className="mt-0.5">
                           {p.kind === 'sos_new' && <Pill tone="danger">SOS chưa xử lý</Pill>}
                           {p.kind === 'overdue_score' && <Pill tone="danger">Quá hạn điểm</Pill>}
-                          {p.kind === 'needs_date' && <Pill tone="warn">Cần xếp ngày</Pill>}
+                          {p.kind === 'needs_date' && <Pill tone="warn">Cần cập nhật ngày</Pill>}
                           {p.kind === 'overdue_task' && <Pill tone="danger">Việc quá hạn</Pill>}
                         </span>
                         <span className="min-w-0 flex-1">
@@ -135,7 +135,7 @@ export default function OverviewPage() {
             <div className="space-y-4">
               {data.meeting && (
                 <Card title="Họp tuần"
-                  action={<Link className="btn btn-sm no-underline" to="/hop-tuan">Mở</Link>}>
+                  action={<Link className="btn btn-sm no-underline" to="/tien-trinh">Mở</Link>}>
                   <ul className="text-sm space-y-1.5 list-none p-0 m-0">
                     <li className="flex justify-between"><span className="text-slate-400">Chưa báo cáo</span>
                       <strong className="tabular-nums">{data.meeting.notReported}/{data.meeting.total}</strong></li>

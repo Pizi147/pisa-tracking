@@ -121,6 +121,134 @@ export const SKILL_PROGRESS_LABEL: Record<SkillProgress, string> = {
   scored: 'Đã có điểm',
 };
 
+// ------------------------------------------------- Chương trình và lớp thường
+
+/**
+ * Chương trình học. FT dùng Mock Test và band IELTS; lớp thường (FOU/BE/ELE) dùng
+ * bài kiểm tra chấm theo `số câu đúng / tổng số câu`, KHÔNG đi qua bảng quy đổi IELTS.
+ *
+ * `FOU` là mã canonical của Foundation. `FOUND` là mã đã từng dùng — chỉ ánh xạ khi
+ * đọc dữ liệu cũ, KHÔNG tự đổi mã lớp lịch sử.
+ */
+export const PROGRAMME_CODES = ['FT', 'FOU', 'BE', 'ELE'] as const;
+export type ProgrammeCode = (typeof PROGRAMME_CODES)[number];
+export const LEGACY_PROGRAMME_CODE: Record<string, ProgrammeCode> = { FOUND: 'FOU' };
+
+/** Cách chấm của một chương trình. Tách khỏi chương trình để sau này thêm loại khác. */
+export const SCORING_MODES = ['ielts_band', 'ratio'] as const;
+export type ScoringMode = (typeof SCORING_MODES)[number];
+export const SCORING_MODE_LABEL: Record<ScoringMode, string> = {
+  ielts_band: 'Band IELTS (Mock Test)',
+  ratio: 'Số câu đúng / tổng số câu',
+};
+
+/** Ngưỡng đạt của cách chấm theo tỷ lệ. Xét trên tỷ lệ CHÍNH XÁC, không làm tròn % rồi mới xét. */
+export const RATIO_PASS_THRESHOLD = 0.6;
+
+/**
+ * Loại lượt đánh giá. `mock` là MT của FT; lớp thường có bài giữa và bài cuối khoá.
+ * Vẫn KHÔNG dùng từ "thi" — đây là bài kiểm tra, "thi" dành cho kỳ IELTS chính thức.
+ */
+export const ATTEMPT_KINDS = ['mock', 'progress', 'final'] as const;
+export type AttemptKind = (typeof ATTEMPT_KINDS)[number];
+export const ATTEMPT_KIND_LABEL: Record<AttemptKind, string> = {
+  mock: 'Mock Test', progress: 'Bài kiểm tra giữa khoá', final: 'Bài kiểm tra cuối khoá',
+};
+export const ATTEMPT_KIND_SHORT: Record<AttemptKind, string> = {
+  mock: 'MT', progress: 'Giữa khoá', final: 'Cuối khoá',
+};
+
+/** Kỹ năng riêng của lớp thường, không nằm trong bộ bốn kỹ năng IELTS. */
+export const REGULAR_SKILLS = ['listening', 'reading', 'prep_writing', 'pronunciation', 'speaking'] as const;
+export type RegularSkill = (typeof REGULAR_SKILLS)[number];
+export const REGULAR_SKILL_LABEL: Record<RegularSkill, string> = {
+  listening: 'Listening', reading: 'Reading', prep_writing: 'Prep-Writing',
+  pronunciation: 'Pronunciation', speaking: 'Speaking',
+};
+
+/**
+ * Viết tắt dùng trên badge, ví dụ `L R` hay `R W1`.
+ * Gộp cả kỹ năng của lớp FT và lớp thường vào một bảng để nơi hiển thị không phải đoán
+ * lớp nào dùng bộ nào.
+ */
+export const SKILL_SHORT: Record<string, string> = {
+  listening: 'L', reading: 'R', writing1: 'W1', writing2: 'W2', speaking: 'S',
+  prep_writing: 'PrepW', pronunciation: 'Pron',
+};
+export const skillShort = (k: string) => SKILL_SHORT[k] ?? k;
+
+/**
+ * Mốc kiểm tra tính theo TUẦN HỌC của lớp, không phải tuần thứ mấy của tháng.
+ * FOU 8 tuần: giữa khoá tuần 4, cuối khoá tuần 8.
+ * BE/ELE 10 tuần: giữa khoá tuần 5, cuối khoá tuần 10.
+ */
+export type ProgrammeTemplate = {
+  code: ProgrammeCode;
+  name: string;
+  weeks: number | null;
+  scoringMode: ScoringMode;
+  skills: readonly string[];
+  checkpoints: readonly { kind: AttemptKind; studyWeek: number }[];
+};
+
+export const PROGRAMME_TEMPLATES: Record<ProgrammeCode, ProgrammeTemplate> = {
+  FT: {
+    code: 'FT', name: 'Fulltime IELTS', weeks: null, scoringMode: 'ielts_band',
+    skills: ENTRY_SKILLS,
+    checkpoints: [],   // MT theo mốc riêng của FT, xem MOCK_FT_STUDY_WEEK
+  },
+  FOU: {
+    code: 'FOU', name: 'Foundation', weeks: 8, scoringMode: 'ratio',
+    skills: ['listening', 'reading', 'prep_writing', 'pronunciation'],
+    checkpoints: [{ kind: 'progress', studyWeek: 4 }, { kind: 'final', studyWeek: 8 }],
+  },
+  BE: {
+    code: 'BE', name: 'Beginner', weeks: 10, scoringMode: 'ratio',
+    skills: ['listening', 'reading', 'prep_writing', 'speaking'],
+    checkpoints: [{ kind: 'progress', studyWeek: 5 }, { kind: 'final', studyWeek: 10 }],
+  },
+  ELE: {
+    code: 'ELE', name: 'Elementary', weeks: 10, scoringMode: 'ratio',
+    skills: ['listening', 'reading', 'prep_writing', 'speaking'],
+    checkpoints: [{ kind: 'progress', studyWeek: 5 }, { kind: 'final', studyWeek: 10 }],
+  },
+};
+
+/** Đưa mã chương trình về mã canonical. Nhận cả mã cũ, nhưng không sửa dữ liệu gốc. */
+export function programmeOf(kind: string | null | undefined): ProgrammeCode | null {
+  if (!kind) return null;
+  const k = kind.trim().toUpperCase();
+  if ((PROGRAMME_CODES as readonly string[]).includes(k)) return k as ProgrammeCode;
+  return LEGACY_PROGRAMME_CODE[k] ?? null;
+}
+
+/**
+ * Kết quả một kỹ năng của lớp thường.
+ *
+ * Ba trạng thái, KHÔNG hai: thiếu điểm KHÁC trượt. Chưa nhập thì chưa kết luận được,
+ * không được đếm thành một môn trượt rồi đẩy học viên lên SOS oan.
+ */
+export type RatioOutcome = 'pass' | 'fail' | 'missing';
+
+export function ratioResult(score: number | null, total: number | null): {
+  outcome: RatioOutcome; ratio: number | null;
+} {
+  if (score === null || total === null) return { outcome: 'missing', ratio: null };
+  if (!Number.isFinite(score) || !Number.isFinite(total) || total <= 0 || score < 0 || score > total) {
+    return { outcome: 'missing', ratio: null };
+  }
+  const ratio = score / total;
+  // Xét trên tỷ lệ chính xác. Làm tròn % để hiển thị rồi mới so là sai:
+  // 23/40 = 57.5% hiển thị "58%" nhưng vẫn dưới ngưỡng.
+  return { outcome: ratio >= RATIO_PASS_THRESHOLD ? 'pass' : 'fail', ratio };
+}
+
+/** Số môn trượt → mức SOS. Dùng chung ngưỡng 1/2/≥3 với FT, chỉ khác cách sinh ra "trượt". */
+export function sosFromFailCount(failCount: number): SosLevel {
+  if (failCount <= 0) return 0;
+  return failCount >= 3 ? 3 : (failCount as SosLevel);
+}
+
 export type SosLevel = 0 | 1 | 2 | 3;
 export const SOS_LABEL: Record<SosLevel, string> = {
   0: 'Đạt kỳ vọng', 1: 'SOS 1', 2: 'SOS 2', 3: 'SOS 3',
@@ -148,7 +276,16 @@ export const MEETING_KINDS = ['Không cần', 'GVCN meeting HS', 'CX / GĐCN mee
 export const CASE_STATUSES = ['open', 'in_progress', 'done'] as const;
 export type CaseStatus = (typeof CASE_STATUSES)[number];
 export const CASE_STATUS_LABEL: Record<CaseStatus, string> = {
-  open: 'Chưa xử lý', in_progress: 'Đang xử lý', done: 'Đã xong',
+  open: 'Chưa xử lý', in_progress: 'Đang xử lý', done: 'Đã xử lý',
+};
+
+/**
+ * Ba trạng thái phải NHÌN LÀ BIẾT, không phải mở chi tiết mới rõ đã có ai làm gì chưa.
+ * "GVCN đã nhận" là metadata gắn kèm, KHÔNG phải trạng thái thứ tư — nhận tài liệu không
+ * tự nó nghĩa là đã xử lý.
+ */
+export const CASE_STATUS_TONE: Record<CaseStatus, 'danger' | 'warn' | 'ok'> = {
+  open: 'danger', in_progress: 'warn', done: 'ok',
 };
 
 // ---------------------------------------------------------------- Họp tuần
@@ -156,7 +293,8 @@ export const CASE_STATUS_LABEL: Record<CaseStatus, string> = {
 /** Ba nhóm báo cáo cho chi nhánh (chốt theo DANH MỤC của workbook họp). */
 export const BRANCH_REPORT_CATEGORIES = [
   { key: 'teachers', label: 'Giáo viên', hint: 'Thái độ làm việc, chất lượng giảng dạy' },
-  { key: 'students', label: 'Học sinh', hint: 'Lịch học, thái độ, lực học' },
+  // Vấn đề vận hành đến từ cả hai phía, nên một nhóm chung thay vì tách hai module.
+  { key: 'students', label: 'Học sinh / Phụ huynh', hint: 'Lịch học, thái độ, lực học, phản hồi từ phụ huynh' },
   { key: 'curriculum', label: 'Giáo trình', hint: 'Mức độ phù hợp, đề xuất điều chỉnh' },
 ] as const;
 
@@ -228,12 +366,11 @@ export const PERMISSIONS = {
   SCORE_EDIT: 'score.edit',
   /** Nhập bù / sửa điểm NGOÀI phân công. Tách riêng để còn siết lại được — xem O05. */
   SCORE_OVERRIDE: 'score.override',
-  /** Giáo viên cập nhật ước lượng của kỹ năng mình phụ trách. */
+  /** Giáo viên cập nhật đánh giá của kỹ năng mình phụ trách. */
   ESTIMATE_EDIT: 'estimate.edit',
 
   // --- Sau đánh giá ---
   SOS_EDIT: 'sos.edit',
-  SOS_CONFIRM: 'sos.confirm',
 
   // --- Hồ sơ và vận hành ---
   STUDENT_VIEW: 'student.view',
@@ -254,9 +391,8 @@ export const PERMISSION_LABEL: Record<string, string> = {
   'attempt.view': 'Xem lịch và kết quả MT',
   'score.edit': 'Nhập điểm kỹ năng được phân công',
   'score.override': 'Nhập bù điểm ngoài phân công',
-  'estimate.edit': 'Cập nhật ước lượng giáo viên',
+  'estimate.edit': 'Cập nhật Đánh giá GV',
   'sos.edit': 'Ghi nhận xử lý sau MT',
-  'sos.confirm': 'Xác nhận case (Head)',
   'student.view': 'Xem hồ sơ học viên',
   'student.edit': 'Sửa hồ sơ học viên',
   'meeting.view': 'Xem tiến trình công việc',
@@ -284,7 +420,7 @@ export const JOURNEY_EVENT_LABEL: Record<string, string> = {
   mock_rescheduled: 'Đổi lịch MT',
   mock_cancelled: 'Huỷ lượt MT',
   mock_result: 'Kết quả MT',
-  estimate: 'Ước lượng giáo viên',
+  estimate: 'Đánh giá GV',
   warning: 'Cảnh báo',
   wl: 'Warning Letter',
 };

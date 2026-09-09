@@ -5,7 +5,9 @@ import { api, invalidate } from '../lib/api.ts';
 import { useToast } from '../components/Toast.tsx';
 import { Card, Empty, ErrorState, Pill, SectionNote, Skeleton } from '../components/ui.tsx';
 import { Modal } from '../components/Drawer.tsx';
-import { usePeriods } from '../components/Filters.tsx';
+import { WeekPicker, usePeriodWindow } from '../components/Filters.tsx';
+import { SignalList } from '../components/SignalList.tsx';
+import { FollowerPicker, PersonPicker, type Person } from '../components/PeoplePicker.tsx';
 import { dueLabel, dueTone, fmtDate, taskProgressLabel, taskTypeLabel, unitStatusLabel, unitTone } from '../lib/format.ts';
 import { TASK_PROGRESS, TASK_TYPES, UNIT_STATUSES } from '@shared/domain.ts';
 
@@ -17,10 +19,13 @@ type Board = {
     reported: number; total: number; canEdit: boolean;
   }[];
   totals: { total: number; ok: number; watch: number; problem: number; notReported: number };
+  /** Báo cáo tuần chỉ được cập nhật trong hai ngày cuối tuần đó. Máy chủ mới là nơi chặn thật. */
+  editWindow: { open: boolean; reason: string | null; opensOn: string } | null;
 };
 
 type Task = {
   id: number; code: string; title: string; taskType: string;
+  followers?: { userId: number; name: string; source: string }[];
   unitId: number | null; unitName: string | null; assigneeId: number | null; assigneeName: string | null;
   dueDate: string | null; progress: string; note: string | null; dueState: string;
   periodId: number | null; periodCode: string | null; sourceSosCaseId: number | null; canEdit: boolean;
@@ -36,17 +41,18 @@ const TASK_VIEWS = [
 
 export default function MeetingPage() {
   const { session } = useSession();
-  const periods = usePeriods();
   const [periodId, setPeriodId] = useState<number | null>(null);
   const [view, setView] = useState('open');
   const [taskOpen, setTaskOpen] = useState<Task | 'new' | null>(null);
 
+  // Mở đúng tuần hiện tại. Cửa sổ tuần trượt theo tuần đang xem nên không cần nạp cả lịch sử.
+  const window = usePeriodWindow(periodId);
   useEffect(() => {
-    if (periodId === null && periods.data?.length) {
-      const cur = periods.data.find((p) => p.weekStart <= session!.demoDate && p.weekEnd >= session!.demoDate);
-      setPeriodId(cur?.id ?? periods.data[0].id);
+    if (periodId === null && window.data?.length) {
+      const cur = window.data.find((p) => p.weekStart <= session!.demoDate && p.weekEnd >= session!.demoDate);
+      setPeriodId(cur?.id ?? window.data[0].id);
     }
-  }, [periods.data, periodId, session]);
+  }, [window.data, periodId, session]);
 
   const board = useApi<Board>(periodId ? `/meeting/board?periodId=${periodId}` : null);
   const tasksQs = useMemo(() => {
@@ -63,16 +69,23 @@ export default function MeetingPage() {
     <div className="space-y-4 max-w-[1500px]">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-lg font-semibold text-slate-100">Họp tuần</h1>
-          <p className="text-xs text-slate-500 mt-0.5">Tình hình từng đơn vị và công việc theo dõi — thay cho thao tác trên workbook.</p>
+          <h1 className="text-lg font-semibold text-slate-100">Tiến trình công việc</h1>
+          <p className="text-xs text-slate-500 mt-0.5">
+            Hệ thống tổng hợp dữ liệu, quản lý bổ sung nhận định — thay cho việc chép lại số liệu vào workbook.
+          </p>
         </div>
-        <label className="block">
-          <span className="label">Kỳ họp</span>
-          <select className="field w-56" value={periodId ?? ''} onChange={(e) => setPeriodId(Number(e.target.value))}>
-            {(periods.data ?? []).map((p) => <option key={p.id} value={p.id}>{p.code} · {p.range}</option>)}
-          </select>
-        </label>
+        <WeekPicker periodId={periodId} onPeriod={setPeriodId} label="Tuần báo cáo" className="w-52" />
       </div>
+
+      {/* Báo cáo tuần chỉ mở trong hai ngày cuối tuần — nói rõ vì sao, không chỉ làm mờ ô nhập. */}
+      {board.data?.editWindow && !board.data.editWindow.open && (
+        <SectionNote>
+          <strong>Chưa/không còn cập nhật được báo cáo tuần này.</strong> {board.data.editWindow.reason}
+        </SectionNote>
+      )}
+
+      {/* Hệ thống tổng hợp dữ kiện trước; nhận định của quản lý nằm ở phần dưới. */}
+      <SignalList periodId={periodId} />
 
       {board.loading && <Skeleton rows={6} />}
 
@@ -95,7 +108,10 @@ export default function MeetingPage() {
           ) : (
             <div className="divide-y" style={{ borderColor: 'var(--line)' }}>
               {board.data.units.map((u) => (
-                <UnitRow key={u.unitId} unit={u} periodId={periodId!} onSaved={board.reload} />
+                <UnitRow
+                  key={u.unitId} unit={u} periodId={periodId!}
+                  windowOpen={board.data!.editWindow?.open ?? true} onSaved={board.reload}
+                />
               ))}
             </div>
           )}
@@ -129,7 +145,6 @@ export default function MeetingPage() {
                   <th className="th">Phụ trách</th>
                   <th className="th">Hạn</th>
                   <th className="th">Tiến độ</th>
-                  <th className="th">Loại</th>
                   <th className="th">Kỳ</th>
                 </tr>
               </thead>
@@ -148,7 +163,6 @@ export default function MeetingPage() {
                       <div><Pill tone={dueTone(t.dueState)}>{dueLabel(t.dueState)}</Pill></div>
                     </td>
                     <td className="td whitespace-nowrap">{taskProgressLabel(t.progress)}</td>
-                    <td className="td whitespace-nowrap text-slate-400 text-xs">{taskTypeLabel(t.taskType)}</td>
                     <td className="td whitespace-nowrap text-slate-500 text-xs">{t.periodCode ?? '—'}</td>
                   </tr>
                 ))}
@@ -176,14 +190,15 @@ export default function MeetingPage() {
   );
 }
 
-function UnitRow({ unit, periodId, onSaved }: { unit: Board['units'][number]; periodId: number; onSaved: () => void }) {
+function UnitRow({ unit, periodId, windowOpen, onSaved }: {
+  unit: Board['units'][number]; periodId: number; windowOpen: boolean; onSaved: () => void;
+}) {
   const [open, setOpen] = useState(false);
   return (
     <div>
       <button className="w-full text-left px-4 py-3 hover:bg-white/5 flex flex-wrap items-center gap-3"
         onClick={() => setOpen((o) => !o)}>
         <span className="font-medium text-slate-100 w-40 shrink-0">{unit.unitName}</span>
-        {unit.kind !== 'branch' && <Pill tone="neutral">Đơn vị độc lập</Pill>}
         <span className="flex flex-wrap gap-1.5 flex-1">
           {unit.cells.map((c) => (
             <Pill key={c.key} tone={unitTone(c.status)}>{c.label}: {unitStatusLabel(c.status)}</Pill>
@@ -195,7 +210,10 @@ function UnitRow({ unit, periodId, onSaved }: { unit: Board['units'][number]; pe
       {open && (
         <div className="px-4 pb-4 grid gap-3 md:grid-cols-3">
           {unit.cells.map((c) => (
-            <CellEditor key={c.key} unitId={unit.unitId} periodId={periodId} cell={c} canEdit={unit.canEdit} onSaved={onSaved} />
+            <CellEditor
+              key={c.key} unitId={unit.unitId} periodId={periodId} cell={c}
+              canEdit={unit.canEdit && windowOpen} onSaved={onSaved}
+            />
           ))}
         </div>
       )}
@@ -251,24 +269,35 @@ function TaskModal({ task, periodId, onClose, onSaved }: {
 }) {
   const toast = useToast();
   const units = useApi<any[]>('/ref/units');
-  const users = useApi<any[]>('/ref/users');
   const [title, setTitle] = useState(task?.title ?? '');
   const [unitId, setUnitId] = useState<number | null>(task?.unitId ?? null);
-  const [assigneeId, setAssigneeId] = useState<number | null>(task?.assigneeId ?? null);
+  const [assignee, setAssignee] = useState<{ id: number; name: string } | null>(
+    task?.assigneeId ? { id: task.assigneeId, name: task.assigneeName ?? '' } : null,
+  );
+  const [followers, setFollowers] = useState<Person[]>(
+    (task?.followers ?? []).filter((f) => f.source !== 'auto')
+      .map((f) => ({ id: f.userId, name: f.name, title: null, role: null, branches: [] })),
+  );
   const [dueDate, setDueDate] = useState(task?.dueDate ?? '');
   const [progress, setProgress] = useState(task?.progress ?? 'not_started');
-  const [taskType, setTaskType] = useState(task?.taskType ?? 'in_period');
   const [note, setNote] = useState(task?.note ?? '');
   const [busy, setBusy] = useState(false);
+
+  // Quản lý của chi nhánh được hệ thống thêm sẵn — hiện ra để người tạo khỏi chọn lại.
+  const autoNames = (task?.followers ?? []).filter((f) => f.source === 'auto').map((f) => f.name);
 
   const submit = async () => {
     if (busy) return;
     setBusy(true);
     try {
+      const body = {
+        title, unitId, assigneeUserId: assignee?.id ?? null,
+        dueDate: dueDate || null, note, followerIds: followers.map((f) => f.id),
+      };
       if (task) {
-        await api.patch(`/tasks/${task.id}`, { title, unitId, assigneeUserId: assigneeId, dueDate: dueDate || null, progress, taskType, note });
+        await api.patch(`/tasks/${task.id}`, { ...body, progress });
       } else {
-        await api.post('/tasks', { title, unitId, assigneeUserId: assigneeId, dueDate: dueDate || null, taskType, note, periodId });
+        await api.post('/tasks', { ...body, periodId });
       }
       invalidate('/tasks'); invalidate('/overview');
       onSaved(); onClose();
@@ -299,22 +328,18 @@ function TaskModal({ task, periodId, onClose, onSaved }: {
               {(units.data ?? []).map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
             </select>
           </label>
-          <label className="block">
+          <div className="block">
+            {/* Gõ để tìm, kèm vai trò và chi nhánh — một danh sách chỉ có tên là chọn nhầm người. */}
             <span className="label">Người phụ trách</span>
-            <select className="field" value={assigneeId ?? ''} disabled={readOnly} onChange={(e) => setAssigneeId(Number(e.target.value) || null)}>
-              <option value="">Chưa giao</option>
-              {(users.data ?? []).map((u) => <option key={u.id} value={u.id}>{u.fullName}</option>)}
-            </select>
-          </label>
+            <PersonPicker
+              value={assignee?.id ?? null} valueName={assignee?.name} disabled={readOnly}
+              placeholder="Gõ tên để giao việc…"
+              onChange={(id, p) => setAssignee(id && p ? { id, name: p.name } : null)}
+            />
+          </div>
           <label className="block">
             <span className="label">Hạn</span>
             <input type="date" className="field" value={dueDate ?? ''} disabled={readOnly} onChange={(e) => setDueDate(e.target.value)} />
-          </label>
-          <label className="block">
-            <span className="label">Loại</span>
-            <select className="field" value={taskType} disabled={readOnly} onChange={(e) => setTaskType(e.target.value)}>
-              {TASK_TYPES.map((t) => <option key={t} value={t}>{taskTypeLabel(t)}</option>)}
-            </select>
           </label>
           {task && (
             <label className="block">
@@ -324,6 +349,14 @@ function TaskModal({ task, periodId, onClose, onSaved }: {
               </select>
             </label>
           )}
+        </div>
+        <div className="block">
+          <span className="label">Người theo dõi</span>
+          <FollowerPicker value={followers} onChange={setFollowers} autoNames={autoNames} disabled={readOnly} />
+          <p className="text-[11px] text-slate-500 mt-1">
+            Người theo dõi không phải người làm và không chịu trách nhiệm hoàn thành — họ chỉ cần biết
+            khi tiến độ đổi. Quản lý của chi nhánh được thêm sẵn.
+          </p>
         </div>
         <label className="block">
           <span className="label">Ghi chú</span>

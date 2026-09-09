@@ -11,11 +11,16 @@ import { maybeSimulateReadError, maybeSimulateSaveFailure, pInt, qInt, qStr, wra
 import * as attemptSvc from '../services/attempts.ts';
 import * as cycleSvc from '../services/cycles.ts';
 import * as estimateSvc from '../services/estimates.ts';
+import * as classSvc from '../services/classes.ts';
+import * as intakeSvc from '../services/intake.ts';
 import * as sosSvc from '../services/sos.ts';
 import * as studentSvc from '../services/students.ts';
 import * as meetingSvc from '../services/meeting.ts';
 import * as dashboardSvc from '../services/dashboard.ts';
-import { ensurePeriod, listPeriods } from '../services/week.ts';
+import { ensurePeriod, listPeriods, periodById, periodWindow, reportEditWindow } from '../services/week.ts';
+import * as planningSvc from '../services/planning.ts';
+import { signalsFor } from '../services/signals.ts';
+import * as regularSvc from '../services/regular.ts';
 
 export const api = Router();
 
@@ -62,8 +67,8 @@ api.get('/demo/session', wrap((req) => {
      * Chỉ đổi điểm vào, không đổi quyền.
      */
     landing: p.roleKeys.length === 1
-      ? p.roleKeys[0] === 'teacher' ? '/mock-test?need=my_scores'
-        : p.roleKeys[0] === 'branch_admin' ? '/mock-test?need=needs_date'
+      ? p.roleKeys[0] === 'teacher' ? '/hoc-vien?view=my_scores'
+        : p.roleKeys[0] === 'branch_admin' ? '/hoc-vien?view=need_date'
         : '/'
       : '/',
     // Bốn mục điều hướng + một lối phụ. Ẩn/hiện theo quyền, không theo tên vai trò.
@@ -159,6 +164,24 @@ api.get('/ref/periods', requireAuth, wrap(() => {
 
 api.get('/ref/current-period', requireAuth, wrap(() => ensurePeriod(demoToday())));
 
+/**
+ * Cửa sổ tuần cho ô chọn tuần: hai tháng lịch sử quanh tuần đang xem, một tuần tương lai.
+ * Không trả về toàn bộ lịch sử — đây là báo cáo vận hành, không phải kho lưu trữ.
+ */
+api.get('/ref/period-window', requireAuth, wrap((req) => {
+  ensurePeriod(demoToday());
+  const anchor = toInt(req.query?.anchorId);
+  return periodWindow(anchor ?? null).map((p) => ({
+    id: p.id, code: p.code, weekStart: p.weekStart, weekEnd: p.weekEnd, range: p.range,
+    year: p.year, month: p.month, isAnchor: p.isAnchor,
+    editWindow: reportEditWindow({ week_start: p.weekStart, week_end: p.weekEnd, code: p.code }),
+  }));
+}));
+
+/** Danh sách người cho ô chọn Người phụ trách / Người theo dõi — gõ để lọc. */
+api.get('/ref/people', requireAuth, wrap((req) =>
+  meetingSvc.searchPeople(principalOf(req), qStr(req, 'q'))));
+
 api.get('/ref/users', requireAuth, wrap((req) => {
   const p = principalOf(req);
   if (!can(p, PERMISSIONS.MEETING_EDIT, { anyScope: true }) && !can(p, PERMISSIONS.ADMIN_CONFIG, { anyScope: true })) {
@@ -200,6 +223,23 @@ api.get('/attempts', requireAuth, wrap((req) => {
   });
 }));
 
+/*
+ * CÁC ĐƯỜNG DẪN CỐ ĐỊNH PHẢI ĐỨNG TRƯỚC `/attempts/:id`.
+ * Express khớp theo thứ tự khai báo, nên đặt sau thì `:id` sẽ nuốt luôn "no-plan" và
+ * "date-duty" — request đi vào hàm chi tiết với một id không phải số.
+ */
+
+/** Nghĩa vụ hàng tuần của Admin chi nhánh: MT tuần này và tuần trước còn thiếu ngày. */
+api.get('/attempts/date-duty', requireAuth, wrap((req) => planningSvc.dateDutyQueue(principalOf(req), {
+  branchId: toInt(req.query?.branchId), classId: toInt(req.query?.classId),
+})));
+
+/** Học viên chưa có tuần MT tiếp theo — việc của Quản lý. */
+api.get('/attempts/no-plan', requireAuth, wrap((req) => planningSvc.noPlanQueue(principalOf(req), {
+  branchId: toInt(req.query?.branchId), classId: toInt(req.query?.classId),
+  includePlanned: req.query?.includePlanned === '1',
+})));
+
 api.get('/attempts/:id', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   return attemptSvc.attemptDetail(principalOf(req), pInt(req, 'id'));
@@ -211,6 +251,35 @@ api.post('/attempts', requireAuth, wrap((req) => {
   const periodId = toInt(req.body?.periodId);
   if (!periodId) throw badRequest('Cần chọn tuần kế hoạch.');
   return attemptSvc.createAttempt(principalOf(req), { ...req.body, periodId });
+}));
+
+/**
+ * Lên kế hoạch MT cho NHIỀU học viên cùng lúc, kèm chọn kỹ năng lượt này yêu cầu.
+ * Bỏ tick một kỹ năng = ngay từ đầu không yêu cầu, KHÁC với "có yêu cầu nhưng chưa có điểm".
+ */
+api.post('/attempts/bulk-plan', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  const periodId = toInt(req.body?.periodId);
+  if (!periodId) throw badRequest('Cần chọn tuần kế hoạch.');
+  return planningSvc.bulkPlan(principalOf(req), { ...req.body, periodId });
+}));
+
+/** Cập nhật NGÀY MT thực tế cho nhiều lượt cùng lúc — chỉ ngày, không giờ. */
+api.post('/attempts/bulk-date', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return planningSvc.bulkSetDate(principalOf(req), req.body ?? {});
+}));
+
+/** Việc sinh ra từ dữ liệu — tự hết khi nguồn được xử lý, không có nút đóng giả. */
+api.get('/signals', requireAuth, wrap((req) => signalsFor(principalOf(req), {
+  branchId: toInt(req.query?.branchId), periodId: toInt(req.query?.periodId),
+})));
+
+/** Tổng hợp Tutor theo chính tutor, không cộng cơ học theo từng chi nhánh. */
+api.get('/meeting/tutor-rollup', requireAuth, wrap((req) => {
+  const periodId = toInt(req.query?.periodId);
+  if (!periodId) throw badRequest('Cần chọn tuần.');
+  return meetingSvc.tutorRollup(principalOf(req), periodId);
 }));
 
 /** Đổi TUẦN kế hoạch — chỉ Quản lý. */
@@ -274,7 +343,88 @@ api.get('/classes/:id/score-sheet', requireAuth, wrap((req) => {
   return attemptSvc.classScoreSheet(principalOf(req), pInt(req, 'id'), qInt(req, 'periodId') ?? null);
 }));
 
-// ============================================================ Lộ trình và ước lượng
+// ============================================================ Lớp (Học viên lấy lớp làm gốc)
+
+api.get('/classes', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return classSvc.listClassSummaries(principalOf(req), {
+    branchId: qInt(req, 'branchId'),
+    q: qStr(req, 'q'),
+  });
+}));
+
+/** Danh sách học viên của lớp — chỉ gọi khi người dùng mở rộng lớp đó. */
+api.get('/classes/:id/roster', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return classSvc.classRoster(principalOf(req), pInt(req, 'id'), qStr(req, 'q'));
+}));
+
+api.get('/classes/:id/overview', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return classSvc.classOverview(principalOf(req), pInt(req, 'id'));
+}));
+
+api.post('/classes', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return intakeSvc.createClass(principalOf(req), req.body ?? {});
+}));
+
+// ============================================================ Thêm học viên hàng loạt
+
+/** Tách dòng từ nội dung dán ở Excel/Google Sheets. Không ghi gì vào database. */
+api.post('/intake/parse', requireAuth, wrap((req) => {
+  const text = String(req.body?.text ?? '');
+  if (!text.trim()) throw badRequest('Chưa có nội dung để đọc.');
+  return intakeSvc.parsePaste(text);
+}));
+
+/** Xem trước: soát lỗi từng dòng, gợi ý trùng hồ sơ. Vẫn không ghi gì. */
+api.post('/intake/preview', requireAuth, wrap((req) => {
+  const b = req.body ?? {};
+  return intakeSvc.previewIntake(principalOf(req), {
+    rows: b.rows ?? [], defaultClassId: b.defaultClassId ?? null, dateFormat: b.dateFormat,
+  });
+}));
+
+api.post('/intake/commit', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  const b = req.body ?? {};
+  return intakeSvc.commitIntake(principalOf(req), {
+    rows: b.rows ?? [], defaultClassId: b.defaultClassId ?? null, dateFormat: b.dateFormat,
+    skipRows: b.skipRows ?? [], idempotencyKey: b.idempotencyKey,
+  });
+}));
+
+api.get('/classes/:id/suggested-weeks', requireAuth, wrap((req) => {
+  const cls = db().prepare('SELECT start_date FROM classes WHERE id = ?').get(pInt(req, 'id')) as any;
+  return { weeks: intakeSvc.suggestMockWeeks(cls?.start_date ?? null, qInt(req, 'count') ?? 3) };
+}));
+
+// ============================================================ Lớp thường (FOU/BE/ELE)
+
+/** Bảng nhập điểm của lớp thường: số câu đúng / tổng số câu, đạt từ 60%. */
+api.get('/regular/classes/:classId/sheet', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return regularSvc.regularSheet(principalOf(req), pInt(req, 'classId'), qStr(req, 'kind'));
+}));
+
+/** Tạo hai bài kiểm tra của khoá theo đúng mốc TUẦN HỌC của chương trình. */
+api.post('/regular/classes/:classId/plan', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return regularSvc.planRegularTests(principalOf(req), pInt(req, 'classId'));
+}));
+
+/** Nhập điểm một kỹ năng: cả số câu đúng và tổng số câu, không tự điền tổng. */
+api.put('/regular/attempts/:id/scores/:skill', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return regularSvc.saveRegularScore(principalOf(req), pInt(req, 'id'), req.params.skill, req.body ?? {});
+}));
+
+/** Danh sách chương trình học đang dùng. */
+api.get('/ref/programmes', requireAuth, wrap(() =>
+  db().prepare(`SELECT code, name, weeks, scoring_mode AS scoringMode FROM programmes WHERE status='active' ORDER BY code`).all()));
+
+// ============================================================ Lộ trình và Đánh giá GV
 
 api.get('/students/:id/cycles', requireAuth, wrap((req) => {
   const p = principalOf(req);
@@ -299,7 +449,10 @@ api.get('/students/:id/estimates', requireAuth, wrap((req) =>
 api.get('/students/:id/estimate-comparison', requireAuth, wrap((req) =>
   estimateSvc.compareEstimates(principalOf(req), pInt(req, 'id'))));
 
-/** Ước lượng là dữ liệu riêng, không bao giờ ghi đè điểm Mock. */
+/**
+ * Đánh giá GV là dữ liệu riêng, không bao giờ ghi đè điểm Mock.
+ * Giáo viên cập nhật BẤT KỲ LÚC NÀO — không phụ thuộc tuần MT hay hạn nhập điểm.
+ */
 api.post('/students/:id/estimates', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return estimateSvc.saveEstimate(principalOf(req), { ...req.body, studentId: pInt(req, 'id') });
@@ -310,11 +463,6 @@ api.post('/students/:id/estimates', requireAuth, wrap((req) => {
 api.patch('/sos-cases/:id', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return sosSvc.updateCase(principalOf(req), pInt(req, 'id'), req.body ?? {});
-}));
-
-api.post('/sos-cases/:id/confirm', requireAuth, wrap((req) => {
-  maybeSimulateSaveFailure();
-  return sosSvc.confirmCase(principalOf(req), pInt(req, 'id'), req.body?.confirmed !== false);
 }));
 
 // ============================================================ Học viên
@@ -363,7 +511,10 @@ api.post('/students/:id/status', requireAuth, wrap((req) => {
 api.get('/meeting/board', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   const periodId = qInt(req, 'periodId') ?? ensurePeriod(demoToday()).id;
-  return meetingSvc.meetingBoard(principalOf(req), periodId);
+  const board = meetingSvc.meetingBoard(principalOf(req), periodId) as any;
+  const period = periodById(periodId);
+  // Giao diện phải biết tuần này có đang mở để cập nhật không, và nếu không thì vì sao.
+  return { ...board, editWindow: period ? reportEditWindow(period) : null };
 }));
 
 api.put('/meeting/units/:unitId/reports/:categoryKey', requireAuth, wrap((req) => {

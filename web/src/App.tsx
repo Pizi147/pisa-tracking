@@ -1,28 +1,38 @@
-import { NavLink, Navigate, Route, Routes, useLocation } from 'react-router-dom';
+import { NavLink, Navigate, Route, Routes, useLocation, useParams, useSearchParams } from 'react-router-dom';
 import { useSession } from './lib/session.tsx';
 import { DemoBar } from './components/DemoBar.tsx';
 import { Header } from './components/Header.tsx';
 import { Skeleton } from './components/ui.tsx';
 import OverviewPage from './pages/Overview.tsx';
-import MocksPage from './pages/Mocks.tsx';
 import MockDetailPage from './pages/MockDetail.tsx';
 import ScoreSheetPage from './pages/ScoreSheet.tsx';
+import RegularSheetPage from './pages/RegularSheet.tsx';
 import StudentsPage from './pages/Students.tsx';
+import ClassOverviewPage from './pages/ClassOverview.tsx';
 import StudentDetailPage from './pages/StudentDetail.tsx';
 import MeetingPage from './pages/Meeting.tsx';
 import AdminPage from './pages/Admin.tsx';
 import WelcomePage from './pages/Welcome.tsx';
 
 /**
- * Bốn mục nghiệp vụ, không hơn. Quản trị hệ thống là lối vào phụ, chỉ hiện với người có quyền.
- * SOS, báo cáo, công việc KHÔNG có menu riêng — chúng nằm ngay nơi phát sinh.
+ * Ba mục nghiệp vụ. Quản trị hệ thống là lối vào phụ trong menu tài khoản.
+ *
+ * Mock Test không còn là mục riêng: tiến độ, lịch và điểm đều là các cách xem của HỌC VIÊN,
+ * và mọi đường dẫn đổ về cùng một Student Detail. SOS, báo cáo, công việc cũng không có menu
+ * riêng — chúng nằm ngay nơi phát sinh.
  */
 const NAV = [
   { to: '/', label: 'Tổng quan', key: 'overview' as const },
-  { to: '/mock-test', label: 'Mock Test', key: 'mocks' as const },
+  { to: '/tien-trinh', label: 'Tiến trình công việc', key: 'meeting' as const },
   { to: '/hoc-vien', label: 'Học viên', key: 'students' as const },
-  { to: '/hop-tuan', label: 'Họp tuần', key: 'meeting' as const },
 ];
+
+function LegacySheetRedirect() {
+  const { classId } = useParams();
+  const [params] = useSearchParams();
+  const qs = params.toString();
+  return <Navigate to={`/nhap-diem/${classId}${qs ? `?${qs}` : ''}`} replace />;
+}
 
 function NavItem({ to, label }: { to: string; label: string }) {
   return (
@@ -83,13 +93,19 @@ export default function App() {
       <main className="flex-1 overflow-y-auto p-4 md:p-5" key={location.pathname.split('/')[1]}>
         <Routes>
           <Route path="/" element={<OverviewPage />} />
-          <Route path="/mock-test" element={<MocksPage />} />
-          <Route path="/mock-test/lop/:classId" element={<ScoreSheetPage />} />
-          <Route path="/mock-test/:id" element={<MockDetailPage />} />
           <Route path="/hoc-vien" element={<StudentsPage />} />
+          <Route path="/hoc-vien/lop/:classId" element={<ClassOverviewPage />} />
           <Route path="/hoc-vien/:id" element={<StudentDetailPage />} />
-          <Route path="/hop-tuan" element={<MeetingPage />} />
+          <Route path="/nhap-diem/:classId" element={<ScoreSheetPage />} />
+          {/* Lớp thường chấm theo số câu đúng nên có bảng điểm riêng, không dùng bảng band IELTS. */}
+          <Route path="/bang-diem-thuong/:classId" element={<RegularSheetPage />} />
+          <Route path="/mock-test/:id" element={<MockDetailPage />} />
+          <Route path="/tien-trinh" element={<MeetingPage />} />
           <Route path="/quan-tri" element={<AdminPage />} />
+          {/* Đường dẫn cũ vẫn mở được để link đã lưu không gãy. */}
+          <Route path="/mock-test" element={<Navigate to="/hoc-vien" replace />} />
+          <Route path="/mock-test/lop/:classId" element={<LegacySheetRedirect />} />
+          <Route path="/hop-tuan" element={<Navigate to="/tien-trinh" replace />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>

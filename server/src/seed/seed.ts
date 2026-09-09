@@ -1,6 +1,7 @@
 import { db, recreateSchema, tx } from '../db.ts';
 import {
-  BRANCH_REPORT_CATEGORIES, ENTRY_SKILLS, PERMISSION_LABEL, TUTOR_REPORT_CATEGORIES,
+  BRANCH_REPORT_CATEGORIES, ENTRY_SKILLS, PERMISSION_LABEL, PROGRAMME_TEMPLATES,
+  TUTOR_REPORT_CATEGORIES, programmeOf,
   type EntrySkill,
 } from '../../../shared/domain.ts';
 import { addDays, normalizeName, nowIso, padCode } from '../util.ts';
@@ -89,7 +90,17 @@ export function runSeed() {
     const managers = new Map<string, number[]>();
     const teacherPool = new Map<string, number[]>();
     // 2–3 quản lý mỗi chi nhánh, đúng thực tế vận hành nhiều quản lý cùng một nơi.
-    const MANAGER_COUNT: Record<string, number> = { MB: 3, BC: 2, CP: 3, HD: 2, UB: 2 };
+    /*
+     * BẢN DEMO CỐ TÌNH ÍT NGƯỜI: mỗi chi nhánh đúng MỘT Quản lý và MỘT Admin văn phòng,
+     * và một nhóm nhỏ giáo viên dạy nhiều lớp. Người dùng thử demo cần theo dõi được ai
+     * đang làm gì, chứ không phải đọc một danh sách bốn mươi cái tên giả.
+     *
+     * Hệ thống vẫn CHO PHÉP một chi nhánh có nhiều quản lý — đó là dữ liệu, không phải luật.
+     */
+    const MANAGER_COUNT: Record<string, number> = { MB: 1, BC: 1, CP: 1, HD: 1, UB: 1 };
+    // Ba giáo viên mỗi chi nhánh, mỗi người ôm vài kỹ năng ở nhiều lớp — giống thực tế
+    // hơn là mỗi lớp một bộ giáo viên riêng, và dễ theo dõi hơn hẳn.
+    const TEACHERS_PER_BRANCH = 3;
 
     for (const b of BRANCHES) {
       const ba = addUser(fakeName(), `Admin văn phòng ${b.name}`);
@@ -105,7 +116,7 @@ export function runSeed() {
       managers.set(b.code, ms);
 
       const ts: number[] = [];
-      for (let i = 0; i < 5; i += 1) {
+      for (let i = 0; i < TEACHERS_PER_BRANCH; i += 1) {
         const t = addUser(fakeName(), 'Giáo viên');
         grant(t, 'teacher', b.code);
         ts.push(t);
@@ -114,19 +125,40 @@ export function runSeed() {
     }
 
     // ---------------------------------------------------------------- lớp & phân công
+    /*
+     * Chương trình học nằm trong BẢNG chứ không viết cứng trong mã: sau này trung tâm mở
+     * một chương trình mới thì thêm dữ liệu, không phải sửa mã nguồn.
+     */
+    for (const t of Object.values(PROGRAMME_TEMPLATES)) {
+      conn.prepare('INSERT INTO programmes (code, name, weeks, scoring_mode, status, created_at) VALUES (?,?,?,?,?,?)')
+        .run(t.code, t.name, t.weeks, t.scoringMode, 'active', NOW);
+      t.skills.forEach((skill, i) => {
+        conn.prepare('INSERT INTO programme_skills (programme_code, skill, seq) VALUES (?,?,?)').run(t.code, skill, i);
+      });
+      for (const cp of t.checkpoints) {
+        conn.prepare('INSERT INTO programme_checkpoints (programme_code, kind, study_week) VALUES (?,?,?)')
+          .run(t.code, cp.kind, cp.studyWeek);
+      }
+    }
+
     const classId = new Map<string, number>();
     CLASSES.forEach((c, idx) => {
+      // `kind` giữ nguyên chữ người dùng gõ (kể cả mã cũ "FOUND"); `programme_code` là mã
+      // đã chuẩn hoá mà mọi tính toán đọc vào. Không đổi mã lớp lịch sử.
+      const programme = programmeOf(c.kind);
       const info = conn
         .prepare(
-          `INSERT INTO classes (code, branch_id, kind, route, is_fulltime, start_date, status, note, created_at)
-           VALUES (?,?,?,?,?,?,?,?,?)`,
+          `INSERT INTO classes (code, branch_id, kind, programme_code, route, is_fulltime, start_date, status, note, created_at)
+           VALUES (?,?,?,?,?,?,?,?,?,?)`,
         )
-        .run(c.code, branchId.get(c.branch)!, c.kind, c.route, c.isFulltime ? 1 : 0, c.startDate, 'active', null, NOW);
+        .run(c.code, branchId.get(c.branch)!, c.kind, programme, c.route, c.isFulltime ? 1 : 0,
+             c.startDate, 'active', null, NOW);
       const id = Number(info.lastInsertRowid);
       classId.set(c.code, id);
 
-      // Kỹ năng lớp học do quản lý cấu hình. Ở demo mọi lớp học đủ năm ô nhập điểm.
-      for (const skill of ENTRY_SKILLS) {
+      // Kỹ năng lớp học do quản lý cấu hình, lấy theo chương trình của lớp.
+      const skills = programme ? PROGRAMME_TEMPLATES[programme].skills : ENTRY_SKILLS;
+      for (const skill of skills) {
         conn.prepare('INSERT INTO class_skills (class_id, skill, sessions_per_week) VALUES (?,?,?)')
           .run(id, skill, skill === 'writing1' || skill === 'writing2' ? 1 : 2);
       }
@@ -144,11 +176,9 @@ export function runSeed() {
           .run(userId, id, skill, isCore ? 1 : 0, c.startDate, 'active', NOW);
 
       assign(pick(0), null, true);              // GVCN — được dời lịch, KHÔNG tự có quyền sửa mọi điểm
-      assign(pick(1), 'listening', false);
-      assign(pick(1), 'reading', false);
-      assign(pick(2), 'writing1', false);
-      assign(pick(3), 'writing2', false);
-      assign(pick(4), 'speaking', false);
+      // Phân công theo ĐÚNG kỹ năng của chương trình lớp đó: lớp Foundation có
+      // Pronunciation chứ không có Writing task 1/2, nên không giao những ô không tồn tại.
+      skills.forEach((skill, i) => assign(pick(1 + (i % 4)), skill, false));
     });
 
     // ---------------------------------------------------------------- kỳ báo cáo
@@ -239,7 +269,7 @@ export function runSeed() {
       'Lượt Mock': counts.attempts,
       'Ô điểm': counts.scores,
       'Kỹ năng không mock': counts.skips,
-      'Ước lượng GV': counts.estimates,
+      'Đánh giá GV': counts.estimates,
       'Case SOS': counts.cases,
       'Kỳ họp tuần': (conn.prepare('SELECT COUNT(*) AS n FROM report_periods').get() as any).n,
       'Công việc': tasks,
@@ -394,13 +424,12 @@ function seedAttempts(conn: any, ctx: {
   }
 }
 
-/** Ước lượng giáo viên: dữ liệu RIÊNG, không bao giờ ghi đè điểm Mock. */
+/** Đánh giá GV: dữ liệu RIÊNG, không bao giờ ghi đè điểm Mock. */
 function seedEstimates(conn: any, o: {
   sid: number; cid: number; target: number; studentIdx: number; teacherPool: number[]; classIdx: number;
   counts: { estimates: number };
 }) {
   const cycle = conn.prepare('SELECT id FROM learning_cycles WHERE student_id = ? ORDER BY seq DESC LIMIT 1').get(o.sid) as any;
-  const pick = (offset: number) => o.teacherPool[(o.classIdx + offset) % o.teacherPool.length];
   const plan: [string, number, string][] = [
     ['listening', o.target - 0.5, '2026-08-28'],
     ['reading', o.target, '2026-08-28'],
@@ -408,11 +437,19 @@ function seedEstimates(conn: any, o: {
     ['writing2', o.target - 0.5, '2026-09-04'],
     ['speaking', o.target + (o.studentIdx % 2 === 0 ? 0.5 : 0), '2026-09-11'],
   ];
-  const owner: Record<string, number> = {
-    listening: pick(1), reading: pick(1), writing1: pick(2), writing2: pick(3), speaking: pick(4),
-  };
+  /*
+   * Đọc THẲNG phân công đã ghi trong database, không chép lại bảng phân công ở đây.
+   * Chép lại là hai nguồn sự thật: đổi cách phân công một chỗ thì chỗ kia lệch, và người
+   * ghi đánh giá hoá ra lại không phải giáo viên phụ trách kỹ năng đó.
+   */
+  const owner: Record<string, number> = {};
+  for (const r of conn
+    .prepare(`SELECT skill, user_id FROM teacher_assignments WHERE class_id = ? AND skill IS NOT NULL AND status='active'`)
+    .all(o.cid) as any[]) owner[r.skill] = r.user_id;
+
   for (const [skill, band, on] of plan) {
-    if ((o.studentIdx + skill.length) % 3 === 0) continue;   // không phải em nào cũng có đủ ước lượng
+    if (!owner[skill]) continue;                            // lớp này không dạy kỹ năng đó
+    if ((o.studentIdx + skill.length) % 3 === 0) continue;   // không phải em nào cũng có đủ đánh giá
     conn
       .prepare(
         `INSERT INTO teacher_estimates (student_id, cycle_id, skill, band, assessed_on, assessed_by, class_id, created_at)
@@ -483,6 +520,107 @@ function seedCase(conn: any, o: {
 }
 
 // ==================================================================== tình huống riêng
+
+/**
+ * Dữ liệu mẫu cho lớp thường. Tự tạo lộ trình (khoá học), hai bài kiểm tra theo mốc tuần
+ * học, rồi nhập điểm theo một kịch bản cố định để mỗi mức SOS đều có mặt.
+ */
+function seedRegularClasses(conn: any, ctx: {
+  classId: Map<string, number>;
+  allStudents: { id: number; classCode: string; branch: string }[];
+  adminId: number; managers: Map<string, number[]>;
+  counts: { students: number; cycles: number; attempts: number; scores: number; cases: number; estimates: number; skips: number };
+}) {
+  const { classId, allStudents, adminId, managers, counts } = ctx;
+
+  /*
+   * Kịch bản điểm theo VỊ TRÍ học viên trong lớp, để chạy lại seed cho ra đúng dữ liệu cũ.
+   * Mỗi phần tử là tỷ lệ đúng của từng kỹ năng; `null` nghĩa là CHƯA NHẬP — dùng để chứng
+   * minh "thiếu điểm" khác "trượt".
+   */
+  const SCRIPT: (number | null)[][] = [
+    [0.85, 0.80, 0.75, 0.90],   // đạt hết
+    [0.55, 0.80, 0.70, 0.75],   // trượt 1 môn  -> SOS 1
+    [0.50, 0.45, 0.70, 0.80],   // trượt 2 môn  -> SOS 2
+    [0.40, 0.45, 0.50, 0.55],   // trượt 3 môn  -> SOS 3
+    [0.75, 0.65, null, null],   // mới nhập một nửa -> chưa kết luận
+  ];
+  const TOTALS: Record<string, number> = {
+    listening: 40, reading: 40, prep_writing: 20, pronunciation: 25, speaking: 25,
+  };
+
+  for (const cls of CLASSES) {
+    const programme = programmeOf(cls.kind);
+    if (!programme || PROGRAMME_TEMPLATES[programme].scoringMode !== 'ratio') continue;
+    const tpl = PROGRAMME_TEMPLATES[programme];
+    const cid = classId.get(cls.code)!;
+    const manager = managers.get(cls.branch)?.[0] ?? adminId;
+    const students = allStudents.filter((s) => s.classCode === cls.code);
+
+    students.forEach((st, idx) => {
+      // Lớp thường vẫn cần một "lộ trình" để gắn bài kiểm tra vào — đó chính là khoá học này.
+      const cyc = conn
+        .prepare(
+          `INSERT INTO learning_cycles (student_id, seq, route, target_score, started_at, status, note, created_at)
+           VALUES (?, 1, NULL, NULL, ?, 'active', ?, ?)`,
+        )
+        .run(st.id, cls.startDate, `Khoá ${tpl.name} — lớp ${cls.code}`, NOW);
+      counts.cycles += 1;
+      const cycleId = Number(cyc.lastInsertRowid);
+
+      tpl.checkpoints.forEach((cp, ci) => {
+        // Tuần học N bắt đầu sau (N-1) tuần kể từ ngày khai giảng.
+        const week = mondayOf(addDays(cls.startDate, (cp.studyWeek - 1) * 7));
+        const period = ensurePeriod(week);
+        const taken = addDays(week, 2);              // làm bài vào thứ Tư của tuần đó
+        const past = taken <= DEMO_DATE;
+
+        const info = conn
+          .prepare(
+            `INSERT INTO assessment_attempts (cycle_id, student_id, attempt_no, kind, class_id, planned_period_id,
+                                              lrw_scheduled_at, status, created_by, created_at)
+             VALUES (?,?,?,?,?,?,?,?,?,?)`,
+          )
+          .run(cycleId, st.id, ci + 1, cp.kind, cid, period.id, past ? taken : null,
+               'planned', manager, NOW);
+        counts.attempts += 1;
+        const attemptId = Number(info.lastInsertRowid);
+        if (!past) return;                            // bài của tuần sau: chỉ có kế hoạch
+
+        const script = SCRIPT[(idx + ci) % SCRIPT.length];
+        let scored = 0;
+        let failed = 0;
+        tpl.skills.forEach((skill, si) => {
+          const ratio = script[si % script.length];
+          if (ratio === null) return;                 // chưa nhập điểm kỹ năng này
+          const total = TOTALS[skill] ?? 40;
+          const score = Math.round(ratio * total);
+          conn
+            .prepare(
+              `INSERT INTO assessment_scores (attempt_id, skill, taken_on, raw_score, raw_total, entered_by, entered_at)
+               VALUES (?,?,?,?,?,?,?)`,
+            )
+            .run(attemptId, skill, taken, score, total, manager, NOW);
+          counts.scores += 1;
+          scored += 1;
+          if (score / total < 0.6) failed += 1;
+        });
+
+        // Đủ điểm mọi kỹ năng mới chốt. Thiếu một môn thì vẫn đang chờ, KHÔNG kết luận.
+        if (scored === tpl.skills.length) {
+          conn.prepare(`UPDATE assessment_attempts SET status = 'done' WHERE id = ?`).run(attemptId);
+          if (failed > 0) {
+            const level = failed >= 3 ? 3 : failed;
+            conn
+              .prepare(`INSERT INTO sos_cases (attempt_id, sos_level, status, created_at) VALUES (?,?,?,?)`)
+              .run(attemptId, level, ci === 0 ? 'in_progress' : 'open', NOW);
+            counts.cases += 1;
+          }
+        }
+      });
+    });
+  }
+}
 
 function seedSpecialCases(conn: any, ctx: {
   classId: Map<string, number>;
@@ -578,11 +716,66 @@ function seedSpecialCases(conn: any, ctx: {
     }
   }
 
-  // 6) Warning/WL và ước lượng cũ — dữ liệu lịch sử để thử bộ lọc hành trình.
+  /*
+   * 5b) NGHĨA VỤ HÀNG TUẦN CỦA ADMIN CHI NHÁNH.
+   *
+   * Ngày demo là 23/09/2026, tức W4 SEP. Phải có sẵn cả ba tình huống của §11 thì màn
+   * "Cần cập nhật ngày MT" mới thể hiện được đúng việc thật:
+   *   - MT tuần này (W4 SEP) chưa có ngày  → Admin chi nhánh cần làm ngay;
+   *   - MT tuần trước (W3 SEP) vẫn thiếu   → đã quá hạn;
+   *   - MT các tuần sau                     → KHÔNG hiện, vì chưa đến lượt.
+   */
+  const dutyWeeks: { week: string; classCode: string; take: number }[] = [
+    { week: '2026-09-21', classCode: 'MB-FT 101', take: 3 },   // W4 SEP — tuần hiện tại
+    { week: '2026-09-21', classCode: 'MB-FT 102', take: 2 },
+    { week: '2026-09-14', classCode: 'CP-FT 110', take: 2 },   // W3 SEP — đã quá hạn
+  ];
+  for (const d of dutyWeeks) {
+    const pid = periodOf(d.week);
+    const cid = classId.get(d.classCode);
+    if (!pid || !cid) continue;
+    for (const st of inClass(d.classCode).slice(0, d.take)) {
+      const cycle = conn.prepare(`SELECT * FROM learning_cycles WHERE student_id = ? AND status='active' LIMIT 1`)
+        .get(st.id) as any;
+      if (!cycle) continue;
+      const nextNo = ((conn.prepare('SELECT MAX(attempt_no) m FROM assessment_attempts WHERE cycle_id = ?')
+        .get(cycle.id) as any)?.m ?? 0) + 1;
+      const info = conn
+        .prepare(
+          `INSERT INTO assessment_attempts (cycle_id, student_id, attempt_no, kind, class_id, planned_period_id,
+                                            status, target_at_attempt, created_by, created_at)
+           VALUES (?,?,?, 'mock', ?,?, 'planned', ?,?,?)`,
+        )
+        .run(cycle.id, st.id, nextNo, cid, pid, cycle.target_score, managers.get(st.branch)?.[0] ?? adminId, NOW);
+      conn
+        .prepare(
+          `INSERT INTO attempt_schedule_history (attempt_id, action, field, new_value, reason, actor_user_id, created_at)
+           VALUES (?, 'created', 'planned_period', ?, ?, ?, ?)`,
+        )
+        .run(Number(info.lastInsertRowid), d.week, 'Kế hoạch tuần, chờ cập nhật ngày thực tế',
+             managers.get(st.branch)?.[0] ?? adminId, NOW);
+      counts.attempts += 1;
+    }
+  }
+
+  /*
+   * 5c) LỚP THƯỜNG — Foundation / Beginner / Elementary.
+   *
+   * Chấm theo `số câu đúng / tổng số câu`, đạt từ 60%. Mốc kiểm tra tính theo TUẦN HỌC của
+   * lớp (FOU tuần 4 và 8; BE/ELE tuần 5 và 10), không phải theo lịch MT của FT.
+   *
+   * Dữ liệu mẫu cần đủ ba tình huống thì màn hình mới có gì để xem:
+   *   - bài đã chấm xong, đạt hết;
+   *   - bài đã chấm xong, trượt 1–3 môn để thấy SOS 1/2/3 sinh ra từ chính engine cũ;
+   *   - bài mới nhập một phần, để thấy "thiếu điểm" KHÁC "trượt".
+   */
+  seedRegularClasses(conn, { classId, allStudents, adminId, managers, counts });
+
+  // 6) Warning/WL và đánh giá cũ — dữ liệu lịch sử để thử bộ lọc hành trình.
   const warned = inClass('UB-FT 401')[5];
   if (warned) {
     for (const e of [
-      { type: 'estimate', date: '2026-08-31', title: 'Ước lượng giáo viên: 5.5', detail: 'GVCN đánh giá giữa kỳ' },
+      { type: 'estimate', date: '2026-08-31', title: 'Đánh giá GV: 5.5', detail: 'GVCN đánh giá giữa kỳ' },
       { type: 'warning', date: '2026-09-07', title: 'Cảnh báo chuyên cần', detail: 'Vắng 3 buổi liên tiếp' },
     ]) {
       conn

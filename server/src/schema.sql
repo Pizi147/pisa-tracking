@@ -20,11 +20,47 @@ CREATE TABLE reporting_units (
   status TEXT NOT NULL DEFAULT 'active'
 );
 
+-- ===================== CHƯƠNG TRÌNH HỌC =====================
+-- FT dùng Mock Test và band IELTS. Lớp thường (FOU/BE/ELE) dùng bài kiểm tra chấm theo
+-- số câu đúng trên tổng số câu, KHÔNG đi qua bảng quy đổi IELTS.
+--
+-- Để bảng riêng thay vì viết cứng trong code: sau này chương trình đổi, hoặc trung tâm mở
+-- một chương trình mới, thì thêm dữ liệu chứ không phải sửa mã nguồn. Nhưng CHỈ đến thế —
+-- không dựng một công cụ thiết kế chương trình kéo thả.
+CREATE TABLE programmes (
+  code TEXT PRIMARY KEY,              -- FT | FOU | BE | ELE | mã tự đặt
+  name TEXT NOT NULL,
+  weeks INTEGER,                      -- số tuần của khoá; NULL với FT vì không cố định
+  scoring_mode TEXT NOT NULL,         -- ielts_band | ratio
+  status TEXT NOT NULL DEFAULT 'active',
+  created_at TEXT NOT NULL
+);
+
+-- Kỹ năng chương trình có đánh giá, theo đúng thứ tự hiển thị.
+CREATE TABLE programme_skills (
+  programme_code TEXT NOT NULL REFERENCES programmes(code),
+  skill TEXT NOT NULL,
+  seq INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (programme_code, skill)
+);
+
+-- Mốc kiểm tra tính theo TUẦN HỌC của lớp, không phải tuần thứ mấy của tháng.
+-- FOU: giữa khoá tuần 4, cuối khoá tuần 8. BE/ELE: tuần 5 và tuần 10.
+CREATE TABLE programme_checkpoints (
+  programme_code TEXT NOT NULL REFERENCES programmes(code),
+  kind TEXT NOT NULL,                 -- progress | final
+  study_week INTEGER NOT NULL,
+  PRIMARY KEY (programme_code, kind)
+);
+
 CREATE TABLE classes (
   id INTEGER PRIMARY KEY,
   code TEXT NOT NULL UNIQUE,          -- luôn bắt đầu bằng mã chi nhánh: "CP-FT 110"
   branch_id INTEGER NOT NULL REFERENCES branches(id),
-  kind TEXT NOT NULL,                 -- nhãn tự do do quản lý đặt: FT, FOUND, BE, ELE...
+  kind TEXT NOT NULL,                 -- nhãn gốc do quản lý đặt: FT, FOUND, BE, ELE...
+  -- Mã chương trình đã CHUẨN HOÁ. `kind` giữ nguyên chữ người dùng gõ (kể cả "FOUND" cũ),
+  -- còn mọi tính toán đọc cột này. Không đổi mã lớp lịch sử chỉ vì đổi mã chương trình.
+  programme_code TEXT REFERENCES programmes(code),
   route TEXT,                         -- LT1 | LT2, chỉ áp dụng lớp FT
   is_fulltime INTEGER NOT NULL DEFAULT 0,
   start_date TEXT,
@@ -259,8 +295,10 @@ CREATE TABLE assessment_scores (
   attempt_id INTEGER NOT NULL REFERENCES assessment_attempts(id),
   skill TEXT NOT NULL,                -- listening | reading | writing1 | writing2 | speaking
   taken_on TEXT,                      -- ngày MOCK thực tế của riêng kỹ năng này
-  raw_score INTEGER,                  -- 0..40, chỉ với listening/reading
-  raw_total INTEGER,                  -- tổng số câu, dành cho lớp thường (score/total)
+  raw_score INTEGER,                  -- FT: 0..40 với listening/reading. Lớp thường: số câu đúng.
+  -- Tổng số câu của chính đề đó. Lớp thường bắt buộc có, vì số câu KHÔNG cố định giữa các
+  -- kỹ năng và các đề; không có tổng thì không tính được tỷ lệ đạt.
+  raw_total INTEGER,
   c1 REAL, c2 REAL, c3 REAL, c4 REAL, -- bốn tiêu chí, chỉ với writing1/writing2/speaking
   band REAL,                          -- band IELTS, hoặc NULL khi chưa nhập điểm
   result_date TEXT,                   -- ngày có kết quả, để đo thời gian chấm
@@ -278,6 +316,10 @@ CREATE TABLE teacher_estimates (
   student_id INTEGER NOT NULL REFERENCES students(id),
   cycle_id INTEGER REFERENCES learning_cycles(id),
   skill TEXT NOT NULL,                -- entry skill: listening | reading | writing1 | writing2 | speaking
+  -- Nhập GIỐNG HỆT Mock để hai con số so được với nhau: L/R nhập số câu đúng trên 40,
+  -- W/S nhập bốn tiêu chí IELTS. Band là kết quả TÍNH RA, không phải con số gõ tay.
+  raw_score INTEGER,                  -- 0..40, chỉ với listening/reading
+  c1 REAL, c2 REAL, c3 REAL, c4 REAL, -- bốn tiêu chí, chỉ với writing1/writing2/speaking
   band REAL NOT NULL,
   assessed_on TEXT NOT NULL,          -- NGÀY đánh giá, khác ngày nhập vào hệ thống
   assessed_by INTEGER REFERENCES users(id),
@@ -310,6 +352,11 @@ CREATE TABLE sos_cases (
   meeting_date TEXT,
 
   status TEXT NOT NULL DEFAULT 'open',    -- open | in_progress | done
+  -- GVCN đã nhận case: METADATA, không phải trạng thái thứ tư. Nhận không nghĩa là đã xử lý,
+  -- và có thể ghi hành động thực tế trước rồi mới xác nhận đã nhận.
+  acknowledged_by INTEGER REFERENCES users(id),
+  acknowledged_at TEXT,
+  -- Dấu xác nhận cũ. Bước "Head xác nhận" ĐÃ BỎ khỏi quy trình; hai cột này chỉ để tra lại.
   head_confirmed_by INTEGER REFERENCES users(id),
   head_confirmed_at TEXT,
   note TEXT,
@@ -364,6 +411,19 @@ CREATE TABLE tasks (
 );
 CREATE INDEX idx_task_period ON tasks(period_id);
 CREATE INDEX idx_task_assignee ON tasks(assignee_user_id);
+
+-- Người THEO DÕI một công việc: không phải người làm, không chịu trách nhiệm hoàn thành,
+-- nhưng được cập nhật khi tiến độ đổi. Nhiều người một việc nên phải là bảng riêng,
+-- không nhét vào một cột trên tasks.
+CREATE TABLE task_followers (
+  task_id INTEGER NOT NULL REFERENCES tasks(id),
+  user_id INTEGER NOT NULL REFERENCES users(id),
+  -- auto = hệ thống tự thêm (Quản lý của chi nhánh), manual = người tạo chọn thêm.
+  source TEXT NOT NULL DEFAULT 'manual',
+  created_at TEXT NOT NULL,
+  PRIMARY KEY (task_id, user_id)
+);
+CREATE INDEX idx_task_follower_user ON task_followers(user_id);
 
 CREATE TABLE task_history (
   id INTEGER PRIMARY KEY,

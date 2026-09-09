@@ -60,7 +60,7 @@ export default function ScoreSheetPage() {
     <div className="space-y-4 max-w-[1500px]">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <Link className="btn btn-sm btn-ghost mb-1 no-underline" to="/mock-test">← Danh sách Mock</Link>
+          <Link className="btn btn-sm btn-ghost mb-1 no-underline" to="/hoc-vien">← Danh sách lớp</Link>
           <h1 className="text-lg font-semibold text-slate-100">
             Nhập điểm · {data?.classCode ?? '…'}
           </h1>
@@ -193,13 +193,20 @@ function SheetRow({ row, rowIndex, rawSkills, critSkills, onReload, register, on
       })}
       <td className="td tabular-nums">{fmtBand(row.result.expectation)}</td>
       <td className="td tabular-nums text-slate-100">{fmtBand(row.result.overall)}</td>
+      {/* Badge ôm sát nội dung: items-start để ô bảng rộng cũng không kéo giãn nó ra. */}
       <td className="td">
-        <Pill tone={sosTone(row.result.sosLevel)}>
-          {row.result.evaluable
-            ? sosLabel(row.result.sosLevel)
-            : `Chờ ${row.result.required.length - row.result.scoredRequired} kỹ năng`}
-        </Pill>
-        {row.result.scopeNote && <div className="text-[10px] text-slate-500 mt-0.5">{row.result.scopeNote}</div>}
+        <div className="flex flex-col items-start gap-0.5">
+          <Pill tone={sosTone(row.result.sosLevel)}>
+            {row.result.evaluable
+              ? sosLabel(row.result.sosLevel)
+              : `Chờ ${row.result.required.length - row.result.scoredRequired} kỹ năng`}
+          </Pill>
+          {row.result.scopeNote && (
+            <span className="text-[10px] text-slate-500" title={row.result.scopeDetail ?? undefined}>
+              {row.result.scopeNote}
+            </span>
+          )}
+        </div>
       </td>
     </tr>
   );
