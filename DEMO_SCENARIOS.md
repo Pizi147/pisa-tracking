@@ -1,4 +1,4 @@
-# Bấm thử: mười luồng đáng xem
+# Bấm thử: mười hai luồng đáng xem
 
 Mỗi luồng nói **vào đâu · bấm gì · phải thấy gì**. Không mô tả lại toàn bộ màn hình.
 
@@ -106,7 +106,41 @@ không Overall. Bảng điểm riêng, đặt tổng chung cho cả lớp rồi 
 Lớp thường **vẫn có** hai việc trao đổi khi trượt, nhưng **không** tự sinh phương án hỗ trợ:
 quy định "SOS 1–2 tự học, SOS 3 tutor" gắn với mức SOS theo band, mà lớp thường không có.
 
-## 10 · Ghi nhận nhanh
+## 10 · Bảng tổng hợp và khối của Quản lý
+
+Vai **Quản lý** → **Tổng quan**. Ngay trên việc của chính họ có khối **Chi nhánh đang tắc ở đâu**:
+mỗi lớp một dòng, bốn cột (chưa nhập điểm · chưa có phương án · quá hạn cập nhật · chờ tôi duyệt).
+Bấm **+ Xem theo giáo viên** để đổi sang cách nhìn theo người — cố ý **không** tô màu tốt/xấu và
+**không** xếp hạng.
+
+Sang tab **Tình hình chung**: bảng **Tổng hợp theo chi nhánh** ở trên cùng.
+
+- Bốn **bộ cột đặt sẵn**: Mặc định · Theo kỹ năng · Cần chú ý · Tất cả. Chọn một bộ rồi đăng
+  xuất, đăng nhập lại → **vẫn là bộ đó**; đăng nhập bằng người khác → bộ mặc định.
+- Ô dạng `12/5` = 12 vấn đề, 5 chưa có phương án. Bấm vào số là mở đúng danh sách đó.
+- Bấm một **hàng chi nhánh** → xuống tầng **lớp** của chính chi nhánh ấy.
+- Cộng thử cột *Vấn đề đang mở*: hàng tổng phải bằng tổng các hàng trên, và bằng đúng con số
+  trong tiêu đề danh sách bên dưới.
+
+## 11 · Báo cáo tuần và giao việc
+
+Vai **Quản lý** → **Tổng quan → Báo cáo tuần** (tab thứ ba, chỉ Quản lý thấy).
+
+Bấm **+ Giao việc** → hai loại khác hẳn nhau:
+
+| **Việc chi nhánh** | **Giao giáo viên** |
+|---|---|
+| Giáo trình, vận hành. Không gắn học viên nào | Gắn lớp và kỹ năng, và **toả ra** hồ sơ từng em |
+
+Chọn *Giao giáo viên* → chọn lớp → hộp thoại nói rõ *"việc này sẽ hiện trong hồ sơ của 13 em
+lớp MB-FT 102… nhưng vẫn là **một việc**, cập nhật một lần"*.
+
+Sau khi giao, mở hồ sơ một em trong lớp đó → thấy phương án ấy ở đúng ô kỹ năng. Em nào chưa có
+vấn đề ở kỹ năng đó thì hệ thống mở một vấn đề mới, ghi rõ **mở theo yêu cầu Quản lý**, và đưa
+thẳng vào *đang xử lý* — nó đã có phương án rồi, chính là việc này, nên **không** đội con số
+"chưa có phương án hỗ trợ" lên sai.
+
+## 12 · Ghi nhận nhanh
 
 Vai giáo viên → hồ sơ học viên → khối **Ghi nhận nhanh**. Tối thiểu chỉ cần **một nhận định
 bằng lời** *hoặc* một điểm ước lượng — không bắt điền đủ.

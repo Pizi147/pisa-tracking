@@ -1,6 +1,7 @@
 import { db, tx } from '../db.ts';
 import {
-  BRANCH_REPORT_CATEGORIES, PERMISSIONS, TASK_PROGRESS, TASK_TYPES,
+  BEHAVIOUR_TOPIC_LABEL, BRANCH_REPORT_CATEGORIES, ENTRY_SKILL_LABEL, PERMISSIONS,
+  TASK_PROGRESS, TASK_TYPES,
   TUTOR_REPORT_CATEGORIES, UNIT_STATUSES, type DueState,
 } from '../../../shared/domain.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -168,8 +169,9 @@ export function listTasks(p: Principal, f: TaskFilters = {}) {
   const rows = conn
     .prepare(
       `SELECT t.*, u.full_name AS assignee_name, ru.name AS unit_name, pr.code AS period_code,
-              pr.week_start AS period_start
+              pr.week_start AS period_start, cl.code AS class_code
          FROM tasks t
+         LEFT JOIN classes cl ON cl.id = t.class_id
          LEFT JOIN users u ON u.id = t.assignee_user_id
          LEFT JOIN reporting_units ru ON ru.id = t.reporting_unit_id
          LEFT JOIN report_periods pr ON pr.id = t.period_id
@@ -197,8 +199,23 @@ export function listTasks(p: Principal, f: TaskFilters = {}) {
     }
   }
 
+  /* Việc giao giáo viên toả ra bao nhiêu em — để danh sách nói rõ nó chạm tới ai. */
+  const studentCounts = new Map<number, number>();
+  for (const r of conn
+    .prepare('SELECT task_id, COUNT(*) n FROM task_students GROUP BY task_id')
+    .all() as any[]) studentCounts.set(r.task_id, r.n);
+
   let mapped = rows.map((t) => ({
     id: t.id, code: t.code, title: t.title, taskType: t.task_type,
+    kind: t.kind ?? 'branch_ops',
+    classId: t.class_id ?? null, className: t.class_code ?? null,
+    track: t.track ?? null, topic: t.topic ?? null,
+    topicLabel: t.topic
+      ? (t.track === 'behaviour'
+          ? BEHAVIOUR_TOPIC_LABEL[t.topic as keyof typeof BEHAVIOUR_TOPIC_LABEL]
+          : ENTRY_SKILL_LABEL[t.topic as keyof typeof ENTRY_SKILL_LABEL]) ?? t.topic
+      : null,
+    studentCount: studentCounts.get(t.id) ?? 0,
     followers: followers.get(t.id) ?? [],
     unitId: t.reporting_unit_id, unitName: t.unit_name, branchId: t.branch_id,
     assigneeId: t.assignee_user_id, assigneeName: t.assignee_name,
@@ -231,6 +248,76 @@ export function listTasks(p: Principal, f: TaskFilters = {}) {
   return { rows: mapped, scopeEmpty: false };
 }
 
+/**
+ * VIỆC QUẢN LÝ GIAO CHO GIÁO VIÊN, TOẢ RA THÀNH PHƯƠNG ÁN CỦA TỪNG EM.
+ *
+ * Quản lý giao "cả lớp MB-FT 101 tăng luyện nghe chi tiết" thì việc đó phải xuất hiện trong
+ * hồ sơ của từng em — nếu không, ba tháng sau đọc lại hành trình một em sẽ không thấy vì sao
+ * cách dạy đổi. Nhưng nó vẫn là MỘT việc: giáo viên cập nhật một lần, không phải mười ba lần.
+ *
+ * Owner chốt: Quản lý giao việc cho một em TỨC LÀ em đó đang có vấn đề, kể cả khi chưa ai ghi
+ * gì. Vấn đề mở kiểu này vào thẳng "đang xử lý" — nó đã có phương án rồi, chính là task này —
+ * chứ không rơi vào danh sách "chưa có phương án hỗ trợ" và đội con số đó lên sai.
+ *
+ * KHÔNG cần duyệt: chính Quản lý tạo ra nó.
+ */
+function fanOutToStudents(
+  conn: ReturnType<typeof db>, taskId: number, actorId: number | null,
+  input: { classId?: number | null; studentIds?: unknown; track?: string; topic?: string; title: string },
+) {
+  const track = input.track === 'behaviour' ? 'behaviour' : 'academic';
+  const topic = (input.topic ?? '').trim();
+  if (!topic) throw badRequest('Việc giao giáo viên phải chọn kỹ năng hoặc nhóm ý thức.');
+
+  const ids = Array.isArray(input.studentIds) && input.studentIds.length
+    ? input.studentIds.map(Number).filter((n) => Number.isFinite(n) && n > 0)
+    : (conn
+        .prepare(
+          `SELECT s.id FROM enrollments e JOIN students s ON s.id = e.student_id
+            WHERE e.class_id = ? AND e.status = 'active' AND s.status = 'active' AND s.archived_at IS NULL`,
+        )
+        .all(input.classId ?? 0) as any[]).map((r) => r.id as number);
+  if (!ids.length) throw badRequest('Không có học viên nào để giao việc.');
+
+  const today = demoToday();
+  for (const studentId of ids) {
+    const cycle = conn
+      .prepare(`SELECT id FROM learning_cycles WHERE student_id = ? AND status='active' ORDER BY id DESC LIMIT 1`)
+      .get(studentId) as any;
+    /* Đã có vấn đề đang mở ở đúng kỹ năng đó thì DÙNG LẠI, không mở thêm cái thứ hai. */
+    let c = conn
+      .prepare(
+        `SELECT id FROM sos_cases
+          WHERE student_id = ? AND topic = ? AND track = ? AND status != 'done'
+          ORDER BY id DESC LIMIT 1`,
+      )
+      .get(studentId, topic, track) as any;
+    if (!c) {
+      const info = conn
+        .prepare(
+          `INSERT INTO sos_cases (attempt_id, student_id, cycle_id, track, topic, origin_kind,
+                                  detected_at, reported_by, summary, urgency, sos_level, status, created_at)
+           VALUES (NULL, ?,?,?,?, 'manager_task', ?,?,?, 'normal', NULL, 'in_progress', ?)`,
+        )
+        .run(studentId, cycle?.id ?? null, track, topic, today, actorId, input.title.trim(), nowIso());
+      c = { id: Number(info.lastInsertRowid) };
+    }
+    const iv = conn
+      .prepare(
+        `INSERT INTO case_interventions (case_id, kind, description, recorded_by, status, planned_date, created_at)
+         VALUES (?, 'teaching_adjust', ?,?, 'planned', ?, ?)`,
+      )
+      .run(c.id, input.title.trim(), actorId, today, nowIso());
+    conn
+      .prepare(
+        `INSERT INTO task_students (task_id, student_id, case_id, intervention_id, created_at)
+         VALUES (?,?,?,?,?) ON CONFLICT(task_id, student_id) DO NOTHING`,
+      )
+      .run(taskId, studentId, c.id, Number(iv.lastInsertRowid), nowIso());
+  }
+  return ids.length;
+}
+
 export function createTask(p: Principal, input: any) {
   const conn = db();
   const branchId = input.branchId ?? (input.unitId
@@ -241,25 +328,38 @@ export function createTask(p: Principal, input: any) {
   if (input.dueDate && !isIsoDate(input.dueDate)) throw badRequest('Hạn không hợp lệ.');
   // `Loại` đã bỏ khỏi form; cột cũ giữ nguyên giá trị lịch sử, việc mới ghi mặc định.
   const taskType = 'in_period';
+  /*
+   * HAI LOẠI VIỆC KHÁC HẲN NHAU. `branch_ops` là chuyện giáo trình/vận hành, không gắn học
+   * viên nào. `teacher_task` gắn lớp và kỹ năng, và toả ra thành phương án của từng em.
+   */
+  const kind = input.kind === 'teacher_task' ? 'teacher_task' : 'branch_ops';
+  if (kind === 'teacher_task' && !input.classId && !(input.studentIds ?? []).length) {
+    throw badRequest('Việc giao giáo viên phải chọn lớp hoặc chọn học viên.');
+  }
 
   return tx(() => {
     const n = (conn.prepare('SELECT COUNT(*) AS n FROM tasks').get() as any).n as number;
     const code = padCode('CV', n + 1, 4);
     const info = conn
       .prepare(
-        `INSERT INTO tasks (code, period_id, task_type, title, reporting_unit_id, branch_id, assignee_user_id,
+        `INSERT INTO tasks (code, period_id, task_type, kind, class_id, track, topic, title,
+                            reporting_unit_id, branch_id, assignee_user_id,
                             due_date, progress, note, source_type, source_unit_report_id, source_sos_case_id,
                             created_by, created_at)
-         VALUES (?,?,?,?,?,?,?,?, 'not_started', ?,?,?,?,?,?)`,
+         VALUES (?,?,?,?,?,?,?,?,?,?,?,?, 'not_started', ?,?,?,?,?,?)`,
       )
-      .run(code, input.periodId ?? null, taskType, input.title.trim(), input.unitId ?? null, branchId,
+      .run(code, input.periodId ?? null, taskType, kind, input.classId ?? null,
+           kind === 'teacher_task' ? (input.track ?? 'academic') : null,
+           kind === 'teacher_task' ? (input.topic ?? null) : null,
+           input.title.trim(), input.unitId ?? null, branchId,
            input.assigneeUserId ?? null, input.dueDate ?? null, input.note ?? null,
            input.sourceType ?? 'manual', input.sourceUnitReportId ?? null, input.sourceSosCaseId ?? null,
            p.userId, nowIso());
     const id = Number(info.lastInsertRowid);
     setFollowers(conn, id, p.userId, branchId, input.followerIds);
+    const touched = kind === 'teacher_task' ? fanOutToStudents(conn, id, p.userId, { ...input, title: input.title }) : 0;
     writeAudit({ actorUserId: p.userId, action: 'task.create', entityType: 'task', entityId: id,
-      entityLabel: code, after: { title: input.title, dueDate: input.dueDate } });
+      entityLabel: code, after: { title: input.title, dueDate: input.dueDate, kind, students: touched } });
     return conn.prepare('SELECT * FROM tasks WHERE id = ?').get(id);
   });
 }

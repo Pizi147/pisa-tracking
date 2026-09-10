@@ -1,13 +1,14 @@
 import { db } from '../db.ts';
 import {
-  ENTRY_SKILL_LABEL, INTERVENTION_KIND_LABEL, PERMISSIONS, REGULAR_SKILL_LABEL, SOS_LABEL,
-  URGENCY_LABEL, caseHeadline, dueDaysFor,
-  type EntrySkill, type InterventionKind,
+  CONTACT_KIND_SHORT, ENTRY_SKILL_LABEL, INTERVENTION_KIND_LABEL, PERMISSIONS,
+  REGULAR_SKILL_LABEL, SOS_LABEL, URGENCY_LABEL, caseHeadline, dueDaysFor,
+  type ContactKind, type EntrySkill, type InterventionKind,
 } from '../../../shared/domain.ts';
 import { demoToday } from '../demoConfig.ts';
 import { diffDays, formatDateVi } from '../util.ts';
 import { can, scopeFor, teachesClass, type Principal } from '../permissions.ts';
 import { listAttempts } from './attempts.ts';
+import { pendingContacts } from './contacts.ts';
 
 /**
  * VIỆC CỦA CHÍNH NGƯỜI ĐANG XEM.
@@ -53,7 +54,7 @@ export type WorkItem = {
   href: string;
 };
 
-export type WorkGroupKey = 'score' | 'approval' | 'review' | 'support' | 'schedule' | 'week';
+export type WorkGroupKey = 'score' | 'approval' | 'contact' | 'review' | 'support' | 'schedule' | 'week';
 
 /**
  * Mỗi nhóm có MỘT DÒNG nói rõ nhóm đó nghĩa là gì.
@@ -71,6 +72,11 @@ const GROUP_META: Record<WorkGroupKey, { label: string; hint: string; overdue: s
     label: 'Chờ duyệt phương án',
     hint: 'Giáo viên đề xuất một phương án và đang chờ bạn quyết: duyệt, không duyệt (ghi rõ lý do), hoặc góp ý thêm.',
     overdue: 'Quá hạn duyệt',
+  },
+  contact: {
+    label: 'Xác nhận đã trao đổi',
+    hint: 'Em có SOS thì luôn phải trao đổi với chính em và với phụ huynh. Chỉ cần xác nhận đã làm — không phải báo cáo kết quả.',
+    overdue: 'Quá hạn trao đổi',
   },
   review: {
     label: 'Kết quả sau hỗ trợ',
@@ -229,6 +235,28 @@ export function myWork(p: Principal, f: { branchId?: number | null } = {}) {
       ].filter(Boolean).join(' — '),
       actionLabel: 'Duyệt phương án', overdueLabel: badge('approval', u),
       href: iv.eff_student_id ? `/hoc-vien/${iv.eff_student_id}` : `/hoc-thuat/case/${iv.case_id}`,
+    });
+  }
+
+  // ---------------------------------------------- 2b. hai việc trao đổi bắt buộc chưa xác nhận
+  /*
+   * Chỉ hiện việc ĐÃ TỚI HẠN hoặc quá hạn. Hai việc này sinh ra ngay lúc có SOS nhưng hạn là
+   * cuối tuần kế tiếp — bày ra từ ngày đầu thì danh sách lúc nào cũng dài mà chưa cần làm gì.
+   */
+  for (const ct of pendingContacts(p, { branchId: f.branchId })) {
+    if (!ct.due_date || ct.due_date > today) continue;
+    const u = urgencyOf(ct.due_date, today);
+    items.push({
+      key: `contact:${ct.id}`, group: 'contact', urgency: u,
+      studentId: ct.student_id, studentName: ct.full_name ?? 'Học viên',
+      classId: ct.class_id ?? null, classCode: ct.class_code ?? null,
+      attemptId: ct.attempt_id ?? null, attemptNo: ct.attempt_no ?? null,
+      caseId: null, level: null,
+      reason: (CONTACT_KIND_SHORT[ct.kind as ContactKind] ?? ct.kind)
+        + (ct.attempt_no ? ` sau MT${ct.attempt_no}` : '')
+        + ` — ${u === 'overdue' ? lateText(ct.due_date, today) : 'hạn hôm nay'}`,
+      actionLabel: 'Xác nhận đã trao đổi', overdueLabel: badge('contact', u),
+      href: ct.student_id ? `/hoc-vien/${ct.student_id}` : '/',
     });
   }
 
@@ -394,7 +422,7 @@ export function myWork(p: Principal, f: { branchId?: number | null } = {}) {
    * nào là cái nào. Nay GIỮ ĐÚNG LOẠI VIỆC, chỉ xếp việc gấp lên đầu TRONG nhóm của nó, và
    * xếp nhóm nào có việc gấp lên trước.
    */
-  const order: WorkGroupKey[] = ['score', 'approval', 'review', 'support', 'schedule', 'week'];
+  const order: WorkGroupKey[] = ['score', 'approval', 'contact', 'review', 'support', 'schedule', 'week'];
   const weight = (u: WorkUrgency) => (u === 'overdue' ? 0 : u === 'today' ? 1 : 2);
 
   const groups = order

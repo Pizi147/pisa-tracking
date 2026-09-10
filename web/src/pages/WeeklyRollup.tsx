@@ -76,7 +76,7 @@ export default function WeeklyRollupPage() {
   const branchQs = branchId ? `&branchId=${branchId}` : '';
 
   return (
-    <div className="space-y-4 max-w-[1500px]">
+    <div className="page space-y-4">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-lg font-semibold text-slate-100">Tổng hợp theo tuần</h1>

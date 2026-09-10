@@ -36,6 +36,9 @@ const regular = await import('../services/regular.ts');
 const weekly = await import('../services/weekly.ts');
 const cases = await import('../services/cases.ts');
 const contacts = await import('../services/contacts.ts');
+const summary = await import('../services/summary.ts');
+const prefs = await import('../services/prefs.ts');
+const pulse = await import('../services/branchpulse.ts');
 const domain = await import('../../../shared/domain.ts');
 const mywork = await import('../services/mywork.ts');
 const { ratioResult: domainRatio } = await import('../../../shared/domain.ts');
@@ -2423,6 +2426,143 @@ check('Bỏ hoàn cảnh: không còn vai trò context, và Ghi chú giữ nguy�
   assert(!(domain.ISSUE_ROLES as readonly string[]).includes('context'), 'Vai trò "hoàn cảnh" vẫn còn');
   const n = (conn.prepare("SELECT COUNT(*) n FROM case_issues WHERE role = 'context'").get() as any).n;
   assert(n === 0, `${n} dòng hoàn cảnh vẫn còn trong dữ liệu`);
+});
+
+console.log('\n24. Bảng tổng hợp và khối của Quản lý');
+
+check('Số trên bảng tổng hợp khớp với danh sách bên dưới', () => {
+  const s = summary.branchSummary(P.admin, {});
+  assert(s.rows.length > 0, 'Bảng tổng hợp trống');
+  const open = cases.listCases(P.admin, {}).rows.filter((r) => r.state !== 'done');
+  const fromTable = s.rows.reduce((a, r) => a + (r.cells.openCases?.value ?? 0), 0);
+  assert(fromTable === open.length,
+    `Bảng cộng ra ${fromTable} vấn đề đang mở nhưng danh sách có ${open.length} — hai chỗ đếm khác nhau`);
+  assert(s.total.cells.openCases?.value === fromTable, 'Hàng tổng không bằng tổng các hàng trên');
+});
+
+check('SOS đếm HỌC VIÊN, cột kỹ năng đếm VẤN ĐỀ — hai đơn vị khác nhau', () => {
+  const s = summary.branchSummary(P.admin, {});
+  const r = s.rows.find((x) => (x.cells.sos2?.value ?? 0) > 0);
+  assert(r, 'Không có hàng nào có SOS 2 để thử');
+  const open = cases.listCases(P.admin, { branchId: r!.branchId ?? undefined }).rows
+    .filter((c) => c.state !== 'done' && c.sosLevel === 2);
+  const students = new Set(open.map((c) => c.studentId)).size;
+  assert(r!.cells.sos2!.value === students,
+    `Cột SOS 2 đang là ${r!.cells.sos2!.value} nhưng chỉ có ${students} học viên — đang đếm vấn đề chứ không đếm em`);
+  assert(open.length >= students, 'Một em SOS 2 phải sinh ít nhất một vấn đề');
+});
+
+check('Bộ cột đặt sẵn nhớ theo tài khoản, và không rò sang người khác', () => {
+  prefs.setPref(P.mbManager, 'summary.preset', 'skills');
+  assert(prefs.getPref(P.mbManager, 'summary.preset') === 'skills', 'Không nhớ lựa chọn');
+  assert(prefs.getPref(P.cpManager, 'summary.preset', 'default') === 'default',
+    'Lựa chọn của người này rò sang người khác');
+  prefs.setPref(P.mbManager, 'summary.preset', 'default');
+});
+
+check('Khối Quản lý chỉ dành cho Quản lý, và không xếp hạng giáo viên', () => {
+  /* Lớp 102: lớp 101 đã bị test phân công gỡ mất giáo viên Listening. */
+  const gv = loadPrincipal(teacherOfSkill('MB-FT 102', 'listening'));
+  assert(pulse.branchPulse(gv, {}) === null, 'Giáo viên thấy khối điều phối của Quản lý');
+  const b = pulse.branchPulse(P.mbManager, {});
+  assert(b && b.classes.length > 0, 'Quản lý không thấy lớp nào đang tồn việc');
+  // Bảng theo người phải sắp theo TỔNG VIỆC TỒN, không phải theo một chỉ số "hiệu suất".
+  for (let i = 1; i < b!.people.length; i++) {
+    assert(b!.people[i - 1].total >= b!.people[i].total, 'Bảng theo người sắp sai');
+  }
+});
+
+console.log('\n25. Việc Quản lý giao, toả ra thành phương án');
+
+check('Một task cho cả lớp là MỘT task, toả ra hồ sơ từng em', () => {
+  const cls = classId('MB-FT 102');
+  const before = (conn.prepare('SELECT COUNT(*) n FROM sos_cases').get() as any).n;
+  const t = meeting.createTask(P.mbManager, {
+    kind: 'teacher_task', title: 'Luyện đọc bấm giờ 10 phút mỗi buổi',
+    classId: cls, track: 'academic', topic: 'reading',
+  }) as any;
+  const links = conn.prepare('SELECT * FROM task_students WHERE task_id = ?').all(t.id) as any[];
+  const roster = (conn
+    .prepare(
+      `SELECT COUNT(*) n FROM enrollments e JOIN students s ON s.id = e.student_id
+        WHERE e.class_id = ? AND e.status='active' AND s.status='active' AND s.archived_at IS NULL`,
+    )
+    .get(cls) as any).n;
+  assert(links.length === roster, `Lớp ${roster} em nhưng chỉ toả ra ${links.length}`);
+  assert(links.every((l) => l.case_id && l.intervention_id), 'Có em không được gắn vấn đề hoặc phương án');
+  // MỘT task, không phải N bản sao.
+  const tasks = conn.prepare("SELECT COUNT(*) n FROM tasks WHERE title = ?")
+    .get('Luyện đọc bấm giờ 10 phút mỗi buổi') as any;
+  assert(tasks.n === 1, `Tạo ra ${tasks.n} task thay vì một`);
+  const after = (conn.prepare('SELECT COUNT(*) n FROM sos_cases').get() as any).n;
+  assert(after > before, 'Không mở vấn đề nào cho những em chưa có');
+});
+
+check('Vấn đề mở theo yêu cầu Quản lý vào thẳng ĐANG XỬ LÝ, không đội số "chưa có phương án"', () => {
+  const rows = conn
+    .prepare("SELECT status, COUNT(*) n FROM sos_cases WHERE origin_kind = 'manager_task' GROUP BY status")
+    .all() as any[];
+  assert(rows.length > 0, 'Chưa có vấn đề nào mở theo yêu cầu Quản lý');
+  for (const r of rows) {
+    assert(r.status === 'in_progress',
+      `Vấn đề mở theo task đang ở trạng thái ${r.status} — nó đã có phương án rồi, chính là task đó`);
+  }
+  const noPlan = cases.listCases(P.admin, {}).rows
+    .filter((c) => c.originKind === 'manager_task' && c.state === 'no_plan');
+  assert(noPlan.length === 0, `${noPlan.length} vấn đề từ task Quản lý bị đếm là "chưa có phương án"`);
+});
+
+check('Đã có vấn đề đang mở ở kỹ năng đó thì DÙNG LẠI, không mở cái thứ hai', () => {
+  const cls = classId('MB-FT 102');
+  meeting.createTask(P.mbManager, {
+    kind: 'teacher_task', title: 'Đợt hai: vẫn luyện đọc bấm giờ',
+    classId: cls, track: 'academic', topic: 'reading',
+  });
+  const dup = conn
+    .prepare(
+      `SELECT student_id, COUNT(*) n FROM sos_cases
+        WHERE topic = 'reading' AND track = 'academic' AND status != 'done' AND attempt_id IS NULL
+        GROUP BY student_id HAVING n > 1`,
+    )
+    .all() as any[];
+  assert(dup.length === 0, `${dup.length} em bị mở hai vấn đề Reading cùng lúc`);
+});
+
+check('Việc chi nhánh KHÔNG gắn học viên nào', () => {
+  const t = meeting.createTask(P.mbManager, {
+    kind: 'branch_ops', title: 'Rà lại giáo trình Unit 5',
+  }) as any;
+  const links = conn.prepare('SELECT COUNT(*) n FROM task_students WHERE task_id = ?').get(t.id) as any;
+  assert(links.n === 0, 'Việc chi nhánh lại toả ra học viên');
+  assert(t.kind === 'branch_ops' && !t.topic, 'Việc chi nhánh không được gắn kỹ năng');
+});
+
+check('Giao việc cho giáo viên phải chọn lớp và kỹ năng', () => {
+  assertThrows(
+    () => meeting.createTask(P.mbManager, { kind: 'teacher_task', title: 'Thiếu lớp' }),
+    /lớp|học viên/, 'Giao việc mà không chọn lớp',
+  );
+  assertThrows(
+    () => meeting.createTask(P.mbManager, {
+      kind: 'teacher_task', title: 'Thiếu kỹ năng', classId: classId('MB-FT 101'),
+    }),
+    /kỹ năng|ý thức/, 'Giao việc mà không chọn kỹ năng',
+  );
+});
+
+console.log('\n26. Việc trao đổi tới tay đúng người');
+
+check('GVCN nhận việc gặp học sinh, văn phòng nhận việc gọi phụ huynh', () => {
+  const gv = loadPrincipal(teacherOfSkill('MB-FT 102', 'listening'));
+  const kinds = (p: any) => new Set(contacts.pendingContacts(p, {}).map((r: any) => r.kind));
+  const gvKinds = kinds(gv);
+  assert(gvKinds.has('talk_student'), 'Giáo viên không nhận việc gặp học sinh');
+  assert(!gvKinds.has('talk_parent'), 'Giáo viên bị giao việc gọi phụ huynh của văn phòng');
+  const adminKinds = kinds(P.mbAdmin);
+  assert(adminKinds.has('talk_parent'), 'Admin chi nhánh không nhận việc gọi phụ huynh');
+  // Quản lý thấy cả hai: họ là người đôn đốc khi có ai đó quên.
+  const mgrKinds = kinds(P.mbManager);
+  assert(mgrKinds.has('talk_student') && mgrKinds.has('talk_parent'), 'Quản lý phải thấy cả hai loại');
 });
 
 console.log(`\n${'='.repeat(60)}`);

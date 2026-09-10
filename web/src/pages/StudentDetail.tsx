@@ -8,6 +8,7 @@ import { ConfirmDialog, Drawer, Modal } from '../components/Drawer.tsx';
 import { CheckinPanel } from '../components/CheckinPanel.tsx';
 import { CasePanel } from '../components/CasePanel.tsx';
 import { QuickReport } from '../components/QuickReport.tsx';
+import { ContactPanel } from '../components/ContactPanel.tsx';
 import {
   attemptStatusLabel, attemptStatusTone, caseStatusLabel, caseStatusTone,
   fmtBand, fmtDate, fmtSlot, skillLabel, sosLabel, sosTone, studentStatusLabel,
@@ -59,7 +60,7 @@ export default function StudentDetailPage() {
   };
 
   return (
-    <div className="space-y-4 max-w-[1200px]">
+    <div className="page space-y-4">
       {/* ============================================== nhận diện */}
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
@@ -198,6 +199,12 @@ export default function StudentDetailPage() {
                 </p>
               )}
             </Card>
+
+            {/*
+              LIÊN HỆ đứng TRƯỚC danh sách vấn đề: khi một em vừa có SOS, việc đầu tiên là
+              báo cho em và cho gia đình, trước cả khi bàn tới tutor hay tự học.
+            */}
+            <ContactPanel studentId={data.id} canEdit={data.viewer.canReport} />
 
             <Card title="Đang cần chú ý">
               {openCases.length === 0 ? (
@@ -352,7 +359,14 @@ export default function StudentDetailPage() {
             </Card>
           )}
 
-          {/* ============================================== 5. các lần đánh giá */}
+          {/*
+            ============================================== 5 và 6. đánh giá · hành trình
+
+            Ở màn rất rộng thì XẾP CẠNH NHAU thay vì kéo dài một cột. Hành trình là khối
+            nhiều chữ nhất của trang; để nó chiếm hết 1920px thì mỗi dòng dài quá tầm mắt,
+            và người đọc phải quét sang phải rồi tìm lại đầu dòng kế tiếp.
+          */}
+          <div className="grid gap-4 2xl:grid-cols-2 items-start">
           <Card title="Các lần đánh giá" bodyClass="p-0">
             {data.attempts.length === 0 ? (
               <Empty title="Chưa có lượt đánh giá nào trong lộ trình này" />
@@ -366,7 +380,6 @@ export default function StudentDetailPage() {
             </div>
           </Card>
 
-          {/* ============================================== 6. hành trình */}
           <Card title="Hành trình học">
             {data.episodes.length === 0 ? <Empty title="Chưa có sự kiện nào" /> : (
               <ol className="space-y-3 list-none p-0 m-0">
@@ -374,6 +387,7 @@ export default function StudentDetailPage() {
               </ol>
             )}
           </Card>
+          </div>
         </>
       )}
 

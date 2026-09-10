@@ -78,7 +78,7 @@ export default function RegularSheetPage() {
   };
 
   return (
-    <div className="space-y-4 max-w-[1500px]">
+    <div className="page space-y-4">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <button className="btn btn-sm btn-ghost mb-1" onClick={() => navigate(-1)}>← Quay lại</button>

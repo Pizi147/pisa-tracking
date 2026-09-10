@@ -87,7 +87,7 @@ export default function StudentsPage() {
   const classes = useApi<{ rows: ClassSummary[]; scopeEmpty: boolean }>(view === 'classes' ? qs : null);
 
   return (
-    <div className="space-y-4 max-w-[1500px]">
+    <div className="page space-y-4">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-lg font-semibold text-slate-100">Học viên</h1>

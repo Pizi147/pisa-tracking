@@ -697,6 +697,30 @@ function migrateSkillTopics(conn: any, applied: string[]) {
   }
   if (tagged) applied.push(`Gắn kỹ năng cho ${tagged} vấn đề suy được chắc chắn`);
 
+  /* ------------------------------------------- 6. việc Quản lý giao, và lựa chọn hiển thị */
+  for (const [c, d] of [
+    ['kind', "TEXT NOT NULL DEFAULT 'branch_ops'"], ['class_id', 'INTEGER'],
+    ['track', 'TEXT'], ['topic', 'TEXT'],
+  ] as const) {
+    if (!cols('tasks').includes(c)) conn.exec(`ALTER TABLE tasks ADD COLUMN ${c} ${d}`);
+  }
+  conn.exec(`
+    CREATE TABLE IF NOT EXISTS task_students (
+      id INTEGER PRIMARY KEY,
+      task_id INTEGER NOT NULL REFERENCES tasks(id),
+      student_id INTEGER NOT NULL REFERENCES students(id),
+      case_id INTEGER REFERENCES sos_cases(id),
+      intervention_id INTEGER REFERENCES case_interventions(id),
+      created_at TEXT NOT NULL,
+      UNIQUE (task_id, student_id));
+    CREATE INDEX IF NOT EXISTS idx_task_students_task ON task_students(task_id);
+    CREATE INDEX IF NOT EXISTS idx_task_students_student ON task_students(student_id);
+    CREATE TABLE IF NOT EXISTS user_prefs (
+      user_id INTEGER NOT NULL REFERENCES users(id),
+      key TEXT NOT NULL, value TEXT, updated_at TEXT NOT NULL,
+      PRIMARY KEY (user_id, key));
+  `);
+
   const untagged = (conn.prepare('SELECT COUNT(*) n FROM sos_cases WHERE topic IS NULL').get() as any).n;
   if (untagged) {
     applied.push(`${untagged} vấn đề cũ để trống kỹ năng — không suy được từ dữ liệu, giao diện ghi rõ`);

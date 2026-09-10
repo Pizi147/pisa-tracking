@@ -55,7 +55,7 @@ export default function MockDetailPage() {
   const crit = d.cells.filter((c) => c.skill !== 'listening' && c.skill !== 'reading');
 
   return (
-    <div className="space-y-4 max-w-[1200px]">
+    <div className="page space-y-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <button className="btn btn-sm btn-ghost mb-1" onClick={() => navigate(-1)}>← Quay lại</button>
