@@ -422,6 +422,8 @@ function migrateCaseEngine(applied: string[], skipped: string[]) {
       .run();
     if (prog.changes) applied.push(`Gắn mã chương trình cho ${prog.changes} khoá lớp thường`);
 
+    migrateSkillTopics(conn, applied);
+
     conn.prepare("INSERT OR REPLACE INTO demo_config (key, value, updated_at) VALUES ('case_engine_migrated_at', ?, ?)")
       .run(nowIso(), nowIso());
   })();
@@ -429,4 +431,274 @@ function migrateCaseEngine(applied: string[], skipped: string[]) {
 
   if (!applied.length) skipped.push('Mô hình case học vụ đã có sẵn, không cần nâng cấp.');
   return { applied, skipped };
+}
+
+/**
+ * VÒNG 3 — VẤN ĐỀ GẮN VỚI MỘT KỸ NĂNG, VÀ HAI VIỆC TRAO ĐỔI RA BẢNG RIÊNG.
+ *
+ * Nguyên tắc của bước này: KHÔNG BỊA RA MỘT PHÉP TÁCH KHÔNG CÓ CĂN CỨ.
+ *
+ * Mô hình mới là "một vấn đề = một lượt × một kỹ năng". Dữ liệu cũ thì một lượt chỉ có một
+ * bản ghi, và những việc đã làm trong đó không ghi lại là làm cho kỹ năng nào. Với case
+ * trượt ĐÚNG MỘT kỹ năng thì suy ra được chắc chắn; trượt từ hai kỹ năng trở lên thì không
+ * — và chia bừa những việc đã làm cho một kỹ năng nào đó là dựng ra một lịch sử sai.
+ *
+ * Nên: gắn kỹ năng ở chỗ suy được, để trống ở chỗ không suy được (giao diện ghi rõ "chưa
+ * gắn kỹ năng"), và chỉ những lượt chấm TỪ NAY mới sinh vấn đề theo từng kỹ năng.
+ *
+ * Chạy lại lần hai không làm gì thêm.
+ */
+function migrateSkillTopics(conn: any, applied: string[]) {
+  const cols = (t: string) => (conn.prepare(`PRAGMA table_info(${t})`).all() as any[]).map((c) => c.name);
+  if (cols('sos_cases').includes('topic')) return;
+
+  /* ---------------------------------------------------------------- 1. bảng Liên hệ */
+  conn.exec(`
+    CREATE TABLE IF NOT EXISTS student_contacts (
+      id INTEGER PRIMARY KEY,
+      student_id INTEGER NOT NULL REFERENCES students(id),
+      cycle_id INTEGER REFERENCES learning_cycles(id),
+      attempt_id INTEGER REFERENCES assessment_attempts(id),
+      kind TEXT NOT NULL,
+      due_date TEXT, done_on TEXT,
+      done_by INTEGER REFERENCES users(id),
+      performer_name TEXT, note TEXT,
+      auto INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL);
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_contact_auto
+      ON student_contacts(attempt_id, kind) WHERE auto = 1;
+    CREATE INDEX IF NOT EXISTS idx_contact_student ON student_contacts(student_id);
+    CREATE INDEX IF NOT EXISTS idx_contact_due ON student_contacts(due_date) WHERE done_on IS NULL;
+  `);
+
+  /*
+   * Năm ô hỗ trợ cũ trong `sos_cases` đã được vòng D chuyển thành việc đã làm, nhưng hai ô
+   * TRAO ĐỔI thì nay có chỗ đúng hơn. Database nào còn dữ liệu ở đó thì chuyển sang Liên hệ.
+   */
+  const old = cols('sos_cases');
+  if (old.includes('talk_student_date') || old.includes('talk_parent_date')) {
+    for (const [kind, dateCol, personCol] of [
+      ['talk_student', 'talk_student_date', 'talk_student_person'],
+      ['talk_parent', 'talk_parent_date', 'talk_parent_person'],
+    ] as const) {
+      if (!old.includes(dateCol)) continue;
+      const moved = conn
+        .prepare(
+          `INSERT INTO student_contacts (student_id, cycle_id, attempt_id, kind, done_on,
+                                         performer_name, auto, created_at)
+           SELECT sc.student_id, sc.cycle_id, sc.attempt_id, ?, sc.${dateCol},
+                  ${old.includes(personCol) ? `sc.${personCol}` : 'NULL'}, 1, ?
+             FROM sos_cases sc
+            WHERE sc.${dateCol} IS NOT NULL AND sc.student_id IS NOT NULL
+              AND NOT EXISTS (SELECT 1 FROM student_contacts c
+                               WHERE c.attempt_id IS sc.attempt_id AND c.kind = ? AND c.auto = 1)`,
+        )
+        .run(kind, nowIso(), kind);
+      if (moved.changes) applied.push(`Chuyển ${moved.changes} lần trao đổi cũ sang bảng Liên hệ`);
+    }
+  }
+
+  /* ------------------------------------------- 2. mã phân loại cũ sang mã mới */
+  const codeMap: Record<string, string> = {
+    'student.listening.detail': 'student.listening.sound',
+    'student.listening.recognition': 'student.listening.sound',
+    'student.listening.follow': 'student.listening.distractor',
+    'student.listening.strategy': 'student.listening.technique',
+    'student.reading.detail': 'student.reading.language',
+    'student.reading.structure': 'student.reading.mainidea',
+    'student.reading.inference': 'student.reading.logic',
+    'student.reading.strategy': 'student.reading.technique',
+  };
+  let recoded = 0;
+  for (const [from, to] of Object.entries(codeMap)) {
+    recoded += conn.prepare('UPDATE case_issues SET taxonomy_code = ? WHERE taxonomy_code = ?')
+      .run(to, from).changes;
+  }
+  if (recoded) applied.push(`Đổi ${recoded} mã phân loại sang bộ mới của Listening/Reading`);
+
+  /*
+   * "Hoàn cảnh kèm theo" đã bỏ. Không xoá chữ người ta đã viết: gộp vào Ghi chú của chính
+   * vấn đề đó, rồi mới bỏ dòng phân loại.
+   */
+  /*
+   * Nhãn tiếng Việt của bộ hoàn cảnh cũ, chép lại ở đây chứ không đọc từ `shared/domain.ts`:
+   * bộ đó đã bị xoá khỏi mã nguồn, và một bước nâng cấp phải tự đứng được với từ vựng của
+   * thời điểm nó xử lý. Ghi mã thô vào Ghi chú thì người đọc thấy "context.family" và không
+   * hiểu gì.
+   */
+  const CONTEXT_LABEL: Record<string, string> = {
+    'context.parent': 'phía phụ huynh', 'context.health': 'sức khoẻ',
+    'context.family': 'hoàn cảnh gia đình', 'context.travel': 'đi lại / khoảng cách',
+    'context.schedule': 'lịch cá nhân / trường lớp', 'context.pressure': 'áp lực bên ngoài',
+    'context.other': 'khác',
+  };
+  const ctx = conn
+    .prepare(`SELECT case_id, taxonomy_code FROM case_issues WHERE role = 'context' ORDER BY case_id, id`)
+    .all() as any[];
+  const byCase = new Map<number, string[]>();
+  for (const r of ctx) {
+    const list = byCase.get(r.case_id) ?? [];
+    list.push(CONTEXT_LABEL[r.taxonomy_code] ?? r.taxonomy_code);
+    byCase.set(r.case_id, list);
+  }
+  for (const [caseId, labels] of byCase) {
+    conn.prepare(
+      `UPDATE sos_cases SET note = TRIM(COALESCE(note || ' · ', '') || 'Hoàn cảnh: ' || ?) WHERE id = ?`,
+    ).run(labels.join(', '), caseId);
+  }
+  const delCtx = conn.prepare("DELETE FROM case_issues WHERE role = 'context'").run();
+  if (delCtx.changes) applied.push(`Chuyển ${delCtx.changes} dòng hoàn cảnh thành Ghi chú`);
+
+  /* Vấn đề về giáo viên và giáo trình rời khỏi hệ thống theo dõi học sinh (owner chốt). */
+  const delOwn = conn
+    .prepare("DELETE FROM case_issues WHERE taxonomy_code LIKE 'teacher.%' OR taxonomy_code LIKE 'curriculum.%'")
+    .run();
+  if (delOwn.changes) {
+    applied.push(`Gỡ ${delOwn.changes} phân loại Giáo viên/Giáo trình khỏi vấn đề học viên`);
+  }
+
+  /* ------------------------------------------- 3. loại phương án cũ sang loại mới */
+  let rekind = 0;
+  for (const [from, to] of [['meeting', 'meeting_cx'], ['ops_policy', 'other_proposal']] as const) {
+    rekind += conn.prepare('UPDATE case_interventions SET kind = ? WHERE kind = ?').run(to, from).changes;
+  }
+  /*
+   * `talk_student` / `talk_parent` không còn là phương án hỗ trợ. Chuyển sang Liên hệ, giữ
+   * nguyên người làm và ngày, rồi mới xoá khỏi bảng phương án — nếu để lại thì mọi màn hình
+   * phải viết thêm một câu "trừ hai loại này ra".
+   */
+  const movedIv = conn
+    .prepare(
+      `INSERT INTO student_contacts (student_id, cycle_id, attempt_id, kind, done_on, done_by,
+                                     performer_name, note, auto, created_at)
+       SELECT COALESCE(sc.student_id, a.student_id), COALESCE(sc.cycle_id, a.cycle_id), sc.attempt_id,
+              iv.kind, COALESCE(iv.completed_date, iv.started_date), iv.performer_user_id,
+              iv.performer_name, iv.description, 0, iv.created_at
+         FROM case_interventions iv
+         JOIN sos_cases sc ON sc.id = iv.case_id
+         LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
+        WHERE iv.kind IN ('talk_student', 'talk_parent')
+          AND COALESCE(sc.student_id, a.student_id) IS NOT NULL`,
+    )
+    .run();
+  if (movedIv.changes) applied.push(`Chuyển ${movedIv.changes} lần trao đổi từ phương án sang Liên hệ`);
+  conn.prepare(
+    `DELETE FROM case_followups WHERE intervention_id IN
+       (SELECT id FROM case_interventions WHERE kind IN ('talk_student','talk_parent'))`,
+  ).run();
+  const delIv = conn.prepare("DELETE FROM case_interventions WHERE kind IN ('talk_student','talk_parent')").run();
+  if (rekind) applied.push(`Đổi ${rekind} phương án sang nhóm Đề xuất`);
+  if (delIv.changes) applied.push(`Gỡ ${delIv.changes} việc trao đổi khỏi bảng phương án`);
+
+  /* ------------------------------------------- 4. dựng lại sos_cases với track/topic */
+  conn.exec(`
+    CREATE TABLE sos_cases_v3 (
+      id INTEGER PRIMARY KEY,
+      attempt_id INTEGER REFERENCES assessment_attempts(id),
+      student_id INTEGER REFERENCES students(id),
+      cycle_id INTEGER REFERENCES learning_cycles(id),
+      track TEXT NOT NULL DEFAULT 'academic',
+      topic TEXT,
+      origin_kind TEXT NOT NULL DEFAULT 'mock',
+      detected_at TEXT,
+      reported_by INTEGER REFERENCES users(id),
+      summary TEXT, urgency TEXT, sos_level INTEGER,
+      status TEXT NOT NULL DEFAULT 'open',
+      disposition TEXT, disposition_note TEXT,
+      closed_by INTEGER REFERENCES users(id), closed_at TEXT,
+      acknowledged_by INTEGER REFERENCES users(id), acknowledged_at TEXT,
+      head_confirmed_by INTEGER REFERENCES users(id), head_confirmed_at TEXT,
+      note TEXT, idempotency_key TEXT UNIQUE,
+      created_at TEXT NOT NULL, updated_at TEXT);
+  `);
+  const pick = (c: string, fallback = 'NULL') => (old.includes(c) ? `sc.${c}` : fallback);
+  conn.exec(`
+    INSERT INTO sos_cases_v3 (id, attempt_id, student_id, cycle_id, track, topic, origin_kind,
+                              detected_at, reported_by, summary, urgency, sos_level, status,
+                              disposition, disposition_note, closed_by, closed_at,
+                              acknowledged_by, acknowledged_at, head_confirmed_by, head_confirmed_at,
+                              note, idempotency_key, created_at, updated_at)
+    SELECT sc.id, sc.attempt_id, sc.student_id, sc.cycle_id, 'academic', NULL, sc.origin_kind,
+           sc.detected_at, sc.reported_by, sc.summary, sc.urgency, sc.sos_level, sc.status,
+           sc.disposition, sc.disposition_note, sc.closed_by, sc.closed_at,
+           ${pick('acknowledged_by')}, ${pick('acknowledged_at')},
+           ${pick('head_confirmed_by')}, ${pick('head_confirmed_at')},
+           ${pick('note')}, sc.idempotency_key, sc.created_at, sc.updated_at
+      FROM sos_cases sc;
+  `);
+  conn.exec('DROP TABLE sos_cases; ALTER TABLE sos_cases_v3 RENAME TO sos_cases;');
+  conn.exec(`
+    CREATE UNIQUE INDEX idx_case_attempt_topic ON sos_cases(attempt_id, topic) WHERE attempt_id IS NOT NULL;
+    CREATE INDEX idx_case_student_topic ON sos_cases(student_id, cycle_id, topic);
+  `);
+  applied.push('Dựng lại bảng vấn đề với hai đầu mục Học thuật/Ý thức và chủ đề theo kỹ năng');
+
+  /*
+   * ------------------------------------------- 5. gắn kỹ năng Ở CHỖ SUY ĐƯỢC
+   *
+   * Vấn đề giáo viên báo: lấy nhánh của chính mã phân loại chính họ đã chọn. Mã ý thức thì
+   * sang đầu mục Ý thức, mã kỹ năng thì ở Học thuật.
+   */
+  const behaviourMap: Record<string, string> = {
+    'student.behaviour.attendance': 'attendance',
+    'student.behaviour.homework': 'homework',
+    'student.behaviour.focus': 'participation',
+    'student.behaviour.selfstudy': 'other',
+    'student.behaviour.organisation': 'other',
+    'student.behaviour.other': 'other',
+  };
+  const reported = conn
+    .prepare(
+      `SELECT sc.id, (SELECT taxonomy_code FROM case_issues i
+                       WHERE i.case_id = sc.id AND i.role = 'primary' LIMIT 1) AS code
+         FROM sos_cases sc WHERE sc.origin_kind = 'teacher_report'`,
+    )
+    .all() as any[];
+  let tagged = 0;
+  for (const r of reported) {
+    if (!r.code) continue;
+    if (behaviourMap[r.code]) {
+      conn.prepare("UPDATE sos_cases SET track = 'behaviour', topic = ? WHERE id = ?")
+        .run(behaviourMap[r.code], r.id);
+      tagged++;
+    } else {
+      const branch = String(r.code).split('.')[1];
+      // Writing không suy ra được là Task 1 hay Task 2 từ mã phân loại — để trống.
+      const topic = ['listening', 'reading', 'speaking'].includes(branch) ? branch : null;
+      if (topic) { conn.prepare('UPDATE sos_cases SET topic = ? WHERE id = ?').run(topic, r.id); tagged++; }
+    }
+  }
+
+  /*
+   * Vấn đề sinh từ điểm: chỉ gắn khi trượt ĐÚNG MỘT kỹ năng. Từ hai trở lên thì việc đã làm
+   * không ghi lại là làm cho kỹ năng nào, chia bừa là dựng ra một lịch sử sai.
+   */
+  const single = conn
+    .prepare(
+      `SELECT sc.id, sc.attempt_id FROM sos_cases sc
+        WHERE sc.origin_kind = 'mock' AND sc.sos_level = 1 AND sc.attempt_id IS NOT NULL`,
+    )
+    .all() as any[];
+  for (const r of single) {
+    const row = conn
+      .prepare(
+        `SELECT s.skill FROM assessment_scores s
+           JOIN assessment_attempts a ON a.id = s.attempt_id
+          WHERE s.attempt_id = ? AND s.band IS NOT NULL
+            AND a.target_at_attempt IS NOT NULL
+            AND s.band < a.target_at_attempt -
+                  (CASE a.attempt_no WHEN 1 THEN 1.0 WHEN 2 THEN 0.5 ELSE 0 END)`,
+      )
+      .all(r.attempt_id) as any[];
+    if (row.length === 1) {
+      conn.prepare('UPDATE sos_cases SET topic = ? WHERE id = ?').run(row[0].skill, r.id);
+      tagged++;
+    }
+  }
+  if (tagged) applied.push(`Gắn kỹ năng cho ${tagged} vấn đề suy được chắc chắn`);
+
+  const untagged = (conn.prepare('SELECT COUNT(*) n FROM sos_cases WHERE topic IS NULL').get() as any).n;
+  if (untagged) {
+    applied.push(`${untagged} vấn đề cũ để trống kỹ năng — không suy được từ dữ liệu, giao diện ghi rõ`);
+  }
 }

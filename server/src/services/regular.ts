@@ -1,4 +1,5 @@
 import { db, tx } from '../db.ts';
+import { ensureSosContacts } from './sos.ts';
 import {
   ATTEMPT_KIND_LABEL, PERMISSIONS, RATIO_PASS_THRESHOLD, REGULAR_SKILL_LABEL,
   ratioResult, sosFromFailCount, type AttemptKind, type RatioOutcome, type SosLevel,
@@ -360,38 +361,52 @@ export function refreshRegularOutcome(p: Principal, attemptId: number) {
   // Nhưng CASE thì mở ngay khi kết luận được, không chờ đủ.
   if (r.sosLevel === null) return r;
 
-  const existing = conn.prepare('SELECT * FROM sos_cases WHERE attempt_id = ?').get(attemptId) as any;
-  if (r.sosLevel === 0) {
-    // Đạt hết: không mở case mới. Case cũ (nếu điểm từng thấp hơn) vẫn giữ để tra lịch sử.
-    if (existing && existing.sos_level !== 0) {
-      conn.prepare('UPDATE sos_cases SET sos_level = 0, updated_at = ? WHERE id = ?').run(nowIso(), existing.id);
+  const open = conn.prepare('SELECT * FROM sos_cases WHERE attempt_id = ?').all(attemptId) as any[];
+  const failing = r.skills.filter((x) => x.outcome === 'fail').map((x) => x.skill);
+
+  /*
+   * Điểm sửa lên thành đạt: hạ mức, KHÔNG xoá vấn đề — xoá đi là mất luôn những việc đã
+   * làm cho em vì vấn đề đó.
+   */
+  for (const c of open) {
+    const gone = c.topic && !failing.includes(c.topic);
+    const level = gone || r.sosLevel === 0 ? 0 : r.sosLevel;
+    if (c.sos_level !== level) {
+      conn.prepare('UPDATE sos_cases SET sos_level = ?, updated_at = ? WHERE id = ?')
+        .run(level, nowIso(), c.id);
       conn.prepare(
         `INSERT INTO sos_case_history (case_id, field, old_value, new_value, actor_user_id, created_at)
-         VALUES (?, 'sos_level', ?, '0', ?, ?)`,
-      ).run(existing.id, String(existing.sos_level), p.userId, nowIso());
+         VALUES (?, 'sos_level', ?, ?, ?, ?)`,
+      ).run(c.id, String(c.sos_level), String(level), p.userId, nowIso());
     }
-    return r;
   }
+  if (r.sosLevel === 0 || !failing.length) return r;
 
-  if (!existing) {
+  /*
+   * MỘT VẤN ĐỀ CHO MỖI KỸ NĂNG, giống hệt lớp FT — chỉ khác cách sinh ra mức SOS.
+   * Kỹ năng ở đây là kỹ năng của CHÍNH chương trình lớp đó (Prep-Writing, Pronunciation…),
+   * không ép về bộ năm ô IELTS.
+   */
+  for (const skill of failing) {
+    if (open.some((c) => c.topic === skill)) continue;
     conn
       .prepare(
         // Ghi thẳng học viên và khoá học: hồ sơ học viên tra theo `student_id`, và lớp
-        // thường dùng CHUNG bảng case với lớp FT nên phải điền đủ như nhau.
-        `INSERT INTO sos_cases (attempt_id, student_id, cycle_id, origin_kind, detected_at,
-                                sos_level, status, created_at)
-         VALUES (?,?,?, 'mock', ?,?, 'open', ?)`,
+        // thường dùng CHUNG bảng vấn đề với lớp FT nên phải điền đủ như nhau.
+        `INSERT INTO sos_cases (attempt_id, student_id, cycle_id, track, topic, origin_kind,
+                                detected_at, sos_level, status, created_at)
+         VALUES (?,?,?, 'academic', ?, 'mock', ?,?, 'open', ?)`,
       )
-      .run(attemptId, a.student_id, a.cycle_id,
+      .run(attemptId, a.student_id, a.cycle_id, skill,
            (a.lrw_scheduled_at ?? '').slice(0, 10) || demoToday(), r.sosLevel, nowIso());
-  } else if (existing.sos_level !== r.sosLevel) {
-    conn.prepare('UPDATE sos_cases SET sos_level = ?, updated_at = ? WHERE id = ?')
-      .run(r.sosLevel, nowIso(), existing.id);
-    conn.prepare(
-      `INSERT INTO sos_case_history (case_id, field, old_value, new_value, actor_user_id, created_at)
-       VALUES (?, 'sos_level', ?, ?, ?, ?)`,
-    ).run(existing.id, String(existing.sos_level), String(r.sosLevel), p.userId, nowIso());
   }
+
+  /*
+   * Hai việc trao đổi bắt buộc áp cho CẢ lớp thường (owner chốt 10/09/2026): trượt thì phải
+   * báo em và phụ huynh, điều đó đúng với mọi lớp. Nhưng KHÔNG tự sinh phương án hỗ trợ —
+   * quy định "SOS 1-2 tự học, SOS 3 tutor" gắn với mức SOS theo band, mà lớp thường không có.
+   */
+  ensureSosContacts(a, r.sosLevel);
   return r;
 }
 

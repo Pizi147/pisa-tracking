@@ -9,7 +9,8 @@ import { Modal } from './Drawer.tsx';
 import { caseStatusLabel, caseStatusTone, fmtDate, skillLabel, sosLabel, sosTone } from '../lib/format.ts';
 import {
   DISPOSITIONS, DISPOSITION_LABEL, FOLLOWUP_OUTCOMES, FOLLOWUP_OUTCOME_LABEL,
-  INTERVENTION_KINDS, INTERVENTION_KIND_LABEL, INTERVENTION_STATUS_LABEL,
+  INTERVENTION_KIND_LABEL, INTERVENTION_STATUS_LABEL, PROPOSAL_KINDS, SUPPORT_KINDS,
+  isProposalKind,
   URGENCY_LABEL,
 } from '@shared/domain.ts';
 
@@ -264,7 +265,7 @@ function ActionDialog({ open, onClose, caseId, onDone }: {
   open: boolean; onClose: () => void; caseId: number; onDone: () => void;
 }) {
   const toast = useToast();
-  const [kind, setKind] = useState('talk_student');
+  const [kind, setKind] = useState('self_study');
   const [description, setDescription] = useState('');
   const [status, setStatus] = useState('completed');
   const [performerName, setPerformerName] = useState('');
@@ -280,6 +281,8 @@ function ActionDialog({ open, onClose, caseId, onDone }: {
    * Đổi trạng thái sang "đã xong" thì bỏ luôn ô chọn, không để lại một cờ vô nghĩa.
    */
   const canPropose = status === 'planned';
+  /* Nhóm Đề xuất luôn phải có Quản lý trả lời — không hỏi lại một câu đã trả lời sẵn. */
+  const alwaysNeedsApproval = isProposalKind(kind);
 
   const submit = async () => {
     setBusy(true);
@@ -291,12 +294,13 @@ function ActionDialog({ open, onClose, caseId, onDone }: {
         completedDate: status === 'completed' ? completedDate || undefined : undefined,
         startedDate: startedDate || undefined,
         followupDue: followupDue || undefined,
-        needsApproval: canPropose && needsApproval,
+        needsApproval: alwaysNeedsApproval || (canPropose && needsApproval),
       });
       invalidate('/cases'); invalidate('/students'); invalidate('/overview');
       onDone(); onClose();
       setDescription(''); setPerformerName(''); setCompletedDate(''); setFollowupDue('');
-      toast.push('ok', canPropose && needsApproval ? 'Đã gửi Quản lý duyệt' : 'Đã ghi lại');
+      toast.push('ok', alwaysNeedsApproval || (canPropose && needsApproval)
+        ? 'Đã gửi Quản lý duyệt' : 'Đã ghi lại');
       setNeedsApproval(false);
     } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
   };
@@ -307,16 +311,27 @@ function ActionDialog({ open, onClose, caseId, onDone }: {
         <>
           <button className="btn" onClick={onClose}>Huỷ</button>
           <button className="btn btn-primary" disabled={busy} onClick={submit}>
-            {canPropose && needsApproval ? 'Gửi duyệt' : 'Lưu'}
+            {alwaysNeedsApproval || (canPropose && needsApproval) ? 'Gửi duyệt' : 'Lưu'}
           </button>
         </>
       }>
       <div className="space-y-3">
+        {/*
+          HAI HỌ VIỆC, tách bạch ngay trong ô chọn. Chọn một mục trong "Đề xuất" TỨC LÀ đang
+          xin ý kiến Quản lý — nên ô tick "cần duyệt" bên dưới tự ẩn đi, bớt một quyết định.
+        */}
         <Field label="Việc gì">
           <select className="field" value={kind} onChange={(e) => setKind(e.target.value)}>
-            {INTERVENTION_KINDS.map((k) => (
-              <option key={k} value={k}>{INTERVENTION_KIND_LABEL[k]}</option>
-            ))}
+            <optgroup label="Phương án hỗ trợ — bạn tự làm được">
+              {SUPPORT_KINDS.map((k) => (
+                <option key={k} value={k}>{INTERVENTION_KIND_LABEL[k]}</option>
+              ))}
+            </optgroup>
+            <optgroup label="Đề xuất — Quản lý phải trả lời">
+              {PROPOSAL_KINDS.map((k) => (
+                <option key={k} value={k}>{INTERVENTION_KIND_LABEL[k]}</option>
+              ))}
+            </optgroup>
           </select>
         </Field>
         <Field label="Mô tả ngắn" hint="Một câu đủ để người khác hiểu đã làm gì.">
@@ -365,7 +380,7 @@ function ActionDialog({ open, onClose, caseId, onDone }: {
           người quyết. Bắt duyệt hết là biến phần mềm thành cửa xin phép; không duyệt gì thì
           việc tốn tiền lại không ai chịu trách nhiệm.
         */}
-        {canPropose && (
+        {canPropose && !alwaysNeedsApproval && (
           <label className="flex items-start gap-2 text-sm text-slate-300">
             <input type="checkbox" className="mt-1" checked={needsApproval}
               onChange={(e) => setNeedsApproval(e.target.checked)} />
@@ -378,7 +393,14 @@ function ActionDialog({ open, onClose, caseId, onDone }: {
             </span>
           </label>
         )}
-        {!canPropose && (
+        {alwaysNeedsApproval && (
+          <SectionNote>
+            Đây là một ĐỀ XUẤT nên Quản lý luôn phải trả lời — không cần tick thêm gì.
+            Hạn trả lời suy từ mức gấp của vấn đề: 7 ngày (bình thường) · 5 ngày (cần chú ý) ·
+            3 ngày (gấp).
+          </SectionNote>
+        )}
+        {!canPropose && !alwaysNeedsApproval && (
           <SectionNote>
             Đang ghi một việc ĐÃ làm hoặc ĐANG làm nên không gửi duyệt được. Muốn xin ý kiến
             Quản lý trước thì chọn tình trạng “Đã lên kế hoạch”.

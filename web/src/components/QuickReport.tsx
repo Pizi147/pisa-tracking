@@ -3,7 +3,10 @@ import { api, invalidate } from '../lib/api.ts';
 import { useToast } from './Toast.tsx';
 import { Modal } from './Drawer.tsx';
 import { Field, SectionNote } from './ui.tsx';
-import { ISSUE_CONTEXTS, ISSUE_GROUP_LABEL, ISSUE_TAXONOMY, URGENCY_LEVELS, URGENCY_LABEL } from '@shared/domain.ts';
+import {
+  BEHAVIOUR_TOPICS, BEHAVIOUR_TOPIC_LABEL, ENTRY_SKILLS, ENTRY_SKILL_LABEL,
+  THREAD_TRACKS, THREAD_TRACK_LABEL, URGENCY_LEVELS, URGENCY_LABEL, issuesForTopic,
+} from '@shared/domain.ts';
 
 /**
  * BÁO NHANH MỘT VẤN ĐỀ.
@@ -11,8 +14,14 @@ import { ISSUE_CONTEXTS, ISSUE_GROUP_LABEL, ISSUE_TAXONOMY, URGENCY_LEVELS, URGE
  * Giáo viên thấy vấn đề trên lớp từ nhiều tuần trước khi có điểm Mock. Trước đây không có
  * chỗ nào để nói ra, nên đến khi hệ thống "biết" thì đã muộn hai tháng.
  *
- * TỐI THIỂU CHỈ CẦN MỘT CÂU. Phân loại, mức độ gấp, hoàn cảnh đều là tuỳ chọn — bắt điền
- * đủ thì giáo viên bỏ qua, và một form không ai điền thì không có dữ liệu nào cả.
+ * TỐI THIỂU CHỈ CẦN MỘT CÂU và MỘT CHỖ CẤT. Nguyên nhân cụ thể, mức độ gấp, ghi chú đều là
+ * tuỳ chọn — bắt điền đủ thì giáo viên bỏ qua, và một form không ai điền thì không có dữ
+ * liệu nào cả.
+ *
+ * Nhưng đầu mục và chủ đề thì BẮT BUỘC: không có chúng, vấn đề rơi vào "chưa phân loại" và
+ * biến mất khỏi mọi bảng tổng hợp theo kỹ năng — đúng thứ vòng 3 sinh ra để sửa. Đổi lại,
+ * chọn chúng chỉ mất hai lần bấm và không cần suy nghĩ: em vướng kỹ năng nào, hay là chuyện
+ * ý thức.
  */
 export function QuickReport({ open, onClose, studentId, studentName, cycleId, onDone }: {
   open: boolean; onClose: () => void;
@@ -22,9 +31,10 @@ export function QuickReport({ open, onClose, studentId, studentName, cycleId, on
   const toast = useToast();
   const [summary, setSummary] = useState('');
   const [urgency, setUrgency] = useState('normal');
-  const [branchKey, setBranchKey] = useState('');
+  const [track, setTrack] = useState<string>('academic');
+  const [topic, setTopic] = useState('');
   const [primaryCode, setPrimaryCode] = useState('');
-  const [contextCodes, setContextCodes] = useState<string[]>([]);
+  const [note, setNote] = useState('');
   const [detectedAt, setDetectedAt] = useState('');
   const [busy, setBusy] = useState(false);
   const [more, setMore] = useState(false);
@@ -38,27 +48,37 @@ export function QuickReport({ open, onClose, studentId, studentName, cycleId, on
     [studentId, open],
   );
 
-  const branch = ISSUE_TAXONOMY.find((b) => b.key === branchKey) ?? null;
+  const topics: readonly string[] = track === 'behaviour' ? BEHAVIOUR_TOPICS : ENTRY_SKILLS;
+  const topicLabel = (k: string) => (track === 'behaviour'
+    ? BEHAVIOUR_TOPIC_LABEL[k as keyof typeof BEHAVIOUR_TOPIC_LABEL]
+    : ENTRY_SKILL_LABEL[k as keyof typeof ENTRY_SKILL_LABEL]) ?? k;
+  /* Ý thức không có tầng nguyên nhân — bốn nhóm đã là chỗ cất cuối cùng. */
+  const causes = track === 'academic' && topic ? issuesForTopic(topic) : [];
 
   const reset = () => {
-    setSummary(''); setUrgency('normal'); setBranchKey(''); setPrimaryCode('');
-    setContextCodes([]); setDetectedAt(''); setMore(false);
+    setSummary(''); setUrgency('normal'); setTrack('academic'); setTopic('');
+    setPrimaryCode(''); setNote(''); setDetectedAt(''); setMore(false);
   };
 
   const submit = async () => {
     if (!summary.trim()) { toast.push('error', 'Hãy mô tả vấn đề trong một câu.'); return; }
+    if (!topic) {
+      toast.push('error', track === 'behaviour'
+        ? 'Hãy chọn nhóm ý thức.' : 'Hãy chọn kỹ năng em đang vướng.');
+      return;
+    }
     setBusy(true);
     try {
       const res = await api.post<any>('/cases/report', {
         studentId, cycleId: cycleId ?? undefined, summary, urgency,
+        track, topic,
         primaryCode: primaryCode || undefined,
-        skill: branch?.skill ?? undefined,
-        contextCodes: contextCodes.length ? contextCodes : undefined,
+        note: note.trim() || undefined,
         detectedAt: detectedAt || undefined,
         idempotencyKey,
       });
       invalidate('/cases'); invalidate('/students'); invalidate('/overview');
-      toast.push('ok', 'Đã ghi nhận vấn đề');
+      toast.push('ok', 'Đã ghi nhận');
       reset(); onClose(); onDone?.(res.id);
     } catch (e: any) {
       // Lỗi giữ nguyên nội dung đang gõ để người dùng thử lại, không bắt gõ lại từ đầu.
@@ -68,7 +88,7 @@ export function QuickReport({ open, onClose, studentId, studentName, cycleId, on
 
   return (
     <Modal open={open} onClose={onClose}
-      title={studentName ? `Ghi nhận vấn đề · ${studentName}` : 'Ghi nhận vấn đề'}
+      title={studentName ? `Nội dung cần hỗ trợ · ${studentName}` : 'Nội dung cần hỗ trợ'}
       footer={
         <>
           <button className="btn" onClick={onClose}>Huỷ</button>
@@ -95,55 +115,58 @@ export function QuickReport({ open, onClose, studentId, studentName, cycleId, on
           </div>
         </Field>
 
+        {/*
+          ĐẦU MỤC VÀ CHỦ ĐỀ LÀ BẮT BUỘC, nên để ngay đây chứ không giấu dưới "xem thêm":
+          một vấn đề không có chỗ cất sẽ không bao giờ hiện lên bảng tổng hợp theo kỹ năng.
+        */}
+        <Field label="Thuộc nhóm nào" required>
+          <div className="flex gap-1 flex-wrap">
+            {THREAD_TRACKS.map((t) => (
+              <button key={t} type="button"
+                className={`btn btn-sm ${track === t ? 'btn-primary' : ''}`}
+                onClick={() => { setTrack(t); setTopic(''); setPrimaryCode(''); }}>
+                {THREAD_TRACK_LABEL[t]}
+              </button>
+            ))}
+          </div>
+        </Field>
+
+        <Field label={track === 'behaviour' ? 'Về việc gì' : 'Kỹ năng nào'} required>
+          <div className="flex gap-1 flex-wrap">
+            {topics.map((k) => (
+              <button key={k} type="button"
+                className={`btn btn-sm ${topic === k ? 'btn-primary' : ''}`}
+                onClick={() => { setTopic(k); setPrimaryCode(''); }}>
+                {topicLabel(k)}
+              </button>
+            ))}
+          </div>
+        </Field>
+
         {!more && (
           <button type="button" className="btn btn-sm btn-ghost" onClick={() => setMore(true)}>
-            + Phân loại và hoàn cảnh (không bắt buộc)
+            + Nguyên nhân và ghi chú (không bắt buộc)
           </button>
         )}
 
         {more && (
           <>
-            <Field label="Thuộc nhóm nào">
-              <select className="field" value={branchKey}
-                onChange={(e) => { setBranchKey(e.target.value); setPrimaryCode(''); }}>
-                <option value="">Chưa phân loại</option>
-                {/*
-                  Nhóm chỉ có MỘT nhánh thì tên nhóm và tên nhánh trùng nhau — hiện
-                  "Giáo viên · Giáo viên" là chữ thừa, chỉ hiện một lần.
-                */}
-                {ISSUE_TAXONOMY.map((b) => {
-                  const group = ISSUE_GROUP_LABEL[b.group];
-                  const only = ISSUE_TAXONOMY.filter((x) => x.group === b.group).length === 1;
-                  return (
-                    <option key={b.key} value={b.key}>
-                      {only || group === b.label ? group : `${group} · ${b.label}`}
-                    </option>
-                  );
-                })}
-              </select>
-            </Field>
-            {branch && (
-              <Field label="Cụ thể hơn">
+            {causes.length > 0 && (
+              <Field label="Vì sao"
+                hint="Nhận định của bạn, không phải kết luận của hệ thống. Chưa chắc thì bỏ trống.">
                 <select className="field" value={primaryCode} onChange={(e) => setPrimaryCode(e.target.value)}>
-                  <option value="">Chưa chọn</option>
-                  {branch.items.map((i) => <option key={i.code} value={i.code}>{i.label}</option>)}
+                  <option value="">Chưa rõ</option>
+                  {causes.map((i) => <option key={i.code} value={i.code}>{i.label}</option>)}
                 </select>
               </Field>
             )}
-            <Field label="Hoàn cảnh kèm theo"
-              hint="Ghi chú thêm, KHÔNG phải nguyên nhân đã được xác minh.">
-              <div className="flex gap-1 flex-wrap">
-                {ISSUE_CONTEXTS.map((c) => (
-                  <button key={c.code} type="button"
-                    className={`btn btn-sm ${contextCodes.includes(c.code) ? 'btn-primary' : ''}`}
-                    onClick={() => setContextCodes((prev) =>
-                      prev.includes(c.code) ? prev.filter((x) => x !== c.code) : [...prev, c.code])}>
-                    {c.label}
-                  </button>
-                ))}
-              </div>
+            <Field label="Ghi chú"
+              hint="Hoàn cảnh, chuyện riêng, bất cứ điều gì người đọc sau cần biết.">
+              <textarea className="field" rows={2} value={note}
+                onChange={(e) => setNote(e.target.value)}
+                placeholder="Nhà xa, bố mẹ đi làm ca nên em phải trông em nhỏ buổi tối." />
             </Field>
-            <Field label="Bắt đầu để ý từ ngày" hint="Bỏ trống thì lấy hôm nay.">
+        <Field label="Bắt đầu để ý từ ngày" hint="Bỏ trống thì lấy hôm nay.">
               <input type="date" className="field" value={detectedAt} onChange={(e) => setDetectedAt(e.target.value)} />
             </Field>
           </>

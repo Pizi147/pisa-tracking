@@ -79,7 +79,7 @@ export default function StudentDetailPage() {
         </div>
         <div className="flex flex-wrap gap-2">
           {data.viewer.canReport && (
-            <button className="btn btn-primary" onClick={() => setReportOpen(true)}>Ghi nhận vấn đề</button>
+            <button className="btn btn-primary" onClick={() => setReportOpen(true)}>+ Nội dung cần hỗ trợ</button>
           )}
           {data.viewer.canEdit && <button className="btn" onClick={() => setTransferOpen(true)}>Chuyển lớp</button>}
         </div>

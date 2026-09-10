@@ -1,7 +1,7 @@
 import { db } from '../db.ts';
 import {
   ENTRY_SKILL_LABEL, INTERVENTION_KIND_LABEL, PERMISSIONS, REGULAR_SKILL_LABEL, SOS_LABEL,
-  URGENCY_LABEL, caseHeadline,
+  URGENCY_LABEL, caseHeadline, dueDaysFor,
   type EntrySkill, type InterventionKind,
 } from '../../../shared/domain.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -99,8 +99,10 @@ function badge(g: WorkGroupKey, u: WorkUrgency): string | null {
   return u === 'overdue' ? GROUP_META[g].overdue : u === 'today' ? 'Hạn hôm nay' : null;
 }
 
-/** Ngưỡng bỏ quên do owner chốt: mức nặng thì sốt ruột hơn. */
-export const NUDGE_DAYS = { urgent: 3, normal: 7 };
+/**
+ * Hạn xử lý một vấn đề suy thẳng từ mức gấp: 7 · 5 · 3 ngày (owner chốt 10/09/2026).
+ * Dùng chung một bảng với hạn Quản lý trả lời đề xuất — hai con số nói cùng một chuyện.
+ */
 
 function sosTone(level: number | null): 'ok' | 'info' | 'warn' | 'danger' {
   if (level === null) return 'info';
@@ -333,8 +335,7 @@ export function myWork(p: Principal, f: { branchId?: number | null } = {}) {
      */
     const detected = c.detected_at ?? (c.created_at ?? '').slice(0, 10);
     const days = detected ? diffDays(today, detected) : 0;
-    const hot = (c.sos_level ?? 0) >= 3 || c.urgency === 'urgent';
-    const limit = hot ? NUDGE_DAYS.urgent : NUDGE_DAYS.normal;
+    const limit = dueDaysFor(c.urgency, c.sos_level);
     const u: WorkUrgency = days >= limit ? 'overdue' : 'normal';
     const head = caseHeadline({
       summary: c.summary, originKind: c.origin_kind, sosLevel: c.sos_level, attemptNo: c.attempt_no,
