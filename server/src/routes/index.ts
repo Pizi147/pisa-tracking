@@ -389,6 +389,18 @@ api.get('/classes/:id/overview', requireAuth, wrap((req) => {
   return classSvc.classOverview(principalOf(req), pInt(req, 'id'));
 }));
 
+/** Phân công giáo viên: ai đang dạy, ai xếp được, và ai đã từng dạy lớp này. */
+api.get('/classes/:id/teachers', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return classSvc.classTeachers(principalOf(req), pInt(req, 'id'));
+}));
+
+/** Gửi nguyên bức tranh phân công đang hiển thị, không gửi từng thao tác thêm/bớt. */
+api.put('/classes/:id/teachers', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return classSvc.setClassTeachers(principalOf(req), pInt(req, 'id'), req.body ?? {});
+}));
+
 api.post('/classes', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return intakeSvc.createClass(principalOf(req), req.body ?? {});

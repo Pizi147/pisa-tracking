@@ -1,11 +1,12 @@
-import { db } from '../db.ts';
+import { db, tx } from '../db.ts';
 import {
   ATTEMPT_KIND_SHORT, ENTRY_SKILLS, PERMISSIONS,
   type AssessedSkill, type AttemptKind,
 } from '../../../shared/domain.ts';
 import { demoToday } from '../demoConfig.ts';
-import { notFound } from '../util.ts';
+import { badRequest, notFound, nowIso } from '../util.ts';
 import { can, classScopeSql, editableSkills, isCoreTeacherOf, require_, scopeFor, type Principal } from '../permissions.ts';
+import { writeAudit } from './audit.ts';
 import { loadBundle, resultOf, skillCells } from './attempts.ts';
 import { latestCheckins } from './checkins.ts';
 import { allProgrammes, evaluateRegular, programmeOfClass } from './regular.ts';
@@ -338,6 +339,7 @@ export function classOverview(p: Principal, classId: number) {
       canPlanWeek: can(p, PERMISSIONS.PLAN_WEEK, { classId }),
       canSetDate: can(p, PERMISSIONS.SCHEDULE_DATE, { classId }),
       canAddStudents: can(p, PERMISSIONS.STUDENT_EDIT, { classId }),
+      canAssign: can(p, PERMISSIONS.CLASS_ASSIGN, { classId }),
       editableSkills: editableSkills(p, classId, classSkills),
       isCoreTeacher: isCoreTeacherOf(p, classId),
     },
@@ -345,3 +347,165 @@ export function classOverview(p: Principal, classId: number) {
 }
 
 export type { AssessedSkill };
+
+// ==================================================================== phân công giáo viên
+
+/**
+ * PHÂN CÔNG GIÁO VIÊN VÀO LỚP.
+ *
+ * Ai đổi được: Quản lý và Admin chi nhánh (owner chốt — Admin chi nhánh tạo được lớp nên
+ * cũng phải xếp được người dạy), trong đúng chi nhánh của lớp. Giáo viên thì không.
+ *
+ * BỎ PHÂN CÔNG KHÔNG PHẢI LÀ XOÁ. Điểm đã nhập ghi tên người nhập, và báo cáo cũ đọc lại
+ * phải thấy đúng ai dạy lúc đó. Nên bỏ phân công chỉ đóng dòng lại bằng `effective_to` và
+ * `status`, dòng cũ ở nguyên chỗ.
+ *
+ * Hai loại phân công tách hẳn nhau:
+ *   - GVCN   (`is_core = 1`, `skill` để trống): chăm cả lớp, đóng được case của lớp.
+ *   - GVBM   (`skill` có giá trị): CHỈ nhập được điểm đúng kỹ năng đó.
+ * Một người có thể có cả hai dòng ở cùng một lớp — chủ nhiệm và dạy Listening chẳng hạn.
+ */
+export type TeacherSlot = { userId: number; skill: string | null; isCore: boolean };
+
+/** Giáo viên có thể xếp vào lớp này: có grant vai trò giáo viên phủ chi nhánh của lớp. */
+function teacherCandidates(classId: number, branchId: number) {
+  return db()
+    .prepare(
+      `SELECT DISTINCT u.id, u.full_name, u.code, u.title,
+              (SELECT COUNT(*) FROM teacher_assignments ta
+                WHERE ta.user_id = u.id AND ta.status = 'active') AS load_classes,
+              (SELECT COUNT(*) FROM teacher_assignments ta
+                WHERE ta.user_id = u.id AND ta.class_id = ? AND ta.status = 'active') AS here
+         FROM users u
+         JOIN user_roles ur ON ur.user_id = u.id AND ur.status = 'active'
+         JOIN roles r ON r.id = ur.role_id
+        WHERE u.status = 'active'
+          AND r.key IN ('teacher', 'manager')
+          AND (ur.branch_id IS NULL OR ur.branch_id = ?)
+        ORDER BY u.full_name`,
+    )
+    .all(classId, branchId) as any[];
+}
+
+export function classTeachers(p: Principal, classId: number) {
+  const conn = db();
+  const cls = conn
+    .prepare(`SELECT c.*, b.code AS branch_code FROM classes c JOIN branches b ON b.id = c.branch_id WHERE c.id = ?`)
+    .get(classId) as any;
+  if (!cls) throw notFound('Không tìm thấy lớp');
+  require_(p, PERMISSIONS.ATTEMPT_VIEW, { classId }, 'Lớp này nằm ngoài phạm vi bạn được xem.');
+
+  const prog = programmeOfClass(classId);
+  const canAssign = can(p, PERMISSIONS.CLASS_ASSIGN, { classId });
+
+  const active = conn
+    .prepare(
+      `SELECT ta.id, ta.user_id, ta.skill, ta.is_core, ta.effective_from, u.full_name
+         FROM teacher_assignments ta JOIN users u ON u.id = ta.user_id
+        WHERE ta.class_id = ? AND ta.status = 'active'
+        ORDER BY ta.is_core DESC, ta.skill, u.full_name`,
+    )
+    .all(classId) as any[];
+
+  /* Lịch sử: ai đã từng dạy lớp này và trong khoảng nào. Đọc báo cáo cũ phải tra được. */
+  const past = conn
+    .prepare(
+      `SELECT ta.skill, ta.is_core, ta.effective_from, ta.effective_to, u.full_name
+         FROM teacher_assignments ta JOIN users u ON u.id = ta.user_id
+        WHERE ta.class_id = ? AND ta.status != 'active'
+        ORDER BY COALESCE(ta.effective_to, ta.effective_from) DESC, ta.id DESC LIMIT 20`,
+    )
+    .all(classId) as any[];
+
+  return {
+    classId, classCode: cls.code, branchCode: cls.branch_code,
+    /** Kỹ năng của lớp lấy theo CHƯƠNG TRÌNH, không mặc định là bộ IELTS. */
+    skills: prog?.skills ?? [...ENTRY_SKILLS],
+    core: active.filter((a) => a.is_core === 1)
+      .map((a) => ({ userId: a.user_id, name: a.full_name, from: a.effective_from })),
+    bySkill: active.filter((a) => a.skill)
+      .map((a) => ({ skill: a.skill, userId: a.user_id, name: a.full_name, from: a.effective_from })),
+    candidates: teacherCandidates(classId, cls.branch_id)
+      .map((u) => ({ id: u.id, name: u.full_name, code: u.code, title: u.title,
+                     classCount: u.load_classes, inThisClass: u.here > 0 })),
+    past: past.map((a) => ({
+      name: a.full_name, skill: a.skill, isCore: a.is_core === 1,
+      from: a.effective_from, to: a.effective_to,
+    })),
+    viewer: { canAssign },
+  };
+}
+
+/**
+ * Ghi lại TOÀN BỘ phân công đang có hiệu lực của lớp.
+ *
+ * Nhận cả danh sách chứ không nhận từng thao tác thêm/bớt: màn hình đang hiển thị đúng một
+ * bức tranh, gửi nguyên bức tranh đó lên thì không có chuyện hai người sửa hai nửa rồi ra
+ * một trạng thái không ai định. Dòng nào không đổi thì GIỮ NGUYÊN `effective_from`, không
+ * đóng rồi mở lại — làm vậy là bịa ra một lần đổi người không có thật.
+ */
+export function setClassTeachers(p: Principal, classId: number, input: { slots?: TeacherSlot[] }) {
+  const conn = db();
+  const cls = conn.prepare('SELECT * FROM classes WHERE id = ?').get(classId) as any;
+  if (!cls) throw notFound('Không tìm thấy lớp');
+  require_(p, PERMISSIONS.CLASS_ASSIGN, { classId },
+    'Chỉ Quản lý và Admin chi nhánh mới đổi được phân công giáo viên.');
+
+  const prog = programmeOfClass(classId);
+  const classSkills: string[] = prog?.skills ?? [...ENTRY_SKILLS];
+  const today = demoToday();
+
+  const wanted = new Map<string, TeacherSlot>();
+  for (const s of input.slots ?? []) {
+    const userId = Number(s.userId);
+    if (!Number.isInteger(userId) || userId <= 0) throw badRequest('Thiếu người được phân công.');
+    const isCore = !!s.isCore;
+    const skill = isCore ? null : (s.skill ?? null);
+    if (!isCore && !skill) throw badRequest('Phân công giáo viên bộ môn phải chọn kỹ năng.');
+    if (skill && !classSkills.includes(skill)) {
+      throw badRequest(`Lớp này không dạy kỹ năng "${skill}", không phân công vào đó được.`);
+    }
+    wanted.set(`${userId}|${skill ?? ''}|${isCore ? 1 : 0}`, { userId, skill, isCore });
+  }
+
+  // Người được xếp phải thực sự thuộc chi nhánh của lớp — không mượn người chi nhánh khác.
+  const eligible = new Set(teacherCandidates(classId, cls.branch_id).map((u) => u.id as number));
+  for (const s of wanted.values()) {
+    if (!eligible.has(s.userId)) {
+      throw badRequest('Người này không có vai trò giảng dạy ở chi nhánh của lớp.');
+    }
+  }
+
+  return tx(() => {
+    const active = conn
+      .prepare(`SELECT * FROM teacher_assignments WHERE class_id = ? AND status = 'active'`)
+      .all(classId) as any[];
+    const keyOf = (a: any) => `${a.user_id}|${a.skill ?? ''}|${a.is_core ? 1 : 0}`;
+
+    let added = 0; let ended = 0;
+    for (const a of active) {
+      if (wanted.has(keyOf(a))) { wanted.delete(keyOf(a)); continue; }
+      conn
+        .prepare(`UPDATE teacher_assignments SET status = 'ended', effective_to = ? WHERE id = ?`)
+        .run(today, a.id);
+      ended += 1;
+    }
+    for (const s of wanted.values()) {
+      conn
+        .prepare(
+          `INSERT INTO teacher_assignments (user_id, class_id, skill, is_core, effective_from, status, created_at)
+           VALUES (?,?,?,?,?, 'active', ?)`,
+        )
+        .run(s.userId, classId, s.skill, s.isCore ? 1 : 0, today, nowIso());
+      added += 1;
+    }
+
+    if (added || ended) {
+      writeAudit({
+        actorUserId: p.userId, action: 'class.assign', entityType: 'class', entityId: classId,
+        entityLabel: cls.code, after: { added, ended },
+      });
+    }
+    return classTeachers(p, classId);
+  });
+}

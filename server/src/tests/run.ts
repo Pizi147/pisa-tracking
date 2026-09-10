@@ -2085,6 +2085,99 @@ check('Đề xuất đang chờ duyệt thì chưa đòi cập nhật kết qu�
     'Phương án chưa được duyệt đã bị đòi cập nhật kết quả');
 });
 
+console.log('\n19. Phân công giáo viên');
+
+check('Giáo viên không tự phân công mình vào lớp', () => {
+  const gv = loadPrincipal(teacherOfSkill('MB-FT 101', 'listening'));
+  assertThrows(() => classesSvc.setClassTeachers(gv, mbClass, { slots: [] }),
+    /Quản lý|Admin|quyền/, 'Giáo viên đổi phân công');
+  assert(!can(gv, PERMISSIONS.CLASS_ASSIGN, { classId: mbClass }), 'Giáo viên đang có quyền phân công');
+  assert(can(P.mbManager, PERMISSIONS.CLASS_ASSIGN, { classId: mbClass }), 'Quản lý phải phân công được');
+  assert(can(P.mbAdmin, PERMISSIONS.CLASS_ASSIGN, { classId: mbClass }), 'Admin chi nhánh phải phân công được');
+});
+
+check('Không xếp người của chi nhánh khác, và không xếp kỹ năng lớp không dạy', () => {
+  const cpTeacher = teacherOfSkill('CP-FT 110', 'listening');
+  assertThrows(
+    () => classesSvc.setClassTeachers(P.mbManager, mbClass, {
+      slots: [{ userId: cpTeacher, skill: 'listening', isCore: false }],
+    }),
+    /chi nhánh/, 'Xếp giáo viên CP vào lớp MB',
+  );
+  const found = classId('MB-FOUND 12');
+  const anyTeacher = classesSvc.classTeachers(P.mbManager, found).candidates[0];
+  assertThrows(
+    () => classesSvc.setClassTeachers(P.mbManager, found, {
+      slots: [{ userId: anyTeacher.id, skill: 'writing2', isCore: false }],
+    }),
+    /không dạy kỹ năng/, 'Xếp W2 cho lớp không có W2',
+  );
+});
+
+check('Bỏ phân công KHÔNG xoá lịch sử, và dòng giữ nguyên thì không bị mở lại', () => {
+  const before = classesSvc.classTeachers(P.mbManager, mbClass);
+  const lrSlot = before.bySkill.find((b) => b.skill === 'listening');
+  assert(lrSlot, 'Lớp mẫu không có giáo viên Listening');
+
+  const keep = before.bySkill.filter((b) => b.skill !== 'listening')
+    .map((b) => ({ userId: b.userId, skill: b.skill, isCore: false }));
+  const core = before.core.map((c) => ({ userId: c.userId, skill: null, isCore: true }));
+  classesSvc.setClassTeachers(P.mbManager, mbClass, { slots: [...core, ...keep] });
+
+  const rows = conn
+    .prepare(`SELECT * FROM teacher_assignments WHERE class_id = ? AND user_id = ? AND skill='listening'`)
+    .all(mbClass, lrSlot!.userId) as any[];
+  assert(rows.length > 0, 'Bỏ phân công đã xoá mất dòng cũ');
+  assert(rows.every((r) => r.status !== 'active'), 'Bỏ phân công nhưng dòng vẫn còn hiệu lực');
+  assert(rows.some((r) => r.effective_to === demoToday()), 'Không ghi ngày kết thúc phân công');
+
+  const after = classesSvc.classTeachers(P.mbManager, mbClass);
+  assert(!after.bySkill.some((b) => b.skill === 'listening' && b.userId === lrSlot!.userId),
+    'Vẫn còn phân công đã bỏ');
+  // Dòng không đổi phải giữ nguyên ngày bắt đầu — đóng rồi mở lại là bịa ra một lần đổi người.
+  for (const b of after.core) {
+    const same = before.core.find((c) => c.userId === b.userId);
+    assert(same && same.from === b.from, 'GVCN không đổi mà ngày bắt đầu bị ghi lại');
+  }
+  assert(after.past.some((h) => h.skill === 'listening'), 'Lịch sử không hiện người vừa bị bỏ');
+});
+
+check('Bỏ phân công thì mất luôn quyền nhập điểm kỹ năng đó', () => {
+  const before = classesSvc.classTeachers(P.mbManager, mbClass);
+  const wSlot = before.bySkill.find((b) => b.skill === 'writing1');
+  assert(wSlot, 'Lớp mẫu không có giáo viên Writing 1');
+  const gv = loadPrincipal(wSlot!.userId);
+  assert(can(gv, PERMISSIONS.SCORE_EDIT, { classId: mbClass, skill: 'writing1' }), 'GV W1 chưa có quyền');
+
+  classesSvc.setClassTeachers(P.mbManager, mbClass, {
+    slots: [
+      ...before.core.map((c) => ({ userId: c.userId, skill: null, isCore: true })),
+      ...before.bySkill.filter((b) => b.skill !== 'writing1')
+        .map((b) => ({ userId: b.userId, skill: b.skill, isCore: false })),
+    ],
+  });
+  const after = loadPrincipal(wSlot!.userId);
+  assert(!can(after, PERMISSIONS.SCORE_EDIT, { classId: mbClass, skill: 'writing1' }),
+    'Bỏ phân công rồi mà vẫn nhập được điểm kỹ năng đó');
+});
+
+check('Một kỹ năng xếp được HAI giáo viên, không đá mất người thứ hai', () => {
+  const t = classesSvc.classTeachers(P.mbManager, mbClass);
+  const two = t.candidates.slice(0, 2);
+  assert(two.length === 2, 'Chi nhánh không đủ hai giáo viên để thử');
+  classesSvc.setClassTeachers(P.mbManager, mbClass, {
+    slots: [
+      ...t.core.map((c) => ({ userId: c.userId, skill: null, isCore: true })),
+      ...t.bySkill.filter((b) => b.skill !== 'reading').map((b) => ({ userId: b.userId, skill: b.skill, isCore: false })),
+      { userId: two[0].id, skill: 'reading', isCore: false },
+      { userId: two[1].id, skill: 'reading', isCore: false },
+    ],
+  });
+  const after = classesSvc.classTeachers(P.mbManager, mbClass);
+  assert(after.bySkill.filter((b) => b.skill === 'reading').length === 2,
+    'Xếp hai giáo viên Reading nhưng chỉ giữ lại một');
+});
+
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`
