@@ -4,7 +4,7 @@ import { useApi } from '../lib/useApi.ts';
 import { Card, Empty, ErrorState, KpiTile, Pill, SectionNote, Skeleton } from '../components/ui.tsx';
 import { Drawer } from '../components/Drawer.tsx';
 import { CasePanel } from '../components/CasePanel.tsx';
-import { caseStatusLabel, caseStatusTone, fmtDate, sosLabel, sosTone } from '../lib/format.ts';
+import { fmtDate, sosLabel, sosTone } from '../lib/format.ts';
 import { ASSESSED_SKILLS, ASSESSED_SKILL_LABEL, ISSUE_GROUP_LABEL, ISSUE_TAXONOMY } from '@shared/domain.ts';
 
 /**
@@ -20,18 +20,49 @@ import { ASSESSED_SKILLS, ASSESSED_SKILL_LABEL, ISSUE_GROUP_LABEL, ISSUE_TAXONOM
  * Quản lý KHÔNG phải cửa duyệt: không có vấn đề nào bắt buộc phải có ý kiến của Quản lý
  * mới được xử lý tiếp.
  */
+type Facets = {
+  group: Record<string, number>; skill: Record<string, number>;
+  issueBranch: Record<string, number>; branch: Record<string, number>;
+  state: Record<string, number>;
+  groupNone: number; skillNone: number; total: number;
+};
+
+const STATE_LABEL: Record<string, string> = {
+  no_plan: 'Chưa có phương án hỗ trợ',
+  working: 'Đang xử lý',
+  done: 'Đã xong',
+};
+
 export default function AcademicPage() {
+  return (
+    <div className="space-y-4 max-w-[1200px]">
+      <div>
+        <h1 className="text-lg font-semibold text-slate-100 m-0">Tình hình chung</h1>
+        <p className="text-xs text-slate-500 mt-1 mb-0">
+          Vấn đề đang theo dõi trong phạm vi bạn được xem — cả vấn đề sinh từ điểm và vấn đề giáo viên báo.
+        </p>
+      </div>
+      <CaseBoard />
+    </div>
+  );
+}
+
+/**
+ * Bảng vấn đề, dùng CHUNG cho trang riêng và cho tab "Tình hình chung" của Tổng quan.
+ * Một bản cài đặt, một cách đọc số — không có chuyện hai màn hình đếm lệch nhau.
+ */
+export function CaseBoard() {
   const [params, setParams] = useSearchParams();
   const queue = params.get('hang-doi') ?? '';
   const branchId = params.get('cn') ?? '';
   const group = params.get('nhom') ?? '';
   const skill = params.get('ky-nang') ?? '';
   /*
-   * Mặc định chỉ hiện vấn đề ĐANG MỞ. Trộn cả vấn đề đã kết thúc vào danh sách làm việc
-   * thì con số ở đầu trang và số dòng bên dưới không khớp nhau, và người dùng phải tự
-   * lọc bằng mắt. Vẫn xem lại được vấn đề đã đóng bằng một lần bấm.
+   * BA TRẠNG THÁI LOẠI TRỪ NHAU, cộng lại đúng bằng tổng — đây là câu hỏi "bức tranh chung
+   * đang ở đâu", khác với bốn hàng đợi ở trên ("làm gì trước"). Trộn hai cách nhìn vào một
+   * hàng nút là cách chắc chắn nhất để không ai tin con số nào nữa.
    */
-  const scope = params.get('pham-vi') ?? 'open';
+  const state = params.get('tinh-hinh') ?? '';
   const [openCase, setOpenCase] = useState<number | null>(null);
 
   const set = (k: string, v: string) => {
@@ -42,7 +73,6 @@ export default function AcademicPage() {
 
   const qs = new URLSearchParams();
   if (queue) qs.set('queue', queue);
-  if (scope === 'done') qs.set('status', 'done');
   if (branchId) qs.set('branchId', branchId);
   if (group) qs.set('group', group);
   if (skill) qs.set('skill', skill);
@@ -50,39 +80,44 @@ export default function AcademicPage() {
 
   const branches = useApi<any[]>('/ref/branches');
   const counts = useApi<any>(`/cases/queues${branchId ? `?branchId=${branchId}` : ''}`, [branchId]);
-  const list = useApi<{ rows: any[]; scopeEmpty: boolean }>(`/cases${suffix}`, [queue, branchId, group, skill, scope]);
+  const list = useApi<{ rows: any[]; scopeEmpty: boolean; facets: Facets }>(
+    `/cases${suffix}`, [queue, branchId, group, skill],
+  );
 
   if (list.error) return <ErrorState message={list.error.message} hint={list.error.hint} onRetry={list.reload} />;
 
   /*
-   * Hàng đợi đã tự loại vấn đề đã kết thúc, nên chỉ cần lọc thêm khi người dùng không
-   * chọn hàng đợi nào.
+   * KHÔNG GIẤU VẤN ĐỀ ĐÃ XONG, chỉ LÀM MỜ và đẩy xuống cuối.
+   *
+   * Bản trước có thêm một bộ lọc "Phạm vi: Đang mở / Đã kết thúc / Tất cả" nằm cạnh ô
+   * "Đã xong". Hai thứ nói cùng một chuyện bằng hai cách, và mặc định lọc bỏ vấn đề đã
+   * xong khiến ô "Đã xong" lúc nào cũng bằng 0 — nhìn như hệ thống hỏng. Nay chỉ còn một
+   * cách: ba ô trạng thái.
    */
-  const all = list.data?.rows ?? [];
-  const rows = queue || scope === 'all' || scope === 'done'
-    ? all
-    : all.filter((r) => r.status !== 'done');
-  const closedCount = all.filter((r) => r.status === 'done').length;
+  const inScope = list.data?.rows ?? [];
+  const rows = (state ? inScope.filter((r) => r.state === state) : inScope)
+    .slice()
+    .sort((a, b) => (a.state === 'done' ? 1 : 0) - (b.state === 'done' ? 1 : 0));
+  const f = list.data?.facets;
+  /** Đếm trong đúng tập đang hiển thị, để số trên ô và số dòng bên dưới không lệch nhau. */
+  const stateCount = (k: string) => inScope.filter((r) => r.state === k).length;
 
   return (
-    <div className="space-y-4 max-w-[1200px]">
-      <div>
-        <h1 className="text-lg font-semibold text-slate-100 m-0">Học thuật</h1>
-        <p className="text-xs text-slate-500 mt-1 mb-0">
-          Vấn đề đang theo dõi trong phạm vi bạn được xem — cả vấn đề sinh từ điểm và vấn đề giáo viên báo.
-        </p>
-      </div>
+    <div className="space-y-4">
+      {/*
+        BA TRẠNG THÁI LOẠI TRỪ NHAU, cộng lại đúng bằng tổng.
 
-      {/* ---------------------------------------------- bốn hàng đợi */}
-      <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
-        <QueueTile label="Chưa làm" value={counts.data?.newCases} active={queue === 'new'}
-          onClick={() => set('hang-doi', queue === 'new' ? '' : 'new')} />
-        <QueueTile label="Đang hỗ trợ / theo dõi" value={counts.data?.active} active={queue === 'active'}
-          onClick={() => set('hang-doi', queue === 'active' ? '' : 'active')} />
-        <QueueTile label="Tới hạn xem lại" value={counts.data?.due} active={queue === 'due'}
-          onClick={() => set('hang-doi', queue === 'due' ? '' : 'due')} />
-        <QueueTile label="Cần xem kỹ" value={counts.data?.review} active={queue === 'review'}
-          onClick={() => set('hang-doi', queue === 'review' ? '' : 'review')} />
+        Bản trước để bốn ô hàng đợi ở đây ("Chưa làm", "Đang hỗ trợ", "Tới hạn xem lại",
+        "Cần xem kỹ") — bốn câu hỏi cố tình chồng nhau, nên bốn số không cộng thành gì cả
+        và người đọc không biết mình đang nhìn một phép chia hay một danh sách. Nay ba ô ở
+        đây là BỨC TRANH CHUNG; hai câu hỏi còn lại xuống dưới, nói rõ là câu hỏi.
+      */}
+      <div className="grid gap-3 grid-cols-1 sm:grid-cols-3">
+        {(['no_plan', 'working', 'done'] as const).map((k) => (
+          <QueueTile key={k} label={STATE_LABEL[k]} value={stateCount(k)} active={state === k}
+            dim={k === 'done'}
+            onClick={() => set('tinh-hinh', state === k ? '' : k)} />
+        ))}
       </div>
 
       {/* ---------------------------------------------- bộ lọc */}
@@ -90,32 +125,68 @@ export default function AcademicPage() {
         <div className="space-y-3">
           {(branches.data ?? []).length > 1 && (
             <FilterRow label="Chi nhánh">
-              <Chip active={!branchId} onClick={() => set('cn', '')}>Tất cả</Chip>
+              {/* Chỉ ai có phạm vi toàn hệ thống mới thấy nhiều hơn một chi nhánh ở đây. */}
+              <Chip active={!branchId} onClick={() => set('cn', '')}>Cả trung tâm</Chip>
               {(branches.data ?? []).map((b) => (
                 <Chip key={b.id} active={branchId === String(b.id)} onClick={() => set('cn', String(b.id))}>
-                  {b.code}
+                  {b.code}{f?.branch[String(b.id)] ? ` · ${f.branch[String(b.id)]}` : ''}
                 </Chip>
               ))}
             </FilterRow>
           )}
-          <FilterRow label="Phạm vi">
-            <Chip active={scope === 'open'} onClick={() => set('pham-vi', '')}>Đang mở</Chip>
-            <Chip active={scope === 'done'} onClick={() => set('pham-vi', 'done')}>Đã kết thúc</Chip>
-            <Chip active={scope === 'all'} onClick={() => set('pham-vi', 'all')}>Tất cả</Chip>
+          {/*
+            HAI CÂU HỎI, không phải hai phần của một tổng: một em có thể vừa tới hạn xem
+            lại vừa ở mức cao. Để riêng khỏi ba ô trên, và nói thẳng là câu hỏi.
+          */}
+          <FilterRow label="Cần chú ý">
+            <Chip active={queue === 'due'} onClick={() => set('hang-doi', queue === 'due' ? '' : 'due')}>
+              Tới hạn xem lại · {counts.data?.due ?? 0}
+            </Chip>
+            <Chip active={queue === 'review'} onClick={() => set('hang-doi', queue === 'review' ? '' : 'review')}>
+              Mức cao hoặc gấp · {counts.data?.review ?? 0}
+            </Chip>
           </FilterRow>
           <FilterRow label="Nhóm vấn đề">
             <Chip active={!group} onClick={() => set('nhom', '')}>Tất cả</Chip>
             {(['student', 'teacher', 'curriculum'] as const).map((g) => (
-              <Chip key={g} active={group === g} onClick={() => set('nhom', g)}>{ISSUE_GROUP_LABEL[g]}</Chip>
+              <Chip key={g} active={group === g} onClick={() => set('nhom', group === g ? '' : g)}>
+                {ISSUE_GROUP_LABEL[g]} · {f?.group[g] ?? 0}
+              </Chip>
             ))}
+            {/* Phần lớn vấn đề sinh từ điểm nằm ở đây — bỏ nó đi thì các số không cộng thành tổng. */}
+            <Chip active={group === 'none'} onClick={() => set('nhom', group === 'none' ? '' : 'none')}>
+              Chưa phân loại · {f?.groupNone ?? 0}
+            </Chip>
           </FilterRow>
           <FilterRow label="Kỹ năng">
             <Chip active={!skill} onClick={() => set('ky-nang', '')}>Tất cả</Chip>
-            {ASSESSED_SKILLS.map((s) => (
-              <Chip key={s} active={skill === s} onClick={() => set('ky-nang', s)}>{ASSESSED_SKILL_LABEL[s]}</Chip>
+            {ASSESSED_SKILLS.map((sk) => (
+              <Chip key={sk} active={skill === sk} onClick={() => set('ky-nang', skill === sk ? '' : sk)}>
+                {ASSESSED_SKILL_LABEL[sk]} · {f?.skill[sk] ?? 0}
+              </Chip>
             ))}
+            <Chip active={skill === 'none'} onClick={() => set('ky-nang', skill === 'none' ? '' : 'none')}>
+              Chưa gắn kỹ năng · {f?.skillNone ?? 0}
+            </Chip>
           </FilterRow>
         </div>
+          {f && Object.keys(f.issueBranch).length > 0 && (
+            <FilterRow label="Cụ thể là">
+              {/*
+                Không phải nút bấm — đây là bức tranh bên trong lựa chọn hiện tại, để đọc
+                "Học sinh 18 › Listening 6" mà không phải bấm thử từng cái.
+              */}
+              <span className="flex flex-wrap gap-1.5 items-baseline">
+                {Object.entries(f.issueBranch)
+                  .sort((a, b) => b[1] - a[1])
+                  .map(([name, n]) => (
+                    <span key={name} className="text-xs text-slate-400">
+                      {name} <span className="tabular-nums text-slate-200">{n}</span>
+                    </span>
+                  ))}
+              </span>
+            </FilterRow>
+          )}
         <SectionNote>
           Ba nhóm ở trên là <strong>nhận định của người ghi</strong>, không phải kết luận của hệ thống.
           Vấn đề sinh từ điểm chỉ biết kỹ năng nào dưới kỳ vọng, nên phần lớn nằm ở “chưa phân loại”
@@ -127,9 +198,9 @@ export default function AcademicPage() {
       {/* ---------------------------------------------- danh sách */}
       <Card
         title={`Vấn đề (${rows.length})`}
-        action={scope === 'open' && closedCount > 0 && !queue
-          ? <button className="btn btn-sm btn-ghost" onClick={() => set('pham-vi', 'all')}>
-              +{closedCount} đã kết thúc
+        action={state
+          ? <button className="btn btn-sm btn-ghost" onClick={() => set('tinh-hinh', '')}>
+              Bỏ lọc {STATE_LABEL[state].toLowerCase()}
             </button>
           : null}
         bodyClass="p-0">
@@ -151,7 +222,10 @@ export default function AcademicPage() {
                 </thead>
                 <tbody>
                   {rows.map((r) => (
-                    <tr key={r.id} className="row-hover cursor-pointer" onClick={() => setOpenCase(r.id)}>
+                    <tr key={r.id}
+                      /* Đã xong thì LÀM MỜ chứ không giấu — vẫn đọc lại được, nhưng không tranh chỗ. */
+                      className={`row-hover cursor-pointer ${r.state === 'done' ? 'opacity-45' : ''}`}
+                      onClick={() => setOpenCase(r.id)}>
                       <td className="td whitespace-nowrap">
                         <span className="text-slate-100">{r.studentName}</span>
                         <div className="text-[10px] text-slate-500">{r.classCode ?? '—'}</div>
@@ -179,7 +253,14 @@ export default function AcademicPage() {
                         )}
                       </td>
                       <td className="td whitespace-nowrap">
-                        <Pill tone={caseStatusTone(r.status)}>{caseStatusLabel(r.status)}</Pill>
+                        {/*
+                          Dùng đúng BA TRẠNG THÁI của ba ô trên, không dùng trạng thái thô
+                          trong database: một case có hai việc đã ghi mà cột này vẫn đề
+                          "Chưa xử lý" thì người đọc chỉ có thể kết luận là số liệu sai.
+                        */}
+                        <Pill tone={r.state === 'done' ? 'muted' : r.state === 'no_plan' ? 'warn' : 'info'}>
+                          {STATE_LABEL[r.state]}
+                        </Pill>
                         {r.sosLevel !== null && (
                           <div className="mt-0.5"><Pill tone={sosTone(r.sosLevel)}>{sosLabel(r.sosLevel)}</Pill></div>
                         )}
@@ -220,12 +301,14 @@ export function CaseRoutePage() {
   );
 }
 
-function QueueTile({ label, value, active, onClick }: {
-  label: string; value: number | undefined; active: boolean; onClick: () => void;
+function QueueTile({ label, value, active, onClick, dim = false }: {
+  label: string; value: number | undefined; active: boolean; onClick: () => void; dim?: boolean;
 }) {
   return (
     <button onClick={onClick}
-      className={`text-left rounded-lg border p-3 transition-colors ${active ? 'bg-[color:var(--accent-soft)]' : 'hover:bg-white/5'}`}
+      /* "Đã xong" làm mờ chứ không giấu: vẫn tra lại được, nhưng không tranh chỗ với việc đang mở. */
+      className={`text-left rounded-lg border p-3 transition-colors ${dim && !active ? 'opacity-50' : ''} ${
+        active ? 'bg-[color:var(--accent-soft)]' : 'hover:bg-white/5'}`}
       style={{ borderColor: active ? 'var(--accent-line)' : 'var(--line)' }}>
       <div className="text-[11px] uppercase tracking-wide text-slate-500 font-semibold">{label}</div>
       <div className="text-2xl tabular-nums text-slate-100 mt-1">{value ?? '—'}</div>

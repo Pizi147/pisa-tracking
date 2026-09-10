@@ -308,6 +308,17 @@ function seedAttempts(conn: any, ctx: {
   const { c, classIdx, cid, sid, cycleId, studentIdx, target, adminId, counts } = ctx;
   if (!c.plan.length) return;
   const recorder = ctx.branchAdmins.get(c.branch)!;
+  /*
+   * VĂN PHÒNG nhập lịch và điểm; NGƯỜI DẠY mới là người ghi phương án hỗ trợ.
+   *
+   * Bản trước để Admin chi nhánh làm người ghi cho mọi thứ, kể cả "Xếp tự học một tháng".
+   * Hậu quả lộ ra ngay ở màn việc: Admin mở lên thấy một danh sách "cập nhật kết quả sau
+   * hỗ trợ" của những việc chuyên môn họ không làm, còn giáo viên thì không thấy gì.
+   */
+  const teacherRecorder = (conn
+    .prepare(`SELECT user_id FROM teacher_assignments
+                WHERE class_id = ? AND is_core = 1 AND status = 'active' ORDER BY id LIMIT 1`)
+    .get(cid) as any)?.user_id ?? recorder;
   const manager = ctx.adminId;
 
   for (const step of c.plan) {
@@ -421,7 +432,8 @@ function seedAttempts(conn: any, ctx: {
       const pattern = CASE_PATTERNS[(classIdx + studentIdx + step.attemptNo) % CASE_PATTERNS.length];
       seedCase(conn, {
         attemptId, sid, cycleId, attemptNo: step.attemptNo, level: Math.min(3, outcome.fails),
-        testDate: String(step.lrwAt ?? step.week).slice(0, 10), pattern, recorder, counts,
+        testDate: String(step.lrwAt ?? step.week).slice(0, 10), pattern,
+        recorder: teacherRecorder, counts,
       });
     }
   }

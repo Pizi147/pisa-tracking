@@ -6,7 +6,7 @@ import {
 } from '../../../shared/domain.ts';
 import { demoToday } from '../demoConfig.ts';
 import { diffDays, formatDateVi } from '../util.ts';
-import { can, scopeFor, type Principal } from '../permissions.ts';
+import { can, scopeFor, teachesClass, type Principal } from '../permissions.ts';
 import { listAttempts } from './attempts.ts';
 
 /**
@@ -317,6 +317,15 @@ export function myWork(p: Principal, f: { branchId?: number | null } = {}) {
     if (c.iv_count > 0 || reviewedCases.has(c.id)) continue;
     // Quyền GHI NHẬN xử lý, không phải quyền xem — việc chỉ hiện với người làm được.
     if (!can(p, PERMISSIONS.SOS_EDIT, { classId: c.eff_class_id, studentId: c.eff_student_id })) continue;
+    /*
+     * ĐỀ XUẤT PHƯƠNG ÁN là việc của người DẠY em, hoặc của Quản lý. Admin chi nhánh ghi hộ
+     * được việc CS gọi phụ huynh nên vẫn có `sos.edit`, nhưng giao cho văn phòng năm dòng
+     * "đề xuất phương án hỗ trợ" là giao một việc họ không có căn cứ chuyên môn để làm —
+     * đúng kiểu danh sách việc mà người nhận chỉ biết bỏ qua.
+     */
+    const mayDecide = teachesClass(p, c.eff_class_id)
+      || can(p, PERMISSIONS.CASE_APPROVE, { classId: c.eff_class_id, studentId: c.eff_student_id });
+    if (!mayDecide) continue;
 
     /*
      * Quá ngưỡng bỏ quên thì gọi thẳng là quá hạn hỗ trợ — không ép ai phải làm ngay,

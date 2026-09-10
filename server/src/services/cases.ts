@@ -1,7 +1,8 @@
 import { db, tx } from '../db.ts';
 import {
   DISPOSITIONS, INTERVENTION_KINDS, INTERVENTION_STATUSES, FOLLOWUP_OUTCOMES,
-  APPROVAL_DUE_DAYS, ISSUE_ROLES, PERMISSIONS, URGENCY_LEVELS, caseHeadline, issueGroupOf, issueLabel,
+  APPROVAL_DUE_DAYS, ISSUE_ROLES, PERMISSIONS, URGENCY_LEVELS, caseHeadline, issueBranchOf,
+  issueGroupOf, issueLabel,
 } from '../../../shared/domain.ts';
 import { addDays, badRequest, isIsoDate, notFound, nowIso } from '../util.ts';
 import { can, isCoreTeacherOf, require_, scopeFor, type Principal } from '../permissions.ts';
@@ -705,6 +706,30 @@ export type CaseFilters = {
  *   due    — đã hẹn xem lại và đã tới hạn
  *   review — mức cao hoặc người báo đánh dấu gấp
  */
+/** Ba trạng thái loại trừ nhau dùng cho màn tổng hợp của Quản lý. */
+export type CaseState = 'no_plan' | 'working' | 'done';
+export const CASE_STATE_LABEL: Record<CaseState, string> = {
+  no_plan: 'Chưa có phương án hỗ trợ',
+  working: 'Đang xử lý',
+  done: 'Đã xong',
+};
+
+/** Một dòng trong danh sách case, sau khi đã dựng xong. */
+export type MappedCase = {
+  id: number; originKind: string;
+  studentId: number | null; studentName: string | null; studentCode: string | null;
+  classId: number | null; classCode: string | null; branchId: number | null;
+  attemptId: number | null; attemptNo: number | null;
+  sosLevel: number | null; urgency: string | null;
+  summary: string | null; headline: string;
+  primaryCode: string | null; primaryLabel: string | null;
+  group: string | null; issueBranch: string | null; skills: string[];
+  status: string; disposition: string | null;
+  detectedAt: string; reporterName: string | null;
+  interventionCount: number; nextDue: string | null; dueOverdue: boolean;
+  state: CaseState;
+};
+
 export function listCases(p: Principal, f: CaseFilters = {}) {
   const scope = scopeFor(p, PERMISSIONS.ATTEMPT_VIEW);
   if (scope.none) return { rows: [], scopeEmpty: true };
@@ -748,7 +773,16 @@ export function listCases(p: Principal, f: CaseFilters = {}) {
     )
     .all(...params) as any[];
 
-  let mapped = rows
+  /* Kỹ năng của một case = kỹ năng của các dòng phân loại. Một case có thể chạm nhiều kỹ năng. */
+  const skillsByCase = new Map<number, string[]>();
+  for (const r of conn
+    .prepare('SELECT case_id, skill FROM case_issues WHERE skill IS NOT NULL').all() as any[]) {
+    const cur = skillsByCase.get(r.case_id) ?? [];
+    if (!cur.includes(r.skill)) cur.push(r.skill);
+    skillsByCase.set(r.case_id, cur);
+  }
+
+  const all: MappedCase[] = rows
     .filter((r) => can(p, PERMISSIONS.ATTEMPT_VIEW, { classId: r.eff_class_id, studentId: r.eff_student_id }))
     .map((r) => ({
       id: r.id,
@@ -764,39 +798,102 @@ export function listCases(p: Principal, f: CaseFilters = {}) {
       primaryCode: r.primary_code,
       primaryLabel: r.primary_code ? issueLabel(r.primary_code) : null,
       group: issueGroupOf(r.primary_code),
-      status: r.status, disposition: r.disposition,
+      /** Nhánh trong bảng phân loại: Listening, Ý thức học tập, Giáo trình… */
+      issueBranch: issueBranchOf(r.primary_code),
+      skills: skillsByCase.get(r.id) ?? [],
+      status: r.status as string,
+      disposition: r.disposition,
       detectedAt: r.detected_at ?? (r.created_at ?? '').slice(0, 10),
       reporterName: r.reporter_name ?? null,
       interventionCount: r.intervention_count as number,
       nextDue: r.next_due as string | null,
       dueOverdue: !!r.next_due && r.next_due < today,
+      /*
+       * BA TRẠNG THÁI LOẠI TRỪ NHAU, cộng lại đúng bằng tổng — khác hẳn bốn hàng đợi ở
+       * dưới (bốn câu hỏi, cố tình chồng nhau). Quản lý cần cả hai cách nhìn: hàng đợi để
+       * biết làm gì trước, ba trạng thái để biết bức tranh chung đang ở đâu.
+       */
+      state: (r.status === 'done' ? 'done'
+        : (!r.disposition && (r.intervention_count as number) === 0) ? 'no_plan'
+        : 'working') as CaseState,
     }));
 
-  if (f.group) mapped = mapped.filter((r) => r.group === f.group);
-  if (f.skill) {
-    const codes = new Set(
-      (conn.prepare('SELECT case_id FROM case_issues WHERE skill = ?').all(f.skill) as any[]).map((x) => x.case_id),
-    );
-    mapped = mapped.filter((r) => codes.has(r.id));
-  }
+  /*
+   * Hàng đợi lọc TRƯỚC, vì nó là câu hỏi đang đặt ra ("cái nào chưa ai làm?"). Nhóm và kỹ
+   * năng là hai chiều đi sâu bên trong câu hỏi đó, nên số đếm ở các chiều ấy phải tính
+   * trong phạm vi hàng đợi đang chọn, không phải trên toàn bộ.
+   */
+  const queued = (list: MappedCase[]) => {
+    switch (f.queue) {
+      // Chưa ai định hướng: không có hướng xử lý và cũng chưa có tác động nào.
+      case 'new':
+        return list.filter((r) => r.status !== 'done' && !r.disposition && r.interventionCount === 0);
+      case 'active':
+        return list.filter((r) => r.status !== 'done' && (!!r.disposition || r.interventionCount > 0));
+      // Tới hạn xem lại: CHỈ khi đã hẹn. Theo dõi không hẹn thì không bao giờ quá hạn.
+      case 'due':
+        return list.filter((r) => r.status !== 'done' && r.dueOverdue);
+      case 'review':
+        return list.filter((r) => r.status !== 'done' && ((r.sosLevel ?? 0) >= 3 || r.urgency === 'urgent'));
+      default:
+        return list;
+    }
+  };
 
-  switch (f.queue) {
-    // Chưa ai định hướng: không có hướng xử lý và cũng chưa có tác động nào.
-    case 'new':
-      mapped = mapped.filter((r) => r.status !== 'done' && !r.disposition && r.interventionCount === 0);
-      break;
-    case 'active':
-      mapped = mapped.filter((r) => r.status !== 'done' && (!!r.disposition || r.interventionCount > 0));
-      break;
-    // Tới hạn xem lại: CHỈ khi đã hẹn. Theo dõi không hẹn thì không bao giờ quá hạn.
-    case 'due':
-      mapped = mapped.filter((r) => r.status !== 'done' && r.dueOverdue);
-      break;
-    case 'review':
-      mapped = mapped.filter((r) => r.status !== 'done' && ((r.sosLevel ?? 0) >= 3 || r.urgency === 'urgent'));
-      break;
-  }
-  return { rows: mapped, scopeEmpty: false };
+  const base = queued(all);
+  let mapped = base;
+  /*
+   * 'none' = CHƯA PHÂN LOẠI, một lựa chọn thật chứ không phải "bỏ trống bộ lọc".
+   * Phần lớn vấn đề sinh từ điểm nằm ở đây cho tới khi có người dạy nhận định, nên không
+   * lọc được vào nó thì con số "Học sinh 3" bên cạnh tổng 23 nhìn như hệ thống đếm sai.
+   */
+  if (f.group === 'none') mapped = mapped.filter((r) => !r.group);
+  else if (f.group) mapped = mapped.filter((r) => r.group === f.group);
+  if (f.skill === 'none') mapped = mapped.filter((r) => r.skills.length === 0);
+  else if (f.skill) mapped = mapped.filter((r) => r.skills.includes(f.skill!));
+
+  return { rows: mapped, scopeEmpty: false, facets: facetsOf(base, f) };
+}
+
+/**
+ * ĐẾM CHO TỪNG LỰA CHỌN LỌC, để nhìn thấy con số TRƯỚC KHI bấm.
+ *
+ * Mỗi chiều được đếm trên tập đã lọc bởi các chiều KHÁC, không phải bởi chính nó — nếu
+ * không thì chọn "Listening" xong mọi kỹ năng khác hiện 0, và người dùng mất luôn đường
+ * đi tiếp. Đây là cách lọc theo mặt (facet) thông thường, và là điều kiện để dòng
+ * "Học sinh 18 › Listening 6" nói đúng sự thật.
+ */
+function facetsOf(base: MappedCase[], f: CaseFilters) {
+  const matchGroup = (r: MappedCase) => (f.group === 'none' ? !r.group : r.group === f.group);
+  const matchSkill = (r: MappedCase) => (f.skill === 'none' ? r.skills.length === 0 : r.skills.includes(f.skill!));
+  const byGroup = f.group ? base.filter(matchGroup) : base;
+  const bySkill = f.skill ? base.filter(matchSkill) : base;
+  const both = f.group ? bySkill.filter(matchGroup) : bySkill;
+
+  const tally = (list: MappedCase[], keys: (r: MappedCase) => (string | null)[]) => {
+    const m: Record<string, number> = {};
+    for (const r of list) for (const k of keys(r)) if (k) m[k] = (m[k] ?? 0) + 1;
+    return m;
+  };
+
+  return {
+    /** Nhóm vấn đề: đếm trên tập đã lọc theo kỹ năng, chưa lọc theo nhóm. */
+    group: tally(bySkill, (r) => [r.group]),
+    /** Kỹ năng: đếm trên tập đã lọc theo nhóm, chưa lọc theo kỹ năng. */
+    skill: tally(byGroup, (r) => r.skills),
+    /** Nhánh phân loại — chi tiết hơn nhóm, ví dụ "Listening" hay "Ý thức học tập". */
+    issueBranch: tally(both, (r) => [r.issueBranch]),
+    branch: tally(base, (r) => [r.branchId ? String(r.branchId) : null]),
+    /** Ba trạng thái loại trừ nhau, cộng lại đúng bằng tổng. */
+    state: tally(both, (r) => [r.state]),
+    /*
+     * CHƯA PHÂN LOẠI đếm riêng, để cộng lại đúng bằng tổng. Bỏ nó đi thì "Học sinh 3" nằm
+     * cạnh danh sách 23 dòng, và người đọc chỉ có thể kết luận là hệ thống đếm sai.
+     */
+    groupNone: bySkill.filter((r) => !r.group).length,
+    skillNone: byGroup.filter((r) => r.skills.length === 0).length,
+    total: both.length,
+  };
 }
 
 /** Đếm cho bốn hàng đợi. Một case có thể thuộc nhiều nhóm — đây là bốn câu hỏi, không phải phép chia. */

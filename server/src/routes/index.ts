@@ -87,6 +87,12 @@ api.get('/demo/session', wrap((req) => {
       mocks: !scopeFor(p, PERMISSIONS.ATTEMPT_VIEW).none,
       students: !scopeFor(p, PERMISSIONS.STUDENT_VIEW).none,
       meeting: !scopeFor(p, PERMISSIONS.MEETING_VIEW).none,
+      /*
+       * Tab "Tình hình chung" của Quản lý: nhìn toàn bộ vấn đề trong phạm vi mình quản.
+       * Cờ riêng chứ không dùng chung với `meeting` — hai màn khác nhau, và sau này ai
+       * được xem cái nào có thể tách ra mà không phải sửa giao diện.
+       */
+      academic: !scopeFor(p, PERMISSIONS.MEETING_VIEW).none,
       admin: can(p, PERMISSIONS.ADMIN_CONFIG, { anyScope: true }),
     },
   };

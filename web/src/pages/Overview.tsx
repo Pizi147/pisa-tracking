@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useApi } from '../lib/useApi.ts';
 import { useSession } from '../lib/session.tsx';
 import { Card, Empty, ErrorState, Info, Level, Skeleton, Task } from '../components/ui.tsx';
 import { BranchFilter } from '../components/Filters.tsx';
 import { fmtDate, skillShort } from '../lib/format.ts';
+import { CaseBoard } from './Academic.tsx';
 
 type WorkItem = {
   key: string; group: string; urgency: 'overdue' | 'today' | 'normal';
@@ -44,6 +45,17 @@ type ClassRow = {
 export default function OverviewPage() {
   const { session } = useSession();
   const navigate = useNavigate();
+  const [params, setParams] = useSearchParams();
+  /*
+   * HAI CÂU HỎI KHÁC NHAU, KHÔNG PHẢI HAI MÀN HÌNH KHÁC NHAU.
+   *   Việc của tôi   — tôi phải làm gì bây giờ?
+   *   Tình hình chung — cả chi nhánh đang thế nào?
+   * Quản lý cần cả hai, nhưng không cần cùng lúc; nhét chung một trang là cách chắc chắn
+   * nhất để việc của mình chìm trong số liệu của người khác. Tab nằm trên URL nên Back
+   * giữ đúng chỗ và gửi đường dẫn cho người khác vẫn ra đúng màn.
+   */
+  const canSeeBoard = !!session?.nav?.academic;
+  const tab = canSeeBoard && params.get('tab') === 'tinh-hinh' ? 'board' : 'work';
   const [branchId, setBranchId] = useState<number | null>(null);
   const { data, loading, error, reload } = useApi<Work>(
     `/my-work${branchId ? `?branchId=${branchId}` : ''}`, [branchId],
@@ -58,15 +70,30 @@ export default function OverviewPage() {
         <div>
           <h1 className="text-lg font-semibold text-slate-100 m-0">Tổng quan</h1>
           <p className="text-xs text-slate-500 mt-0.5 mb-0">
-            Việc của bạn, tính đến {fmtDate(session?.demoDate)}.
+            {tab === 'board'
+              ? 'Toàn bộ vấn đề trong phạm vi bạn được xem — cả vấn đề sinh từ điểm và vấn đề giáo viên báo.'
+              : `Việc của bạn, tính đến ${fmtDate(session?.demoDate)}.`}
           </p>
         </div>
-        <BranchFilter branchId={branchId} onBranch={setBranchId} />
+        {tab === 'work' && <BranchFilter branchId={branchId} onBranch={setBranchId} />}
       </div>
 
-      {loading && <Skeleton rows={8} />}
+      {canSeeBoard && (
+        <div className="flex flex-wrap gap-1 border-b pb-2" style={{ borderColor: 'var(--line)' }}>
+          <TabButton active={tab === 'work'} onClick={() => {
+            const next = new URLSearchParams(params); next.delete('tab'); setParams(next);
+          }}>Việc của tôi</TabButton>
+          <TabButton active={tab === 'board'} onClick={() => {
+            const next = new URLSearchParams(params); next.set('tab', 'tinh-hinh'); setParams(next);
+          }}>Tình hình chung</TabButton>
+        </div>
+      )}
 
-      {data && (data.scopeEmpty || data.summary.total === 0) && (
+      {tab === 'board' && <CaseBoard />}
+
+      {tab === 'work' && loading && <Skeleton rows={8} />}
+
+      {tab === 'work' && data && (data.scopeEmpty || data.summary.total === 0) && (
         <Card>
           <Empty
             title={data.scopeEmpty ? 'Bạn chưa được cấp phạm vi nào' : 'Không có việc nào đang chờ bạn'}
@@ -76,7 +103,7 @@ export default function OverviewPage() {
         </Card>
       )}
 
-      {data && data.summary.total > 0 && (
+      {tab === 'work' && data && data.summary.total > 0 && (
         <div className="space-y-4">
           {/*
             Dải tóm tắt: đếm theo TỪNG LOẠI VIỆC chứ không chỉ một con số tổng, và nằm
@@ -186,5 +213,20 @@ export default function OverviewPage() {
         </div>
       )}
     </div>
+  );
+}
+
+function TabButton({ active, onClick, children }: {
+  active: boolean; onClick: () => void; children: React.ReactNode;
+}) {
+  return (
+    <button type="button" onClick={onClick}
+      className={`px-3 py-1.5 rounded-lg text-sm border transition-colors ${
+        active
+          ? 'bg-[color:var(--accent-soft)] text-[color:var(--accent-strong)] border-[color:var(--accent-line)]'
+          : 'text-slate-300 border-transparent hover:bg-white/5'
+      }`}>
+      {children}
+    </button>
   );
 }
