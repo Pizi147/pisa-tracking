@@ -51,10 +51,13 @@ const MONTHS = [
   'JULY', 'AUGUST', 'SEPTEMBER', 'OCTOBER', 'NOVEMBER', 'DECEMBER',
 ];
 
-/** Có ít nhất một mốc hỗ trợ đã ghi nhận. Ngày trong tương lai là hẹn, chưa phải đã làm. */
+/**
+ * Đã có ít nhất một việc hỗ trợ THỰC SỰ diễn ra, hoặc một lần trao đổi đã xong.
+ * Ngày trong tương lai là hẹn, chưa phải đã làm.
+ */
 function hasSupport(c: any, today: string): boolean {
-  const marks = [c.talk_student_date, c.talk_parent_date, c.academic_start_date, c.ops_date, c.meeting_date];
-  return marks.some((d) => !!d && d <= today) || !!c.acknowledged_at;
+  return (!!c.support_done && c.support_done <= today)
+    || (!!c.contact_done && c.contact_done <= today);
 }
 
 export function weeklyRollup(
@@ -81,13 +84,24 @@ export function weeklyRollup(
       `SELECT a.id, a.status, a.kind, a.attempt_no, a.class_id, a.planned_period_id, a.target_at_attempt,
               c.programme_code,
               rp.id AS period_id, rp.code, rp.week_start, rp.week_end,
-              sc.id AS case_id, sc.sos_level, sc.status AS case_status,
-              sc.talk_student_date, sc.talk_parent_date, sc.academic_start_date, sc.ops_date,
-              sc.meeting_date, sc.acknowledged_at
+              sc.case_id, sc.sos_level, sc.case_status, sc.support_done,
+              ct.contact_done
          FROM assessment_attempts a
          JOIN report_periods rp ON rp.id = a.planned_period_id
          LEFT JOIN classes c ON c.id = a.class_id
-         LEFT JOIN sos_cases sc ON sc.attempt_id = a.id
+         /* Một lượt nay có nhiều vấn đề — gộp lại thành một dòng cho lượt. */
+         LEFT JOIN (
+           SELECT s.attempt_id, MIN(s.id) AS case_id, MAX(s.sos_level) AS sos_level,
+                  MIN(s.status) AS case_status,
+                  MAX((SELECT MAX(COALESCE(i.completed_date, i.started_date))
+                         FROM case_interventions i
+                        WHERE i.case_id = s.id AND i.status != 'cancelled')) AS support_done
+             FROM sos_cases s WHERE s.attempt_id IS NOT NULL GROUP BY s.attempt_id
+         ) sc ON sc.attempt_id = a.id
+         LEFT JOIN (
+           SELECT attempt_id, MAX(done_on) AS contact_done FROM student_contacts
+            WHERE attempt_id IS NOT NULL GROUP BY attempt_id
+         ) ct ON ct.attempt_id = a.id
         WHERE ${where.join(' AND ')} AND a.status != 'cancelled'`,
     )
     .all(...params) as any[];

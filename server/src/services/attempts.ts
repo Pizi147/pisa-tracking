@@ -82,27 +82,32 @@ export function loadBundle(attemptIds: number[]): AttemptBundle {
     }
     for (const r of conn
       .prepare(
-        `SELECT c.id, c.attempt_id, c.status, c.sos_level, c.acknowledged_at,
-                c.talk_student_date, c.talk_parent_date, c.academic_start_date, c.meeting_date,
-                u.full_name AS ack_name
-           FROM sos_cases c LEFT JOIN users u ON u.id = c.acknowledged_by
-          WHERE c.attempt_id IN (${ph})`,
+        /*
+         * Một lượt nay sinh NHIỀU vấn đề (mỗi kỹ năng một cái), nên gộp lại thành một dòng
+         * tóm tắt cho lượt: mức cao nhất, và mốc mới nhất đã thực sự xảy ra.
+         */
+        `SELECT c.attempt_id, MIN(c.id) AS id,
+                MAX(c.sos_level) AS sos_level,
+                MIN(CASE c.status WHEN 'open' THEN 0 WHEN 'in_progress' THEN 1 ELSE 2 END) AS st,
+                MAX(iv.done_on) AS last_done
+           FROM sos_cases c
+           LEFT JOIN (
+             SELECT case_id, MAX(COALESCE(completed_date, started_date)) AS done_on
+               FROM case_interventions WHERE status != 'cancelled' GROUP BY case_id
+           ) iv ON iv.case_id = c.id
+          WHERE c.attempt_id IN (${ph})
+          GROUP BY c.attempt_id`,
       )
       .all(...chunk) as any[]) {
       /*
-       * Người dùng phải nhìn một case là biết đã được làm hay chưa. Ưu tiên mốc mới nhất
-       * đã thực sự xảy ra; không có gì thì nói thẳng "chưa có follow-up".
+       * Người dùng phải nhìn một lượt là biết đã được làm hay chưa. Mốc là lần hỗ trợ gần
+       * nhất đã thực sự xảy ra; không có gì thì nói thẳng "chưa có follow-up".
        */
-      const marks: [string, string | null][] = [
-        ['Đã nhận', r.acknowledged_at], ['Đã trao đổi HS', r.talk_student_date],
-        ['Đã trao đổi PH', r.talk_parent_date], ['Đã vào hỗ trợ', r.academic_start_date],
-        ['Đã họp', r.meeting_date],
-      ];
-      const latest = marks.filter(([, d]) => !!d).sort((a, b) => (b[1]! > a[1]! ? 1 : -1))[0];
+      const status = r.st === 0 ? 'open' : r.st === 1 ? 'in_progress' : 'done';
       bundle.cases.set(r.attempt_id, {
-        id: r.id, status: r.status, sos_level: r.sos_level,
-        followUp: latest
-          ? `${latest[0]}${latest[0] === 'Đã nhận' && r.ack_name ? ` (${r.ack_name})` : ''} · ${latest[1]!.slice(8, 10)}/${latest[1]!.slice(5, 7)}`
+        id: r.id, status, sos_level: r.sos_level,
+        followUp: r.last_done
+          ? `Đã hỗ trợ · ${String(r.last_done).slice(8, 10)}/${String(r.last_done).slice(5, 7)}`
           : null,
       });
     }
@@ -422,9 +427,11 @@ export function attemptDetail(p: Principal, attemptId: number) {
     .all(attemptId) as any[];
   const sos = conn
     .prepare(
-      `SELECT sc.*, u.full_name AS coordinator_name, hu.full_name AS head_name
-         FROM sos_cases sc LEFT JOIN users u ON u.id = sc.coordinator_user_id
-         LEFT JOIN users hu ON hu.id = sc.head_confirmed_by WHERE sc.attempt_id = ?`,
+      /* Một lượt có nhiều vấn đề; màn chi tiết lấy cái nặng nhất làm đại diện. */
+      `SELECT sc.*, hu.full_name AS head_name
+         FROM sos_cases sc
+         LEFT JOIN users hu ON hu.id = sc.head_confirmed_by WHERE sc.attempt_id = ?
+        ORDER BY COALESCE(sc.sos_level, 0) DESC, sc.id LIMIT 1`,
     )
     .get(attemptId) as any;
   const caseHistory = sos

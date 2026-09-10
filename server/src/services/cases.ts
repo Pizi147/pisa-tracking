@@ -1,8 +1,9 @@
 import { db, tx } from '../db.ts';
 import {
   DISPOSITIONS, INTERVENTION_KINDS, INTERVENTION_STATUSES, FOLLOWUP_OUTCOMES,
-  APPROVAL_DUE_DAYS, ISSUE_ROLES, PERMISSIONS, URGENCY_LEVELS, caseHeadline, issueBranchOf,
-  issueGroupOf, issueLabel,
+  BEHAVIOUR_TOPICS, ENTRY_SKILLS, ISSUE_ROLES, PERMISSIONS, THREAD_TRACKS,
+  URGENCY_LEVELS, caseHeadline, dueDaysFor, isProposalKind, issueBranchOf, issueLabel,
+  threadTopicLabel, urgencyFromSos,
 } from '../../../shared/domain.ts';
 import { addDays, badRequest, isIsoDate, notFound, nowIso } from '../util.ts';
 import { can, isCoreTeacherOf, require_, scopeFor, type Principal } from '../permissions.ts';
@@ -66,10 +67,13 @@ export function reportIssue(p: Principal, input: {
   cycleId?: number | null;
   summary: string;
   urgency?: string;
+  /** Học thuật hay Ý thức — hai đầu mục, không hơn. */
+  track?: string;
+  /** Học thuật: một trong năm ô L·R·W1·W2·S. Ý thức: một trong bốn nhóm. */
+  topic?: string | null;
   primaryCode?: string | null;
   secondaryCodes?: string[];
-  contextCodes?: string[];
-  skill?: string | null;
+  note?: string | null;
   observation?: string | null;
   detectedAt?: string | null;
   idempotencyKey?: string;
@@ -93,6 +97,21 @@ export function reportIssue(p: Principal, input: {
 
   const summary = (input.summary ?? '').trim();
   if (!summary) throw badRequest('Cần một câu mô tả vấn đề.');
+
+  /*
+   * MỌI VẤN ĐỀ PHẢI CÓ CHỖ CẤT. Không có đầu mục và chủ đề thì nó rơi vào "chưa phân loại"
+   * và biến mất khỏi mọi bảng tổng hợp theo kỹ năng — đúng thứ vòng 3 sinh ra để sửa.
+   */
+  const track = (THREAD_TRACKS as readonly string[]).includes(input.track ?? '')
+    ? input.track! : 'academic';
+  const topics: readonly string[] = track === 'behaviour' ? BEHAVIOUR_TOPICS : ENTRY_SKILLS;
+  const topic = (input.topic ?? '').trim() || null;
+  if (!topic) {
+    throw badRequest(track === 'behaviour'
+      ? 'Hãy chọn nhóm ý thức: chuyên cần, BTVN, tham gia trên lớp hay khác.'
+      : 'Hãy chọn kỹ năng: Listening, Reading, Writing Task 1, Writing Task 2 hay Speaking.');
+  }
+  if (!topics.includes(topic)) throw badRequest(`Chủ đề không hợp lệ: ${topic}`);
   const urgency = input.urgency && (URGENCY_LEVELS as readonly string[]).includes(input.urgency)
     ? input.urgency : 'normal';
   const detectedAt = input.detectedAt ?? demoToday();
@@ -114,14 +133,16 @@ export function reportIssue(p: Principal, input: {
   return tx(() => {
     const info = conn
       .prepare(
-        `INSERT INTO sos_cases (attempt_id, student_id, cycle_id, origin_kind, detected_at, reported_by,
-                                summary, urgency, sos_level, status, idempotency_key, created_at)
-         VALUES (NULL, ?,?, 'teacher_report', ?,?,?,?, NULL, 'open', ?, ?)`,
+        `INSERT INTO sos_cases (attempt_id, student_id, cycle_id, track, topic, origin_kind,
+                                detected_at, reported_by, summary, urgency, sos_level, status,
+                                note, idempotency_key, created_at)
+         VALUES (NULL, ?,?,?,?, 'teacher_report', ?,?,?,?, NULL, 'open', ?,?,?)`,
       )
-      .run(input.studentId, cycle?.id ?? null, detectedAt, p.userId, summary, urgency, key, nowIso());
+      .run(input.studentId, cycle?.id ?? null, track, topic, detectedAt, p.userId, summary, urgency,
+           (input.note ?? '').trim() || null, key, nowIso());
     const caseId = Number(info.lastInsertRowid);
 
-    addIssues(caseId, p.userId, input);
+    addIssues(caseId, p.userId, { ...input, topic });
 
     addJourney({
       studentId: input.studentId, cycleId: cycle?.id ?? null,
@@ -140,41 +161,51 @@ export function reportIssue(p: Principal, input: {
   });
 }
 
+/**
+ * Phân loại NGUYÊN NHÂN bên trong một vấn đề. Chủ đề (kỹ năng / nhóm ý thức) nằm ở chính
+ * bản ghi vấn đề; ở đây chỉ nói VÌ SAO, và đó là nhận định của người dạy.
+ *
+ * "Hoàn cảnh kèm theo" đã bỏ (owner chốt 10/09/2026) — thay bằng ô Ghi chú của vấn đề.
+ */
 function addIssues(caseId: number, actor: number | null, input: {
-  primaryCode?: string | null; secondaryCodes?: string[]; contextCodes?: string[];
-  skill?: string | null; observation?: string | null;
+  primaryCode?: string | null; secondaryCodes?: string[];
+  topic?: string | null; observation?: string | null;
 }) {
   const conn = db();
-  const add = (code: string, role: string, skill?: string | null, obs?: string | null) => {
+  const add = (code: string, role: string, obs?: string | null) => {
     if (!code) return;
     conn
       .prepare(
         `INSERT INTO case_issues (case_id, role, taxonomy_code, taxonomy_version, skill, observation, created_by, created_at)
          VALUES (?,?,?,1,?,?,?,?)`,
       )
-      .run(caseId, role, code, skill ?? null, obs ?? null, actor, nowIso());
+      .run(caseId, role, code, input.topic ?? null, obs ?? null, actor, nowIso());
   };
-  if (input.primaryCode) add(input.primaryCode, 'primary', input.skill, input.observation);
-  for (const c of input.secondaryCodes ?? []) add(c, 'secondary', input.skill, null);
-  for (const c of input.contextCodes ?? []) add(c, 'context', null, null);
+  if (input.primaryCode) add(input.primaryCode, 'primary', input.observation);
+  for (const c of input.secondaryCodes ?? []) add(c, 'secondary', null);
 }
 
 /** Sửa phân loại vấn đề. Tối đa MỘT vấn đề chính — nhận định đổi được, có lịch sử. */
 export function setIssues(p: Principal, caseId: number, input: {
-  primaryCode?: string | null; secondaryCodes?: string[]; contextCodes?: string[];
-  skill?: string | null; observation?: string | null;
+  primaryCode?: string | null; secondaryCodes?: string[];
+  observation?: string | null; note?: string | null;
 }) {
   const conn = db();
   const c = loadCase(caseId);
   require_(p, PERMISSIONS.SOS_EDIT, { classId: c.class_id, studentId: c.eff_student_id },
     'Bạn không có quyền phân loại vấn đề cho case này.');
-  for (const code of [input.primaryCode, ...(input.secondaryCodes ?? []), ...(input.contextCodes ?? [])]) {
-    if (code && !issueGroupOf(code)) throw badRequest(`Mã vấn đề không hợp lệ: ${code}`);
+  for (const code of [input.primaryCode, ...(input.secondaryCodes ?? [])]) {
+    if (code && !issueBranchOf(code)) throw badRequest(`Mã vấn đề không hợp lệ: ${code}`);
   }
   return tx(() => {
     const before = conn.prepare('SELECT * FROM case_issues WHERE case_id = ?').all(caseId);
     conn.prepare('DELETE FROM case_issues WHERE case_id = ?').run(caseId);
-    addIssues(caseId, p.userId, input);
+    // Chủ đề lấy từ chính bản ghi vấn đề — người phân loại không đổi được kỹ năng ở đây.
+    addIssues(caseId, p.userId, { ...input, topic: c.topic });
+    if (input.note !== undefined) {
+      conn.prepare('UPDATE sos_cases SET note = ?, updated_at = ? WHERE id = ?')
+        .run((input.note ?? '').trim() || null, nowIso(), caseId);
+    }
     const after = conn.prepare('SELECT * FROM case_issues WHERE case_id = ?').all(caseId);
     writeAudit({ actorUserId: p.userId, action: 'case.classify', entityType: 'sos_case', entityId: caseId,
       entityLabel: `Case ${caseId}`, before, after });
@@ -272,7 +303,12 @@ export function recordIntervention(p: Principal, caseId: number, input: {
    * ghi luôn là "đã xong" trong lúc còn chờ thì sau này không ai biết Quản lý có đồng ý hay
    * không, và dấu vết ai chậm ở khâu nào cũng mất.
    */
-  if (input.needsApproval && status !== 'planned') {
+  /*
+   * Chọn một loại trong nhóm ĐỀ XUẤT tức là đang xin ý kiến — không phải tick thêm gì.
+   * Nhờ vậy ô "cần Quản lý duyệt" chỉ còn hiện ở nhóm phương án giáo viên tự làm được.
+   */
+  const needsApproval = !!input.needsApproval || isProposalKind(input.kind);
+  if (needsApproval && status !== 'planned') {
     throw badRequest('Phương án cần Quản lý duyệt thì để ở "đã lên kế hoạch", chưa ghi là đã làm.');
   }
   const performerUserId = input.performerUserId
@@ -283,12 +319,12 @@ export function recordIntervention(p: Principal, caseId: number, input: {
 
   return tx(() => {
     /*
-     * Hạn Quản lý phải trả lời: case nặng thì gấp hơn. Quá hạn KHÔNG chặn gì cả — nó chỉ
-     * nổi lên màn của Quản lý để một đề xuất không nằm im mãi.
+     * Hạn Quản lý phải trả lời suy thẳng từ mức gấp của vấn đề: 7 · 5 · 3 ngày. Cùng một
+     * bảng với hạn xử lý vấn đề, nên không ai phải nhớ hai thang. Quá hạn KHÔNG chặn gì cả
+     * — nó chỉ nổi lên màn của Quản lý để một đề xuất không nằm im mãi.
      */
-    const hot = (c.sos_level ?? 0) >= 3 || c.urgency === 'urgent';
-    const approvalDue = input.needsApproval
-      ? addDays(demoToday(), hot ? APPROVAL_DUE_DAYS.urgent : APPROVAL_DUE_DAYS.normal)
+    const approvalDue = needsApproval
+      ? addDays(demoToday(), dueDaysFor(c.urgency, c.sos_level))
       : null;
 
     const info = conn
@@ -302,7 +338,7 @@ export function recordIntervention(p: Principal, caseId: number, input: {
            performerUserId, input.performerName?.trim() || null, p.userId, status,
            input.plannedDate ?? null, input.startedDate ?? null, input.completedDate ?? null,
            input.followupDue ?? null,
-           input.needsApproval ? 1 : 0, input.needsApproval ? 'pending' : null, approvalDue, nowIso());
+           needsApproval ? 1 : 0, needsApproval ? 'pending' : null, approvalDue, nowIso());
     const id = Number(info.lastInsertRowid);
 
     /*
@@ -311,7 +347,7 @@ export function recordIntervention(p: Principal, caseId: number, input: {
      * Cần duyệt thì đây là việc phải làm; không cần duyệt thì vẫn là tin đáng biết — Quản lý
      * nắm được giáo viên đang xoay xở thế nào mà không phải đi hỏi từng người.
      */
-    notifyManagers(c, input.needsApproval ? 'approval' : 'plan', input.description ?? input.kind, id, p.userId);
+    notifyManagers(c, needsApproval ? 'approval' : 'plan', input.description ?? input.kind, id, p.userId);
 
     // Có tác động thì case chuyển sang đang xử lý — trừ khi đã đóng.
     if (c.status === 'open') {
@@ -591,7 +627,7 @@ export function caseDetail(p: Principal, caseId: number) {
     .all(caseId) as any[])
     .map((i) => ({
       id: i.id, role: i.role, code: i.taxonomy_code, label: issueLabel(i.taxonomy_code),
-      group: issueGroupOf(i.taxonomy_code), skill: i.skill, observation: i.observation,
+      branch: issueBranchOf(i.taxonomy_code), skill: i.skill, observation: i.observation,
       byName: i.by_name ?? null,
     }));
 
@@ -656,9 +692,19 @@ export function caseDetail(p: Principal, caseId: number) {
     cycle,
     classId: c.class_id,
     attemptId: c.attempt_id, attemptNo: c.attempt_no ?? null,
-    /** Số kỹ năng dưới kỳ vọng. NULL với case giáo viên báo — không phải SOS 0. */
+    /** Hai đầu mục và chủ đề — mọi vấn đề đều phải có chỗ cất. */
+    track: (c.track ?? 'academic') as string,
+    topic: c.topic as string | null,
+    topicLabel: c.topic ? threadTopicLabel((c.track ?? 'academic') as any, c.topic) : null,
+    /** Số kỹ năng dưới kỳ vọng của CẢ LƯỢT. NULL với vấn đề giáo viên báo — không phải SOS 0. */
     sosLevel: c.sos_level,
-    urgency: c.urgency,
+    /**
+     * Mức gấp. Vấn đề sinh từ điểm không ghi mức vào database (hai thang cố tình tách nhau);
+     * suy từ SOS lúc hiển thị, và hạn xử lý suy tiếp từ mức đó: 7 · 5 · 3 ngày.
+     */
+    urgency: c.urgency ?? (c.sos_level !== null ? urgencyFromSos(c.sos_level) : null),
+    dueDays: dueDaysFor(c.urgency, c.sos_level),
+    note: c.note,
     summary: c.summary,
     headline: caseHeadline({
       summary: c.summary, originKind: c.origin_kind, sosLevel: c.sos_level, attemptNo: c.attempt_no ?? null,
@@ -723,7 +769,7 @@ export type MappedCase = {
   sosLevel: number | null; urgency: string | null;
   summary: string | null; headline: string;
   primaryCode: string | null; primaryLabel: string | null;
-  group: string | null; issueBranch: string | null; skills: string[];
+  track: string; topic: string | null; topicLabel: string | null; issueBranch: string | null;
   status: string; disposition: string | null;
   detectedAt: string; reporterName: string | null;
   interventionCount: number; nextDue: string | null; dueOverdue: boolean;
@@ -797,10 +843,13 @@ export function listCases(p: Principal, f: CaseFilters = {}) {
       }),
       primaryCode: r.primary_code,
       primaryLabel: r.primary_code ? issueLabel(r.primary_code) : null,
-      group: issueGroupOf(r.primary_code),
-      /** Nhánh trong bảng phân loại: Listening, Ý thức học tập, Giáo trình… */
+      /** Hai đầu mục: Học thuật hay Ý thức. */
+      track: (r.track ?? 'academic') as string,
+      /** Chủ đề: một trong năm ô L·R·W1·W2·S, hoặc một trong bốn nhóm ý thức. */
+      topic: r.topic as string | null,
+      topicLabel: r.topic ? threadTopicLabel((r.track ?? 'academic') as any, r.topic) : null,
+      /** Nhánh phân loại nguyên nhân, khi đã có người dạy nhận định. */
       issueBranch: issueBranchOf(r.primary_code),
-      skills: skillsByCase.get(r.id) ?? [],
       status: r.status as string,
       disposition: r.disposition,
       detectedAt: r.detected_at ?? (r.created_at ?? '').slice(0, 10),
@@ -843,14 +892,13 @@ export function listCases(p: Principal, f: CaseFilters = {}) {
   const base = queued(all);
   let mapped = base;
   /*
-   * 'none' = CHƯA PHÂN LOẠI, một lựa chọn thật chứ không phải "bỏ trống bộ lọc".
-   * Phần lớn vấn đề sinh từ điểm nằm ở đây cho tới khi có người dạy nhận định, nên không
-   * lọc được vào nó thì con số "Học sinh 3" bên cạnh tổng 23 nhìn như hệ thống đếm sai.
+   * `group` nay là ĐẦU MỤC (Học thuật / Ý thức), `skill` là CHỦ ĐỀ (một trong năm ô kỹ năng
+   * hoặc một trong bốn nhóm ý thức). 'none' cho chủ đề = vấn đề cũ chưa gắn được kỹ năng —
+   * một lựa chọn thật, để các số cộng lại đúng bằng tổng.
    */
-  if (f.group === 'none') mapped = mapped.filter((r) => !r.group);
-  else if (f.group) mapped = mapped.filter((r) => r.group === f.group);
-  if (f.skill === 'none') mapped = mapped.filter((r) => r.skills.length === 0);
-  else if (f.skill) mapped = mapped.filter((r) => r.skills.includes(f.skill!));
+  if (f.group) mapped = mapped.filter((r) => r.track === f.group);
+  if (f.skill === 'none') mapped = mapped.filter((r) => !r.topic);
+  else if (f.skill) mapped = mapped.filter((r) => r.topic === f.skill);
 
   return { rows: mapped, scopeEmpty: false, facets: facetsOf(base, f) };
 }
@@ -864,34 +912,37 @@ export function listCases(p: Principal, f: CaseFilters = {}) {
  * "Học sinh 18 › Listening 6" nói đúng sự thật.
  */
 function facetsOf(base: MappedCase[], f: CaseFilters) {
-  const matchGroup = (r: MappedCase) => (f.group === 'none' ? !r.group : r.group === f.group);
-  const matchSkill = (r: MappedCase) => (f.skill === 'none' ? r.skills.length === 0 : r.skills.includes(f.skill!));
-  const byGroup = f.group ? base.filter(matchGroup) : base;
-  const bySkill = f.skill ? base.filter(matchSkill) : base;
-  const both = f.group ? bySkill.filter(matchGroup) : bySkill;
+  const byTrack = f.group ? base.filter((r) => r.track === f.group) : base;
+  const matchTopic = (r: MappedCase) => (f.skill === 'none' ? !r.topic : r.topic === f.skill);
+  const byTopic = f.skill ? base.filter(matchTopic) : base;
+  const both = f.group ? byTopic.filter((r) => r.track === f.group) : byTopic;
 
-  const tally = (list: MappedCase[], keys: (r: MappedCase) => (string | null)[]) => {
+  const tally = (list: MappedCase[], key: (r: MappedCase) => string | null) => {
     const m: Record<string, number> = {};
-    for (const r of list) for (const k of keys(r)) if (k) m[k] = (m[k] ?? 0) + 1;
+    for (const r of list) { const k = key(r); if (k) m[k] = (m[k] ?? 0) + 1; }
     return m;
   };
 
   return {
-    /** Nhóm vấn đề: đếm trên tập đã lọc theo kỹ năng, chưa lọc theo nhóm. */
-    group: tally(bySkill, (r) => [r.group]),
-    /** Kỹ năng: đếm trên tập đã lọc theo nhóm, chưa lọc theo kỹ năng. */
-    skill: tally(byGroup, (r) => r.skills),
-    /** Nhánh phân loại — chi tiết hơn nhóm, ví dụ "Listening" hay "Ý thức học tập". */
-    issueBranch: tally(both, (r) => [r.issueBranch]),
-    branch: tally(base, (r) => [r.branchId ? String(r.branchId) : null]),
-    /** Ba trạng thái loại trừ nhau, cộng lại đúng bằng tổng. */
-    state: tally(both, (r) => [r.state]),
+    /** Hai đầu mục: đếm trên tập đã lọc theo chủ đề, chưa lọc theo đầu mục. */
+    group: tally(byTopic, (r) => r.track),
+    /** Chủ đề: đếm trên tập đã lọc theo đầu mục, chưa lọc theo chủ đề. */
+    skill: tally(byTrack, (r) => r.topic),
     /*
-     * CHƯA PHÂN LOẠI đếm riêng, để cộng lại đúng bằng tổng. Bỏ nó đi thì "Học sinh 3" nằm
-     * cạnh danh sách 23 dòng, và người đọc chỉ có thể kết luận là hệ thống đếm sai.
+     * NGUYÊN NHÂN đã được người dạy nhận định. Trước đây đếm theo NHÁNH phân loại, nhưng
+     * nhánh nay trùng với chính chủ đề (Listening → Listening), nên dòng đó chỉ lặp lại
+     * hàng chip ở trên. Đếm theo mã nguyên nhân mới nói thêm được điều gì.
      */
-    groupNone: bySkill.filter((r) => !r.group).length,
-    skillNone: byGroup.filter((r) => r.skills.length === 0).length,
+    issueBranch: tally(both, (r) => r.primaryCode),
+    branch: tally(base, (r) => (r.branchId ? String(r.branchId) : null)),
+    /** Ba trạng thái loại trừ nhau, cộng lại đúng bằng tổng. */
+    state: tally(both, (r) => r.state),
+    /*
+     * Vấn đề cũ CHƯA GẮN ĐƯỢC KỸ NĂNG đếm riêng, để các số cộng lại đúng bằng tổng. Bước
+     * nâng cấp cố ý không đoán bừa kỹ năng cho những case trượt từ hai kỹ năng trở lên.
+     */
+    groupNone: 0,
+    skillNone: byTrack.filter((r) => !r.topic).length,
     total: both.length,
   };
 }

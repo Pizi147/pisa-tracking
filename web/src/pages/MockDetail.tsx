@@ -577,8 +577,14 @@ const actionLabel = (a: string) =>
     deadline_set: 'Đặt hạn riêng', deadline_cleared: 'Bỏ hạn riêng',
   }[a] ?? a);
 
+/*
+ * Nhãn cho cột `field` của lịch sử vấn đề. Những tên cũ (trao đổi HS/PH, chính sách vận
+ * hành…) GIỮ LẠI dù các cột đó đã bỏ: các dòng lịch sử ghi từ trước vẫn còn, và đọc lại
+ * thấy "talk_parent_date" thì không ai hiểu.
+ */
 const fieldLabel = (f: string) =>
   ({
+    track: 'Đầu mục', topic: 'Kỹ năng',
     sos_level: 'Mức SOS', status: 'Trạng thái', talk_student_person: 'Người trao đổi HS',
     talk_student_date: 'Ngày trao đổi HS', talk_parent_person: 'Người trao đổi PH',
     talk_parent_date: 'Ngày trao đổi PH', academic_support: 'Hỗ trợ học thuật',

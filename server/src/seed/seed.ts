@@ -1,6 +1,6 @@
 import { db, recreateSchema, tx } from '../db.ts';
 import {
-  BRANCH_REPORT_CATEGORIES, ENTRY_SKILLS, PERMISSION_LABEL, PROGRAMME_TEMPLATES,
+  BRANCH_REPORT_CATEGORIES, CONTACT_KINDS, ENTRY_SKILLS, PERMISSION_LABEL, PROGRAMME_TEMPLATES,
   TUTOR_REPORT_CATEGORIES, programmeOf,
   type EntrySkill,
 } from '../../../shared/domain.ts';
@@ -383,6 +383,8 @@ function seedAttempts(conn: any, ctx: {
 
     const bandOf = (assessed: string) =>
       failing.has(assessed as any) ? Math.max(1, expectation - 0.5) : expectation + (studentIdx % 2 === 0 ? 0.5 : 0);
+    /* Band từng Ô NHẬP, để suy ra đúng những ô dưới kỳ vọng — W1 và W2 so riêng. */
+    const entryBand: Record<string, number> = {};
 
     for (const skill of ENTRY_SKILLS) {
       const assessed = skill === 'writing1' || skill === 'writing2' ? 'writing' : skill;
@@ -412,10 +414,23 @@ function seedAttempts(conn: any, ctx: {
              VALUES (?,?,?,?,40,?,?,?,?)`,
           )
           .run(attemptId, skill, takenOn, raw, realBand, resultDate, recorder, NOW);
+        entryBand[skill] = realBand;
       } else {
         const target2 = bandOf(skill === 'speaking' ? 'speaking' : 'writing');
-        // Band Writing = (W1 + W2×2)/3: đặt W1 cao hơn nửa band vẫn ra đúng band mục tiêu.
-        const band = skill === 'writing1' ? Math.min(9, target2 + 0.5) : target2;
+        /*
+         * Band Writing = (W1 + W2×2)/3, nên có nhiều cặp W1/W2 cùng cho ra một band. Dùng
+         * điều đó để tạo CẢ HAI CHIỀU yếu: đa số em yếu Task 2, một phần ba yếu Task 1.
+         *
+         * Bản trước luôn đặt W1 cao hơn W2 đúng nửa band, nên W1 KHÔNG BAO GIỜ dưới kỳ vọng
+         * — và từ vòng 3, khi Học thuật tách W1/W2 thành hai ô riêng, ô W1 sẽ trống trơn và
+         * không ai kiểm chứng được nó có chạy hay không.
+         *
+         * Cặp (W1 = t−0.5, W2 = t+0.5) và cặp (W1 = t+0.5, W2 = t) đều cho band gộp bằng t.
+         */
+        const weakTask1 = studentIdx % 3 === 0;
+        const band = weakTask1
+          ? (skill === 'writing1' ? Math.max(1, target2 - 0.5) : Math.min(9, target2 + 0.5))
+          : (skill === 'writing1' ? Math.min(9, target2 + 0.5) : target2);
         const crit = criteriaFor(band);
         conn
           .prepare(
@@ -424,17 +439,28 @@ function seedAttempts(conn: any, ctx: {
           )
           .run(attemptId, skill, takenOn, crit[0], crit[1], crit[2], crit[3],
                roundToHalf((crit[0] + crit[1] + crit[2] + crit[3]) / 4), resultDate, recorder, NOW);
+        entryBand[skill] = roundToHalf((crit[0] + crit[1] + crit[2] + crit[3]) / 4);
       }
       counts.scores += 1;
     }
 
-    if (missing.size === 0 && performedOnly.size === 0 && outcome.fails > 0) {
+    /*
+     * Ô nào dưới kỳ vọng thì sinh một vấn đề cho CHÍNH ô đó — W1 và W2 tách riêng, đúng
+     * như lúc chạy thật. Mức SOS vẫn đếm trên bốn kỹ năng có band, nên số vấn đề và mức
+     * SOS là hai con số khác nhau và không cộng khớp; đó là chủ ý.
+     */
+    const failingEntry = ENTRY_SKILLS.filter((k) => entryBand[k] !== undefined && entryBand[k] < expectation);
+    if (missing.size === 0 && performedOnly.size === 0 && failingEntry.length > 0) {
       const pattern = CASE_PATTERNS[(classIdx + studentIdx + step.attemptNo) % CASE_PATTERNS.length];
-      seedCase(conn, {
-        attemptId, sid, cycleId, attemptNo: step.attemptNo, level: Math.min(3, outcome.fails),
-        testDate: String(step.lrwAt ?? step.week).slice(0, 10), pattern,
-        recorder: teacherRecorder, counts,
-      });
+      const testDate = String(step.lrwAt ?? step.week).slice(0, 10);
+      const level = Math.min(3, outcome.fails) || 1;
+      for (const topic of failingEntry) {
+        seedCase(conn, {
+          attemptId, sid, cycleId, attemptNo: step.attemptNo, level, topic,
+          testDate, pattern, recorder: teacherRecorder, counts,
+        });
+      }
+      seedContacts(conn, { attemptId, sid, cycleId, testDate, level, gvcn: teacherRecorder, counts });
     }
   }
 }
@@ -494,11 +520,48 @@ function seedCheckins(conn: any, o: {
   }
 }
 
+/** Chữ gọn để ghép vào mô tả phương án: "Xếp tự học Listening đến lúc thi". */
+const SKILL_WORD: Record<string, string> = {
+  listening: 'Listening', reading: 'Reading',
+  writing1: 'Writing Task 1', writing2: 'Writing Task 2', speaking: 'Speaking',
+};
+
+/**
+ * HAI VIỆC TRAO ĐỔI BẮT BUỘC — một bộ cho mỗi LƯỢT, không phải mỗi kỹ năng.
+ * Hạn: hết Chủ nhật của tuần kế tiếp tuần làm bài. Một phần đã làm, một phần còn treo, để
+ * màn việc có cả hai trạng thái thật.
+ */
+function seedContacts(conn: any, o: {
+  attemptId: number; sid: number; cycleId: number | null; testDate: string; level: number;
+  gvcn: number; counts: { cases: number };
+}) {
+  const due = addDays(mondayOf(o.testDate), 13);
+  const donePart = (o.attemptId + o.level) % 3;      // 0 = xong cả hai, 1 = xong một, 2 = chưa
+  for (const [i, kind] of CONTACT_KINDS.entries()) {
+    const done = donePart === 0 || (donePart === 1 && i === 0);
+    conn
+      .prepare(
+        `INSERT INTO student_contacts (student_id, cycle_id, attempt_id, kind, due_date, done_on,
+                                       done_by, performer_name, note, auto, created_at)
+         VALUES (?,?,?,?,?,?,?,?,?, 1, ?)
+         ON CONFLICT(attempt_id, kind) WHERE auto = 1 DO NOTHING`,
+      )
+      .run(o.sid, o.cycleId, o.attemptId, kind, due,
+           done ? addDays(o.testDate, 5 + i) : null,
+           done && kind === 'talk_student' ? o.gvcn : null,
+           done && kind === 'talk_parent' ? 'Chị Hương (CS)' : null,
+           done ? (kind === 'talk_student' ? 'Em nhận là chưa ôn kỹ' : 'PH nắm được tình hình') : null,
+           NOW);
+  }
+}
+
 const TEACHER_HANDLERS = ['GVCN Thu Trang', 'GVBM Minh Khoa', 'GVCN Bảo Nam', 'GVBM Gia Hân', 'GVCN Quang Duy'];
 const CS_HANDLERS = ['CS Ngọc Diệp', 'CS Hải Yến', 'CS Thanh Vân', 'CS Bảo Ngân'];
 
 function seedCase(conn: any, o: {
   attemptId: number; sid: number; cycleId: number | null; attemptNo: number; level: number; testDate: string;
+  /** Ô nhập điểm dưới kỳ vọng — mỗi ô một vấn đề riêng. */
+  topic: string;
   pattern: CasePattern; recorder: number;
   counts: { students: number; attempts: number; scores: number; cases: number };
 }) {
@@ -520,12 +583,12 @@ function seedCase(conn: any, o: {
 
   const info = conn
     .prepare(
-      `INSERT INTO sos_cases (attempt_id, student_id, cycle_id, origin_kind, detected_at,
-                              sos_level, status, disposition, disposition_note,
+      `INSERT INTO sos_cases (attempt_id, student_id, cycle_id, track, topic, origin_kind,
+                              detected_at, sos_level, status, disposition, disposition_note,
                               closed_by, closed_at, created_at)
-       VALUES (?,?,?, 'mock', ?,?,?,?,?,?,?,?)`,
+       VALUES (?,?,?, 'academic', ?, 'mock', ?,?,?,?,?,?,?,?)`,
     )
-    .run(o.attemptId, o.sid, o.cycleId, o.testDate, o.level, status, disposition,
+    .run(o.attemptId, o.sid, o.cycleId, o.topic, o.testDate, o.level, status, disposition,
          o.pattern === 'done' ? 'Đã hỗ trợ xong đợt này, theo dõi tiếp ở lần đánh giá sau' : null,
          o.pattern === 'done' ? o.recorder : null,
          o.pattern === 'done' ? addDays(o.testDate, 10) : null, NOW);
@@ -549,13 +612,8 @@ function seedCase(conn: any, o: {
      * CÓ TÊN NGƯỜI LÀM NHƯNG CHƯA CÓ NGÀY = MỚI LÊN KẾ HOẠCH, chưa phải đã làm.
      * Đây đúng là chỗ mô hình cũ nói sai: điền tên vào ô là case trông như đã xử lý.
      */
-    iv('talk_student', 'Sẽ trao đổi với em sau buổi tới', h, 'planned');
-    iv('talk_parent', 'Sẽ nhờ CS gọi phụ huynh', cs, 'planned');
+    iv('teaching_adjust', `Sẽ tăng luyện ${SKILL_WORD[o.topic] ?? o.topic} trên lớp`, h, 'planned');
   } else if (o.pattern === 'in_progress') {
-    iv('talk_student', 'Trao đổi với em về kết quả lần này', h, 'completed',
-       { completed: addDays(o.testDate, 4) });
-    iv('talk_parent', 'CS gọi phụ huynh trao đổi tình hình', cs, 'completed',
-       { completed: addDays(o.testDate, 5) });
     /*
      * Hỗ trợ học thuật MỚI BẮT ĐẦU: có ngày bắt đầu, chưa có ngày xong.
      *
@@ -568,23 +626,19 @@ function seedCase(conn: any, o: {
      */
     const spread = [-11, -4, 0, 5, 12][o.attemptId % 5];
     iv(o.level === 3 ? 'tutor' : 'self_study',
-       o.level === 3 ? 'Học tutor đến lần đánh giá sau' : 'Xếp tự học một tháng', h, 'started',
+       `${o.level === 3 ? 'Học tutor' : 'Xếp tự học'} ${SKILL_WORD[o.topic] ?? o.topic} đến lần đánh giá sau`,
+       h, 'started',
        { started: addDays(o.testDate, 7), due: addDays(DEMO_DATE, spread) });
   } else {
-    iv('talk_student', 'Trao đổi với em về kết quả lần này', h, 'completed',
-       { completed: addDays(o.testDate, 3) });
-    iv('talk_parent', 'CS gọi phụ huynh trao đổi tình hình', cs, 'completed',
-       { completed: addDays(o.testDate, 3) });
     iv(o.level === 3 ? 'tutor' : 'self_study',
-       o.level === 3 ? 'Học tutor đến lúc thi' : 'Xếp tự học một tháng', h, 'completed',
+       `${o.level === 3 ? 'Học tutor' : 'Xếp tự học'} ${SKILL_WORD[o.topic] ?? o.topic} đến lúc thi`,
+       h, 'completed',
        { started: addDays(o.testDate, 6), completed: addDays(o.testDate, 30) });
     if (o.attemptNo >= 3 && o.level >= 2) {
-      iv('ops_policy', 'Buổi bổ trợ với tutor', h, 'completed', { completed: addDays(o.testDate, 8) });
+      iv('extra_support', 'Xin thêm buổi bổ trợ với tutor', h, 'completed', { completed: addDays(o.testDate, 8) });
     }
     if (o.level === 3 && o.attemptNo >= 2) {
-      iv('meeting', 'CX / GĐCN gặp riêng học viên', cs, 'completed', { completed: addDays(o.testDate, 5) });
-    } else if (o.level === 3 || (o.level === 2 && o.attemptNo >= 2)) {
-      iv('meeting', 'GVCN gặp riêng học viên', h, 'completed', { completed: addDays(o.testDate, 5) });
+      iv('meeting_cx', 'CX / GĐCN gặp riêng học viên', cs, 'completed', { completed: addDays(o.testDate, 5) });
     }
     // Case đã đóng thì phải có ít nhất một lần XEM LẠI, nếu không thì đóng dựa trên cái gì.
     conn
@@ -598,11 +652,16 @@ function seedCase(conn: any, o: {
              : 'Làm bài đều hơn, kết quả trên lớp khá hơn', NOW);
   }
 
+  /*
+   * MỘT LƯỢT = MỘT SỰ KIỆN HÀNH TRÌNH, dù lượt đó sinh ra mấy vấn đề. Mức SOS là kết luận
+   * của cả lượt; ghi thành ba dòng cho ba kỹ năng thì hành trình đọc như em thi ba lần.
+   */
   conn
     .prepare(
       `INSERT INTO journey_events (student_id, cycle_id, event_type, event_date, title, detail,
                                    ref_table, ref_id, dedup_key, created_by, created_at)
-       VALUES (?,?, 'mock_result', ?, ?, ?, 'assessment_attempts', ?, ?, ?, ?)`,
+       VALUES (?,?, 'mock_result', ?, ?, ?, 'assessment_attempts', ?, ?, ?, ?)
+       ON CONFLICT(dedup_key) WHERE dedup_key IS NOT NULL DO NOTHING`,
     )
     .run(o.sid, o.cycleId, o.testDate, `MT${o.attemptNo}: SOS ${o.level}`,
          `${o.level} kỹ năng dưới kỳ vọng`, o.attemptId, `mock_result:${o.attemptId}`, o.recorder, NOW);
@@ -639,18 +698,21 @@ function seedAcademicCases(conn: any, ctx: {
   const openCase = (o: {
     studentId: number; classCode: string; reporter: number; detectedAt: string;
     summary: string; urgency: string;
-    primary?: string; secondary?: string[]; context?: string[]; skill?: string | null;
+    track?: string; topic: string;
+    primary?: string; secondary?: string[]; note?: string | null;
     observation?: string | null;
   }) => {
     const cyc = conn.prepare(`SELECT id FROM learning_cycles WHERE student_id = ? AND status='active' LIMIT 1`)
       .get(o.studentId) as any;
     const info = conn
       .prepare(
-        `INSERT INTO sos_cases (attempt_id, student_id, cycle_id, origin_kind, detected_at, reported_by,
-                                summary, urgency, sos_level, status, created_at)
-         VALUES (NULL, ?,?, 'teacher_report', ?,?,?,?, NULL, 'open', ?)`,
+        `INSERT INTO sos_cases (attempt_id, student_id, cycle_id, track, topic, origin_kind,
+                                detected_at, reported_by, summary, urgency, sos_level, status,
+                                note, created_at)
+         VALUES (NULL, ?,?,?,?, 'teacher_report', ?,?,?,?, NULL, 'open', ?,?)`,
       )
-      .run(o.studentId, cyc?.id ?? null, o.detectedAt, o.reporter, o.summary, o.urgency, NOW);
+      .run(o.studentId, cyc?.id ?? null, o.track ?? 'academic', o.topic,
+           o.detectedAt, o.reporter, o.summary, o.urgency, o.note ?? null, NOW);
     const id = Number(info.lastInsertRowid);
     counts.reports += 1;
     const addIssue = (code: string, role: string, skill?: string | null, obs?: string | null) =>
@@ -658,14 +720,13 @@ function seedAcademicCases(conn: any, ctx: {
         `INSERT INTO case_issues (case_id, role, taxonomy_code, taxonomy_version, skill, observation, created_by, created_at)
          VALUES (?,?,?,1,?,?,?,?)`,
       ).run(id, role, code, skill ?? null, obs ?? null, o.reporter, NOW);
-    if (o.primary) addIssue(o.primary, 'primary', o.skill, o.observation);
-    for (const c of o.secondary ?? []) addIssue(c, 'secondary', o.skill);
-    for (const c of o.context ?? []) addIssue(c, 'context');
+    if (o.primary) addIssue(o.primary, 'primary', o.topic, o.observation);
+    for (const c of o.secondary ?? []) addIssue(c, 'secondary', o.topic);
     conn.prepare(
       `INSERT INTO journey_events (student_id, cycle_id, event_type, event_date, title, detail,
                                    ref_table, ref_id, dedup_key, created_by, created_at)
        VALUES (?,?, 'case_opened', ?,?,?, 'sos_cases', ?, ?, ?, ?)`,
-    ).run(o.studentId, cyc?.id ?? null, o.detectedAt, 'Giáo viên ghi nhận vấn đề', o.summary,
+    ).run(o.studentId, cyc?.id ?? null, o.detectedAt, 'Giáo viên ghi nhận cần hỗ trợ', o.summary,
           id, `case_open:${id}`, o.reporter, NOW);
     return id;
   };
@@ -696,6 +757,20 @@ function seedAcademicCases(conn: any, ctx: {
     return Number(info.lastInsertRowid);
   };
 
+  /** Một lần trao đổi giáo viên CHỦ ĐỘNG ghi, ngoài hai việc bắt buộc khi có SOS. */
+  const addContact = (studentId: number, o: {
+    kind: string; on: string; by?: number | null; performerName?: string | null; note?: string | null;
+  }) => {
+    const cyc = conn.prepare(`SELECT id FROM learning_cycles WHERE student_id = ? AND status='active' LIMIT 1`)
+      .get(studentId) as any;
+    conn.prepare(
+      `INSERT INTO student_contacts (student_id, cycle_id, attempt_id, kind, done_on, done_by,
+                                     performer_name, note, auto, created_at)
+       VALUES (?,?, NULL, ?,?,?,?,?, 0, ?)`,
+    ).run(studentId, cyc?.id ?? null, o.kind, o.on, o.by ?? null,
+          o.performerName ?? null, o.note ?? null, NOW);
+  };
+
   const addFollowUp = (caseId: number, o: {
     interventionId?: number | null; on: string; observer: number; outcome: string; note?: string;
   }) => {
@@ -716,9 +791,10 @@ function seedAcademicCases(conn: any, ctx: {
       studentId: a.id, classCode: 'MB-FT 101', reporter: gv, detectedAt: '2026-09-14',
       summary: 'Em nghe không kịp phần chi tiết, hay bỏ trống 5–6 câu cuối',
       urgency: 'attention',
-      primary: 'student.listening.detail', skill: 'listening',
+      topic: 'listening',
+      primary: 'student.listening.sound',
       observation: 'Bài luyện trên lớp phần 3 và 4 sai nhiều, phần 1 vẫn tốt',
-      secondary: ['student.behaviour.selfstudy'],
+      secondary: ['student.listening.distractor'],
     });
     const iv = addIntervention(c1, {
       kind: 'teaching_adjust', description: 'Thêm 15 phút luyện nghe chi tiết mỗi buổi',
@@ -736,18 +812,20 @@ function seedAcademicCases(conn: any, ctx: {
       studentId: b.id, classCode: 'MB-FT 102', reporter: core, detectedAt: '2026-09-08',
       summary: 'Em nghỉ nhiều buổi, bài về nhà không nộp',
       urgency: 'urgent',
-      primary: 'student.behaviour.attendance',
-      secondary: ['student.behaviour.homework', 'teacher.followup'],
-      context: ['context.family', 'context.travel'],
+      track: 'behaviour', topic: 'attendance',
       observation: 'Nghỉ 4/8 buổi trong hai tuần',
+      note: 'Nhà xa, bố mẹ đi làm ca nên không đưa đón được buổi tối',
     });
-    // CS trao đổi với phụ huynh: người thực hiện ở ngoài hệ thống, người ghi là Admin.
-    addIntervention(c2, {
-      kind: 'talk_parent', description: 'CS gọi trao đổi với phụ huynh về việc đi học',
-      performerName: 'Chị Hương (CS)', recorder: adminId, status: 'completed', completed: '2026-09-10',
-    });
+    /*
+     * Trao đổi với em và với phụ huynh KHÔNG phải phương án hỗ trợ — chúng nằm ở bảng Liên
+     * hệ. Đây là lần giáo viên CHỦ ĐỘNG gọi ngoài SOS nên `auto = 0` và không có hạn.
+     */
+    addContact(b.id, { kind: 'talk_parent', on: '2026-09-10',
+      performerName: 'Chị Hương (CS)', note: 'PH nói em phải trông em nhỏ buổi tối' });
+    addContact(b.id, { kind: 'talk_student', on: '2026-09-11', by: core,
+      note: 'Em hứa đi đủ, xin đổi sang ca sáng' });
     const iv2 = addIntervention(c2, {
-      kind: 'talk_student', description: 'GVCN gặp riêng em sau buổi học',
+      kind: 'teaching_adjust', description: 'Điểm danh sát và nhắn GVCN ngay khi vắng',
       performerUser: core, recorder: core, status: 'completed', completed: '2026-09-11', due: '2026-09-18',
     });
     addFollowUp(c2, { interventionId: iv2, on: '2026-09-18', observer: core, outcome: 'improved',
@@ -764,7 +842,8 @@ function seedAcademicCases(conn: any, ctx: {
       studentId: c.id, classCode: 'BC-FT 205', reporter: gv, detectedAt: '2026-09-16',
       summary: 'Bài viết task 1 hay thiếu câu tổng quan',
       urgency: 'normal',
-      primary: 'student.writing.task', skill: 'writing',
+      topic: 'writing1',
+      primary: 'student.writing.task',
     });
     conn.prepare(`UPDATE sos_cases SET disposition = 'monitor', disposition_note = ?, updated_at = ? WHERE id = ?`)
       .run('Nhắc trong giờ chữa bài, chưa cần hỗ trợ riêng', NOW, c3);
@@ -778,7 +857,8 @@ function seedAcademicCases(conn: any, ctx: {
       studentId: d.id, classCode: 'CP-FT 110', reporter: gv, detectedAt: '2026-09-01',
       summary: 'Phát âm đuôi và trọng âm sai nhiều, người nghe khó hiểu',
       urgency: 'attention',
-      primary: 'student.speaking.pronunciation', skill: 'speaking',
+      topic: 'speaking',
+      primary: 'student.speaking.pronunciation',
     });
     addIntervention(c4, {
       kind: 'tutor', description: 'Học tutor phát âm 2 buổi/tuần',
@@ -796,12 +876,11 @@ function seedAcademicCases(conn: any, ctx: {
       studentId: e.id, classCode: 'HD-FT 302', reporter: core, detectedAt: '2026-08-24',
       summary: 'Em có vẻ mất tập trung mấy buổi liền',
       urgency: 'normal',
-      primary: 'student.behaviour.focus', context: ['context.health'],
+      track: 'behaviour', topic: 'participation',
+      note: 'Em bị ốm mấy hôm, đã khỏi',
     });
-    addIntervention(c5, {
-      kind: 'talk_student', description: 'Hỏi thăm, em bị ốm nên mệt',
-      performerUser: core, recorder: core, status: 'completed', completed: '2026-08-26',
-    });
+    addContact(e.id, { kind: 'talk_student', on: '2026-08-26', by: core,
+      note: 'Hỏi thăm, em bị ốm nên mệt' });
     addFollowUp(c5, { on: '2026-09-02', observer: core, outcome: 'improved', note: 'Em khỏi ốm, đã tập trung lại' });
     conn.prepare(
       `UPDATE sos_cases SET status = 'done', disposition = 'no_action', disposition_note = ?,
@@ -827,7 +906,8 @@ function seedAcademicCases(conn: any, ctx: {
       studentId: p1.id, classCode: 'CP-FT 111', reporter: gv, detectedAt: '2026-09-17',
       summary: 'Task 2 lạc đề hai bài liên tiếp, viết không kịp giờ',
       urgency: 'attention',
-      primary: 'student.writing.task', skill: 'writing',
+      topic: 'writing2',
+      primary: 'student.writing.task',
     });
     // Còn hạn: đề xuất 19/09, mức "cần chú ý" nên Quản lý có 7 ngày → 26/09.
     addIntervention(c6, {
@@ -844,11 +924,13 @@ function seedAcademicCases(conn: any, ctx: {
       studentId: p2.id, classCode: 'BC-FT 205', reporter: gv, detectedAt: '2026-09-12',
       summary: 'Em xin lùi lịch thi vì trùng lịch thi học kỳ ở trường',
       urgency: 'urgent',
-      primary: 'context.schedule', context: ['context.pressure'],
+      topic: 'reading',
+      primary: 'student.reading.technique',
+      note: 'Trùng lịch thi học kỳ ở trường, em xin lùi MT3',
     });
     // Quá hạn: case GẤP nên Quản lý chỉ có 3 ngày, hạn 15/09 mà nay đã 23/09.
     addIntervention(c7, {
-      kind: 'ops_policy', description: 'Đề nghị lùi MT3 sang tuần sau, giữ nguyên ngày thi thật',
+      kind: 'reschedule_mt', description: 'Đề nghị lùi MT3 sang tuần sau, giữ nguyên ngày thi thật',
       performerUser: gv, recorder: gv, status: 'planned',
       approvalState: 'pending', approvalDue: '2026-09-15',
     });
@@ -862,7 +944,8 @@ function seedAcademicCases(conn: any, ctx: {
       studentId: p3.id, classCode: 'MB-FT 102', reporter: gv, detectedAt: '2026-09-05',
       summary: 'Nói ngắn, hết ý sau 20 giây ở part 2',
       urgency: 'attention',
-      primary: 'student.speaking.fluency', skill: 'speaking',
+      topic: 'speaking',
+      primary: 'student.speaking.fluency',
     });
     addIntervention(c8, {
       kind: 'tutor', description: 'Tutor Speaking 1 buổi/tuần trong 4 tuần',
@@ -881,7 +964,8 @@ function seedAcademicCases(conn: any, ctx: {
       studentId: p4.id, classCode: 'HD-FT 302', reporter: gv, detectedAt: '2026-09-02',
       summary: 'Đọc chậm, phần 3 gần như bỏ trống',
       urgency: 'normal',
-      primary: 'student.reading.strategy', skill: 'reading',
+      topic: 'reading',
+      primary: 'student.reading.technique',
     });
     addIntervention(c9, {
       kind: 'tutor', description: 'Xin 8 buổi tutor Reading',
@@ -998,6 +1082,7 @@ function seedRegularClasses(conn: any, ctx: {
         const script = SCRIPT[(idx + ci) % SCRIPT.length];
         let scored = 0;
         let failed = 0;
+        const failingSkills: string[] = [];
         tpl.skills.forEach((skill, si) => {
           const ratio = script[si % script.length];
           if (ratio === null) return;                 // chưa nhập điểm kỹ năng này
@@ -1011,7 +1096,7 @@ function seedRegularClasses(conn: any, ctx: {
             .run(attemptId, skill, taken, score, total, manager, NOW);
           counts.scores += 1;
           scored += 1;
-          if (score / total < 0.6) failed += 1;
+          if (score / total < 0.6) { failed += 1; failingSkills.push(skill); }
         });
 
         // Đủ điểm mọi kỹ năng mới chốt. Thiếu một môn thì vẫn đang chờ, KHÔNG kết luận.
@@ -1019,16 +1104,25 @@ function seedRegularClasses(conn: any, ctx: {
           conn.prepare(`UPDATE assessment_attempts SET status = 'done' WHERE id = ?`).run(attemptId);
           if (failed > 0) {
             const level = failed >= 3 ? 3 : failed;
-            conn
-              .prepare(
-                // Lớp thường dùng CHUNG bảng case với lớp FT, nên phải điền đủ học viên,
-                // khoá học và ngày phát hiện như nhau — hồ sơ học viên tra theo `student_id`.
-                `INSERT INTO sos_cases (attempt_id, student_id, cycle_id, origin_kind, detected_at,
-                                        sos_level, status, created_at)
-                 VALUES (?,?,?, 'mock', ?,?,?,?)`,
-              )
-              .run(attemptId, st.id, cycleId, taken, level, ci === 0 ? 'in_progress' : 'open', NOW);
-            counts.cases += 1;
+            /*
+             * MỘT VẤN ĐỀ CHO MỖI KỸ NĂNG, kỹ năng của chính chương trình lớp đó
+             * (Prep-Writing, Pronunciation…), không ép về bộ năm ô IELTS.
+             */
+            for (const skill of failingSkills) {
+              conn
+                .prepare(
+                  `INSERT INTO sos_cases (attempt_id, student_id, cycle_id, track, topic, origin_kind,
+                                          detected_at, sos_level, status, created_at)
+                   VALUES (?,?,?, 'academic', ?, 'mock', ?,?,?,?)`,
+                )
+                .run(attemptId, st.id, cycleId, skill, taken, level,
+                     ci === 0 ? 'in_progress' : 'open', NOW);
+              counts.cases += 1;
+            }
+            /* Lớp thường CÓ hai việc trao đổi, nhưng KHÔNG tự sinh phương án hỗ trợ. */
+            seedContacts(conn, {
+              attemptId, sid: st.id, cycleId, testDate: taken, level, gvcn: manager, counts,
+            });
           }
         }
       });

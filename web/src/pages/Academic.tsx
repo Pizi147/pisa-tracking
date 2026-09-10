@@ -5,7 +5,10 @@ import { Card, Empty, ErrorState, KpiTile, Pill, SectionNote, Skeleton } from '.
 import { Drawer } from '../components/Drawer.tsx';
 import { CasePanel } from '../components/CasePanel.tsx';
 import { fmtDate, sosLabel, sosTone } from '../lib/format.ts';
-import { ASSESSED_SKILLS, ASSESSED_SKILL_LABEL, ISSUE_GROUP_LABEL, ISSUE_TAXONOMY } from '@shared/domain.ts';
+import {
+  BEHAVIOUR_TOPICS, BEHAVIOUR_TOPIC_LABEL, ENTRY_SKILLS, ENTRY_SKILL_LABEL,
+  ISSUE_TAXONOMY, REGULAR_SKILL_LABEL, THREAD_TRACKS, THREAD_TRACK_LABEL, issueLabel,
+} from '@shared/domain.ts';
 
 /**
  * HỌC THUẬT — nơi Quản lý nhìn thấy VẤN ĐỀ, không phải ba mươi chỉ số.
@@ -102,6 +105,18 @@ export function CaseBoard() {
   /** Đếm trong đúng tập đang hiển thị, để số trên ô và số dòng bên dưới không lệch nhau. */
   const stateCount = (k: string) => inScope.filter((r) => r.state === k).length;
 
+  const topicLabel = (k: string) =>
+    BEHAVIOUR_TOPIC_LABEL[k as keyof typeof BEHAVIOUR_TOPIC_LABEL]
+    ?? ENTRY_SKILL_LABEL[k as keyof typeof ENTRY_SKILL_LABEL]
+    ?? REGULAR_SKILL_LABEL[k as keyof typeof REGULAR_SKILL_LABEL]
+    ?? k;
+  /* Thứ tự cố định trước, rồi tới những chủ đề khác thực sự có mặt (kỹ năng lớp thường). */
+  const known = group === 'behaviour' ? [...BEHAVIOUR_TOPICS] : [...ENTRY_SKILLS];
+  const topicKeys = [
+    ...known.filter((k) => (f?.skill[k] ?? 0) > 0 || !skill),
+    ...Object.keys(f?.skill ?? {}).filter((k) => !known.includes(k as never)).sort(),
+  ];
+
   return (
     <div className="space-y-4">
       {/*
@@ -146,28 +161,35 @@ export function CaseBoard() {
               Mức cao hoặc gấp · {counts.data?.review ?? 0}
             </Chip>
           </FilterRow>
-          <FilterRow label="Nhóm vấn đề">
+          <FilterRow label="Đầu mục">
             <Chip active={!group} onClick={() => set('nhom', '')}>Tất cả</Chip>
-            {(['student', 'teacher', 'curriculum'] as const).map((g) => (
-              <Chip key={g} active={group === g} onClick={() => set('nhom', group === g ? '' : g)}>
-                {ISSUE_GROUP_LABEL[g]} · {f?.group[g] ?? 0}
+            {THREAD_TRACKS.map((t) => (
+              <Chip key={t} active={group === t} onClick={() => set('nhom', group === t ? '' : t)}>
+                {THREAD_TRACK_LABEL[t]} · {f?.group[t] ?? 0}
               </Chip>
             ))}
-            {/* Phần lớn vấn đề sinh từ điểm nằm ở đây — bỏ nó đi thì các số không cộng thành tổng. */}
-            <Chip active={group === 'none'} onClick={() => set('nhom', group === 'none' ? '' : 'none')}>
-              Chưa phân loại · {f?.groupNone ?? 0}
-            </Chip>
           </FilterRow>
-          <FilterRow label="Kỹ năng">
+          <FilterRow label={group === 'behaviour' ? 'Về việc gì' : 'Kỹ năng'}>
             <Chip active={!skill} onClick={() => set('ky-nang', '')}>Tất cả</Chip>
-            {ASSESSED_SKILLS.map((sk) => (
-              <Chip key={sk} active={skill === sk} onClick={() => set('ky-nang', skill === sk ? '' : sk)}>
-                {ASSESSED_SKILL_LABEL[sk]} · {f?.skill[sk] ?? 0}
+            {/*
+              Dựng chip từ CHÍNH số đếm trả về, không từ một danh sách viết cứng: lớp thường
+              có kỹ năng riêng (Prep-Writing, Pronunciation) và nếu chỉ vẽ năm ô IELTS thì
+              các số cộng lại không bằng tổng — đúng thứ đang cố tránh.
+            */}
+            {topicKeys.map((k) => (
+              <Chip key={k} active={skill === k} onClick={() => set('ky-nang', skill === k ? '' : k)}>
+                {topicLabel(k)} · {f?.skill[k] ?? 0}
               </Chip>
             ))}
-            <Chip active={skill === 'none'} onClick={() => set('ky-nang', skill === 'none' ? '' : 'none')}>
-              Chưa gắn kỹ năng · {f?.skillNone ?? 0}
-            </Chip>
+            {/*
+              Vấn đề cũ chưa gắn được kỹ năng: bước nâng cấp cố ý không đoán bừa khi một lượt
+              trượt từ hai kỹ năng trở lên. Có ô riêng để các số cộng lại đúng bằng tổng.
+            */}
+            {(f?.skillNone ?? 0) > 0 && (
+              <Chip active={skill === 'none'} onClick={() => set('ky-nang', skill === 'none' ? '' : 'none')}>
+                Chưa gắn kỹ năng · {f?.skillNone}
+              </Chip>
+            )}
           </FilterRow>
         </div>
           {f && Object.keys(f.issueBranch).length > 0 && (
@@ -176,22 +198,23 @@ export function CaseBoard() {
                 Không phải nút bấm — đây là bức tranh bên trong lựa chọn hiện tại, để đọc
                 "Học sinh 18 › Listening 6" mà không phải bấm thử từng cái.
               */}
-              <span className="flex flex-wrap gap-1.5 items-baseline">
+              <span className="flex flex-wrap gap-x-3 gap-y-1 items-baseline">
                 {Object.entries(f.issueBranch)
                   .sort((a, b) => b[1] - a[1])
-                  .map(([name, n]) => (
-                    <span key={name} className="text-xs text-slate-400">
-                      {name} <span className="tabular-nums text-slate-200">{n}</span>
+                  .map(([code, n]) => (
+                    <span key={code} className="text-xs text-slate-400">
+                      {issueLabel(code)} <span className="tabular-nums text-slate-200">{n}</span>
                     </span>
                   ))}
               </span>
             </FilterRow>
           )}
         <SectionNote>
-          Ba nhóm ở trên là <strong>nhận định của người ghi</strong>, không phải kết luận của hệ thống.
-          Vấn đề sinh từ điểm chỉ biết kỹ năng nào dưới kỳ vọng, nên phần lớn nằm ở “chưa phân loại”
-          cho tới khi có người dạy nhận định. Nhóm “Quá trình dạy” nói về cách dạy có thể cải thiện,
-          không phải bảng xếp hạng giáo viên.
+          Mọi vấn đề đều thuộc <strong>Học thuật</strong> (theo năm ô L · R · W1 · W2 · S) hoặc
+          <strong> Ý thức</strong>. Vấn đề về giáo viên và giáo trình không nằm ở đây — đó không phải
+          vấn đề của học viên, và chúng thuộc <strong>Báo cáo tuần chi nhánh</strong>.
+          Dòng “Cụ thể là” bên dưới là <strong>nhận định của người dạy</strong>: hệ thống biết em vướng
+          kỹ năng nào, còn vì sao thì phải có người nhận định.
         </SectionNote>
       </Card>
 
@@ -214,7 +237,7 @@ export function CaseBoard() {
                   <tr>
                     <th className="th">Học viên</th>
                     <th className="th">Nội dung</th>
-                    <th className="th">Phân loại</th>
+                    <th className="th">Kỹ năng · nguyên nhân</th>
                     <th className="th">Nguồn</th>
                     <th className="th">Đã làm</th>
                     <th className="th">Tình trạng</th>
@@ -237,9 +260,10 @@ export function CaseBoard() {
                         </div>
                       </td>
                       <td className="td">
+                        {r.topicLabel && <Pill tone="neutral">{r.topicLabel}</Pill>}
                         {r.primaryLabel
-                          ? <Pill tone="info">{r.primaryLabel}</Pill>
-                          : <span className="text-slate-600 text-xs">chưa phân loại</span>}
+                          ? <div className="mt-0.5"><Pill tone="info">{r.primaryLabel}</Pill></div>
+                          : <div className="text-[10px] text-slate-600 mt-0.5">chưa rõ nguyên nhân</div>}
                       </td>
                       <td className="td text-xs text-slate-400 whitespace-nowrap">
                         {r.originKind === 'teacher_report' ? 'Giáo viên báo' : `Điểm · MT${r.attemptNo ?? '?'}`}

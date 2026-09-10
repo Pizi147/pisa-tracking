@@ -1,5 +1,5 @@
 import {
-  ASSESSED_SKILLS, CRITERIA_SKILLS, RAW_SCORE_SKILLS, expectationDelta,
+  ASSESSED_SKILLS, CRITERIA_SKILLS, ENTRY_SKILLS, RAW_SCORE_SKILLS, expectationDelta,
   type AssessedSkill, type EntrySkill, type SosLevel,
 } from '../../../shared/domain.ts';
 
@@ -58,6 +58,30 @@ export function assessedBands(entry: EntryBands): Record<AssessedSkill, number |
     writing: writingBand(entry.writing1 ?? null, entry.writing2 ?? null),
     speaking: entry.speaking ?? null,
   };
+}
+
+/**
+ * NĂM Ô nào dưới kỳ vọng — khác với bốn kỹ năng dùng để đếm mức SOS.
+ *
+ * SOS đếm trên bốn kỹ năng CÓ BAND (Writing gộp theo công thức 1:2), vì đó là thang chính
+ * thức. Nhưng việc hỗ trợ thì phải về đúng ô: một giáo viên chỉ dạy Task 2 không làm gì
+ * được với một vấn đề ghi là "Writing".
+ *
+ * W1 và W2 mỗi cái so RIÊNG với cùng một kỳ vọng (owner chốt 10/09/2026). Hệ quả có thật và
+ * đã được báo trước: W1 = 5.0 với W2 = 6.5 cho band Writing 6.0 — ĐẠT kỳ vọng 6.0, không
+ * tính vào SOS — nhưng W1 vẫn sinh một vấn đề. Band gộp đang che một lỗ hổng thật.
+ */
+export function failingEntrySkills(
+  expectation: number | null,
+  entry: EntryBands,
+  skippedSkills: readonly string[] = [],
+): EntrySkill[] {
+  if (expectation === null) return [];
+  return ENTRY_SKILLS.filter((skill) => {
+    if (skippedSkills.includes(assessedSkillOf(skill))) return false;
+    const band = entry[skill];
+    return band !== null && band !== undefined && band < expectation;
+  });
 }
 
 export function expectationFor(target: number | null, attemptNo: number): number | null {

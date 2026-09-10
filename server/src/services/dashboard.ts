@@ -126,9 +126,29 @@ function supportMetrics(active: any[], inWeek: any[]) {
   }
   const ph = caseIds.map(() => '?').join(',');
   const cases = conn.prepare(`SELECT * FROM sos_cases WHERE id IN (${ph}) AND sos_level > 0`).all(...caseIds) as any[];
-  const talkedStudent = cases.filter((c) => c.talk_student_date).length;
-  const talkedParent = cases.filter((c) => c.talk_parent_date).length;
-  const academicStarted = cases.filter((c) => c.academic_start_date).length;
+  /*
+   * Hai việc trao đổi nay ở bảng Liên hệ, còn hỗ trợ học thuật ở bảng phương án. Đếm theo
+   * LƯỢT chứ không theo vấn đề: một lượt trượt ba kỹ năng vẫn chỉ có một lần gọi phụ huynh.
+   */
+  const attemptIds = [...new Set(cases.map((c) => c.attempt_id).filter(Boolean))];
+  const contactCount = (kind: string) => (attemptIds.length
+    ? (conn
+        .prepare(
+          `SELECT COUNT(DISTINCT attempt_id) n FROM student_contacts
+            WHERE kind = ? AND done_on IS NOT NULL
+              AND attempt_id IN (${attemptIds.map(() => '?').join(',')})`,
+        )
+        .get(kind, ...attemptIds) as any).n
+    : 0);
+  const talkedStudent = contactCount('talk_student');
+  const talkedParent = contactCount('talk_parent');
+  const academicStarted = (conn
+    .prepare(
+      `SELECT COUNT(DISTINCT case_id) n FROM case_interventions
+        WHERE case_id IN (${ph}) AND status != 'cancelled'
+          AND COALESCE(completed_date, started_date) IS NOT NULL`,
+    )
+    .get(...caseIds) as any).n;
 
   // Thời gian trả kết quả = ngày có kết quả − ngày thi (không phải số ngày quá hạn).
   const diffs: number[] = [];
@@ -140,14 +160,15 @@ function supportMetrics(active: any[], inWeek: any[]) {
       }
     }
   }
+  /* Thời gian bắt đầu can thiệp = lần trao đổi đầu tiên − ngày thi đầu tiên của lượt. */
   const interv: number[] = [];
-  for (const c of cases) {
-    const a = conn.prepare('SELECT id FROM assessment_attempts WHERE id = ?').get(c.attempt_id) as any;
-    if (!a) continue;
-    const first = conn.prepare('SELECT MIN(taken_on) AS d FROM assessment_scores WHERE attempt_id = ?').get(c.attempt_id) as any;
-    const dates = [c.talk_student_date, c.talk_parent_date].filter(Boolean).sort();
-    if (first?.d && dates.length) {
-      interv.push(Math.round((Date.parse(dates[0]) - Date.parse(first.d)) / 86400000));
+  for (const aid of attemptIds) {
+    const first = conn.prepare('SELECT MIN(taken_on) AS d FROM assessment_scores WHERE attempt_id = ?').get(aid) as any;
+    const contact = conn
+      .prepare('SELECT MIN(done_on) AS d FROM student_contacts WHERE attempt_id = ? AND done_on IS NOT NULL')
+      .get(aid) as any;
+    if (first?.d && contact?.d) {
+      interv.push(Math.round((Date.parse(contact.d) - Date.parse(first.d)) / 86400000));
     }
   }
   const avg = (xs: number[]) => (xs.length ? Math.round((xs.reduce((a, b) => a + b, 0) / xs.length) * 10) / 10 : null);

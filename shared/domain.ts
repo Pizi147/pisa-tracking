@@ -283,38 +283,72 @@ export function caseHeadline(c: {
   return `${where}: ${level} kỹ năng dưới kỳ vọng`;
 }
 
-// ------------------------------------------------ Phân loại vấn đề học vụ
+// ------------------------------------------------ Mạch theo dõi và phân loại vấn đề
 
 /**
- * BỘ PHÂN LOẠI VẤN ĐỀ — ba nhóm gốc, không hơn.
+ * HAI ĐẦU MỤC, KHÔNG HƠN.
  *
- * Phụ huynh, sức khoẻ, gia đình, đi lại, lịch cá nhân KHÔNG phải nhóm thứ tư: chúng là
- * HOÀN CẢNH kèm theo. Một em nghỉ nhiều vì nhà xa thì vấn đề học vụ vẫn là "đi học không
- * đều", còn "nhà xa" là hoàn cảnh giải thích cho nó.
- *
- * Đây là bộ phân loại VẬN HÀNH của trung tâm, không phải bộ chẩn đoán chính thức của IELTS.
- * Mỗi nhánh luôn có "Khác" để không ép người ghi chọn bừa.
+ * Mọi việc theo dõi một học viên rơi vào đúng một trong hai: HỌC THUẬT (theo kỹ năng) hoặc
+ * Ý THỨC. Vấn đề về giáo viên và về giáo trình KHÔNG còn ở đây — đó không phải vấn đề của
+ * học viên, và nay nằm ở Báo cáo tuần chi nhánh, nơi vốn đã có sẵn đúng ba nhóm ấy.
+ * (Owner chốt 10/09/2026, đảo một phần quyết định cũ về ba nhóm gốc.)
  */
-export const ISSUE_GROUPS = ['student', 'teacher', 'curriculum'] as const;
-export type IssueGroup = (typeof ISSUE_GROUPS)[number];
-export const ISSUE_GROUP_LABEL: Record<IssueGroup, string> = {
-  student: 'Học sinh', teacher: 'Giáo viên', curriculum: 'Giáo trình',
+export const THREAD_TRACKS = ['academic', 'behaviour'] as const;
+export type ThreadTrack = (typeof THREAD_TRACKS)[number];
+export const THREAD_TRACK_LABEL: Record<ThreadTrack, string> = {
+  academic: 'Học thuật',
+  behaviour: 'Ý thức',
 };
 
+/**
+ * Ý THỨC chỉ có bốn nhóm, và bốn nhóm này CHÍNH LÀ chủ đề của mạch — không có tầng chi
+ * tiết bên dưới. "Em hay nghỉ học" đã đủ để bắt đầu làm việc; ép chọn thêm một nhánh con
+ * chỉ làm chậm người ghi mà không thêm thông tin nào dùng được.
+ */
+export const BEHAVIOUR_TOPICS = ['attendance', 'homework', 'participation', 'other'] as const;
+export type BehaviourTopic = (typeof BEHAVIOUR_TOPICS)[number];
+export const BEHAVIOUR_TOPIC_LABEL: Record<BehaviourTopic, string> = {
+  attendance: 'Chuyên cần',
+  homework: 'BTVN',
+  participation: 'Tham gia trên lớp',
+  other: 'Khác',
+};
+
+/**
+ * Chủ đề của một mạch: kỹ năng nhập điểm với Học thuật, nhóm ý thức với Ý thức.
+ *
+ * Học thuật dùng NĂM ô L · R · W1 · W2 · S chứ không phải bốn kỹ năng có band: một giáo
+ * viên chỉ dạy Task 2 thì việc hỗ trợ của họ phải nằm ở W2, không lẫn vào "Writing".
+ */
+export function threadTopicLabel(track: ThreadTrack, topic: string): string {
+  return track === 'behaviour'
+    ? BEHAVIOUR_TOPIC_LABEL[topic as BehaviourTopic] ?? topic
+    : ENTRY_SKILL_LABEL[topic as EntrySkill] ?? topic;
+}
+
+export function threadTopicsOf(track: ThreadTrack): readonly string[] {
+  return track === 'behaviour' ? BEHAVIOUR_TOPICS : ENTRY_SKILLS;
+}
+
+/**
+ * BỘ PHÂN LOẠI NGUYÊN NHÂN — chỉ dùng cho mạch HỌC THUẬT.
+ *
+ * Mạch nói em vướng ở KỸ NĂNG nào (dữ liệu điểm biết được điều đó). Bộ này nói VÌ SAO, và
+ * đó là nhận định của người dạy — hệ thống không tự chẩn đoán. Mỗi nhánh luôn có "Khác" để
+ * không ép người ghi chọn bừa.
+ *
+ * Writing dùng CHUNG một bộ cho cả W1 và W2: bốn tiêu chí chấm là như nhau, chỉ khác đề bài.
+ */
 export type IssueNode = {
   /** Mã ỔN ĐỊNH. Đổi nhãn hiển thị được, đổi mã thì mất lịch sử. */
   code: string;
   label: string;
-  /** Kỹ năng liên quan, để lọc theo kỹ năng ở màn quản lý. */
-  skill?: string;
 };
 
 export type IssueBranch = {
-  group: IssueGroup;
-  /** Nhánh con, ví dụ "Ý thức học tập" hay "Listening". */
-  key: string;
+  /** Khớp với chủ đề mạch. Writing dùng chung cho `writing1` và `writing2`. */
+  key: 'listening' | 'reading' | 'writing' | 'speaking';
   label: string;
-  skill?: string;
   items: IssueNode[];
 };
 
@@ -322,120 +356,98 @@ const other = (code: string): IssueNode => ({ code, label: 'Khác' });
 
 export const ISSUE_TAXONOMY: IssueBranch[] = [
   {
-    group: 'student', key: 'behaviour', label: 'Ý thức học tập',
+    key: 'listening', label: 'Listening',
     items: [
-      { code: 'student.behaviour.attendance', label: 'Đi học / đúng giờ' },
-      { code: 'student.behaviour.homework', label: 'Chuẩn bị bài / bài tập' },
-      { code: 'student.behaviour.selfstudy', label: 'Tự học theo kế hoạch' },
-      { code: 'student.behaviour.focus', label: 'Tập trung / tham gia trên lớp' },
-      { code: 'student.behaviour.organisation', label: 'Hợp tác / tổ chức việc học' },
-      other('student.behaviour.other'),
+      { code: 'student.listening.language', label: 'Từ vựng / ngữ pháp' },
+      { code: 'student.listening.technique', label: 'Kỹ năng làm bài' },
+      { code: 'student.listening.sound', label: 'Cảm âm' },
+      { code: 'student.listening.distractor', label: 'Hay dính bẫy distractors' },
+      { code: 'student.listening.focus', label: 'Tâm lý / khả năng tập trung' },
+      { code: 'student.listening.mainidea', label: 'Nghe hiểu ý chính' },
+      other('student.listening.other'),
     ],
   },
   {
-    group: 'student', key: 'listening', label: 'Listening', skill: 'listening',
+    key: 'reading', label: 'Reading',
     items: [
-      { code: 'student.listening.recognition', label: 'Nhận diện lời nói', skill: 'listening' },
-      { code: 'student.listening.detail', label: 'Hiểu chi tiết / paraphrase', skill: 'listening' },
-      { code: 'student.listening.mainidea', label: 'Ý chính / quan hệ ý', skill: 'listening' },
-      { code: 'student.listening.follow', label: 'Theo mạch / phân biệt người nói', skill: 'listening' },
-      { code: 'student.listening.strategy', label: 'Chiến lược / độ chính xác khi trả lời', skill: 'listening' },
-      { ...other('student.listening.other'), skill: 'listening' },
+      { code: 'student.reading.language', label: 'Từ vựng / ngữ pháp' },
+      { code: 'student.reading.technique', label: 'Kỹ năng làm bài' },
+      { code: 'student.reading.mainidea', label: 'Mơ hồ ý chính' },
+      { code: 'student.reading.logic', label: 'Tư duy logic' },
+      other('student.reading.other'),
     ],
   },
   {
-    group: 'student', key: 'reading', label: 'Reading', skill: 'reading',
+    key: 'writing', label: 'Writing',
     items: [
-      { code: 'student.reading.detail', label: 'Tìm chi tiết / paraphrase', skill: 'reading' },
-      { code: 'student.reading.structure', label: 'Ý chính / cấu trúc bài', skill: 'reading' },
-      { code: 'student.reading.inference', label: 'Lập luận / quan điểm / suy luận', skill: 'reading' },
-      { code: 'student.reading.language', label: 'Từ vựng / cấu trúc câu', skill: 'reading' },
-      { code: 'student.reading.strategy', label: 'Chiến lược / độ chính xác khi trả lời', skill: 'reading' },
-      { ...other('student.reading.other'), skill: 'reading' },
+      { code: 'student.writing.task', label: 'Đáp ứng yêu cầu đề' },
+      { code: 'student.writing.organisation', label: 'Tổ chức bài / liên kết ý' },
+      { code: 'student.writing.lexical', label: 'Từ vựng' },
+      { code: 'student.writing.grammar', label: 'Ngữ pháp' },
+      other('student.writing.other'),
     ],
   },
   {
-    group: 'student', key: 'writing', label: 'Writing', skill: 'writing',
+    key: 'speaking', label: 'Speaking',
     items: [
-      { code: 'student.writing.task', label: 'Đáp ứng yêu cầu đề', skill: 'writing' },
-      { code: 'student.writing.organisation', label: 'Tổ chức bài / liên kết ý', skill: 'writing' },
-      { code: 'student.writing.lexical', label: 'Từ vựng', skill: 'writing' },
-      { code: 'student.writing.grammar', label: 'Ngữ pháp', skill: 'writing' },
-      { ...other('student.writing.other'), skill: 'writing' },
-    ],
-  },
-  {
-    group: 'student', key: 'speaking', label: 'Speaking', skill: 'speaking',
-    items: [
-      { code: 'student.speaking.fluency', label: 'Trôi chảy / mạch lạc', skill: 'speaking' },
-      { code: 'student.speaking.lexical', label: 'Từ vựng', skill: 'speaking' },
-      { code: 'student.speaking.grammar', label: 'Ngữ pháp', skill: 'speaking' },
-      { code: 'student.speaking.pronunciation', label: 'Phát âm', skill: 'speaking' },
-      { ...other('student.speaking.other'), skill: 'speaking' },
-    ],
-  },
-  {
-    group: 'teacher', key: 'teaching', label: 'Giáo viên',
-    items: [
-      { code: 'teacher.explain', label: 'Giải thích / kiểm tra mức hiểu' },
-      { code: 'teacher.adjust', label: 'Điều chỉnh cách dạy theo lớp' },
-      { code: 'teacher.feedback', label: 'Chữa bài / phản hồi' },
-      { code: 'teacher.followup', label: 'Theo sát việc thực hiện hỗ trợ' },
-      { code: 'teacher.tracking', label: 'Theo dõi / đánh giá tiến độ' },
-      { code: 'teacher.classroom', label: 'Quản lý lớp / phối hợp' },
-      other('teacher.other'),
-    ],
-  },
-  {
-    group: 'curriculum', key: 'programme', label: 'Giáo trình',
-    items: [
-      { code: 'curriculum.level', label: 'Mức độ / trình tự bài' },
-      { code: 'curriculum.pace', label: 'Tốc độ / khối lượng' },
-      { code: 'curriculum.balance', label: 'Nội dung / cân đối giữa các kỹ năng' },
-      { code: 'curriculum.materials', label: 'Bài luyện / học liệu' },
-      { code: 'curriculum.alignment', label: 'Độ khớp giữa bài kiểm tra và mục tiêu' },
-      other('curriculum.other'),
+      { code: 'student.speaking.fluency', label: 'Trôi chảy / mạch lạc' },
+      { code: 'student.speaking.lexical', label: 'Từ vựng' },
+      { code: 'student.speaking.grammar', label: 'Ngữ pháp' },
+      { code: 'student.speaking.pronunciation', label: 'Phát âm' },
+      other('student.speaking.other'),
     ],
   },
 ];
 
-/** Hoàn cảnh kèm theo — GHI CHÚ, không phải nguyên nhân đã được xác minh. */
-export const ISSUE_CONTEXTS = [
-  { code: 'context.parent', label: 'Phía phụ huynh' },
-  { code: 'context.health', label: 'Sức khoẻ' },
-  { code: 'context.family', label: 'Hoàn cảnh gia đình' },
-  { code: 'context.travel', label: 'Đi lại / khoảng cách' },
-  { code: 'context.schedule', label: 'Lịch cá nhân / trường lớp' },
-  { code: 'context.pressure', label: 'Áp lực bên ngoài' },
-  { code: 'context.other', label: 'Khác' },
-] as const;
-
-const ISSUE_INDEX: Record<string, { label: string; group: IssueGroup; branch: string; skill?: string }> = {};
+const ISSUE_INDEX: Record<string, { label: string; branch: IssueBranch['key'] }> = {};
 for (const b of ISSUE_TAXONOMY) {
-  for (const it of b.items) {
-    ISSUE_INDEX[it.code] = { label: it.label, group: b.group, branch: b.label, skill: it.skill };
-  }
-}
-for (const c of ISSUE_CONTEXTS) {
-  ISSUE_INDEX[c.code] = { label: c.label, group: 'student', branch: 'Hoàn cảnh' };
+  for (const it of b.items) ISSUE_INDEX[it.code] = { label: it.label, branch: b.key };
 }
 
-/** Mã lạ (dữ liệu cũ, hoặc mã đã ngừng dùng) vẫn đọc được thay vì hiện ra trống. */
 export function issueLabel(code: string | null | undefined): string {
   if (!code) return 'Chưa phân loại';
   return ISSUE_INDEX[code]?.label ?? code;
 }
-export function issueGroupOf(code: string | null | undefined): IssueGroup | null {
-  return code ? ISSUE_INDEX[code]?.group ?? null : null;
-}
-export function issueBranchOf(code: string | null | undefined): string | null {
+
+/** Nhánh phân loại của một mã. NULL nghĩa là mã không còn dùng — không đoán bừa. */
+export function issueBranchOf(code: string | null | undefined): IssueBranch['key'] | null {
   return code ? ISSUE_INDEX[code]?.branch ?? null : null;
 }
 
-export const ISSUE_ROLES = ['primary', 'secondary', 'context'] as const;
+/** Bộ phân loại dùng được cho một chủ đề mạch. W1 và W2 cùng dùng bộ Writing. */
+export function issuesForTopic(topic: string): IssueNode[] {
+  const key = topic === 'writing1' || topic === 'writing2' ? 'writing' : topic;
+  return ISSUE_TAXONOMY.find((b) => b.key === key)?.items ?? [];
+}
+
+/**
+ * CHUYỂN MÃ CŨ SANG MÃ MỚI.
+ *
+ * Giữ lại để dữ liệu cũ đọc được và để bước nâng cấp chạy đúng một lần. Hai dòng đầu của
+ * mỗi nhánh là SUY ĐOÁN chứ không phải ánh xạ hiển nhiên — owner đã được báo trước:
+ * "nghe chi tiết / số liệu / chính tả" gần với CẢM ÂM nhất, còn "tìm chi tiết / paraphrase"
+ * của Reading thực chất là chuyện TỪ VỰNG.
+ */
+export const LEGACY_ISSUE_CODE_MAP: Record<string, string> = {
+  'student.listening.detail': 'student.listening.sound',
+  'student.listening.recognition': 'student.listening.sound',
+  'student.listening.follow': 'student.listening.distractor',
+  'student.listening.strategy': 'student.listening.technique',
+  'student.reading.detail': 'student.reading.language',
+  'student.reading.structure': 'student.reading.mainidea',
+  'student.reading.inference': 'student.reading.logic',
+  'student.reading.strategy': 'student.reading.technique',
+};
+
+/**
+ * "Hoàn cảnh kèm theo" đã BỎ (owner chốt 10/09/2026) — thay bằng một ô Ghi chú không bắt
+ * buộc. Bắt người ghi chọn hoàn cảnh từ một danh sách là thêm một bước cho thứ mà một câu
+ * chữ nói rõ hơn nhiều.
+ */
+export const ISSUE_ROLES = ['primary', 'secondary'] as const;
 export type IssueRole = (typeof ISSUE_ROLES)[number];
 export const ISSUE_ROLE_LABEL: Record<IssueRole, string> = {
-  primary: 'Vấn đề chính', secondary: 'Yếu tố đi kèm', context: 'Hoàn cảnh',
+  primary: 'Vấn đề chính', secondary: 'Yếu tố đi kèm',
 };
 
 // ------------------------------------------------ Nguồn case, hướng xử lý, tác động
@@ -477,21 +489,79 @@ export const DISPOSITION_LABEL: Record<Disposition, string> = {
   other: 'Khác',
 };
 
-export const INTERVENTION_KINDS = [
-  'talk_student', 'talk_parent', 'tutor', 'self_study',
-  'teaching_adjust', 'meeting', 'ops_policy', 'other',
-] as const;
+/**
+ * HAI HỌ VIỆC, TÁCH BẠCH — và chính sự tách bạch đó bỏ được một câu hỏi cho giáo viên.
+ *
+ * PHƯƠNG ÁN HỖ TRỢ là việc giáo viên tự xoay được. ĐỀ XUẤT là việc phải có Quản lý trả
+ * lời — lùi lịch thi, xin nguồn lực ngoài định mức, mời CX/GĐCN vào cuộc. Vì chọn nhóm
+ * Đề xuất TỨC LÀ đang xin ý kiến, ô tick "cần Quản lý duyệt" chỉ còn hiện ở nhóm thứ nhất.
+ *
+ * Đã bỏ: `talk_student` và `talk_parent` (nay là bảng LIÊN HỆ riêng — hai việc bắt buộc khi
+ * có SOS, không duyệt, không hẹn xem lại, không kết quả chuyên môn), `meeting` và
+ * `ops_policy` (owner chốt 10/09/2026; việc lùi lịch thi nay có ô riêng trong nhóm Đề xuất).
+ */
+export const SUPPORT_KINDS = ['self_study', 'tutor', 'teaching_adjust', 'other'] as const;
+export const PROPOSAL_KINDS = ['reschedule_mt', 'extra_support', 'meeting_cx', 'other_proposal'] as const;
+export const INTERVENTION_KINDS = [...SUPPORT_KINDS, ...PROPOSAL_KINDS] as const;
 export type InterventionKind = (typeof INTERVENTION_KINDS)[number];
 export const INTERVENTION_KIND_LABEL: Record<InterventionKind, string> = {
+  self_study: 'Xếp tự học',
+  tutor: 'Học tutor',
+  teaching_adjust: 'Điều chỉnh cách dạy',
+  other: 'Khác',
+  reschedule_mt: 'Lùi lịch thi',
+  extra_support: 'Hỗ trợ học thuật ngoài định mức',
+  meeting_cx: 'Meeting CX / GĐCN',
+  other_proposal: 'Khác',
+};
+
+/** Chọn một loại trong nhóm Đề xuất TỨC LÀ đang xin ý kiến — không phải tick thêm gì. */
+export function isProposalKind(kind: string): boolean {
+  return (PROPOSAL_KINDS as readonly string[]).includes(kind);
+}
+
+/** Chuyển loại cũ sang loại mới, để 26 bản ghi đã có không mất nghĩa. */
+export const LEGACY_INTERVENTION_KIND_MAP: Record<string, InterventionKind> = {
+  meeting: 'meeting_cx',
+  ops_policy: 'other_proposal',
+};
+
+/**
+ * HAI VIỆC TRAO ĐỔI BẮT BUỘC KHI CÓ SOS.
+ *
+ * Không phải phương án hỗ trợ: chúng không tạo ra can thiệp học thuật nào, nên không duyệt,
+ * không hẹn xem lại, không có kết quả chuyên môn để ghi. Chỉ cần xác nhận đã diễn ra.
+ * Vì thế chúng sống ở bảng riêng — nhét vào bảng phương án thì mọi màn hình phải viết thêm
+ * một câu "trừ hai loại này ra", và câu đó sẽ có chỗ bị quên.
+ */
+export const CONTACT_KINDS = ['talk_student', 'talk_parent'] as const;
+export type ContactKind = (typeof CONTACT_KINDS)[number];
+export const CONTACT_KIND_LABEL: Record<ContactKind, string> = {
+  talk_student: 'GVCN + GVBM trao đổi với học sinh',
+  talk_parent: 'CS trao đổi với phụ huynh',
+};
+export const CONTACT_KIND_SHORT: Record<ContactKind, string> = {
   talk_student: 'Trao đổi với học sinh',
   talk_parent: 'Trao đổi với phụ huynh',
-  tutor: 'Học tutor',
-  self_study: 'Xếp tự học',
-  teaching_adjust: 'Điều chỉnh cách dạy',
-  meeting: 'Buổi gặp riêng',
-  ops_policy: 'Chính sách vận hành',
-  other: 'Khác',
 };
+
+/**
+ * PHƯƠNG ÁN TỰ SINH THEO MỨC SOS — quy định cũ của trung tâm, owner xác nhận giữ 10/09/2026.
+ *
+ * Từ MT3 trở đi luôn là tutor bất kể mức: gần ngày thi thì tự học không kịp sửa.
+ * Phương án sinh ra ở trạng thái ĐÃ LÊN KẾ HOẠCH, chưa có người thực hiện, chưa gửi duyệt —
+ * máy không tự đặt tutor thay người, nó chỉ nói "theo quy định em này phải có cái này".
+ */
+export function autoSupportKind(sosLevel: number, attemptNo: number): 'self_study' | 'tutor' {
+  if (attemptNo >= 3) return 'tutor';
+  return sosLevel >= 3 ? 'tutor' : 'self_study';
+}
+
+/** Mức ưu tiên suy ra từ SOS. SUY LÚC HIỂN THỊ, không ghi vào case — xem Q11. */
+export function urgencyFromSos(sosLevel: number | null): 'normal' | 'attention' | 'urgent' {
+  if (sosLevel === null || sosLevel <= 0) return 'normal';
+  return sosLevel >= 3 ? 'urgent' : 'attention';
+}
 
 /**
  * PHƯƠNG ÁN HỖ TRỢ CÓ CẦN QUẢN LÝ DUYỆT KHÔNG — do CHÍNH giáo viên quyết định.
@@ -511,10 +581,27 @@ export const APPROVAL_LABEL: Record<ApprovalState, string> = {
 };
 
 /**
- * Hạn Quản lý phải trả lời một đề xuất. Case nặng thì gấp hơn — owner chốt 10/09/2026.
- * Quá hạn không chặn gì cả, chỉ nổi lên màn của Quản lý để không ai bị bỏ quên.
+ * HẠN SUY THẲNG TỪ MỨC ĐỘ GẤP — một thang duy nhất cho cả hệ thống (owner chốt 10/09/2026).
+ *
+ * Trước đó có hai ngưỡng rời nhau: hạn Quản lý trả lời đề xuất (3 hoặc 7 ngày) và ngưỡng
+ * coi một vấn đề là bị bỏ quên (cũng 3 hoặc 7). Hai con số nói cùng một chuyện — "việc này
+ * gấp đến đâu" — nên nay dùng chung một bảng ba mức, và ai đọc cũng đoán đúng ngay.
+ *
+ * Vấn đề sinh từ điểm không tự ghi mức gấp vào database (hai thang cố tình tách nhau, xem
+ * Q11); mức của nó suy từ SOS lúc cần: SOS 1-2 là cần chú ý, SOS 3 là gấp.
+ *
+ * Quá hạn KHÔNG chặn gì cả — chỉ nổi lên màn việc để không ai bị bỏ quên.
  */
-export const APPROVAL_DUE_DAYS = { urgent: 3, normal: 7 };
+export const URGENCY_DUE_DAYS: Record<UrgencyLevel, number> = {
+  normal: 7,
+  attention: 5,
+  urgent: 3,
+};
+
+export function dueDaysFor(urgency: string | null | undefined, sosLevel?: number | null): number {
+  const level = urgency && urgency !== 'normal' ? urgency : urgencyFromSos(sosLevel ?? null);
+  return URGENCY_DUE_DAYS[level as UrgencyLevel] ?? URGENCY_DUE_DAYS.normal;
+}
 
 export const INTERVENTION_STATUSES = ['planned', 'started', 'completed', 'cancelled'] as const;
 export type InterventionStatus = (typeof INTERVENTION_STATUSES)[number];

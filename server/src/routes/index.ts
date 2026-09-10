@@ -1,7 +1,8 @@
 import { Router } from 'express';
 import { db, isInitialised } from '../db.ts';
 import {
-  ENTRY_SKILLS, ISSUE_CONTEXTS, ISSUE_TAXONOMY, PERMISSIONS, ROLE_LABEL, type Role,
+  BEHAVIOUR_TOPICS, BEHAVIOUR_TOPIC_LABEL, ENTRY_SKILLS, ENTRY_SKILL_LABEL, ISSUE_TAXONOMY,
+  PERMISSIONS, ROLE_LABEL, THREAD_TRACKS, THREAD_TRACK_LABEL, type Role,
 } from '../../../shared/domain.ts';
 import { demoToday, getConfig, scenarioMode, setConfig } from '../demoConfig.ts';
 import { HttpError, badRequest, isIsoDate, notFound, toInt } from '../util.ts';
@@ -12,6 +13,7 @@ import { maybeSimulateReadError, maybeSimulateSaveFailure, pInt, qInt, qStr, wra
 import * as attemptSvc from '../services/attempts.ts';
 import * as cycleSvc from '../services/cycles.ts';
 import * as checkinSvc from '../services/checkins.ts';
+import * as contactSvc from '../services/contacts.ts';
 import * as profileSvc from '../services/profile.ts';
 import * as classSvc from '../services/classes.ts';
 import * as intakeSvc from '../services/intake.ts';
@@ -586,8 +588,38 @@ api.patch('/cases/:id/disposition', requireAuth, wrap((req) => {
 
 /** Bộ phân loại vấn đề để dựng ô chọn. Dữ liệu, không viết cứng trong giao diện. */
 api.get('/ref/issue-taxonomy', requireAuth, wrap(() => ({
-  branches: ISSUE_TAXONOMY, contexts: ISSUE_CONTEXTS,
+  /** Hai đầu mục và chủ đề của chúng — dựng ô chọn từ dữ liệu, không viết cứng trong giao diện. */
+  tracks: THREAD_TRACKS.map((t) => ({
+    key: t,
+    label: THREAD_TRACK_LABEL[t],
+    topics: t === 'behaviour'
+      ? BEHAVIOUR_TOPICS.map((k) => ({ key: k, label: BEHAVIOUR_TOPIC_LABEL[k] }))
+      : ENTRY_SKILLS.map((k) => ({ key: k, label: ENTRY_SKILL_LABEL[k] })),
+  })),
+  /** Phân loại NGUYÊN NHÂN, chỉ dùng cho Học thuật. W1 và W2 dùng chung bộ Writing. */
+  branches: ISSUE_TAXONOMY,
 })));
+
+// ============================================================ Liên hệ với HS và phụ huynh
+
+/**
+ * Hai việc trao đổi bắt buộc khi có SOS, và những lần giáo viên chủ động gọi.
+ * KHÔNG phải phương án hỗ trợ: không duyệt, không hẹn xem lại, không kết quả chuyên môn.
+ */
+api.get('/students/:id/contacts', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return contactSvc.contactsOfStudent(principalOf(req), pInt(req, 'id'));
+}));
+
+api.post('/students/:id/contacts', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return contactSvc.addContact(principalOf(req), { ...req.body, studentId: pInt(req, 'id') });
+}));
+
+api.post('/contacts/:id/done', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return contactSvc.completeContact(principalOf(req), pInt(req, 'id'), req.body ?? {});
+}));
 
 // ============================================================ Học viên
 

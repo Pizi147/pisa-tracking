@@ -384,65 +384,112 @@ CREATE INDEX idx_estimate_student ON teacher_estimates(student_id, skill);
  * Case do giáo viên báo để NULL — không phải SOS 0, cũng không mặc định SOS 1 — và dùng
  * `urgency` riêng. Trộn hai thang vào một cột thì con số SOS trên báo cáo mất nghĩa.
  */
+/*
+ * MỘT VẤN ĐỀ CỦA MỘT HỌC VIÊN.
+ *
+ * Tên bảng giữ nguyên `sos_cases` để không phải đổi khoá ngoại ở sáu bảng khác, nhưng nó
+ * KHÔNG còn là "một case SOS cho mỗi lượt MT". Từ 10/09/2026:
+ *
+ *   một hàng = MỘT LƯỢT × MỘT KỸ NĂNG   (hoặc một nhóm Ý thức, khi giáo viên tự báo)
+ *
+ * Vì sao không gom cả lượt vào một hàng: một kỹ năng có nhiều vấn đề khác nhau theo thời
+ * gian — MT2 vướng Listening vì dính bẫy distractors, MT4 vẫn Listening nhưng vì từ vựng.
+ * Hai chuyện khác nhau, hai phương án khác nhau, nên phải có hai vòng đời.
+ *
+ * "MẠCH" theo kỹ năng KHÔNG phải một bảng: nó là cách gom khi hiển thị (cùng học viên,
+ * cùng lộ trình, cùng `topic`, xếp theo lượt). Nhờ vậy vẫn đọc được "Listening trượt lần
+ * thứ ba" mà không thêm một tầng dữ liệu phải giữ đồng bộ.
+ *
+ * `sos_level` vẫn là mức của CẢ LƯỢT (số kỹ năng dưới kỳ vọng), không phải của riêng hàng
+ * này — SOS là chỉ báo mức độ của em ở lượt đó, không phải một hệ thống công việc song song.
+ */
 CREATE TABLE sos_cases (
   id INTEGER PRIMARY KEY,
-  -- Có thể NULL: case do giáo viên báo không gắn với bài nào.
-  attempt_id INTEGER REFERENCES assessment_attempts(id) UNIQUE,
-  -- Luôn có, kể cả khi không có attempt. Backfill từ attempt khi nâng cấp dữ liệu cũ.
+  -- NULL khi giáo viên tự báo, hoặc khi Quản lý giao việc mà chưa có bài nào.
+  attempt_id INTEGER REFERENCES assessment_attempts(id),
   student_id INTEGER REFERENCES students(id),
   cycle_id INTEGER REFERENCES learning_cycles(id),
 
-  -- Nguồn gốc KHÔNG đổi khi sau này gắn thêm bằng chứng.
-  origin_kind TEXT NOT NULL DEFAULT 'mock',   -- mock | teacher_report
+  /*
+   * HAI ĐẦU MỤC, KHÔNG HƠN. Vấn đề về giáo viên và giáo trình KHÔNG còn ở đây — đó không
+   * phải vấn đề của học viên, và nay nằm ở Báo cáo tuần chi nhánh.
+   */
+  track TEXT NOT NULL DEFAULT 'academic',  -- academic | behaviour
+  -- Học thuật: listening | reading | writing1 | writing2 | speaking (NĂM ô, W1/W2 tách).
+  -- Ý thức:    attendance | homework | participation | other
+  topic TEXT,
+
+  origin_kind TEXT NOT NULL DEFAULT 'mock',  -- mock | teacher_report | manager_task
   detected_at TEXT,                   -- ngày phát hiện vấn đề, khác ngày ghi vào hệ thống
   reported_by INTEGER REFERENCES users(id),
   summary TEXT,                       -- một câu mô tả vấn đề, do người báo viết
-  -- Mức độ gấp do NGƯỜI BÁO nhận định. Khác hẳn sos_level tính từ điểm.
+  -- Mức độ gấp do NGƯỜI BÁO nhận định. Case sinh từ điểm để trống: mức của nó suy ra từ
+  -- `sos_level` lúc hiển thị, không ghi đè vào đây (hai thang cố tình tách nhau).
   urgency TEXT,                       -- normal | attention | urgent
 
-  sos_level INTEGER,                  -- 1..3, NULL khi chưa/không tính được từ điểm
-  coordinator_user_id INTEGER REFERENCES users(id),   -- người điều phối case
-
-  talk_student_person TEXT,
-  talk_student_date TEXT,
-  talk_parent_person TEXT,            -- CS làm ngoài hệ thống: ghi tên, không cần tài khoản
-  talk_parent_date TEXT,
-
-  academic_support TEXT,
-  academic_person TEXT,
-  academic_start_date TEXT,
-
-  ops_policy TEXT,
-  ops_date TEXT,
-
-  meeting_kind TEXT,
-  meeting_date TEXT,
+  -- Mức SOS của CẢ LƯỢT, 1..3. NULL khi không tính được từ điểm.
+  sos_level INTEGER,
 
   status TEXT NOT NULL DEFAULT 'open',    -- open | in_progress | done
 
   /*
    * HƯỚNG XỬ LÝ — khác với trạng thái.
-   * Trạng thái nói case đang mở hay đã xong; hướng xử lý nói định làm gì với nó.
-   * "Chỉ theo dõi" là một hướng xử lý hợp lệ mà case vẫn đang mở.
+   * Trạng thái nói vấn đề đang mở hay đã xong; hướng xử lý nói định làm gì với nó.
+   * "Chỉ theo dõi" là một hướng xử lý hợp lệ mà vấn đề vẫn đang mở.
    */
   disposition TEXT,                   -- monitor | offline | no_action | action | other
   disposition_note TEXT,
   closed_by INTEGER REFERENCES users(id),
   closed_at TEXT,
 
-  -- GVCN đã nhận case: METADATA, không phải trạng thái thứ tư. Nhận không nghĩa là đã xử lý,
-  -- và có thể ghi hành động thực tế trước rồi mới xác nhận đã nhận.
   acknowledged_by INTEGER REFERENCES users(id),
   acknowledged_at TEXT,
   -- Dấu xác nhận cũ. Bước "Head xác nhận" ĐÃ BỎ khỏi quy trình; hai cột này chỉ để tra lại.
   head_confirmed_by INTEGER REFERENCES users(id),
   head_confirmed_at TEXT,
+  -- GHI CHÚ, thay cho "Hoàn cảnh kèm theo" đã bỏ. Không bắt buộc.
   note TEXT,
   -- Chống trùng khi bấm hai lần hoặc thử lại sau lỗi mạng.
   idempotency_key TEXT UNIQUE,
   created_at TEXT NOT NULL,
   updated_at TEXT
 );
+/* Mỗi lượt chỉ một vấn đề cho mỗi kỹ năng — chấm lại không nhân đôi. */
+CREATE UNIQUE INDEX idx_case_attempt_topic ON sos_cases(attempt_id, topic)
+  WHERE attempt_id IS NOT NULL;
+CREATE INDEX idx_case_student_topic ON sos_cases(student_id, cycle_id, topic);
+
+/*
+ * HAI VIỆC TRAO ĐỔI BẮT BUỘC KHI CÓ SOS — bảng riêng, cố ý.
+ *
+ * Chúng KHÔNG phải phương án hỗ trợ: không tạo ra can thiệp học thuật nào, nên không duyệt,
+ * không hẹn xem lại, không có kết quả chuyên môn để ghi. Chỉ cần xác nhận đã diễn ra.
+ * Nhét vào `case_interventions` thì mọi truy vấn và mọi màn hình phải viết thêm một câu
+ * "trừ hai loại này ra" — và sẽ có chỗ quên.
+ *
+ * Giáo viên cũng TỰ THÊM được khi chủ động gọi phụ huynh ngoài SOS (`auto = 0`).
+ */
+CREATE TABLE student_contacts (
+  id INTEGER PRIMARY KEY,
+  student_id INTEGER NOT NULL REFERENCES students(id),
+  cycle_id INTEGER REFERENCES learning_cycles(id),
+  -- Lượt MT làm phát sinh việc này. NULL khi giáo viên tự thêm.
+  attempt_id INTEGER REFERENCES assessment_attempts(id),
+  kind TEXT NOT NULL,                 -- talk_student | talk_parent
+  -- Hết Chủ nhật của TUẦN KẾ TIẾP tuần làm bài. Không co giãn theo ngày chấm.
+  due_date TEXT,
+  done_on TEXT,
+  done_by INTEGER REFERENCES users(id),
+  -- Người thực hiện ở ngoài hệ thống (CS, phụ huynh): giữ tên, không cần tài khoản.
+  performer_name TEXT,
+  note TEXT,
+  auto INTEGER NOT NULL DEFAULT 0,    -- 1 = hệ thống sinh khi có SOS
+  created_at TEXT NOT NULL
+);
+/* Một lượt chỉ sinh một lần mỗi loại — chấm lại hay sửa điểm không nhân đôi. */
+CREATE UNIQUE INDEX idx_contact_auto ON student_contacts(attempt_id, kind) WHERE auto = 1;
+CREATE INDEX idx_contact_student ON student_contacts(student_id);
+CREATE INDEX idx_contact_due ON student_contacts(due_date) WHERE done_on IS NULL;
 CREATE INDEX idx_case_student ON sos_cases(student_id, status);
 CREATE INDEX idx_case_cycle ON sos_cases(cycle_id);
 
@@ -458,7 +505,7 @@ CREATE INDEX idx_case_cycle ON sos_cases(cycle_id);
 CREATE TABLE case_issues (
   id INTEGER PRIMARY KEY,
   case_id INTEGER NOT NULL REFERENCES sos_cases(id),
-  role TEXT NOT NULL DEFAULT 'primary',   -- primary | secondary | context
+  role TEXT NOT NULL DEFAULT 'primary',   -- primary | secondary (vai trò 'context' đã bỏ)
   taxonomy_code TEXT NOT NULL,            -- mã ổn định, ví dụ 'student.academic.listening.detail'
   taxonomy_version INTEGER NOT NULL DEFAULT 1,
   skill TEXT,                             -- kỹ năng liên quan, nếu có

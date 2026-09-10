@@ -1,10 +1,14 @@
 import { db, tx } from '../db.ts';
-import { PERMISSIONS, SOS_LABEL, type SosLevel } from '../../../shared/domain.ts';
+import {
+  CONTACT_KINDS, ENTRY_SKILL_LABEL, INTERVENTION_KIND_LABEL, PERMISSIONS, SOS_LABEL,
+  autoSupportKind, type EntrySkill, type SosLevel,
+} from '../../../shared/domain.ts';
 import { demoToday } from '../demoConfig.ts';
-import { badRequest, isIsoDate, notFound, nowIso } from '../util.ts';
+import { addDays, badRequest, isIsoDate, notFound, nowIso } from '../util.ts';
 import { require_, type Principal } from '../permissions.ts';
 import { addJourney, notify, writeAudit } from './audit.ts';
-import type { AttemptResult } from './scoring.ts';
+import { failingEntrySkills, type AttemptResult, type EntryBands } from './scoring.ts';
+import { mondayOf } from './week.ts';
 
 /**
  * Hành động phối hợp theo Lần MT × mức SOS, lấy nguyên từ 'Quy trinh SOS' của trung tâm.
@@ -76,47 +80,73 @@ export function stepsFor(attemptNo: number, level: SosLevel): SosStep[] {
  * là những thứ năm cột kia không tả được.
  */
 
+/**
+ * MỞ / CẬP NHẬT VẤN ĐỀ TỪ KẾT QUẢ MỘT LƯỢT ĐÁNH GIÁ.
+ *
+ * Từ 10/09/2026 một lượt sinh ra NHIỀU vấn đề — mỗi kỹ năng dưới kỳ vọng một cái. Lý do:
+ * một kỹ năng có nhiều vấn đề khác nhau theo thời gian, và phương án chữa Listening thì
+ * không chữa được Reading. Gộp cả lượt vào một bản ghi thì không biết việc nào chữa gì.
+ *
+ * Kèm theo, mỗi lượt có SOS sinh đúng MỘT bộ hai việc trao đổi (không phải mỗi kỹ năng một
+ * bộ — trao đổi là với em và với phụ huynh, không phải với từng kỹ năng).
+ *
+ * Kết luận sinh NGAY trên phần điểm đang có, không chờ đủ mọi kỹ năng: chờ đủ nghĩa là một
+ * giáo viên nhập muộn thì việc hỗ trợ học viên dừng theo. Kỹ năng nhập sau mà trượt thì mở
+ * thêm vấn đề của chính kỹ năng đó, không mở lại cái đã có.
+ */
 export function upsertCaseForResult(p: Principal, attempt: any, result: AttemptResult) {
-  /*
-   * Mở/cập nhật case NGAY khi đã kết luận được trên phần điểm đang có — không chờ đủ mọi
-   * kỹ năng. Chờ đủ nghĩa là một giáo viên nhập muộn thì việc hỗ trợ học viên dừng theo.
-   *
-   * Mức SOS có thể tăng khi các kỹ năng còn lại vào; case giữ nguyên và ghi lịch sử đổi mức,
-   * không mở case thứ hai.
-   */
   if (result.sosLevel === null) return null;
   const conn = db();
-  const existing = conn.prepare('SELECT * FROM sos_cases WHERE attempt_id = ?').get(attempt.id) as any;
+  const rows = conn
+    .prepare('SELECT skill, band FROM assessment_scores WHERE attempt_id = ?')
+    .all(attempt.id) as any[];
+  const entry: EntryBands = {};
+  for (const r of rows) entry[r.skill as EntrySkill] = r.band;
+  const failing = failingEntrySkills(result.expectation, entry, result.skipped);
 
-  if (result.sosLevel === 0) {
-    if (existing) {
-      conn.prepare('UPDATE sos_cases SET sos_level = 0, updated_at = ? WHERE id = ?').run(nowIso(), existing.id);
-      recordChange(existing.id, 'sos_level', String(existing.sos_level), '0', p.userId);
+  const detectedAt = (attempt.lrw_scheduled_at ?? '').slice(0, 10) || demoToday();
+  const open = conn
+    .prepare(`SELECT * FROM sos_cases WHERE attempt_id = ? ORDER BY id`)
+    .all(attempt.id) as any[];
+
+  /*
+   * Điểm sửa lên thành đạt: KHÔNG xoá vấn đề, chỉ hạ mức và để người có thẩm quyền đóng.
+   * Xoá đi là mất luôn những việc đã làm cho em vì vấn đề đó.
+   */
+  for (const c of open) {
+    if (c.topic && !failing.includes(c.topic)) {
+      if (c.sos_level !== 0) {
+        conn.prepare('UPDATE sos_cases SET sos_level = 0, updated_at = ? WHERE id = ?').run(nowIso(), c.id);
+        recordChange(c.id, 'sos_level', String(c.sos_level), '0', p.userId);
+      }
+    } else if (c.sos_level !== result.sosLevel) {
+      conn.prepare('UPDATE sos_cases SET sos_level = ?, updated_at = ? WHERE id = ?')
+        .run(result.sosLevel, nowIso(), c.id);
+      recordChange(c.id, 'sos_level', String(c.sos_level), String(result.sosLevel), p.userId);
     }
-    return existing ?? null;
   }
+  if (result.sosLevel === 0 || !failing.length) return open[0] ?? null;
 
-  if (!existing) {
+  const made: any[] = [];
+  for (const skill of failing) {
+    if (open.some((c) => c.topic === skill)) continue;
+    /*
+     * NGÀY PHÁT HIỆN là ngày làm bài, không phải ngày nhập điểm: nhập bù một tuần sau thì
+     * vấn đề vẫn đã tồn tại từ hôm làm bài.
+     */
     const info = conn
       .prepare(
-        /*
-         * GHI THẲNG học viên và lộ trình, không chỉ dựa vào bài đánh giá.
-         *
-         * Case do giáo viên báo không có bài nào, nên hai cột này là đường duy nhất chung
-         * cho cả hai nguồn. Bỏ trống ở đây thì hồ sơ học viên — vốn tra theo `student_id` —
-         * sẽ không thấy chính những vấn đề vừa sinh ra từ điểm của em đó.
-         *
-         * NGÀY PHÁT HIỆN là ngày làm bài, không phải ngày nhập điểm: nhập bù một tuần sau
-         * thì vấn đề vẫn đã tồn tại từ hôm làm bài.
-         */
-        `INSERT INTO sos_cases (attempt_id, student_id, cycle_id, origin_kind, detected_at,
-                                sos_level, status, created_at)
-         VALUES (?,?,?, 'mock', ?,?, 'open', ?)`,
+        `INSERT INTO sos_cases (attempt_id, student_id, cycle_id, track, topic, origin_kind,
+                                detected_at, sos_level, status, created_at)
+         VALUES (?,?,?, 'academic', ?, 'mock', ?,?, 'open', ?)`,
       )
-      .run(attempt.id, attempt.student_id, attempt.cycle_id,
-           (attempt.lrw_scheduled_at ?? '').slice(0, 10) || demoToday(),
-           result.sosLevel, nowIso());
+      .run(attempt.id, attempt.student_id, attempt.cycle_id, skill, detectedAt, result.sosLevel, nowIso());
     const id = Number(info.lastInsertRowid);
+    made.push(conn.prepare('SELECT * FROM sos_cases WHERE id = ?').get(id));
+    autoSupportPlan(id, attempt, result.sosLevel, skill);
+  }
+
+  if (made.length) {
     addJourney({
       studentId: attempt.student_id, cycleId: attempt.cycle_id,
       eventType: 'mock_result', eventDate: demoToday(),
@@ -124,26 +154,69 @@ export function upsertCaseForResult(p: Principal, attempt: any, result: AttemptR
       detail: [
         result.overall !== null ? `Overall ${result.overall}` : null,
         `kỳ vọng ${result.expectation ?? '—'}`,
+        failing.map((s) => ENTRY_SKILL_LABEL[s]).join(', '),
         // Kết luận tạm thời phải nói rõ ngay trong hành trình, không để đọc lại tưởng đã chốt.
         result.provisional ? `mới có ${result.scoredRequired}/${result.required.length} kỹ năng` : null,
-        result.scopeNote,
       ].filter(Boolean).join(' · '),
       refTable: 'assessment_attempts', refId: attempt.id, createdBy: p.userId,
-      // Lưu lại nhiều lần vẫn chỉ MỘT sự kiện: mỗi bài chỉ mở case một lần.
+      // Lưu lại nhiều lần vẫn chỉ MỘT sự kiện dù sinh ra nhiều vấn đề.
       dedupKey: `mock_result:${attempt.id}`,
     });
     notifyTeachers(attempt, result.sosLevel);
-    writeAudit({ actorUserId: p.userId, action: 'sos.open', entityType: 'sos_case', entityId: id,
-      entityLabel: `MT${attempt.attempt_no} SOS ${result.sosLevel}`, after: { level: result.sosLevel } });
-    return conn.prepare('SELECT * FROM sos_cases WHERE id = ?').get(id);
+    writeAudit({ actorUserId: p.userId, action: 'sos.open', entityType: 'sos_case',
+      entityId: made[0].id, entityLabel: `MT${attempt.attempt_no} SOS ${result.sosLevel}`,
+      after: { level: result.sosLevel, skills: failing } });
   }
 
-  if (existing.sos_level !== result.sosLevel) {
-    conn.prepare('UPDATE sos_cases SET sos_level = ?, updated_at = ? WHERE id = ?')
-      .run(result.sosLevel, nowIso(), existing.id);
-    recordChange(existing.id, 'sos_level', String(existing.sos_level), String(result.sosLevel), p.userId);
+  ensureSosContacts(attempt, result.sosLevel);
+  return made[0] ?? open[0] ?? null;
+}
+
+/**
+ * HAI VIỆC TRAO ĐỔI BẮT BUỘC — một bộ cho mỗi LƯỢT, không phải mỗi kỹ năng.
+ *
+ * Hạn: hết CHỦ NHẬT của tuần kế tiếp tuần làm bài (owner chốt 10/09/2026, không co giãn).
+ * Owner đã được báo trước hệ quả: nếu giáo viên chấm đúng hạn thứ Tư thì GVCN chỉ còn bốn
+ * ngày, và chấm muộn thì việc sinh ra đã quá hạn — owner chấp nhận đánh đổi đó để quy tắc
+ * dễ giải thích.
+ *
+ * Chỉ số câu `auto = 1` cùng chỉ mục duy nhất bảo đảm chấm lại hay sửa điểm không nhân đôi.
+ */
+export function ensureSosContacts(attempt: any, level: number) {
+  if (!level || !attempt.student_id) return;
+  const conn = db();
+  const taken = (attempt.lrw_scheduled_at ?? '').slice(0, 10) || demoToday();
+  const due = addDays(mondayOf(taken), 13);   // Chủ nhật của tuần kế tiếp
+  for (const kind of CONTACT_KINDS) {
+    conn
+      .prepare(
+        `INSERT INTO student_contacts (student_id, cycle_id, attempt_id, kind, due_date, auto, created_at)
+         VALUES (?,?,?,?,?, 1, ?)
+         ON CONFLICT(attempt_id, kind) WHERE auto = 1 DO NOTHING`,
+      )
+      .run(attempt.student_id, attempt.cycle_id, attempt.id, kind, due, nowIso());
   }
-  return conn.prepare('SELECT * FROM sos_cases WHERE id = ?').get(existing.id);
+}
+
+/**
+ * PHƯƠNG ÁN TỰ SINH THEO QUY ĐỊNH CŨ — xếp tự học, hoặc tutor từ SOS 3 và từ MT3 trở đi.
+ *
+ * Sinh ở trạng thái ĐÃ LÊN KẾ HOẠCH, KHÔNG có người thực hiện và KHÔNG gửi duyệt. Máy không
+ * đặt tutor thay người: nó chỉ nói "theo quy định em này phải có cái này", còn ai làm và có
+ * đúng là cái đó không thì GVCN xác nhận hoặc đổi. Để máy tự gửi duyệt thì Quản lý mở lên
+ * thấy một hàng đề xuất không ai nghĩ ra.
+ */
+function autoSupportPlan(caseId: number, attempt: any, level: number, skill: string) {
+  const kind = autoSupportKind(level, attempt.attempt_no);
+  db()
+    .prepare(
+      `INSERT INTO case_interventions (case_id, kind, description, status, created_at)
+       VALUES (?,?,?, 'planned', ?)`,
+    )
+    .run(caseId, kind,
+         `${INTERVENTION_KIND_LABEL[kind]} cho ${ENTRY_SKILL_LABEL[skill as EntrySkill] ?? skill}`
+         + ` — theo quy định khi ${SOS_LABEL[level as SosLevel]}`,
+         nowIso());
 }
 
 function recordChange(caseId: number, field: string, oldValue: string | null, newValue: string | null, actor: number | null) {
