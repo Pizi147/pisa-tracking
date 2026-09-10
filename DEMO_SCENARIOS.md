@@ -1,8 +1,10 @@
 # Các luồng để bạn bấm thử
 
-> Vòng overhaul **A — nền tảng**. Trọng tâm lần này: tách **tuần kế hoạch** với **ngày giờ**,
-> đánh dấu **kỹ năng không mock**, **lộ trình** và số lần MT, **ước lượng giáo viên**, hệ màu mới,
-> và bỏ chữ "thi" cho Mock.
+> Vòng **D — hồ sơ học viên và vấn đề học vụ**. Trọng tâm lần này: **hai nguồn vấn đề, một vòng đời**;
+> **ghi nhận nhanh** (nhận xét bằng lời là đủ); **hồ sơ học viên** dựng quanh một lộ trình với hành trình
+> gom thành chương; **màn Học thuật** cho Quản lý.
+>
+> Muốn xem nhanh phần mới nhất thì bắt đầu từ **Luồng 15 → 19**.
 
 Ngày demo mặc định: **23/09/2026** (thứ Tư, tuần `W4 SEP · 21/09 – 27/09`).
 Đổi tài khoản bất cứ lúc nào bằng nút **Đổi tài khoản demo** ở thanh trên cùng.
@@ -46,17 +48,19 @@ lưu thật xuống database.
 2. Đổi ô **Tuần** sang tuần khác: số của tuần đổi theo, còn **case và việc quá hạn giữ nguyên**.
 3. Bấm một dòng trong **Việc cần làm trước** → mở thẳng chi tiết lần Mock đó.
 4. Trong chi tiết Mock, đọc từ trên xuống: lịch và cam kết → điểm từng kỹ năng → bốn kỹ năng đánh giá
-   + Overall + kết luận SOS → **checklist xử lý theo đúng MT × mức SOS**.
-5. Ở khối **Xử lý sau Mock**: điền tên người trao đổi HS nhưng **để trống ngày** → trạng thái bước đó là
-   *"Có tên, chưa có ngày"*, **chưa** tính là đã làm. Điền thêm ngày ở tương lai → *"Đã xếp lịch"*.
-   Điền ngày đã qua → *"Đã thực hiện"*. Bấm **Lưu ghi nhận**.
-6. Bấm **Xác nhận (Head)** — thao tác riêng, không tự suy ra từ trạng thái case.
-   **Head chính là Quản lý**: đăng nhập bằng `Đặng Ngọc Phúc` (Admin chi nhánh) thì nút này không hiện,
-   và gọi thẳng API cũng bị từ chối.
-7. Mở **Lịch sử thay đổi** ở cuối trang để xem lịch sử dời lịch và lịch sử cập nhật xử lý.
+   + Overall + kết luận SOS → **Vấn đề học vụ** → **Quy trình gợi ý** cho mức đó.
+5. Khối **Vấn đề học vụ** dùng đúng khung của hồ sơ học viên và màn Học thuật: *vì sao đang theo dõi →
+   đã làm gì → quan sát được gì → bước tiếp theo*. Bấm **+ Ghi một việc đã làm**, chọn *Đã xong* mà
+   **để trống ngày** → bị chặn: ghi "đã xong" phải có ngày thật.
+6. Tick **"Người khác làm, tôi nhập hộ"** rồi gõ `CS Ngọc Diệp` → bản ghi giữ tên CS làm người thực hiện
+   và ghi rõ bạn là người nhập. Bỏ tick → người thực hiện là chính bạn, và đó là **lời khai tường minh**,
+   không phải hệ thống tự đoán.
+7. **Quy trình gợi ý** nằm riêng bên dưới, **chỉ đọc**. Nó nhắc nên làm gì, không phải việc đã làm.
+8. Mở **Lịch sử thay đổi** ở cuối trang để xem lịch sử dời lịch và lịch sử đổi mức.
 
-**Cần thấy:** mỗi KPI mở đúng danh sách · đổi tuần không mất việc cũ · checklist đúng bảng nguồn ·
-tên người không thay được cho ngày thực hiện.
+**Cần thấy:** mỗi KPI mở đúng danh sách · đổi tuần không mất việc cũ · gợi ý tách khỏi việc đã làm ·
+"đã xong" phải có ngày · người nhập không mặc định là người làm.
+**Không còn** bước "Xác nhận (Head)": xem `DEMO_ASSUMPTIONS.md` mục Q7.
 
 Ví dụ hay để mở: các dòng `Case SOS` của lớp `CP-FT 110` (thi 22/09) và `MB-FT 101` (thi 10/09, đã quá hạn).
 
@@ -123,20 +127,21 @@ GVCN chỉ đọc lịch.
 
 ---
 
-## Luồng 6 — Lộ trình, số lần MT và ước lượng giáo viên
+## Luồng 6 — Hai lộ trình, hai mục tiêu, không trộn dữ liệu
 
-**Tài khoản:** `Đặng Quang Vy`, mở `/hoc-vien/4`
+**Tài khoản:** `Đặng Quang Vy`, mở `/hoc-vien/4` (Hoàng Thu Ninh — **LT1 target 6.5**, **LT2 target 7.0**)
 
-1. Bảng **Các lần Mock Test** có cột **Lộ trình**: LT1 có MT1–MT3, rồi LT2 **bắt đầu lại từ MT1**
-   vì đã có target mới. Kỳ vọng LT2 MT1 = target mới − 1.0.
-2. Xem một học viên ở lớp `UB-FT 401` để thấy trường hợp ngược lại: **học tiếp trong cùng lộ trình**
-   thì MT **tăng tiếp** (MT5) và target giữ nguyên, nên kỳ vọng bằng đúng target.
-3. Khối **Ước lượng giáo viên so với điểm Mock**: mỗi kỹ năng có ước lượng, **ngày ước lượng và người
-   đánh giá**, điểm Mock kèm **nguồn** (`LT1 · MT2 · 10/09/2026`) và chênh lệch.
-4. Hành trình ghi cả `Bắt đầu lộ trình LT1`, `Bắt đầu lộ trình LT2` kèm target, các lần lên kế hoạch
-   và đổi tuần.
+1. Đầu trang có **bộ chọn lộ trình**. Đang ở LT2; bấm sang **LT1** — **cả trang đổi theo**: mục tiêu,
+   các lần đánh giá, đường đi từng kỹ năng, vấn đề, hành trình.
+2. Lựa chọn nằm trên **đường dẫn** (`?lo-trinh=…`), nên bấm Back quay đúng lộ trình vừa xem, và gửi
+   đường dẫn cho người khác thì họ mở ra đúng màn hình đó.
+3. LT1 có MT1–MT3; LT2 **bắt đầu lại từ MT1** vì đã có mục tiêu mới. Kỳ vọng LT2 MT1 = 7.0 − 1.0 = **6.0**.
+4. Xem một học viên ở lớp `UB-FT 401` để thấy trường hợp ngược lại: **học tiếp trong cùng lộ trình**
+   thì MT **tăng tiếp** (MT5) và mục tiêu giữ nguyên, nên kỳ vọng bằng đúng mục tiêu.
+5. **Đường đi từng kỹ năng** chỉ nối các mốc **trong cùng một lộ trình** — không nối xuyên qua lộ trình
+   khác, vì hai bên có mục tiêu khác nhau.
 
-**Cần thấy:** hai cột so sánh luôn có ngày và nguồn riêng; không có Overall ghép từ nhiều lượt.
+**Cần thấy:** đổi lộ trình đổi cả trang · không lượt nào xuất hiện ở cả hai lộ trình · Back giữ đúng chỗ.
 
 ---
 
@@ -147,7 +152,7 @@ GVCN chỉ đọc lịch.
 1. Mở **Học viên**. Màn hình mở ra là **danh sách lớp**, không phải danh sách 400 học viên.
    Mỗi dòng lớp có badge — và **chỉ có badge khi thật sự có việc cần làm**.
 2. Bấm **nền dòng** một lớp → danh sách học viên mở ra ngay tại chỗ. Mỗi em hiện chuỗi
-   `MT1 ✓ · MT2 ✓ · MT3 W4 OCT`, kết quả gần nhất và ước lượng giáo viên.
+   `MT1 ✓ · MT2 ✓ · MT3 W4 OCT`, kết quả gần nhất và ghi nhận của giáo viên.
    Đây chính là phần *tiến độ / mock test* trước đây tách riêng.
 3. Bấm **nền dòng lớp thứ hai** → lớp thứ nhất **vẫn mở**. Hai lớp đặt cạnh nhau mà so.
 4. Bấm **badge** `N cần nhập điểm` → chuyển sang hàng đợi đã lọc sẵn theo lớp đó.
@@ -213,19 +218,29 @@ Giáo viên **Speaking** sửa được **ngày Speaking**, nhưng vẫn không 
 
 ---
 
-## Luồng 11 — Giáo viên: Đánh giá GV và so với điểm Mock
+## Luồng 11 — Ghi nhận nhanh: nhận xét bằng lời là đủ
 
-**Vai:** `Trần Hải Đạt` (GV Listening + Reading, lớp MB-FT 101).
+**Vai:** `Đinh Bảo Vy` (GV Reading, lớp MB-FT 101).
 
-1. Mở lớp → mở hồ sơ một học viên → bảng **Điểm Mock và Đánh giá GV**.
+1. Mở lớp → mở hồ sơ một học viên → bảng **Điểm chính thức và ghi nhận của giáo viên**.
    Một bảng, hai cột, kèm cột **Δ**.
-2. Δ **dương** (xanh) = em đang thể hiện **tốt hơn** mức giáo viên đánh giá; **âm** (hổ phách) = **thấp hơn**.
-3. Bấm **Đánh giá** ở dòng Listening → nhập **số câu đúng / 40**, hệ thống tự quy ra band.
-   Dòng Writing/Speaking thì nhập **bốn tiêu chí**.
-4. Bấm vào một ô điểm → mở **căn cứ**: raw hoặc bốn tiêu chí.
-5. Thử sửa kỹ năng **không** được phân công → không có nút, và gọi thẳng API cũng bị từ chối.
+2. Cột giữa hiện **nguyên văn nhận xét** — ví dụ *"Làm matching ổn, mất điểm ở TRUE/FALSE/NOT GIVEN."*
+   Đó thường là thứ hữu ích nhất trên cả bảng: một con số 6.0 không nói được điều đó.
+3. Bấm **Ghi nhận** ở dòng Reading. Ô đầu tiên là **nhận xét**, và **chỉ cần thế là lưu được** —
+   chọn *"Không, chỉ nhận xét"* ở phần điểm.
+4. Lưu xong: dòng đó hiện nhận xét, cột **Δ để trống**. Nhận xét bằng lời **không bị quy ra số** để đem
+   trừ — và cũng không nên, vì như thế là bịa ra một phép đo không có.
+5. Thử lại với *"Ước chừng một band"* → con số được ghi kèm chữ **(nhận định)**. Với *"Có bài, nhập số
+   câu đúng"* → hệ thống tự quy ra band, đúng cùng công thức với điểm chính thức.
+6. Để trống **cả** nhận xét lẫn điểm rồi bấm Lưu → bị chặn: một dòng không có gì thì không nói lên điều gì.
+7. Thử ghi nhận kỹ năng **không** được phân công → không có nút, và gọi thẳng API cũng bị từ chối.
 
-**Lưu ý:** giáo viên cập nhật được **bất kỳ lúc nào**, không phụ thuộc tuần MT hay hạn nhập điểm.
+**Cần thấy:** Δ **không tô màu tốt/xấu** — nó chỉ là khoảng cách hai con số. Điểm chính thức là kết quả
+một bài làm trong một buổi; ghi nhận là nhận định qua cả quá trình dạy. Bên nào cao hơn cũng không tự nó
+nói lên điều gì đáng khen hay đáng lo.
+
+**Lưu ý:** giáo viên ghi được **bất kỳ lúc nào** — không phụ thuộc tuần MT, hạn nhập điểm hay cửa sổ sửa
+báo cáo tuần. Ghi nhận **không bao giờ** ghi đè điểm chính thức, và **không** tự sinh ra vấn đề học vụ.
 
 ---
 
@@ -282,26 +297,159 @@ xét trên tỷ lệ chính xác, không xét trên số đã làm tròn.
 
 ---
 
+## Luồng 15 — Giáo viên báo vấn đề TRƯỚC khi có bài đánh giá
+
+**Vai:** giáo viên bất kỳ, ví dụ `Đinh Bảo Lam` (Listening · W2 · Speaking, lớp MB-FT 101).
+
+Đây là **nguồn thứ hai** của vấn đề học vụ. Trước đây hệ thống chỉ biết em nào đang đuối sau khi có đủ
+điểm Mock — nhưng giáo viên nhìn thấy vấn đề trên lớp từ nhiều tuần trước đó, và không có chỗ nào để nói ra.
+
+1. **Học viên** → mở một lớp → bấm tên một học viên để vào hồ sơ.
+2. Bấm **Ghi nhận vấn đề** ở góc trên bên phải.
+3. Chỉ cần **một câu**: *"Ba tuần nay em không làm bài nghe ở nhà, trên lớp cũng ít tập trung."*
+   Chọn mức **Cần chú ý**. Bấm **Ghi nhận**.
+4. Ngăn kéo mở ngay ra vấn đề vừa tạo. Nhìn phần đầu: có nhãn **Cần chú ý**, **không** có nhãn SOS —
+   SOS là số kỹ năng dưới kỳ vọng ở một bài cụ thể, ở đây chưa có bài nào.
+5. Phần *Phân loại, hoàn cảnh, ngày phát hiện* đều **tuỳ chọn** — mở ra bằng dòng
+   *"+ Phân loại và hoàn cảnh (không bắt buộc)"*. Form dài thì giáo viên bỏ qua, và một form không ai điền
+   thì không có dữ liệu nào cả.
+6. Bấm **+ Ghi một việc đã làm** → chọn *Trao đổi với học viên*, mô tả một câu, chọn *Đã xong* và điền ngày.
+7. Bấm **+ Ghi lại kết quả xem lại** → chọn *Có tiến bộ*, ghi *"Đã nộp bài đủ hai tuần liên tiếp"*.
+8. Cuộn xuống **Hành trình học**: mọi việc vừa làm nằm chung **một chương**, không rải thành bốn dòng rời.
+9. Bấm hai lần nút Ghi nhận (hoặc F5 rồi gửi lại) → **không** tạo vấn đề thứ hai.
+
+**Đổi sang `Đặng Quang Vy` (Quản lý MB)** → **Học thuật** → thấy ngay vấn đề vừa báo. Không ai phải nhập
+thêm một bản báo cáo nào để Quản lý biết chuyện này.
+
+**Vấn đề có sẵn để xem:** `case/114` (Hoàng Minh Mai, cần chú ý) · `case/115` (Phạm Thanh Quân, **gấp**) ·
+`case/116` (Vũ Minh Trâm, bình thường) · `case/118` (Hoàng Tuấn Hà, **đã kết thúc theo dõi**).
+
+---
+
+## Luồng 16 — Hồ sơ học viên: hiểu tình hình trong ba mươi giây
+
+**Vai:** `Đặng Quang Vy` (Quản lý MB), mở hồ sơ một học viên lớp FT.
+
+Đọc từ trên xuống, mỗi khối trả lời đúng một câu hỏi:
+
+| Khối | Câu hỏi |
+|---|---|
+| **Điểm đầu vào → Hiện tại → Mục tiêu** | Em đi từ đâu tới đâu, còn cách đích bao xa |
+| **So với mốc gần nhất** · **Đang cần chú ý** | Có theo kịp không, đang vướng gì |
+| **Đường đi từng kỹ năng** | Kỹ năng nào đã tiến, kỹ năng nào đứng yên |
+| **Vấn đề học vụ** | Ai phát hiện, đã làm gì, quan sát được gì |
+| **Các lần đánh giá** | Bảng điểm chi tiết |
+| **Hành trình học** | Toàn bộ câu chuyện theo thời gian |
+
+Những điều nên để ý:
+
+1. **Điểm đầu vào** phần lớn ghi *"Chưa rõ"* — hệ thống **không** lấy MT1 làm điểm đầu vào. Bấm
+   **Điểm đầu vào** để nhập, và nó **bắt chọn nguồn**: bài kiểm tra đầu vào · kết quả cuối lộ trình trước ·
+   điểm bên ngoài · nhập tay có ghi chú.
+2. **Hiện tại** chỉ lấy Overall từ **một lượt** có đủ bốn kỹ năng, kèm dòng *"Overall ở MT2"*. Không ghép
+   bốn kỹ năng mới nhất của bốn lượt khác nhau.
+3. **So với mốc gần nhất** nói *đạt kỳ vọng* hay *có kỹ năng dưới kỳ vọng*, kèm kỳ vọng đã chốt của chính
+   mốc đó. Nếu mới có 2/4 kỹ năng thì có dòng cảnh báo là kết luận **còn có thể đổi**.
+4. **Cố tình không có nhãn tổng hợp** kiểu *"đang ổn / có nguy cơ"*. Không có cảnh báo **không** đồng nghĩa
+   đang theo kịp — hai điều đó khác nhau, nên nói tách ra.
+5. **Đã tăng** và **Còn cách đích** đều là phép trừ nên **không tô màu**. Thiếu điểm đầu vào thì cột
+   *Đã tăng* để trống, không điền số 0.
+6. Bấm **Đổi mục tiêu** → **bắt ghi lý do**. Lưu xong, các lượt đã chốt **vẫn giữ kỳ vọng cũ**: đổi mục
+   tiêu không chấm lại quá khứ.
+7. Bấm **Kết luận** → *đạt · chưa đạt · **chưa có căn cứ kết luận***. Đóng lộ trình chỉ nói "không học theo
+   lộ trình này nữa"; có đạt hay không là kết luận riêng.
+
+**Hồ sơ lớp thường** (`/hoc-vien/25`, `MB-FOUND 12`) có bộ ba **khác**: *khoá học · bài đã làm · kết quả
+gần nhất*. Lớp thường không có band, mục tiêu IELTS hay ngày thi — dựng ba con số IELTS ở đây là bịa.
+
+---
+
+## Luồng 17 — Học thuật: màn của Quản lý
+
+**Vai:** `Đặng Quang Vy` (Quản lý MB) hoặc `Đặng Quang Nhi` (Quản trị hệ thống, thấy cả năm chi nhánh).
+
+1. Menu **Học thuật**. Bốn ô ở đầu trang là **bốn hàng đợi**, trả lời **bốn câu hỏi khác nhau**:
+
+   | Hàng đợi | Câu hỏi |
+   |---|---|
+   | Chưa ai định hướng | Vấn đề nào chưa có hướng xử lý và cũng chưa ai làm gì? |
+   | Đang hỗ trợ / theo dõi | Vấn đề nào đang có người xử lý? |
+   | Tới hạn xem lại | Vấn đề nào đã hẹn xem lại và đã tới hạn? |
+   | Cần xem kỹ | Vấn đề nào ở mức cao, hoặc người báo đánh dấu gấp? |
+
+   Bốn số này **cố tình không cộng lại thành tổng**: một vấn đề có thể vừa *đang hỗ trợ* vừa *tới hạn xem lại*.
+2. Bấm một hàng đợi → danh sách lọc theo. **Đường dẫn đổi theo** (`?hang-doi=new`).
+3. Lọc tiếp theo **chi nhánh** → **nhóm vấn đề** → **kỹ năng**. Mỗi lựa chọn thêm một tham số vào đường dẫn.
+4. Bấm **Back** → về đúng bộ lọc trước đó, không mất chỗ đang xem.
+5. Bấm một dòng → vấn đề mở trong **ngăn kéo**, không rời màn hình. Bấm **Mở trang riêng** → cùng bản ghi
+   ấy ở một đường dẫn chia sẻ được (`/hoc-thuat/case/…`).
+6. Phần lớn vấn đề sinh từ điểm ghi **"chưa phân loại"** — đúng như vậy: hệ thống chỉ biết kỹ năng nào dưới
+   kỳ vọng, còn **vì sao** thì phải có người dạy nhận định. Nó **không** tự chẩn đoán nguyên nhân.
+7. Nhóm **Quá trình dạy** nói về cách dạy có thể cải thiện — **không** phải bảng xếp hạng giáo viên.
+8. Quản lý **không phải cửa duyệt**: không vấn đề nào cần ý kiến Quản lý mới xử lý tiếp được.
+
+---
+
+## Luồng 18 — Sửa điểm không xoá lịch sử hỗ trợ
+
+**Vai:** `Đặng Quang Nhi` (Quản trị hệ thống).
+
+1. **Học thuật** → mở một vấn đề sinh từ điểm đã có vài việc đã làm (ví dụ `case/78`, `case/81`, `case/8`).
+2. Đếm số việc trong khối *Đã làm gì và quan sát được gì*.
+3. Bấm mã MT ở phần đầu để mở trang điểm → sửa một kỹ năng lên cho **đạt kỳ vọng**.
+4. Quay lại vấn đề: **mọi việc đã làm vẫn còn**, mức SOS đổi theo điểm mới, và lịch sử đổi mức nằm trong
+   *Lịch sử thay đổi*.
+5. Ngay trên trang điểm, khối **Vấn đề học vụ** vẫn hiện kèm một dòng giải thích: điểm nay đã đạt, nhưng
+   vấn đề còn đây để tra lại đã hỗ trợ những gì. Người có quyền quyết định có kết thúc theo dõi hay không.
+
+**Vì sao quan trọng:** giấu vấn đề đi khi điểm đã lên nghĩa là xoá luôn dấu vết của công sức hỗ trợ em —
+đúng phần đáng đọc nhất. Và điểm lên **không** tự chứng minh là nhờ việc hỗ trợ.
+
+---
+
+## Luồng 19 — Ai được kết thúc theo dõi
+
+**Vai:** lần lượt ba tài khoản, cùng một vấn đề.
+
+1. `Đinh Bảo Vy` (GV Reading, **không** phải GVCN của MB-FT 101): mở vấn đề của một học viên lớp đó →
+   ghi được việc đã làm, ghi được kết quả xem lại, nhưng phần **Bước tiếp theo** có dòng giải thích rằng
+   chỉ GVCN của lớp và Quản lý mới kết thúc theo dõi được.
+2. `Trần Quang Nam` (**GVCN** MB-FT 101): cùng vấn đề đó → chọn hướng xử lý và **kết thúc theo dõi** được.
+3. `Đặng Quang Vy` (Quản lý MB): kết thúc được mọi vấn đề trong chi nhánh.
+4. Thử kết thúc mà **không chọn hướng xử lý** → bị chặn.
+5. Chọn hướng **"Chỉ theo dõi"** → **không** có ô kết thúc: "chỉ theo dõi" nghĩa là vấn đề **vẫn còn mở**.
+6. Chặn ở **máy chủ**, không chỉ ẩn nút: gọi thẳng API bằng tài khoản giáo viên bộ môn cũng bị từ chối.
+
+---
+
 ## Kiểm tra quyền (bấm nhanh)
 
 | Thử | Tài khoản | Kỳ vọng |
 |---|---|---|
-| Chỉ sửa được kỹ năng được phân công | `Hoàng Khánh Huy` (W1 lớp MB-FT 101) | Chỉ ô **W1** mở được khung tiêu chí; W2 chỉ đọc |
-| GVCN **không** có quyền lịch | `Đinh Bảo Vy` (GVCN MB-FT 101) | Không có nút **Đổi tuần** lẫn **Chốt ngày giờ**; gọi thẳng API cũng bị từ chối |
+| Chỉ sửa được kỹ năng được phân công | `Đinh Bảo Vy` (GV Reading lớp MB-FT 101) | Chỉ ô **R** mở được; L/W/S chỉ đọc |
+| GVCN **không** có quyền lịch | `Trần Quang Nam` (GVCN MB-FT 101) | Không có nút **Đổi tuần** lẫn **Chốt ngày**; gọi thẳng API cũng bị từ chối |
 | Quản lý chốt tuần nhưng không chốt ngày | `Đặng Quang Vy` | Có **Đổi tuần**, không có **Chốt ngày giờ** |
 | Admin CN chốt ngày nhưng không chốt tuần | `Đặng Ngọc Phúc` | Có **Chốt ngày giờ**, không có **Đổi tuần** |
-| Admin CN **không** vào Tiến trình công việc | `Đặng Ngọc Phúc` | Menu chỉ còn 3 mục, không có *Tiến trình công việc*; gọi API báo cáo bị từ chối |
+| Admin CN **không** vào Tiến trình công việc | `Đặng Ngọc Phúc` | Menu **không** có *Tiến trình công việc*; gọi API báo cáo bị từ chối |
 | Không thấy dữ liệu ngoài chi nhánh | `Đặng Quang Vy` (Quản lý MB) | Không thấy lớp `CP-FT 110`; gọi thẳng URL của Mock lớp CP bị **API từ chối**, không chỉ ẩn nút |
-| Nhiều quản lý cùng chi nhánh | `Trần Quang Nam`, `Đinh Bảo Lam` (đều là Quản lý MB) | Cả ba quản lý MB đều thao tác được |
-| Giáo viên không có Tiến trình công việc | bất kỳ giáo viên nào | Menu chỉ còn **3 mục**, không có *Tiến trình công việc* |
-| Lớp thường: GV chỉ nhập kỹ năng mình dạy | GV Listening lớp `MB-FOUND 12` | Nhập được Listening; gọi API nhập Pronunciation bị từ chối; nhập `writing1` bị từ chối vì chương trình Foundation không có kỹ năng đó |
+| Mỗi chi nhánh một Quản lý, một Admin | `Đặng Quang Vy` (QL MB) · `Đặng Ngọc Phúc` (Admin MB) | Dữ liệu mẫu để đúng một người mỗi vai mỗi chi nhánh cho dễ theo dõi; hệ thống vẫn hỗ trợ nhiều người |
+| Giáo viên không có Tiến trình công việc | bất kỳ giáo viên nào | Menu **không** có *Tiến trình công việc* |
+| Lớp thường: GV chỉ nhập kỹ năng mình dạy | `Đinh Bảo Lam` (GV Reading lớp `MB-FOUND 12`) | Nhập được Reading; gọi API nhập Pronunciation bị từ chối; nhập `writing1` bị từ chối vì chương trình Foundation không có kỹ năng đó |
 | Nhập hàng loạt ngoài phạm vi bị chặn ở máy chủ | `Đặng Quang Vy` (Quản lý MB) | Dán dòng có lớp `CP-FT 110`: xem trước báo *nằm ngoài phạm vi*, bấm Thêm thì dòng đó bị bỏ qua và **không** có học viên nào được tạo |
-| Không còn bước *Xác nhận (Head)* | bất kỳ tài khoản nào | Chi tiết case **không** còn nút *Xác nhận (Head)*; case kết thúc bằng chính trạng thái xử lý. Dấu xác nhận cũ vẫn hiện để tra lại |
+| Không còn bước *Xác nhận (Head)* | bất kỳ tài khoản nào | Chi tiết vấn đề **không** còn nút *Xác nhận (Head)*. Dấu xác nhận cũ trong dữ liệu vẫn giữ để tra lại |
+| Giáo viên bộ môn **không** kết thúc được theo dõi | `Đinh Bảo Vy` (GV Reading MB-FT 101) | Ghi được việc đã làm và kết quả xem lại; phần *Bước tiếp theo* nói rõ chỉ GVCN và Quản lý mới kết thúc được. Gọi thẳng API cũng bị từ chối |
+| GVCN kết thúc được theo dõi lớp mình | `Trần Quang Nam` (GVCN MB-FT 101) | Chọn hướng xử lý rồi kết thúc được |
+| Kết thúc theo dõi phải có hướng xử lý | `Đặng Quang Vy` | Bỏ trống hướng xử lý → bị chặn. Chọn *"Chỉ theo dõi"* → **không** có ô kết thúc, vì "chỉ theo dõi" nghĩa là vẫn còn mở |
+| Ghi *"đã xong"* phải có ngày thật | bất kỳ tài khoản nào ghi được | Chọn *Đã xong* mà để trống ngày → bị chặn ở máy chủ |
+| Người nhập không mặc định là người làm | `Đặng Quang Vy` | Tick *"Người khác làm, tôi nhập hộ"* và gõ tên → bản ghi giữ **tên người ngoài**, kèm ghi chú ai nhập hộ |
+| Giáo viên chỉ ghi nhận kỹ năng mình dạy | `Đinh Bảo Vy` (GV Reading MB-FT 101) | Chỉ dòng **Reading** có nút *Ghi nhận*; gọi API ghi nhận Speaking bị từ chối |
+| Giáo viên báo được vấn đề ngoài kỹ năng mình dạy | `Đinh Bảo Vy` | Báo được *"em hay nghỉ học"* dù chỉ dạy Reading — quyền **báo vấn đề** đi theo phạm vi chăm sóc, không theo kỹ năng. Nhưng vẫn **không** ghi được điểm kỹ năng khác |
+| Vấn đề của học viên ngoài phạm vi bị chặn | `Trần Quang Nam` (GVCN MB) | Gọi API báo vấn đề cho học viên lớp `CP-FT 110` bị từ chối |
 | Quản lý cập nhật được ngày MT | `Đặng Quang Vy` | Có cả **Đổi tuần** lẫn cập nhật **ngày thực tế** — học viên nghỉ thì sửa được ngay |
 | Báo cáo tuần tương lai bị chặn ở máy chủ | `Đặng Quang Vy` | Mở một tuần cuối năm: ô nhập khoá, và gọi thẳng API vẫn bị từ chối |
-| Giáo viên không huỷ được lịch | `Đinh Bảo Vy` (GVCN MB-FT 101) | Có nút **Dời lịch**, **không** có nút *Huỷ lịch* |
-| GV L/R/W không sửa được ngày MT | `Hoàng Khánh Huy` (GV W1) | Gọi API cập nhật ngày L/R/W **và** ngày Speaking đều bị từ chối |
-| GV Speaking chỉ sửa ngày Speaking | `Ngô Khánh Bình` (GV S) | Sửa được **ngày Speaking**; ngày L/R/W bị từ chối |
+| Giáo viên không huỷ được lịch | `Trần Quang Nam` (GVCN MB-FT 101) | **Không** có nút *Huỷ lịch* |
+| GV L/R/W không sửa được ngày MT | `Đinh Bảo Vy` (GV Reading MB-FT 101) | Gọi API cập nhật ngày L/R/W **và** ngày Speaking đều bị từ chối |
+| GV Speaking chỉ sửa ngày Speaking | `Đinh Bảo Lam` (GV Speaking MB-FT 101) | Sửa được **ngày Speaking**; ngày L/R/W bị từ chối |
 | Quản trị hệ thống thấy phần quản trị | `Đặng Quang Nhi` | Menu tài khoản có mục **Quản trị hệ thống** |
 
 ---
@@ -319,15 +467,23 @@ xét trên tỷ lệ chính xác, không xét trên số đã làm tròn.
 | **Đúng hạn hôm nay, chưa quá hạn** | Các lượt tuần `W3 SEP` |
 | **Đã huỷ lượt** | Một học viên `HD-FT 302` — không tính vào "đã xong" hay "thiếu điểm" |
 | **Đổi tuần kế hoạch** | Một học viên `CP-FT 110` — xem *Lịch sử thay đổi* trong chi tiết |
-| **Sang lộ trình mới, MT đánh lại từ 1** | `/hoc-vien/4` — LT1 có MT1–MT3, LT2 bắt đầu lại MT1 với target cao hơn |
+| **Sang lộ trình mới, MT đánh lại từ 1** | `/hoc-vien/4` (Hoàng Thu Ninh) — LT1 target 6.5 có MT1–MT3, LT2 target 7.0 bắt đầu lại MT1 |
 | **Học tiếp cùng lộ trình, MT tăng tiếp** | Một học viên `UB-FT 401` — MT5, target giữ nguyên |
-| **Ước lượng giáo viên** | Hầu hết học viên FT, tách theo W1/W2 và có ngày đánh giá |
+| **Ghi nhận CHỈ CÓ nhận xét, không điểm** | 144 ghi nhận trong dữ liệu mẫu — cột Δ để trống, đúng như thiết kế |
+| **Ghi nhận có điểm ước lượng** | 145 ghi nhận — con số kèm chữ *(nhận định)* để phân biệt với đo từ bài thật |
+| **Giáo viên báo vấn đề, chưa có bài nào** | `case/114` cần chú ý · `case/115` **gấp** · `case/116` bình thường · `case/117` cần chú ý · `case/118` **đã kết thúc theo dõi** |
+| **Vấn đề nhiều việc đã làm và có lần xem lại** | `case/78`, `case/81`, `case/92` — mỗi vấn đề 5 việc |
+| **Việc mới lên kế hoạch, chưa làm** | Các vấn đề còn ở trạng thái *Chưa xử lý* — có tên người nhưng **chưa có ngày** |
+| **Hỗ trợ học thuật đang thực hiện, chưa xong** | Các vấn đề *Đang xử lý* — có ngày bắt đầu, chưa có ngày xong, kèm hẹn xem lại |
+| **Hẹn xem lại đã quá hạn** | `case/79` hẹn 03/08 · `case/1`, `case/7`, `case/10` hẹn 31/08 |
+| **Theo dõi KHÔNG hẹn ngày** | Có trong dữ liệu — và **không bao giờ** bị coi là quá hạn |
+| **Vấn đề chưa phân loại** | Phần lớn vấn đề sinh từ điểm — hệ thống không tự chẩn đoán nguyên nhân |
 | **Chuyển lớp** | `/hoc-vien/3` — lượt đã xong giữ lớp cũ, lượt chưa xong sang lớp mới |
 | **Tạm dừng rồi quay lại học** | Một học viên `BC-FT 205` |
 | **Kết thúc học và lưu trữ** | Hai học viên `BC-FT 205`: một em vừa xong (còn hiện, làm dịu màu), một em đã quá hai tuần |
 | **Warning / WL** | Một học viên `UB-FT 401` — thử bộ lọc *Warning / WL* |
 | **Case SOS ở đủ bốn mức tiến độ** | Chưa ghi nhận · Có tên chưa có ngày · Đang xử lý · Đã xong |
-| **Lớp không thuộc FT** | `MB-FOUND 12`, `BC-BE 80`, `HD-ELE 01` — chưa có lộ trình nên chưa có MT (vòng C) |
+| **Lớp thường** | `MB-FOUND 12` (`/hoc-vien/25`), `BC-BE 80`, `HD-ELE 01` — hồ sơ có bộ ba riêng, bảng điểm theo số câu đúng, không có band |
 
 ---
 
@@ -337,11 +493,12 @@ xét trên tỷ lệ chính xác, không xét trên số đã làm tròn.
 npm test
 ```
 
-Chạy **51 kiểm tra** trên một database riêng (`data/test.sqlite`), phủ 10 nhóm:
+Chạy **120 kiểm tra** trên một database riêng (`data/test.sqlite`), phủ 16 nhóm:
 quy đổi điểm và công thức · kỳ vọng theo lộ trình · kỹ năng không mock và tiến độ ·
 tuần/lịch/hạn nhập · quyền lịch tách tuần với ngày · quyền theo vai trò × chi nhánh × phân công ·
-lộ trình và số lần MT · ước lượng giáo viên · tổng quan và hai nhóm case SOS ·
-xử lý sau Mock và lưu dữ liệu.
+lộ trình và số lần MT · ghi nhận nhanh của giáo viên · tổng quan và các nhóm vấn đề ·
+xử lý sau đánh giá và lưu dữ liệu · nhập hàng loạt · lớp thường · tổng hợp theo tuần ·
+**vấn đề học vụ: hai nguồn một vòng đời**.
 
 ### Nâng cấp dữ liệu đang có
 
@@ -350,5 +507,19 @@ npm run migrate
 ```
 
 Chuyển database cũ sang mô hình mới mà **không xoá gì**: giữ nguyên mã học viên, enrollment, từng lượt MT,
-điểm W1/W2 và lịch sử SOS. Những thứ không suy ra được (kỹ năng không mock, ước lượng giáo viên,
-lịch Speaking riêng) được để trống chứ không bịa. Chạy lại lần hai thì không làm gì thêm.
+điểm W1/W2 và lịch sử vấn đề. Từ vòng D còn:
+
+- gắn học viên và lộ trình cho các vấn đề cũ vốn chỉ có mã bài;
+- dựng lại năm ô hỗ trợ cũ thành **bản ghi việc đã làm** — ngày trao đổi thật thì ghi *đã xong*, còn
+  ngày bắt đầu hỗ trợ học thuật chỉ ghi *đang thực hiện*, **không** tự nâng thành đã xong;
+- đánh dấu các vấn đề đóng theo hệ thống cũ là **đóng-kiểu-cũ**, ghi rõ là thiếu căn cứ, **không** bịa
+  ra một kết luận;
+- chuyển bảng đánh giá GV cũ thành **ghi nhận nhanh**, giữ nguyên người và ngày;
+- gắn **mã chương trình** cho khoá lớp thường, và chỉ khi mọi bài trong khoá cùng một chương trình —
+  mập mờ thì để trống.
+
+Thiếu người, thiếu ngày hay thiếu kết quả thì để **"chưa rõ"**, không suy từ người nhập hay ngày tạo bản
+ghi. Chạy lại lần hai thì **không làm gì thêm**.
+
+Đã kiểm chứng trên **bản sao thật** của database trước khi sửa: giữ nguyên từng ô điểm, từng mã vấn đề,
+mọi mục tiêu đã chốt; 153 việc đã làm và 24 khoá được dựng lại; khoá ngoại sạch.

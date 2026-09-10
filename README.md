@@ -3,10 +3,15 @@
 Đây là **bản demo nội bộ** của hệ thống quản lý học vụ và vận hành PISA IELTS, dùng để bạn
 bấm thử giao diện và phát hiện chỗ chưa hợp lý **trước khi** xây sản phẩm thật.
 
-Bản demo lấy **lớp** làm gốc và nối liền: lớp → học viên → tiến độ MT → xếp lịch → nhập điểm
-từng kỹ năng → kết luận SOS → ghi nhận xử lý → công việc trong Tiến trình công việc.
+Trung tâm của bản demo là **hồ sơ học viên**: em bắt đầu ở đâu, đang ở đâu, đích ở đâu, đang vướng gì,
+ai đã làm gì để hỗ trợ, quan sát được gì sau đó, và bước tiếp theo là gì.
 
-Ba mục điều hướng, không hơn: **Tổng quan** · **Tiến trình công việc** · **Học viên**.
+Hai lối vào, hai câu hỏi khác nhau, nhưng cùng chạm vào **một bản ghi**:
+
+- **Học viên** — *"lớp tôi đang thế nào"*. Vào theo lớp: lớp → học viên → tiến độ → xếp lịch → nhập điểm.
+- **Học thuật** — *"em nào đang vướng gì"*. Vào theo vấn đề, không theo lớp.
+
+Bốn mục điều hướng, không hơn: **Tổng quan** · **Tiến trình công việc** · **Học viên** · **Học thuật**.
 Mock test không còn là menu riêng — lịch và điểm nằm ngay trong lớp của học viên.
 
 > **Toàn bộ dữ liệu trong bản demo là dữ liệu giả.** Không có tên, số điện thoại hay thông tin
@@ -49,7 +54,8 @@ npm run seed
 
 Lệnh này tạo lại toàn bộ dữ liệu giả: **5 chi nhánh** (Monbay, Bãi Cháy, Cẩm Phả, Hải Dương, Uông Bí),
 **10 lớp** (7 lớp FT + 3 lớp thường Foundation/Beginner/Elementary), **26 tài khoản** (mỗi chi nhánh 1 Quản lý + 1 Admin văn phòng + 3 giáo viên), khoảng **108 học viên**, **109 lộ trình/khoá**, **261 lượt Mock Test** và **48 bài kiểm tra lớp thường** kèm điểm
-từng kỹ năng và Đánh giá GV, các case SOS ở đủ mức tiến độ, báo cáo tuần và công việc.
+từng kỹ năng, **289 ghi nhận của giáo viên** (một nửa chỉ có nhận xét, không kèm điểm), **118 vấn đề học vụ**
+từ cả hai nguồn với **277 việc đã làm** và **48 lần xem lại**, báo cáo tuần và công việc.
 
 Màn hình sẽ in ra bảng tóm tắt số lượng bản ghi đã tạo.
 
@@ -84,7 +90,7 @@ Bản demo có **bốn nhóm tài khoản**. Màn hình chọn tài khoản đã
 |---|---|
 | **Quản trị hệ thống** | Người quản trị **phần mềm**: tài khoản, vai trò, cấu hình. Không phải chức danh vận hành |
 | **Admin chi nhánh** | Nhân sự **văn phòng** chi nhánh: danh sách lớp, giáo viên, việc trung gian giữa các phòng ban |
-| **Quản lý** | Điều hành chuyên môn của chi nhánh. **Chính là "Head"** khi xác nhận case SOS |
+| **Quản lý** | Điều hành chuyên môn của chi nhánh. Chốt tuần kế hoạch, xem toàn cảnh vấn đề học vụ, kết thúc theo dõi |
 | **Giáo viên** | GVCN và/hoặc GVBM, quyền theo phân công lớp và kỹ năng |
 
 Gợi ý tài khoản nên dùng đầu tiên:
@@ -92,19 +98,23 @@ Gợi ý tài khoản nên dùng đầu tiên:
 | Muốn xem gì | Chọn tài khoản |
 |---|---|
 | Toàn cảnh cả hệ thống + phần quản trị | **Đặng Quang Nhi** — Quản trị hệ thống |
-| Chốt **tuần** kế hoạch MT, họp tuần, xử lý SOS | **Đặng Quang Vy** — Quản lý Monbay |
-| Quản lý thứ hai cùng chi nhánh (thử nhiều quản lý) | **Trần Quang Nam** — Quản lý Monbay |
-| Màn hình nhập điểm của giáo viên bộ môn | **Trần Hải Đạt** — dạy Listening + Reading lớp MB-FT 101 |
-| Giáo viên chỉ dạy Writing Task 1 | **Hoàng Khánh Huy** — W1 lớp MB-FT 101 |
-| Góc nhìn giáo viên chủ nhiệm | **Đinh Bảo Vy** — GVCN lớp MB-FT 101 |
-| Chốt **ngày giờ** trong tuần đã duyệt | **Đặng Ngọc Phúc** — Admin chi nhánh Monbay |
+| Chốt **tuần** kế hoạch, màn **Học thuật**, kết thúc theo dõi vấn đề | **Đặng Quang Vy** — Quản lý Monbay |
+| Màn hình nhập điểm và **ghi nhận nhanh** của giáo viên bộ môn | **Đinh Bảo Vy** — dạy Reading lớp MB-FT 101 |
+| Giáo viên dạy nhiều kỹ năng (L · W2 · S) | **Đinh Bảo Lam** — lớp MB-FT 101 |
+| Góc nhìn giáo viên chủ nhiệm (kết thúc theo dõi được) | **Trần Quang Nam** — GVCN lớp MB-FT 101 |
+| Chốt **ngày** trong tuần đã duyệt | **Đặng Ngọc Phúc** — Admin chi nhánh Monbay |
 
 Mỗi vai trò mở vào đúng việc thường làm nhất: Giáo viên → **Điểm tôi cần nhập**;
 Admin chi nhánh → **Cần xếp lịch**; Quản lý và Quản trị hệ thống → **Tổng quan**.
 Đây chỉ là lối vào, không đổi quyền.
 
 > **Lịch MT tách làm hai bước:** Quản lý chốt **tuần** trước (`MT2 → W3 OCT`), Admin chi nhánh chốt
-> **ngày giờ** khi tới gần tuần đó (`14/10, 18:00`). Speaking có thể khác ngày nhưng vẫn là cùng một lượt MT.
+> **ngày** khi tới gần tuần đó (`14/10`). Speaking có thể khác ngày nhưng vẫn là cùng một lượt MT.
+> Lịch **chỉ có ngày, không có giờ**.
+
+> **Muốn xem nhanh phần mới nhất?** Mở một hồ sơ học viên bất kỳ, rồi mở menu **Học thuật**.
+> `DEMO_SCENARIOS.md` từ **Luồng 15** đi qua đúng năm việc mới: giáo viên báo vấn đề trước khi có bài
+> đánh giá · hồ sơ học viên · màn Học thuật · sửa điểm không xoá lịch sử hỗ trợ · ai được kết thúc theo dõi.
 
 Muốn đổi tài khoản bất cứ lúc nào: bấm nút **"Đổi tài khoản demo"** ở thanh trên cùng.
 
@@ -211,5 +221,6 @@ Tài liệu liên quan:
 
 - `PISA_Design_Master_Reference.md` — sổ quyết định: trạng thái từng quyết định, cái gì đã chốt, cái gì còn chờ
 - `PRODUCT_DEMO_SPEC.md` — Product / Web Design: **A. Current MVP · B. Simplify–Remove · C. Future Design**
-- `DEMO_ASSUMPTIONS.md` — các câu đã chốt (Q1–Q4) và những điểm còn cần bạn xác nhận
-- `DEMO_SCENARIOS.md` — **mười bốn luồng** để bấm thử, bảng kiểm tra quyền, các tình huống cài sẵn
+- `DEMO_ASSUMPTIONS.md` — các câu đã chốt (Q1–Q15) và những điểm còn cần bạn xác nhận
+- `DEMO_SCENARIOS.md` — **mười chín luồng** để bấm thử, bảng kiểm tra quyền, các tình huống cài sẵn.
+  Phần mới nhất bắt đầu từ **Luồng 15**

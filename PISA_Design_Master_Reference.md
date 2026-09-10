@@ -1,6 +1,9 @@
 # PISA — Design Master Reference
 
-Phiên bản 1.0 · Cập nhật 09/09/2026 · Dự án `Pizi147/pisa-tracking`
+Phiên bản 1.5 · Cập nhật 09/09/2026 · Dự án `Pizi147/pisa-tracking`
+
+> Số phiên bản ở đây trước nay ghi 1.0 trong khi changelog đã tới 1.4 — đọc từ trên xuống
+> thì tưởng tài liệu chưa cập nhật. Nay hai chỗ khớp nhau.
 
 ## 0. Cách dùng tài liệu
 
@@ -36,6 +39,53 @@ Claude được tự do thêm ý tưởng practical/intuitive, đổi IA/layout/
 
 Repo/PR: https://github.com/Pizi147/pisa-tracking/pull/4 . Review lần này đọc source và tài liệu; chưa chạy lại UI hoặc kiểm thử trình duyệt. Test 43/43 trong PR là báo cáo của tác giả PR, không phải kết quả kiểm tra của lần tổng hợp này. Chưa sửa source code/GitHub trong vòng này.
 
+## 0b. CURRENT — trạng thái sau vòng D (09/09/2026)
+
+Đây là MỘT chỗ duy nhất nói phiên bản đang chạy làm được gì. Mọi mục CURRENT rải rác ở
+các phần dưới, nếu mâu thuẫn với bảng này, đều đã lỗi thời.
+
+Ba cột trạng thái có nghĩa khác nhau và không được đọc lẫn:
+
+| Trạng thái | Nghĩa |
+|---|---|
+| **Owner chốt** | Chính chủ trung tâm đã quyết bằng lời, ngày ghi kèm |
+| **Đã chạy** | Đã có trong code, có kiểm tra tự động và đã chạy thử trên trình duyệt |
+| **Đề xuất** | Claude tự quyết trong phạm vi được giao; owner chưa duyệt từng chi tiết |
+
+| Mã | Nội dung | Trạng thái |
+|---|---|---|
+| **D50** | Vấn đề học vụ có HAI NGUỒN — sinh từ điểm, và giáo viên báo trực tiếp — nhưng dùng CHUNG một vòng đời: ghi nhận → phân loại → tác động → xem lại → chốt hướng xử lý | Owner chốt 09/09 · Đã chạy |
+| **D51** | Vấn đề giáo viên báo mang MỨC ĐỘ GẤP (bình thường / cần chú ý / gấp), KHÔNG mang mức SOS 1/2/3. SOS là kết luận từ điểm; gán nó cho một quan sát trên lớp là làm hai loại thông tin trông giống nhau trong khi bản chất khác hẳn | Owner chốt 09/09 · Đã chạy |
+| **D52** | Kết thúc theo dõi một vấn đề: chỉ GVCN của lớp và Quản lý. Giáo viên bộ môn báo được, ghi việc đã làm được, nhưng không tự kết luận là xong | Owner chốt 09/09 · Đã chạy |
+| **D53** | SOS tính NGAY trên phần điểm đang có, không chờ đủ bốn kỹ năng. Kết luận được đánh dấu là TẠM THỜI và có thể tăng khi các kỹ năng còn lại vào. Áp dụng cho cả lớp FT và lớp thường | Owner chốt 09/09 · Đã chạy |
+| **D54** | Lớp thường KHÔNG có cơ chế miễn kỹ năng. Dời lịch sang tuần khác thì được, nhưng bộ kỹ năng của chương trình luôn đủ | Owner chốt 09/09 · Đã chạy |
+| **D55** | Hạn nhập điểm lớp thường: HẾT CHỦ NHẬT của chính tuần đó. Chưa có tuần kế hoạch thì KHÔNG có hạn — để trống chứ không dựng một hạn giả | Owner chốt 09/09 · Đã chạy |
+| **D56** | Báo cáo tuần điền được tới HẾT THỨ TƯ tuần kế tiếp rồi khoá cứng; chỉ Quản trị hệ thống mở lại được, và mỗi lần mở đều có dấu vết | Owner chốt 09/09 · Đã chạy |
+| **D57** | Bỏ hết giờ khỏi lịch đánh giá — chỉ còn ngày | Owner chốt 09/09 · Đã chạy |
+| **D58** | Bảng tổng hợp theo tuần cho Quản lý, mười cột, gom theo tháng, mọi con số bấm được để mở đúng các bản ghi tạo nên nó | Owner chốt 09/09 · Đã chạy |
+| **D59** | GHI NHẬN NHANH thay bảng "Đánh giá GV": tối thiểu chỉ cần MỘT nhận định bằng lời HOẶC một điểm ước lượng. Ba kiểu căn cứ ghi rõ (nhận định · có bài L/R · có chấm bốn tiêu chí). Nhận định bằng lời KHÔNG bị quy ra số để đem trừ | Đề xuất · Đã chạy |
+| **D60** | Lộ trình có ĐIỂM XUẤT PHÁT kèm nguồn, KẾT LUẬN CUỐI và LỊCH SỬ ĐỔI MỤC TIÊU. Hệ thống không lấy MT1 làm điểm đầu vào; đóng lộ trình không đồng nghĩa đạt mục tiêu; đổi mục tiêu phải có lý do và không chấm lại quá khứ | Đề xuất · Đã chạy |
+| **D61** | Hồ sơ học viên dựng quanh MỘT lộ trình, có bộ chọn lộ trình trên đường dẫn. Thứ tự khối: đầu vào→hiện tại→đích · so với mốc + đang vướng gì · từng kỹ năng · vấn đề · các lần đánh giá · hành trình | Đề xuất · Đã chạy |
+| **D62** | Hành trình gom thành CHƯƠNG: mọi việc quanh một vấn đề nằm chung một chỗ, mọi ghi nhận trong một tuần nằm chung một chỗ | Đề xuất · Đã chạy |
+| **D63** | Màn HỌC THUẬT cho Quản lý: bốn hàng đợi (chưa ai định hướng · đang hỗ trợ · tới hạn xem lại · cần xem kỹ) và lọc theo chi nhánh / nhóm vấn đề / kỹ năng, tất cả trên đường dẫn. Quản lý KHÔNG phải cửa duyệt | Đề xuất · Đã chạy |
+| **D64** | Phân loại vấn đề chỉ ba nhóm gốc: Học sinh · Quá trình dạy · Chương trình. Phụ huynh, sức khoẻ, gia đình, đi lại, lịch cá nhân, áp lực bên ngoài chỉ là BỐI CẢNH kèm theo, không phải nhóm thứ tư và không phải nguyên nhân đã xác minh | Đề xuất · Đã chạy |
+| **D65** | Một vấn đề có NHIỀU tác động, mỗi tác động nhiều lần xem lại. Ghi "đã xong" phải có ngày thật; người nhập KHÔNG mặc định là người làm — khai "chính tôi làm" là một thao tác tường minh, và tên người ngoài hệ thống (CS, phụ huynh) được giữ nguyên | Đề xuất · Đã chạy |
+| **D66** | Chỉ còn MỘT đường ghi cho vấn đề học vụ. Năm cột hỗ trợ cũ trong `sos_cases` chỉ còn để dữ liệu cũ không mất và để bước nâng cấp đọc một lần | Đề xuất · Đã chạy |
+| **D67** | Quy trình phối hợp theo lần MT × mức SOS giữ nguyên nội dung nhưng chuyển thành GỢI Ý CHỈ ĐỌC, tách khỏi việc đã làm. Trước đây điền tên vào ô hướng dẫn là vấn đề trông như đã xử lý xong dù chưa ai làm gì | Đề xuất · Đã chạy |
+
+Những điều vòng này CỐ TÌNH KHÔNG làm, và lý do:
+
+- **Không dựng nhãn tổng hợp kiểu "đang ổn / có nguy cơ / sắp trượt".** Chưa có quy tắc nào
+  được chốt cho một nhãn như thế, mà một nhãn sai còn tệ hơn không có nhãn. Thay vào đó nói
+  hai chuyện tách bạch: SO VỚI MỐC (từng kỹ năng đạt hay dưới kỳ vọng đã chốt) và ĐANG CẦN
+  CHÚ Ý (có vấn đề nào đang mở, ai báo, đã làm gì).
+- **Không nội suy kỳ vọng theo tuần.** "Tuần này lẽ ra phải được 6.0" là một con số bịa; kỳ
+  vọng chỉ tồn tại ở đúng các mốc MT.
+- **Không ghép bốn kỹ năng mới nhất của bốn lượt khác nhau thành một Overall.** Bốn buổi khác
+  nhau cộng lại không phải là một bài thi.
+- **Không tự kết luận tác động tạo ra thay đổi.** Lần xem lại là QUAN SÁT SAU HỖ TRỢ; điểm lên
+  cũng không tự kết thúc theo dõi.
+
 ## 1. Hướng sản phẩm hiện hành
 
 **D01 — CURRENT:** Internal academic + branch operations; theo dõi học sinh, assessment, SOS, trạng thái xử lý và nhận định quản lý. Không mở rộng thành CRM/ERP/LMS/task platform.
@@ -44,7 +94,7 @@ Repo/PR: https://github.com/Pizi147/pisa-tracking/pull/4 . Review lần này đ�
 
 **D03 — CURRENT:** Bỏ accent xanh lá nổi bật; pastel/light blue hoặc pink hay sắc nhẹ tương đương. Clean/calm, tương phản đọc được. Desktop-first nhưng có layout mobile thực tế, không ép mọi cột desktop vào màn hẹp.
 
-**D04 — ĐÃ TRIỂN KHAI vòng B (chọn Option B):** Navigation ba mục `Tổng quan → Tiến trình công việc → Học viên`, Quản trị là lối phụ. Học viên class-first, cùng Student Detail chứa tiến độ/hồ sơ/Journey/SOS. `Cần nhập điểm` và `Cần xếp lịch` là view/shortcut theo vai trò, không menu độc lập. Đã chọn **Option B**: điều hướng còn ba mục, `Mock test` và `Họp tuần` không còn là menu riêng; đường dẫn cũ `/mock-test`, `/mock-test/lop/:id`, `/hop-tuan` đều chuyển hướng chứ không 404. Tiến độ MT gộp vào roster của lớp (`MT1 ✓ · MT2 ✓ · MT3 W4 OCT`), không còn màn hình tiến độ riêng.
+**D04 — ĐÃ TRIỂN KHAI vòng B; vòng D thêm mục thứ tư `Học thuật`, xem D63 ở mục 0b:** Navigation ba mục `Tổng quan → Tiến trình công việc → Học viên`, Quản trị là lối phụ. Học viên class-first, cùng Student Detail chứa tiến độ/hồ sơ/Journey/SOS. `Cần nhập điểm` và `Cần xếp lịch` là view/shortcut theo vai trò, không menu độc lập. Đã chọn **Option B**: điều hướng còn ba mục, `Mock test` và `Họp tuần` không còn là menu riêng; đường dẫn cũ `/mock-test`, `/mock-test/lop/:id`, `/hop-tuan` đều chuyển hướng chứ không 404. Tiến độ MT gộp vào roster của lớp (`MT1 ✓ · MT2 ✓ · MT3 W4 OCT`), không còn màn hình tiến độ riêng.
 
 **D05 — ĐÃ TRIỂN KHAI vòng B:** Class row: click tên mở Class Overview; click badge mở tập bản ghi tương ứng (đã lọc sẵn theo lớp); click vùng khác expand roster. Một search tìm lớp hoặc học sinh — gõ tên học viên trả về đúng lớp chứa em đó. Ba vùng bấm chặn nổi bọt sự kiện, đã kiểm chứng trên trình duyệt thật. Dòng lớp là `role="button"` có `aria-expanded`, mở bằng Enter và Space. **NHIỀU lớp mở cùng lúc và độc lập** — mở lớp thứ hai không đóng lớp thứ nhất, vì việc thật là đặt hai lớp cạnh nhau mà so. Lớp đang mở, search và bộ lọc chi nhánh đều nằm trên URL nên Back khôi phục đúng ngữ cảnh. Roster lazy load khi expand; badge chỉ hiện khi có việc cần làm và đếm theo phân công của chính người đang xem.
 
@@ -256,6 +306,20 @@ Các link sau trỏ về source được đọc, không phải kết quả chạ
 6. Ghi rõ đã review code hay đã chạy browser/test; không dùng build/pass của phiên bản cũ cho phiên bản mới.
 
 ### Changelog
+
+- 09/09/2026 — v1.5 (vòng D — hồ sơ học viên và vấn đề học vụ, đã code và chạy): xem bảng
+  CURRENT ở mục 0b. Tóm tắt: **hai nguồn vấn đề, một vòng đời** (sinh từ điểm và giáo viên
+  báo); **ghi nhận nhanh** thay bảng Đánh giá GV, nhận định bằng lời là đủ; **lộ trình có
+  điểm xuất phát, kết luận cuối và lịch sử đổi mục tiêu**; **hồ sơ học viên** dựng lại quanh
+  một lộ trình với hành trình gom thành chương; **màn Học thuật** cho Quản lý với bốn hàng
+  đợi; **một đường ghi duy nhất** cho vấn đề học vụ, kể cả ở trang điểm. Năm sửa theo yêu cầu
+  owner cũng nằm trong vòng này (bỏ giờ MT, bảng tổng hợp tuần, hạn lớp thường hết chủ nhật,
+  SOS tính ngay, khoá báo cáo tuần sau thứ Tư). Bốn lỗi im lặng được phát hiện khi chạy thử
+  trên trình duyệt chứ không phải từ đọc code: khoá lớp thường thiếu mã chương trình nên hồ
+  sơ dựng bảng band IELTS cho lớp Foundation; vấn đề sinh từ điểm không ghi học viên nên hồ
+  sơ không thấy nó; không khai được "chính tôi làm"; dữ liệu mẫu vẫn viết vào năm cột cũ.
+  **120 kiểm tra nghiệp vụ đạt**; năm luồng A–E chạy thật trên trình duyệt; nâng cấp kiểm
+  chứng trên bản sao thật của database, chạy lại lần hai không đổi gì thêm.
 
 - 09/09/2026 — v1.4 (lớp thường + tinh chỉnh, đã code và chạy): **Lớp thường FOU/BE/ELE** dùng chung bảng dữ liệu và chung hệ thống case SOS với lớp FT, chỉ đổi cách chấm (`số câu đúng / tổng số câu`, đạt từ 60%), mốc theo TUẦN HỌC (FOU 4/8, BE·ELE 5/10) và bộ kỹ năng theo chương trình. Xét trên tỷ lệ chính xác chứ không làm tròn phần trăm rồi mới so. Thiếu điểm KHÁC trượt — phải đủ điểm mọi kỹ năng mới kết luận và mới sinh case, để không đẩy học viên lên SOS oan. Không có band, kỳ vọng hay Overall. Chương trình nằm trong bảng (`programmes` + `programme_skills` + `programme_checkpoints`), mã cũ `FOUND` chỉ ánh xạ khi đọc chứ không đổi mã lớp lịch sử. Chuyển từ lớp FT sang lớp thường thì mở khoá mới. Bảng điểm riêng có ô số câu đúng / tổng, đặt tổng chung cho cả lớp rồi sửa từng dòng. **Δ trong bảng so sánh bỏ màu tốt/xấu**: điểm Mock và Đánh giá GV là hai thứ khác hẳn nhau, bên nào cao hơn cũng không tự nó là khen hay cảnh báo — chỉ còn là khoảng cách hai con số. **Badge kỹ năng**: mỗi dòng lớp ghi rõ người đang xem dạy kỹ năng nào ở chính lớp đó (`L R`, `R W1`) kèm `GVCN`. **Dữ liệu mẫu gọn lại** để dễ theo dõi: mỗi chi nhánh đúng một Quản lý và một Admin văn phòng, ba giáo viên mỗi chi nhánh dạy 2–3 lớp, lớp đông hơn (26 tài khoản thay vì 43, 108 học viên). Sửa hai chỗ trùng lặp nguồn sự thật: seed đánh giá GV giờ đọc thẳng phân công thật thay vì chép lại bảng phân công, và chương trình học đọc một lượt thay vì mỗi lớp một lượt (test N+1 bắt được). **97 kiểm tra nghiệp vụ đạt**; kiểm chứng trên trình duyệt thật theo từng vai và không trang nào tràn ngang ở 390→1440px.
 
