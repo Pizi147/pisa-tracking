@@ -29,7 +29,95 @@ const TONE_CLASS: Record<Tone, string> = {
   muted: 'bg-transparent text-slate-400 border-slate-500/35 border-dashed',
 };
 
-/** Trạng thái luôn đi kèm nhãn chữ — màu chỉ hỗ trợ, không mang thông tin một mình. */
+/**
+ * BA HỌ NHÃN, PHÂN BIỆT BẰNG HÌNH DẠNG CHỨ KHÔNG BẰNG MÀU MỚI.
+ *
+ * Trước đây mọi thứ dùng chung một kiểu `Pill`: mức SOS của một đứa trẻ, việc mình phải làm,
+ * và mấy chữ chỉ để biết như "GVCN" hay "L R" — tất cả cùng viền, cùng bo góc, cùng cỡ chữ.
+ * Mắt không tách được cái nào ra cái nào, nên nhìn vào một dòng lớp là thấy một đám nhãn màu.
+ *
+ *   <Level>  nền ĐẶC, bo tròn hẳn      — em này đang ở mức nào (SOS, mức độ gấp)
+ *   <Task>   viền vuông, gạch dọc trái — việc phải làm, bấm được
+ *   <Info>   chữ mờ, viền mảnh          — chỉ để biết, không phải việc cũng không phải mức
+ *
+ * Vẫn đúng ba màu cho ba mức như cũ, không thêm màu nào. Thứ tự nặng nhẹ về thị giác đi đúng
+ * theo mức độ đáng chú ý: tình trạng học viên > việc phải làm > thông tin nền.
+ */
+
+/** Nền đặc nên chữ phải là màu tối, và phải đủ tương phản để đọc được. */
+const LEVEL_CLASS: Record<Tone, string> = {
+  ok: 'bg-emerald-300 text-slate-900',
+  info: 'bg-sky-300 text-slate-900',
+  warn: 'bg-amber-300 text-slate-900',
+  danger: 'bg-rose-300 text-slate-900',
+  neutral: 'bg-slate-300 text-slate-900',
+  muted: 'bg-transparent text-slate-400 border border-dashed border-slate-500/40',
+};
+
+/**
+ * MỨC ĐỘ của một học viên — SOS 1/2/3, hay mức gấp do giáo viên nhận định.
+ * Nặng nhất về thị giác vì đây là tình trạng của một đứa trẻ, không phải một con số vận hành.
+ */
+export function Level({ tone = 'neutral', children, title }: { tone?: Tone; children: ReactNode; title?: string }) {
+  return (
+    <span title={title}
+      className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-bold tracking-[0.01em] whitespace-nowrap ${LEVEL_CLASS[tone]}`}>
+      {children}
+    </span>
+  );
+}
+
+const TASK_CLASS: Record<Tone, { box: string; bar: string }> = {
+  neutral: { box: 'border-[color:var(--accent-line)] bg-[color:var(--accent-soft)] text-[color:var(--accent-strong)]', bar: 'bg-[color:var(--accent)]' },
+  info: { box: 'border-[color:var(--accent-line)] bg-[color:var(--accent-soft)] text-[color:var(--accent-strong)]', bar: 'bg-[color:var(--accent)]' },
+  warn: { box: 'border-amber-300/45 bg-amber-300/10 text-amber-200', bar: 'bg-amber-300' },
+  danger: { box: 'border-rose-300/45 bg-rose-300/10 text-rose-200', bar: 'bg-rose-300' },
+  ok: { box: 'border-slate-300/20 bg-transparent text-slate-500', bar: 'bg-slate-500/50' },
+  muted: { box: 'border-slate-300/20 bg-transparent text-slate-500', bar: 'bg-slate-500/50' },
+};
+
+/**
+ * VIỆC PHẢI LÀM. Gạch dọc bên trái là dấu hiệu "bấm được, làm được".
+ *
+ * Mặc định màu nhấn; sắp tới hạn thì vàng, quá hạn thì đỏ, đã xong thì mờ đi — vẫn ba màu cũ.
+ * KHÔNG dùng họ này cho tình trạng học viên, dù việc đó sinh ra từ một vấn đề của em.
+ */
+export function Task({ tone = 'neutral', children, title, as = 'span', onClick }: {
+  tone?: Tone; children: ReactNode; title?: string; as?: 'span' | 'button'; onClick?: () => void;
+}) {
+  const c = TASK_CLASS[tone];
+  const inner = (
+    <>
+      <span className={`w-[3px] self-stretch rounded-sm ${c.bar}`} aria-hidden />
+      <span className="py-0.5 pr-2">{children}</span>
+    </>
+  );
+  const cls = `inline-flex items-stretch gap-1.5 overflow-hidden rounded border pl-0 text-[11px] font-medium whitespace-nowrap ${c.box}`;
+  if (as === 'button') {
+    return <button type="button" title={title} onClick={onClick} className={`${cls} hover:brightness-125`}>{inner}</button>;
+  }
+  return <span title={title} className={cls}>{inner}</span>;
+}
+
+/**
+ * CHỈ ĐỂ BIẾT — vai trò, kỹ năng được phân công, lộ trình, tên chương trình.
+ * Nhẹ nhất, không kéo mắt. `pending` (viền đứt) nghĩa là đang thiếu một thứ gì đó, chưa phải lỗi.
+ */
+export function Info({ children, title, pending }: { children: ReactNode; title?: string; pending?: boolean }) {
+  return (
+    <span title={title}
+      className={`inline-flex items-center gap-1 rounded border px-2 py-0.5 text-[11px] whitespace-nowrap ${
+        pending ? 'border-dashed border-slate-500/40 text-slate-500' : 'border-slate-300/20 text-slate-400'
+      }`}>
+      {children}
+    </span>
+  );
+}
+
+/**
+ * @deprecated Đang chuyển dần sang `Level` / `Task` / `Info`. Chọn đúng họ theo NGHĨA của nhãn:
+ * mức độ của học viên, việc phải làm, hay chỉ là thông tin.
+ */
 export function Pill({ tone = 'neutral', children, title }: { tone?: Tone; children: ReactNode; title?: string }) {
   return (
     <span title={title} className={`inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[11px] font-medium whitespace-nowrap ${TONE_CLASS[tone]}`}>

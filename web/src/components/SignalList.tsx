@@ -29,10 +29,10 @@ export function SignalList({ branchId, periodId }: { branchId?: number | null; p
   if (periodId) qs.set('periodId', String(periodId));
   const { data, loading } = useApi<Signal[]>(`/signals${qs.toString() ? `?${qs}` : ''}`);
 
-  if (loading) return <Card title="Việc hệ thống nhìn ra"><Skeleton rows={3} /></Card>;
+  if (loading) return <Card title="Việc đang tồn"><Skeleton rows={3} /></Card>;
   if (!data?.length) {
     return (
-      <Card title="Việc hệ thống nhìn ra" bodyClass="p-4">
+      <Card title="Việc đang tồn" bodyClass="p-4">
         <p className="text-sm text-slate-400">
           Không còn việc nào hệ thống tự nhìn ra được trong phạm vi của bạn.
         </p>
@@ -41,7 +41,7 @@ export function SignalList({ branchId, periodId }: { branchId?: number | null; p
   }
 
   return (
-    <Card title="Việc hệ thống nhìn ra" action={<Pill tone="neutral">{data.length} nhóm</Pill>} bodyClass="p-0">
+    <Card title="Việc đang tồn" action={<Pill tone="neutral">{data.length} nhóm</Pill>} bodyClass="p-0">
       <ul className="divide-y list-none p-0 m-0" style={{ borderColor: 'var(--line)' }}>
         {data.map((s) => (
           <li key={s.key}>

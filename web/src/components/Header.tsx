@@ -139,10 +139,24 @@ export function Header() {
               </>
             )}
 
-            {session?.nav?.admin && (
-              <Link to="/quan-tri" className="btn btn-sm w-full justify-center mb-2 no-underline"
-                onClick={() => setOpenMenu(null)}>Quản trị hệ thống</Link>
-            )}
+            {/*
+              LỐI PHỤ. Điều hướng chính chỉ còn hai mục vì đó là hai việc thường ngày;
+              những màn dưới đây mở thỉnh thoảng nên không cần chiếm chỗ trên thanh menu.
+            */}
+            <div className="border-t pt-2 mb-2 space-y-1" style={{ borderColor: 'var(--line)' }}>
+              {session?.nav?.meeting && (
+                <>
+                  <Link to="/tong-hop-tuan" className="btn btn-sm w-full justify-center no-underline"
+                    onClick={() => setOpenMenu(null)}>Tổng hợp theo tuần</Link>
+                  <Link to="/tien-trinh" className="btn btn-sm w-full justify-center no-underline"
+                    onClick={() => setOpenMenu(null)}>Báo cáo tuần</Link>
+                </>
+              )}
+              {session?.nav?.admin && (
+                <Link to="/quan-tri" className="btn btn-sm w-full justify-center no-underline"
+                  onClick={() => setOpenMenu(null)}>Quản trị hệ thống</Link>
+              )}
+            </div>
             <button className="btn btn-sm w-full justify-center" onClick={signOut}>Thoát tài khoản demo</button>
           </div>
         )}

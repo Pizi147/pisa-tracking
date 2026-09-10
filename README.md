@@ -6,13 +6,17 @@ bấm thử giao diện và phát hiện chỗ chưa hợp lý **trước khi** 
 Trung tâm của bản demo là **hồ sơ học viên**: em bắt đầu ở đâu, đang ở đâu, đích ở đâu, đang vướng gì,
 ai đã làm gì để hỗ trợ, quan sát được gì sau đó, và bước tiếp theo là gì.
 
-Hai lối vào, hai câu hỏi khác nhau, nhưng cùng chạm vào **một bản ghi**:
+**Hai mục điều hướng, không hơn:** **Tổng quan** · **Học viên**.
 
+- **Tổng quan** — *"tôi phải làm gì bây giờ"*. Mỗi dòng là một học viên, một câu lý do, và một nút mà
+  **chính người đang xem** bấm được. Việc bạn không có quyền làm thì không xuất hiện.
 - **Học viên** — *"lớp tôi đang thế nào"*. Vào theo lớp: lớp → học viên → tiến độ → xếp lịch → nhập điểm.
-- **Học thuật** — *"em nào đang vướng gì"*. Vào theo vấn đề, không theo lớp.
 
-Bốn mục điều hướng, không hơn: **Tổng quan** · **Tiến trình công việc** · **Học viên** · **Học thuật**.
-Mock test không còn là menu riêng — lịch và điểm nằm ngay trong lớp của học viên.
+Quản lý có thêm tab **Tình hình chung** ngay trong Tổng quan — *"cả chi nhánh đang vướng gì"* — vì hai câu
+hỏi đó cần cả hai, nhưng không cần cùng lúc.
+
+Mock test không còn là menu riêng — lịch và điểm nằm ngay trong lớp của học viên. Tiến trình công việc và
+Quản trị hệ thống là lối vào phụ trong menu tài khoản.
 
 > **Toàn bộ dữ liệu trong bản demo là dữ liệu giả.** Không có tên, số điện thoại hay thông tin
 > thật của học viên. Bản demo chỉ chạy trên máy của bạn, không kết nối internet,
@@ -98,7 +102,9 @@ Gợi ý tài khoản nên dùng đầu tiên:
 | Muốn xem gì | Chọn tài khoản |
 |---|---|
 | Toàn cảnh cả hệ thống + phần quản trị | **Đặng Quang Nhi** — Quản trị hệ thống |
-| Chốt **tuần** kế hoạch, màn **Học thuật**, kết thúc theo dõi vấn đề | **Đặng Quang Vy** — Quản lý Monbay |
+| Chốt **tuần** kế hoạch, tab **Tình hình chung**, kết thúc theo dõi vấn đề | **Đặng Quang Vy** — Quản lý Monbay |
+| **Duyệt phương án hỗ trợ** (có một đề xuất quá hạn duyệt) | **Hoàng Khánh Huy** — Quản lý Bãi Cháy |
+| **Phân công giáo viên** vào lớp | **Đặng Quang Vy** hoặc **Đặng Ngọc Phúc** — mở một lớp → *Sửa phân công* |
 | Màn hình nhập điểm và **ghi nhận nhanh** của giáo viên bộ môn | **Đinh Bảo Vy** — dạy Reading lớp MB-FT 101 |
 | Giáo viên dạy nhiều kỹ năng (L · W2 · S) | **Đinh Bảo Lam** — lớp MB-FT 101 |
 | Góc nhìn giáo viên chủ nhiệm (kết thúc theo dõi được) | **Trần Quang Nam** — GVCN lớp MB-FT 101 |
@@ -112,9 +118,11 @@ Admin chi nhánh → **Cần xếp lịch**; Quản lý và Quản trị hệ th
 > **ngày** khi tới gần tuần đó (`14/10`). Speaking có thể khác ngày nhưng vẫn là cùng một lượt MT.
 > Lịch **chỉ có ngày, không có giờ**.
 
-> **Muốn xem nhanh phần mới nhất?** Mở một hồ sơ học viên bất kỳ, rồi mở menu **Học thuật**.
-> `DEMO_SCENARIOS.md` từ **Luồng 15** đi qua đúng năm việc mới: giáo viên báo vấn đề trước khi có bài
-> đánh giá · hồ sơ học viên · màn Học thuật · sửa điểm không xoá lịch sử hỗ trợ · ai được kết thúc theo dõi.
+> **Muốn xem nhanh phần mới nhất?** Đăng nhập bằng **Hoàng Khánh Huy** (Quản lý Bãi Cháy): màn Tổng quan
+> mở ra là nhóm **Chờ duyệt phương án** với một đề xuất đã quá hạn trả lời. Bấm vào để mở hồ sơ em đó,
+> rồi bấm **Trả lời đề xuất**. Sau đó đổi sang tab **Tình hình chung** để xem cả chi nhánh.
+> `DEMO_SCENARIOS.md` từ **Luồng 15** đi qua các việc mới: giáo viên báo vấn đề trước khi có bài đánh giá ·
+> hồ sơ học viên · đề xuất và duyệt phương án · phân công giáo viên · sửa điểm không xoá lịch sử hỗ trợ.
 
 Muốn đổi tài khoản bất cứ lúc nào: bấm nút **"Đổi tài khoản demo"** ở thanh trên cùng.
 

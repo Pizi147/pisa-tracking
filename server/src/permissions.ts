@@ -284,6 +284,18 @@ export function isCoreTeacherOf(p: Principal, classId: number, date = demoToday(
   return p.assignments.some((a) => a.classId === classId && a.isCore && activeAt(a, date));
 }
 
+/**
+ * Người này CÓ DẠY lớp đó không — chủ nhiệm hay bộ môn đều tính.
+ *
+ * Khác hẳn "có quyền ghi nhận xử lý": Admin chi nhánh ghi hộ được việc CS gọi phụ huynh,
+ * nhưng không phải người quyết phương án học thuật cho một em. Màn việc dùng đúng cái này
+ * để không giao cho văn phòng một việc chuyên môn mà họ không có căn cứ để làm.
+ */
+export function teachesClass(p: Principal, classId: number | null, date = demoToday()): boolean {
+  if (!classId) return false;
+  return p.assignments.some((a) => a.classId === classId && activeAt(a, date));
+}
+
 export function permissionSummary(p: Principal) {
   return p.grants.map((g) => ({
     id: g.id,

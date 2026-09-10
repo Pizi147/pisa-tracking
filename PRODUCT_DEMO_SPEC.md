@@ -17,19 +17,49 @@ Trạng thái các câu cần chốt nằm ở `DEMO_ASSUMPTIONS.md`.
 
 ## A1. Kiến trúc thông tin
 
-**Bốn** mục nghiệp vụ, không hơn. Quản trị là lối vào phụ trong menu tài khoản.
+**Hai** mục nghiệp vụ trên thanh điều hướng, không hơn. Mọi thứ còn lại là lối vào phụ trong menu tài khoản.
 
 | Mục | Nội dung | Thao tác trọng tâm |
 |---|---|---|
-| **Tổng quan** | Tuần đang xem, tiến độ MT, thiếu điểm/quá hạn, vấn đề cần xử lý | Bấm số liệu hoặc học sinh để mở đúng danh sách |
-| **Tiến trình công việc** | Tình hình từng đơn vị và công việc theo dõi | Cập nhật ngắn, phân công, cập nhật tiến độ |
-| **Học viên** | Lớp → học viên → tiến độ → nhập điểm, tất cả trong một mục | Mở lớp, nhập điểm, xếp lịch, thêm học viên hàng loạt |
-| **Học thuật** *(từ vòng D)* | Vấn đề đang theo dõi, theo chi nhánh / nhóm / kỹ năng | Xem bốn hàng đợi, mở một vấn đề, ghi hướng xử lý |
+| **Tổng quan** | Việc của **chính người đang xem**, nhóm theo loại việc | Bấm một dòng để làm đúng việc đó |
+| **Học viên** | Lớp → học viên → tiến độ → nhập điểm, tất cả trong một mục | Mở lớp, nhập điểm, xếp lịch, phân công giáo viên, thêm học viên hàng loạt |
+| *(tab)* Tình hình chung | Toàn bộ vấn đề trong phạm vi được xem | Chỉ hiện với Quản lý — xem A8f |
+| *(phụ)* Tiến trình công việc | Tình hình từng đơn vị và công việc theo dõi | Cập nhật ngắn, phân công, cập nhật tiến độ |
 | *(phụ)* Quản trị hệ thống | Ma trận quyền, đơn vị báo cáo, nhật ký, tài khoản | Chỉ xem, dành cho Quản trị hệ thống |
 
-**Học viên** trả lời *"lớp tôi đang thế nào"* — vào theo lớp, nhập điểm, xếp lịch. **Học thuật** trả lời
-*"em nào đang vướng gì"* — vào theo vấn đề, không theo lớp. Hai câu hỏi khác nhau nên hai lối vào khác
-nhau, nhưng cùng chạm vào **một bản ghi**: mở một vấn đề từ đâu cũng ra đúng nó.
+**Tổng quan** trả lời *"tôi phải làm gì bây giờ"*. **Học viên** trả lời *"lớp tôi đang thế nào"*.
+Màn **Học thuật** cũ — *"em nào đang vướng gì"* — không còn là một mục riêng mà thành **tab thứ hai của
+Tổng quan** cho Quản lý: cùng một câu hỏi, nhưng đặt cạnh việc của mình thay vì ở một góc khác của phần mềm.
+Đường dẫn `/hoc-thuat` vẫn còn và vẫn mở đúng bản ghi.
+
+### Màn Tổng quan: việc của CHÍNH người đang xem
+
+Mỗi dòng là **một học viên**, một câu lý do, và **một nút mà chính người đang xem bấm được**. Việc nào
+người xem không có quyền làm thì **không xuất hiện** — máy chủ lọc trước khi trả về, không phải giao diện
+ẩn nút đi.
+
+| Nhóm việc | Của ai | Nghĩa là |
+|---|---|---|
+| **Nhập điểm Test** | Giáo viên được phân công kỹ năng đó | Em đã làm bài rồi nhưng kỹ năng này chưa có điểm |
+| **Chờ duyệt phương án** | Quản lý | Giáo viên đề xuất một phương án và đang chờ bạn quyết |
+| **Kết quả sau hỗ trợ** | Người thực hiện; quá hạn thì Quản lý cũng thấy | Đã hỗ trợ và hẹn một ngày xem lại — ngày đó đã tới |
+| **Phương án hỗ trợ** | Người **dạy** em, hoặc Quản lý | Em có vấn đề mở mà chưa ai chọn hướng xử lý |
+| **Cập nhật ngày MT** | Admin chi nhánh (và Quản lý) | Tuần đã chốt nhưng chưa biết em thi ngày nào |
+| **Chưa có tuần kế hoạch** | Quản lý | Bài MT chưa được xếp vào tuần nào |
+
+Mỗi nhóm có **một dòng nói rõ nhóm đó nghĩa là gì**. Nhãn cộc lốc bắt người đọc tự đoán chuyện gì đã xảy
+ra và mình phải làm gì; một dòng giải thích rẻ hơn nhiều so với việc mỗi người tự hiểu một kiểu.
+
+Việc gấp **không tách thành một nhóm riêng**: "quá hạn nhập điểm" và "chưa ai bắt tay vào" là hai chuyện
+khác hẳn nhau, gộp lại thì nhìn vào không biết cái nào là cái nào. Thay vào đó việc gấp xếp lên đầu
+**trong nhóm của nó**, và nhóm nào có việc quá hạn thì xếp trước.
+
+Nhãn quá hạn **nói rõ quá hạn cái gì** — *Quá hạn nhập điểm*, *Quá hạn hỗ trợ*, *Quá hạn duyệt*,
+*Quá hạn cập nhật kết quả*, *Quá hạn cập nhật ngày MT*. Một chữ "Quá hạn" trơ trọi bắt người đọc đọc tiếp
+cả dòng mới biết, trong khi cùng một màn hình đang có năm loại hạn khác nhau.
+
+Dải ô đếm nằm **nguyên một hàng trên cùng**; cột "Lớp của bạn" hẹp hơn và nằm bên phải — đó là chỗ tra
+cứu, không phải chỗ làm việc.
 
 **Không có menu riêng cho báo cáo, sự việc, agenda, công việc — và từ vòng B, cũng không còn
 menu riêng cho Mock test.** Chúng nằm tại nơi phát sinh: báo cáo và công việc trong Tiến trình công việc;
@@ -173,10 +203,12 @@ Quyền = permission của vai trò
 | `attempt.skip_skill` — đánh dấu không mock | ✓ | ✓ | ✓ | — |
 | `deadline.override` | ✓ | ✓ | ✓ | — |
 | `score.edit` — đúng phân công | — | — | — | ✓ (chỉ kỹ năng được giao) |
-| `score.override` — nhập bù | ✓ | ✓ | — | — |
+| `score.override` — nhập bù | ✓ | — | — | — |
 | `estimate.edit` — ghi nhận nhanh | — | — | — | ✓ (chỉ kỹ năng được giao) |
 | `sos.edit` — ghi nhận vấn đề và việc đã làm | ✓ | ✓ | ✓ | ✓ (lớp được phân công) |
 | `case.close` — kết thúc theo dõi | ✓ | — | ✓ | ✓ (chỉ GVCN của chính lớp đó) |
+| `case.approve` — duyệt phương án hỗ trợ | ✓ | — | ✓ | — |
+| `class.assign` — phân công giáo viên vào lớp | ✓ | ✓ | ✓ | — |
 | `student.view` / `student.edit` | ✓ | ✓ | ✓ | xem |
 | `meeting.view` / `meeting.edit` | ✓ | — | ✓ | — |
 | `admin.config` | ✓ | — | — | — |
@@ -186,8 +218,15 @@ Những điểm đáng chú ý:
 - **Chốt tuần và chốt ngày là hai quyền khác nhau.** Quyền tuần không tự kéo theo quyền ngày và ngược lại.
 - **Kết thúc theo dõi một vấn đề** chỉ dành cho GVCN của lớp và Quản lý. Giáo viên bộ môn báo được
   và ghi được việc đã làm, nhưng không tự kết luận là xong. (Bước "Head xác nhận" cũ đã bỏ hẳn.)
-- **Nhập bù điểm** đi qua `score.override` riêng, ghi nhật ký riêng (`score.override` thay vì `score.edit`),
-  nên siết lại chỉ là một dòng dữ liệu — ai được nhập bù vẫn chờ bạn chốt (O05).
+- **Nhập bù điểm** đi qua `score.override` riêng, ghi nhật ký riêng (`score.override` thay vì `score.edit`).
+  **Chỉ Quản trị hệ thống** có quyền này *(owner chốt 10/09/2026)*: người không dạy kỹ năng đó thì không có
+  căn cứ nào để chấm, nên giáo viên vắng là chuyện đổi phân công chứ không phải chuyện văn phòng gõ điểm hộ.
+- **Đề xuất phương án hỗ trợ** là việc của người **dạy** em hoặc của Quản lý. Admin chi nhánh vẫn có
+  `sos.edit` để ghi hộ việc CS gọi phụ huynh, nhưng màn việc không giao cho họ việc chuyên môn ấy —
+  quyền ghi nhận và trách nhiệm quyết định là hai chuyện khác nhau.
+- **Phân công giáo viên** mở cho cả Admin chi nhánh: họ tạo được lớp thì cũng phải xếp được người dạy.
+  Bỏ phân công **không xoá lịch sử** — dòng cũ đóng lại bằng `effective_to`, nên báo cáo cũ đọc lại vẫn
+  thấy đúng ai dạy lúc đó, và điểm đã nhập giữ nguyên tên người nhập.
 - **Admin chi nhánh không vào Tiến trình công việc.** Họ theo dõi lịch và điểm qua Mock Test và Học viên.
 - Trang mở đầu theo việc thường làm nhất: Giáo viên → *Điểm tôi cần nhập*; Admin chi nhánh → *Cần xếp lịch*;
   Quản lý và Quản trị hệ thống → *Tổng quan*. Chỉ đổi lối vào, không đổi quyền.
@@ -323,7 +362,7 @@ Một trang duy nhất, chia khối ngắn, không dùng tab:
 1. Học sinh · lớp **tại lần thi** · lộ trình · cam kết chốt tại lần thi · MT · tuần · ngày dự kiến · kỳ vọng.
 2. Điểm từng kỹ năng: ngày thi riêng, số câu / tiêu chí, band, hạn nhập, người nhập.
    Bên dưới là bốn kỹ năng đánh giá + Overall + kết luận.
-3. **Vấn đề học vụ** — cùng một khung với hồ sơ học viên và màn Học thuật: vì sao đang theo dõi →
+3. **Vấn đề học vụ** — cùng một khung với hồ sơ học viên và tab Tình hình chung: vì sao đang theo dõi →
    đã làm gì → quan sát được gì → bước tiếp theo. Hiện cả khi điểm sau đó đã sửa lên thành đạt, vì
    giấu nó đi thì mọi việc đã làm để hỗ trợ em cũng biến mất khỏi màn hình.
 4. **Quy trình gợi ý** theo MT × mức SOS — CHỈ ĐỌC, tách hẳn khỏi việc đã làm.
@@ -652,25 +691,95 @@ cửa duyệt không bảo vệ điều gì.
 
 Dữ liệu xác nhận cũ được **giữ nguyên** để tra lại, chỉ không còn thao tác tạo mới.
 
-## A8f. Học thuật — màn của Quản lý
+## A8f. Tình hình chung — tab thứ hai của Tổng quan
 
-Bốn hàng đợi trả lời **bốn câu hỏi khác nhau**, cố tình **không** chia hết một tổng: một vấn đề có thể vừa
-"đang hỗ trợ" vừa "tới hạn xem lại".
+Quản lý có hai câu hỏi khác nhau, và **không cần cả hai cùng lúc**:
 
-| Hàng đợi | Câu hỏi |
+| Tab | Câu hỏi |
 |---|---|
-| Chưa ai định hướng | Vấn đề nào chưa có hướng xử lý và cũng chưa ai làm gì? |
-| Đang hỗ trợ / theo dõi | Vấn đề nào đang có người xử lý? |
-| Tới hạn xem lại | Vấn đề nào đã hẹn xem lại và đã tới hạn? |
-| Cần xem kỹ | Vấn đề nào ở mức cao, hoặc người báo đánh dấu gấp? |
+| **Việc của tôi** | Tôi phải làm gì bây giờ? |
+| **Tình hình chung** | Cả chi nhánh đang thế nào? |
 
-Đi sâu theo **chi nhánh → nhóm vấn đề → kỹ năng → một vấn đề**. Mọi lựa chọn nằm trên đường dẫn nên Back
-giữ nguyên bộ lọc và gửi đường dẫn cho người khác vẫn ra đúng màn hình.
+Nhét chung một trang là cách chắc chắn nhất để việc của mình chìm trong số liệu của người khác. Tab nằm
+trên đường dẫn (`?tab=tinh-hinh`) nên Back giữ đúng chỗ.
+
+### Ba trạng thái, cộng lại đúng bằng tổng
+
+| Trạng thái | Nghĩa là |
+|---|---|
+| Chưa có phương án hỗ trợ | Chưa có hướng xử lý và cũng chưa ai ghi việc nào |
+| Đang xử lý | Đã có hướng xử lý, hoặc đã có ít nhất một phương án được ghi |
+| Đã xong | Đã kết thúc theo dõi — **làm mờ và đẩy xuống cuối, không giấu đi** |
+
+Đây là **một phép chia**: ba số cộng lại đúng bằng tổng số dòng bên dưới. Bản trước để bốn hàng đợi ở chỗ
+này — bốn câu hỏi cố tình chồng nhau, nên bốn số không cộng thành gì cả và người đọc không biết mình đang
+nhìn một phép chia hay một danh sách. Hai câu hỏi thật sự khác biệt còn lại xuống dưới, dưới nhãn
+**Cần chú ý**, và nói rõ là câu hỏi:
+
+- **Tới hạn xem lại** — đã hẹn xem lại và đã tới hạn.
+- **Mức cao hoặc gấp** — SOS 3, hoặc người báo đánh dấu gấp.
+
+### Số đếm ở mọi lựa chọn lọc
+
+Mỗi chi nhánh, nhóm vấn đề và kỹ năng đều **kèm số ngay trên nút**, để đọc được `Học sinh 18 › Listening 6`
+mà không phải bấm thử từng cái. Số được tính **chéo theo kiểu facet**: mỗi chiều đếm trên tập đã lọc bởi
+các chiều *khác*, không phải bởi chính nó — nếu không thì chọn "Listening" xong mọi kỹ năng khác hiện 0 và
+người dùng mất luôn đường đi tiếp.
+
+Có riêng một lựa chọn **"Chưa phân loại"**, vì phần lớn vấn đề sinh từ điểm nằm ở đó cho tới khi có người
+dạy nhận định. Thiếu nó thì `Học sinh 3` nằm cạnh một danh sách 34 dòng, và người đọc chỉ có thể kết luận
+là hệ thống đếm sai.
+
+Cột **Tình trạng** trong bảng dùng đúng ba trạng thái ở trên, không dùng trạng thái thô trong database:
+một vấn đề đã có hai việc được ghi mà cột vẫn đề "Chưa xử lý" là số liệu tự mâu thuẫn.
 
 Một vấn đề mở được **cả trong ngăn kéo lẫn ở trang riêng** — cùng một bản ghi, mở từ trang điểm, từ hồ sơ
 học viên hay từ đây đều tới đúng nó.
 
-**Quản lý KHÔNG phải cửa duyệt**: không có vấn đề nào bắt buộc phải có ý kiến của Quản lý mới xử lý tiếp được.
+**Quản lý không phải cửa duyệt mặc định**: chỉ những phương án mà **chính giáo viên** đánh dấu "cần duyệt"
+mới phải chờ ý kiến Quản lý (xem A8g).
+
+## A8g. Đề xuất phương án và duyệt
+
+Bắt duyệt hết là biến phần mềm thành cửa xin phép; không duyệt gì thì việc tốn tiền lại không ai chịu
+trách nhiệm. Nên **người đề xuất tự quyết**, theo từng phương án một:
+
+| | |
+|---|---|
+| Trao đổi với em sau buổi học | Giáo viên tự làm, không gửi duyệt |
+| Xếp tutor, lùi lịch thi | Gửi duyệt — có người phải chịu trách nhiệm về chi phí và lịch |
+
+Chỉ **đề xuất** (trạng thái "Đã lên kế hoạch") mới gửi duyệt được: việc đã làm rồi thì không còn gì để
+duyệt. Đã gửi duyệt thì **chờ** — chưa cập nhật kết quả được, vì việc thật sự chưa diễn ra.
+
+Hạn trả lời tính lúc đề xuất: **3 ngày** với case SOS 3 hoặc mức gấp, **7 ngày** với các case còn lại.
+Quá hạn thì đề xuất mang nhãn *"Quá hạn duyệt"* trong việc của Quản lý.
+
+| Quản lý trả lời | Kết quả |
+|---|---|
+| **Duyệt** | Phương án chạy tiếp, mở khoá "Cập nhật kết quả" |
+| **Không duyệt** | **Bắt buộc ghi lý do**; phương án chuyển sang *đã huỷ* |
+| **Góp ý** | Ghi lại góp ý nhưng **KHÔNG kết thúc việc chờ** — Quản lý vẫn nợ một câu trả lời |
+
+Đã trả lời rồi thì **không sửa đè**. Đổi ý là chuyện bình thường, nhưng ghi đè sẽ xoá mất lý do đã ghi và
+giáo viên đọc lại không biết vì sao lúc đầu bị bác — nên đổi ý thì đề xuất lại, hồ sơ giữ cả hai lần.
+
+`approval_state` để **NULL** nghĩa là *không cần duyệt*, khác hẳn `pending` là *đang chờ*. Các phương án
+có từ trước khi có bước duyệt giữ nguyên NULL — không back-date một bước chưa từng tồn tại.
+
+## A8j. Phân công giáo viên vào lớp
+
+Đổi được: **Quản lý và Admin chi nhánh** trong đúng chi nhánh của lớp. Admin chi nhánh tạo được lớp nên
+cũng phải xếp được người dạy. Giáo viên thì không.
+
+- Mỗi kỹ năng là một **danh sách**, không phải một ô chọn — có lớp hai người cùng dạy một kỹ năng, và ô
+  chọn một-người sẽ âm thầm đá mất người thứ hai (lỗi chỉ lộ ra khi ai đó không nhập được điểm).
+- Màn hình gửi lên **nguyên bức tranh** đang hiển thị, không gửi từng thao tác thêm/bớt: hai người sửa
+  cùng lúc thì kết quả vẫn là một trong hai bức tranh, không phải một trạng thái pha trộn không ai định.
+- **Bỏ phân công không phải là xoá.** Dòng cũ đóng lại bằng `effective_to`; báo cáo cũ đọc lại vẫn thấy
+  đúng ai dạy lúc đó, và điểm đã nhập giữ nguyên tên người nhập. Dòng không đổi **giữ nguyên**
+  `effective_from` — đóng rồi mở lại là bịa ra một lần đổi người không có thật.
+- Bỏ phân công thì **mất luôn quyền nhập điểm** kỹ năng đó, ngay lập tức.
 
 ## A8h. Tiến trình công việc: dữ kiện tự sinh + nhận định của quản lý
 

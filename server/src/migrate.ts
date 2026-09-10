@@ -386,6 +386,21 @@ function migrateCaseEngine(applied: string[], skipped: string[]) {
     if (j.changes) applied.push(`Gắn lộ trình cho ${j.changes} sự kiện hành trình`);
 
     /*
+     * 8b. PHƯƠNG ÁN HỖ TRỢ CÓ CẦN DUYỆT KHÔNG (owner chốt 10/09/2026).
+     *
+     * Dữ liệu cũ không có khái niệm này, nên mọi việc đã ghi đều để `needs_approval = 0`:
+     * chúng đã làm xong rồi, dựng ngược lại một trạng thái "đang chờ duyệt" cho quá khứ là
+     * bịa ra một khâu chưa từng tồn tại.
+     */
+    for (const [c, d] of [
+      ['needs_approval', 'INTEGER NOT NULL DEFAULT 0'], ['approval_state', 'TEXT'],
+      ['approval_due', 'TEXT'], ['approval_by', 'INTEGER'], ['approval_at', 'TEXT'],
+      ['approval_note', 'TEXT'],
+    ] as const) addCol('case_interventions', c, d);
+    conn.exec(`CREATE INDEX IF NOT EXISTS idx_intervention_approval
+                 ON case_interventions(approval_state) WHERE approval_state = 'pending'`);
+
+    /*
      * 8. Khoá của lớp thường thiếu MÃ CHƯƠNG TRÌNH.
      *
      * Thiếu mã này thì không biết khoá chấm theo tỷ lệ hay theo band, nên hồ sơ học viên

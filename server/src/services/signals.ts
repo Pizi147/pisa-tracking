@@ -121,7 +121,7 @@ export function signalsFor(p: Principal, f: { branchId?: number | null; periodId
         GROUP BY c.branch_id`,
     )
     .all(...ids, today) as any[]) {
-    push('missing_scores', r.branch_id, r.n, `${r.n} lượt MT chưa đủ điểm`,
+    push('missing_scores', r.branch_id, r.n, `${r.n} bài MT còn thiếu điểm`,
          'teacher', 'warn', `/hoc-vien?view=missing_scores&branchId=${r.branch_id}`);
   }
 

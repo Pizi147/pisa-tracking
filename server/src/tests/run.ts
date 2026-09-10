@@ -35,6 +35,7 @@ const signals = await import('../services/signals.ts');
 const regular = await import('../services/regular.ts');
 const weekly = await import('../services/weekly.ts');
 const cases = await import('../services/cases.ts');
+const mywork = await import('../services/mywork.ts');
 const { ratioResult: domainRatio } = await import('../../../shared/domain.ts');
 const { demoToday } = await import('../demoConfig.ts');
 const { addDays } = await import('../util.ts');
@@ -396,11 +397,19 @@ check('GVCN không vì chủ nhiệm mà sửa được mọi kỹ năng', () =>
     .filter((s) => can(P.coreTeacher, PERMISSIONS.SCORE_EDIT, { classId: mbClass, skill: s }));
   assert(skills.length < 5, `GVCN đang sửa được cả 5 kỹ năng: ${skills.join(', ')}`);
 });
-check('Nhập bù ngoài phân công đi đường riêng và được ghi nhật ký khác', () => {
-  assert(can(P.mbAdmin, PERMISSIONS.SCORE_OVERRIDE, { classId: mbClass }), 'Admin chi nhánh phải nhập bù được');
+/*
+ * ĐIỂM CHỈ NGƯỜI DẠY NHẬP. Owner chốt 10/09: bỏ hẳn đường nhập bù của Admin chi nhánh —
+ * người không dạy kỹ năng đó thì không có căn cứ nào để chấm. Đường nhập bù còn lại chỉ
+ * thuộc về quản trị hệ thống, và vẫn đi nhật ký riêng để soi lại được.
+ */
+check('Chỉ quản trị hệ thống nhập bù được, và đi nhật ký riêng', () => {
+  assert(!can(P.mbAdmin, PERMISSIONS.SCORE_OVERRIDE, { classId: mbClass }), 'Admin chi nhánh không được nhập bù điểm');
   assert(!can(P.mbManager, PERMISSIONS.SCORE_OVERRIDE, { classId: mbClass }), 'Quản lý không có đường nhập bù điểm');
+  assert(can(P.admin, PERMISSIONS.SCORE_OVERRIDE, { classId: mbClass }), 'Quản trị hệ thống phải nhập bù được');
   const a = conn.prepare(`SELECT * FROM assessment_attempts WHERE class_id = ? AND status='done' LIMIT 1`).get(mbClass) as any;
-  attempts.saveScore(P.mbAdmin, a.id, 'writing2', { criteria: [6, 6, 6, 6] });
+  assertThrows(() => attempts.saveScore(P.mbAdmin, a.id, 'writing2', { criteria: [6, 6, 6, 6] }), /phân công/,
+    'Admin chi nhánh nhập bù điểm W2');
+  attempts.saveScore(P.admin, a.id, 'writing2', { criteria: [6, 6, 6, 6] });
   const log = conn.prepare(`SELECT * FROM audit_logs WHERE action='score.override' ORDER BY id DESC LIMIT 1`).get() as any;
   assert(log, 'Nhập bù không được ghi nhật ký riêng');
 });
@@ -719,7 +728,7 @@ check('Đánh dấu không mock sau khi đã có điểm thì giữ điểm và 
   const d = attempts.attemptDetail(P.cpManager, a.id);
   assert(d.result.required.length === 3 && d.result.scopeNote === '3 kỹ năng', 'Chưa tính lại mẫu số');
   assert(d.result.overall === null, 'Không được giữ Overall bốn kỹ năng khi một kỹ năng không mock');
-  assertThrows(() => attempts.saveScore(P.cpAdmin, a.id, 'speaking', { criteria: [6, 6, 6, 6] }),
+  assertThrows(() => attempts.saveScore(P.admin, a.id, 'speaking', { criteria: [6, 6, 6, 6] }),
     /không mock/, 'Nhập điểm cho kỹ năng đã đánh dấu không mock');
   attempts.setSkillSkip(P.cpManager, a.id, 'speaking', false);
   assert(attempts.attemptDetail(P.cpManager, a.id).result.required.length === 4, 'Bỏ đánh dấu không khôi phục mẫu số');
@@ -1900,6 +1909,308 @@ check('Bằng chứng phải thuộc đúng học viên của case', () => {
     /không thuộc học viên/, 'Gắn bằng chứng của học viên khác',
   );
 });
+
+console.log('\n17. Đề xuất phương án và duyệt');
+
+/** Tìm một đề xuất đang chờ duyệt trong dữ liệu mẫu, kèm Quản lý đúng chi nhánh. */
+function pendingPlanIn(branchCode: string) {
+  return conn
+    .prepare(
+      `SELECT iv.id, iv.case_id, iv.recorded_by, iv.approval_due
+         FROM case_interventions iv
+         JOIN sos_cases sc ON sc.id = iv.case_id
+         JOIN students s ON s.id = sc.student_id
+         JOIN enrollments e ON e.student_id = s.id AND e.status = 'active'
+         JOIN classes c ON c.id = e.class_id
+         JOIN branches b ON b.id = c.branch_id
+        WHERE iv.approval_state = 'pending' AND b.code = ?
+        ORDER BY iv.id LIMIT 1`,
+    )
+    .get(branchCode) as any;
+}
+
+check('Dữ liệu mẫu có đủ bốn trạng thái duyệt, không chỉ một kiểu', () => {
+  const rows = conn
+    .prepare(
+      `SELECT COALESCE(approval_state, 'none') AS st, COUNT(*) AS n
+         FROM case_interventions GROUP BY st`,
+    )
+    .all() as any[];
+  const by = new Map(rows.map((r) => [r.st, r.n]));
+  for (const st of ['pending', 'approved', 'declined', 'none']) {
+    assert((by.get(st) ?? 0) > 0, `Dữ liệu mẫu không có đề xuất nào ở trạng thái "${st}"`);
+  }
+  const overdue = conn
+    .prepare(`SELECT COUNT(*) n FROM case_interventions WHERE approval_state='pending' AND approval_due < ?`)
+    .get(demoToday()) as any;
+  const onTime = conn
+    .prepare(`SELECT COUNT(*) n FROM case_interventions WHERE approval_state='pending' AND approval_due >= ?`)
+    .get(demoToday()) as any;
+  assert(overdue.n > 0 && onTime.n > 0,
+    `Cần cả đề xuất quá hạn lẫn còn hạn để nhìn ra khác biệt (quá hạn ${overdue.n}, còn hạn ${onTime.n})`);
+});
+
+check('Chỉ ĐỀ XUẤT mới gửi duyệt được — việc đã làm rồi thì không còn gì để duyệt', () => {
+  const c = cases.reportIssue(P.coreTeacher, {
+    studentId: someStudent.id, summary: 'Thử gửi duyệt', idempotencyKey: 'test-approval-1',
+  }) as any;
+  assertThrows(
+    () => cases.recordIntervention(P.coreTeacher, c.id, {
+      kind: 'tutor', description: 'Xin tutor', status: 'completed',
+      completedDate: demoToday(), performerSelf: true, needsApproval: true,
+    }),
+    /đề xuất|kế hoạch/i, 'Gửi duyệt một việc đã làm xong',
+  );
+  const iv = cases.recordIntervention(P.coreTeacher, c.id, {
+    kind: 'tutor', description: 'Xin 4 buổi tutor', status: 'planned', needsApproval: true,
+  }) as any;
+  const row = conn.prepare(
+    `SELECT * FROM case_interventions WHERE case_id = ? ORDER BY id DESC LIMIT 1`,
+  ).get(c.id) as any;
+  assert(row.approval_state === 'pending', 'Đề xuất không vào trạng thái chờ duyệt');
+  assert(row.approval_due && row.approval_due > demoToday(), 'Đề xuất không có hạn trả lời ở tương lai');
+  assert(iv, 'Không ghi được đề xuất');
+});
+
+check('Không cần duyệt thì để TRỐNG, không phải "đã duyệt"', () => {
+  const c = cases.reportIssue(P.coreTeacher, {
+    studentId: someStudent.id, summary: 'Việc tự làm', idempotencyKey: 'test-approval-2',
+  }) as any;
+  cases.recordIntervention(P.coreTeacher, c.id, {
+    kind: 'talk_student', description: 'Trao đổi với em sau buổi học', status: 'completed',
+    completedDate: demoToday(), performerSelf: true,
+  });
+  const row = conn.prepare(
+    `SELECT * FROM case_interventions WHERE case_id = ? ORDER BY id DESC LIMIT 1`,
+  ).get(c.id) as any;
+  assert(row.needs_approval === 0 && row.approval_state === null,
+    'Việc không cần duyệt lại bị gắn trạng thái duyệt');
+});
+
+check('Chỉ Quản lý duyệt được, và không duyệt thì bắt buộc có lý do', () => {
+  const plan = pendingPlanIn('CP');
+  assert(plan, 'Dữ liệu mẫu thiếu đề xuất chờ duyệt ở CP');
+  assertThrows(() => cases.respondToPlan(P.coreTeacher, plan.id, { decision: 'approved' }),
+    /Quản lý|quyền/, 'Giáo viên tự duyệt đề xuất');
+  assertThrows(() => cases.respondToPlan(P.mbManager, plan.id, { decision: 'approved' }),
+    /phạm vi|quyền|Quản lý/, 'Quản lý MB duyệt đề xuất của CP');
+  assertThrows(() => cases.respondToPlan(P.cpManager, plan.id, { decision: 'declined' }),
+    /lý do/, 'Không duyệt mà không ghi lý do');
+});
+
+check('Góp ý KHÔNG kết thúc việc chờ; duyệt và không duyệt thì mới kết thúc', () => {
+  const plan = pendingPlanIn('CP');
+  cases.respondToPlan(P.cpManager, plan.id, { decision: 'comment', note: 'Cho tôi xem bài gần nhất' });
+  const afterComment = conn.prepare('SELECT * FROM case_interventions WHERE id = ?').get(plan.id) as any;
+  assert(afterComment.approval_state === 'pending', 'Góp ý đã xoá mất việc chờ duyệt');
+  assert(afterComment.approval_note === 'Cho tôi xem bài gần nhất', 'Góp ý không được lưu lại');
+
+  cases.respondToPlan(P.cpManager, plan.id, { decision: 'approved', note: 'Duyệt 4 buổi' });
+  const afterApprove = conn.prepare('SELECT * FROM case_interventions WHERE id = ?').get(plan.id) as any;
+  assert(afterApprove.approval_state === 'approved', 'Duyệt xong vẫn còn chờ');
+  assert(afterApprove.approval_by === P.cpManager.userId && afterApprove.approval_at,
+    'Không ghi ai duyệt và duyệt lúc nào');
+  assertThrows(() => cases.respondToPlan(P.cpManager, plan.id, { decision: 'approved' }),
+    /đã được duyệt|đã bị từ chối/, 'Duyệt lại một đề xuất đã trả lời');
+});
+
+check('Không duyệt thì phương án dừng lại, không âm thầm thành việc đang làm', () => {
+  const plan = pendingPlanIn('BC');
+  assert(plan, 'Dữ liệu mẫu thiếu đề xuất chờ duyệt ở BC');
+  const mgr = loadPrincipal(userByRole('manager', 'BC'));
+  cases.respondToPlan(mgr, plan.id, { decision: 'declined', note: 'Giữ lịch cũ, đổi cách ôn' });
+  const row = conn.prepare('SELECT * FROM case_interventions WHERE id = ?').get(plan.id) as any;
+  assert(row.approval_state === 'declined' && row.status === 'cancelled',
+    'Đề xuất bị bác nhưng vẫn nằm ở trạng thái đang làm');
+});
+
+console.log('\n18. Việc của chính người đang xem');
+
+check('Quản lý thấy nhóm "Chờ duyệt phương án", giáo viên thì không', () => {
+  const gv = loadPrincipal(teacherOfSkill('MB-FT 101', 'listening'));
+  const mgrGroups = mywork.myWork(P.mbManager).groups.map((g: any) => g.key);
+  const gvGroups = mywork.myWork(gv).groups.map((g: any) => g.key);
+  assert(!gvGroups.includes('approval'), 'Giáo viên bị giao việc duyệt mà họ không có quyền làm');
+  const anyManagerHasIt = ['MB', 'CP', 'BC', 'HD']
+    .map((b) => loadPrincipal(userByRole('manager', b)))
+    .some((m) => mywork.myWork(m).groups.some((g: any) => g.key === 'approval'));
+  assert(anyManagerHasIt, 'Không Quản lý nào thấy đề xuất đang chờ duyệt');
+  assert(Array.isArray(mgrGroups), 'myWork không trả về nhóm');
+});
+
+check('Mỗi việc quá hạn nói rõ quá hạn CÁI GÌ', () => {
+  const seen = new Set<string>();
+  for (const b of ['MB', 'CP', 'BC', 'HD', 'TL']) {
+    let m;
+    try { m = loadPrincipal(userByRole('manager', b)); } catch { continue; }
+    for (const g of mywork.myWork(m).groups) {
+      for (const it of g.items) {
+        if (it.urgency === 'overdue') {
+          assert(it.overdueLabel && /^Quá hạn /.test(it.overdueLabel),
+            `Việc quá hạn ở nhóm ${g.key} không ghi rõ quá hạn gì: ${it.overdueLabel}`);
+          seen.add(it.overdueLabel ?? "");
+        }
+        if (it.urgency === 'normal') assert(!it.overdueLabel, `Việc chưa tới hạn lại gắn nhãn ${it.overdueLabel}`);
+      }
+    }
+  }
+  assert(seen.size >= 2, `Chỉ có ${seen.size} kiểu nhãn quá hạn — đáng lẽ mỗi loại việc một kiểu`);
+});
+
+check('Kết quả sau hỗ trợ là việc của NGƯỜI THỰC HIỆN; quá hạn thì Quản lý cũng thấy', () => {
+  const gv = loadPrincipal(teacherOfSkill('CP-FT 110', 'speaking'));
+  const mgr = loadPrincipal(userByRole('manager', 'CP'));
+  const reviewOf = (p: any) => (mywork.myWork(p).groups.find((g: any) => g.key === 'review')?.items ?? []);
+
+  // Dữ liệu mẫu: tutor CP-FT 110 hẹn 19/09, nay đã 23/09 — quá hạn, nên cả hai đều thấy.
+  const gvItems = reviewOf(gv);
+  const mgrItems = reviewOf(mgr);
+  assert(gvItems.length > 0, 'Người ghi phương án không thấy việc cập nhật kết quả của mình');
+  assert(gvItems.every((i: any) => i.actionLabel === 'Cập nhật kết quả'), 'Nhãn hành động không đúng');
+  const overdueForManager = mgrItems.filter((i: any) => i.urgency === 'overdue');
+  assert(overdueForManager.length === mgrItems.length,
+    'Quản lý đang thấy cả việc CHƯA quá hạn của người khác — chỉ quá hạn mới đến tay Quản lý');
+});
+
+check('Đề xuất đang chờ duyệt thì chưa đòi cập nhật kết quả', () => {
+  const c = cases.reportIssue(P.coreTeacher, {
+    studentId: someStudent.id, summary: 'Chờ duyệt đã hẹn xem lại', idempotencyKey: 'test-approval-3',
+  }) as any;
+  cases.recordIntervention(P.coreTeacher, c.id, {
+    kind: 'tutor', description: 'Xin tutor, hẹn xem lại ngay', status: 'planned',
+    needsApproval: true, followupDue: addDays(demoToday(), -1),
+  });
+  const items = (mywork.myWork(P.coreTeacher).groups.find((g: any) => g.key === 'review')?.items ?? []);
+  assert(!items.some((i: any) => i.caseId === c.id),
+    'Phương án chưa được duyệt đã bị đòi cập nhật kết quả');
+});
+
+console.log('\n19. Phân công giáo viên');
+
+check('Giáo viên không tự phân công mình vào lớp', () => {
+  const gv = loadPrincipal(teacherOfSkill('MB-FT 101', 'listening'));
+  assertThrows(() => classesSvc.setClassTeachers(gv, mbClass, { slots: [] }),
+    /Quản lý|Admin|quyền/, 'Giáo viên đổi phân công');
+  assert(!can(gv, PERMISSIONS.CLASS_ASSIGN, { classId: mbClass }), 'Giáo viên đang có quyền phân công');
+  assert(can(P.mbManager, PERMISSIONS.CLASS_ASSIGN, { classId: mbClass }), 'Quản lý phải phân công được');
+  assert(can(P.mbAdmin, PERMISSIONS.CLASS_ASSIGN, { classId: mbClass }), 'Admin chi nhánh phải phân công được');
+});
+
+check('Không xếp người của chi nhánh khác, và không xếp kỹ năng lớp không dạy', () => {
+  const cpTeacher = teacherOfSkill('CP-FT 110', 'listening');
+  assertThrows(
+    () => classesSvc.setClassTeachers(P.mbManager, mbClass, {
+      slots: [{ userId: cpTeacher, skill: 'listening', isCore: false }],
+    }),
+    /chi nhánh/, 'Xếp giáo viên CP vào lớp MB',
+  );
+  const found = classId('MB-FOUND 12');
+  const anyTeacher = classesSvc.classTeachers(P.mbManager, found).candidates[0];
+  assertThrows(
+    () => classesSvc.setClassTeachers(P.mbManager, found, {
+      slots: [{ userId: anyTeacher.id, skill: 'writing2', isCore: false }],
+    }),
+    /không dạy kỹ năng/, 'Xếp W2 cho lớp không có W2',
+  );
+});
+
+check('Bỏ phân công KHÔNG xoá lịch sử, và dòng giữ nguyên thì không bị mở lại', () => {
+  const before = classesSvc.classTeachers(P.mbManager, mbClass);
+  const lrSlot = before.bySkill.find((b) => b.skill === 'listening');
+  assert(lrSlot, 'Lớp mẫu không có giáo viên Listening');
+
+  const keep = before.bySkill.filter((b) => b.skill !== 'listening')
+    .map((b) => ({ userId: b.userId, skill: b.skill, isCore: false }));
+  const core = before.core.map((c) => ({ userId: c.userId, skill: null, isCore: true }));
+  classesSvc.setClassTeachers(P.mbManager, mbClass, { slots: [...core, ...keep] });
+
+  const rows = conn
+    .prepare(`SELECT * FROM teacher_assignments WHERE class_id = ? AND user_id = ? AND skill='listening'`)
+    .all(mbClass, lrSlot!.userId) as any[];
+  assert(rows.length > 0, 'Bỏ phân công đã xoá mất dòng cũ');
+  assert(rows.every((r) => r.status !== 'active'), 'Bỏ phân công nhưng dòng vẫn còn hiệu lực');
+  assert(rows.some((r) => r.effective_to === demoToday()), 'Không ghi ngày kết thúc phân công');
+
+  const after = classesSvc.classTeachers(P.mbManager, mbClass);
+  assert(!after.bySkill.some((b) => b.skill === 'listening' && b.userId === lrSlot!.userId),
+    'Vẫn còn phân công đã bỏ');
+  // Dòng không đổi phải giữ nguyên ngày bắt đầu — đóng rồi mở lại là bịa ra một lần đổi người.
+  for (const b of after.core) {
+    const same = before.core.find((c) => c.userId === b.userId);
+    assert(same && same.from === b.from, 'GVCN không đổi mà ngày bắt đầu bị ghi lại');
+  }
+  assert(after.past.some((h) => h.skill === 'listening'), 'Lịch sử không hiện người vừa bị bỏ');
+});
+
+check('Bỏ phân công thì mất luôn quyền nhập điểm kỹ năng đó', () => {
+  const before = classesSvc.classTeachers(P.mbManager, mbClass);
+  const wSlot = before.bySkill.find((b) => b.skill === 'writing1');
+  assert(wSlot, 'Lớp mẫu không có giáo viên Writing 1');
+  const gv = loadPrincipal(wSlot!.userId);
+  assert(can(gv, PERMISSIONS.SCORE_EDIT, { classId: mbClass, skill: 'writing1' }), 'GV W1 chưa có quyền');
+
+  classesSvc.setClassTeachers(P.mbManager, mbClass, {
+    slots: [
+      ...before.core.map((c) => ({ userId: c.userId, skill: null, isCore: true })),
+      ...before.bySkill.filter((b) => b.skill !== 'writing1')
+        .map((b) => ({ userId: b.userId, skill: b.skill, isCore: false })),
+    ],
+  });
+  const after = loadPrincipal(wSlot!.userId);
+  assert(!can(after, PERMISSIONS.SCORE_EDIT, { classId: mbClass, skill: 'writing1' }),
+    'Bỏ phân công rồi mà vẫn nhập được điểm kỹ năng đó');
+});
+
+check('Một kỹ năng xếp được HAI giáo viên, không đá mất người thứ hai', () => {
+  const t = classesSvc.classTeachers(P.mbManager, mbClass);
+  const two = t.candidates.slice(0, 2);
+  assert(two.length === 2, 'Chi nhánh không đủ hai giáo viên để thử');
+  classesSvc.setClassTeachers(P.mbManager, mbClass, {
+    slots: [
+      ...t.core.map((c) => ({ userId: c.userId, skill: null, isCore: true })),
+      ...t.bySkill.filter((b) => b.skill !== 'reading').map((b) => ({ userId: b.userId, skill: b.skill, isCore: false })),
+      { userId: two[0].id, skill: 'reading', isCore: false },
+      { userId: two[1].id, skill: 'reading', isCore: false },
+    ],
+  });
+  const after = classesSvc.classTeachers(P.mbManager, mbClass);
+  assert(after.bySkill.filter((b) => b.skill === 'reading').length === 2,
+    'Xếp hai giáo viên Reading nhưng chỉ giữ lại một');
+});
+
+check('Dữ liệu mẫu có đủ bốn mức gấp, không phải một màu đỏ', () => {
+  const open = conn
+    .prepare(
+      `SELECT followup_due FROM case_interventions
+        WHERE followup_due IS NOT NULL AND status != 'cancelled'
+          AND NOT EXISTS (SELECT 1 FROM case_followups f WHERE f.intervention_id = case_interventions.id)`,
+    )
+    .all() as any[];
+  const t = demoToday();
+  const late = open.filter((r) => r.followup_due < t).length;
+  const today = open.filter((r) => r.followup_due === t).length;
+  const soon = open.filter((r) => r.followup_due > t).length;
+  assert(late > 0 && today > 0 && soon > 0,
+    `Hẹn xem lại phải có cả ba mức (quá hạn ${late}, hôm nay ${today}, còn hạn ${soon}) — `
+    + 'neo hết vào ngày thi thì màn việc chỉ toàn một màu đỏ và không nhìn ra khác biệt');
+
+  const untouched = conn
+    .prepare(
+      `SELECT COALESCE(detected_at, substr(created_at, 1, 10)) AS d FROM sos_cases sc
+        WHERE sc.status != 'done' AND COALESCE(sc.sos_level, 1) > 0 AND sc.disposition IS NULL
+          AND NOT EXISTS (SELECT 1 FROM case_interventions iv
+                           WHERE iv.case_id = sc.id AND iv.status != 'cancelled')`,
+    )
+    .all() as any[];
+  const fresh = untouched.filter((r) => diffDaysT(t, r.d) < 7).length;
+  assert(fresh > 0 && untouched.length - fresh > 0,
+    `Vấn đề chưa có phương án phải có cả mới lẫn để lâu (mới ${fresh}/${untouched.length})`);
+});
+
+/** Đếm ngày giữa hai mốc ISO, dùng riêng trong kiểm tra để không phụ thuộc thứ tự import. */
+function diffDaysT(a: string, b: string) {
+  return Math.round((Date.parse(a + 'T00:00:00Z') - Date.parse(b + 'T00:00:00Z')) / 86400000);
+}
 
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0

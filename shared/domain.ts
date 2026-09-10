@@ -17,6 +17,11 @@ export const ENTRY_SKILL_SHORT: Record<EntrySkill, string> = {
   listening: 'L', reading: 'R', writing1: 'W1', writing2: 'W2', speaking: 'S',
 };
 
+/** Lớp thường có hai kỹ năng riêng, cũng cần viết tắt để badge không tràn dòng. */
+export const REGULAR_SKILL_SHORT: Record<string, string> = {
+  listening: 'L', reading: 'R', prep_writing: 'Prep-W', pronunciation: 'Pron', speaking: 'S',
+};
+
 /** Kỹ năng ĐÁNH GIÁ dùng để xét kỳ vọng và SOS. Writing gộp từ W1 + W2. */
 export const ASSESSED_SKILLS = ['listening', 'reading', 'writing', 'speaking'] as const;
 export type AssessedSkill = (typeof ASSESSED_SKILLS)[number];
@@ -306,7 +311,7 @@ export type IssueNode = {
 
 export type IssueBranch = {
   group: IssueGroup;
-  /** Nhánh con, ví dụ "Thói quen học" hay "Listening". */
+  /** Nhánh con, ví dụ "Ý thức học tập" hay "Listening". */
   key: string;
   label: string;
   skill?: string;
@@ -317,7 +322,7 @@ const other = (code: string): IssueNode => ({ code, label: 'Khác' });
 
 export const ISSUE_TAXONOMY: IssueBranch[] = [
   {
-    group: 'student', key: 'behaviour', label: 'Thói quen học',
+    group: 'student', key: 'behaviour', label: 'Ý thức học tập',
     items: [
       { code: 'student.behaviour.attendance', label: 'Đi học / đúng giờ' },
       { code: 'student.behaviour.homework', label: 'Chuẩn bị bài / bài tập' },
@@ -370,7 +375,7 @@ export const ISSUE_TAXONOMY: IssueBranch[] = [
     ],
   },
   {
-    group: 'teacher', key: 'teaching', label: 'Quá trình dạy',
+    group: 'teacher', key: 'teaching', label: 'Giáo viên',
     items: [
       { code: 'teacher.explain', label: 'Giải thích / kiểm tra mức hiểu' },
       { code: 'teacher.adjust', label: 'Điều chỉnh cách dạy theo lớp' },
@@ -382,7 +387,7 @@ export const ISSUE_TAXONOMY: IssueBranch[] = [
     ],
   },
   {
-    group: 'curriculum', key: 'programme', label: 'Chương trình',
+    group: 'curriculum', key: 'programme', label: 'Giáo trình',
     items: [
       { code: 'curriculum.level', label: 'Mức độ / trình tự bài' },
       { code: 'curriculum.pace', label: 'Tốc độ / khối lượng' },
@@ -487,6 +492,29 @@ export const INTERVENTION_KIND_LABEL: Record<InterventionKind, string> = {
   ops_policy: 'Chính sách vận hành',
   other: 'Khác',
 };
+
+/**
+ * PHƯƠNG ÁN HỖ TRỢ CÓ CẦN QUẢN LÝ DUYỆT KHÔNG — do CHÍNH giáo viên quyết định.
+ *
+ * Giáo viên là người biết rõ nhất việc mình định làm có tự xoay được hay cần trung tâm
+ * đứng sau: trao đổi với em sau buổi học thì làm luôn, còn xếp tutor hay lùi lịch thi thì
+ * phải có người quyết. Bắt duyệt hết là biến phần mềm thành cửa xin phép; không duyệt gì
+ * thì những việc tốn tiền lại không ai chịu trách nhiệm.
+ *
+ * Việc hỗ trợ thật diễn ra NGOÀI phần mềm, nên "chờ duyệt" không làm chậm điều gì — nó chỉ
+ * để lại dấu vết ai đang chờ ai, và chờ bao lâu.
+ */
+export const APPROVAL_STATES = ['pending', 'approved', 'declined'] as const;
+export type ApprovalState = (typeof APPROVAL_STATES)[number];
+export const APPROVAL_LABEL: Record<ApprovalState, string> = {
+  pending: 'Đang chờ duyệt', approved: 'Đã duyệt', declined: 'Không duyệt',
+};
+
+/**
+ * Hạn Quản lý phải trả lời một đề xuất. Case nặng thì gấp hơn — owner chốt 10/09/2026.
+ * Quá hạn không chặn gì cả, chỉ nổi lên màn của Quản lý để không ai bị bỏ quên.
+ */
+export const APPROVAL_DUE_DAYS = { urgent: 3, normal: 7 };
 
 export const INTERVENTION_STATUSES = ['planned', 'started', 'completed', 'cancelled'] as const;
 export type InterventionStatus = (typeof INTERVENTION_STATUSES)[number];
@@ -641,6 +669,10 @@ export const PERMISSIONS = {
   SOS_EDIT: 'sos.edit',
   /** Kết thúc theo dõi một case. GVCN của lớp và Quản lý — không phải mọi giáo viên. */
   CASE_CLOSE: 'case.close',
+  /** Duyệt phương án hỗ trợ giáo viên đề xuất. Chỉ Quản lý và Quản trị hệ thống. */
+  CASE_APPROVE: 'case.approve',
+  /** Phân công giáo viên dạy kỹ năng nào ở lớp nào. */
+  CLASS_ASSIGN: 'class.assign',
 
   // --- Hồ sơ và vận hành ---
   STUDENT_VIEW: 'student.view',
@@ -664,6 +696,8 @@ export const PERMISSION_LABEL: Record<string, string> = {
   'estimate.edit': 'Cập nhật Đánh giá GV',
   'sos.edit': 'Ghi nhận xử lý case học vụ',
   'case.close': 'Đóng case học vụ',
+  'case.approve': 'Duyệt phương án hỗ trợ',
+  'class.assign': 'Phân công giáo viên vào lớp',
   'student.view': 'Xem hồ sơ học viên',
   'student.edit': 'Sửa hồ sơ học viên',
   'meeting.view': 'Xem tiến trình công việc',

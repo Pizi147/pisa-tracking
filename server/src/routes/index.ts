@@ -24,6 +24,7 @@ import {
 import * as planningSvc from '../services/planning.ts';
 import { signalsFor } from '../services/signals.ts';
 import { weeklyRollup } from '../services/weekly.ts';
+import { myWork } from '../services/mywork.ts';
 import * as caseSvc from '../services/cases.ts';
 import * as regularSvc from '../services/regular.ts';
 
@@ -71,17 +72,27 @@ api.get('/demo/session', wrap((req) => {
      * Admin chi nhánh vào danh sách cần cập nhật ngày, còn lại mở Tổng quan.
      * Chỉ đổi điểm vào, không đổi quyền.
      */
-    landing: p.roleKeys.length === 1
-      ? p.roleKeys[0] === 'teacher' ? '/hoc-vien?view=my_scores'
-        : p.roleKeys[0] === 'branch_admin' ? '/hoc-vien?view=need_date'
-        : '/'
-      : '/',
-    // Bốn mục điều hướng + một lối phụ. Ẩn/hiện theo quyền, không theo tên vai trò.
+    /*
+     * AI CŨNG VÀO TỔNG QUAN.
+     *
+     * Trước đây mỗi vai được đẩy tới một danh sách khác nhau, vì màn Tổng quan cũ là bảng số
+     * theo tuần — không phải việc của ai cả. Nay Tổng quan CHÍNH LÀ việc của người đang xem,
+     * nên không cần đường vòng: giáo viên mở ra thấy điểm mình phải nhập, Quản lý thấy em
+     * đang cần hỗ trợ, Admin chi nhánh thấy lịch cần cập nhật.
+     */
+    landing: '/',
+    // Hai mục điều hướng + các lối phụ trong menu tài khoản. Ẩn/hiện theo quyền.
     nav: {
       overview: true,
       mocks: !scopeFor(p, PERMISSIONS.ATTEMPT_VIEW).none,
       students: !scopeFor(p, PERMISSIONS.STUDENT_VIEW).none,
       meeting: !scopeFor(p, PERMISSIONS.MEETING_VIEW).none,
+      /*
+       * Tab "Tình hình chung" của Quản lý: nhìn toàn bộ vấn đề trong phạm vi mình quản.
+       * Cờ riêng chứ không dùng chung với `meeting` — hai màn khác nhau, và sau này ai
+       * được xem cái nào có thể tách ra mà không phải sửa giao diện.
+       */
+      academic: !scopeFor(p, PERMISSIONS.MEETING_VIEW).none,
       admin: can(p, PERMISSIONS.ADMIN_CONFIG, { anyScope: true }),
     },
   };
@@ -205,6 +216,15 @@ api.get('/ref/units', requireAuth, wrap((req) => {
 }));
 
 // ============================================================ Tổng quan
+
+/**
+ * VIỆC CỦA CHÍNH NGƯỜI ĐANG XEM — thay bảng số theo tuần ở màn chính.
+ * Chỉ trả về việc người này thực sự làm được; quyền kiểm ở tầng dịch vụ, không phải ẩn nút.
+ */
+api.get('/my-work', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return myWork(principalOf(req), { branchId: qInt(req, 'branchId') });
+}));
 
 api.get('/overview', requireAuth, wrap((req) => {
   maybeSimulateReadError();
@@ -375,6 +395,18 @@ api.get('/classes/:id/overview', requireAuth, wrap((req) => {
   return classSvc.classOverview(principalOf(req), pInt(req, 'id'));
 }));
 
+/** Phân công giáo viên: ai đang dạy, ai xếp được, và ai đã từng dạy lớp này. */
+api.get('/classes/:id/teachers', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return classSvc.classTeachers(principalOf(req), pInt(req, 'id'));
+}));
+
+/** Gửi nguyên bức tranh phân công đang hiển thị, không gửi từng thao tác thêm/bớt. */
+api.put('/classes/:id/teachers', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return classSvc.setClassTeachers(principalOf(req), pInt(req, 'id'), req.body ?? {});
+}));
+
 api.post('/classes', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return intakeSvc.createClass(principalOf(req), req.body ?? {});
@@ -529,6 +561,15 @@ api.put('/cases/:id/issues', requireAuth, wrap((req) => {
 api.post('/cases/:id/interventions', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return caseSvc.recordIntervention(principalOf(req), pInt(req, 'id'), req.body ?? {});
+}));
+
+/**
+ * Quản lý trả lời một phương án đang chờ duyệt: duyệt / không duyệt / góp ý.
+ * Góp ý KHÔNG kết thúc việc chờ — Quản lý vẫn nợ một câu trả lời.
+ */
+api.post('/interventions/:id/respond', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return caseSvc.respondToPlan(principalOf(req), pInt(req, 'id'), req.body ?? {});
 }));
 
 /** Ghi một lần xem lại sau hỗ trợ. Một tác động có thể xem lại nhiều lần. */

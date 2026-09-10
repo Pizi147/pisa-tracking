@@ -5,6 +5,7 @@ import { invalidate } from '../lib/api.ts';
 import { Card, ErrorState, Pill, SectionNote, Skeleton } from '../components/ui.tsx';
 import { ClassRoster } from '../components/ClassRoster.tsx';
 import { IntakePanel } from '../components/IntakePanel.tsx';
+import { TeacherAssignDialog } from '../components/TeacherAssignPanel.tsx';
 import { usePeriods } from '../components/Filters.tsx';
 import { fmtDate, skillLabel } from '../lib/format.ts';
 import { skillShort } from '@shared/domain.ts';
@@ -20,7 +21,7 @@ type Overview = {
   skillTeachers: { skill: string; id: number; name: string }[];
   programme: { code: string; name: string; weeks: number | null; scoringMode: string } | null;
   viewer: {
-    canPlanWeek: boolean; canSetDate: boolean; canAddStudents: boolean;
+    canPlanWeek: boolean; canSetDate: boolean; canAddStudents: boolean; canAssign: boolean;
     editableSkills: string[]; isCoreTeacher: boolean;
   };
 };
@@ -33,6 +34,7 @@ export default function ClassOverviewPage() {
   const periods = usePeriods();
   const [periodId, setPeriodId] = useState<number | null>(null);
   const [intake, setIntake] = useState(false);
+  const [assign, setAssign] = useState(false);
   const { data, loading, error, reload } = useApi<Overview>(classId ? `/classes/${classId}/overview` : null);
 
   useEffect(() => {
@@ -112,7 +114,10 @@ export default function ClassOverviewPage() {
         </Link>
       </div>
 
-      <Card title="Phân công và kỹ năng">
+      <Card title="Phân công và kỹ năng"
+        action={data.viewer.canAssign
+          ? <button className="btn btn-sm" onClick={() => setAssign(true)}>Sửa phân công</button>
+          : undefined}>
         <div className="grid gap-4 md:grid-cols-2">
           <div>
             <div className="label">Giáo viên chủ nhiệm</div>
@@ -142,6 +147,9 @@ export default function ClassOverviewPage() {
       <Card title="Học viên" bodyClass="p-3">
         <ClassRoster classId={data.id} onAddStudents={() => setIntake(true)} />
       </Card>
+
+      <TeacherAssignDialog open={assign} onClose={() => setAssign(false)}
+        classId={data.id} classCode={data.code} onDone={reload} />
 
       {intake && (
         <IntakePanel

@@ -62,6 +62,28 @@ export function WeekPicker({ periodId, onPeriod, className = 'w-52', label = 'Tu
 }
 
 /**
+ * Chỉ chọn chi nhánh, không có tuần — dùng ở những màn nói về TÌNH TRẠNG HIỆN TẠI
+ * chứ không phải kết quả của một tuần. Vẫn tự ẩn khi tài khoản chỉ có một chi nhánh.
+ */
+export function BranchFilter({ branchId, onBranch }: {
+  branchId: number | null; onBranch: (id: number | null) => void;
+}) {
+  const branches = useApi<Branch[]>('/ref/branches');
+  const { branchCount } = useSession();
+  if ((branches.data?.length ?? 0) <= 1 || branchCount <= 1) return null;
+  return (
+    <label className="block">
+      <span className="label">Chi nhánh</span>
+      <select className="field w-44" value={branchId ?? ''}
+        onChange={(e) => onBranch(e.target.value ? Number(e.target.value) : null)}>
+        <option value="">Tất cả chi nhánh</option>
+        {(branches.data ?? []).map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
+      </select>
+    </label>
+  );
+}
+
+/**
  * Bộ lọc mặc định là TUẦN. Bộ lọc chi nhánh chỉ xuất hiện khi tài khoản thật sự
  * có nhiều hơn một chi nhánh — không đặt dropdown thừa trên mọi trang.
  */

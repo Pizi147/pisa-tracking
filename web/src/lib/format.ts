@@ -1,12 +1,12 @@
 import {
   ASSESSED_SKILL_LABEL, ATTEMPT_STATUS_LABEL, CASE_STATUS_LABEL, CASE_STATUS_TONE, DUE_LABEL, ENTRY_SKILL_LABEL,
-  ENTRY_SKILL_SHORT, ROLE_LABEL, SKILL_PROGRESS_LABEL, SOS_LABEL, STUDENT_STATUS_LABEL,
+  ENTRY_SKILL_SHORT, REGULAR_SKILL_SHORT, ROLE_LABEL, SKILL_PROGRESS_LABEL, SOS_LABEL, STUDENT_STATUS_LABEL,
   TASK_PROGRESS_LABEL, TASK_TYPE_LABEL, UNIT_STATUS_LABEL,
   type AssessedSkill, type EntrySkill, type SkillProgress, type SosLevel, type StudentStatus,
 } from '@shared/domain.ts';
 
 export const skillLabel = (s: string) => ENTRY_SKILL_LABEL[s as EntrySkill] ?? ASSESSED_SKILL_LABEL[s as AssessedSkill] ?? s;
-export const skillShort = (s: string) => ENTRY_SKILL_SHORT[s as EntrySkill] ?? s;
+export const skillShort = (s: string) => ENTRY_SKILL_SHORT[s as EntrySkill] ?? REGULAR_SKILL_SHORT[s] ?? s;
 export const roleLabel = (s: string) => ROLE_LABEL[s as keyof typeof ROLE_LABEL] ?? s;
 /** Không dùng từ "thi" cho Mock — "thi" chỉ dành cho kỳ IELTS chính thức. */
 export const attemptStatusLabel = (s: string) => ATTEMPT_STATUS_LABEL[s as keyof typeof ATTEMPT_STATUS_LABEL] ?? s;
