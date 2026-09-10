@@ -49,12 +49,33 @@ export type WorkItem = {
 
 export type WorkGroupKey = 'score' | 'support' | 'review' | 'schedule' | 'week';
 
-const GROUP_LABEL: Record<WorkGroupKey, string> = {
-  score: 'Nhập điểm',
-  support: 'Em cần hỗ trợ',
-  review: 'Hẹn xem lại',
-  schedule: 'Cập nhật ngày',
-  week: 'Chốt tuần kế hoạch',
+/**
+ * Mỗi nhóm có MỘT DÒNG nói rõ nhóm đó nghĩa là gì.
+ *
+ * Nhãn cộc lốc kiểu "Ghi kết quả" bắt người đọc tự đoán chuyện gì đã xảy ra và mình phải
+ * làm gì. Một dòng giải thích ở đầu nhóm rẻ hơn nhiều so với việc mỗi người tự hiểu một kiểu.
+ */
+const GROUP_META: Record<WorkGroupKey, { label: string; hint: string }> = {
+  score: {
+    label: 'Nhập điểm',
+    hint: 'Em đã làm bài rồi nhưng kỹ năng này chưa có điểm.',
+  },
+  review: {
+    label: 'Đến hẹn xem lại',
+    hint: 'Trước đó đã hỗ trợ em và hẹn một ngày xem lại. Ngày đó đã tới — ghi lại em có tiến bộ không.',
+  },
+  support: {
+    label: 'Chưa ai bắt tay vào',
+    hint: 'Em đang có vấn đề mở mà chưa ai chọn hướng xử lý, cũng chưa ai ghi việc nào.',
+  },
+  schedule: {
+    label: 'Chưa có ngày cụ thể',
+    hint: 'Tuần đã chốt nhưng chưa biết em thi ngày nào.',
+  },
+  week: {
+    label: 'Chưa có tuần kế hoạch',
+    hint: 'Bài MT chưa được xếp vào tuần nào.',
+  },
 };
 
 /** Ngưỡng bỏ quên do owner chốt: mức nặng thì sốt ruột hơn. */
@@ -116,7 +137,7 @@ export function myWork(p: Principal, f: { branchId?: number | null } = {}) {
       reason: u === 'overdue' ? `${names} — ${lateText(worst.deadline, today)}`
         : u === 'today' ? `${names} — hạn hôm nay`
         : worst?.deadline ? `${names} — hạn ${formatDateVi(worst.deadline)}` : names,
-      actionLabel: 'Nhập điểm',
+      actionLabel: `Nhập điểm ${names}`,
       href: `/mock-test/${a.id}`,
     });
   }
@@ -172,7 +193,7 @@ export function myWork(p: Principal, f: { branchId?: number | null } = {}) {
         reason: c.next_due < today
           ? `Hẹn xem lại ${formatDateVi(c.next_due)} — ${lateText(c.next_due, today)}`
           : 'Bạn hẹn xem lại hôm nay',
-        actionLabel: 'Ghi kết quả', href: `/hoc-thuat/case/${c.id}`,
+        actionLabel: 'Ghi kết quả xem lại', href: `/hoc-thuat/case/${c.id}`,
       });
       continue;
     }
@@ -193,7 +214,7 @@ export function myWork(p: Principal, f: { branchId?: number | null } = {}) {
       reason: days >= limit
         ? `${caseHeadline({ summary: c.summary, originKind: c.origin_kind, sosLevel: c.sos_level, attemptNo: c.attempt_no })} — chưa làm ${days} ngày`
         : caseHeadline({ summary: c.summary, originKind: c.origin_kind, sosLevel: c.sos_level, attemptNo: c.attempt_no }),
-      actionLabel: 'Xem em này',
+      actionLabel: 'Chọn hướng xử lý',
       href: base.studentId ? `/hoc-vien/${base.studentId}` : `/hoc-thuat/case/${c.id}`,
     });
   }
@@ -211,7 +232,7 @@ export function myWork(p: Principal, f: { branchId?: number | null } = {}) {
       classId: a.classId ?? null, classCode: a.classCode ?? null,
       attemptId: a.id, attemptNo: a.attemptNo, caseId: null, level: null,
       reason: `MT${a.attemptNo} đã có tuần ${a.period.code} nhưng chưa có ngày`,
-      actionLabel: 'Cập nhật ngày', href: `/mock-test/${a.id}`,
+      actionLabel: 'Chọn ngày', href: `/mock-test/${a.id}`,
     });
   }
 
@@ -224,23 +245,36 @@ export function myWork(p: Principal, f: { branchId?: number | null } = {}) {
       classId: a.classId ?? null, classCode: a.classCode ?? null,
       attemptId: a.id, attemptNo: a.attemptNo, caseId: null, level: null,
       reason: `MT${a.attemptNo} chưa có tuần kế hoạch`,
-      actionLabel: 'Chốt tuần', href: `/mock-test/${a.id}`,
+      actionLabel: 'Chốt tuần kế hoạch', href: `/mock-test/${a.id}`,
     });
   }
 
-  // ---------------------------------------------------------------- xếp nhóm
-  const urgent = items.filter((i) => i.urgency !== 'normal');
-  const rest = items.filter((i) => i.urgency === 'normal');
+  /*
+   * XẾP NHÓM.
+   *
+   * Bản trước gom hết việc gấp vào một nhóm "Cần làm ngay" — nhưng "quá hạn nhập điểm" và
+   * "chưa ai bắt tay vào" là hai chuyện khác hẳn nhau, gộp lại thì nhìn vào không biết cái
+   * nào là cái nào. Nay GIỮ ĐÚNG LOẠI VIỆC, chỉ xếp việc gấp lên đầu TRONG nhóm của nó, và
+   * xếp nhóm nào có việc gấp lên trước.
+   */
   const order: WorkGroupKey[] = ['score', 'review', 'support', 'schedule', 'week'];
-  const rank = (i: WorkItem) => order.indexOf(i.group);
-  urgent.sort((a, b) => (a.urgency === b.urgency ? rank(a) - rank(b) : a.urgency === 'overdue' ? -1 : 1));
+  const weight = (u: WorkUrgency) => (u === 'overdue' ? 0 : u === 'today' ? 1 : 2);
 
-  const groups: { key: string; label: string; items: WorkItem[] }[] = [];
-  if (urgent.length) groups.push({ key: 'urgent', label: 'Cần làm ngay', items: urgent });
-  for (const g of order) {
-    const list = rest.filter((i) => i.group === g);
-    if (list.length) groups.push({ key: g, label: GROUP_LABEL[g], items: list });
-  }
+  const groups = order
+    .map((g) => {
+      const list = items.filter((i) => i.group === g)
+        .sort((a, b) => weight(a.urgency) - weight(b.urgency));
+      return {
+        key: g,
+        label: GROUP_META[g].label,
+        hint: GROUP_META[g].hint,
+        items: list,
+        overdue: list.filter((i) => i.urgency === 'overdue').length,
+        today: list.filter((i) => i.urgency === 'today').length,
+      };
+    })
+    .filter((g) => g.items.length > 0)
+    .sort((a, b) => (b.overdue > 0 ? 1 : 0) - (a.overdue > 0 ? 1 : 0));
 
   return {
     summary: {

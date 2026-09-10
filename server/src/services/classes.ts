@@ -149,7 +149,15 @@ export function listClassSummaries(p: Principal, f: { branchId?: number; q?: str
      * Một giáo viên dạy nhiều lớp và ở mỗi lớp có thể ôm bộ kỹ năng khác nhau — nhìn danh
      * sách lớp mà không biết mình phụ trách gì ở đâu thì phải mở từng lớp ra dò.
      */
-    mySkills: editableByClass.get(c.id) ?? [],
+    /*
+     * Chỉ có nghĩa khi đây là PHÂN CÔNG của một giáo viên. Admin chi nhánh sửa được mọi kỹ
+     * năng nhờ quyền nhập bù, không phải vì được giao dạy — hiện cả bộ kỹ năng ra cho họ chỉ
+     * là một dãy chữ vô nghĩa. Bằng đúng bộ kỹ năng của lớp nghĩa là "sửa được tất", không
+     * phải "dạy tất".
+     */
+    mySkills: (editableByClass.get(c.id) ?? []).length === (skillsByClass.get(c.id) ?? []).length
+      ? []
+      : editableByClass.get(c.id) ?? [],
     myCoreClass: isCoreTeacherOf(p, c.id),
   }));
 
