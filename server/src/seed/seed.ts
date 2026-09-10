@@ -199,7 +199,7 @@ export function runSeed() {
       return padCode('PISA', row.next_value);
     };
 
-    const counts = { students: 0, cycles: 0, attempts: 0, scores: 0, cases: 0, estimates: 0, skips: 0 };
+    const counts = { students: 0, cycles: 0, attempts: 0, scores: 0, cases: 0, checkins: 0, skips: 0 };
     const allStudents: { id: number; classCode: string; branch: string }[] = [];
 
     CLASSES.forEach((c, classIdx) => {
@@ -246,7 +246,7 @@ export function runSeed() {
           .run(sid, c.startDate, `Bắt đầu lộ trình ${c.route}`, `Target ${target}`, cycleId, adminId, NOW);
 
         seedAttempts(conn, { c, classIdx, cid, sid, cycleId, studentIdx: i, target, adminId, branchAdmins, counts });
-        seedEstimates(conn, { sid, cid, target, studentIdx: i, teacherPool: teacherPool.get(c.branch)!, classIdx, counts });
+        seedCheckins(conn, { sid, cid, target, studentIdx: i, teacherPool: teacherPool.get(c.branch)!, classIdx, counts });
       }
     });
 
@@ -269,8 +269,11 @@ export function runSeed() {
       'Lượt Mock': counts.attempts,
       'Ô điểm': counts.scores,
       'Kỹ năng không mock': counts.skips,
-      'Đánh giá GV': counts.estimates,
-      'Case SOS': counts.cases,
+      'Case SOS từ điểm': counts.cases,
+      'Giáo viên báo vấn đề': (conn.prepare("SELECT COUNT(*) AS n FROM sos_cases WHERE origin_kind='teacher_report'").get() as any).n,
+      'Tác động đã ghi': (conn.prepare('SELECT COUNT(*) AS n FROM case_interventions').get() as any).n,
+      'Lần xem lại': (conn.prepare('SELECT COUNT(*) AS n FROM case_followups').get() as any).n,
+      'Ghi nhận nhanh': (conn.prepare('SELECT COUNT(*) AS n FROM skill_checkins').get() as any).n,
       'Kỳ họp tuần': (conn.prepare('SELECT COUNT(*) AS n FROM report_periods').get() as any).n,
       'Công việc': tasks,
       'Ngày demo': DEMO_DATE,
@@ -300,7 +303,7 @@ const OUTCOME_SKILL_ORDER: ('listening' | 'reading' | 'writing' | 'speaking')[] 
 function seedAttempts(conn: any, ctx: {
   c: ClassSeed; classIdx: number; cid: number; sid: number; cycleId: number; studentIdx: number;
   target: number; adminId: number; branchAdmins: Map<string, number>;
-  counts: { students: number; cycles: number; attempts: number; scores: number; cases: number; estimates: number; skips: number };
+  counts: { students: number; cycles: number; attempts: number; scores: number; cases: number; checkins: number; skips: number };
 }) {
   const { c, classIdx, cid, sid, cycleId, studentIdx, target, adminId, counts } = ctx;
   if (!c.plan.length) return;
@@ -417,7 +420,7 @@ function seedAttempts(conn: any, ctx: {
     if (missing.size === 0 && performedOnly.size === 0 && outcome.fails > 0) {
       const pattern = CASE_PATTERNS[(classIdx + studentIdx + step.attemptNo) % CASE_PATTERNS.length];
       seedCase(conn, {
-        attemptId, sid, attemptNo: step.attemptNo, level: Math.min(3, outcome.fails),
+        attemptId, sid, cycleId, attemptNo: step.attemptNo, level: Math.min(3, outcome.fails),
         testDate: String(step.lrwAt ?? step.week).slice(0, 10), pattern, recorder, counts,
       });
     }
@@ -425,9 +428,9 @@ function seedAttempts(conn: any, ctx: {
 }
 
 /** Đánh giá GV: dữ liệu RIÊNG, không bao giờ ghi đè điểm Mock. */
-function seedEstimates(conn: any, o: {
+function seedCheckins(conn: any, o: {
   sid: number; cid: number; target: number; studentIdx: number; teacherPool: number[]; classIdx: number;
-  counts: { estimates: number };
+  counts: { checkins: number };
 }) {
   const cycle = conn.prepare('SELECT id FROM learning_cycles WHERE student_id = ? ORDER BY seq DESC LIMIT 1').get(o.sid) as any;
   const plan: [string, number, string][] = [
@@ -447,16 +450,35 @@ function seedEstimates(conn: any, o: {
     .prepare(`SELECT skill, user_id FROM teacher_assignments WHERE class_id = ? AND skill IS NOT NULL AND status='active'`)
     .all(o.cid) as any[]) owner[r.skill] = r.user_id;
 
+  /*
+   * Không phải ghi nhận nào cũng có điểm. Phần lớn nhận xét trên lớp là NHẬN ĐỊNH BẰNG
+   * LỜI — dữ liệu mẫu phải phản ánh đúng như thế, nếu không giao diện chỉ được thử với
+   * trường hợp dễ nhất là mọi ô đều có số.
+   */
+  const notes: Record<string, string> = {
+    listening: 'Bắt được ý chính, còn hụt ở phần nói nhanh cuối bài.',
+    reading: 'Làm matching ổn, mất điểm ở TRUE/FALSE/NOT GIVEN.',
+    writing1: 'Chọn số liệu để mô tả còn dàn trải, chưa nêu xu hướng chính.',
+    writing2: 'Có quan điểm rõ, phần triển khai ví dụ còn ngắn.',
+    speaking: 'Part 2 nói đủ thời gian, còn ngập ngừng khi đổi chủ đề.',
+  };
+
   for (const [skill, band, on] of plan) {
     if (!owner[skill]) continue;                            // lớp này không dạy kỹ năng đó
-    if ((o.studentIdx + skill.length) % 3 === 0) continue;   // không phải em nào cũng có đủ đánh giá
+    if ((o.studentIdx + skill.length) % 3 === 0) continue;   // không phải em nào cũng có đủ ghi nhận
+    // Cứ ba em thì một em chỉ có nhận định bằng lời, không kèm điểm ước lượng.
+    const qualitative = (o.studentIdx + skill.length) % 3 === 1;
     conn
       .prepare(
-        `INSERT INTO teacher_estimates (student_id, cycle_id, skill, band, assessed_on, assessed_by, class_id, created_at)
-         VALUES (?,?,?,?,?,?,?,?)`,
+        `INSERT INTO skill_checkins (student_id, cycle_id, class_id, skill, observed_on, author_user_id,
+                                     judgement, band, estimate_basis, created_at)
+         VALUES (?,?,?,?,?,?,?,?,?,?)`,
       )
-      .run(o.sid, cycle?.id ?? null, skill, Math.max(1, Math.min(9, band)), on, owner[skill], o.cid, NOW);
-    o.counts.estimates += 1;
+      .run(o.sid, cycle?.id ?? null, o.cid, skill, on, owner[skill],
+           notes[skill] ?? null,
+           qualitative ? null : Math.max(1, Math.min(9, band)),
+           qualitative ? 'judgement' : 'judgement', NOW);
+    o.counts.checkins += 1;
   }
 }
 
@@ -464,59 +486,104 @@ const TEACHER_HANDLERS = ['GVCN Thu Trang', 'GVBM Minh Khoa', 'GVCN Bảo Nam', 
 const CS_HANDLERS = ['CS Ngọc Diệp', 'CS Hải Yến', 'CS Thanh Vân', 'CS Bảo Ngân'];
 
 function seedCase(conn: any, o: {
-  attemptId: number; sid: number; attemptNo: number; level: number; testDate: string;
+  attemptId: number; sid: number; cycleId: number | null; attemptNo: number; level: number; testDate: string;
   pattern: CasePattern; recorder: number;
   counts: { students: number; attempts: number; scores: number; cases: number };
 }) {
-  const cols: Record<string, unknown> = { status: 'open' };
   const h = TEACHER_HANDLERS[(o.attemptId + o.level) % TEACHER_HANDLERS.length];
   const cs = CS_HANDLERS[(o.attemptId + 2) % CS_HANDLERS.length];
 
-  if (o.pattern === 'named_only') {
-    // Có tên người làm nhưng CHƯA có ngày → chưa được tính là đã thực hiện.
-    cols.talk_student_person = h;
-    cols.talk_parent_person = cs;
-    cols.status = 'open';
-  } else if (o.pattern === 'in_progress') {
-    cols.talk_student_person = h;
-    cols.talk_student_date = addDays(o.testDate, 4);
-    cols.talk_parent_person = cs;
-    cols.talk_parent_date = addDays(o.testDate, 5);
-    cols.academic_support = o.level === 3 ? 'Học tutor đến lần mock sau' : 'Xếp tự học 1 tháng';
-    cols.academic_person = h;
-    cols.academic_start_date = addDays(o.testDate, 7);
-    cols.status = 'in_progress';
-  } else if (o.pattern === 'done') {
-    cols.talk_student_person = h;
-    cols.talk_student_date = addDays(o.testDate, 3);
-    cols.talk_parent_person = cs;
-    cols.talk_parent_date = addDays(o.testDate, 3);
-    cols.academic_support = o.level === 3 ? 'Học tutor đến lúc thi' : 'Xếp tự học 1 tháng';
-    cols.academic_person = h;
-    cols.academic_start_date = addDays(o.testDate, 6);
-    if (o.attemptNo >= 3 && o.level >= 2) {
-      cols.ops_policy = 'Buổi bổ trợ với tutor';
-      cols.ops_date = addDays(o.testDate, 8);
-    }
-    if (o.level === 3 && o.attemptNo >= 2) { cols.meeting_kind = 'CX / GĐCN meeting HS'; cols.meeting_date = addDays(o.testDate, 5); }
-    else if (o.level === 3 || (o.level === 2 && o.attemptNo >= 2)) { cols.meeting_kind = 'GVCN meeting HS'; cols.meeting_date = addDays(o.testDate, 5); }
-    cols.status = 'done';
-    cols.head_confirmed_by = o.recorder;
-    cols.head_confirmed_at = addDays(o.testDate, 10);
-  }
+  /*
+   * VIẾT THẲNG VÀO MÔ HÌNH MỚI.
+   *
+   * Bản cũ nhét mọi việc đã làm vào năm cột cố định của `sos_cases` — trao đổi HS, trao
+   * đổi PH, hỗ trợ học thuật, chính sách, buổi gặp. Năm cột ấy không tả được một case có
+   * hai buổi tutor, và cũng không phân biệt được "đã hẹn" với "đã làm". Những cột đó nay
+   * chỉ còn để nâng cấp dữ liệu cũ; dữ liệu mẫu mới đi thẳng vào `case_interventions`.
+   */
+  const status = o.pattern === 'named_only' ? 'open' : o.pattern === 'in_progress' ? 'in_progress' : 'done';
+  const disposition = o.pattern === 'done'
+    ? (o.level >= 2 ? 'action' : 'monitor')
+    : o.pattern === 'in_progress' ? 'action' : null;
 
-  const keys = ['attempt_id', 'sos_level', ...Object.keys(cols), 'created_at'];
-  const values = [o.attemptId, o.level, ...Object.values(cols), NOW];
-  conn.prepare(`INSERT INTO sos_cases (${keys.join(',')}) VALUES (${keys.map(() => '?').join(',')})`).run(...values);
+  const info = conn
+    .prepare(
+      `INSERT INTO sos_cases (attempt_id, student_id, cycle_id, origin_kind, detected_at,
+                              sos_level, status, disposition, disposition_note,
+                              closed_by, closed_at, created_at)
+       VALUES (?,?,?, 'mock', ?,?,?,?,?,?,?,?)`,
+    )
+    .run(o.attemptId, o.sid, o.cycleId, o.testDate, o.level, status, disposition,
+         o.pattern === 'done' ? 'Đã hỗ trợ xong đợt này, theo dõi tiếp ở lần đánh giá sau' : null,
+         o.pattern === 'done' ? o.recorder : null,
+         o.pattern === 'done' ? addDays(o.testDate, 10) : null, NOW);
+  const caseId = Number(info.lastInsertRowid);
   o.counts.cases += 1;
+
+  const iv = (
+    kind: string, description: string, performerName: string,
+    st: 'planned' | 'started' | 'completed', dates: { started?: string; completed?: string; due?: string } = {},
+  ) => conn
+    .prepare(
+      `INSERT INTO case_interventions (case_id, kind, description, performer_name, recorded_by,
+                                       status, started_date, completed_date, followup_due, created_at)
+       VALUES (?,?,?,?,?,?,?,?,?,?)`,
+    )
+    .run(caseId, kind, description, performerName, o.recorder, st,
+         dates.started ?? null, dates.completed ?? null, dates.due ?? null, NOW);
+
+  if (o.pattern === 'named_only') {
+    /*
+     * CÓ TÊN NGƯỜI LÀM NHƯNG CHƯA CÓ NGÀY = MỚI LÊN KẾ HOẠCH, chưa phải đã làm.
+     * Đây đúng là chỗ mô hình cũ nói sai: điền tên vào ô là case trông như đã xử lý.
+     */
+    iv('talk_student', 'Sẽ trao đổi với em sau buổi tới', h, 'planned');
+    iv('talk_parent', 'Sẽ nhờ CS gọi phụ huynh', cs, 'planned');
+  } else if (o.pattern === 'in_progress') {
+    iv('talk_student', 'Trao đổi với em về kết quả lần này', h, 'completed',
+       { completed: addDays(o.testDate, 4) });
+    iv('talk_parent', 'CS gọi phụ huynh trao đổi tình hình', cs, 'completed',
+       { completed: addDays(o.testDate, 5) });
+    // Hỗ trợ học thuật MỚI BẮT ĐẦU: có ngày bắt đầu, chưa có ngày xong.
+    iv(o.level === 3 ? 'tutor' : 'self_study',
+       o.level === 3 ? 'Học tutor đến lần đánh giá sau' : 'Xếp tự học một tháng', h, 'started',
+       { started: addDays(o.testDate, 7), due: addDays(o.testDate, 35) });
+  } else {
+    iv('talk_student', 'Trao đổi với em về kết quả lần này', h, 'completed',
+       { completed: addDays(o.testDate, 3) });
+    iv('talk_parent', 'CS gọi phụ huynh trao đổi tình hình', cs, 'completed',
+       { completed: addDays(o.testDate, 3) });
+    iv(o.level === 3 ? 'tutor' : 'self_study',
+       o.level === 3 ? 'Học tutor đến lúc thi' : 'Xếp tự học một tháng', h, 'completed',
+       { started: addDays(o.testDate, 6), completed: addDays(o.testDate, 30) });
+    if (o.attemptNo >= 3 && o.level >= 2) {
+      iv('ops_policy', 'Buổi bổ trợ với tutor', h, 'completed', { completed: addDays(o.testDate, 8) });
+    }
+    if (o.level === 3 && o.attemptNo >= 2) {
+      iv('meeting', 'CX / GĐCN gặp riêng học viên', cs, 'completed', { completed: addDays(o.testDate, 5) });
+    } else if (o.level === 3 || (o.level === 2 && o.attemptNo >= 2)) {
+      iv('meeting', 'GVCN gặp riêng học viên', h, 'completed', { completed: addDays(o.testDate, 5) });
+    }
+    // Case đã đóng thì phải có ít nhất một lần XEM LẠI, nếu không thì đóng dựa trên cái gì.
+    conn
+      .prepare(
+        `INSERT INTO case_followups (case_id, intervention_id, observed_on, observer_user_id, outcome, note, created_at)
+         VALUES (?, NULL, ?, ?, ?, ?, ?)`,
+      )
+      .run(caseId, addDays(o.testDate, 28), o.recorder,
+           o.level === 3 ? 'partial' : 'improved',
+           o.level === 3 ? 'Có chuyển biến ở một kỹ năng, hai kỹ năng còn lại chưa rõ'
+             : 'Làm bài đều hơn, kết quả trên lớp khá hơn', NOW);
+  }
 
   conn
     .prepare(
-      `INSERT INTO journey_events (student_id, event_type, event_date, title, detail, ref_table, ref_id, created_by, created_at)
-       VALUES (?, 'mock_result', ?, ?, ?, 'assessment_attempts', ?, ?, ?)`,
+      `INSERT INTO journey_events (student_id, cycle_id, event_type, event_date, title, detail,
+                                   ref_table, ref_id, dedup_key, created_by, created_at)
+       VALUES (?,?, 'mock_result', ?, ?, ?, 'assessment_attempts', ?, ?, ?, ?)`,
     )
-    .run(o.sid, o.testDate, `MT${o.attemptNo}: SOS ${o.level}`, `${o.level} kỹ năng dưới kỳ vọng`,
-         o.attemptId, o.recorder, NOW);
+    .run(o.sid, o.cycleId, o.testDate, `MT${o.attemptNo}: SOS ${o.level}`,
+         `${o.level} kỹ năng dưới kỳ vọng`, o.attemptId, `mock_result:${o.attemptId}`, o.recorder, NOW);
 }
 
 // ==================================================================== tình huống riêng
@@ -525,11 +592,234 @@ function seedCase(conn: any, o: {
  * Dữ liệu mẫu cho lớp thường. Tự tạo lộ trình (khoá học), hai bài kiểm tra theo mốc tuần
  * học, rồi nhập điểm theo một kịch bản cố định để mỗi mức SOS đều có mặt.
  */
+/**
+ * Dữ liệu mẫu cho mô hình case học vụ mới. Dùng mốc ngày cố định để chạy lại seed cho ra
+ * đúng dữ liệu cũ.
+ */
+function seedAcademicCases(conn: any, ctx: {
+  classId: Map<string, number>;
+  allStudents: { id: number; classCode: string; branch: string }[];
+  adminId: number; managers: Map<string, number[]>;
+  counts: Record<string, number>;
+}) {
+  const { classId, allStudents, adminId, managers, counts } = ctx;
+  counts.reports = 0; counts.interventions = 0; counts.followups = 0; counts.checkins = 0;
+
+  const teacherOf = (classCode: string, skill: string) =>
+    (conn.prepare(
+      `SELECT user_id FROM teacher_assignments WHERE class_id = ? AND skill = ? AND status='active' LIMIT 1`,
+    ).get(classId.get(classCode), skill) as any)?.user_id ?? adminId;
+  const coreOf = (classCode: string) =>
+    (conn.prepare(
+      `SELECT user_id FROM teacher_assignments WHERE class_id = ? AND is_core = 1 AND status='active' LIMIT 1`,
+    ).get(classId.get(classCode)) as any)?.user_id ?? adminId;
+
+  const openCase = (o: {
+    studentId: number; classCode: string; reporter: number; detectedAt: string;
+    summary: string; urgency: string;
+    primary?: string; secondary?: string[]; context?: string[]; skill?: string | null;
+    observation?: string | null;
+  }) => {
+    const cyc = conn.prepare(`SELECT id FROM learning_cycles WHERE student_id = ? AND status='active' LIMIT 1`)
+      .get(o.studentId) as any;
+    const info = conn
+      .prepare(
+        `INSERT INTO sos_cases (attempt_id, student_id, cycle_id, origin_kind, detected_at, reported_by,
+                                summary, urgency, sos_level, status, created_at)
+         VALUES (NULL, ?,?, 'teacher_report', ?,?,?,?, NULL, 'open', ?)`,
+      )
+      .run(o.studentId, cyc?.id ?? null, o.detectedAt, o.reporter, o.summary, o.urgency, NOW);
+    const id = Number(info.lastInsertRowid);
+    counts.reports += 1;
+    const addIssue = (code: string, role: string, skill?: string | null, obs?: string | null) =>
+      conn.prepare(
+        `INSERT INTO case_issues (case_id, role, taxonomy_code, taxonomy_version, skill, observation, created_by, created_at)
+         VALUES (?,?,?,1,?,?,?,?)`,
+      ).run(id, role, code, skill ?? null, obs ?? null, o.reporter, NOW);
+    if (o.primary) addIssue(o.primary, 'primary', o.skill, o.observation);
+    for (const c of o.secondary ?? []) addIssue(c, 'secondary', o.skill);
+    for (const c of o.context ?? []) addIssue(c, 'context');
+    conn.prepare(
+      `INSERT INTO journey_events (student_id, cycle_id, event_type, event_date, title, detail,
+                                   ref_table, ref_id, dedup_key, created_by, created_at)
+       VALUES (?,?, 'case_opened', ?,?,?, 'sos_cases', ?, ?, ?, ?)`,
+    ).run(o.studentId, cyc?.id ?? null, o.detectedAt, 'Giáo viên ghi nhận vấn đề', o.summary,
+          id, `case_open:${id}`, o.reporter, NOW);
+    return id;
+  };
+
+  const addIntervention = (caseId: number, o: {
+    kind: string; description: string; performerUser?: number | null; performerName?: string | null;
+    recorder: number; status: string; started?: string | null; completed?: string | null; due?: string | null;
+  }) => {
+    const info = conn
+      .prepare(
+        `INSERT INTO case_interventions (case_id, kind, description, performer_user_id, performer_name,
+                                         recorded_by, status, started_date, completed_date, followup_due, created_at)
+         VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
+      )
+      .run(caseId, o.kind, o.description, o.performerUser ?? null, o.performerName ?? null,
+           o.recorder, o.status, o.started ?? null, o.completed ?? null, o.due ?? null, NOW);
+    conn.prepare(`UPDATE sos_cases SET status = 'in_progress', updated_at = ? WHERE id = ? AND status = 'open'`)
+      .run(NOW, caseId);
+    counts.interventions += 1;
+    return Number(info.lastInsertRowid);
+  };
+
+  const addFollowUp = (caseId: number, o: {
+    interventionId?: number | null; on: string; observer: number; outcome: string; note?: string;
+  }) => {
+    conn.prepare(
+      `INSERT INTO case_followups (case_id, intervention_id, observed_on, observer_user_id, outcome, note, created_at)
+       VALUES (?,?,?,?,?,?,?)`,
+    ).run(caseId, o.interventionId ?? null, o.on, o.observer, o.outcome, o.note ?? null, NOW);
+    counts.followups += 1;
+  };
+
+  const inClass = (code: string) => allStudents.filter((s) => s.classCode === code);
+
+  // --- 1. Giáo viên báo trước khi có bài nào: em mới vào lớp, chưa tới lịch MT.
+  const a = inClass('MB-FT 101')[0];
+  if (a) {
+    const gv = teacherOf('MB-FT 101', 'listening');
+    const c1 = openCase({
+      studentId: a.id, classCode: 'MB-FT 101', reporter: gv, detectedAt: '2026-09-14',
+      summary: 'Em nghe không kịp phần chi tiết, hay bỏ trống 5–6 câu cuối',
+      urgency: 'attention',
+      primary: 'student.listening.detail', skill: 'listening',
+      observation: 'Bài luyện trên lớp phần 3 và 4 sai nhiều, phần 1 vẫn tốt',
+      secondary: ['student.behaviour.selfstudy'],
+    });
+    const iv = addIntervention(c1, {
+      kind: 'teaching_adjust', description: 'Thêm 15 phút luyện nghe chi tiết mỗi buổi',
+      performerUser: gv, recorder: gv, status: 'started', started: '2026-09-15', due: '2026-09-29',
+    });
+    addFollowUp(c1, { interventionId: iv, on: '2026-09-22', observer: gv, outcome: 'partial',
+      note: 'Phần 3 đỡ hơn, phần 4 vẫn còn trống nhiều' });
+  }
+
+  // --- 2. Case nhiều yếu tố, có cả phía giáo viên và hoàn cảnh gia đình.
+  const b = inClass('MB-FT 102')[0];
+  if (b) {
+    const core = coreOf('MB-FT 102');
+    const c2 = openCase({
+      studentId: b.id, classCode: 'MB-FT 102', reporter: core, detectedAt: '2026-09-08',
+      summary: 'Em nghỉ nhiều buổi, bài về nhà không nộp',
+      urgency: 'urgent',
+      primary: 'student.behaviour.attendance',
+      secondary: ['student.behaviour.homework', 'teacher.followup'],
+      context: ['context.family', 'context.travel'],
+      observation: 'Nghỉ 4/8 buổi trong hai tuần',
+    });
+    // CS trao đổi với phụ huynh: người thực hiện ở ngoài hệ thống, người ghi là Admin.
+    addIntervention(c2, {
+      kind: 'talk_parent', description: 'CS gọi trao đổi với phụ huynh về việc đi học',
+      performerName: 'Chị Hương (CS)', recorder: adminId, status: 'completed', completed: '2026-09-10',
+    });
+    const iv2 = addIntervention(c2, {
+      kind: 'talk_student', description: 'GVCN gặp riêng em sau buổi học',
+      performerUser: core, recorder: core, status: 'completed', completed: '2026-09-11', due: '2026-09-18',
+    });
+    addFollowUp(c2, { interventionId: iv2, on: '2026-09-18', observer: core, outcome: 'improved',
+      note: 'Hai tuần gần đây đi đủ, đã nộp bài' });
+    addFollowUp(c2, { on: '2026-09-25', observer: core, outcome: 'unchanged',
+      note: 'Tuần này lại nghỉ một buổi, tiếp tục theo dõi' });
+  }
+
+  // --- 3. Case CHỈ THEO DÕI, không hẹn ngày — không bao giờ được coi là quá hạn.
+  const c = inClass('BC-FT 205')[0];
+  if (c) {
+    const gv = teacherOf('BC-FT 205', 'writing1');
+    const c3 = openCase({
+      studentId: c.id, classCode: 'BC-FT 205', reporter: gv, detectedAt: '2026-09-16',
+      summary: 'Bài viết task 1 hay thiếu câu tổng quan',
+      urgency: 'normal',
+      primary: 'student.writing.task', skill: 'writing',
+    });
+    conn.prepare(`UPDATE sos_cases SET disposition = 'monitor', disposition_note = ?, updated_at = ? WHERE id = ?`)
+      .run('Nhắc trong giờ chữa bài, chưa cần hỗ trợ riêng', NOW, c3);
+  }
+
+  // --- 4. Case đã hẹn xem lại và QUÁ HẠN — để hàng đợi "tới hạn" có dữ liệu thật.
+  const d = inClass('CP-FT 110')[0];
+  if (d) {
+    const gv = teacherOf('CP-FT 110', 'speaking');
+    const c4 = openCase({
+      studentId: d.id, classCode: 'CP-FT 110', reporter: gv, detectedAt: '2026-09-01',
+      summary: 'Phát âm đuôi và trọng âm sai nhiều, người nghe khó hiểu',
+      urgency: 'attention',
+      primary: 'student.speaking.pronunciation', skill: 'speaking',
+    });
+    addIntervention(c4, {
+      kind: 'tutor', description: 'Học tutor phát âm 2 buổi/tuần',
+      performerName: 'Tutor Ngọc', recorder: gv, status: 'started',
+      started: '2026-09-05', due: '2026-09-19',       // đã quá ngày demo 23/09
+    });
+  }
+
+  // --- 5. Case đóng với "không cần xử lý thêm" — có kết luận rõ, không phải bỏ quên.
+  const e = inClass('HD-FT 302')[0];
+  if (e) {
+    const core = coreOf('HD-FT 302');
+    const mgr = managers.get('HD')?.[0] ?? adminId;
+    const c5 = openCase({
+      studentId: e.id, classCode: 'HD-FT 302', reporter: core, detectedAt: '2026-08-24',
+      summary: 'Em có vẻ mất tập trung mấy buổi liền',
+      urgency: 'normal',
+      primary: 'student.behaviour.focus', context: ['context.health'],
+    });
+    addIntervention(c5, {
+      kind: 'talk_student', description: 'Hỏi thăm, em bị ốm nên mệt',
+      performerUser: core, recorder: core, status: 'completed', completed: '2026-08-26',
+    });
+    addFollowUp(c5, { on: '2026-09-02', observer: core, outcome: 'improved', note: 'Em khỏi ốm, đã tập trung lại' });
+    conn.prepare(
+      `UPDATE sos_cases SET status = 'done', disposition = 'no_action', disposition_note = ?,
+              closed_by = ?, closed_at = ?, updated_at = ? WHERE id = ?`,
+    ).run('Nguyên nhân là sức khoẻ, đã ổn định — không cần hỗ trợ học thuật', mgr, NOW, NOW, c5);
+  }
+
+  // --- 6. Ghi nhận nhanh ĐỊNH TÍNH, không có điểm — lớp thường không quy ra band IELTS.
+  const fou = inClass('MB-FOUND 12').slice(0, 4);
+  const fouTeacher = teacherOf('MB-FOUND 12', 'listening');
+  for (const [i, st] of fou.entries()) {
+    const cyc = conn.prepare(`SELECT id FROM learning_cycles WHERE student_id = ? LIMIT 1`).get(st.id) as any;
+    conn.prepare(
+      `INSERT INTO skill_checkins (student_id, cycle_id, class_id, skill, observed_on, author_user_id,
+                                   judgement, strengths, weaknesses, estimate_basis, created_at)
+       VALUES (?,?,?, 'listening', ?,?,?,?,?, 'judgement', ?)`,
+    ).run(st.id, cyc?.id ?? null, classId.get('MB-FOUND 12'), '2026-09-1' + (i + 2), fouTeacher,
+          ['Nghe được ý chính, chưa bắt được chi tiết',
+           'Tiến bộ rõ ở phần nghe số và tên riêng',
+           'Còn nhầm khi người nói nhắc lại ý',
+           'Theo kịp bài trên lớp, cần luyện thêm ở nhà'][i] ?? 'Theo dõi tiếp',
+          i % 2 === 0 ? 'Chăm chỉ, hỏi bài chủ động' : null,
+          i % 2 === 0 ? null : 'Hay quên bài về nhà', NOW);
+    counts.checkins += 1;
+  }
+
+  // --- 7. Ghi nhận nhanh CÓ ĐIỂM cho lớp FT, để so với điểm Mock.
+  const ft = inClass('MB-FT 101').slice(0, 5);
+  const lrTeacher = teacherOf('MB-FT 101', 'listening');
+  for (const [i, st] of ft.entries()) {
+    const cyc = conn.prepare(`SELECT id FROM learning_cycles WHERE student_id = ? AND status='active' LIMIT 1`)
+      .get(st.id) as any;
+    const raw = 26 + (i % 5);
+    conn.prepare(
+      `INSERT INTO skill_checkins (student_id, cycle_id, class_id, skill, observed_on, author_user_id,
+                                   judgement, band, raw_score, estimate_basis, created_at)
+       VALUES (?,?,?, 'listening', ?,?,?,?,?, 'raw', ?)`,
+    ).run(st.id, cyc?.id ?? null, classId.get('MB-FT 101'), '2026-09-19', lrTeacher,
+          'Ước lượng theo bài luyện trên lớp', LISTENING_BY_RAW[raw], raw, NOW);
+    counts.checkins += 1;
+  }
+}
+
 function seedRegularClasses(conn: any, ctx: {
   classId: Map<string, number>;
   allStudents: { id: number; classCode: string; branch: string }[];
   adminId: number; managers: Map<string, number[]>;
-  counts: { students: number; cycles: number; attempts: number; scores: number; cases: number; estimates: number; skips: number };
+  counts: { students: number; cycles: number; attempts: number; scores: number; cases: number; checkins: number; skips: number };
 }) {
   const { classId, allStudents, adminId, managers, counts } = ctx;
 
@@ -561,10 +851,11 @@ function seedRegularClasses(conn: any, ctx: {
       // Lớp thường vẫn cần một "lộ trình" để gắn bài kiểm tra vào — đó chính là khoá học này.
       const cyc = conn
         .prepare(
-          `INSERT INTO learning_cycles (student_id, seq, route, target_score, started_at, status, note, created_at)
-           VALUES (?, 1, NULL, NULL, ?, 'active', ?, ?)`,
+          `INSERT INTO learning_cycles (student_id, seq, route, programme_code, target_score,
+                                        started_at, status, note, created_at)
+           VALUES (?, 1, NULL, ?, NULL, ?, 'active', ?, ?)`,
         )
-        .run(st.id, cls.startDate, `Khoá ${tpl.name} — lớp ${cls.code}`, NOW);
+        .run(st.id, programme, cls.startDate, `Khoá ${tpl.name} — lớp ${cls.code}`, NOW);
       counts.cycles += 1;
       const cycleId = Number(cyc.lastInsertRowid);
 
@@ -612,8 +903,14 @@ function seedRegularClasses(conn: any, ctx: {
           if (failed > 0) {
             const level = failed >= 3 ? 3 : failed;
             conn
-              .prepare(`INSERT INTO sos_cases (attempt_id, sos_level, status, created_at) VALUES (?,?,?,?)`)
-              .run(attemptId, level, ci === 0 ? 'in_progress' : 'open', NOW);
+              .prepare(
+                // Lớp thường dùng CHUNG bảng case với lớp FT, nên phải điền đủ học viên,
+                // khoá học và ngày phát hiện như nhau — hồ sơ học viên tra theo `student_id`.
+                `INSERT INTO sos_cases (attempt_id, student_id, cycle_id, origin_kind, detected_at,
+                                        sos_level, status, created_at)
+                 VALUES (?,?,?, 'mock', ?,?,?,?)`,
+              )
+              .run(attemptId, st.id, cycleId, taken, level, ci === 0 ? 'in_progress' : 'open', NOW);
             counts.cases += 1;
           }
         }
@@ -626,7 +923,7 @@ function seedSpecialCases(conn: any, ctx: {
   classId: Map<string, number>;
   allStudents: { id: number; classCode: string; branch: string }[];
   adminId: number; branchAdmins: Map<string, number>; managers: Map<string, number[]>;
-  counts: { students: number; cycles: number; attempts: number; scores: number; cases: number; estimates: number; skips: number };
+  counts: { students: number; cycles: number; attempts: number; scores: number; cases: number; checkins: number; skips: number };
 }) {
   const { classId, allStudents, adminId, managers, counts } = ctx;
   const inClass = (code: string) => allStudents.filter((s) => s.classCode === code);
@@ -770,6 +1067,20 @@ function seedSpecialCases(conn: any, ctx: {
    *   - bài mới nhập một phần, để thấy "thiếu điểm" KHÁC "trượt".
    */
   seedRegularClasses(conn, { classId, allStudents, adminId, managers, counts });
+
+  /*
+   * 5d) CASE HỌC VỤ THEO MÔ HÌNH MỚI.
+   *
+   * Cần đủ các tình huống thì màn hình mới có gì để xem và để thử:
+   *   - giáo viên báo vấn đề khi CHƯA có bài đánh giá nào;
+   *   - case nhiều yếu tố: vấn đề chính + yếu tố đi kèm + hoàn cảnh;
+   *   - một case nhiều đợt hỗ trợ, mỗi đợt xem lại nhiều lần;
+   *   - case chỉ theo dõi, không có hẹn xem lại (nên KHÔNG bao giờ quá hạn);
+   *   - case đã hẹn xem lại và quá hạn;
+   *   - case đóng với "không cần xử lý thêm";
+   *   - ghi nhận nhanh định tính, không có điểm.
+   */
+  seedAcademicCases(conn, { classId, allStudents, adminId, managers, counts });
 
   // 6) Warning/WL và đánh giá cũ — dữ liệu lịch sử để thử bộ lọc hành trình.
   const warned = inClass('UB-FT 401')[5];

@@ -23,7 +23,7 @@ type RosterRow = {
   id: number; studentCode: string; fullName: string; status: string; archived: boolean;
   cycle: { id: number; seq: number; route: string | null; target: number | null; examDate: string | null } | null;
   latest: Timeline | null; next: Timeline | null; timeline: Timeline[];
-  estimates: Partial<Record<EntrySkill, { band: number; assessedOn: string }>>;
+  checkins: Partial<Record<EntrySkill, { band: number | null; observedOn: string; judgement: string | null }>>;
   myPending: string[];
 };
 
@@ -150,15 +150,23 @@ function MockTrail({ timeline, classId }: { timeline: Timeline[]; classId: numbe
   );
 }
 
-/** Chênh lệch Đánh giá GV ↔ điểm Mock gần nhất của CÙNG kỹ năng, chỉ hiện khi có cả hai. */
+/**
+ * Ghi nhận gần nhất của giáo viên theo từng kỹ năng.
+ *
+ * Ghi nhận KHÔNG bắt buộc có điểm — phần lớn là nhận xét bằng lời. Ở danh sách lớp chỉ đủ
+ * chỗ cho một dấu hiệu ngắn, nên có điểm thì hiện điểm, không có thì hiện một dấu chấm và
+ * để nguyên văn nhận xét trong tooltip.
+ */
 function EstimateChips({ row }: { row: RosterRow }) {
-  const entries = Object.entries(row.estimates ?? {}) as [EntrySkill, { band: number; assessedOn: string }][];
+  const entries = Object.entries(row.checkins ?? {}) as
+    [EntrySkill, { band: number | null; observedOn: string; judgement: string | null }][];
   if (!entries.length) return <span className="text-slate-600">—</span>;
   return (
     <span className="flex flex-wrap gap-1">
-      {entries.map(([skill, est]) => (
-        <Pill key={skill} tone="neutral" title={`Đánh giá ngày ${est.assessedOn}`}>
-          {ENTRY_SKILL_SHORT[skill] ?? skill} {est.band.toFixed(1)}
+      {entries.map(([skill, k]) => (
+        <Pill key={skill} tone="neutral"
+          title={`${k.judgement ? `${k.judgement}\n` : ''}Ghi nhận ngày ${k.observedOn}`}>
+          {ENTRY_SKILL_SHORT[skill] ?? skill} {k.band !== null ? k.band.toFixed(1) : '·'}
         </Pill>
       ))}
     </span>

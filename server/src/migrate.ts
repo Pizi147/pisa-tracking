@@ -23,7 +23,8 @@ export function migrate(): { applied: string[]; skipped: string[] } {
     !!conn.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name = ?").get(table);
 
   if (has('assessment_attempts') && !has('mock_attempts')) {
-    return { applied, skipped: ['Database đã ở schema mới, không cần nâng cấp.'] };
+    // Đã qua bước nâng cấp lớn; chỉ cần bổ sung phần case học vụ nếu chưa có.
+    return migrateCaseEngine(applied, skipped);
   }
   if (!has('mock_attempts')) {
     return { applied, skipped: ['Không tìm thấy dữ liệu cũ để nâng cấp.'] };
@@ -175,5 +176,242 @@ export function migrate(): { applied: string[]; skipped: string[] } {
   conn.pragma('foreign_keys = ON');
 
   skipped.push('Vai trò và quyền lấy lại từ seed: chạy `npm run seed` nếu muốn bộ quyền mới đầy đủ');
+  migrateCaseEngine(applied, skipped);
+  return { applied, skipped };
+}
+
+/**
+ * NÂNG CẤP TẠI CHỖ SANG MÔ HÌNH CASE HỌC VỤ.
+ *
+ * Chạy được trên database đang dùng, KHÔNG xoá và tạo lại. Chạy lại lần hai là no-op.
+ *
+ * Ba việc chính:
+ *   1. Thêm cột/bảng mới, giữ nguyên mọi id cũ để các liên kết đã lưu không gãy.
+ *   2. Điền `student_id`/`cycle_id` cho case cũ, lấy từ chính lượt đánh giá của nó.
+ *   3. Chuyển các cột checklist cố định (trao đổi HS/PH, hỗ trợ học thuật, chính sách,
+ *      buổi gặp) thành các bản ghi tác động — mỗi cột đúng MỘT lần, có khoá chống trùng.
+ *
+ * Nguyên tắc khi chuyển: NGÀY BẮT ĐẦU KHÔNG PHẢI NGÀY HOÀN THÀNH. Dữ liệu cũ chỉ ghi ngày
+ * bắt đầu hỗ trợ học thuật, nên chuyển thành trạng thái "đang thực hiện", không tự nhận là
+ * đã xong. Thiếu người thực hiện thì để trống chứ không lấy người nhập làm người làm.
+ */
+function migrateCaseEngine(applied: string[], skipped: string[]) {
+  const conn = db();
+  const cols = (t: string) => (conn.prepare(`PRAGMA table_info(${t})`).all() as any[]).map((c) => c.name);
+  const has = (table: string) =>
+    !!conn.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name = ?").get(table);
+  const addCol = (table: string, col: string, decl: string) => {
+    if (!cols(table).includes(col)) conn.exec(`ALTER TABLE ${table} ADD COLUMN ${col} ${decl}`);
+  };
+
+  if (!has('sos_cases')) return { applied, skipped };
+
+  conn.pragma('foreign_keys = OFF');
+  conn.transaction(() => {
+    // 1. Cột mới trên các bảng đang có.
+    for (const [col, decl] of [
+      ['student_id', 'INTEGER REFERENCES students(id)'],
+      ['cycle_id', 'INTEGER REFERENCES learning_cycles(id)'],
+      ['origin_kind', "TEXT NOT NULL DEFAULT 'mock'"],
+      ['detected_at', 'TEXT'], ['reported_by', 'INTEGER REFERENCES users(id)'],
+      ['summary', 'TEXT'], ['urgency', 'TEXT'],
+      ['disposition', 'TEXT'], ['disposition_note', 'TEXT'],
+      ['closed_by', 'INTEGER REFERENCES users(id)'], ['closed_at', 'TEXT'],
+      ['acknowledged_by', 'INTEGER REFERENCES users(id)'], ['acknowledged_at', 'TEXT'],
+      ['idempotency_key', 'TEXT'],
+    ] as const) addCol('sos_cases', col, decl);
+
+    for (const [col, decl] of [
+      ['programme_code', 'TEXT'],
+      ['baseline_attempt_id', 'INTEGER'], ['baseline_score', 'REAL'],
+      ['baseline_source', 'TEXT'], ['baseline_note', 'TEXT'],
+      ['outcome', 'TEXT'], ['outcome_attempt_id', 'INTEGER'],
+      ['outcome_score', 'REAL'], ['outcome_note', 'TEXT'],
+    ] as const) addCol('learning_cycles', col, decl);
+
+    for (const [col, decl] of [['cycle_id', 'INTEGER'], ['dedup_key', 'TEXT']] as const) {
+      addCol('journey_events', col, decl);
+    }
+    if (cols('classes').length && !cols('classes').includes('programme_code')) {
+      conn.exec('ALTER TABLE classes ADD COLUMN programme_code TEXT');
+    }
+
+    // 2. Bảng mới.
+    conn.exec(`
+      CREATE TABLE IF NOT EXISTS programmes (
+        code TEXT PRIMARY KEY, name TEXT NOT NULL, weeks INTEGER,
+        scoring_mode TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'active', created_at TEXT NOT NULL);
+      CREATE TABLE IF NOT EXISTS programme_skills (
+        programme_code TEXT NOT NULL, skill TEXT NOT NULL, seq INTEGER NOT NULL DEFAULT 0,
+        PRIMARY KEY (programme_code, skill));
+      CREATE TABLE IF NOT EXISTS programme_checkpoints (
+        programme_code TEXT NOT NULL, kind TEXT NOT NULL, study_week INTEGER NOT NULL,
+        PRIMARY KEY (programme_code, kind));
+      CREATE TABLE IF NOT EXISTS cycle_target_revisions (
+        id INTEGER PRIMARY KEY, cycle_id INTEGER NOT NULL, old_target REAL, new_target REAL,
+        effective_from TEXT NOT NULL, reason TEXT, actor_user_id INTEGER, created_at TEXT NOT NULL);
+      CREATE TABLE IF NOT EXISTS case_issues (
+        id INTEGER PRIMARY KEY, case_id INTEGER NOT NULL, role TEXT NOT NULL DEFAULT 'primary',
+        taxonomy_code TEXT NOT NULL, taxonomy_version INTEGER NOT NULL DEFAULT 1,
+        skill TEXT, observation TEXT, created_by INTEGER, created_at TEXT NOT NULL);
+      CREATE TABLE IF NOT EXISTS case_interventions (
+        id INTEGER PRIMARY KEY, case_id INTEGER NOT NULL, kind TEXT NOT NULL, description TEXT,
+        performer_user_id INTEGER, performer_name TEXT, recorded_by INTEGER,
+        status TEXT NOT NULL DEFAULT 'planned', planned_date TEXT, started_date TEXT,
+        completed_date TEXT, followup_due TEXT, migration_key TEXT UNIQUE,
+        created_at TEXT NOT NULL, updated_at TEXT);
+      CREATE TABLE IF NOT EXISTS case_followups (
+        id INTEGER PRIMARY KEY, case_id INTEGER NOT NULL, intervention_id INTEGER,
+        observed_on TEXT NOT NULL, observer_user_id INTEGER, outcome TEXT, note TEXT,
+        evidence_attempt_id INTEGER, created_at TEXT NOT NULL);
+      CREATE TABLE IF NOT EXISTS case_sources (
+        id INTEGER PRIMARY KEY, case_id INTEGER NOT NULL, role TEXT NOT NULL DEFAULT 'support',
+        source_type TEXT NOT NULL, source_id INTEGER NOT NULL, note TEXT,
+        created_by INTEGER, created_at TEXT NOT NULL,
+        UNIQUE (case_id, source_type, source_id, role));
+      CREATE TABLE IF NOT EXISTS skill_checkins (
+        id INTEGER PRIMARY KEY, student_id INTEGER NOT NULL, cycle_id INTEGER, class_id INTEGER,
+        skill TEXT NOT NULL, observed_on TEXT NOT NULL, author_user_id INTEGER,
+        judgement TEXT, strengths TEXT, weaknesses TEXT,
+        band REAL, raw_score INTEGER, raw_total INTEGER, c1 REAL, c2 REAL, c3 REAL, c4 REAL,
+        estimate_basis TEXT, created_at TEXT NOT NULL);
+      CREATE INDEX IF NOT EXISTS idx_case_student ON sos_cases(student_id, status);
+      CREATE INDEX IF NOT EXISTS idx_case_issue_case ON case_issues(case_id);
+      CREATE INDEX IF NOT EXISTS idx_intervention_case ON case_interventions(case_id);
+      CREATE INDEX IF NOT EXISTS idx_followup_case ON case_followups(case_id);
+      CREATE INDEX IF NOT EXISTS idx_checkin_student ON skill_checkins(student_id, skill, observed_on);
+    `);
+
+    // 3. Điền học viên/lộ trình cho case cũ, lấy từ chính lượt đánh giá của nó.
+    const filled = conn
+      .prepare(
+        `UPDATE sos_cases SET
+           student_id = COALESCE(student_id, (SELECT a.student_id FROM assessment_attempts a WHERE a.id = sos_cases.attempt_id)),
+           cycle_id   = COALESCE(cycle_id,   (SELECT a.cycle_id   FROM assessment_attempts a WHERE a.id = sos_cases.attempt_id)),
+           detected_at = COALESCE(detected_at, substr(created_at, 1, 10))
+         WHERE attempt_id IS NOT NULL AND (student_id IS NULL OR cycle_id IS NULL OR detected_at IS NULL)`,
+      )
+      .run();
+    if (filled.changes) applied.push(`Điền học viên/lộ trình cho ${filled.changes} case cũ`);
+
+    /*
+     * 4. Chuyển checklist cố định thành tác động.
+     *
+     * `migration_key` đảm bảo chạy lại không nhân đôi. Ngày trong dữ liệu cũ chỉ chứng minh
+     * việc ĐÃ BẮT ĐẦU với hỗ trợ học thuật — không nâng thành "đã xong".
+     */
+    const legacy: { field: string; kind: string; dateCol: string; personCol?: string; status: string; label: string }[] = [
+      { field: 'talk_student', kind: 'talk_student', dateCol: 'talk_student_date', personCol: 'talk_student_person', status: 'completed', label: 'Trao đổi với học sinh' },
+      { field: 'talk_parent', kind: 'talk_parent', dateCol: 'talk_parent_date', personCol: 'talk_parent_person', status: 'completed', label: 'Trao đổi với phụ huynh' },
+      { field: 'academic', kind: 'tutor', dateCol: 'academic_start_date', personCol: 'academic_person', status: 'started', label: 'Hỗ trợ học thuật' },
+      { field: 'ops', kind: 'ops_policy', dateCol: 'ops_date', status: 'completed', label: 'Chính sách vận hành' },
+      { field: 'meeting', kind: 'meeting', dateCol: 'meeting_date', status: 'completed', label: 'Buổi gặp riêng' },
+    ];
+    const caseCols = cols('sos_cases');
+    let moved = 0;
+    for (const l of legacy) {
+      if (!caseCols.includes(l.dateCol)) continue;
+      const person = l.personCol && caseCols.includes(l.personCol) ? l.personCol : null;
+      const extra = l.field === 'academic' && caseCols.includes('academic_support') ? 'academic_support'
+        : l.field === 'ops' && caseCols.includes('ops_policy') ? 'ops_policy'
+        : l.field === 'meeting' && caseCols.includes('meeting_kind') ? 'meeting_kind' : null;
+      for (const r of conn
+        .prepare(`SELECT id, ${l.dateCol} AS d${person ? `, ${person} AS who` : ''}${extra ? `, ${extra} AS what` : ''}
+                    FROM sos_cases WHERE ${l.dateCol} IS NOT NULL AND ${l.dateCol} != ''`)
+        .all() as any[]) {
+        const key = `legacy:${l.field}:${r.id}`;
+        const dup = conn.prepare('SELECT 1 FROM case_interventions WHERE migration_key = ?').get(key);
+        if (dup) continue;
+        conn
+          .prepare(
+            `INSERT INTO case_interventions (case_id, kind, description, performer_name, status,
+                                             started_date, completed_date, migration_key, created_at)
+             VALUES (?,?,?,?,?,?,?,?,?)`,
+          )
+          .run(r.id, l.kind, (r as any).what ?? l.label, (r as any).who ?? null, l.status,
+               r.d, l.status === 'completed' ? r.d : null, key, nowIso());
+        moved += 1;
+      }
+    }
+    if (moved) applied.push(`Chuyển ${moved} mốc hỗ trợ cũ thành bản ghi tác động (giữ nguyên bản gốc để tra lại)`);
+
+    /*
+     * 5. Case đã đóng theo hệ thống cũ mà không có hướng xử lý: ghi rõ là "đóng theo hệ
+     *    thống cũ", KHÔNG bịa ra một kết luận và cũng không mở lại hàng loạt.
+     */
+    const legacyClosed = conn
+      .prepare(
+        `UPDATE sos_cases SET disposition = 'other',
+                disposition_note = 'Đóng theo hệ thống cũ — chưa ghi hướng xử lý'
+          WHERE status = 'done' AND disposition IS NULL`,
+      )
+      .run();
+    if (legacyClosed.changes) {
+      applied.push(`Đánh dấu ${legacyClosed.changes} case đóng theo hệ thống cũ (không bịa kết luận)`);
+    }
+
+    /*
+     * 6. Đánh giá GV cũ thành ghi nhận nhanh, GIỮ NGUYÊN bảng cũ.
+     *    Lộ trình không chứng minh được thì để trống, không gán vào lộ trình hiện tại.
+     */
+    if (has('teacher_estimates')) {
+      const moved2 = conn
+        .prepare(
+          `INSERT INTO skill_checkins (student_id, cycle_id, class_id, skill, observed_on, author_user_id,
+                                       band, raw_score, c1, c2, c3, c4, estimate_basis, created_at)
+           SELECT e.student_id, e.cycle_id, e.class_id, e.skill, e.assessed_on, e.assessed_by,
+                  e.band, e.raw_score, e.c1, e.c2, e.c3, e.c4,
+                  CASE WHEN e.raw_score IS NOT NULL THEN 'raw'
+                       WHEN e.c1 IS NOT NULL THEN 'criteria' ELSE 'judgement' END,
+                  e.created_at
+             FROM teacher_estimates e
+            WHERE NOT EXISTS (
+              SELECT 1 FROM skill_checkins k
+               WHERE k.student_id = e.student_id AND k.skill = e.skill
+                 AND k.observed_on = e.assessed_on AND k.author_user_id IS e.assessed_by)`,
+        )
+        .run();
+      if (moved2.changes) applied.push(`Chuyển ${moved2.changes} đánh giá GV cũ thành ghi nhận nhanh`);
+    }
+
+    // 7. Hành trình cũ: gắn lộ trình khi tra được từ bản ghi thật, còn lại để trống.
+    const j = conn
+      .prepare(
+        `UPDATE journey_events SET cycle_id = (
+            SELECT a.cycle_id FROM assessment_attempts a
+             WHERE a.id = journey_events.ref_id AND journey_events.ref_table = 'assessment_attempts')
+          WHERE cycle_id IS NULL AND ref_table = 'assessment_attempts'`,
+      )
+      .run();
+    if (j.changes) applied.push(`Gắn lộ trình cho ${j.changes} sự kiện hành trình`);
+
+    /*
+     * 8. Khoá của lớp thường thiếu MÃ CHƯƠNG TRÌNH.
+     *
+     * Thiếu mã này thì không biết khoá chấm theo tỷ lệ hay theo band, nên hồ sơ học viên
+     * dựng ra bảng band IELTS cho một lớp Foundation — bốn cột L/R/W/S trống trơn.
+     * Suy lại từ lớp của chính các bài kiểm tra trong khoá, và CHỈ khi mọi bài đều thuộc
+     * cùng một chương trình; mập mờ thì để trống chứ không đoán.
+     */
+    const prog = conn
+      .prepare(
+        `UPDATE learning_cycles SET programme_code = (
+            SELECT MIN(c.programme_code) FROM assessment_attempts a
+              JOIN classes c ON c.id = a.class_id
+             WHERE a.cycle_id = learning_cycles.id AND c.programme_code IS NOT NULL)
+          WHERE programme_code IS NULL AND route IS NULL
+            AND (SELECT COUNT(DISTINCT c.programme_code) FROM assessment_attempts a
+                   JOIN classes c ON c.id = a.class_id
+                  WHERE a.cycle_id = learning_cycles.id AND c.programme_code IS NOT NULL) = 1`,
+      )
+      .run();
+    if (prog.changes) applied.push(`Gắn mã chương trình cho ${prog.changes} khoá lớp thường`);
+
+    conn.prepare("INSERT OR REPLACE INTO demo_config (key, value, updated_at) VALUES ('case_engine_migrated_at', ?, ?)")
+      .run(nowIso(), nowIso());
+  })();
+  conn.pragma('foreign_keys = ON');
+
+  if (!applied.length) skipped.push('Mô hình case học vụ đã có sẵn, không cần nâng cấp.');
   return { applied, skipped };
 }

@@ -73,7 +73,7 @@ export function overview(p: Principal, periodId: number, branchId?: number) {
       kind: 'needs_date', studentId: m.studentId, studentName: m.studentName, studentCode: m.studentCode,
       classCode: m.classCode, attemptId: m.id, attemptNo: m.attemptNo,
       reason: `MT${m.attemptNo} đã có tuần ${m.period?.code ?? ''} nhưng chưa có ngày`,
-      action: 'Admin chi nhánh chốt ngày giờ',
+      action: 'Cập nhật ngày MT thực tế',
     });
   }
   for (const t of tasks.filter((t) => t.dueState === 'overdue').slice(0, 8)) {

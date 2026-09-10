@@ -206,7 +206,7 @@ export function explain(p: Principal, permission: string, ctx: Ctx): string {
   const holders = p.grants.filter((g) => g.permissions.has(permission));
   if (!holders.length) {
     if (permission === PERMISSIONS.PLAN_WEEK) return 'Chỉ Quản lý mới chốt được tuần kế hoạch.';
-    if (permission === PERMISSIONS.SCHEDULE_DATE) return 'Chỉ Admin chi nhánh mới chốt được ngày giờ trong tuần.';
+    if (permission === PERMISSIONS.SCHEDULE_DATE) return 'Chỉ Admin chi nhánh và Quản lý mới cập nhật được ngày trong tuần.';
     return 'Vai trò hiện tại của bạn không có chức năng này.';
   }
   if (holders.every((g) => g.roleKey === 'teacher')) {

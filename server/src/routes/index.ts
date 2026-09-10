@@ -1,25 +1,30 @@
 import { Router } from 'express';
 import { db, isInitialised } from '../db.ts';
 import {
-  ENTRY_SKILLS, PERMISSIONS, ROLE_LABEL, type Role,
+  ENTRY_SKILLS, ISSUE_CONTEXTS, ISSUE_TAXONOMY, PERMISSIONS, ROLE_LABEL, type Role,
 } from '../../../shared/domain.ts';
 import { demoToday, getConfig, scenarioMode, setConfig } from '../demoConfig.ts';
 import { HttpError, badRequest, isIsoDate, notFound, toInt } from '../util.ts';
 import { SESSION_COOKIE, createSession, destroySession, principalOf, requireAuth } from '../auth.ts';
-import { can, loadPrincipal, permissionSummary, scopeFor } from '../permissions.ts';
+import { can, loadPrincipal, permissionSummary, require_, scopeFor } from '../permissions.ts';
+import { writeAudit } from '../services/audit.ts';
 import { maybeSimulateReadError, maybeSimulateSaveFailure, pInt, qInt, qStr, wrap } from './helpers.ts';
 import * as attemptSvc from '../services/attempts.ts';
 import * as cycleSvc from '../services/cycles.ts';
-import * as estimateSvc from '../services/estimates.ts';
+import * as checkinSvc from '../services/checkins.ts';
+import * as profileSvc from '../services/profile.ts';
 import * as classSvc from '../services/classes.ts';
 import * as intakeSvc from '../services/intake.ts';
-import * as sosSvc from '../services/sos.ts';
 import * as studentSvc from '../services/students.ts';
 import * as meetingSvc from '../services/meeting.ts';
 import * as dashboardSvc from '../services/dashboard.ts';
-import { ensurePeriod, listPeriods, periodById, periodWindow, reportEditWindow } from '../services/week.ts';
+import {
+  ensurePeriod, listPeriods, periodById, periodWindow, reportEditWindow, setPeriodUnlocked,
+} from '../services/week.ts';
 import * as planningSvc from '../services/planning.ts';
 import { signalsFor } from '../services/signals.ts';
+import { weeklyRollup } from '../services/weekly.ts';
+import * as caseSvc from '../services/cases.ts';
 import * as regularSvc from '../services/regular.ts';
 
 export const api = Router();
@@ -63,7 +68,7 @@ api.get('/demo/session', wrap((req) => {
     scenario: scenarioMode(),
     /*
      * Trang mở đầu theo việc thường làm nhất: giáo viên vào thẳng các kỹ năng cần nhập điểm,
-     * Admin chi nhánh vào danh sách cần chốt ngày giờ, còn lại mở Tổng quan.
+     * Admin chi nhánh vào danh sách cần cập nhật ngày, còn lại mở Tổng quan.
      * Chỉ đổi điểm vào, không đổi quyền.
      */
     landing: p.roleKeys.length === 1
@@ -270,6 +275,12 @@ api.post('/attempts/bulk-date', requireAuth, wrap((req) => {
   return planningSvc.bulkSetDate(principalOf(req), req.body ?? {});
 }));
 
+/** Tổng hợp theo tuần cho Quản lý: mỗi tuần một dòng, mọi con số bấm được. */
+api.get('/weekly-rollup', requireAuth, wrap((req) => weeklyRollup(principalOf(req), {
+  branchId: toInt(req.query?.branchId),
+  weeks: toInt(req.query?.weeks) ?? undefined,
+})));
+
 /** Việc sinh ra từ dữ liệu — tự hết khi nguồn được xử lý, không có nút đóng giả. */
 api.get('/signals', requireAuth, wrap((req) => signalsFor(principalOf(req), {
   branchId: toInt(req.query?.branchId), periodId: toInt(req.query?.periodId),
@@ -290,7 +301,7 @@ api.post('/attempts/:id/week', requireAuth, wrap((req) => {
   return attemptSvc.setPlanningWeek(principalOf(req), pInt(req, 'id'), periodId, req.body?.reason);
 }));
 
-/** Chốt NGÀY–GIỜ trong tuần đã duyệt. Lịch chính do Admin CN, lịch Speaking có thể do GV Speaking. */
+/** Cập nhật NGÀY thực tế trong tuần kế hoạch. Lịch chính do Admin CN, lịch Speaking có thể do GV Speaking. */
 api.post('/attempts/:id/schedule', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return attemptSvc.setSchedule(principalOf(req), pInt(req, 'id'), {
@@ -429,7 +440,7 @@ api.get('/ref/programmes', requireAuth, wrap(() =>
 api.get('/students/:id/cycles', requireAuth, wrap((req) => {
   const p = principalOf(req);
   const id = pInt(req, 'id');
-  studentSvc.studentDetail(p, id);        // kiểm tra phạm vi trước khi trả dữ liệu
+  require_(p, PERMISSIONS.STUDENT_VIEW, { studentId: id }, 'Học viên này nằm ngoài phạm vi bạn được xem.');
   return cycleSvc.cyclesOf(id);
 }));
 
@@ -443,27 +454,99 @@ api.patch('/cycles/:id', requireAuth, wrap((req) => {
   return cycleSvc.updateCycle(principalOf(req), pInt(req, 'id'), req.body ?? {});
 }));
 
-api.get('/students/:id/estimates', requireAuth, wrap((req) =>
-  estimateSvc.estimateHistory(principalOf(req), pInt(req, 'id'), qStr(req, 'skill'))));
+/** Điểm xuất phát của lộ trình — phải ghi rõ NGUỒN, không lấy MT1 làm điểm đầu vào. */
+api.put('/cycles/:id/baseline', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return cycleSvc.setBaseline(principalOf(req), pInt(req, 'id'), req.body ?? {});
+}));
 
-api.get('/students/:id/estimate-comparison', requireAuth, wrap((req) =>
-  estimateSvc.compareEstimates(principalOf(req), pInt(req, 'id'))));
+/** Kết luận cuối lộ trình. Đóng lộ trình về hành chính KHÁC với đạt mục tiêu. */
+api.put('/cycles/:id/outcome', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return cycleSvc.setOutcome(principalOf(req), pInt(req, 'id'), req.body ?? {});
+}));
+
+/** Đổi mục tiêu: có hiệu lực từ ngày ghi trở đi, KHÔNG chấm lại các lượt đã chốt. */
+api.post('/cycles/:id/target-revision', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return cycleSvc.reviseTarget(principalOf(req), pInt(req, 'id'), req.body ?? {});
+}));
+
+// ============================================================ Ghi nhận nhanh của giáo viên
+
+api.get('/students/:id/checkins', requireAuth, wrap((req) =>
+  checkinSvc.checkinHistory(principalOf(req), pInt(req, 'id'), {
+    skill: qStr(req, 'skill'), cycleId: qInt(req, 'cycleId'),
+  })));
+
+api.get('/students/:id/checkin-comparison', requireAuth, wrap((req) =>
+  checkinSvc.compareCheckins(principalOf(req), pInt(req, 'id'), qInt(req, 'cycleId'))));
 
 /**
- * Đánh giá GV là dữ liệu riêng, không bao giờ ghi đè điểm Mock.
- * Giáo viên cập nhật BẤT KỲ LÚC NÀO — không phụ thuộc tuần MT hay hạn nhập điểm.
+ * Ghi nhận là dữ liệu RIÊNG, không bao giờ ghi đè điểm chính thức.
+ * Giáo viên ghi BẤT KỲ LÚC NÀO — không phụ thuộc tuần MT hay hạn nhập điểm, và cũng
+ * không bị khoá theo cửa sổ sửa báo cáo tuần.
  */
-api.post('/students/:id/estimates', requireAuth, wrap((req) => {
+api.post('/students/:id/checkins', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
-  return estimateSvc.saveEstimate(principalOf(req), { ...req.body, studentId: pInt(req, 'id') });
+  return checkinSvc.saveCheckin(principalOf(req), { ...req.body, studentId: pInt(req, 'id') });
 }));
 
-// ============================================================ Xử lý sau Mock (SOS)
+// ============================================================ Case học vụ
 
-api.patch('/sos-cases/:id', requireAuth, wrap((req) => {
+/**
+ * Giáo viên báo vấn đề — KHÔNG cần chờ Mock, không tạo bài đánh giá giả.
+ * `sos_level` để trống: SOS 1/2/3 là số kỹ năng dưới kỳ vọng ở một bài, ở đây chưa có bài.
+ */
+api.post('/cases/report', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
-  return sosSvc.updateCase(principalOf(req), pInt(req, 'id'), req.body ?? {});
+  return caseSvc.reportIssue(principalOf(req), req.body ?? {});
 }));
+
+api.get('/cases', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return caseSvc.listCases(principalOf(req), {
+    branchId: toInt(req.query?.branchId), classId: toInt(req.query?.classId),
+    studentId: toInt(req.query?.studentId),
+    status: qStr(req, 'status'), origin: qStr(req, 'origin'),
+    group: qStr(req, 'group'), skill: qStr(req, 'skill'), queue: qStr(req, 'queue'),
+  });
+}));
+
+api.get('/cases/queues', requireAuth, wrap((req) => caseSvc.caseQueueCounts(principalOf(req), {
+  branchId: toInt(req.query?.branchId), classId: toInt(req.query?.classId),
+})));
+
+api.get('/cases/:id', requireAuth, wrap((req) => caseSvc.caseDetail(principalOf(req), pInt(req, 'id'))));
+
+/** Phân loại vấn đề: tối đa MỘT vấn đề chính, kèm yếu tố đi kèm và hoàn cảnh. */
+api.put('/cases/:id/issues', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return caseSvc.setIssues(principalOf(req), pInt(req, 'id'), req.body ?? {});
+}));
+
+/** Ghi một tác động. Một case có nhiều tác động. */
+api.post('/cases/:id/interventions', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return caseSvc.recordIntervention(principalOf(req), pInt(req, 'id'), req.body ?? {});
+}));
+
+/** Ghi một lần xem lại sau hỗ trợ. Một tác động có thể xem lại nhiều lần. */
+api.post('/cases/:id/followups', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return caseSvc.recordFollowUp(principalOf(req), pInt(req, 'id'), req.body ?? {});
+}));
+
+/** Đổi hướng xử lý, hoặc đóng case. Đóng thì bắt buộc có hướng xử lý. */
+api.patch('/cases/:id/disposition', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return caseSvc.setDisposition(principalOf(req), pInt(req, 'id'), req.body ?? {});
+}));
+
+/** Bộ phân loại vấn đề để dựng ô chọn. Dữ liệu, không viết cứng trong giao diện. */
+api.get('/ref/issue-taxonomy', requireAuth, wrap(() => ({
+  branches: ISSUE_TAXONOMY, contexts: ISSUE_CONTEXTS,
+})));
 
 // ============================================================ Học viên
 
@@ -477,13 +560,16 @@ api.get('/students', requireAuth, wrap((req) => {
   });
 }));
 
+/**
+ * HỒ SƠ HỌC VIÊN theo ĐÚNG MỘT LỘ TRÌNH.
+ *
+ * `cycleId` gửi tường minh; không có thì lấy lộ trình đang chạy. Không bao giờ trộn dữ
+ * liệu hai lộ trình vào một khung nhìn, vì mục tiêu và thang điểm của chúng khác nhau.
+ */
 api.get('/students/:id', requireAuth, wrap((req) => {
   maybeSimulateReadError();
-  return studentSvc.studentDetail(principalOf(req), pInt(req, 'id'));
+  return profileSvc.studentProfile(principalOf(req), pInt(req, 'id'), qInt(req, 'cycleId'));
 }));
-
-api.get('/students/:id/journey', requireAuth, wrap((req) =>
-  studentSvc.journey(principalOf(req), pInt(req, 'id'), qStr(req, 'filter'))));
 
 api.patch('/students/:id', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
@@ -515,6 +601,27 @@ api.get('/meeting/board', requireAuth, wrap((req) => {
   const period = periodById(periodId);
   // Giao diện phải biết tuần này có đang mở để cập nhật không, và nếu không thì vì sao.
   return { ...board, editWindow: period ? reportEditWindow(period) : null };
+}));
+
+/**
+ * Quản trị hệ thống mở lại một tuần báo cáo đã khoá.
+ * Đây là ngoại lệ, nên chỉ một vai trò được làm và có ghi nhật ký.
+ */
+api.post('/meeting/periods/:periodId/unlock', requireAuth, wrap((req) => {
+  const p = principalOf(req);
+  require_(p, PERMISSIONS.ADMIN_CONFIG, { anyScope: true },
+    'Chỉ Quản trị hệ thống mới mở lại được tuần báo cáo đã khoá.');
+  const periodId = pInt(req, 'periodId');
+  const on = req.body?.unlocked !== false;
+  setPeriodUnlocked(periodId, on, p.userId);
+  writeAudit({
+    actorUserId: p.userId, action: on ? 'report.unlock' : 'report.relock',
+    entityType: 'report_period', entityId: periodId,
+    entityLabel: periodById(periodId)?.code ?? String(periodId),
+    after: { unlocked: on },
+  });
+  const period = periodById(periodId);
+  return period ? reportEditWindow(period) : { open: false };
 }));
 
 api.put('/meeting/units/:unitId/reports/:categoryKey', requireAuth, wrap((req) => {
@@ -599,7 +706,7 @@ api.get('/admin/overview', requireAuth, wrap((req) => {
       classes: (conn.prepare('SELECT COUNT(*) AS n FROM classes').get() as any).n,
       attempts: (conn.prepare('SELECT COUNT(*) AS n FROM assessment_attempts').get() as any).n,
       cycles: (conn.prepare('SELECT COUNT(*) AS n FROM learning_cycles').get() as any).n,
-      estimates: (conn.prepare('SELECT COUNT(*) AS n FROM teacher_estimates').get() as any).n,
+      estimates: (conn.prepare('SELECT COUNT(*) AS n FROM skill_checkins').get() as any).n,
       cases: (conn.prepare('SELECT COUNT(*) AS n FROM sos_cases').get() as any).n,
     },
     audit: conn

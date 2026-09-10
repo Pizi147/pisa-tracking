@@ -166,15 +166,46 @@ CREATE TABLE learning_cycles (
   student_id INTEGER NOT NULL REFERENCES students(id),
   seq INTEGER NOT NULL,               -- thứ tự lộ trình của học viên: 1, 2, ...
   route TEXT,                         -- LT1 | LT2 với FT; NULL với lớp thường
+  programme_code TEXT REFERENCES programmes(code),
   target_score REAL,                  -- điểm cam kết của CHÍNH lộ trình này
-  exam_date TEXT,                     -- ngày thi IELTS chính thức của lộ trình này
+  exam_date TEXT,                     -- ngày thi IELTS dự kiến của lộ trình này
+
+  -- ĐIỂM XUẤT PHÁT. Phải ghi rõ NGUỒN, vì "em vào học ở mức nào" là câu hỏi khác hẳn
+  -- "bài Mock đầu tiên được mấy điểm". Không có căn cứ thì để trống và hiển thị "chưa rõ",
+  -- KHÔNG lấy MT1 làm điểm đầu vào.
+  baseline_attempt_id INTEGER REFERENCES assessment_attempts(id),
+  baseline_score REAL,                -- khi điểm đầu vào đến từ ngoài hệ thống
+  baseline_source TEXT,               -- 'entrance' | 'previous_cycle' | 'external' | 'manual'
+  baseline_note TEXT,
+
   started_at TEXT NOT NULL,
   ended_at TEXT,
   status TEXT NOT NULL DEFAULT 'active',   -- active | completed | abandoned
+
+  -- KẾT THÚC HÀNH CHÍNH KHÁC ĐẠT MỤC TIÊU. Đóng lộ trình không chứng minh em đã đạt target.
+  outcome TEXT,                       -- 'reached' | 'not_reached' | 'unknown'
+  outcome_attempt_id INTEGER REFERENCES assessment_attempts(id),
+  outcome_score REAL,
+  outcome_note TEXT,
+
   note TEXT,
   created_at TEXT NOT NULL,
   UNIQUE (student_id, seq)
 );
+
+-- Lịch sử đổi target. Sửa target KHÔNG được chấm lại quá khứ: mỗi lượt đánh giá đã chốt
+-- target của chính nó tại `assessment_attempts.target_at_attempt`.
+CREATE TABLE cycle_target_revisions (
+  id INTEGER PRIMARY KEY,
+  cycle_id INTEGER NOT NULL REFERENCES learning_cycles(id),
+  old_target REAL,
+  new_target REAL,
+  effective_from TEXT NOT NULL,       -- từ ngày này target mới có hiệu lực
+  reason TEXT,
+  actor_user_id INTEGER REFERENCES users(id),
+  created_at TEXT NOT NULL
+);
+CREATE INDEX idx_target_rev_cycle ON cycle_target_revisions(cycle_id);
 CREATE INDEX idx_cycle_student ON learning_cycles(student_id);
 
 -- Lịch sử lớp. Chuyển lớp mở dòng mới, không ghi đè.
@@ -191,19 +222,28 @@ CREATE TABLE enrollments (
 CREATE INDEX idx_enr_student ON enrollments(student_id);
 CREATE INDEX idx_enr_class ON enrollments(class_id);
 
+-- HÀNH TRÌNH HỌC. Đây là câu chuyện đọc được của một em, KHÔNG phải nhật ký kỹ thuật
+-- (nhật ký kỹ thuật nằm ở `audit_logs`). Chỉ ghi sự kiện có ý nghĩa với người đọc.
 CREATE TABLE journey_events (
   id INTEGER PRIMARY KEY,
   student_id INTEGER NOT NULL REFERENCES students(id),
+  -- Sự kiện thuộc lộ trình nào. Thiếu thì để trống chứ không gán bừa vào lộ trình hiện tại.
+  cycle_id INTEGER REFERENCES learning_cycles(id),
   event_type TEXT NOT NULL,
+  -- NGÀY SỰ VIỆC XẢY RA, khác `created_at` là lúc ghi vào hệ thống. Ghi bù một buổi tuần
+  -- trước thì event_date là tuần trước, created_at là hôm nay.
   event_date TEXT NOT NULL,
   title TEXT NOT NULL,
   detail TEXT,
   ref_table TEXT,
   ref_id INTEGER,
+  -- Khoá chống trùng: lưu/thử lại nhiều lần chỉ để lại MỘT sự kiện.
+  dedup_key TEXT,
   created_by INTEGER REFERENCES users(id),
   created_at TEXT NOT NULL
 );
-CREATE INDEX idx_journey_student ON journey_events(student_id);
+CREATE INDEX idx_journey_student ON journey_events(student_id, event_date);
+CREATE UNIQUE INDEX idx_journey_dedup ON journey_events(dedup_key) WHERE dedup_key IS NOT NULL;
 
 -- ===================== KỲ / TUẦN =====================
 -- Tuần thứ Hai–Chủ nhật. Tháng của tuần là tháng chứa thứ Năm. Mã dạng "W1 SEP".
@@ -330,10 +370,37 @@ CREATE TABLE teacher_estimates (
 CREATE INDEX idx_estimate_student ON teacher_estimates(student_id, skill);
 
 -- ===================== CASE SOS =====================
+/*
+ * CASE HỌC VỤ.
+ *
+ * Giữ tên bảng `sos_cases` để mọi liên kết cũ (công việc, thông báo, đường dẫn đã lưu)
+ * không gãy, nhưng ý nghĩa đã rộng hơn tên: một case KHÔNG còn bắt buộc sinh từ Mock.
+ *
+ * Hai nguồn:
+ *   - `mock`          — hệ thống tự mở khi kết quả có kỹ năng dưới kỳ vọng.
+ *   - `teacher_report`— giáo viên chủ động báo, không cần chờ Mock, không tạo bài giả.
+ *
+ * `sos_level` chỉ có nghĩa với case sinh từ bài đánh giá: nó là SỐ KỸ NĂNG DƯỚI KỲ VỌNG.
+ * Case do giáo viên báo để NULL — không phải SOS 0, cũng không mặc định SOS 1 — và dùng
+ * `urgency` riêng. Trộn hai thang vào một cột thì con số SOS trên báo cáo mất nghĩa.
+ */
 CREATE TABLE sos_cases (
   id INTEGER PRIMARY KEY,
-  attempt_id INTEGER NOT NULL REFERENCES assessment_attempts(id) UNIQUE,
-  sos_level INTEGER NOT NULL,         -- 1..3
+  -- Có thể NULL: case do giáo viên báo không gắn với bài nào.
+  attempt_id INTEGER REFERENCES assessment_attempts(id) UNIQUE,
+  -- Luôn có, kể cả khi không có attempt. Backfill từ attempt khi nâng cấp dữ liệu cũ.
+  student_id INTEGER REFERENCES students(id),
+  cycle_id INTEGER REFERENCES learning_cycles(id),
+
+  -- Nguồn gốc KHÔNG đổi khi sau này gắn thêm bằng chứng.
+  origin_kind TEXT NOT NULL DEFAULT 'mock',   -- mock | teacher_report
+  detected_at TEXT,                   -- ngày phát hiện vấn đề, khác ngày ghi vào hệ thống
+  reported_by INTEGER REFERENCES users(id),
+  summary TEXT,                       -- một câu mô tả vấn đề, do người báo viết
+  -- Mức độ gấp do NGƯỜI BÁO nhận định. Khác hẳn sos_level tính từ điểm.
+  urgency TEXT,                       -- normal | attention | urgent
+
+  sos_level INTEGER,                  -- 1..3, NULL khi chưa/không tính được từ điểm
   coordinator_user_id INTEGER REFERENCES users(id),   -- người điều phối case
 
   talk_student_person TEXT,
@@ -352,6 +419,17 @@ CREATE TABLE sos_cases (
   meeting_date TEXT,
 
   status TEXT NOT NULL DEFAULT 'open',    -- open | in_progress | done
+
+  /*
+   * HƯỚNG XỬ LÝ — khác với trạng thái.
+   * Trạng thái nói case đang mở hay đã xong; hướng xử lý nói định làm gì với nó.
+   * "Chỉ theo dõi" là một hướng xử lý hợp lệ mà case vẫn đang mở.
+   */
+  disposition TEXT,                   -- monitor | offline | no_action | action | other
+  disposition_note TEXT,
+  closed_by INTEGER REFERENCES users(id),
+  closed_at TEXT,
+
   -- GVCN đã nhận case: METADATA, không phải trạng thái thứ tư. Nhận không nghĩa là đã xử lý,
   -- và có thể ghi hành động thực tế trước rồi mới xác nhận đã nhận.
   acknowledged_by INTEGER REFERENCES users(id),
@@ -360,9 +438,143 @@ CREATE TABLE sos_cases (
   head_confirmed_by INTEGER REFERENCES users(id),
   head_confirmed_at TEXT,
   note TEXT,
+  -- Chống trùng khi bấm hai lần hoặc thử lại sau lỗi mạng.
+  idempotency_key TEXT UNIQUE,
   created_at TEXT NOT NULL,
   updated_at TEXT
 );
+CREATE INDEX idx_case_student ON sos_cases(student_id, status);
+CREATE INDEX idx_case_cycle ON sos_cases(cycle_id);
+
+/*
+ * VẤN ĐỀ của một case, theo bộ phân loại ba nhóm Học sinh / Giáo viên / Giáo trình.
+ *
+ * Một case có thể có nhiều yếu tố nhưng CHỈ MỘT yếu tố chính. Yếu tố hoàn cảnh (phụ huynh,
+ * sức khoẻ, đi lại…) là ngữ cảnh kèm theo, không phải nhóm thứ tư.
+ *
+ * Đây là NHẬN ĐỊNH của người ghi, sửa được và có lịch sử — không phải kết luận nhân quả
+ * do hệ thống tự suy ra từ điểm số.
+ */
+CREATE TABLE case_issues (
+  id INTEGER PRIMARY KEY,
+  case_id INTEGER NOT NULL REFERENCES sos_cases(id),
+  role TEXT NOT NULL DEFAULT 'primary',   -- primary | secondary | context
+  taxonomy_code TEXT NOT NULL,            -- mã ổn định, ví dụ 'student.academic.listening.detail'
+  taxonomy_version INTEGER NOT NULL DEFAULT 1,
+  skill TEXT,                             -- kỹ năng liên quan, nếu có
+  observation TEXT,                       -- quan sát cụ thể, không phải nhãn quy kết
+  created_by INTEGER REFERENCES users(id),
+  created_at TEXT NOT NULL
+);
+CREATE INDEX idx_case_issue_case ON case_issues(case_id);
+
+/*
+ * TÁC ĐỘNG đã làm cho một case. Một case có NHIỀU tác động — đây là điểm mà các cột cố định
+ * cũ (trao đổi HS / trao đổi PH / hỗ trợ học thuật) không tả được.
+ *
+ * Tách NGƯỜI THỰC HIỆN với NGƯỜI GHI NHẬN: CS trao đổi với phụ huynh nhưng Admin ghi vào
+ * hệ thống thì phải giữ được cả hai. Người thực hiện có thể không có tài khoản (ghi tên).
+ *
+ * "Đã bắt đầu" KHÁC "đã xong": ngày bắt đầu học tutor không chứng minh đã học xong.
+ */
+CREATE TABLE case_interventions (
+  id INTEGER PRIMARY KEY,
+  case_id INTEGER NOT NULL REFERENCES sos_cases(id),
+  kind TEXT NOT NULL,                 -- talk_student | talk_parent | tutor | self_study |
+                                      -- teaching_adjust | meeting | ops_policy | other
+  description TEXT,
+  -- Người thực hiện: ưu tiên tài khoản, không có thì ghi tên (CS, phụ huynh, người ngoài).
+  performer_user_id INTEGER REFERENCES users(id),
+  performer_name TEXT,
+  recorded_by INTEGER REFERENCES users(id),
+
+  status TEXT NOT NULL DEFAULT 'planned',   -- planned | started | completed | cancelled
+  planned_date TEXT,
+  started_date TEXT,
+  completed_date TEXT,
+  -- Hẹn xem lại. Chỉ tính quá hạn khi CÓ ngày hẹn và chưa xem lại; theo dõi không hẹn thì
+  -- không bao giờ quá hạn.
+  followup_due TEXT,
+
+  -- Khoá migration: mỗi cột cũ chỉ chuyển thành một tác động, chạy lại không nhân đôi.
+  migration_key TEXT UNIQUE,
+  created_at TEXT NOT NULL,
+  updated_at TEXT
+);
+CREATE INDEX idx_intervention_case ON case_interventions(case_id);
+CREATE INDEX idx_intervention_due ON case_interventions(followup_due) WHERE followup_due IS NOT NULL;
+
+/*
+ * XEM LẠI SAU TÁC ĐỘNG. Một tác động có thể xem lại nhiều lần; cũng có thể xem lại ở mức
+ * case khi chỉ đang theo dõi mà chưa làm gì.
+ *
+ * `outcome` là QUAN SÁT, không phải khẳng định nhân quả: điểm tăng sau khi học tutor không
+ * chứng minh tutor làm điểm tăng.
+ */
+CREATE TABLE case_followups (
+  id INTEGER PRIMARY KEY,
+  case_id INTEGER NOT NULL REFERENCES sos_cases(id),
+  intervention_id INTEGER REFERENCES case_interventions(id),
+  observed_on TEXT NOT NULL,
+  observer_user_id INTEGER REFERENCES users(id),
+  outcome TEXT,                       -- improved | partial | unchanged | worse | insufficient
+  note TEXT,
+  -- Bằng chứng kèm theo, ví dụ một lượt đánh giá sau đó.
+  evidence_attempt_id INTEGER REFERENCES assessment_attempts(id),
+  created_at TEXT NOT NULL
+);
+CREATE INDEX idx_followup_case ON case_followups(case_id);
+
+/*
+ * BẰNG CHỨNG gắn với case. Một case có thể liên kết nhiều bài đánh giá và nhiều ghi nhận.
+ * `role` phân biệt bằng chứng GỐC (thứ mở ra case) với bằng chứng bổ sung và bằng chứng
+ * kiểm chứng sau hỗ trợ.
+ */
+CREATE TABLE case_sources (
+  id INTEGER PRIMARY KEY,
+  case_id INTEGER NOT NULL REFERENCES sos_cases(id),
+  role TEXT NOT NULL DEFAULT 'support',   -- origin | support | validation
+  source_type TEXT NOT NULL,              -- assessment | checkin | report
+  source_id INTEGER NOT NULL,
+  note TEXT,
+  created_by INTEGER REFERENCES users(id),
+  created_at TEXT NOT NULL,
+  UNIQUE (case_id, source_type, source_id, role)
+);
+CREATE INDEX idx_case_source_case ON case_sources(case_id);
+
+/*
+ * GHI NHẬN NHANH của giáo viên về một kỹ năng.
+ *
+ * Mở rộng `teacher_estimates`: ngoài band còn nhận NHẬN ĐỊNH ĐỊNH TÍNH. Giáo viên lớp
+ * thường không quy được ra band IELTS, và một câu "em nghe chi tiết còn yếu" nhiều khi
+ * hữu ích hơn một con số.
+ *
+ * Tối thiểu phải có NHẬN ĐỊNH hoặc ĐIỂM — không bắt điền đủ mọi ô.
+ */
+CREATE TABLE skill_checkins (
+  id INTEGER PRIMARY KEY,
+  student_id INTEGER NOT NULL REFERENCES students(id),
+  cycle_id INTEGER REFERENCES learning_cycles(id),
+  class_id INTEGER REFERENCES classes(id),
+  skill TEXT NOT NULL,
+  -- NGÀY QUAN SÁT, khác ngày nhập vào hệ thống.
+  observed_on TEXT NOT NULL,
+  author_user_id INTEGER REFERENCES users(id),
+
+  judgement TEXT,                     -- nhận định ngắn
+  strengths TEXT,
+  weaknesses TEXT,
+  -- Điểm ước lượng: TÙY CHỌN. Ghi rõ căn cứ để không nhầm với điểm chính thức.
+  band REAL,
+  raw_score INTEGER,
+  raw_total INTEGER,
+  c1 REAL, c2 REAL, c3 REAL, c4 REAL,
+  estimate_basis TEXT,                -- judgement | raw | criteria
+
+  created_at TEXT NOT NULL
+);
+CREATE INDEX idx_checkin_student ON skill_checkins(student_id, skill, observed_on);
 
 CREATE TABLE sos_case_history (
   id INTEGER PRIMARY KEY,

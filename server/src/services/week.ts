@@ -131,8 +131,14 @@ export function periodWindow(anchorId?: number | null): (WeekInfo & { id: number
   return rows.map((r) => ({ id: r.id, ...weekInfo(r.week_start), isAnchor: r.week_start === center }));
 }
 
-/** Số ngày cuối tuần mà báo cáo tuần được phép cập nhật. */
+/** Số ngày cuối tuần mà báo cáo tuần bắt đầu mở để cập nhật. */
 export const REPORT_EDIT_WINDOW_DAYS = 2;
+
+/**
+ * Sau khi tuần kết thúc vẫn còn thời gian bổ sung đến HẾT THỨ TƯ TUẦN SAU.
+ * Chủ nhật + 3 ngày = thứ Tư. Quá mốc đó thì khoá hẳn, chỉ Quản trị hệ thống mở lại.
+ */
+export const GRACE_DAYS_AFTER_WEEK = 3;
 
 /**
  * Báo cáo tuần chỉ được cập nhật trong HAI NGÀY CUỐI của chính tuần đó.
@@ -142,20 +148,63 @@ export const REPORT_EDIT_WINDOW_DAYS = 2;
  * thường, đó là lỗi. Tuần đã qua thì đóng lại, sửa hồi tố là quyết định vận hành riêng
  * chứ không phải mặc định.
  */
-export function reportEditWindow(period: { week_start: string; week_end: string; code?: string }, today = demoToday()): {
-  open: boolean; reason: string | null; opensOn: string;
+export function reportEditWindow(
+  period: { id?: number; week_start: string; week_end: string; code?: string },
+  today = demoToday(),
+): {
+  open: boolean; reason: string | null; opensOn: string; closesOn: string;
+  /** Đã khoá hẳn, chỉ Quản trị hệ thống mở lại được. */
+  locked: boolean;
+  /** Quản trị hệ thống đã mở lại tuần này. */
+  unlocked: boolean;
 } {
   const opensOn = addDays(period.week_end, -(REPORT_EDIT_WINDOW_DAYS - 1));
+  // Hết thứ Tư tuần sau: Chủ nhật + 3 ngày.
+  const closesOn = addDays(period.week_end, GRACE_DAYS_AFTER_WEEK);
+  const unlocked = period.id ? isPeriodUnlocked(period.id) : false;
+  const base = { opensOn, closesOn, unlocked };
+
   if (today < period.week_start) {
-    return { open: false, reason: `Tuần ${period.code ?? ''} chưa bắt đầu — chưa có gì để báo cáo.`.trim(), opensOn };
-  }
-  if (today > period.week_end) {
-    return { open: false, reason: 'Tuần này đã kết thúc. Sửa lại báo cáo cũ cần quyết định riêng của quản lý.', opensOn };
+    return { ...base, open: false, locked: false,
+      reason: `Tuần ${period.code ?? ''} chưa bắt đầu — chưa có gì để báo cáo.`.trim() };
   }
   if (today < opensOn) {
-    return { open: false, reason: `Báo cáo tuần mở từ ${opensOn} (hai ngày cuối tuần).`, opensOn };
+    return { ...base, open: false, locked: false,
+      reason: `Báo cáo tuần mở từ ${opensOn} (hai ngày cuối tuần).` };
   }
-  return { open: true, reason: null, opensOn };
+  if (today <= closesOn) {
+    // Trong tuần, hoặc trong thời gian bù đến hết thứ Tư tuần sau.
+    return { ...base, open: true, locked: false, reason: null };
+  }
+  // Đã quá hạn bù: khoá hẳn, trừ khi Quản trị hệ thống mở lại.
+  if (unlocked) {
+    return { ...base, open: true, locked: true,
+      reason: 'Tuần này đã quá hạn nhưng Quản trị hệ thống đã mở lại để bổ sung.' };
+  }
+  return { ...base, open: false, locked: true,
+    reason: `Đã quá hạn bổ sung (hết ${closesOn}, tức thứ Tư tuần sau). Cần Quản trị hệ thống mở lại.` };
+}
+
+/**
+ * Quản trị hệ thống mở lại một tuần đã khoá.
+ *
+ * Ghi vào `demo_config` thay vì thêm một bảng riêng: đây là một ngoại lệ hiếm, có người và
+ * thời điểm, không phải một trạng thái nghiệp vụ thường xuyên.
+ */
+export function isPeriodUnlocked(periodId: number): boolean {
+  return !!db().prepare('SELECT value FROM demo_config WHERE key = ?').get(`report_unlock:${periodId}`);
+}
+
+export function setPeriodUnlocked(periodId: number, on: boolean, actorUserId: number | null) {
+  const conn = db();
+  const key = `report_unlock:${periodId}`;
+  if (on) {
+    conn
+      .prepare('INSERT INTO demo_config (key, value, updated_at) VALUES (?,?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value, updated_at=excluded.updated_at')
+      .run(key, JSON.stringify({ by: actorUserId, at: nowIso() }), nowIso());
+  } else {
+    conn.prepare('DELETE FROM demo_config WHERE key = ?').run(key);
+  }
 }
 
 export function periodById(id: number) {

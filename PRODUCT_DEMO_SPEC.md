@@ -17,18 +17,23 @@ Trạng thái các câu cần chốt nằm ở `DEMO_ASSUMPTIONS.md`.
 
 ## A1. Kiến trúc thông tin
 
-**Ba** mục nghiệp vụ, không hơn. Quản trị là lối vào phụ trong menu tài khoản.
+**Bốn** mục nghiệp vụ, không hơn. Quản trị là lối vào phụ trong menu tài khoản.
 
 | Mục | Nội dung | Thao tác trọng tâm |
 |---|---|---|
-| **Tổng quan** | Tuần đang xem, tiến độ MT, thiếu điểm/quá hạn, SOS cần xử lý | Bấm số liệu hoặc học sinh để mở đúng danh sách |
+| **Tổng quan** | Tuần đang xem, tiến độ MT, thiếu điểm/quá hạn, vấn đề cần xử lý | Bấm số liệu hoặc học sinh để mở đúng danh sách |
 | **Tiến trình công việc** | Tình hình từng đơn vị và công việc theo dõi | Cập nhật ngắn, phân công, cập nhật tiến độ |
-| **Học viên** | Lớp → học viên → tiến độ MT → nhập điểm, tất cả trong một mục | Mở lớp, nhập điểm, xếp lịch, thêm học viên hàng loạt |
+| **Học viên** | Lớp → học viên → tiến độ → nhập điểm, tất cả trong một mục | Mở lớp, nhập điểm, xếp lịch, thêm học viên hàng loạt |
+| **Học thuật** *(từ vòng D)* | Vấn đề đang theo dõi, theo chi nhánh / nhóm / kỹ năng | Xem bốn hàng đợi, mở một vấn đề, ghi hướng xử lý |
 | *(phụ)* Quản trị hệ thống | Ma trận quyền, đơn vị báo cáo, nhật ký, tài khoản | Chỉ xem, dành cho Quản trị hệ thống |
 
-**Không có menu riêng cho SOS, báo cáo, sự việc, agenda, công việc — và từ vòng B, cũng không còn
-menu riêng cho Mock test.** Chúng nằm tại nơi phát sinh: SOS trong chi tiết MT; báo cáo và công việc
-trong Tiến trình công việc; lịch và điểm MT trong chính lớp của học viên.
+**Học viên** trả lời *"lớp tôi đang thế nào"* — vào theo lớp, nhập điểm, xếp lịch. **Học thuật** trả lời
+*"em nào đang vướng gì"* — vào theo vấn đề, không theo lớp. Hai câu hỏi khác nhau nên hai lối vào khác
+nhau, nhưng cùng chạm vào **một bản ghi**: mở một vấn đề từ đâu cũng ra đúng nó.
+
+**Không có menu riêng cho báo cáo, sự việc, agenda, công việc — và từ vòng B, cũng không còn
+menu riêng cho Mock test.** Chúng nằm tại nơi phát sinh: báo cáo và công việc trong Tiến trình công việc;
+lịch và điểm trong chính lớp của học viên.
 
 Đường dẫn cũ không bị bỏ rơi: `/mock-test` → `/hoc-vien`, `/mock-test/lop/:id` → màn nhập điểm của
 lớp đó, `/hop-tuan` → `/tien-trinh`. Người đã lưu bookmark vẫn vào đúng chỗ.
@@ -169,9 +174,9 @@ Quyền = permission của vai trò
 | `deadline.override` | ✓ | ✓ | ✓ | — |
 | `score.edit` — đúng phân công | — | — | — | ✓ (chỉ kỹ năng được giao) |
 | `score.override` — nhập bù | ✓ | ✓ | — | — |
-| `estimate.edit` | — | — | — | ✓ (chỉ kỹ năng được giao) |
-| `sos.edit` | ✓ | ✓ | ✓ | ✓ (lớp được phân công) |
-| `sos.confirm` — **Head** | ✓ | — | ✓ | — |
+| `estimate.edit` — ghi nhận nhanh | — | — | — | ✓ (chỉ kỹ năng được giao) |
+| `sos.edit` — ghi nhận vấn đề và việc đã làm | ✓ | ✓ | ✓ | ✓ (lớp được phân công) |
+| `case.close` — kết thúc theo dõi | ✓ | — | ✓ | ✓ (chỉ GVCN của chính lớp đó) |
 | `student.view` / `student.edit` | ✓ | ✓ | ✓ | xem |
 | `meeting.view` / `meeting.edit` | ✓ | — | ✓ | — |
 | `admin.config` | ✓ | — | — | — |
@@ -179,7 +184,8 @@ Quyền = permission của vai trò
 Những điểm đáng chú ý:
 
 - **Chốt tuần và chốt ngày là hai quyền khác nhau.** Quyền tuần không tự kéo theo quyền ngày và ngược lại.
-- **Xác nhận Head**: Head chính là Quản lý, không tách thêm vai trò riêng.
+- **Kết thúc theo dõi một vấn đề** chỉ dành cho GVCN của lớp và Quản lý. Giáo viên bộ môn báo được
+  và ghi được việc đã làm, nhưng không tự kết luận là xong. (Bước "Head xác nhận" cũ đã bỏ hẳn.)
 - **Nhập bù điểm** đi qua `score.override` riêng, ghi nhật ký riêng (`score.override` thay vì `score.edit`),
   nên siết lại chỉ là một dòng dữ liệu — ai được nhập bù vẫn chờ bạn chốt (O05).
 - **Admin chi nhánh không vào Tiến trình công việc.** Họ theo dõi lịch và điểm qua Mock Test và Học viên.
@@ -244,9 +250,18 @@ phân công giáo viên theo từng task. Đánh giá vẫn theo **bốn kỹ n�
 ### Kỹ năng không mock và điều kiện chốt SOS
 
 **Mặc định mọi kỹ năng đánh giá đều bắt buộc.** Khi thực tế học viên không mock một kỹ năng,
-Quản lý hoặc Admin chi nhánh **đánh dấu "không mock"** cho chính lượt đó; SOS khi ấy tính trên các kỹ
-năng còn lại, giữ nguyên ngưỡng 1/2/≥3, kèm nhãn *Đánh giá trên N kỹ năng*.
-**Không ai đánh dấu thì hệ thống chờ đủ bốn**, không tự suy.
+Quản lý hoặc Admin chi nhánh **đánh dấu "không mock"** cho chính lượt đó; kỹ năng ấy rời khỏi mẫu số,
+giữ nguyên ngưỡng 1/2/≥3, kèm nhãn *Đánh giá trên N kỹ năng*.
+
+**SOS TÍNH NGAY trên phần điểm đang có** (owner chốt 09/09/2026). Chỉ cần **một** kỹ năng bắt buộc đã
+chấm và đã biết mục tiêu là kết luận được. Chờ đủ bốn nghĩa là một giáo viên nhập muộn thì việc hỗ trợ
+học viên cũng phải dừng theo. Mức SOS khi đó là **kết luận tạm thời** và có thể tăng khi các kỹ năng còn
+lại vào — giao diện phải ghi rõ "mới có 2/4 kỹ năng", không để người đọc tưởng đây đã là con số cuối.
+
+**Thiếu điểm vẫn KHÁC trượt**: kỹ năng chưa chấm không bị đếm vào số môn dưới kỳ vọng.
+
+**Lớp thường KHÔNG có cơ chế miễn kỹ năng.** Dời lịch sang tuần khác thì được, nhưng bộ kỹ năng của
+chương trình luôn đủ.
 
 - `Missing` (đáng lẽ phải mock mà chưa có) khác `Không mock` (đã được quyết định là không cần) khác `0`.
 - Đánh dấu sau khi đã có điểm thì **giữ nguyên điểm cũ** và ghi lịch sử; không dùng "không mock" như
@@ -272,15 +287,34 @@ Sang **lộ trình mới** (LT1 → LT2) thì **đánh số lại từ MT1** vì
 Kỳ vọng chỉ áp dụng cho lộ trình FT LT1/LT2. Lộ trình chưa có target thì vẫn nhập điểm và tính hoàn thành
 bình thường, chỉ là chưa kết luận được SOS — không treo trạng thái nhập điểm vì thiếu target.
 
-### Teacher Estimate
+### Ghi nhận nhanh của giáo viên *(thay bảng "Đánh giá GV" cũ)*
 
-Ước lượng của giáo viên là **dữ liệu riêng**, không bao giờ ghi đè điểm Mock. Mỗi lần cập nhật ghi thêm một
-dòng nên có sẵn lịch sử. Giáo viên chỉ ước lượng được kỹ năng mình phụ trách; W1/W2 giữ riêng theo task.
+Ghi nhận là **dữ liệu riêng**, không bao giờ ghi đè điểm chính thức. Giáo viên ghi **bất kỳ lúc nào** —
+không phụ thuộc tuần MT, hạn nhập điểm hay cửa sổ sửa báo cáo tuần — và chỉ ghi được kỹ năng mình phụ
+trách; W1/W2 giữ riêng theo task. Mỗi lần ghi là một dòng mới nên lịch sử có sẵn.
 
-So sánh *ước lượng mới nhất ↔ điểm Mock mới nhất của chính kỹ năng đó* đặt ở Hồ sơ học viên, luôn kèm
-**ngày của cả hai** và **nguồn** của từng ô điểm. Điểm từng kỹ năng có thể thuộc các lượt khác nhau nên
-không được ghép thành một bài Mock hay một Overall chung. Chênh lệch chỉ là khoảng cách hai con số,
-không tự nó chứng minh tiến bộ.
+**Tối thiểu chỉ cần MỘT trong hai: một nhận định bằng lời, hoặc một điểm ước lượng.** Bảng cũ bắt buộc
+phải có điểm, nên một nhận xét bình thường trên lớp — *"Part 2 nói đủ thời gian, còn ngập ngừng khi đổi
+chủ đề"* — không có chỗ nào để ghi. Đó chính là loại thông tin hữu ích nhất mà hệ thống đang đánh rơi.
+
+Ba **kiểu căn cứ**, luôn ghi rõ kiểu nào:
+
+| Kiểu | Khi nào | Điểm |
+|---|---|---|
+| Nhận định bằng lời | Thường gặp nhất — quan sát trên lớp | Không có |
+| Ước chừng một band | Giáo viên tự ước lượng | Có, **được đánh dấu là nhận định** |
+| Có bài thật | L/R có số câu đúng; W/S có chấm bốn tiêu chí | Hệ thống tính, cùng công thức với điểm chính thức |
+
+Không bịa số câu đúng hay tiêu chí để một cảm nhận trông giống một phép đo.
+
+So sánh *ghi nhận mới nhất ↔ điểm chính thức mới nhất của chính kỹ năng đó*, **trong cùng một lộ trình**,
+luôn kèm **ngày của cả hai** và **nguồn** của từng ô. Điểm từng kỹ năng có thể thuộc các lượt khác nhau
+nên không được ghép thành một bài hay một Overall chung.
+
+**Δ = điểm chính thức − ghi nhận**, và chỉ là **khoảng cách giữa hai con số** — không phải lời khen cũng
+không phải cảnh báo, nên **không tô màu tốt/xấu** theo dấu của phép trừ. Hai thứ này khác hẳn nhau: một
+bên là kết quả một bài làm trong một buổi, một bên là nhận định qua cả quá trình dạy. Ghi nhận bằng lời
+**không có Δ** vì không có gì để trừ — và cũng không được quy ra một con số chỉ để lấp ô trống.
 
 ## A5. Chi tiết Mock và xử lý SOS
 
@@ -289,8 +323,10 @@ Một trang duy nhất, chia khối ngắn, không dùng tab:
 1. Học sinh · lớp **tại lần thi** · lộ trình · cam kết chốt tại lần thi · MT · tuần · ngày dự kiến · kỳ vọng.
 2. Điểm từng kỹ năng: ngày thi riêng, số câu / tiêu chí, band, hạn nhập, người nhập.
    Bên dưới là bốn kỹ năng đánh giá + Overall + kết luận.
-3. SOS và **checklist hành động theo đúng MT × mức SOS**.
-4. Người thực hiện, ngày, nội dung hỗ trợ, meeting, ghi chú, trạng thái xử lý, Head xác nhận.
+3. **Vấn đề học vụ** — cùng một khung với hồ sơ học viên và màn Học thuật: vì sao đang theo dõi →
+   đã làm gì → quan sát được gì → bước tiếp theo. Hiện cả khi điểm sau đó đã sửa lên thành đạt, vì
+   giấu nó đi thì mọi việc đã làm để hỗ trợ em cũng biến mất khỏi màn hình.
+4. **Quy trình gợi ý** theo MT × mức SOS — CHỈ ĐỌC, tách hẳn khỏi việc đã làm.
 5. Lịch sử sửa lịch / sửa điểm / cập nhật xử lý trong phần phụ mở được.
 
 ### Bảng hành động (nguồn: `Quy trình phối hợp SOS Mock Test` + sheet `Quy trinh SOS`)
@@ -317,12 +353,17 @@ dòng tương ứng trong sheet `Quy trinh SOS` thì có. Bản demo **giữ bư
 
 ### Nguyên tắc ghi nhận
 
-- Đây là **checklist cần phối hợp**, không phải việc hệ thống tự làm. SOS **không** tự cấp buổi học,
-  **không** tự lùi lịch thi thật, **không** tự đóng case, **không** tự xác nhận Head.
+- Đây là **gợi ý phối hợp**, không phải việc hệ thống tự làm và cũng không phải việc đã làm. SOS
+  **không** tự cấp buổi học, **không** tự lùi lịch thi thật, **không** tự kết thúc theo dõi.
 - MT2 SOS3 là **hai phương án chọn một**, không phải hai việc đều bắt buộc.
-- Bốn trạng thái mỗi bước: `Chưa ghi nhận` · `Có tên, chưa có ngày` · `Đã xếp lịch` (ngày ở tương lai) ·
-  `Đã thực hiện` (ngày đã qua). **Có tên người làm mà chưa có ngày thì chưa tính là đã làm.**
-- Trao đổi PH do **CS thực hiện ngoài hệ thống** (Q4): ghi lại **tên người làm và ngày**, không cần tài khoản CS.
+- **Việc đã làm ghi ở chỗ khác**, dưới dạng bản ghi thật: loại việc, mô tả, người thực hiện, trạng thái
+  (đã lên kế hoạch / đang thực hiện / đã xong / đã huỷ) và ngày tương ứng. Một vấn đề có **nhiều** việc,
+  mỗi việc **nhiều lần** xem lại. Trước đây gợi ý và việc đã làm nằm chung năm ô cố định — điền tên vào ô
+  là vấn đề trông như đã xử lý xong dù chưa ai làm gì.
+- Ghi **"đã xong" phải có ngày thật**. Người nhập **không** mặc định là người thực hiện: khai "chính tôi
+  làm" là một thao tác tường minh.
+- Trao đổi PH do **CS thực hiện ngoài hệ thống** (Q4): giữ **tên người làm** và ghi rõ ai nhập hộ, ngày
+  của việc và ngày nhập là hai mốc riêng. Không cần mở tài khoản cho CS.
   Người điều phối case, người thực hiện từng bước và tài khoản ghi nhận là ba thứ tách rời.
 - Sửa điểm làm đổi mức SOS thì **cập nhật mức, giữ nguyên hành động và lịch sử**; không nhân đôi case,
   không tự đóng việc.
@@ -382,16 +423,74 @@ Giáo trình) vẫn cấu hình được trong dữ liệu, nhưng UI chỉ dự
   Không bắt buộc đi qua chuỗi "Ghi nhận sự việc → Issue → Agenda → Task". Nội dung "Có vấn đề"
   **không** tự sinh entity Issue.
 
-## A8. Hồ sơ và Student Journey
+## A8. Hồ sơ học viên và Hành trình học
 
-Đầu hồ sơ: nhận diện · lớp hiện tại · lộ trình/cam kết · Mock tiếp theo · case và việc đang mở.
+Hồ sơ phải trả lời được trong khoảng **ba mươi giây**: em bắt đầu ở đâu, đang ở đâu, đích ở đâu, có đang
+theo kịp không, đang vướng gì, ai đã làm gì, và bước tiếp theo là gì. Vì thế thứ tự các khối **không** ngẫu
+nhiên:
 
-Lịch sử Mock giữ **lớp tại thời điểm thi**. Chuyển lớp mở dòng enrollment mới, chuyển các lượt
-**chưa thi** sang lớp mới và **giữ nguyên lớp cũ cho lượt đã thi**.
+| # | Khối | Trả lời câu hỏi |
+|---|---|---|
+| 1 | Điểm đầu vào → Hiện tại → Mục tiêu | Em đi từ đâu tới đâu, còn cách đích bao xa |
+| 2 | So với mốc gần nhất · Đang cần chú ý | Có theo kịp không, và đang vướng gì |
+| 3 | Đường đi từng kỹ năng | Kỹ năng nào đã tiến, kỹ năng nào đứng yên |
+| 4 | Vấn đề học vụ | Ai phát hiện, đã làm gì, quan sát được gì |
+| 5 | Các lần đánh giá | Bảng điểm chi tiết |
+| 6 | Hành trình học | Toàn bộ câu chuyện theo thời gian |
 
-Hành trình giữ chuyển lớp, tạm dừng, quay lại học. **Chỉ ba bộ lọc**: `Tất cả` ·
-`Assessment` (kết quả Mock + ước lượng giáo viên) · `Warning / WL` (cảnh báo + WL).
-Không có filter riêng cho từng loại sự kiện. Nhấp sự kiện mở đúng bản ghi liên quan.
+**Toàn bộ dữ liệu thuộc về MỘT lộ trình.** Có bộ chọn lộ trình ở đầu trang, lựa chọn nằm trên đường dẫn.
+Không bao giờ trộn hai lộ trình vào một khung nhìn, vì mục tiêu và thang điểm của chúng khác nhau.
+
+### Ba mốc đầu trang
+
+- **Điểm đầu vào** đến từ lộ trình, kèm **nguồn** (bài kiểm tra đầu vào · kết quả cuối lộ trình trước ·
+  điểm bên ngoài · nhập tay có ghi chú). Không có căn cứ thì ghi **"chưa rõ"**. Hệ thống **không** lấy MT1
+  làm điểm đầu vào — *"em vào học ở mức nào"* là câu hỏi khác hẳn *"bài Mock đầu tiên được mấy điểm"*.
+- **Hiện tại** chỉ lấy Overall từ **một lượt** có đủ bốn kỹ năng. Không ghép bốn kỹ năng mới nhất của bốn
+  lượt khác nhau — bốn buổi khác nhau cộng lại không phải một bài thi.
+- **Mục tiêu** kèm ngày thi và số ngày còn lại. Đổi mục tiêu có **lịch sử**, phải có **lý do**, và chỉ có
+  hiệu lực từ ngày ghi trở đi: các lượt đã chốt giữ nguyên kỳ vọng tính theo mục tiêu lúc đó.
+- **Kết luận lộ trình** tách khỏi việc đóng lộ trình: *đạt mục tiêu · chưa đạt · chưa có căn cứ kết luận*.
+  Đóng lộ trình chỉ nói "không học theo lộ trình này nữa".
+
+Lớp thường không có band, mục tiêu IELTS hay ngày thi, nên có bộ ba riêng: **khoá học · bài đã làm ·
+kết quả gần nhất**. Dựng ba con số IELTS cho một khoá Foundation là bịa ra thứ không tồn tại.
+
+### Hai chuyện tách bạch, không gộp thành một nhãn
+
+**Cố tình KHÔNG dựng nhãn tổng hợp** kiểu *"đang ổn / có nguy cơ / sắp trượt"*: chưa có quy tắc nào được
+chốt cho một nhãn như thế, mà một nhãn sai còn tệ hơn không có nhãn.
+
+- **So với mốc gần nhất** — từng kỹ năng đạt hay dưới **kỳ vọng đã chốt của chính mốc đó**. Không nội suy
+  theo tuần: *"tuần này lẽ ra phải được 6.0"* là một con số bịa. Chưa đủ điểm thì ghi rõ *"mới có 2/4 kỹ năng"*.
+- **Đang cần chú ý** — có vấn đề nào đang mở, ai báo, đã làm gì, hẹn xem lại khi nào. Không có cảnh báo
+  **không** đồng nghĩa đang theo kịp; đó là hai điều khác nhau.
+
+### Đường đi từng kỹ năng
+
+Các mốc nối **trong cùng một lộ trình**, cùng một thang. Hai cột phép trừ — *đã tăng* (so điểm đầu vào) và
+*còn cách đích* (so mục tiêu) — **không tô màu**, vì chúng là khoảng cách chứ không phải nhãn tốt/xấu.
+Thiếu điểm đầu vào thì không tính được *đã tăng*, thiếu mục tiêu thì không tính được *còn cách đích* —
+để trống chứ không điền số 0.
+
+### Hành trình gom thành CHƯƠNG
+
+Đọc theo dòng thời gian phẳng thì mỗi lần ghi là một dòng, và một vấn đề theo dõi ba tháng biến thành mười
+lăm dòng rời rạc. Nay **mọi việc quanh một vấn đề nằm chung một chương**, **mọi ghi nhận trong một tuần nằm
+chung một chương**. Chương nhiều mốc thì gấp lại, chỉ hiện dòng mở đầu và số mốc bên trong.
+
+Chỉ giữ **sự kiện có ý nghĩa**: mở/kết thúc lộ trình, đổi mục tiêu, kết quả đánh giá, ghi nhận của giáo viên,
+mở/kết thúc theo dõi vấn đề, việc đã làm, lần xem lại, chuyển lớp, tạm dừng, quay lại, đổi ngày thi. Bấm vào
+một chương mở đúng bản ghi liên quan.
+
+**Ngày sự việc và ngày nhập là hai mốc riêng**: ghi bù một buổi tuần trước thì hành trình hiển thị ngày
+buổi ấy, không phải ngày gõ vào máy.
+
+Lịch sử đánh giá giữ **lớp tại thời điểm đánh giá**. Chuyển lớp mở dòng enrollment mới, chuyển các lượt
+**chưa xong** sang lớp mới và **giữ nguyên lớp cũ cho lượt đã xong**.
+
+Vấn đề còn mở của **lộ trình trước** vẫn hiện ở phần cần chú ý, nhưng dán nhãn rõ *"thuộc LT1"* — không dời
+sang lộ trình mới cho tiện hiển thị, vì như thế là viết lại lịch sử.
 
 ## A8b. Thêm học viên hàng loạt và tạo lớp
 
@@ -485,54 +584,95 @@ Panel **Lên kế hoạch MT** trượt từ phải, chọn nhiều em, đặt t
 
 Một lượt **không thể** không yêu cầu kỹ năng nào — không đánh giá được gì.
 
-## A8d. Đánh giá GV *(trước gọi là Ước lượng GV)*
+## A8d. Ghi nhận nhanh — giao diện
 
-Đây là **nhận định chủ quan hiện tại** của giáo viên về trình độ học viên ở kỹ năng mình phụ trách.
-Giáo viên cập nhật **bất kỳ lúc nào** — không phụ thuộc tuần MT, hạn nhập điểm hay lịch assessment.
-Chỉ sửa được kỹ năng mình phụ trách.
+Xem quy tắc ở phần **Ghi nhận nhanh của giáo viên** (mục A4). Phần này chỉ nói cách hiển thị.
 
-**Nhập giống hệt Mock**, để hai con số nằm cùng một thang:
+**Một bảng chung, không phải hai bảng rời.** Việc thật lúc nào cũng là đặt hai nguồn cạnh nhau; hai bảng
+riêng bắt người đọc tự ghép từng dòng trong đầu.
 
-- **L / R** → nhập `số câu đúng / 40`, hệ thống quy ra band.
-- **W / S** → nhập đủ **bốn tiêu chí IELTS**, hệ thống tính band.
+| Kỹ năng | Điểm gần nhất | Giáo viên ghi nhận | Δ |
+|---|---:|---|---:|
+| Listening | 6.0 | *Bắt được ý chính, còn hụt ở phần nói nhanh cuối bài.* · 15/09 · Thu Trang | — |
+| Reading | 6.5 | ước lượng 6.5 (nhận định) · 15/09 · Minh Khoa | 0 |
 
-Band là kết quả **tính ra**, không phải con số gõ tay — một band trơ trọi không có căn cứ thì không so
-được với gì.
+Cột giữa hiện **nguyên văn nhận xét** — đây thường là thứ hữu ích nhất trên cả bảng, vì một con số 6.0
+không nói được *"mất điểm ở TRUE/FALSE/NOT GIVEN"*. Có điểm ước lượng thì thêm một dòng nhỏ bên dưới,
+kèm chữ *(nhận định)* khi con số ấy là ước chừng chứ không phải đo từ một bài thật.
 
-**Một bảng chung, không phải hai bảng rời.** Việc thật lúc nào cũng là so hai con số ấy; hai bảng riêng
-bắt người đọc tự ghép từng dòng trong đầu.
-
-| Kỹ năng | Mock gần nhất | Đánh giá GV | Δ |
-|---|---:|---:|---:|
-| Listening | 6.0 | 6.5 | −0.5 |
-| Reading | 6.5 | 6.5 | 0 |
-
-**Δ = Mock − Đánh giá GV**, đọc **theo học viên**: dương là em **đang thể hiện tốt hơn** mức giáo viên
-đánh giá (màu tích cực), âm là **thấp hơn** (màu cảnh báo), bằng nhau là trung tính.
-
-> Bảng ví dụ trong prompt ghi Δ = +0.5 khi Đánh giá GV cao hơn Mock, nhưng quy tắc màu ngay dưới lại
-> nói "Mock < Đánh giá GV → warning". Hai điều đó ngược nhau. Đã theo **quy tắc màu**, vì nó nói rõ ý
-> nghĩa cần đọc ra; nếu anh/chị muốn chiều ngược lại thì đổi một dòng.
+**Δ không tô màu tốt/xấu.** Chỉ dùng sắc trung tính, đậm hơn khi hai số lệch từ 1 band trở lên — đủ để
+mắt bắt được chỗ chênh nhiều, không ngụ ý ai đúng ai sai. Dòng chỉ có nhận xét thì Δ để trống.
 
 Bấm vào một ô điểm mở **căn cứ**: số câu đúng, hoặc bốn tiêu chí.
 
-## A8e. Case SOS: nhìn là biết đã làm tới đâu
+## A8e. Vấn đề học vụ: hai nguồn, một vòng đời
 
-Ba trạng thái, ba màu khác nhau ngay ở danh sách: **Chưa xử lý** · **Đang xử lý** · **Đã xử lý**.
-Kèm một dòng ngữ cảnh — mốc follow-up gần nhất, hoặc *"Chưa có follow-up"*. Không phải mở chi tiết
-mới biết case đã được làm hay chưa. Số liệu trên Tổng quan lấy từ chính trạng thái này.
+Trước đây vấn đề chỉ sinh ra từ điểm: đủ điểm bốn kỹ năng thì hệ thống mới biết em nào đang đuối. Nhưng
+giáo viên nhìn thấy vấn đề trong lớp từ nhiều tuần trước đó, và tới lúc ấy thì đã muộn hai tháng.
 
-"GVCN đã nhận" là **metadata**, không phải trạng thái thứ tư: nhận tài liệu không tự nó nghĩa là đã xử lý.
+**Hai nguồn:**
+
+| Nguồn | Sinh ra khi nào | Mang gì |
+|---|---|---|
+| Từ điểm | Có ít nhất một kỹ năng bắt buộc đã chấm và đã biết mục tiêu | **Mức SOS 1/2/3** = số kỹ năng dưới kỳ vọng |
+| Giáo viên báo | Bất kỳ lúc nào, không cần Mock, không tạo bài đánh giá giả | **Mức độ gấp** (bình thường / cần chú ý / gấp) — nhận định của người báo |
+
+Hai nguồn dùng **chung một vòng đời**, chung một bảng, chung một khung hiển thị: *ghi nhận → phân loại →
+tác động → xem lại → chốt hướng xử lý*. Mức SOS và mức độ gấp là hai loại thông tin **khác hẳn nhau** nên
+không bao giờ dùng chung nhãn — vấn đề giáo viên báo có mức SOS để **trống**, không phải SOS 0.
+
+**Bốn chiều tách bạch**, không gộp vào một enum:
+
+| Chiều | Giá trị |
+|---|---|
+| Trạng thái | Chưa xử lý · Đang xử lý · Đã xong |
+| Hướng xử lý | Chỉ theo dõi · Trao đổi ngoài hệ thống · Không cần can thiệp · Có kế hoạch hỗ trợ · Khác |
+| Tiến độ từng việc | Đã lên kế hoạch · Đang thực hiện · Đã xong · Đã huỷ |
+| Quan sát sau hỗ trợ | Có tiến bộ · Tiến bộ một phần · Chưa thay đổi · Kém hơn · Chưa đủ căn cứ |
+
+**Kết thúc theo dõi** bắt buộc có hướng xử lý, và *"chỉ theo dõi"* **không phải** một cách kết thúc — nó
+nghĩa là vấn đề vẫn còn mở. Chỉ **GVCN của lớp** và **Quản lý** kết thúc được.
+
+**Quá hạn chỉ tính khi đã hẹn.** Theo dõi không hẹn ngày thì không bao giờ bị coi là quá hạn — biến mọi
+việc không có deadline thành quá hạn chỉ tạo ra một danh sách đỏ mà không ai tin nữa.
+
+**Phân loại ba nhóm gốc**: Học sinh · Quá trình dạy · Chương trình. Phụ huynh, sức khoẻ, gia đình, đi lại,
+lịch cá nhân, áp lực bên ngoài là **bối cảnh kèm theo** — ghi chú, không phải nguyên nhân đã xác minh, và
+không phải nhóm thứ tư. Vấn đề sinh từ điểm chỉ biết kỹ năng nào dưới kỳ vọng, nên **"chưa phân loại"** là
+trạng thái hợp lệ cho tới khi có người dạy nhận định; hệ thống không tự chẩn đoán nguyên nhân.
+
+**Sửa điểm không xoá lịch sử.** Điểm sửa lên thành đạt thì vấn đề và mọi việc đã làm **vẫn còn** — người có
+quyền quyết định có kết thúc theo dõi hay không. Giấu nó đi thì công sức hỗ trợ em cũng biến mất khỏi màn hình.
 
 ### "Head xác nhận" — đã bỏ
 
 Đối chiếu code: `confirmCase` chỉ ghi tên và ngày. Nó **không** khoá điểm, **không** là điều kiện để
-đổi trạng thái case, **không** mở khoá bước nào, và **không** gắn với một trách nhiệm riêng nào —
-tức là một cửa duyệt không bảo vệ điều gì. Case kết thúc bằng chính **trạng thái xử lý**.
+đổi trạng thái, **không** mở khoá bước nào, và **không** gắn với một trách nhiệm riêng nào — tức là một
+cửa duyệt không bảo vệ điều gì.
 
 Dữ liệu xác nhận cũ được **giữ nguyên** để tra lại, chỉ không còn thao tác tạo mới.
 
-## A8f. Tiến trình công việc: dữ kiện tự sinh + nhận định của quản lý
+## A8f. Học thuật — màn của Quản lý
+
+Bốn hàng đợi trả lời **bốn câu hỏi khác nhau**, cố tình **không** chia hết một tổng: một vấn đề có thể vừa
+"đang hỗ trợ" vừa "tới hạn xem lại".
+
+| Hàng đợi | Câu hỏi |
+|---|---|
+| Chưa ai định hướng | Vấn đề nào chưa có hướng xử lý và cũng chưa ai làm gì? |
+| Đang hỗ trợ / theo dõi | Vấn đề nào đang có người xử lý? |
+| Tới hạn xem lại | Vấn đề nào đã hẹn xem lại và đã tới hạn? |
+| Cần xem kỹ | Vấn đề nào ở mức cao, hoặc người báo đánh dấu gấp? |
+
+Đi sâu theo **chi nhánh → nhóm vấn đề → kỹ năng → một vấn đề**. Mọi lựa chọn nằm trên đường dẫn nên Back
+giữ nguyên bộ lọc và gửi đường dẫn cho người khác vẫn ra đúng màn hình.
+
+Một vấn đề mở được **cả trong ngăn kéo lẫn ở trang riêng** — cùng một bản ghi, mở từ trang điểm, từ hồ sơ
+học viên hay từ đây đều tới đúng nó.
+
+**Quản lý KHÔNG phải cửa duyệt**: không có vấn đề nào bắt buộc phải có ý kiến của Quản lý mới xử lý tiếp được.
+
+## A8h. Tiến trình công việc: dữ kiện tự sinh + nhận định của quản lý
 
 **Việc hệ thống nhìn ra** đọc thẳng từ dữ liệu và **tự hết khi nguồn được xử lý** — giáo viên nhập đủ
 điểm thì *"thiếu điểm"* biến mất. Không có nút "Đã xong", vì đánh dấu chỉ che một con số vẫn đang đúng.
@@ -572,7 +712,7 @@ Badge *"Đơn vị độc lập"* đã bỏ. Báo cáo của chi nhánh là **đ
 nhiều chi nhánh cùng ghi nhận về một tutor thì đó vẫn là một tutor, không phải ba. Phần này giữ **nhẹ**,
 không dựng một hệ quản lý nhân sự tutor.
 
-## A8g. Lớp thường: Foundation · Beginner · Elementary
+## A8i. Lớp thường: Foundation · Beginner · Elementary
 
 Ngoài lớp FT, trung tâm có ba chương trình dùng **bài kiểm tra riêng**, không dùng Mock Test.
 
@@ -641,8 +781,10 @@ Bảng chính: `branches` · `reporting_units` · `classes` · `class_skills` ·
 **`programmes`** · **`programme_skills`** · **`programme_checkpoints`** · **`task_followers`** ·
 **`learning_cycles`** · `enrollments` · `journey_events` · `report_periods` ·
 **`assessment_attempts`** · **`attempt_schedule_history`** · **`attempt_skill_skips`** ·
-**`assessment_scores`** · **`teacher_estimates`** · `sos_cases` · `sos_case_history` ·
-`unit_reports` · `tasks` · `task_history` · `notifications` · `audit_logs` · `demo_config` · `demo_sessions`.
+**`assessment_scores`** · **`skill_checkins`** · `sos_cases` · `sos_case_history` ·
+**`case_issues`** · **`case_interventions`** · **`case_followups`** · **`cycle_target_revisions`** ·
+`unit_reports` · `tasks` · `task_history` · `notifications` · `audit_logs` · `demo_config` · `demo_sessions` ·
+*(chỉ đọc, dữ liệu cũ)* `teacher_estimates`.
 
 Nâng cấp database đang có: `npm run migrate` (giữ nguyên dữ liệu, chạy lại lần hai không làm gì thêm).
 `npm run seed` là lệnh **xoá và tạo lại**, chỉ chạy khi bạn chủ động gọi.
@@ -655,10 +797,25 @@ Quyết định schema đáng chú ý:
   Có dòng với `taken_on` mà chưa có band nghĩa là **đã mock, chưa nhập điểm**.
 - `attempt_skill_skips` chỉ ghi **ngoại lệ**; không có dòng nào nghĩa là phải đủ bốn kỹ năng.
 - `assessment_attempts.target_at_attempt` chốt căn cứ kỳ vọng tại lượt đó; sửa lộ trình **không viết lại lịch sử**.
-- `teacher_estimates` chỉ thêm dòng, không sửa — lịch sử có sẵn.
+- `skill_checkins` chỉ thêm dòng, không sửa — lịch sử có sẵn. `band` được phép **NULL**: ghi nhận bằng lời
+  là trường hợp thường gặp nhất, và `estimate_basis` nói con số (nếu có) dựa trên cái gì.
+- `learning_cycles` giữ **điểm xuất phát** (`baseline_*`, luôn kèm nguồn) và **kết luận cuối** (`outcome_*`)
+  tách khỏi `status`: đóng lộ trình về hành chính **khác** đạt mục tiêu.
+- `cycle_target_revisions` lưu mỗi lần đổi mục tiêu kèm lý do và ngày hiệu lực. Các lượt đã chốt vẫn dùng
+  `target_at_attempt` của chính nó, nên đổi mục tiêu **không chấm lại quá khứ**.
+- `sos_cases.attempt_id` **được phép NULL** (vấn đề giáo viên báo không gắn bài nào), nhưng `student_id` và
+  `cycle_id` thì **luôn có** — hồ sơ học viên tra theo học viên, không tra theo bài.
+- `sos_cases.sos_level` **NULL** với vấn đề giáo viên báo; đó **không** phải SOS 0. Mức độ gấp nằm ở
+  `urgency`, là một cột khác vì là một loại thông tin khác.
+- `sos_cases.idempotency_key` và `journey_events.dedup_key` chống trùng ở **tầng database**: bấm hai lần,
+  mạng chập chờn rồi thử lại đều chỉ để lại một bản ghi.
+- Năm cột hỗ trợ cũ trong `sos_cases` (`talk_student_*`, `talk_parent_*`, `academic_*`, `ops_*`, `meeting_*`)
+  **không còn đường ghi nào**; chúng chỉ tồn tại để dữ liệu cũ không mất và để bước nâng cấp đọc một lần.
+  Việc đã làm nay nằm ở `case_interventions` — một vấn đề **nhiều** việc, mỗi việc **nhiều** lần xem lại.
 - `unit_reports.status = NULL` nghĩa là **chưa báo cáo**, khác hẳn `'ok'`.
 - `report_periods.week_start` là khoá thật; `code` chỉ là nhãn.
-- `sos_cases` dùng **cột cố định** phản chiếu đúng các ô của `Nhap diem`, không phải bảng key–value tự do.
+- `case_interventions.migration_key` là khoá **duy nhất** cho mỗi ô cũ được chuyển đổi, nên chạy lại bước
+  nâng cấp không nhân đôi việc đã làm.
 
 ---
 
@@ -667,7 +824,7 @@ Quyết định schema đáng chú ý:
 | Thành phần cũ | Xử lý trong bản này |
 |---|---|
 | Consultant / Consultant Manager | **Bỏ hẳn** khỏi tài khoản demo, navigation và UI. Bước trao đổi PH giữ nguyên, người thực hiện ghi bằng tên (Q4) |
-| Vai trò "Head" riêng | Không tạo. **Head chính là Quản lý** |
+| Vai trò "Head" riêng | Không tạo. **Head chính là Quản lý**. Bước "Head xác nhận" đã bỏ hẳn khỏi quy trình |
 | Trang "Viết báo cáo" độc lập | Gộp trạng thái + ghi chú vào **Tiến trình công việc** |
 | Ghi nhận sự việc / Issue Center | **Bỏ workflow độc lập**. Ghi chú báo cáo và case SOS liên kết thẳng tới công việc |
 | Ghi nhận cảnh báo độc lập | SOS xuất hiện trong Mock. Lịch sử Warning/WL chỉ **đọc lại** trong hồ sơ, không phát hành mới |
@@ -691,11 +848,12 @@ Các service đã xoá khỏi mã nguồn: `weekly` · `classes` · `tasks` (b�
 
 Ghi lại để bàn sau. **Chưa tạo menu trống, route mẫu hay schema lớn cho các ý này.**
 
-- **Lớp thường FOU/BE/ELE** dùng chung engine assessment với scoring policy riêng (score/total, ≥60% đạt) — vòng C.
-- **Học viên class-first**, Tiến độ học viên, nhập nhanh paste/Excel — vòng B.
-- **Workflow Report/WL** và Tiến trình công việc sinh từ dữ liệu — vòng C.
-- **Tách Head khỏi Quản lý** nếu sau này trung tâm phân thêm cấp duyệt. Hiện tại Head và Quản lý
-  là một, `sos.confirm` gắn thẳng vào vai trò Quản lý.
+- ~~Lớp thường FOU/BE/ELE~~ — **đã làm ở vòng C**.
+- ~~Học viên class-first, nhập nhanh paste/Excel~~ — **đã làm ở vòng B**.
+- ~~Tiến trình công việc sinh từ dữ liệu~~ — **đã làm ở vòng C**.
+- **Tách Head khỏi Quản lý** nếu sau này trung tâm phân thêm cấp duyệt. Hiện tại Head và Quản lý là một,
+  và quy trình **không có bước duyệt nào**: kết thúc theo dõi một vấn đề là quyền của GVCN lớp đó và
+  Quản lý (`case.close`), không phải một cửa duyệt riêng.
 - **Consultant / Consultant Manager có tài khoản riêng**, phối hợp CS / CX / Vận hành trong hệ thống;
   bước trao đổi PH khi đó chuyển từ "ghi tên" sang "giao việc cho tài khoản".
 - **Nhiều chương trình / lộ trình**, quy tắc đánh giá riêng cho từng loại lớp (hiện kỳ vọng chỉ áp dụng FT LT1/LT2).

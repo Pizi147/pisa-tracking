@@ -84,8 +84,13 @@ export type AttemptResult = {
   scoredRequired: number;
   /** Đủ điểm mọi kỹ năng bắt buộc — đây là "hoàn thành", chưa nói gì về SOS. */
   complete: boolean;
-  /** Đủ căn cứ để kết luận: hoàn thành VÀ đã biết kỳ vọng. */
+  /** Đủ điểm MỌI kỹ năng bắt buộc VÀ đã biết kỳ vọng — kết luận cuối cùng. */
   evaluable: boolean;
+  /**
+   * Đã kết luận được nhưng CHƯA đủ điểm mọi kỹ năng, nên mức SOS còn có thể tăng.
+   * Giao diện phải ghi rõ điều này thay vì hiện một con số trông như đã chốt.
+   */
+  provisional: boolean;
   failedCount: number | null;
   sosLevel: SosLevel | null;
   /** Chỉ có khi đủ CẢ BỐN kỹ năng — không dựng Overall từ hai/ba kỹ năng. */
@@ -130,9 +135,25 @@ export function evaluateAttempt(
   const complete = required.length > 0 && scoredRequired === required.length;
   const evaluable = complete && expectation !== null;
 
-  const failedCount = evaluable ? verdicts.filter((v) => v.passed === false).length : null;
+  /*
+   * SOS TÍNH NGAY, KHÔNG CHỜ ĐỦ KỸ NĂNG (owner chốt 09/09/2026).
+   *
+   * Trước đây phải đủ mọi kỹ năng bắt buộc mới kết luận. Nhưng chờ như thế nghĩa là một
+   * giáo viên nhập điểm muộn thì cả việc hỗ trợ học viên cũng phải dừng theo. Nay chỉ cần
+   * CÓ ÍT NHẤT MỘT kỹ năng đã chấm và đã biết kỳ vọng là kết luận được trên phần đang có.
+   *
+   * Mức SOS vì thế là kết luận TẠM THỜI và có thể tăng khi các kỹ năng còn lại vào —
+   * `provisional` cho giao diện biết để ghi rõ "mới có 2/4 kỹ năng", không để người đọc
+   * tưởng đây đã là con số cuối.
+   *
+   * Thiếu điểm vẫn KHÁC trượt: kỹ năng chưa chấm không bị đếm vào số môn dưới kỳ vọng.
+   */
+  const hasAnyScore = scoredRequired > 0;
+  const canConclude = hasAnyScore && expectation !== null;
+  const failedCount = canConclude ? verdicts.filter((v) => v.passed === false).length : null;
   const sosLevel: SosLevel | null =
     failedCount === null ? null : failedCount === 0 ? 0 : failedCount === 1 ? 1 : failedCount === 2 ? 2 : 3;
+  const provisional = canConclude && !complete;
 
   /*
    * Overall IELTS chỉ có nghĩa khi lượt này thực sự đánh giá đủ BỐN kỹ năng.
@@ -147,6 +168,7 @@ export function evaluateAttempt(
   return {
     expectation, bands, verdicts, required, skipped,
     scoredRequired, complete, evaluable, failedCount, sosLevel, overall,
+    provisional,
     /*
      * Ở danh sách chỉ cần con số. "Đánh giá trên 3 kỹ năng" là một câu giải thích, và giải
      * thích thuộc về màn chi tiết — ở overview nó chỉ làm dòng dài ra và khó quét.

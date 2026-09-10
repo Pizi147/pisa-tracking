@@ -7,9 +7,11 @@ import OverviewPage from './pages/Overview.tsx';
 import MockDetailPage from './pages/MockDetail.tsx';
 import ScoreSheetPage from './pages/ScoreSheet.tsx';
 import RegularSheetPage from './pages/RegularSheet.tsx';
+import WeeklyRollupPage from './pages/WeeklyRollup.tsx';
 import StudentsPage from './pages/Students.tsx';
 import ClassOverviewPage from './pages/ClassOverview.tsx';
 import StudentDetailPage from './pages/StudentDetail.tsx';
+import AcademicPage, { CaseRoutePage } from './pages/Academic.tsx';
 import MeetingPage from './pages/Meeting.tsx';
 import AdminPage from './pages/Admin.tsx';
 import WelcomePage from './pages/Welcome.tsx';
@@ -25,6 +27,7 @@ const NAV = [
   { to: '/', label: 'Tổng quan', key: 'overview' as const },
   { to: '/tien-trinh', label: 'Tiến trình công việc', key: 'meeting' as const },
   { to: '/hoc-vien', label: 'Học viên', key: 'students' as const },
+  { to: '/hoc-thuat', label: 'Học thuật', key: 'students' as const },
 ];
 
 function LegacySheetRedirect() {
@@ -96,9 +99,18 @@ export default function App() {
           <Route path="/hoc-vien" element={<StudentsPage />} />
           <Route path="/hoc-vien/lop/:classId" element={<ClassOverviewPage />} />
           <Route path="/hoc-vien/:id" element={<StudentDetailPage />} />
+          {/*
+            Học thuật: nơi nhìn thấy VẤN ĐỀ theo chi nhánh / nhóm / kỹ năng. Một vấn đề có
+            trang riêng để gửi đường dẫn được, và mở dạng ngăn kéo khi đang ở màn khác —
+            cả hai đều là cùng một bản ghi.
+          */}
+          <Route path="/hoc-thuat" element={<AcademicPage />} />
+          <Route path="/hoc-thuat/case/:id" element={<CaseRoutePage />} />
           <Route path="/nhap-diem/:classId" element={<ScoreSheetPage />} />
           {/* Lớp thường chấm theo số câu đúng nên có bảng điểm riêng, không dùng bảng band IELTS. */}
           <Route path="/bang-diem-thuong/:classId" element={<RegularSheetPage />} />
+          {/* Tổng hợp theo tuần cho Quản lý — thay cho sheet cùng tên trong workbook. */}
+          <Route path="/tong-hop-tuan" element={<WeeklyRollupPage />} />
           <Route path="/mock-test/:id" element={<MockDetailPage />} />
           <Route path="/tien-trinh" element={<MeetingPage />} />
           <Route path="/quan-tri" element={<AdminPage />} />

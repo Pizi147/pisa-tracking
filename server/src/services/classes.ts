@@ -7,7 +7,7 @@ import { demoToday } from '../demoConfig.ts';
 import { notFound } from '../util.ts';
 import { can, classScopeSql, editableSkills, isCoreTeacherOf, require_, scopeFor, type Principal } from '../permissions.ts';
 import { loadBundle, resultOf, skillCells } from './attempts.ts';
-import { latestEstimates } from './estimates.ts';
+import { latestCheckins } from './checkins.ts';
 import { allProgrammes, evaluateRegular, programmeOfClass } from './regular.ts';
 
 /**
@@ -26,7 +26,7 @@ export type ClassSummary = {
   needScores: number;
   /** Số CASE SOS chưa xử lý xong — đếm case, không phải học viên. */
   openCases: number;
-  /** Số LƯỢT đã chốt tuần nhưng chưa có ngày giờ. */
+  /** Số LƯỢT đã chốt tuần nhưng chưa có ngày thực tế. */
   needsDate: number;
   programmeCode: string | null;
   programmeName: string | null;
@@ -286,7 +286,7 @@ export function classRoster(p: Principal, classId: number, q?: string) {
       latest: done.length ? done[done.length - 1] : null,
       next: timeline.find((t) => t.status === 'planned') ?? null,
       timeline,
-      estimates: latestEstimates(s.id),
+      checkins: latestCheckins(s.id, s.cycle_id ?? null),
       myPending: [...new Set(timeline.flatMap((t) => t.myPending))],
     };
   });

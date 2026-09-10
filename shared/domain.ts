@@ -254,6 +254,274 @@ export const SOS_LABEL: Record<SosLevel, string> = {
   0: 'Đạt kỳ vọng', 1: 'SOS 1', 2: 'SOS 2', 3: 'SOS 3',
 };
 
+/**
+ * DÒNG MÔ TẢ của một vấn đề học vụ.
+ *
+ * Vấn đề do giáo viên báo luôn có một câu do người báo viết. Vấn đề sinh từ điểm thì
+ * KHÔNG — không ai gõ gì cả, vì nó sinh ra từ một phép tính. Hiển thị "chưa có tóm tắt"
+ * ở đó là đúng sự thật nhưng vô dụng: người đọc vẫn phải mở ra mới biết chuyện gì.
+ *
+ * Nên với vấn đề sinh từ điểm, dựng một câu TỪ CHÍNH DỮ LIỆU đã có. Đây là suy ra khi
+ * hiển thị, không phải một câu được ghi vào database — sửa điểm thì câu này đổi theo.
+ */
+export function caseHeadline(c: {
+  summary?: string | null; originKind?: string | null;
+  sosLevel?: number | null; attemptNo?: number | null;
+}): string {
+  const written = (c.summary ?? '').trim();
+  if (written) return written;
+  if (c.originKind === 'teacher_report') return 'Chưa có tóm tắt';
+  const level = c.sosLevel ?? null;
+  const where = c.attemptNo ? `MT${c.attemptNo}` : 'Bài đánh giá';
+  if (level === null) return `${where}: chưa đủ căn cứ kết luận`;
+  if (level === 0) return `${where}: đạt kỳ vọng ở mọi kỹ năng`;
+  return `${where}: ${level} kỹ năng dưới kỳ vọng`;
+}
+
+// ------------------------------------------------ Phân loại vấn đề học vụ
+
+/**
+ * BỘ PHÂN LOẠI VẤN ĐỀ — ba nhóm gốc, không hơn.
+ *
+ * Phụ huynh, sức khoẻ, gia đình, đi lại, lịch cá nhân KHÔNG phải nhóm thứ tư: chúng là
+ * HOÀN CẢNH kèm theo. Một em nghỉ nhiều vì nhà xa thì vấn đề học vụ vẫn là "đi học không
+ * đều", còn "nhà xa" là hoàn cảnh giải thích cho nó.
+ *
+ * Đây là bộ phân loại VẬN HÀNH của trung tâm, không phải bộ chẩn đoán chính thức của IELTS.
+ * Mỗi nhánh luôn có "Khác" để không ép người ghi chọn bừa.
+ */
+export const ISSUE_GROUPS = ['student', 'teacher', 'curriculum'] as const;
+export type IssueGroup = (typeof ISSUE_GROUPS)[number];
+export const ISSUE_GROUP_LABEL: Record<IssueGroup, string> = {
+  student: 'Học sinh', teacher: 'Giáo viên', curriculum: 'Giáo trình',
+};
+
+export type IssueNode = {
+  /** Mã ỔN ĐỊNH. Đổi nhãn hiển thị được, đổi mã thì mất lịch sử. */
+  code: string;
+  label: string;
+  /** Kỹ năng liên quan, để lọc theo kỹ năng ở màn quản lý. */
+  skill?: string;
+};
+
+export type IssueBranch = {
+  group: IssueGroup;
+  /** Nhánh con, ví dụ "Thói quen học" hay "Listening". */
+  key: string;
+  label: string;
+  skill?: string;
+  items: IssueNode[];
+};
+
+const other = (code: string): IssueNode => ({ code, label: 'Khác' });
+
+export const ISSUE_TAXONOMY: IssueBranch[] = [
+  {
+    group: 'student', key: 'behaviour', label: 'Thói quen học',
+    items: [
+      { code: 'student.behaviour.attendance', label: 'Đi học / đúng giờ' },
+      { code: 'student.behaviour.homework', label: 'Chuẩn bị bài / bài tập' },
+      { code: 'student.behaviour.selfstudy', label: 'Tự học theo kế hoạch' },
+      { code: 'student.behaviour.focus', label: 'Tập trung / tham gia trên lớp' },
+      { code: 'student.behaviour.organisation', label: 'Hợp tác / tổ chức việc học' },
+      other('student.behaviour.other'),
+    ],
+  },
+  {
+    group: 'student', key: 'listening', label: 'Listening', skill: 'listening',
+    items: [
+      { code: 'student.listening.recognition', label: 'Nhận diện lời nói', skill: 'listening' },
+      { code: 'student.listening.detail', label: 'Hiểu chi tiết / paraphrase', skill: 'listening' },
+      { code: 'student.listening.mainidea', label: 'Ý chính / quan hệ ý', skill: 'listening' },
+      { code: 'student.listening.follow', label: 'Theo mạch / phân biệt người nói', skill: 'listening' },
+      { code: 'student.listening.strategy', label: 'Chiến lược / độ chính xác khi trả lời', skill: 'listening' },
+      { ...other('student.listening.other'), skill: 'listening' },
+    ],
+  },
+  {
+    group: 'student', key: 'reading', label: 'Reading', skill: 'reading',
+    items: [
+      { code: 'student.reading.detail', label: 'Tìm chi tiết / paraphrase', skill: 'reading' },
+      { code: 'student.reading.structure', label: 'Ý chính / cấu trúc bài', skill: 'reading' },
+      { code: 'student.reading.inference', label: 'Lập luận / quan điểm / suy luận', skill: 'reading' },
+      { code: 'student.reading.language', label: 'Từ vựng / cấu trúc câu', skill: 'reading' },
+      { code: 'student.reading.strategy', label: 'Chiến lược / độ chính xác khi trả lời', skill: 'reading' },
+      { ...other('student.reading.other'), skill: 'reading' },
+    ],
+  },
+  {
+    group: 'student', key: 'writing', label: 'Writing', skill: 'writing',
+    items: [
+      { code: 'student.writing.task', label: 'Đáp ứng yêu cầu đề', skill: 'writing' },
+      { code: 'student.writing.organisation', label: 'Tổ chức bài / liên kết ý', skill: 'writing' },
+      { code: 'student.writing.lexical', label: 'Từ vựng', skill: 'writing' },
+      { code: 'student.writing.grammar', label: 'Ngữ pháp', skill: 'writing' },
+      { ...other('student.writing.other'), skill: 'writing' },
+    ],
+  },
+  {
+    group: 'student', key: 'speaking', label: 'Speaking', skill: 'speaking',
+    items: [
+      { code: 'student.speaking.fluency', label: 'Trôi chảy / mạch lạc', skill: 'speaking' },
+      { code: 'student.speaking.lexical', label: 'Từ vựng', skill: 'speaking' },
+      { code: 'student.speaking.grammar', label: 'Ngữ pháp', skill: 'speaking' },
+      { code: 'student.speaking.pronunciation', label: 'Phát âm', skill: 'speaking' },
+      { ...other('student.speaking.other'), skill: 'speaking' },
+    ],
+  },
+  {
+    group: 'teacher', key: 'teaching', label: 'Quá trình dạy',
+    items: [
+      { code: 'teacher.explain', label: 'Giải thích / kiểm tra mức hiểu' },
+      { code: 'teacher.adjust', label: 'Điều chỉnh cách dạy theo lớp' },
+      { code: 'teacher.feedback', label: 'Chữa bài / phản hồi' },
+      { code: 'teacher.followup', label: 'Theo sát việc thực hiện hỗ trợ' },
+      { code: 'teacher.tracking', label: 'Theo dõi / đánh giá tiến độ' },
+      { code: 'teacher.classroom', label: 'Quản lý lớp / phối hợp' },
+      other('teacher.other'),
+    ],
+  },
+  {
+    group: 'curriculum', key: 'programme', label: 'Chương trình',
+    items: [
+      { code: 'curriculum.level', label: 'Mức độ / trình tự bài' },
+      { code: 'curriculum.pace', label: 'Tốc độ / khối lượng' },
+      { code: 'curriculum.balance', label: 'Nội dung / cân đối giữa các kỹ năng' },
+      { code: 'curriculum.materials', label: 'Bài luyện / học liệu' },
+      { code: 'curriculum.alignment', label: 'Độ khớp giữa bài kiểm tra và mục tiêu' },
+      other('curriculum.other'),
+    ],
+  },
+];
+
+/** Hoàn cảnh kèm theo — GHI CHÚ, không phải nguyên nhân đã được xác minh. */
+export const ISSUE_CONTEXTS = [
+  { code: 'context.parent', label: 'Phía phụ huynh' },
+  { code: 'context.health', label: 'Sức khoẻ' },
+  { code: 'context.family', label: 'Hoàn cảnh gia đình' },
+  { code: 'context.travel', label: 'Đi lại / khoảng cách' },
+  { code: 'context.schedule', label: 'Lịch cá nhân / trường lớp' },
+  { code: 'context.pressure', label: 'Áp lực bên ngoài' },
+  { code: 'context.other', label: 'Khác' },
+] as const;
+
+const ISSUE_INDEX: Record<string, { label: string; group: IssueGroup; branch: string; skill?: string }> = {};
+for (const b of ISSUE_TAXONOMY) {
+  for (const it of b.items) {
+    ISSUE_INDEX[it.code] = { label: it.label, group: b.group, branch: b.label, skill: it.skill };
+  }
+}
+for (const c of ISSUE_CONTEXTS) {
+  ISSUE_INDEX[c.code] = { label: c.label, group: 'student', branch: 'Hoàn cảnh' };
+}
+
+/** Mã lạ (dữ liệu cũ, hoặc mã đã ngừng dùng) vẫn đọc được thay vì hiện ra trống. */
+export function issueLabel(code: string | null | undefined): string {
+  if (!code) return 'Chưa phân loại';
+  return ISSUE_INDEX[code]?.label ?? code;
+}
+export function issueGroupOf(code: string | null | undefined): IssueGroup | null {
+  return code ? ISSUE_INDEX[code]?.group ?? null : null;
+}
+export function issueBranchOf(code: string | null | undefined): string | null {
+  return code ? ISSUE_INDEX[code]?.branch ?? null : null;
+}
+
+export const ISSUE_ROLES = ['primary', 'secondary', 'context'] as const;
+export type IssueRole = (typeof ISSUE_ROLES)[number];
+export const ISSUE_ROLE_LABEL: Record<IssueRole, string> = {
+  primary: 'Vấn đề chính', secondary: 'Yếu tố đi kèm', context: 'Hoàn cảnh',
+};
+
+// ------------------------------------------------ Nguồn case, hướng xử lý, tác động
+
+export const CASE_ORIGINS = ['mock', 'teacher_report'] as const;
+export type CaseOrigin = (typeof CASE_ORIGINS)[number];
+export const CASE_ORIGIN_LABEL: Record<CaseOrigin, string> = {
+  mock: 'Từ kết quả đánh giá', teacher_report: 'Giáo viên báo',
+};
+
+/**
+ * MỨC ĐỘ GẤP do người báo nhận định. KHÁC HẲN `sos_level`.
+ *
+ * `sos_level` là số kỹ năng dưới kỳ vọng ở một bài — một con số đo được. Mức độ gấp là
+ * cảm nhận của người báo. Nếu để giáo viên gõ thẳng "SOS 2" mà không có bài nào, thì con
+ * số SOS trên mọi báo cáo sẽ mang hai nghĩa khác nhau và không cộng được nữa.
+ */
+export const URGENCY_LEVELS = ['normal', 'attention', 'urgent'] as const;
+export type UrgencyLevel = (typeof URGENCY_LEVELS)[number];
+export const URGENCY_LABEL: Record<UrgencyLevel, string> = {
+  normal: 'Bình thường', attention: 'Cần chú ý', urgent: 'Gấp',
+};
+export const URGENCY_TONE: Record<UrgencyLevel, 'neutral' | 'warn' | 'danger'> = {
+  normal: 'neutral', attention: 'warn', urgent: 'danger',
+};
+
+/**
+ * HƯỚNG XỬ LÝ — khác với TRẠNG THÁI.
+ * Trạng thái nói case đang mở hay đã xong. Hướng xử lý nói định làm gì với nó.
+ * "Chỉ theo dõi" là hướng xử lý hợp lệ mà case vẫn đang mở.
+ */
+export const DISPOSITIONS = ['monitor', 'offline', 'no_action', 'action', 'other'] as const;
+export type Disposition = (typeof DISPOSITIONS)[number];
+export const DISPOSITION_LABEL: Record<Disposition, string> = {
+  monitor: 'Chỉ theo dõi thêm',
+  offline: 'Đã trao đổi ngoài hệ thống',
+  no_action: 'Không cần xử lý thêm',
+  action: 'Có kế hoạch hỗ trợ',
+  other: 'Khác',
+};
+
+export const INTERVENTION_KINDS = [
+  'talk_student', 'talk_parent', 'tutor', 'self_study',
+  'teaching_adjust', 'meeting', 'ops_policy', 'other',
+] as const;
+export type InterventionKind = (typeof INTERVENTION_KINDS)[number];
+export const INTERVENTION_KIND_LABEL: Record<InterventionKind, string> = {
+  talk_student: 'Trao đổi với học sinh',
+  talk_parent: 'Trao đổi với phụ huynh',
+  tutor: 'Học tutor',
+  self_study: 'Xếp tự học',
+  teaching_adjust: 'Điều chỉnh cách dạy',
+  meeting: 'Buổi gặp riêng',
+  ops_policy: 'Chính sách vận hành',
+  other: 'Khác',
+};
+
+export const INTERVENTION_STATUSES = ['planned', 'started', 'completed', 'cancelled'] as const;
+export type InterventionStatus = (typeof INTERVENTION_STATUSES)[number];
+export const INTERVENTION_STATUS_LABEL: Record<InterventionStatus, string> = {
+  planned: 'Đã lên kế hoạch', started: 'Đang thực hiện', completed: 'Đã xong', cancelled: 'Đã huỷ',
+};
+
+/** Quan sát sau tác động. KHÔNG phải khẳng định tác động gây ra thay đổi. */
+export const FOLLOWUP_OUTCOMES = ['improved', 'partial', 'unchanged', 'worse', 'insufficient'] as const;
+export type FollowUpOutcome = (typeof FOLLOWUP_OUTCOMES)[number];
+export const FOLLOWUP_OUTCOME_LABEL: Record<FollowUpOutcome, string> = {
+  improved: 'Có tiến bộ',
+  partial: 'Tiến bộ một phần',
+  unchanged: 'Chưa thay đổi',
+  worse: 'Kém hơn',
+  insufficient: 'Chưa đủ căn cứ',
+};
+
+/** Nguồn của điểm xuất phát. Thiếu căn cứ thì để trống, KHÔNG lấy MT1 làm điểm đầu vào. */
+export const BASELINE_SOURCES = ['entrance', 'previous_cycle', 'external', 'manual'] as const;
+export type BaselineSource = (typeof BASELINE_SOURCES)[number];
+export const BASELINE_SOURCE_LABEL: Record<BaselineSource, string> = {
+  entrance: 'Bài kiểm tra đầu vào',
+  previous_cycle: 'Kết quả cuối lộ trình trước',
+  external: 'Điểm bên ngoài (IELTS, nơi khác)',
+  manual: 'Nhập tay có ghi chú',
+};
+
+/** Kết thúc hành chính KHÁC đạt mục tiêu. */
+export const CYCLE_OUTCOMES = ['reached', 'not_reached', 'unknown'] as const;
+export type CycleOutcome = (typeof CYCLE_OUTCOMES)[number];
+export const CYCLE_OUTCOME_LABEL: Record<CycleOutcome, string> = {
+  reached: 'Đạt mục tiêu', not_reached: 'Chưa đạt mục tiêu', unknown: 'Chưa có căn cứ kết luận',
+};
+
 // ---------------------------------------------------------------- Xử lý SOS
 
 export const ACADEMIC_SUPPORTS = [
@@ -371,6 +639,8 @@ export const PERMISSIONS = {
 
   // --- Sau đánh giá ---
   SOS_EDIT: 'sos.edit',
+  /** Kết thúc theo dõi một case. GVCN của lớp và Quản lý — không phải mọi giáo viên. */
+  CASE_CLOSE: 'case.close',
 
   // --- Hồ sơ và vận hành ---
   STUDENT_VIEW: 'student.view',
@@ -392,7 +662,8 @@ export const PERMISSION_LABEL: Record<string, string> = {
   'score.edit': 'Nhập điểm kỹ năng được phân công',
   'score.override': 'Nhập bù điểm ngoài phân công',
   'estimate.edit': 'Cập nhật Đánh giá GV',
-  'sos.edit': 'Ghi nhận xử lý sau MT',
+  'sos.edit': 'Ghi nhận xử lý case học vụ',
+  'case.close': 'Đóng case học vụ',
   'student.view': 'Xem hồ sơ học viên',
   'student.edit': 'Sửa hồ sơ học viên',
   'meeting.view': 'Xem tiến trình công việc',
