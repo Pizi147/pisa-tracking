@@ -1,7 +1,7 @@
 import { db } from '../db.ts';
 import {
   ASSESSED_SKILLS, BASELINE_SOURCE_LABEL, CYCLE_OUTCOME_LABEL, ENTRY_SKILLS,
-  ASSESSED_SKILL_LABEL, JOURNEY_GROUP, PERMISSIONS, issueLabel,
+  ASSESSED_SKILL_LABEL, JOURNEY_GROUP, PERMISSIONS, caseHeadline, issueLabel,
   type AssessedSkill, type EntrySkill,
 } from '../../../shared/domain.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -406,8 +406,10 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
               (SELECT ci.description FROM case_interventions ci WHERE ci.case_id = sc.id
                 ORDER BY COALESCE(ci.completed_date, ci.started_date, ci.created_at) DESC LIMIT 1) AS last_iv,
               (SELECT ip.taxonomy_code FROM case_issues ip
-                WHERE ip.case_id = sc.id AND ip.role = 'primary' LIMIT 1) AS primary_code
+                WHERE ip.case_id = sc.id AND ip.role = 'primary' LIMIT 1) AS primary_code,
+              a.attempt_no AS attempt_no
          FROM sos_cases sc
+         LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
          LEFT JOIN learning_cycles cy ON cy.id = sc.cycle_id
          LEFT JOIN users u ON u.id = sc.reported_by
         WHERE sc.student_id = ? ORDER BY (sc.status != 'done') DESC, sc.detected_at DESC, sc.id DESC`,
@@ -417,6 +419,10 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
   const cases = caseRows.map((c) => ({
     id: c.id, status: c.status, sosLevel: c.sos_level, urgency: c.urgency,
     originKind: c.origin_kind, detectedAt: c.detected_at, summary: c.summary,
+    headline: caseHeadline({
+      summary: c.summary, originKind: c.origin_kind, sosLevel: c.sos_level, attemptNo: c.attempt_no,
+    }),
+    attemptId: c.attempt_id, attemptNo: c.attempt_no,
     reporterName: c.reporter_name, disposition: c.disposition,
     cycleId: c.cycle_id, cycleSeq: c.cycle_seq, route: c.route,
     // Vấn đề của lộ trình TRƯỚC vẫn hiện, nhưng dán nhãn rõ — không dời sang lộ trình mới

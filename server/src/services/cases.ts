@@ -1,7 +1,7 @@
 import { db, tx } from '../db.ts';
 import {
   DISPOSITIONS, INTERVENTION_KINDS, INTERVENTION_STATUSES, FOLLOWUP_OUTCOMES,
-  ISSUE_ROLES, PERMISSIONS, URGENCY_LEVELS, issueGroupOf, issueLabel,
+  ISSUE_ROLES, PERMISSIONS, URGENCY_LEVELS, caseHeadline, issueGroupOf, issueLabel,
 } from '../../../shared/domain.ts';
 import { badRequest, isIsoDate, notFound, nowIso } from '../util.ts';
 import { can, isCoreTeacherOf, require_, scopeFor, type Principal } from '../permissions.ts';
@@ -461,6 +461,9 @@ export function caseDetail(p: Principal, caseId: number) {
     sosLevel: c.sos_level,
     urgency: c.urgency,
     summary: c.summary,
+    headline: caseHeadline({
+      summary: c.summary, originKind: c.origin_kind, sosLevel: c.sos_level, attemptNo: c.attempt_no ?? null,
+    }),
     detectedAt: c.detected_at,
     reportedBy: c.reported_by
       ? (conn.prepare('SELECT full_name FROM users WHERE id = ?').get(c.reported_by) as any)?.full_name ?? null
@@ -556,6 +559,9 @@ export function listCases(p: Principal, f: CaseFilters = {}) {
       attemptId: r.attempt_id, attemptNo: r.attempt_no,
       sosLevel: r.sos_level, urgency: r.urgency,
       summary: r.summary,
+      headline: caseHeadline({
+        summary: r.summary, originKind: r.origin_kind, sosLevel: r.sos_level, attemptNo: r.attempt_no,
+      }),
       primaryCode: r.primary_code,
       primaryLabel: r.primary_code ? issueLabel(r.primary_code) : null,
       group: issueGroupOf(r.primary_code),

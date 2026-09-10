@@ -26,6 +26,12 @@ export default function AcademicPage() {
   const branchId = params.get('cn') ?? '';
   const group = params.get('nhom') ?? '';
   const skill = params.get('ky-nang') ?? '';
+  /*
+   * Mặc định chỉ hiện vấn đề ĐANG MỞ. Trộn cả vấn đề đã kết thúc vào danh sách làm việc
+   * thì con số ở đầu trang và số dòng bên dưới không khớp nhau, và người dùng phải tự
+   * lọc bằng mắt. Vẫn xem lại được vấn đề đã đóng bằng một lần bấm.
+   */
+  const scope = params.get('pham-vi') ?? 'open';
   const [openCase, setOpenCase] = useState<number | null>(null);
 
   const set = (k: string, v: string) => {
@@ -36,6 +42,7 @@ export default function AcademicPage() {
 
   const qs = new URLSearchParams();
   if (queue) qs.set('queue', queue);
+  if (scope === 'done') qs.set('status', 'done');
   if (branchId) qs.set('branchId', branchId);
   if (group) qs.set('group', group);
   if (skill) qs.set('skill', skill);
@@ -43,11 +50,19 @@ export default function AcademicPage() {
 
   const branches = useApi<any[]>('/ref/branches');
   const counts = useApi<any>(`/cases/queues${branchId ? `?branchId=${branchId}` : ''}`, [branchId]);
-  const list = useApi<{ rows: any[]; scopeEmpty: boolean }>(`/cases${suffix}`, [queue, branchId, group, skill]);
+  const list = useApi<{ rows: any[]; scopeEmpty: boolean }>(`/cases${suffix}`, [queue, branchId, group, skill, scope]);
 
   if (list.error) return <ErrorState message={list.error.message} hint={list.error.hint} onRetry={list.reload} />;
 
-  const rows = list.data?.rows ?? [];
+  /*
+   * Hàng đợi đã tự loại vấn đề đã kết thúc, nên chỉ cần lọc thêm khi người dùng không
+   * chọn hàng đợi nào.
+   */
+  const all = list.data?.rows ?? [];
+  const rows = queue || scope === 'all' || scope === 'done'
+    ? all
+    : all.filter((r) => r.status !== 'done');
+  const closedCount = all.filter((r) => r.status === 'done').length;
 
   return (
     <div className="space-y-4 max-w-[1200px]">
@@ -83,6 +98,11 @@ export default function AcademicPage() {
               ))}
             </FilterRow>
           )}
+          <FilterRow label="Phạm vi">
+            <Chip active={scope === 'open'} onClick={() => set('pham-vi', '')}>Đang mở</Chip>
+            <Chip active={scope === 'done'} onClick={() => set('pham-vi', 'done')}>Đã kết thúc</Chip>
+            <Chip active={scope === 'all'} onClick={() => set('pham-vi', 'all')}>Tất cả</Chip>
+          </FilterRow>
           <FilterRow label="Nhóm vấn đề">
             <Chip active={!group} onClick={() => set('nhom', '')}>Tất cả</Chip>
             {(['student', 'teacher', 'curriculum'] as const).map((g) => (
@@ -105,7 +125,14 @@ export default function AcademicPage() {
       </Card>
 
       {/* ---------------------------------------------- danh sách */}
-      <Card title={`Vấn đề (${rows.length})`} bodyClass="p-0">
+      <Card
+        title={`Vấn đề (${rows.length})`}
+        action={scope === 'open' && closedCount > 0 && !queue
+          ? <button className="btn btn-sm btn-ghost" onClick={() => set('pham-vi', 'all')}>
+              +{closedCount} đã kết thúc
+            </button>
+          : null}
+        bodyClass="p-0">
         {list.loading ? <div className="p-4"><Skeleton rows={6} /></div>
           : list.data?.scopeEmpty ? <div className="p-4"><Empty title="Bạn chưa được cấp phạm vi nào" /></div>
           : rows.length === 0 ? <div className="p-4"><Empty title="Không có vấn đề nào khớp bộ lọc" /></div>
@@ -130,7 +157,7 @@ export default function AcademicPage() {
                         <div className="text-[10px] text-slate-500">{r.classCode ?? '—'}</div>
                       </td>
                       <td className="td text-slate-300">
-                        {r.summary || <span className="text-slate-600">chưa có tóm tắt</span>}
+                        {r.headline}
                         <div className="text-[10px] text-slate-500">
                           {fmtDate(r.detectedAt)}{r.reporterName ? ` · ${r.reporterName}` : ''}
                         </div>

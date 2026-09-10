@@ -30,7 +30,7 @@ type CaseDetail = {
   cycle: { id: number; seq: number; route: string | null; target_score: number | null } | null;
   classId: number | null; attemptId: number | null; attemptNo: number | null;
   sosLevel: number | null; urgency: string | null;
-  summary: string | null; detectedAt: string; reportedBy: string | null;
+  summary: string | null; headline: string; detectedAt: string; reportedBy: string | null;
   status: string; disposition: string | null; dispositionNote: string | null; closedAt: string | null;
   issues: any[]; interventions: any[]; followups: any[]; history: any[];
   viewer: { canEdit: boolean; canClose: boolean };
@@ -73,7 +73,7 @@ export function CasePanel({ caseId, compact = false }: { caseId: number; compact
           {data.cycle && <Pill tone="muted">{data.cycle.route ?? `Lộ trình ${data.cycle.seq}`}</Pill>}
         </div>
 
-        <p className="text-sm text-slate-100 mt-2 mb-1">{data.summary || 'Chưa có tóm tắt'}</p>
+        <p className="text-sm text-slate-100 mt-2 mb-1">{data.headline}</p>
         <p className="text-xs text-slate-500 m-0">
           Ghi nhận {fmtDate(data.detectedAt)}
           {data.reportedBy && ` · ${data.reportedBy}`}

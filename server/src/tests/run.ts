@@ -1859,6 +1859,35 @@ check('Case sinh từ điểm ghi thẳng học viên và lộ trình, không ch
   assert(prof.cases.some((c: any) => c.id === made.id), 'Hồ sơ học viên không thấy vấn đề vừa sinh ra');
 });
 
+check('Vấn đề sinh từ điểm có dòng mô tả suy ra từ dữ liệu, không để trống', () => {
+  /*
+   * Vấn đề sinh từ điểm không có ai gõ tóm tắt, vì nó ra đời từ một phép tính. Hiện
+   * "chưa có tóm tắt" thì đúng sự thật nhưng vô dụng — người đọc vẫn phải mở ra mới biết.
+   */
+  const rows = cases.listCases(P.admin, { origin: 'mock' }).rows;
+  assert(rows.length > 0, 'Không có vấn đề nào sinh từ điểm');
+  for (const r of rows.slice(0, 20)) {
+    assert(r.headline && !/chưa có tóm tắt/i.test(r.headline),
+      `Vấn đề ${r.id} không có dòng mô tả: "${r.headline}"`);
+    if (r.sosLevel !== null && r.sosLevel > 0) {
+      assert(r.headline.includes(String(r.sosLevel)),
+        `Dòng mô tả của vấn đề ${r.id} không nói số kỹ năng dưới kỳ vọng: "${r.headline}"`);
+    }
+  }
+  // Giáo viên báo thì dùng đúng câu người báo viết, không thay bằng câu máy dựng.
+  const reported = cases.listCases(P.admin, { origin: 'teacher_report' }).rows
+    .find((r) => (r.summary ?? '').trim());
+  if (reported) {
+    assert(reported.headline === reported.summary!.trim(),
+      'Câu người báo viết bị thay bằng câu máy dựng');
+  }
+  // Đây là SUY RA KHI HIỂN THỊ, không phải câu ghi vào database.
+  const stored = conn
+    .prepare(`SELECT COUNT(*) n FROM sos_cases WHERE origin_kind='mock' AND summary IS NOT NULL`)
+    .get() as any;
+  assert(stored.n === 0, `${stored.n} vấn đề sinh từ điểm đã bị ghi tóm tắt giả vào database`);
+});
+
 check('Bằng chứng phải thuộc đúng học viên của case', () => {
   const c = cases.reportIssue(P.coreTeacher, {
     studentId: someStudent.id, summary: 'Thử bằng chứng', idempotencyKey: 'test-report-9',

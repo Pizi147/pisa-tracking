@@ -221,7 +221,7 @@ export default function StudentDetailPage() {
                           {/* Vấn đề của lộ trình trước KHÔNG bị giấu đi, nhưng phải dán nhãn rõ. */}
                           {c.carriedOver && <Pill tone="muted">Từ {c.route ?? `lộ trình ${c.cycleSeq}`}</Pill>}
                         </span>
-                        <span className="block text-sm text-slate-200 mt-0.5">{c.summary || 'Chưa có tóm tắt'}</span>
+                        <span className="block text-sm text-slate-200 mt-0.5">{c.headline}</span>
                         <span className="block text-xs text-slate-500">
                           {fmtDate(c.detectedAt)}
                           {c.reporterName && ` · ${c.reporterName}`}
@@ -330,7 +330,7 @@ export default function StudentDetailPage() {
                           </div>
                         </td>
                         <td className="td text-slate-200">
-                          {c.summary || '—'}
+                          {c.headline}
                           {c.carriedOver && (
                             <div className="text-[10px] text-slate-500">Thuộc {c.route ?? `lộ trình ${c.cycleSeq}`}</div>
                           )}

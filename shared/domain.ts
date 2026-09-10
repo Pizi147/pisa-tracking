@@ -254,6 +254,30 @@ export const SOS_LABEL: Record<SosLevel, string> = {
   0: 'Đạt kỳ vọng', 1: 'SOS 1', 2: 'SOS 2', 3: 'SOS 3',
 };
 
+/**
+ * DÒNG MÔ TẢ của một vấn đề học vụ.
+ *
+ * Vấn đề do giáo viên báo luôn có một câu do người báo viết. Vấn đề sinh từ điểm thì
+ * KHÔNG — không ai gõ gì cả, vì nó sinh ra từ một phép tính. Hiển thị "chưa có tóm tắt"
+ * ở đó là đúng sự thật nhưng vô dụng: người đọc vẫn phải mở ra mới biết chuyện gì.
+ *
+ * Nên với vấn đề sinh từ điểm, dựng một câu TỪ CHÍNH DỮ LIỆU đã có. Đây là suy ra khi
+ * hiển thị, không phải một câu được ghi vào database — sửa điểm thì câu này đổi theo.
+ */
+export function caseHeadline(c: {
+  summary?: string | null; originKind?: string | null;
+  sosLevel?: number | null; attemptNo?: number | null;
+}): string {
+  const written = (c.summary ?? '').trim();
+  if (written) return written;
+  if (c.originKind === 'teacher_report') return 'Chưa có tóm tắt';
+  const level = c.sosLevel ?? null;
+  const where = c.attemptNo ? `MT${c.attemptNo}` : 'Bài đánh giá';
+  if (level === null) return `${where}: chưa đủ căn cứ kết luận`;
+  if (level === 0) return `${where}: đạt kỳ vọng ở mọi kỹ năng`;
+  return `${where}: ${level} kỹ năng dưới kỳ vọng`;
+}
+
 // ------------------------------------------------ Phân loại vấn đề học vụ
 
 /**
