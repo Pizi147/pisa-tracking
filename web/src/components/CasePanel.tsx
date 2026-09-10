@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useApi } from '../lib/useApi.ts';
+import { useSession } from '../lib/session.tsx';
 import { api, invalidate } from '../lib/api.ts';
 import { useToast } from '../components/Toast.tsx';
 import { Card, Empty, ErrorState, Field, Pill, SectionNote, Skeleton } from './ui.tsx';
@@ -33,13 +34,16 @@ type CaseDetail = {
   summary: string | null; headline: string; detectedAt: string; reportedBy: string | null;
   status: string; disposition: string | null; dispositionNote: string | null; closedAt: string | null;
   issues: any[]; interventions: any[]; followups: any[]; history: any[];
-  viewer: { canEdit: boolean; canClose: boolean };
+  viewer: { canEdit: boolean; canClose: boolean; canApprove: boolean };
 };
 
 export function CasePanel({ caseId, compact = false }: { caseId: number; compact?: boolean }) {
+  const { session } = useSession();
+  const todayIso = session?.demoDate ?? '';
   const { data, loading, error, reload } = useApi<CaseDetail>(`/cases/${caseId}`);
   const [addAction, setAddAction] = useState(false);
   const [addFollowup, setAddFollowup] = useState<number | 'case' | null>(null);
+  const [respondTo, setRespondTo] = useState<any | null>(null);
   const [close, setClose] = useState(false);
 
   if (error) return <ErrorState message={error.message} hint={error.hint} onRetry={reload} />;
@@ -108,12 +112,12 @@ export function CasePanel({ caseId, compact = false }: { caseId: number; compact
         <div className="flex items-center justify-between gap-2 mb-2">
           <h3 className="text-sm font-semibold text-slate-200 m-0">Đã làm gì và quan sát được gì</h3>
           {data.viewer.canEdit && (
-            <button className="btn btn-sm" onClick={() => setAddAction(true)}>+ Ghi một việc đã làm</button>
+            <button className="btn btn-sm" onClick={() => setAddAction(true)}>+ Ghi phương án hỗ trợ</button>
           )}
         </div>
 
         {data.interventions.length === 0 && loose.length === 0 ? (
-          <Empty title="Chưa ghi việc nào"
+          <Empty title="Chưa có phương án hỗ trợ"
             hint="Trao đổi với học viên, điều chỉnh cách dạy, xếp tự học — ghi lại để lần sau còn biết đã thử gì." />
         ) : (
           <ol className="space-y-2 list-none p-0 m-0">
@@ -126,7 +130,19 @@ export function CasePanel({ caseId, compact = false }: { caseId: number; compact
                   <Pill tone={iv.status === 'completed' ? 'ok' : iv.status === 'cancelled' ? 'muted' : 'info'}>
                     {INTERVENTION_STATUS_LABEL[iv.status as keyof typeof INTERVENTION_STATUS_LABEL] ?? iv.status}
                   </Pill>
-                  {iv.overdue && <Pill tone="warn">Quá hạn xem lại</Pill>}
+                  {iv.overdue && <Pill tone="warn">Quá hạn cập nhật kết quả</Pill>}
+                  {/*
+                    Chờ duyệt là một TRẠNG THÁI RIÊNG, không trộn vào trạng thái thực hiện:
+                    "đã lên kế hoạch" mà chưa ai duyệt khác hẳn "đã lên kế hoạch" đã duyệt rồi.
+                  */}
+                  {iv.approvalState === 'pending' && (
+                    <Pill tone={iv.approvalDue && iv.approvalDue < todayIso ? 'danger' : 'warn'}>
+                      Chờ Quản lý duyệt
+                      {iv.approvalDue && ` · hạn ${fmtDate(iv.approvalDue)}`}
+                    </Pill>
+                  )}
+                  {iv.approvalState === 'approved' && <Pill tone="ok">Đã duyệt</Pill>}
+                  {iv.approvalState === 'declined' && <Pill tone="muted">Không duyệt</Pill>}
                 </div>
                 {iv.description && <p className="text-sm text-slate-300 mt-1 mb-0">{iv.description}</p>}
                 <p className="text-xs text-slate-500 mt-1 mb-0">
@@ -139,6 +155,14 @@ export function CasePanel({ caseId, compact = false }: { caseId: number; compact
                   {iv.followupDue && ` · hẹn xem lại ${fmtDate(iv.followupDue)}`}
                 </p>
 
+                {/* Câu trả lời của Quản lý nằm ngay dưới phương án, không đẩy sang chỗ khác. */}
+                {iv.approvalNote && (
+                  <p className="text-xs mt-1 mb-0 pl-3 border-l"
+                    style={{ borderColor: 'var(--line)', color: 'var(--fg-2, #cbd5e1)' }}>
+                    Quản lý{iv.approvedBy ? ` (${iv.approvedBy})` : ''}: {iv.approvalNote}
+                  </p>
+                )}
+
                 {followupsOf(iv.id).map((f) => (
                   <div key={f.id} className="mt-2 pl-3 border-l" style={{ borderColor: 'var(--line)' }}>
                     <span className="text-xs text-slate-300">
@@ -149,11 +173,21 @@ export function CasePanel({ caseId, compact = false }: { caseId: number; compact
                   </div>
                 ))}
 
-                {data.viewer.canEdit && (
-                  <button className="btn btn-sm btn-ghost mt-2" onClick={() => setAddFollowup(iv.id)}>
-                    + Ghi lại kết quả xem lại
-                  </button>
-                )}
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {data.viewer.canEdit && iv.approvalState !== 'pending' && (
+                    <button className="btn btn-sm btn-ghost" onClick={() => setAddFollowup(iv.id)}>
+                      + Cập nhật kết quả
+                    </button>
+                  )}
+                  {iv.approvalState === 'pending' && data.viewer.canApprove && (
+                    <button className="btn btn-sm" onClick={() => setRespondTo(iv)}>Trả lời đề xuất</button>
+                  )}
+                  {iv.approvalState === 'pending' && !data.viewer.canApprove && (
+                    <span className="text-xs text-slate-500 self-center">
+                      Đang chờ Quản lý trả lời — làm xong rồi mới cập nhật kết quả được.
+                    </span>
+                  )}
+                </div>
               </li>
             ))}
             {loose.map((f) => (
@@ -184,7 +218,7 @@ export function CasePanel({ caseId, compact = false }: { caseId: number; compact
             {data.dispositionNote && <span className="text-slate-400"> — {data.dispositionNote}</span>}
           </p>
         ) : (
-          <p className="text-sm text-slate-400 m-0">Chưa làm — chưa ai định hướng xử lý.</p>
+          <p className="text-sm text-slate-400 m-0">Chưa có phương án hỗ trợ — chưa ai định hướng xử lý.</p>
         )}
         {data.closedAt && <p className="text-xs text-slate-500 mt-1 mb-0">Đã kết thúc theo dõi {fmtDate(data.closedAt)}</p>}
         {data.viewer.canEdit && (
@@ -203,6 +237,8 @@ export function CasePanel({ caseId, compact = false }: { caseId: number; compact
       </section>
 
       <ActionDialog open={addAction} onClose={() => setAddAction(false)} caseId={caseId} onDone={reload} />
+      <ApprovalDialog open={respondTo !== null} onClose={() => setRespondTo(null)}
+        intervention={respondTo} onDone={reload} />
       <FollowupDialog open={addFollowup !== null} onClose={() => setAddFollowup(null)} caseId={caseId}
         interventionId={typeof addFollowup === 'number' ? addFollowup : null} onDone={reload} />
       <DispositionDialog open={close} onClose={() => setClose(false)} caseId={caseId}
@@ -236,7 +272,14 @@ function ActionDialog({ open, onClose, caseId, onDone }: {
   const [completedDate, setCompletedDate] = useState('');
   const [startedDate, setStartedDate] = useState('');
   const [followupDue, setFollowupDue] = useState('');
+  const [needsApproval, setNeedsApproval] = useState(false);
   const [busy, setBusy] = useState(false);
+
+  /*
+   * Chỉ ĐỀ XUẤT mới gửi duyệt được — việc đã làm rồi thì không còn gì để duyệt.
+   * Đổi trạng thái sang "đã xong" thì bỏ luôn ô chọn, không để lại một cờ vô nghĩa.
+   */
+  const canPropose = status === 'planned';
 
   const submit = async () => {
     setBusy(true);
@@ -248,20 +291,24 @@ function ActionDialog({ open, onClose, caseId, onDone }: {
         completedDate: status === 'completed' ? completedDate || undefined : undefined,
         startedDate: startedDate || undefined,
         followupDue: followupDue || undefined,
+        needsApproval: canPropose && needsApproval,
       });
       invalidate('/cases'); invalidate('/students'); invalidate('/overview');
       onDone(); onClose();
       setDescription(''); setPerformerName(''); setCompletedDate(''); setFollowupDue('');
-      toast.push('ok', 'Đã ghi lại');
+      toast.push('ok', canPropose && needsApproval ? 'Đã gửi Quản lý duyệt' : 'Đã ghi lại');
+      setNeedsApproval(false);
     } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
   };
 
   return (
-    <Modal open={open} onClose={onClose} title="Ghi một việc đã làm"
+    <Modal open={open} onClose={onClose} title="Phương án hỗ trợ"
       footer={
         <>
           <button className="btn" onClick={onClose}>Huỷ</button>
-          <button className="btn btn-primary" disabled={busy} onClick={submit}>Lưu</button>
+          <button className="btn btn-primary" disabled={busy} onClick={submit}>
+            {canPropose && needsApproval ? 'Gửi duyệt' : 'Lưu'}
+          </button>
         </>
       }>
       <div className="space-y-3">
@@ -312,6 +359,95 @@ function ActionDialog({ open, onClose, caseId, onDone }: {
         <Field label="Hẹn xem lại" hint="Bỏ trống nếu chỉ theo dõi — không hẹn thì không bao giờ bị coi là quá hạn.">
           <input type="date" className="field" value={followupDue} onChange={(e) => setFollowupDue(e.target.value)} />
         </Field>
+        {/*
+          CHÍNH GIÁO VIÊN quyết định phương án của mình có cần Quản lý duyệt hay không.
+          Trao đổi với em sau buổi học thì tự làm; xếp tutor hay lùi lịch thi thì phải có
+          người quyết. Bắt duyệt hết là biến phần mềm thành cửa xin phép; không duyệt gì thì
+          việc tốn tiền lại không ai chịu trách nhiệm.
+        */}
+        {canPropose && (
+          <label className="flex items-start gap-2 text-sm text-slate-300">
+            <input type="checkbox" className="mt-1" checked={needsApproval}
+              onChange={(e) => setNeedsApproval(e.target.checked)} />
+            <span>
+              Cần Quản lý duyệt trước khi làm
+              <span className="block text-xs text-slate-500">
+                Quản lý phải trả lời trong 3 ngày (case nặng hoặc gấp) hoặc 7 ngày. Trong lúc
+                chờ thì chưa cập nhật kết quả được.
+              </span>
+            </span>
+          </label>
+        )}
+        {!canPropose && (
+          <SectionNote>
+            Đang ghi một việc ĐÃ làm hoặc ĐANG làm nên không gửi duyệt được. Muốn xin ý kiến
+            Quản lý trước thì chọn tình trạng “Đã lên kế hoạch”.
+          </SectionNote>
+        )}
+      </div>
+    </Modal>
+  );
+}
+
+/**
+ * QUẢN LÝ TRẢ LỜI MỘT ĐỀ XUẤT.
+ *
+ * Ba lựa chọn, và chỉ "góp ý" là không kết thúc việc chờ — Quản lý vẫn nợ một câu trả lời,
+ * nên đề xuất vẫn nằm trong danh sách việc cho tới khi duyệt hoặc không duyệt.
+ * Không duyệt thì BẮT BUỘC ghi lý do: bác một phương án mà không nói vì sao thì giáo viên
+ * không biết nên làm gì tiếp.
+ */
+function ApprovalDialog({ open, onClose, intervention, onDone }: {
+  open: boolean; onClose: () => void; intervention: any | null; onDone: () => void;
+}) {
+  const toast = useToast();
+  const [decision, setDecision] = useState<'approved' | 'declined' | 'comment'>('approved');
+  const [note, setNote] = useState('');
+  const [busy, setBusy] = useState(false);
+  if (!intervention) return null;
+
+  const needNote = decision !== 'approved';
+
+  return (
+    <Modal open={open} onClose={onClose} title="Trả lời đề xuất"
+      footer={
+        <>
+          <button className="btn" onClick={onClose}>Huỷ</button>
+          <button className="btn btn-primary" disabled={busy || (needNote && !note.trim())}
+            onClick={async () => {
+              setBusy(true);
+              try {
+                await api.post(`/interventions/${intervention.id}/respond`, { decision, note });
+                invalidate('/cases'); invalidate('/students'); invalidate('/my-work');
+                onDone(); onClose(); setNote(''); setDecision('approved');
+                toast.push('ok', 'Đã trả lời');
+              } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
+            }}>Gửi</button>
+        </>
+      }>
+      <div className="space-y-3">
+        <p className="text-sm text-slate-300 m-0">
+          {INTERVENTION_KIND_LABEL[intervention.kind as keyof typeof INTERVENTION_KIND_LABEL] ?? intervention.kind}
+          {intervention.description && <span className="text-slate-400"> — {intervention.description}</span>}
+        </p>
+        <Field label="Quyết định">
+          <select className="field" value={decision} onChange={(e) => setDecision(e.target.value as any)}>
+            <option value="approved">Duyệt — cứ làm</option>
+            <option value="declined">Không duyệt</option>
+            <option value="comment">Góp ý thêm, chưa quyết</option>
+          </select>
+        </Field>
+        <Field label={decision === 'approved' ? 'Ghi chú' : 'Lý do'} required={needNote}
+          hint={decision === 'declined' ? 'Nói rõ vì sao, và nên làm gì thay thế.' : undefined}>
+          <input className="field" value={note} onChange={(e) => setNote(e.target.value)}
+            placeholder={decision === 'declined' ? 'Lớp đang thiếu giáo viên, tạm xếp tự học có kèm' : 'Đồng ý, ưu tiên Listening trước'} />
+        </Field>
+        {decision === 'comment' && (
+          <SectionNote>
+            Góp ý KHÔNG kết thúc việc chờ — đề xuất vẫn nằm trong danh sách việc của bạn cho
+            tới khi bạn duyệt hoặc không duyệt.
+          </SectionNote>
+        )}
       </div>
     </Modal>
   );

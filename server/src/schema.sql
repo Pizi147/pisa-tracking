@@ -496,11 +496,30 @@ CREATE TABLE case_interventions (
   -- không bao giờ quá hạn.
   followup_due TEXT,
 
+  /*
+   * CÓ CẦN QUẢN LÝ DUYỆT KHÔNG — do chính giáo viên đề xuất quyết định.
+   *
+   * Trao đổi với em sau buổi học thì giáo viên tự làm; xếp tutor hay lùi lịch thi thì phải
+   * có người quyết. Bắt duyệt hết là biến phần mềm thành cửa xin phép, không duyệt gì thì
+   * việc tốn tiền lại không ai chịu trách nhiệm.
+   *
+   * NULL ở `approval_state` nghĩa là KHÔNG cần duyệt — khác hẳn 'pending' là đang chờ.
+   */
+  needs_approval INTEGER NOT NULL DEFAULT 0,
+  approval_state TEXT,                -- NULL (không cần) | pending | approved | declined
+  approval_due TEXT,                  -- hạn Quản lý phải trả lời, tính lúc đề xuất
+  approval_by INTEGER REFERENCES users(id),
+  approval_at TEXT,
+  approval_note TEXT,
+
   -- Khoá migration: mỗi cột cũ chỉ chuyển thành một tác động, chạy lại không nhân đôi.
   migration_key TEXT UNIQUE,
   created_at TEXT NOT NULL,
   updated_at TEXT
 );
+-- Việc đang chờ duyệt là thứ Quản lý phải tìm nhanh, nên có chỉ số riêng.
+CREATE INDEX idx_intervention_approval ON case_interventions(approval_state)
+  WHERE approval_state = 'pending';
 CREATE INDEX idx_intervention_case ON case_interventions(case_id);
 CREATE INDEX idx_intervention_due ON case_interventions(followup_due) WHERE followup_due IS NOT NULL;
 

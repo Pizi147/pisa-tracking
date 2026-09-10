@@ -30,15 +30,20 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
   // Quản trị phần mềm: toàn quyền, kể cả các ngoại lệ sửa sai về lịch.
   system_admin: [
     'plan.week', 'schedule.date', 'schedule.speaking', 'attempt.cancel', 'attempt.skip_skill',
-    'deadline.override', 'attempt.view', 'score.override', 'sos.edit', 'case.close',
-    'student.view', 'student.edit', 'meeting.view', 'meeting.edit', 'admin.config',
+    'deadline.override', 'attempt.view', 'score.override', 'sos.edit', 'case.close', 'case.approve',
+    'class.assign', 'student.view', 'student.edit', 'meeting.view', 'meeting.edit', 'admin.config',
   ],
-  // Văn phòng chi nhánh: CẬP NHẬT NGÀY MT thực tế theo lịch bộ phận xếp lịch đã bố trí,
-  // nhập bù điểm, giữ danh sách lớp. KHÔNG chốt tuần (việc của Quản lý) và KHÔNG vào
-  // Tiến trình công việc (module quản lý).
+  /*
+   * Văn phòng chi nhánh: giữ danh sách lớp và học viên, CẬP NHẬT NGÀY MT thực tế trong tuần
+   * Quản lý đã chốt, và ghi phân công giáo viên mà Quản lý đã quyết ở ngoài.
+   *
+   * KHÔNG chốt tuần MT (việc của Quản lý), KHÔNG nhập điểm (owner chốt 10/09/2026 — trước
+   * đây họ có quyền nhập bù; nay giáo viên vắng thì Quản lý đổi phân công chứ văn phòng
+   * không gõ điểm hộ), và KHÔNG vào Tiến trình công việc.
+   */
   branch_admin: [
     'schedule.date', 'schedule.speaking', 'attempt.cancel', 'attempt.skip_skill',
-    'deadline.override', 'attempt.view', 'score.override', 'sos.edit',
+    'deadline.override', 'attempt.view', 'sos.edit', 'class.assign',
     'student.view', 'student.edit',
   ],
   // Quản lý: chốt TUẦN kế hoạch, và CŨNG cập nhật được ngày MT thực tế — khi học viên nghỉ
@@ -47,7 +52,8 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
     'plan.week', 'schedule.date', 'schedule.speaking', 'attempt.cancel', 'attempt.skip_skill',
     'deadline.override', 'attempt.view',
     // Quản lý đóng được case trong chi nhánh mình; GVCN đóng case lớp mình (kiểm theo phân công).
-    'sos.edit', 'case.close', 'student.view', 'student.edit', 'meeting.view', 'meeting.edit',
+    'sos.edit', 'case.close', 'case.approve', 'class.assign',
+    'student.view', 'student.edit', 'meeting.view', 'meeting.edit',
   ],
   // Giáo viên: nhập điểm và đánh giá ĐÚNG kỹ năng được phân công.
   // GVCN không vì chủ nhiệm mà có thêm quyền lịch; riêng GV Speaking sửa được NGÀY Speaking

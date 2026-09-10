@@ -1,12 +1,12 @@
 import { db, tx } from '../db.ts';
 import {
   DISPOSITIONS, INTERVENTION_KINDS, INTERVENTION_STATUSES, FOLLOWUP_OUTCOMES,
-  ISSUE_ROLES, PERMISSIONS, URGENCY_LEVELS, caseHeadline, issueGroupOf, issueLabel,
+  APPROVAL_DUE_DAYS, ISSUE_ROLES, PERMISSIONS, URGENCY_LEVELS, caseHeadline, issueGroupOf, issueLabel,
 } from '../../../shared/domain.ts';
-import { badRequest, isIsoDate, notFound, nowIso } from '../util.ts';
+import { addDays, badRequest, isIsoDate, notFound, nowIso } from '../util.ts';
 import { can, isCoreTeacherOf, require_, scopeFor, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
-import { addJourney, writeAudit } from './audit.ts';
+import { addJourney, notify, writeAudit } from './audit.ts';
 import { currentCycle } from './cycles.ts';
 
 /**
@@ -130,6 +130,9 @@ export function reportIssue(p: Principal, input: {
       refTable: 'sos_cases', refId: caseId, createdBy: p.userId,
       dedupKey: `case_open:${caseId}`,
     });
+    notifyManagers(
+      { id: caseId, class_id: classId, eff_student_id: input.studentId }, 'report', summary, caseId, p.userId,
+    );
     writeAudit({ actorUserId: p.userId, action: 'case.report', entityType: 'sos_case', entityId: caseId,
       entityLabel: `${student.student_code} · ${summary.slice(0, 40)}`, after: { urgency, detectedAt } });
     return caseDetail(p, caseId);
@@ -187,6 +190,47 @@ export function setIssues(p: Principal, caseId: number, input: {
  * thống, thì phải giữ được cả hai. "Đã xong" bắt buộc có ngày thực tế; không có thì đó mới
  * chỉ là "đang thực hiện".
  */
+/**
+ * BÁO CHO QUẢN LÝ CHI NHÁNH.
+ *
+ * Quản lý không thể ngồi canh từng lớp, nên mọi phương án hỗ trợ đều tới tay họ: cần duyệt
+ * thì là việc phải làm, không cần duyệt thì là tin để biết. Trước đây giáo viên báo một vấn
+ * đề mà Quản lý hoàn toàn không nhận được gì — phải tự mở màn ra mới thấy.
+ */
+function notifyManagers(
+  c: any, kind: 'approval' | 'plan' | 'report', what: string, refId: number, actorId: number | null,
+) {
+  const conn = db();
+  const branchId = c.branch_id ?? (c.class_id
+    ? (conn.prepare('SELECT branch_id FROM classes WHERE id = ?').get(c.class_id) as any)?.branch_id
+    : null);
+  const student = conn.prepare('SELECT full_name FROM students WHERE id = ?').get(c.eff_student_id) as any;
+
+  /* Quản lý của CHÍNH chi nhánh đó, cộng người có phạm vi toàn hệ thống. */
+  const managers = conn
+    .prepare(
+      `SELECT DISTINCT ur.user_id FROM user_roles ur
+         JOIN roles r ON r.id = ur.role_id
+        WHERE r.key IN ('manager', 'system_admin')
+          AND (ur.branch_id IS NULL OR ur.branch_id = ?)`,
+    )
+    .all(branchId ?? -1) as any[];
+
+  const title = kind === 'approval' ? `Chờ duyệt phương án — ${student?.full_name ?? 'học viên'}`
+    : kind === 'plan' ? `Đã có phương án hỗ trợ — ${student?.full_name ?? 'học viên'}`
+    : `Giáo viên báo vấn đề — ${student?.full_name ?? 'học viên'}`;
+
+  for (const m of managers) {
+    if (m.user_id === actorId) continue;      // không tự báo cho chính mình
+    notify({
+      userId: m.user_id, kind: kind === 'approval' ? 'approval' : 'case',
+      title, body: what.slice(0, 120),
+      entityType: 'sos_case', entityId: c.id,
+      dedupKey: `${kind}:${refId}`,
+    });
+  }
+}
+
 export function recordIntervention(p: Principal, caseId: number, input: {
   kind: string; description?: string | null;
   /**
@@ -197,6 +241,11 @@ export function recordIntervention(p: Principal, caseId: number, input: {
    */
   performerSelf?: boolean;
   performerUserId?: number | null; performerName?: string | null;
+  /**
+   * Giáo viên tự đánh dấu phương án này có cần Quản lý duyệt không. Cần thì nó ở trạng
+   * thái ĐANG CHỜ và chưa được ghi là đã làm; không cần thì đi thẳng như trước.
+   */
+  needsApproval?: boolean;
   status?: string; plannedDate?: string | null; startedDate?: string | null;
   completedDate?: string | null; followupDue?: string | null;
 }) {
@@ -215,6 +264,16 @@ export function recordIntervention(p: Principal, caseId: number, input: {
   if (status === 'completed' && !input.completedDate && !input.startedDate) {
     throw badRequest('Ghi "đã xong" thì phải có ngày thực hiện. Chưa có ngày thì chọn "đang thực hiện".');
   }
+  /*
+   * ĐỀ XUẤT CHỜ DUYỆT thì chưa phải việc đã làm.
+   *
+   * Việc hỗ trợ thật diễn ra ngoài phần mềm, nên chờ duyệt không làm chậm điều gì — nhưng
+   * ghi luôn là "đã xong" trong lúc còn chờ thì sau này không ai biết Quản lý có đồng ý hay
+   * không, và dấu vết ai chậm ở khâu nào cũng mất.
+   */
+  if (input.needsApproval && status !== 'planned') {
+    throw badRequest('Phương án cần Quản lý duyệt thì để ở "đã lên kế hoạch", chưa ghi là đã làm.');
+  }
   const performerUserId = input.performerUserId
     ?? (input.performerSelf && !input.performerName?.trim() ? p.userId : null);
   if (!performerUserId && !input.performerName?.trim() && status !== 'planned') {
@@ -222,18 +281,36 @@ export function recordIntervention(p: Principal, caseId: number, input: {
   }
 
   return tx(() => {
+    /*
+     * Hạn Quản lý phải trả lời: case nặng thì gấp hơn. Quá hạn KHÔNG chặn gì cả — nó chỉ
+     * nổi lên màn của Quản lý để một đề xuất không nằm im mãi.
+     */
+    const hot = (c.sos_level ?? 0) >= 3 || c.urgency === 'urgent';
+    const approvalDue = input.needsApproval
+      ? addDays(demoToday(), hot ? APPROVAL_DUE_DAYS.urgent : APPROVAL_DUE_DAYS.normal)
+      : null;
+
     const info = conn
       .prepare(
         `INSERT INTO case_interventions (case_id, kind, description, performer_user_id, performer_name,
                                          recorded_by, status, planned_date, started_date, completed_date,
-                                         followup_due, created_at)
-         VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
+                                         followup_due, needs_approval, approval_state, approval_due, created_at)
+         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       )
       .run(caseId, input.kind, input.description ?? null,
            performerUserId, input.performerName?.trim() || null, p.userId, status,
            input.plannedDate ?? null, input.startedDate ?? null, input.completedDate ?? null,
-           input.followupDue ?? null, nowIso());
+           input.followupDue ?? null,
+           input.needsApproval ? 1 : 0, input.needsApproval ? 'pending' : null, approvalDue, nowIso());
     const id = Number(info.lastInsertRowid);
+
+    /*
+     * BÁO CHO QUẢN LÝ TRONG MỌI TRƯỜNG HỢP (owner chốt 10/09/2026).
+     *
+     * Cần duyệt thì đây là việc phải làm; không cần duyệt thì vẫn là tin đáng biết — Quản lý
+     * nắm được giáo viên đang xoay xở thế nào mà không phải đi hỏi từng người.
+     */
+    notifyManagers(c, input.needsApproval ? 'approval' : 'plan', input.description ?? input.kind, id, p.userId);
 
     // Có tác động thì case chuyển sang đang xử lý — trừ khi đã đóng.
     if (c.status === 'open') {
@@ -250,6 +327,113 @@ export function recordIntervention(p: Principal, caseId: number, input: {
     writeAudit({ actorUserId: p.userId, action: 'case.intervention', entityType: 'case_intervention',
       entityId: id, entityLabel: `Case ${caseId} · ${input.kind}`, after: { status } });
     return caseDetail(p, caseId);
+  });
+}
+
+/**
+ * QUẢN LÝ TRẢ LỜI MỘT ĐỀ XUẤT.
+ *
+ * Ba cách trả lời, và cả ba đều là một câu trả lời thật:
+ *   duyệt      — đồng ý, giáo viên tiến hành
+ *   không duyệt — không làm phương án này, phải ghi lý do
+ *   góp ý      — chưa quyết, nhưng có ý kiến; vẫn còn trong hàng chờ
+ *
+ * Quá hạn KHÔNG tự duyệt và cũng không tự huỷ. Im lặng không bao giờ được hiểu thành đồng ý —
+ * nó chỉ làm đề xuất nổi lên màn của Quản lý mỗi ngày cho tới khi có người trả lời.
+ */
+export function respondToPlan(p: Principal, interventionId: number, input: {
+  decision: 'approved' | 'declined' | 'comment'; note?: string | null;
+}) {
+  const conn = db();
+  const iv = conn
+    .prepare(
+      /*
+       * `sos_cases` KHÔNG có cột lớp — lớp suy ra từ bài đánh giá, hoặc từ lớp em đang học.
+       * Giống hệt `loadCase`, để quyền của một case luôn tính trên cùng một lớp dù vào từ
+       * đâu; viết `sc.class_id` là sai và sẽ hỏng ngay khi chạy.
+       */
+      `SELECT iv.*, sc.student_id, sc.attempt_id,
+              COALESCE(sc.student_id, a.student_id) AS eff_student_id,
+              COALESCE(sc.cycle_id, a.cycle_id) AS eff_cycle_id,
+              COALESCE(a.class_id,
+                       (SELECT e.class_id FROM enrollments e
+                         WHERE e.student_id = COALESCE(sc.student_id, a.student_id)
+                           AND e.status = 'active' ORDER BY e.id DESC LIMIT 1)) AS class_id
+         FROM case_interventions iv
+         JOIN sos_cases sc ON sc.id = iv.case_id
+         LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
+        WHERE iv.id = ?`,
+    )
+    .get(interventionId) as any;
+  if (!iv) throw notFound('Không tìm thấy phương án');
+  require_(p, PERMISSIONS.CASE_APPROVE, { classId: iv.class_id, studentId: iv.eff_student_id },
+    'Chỉ Quản lý mới duyệt được phương án hỗ trợ.');
+  if (!iv.needs_approval) throw badRequest('Phương án này không cần duyệt.');
+  /*
+   * ĐÃ TRẢ LỜI RỒI THÌ THÔI. Đổi ý là chuyện bình thường, nhưng sửa đè lên câu trả lời cũ
+   * sẽ xoá mất lý do đã ghi — giáo viên đọc lại không biết vì sao lúc đầu bị bác. Đổi ý thì
+   * đề xuất lại, để hồ sơ giữ cả hai lần.
+   */
+  if (iv.approval_state === 'approved' || iv.approval_state === 'declined') {
+    throw badRequest(
+      iv.approval_state === 'approved'
+        ? 'Phương án này đã được duyệt rồi.'
+        : 'Phương án này đã bị từ chối. Muốn đổi ý thì giáo viên đề xuất lại, để giữ cả lý do lần trước.',
+    );
+  }
+
+  const note = (input.note ?? '').trim() || null;
+  if (input.decision === 'declined' && !note) {
+    throw badRequest('Không duyệt thì phải ghi lý do, để giáo viên biết nên làm gì tiếp.');
+  }
+  if (input.decision === 'comment' && !note) throw badRequest('Hãy viết góp ý.');
+
+  return tx(() => {
+    if (input.decision === 'comment') {
+      // Góp ý KHÔNG kết thúc việc chờ — Quản lý vẫn nợ một câu trả lời.
+      conn.prepare('UPDATE case_interventions SET approval_note = ?, updated_at = ? WHERE id = ?')
+        .run(note, nowIso(), interventionId);
+    } else {
+      conn
+        .prepare(
+          `UPDATE case_interventions
+              SET approval_state = ?, approval_by = ?, approval_at = ?, approval_note = ?,
+                  status = CASE WHEN ? = 'declined' THEN 'cancelled' ELSE status END,
+                  updated_at = ?
+            WHERE id = ?`,
+        )
+        .run(input.decision, p.userId, nowIso(), note, input.decision, nowIso(), interventionId);
+    }
+
+    addJourney({
+      studentId: iv.eff_student_id, cycleId: iv.eff_cycle_id,
+      eventType: input.decision === 'declined' ? 'plan_declined' : 'plan_approved',
+      eventDate: demoToday(),
+      title: input.decision === 'approved' ? 'Quản lý duyệt phương án hỗ trợ'
+        : input.decision === 'declined' ? 'Quản lý không duyệt phương án'
+        : 'Quản lý góp ý về phương án',
+      detail: [iv.description, note].filter(Boolean).join(' — ') || null,
+      refTable: 'case_interventions', refId: interventionId, createdBy: p.userId,
+      dedupKey: `plan-${input.decision}:${interventionId}`,
+    });
+
+    // Báo lại cho người đề xuất — họ đang chờ câu trả lời này.
+    if (iv.recorded_by && iv.recorded_by !== p.userId) {
+      notify({
+        userId: iv.recorded_by, kind: 'approval',
+        title: input.decision === 'approved' ? 'Phương án của bạn đã được duyệt'
+          : input.decision === 'declined' ? 'Phương án của bạn không được duyệt'
+          : 'Quản lý góp ý về phương án của bạn',
+        body: note ?? iv.description ?? null,
+        entityType: 'sos_case', entityId: iv.case_id,
+        dedupKey: `plan-reply:${interventionId}:${input.decision}`,
+      });
+    }
+
+    writeAudit({ actorUserId: p.userId, action: `case.plan.${input.decision}`,
+      entityType: 'case_intervention', entityId: interventionId,
+      entityLabel: iv.description ?? iv.kind, after: { decision: input.decision, note } });
+    return caseDetail(p, iv.case_id);
   });
 }
 
@@ -412,10 +596,12 @@ export function caseDetail(p: Principal, caseId: number) {
 
   const interventions = (conn
     .prepare(
-      `SELECT iv.*, u.full_name AS performer_account, r.full_name AS recorder_name
+      `SELECT iv.*, u.full_name AS performer_account, r.full_name AS recorder_name,
+              ap.full_name AS approver_name
          FROM case_interventions iv
          LEFT JOIN users u ON u.id = iv.performer_user_id
          LEFT JOIN users r ON r.id = iv.recorded_by
+         LEFT JOIN users ap ON ap.id = iv.approval_by
         WHERE iv.case_id = ? ORDER BY
           COALESCE(iv.completed_date, iv.started_date, iv.planned_date, iv.created_at), iv.id`,
     )
@@ -427,8 +613,20 @@ export function caseDetail(p: Principal, caseId: number) {
       byProxy: !iv.performer_user_id && !!iv.performer_name,
       plannedDate: iv.planned_date, startedDate: iv.started_date, completedDate: iv.completed_date,
       followupDue: iv.followup_due,
-      // Chỉ quá hạn khi CÓ hẹn và chưa xong. Theo dõi không hẹn thì không bao giờ quá hạn.
-      overdue: !!iv.followup_due && iv.followup_due < demoToday() && iv.status !== 'completed',
+      /*
+       * Quá hạn XEM LẠI: có hẹn, tới ngày mà chưa ai ghi kết quả.
+       * Trước đây còn đòi `status !== 'completed'` — sai, vì làm xong rồi mới đúng là lúc
+       * phải xem lại; điều kiện đó khiến gần như không việc nào bị coi là quá hạn.
+       */
+      overdue: !!iv.followup_due && iv.followup_due < demoToday() && iv.status !== 'cancelled'
+        && !conn.prepare('SELECT 1 FROM case_followups WHERE intervention_id = ?').get(iv.id),
+      // NULL = không cần duyệt, khác hẳn 'pending' = đang chờ Quản lý trả lời.
+      needsApproval: !!iv.needs_approval,
+      approvalState: iv.approval_state as string | null,
+      approvalDue: iv.approval_due as string | null,
+      approvalNote: iv.approval_note as string | null,
+      approvedBy: iv.approver_name ?? null,
+      approvalAt: iv.approval_at as string | null,
     }));
 
   const followups = (conn
@@ -481,6 +679,7 @@ export function caseDetail(p: Principal, caseId: number) {
     viewer: {
       canEdit: can(p, PERMISSIONS.SOS_EDIT, { classId: c.class_id, studentId: c.eff_student_id }),
       canClose: canCloseCase(p, c),
+      canApprove: can(p, PERMISSIONS.CASE_APPROVE, { classId: c.class_id, studentId: c.eff_student_id }),
     },
   };
 }

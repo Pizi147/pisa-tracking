@@ -651,15 +651,23 @@ function seedAcademicCases(conn: any, ctx: {
   const addIntervention = (caseId: number, o: {
     kind: string; description: string; performerUser?: number | null; performerName?: string | null;
     recorder: number; status: string; started?: string | null; completed?: string | null; due?: string | null;
+    /* Phần duyệt. `approvalState` để trống nghĩa là KHÔNG cần duyệt, khác hẳn 'pending'. */
+    approvalState?: 'pending' | 'approved' | 'declined' | null;
+    approvalDue?: string | null; approvalBy?: number | null; approvalAt?: string | null;
+    approvalNote?: string | null;
   }) => {
     const info = conn
       .prepare(
         `INSERT INTO case_interventions (case_id, kind, description, performer_user_id, performer_name,
-                                         recorded_by, status, started_date, completed_date, followup_due, created_at)
-         VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
+                                         recorded_by, status, started_date, completed_date, followup_due,
+                                         needs_approval, approval_state, approval_due, approval_by,
+                                         approval_at, approval_note, created_at)
+         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       )
       .run(caseId, o.kind, o.description, o.performerUser ?? null, o.performerName ?? null,
-           o.recorder, o.status, o.started ?? null, o.completed ?? null, o.due ?? null, NOW);
+           o.recorder, o.status, o.started ?? null, o.completed ?? null, o.due ?? null,
+           o.approvalState ? 1 : 0, o.approvalState ?? null, o.approvalDue ?? null,
+           o.approvalBy ?? null, o.approvalAt ?? null, o.approvalNote ?? null, NOW);
     conn.prepare(`UPDATE sos_cases SET status = 'in_progress', updated_at = ? WHERE id = ? AND status = 'open'`)
       .run(NOW, caseId);
     counts.interventions += 1;
@@ -777,6 +785,93 @@ function seedAcademicCases(conn: any, ctx: {
       `UPDATE sos_cases SET status = 'done', disposition = 'no_action', disposition_note = ?,
               closed_by = ?, closed_at = ?, updated_at = ? WHERE id = ?`,
     ).run('Nguyên nhân là sức khoẻ, đã ổn định — không cần hỗ trợ học thuật', mgr, NOW, NOW, c5);
+  }
+
+  /*
+   * --- 5b. ĐỀ XUẤT CHỜ DUYỆT.
+   *
+   * Giáo viên tự quyết phương án của mình có cần Quản lý duyệt hay không. Dữ liệu mẫu phải
+   * có đủ BỐN trạng thái, nếu không thì mở màn hình lên chỉ thấy một kiểu và không biết
+   * các kiểu còn lại trông thế nào:
+   *   - chờ duyệt, CÒN hạn      → Quản lý thấy việc nhưng chưa đỏ
+   *   - chờ duyệt, ĐÃ quá hạn   → đúng chỗ nhãn "Quá hạn duyệt" xuất hiện
+   *   - đã duyệt                → giáo viên làm tiếp, có hẹn xem lại
+   *   - không duyệt             → có lý do, và phương án dừng lại
+   */
+  const p1 = inClass('CP-FT 111')[0];
+  if (p1) {
+    const gv = teacherOf('CP-FT 111', 'writing1');
+    const c6 = openCase({
+      studentId: p1.id, classCode: 'CP-FT 111', reporter: gv, detectedAt: '2026-09-17',
+      summary: 'Task 2 lạc đề hai bài liên tiếp, viết không kịp giờ',
+      urgency: 'attention',
+      primary: 'student.writing.task', skill: 'writing',
+    });
+    // Còn hạn: đề xuất 19/09, mức "cần chú ý" nên Quản lý có 7 ngày → 26/09.
+    addIntervention(c6, {
+      kind: 'tutor', description: 'Xin 4 buổi tutor Writing task 2 trước MT tới',
+      performerUser: gv, recorder: gv, status: 'planned',
+      approvalState: 'pending', approvalDue: '2026-09-26',
+    });
+  }
+
+  const p2 = inClass('BC-FT 205')[1];
+  if (p2) {
+    const gv = teacherOf('BC-FT 205', 'listening');
+    const c7 = openCase({
+      studentId: p2.id, classCode: 'BC-FT 205', reporter: gv, detectedAt: '2026-09-12',
+      summary: 'Em xin lùi lịch thi vì trùng lịch thi học kỳ ở trường',
+      urgency: 'urgent',
+      primary: 'context.schedule', context: ['context.pressure'],
+    });
+    // Quá hạn: case GẤP nên Quản lý chỉ có 3 ngày, hạn 15/09 mà nay đã 23/09.
+    addIntervention(c7, {
+      kind: 'ops_policy', description: 'Đề nghị lùi MT3 sang tuần sau, giữ nguyên ngày thi thật',
+      performerUser: gv, recorder: gv, status: 'planned',
+      approvalState: 'pending', approvalDue: '2026-09-15',
+    });
+  }
+
+  const p3 = inClass('MB-FT 102')[1];
+  if (p3) {
+    const gv = teacherOf('MB-FT 102', 'speaking');
+    const mgr = managers.get('MB')?.[0] ?? adminId;
+    const c8 = openCase({
+      studentId: p3.id, classCode: 'MB-FT 102', reporter: gv, detectedAt: '2026-09-05',
+      summary: 'Nói ngắn, hết ý sau 20 giây ở part 2',
+      urgency: 'attention',
+      primary: 'student.speaking.fluency', skill: 'speaking',
+    });
+    addIntervention(c8, {
+      kind: 'tutor', description: 'Tutor Speaking 1 buổi/tuần trong 4 tuần',
+      performerName: 'Tutor Minh', recorder: gv, status: 'started', started: '2026-09-12',
+      due: '2026-10-03',                                  // hẹn xem lại còn xa, CHƯA quá hạn
+      approvalState: 'approved', approvalDue: '2026-09-12', approvalBy: mgr,
+      approvalAt: '2026-09-10', approvalNote: 'Duyệt 4 buổi, ưu tiên part 2',
+    });
+  }
+
+  const p4 = inClass('HD-FT 302')[1];
+  if (p4) {
+    const gv = teacherOf('HD-FT 302', 'reading');
+    const mgr = managers.get('HD')?.[0] ?? adminId;
+    const c9 = openCase({
+      studentId: p4.id, classCode: 'HD-FT 302', reporter: gv, detectedAt: '2026-09-02',
+      summary: 'Đọc chậm, phần 3 gần như bỏ trống',
+      urgency: 'normal',
+      primary: 'student.reading.strategy', skill: 'reading',
+    });
+    addIntervention(c9, {
+      kind: 'tutor', description: 'Xin 8 buổi tutor Reading',
+      performerUser: gv, recorder: gv, status: 'cancelled',
+      approvalState: 'declined', approvalDue: '2026-09-09', approvalBy: mgr,
+      approvalAt: '2026-09-08',
+      approvalNote: 'Chưa cần tutor, thử tăng bài luyện có bấm giờ trên lớp trước 3 tuần',
+    });
+    addIntervention(c9, {
+      kind: 'teaching_adjust', description: 'Luyện đọc bấm giờ 10 phút mỗi buổi',
+      performerUser: gv, recorder: gv, status: 'started', started: '2026-09-09', due: '2026-09-30',
+    });
   }
 
   // --- 6. Ghi nhận nhanh ĐỊNH TÍNH, không có điểm — lớp thường không quy ra band IELTS.

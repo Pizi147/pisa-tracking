@@ -545,6 +545,15 @@ api.post('/cases/:id/interventions', requireAuth, wrap((req) => {
   return caseSvc.recordIntervention(principalOf(req), pInt(req, 'id'), req.body ?? {});
 }));
 
+/**
+ * Quản lý trả lời một phương án đang chờ duyệt: duyệt / không duyệt / góp ý.
+ * Góp ý KHÔNG kết thúc việc chờ — Quản lý vẫn nợ một câu trả lời.
+ */
+api.post('/interventions/:id/respond', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return caseSvc.respondToPlan(principalOf(req), pInt(req, 'id'), req.body ?? {});
+}));
+
 /** Ghi một lần xem lại sau hỗ trợ. Một tác động có thể xem lại nhiều lần. */
 api.post('/cases/:id/followups', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
