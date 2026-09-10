@@ -4,7 +4,7 @@ import {
 } from '../../../shared/domain.ts';
 import { demoToday } from '../demoConfig.ts';
 import { badRequest, isIsoDate, notFound, nowIso } from '../util.ts';
-import { can, require_, scopeFor, type Principal } from '../permissions.ts';
+import { can, require_, scopeFor, teachesClass, type Principal } from '../permissions.ts';
 import { addJourney, writeAudit } from './audit.ts';
 
 /**
@@ -127,8 +127,14 @@ export function addContact(p: Principal, input: {
 }
 
 /**
- * Việc trao đổi đang chờ, trong phạm vi người xem — dùng cho màn Tổng quan.
- * Chỉ trả về việc người xem THỰC SỰ xác nhận được, không phải mọi việc họ nhìn thấy.
+ * Việc trao đổi đang chờ, VÀ THUỘC VỀ NGƯỜI ĐANG XEM.
+ *
+ * Hai việc này có hai người khác nhau làm, nên không nên hiện cho tất cả:
+ *   talk_student — GVCN + GVBM, tức người DẠY lớp đó. Và Quản lý.
+ *   talk_parent  — CS làm ở ngoài, văn phòng ghi lại. Nên Admin chi nhánh và Quản lý.
+ *
+ * Nếu bày cả hai cho mọi vai thì mỗi người nhận một danh sách trong đó quá nửa là việc của
+ * người khác — và danh sách như thế thì ai cũng bỏ qua cả những dòng thật sự của mình.
  */
 export function pendingContacts(p: Principal, f: { branchId?: number | null } = {}) {
   const scope = scopeFor(p, PERMISSIONS.SOS_EDIT);
@@ -146,5 +152,12 @@ export function pendingContacts(p: Principal, f: { branchId?: number | null } = 
     .all() as any[];
   return rows
     .filter((r) => !f.branchId || r.branch_id === f.branchId)
-    .filter((r) => can(p, PERMISSIONS.SOS_EDIT, { classId: r.class_id, studentId: r.student_id }));
+    .filter((r) => can(p, PERMISSIONS.SOS_EDIT, { classId: r.class_id, studentId: r.student_id }))
+    .filter((r) => {
+      // Quản lý thấy cả hai: họ là người đôn đốc khi có ai đó quên.
+      if (can(p, PERMISSIONS.CASE_APPROVE, { classId: r.class_id, studentId: r.student_id })) return true;
+      return r.kind === 'talk_student'
+        ? teachesClass(p, r.class_id)
+        : can(p, PERMISSIONS.STUDENT_EDIT, { classId: r.class_id, studentId: r.student_id });
+    });
 }

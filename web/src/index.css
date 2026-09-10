@@ -63,6 +63,28 @@
   }
   .surface-2 { background: var(--surface-2); }
 
+  /*
+   * CHIỀU RỘNG TRANG — owner chốt 10/09/2026.
+   *
+   * Bảng và bảng số trải HẾT chiều rộng: bỏ trống nửa màn hình phải là lãng phí đúng chỗ
+   * người ta cần nhìn nhiều dữ liệu nhất.
+   *
+   * Nhưng khối nhiều CHỮ thì không: một dòng dài quá tầm mắt bắt người đọc quét sang phải
+   * rồi tìm lại đầu dòng kế tiếp. Nên chữ trải hết bằng cách CHIA CỘT, không phải kéo dài.
+   * `.prose-col` đặt trần cho một cột chữ; ở màn rộng thì xếp nhiều cột cạnh nhau.
+   */
+  .page { width: 100%; }
+  .prose-col { max-width: 78ch; }
+
+  /*
+   * Bảng rộng hơn màn hình thì CUỘN TRONG CHÍNH NÓ, không đẩy cả trang trượt ngang.
+   * Trang trượt ngang là lỗi nặng nhất ở màn hẹp: thanh điều hướng cũng trôi theo.
+   */
+  .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+  /* Hộp tra cứu cuộn riêng, không phụ thuộc cuộn của cả trang. */
+  .box-scroll { overflow-y: auto; overscroll-behavior: contain; }
+
   .btn {
     display: inline-flex; align-items: center; gap: 0.4rem;
     padding: 0.45rem 0.85rem; border-radius: 0.5rem;

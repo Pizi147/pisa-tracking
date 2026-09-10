@@ -6,6 +6,8 @@ import { Card, Empty, ErrorState, Info, Level, Skeleton, Task } from '../compone
 import { BranchFilter } from '../components/Filters.tsx';
 import { fmtDate, skillShort } from '../lib/format.ts';
 import { CaseBoard } from './Academic.tsx';
+import { BranchPulse } from '../components/BranchPulse.tsx';
+import { MeetingBoard } from './Meeting.tsx';
 
 type WorkItem = {
   key: string; group: string; urgency: 'overdue' | 'today' | 'normal';
@@ -55,7 +57,22 @@ export default function OverviewPage() {
    * giữ đúng chỗ và gửi đường dẫn cho người khác vẫn ra đúng màn.
    */
   const canSeeBoard = !!session?.nav?.academic;
-  const tab = canSeeBoard && params.get('tab') === 'tinh-hinh' ? 'board' : 'work';
+  /*
+   * CỘT PHẢI ĐỔI THEO VAI.
+   *
+   * "Lớp của bạn" đúng với giáo viên và với Quản lý còn đi dạy. Với Admin chi nhánh thì sai
+   * tên: nó đang hiện TOÀN BỘ lớp của chi nhánh, không phải lớp họ dạy — và họ cũng không
+   * dạy lớp nào. Với Quản trị hệ thống thì vô nghĩa: năm chi nhánh trộn chung một danh sách.
+   */
+  const roles = session?.roles ?? [];
+  const showClasses = !(roles.length === 1 && roles[0] === 'system_admin');
+  const classTitle = roles.includes('branch_admin') && !roles.includes('teacher')
+    ? 'Lớp của chi nhánh' : 'Lớp của bạn';
+  const tabParam = params.get('tab');
+  const tab = !canSeeBoard ? 'work'
+    : tabParam === 'tinh-hinh' ? 'board'
+    : tabParam === 'bao-cao' ? 'report'
+    : 'work';
   const [branchId, setBranchId] = useState<number | null>(null);
   const { data, loading, error, reload } = useApi<Work>(
     `/my-work${branchId ? `?branchId=${branchId}` : ''}`, [branchId],
@@ -65,17 +82,19 @@ export default function OverviewPage() {
   if (error) return <ErrorState message={error.message} hint={error.hint} onRetry={reload} />;
 
   return (
-    <div className="space-y-4 max-w-[1080px]">
+    <div className="page space-y-4">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-lg font-semibold text-slate-100 m-0">Tổng quan</h1>
           <p className="text-xs text-slate-500 mt-0.5 mb-0">
             {tab === 'board'
               ? 'Toàn bộ vấn đề trong phạm vi bạn được xem — cả vấn đề sinh từ điểm và vấn đề giáo viên báo.'
+              : tab === 'report'
+              ? 'Tình hình chi nhánh theo tuần, và việc bạn giao cho từng bộ phận.'
               : `Việc của bạn, tính đến ${fmtDate(session?.demoDate)}.`}
           </p>
         </div>
-        {tab === 'work' && <BranchFilter branchId={branchId} onBranch={setBranchId} />}
+        {tab !== 'report' && <BranchFilter branchId={branchId} onBranch={setBranchId} />}
       </div>
 
       {canSeeBoard && (
@@ -86,10 +105,17 @@ export default function OverviewPage() {
           <TabButton active={tab === 'board'} onClick={() => {
             const next = new URLSearchParams(params); next.set('tab', 'tinh-hinh'); setParams(next);
           }}>Tình hình chung</TabButton>
+          <TabButton active={tab === 'report'} onClick={() => {
+            const next = new URLSearchParams(params); next.set('tab', 'bao-cao'); setParams(next);
+          }}>Báo cáo tuần</TabButton>
         </div>
       )}
 
       {tab === 'board' && <CaseBoard />}
+      {tab === 'report' && <MeetingBoard />}
+
+      {/* Khối riêng của Quản lý, nằm ngay trên việc của chính họ. */}
+      {tab === 'work' && canSeeBoard && <BranchPulse branchId={branchId} />}
 
       {tab === 'work' && loading && <Skeleton rows={8} />}
 
@@ -127,7 +153,8 @@ export default function OverviewPage() {
             ))}
           </div>
 
-          <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_17rem] items-start">
+          <div className={`grid gap-4 items-start ${showClasses
+            ? 'lg:grid-cols-[minmax(0,1fr)_17rem] 2xl:grid-cols-[minmax(0,1fr)_20rem]' : ''}`}>
             <div className="space-y-4 min-w-0">
               {data.groups.map((g) => (
                 <Card key={g.key} className="scroll-mt-4"
@@ -182,12 +209,18 @@ export default function OverviewPage() {
               vì nhiều việc làm theo cả lớp một lượt chứ không theo từng em. Cố tình để hẹp
               hơn cột việc: đây là chỗ tra cứu, không phải chỗ làm việc.
             */}
-            <Card title="Lớp của bạn" bodyClass="p-0" className="lg:sticky lg:top-4">
+            {/*
+              Cột tra cứu CUỘN RIÊNG. Trước đây nó dính theo cuộn của cả trang, nên ở lớp
+              nhiều dòng thì phải cuộn hết danh sách việc mới thấy được lớp cuối cùng.
+              `max-h` tính theo chiều cao màn hình, không phải một con số cố định.
+            */}
+            {showClasses && <Card title={classTitle} bodyClass="p-0"
+              className="lg:sticky lg:top-4 lg:max-h-[calc(100vh-7rem)] lg:flex lg:flex-col">
               {classes.loading && <div className="p-4"><Skeleton rows={3} /></div>}
               {classes.data && classes.data.rows.length === 0 && (
                 <div className="p-4"><Empty title="Bạn chưa được phân công lớp nào" /></div>
               )}
-              <ul className="divide-y list-none p-0 m-0" style={{ borderColor: 'var(--line)' }}>
+              <ul className="divide-y list-none p-0 m-0 box-scroll lg:min-h-0" style={{ borderColor: 'var(--line)' }}>
                 {(classes.data?.rows ?? []).map((c) => (
                   <li key={c.id}>
                     <Link to={`/hoc-vien?open=${c.id}`}
@@ -205,10 +238,10 @@ export default function OverviewPage() {
                   </li>
                 ))}
               </ul>
-              <div className="px-4 py-3">
+              <div className="px-4 py-3 shrink-0 border-t" style={{ borderColor: 'var(--line)' }}>
                 <Link className="link text-xs" to="/hoc-vien">Xem tất cả lớp →</Link>
               </div>
-            </Card>
+            </Card>}
           </div>
         </div>
       )}

@@ -14,6 +14,9 @@ import * as attemptSvc from '../services/attempts.ts';
 import * as cycleSvc from '../services/cycles.ts';
 import * as checkinSvc from '../services/checkins.ts';
 import * as contactSvc from '../services/contacts.ts';
+import * as summarySvc from '../services/summary.ts';
+import * as pulseSvc from '../services/branchpulse.ts';
+import * as prefSvc from '../services/prefs.ts';
 import * as profileSvc from '../services/profile.ts';
 import * as classSvc from '../services/classes.ts';
 import * as intakeSvc from '../services/intake.ts';
@@ -546,6 +549,27 @@ api.get('/cases', requireAuth, wrap((req) => {
     group: qStr(req, 'group'), skill: qStr(req, 'skill'), queue: qStr(req, 'queue'),
   });
 }));
+
+/**
+ * Bảng tổng hợp cho Quản lý: một hàng mỗi chi nhánh, hoặc mỗi lớp khi đã chọn chi nhánh.
+ * Dùng CHUNG `listCases` với danh sách bên dưới nên số trên bảng và số dòng luôn khớp.
+ */
+api.get('/summary', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return summarySvc.branchSummary(principalOf(req), { branchId: qInt(req, 'branchId') });
+}));
+
+/** Khối riêng của Quản lý: chi nhánh đang tắc ở đâu (theo lớp), và ai đang tắc (theo người). */
+api.get('/branch-pulse', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return pulseSvc.branchPulse(principalOf(req), { branchId: qInt(req, 'branchId') });
+}));
+
+/** Lựa chọn hiển thị riêng của từng người — bộ cột đang xem, chi nhánh xem lần cuối… */
+api.get('/prefs', requireAuth, wrap((req) => prefSvc.allPrefs(principalOf(req))));
+api.put('/prefs/:key', requireAuth, wrap((req) => prefSvc.setPref(
+  principalOf(req), String(req.params.key), req.body?.value ?? null,
+)));
 
 api.get('/cases/queues', requireAuth, wrap((req) => caseSvc.caseQueueCounts(principalOf(req), {
   branchId: toInt(req.query?.branchId), classId: toInt(req.query?.classId),

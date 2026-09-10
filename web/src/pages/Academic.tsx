@@ -4,6 +4,7 @@ import { useApi } from '../lib/useApi.ts';
 import { Card, Empty, ErrorState, KpiTile, Pill, SectionNote, Skeleton } from '../components/ui.tsx';
 import { Drawer } from '../components/Drawer.tsx';
 import { CasePanel } from '../components/CasePanel.tsx';
+import { SummaryTable } from '../components/SummaryTable.tsx';
 import { fmtDate, sosLabel, sosTone } from '../lib/format.ts';
 import {
   BEHAVIOUR_TOPICS, BEHAVIOUR_TOPIC_LABEL, ENTRY_SKILLS, ENTRY_SKILL_LABEL,
@@ -38,7 +39,7 @@ const STATE_LABEL: Record<string, string> = {
 
 export default function AcademicPage() {
   return (
-    <div className="space-y-4 max-w-[1200px]">
+    <div className="page space-y-4">
       <div>
         <h1 className="text-lg font-semibold text-slate-100 m-0">Tình hình chung</h1>
         <p className="text-xs text-slate-500 mt-1 mb-0">
@@ -119,6 +120,14 @@ export function CaseBoard() {
 
   return (
     <div className="space-y-4">
+      {/*
+        BẢNG TỔNG HỢP trước, danh sách sau: Quản lý mở màn này để trả lời "chi nhánh nào,
+        lớp nào đang nặng nhất", rồi mới đi vào từng em. Bấm một hàng chi nhánh là xuống
+        tầng lớp của chính chi nhánh đó.
+      */}
+      <SummaryTable branchId={branchId ? Number(branchId) : null}
+        onPickBranch={(id) => set('cn', String(id))} />
+
       {/*
         BA TRẠNG THÁI LOẠI TRỪ NHAU, cộng lại đúng bằng tổng.
 

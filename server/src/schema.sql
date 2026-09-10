@@ -679,6 +679,15 @@ CREATE TABLE tasks (
   due_date TEXT,
   progress TEXT NOT NULL DEFAULT 'not_started',
   note TEXT,
+  /*
+   * HAI LOẠI VIỆC KHÁC HẲN NHAU:
+   *   branch_ops   — giáo trình, vận hành chi nhánh. KHÔNG gắn học viên nào.
+   *   teacher_task — giao giáo viên, gắn lớp/kỹ năng/học viên và TOẢ RA thành phương án.
+   */
+  kind TEXT NOT NULL DEFAULT 'branch_ops',
+  class_id INTEGER REFERENCES classes(id),
+  track TEXT,                         -- academic | behaviour, chỉ có ở teacher_task
+  topic TEXT,                         -- kỹ năng hoặc nhóm ý thức
   source_type TEXT,                   -- manual | unit_report | sos_case
   source_unit_report_id INTEGER REFERENCES unit_reports(id),
   source_sos_case_id INTEGER REFERENCES sos_cases(id),
@@ -689,6 +698,44 @@ CREATE TABLE tasks (
 );
 CREATE INDEX idx_task_period ON tasks(period_id);
 CREATE INDEX idx_task_assignee ON tasks(assignee_user_id);
+
+/*
+ * VIỆC QUẢN LÝ GIAO CHO GIÁO VIÊN, TOẢ RA THÀNH PHƯƠNG ÁN CỦA TỪNG EM.
+ *
+ * Một task cho cả lớp 13 em phải là MỘT task cập nhật MỘT LẦN, không phải 13 bản sao —
+ * nếu bắt giáo viên cập nhật 13 lần thì họ bỏ qua, và dữ liệu tiến độ thành rác.
+ *
+ * Bảng này nối task với những em nó chạm tới, và với vấn đề đã mở cho từng em. Owner chốt:
+ * Quản lý giao việc cho một em TỨC LÀ em đó đang có vấn đề — kể cả khi chưa ai ghi gì.
+ * Vấn đề mở kiểu này vào thẳng trạng thái "đang xử lý" (nó đã có phương án rồi, chính là
+ * task này), không rơi vào danh sách "chưa có phương án hỗ trợ".
+ */
+CREATE TABLE task_students (
+  id INTEGER PRIMARY KEY,
+  task_id INTEGER NOT NULL REFERENCES tasks(id),
+  student_id INTEGER NOT NULL REFERENCES students(id),
+  case_id INTEGER REFERENCES sos_cases(id),
+  intervention_id INTEGER REFERENCES case_interventions(id),
+  created_at TEXT NOT NULL,
+  UNIQUE (task_id, student_id)
+);
+CREATE INDEX idx_task_students_task ON task_students(task_id);
+CREATE INDEX idx_task_students_student ON task_students(student_id);
+
+/*
+ * LỰA CHỌN RIÊNG CỦA TỪNG TÀI KHOẢN — bộ cột đang xem, lần cuối chọn chi nhánh nào…
+ *
+ * Cố tình là một bảng khoá–giá trị chứ không phải một cột cho mỗi thứ: đây là sở thích hiển
+ * thị, không phải dữ liệu nghiệp vụ. Mất hết cũng không ai sai việc gì, nên không đáng để
+ * thêm một cột và một bước nâng cấp mỗi lần có một tuỳ chọn mới.
+ */
+CREATE TABLE user_prefs (
+  user_id INTEGER NOT NULL REFERENCES users(id),
+  key TEXT NOT NULL,
+  value TEXT,
+  updated_at TEXT NOT NULL,
+  PRIMARY KEY (user_id, key)
+);
 
 -- Người THEO DÕI một công việc: không phải người làm, không chịu trách nhiệm hoàn thành,
 -- nhưng được cập nhật khi tiến độ đổi. Nhiều người một việc nên phải là bảng riêng,

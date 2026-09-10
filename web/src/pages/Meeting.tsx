@@ -7,6 +7,7 @@ import { useToast } from '../components/Toast.tsx';
 import { Card, Empty, ErrorState, Pill, SectionNote, Skeleton } from '../components/ui.tsx';
 import { WeekPicker, usePeriodWindow } from '../components/Filters.tsx';
 import { SignalList } from '../components/SignalList.tsx';
+import { ManagerTaskList, ManagerTasks } from '../components/ManagerTasks.tsx';
 import { unitStatusLabel, unitTone } from '../lib/format.ts';
 import { UNIT_STATUSES } from '@shared/domain.ts';
 
@@ -23,6 +24,24 @@ type Board = {
 };
 
 export default function MeetingPage() {
+  return (
+    <div className="page space-y-4">
+      <div>
+        <h1 className="text-lg font-semibold text-slate-100 m-0">Báo cáo tuần chi nhánh</h1>
+        <p className="text-xs text-slate-500 mt-0.5 mb-0">
+          Hệ thống tổng hợp dữ liệu, quản lý bổ sung nhận định — thay cho việc chép lại số liệu vào workbook.
+        </p>
+      </div>
+      <MeetingBoard />
+    </div>
+  );
+}
+
+/**
+ * Thân màn Báo cáo tuần, dùng CHUNG cho trang riêng `/tien-trinh` và cho tab thứ ba của
+ * Tổng quan. Một bản cài đặt, một cách đọc số — hai màn hình không bao giờ lệch nhau.
+ */
+export function MeetingBoard() {
   const { session } = useSession();
   const [periodId, setPeriodId] = useState<number | null>(null);
 
@@ -40,20 +59,17 @@ export default function MeetingPage() {
   if (board.error) return <ErrorState message={board.error.message} hint={board.error.hint} onRetry={board.reload} />;
 
   return (
-    <div className="space-y-4 max-w-[1500px]">
+    <div className="space-y-4">
       <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-lg font-semibold text-slate-100">Tiến trình công việc</h1>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Hệ thống tổng hợp dữ liệu, quản lý bổ sung nhận định — thay cho việc chép lại số liệu vào workbook.
-          </p>
-        </div>
         <div className="flex flex-wrap items-end gap-2">
           <WeekPicker periodId={periodId} onPeriod={setPeriodId} label="Tuần báo cáo" className="w-52" />
           {/* Bảng số liệu theo tuần: cùng dữ liệu, khác lát cắt — nhiều tuần cạnh nhau. */}
           <Link className="btn no-underline" to="/tong-hop-tuan">Tổng hợp theo tuần</Link>
         </div>
+        <ManagerTasks periodId={periodId} />
       </div>
+
+      <ManagerTaskList periodId={periodId} />
 
       {/* Báo cáo tuần chỉ mở trong hai ngày cuối tuần — nói rõ vì sao, không chỉ làm mờ ô nhập. */}
       {board.data?.editWindow && !board.data.editWindow.open && (
