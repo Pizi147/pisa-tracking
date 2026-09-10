@@ -228,7 +228,7 @@ export default function StudentDetailPage() {
                           {' · '}
                           {c.interventionCount > 0
                             ? `${c.interventionCount} việc đã ghi`
-                            : 'chưa ghi việc nào'}
+                            : 'chưa làm'}
                           {c.nextDue && ` · hẹn xem lại ${fmtDate(c.nextDue)}`}
                         </span>
                       </button>

@@ -184,7 +184,7 @@ export function CasePanel({ caseId, compact = false }: { caseId: number; compact
             {data.dispositionNote && <span className="text-slate-400"> — {data.dispositionNote}</span>}
           </p>
         ) : (
-          <p className="text-sm text-slate-400 m-0">Chưa ai định hướng xử lý.</p>
+          <p className="text-sm text-slate-400 m-0">Chưa làm — chưa ai định hướng xử lý.</p>
         )}
         {data.closedAt && <p className="text-xs text-slate-500 mt-1 mb-0">Đã kết thúc theo dõi {fmtDate(data.closedAt)}</p>}
         {data.viewer.canEdit && (

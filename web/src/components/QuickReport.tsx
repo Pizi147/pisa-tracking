@@ -3,7 +3,7 @@ import { api, invalidate } from '../lib/api.ts';
 import { useToast } from './Toast.tsx';
 import { Modal } from './Drawer.tsx';
 import { Field, SectionNote } from './ui.tsx';
-import { ISSUE_CONTEXTS, ISSUE_TAXONOMY, URGENCY_LEVELS, URGENCY_LABEL } from '@shared/domain.ts';
+import { ISSUE_CONTEXTS, ISSUE_GROUP_LABEL, ISSUE_TAXONOMY, URGENCY_LEVELS, URGENCY_LABEL } from '@shared/domain.ts';
 
 /**
  * BÁO NHANH MỘT VẤN ĐỀ.
@@ -107,11 +107,19 @@ export function QuickReport({ open, onClose, studentId, studentName, cycleId, on
               <select className="field" value={branchKey}
                 onChange={(e) => { setBranchKey(e.target.value); setPrimaryCode(''); }}>
                 <option value="">Chưa phân loại</option>
-                {ISSUE_TAXONOMY.map((b) => (
-                  <option key={b.key} value={b.key}>
-                    {b.group === 'student' ? 'Học sinh' : b.group === 'teacher' ? 'Quá trình dạy' : 'Chương trình'} · {b.label}
-                  </option>
-                ))}
+                {/*
+                  Nhóm chỉ có MỘT nhánh thì tên nhóm và tên nhánh trùng nhau — hiện
+                  "Giáo viên · Giáo viên" là chữ thừa, chỉ hiện một lần.
+                */}
+                {ISSUE_TAXONOMY.map((b) => {
+                  const group = ISSUE_GROUP_LABEL[b.group];
+                  const only = ISSUE_TAXONOMY.filter((x) => x.group === b.group).length === 1;
+                  return (
+                    <option key={b.key} value={b.key}>
+                      {only || group === b.label ? group : `${group} · ${b.label}`}
+                    </option>
+                  );
+                })}
               </select>
             </Field>
             {branch && (

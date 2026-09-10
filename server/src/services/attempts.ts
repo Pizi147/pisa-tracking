@@ -16,7 +16,7 @@ import {
 import { effectiveDeadline, isOverdue, weekInfo } from './week.ts';
 import { stepsFor, upsertCaseForResult } from './sos.ts';
 import { currentCycle, cycleById, nextAttemptNo } from './cycles.ts';
-import { allProgrammes, evaluateRegular } from './regular.ts';
+import { allProgrammes, evaluateRegular, regularDeadline } from './regular.ts';
 
 export type ScoreRow = {
   id: number; skill: EntrySkill; taken_on: string | null;
@@ -305,6 +305,19 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
               return row?.raw_score === null || row?.raw_score === undefined;
             })
           : [],
+        /*
+         * Cùng danh sách trên nhưng KÈM HẠN, để màn Tổng quan nói được "quá hạn 3 ngày"
+         * chứ không chỉ nói "còn thiếu điểm". Giữ `myPendingSkills` nguyên dạng mảng chuỗi
+         * vì nhiều chỗ khác đang dùng.
+         */
+        myPendingDetail: dueForEntry
+          ? editable
+            .filter((k) => {
+              const row = scores.find((x) => x.skill === k);
+              return row?.raw_score === null || row?.raw_score === undefined;
+            })
+            .map((k) => ({ skill: k, deadline: regularDeadline(a).date }))
+          : [],
         caseStatus: c?.status ?? null,
         caseId: c?.id ?? null,
         caseLevel: c?.sos_level ?? null,
@@ -365,6 +378,9 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
       myPendingSkills: cells
         .filter((c) => c.canEdit && c.band === null && (c.progress === 'performed' || c.progress === 'due'))
         .map((c) => c.skill),
+      myPendingDetail: cells
+        .filter((c) => c.canEdit && c.band === null && (c.progress === 'performed' || c.progress === 'due'))
+        .map((c) => ({ skill: c.skill, deadline: c.deadline })),
       caseStatus: bundle.cases.get(a.id)?.status ?? null,
       caseId: bundle.cases.get(a.id)?.id ?? null,
       caseLevel: bundle.cases.get(a.id)?.sos_level ?? null,

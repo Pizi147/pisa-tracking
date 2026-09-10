@@ -306,7 +306,7 @@ export type IssueNode = {
 
 export type IssueBranch = {
   group: IssueGroup;
-  /** Nhánh con, ví dụ "Thói quen học" hay "Listening". */
+  /** Nhánh con, ví dụ "Ý thức học tập" hay "Listening". */
   key: string;
   label: string;
   skill?: string;
@@ -317,7 +317,7 @@ const other = (code: string): IssueNode => ({ code, label: 'Khác' });
 
 export const ISSUE_TAXONOMY: IssueBranch[] = [
   {
-    group: 'student', key: 'behaviour', label: 'Thói quen học',
+    group: 'student', key: 'behaviour', label: 'Ý thức học tập',
     items: [
       { code: 'student.behaviour.attendance', label: 'Đi học / đúng giờ' },
       { code: 'student.behaviour.homework', label: 'Chuẩn bị bài / bài tập' },
@@ -370,7 +370,7 @@ export const ISSUE_TAXONOMY: IssueBranch[] = [
     ],
   },
   {
-    group: 'teacher', key: 'teaching', label: 'Quá trình dạy',
+    group: 'teacher', key: 'teaching', label: 'Giáo viên',
     items: [
       { code: 'teacher.explain', label: 'Giải thích / kiểm tra mức hiểu' },
       { code: 'teacher.adjust', label: 'Điều chỉnh cách dạy theo lớp' },
@@ -382,7 +382,7 @@ export const ISSUE_TAXONOMY: IssueBranch[] = [
     ],
   },
   {
-    group: 'curriculum', key: 'programme', label: 'Chương trình',
+    group: 'curriculum', key: 'programme', label: 'Giáo trình',
     items: [
       { code: 'curriculum.level', label: 'Mức độ / trình tự bài' },
       { code: 'curriculum.pace', label: 'Tốc độ / khối lượng' },

@@ -24,6 +24,7 @@ import {
 import * as planningSvc from '../services/planning.ts';
 import { signalsFor } from '../services/signals.ts';
 import { weeklyRollup } from '../services/weekly.ts';
+import { myWork } from '../services/mywork.ts';
 import * as caseSvc from '../services/cases.ts';
 import * as regularSvc from '../services/regular.ts';
 
@@ -71,12 +72,16 @@ api.get('/demo/session', wrap((req) => {
      * Admin chi nhánh vào danh sách cần cập nhật ngày, còn lại mở Tổng quan.
      * Chỉ đổi điểm vào, không đổi quyền.
      */
-    landing: p.roleKeys.length === 1
-      ? p.roleKeys[0] === 'teacher' ? '/hoc-vien?view=my_scores'
-        : p.roleKeys[0] === 'branch_admin' ? '/hoc-vien?view=need_date'
-        : '/'
-      : '/',
-    // Bốn mục điều hướng + một lối phụ. Ẩn/hiện theo quyền, không theo tên vai trò.
+    /*
+     * AI CŨNG VÀO TỔNG QUAN.
+     *
+     * Trước đây mỗi vai được đẩy tới một danh sách khác nhau, vì màn Tổng quan cũ là bảng số
+     * theo tuần — không phải việc của ai cả. Nay Tổng quan CHÍNH LÀ việc của người đang xem,
+     * nên không cần đường vòng: giáo viên mở ra thấy điểm mình phải nhập, Quản lý thấy em
+     * đang cần hỗ trợ, Admin chi nhánh thấy lịch cần cập nhật.
+     */
+    landing: '/',
+    // Hai mục điều hướng + các lối phụ trong menu tài khoản. Ẩn/hiện theo quyền.
     nav: {
       overview: true,
       mocks: !scopeFor(p, PERMISSIONS.ATTEMPT_VIEW).none,
@@ -205,6 +210,15 @@ api.get('/ref/units', requireAuth, wrap((req) => {
 }));
 
 // ============================================================ Tổng quan
+
+/**
+ * VIỆC CỦA CHÍNH NGƯỜI ĐANG XEM — thay bảng số theo tuần ở màn chính.
+ * Chỉ trả về việc người này thực sự làm được; quyền kiểm ở tầng dịch vụ, không phải ẩn nút.
+ */
+api.get('/my-work', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return myWork(principalOf(req), { branchId: qInt(req, 'branchId') });
+}));
 
 api.get('/overview', requireAuth, wrap((req) => {
   maybeSimulateReadError();

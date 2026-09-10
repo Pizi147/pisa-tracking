@@ -75,7 +75,7 @@ export default function AcademicPage() {
 
       {/* ---------------------------------------------- bốn hàng đợi */}
       <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
-        <QueueTile label="Chưa ai định hướng" value={counts.data?.newCases} active={queue === 'new'}
+        <QueueTile label="Chưa làm" value={counts.data?.newCases} active={queue === 'new'}
           onClick={() => set('hang-doi', queue === 'new' ? '' : 'new')} />
         <QueueTile label="Đang hỗ trợ / theo dõi" value={counts.data?.active} active={queue === 'active'}
           onClick={() => set('hang-doi', queue === 'active' ? '' : 'active')} />

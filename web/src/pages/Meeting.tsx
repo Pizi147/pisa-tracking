@@ -1,16 +1,14 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useApi } from '../lib/useApi.ts';
 import { useSession } from '../lib/session.tsx';
 import { api, invalidate } from '../lib/api.ts';
 import { useToast } from '../components/Toast.tsx';
 import { Card, Empty, ErrorState, Pill, SectionNote, Skeleton } from '../components/ui.tsx';
-import { Modal } from '../components/Drawer.tsx';
 import { WeekPicker, usePeriodWindow } from '../components/Filters.tsx';
 import { SignalList } from '../components/SignalList.tsx';
-import { FollowerPicker, PersonPicker, type Person } from '../components/PeoplePicker.tsx';
-import { dueLabel, dueTone, fmtDate, taskProgressLabel, taskTypeLabel, unitStatusLabel, unitTone } from '../lib/format.ts';
-import { TASK_PROGRESS, TASK_TYPES, UNIT_STATUSES } from '@shared/domain.ts';
+import { unitStatusLabel, unitTone } from '../lib/format.ts';
+import { UNIT_STATUSES } from '@shared/domain.ts';
 
 type Board = {
   period: { id: number; code: string; range: string };
@@ -24,27 +22,9 @@ type Board = {
   editWindow: { open: boolean; reason: string | null; opensOn: string } | null;
 };
 
-type Task = {
-  id: number; code: string; title: string; taskType: string;
-  followers?: { userId: number; name: string; source: string }[];
-  unitId: number | null; unitName: string | null; assigneeId: number | null; assigneeName: string | null;
-  dueDate: string | null; progress: string; note: string | null; dueState: string;
-  periodId: number | null; periodCode: string | null; sourceSosCaseId: number | null; canEdit: boolean;
-};
-
-const TASK_VIEWS = [
-  { key: '', label: 'Tất cả' },
-  { key: 'open', label: 'Chưa xong' },
-  { key: 'overdue', label: 'Quá hạn' },
-  { key: 'mine', label: 'Của tôi' },
-  { key: 'done', label: 'Đã xong' },
-];
-
 export default function MeetingPage() {
   const { session } = useSession();
   const [periodId, setPeriodId] = useState<number | null>(null);
-  const [view, setView] = useState('open');
-  const [taskOpen, setTaskOpen] = useState<Task | 'new' | null>(null);
 
   // Mở đúng tuần hiện tại. Cửa sổ tuần trượt theo tuần đang xem nên không cần nạp cả lịch sử.
   const window = usePeriodWindow(periodId);
@@ -56,13 +36,6 @@ export default function MeetingPage() {
   }, [window.data, periodId, session]);
 
   const board = useApi<Board>(periodId ? `/meeting/board?periodId=${periodId}` : null);
-  const tasksQs = useMemo(() => {
-    const p = new URLSearchParams();
-    if (periodId) p.set('periodId', String(periodId));
-    if (view) p.set('view', view);
-    return `/tasks?${p.toString()}`;
-  }, [periodId, view]);
-  const tasks = useApi<{ rows: Task[]; scopeEmpty: boolean }>(tasksQs);
 
   if (board.error) return <ErrorState message={board.error.message} hint={board.error.hint} onRetry={board.reload} />;
 
@@ -123,74 +96,6 @@ export default function MeetingPage() {
         </Card>
       )}
 
-      <Card
-        title="Công việc"
-        action={
-          <div className="flex flex-wrap items-center gap-1">
-            {TASK_VIEWS.map((v) => (
-              <button key={v.key} className={`btn btn-sm ${view === v.key ? 'btn-primary' : ''}`} onClick={() => setView(v.key)}>{v.label}</button>
-            ))}
-            <button className="btn btn-sm btn-primary ml-2" onClick={() => setTaskOpen('new')}>Thêm việc</button>
-          </div>
-        }
-        bodyClass="p-0"
-      >
-        {tasks.loading && <div className="p-4"><Skeleton rows={4} /></div>}
-        {tasks.data && tasks.data.rows.length === 0 && (
-          <Empty title="Không có công việc nào khớp bộ lọc" hint="Chọn “Tất cả” để xem cả việc đã xong." />
-        )}
-        {tasks.data && tasks.data.rows.length > 0 && (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr>
-                  <th className="th">Mã</th>
-                  <th className="th">Nội dung</th>
-                  <th className="th">Đơn vị</th>
-                  <th className="th">Phụ trách</th>
-                  <th className="th">Hạn</th>
-                  <th className="th">Tiến độ</th>
-                  <th className="th">Kỳ</th>
-                </tr>
-              </thead>
-              <tbody>
-                {tasks.data.rows.map((t) => (
-                  <tr key={t.id} className="row-hover cursor-pointer" onClick={() => setTaskOpen(t)}>
-                    <td className="td text-xs text-slate-500 whitespace-nowrap">{t.code}</td>
-                    <td className="td text-slate-100">
-                      {t.title}
-                      {t.sourceSosCaseId && <Pill tone="info">Từ case SOS</Pill>}
-                    </td>
-                    <td className="td text-slate-300 whitespace-nowrap">{t.unitName ?? '—'}</td>
-                    <td className="td text-slate-300 whitespace-nowrap">{t.assigneeName ?? 'Chưa giao'}</td>
-                    <td className="td whitespace-nowrap">
-                      <span className="text-slate-300">{fmtDate(t.dueDate)}</span>
-                      <div><Pill tone={dueTone(t.dueState)}>{dueLabel(t.dueState)}</Pill></div>
-                    </td>
-                    <td className="td whitespace-nowrap">{taskProgressLabel(t.progress)}</td>
-                    <td className="td whitespace-nowrap text-slate-500 text-xs">{t.periodCode ?? '—'}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-        <div className="p-3">
-          <SectionNote>
-            Việc chưa xong từ kỳ trước giữ nguyên mã và lịch sử, không nhân bản sang tuần mới. Việc dài hạn chưa xong
-            và việc quá hạn/sắp đến hạn được xét xuyên kỳ. Việc không có hạn không bao giờ bị tính quá hạn.
-          </SectionNote>
-        </div>
-      </Card>
-
-      {taskOpen && (
-        <TaskModal
-          task={taskOpen === 'new' ? null : taskOpen}
-          periodId={periodId}
-          onClose={() => setTaskOpen(null)}
-          onSaved={() => { tasks.reload(); invalidate('/overview'); }}
-        />
-      )}
     </div>
   );
 }
@@ -269,109 +174,3 @@ function CellEditor({ unitId, periodId, cell, canEdit, onSaved }: {
   );
 }
 
-function TaskModal({ task, periodId, onClose, onSaved }: {
-  task: Task | null; periodId: number | null; onClose: () => void; onSaved: () => void;
-}) {
-  const toast = useToast();
-  const units = useApi<any[]>('/ref/units');
-  const [title, setTitle] = useState(task?.title ?? '');
-  const [unitId, setUnitId] = useState<number | null>(task?.unitId ?? null);
-  const [assignee, setAssignee] = useState<{ id: number; name: string } | null>(
-    task?.assigneeId ? { id: task.assigneeId, name: task.assigneeName ?? '' } : null,
-  );
-  const [followers, setFollowers] = useState<Person[]>(
-    (task?.followers ?? []).filter((f) => f.source !== 'auto')
-      .map((f) => ({ id: f.userId, name: f.name, title: null, role: null, branches: [] })),
-  );
-  const [dueDate, setDueDate] = useState(task?.dueDate ?? '');
-  const [progress, setProgress] = useState(task?.progress ?? 'not_started');
-  const [note, setNote] = useState(task?.note ?? '');
-  const [busy, setBusy] = useState(false);
-
-  // Quản lý của chi nhánh được hệ thống thêm sẵn — hiện ra để người tạo khỏi chọn lại.
-  const autoNames = (task?.followers ?? []).filter((f) => f.source === 'auto').map((f) => f.name);
-
-  const submit = async () => {
-    if (busy) return;
-    setBusy(true);
-    try {
-      const body = {
-        title, unitId, assigneeUserId: assignee?.id ?? null,
-        dueDate: dueDate || null, note, followerIds: followers.map((f) => f.id),
-      };
-      if (task) {
-        await api.patch(`/tasks/${task.id}`, { ...body, progress });
-      } else {
-        await api.post('/tasks', { ...body, periodId });
-      }
-      invalidate('/tasks'); invalidate('/overview');
-      onSaved(); onClose();
-      toast.push('ok', task ? 'Đã cập nhật công việc' : 'Đã thêm công việc');
-    } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
-  };
-
-  const readOnly = !!task && !task.canEdit;
-
-  return (
-    <Modal open onClose={onClose} title={task ? `${task.code} · ${task.title}` : 'Thêm công việc'} width="max-w-xl"
-      footer={<>
-        <button className="btn" onClick={onClose} disabled={busy}>Đóng</button>
-        {!readOnly && <button className="btn btn-primary" onClick={submit} disabled={busy || !title.trim()}>
-          {busy ? 'Đang lưu…' : 'Lưu'}
-        </button>}
-      </>}>
-      <div className="space-y-3">
-        <label className="block">
-          <span className="label">Nội dung</span>
-          <input className="field" value={title} disabled={readOnly} onChange={(e) => setTitle(e.target.value)} />
-        </label>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <label className="block">
-            <span className="label">Đơn vị</span>
-            <select className="field" value={unitId ?? ''} disabled={readOnly} onChange={(e) => setUnitId(Number(e.target.value) || null)}>
-              <option value="">Không gắn đơn vị</option>
-              {(units.data ?? []).map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
-            </select>
-          </label>
-          <div className="block">
-            {/* Gõ để tìm, kèm vai trò và chi nhánh — một danh sách chỉ có tên là chọn nhầm người. */}
-            <span className="label">Người phụ trách</span>
-            <PersonPicker
-              value={assignee?.id ?? null} valueName={assignee?.name} disabled={readOnly}
-              placeholder="Gõ tên để giao việc…"
-              onChange={(id, p) => setAssignee(id && p ? { id, name: p.name } : null)}
-            />
-          </div>
-          <label className="block">
-            <span className="label">Hạn</span>
-            <input type="date" className="field" value={dueDate ?? ''} disabled={readOnly} onChange={(e) => setDueDate(e.target.value)} />
-          </label>
-          {task && (
-            <label className="block">
-              <span className="label">Tiến độ</span>
-              <select className="field" value={progress} onChange={(e) => setProgress(e.target.value)}>
-                {TASK_PROGRESS.map((p) => <option key={p} value={p}>{taskProgressLabel(p)}</option>)}
-              </select>
-            </label>
-          )}
-        </div>
-        <div className="block">
-          <span className="label">Người theo dõi</span>
-          <FollowerPicker value={followers} onChange={setFollowers} autoNames={autoNames} disabled={readOnly} />
-          <p className="text-[11px] text-slate-500 mt-1">
-            Người theo dõi không phải người làm và không chịu trách nhiệm hoàn thành — họ chỉ cần biết
-            khi tiến độ đổi. Quản lý của chi nhánh được thêm sẵn.
-          </p>
-        </div>
-        <label className="block">
-          <span className="label">Ghi chú</span>
-          <textarea className="field" rows={2} value={note ?? ''} onChange={(e) => setNote(e.target.value)} />
-        </label>
-        {task?.sourceSosCaseId && (
-          <SectionNote>Công việc này sinh từ một case SOS và giữ liên kết tới lần Mock gốc.</SectionNote>
-        )}
-        {readOnly && <SectionNote>Bạn chỉ xem được công việc này. Người được giao và quản lý đơn vị mới cập nhật được.</SectionNote>}
-      </div>
-    </Modal>
-  );
-}

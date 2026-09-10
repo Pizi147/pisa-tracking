@@ -17,17 +17,22 @@ import AdminPage from './pages/Admin.tsx';
 import WelcomePage from './pages/Welcome.tsx';
 
 /**
- * Ba mục nghiệp vụ. Quản trị hệ thống là lối vào phụ trong menu tài khoản.
+ * HAI MỤC, KHÔNG HƠN.
  *
- * Mock Test không còn là mục riêng: tiến độ, lịch và điểm đều là các cách xem của HỌC VIÊN,
- * và mọi đường dẫn đổ về cùng một Student Detail. SOS, báo cáo, công việc cũng không có menu
- * riêng — chúng nằm ngay nơi phát sinh.
+ * Trước đây bốn mục là bốn cách nghĩ khác nhau — theo TUẦN, theo LỚP, theo VẤN ĐỀ, theo ĐƠN
+ * VỊ — và học viên, thứ đáng lẽ là tâm của cả phần mềm, lại không có mục nào. Muốn xem một
+ * em phải đi ba bước qua hai cách nghĩ.
+ *
+ * Nay chỉ còn hai câu hỏi thường ngày:
+ *   Tổng quan — việc của tôi hôm nay là gì?
+ *   Học viên  — em nào, lớp nào, đang thế nào?
+ *
+ * Tổng hợp tuần, báo cáo tuần và quản trị là những màn mở thỉnh thoảng nên chuyển vào menu
+ * tài khoản. Màn Học thuật cũ trở thành một tab của Tổng quan cho Quản lý.
  */
 const NAV = [
   { to: '/', label: 'Tổng quan', key: 'overview' as const },
-  { to: '/tien-trinh', label: 'Tiến trình công việc', key: 'meeting' as const },
   { to: '/hoc-vien', label: 'Học viên', key: 'students' as const },
-  { to: '/hoc-thuat', label: 'Học thuật', key: 'students' as const },
 ];
 
 function LegacySheetRedirect() {
