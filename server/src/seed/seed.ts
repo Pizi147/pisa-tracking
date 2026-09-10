@@ -556,10 +556,20 @@ function seedCase(conn: any, o: {
        { completed: addDays(o.testDate, 4) });
     iv('talk_parent', 'CS gọi phụ huynh trao đổi tình hình', cs, 'completed',
        { completed: addDays(o.testDate, 5) });
-    // Hỗ trợ học thuật MỚI BẮT ĐẦU: có ngày bắt đầu, chưa có ngày xong.
+    /*
+     * Hỗ trợ học thuật MỚI BẮT ĐẦU: có ngày bắt đầu, chưa có ngày xong.
+     *
+     * NGÀY HẸN XEM LẠI neo quanh NGÀY DEMO, không neo vào ngày thi.
+     *
+     * Neo vào ngày thi thì mọi case sinh từ MT1 (tháng 7) đều quá hạn hai tháng, và màn
+     * việc mở lên chỉ toàn một màu đỏ — không nhìn ra được sự khác nhau giữa "quá hạn",
+     * "tới hạn hôm nay" và "còn hạn", cũng là ba thứ mà giao diện đang cố nói. Rải theo
+     * `attemptId` nên chạy lại seed vẫn ra đúng dữ liệu cũ.
+     */
+    const spread = [-11, -4, 0, 5, 12][o.attemptId % 5];
     iv(o.level === 3 ? 'tutor' : 'self_study',
        o.level === 3 ? 'Học tutor đến lần đánh giá sau' : 'Xếp tự học một tháng', h, 'started',
-       { started: addDays(o.testDate, 7), due: addDays(o.testDate, 35) });
+       { started: addDays(o.testDate, 7), due: addDays(DEMO_DATE, spread) });
   } else {
     iv('talk_student', 'Trao đổi với em về kết quả lần này', h, 'completed',
        { completed: addDays(o.testDate, 3) });

@@ -2178,6 +2178,40 @@ check('Một kỹ năng xếp được HAI giáo viên, không đá mất ngư�
     'Xếp hai giáo viên Reading nhưng chỉ giữ lại một');
 });
 
+check('Dữ liệu mẫu có đủ bốn mức gấp, không phải một màu đỏ', () => {
+  const open = conn
+    .prepare(
+      `SELECT followup_due FROM case_interventions
+        WHERE followup_due IS NOT NULL AND status != 'cancelled'
+          AND NOT EXISTS (SELECT 1 FROM case_followups f WHERE f.intervention_id = case_interventions.id)`,
+    )
+    .all() as any[];
+  const t = demoToday();
+  const late = open.filter((r) => r.followup_due < t).length;
+  const today = open.filter((r) => r.followup_due === t).length;
+  const soon = open.filter((r) => r.followup_due > t).length;
+  assert(late > 0 && today > 0 && soon > 0,
+    `Hẹn xem lại phải có cả ba mức (quá hạn ${late}, hôm nay ${today}, còn hạn ${soon}) — `
+    + 'neo hết vào ngày thi thì màn việc chỉ toàn một màu đỏ và không nhìn ra khác biệt');
+
+  const untouched = conn
+    .prepare(
+      `SELECT COALESCE(detected_at, substr(created_at, 1, 10)) AS d FROM sos_cases sc
+        WHERE sc.status != 'done' AND COALESCE(sc.sos_level, 1) > 0 AND sc.disposition IS NULL
+          AND NOT EXISTS (SELECT 1 FROM case_interventions iv
+                           WHERE iv.case_id = sc.id AND iv.status != 'cancelled')`,
+    )
+    .all() as any[];
+  const fresh = untouched.filter((r) => diffDaysT(t, r.d) < 7).length;
+  assert(fresh > 0 && untouched.length - fresh > 0,
+    `Vấn đề chưa có phương án phải có cả mới lẫn để lâu (mới ${fresh}/${untouched.length})`);
+});
+
+/** Đếm ngày giữa hai mốc ISO, dùng riêng trong kiểm tra để không phụ thuộc thứ tự import. */
+function diffDaysT(a: string, b: string) {
+  return Math.round((Date.parse(a + 'T00:00:00Z') - Date.parse(b + 'T00:00:00Z')) / 86400000);
+}
+
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`

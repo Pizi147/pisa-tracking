@@ -2,7 +2,7 @@
 
 > Vòng **D — hồ sơ học viên và vấn đề học vụ**. Trọng tâm lần này: **hai nguồn vấn đề, một vòng đời**;
 > **ghi nhận nhanh** (nhận xét bằng lời là đủ); **hồ sơ học viên** dựng quanh một lộ trình với hành trình
-> gom thành chương; **màn Học thuật** cho Quản lý.
+> gom thành chương; tab **Tình hình chung** cho Quản lý.
 >
 > Muốn xem nhanh phần mới nhất thì bắt đầu từ **Luồng 15 → 19**.
 
@@ -49,7 +49,7 @@ lưu thật xuống database.
 3. Bấm một dòng trong **Việc cần làm trước** → mở thẳng chi tiết lần Mock đó.
 4. Trong chi tiết Mock, đọc từ trên xuống: lịch và cam kết → điểm từng kỹ năng → bốn kỹ năng đánh giá
    + Overall + kết luận SOS → **Vấn đề học vụ** → **Quy trình gợi ý** cho mức đó.
-5. Khối **Vấn đề học vụ** dùng đúng khung của hồ sơ học viên và màn Học thuật: *vì sao đang theo dõi →
+5. Khối **Vấn đề học vụ** dùng đúng khung của hồ sơ học viên và tab Tình hình chung: *vì sao đang theo dõi →
    đã làm gì → quan sát được gì → bước tiếp theo*. Bấm **+ Ghi một việc đã làm**, chọn *Đã xong* mà
    **để trống ngày** → bị chặn: ghi "đã xong" phải có ngày thật.
 6. Tick **"Người khác làm, tôi nhập hộ"** rồi gõ `CS Ngọc Diệp` → bản ghi giữ tên CS làm người thực hiện
@@ -318,7 +318,7 @@ xét trên tỷ lệ chính xác, không xét trên số đã làm tròn.
 8. Cuộn xuống **Hành trình học**: mọi việc vừa làm nằm chung **một chương**, không rải thành bốn dòng rời.
 9. Bấm hai lần nút Ghi nhận (hoặc F5 rồi gửi lại) → **không** tạo vấn đề thứ hai.
 
-**Đổi sang `Đặng Quang Vy` (Quản lý MB)** → **Học thuật** → thấy ngay vấn đề vừa báo. Không ai phải nhập
+**Đổi sang `Đặng Quang Vy` (Quản lý MB)** → **Tổng quan → Tình hình chung** → thấy ngay vấn đề vừa báo. Không ai phải nhập
 thêm một bản báo cáo nào để Quản lý biết chuyện này.
 
 **Vấn đề có sẵn để xem:** `case/114` (Hoàng Minh Mai, cần chú ý) · `case/115` (Phạm Thanh Quân, **gấp**) ·
@@ -364,29 +364,87 @@ gần nhất*. Lớp thường không có band, mục tiêu IELTS hay ngày thi 
 
 ---
 
-## Luồng 17 — Học thuật: màn của Quản lý
+## Luồng 17 — Tình hình chung: tab thứ hai của Quản lý
 
 **Vai:** `Đặng Quang Vy` (Quản lý MB) hoặc `Đặng Quang Nhi` (Quản trị hệ thống, thấy cả năm chi nhánh).
 
-1. Menu **Học thuật**. Bốn ô ở đầu trang là **bốn hàng đợi**, trả lời **bốn câu hỏi khác nhau**:
+1. Ở **Tổng quan**, Quản lý có **hai tab**: *Việc của tôi* và *Tình hình chung*. Hai câu hỏi khác nhau —
+   *"tôi phải làm gì bây giờ"* và *"cả chi nhánh đang thế nào"* — nhưng không cần cả hai cùng lúc.
+   Giáo viên và Admin chi nhánh **không có** tab thứ hai.
+2. Bấm **Tình hình chung**. Ba ô ở đầu là **ba trạng thái loại trừ nhau**, cộng lại **đúng bằng** số dòng
+   trong bảng bên dưới:
 
-   | Hàng đợi | Câu hỏi |
+   | Trạng thái | Nghĩa là |
    |---|---|
-   | Chưa ai định hướng | Vấn đề nào chưa có hướng xử lý và cũng chưa ai làm gì? |
-   | Đang hỗ trợ / theo dõi | Vấn đề nào đang có người xử lý? |
-   | Tới hạn xem lại | Vấn đề nào đã hẹn xem lại và đã tới hạn? |
-   | Cần xem kỹ | Vấn đề nào ở mức cao, hoặc người báo đánh dấu gấp? |
+   | Chưa có phương án hỗ trợ | Chưa có hướng xử lý và cũng chưa ai ghi việc nào |
+   | Đang xử lý | Đã có hướng xử lý, hoặc đã có ít nhất một phương án được ghi |
+   | Đã xong | Đã kết thúc theo dõi — làm mờ và đẩy xuống cuối, **không giấu đi** |
 
-   Bốn số này **cố tình không cộng lại thành tổng**: một vấn đề có thể vừa *đang hỗ trợ* vừa *tới hạn xem lại*.
-2. Bấm một hàng đợi → danh sách lọc theo. **Đường dẫn đổi theo** (`?hang-doi=new`).
-3. Lọc tiếp theo **chi nhánh** → **nhóm vấn đề** → **kỹ năng**. Mỗi lựa chọn thêm một tham số vào đường dẫn.
-4. Bấm **Back** → về đúng bộ lọc trước đó, không mất chỗ đang xem.
-5. Bấm một dòng → vấn đề mở trong **ngăn kéo**, không rời màn hình. Bấm **Mở trang riêng** → cùng bản ghi
+   Cộng thử: ba số ở ba ô phải đúng bằng con số trong tiêu đề *Vấn đề (N)*.
+3. Ngay dưới đó là **Cần chú ý** — *Tới hạn xem lại* và *Mức cao hoặc gấp*. Hai cái này là **câu hỏi**,
+   không phải phần của một tổng: một em có thể vừa tới hạn xem lại vừa ở mức cao.
+4. **Mỗi lựa chọn lọc kèm số ngay trên nút**, nên đọc được `Học sinh 18 › Listening 6` mà không phải bấm
+   thử. Chọn *Listening* → các nhóm vấn đề đổi số theo, nhưng **các kỹ năng khác không về 0** (đếm chéo
+   kiểu facet), nên vẫn đi tiếp được.
+5. Có riêng nút **"Chưa phân loại"**. Phần lớn vấn đề sinh từ điểm nằm ở đó — hệ thống chỉ biết kỹ năng nào
+   dưới kỳ vọng, **vì sao** thì phải có người dạy nhận định. Cộng `Học sinh + Giáo viên + Giáo trình +
+   Chưa phân loại` phải ra đúng tổng.
+6. Mọi lựa chọn nằm **trên đường dẫn** (`?tab=tinh-hinh&ky-nang=listening`). Bấm **Back** → về đúng bộ lọc
+   trước đó; gửi đường dẫn cho người khác vẫn ra đúng màn hình.
+7. Bấm một dòng → vấn đề mở trong **ngăn kéo**, không rời màn hình. Bấm **Mở trang riêng** → cùng bản ghi
    ấy ở một đường dẫn chia sẻ được (`/hoc-thuat/case/…`).
-6. Phần lớn vấn đề sinh từ điểm ghi **"chưa phân loại"** — đúng như vậy: hệ thống chỉ biết kỹ năng nào dưới
-   kỳ vọng, còn **vì sao** thì phải có người dạy nhận định. Nó **không** tự chẩn đoán nguyên nhân.
-7. Nhóm **Quá trình dạy** nói về cách dạy có thể cải thiện — **không** phải bảng xếp hạng giáo viên.
-8. Quản lý **không phải cửa duyệt**: không vấn đề nào cần ý kiến Quản lý mới xử lý tiếp được.
+8. Nhóm **Giáo viên** nói về cách dạy có thể cải thiện — **không** phải bảng xếp hạng giáo viên.
+
+---
+
+## Luồng 17b — Đề xuất phương án và duyệt
+
+**Vai:** `Ngô Khánh Bình` (Giáo viên Bãi Cháy) rồi `Hoàng Khánh Huy` (Quản lý Bãi Cháy).
+
+1. Vào bằng **Hoàng Khánh Huy**. Màn Tổng quan mở ra đã có nhóm **Chờ duyệt phương án (1)** với nhãn
+   **Quá hạn duyệt**: *"Ngô Khánh Bình đề xuất: Đề nghị lùi MT3 sang tuần sau… — quá hạn 8 ngày"*.
+   Case này ở mức **Gấp** nên Quản lý chỉ có **3 ngày** để trả lời, không phải 7.
+2. Bấm vào dòng đó → mở hồ sơ em, khối *Đã làm gì và quan sát được gì* có một phương án mang nhãn
+   **Chờ Quản lý duyệt · hạn 15/09/2026**. Chưa có nút *Cập nhật kết quả* — **đang chờ thì việc chưa làm**.
+3. Bấm **Trả lời đề xuất**. Ba lựa chọn:
+
+   | | |
+   |---|---|
+   | **Duyệt** | Phương án chạy tiếp, mở khoá *Cập nhật kết quả* |
+   | **Không duyệt** | **Bắt buộc** ghi lý do — nút *Gửi* mờ cho tới khi có chữ |
+   | **Góp ý** | Ghi lại góp ý nhưng **vẫn còn chờ**: đề xuất không rời khỏi việc của bạn |
+
+4. Thử **Góp ý** trước, gõ *"Cho tôi xem bài gần nhất"* → nhãn vẫn là **Chờ Quản lý duyệt**, và dòng
+   *"Quản lý (Hoàng Khánh Huy): Cho tôi xem bài gần nhất"* hiện ngay dưới phương án.
+5. Bấm **Trả lời đề xuất** lần nữa → chọn **Duyệt** → nhãn đổi thành **Đã duyệt**, và nút
+   **+ Cập nhật kết quả** xuất hiện.
+6. Bấm **Trả lời đề xuất** lần thứ ba → **bị từ chối**: *"Phương án này đã được duyệt rồi."* Đổi ý là
+   chuyện bình thường, nhưng ghi đè sẽ xoá mất lý do đã ghi — nên đổi ý thì giáo viên đề xuất lại, hồ sơ
+   giữ cả hai lần.
+7. Muốn xem đầu kia: đổi sang một giáo viên, mở một vấn đề, bấm **+ Ghi phương án hỗ trợ**, chọn tình
+   trạng **Đã lên kế hoạch** → ô *"Cần Quản lý duyệt trước khi làm"* xuất hiện. Chọn **Đã xong** → ô đó
+   biến mất, kèm một dòng giải thích: việc đã làm rồi thì không còn gì để duyệt.
+
+---
+
+## Luồng 17c — Phân công giáo viên vào lớp
+
+**Vai:** `Đặng Quang Vy` (Quản lý MB) hoặc `Đặng Ngọc Phúc` (Admin chi nhánh MB).
+
+1. **Học viên** → mở lớp `MB-FT 101` → thẻ **Phân công và kỹ năng** có nút **Sửa phân công**.
+   Đăng nhập bằng một giáo viên thì **không có nút này**.
+2. Trong hộp thoại: một hàng **GVCN** và một hàng cho **mỗi kỹ năng của chương trình lớp đó**.
+   Mỗi hàng là một **danh sách** chứ không phải một ô chọn — có lớp hai người cùng dạy một kỹ năng, và ô
+   chọn một-người sẽ âm thầm đá mất người thứ hai.
+3. Ô chọn *+ Thêm giáo viên* chỉ liệt kê người **có vai trò giảng dạy ở chi nhánh của lớp**, kèm số lớp
+   họ đang dạy để không dồn hết vào một người.
+4. Bấm **×** cạnh một tên để bỏ phân công, rồi **Lưu**.
+5. Mở lại hộp thoại → mục **Đã từng dạy lớp này** có tên vừa bỏ, kèm khoảng thời gian. **Bỏ phân công
+   không phải là xoá**: dòng cũ đóng lại theo ngày, nên báo cáo cũ đọc lại vẫn thấy đúng ai dạy lúc đó,
+   và điểm đã nhập giữ nguyên tên người nhập.
+6. Đổi sang chính giáo viên vừa bị bỏ → mở trang nhập điểm của lớp đó → **kỹ năng ấy không sửa được nữa**.
+   Các kỹ năng khác của họ không bị ảnh hưởng, và ngày bắt đầu phân công của những dòng không đổi **giữ
+   nguyên** — đóng rồi mở lại là bịa ra một lần đổi người không có thật.
 
 ---
 
@@ -394,7 +452,7 @@ gần nhất*. Lớp thường không có band, mục tiêu IELTS hay ngày thi 
 
 **Vai:** `Đặng Quang Nhi` (Quản trị hệ thống).
 
-1. **Học thuật** → mở một vấn đề sinh từ điểm đã có vài việc đã làm (ví dụ `case/78`, `case/81`, `case/8`).
+1. **Tổng quan → Tình hình chung** → mở một vấn đề sinh từ điểm đã có vài việc đã làm (ví dụ `case/78`, `case/81`, `case/8`).
 2. Đếm số việc trong khối *Đã làm gì và quan sát được gì*.
 3. Bấm mã MT ở phần đầu để mở trang điểm → sửa một kỹ năng lên cho **đạt kỳ vọng**.
 4. Quay lại vấn đề: **mọi việc đã làm vẫn còn**, mức SOS đổi theo điểm mới, và lịch sử đổi mức nằm trong
