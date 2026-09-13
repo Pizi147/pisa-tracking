@@ -1,9 +1,9 @@
 import { db, isInitialised } from './db.ts';
 import { nowIso } from './util.ts';
 import crypto from 'node:crypto';
-import { PERMISSION_LABEL } from '../../shared/domain.ts';
-import { DEFAULT_ADMIN_EMAIL, DEFAULT_ADMIN_PASSWORD, EMAIL_SUFFIX } from './services/accounts.ts';
-import { seedRoutes } from './services/sysconfig.ts';
+import { PERMISSION_LABEL } from '../../shared/domain/index.ts';
+import { DEFAULT_ADMIN_EMAIL, DEFAULT_ADMIN_PASSWORD, EMAIL_SUFFIX } from './platform/accounts.ts';
+import { seedRoutes } from './platform/sysconfig.ts';
 import { ROLE_PERMISSIONS } from './seed/data.ts';
 
 /**

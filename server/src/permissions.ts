@@ -1,5 +1,5 @@
 import { db } from './db.ts';
-import { PERMISSIONS } from '../../shared/domain.ts';
+import { PERMISSIONS } from '../../shared/domain/index.ts';
 import { demoToday } from './demoConfig.ts';
 import { forbidden } from './util.ts';
 

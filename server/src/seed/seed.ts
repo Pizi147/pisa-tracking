@@ -5,13 +5,13 @@ import {
   PERMISSION_LABEL, PROGRAMME_TEMPLATES, categoryOf,
   TUTOR_REPORT_CATEGORIES, programmeOf,
   type EntrySkill,
-} from '../../../shared/domain.ts';
+} from '../../../shared/domain/index.ts';
 import { addDays, normalizeName, nowIso, padCode } from '../util.ts';
 import { setConfig } from '../demoConfig.ts';
-import { DEFAULT_ADMIN_EMAIL, DEFAULT_ADMIN_PASSWORD, EMAIL_SUFFIX } from '../services/accounts.ts';
-import { seedRoutes } from '../services/sysconfig.ts';
-import { LISTENING_BY_RAW, READING_BY_RAW, roundToHalf } from '../services/scoring.ts';
-import { ensurePeriod, mondayOf, weekInfo } from '../services/week.ts';
+import { DEFAULT_ADMIN_EMAIL, DEFAULT_ADMIN_PASSWORD, EMAIL_SUFFIX } from '../platform/accounts.ts';
+import { seedRoutes } from '../platform/sysconfig.ts';
+import { LISTENING_BY_RAW, READING_BY_RAW, roundToHalf } from '../fasttrack/scoring.ts';
+import { ensurePeriod, mondayOf, weekInfo } from '../platform/week.ts';
 import {
   BRANCHES, CASE_PATTERNS, CLASSES, DEMO_DATE, GIVEN_NAMES, MIDDLE_NAMES, MT_OUTCOMES,
   ROLES, ROLE_PERMISSIONS, SURNAMES, TARGET_SCORES, TEACHER_GAPS,

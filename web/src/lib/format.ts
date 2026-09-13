@@ -3,7 +3,7 @@ import {
   ENTRY_SKILL_SHORT, REGULAR_SKILL_LABEL, REGULAR_SKILL_SHORT, ROLE_LABEL, SKILL_PROGRESS_LABEL, SOS_LABEL, STUDENT_STATUS_LABEL,
   TASK_PROGRESS_LABEL, TASK_TYPE_LABEL, UNIT_STATUS_LABEL,
   type AssessedSkill, type EntrySkill, type SkillProgress, type SosLevel, type StudentStatus,
-} from '@shared/domain.ts';
+} from '@shared/domain/index.ts';
 
 /*
  * Tên đầy đủ của một kỹ năng, tra qua CẢ BA bộ.

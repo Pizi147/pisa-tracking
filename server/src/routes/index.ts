@@ -3,37 +3,37 @@ import { db, isInitialised } from '../db.ts';
 import {
   BEHAVIOUR_TOPICS, BEHAVIOUR_TOPIC_LABEL, ENTRY_SKILLS, ENTRY_SKILL_LABEL, ISSUE_TAXONOMY,
   PERMISSIONS, REGULAR_SKILLS, ROLE_LABEL, THREAD_TRACKS, THREAD_TRACK_LABEL, type Role,
-} from '../../../shared/domain.ts';
+} from '../../../shared/domain/index.ts';
 import { demoToday, getConfig, scenarioMode, setConfig } from '../demoConfig.ts';
 import { HttpError, badRequest, isIsoDate, notFound, toInt } from '../util.ts';
 import { SESSION_COOKIE, createSession, destroySession, principalOf, requireAuth } from '../auth.ts';
 import { can, loadPrincipal, permissionSummary, require_, scopeFor } from '../permissions.ts';
-import { writeAudit } from '../services/audit.ts';
+import { writeAudit } from '../platform/audit.ts';
 import { maybeSimulateReadError, maybeSimulateSaveFailure, pInt, qInt, qStr, wrap } from './helpers.ts';
-import * as attemptSvc from '../services/attempts.ts';
-import * as cycleSvc from '../services/cycles.ts';
-import * as summarySvc from '../services/summary.ts';
-import * as pulseSvc from '../services/branchpulse.ts';
-import * as prefSvc from '../services/prefs.ts';
-import * as profileSvc from '../services/profile.ts';
-import * as classSvc from '../services/classes.ts';
-import * as scheduleSvc from '../services/schedule.ts';
-import * as intakeSvc from '../services/intake.ts';
-import * as studentSvc from '../services/students.ts';
-import * as meetingSvc from '../services/meeting.ts';
-import * as dashboardSvc from '../services/dashboard.ts';
+import * as attemptSvc from '../fasttrack/attempts.ts';
+import * as cycleSvc from '../fasttrack/cycles.ts';
+import * as summarySvc from '../worklist/summary.ts';
+import * as pulseSvc from '../worklist/branchpulse.ts';
+import * as prefSvc from '../platform/prefs.ts';
+import * as profileSvc from '../students/profile.ts';
+import * as classSvc from '../classes/classes.ts';
+import * as scheduleSvc from '../classes/schedule.ts';
+import * as intakeSvc from '../classes/intake.ts';
+import * as studentSvc from '../students/students.ts';
+import * as meetingSvc from '../worklist/meeting.ts';
+import * as dashboardSvc from '../worklist/dashboard.ts';
 import {
   PERIOD_WINDOW_PLANNING_FORWARD_WEEKS,
   ensurePeriod, listPeriods, periodById, periodWindow, reportEditWindow, setPeriodUnlocked,
-} from '../services/week.ts';
-import * as planningSvc from '../services/planning.ts';
-import { signalsFor } from '../services/signals.ts';
-import * as accountSvc from '../services/accounts.ts';
-import * as sysconfigSvc from '../services/sysconfig.ts';
-import { weeklyRollup } from '../services/weekly.ts';
-import { myWork } from '../services/mywork.ts';
-import * as caseSvc from '../services/cases.ts';
-import * as regularSvc from '../services/regular.ts';
+} from '../platform/week.ts';
+import * as planningSvc from '../fasttrack/planning.ts';
+import { signalsFor } from '../worklist/signals.ts';
+import * as accountSvc from '../platform/accounts.ts';
+import * as sysconfigSvc from '../platform/sysconfig.ts';
+import { weeklyRollup } from '../worklist/weekly.ts';
+import { myWork } from '../worklist/mywork.ts';
+import * as caseSvc from '../cases/cases.ts';
+import * as regularSvc from '../normal/regular.ts';
 
 export const api = Router();
 

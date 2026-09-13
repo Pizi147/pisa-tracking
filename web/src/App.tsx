@@ -1,21 +1,21 @@
 import { NavLink, Navigate, Route, Routes, useLocation, useParams, useSearchParams } from 'react-router-dom';
 import { useSession } from './lib/session.tsx';
-import { DemoBar } from './components/DemoBar.tsx';
-import { Header } from './components/Header.tsx';
-import { Skeleton } from './components/ui.tsx';
-import OverviewPage from './pages/Overview.tsx';
-import MockDetailPage from './pages/MockDetail.tsx';
-import ScoreSheetPage from './pages/ScoreSheet.tsx';
-import RegularSheetPage from './pages/RegularSheet.tsx';
-import WeeklyRollupPage from './pages/WeeklyRollup.tsx';
-import StudentsPage from './pages/Students.tsx';
-import ClassOverviewPage from './pages/ClassOverview.tsx';
-import StudentDetailPage from './pages/StudentDetail.tsx';
-import AcademicPage, { CaseRoutePage } from './pages/Academic.tsx';
-import MeetingPage from './pages/Meeting.tsx';
-import AdminPage from './pages/Admin.tsx';
-import ProfilePage from './pages/Profile.tsx';
-import WelcomePage from './pages/Welcome.tsx';
+import { DemoBar } from './modules/platform/DemoBar.tsx';
+import { Header } from './modules/platform/Header.tsx';
+import { Skeleton } from './ui/ui.tsx';
+import OverviewPage from './modules/worklist/OverviewPage.tsx';
+import MockDetailPage from './modules/fasttrack/MockDetailPage.tsx';
+import ScoreSheetPage from './modules/fasttrack/ScoreSheetPage.tsx';
+import RegularSheetPage from './modules/normal/RegularSheetPage.tsx';
+import WeeklyRollupPage from './modules/worklist/WeeklyRollupPage.tsx';
+import StudentsPage from './modules/students/StudentsPage.tsx';
+import ClassOverviewPage from './modules/classes/ClassOverviewPage.tsx';
+import StudentDetailPage from './modules/students/StudentDetailPage.tsx';
+import AcademicPage, { CaseRoutePage } from './modules/cases/CaseBoardPage.tsx';
+import MeetingPage from './modules/worklist/MeetingPage.tsx';
+import AdminPage from './modules/platform/AdminPage.tsx';
+import ProfilePage from './modules/platform/ProfilePage.tsx';
+import WelcomePage from './modules/platform/WelcomePage.tsx';
 
 /**
  * HAI MỤC, KHÔNG HƠN.
