@@ -175,7 +175,7 @@ Hai vai trò đầu **không dùng chung chữ "Admin" trong nhãn hiển thị*
 Chi nhánh: Monbay (MB) · Bãi Cháy (BC) · Cẩm Phả (CP) · Hải Dương (HD) · Uông Bí (UB).
 Mỗi chi nhánh có 2–3 quản lý.
 
-Mã lớp luôn bắt đầu bằng mã chi nhánh: `MB-FT 101`, `CP-FT 110`, `BC-BE 80`, `HD-ELE 01`, `MB-FOUND 12`.
+Mã lớp luôn bắt đầu bằng mã chi nhánh: `MB-FT 101`, `CP-FT 110`, `BC-ELE 01`, `MB-FOU 12`, `UB-FOUND 07`.
 Loại lớp là **nhãn tự do do quản lý đặt** — không chia cứng FT5/FT10. Kỹ năng lớp học và số buổi
 chính mỗi tuần được cấu hình trong `class_skills`, không suy từ tên lớp.
 
@@ -244,7 +244,7 @@ Ví dụ đã kiểm chứng: `28/09–04/10/2026 → W1 OCT`; `07/09–13/09/20
 **Hạn nhập điểm = thứ Tư của tuần KẾ TIẾP sau tuần thi**, tính theo **ngày thi thực tế của từng kỹ năng**.
 Hết ngày thứ Tư mới tính quá hạn: Mock 13/09/2026 → hạn 16/09; trong ngày 16 chưa quá hạn, sang 17 mới quá hạn.
 
-Ngày nghiệp vụ tính theo `Asia/Ho_Chi_Minh`. Bản demo dùng **đồng hồ demo** cố định (mặc định `23/09/2026`)
+Ngày nghiệp vụ tính theo `Asia/Ho_Chi_Minh`. Bản demo dùng **đồng hồ demo** cố định (mặc định `14/09/2026`)
 để trạng thái quá hạn ổn định khi xem lại; đổi được trong **Công cụ demo**.
 
 ## A4. Lịch Mock và nhập điểm

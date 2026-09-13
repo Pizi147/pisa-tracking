@@ -614,16 +614,16 @@ check('Mở case ngay khi kết luận được; mức tăng dần không nhân 
          JOIN learning_cycles cy ON cy.student_id = s.id
         WHERE e.class_id = ? AND cy.target_score IS NOT NULL ORDER BY s.id LIMIT 1`,
     )
-    .get(classId('CP-FT 111')) as any;
+    .get(classId('CP-FT 110')) as any;
   const cpPeriod = periodOf('2026-11-09');
   const attempt = attempts.createAttempt(P.cpManager, {
-    studentId: s.id, cycleId: s.cycle_id, classId: classId('CP-FT 111'), periodId: cpPeriod,
+    studentId: s.id, cycleId: s.cycle_id, classId: classId('CP-FT 110'), periodId: cpPeriod,
   }) as any;
   attempts.setSchedule(P.cpAdmin, attempt.id, { lrwAt: '2026-11-09' });
 
   const exp = s.target_score;           // từ MT3 trở đi kỳ vọng bằng target
   const low = exp - 0.5;
-  const t = (skill: string) => loadPrincipal(teacherOfSkill('CP-FT 111', skill));
+  const t = (skill: string) => loadPrincipal(teacherOfSkill('CP-FT 110', skill));
 
   // Một kỹ năng dưới kỳ vọng là mở case NGAY, không chờ ba kỹ năng còn lại.
   attempts.saveScore(t('listening'), attempt.id, 'listening', { rawScore: scoring.LISTENING_BY_RAW.indexOf(low) });
@@ -692,7 +692,7 @@ check('Mở case ngay khi kết luận được; mức tăng dần không nhân 
 check('Đánh dấu không mock sau khi đã có điểm thì giữ điểm và tính lại kết quả', () => {
   const a = conn
     .prepare(`SELECT * FROM assessment_attempts WHERE class_id = ? AND status='done' ORDER BY id DESC LIMIT 1`)
-    .get(classId('CP-FT 111')) as any;
+    .get(classId('CP-FT 110')) as any;
   const beforeScores = (conn.prepare('SELECT COUNT(*) n FROM assessment_scores WHERE attempt_id = ?').get(a.id) as any).n;
   attempts.setSkillSkip(P.cpManager, a.id, 'speaking', true, 'Học viên vắng buổi Speaking');
   const afterScores = (conn.prepare('SELECT COUNT(*) n FROM assessment_scores WHERE attempt_id = ?').get(a.id) as any).n;
@@ -724,7 +724,7 @@ check('Chuyển lớp giữ lớp cũ cho lượt đã xong, chuyển lượt ch
     .get(classId('BC-FT 205')) as any;
   const before = conn.prepare('SELECT id, class_id, status FROM assessment_attempts WHERE student_id = ?').all(s.id) as any[];
   const done = before.filter((a) => a.status === 'done');
-  const target = classId('BC-BE 80');
+  const target = classId('BC-ELE 01');
   students.transferStudent(P.admin, s.id, target, '2026-09-21', 'Đổi ca học');
   const after = conn.prepare('SELECT id, class_id, status FROM assessment_attempts WHERE student_id = ?').all(s.id) as any[];
   for (const t of done) assert(after.find((a) => a.id === t.id)!.class_id === t.class_id, 'Lượt đã xong bị viết lại lớp');
@@ -1214,8 +1214,11 @@ check('Đã bỏ trường "Loại" khỏi việc mới, giữ nguyên dữ li�
 // ==================================================================== 14
 
 console.log('\n14. Lớp thường: Foundation / Beginner / Elementary');
-const fouClass = (conn.prepare(`SELECT id, code, start_date FROM classes WHERE programme_code = 'FOU' LIMIT 1`).get() as any);
-const beClass = (conn.prepare(`SELECT id, code, start_date FROM classes WHERE programme_code = 'BE' LIMIT 1`).get() as any);
+const fouClass = (conn.prepare(`SELECT id, code, start_date FROM classes WHERE kind = 'FOU' ORDER BY id LIMIT 1`).get() as any);
+/* Lớp mang MÃ CŨ "FOUND" — dùng để chứng minh ánh xạ mã cũ không viết đè lên mã lớp. */
+const legacyClass = (conn.prepare(`SELECT id, kind, programme_code FROM classes WHERE kind = 'FOUND' LIMIT 1`).get() as any);
+/* Chương trình 10 tuần (BE hoặc ELE dùng chung một khuôn) — lớp nào cũng chứng minh được. */
+const beClass = (conn.prepare(`SELECT id, code, start_date FROM classes WHERE programme_code IN ('BE','ELE') ORDER BY id LIMIT 1`).get() as any);
 
 check('Chương trình nằm trong dữ liệu, mã cũ FOUND ánh xạ về FOU mà không đổi mã lớp', () => {
   const fou = regular.programmeByCode('FOU');
@@ -1229,8 +1232,8 @@ check('Chương trình nằm trong dữ liệu, mã cũ FOUND ánh xạ về FOU
     'Beginner phải 10 tuần và có Speaking thay cho Pronunciation');
   assert(JSON.stringify(be!.checkpoints.map((c: any) => c.studyWeek)) === '[5,10]', 'Mốc BE phải là tuần học 5 và 10');
   // Mã cũ chỉ được ÁNH XẠ khi đọc, không được viết đè lên mã lớp lịch sử.
-  const cls = conn.prepare('SELECT kind, programme_code FROM classes WHERE id = ?').get(fouClass.id) as any;
-  assert(cls.kind === 'FOUND' && cls.programme_code === 'FOU',
+  const cls = legacyClass;
+  assert(cls && cls.kind === 'FOUND' && cls.programme_code === 'FOU',
     `Mã lớp gốc phải giữ nguyên "FOUND", chương trình chuẩn hoá là "FOU" — đang là ${cls.kind}/${cls.programme_code}`);
 });
 
@@ -1810,8 +1813,8 @@ check('Hành trình ghi ngày SỰ VIỆC XẢY RA, và lưu lại nhiều lần
    * HAI MỐC TÁCH BIỆT — ngày sự việc do người báo khai, ngày nhập do máy ghi.
    *
    * KHÔNG kiểm bằng cách so hai chuỗi ngày với nhau. Bản trước làm thế và bài kiểm hỏng
-   * đúng một ngày trong năm: ngày demo là 23/09/2026, ghi bù lùi 10 ngày ra 13/09/2026 —
-   * và nếu máy chủ tình cờ đang chạy đúng hôm 13/09 thì hai mốc trùng nhau một cách hợp
+   * đúng một ngày trong năm: ngày demo là 14/09/2026, ghi bù lùi 10 ngày ra 04/09/2026 —
+   * và nếu máy chủ tình cờ đang chạy đúng hôm 04/09 thì hai mốc trùng nhau một cách hợp
    * lệ, bài kiểm vẫn báo hỏng. Một bài kiểm chỉ đúng vào 364/365 ngày là một bài kiểm hỏng.
    *
    * Điều thật sự cần chứng minh: `event_date` mang ngày NGƯỜI BÁO KHAI, còn `created_at`
@@ -2100,7 +2103,7 @@ check('Kết quả sau hỗ trợ là việc của NGƯỜI THỰC HIỆN; quá 
   const mgr = loadPrincipal(userByRole('manager', 'CP'));
   const reviewOf = (p: any) => (mywork.myWork(p).groups.find((g: any) => g.key === 'review')?.items ?? []);
 
-  // Dữ liệu mẫu: tutor CP-FT 110 hẹn 19/09, nay đã 23/09 — quá hạn, nên cả hai đều thấy.
+  // Dữ liệu mẫu: tutor CP-FT 110 hẹn 10/09, nay đã 14/09 — quá hạn, nên cả hai đều thấy.
   const gvItems = reviewOf(gv);
   const mgrItems = reviewOf(mgr);
   assert(gvItems.length > 0, 'Người ghi phương án không thấy việc cập nhật kết quả của mình');
@@ -2142,7 +2145,7 @@ check('Không xếp người của chi nhánh khác, và không xếp kỹ năng
     }),
     /chi nhánh/, 'Xếp giáo viên CP vào lớp MB',
   );
-  const found = classId('MB-FOUND 12');
+  const found = classId('MB-FOU 12');
   const anyTeacher = classesSvc.classTeachers(P.mbManager, found).candidates[0];
   assertThrows(
     () => classesSvc.setClassTeachers(P.mbManager, found, {

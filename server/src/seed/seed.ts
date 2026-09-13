@@ -11,7 +11,7 @@ import { LISTENING_BY_RAW, READING_BY_RAW, roundToHalf } from '../services/scori
 import { ensurePeriod, mondayOf, weekInfo } from '../services/week.ts';
 import {
   BRANCHES, CASE_PATTERNS, CLASSES, DEMO_DATE, GIVEN_NAMES, MIDDLE_NAMES, MT_OUTCOMES,
-  ROLES, ROLE_PERMISSIONS, SURNAMES, TARGET_SCORES,
+  ROLES, ROLE_PERMISSIONS, SURNAMES, TARGET_SCORES, TEACHER_GAPS,
   type CasePattern, type ClassSeed, type Outcome,
 } from './data.ts';
 
@@ -65,7 +65,7 @@ export function runSeed() {
     }
 
     // ---------------------------------------------------------------- người dùng
-    const rand = rng(20260923);
+    const rand = rng(20260914);
     let userSeq = 0;
     const usedNames = new Set<string>();
     const fakeName = () => {
@@ -183,15 +183,35 @@ export function runSeed() {
           )
           .run(userId, id, skill, isCore ? 1 : 0, c.startDate, 'active', NOW);
 
-      assign(pick(0), null, true);              // GVCN — được dời lịch, KHÔNG tự có quyền sửa mọi điểm
+      /*
+       * VÀI LỚP CỐ TÌNH THIẾU NGƯỜI. Nhãn "Thiếu GV W1, W2" và nhãn "Chưa có GVCN" chỉ
+       * chứng minh được là nó chạy khi có lớp thật đang thiếu — xem `TEACHER_GAPS`.
+       */
+      const gap = TEACHER_GAPS[c.code] ?? {};
+      const missing = new Set(gap.skills ?? []);
+      const taught = skills.filter((sk) => !missing.has(sk));
+
       // Phân công theo ĐÚNG kỹ năng của chương trình lớp đó: lớp Foundation có
       // Pronunciation chứ không có Writing task 1/2, nên không giao những ô không tồn tại.
-      skills.forEach((skill, i) => assign(pick(1 + (i % 4)), skill, false));
+      taught.forEach((skill, i) => assign(pick(1 + (i % 4)), skill, false));
+
+      /*
+       * GVCN PHẢI DẠY ÍT NHẤT MỘT KỸ NĂNG Ở CHÍNH LỚP ĐÓ (luật ở `services/classes.ts`).
+       * Nên chọn chủ nhiệm TỪ những người đã được giao kỹ năng của lớp này, chứ không bốc
+       * một cái tên bất kỳ trong nhóm — dữ liệu mẫu mà phạm luật của chính nó thì vô nghĩa.
+       */
+      if (!gap.noCore && taught.length) {
+        const core = (conn
+          .prepare(`SELECT user_id FROM teacher_assignments
+                      WHERE class_id = ? AND skill IS NOT NULL ORDER BY id LIMIT 1`)
+          .get(id) as any).user_id;
+        assign(core, null, true);              // GVCN — được dời lịch, KHÔNG tự có quyền sửa mọi điểm
+      }
     });
 
     // ---------------------------------------------------------------- kỳ báo cáo
     // Đủ các tuần từ lớp mở sớm nhất tới ba tháng sau ngày demo, để còn lập kế hoạch trước.
-    let cursor = mondayOf('2026-05-25');
+    let cursor = mondayOf('2026-04-27');
     const lastWeek = mondayOf(addDays(DEMO_DATE, 98));
     while (cursor <= lastWeek) {
       ensurePeriod(cursor);
@@ -648,7 +668,7 @@ function seedCase(conn: any, o: {
    *
    * Kịch bản mẫu tính ngày xong theo "ngày thi + 30", nên case của lượt MT gần ngày demo
    * cho ra ngày xong ở TƯƠNG LAI — hồ sơ học viên hiện "xong 10/10" trong khi hôm nay mới
-   * 23/09. Máy chủ đã chặn người dùng nhập ngày tương lai; dữ liệu mẫu phải theo cùng một
+   * 14/09. Máy chủ đã chặn người dùng nhập ngày tương lai; dữ liệu mẫu phải theo cùng một
    * luật, nếu không thì chính bản demo là thứ dạy người dùng rằng luật ấy không có thật.
    */
   const notFuture = (d: string | undefined) =>
@@ -891,7 +911,7 @@ function seedAcademicCases(conn: any, ctx: {
   if (a) {
     const gv = teacherOf('MB-FT 101', 'listening');
     const c1 = openCase({
-      studentId: a.id, classCode: 'MB-FT 101', reporter: gv, detectedAt: '2026-09-14',
+      studentId: a.id, classCode: 'MB-FT 101', reporter: gv, detectedAt: '2026-09-05',
       summary: 'Em nghe không kịp phần chi tiết, hay bỏ trống 5–6 câu cuối',
       urgency: 'attention',
       topic: 'listening',
@@ -901,9 +921,9 @@ function seedAcademicCases(conn: any, ctx: {
     });
     const iv = addIntervention(c1, {
       kind: 'teaching_adjust', description: 'Thêm 15 phút luyện nghe chi tiết mỗi buổi',
-      performerUser: gv, recorder: gv, status: 'started', started: '2026-09-15', due: '2026-09-29',
+      performerUser: gv, recorder: gv, status: 'started', started: '2026-09-06', due: '2026-09-20',
     });
-    addFollowUp(c1, { interventionId: iv, on: '2026-09-22', observer: gv, outcome: 'partial',
+    addFollowUp(c1, { interventionId: iv, on: '2026-09-11', observer: gv, outcome: 'partial',
       note: 'Phần 3 đỡ hơn, phần 4 vẫn còn trống nhiều' });
   }
 
@@ -912,7 +932,7 @@ function seedAcademicCases(conn: any, ctx: {
   if (b) {
     const core = coreOf('MB-FT 102');
     const c2 = openCase({
-      studentId: b.id, classCode: 'MB-FT 102', reporter: core, detectedAt: '2026-09-08',
+      studentId: b.id, classCode: 'MB-FT 102', reporter: core, detectedAt: '2026-08-30',
       summary: 'Em nghỉ nhiều buổi, bài về nhà không nộp',
       urgency: 'urgent',
       track: 'behaviour', topic: 'attendance',
@@ -923,17 +943,17 @@ function seedAcademicCases(conn: any, ctx: {
      * Hai lần trao đổi này là PHƯƠNG ÁN của chính case Ý thức ở trên — giáo viên chủ động
      * gọi ngoài SOS, đã làm xong rồi nên không có hạn.
      */
-    addContact(c2, { kind: 'talk_parent', on: '2026-09-10',
+    addContact(c2, { kind: 'talk_parent', on: '2026-09-01',
       performerName: 'Chị Hương (CS)', note: 'PH nói em phải trông em nhỏ buổi tối' });
-    addContact(c2, { kind: 'talk_student', on: '2026-09-11', by: core,
+    addContact(c2, { kind: 'talk_student', on: '2026-09-02', by: core,
       note: 'Em hứa đi đủ, xin đổi sang ca sáng' });
     const iv2 = addIntervention(c2, {
       kind: 'teaching_adjust', description: 'Điểm danh sát và nhắn GVCN ngay khi vắng',
-      performerUser: core, recorder: core, status: 'completed', completed: '2026-09-11', due: '2026-09-18',
+      performerUser: core, recorder: core, status: 'completed', completed: '2026-09-02', due: '2026-09-09',
     });
-    addFollowUp(c2, { interventionId: iv2, on: '2026-09-18', observer: core, outcome: 'improved',
+    addFollowUp(c2, { interventionId: iv2, on: '2026-09-09', observer: core, outcome: 'improved',
       note: 'Hai tuần gần đây đi đủ, đã nộp bài' });
-    addFollowUp(c2, { on: '2026-09-22', observer: core, outcome: 'unchanged',
+    addFollowUp(c2, { on: '2026-09-13', observer: core, outcome: 'unchanged',
       note: 'Tuần này lại nghỉ một buổi, tiếp tục theo dõi' });
   }
 
@@ -942,7 +962,7 @@ function seedAcademicCases(conn: any, ctx: {
   if (c) {
     const gv = teacherOf('BC-FT 205', 'writing1');
     const c3 = openCase({
-      studentId: c.id, classCode: 'BC-FT 205', reporter: gv, detectedAt: '2026-09-16',
+      studentId: c.id, classCode: 'BC-FT 205', reporter: gv, detectedAt: '2026-09-07',
       summary: 'Bài viết task 1 hay thiếu câu tổng quan',
       urgency: 'normal',
       topic: 'writing1',
@@ -957,7 +977,7 @@ function seedAcademicCases(conn: any, ctx: {
   if (d) {
     const gv = teacherOf('CP-FT 110', 'speaking');
     const c4 = openCase({
-      studentId: d.id, classCode: 'CP-FT 110', reporter: gv, detectedAt: '2026-09-01',
+      studentId: d.id, classCode: 'CP-FT 110', reporter: gv, detectedAt: '2026-08-23',
       summary: 'Phát âm đuôi và trọng âm sai nhiều, người nghe khó hiểu',
       urgency: 'attention',
       topic: 'speaking',
@@ -966,7 +986,7 @@ function seedAcademicCases(conn: any, ctx: {
     addIntervention(c4, {
       kind: 'tutor', description: 'Học tutor phát âm 2 buổi/tuần',
       performerName: 'Tutor Ngọc', recorder: gv, status: 'started',
-      started: '2026-09-05', due: '2026-09-19',       // đã quá ngày demo 23/09
+      started: '2026-08-27', due: '2026-09-10',       // hẹn xem lại 10/09, nay đã 14/09 — quá hạn
     });
   }
 
@@ -976,15 +996,15 @@ function seedAcademicCases(conn: any, ctx: {
     const core = coreOf('HD-FT 302');
     const mgr = managers.get('HD')?.[0] ?? adminId;
     const c5 = openCase({
-      studentId: e.id, classCode: 'HD-FT 302', reporter: core, detectedAt: '2026-08-24',
+      studentId: e.id, classCode: 'HD-FT 302', reporter: core, detectedAt: '2026-08-15',
       summary: 'Em có vẻ mất tập trung mấy buổi liền',
       urgency: 'normal',
       track: 'behaviour', topic: 'participation',
       note: 'Em bị ốm mấy hôm, đã khỏi',
     });
-    addContact(c5, { kind: 'talk_student', on: '2026-08-26', by: core,
+    addContact(c5, { kind: 'talk_student', on: '2026-08-17', by: core,
       note: 'Hỏi thăm, em bị ốm nên mệt' });
-    addFollowUp(c5, { on: '2026-09-02', observer: core, outcome: 'improved', note: 'Em khỏi ốm, đã tập trung lại' });
+    addFollowUp(c5, { on: '2026-08-24', observer: core, outcome: 'improved', note: 'Em khỏi ốm, đã tập trung lại' });
     conn.prepare(
       `UPDATE sos_cases SET status = 'done', disposition = 'no_action', disposition_note = ?,
               closed_by = ?, closed_at = ?, updated_at = ? WHERE id = ?`,
@@ -1002,21 +1022,21 @@ function seedAcademicCases(conn: any, ctx: {
    *   - đã duyệt                → giáo viên làm tiếp, có hẹn xem lại
    *   - không duyệt             → có lý do, và phương án dừng lại
    */
-  const p1 = inClass('CP-FT 111')[0];
+  const p1 = inClass('CP-FT 110')[1];
   if (p1) {
-    const gv = teacherOf('CP-FT 111', 'writing1');
+    const gv = teacherOf('CP-FT 110', 'writing1');
     const c6 = openCase({
-      studentId: p1.id, classCode: 'CP-FT 111', reporter: gv, detectedAt: '2026-09-17',
+      studentId: p1.id, classCode: 'CP-FT 110', reporter: gv, detectedAt: '2026-09-08',
       summary: 'Task 2 lạc đề hai bài liên tiếp, viết không kịp giờ',
       urgency: 'attention',
       topic: 'writing2',
       primary: 'student.writing.task',
     });
-    // Còn hạn: đề xuất 19/09, mức "cần chú ý" nên Quản lý có 7 ngày → 26/09.
+    // Còn hạn: đề xuất 10/09, mức "cần chú ý" nên Quản lý có 7 ngày → 17/09.
     addIntervention(c6, {
       kind: 'tutor', description: 'Xin 4 buổi tutor Writing task 2 trước MT tới',
       performerUser: gv, recorder: gv, status: 'planned',
-      approvalState: 'pending', approvalDue: '2026-09-26',
+      approvalState: 'pending', approvalDue: '2026-09-17',
     });
   }
 
@@ -1024,18 +1044,18 @@ function seedAcademicCases(conn: any, ctx: {
   if (p2) {
     const gv = teacherOf('BC-FT 205', 'listening');
     const c7 = openCase({
-      studentId: p2.id, classCode: 'BC-FT 205', reporter: gv, detectedAt: '2026-09-12',
+      studentId: p2.id, classCode: 'BC-FT 205', reporter: gv, detectedAt: '2026-09-03',
       summary: 'Em xin lùi lịch thi vì trùng lịch thi học kỳ ở trường',
       urgency: 'urgent',
       topic: 'reading',
       primary: 'student.reading.technique',
       note: 'Trùng lịch thi học kỳ ở trường, em xin lùi MT3',
     });
-    // Quá hạn: case GẤP nên Quản lý chỉ có 3 ngày, hạn 15/09 mà nay đã 23/09.
+    // Quá hạn: case GẤP nên Quản lý chỉ có 3 ngày, hạn 06/09 mà nay đã 14/09.
     addIntervention(c7, {
       kind: 'reschedule_mt', description: 'Đề nghị lùi MT3 sang tuần sau, giữ nguyên ngày thi thật',
       performerUser: gv, recorder: gv, status: 'planned',
-      approvalState: 'pending', approvalDue: '2026-09-15',
+      approvalState: 'pending', approvalDue: '2026-09-06',
     });
   }
 
@@ -1044,7 +1064,7 @@ function seedAcademicCases(conn: any, ctx: {
     const gv = teacherOf('MB-FT 102', 'speaking');
     const mgr = managers.get('MB')?.[0] ?? adminId;
     const c8 = openCase({
-      studentId: p3.id, classCode: 'MB-FT 102', reporter: gv, detectedAt: '2026-09-05',
+      studentId: p3.id, classCode: 'MB-FT 102', reporter: gv, detectedAt: '2026-08-27',
       summary: 'Nói ngắn, hết ý sau 20 giây ở part 2',
       urgency: 'attention',
       topic: 'speaking',
@@ -1052,10 +1072,10 @@ function seedAcademicCases(conn: any, ctx: {
     });
     addIntervention(c8, {
       kind: 'tutor', description: 'Tutor Speaking 1 buổi/tuần trong 4 tuần',
-      performerName: 'Tutor Minh', recorder: gv, status: 'started', started: '2026-09-12',
-      due: '2026-10-03',                                  // hẹn xem lại còn xa, CHƯA quá hạn
-      approvalState: 'approved', approvalDue: '2026-09-12', approvalBy: mgr,
-      approvalAt: '2026-09-10', approvalNote: 'Duyệt 4 buổi, ưu tiên part 2',
+      performerName: 'Tutor Minh', recorder: gv, status: 'started', started: '2026-09-03',
+      due: '2026-09-24',                                  // hẹn xem lại còn xa, CHƯA quá hạn
+      approvalState: 'approved', approvalDue: '2026-09-03', approvalBy: mgr,
+      approvalAt: '2026-09-01', approvalNote: 'Duyệt 4 buổi, ưu tiên part 2',
     });
   }
 
@@ -1064,7 +1084,7 @@ function seedAcademicCases(conn: any, ctx: {
     const gv = teacherOf('HD-FT 302', 'reading');
     const mgr = managers.get('HD')?.[0] ?? adminId;
     const c9 = openCase({
-      studentId: p4.id, classCode: 'HD-FT 302', reporter: gv, detectedAt: '2026-09-02',
+      studentId: p4.id, classCode: 'HD-FT 302', reporter: gv, detectedAt: '2026-08-24',
       summary: 'Đọc chậm, phần 3 gần như bỏ trống',
       urgency: 'normal',
       topic: 'reading',
@@ -1073,13 +1093,13 @@ function seedAcademicCases(conn: any, ctx: {
     addIntervention(c9, {
       kind: 'tutor', description: 'Xin 8 buổi tutor Reading',
       performerUser: gv, recorder: gv, status: 'cancelled',
-      approvalState: 'declined', approvalDue: '2026-09-09', approvalBy: mgr,
-      approvalAt: '2026-09-08',
+      approvalState: 'declined', approvalDue: '2026-08-31', approvalBy: mgr,
+      approvalAt: '2026-08-30',
       approvalNote: 'Chưa cần tutor, thử tăng bài luyện có bấm giờ trên lớp trước 3 tuần',
     });
     addIntervention(c9, {
       kind: 'teaching_adjust', description: 'Luyện đọc bấm giờ 10 phút mỗi buổi',
-      performerUser: gv, recorder: gv, status: 'started', started: '2026-09-09', due: '2026-09-30',
+      performerUser: gv, recorder: gv, status: 'started', started: '2026-08-31', due: '2026-09-21',
     });
   }
 
@@ -1225,13 +1245,13 @@ function seedSpecialCases(conn: any, ctx: {
     const a = conn.prepare(`SELECT * FROM assessment_attempts WHERE student_id = ? AND status='planned' LIMIT 1`)
       .get(moved.id) as any;
     if (a) {
-      const newWeek = '2026-10-26';
+      const newWeek = '2026-11-02';
       conn.prepare('UPDATE assessment_attempts SET planned_period_id = ?, updated_at = ? WHERE id = ?')
         .run(periodOf(newWeek), NOW, a.id);
       conn.prepare(
         `INSERT INTO attempt_schedule_history (attempt_id, action, field, old_value, new_value, reason, actor_user_id, created_at)
          VALUES (?, 'week_set', 'planned_period', ?, ?, ?, ?, ?)`,
-      ).run(a.id, '2026-10-19', newWeek, 'Trùng lịch phòng thi', managers.get('CP')![0], NOW);
+      ).run(a.id, '2026-10-12', newWeek, 'Trùng lịch phòng thi', managers.get('CP')![0], NOW);
     }
   }
 
@@ -1259,11 +1279,11 @@ function seedSpecialCases(conn: any, ctx: {
       conn.prepare(
         `UPDATE assessment_attempts SET deadline_override=?, deadline_override_by=?, deadline_override_at=?,
                 deadline_override_reason=? WHERE id=?`,
-      ).run('2026-09-30', ctx.branchAdmins.get('MB')!, NOW, 'Giáo viên Writing nghỉ phép, gia hạn tới cuối tháng', a.id);
+      ).run('2026-09-21', ctx.branchAdmins.get('MB')!, NOW, 'Giáo viên Writing nghỉ phép, gia hạn thêm một tuần', a.id);
       conn.prepare(
         `INSERT INTO attempt_schedule_history (attempt_id, action, field, new_value, reason, actor_user_id, created_at)
-         VALUES (?, 'deadline_set', 'deadline_override', '2026-09-30', ?, ?, ?)`,
-      ).run(a.id, 'Giáo viên Writing nghỉ phép, gia hạn tới cuối tháng', ctx.branchAdmins.get('MB')!, NOW);
+         VALUES (?, 'deadline_set', 'deadline_override', '2026-09-21', ?, ?, ?)`,
+      ).run(a.id, 'Giáo viên Writing nghỉ phép, gia hạn thêm một tuần', ctx.branchAdmins.get('MB')!, NOW);
     }
   }
 
@@ -1273,9 +1293,9 @@ function seedSpecialCases(conn: any, ctx: {
   if (transferred && toClass) {
     const cur = conn.prepare(`SELECT * FROM enrollments WHERE student_id = ? AND status='active'`).get(transferred.id) as any;
     conn.prepare(`UPDATE enrollments SET status='transferred', ended_at=?, end_reason=? WHERE id=?`)
-      .run('2026-09-14', 'Chuyển ca học buổi chiều', cur.id);
+      .run('2026-09-07', 'Chuyển ca học buổi chiều', cur.id);
     conn.prepare(`INSERT INTO enrollments (student_id, class_id, status, started_at, created_at) VALUES (?,?, 'active', ?, ?)`)
-      .run(transferred.id, toClass, '2026-09-14', NOW);
+      .run(transferred.id, toClass, '2026-09-07', NOW);
     conn.prepare(`UPDATE assessment_attempts SET class_id = ? WHERE student_id = ? AND status = 'planned'`)
       .run(toClass, transferred.id);
     conn
@@ -1283,15 +1303,15 @@ function seedSpecialCases(conn: any, ctx: {
         `INSERT INTO journey_events (student_id, event_type, event_date, title, detail, created_by, created_at)
          VALUES (?, 'transfer', ?, ?, ?, ?, ?)`,
       )
-      .run(transferred.id, '2026-09-14', 'Chuyển sang lớp MB-FT 102', 'Chuyển ca học buổi chiều', adminId, NOW);
+      .run(transferred.id, '2026-09-07', 'Chuyển sang lớp MB-FT 102', 'Chuyển ca học buổi chiều', adminId, NOW);
   }
 
   // 5) Tạm dừng rồi quay lại học.
   const paused = inClass('BC-FT 205')[4];
   if (paused) {
     for (const e of [
-      { type: 'pause', date: '2026-08-24', title: 'Tạm dừng học', detail: 'Gia đình xin nghỉ 2 tuần' },
-      { type: 'resume', date: '2026-09-07', title: 'Quay lại học', detail: null },
+      { type: 'pause', date: '2026-08-17', title: 'Tạm dừng học', detail: 'Gia đình xin nghỉ 2 tuần' },
+      { type: 'resume', date: '2026-08-31', title: 'Quay lại học', detail: null },
     ]) {
       conn
         .prepare(
@@ -1303,46 +1323,17 @@ function seedSpecialCases(conn: any, ctx: {
   }
 
   /*
-   * 5b) NGHĨA VỤ HÀNG TUẦN CỦA ADMIN CHI NHÁNH.
+   * 5b) NGHĨA VỤ HÀNG TUẦN CỦA ADMIN CHI NHÁNH — nay nằm THẲNG trong lịch của lớp.
    *
-   * Ngày demo là 23/09/2026, tức W4 SEP. Phải có sẵn cả ba tình huống của §11 thì màn
-   * "Cần cập nhật ngày MT" mới thể hiện được đúng việc thật:
-   *   - MT tuần này (W4 SEP) chưa có ngày  → Admin chi nhánh cần làm ngay;
-   *   - MT tuần trước (W3 SEP) vẫn thiếu   → đã quá hạn;
-   *   - MT các tuần sau                     → KHÔNG hiện, vì chưa đến lượt.
+   * Bản trước dựng thêm vài lượt MT rời chỉ để màn "Cần cập nhật ngày MT" có gì hiện. Hậu
+   * quả là số lượt MT của một em ở màn này không khớp với kế hoạch của lớp em đó, và owner
+   * đã báo đúng chỗ ấy. Nay hai tình huống đó là lịch thật của hai lớp thật:
+   *
+   *   MB-FT 101 · MT3 tuần W3 SEP (tuần này) chưa có ngày  → Admin CN cần làm ngay
+   *   BC-FT 205 · MT2 tuần W2 SEP (tuần trước) chưa có ngày → đã quá hạn
+   *
+   * Các lượt của tuần sau vẫn KHÔNG hiện, vì chưa đến lượt.
    */
-  const dutyWeeks: { week: string; classCode: string; take: number }[] = [
-    { week: '2026-09-21', classCode: 'MB-FT 101', take: 3 },   // W4 SEP — tuần hiện tại
-    { week: '2026-09-21', classCode: 'MB-FT 102', take: 2 },
-    { week: '2026-09-14', classCode: 'CP-FT 110', take: 2 },   // W3 SEP — đã quá hạn
-  ];
-  for (const d of dutyWeeks) {
-    const pid = periodOf(d.week);
-    const cid = classId.get(d.classCode);
-    if (!pid || !cid) continue;
-    for (const st of inClass(d.classCode).slice(0, d.take)) {
-      const cycle = conn.prepare(`SELECT * FROM learning_cycles WHERE student_id = ? AND status='active' LIMIT 1`)
-        .get(st.id) as any;
-      if (!cycle) continue;
-      const nextNo = ((conn.prepare('SELECT MAX(attempt_no) m FROM assessment_attempts WHERE cycle_id = ?')
-        .get(cycle.id) as any)?.m ?? 0) + 1;
-      const info = conn
-        .prepare(
-          `INSERT INTO assessment_attempts (cycle_id, student_id, attempt_no, kind, class_id, planned_period_id,
-                                            status, target_at_attempt, created_by, created_at)
-           VALUES (?,?,?, 'mock', ?,?, 'planned', ?,?,?)`,
-        )
-        .run(cycle.id, st.id, nextNo, cid, pid, cycle.target_score, managers.get(st.branch)?.[0] ?? adminId, NOW);
-      conn
-        .prepare(
-          `INSERT INTO attempt_schedule_history (attempt_id, action, field, new_value, reason, actor_user_id, created_at)
-           VALUES (?, 'created', 'planned_period', ?, ?, ?, ?)`,
-        )
-        .run(Number(info.lastInsertRowid), d.week, 'Kế hoạch tuần, chờ cập nhật ngày thực tế',
-             managers.get(st.branch)?.[0] ?? adminId, NOW);
-      counts.attempts += 1;
-    }
-  }
 
   /*
    * 5c) LỚP THƯỜNG — Foundation / Beginner / Elementary.
@@ -1380,7 +1371,7 @@ function seedSpecialCases(conn: any, ctx: {
   const warned = inClass('UB-FT 401')[5];
   if (warned) {
     for (const e of [
-      { type: 'warning', date: '2026-09-07', title: 'Cảnh báo chuyên cần', detail: 'Vắng 3 buổi liên tiếp' },
+      { type: 'warning', date: '2026-08-31', title: 'Cảnh báo chuyên cần', detail: 'Vắng 3 buổi liên tiếp' },
     ]) {
       conn
         .prepare(
@@ -1415,7 +1406,7 @@ function seedSpecialCases(conn: any, ctx: {
         `INSERT INTO journey_events (student_id, event_type, event_date, title, detail, created_by, created_at)
          VALUES (?, 'repeat', ?, ?, ?, ?, ?)`,
       )
-      .run(repeater.id, '2026-09-21', 'Học tiếp lộ trình LT2', 'Chưa đạt target, học thêm trước khi thi', adminId, NOW);
+      .run(repeater.id, '2026-09-12', 'Học tiếp lộ trình LT2', 'Chưa đạt target, học thêm trước khi thi', adminId, NOW);
   }
 
   // 8) SANG LỘ TRÌNH MỚI: LT1 xong, thi thật, mở LT2 với target mới nên MT đánh lại từ 1.
@@ -1423,7 +1414,7 @@ function seedSpecialCases(conn: any, ctx: {
   if (promoted) {
     const old = conn.prepare('SELECT * FROM learning_cycles WHERE student_id = ? ORDER BY seq DESC LIMIT 1')
       .get(promoted.id) as any;
-    conn.prepare(`UPDATE learning_cycles SET status='completed', ended_at=? WHERE id=?`).run('2026-09-14', old.id);
+    conn.prepare(`UPDATE learning_cycles SET status='completed', ended_at=? WHERE id=?`).run('2026-09-05', old.id);
     const newTarget = (old.target_score ?? 6) + 0.5;
     const cyc = conn
       .prepare(
@@ -1432,7 +1423,7 @@ function seedSpecialCases(conn: any, ctx: {
          VALUES (?,?, 'LT2', ?, ?, '2027-03', ?, ?, 'active', ?, ?)`,
       )
       .run(promoted.id, old.seq + 1, newTarget, '2027-03-06',
-           ensurePeriod('2026-09-15').id, '2026-09-15',
+           ensurePeriod('2026-09-07').id, '2026-09-07',
            'Đã thi xong LT1, sang lộ trình mới với target cao hơn', NOW);
     const cycleId = Number(cyc.lastInsertRowid);
     counts.cycles += 1;
@@ -1453,12 +1444,12 @@ function seedSpecialCases(conn: any, ctx: {
         `INSERT INTO journey_events (student_id, event_type, event_date, title, detail, ref_table, ref_id, created_by, created_at)
          VALUES (?, 'cycle_start', ?, ?, ?, 'learning_cycles', ?, ?, ?)`,
       )
-      .run(promoted.id, '2026-09-15', 'Bắt đầu lộ trình LT2', `Target mới ${newTarget}`, cycleId, adminId, NOW);
+      .run(promoted.id, '2026-09-07', 'Bắt đầu lộ trình LT2', `Target mới ${newTarget}`, cycleId, adminId, NOW);
   }
 
   // 9) Hai học viên đã kết thúc: một em mới xong (còn hiện, làm dịu màu), một em đã quá
   //    hai tuần nên tới lượt vào lưu trữ. Lưu trữ chỉ ẩn khỏi danh sách, không xoá gì.
-  for (const [idx, date] of [[6, '2026-09-04'], [7, '2026-09-18']] as [number, string][]) {
+  for (const [idx, date] of [[6, '2026-08-24'], [7, '2026-09-09']] as [number, string][]) {
     const finished = inClass('BC-FT 205')[idx];
     if (!finished) continue;
     conn.prepare(`UPDATE students SET status='finished', finished_at=? WHERE id=?`).run(date, finished.id);
@@ -1541,16 +1532,16 @@ function seedMeeting(conn: any, ctx: {
 
   // Quá hạn từ kỳ trước — vẫn phải xuất hiện khi xem tuần này, giữ nguyên ID và lịch sử.
   addTask({ title: 'In bổ sung đáp án Writing bản mới cho 3 lớp FT', unit: unitOf('MB'), branch: 'MB',
-    assignee: managers.get('MB')![0], due: '2026-09-18', progress: 'doing', type: 'in_period', periodId: prevId });
+    assignee: managers.get('MB')![0], due: '2026-09-09', progress: 'doing', type: 'in_period', periodId: prevId });
   addTask({ title: 'Bổ sung giáo viên dự phòng ca tối', unit: unitOf('BC'), branch: 'BC',
-    assignee: managers.get('BC')![0], due: '2026-09-16', progress: 'not_started', type: 'in_period', periodId: prevId });
+    assignee: managers.get('BC')![0], due: '2026-09-07', progress: 'not_started', type: 'in_period', periodId: prevId });
   // Sắp đến hạn trong 3 ngày.
   addTask({ title: 'Chốt danh sách học viên thi thật tháng 11', unit: unitOf('CP'), branch: 'CP',
-    assignee: managers.get('CP')![1], due: '2026-09-25', progress: 'doing', type: 'in_period', periodId: currentPeriodId });
+    assignee: managers.get('CP')![0], due: '2026-09-16', progress: 'doing', type: 'in_period', periodId: currentPeriodId });
   // Hoàn thành sau hạn — KHÔNG được đánh dấu quá hạn nữa.
-  addTask({ title: 'Rà soát lịch Mock tuần W3 SEP', unit: unitOf('HD'), branch: 'HD',
-    assignee: managers.get('HD')![0], due: '2026-09-15', progress: 'done', type: 'in_period', periodId: prevId,
-    completedAt: '2026-09-19T09:00:00.000Z' });
+  addTask({ title: 'Rà soát lịch Mock tuần W2 SEP', unit: unitOf('HD'), branch: 'HD',
+    assignee: managers.get('HD')![0], due: '2026-09-06', progress: 'done', type: 'in_period', periodId: prevId,
+    completedAt: '2026-09-10T09:00:00.000Z' });
   // Không có hạn — không bao giờ tự tính quá hạn.
   addTask({ title: 'Sưu tầm đề Speaking part 2 theo chủ đề mới', unit: unitOf('TUTOR'), branch: null,
     assignee: adminId, due: null, progress: 'doing', type: 'long_term', periodId: currentPeriodId });
@@ -1560,7 +1551,7 @@ function seedMeeting(conn: any, ctx: {
   addTask({ title: 'Tuyển thêm 2 tutor part-time cho ca cuối tuần', unit: unitOf('TUTOR'), branch: null,
     assignee: adminId, due: '2026-10-15', progress: 'not_started', type: 'long_term', periodId: currentPeriodId });
   addTask({ title: 'Tạm dừng: đổi phần mềm chấm Speaking', unit: unitOf('MB'), branch: 'MB',
-    assignee: managers.get('MB')![1], due: '2026-09-20', progress: 'paused', type: 'in_period', periodId: prevId,
+    assignee: managers.get('MB')![0], due: '2026-09-11', progress: 'paused', type: 'in_period', periodId: prevId,
     note: 'Chờ báo giá nhà cung cấp' });
 
   // Việc sinh ra từ một case SOS, giữ liên kết nguồn để mở lại đúng lần Mock.
@@ -1579,7 +1570,7 @@ function seedMeeting(conn: any, ctx: {
       )
       .run(padCode('CV', n, 4), currentPeriodId, 'in_period',
            `Xếp lịch tutor cho ${at.full_name} (${at.class_code})`, unit?.id ?? null, at.branch_id, adminId,
-           '2026-09-26', 'not_started', 'Sinh từ case SOS 3', 'sos_case', someCase.id, adminId, NOW);
+           '2026-09-17', 'not_started', 'Sinh từ case SOS 3', 'sos_case', someCase.id, adminId, NOW);
   }
   return n;
 }

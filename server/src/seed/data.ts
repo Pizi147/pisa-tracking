@@ -1,11 +1,18 @@
 /**
  * Dữ liệu tĩnh cho seed. Toàn bộ tên người là GIẢ, không lấy từ tài liệu nguồn.
  *
- * Ngày demo 23/09/2026 là thứ Tư của tuần W4 SEP. Chọn ngày này để thấy đủ ba mốc hạn
- * trong cùng một màn hình: tuần W2 SEP đã quá hạn, tuần W3 SEP đúng hạn hôm nay
- * (chưa quá hạn), tuần W4 SEP và W1 OCT còn ở phía trước.
+ * NGÀY DEMO 14/09/2026 — thứ Hai, tuần W3 SEP. Chọn đúng đầu tuần vì bản demo phải cho
+ * thấy được cả ba trạng thái của một tuần cùng lúc:
+ *
+ *   W2 SEP (07/09)  đã qua   → việc còn thiếu ở tuần đó là ĐÃ QUÁ HẠN
+ *   W3 SEP (14/09)  hôm nay  → việc của tuần này đang chờ làm
+ *   W4 SEP trở đi            → chưa tới lượt, không được hiện lên như việc cần làm
+ *
+ * Và vì 14/09 là tuần học thứ 8 của lớp FOU mở ngày 27/07, thứ 5 của lớp ELE mở 17/08,
+ * nên ba thông báo của lớp Normal (đang trong tuần Progress Test, đang trong tuần Final
+ * Test, đã học hết chương trình) đều có lớp thật để hiện, không phải chỉ có trên lý thuyết.
  */
-export const DEMO_DATE = '2026-09-23';
+export const DEMO_DATE = '2026-09-14';
 
 export const BRANCHES = [
   { code: 'MB', name: 'Monbay' },
@@ -81,86 +88,116 @@ export type ClassSeed = {
 };
 
 export const CLASSES: ClassSeed[] = [
+  /*
+   * MỘT LỚP = MỘT TÌNH HUỐNG. Bản demo cố tình ÍT LỚP và ÍT HỌC VIÊN: người xem phải theo
+   * dõi được từng em, chứ không phải cuộn qua một trăm cái tên giả giống hệt nhau.
+   *
+   * Lịch MT của lớp FT bám mốc tuần học 6 / 12 / 16 / 20 — đúng cái hệ thống tự đề xuất —
+   * trừ vài chỗ cố ý lệch, vì ngoài đời Quản lý vẫn chốt tay và hệ thống phải chịu được.
+   */
+
+  // MB · lớp chạy lâu nhất: hai đợt MT đã xong, đợt thứ ba rơi đúng TUẦN NÀY và chưa có ngày.
   {
     code: 'MB-FT 101', branch: 'MB', kind: 'FT', route: 'LT1', isFulltime: true,
-    startDate: '2026-06-22', students: 12,
+    startDate: '2026-06-01', students: 8,
     plan: [
-      { attemptNo: 1, week: '2026-07-27', lrwAt: '2026-07-27', done: true },
-      // W2 SEP — hạn mặc định 16/09, đã quá hạn so với ngày demo 23/09.
-      { attemptNo: 2, week: '2026-09-07', lrwAt: '2026-09-10', speakingAt: '2026-09-11', done: true },
-      // Đã chốt tuần, CHƯA có ngày — việc của Admin chi nhánh.
-      { attemptNo: 3, week: '2026-10-05', done: false },
+      { attemptNo: 1, week: '2026-07-06', lrwAt: '2026-07-08', done: true },   // tuần học 6
+      { attemptNo: 2, week: '2026-08-17', lrwAt: '2026-08-19', speakingAt: '2026-08-20', done: true }, // tuần 12
+      // Tuần học 16 = W3 SEP = TUẦN NÀY. Đã chốt tuần, CHƯA có ngày → việc của Admin CN hôm nay.
+      { attemptNo: 3, week: '2026-09-14', done: false },
     ],
   },
+  // MB · lớp đã có ngày MT cụ thể cho tuần này — để so với lớp trên, thấy rõ "đã có ngày" khác gì.
   {
     code: 'MB-FT 102', branch: 'MB', kind: 'FT', route: 'LT2', isFulltime: true,
-    startDate: '2026-06-29', students: 12,
+    startDate: '2026-06-29', students: 6,
     plan: [
-      { attemptNo: 1, week: '2026-08-03', lrwAt: '2026-08-03', done: true },
-      // W3 SEP — hạn mặc định rơi đúng ngày demo 23/09, chưa quá hạn.
-      { attemptNo: 2, week: '2026-09-14', lrwAt: '2026-09-17', done: true },
-      { attemptNo: 3, week: '2026-10-12', done: false },
+      { attemptNo: 1, week: '2026-08-03', lrwAt: '2026-08-05', done: true },   // tuần học 6
+      { attemptNo: 2, week: '2026-09-14', lrwAt: '2026-09-16', speakingAt: '2026-09-17', done: false }, // tuần 12
     ],
   },
+  // MB · lớp Normal ĐANG TRONG TUẦN FINAL TEST (tuần học 8 của chương trình Foundation).
   {
-    code: 'MB-FOUND 12', branch: 'MB', kind: 'FOUND', route: null, isFulltime: false,
-    startDate: '2026-08-10', students: 8, plan: [],
+    code: 'MB-FOU 12', branch: 'MB', kind: 'FOU', route: null, isFulltime: false,
+    startDate: '2026-07-27', students: 6, plan: [],
   },
+
+  // BC · MT của TUẦN TRƯỚC vẫn chưa có ngày → đây là chỗ nhãn "quá hạn" phải hiện lên.
   {
-    code: 'BC-FT 205', branch: 'BC', kind: 'FT', route: 'LT1', isFulltime: true,
-    startDate: '2026-06-22', students: 12,
+    code: 'BC-FT 205', branch: 'BC', kind: 'FT', route: 'LT2', isFulltime: true,
+    startDate: '2026-07-06', students: 8,
     plan: [
-      { attemptNo: 1, week: '2026-07-27', lrwAt: '2026-07-27', done: true },
-      { attemptNo: 2, week: '2026-09-07', lrwAt: '2026-09-10', done: true },
-      { attemptNo: 3, week: '2026-10-05', done: false },
-    ],
-  },
-  {
-    code: 'BC-BE 80', branch: 'BC', kind: 'BE', route: null, isFulltime: false,
-    startDate: '2026-07-13', students: 8, plan: [],
-  },
-  {
-    code: 'CP-FT 110', branch: 'CP', kind: 'FT', route: 'LT1', isFulltime: true,
-    startDate: '2026-07-06', students: 12,
-    plan: [
-      { attemptNo: 1, week: '2026-08-10', lrwAt: '2026-08-10', done: true },
-      // W4 SEP — tuần đang xem, vừa mock xong, hạn 30/09 chưa tới.
-      { attemptNo: 2, week: '2026-09-21', lrwAt: '2026-09-22', done: true },
+      { attemptNo: 1, week: '2026-08-10', lrwAt: '2026-08-12', done: true },   // tuần học 6
+      // Quản lý chốt sớm hơn mốc tuần 12, rồi để quên ngày — W2 SEP đã trôi qua.
+      { attemptNo: 2, week: '2026-09-07', done: false },
       { attemptNo: 3, week: '2026-10-19', done: false },
     ],
   },
+  // BC · lớp Normal ĐANG TRONG TUẦN PROGRESS TEST (tuần học 5 của chương trình Elementary).
   {
-    code: 'CP-FT 111', branch: 'CP', kind: 'FT', route: 'LT2', isFulltime: true,
-    startDate: '2026-06-29', students: 12,
+    code: 'BC-ELE 01', branch: 'BC', kind: 'ELE', route: null, isFulltime: false,
+    startDate: '2026-08-17', students: 6, plan: [],
+  },
+
+  // CP · ba đợt MT đã xong → em nào yếu đi yếu lại sẽ có CASE KÉO DÀI QUA BA LƯỢT.
+  {
+    code: 'CP-FT 110', branch: 'CP', kind: 'FT', route: 'LT1', isFulltime: true,
+    startDate: '2026-05-04', students: 8,
     plan: [
-      { attemptNo: 1, week: '2026-08-03', lrwAt: '2026-08-03', done: true },
-      { attemptNo: 2, week: '2026-09-14', lrwAt: '2026-09-17', done: true },
-      { attemptNo: 3, week: '2026-10-12', done: false },
+      { attemptNo: 1, week: '2026-06-08', lrwAt: '2026-06-10', done: true },   // tuần học 6
+      { attemptNo: 2, week: '2026-07-20', lrwAt: '2026-07-22', done: true },   // tuần học 12
+      { attemptNo: 3, week: '2026-08-17', lrwAt: '2026-08-19', done: true },   // tuần học 16
+      { attemptNo: 4, week: '2026-10-12', done: false },
     ],
   },
+
+  // HD · lớp MỚI MỞ: chưa có kết quả nào, đợt MT đầu rơi đúng tuần này.
   {
     code: 'HD-FT 302', branch: 'HD', kind: 'FT', route: 'LT1', isFulltime: true,
-    startDate: '2026-07-06', students: 12,
+    startDate: '2026-08-10', students: 6,
     plan: [
-      { attemptNo: 1, week: '2026-08-10', lrwAt: '2026-08-10', done: true },
-      { attemptNo: 2, week: '2026-09-21', lrwAt: '2026-09-25', done: false },
+      { attemptNo: 1, week: '2026-09-14', lrwAt: '2026-09-16', done: false },  // tuần học 6
     ],
   },
-  {
-    code: 'HD-ELE 01', branch: 'HD', kind: 'ELE', route: null, isFulltime: false,
-    startDate: '2026-08-24', students: 8, plan: [],
-  },
+
+  // UB · lớp gần cuối lộ trình: bốn đợt MT, đợt cuối vừa thi TUẦN TRƯỚC.
   {
     code: 'UB-FT 401', branch: 'UB', kind: 'FT', route: 'LT2', isFulltime: true,
-    startDate: '2026-05-25', students: 12,
+    startDate: '2026-04-27', students: 8,
     plan: [
-      { attemptNo: 1, week: '2026-06-29', lrwAt: '2026-06-29', done: true },
-      { attemptNo: 2, week: '2026-08-17', lrwAt: '2026-08-17', done: true },
-      { attemptNo: 3, week: '2026-09-14', lrwAt: '2026-09-14', done: true },
-      { attemptNo: 4, week: '2026-10-05', done: false },
+      { attemptNo: 1, week: '2026-06-01', lrwAt: '2026-06-03', done: true },   // tuần học 6
+      { attemptNo: 2, week: '2026-07-13', lrwAt: '2026-07-15', done: true },   // tuần học 12
+      { attemptNo: 3, week: '2026-08-10', lrwAt: '2026-08-12', done: true },   // tuần học 16
+      { attemptNo: 4, week: '2026-09-07', lrwAt: '2026-09-09', done: true },   // tuần học 20
     ],
   },
+  /*
+   * UB · lớp Normal ĐÃ HỌC HẾT CHƯƠNG TRÌNH — các em bắt buộc phải được xếp lớp tiếp.
+   *
+   * Lớp này cố ý mang MÃ CŨ "FOUND" chứ không phải "FOU": trung tâm đã đặt tên lớp như vậy
+   * từ trước, và đổi tên lớp cũ chỉ vì phần mềm chuẩn hoá lại mã là chuyện không được phép.
+   * Hệ thống đọc mã cũ ra đúng chương trình Foundation mà không sửa gì trên mã lớp.
+   */
+  {
+    code: 'UB-FOUND 07', branch: 'UB', kind: 'FOUND', route: null, isFulltime: false,
+    startDate: '2026-07-06', students: 6, plan: [],
+  },
 ];
+
+/**
+ * PHÂN CÔNG GIÁO VIÊN CỐ TÌNH THIẾU ở vài lớp.
+ *
+ * Nhãn "Thiếu GV R, L" và nhãn "Chưa có GVCN" chỉ chứng minh được là nó chạy khi có lớp
+ * thật đang thiếu. Lớp nào không nằm trong bảng này thì được phân công đầy đủ.
+ */
+export const TEACHER_GAPS: Record<string, { skills?: string[]; noCore?: boolean }> = {
+  // Lớp mới mở, chưa xếp xong người: thiếu GV cả hai phần Writing.
+  'HD-FT 302': { skills: ['writing1', 'writing2'] },
+  // Lớp Normal vừa khai giảng ở chi nhánh xa: chưa ai nhận chủ nhiệm.
+  'BC-ELE 01': { noCore: true },
+  // Thiếu đúng một kỹ năng — trường hợp hay gặp nhất.
+  'UB-FOUND 07': { skills: ['pronunciation'] },
+};
 
 // ---------------------------------------------------------------- tên giả
 
