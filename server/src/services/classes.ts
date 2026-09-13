@@ -8,7 +8,10 @@ import { badRequest, notFound, nowIso } from '../util.ts';
 import { can, classScopeSql, editableSkills, isCoreTeacherOf, require_, scopeFor, type Principal } from '../permissions.ts';
 import { writeAudit } from './audit.ts';
 import { loadBundle, resultOf, skillCells } from './attempts.ts';
+import { currentSosByStudent } from './cases.ts';
 import { allProgrammes, evaluateRegular, programmeOfClass } from './regular.ts';
+import { classProgressMany, missingForClasses, missingForStudent } from './schedule.ts';
+import { SKILL_SHORT } from '../../../shared/domain.ts';
 
 /**
  * Màn Học viên lấy LỚP làm gốc.
@@ -33,7 +36,62 @@ export type ClassSummary = {
   scoringMode: string | null;
   mySkills: string[];
   myCoreClass: boolean;
+  /*
+   * TIẾN ĐỘ VÀ CHUYỆN CẦN BÁO CỦA LỚP — mục 7.6, và yêu cầu owner bổ sung 13/09/2026.
+   *
+   * `progressLabel` là MỘT DÒNG đọc được ngay ("BE · tuần 5/10 · Progress Test tuần này").
+   * Dựng ở máy chủ vì nhiều màn cùng cần đúng câu đó; để mỗi màn tự ghép thì sẽ có màn ghép
+   * thiếu và hai màn nói khác nhau về cùng một lớp.
+   */
+  progressLabel: string | null;
+  phase: string;
+  phaseLabel: string;
+  currentWeek: number | null;
+  totalWeeks: number | null;
+  /** Lớp đã hết chương trình và còn học viên đang học → phải xếp lớp tiếp cho từng em. */
+  needsPlacement: boolean;
+  placementOptions: { code: string; name: string }[];
+  /** Gom mọi thứ lớp còn thiếu vào MỘT badge, kèm danh sách kỹ năng thiếu giáo viên. */
+  missing: { key: string; label: string; who: string }[];
+  missingSkills: string[];
 };
+
+/**
+ * Phần tiến độ + thiếu thông tin của MỘT LOẠT lớp, gói sẵn cho danh sách lớp.
+ *
+ * Gộp thành hai hàm hàng loạt chứ không gọi trong vòng lặp: bản đầu biến một trang mười lớp
+ * thành tám mươi câu truy vấn, và bài kiểm N+1 bắt đúng chỗ đó. Ở quy mô demo không ai thấy
+ * chậm — ở quy mô thật thì thấy ngay.
+ *
+ * CẢ danh sách lớp lẫn trang chi tiết lớp đều dùng đúng bộ này, nên hai màn không thể nói
+ * khác nhau về cùng một lớp.
+ */
+function progressMapOf(classIds: number[]) {
+  const prs = classProgressMany(classIds);
+  const ms = missingForClasses(classIds);
+  const out = new Map<number, {
+    progressLabel: string | null; phase: string; phaseLabel: string;
+    currentWeek: number | null; totalWeeks: number | null;
+    needsPlacement: boolean; placementOptions: { code: string; name: string }[];
+    missing: { key: string; label: string; who: string }[]; missingSkills: string[];
+  }>();
+  for (const id of classIds) {
+    const pr = prs.get(id);
+    const m = ms.get(id);
+    out.set(id, {
+      progressLabel: pr?.label ?? null,
+      phase: (pr?.phase ?? 'unknown') as string,
+      phaseLabel: pr?.phaseLabel ?? '',
+      currentWeek: pr?.currentWeek ?? null,
+      totalWeeks: pr?.totalWeeks ?? null,
+      needsPlacement: pr?.needsPlacement ?? false,
+      placementOptions: (pr?.placementOptions ?? []) as { code: string; name: string }[],
+      missing: m?.items ?? [],
+      missingSkills: m?.missingSkills ?? [],
+    });
+  }
+  return out;
+}
 
 /** Một truy vấn cho mỗi loại dữ liệu, không hỏi lại theo từng lớp. */
 export function listClassSummaries(p: Principal, f: { branchId?: number; q?: string } = {}) {
@@ -131,6 +189,8 @@ export function listClassSummaries(p: Principal, f: { branchId?: number; q?: str
     }
   }
 
+  const progressByClass = progressMapOf(classes.map((c) => c.id));
+
   let rows: ClassSummary[] = classes.map((c) => ({
     id: c.id, code: c.code, kind: c.kind, route: c.route,
     programmeCode: c.programme_code ?? null,
@@ -159,6 +219,7 @@ export function listClassSummaries(p: Principal, f: { branchId?: number; q?: str
       ? []
       : editableByClass.get(c.id) ?? [],
     myCoreClass: isCoreTeacherOf(p, c.id),
+    ...progressByClass.get(c.id)!,
   }));
 
   // Tìm theo tên học viên phải trả về đúng LỚP chứa em đó, không phải danh sách rỗng.
@@ -188,10 +249,12 @@ export function classRoster(p: Principal, classId: number, q?: string) {
   const conn = db();
   const params: unknown[] = [classId];
   let sql = `SELECT s.*, e.status AS enrollment_status,
-                    cy.id AS cycle_id, cy.seq AS cycle_seq, cy.route, cy.target_score, cy.exam_date
+                    cy.id AS cycle_id, cy.seq AS cycle_seq, cy.route, cy.target_score, cy.exam_date,
+                    cy.start_period_id, cy.exam_month, sp.week_start AS start_week
                FROM enrollments e
                JOIN students s ON s.id = e.student_id
                LEFT JOIN learning_cycles cy ON cy.student_id = s.id AND cy.status = 'active'
+               LEFT JOIN report_periods sp ON sp.id = cy.start_period_id
               WHERE e.class_id = ? AND e.status = 'active'`;
   if (q?.trim()) {
     sql += ' AND (s.full_name LIKE ? OR s.normalized_name LIKE ? OR s.student_code LIKE ?)';
@@ -224,7 +287,27 @@ export function classRoster(p: Principal, classId: number, q?: string) {
   // Lớp thường chấm khác lớp FT, nên đọc chương trình một lần rồi dùng lại cho mọi dòng.
   const prog = programmeOfClass(classId);
   const isRatio = prog?.scoringMode === 'ratio';
+  /* Chỉ lớp FT mới bị nhắc tháng thi và Target — lớp Normal chưa thi IELTS. */
+  const isFt = prog?.code === 'FT';
   const myRegularSkills = isRatio ? editableSkills(p, classId, prog!.skills) : [];
+
+  /*
+   * CASE ĐANG MỞ của cả lớp, lấy MỘT LẦN. Hỏi từng em một thì một lớp ba mươi em sinh ba
+   * mươi câu truy vấn — đúng kiểu chậm mà không màn nào báo lỗi.
+   */
+  const openCaseCount = new Map<number, number>();
+  const openRows = conn
+    .prepare(
+      `SELECT sc.student_id, sc.sos_level, a.attempt_no FROM sos_cases sc
+         LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
+        WHERE sc.student_id IN (${ph}) AND sc.status != 'done'`,
+    )
+    .all(...sids) as any[];
+  for (const r of openRows) openCaseCount.set(r.student_id, (openCaseCount.get(r.student_id) ?? 0) + 1);
+  /* Mức SOS hiện tại: dùng CHUNG phép tính với bảng tổng hợp, không tự đếm lại ở đây. */
+  const openSos = currentSosByStudent(
+    openRows.map((r) => ({ studentId: r.student_id, sosLevel: r.sos_level, attemptNo: r.attempt_no })),
+  );
 
   return students.map((s) => {
     const list = byStudent.get(s.id) ?? [];
@@ -276,6 +359,14 @@ export function classRoster(p: Principal, classId: number, q?: string) {
         kind: a.kind, kindLabel: `MT${a.attempt_no}`,
         scoredRequired: result.scoredRequired, requiredCount: result.required.length,
         overall: result.overall,
+        /*
+         * BAND CỦA TỪNG Ô NHẬP, để bảng lớp vẽ được sáu cột điểm.
+         *
+         * KHÔNG dùng `result.bands`: bộ đó gộp W1 và W2 thành một band "writing" duy nhất
+         * (đúng cho việc tính SOS), nên hai cột W1 và W2 của bảng lớp sẽ trống trơn. Ở đây
+         * cần đúng con số người dạy đã gõ vào từng ô.
+         */
+        bands: Object.fromEntries(scores.map((x: any) => [x.skill, x.band ?? null])),
         passedCount: null, failedCount: result.failedCount,
         sosLevel: result.sosLevel, evaluable: result.evaluable,
         caseStatus: c?.status ?? null,
@@ -285,12 +376,59 @@ export function classRoster(p: Principal, classId: number, q?: string) {
       };
     });
     const done = timeline.filter((t) => t.evaluable);
+    /*
+     * SÁU CỘT ĐIỂM của bảng lớp (mục 8.4): OVR · L · R · S · W1 · W2.
+     *
+     * Mỗi ô mang ĐIỂM LƯỢT GẦN NHẤT và điểm của lượt TRƯỚC ĐÓ, để vẽ mũi tên lên/xuống.
+     * Tính ở máy chủ chứ không ở trình duyệt: cùng một phép so sánh mà mỗi màn tự làm lấy
+     * thì sớm muộn cũng có hai màn cho ra hai kết quả khác nhau.
+     *
+     * Lớp Normal không có band nên sáu ô này để trống — không dựng một con số giả.
+     */
+    const lastTwo = done.slice(-2);
+    const cell = (now: number | null, prev: number | null) => ({
+      now, prev,
+      dir: now === null || prev === null ? 0 : now > prev ? 1 : now < prev ? -1 : 0,
+    });
+    const bandAt = (t: any, skill: string) => (t ? (t.bands?.[skill] ?? null) : null);
+    const cur = lastTwo.length ? lastTwo[lastTwo.length - 1] : null;
+    const before = lastTwo.length > 1 ? lastTwo[0] : null;
+    const scores = isRatio ? null : {
+      overall: cell(cur?.overall ?? null, before?.overall ?? null),
+      listening: cell(bandAt(cur, 'listening'), bandAt(before, 'listening')),
+      reading: cell(bandAt(cur, 'reading'), bandAt(before, 'reading')),
+      speaking: cell(bandAt(cur, 'speaking'), bandAt(before, 'speaking')),
+      writing1: cell(bandAt(cur, 'writing1'), bandAt(before, 'writing1')),
+      writing2: cell(bandAt(cur, 'writing2'), bandAt(before, 'writing2')),
+    };
+
     return {
       id: s.id, studentCode: s.student_code, fullName: s.full_name, status: s.status,
+      scores,
+      /** Mức SOS đang có hiệu lực và số case chưa xong — hai con số của cột Trạng thái. */
+      sosLevel: openSos.get(s.id) ?? null,
+      openCases: openCaseCount.get(s.id) ?? 0,
+      examDate: s.exam_date ?? null,
       archived: !!s.archived_at,
       cycle: s.cycle_id
-        ? { id: s.cycle_id, seq: s.cycle_seq, route: s.route, target: s.target_score, examDate: s.exam_date }
+        ? {
+          id: s.cycle_id, seq: s.cycle_seq, route: s.route,
+          target: s.target_score, examDate: s.exam_date,
+          examMonth: s.exam_month ?? null,
+          startPeriodId: s.start_period_id ?? null, startWeek: s.start_week ?? null,
+        }
         : null,
+      /*
+       * BADGE "THIẾU THÔNG TIN" — gom mọi thứ còn thiếu vào MỘT nhãn (mục 7.5).
+       *
+       * Bốn nhãn nhỏ trên một dòng học viên thì dòng nào cũng đầy nhãn và người đọc thôi
+       * nhìn chúng. Một nhãn, bấm vào thấy danh sách, là đủ.
+       */
+      missing: missingForStudent({
+        cycle: s.cycle_id ? { start_period_id: s.start_period_id, exam_month: s.exam_month, target_score: s.target_score } : null,
+        student: { dob: s.dob },
+        isFulltime: !!isFt,
+      }),
       latest: done.length ? done[done.length - 1] : null,
       next: timeline.find((t) => t.status === 'planned') ?? null,
       timeline,
@@ -338,6 +476,8 @@ export function classOverview(p: Principal, classId: number) {
       canSetDate: can(p, PERMISSIONS.SCHEDULE_DATE, { classId }),
       canAddStudents: can(p, PERMISSIONS.STUDENT_EDIT, { classId }),
       canAssign: can(p, PERMISSIONS.CLASS_ASSIGN, { classId }),
+      /** Sửa tuần khai giảng và hai mốc kiểm tra — Admin CN và Quản lý CN (mục 7.6). */
+      canEditProgress: can(p, PERMISSIONS.CLASS_EDIT, { classId }),
       editableSkills: editableSkills(p, classId, classSkills),
       isCoreTeacher: isCoreTeacherOf(p, classId),
     },
@@ -471,6 +611,53 @@ export function setClassTeachers(p: Principal, classId: number, input: { slots?:
   for (const s of wanted.values()) {
     if (!eligible.has(s.userId)) {
       throw badRequest('Người này không có vai trò giảng dạy ở chi nhánh của lớp.');
+    }
+  }
+
+  /*
+   * BA QUY TẮC PHÂN CÔNG — mục 7.7, kiểm ở MÁY CHỦ chứ không chỉ ở giao diện.
+   *
+   *   1. Mỗi kỹ năng chỉ MỘT giáo viên.
+   *   2. Một giáo viên dạy NHIỀU kỹ năng trong cùng lớp thì được.
+   *   3. Đúng MỘT giáo viên chủ nhiệm, và người đó phải nằm trong danh sách phân công.
+   *
+   * Quy tắc 1 là quy tắc dễ vi phạm nhất và hậu quả im lặng nhất: hai người cùng phụ trách
+   * Listening thì cả hai đều tưởng người kia nhập điểm, và không ai nhập.
+   */
+  const perSkill = new Map<string, number[]>();
+  for (const s of wanted.values()) {
+    if (!s.skill) continue;
+    const list = perSkill.get(s.skill) ?? [];
+    list.push(s.userId);
+    perSkill.set(s.skill, list);
+  }
+  for (const [skill, users] of perSkill) {
+    if (users.length > 1) {
+      throw badRequest(
+        `Kỹ năng ${SKILL_SHORT[skill] ?? skill} đang được xếp cho ${users.length} giáo viên. `
+        + 'Mỗi kỹ năng chỉ một người — nếu hai người cùng phụ trách thì cả hai đều tưởng người kia nhập điểm.',
+      );
+    }
+  }
+
+  /*
+   * ĐÚNG MỘT GVCN, VÀ GVCN PHẢI DẠY ÍT NHẤT MỘT KỸ NĂNG Ở LỚP ĐÓ.
+   *
+   * Owner khẳng định lại 13/09/2026. Đây chính là chữ "trong danh sách được phân công" ở mục
+   * 7.7: chủ nhiệm một lớp mà không dạy em nào buổi nào thì không có căn cứ nào để nhận xét
+   * và theo dõi các em — vai đó thành một cái tên trên giấy.
+   */
+  const cores = [...wanted.values()].filter((s) => s.isCore);
+  if (cores.length > 1) {
+    throw badRequest('Một lớp chỉ có đúng một giáo viên chủ nhiệm.');
+  }
+  if (cores.length === 1) {
+    const teaches = [...wanted.values()].some((s) => s.skill && s.userId === cores[0].userId);
+    if (!teaches) {
+      throw badRequest(
+        'Giáo viên chủ nhiệm phải dạy ít nhất một kỹ năng ở lớp này. '
+        + 'Hãy xếp cho người đó một kỹ năng, hoặc chọn người khác làm chủ nhiệm.',
+      );
     }
   }
 

@@ -1,5 +1,10 @@
 import { db, isInitialised } from './db.ts';
 import { nowIso } from './util.ts';
+import crypto from 'node:crypto';
+import { PERMISSION_LABEL } from '../../shared/domain.ts';
+import { DEFAULT_ADMIN_EMAIL, DEFAULT_ADMIN_PASSWORD, EMAIL_SUFFIX } from './services/accounts.ts';
+import { seedRoutes } from './services/sysconfig.ts';
+import { ROLE_PERMISSIONS } from './seed/data.ts';
 
 /**
  * Nâng cấp database ĐANG CÓ lên schema mới, không xoá dữ liệu.
@@ -387,6 +392,9 @@ function migrateCaseEngine(applied: string[], skipped: string[]) {
 
     migrateSkillTopics(conn, applied);
     migrateCaseLifecycle(conn, applied);
+    migrateSchedulingFields(conn, applied);
+    migratePermissions(conn, applied);
+    migrateAccounts(conn, applied);
 
     /*
      * Case đã đóng theo hệ thống cũ mà không có hướng xử lý: ghi rõ là "đóng theo hệ thống
@@ -1016,4 +1024,297 @@ function migrateCaseLifecycle(conn: any, applied: string[]) {
     CREATE INDEX IF NOT EXISTS idx_case_student_category ON sos_cases(student_id, cycle_id, category);
     CREATE INDEX IF NOT EXISTS idx_case_follow_until ON sos_cases(follow_until) WHERE follow_until IS NOT NULL;
   `);
+}
+
+
+/**
+ * VÒNG 4 · PHASE 2 — TUẦN BẮT ĐẦU HỌC, LỊCH MT MẶC ĐỊNH, VÀ TÊN MÔN W.
+ *
+ * Ba việc, đều là thêm chứ không bỏ:
+ *
+ *   1. Cột mới cho tuần bắt đầu học (lớp và lộ trình), tháng thi dự kiến, mốc kiểm tra do
+ *      người xếp lại, và cột ghi AI đã xếp tuần MT.
+ *   2. Đổi mã môn `prep_writing` → `writing` ở MỌI chỗ dữ liệu nhắc tới nó. Đây là đổi mã
+ *      thật trong database, không phải chỉ đổi nhãn — để sau này không ai phải nhớ hai mã
+ *      cho một môn.
+ *   3. Suy ngược tuần bắt đầu học cho dữ liệu cũ, CHỈ ở chỗ suy được chắc chắn.
+ *
+ * Chạy lần hai không đổi gì thêm: mỗi bước tự kiểm bằng sự tồn tại của cột hoặc bằng chính
+ * giá trị đang có.
+ */
+/**
+ * ĐỒNG BỘ BỘ QUYỀN với danh sách trong `shared/domain.ts`.
+ *
+ * Vòng 4 thêm quyền `case.view` — tách việc XEM danh sách case khỏi việc GHI NHẬN xử lý,
+ * vì bảng bộ lọc ở mục 6 nói Admin chi nhánh vẫn ghi nhận được nhưng không có bốn bộ lọc
+ * case. Trên database đang chạy, quyền mới phải được thêm và cấp lại cho đúng ba vai, nếu
+ * không thì tài khoản cũ mở màn Học viên lên sẽ mất sạch bộ lọc case.
+ *
+ * Chạy lại lần hai không làm gì thêm: chỉ thêm phần CÒN THIẾU, không xoá quyền ai đã có.
+ */
+/**
+ * TÀI KHOẢN VÀ ĐĂNG NHẬP (vòng 4 phase 4) trên database đang chạy.
+ *
+ * Thêm cột mật khẩu, trạng thái duyệt và bốn bảng mới; nạp bảng `routes` từ danh sách viết
+ * cứng; và ĐẶT MẬT KHẨU cho những tài khoản cũ chưa có, nếu không thì sau khi cập nhật
+ * không ai đăng nhập được vào chính dữ liệu của mình.
+ *
+ * Email suy từ tên theo đúng quy ước `ten.pisa@gmail.com`. Tài khoản nào đã có email thì giữ
+ * nguyên — không ghi đè một địa chỉ người ta đang dùng.
+ *
+ * Chạy lại lần hai không làm gì thêm.
+ */
+function migrateAccounts(conn: any, applied: string[]) {
+  const cols = (t: string) => (conn.prepare(`PRAGMA table_info(${t})`).all() as any[]).map((c: any) => c.name);
+  const has = (t: string) =>
+    !!conn.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name = ?").get(t);
+  if (!has('users')) return;
+
+  const addCol = (table: string, col: string, decl: string) => {
+    if (!cols(table).includes(col)) conn.exec(`ALTER TABLE ${table} ADD COLUMN ${col} ${decl}`);
+  };
+  for (const [c, d] of [
+    ['phone', 'TEXT'],
+    ['password_hash', 'TEXT'],
+    ['password_salt', 'TEXT'],
+    ['approval_state', "TEXT NOT NULL DEFAULT 'approved'"],
+    ['requested_branches', 'TEXT'],
+    ['requested_note', 'TEXT'],
+    ['approved_by', 'INTEGER'],
+    ['approved_at', 'TEXT'],
+    ['decline_reason', 'TEXT'],
+  ] as const) addCol('users', c, d);
+
+  conn.exec(`
+    CREATE TABLE IF NOT EXISTS user_emails (
+      id INTEGER PRIMARY KEY,
+      user_id INTEGER NOT NULL REFERENCES users(id),
+      email TEXT NOT NULL, created_at TEXT NOT NULL,
+      UNIQUE (user_id, email));
+    CREATE TABLE IF NOT EXISTS user_skills (
+      user_id INTEGER NOT NULL REFERENCES users(id),
+      skill TEXT NOT NULL, PRIMARY KEY (user_id, skill));
+    CREATE TABLE IF NOT EXISTS user_permissions (
+      id INTEGER PRIMARY KEY,
+      user_id INTEGER NOT NULL REFERENCES users(id),
+      permission_id INTEGER NOT NULL REFERENCES permissions(id),
+      branch_id INTEGER REFERENCES branches(id),
+      note TEXT, granted_by INTEGER REFERENCES users(id), created_at TEXT NOT NULL,
+      UNIQUE (user_id, permission_id, branch_id));
+    CREATE TABLE IF NOT EXISTS routes (
+      code TEXT PRIMARY KEY, name TEXT NOT NULL, note TEXT,
+      seq INTEGER NOT NULL DEFAULT 0, status TEXT NOT NULL DEFAULT 'active', created_at TEXT NOT NULL);
+  `);
+  const routes = seedRoutes(conn);
+
+  /* Email và mật khẩu cho tài khoản cũ. Không đụng vào ai đã có sẵn. */
+  const used = new Set(
+    (conn.prepare('SELECT email FROM users WHERE email IS NOT NULL').all() as any[]).map((r: any) => r.email),
+  );
+  const emailFor = (name: string) => {
+    const parts = String(name).normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .replace(/đ/gi, 'd').toLowerCase().split(/\s+/).filter(Boolean);
+    const stem = ((parts[parts.length - 1] ?? 'nv') + (parts[0] ? `.${parts[0]}` : '')).replace(/[^a-z0-9.]/g, '');
+    let local = stem; let n = 1;
+    while (used.has(`${local}${EMAIL_SUFFIX}`)) { n += 1; local = `${stem}${n}`; }
+    used.add(`${local}${EMAIL_SUFFIX}`);
+    return `${local}${EMAIL_SUFFIX}`;
+  };
+
+  let fixed = 0;
+  for (const u of conn.prepare('SELECT id, full_name, email, password_hash FROM users').all() as any[]) {
+    const email = u.email || emailFor(u.full_name);
+    if (u.password_hash && u.email) continue;
+    const salt = crypto.randomBytes(16).toString('hex');
+    const hash = crypto.scryptSync(DEFAULT_ADMIN_PASSWORD, salt, 64).toString('hex');
+    conn.prepare('UPDATE users SET email = ?, password_hash = ?, password_salt = ? WHERE id = ?')
+      .run(email, u.password_hash ?? hash, u.password_salt ?? salt, u.id);
+    fixed += 1;
+  }
+
+  /*
+   * TÀI KHOẢN QUẢN TRỊ MẶC ĐỊNH của owner phải tồn tại kể cả trên database cũ — nếu không thì
+   * sau khi cập nhật, chính người chủ hệ thống là người duy nhất không vào được.
+   */
+  let createdAdmin = false;
+  if (!conn.prepare('SELECT 1 FROM users WHERE email = ?').get(DEFAULT_ADMIN_EMAIL)) {
+    const salt = crypto.randomBytes(16).toString('hex');
+    const hash = crypto.scryptSync(DEFAULT_ADMIN_PASSWORD, salt, 64).toString('hex');
+    const n = (conn.prepare('SELECT COUNT(*) n FROM users').get() as any).n + 1;
+    const info = conn
+      .prepare(
+        `INSERT INTO users (code, full_name, email, title, password_hash, password_salt,
+                            approval_state, status, created_at)
+         VALUES (?,?,?,?,?,?, 'approved', 'active', ?)`,
+      )
+      .run(`NV${String(n).padStart(3, '0')}`, 'Đỗ Vũ Tuấn Phong', DEFAULT_ADMIN_EMAIL,
+           'Quản trị hệ thống', hash, salt, nowIso());
+    const role = conn.prepare("SELECT id FROM roles WHERE key = 'system_admin'").get() as any;
+    if (role) {
+      conn.prepare("INSERT INTO user_roles (user_id, role_id, branch_id, status, created_at) VALUES (?,?,NULL,'active',?)")
+        .run(Number(info.lastInsertRowid), role.id, nowIso());
+    }
+    createdAdmin = true;
+  }
+
+  const bits: string[] = [];
+  if (routes) bits.push(`nạp ${routes} lộ trình`);
+  if (fixed) bits.push(`đặt email và mật khẩu cho ${fixed} tài khoản`);
+  if (createdAdmin) bits.push('tạo tài khoản Quản trị hệ thống mặc định');
+  if (bits.length) applied.push(`Tài khoản và đăng nhập: ${bits.join(', ')}`);
+}
+
+function migratePermissions(conn: any, applied: string[]) {
+  const has = (t: string) =>
+    !!conn.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name = ?").get(t);
+  if (!has('permissions') || !has('roles') || !has('role_permissions')) return;
+
+  let added = 0;
+  for (const [key, label] of Object.entries(PERMISSION_LABEL)) {
+    const row = conn.prepare('SELECT id FROM permissions WHERE key = ?').get(key) as any;
+    if (row) continue;
+    conn.prepare('INSERT INTO permissions (key, name_vi) VALUES (?,?)').run(key, label);
+    added += 1;
+  }
+
+  /* Cấp quyền mới cho đúng những vai mà seed cấp — không tự ý nới cho vai khác. */
+  let granted = 0;
+  for (const [roleKey, keys] of Object.entries(ROLE_PERMISSIONS)) {
+    const role = conn.prepare('SELECT id FROM roles WHERE key = ?').get(roleKey) as any;
+    if (!role) continue;
+    for (const k of keys) {
+      const perm = conn.prepare('SELECT id FROM permissions WHERE key = ?').get(k) as any;
+      if (!perm) continue;
+      const had = conn
+        .prepare('SELECT 1 FROM role_permissions WHERE role_id = ? AND permission_id = ?')
+        .get(role.id, perm.id);
+      if (had) continue;
+      conn.prepare('INSERT INTO role_permissions (role_id, permission_id) VALUES (?,?)')
+        .run(role.id, perm.id);
+      granted += 1;
+    }
+  }
+  if (added || granted) applied.push(`Bổ sung ${added} quyền mới và ${granted} lượt cấp quyền cho vai trò`);
+}
+
+function migrateSchedulingFields(conn: any, applied: string[]) {
+  const cols = (t: string) => (conn.prepare(`PRAGMA table_info(${t})`).all() as any[]).map((c: any) => c.name);
+  const has = (t: string) =>
+    !!conn.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name = ?").get(t);
+  const addCol = (table: string, col: string, decl: string) => {
+    if (!cols(table).includes(col)) conn.exec(`ALTER TABLE ${table} ADD COLUMN ${col} ${decl}`);
+  };
+  if (!has('classes') || !has('learning_cycles')) return;
+
+  /* ------------------------------------------------------------- 1. cột mới */
+  for (const [c, d] of [
+    ['start_period_id', 'INTEGER REFERENCES report_periods(id)'],
+    ['progress_week_override', 'INTEGER'],
+    ['final_week_override', 'INTEGER'],
+  ] as const) addCol('classes', c, d);
+
+  for (const [c, d] of [
+    ['start_period_id', 'INTEGER REFERENCES report_periods(id)'],
+    ['exam_month', 'TEXT'],
+  ] as const) addCol('learning_cycles', c, d);
+
+  addCol('assessment_attempts', 'plan_source', "TEXT NOT NULL DEFAULT 'manual'");
+
+  /* ------------------------------------------ 2. đổi mã môn prep_writing → writing */
+  const renames: [string, string][] = [
+    ['assessment_scores', 'skill'],
+    ['class_skills', 'skill'],
+    ['teacher_assignments', 'skill'],
+    ['programme_skills', 'skill'],
+    ['attempt_required_skills', 'skill'],
+    ['attempt_skill_skips', 'skill'],
+    ['teacher_estimates', 'skill'],
+    ['sos_cases', 'topic'],
+    ['case_issues', 'skill'],
+    ['tasks', 'topic'],
+  ];
+  let renamed = 0;
+  for (const [table, col] of renames) {
+    if (!has(table) || !cols(table).includes(col)) continue;
+    try {
+      renamed += conn.prepare(`UPDATE ${table} SET ${col} = 'writing' WHERE ${col} = 'prep_writing'`).run().changes;
+    } catch {
+      /*
+       * Bảng có ràng buộc duy nhất trên cột đó (ví dụ mỗi lớp một dòng cho mỗi kỹ năng) và
+       * đã tồn tại sẵn dòng 'writing'. Bỏ dòng cũ thay vì dừng cả bước nâng cấp — dữ liệu
+       * mới đã có đủ, giữ thêm dòng mã cũ chỉ làm hai kỹ năng hiện ra cho một môn.
+       */
+      conn.prepare(`DELETE FROM ${table} WHERE ${col} = 'prep_writing'`).run();
+    }
+  }
+  if (renamed) applied.push(`Đổi mã môn Prep-Writing sang W ở ${renamed} bản ghi`);
+
+  /*
+   * Hạng mục của case cũng phải đổi theo: mã cũ ánh xạ về `writing2`, mã mới cũng vậy, nên
+   * hạng mục không đổi — nhưng case nào chưa có hạng mục thì nay gắn được.
+   */
+  if (cols('sos_cases').includes('category')) {
+    const fixed = conn
+      .prepare(`UPDATE sos_cases SET category = 'writing2' WHERE category IS NULL AND topic = 'writing'`)
+      .run().changes;
+    if (fixed) applied.push(`Gắn hạng mục cho ${fixed} case môn W`);
+  }
+
+  /* --------------------------------- 3. suy ngược tuần bắt đầu học ở chỗ suy được */
+  /*
+   * CHỈ SUY KHI CÓ CĂN CỨ CHẮC CHẮN, và ở đây căn cứ là ngày ghi danh sớm nhất của học
+   * viên trong lộ trình đó. Không có ghi danh nào thì để TRỐNG — badge "Thiếu thông tin"
+   * sẽ nhắc người có trách nhiệm điền, và đó là kết quả đúng.
+   *
+   * KHÔNG suy từ ngày làm bài MT1 rồi trừ ngược 5 tuần: MT1 có thể đã bị xếp lại, và một
+   * phép trừ ngược như thế dựng ra một "sự thật" chưa từng ai khai.
+   */
+  const cycleWeeks = conn
+    .prepare(
+      `SELECT lc.id, MIN(e.started_at) AS first_day
+         FROM learning_cycles lc
+         JOIN enrollments e ON e.student_id = lc.student_id
+        WHERE lc.start_period_id IS NULL AND e.started_at IS NOT NULL
+        GROUP BY lc.id`,
+    )
+    .all() as any[];
+  let filled = 0;
+  for (const r of cycleWeeks) {
+    if (!r.first_day) continue;
+    const monday = mondayOfIso(String(r.first_day).slice(0, 10));
+    const period = conn.prepare('SELECT id FROM report_periods WHERE week_start = ?').get(monday) as any;
+    if (!period) continue;
+    conn.prepare('UPDATE learning_cycles SET start_period_id = ? WHERE id = ?').run(period.id, r.id);
+    filled += 1;
+  }
+  if (filled) applied.push(`Suy tuần bắt đầu học cho ${filled} lộ trình từ ngày ghi danh`);
+
+  const classWeeks = conn
+    .prepare(`SELECT id, start_date FROM classes WHERE start_period_id IS NULL AND start_date IS NOT NULL`)
+    .all() as any[];
+  let filledClass = 0;
+  for (const c of classWeeks) {
+    const monday = mondayOfIso(String(c.start_date).slice(0, 10));
+    const period = conn.prepare('SELECT id FROM report_periods WHERE week_start = ?').get(monday) as any;
+    if (!period) continue;
+    conn.prepare('UPDATE classes SET start_period_id = ? WHERE id = ?').run(period.id, c.id);
+    filledClass += 1;
+  }
+  if (filledClass) applied.push(`Suy tuần bắt đầu cho ${filledClass} lớp từ ngày khai giảng`);
+
+  /*
+   * MỌI LƯỢT MT ĐÃ CÓ ĐỀU LÀ 'manual'.
+   *
+   * Chúng do người xếp từ trước, nên hệ thống không được phép tính lại và ghi đè. Cột mặc
+   * định đã là 'manual' nên không phải làm gì — ghi lại ở đây để người đọc sau không tưởng
+   * là bước nâng cấp bỏ sót.
+   */
+}
+
+/** Thứ Hai của tuần chứa ngày đó. Chép lại ở đây vì bước nâng cấp phải tự đứng được. */
+function mondayOfIso(date: string): string {
+  const d = new Date(date + 'T00:00:00Z');
+  const dow = (d.getUTCDay() + 6) % 7;        // thứ Hai = 0
+  d.setUTCDate(d.getUTCDate() - dow);
+  return d.toISOString().slice(0, 10);
 }

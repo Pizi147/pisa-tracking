@@ -8,6 +8,7 @@ import { demoToday } from '../demoConfig.ts';
 import { diffDays, formatDateVi } from '../util.ts';
 import { can, scopeFor, teachesClass, type Principal } from '../permissions.ts';
 import { listAttempts } from './attempts.ts';
+import { classAlerts } from './schedule.ts';
 
 /**
  * VIỆC CỦA CHÍNH NGƯỜI ĐANG XEM.
@@ -53,7 +54,7 @@ export type WorkItem = {
   href: string;
 };
 
-export type WorkGroupKey = 'score' | 'approval' | 'action' | 'review' | 'support' | 'schedule' | 'week';
+export type WorkGroupKey = 'score' | 'approval' | 'action' | 'review' | 'support' | 'schedule' | 'week' | 'class_phase';
 
 /**
  * Mỗi nhóm có MỘT DÒNG nói rõ nhóm đó nghĩa là gì.
@@ -98,6 +99,21 @@ const GROUP_META: Record<WorkGroupKey, { label: string; hint: string; overdue: s
     label: 'Cập nhật ngày MT',
     hint: 'Tuần đã chốt nhưng chưa biết em thi ngày nào.',
     overdue: 'Quá hạn cập nhật ngày MT',
+  },
+  /*
+   * MỐC CỦA CẢ LỚP — owner yêu cầu 13/09/2026.
+   *
+   * Ba chuyện lớp Normal phải tự báo: sắp tới tuần Progress Test, sắp tới tuần Final Test,
+   * và đã học hết chương trình. Cái cuối là nặng nhất: lớp xong rồi thì mọi em còn đang học
+   * PHẢI được xếp lớp tiếp, và việc đó không tự xảy ra.
+   *
+   * Xếp lên ĐẦU danh sách vì nó là việc của cả một lớp, không phải của một em — bỏ lỡ thì
+   * cả lớp treo, chứ không phải một người.
+   */
+  class_phase: {
+    label: 'Mốc của lớp',
+    hint: 'Lớp sắp tới tuần kiểm tra, hoặc đã học hết chương trình và học viên cần được xếp lớp tiếp.',
+    overdue: 'Lớp đã hết chương trình',
   },
   week: {
     label: 'Chưa có tuần kế hoạch',
@@ -310,6 +326,39 @@ export function myWork(p: Principal, f: { branchId?: number | null } = {}) {
     });
   }
 
+  // ------------------------------------------------- 2c. mốc của lớp Normal
+  /*
+   * Chỉ những vai CÓ TRÁCH NHIỆM với lớp mới thấy: Admin CN và Quản lý sửa được tiến độ và
+   * xếp lớp; giáo viên thì không. Đưa vào danh sách việc của người không làm được gì với nó
+   * là cách nhanh nhất để họ bỏ qua cả danh sách.
+   */
+  for (const [classId, pr] of classAlerts(
+    (conn
+      .prepare(
+        `SELECT c.id FROM classes c WHERE c.status = 'active'${f.branchId ? ' AND c.branch_id = ?' : ''}`,
+      )
+      .all(...(f.branchId ? [f.branchId] : [])) as any[]).map((r) => r.id),
+  )) {
+    if (pr.phase === 'unknown') continue;   // thiếu tuần bắt đầu đã có badge riêng, không nhân đôi
+    if (!can(p, PERMISSIONS.CLASS_EDIT, { classId })) continue;
+    const cls = conn.prepare('SELECT code, branch_id FROM classes WHERE id = ?').get(classId) as any;
+    const finished = pr.phase === 'finished';
+    items.push({
+      key: `class:${classId}`, group: 'class_phase',
+      urgency: finished ? 'overdue' : pr.phase.endsWith('_week') ? 'today' : 'normal',
+      studentId: null, studentName: `Lớp ${cls.code}`,
+      classId, classCode: cls.code,
+      attemptId: null, attemptNo: null, caseId: null, level: null,
+      reason: finished
+        ? `Đã học hết ${pr.totalWeeks} tuần — ${pr.activeStudents} học viên cần xếp lớp tiếp`
+          + ` (${pr.placementOptions.map((o) => o.name).join(' hoặc ')})`
+        : `${pr.phaseLabel}${pr.currentWeek !== null ? ` · đang ở tuần ${pr.currentWeek}/${pr.totalWeeks}` : ''}`,
+      actionLabel: finished ? 'Xếp lớp tiếp theo' : 'Mở lớp',
+      overdueLabel: finished ? 'Quá hạn xếp lớp tiếp theo' : null,
+      href: `/hoc-vien/lop/${classId}`,
+    });
+  }
+
   // ------------------------------------------------- 3. kết quả sau hỗ trợ (tới hẹn xem lại)
   /*
    * AI THẤY VIỆC NÀY: người thực hiện phương án — họ là người biết em có khá lên không.
@@ -472,7 +521,7 @@ export function myWork(p: Principal, f: { branchId?: number | null } = {}) {
    * nào là cái nào. Nay GIỮ ĐÚNG LOẠI VIỆC, chỉ xếp việc gấp lên đầu TRONG nhóm của nó, và
    * xếp nhóm nào có việc gấp lên trước.
    */
-  const order: WorkGroupKey[] = ['score', 'approval', 'action', 'review', 'support', 'schedule', 'week'];
+  const order: WorkGroupKey[] = ['class_phase', 'score', 'approval', 'action', 'review', 'support', 'schedule', 'week'];
   const weight = (u: WorkUrgency) => (u === 'overdue' ? 0 : u === 'today' ? 1 : 2);
 
   const groups = order

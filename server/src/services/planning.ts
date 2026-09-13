@@ -58,15 +58,34 @@ function normalizeSkills(input: readonly string[] | undefined): AssessedSkill[] 
  * Lượt được coi là xong khi đủ điểm các kỹ năng ĐƯỢC YÊU CẦU, không chờ kỹ năng không yêu cầu.
  */
 export function bulkPlan(p: Principal, input: {
-  studentIds: number[];
+  studentIds?: number[];
+  /**
+   * MT RIÊNG CHO TỪNG EM, rồi chốt chung MỘT TUẦN — đúng ví dụ của owner ở mục 10:
+   * "MT2 của Nguyễn A và MT4 của Nguyễn B xếp vào cùng một tuần".
+   *
+   * `studentIds` giữ lại cho đường gọi cũ (chọn em, để hệ thống tự lấy lượt kế tiếp).
+   */
+  picks?: { studentId: number; attemptNo?: number | null }[];
   periodId: number;
   attemptNo?: number | null;
   requiredSkills?: string[];
   note?: string | null;
 }): BulkResult {
   const conn = db();
-  const ids = [...new Set((input.studentIds ?? []).map(Number).filter(Boolean))];
+
+  /* Gộp hai đường gọi về một danh sách, và bỏ trùng theo học viên. */
+  const byStudent = new Map<number, number | null>();
+  for (const id of input.studentIds ?? []) {
+    const n = Number(id);
+    if (Number.isInteger(n) && n > 0) byStudent.set(n, input.attemptNo ?? null);
+  }
+  for (const pick of input.picks ?? []) {
+    const n = Number(pick.studentId);
+    if (Number.isInteger(n) && n > 0) byStudent.set(n, pick.attemptNo ?? input.attemptNo ?? null);
+  }
+  const ids = [...byStudent.keys()];
   if (!ids.length) throw badRequest('Chưa chọn học viên nào.');
+
   const required = normalizeSkills(input.requiredSkills);
   const notRequired = required ? ASSESSED_SKILLS.filter((s) => !required.includes(s)) : [];
 
@@ -78,9 +97,14 @@ export function bulkPlan(p: Principal, input: {
   return tx(() => runEach(ids, (id) => names.get(id), (id) => id, (studentId) => {
     const created = createAttempt(p, {
       studentId, periodId: input.periodId,
-      attemptNo: input.attemptNo ?? undefined,
+      attemptNo: byStudent.get(studentId) ?? undefined,
       note: input.note ?? null,
     }) as any;
+    /*
+     * Tuần này do NGƯỜI chốt, nên đánh dấu 'manual': từ đây hệ thống không bao giờ tự dời
+     * nó nữa, kể cả khi tuần bắt đầu học của em thay đổi.
+     */
+    conn.prepare(`UPDATE assessment_attempts SET plan_source = 'manual' WHERE id = ?`).run(created.id);
     for (const skill of notRequired) {
       setSkillSkip(p, created.id, skill, true, 'Lượt này không yêu cầu kỹ năng đó ngay từ khi lên kế hoạch');
     }
@@ -186,13 +210,24 @@ export function dateDutyQueue(p: Principal, f: { branchId?: number | null; class
  */
 export function noPlanQueue(
   p: Principal,
-  f: { branchId?: number | null; classId?: number | null; includePlanned?: boolean } = {},
+  f: {
+    branchId?: number | null; classId?: number | null; includePlanned?: boolean;
+    /** Gõ tìm thẳng học viên, không cần chọn lớp trước (mục 10). */
+    q?: string | null;
+    /** Chỉ hiện em CHƯA có lượt MT thứ n — để đăng ký hàng loạt đúng một lượt (mục 10). */
+    missingAttemptNo?: number | null;
+  } = {},
 ) {
   const conn = db();
   const where: string[] = [`s.status = 'active'`, 's.archived_at IS NULL', 'cy.id IS NOT NULL'];
   const params: unknown[] = [];
   if (f.branchId) { where.push('c.branch_id = ?'); params.push(f.branchId); }
   if (f.classId) { where.push('e.class_id = ?'); params.push(f.classId); }
+  if (f.q?.trim()) {
+    where.push('(s.full_name LIKE ? OR s.normalized_name LIKE ? OR s.student_code LIKE ?)');
+    const q = f.q.trim();
+    params.push(`%${q}%`, `%${q.toLowerCase()}%`, `%${q.toUpperCase()}%`);
+  }
 
   const rows = conn
     .prepare(
@@ -214,7 +249,41 @@ export function noPlanQueue(
     .all(...params) as any[];
 
   const inScope = rows.filter((r) => can(p, PERMISSIONS.ATTEMPT_VIEW, { classId: r.class_id, studentId: r.student_id }));
-  const visible = f.includePlanned ? inScope : inScope.filter((r) => r.pending === 0);
+
+  /*
+   * TRẠNG THÁI TỪNG LƯỢT MT của mỗi em — MT1 đã xong, MT2 đã xếp tuần, MT3 chưa có.
+   *
+   * Đây là thứ panel cần để bày ra dãy ô MT1/2/3… cho từng em (mục 10): ô nào đã xong thì
+   * KHÔNG cho chọn lại, ô nào đã xếp thì nói rõ đang ở tuần nào, ô nào trống thì chọn được.
+   * Lấy MỘT câu cho cả danh sách, không hỏi theo từng em.
+   */
+  const cycleIds = [...new Set(inScope.map((r) => r.cycle_id).filter(Boolean))];
+  const byCycle = new Map<number, { attemptNo: number; status: string; periodCode: string | null }[]>();
+  if (cycleIds.length) {
+    for (const a of conn
+      .prepare(
+        `SELECT a.cycle_id, a.attempt_no, a.status, pr.code AS period_code
+           FROM assessment_attempts a
+           LEFT JOIN report_periods pr ON pr.id = a.planned_period_id
+          WHERE a.cycle_id IN (${cycleIds.map(() => '?').join(',')}) AND a.status != 'cancelled'
+          ORDER BY a.attempt_no`,
+      )
+      .all(...cycleIds) as any[]) {
+      if (!byCycle.has(a.cycle_id)) byCycle.set(a.cycle_id, []);
+      byCycle.get(a.cycle_id)!.push({
+        attemptNo: a.attempt_no, status: a.status, periodCode: a.period_code ?? null,
+      });
+    }
+  }
+
+  let visible = f.includePlanned ? inScope : inScope.filter((r) => r.pending === 0);
+  /* Lọc "chưa có MT thứ n" — để đăng ký hàng loạt đúng một lượt cho cả chi nhánh hoặc cả lớp. */
+  if (f.missingAttemptNo) {
+    visible = visible.filter(
+      (r) => !(byCycle.get(r.cycle_id) ?? []).some((a) => a.attemptNo === f.missingAttemptNo),
+    );
+  }
+
   return {
     rows: visible.map((r) => ({
       studentId: r.student_id, studentName: r.full_name, studentCode: r.student_code,
@@ -224,6 +293,7 @@ export function noPlanQueue(
       /** Đã có lượt đang chờ — vẫn xếp trước được lượt sau, chỉ là không phải việc gấp. */
       hasPending: r.pending > 0,
       canPlan: can(p, PERMISSIONS.PLAN_WEEK, { classId: r.class_id, studentId: r.student_id }),
+      attempts: byCycle.get(r.cycle_id) ?? [],
     })),
     total: visible.length,
     /** Số em thật sự CHƯA có tuần MT — con số cần surface, không đổi theo bộ lọc. */

@@ -80,6 +80,34 @@ export function loadPrincipal(userId: number): Principal {
       permissions: permsByRole.get(g.role_key) ?? new Set<string>(),
     }));
 
+  /*
+   * QUYỀN CẤP RIÊNG CHO CÁ NHÂN (mục 7.3) — thêm vào dưới dạng một GRANT nữa.
+   *
+   * Ví dụ owner đưa ra: một Quản lý CN Monbay được cấp thêm quyền quan sát toàn hệ thống.
+   * Đưa chúng vào cùng danh sách `grants` chứ không thành một đường kiểm tra thứ hai: mọi
+   * chỗ hỏi quyền đã đi qua `grants`, nên thêm một đường song song là chắc chắn có chỗ quên
+   * kiểm — và chỗ quên kiểm ở một hệ thống phân quyền thì không ai phát hiện ra cho tới lúc
+   * ai đó nhìn thấy thứ họ không được nhìn.
+   */
+  for (const row of conn
+    .prepare(
+      `SELECT up.branch_id, p.key AS perm_key, b.name AS branch_name
+         FROM user_permissions up
+         JOIN permissions p ON p.id = up.permission_id
+         LEFT JOIN branches b ON b.id = up.branch_id
+        WHERE up.user_id = ?`,
+    )
+    .all(userId) as any[]) {
+    grants.push({
+      id: -1,
+      roleKey: 'granted',
+      roleName: 'Quyền cấp riêng',
+      branchId: row.branch_id,
+      branchName: row.branch_name,
+      permissions: new Set<string>([row.perm_key]),
+    });
+  }
+
   const assignments: Assignment[] = (conn
     .prepare(
       `SELECT id, class_id, skill, is_core, effective_from, effective_to
@@ -100,7 +128,8 @@ export function loadPrincipal(userId: number): Principal {
     fullName: user.full_name,
     title: user.title,
     grants,
-    roleKeys: [...new Set(grants.map((g) => g.roleKey))],
+    /* `granted` không phải một vai trò — nó chỉ là chỗ chứa quyền cấp riêng. */
+    roleKeys: [...new Set(grants.map((g) => g.roleKey).filter((k) => k !== 'granted'))],
     assignments,
   };
 }

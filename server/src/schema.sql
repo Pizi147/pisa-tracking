@@ -64,6 +64,30 @@ CREATE TABLE classes (
   route TEXT,                         -- LT1 | LT2, chỉ áp dụng lớp FT
   is_fulltime INTEGER NOT NULL DEFAULT 0,
   start_date TEXT,
+
+  /*
+   * TUẦN BẮT ĐẦU CỦA LỚP — mốc gốc để tính "lớp đang ở tuần thứ mấy".
+   *
+   * Với lớp Normal, tuần bắt đầu của TỪNG học viên không quan trọng bằng tuần bắt đầu của
+   * LỚP: cả lớp làm Progress Test và Final Test cùng một tuần theo chương trình. Với lớp FT
+   * thì ngược lại — mỗi em một lịch MT riêng theo tuần em vào học, nên cột này chỉ để tham
+   * khảo.
+   *
+   * Dùng TUẦN chứ không dùng ngày: khai ngày cụ thể thì người nhập phải nhớ lớp khai giảng
+   * đúng hôm nào, mà thông tin đó không ai giữ và cũng không đổi được kết quả tính toán nào.
+   */
+  start_period_id INTEGER REFERENCES report_periods(id),
+
+  /*
+   * MỐC KIỂM TRA DO NGƯỜI XẾP LẠI — ghi đè mốc mặc định của chương trình.
+   *
+   * FOU: tuần 4 và 8 · BE/ELE: tuần 5 và 10. Nhưng lớp nghỉ lễ, lớp học bù, lớp mở muộn là
+   * chuyện có thật, nên Admin CN và Quản lý CN phải xê dịch được. NULL = dùng mốc mặc định
+   * của chương trình; có số = người đã xếp lại và HỆ THỐNG KHÔNG ĐƯỢC GHI ĐÈ.
+   */
+  progress_week_override INTEGER,
+  final_week_override INTEGER,
+
   status TEXT NOT NULL DEFAULT 'active',
   note TEXT,
   created_at TEXT NOT NULL
@@ -80,12 +104,89 @@ CREATE TABLE class_skills (
 );
 
 -- ===================== NGƯỜI DÙNG & QUYỀN =====================
+/*
+ * TÀI KHOẢN NGƯỜI DÙNG.
+ *
+ * `email` là email ĐĂNG NHẬP, duy nhất, và phải có đuôi `.pisa@gmail.com` (owner chốt 7.1).
+ * Email phụ nằm ở `user_emails` — mục 7.2 nói rõ "email(s)", số nhiều.
+ *
+ * `password_hash` lưu dạng băm scrypt kèm muối riêng từng người. Bản demo KHÔNG gửi email
+ * thật và KHÔNG có luồng quên mật khẩu; quên thì Quản trị hệ thống đặt lại.
+ *
+ * `approval_state` tách khỏi `status` vì hai thứ khác nhau: `pending` là người mới tự đăng
+ * ký và CHƯA ai duyệt, `status='inactive'` là tài khoản đã từng dùng rồi bị khoá. Gộp làm
+ * một thì không phân biệt được "chưa được vào" với "đã bị cho ra".
+ */
 CREATE TABLE users (
   id INTEGER PRIMARY KEY,
   code TEXT NOT NULL UNIQUE,
   full_name TEXT NOT NULL,
-  email TEXT,
+  email TEXT UNIQUE,
   title TEXT,
+  phone TEXT,
+  password_hash TEXT,
+  password_salt TEXT,
+  approval_state TEXT NOT NULL DEFAULT 'approved',   -- approved | pending | declined
+  /* Chi nhánh người đăng ký tự khai; người duyệt sửa được trước khi bấm duyệt. */
+  requested_branches TEXT,                            -- JSON mảng mã chi nhánh
+  requested_note TEXT,
+  approved_by INTEGER REFERENCES users(id),
+  approved_at TEXT,
+  decline_reason TEXT,
+  status TEXT NOT NULL DEFAULT 'active',
+  created_at TEXT NOT NULL
+);
+
+/* Email phụ. Email đăng nhập vẫn nằm ở `users.email` và không lặp lại ở đây. */
+CREATE TABLE user_emails (
+  id INTEGER PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(id),
+  email TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  UNIQUE (user_id, email)
+);
+
+/*
+ * KỸ NĂNG NGƯỜI NÀY PHỤ TRÁCH ĐƯỢC (mục 7.2) — khác hẳn phân công dạy ở một lớp cụ thể.
+ *
+ * Đây là "biết dạy được gì", dùng để gợi ý khi phân công. `teacher_assignments` mới là
+ * "đang dạy gì ở lớp nào", và mới là thứ quyết định quyền nhập điểm.
+ */
+CREATE TABLE user_skills (
+  user_id INTEGER NOT NULL REFERENCES users(id),
+  skill TEXT NOT NULL,
+  PRIMARY KEY (user_id, skill)
+);
+
+/*
+ * QUYỀN CẤP RIÊNG CHO MỘT CÁ NHÂN, ngoài quyền đến từ vai trò (mục 7.3).
+ *
+ * Ví dụ owner đưa ra: cấp cho một Quản lý CN Monbay quyền QUAN SÁT toàn hệ thống. Không thể
+ * làm điều đó bằng vai trò — sửa vai "Quản lý" là sửa cho tất cả Quản lý. `branch_id` để
+ * trống nghĩa là phạm vi toàn hệ thống, đúng quy ước của `user_roles`.
+ */
+CREATE TABLE user_permissions (
+  id INTEGER PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(id),
+  permission_id INTEGER NOT NULL REFERENCES permissions(id),
+  branch_id INTEGER REFERENCES branches(id),
+  note TEXT,
+  granted_by INTEGER REFERENCES users(id),
+  created_at TEXT NOT NULL,
+  UNIQUE (user_id, permission_id, branch_id)
+);
+
+/*
+ * LỘ TRÌNH (LT1, LT2, …) nay là DỮ LIỆU chứ không phải hằng số trong mã.
+ *
+ * Mục 7.3: Quản trị hệ thống tạo và sửa lộ trình. Trung tâm mở một lộ trình mới thì thêm
+ * một dòng, không phải sửa mã nguồn rồi chờ cài lại.
+ */
+CREATE TABLE routes (
+  code TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  note TEXT,
+  seq INTEGER NOT NULL DEFAULT 0,
   status TEXT NOT NULL DEFAULT 'active',
   created_at TEXT NOT NULL
 );
@@ -168,7 +269,29 @@ CREATE TABLE learning_cycles (
   route TEXT,                         -- LT1 | LT2 với FT; NULL với lớp thường
   programme_code TEXT REFERENCES programmes(code),
   target_score REAL,                  -- điểm cam kết của CHÍNH lộ trình này
-  exam_date TEXT,                     -- ngày thi IELTS dự kiến của lộ trình này
+
+  /*
+   * TUẦN BẮT ĐẦU HỌC của học viên — TUẦN HỌC THỨ 1 của em.
+   *
+   * Đây là mốc gốc sinh ra lịch MT mặc định của lớp FT: MT1 tuần 6 · MT2 tuần 12 ·
+   * MT3 tuần 16 · MT4 tuần 20 · MT5 tuần 24. Gắn vào LỘ TRÌNH chứ không gắn vào hồ sơ học
+   * viên, vì sang LT2 là bắt đầu lại từ tuần 1 với một target mới.
+   *
+   * Bắt buộc với MỌI học viên (owner chốt 13/09/2026). Thiếu thì badge "Thiếu thông tin".
+   */
+  start_period_id INTEGER REFERENCES report_periods(id),
+
+  /*
+   * THÁNG/NĂM DỰ KIẾN THI, dạng 'YYYY-MM'. CHỈ áp dụng lớp FT.
+   *
+   * Tách khỏi `exam_date` vì hai thứ khác nhau về độ chắc chắn: tháng thi là thứ biết ngay
+   * lúc tư vấn và dùng để xếp lịch cả khoá; ngày thi cụ thể thì đăng ký xong mới có. Ép khai
+   * ngày ngay từ đầu thì người ta gõ bừa một ngày rồi không ai sửa lại.
+   *
+   * Lớp Normal để TRỐNG và KHÔNG bị badge nhắc — các em đó chưa thi IELTS.
+   */
+  exam_month TEXT,
+  exam_date TEXT,                     -- ngày thi IELTS cụ thể, cập nhật sau
 
   -- ĐIỂM XUẤT PHÁT. Phải ghi rõ NGUỒN, vì "em vào học ở mức nào" là câu hỏi khác hẳn
   -- "bài Mock đầu tiên được mấy điểm". Không có căn cứ thì để trống và hiển thị "chưa rõ",
@@ -274,6 +397,17 @@ CREATE TABLE assessment_attempts (
   -- tổng hợp, nên một lượt chỉ thuộc đúng một tuần dù các kỹ năng mock lệch tuần.
   -- Có thể đã có tuần mà chưa có ngày; KHÔNG tự điền thứ Hai làm ngày mock giả.
   planned_period_id INTEGER REFERENCES report_periods(id),
+
+  /*
+   * AI XẾP TUẦN NÀY — và đây là cột giữ lời hứa "hệ thống không ghi đè cái Quản lý đã xếp".
+   *
+   *   'auto'   hệ thống đề xuất theo mốc tuần 6/12/16/20/24 tính từ tuần bắt đầu học
+   *   'manual' một người đã chốt, hoặc đã sửa lại đề xuất của hệ thống
+   *
+   * Đổi tuần bắt đầu học thì chỉ những lượt còn 'auto' được tính lại. Lượt nào người đã
+   * đụng vào thì đứng yên — đó là lý do cột này tồn tại, chứ không phải để thống kê.
+   */
+  plan_source TEXT NOT NULL DEFAULT 'manual',
 
   -- NGÀY–GIỜ cụ thể do Admin chi nhánh chốt trong tuần đã duyệt.
   -- LRW đi chung một buổi; Speaking có thể khác ngày nhưng vẫn cùng lượt MT này.

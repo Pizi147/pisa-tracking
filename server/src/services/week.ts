@@ -106,7 +106,17 @@ export function listPeriods(limit = 20): (WeekInfo & { id: number })[] {
 
 /** Cửa sổ tuần quanh tuần đang xem: hai tháng lịch sử, một tuần tương lai. */
 export const PERIOD_WINDOW_BACK_WEEKS = 9;
+/**
+ * Cửa sổ tuần MẶC ĐỊNH chỉ mở một tuần về phía trước — đúng cho những màn nói về KẾT QUẢ
+ * (báo cáo tuần, bảng điểm): tuần chưa tới thì chưa có gì để xem.
+ *
+ * NHƯNG LÊN KẾ HOẠCH MT LÀ VIỆC CỦA TƯƠNG LAI. Đó là lỗi owner báo: panel "Lên kế hoạch MT"
+ * không xếp được quá một tuần tới, trong khi MT3 của một em có thể cách đây bốn tháng. Nên
+ * có cửa sổ RỘNG riêng, và màn nào cần thì xin đúng cửa sổ đó.
+ */
 export const PERIOD_WINDOW_FORWARD_WEEKS = 1;
+/** Cửa sổ cho việc xếp lịch: nửa năm về phía trước, đủ cho cả một khoá FT 24 tuần. */
+export const PERIOD_WINDOW_PLANNING_FORWARD_WEEKS = 30;
 
 /**
  * Danh sách tuần cho ô chọn tuần — một CỬA SỔ TRƯỢT, không phải toàn bộ lịch sử.
@@ -117,14 +127,23 @@ export const PERIOD_WINDOW_FORWARD_WEEKS = 1;
  *
  * Tương lai chỉ mở MỘT tuần: mở báo cáo của tháng sau thì chẳng có gì để báo cáo.
  */
-export function periodWindow(anchorId?: number | null): (WeekInfo & { id: number; isAnchor: boolean })[] {
+export function periodWindow(
+  anchorId?: number | null,
+  opts: { forward?: number; back?: number } = {},
+): (WeekInfo & { id: number; isAnchor: boolean })[] {
   const conn = db();
   const anchor = anchorId
     ? (conn.prepare('SELECT * FROM report_periods WHERE id = ?').get(anchorId) as any)
     : null;
   const center = anchor?.week_start ?? mondayOf(demoToday());
-  const from = addDays(center, -7 * PERIOD_WINDOW_BACK_WEEKS);
-  const to = addDays(center, 7 * PERIOD_WINDOW_FORWARD_WEEKS);
+  const from = addDays(center, -7 * (opts.back ?? PERIOD_WINDOW_BACK_WEEKS));
+  const to = addDays(center, 7 * (opts.forward ?? PERIOD_WINDOW_FORWARD_WEEKS));
+  /*
+   * TẠO SẴN TUẦN CÒN THIẾU trong khoảng. Bảng tuần chỉ có những tuần đã từng được dùng tới;
+   * xếp lịch cho tháng sau mà tuần đó chưa tồn tại thì danh sách hiện ra một khoảng trống và
+   * người dùng tưởng không xếp được.
+   */
+  for (let d = from; d <= to; d = addDays(d, 7)) ensurePeriod(d);
   const rows = conn
     .prepare('SELECT * FROM report_periods WHERE week_start >= ? AND week_start <= ? ORDER BY week_start DESC')
     .all(from, to) as any[];

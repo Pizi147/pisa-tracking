@@ -12,10 +12,10 @@ ai đã làm gì để hỗ trợ, quan sát được gì sau đó, và bước 
   **chính người đang xem** bấm được. Việc bạn không có quyền làm thì không xuất hiện.
 - **Học viên** — *"lớp tôi đang thế nào"*. Vào theo lớp: lớp → học viên → tiến độ → xếp lịch → nhập điểm.
 
-Quản lý có thêm tab **Tình hình chung** ngay trong Tổng quan — *"cả chi nhánh đang vướng gì"* — vì hai câu
+Quản lý có thêm tab **Thực trạng** ngay trong Tổng quan — *"học viên đang yếu ở đâu"* — vì hai câu
 hỏi đó cần cả hai, nhưng không cần cùng lúc.
 
-Mock test không còn là menu riêng — lịch và điểm nằm ngay trong lớp của học viên. Tiến trình công việc và
+Mock test không còn là menu riêng — lịch và điểm nằm ngay trong lớp của học viên. Hồ sơ cá nhân và
 Quản trị hệ thống là lối vào phụ trong menu tài khoản.
 
 > **Toàn bộ dữ liệu trong bản demo là dữ liệu giả.** Không có tên, số điện thoại hay thông tin
@@ -57,9 +57,14 @@ npm run seed
 ```
 
 Lệnh này tạo lại toàn bộ dữ liệu giả: **5 chi nhánh** (Monbay, Bãi Cháy, Cẩm Phả, Hải Dương, Uông Bí),
-**10 lớp** (7 lớp FT + 3 lớp thường Foundation/Beginner/Elementary), **26 tài khoản** (mỗi chi nhánh 1 Quản lý + 1 Admin văn phòng + 3 giáo viên), khoảng **108 học viên**, **109 lộ trình/khoá**, **261 lượt Mock Test** và **48 bài kiểm tra lớp thường** kèm điểm
-từng kỹ năng, **289 ghi nhận của giáo viên** (một nửa chỉ có nhận xét, không kèm điểm), **118 vấn đề học vụ**
-từ cả hai nguồn với **277 việc đã làm** và **48 lần xem lại**, báo cáo tuần và công việc.
+**9 lớp** (6 lớp FT + 3 lớp Normal Foundation/Elementary), **26 tài khoản** (mỗi chi nhánh 1 Quản lý +
+1 Admin văn phòng + 3 giáo viên, cộng tài khoản Quản trị hệ thống), **62 học viên**, **168 lượt Mock Test**
+và các bài kiểm tra lớp Normal kèm điểm từng kỹ năng, **138 case sinh từ điểm** cộng **8 case giáo viên
+tự báo**, với **242 việc đã làm** và **51 lần xem lại**, cùng báo cáo tuần và công việc.
+
+Quy mô cố tình **nhỏ**, và **mỗi lớp là một tình huống** — lớp sắp Final Test, lớp đang trong tuần
+Progress Test, lớp đã hết chương trình, lớp thiếu GV, lớp chưa có GVCN, case kéo dài qua ba lượt MT.
+Bảng đầy đủ nằm ở `DEMO_SCENARIOS.md`.
 
 Màn hình sẽ in ra bảng tóm tắt số lượng bản ghi đã tạo.
 
@@ -85,10 +90,21 @@ thì mở trình duyệt và vào địa chỉ: **<http://localhost:5173>**
 
 ## 5. Đăng nhập thử
 
-Màn hình đầu tiên là danh sách **tài khoản mẫu**. Bấm vào một tài khoản là vào luôn,
-không cần mật khẩu.
+Màn hình đầu tiên có **ba cách vào**:
 
-Bản demo có **bốn nhóm tài khoản**. Màn hình chọn tài khoản đã nhóm sẵn theo bốn loại này:
+| Cách | Dùng khi nào |
+|---|---|
+| **Đăng nhập** | Đường thật: email + mật khẩu. Tài khoản Quản trị hệ thống mặc định là `dovutuanphong95.pisa@gmail.com`, mật khẩu `pisa2026` |
+| **Giáo viên đăng ký** | Thử luồng tự đăng ký: khai chi nhánh rồi chờ Quản trị hệ thống duyệt |
+| **Vào nhanh bằng tài khoản demo** | Bấm một tài khoản là vào, **không cần mật khẩu** — dùng cái này khi muốn đổi vai liên tục để so sánh màn hình |
+
+Mọi tài khoản mẫu dùng chung mật khẩu **`pisa2026`**, email theo mẫu `ten.ho.pisa@gmail.com`
+(ví dụ `ha.tran.pisa@gmail.com`). Chỉ email đuôi **`.pisa@gmail.com`** mới hợp lệ — áp cho mọi vai.
+
+> Bản demo **không gửi email thật** và **không có luồng quên mật khẩu**. Quên thì vào
+> **Quản trị hệ thống → Tài khoản → Sửa** để đặt lại hộ.
+
+Bản demo có **bốn nhóm tài khoản**. Màn hình "Vào nhanh" đã nhóm sẵn theo bốn loại này:
 
 | Nhóm | Là ai |
 |---|---|
@@ -101,28 +117,24 @@ Gợi ý tài khoản nên dùng đầu tiên:
 
 | Muốn xem gì | Chọn tài khoản |
 |---|---|
-| Toàn cảnh cả hệ thống + phần quản trị | **Đặng Quang Nhi** — Quản trị hệ thống |
-| Chốt **tuần** kế hoạch, tab **Tình hình chung**, kết thúc theo dõi vấn đề | **Đặng Quang Vy** — Quản lý Monbay |
-| **Duyệt phương án hỗ trợ** (có một đề xuất quá hạn duyệt) | **Hoàng Khánh Huy** — Quản lý Bãi Cháy |
-| **Phân công giáo viên** vào lớp | **Đặng Quang Vy** hoặc **Đặng Ngọc Phúc** — mở một lớp → *Sửa phân công* |
-| Màn hình nhập điểm và **ghi nhận nhanh** của giáo viên bộ môn | **Đinh Bảo Vy** — dạy Reading lớp MB-FT 101 |
-| Giáo viên dạy nhiều kỹ năng (L · W2 · S) | **Đinh Bảo Lam** — lớp MB-FT 101 |
-| Góc nhìn giáo viên chủ nhiệm (kết thúc theo dõi được) | **Trần Quang Nam** — GVCN lớp MB-FT 101 |
-| Chốt **ngày** trong tuần đã duyệt | **Đặng Ngọc Phúc** — Admin chi nhánh Monbay |
+| Toàn cảnh cả hệ thống, quản trị tài khoản và danh mục | **Đỗ Vũ Tuấn Phong** — `dovutuanphong95.pisa@gmail.com` |
+| Bảng **Việc cần lưu ý**, tab **Thực trạng**, chốt **tuần** kế hoạch | **Trần Ngọc Hà** — `ha.tran.pisa@gmail.com` (Quản lý Monbay) |
+| **Duyệt phương án hỗ trợ** (có một đề xuất đã quá hạn duyệt) | **Đặng Thanh Quân** — `quan.dang.pisa@gmail.com` (Quản lý Bãi Cháy) |
+| Chốt **ngày** MT trong tuần đã có kế hoạch | **Đặng Bảo Khoa** — `khoa.dang.pisa@gmail.com` (Admin CN Monbay) |
+| Góc nhìn GVCN, dạy nhiều kỹ năng (L · W2 · S) | **Đỗ Thu Huy** — `huy.do.pisa@gmail.com` (GVCN lớp MB-FT 101) |
+| Giáo viên chỉ dạy một kỹ năng | **Đỗ Minh Chi** — `chi.do.pisa@gmail.com` (W1 lớp MB-FT 101) |
 
-Mỗi vai trò mở vào đúng việc thường làm nhất: Giáo viên → **Điểm tôi cần nhập**;
-Admin chi nhánh → **Cần xếp lịch**; Quản lý và Quản trị hệ thống → **Tổng quan**.
-Đây chỉ là lối vào, không đổi quyền.
+Mỗi vai trò mở vào đúng việc thường làm nhất. Đây chỉ là lối vào, không đổi quyền.
 
 > **Lịch MT tách làm hai bước:** Quản lý chốt **tuần** trước (`MT2 → W3 OCT`), Admin chi nhánh chốt
 > **ngày** khi tới gần tuần đó (`14/10`). Speaking có thể khác ngày nhưng vẫn là cùng một lượt MT.
 > Lịch **chỉ có ngày, không có giờ**.
 
-> **Muốn xem nhanh phần mới nhất?** Đăng nhập bằng **Hoàng Khánh Huy** (Quản lý Bãi Cháy): màn Tổng quan
-> mở ra là nhóm **Chờ duyệt phương án** với một đề xuất đã quá hạn trả lời. Bấm vào để mở hồ sơ em đó,
-> rồi bấm **Trả lời đề xuất**. Sau đó đổi sang tab **Tình hình chung** để xem cả chi nhánh.
-> `DEMO_SCENARIOS.md` từ **Luồng 15** đi qua các việc mới: giáo viên báo vấn đề trước khi có bài đánh giá ·
-> hồ sơ học viên · đề xuất và duyệt phương án · phân công giáo viên · sửa điểm không xoá lịch sử hỗ trợ.
+> **Muốn xem nhanh phần mới nhất?** Đăng nhập bằng tài khoản Quản trị hệ thống: màn **Tổng quan** mở ra
+> có bảng **Việc cần lưu ý** (thu gọn được, sắp theo cột, bấm số là đi đúng chỗ) và nhóm **Mốc của lớp**
+> với ba lớp Normal đang ở ba trạng thái khác nhau. Đổi sang tab **Thực trạng** để xem hai chế độ
+> chi nhánh/lớp và theo tuần. `DEMO_SCENARIOS.md` đi qua đủ mười sáu luồng, kể cả tự đăng ký và duyệt
+> tài khoản, cấp quyền riêng cho một người, và sửa lộ trình / loại lớp.
 
 Muốn đổi tài khoản bất cứ lúc nào: bấm nút **"Đổi tài khoản demo"** ở thanh trên cùng.
 

@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { db, isInitialised } from '../db.ts';
 import {
   BEHAVIOUR_TOPICS, BEHAVIOUR_TOPIC_LABEL, ENTRY_SKILLS, ENTRY_SKILL_LABEL, ISSUE_TAXONOMY,
-  PERMISSIONS, ROLE_LABEL, THREAD_TRACKS, THREAD_TRACK_LABEL, type Role,
+  PERMISSIONS, REGULAR_SKILLS, ROLE_LABEL, THREAD_TRACKS, THREAD_TRACK_LABEL, type Role,
 } from '../../../shared/domain.ts';
 import { demoToday, getConfig, scenarioMode, setConfig } from '../demoConfig.ts';
 import { HttpError, badRequest, isIsoDate, notFound, toInt } from '../util.ts';
@@ -17,15 +17,19 @@ import * as pulseSvc from '../services/branchpulse.ts';
 import * as prefSvc from '../services/prefs.ts';
 import * as profileSvc from '../services/profile.ts';
 import * as classSvc from '../services/classes.ts';
+import * as scheduleSvc from '../services/schedule.ts';
 import * as intakeSvc from '../services/intake.ts';
 import * as studentSvc from '../services/students.ts';
 import * as meetingSvc from '../services/meeting.ts';
 import * as dashboardSvc from '../services/dashboard.ts';
 import {
+  PERIOD_WINDOW_PLANNING_FORWARD_WEEKS,
   ensurePeriod, listPeriods, periodById, periodWindow, reportEditWindow, setPeriodUnlocked,
 } from '../services/week.ts';
 import * as planningSvc from '../services/planning.ts';
 import { signalsFor } from '../services/signals.ts';
+import * as accountSvc from '../services/accounts.ts';
+import * as sysconfigSvc from '../services/sysconfig.ts';
 import { weeklyRollup } from '../services/weekly.ts';
 import { myWork } from '../services/mywork.ts';
 import * as caseSvc from '../services/cases.ts';
@@ -187,10 +191,15 @@ api.get('/ref/current-period', requireAuth, wrap(() => ensurePeriod(demoToday())
  * Cửa sổ tuần cho ô chọn tuần: hai tháng lịch sử quanh tuần đang xem, một tuần tương lai.
  * Không trả về toàn bộ lịch sử — đây là báo cáo vận hành, không phải kho lưu trữ.
  */
+/*
+ * Cửa sổ tuần. `scope=planning` mở XA về tương lai — lên kế hoạch MT là việc của tương lai,
+ * còn các màn nói về kết quả thì giữ cửa sổ hẹp như cũ.
+ */
 api.get('/ref/period-window', requireAuth, wrap((req) => {
   ensurePeriod(demoToday());
   const anchor = toInt(req.query?.anchorId);
-  return periodWindow(anchor ?? null).map((p) => ({
+  const planning = qStr(req, 'scope') === 'planning';
+  return periodWindow(anchor ?? null, planning ? { forward: PERIOD_WINDOW_PLANNING_FORWARD_WEEKS } : {}).map((p) => ({
     id: p.id, code: p.code, weekStart: p.weekStart, weekEnd: p.weekEnd, range: p.range,
     year: p.year, month: p.month, isAnchor: p.isAnchor,
     editWindow: reportEditWindow({ week_start: p.weekStart, week_end: p.weekEnd, code: p.code }),
@@ -266,6 +275,9 @@ api.get('/attempts/date-duty', requireAuth, wrap((req) => planningSvc.dateDutyQu
 api.get('/attempts/no-plan', requireAuth, wrap((req) => planningSvc.noPlanQueue(principalOf(req), {
   branchId: toInt(req.query?.branchId), classId: toInt(req.query?.classId),
   includePlanned: req.query?.includePlanned === '1',
+  /* Gõ tìm thẳng học viên, và lọc "chưa có MT thứ n" — hai cách vào của mục 10. */
+  q: qStr(req, 'q'),
+  missingAttemptNo: toInt(req.query?.missingAttemptNo),
 })));
 
 api.get('/attempts/:id', requireAuth, wrap((req) => {
@@ -484,6 +496,15 @@ api.post('/students/:id/cycles', requireAuth, wrap((req) => {
   return cycleSvc.createCycle(principalOf(req), { ...req.body, studentId: pInt(req, 'id') });
 }));
 
+/** Một lộ trình, để panel Kế hoạch học nạp đúng giá trị đang có. */
+api.get('/cycles/:id', requireAuth, wrap((req) => {
+  const c = cycleSvc.cycleById(pInt(req, 'id'));
+  if (!c) throw notFound('Không tìm thấy lộ trình');
+  require_(principalOf(req), PERMISSIONS.STUDENT_VIEW, { studentId: c.student_id },
+    'Học viên này nằm ngoài phạm vi bạn được xem.');
+  return c;
+}));
+
 api.patch('/cycles/:id', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return cycleSvc.updateCycle(principalOf(req), pInt(req, 'id'), req.body ?? {});
@@ -516,6 +537,36 @@ api.post('/cycles/:id/target-revision', requireAuth, wrap((req) => {
  * án và có kết quả.
  */
 
+// ============================================================ Tiến độ lớp và lịch MT
+
+/** Lớp đang ở tuần thứ mấy, sắp thi gì, và đã hết chương trình chưa. */
+api.get('/classes/:id/progress', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return scheduleSvc.classProgress(pInt(req, 'id'));
+}));
+
+/**
+ * Đổi tuần bắt đầu và mốc kiểm tra của lớp. Quyền: Admin CN và Quản lý CN (mục 7.6).
+ * Đặt mốc về trống là quay lại mốc mặc định của chương trình, không phải xoá mốc.
+ */
+api.patch('/classes/:id/progress', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return scheduleSvc.setClassProgress(principalOf(req), pInt(req, 'id'), req.body ?? {});
+}));
+
+/** Lịch MT hệ thống ĐỀ XUẤT cho một lộ trình FT, tính từ tuần bắt đầu học. */
+api.get('/cycles/:id/suggested-mocks', requireAuth, wrap((req) =>
+  scheduleSvc.suggestedMockWeeks(pInt(req, 'id'))));
+
+/**
+ * Áp lịch đề xuất vào thực tế. KHÔNG đụng vào lượt người đã chốt tay và lượt đã làm xong —
+ * đó là toàn bộ ý nghĩa của thao tác này.
+ */
+api.post('/cycles/:id/apply-suggested-mocks', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return scheduleSvc.applySuggestedMockWeeks(principalOf(req), pInt(req, 'id'));
+}));
+
 // ============================================================ Case học vụ
 
 /**
@@ -534,6 +585,7 @@ api.get('/cases', requireAuth, wrap((req) => {
     studentId: toInt(req.query?.studentId),
     status: qStr(req, 'status'), origin: qStr(req, 'origin'),
     group: qStr(req, 'group'), skill: qStr(req, 'skill'), queue: qStr(req, 'queue'),
+    classKind: qStr(req, 'classKind'),
   });
 }));
 
@@ -826,3 +878,78 @@ api.get('/admin/overview', requireAuth, wrap((req) => {
       .all(),
   };
 }));
+
+// ==================================================================== tài khoản (vòng 4 phase 4)
+
+/**
+ * ĐĂNG NHẬP THẬT — email + mật khẩu (mục 7.1).
+ *
+ * Bản demo vẫn giữ nút "Đổi tài khoản demo" ở thanh trên: đó là công cụ để owner xem nhanh
+ * cùng một màn hình bằng bốn con mắt khác nhau, và bỏ nó đi thì mỗi lần đổi vai phải gõ lại
+ * mật khẩu. Hai đường cùng dẫn tới một `demo_sessions`, nên không có hai cơ chế phiên.
+ */
+api.post('/auth/login', wrap((req, res) => {
+  const r = accountSvc.login(String(req.body?.email ?? ''), String(req.body?.password ?? ''));
+  if (req.sessionToken) destroySession(req.sessionToken);
+  const token = createSession(r.userId);
+  res.cookie(SESSION_COOKIE, token, { httpOnly: true, sameSite: 'lax', path: '/' });
+  return { ok: true, userId: r.userId, fullName: r.fullName };
+}));
+
+api.post('/auth/register', wrap((req) => {
+  const b = req.body ?? {};
+  const r = accountSvc.register({
+    email: String(b.email ?? ''), password: String(b.password ?? ''), fullName: String(b.fullName ?? ''),
+    phone: b.phone ?? null, branches: Array.isArray(b.branches) ? b.branches : [],
+    note: b.note ?? null, skills: Array.isArray(b.skills) ? b.skills : [],
+  });
+  return { ...r, pending: true };
+}));
+
+/** Ô chọn chi nhánh trên màn đăng ký — chưa đăng nhập nên không đi qua `requireAuth`. */
+api.get('/auth/branches', wrap(() => {
+  if (!isInitialised()) throw new HttpError(503, 'Chưa có dữ liệu demo trong máy.', { needsSeed: true });
+  return db().prepare("SELECT code, name FROM branches WHERE status='active' ORDER BY id").all();
+}));
+
+/** Thông tin cần cho màn đăng nhập: đuôi email bắt buộc và tài khoản mặc định của bản demo. */
+api.get('/auth/info', wrap(() => ({
+  emailSuffix: accountSvc.EMAIL_SUFFIX,
+  demoAdmin: { email: accountSvc.DEFAULT_ADMIN_EMAIL, password: accountSvc.DEFAULT_ADMIN_PASSWORD },
+  /* Gộp hai bộ kỹ năng và BỎ TRÙNG: Listening có ở cả hai, hiện hai lần là một lỗi nhìn thấy ngay. */
+  skills: [...new Set([...ENTRY_SKILLS, ...REGULAR_SKILLS])],
+})));
+
+api.get('/me/profile', requireAuth, wrap((req) => accountSvc.myProfile(principalOf(req))));
+api.patch('/me/profile', requireAuth, wrap((req) => accountSvc.updateProfile(principalOf(req), req.body ?? {})));
+
+api.get('/admin/accounts', requireAuth, wrap((req) => ({
+  rows: accountSvc.listAccounts(principalOf(req)),
+  pending: accountSvc.pendingQueue(principalOf(req)),
+})));
+api.post('/admin/accounts', requireAuth, wrap((req) => accountSvc.createAccount(principalOf(req), req.body ?? {})));
+api.post('/admin/accounts/:id/approve', requireAuth, wrap((req) => accountSvc.approve(
+  principalOf(req), Number(req.params.id), req.body ?? {},
+)));
+api.post('/admin/accounts/:id/decline', requireAuth, wrap((req) => accountSvc.decline(
+  principalOf(req), Number(req.params.id), String(req.body?.reason ?? ''),
+)));
+api.put('/admin/accounts/:id/roles', requireAuth, wrap((req) => accountSvc.setRoles(
+  principalOf(req), Number(req.params.id), Array.isArray(req.body?.roles) ? req.body.roles : [],
+)));
+api.put('/admin/accounts/:id/permissions', requireAuth, wrap((req) => accountSvc.setUserPermissions(
+  principalOf(req), Number(req.params.id), Array.isArray(req.body?.items) ? req.body.items : [],
+)));
+api.post('/admin/accounts/:id/password', requireAuth, wrap((req) => accountSvc.resetPassword(
+  principalOf(req), Number(req.params.id), String(req.body?.password ?? ''),
+)));
+
+/** Lộ trình và loại lớp — nay là dữ liệu, Quản trị hệ thống sửa được (mục 7.3). */
+api.get('/ref/routes', wrap(() => sysconfigSvc.listRoutes()));
+api.get('/admin/routes', requireAuth, wrap((req) => {
+  principalOf(req);
+  return sysconfigSvc.listRoutes(true);
+}));
+api.put('/admin/routes', requireAuth, wrap((req) => sysconfigSvc.saveRoute(principalOf(req), req.body ?? {})));
+api.get('/admin/programmes', requireAuth, wrap((req) => sysconfigSvc.listProgrammes(principalOf(req))));
+api.put('/admin/programmes', requireAuth, wrap((req) => sysconfigSvc.saveProgramme(principalOf(req), req.body ?? {})));

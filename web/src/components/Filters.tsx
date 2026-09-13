@@ -18,8 +18,11 @@ export function usePeriods() {
  * Chọn một tuần cũ thì cửa sổ dịch theo, nên vẫn đi tiếp về quá khứ được mà danh sách
  * không bao giờ dài ra thành một cuộn vô tận.
  */
-export function usePeriodWindow(anchorId: number | null) {
-  return useApi<WindowPeriod[]>(`/ref/period-window${anchorId ? `?anchorId=${anchorId}` : ''}`);
+export function usePeriodWindow(anchorId: number | null, scope?: 'planning') {
+  const qs = new URLSearchParams();
+  if (anchorId) qs.set('anchorId', String(anchorId));
+  if (scope) qs.set('scope', scope);
+  return useApi<WindowPeriod[]>(`/ref/period-window${qs.toString() ? `?${qs}` : ''}`, [anchorId, scope]);
 }
 
 /**
@@ -28,16 +31,35 @@ export function usePeriodWindow(anchorId: number | null) {
  * Phần lớn thao tác là đi sang tuần liền kề. Bắt mở dropdown rồi tìm đúng dòng cho một
  * việc như thế là ba thao tác cho một bước — hai mũi tên giải quyết bằng một cú bấm.
  */
-export function WeekPicker({ periodId, onPeriod, className = 'w-52', label = 'Tuần' }: {
-  periodId: number | null; onPeriod: (id: number) => void; className?: string; label?: string | null;
+export function WeekPicker({ periodId, onPeriod, className = 'w-52', label = 'Tuần', scope }: {
+  periodId: number | null; onPeriod: (id: number) => void;
+  className?: string; label?: string | null;
+  /** 'planning' mở cửa sổ tuần XA về tương lai — xếp lịch MT là việc của tương lai. */
+  scope?: 'planning';
 }) {
-  const { data } = usePeriodWindow(periodId);
+  const { data } = usePeriodWindow(periodId, scope);
   const list = data ?? [];
   // Danh sách trả về mới nhất trước; đảo lại để "trước/sau" đọc theo trục thời gian.
   const asc = [...list].reverse();
-  const idx = asc.findIndex((p) => p.id === periodId);
+
+  /*
+   * CHƯA CHỌN TUẦN NÀO THÌ NEO VÀO TUẦN HIỆN TẠI — đây là lỗi owner báo.
+   *
+   * Bản trước: `periodId` rỗng → `idx = -1` → cả hai mũi tên bị khoá, ô select hiện một tuần
+   * nhưng state vẫn rỗng nên nút Lưu không bao giờ sáng. Người dùng thấy một panel trông như
+   * đã chọn xong mà bấm gì cũng không được.
+   *
+   * Nay chưa chọn thì coi như đang đứng ở tuần neo (tuần hiện tại), nên hai mũi tên chạy
+   * được ngay, và bấm một cái là chọn thật.
+   */
+  const anchorIdx = asc.findIndex((p) => p.isAnchor);
+  const idx = periodId
+    ? asc.findIndex((p) => p.id === periodId)
+    : (anchorIdx >= 0 ? anchorIdx : asc.length - 1);
+
   const prev = idx > 0 ? asc[idx - 1] : null;
   const next = idx >= 0 && idx < asc.length - 1 ? asc[idx + 1] : null;
+  const shown = idx >= 0 ? asc[idx] : null;
 
   return (
     <label className="block">
@@ -48,8 +70,15 @@ export function WeekPicker({ periodId, onPeriod, className = 'w-52', label = 'Tu
           onClick={() => prev && onPeriod(prev.id)}
           aria-label="Tuần trước" title={prev ? `Tuần trước · ${prev.code}` : 'Đã ở đầu khoảng đang xem'}
         >←</button>
-        <select className={`field ${className}`} value={periodId ?? ''} onChange={(e) => onPeriod(Number(e.target.value))}>
-          {list.map((p) => <option key={p.id} value={p.id}>{p.code} · {p.range}</option>)}
+        <select className={`field ${className}`} value={periodId ?? shown?.id ?? ''}
+          onChange={(e) => onPeriod(Number(e.target.value))}>
+          {/*
+            Chưa chọn thì vẫn phải chọn được CHÍNH tuần đang hiện — nếu không, người dùng
+            muốn lấy đúng tuần này lại phải bấm sang tuần khác rồi bấm ngược lại.
+          */}
+          {!periodId && shown && <option value={shown.id}>{shown.code} · {shown.range}</option>}
+          {list.filter((p) => periodId || p.id !== shown?.id)
+            .map((p) => <option key={p.id} value={p.id}>{p.code} · {p.range}</option>)}
         </select>
         <button
           type="button" className="btn btn-sm px-2" disabled={!next}

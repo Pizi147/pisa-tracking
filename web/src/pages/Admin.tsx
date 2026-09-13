@@ -1,5 +1,8 @@
+import { useState } from 'react';
 import { useApi } from '../lib/useApi.ts';
 import { Card, ErrorState, Pill, SectionNote, Skeleton } from '../components/ui.tsx';
+import { AccountsAdmin } from '../components/AccountsAdmin.tsx';
+import { CatalogAdmin } from '../components/CatalogAdmin.tsx';
 import { fmtDateTime, roleLabel } from '../lib/format.ts';
 
 type AdminData = {
@@ -13,21 +16,60 @@ type AdminData = {
   audit: { id: number; action: string; entityType: string; entityLabel: string | null; createdAt: string; actorName: string | null }[];
 };
 
-/** Lối vào phụ, chỉ dành cho Quản trị hệ thống. Nơi xem cấu hình, không phải một mục nghiệp vụ. */
+/**
+ * QUẢN TRỊ HỆ THỐNG — ba việc khác hẳn nhau, nên ba tab thay vì một trang dài.
+ *
+ *   TÀI KHOẢN  duyệt đăng ký, tạo tài khoản, cấp vai và quyền riêng (mục 7.1, 7.3).
+ *   DANH MỤC   lộ trình và loại lớp — nay là dữ liệu, không còn là hằng số trong mã (7.3).
+ *   CẤU HÌNH   bảng quyền theo vai, đơn vị báo cáo, nhật ký thay đổi.
+ *
+ * Đây là quản trị PHẦN MỀM — khác với Admin chi nhánh là nhân sự văn phòng.
+ */
+const TABS = [
+  { key: 'accounts', label: 'Tài khoản' },
+  { key: 'catalog', label: 'Lộ trình và loại lớp' },
+  { key: 'config', label: 'Quyền và nhật ký' },
+] as const;
+
 export default function AdminPage() {
-  const { data, loading, error, reload } = useApi<AdminData>('/admin/overview');
-  if (error) return <ErrorState message={error.message} hint={error.hint} onRetry={reload} />;
-  if (loading || !data) return <Skeleton rows={8} />;
+  const [tab, setTab] = useState<(typeof TABS)[number]['key']>('accounts');
+  const { data, loading, error, reload } = useApi<AdminData>(tab === 'config' ? '/admin/overview' : null, [tab]);
 
   return (
     <div className="page space-y-4">
       <div>
         <h1 className="text-lg font-semibold text-slate-100">Quản trị hệ thống</h1>
         <p className="text-xs text-slate-500 mt-0.5">
-          Xem cấu hình vai trò, phạm vi và nhật ký thay đổi của bản demo.
-          Đây là quản trị <strong>phần mềm</strong> — khác với Admin chi nhánh là nhân sự văn phòng.
+          Tài khoản, danh mục và cấu hình quyền. Đây là quản trị <strong>phần mềm</strong> — khác với
+          Admin chi nhánh là nhân sự văn phòng.
         </p>
       </div>
+
+      <div className="flex flex-wrap gap-1 border-b pb-2" style={{ borderColor: 'var(--line)' }}>
+        {TABS.map((t) => (
+          <button key={t.key} type="button" onClick={() => setTab(t.key)}
+            className={`px-3 py-1.5 rounded-lg text-sm border transition-colors ${
+              tab === t.key
+                ? 'bg-[color:var(--accent-soft)] text-[color:var(--accent-strong)] border-[color:var(--accent-line)]'
+                : 'text-slate-300 border-transparent hover:bg-white/5'
+            }`}>
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {tab === 'accounts' && <AccountsAdmin />}
+      {tab === 'catalog' && <CatalogAdmin />}
+      {tab === 'config' && error && <ErrorState message={error.message} hint={error.hint} onRetry={reload} />}
+      {tab === 'config' && (loading || !data) && !error && <Skeleton rows={8} />}
+      {tab === 'config' && data && <ConfigTab data={data} />}
+    </div>
+  );
+}
+
+function ConfigTab({ data }: { data: AdminData }) {
+  return (
+    <div className="space-y-4">
 
       <div className="grid gap-3 sm:grid-cols-4">
         {[
@@ -100,33 +142,6 @@ export default function AdminPage() {
         </Card>
       </div>
 
-      <Card title="Tài khoản demo" bodyClass="p-0">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr>
-                <th className="th">Mã</th><th className="th">Họ tên</th><th className="th">Chức danh</th>
-                <th className="th">Vai trò · phạm vi</th><th className="th">Phân công lớp</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.users.map((u) => (
-                <tr key={u.id} className="row-hover">
-                  <td className="td text-xs text-slate-500">{u.code}</td>
-                  <td className="td text-slate-100">{u.fullName}</td>
-                  <td className="td text-slate-400 text-xs">{u.title}</td>
-                  <td className="td">
-                    <span className="flex flex-wrap gap-1">
-                      {u.grants.map((g, i) => <Pill key={i} tone="neutral">{roleLabel(g.role)} · {g.scope}</Pill>)}
-                    </span>
-                  </td>
-                  <td className="td tabular-nums text-slate-300">{u.assignments || '—'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </Card>
     </div>
   );
 }

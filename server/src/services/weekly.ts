@@ -42,6 +42,8 @@ export type WeeklyRow = {
   cases: number;         // tổng case SOS mở trong tuần này
   withSupport: number;   // case đã có ít nhất một ghi nhận hỗ trợ
   untouched: number;     // case chưa ai động vào
+  /** Phương án giáo viên đề xuất trong tuần đó, đang chờ Quản lý trả lời (mục 10.7). */
+  pendingApproval: number;
   /** Số ngày trung bình từ ngày làm bài đến ngày nhập điểm. null khi chưa đủ dữ liệu. */
   scoreLagDays: number | null;
 };
@@ -165,6 +167,23 @@ export function weeklyRollup(
     }
   }
 
+  /*
+   * ĐỀ XUẤT CHỜ DUYỆT, quy về TUẦN CỦA LƯỢT MT sinh ra case đó — cùng một quy ước tuần với
+   * mọi cột khác của bảng này. Đếm bằng một câu riêng thay vì nối thêm vào câu lớn ở trên:
+   * nối vào đó sẽ nhân đôi số dòng và làm mọi cột khác đếm sai.
+   */
+  const pending = new Map<number, number>();
+  for (const r of conn
+    .prepare(
+      `SELECT a.planned_period_id AS pid, COUNT(*) AS n
+         FROM case_interventions iv
+         JOIN sos_cases sc ON sc.id = iv.case_id
+         JOIN assessment_attempts a ON a.id = sc.attempt_id
+        WHERE iv.approval_state = 'pending' AND a.planned_period_id IS NOT NULL
+        GROUP BY a.planned_period_id`,
+    )
+    .all() as any[]) pending.set(r.pid, r.n);
+
   const byPeriod = new Map<number, WeeklyRow>();
   for (const a of attempts) {
     if (!byPeriod.has(a.period_id)) {
@@ -176,7 +195,7 @@ export function weeklyRollup(
         range: info.range, weekStart: a.week_start, weekEnd: a.week_end,
         isCurrent: a.week_start <= today && a.week_end >= today,
         attempts: 0, onTarget: 0, sos1: 0, sos2: 0, sos3: 0,
-        cases: 0, withSupport: 0, untouched: 0, scoreLagDays: null,
+        cases: 0, withSupport: 0, untouched: 0, pendingApproval: 0, scoreLagDays: null,
       });
     }
     const row = byPeriod.get(a.period_id)!;
@@ -201,6 +220,7 @@ export function weeklyRollup(
   for (const [pid, row] of byPeriod) {
     const l = lag.get(pid);
     row.scoreLagDays = l && l.n > 0 ? Math.round((l.sum / l.n) * 10) / 10 : null;
+    row.pendingApproval = pending.get(pid) ?? 0;
   }
 
   const rows = [...byPeriod.values()].sort((a, b) => (a.weekStart < b.weekStart ? 1 : -1));

@@ -202,3 +202,75 @@ export function DataCell({ value, state, suffix }: { value: ReactNode; state?: s
   if (value === null || value === undefined) return <span className="text-slate-500 text-xs">Chưa có dữ liệu</span>;
   return <span className="tabular-nums">{value}{suffix}</span>;
 }
+
+/**
+ * TIÊU ĐỀ CỘT CÓ LỜI GIẢI THÍCH — mục 8.5 và 9.2.
+ *
+ * Bảng ở đây đầy chữ viết tắt: OVR, W1, SOS, "Quá hạn cập nhật". Người mới mở lên đoán sai
+ * là chuyện thường, và đoán sai một cột số là hiểu sai cả bảng. Rê chuột lên tiêu đề một lúc
+ * thì có một câu giải thích — không chiếm chỗ, không ai phải đi tìm tài liệu.
+ *
+ * Dùng `title` của trình duyệt chứ không dựng tooltip riêng: nó tự có độ trễ, tự tránh mép
+ * màn hình, đọc được bằng trình đọc màn hình, và không thêm một lớp cửa sổ nổi nào nữa.
+ *
+ * Cột nào SẮP XẾP ĐƯỢC thì truyền `sort`. Bấm lần đầu xếp từ CAO XUỐNG THẤP — con số người
+ * ta đi tìm bao giờ cũng là con số lớn nhất — bấm lại thì đảo chiều.
+ */
+export function Th({ children, hint, align = 'left', sort, className = '' }: {
+  children: ReactNode; hint?: string; align?: 'left' | 'right' | 'center';
+  sort?: { active: boolean; dir: 'asc' | 'desc'; onSort: () => void };
+  className?: string;
+}) {
+  const alignClass = align === 'right' ? 'text-right' : align === 'center' ? 'text-center' : 'text-left';
+  const inner = (
+    <>
+      {children}
+      {sort && (
+        <span className={`ml-1 ${sort.active ? 'text-slate-200' : 'text-slate-700'}`} aria-hidden>
+          {sort.active ? (sort.dir === 'desc' ? '▾' : '▴') : '⇅'}
+        </span>
+      )}
+    </>
+  );
+  return (
+    <th className={`th ${alignClass} ${className}`} title={hint}
+      aria-sort={sort ? (sort.active ? (sort.dir === 'desc' ? 'descending' : 'ascending') : 'none') : undefined}>
+      {sort ? (
+        <button type="button" onClick={sort.onSort}
+          className="appearance-none bg-transparent border-0 p-0 font-[inherit] text-[inherit] tracking-[inherit] uppercase cursor-pointer hover:text-slate-200">
+          {inner}
+        </button>
+      ) : inner}
+    </th>
+  );
+}
+
+/**
+ * MỘT Ô ĐIỂM KỲ THI kèm mũi tên so với lượt trước — mục 8.4.
+ *
+ * Ba thứ trong một ô: con số, màu đạt/chưa đạt, và chiều thay đổi. Mũi tên cố tình nhỏ và
+ * nhạt hơn con số: người đọc tìm điểm trước, chiều thay đổi là thông tin thứ hai.
+ *
+ * "Chưa có" khác "0" và phải nhìn ra ngay — nên ô trống là một dấu gạch mờ, không phải số.
+ */
+export function BandCell({ cell, target }: {
+  cell: { now: number | null; prev: number | null; dir: number } | null | undefined;
+  target?: number | null;
+}) {
+  if (!cell || cell.now === null) return <span className="text-slate-700">–</span>;
+  const met = target == null ? null : cell.now >= target;
+  const tone = met === null ? 'text-slate-100' : met ? 'text-emerald-200' : 'text-rose-200';
+  const delta = cell.prev === null ? null : Math.round((cell.now - cell.prev) * 10) / 10;
+  return (
+    <span className="inline-flex items-baseline gap-1 whitespace-nowrap"
+      title={cell.prev === null ? 'Lượt đầu tiên, chưa có gì để so'
+        : `Lượt trước ${cell.prev} → lượt này ${cell.now}`}>
+      <span className={`tabular-nums ${tone}`}>{cell.now}</span>
+      {delta !== null && delta !== 0 && (
+        <span className={`text-[10px] ${cell.dir > 0 ? 'text-emerald-300/70' : 'text-rose-300/70'}`}>
+          {cell.dir > 0 ? '▲' : '▼'}{Math.abs(delta)}
+        </span>
+      )}
+    </span>
+  );
+}
