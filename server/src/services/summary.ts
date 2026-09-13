@@ -158,12 +158,40 @@ export function branchSummary(p: Principal, f: { branchId?: number | null } = {}
     const mine = cases.filter((c) => (byBranch ? c.branchId === g.branchId : c.classId === g.classId));
     const open = mine.filter((c) => c.state !== 'done');
     const q = (extra: string) => `/?tab=tinh-hinh${g.branchId ? `&cn=${g.branchId}` : ''}${extra}`;
+
     /*
-     * Mức SOS là của một LƯỢT, nên đếm theo HỌC VIÊN duy nhất — không phải theo vấn đề.
-     * Một em SOS 2 sinh hai vấn đề; đếm vấn đề thì em đó bị tính hai lần và con số vô nghĩa.
+     * MỖI HỌC VIÊN CHỈ ĐỨNG Ở ĐÚNG MỘT CỘT SOS — cột của LƯỢT MT GẦN NHẤT.
+     *
+     * Lỗi owner báo 12/09: sĩ số 8 mà ba cột SOS cộng lại thành 11. Bản cũ đếm học viên
+     * duy nhất cho từng mức riêng lẻ, nên một em SOS 1 ở MT1 rồi SOS 3 ở MT2 có mặt ở
+     * CẢ HAI cột — cộng lại vượt cả sĩ số và không ai tin con số nữa.
+     *
+     * SOS là TÌNH TRẠNG HIỆN TẠI của một em, không phải một cái sổ cộng dồn: mức của em
+     * là mức ở lượt MT mới nhất em đã làm. Mức cũ vẫn tra lại được trong từng case, chỉ
+     * không đếm vào bảng tổng hợp nữa.
+     *
+     * Case do giáo viên tự báo không có `sosLevel` nên không tham gia phép đếm này —
+     * chúng đã có cột "GV báo" riêng.
      */
-    const sosStudents = (lv: number) =>
-      new Set(open.filter((c) => c.sosLevel === lv).map((c) => c.studentId)).size;
+    const currentSos = new Map<number, number>();
+    const latestAttempt = new Map<number, number>();
+    for (const c of open) {
+      if (c.studentId == null || !c.sosLevel) continue;
+      const at = c.attemptNo ?? 0;
+      const seen = latestAttempt.get(c.studentId);
+      if (seen === undefined || at > seen) {
+        latestAttempt.set(c.studentId, at);
+        currentSos.set(c.studentId, c.sosLevel);
+      } else if (at === seen) {
+        // Cùng một lượt thì mọi case mang cùng mức; lấy mức cao nhất cho chắc.
+        currentSos.set(c.studentId, Math.max(currentSos.get(c.studentId) ?? 0, c.sosLevel));
+      }
+    }
+    const sosStudents = (lv: number) => {
+      let n = 0;
+      for (const level of currentSos.values()) if (level === lv) n += 1;
+      return n;
+    };
     const skillCell = (s: string): Cell => {
       const list = open.filter((c) => c.topic === s);
       return { value: list.length, of: list.filter((c) => c.state === 'no_plan').length, href: q(`&ky-nang=${s}`) };

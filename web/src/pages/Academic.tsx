@@ -55,7 +55,7 @@ export default function AcademicPage() {
  * Bảng vấn đề, dùng CHUNG cho trang riêng và cho tab "Tình hình chung" của Tổng quan.
  * Một bản cài đặt, một cách đọc số — không có chuyện hai màn hình đếm lệch nhau.
  */
-export function CaseBoard() {
+export function CaseBoard({ embedded = false }: { embedded?: boolean } = {}) {
   const [params, setParams] = useSearchParams();
   const queue = params.get('hang-doi') ?? '';
   const branchId = params.get('cn') ?? '';
@@ -147,7 +147,12 @@ export function CaseBoard() {
       {/* ---------------------------------------------- bộ lọc */}
       <Card title="Lọc">
         <div className="space-y-3">
-          {(branches.data ?? []).length > 1 && (
+          {/*
+            Khi bảng này nằm trong tab "Tình hình chung" của Tổng quan thì màn đó đã có sẵn
+            ô chọn chi nhánh, và cả hai nay điều khiển CÙNG tham số `cn`. Vẽ thêm một hàng
+            chip nữa chỉ là hai cái nút làm một việc — bỏ đi cho đỡ rối.
+          */}
+          {!embedded && (branches.data ?? []).length > 1 && (
             <FilterRow label="Chi nhánh">
               {/* Chỉ ai có phạm vi toàn hệ thống mới thấy nhiều hơn một chi nhánh ở đây. */}
               <Chip active={!branchId} onClick={() => set('cn', '')}>Cả trung tâm</Chip>

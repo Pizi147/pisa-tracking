@@ -1821,12 +1821,23 @@ check('Hành trình ghi ngày SỰ VIỆC XẢY RA, và lưu lại nhiều lần
     .get(c.id) as any;
   assert(ev, 'Báo vấn đề mà không ghi vào hành trình');
   assert(ev.event_date === addDays(TODAY, -10), 'Hành trình phải ghi ngày sự việc, không phải ngày nhập');
-  // Không so `created_at` với TODAY: `created_at` là giờ thật của máy chủ, còn TODAY là ngày
-  // demo cố định, hai mốc này không trùng nhau và cũng không cần trùng. Điều đáng kiểm là
-  // hệ thống lưu HAI mốc TÁCH BIỆT — ngày sự việc do người báo khai, ngày nhập do máy ghi.
+  /*
+   * HAI MỐC TÁCH BIỆT — ngày sự việc do người báo khai, ngày nhập do máy ghi.
+   *
+   * KHÔNG kiểm bằng cách so hai chuỗi ngày với nhau. Bản trước làm thế và bài kiểm hỏng
+   * đúng một ngày trong năm: ngày demo là 23/09/2026, ghi bù lùi 10 ngày ra 13/09/2026 —
+   * và nếu máy chủ tình cờ đang chạy đúng hôm 13/09 thì hai mốc trùng nhau một cách hợp
+   * lệ, bài kiểm vẫn báo hỏng. Một bài kiểm chỉ đúng vào 364/365 ngày là một bài kiểm hỏng.
+   *
+   * Điều thật sự cần chứng minh: `event_date` mang ngày NGƯỜI BÁO KHAI, còn `created_at`
+   * mang GIỜ THẬT CỦA MÁY (có cả giờ phút, và rơi vào ngày thật hôm nay). Hai điều đó đúng
+   * thì không thể có chuyện gộp cột, dù hai ngày có tình cờ trùng nhau hay không.
+   */
   assert(ev.created_at, 'Không ghi lại thời điểm nhập');
-  assert(ev.event_date !== ev.created_at.slice(0, 10),
-    'Ngày sự việc và ngày nhập bị gộp làm một, ghi bù sẽ mất dấu thời điểm thật');
+  assert(ev.created_at.includes('T'),
+    'Thời điểm nhập phải có cả giờ phút, không phải một ngày trơ');
+  assert(ev.created_at.slice(0, 10) === new Date().toISOString().slice(0, 10),
+    'Thời điểm nhập phải là giờ thật của máy, không phải ngày người báo khai');
   assert(ev.cycle_id !== null, 'Sự kiện phải gắn đúng lộ trình');
   // Gửi lại cùng khoá: không thêm case, nên cũng không thêm sự kiện.
   cases.reportIssue(P.coreTeacher, {

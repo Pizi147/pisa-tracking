@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useApi } from '../lib/useApi.ts';
 import { useSession } from '../lib/session.tsx';
@@ -73,7 +72,21 @@ export default function OverviewPage() {
     : tabParam === 'tinh-hinh' ? 'board'
     : tabParam === 'bao-cao' ? 'report'
     : 'work';
-  const [branchId, setBranchId] = useState<number | null>(null);
+  /*
+   * CHI NHÁNH ĐANG CHỌN NẰM TRÊN ĐỊA CHỈ TRANG, KHÔNG NẰM TRONG BỘ NHỚ CỦA RIÊNG MÀN NÀY.
+   *
+   * Lỗi owner báo 12/09: chọn Hải Dương mà bảng không đổi. Nguyên nhân là màn này giữ chi
+   * nhánh trong state riêng, còn bảng vấn đề bên dưới (`CaseBoard`) đọc tham số `cn` trên
+   * địa chỉ — HAI bộ lọc chi nhánh độc lập trên cùng MỘT màn hình. Nay chỉ còn một nguồn:
+   * tham số `cn`. Đổi ở đâu thì cả trang đổi theo, và gửi đường dẫn cho người khác vẫn ra
+   * đúng chi nhánh đó.
+   */
+  const branchId = params.get('cn') ? Number(params.get('cn')) : null;
+  const setBranchId = (id: number | null) => {
+    const next = new URLSearchParams(params);
+    if (id) next.set('cn', String(id)); else next.delete('cn');
+    setParams(next);
+  };
   const { data, loading, error, reload } = useApi<Work>(
     `/my-work${branchId ? `?branchId=${branchId}` : ''}`, [branchId],
   );
@@ -111,7 +124,7 @@ export default function OverviewPage() {
         </div>
       )}
 
-      {tab === 'board' && <CaseBoard />}
+      {tab === 'board' && <CaseBoard embedded />}
       {tab === 'report' && <MeetingBoard />}
 
       {/* Khối riêng của Quản lý, nằm ngay trên việc của chính họ. */}
