@@ -3,12 +3,11 @@ import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useApi } from '../lib/useApi.ts';
 import { api, invalidate } from '../lib/api.ts';
 import { useToast } from '../components/Toast.tsx';
-import { Card, Empty, ErrorState, Field, Pill, SectionNote, Skeleton } from '../components/ui.tsx';
+import { Card, Empty, ErrorState, Field, Level, Pill, SectionNote, Skeleton } from '../components/ui.tsx';
 import { ConfirmDialog, Drawer, Modal } from '../components/Drawer.tsx';
-import { CheckinPanel } from '../components/CheckinPanel.tsx';
 import { CasePanel } from '../components/CasePanel.tsx';
+import { SkillBoard } from '../components/SkillBoard.tsx';
 import { QuickReport } from '../components/QuickReport.tsx';
-import { ContactPanel } from '../components/ContactPanel.tsx';
 import {
   attemptStatusLabel, attemptStatusTone, caseStatusLabel, caseStatusTone,
   fmtBand, fmtDate, fmtSlot, skillLabel, sosLabel, sosTone, studentStatusLabel,
@@ -23,13 +22,17 @@ type Profile = any;
  * Trang này phải trả lời được trong khoảng ba mươi giây: em bắt đầu ở đâu, đang ở đâu,
  * đích ở đâu, có đang theo kịp không, đang vướng gì, ai đã làm gì, và bước tiếp theo là gì.
  *
- * Vì thế thứ tự các khối KHÔNG phải ngẫu nhiên:
- *   1. Đầu vào → hiện tại → mục tiêu   (ba con số, một dòng)
- *   2. So với mốc gần nhất + đang vướng gì
- *   3. Từng kỹ năng: đi được bao xa, còn cách đích bao nhiêu
- *   4. Vấn đề đang theo dõi
- *   5. Các lần đánh giá
- *   6. Hành trình, gom thành chương
+ * BA TẦNG, theo đúng thứ tự người ta muốn biết (owner duyệt 13/09/2026):
+ *
+ *   Tầng 1  EM NÀY LÀ AI            thẻ tên dính trên đầu khi cuộn
+ *   Tầng 2  YẾU CHỖ NÀO, ĐÃ LÀM GÌ  bảng sáu hạng mục — trái tim của trang
+ *   Tầng 3  SỐ LIỆU THÔ            hai thẻ: điểm qua các lượt · nhật ký
+ *
+ * Bản trước là BẢY cái hộp xếp chồng, trong đó ba hộp — "Đang cần chú ý", "Đường đi từng kỹ
+ * năng" và bảng "Vấn đề học vụ" — nói cùng một chuyện bằng ba cách khác nhau, nên đọc hết
+ * trang vẫn phải tự ghép lại mới ra kết luận. Owner gọi đúng tên nó: "vừa rối mắt vừa sơ sài".
+ *
+ * Ai chỉ cần liếc nhanh thì dừng ở tầng 1–2 và không phải cuộn dòng nào.
  *
  * Toàn bộ dữ liệu thuộc về MỘT lộ trình. Đổi lộ trình ở đầu trang là đổi cả trang — không
  * bao giờ trộn hai lộ trình vào một khung nhìn, vì mục tiêu và thang điểm của chúng khác nhau.
@@ -45,6 +48,8 @@ export default function StudentDetailPage() {
   const [reportOpen, setReportOpen] = useState(false);
   const [openCase, setOpenCase] = useState<number | null>(null);
   const [cycleEdit, setCycleEdit] = useState<'baseline' | 'target' | 'outcome' | null>(null);
+  /* Tầng 3 mặc định mở bảng điểm: đó là thứ người ta mở hồ sơ để xem nhiều nhất. */
+  const [tier3, setTier3] = useState<'scores' | 'journey'>('scores');
 
   if (error) return <ErrorState message={error.message} hint={error.hint} onRetry={reload} />;
   if (loading || !data) return <Skeleton rows={10} />;
@@ -61,333 +66,185 @@ export default function StudentDetailPage() {
 
   return (
     <div className="page space-y-4">
-      {/* ============================================== nhận diện */}
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0">
-          <button className="btn btn-sm btn-ghost mb-1" onClick={() => navigate(-1)}>← Quay lại</button>
-          <h1 className="text-lg font-semibold text-slate-100 flex flex-wrap items-center gap-2">
-            {data.fullName} <span className="text-slate-500 text-sm">· {data.studentCode}</span>
-            <Pill tone={data.status === 'active' ? 'ok' : data.status === 'inactive' ? 'warn' : 'muted'}>
-              {studentStatusLabel(data.status)}
-            </Pill>
-            {data.archivedAt && <Pill tone="muted">Đã lưu trữ</Pill>}
-          </h1>
-          <p className="text-xs text-slate-500 m-0">
-            {data.currentClass
-              ? <>Lớp {data.currentClass.code} · {data.currentClass.branchName}</>
-              : 'Chưa xếp lớp'}
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {data.viewer.canReport && (
-            <button className="btn btn-primary" onClick={() => setReportOpen(true)}>+ Nội dung cần hỗ trợ</button>
+      {/* ══════════════════════════════════════════ TẦNG 1 — EM NÀY LÀ AI */}
+      {/*
+        Thẻ tên DÍNH TRÊN ĐẦU khi cuộn: xuống tới bảng điểm mà quên đang xem em nào là
+        chuyện xảy ra thật, nhất là khi mở liền mấy em.
+      */}
+      <div className="sticky top-0 z-10 -mx-4 px-4 pt-2 pb-3 backdrop-blur"
+           style={{ background: 'color-mix(in srgb, var(--bg) 88%, transparent)' }}>
+        <button className="btn btn-sm btn-ghost mb-1.5" onClick={() => navigate(-1)}>← Quay lại</button>
+        <div className="rounded-xl border p-3 sm:p-4"
+             style={{ borderColor: 'var(--line-strong)', background: 'var(--surface)' }}>
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="min-w-0">
+              <h1 className="text-lg font-semibold text-slate-100 flex flex-wrap items-center gap-2 m-0">
+                {data.fullName}
+                <span className="text-slate-500 text-sm font-normal">· {data.studentCode}</span>
+                {data.concerns.maxSos > 0 && (
+                  <Level tone={sosTone(data.concerns.maxSos)}>{sosLabel(data.concerns.maxSos)}</Level>
+                )}
+                {data.status !== 'active' && (
+                  <Pill tone={data.status === 'inactive' ? 'warn' : 'muted'}>{studentStatusLabel(data.status)}</Pill>
+                )}
+                {data.archivedAt && <Pill tone="muted">Đã lưu trữ</Pill>}
+              </h1>
+              {/*
+                MỘT DÒNG NHẬN DIỆN, không phải ba ô số to.
+                Ba ô "Đầu vào → Hiện tại → Mục tiêu" của bản cũ chiếm gần một màn hình để nói
+                ba con số; gộp vào một dòng thì phần quan trọng hơn — em đang vướng gì — được
+                nhìn thấy mà không phải cuộn.
+              */}
+              <p className="text-xs text-slate-400 mt-1 mb-0">
+                {data.currentClass
+                  ? <>Lớp {data.currentClass.code} · {data.currentClass.branchName}</>
+                  : 'Chưa xếp lớp'}
+                {cy && !cy.ratio && cy.target !== null && <> · Target {fmtBand(cy.target)}</>}
+                {cy?.examDate && <> · Thi {fmtDate(cy.examDate)}
+                  {cy.daysToExam !== null && <span className="text-slate-500"> (còn {cy.daysToExam} ngày)</span>}</>}
+              </p>
+              {cy && !cy.ratio && (
+                <p className="text-xs text-slate-400 mt-1 mb-0">
+                  Overall gần nhất{' '}
+                  <strong className="text-slate-100 tabular-nums">
+                    {data.current.overall !== null ? fmtBand(data.current.overall) : '—'}
+                  </strong>
+                  {data.current.overallFrom && <span className="text-slate-500"> · MT{data.current.overallFrom}</span>}
+                  {cy.baseline?.score !== null && cy.baseline?.score !== undefined && (
+                    <span className="text-slate-500"> · đầu vào {fmtBand(cy.baseline.score)}</span>
+                  )}
+                  {data.nextCheckpoint && (
+                    <span className="text-slate-500">
+                      {' · '}MT{data.nextCheckpoint.attemptNo} tới:{' '}
+                      {data.nextCheckpoint.needsDate
+                        ? (data.nextCheckpoint.periodCode ?? 'chưa có tuần')
+                        : fmtDate(data.nextCheckpoint.scheduledAt)}
+                    </span>
+                  )}
+                </p>
+              )}
+              {cy?.ratio && (
+                <p className="text-xs text-slate-400 mt-1 mb-0">
+                  {cy.label} · bắt đầu {fmtDate(cy.startedAt)} ·{' '}
+                  {data.attempts.filter((a: any) => a.scored > 0).length}/{data.attempts.length} bài đã chấm
+                  {data.checkpoint && (
+                    <span className="text-slate-500">
+                      {' · '}gần nhất {data.checkpoint.status === 'met' ? 'Đạt' : 'có phần chưa đạt'}
+                    </span>
+                  )}
+                </p>
+              )}
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {data.viewer.canReport && (
+                <button className="btn btn-primary" onClick={() => setReportOpen(true)}>+ Case</button>
+              )}
+              {data.viewer.canEdit && <button className="btn" onClick={() => setTransferOpen(true)}>Chuyển lớp</button>}
+            </div>
+          </div>
+
+          {/* Chọn lộ trình — chỉ hiện khi em có nhiều hơn một, nên đa số em không thấy dòng này. */}
+          {data.cycles.length > 1 && (
+            <div className="flex flex-wrap items-center gap-2 mt-3 pt-3 border-t" style={{ borderColor: 'var(--line)' }}>
+              <span className="text-xs text-slate-500">Lộ trình:</span>
+              {data.cycles.map((c: any) => (
+                <button key={c.id}
+                  className={`btn btn-sm ${c.id === cy?.id ? 'btn-primary' : ''}`}
+                  onClick={() => setCycle(c.id)}>
+                  {c.label}
+                  <span className="text-[10px] opacity-70 ml-1">
+                    {c.target ? `· ${fmtBand(c.target)}` : ''}{c.status !== 'active' ? ' · đã đóng' : ''}
+                  </span>
+                </button>
+              ))}
+            </div>
           )}
-          {data.viewer.canEdit && <button className="btn" onClick={() => setTransferOpen(true)}>Chuyển lớp</button>}
         </div>
       </div>
-
-      {/* ============================================== chọn lộ trình */}
-      {data.cycles.length > 1 && (
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-xs text-slate-500">Lộ trình:</span>
-          {data.cycles.map((c: any) => (
-            <button key={c.id}
-              className={`btn btn-sm ${c.id === cy?.id ? 'btn-primary' : ''}`}
-              onClick={() => setCycle(c.id)}>
-              {c.label}
-              <span className="text-[10px] opacity-70 ml-1">
-                {c.target ? `· ${fmtBand(c.target)}` : ''}{c.status !== 'active' ? ' · đã đóng' : ''}
-              </span>
-            </button>
-          ))}
-        </div>
-      )}
 
       {!cy ? (
         <Empty title="Học viên chưa có lộ trình nào" hint="Mở lộ trình để bắt đầu theo dõi mục tiêu và các mốc đánh giá." />
       ) : (
         <>
-          {/* ============================================== 1. đầu vào → hiện tại → đích */}
-          <Card title={cy.label} action={
+          {/* ══════════════════════════════════ TẦNG 2 — YẾU CHỖ NÀO, ĐÃ LÀM GÌ */}
+          {/*
+            TRÁI TIM CỦA TRANG. Sáu hạng mục, mỗi hạng mục một dòng, bấm là giãn ra xem lịch sử.
+            Khối này thay cho BA khu rời rạc của bản cũ — "Đang cần chú ý", "Đường đi từng kỹ
+            năng" và bảng "Vấn đề học vụ" — vốn nói cùng một chuyện bằng ba cách khác nhau,
+            khiến người đọc phải tự ghép lại mới ra kết luận.
+          */}
+          <Card title="Theo dõi hỗ trợ theo kỹ năng"
+            action={<span className="text-xs text-slate-500">Bấm một dòng để xem lịch sử</span>}
+            bodyClass="p-0">
+            <SkillBoard studentId={data.id} cycleId={cy.id}
+              onOpenCase={setOpenCase}
+              onReport={() => setReportOpen(true)} />
+          </Card>
+
+          {/* ══════════════════════════════ TẦNG 3 — SỐ LIỆU THÔ, AI CẦN THÌ MỞ */}
+          {/*
+            Hai thẻ chứ không phải hai khối xếp chồng: bảng điểm và nhật ký đều dài, và hiếm
+            khi ai cần đọc cả hai cùng lúc. Ai chỉ cần liếc nhanh thì dừng ở tầng 1–2 và
+            không phải cuộn thêm dòng nào.
+          */}
+          <Card title={
+            <span className="flex flex-wrap gap-1">
+              <button className={`btn btn-sm ${tier3 === 'scores' ? 'btn-primary' : 'btn-ghost'}`}
+                onClick={() => setTier3('scores')}>Điểm qua các lượt</button>
+              <button className={`btn btn-sm ${tier3 === 'journey' ? 'btn-primary' : 'btn-ghost'}`}
+                onClick={() => setTier3('journey')}>Nhật ký</button>
+            </span>
+          } action={
             <div className="flex flex-wrap gap-1">
               {data.viewer.canEdit && !cy.ratio && <button className="btn btn-sm" onClick={() => setCycleEdit('baseline')}>Điểm đầu vào</button>}
               {data.viewer.canEdit && !cy.ratio && <button className="btn btn-sm" onClick={() => setCycleEdit('target')}>Đổi mục tiêu</button>}
-              {data.viewer.canEdit && <button className="btn btn-sm" onClick={() => setCycleEdit('outcome')}>Kết luận</button>}
+              {data.viewer.canEdit && <button className="btn btn-sm" onClick={() => setCycleEdit('outcome')}>Kết luận lộ trình</button>}
             </div>
-          }>
-            {/*
-              Lớp thường KHÔNG có band, không có mục tiêu IELTS và không có ngày thi — dựng
-              ba ô "Đầu vào → Hiện tại → Mục tiêu" cho một khoá Foundation là bịa ra ba con
-              số không tồn tại. Nên khoá tỷ lệ có bộ ba của riêng nó.
-            */}
-            {cy.ratio ? (
-              <div className="grid gap-3 sm:grid-cols-3">
-                <Milestone label="Khoá học" value={cy.label}
-                  sub={`Bắt đầu ${fmtDate(cy.startedAt)}`} />
-                <Milestone label="Bài đã làm"
-                  value={String(data.attempts.filter((a: any) => a.scored > 0).length)}
-                  sub={`trên ${data.attempts.length} bài của khoá`} />
-                <Milestone label="Kết quả gần nhất"
-                  value={data.checkpoint
-                    ? (data.checkpoint.status === 'met' ? 'Đạt' : 'Có phần chưa đạt')
-                    : 'Chưa có'}
-                  sub={data.checkpoint ? `${data.checkpoint.coverage} phần đã chấm` : 'Chưa chấm bài nào'}
-                  muted={!data.checkpoint} />
-              </div>
-            ) : (
-              <div className="grid gap-3 sm:grid-cols-3">
-                <Milestone label="Điểm đầu vào"
-                  value={cy.baseline?.score !== null && cy.baseline?.score !== undefined ? fmtBand(cy.baseline.score) : 'Chưa rõ'}
-                  sub={cy.baseline?.sourceLabel ?? 'Chưa ghi điểm xuất phát'}
-                  muted={!cy.baseline} />
-                <Milestone label="Hiện tại"
-                  value={data.current.overall !== null ? fmtBand(data.current.overall) : '—'}
-                  sub={data.current.overallFrom
-                    ? `Overall ở MT${data.current.overallFrom}`
-                    : 'Chưa có lượt nào đủ bốn kỹ năng'} />
-                <Milestone label="Mục tiêu"
-                  value={cy.target !== null ? fmtBand(cy.target) : 'Chưa có'}
-                  sub={cy.examDate
-                    ? `Thi ${fmtDate(cy.examDate)}${cy.daysToExam !== null ? ` · còn ${cy.daysToExam} ngày` : ''}`
-                    : 'Chưa có ngày thi'}
-                  muted={cy.target === null} />
-              </div>
-            )}
-
-            {cy.targetRevisions.length > 0 && (
-              <p className="text-xs text-slate-500 mt-2 mb-0">
-                Mục tiêu đã đổi {cy.targetRevisions.length} lần — lần gần nhất {fmtDate(cy.targetRevisions[0].effectiveFrom)}:
-                {' '}{fmtBand(cy.targetRevisions[0].oldTarget)} → {fmtBand(cy.targetRevisions[0].newTarget)}
-                {cy.targetRevisions[0].reason && ` (${cy.targetRevisions[0].reason})`}.
-                {' '}Các lượt đã chốt vẫn giữ kỳ vọng tính theo mục tiêu lúc đó.
-              </p>
-            )}
-            {cy.outcome && (
-              <p className="text-sm text-slate-200 mt-2 mb-0">
-                Kết luận lộ trình: <strong>{cy.outcome.label}</strong>
-                {cy.outcome.score !== null && ` · ${fmtBand(cy.outcome.score)}`}
-                {cy.outcome.note && <span className="text-slate-400"> — {cy.outcome.note}</span>}
-              </p>
-            )}
-            {!cy.baseline && !cy.ratio && (
-              <SectionNote>
-                Chưa ghi điểm đầu vào nên chưa tính được đã tiến bộ bao nhiêu. Hệ thống KHÔNG lấy
-                MT1 làm điểm đầu vào — hai thứ đó khác nhau.
-              </SectionNote>
-            )}
-          </Card>
-
-          {/* ============================================== 2. so với mốc + đang vướng gì */}
-          <div className="grid gap-4 lg:grid-cols-2">
-            <Card title="So với mốc gần nhất">
-              {!data.checkpoint ? (
-                <Empty title="Chưa có mốc nào kết luận được"
-                  hint={data.nextCheckpoint
-                    ? `Mốc tiếp theo: MT${data.nextCheckpoint.attemptNo}${data.nextCheckpoint.periodCode ? ` · ${data.nextCheckpoint.periodCode}` : ''}`
-                    : 'Chưa có lượt đánh giá nào được lên kế hoạch.'} />
-              ) : (
-                <CheckpointView cp={data.checkpoint} />
-              )}
-              {data.nextCheckpoint && (
-                <p className="text-xs text-slate-500 mt-3 mb-0">
-                  Mốc tiếp theo:{' '}
-                  <Link className="link" to={`/mock-test/${data.nextCheckpoint.id}`}>
-                    MT{data.nextCheckpoint.attemptNo}
-                  </Link>
-                  {' · '}{data.nextCheckpoint.periodCode ?? 'chưa có tuần'}
-                  {data.nextCheckpoint.needsDate ? ' · chưa có ngày' : ` · ${fmtSlot(data.nextCheckpoint.scheduledAt)}`}
-                </p>
-              )}
-            </Card>
-
-            {/*
-              LIÊN HỆ đứng TRƯỚC danh sách vấn đề: khi một em vừa có SOS, việc đầu tiên là
-              báo cho em và cho gia đình, trước cả khi bàn tới tutor hay tự học.
-            */}
-            <ContactPanel studentId={data.id} canEdit={data.viewer.canReport} />
-
-            <Card title="Đang cần chú ý">
-              {openCases.length === 0 ? (
-                <Empty title="Không có vấn đề nào đang theo dõi"
-                  hint="Không có cảnh báo KHÔNG có nghĩa là đang theo kịp — hai điều đó khác nhau." />
-              ) : (
-                <ul className="space-y-2 list-none p-0 m-0">
-                  {openCases.slice(0, 4).map((c: any) => (
-                    <li key={c.id}>
-                      <button className="w-full text-left appearance-none bg-transparent border-0 p-0"
-                        onClick={() => setOpenCase(c.id)}>
-                        <span className="flex flex-wrap items-center gap-1.5">
-                          {c.sosLevel !== null && <Pill tone={sosTone(c.sosLevel)}>{sosLabel(c.sosLevel)}</Pill>}
-                          {c.urgency && c.urgency !== 'normal' && (
-                            <Pill tone={c.urgency === 'urgent' ? 'danger' : 'warn'}>
-                              {c.urgency === 'urgent' ? 'Gấp' : 'Cần chú ý'}
-                            </Pill>
-                          )}
-                          {c.primaryLabel && <Pill tone="info">{c.primaryLabel}</Pill>}
-                          {c.dueOverdue && <Pill tone="warn">Quá hạn xem lại</Pill>}
-                          {/* Vấn đề của lộ trình trước KHÔNG bị giấu đi, nhưng phải dán nhãn rõ. */}
-                          {c.carriedOver && <Pill tone="muted">Từ {c.route ?? `lộ trình ${c.cycleSeq}`}</Pill>}
-                        </span>
-                        <span className="block text-sm text-slate-200 mt-0.5">{c.headline}</span>
-                        <span className="block text-xs text-slate-500">
-                          {fmtDate(c.detectedAt)}
-                          {c.reporterName && ` · ${c.reporterName}`}
-                          {' · '}
-                          {c.interventionCount > 0
-                            ? `${c.interventionCount} việc đã ghi`
-                            : 'chưa làm'}
-                          {c.nextDue && ` · hẹn xem lại ${fmtDate(c.nextDue)}`}
-                        </span>
-                      </button>
-                    </li>
-                  ))}
-                  {openCases.length > 4 && (
-                    <li className="text-xs text-slate-500">và {openCases.length - 4} vấn đề nữa ở dưới</li>
+          } bodyClass="p-0">
+            {tier3 === 'scores' ? (
+              <>
+                {data.attempts.length === 0 ? (
+                  <div className="p-4"><Empty title="Chưa có lượt đánh giá nào trong lộ trình này" /></div>
+                ) : cy.ratio ? <RatioAttempts attempts={data.attempts} onOpen={(a) => navigate(`/mock-test/${a}`)} />
+                  : <IeltsAttempts attempts={data.attempts} onOpen={(a) => navigate(`/mock-test/${a}`)} />}
+                <div className="p-3">
+                  <SectionNote>
+                    Lớp ghi ở đây là lớp TẠI LÚC ĐÁNH GIÁ — chuyển lớp không viết lại lịch sử này.
+                    Số MT đánh lại từ 1 khi sang lộ trình mới, học tiếp trong cùng lộ trình thì tăng tiếp.
+                  </SectionNote>
+                  {cy.targetRevisions.length > 0 && (
+                    <p className="text-xs text-slate-500 mt-2 mb-0">
+                      Mục tiêu đã đổi {cy.targetRevisions.length} lần — lần gần nhất {fmtDate(cy.targetRevisions[0].effectiveFrom)}:
+                      {' '}{fmtBand(cy.targetRevisions[0].oldTarget)} → {fmtBand(cy.targetRevisions[0].newTarget)}
+                      {cy.targetRevisions[0].reason && ` (${cy.targetRevisions[0].reason})`}.
+                      {' '}Các lượt đã chốt vẫn giữ kỳ vọng tính theo mục tiêu lúc đó.
+                    </p>
                   )}
-                </ul>
-              )}
-            </Card>
-          </div>
-
-          {/* ============================================== 3. từng kỹ năng */}
-          {data.trajectory.length > 0 && (
-            <Card title="Đường đi từng kỹ năng" bodyClass="p-0">
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr>
-                      <th className="th">Kỹ năng</th>
-                      <th className="th">Các mốc</th>
-                      <th className="th text-right">Hiện tại</th>
-                      <th className="th text-right">Đã tăng</th>
-                      <th className="th text-right">Còn cách đích</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {data.trajectory.map((t: any) => (
-                      <tr key={t.skill} className="row-hover">
-                        <td className="td text-slate-200 whitespace-nowrap">{t.label}</td>
-                        <td className="td">
-                          {t.points.length === 0 ? <span className="text-slate-600">chưa có điểm nào</span> : (
-                            <span className="flex flex-wrap items-center gap-1">
-                              {t.points.map((pt: any, i: number) => (
-                                <span key={i} className="inline-flex items-center gap-1">
-                                  {i > 0 && <span className="text-slate-600">→</span>}
-                                  <span className="tabular-nums text-slate-200" title={pt.detail ?? undefined}>
-                                    {fmtBand(pt.band)}
-                                  </span>
-                                  <span className="text-[10px] text-slate-500">{pt.label}</span>
-                                </span>
-                              ))}
-                            </span>
-                          )}
-                        </td>
-                        <td className="td text-right tabular-nums text-slate-100">
-                          {t.current ? fmtBand(t.current.band) : '—'}
-                        </td>
-                        {/* Cả hai cột đều là PHÉP TRỪ, không phải nhãn tốt/xấu — nên không tô màu. */}
-                        <td className="td text-right tabular-nums text-slate-300">
-                          {t.gain === null ? '—' : t.gain > 0 ? `+${t.gain}` : String(t.gain)}
-                        </td>
-                        <td className="td text-right tabular-nums text-slate-300">
-                          {t.gapToTarget === null ? '—' : fmtBand(t.gapToTarget)}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                  {cy.outcome && (
+                    <p className="text-sm text-slate-200 mt-2 mb-0">
+                      Kết luận lộ trình: <strong>{cy.outcome.label}</strong>
+                      {cy.outcome.score !== null && ` · ${fmtBand(cy.outcome.score)}`}
+                      {cy.outcome.note && <span className="text-slate-400"> — {cy.outcome.note}</span>}
+                    </p>
+                  )}
+                  {!cy.baseline && !cy.ratio && (
+                    <SectionNote>
+                      Chưa ghi điểm đầu vào nên chưa tính được đã tiến bộ bao nhiêu. Hệ thống KHÔNG lấy
+                      MT1 làm điểm đầu vào — hai thứ đó khác nhau.
+                    </SectionNote>
+                  )}
+                </div>
+              </>
+            ) : (
+              <div className="p-4">
+                {data.episodes.length === 0 ? <Empty title="Chưa có sự kiện nào" /> : (
+                  <ol className="space-y-3 list-none p-0 m-0">
+                    {data.episodes.map((ep: any) => <Episode key={ep.key} ep={ep} onOpenCase={setOpenCase} />)}
+                  </ol>
+                )}
               </div>
-              <div className="p-3">
-                <SectionNote>
-                  “Đã tăng” cần có điểm đầu vào mới tính được, “Còn cách đích” cần có mục tiêu — thiếu
-                  căn cứ thì để trống chứ không điền số 0. Các mốc chỉ nối trong CÙNG một lộ trình.
-                </SectionNote>
-              </div>
-            </Card>
-          )}
-
-          {/* ============================================== ghi nhận của giáo viên */}
-          <Card title="Điểm chính thức và ghi nhận của giáo viên"
-            action={<span className="text-xs text-slate-500">Hai nguồn khác nhau, đặt cạnh nhau để so</span>}
-            bodyClass="p-0">
-            <CheckinPanel studentId={Number(id)} cycleId={cy.id} canEditSkills={data.viewer.checkinSkills ?? []} />
-          </Card>
-
-          {/* ============================================== 4. vấn đề đang theo dõi */}
-          {data.cases.length > 0 && (
-            <Card title="Vấn đề học vụ" bodyClass="p-0">
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr>
-                      <th className="th">Ghi nhận</th>
-                      <th className="th">Nội dung</th>
-                      <th className="th">Phân loại</th>
-                      <th className="th">Đã làm</th>
-                      <th className="th">Tình trạng</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {data.cases.map((c: any) => (
-                      <tr key={c.id} className="row-hover cursor-pointer" onClick={() => setOpenCase(c.id)}>
-                        <td className="td whitespace-nowrap text-slate-400 text-xs">
-                          {fmtDate(c.detectedAt)}
-                          <div className="text-[10px] text-slate-500">
-                            {c.originKind === 'teacher_report' ? 'GV báo' : 'Từ điểm'}
-                          </div>
-                        </td>
-                        <td className="td text-slate-200">
-                          {c.headline}
-                          {c.carriedOver && (
-                            <div className="text-[10px] text-slate-500">Thuộc {c.route ?? `lộ trình ${c.cycleSeq}`}</div>
-                          )}
-                        </td>
-                        <td className="td">{c.primaryLabel ?? <span className="text-slate-600">chưa phân loại</span>}</td>
-                        <td className="td text-slate-300 text-xs">
-                          {c.interventionCount > 0 ? `${c.interventionCount} việc` : '—'}
-                          {c.lastIntervention && <div className="text-[10px] text-slate-500 truncate max-w-[16rem]">{c.lastIntervention}</div>}
-                        </td>
-                        <td className="td">
-                          <Pill tone={caseStatusTone(c.status)}>{caseStatusLabel(c.status)}</Pill>
-                          {c.sosLevel !== null && <div className="text-[10px] text-slate-500">{sosLabel(c.sosLevel)}</div>}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </Card>
-          )}
-
-          {/*
-            ============================================== 5 và 6. đánh giá · hành trình
-
-            Ở màn rất rộng thì XẾP CẠNH NHAU thay vì kéo dài một cột. Hành trình là khối
-            nhiều chữ nhất của trang; để nó chiếm hết 1920px thì mỗi dòng dài quá tầm mắt,
-            và người đọc phải quét sang phải rồi tìm lại đầu dòng kế tiếp.
-          */}
-          <div className="grid gap-4 2xl:grid-cols-2 items-start">
-          <Card title="Các lần đánh giá" bodyClass="p-0">
-            {data.attempts.length === 0 ? (
-              <Empty title="Chưa có lượt đánh giá nào trong lộ trình này" />
-            ) : cy.ratio ? <RatioAttempts attempts={data.attempts} onOpen={(a) => navigate(`/mock-test/${a}`)} />
-              : <IeltsAttempts attempts={data.attempts} onOpen={(a) => navigate(`/mock-test/${a}`)} />}
-            <div className="p-3">
-              <SectionNote>
-                Lớp ghi ở đây là lớp TẠI LÚC ĐÁNH GIÁ — chuyển lớp không viết lại lịch sử này.
-                Số MT đánh lại từ 1 khi sang lộ trình mới, học tiếp trong cùng lộ trình thì tăng tiếp.
-              </SectionNote>
-            </div>
-          </Card>
-
-          <Card title="Hành trình học">
-            {data.episodes.length === 0 ? <Empty title="Chưa có sự kiện nào" /> : (
-              <ol className="space-y-3 list-none p-0 m-0">
-                {data.episodes.map((ep: any) => <Episode key={ep.key} ep={ep} onOpenCase={setOpenCase} />)}
-              </ol>
             )}
           </Card>
-          </div>
         </>
       )}
 
@@ -396,7 +253,7 @@ export default function StudentDetailPage() {
         studentId={data.id} studentName={data.fullName} cycleId={cy?.id ?? null}
         onDone={(cid) => { reload(); setOpenCase(cid); }} />
 
-      <Drawer open={openCase !== null} onClose={() => setOpenCase(null)} title="Vấn đề học vụ"
+      <Drawer open={openCase !== null} onClose={() => setOpenCase(null)} title="Vấn đề - Case"
         subtitle={data.fullName}
         footer={openCase !== null
           ? <Link className="btn" to={`/hoc-thuat/case/${openCase}`}>Mở trang riêng</Link>

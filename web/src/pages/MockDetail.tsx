@@ -261,7 +261,7 @@ export default function MockDetailPage() {
         trong khi đó chính là phần đáng đọc nhất.
       */}
       {d.sosCase ? (
-        <Card title="Vấn đề học vụ" action={
+        <Card title="Vấn đề - Case" action={
           <Link className="btn btn-sm" to={`/hoc-thuat/case/${d.sosCase.id}`}>Mở trang riêng</Link>
         }>
           {d.result.evaluable && d.result.sosLevel === 0 && (

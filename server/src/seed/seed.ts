@@ -1338,11 +1338,15 @@ function seedSpecialCases(conn: any, ctx: {
    */
   seedAcademicCases(conn, { classId, allStudents, adminId, managers, counts });
 
-  // 6) Warning/WL và đánh giá cũ — dữ liệu lịch sử để thử bộ lọc hành trình.
+  /*
+   * 6) Cảnh báo — dữ liệu lịch sử để thử bộ lọc hành trình.
+   *
+   * Dòng "Đánh giá GV" của bản trước đã bỏ cùng với chức năng ghi nhận của giáo viên: để
+   * lại thì nhật ký còn một loại sự kiện mà không màn nào mở ra được.
+   */
   const warned = inClass('UB-FT 401')[5];
   if (warned) {
     for (const e of [
-      { type: 'estimate', date: '2026-08-31', title: 'Đánh giá GV: 5.5', detail: 'GVCN đánh giá giữa kỳ' },
       { type: 'warning', date: '2026-09-07', title: 'Cảnh báo chuyên cần', detail: 'Vắng 3 buổi liên tiếp' },
     ]) {
       conn

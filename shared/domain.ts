@@ -862,7 +862,7 @@ export const CASE_STATUS_TONE: Record<CaseStatus, 'danger' | 'warn' | 'ok'> = {
 export const BRANCH_REPORT_CATEGORIES = [
   { key: 'teachers', label: 'Giáo viên', hint: 'Thái độ làm việc, chất lượng giảng dạy' },
   // Vấn đề vận hành đến từ cả hai phía, nên một nhóm chung thay vì tách hai module.
-  { key: 'students', label: 'Học sinh / Phụ huynh', hint: 'Lịch học, thái độ, lực học, phản hồi từ phụ huynh' },
+  { key: 'students', label: 'Học viên / Phụ huynh', hint: 'Lịch học, thái độ, lực học, phản hồi từ phụ huynh' },
   { key: 'curriculum', label: 'Giáo trình', hint: 'Mức độ phù hợp, đề xuất điều chỉnh' },
 ] as const;
 

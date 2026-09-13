@@ -57,16 +57,19 @@ export function QuickReport({ open, onClose, studentId, studentName, cycleId, on
 
   const reset = () => {
     setSummary(''); setUrgency('normal'); setTrack('academic'); setTopic('');
-    setPrimaryCode(''); setNote(''); setDetectedAt(''); setMore(false);
+    setPrimaryCode(''); setNote(''); setDetectedAt(''); setMore(false); setDup(null);
   };
 
-  const submit = async () => {
-    if (!summary.trim()) { toast.push('error', 'Hãy mô tả vấn đề trong một câu.'); return; }
-    if (!topic) {
-      toast.push('error', track === 'behaviour'
-        ? 'Hãy chọn nhóm ý thức.' : 'Hãy chọn kỹ năng em đang vướng.');
-      return;
-    }
+  /*
+   * CẢNH BÁO CASE TRÙNG — mục 7.13.
+   *
+   * Máy chủ từ chối lần gửi đầu và trả về CHÍNH case đang vướng, nên pop-up dựng được ngay
+   * mà không phải hỏi lại thêm một vòng mạng. Hai lựa chọn chỉ khác nhau đúng một cờ, và
+   * nội dung người dùng vừa gõ được giữ nguyên ở cả hai đường — không bắt gõ lại.
+   */
+  const [dup, setDup] = useState<any | null>(null);
+
+  const send = async (extra: Record<string, unknown> = {}) => {
     setBusy(true);
     try {
       const res = await api.post<any>('/cases/report', {
@@ -76,19 +79,32 @@ export function QuickReport({ open, onClose, studentId, studentName, cycleId, on
         note: note.trim() || undefined,
         detectedAt: detectedAt || undefined,
         idempotencyKey,
+        ...extra,
       });
       invalidate('/cases'); invalidate('/students'); invalidate('/overview');
-      toast.push('ok', 'Đã ghi nhận');
-      reset(); onClose(); onDone?.(res.id);
+      toast.push('ok', extra.mergeIntoExisting ? 'Đã ghi vào case đang có' : 'Đã ghi nhận');
+      reset(); setDup(null); onClose(); onDone?.(res.id);
     } catch (e: any) {
+      const d = e?.details?.duplicateCase;
+      if (d) { setDup(d); return; }
       // Lỗi giữ nguyên nội dung đang gõ để người dùng thử lại, không bắt gõ lại từ đầu.
       toast.push('error', e.message);
     } finally { setBusy(false); }
   };
 
+  const submit = async () => {
+    if (!summary.trim()) { toast.push('error', 'Hãy mô tả vấn đề trong một câu.'); return; }
+    if (!topic) {
+      toast.push('error', track === 'behaviour'
+        ? 'Hãy chọn nhóm ý thức.' : 'Hãy chọn kỹ năng em đang vướng.');
+      return;
+    }
+    await send();
+  };
+
   return (
     <Modal open={open} onClose={onClose}
-      title={studentName ? `Nội dung cần hỗ trợ · ${studentName}` : 'Nội dung cần hỗ trợ'}
+      title={studentName ? `+ Case · ${studentName}` : '+ Case'}
       footer={
         <>
           <button className="btn" onClick={onClose}>Huỷ</button>
@@ -177,6 +193,37 @@ export function QuickReport({ open, onClose, studentId, studentName, cycleId, on
           năng dưới kỳ vọng ở một bài cụ thể, ở đây chưa có bài nào.
         </SectionNote>
       </div>
+
+      {/*
+        POP-UP CẢNH BÁO CASE TRÙNG — đè lên form, không thay thế form.
+
+        Người dùng vẫn thấy chữ mình vừa gõ ở phía sau, nên chọn xong là hiểu mình vừa quyết
+        định gì. Nút trái là vế MẶC ĐỊNH vì nó đúng trong đa số trường hợp; vế phải hợp lệ
+        nhưng phải là quyết định có ý thức.
+      */}
+      {dup && (
+        <div className="mt-4 rounded-lg border p-3"
+             style={{ borderColor: 'var(--warn)', background: 'rgba(240, 201, 135, 0.08)' }}>
+          <p className="text-sm text-slate-100 m-0">
+            Học viên này đang có case <strong>“{dup.title}”</strong> chưa xử lý xong
+            ở hạng mục {dup.categoryLabel}.
+          </p>
+          <p className="text-xs text-slate-400 mt-1 mb-2">
+            Mở từ {dup.detectedAt}
+            {dup.interventionCount > 0 ? ` · đã có ${dup.interventionCount} phương án` : ' · chưa có phương án nào'}.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <button className="btn btn-primary btn-sm" disabled={busy}
+              onClick={() => send({ mergeIntoExisting: true })}>
+              Ghi vào case đang có
+            </button>
+            <button className="btn btn-sm" disabled={busy}
+              onClick={() => send({ parallel: true })}>
+              Đây là vấn đề khác, mở case riêng
+            </button>
+          </div>
+        </div>
+      )}
     </Modal>
   );
 }

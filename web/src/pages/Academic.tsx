@@ -41,7 +41,7 @@ export default function AcademicPage() {
   return (
     <div className="page space-y-4">
       <div>
-        <h1 className="text-lg font-semibold text-slate-100 m-0">Tình hình chung</h1>
+        <h1 className="text-lg font-semibold text-slate-100 m-0">Thực trạng</h1>
         <p className="text-xs text-slate-500 mt-1 mb-0">
           Vấn đề đang theo dõi trong phạm vi bạn được xem — cả vấn đề sinh từ điểm và vấn đề giáo viên báo.
         </p>
@@ -210,7 +210,7 @@ export function CaseBoard({ embedded = false }: { embedded?: boolean } = {}) {
             <FilterRow label="Cụ thể là">
               {/*
                 Không phải nút bấm — đây là bức tranh bên trong lựa chọn hiện tại, để đọc
-                "Học sinh 18 › Listening 6" mà không phải bấm thử từng cái.
+                "Học viên 18 › Listening 6" mà không phải bấm thử từng cái.
               */}
               <span className="flex flex-wrap gap-x-3 gap-y-1 items-baseline">
                 {Object.entries(f.issueBranch)
@@ -234,7 +234,7 @@ export function CaseBoard({ embedded = false }: { embedded?: boolean } = {}) {
 
       {/* ---------------------------------------------- danh sách */}
       <Card
-        title={`Vấn đề (${rows.length})`}
+        title={`Vấn đề - Case (${rows.length})`}
         action={state
           ? <button className="btn btn-sm btn-ghost" onClick={() => set('tinh-hinh', '')}>
               Bỏ lọc {STATE_LABEL[state].toLowerCase()}
@@ -268,7 +268,7 @@ export function CaseBoard({ embedded = false }: { embedded?: boolean } = {}) {
                         <div className="text-[10px] text-slate-500">{r.classCode ?? '—'}</div>
                       </td>
                       <td className="td text-slate-300">
-                        {r.headline}
+                        {r.title ?? r.headline}
                         <div className="text-[10px] text-slate-500">
                           {fmtDate(r.detectedAt)}{r.reporterName ? ` · ${r.reporterName}` : ''}
                         </div>
@@ -318,7 +318,7 @@ export function CaseBoard({ embedded = false }: { embedded?: boolean } = {}) {
           )}
       </Card>
 
-      <Drawer open={openCase !== null} onClose={() => setOpenCase(null)} title="Vấn đề học vụ"
+      <Drawer open={openCase !== null} onClose={() => setOpenCase(null)} title="Vấn đề - Case"
         footer={openCase !== null ? <Link className="btn" to={`/hoc-thuat/case/${openCase}`}>Mở trang riêng</Link> : null}>
         {openCase !== null && <CasePanel caseId={openCase} />}
       </Drawer>
@@ -332,7 +332,7 @@ export function CaseRoutePage() {
   return (
     <div className="max-w-[900px] space-y-3">
       <Link className="btn btn-sm btn-ghost" to="/hoc-thuat">← Học thuật</Link>
-      <Card title="Vấn đề học vụ">
+      <Card title="Vấn đề - Case">
         <CasePanel caseId={Number(id)} />
       </Card>
     </div>

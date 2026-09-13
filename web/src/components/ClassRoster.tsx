@@ -23,7 +23,6 @@ type RosterRow = {
   id: number; studentCode: string; fullName: string; status: string; archived: boolean;
   cycle: { id: number; seq: number; route: string | null; target: number | null; examDate: string | null } | null;
   latest: Timeline | null; next: Timeline | null; timeline: Timeline[];
-  checkins: Partial<Record<EntrySkill, { band: number | null; observedOn: string; judgement: string | null }>>;
   myPending: string[];
 };
 
@@ -31,7 +30,7 @@ type RosterRow = {
  * Danh sách học viên của một lớp, chỉ tải khi lớp được mở rộng.
  *
  * Mỗi dòng cho thấy học viên đang ở đâu trong lộ trình mà không phải mở chi tiết:
- * chuỗi MT quá khứ → hiện tại → tương lai, kết quả gần nhất và chênh lệch với Đánh giá GV.
+ * chuỗi MT quá khứ → hiện tại → tương lai, và kết quả gần nhất.
  */
 export function ClassRoster({ classId, studentQuery, onAddStudents }: {
   classId: number; studentQuery?: string; onAddStudents?: () => void;
@@ -68,7 +67,6 @@ export function ClassRoster({ classId, studentQuery, onAddStudents }: {
             <th className="th">Target</th>
             <th className="th">Tiến trình MT</th>
             <th className="th">Kết quả gần nhất</th>
-            <th className="th">Đánh giá GV</th>
             <th className="th">Việc cần làm</th>
           </tr>
         </thead>
@@ -93,7 +91,6 @@ export function ClassRoster({ classId, studentQuery, onAddStudents }: {
                     </>
                   : <span className="text-slate-600 text-xs">Chưa có</span>}
               </td>
-              <td className="td text-xs text-slate-400 whitespace-nowrap"><EstimateChips row={s} /></td>
               <td className="td text-xs">
                 {s.myPending.length > 0 && (
                   <span style={{ color: 'var(--accent)' }}>
@@ -150,25 +147,10 @@ function MockTrail({ timeline, classId }: { timeline: Timeline[]; classId: numbe
   );
 }
 
-/**
- * Ghi nhận gần nhất của giáo viên theo từng kỹ năng.
+/*
+ * CỘT "ĐÁNH GIÁ GV" ĐÃ BỎ Ở VÒNG 4, cùng với cả chức năng ghi nhận của giáo viên.
  *
- * Ghi nhận KHÔNG bắt buộc có điểm — phần lớn là nhận xét bằng lời. Ở danh sách lớp chỉ đủ
- * chỗ cho một dấu hiệu ngắn, nên có điểm thì hiện điểm, không có thì hiện một dấu chấm và
- * để nguyên văn nhận xét trong tooltip.
+ * Owner chốt 13/09/2026: đặt điểm ước lượng của giáo viên ngay cạnh điểm MT trong bảng lớp
+ * tạo ra hai con số nhìn như nhau nhưng nghĩa khác hẳn nhau, và không ai nhớ được cái nào
+ * là cái nào. Bảng lớp nay chỉ hiện MỘT nguồn điểm.
  */
-function EstimateChips({ row }: { row: RosterRow }) {
-  const entries = Object.entries(row.checkins ?? {}) as
-    [EntrySkill, { band: number | null; observedOn: string; judgement: string | null }][];
-  if (!entries.length) return <span className="text-slate-600">—</span>;
-  return (
-    <span className="flex flex-wrap gap-1">
-      {entries.map(([skill, k]) => (
-        <Pill key={skill} tone="neutral"
-          title={`${k.judgement ? `${k.judgement}\n` : ''}Ghi nhận ngày ${k.observedOn}`}>
-          {ENTRY_SKILL_SHORT[skill] ?? skill} {k.band !== null ? k.band.toFixed(1) : '·'}
-        </Pill>
-      ))}
-    </span>
-  );
-}

@@ -49,8 +49,8 @@ export default function OverviewPage() {
   const [params, setParams] = useSearchParams();
   /*
    * HAI CÂU HỎI KHÁC NHAU, KHÔNG PHẢI HAI MÀN HÌNH KHÁC NHAU.
-   *   Việc của tôi   — tôi phải làm gì bây giờ?
-   *   Tình hình chung — cả chi nhánh đang thế nào?
+   *   Toàn cảnh công việc — tôi phải làm gì bây giờ?
+   *   Thực trạng         — cả chi nhánh đang thế nào?
    * Quản lý cần cả hai, nhưng không cần cùng lúc; nhét chung một trang là cách chắc chắn
    * nhất để việc của mình chìm trong số liệu của người khác. Tab nằm trên URL nên Back
    * giữ đúng chỗ và gửi đường dẫn cho người khác vẫn ra đúng màn.
@@ -114,10 +114,10 @@ export default function OverviewPage() {
         <div className="flex flex-wrap gap-1 border-b pb-2" style={{ borderColor: 'var(--line)' }}>
           <TabButton active={tab === 'work'} onClick={() => {
             const next = new URLSearchParams(params); next.delete('tab'); setParams(next);
-          }}>Việc của tôi</TabButton>
+          }}>Toàn cảnh công việc</TabButton>
           <TabButton active={tab === 'board'} onClick={() => {
             const next = new URLSearchParams(params); next.set('tab', 'tinh-hinh'); setParams(next);
-          }}>Tình hình chung</TabButton>
+          }}>Thực trạng</TabButton>
           <TabButton active={tab === 'report'} onClick={() => {
             const next = new URLSearchParams(params); next.set('tab', 'bao-cao'); setParams(next);
           }}>Báo cáo tuần</TabButton>

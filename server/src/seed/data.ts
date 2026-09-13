@@ -178,7 +178,7 @@ export const GIVEN_NAMES = [
 export const TARGET_SCORES = [6.0, 6.5, 7.0, 6.5, 5.5];
 
 /**
- * Kịch bản kết quả theo vị trí học sinh trong lớp.
+ * Kịch bản kết quả theo vị trí học viên trong lớp.
  *
  *  - `fails`: số kỹ năng dưới kỳ vọng, quyết định mức SOS (0 → đạt, 1 → SOS 1, ...).
  *  - `missing`: các kỹ năng CHƯA nhập điểm, để thấy tiến độ n/n và trạng thái quá hạn.
@@ -188,13 +188,13 @@ export const TARGET_SCORES = [6.0, 6.5, 7.0, 6.5, 5.5];
 export type Outcome = { fails: number; missing?: string[]; skip?: string; performedOnly?: string[] };
 
 export const MT_OUTCOMES: Outcome[][] = [
-  // [MT1, MT2, MT3, MT4] cho từng vị trí học sinh trong lớp
+  // [MT1, MT2, MT3, MT4] cho từng vị trí học viên trong lớp
   [{ fails: 0 }, { fails: 0 }, { fails: 0 }, { fails: 0 }],
   [{ fails: 1 }, { fails: 0 }, { fails: 1 }, { fails: 0 }],
   [{ fails: 0 }, { fails: 1 }, { fails: 0 }, { fails: 1 }],
   [{ fails: 2 }, { fails: 2 }, { fails: 2 }, { fails: 2 }],
   [{ fails: 1 }, { fails: 3 }, { fails: 3 }, { fails: 1 }],
-  // Học sinh không mock Speaking ở MT2: Quản lý đánh dấu không mock, SOS tính trên 3 kỹ năng.
+  // Học viên không mock Speaking ở MT2: Quản lý đánh dấu không mock, SOS tính trên 3 kỹ năng.
   [{ fails: 3 }, { fails: 2, skip: 'speaking' }, { fails: 2 }, { fails: 3 }],
   [{ fails: 0 }, { fails: 0, missing: ['writing2'] }, { fails: 0 }, { fails: 0 }],
   // Đã mock Speaking nhưng chưa nhập điểm, và Reading thì chưa mock — hai trạng thái khác nhau.

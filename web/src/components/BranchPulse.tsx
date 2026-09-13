@@ -30,7 +30,7 @@ export function BranchPulse({ branchId }: { branchId: number | null }) {
   );
   const [showPeople, setShowPeople] = useState(false);
 
-  if (loading) return <Card title="Chi nhánh đang tắc ở đâu"><Skeleton rows={3} /></Card>;
+  if (loading) return <Card title="Việc cần lưu ý"><Skeleton rows={3} /></Card>;
   if (!data) return null;
 
   const num = (n: number, tone?: 'warn' | 'danger') => (
@@ -41,7 +41,7 @@ export function BranchPulse({ branchId }: { branchId: number | null }) {
   );
 
   return (
-    <Card title="Chi nhánh đang tắc ở đâu" bodyClass="p-0">
+    <Card title="Việc cần lưu ý" bodyClass="p-0">
       {data.classes.length === 0 ? (
         <p className="px-4 py-3 text-sm text-slate-400 m-0">Không lớp nào đang tồn việc. </p>
       ) : (

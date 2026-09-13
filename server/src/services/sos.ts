@@ -28,10 +28,10 @@ export function stepsFor(attemptNo: number, level: SosLevel): SosStep[] {
   if (level === 0) return [];
   const steps: SosStep[] = [];
 
-  // Ai trao đổi với học sinh: SOS 2 từ MT2 trở đi là GVBM, còn lại GVCN + GVBM.
+  // Ai trao đổi với học viên: SOS 2 từ MT2 trở đi là GVBM, còn lại GVCN + GVBM.
   const byGvbmOnly = level === 2 && attemptNo >= 2;
   steps.push({
-    key: 'talk_student', label: 'Trao đổi với học sinh',
+    key: 'talk_student', label: 'Trao đổi với học viên',
     detail: byGvbmOnly ? 'GVBM trao đổi ngắn với HS' : 'GVCN + GVBM trao đổi ngắn với HS',
     required: true,
   });

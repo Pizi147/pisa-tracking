@@ -2903,7 +2903,7 @@ check('Cảnh báo case trùng: báo lại hạng mục đã có case chưa xong
     });
   } catch (e) { caught = e; }
   assert(caught, 'Báo trùng hạng mục mà hệ thống im lặng mở case thứ hai');
-  assert(caught.duplicateCase?.id === open.id,
+  assert(caught.details?.duplicateCase?.id === open.id,
     'Cảnh báo không chỉ ra case đang vướng, giao diện không dựng được pop-up');
 
   /* Chọn "Ghi vào case đang có" → không có case mới. */

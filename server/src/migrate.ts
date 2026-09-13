@@ -294,7 +294,7 @@ function migrateCaseEngine(applied: string[], skipped: string[]) {
      * việc ĐÃ BẮT ĐẦU với hỗ trợ học thuật — không nâng thành "đã xong".
      */
     const legacy: { field: string; kind: string; dateCol: string; personCol?: string; status: string; label: string }[] = [
-      { field: 'talk_student', kind: 'talk_student', dateCol: 'talk_student_date', personCol: 'talk_student_person', status: 'completed', label: 'Trao đổi với học sinh' },
+      { field: 'talk_student', kind: 'talk_student', dateCol: 'talk_student_date', personCol: 'talk_student_person', status: 'completed', label: 'Trao đổi với học viên' },
       { field: 'talk_parent', kind: 'talk_parent', dateCol: 'talk_parent_date', personCol: 'talk_parent_person', status: 'completed', label: 'Trao đổi với phụ huynh' },
       { field: 'academic', kind: 'tutor', dateCol: 'academic_start_date', personCol: 'academic_person', status: 'started', label: 'Hỗ trợ học thuật' },
       { field: 'ops', kind: 'ops_policy', dateCol: 'ops_date', status: 'completed', label: 'Chính sách vận hành' },
@@ -327,21 +327,6 @@ function migrateCaseEngine(applied: string[], skipped: string[]) {
       }
     }
     if (moved) applied.push(`Chuyển ${moved} mốc hỗ trợ cũ thành bản ghi tác động (giữ nguyên bản gốc để tra lại)`);
-
-    /*
-     * 5. Case đã đóng theo hệ thống cũ mà không có hướng xử lý: ghi rõ là "đóng theo hệ
-     *    thống cũ", KHÔNG bịa ra một kết luận và cũng không mở lại hàng loạt.
-     */
-    const legacyClosed = conn
-      .prepare(
-        `UPDATE sos_cases SET disposition = 'other',
-                disposition_note = 'Đóng theo hệ thống cũ — chưa ghi hướng xử lý'
-          WHERE status = 'done' AND disposition IS NULL`,
-      )
-      .run();
-    if (legacyClosed.changes) {
-      applied.push(`Đánh dấu ${legacyClosed.changes} case đóng theo hệ thống cũ (không bịa kết luận)`);
-    }
 
     /*
      * 6. "GHI NHẬN CỦA GIÁO VIÊN" ĐÃ BỎ HẲN Ở VÒNG 4.
@@ -402,6 +387,26 @@ function migrateCaseEngine(applied: string[], skipped: string[]) {
 
     migrateSkillTopics(conn, applied);
     migrateCaseLifecycle(conn, applied);
+
+    /*
+     * Case đã đóng theo hệ thống cũ mà không có hướng xử lý: ghi rõ là "đóng theo hệ thống
+     * cũ", KHÔNG bịa ra một kết luận và cũng không mở lại hàng loạt.
+     *
+     * CHẠY SAU CÙNG, sau cả bước gộp case. Bản trước đặt nó ở giữa, nên những case do chính
+     * bước gộp và bước chuyển việc trao đổi tạo ra lại chưa được đánh dấu — và lần chạy thứ
+     * hai mới nhặt nốt. Một bước nâng cấp cần xong hẳn trong MỘT lần chạy, nếu không thì
+     * không ai biết bao nhiêu lần mới là đủ.
+     */
+    const legacyClosed = conn
+      .prepare(
+        `UPDATE sos_cases SET disposition = 'other',
+                disposition_note = 'Đóng theo hệ thống cũ — chưa ghi hướng xử lý'
+          WHERE status = 'done' AND disposition IS NULL`,
+      )
+      .run();
+    if (legacyClosed.changes) {
+      applied.push(`Đánh dấu ${legacyClosed.changes} case đóng theo hệ thống cũ (không bịa kết luận)`);
+    }
 
     conn.prepare("INSERT OR REPLACE INTO demo_config (key, value, updated_at) VALUES ('case_engine_migrated_at', ?, ?)")
       .run(nowIso(), nowIso());
@@ -528,7 +533,7 @@ function migrateSkillTopics(conn: any, applied: string[]) {
   const delCtx = conn.prepare("DELETE FROM case_issues WHERE role = 'context'").run();
   if (delCtx.changes) applied.push(`Chuyển ${delCtx.changes} dòng hoàn cảnh thành Ghi chú`);
 
-  /* Vấn đề về giáo viên và giáo trình rời khỏi hệ thống theo dõi học sinh (owner chốt). */
+  /* Vấn đề về giáo viên và giáo trình rời khỏi hệ thống theo dõi học viên (owner chốt). */
   const delOwn = conn
     .prepare("DELETE FROM case_issues WHERE taxonomy_code LIKE 'teacher.%' OR taxonomy_code LIKE 'curriculum.%'")
     .run();
