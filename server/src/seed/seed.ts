@@ -149,11 +149,18 @@ export function runSeed() {
       const programme = programmeOf(c.kind);
       const info = conn
         .prepare(
-          `INSERT INTO classes (code, branch_id, kind, programme_code, route, is_fulltime, start_date, status, note, created_at)
-           VALUES (?,?,?,?,?,?,?,?,?,?)`,
+          `INSERT INTO classes (code, branch_id, kind, programme_code, route, is_fulltime, start_date,
+                                start_period_id, status, note, created_at)
+           VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
         )
+        /*
+         * TUẦN KHAI GIẢNG suy thẳng từ ngày khai giảng. Lớp Normal dùng mốc này để biết đang
+         * ở tuần thứ mấy và tuần nào là Progress/Final Test — thiếu nó thì cả ba thông báo
+         * của lớp không có căn cứ nào để tính.
+         */
         .run(c.code, branchId.get(c.branch)!, c.kind, programme, c.route, c.isFulltime ? 1 : 0,
-             c.startDate, 'active', null, NOW);
+             c.startDate, c.startDate ? ensurePeriod(c.startDate).id : null,
+             'active', null, NOW);
       const id = Number(info.lastInsertRowid);
       classId.set(c.code, id);
 
@@ -233,10 +240,21 @@ export function runSeed() {
         const target = TARGET_SCORES[i % TARGET_SCORES.length];
         const cycleInfo = conn
           .prepare(
-            `INSERT INTO learning_cycles (student_id, seq, route, target_score, exam_date, started_at, status, created_at)
-             VALUES (?, 1, ?, ?, ?, ?, 'active', ?)`,
+            `INSERT INTO learning_cycles (student_id, seq, route, target_score, exam_date, exam_month,
+                                          start_period_id, started_at, status, created_at)
+             VALUES (?, 1, ?, ?, ?, ?, ?, ?, 'active', ?)`,
           )
-          .run(sid, c.route, target, addDays(c.startDate, 200), c.startDate, NOW);
+          /*
+           * TUẦN BẮT ĐẦU HỌC của em, và THÁNG THI DỰ KIẾN.
+           *
+           * Cứ năm em thì một em CHƯA khai tuần bắt đầu và một em chưa khai tháng thi — để
+           * badge "Thiếu thông tin" có dữ liệu thật mà hiện, chứ không phải một badge chỉ
+           * tồn tại trên lý thuyết.
+           */
+          .run(sid, c.route, target, addDays(c.startDate, 200),
+               i % 5 === 3 ? null : String(addDays(c.startDate, 200)).slice(0, 7),
+               i % 5 === 1 ? null : ensurePeriod(c.startDate).id,
+               c.startDate, NOW);
         const cycleId = Number(cycleInfo.lastInsertRowid);
         counts.cycles += 1;
         conn
@@ -1092,7 +1110,7 @@ function seedRegularClasses(conn: any, ctx: {
     [0.75, 0.65, null, null],   // mới nhập một nửa -> chưa kết luận
   ];
   const TOTALS: Record<string, number> = {
-    listening: 40, reading: 40, prep_writing: 20, pronunciation: 25, speaking: 25,
+    listening: 40, reading: 40, writing: 20, pronunciation: 25, speaking: 25,
   };
 
   for (const cls of CLASSES) {
@@ -1108,10 +1126,12 @@ function seedRegularClasses(conn: any, ctx: {
       const cyc = conn
         .prepare(
           `INSERT INTO learning_cycles (student_id, seq, route, programme_code, target_score,
-                                        started_at, status, note, created_at)
-           VALUES (?, 1, NULL, ?, NULL, ?, 'active', ?, ?)`,
+                                        start_period_id, started_at, status, note, created_at)
+           VALUES (?, 1, NULL, ?, NULL, ?, ?, 'active', ?, ?)`,
         )
-        .run(st.id, programme, cls.startDate, `Khoá ${tpl.name} — lớp ${cls.code}`, NOW);
+        /* Lớp Normal: tuần bắt đầu của em chính là tuần khai giảng của lớp. */
+        .run(st.id, programme, ensurePeriod(cls.startDate).id, cls.startDate,
+             `Khoá ${tpl.name} — lớp ${cls.code}`, NOW);
       counts.cycles += 1;
       const cycleId = Number(cyc.lastInsertRowid);
 
@@ -1407,10 +1427,12 @@ function seedSpecialCases(conn: any, ctx: {
     const newTarget = (old.target_score ?? 6) + 0.5;
     const cyc = conn
       .prepare(
-        `INSERT INTO learning_cycles (student_id, seq, route, target_score, exam_date, started_at, status, note, created_at)
-         VALUES (?,?, 'LT2', ?, ?, ?, 'active', ?, ?)`,
+        `INSERT INTO learning_cycles (student_id, seq, route, target_score, exam_date, exam_month,
+                                      start_period_id, started_at, status, note, created_at)
+         VALUES (?,?, 'LT2', ?, ?, '2027-03', ?, ?, 'active', ?, ?)`,
       )
-      .run(promoted.id, old.seq + 1, newTarget, '2027-03-06', '2026-09-15',
+      .run(promoted.id, old.seq + 1, newTarget, '2027-03-06',
+           ensurePeriod('2026-09-15').id, '2026-09-15',
            'Đã thi xong LT1, sang lộ trình mới với target cao hơn', NOW);
     const cycleId = Number(cyc.lastInsertRowid);
     counts.cycles += 1;

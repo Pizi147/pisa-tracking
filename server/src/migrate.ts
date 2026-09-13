@@ -387,6 +387,7 @@ function migrateCaseEngine(applied: string[], skipped: string[]) {
 
     migrateSkillTopics(conn, applied);
     migrateCaseLifecycle(conn, applied);
+    migrateSchedulingFields(conn, applied);
 
     /*
      * Case đã đóng theo hệ thống cũ mà không có hướng xử lý: ghi rõ là "đóng theo hệ thống
@@ -1016,4 +1017,142 @@ function migrateCaseLifecycle(conn: any, applied: string[]) {
     CREATE INDEX IF NOT EXISTS idx_case_student_category ON sos_cases(student_id, cycle_id, category);
     CREATE INDEX IF NOT EXISTS idx_case_follow_until ON sos_cases(follow_until) WHERE follow_until IS NOT NULL;
   `);
+}
+
+
+/**
+ * VÒNG 4 · PHASE 2 — TUẦN BẮT ĐẦU HỌC, LỊCH MT MẶC ĐỊNH, VÀ TÊN MÔN W.
+ *
+ * Ba việc, đều là thêm chứ không bỏ:
+ *
+ *   1. Cột mới cho tuần bắt đầu học (lớp và lộ trình), tháng thi dự kiến, mốc kiểm tra do
+ *      người xếp lại, và cột ghi AI đã xếp tuần MT.
+ *   2. Đổi mã môn `prep_writing` → `writing` ở MỌI chỗ dữ liệu nhắc tới nó. Đây là đổi mã
+ *      thật trong database, không phải chỉ đổi nhãn — để sau này không ai phải nhớ hai mã
+ *      cho một môn.
+ *   3. Suy ngược tuần bắt đầu học cho dữ liệu cũ, CHỈ ở chỗ suy được chắc chắn.
+ *
+ * Chạy lần hai không đổi gì thêm: mỗi bước tự kiểm bằng sự tồn tại của cột hoặc bằng chính
+ * giá trị đang có.
+ */
+function migrateSchedulingFields(conn: any, applied: string[]) {
+  const cols = (t: string) => (conn.prepare(`PRAGMA table_info(${t})`).all() as any[]).map((c: any) => c.name);
+  const has = (t: string) =>
+    !!conn.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name = ?").get(t);
+  const addCol = (table: string, col: string, decl: string) => {
+    if (!cols(table).includes(col)) conn.exec(`ALTER TABLE ${table} ADD COLUMN ${col} ${decl}`);
+  };
+  if (!has('classes') || !has('learning_cycles')) return;
+
+  /* ------------------------------------------------------------- 1. cột mới */
+  for (const [c, d] of [
+    ['start_period_id', 'INTEGER REFERENCES report_periods(id)'],
+    ['progress_week_override', 'INTEGER'],
+    ['final_week_override', 'INTEGER'],
+  ] as const) addCol('classes', c, d);
+
+  for (const [c, d] of [
+    ['start_period_id', 'INTEGER REFERENCES report_periods(id)'],
+    ['exam_month', 'TEXT'],
+  ] as const) addCol('learning_cycles', c, d);
+
+  addCol('assessment_attempts', 'plan_source', "TEXT NOT NULL DEFAULT 'manual'");
+
+  /* ------------------------------------------ 2. đổi mã môn prep_writing → writing */
+  const renames: [string, string][] = [
+    ['assessment_scores', 'skill'],
+    ['class_skills', 'skill'],
+    ['teacher_assignments', 'skill'],
+    ['programme_skills', 'skill'],
+    ['attempt_required_skills', 'skill'],
+    ['attempt_skill_skips', 'skill'],
+    ['teacher_estimates', 'skill'],
+    ['sos_cases', 'topic'],
+    ['case_issues', 'skill'],
+    ['tasks', 'topic'],
+  ];
+  let renamed = 0;
+  for (const [table, col] of renames) {
+    if (!has(table) || !cols(table).includes(col)) continue;
+    try {
+      renamed += conn.prepare(`UPDATE ${table} SET ${col} = 'writing' WHERE ${col} = 'prep_writing'`).run().changes;
+    } catch {
+      /*
+       * Bảng có ràng buộc duy nhất trên cột đó (ví dụ mỗi lớp một dòng cho mỗi kỹ năng) và
+       * đã tồn tại sẵn dòng 'writing'. Bỏ dòng cũ thay vì dừng cả bước nâng cấp — dữ liệu
+       * mới đã có đủ, giữ thêm dòng mã cũ chỉ làm hai kỹ năng hiện ra cho một môn.
+       */
+      conn.prepare(`DELETE FROM ${table} WHERE ${col} = 'prep_writing'`).run();
+    }
+  }
+  if (renamed) applied.push(`Đổi mã môn Prep-Writing sang W ở ${renamed} bản ghi`);
+
+  /*
+   * Hạng mục của case cũng phải đổi theo: mã cũ ánh xạ về `writing2`, mã mới cũng vậy, nên
+   * hạng mục không đổi — nhưng case nào chưa có hạng mục thì nay gắn được.
+   */
+  if (cols('sos_cases').includes('category')) {
+    const fixed = conn
+      .prepare(`UPDATE sos_cases SET category = 'writing2' WHERE category IS NULL AND topic = 'writing'`)
+      .run().changes;
+    if (fixed) applied.push(`Gắn hạng mục cho ${fixed} case môn W`);
+  }
+
+  /* --------------------------------- 3. suy ngược tuần bắt đầu học ở chỗ suy được */
+  /*
+   * CHỈ SUY KHI CÓ CĂN CỨ CHẮC CHẮN, và ở đây căn cứ là ngày ghi danh sớm nhất của học
+   * viên trong lộ trình đó. Không có ghi danh nào thì để TRỐNG — badge "Thiếu thông tin"
+   * sẽ nhắc người có trách nhiệm điền, và đó là kết quả đúng.
+   *
+   * KHÔNG suy từ ngày làm bài MT1 rồi trừ ngược 5 tuần: MT1 có thể đã bị xếp lại, và một
+   * phép trừ ngược như thế dựng ra một "sự thật" chưa từng ai khai.
+   */
+  const cycleWeeks = conn
+    .prepare(
+      `SELECT lc.id, MIN(e.started_at) AS first_day
+         FROM learning_cycles lc
+         JOIN enrollments e ON e.student_id = lc.student_id
+        WHERE lc.start_period_id IS NULL AND e.started_at IS NOT NULL
+        GROUP BY lc.id`,
+    )
+    .all() as any[];
+  let filled = 0;
+  for (const r of cycleWeeks) {
+    if (!r.first_day) continue;
+    const monday = mondayOfIso(String(r.first_day).slice(0, 10));
+    const period = conn.prepare('SELECT id FROM report_periods WHERE week_start = ?').get(monday) as any;
+    if (!period) continue;
+    conn.prepare('UPDATE learning_cycles SET start_period_id = ? WHERE id = ?').run(period.id, r.id);
+    filled += 1;
+  }
+  if (filled) applied.push(`Suy tuần bắt đầu học cho ${filled} lộ trình từ ngày ghi danh`);
+
+  const classWeeks = conn
+    .prepare(`SELECT id, start_date FROM classes WHERE start_period_id IS NULL AND start_date IS NOT NULL`)
+    .all() as any[];
+  let filledClass = 0;
+  for (const c of classWeeks) {
+    const monday = mondayOfIso(String(c.start_date).slice(0, 10));
+    const period = conn.prepare('SELECT id FROM report_periods WHERE week_start = ?').get(monday) as any;
+    if (!period) continue;
+    conn.prepare('UPDATE classes SET start_period_id = ? WHERE id = ?').run(period.id, c.id);
+    filledClass += 1;
+  }
+  if (filledClass) applied.push(`Suy tuần bắt đầu cho ${filledClass} lớp từ ngày khai giảng`);
+
+  /*
+   * MỌI LƯỢT MT ĐÃ CÓ ĐỀU LÀ 'manual'.
+   *
+   * Chúng do người xếp từ trước, nên hệ thống không được phép tính lại và ghi đè. Cột mặc
+   * định đã là 'manual' nên không phải làm gì — ghi lại ở đây để người đọc sau không tưởng
+   * là bước nâng cấp bỏ sót.
+   */
+}
+
+/** Thứ Hai của tuần chứa ngày đó. Chép lại ở đây vì bước nâng cấp phải tự đứng được. */
+function mondayOfIso(date: string): string {
+  const d = new Date(date + 'T00:00:00Z');
+  const dow = (d.getUTCDay() + 6) % 7;        // thứ Hai = 0
+  d.setUTCDate(d.getUTCDate() - dow);
+  return d.toISOString().slice(0, 10);
 }

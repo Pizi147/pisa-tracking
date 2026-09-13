@@ -19,7 +19,8 @@ export const ENTRY_SKILL_SHORT: Record<EntrySkill, string> = {
 
 /** Lớp thường có hai kỹ năng riêng, cũng cần viết tắt để badge không tràn dòng. */
 export const REGULAR_SKILL_SHORT: Record<string, string> = {
-  listening: 'L', reading: 'R', prep_writing: 'Prep-W', pronunciation: 'Pron', speaking: 'S',
+  listening: 'L', reading: 'R', writing: 'W', pronunciation: 'Pron', speaking: 'S',
+  prep_writing: 'W',   // mã cũ, giữ để dữ liệu chưa di trú không hiện mã thô
 };
 
 /** Kỹ năng ĐÁNH GIÁ dùng để xét kỳ vọng và SOS. Writing gộp từ W1 + W2. */
@@ -97,6 +98,107 @@ export function expectationDelta(attemptNo: number): number {
 export const MOCK_FT_STUDY_WEEK: Record<number, number> = { 1: 6, 2: 12, 3: 16, 4: 20, 5: 24 };
 
 /**
+ * LỚP FT CHỈ ĐỀ XUẤT SẴN BA LƯỢT.
+ *
+ * Đa số học viên chỉ thi ba lượt MT; MT4 và MT5 là dự phòng cho em cần kéo dài. Đề xuất
+ * sẵn cả năm lượt thì lịch của mọi em dài gấp rưỡi sự thật, và Quản lý phải đi xoá bớt —
+ * việc không ai muốn làm nên sẽ không ai làm.
+ */
+export const MOCK_FT_DEFAULT_ATTEMPTS = 3;
+
+/**
+ * BẬC THANG LỚP NORMAL — học xong một lớp thì em đi đâu tiếp.
+ *
+ *     FOU  →  BE  →  ELE  →  (hết bậc Normal)
+ *
+ * Và ở BẤT KỲ bậc nào, em cũng có thể lên thẳng FT nếu đủ trình. Nên khi một lớp Normal
+ * học hết chương trình, mỗi em luôn có ĐÚNG HAI đường (owner chốt 13/09/2026):
+ *
+ *     1. lên FT
+ *     2. lên bậc Normal kế tiếp
+ *
+ * Riêng lớp ELE chỉ còn một đường, vì trên ELE không còn bậc Normal nào nữa.
+ *
+ * Đây KHÔNG phải một quyết định hệ thống tự làm. Nó chỉ nói "em này học xong rồi, phải xếp
+ * lớp cho em" và bày sẵn hai lựa chọn; người xếp lớp mới là người quyết.
+ */
+export const NORMAL_LADDER: Partial<Record<ProgrammeCode, ProgrammeCode>> = {
+  FOU: 'BE',
+  BE: 'ELE',
+};
+
+/** Hai đường đi tiếp của một em vừa học xong lớp Normal. Luôn có 'FT'. */
+export function nextStepsAfter(code: ProgrammeCode | null): ProgrammeCode[] {
+  if (!code || code === 'FT') return [];
+  const up = NORMAL_LADDER[code];
+  return up ? [up, 'FT'] : ['FT'];
+}
+
+/**
+ * CHẶNG CỦA MỘT LỚP NORMAL trong chương trình của nó.
+ *
+ * Sáu chặng, và mỗi chặng dẫn tới một việc khác nhau cho người vận hành — đó là lý do
+ * chúng phải tách ra chứ không gộp thành "đang học / đã xong":
+ *
+ *   not_started    chưa tới tuần khai giảng
+ *   running        đang học bình thường, chưa tới mốc nào
+ *   progress_soon  tuần sau là Progress Test  → chuẩn bị đề, nhắc giáo viên
+ *   progress_week  ĐANG trong tuần Progress Test
+ *   final_soon     tuần sau là Final Test      → chuẩn bị đề, nhắc phụ huynh
+ *   final_week     ĐANG trong tuần Final Test
+ *   finished       hết chương trình            → PHẢI xếp lớp tiếp theo cho từng em
+ *   unknown        chưa khai tuần bắt đầu nên chưa tính được gì
+ */
+export const CLASS_PHASES = [
+  'unknown', 'not_started', 'running',
+  'progress_soon', 'progress_week', 'final_soon', 'final_week', 'finished',
+] as const;
+export type ClassPhase = (typeof CLASS_PHASES)[number];
+
+export const CLASS_PHASE_LABEL: Record<ClassPhase, string> = {
+  unknown: 'Chưa khai tuần bắt đầu',
+  not_started: 'Chưa khai giảng',
+  running: 'Đang học',
+  progress_soon: 'Tuần sau Progress Test',
+  progress_week: 'Progress Test tuần này',
+  final_soon: 'Tuần sau Final Test',
+  final_week: 'Final Test tuần này',
+  finished: 'Đã hết chương trình',
+};
+
+/** Chặng nào đáng nổi lên màn hình, và nổi ở mức nào. */
+export const CLASS_PHASE_TONE: Record<ClassPhase, 'ok' | 'info' | 'warn' | 'danger' | 'muted'> = {
+  unknown: 'warn',
+  not_started: 'muted',
+  running: 'ok',
+  progress_soon: 'info',
+  progress_week: 'warn',
+  final_soon: 'info',
+  final_week: 'warn',
+  finished: 'danger',
+};
+
+/**
+ * Tuần học thứ mấy, tính từ TUẦN BẮT ĐẦU HỌC (tuần bắt đầu là tuần thứ 1).
+ *
+ * Cả hai mốc đều là thứ Hai của tuần, nên phép trừ luôn ra số nguyên tuần. Trả về `null`
+ * khi thiếu một trong hai — thiếu căn cứ thì để trống, không đoán ra tuần 1.
+ */
+export function studyWeekOf(startMonday: string | null | undefined, monday: string | null | undefined): number | null {
+  if (!startMonday || !monday) return null;
+  const a = Date.parse(startMonday + 'T00:00:00Z');
+  const b = Date.parse(monday + 'T00:00:00Z');
+  if (Number.isNaN(a) || Number.isNaN(b)) return null;
+  return Math.floor((b - a) / (7 * 86400000)) + 1;
+}
+
+/** Tháng/năm dạng 'YYYY-MM' → '11/2026'. Trống thì trả về chuỗi rỗng. */
+export function fmtExamMonth(v: string | null | undefined): string {
+  if (!v || !/^\d{4}-\d{2}$/.test(v)) return '';
+  return `${v.slice(5, 7)}/${v.slice(0, 4)}`;
+}
+
+/**
  * Trạng thái một lượt đánh giá.
  * KHÔNG dùng từ "thi" cho Mock — "thi" chỉ dành cho kỳ thi IELTS chính thức.
  */
@@ -163,12 +265,24 @@ export const ATTEMPT_KIND_SHORT: Record<AttemptKind, string> = {
   mock: 'MT', progress: 'Giữa khoá', final: 'Cuối khoá',
 };
 
-/** Kỹ năng riêng của lớp thường, không nằm trong bộ bốn kỹ năng IELTS. */
-export const REGULAR_SKILLS = ['listening', 'reading', 'prep_writing', 'pronunciation', 'speaking'] as const;
+/**
+ * Kỹ năng riêng của lớp Normal, không nằm trong bộ bốn kỹ năng IELTS.
+ *
+ * TÊN "Prep-Writing" ĐÃ BỎ Ở VÒNG 4 — gọi là **W** (`writing`), owner chốt 13/09/2026.
+ * Cái tên cũ gợi ý đây là môn "chuẩn bị cho Writing", trong khi thực tế các em đang viết
+ * đoạn và viết bài thật. Mã cũ `prep_writing` chỉ còn trong dữ liệu chưa di trú và trong
+ * bảng ánh xạ ở `LEGACY_REGULAR_SKILL_MAP`.
+ */
+export const REGULAR_SKILLS = ['listening', 'reading', 'writing', 'pronunciation', 'speaking'] as const;
 export type RegularSkill = (typeof REGULAR_SKILLS)[number];
 export const REGULAR_SKILL_LABEL: Record<RegularSkill, string> = {
-  listening: 'Listening', reading: 'Reading', prep_writing: 'Prep-Writing',
+  listening: 'Listening', reading: 'Reading', writing: 'W',
   pronunciation: 'Pronunciation', speaking: 'Speaking',
+};
+
+/** Mã kỹ năng cũ → mã mới. Dữ liệu chưa di trú vẫn đọc đúng tên môn. */
+export const LEGACY_REGULAR_SKILL_MAP: Record<string, RegularSkill> = {
+  prep_writing: 'writing',
 };
 
 /**
@@ -178,7 +292,8 @@ export const REGULAR_SKILL_LABEL: Record<RegularSkill, string> = {
  */
 export const SKILL_SHORT: Record<string, string> = {
   listening: 'L', reading: 'R', writing1: 'W1', writing2: 'W2', speaking: 'S',
-  prep_writing: 'PrepW', pronunciation: 'Pron',
+  writing: 'W', pronunciation: 'Pron',
+  prep_writing: 'W',   // mã cũ, giữ để dữ liệu chưa di trú không hiện mã thô
 };
 export const skillShort = (k: string) => SKILL_SHORT[k] ?? k;
 
@@ -204,17 +319,17 @@ export const PROGRAMME_TEMPLATES: Record<ProgrammeCode, ProgrammeTemplate> = {
   },
   FOU: {
     code: 'FOU', name: 'Foundation', weeks: 8, scoringMode: 'ratio',
-    skills: ['listening', 'reading', 'prep_writing', 'pronunciation'],
+    skills: ['listening', 'reading', 'writing', 'pronunciation'],
     checkpoints: [{ kind: 'progress', studyWeek: 4 }, { kind: 'final', studyWeek: 8 }],
   },
   BE: {
     code: 'BE', name: 'Beginner', weeks: 10, scoringMode: 'ratio',
-    skills: ['listening', 'reading', 'prep_writing', 'speaking'],
+    skills: ['listening', 'reading', 'writing', 'speaking'],
     checkpoints: [{ kind: 'progress', studyWeek: 5 }, { kind: 'final', studyWeek: 10 }],
   },
   ELE: {
     code: 'ELE', name: 'Elementary', weeks: 10, scoringMode: 'ratio',
-    skills: ['listening', 'reading', 'prep_writing', 'speaking'],
+    skills: ['listening', 'reading', 'writing', 'speaking'],
     checkpoints: [{ kind: 'progress', studyWeek: 5 }, { kind: 'final', studyWeek: 10 }],
   },
 };
@@ -945,6 +1060,13 @@ export const PERMISSIONS = {
   CASE_APPROVE: 'case.approve',
   /** Phân công giáo viên dạy kỹ năng nào ở lớp nào. */
   CLASS_ASSIGN: 'class.assign',
+  /**
+   * Sửa TIẾN ĐỘ của lớp: tuần bắt đầu, tuần Progress Test, tuần Final Test.
+   *
+   * Tách khỏi `class.assign` vì hai việc khác hẳn nhau: phân công là chuyện nhân sự, tiến độ
+   * là chuyện lịch học của cả lớp. Owner giao cho Admin CN và Quản lý CN (mục 7.6).
+   */
+  CLASS_EDIT: 'class.edit',
 
   // --- Hồ sơ và vận hành ---
   STUDENT_VIEW: 'student.view',
@@ -970,6 +1092,7 @@ export const PERMISSION_LABEL: Record<string, string> = {
   'case.close': 'Đóng case học vụ',
   'case.approve': 'Duyệt phương án hỗ trợ',
   'class.assign': 'Phân công giáo viên vào lớp',
+  'class.edit': 'Sửa tiến độ lớp (tuần bắt đầu, tuần kiểm tra)',
   'student.view': 'Xem hồ sơ học viên',
   'student.edit': 'Sửa hồ sơ học viên',
   'meeting.view': 'Xem tiến trình công việc',

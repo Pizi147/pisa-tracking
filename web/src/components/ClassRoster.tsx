@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useApi } from '../lib/useApi.ts';
 import { Empty, Pill, Skeleton } from './ui.tsx';
+import { MissingBadge } from './MissingBadge.tsx';
 import { fmtBand, sosLabel, sosTone } from '../lib/format.ts';
 import { ENTRY_SKILL_SHORT, type EntrySkill } from '@shared/domain.ts';
 
@@ -20,6 +21,8 @@ type Timeline = {
 };
 
 type RosterRow = {
+  /** Gom mọi thứ học viên còn thiếu vào một badge (mục 7.5). */
+  missing: { key: string; label: string; who: string }[];
   id: number; studentCode: string; fullName: string; status: string; archived: boolean;
   cycle: { id: number; seq: number; route: string | null; target: number | null; examDate: string | null } | null;
   latest: Timeline | null; next: Timeline | null; timeline: Timeline[];
@@ -74,7 +77,11 @@ export function ClassRoster({ classId, studentQuery, onAddStudents }: {
           {data.map((s) => (
             <tr key={s.id} className={`row-hover ${s.status !== 'active' ? 'row-muted' : ''}`}>
               <td className="td">
-                <Link className="link" to={`/hoc-vien/${s.id}`}>{s.fullName}</Link>
+                <span className="flex flex-wrap items-center gap-1.5">
+                  <Link className="link" to={`/hoc-vien/${s.id}`}>{s.fullName}</Link>
+                  {/* Badge thiếu thông tin ngay trên dòng học viên (mục 7.5). */}
+                  <MissingBadge items={s.missing} />
+                </span>
                 <div className="text-[11px] text-slate-500">
                   {s.studentCode}
                   {s.cycle?.route ? ` · ${s.cycle.route}` : ''}

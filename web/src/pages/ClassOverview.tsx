@@ -6,6 +6,8 @@ import { Card, ErrorState, Pill, SectionNote, Skeleton } from '../components/ui.
 import { ClassRoster } from '../components/ClassRoster.tsx';
 import { IntakePanel } from '../components/IntakePanel.tsx';
 import { TeacherAssignDialog } from '../components/TeacherAssignPanel.tsx';
+import { ClassProgressPanel } from '../components/ClassProgressPanel.tsx';
+import { MissingBadge } from '../components/MissingBadge.tsx';
 import { usePeriods } from '../components/Filters.tsx';
 import { fmtDate, skillLabel } from '../lib/format.ts';
 import { skillShort } from '@shared/domain.ts';
@@ -15,13 +17,22 @@ type Overview = {
   id: number; code: string; kind: string; route: string | null;
   isFulltime: boolean; startDate: string | null; note: string | null;
   branchId: number; branchCode: string; branchName: string;
-  summary: { studentCount: number; needScores: number; openCases: number; needsDate: number } | null;
+  summary: {
+    studentCount: number; needScores: number; openCases: number; needsDate: number;
+    /* Tiến độ lớp và những thứ còn thiếu — dùng chung một bộ với danh sách lớp. */
+    progressLabel: string | null; phase: string; phaseLabel: string;
+    currentWeek: number | null; totalWeeks: number | null;
+    needsPlacement: boolean; placementOptions: { code: string; name: string }[];
+    missing: { key: string; label: string; who: string }[];
+    missingSkills: string[];
+  } | null;
   skills: { skill: string; sessionsPerWeek: number }[];
   coreTeachers: { id: number; name: string }[];
   skillTeachers: { skill: string; id: number; name: string }[];
   programme: { code: string; name: string; weeks: number | null; scoringMode: string } | null;
   viewer: {
     canPlanWeek: boolean; canSetDate: boolean; canAddStudents: boolean; canAssign: boolean;
+    canEditProgress: boolean;
     editableSkills: string[]; isCoreTeacher: boolean;
   };
 };
@@ -35,6 +46,7 @@ export default function ClassOverviewPage() {
   const [periodId, setPeriodId] = useState<number | null>(null);
   const [intake, setIntake] = useState(false);
   const [assign, setAssign] = useState(false);
+  const [progressOpen, setProgressOpen] = useState(false);
   const { data, loading, error, reload } = useApi<Overview>(classId ? `/classes/${classId}/overview` : null);
 
   useEffect(() => {
@@ -56,9 +68,29 @@ export default function ClassOverviewPage() {
           <h1 className="text-lg font-semibold text-slate-100">{data.code}</h1>
           <p className="text-xs text-slate-500 mt-0.5">
             {data.branchName} · {data.programme?.name ?? data.kind}{data.route ? ` · ${data.route}` : ''}
-            {data.programme?.weeks ? ` · khoá ${data.programme.weeks} tuần` : ''}
             {data.startDate && ` · khai giảng ${fmtDate(data.startDate)}`}
           </p>
+          {/*
+            TIẾN ĐỘ LỚP ngay dưới tên lớp — với lớp Normal đây là câu quan trọng nhất của
+            trang: đang ở tuần thứ mấy, sắp thi gì, hay đã hết chương trình.
+          */}
+          {s?.progressLabel && (
+            <p className="mt-1.5 mb-0 flex flex-wrap items-center gap-1.5">
+              {s.needsPlacement ? (
+                <Pill tone="danger">{s.progressLabel}</Pill>
+              ) : s.phase === 'final_week' || s.phase === 'progress_week' ? (
+                <Pill tone="warn">{s.progressLabel}</Pill>
+              ) : s.phase === 'final_soon' || s.phase === 'progress_soon' ? (
+                <Pill tone="info">{s.progressLabel}</Pill>
+              ) : (
+                <span className="text-xs text-slate-400">{s.progressLabel}</span>
+              )}
+              {s.missingSkills.length > 0 && (
+                <Pill tone="warn">Thiếu GV {s.missingSkills.map(skillShort).join(', ')}</Pill>
+              )}
+              <MissingBadge items={s.missing.filter((m: any) => m.key !== 'teachers')} />
+            </p>
+          )}
           {/* Nhắc ngay ở đầu trang: bạn phụ trách gì ở chính lớp này. */}
           {(data.viewer.editableSkills.length > 0 || data.viewer.isCoreTeacher) && (
             <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
@@ -80,6 +112,9 @@ export default function ClassOverviewPage() {
           >
             Nhập điểm cả lớp
           </Link>
+          {data.viewer.canEditProgress && (
+            <button className="btn" onClick={() => setProgressOpen(true)}>Tiến độ lớp</button>
+          )}
           {data.viewer.canAddStudents && (
             <button className="btn btn-primary" onClick={() => setIntake(true)}>Thêm học viên</button>
           )}
@@ -157,6 +192,11 @@ export default function ClassOverviewPage() {
           onClose={() => setIntake(false)}
           onDone={() => { invalidate('/classes'); reload(); }}
         />
+      )}
+
+      {progressOpen && (
+        <ClassProgressPanel classId={data.id} classCode={data.code}
+          onClose={() => setProgressOpen(false)} onDone={reload} />
       )}
     </div>
   );

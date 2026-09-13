@@ -10,6 +10,7 @@ import { IntakePanel } from '../components/IntakePanel.tsx';
 import { ClassRoster } from '../components/ClassRoster.tsx';
 import { DateDutyPanel } from '../components/DateDutyPanel.tsx';
 import { MockPlanPanel } from '../components/MockPlanPanel.tsx';
+import { MissingBadge } from '../components/MissingBadge.tsx';
 import { PERMISSIONS, skillShort } from '@shared/domain.ts';
 
 export type ClassSummary = {
@@ -24,6 +25,18 @@ export type ClassSummary = {
   mySkills: string[];
   /** Người đang xem có phải GVCN của lớp này không. */
   myCoreClass: boolean;
+  /** Một dòng tiến độ đọc được ngay: "BE · tuần 5/10 · Progress Test tuần này". */
+  progressLabel: string | null;
+  phase: string;
+  phaseLabel: string;
+  currentWeek: number | null;
+  totalWeeks: number | null;
+  /** Lớp đã hết chương trình và còn học viên → phải xếp lớp tiếp cho từng em. */
+  needsPlacement: boolean;
+  placementOptions: { code: string; name: string }[];
+  /** Gom mọi thứ lớp còn thiếu vào một badge. */
+  missing: { key: string; label: string; who: string }[];
+  missingSkills: string[];
 };
 
 /**
@@ -253,9 +266,11 @@ function ClassRow({ cls, expanded, studentQuery, onToggle, onAddStudents }: {
         </Link>
         <span className="text-xs text-slate-500 shrink-0">
           {cls.branchName}
-          {cls.route ? ` · ${cls.route}` : ''}
-          {/* Lớp thường ghi rõ tên chương trình để không nhầm với lớp FT. */}
-          {!cls.route && cls.programmeName && cls.scoringMode === 'ratio' ? ` · ${cls.programmeName}` : ''}
+          {/*
+            TIẾN ĐỘ LỚP ngay trên thanh lớp (mục 7.6). Với lớp Normal đây là câu quan trọng
+            nhất của dòng này — "tuần 5/10" nói được nhiều hơn tên chương trình.
+          */}
+          {cls.progressLabel ? ` · ${cls.progressLabel}` : cls.route ? ` · ${cls.route}` : ''}
           {' · '}{cls.studentCount} HV
         </span>
 
@@ -270,6 +285,32 @@ function ClassRow({ cls, expanded, studentQuery, onToggle, onAddStudents }: {
             </Pill>
           )}
           {cls.myCoreClass && <Pill tone="neutral" title="Bạn là giáo viên chủ nhiệm lớp này">GVCN</Pill>}
+
+          {/*
+            BA THÔNG BÁO CỦA LỚP NORMAL — owner yêu cầu 13/09/2026.
+
+            Sắp thi / đang thi / đã hết chương trình. Cái cuối là nặng nhất: lớp xong rồi thì
+            mọi em còn đang học PHẢI được xếp lớp tiếp, và việc đó không tự xảy ra.
+          */}
+          {cls.needsPlacement ? (
+            <Pill tone="danger"
+              title={`Lớp đã hết chương trình. ${cls.studentCount} học viên cần xếp lớp tiếp: `
+                + cls.placementOptions.map((o) => o.name).join(' hoặc ')}>
+              Hết chương trình · {cls.studentCount} em cần xếp lớp
+            </Pill>
+          ) : cls.phase === 'final_week' || cls.phase === 'progress_week' ? (
+            <Pill tone="warn">{cls.phaseLabel}</Pill>
+          ) : cls.phase === 'final_soon' || cls.phase === 'progress_soon' ? (
+            <Pill tone="info">{cls.phaseLabel}</Pill>
+          ) : null}
+
+          {/* Thiếu GV kỹ năng nào thì nói thẳng kỹ năng đó — "Thiếu GV R, L" (mục 7.7). */}
+          {cls.missingSkills.length > 0 && (
+            <Pill tone="warn" title="Admin CN hoặc Quản lý phân công giáo viên cho các kỹ năng này">
+              Thiếu GV {cls.missingSkills.map(skillShort).join(', ')}
+            </Pill>
+          )}
+          <MissingBadge items={cls.missing.filter((m) => m.key !== 'teachers')} />
           {cls.needScores > 0 && (
             <button className="appearance-none bg-transparent border-0 p-0" onClick={go(`/hoc-vien?view=my_scores&classId=${cls.id}`)}>
               <Pill tone="warn">{cls.needScores} cần nhập điểm</Pill>
@@ -285,7 +326,8 @@ function ClassRow({ cls, expanded, studentQuery, onToggle, onAddStudents }: {
               <Pill tone="info">{cls.needsDate} cần cập nhật ngày</Pill>
             </button>
           )}
-          {cls.needScores + cls.openCases + cls.needsDate === 0 && (
+          {cls.needScores + cls.openCases + cls.needsDate === 0
+            && !cls.needsPlacement && !cls.missing.length && cls.phase === 'running' && (
             <span className="text-xs text-slate-600">Không có việc cần chú ý</span>
           )}
         </span>

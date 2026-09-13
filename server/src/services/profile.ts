@@ -12,6 +12,7 @@ import { assessedBands, evaluateAttempt } from './scoring.ts';
 import { evaluateRegular, programmeByCode, programmeOfClass } from './regular.ts';
 import { cycleById, cyclesOf, currentCycle, targetRevisions } from './cycles.ts';
 import { canCloseCase } from './cases.ts';
+import { missingForStudent, suggestedMockWeeks } from './schedule.ts';
 
 /**
  * HỒ SƠ HỌC VIÊN — phần trả lời câu hỏi "em này đang thế nào" trong khoảng ba mươi giây.
@@ -462,6 +463,18 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
         target, examDate, startedAt: selected.started_at, endedAt: selected.ended_at,
         status: selected.status,
         daysToExam: examDate ? diffDays(examDate, today) : null,
+        /*
+         * TUẦN BẮT ĐẦU HỌC và THÁNG THI DỰ KIẾN — hai trường của vòng 4 (mục 7.5).
+         * Tuần bắt đầu là mốc gốc sinh ra lịch MT mặc định; tháng thi chỉ có với lớp FT.
+         */
+        startPeriodId: selected.start_period_id ?? null,
+        startWeek: selected.start_period_id
+          ? (conn.prepare('SELECT week_start, code FROM report_periods WHERE id = ?')
+              .get(selected.start_period_id) as any) ?? null
+          : null,
+        examMonth: selected.exam_month ?? null,
+        /* Lịch MT hệ thống đề xuất, và những lượt người đã chốt tay thì ghi rõ là giữ nguyên. */
+        suggestedMocks: isRatioCycle(selected) ? [] : suggestedMockWeeks(selected.id),
         baseline,
         outcome: selected.outcome
           ? {
@@ -493,6 +506,21 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
         scheduledAt: nextRow.lrw_scheduled_at, needsDate: !nextRow.lrw_scheduled_at,
       }
       : null,
+    /*
+     * BADGE "THIẾU THÔNG TIN" (mục 7.5) — gom mọi thứ còn thiếu vào MỘT nhãn, hiện ngay
+     * trên thẻ tên để đúng vai có trách nhiệm nhìn thấy mà không phải đi tìm.
+     */
+    missing: missingForStudent({
+      cycle: selected
+        ? {
+          start_period_id: selected.start_period_id,
+          exam_month: selected.exam_month,
+          target_score: selected.target_score,
+        }
+        : null,
+      student: { dob: s.dob },
+      isFulltime: !isRatioCycle(selected ?? {}),
+    }),
     concerns: {
       openCases: openCases.length,
       carriedOver: openCases.filter((c) => c.carriedOver).length,

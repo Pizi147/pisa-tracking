@@ -31,7 +31,8 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
   system_admin: [
     'plan.week', 'schedule.date', 'schedule.speaking', 'attempt.cancel', 'attempt.skip_skill',
     'deadline.override', 'attempt.view', 'score.override', 'sos.edit', 'case.close', 'case.approve',
-    'class.assign', 'student.view', 'student.edit', 'meeting.view', 'meeting.edit', 'admin.config',
+    'class.assign', 'class.edit', 'student.view', 'student.edit',
+    'meeting.view', 'meeting.edit', 'admin.config',
   ],
   /*
    * Văn phòng chi nhánh: giữ danh sách lớp và học viên, CẬP NHẬT NGÀY MT thực tế trong tuần
@@ -43,7 +44,7 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
    */
   branch_admin: [
     'schedule.date', 'schedule.speaking', 'attempt.cancel', 'attempt.skip_skill',
-    'deadline.override', 'attempt.view', 'sos.edit', 'class.assign',
+    'deadline.override', 'attempt.view', 'sos.edit', 'class.assign', 'class.edit',
     'student.view', 'student.edit',
   ],
   // Quản lý: chốt TUẦN kế hoạch, và CŨNG cập nhật được ngày MT thực tế — khi học viên nghỉ
@@ -52,7 +53,7 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
     'plan.week', 'schedule.date', 'schedule.speaking', 'attempt.cancel', 'attempt.skip_skill',
     'deadline.override', 'attempt.view',
     // Quản lý đóng được case trong chi nhánh mình; GVCN đóng case lớp mình (kiểm theo phân công).
-    'sos.edit', 'case.close', 'case.approve', 'class.assign',
+    'sos.edit', 'case.close', 'case.approve', 'class.assign', 'class.edit',
     'student.view', 'student.edit', 'meeting.view', 'meeting.edit',
   ],
   // Giáo viên: nhập điểm và đánh giá ĐÚNG kỹ năng được phân công.

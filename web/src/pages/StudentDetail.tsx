@@ -7,12 +7,17 @@ import { Card, Empty, ErrorState, Field, Level, Pill, SectionNote, Skeleton } fr
 import { ConfirmDialog, Drawer, Modal } from '../components/Drawer.tsx';
 import { CasePanel } from '../components/CasePanel.tsx';
 import { SkillBoard } from '../components/SkillBoard.tsx';
+import { MissingBadge } from '../components/MissingBadge.tsx';
+import { StudentPlanPanel } from '../components/StudentPlanPanel.tsx';
 import { QuickReport } from '../components/QuickReport.tsx';
 import {
   attemptStatusLabel, attemptStatusTone, caseStatusLabel, caseStatusTone,
   fmtBand, fmtDate, fmtSlot, skillLabel, sosLabel, sosTone, studentStatusLabel,
 } from '../lib/format.ts';
-import { BASELINE_SOURCES, BASELINE_SOURCE_LABEL, CYCLE_OUTCOMES, CYCLE_OUTCOME_LABEL, JOURNEY_EVENT_LABEL } from '@shared/domain.ts';
+import {
+  BASELINE_SOURCES, BASELINE_SOURCE_LABEL, CYCLE_OUTCOMES, CYCLE_OUTCOME_LABEL,
+  JOURNEY_EVENT_LABEL, fmtExamMonth,
+} from '@shared/domain.ts';
 
 type Profile = any;
 
@@ -45,6 +50,7 @@ export default function StudentDetailPage() {
   const q = cycleParam ? `?cycleId=${cycleParam}` : '';
   const { data, loading, error, reload } = useApi<Profile>(id ? `/students/${id}${q}` : null, [cycleParam]);
   const [transferOpen, setTransferOpen] = useState(false);
+  const [planOpen, setPlanOpen] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
   const [openCase, setOpenCase] = useState<number | null>(null);
   const [cycleEdit, setCycleEdit] = useState<'baseline' | 'target' | 'outcome' | null>(null);
@@ -84,6 +90,7 @@ export default function StudentDetailPage() {
                 {data.concerns.maxSos > 0 && (
                   <Level tone={sosTone(data.concerns.maxSos)}>{sosLabel(data.concerns.maxSos)}</Level>
                 )}
+                <MissingBadge items={data.missing} />
                 {data.status !== 'active' && (
                   <Pill tone={data.status === 'inactive' ? 'warn' : 'muted'}>{studentStatusLabel(data.status)}</Pill>
                 )}
@@ -100,8 +107,17 @@ export default function StudentDetailPage() {
                   ? <>Lớp {data.currentClass.code} · {data.currentClass.branchName}</>
                   : 'Chưa xếp lớp'}
                 {cy && !cy.ratio && cy.target !== null && <> · Target {fmtBand(cy.target)}</>}
-                {cy?.examDate && <> · Thi {fmtDate(cy.examDate)}
-                  {cy.daysToExam !== null && <span className="text-slate-500"> (còn {cy.daysToExam} ngày)</span>}</>}
+                {/*
+                  TUẦN BẮT ĐẦU HỌC đứng trước ngày thi, vì nó là mốc gốc: lịch MT của em
+                  tính ra từ đây. Thiếu thì nói thẳng "chưa khai" chứ không để trống im lặng.
+                */}
+                {cy && <> · Vào học {cy.startWeek ? cy.startWeek.code : <span className="text-amber-300">chưa khai tuần</span>}</>}
+                {cy?.examDate
+                  ? <> · Thi {fmtDate(cy.examDate)}
+                      {cy.daysToExam !== null && <span className="text-slate-500"> (còn {cy.daysToExam} ngày)</span>}</>
+                  : cy && !cy.ratio && cy.examMonth
+                  ? <> · Dự kiến thi {fmtExamMonth(cy.examMonth)}</>
+                  : null}
               </p>
               {cy && !cy.ratio && (
                 <p className="text-xs text-slate-400 mt-1 mb-0">
@@ -138,6 +154,9 @@ export default function StudentDetailPage() {
             <div className="flex flex-wrap gap-2">
               {data.viewer.canReport && (
                 <button className="btn btn-primary" onClick={() => setReportOpen(true)}>+ Case</button>
+              )}
+              {data.viewer.canEdit && (
+                <button className="btn" onClick={() => setPlanOpen(true)}>Kế hoạch học</button>
               )}
               {data.viewer.canEdit && <button className="btn" onClick={() => setTransferOpen(true)}>Chuyển lớp</button>}
             </div>
@@ -249,6 +268,16 @@ export default function StudentDetailPage() {
       )}
 
       {/* ============================================== hộp thoại */}
+      {planOpen && cy && (
+        <StudentPlanPanel
+          cycleId={cy.id}
+          studentName={data.fullName}
+          ratio={!!cy.ratio}
+          onClose={() => setPlanOpen(false)}
+          onDone={reload}
+        />
+      )}
+
       <QuickReport open={reportOpen} onClose={() => setReportOpen(false)}
         studentId={data.id} studentName={data.fullName} cycleId={cy?.id ?? null}
         onDone={(cid) => { reload(); setOpenCase(cid); }} />

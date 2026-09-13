@@ -32,6 +32,7 @@ const intake = await import('../services/intake.ts');
 const planning = await import('../services/planning.ts');
 const signals = await import('../services/signals.ts');
 const regular = await import('../services/regular.ts');
+const schedule = await import('../services/schedule.ts');
 const weekly = await import('../services/weekly.ts');
 const cases = await import('../services/cases.ts');
 const summary = await import('../services/summary.ts');
@@ -1219,7 +1220,7 @@ const beClass = (conn.prepare(`SELECT id, code, start_date FROM classes WHERE pr
 check('Chương trình nằm trong dữ liệu, mã cũ FOUND ánh xạ về FOU mà không đổi mã lớp', () => {
   const fou = regular.programmeByCode('FOU');
   assert(fou && fou.weeks === 8, 'Foundation phải là khoá 8 tuần');
-  assert(JSON.stringify(fou!.skills) === JSON.stringify(['listening', 'reading', 'prep_writing', 'pronunciation']),
+  assert(JSON.stringify(fou!.skills) === JSON.stringify(['listening', 'reading', 'writing', 'pronunciation']),
     `Kỹ năng Foundation sai: ${fou!.skills.join(', ')}`);
   assert(JSON.stringify(fou!.checkpoints) === JSON.stringify([{ kind: 'progress', studyWeek: 4 }, { kind: 'final', studyWeek: 8 }]),
     'Mốc kiểm tra Foundation phải là tuần học 4 và 8');
@@ -1248,7 +1249,7 @@ check('Đạt từ 60%, xét trên tỷ lệ CHÍNH XÁC chứ không làm tròn
 });
 
 check('Kết luận ngay trên phần đã chấm; ô trống KHÔNG bị đếm thành môn chưa đạt', () => {
-  const skills = ['listening', 'reading', 'prep_writing', 'pronunciation'];
+  const skills = ['listening', 'reading', 'writing', 'pronunciation'];
   const partial = regular.evaluateRegular(skills, [
     { skill: 'listening', raw_score: 10, raw_total: 40 },     // chưa đạt
     { skill: 'reading', raw_score: 30, raw_total: 40 },       // đạt
@@ -1293,7 +1294,7 @@ check('Hạn nhập điểm lớp thường là hết Chủ nhật của chính 
 });
 
 check('Số môn trượt ra mức SOS theo đúng ngưỡng 1 / 2 / từ 3', () => {
-  const skills = ['listening', 'reading', 'prep_writing', 'pronunciation'];
+  const skills = ['listening', 'reading', 'writing', 'pronunciation'];
   const mk = (fails: number) => regular.evaluateRegular(skills,
     skills.map((skill, i) => ({ skill, raw_score: i < fails ? 10 : 30, raw_total: 40 })));
   assert(mk(0).sosLevel === 0, 'Đạt hết phải là 0');
@@ -2959,6 +2960,180 @@ check('Lớp Normal: chấm lại một bài CŨ vẫn hạ được mức của
     .prepare(`SELECT 1 FROM case_milestones WHERE case_id = ? AND kind = 'passed'`)
     .get(row.id);
   assert(passed, 'Hạ mức mà không ghi mốc "đã đạt kỳ vọng"');
+});
+
+console.log('\n28. Vòng 4 phase 2 — tuần bắt đầu học và tiến độ lớp');
+
+check('Lịch MT mặc định của FT sinh đúng mốc tuần 6 / 12 / 16', () => {
+  const cy = conn
+    .prepare(
+      `SELECT lc.*, p.week_start FROM learning_cycles lc
+         JOIN report_periods p ON p.id = lc.start_period_id
+        WHERE lc.route IS NOT NULL AND lc.status = 'active' LIMIT 1`,
+    )
+    .get() as any;
+  assert(cy, 'Dữ liệu mẫu thiếu một lộ trình FT đã khai tuần bắt đầu');
+
+  const sugg = schedule.suggestedMockWeeks(cy.id);
+  assert(sugg.length === 3, `Chỉ đề xuất ba lượt đầu, đang đề xuất ${sugg.length}`);
+  const want = [6, 12, 16];
+  for (const [i, sg] of sugg.entries()) {
+    assert(sg.attemptNo === i + 1, `Lượt thứ ${i + 1} bị đánh số ${sg.attemptNo}`);
+    assert(sg.studyWeek === want[i], `MT${sg.attemptNo} phải ở tuần học ${want[i]}, đang là ${sg.studyWeek}`);
+    /* Tuần học thứ N bắt đầu sau (N−1) tuần kể từ tuần bắt đầu học. */
+    const expected = addDays(cy.week_start, 7 * (want[i] - 1));
+    assert(sg.weekStart === expected,
+      `MT${sg.attemptNo} phải rơi vào tuần ${expected}, đang là ${sg.weekStart}`);
+  }
+});
+
+check('Chưa khai tuần bắt đầu học thì KHÔNG đoán ra lịch MT', () => {
+  const cy = conn
+    .prepare(`SELECT id FROM learning_cycles WHERE start_period_id IS NULL LIMIT 1`)
+    .get() as any;
+  if (!cy) return;
+  assert(schedule.suggestedMockWeeks(cy.id).length === 0,
+    'Thiếu tuần bắt đầu mà vẫn dựng ra lịch MT — một con số không ai biết từ đâu ra');
+});
+
+check('Áp lịch đề xuất KHÔNG ghi đè lượt Quản lý đã chốt tay', () => {
+  const cy = conn
+    .prepare(
+      `SELECT lc.id FROM learning_cycles lc
+        WHERE lc.route IS NOT NULL AND lc.status = 'active' AND lc.start_period_id IS NOT NULL
+          AND EXISTS (SELECT 1 FROM assessment_attempts a WHERE a.cycle_id = lc.id AND a.status != 'cancelled')
+        LIMIT 1`,
+    )
+    .get() as any;
+  assert(cy, 'Không tìm được lộ trình FT có sẵn lượt MT để thử');
+
+  /* Mọi lượt đã có đều là 'manual' (người xếp), nên lần áp đầu KHÔNG được dời cái nào. */
+  const before = conn
+    .prepare(`SELECT id, planned_period_id, plan_source FROM assessment_attempts WHERE cycle_id = ?`)
+    .all(cy.id) as any[];
+  const r = schedule.applySuggestedMockWeeks(P.admin, cy.id);
+  const after = conn
+    .prepare(`SELECT id, planned_period_id, plan_source FROM assessment_attempts WHERE cycle_id = ?`)
+    .all(cy.id) as any[];
+
+  for (const b of before) {
+    const a = after.find((x) => x.id === b.id)!;
+    assert(a.planned_period_id === b.planned_period_id,
+      `Lượt ${b.id} do người xếp đã bị hệ thống dời sang tuần khác`);
+  }
+  assert(r.moved === 0, `Đã dời ${r.moved} lượt do người xếp — không được phép`);
+});
+
+check('Lớp Normal biết mình đang ở tuần thứ mấy và sắp thi gì', () => {
+  const cls = conn
+    .prepare(
+      `SELECT id, code FROM classes
+        WHERE status = 'active' AND kind != 'FT' AND start_period_id IS NOT NULL LIMIT 1`,
+    )
+    .get() as any;
+  assert(cls, 'Dữ liệu mẫu thiếu lớp Normal đã khai tuần khai giảng');
+  const pr = schedule.classProgress(cls.id);
+  assert(pr.totalWeeks && pr.totalWeeks > 0, 'Lớp Normal phải biết chương trình dài mấy tuần');
+  assert(pr.currentWeek !== null, 'Đã khai tuần khai giảng mà vẫn không tính được đang ở tuần thứ mấy');
+  assert(pr.progressWeek && pr.finalWeek, 'Thiếu mốc Progress hoặc Final Test');
+  assert(pr.progressWeek! < pr.finalWeek!, 'Progress Test phải ở trước Final Test');
+  assert(pr.label && pr.label.includes('tuần'), `Dòng tiến độ không đọc được: "${pr.label}"`);
+});
+
+check('Lớp học hết chương trình thì báo học viên phải xếp lớp tiếp, kèm hai đường đi', () => {
+  /*
+   * Owner yêu cầu 13/09/2026: lớp Normal xong chương trình thì học viên PHẢI chuyển —
+   * một là lên FT, hai là lên bậc Normal kế tiếp.
+   */
+  const cls = conn
+    .prepare(`SELECT id, code, programme_code FROM classes WHERE status='active' AND kind != 'FT' LIMIT 1`)
+    .get() as any;
+  assert(cls, 'Không có lớp Normal nào để thử');
+
+  /* Dời tuần khai giảng lùi thật xa để lớp chắc chắn đã hết chương trình. */
+  const past = conn.prepare('SELECT id FROM report_periods ORDER BY week_start LIMIT 1').get() as any;
+  const keep = conn.prepare('SELECT start_period_id FROM classes WHERE id = ?').get(cls.id) as any;
+  schedule.setClassProgress(P.admin, cls.id, { startPeriodId: past.id });
+  try {
+    const pr = schedule.classProgress(cls.id);
+    assert(pr.phase === 'finished', `Lớp khai giảng từ rất lâu mà chặng vẫn là "${pr.phase}"`);
+    assert(pr.needsPlacement, 'Lớp đã hết chương trình mà không báo cần xếp lớp tiếp');
+    assert(pr.placementOptions.length >= 1, 'Không bày ra đường đi tiếp nào cho học viên');
+    assert(pr.placementOptions.some((o) => o.code === 'FT'), 'Luôn phải có đường lên FT');
+    if (cls.programme_code === 'FOU') {
+      assert(pr.placementOptions.some((o) => o.code === 'BE'), 'Từ FOU phải có đường lên BE');
+    }
+    assert(pr.label && /xếp lớp/.test(pr.label), `Dòng tiến độ chưa nói cần xếp lớp: "${pr.label}"`);
+  } finally {
+    schedule.setClassProgress(P.admin, cls.id, { startPeriodId: keep.start_period_id });
+  }
+});
+
+check('Mốc kiểm tra do người xếp lại thì hệ thống KHÔNG tính lại theo mặc định', () => {
+  const cls = conn
+    .prepare(
+      `SELECT id FROM classes WHERE status='active' AND kind != 'FT' AND start_period_id IS NOT NULL LIMIT 1`,
+    )
+    .get() as any;
+  if (!cls) return;
+  const before = schedule.classProgress(cls.id);
+  const moved = (before.progressWeek ?? 4) + 1;
+  schedule.setClassProgress(P.admin, cls.id, { progressWeek: moved });
+  try {
+    const after = schedule.classProgress(cls.id);
+    assert(after.progressWeek === moved, `Xếp lại tuần Progress sang ${moved} mà vẫn là ${after.progressWeek}`);
+    assert(after.progressOverridden, 'Không đánh dấu là đã xếp lại — lần sau hệ thống sẽ ghi đè');
+    /* Đặt về trống là QUAY LẠI mốc mặc định, không phải xoá mốc. */
+    schedule.setClassProgress(P.admin, cls.id, { progressWeek: null });
+    const back = schedule.classProgress(cls.id);
+    assert(back.progressWeek === before.progressWeek, 'Không quay lại được mốc mặc định của chương trình');
+    assert(!back.progressOverridden, 'Vẫn còn bị coi là đã xếp lại');
+  } finally {
+    schedule.setClassProgress(P.admin, cls.id, { progressWeek: null });
+  }
+  assertThrows(() => schedule.setClassProgress(P.admin, cls.id, { progressWeek: 99 }),
+    /vượt quá/, 'Xếp tuần kiểm tra vượt quá số tuần của chương trình');
+});
+
+check('Badge "Thiếu thông tin" gom mọi thứ còn thiếu vào MỘT nhãn', () => {
+  /* Lớp Normal KHÔNG bị nhắc tháng thi — các em đó chưa thi IELTS. */
+  const normal = schedule.missingForStudent({
+    cycle: { start_period_id: null, exam_month: null, target_score: null },
+    student: { dob: null }, isFulltime: false,
+  });
+  assert(normal.some((m) => m.key === 'start_week'), 'Thiếu tuần bắt đầu mà không nhắc');
+  assert(!normal.some((m) => m.key === 'exam_month'), 'Lớp Normal bị nhắc tháng thi IELTS');
+  assert(!normal.some((m) => m.key === 'target'), 'Lớp Normal bị nhắc Target IELTS');
+
+  const ft = schedule.missingForStudent({
+    cycle: { start_period_id: null, exam_month: null, target_score: null },
+    student: { dob: null }, isFulltime: true,
+  });
+  assert(ft.some((m) => m.key === 'exam_month') && ft.some((m) => m.key === 'target'),
+    'Lớp FT phải bị nhắc cả tháng thi lẫn Target');
+  for (const m of ft) assert(m.who, `Mục "${m.label}" không nói ai điền được`);
+
+  /* Khai đủ thì badge biến mất hẳn, không để lại một nhãn rỗng. */
+  const full = schedule.missingForStudent({
+    cycle: { start_period_id: 1, exam_month: '2026-11', target_score: 6.5 },
+    student: { dob: '2008-01-01' }, isFulltime: true,
+  });
+  assert(full.length === 0, `Khai đủ rồi mà vẫn báo thiếu: ${full.map((m) => m.label).join(', ')}`);
+});
+
+check('Ô chọn tuần mở đủ xa về tương lai để xếp lịch MT', () => {
+  /*
+   * Lỗi owner báo: panel "Lên kế hoạch MT" không xếp được quá một tuần tới, trong khi MT3
+   * của một em có thể cách đây bốn tháng.
+   */
+  const narrow = week.periodWindow(null);
+  const wide = week.periodWindow(null, { forward: week.PERIOD_WINDOW_PLANNING_FORWARD_WEEKS });
+  const monday = week.mondayOf(demoToday());
+  const futureNarrow = narrow.filter((p) => p.weekStart > monday).length;
+  const futureWide = wide.filter((p) => p.weekStart > monday).length;
+  assert(futureWide >= 24,
+    `Cửa sổ xếp lịch chỉ mở ${futureWide} tuần tới — không đủ cho một khoá FT 24 tuần`);
+  assert(futureWide > futureNarrow, 'Cửa sổ xếp lịch không rộng hơn cửa sổ mặc định');
 });
 
 console.log(`\n${'='.repeat(60)}`);

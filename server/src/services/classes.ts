@@ -9,6 +9,7 @@ import { can, classScopeSql, editableSkills, isCoreTeacherOf, require_, scopeFor
 import { writeAudit } from './audit.ts';
 import { loadBundle, resultOf, skillCells } from './attempts.ts';
 import { allProgrammes, evaluateRegular, programmeOfClass } from './regular.ts';
+import { classProgressMany, missingForClasses, missingForStudent } from './schedule.ts';
 
 /**
  * Màn Học viên lấy LỚP làm gốc.
@@ -33,7 +34,62 @@ export type ClassSummary = {
   scoringMode: string | null;
   mySkills: string[];
   myCoreClass: boolean;
+  /*
+   * TIẾN ĐỘ VÀ CHUYỆN CẦN BÁO CỦA LỚP — mục 7.6, và yêu cầu owner bổ sung 13/09/2026.
+   *
+   * `progressLabel` là MỘT DÒNG đọc được ngay ("BE · tuần 5/10 · Progress Test tuần này").
+   * Dựng ở máy chủ vì nhiều màn cùng cần đúng câu đó; để mỗi màn tự ghép thì sẽ có màn ghép
+   * thiếu và hai màn nói khác nhau về cùng một lớp.
+   */
+  progressLabel: string | null;
+  phase: string;
+  phaseLabel: string;
+  currentWeek: number | null;
+  totalWeeks: number | null;
+  /** Lớp đã hết chương trình và còn học viên đang học → phải xếp lớp tiếp cho từng em. */
+  needsPlacement: boolean;
+  placementOptions: { code: string; name: string }[];
+  /** Gom mọi thứ lớp còn thiếu vào MỘT badge, kèm danh sách kỹ năng thiếu giáo viên. */
+  missing: { key: string; label: string; who: string }[];
+  missingSkills: string[];
 };
+
+/**
+ * Phần tiến độ + thiếu thông tin của MỘT LOẠT lớp, gói sẵn cho danh sách lớp.
+ *
+ * Gộp thành hai hàm hàng loạt chứ không gọi trong vòng lặp: bản đầu biến một trang mười lớp
+ * thành tám mươi câu truy vấn, và bài kiểm N+1 bắt đúng chỗ đó. Ở quy mô demo không ai thấy
+ * chậm — ở quy mô thật thì thấy ngay.
+ *
+ * CẢ danh sách lớp lẫn trang chi tiết lớp đều dùng đúng bộ này, nên hai màn không thể nói
+ * khác nhau về cùng một lớp.
+ */
+function progressMapOf(classIds: number[]) {
+  const prs = classProgressMany(classIds);
+  const ms = missingForClasses(classIds);
+  const out = new Map<number, {
+    progressLabel: string | null; phase: string; phaseLabel: string;
+    currentWeek: number | null; totalWeeks: number | null;
+    needsPlacement: boolean; placementOptions: { code: string; name: string }[];
+    missing: { key: string; label: string; who: string }[]; missingSkills: string[];
+  }>();
+  for (const id of classIds) {
+    const pr = prs.get(id);
+    const m = ms.get(id);
+    out.set(id, {
+      progressLabel: pr?.label ?? null,
+      phase: (pr?.phase ?? 'unknown') as string,
+      phaseLabel: pr?.phaseLabel ?? '',
+      currentWeek: pr?.currentWeek ?? null,
+      totalWeeks: pr?.totalWeeks ?? null,
+      needsPlacement: pr?.needsPlacement ?? false,
+      placementOptions: (pr?.placementOptions ?? []) as { code: string; name: string }[],
+      missing: m?.items ?? [],
+      missingSkills: m?.missingSkills ?? [],
+    });
+  }
+  return out;
+}
 
 /** Một truy vấn cho mỗi loại dữ liệu, không hỏi lại theo từng lớp. */
 export function listClassSummaries(p: Principal, f: { branchId?: number; q?: string } = {}) {
@@ -131,6 +187,8 @@ export function listClassSummaries(p: Principal, f: { branchId?: number; q?: str
     }
   }
 
+  const progressByClass = progressMapOf(classes.map((c) => c.id));
+
   let rows: ClassSummary[] = classes.map((c) => ({
     id: c.id, code: c.code, kind: c.kind, route: c.route,
     programmeCode: c.programme_code ?? null,
@@ -159,6 +217,7 @@ export function listClassSummaries(p: Principal, f: { branchId?: number; q?: str
       ? []
       : editableByClass.get(c.id) ?? [],
     myCoreClass: isCoreTeacherOf(p, c.id),
+    ...progressByClass.get(c.id)!,
   }));
 
   // Tìm theo tên học viên phải trả về đúng LỚP chứa em đó, không phải danh sách rỗng.
@@ -188,10 +247,12 @@ export function classRoster(p: Principal, classId: number, q?: string) {
   const conn = db();
   const params: unknown[] = [classId];
   let sql = `SELECT s.*, e.status AS enrollment_status,
-                    cy.id AS cycle_id, cy.seq AS cycle_seq, cy.route, cy.target_score, cy.exam_date
+                    cy.id AS cycle_id, cy.seq AS cycle_seq, cy.route, cy.target_score, cy.exam_date,
+                    cy.start_period_id, cy.exam_month, sp.week_start AS start_week
                FROM enrollments e
                JOIN students s ON s.id = e.student_id
                LEFT JOIN learning_cycles cy ON cy.student_id = s.id AND cy.status = 'active'
+               LEFT JOIN report_periods sp ON sp.id = cy.start_period_id
               WHERE e.class_id = ? AND e.status = 'active'`;
   if (q?.trim()) {
     sql += ' AND (s.full_name LIKE ? OR s.normalized_name LIKE ? OR s.student_code LIKE ?)';
@@ -224,6 +285,8 @@ export function classRoster(p: Principal, classId: number, q?: string) {
   // Lớp thường chấm khác lớp FT, nên đọc chương trình một lần rồi dùng lại cho mọi dòng.
   const prog = programmeOfClass(classId);
   const isRatio = prog?.scoringMode === 'ratio';
+  /* Chỉ lớp FT mới bị nhắc tháng thi và Target — lớp Normal chưa thi IELTS. */
+  const isFt = prog?.code === 'FT';
   const myRegularSkills = isRatio ? editableSkills(p, classId, prog!.skills) : [];
 
   return students.map((s) => {
@@ -289,8 +352,24 @@ export function classRoster(p: Principal, classId: number, q?: string) {
       id: s.id, studentCode: s.student_code, fullName: s.full_name, status: s.status,
       archived: !!s.archived_at,
       cycle: s.cycle_id
-        ? { id: s.cycle_id, seq: s.cycle_seq, route: s.route, target: s.target_score, examDate: s.exam_date }
+        ? {
+          id: s.cycle_id, seq: s.cycle_seq, route: s.route,
+          target: s.target_score, examDate: s.exam_date,
+          examMonth: s.exam_month ?? null,
+          startPeriodId: s.start_period_id ?? null, startWeek: s.start_week ?? null,
+        }
         : null,
+      /*
+       * BADGE "THIẾU THÔNG TIN" — gom mọi thứ còn thiếu vào MỘT nhãn (mục 7.5).
+       *
+       * Bốn nhãn nhỏ trên một dòng học viên thì dòng nào cũng đầy nhãn và người đọc thôi
+       * nhìn chúng. Một nhãn, bấm vào thấy danh sách, là đủ.
+       */
+      missing: missingForStudent({
+        cycle: s.cycle_id ? { start_period_id: s.start_period_id, exam_month: s.exam_month, target_score: s.target_score } : null,
+        student: { dob: s.dob },
+        isFulltime: !!isFt,
+      }),
       latest: done.length ? done[done.length - 1] : null,
       next: timeline.find((t) => t.status === 'planned') ?? null,
       timeline,
@@ -338,6 +417,8 @@ export function classOverview(p: Principal, classId: number) {
       canSetDate: can(p, PERMISSIONS.SCHEDULE_DATE, { classId }),
       canAddStudents: can(p, PERMISSIONS.STUDENT_EDIT, { classId }),
       canAssign: can(p, PERMISSIONS.CLASS_ASSIGN, { classId }),
+      /** Sửa tuần khai giảng và hai mốc kiểm tra — Admin CN và Quản lý CN (mục 7.6). */
+      canEditProgress: can(p, PERMISSIONS.CLASS_EDIT, { classId }),
       editableSkills: editableSkills(p, classId, classSkills),
       isCoreTeacher: isCoreTeacherOf(p, classId),
     },

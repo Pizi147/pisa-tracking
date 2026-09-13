@@ -1,0 +1,500 @@
+import { db, tx } from '../db.ts';
+import {
+  CLASS_PHASE_LABEL, MOCK_FT_DEFAULT_ATTEMPTS, MOCK_FT_STUDY_WEEK, PERMISSIONS,
+  PROGRAMME_TEMPLATES, nextStepsAfter, programmeOf, studyWeekOf,
+  type ClassPhase, type ProgrammeCode,
+} from '../../../shared/domain.ts';
+import { addDays, badRequest, notFound, nowIso } from '../util.ts';
+import { demoToday } from '../demoConfig.ts';
+import { require_, type Principal } from '../permissions.ts';
+import { writeAudit } from './audit.ts';
+import { ensurePeriod, mondayOf, periodById, weekInfo } from './week.ts';
+
+/**
+ * TUẦN BẮT ĐẦU HỌC → LỊCH MT MẶC ĐỊNH, VÀ TIẾN ĐỘ LỚP.
+ *
+ * Hai câu hỏi của mục 7.6, và cả hai đều quy về một phép đếm tuần:
+ *
+ *   Lớp FT     em vào học tuần nào → MT1 tuần thứ 6, MT2 tuần 12, MT3 tuần 16 của em
+ *   Lớp Normal lớp khai giảng tuần nào → lớp đang ở tuần thứ mấy trên mấy tuần
+ *
+ * NGUYÊN TẮC LỚN NHẤT CỦA FILE NÀY: hệ thống chỉ ĐỀ XUẤT, không bao giờ ghi đè cái người
+ * đã xếp. Owner nói rõ: "Đây là lịch mặc định; Quản lý chủ động xếp lại khi cần, và hệ
+ * thống không được ghi đè cái Quản lý đã xếp." Cột `plan_source` là chỗ giữ lời hứa đó.
+ */
+
+// ==================================================================== lớp FT
+
+export type SuggestedMock = {
+  attemptNo: number;
+  studyWeek: number;
+  periodId: number;
+  weekStart: string;
+  code: string;
+  /** Đã có lượt này trong hệ thống chưa, và ai xếp nó. */
+  existingAttemptId: number | null;
+  existingPeriodId: number | null;
+  existingSource: 'auto' | 'manual' | null;
+  /** Lượt đã làm xong thì KHÔNG được xếp lại — đó là lịch sử, không phải kế hoạch. */
+  locked: boolean;
+};
+
+/**
+ * LỊCH MT ĐỀ XUẤT cho một lộ trình FT, tính từ tuần bắt đầu học.
+ *
+ * Chỉ đề xuất ba lượt đầu: đa số em chỉ thi ba lượt, MT4 và MT5 là dự phòng. Đề xuất sẵn
+ * cả năm thì lịch của mọi em dài gấp rưỡi sự thật và Quản lý phải đi xoá bớt.
+ *
+ * Trả về mảng RỖNG khi chưa khai tuần bắt đầu học — không đoán, vì đoán sai thì cả khoá
+ * lệch và không ai biết con số ấy từ đâu ra.
+ */
+export function suggestedMockWeeks(cycleId: number): SuggestedMock[] {
+  const conn = db();
+  const cy = conn.prepare('SELECT * FROM learning_cycles WHERE id = ?').get(cycleId) as any;
+  if (!cy?.start_period_id) return [];
+  const start = periodById(cy.start_period_id);
+  if (!start) return [];
+
+  const existing = conn
+    .prepare('SELECT * FROM assessment_attempts WHERE cycle_id = ? AND status != ?')
+    .all(cycleId, 'cancelled') as any[];
+
+  const out: SuggestedMock[] = [];
+  for (let no = 1; no <= MOCK_FT_DEFAULT_ATTEMPTS; no += 1) {
+    const week = MOCK_FT_STUDY_WEEK[no];
+    if (!week) continue;
+    /* Tuần học thứ 1 là chính tuần bắt đầu, nên lượt ở tuần thứ N cách đó N−1 tuần. */
+    const monday = addDays(start.weekStart, 7 * (week - 1));
+    const period = ensurePeriod(monday);
+    const had = existing.find((a) => a.attempt_no === no) ?? null;
+    out.push({
+      attemptNo: no,
+      studyWeek: week,
+      periodId: period.id,
+      weekStart: monday,
+      code: period.code,
+      existingAttemptId: had?.id ?? null,
+      existingPeriodId: had?.planned_period_id ?? null,
+      existingSource: (had?.plan_source ?? null) as any,
+      locked: !!had && had.status === 'done',
+    });
+  }
+  return out;
+}
+
+/**
+ * ÁP LỊCH ĐỀ XUẤT vào thực tế — tạo lượt còn thiếu, và dời lượt hệ thống từng tự xếp.
+ *
+ * KHÔNG ĐỤNG vào lượt `plan_source = 'manual'` và lượt đã làm xong. Đó là toàn bộ ý nghĩa
+ * của hàm này: đổi tuần bắt đầu học thì lịch đề xuất chạy theo, còn cái người đã chốt thì
+ * đứng yên.
+ *
+ * Trả về số lượt đã tạo và số lượt đã dời, để giao diện nói đúng việc vừa xảy ra thay vì
+ * một câu "đã lưu" chung chung.
+ */
+export function applySuggestedMockWeeks(p: Principal, cycleId: number): { created: number; moved: number; kept: number } {
+  const conn = db();
+  const cy = conn.prepare('SELECT * FROM learning_cycles WHERE id = ?').get(cycleId) as any;
+  if (!cy) throw notFound('Không tìm thấy lộ trình');
+  require_(p, PERMISSIONS.PLAN_WEEK, { studentId: cy.student_id },
+    'Bạn không có quyền xếp tuần MT cho học viên này.');
+
+  const suggestions = suggestedMockWeeks(cycleId);
+  if (!suggestions.length) {
+    throw badRequest('Chưa khai tuần bắt đầu học nên chưa đề xuất được lịch MT.');
+  }
+  const classId = (conn
+    .prepare(`SELECT class_id FROM enrollments WHERE student_id = ? AND status='active' ORDER BY id DESC LIMIT 1`)
+    .get(cy.student_id) as any)?.class_id ?? null;
+
+  return tx(() => {
+    let created = 0; let moved = 0; let kept = 0;
+    for (const s of suggestions) {
+      if (s.locked || s.existingSource === 'manual') { kept += 1; continue; }
+      if (!s.existingAttemptId) {
+        conn
+          .prepare(
+            `INSERT INTO assessment_attempts (cycle_id, student_id, attempt_no, kind, class_id,
+                                              planned_period_id, plan_source, status,
+                                              target_at_attempt, created_by, created_at)
+             VALUES (?,?,?, 'mock', ?,?, 'auto', 'planned', ?,?,?)`,
+          )
+          .run(cycleId, cy.student_id, s.attemptNo, classId, s.periodId,
+               cy.target_score ?? null, p.userId, nowIso());
+        created += 1;
+      } else if (s.existingPeriodId !== s.periodId) {
+        conn
+          .prepare(`UPDATE assessment_attempts SET planned_period_id = ?, plan_source = 'auto', updated_at = ? WHERE id = ?`)
+          .run(s.periodId, nowIso(), s.existingAttemptId);
+        moved += 1;
+      } else {
+        kept += 1;
+      }
+    }
+    if (created || moved) {
+      writeAudit({ actorUserId: p.userId, action: 'schedule.autoplan', entityType: 'learning_cycle',
+        entityId: cycleId, after: { created, moved, kept } });
+    }
+    return { created, moved, kept };
+  });
+}
+
+// ==================================================================== lớp Normal
+
+export type ClassProgress = {
+  programmeCode: ProgrammeCode | null;
+  programmeName: string | null;
+  /** Tổng số tuần của chương trình. NULL với lớp FT — FT không có số tuần cố định. */
+  totalWeeks: number | null;
+  /** Lớp đang ở tuần học thứ mấy. NULL khi chưa khai tuần bắt đầu. */
+  currentWeek: number | null;
+  startPeriodId: number | null;
+  startWeekStart: string | null;
+  progressWeek: number | null;
+  finalWeek: number | null;
+  /** Người đã xếp lại mốc, khác mốc mặc định của chương trình. */
+  progressOverridden: boolean;
+  finalOverridden: boolean;
+  /** Tuần lịch của hai mốc, để hiện "Progress Test tuần này". */
+  progressWeekStart: string | null;
+  finalWeekStart: string | null;
+  /** 'progress' | 'final' khi CHÍNH TUẦN NÀY là tuần kiểm tra. */
+  checkpointThisWeek: 'progress' | 'final' | null;
+  /** Chặng của lớp — thứ quyết định lớp có nổi lên màn hình hay không. */
+  phase: ClassPhase;
+  phaseLabel: string;
+  /** Còn mấy tuần nữa hết chương trình. Âm nghĩa là đã quá. */
+  weeksLeft: number | null;
+  /**
+   * LỚP ĐÃ HẾT CHƯƠNG TRÌNH → mọi học viên còn đang học PHẢI được xếp lớp tiếp theo.
+   * Hai đường: lên bậc Normal kế tiếp, hoặc lên FT.
+   */
+  needsPlacement: boolean;
+  placementOptions: { code: ProgrammeCode; name: string }[];
+  /** Số học viên còn đang học ở lớp này — chính là số em cần xếp lớp khi lớp đã xong. */
+  activeStudents: number;
+  /** Một dòng đọc được ngay, ví dụ "BE · tuần 5/10 · Progress Test tuần này". */
+  label: string | null;
+};
+
+/**
+ * LỚP ĐANG Ở TUẦN THỨ MẤY — mục 7.6.
+ *
+ * Lớp FT không có số tuần cố định nên chỉ trả về mã chương trình; mọi con số tuần để trống
+ * thay vì bịa ra một mẫu số. Với lớp FT, thứ tương đương là lịch MT của TỪNG EM, nằm ở
+ * `suggestedMockWeeks`.
+ */
+export function classProgress(classId: number): ClassProgress {
+  const conn = db();
+  const c = conn.prepare('SELECT * FROM classes WHERE id = ?').get(classId) as any;
+  if (!c) throw notFound('Không tìm thấy lớp');
+  const start = c.start_period_id ? periodById(c.start_period_id) : null;
+  const activeStudents = (conn
+    .prepare(
+      `SELECT COUNT(*) n FROM enrollments e
+         JOIN students s ON s.id = e.student_id
+        WHERE e.class_id = ? AND e.status = 'active'
+          AND s.status = 'active' AND s.archived_at IS NULL`,
+    )
+    .get(classId) as any).n;
+  return computeProgress(c, start, activeStudents);
+}
+
+/**
+ * TIẾN ĐỘ CỦA NHIỀU LỚP TRONG BA CÂU LỆNH — không phải ba câu MỖI LỚP.
+ *
+ * Danh sách lớp gọi hàm này cho cả trang. Bản đầu gọi `classProgress` trong vòng lặp và
+ * biến một trang mười lớp thành tám mươi câu truy vấn; bài kiểm N+1 của vòng trước bắt
+ * đúng chỗ đó. Ở quy mô demo thì không ai thấy chậm — ở quy mô thật thì thấy ngay.
+ */
+export function classProgressMany(classIds: number[]): Map<number, ClassProgress> {
+  const out = new Map<number, ClassProgress>();
+  if (!classIds.length) return out;
+  const conn = db();
+  const ph = classIds.map(() => '?').join(',');
+
+  const classes = conn.prepare(`SELECT * FROM classes WHERE id IN (${ph})`).all(...classIds) as any[];
+  const periodIds = [...new Set(classes.map((c) => c.start_period_id).filter(Boolean))];
+  const periods = new Map<number, any>();
+  if (periodIds.length) {
+    for (const r of conn
+      .prepare(`SELECT * FROM report_periods WHERE id IN (${periodIds.map(() => '?').join(',')})`)
+      .all(...periodIds) as any[]) {
+      periods.set(r.id, { id: r.id, ...weekInfo(r.week_start) });
+    }
+  }
+  const counts = new Map<number, number>();
+  for (const r of conn
+    .prepare(
+      `SELECT e.class_id, COUNT(*) n FROM enrollments e
+         JOIN students s ON s.id = e.student_id
+        WHERE e.class_id IN (${ph}) AND e.status = 'active'
+          AND s.status = 'active' AND s.archived_at IS NULL
+        GROUP BY e.class_id`,
+    )
+    .all(...classIds) as any[]) {
+    counts.set(r.class_id, r.n);
+  }
+
+  for (const c of classes) {
+    out.set(c.id, computeProgress(c, c.start_period_id ? periods.get(c.start_period_id) ?? null : null,
+      counts.get(c.id) ?? 0));
+  }
+  return out;
+}
+
+/** Phần TÍNH THUẦN TUÝ — không chạm database, nên gọi hàng loạt được. */
+function computeProgress(
+  c: any,
+  start: { weekStart: string } | null,
+  activeStudents: number,
+): ClassProgress {
+  const code = (c.programme_code ?? programmeOf(c.kind)) as ProgrammeCode | null;
+  const tpl = code ? PROGRAMME_TEMPLATES[code] : null;
+  const thisMonday = mondayOf(demoToday());
+  const currentWeek = start ? studyWeekOf(start.weekStart, thisMonday) : null;
+
+  const defProgress = tpl?.checkpoints.find((k) => k.kind === 'progress')?.studyWeek ?? null;
+  const defFinal = tpl?.checkpoints.find((k) => k.kind === 'final')?.studyWeek ?? null;
+  const progressWeek = c.progress_week_override ?? defProgress;
+  const finalWeek = c.final_week_override ?? defFinal;
+
+  const weekStartOf = (n: number | null) =>
+    (start && n ? addDays(start.weekStart, 7 * (n - 1)) : null);
+  const progressWeekStart = weekStartOf(progressWeek);
+  const finalWeekStart = weekStartOf(finalWeek);
+
+  const checkpointThisWeek = finalWeekStart === thisMonday ? 'final'
+    : progressWeekStart === thisMonday ? 'progress'
+    : null;
+
+  /*
+   * CHẶNG CỦA LỚP — owner yêu cầu 13/09/2026: lớp Normal phải TỰ BÁO khi đang trong tuần
+   * Progress Test, tuần Final Test, và khi đã hết chương trình.
+   *
+   * Vì sao báo TRƯỚC MỘT TUẦN chứ không chỉ báo trong tuần: đề kiểm tra và lịch phòng phải
+   * chuẩn bị trước. Biết vào đúng sáng thứ Hai của tuần thi thì đã muộn.
+   *
+   * Thứ tự kiểm đi từ MUỘN NHẤT về SỚM NHẤT: một lớp đã hết chương trình thì không còn là
+   * "tuần sau Final Test" nữa, dù phép tính tuần vẫn khớp cả hai.
+   */
+  const nextMonday = addDays(thisMonday, 7);
+  const totalWeeks = tpl?.weeks ?? null;
+  const weeksLeft = currentWeek !== null && totalWeeks !== null ? totalWeeks - currentWeek : null;
+
+  let phase: ClassPhase;
+  if (code === 'FT') phase = 'running';
+  else if (!start || currentWeek === null) phase = 'unknown';
+  else if (currentWeek < 1) phase = 'not_started';
+  else if (totalWeeks !== null && currentWeek > totalWeeks) phase = 'finished';
+  else if (finalWeekStart === thisMonday) phase = 'final_week';
+  else if (finalWeekStart === nextMonday) phase = 'final_soon';
+  else if (progressWeekStart === thisMonday) phase = 'progress_week';
+  else if (progressWeekStart === nextMonday) phase = 'progress_soon';
+  else phase = 'running';
+
+  const needsPlacement = phase === 'finished' && activeStudents > 0;
+  const placementOptions = needsPlacement
+    ? nextStepsAfter(code).map((c) => ({ code: c, name: PROGRAMME_TEMPLATES[c].name }))
+    : [];
+
+  /*
+   * MỘT DÒNG ĐỌC ĐƯỢC NGAY. Dựng ở máy chủ vì nhiều màn hình cùng cần đúng câu này; để
+   * mỗi màn tự ghép thì sẽ có màn ghép thiếu, và hai màn nói khác nhau về cùng một lớp.
+   */
+  let label: string | null = null;
+  if (tpl && tpl.weeks) {
+    const parts: string[] = [tpl.code];
+    if (phase === 'finished') {
+      parts.push(`đã học xong ${tpl.weeks} tuần`);
+      if (activeStudents > 0) parts.push(`${activeStudents} học viên cần xếp lớp tiếp`);
+    } else {
+      parts.push(currentWeek !== null ? `tuần ${currentWeek}/${tpl.weeks}` : 'chưa khai tuần bắt đầu');
+      if (phase !== 'running' && phase !== 'not_started' && phase !== 'unknown') {
+        parts.push(CLASS_PHASE_LABEL[phase]);
+      }
+    }
+    label = parts.join(' · ');
+  } else if (code === 'FT') {
+    label = c.route ? `Fulltime · ${c.route}` : 'Fulltime';
+  }
+
+  return {
+    programmeCode: code, programmeName: tpl?.name ?? null,
+    totalWeeks,
+    currentWeek,
+    startPeriodId: c.start_period_id ?? null,
+    startWeekStart: start?.weekStart ?? null,
+    progressWeek, finalWeek,
+    progressOverridden: c.progress_week_override !== null && c.progress_week_override !== undefined,
+    finalOverridden: c.final_week_override !== null && c.final_week_override !== undefined,
+    progressWeekStart, finalWeekStart,
+    checkpointThisWeek,
+    phase, phaseLabel: CLASS_PHASE_LABEL[phase],
+    weeksLeft, needsPlacement, placementOptions, activeStudents,
+    label,
+  };
+}
+
+/**
+ * NHỮNG LỚP ĐANG CÓ CHUYỆN CẦN BÁO — dùng cho màn việc và cho thanh lớp.
+ *
+ * Chỉ trả về lớp ở chặng ĐÁNG NÓI: sắp thi, đang thi, hoặc đã hết chương trình. Lớp đang
+ * học bình thường không xuất hiện — một danh sách liệt kê cả những lớp không cần làm gì là
+ * một danh sách không ai đọc.
+ */
+export function classAlerts(classIds: number[]): Map<number, ClassProgress> {
+  const out = new Map<number, ClassProgress>();
+  for (const [id, pr] of classProgressMany(classIds)) {
+    if (pr.phase === 'progress_soon' || pr.phase === 'progress_week'
+      || pr.phase === 'final_soon' || pr.phase === 'final_week'
+      || (pr.phase === 'finished' && pr.activeStudents > 0)
+      || pr.phase === 'unknown') {
+      out.set(id, pr);
+    }
+  }
+  return out;
+}
+
+/**
+ * Đổi tuần bắt đầu và mốc kiểm tra của lớp. Quyền: Admin CN và Quản lý CN (mục 7.6).
+ *
+ * Đặt mốc về TRỐNG là quay lại mốc mặc định của chương trình — không phải xoá mốc. Cần có
+ * đường quay lại, nếu không thì một lần gõ nhầm là lớp đó vĩnh viễn lệch chuẩn.
+ */
+export function setClassProgress(p: Principal, classId: number, input: {
+  startPeriodId?: number | null; progressWeek?: number | null; finalWeek?: number | null;
+}) {
+  const conn = db();
+  const c = conn.prepare('SELECT * FROM classes WHERE id = ?').get(classId) as any;
+  if (!c) throw notFound('Không tìm thấy lớp');
+  require_(p, PERMISSIONS.CLASS_EDIT, { classId }, 'Bạn không có quyền sửa tiến độ của lớp này.');
+
+  const code = (c.programme_code ?? programmeOf(c.kind)) as ProgrammeCode | null;
+  const weeks = code ? PROGRAMME_TEMPLATES[code]?.weeks ?? null : null;
+  const checkWeek = (v: number | null | undefined, label: string) => {
+    if (v === null || v === undefined) return null;
+    if (!Number.isInteger(v) || v < 1) throw badRequest(`${label} phải là số tuần từ 1 trở lên.`);
+    if (weeks && v > weeks) throw badRequest(`${label} không thể vượt quá ${weeks} tuần của chương trình.`);
+    return v;
+  };
+  const progress = 'progressWeek' in input ? checkWeek(input.progressWeek, 'Tuần Progress Test') : undefined;
+  const final = 'finalWeek' in input ? checkWeek(input.finalWeek, 'Tuần Final Test') : undefined;
+  if (progress !== undefined && final !== undefined && progress && final && progress >= final) {
+    throw badRequest('Progress Test phải ở trước Final Test.');
+  }
+  if (input.startPeriodId && !periodById(input.startPeriodId)) throw badRequest('Tuần bắt đầu không hợp lệ.');
+
+  const sets: string[] = []; const params: unknown[] = [];
+  if ('startPeriodId' in input) { sets.push('start_period_id = ?'); params.push(input.startPeriodId ?? null); }
+  if (progress !== undefined) { sets.push('progress_week_override = ?'); params.push(progress); }
+  if (final !== undefined) { sets.push('final_week_override = ?'); params.push(final); }
+  if (!sets.length) return classProgress(classId);
+
+  params.push(classId);
+  conn.prepare(`UPDATE classes SET ${sets.join(', ')} WHERE id = ?`).run(...params);
+  writeAudit({ actorUserId: p.userId, action: 'class.progress', entityType: 'class', entityId: classId,
+    entityLabel: c.code, before: {
+      startPeriodId: c.start_period_id, progressWeek: c.progress_week_override, finalWeek: c.final_week_override,
+    }, after: input });
+  return classProgress(classId);
+}
+
+// ==================================================================== thiếu thông tin
+
+export type MissingInfo = {
+  /** Mã ngắn để giao diện và bộ lọc dùng chung một từ vựng. */
+  key: 'start_week' | 'exam_month' | 'target' | 'dob' | 'class_start_week' | 'teachers' | 'core_teacher';
+  label: string;
+  /** Ai là người điền được — để badge nói đúng với đúng vai, không đổ việc lung tung. */
+  who: string;
+};
+
+const MISSING_LABEL: Record<MissingInfo['key'], { label: string; who: string }> = {
+  start_week: { label: 'Tuần bắt đầu học', who: 'Admin CN · Quản lý · GVCN' },
+  exam_month: { label: 'Tháng/năm dự kiến thi', who: 'Admin CN · Quản lý · GVCN' },
+  target: { label: 'Target', who: 'Admin CN · Quản lý' },
+  dob: { label: 'Ngày sinh', who: 'Admin CN' },
+  class_start_week: { label: 'Tuần bắt đầu của lớp', who: 'Admin CN · Quản lý' },
+  teachers: { label: 'Giáo viên các kỹ năng', who: 'Admin CN · Quản lý' },
+  core_teacher: { label: 'Giáo viên chủ nhiệm', who: 'Admin CN · Quản lý' },
+};
+
+const miss = (key: MissingInfo['key']): MissingInfo => ({ key, ...MISSING_LABEL[key] });
+
+/**
+ * BADGE "THIẾU THÔNG TIN" CỦA MỘT HỌC VIÊN — mục 7.5.
+ *
+ * GOM MỌI THỨ CÒN THIẾU VÀO MỘT BADGE, không phải mỗi thứ một nhãn. Owner nói rõ điều này,
+ * và lý do thì nhìn bảng lớp là thấy: bốn nhãn nhỏ trên một dòng học viên thì dòng nào cũng
+ * đầy nhãn, và người đọc thôi nhìn chúng.
+ *
+ * Đây KHÔNG phải việc trong hàng đợi công việc — không có hạn, không ai bị thúc. Nó chỉ cần
+ * được nhìn thấy bởi vai có trách nhiệm.
+ *
+ * Lớp Normal KHÔNG bị nhắc tháng thi: các em đó chưa thi IELTS, nhắc là nhắc sai.
+ */
+export function missingForStudent(input: {
+  cycle: { start_period_id?: number | null; exam_month?: string | null; target_score?: number | null } | null;
+  student: { dob?: string | null } | null;
+  isFulltime: boolean;
+}): MissingInfo[] {
+  const out: MissingInfo[] = [];
+  if (!input.cycle?.start_period_id) out.push(miss('start_week'));
+  if (input.isFulltime) {
+    if (!input.cycle?.exam_month) out.push(miss('exam_month'));
+    if (input.cycle?.target_score === null || input.cycle?.target_score === undefined) out.push(miss('target'));
+  }
+  if (!input.student?.dob) out.push(miss('dob'));
+  return out;
+}
+
+/**
+ * BADGE "THIẾU THÔNG TIN" CỦA MỘT LỚP.
+ *
+ * Khác học viên ở chỗ lớp còn thiếu được cả NGƯỜI: thiếu giáo viên một kỹ năng, hoặc chưa
+ * có GVCN. Nhãn nói rõ thiếu kỹ năng nào — "Thiếu GV R, L" (mục 7.7) — vì "thiếu giáo viên"
+ * chung chung thì Admin vẫn phải mở lớp ra xem thiếu ai.
+ */
+export function missingForClass(classId: number): { items: MissingInfo[]; missingSkills: string[] } {
+  return missingForClasses([classId]).get(classId) ?? { items: [], missingSkills: [] };
+}
+
+/** Bản hàng loạt — hai câu lệnh cho cả trang, không phải hai câu mỗi lớp. */
+export function missingForClasses(
+  classIds: number[],
+): Map<number, { items: MissingInfo[]; missingSkills: string[] }> {
+  const out = new Map<number, { items: MissingInfo[]; missingSkills: string[] }>();
+  if (!classIds.length) return out;
+  const conn = db();
+  const ph = classIds.map(() => '?').join(',');
+
+  const classes = conn.prepare(`SELECT * FROM classes WHERE id IN (${ph})`).all(...classIds) as any[];
+  const byClass = new Map<number, any[]>();
+  for (const a of conn
+    .prepare(
+      `SELECT class_id, skill, is_core FROM teacher_assignments
+        WHERE class_id IN (${ph}) AND status = 'active'`,
+    )
+    .all(...classIds) as any[]) {
+    if (!byClass.has(a.class_id)) byClass.set(a.class_id, []);
+    byClass.get(a.class_id)!.push(a);
+  }
+
+  for (const c of classes) {
+    const code = (c.programme_code ?? programmeOf(c.kind)) as ProgrammeCode | null;
+    const tpl = code ? PROGRAMME_TEMPLATES[code] : null;
+    const items: MissingInfo[] = [];
+    /* Lớp FT không cần tuần bắt đầu của LỚP — lịch MT đi theo từng em. */
+    if (tpl?.weeks && !c.start_period_id) items.push(miss('class_start_week'));
+
+    const assigned = byClass.get(c.id) ?? [];
+    const have = new Set(assigned.map((a) => a.skill));
+    const missingSkills = (tpl?.skills ?? []).filter((sk) => !have.has(sk));
+    if (missingSkills.length) items.push(miss('teachers'));
+    if (!assigned.some((a) => a.is_core)) items.push(miss('core_teacher'));
+
+    out.set(c.id, { items, missingSkills: [...missingSkills] });
+  }
+  return out;
+}

@@ -17,11 +17,13 @@ import * as pulseSvc from '../services/branchpulse.ts';
 import * as prefSvc from '../services/prefs.ts';
 import * as profileSvc from '../services/profile.ts';
 import * as classSvc from '../services/classes.ts';
+import * as scheduleSvc from '../services/schedule.ts';
 import * as intakeSvc from '../services/intake.ts';
 import * as studentSvc from '../services/students.ts';
 import * as meetingSvc from '../services/meeting.ts';
 import * as dashboardSvc from '../services/dashboard.ts';
 import {
+  PERIOD_WINDOW_PLANNING_FORWARD_WEEKS,
   ensurePeriod, listPeriods, periodById, periodWindow, reportEditWindow, setPeriodUnlocked,
 } from '../services/week.ts';
 import * as planningSvc from '../services/planning.ts';
@@ -187,10 +189,15 @@ api.get('/ref/current-period', requireAuth, wrap(() => ensurePeriod(demoToday())
  * Cửa sổ tuần cho ô chọn tuần: hai tháng lịch sử quanh tuần đang xem, một tuần tương lai.
  * Không trả về toàn bộ lịch sử — đây là báo cáo vận hành, không phải kho lưu trữ.
  */
+/*
+ * Cửa sổ tuần. `scope=planning` mở XA về tương lai — lên kế hoạch MT là việc của tương lai,
+ * còn các màn nói về kết quả thì giữ cửa sổ hẹp như cũ.
+ */
 api.get('/ref/period-window', requireAuth, wrap((req) => {
   ensurePeriod(demoToday());
   const anchor = toInt(req.query?.anchorId);
-  return periodWindow(anchor ?? null).map((p) => ({
+  const planning = qStr(req, 'scope') === 'planning';
+  return periodWindow(anchor ?? null, planning ? { forward: PERIOD_WINDOW_PLANNING_FORWARD_WEEKS } : {}).map((p) => ({
     id: p.id, code: p.code, weekStart: p.weekStart, weekEnd: p.weekEnd, range: p.range,
     year: p.year, month: p.month, isAnchor: p.isAnchor,
     editWindow: reportEditWindow({ week_start: p.weekStart, week_end: p.weekEnd, code: p.code }),
@@ -484,6 +491,15 @@ api.post('/students/:id/cycles', requireAuth, wrap((req) => {
   return cycleSvc.createCycle(principalOf(req), { ...req.body, studentId: pInt(req, 'id') });
 }));
 
+/** Một lộ trình, để panel Kế hoạch học nạp đúng giá trị đang có. */
+api.get('/cycles/:id', requireAuth, wrap((req) => {
+  const c = cycleSvc.cycleById(pInt(req, 'id'));
+  if (!c) throw notFound('Không tìm thấy lộ trình');
+  require_(principalOf(req), PERMISSIONS.STUDENT_VIEW, { studentId: c.student_id },
+    'Học viên này nằm ngoài phạm vi bạn được xem.');
+  return c;
+}));
+
 api.patch('/cycles/:id', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return cycleSvc.updateCycle(principalOf(req), pInt(req, 'id'), req.body ?? {});
@@ -515,6 +531,36 @@ api.post('/cycles/:id/target-revision', requireAuth, wrap((req) => {
  * gì về một em thì bấm "+ Case" — ghi vào đó thì việc có người chịu trách nhiệm, có phương
  * án và có kết quả.
  */
+
+// ============================================================ Tiến độ lớp và lịch MT
+
+/** Lớp đang ở tuần thứ mấy, sắp thi gì, và đã hết chương trình chưa. */
+api.get('/classes/:id/progress', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return scheduleSvc.classProgress(pInt(req, 'id'));
+}));
+
+/**
+ * Đổi tuần bắt đầu và mốc kiểm tra của lớp. Quyền: Admin CN và Quản lý CN (mục 7.6).
+ * Đặt mốc về trống là quay lại mốc mặc định của chương trình, không phải xoá mốc.
+ */
+api.patch('/classes/:id/progress', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return scheduleSvc.setClassProgress(principalOf(req), pInt(req, 'id'), req.body ?? {});
+}));
+
+/** Lịch MT hệ thống ĐỀ XUẤT cho một lộ trình FT, tính từ tuần bắt đầu học. */
+api.get('/cycles/:id/suggested-mocks', requireAuth, wrap((req) =>
+  scheduleSvc.suggestedMockWeeks(pInt(req, 'id'))));
+
+/**
+ * Áp lịch đề xuất vào thực tế. KHÔNG đụng vào lượt người đã chốt tay và lượt đã làm xong —
+ * đó là toàn bộ ý nghĩa của thao tác này.
+ */
+api.post('/cycles/:id/apply-suggested-mocks', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return scheduleSvc.applySuggestedMockWeeks(principalOf(req), pInt(req, 'id'));
+}));
 
 // ============================================================ Case học vụ
 

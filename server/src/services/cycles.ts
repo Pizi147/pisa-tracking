@@ -5,6 +5,8 @@ import {
 import { badRequest, isIsoDate, notFound, nowIso } from '../util.ts';
 import { require_, type Principal } from '../permissions.ts';
 import { addJourney, writeAudit } from './audit.ts';
+import { periodById } from './week.ts';
+import { applySuggestedMockWeeks } from './schedule.ts';
 
 /**
  * Lộ trình học của một học viên.
@@ -82,11 +84,31 @@ export function updateCycle(p: Principal, cycleId: number, patch: any) {
   require_(p, PERMISSIONS.STUDENT_EDIT, { studentId: c.student_id });
   const map: Record<string, string> = {
     targetScore: 'target_score', examDate: 'exam_date', route: 'route', note: 'note', status: 'status',
+    /*
+     * Hai trường của vòng 4. Quyền sửa: Admin CN · Quản lý · GVCN của lớp (mục 7.5) —
+     * `student.edit` đã bao đúng ba vai đó, nên không thêm quyền mới.
+     */
+    startPeriodId: 'start_period_id', examMonth: 'exam_month',
   };
   const sets: string[] = []; const params: unknown[] = [];
   for (const [k, v] of Object.entries(patch)) {
     if (!map[k]) continue;
     if (k === 'examDate' && v && !isIsoDate(String(v))) throw badRequest('Ngày thi IELTS không hợp lệ.');
+    /*
+     * Tháng thi dạng 'YYYY-MM'. Nhận CẢ một ngày đầy đủ rồi cắt lấy tháng — ô chọn tháng
+     * của trình duyệt trả về đúng dạng này, nhưng người dán tay hay dán cả ngày.
+     */
+    if (k === 'examMonth' && v) {
+      const raw = String(v).slice(0, 7);
+      if (!/^\d{4}-\d{2}$/.test(raw)) throw badRequest('Tháng dự kiến thi phải có dạng MM/YYYY.');
+      const mm = Number(raw.slice(5, 7));
+      if (mm < 1 || mm > 12) throw badRequest('Tháng dự kiến thi không hợp lệ.');
+      sets.push('exam_month = ?'); params.push(raw);
+      continue;
+    }
+    if (k === 'startPeriodId' && v && !periodById(Number(v))) {
+      throw badRequest('Tuần bắt đầu học không hợp lệ.');
+    }
     sets.push(`${map[k]} = ?`); params.push(v);
   }
   if (!sets.length) return c;
@@ -102,6 +124,34 @@ export function updateCycle(p: Principal, cycleId: number, patch: any) {
       refTable: 'learning_cycles', refId: cycleId, createdBy: p.userId,
     });
   }
+  /*
+   * ĐỔI TUẦN BẮT ĐẦU HỌC LÀ ĐỔI CẢ LỊCH MT — nhưng chỉ những lượt hệ thống từng tự xếp.
+   *
+   * Đây là chỗ giữ lời hứa của mục 7.6: "hệ thống không được ghi đè cái Quản lý đã xếp".
+   * Lượt nào `plan_source = 'manual'` hoặc đã làm xong thì đứng yên; phần còn lại chạy theo
+   * mốc mới. Người dùng khai đúng tuần vào học một lần, lịch tự đúng theo.
+   */
+  if (patch.startPeriodId !== undefined && patch.startPeriodId !== c.start_period_id && after?.start_period_id) {
+    try {
+      const r = applySuggestedMockWeeks(p, cycleId);
+      if (r.created || r.moved) {
+        addJourney({
+          studentId: c.student_id, eventType: 'cycle_start',
+          eventDate: nowIso().slice(0, 10),
+          title: 'Đổi tuần bắt đầu học',
+          detail: `Lịch MT đề xuất cập nhật theo: thêm ${r.created}, dời ${r.moved}, giữ nguyên ${r.kept} lượt đã chốt tay`,
+          refTable: 'learning_cycles', refId: cycleId, createdBy: p.userId,
+        });
+      }
+    } catch {
+      /*
+       * Không có quyền xếp tuần MT (ví dụ GVCN sửa tuần bắt đầu) thì KHÔNG chặn việc sửa
+       * thông tin — chỉ là lịch MT chưa được đề xuất lại, và Quản lý áp sau. Ném lỗi ở đây
+       * sẽ biến một ô thông tin đơn giản thành một thao tác cần quyền cao hơn.
+       */
+    }
+  }
+
   writeAudit({ actorUserId: p.userId, action: 'cycle.update', entityType: 'learning_cycle', entityId: cycleId,
     before: c, after });
   return after;
