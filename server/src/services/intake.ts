@@ -1,5 +1,5 @@
 import { db, tx } from '../db.ts';
-import { MOCK_FT_STUDY_WEEK, PERMISSIONS, ROUTES, type Route } from '../../../shared/domain.ts';
+import { MOCK_FT_STUDY_WEEK, PERMISSIONS, ROUTES, programmeOf, type Route } from '../../../shared/domain.ts';
 import { addDays, badRequest, isIsoDate, normalizeName, notFound, nowIso, padCode } from '../util.ts';
 import { can, require_, type Principal } from '../permissions.ts';
 import { addJourney, writeAudit } from './audit.ts';
@@ -12,10 +12,25 @@ import { ensurePeriod, mondayOf } from './week.ts';
  * quyền, chạy trong một transaction và có khoá idempotency để bấm hai lần hoặc thử lại
  * không tạo bản ghi trùng.
  */
+/**
+ * NĂM CỘT, KHÔNG HƠN — owner chốt 13/09/2026 (mục 7.4):
+ *
+ *     Họ và tên · Lớp · Ngày sinh · Điểm đầu vào · Target
+ *
+ * Những gì bỏ khỏi bảng dán, và vì sao:
+ *   · Lộ trình (LT1/LT2)  suy từ chính lớp em vào — lớp đã có lộ trình rồi
+ *   · Ngày thi IELTS      chưa ai biết lúc nhập; khai sau khi đăng ký xong
+ *   · Tư vấn viên         không đổi được quyết định nào trong phần mềm này
+ *
+ * Các trường đó VẪN đọc được nếu bảng dán có cột tương ứng — người ta dán cả file cũ là
+ * chuyện thường. Chỉ là lưới nhập tay không còn bày chúng ra nữa.
+ */
 export type IntakeRow = {
   fullName?: string;
   classCode?: string;
   dob?: string;
+  /** Điểm đầu vào, ưu tiên OVR. Không phải em nào cũng có điểm chi tiết — bổ sung sau. */
+  baselineScore?: number | string | null;
   examDate?: string;
   route?: string;
   target?: number | string | null;
@@ -45,10 +60,25 @@ const HEADER_ALIASES: Record<string, keyof IntakeRow> = {
   'ngay thi': 'examDate', 'ngay thi ielts': 'examDate', 'exam': 'examDate', 'exam date': 'examDate',
   'lo trinh': 'route', 'route': 'route',
   'target': 'target', 'diem cam ket': 'target', 'cam ket': 'target',
+  'diem dau vao': 'baselineScore', 'dau vao': 'baselineScore', 'ovr': 'baselineScore',
+  'diem ovr': 'baselineScore', 'baseline': 'baselineScore', 'entry': 'baselineScore',
   'tu van vien': 'consultant', 'tvv': 'consultant', 'consultant': 'consultant',
   'ngay bat dau': 'startDate', 'bat dau': 'startDate',
   'tuan mt': 'mockWeeks', 'cac tuan mt': 'mockWeeks',
 };
+
+/**
+ * ĐIỂM ĐẦU VÀO — ưu tiên OVR, và bỏ qua chứ KHÔNG báo lỗi khi ô để trống.
+ *
+ * Owner nói rõ: không phải em nào cũng có điểm đầu vào, bổ sung sau được. Bắt lỗi ở đây thì
+ * một bảng bốn mươi em có ba ô trống là cả bảng không nhập được.
+ */
+function baselineOf(v: number | string | null | undefined): number | null {
+  if (v === null || v === undefined || String(v).trim() === '') return null;
+  const n = Number(String(v).replace(',', '.'));
+  if (!Number.isFinite(n) || n < 0 || n > 9) return null;
+  return n;
+}
 
 const deaccent = (s: string) =>
   s.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/gi, 'd').toLowerCase().trim();
@@ -67,7 +97,8 @@ export function parsePaste(text: string): { rows: IntakeRow[]; usedHeader: boole
   const usedHeader = mapped.filter(Boolean).length >= 2;
   const order: (keyof IntakeRow | undefined)[] = usedHeader
     ? mapped
-    : ['fullName', 'classCode', 'dob', 'examDate', 'route', 'target', 'consultant'];
+    /* Thứ tự mặc định khi bảng dán KHÔNG có dòng tiêu đề — đúng năm cột của mục 7.4. */
+    : ['fullName', 'classCode', 'dob', 'baselineScore', 'target'];
 
   const out: IntakeRow[] = [];
   for (const line of lines.slice(usedHeader ? 1 : 0)) {
@@ -239,15 +270,32 @@ export function commitIntake(
       addJourney({ studentId: sid, eventType: 'enrollment', eventDate: startedAt,
         title: `Vào lớp ${cls.code}`, createdBy: p.userId });
 
-      if (r.route) {
+      /*
+       * MỞ LỘ TRÌNH CHO MỌI EM, không chỉ em có cột lộ trình.
+       *
+       * Trước đây thiếu cột "Lộ trình" là em vào hệ thống mà không có lộ trình nào — nghĩa
+       * là không có target, không có tuần bắt đầu, không có lịch MT, và mọi màn hình đều
+       * hiện trống mà không nói vì sao. Nay lộ trình suy từ chính LỚP em vào (lớp FT đã có
+       * LT1/LT2 sẵn), nên em nào cũng có chỗ để gắn thông tin.
+       */
+      const route = r.route ?? cls.route ?? null;
+      {
         const cyc = conn
           .prepare(
-            `INSERT INTO learning_cycles (student_id, seq, route, target_score, exam_date, started_at, status, created_at)
-             VALUES (?, 1, ?, ?, ?, ?, 'active', ?)`,
+            `INSERT INTO learning_cycles (student_id, seq, route, programme_code, target_score, exam_date,
+                                          baseline_score, baseline_source, start_period_id,
+                                          started_at, status, created_at)
+             VALUES (?, 1, ?, ?, ?, ?, ?, ?, ?, ?, 'active', ?)`,
           )
-          .run(sid, r.route, r.target ?? null, r.examDate ?? null, startedAt, nowIso());
+          /*
+           * TUẦN BẮT ĐẦU HỌC suy từ ngày vào lớp — đó là thông tin duy nhất có thật lúc này,
+           * và khai lại được bất cứ lúc nào ở panel "Kế hoạch học".
+           */
+          .run(sid, route, cls.programme_code ?? null, r.target ?? null, r.examDate ?? null,
+               baselineOf(r.baselineScore), r.baselineScore ? 'entrance' : null,
+               ensurePeriod(startedAt).id, startedAt, nowIso());
         addJourney({ studentId: sid, eventType: 'cycle_start', eventDate: startedAt,
-          title: `Bắt đầu lộ trình ${r.route}`,
+          title: route ? `Bắt đầu lộ trình ${route}` : 'Bắt đầu khoá học',
           detail: r.target ? `Target ${r.target}` : 'Chưa có target',
           refTable: 'learning_cycles', refId: Number(cyc.lastInsertRowid), createdBy: p.userId });
 
@@ -289,6 +337,8 @@ export function commitIntake(
 export function createClass(p: Principal, input: {
   code: string; branchId: number; kind: string; route?: Route | null;
   isFulltime?: boolean; startDate?: string | null; skills?: string[]; note?: string | null;
+  /** Tuần khai giảng — với lớp Normal đây là mốc gốc của hai kỳ kiểm tra. */
+  startPeriodId?: number | null;
 }) {
   require_(p, PERMISSIONS.STUDENT_EDIT, { branchId: input.branchId }, 'Bạn không có quyền tạo lớp ở chi nhánh này.');
   const conn = db();
@@ -306,11 +356,20 @@ export function createClass(p: Principal, input: {
   return tx(() => {
     const info = conn
       .prepare(
-        `INSERT INTO classes (code, branch_id, kind, route, is_fulltime, start_date, status, note, created_at)
-         VALUES (?,?,?,?,?,?, 'active', ?, ?)`,
+        /*
+         * MÃ CHƯƠNG TRÌNH ghi thẳng lúc tạo, không để suy sau từ tên lớp.
+         *
+         * Thiếu nó thì hệ thống không biết lớp chấm theo band hay theo tỷ lệ, và trang lớp
+         * dựng ra bảng band IELTS cho một lớp Foundation — lỗi im lặng đã từng xảy ra.
+         */
+        `INSERT INTO classes (code, branch_id, kind, programme_code, route, is_fulltime,
+                              start_date, start_period_id, status, note, created_at)
+         VALUES (?,?,?,?,?,?,?,?, 'active', ?, ?)`,
       )
-      .run(code, input.branchId, (input.kind ?? 'FT').trim(), input.route ?? null,
-           input.isFulltime ? 1 : 0, input.startDate ?? null, input.note ?? null, nowIso());
+      .run(code, input.branchId, (input.kind ?? 'FT').trim(),
+           programmeOf(input.kind ?? 'FT'), input.route ?? null,
+           input.isFulltime ? 1 : 0, input.startDate ?? null, input.startPeriodId ?? null,
+           input.note ?? null, nowIso());
     const id = Number(info.lastInsertRowid);
     for (const skill of input.skills?.length ? input.skills : ['listening', 'reading', 'writing1', 'writing2', 'speaking']) {
       conn.prepare('INSERT INTO class_skills (class_id, skill, sessions_per_week) VALUES (?,?,1)').run(id, skill);

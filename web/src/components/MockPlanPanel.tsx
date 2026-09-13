@@ -7,58 +7,88 @@ import { WeekPicker } from './Filters.tsx';
 import { useToast } from './Toast.tsx';
 import { Empty, Pill, SectionNote, Skeleton } from './ui.tsx';
 
+type AttemptState = { attemptNo: number; status: string; periodCode: string | null };
+
 type NoPlan = {
   studentId: number; studentName: string; studentCode: string;
   classId: number | null; classCode: string | null; branchName: string | null;
   cycleId: number; route: string | null; target: number | null;
   nextAttemptNo: number; hasPending: boolean; canPlan: boolean;
+  attempts: AttemptState[];
 };
 
+/** Bày sẵn bảy ô. Đa số em chỉ dùng ba ô đầu, nhưng em học kéo dài thì cần tới MT6, MT7. */
+const SLOTS = [1, 2, 3, 4, 5, 6, 7];
+
 /**
- * LÊN KẾ HOẠCH MT HÀNG LOẠT — panel trượt từ phải, không phải một hộp thoại nhỏ.
+ * LÊN KẾ HOẠCH MT — thiết kế lại theo mục 10, sau khi owner báo ba lỗi.
  *
- * Quản lý lên kế hoạch cho cả lớp một lần, không phải mở từng em. Panel đủ rộng để vừa
- * thấy danh sách em, vừa đặt tuần và chọn kỹ năng, mà không phải nhớ mình vừa chọn gì.
+ * Ba lỗi cũ và cách sửa:
  *
- * KỸ NĂNG YÊU CẦU chọn ngay tại đây. Bỏ tick Speaking nghĩa là lượt này NGAY TỪ ĐẦU không
- * yêu cầu Speaking — khác hẳn "có yêu cầu nhưng chưa có điểm". Lượt xong khi đủ điểm các
- * kỹ năng được yêu cầu, không chờ kỹ năng không yêu cầu.
+ *   1. Không chuyển được tuần   → ô chọn tuần chưa chọn gì thì khoá cả hai mũi tên. Sửa ở
+ *                                 `WeekPicker`: chưa chọn thì neo vào tuần hiện tại.
+ *   2. Cửa sổ tuần chỉ mở 1 tuần → nay mở 30 tuần, đủ cho cả một khoá FT 24 tuần.
+ *   3. Không nhập được tên      → nay có ô gõ tìm học viên, không cần chọn lớp trước.
+ *
+ * Và thay đổi lớn nhất về cách làm việc: CHỌN Ô MT RIÊNG CHO TỪNG EM rồi chốt chung một
+ * tuần. Đúng ví dụ của owner — MT2 của Nguyễn A và MT4 của Nguyễn B xếp vào cùng một tuần.
+ * Lượt đã làm xong thì KHÔNG chọn lại được: đó là lịch sử, không phải kế hoạch.
  */
 export function MockPlanPanel({ classId, branchId, onClose, onDone }: {
   classId?: number | null; branchId?: number | null; onClose: () => void; onDone?: () => void;
 }) {
-  /*
-   * Mặc định chỉ hiện em CHƯA có tuần MT — đó là việc đang tồn.
-   * Mở rộng ra cả lớp khi Quản lý muốn xếp trước lượt sau cho cả lớp trong một lần.
-   */
+  const toast = useToast();
+
+  /* Ba cách thu hẹp danh sách, dùng riêng hoặc dùng chung. */
+  const [q, setQ] = useState('');
+  const [pickedClass, setPickedClass] = useState<number | null>(classId ?? null);
+  const [missingNo, setMissingNo] = useState<number | null>(null);
   const [all, setAll] = useState(false);
+
   const qs = new URLSearchParams();
-  if (classId) qs.set('classId', String(classId));
+  if (pickedClass) qs.set('classId', String(pickedClass));
   if (branchId) qs.set('branchId', String(branchId));
   if (all) qs.set('includePlanned', '1');
+  if (q.trim()) { qs.set('q', q.trim()); qs.set('includePlanned', '1'); }
+  if (missingNo) { qs.set('missingAttemptNo', String(missingNo)); qs.set('includePlanned', '1'); }
+
   const { data, loading, reload } = useApi<{ rows: NoPlan[]; total: number; noPlanCount: number }>(
-    `/attempts/no-plan${qs.toString() ? `?${qs}` : ''}`,
+    `/attempts/no-plan${qs.toString() ? `?${qs}` : ''}`, [qs.toString()],
   );
-  const toast = useToast();
-  const [picked, setPicked] = useState<Set<number>>(new Set());
+  const classes = useApi<{ id: number; code: string }[]>('/ref/classes');
+
+  /** studentId → lượt MT đang chọn. Mỗi em một lượt riêng. */
+  const [picks, setPicks] = useState<Map<number, number>>(new Map());
   const [periodId, setPeriodId] = useState<number | null>(null);
   const [skills, setSkills] = useState<Set<AssessedSkill>>(new Set(ASSESSED_SKILLS));
   const [busy, setBusy] = useState(false);
 
   const rows = data?.rows ?? [];
-  const canPick = useMemo(() => rows.filter((r) => r.canPlan), [rows]);
-  const chosen = useMemo(() => canPick.filter((r) => picked.has(r.studentId)), [canPick, picked]);
-  // Số MT tiếp theo khác nhau giữa các em là bình thường — mỗi em theo lộ trình riêng.
-  const attemptNos = useMemo(() => [...new Set(chosen.map((c) => c.nextAttemptNo))].sort(), [chosen]);
+  const chosen = useMemo(
+    () => rows.filter((r) => r.canPlan && picks.has(r.studentId)),
+    [rows, picks],
+  );
 
-  const toggle = (id: number) => setPicked((s) => {
-    const n = new Set(s);
-    if (n.has(id)) n.delete(id); else n.add(id);
+  const pick = (r: NoPlan, no: number) => setPicks((m) => {
+    const n = new Map(m);
+    if (n.get(r.studentId) === no) n.delete(r.studentId); else n.set(r.studentId, no);
     return n;
   });
+
   const toggleSkill = (k: AssessedSkill) => setSkills((s) => {
     const n = new Set(s);
     if (n.has(k)) n.delete(k); else n.add(k);
+    return n;
+  });
+
+  /** Chọn nhanh cả danh sách vào cùng một lượt — đường đăng ký hàng loạt của mục 10. */
+  const pickAll = (no: number) => setPicks(() => {
+    const n = new Map<number, number>();
+    for (const r of rows) {
+      if (!r.canPlan) continue;
+      if (r.attempts.some((a) => a.attemptNo === no)) continue;   // đã có lượt đó rồi
+      n.set(r.studentId, no);
+    }
     return n;
   });
 
@@ -68,68 +98,74 @@ export function MockPlanPanel({ classId, branchId, onClose, onDone }: {
     try {
       const r = await api.post<{ done: number; failed: { label?: string; message: string }[] }>(
         '/attempts/bulk-plan',
-        { studentIds: chosen.map((c) => c.studentId), periodId, requiredSkills: [...skills] },
+        {
+          picks: chosen.map((c) => ({ studentId: c.studentId, attemptNo: picks.get(c.studentId) })),
+          periodId,
+          requiredSkills: [...skills],
+        },
       );
       toast.push(r.done > 0 ? 'ok' : 'error',
         `Đã lên kế hoạch cho ${r.done} học viên${r.failed.length ? `, ${r.failed.length} em không tạo được` : ''}.`);
       for (const f of r.failed.slice(0, 3)) toast.push('error', `${f.label ?? ''}: ${f.message}`);
-      invalidate('/attempts');
-      invalidate('/classes');
+      invalidate('/attempts'); invalidate('/classes'); invalidate('/students');
       onDone?.();
-      if (r.done > 0) onClose(); else { setPicked(new Set()); reload(); }
+      if (r.done > 0) onClose(); else { setPicks(new Map()); reload(); }
     } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
   };
 
+  /* Các lượt MT đang được chọn, để nói đúng việc sắp xảy ra thay vì một câu chung chung. */
+  const pickedNos = useMemo(
+    () => [...new Set(chosen.map((c) => picks.get(c.studentId)!))].sort((a, b) => a - b),
+    [chosen, picks],
+  );
+
   return (
     <Drawer
-      open
-      onClose={onClose}
-      width="max-w-3xl"
+      open onClose={onClose} width="max-w-4xl"
       title="Lên kế hoạch MT"
-      subtitle="Chọn nhiều học viên, đặt tuần một lần, và quyết định lượt này yêu cầu những kỹ năng nào"
+      subtitle="Chọn lượt MT riêng cho từng em, rồi chốt chung một tuần"
       footer={
         <>
           <button className="btn" onClick={onClose} disabled={busy}>Đóng</button>
-          <button className="btn btn-primary" onClick={save} disabled={busy || !chosen.length || !periodId || !skills.size}>
-            {busy ? 'Đang lưu…' : `Lên kế hoạch cho ${chosen.length} học viên`}
+          <button className="btn btn-primary" onClick={save}
+            disabled={busy || !chosen.length || !periodId || !skills.size}>
+            {busy ? 'Đang lưu…'
+              : chosen.length
+              ? `Xếp ${chosen.length} em vào tuần này`
+              : 'Chưa chọn em nào'}
           </button>
         </>
       }
     >
       <div className="space-y-4">
+        {/* ------------------------------------------------ 1. tuần chốt chung */}
         <div className="grid gap-3 sm:grid-cols-2">
-          <WeekPicker periodId={periodId} onPeriod={setPeriodId} className="w-full" label="Tuần MT" />
+          <WeekPicker periodId={periodId} onPeriod={setPeriodId} className="w-full"
+            label="Tuần MT" scope="planning" />
           <div>
-            <span className="label">Số lần MT</span>
+            <span className="label">Lượt MT đang chọn</span>
             <div className="field flex items-center text-slate-300">
-              {attemptNos.length === 0 ? 'Chọn học viên trước'
-                : attemptNos.length === 1 ? `MT${attemptNos[0]}`
-                : `MT${attemptNos[0]}–MT${attemptNos[attemptNos.length - 1]} tuỳ từng em`}
+              {pickedNos.length === 0 ? 'Chưa chọn em nào'
+                : pickedNos.map((n) => `MT${n}`).join(' · ')}
             </div>
             <p className="text-[11px] text-slate-500 mt-1">
-              Số lần MT tính theo lộ trình của từng em, hệ thống tự đánh — không gõ tay để khỏi lệch.
+              Các em xếp chung một tuần vẫn có thể ở những lượt MT khác nhau.
             </p>
           </div>
         </div>
 
+        {/* ------------------------------------------------ 2. kỹ năng yêu cầu */}
         <div>
           <span className="label">Kỹ năng lượt này yêu cầu</span>
           <div className="flex flex-wrap gap-2 mt-1">
             {ASSESSED_SKILLS.map((k) => (
               <label key={k} className={`btn btn-sm ${skills.has(k) ? 'btn-primary' : ''}`}>
-                <input
-                  type="checkbox" className="accent-sky-400 mr-1.5"
-                  checked={skills.has(k)} onChange={() => toggleSkill(k)}
-                />
+                <input type="checkbox" className="accent-sky-400 mr-1.5"
+                  checked={skills.has(k)} onChange={() => toggleSkill(k)} />
                 {ASSESSED_SKILL_LABEL[k]}
               </label>
             ))}
           </div>
-          <SectionNote>
-            Bỏ tick một kỹ năng nghĩa là lượt này <strong>không yêu cầu</strong> kỹ năng đó ngay từ đầu —
-            khác hẳn “có yêu cầu nhưng chưa có điểm”. Lượt được coi là xong khi đủ điểm các kỹ năng
-            được yêu cầu, và SOS cũng tính trên đúng những kỹ năng đó.
-          </SectionNote>
           {skills.size === 0 && (
             <p className="text-xs text-rose-300 mt-1">
               Phải yêu cầu ít nhất một kỹ năng — một lượt không có kỹ năng nào thì không đánh giá được gì.
@@ -137,64 +173,90 @@ export function MockPlanPanel({ classId, branchId, onClose, onDone }: {
           )}
         </div>
 
+        {/* ------------------------------------------------ 3. tìm học viên */}
+        <div className="grid gap-3 sm:grid-cols-3">
+          <label className="block">
+            <span className="label">Tìm học viên</span>
+            <input className="field w-full" value={q} placeholder="Gõ tên hoặc mã học viên"
+              onChange={(e) => setQ(e.target.value)} />
+          </label>
+          <label className="block">
+            <span className="label">Lớp</span>
+            <select className="field w-full" value={pickedClass ?? ''}
+              onChange={(e) => setPickedClass(e.target.value ? Number(e.target.value) : null)}>
+              <option value="">Tất cả lớp trong phạm vi</option>
+              {(classes.data ?? []).map((c) => <option key={c.id} value={c.id}>{c.code}</option>)}
+            </select>
+          </label>
+          <label className="block">
+            <span className="label">Chỉ em chưa có</span>
+            <select className="field w-full" value={missingNo ?? ''}
+              onChange={(e) => setMissingNo(e.target.value ? Number(e.target.value) : null)}>
+              <option value="">— không lọc —</option>
+              {SLOTS.map((n) => <option key={n} value={n}>Chưa có MT{n}</option>)}
+            </select>
+          </label>
+        </div>
+
+        {/* ------------------------------------------------ 4. danh sách + chọn lượt */}
         <div>
           <div className="flex flex-wrap items-center justify-between gap-2 mb-1">
             <span className="label">
-              {all ? 'Tất cả học viên trong phạm vi' : 'Học viên chưa có tuần MT tiếp theo'}
+              {q.trim() || missingNo || all ? 'Học viên trong phạm vi' : 'Học viên chưa có tuần MT tiếp theo'}
               {data?.noPlanCount ? ` · ${data.noPlanCount} em đang thiếu` : ''}
             </span>
-            <button className="btn btn-sm" onClick={() => { setAll((v) => !v); setPicked(new Set()); }}>
-              {all ? 'Chỉ em chưa có tuần MT' : 'Xem cả lớp để xếp trước'}
-            </button>
-            {canPick.length > 0 && (
-              <button
-                className="btn btn-sm"
-                onClick={() => setPicked(picked.size === canPick.length ? new Set() : new Set(canPick.map((r) => r.studentId)))}
-              >
-                {picked.size === canPick.length ? 'Bỏ chọn tất cả' : `Chọn tất cả (${canPick.length})`}
-              </button>
-            )}
+            <span className="flex flex-wrap gap-1">
+              {!q.trim() && !missingNo && (
+                <button className="btn btn-sm" onClick={() => { setAll((v) => !v); setPicks(new Map()); }}>
+                  {all ? 'Chỉ em chưa có tuần MT' : 'Xem cả lớp để xếp trước'}
+                </button>
+              )}
+              {/*
+                ĐĂNG KÝ HÀNG LOẠT MỘT LƯỢT — mục 10. Bấm "MT2 cho tất cả" là chọn MT2 cho
+                mọi em trong danh sách chưa có lượt đó; em đã có thì bỏ qua, không ghi đè.
+              */}
+              {missingNo && (
+                <button className="btn btn-sm" onClick={() => pickAll(missingNo)}>
+                  Chọn MT{missingNo} cho tất cả
+                </button>
+              )}
+              {picks.size > 0 && (
+                <button className="btn btn-sm" onClick={() => setPicks(new Map())}>Bỏ chọn tất cả</button>
+              )}
+            </span>
           </div>
+
           {loading ? <Skeleton rows={5} /> : rows.length === 0 ? (
             <Empty
-              title="Mọi học viên đều đã có tuần MT tiếp theo"
-              hint='Muốn xếp trước lượt sau cho cả lớp thì bấm "Xem cả lớp để xếp trước".'
+              title={q.trim() ? 'Không tìm thấy học viên nào' : 'Mọi học viên đều đã có tuần MT tiếp theo'}
+              hint={q.trim() ? 'Thử gõ một phần tên hoặc mã học viên.'
+                : 'Muốn xếp trước lượt sau cho cả lớp thì bấm "Xem cả lớp để xếp trước".'}
             />
           ) : (
             <div className="surface-2 rounded-lg overflow-x-auto">
-              <table className="w-full text-sm">
+              <table className="w-full text-sm" style={{ minWidth: '44rem' }}>
                 <thead>
                   <tr>
-                    <th className="th w-10"></th>
                     <th className="th">Học viên</th>
                     <th className="th">Lớp</th>
-                    <th className="th">Lộ trình · Target</th>
-                    <th className="th">MT tiếp theo</th>
+                    <th className="th">Chọn lượt MT</th>
                   </tr>
                 </thead>
                 <tbody>
                   {rows.map((r) => (
                     <tr key={r.studentId} className={`row-hover ${r.canPlan ? '' : 'row-muted'}`}>
                       <td className="td">
-                        <input
-                          type="checkbox" className="accent-sky-400" disabled={!r.canPlan}
-                          checked={picked.has(r.studentId)} onChange={() => toggle(r.studentId)}
-                          aria-label={`Chọn ${r.studentName}`}
-                        />
-                      </td>
-                      <td className="td">
                         <div className="text-slate-100">{r.studentName}</div>
-                        <div className="text-[11px] text-slate-500">{r.studentCode}</div>
+                        <div className="text-[11px] text-slate-500">
+                          {r.studentCode}
+                          {r.route ? ` · ${r.route}` : ''}
+                          {r.target ? ` · Target ${r.target}` : ''}
+                        </div>
                       </td>
                       <td className="td text-slate-300 whitespace-nowrap">{r.classCode ?? '—'}</td>
-                      <td className="td whitespace-nowrap tabular-nums">
-                        {r.route ?? '—'} · {r.target ?? '—'}
-                      </td>
                       <td className="td">
-                        <div className="flex flex-col items-start gap-0.5">
-                          <Pill tone="info">MT{r.nextAttemptNo}</Pill>
-                          {r.hasPending && <span className="text-[10px] text-slate-500">đã có lượt đang chờ</span>}
-                        </div>
+                        <MockSlots row={r} picked={picks.get(r.studentId) ?? null}
+                          onPick={(no) => pick(r, no)} />
                       </td>
                     </tr>
                   ))}
@@ -202,8 +264,67 @@ export function MockPlanPanel({ classId, branchId, onClose, onDone }: {
               </table>
             </div>
           )}
+
+          <SectionNote>
+            Ô <strong>xám đậm</strong> là lượt đã làm xong — không sửa lại được, vì đó là lịch sử
+            chứ không phải kế hoạch. Ô <strong>viền xanh</strong> là lượt đã có tuần; chọn lại sẽ
+            báo lỗi ở chính dòng đó chứ không huỷ cả lô.
+          </SectionNote>
         </div>
       </div>
     </Drawer>
+  );
+}
+
+/**
+ * DÃY Ô MT1…MT7 CỦA MỘT EM.
+ *
+ * Ba trạng thái, ba hình dạng — người dùng phải phân biệt được trước khi bấm, không phải sau:
+ *   đã xong    xám đậm, bấm không được   (lịch sử)
+ *   đã xếp     viền xanh, có mã tuần      (kế hoạch đang có)
+ *   còn trống  bấm được                   (chỗ xếp mới)
+ */
+function MockSlots({ row, picked, onPick }: {
+  row: NoPlan; picked: number | null; onPick: (no: number) => void;
+}) {
+  const byNo = new Map(row.attempts.map((a) => [a.attemptNo, a]));
+  return (
+    <span className="flex flex-wrap gap-1">
+      {SLOTS.map((no) => {
+        const had = byNo.get(no);
+        const done = had?.status === 'done';
+        const active = picked === no;
+        if (done) {
+          return (
+            <span key={no}
+              className="inline-flex items-center rounded px-2 py-1 text-[11px] text-slate-500 cursor-not-allowed"
+              style={{ background: 'var(--surface-2)' }}
+              title={`MT${no} đã làm xong${had?.periodCode ? ` · ${had.periodCode}` : ''} — không sửa lại được`}>
+              MT{no} ✓
+            </span>
+          );
+        }
+        return (
+          <button
+            key={no} type="button" disabled={!row.canPlan}
+            className={`inline-flex items-center rounded px-2 py-1 text-[11px] border ${
+              active ? 'border-transparent' : ''
+            }`}
+            style={active
+              ? { background: 'var(--accent)', color: 'var(--accent-ink)', fontWeight: 600 }
+              : had
+              ? { borderColor: 'var(--accent-line)', color: 'var(--accent-strong)' }
+              : { borderColor: 'var(--line-strong)', color: 'var(--text-dim)' }}
+            title={had ? `MT${no} đã xếp ở ${had.periodCode ?? 'một tuần'}` : `Xếp MT${no} cho em này`}
+            onClick={() => onPick(no)}
+          >
+            MT{no}{had ? ' ·' : ''}
+          </button>
+        );
+      })}
+      {row.hasPending && !picked && (
+        <Pill tone="muted">đã có lượt đang chờ</Pill>
+      )}
+    </span>
   );
 }

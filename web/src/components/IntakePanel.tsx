@@ -7,8 +7,11 @@ import { Pill, SectionNote } from './ui.tsx';
 import { ROUTES } from '@shared/domain.ts';
 
 type Row = {
-  fullName?: string; classCode?: string; dob?: string; examDate?: string;
-  route?: string; target?: number | string | null; consultant?: string; mockWeeks?: string[];
+  fullName?: string; classCode?: string; dob?: string;
+  baselineScore?: number | string | null;
+  target?: number | string | null;
+  /* Vẫn nhận được nếu bảng dán có các cột cũ, nhưng lưới nhập tay không bày ra nữa. */
+  examDate?: string; route?: string; consultant?: string; mockWeeks?: string[];
 };
 type PreviewRow = Row & {
   row: number; classId: number | null;
@@ -16,17 +19,22 @@ type PreviewRow = Row & {
   issues: { row: number; field: string; message: string }[];
 };
 
-const COLUMNS: { key: keyof Row; label: string; width: string }[] = [
-  { key: 'fullName', label: 'Họ tên', width: 'w-44' },
+/**
+ * NĂM CỘT, KHÔNG HƠN — owner chốt 13/09/2026 (mục 7.4).
+ *
+ * Ba cột bỏ đi và lý do: lộ trình suy từ chính lớp em vào; ngày thi IELTS lúc nhập chưa ai
+ * biết; tư vấn viên không đổi được quyết định nào trong phần mềm này. Bảng dán có các cột
+ * đó thì hệ thống vẫn đọc — chỉ là không bắt ai gõ tay nữa.
+ */
+const COLUMNS: { key: keyof Row; label: string; width: string; hint?: string }[] = [
+  { key: 'fullName', label: 'Họ và tên', width: 'w-48' },
   { key: 'classCode', label: 'Lớp', width: 'w-32' },
   { key: 'dob', label: 'Ngày sinh', width: 'w-28' },
-  { key: 'route', label: 'Lộ trình', width: 'w-24' },
+  { key: 'baselineScore', label: 'Điểm đầu vào', width: 'w-28', hint: 'Ưu tiên OVR. Bỏ trống được, bổ sung sau.' },
   { key: 'target', label: 'Target', width: 'w-20' },
-  { key: 'examDate', label: 'Ngày thi IELTS', width: 'w-32' },
-  { key: 'consultant', label: 'Tư vấn viên', width: 'w-36' },
 ];
 
-const EMPTY: Row = { fullName: '', classCode: '', dob: '', route: '', target: '', examDate: '', consultant: '' };
+const EMPTY: Row = { fullName: '', classCode: '', dob: '', baselineScore: '', target: '' };
 
 /**
  * Thêm nhiều học viên trong một lần.

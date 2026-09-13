@@ -10,6 +10,7 @@ import { writeAudit } from './audit.ts';
 import { loadBundle, resultOf, skillCells } from './attempts.ts';
 import { allProgrammes, evaluateRegular, programmeOfClass } from './regular.ts';
 import { classProgressMany, missingForClasses, missingForStudent } from './schedule.ts';
+import { SKILL_SHORT } from '../../../shared/domain.ts';
 
 /**
  * Màn Học viên lấy LỚP làm gốc.
@@ -552,6 +553,53 @@ export function setClassTeachers(p: Principal, classId: number, input: { slots?:
   for (const s of wanted.values()) {
     if (!eligible.has(s.userId)) {
       throw badRequest('Người này không có vai trò giảng dạy ở chi nhánh của lớp.');
+    }
+  }
+
+  /*
+   * BA QUY TẮC PHÂN CÔNG — mục 7.7, kiểm ở MÁY CHỦ chứ không chỉ ở giao diện.
+   *
+   *   1. Mỗi kỹ năng chỉ MỘT giáo viên.
+   *   2. Một giáo viên dạy NHIỀU kỹ năng trong cùng lớp thì được.
+   *   3. Đúng MỘT giáo viên chủ nhiệm, và người đó phải nằm trong danh sách phân công.
+   *
+   * Quy tắc 1 là quy tắc dễ vi phạm nhất và hậu quả im lặng nhất: hai người cùng phụ trách
+   * Listening thì cả hai đều tưởng người kia nhập điểm, và không ai nhập.
+   */
+  const perSkill = new Map<string, number[]>();
+  for (const s of wanted.values()) {
+    if (!s.skill) continue;
+    const list = perSkill.get(s.skill) ?? [];
+    list.push(s.userId);
+    perSkill.set(s.skill, list);
+  }
+  for (const [skill, users] of perSkill) {
+    if (users.length > 1) {
+      throw badRequest(
+        `Kỹ năng ${SKILL_SHORT[skill] ?? skill} đang được xếp cho ${users.length} giáo viên. `
+        + 'Mỗi kỹ năng chỉ một người — nếu hai người cùng phụ trách thì cả hai đều tưởng người kia nhập điểm.',
+      );
+    }
+  }
+
+  /*
+   * ĐÚNG MỘT GVCN, VÀ GVCN PHẢI DẠY ÍT NHẤT MỘT KỸ NĂNG Ở LỚP ĐÓ.
+   *
+   * Owner khẳng định lại 13/09/2026. Đây chính là chữ "trong danh sách được phân công" ở mục
+   * 7.7: chủ nhiệm một lớp mà không dạy em nào buổi nào thì không có căn cứ nào để nhận xét
+   * và theo dõi các em — vai đó thành một cái tên trên giấy.
+   */
+  const cores = [...wanted.values()].filter((s) => s.isCore);
+  if (cores.length > 1) {
+    throw badRequest('Một lớp chỉ có đúng một giáo viên chủ nhiệm.');
+  }
+  if (cores.length === 1) {
+    const teaches = [...wanted.values()].some((s) => s.skill && s.userId === cores[0].userId);
+    if (!teaches) {
+      throw badRequest(
+        'Giáo viên chủ nhiệm phải dạy ít nhất một kỹ năng ở lớp này. '
+        + 'Hãy xếp cho người đó một kỹ năng, hoặc chọn người khác làm chủ nhiệm.',
+      );
     }
   }
 

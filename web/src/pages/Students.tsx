@@ -7,6 +7,7 @@ import { Card, Empty, ErrorState, Pill, SectionNote, Skeleton } from '../compone
 import { caseStatusLabel, caseStatusTone, sosTone } from '../lib/format.ts';
 import type { Branch } from '../components/Filters.tsx';
 import { IntakePanel } from '../components/IntakePanel.tsx';
+import { ClassCreatePanel } from '../components/ClassCreatePanel.tsx';
 import { ClassRoster } from '../components/ClassRoster.tsx';
 import { DateDutyPanel } from '../components/DateDutyPanel.tsx';
 import { MockPlanPanel } from '../components/MockPlanPanel.tsx';
@@ -71,6 +72,7 @@ export default function StudentsPage() {
   );
   const [intakeOpen, setIntakeOpen] = useState(false);
   const [planOpen, setPlanOpen] = useState(false);
+  const [classCreate, setClassCreate] = useState(false);
   const [intakeFor, setIntakeFor] = useState<ClassSummary | null>(null);
   const [draftQ, setDraftQ] = useState(q);
 
@@ -146,6 +148,9 @@ export default function StudentsPage() {
           <button className="btn btn-sm" onClick={() => setPlanOpen(true)}>Lên kế hoạch MT</button>
         )}
         {can(PERMISSIONS.STUDENT_EDIT) && view === 'classes' && (
+          <button className="btn btn-sm" onClick={() => setClassCreate(true)}>Tạo lớp</button>
+        )}
+        {can(PERMISSIONS.STUDENT_EDIT) && view === 'classes' && (
           <button className="btn btn-primary btn-sm" onClick={() => { setIntakeFor(null); setIntakeOpen(true); }}>
             Thêm học viên
           </button>
@@ -213,6 +218,13 @@ export default function StudentsPage() {
           classId={params.get('classId') ? Number(params.get('classId')) : null}
           onClose={() => setPlanOpen(false)}
           onDone={() => { invalidate('/classes'); invalidate('/attempts'); classes.reload(); }}
+        />
+      )}
+
+      {classCreate && (
+        <ClassCreatePanel
+          onClose={() => setClassCreate(false)}
+          onDone={() => { invalidate('/classes'); classes.reload(); }}
         />
       )}
 

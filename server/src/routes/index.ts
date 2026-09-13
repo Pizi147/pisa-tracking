@@ -273,6 +273,9 @@ api.get('/attempts/date-duty', requireAuth, wrap((req) => planningSvc.dateDutyQu
 api.get('/attempts/no-plan', requireAuth, wrap((req) => planningSvc.noPlanQueue(principalOf(req), {
   branchId: toInt(req.query?.branchId), classId: toInt(req.query?.classId),
   includePlanned: req.query?.includePlanned === '1',
+  /* Gõ tìm thẳng học viên, và lọc "chưa có MT thứ n" — hai cách vào của mục 10. */
+  q: qStr(req, 'q'),
+  missingAttemptNo: toInt(req.query?.missingAttemptNo),
 })));
 
 api.get('/attempts/:id', requireAuth, wrap((req) => {

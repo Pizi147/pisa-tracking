@@ -2182,38 +2182,106 @@ check('Bỏ phân công KHÔNG xoá lịch sử, và dòng giữ nguyên thì kh
 
 check('Bỏ phân công thì mất luôn quyền nhập điểm kỹ năng đó', () => {
   const before = classesSvc.classTeachers(P.mbManager, mbClass);
-  const wSlot = before.bySkill.find((b) => b.skill === 'writing1');
-  assert(wSlot, 'Lớp mẫu không có giáo viên Writing 1');
-  const gv = loadPrincipal(wSlot!.userId);
-  assert(can(gv, PERMISSIONS.SCORE_EDIT, { classId: mbClass, skill: 'writing1' }), 'GV W1 chưa có quyền');
+  const coreIds = new Set(before.core.map((c: any) => c.userId));
+  /*
+   * CHỌN MỘT KỸ NĂNG BỎ ĐƯỢC — không phải kỹ năng cuối cùng của giáo viên chủ nhiệm.
+   *
+   * GVCN phải dạy ít nhất một kỹ năng ở lớp (mục 7.7, owner khẳng định lại 13/09/2026), nên
+   * bỏ nốt kỹ năng cuối của họ là một thao tác KHÔNG hợp lệ — bài kiểm này nói về chuyện
+   * khác, nên nó phải chọn một kỹ năng khác để thử.
+   */
+  const coreSkillCount = before.bySkill.filter((b: any) => coreIds.has(b.userId)).length;
+  const slot = before.bySkill.find(
+    (b: any) => !coreIds.has(b.userId) || coreSkillCount > 1,
+  );
+  assert(slot, 'Lớp mẫu không có kỹ năng nào bỏ được mà không bỏ rơi giáo viên chủ nhiệm');
+  const gv = loadPrincipal(slot!.userId);
+  assert(can(gv, PERMISSIONS.SCORE_EDIT, { classId: mbClass, skill: slot!.skill }),
+    `GV ${slot!.skill} chưa có quyền`);
 
   classesSvc.setClassTeachers(P.mbManager, mbClass, {
     slots: [
-      ...before.core.map((c) => ({ userId: c.userId, skill: null, isCore: true })),
-      ...before.bySkill.filter((b) => b.skill !== 'writing1')
-        .map((b) => ({ userId: b.userId, skill: b.skill, isCore: false })),
+      ...before.core.map((c: any) => ({ userId: c.userId, skill: null, isCore: true })),
+      ...before.bySkill.filter((b: any) => b.skill !== slot!.skill)
+        .map((b: any) => ({ userId: b.userId, skill: b.skill, isCore: false })),
     ],
   });
-  const after = loadPrincipal(wSlot!.userId);
-  assert(!can(after, PERMISSIONS.SCORE_EDIT, { classId: mbClass, skill: 'writing1' }),
+  const after = loadPrincipal(slot!.userId);
+  assert(!can(after, PERMISSIONS.SCORE_EDIT, { classId: mbClass, skill: slot!.skill }),
     'Bỏ phân công rồi mà vẫn nhập được điểm kỹ năng đó');
 });
 
-check('Một kỹ năng xếp được HAI giáo viên, không đá mất người thứ hai', () => {
+check('GVCN phải dạy ít nhất MỘT kỹ năng ở lớp mình chủ nhiệm', () => {
+  /*
+   * Owner khẳng định 13/09/2026. Chủ nhiệm một lớp mà không dạy em nào buổi nào thì không có
+   * căn cứ nào để nhận xét và theo dõi — vai đó thành một cái tên trên giấy.
+   */
+  const t = classesSvc.classTeachers(P.mbManager, mbClass);
+  const core = t.core[0];
+  assert(core, 'Lớp mẫu chưa có giáo viên chủ nhiệm');
+  assertThrows(
+    () => classesSvc.setClassTeachers(P.mbManager, mbClass, {
+      slots: [
+        { userId: core.userId, skill: null, isCore: true },
+        ...t.bySkill.filter((b: any) => b.userId !== core.userId)
+          .map((b: any) => ({ userId: b.userId, skill: b.skill, isCore: false })),
+      ],
+    }),
+    /ít nhất một kỹ năng/, 'Đặt GVCN không dạy kỹ năng nào',
+  );
+});
+
+check('MỖI KỸ NĂNG CHỈ MỘT GIÁO VIÊN — xếp hai người vào một kỹ năng bị chặn', () => {
+  /*
+   * VÒNG 4 ĐẢO LẠI QUY TẮC NÀY (mục 7.7). Vòng trước cho phép hai giáo viên cùng một kỹ
+   * năng; owner chốt 13/09/2026 rằng mỗi kỹ năng chỉ một người.
+   *
+   * Lý do nghiệp vụ, và cũng là hậu quả im lặng nhất khi làm sai: hai người cùng phụ trách
+   * Listening thì cả hai đều tưởng người kia nhập điểm, và không ai nhập.
+   */
   const t = classesSvc.classTeachers(P.mbManager, mbClass);
   const two = t.candidates.slice(0, 2);
   assert(two.length === 2, 'Chi nhánh không đủ hai giáo viên để thử');
+
+  const base = [
+    ...t.core.map((c: any) => ({ userId: c.userId, skill: null, isCore: true })),
+    ...t.bySkill.filter((b: any) => b.skill !== 'reading')
+      .map((b: any) => ({ userId: b.userId, skill: b.skill, isCore: false })),
+  ];
+  assertThrows(
+    () => classesSvc.setClassTeachers(P.mbManager, mbClass, {
+      slots: [
+        ...base,
+        { userId: two[0].id, skill: 'reading', isCore: false },
+        { userId: two[1].id, skill: 'reading', isCore: false },
+      ],
+    }),
+    /chỉ một người/, 'Xếp hai giáo viên vào cùng một kỹ năng',
+  );
+
+  /* Một giáo viên dạy NHIỀU kỹ năng thì vẫn được — đó là quy tắc thứ hai của mục 7.7. */
   classesSvc.setClassTeachers(P.mbManager, mbClass, {
     slots: [
-      ...t.core.map((c) => ({ userId: c.userId, skill: null, isCore: true })),
-      ...t.bySkill.filter((b) => b.skill !== 'reading').map((b) => ({ userId: b.userId, skill: b.skill, isCore: false })),
+      ...base,
       { userId: two[0].id, skill: 'reading', isCore: false },
-      { userId: two[1].id, skill: 'reading', isCore: false },
     ],
   });
   const after = classesSvc.classTeachers(P.mbManager, mbClass);
-  assert(after.bySkill.filter((b) => b.skill === 'reading').length === 2,
-    'Xếp hai giáo viên Reading nhưng chỉ giữ lại một');
+  assert(after.bySkill.filter((b: any) => b.skill === 'reading').length === 1,
+    'Kỹ năng Reading phải có đúng một giáo viên');
+
+  /* Và đúng MỘT giáo viên chủ nhiệm. */
+  assertThrows(
+    () => classesSvc.setClassTeachers(P.mbManager, mbClass, {
+      slots: [
+        ...base,
+        { userId: two[0].id, skill: 'reading', isCore: false },
+        { userId: two[0].id, skill: null, isCore: true },
+        { userId: two[1].id, skill: null, isCore: true },
+      ],
+    }),
+    /một giáo viên chủ nhiệm/, 'Xếp hai giáo viên chủ nhiệm cho một lớp',
+  );
 });
 
 check('Dữ liệu mẫu có đủ bốn mức gấp, không phải một màu đỏ', () => {
