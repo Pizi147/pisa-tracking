@@ -1,6 +1,10 @@
 # PISA — Design Master Reference
 
-Phiên bản 1.5 · Cập nhật 09/09/2026 · Dự án `Pizi147/pisa-tracking`
+Phiên bản 1.7 · Cập nhật 13/09/2026 · Dự án `Pizi147/pisa-tracking`
+
+> **VÒNG 4 ĐANG CHẠY — đọc `vong4/01_CHOT_NGHIEP_VU.md` TRƯỚC tài liệu này.**
+> Vòng 4 đảo ngược ba quyết định của vòng 3 (đơn vị case, hai việc trao đổi, ghi nhận của GV).
+> Những mục bị thay thế đã được đánh dấu ở mục 8. Chỗ nào hai tài liệu mâu thuẫn, `vong4/` thắng.
 
 > Số phiên bản ở đây trước nay ghi 1.0 trong khi changelog đã tới 1.4 — đọc từ trên xuống
 > thì tưởng tài liệu chưa cập nhật. Nay hai chỗ khớp nhau.
@@ -291,6 +295,11 @@ Seed cases đáng giữ để review khi đúng scope: đa role khác chi nhánh
 | Warning/WL chỉ đọc ở PR4 | S8 GVCN cập nhật trạng thái nhận/xử lý; không tự phát hành |
 | Head checkbox giữ vì sheet có cột | S8 yêu cầu đánh giá; đề xuất bỏ/gộp, không tự dựng gate |
 | Branch report chủ yếu nhập tay, không tự detect | S8 facts tự sinh, judgement vẫn do người; không auto quyết thái độ/Warning |
+| Case = một lượt MT × một kỹ năng; mở lại thì tạo mạch mới nối mạch cũ (vòng 3a, D79/D80) | **Vòng 4**: case = một học viên × một hạng mục, sống xuyên suốt khoá; MT sau trượt lại thì thêm mốc vào chính case đó; case đã kết thúc mà tái phát thì MỞ LẠI, không tạo case mới |
+| Hai việc trao đổi học viên/phụ huynh nằm ở bảng riêng, tách khỏi học thuật (vòng 3a, D82) | **Vòng 4**: hai việc đó là hai PHƯƠNG ÁN của một case "Ý thức/Khác" tự sinh sau mỗi đợt MT có SOS; case này đóng khi xong cả hai |
+| "Điểm chính thức" và "Ghi nhận của GV" là hai khu riêng (D59, bảng `skill_checkins`) | **Vòng 4**: bỏ hẳn cả hai, kể cả chức năng GV chấm điểm ngoài luồng case. Đánh giá của GV chỉ nằm trong "cập nhật kết quả case" |
+| Môn `prep_writing` / "Prep Writing" của lớp Normal | **Vòng 4**: gọi là **W** (`writing`). FOU = L·R·W·Pronunciation, BE/ELE = L·R·W·S |
+| Tab "Báo cáo tuần" là nơi Quản lý giao việc cho GV (vòng 3b, D89) | **Vòng 4**: bỏ tạm tab Báo cáo tuần; nút "+ Giao việc" chuyển vào màn Thực trạng |
 | STOP trước code trong context gốc | Đã chuyển sang vòng demo/iteration; ChatGPT review+prompt, Claude code theo scope mới, không hỏi lại gate cũ |
 
 ## 9. OPEN — chỉ hỏi điều thực sự còn thiếu
@@ -337,6 +346,21 @@ Các link sau trỏ về source được đọc, không phải kết quả chạ
 6. Ghi rõ đã review code hay đã chạy browser/test; không dùng build/pass của phiên bản cũ cho phiên bản mới.
 
 ### Changelog
+
+- 13/09/2026 — v1.7 (chốt vòng 4, **chưa code**): owner gửi `PISA_Claude_Prompt.md` và trả lời
+  bốn vòng hỏi đáp. Toàn bộ quyết định nằm ở **`vong4/01_CHOT_NGHIEP_VU.md`**; kế hoạch bốn
+  phase ở `vong4/02_KE_HOACH_PHASE.md`. Ba đảo ngược so với vòng 3 đã ghi ở mục 8. Bộ số mới
+  được chốt: lịch MT mặc định của FT theo tuần học **6 · 12 · 16 · 20 · 24** (đa số chỉ 3 lượt,
+  LT1 và LT2 giống nhau, Quản lý sửa đè được); lớp Normal giữ nguyên FOU 8 tuần (4/8) và
+  BE·ELE 10 tuần (5/10), **không có LT1/LT2**; mức SOS tính trên bốn kỹ năng L·R·W·S với W là
+  band tổng hợp, tách W1/W2 không làm tăng số kỹ năng; Writing chỉ sinh case khi band tổng hợp
+  trượt, rồi mới xét từng task; phương án mặc định theo mức SOS **giữ nguyên không đổi**;
+  đăng nhập thật bằng email đuôi `.pisa@gmail.com`, tài khoản quản trị mặc định là
+  `dovutuanphong95.pisa@gmail.com`; ngày demo chuyển sang **14/09/2026**. Ba lỗi owner báo đã
+  truy được nguyên nhân: hai bộ lọc chi nhánh độc lập trên cùng một màn (`Overview.tsx:76` vs
+  `Academic.tsx:61`); bảng tổng hợp đếm lượt thay vì đếm người nên SOS vượt sĩ số
+  (`summary.ts`); panel "Lên kế hoạch MT" mở ra với tuần rỗng nên hai mũi tên bị khoá cứng,
+  cửa sổ tuần chỉ mở một tuần tương lai, và không hề có ô gõ tên học viên.
 
 - 09/09/2026 — v1.5 (vòng D — hồ sơ học viên và vấn đề học vụ, đã code và chạy): xem bảng
   CURRENT ở mục 0b. Tóm tắt: **hai nguồn vấn đề, một vòng đời** (sinh từ điểm và giáo viên
