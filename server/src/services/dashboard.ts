@@ -127,16 +127,19 @@ function supportMetrics(active: any[], inWeek: any[]) {
   const ph = caseIds.map(() => '?').join(',');
   const cases = conn.prepare(`SELECT * FROM sos_cases WHERE id IN (${ph}) AND sos_level > 0`).all(...caseIds) as any[];
   /*
-   * Hai việc trao đổi nay ở bảng Liên hệ, còn hỗ trợ học thuật ở bảng phương án. Đếm theo
-   * LƯỢT chứ không theo vấn đề: một lượt trượt ba kỹ năng vẫn chỉ có một lần gọi phụ huynh.
+   * Từ vòng 4, hai việc trao đổi là PHƯƠNG ÁN của case Ý thức/Khác — không còn bảng riêng.
+   * Vẫn đếm theo LƯỢT chứ không theo case: một lượt trượt ba kỹ năng vẫn chỉ có một lần gọi
+   * phụ huynh, đếm theo case thì con số phồng lên gấp ba.
    */
   const attemptIds = [...new Set(cases.map((c) => c.attempt_id).filter(Boolean))];
   const contactCount = (kind: string) => (attemptIds.length
     ? (conn
         .prepare(
-          `SELECT COUNT(DISTINCT attempt_id) n FROM student_contacts
-            WHERE kind = ? AND done_on IS NOT NULL
-              AND attempt_id IN (${attemptIds.map(() => '?').join(',')})`,
+          `SELECT COUNT(DISTINCT sc.attempt_id) n
+             FROM case_interventions iv
+             JOIN sos_cases sc ON sc.id = iv.case_id
+            WHERE iv.kind = ? AND iv.status = 'completed'
+              AND sc.attempt_id IN (${attemptIds.map(() => '?').join(',')})`,
         )
         .get(kind, ...attemptIds) as any).n
     : 0);
@@ -165,7 +168,13 @@ function supportMetrics(active: any[], inWeek: any[]) {
   for (const aid of attemptIds) {
     const first = conn.prepare('SELECT MIN(taken_on) AS d FROM assessment_scores WHERE attempt_id = ?').get(aid) as any;
     const contact = conn
-      .prepare('SELECT MIN(done_on) AS d FROM student_contacts WHERE attempt_id = ? AND done_on IS NOT NULL')
+      .prepare(
+        `SELECT MIN(iv.completed_date) AS d
+           FROM case_interventions iv
+           JOIN sos_cases sc ON sc.id = iv.case_id
+          WHERE sc.attempt_id = ? AND iv.kind IN ('talk_student','talk_parent')
+            AND iv.completed_date IS NOT NULL`,
+      )
       .get(aid) as any;
     if (first?.d && contact?.d) {
       interv.push(Math.round((Date.parse(contact.d) - Date.parse(first.d)) / 86400000));

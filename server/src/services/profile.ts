@@ -11,7 +11,6 @@ import { entryBandsOf, scoresOf, skipsOf } from './attempts.ts';
 import { assessedBands, evaluateAttempt } from './scoring.ts';
 import { evaluateRegular, programmeByCode, programmeOfClass } from './regular.ts';
 import { cycleById, cyclesOf, currentCycle, targetRevisions } from './cycles.ts';
-import { checkinSkillsFor, compareCheckins, latestCheckins } from './checkins.ts';
 import { canCloseCase } from './cases.ts';
 
 /**
@@ -218,11 +217,6 @@ function episodesOf(rows: any[]) {
     if (e.ref_table === 'assessment_attempts' && e.ref_id) {
       return { key: `attempt:${e.ref_id}`, kind: 'assessment', link: `/mock/${e.ref_id}` };
     }
-    // Ghi nhận gom theo TUẦN, vì năm ghi nhận trong một tuần là một đợt quan sát, không
-    // phải năm sự kiện đáng đọc riêng.
-    if (e.ref_table === 'skill_checkins') {
-      return { key: `checkin:${e.event_date.slice(0, 8)}`, kind: 'checkin', link: null };
-    }
     if (e.ref_table === 'learning_cycles' || e.ref_table === 'cycle_target_revisions') {
       return { key: `cycle:${e.event_type}:${e.ref_id ?? e.id}`, kind: 'cycle', link: null };
     }
@@ -367,7 +361,11 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
     .sort((a, b) => a.attempt_no - b.attempt_no)[0] ?? null;
 
   // --------------------------------------------------------- đường đi từng kỹ năng
-  const checkins = latestCheckins(studentId, selected?.id ?? null);
+  /*
+   * "Ghi nhận của giáo viên" ĐÃ BỎ HẲN Ở VÒNG 4. Đường đi từng kỹ năng nay chỉ dựng từ
+   * ĐIỂM ĐẦU VÀO và ĐIỂM CÁC LƯỢT MT — một nguồn số liệu duy nhất, không còn hai đường
+   * chấm điểm song song để các bảng đá nhau.
+   */
   const trajectory = (isRatioCycle(selected ?? {}) ? [] : ASSESSED_SKILLS).map((skill) => {
     const points: SkillPoint[] = [];
     if (baseline?.bands?.[skill] !== null && baseline?.bands?.[skill] !== undefined) {
@@ -382,8 +380,6 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
         date: a.lrw_scheduled_at?.slice(0, 10) ?? null, band: b, detail: null,
       });
     }
-    const entryKeys: EntrySkill[] = skill === 'writing' ? ['writing1', 'writing2'] : [skill as EntrySkill];
-    const k = entryKeys.map((e) => checkins[e]).find((x) => x && x.band !== null) ?? null;
     return {
       skill, label: ASSESSED_SKILL_LABEL[skill], points,
       target,
@@ -391,7 +387,6 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
       gain: baseline?.bands?.[skill] !== null && baseline?.bands?.[skill] !== undefined && per[skill]
         ? Math.round((per[skill]!.band - baseline.bands[skill]) * 10) / 10 : null,
       current: per[skill] ?? null,
-      checkin: k ? { band: k.band, on: k.observedOn, by: k.authorName, basis: k.basis } : null,
     };
   });
 
@@ -507,8 +502,6 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
       dueOverdue: openCases.filter((c) => c.dueOverdue).length,
     },
     trajectory,
-    comparison: compareCheckins(p, studentId, selected?.id ?? null),
-    checkins: Object.values(checkins),
     attempts,
     cases,
     episodes: episodesOf(journeyRows),
@@ -518,7 +511,6 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
       canSetDate: can(p, PERMISSIONS.SCHEDULE_DATE, { studentId }),
       canReport: can(p, PERMISSIONS.SOS_EDIT, { classId: current?.class_id ?? null, studentId }),
       canClose: canCloseCase(p, { class_id: current?.class_id ?? null, student_id: studentId }),
-      checkinSkills: checkinSkillsFor(p, studentId, current?.class_id ?? null),
     },
   };
 }

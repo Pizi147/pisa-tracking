@@ -182,7 +182,7 @@ export function CriteriaModal({ cell, onSave, onClose }: {
         <SectionNote>
           Đủ bốn tiêu chí mới ra band. Để trống là chưa chấm, không phải điểm 0.
           {(cell.skill === 'writing1' || cell.skill === 'writing2') &&
-            ' Band Writing của học sinh = (Task 1 + Task 2 × 2) / 3, tính khi có cả hai task.'}
+            ' Band Writing của học viên = (Task 1 + Task 2 × 2) / 3, tính khi có cả hai task.'}
         </SectionNote>
       </div>
     </Modal>

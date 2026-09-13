@@ -194,7 +194,7 @@ export default function WeeklyRollupPage() {
               <strong>Số lượt có kết quả</strong> là lượt đã chấm ít nhất một kỹ năng — chưa chấm gì thì chưa
               đếm. Bốn cột <strong>Đạt kỳ vọng · SOS 1 · SOS 2 · SOS 3</strong> cộng lại đúng bằng số lượt đó.
               <br />
-              <strong>Đã có hỗ trợ</strong> gộp cả trao đổi với học sinh, với phụ huynh và xếp hỗ trợ học thuật —
+              <strong>Đã có hỗ trợ</strong> gộp cả trao đổi với học viên, với phụ huynh và xếp hỗ trợ học thuật —
               một em có thể có nhiều đợt, nên ở đây chỉ trả lời “case này đã có ai động vào chưa”.
               <br />
               <strong>Trễ chấm TB</strong> là số ngày trung bình từ ngày làm bài đến ngày nhập điểm.

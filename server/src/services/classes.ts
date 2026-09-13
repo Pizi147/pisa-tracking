@@ -8,7 +8,6 @@ import { badRequest, notFound, nowIso } from '../util.ts';
 import { can, classScopeSql, editableSkills, isCoreTeacherOf, require_, scopeFor, type Principal } from '../permissions.ts';
 import { writeAudit } from './audit.ts';
 import { loadBundle, resultOf, skillCells } from './attempts.ts';
-import { latestCheckins } from './checkins.ts';
 import { allProgrammes, evaluateRegular, programmeOfClass } from './regular.ts';
 
 /**
@@ -295,7 +294,6 @@ export function classRoster(p: Principal, classId: number, q?: string) {
       latest: done.length ? done[done.length - 1] : null,
       next: timeline.find((t) => t.status === 'planned') ?? null,
       timeline,
-      checkins: latestCheckins(s.id, s.cycle_id ?? null),
       myPending: [...new Set(timeline.flatMap((t) => t.myPending))],
     };
   });

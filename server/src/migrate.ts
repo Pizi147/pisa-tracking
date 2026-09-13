@@ -269,17 +269,10 @@ function migrateCaseEngine(applied: string[], skipped: string[]) {
         source_type TEXT NOT NULL, source_id INTEGER NOT NULL, note TEXT,
         created_by INTEGER, created_at TEXT NOT NULL,
         UNIQUE (case_id, source_type, source_id, role));
-      CREATE TABLE IF NOT EXISTS skill_checkins (
-        id INTEGER PRIMARY KEY, student_id INTEGER NOT NULL, cycle_id INTEGER, class_id INTEGER,
-        skill TEXT NOT NULL, observed_on TEXT NOT NULL, author_user_id INTEGER,
-        judgement TEXT, strengths TEXT, weaknesses TEXT,
-        band REAL, raw_score INTEGER, raw_total INTEGER, c1 REAL, c2 REAL, c3 REAL, c4 REAL,
-        estimate_basis TEXT, created_at TEXT NOT NULL);
       CREATE INDEX IF NOT EXISTS idx_case_student ON sos_cases(student_id, status);
       CREATE INDEX IF NOT EXISTS idx_case_issue_case ON case_issues(case_id);
       CREATE INDEX IF NOT EXISTS idx_intervention_case ON case_interventions(case_id);
       CREATE INDEX IF NOT EXISTS idx_followup_case ON case_followups(case_id);
-      CREATE INDEX IF NOT EXISTS idx_checkin_student ON skill_checkins(student_id, skill, observed_on);
     `);
 
     // 3. Điền học viên/lộ trình cho case cũ, lấy từ chính lượt đánh giá của nó.
@@ -301,7 +294,7 @@ function migrateCaseEngine(applied: string[], skipped: string[]) {
      * việc ĐÃ BẮT ĐẦU với hỗ trợ học thuật — không nâng thành "đã xong".
      */
     const legacy: { field: string; kind: string; dateCol: string; personCol?: string; status: string; label: string }[] = [
-      { field: 'talk_student', kind: 'talk_student', dateCol: 'talk_student_date', personCol: 'talk_student_person', status: 'completed', label: 'Trao đổi với học sinh' },
+      { field: 'talk_student', kind: 'talk_student', dateCol: 'talk_student_date', personCol: 'talk_student_person', status: 'completed', label: 'Trao đổi với học viên' },
       { field: 'talk_parent', kind: 'talk_parent', dateCol: 'talk_parent_date', personCol: 'talk_parent_person', status: 'completed', label: 'Trao đổi với phụ huynh' },
       { field: 'academic', kind: 'tutor', dateCol: 'academic_start_date', personCol: 'academic_person', status: 'started', label: 'Hỗ trợ học thuật' },
       { field: 'ops', kind: 'ops_policy', dateCol: 'ops_date', status: 'completed', label: 'Chính sách vận hành' },
@@ -336,43 +329,13 @@ function migrateCaseEngine(applied: string[], skipped: string[]) {
     if (moved) applied.push(`Chuyển ${moved} mốc hỗ trợ cũ thành bản ghi tác động (giữ nguyên bản gốc để tra lại)`);
 
     /*
-     * 5. Case đã đóng theo hệ thống cũ mà không có hướng xử lý: ghi rõ là "đóng theo hệ
-     *    thống cũ", KHÔNG bịa ra một kết luận và cũng không mở lại hàng loạt.
+     * 6. "GHI NHẬN CỦA GIÁO VIÊN" ĐÃ BỎ HẲN Ở VÒNG 4.
+     *
+     * Bản trước dựng bảng `skill_checkins` từ `teacher_estimates`. Vòng 4 bỏ cả khu đó khỏi
+     * sản phẩm (owner chốt 13/09/2026: hai đường chấm điểm song song làm số liệu đá nhau),
+     * nên dựng lên rồi lại xoá đi chỉ khiến chạy lần hai báo thêm việc đã làm. `teacher_estimates`
+     * vẫn còn nguyên để tra lại.
      */
-    const legacyClosed = conn
-      .prepare(
-        `UPDATE sos_cases SET disposition = 'other',
-                disposition_note = 'Đóng theo hệ thống cũ — chưa ghi hướng xử lý'
-          WHERE status = 'done' AND disposition IS NULL`,
-      )
-      .run();
-    if (legacyClosed.changes) {
-      applied.push(`Đánh dấu ${legacyClosed.changes} case đóng theo hệ thống cũ (không bịa kết luận)`);
-    }
-
-    /*
-     * 6. Đánh giá GV cũ thành ghi nhận nhanh, GIỮ NGUYÊN bảng cũ.
-     *    Lộ trình không chứng minh được thì để trống, không gán vào lộ trình hiện tại.
-     */
-    if (has('teacher_estimates')) {
-      const moved2 = conn
-        .prepare(
-          `INSERT INTO skill_checkins (student_id, cycle_id, class_id, skill, observed_on, author_user_id,
-                                       band, raw_score, c1, c2, c3, c4, estimate_basis, created_at)
-           SELECT e.student_id, e.cycle_id, e.class_id, e.skill, e.assessed_on, e.assessed_by,
-                  e.band, e.raw_score, e.c1, e.c2, e.c3, e.c4,
-                  CASE WHEN e.raw_score IS NOT NULL THEN 'raw'
-                       WHEN e.c1 IS NOT NULL THEN 'criteria' ELSE 'judgement' END,
-                  e.created_at
-             FROM teacher_estimates e
-            WHERE NOT EXISTS (
-              SELECT 1 FROM skill_checkins k
-               WHERE k.student_id = e.student_id AND k.skill = e.skill
-                 AND k.observed_on = e.assessed_on AND k.author_user_id IS e.assessed_by)`,
-        )
-        .run();
-      if (moved2.changes) applied.push(`Chuyển ${moved2.changes} đánh giá GV cũ thành ghi nhận nhanh`);
-    }
 
     // 7. Hành trình cũ: gắn lộ trình khi tra được từ bản ghi thật, còn lại để trống.
     const j = conn
@@ -423,6 +386,27 @@ function migrateCaseEngine(applied: string[], skipped: string[]) {
     if (prog.changes) applied.push(`Gắn mã chương trình cho ${prog.changes} khoá lớp thường`);
 
     migrateSkillTopics(conn, applied);
+    migrateCaseLifecycle(conn, applied);
+
+    /*
+     * Case đã đóng theo hệ thống cũ mà không có hướng xử lý: ghi rõ là "đóng theo hệ thống
+     * cũ", KHÔNG bịa ra một kết luận và cũng không mở lại hàng loạt.
+     *
+     * CHẠY SAU CÙNG, sau cả bước gộp case. Bản trước đặt nó ở giữa, nên những case do chính
+     * bước gộp và bước chuyển việc trao đổi tạo ra lại chưa được đánh dấu — và lần chạy thứ
+     * hai mới nhặt nốt. Một bước nâng cấp cần xong hẳn trong MỘT lần chạy, nếu không thì
+     * không ai biết bao nhiêu lần mới là đủ.
+     */
+    const legacyClosed = conn
+      .prepare(
+        `UPDATE sos_cases SET disposition = 'other',
+                disposition_note = 'Đóng theo hệ thống cũ — chưa ghi hướng xử lý'
+          WHERE status = 'done' AND disposition IS NULL`,
+      )
+      .run();
+    if (legacyClosed.changes) {
+      applied.push(`Đánh dấu ${legacyClosed.changes} case đóng theo hệ thống cũ (không bịa kết luận)`);
+    }
 
     conn.prepare("INSERT OR REPLACE INTO demo_config (key, value, updated_at) VALUES ('case_engine_migrated_at', ?, ?)")
       .run(nowIso(), nowIso());
@@ -549,7 +533,7 @@ function migrateSkillTopics(conn: any, applied: string[]) {
   const delCtx = conn.prepare("DELETE FROM case_issues WHERE role = 'context'").run();
   if (delCtx.changes) applied.push(`Chuyển ${delCtx.changes} dòng hoàn cảnh thành Ghi chú`);
 
-  /* Vấn đề về giáo viên và giáo trình rời khỏi hệ thống theo dõi học sinh (owner chốt). */
+  /* Vấn đề về giáo viên và giáo trình rời khỏi hệ thống theo dõi học viên (owner chốt). */
   const delOwn = conn
     .prepare("DELETE FROM case_issues WHERE taxonomy_code LIKE 'teacher.%' OR taxonomy_code LIKE 'curriculum.%'")
     .run();
@@ -725,4 +709,311 @@ function migrateSkillTopics(conn: any, applied: string[]) {
   if (untagged) {
     applied.push(`${untagged} vấn đề cũ để trống kỹ năng — không suy được từ dữ liệu, giao diện ghi rõ`);
   }
+}
+
+
+/**
+ * VÒNG 4 — MỘT HỌC VIÊN × MỘT HẠNG MỤC = MỘT CASE SỐNG SUỐT KHOÁ.
+ *
+ * Đây là bước đảo lại vòng 3a. Trước: case gắn với MỘT LƯỢT MT × MỘT KỸ NĂNG, nên một em
+ * trượt Listening ở MT1, MT2 và MT3 có ba case rời rạc. Sau: đúng MỘT case Listening, ba
+ * lần trượt là ba MỐC trong cùng một case.
+ *
+ * Nguyên tắc của bước này — GỘP, KHÔNG XOÁ:
+ *
+ *   · Các case cùng (học viên, lộ trình, hạng mục) gộp về case SỚM NHẤT. Mọi phương án,
+ *     phân loại, lần xem lại, bằng chứng, lịch sử và việc Quản lý giao đều được chuyển
+ *     sang case sống sót — không bản ghi nào bị bỏ lại.
+ *   · Mỗi case bị gộp để lại MỘT MỐC ghi đúng lượt MT, band và mức SOS của nó, nên lịch sử
+ *     không mỏng đi sau khi gộp mà còn đọc được rõ hơn.
+ *   · Hai việc trao đổi quay về làm phương án của case Ý thức/Khác, giữ nguyên người thực
+ *     hiện, ngày thực hiện và ghi chú.
+ *   · Trạng thái case sống sót lấy theo cái CÒN MỞ: một hạng mục có một case đã đóng và
+ *     một case đang mở thì sau khi gộp nó vẫn đang mở, không được tự đóng lại.
+ *
+ * Chạy lần hai không đổi gì thêm: mọi bước đều kiểm trước bằng `dedup_key`, `migration_key`
+ * hoặc bằng chính sự tồn tại của cột/bảng.
+ */
+function migrateCaseLifecycle(conn: any, applied: string[]) {
+  const cols = (t: string) => (conn.prepare(`PRAGMA table_info(${t})`).all() as any[]).map((c: any) => c.name);
+  const has = (t: string) =>
+    !!conn.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name = ?").get(t);
+  const addCol = (table: string, col: string, decl: string) => {
+    if (!cols(table).includes(col)) conn.exec(`ALTER TABLE ${table} ADD COLUMN ${col} ${decl}`);
+  };
+  if (!has('sos_cases')) return;
+
+  /* ------------------------------------------------------------ 1. cột và bảng mới */
+  for (const [c, d] of [
+    ['category', 'TEXT'], ['dedup_key', 'TEXT'], ['parallel', 'INTEGER NOT NULL DEFAULT 0'],
+    ['follow_until', 'TEXT'],
+    ['outcome', 'TEXT'], ['outcome_note', 'TEXT'], ['outcome_decision', 'TEXT'],
+    ['outcome_by', 'INTEGER'], ['outcome_at', 'TEXT'],
+  ] as const) addCol('sos_cases', c, d);
+  addCol('case_interventions', 'action_due', 'TEXT');
+
+  conn.exec(`
+    CREATE TABLE IF NOT EXISTS case_milestones (
+      id INTEGER PRIMARY KEY,
+      case_id INTEGER NOT NULL REFERENCES sos_cases(id),
+      kind TEXT NOT NULL,
+      attempt_id INTEGER REFERENCES assessment_attempts(id),
+      attempt_no INTEGER,
+      band REAL, expectation REAL, sos_level INTEGER,
+      occurred_on TEXT NOT NULL,
+      note TEXT,
+      created_by INTEGER REFERENCES users(id),
+      created_at TEXT NOT NULL,
+      dedup_key TEXT);
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_milestone_dedup ON case_milestones(dedup_key);
+    CREATE INDEX IF NOT EXISTS idx_milestone_case ON case_milestones(case_id, occurred_on);
+  `);
+
+  /*
+   * Chỉ mục cũ ép "mỗi lượt một case mỗi kỹ năng" — chính thứ phải bỏ. Gỡ trước khi gộp,
+   * nếu không việc gộp sẽ vướng chính nó.
+   */
+  conn.exec('DROP INDEX IF EXISTS idx_case_attempt_topic');
+
+  /* ------------------------------------------------------- 2. điền hạng mục cho case cũ */
+  const REGULAR_TO_CATEGORY: Record<string, string> = {
+    listening: 'listening', reading: 'reading',
+    writing: 'writing2', prep_writing: 'writing2',
+    pronunciation: 'speaking', speaking: 'speaking',
+    writing1: 'writing1', writing2: 'writing2',
+  };
+  let categorised = 0;
+  for (const r of conn
+    .prepare('SELECT id, track, topic FROM sos_cases WHERE category IS NULL')
+    .all() as any[]) {
+    const cat = r.track === 'behaviour' ? 'behaviour' : (REGULAR_TO_CATEGORY[r.topic] ?? null);
+    /*
+     * Case cũ không gắn được kỹ năng (vòng 3 cố ý không đoán bừa khi một lượt trượt từ hai
+     * kỹ năng trở lên) thì hạng mục để TRỐNG. Đoán bừa ở đây sẽ gộp nhầm hai case của hai
+     * môn khác nhau làm một — mất dữ liệu thật, không lấy lại được.
+     */
+    if (!cat) continue;
+    conn.prepare('UPDATE sos_cases SET category = ? WHERE id = ?').run(cat, r.id);
+    categorised += 1;
+  }
+  if (categorised) applied.push(`Gắn hạng mục cho ${categorised} case cũ`);
+
+  /* ------------------------------------------------- 3. gộp case cùng một hạng mục */
+  const CHILD_TABLES: [string, string][] = [
+    ['case_issues', 'case_id'], ['case_interventions', 'case_id'],
+    ['case_followups', 'case_id'], ['case_sources', 'case_id'],
+    ['sos_case_history', 'case_id'], ['case_milestones', 'case_id'],
+    ['task_students', 'case_id'], ['tasks', 'source_sos_case_id'],
+  ];
+  const repoint = (fromId: number, toId: number) => {
+    for (const [table, col] of CHILD_TABLES) {
+      if (!has(table) || !cols(table).includes(col)) continue;
+      try {
+        conn.prepare(`UPDATE ${table} SET ${col} = ? WHERE ${col} = ?`).run(toId, fromId);
+      } catch {
+        /*
+         * `case_sources` có ràng buộc duy nhất (case_id, source_type, source_id, role):
+         * hai case cũ có thể cùng trỏ về một lượt MT, và sau khi gộp thì trùng nhau. Bỏ
+         * bản trùng thay vì dừng cả bước nâng cấp — bằng chứng vẫn còn nguyên một bản.
+         */
+        conn.prepare(`DELETE FROM ${table} WHERE ${col} = ?`).run(fromId);
+      }
+    }
+  };
+
+  /*
+   * Nhóm gộp:
+   *   học thuật              (học viên, lộ trình, hạng mục)
+   *   Ý thức do GV tự báo    (học viên, lộ trình)
+   *   Ý thức sinh từ một MT  KHÔNG gộp — mỗi lượt một case, đúng ngoại lệ ở mục 1.2
+   */
+  const groups = new Map<string, any[]>();
+  for (const r of conn
+    .prepare(
+      `SELECT id, student_id, cycle_id, category, track, origin_kind, attempt_id, status,
+              detected_at, sos_level, created_at, closed_at, disposition
+         FROM sos_cases
+        WHERE student_id IS NOT NULL AND category IS NOT NULL AND parallel = 0
+        ORDER BY COALESCE(detected_at, substr(created_at, 1, 10)), id`,
+    )
+    .all() as any[]) {
+    if (r.track === 'behaviour' && r.origin_kind === 'mock') continue;
+    const key = r.track === 'behaviour'
+      ? `bt:${r.student_id}:${r.cycle_id ?? 0}`
+      : `a:${r.student_id}:${r.cycle_id ?? 0}:${r.category}`;
+    const list = groups.get(key) ?? [];
+    list.push(r);
+    groups.set(key, list);
+  }
+
+  const attemptNo = conn.prepare('SELECT attempt_no FROM assessment_attempts WHERE id = ?');
+  let mergedCases = 0;
+  let mergedGroups = 0;
+  for (const [key, list] of groups) {
+    /* Mốc phải ghi cho MỌI case, kể cả nhóm chỉ có một cái — đó là mốc "mở case". */
+    const ordered = list.slice();
+    const survivor = ordered[0];
+
+    ordered.forEach((c, i) => {
+      const no = c.attempt_id ? (attemptNo.get(c.attempt_id) as any)?.attempt_no ?? null : null;
+      conn
+        .prepare(
+          `INSERT OR IGNORE INTO case_milestones
+             (case_id, kind, attempt_id, attempt_no, sos_level, occurred_on, note, created_at, dedup_key)
+           VALUES (?,?,?,?,?,?,?,?,?)`,
+        )
+        .run(
+          survivor.id,
+          i === 0 ? 'opened' : 'repeat',
+          c.attempt_id, no, c.sos_level,
+          c.detected_at ?? String(c.created_at).slice(0, 10),
+          i === 0 ? null : 'Gộp từ case cũ của lượt MT này khi nâng cấp lên vòng 4',
+          nowIso(),
+          `mig:${c.id}`,
+        );
+    });
+
+    if (ordered.length < 2) continue;
+    mergedGroups += 1;
+
+    for (const c of ordered.slice(1)) {
+      repoint(c.id, survivor.id);
+      conn.prepare('DELETE FROM sos_cases WHERE id = ?').run(c.id);
+      mergedCases += 1;
+    }
+
+    /*
+     * Case sống sót giữ lượt MT MỚI NHẤT và mức SOS mới nhất — tên case tự sinh từ đó.
+     * Trạng thái lấy theo cái CÒN MỞ: gộp một case đã đóng với một case đang mở thì kết quả
+     * phải là ĐANG MỞ, không được tự đóng lại việc chưa xong.
+     */
+    const latest = ordered[ordered.length - 1];
+    const anyOpen = ordered.some((c) => c.status !== 'done');
+    conn
+      .prepare(
+        `UPDATE sos_cases
+            SET attempt_id = COALESCE(?, attempt_id),
+                sos_level  = COALESCE(?, sos_level),
+                status     = ?,
+                closed_at  = CASE WHEN ? = 'done' THEN closed_at ELSE NULL END,
+                updated_at = ?
+          WHERE id = ?`,
+      )
+      .run(latest.attempt_id, latest.sos_level, anyOpen ? (survivor.status === 'done' ? 'in_progress' : survivor.status) : 'done',
+           anyOpen ? 'open' : 'done', nowIso(), survivor.id);
+    void key;
+  }
+  if (mergedCases) {
+    applied.push(`Gộp ${mergedCases} case rời rạc vào ${mergedGroups} case sống suốt khoá (giữ nguyên mọi phương án và lịch sử)`);
+  }
+
+  /* ------------------------------------- 4. hai việc trao đổi quay về làm phương án */
+  if (has('student_contacts')) {
+    let moved = 0;
+    for (const c of conn
+      .prepare(
+        `SELECT sc.*, a.cycle_id AS attempt_cycle
+           FROM student_contacts sc
+           LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
+          ORDER BY sc.id`,
+      )
+      .all() as any[]) {
+      const cycleId = c.cycle_id ?? c.attempt_cycle ?? null;
+      /*
+       * Việc trao đổi phải về đúng case Ý thức/Khác của nó: sinh từ một lượt MT thì về case
+       * của chính lượt đó, giáo viên tự thêm thì về case Ý thức sống dai của em.
+       */
+      const dedup = c.attempt_id && c.auto
+        ? `bm:${c.attempt_id}`
+        : `bt:${c.student_id}:${cycleId ?? 0}`;
+      let target = conn.prepare('SELECT id FROM sos_cases WHERE dedup_key = ?').get(dedup) as any;
+      if (!target) {
+        target = conn
+          .prepare(
+            `SELECT id FROM sos_cases
+              WHERE student_id = ? AND track = 'behaviour' AND parallel = 0
+                AND COALESCE(cycle_id, 0) = ?
+                AND ${c.attempt_id && c.auto ? 'attempt_id = ?' : "origin_kind != 'mock'"}
+              ORDER BY id LIMIT 1`,
+          )
+          .get(...(c.attempt_id && c.auto
+            ? [c.student_id, cycleId ?? 0, c.attempt_id]
+            : [c.student_id, cycleId ?? 0])) as any;
+      }
+      if (!target) {
+        /* Chưa có case Ý thức nào nhận nó thì mở một case, chứ không bỏ bản ghi đi. */
+        const info = conn
+          .prepare(
+            `INSERT INTO sos_cases (attempt_id, student_id, cycle_id, track, topic, category,
+                                    origin_kind, detected_at, status, dedup_key, created_at)
+             VALUES (?,?,?, 'behaviour', 'other', 'behaviour', ?, ?, ?, ?, ?)`,
+          )
+          .run(c.attempt_id, c.student_id, cycleId,
+               c.auto && c.attempt_id ? 'mock' : 'teacher_report',
+               c.done_on ?? c.due_date ?? String(c.created_at).slice(0, 10),
+               c.done_on ? 'done' : 'open', dedup, nowIso());
+        target = { id: Number(info.lastInsertRowid) };
+      }
+      const key = `contact:${c.id}`;
+      if (conn.prepare('SELECT 1 FROM case_interventions WHERE migration_key = ?').get(key)) continue;
+      conn
+        .prepare(
+          `INSERT INTO case_interventions (case_id, kind, description, performer_user_id, performer_name,
+                                           status, completed_date, action_due, migration_key, created_at)
+           VALUES (?,?,?,?,?,?,?,?,?,?)`,
+        )
+        .run(target.id, c.kind, c.note ?? null, c.done_by ?? null, c.performer_name ?? null,
+             c.done_on ? 'completed' : 'planned', c.done_on ?? null, c.due_date ?? null,
+             key, c.created_at ?? nowIso());
+      moved += 1;
+    }
+    if (moved) applied.push(`Chuyển ${moved} việc trao đổi thành phương án của case Ý thức/Khác`);
+    conn.exec('DROP TABLE IF EXISTS student_contacts');
+    applied.push('Bỏ bảng Liên hệ riêng — hai việc trao đổi nay nằm trong case');
+  }
+
+  /* --------------------------------------------------- 5. bỏ hẳn "Ghi nhận của GV" */
+  if (has('skill_checkins')) {
+    const n = (conn.prepare('SELECT COUNT(*) n FROM skill_checkins').get() as any).n;
+    conn.prepare("DELETE FROM case_sources WHERE source_type = 'checkin'").run();
+    conn.prepare("DELETE FROM journey_events WHERE ref_table = 'skill_checkins'").run();
+    conn.exec('DROP TABLE IF EXISTS skill_checkins');
+    applied.push(`Bỏ hẳn "Ghi nhận của giáo viên" (${n} bản ghi) — chỉ còn một nguồn điểm duy nhất`);
+  }
+
+  /* ----------------------------------------------------- 6. đặt khoá chống trùng */
+  let keyed = 0;
+  for (const r of conn
+    .prepare(
+      `SELECT id, student_id, cycle_id, category, track, origin_kind, attempt_id
+         FROM sos_cases WHERE dedup_key IS NULL AND parallel = 0 ORDER BY id`,
+    )
+    .all() as any[]) {
+    let key: string | null = null;
+    if (r.track === 'behaviour') {
+      key = r.origin_kind === 'mock'
+        ? (r.attempt_id ? `bm:${r.attempt_id}` : null)
+        : (r.student_id ? `bt:${r.student_id}:${r.cycle_id ?? 0}` : null);
+    } else if (r.student_id && r.category) {
+      key = `a:${r.student_id}:${r.cycle_id ?? 0}:${r.category}`;
+    }
+    if (!key) continue;
+    /*
+     * Vẫn còn đụng nhau thì để case này là case SONG SONG thay vì bỏ nó đi. Case song song
+     * là một trạng thái hợp lệ ở mục 7.13, nên không mất gì; còn xoá là mất thật.
+     */
+    if (conn.prepare('SELECT 1 FROM sos_cases WHERE dedup_key = ?').get(key)) {
+      conn.prepare('UPDATE sos_cases SET parallel = 1 WHERE id = ?').run(r.id);
+      continue;
+    }
+    conn.prepare('UPDATE sos_cases SET dedup_key = ? WHERE id = ?').run(key, r.id);
+    keyed += 1;
+  }
+  if (keyed) applied.push(`Đặt khoá chống trùng cho ${keyed} case`);
+
+  conn.exec(`
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_case_dedup ON sos_cases(dedup_key);
+    CREATE INDEX IF NOT EXISTS idx_case_student_category ON sos_cases(student_id, cycle_id, category);
+    CREATE INDEX IF NOT EXISTS idx_case_follow_until ON sos_cases(follow_until) WHERE follow_until IS NOT NULL;
+  `);
 }

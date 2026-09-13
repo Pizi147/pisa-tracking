@@ -4,6 +4,7 @@ import {
   PERMISSIONS, SOS_LABEL,
 } from '../../../shared/domain.ts';
 import { scopeFor, type Principal } from '../permissions.ts';
+import { demoToday } from '../demoConfig.ts';
 import { listCases } from './cases.ts';
 
 /**
@@ -67,7 +68,10 @@ export function summaryColumns(): SummaryColumn[] {
     { key: 'noPlan', label: 'Chưa có phương án', group: 'total' },
     { key: 'overdueReview', label: 'Quá hạn cập nhật', group: 'total' },
     { key: 'pendingApproval', label: 'Chờ duyệt', group: 'total' },
-    { key: 'overdueContact', label: 'Chưa trao đổi', group: 'total', hint: 'Quá hạn hai việc trao đổi bắt buộc' },
+    {
+      key: 'overdueContact', label: 'Quá hạn làm', group: 'total',
+      hint: 'Học viên có phương án đã lên kế hoạch mà quá hạn làm (3/5/7 ngày theo mức SOS)',
+    },
   ];
 }
 
@@ -123,19 +127,35 @@ export function branchSummary(p: Principal, f: { branchId?: number | null } = {}
     studentCounts.set(k, (studentCounts.get(k) ?? 0) + r.n);
   }
 
-  /* Hai việc trao đổi quá hạn — đếm theo LƯỢT, không theo vấn đề. */
+  /*
+   * PHƯƠNG ÁN QUÁ HẠN LÀM — đếm theo HỌC VIÊN, không theo phương án.
+   *
+   * Cột này trước là "Chưa trao đổi", đọc từ bảng Liên hệ riêng đã bỏ. Nay nó rộng hơn và
+   * đúng hơn: mọi phương án đã lên kế hoạch mà quá hạn làm, kể cả hai việc trao đổi.
+   *
+   * Đếm theo học viên vì đây là bảng trả lời "chi nhánh nào đang tắc": ba phương án quá hạn
+   * của cùng một em là MỘT em bị bỏ quên, không phải ba.
+   *
+   * So với ngày DEMO chứ không phải `date('now')` — bản trước so với giờ thật của máy, nên
+   * trên dữ liệu demo con số này luôn sai.
+   */
   const overdueContacts = new Map<string, number>();
   for (const r of conn
     .prepare(
-      `SELECT cl.id AS class_id, cl.branch_id, COUNT(DISTINCT c.attempt_id) AS n
-         FROM student_contacts c
-         JOIN students s ON s.id = c.student_id
+      `SELECT cl.id AS class_id, cl.branch_id, COUNT(DISTINCT s.id) AS n
+         FROM case_interventions iv
+         JOIN sos_cases sc ON sc.id = iv.case_id
+         JOIN students s ON s.id = sc.student_id
          LEFT JOIN enrollments e ON e.student_id = s.id AND e.status = 'active'
          LEFT JOIN classes cl ON cl.id = e.class_id
-        WHERE c.done_on IS NULL AND c.due_date IS NOT NULL AND c.due_date < date('now')
+        WHERE iv.status IN ('planned', 'started')
+          AND iv.action_due IS NOT NULL AND iv.action_due < ?
+          AND sc.status != 'done'
+          AND COALESCE(iv.approval_state, '') != 'pending'
+          AND s.archived_at IS NULL
         GROUP BY cl.id`,
     )
-    .all() as any[]) {
+    .all(demoToday()) as any[]) {
     const k = byBranch ? `b${r.branch_id}` : `c${r.class_id}`;
     if (groups.has(k)) overdueContacts.set(k, (overdueContacts.get(k) ?? 0) + r.n);
   }
@@ -158,12 +178,40 @@ export function branchSummary(p: Principal, f: { branchId?: number | null } = {}
     const mine = cases.filter((c) => (byBranch ? c.branchId === g.branchId : c.classId === g.classId));
     const open = mine.filter((c) => c.state !== 'done');
     const q = (extra: string) => `/?tab=tinh-hinh${g.branchId ? `&cn=${g.branchId}` : ''}${extra}`;
+
     /*
-     * Mức SOS là của một LƯỢT, nên đếm theo HỌC VIÊN duy nhất — không phải theo vấn đề.
-     * Một em SOS 2 sinh hai vấn đề; đếm vấn đề thì em đó bị tính hai lần và con số vô nghĩa.
+     * MỖI HỌC VIÊN CHỈ ĐỨNG Ở ĐÚNG MỘT CỘT SOS — cột của LƯỢT MT GẦN NHẤT.
+     *
+     * Lỗi owner báo 12/09: sĩ số 8 mà ba cột SOS cộng lại thành 11. Bản cũ đếm học viên
+     * duy nhất cho từng mức riêng lẻ, nên một em SOS 1 ở MT1 rồi SOS 3 ở MT2 có mặt ở
+     * CẢ HAI cột — cộng lại vượt cả sĩ số và không ai tin con số nữa.
+     *
+     * SOS là TÌNH TRẠNG HIỆN TẠI của một em, không phải một cái sổ cộng dồn: mức của em
+     * là mức ở lượt MT mới nhất em đã làm. Mức cũ vẫn tra lại được trong từng case, chỉ
+     * không đếm vào bảng tổng hợp nữa.
+     *
+     * Case do giáo viên tự báo không có `sosLevel` nên không tham gia phép đếm này —
+     * chúng đã có cột "GV báo" riêng.
      */
-    const sosStudents = (lv: number) =>
-      new Set(open.filter((c) => c.sosLevel === lv).map((c) => c.studentId)).size;
+    const currentSos = new Map<number, number>();
+    const latestAttempt = new Map<number, number>();
+    for (const c of open) {
+      if (c.studentId == null || !c.sosLevel) continue;
+      const at = c.attemptNo ?? 0;
+      const seen = latestAttempt.get(c.studentId);
+      if (seen === undefined || at > seen) {
+        latestAttempt.set(c.studentId, at);
+        currentSos.set(c.studentId, c.sosLevel);
+      } else if (at === seen) {
+        // Cùng một lượt thì mọi case mang cùng mức; lấy mức cao nhất cho chắc.
+        currentSos.set(c.studentId, Math.max(currentSos.get(c.studentId) ?? 0, c.sosLevel));
+      }
+    }
+    const sosStudents = (lv: number) => {
+      let n = 0;
+      for (const level of currentSos.values()) if (level === lv) n += 1;
+      return n;
+    };
     const skillCell = (s: string): Cell => {
       const list = open.filter((c) => c.topic === s);
       return { value: list.length, of: list.filter((c) => c.state === 'no_plan').length, href: q(`&ky-nang=${s}`) };
