@@ -1,8 +1,9 @@
 import { db, tx } from '../db.ts';
-import { ensureSosContacts } from './sos.ts';
+import { addMilestone, ensureBehaviourCase, upsertCategoryCase } from './sos.ts';
 import {
   ATTEMPT_KIND_LABEL, PERMISSIONS, RATIO_PASS_THRESHOLD, REGULAR_SKILL_LABEL,
-  ratioResult, sosFromFailCount, type AttemptKind, type RatioOutcome, type SosLevel,
+  categoryOf, ratioResult, sosFromFailCount,
+  type AttemptKind, type RatioOutcome, type SosLevel,
 } from '../../../shared/domain.ts';
 import { addDays, badRequest, isIsoDate, notFound, nowIso } from '../util.ts';
 import { can, editableSkills, require_, scoreEditPath, type Principal } from '../permissions.ts';
@@ -383,30 +384,37 @@ export function refreshRegularOutcome(p: Principal, attemptId: number) {
   if (r.sosLevel === 0 || !failing.length) return r;
 
   /*
-   * MỘT VẤN ĐỀ CHO MỖI KỸ NĂNG, giống hệt lớp FT — chỉ khác cách sinh ra mức SOS.
-   * Kỹ năng ở đây là kỹ năng của CHÍNH chương trình lớp đó (Prep-Writing, Pronunciation…),
-   * không ép về bộ năm ô IELTS.
+   * MỘT CASE CHO MỖI HẠNG MỤC, SỐNG SUỐT KHOÁ — dùng chung hệt lớp FT.
+   *
+   * Kỹ năng riêng của lớp Normal quy về đúng sáu hạng mục chung (Pronunciation → Speaking,
+   * W → Writing 2) để mọi bảng tổng hợp dùng một bộ cột. `topic` vẫn giữ NGUYÊN tên kỹ năng
+   * thật của chương trình, nên màn hình của lớp đó vẫn gọi đúng tên môn em học.
+   *
+   * Progress Test rồi Final Test cùng trượt một môn thì đó là MỘT case với hai mốc, không
+   * phải hai case rời — giống hệt MT1/MT2 của lớp FT.
    */
+  const detectedAt = (a.lrw_scheduled_at ?? '').slice(0, 10) || demoToday();
   for (const skill of failing) {
-    if (open.some((c) => c.topic === skill)) continue;
-    conn
-      .prepare(
-        // Ghi thẳng học viên và khoá học: hồ sơ học viên tra theo `student_id`, và lớp
-        // thường dùng CHUNG bảng vấn đề với lớp FT nên phải điền đủ như nhau.
-        `INSERT INTO sos_cases (attempt_id, student_id, cycle_id, track, topic, origin_kind,
-                                detected_at, sos_level, status, created_at)
-         VALUES (?,?,?, 'academic', ?, 'mock', ?,?, 'open', ?)`,
-      )
-      .run(attemptId, a.student_id, a.cycle_id, skill,
-           (a.lrw_scheduled_at ?? '').slice(0, 10) || demoToday(), r.sosLevel, nowIso());
+    const category = categoryOf('academic', skill);
+    if (!category) continue;
+    const { id, kind } = upsertCategoryCase(p, a, category, skill, r.sosLevel, detectedAt);
+    addMilestone({
+      caseId: id, kind, attemptId: a.id, attemptNo: a.attempt_no,
+      sosLevel: r.sosLevel, occurredOn: detectedAt, createdBy: p.userId,
+      note: REGULAR_SKILL_LABEL[skill as keyof typeof REGULAR_SKILL_LABEL] ?? skill,
+      dedupKey: `mt:${a.id}:${id}:${kind}`,
+    });
   }
 
   /*
    * Hai việc trao đổi bắt buộc áp cho CẢ lớp thường (owner chốt 10/09/2026): trượt thì phải
-   * báo em và phụ huynh, điều đó đúng với mọi lớp. Nhưng KHÔNG tự sinh phương án hỗ trợ —
-   * quy định "SOS 1-2 tự học, SOS 3 tutor" gắn với mức SOS theo band, mà lớp thường không có.
+   * báo em và phụ huynh, điều đó đúng với mọi lớp. Nay chúng là hai phương án của case
+   * Ý thức/Khác, nên gọi chung một hàm với lớp FT.
+   *
+   * Vẫn KHÔNG tự sinh phương án hỗ trợ học thuật — quy định "SOS 1-2 tự học, SOS 3 tutor"
+   * gắn với mức SOS theo band IELTS, mà lớp thường không chấm theo band.
    */
-  ensureSosContacts(a, r.sosLevel);
+  ensureBehaviourCase(p, a, r.sosLevel, detectedAt);
   return r;
 }
 

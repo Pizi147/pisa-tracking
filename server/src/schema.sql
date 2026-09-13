@@ -416,8 +416,55 @@ CREATE TABLE sos_cases (
    */
   track TEXT NOT NULL DEFAULT 'academic',  -- academic | behaviour
   -- Học thuật: listening | reading | writing1 | writing2 | speaking (NĂM ô, W1/W2 tách).
-  -- Ý thức:    attendance | homework | participation | other
+  -- Ý thức:    attendance | homework | participation | other (nay chỉ là MÔ TẢ bên trong
+  --            case, không còn là đơn vị gộp — xem `category`).
   topic TEXT,
+
+  /*
+   * HẠNG MỤC — ĐƠN VỊ GỘP CỦA MỘT CASE TỪ VÒNG 4.
+   *
+   * Sáu giá trị: listening · reading · writing1 · writing2 · speaking · behaviour.
+   * Một case = MỘT HỌC VIÊN × MỘT HẠNG MỤC, sống suốt khoá học. Bốn nhóm ý thức gộp hết
+   * vào `behaviour`; kỹ năng của lớp Normal quy về đúng sáu ô này (Pronunciation → speaking,
+   * W → writing2) để mọi bảng tổng hợp dùng chung một bộ cột.
+   */
+  category TEXT,
+
+  /*
+   * KHOÁ CHỐNG TRÙNG — MỘT chỉ mục duy nhất thay cho bốn chỉ mục một phần.
+   *
+   *   a:{học viên}:{lộ trình}:{hạng mục}   case học thuật chính, sống suốt khoá
+   *   bt:{học viên}:{lộ trình}             case Ý thức do giáo viên báo, cũng sống suốt khoá
+   *   bm:{lượt MT}                         case Ý thức tự sinh sau một đợt MT, chết theo lượt
+   *   NULL                                 case mở SONG SONG có chủ ý
+   *
+   * Để NULL thì không vướng chỉ mục duy nhất (SQLite coi mỗi NULL là một giá trị khác) —
+   * đúng thứ cần cho case song song ở mục 7.13: hợp lệ, nhưng phải do người mở quyết định.
+   * Gói bốn quy tắc vào một chuỗi để tránh cái bẫy `ON CONFLICT` phải chép lại mệnh đề
+   * `WHERE` của chỉ mục một phần.
+   */
+  dedup_key TEXT,
+  /* 1 = case mở song song có chủ ý, sau khi người dùng đã thấy cảnh báo case trùng. */
+  parallel INTEGER NOT NULL DEFAULT 0,
+
+  /*
+   * HẠN BÁO KẾT QUẢ CỦA CẢ CASE — hết tuần có MT KẾ TIẾP của học viên đó, sửa được.
+   *
+   * Khác hẳn hạn làm từng phương án (3/5/7 ngày theo mức SOS, nằm ở `case_interventions`).
+   * Owner xác nhận 13/09/2026 giữ CẢ HAI mốc: một mốc thúc LÀM, một mốc thúc BÁO KẾT QUẢ.
+   */
+  follow_until TEXT,
+
+  /*
+   * KẾT QUẢ CHUNG CỦA CẢ CASE. Chỉ chốt được khi MỌI phương án đã có kết quả.
+   *   outcome          much_better | improved | unchanged | worse
+   *   outcome_decision end (kết thúc hẳn) | extend (kéo dài theo dõi + thêm phương án)
+   */
+  outcome TEXT,
+  outcome_note TEXT,
+  outcome_decision TEXT,
+  outcome_by INTEGER REFERENCES users(id),
+  outcome_at TEXT,
 
   origin_kind TEXT NOT NULL DEFAULT 'mock',  -- mock | teacher_report | manager_task
   detected_at TEXT,                   -- ngày phát hiện vấn đề, khác ngày ghi vào hệ thống
@@ -454,42 +501,42 @@ CREATE TABLE sos_cases (
   created_at TEXT NOT NULL,
   updated_at TEXT
 );
-/* Mỗi lượt chỉ một vấn đề cho mỗi kỹ năng — chấm lại không nhân đôi. */
-CREATE UNIQUE INDEX idx_case_attempt_topic ON sos_cases(attempt_id, topic)
-  WHERE attempt_id IS NOT NULL;
+/*
+ * MỘT HỌC VIÊN × MỘT HẠNG MỤC = MỘT CASE.
+ *
+ * Chỉ mục cũ `(attempt_id, topic)` đã bỏ: nó chính là thứ ép mỗi lượt MT đẻ ra một case
+ * mới. Nay khoá chống trùng gói cả bốn quy tắc gộp vào một chuỗi, nên chỉ cần MỘT chỉ mục
+ * duy nhất và mọi câu ON CONFLICT đều viết được không cần mệnh đề WHERE.
+ */
+/*
+ * KHÔNG dùng chỉ mục duy nhất MỘT PHẦN (`... WHERE dedup_key IS NOT NULL`) ở đây, dù ý định
+ * là "chỉ ràng buộc khi có khoá".
+ *
+ * SQLite bắt mọi câu `ON CONFLICT` phải chép lại y nguyên mệnh đề `WHERE` của chỉ mục một
+ * phần, nếu không thì báo "ON CONFLICT clause does not match any PRIMARY KEY or UNIQUE
+ * constraint" — và chỉ báo LÚC CHẠY, không phải lúc biên dịch. Đó là cái bẫy đã mất thời
+ * gian ở vòng trước.
+ *
+ * May là không cần: SQLite coi mỗi NULL là một giá trị KHÁC NHAU trong chỉ mục duy nhất,
+ * nên chỉ mục đầy đủ vẫn cho nhiều case song song cùng để khoá trống. Cùng tác dụng, không
+ * mệnh đề nào phải nhớ chép lại.
+ */
+CREATE UNIQUE INDEX idx_case_dedup ON sos_cases(dedup_key);
+CREATE INDEX idx_case_student_category ON sos_cases(student_id, cycle_id, category);
 CREATE INDEX idx_case_student_topic ON sos_cases(student_id, cycle_id, topic);
+CREATE INDEX idx_case_follow_until ON sos_cases(follow_until) WHERE follow_until IS NOT NULL;
 
 /*
- * HAI VIỆC TRAO ĐỔI BẮT BUỘC KHI CÓ SOS — bảng riêng, cố ý.
+ * BẢNG `student_contacts` ĐÃ BỎ Ở VÒNG 4.
  *
- * Chúng KHÔNG phải phương án hỗ trợ: không tạo ra can thiệp học thuật nào, nên không duyệt,
- * không hẹn xem lại, không có kết quả chuyên môn để ghi. Chỉ cần xác nhận đã diễn ra.
- * Nhét vào `case_interventions` thì mọi truy vấn và mọi màn hình phải viết thêm một câu
- * "trừ hai loại này ra" — và sẽ có chỗ quên.
+ * Vòng 3a để hai việc trao đổi (với học viên, với phụ huynh) ở một bảng riêng, tách khỏi
+ * việc học. Vòng 4 đảo lại: chúng là HAI PHƯƠNG ÁN của case "Ý thức/Khác", nằm chung
+ * `case_interventions` với mọi phương án khác.
  *
- * Giáo viên cũng TỰ THÊM được khi chủ động gọi phụ huynh ngoài SOS (`auto = 0`).
+ * Lý do owner đổi ý: tách ra thì mỗi màn hình phải hỏi hai nơi rồi cộng lại, và sẽ có chỗ
+ * cộng thiếu — đúng thứ đang làm các con số đá nhau. Dữ liệu cũ được bước di trú chuyển
+ * nguyên sang phương án, giữ đủ người thực hiện, ngày thực hiện và ghi chú.
  */
-CREATE TABLE student_contacts (
-  id INTEGER PRIMARY KEY,
-  student_id INTEGER NOT NULL REFERENCES students(id),
-  cycle_id INTEGER REFERENCES learning_cycles(id),
-  -- Lượt MT làm phát sinh việc này. NULL khi giáo viên tự thêm.
-  attempt_id INTEGER REFERENCES assessment_attempts(id),
-  kind TEXT NOT NULL,                 -- talk_student | talk_parent
-  -- Hết Chủ nhật của TUẦN KẾ TIẾP tuần làm bài. Không co giãn theo ngày chấm.
-  due_date TEXT,
-  done_on TEXT,
-  done_by INTEGER REFERENCES users(id),
-  -- Người thực hiện ở ngoài hệ thống (CS, phụ huynh): giữ tên, không cần tài khoản.
-  performer_name TEXT,
-  note TEXT,
-  auto INTEGER NOT NULL DEFAULT 0,    -- 1 = hệ thống sinh khi có SOS
-  created_at TEXT NOT NULL
-);
-/* Một lượt chỉ sinh một lần mỗi loại — chấm lại hay sửa điểm không nhân đôi. */
-CREATE UNIQUE INDEX idx_contact_auto ON student_contacts(attempt_id, kind) WHERE auto = 1;
-CREATE INDEX idx_contact_student ON student_contacts(student_id);
-CREATE INDEX idx_contact_due ON student_contacts(due_date) WHERE done_on IS NULL;
 CREATE INDEX idx_case_student ON sos_cases(student_id, status);
 CREATE INDEX idx_case_cycle ON sos_cases(cycle_id);
 
@@ -542,6 +589,17 @@ CREATE TABLE case_interventions (
   -- Hẹn xem lại. Chỉ tính quá hạn khi CÓ ngày hẹn và chưa xem lại; theo dõi không hẹn thì
   -- không bao giờ quá hạn.
   followup_due TEXT,
+
+  /*
+   * HẠN LÀM XONG PHƯƠNG ÁN — mốc thứ nhất trong hai mốc owner giữ (xác nhận 13/09/2026).
+   *
+   * Tính từ ngày phát hiện, theo mức SOS: SOS 1 → 7 ngày · SOS 2 → 5 ngày · SOS 3 → 3 ngày.
+   * Khác với `followup_due` (hẹn XEM LẠI sau khi đã làm) và `approval_due` (hạn Quản lý trả
+   * lời). Ba mốc, ba câu hỏi khác nhau, nên không gộp cột.
+   *
+   * Quá hạn KHÔNG chặn gì — chỉ nổi lên màn việc để không ai bị bỏ quên.
+   */
+  action_due TEXT,
 
   /*
    * CÓ CẦN QUẢN LÝ DUYỆT KHÔNG — do chính giáo viên đề xuất quyết định.
@@ -610,37 +668,51 @@ CREATE TABLE case_sources (
 CREATE INDEX idx_case_source_case ON case_sources(case_id);
 
 /*
- * GHI NHẬN NHANH của giáo viên về một kỹ năng.
+ * BẢNG `skill_checkins` ĐÃ BỎ Ở VÒNG 4 — cùng với khu "Điểm chính thức" và "Ghi nhận của
+ * giáo viên" trên giao diện.
  *
- * Mở rộng `teacher_estimates`: ngoài band còn nhận NHẬN ĐỊNH ĐỊNH TÍNH. Giáo viên lớp
- * thường không quy được ra band IELTS, và một câu "em nghe chi tiết còn yếu" nhiều khi
- * hữu ích hơn một con số.
- *
- * Tối thiểu phải có NHẬN ĐỊNH hoặc ĐIỂM — không bắt điền đủ mọi ô.
+ * Owner chốt 13/09/2026: giữ thêm một đường chấm điểm chạy song song với điểm MT tạo ra hai
+ * nguồn số liệu đá nhau, và đó chính là thứ đang làm mọi bảng biểu lộn xộn. Giáo viên muốn
+ * ghi nhận gì về một em thì đã có nút "+ Case" — ghi vào đó thì việc có người chịu trách
+ * nhiệm, có phương án và có kết quả, thay vì một dòng nhận xét không dẫn tới đâu.
  */
-CREATE TABLE skill_checkins (
+/*
+ * MỐC TRONG VÒNG ĐỜI MỘT CASE.
+ *
+ * Bảng này là thứ làm cho "case sống suốt khoá" đọc được. Trước vòng 4, mỗi lượt MT đẻ một
+ * case mới nên lịch sử nằm ở việc có nhiều case; nay chỉ còn MỘT case cho mỗi (học viên,
+ * hạng mục), nên chuyện đã xảy ra phải được ghi lại ở đây:
+ *
+ *   opened      mở case lần đầu
+ *   repeat      MT sau vẫn trượt hạng mục này, case đang mở       → "chưa ăn thua"
+ *   recurrence  MT sau trượt lại sau khi case ĐÃ chốt kết thúc    → "tưởng xong mà hỏng lại"
+ *   passed      MT sau đã đạt kỳ vọng
+ *   closed      chốt kết quả case
+ *   extended    chốt nhưng kéo dài theo dõi, thêm phương án mới
+ *
+ * Mốc KHÔNG thay thế `case_interventions`: mốc nói ĐIỀU GÌ ĐÃ XẢY RA VỚI EM, phương án nói
+ * MÌNH ĐÃ LÀM GÌ CHO EM. Màn case xếp xen kẽ hai thứ theo thời gian.
+ *
+ * `dedup_key` để chấm lại hay sửa điểm không nhân đôi mốc.
+ */
+CREATE TABLE case_milestones (
   id INTEGER PRIMARY KEY,
-  student_id INTEGER NOT NULL REFERENCES students(id),
-  cycle_id INTEGER REFERENCES learning_cycles(id),
-  class_id INTEGER REFERENCES classes(id),
-  skill TEXT NOT NULL,
-  -- NGÀY QUAN SÁT, khác ngày nhập vào hệ thống.
-  observed_on TEXT NOT NULL,
-  author_user_id INTEGER REFERENCES users(id),
-
-  judgement TEXT,                     -- nhận định ngắn
-  strengths TEXT,
-  weaknesses TEXT,
-  -- Điểm ước lượng: TÙY CHỌN. Ghi rõ căn cứ để không nhầm với điểm chính thức.
+  case_id INTEGER NOT NULL REFERENCES sos_cases(id),
+  kind TEXT NOT NULL,
+  attempt_id INTEGER REFERENCES assessment_attempts(id),
+  attempt_no INTEGER,
+  -- Ảnh chụp con số lúc đó, để đọc lại không phải truy ngược mà vẫn đúng bối cảnh cũ.
   band REAL,
-  raw_score INTEGER,
-  raw_total INTEGER,
-  c1 REAL, c2 REAL, c3 REAL, c4 REAL,
-  estimate_basis TEXT,                -- judgement | raw | criteria
-
-  created_at TEXT NOT NULL
+  expectation REAL,
+  sos_level INTEGER,
+  occurred_on TEXT NOT NULL,
+  note TEXT,
+  created_by INTEGER REFERENCES users(id),
+  created_at TEXT NOT NULL,
+  dedup_key TEXT
 );
-CREATE INDEX idx_checkin_student ON skill_checkins(student_id, skill, observed_on);
+CREATE UNIQUE INDEX idx_milestone_dedup ON case_milestones(dedup_key);
+CREATE INDEX idx_milestone_case ON case_milestones(case_id, occurred_on);
 
 CREATE TABLE sos_case_history (
   id INTEGER PRIMARY KEY,

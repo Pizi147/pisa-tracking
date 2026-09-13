@@ -98,9 +98,16 @@ export function weeklyRollup(
                         WHERE i.case_id = s.id AND i.status != 'cancelled')) AS support_done
              FROM sos_cases s WHERE s.attempt_id IS NOT NULL GROUP BY s.attempt_id
          ) sc ON sc.attempt_id = a.id
+         /*
+          * Hai việc trao đổi nay là phương án trong case Ý thức/Khác của chính lượt đó
+          * (vòng 4 bỏ bảng Liên hệ riêng). Vẫn gộp về MỘT dòng cho mỗi lượt.
+          */
          LEFT JOIN (
-           SELECT attempt_id, MAX(done_on) AS contact_done FROM student_contacts
-            WHERE attempt_id IS NOT NULL GROUP BY attempt_id
+           SELECT s.attempt_id, MAX(i.completed_date) AS contact_done
+             FROM case_interventions i
+             JOIN sos_cases s ON s.id = i.case_id
+            WHERE s.attempt_id IS NOT NULL AND i.kind IN ('talk_student','talk_parent')
+            GROUP BY s.attempt_id
          ) ct ON ct.attempt_id = a.id
         WHERE ${where.join(' AND ')} AND a.status != 'cancelled'`,
     )

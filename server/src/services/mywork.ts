@@ -1,6 +1,6 @@
 import { db } from '../db.ts';
 import {
-  CONTACT_KIND_SHORT, ENTRY_SKILL_LABEL, INTERVENTION_KIND_LABEL, PERMISSIONS,
+  CONTACT_KIND_SHORT, ENTRY_SKILL_LABEL, INTERVENTION_KIND_LABEL, PERMISSIONS, isContactKind,
   REGULAR_SKILL_LABEL, SOS_LABEL, URGENCY_LABEL, caseHeadline, dueDaysFor,
   type ContactKind, type EntrySkill, type InterventionKind,
 } from '../../../shared/domain.ts';
@@ -8,7 +8,6 @@ import { demoToday } from '../demoConfig.ts';
 import { diffDays, formatDateVi } from '../util.ts';
 import { can, scopeFor, teachesClass, type Principal } from '../permissions.ts';
 import { listAttempts } from './attempts.ts';
-import { pendingContacts } from './contacts.ts';
 
 /**
  * VIỆC CỦA CHÍNH NGƯỜI ĐANG XEM.
@@ -54,7 +53,7 @@ export type WorkItem = {
   href: string;
 };
 
-export type WorkGroupKey = 'score' | 'approval' | 'contact' | 'review' | 'support' | 'schedule' | 'week';
+export type WorkGroupKey = 'score' | 'approval' | 'action' | 'review' | 'support' | 'schedule' | 'week';
 
 /**
  * Mỗi nhóm có MỘT DÒNG nói rõ nhóm đó nghĩa là gì.
@@ -73,10 +72,17 @@ const GROUP_META: Record<WorkGroupKey, { label: string; hint: string; overdue: s
     hint: 'Giáo viên đề xuất một phương án và đang chờ bạn quyết: duyệt, không duyệt (ghi rõ lý do), hoặc góp ý thêm.',
     overdue: 'Quá hạn duyệt',
   },
-  contact: {
-    label: 'Xác nhận đã trao đổi',
-    hint: 'Em có SOS thì luôn phải trao đổi với chính em và với phụ huynh. Chỉ cần xác nhận đã làm — không phải báo cáo kết quả.',
-    overdue: 'Quá hạn trao đổi',
+  /*
+   * NHÓM NÀY THAY CHO NHÓM "Xác nhận đã trao đổi" CŨ.
+   *
+   * Hai việc trao đổi nay là hai phương án bình thường của case Ý thức/Khác, nên chúng vào
+   * chung một nhóm với mọi phương án đã lên kế hoạch mà tới hạn làm. Giữ một nhóm riêng chỉ
+   * cho hai loại việc là bắt người đọc học thêm một khái niệm mà không được gì.
+   */
+  action: {
+    label: 'Phương án tới hạn làm',
+    hint: 'Phương án đã lên kế hoạch cho em mà tới hạn phải làm. Làm xong thì đánh dấu đã hoàn thành kèm ngày thực hiện.',
+    overdue: 'Quá hạn làm phương án',
   },
   review: {
     label: 'Kết quả sau hỗ trợ',
@@ -238,25 +244,69 @@ export function myWork(p: Principal, f: { branchId?: number | null } = {}) {
     });
   }
 
-  // ---------------------------------------------- 2b. hai việc trao đổi bắt buộc chưa xác nhận
+  // ------------------------------------- 2b. phương án đã lên kế hoạch mà tới hạn làm
   /*
-   * Chỉ hiện việc ĐÃ TỚI HẠN hoặc quá hạn. Hai việc này sinh ra ngay lúc có SOS nhưng hạn là
-   * cuối tuần kế tiếp — bày ra từ ngày đầu thì danh sách lúc nào cũng dài mà chưa cần làm gì.
+   * MỐC THỨ NHẤT trong hai mốc owner giữ: hạn LÀM XONG phương án, 3/5/7 ngày theo mức SOS.
+   * (Mốc thứ hai là hạn BÁO KẾT QUẢ của cả case, nằm ở nhóm "Kết quả sau hỗ trợ".)
+   *
+   * Chỉ hiện việc ĐÃ TỚI HẠN hoặc quá hạn — bày ra từ ngày đầu thì danh sách lúc nào cũng
+   * dài mà chưa cần làm gì, và một danh sách lúc nào cũng dài thì không ai đọc.
+   *
+   * Phương án đang CHỜ DUYỆT thì chưa được phép làm, nên không tính là tới hạn: thúc người
+   * ta làm một việc Quản lý chưa đồng ý là thúc sai người.
    */
-  for (const ct of pendingContacts(p, { branchId: f.branchId })) {
-    if (!ct.due_date || ct.due_date > today) continue;
-    const u = urgencyOf(ct.due_date, today);
+  const dueActions = conn
+    .prepare(
+      `SELECT iv.id, iv.case_id, iv.kind, iv.description, iv.action_due,
+              sc.track, sc.category, sc.attempt_id, sc.sos_level,
+              COALESCE(sc.student_id, a.student_id) AS eff_student_id,
+              COALESCE(a.class_id, cur.class_id) AS eff_class_id,
+              s.full_name, cl.code AS class_code, cl.branch_id, a.attempt_no
+         FROM case_interventions iv
+         JOIN sos_cases sc ON sc.id = iv.case_id
+         LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
+         LEFT JOIN enrollments cur ON cur.student_id = sc.student_id AND cur.status = 'active'
+         LEFT JOIN students s ON s.id = COALESCE(sc.student_id, a.student_id)
+         LEFT JOIN classes cl ON cl.id = COALESCE(a.class_id, cur.class_id)
+        WHERE iv.status IN ('planned', 'started')
+          AND iv.action_due IS NOT NULL AND iv.action_due <= ?
+          AND sc.status != 'done'
+          AND COALESCE(iv.approval_state, '') != 'pending'
+          AND s.archived_at IS NULL`,
+    )
+    .all(today) as any[];
+  for (const iv of dueActions) {
+    if (f.branchId && iv.branch_id !== f.branchId) continue;
+    if (!can(p, PERMISSIONS.SOS_EDIT, { classId: iv.eff_class_id, studentId: iv.eff_student_id })) continue;
+    /*
+     * AI THẤY VIỆC NÀY — giữ nguyên cách chia của bảng Liên hệ cũ, vì nó đúng:
+     *   gặp học viên   → người ĐANG DẠY em
+     *   gọi phụ huynh  → văn phòng (người sửa được hồ sơ học viên)
+     *   phương án học thuật → người đang dạy em
+     * Quản lý thấy hết, vì họ là người đôn đốc khi có ai đó quên.
+     */
+    const isManager = can(p, PERMISSIONS.CASE_APPROVE, { classId: iv.eff_class_id, studentId: iv.eff_student_id });
+    if (!isManager) {
+      const mine = iv.kind === 'talk_parent'
+        ? can(p, PERMISSIONS.STUDENT_EDIT, { classId: iv.eff_class_id, studentId: iv.eff_student_id })
+        : teachesClass(p, iv.eff_class_id);
+      if (!mine) continue;
+    }
+    const u = urgencyOf(iv.action_due, today);
+    const what = CONTACT_KIND_SHORT[iv.kind as ContactKind]
+      ?? INTERVENTION_KIND_LABEL[iv.kind as keyof typeof INTERVENTION_KIND_LABEL]
+      ?? iv.kind;
     items.push({
-      key: `contact:${ct.id}`, group: 'contact', urgency: u,
-      studentId: ct.student_id, studentName: ct.full_name ?? 'Học viên',
-      classId: ct.class_id ?? null, classCode: ct.class_code ?? null,
-      attemptId: ct.attempt_id ?? null, attemptNo: ct.attempt_no ?? null,
-      caseId: null, level: null,
-      reason: (CONTACT_KIND_SHORT[ct.kind as ContactKind] ?? ct.kind)
-        + (ct.attempt_no ? ` sau MT${ct.attempt_no}` : '')
-        + ` — ${u === 'overdue' ? lateText(ct.due_date, today) : 'hạn hôm nay'}`,
-      actionLabel: 'Xác nhận đã trao đổi', overdueLabel: badge('contact', u),
-      href: ct.student_id ? `/hoc-vien/${ct.student_id}` : '/',
+      key: `action:${iv.id}`, group: 'action', urgency: u,
+      studentId: iv.eff_student_id, studentName: iv.full_name ?? 'Học viên',
+      classId: iv.eff_class_id ?? null, classCode: iv.class_code ?? null,
+      attemptId: iv.attempt_id ?? null, attemptNo: iv.attempt_no ?? null,
+      caseId: iv.case_id, level: null,
+      reason: `${what}${iv.attempt_no ? ` sau MT${iv.attempt_no}` : ''}`
+        + ` — ${u === 'overdue' ? lateText(iv.action_due, today) : 'hạn hôm nay'}`,
+      actionLabel: isContactKind(iv.kind) ? 'Xác nhận đã trao đổi' : 'Đánh dấu đã làm',
+      overdueLabel: badge('action', u),
+      href: iv.eff_student_id ? `/hoc-vien/${iv.eff_student_id}` : `/hoc-thuat/case/${iv.case_id}`,
     });
   }
 
@@ -422,7 +472,7 @@ export function myWork(p: Principal, f: { branchId?: number | null } = {}) {
    * nào là cái nào. Nay GIỮ ĐÚNG LOẠI VIỆC, chỉ xếp việc gấp lên đầu TRONG nhóm của nó, và
    * xếp nhóm nào có việc gấp lên trước.
    */
-  const order: WorkGroupKey[] = ['score', 'approval', 'contact', 'review', 'support', 'schedule', 'week'];
+  const order: WorkGroupKey[] = ['score', 'approval', 'action', 'review', 'support', 'schedule', 'week'];
   const weight = (u: WorkUrgency) => (u === 'overdue' ? 0 : u === 'today' ? 1 : 2);
 
   const groups = order

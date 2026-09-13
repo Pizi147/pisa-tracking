@@ -67,9 +67,19 @@ export function assessedBands(entry: EntryBands): Record<AssessedSkill, number |
  * thức. Nhưng việc hỗ trợ thì phải về đúng ô: một giáo viên chỉ dạy Task 2 không làm gì
  * được với một vấn đề ghi là "Writing".
  *
- * W1 và W2 mỗi cái so RIÊNG với cùng một kỳ vọng (owner chốt 10/09/2026). Hệ quả có thật và
- * đã được báo trước: W1 = 5.0 với W2 = 6.5 cho band Writing 6.0 — ĐẠT kỳ vọng 6.0, không
- * tính vào SOS — nhưng W1 vẫn sinh một vấn đề. Band gộp đang che một lỗ hổng thật.
+ * WRITING XÉT HAI TẦNG — owner đảo lại quy tắc cũ, chốt 13/09/2026:
+ *
+ *     band W tổng hợp ĐẠT kỳ vọng  →  KHÔNG sinh case nào, kể cả khi riêng W1 dưới kỳ vọng
+ *     band W tổng hợp TRƯỢT        →  so W1 và W2 với CÙNG kỳ vọng đó, task nào trượt thì
+ *                                     task đó một case (có thể ra hai case)
+ *
+ * Vòng trước so W1 và W2 riêng lẻ ngay từ đầu, nên W1 = 5.0 với W2 = 6.5 (band Writing 6.0,
+ * ĐẠT kỳ vọng 6.0, không tính vào SOS) vẫn sinh ra một case W1. Owner bỏ cách đó: em đã đạt
+ * kỳ vọng môn Writing thì không mở việc cho em, còn chênh lệch giữa hai task là chuyện giáo
+ * viên điều chỉnh trong lớp chứ không phải một case phải theo dõi và chốt kết quả.
+ *
+ * Thiếu một trong hai task thì chưa có band tổng hợp, nên chưa kết luận gì về Writing —
+ * chờ nhập đủ, không đoán.
  */
 export function failingEntrySkills(
   expectation: number | null,
@@ -77,7 +87,19 @@ export function failingEntrySkills(
   skippedSkills: readonly string[] = [],
 ): EntrySkill[] {
   if (expectation === null) return [];
+  const writingSkipped = skippedSkills.includes('writing');
+  const w1 = entry.writing1 ?? null;
+  const w2 = entry.writing2 ?? null;
+  const wBand = writingBand(w1, w2);
+  /* Cổng tầng một: band Writing tổng hợp có trượt không. */
+  const writingFails = !writingSkipped && wBand !== null && wBand < expectation;
+
   return ENTRY_SKILLS.filter((skill) => {
+    if (skill === 'writing1' || skill === 'writing2') {
+      if (!writingFails) return false;
+      const band = skill === 'writing1' ? w1 : w2;
+      return band !== null && band < expectation;
+    }
     if (skippedSkills.includes(assessedSkillOf(skill))) return false;
     const band = entry[skill];
     return band !== null && band !== undefined && band < expectation;

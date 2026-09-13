@@ -12,8 +12,6 @@ import { writeAudit } from '../services/audit.ts';
 import { maybeSimulateReadError, maybeSimulateSaveFailure, pInt, qInt, qStr, wrap } from './helpers.ts';
 import * as attemptSvc from '../services/attempts.ts';
 import * as cycleSvc from '../services/cycles.ts';
-import * as checkinSvc from '../services/checkins.ts';
-import * as contactSvc from '../services/contacts.ts';
 import * as summarySvc from '../services/summary.ts';
 import * as pulseSvc from '../services/branchpulse.ts';
 import * as prefSvc from '../services/prefs.ts';
@@ -509,25 +507,14 @@ api.post('/cycles/:id/target-revision', requireAuth, wrap((req) => {
   return cycleSvc.reviseTarget(principalOf(req), pInt(req, 'id'), req.body ?? {});
 }));
 
-// ============================================================ Ghi nhận nhanh của giáo viên
-
-api.get('/students/:id/checkins', requireAuth, wrap((req) =>
-  checkinSvc.checkinHistory(principalOf(req), pInt(req, 'id'), {
-    skill: qStr(req, 'skill'), cycleId: qInt(req, 'cycleId'),
-  })));
-
-api.get('/students/:id/checkin-comparison', requireAuth, wrap((req) =>
-  checkinSvc.compareCheckins(principalOf(req), pInt(req, 'id'), qInt(req, 'cycleId'))));
-
-/**
- * Ghi nhận là dữ liệu RIÊNG, không bao giờ ghi đè điểm chính thức.
- * Giáo viên ghi BẤT KỲ LÚC NÀO — không phụ thuộc tuần MT hay hạn nhập điểm, và cũng
- * không bị khoá theo cửa sổ sửa báo cáo tuần.
+/*
+ * "GHI NHẬN NHANH CỦA GIÁO VIÊN" ĐÃ BỎ HẲN Ở VÒNG 4 — cùng với khu "Điểm chính thức".
+ *
+ * Owner chốt 13/09/2026: giữ thêm một đường chấm điểm chạy song song với điểm MT tạo ra hai
+ * nguồn số liệu đá nhau, và đó là thứ đang làm bảng biểu lộn xộn. Giáo viên muốn ghi nhận
+ * gì về một em thì bấm "+ Case" — ghi vào đó thì việc có người chịu trách nhiệm, có phương
+ * án và có kết quả.
  */
-api.post('/students/:id/checkins', requireAuth, wrap((req) => {
-  maybeSimulateSaveFailure();
-  return checkinSvc.saveCheckin(principalOf(req), { ...req.body, studentId: pInt(req, 'id') });
-}));
 
 // ============================================================ Case học vụ
 
@@ -626,24 +613,13 @@ api.get('/ref/issue-taxonomy', requireAuth, wrap(() => ({
 
 // ============================================================ Liên hệ với HS và phụ huynh
 
-/**
- * Hai việc trao đổi bắt buộc khi có SOS, và những lần giáo viên chủ động gọi.
- * KHÔNG phải phương án hỗ trợ: không duyệt, không hẹn xem lại, không kết quả chuyên môn.
+/*
+ * BA ENDPOINT LIÊN HỆ ĐÃ BỎ Ở VÒNG 4.
+ *
+ * Hai việc trao đổi nay là hai PHƯƠNG ÁN của case Ý thức/Khác, nên chúng đi chung đường với
+ * mọi phương án khác: `POST /cases/:id/interventions` để thêm, `POST /interventions/:id` để
+ * đánh dấu đã làm. Ít hơn ba đường, và không còn chỗ nào phải cộng hai nguồn lại.
  */
-api.get('/students/:id/contacts', requireAuth, wrap((req) => {
-  maybeSimulateReadError();
-  return contactSvc.contactsOfStudent(principalOf(req), pInt(req, 'id'));
-}));
-
-api.post('/students/:id/contacts', requireAuth, wrap((req) => {
-  maybeSimulateSaveFailure();
-  return contactSvc.addContact(principalOf(req), { ...req.body, studentId: pInt(req, 'id') });
-}));
-
-api.post('/contacts/:id/done', requireAuth, wrap((req) => {
-  maybeSimulateSaveFailure();
-  return contactSvc.completeContact(principalOf(req), pInt(req, 'id'), req.body ?? {});
-}));
 
 // ============================================================ Học viên
 
@@ -803,7 +779,7 @@ api.get('/admin/overview', requireAuth, wrap((req) => {
       classes: (conn.prepare('SELECT COUNT(*) AS n FROM classes').get() as any).n,
       attempts: (conn.prepare('SELECT COUNT(*) AS n FROM assessment_attempts').get() as any).n,
       cycles: (conn.prepare('SELECT COUNT(*) AS n FROM learning_cycles').get() as any).n,
-      estimates: (conn.prepare('SELECT COUNT(*) AS n FROM skill_checkins').get() as any).n,
+      milestones: (conn.prepare('SELECT COUNT(*) AS n FROM case_milestones').get() as any).n,
       cases: (conn.prepare('SELECT COUNT(*) AS n FROM sos_cases').get() as any).n,
     },
     audit: conn
