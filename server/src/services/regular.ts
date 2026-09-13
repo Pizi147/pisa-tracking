@@ -362,16 +362,40 @@ export function refreshRegularOutcome(p: Principal, attemptId: number) {
   // Nhưng CASE thì mở ngay khi kết luận được, không chờ đủ.
   if (r.sosLevel === null) return r;
 
-  const open = conn.prepare('SELECT * FROM sos_cases WHERE attempt_id = ?').all(attemptId) as any[];
   const failing = r.skills.filter((x) => x.outcome === 'fail').map((x) => x.skill);
+  const failingCats = new Set(failing.map((sk) => categoryOf('academic', sk)).filter(Boolean) as string[]);
 
   /*
-   * Điểm sửa lên thành đạt: hạ mức, KHÔNG xoá vấn đề — xoá đi là mất luôn những việc đã
-   * làm cho em vì vấn đề đó.
+   * TÌM CASE THEO HỌC VIÊN, KHÔNG THEO LƯỢT THI.
+   *
+   * Bản trước tìm bằng `WHERE attempt_id = ?`. Từ vòng 4 case sống suốt khoá và cột đó luôn
+   * trỏ tới LƯỢT MỚI NHẤT đã chạm vào nó, nên chấm lại một bài CŨ thì câu đó không tìm ra
+   * case nào — điểm sửa lên thành đạt mà mức SOS vẫn nằm nguyên, không có lỗi nào báo ra.
+   *
+   * Điểm sửa lên thành đạt: hạ mức và ghi một mốc, KHÔNG xoá case — xoá đi là mất luôn
+   * những việc đã làm cho em vì vấn đề đó.
    */
+  const open = conn
+    .prepare(
+      `SELECT * FROM sos_cases
+        WHERE student_id = ? AND COALESCE(cycle_id, 0) = ?
+          AND track = 'academic' AND status != 'done'`,
+    )
+    .all(a.student_id, a.cycle_id ?? 0) as any[];
+
+  const detectedAt = (a.lrw_scheduled_at ?? '').slice(0, 10) || demoToday();
   for (const c of open) {
-    const gone = c.topic && !failing.includes(c.topic);
+    const cat = c.category ?? categoryOf('academic', c.topic);
+    if (!cat) continue;
+    const gone = !failingCats.has(cat);
     const level = gone || r.sosLevel === 0 ? 0 : r.sosLevel;
+    if (gone) {
+      addMilestone({
+        caseId: c.id, kind: 'passed', attemptId, attemptNo: a.attempt_no,
+        sosLevel: r.sosLevel, occurredOn: detectedAt, createdBy: p.userId,
+        dedupKey: `mt:${attemptId}:${c.id}:passed`,
+      });
+    }
     if (c.sos_level !== level) {
       conn.prepare('UPDATE sos_cases SET sos_level = ?, updated_at = ? WHERE id = ?')
         .run(level, nowIso(), c.id);
@@ -393,7 +417,6 @@ export function refreshRegularOutcome(p: Principal, attemptId: number) {
    * Progress Test rồi Final Test cùng trượt một môn thì đó là MỘT case với hai mốc, không
    * phải hai case rời — giống hệt MT1/MT2 của lớp FT.
    */
-  const detectedAt = (a.lrw_scheduled_at ?? '').slice(0, 10) || demoToday();
   for (const skill of failing) {
     const category = categoryOf('academic', skill);
     if (!category) continue;

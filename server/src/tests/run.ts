@@ -2925,6 +2925,42 @@ check('Cảnh báo case trùng: báo lại hạng mục đã có case chưa xong
   assert(parallel.parallel === true, 'Case mở riêng không được đánh dấu là song song');
 });
 
+check('Lớp Normal: chấm lại một bài CŨ vẫn hạ được mức của case', () => {
+  /*
+   * Case sống suốt khoá nên cột `attempt_id` của nó luôn trỏ tới LƯỢT MỚI NHẤT. Tìm case
+   * bằng `WHERE attempt_id = ?` thì chấm lại một bài cũ sẽ không tìm ra case nào, và điểm
+   * sửa lên thành đạt mà mức SOS vẫn nằm nguyên — một lỗi im lặng, không ai báo gì.
+   */
+  const row = conn
+    .prepare(
+      `SELECT sc.id, sc.category, sc.topic, sc.sos_level, a.id AS attempt_id, a.student_id, a.cycle_id
+         FROM sos_cases sc
+         JOIN assessment_attempts a ON a.student_id = sc.student_id
+         JOIN classes cl ON cl.id = a.class_id
+        WHERE sc.track = 'academic' AND sc.status != 'done' AND sc.sos_level > 0
+          AND cl.kind != 'FT' AND a.status = 'done'
+          AND EXISTS (SELECT 1 FROM assessment_scores s WHERE s.attempt_id = a.id AND s.skill = sc.topic)
+        ORDER BY a.attempt_no LIMIT 1`,
+    )
+    .get() as any;
+  if (!row) return;   // dữ liệu mẫu chưa có lớp Normal nào ở tình huống này
+
+  /* Cho kỹ năng đó đạt hẳn: đúng hết số câu. */
+  const sc = conn
+    .prepare('SELECT raw_total FROM assessment_scores WHERE attempt_id = ? AND skill = ?')
+    .get(row.attempt_id, row.topic) as any;
+  const total = sc?.raw_total ?? 40;
+  regular.saveRegularScore(P.admin, row.attempt_id, row.topic, { score: total, total });
+
+  const after = conn.prepare('SELECT sos_level FROM sos_cases WHERE id = ?').get(row.id) as any;
+  assert(after.sos_level === 0,
+    `Kỹ năng đã đạt mà mức của case vẫn là ${after.sos_level} — case tìm theo lượt thi thay vì theo học viên`);
+  const passed = conn
+    .prepare(`SELECT 1 FROM case_milestones WHERE case_id = ? AND kind = 'passed'`)
+    .get(row.id);
+  assert(passed, 'Hạ mức mà không ghi mốc "đã đạt kỳ vọng"');
+});
+
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`
