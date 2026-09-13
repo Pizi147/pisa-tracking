@@ -583,6 +583,7 @@ api.get('/cases', requireAuth, wrap((req) => {
     studentId: toInt(req.query?.studentId),
     status: qStr(req, 'status'), origin: qStr(req, 'origin'),
     group: qStr(req, 'group'), skill: qStr(req, 'skill'), queue: qStr(req, 'queue'),
+    classKind: qStr(req, 'classKind'),
   });
 }));
 

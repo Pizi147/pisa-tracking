@@ -2632,12 +2632,28 @@ check('Khối Quản lý chỉ dành cho Quản lý, và không xếp hạng gi�
   /* Lớp 102: lớp 101 đã bị test phân công gỡ mất giáo viên Listening. */
   const gv = loadPrincipal(teacherOfSkill('MB-FT 102', 'listening'));
   assert(pulse.branchPulse(gv, {}) === null, 'Giáo viên thấy khối điều phối của Quản lý');
+  /* Chưa chọn chi nhánh: mỗi hàng là một CHI NHÁNH, không liệt kê từng lớp (mục 9.2). */
   const b = pulse.branchPulse(P.mbManager, {});
-  assert(b && b.classes.length > 0, 'Quản lý không thấy lớp nào đang tồn việc');
-  // Bảng theo người phải sắp theo TỔNG VIỆC TỒN, không phải theo một chỉ số "hiệu suất".
+  assert(b && b.mode === 'branches' && b.rows.length > 0, 'Quản lý không thấy chi nhánh nào đang tồn việc');
+  // Bảng theo người phải sắp theo VIỆC ĐÃ QUÁ HẠN, không phải theo một chỉ số "hiệu suất".
   for (let i = 1; i < b!.people.length; i++) {
-    assert(b!.people[i - 1].total >= b!.people[i].total, 'Bảng theo người sắp sai');
+    const late = (x: any) => x.mtOverdue + x.overdueUpdate;
+    assert(late(b!.people[i - 1]) >= late(b!.people[i]), 'Bảng theo người sắp sai');
   }
+
+  /* Chọn một chi nhánh: hai nhóm Normal và FT, và hàng tổng phải bằng tổng các hàng. */
+  const mbBranch = (conn.prepare("SELECT id FROM branches WHERE code='MB'").get() as any).id;
+  const one = pulse.branchPulse(P.mbManager, { branchId: mbBranch })!;
+  assert(one.mode === 'groups', 'Chọn chi nhánh rồi vẫn hiện theo chi nhánh');
+  const sum = one.rows.reduce((n: number, g: any) => n + g.metrics.cases, 0);
+  assert(sum <= one.total.cases, `Tổng nhóm ${sum} vượt quá tổng chi nhánh ${one.total.cases}`);
+  for (const g of one.rows) {
+    const inner = g.classes.reduce((n: number, c: any) => n + c.metrics.cases, 0);
+    assert(inner <= g.metrics.cases, 'Tổng của nhóm nhỏ hơn tổng các lớp trong nhóm');
+  }
+  /* Sĩ số là sĩ số thật: tổng HV cần hỗ trợ không bao giờ vượt tổng sĩ số. */
+  assert(one.total.needSupport <= one.total.size,
+    `HV cần hỗ trợ ${one.total.needSupport} vượt sĩ số ${one.total.size}`);
 });
 
 console.log('\n25. Việc Quản lý giao, toả ra thành phương án');
@@ -3205,6 +3221,125 @@ check('Ô chọn tuần mở đủ xa về tương lai để xếp lịch MT', (
   assert(futureWide >= 24,
     `Cửa sổ xếp lịch chỉ mở ${futureWide} tuần tới — không đủ cho một khoá FT 24 tuần`);
   assert(futureWide > futureNarrow, 'Cửa sổ xếp lịch không rộng hơn cửa sổ mặc định');
+});
+
+console.log('\n29. Vòng 4 phase 3 — bảng, bộ lọc và cách gọi tên');
+
+check('Tám bộ lọc học viên định nghĩa MỘT chỗ, và hiện đúng theo vai', () => {
+  const keys = domain.STUDENT_FILTERS.map((x) => x.key);
+  assert(keys.length === 8, `Phải đủ tám bộ lọc của mục 6, đang có ${keys.length}`);
+  assert(new Set(domain.STUDENT_FILTERS.map((x) => x.label)).size === 8, 'Có hai bộ lọc trùng tên');
+
+  const has = (p: any) => (key: string) => can(p, key, { anyScope: true });
+  const forTeacher = domain.studentFiltersFor(has(P.lrTeacher));
+  const forManager = domain.studentFiltersFor(has(P.mbManager));
+  const forAdmin = domain.studentFiltersFor(has(P.mbAdmin));
+
+  /* Bảng ở mục 6: GV không có "Chưa có lịch MT" và "Cần cập nhật ngày MT". */
+  assert(!forTeacher.includes('no_plan') && !forTeacher.includes('need_date'),
+    'Giáo viên không được thấy hai bộ lọc lịch');
+  assert(forTeacher.includes('sos') && forTeacher.includes('case_overdue'),
+    'Giáo viên phải thấy bộ lọc SOS và case quá hạn');
+  /* Admin CN không có bộ lọc case, nhưng CÓ "Cần nhập điểm MT" để đôn đốc (owner xác nhận Q9). */
+  assert(!forAdmin.includes('case_no_plan') && !forAdmin.includes('sos'),
+    'Admin CN không được thấy bộ lọc case');
+  assert(forAdmin.includes('my_scores') && forAdmin.includes('need_date'),
+    'Admin CN phải thấy bộ lọc nhập điểm và cập nhật ngày');
+  /* Quản lý thấy nhiều nhất, và luôn có "Chưa có lịch MT" vì đó là việc của họ. */
+  assert(forManager.includes('no_plan'), 'Quản lý phải thấy bộ lọc chưa có lịch MT');
+  for (const k of ['classes', 'sos', 'case_working', 'case_no_plan', 'case_overdue']) {
+    assert(forManager.includes(k as any), `Quản lý thiếu bộ lọc ${k}`);
+  }
+});
+
+check('Case Pronunciation gộp vào cột S, case Writing lớp Normal gộp vào W2', () => {
+  const b = summary.branchSummary(P.admin, {});
+  const all = cases.listCases(P.admin, {}).rows.filter((c: any) => c.state !== 'done');
+  const countTopic = (t: string) => all.filter((c: any) => c.topic === t).length;
+
+  const sCol = b.total.cells.skill_speaking?.value ?? 0;
+  const w2Col = b.total.cells.skill_writing2?.value ?? 0;
+  assert(sCol === countTopic('speaking') + countTopic('pronunciation'),
+    `Cột S phải gộp cả Pronunciation: ${sCol} ≠ ${countTopic('speaking')} + ${countTopic('pronunciation')}`);
+  assert(w2Col === countTopic('writing2') + countTopic('writing'),
+    `Cột W2 phải gộp cả Writing lớp Normal: ${w2Col} ≠ ${countTopic('writing2')} + ${countTopic('writing')}`);
+  /* Và không sinh ra cột riêng cho hai kỹ năng đã gộp. */
+  const keys = b.columns.map((c: any) => c.key);
+  assert(!keys.includes('skill_pronunciation') && !keys.includes('skill_writing'),
+    'Vẫn còn cột kỹ năng riêng cho Pronunciation hoặc Writing lớp Normal');
+});
+
+check('Lọc theo loại lớp thu hẹp CẢ số đếm trên chip, không chỉ danh sách', () => {
+  const all = cases.listCases(P.admin, {});
+  const ft = cases.listCases(P.admin, { classKind: 'ft' });
+  const normal = cases.listCases(P.admin, { classKind: 'normal' });
+  assert(ft.rows.length + normal.rows.length === all.rows.length,
+    'Hai loại lớp cộng lại không bằng tổng — có case không thuộc lớp nào');
+  assert(ft.rows.every((r: any) => r.classKind === 'ft'), 'Lọc FT còn lọt case lớp Normal');
+
+  /* Số trên chip kỹ năng phải đếm TRONG loại lớp đang chọn, nếu không bấm vào sẽ lệch. */
+  const facetSum = Object.values(ft.facets!.skill).reduce((a: number, n: any) => a + n, 0);
+  assert(facetSum <= ft.rows.length,
+    `Chip kỹ năng đếm ${facetSum} case trong khi danh sách chỉ có ${ft.rows.length}`);
+  assert((ft.facets as any).classKind.ft === ft.rows.length, 'Chip loại lớp đếm sai chính nó');
+});
+
+check('Bảng lớp có đủ sáu ô điểm, và mũi tên so với ĐÚNG lượt trước', () => {
+  const roster = classesSvc.classRoster(P.admin, mbClass) as any[];
+  const withScores = roster.filter((r) => r.scores && r.scores.overall.now !== null);
+  assert(withScores.length > 0, 'Lớp mẫu không có em nào đã có điểm');
+  for (const r of withScores) {
+    for (const k of ['overall', 'listening', 'reading', 'speaking', 'writing1', 'writing2']) {
+      assert(k in r.scores, `Thiếu ô điểm ${k}`);
+    }
+    /* W1 và W2 phải là HAI con số riêng, không phải band Writing gộp. */
+    const w1 = r.scores.writing1.now;
+    const w2 = r.scores.writing2.now;
+    if (r.scores.listening.now !== null) {
+      assert(w1 !== null || w2 !== null,
+        `Học viên ${r.fullName} có điểm mà hai cột W1/W2 đều trống`);
+    }
+    const c = r.scores.overall;
+    if (c.prev !== null) {
+      const expect = c.now > c.prev ? 1 : c.now < c.prev ? -1 : 0;
+      assert(c.dir === expect, `Mũi tên sai chiều: ${c.prev} → ${c.now} mà dir = ${c.dir}`);
+    } else {
+      assert(c.dir === 0, 'Lượt đầu tiên không được có mũi tên');
+    }
+  }
+  /* Lớp Normal không có band nên KHÔNG dựng sáu ô điểm giả. */
+  const fou = classesSvc.classRoster(P.admin, fouClass.id) as any[];
+  assert(fou.every((r) => r.scores === null), 'Lớp Normal vẫn dựng ra sáu ô điểm band');
+});
+
+check('Mức SOS trên bảng lớp dùng CHUNG phép tính với bảng tổng hợp', () => {
+  /*
+   * Owner nêu đích danh chuyện số liệu lệch giữa các màn. Bảng lớp và bảng tổng hợp phải
+   * gọi cùng một hàm, nên với một lớp bất kỳ, số em ở mỗi mức phải khớp nhau.
+   */
+  const cid = classId('CP-FT 110');
+  const roster = classesSvc.classRoster(P.admin, cid) as any[];
+  const open = cases.listCases(P.admin, { classId: cid }).rows.filter((c: any) => c.state !== 'done');
+  const expect = cases.currentSosByStudent(open);
+  for (const r of roster) {
+    const want = expect.get(r.id) ?? null;
+    assert((r.sosLevel ?? null) === want,
+      `Học viên ${r.fullName}: bảng lớp nói SOS ${r.sosLevel}, phép tính chung nói ${want}`);
+  }
+  /* Và tổng ba mức không bao giờ vượt sĩ số — đúng lỗi owner báo 12/09. */
+  const byLevel = [1, 2, 3].map((lv) => roster.filter((r) => r.sosLevel === lv).length);
+  assert(byLevel.reduce((a, b) => a + b, 0) <= roster.length,
+    `Tổng ba mức SOS ${byLevel.join('+')} vượt sĩ số ${roster.length}`);
+});
+
+check('Bảng theo tuần đếm đúng: Đạt + SOS 1 + SOS 2 + SOS 3 = số lượt có kết quả', () => {
+  const r = weekly.weeklyRollup(P.admin, { weeks: 26 });
+  assert(r.rows.length > 0, 'Không có tuần nào có dữ liệu');
+  for (const w of r.rows) {
+    assert(w.onTarget + w.sos1 + w.sos2 + w.sos3 === w.attempts,
+      `Tuần ${w.code}: ${w.onTarget}+${w.sos1}+${w.sos2}+${w.sos3} ≠ ${w.attempts} lượt`);
+    assert(typeof w.pendingApproval === 'number', `Tuần ${w.code} thiếu cột Chờ duyệt`);
+  }
 });
 
 console.log(`\n${'='.repeat(60)}`);

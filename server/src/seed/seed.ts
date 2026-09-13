@@ -554,7 +554,20 @@ function seedBehaviourCase(conn: any, o: {
     .run(caseId, o.attemptId, o.attemptNo, o.level, o.testDate, NOW, `mt:${o.attemptId}:${caseId}:opened`);
 
   const due = addDays(o.testDate, DUE_DAYS_BY_SOS[o.level] ?? 7);
-  const donePart = (o.attemptId + o.level) % 3;      // 0 = xong cả hai, 1 = xong một, 2 = chưa
+  /*
+   * ĐỢT MT CŨ THÌ HAI VIỆC TRAO ĐỔI COI NHƯ ĐÃ LÀM XONG.
+   *
+   * Bản trước để tình trạng rải đều theo `attemptId`, bất kể đợt MT cách đây một tuần hay
+   * ba tháng. Hậu quả trên màn việc: 97% hàng đợi "phương án tới hạn làm" là màu đỏ, và một
+   * hàng đợi toàn đỏ thì không nói được gì — người dùng không phân biệt nổi "quá hạn", "tới
+   * hạn hôm nay" và "còn hạn", đúng ba thứ giao diện đang cố nói, nên họ thôi nhìn nó.
+   *
+   * Một trung tâm có thật thì gọi phụ huynh trong vài tuần chứ không để treo ba tháng. Nên
+   * đợt MT cách ngày demo quá 35 ngày được coi là đã làm xong; việc còn treo chỉ nằm ở
+   * những đợt gần đây — đúng chỗ người dùng cần nhìn.
+   */
+  const stale = addDays(o.testDate, 35) < DEMO_DATE;
+  const donePart = stale ? 0 : (o.attemptId + o.level) % 3;   // 0 = xong cả hai, 1 = xong một, 2 = chưa
   for (const [i, kind] of CONTACT_KINDS.entries()) {
     const done = donePart === 0 || (donePart === 1 && i === 0);
     conn

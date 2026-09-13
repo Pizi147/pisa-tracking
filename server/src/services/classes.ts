@@ -8,6 +8,7 @@ import { badRequest, notFound, nowIso } from '../util.ts';
 import { can, classScopeSql, editableSkills, isCoreTeacherOf, require_, scopeFor, type Principal } from '../permissions.ts';
 import { writeAudit } from './audit.ts';
 import { loadBundle, resultOf, skillCells } from './attempts.ts';
+import { currentSosByStudent } from './cases.ts';
 import { allProgrammes, evaluateRegular, programmeOfClass } from './regular.ts';
 import { classProgressMany, missingForClasses, missingForStudent } from './schedule.ts';
 import { SKILL_SHORT } from '../../../shared/domain.ts';
@@ -290,6 +291,24 @@ export function classRoster(p: Principal, classId: number, q?: string) {
   const isFt = prog?.code === 'FT';
   const myRegularSkills = isRatio ? editableSkills(p, classId, prog!.skills) : [];
 
+  /*
+   * CASE ĐANG MỞ của cả lớp, lấy MỘT LẦN. Hỏi từng em một thì một lớp ba mươi em sinh ba
+   * mươi câu truy vấn — đúng kiểu chậm mà không màn nào báo lỗi.
+   */
+  const openCaseCount = new Map<number, number>();
+  const openRows = conn
+    .prepare(
+      `SELECT sc.student_id, sc.sos_level, a.attempt_no FROM sos_cases sc
+         LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
+        WHERE sc.student_id IN (${ph}) AND sc.status != 'done'`,
+    )
+    .all(...sids) as any[];
+  for (const r of openRows) openCaseCount.set(r.student_id, (openCaseCount.get(r.student_id) ?? 0) + 1);
+  /* Mức SOS hiện tại: dùng CHUNG phép tính với bảng tổng hợp, không tự đếm lại ở đây. */
+  const openSos = currentSosByStudent(
+    openRows.map((r) => ({ studentId: r.student_id, sosLevel: r.sos_level, attemptNo: r.attempt_no })),
+  );
+
   return students.map((s) => {
     const list = byStudent.get(s.id) ?? [];
     const timeline = list.map((a) => {
@@ -340,6 +359,14 @@ export function classRoster(p: Principal, classId: number, q?: string) {
         kind: a.kind, kindLabel: `MT${a.attempt_no}`,
         scoredRequired: result.scoredRequired, requiredCount: result.required.length,
         overall: result.overall,
+        /*
+         * BAND CỦA TỪNG Ô NHẬP, để bảng lớp vẽ được sáu cột điểm.
+         *
+         * KHÔNG dùng `result.bands`: bộ đó gộp W1 và W2 thành một band "writing" duy nhất
+         * (đúng cho việc tính SOS), nên hai cột W1 và W2 của bảng lớp sẽ trống trơn. Ở đây
+         * cần đúng con số người dạy đã gõ vào từng ô.
+         */
+        bands: Object.fromEntries(scores.map((x: any) => [x.skill, x.band ?? null])),
         passedCount: null, failedCount: result.failedCount,
         sosLevel: result.sosLevel, evaluable: result.evaluable,
         caseStatus: c?.status ?? null,
@@ -349,8 +376,39 @@ export function classRoster(p: Principal, classId: number, q?: string) {
       };
     });
     const done = timeline.filter((t) => t.evaluable);
+    /*
+     * SÁU CỘT ĐIỂM của bảng lớp (mục 8.4): OVR · L · R · S · W1 · W2.
+     *
+     * Mỗi ô mang ĐIỂM LƯỢT GẦN NHẤT và điểm của lượt TRƯỚC ĐÓ, để vẽ mũi tên lên/xuống.
+     * Tính ở máy chủ chứ không ở trình duyệt: cùng một phép so sánh mà mỗi màn tự làm lấy
+     * thì sớm muộn cũng có hai màn cho ra hai kết quả khác nhau.
+     *
+     * Lớp Normal không có band nên sáu ô này để trống — không dựng một con số giả.
+     */
+    const lastTwo = done.slice(-2);
+    const cell = (now: number | null, prev: number | null) => ({
+      now, prev,
+      dir: now === null || prev === null ? 0 : now > prev ? 1 : now < prev ? -1 : 0,
+    });
+    const bandAt = (t: any, skill: string) => (t ? (t.bands?.[skill] ?? null) : null);
+    const cur = lastTwo.length ? lastTwo[lastTwo.length - 1] : null;
+    const before = lastTwo.length > 1 ? lastTwo[0] : null;
+    const scores = isRatio ? null : {
+      overall: cell(cur?.overall ?? null, before?.overall ?? null),
+      listening: cell(bandAt(cur, 'listening'), bandAt(before, 'listening')),
+      reading: cell(bandAt(cur, 'reading'), bandAt(before, 'reading')),
+      speaking: cell(bandAt(cur, 'speaking'), bandAt(before, 'speaking')),
+      writing1: cell(bandAt(cur, 'writing1'), bandAt(before, 'writing1')),
+      writing2: cell(bandAt(cur, 'writing2'), bandAt(before, 'writing2')),
+    };
+
     return {
       id: s.id, studentCode: s.student_code, fullName: s.full_name, status: s.status,
+      scores,
+      /** Mức SOS đang có hiệu lực và số case chưa xong — hai con số của cột Trạng thái. */
+      sosLevel: openSos.get(s.id) ?? null,
+      openCases: openCaseCount.get(s.id) ?? 0,
+      examDate: s.exam_date ?? null,
       archived: !!s.archived_at,
       cycle: s.cycle_id
         ? {

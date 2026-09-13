@@ -6,7 +6,6 @@ import { BranchFilter } from '../components/Filters.tsx';
 import { fmtDate, skillShort } from '../lib/format.ts';
 import { CaseBoard } from './Academic.tsx';
 import { BranchPulse } from '../components/BranchPulse.tsx';
-import { MeetingBoard } from './Meeting.tsx';
 
 type WorkItem = {
   key: string; group: string; urgency: 'overdue' | 'today' | 'normal';
@@ -67,11 +66,15 @@ export default function OverviewPage() {
   const showClasses = !(roles.length === 1 && roles[0] === 'system_admin');
   const classTitle = roles.includes('branch_admin') && !roles.includes('teacher')
     ? 'Lớp của chi nhánh' : 'Lớp của bạn';
+  /*
+   * TAB "BÁO CÁO TUẦN" ĐÃ BỎ (mục 12) — owner nói "chưa cần thiết ở giai đoạn này".
+   *
+   * Chức năng Quản lý giao việc cho giáo viên thì GIỮ, và chuyển sang tab Thực trạng: nó là
+   * việc làm hằng ngày, còn báo cáo tuần là một nghi thức họp. Địa chỉ cũ `?tab=bao-cao` đưa
+   * về Toàn cảnh công việc thay vì báo lỗi — đường dẫn cũ ai đó đã gửi cho nhau vẫn mở được.
+   */
   const tabParam = params.get('tab');
-  const tab = !canSeeBoard ? 'work'
-    : tabParam === 'tinh-hinh' ? 'board'
-    : tabParam === 'bao-cao' ? 'report'
-    : 'work';
+  const tab = !canSeeBoard ? 'work' : tabParam === 'tinh-hinh' ? 'board' : 'work';
   /*
    * CHI NHÁNH ĐANG CHỌN NẰM TRÊN ĐỊA CHỈ TRANG, KHÔNG NẰM TRONG BỘ NHỚ CỦA RIÊNG MÀN NÀY.
    *
@@ -101,13 +104,11 @@ export default function OverviewPage() {
           <h1 className="text-lg font-semibold text-slate-100 m-0">Tổng quan</h1>
           <p className="text-xs text-slate-500 mt-0.5 mb-0">
             {tab === 'board'
-              ? 'Toàn bộ vấn đề trong phạm vi bạn được xem — cả vấn đề sinh từ điểm và vấn đề giáo viên báo.'
-              : tab === 'report'
-              ? 'Tình hình chi nhánh theo tuần, và việc bạn giao cho từng bộ phận.'
+              ? 'Học viên đang yếu ở đâu — cả case sinh từ điểm và case giáo viên báo.'
               : `Việc của bạn, tính đến ${fmtDate(session?.demoDate)}.`}
           </p>
         </div>
-        {tab !== 'report' && <BranchFilter branchId={branchId} onBranch={setBranchId} />}
+        <BranchFilter branchId={branchId} onBranch={setBranchId} />
       </div>
 
       {canSeeBoard && (
@@ -118,14 +119,10 @@ export default function OverviewPage() {
           <TabButton active={tab === 'board'} onClick={() => {
             const next = new URLSearchParams(params); next.set('tab', 'tinh-hinh'); setParams(next);
           }}>Thực trạng</TabButton>
-          <TabButton active={tab === 'report'} onClick={() => {
-            const next = new URLSearchParams(params); next.set('tab', 'bao-cao'); setParams(next);
-          }}>Báo cáo tuần</TabButton>
         </div>
       )}
 
       {tab === 'board' && <CaseBoard embedded />}
-      {tab === 'report' && <MeetingBoard />}
 
       {/* Khối riêng của Quản lý, nằm ngay trên việc của chính họ. */}
       {tab === 'work' && canSeeBoard && <BranchPulse branchId={branchId} />}
@@ -166,8 +163,13 @@ export default function OverviewPage() {
             ))}
           </div>
 
+          {/*
+            CỘT PHẢI RỘNG 25–30% (mục 1). Bản trước cố định 17rem, nên trên màn hình rộng nó
+            teo lại thành một dải hẹp mà mã lớp phải xuống dòng, còn cột việc thì dài quá
+            tầm mắt. Dùng phần trăm để hai cột cùng lớn lên theo màn hình.
+          */}
           <div className={`grid gap-4 items-start ${showClasses
-            ? 'lg:grid-cols-[minmax(0,1fr)_17rem] 2xl:grid-cols-[minmax(0,1fr)_20rem]' : ''}`}>
+            ? 'lg:grid-cols-[minmax(0,1fr)_28%] 2xl:grid-cols-[minmax(0,1fr)_26%]' : ''}`}>
             <div className="space-y-4 min-w-0">
               {data.groups.map((g) => (
                 <Card key={g.key} className="scroll-mt-4"

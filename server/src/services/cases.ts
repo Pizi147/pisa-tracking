@@ -1082,6 +1082,8 @@ export type CaseFilters = {
   skill?: string | null;
   /** Hàng đợi: new | active | due | review */
   queue?: string | null;
+  /** Loại lớp: 'normal' hay 'ft'. Thay cho bộ lọc "Đầu mục" đã bỏ ở vòng 4 (mục 10.1). */
+  classKind?: string | null;
 };
 
 /**
@@ -1114,11 +1116,43 @@ export type MappedCase = {
   category: string | null; categoryLabel: string | null;
   primaryCode: string | null; primaryLabel: string | null;
   track: string; topic: string | null; topicLabel: string | null; issueBranch: string | null;
+  classKind: 'ft' | 'normal';
   status: string; disposition: string | null;
   detectedAt: string; reporterName: string | null;
   interventionCount: number; nextDue: string | null; dueOverdue: boolean;
   state: CaseState;
 };
+
+/**
+ * MỨC SOS HIỆN TẠI CỦA TỪNG HỌC VIÊN — một định nghĩa, dùng chung cho mọi bảng.
+ *
+ * Lỗi owner báo 12/09: sĩ số 8 mà ba cột SOS cộng lại thành 11. Nguyên nhân là đếm CỘNG DỒN:
+ * một em SOS 1 ở MT1 rồi SOS 3 ở MT2 có mặt ở cả hai cột. SOS là TÌNH TRẠNG HIỆN TẠI của một
+ * em — mức ở lượt MT mới nhất em đã làm — nên mỗi em chỉ được vào đúng một cột.
+ *
+ * Hàm này cố tình là hàm THUẦN trên một danh sách case đã có sẵn, để bảng tổng hợp, bảng lớp
+ * và khối Việc cần lưu ý dùng CHUNG một phép tính. Ba màn tự tính lấy là ba màn sớm muộn nói
+ * ba con số khác nhau về cùng một em — đúng thứ owner nêu đích danh ở mục 8 tài liệu chốt.
+ */
+export function currentSosByStudent(
+  rows: { studentId: number | null; sosLevel: number | null; attemptNo: number | null }[],
+): Map<number, number> {
+  const level = new Map<number, number>();
+  const latest = new Map<number, number>();
+  for (const c of rows) {
+    if (c.studentId == null || !c.sosLevel) continue;
+    const at = c.attemptNo ?? 0;
+    const seen = latest.get(c.studentId);
+    if (seen === undefined || at > seen) {
+      latest.set(c.studentId, at);
+      level.set(c.studentId, c.sosLevel);
+    } else if (at === seen) {
+      // Cùng một lượt thì mọi case mang cùng mức; lấy mức cao nhất cho chắc.
+      level.set(c.studentId, Math.max(level.get(c.studentId) ?? 0, c.sosLevel));
+    }
+  }
+  return level;
+}
 
 export function listCases(p: Principal, f: CaseFilters = {}) {
   const scope = scopeFor(p, PERMISSIONS.ATTEMPT_VIEW);
@@ -1142,6 +1176,7 @@ export function listCases(p: Principal, f: CaseFilters = {}) {
               COALESCE(a.class_id, cur.class_id) AS eff_class_id,
               COALESCE(ac.branch_id, cc.branch_id) AS eff_branch_id,
               COALESCE(ac.code, cc.code) AS class_code,
+              COALESCE(ac.is_fulltime, cc.is_fulltime) AS class_is_ft,
               s.full_name, s.student_code,
               a.attempt_no, a.kind AS attempt_kind,
               u.full_name AS reporter_name,
@@ -1195,6 +1230,8 @@ export function listCases(p: Principal, f: CaseFilters = {}) {
       originKind: r.origin_kind,
       studentId: r.eff_student_id, studentName: r.full_name, studentCode: r.student_code,
       classId: r.eff_class_id, classCode: r.class_code, branchId: r.eff_branch_id,
+      /* Lớp Normal và lớp FT chấm khác nhau, nên bộ lọc loại lớp là bộ lọc ĐẦU TIÊN. */
+      classKind: (r.class_is_ft ? 'ft' : 'normal') as 'ft' | 'normal',
       attemptId: r.attempt_id, attemptNo: r.attempt_no,
       sosLevel: r.sos_level, urgency: r.urgency,
       summary: r.summary,
@@ -1264,6 +1301,7 @@ export function listCases(p: Principal, f: CaseFilters = {}) {
    * hoặc một trong bốn nhóm ý thức). 'none' cho chủ đề = vấn đề cũ chưa gắn được kỹ năng —
    * một lựa chọn thật, để các số cộng lại đúng bằng tổng.
    */
+  if (f.classKind) mapped = mapped.filter((r) => r.classKind === f.classKind);
   if (f.group) mapped = mapped.filter((r) => r.track === f.group);
   if (f.skill === 'none') mapped = mapped.filter((r) => !r.topic);
   else if (f.skill) mapped = mapped.filter((r) => r.topic === f.skill);
@@ -1279,7 +1317,13 @@ export function listCases(p: Principal, f: CaseFilters = {}) {
  * đi tiếp. Đây là cách lọc theo mặt (facet) thông thường, và là điều kiện để dòng
  * "Học viên 18 › Listening 6" nói đúng sự thật.
  */
-function facetsOf(base: MappedCase[], f: CaseFilters) {
+function facetsOf(all: MappedCase[], f: CaseFilters) {
+  /*
+   * LOẠI LỚP LÀ BỘ LỌC NGOÀI CÙNG, nên nó thu hẹp MỌI số đếm bên trong. Chọn "Normal" rồi
+   * mà chip kỹ năng vẫn đếm cả case lớp FT thì bấm vào ra danh sách ngắn hơn con số trên
+   * chip — đúng kiểu lệch số owner nêu đích danh.
+   */
+  const base = f.classKind ? all.filter((r) => r.classKind === f.classKind) : all;
   const byTrack = f.group ? base.filter((r) => r.track === f.group) : base;
   const matchTopic = (r: MappedCase) => (f.skill === 'none' ? !r.topic : r.topic === f.skill);
   const byTopic = f.skill ? base.filter(matchTopic) : base;
@@ -1302,7 +1346,9 @@ function facetsOf(base: MappedCase[], f: CaseFilters) {
      * hàng chip ở trên. Đếm theo mã nguyên nhân mới nói thêm được điều gì.
      */
     issueBranch: tally(both, (r) => r.primaryCode),
-    branch: tally(base, (r) => (r.branchId ? String(r.branchId) : null)),
+    branch: tally(all, (r) => (r.branchId ? String(r.branchId) : null)),
+    /** Số case theo loại lớp — để chip Normal/FT có con số trước khi bấm. */
+    classKind: tally(all, (r) => r.classKind),
     /** Ba trạng thái loại trừ nhau, cộng lại đúng bằng tổng. */
     state: tally(both, (r) => r.state),
     /*

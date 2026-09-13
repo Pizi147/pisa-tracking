@@ -37,7 +37,7 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
   // Quản trị phần mềm: toàn quyền, kể cả các ngoại lệ sửa sai về lịch.
   system_admin: [
     'plan.week', 'schedule.date', 'schedule.speaking', 'attempt.cancel', 'attempt.skip_skill',
-    'deadline.override', 'attempt.view', 'score.override', 'sos.edit', 'case.close', 'case.approve',
+    'deadline.override', 'attempt.view', 'score.override', 'case.view', 'sos.edit', 'case.close', 'case.approve',
     'class.assign', 'class.edit', 'student.view', 'student.edit',
     'meeting.view', 'meeting.edit', 'admin.config',
   ],
@@ -60,13 +60,14 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
     'plan.week', 'schedule.date', 'schedule.speaking', 'attempt.cancel', 'attempt.skip_skill',
     'deadline.override', 'attempt.view',
     // Quản lý đóng được case trong chi nhánh mình; GVCN đóng case lớp mình (kiểm theo phân công).
-    'sos.edit', 'case.close', 'case.approve', 'class.assign', 'class.edit',
+    'case.view', 'sos.edit', 'case.close', 'case.approve', 'class.assign', 'class.edit',
     'student.view', 'student.edit', 'meeting.view', 'meeting.edit',
   ],
   // Giáo viên: nhập điểm và đánh giá ĐÚNG kỹ năng được phân công.
   // GVCN không vì chủ nhiệm mà có thêm quyền lịch; riêng GV Speaking sửa được NGÀY Speaking
   // vì Speaking thường diễn ra khác ngày với buổi L/R/W.
-  teacher: ['attempt.view', 'score.edit', 'estimate.edit', 'schedule.speaking', 'sos.edit', 'student.view'],
+  teacher: ['attempt.view', 'score.edit', 'estimate.edit', 'schedule.speaking',
+    'case.view', 'sos.edit', 'student.view'],
 };
 
 /** Mã lớp luôn bắt đầu bằng mã chi nhánh. Loại lớp là nhãn tự do do quản lý đặt. */

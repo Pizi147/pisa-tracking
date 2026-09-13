@@ -5,7 +5,7 @@ import {
 } from '../../../shared/domain.ts';
 import { scopeFor, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
-import { listCases } from './cases.ts';
+import { currentSosByStudent, listCases } from './cases.ts';
 
 /**
  * BẢNG TỔNG HỢP CHO QUẢN LÝ — một hàng cho mỗi chi nhánh, hoặc mỗi lớp khi đã chọn chi nhánh.
@@ -30,50 +30,88 @@ export type SummaryColumn = {
   hint?: string;
 };
 
-/** Bộ cột đặt sẵn. Owner chốt vòng 3: chưa làm bật/tắt từng cột, làm bộ trước. */
+/**
+ * BỘ CỘT ĐẶT SẴN — mục 10.6.
+ *
+ * Bộ "Tất cả" là bộ cột ĐẦY ĐỦ owner liệt kê; ba bộ còn lại là những lát cắt hẹp hơn của
+ * chính nó, không phải ba bảng khác nhau. Chọn bộ cột thay cho mười lăm ô tick bật/tắt từng
+ * cột: ô tick là thứ dễ làm mà gần như không ai dùng, và đúng chỗ hệ thống bắt đầu rối.
+ */
 export const SUMMARY_PRESETS = [
   {
     key: 'default', label: 'Mặc định',
-    columns: ['students', 'sos3', 'sos2', 'sos1', 'openCases', 'behaviour'],
+    columns: ['students', 'openCases', 'sos3', 'sos2', 'sos1', 'behaviour'],
   },
   {
-    key: 'skills', label: 'Theo kỹ năng',
-    columns: ['students', ...ENTRY_SKILLS.map((s) => `skill_${s}`), 'openCases'],
+    key: 'sos', label: 'SOS',
+    columns: ['students', 'sos3', 'sos2', 'sos1', 'openCases'],
+  },
+  {
+    key: 'skills', label: 'Cụ thể',
+    columns: ['openCases', ...ENTRY_SKILLS.map((s) => `skill_${s}`), 'behaviour'],
   },
   {
     key: 'attention', label: 'Cần chú ý',
-    columns: ['students', 'sos3', 'noPlan', 'overdueReview', 'pendingApproval', 'overdueContact'],
+    columns: ['students', 'sos3', 'working', 'noPlan', 'overdueReview', 'pendingApproval', 'overdueContact'],
   },
   { key: 'all', label: 'Tất cả', columns: [] as string[] },
 ] as const;
 
+/**
+ * Thứ tự cột của bộ "Tất cả", đúng như owner liệt kê ở mục 10.6:
+ *
+ *   Chi nhánh/Lớp · Case · SOS 3 · SOS 2 · SOS 1 · L · R · W1 · W2 · S · Ý thức ·
+ *   Đang xử lý · Thiếu phương án · Quá hạn cập nhật · Chờ duyệt
+ *
+ * Sĩ số và "GV báo" giữ lại nhưng đứng ngoài bốn bộ cột chính: sĩ số là thông tin nền để
+ * đọc các cột khác, còn "GV báo" chỉ cần khi đi tìm case không sinh từ điểm.
+ */
 export function summaryColumns(): SummaryColumn[] {
   return [
-    { key: 'students', label: 'Sĩ số', group: 'total' },
-    { key: 'sos3', label: SOS_LABEL[3], group: 'sos', hint: 'Học viên đang có mức SOS 3' },
-    { key: 'sos2', label: SOS_LABEL[2], group: 'sos' },
-    { key: 'sos1', label: SOS_LABEL[1], group: 'sos' },
+    { key: 'students', label: 'Sĩ số', group: 'total', hint: 'Học viên đang học, không tính em đã kết thúc' },
+    { key: 'openCases', label: 'Case', group: 'total', hint: 'Tổng case đang mở / trong đó chưa có phương án' },
+    { key: 'sos3', label: SOS_LABEL[3], group: 'sos', hint: 'Học viên đang ở mức SOS 3 — đếm người, mỗi em một cột' },
+    { key: 'sos2', label: SOS_LABEL[2], group: 'sos', hint: 'Học viên đang ở mức SOS 2' },
+    { key: 'sos1', label: SOS_LABEL[1], group: 'sos' , hint: 'Học viên đang ở mức SOS 1' },
     ...ENTRY_SKILLS.map((s) => ({
       key: `skill_${s}`,
       label: ENTRY_SKILL_SHORT[s],
       group: 'skill' as const,
-      hint: `Vấn đề Học thuật ở ${ENTRY_SKILL_SHORT[s]} — tổng / chưa có phương án`,
+      hint: s === 'speaking'
+        ? 'Case Speaking — case Pronunciation của lớp Foundation gộp vào đây'
+        : s === 'writing2'
+        ? 'Case Writing Task 2 — case Writing của lớp Normal gộp vào đây'
+        : `Case Học thuật ở ${ENTRY_SKILL_SHORT[s]} — tổng / chưa có phương án`,
     })),
     {
       key: 'behaviour', label: 'Ý thức', group: 'behaviour',
       hint: BEHAVIOUR_TOPICS.map((t) => BEHAVIOUR_TOPIC_LABEL[t]).join(' · '),
     },
-    { key: 'reported', label: 'GV báo', group: 'total', hint: 'Vấn đề giáo viên tự ghi nhận, không sinh từ điểm' },
-    { key: 'openCases', label: 'Vấn đề đang mở', group: 'total', hint: 'Tổng / chưa có phương án hỗ trợ' },
-    { key: 'noPlan', label: 'Chưa có phương án', group: 'total' },
-    { key: 'overdueReview', label: 'Quá hạn cập nhật', group: 'total' },
-    { key: 'pendingApproval', label: 'Chờ duyệt', group: 'total' },
+    { key: 'working', label: 'Đang xử lý', group: 'total', hint: 'Case đã có phương án và đang theo dõi' },
+    { key: 'noPlan', label: 'Thiếu phương án', group: 'total', hint: 'Case chưa ai ghi sẽ làm gì cho em' },
+    { key: 'overdueReview', label: 'Quá hạn cập nhật', group: 'total',
+      hint: 'Đã qua hẹn xem lại mà chưa cập nhật tình hình hoặc kết quả' },
+    { key: 'pendingApproval', label: 'Chờ duyệt', group: 'total',
+      hint: 'Phương án giáo viên đề xuất, đang chờ Quản lý trả lời' },
+    { key: 'reported', label: 'GV báo', group: 'total', hint: 'Case giáo viên tự ghi nhận, không sinh từ điểm' },
     {
       key: 'overdueContact', label: 'Quá hạn làm', group: 'total',
       hint: 'Học viên có phương án đã lên kế hoạch mà quá hạn làm (3/5/7 ngày theo mức SOS)',
     },
   ];
 }
+
+/**
+ * GỘP KỸ NĂNG RIÊNG CỦA LỚP NORMAL VÀO NĂM Ô IELTS — owner chốt ở mục 10.6.
+ *
+ * Lớp Foundation có Pronunciation chứ không có Speaking, lớp Normal có một ô Writing duy
+ * nhất. Để chúng thành cột riêng thì bảng có tám cột kỹ năng mà ba cột lúc nào cũng gần
+ * trống, còn người đọc phải tự cộng hai cột lại mới biết cả trung tâm yếu Speaking đến đâu.
+ */
+const SKILL_ROLLUP: Record<string, string> = {
+  pronunciation: 'speaking',
+  writing: 'writing2',
+};
 
 type Cell = { value: number; of?: number; href?: string };
 
@@ -96,19 +134,23 @@ export function branchSummary(p: Principal, f: { branchId?: number | null } = {}
   const byBranch = f.branchId == null;
 
   /* Nhóm theo chi nhánh hoặc theo lớp, tuỳ đang đứng ở tầng nào. */
-  const groups = new Map<string, { key: string; label: string; branchId: number | null; classId: number | null }>();
+  const groups = new Map<string, {
+    key: string; label: string; branchId: number | null; classId: number | null; isFt: boolean;
+  }>();
   const branches = conn.prepare('SELECT id, code, name FROM branches ORDER BY id').all() as any[];
   const classes = conn
-    .prepare(`SELECT id, code, branch_id FROM classes WHERE status = 'active' ORDER BY branch_id, code`)
+    .prepare(`SELECT id, code, branch_id, is_fulltime FROM classes WHERE status = 'active' ORDER BY branch_id, code`)
     .all() as any[];
   if (byBranch) {
     for (const b of branches) {
       if (!cases.some((c) => c.branchId === b.id) && scope.branchIds && !scope.branchIds.includes(b.id)) continue;
-      groups.set(`b${b.id}`, { key: `b${b.id}`, label: b.name, branchId: b.id, classId: null });
+      groups.set(`b${b.id}`, { key: `b${b.id}`, label: b.name, branchId: b.id, classId: null, isFt: false });
     }
   } else {
     for (const c of classes.filter((x) => x.branch_id === f.branchId)) {
-      groups.set(`c${c.id}`, { key: `c${c.id}`, label: c.code, branchId: c.branch_id, classId: c.id });
+      groups.set(`c${c.id}`, {
+        key: `c${c.id}`, label: c.code, branchId: c.branch_id, classId: c.id, isFt: !!c.is_fulltime,
+      });
     }
   }
 
@@ -174,7 +216,9 @@ export function branchSummary(p: Principal, f: { branchId?: number | null } = {}
     if (groups.has(k)) pendingApprovals.set(k, (pendingApprovals.get(k) ?? 0) + r.n);
   }
 
-  const buildRow = (g: { key: string; label: string; branchId: number | null; classId: number | null }) => {
+  const buildRow = (g: {
+    key: string; label: string; branchId: number | null; classId: number | null; isFt: boolean;
+  }) => {
     const mine = cases.filter((c) => (byBranch ? c.branchId === g.branchId : c.classId === g.classId));
     const open = mine.filter((c) => c.state !== 'done');
     const q = (extra: string) => `/?tab=tinh-hinh${g.branchId ? `&cn=${g.branchId}` : ''}${extra}`;
@@ -182,38 +226,20 @@ export function branchSummary(p: Principal, f: { branchId?: number | null } = {}
     /*
      * MỖI HỌC VIÊN CHỈ ĐỨNG Ở ĐÚNG MỘT CỘT SOS — cột của LƯỢT MT GẦN NHẤT.
      *
-     * Lỗi owner báo 12/09: sĩ số 8 mà ba cột SOS cộng lại thành 11. Bản cũ đếm học viên
-     * duy nhất cho từng mức riêng lẻ, nên một em SOS 1 ở MT1 rồi SOS 3 ở MT2 có mặt ở
-     * CẢ HAI cột — cộng lại vượt cả sĩ số và không ai tin con số nữa.
-     *
-     * SOS là TÌNH TRẠNG HIỆN TẠI của một em, không phải một cái sổ cộng dồn: mức của em
-     * là mức ở lượt MT mới nhất em đã làm. Mức cũ vẫn tra lại được trong từng case, chỉ
-     * không đếm vào bảng tổng hợp nữa.
+     * Phép đếm nằm ở `currentSosByStudent` của `services/cases.ts` — dùng chung với bảng
+     * lớp và khối Việc cần lưu ý, để ba màn không thể nói ba con số khác nhau về một em.
      *
      * Case do giáo viên tự báo không có `sosLevel` nên không tham gia phép đếm này —
      * chúng đã có cột "GV báo" riêng.
      */
-    const currentSos = new Map<number, number>();
-    const latestAttempt = new Map<number, number>();
-    for (const c of open) {
-      if (c.studentId == null || !c.sosLevel) continue;
-      const at = c.attemptNo ?? 0;
-      const seen = latestAttempt.get(c.studentId);
-      if (seen === undefined || at > seen) {
-        latestAttempt.set(c.studentId, at);
-        currentSos.set(c.studentId, c.sosLevel);
-      } else if (at === seen) {
-        // Cùng một lượt thì mọi case mang cùng mức; lấy mức cao nhất cho chắc.
-        currentSos.set(c.studentId, Math.max(currentSos.get(c.studentId) ?? 0, c.sosLevel));
-      }
-    }
+    const currentSos = currentSosByStudent(open);
     const sosStudents = (lv: number) => {
       let n = 0;
       for (const level of currentSos.values()) if (level === lv) n += 1;
       return n;
     };
     const skillCell = (s: string): Cell => {
-      const list = open.filter((c) => c.topic === s);
+      const list = open.filter((c) => (SKILL_ROLLUP[c.topic ?? ''] ?? c.topic) === s);
       return { value: list.length, of: list.filter((c) => c.state === 'no_plan').length, href: q(`&ky-nang=${s}`) };
     };
     const cells: Record<string, Cell> = {
@@ -232,13 +258,18 @@ export function branchSummary(p: Principal, f: { branchId?: number | null } = {}
         of: open.filter((c) => c.state === 'no_plan').length,
         href: q(''),
       },
+      working: { value: open.filter((c) => c.state === 'working').length, href: q('&tinh-hinh=working') },
       noPlan: { value: open.filter((c) => c.state === 'no_plan').length, href: q('&tinh-hinh=no_plan') },
       overdueReview: { value: open.filter((c) => c.dueOverdue).length, href: q('&hang-doi=due') },
       pendingApproval: { value: pendingApprovals.get(g.key) ?? 0 },
       overdueContact: { value: overdueContacts.get(g.key) ?? 0 },
     };
     for (const s of ENTRY_SKILLS) cells[`skill_${s}`] = skillCell(s);
-    return { key: g.key, label: g.label, branchId: g.branchId, classId: g.classId, cells };
+    return {
+      key: g.key, label: g.label, branchId: g.branchId, classId: g.classId,
+      /* Normal và FT vận hành khác nhau, nên bảng lớp gom theo hai nhóm này (mục 10.6). */
+      group: g.isFt ? 'ft' : 'normal', cells,
+    };
   };
   const rows = [...groups.values()].map(buildRow);
 

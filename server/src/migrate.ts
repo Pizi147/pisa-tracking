@@ -1,5 +1,7 @@
 import { db, isInitialised } from './db.ts';
 import { nowIso } from './util.ts';
+import { PERMISSION_LABEL } from '../../shared/domain.ts';
+import { ROLE_PERMISSIONS } from './seed/data.ts';
 
 /**
  * Nâng cấp database ĐANG CÓ lên schema mới, không xoá dữ liệu.
@@ -388,6 +390,7 @@ function migrateCaseEngine(applied: string[], skipped: string[]) {
     migrateSkillTopics(conn, applied);
     migrateCaseLifecycle(conn, applied);
     migrateSchedulingFields(conn, applied);
+    migratePermissions(conn, applied);
 
     /*
      * Case đã đóng theo hệ thống cũ mà không có hướng xử lý: ghi rõ là "đóng theo hệ thống
@@ -1035,6 +1038,49 @@ function migrateCaseLifecycle(conn: any, applied: string[]) {
  * Chạy lần hai không đổi gì thêm: mỗi bước tự kiểm bằng sự tồn tại của cột hoặc bằng chính
  * giá trị đang có.
  */
+/**
+ * ĐỒNG BỘ BỘ QUYỀN với danh sách trong `shared/domain.ts`.
+ *
+ * Vòng 4 thêm quyền `case.view` — tách việc XEM danh sách case khỏi việc GHI NHẬN xử lý,
+ * vì bảng bộ lọc ở mục 6 nói Admin chi nhánh vẫn ghi nhận được nhưng không có bốn bộ lọc
+ * case. Trên database đang chạy, quyền mới phải được thêm và cấp lại cho đúng ba vai, nếu
+ * không thì tài khoản cũ mở màn Học viên lên sẽ mất sạch bộ lọc case.
+ *
+ * Chạy lại lần hai không làm gì thêm: chỉ thêm phần CÒN THIẾU, không xoá quyền ai đã có.
+ */
+function migratePermissions(conn: any, applied: string[]) {
+  const has = (t: string) =>
+    !!conn.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name = ?").get(t);
+  if (!has('permissions') || !has('roles') || !has('role_permissions')) return;
+
+  let added = 0;
+  for (const [key, label] of Object.entries(PERMISSION_LABEL)) {
+    const row = conn.prepare('SELECT id FROM permissions WHERE key = ?').get(key) as any;
+    if (row) continue;
+    conn.prepare('INSERT INTO permissions (key, name_vi) VALUES (?,?)').run(key, label);
+    added += 1;
+  }
+
+  /* Cấp quyền mới cho đúng những vai mà seed cấp — không tự ý nới cho vai khác. */
+  let granted = 0;
+  for (const [roleKey, keys] of Object.entries(ROLE_PERMISSIONS)) {
+    const role = conn.prepare('SELECT id FROM roles WHERE key = ?').get(roleKey) as any;
+    if (!role) continue;
+    for (const k of keys) {
+      const perm = conn.prepare('SELECT id FROM permissions WHERE key = ?').get(k) as any;
+      if (!perm) continue;
+      const had = conn
+        .prepare('SELECT 1 FROM role_permissions WHERE role_id = ? AND permission_id = ?')
+        .get(role.id, perm.id);
+      if (had) continue;
+      conn.prepare('INSERT INTO role_permissions (role_id, permission_id) VALUES (?,?)')
+        .run(role.id, perm.id);
+      granted += 1;
+    }
+  }
+  if (added || granted) applied.push(`Bổ sung ${added} quyền mới và ${granted} lượt cấp quyền cho vai trò`);
+}
+
 function migrateSchedulingFields(conn: any, applied: string[]) {
   const cols = (t: string) => (conn.prepare(`PRAGMA table_info(${t})`).all() as any[]).map((c: any) => c.name);
   const has = (t: string) =>

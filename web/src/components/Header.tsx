@@ -144,14 +144,13 @@ export function Header() {
               những màn dưới đây mở thỉnh thoảng nên không cần chiếm chỗ trên thanh menu.
             */}
             <div className="border-t pt-2 mb-2 space-y-1" style={{ borderColor: 'var(--line)' }}>
-              {session?.nav?.meeting && (
-                <>
-                  <Link to="/tong-hop-tuan" className="btn btn-sm w-full justify-center no-underline"
-                    onClick={() => setOpenMenu(null)}>Tổng hợp theo tuần</Link>
-                  <Link to="/tien-trinh" className="btn btn-sm w-full justify-center no-underline"
-                    onClick={() => setOpenMenu(null)}>Báo cáo tuần</Link>
-                </>
-              )}
+              {/*
+                "Tổng hợp theo tuần" và "Báo cáo tuần" ĐÃ RỜI THANH ĐIỀU HƯỚNG ở vòng 4.
+
+                Bảng theo tuần nay là chế độ xem thứ hai của Thực trạng (mục 10.5), nên để
+                thêm một lối vào riêng là hai cửa dẫn vào cùng một chỗ. Báo cáo tuần thì owner
+                bỏ tạm (mục 12). Hai địa chỉ cũ vẫn mở được, chỉ không còn nút dẫn tới.
+              */}
               {session?.nav?.admin && (
                 <Link to="/quan-tri" className="btn btn-sm w-full justify-center no-underline"
                   onClick={() => setOpenMenu(null)}>Quản trị hệ thống</Link>
