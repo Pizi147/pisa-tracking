@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useApi } from '../lib/useApi.ts';
 import { api, invalidate } from '../lib/api.ts';
 import { useToast } from '../components/Toast.tsx';
-import { Card, Empty, Field, Pill, SectionNote, Skeleton } from './ui.tsx';
+import { Card, Empty, Field, Forbidden, Pill, SectionNote, Skeleton } from './ui.tsx';
 import { Drawer } from './Drawer.tsx';
 import { fmtDate, skillLabel } from '../lib/format.ts';
 import { PERMISSION_LABEL, ROLES, ROLE_LABEL, type Role } from '@shared/domain.ts';
@@ -35,6 +35,21 @@ export function AccountsAdmin() {
   const [editing, setEditing] = useState<Account | null>(null);
 
   if (accounts.loading) return <Card title="Tài khoản"><Skeleton rows={5} /></Card>;
+  /*
+   * KHÔNG CÓ QUYỀN THÌ NÓI THẲNG, đừng để một khối trống.
+   *
+   * Máy chủ đã chặn đúng (403), nhưng nếu giao diện chỉ im lặng thì người dùng thấy một trang
+   * rỗng và không biết là mình thiếu quyền hay phần mềm hỏng — và trên bảng điều khiển của
+   * trình duyệt thì nó hiện thành một lỗi đỏ, đúng thứ làm người ta hết tin vào những lỗi khác.
+   */
+  if (accounts.error) {
+    return (
+      <Forbidden
+        message="Phần này chỉ dành cho Quản trị hệ thống."
+        hint="Tài khoản của bạn không có quyền quản trị phần mềm. Đây là quản trị PHẦN MỀM, khác với Admin chi nhánh là nhân sự văn phòng."
+      />
+    );
+  }
   const rows = accounts.data?.rows ?? [];
   const pending = accounts.data?.pending ?? [];
   const reload = () => { accounts.reload(); invalidate('/demo/accounts'); };

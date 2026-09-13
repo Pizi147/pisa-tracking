@@ -119,7 +119,16 @@ export default function App() {
           <Route path="/tong-hop-tuan" element={<WeeklyRollupPage />} />
           <Route path="/mock-test/:id" element={<MockDetailPage />} />
           <Route path="/tien-trinh" element={<MeetingPage />} />
-          <Route path="/quan-tri" element={<AdminPage />} />
+          {/*
+            MÀN QUẢN TRỊ CHỈ GẮN VÀO KHI NGƯỜI XEM CÓ QUYỀN.
+
+            Máy chủ vẫn chặn đúng nếu ai đó gọi thẳng API. Nhưng nếu vẫn gắn màn cho mọi
+            người thì giáo viên gõ địa chỉ đó sẽ thấy trang tải rồi mới báo từ chối, và bảng
+            điều khiển của trình duyệt ghi một lỗi đỏ 403 — lâu dần người ta hết tin vào
+            những lỗi đỏ khác. Không có quyền thì đưa thẳng về Tổng quan.
+          */}
+          <Route path="/quan-tri"
+            element={nav.admin ? <AdminPage /> : <Navigate to="/" replace />} />
           <Route path="/ho-so-ca-nhan" element={<ProfilePage />} />
           {/* Đường dẫn cũ vẫn mở được để link đã lưu không gãy. */}
           <Route path="/mock-test" element={<Navigate to="/hoc-vien" replace />} />

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useApi } from '../lib/useApi.ts';
 import { api, invalidate } from '../lib/api.ts';
 import { useToast } from './Toast.tsx';
-import { Card, Field, Pill, SectionNote, Skeleton } from './ui.tsx';
+import { Card, Field, Forbidden, Pill, SectionNote, Skeleton } from './ui.tsx';
 import { Drawer } from './Drawer.tsx';
 import { skillLabel } from '../lib/format.ts';
 import { ENTRY_SKILLS, REGULAR_SKILLS } from '@shared/domain.ts';
@@ -32,6 +32,16 @@ export function CatalogAdmin() {
   const programmes = useApi<Programme[]>('/admin/programmes');
   const [editRoute, setEditRoute] = useState<RouteRow | null | 'new'>(null);
   const [editProg, setEditProg] = useState<Programme | null | 'new'>(null);
+
+  /* Không có quyền thì nói thẳng, đừng để một khối trống — xem chú thích ở `AccountsAdmin`. */
+  if (routes.error || programmes.error) {
+    return (
+      <Forbidden
+        message="Phần này chỉ dành cho Quản trị hệ thống."
+        hint="Lộ trình và loại lớp là cấu hình chung của cả trung tâm, nên chỉ một người sửa được."
+      />
+    );
+  }
 
   return (
     <div className="grid gap-4 lg:grid-cols-2 items-start">
