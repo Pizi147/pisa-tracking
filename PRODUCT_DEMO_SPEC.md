@@ -1,9 +1,21 @@
 # PISA Progress — Product / Web Design
 
-> **Trạng thái:** vòng overhaul **A — nền tảng** đã code và chạy (dữ liệu, quyền lịch, thuật ngữ, hệ màu).
-> Vòng **B** (Học viên class-first, Tiến độ học viên, nhập nhanh) và vòng **C** (lớp thường FOU/BE/ELE,
-> workflow Report/WL, Tiến trình công việc) chưa làm.
-> Sổ quyết định đầy đủ nằm ở `PISA_Design_Master_Reference.md`.
+> ## ⚠ Tài liệu này viết ở VÒNG 3. Vòng 4 đã đảo ngược vài phần của nó.
+>
+> Giữ lại vì phần lớn nội dung vẫn đúng và vì nó là chỗ tra lịch sử thiết kế. Nhưng khi tài liệu này
+> nói khác với `vong4/01_CHOT_NGHIEP_VU.md` thì **vong4 đúng**. Bốn chỗ đã đổi hẳn:
+>
+> | Vòng 3 nói | Vòng 4 chốt |
+> |---|---|
+> | Một vấn đề = **một lượt × một kỹ năng**, xong thì đóng | Một case = **một học viên × một hạng mục**, **sống suốt khoá**; lượt sau yếu lại thì mở lại chính nó |
+> | Hai việc trao đổi nằm ở **bảng Liên hệ riêng** | Là **phương án** trong case Ý thức/Khác; bảng Liên hệ đã bỏ |
+> | Có **Ghi nhận nhanh của giáo viên** (mục A4, A8d) | **Bỏ hẳn**; đánh giá của GV chỉ còn trong luồng cập nhật kết quả case |
+> | Tab **Tình hình chung**, tab **Báo cáo tuần** | Đổi tên thành **Thực trạng**; tab Báo cáo tuần **bỏ tạm** |
+>
+> Trạng thái hiện tại của bản demo: `DEMO_ASSUMPTIONS.md` (luật đang chạy) và `DEMO_SCENARIOS.md`
+> (bấm thử từng luồng). Sổ quyết định đầy đủ nằm ở `PISA_Design_Master_Reference.md`.
+>
+> **Trạng thái vòng 3 (giữ nguyên để đọc lịch sử):** vòng overhaul **A — nền tảng** đã code và chạy.
 
 Tài liệu thiết kế của bản demo local sau đợt overhaul lấy **Mock Test và xử lý SOS** làm trọng tâm.
 Ba phần: **A. Current MVP** (đã build), **B. Simplify / Remove** (đã gộp hoặc bỏ),
