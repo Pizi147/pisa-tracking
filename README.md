@@ -227,6 +227,8 @@ Hệ thống **không bao giờ** tự sinh lỗi ngẫu nhiên khi bạn dùng 
 
 Tài liệu liên quan:
 
+- **`vong4/`** — bộ tài liệu bàn giao **vòng 4 đang chạy**. Bắt đầu ở `vong4/README.md`.
+  Chỗ nào mâu thuẫn với các tài liệu bên dưới thì `vong4/` thắng
 - `PISA_Design_Master_Reference.md` — sổ quyết định: trạng thái từng quyết định, cái gì đã chốt, cái gì còn chờ
 - `PRODUCT_DEMO_SPEC.md` — Product / Web Design: **A. Current MVP · B. Simplify–Remove · C. Future Design**
 - `DEMO_ASSUMPTIONS.md` — các câu đã chốt (Q1–Q15) và những điểm còn cần bạn xác nhận
