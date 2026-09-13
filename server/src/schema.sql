@@ -104,12 +104,89 @@ CREATE TABLE class_skills (
 );
 
 -- ===================== NGƯỜI DÙNG & QUYỀN =====================
+/*
+ * TÀI KHOẢN NGƯỜI DÙNG.
+ *
+ * `email` là email ĐĂNG NHẬP, duy nhất, và phải có đuôi `.pisa@gmail.com` (owner chốt 7.1).
+ * Email phụ nằm ở `user_emails` — mục 7.2 nói rõ "email(s)", số nhiều.
+ *
+ * `password_hash` lưu dạng băm scrypt kèm muối riêng từng người. Bản demo KHÔNG gửi email
+ * thật và KHÔNG có luồng quên mật khẩu; quên thì Quản trị hệ thống đặt lại.
+ *
+ * `approval_state` tách khỏi `status` vì hai thứ khác nhau: `pending` là người mới tự đăng
+ * ký và CHƯA ai duyệt, `status='inactive'` là tài khoản đã từng dùng rồi bị khoá. Gộp làm
+ * một thì không phân biệt được "chưa được vào" với "đã bị cho ra".
+ */
 CREATE TABLE users (
   id INTEGER PRIMARY KEY,
   code TEXT NOT NULL UNIQUE,
   full_name TEXT NOT NULL,
-  email TEXT,
+  email TEXT UNIQUE,
   title TEXT,
+  phone TEXT,
+  password_hash TEXT,
+  password_salt TEXT,
+  approval_state TEXT NOT NULL DEFAULT 'approved',   -- approved | pending | declined
+  /* Chi nhánh người đăng ký tự khai; người duyệt sửa được trước khi bấm duyệt. */
+  requested_branches TEXT,                            -- JSON mảng mã chi nhánh
+  requested_note TEXT,
+  approved_by INTEGER REFERENCES users(id),
+  approved_at TEXT,
+  decline_reason TEXT,
+  status TEXT NOT NULL DEFAULT 'active',
+  created_at TEXT NOT NULL
+);
+
+/* Email phụ. Email đăng nhập vẫn nằm ở `users.email` và không lặp lại ở đây. */
+CREATE TABLE user_emails (
+  id INTEGER PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(id),
+  email TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  UNIQUE (user_id, email)
+);
+
+/*
+ * KỸ NĂNG NGƯỜI NÀY PHỤ TRÁCH ĐƯỢC (mục 7.2) — khác hẳn phân công dạy ở một lớp cụ thể.
+ *
+ * Đây là "biết dạy được gì", dùng để gợi ý khi phân công. `teacher_assignments` mới là
+ * "đang dạy gì ở lớp nào", và mới là thứ quyết định quyền nhập điểm.
+ */
+CREATE TABLE user_skills (
+  user_id INTEGER NOT NULL REFERENCES users(id),
+  skill TEXT NOT NULL,
+  PRIMARY KEY (user_id, skill)
+);
+
+/*
+ * QUYỀN CẤP RIÊNG CHO MỘT CÁ NHÂN, ngoài quyền đến từ vai trò (mục 7.3).
+ *
+ * Ví dụ owner đưa ra: cấp cho một Quản lý CN Monbay quyền QUAN SÁT toàn hệ thống. Không thể
+ * làm điều đó bằng vai trò — sửa vai "Quản lý" là sửa cho tất cả Quản lý. `branch_id` để
+ * trống nghĩa là phạm vi toàn hệ thống, đúng quy ước của `user_roles`.
+ */
+CREATE TABLE user_permissions (
+  id INTEGER PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(id),
+  permission_id INTEGER NOT NULL REFERENCES permissions(id),
+  branch_id INTEGER REFERENCES branches(id),
+  note TEXT,
+  granted_by INTEGER REFERENCES users(id),
+  created_at TEXT NOT NULL,
+  UNIQUE (user_id, permission_id, branch_id)
+);
+
+/*
+ * LỘ TRÌNH (LT1, LT2, …) nay là DỮ LIỆU chứ không phải hằng số trong mã.
+ *
+ * Mục 7.3: Quản trị hệ thống tạo và sửa lộ trình. Trung tâm mở một lộ trình mới thì thêm
+ * một dòng, không phải sửa mã nguồn rồi chờ cài lại.
+ */
+CREATE TABLE routes (
+  code TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  note TEXT,
+  seq INTEGER NOT NULL DEFAULT 0,
   status TEXT NOT NULL DEFAULT 'active',
   created_at TEXT NOT NULL
 );

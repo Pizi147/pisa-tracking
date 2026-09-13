@@ -39,6 +39,8 @@ const summary = await import('../services/summary.ts');
 const prefs = await import('../services/prefs.ts');
 const pulse = await import('../services/branchpulse.ts');
 const domain = await import('../../../shared/domain.ts');
+const accounts = await import('../services/accounts.ts');
+const sysconfig = await import('../services/sysconfig.ts');
 const mywork = await import('../services/mywork.ts');
 const { ratioResult: domainRatio } = await import('../../../shared/domain.ts');
 const { demoToday } = await import('../demoConfig.ts');
@@ -1409,8 +1411,26 @@ check('Case SOS của lớp thường dùng CHUNG hệ thống case với lớp 
         WHERE a.kind != 'mock' GROUP BY sc.sos_level ORDER BY sc.sos_level`,
     )
     .all() as any[];
-  assert(cases.length >= 3, 'Dữ liệu mẫu cần đủ cả ba mức SOS của lớp thường');
-  for (const c of cases) assert(c.sos_level >= 1 && c.sos_level <= 3, `Mức SOS lạ: ${c.sos_level}`);
+  assert(cases.filter((c) => c.sos_level >= 1).length >= 3, 'Dữ liệu mẫu cần đủ cả ba mức SOS của lớp thường');
+  for (const c of cases) assert(c.sos_level >= 0 && c.sos_level <= 3, `Mức SOS lạ: ${c.sos_level}`);
+  /*
+   * MỨC 0 LÀ MỘT MỨC HỢP LỆ, không phải dữ liệu hỏng.
+   *
+   * Từ vòng 4 case sống suốt khoá: chấm lại một bài cũ thành đạt thì case KHÔNG bị xoá — nó
+   * hạ về mức 0 và mang thêm một mốc "đã đạt lại", để những việc đã làm cho em vì vấn đề đó
+   * còn nguyên. Nhưng mức 0 phải CÓ CĂN CỨ, nên mỗi case mức 0 buộc phải có mốc ấy.
+   */
+  for (const c of conn
+    .prepare(
+      `SELECT sc.id FROM sos_cases sc JOIN assessment_attempts a ON a.id = sc.attempt_id
+        WHERE a.kind != 'mock' AND sc.sos_level = 0`,
+    )
+    .all() as any[]) {
+    const passed = conn
+      .prepare("SELECT COUNT(*) n FROM case_milestones WHERE case_id = ? AND kind = 'passed'")
+      .get(c.id) as any;
+    assert(passed.n > 0, `Case ${c.id} về mức 0 mà không có mốc "đã đạt lại" nào giải thích`);
+  }
   // Cùng một bảng, nên hai card SOS ở Tổng quan phải đếm được cả case của lớp thường.
   const one = conn
     .prepare(`SELECT sc.id FROM sos_cases sc JOIN assessment_attempts a ON a.id = sc.attempt_id
@@ -3340,6 +3360,167 @@ check('Bảng theo tuần đếm đúng: Đạt + SOS 1 + SOS 2 + SOS 3 = số l
       `Tuần ${w.code}: ${w.onTarget}+${w.sos1}+${w.sos2}+${w.sos3} ≠ ${w.attempts} lượt`);
     assert(typeof w.pendingApproval === 'number', `Tuần ${w.code} thiếu cột Chờ duyệt`);
   }
+});
+
+console.log('\n30. Vòng 4 phase 4 — tài khoản, đăng nhập và quyền');
+
+check('Chỉ email đuôi .pisa@gmail.com mới hợp lệ, áp cho MỌI vai', () => {
+  assert(accounts.checkEmail('Dung.Pisa@Gmail.com ') === 'dung.pisa@gmail.com', 'Không chuẩn hoá được email');
+  for (const bad of ['dung@gmail.com', 'dung.pisa@yahoo.com', '.pisa@gmail.com', 'dung pisa.pisa@gmail.com']) {
+    assertThrows(() => accounts.checkEmail(bad), /pisa@gmail\.com|chữ thường/, `Chấp nhận email sai: ${bad}`);
+  }
+});
+
+check('Đăng nhập đúng thì vào, sai email và sai mật khẩu nói CÙNG một câu', () => {
+  const r = accounts.login(accounts.DEFAULT_ADMIN_EMAIL, accounts.DEFAULT_ADMIN_PASSWORD);
+  assert(r.userId > 0, 'Tài khoản Quản trị hệ thống mặc định không đăng nhập được');
+  const admin = loadPrincipal(r.userId);
+  assert(can(admin, PERMISSIONS.ADMIN_CONFIG, { anyScope: true }), 'Tài khoản mặc định không có quyền quản trị');
+
+  /*
+   * Hai câu trả lời phải GIỐNG HỆT NHAU. Nói "email này không tồn tại" là nói cho người
+   * đang dò biết địa chỉ nào có thật — một nửa công việc của họ.
+   */
+  let a = ''; let b = '';
+  try { accounts.login('khongcoai.pisa@gmail.com', 'saibet'); } catch (e: any) { a = e.message; }
+  try { accounts.login(accounts.DEFAULT_ADMIN_EMAIL, 'sai-mat-khau'); } catch (e: any) { b = e.message; }
+  assert(a && a === b, `Sai email và sai mật khẩu trả lời khác nhau: "${a}" vs "${b}"`);
+
+  /* Mật khẩu lưu dạng BĂM, không lưu thẳng. */
+  const row = conn.prepare('SELECT password_hash, password_salt FROM users WHERE email = ?')
+    .get(accounts.DEFAULT_ADMIN_EMAIL) as any;
+  assert(row.password_hash && row.password_salt, 'Thiếu băm hoặc muối');
+  assert(!String(row.password_hash).includes(accounts.DEFAULT_ADMIN_PASSWORD), 'Mật khẩu lưu thẳng chứ không băm');
+  const other = conn.prepare("SELECT password_salt FROM users WHERE email != ? AND password_salt IS NOT NULL LIMIT 1")
+    .get(accounts.DEFAULT_ADMIN_EMAIL) as any;
+  assert(other.password_salt !== row.password_salt, 'Hai tài khoản dùng chung một muối');
+});
+
+check('GV tự đăng ký vào hàng đợi, chưa được vào cho tới khi duyệt', () => {
+  const email = `thu.nguyen.moi${accounts.EMAIL_SUFFIX}`;
+  const r = accounts.register({
+    email, password: 'matkhau123', fullName: 'Nguyễn Thu Mới',
+    branches: ['MB'], skills: ['listening', 'speaking'], note: 'Dạy ca tối',
+  });
+  assert(r.userId > 0, 'Không tạo được đăng ký');
+
+  /* CHƯA DUYỆT thì chưa vào được, và câu báo phải nói rõ là đang chờ chứ không phải sai mật khẩu. */
+  assertThrows(() => accounts.login(email, 'matkhau123'), /chờ/, 'Tài khoản chưa duyệt đã vào được');
+  /* Và chưa có vai trò nào. */
+  assert(loadPrincipal(r.userId).grants.length === 0, 'Đăng ký chưa duyệt đã có vai trò');
+
+  const queue = accounts.pendingQueue(P.admin);
+  const mine = queue.find((x: any) => x.id === r.userId);
+  assert(mine, 'Đăng ký không vào hàng đợi');
+  assert(mine!.branches.join() === 'MB', 'Không giữ chi nhánh người đăng ký khai');
+
+  /* NGƯỜI DUYỆT SỬA ĐƯỢC CHI NHÁNH trước khi đồng ý — đó là cả lý do có bước duyệt. */
+  accounts.approve(P.admin, r.userId, { role: 'teacher', branches: ['MB', 'BC'] });
+  const after = accounts.login(email, 'matkhau123');
+  assert(after.userId === r.userId, 'Duyệt rồi vẫn không đăng nhập được');
+  const p2 = loadPrincipal(r.userId);
+  assert(p2.roleKeys.join() === 'teacher', `Vai sau khi duyệt sai: ${p2.roleKeys.join()}`);
+  assert(p2.grants.length === 2, `Phải có hai chi nhánh sau khi duyệt, đang có ${p2.grants.length}`);
+
+  /* Giáo viên KHÔNG được xem hàng đợi duyệt. */
+  assertThrows(() => accounts.pendingQueue(loadPrincipal(r.userId)), /Quản trị hệ thống/,
+    'Giáo viên xem được hàng đợi duyệt');
+});
+
+check('Đăng ký bị từ chối phải có lý do, và người đăng ký đọc được lý do đó', () => {
+  const email = `linh.pham.moi${accounts.EMAIL_SUFFIX}`;
+  const r = accounts.register({ email, password: 'matkhau123', fullName: 'Phạm Linh Mới', branches: ['CP'] });
+  assertThrows(() => accounts.decline(P.admin, r.userId, '   '), /lý do/, 'Từ chối mà không cần lý do');
+  accounts.decline(P.admin, r.userId, 'Chưa có lịch dạy ở chi nhánh này');
+  assertThrows(() => accounts.login(email, 'matkhau123'), /Chưa có lịch dạy/,
+    'Người bị từ chối không đọc được lý do');
+});
+
+check('Một người mang NHIỀU VAI ở NHIỀU CHI NHÁNH, và gỡ vai không xoá lịch sử', () => {
+  const email = `kiem.nhiem${accounts.EMAIL_SUFFIX}`;
+  const { userId } = accounts.createAccount(P.admin, {
+    email, password: 'matkhau123', fullName: 'Người Kiêm Nhiệm',
+    roles: [{ role: 'teacher', branches: ['MB', 'BC'] }, { role: 'manager', branches: ['MB'] }],
+    skills: ['listening'],
+  });
+  const p1 = loadPrincipal(userId);
+  assert(p1.roleKeys.sort().join() === 'manager,teacher', `Vai sai: ${p1.roleKeys.join()}`);
+  assert(p1.grants.length === 3, `Phải có 3 grant (GV×2 + QL×1), đang có ${p1.grants.length}`);
+
+  const before = (conn.prepare('SELECT COUNT(*) n FROM user_roles WHERE user_id = ?').get(userId) as any).n;
+  accounts.setRoles(P.admin, userId, [{ role: 'teacher', branches: ['MB'] }]);
+  const after = (conn.prepare('SELECT COUNT(*) n FROM user_roles WHERE user_id = ?').get(userId) as any).n;
+  assert(after >= before, 'Gỡ vai đã XOÁ dòng cũ thay vì đóng lại — mất căn cứ đọc lịch sử');
+  assert(loadPrincipal(userId).grants.length === 1, 'Gỡ vai không có tác dụng');
+});
+
+check('Quyền cấp riêng cho cá nhân cộng thêm vào quyền của vai, không thay thế', () => {
+  /*
+   * Ví dụ owner đưa ra ở mục 7.3: cấp cho một Quản lý CN Monbay quyền quan sát TOÀN HỆ THỐNG.
+   * Sửa vai "Quản lý" là sửa cho tất cả Quản lý, nên phải có đường cấp riêng cho một người.
+   */
+  const mgr = userByRole('manager', 'MB');
+  const cp = (conn.prepare("SELECT id FROM classes WHERE code = 'CP-FT 110'").get() as any).id;
+  assert(!can(loadPrincipal(mgr), PERMISSIONS.ATTEMPT_VIEW, { classId: cp }),
+    'Quản lý MB đã xem được lớp CP từ trước khi cấp quyền');
+
+  accounts.setUserPermissions(P.admin, mgr, [{ permission: PERMISSIONS.ATTEMPT_VIEW, branchCode: null }]);
+  assert(can(loadPrincipal(mgr), PERMISSIONS.ATTEMPT_VIEW, { classId: cp }),
+    'Cấp quyền riêng toàn hệ thống mà vẫn không xem được lớp chi nhánh khác');
+  /* Quyền riêng KHÔNG kéo theo quyền khác: vẫn không được chốt tuần ở chi nhánh lạ. */
+  assert(!can(loadPrincipal(mgr), PERMISSIONS.PLAN_WEEK, { classId: cp }),
+    'Quyền xem riêng kéo theo cả quyền sửa');
+
+  accounts.setUserPermissions(P.admin, mgr, []);
+  assert(!can(loadPrincipal(mgr), PERMISSIONS.ATTEMPT_VIEW, { classId: cp }), 'Gỡ quyền riêng không có tác dụng');
+});
+
+check('Hồ sơ cá nhân: sửa được tên, kỹ năng và email phụ; KHÔNG sửa được email đăng nhập', () => {
+  /* Lớp 102: lớp 101 đã bị bài kiểm phân công ở trên gỡ mất giáo viên Listening. */
+  const gv = loadPrincipal(teacherOfSkill('MB-FT 102', 'listening'));
+  const before = accounts.myProfile(gv);
+  assert(before.email && before.email.endsWith(accounts.EMAIL_SUFFIX), 'Tài khoản mẫu thiếu email đăng nhập');
+
+  accounts.updateProfile(gv, {
+    fullName: `${before.fullName}`, phone: '0900000001',
+    skills: ['listening', 'writing1'], extraEmails: ['rieng@gmail.com', 'rieng@gmail.com'],
+  });
+  const after = accounts.myProfile(gv);
+  assert(after.phone === '0900000001', 'Không lưu được số điện thoại');
+  assert(after.skills.sort().join() === 'listening,writing1', `Kỹ năng sai: ${after.skills.join()}`);
+  assert(after.extraEmails.length === 1, 'Email phụ trùng nhau không được gộp lại');
+  assert(after.email === before.email, 'Email đăng nhập bị đổi qua hồ sơ cá nhân');
+
+  /* Đổi mật khẩu phải nhập đúng mật khẩu cũ. */
+  assertThrows(() => accounts.updateProfile(gv, { currentPassword: 'sai', newPassword: 'matkhaumoi' }),
+    /hiện tại/, 'Đổi mật khẩu mà không cần mật khẩu cũ');
+});
+
+check('Lộ trình và loại lớp là DỮ LIỆU, và không xoá được thứ đang có người dùng', () => {
+  const routes = sysconfig.listRoutes(true);
+  assert(routes.some((r: any) => r.code === 'LT1'), 'Bảng lộ trình chưa được nạp');
+  assert((routes.find((r: any) => r.code === 'LT1')?.inUse ?? 0) > 0, 'LT1 phải đang có lớp dùng');
+
+  sysconfig.saveRoute(P.admin, { code: 'LT9', name: 'Lộ trình thử' });
+  assert(sysconfig.activeRouteCodes().includes('LT9'), 'Không thêm được lộ trình mới');
+  /* Ngừng dùng thì biến khỏi ô chọn, nhưng bản ghi vẫn còn để đọc lịch sử. */
+  sysconfig.saveRoute(P.admin, { code: 'LT9', name: 'Lộ trình thử', status: 'inactive' });
+  assert(!sysconfig.activeRouteCodes().includes('LT9'), 'Ngừng dùng mà vẫn chọn được');
+  assert(sysconfig.listRoutes(true).some((r: any) => r.code === 'LT9'), 'Ngừng dùng đã xoá mất bản ghi');
+
+  /* Giáo viên không sửa được danh mục. */
+  const gv = loadPrincipal(teacherOfSkill('MB-FT 102', 'listening'));
+  assertThrows(() => sysconfig.saveRoute(gv, { code: 'LT8', name: 'Thử' }), /Quản trị hệ thống/,
+    'Giáo viên sửa được lộ trình');
+
+  /* Loại lớp GỐC khoá cách chấm và bộ kỹ năng — đổi là đổi ý nghĩa của điểm đã nhập. */
+  sysconfig.saveProgramme(P.admin, {
+    code: 'FOU', name: 'Foundation', weeks: 8, scoringMode: 'ielts_band',
+    skills: ['listening'], progressWeek: 4, finalWeek: 8,
+  });
+  const fou = sysconfig.listProgrammes(P.admin).find((x: any) => x.code === 'FOU')!;
+  assert(fou.scoringMode === 'ratio', 'Đổi được cách chấm của loại lớp gốc');
+  assert(fou.skills.length === 4, `Đổi được bộ kỹ năng của loại lớp gốc: còn ${fou.skills.length}`);
 });
 
 console.log(`\n${'='.repeat(60)}`);

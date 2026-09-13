@@ -1,3 +1,4 @@
+import crypto from 'node:crypto';
 import { db, recreateSchema, tx } from '../db.ts';
 import {
   BRANCH_REPORT_CATEGORIES, CONTACT_KINDS, CONTACT_KIND_LABEL, ENTRY_SKILLS,
@@ -7,6 +8,8 @@ import {
 } from '../../../shared/domain.ts';
 import { addDays, normalizeName, nowIso, padCode } from '../util.ts';
 import { setConfig } from '../demoConfig.ts';
+import { DEFAULT_ADMIN_EMAIL, DEFAULT_ADMIN_PASSWORD, EMAIL_SUFFIX } from '../services/accounts.ts';
+import { seedRoutes } from '../services/sysconfig.ts';
 import { LISTENING_BY_RAW, READING_BY_RAW, roundToHalf } from '../services/scoring.ts';
 import { ensurePeriod, mondayOf, weekInfo } from '../services/week.ts';
 import {
@@ -74,17 +77,46 @@ export function runSeed() {
         if (!usedNames.has(n)) { usedNames.add(n); return n; }
       }
     };
-    const addUser = (name: string, title: string) => {
+    /*
+     * MỌI TÀI KHOẢN DEMO ĐỀU ĐĂNG NHẬP ĐƯỢC THẬT.
+     *
+     * Email suy từ tên, đúng quy ước `ten.pisa@gmail.com` owner chốt ở mục 7.1. Mật khẩu
+     * chung một chuỗi và ghi rõ ở README lẫn màn đăng nhập — bản demo nội bộ mà mỗi tài khoản
+     * một mật khẩu riêng thì không ai thử được vai nào ngoài vai của mình.
+     *
+     * Có mật khẩu thật ngay ở dữ liệu mẫu là điều kiện để thử ĐÚNG luồng đăng nhập, chứ không
+     * chỉ thử nút "Đổi tài khoản demo".
+     */
+    const usedEmails = new Set<string>();
+    const emailFor = (name: string) => {
+      const base = name.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .replace(/đ/gi, 'd').toLowerCase().split(/\s+/).filter(Boolean);
+      const stem = (base[base.length - 1] ?? 'gv') + (base[0] ? `.${base[0]}` : '');
+      let local = stem.replace(/[^a-z0-9.]/g, '');
+      let n = 1;
+      while (usedEmails.has(local)) { n += 1; local = `${stem.replace(/[^a-z0-9.]/g, '')}${n}`; }
+      usedEmails.add(local);
+      return `${local}${EMAIL_SUFFIX}`;
+    };
+    const addUser = (name: string, title: string, email?: string) => {
       userSeq += 1;
-      const info = conn.prepare('INSERT INTO users (code, full_name, email, title, status, created_at) VALUES (?,?,?,?,?,?)')
-        .run(padCode('NV', userSeq, 3), name, null, title, 'active', NOW);
+      const salt = crypto.randomBytes(16).toString('hex');
+      const hash = crypto.scryptSync(DEFAULT_ADMIN_PASSWORD, salt, 64).toString('hex');
+      const info = conn
+        .prepare(
+          `INSERT INTO users (code, full_name, email, title, password_hash, password_salt,
+                              approval_state, status, created_at)
+           VALUES (?,?,?,?,?,?, 'approved', 'active', ?)`,
+        )
+        .run(padCode('NV', userSeq, 3), name, email ?? emailFor(name), title, hash, salt, NOW);
       return Number(info.lastInsertRowid);
     };
     const grant = (userId: number, role: string, branch: string | null) =>
       conn.prepare('INSERT INTO user_roles (user_id, role_id, branch_id, status, created_at) VALUES (?,?,?,?,?)')
         .run(userId, roleId.get(role)!, branch ? branchId.get(branch)! : null, 'active', NOW);
 
-    const adminId = addUser(fakeName(), 'Quản trị hệ thống');
+    /* Tài khoản Quản trị hệ thống MẶC ĐỊNH của owner, đúng địa chỉ owner chỉ định (mục 7.1). */
+    const adminId = addUser('Đỗ Vũ Tuấn Phong', 'Quản trị hệ thống', DEFAULT_ADMIN_EMAIL);
     grant(adminId, 'system_admin', null);
 
     const branchAdmins = new Map<string, number>();
@@ -124,6 +156,12 @@ export function runSeed() {
       }
       teacherPool.set(b.code, ts);
     }
+
+    /*
+     * LỘ TRÌNH nay là DỮ LIỆU (mục 7.3) — nạp lần đầu từ danh sách viết cứng, sau đó Quản trị
+     * hệ thống thêm sửa trong màn quản trị mà không phải đụng vào mã nguồn.
+     */
+    seedRoutes(conn);
 
     // ---------------------------------------------------------------- lớp & phân công
     /*

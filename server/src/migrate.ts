@@ -1,6 +1,9 @@
 import { db, isInitialised } from './db.ts';
 import { nowIso } from './util.ts';
+import crypto from 'node:crypto';
 import { PERMISSION_LABEL } from '../../shared/domain.ts';
+import { DEFAULT_ADMIN_EMAIL, DEFAULT_ADMIN_PASSWORD, EMAIL_SUFFIX } from './services/accounts.ts';
+import { seedRoutes } from './services/sysconfig.ts';
 import { ROLE_PERMISSIONS } from './seed/data.ts';
 
 /**
@@ -391,6 +394,7 @@ function migrateCaseEngine(applied: string[], skipped: string[]) {
     migrateCaseLifecycle(conn, applied);
     migrateSchedulingFields(conn, applied);
     migratePermissions(conn, applied);
+    migrateAccounts(conn, applied);
 
     /*
      * Case đã đóng theo hệ thống cũ mà không có hướng xử lý: ghi rõ là "đóng theo hệ thống
@@ -1048,6 +1052,118 @@ function migrateCaseLifecycle(conn: any, applied: string[]) {
  *
  * Chạy lại lần hai không làm gì thêm: chỉ thêm phần CÒN THIẾU, không xoá quyền ai đã có.
  */
+/**
+ * TÀI KHOẢN VÀ ĐĂNG NHẬP (vòng 4 phase 4) trên database đang chạy.
+ *
+ * Thêm cột mật khẩu, trạng thái duyệt và bốn bảng mới; nạp bảng `routes` từ danh sách viết
+ * cứng; và ĐẶT MẬT KHẨU cho những tài khoản cũ chưa có, nếu không thì sau khi cập nhật
+ * không ai đăng nhập được vào chính dữ liệu của mình.
+ *
+ * Email suy từ tên theo đúng quy ước `ten.pisa@gmail.com`. Tài khoản nào đã có email thì giữ
+ * nguyên — không ghi đè một địa chỉ người ta đang dùng.
+ *
+ * Chạy lại lần hai không làm gì thêm.
+ */
+function migrateAccounts(conn: any, applied: string[]) {
+  const cols = (t: string) => (conn.prepare(`PRAGMA table_info(${t})`).all() as any[]).map((c: any) => c.name);
+  const has = (t: string) =>
+    !!conn.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name = ?").get(t);
+  if (!has('users')) return;
+
+  const addCol = (table: string, col: string, decl: string) => {
+    if (!cols(table).includes(col)) conn.exec(`ALTER TABLE ${table} ADD COLUMN ${col} ${decl}`);
+  };
+  for (const [c, d] of [
+    ['phone', 'TEXT'],
+    ['password_hash', 'TEXT'],
+    ['password_salt', 'TEXT'],
+    ['approval_state', "TEXT NOT NULL DEFAULT 'approved'"],
+    ['requested_branches', 'TEXT'],
+    ['requested_note', 'TEXT'],
+    ['approved_by', 'INTEGER'],
+    ['approved_at', 'TEXT'],
+    ['decline_reason', 'TEXT'],
+  ] as const) addCol('users', c, d);
+
+  conn.exec(`
+    CREATE TABLE IF NOT EXISTS user_emails (
+      id INTEGER PRIMARY KEY,
+      user_id INTEGER NOT NULL REFERENCES users(id),
+      email TEXT NOT NULL, created_at TEXT NOT NULL,
+      UNIQUE (user_id, email));
+    CREATE TABLE IF NOT EXISTS user_skills (
+      user_id INTEGER NOT NULL REFERENCES users(id),
+      skill TEXT NOT NULL, PRIMARY KEY (user_id, skill));
+    CREATE TABLE IF NOT EXISTS user_permissions (
+      id INTEGER PRIMARY KEY,
+      user_id INTEGER NOT NULL REFERENCES users(id),
+      permission_id INTEGER NOT NULL REFERENCES permissions(id),
+      branch_id INTEGER REFERENCES branches(id),
+      note TEXT, granted_by INTEGER REFERENCES users(id), created_at TEXT NOT NULL,
+      UNIQUE (user_id, permission_id, branch_id));
+    CREATE TABLE IF NOT EXISTS routes (
+      code TEXT PRIMARY KEY, name TEXT NOT NULL, note TEXT,
+      seq INTEGER NOT NULL DEFAULT 0, status TEXT NOT NULL DEFAULT 'active', created_at TEXT NOT NULL);
+  `);
+  const routes = seedRoutes(conn);
+
+  /* Email và mật khẩu cho tài khoản cũ. Không đụng vào ai đã có sẵn. */
+  const used = new Set(
+    (conn.prepare('SELECT email FROM users WHERE email IS NOT NULL').all() as any[]).map((r: any) => r.email),
+  );
+  const emailFor = (name: string) => {
+    const parts = String(name).normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .replace(/đ/gi, 'd').toLowerCase().split(/\s+/).filter(Boolean);
+    const stem = ((parts[parts.length - 1] ?? 'nv') + (parts[0] ? `.${parts[0]}` : '')).replace(/[^a-z0-9.]/g, '');
+    let local = stem; let n = 1;
+    while (used.has(`${local}${EMAIL_SUFFIX}`)) { n += 1; local = `${stem}${n}`; }
+    used.add(`${local}${EMAIL_SUFFIX}`);
+    return `${local}${EMAIL_SUFFIX}`;
+  };
+
+  let fixed = 0;
+  for (const u of conn.prepare('SELECT id, full_name, email, password_hash FROM users').all() as any[]) {
+    const email = u.email || emailFor(u.full_name);
+    if (u.password_hash && u.email) continue;
+    const salt = crypto.randomBytes(16).toString('hex');
+    const hash = crypto.scryptSync(DEFAULT_ADMIN_PASSWORD, salt, 64).toString('hex');
+    conn.prepare('UPDATE users SET email = ?, password_hash = ?, password_salt = ? WHERE id = ?')
+      .run(email, u.password_hash ?? hash, u.password_salt ?? salt, u.id);
+    fixed += 1;
+  }
+
+  /*
+   * TÀI KHOẢN QUẢN TRỊ MẶC ĐỊNH của owner phải tồn tại kể cả trên database cũ — nếu không thì
+   * sau khi cập nhật, chính người chủ hệ thống là người duy nhất không vào được.
+   */
+  let createdAdmin = false;
+  if (!conn.prepare('SELECT 1 FROM users WHERE email = ?').get(DEFAULT_ADMIN_EMAIL)) {
+    const salt = crypto.randomBytes(16).toString('hex');
+    const hash = crypto.scryptSync(DEFAULT_ADMIN_PASSWORD, salt, 64).toString('hex');
+    const n = (conn.prepare('SELECT COUNT(*) n FROM users').get() as any).n + 1;
+    const info = conn
+      .prepare(
+        `INSERT INTO users (code, full_name, email, title, password_hash, password_salt,
+                            approval_state, status, created_at)
+         VALUES (?,?,?,?,?,?, 'approved', 'active', ?)`,
+      )
+      .run(`NV${String(n).padStart(3, '0')}`, 'Đỗ Vũ Tuấn Phong', DEFAULT_ADMIN_EMAIL,
+           'Quản trị hệ thống', hash, salt, nowIso());
+    const role = conn.prepare("SELECT id FROM roles WHERE key = 'system_admin'").get() as any;
+    if (role) {
+      conn.prepare("INSERT INTO user_roles (user_id, role_id, branch_id, status, created_at) VALUES (?,?,NULL,'active',?)")
+        .run(Number(info.lastInsertRowid), role.id, nowIso());
+    }
+    createdAdmin = true;
+  }
+
+  const bits: string[] = [];
+  if (routes) bits.push(`nạp ${routes} lộ trình`);
+  if (fixed) bits.push(`đặt email và mật khẩu cho ${fixed} tài khoản`);
+  if (createdAdmin) bits.push('tạo tài khoản Quản trị hệ thống mặc định');
+  if (bits.length) applied.push(`Tài khoản và đăng nhập: ${bits.join(', ')}`);
+}
+
 function migratePermissions(conn: any, applied: string[]) {
   const has = (t: string) =>
     !!conn.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name = ?").get(t);

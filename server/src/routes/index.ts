@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { db, isInitialised } from '../db.ts';
 import {
   BEHAVIOUR_TOPICS, BEHAVIOUR_TOPIC_LABEL, ENTRY_SKILLS, ENTRY_SKILL_LABEL, ISSUE_TAXONOMY,
-  PERMISSIONS, ROLE_LABEL, THREAD_TRACKS, THREAD_TRACK_LABEL, type Role,
+  PERMISSIONS, REGULAR_SKILLS, ROLE_LABEL, THREAD_TRACKS, THREAD_TRACK_LABEL, type Role,
 } from '../../../shared/domain.ts';
 import { demoToday, getConfig, scenarioMode, setConfig } from '../demoConfig.ts';
 import { HttpError, badRequest, isIsoDate, notFound, toInt } from '../util.ts';
@@ -28,6 +28,8 @@ import {
 } from '../services/week.ts';
 import * as planningSvc from '../services/planning.ts';
 import { signalsFor } from '../services/signals.ts';
+import * as accountSvc from '../services/accounts.ts';
+import * as sysconfigSvc from '../services/sysconfig.ts';
 import { weeklyRollup } from '../services/weekly.ts';
 import { myWork } from '../services/mywork.ts';
 import * as caseSvc from '../services/cases.ts';
@@ -876,3 +878,78 @@ api.get('/admin/overview', requireAuth, wrap((req) => {
       .all(),
   };
 }));
+
+// ==================================================================== tài khoản (vòng 4 phase 4)
+
+/**
+ * ĐĂNG NHẬP THẬT — email + mật khẩu (mục 7.1).
+ *
+ * Bản demo vẫn giữ nút "Đổi tài khoản demo" ở thanh trên: đó là công cụ để owner xem nhanh
+ * cùng một màn hình bằng bốn con mắt khác nhau, và bỏ nó đi thì mỗi lần đổi vai phải gõ lại
+ * mật khẩu. Hai đường cùng dẫn tới một `demo_sessions`, nên không có hai cơ chế phiên.
+ */
+api.post('/auth/login', wrap((req, res) => {
+  const r = accountSvc.login(String(req.body?.email ?? ''), String(req.body?.password ?? ''));
+  if (req.sessionToken) destroySession(req.sessionToken);
+  const token = createSession(r.userId);
+  res.cookie(SESSION_COOKIE, token, { httpOnly: true, sameSite: 'lax', path: '/' });
+  return { ok: true, userId: r.userId, fullName: r.fullName };
+}));
+
+api.post('/auth/register', wrap((req) => {
+  const b = req.body ?? {};
+  const r = accountSvc.register({
+    email: String(b.email ?? ''), password: String(b.password ?? ''), fullName: String(b.fullName ?? ''),
+    phone: b.phone ?? null, branches: Array.isArray(b.branches) ? b.branches : [],
+    note: b.note ?? null, skills: Array.isArray(b.skills) ? b.skills : [],
+  });
+  return { ...r, pending: true };
+}));
+
+/** Ô chọn chi nhánh trên màn đăng ký — chưa đăng nhập nên không đi qua `requireAuth`. */
+api.get('/auth/branches', wrap(() => {
+  if (!isInitialised()) throw new HttpError(503, 'Chưa có dữ liệu demo trong máy.', { needsSeed: true });
+  return db().prepare("SELECT code, name FROM branches WHERE status='active' ORDER BY id").all();
+}));
+
+/** Thông tin cần cho màn đăng nhập: đuôi email bắt buộc và tài khoản mặc định của bản demo. */
+api.get('/auth/info', wrap(() => ({
+  emailSuffix: accountSvc.EMAIL_SUFFIX,
+  demoAdmin: { email: accountSvc.DEFAULT_ADMIN_EMAIL, password: accountSvc.DEFAULT_ADMIN_PASSWORD },
+  /* Gộp hai bộ kỹ năng và BỎ TRÙNG: Listening có ở cả hai, hiện hai lần là một lỗi nhìn thấy ngay. */
+  skills: [...new Set([...ENTRY_SKILLS, ...REGULAR_SKILLS])],
+})));
+
+api.get('/me/profile', requireAuth, wrap((req) => accountSvc.myProfile(principalOf(req))));
+api.patch('/me/profile', requireAuth, wrap((req) => accountSvc.updateProfile(principalOf(req), req.body ?? {})));
+
+api.get('/admin/accounts', requireAuth, wrap((req) => ({
+  rows: accountSvc.listAccounts(principalOf(req)),
+  pending: accountSvc.pendingQueue(principalOf(req)),
+})));
+api.post('/admin/accounts', requireAuth, wrap((req) => accountSvc.createAccount(principalOf(req), req.body ?? {})));
+api.post('/admin/accounts/:id/approve', requireAuth, wrap((req) => accountSvc.approve(
+  principalOf(req), Number(req.params.id), req.body ?? {},
+)));
+api.post('/admin/accounts/:id/decline', requireAuth, wrap((req) => accountSvc.decline(
+  principalOf(req), Number(req.params.id), String(req.body?.reason ?? ''),
+)));
+api.put('/admin/accounts/:id/roles', requireAuth, wrap((req) => accountSvc.setRoles(
+  principalOf(req), Number(req.params.id), Array.isArray(req.body?.roles) ? req.body.roles : [],
+)));
+api.put('/admin/accounts/:id/permissions', requireAuth, wrap((req) => accountSvc.setUserPermissions(
+  principalOf(req), Number(req.params.id), Array.isArray(req.body?.items) ? req.body.items : [],
+)));
+api.post('/admin/accounts/:id/password', requireAuth, wrap((req) => accountSvc.resetPassword(
+  principalOf(req), Number(req.params.id), String(req.body?.password ?? ''),
+)));
+
+/** Lộ trình và loại lớp — nay là dữ liệu, Quản trị hệ thống sửa được (mục 7.3). */
+api.get('/ref/routes', wrap(() => sysconfigSvc.listRoutes()));
+api.get('/admin/routes', requireAuth, wrap((req) => {
+  principalOf(req);
+  return sysconfigSvc.listRoutes(true);
+}));
+api.put('/admin/routes', requireAuth, wrap((req) => sysconfigSvc.saveRoute(principalOf(req), req.body ?? {})));
+api.get('/admin/programmes', requireAuth, wrap((req) => sysconfigSvc.listProgrammes(principalOf(req))));
+api.put('/admin/programmes', requireAuth, wrap((req) => sysconfigSvc.saveProgramme(principalOf(req), req.body ?? {})));

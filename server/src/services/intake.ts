@@ -1,5 +1,6 @@
 import { db, tx } from '../db.ts';
-import { MOCK_FT_STUDY_WEEK, PERMISSIONS, ROUTES, programmeOf, type Route } from '../../../shared/domain.ts';
+import { MOCK_FT_STUDY_WEEK, PERMISSIONS, programmeOf, type Route } from '../../../shared/domain.ts';
+import { activeRouteCodes } from './sysconfig.ts';
 import { addDays, badRequest, isIsoDate, normalizeName, notFound, nowIso, padCode } from '../util.ts';
 import { can, require_, type Principal } from '../permissions.ts';
 import { addJourney, writeAudit } from './audit.ts';
@@ -164,7 +165,11 @@ export function previewIntake(
     if (startDate === 'invalid') rowIssues.push({ row: rowNo, field: 'startDate', message: `Ngày bắt đầu "${r.startDate}" không đọc được` });
 
     const route = r.route ? r.route.trim().toUpperCase() : cls?.route ?? null;
-    if (route && !(ROUTES as readonly string[]).includes(route)) {
+    /*
+     * Lộ trình nay là DỮ LIỆU (mục 7.3), nên kiểm theo BẢNG chứ không theo hằng số trong mã.
+     * Kiểm bằng hằng số thì lộ trình Quản trị hệ thống vừa tạo lại bị coi là sai.
+     */
+    if (route && !activeRouteCodes().includes(route)) {
       rowIssues.push({ row: rowNo, field: 'route', message: `Lộ trình "${r.route}" không hợp lệ` });
     }
     const target = r.target === undefined || r.target === null || r.target === '' ? null : Number(r.target);

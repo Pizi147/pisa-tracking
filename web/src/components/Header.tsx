@@ -151,6 +151,9 @@ export function Header() {
                 thêm một lối vào riêng là hai cửa dẫn vào cùng một chỗ. Báo cáo tuần thì owner
                 bỏ tạm (mục 12). Hai địa chỉ cũ vẫn mở được, chỉ không còn nút dẫn tới.
               */}
+              {/* Hồ sơ cá nhân (mục 7.2) — ai cũng có, nên đứng trước lối vào quản trị. */}
+              <Link to="/ho-so-ca-nhan" className="btn btn-sm w-full justify-center no-underline"
+                onClick={() => setOpenMenu(null)}>Hồ sơ cá nhân</Link>
               {session?.nav?.admin && (
                 <Link to="/quan-tri" className="btn btn-sm w-full justify-center no-underline"
                   onClick={() => setOpenMenu(null)}>Quản trị hệ thống</Link>

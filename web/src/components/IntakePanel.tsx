@@ -4,7 +4,7 @@ import { useApi } from '../lib/useApi.ts';
 import { useToast } from './Toast.tsx';
 import { Drawer } from './Drawer.tsx';
 import { Pill, SectionNote } from './ui.tsx';
-import { ROUTES } from '@shared/domain.ts';
+
 
 type Row = {
   fullName?: string; classCode?: string; dob?: string;
@@ -49,6 +49,9 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
 }) {
   const toast = useToast();
   const classes = useApi<any[]>('/ref/classes');
+  /* Lộ trình đọc từ BẢNG, không từ hằng số: lộ trình Quản trị hệ thống vừa tạo phải chọn được ngay. */
+  const routes = useApi<{ code: string }[]>('/ref/routes');
+  const routeCodes = (routes.data ?? []).map((r) => r.code);
   const [rows, setRows] = useState<Row[]>([{ ...EMPTY, classCode: defaultClass?.code ?? '' }]);
   const [dateFormat, setDateFormat] = useState<'dmy' | 'mdy' | 'iso'>('dmy');
   const [preview, setPreview] = useState<PreviewRow[] | null>(null);
@@ -196,7 +199,7 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
                             <select className="field" value={String(r.route ?? '')} disabled={skipped}
                               onChange={(e) => setCell(i, 'route', e.target.value)}>
                               <option value="">—</option>
-                              {ROUTES.map((x) => <option key={x} value={x}>{x}</option>)}
+                              {routeCodes.map((x) => <option key={x} value={x}>{x}</option>)}
                             </select>
                           ) : (
                             <input

@@ -14,6 +14,7 @@ import StudentDetailPage from './pages/StudentDetail.tsx';
 import AcademicPage, { CaseRoutePage } from './pages/Academic.tsx';
 import MeetingPage from './pages/Meeting.tsx';
 import AdminPage from './pages/Admin.tsx';
+import ProfilePage from './pages/Profile.tsx';
 import WelcomePage from './pages/Welcome.tsx';
 
 /**
@@ -119,6 +120,7 @@ export default function App() {
           <Route path="/mock-test/:id" element={<MockDetailPage />} />
           <Route path="/tien-trinh" element={<MeetingPage />} />
           <Route path="/quan-tri" element={<AdminPage />} />
+          <Route path="/ho-so-ca-nhan" element={<ProfilePage />} />
           {/* Đường dẫn cũ vẫn mở được để link đã lưu không gãy. */}
           <Route path="/mock-test" element={<Navigate to="/hoc-vien" replace />} />
           <Route path="/mock-test/lop/:classId" element={<LegacySheetRedirect />} />

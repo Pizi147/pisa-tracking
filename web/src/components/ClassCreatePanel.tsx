@@ -5,7 +5,7 @@ import { Drawer } from './Drawer.tsx';
 import { WeekPicker } from './Filters.tsx';
 import { useToast } from './Toast.tsx';
 import { Field, Pill, SectionNote } from './ui.tsx';
-import { PROGRAMME_TEMPLATES, ROUTES, skillShort } from '@shared/domain.ts';
+import { PROGRAMME_TEMPLATES, skillShort } from '@shared/domain.ts';
 
 type Branch = { id: number; code: string; name: string };
 
@@ -25,6 +25,8 @@ export function ClassCreatePanel({ onClose, onDone }: {
 }) {
   const toast = useToast();
   const branches = useApi<Branch[]>('/ref/branches');
+  /* Lộ trình đọc từ BẢNG, không từ hằng số — Quản trị hệ thống thêm lộ trình là nó hiện ngay ở đây. */
+  const routes = useApi<{ code: string; name: string }[]>('/ref/routes');
 
   const [branchId, setBranchId] = useState<number | null>(null);
   const [isFt, setIsFt] = useState(true);
@@ -100,9 +102,9 @@ export function ClassCreatePanel({ onClose, onDone }: {
         {isFt ? (
           <Field label="Lộ trình" required hint="Lớp FT chỉ cần đánh số; lộ trình quyết định target của các em.">
             <div className="flex flex-wrap gap-2">
-              {ROUTES.map((r) => (
-                <button key={r} type="button" className={`btn btn-sm ${route === r ? 'btn-primary' : ''}`}
-                  onClick={() => setRoute(r)}>{r}</button>
+              {(routes.data ?? []).map((r) => (
+                <button key={r.code} type="button" className={`btn btn-sm ${route === r.code ? 'btn-primary' : ''}`}
+                  title={r.name} onClick={() => setRoute(r.code)}>{r.code}</button>
               ))}
             </div>
           </Field>
