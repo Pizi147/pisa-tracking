@@ -585,6 +585,41 @@ api.post('/interventions/:id/respond', requireAuth, wrap((req) => {
   return caseSvc.respondToPlan(principalOf(req), pInt(req, 'id'), req.body ?? {});
 }));
 
+/**
+ * Đánh dấu một phương án ĐÃ LÀM XONG kèm ngày thực hiện.
+ *
+ * Dùng chung cho cả hai việc trao đổi lẫn phương án học thuật — vòng 4 bỏ đường ghi riêng
+ * của bảng Liên hệ, nên chỉ còn một cách xác nhận "việc này đã làm".
+ */
+api.post('/interventions/:id/complete', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return caseSvc.completeIntervention(principalOf(req), pInt(req, 'id'), req.body ?? {});
+}));
+
+/**
+ * CHỐT KẾT QUẢ CẢ CASE — chỉ mở khi mọi phương án đã có kết quả.
+ * `decision` là 'end' (kết thúc hẳn) hoặc 'extend' (kéo dài theo dõi + thêm phương án).
+ */
+api.post('/cases/:id/outcome', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return caseSvc.closeCaseOutcome(principalOf(req), pInt(req, 'id'), req.body ?? {});
+}));
+
+/** Đổi hạn BÁO KẾT QUẢ của case. Mặc định hết tuần MT kế tiếp, nhưng sửa được. */
+api.patch('/cases/:id/follow-until', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return caseSvc.setFollowUntil(principalOf(req), pInt(req, 'id'), req.body?.date ?? null);
+}));
+
+/**
+ * BẢNG THEO DÕI HỖ TRỢ THEO KỸ NĂNG của một học viên — sáu hạng mục, luôn đủ sáu dòng.
+ * Đây là phần giữa của hồ sơ học viên.
+ */
+api.get('/students/:id/skill-board', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return caseSvc.skillSupportBoard(principalOf(req), pInt(req, 'id'), qInt(req, 'cycleId'));
+}));
+
 /** Ghi một lần xem lại sau hỗ trợ. Một tác động có thể xem lại nhiều lần. */
 api.post('/cases/:id/followups', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
