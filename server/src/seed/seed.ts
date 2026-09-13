@@ -532,7 +532,8 @@ function seedBehaviourCase(conn: any, o: {
            done && kind === 'talk_student' ? o.gvcn : null,
            done && kind === 'talk_parent' ? 'Chị Hương (CS)' : null,
            done ? 'completed' : 'planned',
-           done ? addDays(o.testDate, 5 + i) : null,
+           // Việc đã làm không bao giờ mang ngày ở tương lai — xem `notFuture` ở seedCase.
+           done ? (addDays(o.testDate, 5 + i) > DEMO_DATE ? DEMO_DATE : addDays(o.testDate, 5 + i)) : null,
            due, `auto:${o.attemptId}:${kind}`, NOW);
   }
 }
@@ -624,6 +625,17 @@ function seedCase(conn: any, o: {
     .run(caseId, kind, o.attemptId, o.attemptNo, o.level,
          o.testDate, NOW, `mt:${o.attemptId}:${caseId}:${kind}`);
 
+  /*
+   * KHÔNG BAO GIỜ GHI "ĐÃ XONG" VÀO MỘT NGÀY CHƯA TỚI.
+   *
+   * Kịch bản mẫu tính ngày xong theo "ngày thi + 30", nên case của lượt MT gần ngày demo
+   * cho ra ngày xong ở TƯƠNG LAI — hồ sơ học viên hiện "xong 10/10" trong khi hôm nay mới
+   * 23/09. Máy chủ đã chặn người dùng nhập ngày tương lai; dữ liệu mẫu phải theo cùng một
+   * luật, nếu không thì chính bản demo là thứ dạy người dùng rằng luật ấy không có thật.
+   */
+  const notFuture = (d: string | undefined) =>
+    (d && d > DEMO_DATE ? DEMO_DATE : d);
+
   const iv = (
     kind: string, description: string, performerName: string,
     st: 'planned' | 'started' | 'completed', dates: { started?: string; completed?: string; due?: string } = {},
@@ -634,7 +646,8 @@ function seedCase(conn: any, o: {
        VALUES (?,?,?,?,?,?,?,?,?,?)`,
     )
     .run(caseId, kind, description, performerName, o.recorder, st,
-         dates.started ?? null, dates.completed ?? null, dates.due ?? null, NOW);
+         notFuture(dates.started) ?? null, notFuture(dates.completed) ?? null,
+         dates.due ?? null, NOW);
 
   if (o.pattern === 'named_only') {
     /*
@@ -675,7 +688,7 @@ function seedCase(conn: any, o: {
         `INSERT INTO case_followups (case_id, intervention_id, observed_on, observer_user_id, outcome, note, created_at)
          VALUES (?, NULL, ?, ?, ?, ?, ?)`,
       )
-      .run(caseId, addDays(o.testDate, 28), o.recorder,
+      .run(caseId, notFuture(addDays(o.testDate, 28))!, o.recorder,
            o.level === 3 ? 'partial' : 'improved',
            o.level === 3 ? 'Có chuyển biến ở một kỹ năng, hai kỹ năng còn lại chưa rõ'
              : 'Làm bài đều hơn, kết quả trên lớp khá hơn', NOW);
@@ -902,7 +915,7 @@ function seedAcademicCases(conn: any, ctx: {
     });
     addFollowUp(c2, { interventionId: iv2, on: '2026-09-18', observer: core, outcome: 'improved',
       note: 'Hai tuần gần đây đi đủ, đã nộp bài' });
-    addFollowUp(c2, { on: '2026-09-25', observer: core, outcome: 'unchanged',
+    addFollowUp(c2, { on: '2026-09-22', observer: core, outcome: 'unchanged',
       note: 'Tuần này lại nghỉ một buổi, tiếp tục theo dõi' });
   }
 
