@@ -1915,7 +1915,7 @@ function seedVong5(conn: any, ctx: {
       detectedAt: '2026-07-06', status: 'in_progress',
     });
     const iv = plan({
-      caseId: cs, kind: 'extra_homework',
+      caseId: cs, kind: 'self_study',
       description: 'Mỗi tuần một bài Task 2 dạng hai phía, cô chữa tay',
       performer: coreOf('CP-FT 110'), cycleStart: '2026-08-17', cycleNo: 3,
     });
@@ -1967,7 +1967,7 @@ function seedVong5(conn: any, ctx: {
       detectedAt: '2026-08-31', status: 'in_progress',
     });
     const iv = plan({
-      caseId: cs, kind: 'teacher_change', description: 'Xin đổi giờ Speaking sang lớp nhỏ hơn',
+      caseId: cs, kind: 'extra_support', description: 'Xin đổi giờ Speaking sang lớp nhỏ hơn',
       performer: coreOf('BC-FT 205'), cycleStart: '2026-09-07',
       status: 'planned', needsApproval: true, approvalState: 'pending',
     });
@@ -1993,7 +1993,7 @@ function seedVong5(conn: any, ctx: {
       detectedAt: DEMO_DATE, status: 'in_progress',
     });
     plan({
-      caseId: cs, kind: 'extra_homework', description: 'Viết lại phần overview của ba bài cũ',
+      caseId: cs, kind: 'self_study', description: 'Viết lại phần overview của ba bài cũ',
       performer: coreOf('MB-FT 102'), cycleStart: DEMO_DATE,
     });
   }
@@ -2039,7 +2039,7 @@ function seedVong5(conn: any, ctx: {
       approver: managers.get('HD')?.[0] ?? adminId, approvalAt: '2026-09-04',
     });
     plan({
-      caseId: cs, kind: 'extra_homework', description: 'Kèm thêm 15 phút cuối mỗi buổi, hai tuần',
+      caseId: cs, kind: 'self_study', description: 'Kèm thêm 15 phút cuối mỗi buổi, hai tuần',
       performer: coreOf('HD-FT 302'), cycleStart: '2026-09-04',
     });
   }
@@ -2058,7 +2058,7 @@ function seedVong5(conn: any, ctx: {
       detectedAt: '2026-08-10', status: 'in_progress',
     });
     const iv = plan({
-      caseId: cs, kind: 'extra_homework', description: 'Mỗi tuần một bài Task 1 nhóm xu hướng',
+      caseId: cs, kind: 'self_study', description: 'Mỗi tuần một bài Task 1 nhóm xu hướng',
       performer: coreOf('MB-FT 101'), cycleStart: '2026-08-24', cycleNo: 2,
     });
     result({

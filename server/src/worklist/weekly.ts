@@ -2,7 +2,7 @@ import { db } from '../db.ts';
 import { PERMISSIONS } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { classScopeSql, require_, scopeFor, type Principal } from '../permissions.ts';
-import { addDays, diffDays } from '../util.ts';
+import { addDays } from '../util.ts';
 import { mondayOf, weekInfo } from '../platform/week.ts';
 import { loadBundle, resultOf } from '../fasttrack/attempts.ts';
 import { allProgrammes, evaluateRegular } from '../normal/regular.ts';
@@ -25,7 +25,7 @@ import { allProgrammes, evaluateRegular } from '../normal/regular.ts';
 
 export type WeeklyRow = {
   periodId: number;
-  code: string;          // "W2 SEP"
+  code: string;          // "W2 SEP 2026"
   month: string;         // "SEPTEMBER" — dùng gom nhóm
   weekLabel: string;     // "Tuần 2"
   range: string;
@@ -33,25 +33,45 @@ export type WeeklyRow = {
   weekEnd: string;
   isCurrent: boolean;
 
-  /** Số lượt đã có ít nhất một kỹ năng được chấm. Chưa chấm gì thì chưa phải "lượt có kết quả". */
+  /**
+   * SÁU CỘT LOẠI TRỪ NHAU, CỘNG LẠI ĐÚNG BẰNG `attempts` (mục 4.2).
+   *
+   * `attempts` là số LƯỢT đã chấm ít nhất một kỹ năng — chưa chấm gì thì chưa phải một lượt
+   * có kết quả. Năm cột kết luận chia hết số đó, không cột nào chồng lên cột nào:
+   *
+   *   onTarget     đủ điểm, không kỹ năng nào dưới kỳ vọng — kết luận CHẮC CHẮN
+   *   sos1/2/3     đủ điểm, 1 / 2 / từ 3 kỹ năng dưới kỳ vọng — kết luận CHẮC CHẮN
+   *   provisional  CHƯA đủ điểm nhưng phần đã chấm đã đủ để kết luận (có kỹ năng trượt,
+   *                hoặc Fast Track đã kết luận trên phần đang có) — mức còn có thể tăng
+   *   pending      CHƯA đủ điểm và phần đã chấm chưa kết luận được gì
+   *
+   * Một lượt chưa đủ điểm chỉ nằm ở ĐÚNG MỘT trong hai cột cuối — không đếm hai lần.
+   * Và không lượt nào chưa đủ điểm bị ghi thành "Đạt".
+   */
   attempts: number;
-  onTarget: number;      // đạt kỳ vọng (SOS 0)
+  onTarget: number;
   sos1: number;
   sos2: number;
   sos3: number;
-  /**
-   * ĐÃ CHẤM MỘT PHẦN, CHƯA KẾT LUẬN ĐƯỢC — bài kiểm tra lớp Normal còn thiếu môn mà các
-   * môn đã chấm đều đạt. Không được dồn vào cột "Đạt": môn còn thiếu có thể chính là môn
-   * em trượt. Có cột riêng để năm cột cộng lại vẫn đúng bằng số lượt có kết quả.
-   */
+  provisional: number;
   pending: number;
-  cases: number;         // tổng case SOS mở trong tuần này
-  withSupport: number;   // case đã có ít nhất một ghi nhận hỗ trợ
-  untouched: number;     // case chưa ai động vào
-  /** Phương án giáo viên đề xuất trong tuần đó, đang chờ Quản lý trả lời (mục 10.7). */
+
+  /**
+   * ĐẾM CASE, KHÔNG PHẢI "LƯỢT CÓ CASE" (mục 2.2).
+   *
+   * Trước vòng này cột tên "Case" thực ra đếm số LƯỢT MT có ít nhất một case: một lượt sinh
+   * ba case vẫn chỉ ra số 1. Nay đếm đúng từng case.
+   *
+   * Một case thuộc về tuần của lượt sinh ra nó, nên nó chỉ xuất hiện ở MỘT tuần — cộng các
+   * tuần lại vẫn là số case duy nhất, không phải cộng trùng.
+   */
+  cases: number;
+  /** Số HỌC VIÊN có case trong tuần đó — đơn vị khác cột trên, và cố ý khác. */
+  caseStudents: number;
+  withSupport: number;   // case đã có ít nhất một việc hỗ trợ thực sự diễn ra
+  untouched: number;     // case chưa ai ghi sẽ làm gì
+  /** Phương án giáo viên đề xuất, đang chờ Quản lý trả lời — TRẠNG THÁI HIỆN TẠI. */
   pendingApproval: number;
-  /** Số ngày trung bình từ ngày làm bài đến ngày nhập điểm. null khi chưa đủ dữ liệu. */
-  scoreLagDays: number | null;
 };
 
 const MONTHS = [
@@ -59,22 +79,14 @@ const MONTHS = [
   'JULY', 'AUGUST', 'SEPTEMBER', 'OCTOBER', 'NOVEMBER', 'DECEMBER',
 ];
 
-/**
- * Đã có ít nhất một việc hỗ trợ THỰC SỰ diễn ra, hoặc một lần trao đổi đã xong.
- * Ngày trong tương lai là hẹn, chưa phải đã làm.
- */
-function hasSupport(c: any, today: string): boolean {
-  return (!!c.support_done && c.support_done <= today)
-    || (!!c.contact_done && c.contact_done <= today);
-}
-
 export function weeklyRollup(
   p: Principal,
-  f: { branchId?: number | null; weeks?: number } = {},
-): { rows: WeeklyRow[]; scopeEmpty: boolean; today: string } {
+  f: { branchId?: number | null; weeks?: number; track?: 'normal' | 'ft' | null } = {},
+): { rows: WeeklyRow[]; scopeEmpty: boolean; today: string; track: 'normal' | 'ft' | null } {
   require_(p, PERMISSIONS.ATTEMPT_VIEW, { anyScope: true }, 'Bạn không có quyền xem tổng hợp tuần.');
   const scope = scopeFor(p, PERMISSIONS.ATTEMPT_VIEW);
-  if (scope.none) return { rows: [], scopeEmpty: true, today: demoToday() };
+  const track = f.track ?? null;
+  if (scope.none) return { rows: [], scopeEmpty: true, today: demoToday(), track };
 
   const conn = db();
   const today = demoToday();
@@ -86,37 +98,24 @@ export function weeklyRollup(
   const where: string[] = [cs.sql, 'rp.week_start >= ?', 'rp.week_start <= ?'];
   const params: unknown[] = [...cs.params, from, mondayOf(today)];
   if (f.branchId) { where.push('c.branch_id = ?'); params.push(f.branchId); }
+  /*
+   * NORMAL VÀ FT ĐẾM HAI THỨ KHÁC NHAU (mục 4.2).
+   *
+   * Lớp Normal làm BÀI KIỂM TRA giữa khoá / cuối khoá; lớp Fast Track làm MOCK TEST. Trộn
+   * chung một cột "Lượt" thì con số không trả lời được câu hỏi nào: "tuần này 30 lượt" là
+   * 30 bài kiểm tra hay 30 MT? Nên lọc ngay từ đây, và nhãn cột đổi theo.
+   */
+  if (track === 'ft') where.push("a.kind = 'mock'");
+  if (track === 'normal') where.push("a.kind IN ('progress','final')");
 
   const attempts = conn
     .prepare(
       `SELECT a.id, a.status, a.kind, a.attempt_no, a.class_id, a.planned_period_id, a.target_at_attempt,
               c.programme_code,
-              rp.id AS period_id, rp.code, rp.week_start, rp.week_end,
-              sc.case_id, sc.sos_level, sc.case_status, sc.support_done,
-              ct.contact_done
+              rp.id AS period_id, rp.code, rp.week_start, rp.week_end
          FROM assessment_attempts a
          JOIN report_periods rp ON rp.id = a.planned_period_id
          LEFT JOIN classes c ON c.id = a.class_id
-         /* Một lượt nay có nhiều vấn đề — gộp lại thành một dòng cho lượt. */
-         LEFT JOIN (
-           SELECT s.attempt_id, MIN(s.id) AS case_id, MAX(s.sos_level) AS sos_level,
-                  MIN(s.status) AS case_status,
-                  MAX((SELECT MAX(COALESCE(i.completed_date, i.started_date))
-                         FROM case_interventions i
-                        WHERE i.case_id = s.id AND i.status != 'cancelled')) AS support_done
-             FROM sos_cases s WHERE s.attempt_id IS NOT NULL GROUP BY s.attempt_id
-         ) sc ON sc.attempt_id = a.id
-         /*
-          * Hai việc trao đổi nay là phương án trong case Ý thức/Khác của chính lượt đó
-          * (vòng 4 bỏ bảng Liên hệ riêng). Vẫn gộp về MỘT dòng cho mỗi lượt.
-          */
-         LEFT JOIN (
-           SELECT s.attempt_id, MAX(i.completed_date) AS contact_done
-             FROM case_interventions i
-             JOIN sos_cases s ON s.id = i.case_id
-            WHERE s.attempt_id IS NOT NULL AND i.kind IN ('talk_student','talk_parent')
-            GROUP BY s.attempt_id
-         ) ct ON ct.attempt_id = a.id
         WHERE ${where.join(' AND ')} AND a.status != 'cancelled'`,
     )
     .all(...params) as any[];
@@ -128,38 +127,16 @@ export function weeklyRollup(
    */
   const bundle = loadBundle(attempts.map((a) => a.id));
   const programmes = allProgrammes();
-  const resultOfAttempt = (a: any): { sosLevel: number | null } => {
+  const resultOfAttempt = (a: any): { sosLevel: number | null; complete: boolean } => {
     const scores = bundle.scores.get(a.id) ?? [];
     const prog = a.programme_code ? programmes.get(a.programme_code) : null;
-    if (prog?.scoringMode === 'ratio') return evaluateRegular(prog.skills, scores);
-    return resultOf(a, scores, bundle.skips.get(a.id) ?? []);
-  };
-
-  // Độ trễ chấm: ngày làm bài → ngày nhập điểm, tính trên từng ô điểm rồi lấy trung bình tuần.
-  const lag = new Map<number, { sum: number; n: number }>();
-  if (attempts.length) {
-    const ids = attempts.map((a) => a.id);
-    for (let i = 0; i < ids.length; i += 400) {
-      const chunk = ids.slice(i, i + 400);
-      for (const r of conn
-        .prepare(
-          `SELECT s.attempt_id, s.entered_at, a.planned_period_id, rp.week_end
-             FROM assessment_scores s
-             JOIN assessment_attempts a ON a.id = s.attempt_id
-             JOIN report_periods rp ON rp.id = a.planned_period_id
-            WHERE s.attempt_id IN (${chunk.map(() => '?').join(',')})
-              AND s.entered_at IS NOT NULL`,
-        )
-        .all(...chunk) as any[]) {
-        // Đếm từ CHỦ NHẬT của tuần MT — không còn ngày thi cụ thể để đếm từ đó.
-        const days = diffDays(r.week_end, String(r.entered_at).slice(0, 10));
-        if (days < 0 || days > 120) continue;          // dữ liệu lệch thì bỏ, không kéo trung bình
-        const cur = lag.get(r.planned_period_id) ?? { sum: 0, n: 0 };
-        cur.sum += days; cur.n += 1;
-        lag.set(r.planned_period_id, cur);
-      }
+    if (prog?.scoringMode === 'ratio') {
+      const r = evaluateRegular(prog.skills, scores);
+      return { sosLevel: r.sosLevel, complete: r.complete };
     }
-  }
+    const r = resultOf(a, scores, bundle.skips.get(a.id) ?? []);
+    return { sosLevel: r.sosLevel, complete: r.complete };
+  };
 
   const scored = new Set<number>();
   if (attempts.length) {
@@ -176,63 +153,113 @@ export function weeklyRollup(
     }
   }
 
-  /*
-   * ĐỀ XUẤT CHỜ DUYỆT, quy về TUẦN CỦA LƯỢT MT sinh ra case đó — cùng một quy ước tuần với
-   * mọi cột khác của bảng này. Đếm bằng một câu riêng thay vì nối thêm vào câu lớn ở trên:
-   * nối vào đó sẽ nhân đôi số dòng và làm mọi cột khác đếm sai.
-   */
-  const pending = new Map<number, number>();
-  for (const r of conn
-    .prepare(
-      `SELECT a.planned_period_id AS pid, COUNT(*) AS n
-         FROM case_interventions iv
-         JOIN sos_cases sc ON sc.id = iv.case_id
-         JOIN assessment_attempts a ON a.id = sc.attempt_id
-        WHERE iv.approval_state = 'pending' AND a.planned_period_id IS NOT NULL
-        GROUP BY a.planned_period_id`,
-    )
-    .all() as any[]) pending.set(r.pid, r.n);
-
   const byPeriod = new Map<number, WeeklyRow>();
-  for (const a of attempts) {
-    if (!byPeriod.has(a.period_id)) {
+  const rowOf = (a: any): WeeklyRow => {
+    let row = byPeriod.get(a.period_id);
+    if (!row) {
       const info = weekInfo(a.week_start);
-      byPeriod.set(a.period_id, {
+      row = {
         periodId: a.period_id, code: a.code,
         month: MONTHS[info.month - 1] ?? '',
         weekLabel: `Tuần ${info.weekNo}`,
         range: info.range, weekStart: a.week_start, weekEnd: a.week_end,
         isCurrent: a.week_start <= today && a.week_end >= today,
-        attempts: 0, onTarget: 0, sos1: 0, sos2: 0, sos3: 0, pending: 0,
-        cases: 0, withSupport: 0, untouched: 0, pendingApproval: 0, scoreLagDays: null,
-      });
+        attempts: 0, onTarget: 0, sos1: 0, sos2: 0, sos3: 0, provisional: 0, pending: 0,
+        cases: 0, caseStudents: 0, withSupport: 0, untouched: 0, pendingApproval: 0,
+      };
+      byPeriod.set(a.period_id, row);
     }
-    const row = byPeriod.get(a.period_id)!;
+    return row;
+  };
+
+  for (const a of attempts) {
+    const row = rowOf(a);
     if (!scored.has(a.id)) continue;          // chưa chấm gì thì chưa phải một lượt có kết quả
     row.attempts += 1;
 
-    const level = resultOfAttempt(a).sosLevel;
-    if (level === null) row.pending += 1;
-    else if (level === 0) row.onTarget += 1;
-    else if (level === 1) row.sos1 += 1;
-    else if (level === 2) row.sos2 += 1;
-    else if (level === 3) row.sos3 += 1;
+    /*
+     * SÁU CỘT LOẠI TRỪ NHAU. Thứ tự xét quan trọng: kiểm tra ĐỦ ĐIỂM TRƯỚC, vì một lượt
+     * chưa đủ điểm mà đã kết luận được thì là kết luận TẠM THỜI — không được rơi vào cột
+     * "Đạt" hay cột SOS chắc chắn, và cũng không được đếm thêm lần nữa ở cột "chưa đủ điểm".
+     */
+    const { sosLevel, complete } = resultOfAttempt(a);
+    if (!complete) {
+      if (sosLevel === null) row.pending += 1;
+      else row.provisional += 1;
+    } else if (sosLevel === null) row.pending += 1;
+    else if (sosLevel === 0) row.onTarget += 1;
+    else if (sosLevel === 1) row.sos1 += 1;
+    else if (sosLevel === 2) row.sos2 += 1;
+    else row.sos3 += 1;
+  }
 
-    // Case là bản ghi theo dõi xử lý — đếm riêng với mức SOS, vì một lượt có thể đã đạt
-    // trở lại sau khi sửa điểm mà case vẫn còn để tra lịch sử.
-    if (a.case_id && a.sos_level > 0) {
+  /*
+   * CASE — ĐẾM TỪNG CASE, và học viên đếm riêng (mục 2.2).
+   *
+   * Một câu truy vấn riêng thay vì nối vào câu lớn ở trên: nối vào sẽ nhân số dòng lượt lên
+   * theo số case, và mọi cột kết luận ở trên đếm sai theo.
+   *
+   * Một case thuộc tuần của LƯỢT sinh ra nó, nên nó chỉ nằm ở một tuần duy nhất — hàng tổng
+   * cộng các tuần lại vẫn là số case duy nhất.
+   */
+  if (byPeriod.size) {
+    const pids = [...byPeriod.keys()];
+    for (const r of conn
+      .prepare(
+        `SELECT a.planned_period_id AS pid, sc.id AS case_id, sc.student_id, sc.status,
+                (SELECT MAX(COALESCE(i.completed_date, i.started_date))
+                   FROM case_interventions i
+                  WHERE i.case_id = sc.id AND i.status != 'cancelled') AS support_done,
+                (SELECT COUNT(*) FROM case_interventions i2
+                  WHERE i2.case_id = sc.id AND i2.status != 'cancelled') AS iv_count
+           FROM sos_cases sc
+           JOIN assessment_attempts a ON a.id = sc.attempt_id
+          WHERE a.planned_period_id IN (${pids.map(() => '?').join(',')})
+            AND COALESCE(sc.sos_level, 1) > 0`,
+      )
+      .all(...pids) as any[]) {
+      const row = byPeriod.get(r.pid);
+      if (!row) continue;                     // lượt bị bộ lọc Normal/FT loại ra
       row.cases += 1;
-      if (hasSupport(a, today)) row.withSupport += 1;
-      else if (a.case_status !== 'done') row.untouched += 1;
+      if (r.support_done && r.support_done <= today) row.withSupport += 1;
+      else if (r.iv_count === 0 && r.status !== 'done') row.untouched += 1;
+    }
+    /* Số HỌC VIÊN có case — đếm riêng, vì một em ba case vẫn là một em. */
+    for (const r of conn
+      .prepare(
+        `SELECT a.planned_period_id AS pid, COUNT(DISTINCT sc.student_id) AS n
+           FROM sos_cases sc
+           JOIN assessment_attempts a ON a.id = sc.attempt_id
+          WHERE a.planned_period_id IN (${pids.map(() => '?').join(',')})
+            AND COALESCE(sc.sos_level, 1) > 0
+          GROUP BY a.planned_period_id`,
+      )
+      .all(...pids) as any[]) {
+      const row = byPeriod.get(r.pid);
+      if (row) row.caseStudents = r.n;
+    }
+
+    /*
+     * ĐỀ XUẤT CHỜ DUYỆT là TRẠNG THÁI HIỆN TẠI, không phải chuyện đã xảy ra trong tuần đó —
+     * nhãn cột phải nói rõ vậy. Quy về tuần của lượt sinh ra case, cùng quy ước với các cột
+     * khác, và LỌC ĐÚNG PHẠM VI đang xem (mục 4.4) thay vì lấy cả hệ thống như trước.
+     */
+    for (const r of conn
+      .prepare(
+        `SELECT a.planned_period_id AS pid, COUNT(*) AS n
+           FROM case_interventions iv
+           JOIN sos_cases sc ON sc.id = iv.case_id
+           JOIN assessment_attempts a ON a.id = sc.attempt_id
+          WHERE iv.approval_state = 'pending'
+            AND a.planned_period_id IN (${pids.map(() => '?').join(',')})
+          GROUP BY a.planned_period_id`,
+      )
+      .all(...pids) as any[]) {
+      const row = byPeriod.get(r.pid);
+      if (row) row.pendingApproval = r.n;
     }
   }
 
-  for (const [pid, row] of byPeriod) {
-    const l = lag.get(pid);
-    row.scoreLagDays = l && l.n > 0 ? Math.round((l.sum / l.n) * 10) / 10 : null;
-    row.pendingApproval = pending.get(pid) ?? 0;
-  }
-
   const rows = [...byPeriod.values()].sort((a, b) => (a.weekStart < b.weekStart ? 1 : -1));
-  return { rows, scopeEmpty: false, today };
+  return { rows, scopeEmpty: false, today, track };
 }

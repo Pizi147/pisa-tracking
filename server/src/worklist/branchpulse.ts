@@ -230,26 +230,43 @@ function peopleOf(
     if (due && due < today) row.mtOverdue += 1;
   }
 
-  /* Case "đang phụ trách" = case của học viên trong lớp người đó dạy. */
-  const byClass = new Map<number, number[]>();
-  for (const [uid, set] of classesOf) for (const cid of set) {
-    if (!byClass.has(cid)) byClass.set(cid, []);
-    byClass.get(cid)!.push(uid);
-  }
+  /*
+   * CASE "ĐANG PHỤ TRÁCH" = case CÓ TÊN NGƯỜI NÀY LÀ NGƯỜI PHỤ TRÁCH (mục 2.3 · 3.4).
+   *
+   * Trước vòng này, một case được cộng cho MỌI giáo viên dạy lớp đó — một lớp bốn giáo viên
+   * thì một case hoá thành bốn, và không ai trong bốn người thật sự chịu trách nhiệm. Từ khi
+   * mỗi case có một người phụ trách, con số phải đi theo đúng người ấy.
+   *
+   * Case chưa có ai nhận thì KHÔNG cộng vào đầu ai cả — nó đã là một dòng việc riêng ở
+   * Toàn cảnh ("Chưa có người phụ trách"), và gán bừa cho giáo viên dạy lớp là ghi sai
+   * trách nhiệm cho cả trăm bản ghi.
+   */
   for (const c of cases) {
-    for (const uid of byClass.get(c.classId ?? -1) ?? []) {
-      const row = people.get(uid)!;
-      row.cases += 1;
-      if (c.state === 'no_plan') row.noPlan += 1;
-      if (c.dueOverdue) row.overdueUpdate += 1;
-    }
+    const uid = (c as any).ownerUserId ?? null;
+    if (!uid) continue;
+    const row = people.get(uid);
+    if (!row) continue;
+    row.cases += 1;
+    if (c.state === 'no_plan') row.noPlan += 1;
+    if (c.dueOverdue) row.overdueUpdate += 1;
   }
+
+  /*
+   * ĐỀ XUẤT CHỜ DUYỆT tính cho NGƯỜI ĐỀ XUẤT, không cho người nhập hộ (mục 3.4) — và chỉ
+   * trong phạm vi chi nhánh đang xem (mục 4.4), không lấy cả hệ thống như trước.
+   */
   for (const r of conn
     .prepare(
-      `SELECT iv.recorded_by AS uid, COUNT(*) n FROM case_interventions iv
-        WHERE iv.approval_state = 'pending' GROUP BY uid`,
+      `SELECT COALESCE(iv.performer_user_id, iv.recorded_by) AS uid, COUNT(*) n
+         FROM case_interventions iv
+         JOIN sos_cases sc ON sc.id = iv.case_id
+         LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
+         LEFT JOIN enrollments cur ON cur.student_id = sc.student_id AND cur.status = 'active'
+         JOIN classes cl ON cl.id = COALESCE(a.class_id, cur.class_id)
+        WHERE iv.approval_state = 'pending' ${scopeSql}
+        GROUP BY uid`,
     )
-    .all() as any[]) {
+    .all(...scopeArgs) as any[]) {
     if (r.uid && people.has(r.uid)) people.get(r.uid)!.pendingApproval = r.n;
   }
 

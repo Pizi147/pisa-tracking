@@ -12,6 +12,10 @@ export type WorkItem = {
   reason: string; actionLabel: string; overdueLabel: string | null; href: string;
   ownerId: number | null; owner: string | null; mine: boolean;
   due: string | null; statusLabel: string;
+  /** Bài/case liên quan — ô thứ hai của dòng việc: "MT2", "Giữa khoá", "Case". */
+  contextLabel: string | null;
+  /** Số học viên trong một dòng việc gom. NULL khi dòng chỉ nói về một em. */
+  count: number | null;
 };
 export type WorkGroup = { key: string; label: string; hint: string; items: WorkItem[]; overdue: number; today: number };
 
@@ -44,15 +48,18 @@ const PAGE = 12;
  * Danh sách dài thì **Xem thêm**, và LUÔN hiện tổng số — biết còn bao nhiêu là một phần của
  * việc quyết định làm tiếp hay dừng.
  */
-export function WorkList({ data, defaultGroup }: {
+export function WorkList({ data, defaultGroup, onGroup }: {
   data: { summary: { total: number; overdue: number; today: number; approval: number; mine: number };
           items: WorkItem[]; groups: WorkGroup[] };
-  /** Nhóm được chọn sẵn khi người dùng bấm một con số ở dải tóm tắt. */
+  /** Nhóm được chọn sẵn khi người dùng bấm một con số ở bảng tổng hợp. */
   defaultGroup?: string | null;
+  /** Báo ngược lên trang để bộ lọc đang áp dụng nằm trên địa chỉ, gửi link vẫn ra đúng. */
+  onGroup?: (g: string | null) => void;
 }) {
   const navigate = useNavigate();
   const [when, setWhen] = useState<When>('all');
-  const [group, setGroup] = useState<string>(defaultGroup ?? '');
+  const [group, setGroupState] = useState<string>(defaultGroup ?? '');
+  const setGroup = (g: string) => { setGroupState(g); onGroup?.(g || null); };
   /*
    * GIÁO VIÊN MẶC ĐỊNH XEM VIỆC CỦA MÌNH (mục 5.3 điểm 7). Quản lý cũng vậy — mở màn lên
    * thấy việc của người khác trước việc của chính mình là cách nhanh nhất để bỏ sót việc
@@ -73,7 +80,7 @@ export function WorkList({ data, defaultGroup }: {
     if (group && it.group !== group) return false;
     if (when === 'overdue') return it.urgency === 'overdue';
     if (when === 'today') return it.urgency === 'today';
-    if (when === 'approval') return it.group === 'approval';
+    if (when === 'approval') return it.group === 'decide';
     return true;
   }), [data.items, when, group, onlyMine]);
 
@@ -113,7 +120,7 @@ export function WorkList({ data, defaultGroup }: {
           const n = w.key === 'all' ? scoped.length
             : w.key === 'overdue' ? scoped.filter((i) => i.urgency === 'overdue').length
             : w.key === 'today' ? scoped.filter((i) => i.urgency === 'today').length
-            : scoped.filter((i) => i.group === 'approval').length;
+            : scoped.filter((i) => i.group === 'decide').length;
           return (
             <button key={w.key} className={`btn btn-sm ${when === w.key ? 'btn-primary' : ''}`}
               onClick={() => reset(setWhen)(w.key)} disabled={n === 0 && when !== w.key}>
@@ -166,7 +173,16 @@ export function WorkList({ data, defaultGroup }: {
                   <span className="min-w-0">
                     <span className="flex flex-wrap items-center gap-2">
                       <span className="text-sm text-slate-100 font-medium">{it.studentName}</span>
-                      {it.classCode && <Info>{it.classCode}</Info>}
+                      {/*
+                        LỚP chỉ hiện khi ô đầu đang nói về MỘT EM — dòng gom đã lấy chính tên
+                        lớp làm ô đầu, nhắc lại lần nữa là thừa.
+                      */}
+                      {it.classCode && it.studentName !== `Lớp ${it.classCode}` && <Info>{it.classCode}</Info>}
+                      {/* BÀI/CASE LIÊN QUAN — nói rõ MT nào, thay vì bắt mở ra mới biết. */}
+                      {it.contextLabel && <Info>{it.contextLabel}</Info>}
+                      {it.count !== null && it.count > 1 && (
+                        <span className="text-[11px] text-slate-500 tabular-nums">{it.count} học viên</span>
+                      )}
                       {it.level && <Level tone={it.level.tone}>{it.level.text}</Level>}
                       {it.overdueLabel && (
                         <Alert tone={it.urgency === 'overdue' ? 'danger' : 'warn'}>{it.overdueLabel}</Alert>
@@ -183,8 +199,8 @@ export function WorkList({ data, defaultGroup }: {
                         trong quy trình. Tô nó theo độ gấp thì một dòng có hai chỗ báo động
                         về cùng một chuyện.
                       */}
-                      <Status kind={it.group === 'approval' ? 'waiting'
-                        : it.group === 'support' ? 'idle' : 'doing'}>
+                      <Status kind={it.group === 'decide' ? 'waiting'
+                        : it.group === 'no_plan' || it.group === 'no_owner' ? 'idle' : 'doing'}>
                         {it.statusLabel}
                       </Status>
                     </span>

@@ -1503,12 +1503,12 @@ check('Chuyển từ lớp FT sang lớp thường thì mở KHOÁ MỚI, không
 // ==================================================================== 15
 
 console.log('\n15. Tổng hợp theo tuần');
-check('Bốn cột kết quả cộng lại đúng bằng số lượt có kết quả', () => {
+check('Sáu cột kết quả cộng lại đúng bằng số lượt có kết quả', () => {
   const r = weekly.weeklyRollup(P.admin, {});
   assert(r.rows.length > 0, 'Không có tuần nào có dữ liệu');
   for (const row of r.rows) {
-    assert(row.onTarget + row.sos1 + row.sos2 + row.sos3 + row.pending === row.attempts,
-      `Tuần ${row.code}: ${row.onTarget}+${row.sos1}+${row.sos2}+${row.sos3}+${row.pending} khác ${row.attempts} lượt`);
+    const sum = row.onTarget + row.sos1 + row.sos2 + row.sos3 + row.provisional + row.pending;
+    assert(sum === row.attempts, `Tuần ${row.code}: sáu cột cộng lại ${sum}, khác ${row.attempts} lượt`);
   }
 });
 check('Chỉ đếm lượt ĐÃ CHẤM, và chỉ hiện tuần có dữ liệu', () => {
@@ -1540,12 +1540,44 @@ check('Tổng hợp tuần chỉ trong phạm vi được cấp quyền', () => 
   assert(mineTotal < allTotal, 'Quản lý một chi nhánh lại thấy đúng bằng toàn hệ thống');
   assert(mineTotal > 0, 'Quản lý MB không thấy số nào');
 });
-check('Trễ chấm để trống khi chưa đủ căn cứ, không hiện số 0 giả', () => {
-  const r = weekly.weeklyRollup(P.admin, {});
-  for (const row of r.rows) {
-    assert(row.scoreLagDays === null || row.scoreLagDays >= 0, `Trễ chấm âm ở tuần ${row.code}`);
+check('Sáu cột kết luận loại trừ nhau và cộng lại đúng bằng số lượt', () => {
+  /*
+   * Đây là phép kiểm tra chính của mục 4.2: một lượt chưa đủ điểm không được vừa nằm ở cột
+   * "kết luận tạm thời" vừa được đếm lại ở cột "chưa đủ điểm", và không lượt nào chưa đủ
+   * căn cứ mà bị ghi thành "Đạt".
+   */
+  for (const track of [null, 'normal', 'ft'] as const) {
+    const r = weekly.weeklyRollup(P.admin, { track });
+    for (const row of r.rows) {
+      const sum = row.onTarget + row.sos1 + row.sos2 + row.sos3 + row.provisional + row.pending;
+      assert(sum === row.attempts,
+        `Tuần ${row.code} (${track ?? 'tất cả'}): sáu cột cộng lại ${sum} nhưng có ${row.attempts} lượt`);
+    }
   }
-  assert(r.rows.some((x) => x.scoreLagDays === null), 'Tuần chưa có căn cứ phải để trống thay vì 0');
+  /* Và lọc theo loại lớp thì tổng hai phần phải bằng tổng chung — không mất, không trùng. */
+  const all = weekly.weeklyRollup(P.admin, {});
+  const n = (x: any) => x.rows.reduce((z: number, r: any) => z + r.attempts, 0);
+  assert(n(weekly.weeklyRollup(P.admin, { track: 'normal' }))
+       + n(weekly.weeklyRollup(P.admin, { track: 'ft' })) === n(all),
+    'Lượt Normal cộng lượt FT không bằng tổng chung');
+});
+
+check('Cột Case đếm CASE, không đếm lượt có case', () => {
+  const r = weekly.weeklyRollup(P.admin, {});
+  const cases = r.rows.reduce((z, x) => z + x.cases, 0);
+  const students = r.rows.reduce((z, x) => z + x.caseStudents, 0);
+  assert(cases > 0, 'Không tuần nào có case — dữ liệu mẫu không đủ để kiểm tra');
+  /* Một em có thể có nhiều case, nên số case luôn ≥ số học viên có case. */
+  assert(cases >= students, `Đếm ${cases} case nhưng lại ${students} học viên có case`);
+  /* Và con số phải khớp với số case thật sinh từ những lượt trong cửa sổ đang xem. */
+  const pids = r.rows.map((x) => x.periodId);
+  const real = (conn.prepare(
+    `SELECT COUNT(*) n FROM sos_cases sc
+       JOIN assessment_attempts a ON a.id = sc.attempt_id
+      WHERE COALESCE(sc.sos_level, 1) > 0
+        AND a.planned_period_id IN (${pids.map(() => '?').join(',')})`,
+  ).get(...pids) as any).n;
+  assert(cases === real, `Bảng nói ${cases} case, cơ sở dữ liệu có ${real}`);
 });
 
 // ==================================================================== 16
@@ -2119,14 +2151,14 @@ check('Không duyệt thì phương án dừng lại, không âm thầm thành v
 
 console.log('\n18. Việc của chính người đang xem');
 
-check('Quản lý thấy nhóm "Chờ duyệt phương án", giáo viên thì không', () => {
+check('Quản lý thấy nhóm "Chờ tôi xử lý", giáo viên thì không', () => {
   const gv = loadPrincipal(teacherOfSkill('MB-FT 101', 'listening'));
   const mgrGroups = mywork.myWork(P.mbManager).groups.map((g: any) => g.key);
   const gvGroups = mywork.myWork(gv).groups.map((g: any) => g.key);
-  assert(!gvGroups.includes('approval'), 'Giáo viên bị giao việc duyệt mà họ không có quyền làm');
+  assert(!gvGroups.includes('decide'), 'Giáo viên bị giao việc duyệt mà họ không có quyền làm');
   const anyManagerHasIt = ['MB', 'CP', 'BC', 'HD']
     .map((b) => loadPrincipal(userByRole('manager', b)))
-    .some((m) => mywork.myWork(m).groups.some((g: any) => g.key === 'approval'));
+    .some((m) => mywork.myWork(m).groups.some((g: any) => g.key === 'decide'));
   assert(anyManagerHasIt, 'Không Quản lý nào thấy đề xuất đang chờ duyệt');
   assert(Array.isArray(mgrGroups), 'myWork không trả về nhóm');
 });
@@ -2153,7 +2185,7 @@ check('Mỗi việc quá hạn nói rõ quá hạn CÁI GÌ', () => {
 check('Kết quả sau hỗ trợ là việc của NGƯỜI THỰC HIỆN; quá hạn thì Quản lý cũng thấy', () => {
   const gv = loadPrincipal(teacherOfSkill('CP-FT 110', 'speaking'));
   const mgr = loadPrincipal(userByRole('manager', 'CP'));
-  const reviewOf = (p: any) => (mywork.myWork(p).groups.find((g: any) => g.key === 'review')?.items ?? []);
+  const reviewOf = (p: any) => (mywork.myWork(p).groups.find((g: any) => g.key === 'result')?.items ?? []);
 
   // Dữ liệu mẫu: tutor CP-FT 110 hẹn 10/09, nay đã 14/09 — quá hạn, nên cả hai đều thấy.
   const gvItems = reviewOf(gv);
@@ -2173,7 +2205,7 @@ check('Đề xuất đang chờ duyệt thì chưa đòi cập nhật kết qu�
     kind: 'tutor', description: 'Xin tutor, hẹn xem lại ngay', status: 'planned',
     needsApproval: true, followupDue: addDays(demoToday(), -1),
   });
-  const items = (mywork.myWork(P.coreTeacher).groups.find((g: any) => g.key === 'review')?.items ?? []);
+  const items = (mywork.myWork(P.coreTeacher).groups.find((g: any) => g.key === 'result')?.items ?? []);
   assert(!items.some((i: any) => i.caseId === c.id),
     'Phương án chưa được duyệt đã bị đòi cập nhật kết quả');
 });
@@ -2884,14 +2916,14 @@ console.log('\n26. Việc trao đổi tới tay đúng người');
 check('GVCN nhận việc gặp học viên, văn phòng nhận việc gọi phụ huynh', () => {
   /*
    * Hai việc trao đổi nay là phương án, nên chúng tới tay người ta qua nhóm việc
-   * "Phương án tới hạn làm" chứ không qua một bảng Liên hệ riêng. Cách CHIA VIỆC thì giữ
+   * "Làm phương án đã hẹn" chứ không qua một bảng Liên hệ riêng. Cách CHIA VIỆC thì giữ
    * nguyên — đó mới là thứ nghiệp vụ, không phải bảng nào chứa nó.
    */
   const gv = loadPrincipal(teacherOfSkill('MB-FT 102', 'listening'));
   const kinds = (who: any) => {
     const out = new Set<string>();
     for (const g of mywork.myWork(who, {}).groups) {
-      if (g.key !== 'action') continue;
+      if (g.key !== 'do_plan') continue;
       for (const it of g.items) {
         if (/trao đổi với học viên/i.test(it.reason)) out.add('talk_student');
         if (/trao đổi với phụ huynh/i.test(it.reason)) out.add('talk_parent');
@@ -3495,12 +3527,12 @@ check('Mức SOS trên bảng lớp dùng CHUNG phép tính với bảng tổng 
     `Tổng ba mức SOS ${byLevel.join('+')} vượt sĩ số ${roster.length}`);
 });
 
-check('Bảng theo tuần đếm đúng: Đạt + SOS 1..3 + Chưa đủ điểm = số lượt có kết quả', () => {
+check('Bảng theo tuần: Đạt + SOS 1..3 + Tạm thời + Chưa đủ điểm = số lượt có kết quả', () => {
   const r = weekly.weeklyRollup(P.admin, { weeks: 26 });
   assert(r.rows.length > 0, 'Không có tuần nào có dữ liệu');
   for (const w of r.rows) {
-    assert(w.onTarget + w.sos1 + w.sos2 + w.sos3 + w.pending === w.attempts,
-      `Tuần ${w.code}: ${w.onTarget}+${w.sos1}+${w.sos2}+${w.sos3}+${w.pending} ≠ ${w.attempts} lượt`);
+    const sum = w.onTarget + w.sos1 + w.sos2 + w.sos3 + w.provisional + w.pending;
+    assert(sum === w.attempts, `Tuần ${w.code}: sáu cột cộng lại ${sum} ≠ ${w.attempts} lượt`);
     assert(typeof w.pendingApproval === 'number', `Tuần ${w.code} thiếu cột Chờ duyệt`);
   }
 });

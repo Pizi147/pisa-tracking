@@ -6,10 +6,12 @@ import { Card, Empty, ErrorState, SectionNote, Skeleton, Task, Th } from '../../
 type Row = {
   periodId: number; code: string; month: string; weekLabel: string; range: string;
   weekStart: string; weekEnd: string; isCurrent: boolean;
-  attempts: number; onTarget: number; sos1: number; sos2: number; sos3: number; pending: number;
-  cases: number; withSupport: number; untouched: number; pendingApproval: number;
-  scoreLagDays: number | null;
+  attempts: number; onTarget: number; sos1: number; sos2: number; sos3: number;
+  provisional: number; pending: number;
+  cases: number; caseStudents: number; withSupport: number; untouched: number;
+  pendingApproval: number;
 };
+type Track = 'all' | 'normal' | 'ft';
 
 const MONTH_VI: Record<string, string> = {
   JANUARY: 'Tháng 1', FEBRUARY: 'Tháng 2', MARCH: 'Tháng 3', APRIL: 'Tháng 4',
@@ -25,22 +27,49 @@ export const WEEK_RANGES = [
   { weeks: 26, label: '6 tháng' },
 ] as const;
 
-const COLS: { key: keyof Row; label: string; hint: string; tone?: 'ok' | 'info' | 'warn' | 'danger' }[] = [
-  { key: 'attempts', label: 'Lượt MT', hint: 'Lượt đã chấm ít nhất một kỹ năng. Chưa chấm gì thì chưa đếm.' },
-  { key: 'onTarget', label: 'Đạt', hint: 'Lượt không có kỹ năng nào dưới kỳ vọng.', tone: 'ok' },
-  { key: 'sos1', label: 'SOS 1', hint: 'Lượt có đúng một kỹ năng dưới kỳ vọng.', tone: 'info' },
-  { key: 'sos2', label: 'SOS 2', hint: 'Lượt có hai kỹ năng dưới kỳ vọng.', tone: 'warn' },
-  { key: 'sos3', label: 'SOS 3', hint: 'Lượt có từ ba kỹ năng dưới kỳ vọng.', tone: 'danger' },
-  {
-    key: 'pending', label: 'Chưa đủ điểm',
-    hint: 'Đã chấm một phần, các môn đã chấm đều đạt nhưng còn môn chưa nhập — chưa kết luận được. '
-      + 'Không dồn vào cột Đạt: môn còn thiếu có thể chính là môn em trượt.',
-  },
-  { key: 'cases', label: 'Case', hint: 'Case mở từ các lượt MT của tuần đó.' },
-  { key: 'withSupport', label: 'Đang xử lý', hint: 'Case đã có ít nhất một việc hỗ trợ thực sự diễn ra.' },
-  { key: 'untouched', label: 'Thiếu phương án', hint: 'Case chưa ai ghi sẽ làm gì.', tone: 'danger' },
-  { key: 'pendingApproval', label: 'Chờ duyệt', hint: 'Đề xuất của giáo viên đang chờ Quản lý trả lời.', tone: 'warn' },
-];
+/**
+ * BỘ CỘT ĐỔI THEO LOẠI LỚP (mục 4.2).
+ *
+ * Lớp Normal làm BÀI KIỂM TRA giữa khoá / cuối khoá; lớp Fast Track làm MOCK TEST. Đó là hai
+ * đơn vị đếm khác nhau, nên cột đầu phải gọi đúng tên loại lớp đang xem — "30 lượt" mà không
+ * biết là 30 bài kiểm tra hay 30 MT thì không dùng vào việc gì được.
+ *
+ * "Trễ chấm TB" đã BỎ khỏi bộ cột: hệ thống chỉ biết TUẦN kế hoạch, không biết ngày làm bài,
+ * nên một cột nói "số ngày từ ngày làm bài" là nói sai cách nó được tính.
+ */
+function colsFor(track: Track): { key: keyof Row; label: string; hint: string; tone?: 'ok' | 'info' | 'warn' | 'danger' }[] {
+  const unit = track === 'normal' ? 'bài kiểm tra' : track === 'ft' ? 'lượt MT' : 'lượt';
+  return [
+    {
+      key: 'attempts',
+      label: track === 'normal' ? 'Lượt Test' : track === 'ft' ? 'Lượt MT' : 'Lượt Test/MT',
+      hint: `Số ${unit} đã chấm ít nhất một kỹ năng. Chưa chấm gì thì chưa đếm. Sáu cột bên phải chia hết con số này.`,
+    },
+    { key: 'onTarget', label: 'Đạt', tone: 'ok',
+      hint: 'ĐỦ ĐIỂM mọi kỹ năng và không kỹ năng nào dưới kỳ vọng — kết luận chắc chắn.' },
+    { key: 'sos1', label: 'SOS 1', tone: 'info',
+      hint: 'Đủ điểm, đúng một kỹ năng dưới kỳ vọng.' },
+    { key: 'sos2', label: 'SOS 2', tone: 'warn',
+      hint: 'Đủ điểm, hai kỹ năng dưới kỳ vọng.' },
+    { key: 'sos3', label: 'SOS 3', tone: 'danger',
+      hint: 'Đủ điểm, từ ba kỹ năng dưới kỳ vọng.' },
+    { key: 'provisional', label: 'Tạm thời', tone: 'warn',
+      hint: 'CHƯA đủ điểm nhưng phần đã chấm đã kết luận được — mức còn có thể tăng khi nhập nốt. '
+        + 'Không gộp vào cột SOS chắc chắn, và không đếm lại ở cột "Chưa đủ điểm".' },
+    { key: 'pending', label: 'Chưa đủ điểm',
+      hint: 'Chưa đủ điểm và phần đã chấm chưa kết luận được gì. '
+        + 'Không dồn vào cột Đạt: môn còn thiếu có thể chính là môn em trượt.' },
+    { key: 'caseStudents', label: 'HV có case',
+      hint: 'Đếm HỌC VIÊN: một em ba case vẫn chỉ tính một lần.' },
+    { key: 'cases', label: 'Case',
+      hint: 'Đếm từng CASE — đơn vị khác cột bên trái. Một case thuộc tuần của bài sinh ra nó, '
+        + 'nên cộng các tuần lại vẫn là số case duy nhất.' },
+    { key: 'withSupport', label: 'Đang xử lý',
+      hint: 'Case đã có ít nhất một việc hỗ trợ thực sự diễn ra. Là TÌNH TRẠNG HIỆN TẠI.' },
+    { key: 'untouched', label: 'Thiếu phương án', tone: 'danger',
+      hint: 'Case chưa ai ghi sẽ làm gì. Là TÌNH TRẠNG HIỆN TẠI.' },
+  ];
+}
 
 /**
  * BẢNG TỔNG HỢP THEO TUẦN — chế độ xem thứ hai của màn Thực trạng (mục 10.5 và 10.7).
@@ -61,12 +90,15 @@ const COLS: { key: keyof Row; label: string; hint: string; tone?: 'ok' | 'info' 
  */
 export function WeeklyBoard({ branchId }: { branchId: number | null }) {
   const [weeks, setWeeks] = useState(12);
+  const [track, setTrack] = useState<Track>('all');
   const qs = new URLSearchParams();
   if (branchId) qs.set('branchId', String(branchId));
   if (weeks !== 12) qs.set('weeks', String(weeks));
+  if (track !== 'all') qs.set('track', track);
   const { data, loading, error, reload } = useApi<{ rows: Row[]; scopeEmpty: boolean; today: string }>(
-    `/weekly-rollup${qs.toString() ? `?${qs}` : ''}`, [branchId, weeks],
+    `/weekly-rollup${qs.toString() ? `?${qs}` : ''}`, [branchId, weeks, track],
   );
+  const COLS = colsFor(track);
   /* Tháng gần nhất mở sẵn, các tháng cũ hơn thu gọn — người ta đọc bảng này từ hiện tại lùi về. */
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
 
@@ -98,7 +130,17 @@ export function WeeklyBoard({ branchId }: { branchId: number | null }) {
       title="Tổng hợp theo tuần"
       bodyClass="p-0"
       action={
-        <div className="flex flex-wrap gap-1">
+        <div className="flex flex-wrap items-center gap-1">
+          {/*
+            LOẠI LỚP ĐỨNG TRƯỚC KHOẢNG THỜI GIAN: nó quyết định cột đầu đang đếm cái gì, nên
+            phải chọn xong nó rồi mới đọc được các con số.
+          */}
+          {([['all', 'Cả hai'], ['normal', 'Normal'], ['ft', 'Fast Track']] as const).map(([k, label]) => (
+            <button key={k} type="button"
+              className={`btn btn-sm ${track === k ? 'btn-primary' : ''}`}
+              onClick={() => setTrack(k)}>{label}</button>
+          ))}
+          <span className="w-px h-5 mx-1" style={{ background: 'var(--line)' }} />
           {WEEK_RANGES.map((r) => (
             <button key={r.weeks} type="button"
               className={`btn btn-sm ${weeks === r.weeks ? 'btn-primary' : ''}`}
@@ -127,7 +169,6 @@ export function WeeklyBoard({ branchId }: { branchId: number | null }) {
                 <tr>
                   <Th className="sticky-col" hint="Tuần thứ mấy của tháng, và khoảng ngày của tuần đó.">Tuần</Th>
                   {COLS.map((c) => <Th key={c.key} align="right" hint={c.hint}>{c.label}</Th>)}
-                  <Th align="right" hint="Số ngày trung bình từ ngày làm bài tới ngày nhập điểm.">Trễ chấm TB</Th>
                 </tr>
               </thead>
               <tbody>
@@ -152,7 +193,6 @@ export function WeeklyBoard({ branchId }: { branchId: number | null }) {
                             {sumOf(g.rows, c.key) || <span className="text-slate-600">—</span>}
                           </td>
                         ))}
-                        <td className="td" />
                       </tr>
                       {open && g.rows.map((r) => (
                         <tr key={r.periodId} className={`row-hover ${r.isCurrent ? 'bg-white/[0.03]' : ''}`}>
@@ -167,9 +207,6 @@ export function WeeklyBoard({ branchId }: { branchId: number | null }) {
                               <Num n={r[c.key] as number} tone={c.tone} to={linkFor(c.key)} />
                             </td>
                           ))}
-                          <td className="td text-right tabular-nums text-slate-300">
-                            {r.scoreLagDays === null ? '—' : r.scoreLagDays}
-                          </td>
                         </tr>
                       ))}
                     </Fragment>
@@ -184,7 +221,6 @@ export function WeeklyBoard({ branchId }: { branchId: number | null }) {
                       {sumOf(data.rows, c.key)}
                     </td>
                   ))}
-                  <td className="td" />
                 </tr>
               </tbody>
             </table>
@@ -192,11 +228,20 @@ export function WeeklyBoard({ branchId }: { branchId: number | null }) {
 
           <div className="p-3">
             <SectionNote>
-              <strong>Lượt MT</strong> là lượt đã chấm ít nhất một kỹ năng — chưa chấm gì thì chưa đếm.
-              Bốn cột <strong>Đạt · SOS 1 · SOS 2 · SOS 3</strong> cộng lại đúng bằng số lượt đó.
+              Cột đầu đếm <strong>{track === 'normal' ? 'bài kiểm tra của lớp Normal'
+                : track === 'ft' ? 'lượt MT của lớp Fast Track' : 'cả bài kiểm tra Normal lẫn lượt MT'}</strong>{' '}
+              đã chấm ít nhất một kỹ năng. Sáu cột <strong>Đạt · SOS 1 · SOS 2 · SOS 3 · Tạm thời ·
+              Chưa đủ điểm</strong> loại trừ nhau và cộng lại đúng bằng con số đó — một bài chưa đủ
+              điểm chỉ nằm ở một trong hai cột cuối, không đếm hai lần.
               <br />
-              <strong>Trễ chấm TB</strong> là số ngày trung bình từ ngày làm bài đến ngày nhập điểm.
-              Tuần chưa có ô điểm nào ghi đủ hai mốc thì để trống, không hiện số 0.
+              <strong>Case</strong> đếm từng case, <strong>HV có case</strong> đếm học viên — một em
+              ba case là <em>một</em> học viên và <em>ba</em> case. Case thuộc về tuần của bài sinh ra
+              nó, nên cộng các tuần lại vẫn là số case duy nhất.
+              <br />
+              Hai cột cuối (<strong>Đang xử lý · Thiếu phương án</strong>) nói về những case sinh ra
+              trong tuần đó, nhưng là <strong>tình trạng xử lý HIỆN TẠI</strong> của chúng — không phải
+              ảnh chụp trạng thái vào cuối tuần ấy. Đề xuất đang chờ duyệt là chuyện của hôm nay chứ
+              không thuộc tuần nào, nên nó nằm ở <strong>Theo chi nhánh</strong>, không nằm ở bảng này.
             </SectionNote>
           </div>
         </>

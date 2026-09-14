@@ -41,22 +41,28 @@ export type SummaryColumn = {
 /** Sáu cột môn của bảng tổng hợp: năm ô của Fast Track cộng thêm W của Normal. */
 const SUMMARY_SKILLS = ['listening', 'reading', 'writing1', 'writing2', 'writing', 'speaking'] as const;
 
+/**
+ * BỐN BỘ CỘT (mục 4.3).
+ *
+ * Bộ MẶC ĐỊNH nay đúng bằng bộ cột owner chốt cho chế độ "Vấn đề":
+ *
+ *   Chi nhánh/Lớp · HV có case · Case mở · Thiếu phương án · Cần cập nhật · Quá hạn
+ *
+ * Bộ "Cần chú ý" cũ đã BỎ: nó trộn ba loại số khác đơn vị (học viên, case, phương án) vào
+ * một bảng không có tên chung, và không ai đọc ra được nó đang nói về cái gì.
+ */
 export const SUMMARY_PRESETS = [
   {
-    key: 'default', label: 'Mặc định',
-    columns: ['students', 'openCases', 'sos3', 'sos2', 'sos1', 'behaviour'],
+    key: 'default', label: 'Vấn đề',
+    columns: ['caseStudents', 'openCases', 'noPlan', 'overdueReview', 'overdueContact'],
   },
   {
-    key: 'sos', label: 'SOS',
-    columns: ['students', 'sos3', 'sos2', 'sos1', 'openCases'],
+    key: 'sos', label: 'Mức SOS',
+    columns: ['students', 'sos3', 'sos2', 'sos1', 'caseStudents', 'openCases'],
   },
   {
-    key: 'skills', label: 'Cụ thể',
+    key: 'skills', label: 'Theo kỹ năng',
     columns: ['openCases', ...SUMMARY_SKILLS.map((s) => `skill_${s}`), 'behaviour'],
-  },
-  {
-    key: 'attention', label: 'Cần chú ý',
-    columns: ['students', 'sos3', 'working', 'noPlan', 'overdueReview', 'pendingApproval', 'overdueContact'],
   },
   { key: 'all', label: 'Tất cả', columns: [] as string[] },
 ] as const;
@@ -76,7 +82,10 @@ export const SUMMARY_PRESETS = [
 export function summaryColumns(): SummaryColumn[] {
   return [
     { key: 'students', label: 'Sĩ số', group: 'total', hint: 'Học viên đang học, không tính em đã kết thúc' },
-    { key: 'openCases', label: 'Case', group: 'total', hint: 'Tổng case đang mở / trong đó chưa có phương án' },
+    { key: 'caseStudents', label: 'HV có case', group: 'total',
+      hint: 'Đếm HỌC VIÊN đang có ít nhất một case mở — một em ba case vẫn chỉ tính một lần' },
+    { key: 'openCases', label: 'Case mở', group: 'total',
+      hint: 'Đếm từng CASE đang mở — đơn vị khác cột bên trái. Số sau gạch chéo là phần chưa có phương án' },
     { key: 'sos3', label: SOS_LABEL[3], group: 'sos', hint: 'Học viên đang ở mức SOS 3 — đếm người, mỗi em một cột' },
     { key: 'sos2', label: SOS_LABEL[2], group: 'sos', hint: 'Học viên đang ở mức SOS 2' },
     { key: 'sos1', label: SOS_LABEL[1], group: 'sos' , hint: 'Học viên đang ở mức SOS 1' },
@@ -96,13 +105,13 @@ export function summaryColumns(): SummaryColumn[] {
     },
     { key: 'working', label: 'Đang xử lý', group: 'total', hint: 'Case đã có phương án và đang theo dõi' },
     { key: 'noPlan', label: 'Thiếu phương án', group: 'total', hint: 'Case chưa ai ghi sẽ làm gì cho em' },
-    { key: 'overdueReview', label: 'Quá hạn cập nhật', group: 'total',
+    { key: 'overdueReview', label: 'Cần cập nhật', group: 'total',
       hint: 'Đã qua hẹn xem lại mà chưa cập nhật tình hình hoặc kết quả' },
     { key: 'pendingApproval', label: 'Chờ duyệt', group: 'total',
       hint: 'Phương án giáo viên đề xuất, đang chờ Quản lý trả lời' },
     { key: 'reported', label: 'GV báo', group: 'total', hint: 'Case giáo viên tự ghi nhận, không sinh từ điểm' },
     {
-      key: 'overdueContact', label: 'Quá hạn làm', group: 'total',
+      key: 'overdueContact', label: 'Quá hạn', group: 'total',
       hint: 'Học viên có phương án đã lên kế hoạch mà quá hạn làm (3/5/7 ngày theo mức SOS)',
     },
   ];
@@ -289,6 +298,14 @@ export function branchSummary(p: Principal, f: { branchId?: number | null } = {}
       openCases: {
         value: open.length,
         of: open.filter((c) => c.state === 'no_plan').length,
+        href: q(''),
+      },
+      /*
+       * HỌC VIÊN CÓ CASE — đơn vị khác hẳn cột "Case mở" ngay bên cạnh, và cố ý khác (mục 2.2).
+       * Một em ba case là MỘT học viên và BA case; hai con số này không bao giờ được trộn.
+       */
+      caseStudents: {
+        value: new Set(open.map((c) => c.studentId).filter((x) => x !== null)).size,
         href: q(''),
       },
       working: { value: open.filter((c) => c.state === 'working').length, href: q('&tinh-hinh=working') },

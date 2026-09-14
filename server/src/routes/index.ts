@@ -32,6 +32,8 @@ import { signalsFor } from '../worklist/signals.ts';
 import * as accountSvc from '../platform/accounts.ts';
 import * as sysconfigSvc from '../platform/sysconfig.ts';
 import * as mgmtSvc from '../worklist/mgmttasks.ts';
+import * as highlightSvc from '../worklist/highlights.ts';
+import * as outcomeSvc from '../worklist/outcomes.ts';
 import { weeklyRollup } from '../worklist/weekly.ts';
 import { myWork } from '../worklist/mywork.ts';
 import * as caseSvc from '../cases/cases.ts';
@@ -311,6 +313,8 @@ api.post('/attempts/bulk-plan', requireAuth, wrap((req) => {
 api.get('/weekly-rollup', requireAuth, wrap((req) => weeklyRollup(principalOf(req), {
   branchId: toInt(req.query?.branchId),
   weeks: toInt(req.query?.weeks) ?? undefined,
+  /* Normal và FT đếm hai thứ khác nhau (mục 4.2) — bộ lọc này quyết định nhãn cột luôn. */
+  track: req.query?.track === 'normal' ? 'normal' : req.query?.track === 'ft' ? 'ft' : null,
 })));
 
 /** Việc sinh ra từ dữ liệu — tự hết khi nguồn được xử lý, không có nút đóng giả. */
@@ -606,10 +610,32 @@ api.get('/summary', requireAuth, wrap((req) => {
   return summarySvc.branchSummary(principalOf(req), { branchId: qInt(req, 'branchId') });
 }));
 
+/**
+ * Phương án & kết quả (mục 4.3): những gì đã làm cho học viên có ăn thua không.
+ * Một phương án là MỘT phương án dù cập nhật ba lần; báo cáo dùng kết quả gần nhất.
+ */
+api.get('/outcomes', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return outcomeSvc.outcomeReport(principalOf(req), {
+    branchId: qInt(req, 'branchId'),
+    track: req.query?.track === 'normal' ? 'normal' : req.query?.track === 'ft' ? 'ft' : null,
+    topic: req.query?.topic ? String(req.query.topic) : null,
+  });
+}));
+
 /** Khối riêng của Quản lý: chi nhánh đang tắc ở đâu (theo lớp), và ai đang tắc (theo người). */
 api.get('/branch-pulse', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   return pulseSvc.branchPulse(principalOf(req), { branchId: qInt(req, 'branchId') });
+}));
+
+/**
+ * Sự kiện nổi bật: tuần này, tuần tới, tuần nữa có gì đáng để ý (mục 3.5).
+ * Đây là SỰ KIỆN sắp đến, không phải việc đang nợ — nên tách hẳn khỏi `/my-work`.
+ */
+api.get('/highlights', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return highlightSvc.highlights(principalOf(req), { branchId: qInt(req, 'branchId') });
 }));
 
 /** Lựa chọn hiển thị riêng của từng người — bộ cột đang xem, chi nhánh xem lần cuối… */
