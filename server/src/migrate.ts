@@ -1587,6 +1587,8 @@ function migrateCaseCycles(conn: any, applied: string[]) {
   let added = 0;
   /* Tên case người dùng tự đặt, và mối nối sang case trước khi vấn đề tái phát. */
   if (addCol('sos_cases', 'title', 'TEXT')) added += 1;
+  /* Người phụ trách chính của case — tách khỏi người ghi nhận và người thực hiện. */
+  if (addCol('sos_cases', 'owner_user_id', 'INTEGER REFERENCES users(id)')) added += 1;
   if (addCol('sos_cases', 'previous_case_id', 'INTEGER REFERENCES sos_cases(id)')) added += 1;
 
   /* Chu kỳ xử lý nằm TRONG phương án — không có màn quản lý chu kỳ riêng. */
@@ -1640,5 +1642,28 @@ function migrateCaseCycles(conn: any, applied: string[]) {
   if (has('case_followups') && cols('case_followups').includes('cycle_no')) {
     const n = conn.prepare('UPDATE case_followups SET cycle_no = 1 WHERE cycle_no IS NULL').run().changes;
     if (n) applied.push(`Gán chu kỳ 1 cho ${n} lần cập nhật kết quả cũ`);
+  }
+
+  /*
+   * NGƯỜI PHỤ TRÁCH của case cũ: lấy người THỰC HIỆN phương án đầu tiên, vì đó là người
+   * thật sự đang làm. KHÔNG lấy người ghi nhận — rất nhiều case do Quản lý hoặc người nhập
+   * hộ mở, và gán họ làm người phụ trách là ghi sai trách nhiệm cho cả trăm bản ghi.
+   *
+   * Không suy được thì để TRỐNG, và màn hình sẽ nói "chưa có người phụ trách" kèm đường
+   * phân công — thà nói thật là chưa ai nhận còn hơn gán bừa một cái tên.
+   */
+  if (has('sos_cases') && cols('sos_cases').includes('owner_user_id')) {
+    const n = conn
+      .prepare(
+        `UPDATE sos_cases SET owner_user_id = (
+            SELECT iv.performer_user_id FROM case_interventions iv
+             WHERE iv.case_id = sos_cases.id AND iv.performer_user_id IS NOT NULL
+             ORDER BY iv.id LIMIT 1)
+          WHERE owner_user_id IS NULL
+            AND EXISTS (SELECT 1 FROM case_interventions iv
+                         WHERE iv.case_id = sos_cases.id AND iv.performer_user_id IS NOT NULL)`,
+      )
+      .run().changes;
+    if (n) applied.push(`Gán người phụ trách cho ${n} case cũ theo người thực hiện phương án đầu tiên`);
   }
 }

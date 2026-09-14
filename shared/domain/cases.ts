@@ -78,6 +78,20 @@ export const CASE_CATEGORY_LABEL: Record<CaseCategory, string> = {
   speaking: 'Speaking',
   behaviour: 'Ý thức/Khác',
 };
+/**
+ * HẠNG MỤC CASE → KỸ NĂNG ĐƯỢC PHÂN CÔNG.
+ *
+ * Dùng để gợi ý người phụ trách case: case Reading thì gợi ý giáo viên đang dạy Reading của
+ * lớp đó. Hạng mục Ý thức/Khác không gắn với kỹ năng nào nên không có mặt ở đây — nó về
+ * giáo viên chủ nhiệm.
+ */
+export const CASE_CATEGORY_SKILL: Record<string, string> = {
+  listening: 'listening', reading: 'reading', speaking: 'speaking',
+  writing1: 'writing1', writing2: 'writing2',
+  /* Lớp Normal chỉ có MỘT môn Writing, và phân công cũng chỉ có một ô `writing`. */
+  writing: 'writing',
+};
+
 export const CASE_CATEGORY_SHORT: Record<CaseCategory, string> = {
   listening: 'L', reading: 'R', writing1: 'W1', writing2: 'W2', writing: 'W', speaking: 'S',
   behaviour: 'Ý thức',

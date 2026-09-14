@@ -583,6 +583,8 @@ api.get('/cases', requireAuth, wrap((req) => {
     status: qStr(req, 'status'), origin: qStr(req, 'origin'),
     group: qStr(req, 'group'), skill: qStr(req, 'skill'), queue: qStr(req, 'queue'),
     classKind: qStr(req, 'classKind'),
+    ownerUserId: toInt(req.query?.ownerUserId),
+    noOwner: qStr(req, 'noOwner') === '1',
     /* Có `cycleId` = chỉ lộ trình đó; không có = TOÀN BỘ hành trình, kể cả lớp cũ. */
     cycleId: toInt(req.query?.cycleId),
   });
@@ -693,6 +695,12 @@ api.post('/cases/:id/followups', requireAuth, wrap((req) => {
 api.patch('/cases/:id/disposition', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return caseSvc.setDisposition(principalOf(req), pInt(req, 'id'), req.body ?? {});
+}));
+
+api.put('/cases/:id/owner', requireAuth, wrap((req) => {
+  const raw = (req.body ?? {}).ownerUserId;
+  return caseSvc.setCaseOwner(principalOf(req), pInt(req, 'id'),
+    raw === null || raw === undefined || raw === '' ? null : Number(raw));
 }));
 
 /** Bộ phân loại vấn đề để dựng ô chọn. Dữ liệu, không viết cứng trong giao diện. */

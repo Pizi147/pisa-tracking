@@ -1,3 +1,4 @@
+import { suggestCaseOwner } from './owner.ts';
 import { db, tx } from '../db.ts';
 import {
   CONTACT_KINDS, CONTACT_KIND_LABEL, ENTRY_SKILL_LABEL, INTERVENTION_KIND_LABEL, PERMISSIONS,
@@ -146,11 +147,14 @@ export function upsertCategoryCase(
       .prepare(
         `INSERT INTO sos_cases (attempt_id, student_id, cycle_id, track, topic, category,
                                 origin_kind, detected_at, sos_level, status, dedup_key,
-                                follow_until, created_at)
-         VALUES (?,?,?, 'academic', ?,?, 'mock', ?,?, 'open', ?,?,?)`,
+                                follow_until, owner_user_id, created_at)
+         VALUES (?,?,?, 'academic', ?,?, 'mock', ?,?, 'open', ?,?,?,?)`,
       )
       .run(attempt.id, attempt.student_id, attempt.cycle_id, topic, category,
-           detectedAt, sosLevel, key, followUntil, nowIso());
+           detectedAt, sosLevel, key, followUntil,
+           /* Gợi ý người phụ trách theo phân công; không tìm được thì để trống, không gán bừa. */
+           suggestCaseOwner({ classId: attempt.class_id ?? null, track: 'academic', category }),
+           nowIso());
     return { id: Number(info.lastInsertRowid), kind: 'opened' };
   }
 
@@ -174,11 +178,15 @@ export function upsertCategoryCase(
       .prepare(
         `INSERT INTO sos_cases (attempt_id, student_id, cycle_id, track, topic, category,
                                 origin_kind, detected_at, sos_level, status, dedup_key,
-                                follow_until, previous_case_id, created_at)
-         VALUES (?,?,?, 'academic', ?,?, 'mock', ?,?, 'open', ?,?,?,?)`,
+                                follow_until, previous_case_id, owner_user_id, created_at)
+         VALUES (?,?,?, 'academic', ?,?, 'mock', ?,?, 'open', ?,?,?,?,?)`,
       )
       .run(attempt.id, attempt.student_id, attempt.cycle_id, topic, category,
-           detectedAt, sosLevel, key, followUntil, existing.id, nowIso());
+           detectedAt, sosLevel, key, followUntil, existing.id,
+           /* Case tái phát thừa kế người phụ trách của case cũ nếu người đó còn dạy lớp. */
+           existing.owner_user_id
+             ?? suggestCaseOwner({ classId: attempt.class_id ?? null, track: 'academic', category }),
+           nowIso());
     const id = Number(info.lastInsertRowid);
     /* Ghi vào CASE CŨ một mốc nói rõ chuyện chưa dừng ở đó — để đọc hồ sơ là ra một mạch. */
     addMilestone({

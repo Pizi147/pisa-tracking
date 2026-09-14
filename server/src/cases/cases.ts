@@ -17,6 +17,7 @@ import { addJourney, notify, writeAudit } from '../platform/audit.ts';
 import { currentCycle } from '../fasttrack/cycles.ts';
 import { expectationFor } from '../fasttrack/scoring.ts';
 import { isRatioCycle } from '../normal/regular.ts';
+import { suggestCaseOwner } from './owner.ts';
 
 /**
  * CASE HỌC VỤ — một vòng đời cho cả hai nguồn.
@@ -257,6 +258,8 @@ export function reportIssue(p: Principal, input: {
   mergeIntoExisting?: boolean;
   /** Người dùng đã thấy cảnh báo và chọn "Đây là vấn đề khác, mở case riêng". */
   parallel?: boolean;
+  /** Người phụ trách chính. Bỏ trống thì hệ thống gợi ý theo phân công của lớp. */
+  ownerUserId?: number | null;
 }) {
   const conn = db();
   const student = conn.prepare('SELECT * FROM students WHERE id = ?').get(input.studentId) as any;
@@ -386,13 +389,20 @@ export function reportIssue(p: Principal, input: {
       .prepare(
         `INSERT INTO sos_cases (attempt_id, student_id, cycle_id, track, topic, category, origin_kind,
                                 detected_at, reported_by, title, summary, urgency, sos_level, status,
-                                note, idempotency_key, dedup_key, parallel, created_at)
-         VALUES (NULL, ?,?,?,?,?, 'teacher_report', ?,?,?,?,?, NULL, 'open', ?,?,?,?,?)`,
+                                note, idempotency_key, dedup_key, parallel, owner_user_id, created_at)
+         VALUES (NULL, ?,?,?,?,?, 'teacher_report', ?,?,?,?,?, NULL, 'open', ?,?,?,?,?,?)`,
       )
       .run(input.studentId, cycle?.id ?? null, track, topic, category,
            detectedAt, p.userId, (input.title ?? '').trim() || null, summary, urgency,
            (input.note ?? '').trim() || null, key,
-           input.parallel ? null : dedupKey, input.parallel ? 1 : 0, nowIso());
+           input.parallel ? null : dedupKey, input.parallel ? 1 : 0,
+           /*
+            * NGƯỜI BÁO KHÔNG MẶC NHIÊN LÀ NGƯỜI PHỤ TRÁCH (mục 2.3). Quản lý hoặc người nhập
+            * hộ mở case rất thường xuyên; gán họ làm người phụ trách là ghi sai trách nhiệm.
+            * Ai báo thì lưu ở `reported_by`, còn đây là gợi ý theo phân công.
+            */
+           input.ownerUserId ?? suggestCaseOwner({ classId, track, category }),
+           nowIso());
     const caseId = Number(info.lastInsertRowid);
 
     /*
@@ -1133,6 +1143,16 @@ export function caseDetail(p: Principal, caseId: number) {
     categoryLabel: caseCategoryLabel(c.category ?? categoryOf(c.track ?? 'academic', c.topic)),
     /** Tên case tự sinh theo mốc mới nhất, ví dụ "MT2 - Listening dưới kỳ vọng". */
     title: caseTitleOf(c),
+    /*
+     * BA VAI KHÁC NHAU, KHÔNG SUY RA TỪ NHAU (mục 2.3):
+     *   `owner`    — người phụ trách chính, chịu trách nhiệm điều phối case
+     *   `reportedBy` — người ghi nhận vấn đề, có thể là người nhập hộ
+     *   người thực hiện từng phương án — nằm trong chính phương án đó
+     */
+    ownerUserId: c.owner_user_id ?? null,
+    owner: c.owner_user_id
+      ? ((conn.prepare('SELECT full_name FROM users WHERE id = ?').get(c.owner_user_id) as any)?.full_name ?? null)
+      : null,
     /** Case mở song song có chủ ý với một case khác cùng hạng mục. */
     parallel: !!c.parallel,
     /*
@@ -1215,6 +1235,10 @@ export type CaseFilters = {
   queue?: string | null;
   /** Loại lớp: 'normal' hay 'ft'. Thay cho bộ lọc "Đầu mục" đã bỏ ở vòng 4 (mục 10.1). */
   classKind?: string | null;
+  /** Người phụ trách chính — để bảng giáo viên đếm đúng trách nhiệm của từng người. */
+  ownerUserId?: number | null;
+  /** Chỉ những case CHƯA CÓ ai phụ trách — một nhóm việc riêng, không phải một trạng thái. */
+  noOwner?: boolean;
   /**
    * PHẠM VI LỘ TRÌNH (mục 7.2). Chỉ dùng ở hồ sơ một học viên.
    *
@@ -1259,6 +1283,8 @@ export type MappedCase = {
   classKind: 'ft' | 'normal';
   status: string; disposition: string | null;
   detectedAt: string; reporterName: string | null;
+  /** NGƯỜI PHỤ TRÁCH CHÍNH — NULL nghĩa là chưa ai nhận, và đó là một việc phải xử lý. */
+  ownerUserId: number | null; ownerName: string | null;
   interventionCount: number; nextDue: string | null; dueOverdue: boolean;
   /** Case mở SONG SONG có chủ ý với một case khác cùng hạng mục. */
   parallel: boolean;
@@ -1266,37 +1292,6 @@ export type MappedCase = {
   previousCaseId: number | null;
   state: CaseState;
 };
-
-/**
- * MỨC SOS HIỆN TẠI CỦA TỪNG HỌC VIÊN — một định nghĩa, dùng chung cho mọi bảng.
- *
- * Lỗi owner báo 12/09: sĩ số 8 mà ba cột SOS cộng lại thành 11. Nguyên nhân là đếm CỘNG DỒN:
- * một em SOS 1 ở MT1 rồi SOS 3 ở MT2 có mặt ở cả hai cột. SOS là TÌNH TRẠNG HIỆN TẠI của một
- * em — mức ở lượt MT mới nhất em đã làm — nên mỗi em chỉ được vào đúng một cột.
- *
- * Hàm này cố tình là hàm THUẦN trên một danh sách case đã có sẵn, để bảng tổng hợp, bảng lớp
- * và khối Việc cần lưu ý dùng CHUNG một phép tính. Ba màn tự tính lấy là ba màn sớm muộn nói
- * ba con số khác nhau về cùng một em — đúng thứ owner nêu đích danh ở mục 8 tài liệu chốt.
- */
-export function currentSosByStudent(
-  rows: { studentId: number | null; sosLevel: number | null; attemptNo: number | null }[],
-): Map<number, number> {
-  const level = new Map<number, number>();
-  const latest = new Map<number, number>();
-  for (const c of rows) {
-    if (c.studentId == null || !c.sosLevel) continue;
-    const at = c.attemptNo ?? 0;
-    const seen = latest.get(c.studentId);
-    if (seen === undefined || at > seen) {
-      latest.set(c.studentId, at);
-      level.set(c.studentId, c.sosLevel);
-    } else if (at === seen) {
-      // Cùng một lượt thì mọi case mang cùng mức; lấy mức cao nhất cho chắc.
-      level.set(c.studentId, Math.max(level.get(c.studentId) ?? 0, c.sosLevel));
-    }
-  }
-  return level;
-}
 
 export function listCases(p: Principal, f: CaseFilters = {}) {
   const scope = scopeFor(p, PERMISSIONS.ATTEMPT_VIEW);
@@ -1322,6 +1317,9 @@ export function listCases(p: Principal, f: CaseFilters = {}) {
   if (f.status) { where.push('sc.status = ?'); params.push(f.status); }
   if (f.cycleId) { where.push('COALESCE(sc.cycle_id, a.cycle_id) = ?'); params.push(f.cycleId); }
   if (f.origin) { where.push('sc.origin_kind = ?'); params.push(f.origin); }
+  /* Lọc theo NGƯỜI PHỤ TRÁCH — để bảng giáo viên đếm đúng trách nhiệm của từng người. */
+  if (f.ownerUserId) { where.push('sc.owner_user_id = ?'); params.push(f.ownerUserId); }
+  if (f.noOwner) where.push('sc.owner_user_id IS NULL');
 
   const rows = conn
     .prepare(
@@ -1337,6 +1335,7 @@ export function listCases(p: Principal, f: CaseFilters = {}) {
               s.full_name, s.student_code,
               a.attempt_no, a.kind AS attempt_kind,
               u.full_name AS reporter_name,
+              ow.full_name AS owner_name,
               (SELECT COUNT(*) FROM case_interventions iv WHERE iv.case_id = sc.id) AS intervention_count,
               (SELECT MIN(iv.followup_due) FROM case_interventions iv
                 WHERE iv.case_id = sc.id AND iv.followup_due IS NOT NULL AND iv.status != 'completed') AS next_due,
@@ -1349,6 +1348,7 @@ export function listCases(p: Principal, f: CaseFilters = {}) {
          LEFT JOIN classes ac ON ac.id = a.class_id
          LEFT JOIN classes cc ON cc.id = cur.class_id
          LEFT JOIN users u ON u.id = sc.reported_by
+         LEFT JOIN users ow ON ow.id = sc.owner_user_id
         WHERE ${where.join(' AND ')}
         GROUP BY sc.id
         ORDER BY COALESCE(sc.detected_at, DATE(sc.created_at)) DESC, sc.id DESC`,
@@ -1431,6 +1431,8 @@ export function listCases(p: Principal, f: CaseFilters = {}) {
       disposition: r.disposition,
       detectedAt: r.detected_at ?? (r.created_at ?? '').slice(0, 10),
       reporterName: r.reporter_name ?? null,
+      ownerUserId: r.owner_user_id ?? null,
+      ownerName: r.owner_name ?? null,
       parallel: !!r.parallel,
       previousCaseId: r.previous_case_id ?? null,
       interventionCount: r.intervention_count as number,
@@ -1766,6 +1768,41 @@ function supportLineOf(openIv: any[], lastDone: any | null, lastFollow: any | nu
     ].filter(Boolean).join(' ');
   }
   return null;
+}
+
+/**
+ * ĐỔI NGƯỜI PHỤ TRÁCH CHÍNH của một case (mục 2.3).
+ *
+ * Đổi người phụ trách KHÔNG cấp thêm quyền cho ai: người mới vẫn chỉ làm được những gì vai
+ * và phân công của họ cho phép. Nó chỉ trả lời câu "ai đang giữ việc này" — câu mà trước
+ * vòng này không có chỗ nào trả lời được.
+ */
+export function setCaseOwner(p: Principal, caseId: number, ownerUserId: number | null) {
+  const conn = db();
+  const c = loadCase(caseId);
+  require_(p, PERMISSIONS.SOS_EDIT, { classId: c.class_id, studentId: c.eff_student_id },
+    'Bạn không có quyền đổi người phụ trách case này.');
+  if (ownerUserId !== null) {
+    const u = conn.prepare("SELECT id, full_name FROM users WHERE id = ? AND status = 'active'").get(ownerUserId) as any;
+    if (!u) throw badRequest('Không tìm thấy người này, hoặc tài khoản đã ngừng hoạt động.');
+  }
+  return tx(() => {
+    const before = c.owner_user_id
+      ? ((conn.prepare('SELECT full_name FROM users WHERE id = ?').get(c.owner_user_id) as any)?.full_name ?? null)
+      : null;
+    conn.prepare('UPDATE sos_cases SET owner_user_id = ?, updated_at = ? WHERE id = ?')
+      .run(ownerUserId, nowIso(), caseId);
+    const after = ownerUserId
+      ? ((conn.prepare('SELECT full_name FROM users WHERE id = ?').get(ownerUserId) as any)?.full_name ?? null)
+      : null;
+    conn
+      .prepare(
+        `INSERT INTO sos_case_history (case_id, field, old_value, new_value, actor_user_id, created_at)
+         VALUES (?, 'owner', ?, ?, ?, ?)`,
+      )
+      .run(caseId, before, after, p.userId, nowIso());
+    return caseDetail(p, caseId);
+  });
 }
 
 // ================================================================ điểm GV tự đánh giá

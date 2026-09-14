@@ -632,6 +632,18 @@ CREATE TABLE sos_cases (
    * tên cũ nói sai sự thật. Case tạo tay thì ngược lại — không có gì để suy ra, và người
    * tạo biết rõ nhất nên gọi nó là gì.
    */
+  /*
+   * NGƯỜI PHỤ TRÁCH CHÍNH của case — MỘT người, chịu trách nhiệm điều phối (mục 2.3).
+   *
+   * Tách hẳn khỏi hai vai khác vẫn thường bị lẫn với nó:
+   *   · `reported_by`            — người GHI NHẬN vấn đề, có thể là người nhập hộ
+   *   · `case_interventions.performer_user_id` — người THỰC HIỆN một phương án cụ thể
+   *
+   * Không suy người phụ trách từ "mọi giáo viên dạy lớp đó": một lớp có năm giáo viên thì
+   * suy như thế là năm người cùng nợ một việc, và cuối cùng không ai làm. Chưa xác định được
+   * thì để TRỐNG và nói thẳng "chưa có người phụ trách" — đó là một tin cần biết.
+   */
+  owner_user_id INTEGER REFERENCES users(id),
   title TEXT,
 
   /*

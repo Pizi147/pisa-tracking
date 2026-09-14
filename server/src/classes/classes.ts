@@ -9,7 +9,7 @@ import { can, classScopeSql, editableSkills, isCoreTeacherOf, require_, scopeFor
 import { writeAudit } from '../platform/audit.ts';
 import { loadBundle, resultOf, skillCells } from '../fasttrack/attempts.ts';
 import { examPlanOf } from '../fasttrack/cycles.ts';
-import { currentSosByStudent } from '../cases/cases.ts';
+import { standingFor, standingLine } from '../students/standing.ts';
 import { allProgrammes, evaluateRegular, programmeOfClass } from '../normal/regular.ts';
 import { classProgressMany, missingForClasses, missingForStudent } from './schedule.ts';
 import { SKILL_SHORT } from '../../../shared/domain/index.ts';
@@ -313,15 +313,14 @@ export function classRoster(p: Principal, classId: number, q?: string) {
     openCaseCount.set(r.student_id, (openCaseCount.get(r.student_id) ?? 0) + 1);
     if (carried) handoverCount.set(r.student_id, (handoverCount.get(r.student_id) ?? 0) + 1);
   }
-  /* Mức SOS hiện tại: dùng CHUNG phép tính với bảng tổng hợp, không tự đếm lại ở đây. */
-  const openSos = currentSosByStudent(
-    openRows
-      .filter((r) => {
-        const cur = activeCycle.get(r.student_id) ?? null;
-        return cur === null || r.cycle_id === null || r.cycle_id === cur;
-      })
-      .map((r) => ({ studentId: r.student_id, sosLevel: r.sos_level, attemptNo: r.attempt_no })),
-  );
+  /*
+   * TÌNH TRẠNG HỌC THUẬT lấy từ KẾT QUẢ BÀI GẦN NHẤT, không suy từ case còn mở.
+   *
+   * Trước đây bảng này đọc mức SOS đã đóng băng trong case: em thi MT3 đạt hết mà case
+   * Reading của MT2 chưa đóng thì vẫn bị gọi là SOS 1. Nay một chỗ tính duy nhất —
+   * `standingFor` — dùng chung cho bảng lớp, danh sách học viên và bảng tổng hợp.
+   */
+  const standing = standingFor(sids);
 
   return students.map((s) => {
     /*
@@ -425,8 +424,17 @@ export function classRoster(p: Principal, classId: number, q?: string) {
     return {
       id: s.id, studentCode: s.student_code, fullName: s.full_name, status: s.status,
       scores,
-      /** Mức SOS đang có hiệu lực và số case chưa xong — hai con số của cột Trạng thái. */
-      sosLevel: openSos.get(s.id) ?? null,
+      /*
+       * BA THÔNG TIN TÁCH RỜI, KHÔNG CÁI NÀO SUY RA TỪ CÁI KIA (mục 2.1):
+       *   · `standing` — kết quả bài gần nhất, nói mức SOS của CHÍNH bài đó
+       *   · `openCases` — số case đang theo dõi, chỉ là một con số đếm
+       *   · `handoverCases` — trong đó bao nhiêu cái mang từ lộ trình trước sang
+       */
+      standing: standing.get(s.id) ?? null,
+      standingLine: standing.has(s.id) ? standingLine(standing.get(s.id)!) : null,
+      /** Giữ tên cũ cho các màn đang đọc, nhưng nay lấy từ KẾT QUẢ BÀI chứ không từ case. */
+      sosLevel: standing.get(s.id)?.sosLevel ?? null,
+      provisional: !!standing.get(s.id)?.provisional,
       openCases: openCaseCount.get(s.id) ?? 0,
       /** Case còn mở từ lớp/chương trình TRƯỚC — việc phải bàn giao, không phải mức SOS ở đây. */
       handoverCases: handoverCount.get(s.id) ?? 0,

@@ -13,6 +13,7 @@ import { assessedBands, evaluateAttempt } from '../fasttrack/scoring.ts';
 import { evaluateRegular, isRatioCycle, programmeByCode, programmeCodeOfCycle, programmeOfClass } from '../normal/regular.ts';
 import { cycleById, cyclesOf, currentCycle, examPlanOf, targetRevisions } from '../fasttrack/cycles.ts';
 import { canCloseCase, parseMetrics } from '../cases/cases.ts';
+import { standingFor } from './standing.ts';
 import { missingForStudent, suggestedMockWeeks } from '../classes/schedule.ts';
 
 /**
@@ -599,11 +600,17 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
       student: { dob: s.dob },
       isFastTrack: !isRatioCycle(selected ?? {}),
     }),
+    /*
+     * TÌNH TRẠNG HỌC THUẬT HIỆN TẠI — lấy từ KẾT QUẢ BÀI GẦN NHẤT (mục 2.1).
+     *
+     * Đây là thứ thay cho `concerns.maxSos` cũ. `maxSos` đọc mức SOS đã đóng băng trong case
+     * còn mở, nên một em thi MT3 đạt hết mà case MT2 chưa đóng vẫn bị gọi là SOS 1 ngay trên
+     * thẻ tên. Nay mức SOS chỉ nói về BÀI, còn case là một con số đếm riêng.
+     */
+    standing: standingFor([studentId]).get(studentId) ?? null,
     concerns: {
       openCases: openCases.length,
       carriedOver: openCases.filter((c) => c.carriedOver).length,
-      urgent: openCases.filter((c) => c.urgency === 'urgent').length,
-      maxSos: openCases.reduce((m, c) => Math.max(m, c.sosLevel ?? 0), 0),
       activeInterventions: openCases.reduce((n, c) => n + (c.interventionCount ?? 0), 0),
       dueOverdue: openCases.filter((c) => c.dueOverdue).length,
     },

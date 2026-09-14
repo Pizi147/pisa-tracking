@@ -43,6 +43,7 @@ const domain = await import('../../../shared/domain/index.ts');
 const accounts = await import('../platform/accounts.ts');
 const sysconfig = await import('../platform/sysconfig.ts');
 const mywork = await import('../worklist/mywork.ts');
+const standing = await import('../students/standing.ts');
 const { ratioResult: domainRatio } = await import('../../../shared/domain/index.ts');
 const { demoToday } = await import('../demoConfig.ts');
 const { addDays } = await import('../util.ts');
@@ -2678,16 +2679,82 @@ check('Số trên bảng tổng hợp khớp với danh sách bên dưới', () 
   assert(s.total.cells.openCases?.value === fromTable, 'Hàng tổng không bằng tổng các hàng trên');
 });
 
-check('SOS đếm HỌC VIÊN, cột kỹ năng đếm VẤN ĐỀ — hai đơn vị khác nhau', () => {
+check('SOS đếm HỌC VIÊN theo KẾT QUẢ BÀI GẦN NHẤT, không đếm case', () => {
+  /*
+   * Mục 2.1: mức SOS là kết luận của MỘT bài đánh giá, không phải "còn việc đang làm dở".
+   * Nên ba cột SOS phải đếm được lại từ `standingFor`, và mỗi em chỉ đứng ở đúng một cột.
+   */
   const s = summary.branchSummary(P.admin, {});
   const r = s.rows.find((x) => (x.cells.sos2?.value ?? 0) > 0);
   assert(r, 'Không có hàng nào có SOS 2 để thử');
-  const open = cases.listCases(P.admin, { branchId: r!.branchId ?? undefined }).rows
-    .filter((c) => c.state !== 'done' && c.sosLevel === 2);
-  const students = new Set(open.map((c) => c.studentId)).size;
-  assert(r!.cells.sos2!.value === students,
-    `Cột SOS 2 đang là ${r!.cells.sos2!.value} nhưng chỉ có ${students} học viên — đang đếm vấn đề chứ không đếm em`);
-  assert(open.length >= students, 'Một em SOS 2 phải sinh ít nhất một vấn đề');
+
+  const ids = (conn
+    .prepare(
+      `SELECT e.student_id AS id FROM enrollments e
+         JOIN students st ON st.id = e.student_id
+         JOIN classes cl ON cl.id = e.class_id
+        WHERE e.status = 'active' AND st.status = 'active' AND st.archived_at IS NULL
+          AND cl.branch_id = ?`,
+    )
+    .all(r!.branchId) as any[]).map((x) => x.id);
+  const st = standing.standingFor(ids);
+  const atLevel = (lv: number) => ids.filter((id) => st.get(id)?.sosLevel === lv).length;
+
+  for (const lv of [1, 2, 3]) {
+    const shown = r!.cells[`sos${lv}`]?.value ?? 0;
+    assert(shown === atLevel(lv),
+      `Cột SOS ${lv} nói ${shown} em, nhưng kết quả bài gần nhất cho ra ${atLevel(lv)} em`);
+  }
+  /* Ba cột loại trừ nhau và không bao giờ vượt sĩ số. */
+  const total = atLevel(1) + atLevel(2) + atLevel(3);
+  assert(total <= (r!.cells.students?.value ?? 0), 'Ba cột SOS cộng lại vượt sĩ số');
+});
+
+check('Mức SOS KHÔNG đổi khi đóng case, và KHÔNG kéo theo case còn mở', () => {
+  /*
+   * Đây là lỗi gốc mục 2.1 nêu đích danh: em thi MT gần nhất ĐẠT mà case cũ chưa đóng thì
+   * vẫn bị gọi là SOS. Kiểm bằng một em có đúng tình huống đó.
+   */
+  const row = conn
+    .prepare(
+      `SELECT sc.student_id AS sid, sc.id AS cid FROM sos_cases sc
+        WHERE sc.status != 'done' AND sc.student_id IS NOT NULL AND sc.sos_level > 0
+        ORDER BY sc.id LIMIT 1`,
+    )
+    .get() as any;
+  assert(row, 'Dữ liệu demo không có case SOS nào đang mở');
+
+  const before = standing.standingFor([row.sid]).get(row.sid)!;
+  /* Đóng case: mức SOS KHÔNG được đổi, vì nó nói về bài thi chứ không về case. */
+  conn.prepare(`UPDATE sos_cases SET status = 'done' WHERE id = ?`).run(row.cid);
+  const after = standing.standingFor([row.sid]).get(row.sid)!;
+  conn.prepare(`UPDATE sos_cases SET status = 'in_progress' WHERE id = ?`).run(row.cid);
+
+  assert(before.sosLevel === after.sosLevel,
+    `Đóng case làm mức SOS đổi từ ${before.sosLevel} thành ${after.sosLevel}`);
+  assert(before.attemptId === after.attemptId, 'Đóng case làm đổi bài đánh giá đang được lấy làm căn cứ');
+  /* Và số case thì PHẢI đổi — đó mới là con số case. */
+  assert(after.openCases === before.openCases - 1, 'Đóng case mà số case đang theo dõi không giảm');
+});
+
+check('Lộ trình mới chưa có bài nào thì KHÔNG mang SOS của lộ trình cũ', () => {
+  const row = conn
+    .prepare(
+      `SELECT cy.student_id AS sid, cy.id AS cid FROM learning_cycles cy
+        WHERE cy.status = 'active'
+          AND NOT EXISTS (SELECT 1 FROM assessment_attempts a
+                           JOIN assessment_scores s ON s.attempt_id = a.id
+                          WHERE a.cycle_id = cy.id)
+          AND EXISTS (SELECT 1 FROM sos_cases sc
+                       WHERE sc.student_id = cy.student_id AND sc.status != 'done'
+                         AND sc.cycle_id IS NOT NULL AND sc.cycle_id != cy.id)
+        LIMIT 1`,
+    )
+    .get() as any;
+  if (!row) return;   // bộ demo hiện tại chưa có tình huống này thì bỏ qua, không bịa ra
+  const s = standing.standingFor([row.sid]).get(row.sid)!;
+  assert(s.sosLevel === null, `Lộ trình mới chưa thi mà vẫn mang mức SOS ${s.sosLevel}`);
+  assert(s.handoverCases > 0, 'Case của lộ trình trước không được đếm là việc bàn giao');
 });
 
 check('Bộ cột đặt sẵn nhớ theo tài khoản, và không rò sang người khác', () => {
@@ -3414,10 +3481,9 @@ check('Mức SOS trên bảng lớp dùng CHUNG phép tính với bảng tổng 
    */
   const cid = classId('CP-FT 110');
   const roster = classesSvc.classRoster(P.admin, cid) as any[];
-  const open = cases.listCases(P.admin, { classId: cid }).rows.filter((c: any) => c.state !== 'done');
-  const expect = cases.currentSosByStudent(open);
+  const expect = standing.standingFor(roster.map((r) => r.id));
   for (const r of roster) {
-    const want = expect.get(r.id) ?? null;
+    const want = expect.get(r.id)?.sosLevel ?? null;
     assert((r.sosLevel ?? null) === want,
       `Học viên ${r.fullName}: bảng lớp nói SOS ${r.sosLevel}, phép tính chung nói ${want}`);
   }

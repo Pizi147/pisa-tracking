@@ -5,7 +5,8 @@ import {
 } from '../../../shared/domain/index.ts';
 import { scopeFor, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
-import { currentSosByStudent, listCases } from '../cases/cases.ts';
+import { listCases } from '../cases/cases.ts';
+import { standingFor } from '../students/standing.ts';
 
 /**
  * BẢNG TỔNG HỢP CHO QUẢN LÝ — một hàng cho mỗi chi nhánh, hoặc mỗi lớp khi đã chọn chi nhánh.
@@ -165,19 +166,35 @@ export function branchSummary(p: Principal, f: { branchId?: number | null } = {}
   }
 
   const studentCounts = new Map<string, number>();
+  /*
+   * HỌC VIÊN ĐANG HỌC của từng nhóm, kèm mã nhóm để tính tình trạng học thuật ngay bên dưới.
+   * Sĩ số chỉ đếm ghi danh ĐANG HOẠT ĐỘNG — em đã kết thúc hoặc đã chuyển đi không tính.
+   */
+  const studentsOf = new Map<string, number[]>();
   for (const r of conn
     .prepare(
-      `SELECT cl.id AS class_id, cl.branch_id, COUNT(*) AS n
+      `SELECT e.student_id, cl.id AS class_id, cl.branch_id
          FROM enrollments e
          JOIN students s ON s.id = e.student_id
          JOIN classes cl ON cl.id = e.class_id
-        WHERE e.status = 'active' AND s.status = 'active' AND s.archived_at IS NULL
-        GROUP BY cl.id`,
+        WHERE e.status = 'active' AND s.status = 'active' AND s.archived_at IS NULL`,
     )
     .all() as any[]) {
     const k = byBranch ? `b${r.branch_id}` : `c${r.class_id}`;
-    studentCounts.set(k, (studentCounts.get(k) ?? 0) + r.n);
+    studentCounts.set(k, (studentCounts.get(k) ?? 0) + 1);
+    if (!studentsOf.has(k)) studentsOf.set(k, []);
+    studentsOf.get(k)!.push(r.student_id);
   }
+
+  /*
+   * MỨC SOS LẤY TỪ KẾT QUẢ BÀI GẦN NHẤT (mục 2.1), không suy từ case còn mở.
+   *
+   * Tính một lần cho toàn bộ học viên đang hiện trên bảng, rồi mỗi hàng chỉ việc đếm. Đây
+   * cũng chính là phép tính mà bảng lớp và hồ sơ học viên dùng, nên ba màn không thể nói ba
+   * con số khác nhau về cùng một em.
+   */
+  const allStudentIds = [...new Set([...studentsOf.values()].flat())];
+  const standing = standingFor(allStudentIds);
 
   /*
    * PHƯƠNG ÁN QUÁ HẠN LÀM — đếm theo HỌC VIÊN, không theo phương án.
@@ -244,20 +261,16 @@ export function branchSummary(p: Principal, f: { branchId?: number | null } = {}
     const q = (extra: string) => `/?tab=tinh-hinh${g.branchId ? `&cn=${g.branchId}` : ''}${extra}`;
 
     /*
-     * MỖI HỌC VIÊN CHỈ ĐỨNG Ở ĐÚNG MỘT CỘT SOS — cột của LƯỢT MT GẦN NHẤT.
+     * MỖI HỌC VIÊN ĐỨNG ĐÚNG MỘT CỘT SOS — cột của BÀI ĐÁNH GIÁ GẦN NHẤT của em.
      *
-     * Phép đếm nằm ở `currentSosByStudent` của `services/cases.ts` — dùng chung với bảng
-     * lớp và khối Việc cần lưu ý, để ba màn không thể nói ba con số khác nhau về một em.
+     * Em chưa thi lượt nào, hoặc thi rồi mà chưa nhập ô điểm nào, thì KHÔNG vào cột nào cả:
+     * "chưa biết" không phải là "đạt", và cũng không phải là một mức SOS.
      *
-     * Case do giáo viên tự báo không có `sosLevel` nên không tham gia phép đếm này —
-     * chúng đã có cột "GV báo" riêng.
+     * Ba cột SOS cộng lại vì thế luôn ≤ sĩ số, và chúng loại trừ nhau thật.
      */
-    const currentSos = currentSosByStudent(open);
-    const sosStudents = (lv: number) => {
-      let n = 0;
-      for (const level of currentSos.values()) if (level === lv) n += 1;
-      return n;
-    };
+    const mineStudents = studentsOf.get(g.key) ?? [];
+    const sosStudents = (lv: number) =>
+      mineStudents.filter((id) => standing.get(id)?.sosLevel === lv).length;
     const skillCell = (s: string): Cell => {
       const list = open.filter((c) => (LEGACY_SKILL_ROLLUP[c.topic ?? ''] ?? c.topic) === s);
       return { value: list.length, of: list.filter((c) => c.state === 'no_plan').length, href: q(`&ky-nang=${s}`) };
