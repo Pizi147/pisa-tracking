@@ -404,7 +404,8 @@ export function setClassProgress(p: Principal, classId: number, input: {
 
 export type MissingInfo = {
   /** Mã ngắn để giao diện và bộ lọc dùng chung một từ vựng. */
-  key: 'start_week' | 'exam_month' | 'target' | 'dob' | 'class_start_week' | 'teachers' | 'core_teacher';
+  key: 'start_week' | 'exam_month' | 'target' | 'dob' | 'class_start_week' | 'teachers' | 'core_teacher'
+     | 'next_milestone' | 'baseline';
   label: string;
   /** Ai là người điền được — để badge nói đúng với đúng vai, không đổ việc lung tung. */
   who: string;
@@ -418,6 +419,8 @@ const MISSING_LABEL: Record<MissingInfo['key'], { label: string; who: string }> 
   class_start_week: { label: 'Tuần bắt đầu của lớp', who: 'Admin CN · Quản lý' },
   teachers: { label: 'Giáo viên các kỹ năng', who: 'Admin CN · Quản lý' },
   core_teacher: { label: 'Giáo viên chủ nhiệm', who: 'Admin CN · Quản lý' },
+  next_milestone: { label: 'Mốc đánh giá tiếp theo', who: 'Admin CN · Quản lý' },
+  baseline: { label: 'Điểm đầu vào', who: 'Admin CN · Quản lý' },
 };
 
 const miss = (key: MissingInfo['key']): MissingInfo => ({ key, ...MISSING_LABEL[key] });
@@ -435,17 +438,39 @@ const miss = (key: MissingInfo['key']): MissingInfo => ({ key, ...MISSING_LABEL[
  * Lớp Normal KHÔNG bị nhắc tháng thi: các em đó chưa thi IELTS, nhắc là nhắc sai.
  */
 export function missingForStudent(input: {
-  cycle: { start_period_id?: number | null; exam_month?: string | null; target_score?: number | null } | null;
+  cycle: {
+    start_period_id?: number | null; exam_month?: string | null; target_score?: number | null;
+    baseline?: boolean;
+  } | null;
   student: { dob?: string | null } | null;
   isFastTrack: boolean;
+  /** Đã có mốc đánh giá nào đang chờ tới chưa. `undefined` = chưa hỏi, thì không nhắc. */
+  hasNextMilestone?: boolean;
 }): MissingInfo[] {
   const out: MissingInfo[] = [];
+  /*
+   * CHỈ NHỮNG THIẾU SÓT CẢN TRỞ CHUYÊN MÔN (mục 5.3).
+   *
+   * Badge này là một CẢNH BÁO HỌC THUẬT, nên nó chỉ được chứa những thứ mà thiếu đi thì
+   * không đánh giá, không so kỳ vọng, hoặc không lên kế hoạch tiếp được:
+   *
+   *   tuần bắt đầu    → không tính được lớp đang ở tuần mấy, không suy được lịch đánh giá
+   *   target (FT)     → không có kỳ vọng thì mọi điểm đều không kết luận được
+   *   tháng thi (FT)  → không xếp được lịch MT cho cả khoá
+   *   mốc tiếp theo   → không biết lần đánh giá sau là khi nào
+   *   điểm đầu vào    → không tính được em đã tiến bộ bao nhiêu từ lúc vào học
+   *
+   * NGÀY SINH ĐÃ BỎ KHỎI ĐÂY. Nó là thông tin hành chính: thiếu thì hồ sơ chưa đầy đủ,
+   * nhưng không cản trở việc dạy hay việc đánh giá một buổi nào. Biến mọi ô cá nhân còn
+   * trống thành cảnh báo học thuật là cách nhanh nhất để không ai còn tin cảnh báo nào.
+   */
   if (!input.cycle?.start_period_id) out.push(miss('start_week'));
   if (input.isFastTrack) {
     if (!input.cycle?.exam_month) out.push(miss('exam_month'));
     if (input.cycle?.target_score === null || input.cycle?.target_score === undefined) out.push(miss('target'));
+    if (input.cycle && input.cycle.baseline === false) out.push(miss('baseline'));
   }
-  if (!input.student?.dob) out.push(miss('dob'));
+  if (input.hasNextMilestone === false) out.push(miss('next_milestone'));
   return out;
 }
 

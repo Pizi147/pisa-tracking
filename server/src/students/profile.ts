@@ -623,6 +623,7 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
           start_period_id: selected.start_period_id,
           exam_month: selected.exam_month,
           target_score: selected.target_score,
+          baseline: selected.baseline_attempt_id !== null || selected.baseline_score !== null,
         }
         : null,
       student: { dob: s.dob },
