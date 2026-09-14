@@ -76,11 +76,32 @@ export function ProgressChart({ data }: { data: { mode: 'ielts' | 'ratio'; skill
   );
 }
 
-/** Giá trị dùng để xếp chiều cao: band là chính nó, điểm đạt/tổng là tỷ lệ. */
-function heightOf(p: Point, mode: 'ielts' | 'ratio'): number | null {
+/**
+ * Giá trị thô để vẽ: lớp Fast Track là band 0–9, lớp Normal là TỶ LỆ điểm đạt trên tổng.
+ *
+ * Lớp Normal buộc phải quy về tỷ lệ để xếp được chiều cao, vì mỗi bài một thang điểm khác
+ * nhau (13/30 và 18/40 không so thẳng được). Con số hiện trên hình vẫn là ĐIỂM GỐC, và
+ * ghi chú dưới biểu đồ nói rõ tỷ lệ chỉ để đọc cho dễ.
+ */
+function rawOf(p: Point, mode: 'ielts' | 'ratio'): number | null {
   if (p.value === null) return null;
   if (mode === 'ratio' || p.total) return p.total ? p.value / p.total : null;
-  return p.value / 9;
+  return p.value;
+}
+
+/**
+ * KHUNG GIÁ TRỊ CỦA TRỤC DỌC.
+ *
+ * Vẽ band 5.0 → 6.0 trên thang 0–9 thì đường gần như phẳng, và một em tiến một band trông
+ * như không tiến gì. Vẽ vừa khít 5.0–6.0 thì ngược lại: nửa band thành một cú nhảy dựng
+ * đứng. Nên lấy khoảng dữ liệu rồi nới ra nửa band mỗi đầu — đủ để thấy hình dạng, không đủ
+ * để thổi phồng.
+ */
+function domainOf(values: number[], mode: 'ielts' | 'ratio'): [number, number] {
+  if (mode === 'ratio') return [0, 1];
+  const lo = Math.max(0, Math.floor(Math.min(...values) * 2) / 2 - 0.5);
+  const hi = Math.min(9, Math.ceil(Math.max(...values) * 2) / 2 + 0.5);
+  return hi - lo < 1 ? [Math.max(0, lo - 0.5), Math.min(9, hi + 0.5)] : [lo, hi];
 }
 
 function fmtValue(p: Point, mode: 'ielts' | 'ratio'): string {
@@ -94,33 +115,45 @@ function fmtValue(p: Point, mode: 'ielts' | 'ratio'): string {
  * kilobyte về máy người dùng, và thư viện nào cũng có mặc định riêng phải gỡ đi.
  */
 function Plot({ series, mode }: { series: Series; mode: 'ielts' | 'ratio' }) {
-  const W = 640, H = 150, PAD_X = 28, PAD_Y = 18;
-  const pts = series.points.filter((p) => heightOf(p, mode) !== null);
+  const W = 640, H = 170, PAD_X = 30, PAD_Y = 26;
+  const pts = series.points.filter((p) => rawOf(p, mode) !== null);
   if (pts.length === 0) return null;
+
+  /* Đường kỳ vọng cũng phải nằm trong khung, nếu không nó bị cắt mất ở mép trên. */
+  const values = [
+    ...pts.map((p) => rawOf(p, mode)!),
+    ...(mode === 'ielts' ? pts.filter((p) => p.expectation !== null).map((p) => p.expectation!) : []),
+  ];
+  const [lo, hi] = domainOf(values, mode);
+  const span = hi - lo || 1;
 
   const x = (i: number) => PAD_X + (pts.length === 1 ? (W - 2 * PAD_X) / 2
     : (i * (W - 2 * PAD_X)) / (pts.length - 1));
-  const y = (v: number) => H - PAD_Y - v * (H - 2 * PAD_Y);
+  const y = (v: number) => H - PAD_Y - ((v - lo) / span) * (H - 2 * PAD_Y);
 
   const official = pts.map((p, i) => ({ p, i })).filter((n) => n.p.kind === 'official');
-  const line = official.map((n) => `${x(n.i)},${y(heightOf(n.p, mode)!)}`).join(' ');
+  const line = official.map((n) => `${x(n.i)},${y(rawOf(n.p, mode)!)}`).join(' ');
   const exp = official.filter((n) => n.p.expectation !== null);
 
   return (
-    <div className="rounded-lg border p-2 overflow-x-auto" style={{ borderColor: 'var(--line)' }}>
-      <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ minWidth: 320, height: 150 }}
+    /*
+      GIỚI HẠN BỀ NGANG. Biểu đồ bốn điểm kéo hết màn hình rộng thì đường gần như nằm ngang
+      dù điểm có tăng thật — mắt đọc độ dốc theo cả hai chiều, không chỉ chiều dọc.
+    */
+    <div className="rounded-lg border p-2 max-w-[680px]" style={{ borderColor: 'var(--line)' }}>
+      <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto"
         role="img" aria-label={`Tiến bộ môn ${series.label}`}>
         {/* Đường kỳ vọng của từng mốc — nét đứt, mờ, đứng sau đường điểm. */}
         {exp.length > 1 && (
           <polyline fill="none" stroke="var(--line-strong)" strokeWidth="1.5" strokeDasharray="4 4"
-            points={exp.map((n) => `${x(n.i)},${y(n.p.expectation! / 9)}`).join(' ')} />
+            points={exp.map((n) => `${x(n.i)},${y(n.p.expectation!)}`).join(' ')} />
         )}
         {/* Đường điểm chính thức. */}
         {official.length > 1 && (
           <polyline fill="none" stroke="var(--accent, #60a5fa)" strokeWidth="2" points={line} />
         )}
         {pts.map((p, i) => {
-          const cy = y(heightOf(p, mode)!);
+          const cy = y(rawOf(p, mode)!);
           const cx = x(i);
           return p.kind === 'official' ? (
             <g key={`${p.kind}-${i}`}>

@@ -223,7 +223,17 @@ function MockTrail({ timeline, classId }: { timeline: Timeline[]; classId: numbe
               nhau — nên không thể tô cùng một kiểu cho cả dải.
             */}
             {t.evaluable ? (
-              <Level tone={sosTone(t.sosLevel)}>{t.kindLabel} ✓</Level>
+              /*
+                Dùng nhãn KẾT QUẢ chứ không phải nhãn MỨC ĐỘ: mỗi dòng có tới bốn năm mốc,
+                mà nhãn mức độ là nền đặc, nên cả dải sáng rực và át mất cột Trạng thái —
+                chỗ nói em ĐANG ở mức nào. Nền đặc để dành cho tình trạng hiện tại.
+              */
+              <Outcome
+                tone={t.sosLevel === null ? 'muted' : t.sosLevel === 0 ? 'ok' : t.sosLevel >= 3 ? 'danger' : 'warn'}
+                mark={t.sosLevel ? '↓' : '✓'}
+                title={t.sosLevel ? `${t.sosLevel} kỹ năng dưới kỳ vọng ở lượt này` : 'Đạt kỳ vọng ở mọi kỹ năng'}>
+                {t.kindLabel}{t.sosLevel ? ` SOS${t.sosLevel}` : ''}
+              </Outcome>
             ) : (
               <Status kind={t.status === 'cancelled' ? 'idle' : t.status === 'done' ? 'doing' : 'waiting'}>
                 {t.kindLabel}

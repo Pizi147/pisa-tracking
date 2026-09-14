@@ -128,7 +128,7 @@ export function StudentCases({ studentId, cycleId, cycleLabel }: {
 
               {isOpen(c) && (
                 <div className="px-3 pb-3 border-t pt-3" style={{ borderColor: 'var(--line)' }}>
-                  <CasePanel caseId={c.id} compact />
+                  <CasePanel caseId={c.id} compact hideHeader />
                 </div>
               )}
             </section>

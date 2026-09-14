@@ -267,9 +267,16 @@ export function Field({ label, children, hint, required }: { label: string; chil
   );
 }
 
+/**
+ * Ghi chú giải thích dưới một khu vực.
+ *
+ * Dùng `<div>` chứ không phải `<p>`: có chỗ ghi chú cần một danh sách bên trong — ví dụ
+ * "chưa hoàn thành case được vì còn ba việc" — và một danh sách nằm trong thẻ đoạn văn là
+ * HTML sai, trình duyệt sẽ tự tách thẻ ra và làm hỏng đúng cái khung viền bên trái này.
+ */
 export function SectionNote({ children }: { children: ReactNode }) {
   return (
-    <p className="text-[11px] text-slate-500 leading-relaxed border-l-2 border-slate-700 pl-2">{children}</p>
+    <div className="text-[11px] text-slate-500 leading-relaxed border-l-2 border-slate-700 pl-2">{children}</div>
   );
 }
 

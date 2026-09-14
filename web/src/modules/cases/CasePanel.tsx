@@ -65,7 +65,15 @@ type CaseDetail = {
   viewer: { canEdit: boolean; canClose: boolean; canApprove: boolean };
 };
 
-export function CasePanel({ caseId, compact = false }: { caseId: number; compact?: boolean }) {
+export function CasePanel({ caseId, compact = false, hideHeader = false }: {
+  caseId: number; compact?: boolean;
+  /**
+   * Bỏ phần đầu case khi panel nằm TRONG một khối đã có sẵn tên và trạng thái ở trên
+   * (danh sách case của một em). Hiện hai lần cùng một dòng tiêu đề chỉ làm người đọc
+   * tưởng mình đang xem hai case khác nhau.
+   */
+  hideHeader?: boolean;
+}) {
   const { session } = useSession();
   const todayIso = session?.demoDate ?? '';
   const { data, loading, error, reload } = useApi<CaseDetail>(`/cases/${caseId}`);
@@ -106,6 +114,12 @@ export function CasePanel({ caseId, compact = false }: { caseId: number; compact
     <div className="space-y-4">
       {/* ══════════════════════════════════════════════════ đầu case */}
       <section>
+        {/*
+          KHỐI CASE Ở HỒ SƠ ĐÃ CÓ TÊN VÀ TRẠNG THÁI trên đầu khối rồi, nên ở đó panel này bỏ
+          phần nhận diện đi. Hiện hai lần liền nhau cùng một dòng tiêu đề khiến người đọc
+          tưởng mình đang xem hai case khác nhau xếp chồng.
+        */}
+        {!hideHeader && (
         <h3 className="text-base font-semibold text-slate-100 m-0 flex flex-wrap items-center gap-2">
           {data.title ?? data.headline}
           {/*
@@ -125,7 +139,9 @@ export function CasePanel({ caseId, compact = false }: { caseId: number; compact
           )}
           {data.parallel && <Info>Case riêng, song song</Info>}
         </h3>
+        )}
 
+        {!hideHeader && (
         <p className="text-xs text-slate-500 mt-1 mb-0">
           {data.student && !compact && (
             <><Link className="link" to={`/hoc-vien/${data.student.id}`}>{data.student.name}</Link> · </>
@@ -136,6 +152,7 @@ export function CasePanel({ caseId, compact = false }: { caseId: number; compact
           {mtCount(data) > 1 && ` · đã kéo qua ${mtCount(data)} lượt MT`}
           {data.cycle && ` · ${data.cycle.route ?? `Lộ trình ${data.cycle.seq}`}`}
         </p>
+        )}
 
         {/*
           HẠN BÁO KẾT QUẢ của cả case — khác hạn làm từng phương án, nên đứng riêng một dòng
@@ -206,7 +223,16 @@ export function CasePanel({ caseId, compact = false }: { caseId: number; compact
             {data.dispositionNote && <span className="text-slate-400"> — {data.dispositionNote}</span>}
           </p>
         ) : (
-          <p className="text-sm text-slate-400 m-0">Chưa có phương án hỗ trợ — chưa ai định hướng xử lý.</p>
+          /*
+            NÓI ĐÚNG CÁI ĐANG THIẾU. Câu cũ là "chưa có phương án hỗ trợ", nhưng khối này nói
+            về HƯỚNG XỬ LÝ CHUNG của case — nó hiện ngay cả khi case đã có hai phương án đang
+            chạy ở trên, và người đọc thì thấy hai việc rành rành rồi lại đọc "chưa có".
+          */
+          <p className="text-sm text-slate-400 m-0">
+            {(data.interventions?.length ?? 0) === 0
+              ? 'Chưa có phương án hỗ trợ nào — chưa ai định hướng xử lý.'
+              : 'Chưa chốt hướng xử lý chung cho case này.'}
+          </p>
         )}
         {data.closedAt && <p className="text-xs text-slate-500 mt-1 mb-0">Đã kết thúc theo dõi {fmtDate(data.closedAt)}</p>}
 
@@ -289,7 +315,6 @@ type TimelineItem = {
 };
 
 const MILESTONE_TITLE: Record<string, string> = {
-  opened: 'Mở case',
   repeat: 'Trượt lại',
   recurrence: 'Tái phát sau khi đã chốt kết thúc',
   passed: 'Đã đạt kỳ vọng',
@@ -318,7 +343,14 @@ function buildTimeline(data: any, act: TimelineActions): TimelineItem[] {
   const items: TimelineItem[] = [];
 
   for (const m of data.milestones ?? []) {
-    const bad = m.kind === 'repeat' || m.kind === 'recurrence' || m.kind === 'opened';
+    /*
+     * BỎ NODE "MỞ CASE" (mục 7.6). Ngày mở và người tạo đã nằm ngay đầu case; lặp lại thành
+     * một mốc trong dòng thời gian chỉ đẩy mọi thứ khác xuống một dòng mà không thêm gì.
+     * Lọc ở đây chứ không xoá dữ liệu: case cũ trong máy vẫn giữ mốc đó, và trên HÀNH TRÌNH
+     * TOÀN HỌC VIÊN thì "phát sinh case" vẫn là một mốc đáng kể.
+     */
+    if (m.kind === 'opened') continue;
+    const bad = m.kind === 'repeat' || m.kind === 'recurrence';
     items.push({
       key: `m${m.id}`, on: m.occurredOn, attemptNo: m.attemptNo, rank: 0,
       dotFill: bad ? 'var(--danger)' : m.kind === 'passed' ? 'var(--ok)' : 'var(--surface)',
