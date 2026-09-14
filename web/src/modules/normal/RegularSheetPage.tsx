@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useApi } from '../../lib/useApi.ts';
 import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
-import { Card, Empty, ErrorState, Pill, SectionNote, Skeleton } from '../../ui/ui.tsx';
+import { Card, Empty, ErrorState, Info, Level, Outcome as Verdict, SectionNote, Skeleton, Status } from '../../ui/ui.tsx';
 import { caseStatusLabel, caseStatusTone, sosLabel, sosTone } from '../../lib/format.ts';
 import { ATTEMPT_KIND_LABEL, type AttemptKind } from '@shared/domain/index.ts';
 
@@ -231,9 +231,9 @@ function SheetRow({ row, sheet, bulkTotal, onSaved }: {
                 "ĐẠT" chứ không phải "Đạt kỳ vọng". Kỳ vọng là khái niệm của Fast Track —
                 một mốc band tính từ target. Lớp Normal không có target, chỉ có ngưỡng đạt.
               */}
-              <Pill tone={sosTone(row.result.sosLevel)}>
+              <Level tone={sosTone(row.result.sosLevel)}>
                 {row.result.failedCount === 0 ? 'Đạt' : sosLabel(row.result.sosLevel)}
-              </Pill>
+              </Level>
               <span className="text-[10px] text-slate-500">
                 {row.result.failedCount === 0
                   ? 'Đạt cả ' + row.result.required + ' môn'
@@ -247,21 +247,23 @@ function SheetRow({ row, sheet, bulkTotal, onSaved }: {
                 lại từng ô mới biết phải đi nhắc ai; "Còn thiếu W, S" trả lời luôn.
                 Nhưng chưa nhập môn nào thì liệt kê cả bốn môn là thừa — nói gọn một câu.
               */}
-              <Pill tone="neutral">
+              <Info>
                 {row.result.scored === 0
                   ? 'Chưa nhập điểm'
                   : `Còn thiếu ${row.result.skills
                       .filter((s) => s.outcome === 'missing')
                       .map((s) => sheet.skillLabels[s.skill] ?? s.label)
                       .join(', ')}`}
-              </Pill>
+              </Info>
               <span className="text-[10px] text-slate-500">
                 {row.result.scored === 0 ? 'Bài chưa chấm' : 'Chưa đủ điểm để kết luận'}
               </span>
             </>
           )}
           {row.caseStatus && (
-            <Pill tone={caseStatusTone(row.caseStatus)}>{caseStatusLabel(row.caseStatus)}</Pill>
+            <Status kind={row.caseStatus === 'done' ? 'done' : row.caseStatus === 'open' ? 'idle' : 'doing'}>
+              {caseStatusLabel(row.caseStatus)}
+            </Status>
           )}
         </div>
       </td>
@@ -345,9 +347,9 @@ function Outcome({ cell, busy }: { cell: SkillResult; busy?: boolean }) {
   }
   return (
     <div className="mt-0.5 flex justify-center">
-      <Pill tone={cell.outcome === 'pass' ? 'ok' : 'danger'}>
+      <Verdict tone={cell.outcome === 'pass' ? 'ok' : 'danger'} mark={cell.outcome === 'pass' ? '✓' : '↓'}>
         {pct(cell.ratio)} · {cell.outcome === 'pass' ? 'Đạt' : 'Chưa đạt'}
-      </Pill>
+      </Verdict>
     </div>
   );
 }

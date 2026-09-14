@@ -5,7 +5,7 @@ import { ASSESSED_SKILLS, ASSESSED_SKILL_LABEL, type AssessedSkill } from '@shar
 import { Drawer } from '../../ui/Drawer.tsx';
 import { WeekPicker } from '../../ui/Filters.tsx';
 import { useToast } from '../../ui/Toast.tsx';
-import { Empty, Pill, SectionNote, Skeleton } from '../../ui/ui.tsx';
+import { Empty, Info, SectionNote, Skeleton } from '../../ui/ui.tsx';
 
 type AttemptState = { attemptNo: number; status: string; periodCode: string | null };
 
@@ -323,7 +323,7 @@ function MockSlots({ row, picked, onPick }: {
         );
       })}
       {row.hasPending && !picked && (
-        <Pill tone="muted">đã có lượt đang chờ</Pill>
+        <Info>đã có lượt đang chờ</Info>
       )}
     </span>
   );

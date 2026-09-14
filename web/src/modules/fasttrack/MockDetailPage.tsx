@@ -3,7 +3,7 @@ import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
-import { Card, Empty, ErrorState, ExamPlanText, Pill, SectionNote, Skeleton } from '../../ui/ui.tsx';
+import { Card, Empty, ErrorState, ExamPlanText, Info as Tag, Level, Outcome, SectionNote, Skeleton, Status } from '../../ui/ui.tsx';
 import type { ExamPlan } from '../../../../shared/domain/index.ts';
 import { ConfirmDialog, Modal } from '../../ui/Drawer.tsx';
 import {
@@ -104,12 +104,14 @@ export default function MockDetailPage() {
       <Card title="Kế hoạch MT">
         <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 m-0">
           <Info label="Trạng thái">
-            <Pill tone={attemptStatusTone(d.status)}>{attemptStatusLabel(d.status)}</Pill>
+            <Status kind={d.status === 'done' ? 'done' : d.status === 'cancelled' ? 'idle' : 'doing'}>
+              {attemptStatusLabel(d.status)}
+            </Status>
           </Info>
           <Info label="Tuần MT">
             {d.period
               ? <>{d.period.code} <span className="text-slate-500 text-xs">({d.period.range})</span></>
-              : <Pill tone="muted">Chưa chốt tuần</Pill>}
+              : <Tag pending>Chưa chốt tuần</Tag>}
           </Info>
           <Info label="Dự kiến thi">
             <ExamPlanText plan={d.cycle.examPlan} />
@@ -120,9 +122,9 @@ export default function MockDetailPage() {
         {d.cancelReason && <p className="text-xs text-rose-200 mt-3">Đã huỷ: {d.cancelReason}</p>}
         <div className="mt-3 flex flex-wrap items-center gap-2">
           {d.deadlineOverride ? (
-            <Pill tone="info" title={d.deadlineOverride.reason ?? undefined}>
+            <Tag title={d.deadlineOverride.reason ?? undefined}>
               Hạn riêng {fmtDate(d.deadlineOverride.date)}{d.deadlineOverride.by ? ` · ${d.deadlineOverride.by}` : ''}
-            </Pill>
+            </Tag>
           ) : (
             <span className="text-xs text-slate-500">Đang dùng hạn mặc định: hết thứ Tư của tuần kế tiếp sau tuần MT.</span>
           )}
@@ -174,7 +176,13 @@ export default function MockDetailPage() {
                             : <CriteriaButton cell={c} onSave={(p) => save(c.skill, p)} />}
                       </td>
                       <td className="td tabular-nums text-slate-100">{fmtBand(c.band)}</td>
-                      <td className="td"><Pill tone={progressTone(c.progress)}>{progressLabel(c.progress)}</Pill></td>
+                      <td className="td">
+                        <Status kind={c.progress === 'scored' ? 'done'
+                          : c.progress === 'skipped' || c.progress === 'not_scheduled' ? 'idle'
+                          : c.progress === 'due' ? 'doing' : 'waiting'}>
+                          {progressLabel(c.progress)}
+                        </Status>
+                      </td>
                       <td className="td"><DeadlinePill cell={c} /></td>
                       <td className="td text-xs text-slate-500">
                         {c.enteredByName ?? '—'}
@@ -198,10 +206,12 @@ export default function MockDetailPage() {
                     <div className="text-xl tabular-nums mt-1 text-slate-100">{fmtBand(v?.band)}</div>
                     <div className="mt-1">
                       {skipped
-                        ? <Pill tone="muted">Không mock</Pill>
+                        ? <Tag pending>Không mock</Tag>
                         : v?.passed === null
-                          ? <Pill tone="muted">Chưa đủ điểm</Pill>
-                          : v?.passed ? <Pill tone="ok">Đạt kỳ vọng</Pill> : <Pill tone="danger">Dưới kỳ vọng</Pill>}
+                          ? <Tag pending>Chưa đủ điểm</Tag>
+                          : v?.passed
+                            ? <Outcome tone="ok" mark="✓">Đạt kỳ vọng</Outcome>
+                            : <Outcome tone="danger" mark="↓">Dưới kỳ vọng</Outcome>}
                     </div>
                     {d.viewer.canSkipSkill && d.status !== 'cancelled' && (
                       <button
@@ -226,7 +236,7 @@ export default function MockDetailPage() {
               <div className="surface-2 rounded-lg p-3 border border-sky-300/25">
                 <div className="text-[11px] uppercase tracking-wide text-slate-500 font-semibold">Overall</div>
                 <div className="text-xl tabular-nums mt-1 text-slate-100">{fmtBand(d.result.overall)}</div>
-                <div className="mt-1"><Pill tone={sosTone(d.result.sosLevel)}>{sosLabel(d.result.sosLevel)}</Pill></div>
+                <div className="mt-1"><Level tone={sosTone(d.result.sosLevel)}>{sosLabel(d.result.sosLevel)}</Level></div>
               </div>
             </div>
 

@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { invalidate } from '../../lib/api.ts';
-import { Card, ErrorState, Pill, SectionNote, Skeleton } from '../../ui/ui.tsx';
+import { Alert, Card, ErrorState, Info, SectionNote, Skeleton, Status, Task } from '../../ui/ui.tsx';
+import { Drawer } from '../../ui/Drawer.tsx';
 import { ClassRoster } from '../students/ClassRoster.tsx';
 import { IntakePanel } from '../students/IntakePanel.tsx';
 import { TeacherAssignDialog } from './TeacherAssignPanel.tsx';
@@ -66,6 +67,7 @@ export default function ClassOverviewPage() {
   const [assign, setAssign] = useState(false);
   const [progressOpen, setProgressOpen] = useState(false);
   const [transitionOpen, setTransitionOpen] = useState(false);
+  const [manageOpen, setManageOpen] = useState(false);
   const { data, loading, error, reload } = useApi<Overview>(classId ? `/classes/${classId}/overview` : null);
 
   useEffect(() => {
@@ -110,11 +112,11 @@ export default function ClassOverviewPage() {
           {(s?.totalWeeks || (s?.missing.length ?? 0) > 0) && (
             <p className="mt-1.5 mb-0 flex flex-wrap items-center gap-1.5">
               {!s?.totalWeeks ? null : s.needsPlacement ? (
-                <Pill tone="danger">{s.progressLabel}</Pill>
+                <Alert>{s.progressLabel}</Alert>
               ) : s.phase === 'final_week' || s.phase === 'progress_week' ? (
-                <Pill tone="warn">{s.progressLabel}</Pill>
+                <Status kind="doing">{s.progressLabel}</Status>
               ) : s.phase === 'final_soon' || s.phase === 'progress_soon' ? (
-                <Pill tone="info">{s.progressLabel}</Pill>
+                <Status kind="waiting">{s.progressLabel}</Status>
               ) : (
                 <span className="text-xs text-slate-400">{s.progressLabel}</span>
               )}
@@ -126,27 +128,34 @@ export default function ClassOverviewPage() {
             <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
               <span className="text-[11px] text-slate-500">Bạn phụ trách:</span>
               {data.viewer.editableSkills.map((k) => (
-                <Pill key={k} tone="info">{skillShort(k)}</Pill>
+                <Info key={k}>{skillShort(k)}</Info>
               ))}
-              {data.viewer.isCoreTeacher && <Pill tone="neutral">GVCN</Pill>}
+              {data.viewer.isCoreTeacher && <Info>GVCN</Info>}
             </div>
           )}
         </div>
+        {/*
+          NHẬP ĐIỂM PHẢI DỄ THẤY (mục 5.1). Đó là việc hằng ngày của giáo viên, nên nó giữ
+          nguyên chỗ và giữ nguyên hình dạng một cái nút.
+
+          Ba việc quản trị — tiến độ lớp, phân công giáo viên, chuyển tiếp lên lớp sau — gom
+          vào "Quản lý lớp". Chúng mỗi khoá làm một lần, không đáng chiếm ba ô ngang hàng
+          với việc làm mỗi tuần.
+        */}
         <div className="flex flex-wrap gap-2">
-          {/* Lớp Normal chấm theo điểm đạt/tổng điểm nên có bảng điểm riêng. */}
           <Link
-            className="btn no-underline"
+            className="btn btn-primary no-underline"
             to={data.programme?.scoringMode === 'ratio'
               ? `/bang-diem-thuong/${data.id}`
               : `/nhap-diem/${data.id}${periodId ? `?periodId=${periodId}` : ''}`}
           >
             Nhập điểm cả lớp
           </Link>
-          {data.viewer.canEditProgress && (
-            <button className="btn" onClick={() => setProgressOpen(true)}>Tiến độ lớp</button>
-          )}
           {data.viewer.canAddStudents && (
-            <button className="btn btn-primary" onClick={() => setIntake(true)}>Thêm học viên</button>
+            <button className="btn" onClick={() => setIntake(true)}>Thêm học viên</button>
+          )}
+          {(data.viewer.canEditProgress || data.viewer.canAssign) && (
+            <button className="btn" onClick={() => setManageOpen(true)}>Quản lý lớp</button>
           )}
         </div>
       </div>
@@ -160,7 +169,7 @@ export default function ClassOverviewPage() {
           <span className="text-xs text-slate-500">Lớp này không có việc nào đang tồn.</span>
         ) : jobs.map((j) => (
           <Link key={j.view} className="no-underline" to={`/hoc-vien?view=${j.view}&classId=${data.id}&open=${data.id}`}>
-            <Pill tone={j.tone}>{j.n} {j.label}</Pill>
+            <Task tone={j.tone}>{j.n} {j.label}</Task>
           </Link>
         ))}
         {/*
@@ -169,12 +178,10 @@ export default function ClassOverviewPage() {
           đang muốn xếp lớp cho các em, không phải muốn sửa lại tuần khai giảng.
         */}
         {s?.needsPlacement && (
-          <button className="appearance-none bg-transparent border-0 p-0" onClick={() => setTransitionOpen(true)}>
-            <Pill tone="danger">
-              {s.studentCount} học viên cần xếp lớp tiếp
-              {s.placementOptions.length ? ` · ${s.placementOptions.map((o) => o.code).join(' hoặc ')}` : ''}
-            </Pill>
-          </button>
+          <Task tone="danger" as="button" onClick={() => setTransitionOpen(true)}>
+            {s.studentCount} học viên cần xếp lớp tiếp
+            {s.placementOptions.length ? ` · ${s.placementOptions.map((o) => o.code).join(' hoặc ')}` : ''}
+          </Task>
         )}
       </div>
 
@@ -194,8 +201,8 @@ export default function ClassOverviewPage() {
                 <td className="td w-44 text-slate-400 whitespace-nowrap">Chủ nhiệm</td>
                 <td className="td">
                   {data.coreTeachers.length
-                    ? data.coreTeachers.map((t) => <Pill key={t.id} tone="info">{t.name}</Pill>)
-                    : <Pill tone="warn">Chưa có GVCN</Pill>}
+                    ? data.coreTeachers.map((t) => <Info key={t.id}>{t.name}</Info>)
+                    : <Alert tone="warn">Chưa có GVCN</Alert>}
                 </td>
               </tr>
               {/*
@@ -209,7 +216,7 @@ export default function ClassOverviewPage() {
                   <tr key={x.skill} className="row-hover">
                     <td className="td w-44 text-slate-400 whitespace-nowrap">{skillLabel(x.skill)}</td>
                     <td className="td">
-                      {t ? <span className="text-slate-100">{t.name}</span> : <Pill tone="warn">Chưa phân công</Pill>}
+                      {t ? <span className="text-slate-100">{t.name}</span> : <Alert tone="warn">Chưa phân công</Alert>}
                     </td>
                   </tr>
                 );
@@ -235,6 +242,31 @@ export default function ClassOverviewPage() {
         />
       )}
 
+      {/*
+        MENU QUẢN LÝ LỚP. Panel này chỉ để CHỌN việc; chọn xong nó tự đóng rồi panel của
+        việc đó mở ra, nên không bao giờ có hai lớp panel chồng nhau (mục 5.2).
+      */}
+      <Drawer open={manageOpen} onClose={() => setManageOpen(false)} width="max-w-md"
+        title="Quản lý lớp" subtitle={`${data.code} · ${data.branchName}`}>
+        <div className="space-y-2">
+          {data.viewer.canEditProgress && (
+            <ManageItem label="Tiến độ lớp"
+              hint="Tuần khai giảng, số tuần học, tuần Progress Test và Final Test."
+              onClick={() => { setManageOpen(false); setProgressOpen(true); }} />
+          )}
+          {data.viewer.canAssign && (
+            <ManageItem label="Phân công giáo viên"
+              hint="Chủ nhiệm và giáo viên từng kỹ năng của lớp này."
+              onClick={() => { setManageOpen(false); setAssign(true); }} />
+          )}
+          {data.viewer.canEditProgress && (
+            <ManageItem label="Chuyển tiếp lên lớp sau"
+              hint="Mở lớp tiếp theo và chuyển học viên sang. Lớp cũ giữ nguyên lịch sử."
+              onClick={() => { setManageOpen(false); setTransitionOpen(true); }} />
+          )}
+        </div>
+      </Drawer>
+
       <TransitionPanel classId={data.id} open={transitionOpen}
         onClose={() => setTransitionOpen(false)} onDone={reload} />
       {progressOpen && (
@@ -242,5 +274,17 @@ export default function ClassOverviewPage() {
           onClose={() => setProgressOpen(false)} onDone={reload} />
       )}
     </div>
+  );
+}
+
+/** Một dòng trong menu Quản lý lớp — tên việc, một câu nói rõ nó làm gì. */
+function ManageItem({ label, hint, onClick }: { label: string; hint: string; onClick: () => void }) {
+  return (
+    <button type="button" onClick={onClick}
+      className="w-full text-left rounded-lg border px-3 py-2.5 bg-transparent hover:brightness-125"
+      style={{ borderColor: 'var(--line)' }}>
+      <span className="block text-sm text-slate-100">{label}</span>
+      <span className="block text-xs text-slate-500 mt-0.5">{hint}</span>
+    </button>
   );
 }

@@ -2,6 +2,7 @@ import { db } from '../db.ts';
 import {
   ASSESSED_SKILLS, BASELINE_SOURCE_LABEL, CYCLE_OUTCOME_LABEL, ENTRY_SKILLS,
   ASSESSED_SKILL_LABEL, JOURNEY_GROUP, PERMISSIONS, caseHeadline, issueLabel,
+  caseCategoryLabel,
   type AssessedSkill, type EntrySkill,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -11,7 +12,7 @@ import { entryBandsOf, scoresOf, skipsOf } from '../fasttrack/attempts.ts';
 import { assessedBands, evaluateAttempt } from '../fasttrack/scoring.ts';
 import { evaluateRegular, isRatioCycle, programmeByCode, programmeCodeOfCycle, programmeOfClass } from '../normal/regular.ts';
 import { cycleById, cyclesOf, currentCycle, examPlanOf, targetRevisions } from '../fasttrack/cycles.ts';
-import { canCloseCase } from '../cases/cases.ts';
+import { canCloseCase, parseMetrics } from '../cases/cases.ts';
 import { missingForStudent, suggestedMockWeeks } from '../classes/schedule.ts';
 
 /**
@@ -223,6 +224,109 @@ function episodesOf(rows: any[]) {
   }
   list.sort((a, b) => (a.to < b.to ? 1 : a.to > b.to ? -1 : 0));
   return list;
+}
+
+/**
+ * BIỂU ĐỒ TIẾN BỘ GỌN (mục 7.12.A).
+ *
+ * Một chuỗi điểm cho MỖI kỹ năng, để giao diện chỉ việc vẽ. Bốn quy tắc đã chốt, và ba
+ * trong bốn là quy tắc về những thứ KHÔNG được làm:
+ *
+ * 1. MỘT THANG ĐIỂM MỘT LOẠT. Lớp Fast Track vẽ band 0–9 cùng đường kỳ vọng của từng mốc;
+ *    lớp Normal vẽ ĐIỂM GỐC dạng 13/30, tỷ lệ chỉ để đọc cho dễ. Hai bài khác đề khác thang
+ *    không phải là hai điểm so được thẳng với nhau, nên không quy hết về phần trăm rồi vẽ
+ *    một đường mượt.
+ * 2. ĐIỂM CHÍNH THỨC VÀ ĐIỂM CÔ TỰ CHẤM LÀ HAI LOẠI. Chúng nằm cùng một biểu đồ nhưng
+ *    KHÔNG nối chung một đường, và mang ký hiệu khác nhau.
+ * 3. DƯỚI HAI ĐIỂM THÌ KHÔNG CÓ XU HƯỚNG. Một điểm duy nhất là một điểm, không phải một
+ *    đường đi lên hay đi xuống. Trường hợp đó trả về `enough: false` để màn hình nói thẳng
+ *    "chưa đủ dữ liệu".
+ * 4. LỘ TRÌNH NÀO VẼ LỘ TRÌNH ẤY. Đổi chương trình là đổi thang điểm; hai giai đoạn tách
+ *    nhau bằng chính bộ chọn lộ trình ở đầu trang, không trộn vào một biểu đồ.
+ */
+function progressOf(
+  attempts: any[],
+  ratio: boolean,
+  caseIds: number[],
+) {
+  const conn = db();
+
+  /* ---------------------------------------------- điểm chính thức, cũ → mới */
+  const asc = [...attempts].reverse();
+  type Point = {
+    kind: 'official' | 'teacher';
+    at: string | null; label: string;
+    value: number | null; total: number | null; expectation: number | null;
+  };
+  const bySkill = new Map<string, Point[]>();
+  const push = (skill: string, pt: Point) => {
+    const cur = bySkill.get(skill) ?? [];
+    cur.push(pt);
+    bySkill.set(skill, cur);
+  };
+
+  for (const a of asc) {
+    const label = ratio
+      ? (a.kind === 'final' ? 'Cuối khoá' : 'Giữa khoá')
+      : `MT${a.attemptNo}`;
+    if (ratio) {
+      for (const sk of a.skills ?? []) {
+        if (sk.score === null) continue;
+        push(sk.skill, {
+          kind: 'official', at: a.weekStart ?? null, label,
+          value: sk.score, total: sk.total ?? null, expectation: null,
+        });
+      }
+    } else {
+      for (const sk of ASSESSED_SKILLS) {
+        const band = a.bands?.[sk] ?? null;
+        if (band === null) continue;
+        push(sk, {
+          kind: 'official', at: a.weekStart ?? null, label,
+          value: band, total: null, expectation: a.expectation ?? null,
+        });
+      }
+    }
+  }
+
+  /* ------------------------------------ điểm cô tự chấm, lấy từ các lần cập nhật case */
+  if (caseIds.length) {
+    const rows = conn
+      .prepare(
+        `SELECT observed_on, metrics FROM case_followups
+          WHERE metrics IS NOT NULL AND case_id IN (${caseIds.map(() => '?').join(',')})
+          ORDER BY observed_on`,
+      )
+      .all(...caseIds) as any[];
+    for (const r of rows) {
+      for (const m of parseMetrics(r.metrics) ?? []) {
+        /* Writing1/Writing2 của lớp Fast Track cùng thuộc đường Writing khi vẽ. */
+        const skill = m.skill === 'writing1' || m.skill === 'writing2' ? 'writing' : m.skill;
+        push(skill, {
+          kind: 'teacher', at: r.observed_on, label: 'Cô đánh giá',
+          value: m.score, total: m.total ?? null, expectation: null,
+        });
+      }
+    }
+  }
+
+  const skills = [...bySkill.entries()].map(([skill, points]) => {
+    points.sort((x, y) => ((x.at ?? '') < (y.at ?? '') ? -1 : (x.at ?? '') > (y.at ?? '') ? 1 : 0));
+    const official = points.filter((pt) => pt.kind === 'official');
+    return {
+      skill,
+      label: ASSESSED_SKILL_LABEL[skill as AssessedSkill] ?? caseCategoryLabel(skill),
+      points,
+      officialCount: official.length,
+      /* Hai điểm chính thức trở lên mới nói được là lên hay xuống. */
+      enough: official.length >= 2,
+    };
+  });
+  /* Thứ tự cố định L·R·W·S để mắt quen chỗ, không đổi theo dữ liệu em nào nhiều điểm hơn. */
+  const order = ['listening', 'reading', 'writing', 'speaking'];
+  skills.sort((x, y) => order.indexOf(x.skill) - order.indexOf(y.skill));
+
+  return { mode: ratio ? ('ratio' as const) : ('ielts' as const), skills };
 }
 
 export function studentProfile(p: Principal, studentId: number, wantCycleId?: number | null) {
@@ -505,6 +609,7 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
     },
     trajectory,
     attempts,
+    progress: progressOf(attempts, isRatioCycle(selected ?? {}), cases.map((c: any) => c.id)),
     cases,
     episodes: episodesOf(journeyRows),
     viewer: {

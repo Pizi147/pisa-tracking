@@ -4,7 +4,7 @@ import { useSession } from '../../lib/session.tsx';
 import { useApi } from '../../lib/useApi.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { ConfirmDialog, Modal } from '../../ui/Drawer.tsx';
-import { Field, Pill } from '../../ui/ui.tsx';
+import { Alert, Field, Info, Status } from '../../ui/ui.tsx';
 import { fmtDate } from '../../lib/format.ts';
 
 type Account = {
@@ -53,13 +53,13 @@ export function DemoBar() {
 
   return (
     <div className="flex items-center gap-2 flex-wrap px-4 py-1.5 text-xs border-b bg-[#0b141d]" style={{ borderColor: 'var(--line)' }}>
-      <Pill tone="warn">Dữ liệu demo</Pill>
+      <Alert tone="warn">Dữ liệu demo</Alert>
       <span className="text-slate-500 hidden sm:inline">Toàn bộ dữ liệu là giả, không phải dữ liệu thật của trung tâm.</span>
       <div className="flex-1" />
       <span className="text-slate-400">
         Ngày demo: <strong className="text-slate-200">{fmtDate(session?.demoDate)}</strong>
       </span>
-      {scenario !== 'normal' && <Pill tone="danger">Kịch bản: {SCENARIOS.find((s) => s.key === scenario)?.label}</Pill>}
+      {scenario !== 'normal' && <Alert>Kịch bản: {SCENARIOS.find((s) => s.key === scenario)?.label}</Alert>}
       <button className="btn btn-sm" onClick={() => setToolsOpen(true)}>Công cụ demo</button>
       <button className="btn btn-sm btn-primary" onClick={() => setPickerOpen(true)}>Đổi tài khoản demo</button>
 
@@ -84,13 +84,13 @@ export function DemoBar() {
                   <div className="font-medium text-slate-100">{a.fullName} <span className="text-slate-500 text-xs">· {a.code}</span></div>
                   <div className="text-xs text-slate-400">{a.title}</div>
                 </div>
-                {session?.user?.id === a.id && <Pill tone="ok">Đang dùng</Pill>}
+                {session?.user?.id === a.id && <Status kind="doing">Đang dùng</Status>}
               </div>
               <div className="flex flex-wrap gap-1 mt-2">
                 {a.grants.map((r, i) => (
-                  <Pill key={i} tone="neutral">{r.roleName} · {r.scope}</Pill>
+                  <Info key={i}>{r.roleName} · {r.scope}</Info>
                 ))}
-                {a.assignmentCount > 0 && <Pill tone="info">{a.assignmentCount} phân công lớp/kỹ năng</Pill>}
+                {a.assignmentCount > 0 && <Info>{a.assignmentCount} phân công lớp/kỹ năng</Info>}
               </div>
             </button>
           ))}

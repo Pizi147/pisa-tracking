@@ -1,7 +1,7 @@
 import { db, tx } from '../db.ts';
 import {
   CONTACT_KINDS, CONTACT_KIND_LABEL, ENTRY_SKILL_LABEL, INTERVENTION_KIND_LABEL, PERMISSIONS,
-  SOS_LABEL, autoSupportKind, caseDedupKey, categoryOf, dueDaysFor,
+  SOS_LABEL, autoSupportKind, caseDedupKey, categoryOf, cycleDeadline,
   type CaseCategory, type EntrySkill, type MilestoneKind, type SosLevel,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -155,13 +155,41 @@ export function upsertCategoryCase(
   }
 
   /*
-   * CASE ĐÃ CHỐT "KẾT THÚC HẲN" MÀ TRƯỢT LẠI → MỞ LẠI CHÍNH NÓ, ghi mốc tái phát.
-   * Không tạo case mới, không tạo case-nối-case (owner chốt 13/09/2026).
+   * CASE ĐÃ ĐÓNG MÀ TRƯỢT LẠI → MỞ CASE MỚI, NỐI VÀO CASE CŨ (mục 7.5, vòng 5).
    *
-   * Mở lại thì xoá kết quả đã chốt: kết quả cũ nói "đã xong", mà rõ ràng là chưa. Nó không
-   * mất đi — mốc `closed` trước đó vẫn ghi lại đúng lúc ấy người ta đã kết luận gì.
+   * ĐÂY LÀ ĐẢO LẠI QUYẾT ĐỊNH CỦA VÒNG 4, và lý do đảo rất cụ thể: mở lại case cũ thì phải
+   * xoá kết luận đã chốt của nó, mà kết luận ấy là một quyết định có thật của một người có
+   * thật, ở một thời điểm mà lúc đó nó đúng. Đè lên nó là làm hồ sơ nói dối.
+   *
+   * Case mới thừa kế khoá chống trùng (vì nó mới là case đang mở của hạng mục này), còn
+   * case cũ nhả khoá ra và giữ nguyên mọi thứ nó đã có.
+   *
+   * Case cũ CÒN MỞ thì KHÔNG mở case thứ hai — chỉ cập nhật mức và ghi thêm một mốc, đúng
+   * như bảng ở mục 7.5.
    */
-  const reopening = existing.status === 'done';
+  if (existing.status === 'done') {
+    conn.prepare('UPDATE sos_cases SET dedup_key = NULL, updated_at = ? WHERE id = ?')
+      .run(nowIso(), existing.id);
+    const info = conn
+      .prepare(
+        `INSERT INTO sos_cases (attempt_id, student_id, cycle_id, track, topic, category,
+                                origin_kind, detected_at, sos_level, status, dedup_key,
+                                follow_until, previous_case_id, created_at)
+         VALUES (?,?,?, 'academic', ?,?, 'mock', ?,?, 'open', ?,?,?,?)`,
+      )
+      .run(attempt.id, attempt.student_id, attempt.cycle_id, topic, category,
+           detectedAt, sosLevel, key, followUntil, existing.id, nowIso());
+    const id = Number(info.lastInsertRowid);
+    /* Ghi vào CASE CŨ một mốc nói rõ chuyện chưa dừng ở đó — để đọc hồ sơ là ra một mạch. */
+    addMilestone({
+      caseId: existing.id, kind: 'recurrence', attemptId: attempt.id,
+      attemptNo: attempt.attempt_no, sosLevel, occurredOn: detectedAt,
+      note: 'Tái diễn sau khi case này đã đóng — đã mở case mới nối tiếp',
+      createdBy: p.userId, dedupKey: `recur-link:${existing.id}:${attempt.id}`,
+    });
+    return { id, kind: 'recurrence' };
+  }
+
   conn
     .prepare(
       `UPDATE sos_cases
@@ -173,13 +201,11 @@ export function upsertCategoryCase(
               updated_at = ?
         WHERE id = ?`,
     )
-    .run(attempt.id, sosLevel,
-         existing.status === 'done' ? 'in_progress' : existing.status,
-         followUntil, nowIso(), existing.id);
+    .run(attempt.id, sosLevel, existing.status, followUntil, nowIso(), existing.id);
   if (existing.sos_level !== sosLevel) {
     recordChange(existing.id, 'sos_level', String(existing.sos_level), String(sosLevel), p.userId);
   }
-  return { id: existing.id, kind: reopening ? 'recurrence' : 'repeat' };
+  return { id: existing.id, kind: 'repeat' };
 }
 
 /** Ghi một mốc. Chấm lại hay sửa điểm không nhân đôi nhờ khoá chống trùng. */
@@ -355,13 +381,11 @@ export function ensureBehaviourCase(p: Principal, attempt: any, sosLevel: number
   }
 
   /*
-   * HẠN LÀM hai việc trao đổi: theo mức SOS, giống mọi phương án khác (3/5/7 ngày).
-   *
-   * Bản vòng 3 dùng một mốc riêng "hết Chủ nhật tuần kế tiếp" cho riêng hai việc này. Nay
-   * chúng đã là phương án bình thường nên dùng chung một thang — một quy tắc ít hơn phải
-   * giải thích, và giáo viên không phải nhớ hai cách tính hạn.
+   * HẠN LÀM hai việc trao đổi: MỘT TUẦN kể từ lúc phương án bắt đầu — luật của case
+   * Ý thức/Khác (mục 7.8). Việc gặp em hay gọi phụ huynh làm xong trong vài ngày; bắt chờ
+   * đến Chủ nhật tuần sau mới phải báo lại là kéo dài một việc ngắn một cách vô ích.
    */
-  const due = addDays(detectedAt, dueDaysFor(null, sosLevel));
+  const due = cycleDeadline(detectedAt, 'behaviour');
   for (const kind of CONTACT_KINDS) {
     conn
       .prepare(
@@ -396,7 +420,7 @@ function autoSupportPlan(caseId: number, attempt: any, level: number, skill: str
     .run(caseId, kind,
          `${INTERVENTION_KIND_LABEL[kind]} cho ${ENTRY_SKILL_LABEL[skill as EntrySkill] ?? skill}`
          + ` — theo quy định khi ${SOS_LABEL[level as SosLevel]}`,
-         addDays(detectedAt, dueDaysFor(null, level)),
+         cycleDeadline(detectedAt, 'academic'),
          `auto:${attempt.id}:${caseId}:${skill}`, nowIso());
 }
 

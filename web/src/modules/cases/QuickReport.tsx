@@ -29,6 +29,7 @@ export function QuickReport({ open, onClose, studentId, studentName, cycleId, on
   onDone?: (caseId: number) => void;
 }) {
   const toast = useToast();
+  const [title, setTitle] = useState('');
   const [summary, setSummary] = useState('');
   const [urgency, setUrgency] = useState('normal');
   const [track, setTrack] = useState<string>('academic');
@@ -73,7 +74,7 @@ export function QuickReport({ open, onClose, studentId, studentName, cycleId, on
     setBusy(true);
     try {
       const res = await api.post<any>('/cases/report', {
-        studentId, cycleId: cycleId ?? undefined, summary, urgency,
+        studentId, cycleId: cycleId ?? undefined, title: title.trim() || null, summary, urgency,
         track, topic,
         primaryCode: primaryCode || undefined,
         note: note.trim() || undefined,
@@ -112,7 +113,18 @@ export function QuickReport({ open, onClose, studentId, studentName, cycleId, on
         </>
       }>
       <div className="space-y-3">
-        <Field label="Chuyện gì đang xảy ra" required
+        {/*
+          TÊN CASE DO NGƯỜI TẠO ĐẶT (mục 7.3).
+          Case sinh từ điểm có tên suy ra được ("MT2 - Reading dưới kỳ vọng"); case tạo tay
+          thì không có gì để suy, và hệ thống KHÔNG được tự gán "… dưới kỳ vọng" cho nó.
+        */}
+        <Field label="Tên case"
+          hint="Bỏ trống thì hệ thống gọi theo hạng mục. Đặt tên riêng thì dễ tìm lại hơn.">
+          <input className="field" value={title} onChange={(e) => setTitle(e.target.value)}
+            placeholder="Ví dụ: Không làm bài nghe ở nhà" />
+        </Field>
+
+        <Field label="Mô tả" required
           hint="Một câu là đủ. Những mục còn lại đều có thể bỏ trống.">
           <textarea className="field" rows={3} value={summary} autoFocus
             onChange={(e) => setSummary(e.target.value)}

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useApi } from '../../lib/useApi.ts';
-import { Card, ErrorState, Pill, SectionNote, Skeleton } from '../../ui/ui.tsx';
+import { Card, ErrorState, Info, SectionNote, Skeleton } from '../../ui/ui.tsx';
 import { AccountsAdmin } from './AccountsAdmin.tsx';
 import { CatalogAdmin } from './CatalogAdmin.tsx';
 import { fmtDateTime, roleLabel } from '../../lib/format.ts';
@@ -122,7 +122,7 @@ function ConfigTab({ data }: { data: AdminData }) {
             {data.units.map((u) => (
               <li key={u.id} className="flex items-center gap-2">
                 <span className="text-slate-100">{u.name}</span>
-                <Pill tone={u.kind === 'branch' ? 'neutral' : 'info'}>{u.kind === 'branch' ? 'Chi nhánh' : 'Đơn vị độc lập'}</Pill>
+                <Info>{u.kind === 'branch' ? 'Chi nhánh' : 'Đơn vị độc lập'}</Info>
               </li>
             ))}
           </ul>

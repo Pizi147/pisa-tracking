@@ -397,6 +397,7 @@ function migrateCaseEngine(applied: string[], skipped: string[]) {
     migrateAccounts(conn, applied);
     migrateWeekOnlySchedule(conn, applied);
     migrateNormalFourSkills(conn, applied);
+    migrateCaseCycles(conn, applied);
 
     /*
      * Case đã đóng theo hệ thống cũ mà không có hướng xử lý: ghi rõ là "đóng theo hệ thống
@@ -1560,5 +1561,84 @@ function migrateNormalFourSkills(conn: any, applied: string[]) {
       if (rekeyed) applied.push(`Đặt lại khoá chống trùng cho ${rekeyed} case sau khi đổi hạng mục`);
       if (conflicts) applied.push(`${conflicts} case giữ khoá cũ vì hạng mục đó đã có case khác — cần người gộp tay`);
     }
+  }
+}
+
+/**
+ * VÒNG 5 — CỘT MỚI CHO WORKFLOW CASE HAI TUẦN (mục 7.5, 7.7).
+ *
+ * Cơ sở dữ liệu mới dựng thì đã có sẵn các cột này từ `schema.sql`; hàm này chỉ vá cho cơ
+ * sở dữ liệu CŨ, vì thêm cột là thao tác duy nhất SQLite làm được mà không phải dựng lại
+ * bảng. Mọi bước đều kiểm tra trước, nên chạy lần hai không đổi gì.
+ *
+ * Bản ghi cũ được đặt về chu kỳ 1 và mốc bắt đầu lấy theo ngày đã có — không bịa ra một
+ * ngày bắt đầu mới, và cũng không để trống khiến mọi phương án cũ trông như chưa từng chạy.
+ */
+function migrateCaseCycles(conn: any, applied: string[]) {
+  const has = (t: string) =>
+    !!conn.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name = ?").get(t);
+  const cols = (t: string) => (conn.prepare(`PRAGMA table_info(${t})`).all() as any[]).map((c: any) => c.name);
+  const addCol = (table: string, col: string, decl: string) => {
+    if (!has(table) || cols(table).includes(col)) return false;
+    conn.exec(`ALTER TABLE ${table} ADD COLUMN ${col} ${decl}`);
+    return true;
+  };
+
+  let added = 0;
+  /* Tên case người dùng tự đặt, và mối nối sang case trước khi vấn đề tái phát. */
+  if (addCol('sos_cases', 'title', 'TEXT')) added += 1;
+  if (addCol('sos_cases', 'previous_case_id', 'INTEGER REFERENCES sos_cases(id)')) added += 1;
+
+  /* Chu kỳ xử lý nằm TRONG phương án — không có màn quản lý chu kỳ riêng. */
+  if (addCol('case_interventions', 'cycle_no', 'INTEGER NOT NULL DEFAULT 1')) added += 1;
+  if (addCol('case_interventions', 'cycle_started_on', 'TEXT')) added += 1;
+  if (addCol('case_interventions', 'closed_reason', 'TEXT')) added += 1;
+  if (addCol('case_interventions', 'superseded_by', 'INTEGER REFERENCES case_interventions(id)')) added += 1;
+
+  /* Mỗi lần cập nhật kết quả ghi luôn bước tiếp theo, hạn của chính chu kỳ đó và có trễ không. */
+  if (addCol('case_followups', 'next_step', 'TEXT')) added += 1;
+  if (addCol('case_followups', 'cycle_no', 'INTEGER')) added += 1;
+  if (addCol('case_followups', 'cycle_due', 'TEXT')) added += 1;
+  if (addCol('case_followups', 'late', 'INTEGER NOT NULL DEFAULT 0')) added += 1;
+  /* Điểm giáo viên tự chấm — lưu riêng, không đụng vào điểm chính thức. */
+  if (addCol('case_followups', 'metrics', 'TEXT')) added += 1;
+
+  /* Lớp nối tiếp: lớp BE mở ra từ lớp FOU nào. */
+  if (addCol('classes', 'previous_class_id', 'INTEGER REFERENCES classes(id)')) added += 1;
+
+  if (added) applied.push(`Bổ sung ${added} cột cho workflow case theo chu kỳ hai tuần`);
+
+  /*
+   * MỐC BẮT ĐẦU CHU KỲ cho phương án cũ: lấy ngày đã bắt đầu, hoặc ngày tạo. Chỉ điền vào
+   * chỗ còn trống, nên chạy lại không ghi đè cái đã có.
+   */
+  if (has('case_interventions') && cols('case_interventions').includes('cycle_started_on')) {
+    const filled = conn
+      .prepare(
+        `UPDATE case_interventions
+            SET cycle_started_on = COALESCE(started_date, planned_date, DATE(created_at))
+          WHERE cycle_started_on IS NULL
+            AND COALESCE(started_date, planned_date, DATE(created_at)) IS NOT NULL`,
+      )
+      .run().changes;
+    if (filled) applied.push(`Điền mốc bắt đầu chu kỳ cho ${filled} phương án cũ`);
+
+    /* Phương án cũ đã hoàn thành thì lý do khép lại là "đã xong", không phải "bị thay thế". */
+    const closed = conn
+      .prepare(
+        `UPDATE case_interventions SET closed_reason = 'done'
+          WHERE closed_reason IS NULL AND status = 'completed'`,
+      )
+      .run().changes;
+    if (closed) applied.push(`Ghi lý do khép lại cho ${closed} phương án đã hoàn thành trước đây`);
+  }
+
+  /*
+   * LẦN CẬP NHẬT CŨ chưa có số chu kỳ: gán chu kỳ 1. Không suy ra bước tiếp theo — bước
+   * tiếp theo là một QUYẾT ĐỊNH của người dùng, và đoán hộ thì lịch sử nói sai.
+   */
+  if (has('case_followups') && cols('case_followups').includes('cycle_no')) {
+    const n = conn.prepare('UPDATE case_followups SET cycle_no = 1 WHERE cycle_no IS NULL').run().changes;
+    if (n) applied.push(`Gán chu kỳ 1 cho ${n} lần cập nhật kết quả cũ`);
   }
 }

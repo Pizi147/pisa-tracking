@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useApi } from '../../lib/useApi.ts';
-import { Empty, ErrorState, Level, Skeleton } from '../../ui/ui.tsx';
+import { Empty, ErrorState, Skeleton, Status } from '../../ui/ui.tsx';
 import { fmtBand, fmtDate } from '../../lib/format.ts';
 import { CasePanel } from './CasePanel.tsx';
 
@@ -43,12 +43,23 @@ const STATE_LABEL: Record<Row['state'], string> = {
   working: 'Đang xử lý',
   done: 'Đã kết thúc',
 };
-const STATE_TONE: Record<Row['state'], 'ok' | 'warn' | 'danger' | 'muted'> = {
-  none: 'ok', no_plan: 'warn', working: 'danger', done: 'muted',
+/*
+ * "KHÔNG CÓ CASE" KHÔNG PHẢI LÀ "HỌC TỐT" (mục 2.2).
+ *
+ * Bản trước tô xanh ô này, nên một em chưa ai nhập điểm và một em điểm tốt trông giống hệt
+ * nhau. Xanh là một lời khen, và ở đây hệ thống không có căn cứ nào để khen: nó chỉ biết
+ * rằng chưa ai mở case. Trạng thái "chưa có tin gì" phải là màu xám trung tính — chỉ khi
+ * có ĐIỂM ĐẠT KỲ VỌNG thì dòng mới được xanh, và việc đó do cột kết quả bên cạnh nói.
+ *
+ * Cả bốn ô đều là TRẠNG THÁI XỬ LÝ, nên dùng chung một họ nhãn (mục 2.1): xám khi chưa có
+ * gì hoặc đã xong, vàng khi đang chờ ai đó ra tay, xanh dương khi đang chạy.
+ */
+const STATE_KIND: Record<Row['state'], 'doing' | 'waiting' | 'done' | 'idle'> = {
+  none: 'idle', no_plan: 'waiting', working: 'doing', done: 'done',
 };
 /** Dải màu ở mép trái dòng — đọc được mức độ trước cả khi đọc chữ. */
 const STATE_BAR: Record<Row['state'], string> = {
-  none: 'var(--ok)', no_plan: 'var(--warn)', working: 'var(--danger)', done: 'var(--line-strong)',
+  none: 'var(--line)', no_plan: 'var(--warn)', working: 'var(--accent)', done: 'var(--line-strong)',
 };
 
 export function SkillBoard({ studentId, cycleId, onOpenCase, onReport }: {
@@ -139,7 +150,7 @@ function SkillRow({ row, open, onToggle, onOpenCase, onReport }: {
 
           {/* ---------------------------------------------------------- 3. tình trạng */}
           <div className="whitespace-nowrap">
-            <Level tone={STATE_TONE[row.state]}>{STATE_LABEL[row.state]}</Level>
+            <Status kind={STATE_KIND[row.state]}>{STATE_LABEL[row.state]}</Status>
             <span className="block text-[10px] text-slate-500 mt-0.5">
               {row.carriedOver
                 ? 'từ lộ trình trước'

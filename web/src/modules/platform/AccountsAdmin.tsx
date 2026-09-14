@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useApi } from '../../lib/useApi.ts';
 import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
-import { Card, Empty, Field, Forbidden, Pill, SectionNote, Skeleton } from '../../ui/ui.tsx';
+import { Card, Empty, Field, Forbidden, Info, SectionNote, Skeleton } from '../../ui/ui.tsx';
 import { Drawer } from '../../ui/Drawer.tsx';
 import { fmtDate, skillLabel } from '../../lib/format.ts';
 import { PERMISSION_LABEL, ROLES, ROLE_LABEL, type Role } from '@shared/domain/index.ts';
@@ -100,9 +100,9 @@ export function AccountsAdmin() {
                     <span className="flex flex-wrap gap-1">
                       {u.roles.length === 0 && <span className="text-xs text-slate-600">chưa có vai</span>}
                       {u.roles.map((g, i) => (
-                        <Pill key={i} tone="neutral">
+                        <Info key={i}>
                           {ROLE_LABEL[g.role as Role] ?? g.roleName} · {g.branchName ?? 'Toàn hệ thống'}
-                        </Pill>
+                        </Info>
                       ))}
                     </span>
                   </td>
@@ -110,7 +110,7 @@ export function AccountsAdmin() {
                     <span className="flex flex-wrap gap-1">
                       {u.extra.length === 0 && <span className="text-xs text-slate-600">—</span>}
                       {u.extra.map((x, i) => (
-                        <Pill key={i} tone="warn">{x.name}{x.branchCode ? ` · ${x.branchCode}` : ' · toàn hệ thống'}</Pill>
+                        <Info key={i}>{x.name}{x.branchCode ? ` · ${x.branchCode}` : ' · toàn hệ thống'}</Info>
                       ))}
                     </span>
                   </td>

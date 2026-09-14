@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { useSession } from '../../lib/session.tsx';
-import { Card, Empty, ErrorState, KpiTile, Pill, SectionNote, Skeleton } from '../../ui/ui.tsx';
+import { Alert, Card, Empty, ErrorState, Info, KpiTile, Level, SectionNote, Skeleton, Status } from '../../ui/ui.tsx';
 import { Drawer } from '../../ui/Drawer.tsx';
 import { CasePanel } from './CasePanel.tsx';
 import { SummaryTable } from '../worklist/SummaryTable.tsx';
@@ -349,9 +349,9 @@ export function CaseBoard({ embedded = false }: { embedded?: boolean } = {}) {
                         </div>
                       </td>
                       <td className="td">
-                        {r.topicLabel && <Pill tone="neutral">{r.topicLabel}</Pill>}
+                        {r.topicLabel && <Info>{r.topicLabel}</Info>}
                         {r.primaryLabel
-                          ? <div className="mt-0.5"><Pill tone="info">{r.primaryLabel}</Pill></div>
+                          ? <div className="mt-0.5"><Info>{r.primaryLabel}</Info></div>
                           : <div className="text-[10px] text-slate-600 mt-0.5">chưa rõ nguyên nhân</div>}
                       </td>
                       <td className="td text-xs text-slate-400 whitespace-nowrap">
@@ -371,17 +371,17 @@ export function CaseBoard({ embedded = false }: { embedded?: boolean } = {}) {
                           trong database: một case có hai việc đã ghi mà cột này vẫn đề
                           "Chưa xử lý" thì người đọc chỉ có thể kết luận là số liệu sai.
                         */}
-                        <Pill tone={r.state === 'done' ? 'muted' : r.state === 'no_plan' ? 'warn' : 'info'}>
+                        <Status kind={r.state === 'done' ? 'done' : r.state === 'no_plan' ? 'waiting' : 'doing'}>
                           {STATE_LABEL[r.state]}
-                        </Pill>
+                        </Status>
                         {r.sosLevel !== null && (
-                          <div className="mt-0.5"><Pill tone={sosTone(r.sosLevel)}>{sosLabel(r.sosLevel)}</Pill></div>
+                          <div className="mt-0.5"><Level tone={sosTone(r.sosLevel)}>{sosLabel(r.sosLevel)}</Level></div>
                         )}
                         {r.urgency && r.urgency !== 'normal' && (
                           <div className="mt-0.5">
-                            <Pill tone={r.urgency === 'urgent' ? 'danger' : 'warn'}>
+                            <Alert tone={r.urgency === 'urgent' ? 'danger' : 'warn'}>
                               {r.urgency === 'urgent' ? 'Gấp' : 'Cần chú ý'}
-                            </Pill>
+                            </Alert>
                           </div>
                         )}
                       </td>

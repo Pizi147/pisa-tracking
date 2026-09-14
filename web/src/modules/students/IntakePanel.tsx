@@ -3,7 +3,7 @@ import { api } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { Drawer } from '../../ui/Drawer.tsx';
-import { Pill, SectionNote } from '../../ui/ui.tsx';
+import { Outcome, SectionNote } from '../../ui/ui.tsx';
 
 
 type Row = {
@@ -261,7 +261,7 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
               Bỏ qua {blocking} dòng lỗi
             </button>
           ) : (
-            <Pill tone="ok">Không còn lỗi chặn</Pill>
+            <Outcome tone="ok" mark="✓">Không còn lỗi chặn</Outcome>
           ))}
         </div>
 

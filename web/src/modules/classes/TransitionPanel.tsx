@@ -4,7 +4,7 @@ import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { Drawer } from '../../ui/Drawer.tsx';
 import { WeekPicker } from '../../ui/Filters.tsx';
-import { ErrorState, Pill, SectionNote, Skeleton } from '../../ui/ui.tsx';
+import { ErrorState, Info, SectionNote, Skeleton } from '../../ui/ui.tsx';
 
 /**
  * CHUYỂN TIẾP CẢ LỚP KHI HỌC HẾT CHƯƠNG TRÌNH — mục 6.1.
@@ -199,7 +199,7 @@ export function TransitionPanel({ classId, open, onClose, onDone }: {
                       </td>
                       <td className="td">
                         {skipped[s.id] ? (
-                          <Pill tone="muted">Không chuyển lần này</Pill>
+                          <Info>Không chuyển lần này</Info>
                         ) : (
                           <select
                             className="field w-full" value={targetOf(s.id)}

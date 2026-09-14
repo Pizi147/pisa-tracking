@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
-import { Card, Pill, SectionNote, Skeleton } from '../../ui/ui.tsx';
+import { Card, Info, SectionNote, Skeleton, Task } from '../../ui/ui.tsx';
 
 type Signal = {
   key: string; kind: string; label: string; count: number;
@@ -41,15 +41,15 @@ export function SignalList({ branchId, periodId }: { branchId?: number | null; p
   }
 
   return (
-    <Card title="Việc đang tồn" action={<Pill tone="neutral">{data.length} nhóm</Pill>} bodyClass="p-0">
+    <Card title="Việc đang tồn" action={<Info>{data.length} nhóm</Info>} bodyClass="p-0">
       <ul className="divide-y list-none p-0 m-0" style={{ borderColor: 'var(--line)' }}>
         {data.map((s) => (
           <li key={s.key}>
             <Link to={s.href} className="no-underline flex flex-wrap items-center gap-x-3 gap-y-1 px-4 py-2.5 hover:bg-white/5">
-              <Pill tone={s.tone}>{s.count}</Pill>
+              <Task tone={s.tone}>{s.count}</Task>
               <span className="text-sm text-slate-200 flex-1 min-w-0">{s.label}</span>
               {s.branchName && <span className="text-xs text-slate-500">{s.branchName}</span>}
-              <Pill tone="muted">{OWNER_LABEL[s.owner]}</Pill>
+              <Info>{OWNER_LABEL[s.owner]}</Info>
             </Link>
           </li>
         ))}

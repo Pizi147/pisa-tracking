@@ -1655,40 +1655,106 @@ check('"Đã xong" phải có ngày thực tế; người nhập không mặc đ
   assert(p2.byProxy, 'Nhập hộ người ngoài mà không được đánh dấu là nhập hộ');
 });
 
-check('Chỉ hẹn ngày xem lại mới có quá hạn; theo dõi không hẹn thì không bao giờ quá hạn', () => {
+check('MỌI phương án đều có chu kỳ và hạn — không có phương án treo vô thời hạn', () => {
   const c = cases.reportIssue(P.coreTeacher, {
     studentId: someStudent.id, topic: 'listening', summary: 'Thử quá hạn', idempotencyKey: 'test-report-4', parallel: true,
   }) as any;
-  // Có hẹn và đã qua ngày.
-  const overdue = cases.recordIntervention(P.coreTeacher, c.id, {
-    kind: 'tutor', description: 'Có hẹn xem lại', performerName: 'Tutor A',
-    status: 'started', startedDate: addDays(TODAY, -20), followupDue: addDays(TODAY, -5),
+  /*
+   * LUẬT VÒNG 5 (mục 7.7): chu kỳ hai tuần gắn vào MỌI phương án học thuật ngay khi nó bắt
+   * đầu. Trước đây một phương án không hẹn ngày thì không bao giờ quá hạn — nghĩa là nó nằm
+   * im mãi mà không ai bị nhắc, đúng thứ luật mới sinh ra để chặn.
+   */
+  const started = cases.recordIntervention(P.coreTeacher, c.id, {
+    kind: 'tutor', description: 'Bắt đầu từ 20 ngày trước', performerName: 'Tutor A',
+    status: 'started', startedDate: addDays(TODAY, -20),
   }) as any;
-  assert(overdue.interventions.some((i: any) => i.overdue), 'Đã quá ngày hẹn mà không báo quá hạn');
-  // Không hẹn: dù để rất lâu cũng không quá hạn.
-  const c2 = cases.reportIssue(P.coreTeacher, {
-    studentId: someStudent.id, topic: 'listening', summary: 'Chỉ theo dõi', idempotencyKey: 'test-report-5', parallel: true,
+  const iv = started.interventions.find((i: any) => i.description === 'Bắt đầu từ 20 ngày trước')!;
+  assert(iv.actionDue, 'Phương án bắt đầu rồi mà không có hạn nào');
+  assert(iv.actionDue === domain.cycleDeadline(addDays(TODAY, -20)),
+    `Hạn phải theo chu kỳ hai tuần: kỳ vọng ${domain.cycleDeadline(addDays(TODAY, -20))}, đang là ${iv.actionDue}`);
+  assert(iv.overdue || iv.actionOverdue, 'Bắt đầu 20 ngày trước, quá chu kỳ hai tuần mà không báo quá hạn');
+
+  // Phương án CHỜ DUYỆT thì chu kỳ CHƯA chạy — thời gian chờ là của Quản lý.
+  const proposed = cases.recordIntervention(P.coreTeacher, c.id, {
+    kind: 'extra_support', description: 'Xin hỗ trợ ngoài định mức', performerName: 'GVCN',
   }) as any;
-  const monitor = cases.recordIntervention(P.coreTeacher, c2.id, {
-    kind: 'teaching_adjust', description: 'Nhắc trong giờ chữa bài', performerName: 'GVBM',
-    status: 'started', startedDate: addDays(TODAY, -60),
-  }) as any;
-  assert(!monitor.interventions.some((i: any) => i.overdue),
-    'Theo dõi không hẹn ngày mà lại bị coi là quá hạn');
+  const waiting = proposed.interventions.find((i: any) => i.description === 'Xin hỗ trợ ngoài định mức')!;
+  assert(waiting.approvalState === 'pending', 'Phương án nhóm Đề xuất phải ở trạng thái chờ duyệt');
+  assert(!waiting.actionDue, 'Đang chờ duyệt mà đã tính hạn cho giáo viên — thời gian chờ là của Quản lý');
 });
 
-check('Đóng case bắt buộc có hướng xử lý, và "chỉ theo dõi" không phải là đóng', () => {
+check('Hoàn thành case: bắt buộc có hướng xử lý VÀ mọi phương án đã khép lại', () => {
   const c = cases.reportIssue(P.coreTeacher, {
     studentId: someStudent.id, topic: 'listening', summary: 'Thử đóng case', idempotencyKey: 'test-report-6', parallel: true,
   }) as any;
   assertThrows(() => cases.setDisposition(P.mbManager, c.id, { status: 'done' }),
     /hướng xử lý/, 'Đóng case mà không có hướng xử lý');
-  assertThrows(() => cases.setDisposition(P.mbManager, c.id, { status: 'done', disposition: 'monitor' }),
-    /còn mở/, '"Chỉ theo dõi" mà vẫn đóng được');
+
+  /*
+   * MỤC 7.7 [5]: case CHƯA CÓ PHƯƠNG ÁN NÀO không đủ điều kiện đóng. Đếm được "0 phương án
+   * còn mở" không có nghĩa là đã làm gì cho em.
+   */
+  assert(cases.closeBlockers(c.id).length === 1, 'Case chưa có phương án phải có đúng một lý do chặn');
+  assertThrows(() => cases.setDisposition(P.mbManager, c.id, { status: 'done', disposition: 'no_action' }),
+    /chưa có phương án/, 'Case chưa có phương án nào mà vẫn đóng được');
+
+  // Có phương án nhưng CHƯA cập nhật kết quả → vẫn chặn, và nói rõ còn thiếu gì.
+  const withPlan = cases.recordIntervention(P.coreTeacher, c.id, {
+    kind: 'tutor', description: 'Học tutor Listening', performerName: 'Tutor B',
+    status: 'started', startedDate: demoToday(),
+  }) as any;
+  const ivId = withPlan.interventions.find((i: any) => i.description === 'Học tutor Listening').id;
+  assert(cases.closeBlockers(c.id).some((b: string) => /chưa cập nhật kết quả/.test(b)),
+    'Phương án chưa có kết quả mà không bị chặn');
+  assertThrows(() => cases.setDisposition(P.mbManager, c.id, { status: 'done', disposition: 'no_action' }),
+    /chưa cập nhật kết quả/, 'Còn phương án chưa cập nhật mà vẫn đóng được');
+
+  // Cập nhật kết quả và khép phương án → lúc này mới đóng được.
+  cases.updateResult(P.coreTeacher, ivId, {
+    outcome: 'improved', nextStep: 'complete', note: 'Em nghe bắt ý tốt hơn hẳn',
+  });
+  assert(cases.closeBlockers(c.id).length === 0, 'Mọi phương án đã khép mà vẫn còn lý do chặn');
   const done = cases.setDisposition(P.mbManager, c.id, {
     status: 'done', disposition: 'no_action', note: 'Đã trao đổi, em ổn định lại',
   }) as any;
-  assert(done.status === 'done' && done.closedAt, 'Không đóng được case dù đã có hướng xử lý');
+  assert(done.status === 'done' && done.closedAt, 'Không đóng được case dù mọi điều kiện đã đủ');
+});
+
+check('Cập nhật kết quả: kết quả chưa tốt BẮT BUỘC chọn đường đi tiếp', () => {
+  const c = cases.reportIssue(P.coreTeacher, {
+    studentId: someStudent.id, topic: 'reading', summary: 'Thử luồng kết quả',
+    idempotencyKey: 'test-result-1', parallel: true,
+  }) as any;
+  const d = cases.recordIntervention(P.coreTeacher, c.id, {
+    kind: 'self_study', description: 'Xếp tự học Reading', performerName: 'GVCN',
+    status: 'started', startedDate: demoToday(),
+  }) as any;
+  const ivId = d.interventions.find((i: any) => i.description === 'Xếp tự học Reading').id;
+
+  assertThrows(() => cases.updateResult(P.coreTeacher, ivId, { outcome: 'worse', nextStep: 'complete' }),
+    /chỉ đi tiếp được bằng/, 'Kết quả "Kém hơn" mà vẫn khép lại được');
+  assertThrows(() => cases.updateResult(P.coreTeacher, ivId, { outcome: 'unchanged', nextStep: 'propose' }),
+    /phương án mới là gì/, 'Chọn đề xuất phương án mới mà không nói phương án nào');
+
+  // "Tiếp tục phương án cũ" mở CHU KỲ MỚI trên chính phương án đó, không nhân đôi phương án.
+  const before = d.interventions.length;
+  const after = cases.updateResult(P.coreTeacher, ivId, {
+    outcome: 'unchanged', nextStep: 'continue', note: 'Em có làm nhưng chưa đều',
+  }) as any;
+  assert(after.interventions.length === before, 'Tiếp tục phương án cũ mà lại sinh thêm một phương án');
+  const iv2 = after.interventions.find((i: any) => i.id === ivId);
+  assert(iv2.cycleNo === 2, `Phải sang chu kỳ 2, đang là ${iv2.cycleNo}`);
+  assert(iv2.actionDue === domain.cycleDeadline(demoToday()), 'Chu kỳ mới phải có hạn mới theo luật hai tuần');
+
+  // "Đề xuất phương án mới" khép phương án cũ với lý do ĐƯỢC THAY THẾ, không phải đã thành công.
+  const replaced = cases.updateResult(P.coreTeacher, ivId, {
+    outcome: 'worse', nextStep: 'propose', note: 'Tự học không ăn thua',
+    newPlan: { kind: 'tutor', description: 'Chuyển sang tutor', performerName: 'Tutor C' },
+  }) as any;
+  const old = replaced.interventions.find((i: any) => i.id === ivId);
+  assert(old.closedReason === 'superseded', `Phương án cũ phải ghi "được thay thế", đang là ${old.closedReason}`);
+  assert(old.supersededBy, 'Phương án cũ không nối sang phương án mới');
+  assert(replaced.interventions.some((i: any) => i.description === 'Chuyển sang tutor'), 'Không tạo phương án mới');
 });
 
 check('Chỉ GVCN của lớp và Quản lý mới đóng được case', () => {
@@ -2461,7 +2527,7 @@ check('Hai việc trao đổi nằm CHUNG bảng phương án, không còn bản
   assert(stray === 0, `${stray} việc trao đổi lạc vào case học thuật`);
 });
 
-check('Hạn làm việc trao đổi theo mức SOS: 7 / 5 / 3 ngày', () => {
+check('Hạn làm việc trao đổi: một tuần kể từ lúc bắt đầu', () => {
   const rows = conn
     .prepare(
       `SELECT iv.action_due, iv.kind, sc.sos_level, sc.detected_at
@@ -2475,9 +2541,10 @@ check('Hạn làm việc trao đổi theo mức SOS: 7 / 5 / 3 ngày', () => {
     .all() as any[];
   assert(rows.length > 0, 'Không có việc trao đổi nào có hạn để kiểm');
   for (const r of rows) {
-    const expected = addDays(r.detected_at, domain.dueDaysFor(null, r.sos_level));
+    // Việc trao đổi thuộc case Ý thức/Khác → hạn một tuần kể từ lúc bắt đầu.
+    const expected = domain.cycleDeadline(r.detected_at, 'behaviour');
     assert(r.action_due === expected,
-      `SOS ${r.sos_level} phát hiện ${r.detected_at} phải có hạn ${expected}, đang là ${r.action_due}`);
+      `Việc trao đổi phát hiện ${r.detected_at} phải có hạn ${expected}, đang là ${r.action_due}`);
   }
 });
 
@@ -2517,20 +2584,40 @@ check('SOS 1-2 xếp tự học, SOS 3 xếp tutor, từ MT3 luôn là tutor', (
     'Từ MT3 luôn là tutor bất kể mức — gần ngày thi thì tự học không kịp');
 });
 
-check('Hạn suy thẳng từ mức gấp: 7 · 5 · 3 ngày', () => {
-  const { dueDaysFor } = domain;
-  assert(dueDaysFor('normal') === 7, 'Bình thường phải là 7 ngày');
-  assert(dueDaysFor('attention') === 5, 'Cần chú ý phải là 5 ngày');
-  assert(dueDaysFor('urgent') === 3, 'Gấp phải là 3 ngày');
-  // Vấn đề sinh từ điểm không ghi mức vào database; mức suy từ SOS lúc cần.
-  /*
-   * BA MỨC SOS ↔ BA MỨC GẤP, một–một (tài liệu chốt vòng 4, bảng 3.1).
-   * Bản trước gộp SOS 1 và SOS 2 vào cùng mức "cần chú ý", nên một em trượt đúng một kỹ
-   * năng bị thúc gấp ngang em trượt hai kỹ năng.
-   */
-  assert(dueDaysFor(null, 1) === 7, 'SOS 1 là bình thường → 7 ngày');
-  assert(dueDaysFor(null, 2) === 5, 'SOS 2 là cần chú ý → 5 ngày');
-  assert(dueDaysFor(null, 3) === 3, 'SOS 3 là gấp → 3 ngày');
+check('Chu kỳ HỌC THUẬT: hết Chủ nhật tuần thứ hai, tính tuần bắt đầu là tuần thứ nhất', () => {
+  const { cycleDeadline } = domain;
+  // Ví dụ owner chốt ở mục 7.7: case 14/09/2026 (thứ Hai) → hạn 27/09/2026, KHÔNG phải 04/10.
+  assert(cycleDeadline('2026-09-14') === '2026-09-27',
+    `Case 14/09 phải có hạn 27/09, đang là ${cycleDeadline('2026-09-14')}`);
+  // Bắt đầu giữa tuần vẫn cùng một hạn — chu kỳ đếm theo TUẦN, không phải cộng 14 ngày.
+  assert(cycleDeadline('2026-09-17') === '2026-09-27', 'Bắt đầu thứ Năm vẫn cùng hạn với thứ Hai cùng tuần');
+  assert(cycleDeadline('2026-09-20') === '2026-09-27', 'Chủ nhật vẫn thuộc tuần đó');
+  assert(cycleDeadline('2026-09-21') === '2026-10-04', 'Sang tuần mới thì hạn lùi đúng một tuần');
+});
+
+check('Chu kỳ Ý THỨC/KHÁC: một tuần kể từ lúc phương án bắt đầu', () => {
+  const { cycleDeadline } = domain;
+  assert(cycleDeadline('2026-09-14', 'behaviour') === '2026-09-21', 'Một tuần kể từ 14/09 là 21/09');
+  assert(cycleDeadline('2026-09-17', 'behaviour') === '2026-09-24',
+    'Case Ý thức tính từ chính ngày bắt đầu, KHÔNG căn theo tuần lịch');
+});
+
+check('Kết quả tốt được khép lại; kết quả chưa tốt BẮT BUỘC đi tiếp', () => {
+  const { nextStepsFor, FOLLOWUP_OUTCOMES, BEHAVIOUR_OUTCOMES } = domain;
+  assert(FOLLOWUP_OUTCOMES.length === 5, 'Case học thuật phải có đủ năm kết quả');
+  assert(BEHAVIOUR_OUTCOMES.length === 3, 'Case Ý thức/Khác chỉ có ba kết quả');
+  for (const o of ['improved', 'partial']) {
+    const steps = nextStepsFor(o);
+    assert(steps.includes('complete') && steps.includes('monitor'),
+      `Kết quả ${o} phải cho phép hoàn thành hoặc theo dõi thêm`);
+    assert(!steps.includes('continue'), `Kết quả ${o} không cần tiếp tục phương án cũ`);
+  }
+  for (const o of ['unchanged', 'worse', 'insufficient']) {
+    const steps = nextStepsFor(o);
+    assert(!steps.includes('complete'),
+      `Kết quả ${o} KHÔNG được phép khép lại — phải chọn đường đi tiếp`);
+    assert(steps.length === 3, `Kết quả ${o} phải có đủ ba đường đi tiếp`);
+  }
 });
 
 check('Chọn loại trong nhóm Đề xuất TỨC LÀ xin duyệt, không phải tick thêm', () => {
@@ -2685,14 +2772,20 @@ check('Đã có vấn đề đang mở ở kỹ năng đó thì DÙNG LẠI, kh�
     kind: 'teacher_task', title: 'Đợt hai: vẫn luyện đọc bấm giờ',
     classId: cls, track: 'academic', topic: 'reading',
   });
+  /*
+   * `parallel = 1` là case người dùng ĐÃ THẤY cảnh báo trùng và cố ý mở riêng (mục 7.2:
+   * "cho chọn thêm vào case đang có hoặc tạo case riêng; không âm thầm gộp"). Phép kiểm
+   * này nói về việc máy tự mở trùng, nên loại những case cố ý ra.
+   */
   const dup = conn
     .prepare(
       `SELECT student_id, COUNT(*) n FROM sos_cases
         WHERE topic = 'reading' AND track = 'academic' AND status != 'done' AND attempt_id IS NULL
+          AND parallel = 0
         GROUP BY student_id HAVING n > 1`,
     )
     .all() as any[];
-  assert(dup.length === 0, `${dup.length} em bị mở hai vấn đề Reading cùng lúc`);
+  assert(dup.length === 0, `${dup.length} em bị máy tự mở hai vấn đề Reading cùng lúc`);
 });
 
 check('Việc chi nhánh KHÔNG gắn học viên nào', () => {
@@ -2820,7 +2913,7 @@ check('Trượt Listening ở MT1 rồi MT2 → ĐÚNG MỘT case, tên đổi t
     'Thiếu mốc "trượt lại" — nhìn vào không biết phương án cũ chưa ăn thua');
 });
 
-check('Case đã chốt "kết thúc hẳn" mà MT sau trượt lại → MỞ LẠI chính nó, có mốc tái phát', () => {
+check('Case đã đóng mà MT sau trượt lại → MỞ CASE MỚI nối vào case cũ (mục 7.5)', () => {
   const cls = 'BC-FT 205';
   const s = conn
     .prepare(
@@ -2860,7 +2953,7 @@ check('Case đã chốt "kết thúc hẳn" mà MT sau trượt lại → MỞ L
     .all(c.id) as any[];
   assertThrows(
     () => cases.closeCaseOutcome(mgr, c.id, { outcome: 'improved', decision: 'end' }),
-    /chưa có kết quả/, 'Chốt được kết quả case khi còn phương án treo',
+    /chưa cập nhật kết quả cuối cùng/, 'Chốt được kết quả case khi còn phương án treo',
   );
   for (const iv of open) cases.completeIntervention(mgr, iv.id, { doneOn: demoToday() });
   cases.closeCaseOutcome(mgr, c.id, {
@@ -2873,15 +2966,32 @@ check('Case đã chốt "kết thúc hẳn" mà MT sau trượt lại → MỞ L
   const a2 = mk('2026-11-23');
   attempts.saveScore(rt, a2.id, 'reading', { rawScore: low(a2.attempt_no) });
 
-  const all = conn.prepare(`SELECT * FROM sos_cases WHERE student_id = ? AND category = 'reading'`)
+  /*
+   * VÒNG 5 ĐẢO LẠI QUYẾT ĐỊNH CỦA VÒNG 4 (mục 7.5).
+   *
+   * Vòng 4: mở lại chính case cũ. Vòng 5: mở case MỚI nối vào case cũ — vì mở lại case cũ
+   * thì phải xoá kết luận đã chốt của nó, mà kết luận ấy là một quyết định có thật của một
+   * người có thật, ở một thời điểm mà lúc đó nó đúng.
+   */
+  const all = conn
+    .prepare(`SELECT * FROM sos_cases WHERE student_id = ? AND category = 'reading' ORDER BY id`)
     .all(s.id) as any[];
-  assert(all.length === 1, `Tái phát phải mở lại chính case cũ, đang có ${all.length} case Reading`);
-  const back = all[0];
-  assert(back.status !== 'done', 'Case tái phát mà vẫn đang đóng');
-  assert(back.outcome === null, 'Case mở lại vẫn giữ kết quả "đã xong" cũ — nói sai sự thật');
-  const d = cases.caseDetail(mgr, c.id) as any;
+  assert(all.length === 2, `Tái diễn sau khi đóng phải mở case MỚI, đang có ${all.length} case Reading`);
+  const [older, newer] = all;
+
+  // Case CŨ giữ nguyên mọi thứ đã chốt — không bị đè.
+  assert(older.id === c.id && older.status === 'done', 'Case cũ bị mở lại thay vì giữ nguyên');
+  assert(older.outcome === 'much_better', 'Kết luận của case cũ bị xoá — mất một quyết định có thật');
+
+  // Case MỚI đang mở, và nối được về case cũ.
+  assert(newer.status !== 'done', 'Case mới mà đã đóng sẵn');
+  assert(newer.previous_case_id === older.id, 'Case mới không nối về case cũ — hồ sơ đứt mạch');
+  assert(newer.outcome === null, 'Case mới không được thừa kế kết luận của case cũ');
+
+  // Và case cũ mang một mốc nói rõ chuyện chưa dừng ở đó.
+  const d = cases.caseDetail(mgr, older.id) as any;
   assert(d.milestones.some((m: any) => m.kind === 'recurrence'),
-    'Thiếu mốc "tái phát" — nhìn vào không biết là tưởng xong rồi mà hỏng lại');
+    'Case cũ thiếu mốc tái diễn — đọc hồ sơ tưởng xong hẳn rồi');
   assert(d.milestones.some((m: any) => m.kind === 'closed'),
     'Mốc chốt kết thúc cũ bị xoá — mất dấu chuyện đã từng kết luận là xong');
 });
@@ -3638,6 +3748,126 @@ check('Chuyển tiếp: một dòng lỗi không làm hỏng cả lô', () => {
   }) as any;
   assert(r.done.length === 1 && r.failed.length === 1, 'Lô phải có cả dòng xong lẫn dòng lỗi');
   assert(/lớp đích/i.test(r.failed[0].message), `Lý do lỗi phải nói rõ: ${r.failed[0].message}`);
+});
+
+// ============================================================ 32. Vòng 5 — mục 7
+console.log('\n32. Vòng 5 — case, điểm giáo viên tự chấm và biểu đồ tiến bộ');
+
+check('Điểm giáo viên tự chấm KHÔNG đụng vào điểm chính thức và không đổi mức SOS', () => {
+  const c = conn
+    .prepare(
+      `SELECT sc.*, iv.id AS iv_id FROM sos_cases sc
+         JOIN case_interventions iv ON iv.case_id = sc.id
+        WHERE sc.track = 'academic' AND sc.status != 'done'
+          AND iv.status IN ('planned','started') AND COALESCE(iv.approval_state,'') != 'pending'
+        ORDER BY sc.id LIMIT 1`,
+    )
+    .get() as any;
+  assert(c, 'Không tìm thấy case học thuật đang có phương án chạy');
+
+  const before = conn
+    .prepare('SELECT sos_level FROM sos_cases WHERE id = ?').get(c.id) as any;
+  const scoresBefore = (conn
+    .prepare('SELECT COUNT(*) n FROM assessment_scores').get() as any).n;
+
+  cases.updateResult(P.admin, c.iv_id, {
+    outcome: 'partial', nextStep: 'monitor', note: 'Có khá hơn',
+    metrics: [{ skill: 'reading', score: 6, total: null }],
+  });
+
+  const after = conn.prepare('SELECT sos_level FROM sos_cases WHERE id = ?').get(c.id) as any;
+  assert(after.sos_level === before.sos_level, 'Điểm cô tự chấm đã làm đổi mức SOS — không được phép');
+  const scoresAfter = (conn.prepare('SELECT COUNT(*) n FROM assessment_scores').get() as any).n;
+  assert(scoresAfter === scoresBefore, 'Điểm cô tự chấm đã ghi vào bảng điểm chính thức');
+
+  const f = conn
+    .prepare('SELECT metrics FROM case_followups WHERE intervention_id = ? ORDER BY id DESC LIMIT 1')
+    .get(c.iv_id) as any;
+  const m = JSON.parse(f.metrics);
+  assert(m[0].skill === 'reading' && m[0].score === 6 && m[0].total === null,
+    `Điểm cô chấm lưu sai: ${f.metrics}`);
+});
+
+check('Điểm giáo viên tự chấm bị chặn khi vô lý', () => {
+  const c = conn
+    .prepare(
+      `SELECT iv.id FROM sos_cases sc JOIN case_interventions iv ON iv.case_id = sc.id
+        WHERE sc.track = 'academic' AND sc.status != 'done'
+          AND iv.status IN ('planned','started') AND COALESCE(iv.approval_state,'') != 'pending'
+        ORDER BY sc.id LIMIT 1`,
+    )
+    .get() as any;
+  if (!c) return;
+  // Band phải 0–9 khi không có tổng điểm.
+  assertThrows(
+    () => cases.updateResult(P.admin, c.id, {
+      outcome: 'partial', nextStep: 'monitor', metrics: [{ skill: 'reading', score: 24, total: null }],
+    }),
+    /0–9/, 'Nhận band 24 như một band hợp lệ',
+  );
+  // Điểm đạt không thể lớn hơn tổng.
+  assertThrows(
+    () => cases.updateResult(P.admin, c.id, {
+      outcome: 'partial', nextStep: 'monitor', metrics: [{ skill: 'reading', score: 41, total: 40 }],
+    }),
+    /lớn hơn tổng/, 'Nhận điểm đạt lớn hơn tổng điểm',
+  );
+  // Ý thức không phải là một môn để chấm điểm.
+  assertThrows(
+    () => cases.updateResult(P.admin, c.id, {
+      outcome: 'partial', nextStep: 'monitor', metrics: [{ skill: 'behaviour', score: 6, total: null }],
+    }),
+    /kỹ năng cụ thể/, 'Nhận điểm cho hạng mục Ý thức',
+  );
+});
+
+check('Biểu đồ tiến bộ: một mốc thì nói CHƯA ĐỦ DỮ LIỆU, không vẽ xu hướng', () => {
+  const rows = conn
+    .prepare(
+      /* Hồ sơ chỉ vẽ MỘT lộ trình, nên phải đếm mốc TRONG lộ trình đang mở. */
+      `SELECT a.student_id AS sid, a.cycle_id AS cid, COUNT(DISTINCT a.id) AS n
+         FROM assessment_attempts a JOIN assessment_scores s ON s.attempt_id = a.id
+        WHERE s.skill = 'reading' AND s.band IS NOT NULL AND a.cycle_id IS NOT NULL
+        GROUP BY a.student_id, a.cycle_id ORDER BY n, a.student_id`,
+    )
+    .all() as any[];
+  const one = rows.find((r) => r.n === 1);
+  const many = rows.find((r) => r.n >= 2);
+
+  if (one) {
+    const pr = profile.studentProfile(P.admin, one.sid, one.cid) as any;
+    const rd = pr.progress.skills.find((x: any) => x.skill === 'reading');
+    if (rd) assert(rd.enough === false, 'Một mốc mà vẫn bảo là đủ để nói xu hướng');
+  }
+  if (many) {
+    const pr = profile.studentProfile(P.admin, many.sid, many.cid) as any;
+    const rd = pr.progress.skills.find((x: any) => x.skill === 'reading');
+    assert(rd && rd.enough === true, 'Hai mốc trở lên mà vẫn bảo là chưa đủ');
+    assert(rd.points.every((pt: any) => pt.kind === 'official' || pt.kind === 'teacher'),
+      'Có loại điểm lạ trong biểu đồ');
+  }
+  assert(one || many, 'Dữ liệu demo không có em nào có điểm Reading để kiểm');
+});
+
+check('Case CHƯA CÓ PHƯƠNG ÁN NÀO thì không chốt kết quả được', () => {
+  /* Em nào chưa có case Ý thức nào đang mở — để không vướng luật chống trùng hạng mục. */
+  const s = conn
+    .prepare(
+      `SELECT id FROM students
+        WHERE id NOT IN (SELECT student_id FROM sos_cases
+                          WHERE student_id IS NOT NULL AND track = 'behaviour' AND status != 'done')
+        ORDER BY id LIMIT 1`,
+    )
+    .get() as any;
+  assert(s, 'Không còn em nào chưa có case Ý thức để kiểm');
+  const d = cases.reportIssue(P.admin, {
+    studentId: s.id, track: 'behaviour', topic: 'attendance',
+    title: 'Nghỉ nhiều không báo', summary: 'Ba buổi liên tiếp không tới lớp',
+  }) as any;
+  assertThrows(
+    () => cases.closeCaseOutcome(P.admin, d.id, { outcome: 'improved', decision: 'end' }),
+    /chưa có phương án/i, 'Đóng được case chưa làm gì cho em',
+  );
 });
 
 console.log(`\n${'='.repeat(60)}`);

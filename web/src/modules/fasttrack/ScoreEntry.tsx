@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { Modal } from '../../ui/Drawer.tsx';
-import { Pill, SectionNote } from '../../ui/ui.tsx';
+import { Alert, Info, SectionNote, Status } from '../../ui/ui.tsx';
 import { fmtBand, fmtDate, skillLabel } from '../../lib/format.ts';
 import { CRITERIA, CRITERIA_SHORT, criteriaSetFor, type EntrySkill } from '@shared/domain/index.ts';
 
@@ -190,12 +190,13 @@ export function CriteriaModal({ cell, onSave, onClose }: {
  * Chưa xếp tuần thì KHÔNG dựng hạn giả.
  */
 export function DeadlinePill({ cell }: { cell: Cell }) {
-  if (!cell.required) return <Pill tone="muted">Không áp dụng</Pill>;
-  if (cell.band !== null) return <Pill tone="ok">Đã nhập</Pill>;
-  if (!cell.deadline) return <Pill tone="muted">Chưa xếp tuần</Pill>;
+  if (!cell.required) return <Info pending>Không áp dụng</Info>;
+  /* "Đã nhập" là TRẠNG THÁI CÔNG VIỆC, không phải điểm tốt — nên không tô xanh lá. */
+  if (cell.band !== null) return <Status kind="done">Đã nhập</Status>;
+  if (!cell.deadline) return <Info pending>Chưa xếp tuần</Info>;
   const label = cell.deadlineSource === 'override' ? 'Hạn riêng' : 'Hạn';
   return cell.overdue
-    ? <Pill tone="danger">Quá hạn {fmtDate(cell.deadline)}</Pill>
-    : <Pill tone="warn">{label} {fmtDate(cell.deadline)}</Pill>;
+    ? <Alert>Quá hạn {fmtDate(cell.deadline)}</Alert>
+    : <Status kind="waiting">{label} {fmtDate(cell.deadline)}</Status>;
 }
 

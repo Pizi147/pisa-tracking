@@ -4,7 +4,7 @@ import { api, invalidate } from '../../lib/api.ts';
 import { Drawer } from '../../ui/Drawer.tsx';
 import { WeekPicker } from '../../ui/Filters.tsx';
 import { useToast } from '../../ui/Toast.tsx';
-import { Field, Pill, SectionNote, Skeleton } from '../../ui/ui.tsx';
+import { Field, SectionNote, Skeleton, Status } from '../../ui/ui.tsx';
 import { fmtDate } from '../../lib/format.ts';
 
 type Progress = {
@@ -112,16 +112,16 @@ export function ClassProgressPanel({ classId, classCode, onClose, onDone }: {
 
               <div className="flex flex-wrap gap-2">
                 {data.progressWeekStart && (
-                  <Pill tone={data.phase === 'progress_week' ? 'warn' : 'muted'}>
+                  <Status kind={data.phase === 'progress_week' ? 'doing' : 'idle'}>
                     Progress Test: tuần {data.progressWeek} · {fmtDate(data.progressWeekStart)}
                     {data.progressOverridden ? ' · đã xếp lại' : ''}
-                  </Pill>
+                  </Status>
                 )}
                 {data.finalWeekStart && (
-                  <Pill tone={data.phase === 'final_week' ? 'warn' : 'muted'}>
+                  <Status kind={data.phase === 'final_week' ? 'doing' : 'idle'}>
                     Final Test: tuần {data.finalWeek} · {fmtDate(data.finalWeekStart)}
                     {data.finalOverridden ? ' · đã xếp lại' : ''}
-                  </Pill>
+                  </Status>
                 )}
               </div>
 

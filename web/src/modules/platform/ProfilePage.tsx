@@ -3,7 +3,7 @@ import { useApi } from '../../lib/useApi.ts';
 import { api } from '../../lib/api.ts';
 import { useSession } from '../../lib/session.tsx';
 import { useToast } from '../../ui/Toast.tsx';
-import { Card, ErrorState, Field, Pill, SectionNote, Skeleton } from '../../ui/ui.tsx';
+import { Card, ErrorState, Field, Info, SectionNote, Skeleton } from '../../ui/ui.tsx';
 import { skillLabel } from '../../lib/format.ts';
 
 type Profile = {
@@ -126,9 +126,9 @@ export default function ProfilePage() {
       <Card title="Vai trò và phạm vi">
         <div className="flex flex-wrap gap-1.5">
           {(session?.grants ?? []).map((g, i) => (
-            <Pill key={i} tone={g.role === 'granted' ? 'warn' : 'neutral'}>
+            <Info key={i}>
               {g.roleName} · {g.branchName ?? 'Toàn hệ thống'}
-            </Pill>
+            </Info>
           ))}
         </div>
         <SectionNote>

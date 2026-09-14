@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useApi } from '../../lib/useApi.ts';
 import { api } from '../../lib/api.ts';
 import { useSession } from '../../lib/session.tsx';
-import { Field, Pill, SectionNote } from '../../ui/ui.tsx';
+import { Alert, Field, Info, SectionNote } from '../../ui/ui.tsx';
 import { skillLabel } from '../../lib/format.ts';
 
 import { ROLES, ROLE_LABEL, type Role } from '@shared/domain/index.ts';
@@ -100,7 +100,7 @@ export default function WelcomePage() {
             <h1 className="text-xl font-semibold text-slate-100">PISA Progress</h1>
             <div className="text-xs text-slate-500">Hệ thống quản lý học vụ và vận hành — bản demo chạy local</div>
           </div>
-          <div className="ml-auto"><Pill tone="warn">Dữ liệu demo</Pill></div>
+          <div className="ml-auto"><Alert tone="warn">Dữ liệu demo</Alert></div>
         </div>
 
         {noData ? (
@@ -325,8 +325,8 @@ function DemoAccounts({ accounts, loading }: { accounts: Account[]; loading: boo
                   <div className="font-medium text-slate-100">{a.fullName}</div>
                   <div className="text-xs text-slate-400 mb-2">{a.title}</div>
                   <div className="flex flex-wrap gap-1">
-                    {a.grants.map((r, i) => <Pill key={i} tone="neutral">{r.roleName} · {r.scope}</Pill>)}
-                    {a.assignmentCount > 0 && <Pill tone="info">{a.assignmentCount} phân công</Pill>}
+                    {a.grants.map((r, i) => <Info key={i}>{r.roleName} · {r.scope}</Info>)}
+                    {a.assignmentCount > 0 && <Info>{a.assignmentCount} phân công</Info>}
                   </div>
                 </button>
               ))}

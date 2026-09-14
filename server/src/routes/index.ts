@@ -583,6 +583,8 @@ api.get('/cases', requireAuth, wrap((req) => {
     status: qStr(req, 'status'), origin: qStr(req, 'origin'),
     group: qStr(req, 'group'), skill: qStr(req, 'skill'), queue: qStr(req, 'queue'),
     classKind: qStr(req, 'classKind'),
+    /* Có `cycleId` = chỉ lộ trình đó; không có = TOÀN BỘ hành trình, kể cả lớp cũ. */
+    cycleId: toInt(req.query?.cycleId),
   });
 }));
 
@@ -635,10 +637,22 @@ api.post('/interventions/:id/respond', requireAuth, wrap((req) => {
 }));
 
 /**
+ * CẬP NHẬT KẾT QUẢ — một thao tác duy nhất khép lại một chu kỳ xử lý (mục 7.7 [3], 7.9).
+ *
+ * Gộp ba nút cũ: "Đánh dấu đã làm" · "Ghi quan sát" · "Hướng xử lý". Payload hỏi đúng ba
+ * câu: kết quả ra sao, ghi chú, và bước tiếp theo là gì.
+ */
+api.post('/interventions/:id/result', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return caseSvc.updateResult(principalOf(req), pInt(req, 'id'), req.body ?? {});
+}));
+
+/**
  * Đánh dấu một phương án ĐÃ LÀM XONG kèm ngày thực hiện.
  *
- * Dùng chung cho cả hai việc trao đổi lẫn phương án học thuật — vòng 4 bỏ đường ghi riêng
- * của bảng Liên hệ, nên chỉ còn một cách xác nhận "việc này đã làm".
+ * Chỉ còn dùng cho việc TRAO ĐỔI (gặp em, gọi phụ huynh) — những việc không có kết quả
+ * chuyên môn để ghi, chỉ cần xác nhận đã diễn ra. Phương án học thuật đi qua
+ * `/interventions/:id/result`.
  */
 api.post('/interventions/:id/complete', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();

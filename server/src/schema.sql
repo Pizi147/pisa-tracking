@@ -624,6 +624,27 @@ CREATE TABLE sos_cases (
   outcome_by INTEGER REFERENCES users(id),
   outcome_at TEXT,
 
+  /*
+   * TÊN CASE DO NGƯỜI TẠO ĐẶT. Chỉ case tạo tay mới có.
+   *
+   * Case sinh từ điểm KHÔNG lưu tên: tên của nó suy ra lúc hiển thị từ lượt và hạng mục
+   * ("MT2 - Reading dưới kỳ vọng"), nên sửa điểm thì tên đổi theo thay vì để lại một cái
+   * tên cũ nói sai sự thật. Case tạo tay thì ngược lại — không có gì để suy ra, và người
+   * tạo biết rõ nhất nên gọi nó là gì.
+   */
+  title TEXT,
+
+  /*
+   * CASE NÀY TÁI DIỄN TỪ CASE NÀO — mục 7.5.
+   *
+   * Cùng một kỹ năng trượt lại sau khi case cũ ĐÃ ĐÓNG thì mở case MỚI chứ không mở lại
+   * case cũ: case cũ đã có kết luận của người phụ trách, và đè lên kết luận đó là xoá mất
+   * một quyết định có thật. Cột này giữ sợi dây để hồ sơ đọc được thành một mạch.
+   *
+   * Case cũ CÒN MỞ thì không sinh case mới — chỉ thêm một mốc và một chu kỳ xử lý tiếp.
+   */
+  previous_case_id INTEGER REFERENCES sos_cases(id),
+
   origin_kind TEXT NOT NULL DEFAULT 'mock',  -- mock | teacher_report | manager_task
   detected_at TEXT,                   -- ngày phát hiện vấn đề, khác ngày ghi vào hệ thống
   reported_by INTEGER REFERENCES users(id),
@@ -776,6 +797,30 @@ CREATE TABLE case_interventions (
   approval_note TEXT,
 
   -- Khoá migration: mỗi cột cũ chỉ chuyển thành một tác động, chạy lại không nhân đôi.
+  /*
+   * CHU KỲ THỨ MẤY của phương án này, và chu kỳ hiện tại bắt đầu ngày nào.
+   *
+   * Một phương án chạy nhiều chu kỳ hai tuần: hết chu kỳ thì giáo viên cập nhật kết quả,
+   * chọn "theo dõi thêm" hoặc "tiếp tục", và một chu kỳ MỚI mở ra với hạn mới. Giữ số chu
+   * kỳ để lịch sử đọc được là "đã ba vòng mà vẫn chưa chuyển", chứ không phải một cái hạn
+   * bị đẩy lùi ba lần mà không ai biết.
+   *
+   * Hạn cũ KHÔNG bị xoá — nó nằm trong `case_followups` của chính chu kỳ đó.
+   */
+  cycle_no INTEGER NOT NULL DEFAULT 1,
+  cycle_started_on TEXT,
+
+  /*
+   * PHƯƠNG ÁN NÀY BỊ THAY BẰNG PHƯƠNG ÁN NÀO — mục 7.7 [4].
+   *
+   * Khi giáo viên đề xuất một phương án mới thay cho phương án cũ, phương án cũ được khép
+   * lại với lý do "Được thay thế". KHÔNG đánh dấu nó là "đã hoàn thành thành công" — nó
+   * không thành công, đó là cả lý do phải thay. Nhưng cũng không để nó treo vô hạn, vì
+   * case sẽ không bao giờ đủ điều kiện đóng.
+   */
+  closed_reason TEXT,                 -- NULL | 'superseded' | 'done'
+  superseded_by INTEGER REFERENCES case_interventions(id),
+
   migration_key TEXT UNIQUE,
   created_at TEXT NOT NULL,
   updated_at TEXT
@@ -803,6 +848,33 @@ CREATE TABLE case_followups (
   note TEXT,
   -- Bằng chứng kèm theo, ví dụ một lượt đánh giá sau đó.
   evidence_attempt_id INTEGER REFERENCES assessment_attempts(id),
+
+  /*
+   * BƯỚC TIẾP THEO người cập nhật đã chọn — complete | monitor | continue | propose | ask_manager.
+   *
+   * Ghi lại vì đây là QUYẾT ĐỊNH, không phải trạng thái suy được. Ba tháng sau, "lần đó em
+   * chưa tiến bộ và cô chọn tiếp tục phương án cũ" là một câu khác hẳn "lần đó em chưa tiến
+   * bộ và cô đổi sang tutor".
+   */
+  next_step TEXT,
+  /** Chu kỳ thứ mấy, và hạn của CHÍNH chu kỳ đó — không bị ghi đè khi mở chu kỳ mới. */
+  cycle_no INTEGER,
+  cycle_due TEXT,
+  /** Cập nhật sau hạn: giữ nguyên trong lịch sử, không reset để che quá hạn. */
+  late INTEGER NOT NULL DEFAULT 0,
+
+  /*
+   * ĐIỂM GIÁO VIÊN TỰ ĐÁNH GIÁ khi cập nhật kết quả (mục 7.7 [5] Option 2).
+   *
+   * JSON: [{ "skill": "reading", "score": 24, "total": 40 }] hoặc band cho lớp Fast Track.
+   *
+   * ĐÂY KHÔNG PHẢI ĐIỂM CHÍNH THỨC. Nó không ghi đè điểm entrance/mock/test, không đổi mức
+   * SOS, và trên biểu đồ tiến bộ nó dùng KÝ HIỆU KHÁC, không nối chung một đường với điểm
+   * chính thức. Cô đọc một bài viết rồi ước lượng 5.5 là một thông tin có ích, nhưng nó
+   * không cùng loại với 5.5 chấm trong phòng thi.
+   */
+  metrics TEXT,
+
   created_at TEXT NOT NULL
 );
 CREATE INDEX idx_followup_case ON case_followups(case_id);

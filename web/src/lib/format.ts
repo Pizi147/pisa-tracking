@@ -81,7 +81,11 @@ export function attemptStatusTone(s: string): Tone {
   return s === 'cancelled' ? 'muted' : s === 'done' ? 'info' : 'neutral';
 }
 
-export function unitTone(status: string | null): Tone {
+/**
+ * Ô họp tuần là một KẾT QUẢ (ổn · cần theo dõi · có vấn đề), nên chỉ nhận bốn tông của họ
+ * nhãn kết quả — không có `info`, vì "đang thực hiện" không phải một kết luận về lớp.
+ */
+export function unitTone(status: string | null): 'ok' | 'warn' | 'danger' | 'muted' {
   return status === null ? 'muted' : status === 'problem' ? 'danger' : status === 'watch' ? 'warn' : 'ok';
 }
 export function caseTone(status: string | null): Tone {

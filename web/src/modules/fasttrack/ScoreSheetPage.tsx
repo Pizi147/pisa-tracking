@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { useSession } from '../../lib/session.tsx';
-import { Card, Empty, ErrorState, Pill, SectionNote, Skeleton } from '../../ui/ui.tsx';
+import { Card, Empty, ErrorState, Level, SectionNote, Skeleton, Status } from '../../ui/ui.tsx';
 import { usePeriods } from '../../ui/Filters.tsx';
 import { CriteriaButton, DeadlinePill, RawScoreInput, useSaveScore, type Cell } from './ScoreEntry.tsx';
 import {
@@ -153,7 +153,9 @@ function SheetRow({ row, rowIndex, rawSkills, critSkills, onReload, register, on
       </td>
       <td className="td tabular-nums whitespace-nowrap">MT{row.attemptNo}</td>
       <td className="td whitespace-nowrap text-xs text-slate-400">
-        <Pill tone={attemptStatusTone(row.status)}>{attemptStatusLabel(row.status)}</Pill>
+        <Status kind={row.status === 'done' ? 'done' : row.status === 'cancelled' ? 'idle' : 'doing'}>
+          {attemptStatusLabel(row.status)}
+        </Status>
       </td>
       {/*
         MỘT HẠN CHO CẢ DÒNG. Trước đây mỗi kỹ năng có ngày mock riêng nên mỗi ô một hạn;
@@ -193,11 +195,11 @@ function SheetRow({ row, rowIndex, rawSkills, critSkills, onReload, register, on
       {/* Badge ôm sát nội dung: items-start để ô bảng rộng cũng không kéo giãn nó ra. */}
       <td className="td">
         <div className="flex flex-col items-start gap-0.5">
-          <Pill tone={sosTone(row.result.sosLevel)}>
+          <Level tone={sosTone(row.result.sosLevel)}>
             {row.result.evaluable
               ? sosLabel(row.result.sosLevel)
               : `Chờ ${row.result.required.length - row.result.scoredRequired} kỹ năng`}
-          </Pill>
+          </Level>
           {row.result.scopeNote && (
             <span className="text-[10px] text-slate-500" title={row.result.scopeDetail ?? undefined}>
               {row.result.scopeNote}

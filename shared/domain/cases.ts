@@ -525,26 +525,61 @@ export const APPROVAL_LABEL: Record<ApprovalState, string> = {
 };
 
 /**
- * HẠN SUY THẲNG TỪ MỨC ĐỘ GẤP — một thang duy nhất cho cả hệ thống (owner chốt 10/09/2026).
+ * CHU KỲ XỬ LÝ: HAI TUẦN VỚI CASE HỌC THUẬT, MỘT TUẦN VỚI Ý THỨC/KHÁC.
  *
- * Trước đó có hai ngưỡng rời nhau: hạn Quản lý trả lời đề xuất (3 hoặc 7 ngày) và ngưỡng
- * coi một vấn đề là bị bỏ quên (cũng 3 hoặc 7). Hai con số nói cùng một chuyện — "việc này
- * gấp đến đâu" — nên nay dùng chung một bảng ba mức, và ai đọc cũng đoán đúng ngay.
+ * Owner chốt ở vòng 5, và luật này THAY THẾ hẳn luật cũ (hạn 3/5/7 ngày theo mức gấp,
+ * hạn theo mức SOS, hạn theo lượt MT kế tiếp).
  *
- * Vấn đề sinh từ điểm không tự ghi mức gấp vào database (hai thang cố tình tách nhau, xem
- * Q11); mức của nó suy từ SOS lúc cần: SOS 1-2 là cần chú ý, SOS 3 là gấp.
+ * CASE HỌC THUẬT — chu kỳ hai tuần:
  *
- * Quá hạn KHÔNG chặn gì cả — chỉ nổi lên màn việc để không ai bị bỏ quên.
+ *   Hạn = CHỦ NHẬT CỦA TUẦN THỨ HAI, tính tuần bắt đầu là tuần thứ nhất.
+ *   Ví dụ: bắt đầu 14/09/2026 (thứ Hai) → hạn 27/09/2026. KHÔNG phải 04/10.
+ *
+ * Đếm theo tuần chứ không phải "cộng 14 ngày" là có lý do: mọi thứ khác của hệ thống —
+ * lịch MT, hạn nhập điểm, báo cáo — đều chạy theo tuần thứ Hai→Chủ nhật. Một cái hạn rơi
+ * vào giữa tuần thì người ta phải nhớ riêng nó.
+ *
+ * CASE Ý THỨC/KHÁC — một tuần TỪ LÚC PHƯƠNG ÁN BẮT ĐẦU, không căn theo tuần lịch. Việc
+ * trao đổi với em hay gọi phụ huynh là việc làm xong trong vài ngày; bắt chờ đến Chủ nhật
+ * tuần sau mới phải báo lại là kéo dài một việc ngắn một cách vô ích.
+ *
+ * Quá hạn KHÔNG chặn gì cả — nó là CẢNH BÁO BỔ SUNG, không thay trạng thái của phương án.
  */
-export const URGENCY_DUE_DAYS: Record<UrgencyLevel, number> = {
-  normal: 7,
-  attention: 5,
-  urgent: 3,
-};
+export const ACADEMIC_CYCLE_WEEKS = 2;
+export const BEHAVIOUR_CYCLE_DAYS = 7;
 
-export function dueDaysFor(urgency: string | null | undefined, sosLevel?: number | null): number {
-  const level = urgency && urgency !== 'normal' ? urgency : urgencyFromSos(sosLevel ?? null);
-  return URGENCY_DUE_DAYS[level as UrgencyLevel] ?? URGENCY_DUE_DAYS.normal;
+/** Thứ Hai của tuần chứa ngày đó. Chép lại ở đây để `shared/` không phụ thuộc máy chủ. */
+function mondayOfIso(date: string): string {
+  const d = new Date(`${date.slice(0, 10)}T00:00:00Z`);
+  const dow = (d.getUTCDay() + 6) % 7;          // thứ Hai = 0
+  d.setUTCDate(d.getUTCDate() - dow);
+  return d.toISOString().slice(0, 10);
+}
+
+function addDaysIso(date: string, n: number): string {
+  const d = new Date(`${date.slice(0, 10)}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + n);
+  return d.toISOString().slice(0, 10);
+}
+
+/**
+ * Hạn của một chu kỳ xử lý, tính từ ngày chu kỳ BẮT ĐẦU.
+ *
+ * `track` quyết định độ dài: học thuật hai tuần theo lịch, Ý thức/Khác bảy ngày kể từ lúc
+ * bắt đầu. Phương án cần duyệt thì ngày bắt đầu là NGÀY ĐƯỢC DUYỆT, không phải ngày gửi —
+ * thời gian chờ Quản lý không được tính là giáo viên đã có thời gian làm.
+ */
+export function cycleDeadline(startDate: string, track: string = 'academic'): string {
+  if (track === 'behaviour') return addDaysIso(startDate, BEHAVIOUR_CYCLE_DAYS);
+  // Thứ Hai tuần bắt đầu + 13 ngày = Chủ nhật của tuần kế tiếp.
+  return addDaysIso(mondayOfIso(startDate), ACADEMIC_CYCLE_WEEKS * 7 - 1);
+}
+
+/** Câu giải thích cho giao diện, để người dùng không phải tự đoán luật. */
+export function cycleDeadlineHint(track: string = 'academic'): string {
+  return track === 'behaviour'
+    ? 'Hạn mặc định: một tuần kể từ lúc phương án bắt đầu.'
+    : 'Hạn mặc định: hết Chủ nhật của tuần kế tiếp (chu kỳ hai tuần, tính tuần bắt đầu là tuần thứ nhất).';
 }
 
 export const INTERVENTION_STATUSES = ['planned', 'started', 'completed', 'cancelled'] as const;
@@ -553,16 +588,83 @@ export const INTERVENTION_STATUS_LABEL: Record<InterventionStatus, string> = {
   planned: 'Đã lên kế hoạch', started: 'Đang thực hiện', completed: 'Đã xong', cancelled: 'Đã huỷ',
 };
 
-/** Quan sát sau tác động. KHÔNG phải khẳng định tác động gây ra thay đổi. */
+/**
+ * KẾT QUẢ SAU MỘT CHU KỲ HỖ TRỢ. Là QUAN SÁT, không phải khẳng định phương án gây ra
+ * thay đổi — nên nhãn nói "kết quả", không nói "nhờ phương án X".
+ *
+ * Case HỌC THUẬT có năm kết quả; case Ý THỨC/KHÁC chỉ ba, vì bản chất vấn đề khác: em có
+ * đi học đều hơn không, chứ không phải em lên được mấy band.
+ */
 export const FOLLOWUP_OUTCOMES = ['improved', 'partial', 'unchanged', 'worse', 'insufficient'] as const;
 export type FollowUpOutcome = (typeof FOLLOWUP_OUTCOMES)[number];
 export const FOLLOWUP_OUTCOME_LABEL: Record<FollowUpOutcome, string> = {
-  improved: 'Có tiến bộ',
+  improved: 'Tiến bộ rõ rệt',
   partial: 'Tiến bộ một phần',
   unchanged: 'Chưa thay đổi',
   worse: 'Kém hơn',
-  insufficient: 'Chưa đủ căn cứ',
+  insufficient: 'Không đủ căn cứ',
 };
+/** Ba kết quả của case Ý thức/Khác. `improved` ở đây đọc là "Đã tiến bộ". */
+export const BEHAVIOUR_OUTCOMES = ['improved', 'unchanged', 'worse'] as const;
+export const BEHAVIOUR_OUTCOME_LABEL: Record<string, string> = {
+  improved: 'Đã tiến bộ', unchanged: 'Không thay đổi', worse: 'Kém hơn',
+};
+
+export function outcomesFor(track: string): readonly string[] {
+  return track === 'behaviour' ? BEHAVIOUR_OUTCOMES : FOLLOWUP_OUTCOMES;
+}
+export function outcomeLabelFor(track: string, outcome: string): string {
+  return track === 'behaviour'
+    ? BEHAVIOUR_OUTCOME_LABEL[outcome] ?? outcome
+    : FOLLOWUP_OUTCOME_LABEL[outcome as FollowUpOutcome] ?? outcome;
+}
+
+/**
+ * MÀU VÀ DẤU CỦA MỘT KẾT QUẢ — owner chốt bảng này ở mục 7.10.
+ *
+ * TRẠNG THÁI và KẾT QUẢ là hai thông tin khác nhau: một phương án "Đã hoàn thành" với kết
+ * quả "Kém hơn" vẫn phải hiện màu đỏ. Tô xanh mọi thứ đã hoàn thành là nói dối.
+ */
+export const OUTCOME_TONE: Record<string, 'ok' | 'warn' | 'danger' | 'muted'> = {
+  improved: 'ok', partial: 'warn', unchanged: 'warn', worse: 'danger', insufficient: 'muted',
+};
+export const OUTCOME_MARK: Record<string, string> = {
+  improved: '✓', partial: '↗', unchanged: '–', worse: '↓', insufficient: '?',
+};
+
+/**
+ * BƯỚC TIẾP THEO sau khi ghi kết quả — và đây là chỗ luật nghiệp vụ nằm, không phải ở
+ * giao diện.
+ *
+ * Kết quả TỐT thì được phép khép lại hoặc theo dõi thêm. Kết quả CHƯA TỐT thì BẮT BUỘC
+ * chọn một trong ba đường đi tiếp — không có đường "ghi nhận rồi thôi". Đó là cả lý do
+ * bảng này tồn tại: một kết quả "Kém hơn" mà không ai phải làm gì tiếp là một kết quả sẽ
+ * bị quên.
+ */
+export const NEXT_STEPS = ['complete', 'monitor', 'continue', 'propose', 'ask_manager'] as const;
+export type NextStep = (typeof NEXT_STEPS)[number];
+export const NEXT_STEP_LABEL: Record<NextStep, string> = {
+  complete: 'Hoàn thành phương án',
+  monitor: 'Theo dõi thêm',
+  continue: 'Tiếp tục phương án cũ',
+  propose: 'Đề xuất phương án mới',
+  ask_manager: 'Xin hỗ trợ từ Quản lý',
+};
+export const NEXT_STEP_HINT: Record<NextStep, string> = {
+  complete: 'Khép lại phương án này. Case chỉ đóng được khi mọi phương án đã khép.',
+  monitor: 'Ghi kết quả chu kỳ vừa rồi và mở một chu kỳ theo dõi mới.',
+  continue: 'Giữ nguyên phương án, mở chu kỳ mới để làm tiếp.',
+  propose: 'Khép phương án cũ với lý do "Được thay thế" và mở phương án mới.',
+  ask_manager: 'Chuyển sang chờ Quản lý quyết định. Thời gian chờ tính cho Quản lý.',
+};
+
+/** Kết quả tốt được phép khép lại; kết quả chưa tốt BẮT BUỘC đi tiếp. */
+const GOOD_OUTCOMES = ['improved', 'partial'];
+export function nextStepsFor(outcome: string): NextStep[] {
+  return GOOD_OUTCOMES.includes(outcome)
+    ? ['complete', 'monitor']
+    : ['continue', 'propose', 'ask_manager'];
+}
 
 /** Nguồn của điểm xuất phát. Thiếu căn cứ thì để trống, KHÔNG lấy MT1 làm điểm đầu vào. */
 export const BASELINE_SOURCES = ['entrance', 'previous_cycle', 'external', 'manual'] as const;

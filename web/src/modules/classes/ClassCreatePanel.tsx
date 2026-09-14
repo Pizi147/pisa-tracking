@@ -4,7 +4,7 @@ import { api, invalidate } from '../../lib/api.ts';
 import { Drawer } from '../../ui/Drawer.tsx';
 import { WeekPicker } from '../../ui/Filters.tsx';
 import { useToast } from '../../ui/Toast.tsx';
-import { Field, Pill, SectionNote } from '../../ui/ui.tsx';
+import { Field, Info, SectionNote } from '../../ui/ui.tsx';
 import { PROGRAMME_TEMPLATES, skillShort } from '@shared/domain/index.ts';
 
 type Branch = { id: number; code: string; name: string };
@@ -143,7 +143,7 @@ export function ClassCreatePanel({ onClose, onDone }: {
         <div className="rounded-lg border p-3" style={{ borderColor: 'var(--line)' }}>
           <p className="text-xs text-slate-400 m-0 mb-1.5">Lớp này sẽ có:</p>
           <div className="flex flex-wrap gap-1.5">
-            {tpl.skills.map((sk) => <Pill key={sk} tone="info">{skillShort(sk)}</Pill>)}
+            {tpl.skills.map((sk) => <Info key={sk}>{skillShort(sk)}</Info>)}
           </div>
           {!isFt && (
             <p className="text-xs text-slate-400 mt-2 mb-0">

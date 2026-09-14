@@ -1,7 +1,7 @@
 import { db } from '../db.ts';
 import {
   CONTACT_KIND_SHORT, ENTRY_SKILL_LABEL, INTERVENTION_KIND_LABEL, PERMISSIONS, isContactKind,
-  REGULAR_SKILL_LABEL, SOS_LABEL, URGENCY_LABEL, caseHeadline, dueDaysFor,
+  REGULAR_SKILL_LABEL, SOS_LABEL, URGENCY_LABEL, caseHeadline, cycleDeadline,
   type ContactKind, type EntrySkill, type InterventionKind,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -452,13 +452,14 @@ export function myWork(p: Principal, f: { branchId?: number | null } = {}) {
     if (!mayDecide) continue;
 
     /*
-     * Quá ngưỡng bỏ quên thì gọi thẳng là quá hạn hỗ trợ — không ép ai phải làm ngay,
-     * nhưng cũng không để một em nằm im nhiều ngày mà không ai biết.
+     * CASE CHƯA CÓ PHƯƠNG ÁN quá hạn khi đã qua chu kỳ đầu — hai tuần với case học thuật,
+     * một tuần với Ý thức/Khác. Không ép ai phải làm ngay, nhưng cũng không để một em nằm
+     * im hết cả chu kỳ mà không ai biết.
      */
     const detected = c.detected_at ?? (c.created_at ?? '').slice(0, 10);
     const days = detected ? diffDays(today, detected) : 0;
-    const limit = dueDaysFor(c.urgency, c.sos_level);
-    const u: WorkUrgency = days >= limit ? 'overdue' : 'normal';
+    const deadline = detected ? cycleDeadline(detected, c.track ?? 'academic') : null;
+    const u: WorkUrgency = deadline !== null && today > deadline ? 'overdue' : 'normal';
     const head = caseHeadline({
       summary: c.summary, originKind: c.origin_kind, sosLevel: c.sos_level, attemptNo: c.attempt_no,
     });

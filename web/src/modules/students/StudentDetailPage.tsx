@@ -1,24 +1,21 @@
 import { useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
-import { api, invalidate } from '../../lib/api.ts';
-import { useToast } from '../../ui/Toast.tsx';
-import { Card, Empty, ErrorState, Field, Level, Pill, SectionNote, Skeleton } from '../../ui/ui.tsx';
-import { ConfirmDialog, Drawer, Modal } from '../../ui/Drawer.tsx';
+import { Card, Empty, ErrorState, Info, Level, Outcome, SectionNote, Skeleton, Status } from '../../ui/ui.tsx';
+import { Drawer } from '../../ui/Drawer.tsx';
 import { CasePanel } from '../cases/CasePanel.tsx';
 import { SkillBoard } from '../cases/SkillBoard.tsx';
+import { StudentCases } from '../cases/StudentCases.tsx';
 import { MissingBadge } from './MissingBadge.tsx';
 import { StudentPlanPanel } from './StudentPlanPanel.tsx';
+import { ProgressChart } from './ProgressChart.tsx';
+import { StudentManagePanel } from './StudentManagePanel.tsx';
 import { QuickReport } from '../cases/QuickReport.tsx';
 import {
   attemptHref,
-  attemptStatusLabel, attemptStatusTone, caseStatusLabel, caseStatusTone,
-  fmtBand, fmtDate, skillLabel, sosLabel, sosTone, studentStatusLabel,
+  attemptStatusLabel, fmtBand, fmtDate, skillLabel, sosLabel, sosTone, studentStatusLabel,
 } from '../../lib/format.ts';
-import {
-  BASELINE_SOURCES, BASELINE_SOURCE_LABEL, CYCLE_OUTCOMES, CYCLE_OUTCOME_LABEL,
-  JOURNEY_EVENT_LABEL, fmtExamMonth,
-} from '@shared/domain/index.ts';
+import { JOURNEY_EVENT_LABEL } from '@shared/domain/index.ts';
 
 type Profile = any;
 
@@ -50,11 +47,10 @@ export default function StudentDetailPage() {
   const cycleParam = params.get('lo-trinh');
   const q = cycleParam ? `?cycleId=${cycleParam}` : '';
   const { data, loading, error, reload } = useApi<Profile>(id ? `/students/${id}${q}` : null, [cycleParam]);
-  const [transferOpen, setTransferOpen] = useState(false);
+  const [manageOpen, setManageOpen] = useState(false);
   const [planOpen, setPlanOpen] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
   const [openCase, setOpenCase] = useState<number | null>(null);
-  const [cycleEdit, setCycleEdit] = useState<'baseline' | 'target' | 'outcome' | null>(null);
   /* Tầng 3 mặc định mở bảng điểm: đó là thứ người ta mở hồ sơ để xem nhiều nhất. */
   const [tier3, setTier3] = useState<'scores' | 'journey'>('scores');
 
@@ -62,7 +58,6 @@ export default function StudentDetailPage() {
   if (loading || !data) return <Skeleton rows={10} />;
 
   const cy = data.cycle;
-  const openCases = data.cases.filter((c: any) => c.status !== 'done');
 
   const setCycle = (cid: number) => {
     const next = new URLSearchParams(params);
@@ -93,9 +88,9 @@ export default function StudentDetailPage() {
                 )}
                 <MissingBadge items={data.missing} />
                 {data.status !== 'active' && (
-                  <Pill tone={data.status === 'inactive' ? 'warn' : 'muted'}>{studentStatusLabel(data.status)}</Pill>
+                  <Info>{studentStatusLabel(data.status)}</Info>
                 )}
-                {data.archivedAt && <Pill tone="muted">Đã lưu trữ</Pill>}
+                {data.archivedAt && <Info>Đã lưu trữ</Info>}
               </h1>
               {/*
                 MỘT DÒNG NHẬN DIỆN, không phải ba ô số to.
@@ -153,13 +148,15 @@ export default function StudentDetailPage() {
               )}
             </div>
             <div className="flex flex-wrap gap-2">
+              {/*
+                HAI NÚT, KHÔNG PHẢI SÁU (mục 5.1). "+ Case" là việc hằng ngày nên đứng riêng
+                và nổi bật; năm việc quản trị còn lại — kế hoạch học, điểm đầu vào, mục tiêu,
+                chuyển lớp, kết luận lộ trình — mỗi năm làm một lần nên gom vào một panel.
+              */}
               {data.viewer.canReport && (
                 <button className="btn btn-primary" onClick={() => setReportOpen(true)}>+ Case</button>
               )}
-              {data.viewer.canEdit && (
-                <button className="btn" onClick={() => setPlanOpen(true)}>Kế hoạch học</button>
-              )}
-              {data.viewer.canEdit && <button className="btn" onClick={() => setTransferOpen(true)}>Chuyển lớp</button>}
+              <button className="btn" onClick={() => setManageOpen(true)}>Quản lý học viên</button>
             </div>
           </div>
 
@@ -201,25 +198,38 @@ export default function StudentDetailPage() {
               onReport={() => setReportOpen(true)} />
           </Card>
 
-          {/* ══════════════════════════════ TẦNG 3 — SỐ LIỆU THÔ, AI CẦN THÌ MỞ */}
+          {/* ══════════════════════════════════ TẦNG 2B — TỪNG CASE MỘT KHỐI */}
           {/*
-            Hai thẻ chứ không phải hai khối xếp chồng: bảng điểm và nhật ký đều dài, và hiếm
-            khi ai cần đọc cả hai cùng lúc. Ai chỉ cần liếc nhanh thì dừng ở tầng 1–2 và
-            không phải cuộn thêm dòng nào.
+            Bảng phía trên tóm tắt THEO KỸ NĂNG: mỗi hạng mục một dòng, và dòng đó chỉ trỏ
+            được vào MỘT case đại diện. Em có hai case Reading song song thì cái thứ hai
+            không có đường nào vào, và một case Ý thức mới mở làm case cũ trông như biến mất.
+
+            Nên phía dưới là DANH SÁCH CASE THẬT: mỗi case một khối riêng, mở đóng độc lập,
+            xem được cả case của lộ trình trước. Hai khối trả lời hai câu khác nhau —
+            "kỹ năng nào đang có chuyện" và "cụ thể đang có những case nào".
+          */}
+          <Card title="Các case của em"
+            action={<span className="text-xs text-slate-500">Mỗi case mở đóng riêng</span>}>
+            <StudentCases studentId={data.id} cycleId={cy.id} cycleLabel={cy.label} />
+          </Card>
+
+          {/* ══════════════════════════════ TẦNG 3 — KẾT QUẢ VÀ HÀNH TRÌNH */}
+          {/*
+            Hai tab chứ không phải hai khối xếp chồng: bảng kết quả và hành trình đều dài,
+            và hiếm khi ai cần đọc cả hai cùng lúc. Ai chỉ cần liếc nhanh thì dừng ở tầng
+            1–2 và không phải cuộn thêm dòng nào.
+
+            TÊN TAB GỌI ĐÚNG THEO CHƯƠNG TRÌNH (mục 7.11): lớp Fast Track là "Mock Test",
+            lớp Normal là "Kết quả kiểm tra". Cụm "Điểm qua các lượt" đã bỏ — nó không phải
+            tiếng Việt ai dùng, và nó đúng với cả hai loại lớp nên chẳng nói được gì.
           */}
           <Card title={
             <span className="flex flex-wrap gap-1">
               <button className={`btn btn-sm ${tier3 === 'scores' ? 'btn-primary' : 'btn-ghost'}`}
-                onClick={() => setTier3('scores')}>Điểm qua các lượt</button>
+                onClick={() => setTier3('scores')}>{cy.ratio ? 'Kết quả kiểm tra' : 'Mock Test'}</button>
               <button className={`btn btn-sm ${tier3 === 'journey' ? 'btn-primary' : 'btn-ghost'}`}
-                onClick={() => setTier3('journey')}>Nhật ký</button>
+                onClick={() => setTier3('journey')}>Hành trình học tập</button>
             </span>
-          } action={
-            <div className="flex flex-wrap gap-1">
-              {data.viewer.canEdit && !cy.ratio && <button className="btn btn-sm" onClick={() => setCycleEdit('baseline')}>Điểm đầu vào</button>}
-              {data.viewer.canEdit && !cy.ratio && <button className="btn btn-sm" onClick={() => setCycleEdit('target')}>Đổi mục tiêu</button>}
-              {data.viewer.canEdit && <button className="btn btn-sm" onClick={() => setCycleEdit('outcome')}>Kết luận lộ trình</button>}
-            </div>
           } bodyClass="p-0">
             {tier3 === 'scores' ? (
               <>
@@ -256,12 +266,24 @@ export default function StudentDetailPage() {
                 </div>
               </>
             ) : (
-              <div className="p-4">
-                {data.episodes.length === 0 ? <Empty title="Chưa có sự kiện nào" /> : (
-                  <ol className="space-y-3 list-none p-0 m-0">
-                    {data.episodes.map((ep: any) => <Episode key={ep.key} ep={ep} onOpenCase={setOpenCase} />)}
-                  </ol>
+              <div className="p-4 space-y-4">
+                {/*
+                  BIỂU ĐỒ TRƯỚC, DÒNG THỜI GIAN SAU (mục 7.12).
+                  "Em có đang tiến bộ không" là câu hỏi đầu tiên ai mở tab này cũng hỏi, và
+                  một hình nhỏ trả lời nó nhanh hơn mười dòng chữ. Dòng thời gian trả lời
+                  câu thứ hai: vì sao lại thành ra như thế.
+                */}
+                {data.progress && data.progress.skills.length > 0 && (
+                  <ProgressChart data={data.progress} />
                 )}
+                <div>
+                  <h3 className="text-sm font-semibold text-slate-200 mt-0 mb-2">Các mốc đã qua</h3>
+                  {data.episodes.length === 0 ? <Empty title="Chưa có sự kiện nào" /> : (
+                    <ol className="space-y-3 list-none p-0 m-0">
+                      {data.episodes.map((ep: any) => <Episode key={ep.key} ep={ep} onOpenCase={setOpenCase} />)}
+                    </ol>
+                  )}
+                </div>
               </div>
             )}
           </Card>
@@ -291,72 +313,17 @@ export default function StudentDetailPage() {
         {openCase !== null && <CasePanel caseId={openCase} compact />}
       </Drawer>
 
-      {cy && (
-        <CycleDialog kind={cycleEdit} onClose={() => setCycleEdit(null)} cycle={cy}
-          attempts={data.attempts} onDone={reload} />
-      )}
-
-      <TransferDialog open={transferOpen} onClose={() => setTransferOpen(false)} studentId={data.id}
-        currentClassId={data.currentClass?.id ?? null} onDone={reload} />
+      <StudentManagePanel
+        open={manageOpen} onClose={() => setManageOpen(false)}
+        student={{ id: data.id, name: data.fullName, classId: data.currentClass?.id ?? null }}
+        cycle={cy} attempts={data.attempts} canEdit={data.viewer.canEdit}
+        onOpenPlan={() => setPlanOpen(true)} onDone={reload}
+      />
     </div>
   );
 }
 
 // ==================================================================== khối nhỏ
-
-function Milestone({ label, value, sub, muted }: {
-  label: string; value: string; sub: string; muted?: boolean;
-}) {
-  return (
-    <div className="rounded-lg border p-3" style={{ borderColor: 'var(--line)' }}>
-      <div className="text-[11px] uppercase tracking-wide text-slate-500 font-semibold">{label}</div>
-      <div className={`text-2xl tabular-nums mt-1 ${muted ? 'text-slate-500' : 'text-slate-100'}`}>{value}</div>
-      <div className="text-xs text-slate-500 mt-0.5">{sub}</div>
-    </div>
-  );
-}
-
-/**
- * VỊ TRÍ SO VỚI MỐC — chỉ nói đúng một điều: từng kỹ năng có đạt kỳ vọng ĐÃ CHỐT của mốc
- * đó không. Không dựng một nhãn tổng hợp kiểu "đang ổn / có nguy cơ", vì chưa có quy tắc
- * nào được chốt cho một nhãn như thế.
- */
-function CheckpointView({ cp }: { cp: any }) {
-  const headline = cp.status === 'above' ? 'Vượt kỳ vọng ở mọi kỹ năng'
-    : cp.status === 'met' ? 'Đạt kỳ vọng'
-    : cp.status === 'no_target' ? 'Đã đủ điểm nhưng chưa có mục tiêu để so'
-    : 'Có kỹ năng dưới kỳ vọng';
-  return (
-    <>
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="text-sm text-slate-100">{headline}</span>
-        <Pill tone="muted">{cp.mode === 'ratio' ? `Bài ${cp.kind === 'final' ? 'cuối khoá' : 'giữa khoá'}` : `MT${cp.attemptNo}`}</Pill>
-        {cp.date && <span className="text-xs text-slate-500">{fmtDate(cp.date)}</span>}
-      </div>
-      {cp.provisional && (
-        <p className="text-xs text-amber-200/80 mt-1 mb-0">
-          Mới có {cp.coverage} kỹ năng — kết luận này còn có thể đổi khi các kỹ năng còn lại vào điểm.
-        </p>
-      )}
-      {cp.expectation !== null && (
-        <p className="text-xs text-slate-500 mt-1 mb-0">Kỳ vọng của mốc này: {fmtBand(cp.expectation)}</p>
-      )}
-      <ul className="flex flex-wrap gap-1.5 list-none p-0 mt-2 mb-0">
-        {cp.skills.map((s: any) => (
-          <li key={s.skill}>
-            <Pill tone={s.verdict === null ? 'muted' : s.verdict ? 'ok' : 'warn'}>
-              {s.label}
-              {' '}
-              {cp.mode === 'ratio'
-                ? (s.score !== null ? `${s.score}/${s.total}` : '—')
-                : fmtBand(s.band)}
-            </Pill>
-          </li>
-        ))}
-      </ul>
-    </>
-  );
-}
 
 function IeltsAttempts({ attempts, onOpen }: { attempts: any[]; onOpen: (a: any) => void }) {
   return (
@@ -380,9 +347,13 @@ function IeltsAttempts({ attempts, onOpen }: { attempts: any[]; onOpen: (a: any)
               <td className="td tabular-nums">MT{a.attemptNo}</td>
               <td className="td text-slate-300">{a.classCode ?? '—'}</td>
               <td className="td whitespace-nowrap">
-                {a.periodCode ?? <Pill tone="muted">Chưa có tuần</Pill>}
+                {a.periodCode ?? <Info pending>Chưa có tuần</Info>}
               </td>
-              <td className="td"><Pill tone={attemptStatusTone(a.status)}>{attemptStatusLabel(a.status)}</Pill></td>
+              <td className="td">
+                <Status kind={a.status === 'done' ? 'done' : a.status === 'cancelled' ? 'idle' : 'doing'}>
+                  {attemptStatusLabel(a.status)}
+                </Status>
+              </td>
               <td className="td tabular-nums">{fmtBand(a.bands?.listening)}</td>
               <td className="td tabular-nums">{fmtBand(a.bands?.reading)}</td>
               <td className="td tabular-nums">{fmtBand(a.bands?.writing)}</td>
@@ -390,9 +361,9 @@ function IeltsAttempts({ attempts, onOpen }: { attempts: any[]; onOpen: (a: any)
               <td className="td tabular-nums text-slate-100">{fmtBand(a.overall)}</td>
               <td className="td tabular-nums">{fmtBand(a.expectation)}</td>
               <td className="td">
-                <Pill tone={sosTone(a.sosLevel)}>
+                <Level tone={sosTone(a.sosLevel)}>
                   {a.sosLevel === null ? `Chờ ${a.required - a.scored} kỹ năng` : sosLabel(a.sosLevel)}
-                </Pill>
+                </Level>
                 {a.provisional && <div className="text-[10px] text-slate-500">mới {a.scored}/{a.required} kỹ năng</div>}
                 {a.scopeNote && <div className="text-[10px] text-slate-500">{a.scopeNote}</div>}
               </td>
@@ -427,21 +398,21 @@ function RatioAttempts({ attempts, onOpen }: { attempts: any[]; onOpen: (a: any)
               <td className="td whitespace-nowrap">{a.kind === 'final' ? 'Cuối khoá' : 'Giữa khoá'}</td>
               <td className="td text-slate-300">{a.classCode ?? '—'}</td>
               <td className="td whitespace-nowrap">
-                {a.periodCode ?? <Pill tone="muted">Chưa có tuần</Pill>}
+                {a.periodCode ?? <Info pending>Chưa có tuần</Info>}
               </td>
               <td className="td">
                 <span className="flex flex-wrap gap-1">
                   {(a.skills ?? []).map((s: any) => (
-                    <Pill key={s.skill} tone={s.outcome === 'missing' ? 'muted' : s.outcome === 'pass' ? 'ok' : 'warn'}>
+                    <Outcome key={s.skill} tone={s.outcome === 'missing' ? 'muted' : s.outcome === 'pass' ? 'ok' : 'warn'}>
                       {s.label} {s.score !== null ? `${s.score}/${s.total}` : '—'}
-                    </Pill>
+                    </Outcome>
                   ))}
                 </span>
               </td>
               <td className="td">
-                <Pill tone={sosTone(a.sosLevel)}>
+                <Level tone={sosTone(a.sosLevel)}>
                   {a.sosLevel === null ? `Chờ ${a.required - a.scored} phần` : sosLabel(a.sosLevel)}
-                </Pill>
+                </Level>
                 {a.provisional && <div className="text-[10px] text-slate-500">mới {a.scored}/{a.required} phần</div>}
               </td>
             </tr>
@@ -470,7 +441,7 @@ function Episode({ ep, onOpenCase }: { ep: any; onOpenCase: (id: number) => void
           {ep.from === ep.to ? fmtDate(ep.from) : `${fmtDate(ep.from)} → ${fmtDate(ep.to)}`}
         </span>
         <span className="text-sm text-slate-100 min-w-0">{ep.title}</span>
-        {many && <Pill tone="muted">{ep.events.length} mốc</Pill>}
+        {many && <Info>{ep.events.length} mốc</Info>}
       </div>
 
       {/*
@@ -510,199 +481,6 @@ function Episode({ ep, onOpenCase }: { ep: any; onOpenCase: (id: number) => void
         )}
       </div>
     </li>
-  );
-}
-
-// ==================================================================== hộp thoại lộ trình
-
-function CycleDialog({ kind, onClose, cycle, attempts, onDone }: {
-  kind: 'baseline' | 'target' | 'outcome' | null; onClose: () => void;
-  cycle: any; attempts: any[]; onDone: () => void;
-}) {
-  const toast = useToast();
-  const [source, setSource] = useState(cycle.baseline?.source ?? 'entrance');
-  const [score, setScore] = useState('');
-  const [attemptId, setAttemptId] = useState('');
-  const [note, setNote] = useState('');
-  const [newTarget, setNewTarget] = useState(cycle.target !== null ? String(cycle.target) : '');
-  const [reason, setReason] = useState('');
-  const [effectiveFrom, setEffectiveFrom] = useState('');
-  const [outcome, setOutcome] = useState(cycle.outcome?.outcome ?? 'unknown');
-  const [busy, setBusy] = useState(false);
-
-  const done = attempts.filter((a) => a.status !== 'cancelled');
-
-  const submit = async () => {
-    setBusy(true);
-    try {
-      if (kind === 'baseline') {
-        await api.put(`/cycles/${cycle.id}/baseline`, {
-          source, note,
-          attemptId: attemptId ? Number(attemptId) : undefined,
-          score: attemptId ? undefined : score,
-        });
-      } else if (kind === 'target') {
-        await api.post(`/cycles/${cycle.id}/target-revision`, {
-          newTarget: newTarget === '' ? null : Number(newTarget), reason, effectiveFrom: effectiveFrom || undefined,
-        });
-      } else {
-        await api.put(`/cycles/${cycle.id}/outcome`, {
-          outcome, note, attemptId: attemptId ? Number(attemptId) : undefined,
-          score: attemptId ? undefined : score || undefined,
-        });
-      }
-      invalidate('/students'); onDone(); onClose(); toast.push('ok', 'Đã lưu');
-    } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
-  };
-
-  const title = kind === 'baseline' ? 'Điểm đầu vào của lộ trình'
-    : kind === 'target' ? 'Đổi mục tiêu' : 'Kết luận lộ trình';
-
-  return (
-    <Modal open={kind !== null} onClose={onClose} title={title}
-      footer={
-        <>
-          <button className="btn" onClick={onClose} disabled={busy}>Huỷ</button>
-          <button className="btn btn-primary" onClick={submit} disabled={busy}>Lưu</button>
-        </>
-      }>
-      {kind === 'baseline' && (
-        <div className="space-y-3">
-          <Field label="Điểm này lấy từ đâu" required>
-            <select className="field" value={source} onChange={(e) => setSource(e.target.value)}>
-              {BASELINE_SOURCES.map((s) => <option key={s} value={s}>{BASELINE_SOURCE_LABEL[s]}</option>)}
-            </select>
-          </Field>
-          <Field label="Chọn một bài đã có" hint="Hoặc bỏ trống và nhập điểm bên dưới nếu điểm đến từ ngoài hệ thống.">
-            <select className="field" value={attemptId} onChange={(e) => setAttemptId(e.target.value)}>
-              <option value="">Không lấy từ bài nào</option>
-              {done.map((a) => (
-                <option key={a.id} value={a.id}>
-                  MT{a.attemptNo}{a.overall !== null ? ` · Overall ${a.overall}` : ''}
-                </option>
-              ))}
-            </select>
-          </Field>
-          {!attemptId && (
-            <Field label="Điểm đầu vào" required>
-              <input className="field max-w-[8rem]" type="number" step="0.5" min={0} max={9}
-                value={score} onChange={(e) => setScore(e.target.value)} />
-            </Field>
-          )}
-          <Field label="Ghi chú">
-            <input className="field" value={note} onChange={(e) => setNote(e.target.value)}
-              placeholder="Điểm IELTS thi tại BC tháng 3/2026" />
-          </Field>
-          <SectionNote>
-            Hệ thống KHÔNG tự lấy MT1 làm điểm đầu vào. “Em vào học ở mức nào” là câu hỏi khác
-            hẳn “bài Mock đầu tiên được mấy điểm”.
-          </SectionNote>
-        </div>
-      )}
-
-      {kind === 'target' && (
-        <div className="space-y-3">
-          <Field label="Mục tiêu mới" required>
-            <input className="field max-w-[8rem]" type="number" step="0.5" min={0} max={9}
-              value={newTarget} onChange={(e) => setNewTarget(e.target.value)} />
-          </Field>
-          <Field label="Lý do" required hint="Vài tháng sau, đây là thứ duy nhất giải thích vì sao mục tiêu đổi.">
-            <input className="field" value={reason} onChange={(e) => setReason(e.target.value)}
-              placeholder="Gia đình lùi kế hoạch du học sang năm sau" />
-          </Field>
-          <Field label="Có hiệu lực từ ngày">
-            <input type="date" className="field" value={effectiveFrom} onChange={(e) => setEffectiveFrom(e.target.value)} />
-          </Field>
-          <SectionNote>
-            Các lượt đã chốt GIỮ NGUYÊN kỳ vọng tính theo mục tiêu lúc đó. Đổi mục tiêu không
-            chấm lại quá khứ.
-          </SectionNote>
-        </div>
-      )}
-
-      {kind === 'outcome' && (
-        <div className="space-y-3">
-          <Field label="Kết luận" required>
-            <select className="field" value={outcome} onChange={(e) => setOutcome(e.target.value)}>
-              {CYCLE_OUTCOMES.map((o) => <option key={o} value={o}>{CYCLE_OUTCOME_LABEL[o]}</option>)}
-            </select>
-          </Field>
-          <Field label="Dựa trên bài nào">
-            <select className="field" value={attemptId} onChange={(e) => setAttemptId(e.target.value)}>
-              <option value="">Không lấy từ bài nào</option>
-              {done.map((a) => (
-                <option key={a.id} value={a.id}>
-                  MT{a.attemptNo}{a.overall !== null ? ` · Overall ${a.overall}` : ''}
-                </option>
-              ))}
-            </select>
-          </Field>
-          {!attemptId && (
-            <Field label="Điểm cuối" hint="Ví dụ điểm IELTS chính thức em báo về.">
-              <input className="field max-w-[8rem]" type="number" step="0.5" min={0} max={9}
-                value={score} onChange={(e) => setScore(e.target.value)} />
-            </Field>
-          )}
-          <Field label="Ghi chú">
-            <input className="field" value={note} onChange={(e) => setNote(e.target.value)} />
-          </Field>
-          <SectionNote>
-            Đóng lộ trình chỉ nói “không học theo lộ trình này nữa”. Có đạt mục tiêu hay không là
-            kết luận riêng, và “chưa có căn cứ” là một câu trả lời hợp lệ.
-          </SectionNote>
-        </div>
-      )}
-    </Modal>
-  );
-}
-
-function TransferDialog({ open, onClose, studentId, currentClassId, onDone }: {
-  open: boolean; onClose: () => void; studentId: number; currentClassId: number | null; onDone: () => void;
-}) {
-  const toast = useToast();
-  const classes = useApi<any[]>(open ? '/ref/classes' : null);
-  const [toClassId, setToClassId] = useState<number | null>(null);
-  const [date, setDate] = useState('');
-  const [reason, setReason] = useState('');
-  const [busy, setBusy] = useState(false);
-
-  return (
-    <ConfirmDialog
-      open={open} onClose={onClose} busy={busy} title="Chuyển lớp" confirmLabel="Chuyển lớp"
-      body={
-        <div className="space-y-3">
-          <label className="block">
-            <span className="label">Lớp đích</span>
-            <select className="field" value={toClassId ?? ''} onChange={(e) => setToClassId(Number(e.target.value) || null)}>
-              <option value="">Chọn lớp…</option>
-              {(classes.data ?? []).filter((c) => c.id !== currentClassId).map((c) => (
-                <option key={c.id} value={c.id}>{c.code} · {c.branch_name}</option>
-              ))}
-            </select>
-          </label>
-          <label className="block">
-            <span className="label">Ngày hiệu lực</span>
-            <input type="date" className="field" value={date} onChange={(e) => setDate(e.target.value)} />
-          </label>
-          <label className="block">
-            <span className="label">Lý do</span>
-            <input className="field" value={reason} onChange={(e) => setReason(e.target.value)} />
-          </label>
-          <SectionNote>
-            Lượt chưa xong sẽ chuyển sang lớp mới. Lượt đã xong giữ nguyên lớp cũ để không viết lại lịch sử.
-          </SectionNote>
-        </div>
-      }
-      onConfirm={async () => {
-        if (!toClassId) { toast.push('error', 'Cần chọn lớp đích.'); return; }
-        setBusy(true);
-        try {
-          await api.post(`/students/${studentId}/transfer`, { toClassId, effectiveDate: date || undefined, reason });
-          invalidate('/students'); invalidate('/attempts'); invalidate('/overview');
-          onDone(); onClose(); toast.push('ok', 'Đã chuyển lớp');
-        } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
-      }}
-    />
   );
 }
 

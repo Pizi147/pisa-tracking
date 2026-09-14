@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useApi } from '../../lib/useApi.ts';
 import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
-import { Card, Field, Forbidden, Pill, SectionNote, Skeleton } from '../../ui/ui.tsx';
+import { Card, Field, Forbidden, Info, SectionNote, Skeleton } from '../../ui/ui.tsx';
 import { Drawer } from '../../ui/Drawer.tsx';
 import { skillLabel } from '../../lib/format.ts';
 import { ENTRY_SKILLS, REGULAR_SKILLS } from '@shared/domain/index.ts';
@@ -57,7 +57,7 @@ export function CatalogAdmin() {
                 <tr key={r.code} className={`row-hover ${r.status !== 'active' ? 'opacity-50' : ''}`}>
                   <td className="td text-slate-100 whitespace-nowrap">
                     {r.code}
-                    {r.status !== 'active' && <Pill tone="muted">ngừng dùng</Pill>}
+                    {r.status !== 'active' && <Info pending>ngừng dùng</Info>}
                   </td>
                   <td className="td text-slate-300">{r.name}</td>
                   <td className="td text-right tabular-nums text-slate-400">{r.inUse || '—'}</td>
@@ -92,7 +92,7 @@ export function CatalogAdmin() {
                 <tr key={p.code} className={`row-hover ${p.status !== 'active' ? 'opacity-50' : ''}`}>
                   <td className="td text-slate-100 whitespace-nowrap">
                     {p.code}
-                    {p.builtin && <Pill tone="neutral">gốc</Pill>}
+                    {p.builtin && <Info>gốc</Info>}
                   </td>
                   <td className="td text-slate-300">
                     {p.name}

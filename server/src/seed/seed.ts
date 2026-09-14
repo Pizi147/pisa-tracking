@@ -1,7 +1,7 @@
 import crypto from 'node:crypto';
 import { db, recreateSchema, tx } from '../db.ts';
 import {
-  BRANCH_REPORT_CATEGORIES, CONTACT_KINDS, CONTACT_KIND_LABEL, ENTRY_SKILLS,
+  BRANCH_REPORT_CATEGORIES, CONTACT_KINDS, CONTACT_KIND_LABEL, ENTRY_SKILLS, cycleDeadline,
   PERMISSION_LABEL, PROGRAMME_TEMPLATES, categoryOf,
   TUTOR_REPORT_CATEGORIES, programmeOf,
   type EntrySkill,
@@ -568,7 +568,7 @@ function seedBehaviourCase(conn: any, o: {
     )
     .run(caseId, o.attemptId, o.attemptNo, o.level, o.testDate, NOW, `mt:${o.attemptId}:${caseId}:opened`);
 
-  const due = addDays(o.testDate, DUE_DAYS_BY_SOS[o.level] ?? 7);
+  const due = cycleDeadline(o.testDate, 'behaviour');
   /*
    * ĐỢT MT CŨ THÌ HAI VIỆC TRAO ĐỔI COI NHƯ ĐÃ LÀM XONG.
    *
@@ -603,9 +603,6 @@ function seedBehaviourCase(conn: any, o: {
            due, `auto:${o.attemptId}:${kind}`, NOW);
   }
 }
-
-/** Hạn làm phương án theo mức SOS — cùng thang với `URGENCY_DUE_DAYS` của `shared/domain.ts`. */
-const DUE_DAYS_BY_SOS: Record<number, number> = { 1: 7, 2: 5, 3: 3 };
 
 const TEACHER_HANDLERS = ['GVCN Thu Trang', 'GVBM Minh Khoa', 'GVCN Bảo Nam', 'GVBM Gia Hân', 'GVCN Quang Duy'];
 const CS_HANDLERS = ['CS Ngọc Diệp', 'CS Hải Yến', 'CS Thanh Vân', 'CS Bảo Ngân'];

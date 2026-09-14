@@ -3,9 +3,10 @@ import {
   DISPOSITIONS, INTERVENTION_KINDS, INTERVENTION_KIND_LABEL, INTERVENTION_STATUSES,
   FOLLOWUP_OUTCOMES, BEHAVIOUR_TOPICS, CASE_DECISIONS, CASE_OUTCOMES, ENTRY_SKILLS,
   ISSUE_ROLES, PERMISSIONS, THREAD_TRACKS, URGENCY_LEVELS,
-  CASE_CATEGORY_SHORT, FOLLOWUP_OUTCOME_LABEL, caseCategoriesFor,
+  CASE_CATEGORY_SHORT, CASE_CATEGORIES, FOLLOWUP_OUTCOME_LABEL, caseCategoriesFor,
   CASE_OUTCOME_LABEL, caseCategoryLabel, caseDedupKey, caseHeadline, caseTitle, categoryOf,
-  dueDaysFor, isProposalKind,
+  NEXT_STEP_LABEL, cycleDeadline, isProposalKind, nextStepsFor, outcomeLabelFor, outcomesFor,
+  type NextStep,
   issueBranchOf, issueLabel, threadTopicLabel, urgencyFromSos,
   type CaseOutcome, type FollowUpOutcome, type InterventionKind,
 } from '../../../shared/domain/index.ts';
@@ -41,8 +42,14 @@ import { isRatioCycle } from '../normal/regular.ts';
  */
 export function caseTitleOf(c: {
   id: number; category?: string | null; track?: string | null; topic?: string | null;
-  origin_kind?: string | null; sos_level?: number | null;
+  origin_kind?: string | null; sos_level?: number | null; title?: string | null;
 }): string {
+  /*
+   * TÊN NGƯỜI TẠO ĐẶT THẮNG TÊN SUY RA. Case tạo tay có tên riêng vì không có gì để suy;
+   * và không được tự gán "… dưới kỳ vọng" cho một case không sinh từ điểm (mục 7.3).
+   */
+  const own = (c.title ?? '').trim();
+  if (own) return own;
   const latest = db()
     .prepare(
       `SELECT m.attempt_no, a.kind FROM case_milestones m
@@ -91,6 +98,8 @@ export function milestonesOf(caseId: number) {
  */
 export function closeCaseOutcome(p: Principal, caseId: number, input: {
   outcome: string; note?: string | null; decision: string;
+  /** Option 2 — ghi chi tiết theo kỹ năng khi kết luận (mục 7.7 [5]). Tuỳ chọn. */
+  metrics?: unknown;
 }) {
   const conn = db();
   const c = loadCase(caseId);
@@ -104,19 +113,19 @@ export function closeCaseOutcome(p: Principal, caseId: number, input: {
     throw badRequest('Hãy chọn kết thúc hẳn hay kéo dài theo dõi.');
   }
 
-  const pending = conn
-    .prepare(
-      `SELECT kind, description FROM case_interventions
-        WHERE case_id = ? AND status IN ('planned', 'started')`,
-    )
-    .all(caseId) as any[];
-  if (pending.length) {
-    const first = (pending[0].description ?? '').trim()
-      || INTERVENTION_KIND_LABEL[pending[0].kind as InterventionKind] || 'một phương án';
-    throw badRequest(
-      `Còn ${pending.length} phương án chưa có kết quả (${first}). `
-      + 'Cập nhật kết quả từng phương án xong rồi mới chốt kết quả chung của case.',
-    );
+  const metrics = normalizeMetrics(input.metrics);
+
+  /*
+   * MỘT ĐIỀU KIỆN ĐÓNG DUY NHẤT cho cả hai đường vào (mục 7.7 [5]).
+   *
+   * Trước đây hàm này tự kiểm "còn phương án nào đang chạy không", trong khi nút trên màn
+   * hình lại hỏi `closeBlockers`. Hai phép kiểm khác nhau cho cùng một câu hỏi nghĩa là
+   * sớm muộn sẽ có đường đóng được case mà màn hình bảo là chưa đóng được — cụ thể là case
+   * CHƯA CÓ PHƯƠNG ÁN NÀO vẫn lọt qua đây.
+   */
+  const blockers = closeBlockers(caseId);
+  if (blockers.length) {
+    throw badRequest(`Chưa chốt kết quả case được. ${blockers.join(' ')}`);
   }
 
   const today = demoToday();
@@ -149,6 +158,18 @@ export function closeCaseOutcome(p: Principal, caseId: number, input: {
            [CASE_OUTCOME_LABEL[input.outcome as CaseOutcome], (input.note ?? '').trim() || null]
              .filter(Boolean).join(' — '),
            p.userId, nowIso(), `outcome:${caseId}:${today}:${input.decision}`);
+
+    /* Điểm cô tự chấm lúc kết luận: lưu thành một dòng cập nhật gắn thẳng vào case. */
+    if (metrics) {
+      conn
+        .prepare(
+          `INSERT INTO case_followups (case_id, intervention_id, observed_on, observer_user_id,
+                                       note, metrics, created_at)
+           VALUES (?, NULL, ?, ?, ?, ?, ?)`,
+        )
+        .run(caseId, today, p.userId, (input.note ?? '').trim() || null,
+             JSON.stringify(metrics), nowIso());
+    }
 
     addJourney({
       studentId: c.eff_student_id, cycleId: c.eff_cycle_id,
@@ -217,6 +238,9 @@ function loadCase(caseId: number) {
 export function reportIssue(p: Principal, input: {
   studentId: number;
   cycleId?: number | null;
+  /** Tên case do người tạo đặt (mục 7.3). Chỉ case tạo tay mới có. */
+  title?: string | null;
+  /** "Mô tả" — trước vòng 5 ô này tên là "Chuyện gì đang xảy ra". */
   summary: string;
   urgency?: string;
   /** Học thuật hay Ý thức — hai đầu mục, không hơn. */
@@ -361,24 +385,24 @@ export function reportIssue(p: Principal, input: {
     const info = conn
       .prepare(
         `INSERT INTO sos_cases (attempt_id, student_id, cycle_id, track, topic, category, origin_kind,
-                                detected_at, reported_by, summary, urgency, sos_level, status,
+                                detected_at, reported_by, title, summary, urgency, sos_level, status,
                                 note, idempotency_key, dedup_key, parallel, created_at)
-         VALUES (NULL, ?,?,?,?,?, 'teacher_report', ?,?,?,?, NULL, 'open', ?,?,?,?,?)`,
+         VALUES (NULL, ?,?,?,?,?, 'teacher_report', ?,?,?,?,?, NULL, 'open', ?,?,?,?,?)`,
       )
       .run(input.studentId, cycle?.id ?? null, track, topic, category,
-           detectedAt, p.userId, summary, urgency,
+           detectedAt, p.userId, (input.title ?? '').trim() || null, summary, urgency,
            (input.note ?? '').trim() || null, key,
            input.parallel ? null : dedupKey, input.parallel ? 1 : 0, nowIso());
     const caseId = Number(info.lastInsertRowid);
 
-    /* Mốc mở case — để màn case kể được từ đầu, kể cả case không sinh từ điểm. */
-    conn
-      .prepare(
-        `INSERT INTO case_milestones (case_id, kind, occurred_on, note, created_by, created_at, dedup_key)
-         VALUES (?, 'opened', ?,?,?,?,?)`,
-      )
-      .run(caseId, detectedAt, input.parallel ? 'Mở song song với case đang có' : 'Giáo viên tự báo',
-           p.userId, nowIso(), `open:${caseId}`);
+    /*
+     * KHÔNG ghi một mốc "Mở case" ở đây (mục 7.6).
+     *
+     * Ngày mở và người tạo đã nằm ở đầu case; thêm một node "Mở case" vào dòng thời gian
+     * nội bộ là lặp lại đúng thông tin đó và đẩy những mốc có nghĩa — hỗ trợ đã làm, kết
+     * quả sau hỗ trợ — xuống dưới. Hành trình học tập của TOÀN học viên vẫn có mốc "phát
+     * sinh case" (`addJourney` ngay dưới), vì ở đó nó thật sự là một mốc.
+     */
 
     addIssues(caseId, p.userId, { ...input, topic });
 
@@ -530,8 +554,15 @@ export function recordIntervention(p: Principal, caseId: number, input: {
     [input.completedDate, 'Ngày hoàn thành'], [input.followupDue, 'Ngày xem lại']] as const) {
     if (d && !isIsoDate(d)) throw badRequest(`${label} không hợp lệ.`);
   }
+  /*
+   * PHƯƠNG ÁN CẦN DUYỆT KHÔNG BAO GIỜ BẮT ĐẦU Ở TRẠNG THÁI ĐÃ LÀM (mục 7.7 [2]).
+   * Gửi đi rồi thì nó đang CHỜ, và chu kỳ thực hiện chỉ chạy khi Quản lý duyệt.
+   */
+  const needsApprovalEarly = isProposalKind(input.kind) || !!input.needsApproval;
+  const effStatus = needsApprovalEarly ? 'planned' : status;
+
   // "Đã xong" phải có ngày thực tế; nếu không thì nó mới là "đang thực hiện".
-  if (status === 'completed' && !input.completedDate && !input.startedDate) {
+  if (effStatus === 'completed' && !input.completedDate && !input.startedDate) {
     throw badRequest('Ghi "đã xong" thì phải có ngày thực hiện. Chưa có ngày thì chọn "đang thực hiện".');
   }
   /*
@@ -545,9 +576,15 @@ export function recordIntervention(p: Principal, caseId: number, input: {
    * Chọn một loại trong nhóm ĐỀ XUẤT tức là đang xin ý kiến — không phải tick thêm gì.
    * Nhờ vậy ô "cần Quản lý duyệt" chỉ còn hiện ở nhóm phương án giáo viên tự làm được.
    */
-  const needsApproval = !!input.needsApproval || isProposalKind(input.kind);
-  if (needsApproval && status !== 'planned') {
-    throw badRequest('Phương án cần Quản lý duyệt thì để ở "đã lên kế hoạch", chưa ghi là đã làm.');
+  const needsApproval = needsApprovalEarly;
+  /*
+   * Gửi kèm trạng thái "đã làm" cho một phương án cần duyệt là mâu thuẫn — nhưng thay vì
+   * báo lỗi và bắt người dùng gõ lại, hệ thống ĐƯA VỀ "đã lên kế hoạch" (xem `effStatus`).
+   * Chỉ chặn khi người dùng khai hẳn một ngày hoàn thành, vì lúc đó họ đang nói một điều
+   * khác hẳn: việc đã xong rồi mới đi xin duyệt.
+   */
+  if (needsApproval && input.completedDate) {
+    throw badRequest('Việc đã làm xong rồi thì không còn gì để duyệt — phương án cần duyệt phải ở "đã lên kế hoạch".');
   }
   const performerUserId = input.performerUserId
     ?? (input.performerSelf && !input.performerName?.trim() ? p.userId : null);
@@ -557,25 +594,31 @@ export function recordIntervention(p: Principal, caseId: number, input: {
 
   return tx(() => {
     /*
-     * Hạn Quản lý phải trả lời suy thẳng từ mức gấp của vấn đề: 7 · 5 · 3 ngày. Cùng một
-     * bảng với hạn xử lý vấn đề, nên không ai phải nhớ hai thang. Quá hạn KHÔNG chặn gì cả
-     * — nó chỉ nổi lên màn của Quản lý để một đề xuất không nằm im mãi.
+     * HẠN QUẢN LÝ PHẢI TRẢ LỜI — dùng CHUNG chu kỳ với phương án, để không ai phải nhớ hai
+     * thang. Quá hạn KHÔNG chặn gì cả; nó nổi lên màn của Quản lý để một đề xuất không nằm
+     * im mãi, và thời gian chờ đó tính cho QUẢN LÝ chứ không phải cho giáo viên.
      */
-    const approvalDue = needsApproval
-      ? addDays(demoToday(), dueDaysFor(c.urgency, c.sos_level))
-      : null;
+    const approvalDue = needsApproval ? cycleDeadline(demoToday(), c.track ?? 'academic') : null;
+
+    /*
+     * CHU KỲ ĐẦU TIÊN bắt đầu NGAY, trừ phương án cần duyệt — cái đó chỉ bắt đầu khi được
+     * duyệt (mục 7.7): thời gian chờ Quản lý không được tính là giáo viên đã có thời gian làm.
+     */
+    const cycleStart = needsApproval ? null : (input.startedDate ?? demoToday());
+    const cycleDue = cycleStart ? cycleDeadline(cycleStart, c.track ?? 'academic') : null;
 
     const info = conn
       .prepare(
         `INSERT INTO case_interventions (case_id, kind, description, performer_user_id, performer_name,
                                          recorded_by, status, planned_date, started_date, completed_date,
-                                         followup_due, needs_approval, approval_state, approval_due, created_at)
-         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+                                         followup_due, action_due, cycle_no, cycle_started_on,
+                                         needs_approval, approval_state, approval_due, created_at)
+         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,1,?,?,?,?,?)`,
       )
       .run(caseId, input.kind, input.description ?? null,
-           performerUserId, input.performerName?.trim() || null, p.userId, status,
+           performerUserId, input.performerName?.trim() || null, p.userId, effStatus,
            input.plannedDate ?? null, input.startedDate ?? null, input.completedDate ?? null,
-           input.followupDue ?? null,
+           input.followupDue ?? cycleDue, cycleDue, cycleStart,
            needsApproval ? 1 : 0, needsApproval ? 'pending' : null, approvalDue, nowIso());
     const id = Number(info.lastInsertRowid);
 
@@ -657,6 +700,7 @@ export function respondToPlan(p: Principal, interventionId: number, input: {
     );
   }
 
+  const c0 = db().prepare('SELECT track FROM sos_cases WHERE id = ?').get(iv.case_id) as any;
   const note = (input.note ?? '').trim() || null;
   if (input.decision === 'declined' && !note) {
     throw badRequest('Không duyệt thì phải ghi lý do, để giáo viên biết nên làm gì tiếp.');
@@ -669,15 +713,35 @@ export function respondToPlan(p: Principal, interventionId: number, input: {
       conn.prepare('UPDATE case_interventions SET approval_note = ?, updated_at = ? WHERE id = ?')
         .run(note, nowIso(), interventionId);
     } else {
+      /*
+       * CHU KỲ THỰC HIỆN BẮT ĐẦU TỪ LÚC ĐƯỢC DUYỆT, không phải từ lúc gửi đề xuất (mục 7.7).
+       *
+       * Quản lý để đề xuất nằm mười ngày rồi mới duyệt thì mười ngày đó là của Quản lý.
+       * Tính hạn từ ngày gửi là bắt giáo viên chịu một cái trễ không phải của họ — và cái
+       * số "quá hạn" sau đó chỉ ra một người sai.
+       */
+      const approvedOn = demoToday();
+      const startDue = input.decision === 'approved' ? cycleDeadline(approvedOn, c0.track ?? 'academic') : null;
       conn
         .prepare(
           `UPDATE case_interventions
               SET approval_state = ?, approval_by = ?, approval_at = ?, approval_note = ?,
-                  status = CASE WHEN ? = 'declined' THEN 'cancelled' ELSE status END,
+                  status = CASE WHEN ? = 'declined' THEN 'cancelled'
+                                WHEN ? = 'approved' THEN 'started' ELSE status END,
+                  cycle_started_on = CASE WHEN ? = 'approved' THEN ? ELSE cycle_started_on END,
+                  started_date    = CASE WHEN ? = 'approved' THEN COALESCE(started_date, ?) ELSE started_date END,
+                  action_due      = CASE WHEN ? = 'approved' THEN ? ELSE action_due END,
+                  followup_due    = CASE WHEN ? = 'approved' THEN ? ELSE followup_due END,
                   updated_at = ?
             WHERE id = ?`,
         )
-        .run(input.decision, p.userId, nowIso(), note, input.decision, nowIso(), interventionId);
+        .run(input.decision, p.userId, nowIso(), note,
+             input.decision, input.decision,
+             input.decision, approvedOn,
+             input.decision, approvedOn,
+             input.decision, startDue,
+             input.decision, startDue,
+             nowIso(), interventionId);
     }
 
     addJourney({
@@ -849,10 +913,16 @@ export function recordFollowUp(p: Principal, caseId: number, input: {
  */
 export function setDisposition(p: Principal, caseId: number, input: {
   disposition?: string | null; note?: string | null; status?: string | null;
+  /**
+   * Ghi chi tiết theo kỹ năng khi kết luận case (mục 7.7 [5] Option 2) — TUỲ CHỌN.
+   * Mặc định chỉ cần ghi chú ngắn; ai muốn ghi kỹ thì ghi thêm điểm mình tự chấm.
+   */
+  metrics?: unknown;
 }) {
   const conn = db();
   const c = loadCase(caseId);
   const closing = input.status === 'done';
+  const metrics = normalizeMetrics(input.metrics);
 
   if (closing) {
     if (!canCloseCase(p, c)) {
@@ -861,6 +931,17 @@ export function setDisposition(p: Principal, caseId: number, input: {
     const disposition = input.disposition ?? c.disposition;
     if (!disposition) {
       throw badRequest('Đóng case thì phải chọn hướng xử lý — để biết case kết thúc vì đã giải quyết hay bị bỏ quên.');
+    }
+    /*
+     * CHỈ ĐÓNG ĐƯỢC KHI MỌI PHƯƠNG ÁN ĐÃ KHÉP LẠI (mục 7.7 [5]).
+     *
+     * Và một case CHƯA CÓ PHƯƠNG ÁN NÀO cũng không đủ điều kiện: đếm được "0 phương án còn
+     * mở" không có nghĩa là đã làm gì cho em. Thông báo NÓI RÕ còn thiếu gì, thay vì chỉ
+     * làm mờ một cái nút và để người dùng tự đoán.
+     */
+    const blockers = closeBlockers(caseId);
+    if (blockers.length) {
+      throw badRequest(`Chưa hoàn thành case được. ${blockers.join(' ')}`);
     }
     if (disposition === 'monitor') {
       throw badRequest('"Chỉ theo dõi thêm" nghĩa là case còn mở. Chọn hướng khác nếu muốn đóng.');
@@ -887,9 +968,26 @@ export function setDisposition(p: Principal, caseId: number, input: {
         sets.push('closed_by = NULL', 'closed_at = NULL');
       }
     }
-    if (!sets.length) return caseDetail(p, caseId);
-    sets.push('updated_at = ?'); params.push(nowIso(), caseId);
-    conn.prepare(`UPDATE sos_cases SET ${sets.join(', ')} WHERE id = ?`).run(...params);
+    if (!sets.length && !metrics) return caseDetail(p, caseId);
+    if (sets.length) {
+      sets.push('updated_at = ?'); params.push(nowIso(), caseId);
+      conn.prepare(`UPDATE sos_cases SET ${sets.join(', ')} WHERE id = ?`).run(...params);
+    }
+
+    /*
+     * ĐIỂM KẾT LUẬN ghi thành một dòng cập nhật gắn thẳng vào case, không gắn vào phương án
+     * nào — vì nó là kết luận của CẢ case, không phải kết quả của một vòng hỗ trợ. Nhờ vậy
+     * biểu đồ tiến bộ chỉ phải đọc một chỗ duy nhất để lấy mọi điểm cô tự chấm.
+     */
+    if (metrics) {
+      conn
+        .prepare(
+          `INSERT INTO case_followups (case_id, intervention_id, observed_on, observer_user_id,
+                                       note, metrics, created_at)
+           VALUES (?, NULL, ?, ?, ?, ?, ?)`,
+        )
+        .run(caseId, demoToday(), p.userId, input.note ?? null, JSON.stringify(metrics), nowIso());
+    }
 
     conn
       .prepare(
@@ -964,7 +1062,16 @@ export function caseDetail(p: Principal, caseId: number) {
       byProxy: !iv.performer_user_id && !!iv.performer_name,
       plannedDate: iv.planned_date, startedDate: iv.started_date, completedDate: iv.completed_date,
       followupDue: iv.followup_due,
-      /* HẠN LÀM phương án — 3/5/7 ngày theo mức SOS. Khác hạn xem lại và hạn duyệt. */
+      /*
+       * CHU KỲ XỬ LÝ. `cycleNo` là vòng thứ mấy của CHÍNH phương án này — "đã ba vòng mà
+       * vẫn chưa chuyển" là một câu khác hẳn "một cái hạn bị đẩy lùi ba lần".
+       */
+      cycleNo: iv.cycle_no ?? 1,
+      cycleStartedOn: iv.cycle_started_on ?? null,
+      /** Khép lại VÌ SAO: `done` đã xong · `superseded` bị thay bằng phương án khác. */
+      closedReason: iv.closed_reason ?? null,
+      supersededBy: iv.superseded_by ?? null,
+      /* HẠN của chu kỳ đang chạy — hai tuần với case học thuật, một tuần với Ý thức/Khác. */
       actionDue: iv.action_due ?? null,
       actionOverdue: !!iv.action_due && iv.action_due < demoToday()
         && (iv.status === 'planned' || iv.status === 'started')
@@ -975,7 +1082,9 @@ export function caseDetail(p: Principal, caseId: number) {
        * phải xem lại; điều kiện đó khiến gần như không việc nào bị coi là quá hạn.
        */
       overdue: !!iv.followup_due && iv.followup_due < demoToday() && iv.status !== 'cancelled'
-        && !conn.prepare('SELECT 1 FROM case_followups WHERE intervention_id = ?').get(iv.id),
+        && !conn
+          .prepare('SELECT 1 FROM case_followups WHERE intervention_id = ? AND cycle_no = ?')
+          .get(iv.id, iv.cycle_no ?? 1),
       // NULL = không cần duyệt, khác hẳn 'pending' = đang chờ Quản lý trả lời.
       needsApproval: !!iv.needs_approval,
       approvalState: iv.approval_state as string | null,
@@ -995,6 +1104,10 @@ export function caseDetail(p: Principal, caseId: number) {
       id: f.id, interventionId: f.intervention_id, observedOn: f.observed_on,
       observerName: f.observer_name ?? null, outcome: f.outcome, note: f.note,
       evidenceAttemptId: f.evidence_attempt_id,
+      nextStep: f.next_step ?? null, cycleNo: f.cycle_no ?? null,
+      cycleDue: f.cycle_due ?? null, late: !!f.late,
+      /* Điểm cô tự chấm kèm lần cập nhật này — KHÔNG phải điểm chính thức. */
+      metrics: parseMetrics(f.metrics),
     }));
 
   const history = conn
@@ -1022,14 +1135,24 @@ export function caseDetail(p: Principal, caseId: number) {
     title: caseTitleOf(c),
     /** Case mở song song có chủ ý với một case khác cùng hạng mục. */
     parallel: !!c.parallel,
+    /*
+     * LỚP NÀY CHẤM KIỂU GÌ. Lớp Normal chấm điểm đạt/tổng, lớp Fast Track chấm band 0–9.
+     * Ô ghi điểm giáo viên tự chấm phải hỏi đúng kiểu của lớp — hỏi band một lớp Normal là
+     * hỏi một con số không tồn tại ở đó.
+     */
+    ratio: isRatioCycle(cycle ?? {}),
+    /** Các hạng mục hợp lệ của lớp này — năm ô với FT, bốn ô với Normal. */
+    categories: caseCategoriesFor(isRatioCycle(cycle ?? {}) ? 'ratio' : 'ielts_band')
+      .filter((k) => k !== 'behaviour')
+      .map((k) => ({ code: k, label: caseCategoryLabel(k) })),
     /** Số kỹ năng dưới kỳ vọng của CẢ LƯỢT. NULL với vấn đề giáo viên báo — không phải SOS 0. */
     sosLevel: c.sos_level,
     /**
      * Mức gấp. Vấn đề sinh từ điểm không ghi mức vào database (hai thang cố tình tách nhau);
-     * suy từ SOS lúc hiển thị, và hạn xử lý suy tiếp từ mức đó: 7 · 5 · 3 ngày.
+     * suy từ SOS lúc hiển thị. Từ vòng 5 mức gấp KHÔNG còn quyết định hạn — hạn là chu kỳ
+     * hai tuần (học thuật) hoặc một tuần (Ý thức/Khác), xem `cycleDeadline`.
      */
     urgency: c.urgency ?? (c.sos_level !== null ? urgencyFromSos(c.sos_level) : null),
-    dueDays: dueDaysFor(c.urgency, c.sos_level),
     note: c.note,
     summary: c.summary,
     headline: caseHeadline({
@@ -1067,6 +1190,11 @@ export function caseDetail(p: Principal, caseId: number) {
       id: h.id, field: h.field, oldValue: h.old_value, newValue: h.new_value,
       actorName: h.actor_name, createdAt: h.created_at,
     })),
+    /*
+     * CÒN THIẾU GÌ ĐỂ HOÀN THÀNH CASE — nói thẳng, không làm mờ một cái nút rồi để người
+     * dùng tự đoán (mục 7.7 [5]). Rỗng nghĩa là đủ điều kiện đóng.
+     */
+    closeBlockers: c.status === 'done' ? [] : closeBlockers(caseId),
     viewer: {
       canEdit: can(p, PERMISSIONS.SOS_EDIT, { classId: c.class_id, studentId: c.eff_student_id }),
       canClose: canCloseCase(p, c),
@@ -1087,6 +1215,14 @@ export type CaseFilters = {
   queue?: string | null;
   /** Loại lớp: 'normal' hay 'ft'. Thay cho bộ lọc "Đầu mục" đã bỏ ở vòng 4 (mục 10.1). */
   classKind?: string | null;
+  /**
+   * PHẠM VI LỘ TRÌNH (mục 7.2). Chỉ dùng ở hồ sơ một học viên.
+   *
+   * Có `cycleId` thì chỉ lấy case của lộ trình đó; không có thì lấy TOÀN BỘ HÀNH TRÌNH,
+   * gồm cả case đã hoàn thành từ lớp và lộ trình trước. Bộ lọc phải nói rõ phạm vi, để
+   * không ai nhìn một danh sách ngắn rồi tưởng lịch sử đã mất.
+   */
+  cycleId?: number | null;
 };
 
 /**
@@ -1123,6 +1259,10 @@ export type MappedCase = {
   status: string; disposition: string | null;
   detectedAt: string; reporterName: string | null;
   interventionCount: number; nextDue: string | null; dueOverdue: boolean;
+  /** Case mở SONG SONG có chủ ý với một case khác cùng hạng mục. */
+  parallel: boolean;
+  /** Case này nối tiếp case nào (vấn đề cũ tái phát sau khi đã chốt). */
+  previousCaseId: number | null;
   state: CaseState;
 };
 
@@ -1169,6 +1309,7 @@ export function listCases(p: Principal, f: CaseFilters = {}) {
   if (f.classId) { where.push('COALESCE(a.class_id, cur.class_id) = ?'); params.push(f.classId); }
   if (f.branchId) { where.push('COALESCE(ac.branch_id, cc.branch_id) = ?'); params.push(f.branchId); }
   if (f.status) { where.push('sc.status = ?'); params.push(f.status); }
+  if (f.cycleId) { where.push('COALESCE(sc.cycle_id, a.cycle_id) = ?'); params.push(f.cycleId); }
   if (f.origin) { where.push('sc.origin_kind = ?'); params.push(f.origin); }
 
   const rows = conn
@@ -1263,6 +1404,8 @@ export function listCases(p: Principal, f: CaseFilters = {}) {
       disposition: r.disposition,
       detectedAt: r.detected_at ?? (r.created_at ?? '').slice(0, 10),
       reporterName: r.reporter_name ?? null,
+      parallel: !!r.parallel,
+      previousCaseId: r.previous_case_id ?? null,
       interventionCount: r.intervention_count as number,
       nextDue: r.next_due as string | null,
       dueOverdue: !!r.next_due && r.next_due < today,
@@ -1596,4 +1739,267 @@ function supportLineOf(openIv: any[], lastDone: any | null, lastFollow: any | nu
     ].filter(Boolean).join(' ');
   }
   return null;
+}
+
+// ================================================================ điểm GV tự đánh giá
+
+/** Một con số giáo viên tự chấm khi cập nhật kết quả hoặc kết luận case. */
+export type TeacherMetric = { skill: string; score: number; total: number | null };
+
+/**
+ * ĐIỂM GIÁO VIÊN TỰ ĐÁNH GIÁ — kiểm tra và chuẩn hoá (mục 7.7 [5] Option 2).
+ *
+ * Đây là con số CÔ TỰ CHẤM, không phải điểm phòng thi. Nó được lưu riêng, không ghi đè điểm
+ * chính thức, không đổi mức SOS, và trên biểu đồ tiến bộ nó là ký hiệu khác — không nối
+ * chung một đường với điểm chính thức. Trộn hai loại điểm vào một đường là tự tạo ra một
+ * "xu hướng" mà không ai chấm cả hai đầu bằng cùng một thước.
+ *
+ * Hai cách ghi, tuỳ lớp:
+ *   · có TỔNG ĐIỂM → hiểu là điểm đạt/tổng, ví dụ 24/40 (lớp Normal, hoặc số câu đúng)
+ *   · không có tổng → hiểu là BAND 0–9 bước 0,5 (lớp Fast Track)
+ */
+export function parseMetrics(raw: unknown): TeacherMetric[] | null {
+  if (typeof raw !== 'string' || !raw) return null;
+  try {
+    const v = JSON.parse(raw);
+    return Array.isArray(v) && v.length ? (v as TeacherMetric[]) : null;
+  } catch { return null; }
+}
+
+export function normalizeMetrics(input: unknown): TeacherMetric[] | null {
+  if (input === undefined || input === null) return null;
+  if (!Array.isArray(input)) throw badRequest('Điểm đánh giá phải là một danh sách.');
+  const out: TeacherMetric[] = [];
+  const seen = new Set<string>();
+  for (const raw of input) {
+    const m = raw as any;
+    const skill = String(m?.skill ?? '');
+    if (!(CASE_CATEGORIES as readonly string[]).includes(skill) || skill === 'behaviour') {
+      throw badRequest('Điểm đánh giá phải gắn với một kỹ năng cụ thể.');
+    }
+    if (seen.has(skill)) throw badRequest('Mỗi kỹ năng chỉ ghi được một điểm trong cùng một lần cập nhật.');
+    seen.add(skill);
+    const score = Number(m?.score);
+    if (!Number.isFinite(score) || score < 0) throw badRequest('Điểm đánh giá phải là số không âm.');
+    const total = m?.total === null || m?.total === undefined || m?.total === '' ? null : Number(m.total);
+    if (total !== null) {
+      if (!Number.isFinite(total) || total <= 0) throw badRequest('Tổng điểm phải là số lớn hơn 0.');
+      if (score > total) throw badRequest('Điểm đạt không thể lớn hơn tổng điểm.');
+    } else {
+      if (score > 9) throw badRequest('Không có tổng điểm thì đây là band, phải nằm trong 0–9.');
+      if (Math.round(score * 2) !== score * 2) throw badRequest('Band chỉ nhận bước 0,5.');
+    }
+    out.push({ skill, score, total });
+  }
+  return out.length ? out : null;
+}
+
+// ================================================================ chu kỳ xử lý
+
+/**
+ * CẬP NHẬT KẾT QUẢ — MỘT THAO TÁC DUY NHẤT khép lại một chu kỳ xử lý (mục 7.7 [3], 7.9).
+ *
+ * Trước vòng 5 đây là ba nút rời: "Đánh dấu đã làm", "Ghi quan sát", "Hướng xử lý". Ba nút
+ * cho một việc, và người dùng phải nhớ thứ tự bấm. Nay gộp thành một panel hỏi đúng ba câu:
+ *
+ *   1. Kết quả ra sao?            (năm mức với case học thuật, ba mức với Ý thức/Khác)
+ *   2. Ghi chú                     (tuỳ chọn)
+ *   3. Bước tiếp theo là gì?       (BẮT BUỘC khi kết quả chưa tốt)
+ *
+ * LUẬT LỚN NHẤT Ở ĐÂY: kết quả chưa tốt thì KHÔNG có đường "ghi nhận rồi thôi". Một kết quả
+ * "Kém hơn" mà không ai phải làm gì tiếp là một kết quả sẽ bị quên — và em đó nằm im.
+ *
+ * Hạn cũ và việc cập nhật trễ được GIỮ NGUYÊN trong lịch sử. Mở chu kỳ mới không xoá dấu
+ * vết chu kỳ cũ đã quá hạn; che quá hạn đi thì con số "bao nhiêu việc trễ" mất nghĩa.
+ */
+export function updateResult(p: Principal, interventionId: number, input: {
+  outcome: string;
+  note?: string | null;
+  nextStep: string;
+  observedOn?: string | null;
+  evidenceAttemptId?: number | null;
+  /** Chỉ dùng khi `nextStep = 'propose'`: phương án mới thay cho phương án này. */
+  newPlan?: { kind: string; description?: string | null; performerUserId?: number | null; performerName?: string | null } | null;
+  /** Người thực hiện chu kỳ vừa rồi, nếu chưa ghi lúc lên kế hoạch. */
+  performerSelf?: boolean; performerUserId?: number | null; performerName?: string | null;
+  /** Điểm GIÁO VIÊN TỰ CHẤM kèm theo — không phải điểm chính thức. */
+  metrics?: unknown;
+}) {
+  const conn = db();
+  const iv = conn.prepare('SELECT * FROM case_interventions WHERE id = ?').get(interventionId) as any;
+  if (!iv) throw notFound('Không tìm thấy phương án.');
+  const c = loadCase(iv.case_id);
+  require_(p, PERMISSIONS.SOS_EDIT, { classId: c.class_id, studentId: c.eff_student_id },
+    'Bạn không có quyền cập nhật kết quả của case này.');
+
+  const track = c.track ?? 'academic';
+  if (iv.approval_state === 'pending') {
+    throw badRequest('Phương án này đang chờ Quản lý duyệt — chu kỳ thực hiện chưa bắt đầu.');
+  }
+  if (iv.status === 'cancelled') throw badRequest('Phương án này đã huỷ.');
+  if (!(outcomesFor(track) as readonly string[]).includes(input.outcome)) {
+    throw badRequest('Kết quả không hợp lệ với loại case này.');
+  }
+  const allowed = nextStepsFor(input.outcome);
+  if (!(allowed as readonly string[]).includes(input.nextStep)) {
+    throw badRequest(
+      `Kết quả "${outcomeLabelFor(track, input.outcome)}" chỉ đi tiếp được bằng: `
+      + allowed.map((s) => NEXT_STEP_LABEL[s]).join(' · '),
+    );
+  }
+  if (input.nextStep === 'propose' && !input.newPlan?.kind) {
+    throw badRequest('Chọn "Đề xuất phương án mới" thì phải nói rõ phương án mới là gì.');
+  }
+  const observedOn = input.observedOn ?? demoToday();
+  if (!isIsoDate(observedOn)) throw badRequest('Ngày cập nhật không hợp lệ.');
+  if (observedOn > demoToday()) throw badRequest('Không ghi được ngày cập nhật ở tương lai.');
+  const metrics = normalizeMetrics(input.metrics);
+  if (input.evidenceAttemptId) {
+    const a = conn.prepare('SELECT student_id FROM assessment_attempts WHERE id = ?').get(input.evidenceAttemptId) as any;
+    if (!a || a.student_id !== c.eff_student_id) throw badRequest('Bằng chứng không thuộc học viên này.');
+  }
+
+  return tx(() => {
+    const cycleNo = iv.cycle_no ?? 1;
+    const cycleDue = iv.action_due ?? iv.followup_due ?? null;
+    /* Cập nhật SAU hạn vẫn ghi đúng là trễ — không reset để che. */
+    const late = cycleDue !== null && observedOn > cycleDue ? 1 : 0;
+
+    const fInfo = conn
+      .prepare(
+        `INSERT INTO case_followups (case_id, intervention_id, observed_on, observer_user_id,
+                                     outcome, note, evidence_attempt_id,
+                                     next_step, cycle_no, cycle_due, late, metrics, created_at)
+         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+      )
+      .run(iv.case_id, interventionId, observedOn, p.userId,
+           input.outcome, input.note ?? null, input.evidenceAttemptId ?? null,
+           input.nextStep, cycleNo, cycleDue, late, metrics ? JSON.stringify(metrics) : null, nowIso());
+    const followupId = Number(fInfo.lastInsertRowid);
+
+    const performerUserId = input.performerSelf ? p.userId : (input.performerUserId ?? iv.performer_user_id);
+    let created: number | null = null;
+
+    if (input.nextStep === 'complete') {
+      /* Khép lại vì ĐÃ XONG — khác hẳn khép lại vì bị thay thế. */
+      conn
+        .prepare(
+          `UPDATE case_interventions
+              SET status = 'completed', completed_date = ?, closed_reason = 'done',
+                  started_date = COALESCE(started_date, cycle_started_on, ?),
+                  performer_user_id = ?, performer_name = COALESCE(?, performer_name),
+                  updated_at = ?
+            WHERE id = ?`,
+        )
+        .run(observedOn, observedOn, performerUserId ?? null, input.performerName ?? null, nowIso(), interventionId);
+    } else if (input.nextStep === 'monitor' || input.nextStep === 'continue') {
+      /*
+       * MỞ CHU KỲ MỚI trên CHÍNH phương án này. Không tạo một phương án thứ hai giống hệt:
+       * đó vẫn là cùng một việc, chỉ là làm tiếp thêm một vòng nữa.
+       */
+      const nextDue = cycleDeadline(observedOn, track);
+      conn
+        .prepare(
+          `UPDATE case_interventions
+              SET status = 'started', cycle_no = ?, cycle_started_on = ?, action_due = ?, followup_due = ?,
+                  started_date = COALESCE(started_date, ?),
+                  performer_user_id = ?, performer_name = COALESCE(?, performer_name),
+                  updated_at = ?
+            WHERE id = ?`,
+        )
+        .run(cycleNo + 1, observedOn, nextDue, nextDue, observedOn,
+             performerUserId ?? null, input.performerName ?? null, nowIso(), interventionId);
+    } else if (input.nextStep === 'propose') {
+      /*
+       * PHƯƠNG ÁN CŨ ĐƯỢC THAY, KHÔNG PHẢI ĐÃ THÀNH CÔNG. Ghi rõ lý do "Được thay thế" và
+       * nối sang phương án mới, để lịch sử không đọc thành "đã hoàn thành tốt đẹp".
+       */
+      const detail = recordIntervention(p, iv.case_id, {
+        kind: input.newPlan!.kind,
+        description: input.newPlan!.description ?? null,
+        performerUserId: input.newPlan!.performerUserId ?? null,
+        performerName: input.newPlan!.performerName ?? null,
+        status: 'started', startedDate: observedOn,
+      }) as any;
+      created = (conn
+        .prepare('SELECT id FROM case_interventions WHERE case_id = ? ORDER BY id DESC LIMIT 1')
+        .get(iv.case_id) as any)?.id ?? null;
+      void detail;
+      conn
+        .prepare(
+          `UPDATE case_interventions
+              SET status = 'completed', completed_date = ?, closed_reason = 'superseded',
+                  superseded_by = ?, updated_at = ?
+            WHERE id = ?`,
+        )
+        .run(observedOn, created, nowIso(), interventionId);
+    } else if (input.nextStep === 'ask_manager') {
+      /*
+       * CHỜ QUẢN LÝ. Chu kỳ thực hiện DỪNG ở đây và chỉ chạy lại khi có quyết định — thời
+       * gian chờ tính cho Quản lý, không tính là giáo viên đã có thời gian làm.
+       */
+      conn
+        .prepare(
+          `UPDATE case_interventions
+              SET status = 'planned', needs_approval = 1, approval_state = 'pending',
+                  approval_due = ?, action_due = NULL, followup_due = NULL, updated_at = ?
+            WHERE id = ?`,
+        )
+        .run(cycleDeadline(observedOn, track), nowIso(), interventionId);
+    }
+
+    if (c.status === 'open') {
+      conn.prepare("UPDATE sos_cases SET status = 'in_progress', updated_at = ? WHERE id = ?")
+        .run(nowIso(), iv.case_id);
+    }
+
+    addJourney({
+      studentId: c.eff_student_id, cycleId: c.eff_cycle_id,
+      eventType: 'followup', eventDate: observedOn,
+      title: `Kết quả sau hỗ trợ: ${outcomeLabelFor(track, input.outcome)}`,
+      detail: [
+        INTERVENTION_KIND_LABEL[iv.kind as InterventionKind] ?? iv.kind,
+        NEXT_STEP_LABEL[input.nextStep as NextStep],
+        input.note ?? null,
+      ].filter(Boolean).join(' · '),
+      refTable: 'case_followups', refId: followupId, createdBy: p.userId,
+      dedupKey: `followup:${followupId}`,
+    });
+    writeAudit({
+      actorUserId: p.userId, action: 'case.result.update',
+      entityType: 'case_intervention', entityId: interventionId,
+      entityLabel: iv.description ?? iv.kind,
+      after: { outcome: input.outcome, nextStep: input.nextStep, late: !!late, cycleNo },
+    });
+    return caseDetail(p, iv.case_id);
+  });
+}
+
+/**
+ * CÒN GÌ CHẶN VIỆC HOÀN THÀNH CASE — mục 7.7 [5].
+ *
+ * Case chỉ đóng được khi MỌI phương án đã khép lại và không còn gì đang chờ. Và một case
+ * CHƯA CÓ PHƯƠNG ÁN NÀO cũng không đủ điều kiện đóng: đếm được "0 phương án còn mở" không
+ * có nghĩa là đã làm gì cho em.
+ *
+ * Trả về danh sách lý do để giao diện nói rõ CÒN THIẾU GÌ, thay vì làm mờ một cái nút và
+ * để người dùng tự đoán.
+ */
+export function closeBlockers(caseId: number): string[] {
+  const conn = db();
+  const rows = conn
+    .prepare(`SELECT * FROM case_interventions WHERE case_id = ? AND status != 'cancelled'`)
+    .all(caseId) as any[];
+  const out: string[] = [];
+  if (!rows.length) {
+    out.push('Case chưa có phương án nào — chưa làm gì cho em thì chưa có gì để kết luận.');
+    return out;
+  }
+  const pending = rows.filter((r) => r.approval_state === 'pending');
+  if (pending.length) out.push(`${pending.length} phương án đang chờ Quản lý duyệt.`);
+  const running = rows.filter((r) => r.status !== 'completed' && r.approval_state !== 'pending');
+  if (running.length) {
+    out.push(`${running.length} phương án chưa cập nhật kết quả cuối cùng.`);
+  }
+  return out;
 }

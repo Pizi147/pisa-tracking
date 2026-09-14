@@ -4,7 +4,7 @@ import { api, invalidate } from '../../lib/api.ts';
 import { Drawer } from '../../ui/Drawer.tsx';
 import { WeekPicker } from '../../ui/Filters.tsx';
 import { useToast } from '../../ui/Toast.tsx';
-import { Empty, Field, Pill, SectionNote, Skeleton } from '../../ui/ui.tsx';
+import { Empty, Field, SectionNote, Skeleton, Status } from '../../ui/ui.tsx';
 import { fmtDate } from '../../lib/format.ts';
 
 type Suggested = {
@@ -170,11 +170,11 @@ export function StudentPlanPanel({ cycleId, studentName, ratio, onClose, onDone 
                               "hệ thống không ghi đè cái Quản lý đã xếp" — và người dùng phải
                               thấy lời hứa đó trước khi bấm, không phải sau.
                             */}
-                            {r.locked ? <Pill tone="muted">Đã làm xong, giữ nguyên</Pill>
-                              : r.existingSource === 'manual' ? <Pill tone="info">Quản lý đã chốt, giữ nguyên</Pill>
-                              : !r.existingAttemptId ? <Pill tone="warn">Chưa có, sẽ tạo</Pill>
-                              : r.existingPeriodId !== r.periodId ? <Pill tone="warn">Sẽ dời sang tuần đề xuất</Pill>
-                              : <Pill tone="ok">Đã đúng</Pill>}
+                            {r.locked ? <Status kind="done">Đã làm xong, giữ nguyên</Status>
+                              : r.existingSource === 'manual' ? <Status kind="done">Quản lý đã chốt, giữ nguyên</Status>
+                              : !r.existingAttemptId ? <Status kind="waiting">Chưa có, sẽ tạo</Status>
+                              : r.existingPeriodId !== r.periodId ? <Status kind="waiting">Sẽ dời sang tuần đề xuất</Status>
+                              : <Status kind="done">Đã đúng</Status>}
                           </td>
                         </tr>
                       ))}

@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
-import { BandCell, Empty, ExamPlanText, Pill, Skeleton, Th } from '../../ui/ui.tsx';
+import { Alert, BandCell, Empty, ExamPlanText, Level, Outcome, Skeleton, Status, Task, Th } from '../../ui/ui.tsx';
 import { MissingBadge } from './MissingBadge.tsx';
 import { fmtBand, fmtDate, sosLabel, sosTone } from '../../lib/format.ts';
 import { ENTRY_SKILL_SHORT, type EntrySkill, type ExamPlan } from '@shared/domain/index.ts';
@@ -162,18 +162,18 @@ export function ClassRoster({ classId, studentQuery, onAddStudents }: {
 function StatusCell({ row }: { row: RosterRow }) {
   if (row.status !== 'active') return <span className="text-xs text-slate-600">Đã kết thúc</span>;
   const bits: React.ReactNode[] = [];
-  if (row.sosLevel) bits.push(<Pill key="sos" tone={sosTone(row.sosLevel)}>{sosLabel(row.sosLevel)}</Pill>);
+  if (row.sosLevel) bits.push(<Level key="sos" tone={sosTone(row.sosLevel)}>{sosLabel(row.sosLevel)}</Level>);
   if (row.openCases > 0) {
     bits.push(
-      <Pill key="cases" tone={row.openCases >= 3 ? 'warn' : 'neutral'}
-        title="Case đã mở và chưa chốt kết quả">
+      <Status key="cases" kind="doing" title="Case đã mở và chưa chốt kết quả">
         {row.openCases} case chưa xong
-      </Pill>,
+      </Status>,
     );
   }
   if (bits.length) return <span className="flex flex-wrap items-center gap-1">{bits}</span>;
   if (!row.latest) return <span className="text-xs text-slate-500">Chưa có kết quả nào</span>;
-  return <Pill tone="ok">Đúng tiến độ</Pill>;
+  /* Xanh lá chỉ dành cho KẾT QUẢ, và "đúng tiến độ" đúng là một kết quả — em đã có điểm. */
+  return <Outcome tone="ok" mark="✓">Đúng tiến độ</Outcome>;
 }
 
 /**
@@ -186,13 +186,13 @@ function TaskCell({ row }: { row: RosterRow }) {
   const jobs: React.ReactNode[] = [];
   if (row.myPending.length > 0) {
     jobs.push(
-      <Pill key="score" tone="warn" title="Kỹ năng bạn phụ trách còn để trống điểm">
+      <Task key="score" tone="warn" title="Kỹ năng bạn phụ trách còn để trống điểm">
         Nhập điểm {row.myPending.map((k) => ENTRY_SKILL_SHORT[k as EntrySkill] ?? k).join(', ')}
-      </Pill>,
+      </Task>,
     );
   }
   if (row.timeline.some((t) => t.overdueSkills > 0)) {
-    jobs.push(<Pill key="late" tone="danger" title="Đã qua hạn nhập điểm của lượt đó">Quá hạn nhập điểm</Pill>);
+    jobs.push(<Alert key="late" title="Đã qua hạn nhập điểm của lượt đó">Quá hạn nhập điểm</Alert>);
   }
   if (!jobs.length) return <span className="text-xs text-slate-600">—</span>;
   return <span className="flex flex-col items-start gap-1">{jobs}</span>;
@@ -217,17 +217,21 @@ function MockTrail({ timeline, classId }: { timeline: Timeline[]; classId: numbe
             className="no-underline"
             title={`${t.kindLabel}${t.periodCode ? ` · ${t.periodCode}` : ''}`}
           >
-            <Pill tone={
-              t.status === 'cancelled' ? 'muted'
-                : t.evaluable ? sosTone(t.sosLevel)
-                : t.status === 'done' ? 'info' : 'neutral'
-            }>
-              {t.kindLabel}
-              {t.status === 'cancelled' ? ' huỷ'
-                : t.evaluable ? ' ✓'
-                : t.scoredRequired > 0 ? ` ${t.scoredRequired}/${t.requiredCount}`
-                : t.periodCode ? ` ${t.periodCode}` : ''}
-            </Pill>
+            {/*
+              CHẤM XONG rồi thì đây là một KẾT QUẢ (mức SOS của lượt đó); chưa chấm xong thì
+              nó mới chỉ là một TRẠNG THÁI công việc. Hai chuyện khác nhau, hai họ nhãn khác
+              nhau — nên không thể tô cùng một kiểu cho cả dải.
+            */}
+            {t.evaluable ? (
+              <Level tone={sosTone(t.sosLevel)}>{t.kindLabel} ✓</Level>
+            ) : (
+              <Status kind={t.status === 'cancelled' ? 'idle' : t.status === 'done' ? 'doing' : 'waiting'}>
+                {t.kindLabel}
+                {t.status === 'cancelled' ? ' huỷ'
+                  : t.scoredRequired > 0 ? ` ${t.scoredRequired}/${t.requiredCount}`
+                  : t.periodCode ? ` ${t.periodCode}` : ''}
+              </Status>
+            )}
           </Link>
         </span>
       ))}

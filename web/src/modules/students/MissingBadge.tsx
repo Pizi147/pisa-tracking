@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Pill } from '../../ui/ui.tsx';
+import { Alert } from '../../ui/ui.tsx';
 
 /**
  * BADGE "THIẾU THÔNG TIN" — mục 7.5.
@@ -27,7 +27,7 @@ export function MissingBadge({ items, className = '' }: {
         title={items.map((i) => i.label).join(' · ')}
         onClick={(e) => { e.stopPropagation(); e.preventDefault(); setOpen((v) => !v); }}
       >
-        <Pill tone="warn">Thiếu {items.length} thông tin</Pill>
+        <Alert tone="warn">Thiếu {items.length} thông tin</Alert>
       </button>
 
       {open && (

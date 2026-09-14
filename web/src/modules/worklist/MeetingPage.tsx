@@ -4,7 +4,7 @@ import { useApi } from '../../lib/useApi.ts';
 import { useSession } from '../../lib/session.tsx';
 import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
-import { Card, Empty, ErrorState, Pill, SectionNote, Skeleton } from '../../ui/ui.tsx';
+import { Card, Empty, ErrorState, Outcome, SectionNote, Skeleton, Status } from '../../ui/ui.tsx';
 import { WeekPicker, usePeriodWindow } from '../../ui/Filters.tsx';
 import { SignalList } from './SignalList.tsx';
 import { ManagerTaskList, ManagerTasks } from './ManagerTasks.tsx';
@@ -88,10 +88,10 @@ export function MeetingBoard() {
           title="Tình hình đơn vị"
           action={
             <span className="text-xs text-slate-400 flex flex-wrap gap-2">
-              <Pill tone="muted">Chưa báo cáo {board.data.totals.notReported}</Pill>
-              <Pill tone="ok">Ổn {board.data.totals.ok}</Pill>
-              <Pill tone="warn">Cần theo dõi {board.data.totals.watch}</Pill>
-              <Pill tone="danger">Có vấn đề {board.data.totals.problem}</Pill>
+              <Status kind="idle">Chưa báo cáo {board.data.totals.notReported}</Status>
+              <Outcome tone="ok" mark="✓">Ổn {board.data.totals.ok}</Outcome>
+              <Outcome tone="warn" mark="–">Cần theo dõi {board.data.totals.watch}</Outcome>
+              <Outcome tone="danger" mark="↓">Có vấn đề {board.data.totals.problem}</Outcome>
               <span className="text-slate-500">trên {board.data.totals.total} mục</span>
             </span>
           }
@@ -127,7 +127,7 @@ function UnitRow({ unit, periodId, windowOpen, onSaved }: {
         <span className="font-medium text-slate-100 w-40 shrink-0">{unit.unitName}</span>
         <span className="flex flex-wrap gap-1.5 flex-1">
           {unit.cells.map((c) => (
-            <Pill key={c.key} tone={unitTone(c.status)}>{c.label}: {unitStatusLabel(c.status)}</Pill>
+            <Outcome key={c.key} tone={unitTone(c.status)}>{c.label}: {unitStatusLabel(c.status)}</Outcome>
           ))}
         </span>
         <span className="text-xs text-slate-500 shrink-0">{unit.reported}/{unit.total} đã báo cáo</span>
@@ -173,7 +173,7 @@ function CellEditor({ unitId, periodId, cell, canEdit, onSaved }: {
     <div className="surface-2 rounded-lg p-3 space-y-2">
       <div className="flex items-center justify-between gap-2">
         <strong className="text-sm text-slate-100">{cell.label}</strong>
-        <Pill tone={unitTone(cell.status)}>{unitStatusLabel(cell.status)}</Pill>
+        <Outcome tone={unitTone(cell.status)}>{unitStatusLabel(cell.status)}</Outcome>
       </div>
       {cell.hint && <p className="text-[11px] text-slate-500 m-0">{cell.hint}</p>}
       <select className="field" value={status} disabled={!canEdit} onChange={(e) => setStatus(e.target.value)}>

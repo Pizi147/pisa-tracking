@@ -1,7 +1,7 @@
 import { Fragment, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
-import { Card, Empty, ErrorState, Pill, SectionNote, Skeleton, Th } from '../../ui/ui.tsx';
+import { Card, Empty, ErrorState, SectionNote, Skeleton, Task, Th } from '../../ui/ui.tsx';
 
 type Row = {
   periodId: number; code: string; month: string; weekLabel: string; range: string;
@@ -208,6 +208,7 @@ export function WeeklyBoard({ branchId }: { branchId: number | null }) {
 /** Con số 0 hiện dấu gạch cho đỡ nhiễu; số khác 0 thì bấm được nếu có chỗ để mở. */
 function Num({ n, tone, to }: { n: number; tone?: 'ok' | 'info' | 'warn' | 'danger'; to?: string }) {
   if (!n) return <span className="text-slate-600">—</span>;
-  const body = tone ? <Pill tone={tone}>{n}</Pill> : <span className="text-slate-200">{n}</span>;
+  /* Con số bấm được là một VIỆC CẦN LÀM, nên dùng họ nhãn việc (mục 2.1, 5.3 điểm 4). */
+  const body = tone ? <Task tone={tone}>{n}</Task> : <span className="text-slate-200">{n}</span>;
   return to ? <Link to={to} className="no-underline inline-flex">{body}</Link> : <span className="inline-flex">{body}</span>;
 }

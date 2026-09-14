@@ -3,7 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { useSession } from '../../lib/session.tsx';
 import { invalidate } from '../../lib/api.ts';
-import { Card, Empty, ErrorState, Pill, SectionNote, Skeleton } from '../../ui/ui.tsx';
+import { Alert, Card, Empty, ErrorState, Info, Level, SectionNote, Skeleton, Status, Task } from '../../ui/ui.tsx';
 import { attemptHref, caseStatusLabel, caseStatusTone, sosTone } from '../../lib/format.ts';
 import type { Branch } from '../../ui/Filters.tsx';
 import { IntakePanel } from './IntakePanel.tsx';
@@ -319,11 +319,11 @@ function ClassRow({ cls, expanded, studentQuery, onToggle, onAddStudents }: {
             * ra đây để không phải mở từng lớp mới biết mình phụ trách gì ở đâu.
             */}
           {cls.mySkills.length > 0 && (
-            <Pill tone="info" title={`Bạn dạy ${cls.mySkills.map(skillShort).join(', ')} ở lớp này`}>
+            <Info title={`Bạn dạy ${cls.mySkills.map(skillShort).join(', ')} ở lớp này`}>
               {cls.mySkills.map(skillShort).join(' ')}
-            </Pill>
+            </Info>
           )}
-          {cls.myCoreClass && <Pill tone="neutral" title="Bạn là giáo viên chủ nhiệm lớp này">GVCN</Pill>}
+          {cls.myCoreClass && <Info title="Bạn là giáo viên chủ nhiệm lớp này">GVCN</Info>}
 
           {/*
             BA THÔNG BÁO CỦA LỚP NORMAL — owner yêu cầu 13/09/2026.
@@ -332,33 +332,33 @@ function ClassRow({ cls, expanded, studentQuery, onToggle, onAddStudents }: {
             mọi em còn đang học PHẢI được xếp lớp tiếp, và việc đó không tự xảy ra.
           */}
           {cls.needsPlacement ? (
-            <Pill tone="danger"
+            <Alert
               title={`Lớp đã hết chương trình. ${cls.studentCount} học viên cần xếp lớp tiếp: `
                 + cls.placementOptions.map((o) => o.name).join(' hoặc ')}>
               Hết chương trình · {cls.studentCount} em cần xếp lớp
-            </Pill>
+            </Alert>
           ) : cls.phase === 'final_week' || cls.phase === 'progress_week' ? (
-            <Pill tone="warn">{cls.phaseLabel}</Pill>
+            <Status kind="doing">{cls.phaseLabel}</Status>
           ) : cls.phase === 'final_soon' || cls.phase === 'progress_soon' ? (
-            <Pill tone="info">{cls.phaseLabel}</Pill>
+            <Status kind="waiting">{cls.phaseLabel}</Status>
           ) : null}
 
           {/* Thiếu GV kỹ năng nào thì nói thẳng kỹ năng đó — "Thiếu GV R, L" (mục 7.7). */}
           {cls.missingSkills.length > 0 && (
-            <Pill tone="warn" title="Admin CN hoặc Quản lý phân công giáo viên cho các kỹ năng này">
+            <Alert tone="warn" title="Admin CN hoặc Quản lý phân công giáo viên cho các kỹ năng này">
               Thiếu GV {cls.missingSkills.map(skillShort).join(', ')}
-            </Pill>
+            </Alert>
           )}
           <MissingBadge items={cls.missing.filter((m) => m.key !== 'teachers')} />
           {cls.needScores > 0 && (
-            <button className="appearance-none bg-transparent border-0 p-0" onClick={go(`/hoc-vien?view=my_scores&classId=${cls.id}`)}>
-              <Pill tone="warn">{cls.needScores} cần nhập điểm MT</Pill>
-            </button>
+            <Task tone="warn" as="button" onClick={go(`/hoc-vien?view=my_scores&classId=${cls.id}`)}>
+              {cls.needScores} cần nhập điểm MT
+            </Task>
           )}
           {cls.openCases > 0 && (
-            <button className="appearance-none bg-transparent border-0 p-0" onClick={go(`/hoc-vien?view=sos&classId=${cls.id}`)}>
-              <Pill tone="danger">{cls.openCases} case SOS</Pill>
-            </button>
+            <Task tone="danger" as="button" onClick={go(`/hoc-vien?view=sos&classId=${cls.id}`)}>
+              {cls.openCases} case SOS
+            </Task>
           )}
           {cls.needScores + cls.openCases === 0
             && !cls.needsPlacement && !cls.missing.length && cls.phase === 'running' && (
@@ -440,15 +440,17 @@ function WorkQueue({ view, branchId, q }: { view: string; branchId: number | nul
                     {view === 'sos' && (
                       <div className="flex flex-col items-start gap-0.5">
                         <span className="flex items-center gap-1">
-                          <Pill tone={sosTone(r.caseLevel)}>SOS {r.caseLevel}</Pill>
-                          <Pill tone={caseStatusTone(r.caseStatus)}>{caseStatusLabel(r.caseStatus ?? 'open')}</Pill>
+                          <Level tone={sosTone(r.caseLevel)}>SOS {r.caseLevel}</Level>
+                          <Status kind={r.caseStatus === 'done' ? 'done' : r.caseStatus === 'open' ? 'idle' : 'doing'}>
+                            {caseStatusLabel(r.caseStatus ?? 'open')}
+                          </Status>
                         </span>
                         <span className="text-[10px] text-slate-500">
                           {r.caseFollowUp ?? 'Chưa có follow-up'}
                         </span>
                       </div>
                     )}
-                    {r.overdueSkills > 0 && <Pill tone="danger">Quá hạn {r.overdueSkills}</Pill>}
+                    {r.overdueSkills > 0 && <Alert>Quá hạn {r.overdueSkills}</Alert>}
                   </td>
                 </tr>
               ))}
@@ -535,8 +537,10 @@ function CaseQueue({ view, branchId, q }: { view: string; branchId: number | nul
                   <td className="td text-slate-300 whitespace-nowrap">{r.classCode ?? '—'}</td>
                   <td className="td">
                     <span className="flex flex-wrap items-center gap-1">
-                      <Pill tone={sosTone(r.sosLevel)}>{r.title}</Pill>
-                      <Pill tone={caseStatusTone(r.status)}>{caseStatusLabel(r.status)}</Pill>
+                      <Level tone={sosTone(r.sosLevel)}>{r.title}</Level>
+                      <Status kind={r.status === 'done' ? 'done' : r.status === 'open' ? 'idle' : 'doing'}>
+                        {caseStatusLabel(r.status)}
+                      </Status>
                     </span>
                   </td>
                   <td className="td whitespace-nowrap text-xs">

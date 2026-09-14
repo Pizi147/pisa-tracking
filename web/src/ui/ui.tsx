@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { MouseEvent, ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 
 export function Card({ title, action, children, className = '', bodyClass = 'p-4' }: {
@@ -19,29 +19,31 @@ export function Card({ title, action, children, className = '', bodyClass = 'p-4
 
 type Tone = 'ok' | 'warn' | 'danger' | 'info' | 'neutral' | 'muted';
 
-/** Màu chỉ hỗ trợ; mọi trạng thái đều đi kèm chữ nên đọc được cả khi không phân biệt màu. */
-const TONE_CLASS: Record<Tone, string> = {
-  ok: 'bg-emerald-300/10 text-emerald-200 border-emerald-300/30',
-  warn: 'bg-amber-300/10 text-amber-200 border-amber-300/30',
-  danger: 'bg-rose-300/10 text-rose-200 border-rose-300/30',
-  info: 'bg-sky-300/10 text-sky-200 border-sky-300/30',
-  neutral: 'bg-slate-300/8 text-slate-300 border-slate-300/20',
-  muted: 'bg-transparent text-slate-400 border-slate-500/35 border-dashed',
-};
-
 /**
- * BA HỌ NHÃN, PHÂN BIỆT BẰNG HÌNH DẠNG CHỨ KHÔNG BẰNG MÀU MỚI.
+ * SÁU HỌ NHÃN, PHÂN BIỆT BẰNG HÌNH DẠNG TRƯỚC, MÀU SAU (mục 2.1).
  *
- * Trước đây mọi thứ dùng chung một kiểu `Pill`: mức SOS của một đứa trẻ, việc mình phải làm,
- * và mấy chữ chỉ để biết như "GVCN" hay "L R" — tất cả cùng viền, cùng bo góc, cùng cỡ chữ.
- * Mắt không tách được cái nào ra cái nào, nên nhìn vào một dòng lớp là thấy một đám nhãn màu.
+ * Trước vòng 5 gần như mọi thứ dùng chung một kiểu `Pill`: mức SOS của một đứa trẻ, việc
+ * mình phải làm, kết quả sau hỗ trợ, và mấy chữ chỉ để biết như "GVCN" hay "L R" — tất cả
+ * cùng viền, cùng bo góc, cùng cỡ chữ, màu thì mỗi màn tự chọn. Mắt không tách được cái nào
+ * ra cái nào, nên nhìn một dòng lớp chỉ thấy một đám nhãn màu.
  *
- *   <Level>  nền ĐẶC, bo tròn hẳn      — em này đang ở mức nào (SOS, mức độ gấp)
- *   <Task>   viền vuông, gạch dọc trái — việc phải làm, bấm được
- *   <Info>   chữ mờ, viền mảnh          — chỉ để biết, không phải việc cũng không phải mức
+ *   <Level>   nền ĐẶC, bo tròn hẳn      — mức SOS, mức gấp: tình trạng của một đứa trẻ
+ *   <Status>  nền nhẹ + biểu tượng      — TRẠNG THÁI CÔNG VIỆC: đang làm · chờ · xong
+ *   <Task>    viền vuông, gạch dọc trái — VIỆC PHẢI LÀM, bấm được
+ *   <Alert>   dấu ⚠ + màu mạnh          — quá hạn, thiếu thông tin
+ *   <Outcome> biểu tượng kết quả        — KẾT QUẢ học tập: tiến bộ · chưa đổi · kém hơn
+ *   <Info>    chữ mờ, viền mảnh         — chỉ để biết: vai trò, kỹ năng, mã lớp
  *
- * Vẫn đúng ba màu cho ba mức như cũ, không thêm màu nào. Thứ tự nặng nhẹ về thị giác đi đúng
- * theo mức độ đáng chú ý: tình trạng học viên > việc phải làm > thông tin nền.
+ * HAI LUẬT MÀU KHÔNG ĐƯỢC PHÁ (mục 2.2):
+ *
+ *   · XANH LÁ CHỈ DÀNH CHO `<Outcome>`. Xanh lá là một lời khen, và chỉ kết quả học tập mới
+ *     có căn cứ để khen. "Đã lưu", "đã hoàn thành phương án", "không có case" đều KHÔNG phải
+ *     là tin tốt — chúng chỉ là việc đã xong hoặc chưa có tin gì.
+ *   · MÀU KHÔNG BAO GIỜ ĐỨNG MỘT MÌNH. Mỗi họ có hình dạng và biểu tượng riêng, nên người
+ *     không phân biệt được màu vẫn đọc ra nghĩa.
+ *
+ * Thứ tự nặng nhẹ về thị giác đi đúng theo mức độ đáng chú ý:
+ * tình trạng học viên > cảnh báo > việc phải làm > kết quả > trạng thái > thông tin nền.
  */
 
 /** Nền đặc nên chữ phải là màu tối, và phải đủ tương phản để đọc được. */
@@ -83,7 +85,9 @@ const TASK_CLASS: Record<Tone, { box: string; bar: string }> = {
  * KHÔNG dùng họ này cho tình trạng học viên, dù việc đó sinh ra từ một vấn đề của em.
  */
 export function Task({ tone = 'neutral', children, title, as = 'span', onClick }: {
-  tone?: Tone; children: ReactNode; title?: string; as?: 'span' | 'button'; onClick?: () => void;
+  tone?: Tone; children: ReactNode; title?: string; as?: 'span' | 'button';
+  /* Nhận cả sự kiện, để dòng bấm được bên trong một dòng bấm được còn chặn được lan lên trên. */
+  onClick?: (e: MouseEvent<HTMLButtonElement>) => void;
 }) {
   const c = TASK_CLASS[tone];
   const inner = (
@@ -115,12 +119,84 @@ export function Info({ children, title, pending }: { children: ReactNode; title?
 }
 
 /**
- * @deprecated Đang chuyển dần sang `Level` / `Task` / `Info`. Chọn đúng họ theo NGHĨA của nhãn:
- * mức độ của học viên, việc phải làm, hay chỉ là thông tin.
+ * TRẠNG THÁI XỬ LÝ — một việc đang ở đâu trong quy trình (mục 2.1).
+ *
+ * Nền nhẹ, có biểu tượng, và CỐ Ý KHÔNG BAO GIỜ MÀU XANH LÁ. "Đã hoàn thành" là một trạng
+ * thái công việc, không phải một kết quả tốt: một phương án hoàn thành với kết quả "Kém hơn"
+ * mà hiện màu xanh là nói dối người đọc. Kết quả có họ nhãn riêng ở ngay bên dưới.
+ *
+ *   xanh dương  đang thực hiện
+ *   vàng        đang chờ (chờ duyệt, chờ tới hạn)
+ *   xám         đã hoàn thành, hoặc chưa bắt đầu
  */
-export function Pill({ tone = 'neutral', children, title }: { tone?: Tone; children: ReactNode; title?: string }) {
+const STATUS_MARK: Record<'doing' | 'waiting' | 'done' | 'idle', string> = {
+  doing: '▶', waiting: '◷', done: '✓', idle: '·',
+};
+const STATUS_CLASS: Record<'doing' | 'waiting' | 'done' | 'idle', string> = {
+  doing: 'bg-sky-300/10 text-sky-200 border-sky-300/30',
+  waiting: 'bg-amber-300/10 text-amber-200 border-amber-300/30',
+  done: 'bg-slate-300/8 text-slate-400 border-slate-300/20',
+  idle: 'bg-transparent text-slate-500 border-dashed border-slate-500/35',
+};
+export function Status({ kind, children, title }: {
+  kind: 'doing' | 'waiting' | 'done' | 'idle'; children: ReactNode; title?: string;
+}) {
   return (
-    <span title={title} className={`inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[11px] font-medium whitespace-nowrap ${TONE_CLASS[tone]}`}>
+    <span title={title}
+      className={`inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[11px] font-medium whitespace-nowrap ${STATUS_CLASS[kind]}`}>
+      <span aria-hidden className="opacity-70">{STATUS_MARK[kind]}</span>
+      {children}
+    </span>
+  );
+}
+
+/**
+ * CẢNH BÁO — quá hạn, thiếu thông tin (mục 2.1).
+ *
+ * Luôn có dấu tam giác đứng trước, nên đọc được cả khi người xem không phân biệt màu, và
+ * phân biệt được với trạng thái xử lý ngay cả khi hai nhãn đứng cạnh nhau.
+ */
+export function Alert({ tone = 'danger', children, title }: {
+  tone?: 'danger' | 'warn'; children: ReactNode; title?: string;
+}) {
+  return (
+    <span title={title}
+      className={`inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[11px] font-semibold whitespace-nowrap ${
+        tone === 'danger'
+          ? 'bg-rose-300/15 text-rose-200 border-rose-300/45'
+          : 'bg-amber-300/15 text-amber-200 border-amber-300/45'
+      }`}>
+      <span aria-hidden>⚠</span>
+      {children}
+    </span>
+  );
+}
+
+/**
+ * KẾT QUẢ SAU HỖ TRỢ — đúng bảng màu/biểu tượng ở mục 7.10.
+ *
+ *   Tiến bộ rõ rệt   xanh lá + dấu tích
+ *   Tiến bộ một phần vàng   + mũi tên lên
+ *   Chưa thay đổi    vàng   + dấu ngang
+ *   Kém hơn          đỏ     + mũi tên xuống
+ *   Không đủ căn cứ  xám    + dấu hỏi
+ *
+ * Đây là họ nhãn DUY NHẤT được dùng màu xanh lá. Xanh lá ở chỗ khác là một lời khen không
+ * ai kiểm chứng.
+ */
+const OUTCOME_CLASS: Record<string, string> = {
+  ok: 'bg-emerald-300/12 text-emerald-200 border-emerald-300/35',
+  warn: 'bg-amber-300/12 text-amber-200 border-amber-300/35',
+  danger: 'bg-rose-300/12 text-rose-200 border-rose-300/35',
+  muted: 'bg-transparent text-slate-400 border-slate-500/35',
+};
+export function Outcome({ tone, mark, children, title }: {
+  tone: 'ok' | 'warn' | 'danger' | 'muted'; mark?: string; children: ReactNode; title?: string;
+}) {
+  return (
+    <span title={title}
+      className={`inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[11px] font-medium whitespace-nowrap ${OUTCOME_CLASS[tone]}`}>
+      {mark && <span aria-hidden>{mark}</span>}
       {children}
     </span>
   );
@@ -287,7 +363,7 @@ export function BandCell({ cell, target }: {
  * hiện tháng thi như thể đã chốt ngày.
  */
 export function ExamPlanText({ plan }: { plan?: { confidence: string; label: string } | null }) {
-  if (!plan || plan.confidence === 'none') return <Pill tone="muted">Chưa xác định</Pill>;
+  if (!plan || plan.confidence === 'none') return <Info pending>Chưa xác định</Info>;
   if (plan.confidence === 'month') {
     return <span className="text-slate-300" title="Chưa chốt tuần thi nên chưa đếm ngược">{plan.label}</span>;
   }

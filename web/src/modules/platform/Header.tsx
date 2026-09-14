@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useSession } from '../../lib/session.tsx';
 import { useApi } from '../../lib/useApi.ts';
 import { api } from '../../lib/api.ts';
-import { Pill } from '../../ui/ui.tsx';
+import { Info } from '../../ui/ui.tsx';
 import { roleLabel, skillShort } from '../../lib/format.ts';
 
 type SearchHit = { id: number; studentCode: string; fullName: string; classCode: string | null };
@@ -119,7 +119,7 @@ export function Header() {
             <ul className="space-y-1 mb-3 list-none p-0">
               {(session?.grants ?? []).map((g) => (
                 <li key={g.id} className="text-xs text-slate-300 flex items-center gap-1">
-                  <Pill tone="neutral">{roleLabel(g.role)}</Pill>
+                  <Info>{roleLabel(g.role)}</Info>
                   <span className="text-slate-500">{g.branchName ?? 'Toàn hệ thống'}</span>
                 </li>
               ))}
@@ -129,7 +129,7 @@ export function Header() {
               <>
                 <div className="label">Chủ nhiệm</div>
                 <div className="flex flex-wrap gap-1 mb-3">
-                  {core.map((c) => <Pill key={c.classId} tone="info">GVCN {c.classCode}</Pill>)}
+                  {core.map((c) => <Info key={c.classId}>GVCN {c.classCode}</Info>)}
                 </div>
               </>
             )}
@@ -138,7 +138,7 @@ export function Header() {
                 <div className="label">Kỹ năng được phân công</div>
                 <div className="flex flex-wrap gap-1 mb-3">
                   {skills.map((c, i) => (
-                    <Pill key={i} tone="neutral">{c.classCode} · {skillShort(c.skill!)}</Pill>
+                    <Info key={i}>{c.classCode} · {skillShort(c.skill!)}</Info>
                   ))}
                 </div>
               </>

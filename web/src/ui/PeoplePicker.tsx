@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '../lib/api.ts';
-import { Pill } from './ui.tsx';
+import { Info } from './ui.tsx';
 
 export type Person = { id: number; name: string; title: string | null; role: string | null; branches: string[] };
 
@@ -109,11 +109,11 @@ export function FollowerPicker({ value, onChange, autoNames = [], disabled }: {
     <div className="space-y-1.5">
       <div className="flex flex-wrap gap-1">
         {autoNames.map((n) => (
-          <Pill key={`auto-${n}`} tone="neutral" title="Quản lý chi nhánh — hệ thống tự thêm">{n} · tự động</Pill>
+          <Info key={`auto-${n}`} title="Quản lý chi nhánh — hệ thống tự thêm">{n} · tự động</Info>
         ))}
         {value.map((p) => (
           <span key={p.id} className="inline-flex items-center gap-1">
-            <Pill tone="info">{p.name}</Pill>
+            <Info>{p.name}</Info>
             {!disabled && (
               <button
                 className="text-slate-500 hover:text-slate-200 text-xs"
