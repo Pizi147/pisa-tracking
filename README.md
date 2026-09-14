@@ -168,6 +168,11 @@ npm run seed
 Lệnh này **xoá toàn bộ thay đổi** của bạn và dựng lại dữ liệu gốc.
 Bạn có thể chạy ngay cả khi ứng dụng đang chạy — giao diện sẽ thấy dữ liệu mới sau khi tải lại trang.
 
+Bộ dữ liệu gốc: **11 lớp · 71 học viên · 5 chi nhánh**, đủ bốn chương trình Foundation ·
+Beginner · Elementary · Fast Track, ngày demo cố định **14/09/2026**. Chạy lại nhiều lần cho ra
+đúng bộ cũ, không nhân đôi bản ghi nào. Danh sách từng tình huống và chỗ bấm để xem nằm ở
+[`DEMO_SCENARIOS.md`](DEMO_SCENARIOS.md).
+
 ---
 
 ## 8. Các lệnh khác

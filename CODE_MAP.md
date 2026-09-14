@@ -36,6 +36,8 @@ cùng một thứ bằng hai cái tên.
 | Cột trong bảng học viên của một lớp | `web/src/modules/students/ClassRoster.tsx` |
 | Dữ liệu đổ vào bảng đó | `server/src/classes/classes.ts` → `classRoster` |
 | Trang hồ sơ một em | `web/src/modules/students/StudentDetailPage.tsx` |
+| Panel "Quản lý học viên" (kế hoạch · đầu vào · mục tiêu · kết luận · chuyển lớp) | `web/src/modules/students/StudentManagePanel.tsx` |
+| Biểu đồ tiến bộ theo kỹ năng | `web/src/modules/students/ProgressChart.tsx` · `server/src/students/profile.ts` → `progressOf` |
 | Dữ liệu hồ sơ | `server/src/students/profile.ts` |
 | Danh sách lớp và tám bộ lọc | `web/src/modules/students/StudentsPage.tsx` |
 | Tên và điều kiện của tám bộ lọc | `shared/domain/people.ts` → `STUDENT_FILTERS` |
@@ -93,6 +95,12 @@ cùng một thứ bằng hai cái tên.
 | Vòng đời case, phương án, phê duyệt, kết quả | `server/src/cases/cases.ts` |
 | Màn một case | `web/src/modules/cases/CasePanel.tsx` |
 | Bảng theo dõi sáu hạng mục ở hồ sơ | `web/src/modules/cases/SkillBoard.tsx` |
+| Khối "Các case của em" ở hồ sơ | `web/src/modules/cases/StudentCases.tsx` |
+| Luật hạn chu kỳ hai tuần / một tuần | `shared/domain/cases.ts` → `cycleDeadline` |
+| Năm kết quả và năm bước tiếp theo | `shared/domain/cases.ts` → `FOLLOWUP_OUTCOMES`, `nextStepsFor` |
+| Một chu kỳ khép lại (gộp ba nút cũ) | `server/src/cases/cases.ts` → `updateResult` |
+| Điều kiện được hoàn thành case | `server/src/cases/cases.ts` → `closeBlockers` |
+| Điểm giáo viên tự chấm | `server/src/cases/cases.ts` → `normalizeMetrics`, `parseMetrics` |
 | Bảng "Vấn đề - Case" và bộ lọc | `web/src/modules/cases/CaseBoardPage.tsx` |
 
 ### Tổng quan và công việc
@@ -122,7 +130,7 @@ cùng một thứ bằng hai cái tên.
 
 | Muốn sửa | Mở file |
 |---|---|
-| Badge, nút, thẻ, bảng, tooltip tiêu đề cột | `web/src/ui/ui.tsx` |
+| Sáu họ nhãn (`Level` · `Status` · `Task` · `Alert` · `Outcome` · `Info`), nút, thẻ, bảng | `web/src/ui/ui.tsx` |
 | Panel trượt bên phải | `web/src/ui/Drawer.tsx` |
 | Ô chọn tuần, bộ lọc chi nhánh | `web/src/ui/Filters.tsx` |
 | Thông báo nổi | `web/src/ui/Toast.tsx` |
@@ -146,6 +154,16 @@ thêm quyền cấp riêng cho cá nhân.
 Năm; mã tuần LUÔN kèm năm). Lịch MT, hạn nhập điểm, chu kỳ case và bảng theo tuần đều đếm từ
 đây. Từ vòng 5, một lượt MT được xác định bằng ĐÚNG MỘT TUẦN — không còn ngày thi cụ thể ở
 bất kỳ đâu trong luồng MT, nên cả năm kỹ năng của một lượt dùng chung một hạn nhập điểm.
+
+**`shared/domain/cases.ts`** — từ vựng của case: sáu hạng mục, năm kết quả, năm bước tiếp theo,
+và `cycleDeadline`. Từ vòng 5, HẠN của một chu kỳ tính ở ĐÚNG MỘT CHỖ này (Chủ nhật của tuần thứ
+hai với case học thuật, một tuần với Ý thức/Khác) — luật cũ suy hạn từ mức gấp `7 · 5 · 3 ngày`
+đã bị thay hẳn. Màn hình nào tự tính hạn lấy là màn hình sớm muộn nói một con số khác.
+
+**`server/src/cases/cases.ts` → `listCases`** — lọc theo lớp đi theo **lớp em ĐANG học**
+(`homeClassId`), trong khi cột hiển thị vẫn là **lớp lúc đánh giá** (`classId`). Bảng tổng hợp
+gom theo cùng ô đó, nên bấm một con số ra đúng danh sách tạo nên nó. Đổi một trong hai mà quên
+chỗ kia là cách tạo ra "bảng nói 19 case, bấm vào ra danh sách rỗng".
 
 ---
 

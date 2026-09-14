@@ -1,4 +1,4 @@
-# Bấm thử: mười bốn luồng đáng xem
+# Bấm thử: những luồng đáng xem
 
 Mỗi luồng nói **vào đâu · bấm gì · phải thấy gì**. Không mô tả lại toàn bộ màn hình.
 
@@ -19,21 +19,41 @@ Mọi tài khoản mẫu dùng chung mật khẩu `pisa2026`, email theo mẫu `
 
 ## Dữ liệu demo: mỗi lớp là một tình huống
 
-Chín lớp, 62 học viên, năm chi nhánh. Không lớp nào thừa:
+Mười một lớp, 71 học viên, năm chi nhánh, đủ bốn chương trình. Không lớp nào thừa:
 
-| Lớp | Tình huống |
-|---|---|
-| `MB-FT 101` | MT3 rơi đúng **tuần này**, chưa có ngày → việc của Admin CN hôm nay |
-| `MB-FT 102` | MT2 tuần này **đã có ngày** → để so với lớp trên |
-| `MB-FOU 12` | Tuần học 8/8 → **đang trong tuần Final Test** |
-| `BC-FT 205` | MT2 **tuần trước** vẫn chưa có ngày → đã quá hạn |
-| `BC-ELE 01` | Tuần học 5/10 → **đang trong tuần Progress Test**; và lớp này **chưa có GVCN** |
-| `CP-FT 110` | Ba đợt MT đã xong → **case kéo dài qua ba lượt** |
-| `HD-FT 302` | Lớp **mới mở**, chưa có kết quả nào; **thiếu GV W1 và W2** |
-| `UB-FT 401` | Bốn đợt MT, đợt cuối vừa thi tuần trước |
-| `UB-FOUND 07` | **Đã học hết 8 tuần** → sáu em cần xếp lớp tiếp. Mã lớp cố ý giữ chữ cũ "FOUND" |
+| Lớp | Chương trình | Tình huống |
+|---|---|---|
+| `MB-FT 101` | Fast Track | MT3 rơi đúng **tuần này** → việc của Admin CN hôm nay |
+| `MB-FT 102` | Fast Track | MT2 tuần này, để so với lớp trên |
+| `MB-FOU 12` | Foundation | Tuần học 8/8 → **đang trong tuần Final Test** |
+| `BC-FT 205` | Fast Track | MT2 **tuần trước** vẫn trống điểm → đã quá hạn |
+| `BC-ELE 01` | Elementary | Tuần học 5/10 → **đang trong tuần Progress Test**; lớp này **chưa có GVCN** |
+| `CP-FT 110` | Fast Track | Ba đợt MT đã xong → **case kéo dài qua ba lượt** |
+| `HD-FT 302` | Fast Track | Lớp **mới mở**, chưa có kết quả nào; **thiếu GV W1 và W2** |
+| `HD-BE 21` | Beginner | Tuần học 7/10; **bốn em vừa từ Foundation lên**, mang theo case bàn giao |
+| `HD-FOU 05` | Foundation | Đã học xong; bốn em đã lên Beginner, **hai em chưa xếp được lớp** |
+| `UB-FT 401` | Fast Track | Bốn đợt MT, đợt cuối vừa thi tuần trước |
+| `UB-FOUND 07` | Foundation | **Đã học hết 8 tuần** → sáu em cần xếp lớp tiếp. Mã lớp cố ý giữ chữ cũ "FOUND" |
 
----
+### Mười ba tình huống case, mỗi cái một em
+
+Dựng riêng để bấm thử từng nhánh workflow. Vào **Học viên** → mở lớp → mở em.
+
+| Xem gì | Lớp | Mở hồ sơ em rồi tìm |
+|---|---|---|
+| Case **tên tự nhập**, chưa có phương án nào | `CP-FT 110` | *Đọc chậm, không kịp bài Reading* — nút **Hoàn thành case** mờ, có ghi rõ còn thiếu gì |
+| **Hai case cùng một kỹ năng** mở song song | `MB-FT 101` | *Phát âm đuôi -s, -ed* và *Vốn từ Speaking* — cái thứ hai có nhãn **Song song** |
+| **Tái phát** sau khi đã chốt xong | `UB-FT 401` | *Nghe sót số và tên riêng* (đã hoàn thành) và bản **Tái phát sau MT4** nối vào nó |
+| **Ba chu kỳ nối tiếp** trên một phương án | `CP-FT 110` | *Writing Task 2 lạc đề* — chu kỳ 1 tiến bộ một phần, chu kỳ 2 chưa đổi, chu kỳ 3 đang chạy |
+| Phương án **bị thay thế** | `BC-FT 205` | *Reading sai dạng T/F/NG* — phương án cũ ghi **Được thay thế**, không phải đã thành công |
+| **Xin hỗ trợ Quản lý** | `BC-FT 205` | *Em gần như không nói trong giờ Speaking* — chu kỳ dừng, chờ Quản lý |
+| **Hạn 14/09 → 27/09** | `MB-FT 102` | *Writing Task 1 thiếu câu tổng quan* — mở đúng ngày demo, hạn hiện **27/09/2026** |
+| Chu kỳ **chỉ chạy từ lúc được duyệt** | `UB-FT 401` | *Cần học thêm ngoài giờ cho Writing* — gửi 24/08, duyệt 07/09, hạn tính từ 07/09 |
+| Quản lý **không duyệt**, có lý do | `HD-FT 302` | *Đề nghị chuyển em sang lớp khác* — kèm hướng sửa và một phương án thay thế |
+| **Điểm giáo viên tự chấm** | `MB-FT 101` | *Task 1 mô tả số liệu rời rạc* → tab **Hành trình học tập** → hình thoi rỗng trên biểu đồ |
+| Case **Ý thức/Khác** đóng với kết quả xấu | `CP-FT 110` | *Không làm bài về nhà ba tuần liền* — đã đóng, kết quả **Kém hơn**, không tô xanh |
+| **FOU → BE** chuyển cả lớp | `HD-BE 21` | Bốn em có nhãn **case bàn giao**; mở hồ sơ → **Toàn bộ hành trình** thấy cả lớp cũ |
+| **BE → FT** chuyển một em vào lớp có sẵn | `HD-FT 302` | Em chuyển vào giữa chừng, lộ trình Fast Track mới với target riêng |
 
 ## 1 · Mỗi vai thấy một màn hình khác nhau
 
@@ -58,8 +78,9 @@ Vai **Quản trị hệ thống** → **Tổng quan**. Nhóm **Mốc của lớp
 - `MB-FOU 12` — *Final Test tuần này · đang ở tuần 8/8*
 - `BC-ELE 01` — *Progress Test tuần này · đang ở tuần 5/10*
 
-Bấm **Xếp lớp tiếp theo** ở dòng đầu → panel **Tiến độ lớp** mở ra, nói rõ còn bao nhiêu em và
-hai đường đi. **Hệ thống không tự chuyển ai** — nó chỉ nói "đến lúc rồi".
+Bấm **Xếp lớp tiếp theo** ở dòng đầu → panel **Chuyển tiếp lên lớp sau** mở ra, nói rõ còn bao
+nhiêu em và hai đường đi. **Hệ thống không tự chuyển ai** — nó chỉ nói "đến lúc rồi", dựng sẵn
+lớp nháp và chọn sẵn cả lớp, rồi chờ người phụ trách xác nhận.
 
 ## 3 · Bảng "Việc cần lưu ý"
 
@@ -131,12 +152,21 @@ Trong khối **Lọc**:
 
 Vai **Quản trị hệ thống** → **Học viên** → lớp `CP-FT 110` → mở một em có SOS.
 
-- Hồ sơ em có **bảng sáu hạng mục**: `L · R · W1 · W2 · S · Ý thức/Khác`. Hạng mục đang ổn vẫn có
-  mặt, ghi *"Không có case"* — để nhìn một lần là biết cả bức tranh.
-- Mỗi hàng có **đường điểm** `5.0 → 5.5 → 6.0`, mũi tên tăng/giảm, và dòng hỗ trợ đang chạy.
-- Mở một case đã kéo dài → **dòng thời gian** có nhiều mốc: *mở ở MT1 · lặp lại ở MT2 · lặp lại ở MT3*.
-  Mọi phương án cũ và kết quả cũ **vẫn còn nguyên** — đó chính là thứ nói lên mức độ chưa triệt để.
-- Tên case đổi theo lượt mới nhất, nhưng **vẫn là một case**.
+Hồ sơ có **ba tầng**, đọc từ trên xuống là ra kết luận:
+
+1. **Theo dõi hỗ trợ theo kỹ năng** — sáu hạng mục `L · R · W1 · W2 · S · Ý thức/Khác`, hạng mục
+   đang ổn vẫn có mặt và ghi *"Không có case"*. Ô đó là **màu xám**, không phải xanh: chưa ai mở
+   case không đồng nghĩa học tốt.
+2. **Các case của em** — mỗi case một **khối riêng, mở đóng độc lập**. Case đang xử lý mặc định
+   mở, case đã hoàn thành thu gọn. Mở một case không đóng case khác. Có bộ lọc hạng mục và hai
+   phạm vi: **Lộ trình này** và **Toàn bộ hành trình**.
+3. **Mock Test | Hành trình học tập** — bảng điểm, và biểu đồ tiến bộ kèm dòng thời gian.
+
+Trong một case: phần đang làm nổi bật nhất, chu kỳ cũ thu gọn thành dòng kết quả. **Không còn
+node "Mở case"** — ngày mở và người tạo đã ở ngay đầu case.
+
+Tên case tự sinh đổi theo lượt mới nhất, nhưng **vẫn là một case**. Case do người tạo đặt tên thì
+giữ nguyên tên đó ở mọi màn.
 
 ## 9 · Cảnh báo case trùng
 
@@ -161,7 +191,8 @@ Bốn trạng thái đều có sẵn trong dữ liệu mẫu: chờ duyệt còn
 
 ## 11 · Phân công giáo viên
 
-Vai **Quản lý** hoặc **Admin CN** → **Học viên** → mở lớp `MB-FT 101` → **Sửa phân công**.
+Vai **Quản lý** hoặc **Admin CN** → **Học viên** → mở lớp `MB-FT 101` → **Quản lý lớp** →
+**Phân công giáo viên**.
 
 - Trang lớp có bảng **một kỹ năng một dòng**, kể cả kỹ năng **chưa ai dạy**. Mở `HD-FT 302` để thấy
   hai dòng *Chưa phân công* ở W1 và W2; mở `BC-ELE 01` để thấy *Chưa có GVCN*.
@@ -172,7 +203,7 @@ Vai **Quản lý** hoặc **Admin CN** → **Học viên** → mở lớp `MB-FT
 
 ## 12 · Lịch MT tự đề xuất
 
-Vai **Quản lý** → hồ sơ một em lớp FT → **Kế hoạch học**.
+Vai **Quản lý** → hồ sơ một em lớp FT → **Quản lý học viên** → **Kế hoạch học**.
 
 - Khai **tuần bắt đầu học** → bảng bên dưới đề xuất **MT1 · MT2 · MT3** đúng mốc tuần học **6 · 12 · 16**.
 - Cột **Hiện tại** nói trước từng lượt sẽ ra sao: *Chưa có, sẽ tạo · Sẽ dời sang tuần đề xuất ·
@@ -230,6 +261,55 @@ Hai ô cố ý **không** sửa được, và màn hình nói rõ vì sao thay v
 "Kỹ năng phụ trách được" là **năng lực**, dùng để gợi ý khi phân công — khác hẳn "đang dạy kỹ năng
 nào ở lớp nào", và không cho quyền nhập điểm.
 
+## 17 · Hai nút thay cho sáu
+
+**Đầu hồ sơ học viên** chỉ còn **+ Case** và **Quản lý học viên**. Bấm nút thứ hai → panel bên
+phải liệt kê năm việc quản trị: *Kế hoạch học · Điểm đầu vào · Đổi mục tiêu · Kết luận lộ trình ·
+Chuyển lớp*. Chọn một việc thì **thân panel đổi ngay tại chỗ**, có nút *← Chọn việc khác* quay lại.
+Không có modal chồng lên modal.
+
+**Đầu trang lớp** giữ **Nhập điểm cả lớp** ở nguyên chỗ cũ — đó là việc hằng ngày. Ba việc quản trị
+gom vào **Quản lý lớp**: *Tiến độ lớp · Phân công giáo viên · Chuyển tiếp lên lớp sau*.
+
+Trong case, **một nút cho một việc**: *Cập nhật kết quả* hỏi đủ ba câu — kết quả, ghi chú, bước tiếp
+theo. Ba nút cũ (*Đánh dấu đã làm*, *Ghi quan sát*, *Hướng xử lý*) đã gộp vào đây.
+
+## 18 · Sáu họ nhãn, hai luật màu
+
+Nhìn một dòng bất kỳ là phân biệt được sáu loại thông tin bằng **hình dạng trước, màu sau**:
+
+| Họ | Ví dụ | Hình thức |
+|---|---|---|
+| Mức độ | `SOS 1` `SOS 3` | Nền đặc, bo tròn hẳn |
+| Trạng thái xử lý | `▶ Đang xử lý` `◷ Chờ QL duyệt` `✓ Đã hoàn thành` | Nền nhẹ, có biểu tượng |
+| Việc cần làm | `Nhập điểm L, R` | Viền vuông, gạch dọc bên trái, bấm được |
+| Cảnh báo | `⚠ Quá hạn` `⚠ Thiếu 2 thông tin` | Dấu tam giác, màu mạnh |
+| Kết quả | `✓ Tiến bộ rõ rệt` `↓ Kém hơn` | Biểu tượng kết quả |
+| Thông tin | `GVCN` `Speaking` `LT2` | Chữ mờ, viền mảnh |
+
+Hai luật không được phá:
+
+- **Xanh lá chỉ dành cho KẾT QUẢ.** *"Đã lưu"*, *"đã hoàn thành phương án"*, *"không có case"* đều
+  không phải tin tốt — chúng chỉ là việc đã xong hoặc chưa có tin gì.
+- **Màu không bao giờ đứng một mình.** Mỗi họ có hình dạng và biểu tượng riêng, nên người không
+  phân biệt được màu vẫn đọc ra nghĩa.
+
+Chỗ nhìn rõ nhất: mở `CP-FT 110` → một em có case đã đóng với kết quả *Kém hơn*. Trạng thái ghi
+**Đã hoàn thành** (xám), kết quả ghi **↓ Kém hơn** (đỏ). Hai thông tin khác nhau, không gộp.
+
+## 19 · Biểu đồ tiến bộ
+
+Hồ sơ một em lớp FT → tab **Hành trình học tập**.
+
+- Chọn từng kỹ năng. Lớp Fast Track vẽ **band** kèm **đường kỳ vọng** nét đứt của từng mốc; lớp
+  Normal vẽ **điểm gốc** dạng `13/30`.
+- **Hình thoi rỗng** là điểm giáo viên tự chấm khi cập nhật case. Nó **đứng riêng, không nối vào
+  đường điểm chính thức** — hai loại điểm không chấm bằng cùng một thước.
+- Kỹ năng mới có **một mốc** thì màn hình nói thẳng *"Chưa đủ dữ liệu"* thay vì vẽ một chấm rồi
+  để người xem tự tưởng tượng ra xu hướng.
+- Đổi lộ trình ở đầu trang là đổi cả biểu đồ: hai chương trình chấm trên hai thang khác nhau nên
+  không trộn vào một hình.
+
 ---
 
 ## Nâng cấp dữ liệu cũ
@@ -251,6 +331,12 @@ tách không có căn cứ.**
   nếu chưa tồn tại — nếu không thì sau khi cập nhật, chính người chủ hệ thống là người duy nhất
   không vào được.
 - Nạp bảng **lộ trình** từ danh sách viết cứng cũ.
+- **Vòng 5:** bổ sung các cột của workflow chu kỳ hai tuần (`cycle_no`, `cycle_started_on`,
+  `closed_reason`, `superseded_by`, `next_step`, `cycle_due`, `late`, `metrics`, `title`,
+  `previous_case_id`, `previous_class_id`), rồi điền mốc bắt đầu chu kỳ cho phương án cũ theo
+  ngày đã có — không bịa ra ngày mới, cũng không để trống khiến phương án cũ trông như chưa
+  từng chạy. Phương án đã hoàn thành được ghi lý do khép lại là **đã xong**, không phải bị
+  thay thế.
 
 Đã kiểm chứng trên **bản sao thật**: khoá ngoại sạch, không email nào trùng, mọi tài khoản đăng
 nhập được, và **chạy lại lần hai không làm gì thêm**.

@@ -1247,6 +1247,7 @@ export type MappedCase = {
   id: number; originKind: string;
   studentId: number | null; studentName: string | null; studentCode: string | null;
   classId: number | null; classCode: string | null; branchId: number | null;
+  homeClassId: number | null; homeBranchId: number | null;
   attemptId: number | null; attemptNo: number | null;
   sosLevel: number | null; urgency: string | null;
   summary: string | null; headline: string;
@@ -1306,8 +1307,18 @@ export function listCases(p: Principal, f: CaseFilters = {}) {
   const where: string[] = ['1=1'];
   const params: unknown[] = [];
   if (f.studentId) { where.push('COALESCE(sc.student_id, a.student_id) = ?'); params.push(f.studentId); }
-  if (f.classId) { where.push('COALESCE(a.class_id, cur.class_id) = ?'); params.push(f.classId); }
-  if (f.branchId) { where.push('COALESCE(ac.branch_id, cc.branch_id) = ?'); params.push(f.branchId); }
+  /*
+   * LỌC THEO LỚP EM ĐANG HỌC, không phải lớp lúc đánh giá.
+   *
+   * Bảng tổng hợp xếp case về lớp em đang học (để cột sĩ số và ba cột SOS nói về cùng một
+   * nhóm người). Bấm vào con số đó phải ra ĐÚNG danh sách tạo nên nó — nếu bộ lọc ở đây vẫn
+   * đi theo lớp lúc đánh giá thì một lớp vừa nhận bốn em chuyển sang sẽ hiện "19 case" mà
+   * bấm vào lại ra danh sách rỗng.
+   *
+   * Em chưa xếp lớp thì lấy lớp của bài — vẫn hơn là rơi ra khỏi mọi bộ lọc.
+   */
+  if (f.classId) { where.push('COALESCE(cur.class_id, a.class_id) = ?'); params.push(f.classId); }
+  if (f.branchId) { where.push('COALESCE(cc.branch_id, ac.branch_id) = ?'); params.push(f.branchId); }
   if (f.status) { where.push('sc.status = ?'); params.push(f.status); }
   if (f.cycleId) { where.push('COALESCE(sc.cycle_id, a.cycle_id) = ?'); params.push(f.cycleId); }
   if (f.origin) { where.push('sc.origin_kind = ?'); params.push(f.origin); }
@@ -1319,6 +1330,8 @@ export function listCases(p: Principal, f: CaseFilters = {}) {
               COALESCE(sc.cycle_id, a.cycle_id) AS eff_cycle_id,
               COALESCE(a.class_id, cur.class_id) AS eff_class_id,
               COALESCE(ac.branch_id, cc.branch_id) AS eff_branch_id,
+              cur.class_id AS home_class_id,
+              cc.branch_id AS home_branch_id,
               COALESCE(ac.code, cc.code) AS class_code,
               COALESCE(ac.is_fast_track, cc.is_fast_track) AS class_is_ft,
               s.full_name, s.student_code,
@@ -1338,7 +1351,7 @@ export function listCases(p: Principal, f: CaseFilters = {}) {
          LEFT JOIN users u ON u.id = sc.reported_by
         WHERE ${where.join(' AND ')}
         GROUP BY sc.id
-        ORDER BY sc.created_at DESC`,
+        ORDER BY COALESCE(sc.detected_at, DATE(sc.created_at)) DESC, sc.id DESC`,
     )
     .all(...params) as any[];
 
@@ -1374,6 +1387,12 @@ export function listCases(p: Principal, f: CaseFilters = {}) {
       originKind: r.origin_kind,
       studentId: r.eff_student_id, studentName: r.full_name, studentCode: r.student_code,
       classId: r.eff_class_id, classCode: r.class_code, branchId: r.eff_branch_id,
+      /*
+       * LỚP EM ĐANG HỌC — khác `classId` là lớp LÚC ĐÁNH GIÁ. Bảng tổng hợp gom theo ô này;
+       * hồ sơ và danh sách vẫn hiện lớp lúc đánh giá, vì đó là chỗ người ta đọc lịch sử.
+       */
+      homeClassId: r.home_class_id ?? r.eff_class_id,
+      homeBranchId: r.home_branch_id ?? r.eff_branch_id,
       /* Lớp Normal và lớp FT chấm khác nhau, nên bộ lọc loại lớp là bộ lọc ĐẦU TIÊN. */
       classKind: (r.class_is_ft ? 'ft' : 'normal') as 'ft' | 'normal',
       attemptId: r.attempt_id, attemptNo: r.attempt_no,
