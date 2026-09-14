@@ -1382,7 +1382,15 @@ export function listCases(p: Principal, f: CaseFilters = {}) {
       headline: caseHeadline({
         summary: r.summary, originKind: r.origin_kind, sosLevel: r.sos_level, attemptNo: r.attempt_no,
       }),
-      title: caseTitle({
+      /*
+       * TÊN NGƯỜI DÙNG TỰ ĐẶT LUÔN THẮNG (mục 7.3).
+       *
+       * Bản trước chỗ này luôn dựng lại tên tự sinh, nên một case giáo viên đặt tên "Nghe
+       * sót số và tên riêng" lên danh sách lại thành "Listening dưới kỳ vọng" — trong khi
+       * mở ra xem thì đúng tên đã gõ. Cùng một case mang hai cái tên ở hai màn là cách
+       * chắc chắn để người đọc tưởng đó là hai case.
+       */
+      title: (r.title ?? '').trim() || caseTitle({
         category: r.category ?? categoryOf(r.track ?? 'academic', r.topic),
         latestAttemptNo: latestAttemptByCase.get(r.id) ?? r.attempt_no ?? null,
         latestAttemptKind: r.attempt_kind ?? null,

@@ -140,8 +140,35 @@ export function branchSummary(p: Principal, f: { branchId?: number | null } = {}
     };
   }
 
-  const cases = listCases(p, { branchId: f.branchId ?? undefined }).rows;
+  const rawCases = listCases(p, { branchId: f.branchId ?? undefined }).rows;
   const byBranch = f.branchId == null;
+
+  /*
+   * XẾP CASE VỀ LỚP EM ĐANG HỌC, KHÔNG PHẢI LỚP LÚC LÀM BÀI.
+   *
+   * Một case sinh từ bài MT mang theo lớp LÚC ĐÁNH GIÁ — đúng cho lịch sử, vì chuyển lớp
+   * không được viết lại quá khứ. Nhưng bảng này đặt cột "sĩ số" cạnh ba cột SOS, và sĩ số
+   * đếm theo ghi danh ĐANG hoạt động. Trộn hai mốc thời gian vào một hàng thì một lớp vừa
+   * chuyển bốn em đi sẽ có sĩ số 2 mà SOS cộng lại thành 5 — đúng kiểu mâu thuẫn số đếm
+   * owner nêu ở mục 8.1.
+   *
+   * Nên ở BẢNG TỔNG HỢP, một case thuộc về lớp em ĐANG học. Màn danh sách case và hồ sơ học
+   * viên vẫn giữ nguyên lớp lúc đánh giá — đó là chỗ người ta đọc lịch sử.
+   */
+  const homeClass = new Map<number, { classId: number; branchId: number }>();
+  for (const r of conn
+    .prepare(
+      `SELECT e.student_id, cl.id AS class_id, cl.branch_id
+         FROM enrollments e JOIN classes cl ON cl.id = e.class_id
+        WHERE e.status = 'active'`,
+    )
+    .all() as any[]) {
+    homeClass.set(r.student_id, { classId: r.class_id, branchId: r.branch_id });
+  }
+  const cases = rawCases.map((c) => {
+    const home = c.studentId === null ? null : homeClass.get(c.studentId);
+    return home ? { ...c, classId: home.classId, branchId: home.branchId } : c;
+  });
 
   /* Nhóm theo chi nhánh hoặc theo lớp, tuỳ đang đứng ở tầng nào. */
   const groups = new Map<string, {

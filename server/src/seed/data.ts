@@ -178,6 +178,30 @@ export const CLASSES: ClassSeed[] = [
     code: 'UB-FOUND 07', branch: 'UB', kind: 'FOUND', route: null, isFastTrack: false,
     startDate: '2026-07-06', students: 6, plan: [],
   },
+  /*
+   * HD · lớp Beginner — BẬC GIỮA còn thiếu của bộ demo.
+   *
+   * Trước vòng 5 bộ dữ liệu chỉ có Foundation và Elementary, nên luồng chuyển tiếp mặc định
+   * FOU → BE không có lớp đích nào để nhìn thấy. Lớp này vừa qua tuần Progress Test (tuần
+   * học 5 của Beginner), nên nó cũng là chỗ so sánh: cùng một mốc, hai chương trình khác
+   * nhau xếp vào hai tuần học khác nhau.
+   */
+  {
+    code: 'HD-BE 21', branch: 'HD', kind: 'BE', route: null, isFastTrack: false,
+    startDate: '2026-08-03', students: 3, plan: [],
+  },
+  /*
+   * HD · lớp Foundation ĐÃ HỌC XONG — lớp NGUỒN của luồng chuyển tiếp FOU → BE.
+   *
+   * Khai giảng từ đầu tháng Sáu nên cả Progress Test (tuần 4) lẫn Final Test (tuần 8) đều đã
+   * có điểm. Sau khi hết chương trình, phần lớn các em được chuyển sang HD-BE 21; hai em còn
+   * lại cố ý để nguyên, vì "chưa xếp được lớp tiếp" là một tình trạng có thật và phải nhìn
+   * thấy được chứ không phải một lỗi dữ liệu.
+   */
+  {
+    code: 'HD-FOU 05', branch: 'HD', kind: 'FOU', route: null, isFastTrack: false,
+    startDate: '2026-06-01', students: 6, plan: [],
+  },
 ];
 
 /**

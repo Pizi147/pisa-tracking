@@ -3870,6 +3870,139 @@ check('Case CHƯA CÓ PHƯƠNG ÁN NÀO thì không chốt kết quả được'
   );
 });
 
+check('Chuyển lớp rồi thì case theo em sang lớp mới TRÊN BẢNG TỔNG HỢP', () => {
+  /*
+   * Case sinh từ bài MT mang lớp LÚC ĐÁNH GIÁ — đúng cho lịch sử. Nhưng bảng tổng hợp đặt
+   * cột sĩ số cạnh ba cột SOS, mà sĩ số đếm theo ghi danh đang hoạt động. Trộn hai mốc thời
+   * gian vào một hàng là chỗ sinh ra "sĩ số 2 mà SOS cộng lại thành 5".
+   */
+  const moved = conn
+    .prepare(
+      `SELECT e.student_id sid, e.class_id newc, old.class_id oldc, c.branch_id
+         FROM enrollments e
+         JOIN enrollments old ON old.student_id = e.student_id AND old.status = 'transferred'
+         JOIN classes c ON c.id = e.class_id
+        WHERE e.status = 'active' AND e.class_id != old.class_id
+          AND EXISTS (SELECT 1 FROM sos_cases sc WHERE sc.student_id = e.student_id)
+        ORDER BY e.student_id LIMIT 1`,
+    )
+    .get() as any;
+  assert(moved, 'Dữ liệu demo không có em nào vừa chuyển lớp vừa có case');
+
+  const board = summary.branchSummary(P.admin, { branchId: moved.branch_id });
+  const row = board.rows.find((r: any) => r.classId === moved.newc);
+  assert(row, 'Không thấy lớp mới trên bảng tổng hợp');
+  const old = board.rows.find((r: any) => r.classId === moved.oldc);
+
+  const sosOf = (r: any) => (r.cells.sos1?.value ?? 0) + (r.cells.sos2?.value ?? 0) + (r.cells.sos3?.value ?? 0);
+  assert(sosOf(row!) <= (row!.cells.students?.value ?? 0),
+    `Lớp mới: SOS ${sosOf(row!)} vượt sĩ số ${row!.cells.students?.value}`);
+  if (old) {
+    assert(sosOf(old) <= (old.cells.students?.value ?? 0),
+      `Lớp cũ: SOS ${sosOf(old)} vượt sĩ số ${old.cells.students?.value}`);
+  }
+
+  /* Còn HỒ SƠ HỌC VIÊN vẫn phải giữ lớp lúc đánh giá — chuyển lớp không viết lại quá khứ. */
+  const pr = profile.studentProfile(P.admin, moved.sid) as any;
+  const oldCode = (conn.prepare('SELECT code FROM classes WHERE id = ?').get(moved.oldc) as any).code;
+  const kept = pr.attempts.some((a: any) => a.classCode === oldCode);
+  if (pr.attempts.length) {
+    assert(kept, `Lịch sử bài của em mất lớp cũ ${oldCode} sau khi chuyển lớp`);
+  }
+});
+
+check('Ma trận tình huống vòng 5 có đủ những ô đã chốt ở mục 8.2', () => {
+  const one = (label: string, sql: string) => {
+    const n = (conn.prepare(sql).get() as any).n;
+    assert(n > 0, `Thiếu tình huống: ${label}`);
+  };
+  one('case có tên tự nhập', 'SELECT COUNT(*) n FROM sos_cases WHERE title IS NOT NULL');
+  one('case mở song song có chủ ý', 'SELECT COUNT(*) n FROM sos_cases WHERE parallel = 1');
+  one('case tái phát nối vào case cũ', 'SELECT COUNT(*) n FROM sos_cases WHERE previous_case_id IS NOT NULL');
+  one('case chưa có phương án nào',
+    `SELECT COUNT(*) n FROM sos_cases sc WHERE sc.status != 'done'
+       AND NOT EXISTS (SELECT 1 FROM case_interventions iv WHERE iv.case_id = sc.id)`);
+  one('phương án sang chu kỳ thứ hai trở lên', 'SELECT COUNT(*) n FROM case_interventions WHERE cycle_no > 1');
+  one('phương án bị thay thế', `SELECT COUNT(*) n FROM case_interventions WHERE closed_reason = 'superseded' AND superseded_by IS NOT NULL`);
+  one('phương án đang chờ Quản lý duyệt', `SELECT COUNT(*) n FROM case_interventions WHERE approval_state = 'pending'`);
+  one('phương án được duyệt', `SELECT COUNT(*) n FROM case_interventions WHERE approval_state = 'approved'`);
+  one('phương án bị từ chối có lý do', `SELECT COUNT(*) n FROM case_interventions WHERE approval_state = 'declined' AND approval_note IS NOT NULL`);
+  one('điểm giáo viên tự chấm', 'SELECT COUNT(*) n FROM case_followups WHERE metrics IS NOT NULL');
+  one('cập nhật kết quả trễ hạn', 'SELECT COUNT(*) n FROM case_followups WHERE late = 1');
+  for (const o of ['improved', 'partial', 'unchanged', 'worse', 'insufficient']) {
+    one(`kết quả "${o}"`, `SELECT COUNT(*) n FROM case_followups WHERE outcome = '${o}'`);
+  }
+  for (const ns of ['complete', 'monitor', 'continue', 'propose', 'ask_manager']) {
+    one(`bước tiếp theo "${ns}"`, `SELECT COUNT(*) n FROM case_followups WHERE next_step = '${ns}'`);
+  }
+  for (const prog of ['FOU', 'BE', 'ELE', 'FT']) {
+    one(`lớp chương trình ${prog}`, `SELECT COUNT(*) n FROM classes WHERE programme_code = '${prog}'`);
+  }
+  one('học viên đi qua nhiều lớp',
+    'SELECT COUNT(*) n FROM (SELECT student_id FROM enrollments GROUP BY student_id HAVING COUNT(*) > 1)');
+  one('học viên đi qua nhiều chương trình',
+    `SELECT COUNT(*) n FROM (SELECT student_id FROM learning_cycles
+       WHERE programme_code IS NOT NULL GROUP BY student_id HAVING COUNT(DISTINCT programme_code) > 1)`);
+  one('học viên còn ở lớp đã hết chương trình, chưa xếp lớp tiếp',
+    `SELECT COUNT(*) n FROM enrollments e JOIN classes c ON c.id = e.class_id
+      WHERE e.status = 'active' AND c.is_fast_track = 0
+        AND (SELECT COUNT(*) FROM assessment_attempts a
+              WHERE a.class_id = c.id AND a.kind = 'final' AND a.status = 'done') > 0`);
+  one('lộ trình chỉ biết THÁNG thi', 'SELECT COUNT(*) n FROM learning_cycles WHERE exam_period_id IS NULL AND exam_month IS NOT NULL');
+  one('lộ trình đã chốt TUẦN thi', 'SELECT COUNT(*) n FROM learning_cycles WHERE exam_period_id IS NOT NULL');
+});
+
+check('Case mở đúng ngày demo 14/09/2026 có hạn 27/09/2026', () => {
+  /*
+   * Ô kiểm tra LUẬT HẠN đã chốt ở mục 7.7, viết thẳng vào dữ liệu mẫu: chu kỳ đầu kết thúc
+   * Chủ nhật của TUẦN THỨ HAI, tính tuần case xuất hiện là tuần thứ nhất. 14/09 là thứ Hai,
+   * nên hạn là 27/09 — KHÔNG phải 04/10.
+   */
+  assert(demoToday() === '2026-09-14', `Ngày demo đã đổi thành ${demoToday()} — kiểm lại ví dụ hạn`);
+  assert(domain.cycleDeadline('2026-09-14') === '2026-09-27',
+    `Luật hạn sai: 14/09 ra ${domain.cycleDeadline('2026-09-14')}`);
+  const row = conn
+    .prepare(
+      `SELECT iv.action_due FROM case_interventions iv
+         JOIN sos_cases sc ON sc.id = iv.case_id
+        WHERE sc.detected_at = '2026-09-14' AND iv.cycle_started_on = '2026-09-14'
+        ORDER BY iv.id LIMIT 1`,
+    )
+    .get() as any | undefined;
+  assert(row, 'Dữ liệu demo không có case nào mở đúng ngày demo để đối chiếu bằng mắt');
+  assert(row!.action_due === '2026-09-27', `Hạn trong dữ liệu mẫu là ${row!.action_due}, phải là 2026-09-27`);
+});
+
+check('Case của lớp trước là việc BÀN GIAO, không phải mức SOS của lớp này', () => {
+  /*
+   * Một em học xong Foundation rồi lên Beginner mà còn case dở: case đó vẫn phải nhìn thấy
+   * được, nhưng gọi em là "SOS 3" ở lớp Beginner vì một bài Foundation chấm trên thang khác
+   * là nói sai. Mức SOS là kết luận của MỘT lượt trong MỘT chương trình.
+   */
+  const row = conn
+    .prepare(
+      `SELECT e.student_id sid, e.class_id cid FROM enrollments e
+        WHERE e.status = 'active'
+          AND EXISTS (SELECT 1 FROM enrollments o WHERE o.student_id = e.student_id AND o.status='transferred')
+          AND EXISTS (SELECT 1 FROM sos_cases sc
+                       JOIN learning_cycles cy ON cy.id = sc.cycle_id
+                      WHERE sc.student_id = e.student_id AND sc.status != 'done' AND cy.status = 'ended')
+        ORDER BY e.student_id LIMIT 1`,
+    )
+    .get() as any;
+  assert(row, 'Dữ liệu demo không có em nào mang case cũ sang lớp mới');
+
+  const roster = classesSvc.classRoster(P.admin, row.cid) as any[];
+  const me = roster.find((r) => r.id === row.sid);
+  assert(me, 'Không thấy em đó trong bảng lớp mới');
+  assert(me.handoverCases > 0, 'Case của lộ trình trước không được đếm là việc bàn giao');
+  assert(me.openCases >= me.handoverCases, 'Số case bàn giao lớn hơn tổng số case đang mở');
+
+  /* Và case cũ vẫn MỞ RA XEM ĐƯỢC ở phạm vi toàn hành trình của em. */
+  const all = cases.listCases(P.admin, { studentId: row.sid }).rows;
+  assert(all.some((c: any) => c.status !== 'done'), 'Case cũ biến mất khỏi danh sách case của em');
+});
+
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`

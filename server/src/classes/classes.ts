@@ -287,21 +287,55 @@ export function classRoster(p: Principal, classId: number, q?: string) {
    * mươi câu truy vấn — đúng kiểu chậm mà không màn nào báo lỗi.
    */
   const openCaseCount = new Map<number, number>();
+  const handoverCount = new Map<number, number>();
   const openRows = conn
     .prepare(
-      `SELECT sc.student_id, sc.sos_level, a.attempt_no FROM sos_cases sc
+      `SELECT sc.student_id, sc.sos_level, sc.cycle_id, a.attempt_no FROM sos_cases sc
          LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
         WHERE sc.student_id IN (${ph}) AND sc.status != 'done'`,
     )
     .all(...sids) as any[];
-  for (const r of openRows) openCaseCount.set(r.student_id, (openCaseCount.get(r.student_id) ?? 0) + 1);
+  const activeCycle = new Map<number, number | null>(students.map((s) => [s.id, s.cycle_id ?? null]));
+  /*
+   * CASE CỦA LỘ TRÌNH TRƯỚC LÀ VIỆC BÀN GIAO, KHÔNG PHẢI MỨC SOS CỦA LỚP NÀY.
+   *
+   * Một em học xong Foundation rồi lên Beginner mà còn case dở thì case đó vẫn phải nhìn
+   * thấy được — bỏ đi là bỏ rơi em. Nhưng gọi em là "SOS 3" ở lớp Beginner vì một bài
+   * Foundation chấm trên thang khác thì lại sai: mức SOS là kết luận của MỘT lượt đánh giá
+   * trong MỘT chương trình.
+   *
+   * Nên tách đôi: mức SOS tính theo lộ trình đang chạy; case cũ còn mở đếm riêng thành việc
+   * cần bàn giao, có nhãn riêng ở cột Trạng thái.
+   */
+  for (const r of openRows) {
+    const cur = activeCycle.get(r.student_id) ?? null;
+    const carried = cur !== null && r.cycle_id !== null && r.cycle_id !== cur;
+    openCaseCount.set(r.student_id, (openCaseCount.get(r.student_id) ?? 0) + 1);
+    if (carried) handoverCount.set(r.student_id, (handoverCount.get(r.student_id) ?? 0) + 1);
+  }
   /* Mức SOS hiện tại: dùng CHUNG phép tính với bảng tổng hợp, không tự đếm lại ở đây. */
   const openSos = currentSosByStudent(
-    openRows.map((r) => ({ studentId: r.student_id, sosLevel: r.sos_level, attemptNo: r.attempt_no })),
+    openRows
+      .filter((r) => {
+        const cur = activeCycle.get(r.student_id) ?? null;
+        return cur === null || r.cycle_id === null || r.cycle_id === cur;
+      })
+      .map((r) => ({ studentId: r.student_id, sosLevel: r.sos_level, attemptNo: r.attempt_no })),
   );
 
   return students.map((s) => {
-    const list = byStudent.get(s.id) ?? [];
+    /*
+     * CHỈ CÁC BÀI CỦA LỘ TRÌNH ĐANG CHẠY.
+     *
+     * Bảng lớp trả lời câu "lớp này đang thế nào". Một em chuyển từ lớp Foundation sang lớp
+     * Beginner thì bài Giữa khoá và Cuối khoá của Foundation KHÔNG phải bài của lớp này —
+     * để nguyên thì lớp Beginner mới học tuần 7/10 đã hiện "Cuối khoá SOS3" của một chương
+     * trình khác, chấm trên một thang khác.
+     *
+     * Lịch sử cũ không mất: hồ sơ học viên có bộ chọn lộ trình, và "Toàn bộ hành trình" vẫn
+     * mở ra được mọi lớp em từng học.
+     */
+    const list = (byStudent.get(s.id) ?? []).filter((a) => !s.cycle_id || a.cycle_id === s.cycle_id);
     const timeline = list.map((a) => {
       const scores = bundle.scores.get(a.id) ?? [];
       const c = bundle.cases.get(a.id);
@@ -394,6 +428,8 @@ export function classRoster(p: Principal, classId: number, q?: string) {
       /** Mức SOS đang có hiệu lực và số case chưa xong — hai con số của cột Trạng thái. */
       sosLevel: openSos.get(s.id) ?? null,
       openCases: openCaseCount.get(s.id) ?? 0,
+      /** Case còn mở từ lớp/chương trình TRƯỚC — việc phải bàn giao, không phải mức SOS ở đây. */
+      handoverCases: handoverCount.get(s.id) ?? 0,
       /** DỰ KIẾN THI ở đúng mức chắc chắn đang có: tuần, hoặc tháng, hoặc chưa biết. */
       examPlan: examPlanOf(s),
       archived: !!s.archived_at,

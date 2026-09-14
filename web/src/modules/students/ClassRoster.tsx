@@ -31,7 +31,7 @@ type RosterRow = {
   scores: {
     overall: Cell; listening: Cell; reading: Cell; speaking: Cell; writing1: Cell; writing2: Cell;
   } | null;
-  sosLevel: number | null; openCases: number; examPlan: ExamPlan;
+  sosLevel: number | null; openCases: number; handoverCases: number; examPlan: ExamPlan;
   latest: Timeline | null; next: Timeline | null; timeline: Timeline[];
   myPending: string[];
 };
@@ -163,11 +163,24 @@ function StatusCell({ row }: { row: RosterRow }) {
   if (row.status !== 'active') return <span className="text-xs text-slate-600">Đã kết thúc</span>;
   const bits: React.ReactNode[] = [];
   if (row.sosLevel) bits.push(<Level key="sos" tone={sosTone(row.sosLevel)}>{sosLabel(row.sosLevel)}</Level>);
-  if (row.openCases > 0) {
+  /*
+   * CASE CỦA LỚP NÀY và CASE MANG TỪ LỚP TRƯỚC SANG là hai việc khác nhau. Cái sau là việc
+   * BÀN GIAO — giáo viên mới phải biết em đang dở dang chuyện gì, và nó không phải là kết
+   * quả học tập ở lớp này.
+   */
+  const here = row.openCases - (row.handoverCases ?? 0);
+  if (here > 0) {
     bits.push(
       <Status key="cases" kind="doing" title="Case đã mở và chưa chốt kết quả">
-        {row.openCases} case chưa xong
+        {here} case chưa xong
       </Status>,
+    );
+  }
+  if (row.handoverCases > 0) {
+    bits.push(
+      <Alert key="handover" tone="warn" title="Case còn dở từ lớp hoặc chương trình trước — cần bàn giao">
+        {row.handoverCases} case bàn giao
+      </Alert>,
     );
   }
   if (bits.length) return <span className="flex flex-wrap items-center gap-1">{bits}</span>;
