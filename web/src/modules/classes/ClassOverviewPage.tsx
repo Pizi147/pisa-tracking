@@ -7,6 +7,7 @@ import { ClassRoster } from '../students/ClassRoster.tsx';
 import { IntakePanel } from '../students/IntakePanel.tsx';
 import { TeacherAssignDialog } from './TeacherAssignPanel.tsx';
 import { ClassProgressPanel } from './ClassProgressPanel.tsx';
+import { TransitionPanel } from './TransitionPanel.tsx';
 import { MissingBadge } from '../students/MissingBadge.tsx';
 import { usePeriods } from '../../ui/Filters.tsx';
 import { fmtDate, skillLabel } from '../../lib/format.ts';
@@ -64,6 +65,7 @@ export default function ClassOverviewPage() {
   const [intake, setIntake] = useState(false);
   const [assign, setAssign] = useState(false);
   const [progressOpen, setProgressOpen] = useState(false);
+  const [transitionOpen, setTransitionOpen] = useState(false);
   const { data, loading, error, reload } = useApi<Overview>(classId ? `/classes/${classId}/overview` : null);
 
   useEffect(() => {
@@ -131,7 +133,7 @@ export default function ClassOverviewPage() {
           )}
         </div>
         <div className="flex flex-wrap gap-2">
-          {/* Lớp thường chấm theo số câu đúng nên có bảng điểm riêng. */}
+          {/* Lớp Normal chấm theo điểm đạt/tổng điểm nên có bảng điểm riêng. */}
           <Link
             className="btn no-underline"
             to={data.programme?.scoringMode === 'ratio'
@@ -161,9 +163,13 @@ export default function ClassOverviewPage() {
             <Pill tone={j.tone}>{j.n} {j.label}</Pill>
           </Link>
         ))}
-        {/* Lớp học hết chương trình là việc nặng nhất, và nó không tự xảy ra. */}
+        {/*
+          Lớp học hết chương trình là việc nặng nhất, và nó không tự xảy ra.
+          Bấm vào mở thẳng panel CHUYỂN TIẾP chứ không phải panel tiến độ: người bấm vào đây
+          đang muốn xếp lớp cho các em, không phải muốn sửa lại tuần khai giảng.
+        */}
         {s?.needsPlacement && (
-          <button className="appearance-none bg-transparent border-0 p-0" onClick={() => setProgressOpen(true)}>
+          <button className="appearance-none bg-transparent border-0 p-0" onClick={() => setTransitionOpen(true)}>
             <Pill tone="danger">
               {s.studentCount} học viên cần xếp lớp tiếp
               {s.placementOptions.length ? ` · ${s.placementOptions.map((o) => o.code).join(' hoặc ')}` : ''}
@@ -229,6 +235,8 @@ export default function ClassOverviewPage() {
         />
       )}
 
+      <TransitionPanel classId={data.id} open={transitionOpen}
+        onClose={() => setTransitionOpen(false)} onDone={reload} />
       {progressOpen && (
         <ClassProgressPanel classId={data.id} classCode={data.code}
           onClose={() => setProgressOpen(false)} onDone={reload} />

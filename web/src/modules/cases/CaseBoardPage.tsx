@@ -250,8 +250,8 @@ export function CaseBoard({ embedded = false }: { embedded?: boolean } = {}) {
           {/*
             LOẠI LỚP ĐỨNG TRƯỚC, và "Cụ thể" chỉ hiện SAU KHI đã chọn loại lớp (mục 10.1).
             Lý do rất thực tế: danh sách "cụ thể" của hai loại lớp khác nhau — lớp Normal có
-            Pronunciation, lớp FT có W1 và W2 — nên bày cả hai bộ cùng lúc là bày ra những ô
-            không tồn tại ở loại lớp người dùng đang nghĩ tới.
+            một môn W, lớp Fast Track có W1 và W2 — nên bày cả hai bộ cùng lúc là bày ra những
+            ô không tồn tại ở loại lớp người dùng đang nghĩ tới.
           */}
           <FilterRow label="Loại lớp">
             <Chip active={!classKind} onClick={() => set('loai-lop', '')}>Tất cả</Chip>
@@ -267,8 +267,8 @@ export function CaseBoard({ embedded = false }: { embedded?: boolean } = {}) {
               <Chip active={!skill} onClick={() => set('ky-nang', '')}>Tất cả</Chip>
               {/*
                 KỸ NĂNG TRƯỚC, Ý THỨC SAU (mục 10.1). Chip dựng từ CHÍNH số đếm trả về chứ
-                không từ một danh sách viết cứng: lớp Normal có kỹ năng riêng (Writing,
-                Pronunciation) và nếu chỉ vẽ năm ô IELTS thì các số cộng lại không bằng tổng
+                không từ một danh sách viết cứng: lớp Normal có môn W riêng, không gộp vào W2
+                của Fast Track, nên nếu chỉ vẽ năm ô IELTS thì các số cộng lại không bằng tổng
                 — đúng thứ đang cố tránh.
               */}
               {topicKeys.map((k) => (

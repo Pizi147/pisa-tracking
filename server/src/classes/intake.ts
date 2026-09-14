@@ -1,5 +1,5 @@
 import { db, tx } from '../db.ts';
-import { MOCK_FT_STUDY_WEEK, PERMISSIONS, programmeOf, type Route } from '../../../shared/domain/index.ts';
+import { MOCK_FT_STUDY_WEEK, PERMISSIONS, PROGRAMME_TEMPLATES, programmeOf, type Route } from '../../../shared/domain/index.ts';
 import { activeRouteCodes } from '../platform/sysconfig.ts';
 import { addDays, badRequest, isIsoDate, normalizeName, notFound, nowIso, padCode } from '../util.ts';
 import { can, require_, type Principal } from '../permissions.ts';
@@ -360,6 +360,8 @@ export function createClass(p: Principal, input: {
   isFastTrack?: boolean; startDate?: string | null; skills?: string[]; note?: string | null;
   /** Tuần khai giảng — với lớp Normal đây là mốc gốc của hai kỳ kiểm tra. */
   startPeriodId?: number | null;
+  /** Lớp này học tiếp từ lớp nào — giữ sợi dây FOU → BE → FT. */
+  previousClassId?: number | null;
 }) {
   require_(p, PERMISSIONS.STUDENT_EDIT, { branchId: input.branchId }, 'Bạn không có quyền tạo lớp ở chi nhánh này.');
   const conn = db();
@@ -384,15 +386,21 @@ export function createClass(p: Principal, input: {
          * dựng ra bảng band IELTS cho một lớp Foundation — lỗi im lặng đã từng xảy ra.
          */
         `INSERT INTO classes (code, branch_id, kind, programme_code, route, is_fast_track,
-                              start_date, start_period_id, status, note, created_at)
-         VALUES (?,?,?,?,?,?,?,?, 'active', ?, ?)`,
+                              start_date, start_period_id, previous_class_id, status, note, created_at)
+         VALUES (?,?,?,?,?,?,?,?,?, 'active', ?, ?)`,
       )
       .run(code, input.branchId, (input.kind ?? 'FT').trim(),
            programmeOf(input.kind ?? 'FT'), input.route ?? null,
            input.isFastTrack ? 1 : 0, input.startDate ?? null, input.startPeriodId ?? null,
+           input.previousClassId ?? null,
            input.note ?? null, nowIso());
     const id = Number(info.lastInsertRowid);
-    for (const skill of input.skills?.length ? input.skills : ['listening', 'reading', 'writing1', 'writing2', 'speaking']) {
+    /* Không khai kỹ năng thì lấy ĐÚNG bộ môn của chương trình lớp đó, không mặc định bộ FT. */
+    const prog = programmeOf(input.kind ?? 'FT');
+    const fallback = prog && prog !== 'FT'
+      ? [...PROGRAMME_TEMPLATES[prog].skills]
+      : ['listening', 'reading', 'writing1', 'writing2', 'speaking'];
+    for (const skill of input.skills?.length ? input.skills : fallback) {
       conn.prepare('INSERT INTO class_skills (class_id, skill, sessions_per_week) VALUES (?,?,1)').run(id, skill);
     }
     writeAudit({ actorUserId: p.userId, action: 'class.create', entityType: 'class', entityId: id,

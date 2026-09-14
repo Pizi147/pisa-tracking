@@ -3,7 +3,7 @@ import {
   DISPOSITIONS, INTERVENTION_KINDS, INTERVENTION_KIND_LABEL, INTERVENTION_STATUSES,
   FOLLOWUP_OUTCOMES, BEHAVIOUR_TOPICS, CASE_DECISIONS, CASE_OUTCOMES, ENTRY_SKILLS,
   ISSUE_ROLES, PERMISSIONS, THREAD_TRACKS, URGENCY_LEVELS,
-  CASE_CATEGORIES, CASE_CATEGORY_SHORT, FOLLOWUP_OUTCOME_LABEL,
+  CASE_CATEGORY_SHORT, FOLLOWUP_OUTCOME_LABEL, caseCategoriesFor,
   CASE_OUTCOME_LABEL, caseCategoryLabel, caseDedupKey, caseHeadline, caseTitle, categoryOf,
   dueDaysFor, isProposalKind,
   issueBranchOf, issueLabel, threadTopicLabel, urgencyFromSos,
@@ -15,6 +15,7 @@ import { demoToday } from '../demoConfig.ts';
 import { addJourney, notify, writeAudit } from '../platform/audit.ts';
 import { currentCycle } from '../fasttrack/cycles.ts';
 import { expectationFor } from '../fasttrack/scoring.ts';
+import { isRatioCycle } from '../normal/regular.ts';
 
 /**
  * CASE HỌC VỤ — một vòng đời cho cả hai nguồn.
@@ -44,14 +45,16 @@ export function caseTitleOf(c: {
 }): string {
   const latest = db()
     .prepare(
-      `SELECT attempt_no FROM case_milestones
-        WHERE case_id = ? AND attempt_no IS NOT NULL
-        ORDER BY attempt_no DESC LIMIT 1`,
+      `SELECT m.attempt_no, a.kind FROM case_milestones m
+         LEFT JOIN assessment_attempts a ON a.id = m.attempt_id
+        WHERE m.case_id = ? AND m.attempt_no IS NOT NULL
+        ORDER BY m.attempt_no DESC LIMIT 1`,
     )
     .get(c.id) as any;
   return caseTitle({
     category: c.category ?? categoryOf(c.track ?? 'academic', c.topic),
     latestAttemptNo: latest?.attempt_no ?? null,
+    latestAttemptKind: latest?.kind ?? null,
     originKind: c.origin_kind,
     failedCount: c.sos_level ?? null,
   });
@@ -1241,6 +1244,7 @@ export function listCases(p: Principal, f: CaseFilters = {}) {
       title: caseTitle({
         category: r.category ?? categoryOf(r.track ?? 'academic', r.topic),
         latestAttemptNo: latestAttemptByCase.get(r.id) ?? r.attempt_no ?? null,
+        latestAttemptKind: r.attempt_kind ?? null,
         originKind: r.origin_kind,
         failedCount: r.sos_level,
       }),
@@ -1451,7 +1455,14 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
     )
     .all(cycle?.id ?? 0, studentId, cycle?.id ?? 0) as any[];
 
-  const rows = CASE_CATEGORIES.map((category) => {
+  /*
+   * BỘ HẠNG MỤC THEO ĐÚNG CHƯƠNG TRÌNH EM ĐANG HỌC.
+   *
+   * Em lớp Foundation không có Writing Task 1 và Task 2, nên bày hai dòng đó trên hồ sơ em
+   * là bày hai dòng vĩnh viễn trống. Em lớp Fast Track thì ngược lại: một dòng "W" gộp mất
+   * mất phân biệt giữa hai bài do hai giáo viên khác nhau chấm.
+   */
+  const rows = caseCategoriesFor(isRatioCycle(cycle) ? 'ratio' : 'ielts_band').map((category) => {
     const points = byCategory.get(category) ?? [];
     const latest = points[points.length - 1] ?? null;
     const prev = points.length > 1 ? points[points.length - 2] : null;

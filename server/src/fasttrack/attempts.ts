@@ -335,6 +335,12 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
     const active = cells.filter((c) => c.required);
     return {
       id: a.id,
+      /*
+       * LOẠI BÀI phải đi kèm mọi dòng, để giao diện mở ĐÚNG màn.
+       * Bài giữa/cuối khoá của lớp Normal mà mở bằng màn Mock Test thì nó hiện ra "MT1" —
+       * đúng lỗi owner báo ở mục 6.3.
+       */
+      kind: a.kind,
       studentId: a.student_id,
       studentName: a.full_name,
       studentCode: a.student_code,
@@ -428,6 +434,8 @@ export function attemptDetail(p: Principal, attemptId: number) {
 
   return {
     id: a.id,
+    /** Loại bài. Màn này CHỈ dựng cho `mock`; loại khác phải chuyển sang màn của lớp Normal. */
+    kind: a.kind,
     student: { id: a.student_id, name: a.full_name, code: a.student_code },
     cycle: { id: a.cycle_id, seq: a.cycle_seq, route: a.route, target: a.target_score, examPlan: examPlanOf(a) },
     classId: a.class_id, classCode: a.class_code, branchId: a.branch_id, branchName: a.branch_name,
@@ -828,3 +836,17 @@ export function classScoreSheet(p: Principal, classId: number, periodId: number 
 }
 
 export { notify };
+
+/**
+ * ĐƯỜNG DẪN TỚI ĐIỂM CỦA MỘT LƯỢT — chọn ĐÚNG MÀN theo loại bài.
+ *
+ * Bài `mock` về màn Mock Test; bài giữa/cuối khoá của lớp Normal về bảng điểm của lớp đó.
+ * Mở nhầm màn là đọc sai cả kết quả: màn Mock Test gọi mọi lượt là "MT{n}" và chấm theo
+ * band, cả hai đều sai với một bài Progress Test.
+ *
+ * Máy chủ dựng sẵn đường dẫn cho mọi danh sách việc, để không màn nào phải tự ghép lấy.
+ */
+export function attemptHref(a: { id: number; kind?: string | null; classId?: number | null }): string {
+  if (!a.kind || a.kind === 'mock') return `/mock-test/${a.id}`;
+  return a.classId ? `/bang-diem-thuong/${a.classId}?kind=${a.kind}` : `/mock-test/${a.id}`;
+}

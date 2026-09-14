@@ -11,8 +11,9 @@ import { MissingBadge } from './MissingBadge.tsx';
 import { StudentPlanPanel } from './StudentPlanPanel.tsx';
 import { QuickReport } from '../cases/QuickReport.tsx';
 import {
+  attemptHref,
   attemptStatusLabel, attemptStatusTone, caseStatusLabel, caseStatusTone,
-  fmtBand, fmtDate, fmtSlot, skillLabel, sosLabel, sosTone, studentStatusLabel,
+  fmtBand, fmtDate, skillLabel, sosLabel, sosTone, studentStatusLabel,
 } from '../../lib/format.ts';
 import {
   BASELINE_SOURCES, BASELINE_SOURCE_LABEL, CYCLE_OUTCOMES, CYCLE_OUTCOME_LABEL,
@@ -224,8 +225,8 @@ export default function StudentDetailPage() {
               <>
                 {data.attempts.length === 0 ? (
                   <div className="p-4"><Empty title="Chưa có lượt đánh giá nào trong lộ trình này" /></div>
-                ) : cy.ratio ? <RatioAttempts attempts={data.attempts} onOpen={(a) => navigate(`/mock-test/${a}`)} />
-                  : <IeltsAttempts attempts={data.attempts} onOpen={(a) => navigate(`/mock-test/${a}`)} />}
+                ) : cy.ratio ? <RatioAttempts attempts={data.attempts} onOpen={(a) => navigate(attemptHref(a))} />
+                  : <IeltsAttempts attempts={data.attempts} onOpen={(a) => navigate(attemptHref(a))} />}
                 <div className="p-3">
                   <SectionNote>
                     Lớp ghi ở đây là lớp TẠI LÚC ĐÁNH GIÁ — chuyển lớp không viết lại lịch sử này.
@@ -357,7 +358,7 @@ function CheckpointView({ cp }: { cp: any }) {
   );
 }
 
-function IeltsAttempts({ attempts, onOpen }: { attempts: any[]; onOpen: (id: number) => void }) {
+function IeltsAttempts({ attempts, onOpen }: { attempts: any[]; onOpen: (a: any) => void }) {
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
@@ -375,7 +376,7 @@ function IeltsAttempts({ attempts, onOpen }: { attempts: any[]; onOpen: (id: num
         </thead>
         <tbody>
           {attempts.map((a) => (
-            <tr key={a.id} className="row-hover cursor-pointer" onClick={() => onOpen(a.id)}>
+            <tr key={a.id} className="row-hover cursor-pointer" onClick={() => onOpen(a)}>
               <td className="td tabular-nums">MT{a.attemptNo}</td>
               <td className="td text-slate-300">{a.classCode ?? '—'}</td>
               <td className="td whitespace-nowrap">
@@ -403,8 +404,11 @@ function IeltsAttempts({ attempts, onOpen }: { attempts: any[]; onOpen: (id: num
   );
 }
 
-/** Lớp thường chấm theo TỶ LỆ SỐ CÂU ĐÚNG — không có band, không có Overall, không có kỳ vọng IELTS. */
-function RatioAttempts({ attempts, onOpen }: { attempts: any[]; onOpen: (id: number) => void }) {
+/**
+ * Lớp Normal chấm theo ĐIỂM ĐẠT / TỔNG ĐIỂM — không có band, không có Overall, không có
+ * kỳ vọng IELTS. Bấm một dòng ở đây mở BẢNG ĐIỂM LỚP NORMAL, không phải màn Mock Test.
+ */
+function RatioAttempts({ attempts, onOpen }: { attempts: any[]; onOpen: (a: any) => void }) {
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
@@ -419,7 +423,7 @@ function RatioAttempts({ attempts, onOpen }: { attempts: any[]; onOpen: (id: num
         </thead>
         <tbody>
           {attempts.map((a) => (
-            <tr key={a.id} className="row-hover cursor-pointer" onClick={() => onOpen(a.id)}>
+            <tr key={a.id} className="row-hover cursor-pointer" onClick={() => onOpen(a)}>
               <td className="td whitespace-nowrap">{a.kind === 'final' ? 'Cuối khoá' : 'Giữa khoá'}</td>
               <td className="td text-slate-300">{a.classCode ?? '—'}</td>
               <td className="td whitespace-nowrap">

@@ -229,8 +229,8 @@ export function runSeed() {
       const missing = new Set(gap.skills ?? []);
       const taught = skills.filter((sk) => !missing.has(sk));
 
-      // Phân công theo ĐÚNG kỹ năng của chương trình lớp đó: lớp Foundation có
-      // Pronunciation chứ không có Writing task 1/2, nên không giao những ô không tồn tại.
+      // Phân công theo ĐÚNG kỹ năng của chương trình lớp đó: lớp Normal có bốn môn L/R/W/S,
+      // không có Writing task 1/2, nên không giao những ô không tồn tại.
       taught.forEach((skill, i) => assign(pick(1 + (i % 4)), skill, false));
 
       /*
@@ -1157,8 +1157,12 @@ function seedRegularClasses(conn: any, ctx: {
     [0.40, 0.45, 0.50, 0.55],   // trượt 3 môn  -> SOS 3
     [0.75, 0.65, null, null],   // mới nhập một nửa -> chưa kết luận
   ];
+  /*
+   * TỔNG ĐIỂM khác nhau giữa các môn — đúng như ngoài đời, và cũng là lý do ô nhập bắt gõ
+   * CẢ tổng: L/R chấm trên 40, W trên 20, S trên 25.
+   */
   const TOTALS: Record<string, number> = {
-    listening: 40, reading: 40, writing: 20, pronunciation: 25, speaking: 25,
+    listening: 40, reading: 40, writing: 20, speaking: 25,
   };
 
   for (const cls of CLASSES) {
@@ -1228,7 +1232,7 @@ function seedRegularClasses(conn: any, ctx: {
             const level = failed >= 3 ? 3 : failed;
             /*
              * MỘT VẤN ĐỀ CHO MỖI KỸ NĂNG, kỹ năng của chính chương trình lớp đó
-             * (Prep-Writing, Pronunciation…), không ép về bộ năm ô IELTS.
+             * (môn W của Normal), không ép về bộ năm ô IELTS.
              */
             for (const skill of failingSkills) {
               conn

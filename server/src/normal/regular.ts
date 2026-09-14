@@ -2,8 +2,8 @@ import { db, tx } from '../db.ts';
 import { addMilestone, ensureBehaviourCase, upsertCategoryCase } from '../cases/sos.ts';
 import {
   ATTEMPT_KIND_LABEL, PERMISSIONS, RATIO_PASS_THRESHOLD, REGULAR_SKILL_LABEL,
-  categoryOf, ratioResult, sosFromFailCount,
-  type AttemptKind, type RatioOutcome, type SosLevel,
+  caseCategoriesFor, categoryOf, ratioResult, sosFromFailCount,
+  type AttemptKind, type CaseCategory, type RatioOutcome, type SosLevel,
 } from '../../../shared/domain/index.ts';
 import { addDays, badRequest, isIsoDate, notFound, nowIso } from '../util.ts';
 import { can, editableSkills, require_, scoreEditPath, type Principal } from '../permissions.ts';
@@ -18,11 +18,11 @@ import { weekStartOf } from '../fasttrack/attempts.ts';
  * Dùng CHUNG bảng dữ liệu và CHUNG hệ thống case SOS với lớp FT — cùng `assessment_attempts`,
  * `assessment_scores`, `sos_cases`. Chỉ khác ba thứ:
  *
- *   1. CÁCH CHẤM: nhập `số câu đúng / tổng số câu`, đạt từ 60% trở lên. Không quy ra band
+ *   1. CÁCH CHẤM: nhập `điểm đạt / tổng điểm`, đạt từ 60% trở lên. Không quy ra band
  *      IELTS, không có kỳ vọng theo target, không có Overall.
  *   2. MỐC KIỂM TRA: theo TUẦN HỌC của lớp (FOU tuần 4 và 8; BE/ELE tuần 5 và 10),
  *      không phải theo lịch MT của FT.
- *   3. KỸ NĂNG: theo chương trình, ví dụ Foundation có Pronunciation thay cho Speaking.
+ *   3. KỸ NĂNG: bốn môn L/R/W/S, giống nhau ở mọi chương trình Normal.
  *
  * Ngưỡng SOS giữ nguyên: 1 môn trượt → SOS 1, 2 môn → SOS 2, từ 3 môn → SOS 3.
  */
@@ -67,10 +67,47 @@ export function programmeOfClass(classId: number): ProgrammeInfo | null {
   return programmeByCode(c?.programme_code);
 }
 
-/** Lớp này có chấm theo tỷ lệ số câu đúng không (tức là lớp thường). */
+/** Lớp này có chấm theo tỷ lệ điểm đạt/tổng điểm không (tức là lớp Normal). */
 export function isRatioClass(classId: number | null | undefined): boolean {
   if (!classId) return false;
   return programmeOfClass(classId)?.scoringMode === 'ratio';
+}
+
+/**
+ * Mã chương trình của một lộ trình, suy từ lớp của các bài kiểm tra trong lộ trình đó.
+ * Dùng khi bản thân lộ trình chưa ghi mã chương trình (dữ liệu cũ).
+ */
+export function programmeCodeOfCycle(cycleId: number | null | undefined): string | null {
+  if (!cycleId) return null;
+  const row = db()
+    .prepare(
+      `SELECT c.programme_code AS code FROM assessment_attempts a
+         JOIN classes c ON c.id = a.class_id
+        WHERE a.cycle_id = ? AND c.programme_code IS NOT NULL LIMIT 1`,
+    )
+    .get(cycleId) as any;
+  return row?.code ?? null;
+}
+
+/**
+ * Lộ trình này chấm theo TỶ LỆ (lớp Normal) hay theo BAND (Fast Track).
+ *
+ * Ưu tiên mã chương trình ghi trên chính lộ trình. Dữ liệu cũ có thể thiếu mã đó, nên còn
+ * một đường tra dự phòng: lớp của các bài kiểm tra trong lộ trình. Không có căn cứ nào thì
+ * coi là lớp band — đó là mặc định của trung tâm.
+ *
+ * Đây là chỗ DUY NHẤT trả lời câu hỏi này. Trước vòng 5 nó bị chép ở hai file, và hai bản
+ * chép là hai chỗ để sau này lệch nhau.
+ */
+export function isRatioCycle(c: { id?: number | null; route?: string | null; programme_code?: string | null } | null | undefined): boolean {
+  if (!c || c.route) return false;
+  if (c.programme_code) return programmeByCode(c.programme_code)?.scoringMode === 'ratio';
+  return programmeByCode(programmeCodeOfCycle(c.id))?.scoringMode === 'ratio';
+}
+
+/** Bộ hạng mục case đúng với chương trình của lộ trình này. */
+export function caseCategoriesOfCycle(c: any): readonly CaseCategory[] {
+  return caseCategoriesFor(isRatioCycle(c) ? 'ratio' : 'ielts_band');
 }
 
 // ---------------------------------------------------------------- kết luận
@@ -125,12 +162,27 @@ export function evaluateRegular(skills: string[], rows: { skill: string; raw_sco
   const scored = results.filter((r) => r.outcome !== 'missing').length;
   const complete = skills.length > 0 && scored === skills.length;
   const failedCount = scored > 0 ? results.filter((r) => r.outcome === 'fail').length : null;
+
+  /*
+   * KẾT LUẬN TẠM THỜI CHỈ ĐƯỢC ĐI LÊN, KHÔNG ĐƯỢC ĐI XUỐNG "ĐẠT".
+   *
+   * Một môn dưới ngưỡng là kết luận được NGAY — nhập nốt ba môn kia cũng không làm môn đó
+   * đạt lại, nên mở case luôn để người dạy bắt tay vào sớm.
+   *
+   * Nhưng ba môn đạt mà môn thứ tư chưa nhập thì KHÔNG kết luận được gì: môn còn thiếu có
+   * thể chính là môn em trượt. Ghi "Đạt kỳ vọng" lúc đó là báo an toàn giả, và người đọc
+   * bảng sẽ bỏ qua em ấy — đúng lỗi owner nêu ở mục 6.3.
+   */
+  const sosLevel = failedCount === null ? null
+    : failedCount === 0 && !complete ? null
+    : sosFromFailCount(failedCount);
+
   return {
     skills: results,
     scored, required: skills.length, complete,
     provisional: scored > 0 && !complete,
     failedCount,
-    sosLevel: failedCount === null ? null : sosFromFailCount(failedCount),
+    sosLevel,
     passThreshold: RATIO_PASS_THRESHOLD,
   };
 }
@@ -303,12 +355,12 @@ export function saveRegularScore(
 
   // Kiểm tra ở đây chứ không chỉ ở giao diện: gửi thẳng request vẫn phải bị chặn.
   if (total !== null && total !== undefined) {
-    if (!Number.isInteger(total) || total <= 0) throw badRequest('Tổng số câu phải là số nguyên lớn hơn 0.');
+    if (!Number.isInteger(total) || total <= 0) throw badRequest('Tổng điểm phải là số nguyên lớn hơn 0.');
   }
   if (score !== null && score !== undefined) {
-    if (!Number.isInteger(score) || score < 0) throw badRequest('Số câu đúng phải là số nguyên không âm.');
-    if (total === null || total === undefined) throw badRequest('Nhập số câu đúng thì phải nhập cả tổng số câu.');
-    if (score > total) throw badRequest(`Số câu đúng (${score}) không thể lớn hơn tổng số câu (${total}).`);
+    if (!Number.isInteger(score) || score < 0) throw badRequest('Điểm đạt phải là số nguyên không âm.');
+    if (total === null || total === undefined) throw badRequest('Nhập điểm đạt thì phải nhập cả tổng điểm.');
+    if (score > total) throw badRequest(`Điểm đạt (${score}) không thể lớn hơn tổng điểm (${total}).`);
   }
 
   return tx(() => {
@@ -407,9 +459,8 @@ export function refreshRegularOutcome(p: Principal, attemptId: number) {
   /*
    * MỘT CASE CHO MỖI HẠNG MỤC, SỐNG SUỐT KHOÁ — dùng chung hệt lớp FT.
    *
-   * Kỹ năng riêng của lớp Normal quy về đúng sáu hạng mục chung (Pronunciation → Speaking,
-   * W → Writing 2) để mọi bảng tổng hợp dùng một bộ cột. `topic` vẫn giữ NGUYÊN tên kỹ năng
-   * thật của chương trình, nên màn hình của lớp đó vẫn gọi đúng tên môn em học.
+   * Bốn môn của lớp Normal ứng thẳng với bốn hạng mục CÙNG TÊN: L · R · W · S. Không gộp
+   * W vào W2 của Fast Track — hai môn khác nhau, chấm theo hai cách khác nhau.
    *
    * Progress Test rồi Final Test cùng trượt một môn thì đó là MỘT case với hai mốc, không
    * phải hai case rời — giống hệt MT1/MT2 của lớp FT.
@@ -442,7 +493,7 @@ export function refreshRegularOutcome(p: Principal, attemptId: number) {
 
 /**
  * Bảng nhập điểm của một lớp thường: mỗi dòng một học viên, mỗi kỹ năng hai ô
- * (số câu đúng và tổng số câu).
+ * (điểm đạt và tổng điểm).
  *
  * Cho phép đặt TỔNG SỐ CÂU CHUNG cho cả lớp rồi sửa lại ở dòng có đề khác — cả lớp thường
  * làm cùng một đề, gõ lại "40" bốn mươi lần là bắt làm một việc máy đã biết.

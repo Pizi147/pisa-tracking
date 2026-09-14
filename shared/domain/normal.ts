@@ -6,7 +6,7 @@ import { ENTRY_SKILLS } from './skills.ts';
 
 /**
  * Chương trình học. FT dùng Mock Test và band IELTS; lớp thường (FOU/BE/ELE) dùng
- * bài kiểm tra chấm theo `số câu đúng / tổng số câu`, KHÔNG đi qua bảng quy đổi IELTS.
+ * bài kiểm tra chấm theo `điểm đạt / tổng điểm`, KHÔNG đi qua bảng quy đổi IELTS.
  *
  * `FOU` là mã canonical của Foundation. `FOUND` là mã đã từng dùng — chỉ ánh xạ khi
  * đọc dữ liệu cũ, KHÔNG tự đổi mã lớp lịch sử.
@@ -20,10 +20,16 @@ export const SCORING_MODES = ['ielts_band', 'ratio'] as const;
 export type ScoringMode = (typeof SCORING_MODES)[number];
 export const SCORING_MODE_LABEL: Record<ScoringMode, string> = {
   ielts_band: 'Band IELTS (Mock Test)',
-  ratio: 'Số câu đúng / tổng số câu',
+  ratio: 'Điểm đạt / Tổng điểm',
 };
 
-/** Ngưỡng đạt của cách chấm theo tỷ lệ. Xét trên tỷ lệ CHÍNH XÁC, không làm tròn % rồi mới xét. */
+/**
+ * Ngưỡng đạt của cách chấm theo tỷ lệ. Xét trên tỷ lệ CHÍNH XÁC, không làm tròn % rồi mới xét.
+ *
+ * Gọi là "điểm đạt / tổng điểm" chứ không phải "số câu đúng / tổng số câu": Writing và
+ * Speaking của lớp Normal chấm theo thang điểm, không đếm câu. Một cái tên chỉ đúng với
+ * Listening và Reading thì hai môn kia phải gõ vào một ô mang tên sai.
+ */
 export const RATIO_PASS_THRESHOLD = 0.6;
 
 /**
@@ -40,23 +46,28 @@ export const ATTEMPT_KIND_SHORT: Record<AttemptKind, string> = {
 };
 
 /**
- * Kỹ năng riêng của lớp Normal, không nằm trong bộ bốn kỹ năng IELTS.
+ * BỐN MÔN CỦA LỚP NORMAL, GIỐNG NHAU Ở MỌI CHƯƠNG TRÌNH: L · R · W · S.
  *
- * TÊN "Prep-Writing" ĐÃ BỎ Ở VÒNG 4 — gọi là **W** (`writing`), owner chốt 13/09/2026.
- * Cái tên cũ gợi ý đây là môn "chuẩn bị cho Writing", trong khi thực tế các em đang viết
- * đoạn và viết bài thật. Mã cũ `prep_writing` chỉ còn trong dữ liệu chưa di trú và trong
- * bảng ánh xạ ở `LEGACY_REGULAR_SKILL_MAP`.
+ * Hai cái tên riêng đã bỏ hẳn từ vòng 5:
+ *
+ *   `pronunciation` — Foundation trước đây có Pronunciation thay cho Speaking. Hai môn đó
+ *                     đo cùng một thứ ở hai cái tên, nên mọi bảng tổng hợp phải cộng hai
+ *                     cột lại mới trả lời được "cả trung tâm yếu nói đến đâu".
+ *   `prep_writing`  — đã đổi thành `writing` ở vòng 4.
+ *
+ * Cả hai chỉ còn trong `LEGACY_REGULAR_SKILL_MAP` để dữ liệu cũ đọc ra đúng môn, KHÔNG
+ * còn là môn để phân công hay để nhập điểm.
  */
-export const REGULAR_SKILLS = ['listening', 'reading', 'writing', 'pronunciation', 'speaking'] as const;
+export const REGULAR_SKILLS = ['listening', 'reading', 'writing', 'speaking'] as const;
 export type RegularSkill = (typeof REGULAR_SKILLS)[number];
 export const REGULAR_SKILL_LABEL: Record<RegularSkill, string> = {
-  listening: 'Listening', reading: 'Reading', writing: 'W',
-  pronunciation: 'Pronunciation', speaking: 'Speaking',
+  listening: 'Listening', reading: 'Reading', writing: 'Writing', speaking: 'Speaking',
 };
 
 /** Mã kỹ năng cũ → mã mới. Dữ liệu chưa di trú vẫn đọc đúng tên môn. */
 export const LEGACY_REGULAR_SKILL_MAP: Record<string, RegularSkill> = {
   prep_writing: 'writing',
+  pronunciation: 'speaking',
 };
 
 /**
@@ -66,8 +77,9 @@ export const LEGACY_REGULAR_SKILL_MAP: Record<string, RegularSkill> = {
  */
 export const SKILL_SHORT: Record<string, string> = {
   listening: 'L', reading: 'R', writing1: 'W1', writing2: 'W2', speaking: 'S',
-  writing: 'W', pronunciation: 'Pron',
-  prep_writing: 'W',   // mã cũ, giữ để dữ liệu chưa di trú không hiện mã thô
+  writing: 'W',
+  // Hai mã CŨ, chỉ để dữ liệu chưa di trú không hiện mã thô trên giao diện.
+  prep_writing: 'W', pronunciation: 'S',
 };
 export const skillShort = (k: string) => SKILL_SHORT[k] ?? k;
 
@@ -93,17 +105,17 @@ export const PROGRAMME_TEMPLATES: Record<ProgrammeCode, ProgrammeTemplate> = {
   },
   FOU: {
     code: 'FOU', name: 'Foundation', weeks: 8, scoringMode: 'ratio',
-    skills: ['listening', 'reading', 'writing', 'pronunciation'],
+    skills: REGULAR_SKILLS,
     checkpoints: [{ kind: 'progress', studyWeek: 4 }, { kind: 'final', studyWeek: 8 }],
   },
   BE: {
     code: 'BE', name: 'Beginner', weeks: 10, scoringMode: 'ratio',
-    skills: ['listening', 'reading', 'writing', 'speaking'],
+    skills: REGULAR_SKILLS,
     checkpoints: [{ kind: 'progress', studyWeek: 5 }, { kind: 'final', studyWeek: 10 }],
   },
   ELE: {
     code: 'ELE', name: 'Elementary', weeks: 10, scoringMode: 'ratio',
-    skills: ['listening', 'reading', 'writing', 'speaking'],
+    skills: REGULAR_SKILLS,
     checkpoints: [{ kind: 'progress', studyWeek: 5 }, { kind: 'final', studyWeek: 10 }],
   },
 };

@@ -86,6 +86,11 @@ export function Header() {
                 onClick={async () => {
                   await api.post(`/notifications/${n.id}/read`);
                   notifications.reload();
+                  /*
+                    Thông báo chỉ lưu id của lượt, không lưu loại bài. Đi qua màn Mock Test
+                    là đủ: màn đó tự chuyển tiếp sang bảng điểm lớp Normal khi bài không
+                    phải Mock Test.
+                  */
                   if (n.entity_type === 'mock_attempt') navigate(`/mock-test/${n.entity_id}`);
                   setOpenMenu(null);
                 }}

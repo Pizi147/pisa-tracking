@@ -6,7 +6,7 @@ import { Card, Empty, ErrorState, Pill, SectionNote, Skeleton, Th } from '../../
 type Row = {
   periodId: number; code: string; month: string; weekLabel: string; range: string;
   weekStart: string; weekEnd: string; isCurrent: boolean;
-  attempts: number; onTarget: number; sos1: number; sos2: number; sos3: number;
+  attempts: number; onTarget: number; sos1: number; sos2: number; sos3: number; pending: number;
   cases: number; withSupport: number; untouched: number; pendingApproval: number;
   scoreLagDays: number | null;
 };
@@ -31,6 +31,11 @@ const COLS: { key: keyof Row; label: string; hint: string; tone?: 'ok' | 'info' 
   { key: 'sos1', label: 'SOS 1', hint: 'Lượt có đúng một kỹ năng dưới kỳ vọng.', tone: 'info' },
   { key: 'sos2', label: 'SOS 2', hint: 'Lượt có hai kỹ năng dưới kỳ vọng.', tone: 'warn' },
   { key: 'sos3', label: 'SOS 3', hint: 'Lượt có từ ba kỹ năng dưới kỳ vọng.', tone: 'danger' },
+  {
+    key: 'pending', label: 'Chưa đủ điểm',
+    hint: 'Đã chấm một phần, các môn đã chấm đều đạt nhưng còn môn chưa nhập — chưa kết luận được. '
+      + 'Không dồn vào cột Đạt: môn còn thiếu có thể chính là môn em trượt.',
+  },
   { key: 'cases', label: 'Case', hint: 'Case mở từ các lượt MT của tuần đó.' },
   { key: 'withSupport', label: 'Đang xử lý', hint: 'Case đã có ít nhất một việc hỗ trợ thực sự diễn ra.' },
   { key: 'untouched', label: 'Thiếu phương án', hint: 'Case chưa ai ghi sẽ làm gì.', tone: 'danger' },

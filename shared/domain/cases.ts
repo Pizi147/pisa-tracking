@@ -65,39 +65,61 @@ export function threadTopicsOf(track: ThreadTrack): readonly string[] {
  * sống song song chỉ làm bảng dài ra mà không đổi việc phải làm.
  */
 export const CASE_CATEGORIES = [
-  'listening', 'reading', 'writing1', 'writing2', 'speaking', 'behaviour',
+  'listening', 'reading', 'writing1', 'writing2', 'writing', 'speaking', 'behaviour',
 ] as const;
 export type CaseCategory = (typeof CASE_CATEGORIES)[number];
 
 export const CASE_CATEGORY_LABEL: Record<CaseCategory, string> = {
   listening: 'Listening',
   reading: 'Reading',
-  writing1: 'Writing 1',
-  writing2: 'Writing 2',
+  writing1: 'Writing Task 1',
+  writing2: 'Writing Task 2',
+  writing: 'Writing',
   speaking: 'Speaking',
   behaviour: 'Ý thức/Khác',
 };
 export const CASE_CATEGORY_SHORT: Record<CaseCategory, string> = {
-  listening: 'L', reading: 'R', writing1: 'W1', writing2: 'W2', speaking: 'S',
+  listening: 'L', reading: 'R', writing1: 'W1', writing2: 'W2', writing: 'W', speaking: 'S',
   behaviour: 'Ý thức',
 };
 
 /**
- * Lớp Normal quy về CÙNG sáu hạng mục, để mọi bảng tổng hợp dùng chung một bộ cột.
+ * HẠNG MỤC HIỆN RA TUỲ CHƯƠNG TRÌNH EM ĐANG HỌC.
  *
- *   Pronunciation (lớp FOU)  → Speaking
- *   W của lớp Normal         → Writing 2
+ * Fast Track chấm Writing thành hai bài riêng (Task 1 và Task 2, hai giáo viên khác nhau),
+ * còn lớp Normal chỉ có MỘT môn Writing. Bày cả W1 lẫn W2 trên hồ sơ một em lớp Foundation
+ * là bày hai dòng vĩnh viễn trống; bày một dòng W cho em lớp FT thì mất mất một nửa thông tin.
+ * Nên mỗi bên thấy đúng bộ của mình.
+ */
+export const FT_CASE_CATEGORIES = [
+  'listening', 'reading', 'writing1', 'writing2', 'speaking', 'behaviour',
+] as const;
+export const NORMAL_CASE_CATEGORIES = [
+  'listening', 'reading', 'writing', 'speaking', 'behaviour',
+] as const;
+
+/** `ratio` = lớp Normal. Không rõ chương trình thì lấy bộ của Fast Track. */
+export function caseCategoriesFor(scoringMode: string | null | undefined): readonly CaseCategory[] {
+  return scoringMode === 'ratio' ? NORMAL_CASE_CATEGORIES : FT_CASE_CATEGORIES;
+}
+
+/**
+ * Môn của lớp Normal → hạng mục case.
  *
- * Quy tắc thứ hai là chữ của owner: Writing ở trình độ Normal là viết đoạn/bài, gần Task 2
- * hơn Task 1. Đây là ánh xạ ĐỂ GOM BÁO CÁO, không đổi cách chấm của lớp Normal.
+ * W CỦA NORMAL LÀ HẠNG MỤC RIÊNG, KHÔNG PHẢI W2 CỦA FAST TRACK. Vòng 4 từng gộp chúng để
+ * bảng tổng hợp bớt một cột; owner bác bỏ ở vòng 5. Hai môn khác nhau: W2 là bài luận IELTS
+ * chấm theo bốn tiêu chí band, W là bài viết của lớp Normal chấm theo điểm đạt/tổng điểm.
+ * Cộng chúng vào một cột thì con số ấy không trả lời được câu hỏi nào.
+ *
+ * Hai mã dưới cùng là mã CŨ, chỉ để đọc dữ liệu chưa di trú.
  */
 const REGULAR_TO_CATEGORY: Record<string, CaseCategory> = {
   listening: 'listening',
   reading: 'reading',
-  writing: 'writing2',
-  prep_writing: 'writing2',   // tên cũ, còn trong dữ liệu chưa di trú
-  pronunciation: 'speaking',
+  writing: 'writing',
   speaking: 'speaking',
+  prep_writing: 'writing',
+  pronunciation: 'speaking',
 };
 
 /** Đưa một chủ đề bất kỳ (kỹ năng FT, kỹ năng lớp Normal, nhóm ý thức) về đúng một hạng mục. */
@@ -166,15 +188,26 @@ export const MILESTONE_KIND_LABEL: Record<MilestoneKind, string> = {
  * TÊN CASE TỰ SINH, cập nhật theo MỐC MỚI NHẤT.
  *
  * Suy lúc hiển thị chứ không ghi vào database: sửa điểm thì tên đổi theo, không để lại một
- * cái tên cũ nói sai sự thật. Tiền tố MT{n} là cách nhận ra case sinh từ điểm; case do giáo
- * viên tự báo không có tiền tố.
+ * cái tên cũ nói sai sự thật. Tiền tố (MT{n} với Fast Track, "Giữa khoá"/"Cuối khoá" với
+ * lớp Normal) là cách nhận ra case sinh từ điểm; case do giáo viên tự báo không có tiền tố.
  */
 export function caseTitle(c: {
   category: string | null; latestAttemptNo?: number | null;
+  /** `mock` | `progress` | `final`. Lớp Normal KHÔNG được gọi bài của mình là "MT". */
+  latestAttemptKind?: string | null;
   originKind?: string | null; failedCount?: number | null;
 }): string {
   const label = caseCategoryLabel(c.category);
-  const prefix = c.latestAttemptNo ? `MT${c.latestAttemptNo} - ` : '';
+  /*
+   * TIỀN TỐ GỌI ĐÚNG TÊN BÀI. Trước vòng 5 mọi case đều mang tiền tố "MT{n}", kể cả case
+   * sinh từ một bài Progress Test của lớp Foundation — người đọc thấy "MT1" ở một lớp
+   * không hề có Mock Test nào.
+   */
+  const kind = c.latestAttemptKind ?? 'mock';
+  const prefix = !c.latestAttemptNo ? ''
+    : kind === 'final' ? 'Cuối khoá - '
+    : kind === 'progress' ? 'Giữa khoá - '
+    : `MT${c.latestAttemptNo} - `;
   if (c.category === 'behaviour' && c.originKind === 'mock') {
     /*
      * CASE Ý THỨC SINH SAU MỘT ĐỢT MT CÓ SOS — việc của nó là hai lần trao đổi bắt buộc.

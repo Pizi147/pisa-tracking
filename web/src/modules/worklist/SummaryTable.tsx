@@ -231,8 +231,9 @@ export function SummaryTable({ branchId, onPickBranch }: {
         <span className="tabular-nums text-amber-200">/5</span> nghĩa là{' '}
         <strong>12 case, trong đó 5 chưa có phương án hỗ trợ</strong>. Mức SOS đếm{' '}
         <strong>học viên</strong> (một em SOS 2 vẫn là một em); các cột kỹ năng đếm{' '}
-        <strong>case</strong> — nên hai cụm không cộng vào nhau được. Case Pronunciation của lớp
-        Foundation gộp vào cột <strong>S</strong>, case Writing của lớp Normal gộp vào <strong>W2</strong>.
+        <strong>case</strong> — nên hai cụm không cộng vào nhau được. Môn <strong>W</strong> của lớp
+        Normal có cột riêng, KHÔNG gộp vào <strong>W2</strong> của Fast Track: hai môn đó chấm theo
+        hai cách khác nhau. Ô trống ở cột không thuộc loại lớp đó là đúng.
       </p>
     </Card>
   );

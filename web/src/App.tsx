@@ -113,7 +113,7 @@ export default function App() {
           <Route path="/hoc-thuat" element={<AcademicPage />} />
           <Route path="/hoc-thuat/case/:id" element={<CaseRoutePage />} />
           <Route path="/nhap-diem/:classId" element={<ScoreSheetPage />} />
-          {/* Lớp thường chấm theo số câu đúng nên có bảng điểm riêng, không dùng bảng band IELTS. */}
+          {/* Lớp Normal chấm theo điểm đạt/tổng điểm nên có bảng điểm riêng, không dùng bảng band IELTS. */}
           <Route path="/bang-diem-thuong/:classId" element={<RegularSheetPage />} />
           {/* Tổng hợp theo tuần cho Quản lý — thay cho sheet cùng tên trong workbook. */}
           <Route path="/tong-hop-tuan" element={<WeeklyRollupPage />} />

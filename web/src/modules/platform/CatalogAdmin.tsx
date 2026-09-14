@@ -246,7 +246,7 @@ function ProgrammeDialog({ row, onClose, onDone }: {
               <button key={m} type="button" disabled={locked}
                 className={`btn btn-sm ${f.scoringMode === m ? 'btn-primary' : ''} ${locked ? 'opacity-60' : ''}`}
                 onClick={() => setF({ ...f, scoringMode: m })}>
-                {m === 'ratio' ? 'Số câu đúng / tổng' : 'Band IELTS'}
+                {m === 'ratio' ? 'Điểm đạt / Tổng điểm' : 'Band IELTS'}
               </button>
             ))}
           </div>

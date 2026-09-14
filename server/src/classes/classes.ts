@@ -185,7 +185,7 @@ export function listClassSummaries(p: Principal, f: { branchId?: number; q?: str
     id: c.id, code: c.code, kind: c.kind, route: c.route,
     programmeCode: c.programme_code ?? null,
     programmeName: c.programme_name ?? null,
-    /** Lớp thường chấm theo số câu đúng; lớp FT chấm theo band IELTS. */
+    /** Lớp Normal chấm theo điểm đạt/tổng điểm; lớp Fast Track chấm theo band IELTS. */
     scoringMode: c.scoring_mode ?? null,
     branchId: c.branch_id, branchCode: c.branch_code, branchName: c.branch_name,
     startDate: c.start_date,
@@ -309,7 +309,7 @@ export function classRoster(p: Principal, classId: number, q?: string) {
       if (isRatio) {
         /*
          * Bài kiểm tra lớp thường: không có band, không có Overall, không có kỳ vọng theo
-         * target. Chỉ có đạt/trượt theo tỷ lệ số câu đúng, và số môn trượt ra mức SOS.
+         * target. Chỉ có đạt/trượt theo tỷ lệ điểm đạt/tổng điểm, và số môn trượt ra mức SOS.
          */
         const r = evaluateRegular(prog!.skills, scores);
         const dueForEntry = !!a.period_start && a.period_start <= today;

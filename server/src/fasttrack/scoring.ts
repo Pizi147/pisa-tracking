@@ -197,6 +197,15 @@ export function evaluateAttempt(
   const hasAnyScore = scoredRequired > 0;
   const canConclude = hasAnyScore && expectation !== null;
   const failedCount = canConclude ? verdicts.filter((v) => v.passed === false).length : null;
+  /*
+   * Fast Track KẾT LUẬN TẠM THỜI ngay trên phần điểm đang có, kể cả khi kết luận đó là
+   * "đạt" — owner chốt ở vòng 3, và cờ `provisional` bên dưới nói rõ đó là tạm thời.
+   *
+   * LỚP NORMAL THÌ KHÁC, CÓ CHỦ Ý: ở đó thiếu điểm KHÔNG được suy thành "đạt mọi môn"
+   * (mục 6.3 — xem `evaluateRegular`). Lý do khác nhau: một lượt Mock Test luôn đủ bốn
+   * kỹ năng và chỉ chờ chấm, còn một bài kiểm tra lớp Normal có thể thiếu môn vì em vắng
+   * buổi đó — hai chuyện khác nhau, nên kết luận tạm thời mang nghĩa khác nhau.
+   */
   const sosLevel: SosLevel | null =
     failedCount === null ? null : failedCount === 0 ? 0 : failedCount === 1 ? 1 : failedCount === 2 ? 2 : 3;
   const provisional = canConclude && !complete;

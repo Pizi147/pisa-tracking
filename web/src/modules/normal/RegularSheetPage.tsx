@@ -39,8 +39,11 @@ const pct = (r: number | null) => (r === null ? '—' : `${Math.round(r * 1000) 
 /**
  * BẢNG ĐIỂM LỚP THƯỜNG (Foundation / Beginner / Elementary).
  *
- * Khác lớp FT: nhập `số câu đúng / tổng số câu`, đạt từ 60%. Không có band IELTS, không có
- * kỳ vọng theo target, không có Overall — vì bài này không phải bài IELTS bốn kỹ năng.
+ * Khác lớp Fast Track: nhập `điểm đạt / tổng điểm`, đạt từ 60%. Không có band IELTS, không có
+ * kỳ vọng theo target, không có Overall — vì bài này không phải bài Mock Test IELTS.
+ *
+ * ĐÂY LÀ MÀN RIÊNG, KHÔNG PHẢI MÀN MOCK TEST ẨN BỚT Ô. Mọi đường dẫn tới điểm của một em
+ * lớp Normal phải về đây; mở nhầm sang màn Mock Test là hiện ra MT1 cho một bài giữa khoá.
  */
 export default function RegularSheetPage() {
   const { classId } = useParams();
@@ -126,10 +129,10 @@ export default function RegularSheetPage() {
         />
       ) : (
         <Card bodyClass="p-0">
-          {/* Đặt tổng số câu chung một lần cho cả lớp, rồi sửa lại ở dòng có đề khác. */}
+          {/* Đặt tổng điểm chung một lần cho cả lớp, rồi sửa lại ở dòng có đề khác. */}
           {data.editableSkills.length > 0 && (
             <div className="flex flex-wrap items-end gap-3 px-4 py-3 border-b" style={{ borderColor: 'var(--line)' }}>
-              <span className="label mb-0">Tổng số câu chung</span>
+              <span className="label mb-0">Tổng điểm chung</span>
               {data.editableSkills.map((k) => (
                 <label key={k} className="block">
                   <span className="label">{data.skillLabels[k] ?? k}</span>
@@ -157,7 +160,7 @@ export default function RegularSheetPage() {
                   {data.programme.skills.map((k) => (
                     <th key={k} className="th text-center">{data.skillLabels[k] ?? k}</th>
                   ))}
-                  <th className="th">Kết quả</th>
+                  <th className="th">Tình trạng nhập</th>
                 </tr>
               </thead>
               <tbody>
@@ -173,13 +176,19 @@ export default function RegularSheetPage() {
 
           <div className="p-3">
             <SectionNote>
+              Mỗi ô là <strong>điểm đạt / tổng điểm</strong> của chính đề đó, ví dụ <strong>13/30</strong>.
+              Đây là <strong>kết quả chính thức</strong>, không phải ước lượng của giáo viên. Thang điểm không
+              cố định giữa các môn và các đề, nên cả hai số đều phải nhập.
+              <br />
               Đạt từ <strong>{Math.round(data.passThreshold * 100)}%</strong> trở lên. Hệ thống xét trên
               <strong> tỷ lệ chính xác</strong>, không làm tròn phần trăm rồi mới so — 25/42 hiện ra “60%”
               nhưng thực tế là 59,5% nên vẫn là chưa đạt.
               <br />
-              <strong>Thiếu điểm khác với trượt.</strong> Ô trống là chưa nhập, không phải 0 điểm; phải đủ điểm
-              mọi kỹ năng thì mới kết luận và mới sinh case SOS — để không đẩy học viên lên SOS oan.
-              Số môn chưa đạt ra mức SOS theo đúng ngưỡng của lớp FT: 1 môn → SOS 1, 2 môn → SOS 2, từ 3 môn → SOS 3.
+              <strong>Thiếu điểm khác với trượt, và cũng khác đạt.</strong> Ô trống là <strong>chưa nhập</strong>,
+              không phải 0 điểm và cũng không được suy thành “đạt”. Phải đủ điểm cả bốn môn mới kết luận và
+              mới sinh case SOS — để không đẩy học viên lên SOS oan, cũng không báo an toàn giả.
+              Số môn chưa đạt ra mức SOS theo đúng ngưỡng của lớp Fast Track: 1 môn → SOS 1, 2 môn → SOS 2,
+              từ 3 môn → SOS 3.
             </SectionNote>
           </div>
         </Card>
@@ -218,7 +227,13 @@ function SheetRow({ row, sheet, bulkTotal, onSaved }: {
         <div className="flex flex-col items-start gap-0.5">
           {row.result.complete ? (
             <>
-              <Pill tone={sosTone(row.result.sosLevel)}>{sosLabel(row.result.sosLevel)}</Pill>
+              {/*
+                "ĐẠT" chứ không phải "Đạt kỳ vọng". Kỳ vọng là khái niệm của Fast Track —
+                một mốc band tính từ target. Lớp Normal không có target, chỉ có ngưỡng đạt.
+              */}
+              <Pill tone={sosTone(row.result.sosLevel)}>
+                {row.result.failedCount === 0 ? 'Đạt' : sosLabel(row.result.sosLevel)}
+              </Pill>
               <span className="text-[10px] text-slate-500">
                 {row.result.failedCount === 0
                   ? 'Đạt cả ' + row.result.required + ' môn'
@@ -227,8 +242,22 @@ function SheetRow({ row, sheet, bulkTotal, onSaved }: {
             </>
           ) : (
             <>
-              <Pill tone="neutral">Chờ {row.result.required - row.result.scored} môn</Pill>
-              <span className="text-[10px] text-slate-500">Chưa đủ điểm để kết luận</span>
+              {/*
+                GỌI TÊN MÔN CÒN THIẾU, không chỉ đếm số. "Chờ 2 môn" bắt người đọc nhìn ngược
+                lại từng ô mới biết phải đi nhắc ai; "Còn thiếu W, S" trả lời luôn.
+                Nhưng chưa nhập môn nào thì liệt kê cả bốn môn là thừa — nói gọn một câu.
+              */}
+              <Pill tone="neutral">
+                {row.result.scored === 0
+                  ? 'Chưa nhập điểm'
+                  : `Còn thiếu ${row.result.skills
+                      .filter((s) => s.outcome === 'missing')
+                      .map((s) => sheet.skillLabels[s.skill] ?? s.label)
+                      .join(', ')}`}
+              </Pill>
+              <span className="text-[10px] text-slate-500">
+                {row.result.scored === 0 ? 'Bài chưa chấm' : 'Chưa đủ điểm để kết luận'}
+              </span>
             </>
           )}
           {row.caseStatus && (
@@ -241,10 +270,14 @@ function SheetRow({ row, sheet, bulkTotal, onSaved }: {
 }
 
 /**
- * Một ô điểm: số câu đúng và tổng số câu.
+ * Một ô điểm: ĐIỂM ĐẠT và TỔNG ĐIỂM.
  *
- * CẢ HAI đều phải nhập — số câu không cố định giữa các kỹ năng và các đề, nên tự điền tổng
- * là đoán bừa, mà đoán sai tổng thì đạt/trượt sai theo.
+ * Gọi là "điểm đạt / tổng điểm" chứ không phải "số câu đúng": Writing và Speaking chấm theo
+ * thang điểm chứ không đếm câu, nên một cái tên chỉ đúng với Listening và Reading thì hai
+ * môn kia phải gõ vào một ô mang tên sai.
+ *
+ * CẢ HAI đều phải nhập — thang điểm không cố định giữa các môn và các đề, nên tự điền tổng
+ * là đoán bừa, mà đoán sai tổng thì đạt/chưa đạt sai theo.
  */
 function ScoreCell({ attemptId, skill, cell, canEdit, defaultTotal, onSaved }: {
   attemptId: number; skill: string; cell: SkillResult;
@@ -290,14 +323,14 @@ function ScoreCell({ attemptId, skill, cell, canEdit, defaultTotal, onSaved }: {
         <input
           className="field w-14 text-center px-1" type="number" min={0} value={score}
           onChange={(e) => setScore(e.target.value)} onBlur={() => dirty && save()}
-          aria-label={`Số câu đúng ${skill}`}
+          aria-label={`Điểm đạt ${skill}`}
         />
         <span className="text-slate-600">/</span>
         <input
           className="field w-14 text-center px-1" type="number" min={1} value={total}
           placeholder="tổng"
           onChange={(e) => setTotal(e.target.value)} onBlur={() => dirty && save()}
-          aria-label={`Tổng số câu ${skill}`}
+          aria-label={`Tổng điểm ${skill}`}
         />
       </div>
       <Outcome cell={cell} busy={busy} />
@@ -308,7 +341,7 @@ function ScoreCell({ attemptId, skill, cell, canEdit, defaultTotal, onSaved }: {
 function Outcome({ cell, busy }: { cell: SkillResult; busy?: boolean }) {
   if (busy) return <div className="text-[10px] text-slate-500 mt-0.5">Đang lưu…</div>;
   if (cell.outcome === 'missing') {
-    return <div className="text-[10px] text-slate-600 mt-0.5">chưa nhập</div>;
+    return <div className="text-[10px] text-slate-500 mt-0.5">Chưa nhập</div>;
   }
   return (
     <div className="mt-0.5 flex justify-center">

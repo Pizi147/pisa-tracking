@@ -396,6 +396,7 @@ function migrateCaseEngine(applied: string[], skipped: string[]) {
     migratePermissions(conn, applied);
     migrateAccounts(conn, applied);
     migrateWeekOnlySchedule(conn, applied);
+    migrateNormalFourSkills(conn, applied);
 
     /*
      * Case đã đóng theo hệ thống cũ mà không có hướng xử lý: ghi rõ là "đóng theo hệ thống
@@ -1451,5 +1452,113 @@ function migrateWeekOnlySchedule(conn: any, applied: string[]) {
       conn.prepare('DELETE FROM permissions WHERE id = ?').run(perm.id);
     }
     if (removed) applied.push(`Gỡ quyền "Chốt ngày giờ" và "Đổi lịch Speaking" khỏi ${removed} lượt cấp quyền`);
+  }
+}
+
+/**
+ * VÒNG 5 — LỚP NORMAL CHỈ CÒN BỐN MÔN L/R/W/S, VÀ W KHÔNG CÒN LÀ W2.
+ *
+ * Hai việc trên dữ liệu đang có:
+ *
+ * 1. PRONUNCIATION → SPEAKING. Foundation trước đây gọi môn nói là Pronunciation. Hai môn
+ *    đó đo cùng một thứ ở hai cái tên, nên mọi bảng tổng hợp phải cộng hai cột lại mới trả
+ *    lời được "cả trung tâm yếu nói đến đâu".
+ *
+ *    NHƯNG KHÔNG GHI ĐÈ. Nếu một lượt đã có CẢ Pronunciation lẫn Speaking thì đó là hai
+ *    điểm thật của hai lần chấm, và đổi tên một cái sẽ đè lên cái kia. Những lượt như vậy
+ *    được ĐỂ NGUYÊN và báo ra thành một con số, để người phụ trách quyết định — máy không
+ *    được tự chọn hộ điểm nào sống điểm nào chết.
+ *
+ * 2. CASE MÔN W TÁCH KHỎI W2. Vòng 4 xếp case môn Writing của lớp Normal vào hạng mục
+ *    `writing2` của Fast Track; owner bác bỏ ở vòng 5. Đổi lại hạng mục và đặt lại khoá
+ *    chống trùng cho đúng.
+ */
+function migrateNormalFourSkills(conn: any, applied: string[]) {
+  const has = (t: string) =>
+    !!conn.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name = ?").get(t);
+  const cols = (t: string) => (conn.prepare(`PRAGMA table_info(${t})`).all() as any[]).map((c: any) => c.name);
+
+  /* ------------------------------------------- 1. Pronunciation → Speaking, không ghi đè */
+  if (has('assessment_scores')) {
+    const clash = conn
+      .prepare(
+        `SELECT COUNT(*) AS n FROM assessment_scores p
+          WHERE p.skill = 'pronunciation'
+            AND EXISTS (SELECT 1 FROM assessment_scores s
+                         WHERE s.attempt_id = p.attempt_id AND s.skill = 'speaking')`,
+      )
+      .get() as any;
+    const moved = conn
+      .prepare(
+        `UPDATE assessment_scores SET skill = 'speaking'
+          WHERE skill = 'pronunciation'
+            AND NOT EXISTS (SELECT 1 FROM assessment_scores s
+                             WHERE s.attempt_id = assessment_scores.attempt_id AND s.skill = 'speaking')`,
+      )
+      .run().changes;
+    if (moved) applied.push(`Gộp ${moved} điểm Pronunciation vào môn Speaking`);
+    if (clash?.n) {
+      applied.push(
+        `${clash.n} điểm Pronunciation ĐỂ NGUYÊN vì lượt đó đã có điểm Speaking riêng `
+        + '— hai điểm thật của hai lần chấm, cần người xem và quyết định, máy không gộp hộ',
+      );
+    }
+  }
+
+  /* Phân công giáo viên và danh sách môn của chương trình: đổi thẳng, không có xung đột. */
+  for (const [table, col] of [
+    ['teacher_assignments', 'skill'],
+    ['programme_skills', 'skill'],
+    ['attempt_skill_skips', 'skill'],
+    ['user_skills', 'skill'],
+  ] as const) {
+    if (!has(table) || !cols(table).includes(col)) continue;
+    // Bỏ dòng sẽ trùng sau khi đổi tên, rồi mới đổi — tránh vi phạm ràng buộc duy nhất.
+    try {
+      conn.prepare(
+        `DELETE FROM ${table} WHERE ${col} = 'pronunciation'
+          AND EXISTS (SELECT 1 FROM ${table} b WHERE b.${col} = 'speaking'
+                        AND b.rowid != ${table}.rowid)`,
+      ).run();
+    } catch { /* bảng không có ràng buộc phù hợp thì bỏ qua bước dọn */ }
+    conn.prepare(`UPDATE ${table} SET ${col} = 'speaking' WHERE ${col} = 'pronunciation'`).run();
+  }
+
+  /* ------------------------------------------- 2. case môn W tách khỏi W2 */
+  if (has('sos_cases') && cols('sos_cases').includes('category')) {
+    const n = conn
+      .prepare(
+        `UPDATE sos_cases SET category = 'writing'
+          WHERE category = 'writing2' AND topic IN ('writing', 'prep_writing')`,
+      )
+      .run().changes;
+    // Case chủ đề Pronunciation nay thuộc hạng mục Speaking.
+    const m = conn
+      .prepare(`UPDATE sos_cases SET category = 'speaking', topic = 'speaking' WHERE topic = 'pronunciation'`)
+      .run().changes;
+    if (n) applied.push(`Tách ${n} case môn W của lớp Normal ra khỏi hạng mục Writing Task 2`);
+    if (m) applied.push(`Chuyển ${m} case Pronunciation sang hạng mục Speaking`);
+
+    /*
+     * ĐẶT LẠI KHOÁ CHỐNG TRÙNG. Khoá chứa tên hạng mục, nên đổi hạng mục mà quên khoá thì
+     * lần trượt sau sinh ra một case thứ hai ở cùng một hạng mục — đúng cái khoá này sinh
+     * ra để chặn. Case nào đổi khoá mà đụng một case đã có thì để nguyên khoá cũ và báo ra.
+     */
+    if (cols('sos_cases').includes('dedup_key')) {
+      let rekeyed = 0;
+      let conflicts = 0;
+      for (const c of conn
+        .prepare(`SELECT id, student_id, cycle_id, category, dedup_key FROM sos_cases WHERE track = 'academic'`)
+        .all() as any[]) {
+        const want = `a:${c.student_id}:${c.cycle_id ?? 0}:${c.category}`;
+        if (c.dedup_key === want) continue;
+        const taken = conn.prepare('SELECT id FROM sos_cases WHERE dedup_key = ? AND id != ?').get(want, c.id) as any;
+        if (taken) { conflicts += 1; continue; }
+        conn.prepare('UPDATE sos_cases SET dedup_key = ? WHERE id = ?').run(want, c.id);
+        rekeyed += 1;
+      }
+      if (rekeyed) applied.push(`Đặt lại khoá chống trùng cho ${rekeyed} case sau khi đổi hạng mục`);
+      if (conflicts) applied.push(`${conflicts} case giữ khoá cũ vì hạng mục đó đã có case khác — cần người gộp tay`);
+    }
   }
 }

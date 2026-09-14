@@ -39,6 +39,12 @@ export type WeeklyRow = {
   sos1: number;
   sos2: number;
   sos3: number;
+  /**
+   * ĐÃ CHẤM MỘT PHẦN, CHƯA KẾT LUẬN ĐƯỢC — bài kiểm tra lớp Normal còn thiếu môn mà các
+   * môn đã chấm đều đạt. Không được dồn vào cột "Đạt": môn còn thiếu có thể chính là môn
+   * em trượt. Có cột riêng để năm cột cộng lại vẫn đúng bằng số lượt có kết quả.
+   */
+  pending: number;
   cases: number;         // tổng case SOS mở trong tuần này
   withSupport: number;   // case đã có ít nhất một ghi nhận hỗ trợ
   untouched: number;     // case chưa ai động vào
@@ -197,7 +203,7 @@ export function weeklyRollup(
         weekLabel: `Tuần ${info.weekNo}`,
         range: info.range, weekStart: a.week_start, weekEnd: a.week_end,
         isCurrent: a.week_start <= today && a.week_end >= today,
-        attempts: 0, onTarget: 0, sos1: 0, sos2: 0, sos3: 0,
+        attempts: 0, onTarget: 0, sos1: 0, sos2: 0, sos3: 0, pending: 0,
         cases: 0, withSupport: 0, untouched: 0, pendingApproval: 0, scoreLagDays: null,
       });
     }
@@ -206,7 +212,8 @@ export function weeklyRollup(
     row.attempts += 1;
 
     const level = resultOfAttempt(a).sosLevel;
-    if (level === 0) row.onTarget += 1;
+    if (level === null) row.pending += 1;
+    else if (level === 0) row.onTarget += 1;
     else if (level === 1) row.sos1 += 1;
     else if (level === 2) row.sos2 += 1;
     else if (level === 3) row.sos3 += 1;

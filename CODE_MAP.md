@@ -15,7 +15,7 @@ ba nơi.
 | **Học viên** | Em này là ai, đang học gì, đã đi qua những đâu | `server/src/students/` | `web/src/modules/students/` |
 | **Lớp học** | Lớp nào, ai dạy, ai đang học, chuyển lớp thế nào | `server/src/classes/` | `web/src/modules/classes/` |
 | **Fast Track** | Tuần Mock Test, điểm band, mức SOS, dự kiến thi | `server/src/fasttrack/` | `web/src/modules/fasttrack/` |
-| **Normal** | FOU/BE/ELE, Progress Test, Final Test, điểm đạt/tổng | `server/src/normal/` | `web/src/modules/normal/` |
+| **Normal** | FOU/BE/ELE, bốn môn L/R/W/S, điểm đạt/tổng điểm, chuyển tiếp lớp | `server/src/normal/` | `web/src/modules/normal/` |
 | **Case** | Vấn đề của em, phương án, phê duyệt, kết quả | `server/src/cases/` | `web/src/modules/cases/` |
 | **Tổng quan và công việc** | Ai phải làm gì, cả chi nhánh đang thế nào | `server/src/worklist/` | `web/src/modules/worklist/` |
 | **Nền tảng** | Tài khoản, quyền, tuần, danh mục, nhật ký thay đổi | `server/src/platform/` | `web/src/modules/platform/` |
@@ -73,11 +73,13 @@ cùng một thứ bằng hai cái tên.
 
 | Muốn sửa | Mở file |
 |---|---|
-| Bốn môn của Normal | `shared/domain/skills.ts` → `REGULAR_SKILLS` |
+| Bốn môn của Normal (L/R/W/S) | `shared/domain/normal.ts` → `REGULAR_SKILLS` |
 | Số tuần và mốc kiểm tra từng chương trình | `shared/domain/normal.ts` → `PROGRAMME_TEMPLATES` |
 | Ngưỡng đạt (60%) và cách chấm theo tỷ lệ | `shared/domain/normal.ts` → `ratioResult` |
 | Bảng nhập điểm Progress/Final Test | `web/src/modules/normal/RegularSheetPage.tsx` |
 | Xử lý điểm và sinh case của Normal | `server/src/normal/regular.ts` |
+| Chuyển tiếp lớp FOU → BE → Fast Track | `server/src/classes/transition.ts` · `web/src/modules/classes/TransitionPanel.tsx` |
+| Bài nào mở màn nào (Mock Test hay bảng điểm Normal) | `server/src/fasttrack/attempts.ts` → `attemptHref` · `web/src/lib/format.ts` |
 
 ### Case
 
@@ -160,6 +162,9 @@ bất kỳ đâu trong luồng MT, nên cả năm kỹ năng của một lượt
 - **Fast Track và Normal có form, kiểm tra dữ liệu và workflow RIÊNG.** Dùng chung thành phần
   giao diện cơ bản thì được; tái dùng form nghiệp vụ của bên này cho bên kia bằng cách ẩn vài
   ô thì không — đó là cách chắc chắn nhất để một sửa đổi bên này làm hỏng bên kia.
+  Cụ thể: Fast Track có W1/W2 và chấm theo band; Normal có một môn W và chấm theo điểm
+  đạt/tổng điểm. Hai môn ĐÓ KHÔNG GỘP VÀO NHAU ở bất kỳ bảng nào. Mọi đường dẫn tới điểm đi
+  qua `attemptHref` để mở đúng màn theo loại bài.
 - **Case học thuật và Ý thức/Khác** dùng chung phần lưu lịch sử, người phụ trách và ghi chú;
   tách riêng quy tắc thời hạn và cách cập nhật kết quả.
 - **Hành trình học viên** tổng hợp từ dữ liệu nguồn, không giữ một bộ điểm hay trạng thái

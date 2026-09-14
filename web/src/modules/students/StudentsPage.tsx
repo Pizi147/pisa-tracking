@@ -4,7 +4,7 @@ import { useApi } from '../../lib/useApi.ts';
 import { useSession } from '../../lib/session.tsx';
 import { invalidate } from '../../lib/api.ts';
 import { Card, Empty, ErrorState, Pill, SectionNote, Skeleton } from '../../ui/ui.tsx';
-import { caseStatusLabel, caseStatusTone, sosTone } from '../../lib/format.ts';
+import { attemptHref, caseStatusLabel, caseStatusTone, sosTone } from '../../lib/format.ts';
 import type { Branch } from '../../ui/Filters.tsx';
 import { IntakePanel } from './IntakePanel.tsx';
 import { ClassCreatePanel } from '../classes/ClassCreatePanel.tsx';
@@ -18,7 +18,7 @@ export type ClassSummary = {
   branchId: number; branchCode: string; branchName: string;
   startDate: string | null;
   studentCount: number; needScores: number; openCases: number;
-  /** `ratio` = lớp thường chấm theo số câu đúng; `ielts_band` = lớp FT. */
+  /** `ratio` = lớp Normal chấm theo điểm đạt/tổng điểm; `ielts_band` = lớp Fast Track. */
   scoringMode: string | null;
   programmeName: string | null;
   /** Kỹ năng người đang xem dạy ở CHÍNH lớp này. */
@@ -410,21 +410,24 @@ function WorkQueue({ view, branchId, q }: { view: string; branchId: number | nul
               <tr>
                 <th className="th">Học viên</th>
                 <th className="th">Lớp</th>
-                <th className="th">MT</th>
+                <th className="th">Bài</th>
                 <th className="th">Tuần</th>
                 <th className="th">Việc cần làm</th>
               </tr>
             </thead>
             <tbody>
               {data.rows.map((r) => (
-                <tr key={r.id} className="row-hover cursor-pointer" onClick={() => navigate(`/mock-test/${r.id}`)}>
+                <tr key={r.id} className="row-hover cursor-pointer" onClick={() => navigate(attemptHref(r))}>
                   <td className="td">
                     <div className="text-slate-100">{r.studentName}</div>
                     <div className="text-[11px] text-slate-500">{r.studentCode}</div>
                   </td>
                   <td className="td text-slate-300 whitespace-nowrap">{r.classCode ?? '—'}</td>
                   {/* Lộ trình đã hiện ở cột Target ngay cạnh — nhắc lại chỉ là chữ thừa. */}
-                  <td className="td tabular-nums whitespace-nowrap">MT{r.attemptNo}</td>
+                  {/* Lớp Normal không có "MT" — gọi đúng tên bài của nó. */}
+                  <td className="td tabular-nums whitespace-nowrap">
+                    {r.kind === 'mock' ? `MT${r.attemptNo}` : r.kind === 'final' ? 'Cuối khoá' : 'Giữa khoá'}
+                  </td>
                   <td className="td whitespace-nowrap text-slate-300">{r.period?.code ?? '—'}</td>
                   <td className="td text-xs">
                     {view === 'my_scores' && (

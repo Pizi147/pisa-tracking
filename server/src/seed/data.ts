@@ -192,7 +192,7 @@ export const TEACHER_GAPS: Record<string, { skills?: string[]; noCore?: boolean 
   // Lớp Normal vừa khai giảng ở chi nhánh xa: chưa ai nhận chủ nhiệm.
   'BC-ELE 01': { noCore: true },
   // Thiếu đúng một kỹ năng — trường hợp hay gặp nhất.
-  'UB-FOUND 07': { skills: ['pronunciation'] },
+  'UB-FOUND 07': { skills: ['speaking'] },
 };
 
 // ---------------------------------------------------------------- tên giả

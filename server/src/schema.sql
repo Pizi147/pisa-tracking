@@ -22,7 +22,7 @@ CREATE TABLE reporting_units (
 
 -- ===================== CHƯƠNG TRÌNH HỌC =====================
 -- FT dùng Mock Test và band IELTS. Lớp thường (FOU/BE/ELE) dùng bài kiểm tra chấm theo
--- số câu đúng trên tổng số câu, KHÔNG đi qua bảng quy đổi IELTS.
+-- điểm đạt trên tổng điểm, KHÔNG đi qua bảng quy đổi IELTS.
 --
 -- Để bảng riêng thay vì viết cứng trong code: sau này chương trình đổi, hoặc trung tâm mở
 -- một chương trình mới, thì thêm dữ liệu chứ không phải sửa mã nguồn. Nhưng CHỈ đến thế —
@@ -87,6 +87,15 @@ CREATE TABLE classes (
    */
   progress_week_override INTEGER,
   final_week_override INTEGER,
+
+  /*
+   * LỚP NÀY HỌC TIẾP TỪ LỚP NÀO — chuỗi chuyển tiếp FOU → BE → FT.
+   *
+   * Hết khoá thì KHÔNG đổi loại ngay trên lớp cũ: làm thế là xoá mất dấu giai đoạn trước,
+   * và ba tháng sau không ai trả lời được "hồi đó em học Foundation ở lớp nào". Thay vào
+   * đó mở một LỚP MỚI rồi chuyển học viên sang, và cột này giữ sợi dây giữa hai lớp.
+   */
+  previous_class_id INTEGER REFERENCES classes(id),
 
   status TEXT NOT NULL DEFAULT 'active',
   note TEXT,
@@ -484,9 +493,9 @@ CREATE TABLE assessment_scores (
   skill TEXT NOT NULL,                -- listening | reading | writing1 | writing2 | speaking
   -- Không lưu ngày làm bài của riêng kỹ năng: lượt MT thuộc về một TUẦN, và thời điểm cần
   -- biết duy nhất là lúc điểm được nhập (`entered_at`).
-  raw_score INTEGER,                  -- FT: 0..40 với listening/reading. Lớp thường: số câu đúng.
-  -- Tổng số câu của chính đề đó. Lớp thường bắt buộc có, vì số câu KHÔNG cố định giữa các
-  -- kỹ năng và các đề; không có tổng thì không tính được tỷ lệ đạt.
+  raw_score INTEGER,                  -- FT: số câu đúng 0..40 với L/R. Normal: ĐIỂM ĐẠT.
+  -- TỔNG ĐIỂM của chính đề đó. Lớp Normal bắt buộc có, vì thang điểm KHÔNG cố định giữa các
+  -- môn và các đề; không có tổng thì không tính được tỷ lệ đạt.
   raw_total INTEGER,
   c1 REAL, c2 REAL, c3 REAL, c4 REAL, -- bốn tiêu chí, chỉ với writing1/writing2/speaking
   band REAL,                          -- band IELTS, hoặc NULL khi chưa nhập điểm

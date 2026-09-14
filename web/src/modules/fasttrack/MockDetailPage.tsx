@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
@@ -10,8 +10,8 @@ import {
   CriteriaButton, DeadlinePill, RawScoreInput, useSaveScore, type Cell,
 } from './ScoreEntry.tsx';
 import {
-  attemptStatusLabel, attemptStatusTone, fmtBand, fmtDate, fmtDateTime,
-  fmtSlot, progressLabel, progressTone, skillLabel, sosLabel, sosTone,
+  attemptHref, attemptStatusLabel, attemptStatusTone, fmtBand, fmtDate, fmtDateTime,
+  progressLabel, progressTone, skillLabel, sosLabel, sosTone,
 } from '../../lib/format.ts';
 import { CasePanel } from '../cases/CasePanel.tsx';
 import { ASSESSED_SKILLS, ASSESSED_SKILL_LABEL } from '@shared/domain/index.ts';
@@ -19,6 +19,8 @@ import { usePeriods } from '../../ui/Filters.tsx';
 
 type Detail = {
   id: number;
+  /** `mock` với Fast Track; `progress` / `final` là bài của lớp Normal — màn khác hẳn. */
+  kind: string;
   student: { id: number; name: string; code: string };
   cycle: { id: number; seq: number; route: string | null; target: number | null; examPlan: ExamPlan };
   classId: number | null; classCode: string | null; branchName: string | null;
@@ -48,6 +50,18 @@ export default function MockDetailPage() {
 
   if (error) return <ErrorState message={error.message} hint={error.hint} onRetry={reload} />;
   if (loading || !data) return <Skeleton rows={10} />;
+
+  /*
+   * CHẶN CỬA: bài của lớp Normal KHÔNG được dựng bằng màn này.
+   *
+   * Màn Mock Test gọi mọi lượt là "MT{n}", chấm theo band và so với kỳ vọng target — cả ba
+   * thứ đó đều sai với một bài Progress Test. Mọi đường dẫn trong hệ thống đã trỏ đúng màn,
+   * nhưng đường dẫn cũ, thông báo cũ và link người dùng lưu lại thì vẫn còn, nên chặn ngay
+   * ở đây thay vì tin rằng không ai vào được.
+   */
+  if (data.kind && data.kind !== 'mock') {
+    return <Navigate to={attemptHref({ id: data.id, kind: data.kind, classId: data.classId })} replace />;
+  }
 
   const d = data;
   const raw = d.cells.filter((c) => c.skill === 'listening' || c.skill === 'reading');

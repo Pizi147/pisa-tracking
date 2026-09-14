@@ -9,7 +9,7 @@ import { diffDays, notFound } from '../util.ts';
 import { can, require_, type Principal } from '../permissions.ts';
 import { entryBandsOf, scoresOf, skipsOf } from '../fasttrack/attempts.ts';
 import { assessedBands, evaluateAttempt } from '../fasttrack/scoring.ts';
-import { evaluateRegular, programmeByCode, programmeOfClass } from '../normal/regular.ts';
+import { evaluateRegular, isRatioCycle, programmeByCode, programmeCodeOfCycle, programmeOfClass } from '../normal/regular.ts';
 import { cycleById, cyclesOf, currentCycle, examPlanOf, targetRevisions } from '../fasttrack/cycles.ts';
 import { canCloseCase } from '../cases/cases.ts';
 import { missingForStudent, suggestedMockWeeks } from '../classes/schedule.ts';
@@ -45,41 +45,11 @@ function cycleLabel(c: any): string {
   return prog ? prog.name : `Lộ trình ${c.seq}`;
 }
 
-function programmeCodeOfCycle(cycleId: number): string | null {
-  const row = db()
-    .prepare(
-      `SELECT c.programme_code AS code FROM assessment_attempts a
-         JOIN classes c ON c.id = a.class_id
-        WHERE a.cycle_id = ? AND c.programme_code IS NOT NULL LIMIT 1`,
-    )
-    .get(cycleId) as any;
-  return row?.code ?? null;
-}
-
-/**
- * Khoá này chấm theo TỶ LỆ SỐ CÂU ĐÚNG hay theo BAND — quyết định dùng bộ máy kết luận nào.
- *
- * Ưu tiên mã chương trình ghi trên chính khoá. Dữ liệu cũ có thể thiếu mã đó, nên còn một
- * đường tra dự phòng: lớp của các bài kiểm tra trong khoá. Không có căn cứ nào thì coi là
- * lớp band — đó là mặc định của trung tâm.
- */
-function isRatioCycle(c: any): boolean {
-  if (!c || c.route) return false;
-  if (c.programme_code) return programmeByCode(c.programme_code)?.scoringMode === 'ratio';
-  const row = db()
-    .prepare(
-      `SELECT c.programme_code AS code FROM assessment_attempts a
-         JOIN classes c ON c.id = a.class_id
-        WHERE a.cycle_id = ? AND c.programme_code IS NOT NULL LIMIT 1`,
-    )
-    .get(c.id) as any;
-  return programmeByCode(row?.code)?.scoringMode === 'ratio';
-}
 
 /**
  * Kết luận một lượt đánh giá bằng ĐÚNG bộ máy của loại lớp đó.
  *
- * Lớp thường chấm theo tỷ lệ số câu đúng, không có band và không có mục tiêu IELTS. Đưa
+ * Lớp Normal chấm theo tỷ lệ điểm đạt/tổng điểm, không có band và không có mục tiêu IELTS. Đưa
  * lượt của lớp thường qua bộ máy FT thì mọi kỹ năng đều "chưa có band" và hồ sơ hiện ra
  * một bảng trống — sai mà trông như thiếu dữ liệu.
  */

@@ -19,6 +19,7 @@ import * as profileSvc from '../students/profile.ts';
 import * as classSvc from '../classes/classes.ts';
 import * as scheduleSvc from '../classes/schedule.ts';
 import * as intakeSvc from '../classes/intake.ts';
+import * as transitionSvc from '../classes/transition.ts';
 import * as studentSvc from '../students/students.ts';
 import * as meetingSvc from '../worklist/meeting.ts';
 import * as dashboardSvc from '../worklist/dashboard.ts';
@@ -439,7 +440,7 @@ api.get('/classes/:id/suggested-weeks', requireAuth, wrap((req) => {
 
 // ============================================================ Lớp thường (FOU/BE/ELE)
 
-/** Bảng nhập điểm của lớp thường: số câu đúng / tổng số câu, đạt từ 60%. */
+/** Bảng nhập điểm của lớp Normal: điểm đạt / tổng điểm, đạt từ 60%. */
 api.get('/regular/classes/:classId/sheet', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   return regularSvc.regularSheet(principalOf(req), pInt(req, 'classId'), qStr(req, 'kind'));
@@ -451,7 +452,7 @@ api.post('/regular/classes/:classId/plan', requireAuth, wrap((req) => {
   return regularSvc.planRegularTests(principalOf(req), pInt(req, 'classId'));
 }));
 
-/** Nhập điểm một kỹ năng: cả số câu đúng và tổng số câu, không tự điền tổng. */
+/** Nhập điểm một môn: cả điểm đạt và tổng điểm, không tự điền tổng. */
 api.put('/regular/attempts/:id/scores/:skill', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return regularSvc.saveRegularScore(principalOf(req), pInt(req, 'id'), req.params.skill, req.body ?? {});
@@ -522,6 +523,23 @@ api.post('/cycles/:id/target-revision', requireAuth, wrap((req) => {
 api.get('/classes/:id/progress', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   return scheduleSvc.classProgress(pInt(req, 'id'));
+}));
+
+/**
+ * KẾ HOẠCH CHUYỂN TIẾP khi lớp học hết chương trình (mục 6.1) — chỉ đọc.
+ * Trả về chương trình kế tiếp theo luồng mặc định, lớp đích đang có, và danh sách học viên.
+ */
+api.get('/classes/:id/transition', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return transitionSvc.transitionPlan(principalOf(req), pInt(req, 'id'));
+}));
+
+/** Xác nhận chuyển tiếp: mở lớp mới (nếu có) rồi chuyển từng em sang lớp đích của em. */
+api.post('/classes/:id/transition', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return transitionSvc.applyTransition(principalOf(req), {
+    ...(req.body ?? {}), fromClassId: pInt(req, 'id'),
+  });
 }));
 
 /**

@@ -7,7 +7,7 @@ import {
 import { demoToday } from '../demoConfig.ts';
 import { diffDays, formatDateVi } from '../util.ts';
 import { can, scopeFor, teachesClass, type Principal } from '../permissions.ts';
-import { listAttempts } from '../fasttrack/attempts.ts';
+import { attemptHref, listAttempts } from '../fasttrack/attempts.ts';
 import { classAlerts } from '../classes/schedule.ts';
 
 /**
@@ -182,7 +182,7 @@ export function myWork(p: Principal, f: { branchId?: number | null } = {}) {
       if (!w?.deadline || c.deadline < w.deadline) return c;
       return w;
     }, null as any);
-    // Lớp thường có kỹ năng riêng (Prep-Writing, Pronunciation) không nằm trong bộ IELTS.
+    // Lớp Normal có môn W riêng, không nằm trong bộ năm ô của Fast Track.
     const names = mine
       .map((c: any) => ENTRY_SKILL_LABEL[c.skill as EntrySkill]
         ?? REGULAR_SKILL_LABEL[c.skill as keyof typeof REGULAR_SKILL_LABEL]
@@ -199,7 +199,7 @@ export function myWork(p: Principal, f: { branchId?: number | null } = {}) {
         : u === 'today' ? `${names} — hạn hôm nay`
         : worst?.deadline ? `${names} — hạn ${formatDateVi(worst.deadline)}` : names,
       actionLabel: `Nhập điểm ${names}`, overdueLabel: badge('score', u),
-      href: `/mock-test/${a.id}`,
+      href: attemptHref(a),
     });
   }
 
@@ -486,7 +486,7 @@ export function myWork(p: Principal, f: { branchId?: number | null } = {}) {
       classId: a.classId ?? null, classCode: a.classCode ?? null,
       attemptId: a.id, attemptNo: a.attemptNo, caseId: null, level: null,
       reason: `MT${a.attemptNo} chưa được xếp vào tuần nào`,
-      actionLabel: 'Chốt tuần kế hoạch', overdueLabel: null, href: `/mock-test/${a.id}`,
+      actionLabel: 'Chốt tuần MT', overdueLabel: null, href: attemptHref(a),
     });
   }
 

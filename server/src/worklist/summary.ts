@@ -1,6 +1,6 @@
 import { db } from '../db.ts';
 import {
-  BEHAVIOUR_TOPICS, BEHAVIOUR_TOPIC_LABEL, ENTRY_SKILLS, ENTRY_SKILL_SHORT,
+  BEHAVIOUR_TOPICS, BEHAVIOUR_TOPIC_LABEL, CASE_CATEGORY_LABEL, CASE_CATEGORY_SHORT,
   PERMISSIONS, SOS_LABEL,
 } from '../../../shared/domain/index.ts';
 import { scopeFor, type Principal } from '../permissions.ts';
@@ -37,6 +37,9 @@ export type SummaryColumn = {
  * chính nó, không phải ba bảng khác nhau. Chọn bộ cột thay cho mười lăm ô tick bật/tắt từng
  * cột: ô tick là thứ dễ làm mà gần như không ai dùng, và đúng chỗ hệ thống bắt đầu rối.
  */
+/** Sáu cột môn của bảng tổng hợp: năm ô của Fast Track cộng thêm W của Normal. */
+const SUMMARY_SKILLS = ['listening', 'reading', 'writing1', 'writing2', 'writing', 'speaking'] as const;
+
 export const SUMMARY_PRESETS = [
   {
     key: 'default', label: 'Mặc định',
@@ -48,7 +51,7 @@ export const SUMMARY_PRESETS = [
   },
   {
     key: 'skills', label: 'Cụ thể',
-    columns: ['openCases', ...ENTRY_SKILLS.map((s) => `skill_${s}`), 'behaviour'],
+    columns: ['openCases', ...SUMMARY_SKILLS.map((s) => `skill_${s}`), 'behaviour'],
   },
   {
     key: 'attention', label: 'Cần chú ý',
@@ -60,8 +63,11 @@ export const SUMMARY_PRESETS = [
 /**
  * Thứ tự cột của bộ "Tất cả", đúng như owner liệt kê ở mục 10.6:
  *
- *   Chi nhánh/Lớp · Case · SOS 3 · SOS 2 · SOS 1 · L · R · W1 · W2 · S · Ý thức ·
+ *   Chi nhánh/Lớp · Case · SOS 3 · SOS 2 · SOS 1 · L · R · W1 · W2 · W · S · Ý thức ·
  *   Đang xử lý · Thiếu phương án · Quá hạn cập nhật · Chờ duyệt
+ *
+ * Sáu cột môn chứ không năm: W của lớp Normal đứng riêng, không gộp vào W2 của Fast Track.
+ * Ô trống ở W với một lớp Fast Track là ĐÚNG — lớp đó không có môn ấy.
  *
  * Sĩ số và "GV báo" giữ lại nhưng đứng ngoài bốn bộ cột chính: sĩ số là thông tin nền để
  * đọc các cột khác, còn "GV báo" chỉ cần khi đi tìm case không sinh từ điểm.
@@ -73,15 +79,15 @@ export function summaryColumns(): SummaryColumn[] {
     { key: 'sos3', label: SOS_LABEL[3], group: 'sos', hint: 'Học viên đang ở mức SOS 3 — đếm người, mỗi em một cột' },
     { key: 'sos2', label: SOS_LABEL[2], group: 'sos', hint: 'Học viên đang ở mức SOS 2' },
     { key: 'sos1', label: SOS_LABEL[1], group: 'sos' , hint: 'Học viên đang ở mức SOS 1' },
-    ...ENTRY_SKILLS.map((s) => ({
+    ...SUMMARY_SKILLS.map((s) => ({
       key: `skill_${s}`,
-      label: ENTRY_SKILL_SHORT[s],
+      label: CASE_CATEGORY_SHORT[s],
       group: 'skill' as const,
-      hint: s === 'speaking'
-        ? 'Case Speaking — case Pronunciation của lớp Foundation gộp vào đây'
-        : s === 'writing2'
-        ? 'Case Writing Task 2 — case Writing của lớp Normal gộp vào đây'
-        : `Case Học thuật ở ${ENTRY_SKILL_SHORT[s]} — tổng / chưa có phương án`,
+      hint: s === 'writing'
+        ? 'Case môn Writing của lớp Normal — KHÔNG gộp chung với Writing Task 2 của Fast Track'
+        : s === 'writing1' || s === 'writing2'
+        ? `Case ${CASE_CATEGORY_LABEL[s]} — chỉ lớp Fast Track mới có hai bài Writing riêng`
+        : `Case Học thuật ở ${CASE_CATEGORY_LABEL[s]} — tổng / chưa có phương án`,
     })),
     {
       key: 'behaviour', label: 'Ý thức', group: 'behaviour',
@@ -102,16 +108,20 @@ export function summaryColumns(): SummaryColumn[] {
 }
 
 /**
- * GỘP KỸ NĂNG RIÊNG CỦA LỚP NORMAL VÀO NĂM Ô IELTS — owner chốt ở mục 10.6.
+ * W CỦA NORMAL LÀ MỘT CỘT RIÊNG, KHÔNG GỘP VÀO W2 CỦA FAST TRACK — owner chốt ở vòng 5.
  *
- * Lớp Foundation có Pronunciation chứ không có Speaking, lớp Normal có một ô Writing duy
- * nhất. Để chúng thành cột riêng thì bảng có tám cột kỹ năng mà ba cột lúc nào cũng gần
- * trống, còn người đọc phải tự cộng hai cột lại mới biết cả trung tâm yếu Speaking đến đâu.
+ * Vòng 4 từng gộp để bảng bớt một cột. Nhưng W2 là bài luận IELTS chấm theo bốn tiêu chí
+ * band, còn W là bài viết của lớp Normal chấm theo điểm đạt/tổng điểm — cộng chúng vào một
+ * ô thì con số ấy không trả lời được câu hỏi nào.
+ *
+ * Còn lại đúng MỘT phép gộp, và nó chỉ để đọc DỮ LIỆU CŨ: Foundation trước đây gọi môn nói
+ * là Pronunciation. Môn đó đã bỏ ở vòng 5, nên đây chỉ là đường đọc lại lịch sử.
  */
-const SKILL_ROLLUP: Record<string, string> = {
+const LEGACY_SKILL_ROLLUP: Record<string, string> = {
   pronunciation: 'speaking',
-  writing: 'writing2',
+  prep_writing: 'writing',
 };
+
 
 type Cell = { value: number; of?: number; href?: string };
 
@@ -239,7 +249,7 @@ export function branchSummary(p: Principal, f: { branchId?: number | null } = {}
       return n;
     };
     const skillCell = (s: string): Cell => {
-      const list = open.filter((c) => (SKILL_ROLLUP[c.topic ?? ''] ?? c.topic) === s);
+      const list = open.filter((c) => (LEGACY_SKILL_ROLLUP[c.topic ?? ''] ?? c.topic) === s);
       return { value: list.length, of: list.filter((c) => c.state === 'no_plan').length, href: q(`&ky-nang=${s}`) };
     };
     const cells: Record<string, Cell> = {
@@ -264,7 +274,7 @@ export function branchSummary(p: Principal, f: { branchId?: number | null } = {}
       pendingApproval: { value: pendingApprovals.get(g.key) ?? 0 },
       overdueContact: { value: overdueContacts.get(g.key) ?? 0 },
     };
-    for (const s of ENTRY_SKILLS) cells[`skill_${s}`] = skillCell(s);
+    for (const s of SUMMARY_SKILLS) cells[`skill_${s}`] = skillCell(s);
     return {
       key: g.key, label: g.label, branchId: g.branchId, classId: g.classId,
       /* Normal và FT vận hành khác nhau, nên bảng lớp gom theo hai nhóm này (mục 10.6). */
