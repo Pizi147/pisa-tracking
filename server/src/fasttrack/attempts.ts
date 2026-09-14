@@ -6,7 +6,7 @@ import {
 import { demoToday } from '../demoConfig.ts';
 import { badRequest, isIsoDate, notFound, nowIso } from '../util.ts';
 import {
-  can, classScopeSql, editableSkills, require_, scopeFor, scoreEditPath, type Principal,
+  can, classScopeSql, editableSkills, mySkills, require_, scopeFor, scoreEditPath, type Principal,
 } from '../permissions.ts';
 import { addJourney, notify, writeAudit } from '../platform/audit.ts';
 import {
@@ -165,10 +165,13 @@ export type SkillCell = {
   overdue: boolean;
   progress: SkillProgress;
   canEdit: boolean;
+  /** Kỹ năng NÀY được phân công cho chính người đang xem — khác với "được phép sửa". */
+  mine: boolean;
 };
 
 export function skillCells(p: Principal, attempt: any, rows: ScoreRow[], skips: AssessedSkill[], today = demoToday()): SkillCell[] {
   const editable = attempt.class_id ? editableSkills(p, attempt.class_id, ENTRY_SKILLS) : [];
+  const mine = attempt.class_id ? mySkills(p, attempt.class_id, ENTRY_SKILLS) : [];
   const weekStart = weekStartOf(attempt);
   return ENTRY_SKILLS.map((skill) => {
     const assessed = assessedSkillOf(skill);
@@ -201,6 +204,11 @@ export function skillCells(p: Principal, attempt: any, rows: ScoreRow[], skips: 
       overdue: required && !!dl.date && (row?.band ?? null) === null && isOverdue(dl.date, today),
       progress,
       canEdit: required && attempt.status !== 'cancelled' && editable.includes(skill),
+      /*
+       * "TÔI SỬA ĐƯỢC" KHÁC "ĐÂY LÀ VIỆC CỦA TÔI" (mục 3.3).
+       * Người có quyền sửa hộ vẫn bấm vào ô được, nhưng không vì thế mà nợ việc đó.
+       */
+      mine: required && attempt.status !== 'cancelled' && mine.includes(skill),
     };
   });
 }
@@ -280,6 +288,8 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
     if (regularSkills) {
       const r = evaluateRegular(regularSkills, scores);
       const editable = a.class_id ? editableSkills(p, a.class_id, regularSkills) : [];
+      /* Việc của CHÍNH người này = kỹ năng được phân công, không tính quyền sửa hộ (mục 3.3). */
+      const mineSkills = a.class_id ? mySkills(p, a.class_id, regularSkills) : [];
       const dueForEntry = !!a.period_start && a.period_start <= today && a.status !== 'cancelled';
       const c = bundle.cases.get(a.id);
       return {
@@ -303,7 +313,7 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
         scopeNote: null, scopeDetail: null,
         overdueSkills: 0,
         myPendingSkills: dueForEntry
-          ? editable.filter((k) => {
+          ? mineSkills.filter((k) => {
               const row = scores.find((x) => x.skill === k);
               return row?.raw_score === null || row?.raw_score === undefined;
             })
@@ -314,7 +324,7 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
          * vì nhiều chỗ khác đang dùng.
          */
         myPendingDetail: dueForEntry
-          ? editable
+          ? mineSkills
             .filter((k) => {
               const row = scores.find((x) => x.skill === k);
               return row?.raw_score === null || row?.raw_score === undefined;
@@ -372,10 +382,10 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
       scopeNote: result.scopeNote,
       overdueSkills: cells.filter((c) => c.overdue).length,
       myPendingSkills: cells
-        .filter((c) => c.canEdit && c.band === null && c.progress === 'due')
+        .filter((c) => c.mine && c.band === null && c.progress === 'due')
         .map((c) => c.skill),
       myPendingDetail: cells
-        .filter((c) => c.canEdit && c.band === null && c.progress === 'due')
+        .filter((c) => c.mine && c.band === null && c.progress === 'due')
         .map((c) => ({ skill: c.skill, deadline: c.deadline })),
       caseStatus: bundle.cases.get(a.id)?.status ?? null,
       caseId: bundle.cases.get(a.id)?.id ?? null,

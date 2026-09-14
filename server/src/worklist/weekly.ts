@@ -260,6 +260,15 @@ export function weeklyRollup(
     }
   }
 
-  const rows = [...byPeriod.values()].sort((a, b) => (a.weekStart < b.weekStart ? 1 : -1));
+  /*
+   * CHỈ HIỆN TUẦN CÓ DỮ LIỆU.
+   *
+   * Một tuần có lượt đã XẾP LỊCH nhưng chưa ai chấm không phải là một tuần có dữ liệu — hàng
+   * của nó toàn số 0, và một bảng đầy dòng 0 chính là thứ file Excel cũ làm mà không ai đọc.
+   * Lượt chưa chấm đã có chỗ riêng ở danh sách việc cần làm.
+   */
+  const rows = [...byPeriod.values()]
+    .filter((r) => r.attempts > 0 || r.cases > 0)
+    .sort((a, b) => (a.weekStart < b.weekStart ? 1 : -1));
   return { rows, scopeEmpty: false, today, track };
 }

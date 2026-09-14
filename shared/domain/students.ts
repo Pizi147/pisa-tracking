@@ -48,6 +48,8 @@ export const JOURNEY_EVENT_LABEL: Record<string, string> = {
   mock_rescheduled: 'Đổi lịch MT',
   mock_cancelled: 'Huỷ lượt MT',
   mock_result: 'Kết quả MT',
+  /* Kỳ thi IELTS THẬT — khác hẳn một lượt Mock Test, nên có nhãn riêng. */
+  exam_result: 'Kết quả thi IELTS',
   estimate: 'Đánh giá GV',
   warning: 'Cảnh báo',
   wl: 'Warning Letter',

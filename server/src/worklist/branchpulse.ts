@@ -57,16 +57,28 @@ export function branchPulse(p: Principal, f: { branchId?: number | null } = {}) 
   const attempts = listAttempts(p, { branchId: f.branchId ?? undefined }).rows
     .filter((a: any) => a.status !== 'cancelled');
 
-  /* ---------------------------------------------------------------- lớp trong phạm vi */
+  /*
+   * LỚP TRONG PHẠM VI NGƯỜI ĐANG XEM — không phải mọi lớp của trung tâm.
+   *
+   * Trước vòng này câu lệnh lấy hết lớp đang hoạt động, nên Quản lý một chi nhánh mở bảng ra
+   * thấy hàng của chi nhánh mình ghi 11 học viên mà hàng "Tất cả chi nhánh" ngay dưới ghi 40.
+   * Hai con số ấy nói với người đọc rằng bảng này đếm sai — và họ đúng.
+   */
+  const scopeArgs: unknown[] = [];
+  let scopeSql = '';
+  if (!scope.all && scope.branchIds?.length) {
+    scopeSql = ` AND c.branch_id IN (${scope.branchIds.map(() => '?').join(',')})`;
+    scopeArgs.push(...scope.branchIds);
+  }
   const classRows = conn
     .prepare(
       `SELECT c.id, c.code, c.branch_id, c.is_fast_track, b.name AS branch_name,
               (SELECT COUNT(*) FROM enrollments e JOIN students s ON s.id = e.student_id
                 WHERE e.class_id = c.id AND e.status = 'active' AND s.archived_at IS NULL) AS size
          FROM classes c JOIN branches b ON b.id = c.branch_id
-        WHERE c.status = 'active' ORDER BY b.id, c.code`,
+        WHERE c.status = 'active'${scopeSql} ORDER BY b.id, c.code`,
     )
-    .all() as any[];
+    .all(...scopeArgs) as any[];
 
   const perClass = new Map<number, PulseMetrics>();
   const supportStudents = new Map<number, Set<number>>();

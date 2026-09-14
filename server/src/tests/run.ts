@@ -56,7 +56,10 @@ const failures: string[] = [];
 
 function check(name: string, fn: () => void) {
   try { fn(); passed++; console.log(`  ✓ ${name}`); }
-  catch (e: any) { failures.push(`${name}: ${e.message}`); console.log(`  ✗ ${name}\n      ${e.message}`); }
+  catch (e: any) {
+    failures.push(`${name}: ${e.message}`);
+    console.log(`  ✗ ${name}\n      ${e.message}`);
+  }
 }
 function assert(cond: unknown, msg: string) { if (!cond) throw new Error(msg); }
 function assertThrows(fn: () => unknown, match: RegExp, msg: string) {
@@ -476,11 +479,19 @@ check('Đã bỏ hẳn bước "Head xác nhận" khỏi hệ thống', () => {
 
 console.log('\n7. Lộ trình và số lần MT');
 check('Số MT là duy nhất TRONG một lộ trình, lộ trình mới đánh số lại từ 1', () => {
+  /*
+   * Chỉ lộ trình Fast Track mới có target, nên phép so target phải chọn một em có HAI lộ
+   * trình Fast Track — em đi FOU → BE → FT có ba lộ trình nhưng hai lộ trình đầu không có
+   * target nào để so.
+   */
   const multi = conn
-    .prepare('SELECT student_id FROM learning_cycles GROUP BY student_id HAVING COUNT(*) > 1 LIMIT 1')
+    .prepare(
+      `SELECT student_id FROM learning_cycles WHERE target_score IS NOT NULL
+        GROUP BY student_id HAVING COUNT(*) > 1 LIMIT 1`,
+    )
     .get() as any;
-  assert(multi, 'Seed thiếu học viên có hai lộ trình');
-  const cs = cycles.cyclesOf(multi.student_id);
+  assert(multi, 'Seed thiếu học viên có hai lộ trình Fast Track');
+  const cs = cycles.cyclesOf(multi.student_id).filter((c: any) => c.target_score !== null);
   assert(cs.length >= 2 && cs[1].target_score !== cs[0].target_score, 'Lộ trình mới phải có target mới');
   const first = conn.prepare('SELECT MIN(attempt_no) n FROM assessment_attempts WHERE cycle_id = ?').get(cs[1].id) as any;
   assert(first.n === 1, 'Lộ trình mới phải bắt đầu lại từ MT1');
@@ -576,7 +587,12 @@ check('Hai nhóm case chưa xử lý / đang xử lý không chồng nhau', () =
 });
 check('Một lượt MT chỉ thuộc ĐÚNG MỘT tuần, không bị đếm hai lần', () => {
   const split = conn
-    .prepare(`SELECT * FROM assessment_attempts WHERE planned_period_id IS NOT NULL AND status != 'cancelled' LIMIT 1`)
+    .prepare(
+      `SELECT a.* FROM assessment_attempts a
+         JOIN report_periods rp ON rp.id = a.planned_period_id
+        WHERE a.status != 'cancelled'
+        ORDER BY rp.week_start DESC LIMIT 1`,
+    )
     .get() as any;
   const periods = week.listPeriods(40);
   let seen = 0;
@@ -617,10 +633,18 @@ console.log('\n10. Xử lý sau Mock và lưu dữ liệu');
 check('Mở case ngay khi kết luận được; mức tăng dần không nhân đôi case', () => {
   const s = conn
     .prepare(
+      /*
+       * Chọn em CHƯA có case Reading nào. Bộ demo mới cố tình có một em mang case Reading
+       * tái diễn (case cũ đã chốt, case mới nối vào); mở thêm một case Reading cho chính em
+       * đó thì phép kiểm này không còn nói về điều nó muốn nói nữa.
+       */
       `SELECT s.id, cy.id AS cycle_id, cy.target_score FROM students s
          JOIN enrollments e ON e.student_id = s.id
-         JOIN learning_cycles cy ON cy.student_id = s.id
-        WHERE e.class_id = ? AND cy.target_score IS NOT NULL ORDER BY s.id LIMIT 1`,
+         JOIN learning_cycles cy ON cy.student_id = s.id AND cy.status = 'active'
+        WHERE e.class_id = ? AND e.status = 'active' AND cy.target_score IS NOT NULL
+          AND NOT EXISTS (SELECT 1 FROM sos_cases sc
+                           WHERE sc.student_id = s.id AND sc.category = 'reading')
+        ORDER BY s.id LIMIT 1`,
     )
     .get(classId('CP-FT 110')) as any;
   const cpPeriod = periodOf('2026-11-09');
@@ -1175,11 +1199,15 @@ check('Đã bỏ trường "Loại" khỏi việc mới, giữ nguyên dữ li�
 // ==================================================================== 14
 
 console.log('\n14. Lớp thường: Foundation / Beginner / Elementary');
-const fouClass = (conn.prepare(`SELECT id, code, start_date FROM classes WHERE kind = 'FOU' ORDER BY id LIMIT 1`).get() as any);
+const fouClass = (conn.prepare(
+  `SELECT id, code, start_date FROM classes WHERE kind = 'FOU' AND status = 'active' ORDER BY id LIMIT 1`,
+).get() as any);
 /* Lớp mang MÃ CŨ "FOUND" — dùng để chứng minh ánh xạ mã cũ không viết đè lên mã lớp. */
 const legacyClass = (conn.prepare(`SELECT id, kind, programme_code FROM classes WHERE kind = 'FOUND' LIMIT 1`).get() as any);
 /* Chương trình 10 tuần (BE hoặc ELE dùng chung một khuôn) — lớp nào cũng chứng minh được. */
-const beClass = (conn.prepare(`SELECT id, code, start_date FROM classes WHERE programme_code IN ('BE','ELE') ORDER BY id LIMIT 1`).get() as any);
+const beClass = (conn.prepare(
+  `SELECT id, code, start_date FROM classes WHERE programme_code IN ('BE','ELE') AND status = 'active' ORDER BY id LIMIT 1`,
+).get() as any);
 
 check('Chương trình nằm trong dữ liệu, mã cũ FOUND ánh xạ về FOU mà không đổi mã lớp', () => {
   const fou = regular.programmeByCode('FOU');
@@ -1337,7 +1365,7 @@ check('Nhập điểm phải có cả số câu đúng và tổng; không tự �
     .get(fouClass.id) as any;
   if (fresh) {
     assertThrows(() => regular.saveRegularScore(T, fresh.id, 'listening', { score: 20 }),
-      /tổng số câu/, 'Nhập số câu đúng mà không có tổng');
+      /tổng điểm/, 'Nhập điểm đạt mà không có tổng điểm');
   }
   assertThrows(() => regular.saveRegularScore(T, row.attemptId, 'listening', { score: 45, total: 40 }),
     /không thể lớn hơn/, 'Số câu đúng lớn hơn tổng');
@@ -1851,13 +1879,18 @@ check('Lọc theo đầu mục và theo chủ đề', () => {
   for (const r of listening) assert(r.topic === 'listening', 'Lọc chủ đề sai');
 });
 
-check('Case sinh từ điểm và case giáo viên báo dùng CHUNG một vòng đời', () => {
+check('Ba nguồn case dùng CHUNG một vòng đời', () => {
+  /*
+   * BA nguồn, không phải hai: sinh từ điểm, giáo viên tự báo, và mở theo yêu cầu Quản lý.
+   * Cả ba nằm cùng một bảng với cùng bộ trạng thái, nên cộng lại phải đúng bằng tổng.
+   */
   const fromMock = cases.listCases(P.admin, { origin: 'mock' }).rows;
   const fromTeacher = cases.listCases(P.admin, { origin: 'teacher_report' }).rows;
-  assert(fromMock.length > 0 && fromTeacher.length > 0, 'Thiếu một trong hai nguồn case');
-  // Cùng một bảng, cùng bộ trạng thái, nên đếm chung được.
+  const fromTask = cases.listCases(P.admin, { origin: 'manager_task' }).rows;
+  assert(fromMock.length > 0 && fromTeacher.length > 0, 'Thiếu một trong hai nguồn case chính');
   const total = cases.listCases(P.admin, {}).rows.length;
-  assert(total === fromMock.length + fromTeacher.length, 'Hai nguồn không cộng lại thành tổng');
+  assert(total === fromMock.length + fromTeacher.length + fromTask.length,
+    `Ba nguồn cộng lại ${fromMock.length + fromTeacher.length + fromTask.length} khác tổng ${total}`);
   /*
    * `origin_kind` nói AI MỞ case, không phải case đó thuộc về thế giới nào.
    *
@@ -2152,7 +2185,7 @@ check('Không duyệt thì phương án dừng lại, không âm thầm thành v
 console.log('\n18. Việc của chính người đang xem');
 
 check('Quản lý thấy nhóm "Chờ tôi xử lý", giáo viên thì không', () => {
-  const gv = loadPrincipal(teacherOfSkill('MB-FT 101', 'listening'));
+  const gv = loadPrincipal(teacherOfSkill('MB-FT 102', 'listening'));
   const mgrGroups = mywork.myWork(P.mbManager).groups.map((g: any) => g.key);
   const gvGroups = mywork.myWork(gv).groups.map((g: any) => g.key);
   assert(!gvGroups.includes('decide'), 'Giáo viên bị giao việc duyệt mà họ không có quyền làm');
@@ -2213,7 +2246,7 @@ check('Đề xuất đang chờ duyệt thì chưa đòi cập nhật kết qu�
 console.log('\n19. Phân công giáo viên');
 
 check('Giáo viên không tự phân công mình vào lớp', () => {
-  const gv = loadPrincipal(teacherOfSkill('MB-FT 101', 'listening'));
+  const gv = loadPrincipal(teacherOfSkill('MB-FT 102', 'listening'));
   assertThrows(() => classesSvc.setClassTeachers(gv, mbClass, { slots: [] }),
     /Quản lý|Admin|quyền/, 'Giáo viên đổi phân công');
   assert(!can(gv, PERMISSIONS.CLASS_ASSIGN, { classId: mbClass }), 'Giáo viên đang có quyền phân công');
@@ -2327,8 +2360,17 @@ check('MỖI KỸ NĂNG CHỈ MỘT GIÁO VIÊN — xếp hai người vào mộ
    * Listening thì cả hai đều tưởng người kia nhập điểm, và không ai nhập.
    */
   const t = classesSvc.classTeachers(P.mbManager, mbClass);
-  const two = t.candidates.slice(0, 2);
-  assert(two.length === 2, 'Chi nhánh không đủ hai giáo viên để thử');
+  /*
+   * Phải chọn hai người ĐANG DẠY một kỹ năng ở chính lớp này.
+   *
+   * Luật khác của cùng mục 7.7 nói GVCN phải dạy ít nhất một kỹ năng ở lớp mình chủ nhiệm.
+   * Lấy bừa hai cái tên trong chi nhánh thì phép kiểm rơi vào luật ấy trước và không bao giờ
+   * chạm tới luật đang muốn kiểm.
+   */
+  const two = [...new Set(t.bySkill.map((b: any) => b.userId))]
+    .slice(0, 2)
+    .map((id) => ({ id }));
+  assert(two.length === 2, 'Lớp không đủ hai giáo viên bộ môn để thử');
 
   const base = [
     ...t.core.map((c: any) => ({ userId: c.userId, skill: null, isCore: true })),
@@ -2410,8 +2452,14 @@ console.log('\n20. Vấn đề gắn với một kỹ năng');
 check('Một lượt trượt nhiều kỹ năng sinh NHIỀU vấn đề, mỗi kỹ năng một cái', () => {
   const rows = conn
     .prepare(
+      /*
+       * Loại case SONG SONG và case TÁI DIỄN: cả hai cố tình là case thứ hai ở cùng hạng
+       * mục, và người dùng đã thấy cảnh báo trùng trước khi mở. Phép kiểm này nói về việc
+       * MÁY tự mở trùng, không phải về lựa chọn của người dùng.
+       */
       `SELECT attempt_id, COUNT(*) n, COUNT(DISTINCT topic) t FROM sos_cases
-        WHERE attempt_id IS NOT NULL GROUP BY attempt_id`,
+        WHERE attempt_id IS NOT NULL AND parallel = 0 AND previous_case_id IS NULL
+        GROUP BY attempt_id`,
     )
     .all() as any[];
   assert(rows.some((r) => r.n > 1), 'Không lượt nào sinh quá một vấn đề — vẫn đang gom cả lượt');
@@ -3168,8 +3216,16 @@ check('Bảng theo dõi hỗ trợ luôn đủ SÁU hạng mục, kể cả hạ
 check('Cảnh báo case trùng: báo lại hạng mục đã có case chưa xong thì phải hỏi trước', () => {
   const open = conn
     .prepare(
+      /*
+       * Case phải nằm trong LỘ TRÌNH ĐANG CHẠY của em.
+       *
+       * Khoá chống trùng tính theo từng lộ trình, nên một case còn mở từ chương trình TRƯỚC
+       * không chặn việc mở case mới ở chương trình hiện tại — và đúng là không nên chặn.
+       */
       `SELECT sc.id, sc.student_id, sc.topic FROM sos_cases sc
+         JOIN learning_cycles cy ON cy.id = sc.cycle_id AND cy.status = 'active'
         WHERE sc.track = 'academic' AND sc.status != 'done' AND sc.parallel = 0
+          AND sc.previous_case_id IS NULL
           AND sc.topic IS NOT NULL LIMIT 1`,
     )
     .get() as any;
@@ -3215,7 +3271,13 @@ check('Lớp Normal: chấm lại một bài CŨ vẫn hạ được mức của
     .prepare(
       `SELECT sc.id, sc.category, sc.topic, sc.sos_level, a.id AS attempt_id, a.student_id, a.cycle_id
          FROM sos_cases sc
-         JOIN assessment_attempts a ON a.student_id = sc.student_id
+         /*
+          * Lượt phải thuộc CHÍNH LỘ TRÌNH của case. Một em đi Foundation → Beginner có bài
+          * ở cả hai chương trình; chấm lại một bài Foundation không nói gì về case của lớp
+          * Beginner, và cũng không nên nói.
+          */
+         JOIN assessment_attempts a
+           ON a.student_id = sc.student_id AND a.cycle_id = sc.cycle_id
          JOIN classes cl ON cl.id = a.class_id
         WHERE sc.track = 'academic' AND sc.status != 'done' AND sc.sos_level > 0
           AND cl.kind != 'FT' AND a.status = 'done'
@@ -3779,10 +3841,20 @@ check('Case sinh từ bài Normal KHÔNG mang tên "MT"', () => {
 });
 
 check('Chuyển tiếp: FOU → BE là luồng mặc định, và hệ thống KHÔNG tự chuyển ai', () => {
+  /*
+   * Bộ demo có cả lớp Foundation ĐÃ KẾT THÚC (giữ lại để tra lịch sử), và một lớp đã hết
+   * chương trình mà học viên chưa được xếp lớp tiếp. Kế hoạch chuyển tiếp chỉ có nghĩa với
+   * lớp thứ hai, nên phải chọn lớp CÒN HỌC VIÊN ĐANG HỌC.
+   */
   const fou = conn
-    .prepare(`SELECT id, code FROM classes WHERE programme_code = 'FOU' ORDER BY id LIMIT 1`)
+    .prepare(
+      `SELECT c.id, c.code FROM classes c
+        WHERE c.programme_code = 'FOU' AND c.status = 'active'
+          AND EXISTS (SELECT 1 FROM enrollments e WHERE e.class_id = c.id AND e.status = 'active')
+        ORDER BY c.id LIMIT 1`,
+    )
     .get() as any;
-  assert(fou, 'Seed thiếu lớp Foundation');
+  assert(fou, 'Seed thiếu lớp Foundation còn học viên đang học');
   const plan = transition.transitionPlan(P.admin, fou.id) as any;
   assert(plan.defaultProgramme === 'BE', `Luồng mặc định của FOU phải là BE, đang là ${plan.defaultProgramme}`);
   assert(plan.students.length > 0, 'Kế hoạch chuyển tiếp không có học viên nào');
@@ -3796,7 +3868,12 @@ check('Chuyển tiếp: FOU → BE là luồng mặc định, và hệ thống K
 
 check('Chuyển tiếp: mở lớp mới, chuyển cả lớp, GIỮ NGUYÊN lớp cũ trong lịch sử', () => {
   const src = conn
-    .prepare(`SELECT id, code, programme_code FROM classes WHERE programme_code = 'FOU' ORDER BY id LIMIT 1`)
+    .prepare(
+      `SELECT c.id, c.code, c.programme_code FROM classes c
+        WHERE c.programme_code = 'FOU' AND c.status = 'active'
+          AND EXISTS (SELECT 1 FROM enrollments e WHERE e.class_id = c.id AND e.status = 'active')
+        ORDER BY c.id LIMIT 1`,
+    )
     .get() as any;
   const plan = transition.transitionPlan(P.admin, src.id) as any;
   const ids = plan.students.map((s: any) => s.id);
@@ -4086,7 +4163,8 @@ check('Case của lớp trước là việc BÀN GIAO, không phải mức SOS c
           AND EXISTS (SELECT 1 FROM enrollments o WHERE o.student_id = e.student_id AND o.status='transferred')
           AND EXISTS (SELECT 1 FROM sos_cases sc
                        JOIN learning_cycles cy ON cy.id = sc.cycle_id
-                      WHERE sc.student_id = e.student_id AND sc.status != 'done' AND cy.status = 'ended')
+                      WHERE sc.student_id = e.student_id AND sc.status != 'done'
+                        AND cy.status = 'completed')
         ORDER BY e.student_id LIMIT 1`,
     )
     .get() as any;
@@ -4245,10 +4323,18 @@ check('[6] Hạn: chu kỳ đầu, chu kỳ tiếp, chờ duyệt, cập nhật 
     'Phương án chờ duyệt đã bị tính hạn thực hiện như thể đang chạy');
   assert(pending.approval_due !== null, 'Phương án chờ duyệt không có hạn cho Quản lý trả lời');
   /* Được duyệt thì chu kỳ chạy TỪ NGÀY DUYỆT. */
+  /*
+   * Phải chọn một phương án ĐÃ DUYỆT VÀ CÒN ĐANG CHẠY: phương án đã hoàn thành thì không
+   * còn hạn thực hiện nào để kiểm, và để trống hạn ở đó là đúng chứ không phải lỗi.
+   */
   const appr = conn
-    .prepare(`SELECT * FROM case_interventions WHERE approval_state = 'approved' AND approval_at IS NOT NULL LIMIT 1`)
+    .prepare(
+      `SELECT * FROM case_interventions
+        WHERE approval_state = 'approved' AND approval_at IS NOT NULL
+          AND status IN ('planned', 'started') LIMIT 1`,
+    )
     .get() as any;
-  assert(appr, 'Không có phương án nào đã được duyệt');
+  assert(appr, 'Không có phương án nào đã được duyệt và còn đang chạy');
   assert(appr.cycle_started_on === appr.approval_at.slice(0, 10),
     `Chu kỳ bắt đầu ${appr.cycle_started_on} mà duyệt ngày ${appr.approval_at.slice(0, 10)}`);
   assert(appr.action_due === domain.cycleDeadline(appr.cycle_started_on),
@@ -4395,6 +4481,7 @@ check('[12] Seed chạy lại cho ra đúng bộ dữ liệu cũ, không nhân �
       `SELECT COUNT(*) n FROM (
          SELECT student_id, category FROM sos_cases
           WHERE status != 'done' AND student_id IS NOT NULL AND parallel = 0
+            AND previous_case_id IS NULL
             AND track = 'academic'
           GROUP BY student_id, cycle_id, category HAVING COUNT(*) > 1)`,
     )
@@ -4403,7 +4490,14 @@ check('[12] Seed chạy lại cho ra đúng bộ dữ liệu cũ, không nhân �
    * Luật một-case-một-hạng-mục chỉ áp cho case HỌC THUẬT trong cùng một lộ trình. Case Ý
    * thức/Khác gắn với từng sự việc, nên một em có thể có nhiều case cùng lúc mà không trùng.
    */
-  assert(dupCase.n === 0, `${dupCase.n} nhóm case học thuật trùng hạng mục mà không đánh dấu song song`);
+  const dupDetail = conn.prepare(
+    `SELECT student_id, cycle_id, category, GROUP_CONCAT(id) ids FROM sos_cases
+      WHERE status != 'done' AND student_id IS NOT NULL AND parallel = 0
+        AND previous_case_id IS NULL AND track = 'academic'
+      GROUP BY student_id, cycle_id, category HAVING COUNT(*) > 1`).all() as any[];
+  assert(dupCase.n === 0,
+    `${dupCase.n} nhóm case học thuật trùng hạng mục mà không đánh dấu song song: `
+    + dupDetail.map((d) => `hv${d.student_id}/${d.category}[${d.ids}]`).join(' · '));
   /* Mọi bản ghi đều nối đúng chỗ — không có case mồ côi sau khi dựng lại dữ liệu. */
   const fk = conn.prepare('PRAGMA foreign_key_check').all() as any[];
   assert(fk.length === 0, `${fk.length} bản ghi vi phạm khoá ngoại`);
@@ -4578,6 +4672,21 @@ check('Người theo dõi xem được nhưng không cập nhật hộ', () => {
   /* Người theo dõi không phải người phụ trách — bảng phải nói rõ hai vai khác nhau. */
   assert(detail.watcherUserId !== detail.assigneeUserId,
     'Người theo dõi và người phụ trách đang bị trộn làm một');
+});
+
+
+check('Bảng "Việc cần lưu ý" chỉ đếm trong phạm vi người đang xem', () => {
+  /*
+   * Lỗi cũ: hàng của chi nhánh ghi 11 học viên mà hàng "Tất cả chi nhánh" ngay dưới ghi 40 —
+   * vì câu lệnh lấy sĩ số của mọi lớp trong trung tâm, không lọc theo phạm vi người xem.
+   */
+  const all = pulse.branchPulse(P.admin, {})!;
+  const mine = pulse.branchPulse(P.mbManager, {})!;
+  assert(mine.total.size < all.total.size,
+    `Quản lý một chi nhánh thấy tổng ${mine.total.size} bằng cả trung tâm ${all.total.size}`);
+  const sumRows = mine.rows.reduce((z: number, r: any) => z + r.metrics.size, 0);
+  assert(sumRows <= mine.total.size,
+    `Cộng các hàng ra ${sumRows} mà hàng tổng ghi ${mine.total.size}`);
 });
 
 console.log(`\n${'='.repeat(60)}`);

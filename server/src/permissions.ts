@@ -296,6 +296,23 @@ export function editableSkills(p: Principal, classId: number, skills: readonly s
   );
 }
 
+/**
+ * KỸ NĂNG LÀ VIỆC CỦA CHÍNH NGƯỜI NÀY — chỉ đường PHÂN CÔNG, không tính đường sửa hộ.
+ *
+ * Khác `editableSkills` ở đúng một chỗ, và chỗ đó là cả vấn đề (mục 3.3):
+ *
+ *   ĐƯỢC PHÉP SỬA  Quản trị hệ thống và Quản lý có quyền sửa điểm mọi kỹ năng để gỡ sự cố.
+ *   LÀ VIỆC CỦA TÔI  chỉ kỹ năng người đó được PHÂN CÔNG dạy ở chính lớp đó.
+ *
+ * Trộn hai thứ này lại thì mở màn Tổng quan lên, Quản trị hệ thống thấy mình đang nợ điểm
+ * của cả trung tâm — kể cả những lớp chưa phân công ai. Một danh sách việc như thế không ai
+ * đọc, và lớp thật sự thiếu giáo viên thì chìm nghỉm trong đó. Lớp thiếu người đã có nhãn
+ * "Thiếu GV ..." riêng ở danh sách lớp; đó mới là việc cần làm, và nó là việc PHÂN CÔNG.
+ */
+export function mySkills(p: Principal, classId: number, skills: readonly string[]): string[] {
+  return skills.filter((skill) => can(p, PERMISSIONS.SCORE_EDIT, { classId, skill }));
+}
+
 /** Người dùng đang sửa điểm bằng đường nào — dùng để ghi nhật ký cho đúng. */
 export function scoreEditPath(p: Principal, classId: number, skill: string): 'assigned' | 'override' | null {
   if (can(p, PERMISSIONS.SCORE_EDIT, { classId, skill })) return 'assigned';
