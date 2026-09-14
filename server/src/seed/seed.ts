@@ -1543,49 +1543,106 @@ function seedMeeting(conn: any, ctx: {
   });
 
   // ---------------------------------------------------------------- công việc
+  /*
+   * VIỆC QUẢN LÝ (mục 8).
+   *
+   * Mỗi việc thuộc MỘT nhóm, có thể có VIỆC CON một tầng, có thể có người theo dõi, và mỗi
+   * lần cập nhật là một dòng lịch sử riêng chứ không đè lên trạng thái cũ. Bộ demo dưới đây
+   * cố tình có đủ: việc đang chạy, việc tạm ngưng có ngày xem lại, việc dừng hẳn có lý do,
+   * việc cha còn con chưa xong, và việc giao cho giáo viên nhưng Quản lý theo dõi.
+   */
   let n = 0;
   const addTask = (t: {
     title: string; unit?: any; branch?: string | null; assignee: number; due: string | null;
     progress: string; type: string; periodId: number | null; note?: string | null; completedAt?: string | null;
-  }) => {
+    group?: string | null; parentId?: number | null; watcher?: number | null;
+    stopReason?: string | null; reviewOn?: string | null;
+    updates?: { progress: string; note?: string | null; on: string; by?: number }[];
+  }): number => {
     n += 1;
-    conn
-      .prepare(
-        `INSERT INTO tasks (code, period_id, task_type, title, reporting_unit_id, branch_id, assignee_user_id,
-                            due_date, progress, note, source_type, created_by, created_at, completed_at)
-         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-      )
-      .run(padCode('CV', n, 4), t.periodId, t.type, t.title, t.unit?.id ?? null,
-           t.branch ? branchId.get(t.branch)! : null, t.assignee, t.due, t.progress, t.note ?? null,
-           'manual', adminId, NOW, t.completedAt ?? null);
+    const id = Number(
+      conn
+        .prepare(
+          `INSERT INTO tasks (code, period_id, task_type, title, reporting_unit_id, branch_id, assignee_user_id,
+                              due_date, progress, note, source_type, created_by, created_at, completed_at,
+                              group_key, parent_task_id, watcher_user_id, stop_reason, review_on)
+           VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+        )
+        .run(padCode('CV', n, 4), t.periodId, t.type, t.title, t.unit?.id ?? null,
+             t.branch ? branchId.get(t.branch)! : null, t.assignee, t.due, t.progress, t.note ?? null,
+             'manual', adminId, NOW, t.completedAt ?? null,
+             t.group ?? null, t.parentId ?? null, t.watcher ?? null,
+             t.stopReason ?? null, t.reviewOn ?? null).lastInsertRowid,
+    );
+    for (const u of t.updates ?? []) {
+      conn
+        .prepare(
+          `INSERT INTO task_updates (task_id, period_id, progress, note, actor_user_id, updated_on, created_at)
+           VALUES (?,?,?,?,?,?,?)`,
+        )
+        .run(id, t.periodId, u.progress, u.note ?? null, u.by ?? t.assignee, u.on, NOW);
+    }
+    return id;
   };
 
   const unitOf = (code: string) => units.find((u) => u.code === code);
   const prevId = prev?.id ?? currentPeriodId;
 
   // Quá hạn từ kỳ trước — vẫn phải xuất hiện khi xem tuần này, giữ nguyên ID và lịch sử.
-  addTask({ title: 'In bổ sung đáp án Writing bản mới cho 3 lớp FT', unit: unitOf('MB'), branch: 'MB',
-    assignee: managers.get('MB')![0], due: '2026-09-09', progress: 'doing', type: 'in_period', periodId: prevId });
+  // Việc CHA: còn hai việc con nên chưa được phép đánh dấu hoàn thành.
+  const parentPrint = addTask({ title: 'In bổ sung đáp án Writing bản mới cho 3 lớp FT', unit: unitOf('MB'), branch: 'MB',
+    assignee: managers.get('MB')![0], due: '2026-09-09', progress: 'doing', type: 'in_period', periodId: prevId,
+    group: 'curriculum',
+    updates: [
+      { progress: 'not_started', note: 'Đã gửi yêu cầu sang bộ phận in.', on: '2026-09-03' },
+      { progress: 'doing', note: 'Nhận được bản in thử, còn thiếu phần Task 1.', on: '2026-09-08' },
+    ] });
+  addTask({ title: 'Soát lại đáp án Writing Task 1 trước khi in', unit: unitOf('MB'), branch: 'MB',
+    assignee: managers.get('MB')![0], due: '2026-09-08', progress: 'done', type: 'in_period', periodId: prevId,
+    group: 'curriculum', parentId: parentPrint, completedAt: '2026-09-08T10:00:00.000Z',
+    updates: [{ progress: 'done', note: 'Đã soát xong, gửi lại bản sửa.', on: '2026-09-08' }] });
+  addTask({ title: 'Phát tài liệu về ba lớp FT', unit: unitOf('MB'), branch: 'MB',
+    assignee: managers.get('MB')![0], due: '2026-09-18', progress: 'not_started', type: 'in_period',
+    periodId: currentPeriodId, group: 'curriculum', parentId: parentPrint });
+
   addTask({ title: 'Bổ sung giáo viên dự phòng ca tối', unit: unitOf('BC'), branch: 'BC',
-    assignee: managers.get('BC')![0], due: '2026-09-07', progress: 'not_started', type: 'in_period', periodId: prevId });
+    assignee: managers.get('BC')![0], due: '2026-09-07', progress: 'not_started', type: 'in_period', periodId: prevId,
+    group: 'teacher' });
   // Sắp đến hạn trong 3 ngày.
   addTask({ title: 'Chốt danh sách học viên thi thật tháng 11', unit: unitOf('CP'), branch: 'CP',
-    assignee: managers.get('CP')![0], due: '2026-09-16', progress: 'doing', type: 'in_period', periodId: currentPeriodId });
+    assignee: managers.get('CP')![0], due: '2026-09-16', progress: 'doing', type: 'in_period', periodId: currentPeriodId,
+    group: 'student_parent',
+    updates: [{ progress: 'doing', note: 'Đã gọi 12/18 phụ huynh, còn 6 em chưa phản hồi.', on: '2026-09-13' }] });
   // Hoàn thành sau hạn — KHÔNG được đánh dấu quá hạn nữa.
   addTask({ title: 'Rà soát lịch Mock tuần W2 SEP', unit: unitOf('HD'), branch: 'HD',
     assignee: managers.get('HD')![0], due: '2026-09-06', progress: 'done', type: 'in_period', periodId: prevId,
-    completedAt: '2026-09-10T09:00:00.000Z' });
+    group: 'teacher', completedAt: '2026-09-10T09:00:00.000Z',
+    updates: [{ progress: 'done', note: 'Đã khớp lịch với cả bốn giáo viên.', on: '2026-09-10' }] });
   // Không có hạn — không bao giờ tự tính quá hạn.
   addTask({ title: 'Sưu tầm đề Speaking part 2 theo chủ đề mới', unit: unitOf('TUTOR'), branch: null,
-    assignee: adminId, due: null, progress: 'doing', type: 'long_term', periodId: currentPeriodId });
+    assignee: adminId, due: null, progress: 'doing', type: 'long_term', periodId: currentPeriodId,
+    group: 'tutor' });
   // Dài hạn chưa xong — xét xuyên kỳ, không clone sang tuần mới.
   addTask({ title: 'Chuẩn hoá quy trình bàn giao lớp giữa các ca', unit: unitOf('UB'), branch: 'UB',
-    assignee: managers.get('UB')![0], due: '2026-11-30', progress: 'doing', type: 'long_term', periodId: prevId });
+    assignee: managers.get('UB')![0], due: '2026-11-30', progress: 'doing', type: 'long_term', periodId: prevId,
+    group: 'teacher', watcher: adminId });
   addTask({ title: 'Tuyển thêm 2 tutor part-time cho ca cuối tuần', unit: unitOf('TUTOR'), branch: null,
-    assignee: adminId, due: '2026-10-15', progress: 'not_started', type: 'long_term', periodId: currentPeriodId });
-  addTask({ title: 'Tạm dừng: đổi phần mềm chấm Speaking', unit: unitOf('MB'), branch: 'MB',
+    assignee: adminId, due: '2026-10-15', progress: 'not_started', type: 'long_term', periodId: currentPeriodId,
+    group: 'tutor' });
+  // Tạm ngưng: BẮT BUỘC có lý do, và có ngày xem lại để không rơi vào quên lãng.
+  addTask({ title: 'Đổi phần mềm chấm Speaking', unit: unitOf('MB'), branch: 'MB',
     assignee: managers.get('MB')![0], due: '2026-09-11', progress: 'paused', type: 'in_period', periodId: prevId,
-    note: 'Chờ báo giá nhà cung cấp' });
+    group: 'curriculum', note: 'Chờ báo giá nhà cung cấp',
+    stopReason: 'Chờ báo giá nhà cung cấp, dự kiến có trong tháng 10.', reviewOn: '2026-10-05',
+    updates: [{ progress: 'paused', note: 'Chờ báo giá nhà cung cấp, dự kiến có trong tháng 10.', on: '2026-09-11' }] });
+  // Dừng hẳn: cũng bắt buộc có lý do, và không bao giờ hiện trong danh sách việc đang chạy.
+  addTask({ title: 'Mở lớp Speaking club tối thứ Sáu', unit: unitOf('BC'), branch: 'BC',
+    assignee: managers.get('BC')![0], due: '2026-09-30', progress: 'stopped', type: 'long_term', periodId: prevId,
+    group: 'student_parent', stopReason: 'Chỉ 4 em đăng ký, không đủ mở lớp. Gộp vào buổi tutor cuối tuần.',
+    updates: [
+      { progress: 'doing', note: 'Đã khảo sát 3 lớp.', on: '2026-09-02' },
+      { progress: 'stopped', note: 'Chỉ 4 em đăng ký, không đủ mở lớp.', on: '2026-09-12' },
+    ] });
 
   // Việc sinh ra từ một case SOS, giữ liên kết nguồn để mở lại đúng lần Mock.
   const someCase = conn.prepare('SELECT * FROM sos_cases WHERE sos_level = 3 ORDER BY id LIMIT 1').get() as any;
@@ -1598,12 +1655,17 @@ function seedMeeting(conn: any, ctx: {
     conn
       .prepare(
         `INSERT INTO tasks (code, period_id, task_type, title, reporting_unit_id, branch_id, assignee_user_id,
-                            due_date, progress, note, source_type, source_sos_case_id, created_by, created_at)
-         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+                            due_date, progress, note, source_type, source_sos_case_id, created_by, created_at,
+                            group_key)
+         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       )
       .run(padCode('CV', n, 4), currentPeriodId, 'in_period',
            `Xếp lịch tutor cho ${at.full_name} (${at.class_code})`, unit?.id ?? null, at.branch_id, adminId,
-           '2026-09-17', 'not_started', 'Sinh từ case SOS 3', 'sos_case', someCase.id, adminId, NOW);
+           '2026-09-17', 'not_started', 'Sinh từ case SOS 3', 'sos_case', someCase.id, adminId, NOW,
+           'student_parent');
+    conn
+      .prepare('INSERT OR IGNORE INTO task_case_links (task_id, case_id, created_at) VALUES (?,?,?)')
+      .run(Number(conn.prepare('SELECT id FROM tasks WHERE code = ?').get(padCode('CV', n, 4)).id), someCase.id, NOW);
   }
   return n;
 }

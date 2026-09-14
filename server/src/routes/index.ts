@@ -31,6 +31,7 @@ import * as planningSvc from '../fasttrack/planning.ts';
 import { signalsFor } from '../worklist/signals.ts';
 import * as accountSvc from '../platform/accounts.ts';
 import * as sysconfigSvc from '../platform/sysconfig.ts';
+import * as mgmtSvc from '../worklist/mgmttasks.ts';
 import { weeklyRollup } from '../worklist/weekly.ts';
 import { myWork } from '../worklist/mywork.ts';
 import * as caseSvc from '../cases/cases.ts';
@@ -101,6 +102,12 @@ api.get('/demo/session', wrap((req) => {
        * được xem cái nào có thể tách ra mà không phải sửa giao diện.
        */
       academic: !scopeFor(p, PERMISSIONS.MEETING_VIEW).none,
+      /*
+       * TIẾN ĐỘ CÔNG VIỆC — toàn bộ tab chỉ dành cho Quản trị hệ thống và Quản lý chi nhánh
+       * (mục 8.3). Giáo viên vẫn nhận và cập nhật được việc con giao cho mình, nhưng qua
+       * Toàn cảnh và đường dẫn trực tiếp, không qua tab quản lý.
+       */
+      mgmtTasks: mgmtSvc.canSeeBoard(p),
       admin: can(p, PERMISSIONS.ADMIN_CONFIG, { anyScope: true }),
     },
   };
@@ -859,6 +866,48 @@ api.post('/notifications/:id/read', requireAuth, wrap((req) => {
     .run(demoToday(), pInt(req, 'id'), p.userId);
   return { ok: true };
 }));
+
+// ============================================================ Tiến độ công việc (mục 8)
+
+api.get('/mgmt-tasks', requireAuth, wrap((req) => mgmtSvc.listMgmtTasks(principalOf(req), {
+  branchId: qInt(req, 'branchId'),
+  group: qStr(req, 'group'),
+  progress: qStr(req, 'progress'),
+  assigneeUserId: qInt(req, 'assigneeUserId'),
+  periodId: qInt(req, 'periodId'),
+})));
+
+/** Việc được giao cho chính người đang xem — hiện ở Toàn cảnh, không cần mở tab quản lý. */
+api.get('/mgmt-tasks/mine', requireAuth, wrap((req) => mgmtSvc.myMgmtTasks(principalOf(req))));
+
+api.get('/mgmt-tasks/:id', requireAuth, wrap((req) =>
+  mgmtSvc.mgmtTaskDetail(principalOf(req), pInt(req, 'id'))));
+
+api.post('/mgmt-tasks', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  const b = req.body ?? {};
+  return mgmtSvc.createMgmtTask(principalOf(req), {
+    title: String(b.title ?? ''), group: String(b.group ?? ''),
+    branchId: b.branchId ? Number(b.branchId) : null,
+    assigneeUserId: b.assigneeUserId ? Number(b.assigneeUserId) : null,
+    watcherUserId: b.watcherUserId ? Number(b.watcherUserId) : null,
+    due: b.due ?? null, note: b.note ?? null,
+    parentTaskId: b.parentTaskId ? Number(b.parentTaskId) : null,
+    caseIds: Array.isArray(b.caseIds) ? b.caseIds.map(Number) : [],
+  });
+}));
+
+api.post('/mgmt-tasks/:id/update', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  const b = req.body ?? {};
+  return mgmtSvc.updateMgmtTask(principalOf(req), pInt(req, 'id'), {
+    progress: String(b.progress ?? ''), note: b.note ?? null, reason: b.reason ?? null,
+    on: b.on ?? null, reviewOn: b.reviewOn ?? null,
+  });
+}));
+
+api.patch('/mgmt-tasks/:id', requireAuth, wrap((req) =>
+  mgmtSvc.editMgmtTask(principalOf(req), pInt(req, 'id'), req.body ?? {})));
 
 // ============================================================ Quản trị (lối phụ)
 

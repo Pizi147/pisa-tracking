@@ -13,6 +13,7 @@ import ClassOverviewPage from './modules/classes/ClassOverviewPage.tsx';
 import StudentDetailPage from './modules/students/StudentDetailPage.tsx';
 import AcademicPage, { CaseRoutePage } from './modules/cases/CaseBoardPage.tsx';
 import MeetingPage from './modules/worklist/MeetingPage.tsx';
+import MgmtTasksPage from './modules/worklist/MgmtTasksPage.tsx';
 import AdminPage from './modules/platform/AdminPage.tsx';
 import ProfilePage from './modules/platform/ProfilePage.tsx';
 import WelcomePage from './modules/platform/WelcomePage.tsx';
@@ -34,6 +35,11 @@ import WelcomePage from './modules/platform/WelcomePage.tsx';
 const NAV = [
   { to: '/', label: 'Tổng quan', key: 'overview' as const },
   { to: '/hoc-vien', label: 'Học viên', key: 'students' as const },
+  /*
+   * Mục thứ ba chỉ hiện với Quản trị hệ thống và Quản lý chi nhánh. Với mọi người khác,
+   * danh sách điều hướng vẫn đúng hai mục như cũ.
+   */
+  { to: '/tien-do-cong-viec', label: 'Tiến độ công việc', key: 'mgmtTasks' as const },
 ];
 
 function LegacySheetRedirect() {
@@ -68,7 +74,7 @@ export default function App() {
   if (loading) return <div className="p-8 max-w-4xl mx-auto"><Skeleton rows={8} /></div>;
   if (!session?.authenticated) return <WelcomePage />;
 
-  const nav = session.nav ?? { overview: true, mocks: false, students: false, meeting: false, admin: false };
+  const nav = session.nav ?? { overview: true, mocks: false, students: false, meeting: false, academic: false, mgmtTasks: false, admin: false };
   const items = NAV.filter((n) => nav[n.key]);
 
   return (
@@ -119,6 +125,12 @@ export default function App() {
           <Route path="/tong-hop-tuan" element={<WeeklyRollupPage />} />
           <Route path="/mock-test/:id" element={<MockDetailPage />} />
           <Route path="/tien-trinh" element={<MeetingPage />} />
+          {/*
+            Bảng việc quản lý: cũng chỉ gắn khi người xem có quyền, để người không có quyền
+            không thấy trang tải rồi mới báo từ chối.
+          */}
+          <Route path="/tien-do-cong-viec"
+            element={nav.mgmtTasks ? <MgmtTasksPage /> : <Navigate to="/" replace />} />
           {/*
             MÀN QUẢN TRỊ CHỈ GẮN VÀO KHI NGƯỜI XEM CÓ QUYỀN.
 

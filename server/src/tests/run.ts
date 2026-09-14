@@ -44,6 +44,7 @@ const accounts = await import('../platform/accounts.ts');
 const sysconfig = await import('../platform/sysconfig.ts');
 const mywork = await import('../worklist/mywork.ts');
 const standing = await import('../students/standing.ts');
+const mgmt = await import('../worklist/mgmttasks.ts');
 const { ratioResult: domainRatio } = await import('../../../shared/domain/index.ts');
 const { demoToday } = await import('../demoConfig.ts');
 const { addDays } = await import('../util.ts');
@@ -4461,6 +4462,90 @@ check('Chuyển lớp khi còn case dở thì BẮT BUỘC có thông tin bàn g
     .prepare(`SELECT detail FROM journey_events WHERE student_id = ? AND event_type = 'transfer' ORDER BY id DESC LIMIT 1`)
     .get(row.sid) as any;
   assert((ev?.detail ?? '').includes('tutor'), 'Ghi chú bàn giao không được lưu vào hành trình');
+});
+
+
+/* ============================================================ mục 8 · Tiến độ công việc */
+
+check('Bảng Tiến độ công việc chỉ mở cho Quản trị hệ thống và Quản lý chi nhánh', () => {
+  assert(mgmt.canSeeBoard(P.admin), 'Quản trị hệ thống không vào được bảng công việc');
+  assert(mgmt.canSeeBoard(P.mbManager), 'Quản lý chi nhánh không vào được bảng công việc');
+  const teacher = Object.entries(P).find(([k]) => k.toLowerCase().includes('teacher'))?.[1] as any;
+  if (teacher) assert(!mgmt.canSeeBoard(teacher), 'Giáo viên vẫn nhìn thấy toàn bộ bảng công việc');
+});
+
+check('Một công việc có MỘT định danh: việc con không lên bảng chính, việc cha đếm hộ', () => {
+  const board = mgmt.listMgmtTasks(P.admin, {});
+  const withSubs = board.rows.find((r: any) => r.subTotal > 0);
+  assert(withSubs, 'Dữ liệu demo không có việc nào chia việc con');
+  const detail = mgmt.mgmtTaskDetail(P.admin, withSubs!.id);
+  assert(detail.subtasks.length === withSubs!.subTotal,
+    `Bảng nói ${withSubs!.subTotal} việc con nhưng mở ra thấy ${detail.subtasks.length}`);
+  /* Không việc con nào được xuất hiện thành một dòng riêng trên bảng chính. */
+  for (const sub of detail.subtasks) {
+    assert(!board.rows.some((r: any) => r.id === sub.id),
+      `Việc con "${sub.title}" bị đếm hai lần: vừa là việc con, vừa là một dòng riêng`);
+  }
+});
+
+check('Việc con chỉ có MỘT tầng, và tạm ngưng / dừng hẳn bắt buộc có lý do', () => {
+  const board = mgmt.listMgmtTasks(P.admin, {});
+  const parent = board.rows.find((r: any) => r.subTotal > 0)!;
+  const sub = mgmt.mgmtTaskDetail(P.admin, parent.id).subtasks[0];
+
+  assertThrows(
+    () => mgmt.createMgmtTask(P.admin, {
+      title: 'Việc cháu', group: 'curriculum', assigneeUserId: parent.assigneeUserId,
+      due: '2026-10-01', parentTaskId: sub.id,
+    }),
+    /một tầng/i, 'Tạo được việc con của việc con',
+  );
+
+  for (const p of ['paused', 'stopped'] as const) {
+    assertThrows(
+      () => mgmt.updateMgmtTask(P.admin, parent.id, { progress: p, note: null }),
+      /lý do|vì sao/i, `Đổi sang "${p}" mà không cần nói lý do`,
+    );
+  }
+});
+
+check('Việc cha còn việc con dang dở thì chưa đánh dấu hoàn thành được', () => {
+  const board = mgmt.listMgmtTasks(P.admin, {});
+  const parent = board.rows.find((r: any) => r.subTotal > r.subDone);
+  assert(parent, 'Dữ liệu demo không có việc cha nào còn việc con dở');
+  assertThrows(
+    () => mgmt.updateMgmtTask(P.admin, parent!.id, { progress: 'done', note: 'xong rồi' }),
+    /việc con/i, 'Đóng được việc cha trong khi việc con còn dở',
+  );
+});
+
+check('Mỗi lần cập nhật là một dòng lịch sử, không đè lên lần trước', () => {
+  const board = mgmt.listMgmtTasks(P.admin, {});
+  const row = board.rows.find((r: any) => r.subTotal === 0 && r.progress !== 'done' && r.progress !== 'stopped')!;
+  const before = mgmt.mgmtTaskDetail(P.admin, row.id).updates.length;
+  mgmt.updateMgmtTask(P.admin, row.id, { progress: 'doing', note: 'Đã gọi điện lần một.' });
+  mgmt.updateMgmtTask(P.admin, row.id, { progress: 'doing', note: 'Đã gọi điện lần hai.' });
+  const after = mgmt.mgmtTaskDetail(P.admin, row.id);
+  assert(after.updates.length === before + 2,
+    `Ghi hai lần cập nhật nhưng lịch sử chỉ tăng ${after.updates.length - before} dòng`);
+  /* Lần mới nhất đứng đầu, và nội dung cũ vẫn đọc lại được. */
+  assert(after.updates[0].note === 'Đã gọi điện lần hai.', 'Lần cập nhật mới nhất không đứng đầu lịch sử');
+  assert(after.updates.some((u: any) => u.note === 'Đã gọi điện lần một.'),
+    'Lần cập nhật trước đã bị xoá mất');
+});
+
+check('Người theo dõi xem được nhưng không cập nhật hộ', () => {
+  const board = mgmt.listMgmtTasks(P.admin, {});
+  const row = board.rows.find((r: any) => r.subTotal === 0 && r.progress !== 'done' && r.progress !== 'stopped')!;
+  const other = (conn
+    .prepare(`SELECT id FROM users WHERE status='active' AND id != ? ORDER BY id LIMIT 1`)
+    .get(row.assigneeUserId) as any).id;
+  mgmt.editMgmtTask(P.admin, row.id, { watcherUserId: other });
+  const detail = mgmt.mgmtTaskDetail(P.admin, row.id);
+  assert(detail.watcherUserId === other, 'Không gán được người theo dõi');
+  /* Người theo dõi không phải người phụ trách — bảng phải nói rõ hai vai khác nhau. */
+  assert(detail.watcherUserId !== detail.assigneeUserId,
+    'Người theo dõi và người phụ trách đang bị trộn làm một');
 });
 
 console.log(`\n${'='.repeat(60)}`);

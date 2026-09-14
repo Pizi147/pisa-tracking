@@ -22,7 +22,7 @@ export type Session = {
   /** Trang mở đầu theo vai trò — chỉ đổi điểm vào, không đổi quyền. */
   landing?: string;
   /** Bốn mục điều hướng + một lối phụ, do API quyết định theo quyền đã cấu hình. */
-  nav?: { overview: boolean; mocks: boolean; students: boolean; meeting: boolean; academic: boolean; admin: boolean };
+  nav?: { overview: boolean; mocks: boolean; students: boolean; meeting: boolean; academic: boolean; mgmtTasks: boolean; admin: boolean };
 };
 
 type Ctx = {
