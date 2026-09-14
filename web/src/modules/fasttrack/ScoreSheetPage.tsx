@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { useSession } from '../../lib/session.tsx';
-import { Card, Empty, ErrorState, Level, SectionNote, Skeleton, Status } from '../../ui/ui.tsx';
+import { Card, Empty, ErrorState, Level, SectionNote, Skeleton, Status, Th} from '../../ui/ui.tsx';
 import { usePeriods } from '../../ui/Filters.tsx';
 import { CriteriaButton, DeadlinePill, RawScoreInput, useSaveScore, type Cell } from './ScoreEntry.tsx';
 import {
@@ -92,15 +92,15 @@ export default function ScoreSheetPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr>
-                    <th className="th sticky-col">Học viên</th>
-                    <th className="th">MT</th>
-                    <th className="th">Trạng thái</th>
-                    <th className="th">Hạn nhập</th>
+                    <Th className="sticky-col" hint="Cột này đứng yên khi cuộn ngang, để không lạc mất đang nhập cho em nào.">Học viên</Th>
+                    <Th hint="Số thứ tự lượt Mock Test trong lộ trình của em.">MT</Th>
+                    <Th hint="Lượt đã chấm xong, đang chờ, hay đã huỷ.">Trạng thái</Th>
+                    <Th hint="Hết thứ Tư của tuần kế tiếp sau tuần MT. Admin chi nhánh đặt được hạn riêng cho một lượt.">Hạn nhập</Th>
                     {rawSkills.map((s) => <th key={s} className="th">{skillShort(s)} <span className="normal-case text-slate-500">(số câu)</span></th>)}
                     {critSkills.map((s) => <th key={s} className="th">{skillShort(s)} <span className="normal-case text-slate-500">(band)</span></th>)}
-                    <th className="th">Kỳ vọng</th>
-                    <th className="th">Overall</th>
-                    <th className="th">Kết quả</th>
+                    <Th hint="Mức mong đợi của chính lượt này, tính theo mục tiêu tại thời điểm đó.">Kỳ vọng</Th>
+                    <Th hint="Band tổng, chỉ có khi đã đủ điểm mọi kỹ năng bắt buộc.">Overall</Th>
+                    <Th hint="Số kỹ năng dưới kỳ vọng của lượt này — đó chính là mức SOS.">Kết quả</Th>
                   </tr>
                 </thead>
                 <tbody>

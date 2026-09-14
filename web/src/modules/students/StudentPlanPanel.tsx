@@ -4,7 +4,7 @@ import { api, invalidate } from '../../lib/api.ts';
 import { Drawer } from '../../ui/Drawer.tsx';
 import { WeekPicker } from '../../ui/Filters.tsx';
 import { useToast } from '../../ui/Toast.tsx';
-import { Empty, Field, SectionNote, Skeleton, Status } from '../../ui/ui.tsx';
+import { Empty, Field, SectionNote, Skeleton, Status, Th} from '../../ui/ui.tsx';
 import { fmtDate } from '../../lib/format.ts';
 
 type Suggested = {
@@ -149,10 +149,10 @@ export function StudentPlanPanel({ cycleId, studentName, ratio, onClose, onDone 
                   <table className="w-full text-sm">
                     <thead>
                       <tr>
-                        <th className="th">Lượt</th>
-                        <th className="th">Tuần học</th>
-                        <th className="th">Tuần đề xuất</th>
-                        <th className="th">Hiện tại</th>
+                        <Th hint="Số thứ tự lượt Mock Test trong lộ trình này. Sang lộ trình mới thì đánh lại từ 1.">Lượt</Th>
+                        <Th hint="Tuần thứ mấy kể từ tuần em bắt đầu học. Mốc mặc định của Fast Track là tuần 6 · 12 · 16 · 20 · 24.">Tuần học</Th>
+                        <Th hint="Tuần hệ thống tính ra từ tuần bắt đầu học. Chỉ là đề xuất — bấm Áp lịch mới thật sự đổi.">Tuần đề xuất</Th>
+                        <Th hint="Bấm Áp lịch thì lượt này sẽ ra sao. Lượt Quản lý đã chốt tay và lượt đã làm xong thì đứng yên.">Hiện tại</Th>
                       </tr>
                     </thead>
                     <tbody>

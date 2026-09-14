@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useApi } from '../../lib/useApi.ts';
 import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
-import { Card, Field, Forbidden, Info, SectionNote, Skeleton } from '../../ui/ui.tsx';
+import { Card, Field, Forbidden, Info, SectionNote, Skeleton, Th} from '../../ui/ui.tsx';
 import { Drawer } from '../../ui/Drawer.tsx';
 import { skillLabel } from '../../lib/format.ts';
 import { ENTRY_SKILLS, REGULAR_SKILLS } from '@shared/domain/index.ts';
@@ -50,7 +50,7 @@ export function CatalogAdmin() {
         {routes.loading ? <div className="p-4"><Skeleton rows={3} /></div> : (
           <table className="w-full text-sm">
             <thead>
-              <tr><th className="th">Mã</th><th className="th">Tên</th><th className="th text-right">Đang dùng</th><th className="th" /></tr>
+              <tr><th className="th">Mã</th><th className="th">Tên</th><Th align="right" hint="Có bao nhiêu bản ghi đang dùng mục này. Khác 0 thì không xoá được.">Đang dùng</Th><th className="th" /></tr>
             </thead>
             <tbody>
               {(routes.data ?? []).map((r) => (

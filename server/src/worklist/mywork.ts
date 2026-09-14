@@ -5,7 +5,7 @@ import {
   type ContactKind, type EntrySkill, type InterventionKind,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
-import { diffDays, formatDateVi } from '../util.ts';
+import { diffDays } from '../util.ts';
 import { can, scopeFor, teachesClass, type Principal } from '../permissions.ts';
 import { attemptHref, listAttempts } from '../fasttrack/attempts.ts';
 import { classAlerts } from '../classes/schedule.ts';
@@ -52,6 +52,17 @@ export type WorkItem = {
    */
   overdueLabel: string | null;
   href: string;
+  /*
+   * NĂM Ô CỦA MỘT DÒNG VIỆC (mục 5.3): học viên/lớp · việc cần làm · người phụ trách · hạn ·
+   * trạng thái. Trước vòng 5 ba ô sau nằm lẫn trong câu lý do, nên muốn biết "ai đang giữ
+   * việc này" hay "hạn hôm nào" thì phải đọc cả câu — và không lọc theo chúng được.
+   */
+  ownerId: number | null;
+  owner: string | null;
+  /** Người đang xem CHÍNH LÀ người phụ trách việc này. */
+  mine: boolean;
+  due: string | null;
+  statusLabel: string;
 };
 
 export type WorkGroupKey = 'score' | 'approval' | 'action' | 'review' | 'support' | 'week' | 'class_phase';
@@ -195,11 +206,15 @@ export function myWork(p: Principal, f: { branchId?: number | null } = {}) {
       studentId: a.studentId, studentName: a.studentName,
       classId: a.classId ?? null, classCode: a.classCode ?? null,
       attemptId: a.id, attemptNo: a.attemptNo, caseId: null, level: null,
-      reason: u === 'overdue' ? `${names} — ${lateText(worst.deadline, today)}`
-        : u === 'today' ? `${names} — hạn hôm nay`
-        : worst?.deadline ? `${names} — hạn ${formatDateVi(worst.deadline)}` : names,
+      /*
+        NGÀY HẠN KHÔNG LẶP LẠI Ở ĐÂY NỮA — nó đã là một ô riêng trên dòng việc (mục 5.3).
+        Câu này chỉ giữ phần một ô ngày không nói được: TRỄ BAO LÂU RỒI.
+      */
+      reason: u === 'overdue' ? `${names} — ${lateText(worst.deadline, today)}` : names,
       actionLabel: `Nhập điểm ${names}`, overdueLabel: badge('score', u),
       href: attemptHref(a),
+      ownerId: p.userId, owner: null, mine: true,
+      due: worst?.deadline ?? null, statusLabel: 'Chưa nhập điểm',
     });
   }
 
@@ -244,14 +259,13 @@ export function myWork(p: Principal, f: { branchId?: number | null } = {}) {
       caseId: iv.case_id as number, level: levelOf(iv),
       reason: [
         iv.proposer_name ? `${iv.proposer_name} đề xuất: ${what}` : `Đề xuất: ${what}`,
-        iv.approval_due
-          ? (u === 'overdue' ? lateText(iv.approval_due, today)
-            : u === 'today' ? 'hạn trả lời hôm nay'
-            : `hạn trả lời ${formatDateVi(iv.approval_due)}`)
-          : null,
+        u === 'overdue' && iv.approval_due ? lateText(iv.approval_due, today) : null,
       ].filter(Boolean).join(' — '),
       actionLabel: 'Duyệt phương án', overdueLabel: badge('approval', u),
       href: iv.eff_student_id ? `/hoc-vien/${iv.eff_student_id}` : `/hoc-thuat/case/${iv.case_id}`,
+      /* Việc này là của QUẢN LÝ đang xem, dù người đề xuất là giáo viên khác. */
+      ownerId: p.userId, owner: null, mine: true,
+      due: iv.approval_due ?? null, statusLabel: 'Chờ Quản lý duyệt',
     });
   }
 
@@ -269,6 +283,7 @@ export function myWork(p: Principal, f: { branchId?: number | null } = {}) {
   const dueActions = conn
     .prepare(
       `SELECT iv.id, iv.case_id, iv.kind, iv.description, iv.action_due,
+              iv.performer_user_id, iv.performer_name,
               sc.track, sc.category, sc.attempt_id, sc.sos_level,
               COALESCE(sc.student_id, a.student_id) AS eff_student_id,
               COALESCE(a.class_id, cur.class_id) AS eff_class_id,
@@ -314,10 +329,19 @@ export function myWork(p: Principal, f: { branchId?: number | null } = {}) {
       attemptId: iv.attempt_id ?? null, attemptNo: iv.attempt_no ?? null,
       caseId: iv.case_id, level: null,
       reason: `${what}${iv.attempt_no ? ` sau MT${iv.attempt_no}` : ''}`
-        + ` — ${u === 'overdue' ? lateText(iv.action_due, today) : 'hạn hôm nay'}`,
+        + (u === 'overdue' ? ` — ${lateText(iv.action_due, today)}` : ''),
       actionLabel: isContactKind(iv.kind) ? 'Xác nhận đã trao đổi' : 'Đánh dấu đã làm',
       overdueLabel: badge('action', u),
       href: iv.eff_student_id ? `/hoc-vien/${iv.eff_student_id}` : `/hoc-thuat/case/${iv.case_id}`,
+      /*
+       * NGƯỜI PHỤ TRÁCH có thể là một tài khoản, hoặc chỉ là một cái tên ai đó gõ vào (người
+       * ngoài hệ thống). Không có cả hai thì nói thẳng là CHƯA CÓ AI — đó là một tin quan
+       * trọng, không phải một ô trống cần lấp cho đẹp.
+       */
+      ownerId: iv.performer_user_id ?? null,
+      owner: iv.performer_user_id ? null : ((iv.performer_name ?? '').trim() || null),
+      mine: iv.performer_user_id === p.userId,
+      due: iv.action_due ?? null, statusLabel: 'Đang thực hiện',
     });
   }
 
@@ -351,6 +375,9 @@ export function myWork(p: Principal, f: { branchId?: number | null } = {}) {
       actionLabel: finished ? 'Xếp lớp tiếp theo' : 'Mở lớp',
       overdueLabel: finished ? 'Quá hạn xếp lớp tiếp theo' : null,
       href: `/hoc-vien/lop/${classId}`,
+      /* Việc của cả lớp, không của riêng ai — nên không gán người phụ trách. */
+      ownerId: null, owner: null, mine: false,
+      due: null, statusLabel: finished ? 'Đã hết chương trình' : pr.phaseLabel,
     });
   }
 
@@ -404,12 +431,13 @@ export function myWork(p: Principal, f: { branchId?: number | null } = {}) {
       caseId: iv.case_id as number, level: levelOf(iv),
       reason: [
         (iv.description ?? '').trim() || INTERVENTION_KIND_LABEL[iv.kind as InterventionKind] || 'Đã hỗ trợ',
-        u === 'overdue' ? `hẹn xem lại ${formatDateVi(iv.followup_due)}, ${lateText(iv.followup_due, today)}`
-          : 'hẹn xem lại hôm nay',
+        u === 'overdue' ? lateText(iv.followup_due, today) : null,
         mine ? null : 'người thực hiện chưa cập nhật',
       ].filter(Boolean).join(' — '),
       actionLabel: 'Cập nhật kết quả', overdueLabel: badge('review', u),
       href: iv.eff_student_id ? `/hoc-vien/${iv.eff_student_id}` : `/hoc-thuat/case/${iv.case_id}`,
+      ownerId: iv.owner_id ?? null, owner: null, mine,
+      due: iv.followup_due ?? null, statusLabel: 'Chờ cập nhật kết quả',
     });
   }
 
@@ -474,6 +502,9 @@ export function myWork(p: Principal, f: { branchId?: number | null } = {}) {
         : `${head} — chưa có phương án hỗ trợ`,
       actionLabel: 'Đề xuất phương án', overdueLabel: badge('support', u),
       href: c.eff_student_id ? `/hoc-vien/${c.eff_student_id}` : `/hoc-thuat/case/${c.id}`,
+      /* Chưa ai nhận — và đó chính là vấn đề, nên để trống chứ không gán bừa cho người xem. */
+      ownerId: null, owner: null, mine: false,
+      due: deadline, statusLabel: 'Chưa có phương án',
     });
   }
 
@@ -488,6 +519,8 @@ export function myWork(p: Principal, f: { branchId?: number | null } = {}) {
       attemptId: a.id, attemptNo: a.attemptNo, caseId: null, level: null,
       reason: `MT${a.attemptNo} chưa được xếp vào tuần nào`,
       actionLabel: 'Chốt tuần MT', overdueLabel: null, href: attemptHref(a),
+      ownerId: p.userId, owner: null, mine: true,
+      due: null, statusLabel: 'Chưa có tuần',
     });
   }
 
@@ -501,6 +534,25 @@ export function myWork(p: Principal, f: { branchId?: number | null } = {}) {
    */
   const order: WorkGroupKey[] = ['class_phase', 'score', 'approval', 'action', 'review', 'support', 'week'];
   const weight = (u: WorkUrgency) => (u === 'overdue' ? 0 : u === 'today' ? 1 : 2);
+
+  /*
+   * TÊN NGƯỜI PHỤ TRÁCH, LẤY MỘT LẦN CHO CẢ DANH SÁCH.
+   *
+   * Hỏi từng dòng một thì một màn ba trăm việc sinh ba trăm câu truy vấn — chậm mà không
+   * màn nào báo lỗi, đúng kiểu khó tìm nhất.
+   */
+  const ownerIds = [...new Set(items.map((i) => i.ownerId).filter((x): x is number => x !== null))];
+  if (ownerIds.length) {
+    const names = new Map<number, string>();
+    for (const r of conn
+      .prepare(`SELECT id, full_name FROM users WHERE id IN (${ownerIds.map(() => '?').join(',')})`)
+      .all(...ownerIds) as any[]) names.set(r.id, r.full_name);
+    for (const it of items) {
+      if (it.ownerId === null) continue;   // đã có tên chữ, hoặc thật sự chưa có ai
+      it.owner = it.ownerId === p.userId ? 'Bạn' : (names.get(it.ownerId) ?? null);
+      it.mine = it.ownerId === p.userId;
+    }
+  }
 
   const groups = order
     .map((g) => {
@@ -518,12 +570,35 @@ export function myWork(p: Principal, f: { branchId?: number | null } = {}) {
     .filter((g) => g.items.length > 0)
     .sort((a, b) => (b.overdue > 0 ? 1 : 0) - (a.overdue > 0 ? 1 : 0));
 
+  /*
+   * TRẢ VỀ CẢ DANH SÁCH PHẲNG.
+   *
+   * Màn Tổng quan bày MỘT khu "Việc cần làm" có bộ lọc, chứ không phải bảy danh sách mở
+   * đồng thời (mục 5.3). Nhóm vẫn còn, nhưng chỉ dùng để đếm cho dải ô trên đầu và làm một
+   * chiều lọc — không còn là bảy cái hộp xếp chồng nhau.
+   *
+   * Thứ tự: quá hạn trước, rồi tới hạn hôm nay, rồi hạn gần nhất. Việc không có hạn xuống
+   * cuối — nó không cấp bằng việc có hạn đã trôi qua.
+   */
+  const flat = [...items].sort((a, b) => {
+    const w = weight(a.urgency) - weight(b.urgency);
+    if (w !== 0) return w;
+    if (a.due && b.due) return a.due < b.due ? -1 : a.due > b.due ? 1 : 0;
+    if (a.due) return -1;
+    if (b.due) return 1;
+    return 0;
+  });
+
   return {
     summary: {
       total: items.length,
       overdue: items.filter((i) => i.urgency === 'overdue').length,
       today: items.filter((i) => i.urgency === 'today').length,
+      /* Việc đang chờ NGƯỜI KHÁC quyết — đếm riêng vì nó không phải việc mình làm được ngay. */
+      approval: items.filter((i) => i.group === 'approval').length,
+      mine: items.filter((i) => i.mine).length,
     },
+    items: flat,
     groups,
     scopeEmpty: false,
   };

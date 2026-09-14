@@ -3,7 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { useSession } from '../../lib/session.tsx';
 import { invalidate } from '../../lib/api.ts';
-import { Alert, Card, Empty, ErrorState, Info, Level, SectionNote, Skeleton, Status, Task } from '../../ui/ui.tsx';
+import { Alert, Card, Empty, ErrorState, Info, Level, SectionNote, Skeleton, Status, Task, Th} from '../../ui/ui.tsx';
 import { attemptHref, caseStatusLabel, caseStatusTone, sosTone } from '../../lib/format.ts';
 import type { Branch } from '../../ui/Filters.tsx';
 import { IntakePanel } from './IntakePanel.tsx';
@@ -410,9 +410,9 @@ function WorkQueue({ view, branchId, q }: { view: string; branchId: number | nul
               <tr>
                 <th className="th">Học viên</th>
                 <th className="th">Lớp</th>
-                <th className="th">Bài</th>
-                <th className="th">Tuần</th>
-                <th className="th">Việc cần làm</th>
+                <Th hint="Lượt đánh giá đang cần bạn xử lý.">Bài</Th>
+                <Th hint="Tuần kế hoạch của lượt đó. Chưa có tuần thì cũng chưa có hạn nhập điểm.">Tuần</Th>
+                <Th hint="Việc của CHÍNH bạn ở dòng này. Việc bạn không có quyền làm thì không hiện.">Việc cần làm</Th>
               </tr>
             </thead>
             <tbody>
@@ -522,8 +522,8 @@ function CaseQueue({ view, branchId, q }: { view: string; branchId: number | nul
               <tr>
                 <th className="th">Học viên</th>
                 <th className="th">Lớp</th>
-                <th className="th">Case</th>
-                <th className="th">Hạn xem lại</th>
+                <Th hint="Mức SOS và trạng thái xử lý của case đang mở.">Case</Th>
+                <Th hint="Ngày đã hẹn cập nhật kết quả sau hỗ trợ. Qua ngày mà chưa cập nhật thì thành quá hạn.">Hạn xem lại</Th>
               </tr>
             </thead>
             <tbody>

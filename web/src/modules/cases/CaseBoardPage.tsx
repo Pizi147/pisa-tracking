@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { useSession } from '../../lib/session.tsx';
-import { Alert, Card, Empty, ErrorState, Info, KpiTile, Level, SectionNote, Skeleton, Status } from '../../ui/ui.tsx';
+import { Alert, Card, Empty, ErrorState, Info, KpiTile, Level, SectionNote, Skeleton, Status, Th} from '../../ui/ui.tsx';
 import { Drawer } from '../../ui/Drawer.tsx';
 import { CasePanel } from './CasePanel.tsx';
 import { SummaryTable } from '../worklist/SummaryTable.tsx';
@@ -324,12 +324,12 @@ export function CaseBoard({ embedded = false }: { embedded?: boolean } = {}) {
               <table className="w-full text-sm">
                 <thead>
                   <tr>
-                    <th className="th">Học viên</th>
-                    <th className="th">Nội dung</th>
-                    <th className="th">Kỹ năng · nguyên nhân</th>
-                    <th className="th">Nguồn</th>
-                    <th className="th">Đã làm</th>
-                    <th className="th">Tình trạng</th>
+                    <Th hint="Tên em và lớp em đang học. Bấm một dòng để mở case đó.">Học viên</Th>
+                    <Th hint="Tên case và một câu tóm tắt chuyện đang xảy ra.">Nội dung</Th>
+                    <Th hint="Hạng mục của case, và nhận định nguyên nhân nếu đã có người dạy phân loại.">Kỹ năng · nguyên nhân</Th>
+                    <Th hint="Case sinh từ kết quả một bài đánh giá, do giáo viên ghi nhận, hay do Quản lý giao.">Nguồn</Th>
+                    <Th hint="Số phương án đã ghi cho case này, và phương án đang chạy.">Đã làm</Th>
+                    <Th hint="Ba trạng thái loại trừ nhau: chưa có phương án · đang xử lý · đã hoàn thành. Mức SOS và mức gấp đứng riêng.">Tình trạng</Th>
                   </tr>
                 </thead>
                 <tbody>

@@ -1,4 +1,4 @@
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { useSession } from '../../lib/session.tsx';
 import { Card, Empty, ErrorState, Info, Level, Skeleton, Task } from '../../ui/ui.tsx';
@@ -6,21 +6,11 @@ import { BranchFilter } from '../../ui/Filters.tsx';
 import { fmtDate, skillShort } from '../../lib/format.ts';
 import { CaseBoard } from '../cases/CaseBoardPage.tsx';
 import { BranchPulse } from './BranchPulse.tsx';
+import { WorkList, type WorkGroup, type WorkItem } from './WorkList.tsx';
 
-type WorkItem = {
-  key: string; group: string; urgency: 'overdue' | 'today' | 'normal';
-  studentId: number | null; studentName: string;
-  classId: number | null; classCode: string | null;
-  attemptId: number | null; attemptNo: number | null; caseId: number | null;
-  level: { tone: 'ok' | 'info' | 'warn' | 'danger'; text: string } | null;
-  reason: string; actionLabel: string; overdueLabel: string | null; href: string;
-};
-type WorkGroup = {
-  key: string; label: string; hint: string;
-  items: WorkItem[]; overdue: number; today: number;
-};
 type Work = {
-  summary: { total: number; overdue: number; today: number };
+  summary: { total: number; overdue: number; today: number; approval: number; mine: number };
+  items: WorkItem[];
   groups: WorkGroup[];
   scopeEmpty: boolean;
 };
@@ -44,7 +34,6 @@ type ClassRow = {
  */
 export default function OverviewPage() {
   const { session } = useSession();
-  const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
   /*
    * HAI CÂU HỎI KHÁC NHAU, KHÔNG PHẢI HAI MÀN HÌNH KHÁC NHAU.
@@ -84,6 +73,17 @@ export default function OverviewPage() {
    * tham số `cn`. Đổi ở đâu thì cả trang đổi theo, và gửi đường dẫn cho người khác vẫn ra
    * đúng chi nhánh đó.
    */
+  /*
+   * LOẠI VIỆC ĐANG LỌC nằm trên địa chỉ trang, cùng chỗ với chi nhánh. Bấm một con số ở dải
+   * tóm tắt là đổi tham số này, nên gửi đường dẫn cho người khác vẫn ra đúng danh sách đó
+   * (mục 5.3 điểm 4).
+   */
+  const workGroup = params.get('viec');
+  const setWorkGroup = (g: string | null) => {
+    const next = new URLSearchParams(params);
+    if (g) next.set('viec', g); else next.delete('viec');
+    setParams(next, { replace: true });
+  };
   const branchId = params.get('cn') ? Number(params.get('cn')) : null;
   const setBranchId = (id: number | null) => {
     const next = new URLSearchParams(params);
@@ -146,77 +146,45 @@ export default function OverviewPage() {
             NGUYÊN MỘT HÀNG trên cùng — nhét vào cột trái thì mỗi ô bị bóp lại, chữ xuống
             dòng, nhìn không ra là đang đếm cái gì. Bấm vào một ô là nhảy xuống đúng nhóm đó.
           */}
+          {/*
+            DẢI TÓM TẮT giữ nguyên vị trí trên đầu (mục 5.3 điểm 1), nhưng nay BẤM LÀ LỌC
+            chứ không phải nhảy xuống một cái hộp khác. Con số nào thì ra đúng danh sách tạo
+            nên con số đó — điểm 4 của mục 5.3.
+          */}
           <div className="flex flex-wrap gap-2">
-            {data.groups.map((g) => (
-              <button key={g.key}
-                className="flex-1 min-w-[9.5rem] rounded-lg border px-3 py-2.5 text-left hover:bg-white/5 transition-colors"
-                style={{ borderColor: g.overdue ? 'rgba(242,161,161,.35)' : 'var(--line)' }}
-                onClick={() => document.getElementById(`nhom-${g.key}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>
-                <div className="text-[11px] text-slate-500">{g.label}</div>
-                <div className="text-2xl tabular-nums text-slate-100 leading-none mt-1">{g.items.length}</div>
-                <div className="text-[11px] mt-1 h-4">
-                  {g.overdue > 0 ? <span className="text-rose-200">{g.overdue} quá hạn</span>
-                    : g.today > 0 ? <span className="text-amber-200">{g.today} tới hạn hôm nay</span>
-                    : <span className="text-slate-600">chưa tới hạn</span>}
-                </div>
-              </button>
-            ))}
+            {data.groups.map((g) => {
+              const active = workGroup === g.key;
+              return (
+                <button key={g.key}
+                  className="flex-1 min-w-[9.5rem] rounded-lg border px-3 py-2.5 text-left hover:bg-white/5 transition-colors"
+                  style={{
+                    borderColor: active ? 'var(--accent)'
+                      : g.overdue ? 'rgba(242,161,161,.35)' : 'var(--line)',
+                    background: active ? 'var(--accent-soft)' : undefined,
+                  }}
+                  aria-pressed={active}
+                  onClick={() => setWorkGroup(active ? null : g.key)}>
+                  <div className="text-[11px] text-slate-500">{g.label}</div>
+                  <div className="text-2xl tabular-nums text-slate-100 leading-none mt-1">{g.items.length}</div>
+                  <div className="text-[11px] mt-1 h-4">
+                    {g.overdue > 0 ? <span className="text-rose-200">{g.overdue} quá hạn</span>
+                      : g.today > 0 ? <span className="text-amber-200">{g.today} tới hạn hôm nay</span>
+                      : <span className="text-slate-600">chưa tới hạn</span>}
+                  </div>
+                </button>
+              );
+            })}
           </div>
 
-          {/*
-            CỘT PHẢI RỘNG 25–30% (mục 1). Bản trước cố định 17rem, nên trên màn hình rộng nó
-            teo lại thành một dải hẹp mà mã lớp phải xuống dòng, còn cột việc thì dài quá
-            tầm mắt. Dùng phần trăm để hai cột cùng lớn lên theo màn hình.
-          */}
           <div className={`grid gap-4 items-start ${showClasses
             ? 'lg:grid-cols-[minmax(0,1fr)_28%] 2xl:grid-cols-[minmax(0,1fr)_26%]' : ''}`}>
-            <div className="space-y-4 min-w-0">
-              {data.groups.map((g) => (
-                <Card key={g.key} className="scroll-mt-4"
-                  title={
-                    <span className="flex flex-wrap items-baseline gap-2">
-                      {g.label}
-                      <span className="text-slate-500 font-normal">({g.items.length})</span>
-                    </span>
-                  }
-                  bodyClass="p-0">
-                  <div id={`nhom-${g.key}`} />
-                  {/* Một dòng nói rõ nhóm này nghĩa là gì — không bắt người đọc tự đoán. */}
-                  <p className="px-4 pt-3 pb-1 text-xs text-slate-500 m-0">{g.hint}</p>
-                  <ul className="divide-y list-none p-0 m-0" style={{ borderColor: 'var(--line)' }}>
-                    {g.items.map((it) => (
-                      <li key={it.key}>
-                        <button
-                          className="w-full text-left px-4 py-3 hover:bg-white/5 flex flex-wrap items-center gap-x-3 gap-y-1.5"
-                          onClick={() => navigate(it.href)}>
-                          <span className="min-w-0 flex-1">
-                            <span className="flex flex-wrap items-center gap-2">
-                              <span className="text-sm text-slate-100 font-medium">{it.studentName}</span>
-                              {it.classCode && <Info>{it.classCode}</Info>}
-                              {/* Nhãn MỨC ĐỘ: nền đặc, tách hẳn khỏi nhãn việc bên phải. */}
-                              {it.level && <Level tone={it.level.tone}>{it.level.text}</Level>}
-                              {/*
-                                Nhãn quá hạn nói rõ QUÁ HẠN CÁI GÌ. "Quá hạn" trơ trọi thì
-                                phải đọc tiếp cả dòng mới biết, mà cùng một màn hình đang có
-                                năm loại hạn khác nhau.
-                              */}
-                              {it.overdueLabel && (
-                                <Task tone={it.urgency === 'overdue' ? 'danger' : 'warn'}>{it.overdueLabel}</Task>
-                              )}
-                            </span>
-                            <span className="block text-xs text-slate-400 mt-0.5">{it.reason}</span>
-                          </span>
-                          {/*
-                            Nhãn VIỆC: luôn trung tính. Màu gấp đã nằm ở nhãn quá hạn bên
-                            trái — tô thêm ở đây thì một dòng có hai chỗ đỏ, mất trọng tâm.
-                          */}
-                          <Task>{it.actionLabel}</Task>
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                </Card>
-              ))}
+            <div className="min-w-0">
+              {/*
+                MỘT khu vực Việc cần làm, thay cho bảy cái hộp mở đồng thời của bản trước.
+                `key` gắn với nhóm đang chọn để bấm một ô ở dải trên là danh sách nhảy về
+                đúng bộ lọc đó, kể cả khi người dùng đã tự đổi bộ lọc bằng tay.
+              */}
+              <WorkList key={workGroup ?? 'all'} data={data} defaultGroup={workGroup} />
             </div>
 
             {/*

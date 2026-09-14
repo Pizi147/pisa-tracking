@@ -185,3 +185,64 @@ export function requireRoute(code: string) {
   if (!list.includes(code)) throw notFound(`Không có lộ trình "${code}".`);
   return code;
 }
+
+// ==================================================================== quyền theo vai
+
+/**
+ * HAI QUYỀN KHÔNG GỠ ĐƯỢC KHỎI QUẢN TRỊ HỆ THỐNG.
+ *
+ * Bỏ tick `admin.config` của vai Quản trị hệ thống là tự khoá mình ra khỏi chính màn hình
+ * đang đứng, và không còn đường nào vào lại ngoài sửa thẳng cơ sở dữ liệu. `student.view` là
+ * điều kiện để còn nhìn thấy học viên — mất nó thì hệ thống vẫn chạy nhưng không ai vận hành
+ * được nữa.
+ */
+const LOCKED: Record<string, string[]> = {
+  system_admin: [PERMISSIONS.ADMIN_CONFIG, PERMISSIONS.STUDENT_VIEW],
+};
+
+/**
+ * Bật/tắt MỘT ô trong bảng quyền theo vai.
+ *
+ * Cố ý làm từng ô một chứ không phải "lưu cả bảng": một lần lưu cả bảng là một lần có thể
+ * ghi đè thay đổi của người khác mà không ai biết, và cũng khó ghi nhật ký cho tử tế.
+ */
+export function setRolePermission(p: Principal, input: {
+  roleKey: string; permissionKey: string; granted: boolean;
+}) {
+  require_(p, PERMISSIONS.ADMIN_CONFIG, { anyScope: true },
+    'Chỉ Quản trị hệ thống mới sửa được bảng quyền.');
+  const conn = db();
+  const role = conn.prepare('SELECT id, key, name_vi AS name FROM roles WHERE key = ?').get(input.roleKey) as any;
+  if (!role) throw notFound(`Không có vai trò "${input.roleKey}".`);
+  const perm = conn.prepare('SELECT id, key, name_vi AS name FROM permissions WHERE key = ?')
+    .get(input.permissionKey) as any;
+  if (!perm) throw notFound(`Không có quyền "${input.permissionKey}".`);
+
+  if (!input.granted && (LOCKED[role.key] ?? []).includes(perm.key)) {
+    throw badRequest(
+      `Không gỡ được quyền "${perm.name}" khỏi vai ${role.name} — gỡ xong thì không còn ai vào được màn này.`,
+    );
+  }
+
+  return tx(() => {
+    const had = !!conn
+      .prepare('SELECT 1 FROM role_permissions WHERE role_id = ? AND permission_id = ?')
+      .get(role.id, perm.id);
+    if (had === input.granted) return { ok: true, changed: false };
+
+    if (input.granted) {
+      conn.prepare('INSERT INTO role_permissions (role_id, permission_id) VALUES (?,?)').run(role.id, perm.id);
+    } else {
+      conn.prepare('DELETE FROM role_permissions WHERE role_id = ? AND permission_id = ?').run(role.id, perm.id);
+    }
+    writeAudit({
+      actorUserId: p.userId,
+      action: input.granted ? 'role.permission.grant' : 'role.permission.revoke',
+      entityType: 'role', entityId: role.id,
+      entityLabel: `${role.name} · ${perm.name}`,
+      /* Ghi cả hai đầu để tra lại được ai đổi cái gì, không chỉ trạng thái hiện tại. */
+      before: had ? 'có' : 'không', after: input.granted ? 'có' : 'không',
+    });
+    return { ok: true, changed: true };
+  });
+}

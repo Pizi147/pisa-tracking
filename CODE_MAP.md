@@ -109,6 +109,7 @@ cùng một thứ bằng hai cái tên.
 |---|---|
 | Danh sách việc của người đang xem | `server/src/worklist/mywork.ts` |
 | Màn Tổng quan | `web/src/modules/worklist/OverviewPage.tsx` |
+| Khu "Việc cần làm" — bộ lọc, phân trang, năm ô của một dòng | `web/src/modules/worklist/WorkList.tsx` |
 | Bảng "Việc cần lưu ý" | `web/src/modules/worklist/BranchPulse.tsx` · `server/src/worklist/branchpulse.ts` |
 | Bảng tổng hợp chi nhánh/lớp | `web/src/modules/worklist/SummaryTable.tsx` · `server/src/worklist/summary.ts` |
 | Bảng tổng hợp theo tuần | `web/src/modules/worklist/WeeklyBoard.tsx` · `server/src/worklist/weekly.ts` |
@@ -120,6 +121,7 @@ cùng một thứ bằng hai cái tên.
 |---|---|
 | Đăng nhập, đăng ký, duyệt tài khoản | `server/src/platform/accounts.ts` · `web/src/modules/platform/WelcomePage.tsx` |
 | Vai trò và quyền | `shared/domain/people.ts` → `ROLES`, `PERMISSIONS` |
+| Sửa bảng quyền theo vai | `server/src/platform/sysconfig.ts` → `setRolePermission` · `web/src/modules/platform/AdminPage.tsx` |
 | Ai được làm gì ở đâu | `server/src/permissions.ts` |
 | Lộ trình và loại lớp (danh mục) | `server/src/platform/sysconfig.ts` · `web/src/modules/platform/CatalogAdmin.tsx` |
 | Hồ sơ cá nhân | `web/src/modules/platform/ProfilePage.tsx` |

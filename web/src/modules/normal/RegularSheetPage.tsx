@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useApi } from '../../lib/useApi.ts';
 import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
-import { Card, Empty, ErrorState, Info, Level, Outcome as Verdict, SectionNote, Skeleton, Status } from '../../ui/ui.tsx';
+import { Card, Empty, ErrorState, Info, Level, Outcome as Verdict, SectionNote, Skeleton, Status, Th} from '../../ui/ui.tsx';
 import { caseStatusLabel, caseStatusTone, sosLabel, sosTone } from '../../lib/format.ts';
 import { ATTEMPT_KIND_LABEL, type AttemptKind } from '@shared/domain/index.ts';
 
@@ -155,12 +155,12 @@ export default function RegularSheetPage() {
               <thead>
                 <tr>
                   <th className="th">Học viên</th>
-                  <th className="th">Bài</th>
-                  <th className="th">Tuần</th>
+                  <Th hint="Progress Test (giữa khoá) hay Final Test (cuối khoá) của chương trình lớp này.">Bài</Th>
+                  <Th hint="Tuần học của LỚP, tính từ tuần khai giảng — không phải tuần MT của Fast Track.">Tuần</Th>
                   {data.programme.skills.map((k) => (
                     <th key={k} className="th text-center">{data.skillLabels[k] ?? k}</th>
                   ))}
-                  <th className="th">Tình trạng nhập</th>
+                  <Th hint="Đã nhập đủ bốn môn chưa. Thiếu điểm KHÁC với chưa đạt — thiếu thì chưa kết luận được gì.">Tình trạng nhập</Th>
                 </tr>
               </thead>
               <tbody>

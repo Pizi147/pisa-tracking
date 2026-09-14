@@ -843,6 +843,15 @@ api.post('/notifications/:id/read', requireAuth, wrap((req) => {
 
 // ============================================================ Quản trị (lối phụ)
 
+api.put('/admin/role-permissions', requireAuth, wrap((req) => {
+  const b = req.body ?? {};
+  return sysconfigSvc.setRolePermission(principalOf(req), {
+    roleKey: String(b.roleKey ?? ''),
+    permissionKey: String(b.permissionKey ?? ''),
+    granted: !!b.granted,
+  });
+}));
+
 api.get('/admin/overview', requireAuth, wrap((req) => {
   const p = principalOf(req);
   if (!can(p, PERMISSIONS.ADMIN_CONFIG, { anyScope: true })) {

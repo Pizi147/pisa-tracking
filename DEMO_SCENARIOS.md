@@ -310,6 +310,46 @@ Hồ sơ một em lớp FT → tab **Hành trình học tập**.
 - Đổi lộ trình ở đầu trang là đổi cả biểu đồ: hai chương trình chấm trên hai thang khác nhau nên
   không trộn vào một hình.
 
+## 20 · Tổng quan — một khu "Việc cần làm"
+
+Vai **Giáo viên** → **Tổng quan**.
+
+Bản trước là bảy danh sách mở đồng thời, trang rất dài, mọi dòng nổi bật ngang nhau. Nay:
+
+- **Dải ô số** vẫn ở trên đầu, nhưng **bấm là lọc** chứ không nhảy xuống một cái hộp khác.
+  Con số nào thì ra đúng danh sách tạo nên con số đó. Bộ lọc nằm trên địa chỉ trang, nên gửi
+  đường dẫn cho người khác vẫn ra đúng danh sách ấy.
+- **Một khu duy nhất** bên dưới, với ba chiều lọc đứng cạnh nhau:
+  *Tất cả · Quá hạn · Đến hạn · Chờ duyệt* · loại việc · **Việc của tôi / Cả phạm vi quản lý**.
+  Mỗi nút kèm số đếm, và số đếm tính trong phạm vi đang chọn — bấm vào không bao giờ ra rỗng.
+- **Một dòng năm ô**: học viên hoặc lớp · việc cần làm · người phụ trách · hạn · trạng thái.
+  Trước đây ba ô sau nằm lẫn trong một câu văn nên không lọc và không quét bằng mắt được.
+- Danh sách dài thì **Xem thêm**, và **luôn hiện tổng số**.
+
+Giáo viên mở lên thấy **việc của mình** trước. Quản lý bấm một cái là sang cả phạm vi mình
+quản — trừ khi hôm đó không có việc nào mang tên mình, thì mở thẳng vào toàn phạm vi chứ
+không cho một màn hình trống.
+
+## 21 · Sửa bảng quyền theo vai
+
+Vai **Quản trị hệ thống** → **Quản trị hệ thống** → tab **Quyền và nhật ký**.
+
+- Bấm thẳng vào một ô trong bảng là **bật/tắt ngay**, không có nút *Lưu* riêng. Người mang vai
+  đó làm được hay không làm được việc đó **ngay lập tức**, không cần đăng nhập lại.
+- Mỗi lần đổi là **một dòng nhật ký** ở cuối trang, ghi cả trạng thái trước và sau.
+- Thử bỏ tick **Cấu hình hệ thống** hoặc **Xem học viên** của vai *Quản trị hệ thống* →
+  **bị chặn**: gỡ xong thì không còn ai vào lại được chính màn này.
+- Đổi bằng tài khoản không phải Quản trị hệ thống → **bị chặn**.
+
+## 22 · Chú thích tiêu đề cột
+
+Đưa chuột lên tiêu đề cột ở bất kỳ bảng nào → hiện một câu nói rõ **cột đó đang đếm cái gì**.
+
+Những chỗ dễ hiểu nhầm nhất đều có: *Lớp lúc đánh giá* (lớp em học vào lúc làm bài, không phải
+lớp hiện tại) · *Kỳ vọng* (tính theo mục tiêu tại thời điểm đó) · *Tuần* của lớp Normal (tuần
+học của LỚP, không phải tuần MT) · *Tình trạng nhập* (thiếu điểm khác với chưa đạt) ·
+*Kết quả* (số kỹ năng dưới kỳ vọng — chính là mức SOS).
+
 ---
 
 ## Nâng cấp dữ liệu cũ

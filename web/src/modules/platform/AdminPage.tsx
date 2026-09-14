@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useApi } from '../../lib/useApi.ts';
-import { Card, ErrorState, Info, SectionNote, Skeleton } from '../../ui/ui.tsx';
+import { Card, ErrorState, Info, SectionNote, Skeleton, Th } from '../../ui/ui.tsx';
+import { useToast } from '../../ui/Toast.tsx';
+import { api } from '../../lib/api.ts';
 import { AccountsAdmin } from './AccountsAdmin.tsx';
 import { CatalogAdmin } from './CatalogAdmin.tsx';
 import { fmtDateTime, roleLabel } from '../../lib/format.ts';
@@ -62,12 +64,12 @@ export default function AdminPage() {
       {tab === 'catalog' && <CatalogAdmin />}
       {tab === 'config' && error && <ErrorState message={error.message} hint={error.hint} onRetry={reload} />}
       {tab === 'config' && (loading || !data) && !error && <Skeleton rows={8} />}
-      {tab === 'config' && data && <ConfigTab data={data} />}
+      {tab === 'config' && data && <ConfigTab data={data} onDone={reload} />}
     </div>
   );
 }
 
-function ConfigTab({ data }: { data: AdminData }) {
+function ConfigTab({ data, onDone }: { data: AdminData; onDone: () => void }) {
   return (
     <div className="space-y-4">
 
@@ -88,8 +90,13 @@ function ConfigTab({ data }: { data: AdminData }) {
           <table className="w-full text-sm">
             <thead>
               <tr>
-                <th className="th sticky-col">Quyền</th>
-                {data.roles.map((r) => <th key={r.key} className="th text-center">{r.name}</th>)}
+                <Th className="sticky-col" hint="Mỗi dòng là một việc cụ thể. Dấu tích nghĩa là vai đó được làm việc này.">Quyền</Th>
+                {data.roles.map((r) => (
+                  <Th key={r.key} align="center"
+                    hint={`Bấm một ô trong cột này để bật hoặc tắt quyền đó cho vai ${r.name}.`}>
+                    {r.name}
+                  </Th>
+                ))}
               </tr>
             </thead>
             <tbody>
@@ -97,10 +104,9 @@ function ConfigTab({ data }: { data: AdminData }) {
                 <tr key={p.key} className="row-hover">
                   <td className="td sticky-col text-slate-200">{p.name} <span className="text-[11px] text-slate-500">{p.key}</span></td>
                   {data.roles.map((r) => (
-                    <td key={r.key} className="td text-center">
-                      {data.matrix[r.key]?.includes(p.key)
-                        ? <span className="text-sky-200">có</span>
-                        : <span className="text-slate-600">—</span>}
+                    <td key={r.key} className="td text-center p-0">
+                      <PermCell roleKey={r.key} roleName={r.name} perm={p}
+                        granted={!!data.matrix[r.key]?.includes(p.key)} onDone={onDone} />
                     </td>
                   ))}
                 </tr>
@@ -112,6 +118,11 @@ function ConfigTab({ data }: { data: AdminData }) {
           <SectionNote>
             Quyền = quyền của vai trò × phạm vi chi nhánh của CHÍNH grant đó × phân công lớp/kỹ năng.
             Không vai trò nào mặc định thấy toàn hệ thống: chỉ grant không gắn chi nhánh mới phủ toàn bộ.
+            <br />
+            Bấm một ô là đổi ngay, và mỗi lần đổi đều ghi vào nhật ký ở cuối trang — sửa bảng quyền
+            là việc phải tra lại được. Hai quyền <strong>Cấu hình hệ thống</strong> và
+            <strong> Xem học viên</strong> của vai Quản trị hệ thống KHÔNG gỡ được: gỡ xong thì không
+            còn ai vào lại được màn này.
           </SectionNote>
         </div>
       </Card>
@@ -143,5 +154,46 @@ function ConfigTab({ data }: { data: AdminData }) {
       </div>
 
     </div>
+  );
+}
+
+/**
+ * MỘT Ô TRONG BẢNG QUYỀN — bấm là đổi ngay, không có nút "Lưu" riêng.
+ *
+ * Cố ý không làm kiểu "sửa cả bảng rồi bấm Lưu": một lần lưu cả bảng là một lần có thể ghi đè
+ * thay đổi của người khác mà không ai biết. Đổi từng ô thì mỗi lần đổi là một dòng nhật ký
+ * riêng, tra lại được ai bật cái gì lúc nào.
+ */
+function PermCell({ roleKey, roleName, perm, granted, onDone }: {
+  roleKey: string; roleName: string; perm: { key: string; name: string };
+  granted: boolean; onDone: () => void;
+}) {
+  const toast = useToast();
+  const [busy, setBusy] = useState(false);
+  return (
+    <button
+      type="button"
+      disabled={busy}
+      title={`${granted ? 'Bỏ' : 'Cấp'} quyền "${perm.name}" cho vai ${roleName}`}
+      className={`w-full py-1.5 bg-transparent border-0 text-sm ${
+        granted ? 'text-sky-200' : 'text-slate-600'
+      } ${busy ? 'opacity-50' : 'hover:bg-white/5 cursor-pointer'}`}
+      onClick={async () => {
+        setBusy(true);
+        try {
+          await api.put('/admin/role-permissions', {
+            roleKey, permissionKey: perm.key, granted: !granted,
+          });
+          toast.push('ok', granted
+            ? `Đã bỏ "${perm.name}" khỏi vai ${roleName}`
+            : `Đã cấp "${perm.name}" cho vai ${roleName}`);
+          onDone();
+        } catch (e: any) {
+          toast.push('error', e?.message ?? 'Không lưu được');
+        } finally { setBusy(false); }
+      }}
+    >
+      {granted ? 'có' : '—'}
+    </button>
   );
 }

@@ -3,7 +3,7 @@ import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
-import { Card, Empty, ErrorState, ExamPlanText, Info as Tag, Level, Outcome, SectionNote, Skeleton, Status } from '../../ui/ui.tsx';
+import { Card, Empty, ErrorState, ExamPlanText, Info as Tag, Level, Outcome, SectionNote, Skeleton, Status, Th} from '../../ui/ui.tsx';
 import type { ExamPlan } from '../../../../shared/domain/index.ts';
 import { ConfirmDialog, Modal } from '../../ui/Drawer.tsx';
 import {
@@ -156,12 +156,12 @@ export default function MockDetailPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr>
-                    <th className="th">Kỹ năng</th>
-                    <th className="th">Số câu đúng / tiêu chí</th>
-                    <th className="th">Band</th>
-                    <th className="th">Tiến độ</th>
-                    <th className="th">Hạn nhập</th>
-                    <th className="th">Người nhập</th>
+                    <Th hint="Năm ô của Fast Track: L · R · W1 · W2 · S. W1 và W2 chấm riêng từng task.">Kỹ năng</Th>
+                    <Th hint="Listening và Reading nhập số câu đúng; Writing và Speaking nhập điểm bốn tiêu chí.">Số câu đúng / tiêu chí</Th>
+                    <Th hint="Band quy đổi từ ô bên trái. Không gõ tay được — để hai người cùng chấm ra cùng một số.">Band</Th>
+                    <Th hint="Kỹ năng này đã nhập điểm chưa, và có nằm trong lượt này không.">Tiến độ</Th>
+                    <Th hint="Cả lượt dùng chung một hạn: hết thứ Tư của tuần kế tiếp sau tuần MT.">Hạn nhập</Th>
+                    <Th hint="Ai nhập ô điểm này và nhập lúc nào — để tra lại khi có thắc mắc.">Người nhập</Th>
                   </tr>
                 </thead>
                 <tbody>

@@ -4,7 +4,7 @@ import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { Drawer } from '../../ui/Drawer.tsx';
 import { WeekPicker } from '../../ui/Filters.tsx';
-import { ErrorState, Info, SectionNote, Skeleton } from '../../ui/ui.tsx';
+import { ErrorState, Info, SectionNote, Skeleton, Th} from '../../ui/ui.tsx';
 
 /**
  * CHUYỂN TIẾP CẢ LỚP KHI HỌC HẾT CHƯƠNG TRÌNH — mục 6.1.
@@ -179,8 +179,8 @@ export function TransitionPanel({ classId, open, onClose, onDone }: {
                 <thead>
                   <tr>
                     <th className="th w-10" />
-                    <th className="th">Học viên</th>
-                    <th className="th">Lớp đích</th>
+                    <Th hint="Bỏ tick những em không chuyển lần này — hệ thống không tự chuyển ai.">Học viên</Th>
+                    <Th hint="Mặc định là lớp nháp vừa dựng. Chọn lớp khác cho từng em nếu có ngoại lệ.">Lớp đích</Th>
                   </tr>
                 </thead>
                 <tbody>

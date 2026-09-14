@@ -5,7 +5,7 @@ import { ASSESSED_SKILLS, ASSESSED_SKILL_LABEL, type AssessedSkill } from '@shar
 import { Drawer } from '../../ui/Drawer.tsx';
 import { WeekPicker } from '../../ui/Filters.tsx';
 import { useToast } from '../../ui/Toast.tsx';
-import { Empty, Info, SectionNote, Skeleton } from '../../ui/ui.tsx';
+import { Empty, Info, SectionNote, Skeleton, Th} from '../../ui/ui.tsx';
 
 type AttemptState = { attemptNo: number; status: string; periodCode: string | null };
 
@@ -239,7 +239,7 @@ export function MockPlanPanel({ classId, branchId, onClose, onDone }: {
                   <tr>
                     <th className="th">Học viên</th>
                     <th className="th">Lớp</th>
-                    <th className="th">Chọn lượt MT</th>
+                    <Th hint="Chọn MT khác nhau cho từng em rồi xếp chung vào một tuần. Lượt đã làm xong không chọn được.">Chọn lượt MT</Th>
                   </tr>
                 </thead>
                 <tbody>

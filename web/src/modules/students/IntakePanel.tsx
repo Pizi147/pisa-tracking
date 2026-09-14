@@ -3,7 +3,7 @@ import { api } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { Drawer } from '../../ui/Drawer.tsx';
-import { Outcome, SectionNote } from '../../ui/ui.tsx';
+import { Outcome, SectionNote, Th} from '../../ui/ui.tsx';
 
 
 type Row = {
@@ -181,7 +181,7 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
               <tr>
                 <th className="th w-10">#</th>
                 {COLUMNS.map((c) => <th key={c.key} className="th">{c.label}</th>)}
-                <th className="th w-16">Bỏ qua</th>
+                <Th className="w-16" hint="Tick để không nhập dòng này. Dòng lỗi vẫn giữ lại để bạn sửa, không làm hỏng cả lô.">Bỏ qua</Th>
               </tr>
             </thead>
             <tbody>

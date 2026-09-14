@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useApi } from '../../lib/useApi.ts';
 import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
-import { Card, Empty, Field, Forbidden, Info, SectionNote, Skeleton } from '../../ui/ui.tsx';
+import { Card, Empty, Field, Forbidden, Info, SectionNote, Skeleton, Th} from '../../ui/ui.tsx';
 import { Drawer } from '../../ui/Drawer.tsx';
 import { fmtDate, skillLabel } from '../../lib/format.ts';
 import { PERMISSION_LABEL, ROLES, ROLE_LABEL, type Role } from '@shared/domain/index.ts';
@@ -80,11 +80,11 @@ export function AccountsAdmin() {
           <table className="w-full text-sm">
             <thead>
               <tr>
-                <th className="th sticky-col">Họ tên</th>
-                <th className="th">Email đăng nhập</th>
-                <th className="th">Vai trò · chi nhánh</th>
-                <th className="th">Quyền cấp riêng</th>
-                <th className="th">Kỹ năng</th>
+                <Th className="sticky-col" hint="Tên hiện ở mọi nơi trong hệ thống. Chính người đó sửa được ở Hồ sơ cá nhân.">Họ tên</Th>
+                <Th hint="Địa chỉ dùng để đăng nhập. KHÔNG sửa được sau khi tạo — đổi email là đổi danh tính.">Email đăng nhập</Th>
+                <Th hint="Một người mang được nhiều vai ở nhiều chi nhánh. Quyền = vai × chi nhánh của chính lần cấp đó.">Vai trò · chi nhánh</Th>
+                <Th hint="Quyền cấp thêm cho riêng người này, CỘNG vào quyền của vai chứ không thay thế.">Quyền cấp riêng</Th>
+                <Th hint="Kỹ năng người này phụ trách được — dùng để gợi ý khi phân công, không tự cho quyền nhập điểm.">Kỹ năng</Th>
                 <th className="th" />
               </tr>
             </thead>

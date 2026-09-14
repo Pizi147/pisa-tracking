@@ -180,5 +180,6 @@ thấy đúng ai dạy lúc đó, và điểm đã nhập giữ nguyên tên ng�
 | **Kỹ năng không mock ở mức task** | Bỏ Writing là bỏ **cả W1 và W2** | Nếu chỉ cần mock một task thì phải có quy tắc tính W riêng |
 | **Chuyển lớp khi lớp Normal hết chương trình** | **Đã chốt vòng 5:** hệ thống dựng sẵn **lớp nháp** của chương trình kế tiếp và **chọn sẵn cả lớp**; người phụ trách xác nhận thì mới chuyển. Vẫn **không tự chuyển ai** | — |
 | **Case còn mở sau khi chuyển lớp** | Case cũ **không mất**: bảng lớp mới hiện nhãn **"n case bàn giao"** riêng, và nó **không** bị tính thành mức SOS của lớp mới — mức SOS là kết luận của một lượt trong một chương trình | — |
+| **Sửa bảng quyền theo vai** | **Đã làm vòng 5:** bấm một ô là bật/tắt ngay, ghi nhật ký từng lần. Hai quyền `admin.config` và `student.view` của vai Quản trị hệ thống KHÔNG gỡ được | — |
 | **Tab Báo cáo tuần** | **Bỏ tạm** (owner chốt mục 12). Chức năng Quản lý giao việc cho GV thì giữ, chuyển vào Thực trạng | Khi nào cần lại thì mở, mã và dữ liệu vẫn còn |
 | **Đánh giá điểm của GV ngoài luồng case** | **Bỏ hẳn** — điểm GV ước lượng chỉ còn trong phần cập nhật kết quả case | Owner nêu hai hướng ở mục 7.17, chọn hướng gọn hơn |

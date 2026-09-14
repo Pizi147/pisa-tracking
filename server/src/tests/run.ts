@@ -4309,6 +4309,49 @@ check('[12] Seed chạy lại cho ra đúng bộ dữ liệu cũ, không nhân �
   assert(fk.length === 0, `${fk.length} bản ghi vi phạm khoá ngoại`);
 });
 
+check('Sửa được bảng quyền theo vai, và không tự khoá mình ra ngoài', () => {
+  const before = can(P.mbManager, PERMISSIONS.ADMIN_CONFIG, { anyScope: true });
+  assert(!before, 'Quản lý đang có sẵn quyền cấu hình hệ thống — chọn quyền khác để kiểm');
+
+  /* Cấp một quyền cho một vai, rồi chính người mang vai đó phải LÀM ĐƯỢC việc đó ngay. */
+  sysconfig.setRolePermission(P.admin, {
+    roleKey: 'manager', permissionKey: PERMISSIONS.ADMIN_CONFIG, granted: true,
+  });
+  assert(can(loadPrincipal(P.mbManager.userId), PERMISSIONS.ADMIN_CONFIG, { anyScope: true }),
+    'Cấp quyền xong mà người mang vai đó vẫn không làm được');
+
+  /* Gỡ ra thì mất ngay, không đợi đăng nhập lại. */
+  sysconfig.setRolePermission(P.admin, {
+    roleKey: 'manager', permissionKey: PERMISSIONS.ADMIN_CONFIG, granted: false,
+  });
+  assert(!can(loadPrincipal(P.mbManager.userId), PERMISSIONS.ADMIN_CONFIG, { anyScope: true }),
+    'Gỡ quyền xong mà vẫn còn làm được');
+
+  /* Hai quyền xương sống của Quản trị hệ thống KHÔNG gỡ được. */
+  for (const locked of [PERMISSIONS.ADMIN_CONFIG, PERMISSIONS.STUDENT_VIEW]) {
+    assertThrows(
+      () => sysconfig.setRolePermission(P.admin, {
+        roleKey: 'system_admin', permissionKey: locked, granted: false,
+      }),
+      /không còn ai vào được/, `Gỡ được quyền xương sống ${locked} khỏi Quản trị hệ thống`,
+    );
+  }
+
+  /* Người không phải Quản trị hệ thống thì không sửa được bảng này. */
+  assertThrows(
+    () => sysconfig.setRolePermission(P.mbManager, {
+      roleKey: 'teacher', permissionKey: PERMISSIONS.CLASS_ASSIGN, granted: true,
+    }),
+    /Quản trị hệ thống/, 'Quản lý sửa được bảng quyền',
+  );
+
+  /* Và mỗi lần đổi đều để lại dấu vết. */
+  const log = conn
+    .prepare(`SELECT COUNT(*) n FROM audit_logs WHERE action LIKE 'role.permission.%'`)
+    .get() as any;
+  assert(log.n >= 2, `Chỉ ghi được ${log.n} dòng nhật ký cho việc sửa quyền`);
+});
+
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`

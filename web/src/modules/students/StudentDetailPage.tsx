@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
-import { Card, Empty, ErrorState, Info, Level, Outcome, SectionNote, Skeleton, Status } from '../../ui/ui.tsx';
+import { Card, Empty, ErrorState, Info, Level, Outcome, SectionNote, Skeleton, Status, Th} from '../../ui/ui.tsx';
 import { Drawer } from '../../ui/Drawer.tsx';
 import { CasePanel } from '../cases/CasePanel.tsx';
 import { SkillBoard } from '../cases/SkillBoard.tsx';
@@ -331,14 +331,14 @@ function IeltsAttempts({ attempts, onOpen }: { attempts: any[]; onOpen: (a: any)
       <table className="w-full text-sm">
         <thead>
           <tr>
-            <th className="th">MT</th>
-            <th className="th">Lớp lúc đánh giá</th>
-            <th className="th">Tuần</th>
-            <th className="th">Trạng thái</th>
-            <th className="th">L</th><th className="th">R</th><th className="th">W</th><th className="th">S</th>
-            <th className="th">Overall</th>
-            <th className="th">Kỳ vọng</th>
-            <th className="th">Kết quả</th>
+            <Th hint="Số thứ tự lượt Mock Test trong lộ trình này.">MT</Th>
+            <Th hint="Lớp em học VÀO LÚC làm bài này — chuyển lớp không viết lại lịch sử.">Lớp lúc đánh giá</Th>
+            <Th hint="Tuần kế hoạch của lượt này. Một lượt chỉ thuộc đúng một tuần — không có ngày thi cụ thể.">Tuần</Th>
+            <Th hint="Lượt đã chấm xong, đang chờ, hay đã huỷ.">Trạng thái</Th>
+            <Th hint="Band Listening">L</Th><Th hint="Band Reading">R</Th><Th hint="Band Writing — gộp từ W1 và W2">W</Th><Th hint="Band Speaking">S</Th>
+            <Th hint="Band tổng của lượt, tính theo quy tắc IELTS. Thiếu một kỹ năng thì chưa có Overall.">Overall</Th>
+            <Th hint="Mức mong đợi của chính lượt đó, tính theo mục tiêu tại thời điểm ấy. Đổi mục tiêu không chấm lại quá khứ.">Kỳ vọng</Th>
+            <Th hint="Số kỹ năng dưới kỳ vọng ở lượt đó — đó chính là mức SOS. Thiếu điểm thì chưa kết luận.">Kết quả</Th>
           </tr>
         </thead>
         <tbody>
@@ -385,11 +385,11 @@ function RatioAttempts({ attempts, onOpen }: { attempts: any[]; onOpen: (a: any)
       <table className="w-full text-sm">
         <thead>
           <tr>
-            <th className="th">Bài</th>
+            <Th hint="Progress Test (giữa khoá) hay Final Test (cuối khoá) của chương trình lớp.">Bài</Th>
             <th className="th">Lớp</th>
-            <th className="th">Tuần</th>
-            <th className="th">Điểm từng phần</th>
-            <th className="th">Kết quả</th>
+            <Th hint="Tuần kế hoạch của lượt này. Một lượt chỉ thuộc đúng một tuần — không có ngày thi cụ thể.">Tuần</Th>
+            <Th hint="Điểm đạt trên tổng điểm của từng môn. Lớp Normal không quy ra band.">Điểm từng phần</Th>
+            <Th hint="Số kỹ năng dưới kỳ vọng ở lượt đó — đó chính là mức SOS. Thiếu điểm thì chưa kết luận.">Kết quả</Th>
           </tr>
         </thead>
         <tbody>
