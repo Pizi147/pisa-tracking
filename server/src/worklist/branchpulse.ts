@@ -4,6 +4,7 @@ import { demoToday } from '../demoConfig.ts';
 import { can, scopeFor, type Principal } from '../permissions.ts';
 import { listCases } from '../cases/cases.ts';
 import { listAttempts } from '../fasttrack/attempts.ts';
+import { addDays } from '../util.ts';
 
 /**
  * "VIỆC CẦN LƯU Ý" — bảng trả lời câu hỏi AI PHẢI LÀM GÌ (mục 9.2).
@@ -59,7 +60,7 @@ export function branchPulse(p: Principal, f: { branchId?: number | null } = {}) 
   /* ---------------------------------------------------------------- lớp trong phạm vi */
   const classRows = conn
     .prepare(
-      `SELECT c.id, c.code, c.branch_id, c.is_fulltime, b.name AS branch_name,
+      `SELECT c.id, c.code, c.branch_id, c.is_fast_track, b.name AS branch_name,
               (SELECT COUNT(*) FROM enrollments e JOIN students s ON s.id = e.student_id
                 WHERE e.class_id = c.id AND e.status = 'active' AND s.archived_at IS NULL) AS size
          FROM classes c JOIN branches b ON b.id = c.branch_id
@@ -74,7 +75,7 @@ export function branchPulse(p: Principal, f: { branchId?: number | null } = {}) 
     perClass.set(c.id, { ...zero(), size: c.size });
     supportStudents.set(c.id, new Set());
     info.set(c.id, {
-      id: c.id, code: c.code, branchId: c.branch_id, branchName: c.branch_name, isFt: !!c.is_fulltime,
+      id: c.id, code: c.code, branchId: c.branch_id, branchName: c.branch_name, isFt: !!c.is_fast_track,
     });
   }
 
@@ -132,7 +133,7 @@ export function branchPulse(p: Principal, f: { branchId?: number | null } = {}) 
     mode = 'groups';
     const groups: Record<'normal' | 'ft', { key: string; label: string; metrics: PulseMetrics; classes: any[] }> = {
       normal: { key: 'normal', label: 'Normal', metrics: zero(), classes: [] },
-      ft: { key: 'ft', label: 'Fulltime IELTS', metrics: zero(), classes: [] },
+      ft: { key: 'ft', label: 'Fast Track', metrics: zero(), classes: [] },
     };
     for (const [id, m] of perClass) {
       const i = info.get(id)!;
@@ -204,19 +205,28 @@ function peopleOf(
    */
   for (const r of conn
     .prepare(
-      `SELECT ta.user_id, s.taken_on, a.deadline_override, rp.week_end
+      /*
+       * Một ô "còn nợ điểm" = một kỹ năng người này được phân công, ở một lượt MT mà TUẦN
+       * đã bắt đầu, mà chưa có band. Đếm theo phân công chứ không theo dòng điểm có sẵn:
+       * chưa ai gõ gì thì chưa có dòng nào, và đó chính là trường hợp phải đếm.
+       */
+      `SELECT ta.user_id, a.deadline_override, rp.week_end
          FROM assessment_attempts a
          JOIN classes cl ON cl.id = a.class_id
          JOIN teacher_assignments ta ON ta.class_id = a.class_id AND ta.status = 'active'
-         JOIN assessment_scores s ON s.attempt_id = a.id AND s.skill = ta.skill AND s.band IS NULL
-         LEFT JOIN report_periods rp ON rp.id = a.planned_period_id
-        WHERE a.status != 'cancelled' AND ta.skill IS NOT NULL ${scopeSql}`,
+         JOIN report_periods rp ON rp.id = a.planned_period_id
+         LEFT JOIN assessment_scores s ON s.attempt_id = a.id AND s.skill = ta.skill
+        WHERE a.status != 'cancelled' AND ta.skill IS NOT NULL
+          AND rp.week_start <= ? AND s.band IS NULL
+          AND NOT EXISTS (SELECT 1 FROM attempt_skill_skips k
+                           WHERE k.attempt_id = a.id AND k.skill = ta.skill) ${scopeSql}`,
     )
-    .all(...scopeArgs) as any[]) {
+    .all(today, ...scopeArgs) as any[]) {
     const row = people.get(r.user_id);
     if (!row) continue;
     row.mtPending += 1;
-    const due = r.deadline_override ?? r.week_end ?? null;
+    // Hạn mặc định là hết thứ Tư tuần kế tiếp = Chủ nhật của tuần MT + 3 ngày.
+    const due = r.deadline_override ?? (r.week_end ? addDays(r.week_end, 3) : null);
     if (due && due < today) row.mtOverdue += 1;
   }
 

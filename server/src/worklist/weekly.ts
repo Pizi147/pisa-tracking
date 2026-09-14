@@ -137,13 +137,16 @@ export function weeklyRollup(
       const chunk = ids.slice(i, i + 400);
       for (const r of conn
         .prepare(
-          `SELECT s.attempt_id, s.taken_on, s.entered_at, a.planned_period_id
-             FROM assessment_scores s JOIN assessment_attempts a ON a.id = s.attempt_id
+          `SELECT s.attempt_id, s.entered_at, a.planned_period_id, rp.week_end
+             FROM assessment_scores s
+             JOIN assessment_attempts a ON a.id = s.attempt_id
+             JOIN report_periods rp ON rp.id = a.planned_period_id
             WHERE s.attempt_id IN (${chunk.map(() => '?').join(',')})
-              AND s.taken_on IS NOT NULL AND s.entered_at IS NOT NULL`,
+              AND s.entered_at IS NOT NULL`,
         )
         .all(...chunk) as any[]) {
-        const days = diffDays(r.taken_on, String(r.entered_at).slice(0, 10));
+        // Đếm từ CHỦ NHẬT của tuần MT — không còn ngày thi cụ thể để đếm từ đó.
+        const days = diffDays(r.week_end, String(r.entered_at).slice(0, 10));
         if (days < 0 || days > 120) continue;          // dữ liệu lệch thì bỏ, không kéo trung bình
         const cur = lag.get(r.planned_period_id) ?? { sum: 0, n: 0 };
         cur.sum += days; cur.n += 1;

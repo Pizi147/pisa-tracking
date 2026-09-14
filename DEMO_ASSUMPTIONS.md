@@ -71,7 +71,7 @@ Chọn một mục ở cột phải **tức là** đang xin ý kiến, nên ô t
 
 ## 6. Vai trò, bộ lọc và quyền
 
-Tám bộ lọc học viên, định nghĩa **một chỗ** trong `shared/domain.ts` để mọi trang gọi giống hệt nhau:
+Bảy bộ lọc học viên, định nghĩa **một chỗ** trong `shared/domain/people.ts` để mọi trang gọi giống hệt nhau:
 
 | # | Bộ lọc | GV | QL | Admin CN |
 |---|---|:--:|:--:|:--:|
@@ -81,15 +81,13 @@ Tám bộ lọc học viên, định nghĩa **một chỗ** trong `shared/domain
 | 4 | Case thiếu phương án | ✓ | ✓ | |
 | 5 | Case quá hạn cập nhật | ✓ | ✓ | |
 | 6 | Cần nhập điểm MT | ✓ | ✓ | ✓ *(chỉ xem để đôn đốc)* |
-| 7 | Chưa có lịch MT | | ✓ | ✓ |
-| 8 | Cần cập nhật ngày MT | | | ✓ |
+| 7 | Chưa có tuần MT | | ✓ | |
 
 Bảng quyền:
 
 | | Quản trị HT | Admin CN | Quản lý | Giáo viên |
 |---|:--:|:--:|:--:|:--:|
-| Chốt **tuần** kế hoạch MT | ✓ | — | ✓ | — |
-| Chốt **ngày** trong tuần | ✓ | ✓ | ✓ | GV Speaking đổi được ngày Speaking |
+| Chốt **tuần** của một lượt MT | ✓ | — | ✓ | — |
 | Nhập điểm | nhập bù | — | — | ✓ đúng kỹ năng được phân công |
 | **Xem danh sách case** | ✓ | — | ✓ | ✓ |
 | Ghi nhận xử lý case | ✓ | ✓ | ✓ | ✓ trong phạm vi phụ trách |

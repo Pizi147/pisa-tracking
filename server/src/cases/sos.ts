@@ -9,6 +9,7 @@ import { addDays, badRequest, isIsoDate, notFound, nowIso } from '../util.ts';
 import { require_, type Principal } from '../permissions.ts';
 import { addJourney, notify, writeAudit } from '../platform/audit.ts';
 import { failingEntrySkills, type AttemptResult, type EntryBands } from '../fasttrack/scoring.ts';
+import { weekStartOf } from '../fasttrack/attempts.ts';
 import { mondayOf } from '../platform/week.ts';
 
 /**
@@ -56,7 +57,7 @@ export function stepsFor(attemptNo: number, level: SosLevel): SosStep[] {
   if (attemptNo >= 3 && level >= 2) {
     steps.push({
       key: 'ops', label: 'Chính sách vận hành',
-      detail: 'P. Vận hành đưa chính sách hỗ trợ (buổi bổ trợ với tutor / GV fulltime) — quyết định theo từng case',
+      detail: 'P. Vận hành đưa chính sách hỗ trợ (buổi bổ trợ với tutor / GV cơ hữu) — quyết định theo từng case',
       required: false,
     });
   }
@@ -98,7 +99,7 @@ export function followUntilAfter(attempt: any): string | null {
   const conn = db();
   const next = conn
     .prepare(
-      `SELECT a.id, a.lrw_scheduled_at, p.week_start
+      `SELECT a.id, p.week_start
          FROM assessment_attempts a
          LEFT JOIN report_periods p ON p.id = a.planned_period_id
         WHERE a.cycle_id = ? AND a.attempt_no > ? AND a.status != 'cancelled'
@@ -107,7 +108,7 @@ export function followUntilAfter(attempt: any): string | null {
     )
     .get(attempt.cycle_id, attempt.attempt_no) as any;
   if (!next) return null;
-  const anchor = next.week_start ?? (next.lrw_scheduled_at ?? '').slice(0, 10);
+  const anchor = next.week_start;
   if (!anchor) return null;
   return addDays(mondayOf(anchor), 6);   // hết Chủ nhật của tuần đó
 }
@@ -226,7 +227,11 @@ export function upsertCaseForResult(p: Principal, attempt: any, result: AttemptR
   for (const r of rows) entry[r.skill as EntrySkill] = r.band;
   const failing = failingEntrySkills(result.expectation, entry, result.skipped);
 
-  const detectedAt = (attempt.lrw_scheduled_at ?? '').slice(0, 10) || demoToday();
+  /*
+   * NGÀY PHÁT HIỆN = thứ Hai của TUẦN MT. Không còn ngày thi cụ thể để bám vào, và tuần
+   * là đơn vị đúng: case sinh ra từ kết quả của cả một tuần MT, không của một buổi.
+   */
+  const detectedAt = weekStartOf(attempt) ?? demoToday();
 
   /*
    * HẠNG MỤC ĐÃ ĐẠT LẦN NÀY: ghi mốc "đã đạt kỳ vọng" và hạ mức, nhưng KHÔNG tự đóng case.

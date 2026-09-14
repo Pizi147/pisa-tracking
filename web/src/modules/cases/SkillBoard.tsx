@@ -23,7 +23,7 @@ import { CasePanel } from './CasePanel.tsx';
 
 type Row = {
   category: string; label: string; short: string;
-  band: number | null; bandAttemptNo: number | null; bandOn: string | null;
+  band: number | null; bandAttemptNo: number | null; bandWeek: string | null;
   expectation: number | null; delta: number | null; missed: boolean | null;
   state: 'none' | 'no_plan' | 'working' | 'done';
   caseId: number | null; caseTitle: string | null; caseStatus: string | null;
@@ -236,7 +236,7 @@ function Trend({ row }: { row: Row }) {
   if (pts.length === 1) {
     return (
       <span className="block text-[10px] text-slate-500">
-        mới có MT{pts[0].attemptNo}{row.bandOn ? ` · ${fmtDate(row.bandOn)}` : ''}
+        mới có MT{pts[0].attemptNo}{row.bandWeek ? ` · ${row.bandWeek}` : ''}
       </span>
     );
   }

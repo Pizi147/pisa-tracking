@@ -1,9 +1,9 @@
 import { Link } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
-import { BandCell, Empty, Pill, Skeleton, Th } from '../../ui/ui.tsx';
+import { BandCell, Empty, ExamPlanText, Pill, Skeleton, Th } from '../../ui/ui.tsx';
 import { MissingBadge } from './MissingBadge.tsx';
 import { fmtBand, fmtDate, sosLabel, sosTone } from '../../lib/format.ts';
-import { ENTRY_SKILL_SHORT, type EntrySkill } from '@shared/domain/index.ts';
+import { ENTRY_SKILL_SHORT, type EntrySkill, type ExamPlan } from '@shared/domain/index.ts';
 
 type Cell = { now: number | null; prev: number | null; dir: number };
 
@@ -13,7 +13,7 @@ type Timeline = {
   kind: string;
   /** Nhãn ngắn để hiện trên dải: "MT2", "Giữa khoá", "Cuối khoá". */
   kindLabel: string;
-  periodCode: string | null; lrwScheduledAt: string | null; status: string; needsDate: boolean;
+  periodCode: string | null; status: string;
   scoredRequired: number; requiredCount: number;
   /** Lớp thường KHÔNG có Overall IELTS — luôn null, không dựng số giả. */
   overall: number | null;
@@ -26,12 +26,12 @@ type RosterRow = {
   /** Gom mọi thứ học viên còn thiếu vào một badge (mục 7.5). */
   missing: { key: string; label: string; who: string }[];
   id: number; studentCode: string; fullName: string; status: string; archived: boolean;
-  cycle: { id: number; seq: number; route: string | null; target: number | null; examDate: string | null } | null;
+  cycle: { id: number; seq: number; route: string | null; target: number | null } | null;
   /** Sáu ô điểm của lượt gần nhất, kèm điểm lượt trước để vẽ mũi tên. Lớp Normal: null. */
   scores: {
     overall: Cell; listening: Cell; reading: Cell; speaking: Cell; writing1: Cell; writing2: Cell;
   } | null;
-  sosLevel: number | null; openCases: number; examDate: string | null;
+  sosLevel: number | null; openCases: number; examPlan: ExamPlan;
   latest: Timeline | null; next: Timeline | null; timeline: Timeline[];
   myPending: string[];
 };
@@ -41,7 +41,7 @@ type RosterRow = {
  *
  * Thứ tự cột do owner chốt:
  *
- *   Học viên · Target · Ngày thi · OVR · L · R · S · W1 · W2 · Trạng thái · Việc cần làm
+ *   Học viên · Target · Dự kiến thi · OVR · L · R · S · W1 · W2 · Trạng thái · Việc cần làm
  *
  * Ba quyết định đáng nói:
  *
@@ -94,7 +94,7 @@ export function ClassRoster({ classId, studentQuery, onAddStudents }: {
           <tr>
             <Th hint="Tên và mã học viên. Dòng dưới là chuỗi các lượt đánh giá của em.">Học viên</Th>
             <Th align="right" hint="Điểm mục tiêu của lộ trình em đang học.">Target</Th>
-            <Th hint="Ngày thi IELTS thật đã đăng ký. Chưa đăng ký thì để trống.">Ngày thi</Th>
+            <Th hint="Kỳ thi IELTS thật, ở đúng mức chắc chắn đang biết: tuần, hoặc mới có tháng, hoặc chưa xác định.">Dự kiến thi</Th>
             {hasBands && (
               <>
                 <Th align="right" hint="Overall — điểm trung bình bốn kỹ năng ở lượt MT gần nhất.">OVR</Th>
@@ -128,8 +128,8 @@ export function ClassRoster({ classId, studentQuery, onAddStudents }: {
                   <span className="block mt-1"><MockTrail timeline={s.timeline} classId={classId} /></span>
                 </td>
                 <td className="td text-right tabular-nums whitespace-nowrap align-top">{fmtBand(target)}</td>
-                <td className="td whitespace-nowrap text-slate-300 text-xs align-top">
-                  {s.examDate ? fmtDate(s.examDate) : <span className="text-slate-700">–</span>}
+                <td className="td whitespace-nowrap text-xs align-top">
+                  <ExamPlanText plan={s.examPlan} />
                 </td>
                 {hasBands && (
                   <>
@@ -194,9 +194,6 @@ function TaskCell({ row }: { row: RosterRow }) {
   if (row.timeline.some((t) => t.overdueSkills > 0)) {
     jobs.push(<Pill key="late" tone="danger" title="Đã qua hạn nhập điểm của lượt đó">Quá hạn nhập điểm</Pill>);
   }
-  if (row.timeline.some((t) => t.needsDate)) {
-    jobs.push(<Pill key="date" tone="warn" title="Tuần MT đã tới mà chưa có ngày cụ thể">Cần cập nhật ngày MT</Pill>);
-  }
   if (!jobs.length) return <span className="text-xs text-slate-600">—</span>;
   return <span className="flex flex-col items-start gap-1">{jobs}</span>;
 }
@@ -223,7 +220,6 @@ function MockTrail({ timeline, classId }: { timeline: Timeline[]; classId: numbe
             <Pill tone={
               t.status === 'cancelled' ? 'muted'
                 : t.evaluable ? sosTone(t.sosLevel)
-                : t.needsDate ? 'warn'
                 : t.status === 'done' ? 'info' : 'neutral'
             }>
               {t.kindLabel}

@@ -108,16 +108,18 @@ export default function StudentDetailPage() {
                   : 'Chưa xếp lớp'}
                 {cy && !cy.ratio && cy.target !== null && <> · Target {fmtBand(cy.target)}</>}
                 {/*
-                  TUẦN BẮT ĐẦU HỌC đứng trước ngày thi, vì nó là mốc gốc: lịch MT của em
+                  TUẦN BẮT ĐẦU HỌC đứng trước dự kiến thi, vì nó là mốc gốc: lịch MT của em
                   tính ra từ đây. Thiếu thì nói thẳng "chưa khai" chứ không để trống im lặng.
                 */}
                 {cy && <> · Vào học {cy.startWeek ? cy.startWeek.code : <span className="text-amber-300">chưa khai tuần</span>}</>}
-                {cy?.examDate
-                  ? <> · Thi {fmtDate(cy.examDate)}
-                      {cy.daysToExam !== null && <span className="text-slate-500"> (còn {cy.daysToExam} ngày)</span>}</>
-                  : cy && !cy.ratio && cy.examMonth
-                  ? <> · Dự kiến thi {fmtExamMonth(cy.examMonth)}</>
-                  : null}
+                {/*
+                  ĐẾM NGƯỢC CHỈ KHI ĐÃ CHỐT TUẦN THI. Mới biết tháng thì nói đúng là mới biết
+                  tháng — thêm "còn 134 ngày" vào một cái tháng là bịa ra độ chính xác.
+                */}
+                {cy && !cy.ratio && cy.examPlan && cy.examPlan.confidence !== 'none' && (
+                  <> · Dự kiến thi {cy.examPlan.label}
+                    {cy.daysToExam !== null && <span className="text-slate-500"> (còn {cy.daysToExam} ngày)</span>}</>
+                )}
               </p>
               {cy && !cy.ratio && (
                 <p className="text-xs text-slate-400 mt-1 mb-0">
@@ -132,9 +134,7 @@ export default function StudentDetailPage() {
                   {data.nextCheckpoint && (
                     <span className="text-slate-500">
                       {' · '}MT{data.nextCheckpoint.attemptNo} tới:{' '}
-                      {data.nextCheckpoint.needsDate
-                        ? (data.nextCheckpoint.periodCode ?? 'chưa có tuần')
-                        : fmtDate(data.nextCheckpoint.scheduledAt)}
+                      {data.nextCheckpoint.periodCode ?? 'chưa có tuần'}
                     </span>
                   )}
                 </p>
@@ -365,7 +365,7 @@ function IeltsAttempts({ attempts, onOpen }: { attempts: any[]; onOpen: (id: num
           <tr>
             <th className="th">MT</th>
             <th className="th">Lớp lúc đánh giá</th>
-            <th className="th">Tuần · lịch</th>
+            <th className="th">Tuần</th>
             <th className="th">Trạng thái</th>
             <th className="th">L</th><th className="th">R</th><th className="th">W</th><th className="th">S</th>
             <th className="th">Overall</th>
@@ -380,7 +380,6 @@ function IeltsAttempts({ attempts, onOpen }: { attempts: any[]; onOpen: (id: num
               <td className="td text-slate-300">{a.classCode ?? '—'}</td>
               <td className="td whitespace-nowrap">
                 {a.periodCode ?? <Pill tone="muted">Chưa có tuần</Pill>}
-                <div className="text-slate-500 text-xs">{a.lrwScheduledAt ? fmtSlot(a.lrwScheduledAt) : 'chưa có ngày'}</div>
               </td>
               <td className="td"><Pill tone={attemptStatusTone(a.status)}>{attemptStatusLabel(a.status)}</Pill></td>
               <td className="td tabular-nums">{fmtBand(a.bands?.listening)}</td>
@@ -413,7 +412,7 @@ function RatioAttempts({ attempts, onOpen }: { attempts: any[]; onOpen: (id: num
           <tr>
             <th className="th">Bài</th>
             <th className="th">Lớp</th>
-            <th className="th">Tuần · lịch</th>
+            <th className="th">Tuần</th>
             <th className="th">Điểm từng phần</th>
             <th className="th">Kết quả</th>
           </tr>
@@ -425,7 +424,6 @@ function RatioAttempts({ attempts, onOpen }: { attempts: any[]; onOpen: (id: num
               <td className="td text-slate-300">{a.classCode ?? '—'}</td>
               <td className="td whitespace-nowrap">
                 {a.periodCode ?? <Pill tone="muted">Chưa có tuần</Pill>}
-                <div className="text-slate-500 text-xs">{a.lrwScheduledAt ? fmtSlot(a.lrwScheduledAt) : 'chưa có ngày'}</div>
               </td>
               <td className="td">
                 <span className="flex flex-wrap gap-1">

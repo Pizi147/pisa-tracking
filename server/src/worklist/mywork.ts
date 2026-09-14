@@ -54,7 +54,7 @@ export type WorkItem = {
   href: string;
 };
 
-export type WorkGroupKey = 'score' | 'approval' | 'action' | 'review' | 'support' | 'schedule' | 'week' | 'class_phase';
+export type WorkGroupKey = 'score' | 'approval' | 'action' | 'review' | 'support' | 'week' | 'class_phase';
 
 /**
  * Mỗi nhóm có MỘT DÒNG nói rõ nhóm đó nghĩa là gì.
@@ -94,11 +94,6 @@ const GROUP_META: Record<WorkGroupKey, { label: string; hint: string; overdue: s
     label: 'Phương án hỗ trợ',
     hint: 'Em đang có vấn đề mở mà chưa ai chọn hướng xử lý, cũng chưa ai ghi việc nào.',
     overdue: 'Quá hạn hỗ trợ',
-  },
-  schedule: {
-    label: 'Cập nhật ngày MT',
-    hint: 'Tuần đã chốt nhưng chưa biết em thi ngày nào.',
-    overdue: 'Quá hạn cập nhật ngày MT',
   },
   /*
    * MỐC CỦA CẢ LỚP — owner yêu cầu 13/09/2026.
@@ -481,25 +476,7 @@ export function myWork(p: Principal, f: { branchId?: number | null } = {}) {
     });
   }
 
-  // ---------------------------------------------------------------- 4 & 5. lịch
-  for (const a of attempts as any[]) {
-    if (!a.needsDate) continue;
-    // Chỉ nhắc khi ĐÃ TỚI TUẦN — nhắc trước hàng tháng thì danh sách lúc nào cũng dài.
-    if (!a.period?.weekStart || a.period.weekStart > today) continue;
-    if (!can(p, PERMISSIONS.SCHEDULE_DATE, { classId: a.classId })) continue;
-    const u: WorkUrgency = a.period.weekEnd && a.period.weekEnd < today ? 'overdue' : 'normal';
-    items.push({
-      key: `date:${a.id}`, group: 'schedule', urgency: u,
-      studentId: a.studentId, studentName: a.studentName,
-      classId: a.classId ?? null, classCode: a.classCode ?? null,
-      attemptId: a.id, attemptNo: a.attemptNo, caseId: null, level: null,
-      reason: `MT${a.attemptNo} diễn ra vào tuần ${a.period.code} nhưng chưa có ngày cụ thể`
-        + (u === 'overdue' ? ' — tuần đã qua' : ''),
-      actionLabel: 'Cập nhật ngày MT', overdueLabel: badge('schedule', u),
-      href: `/mock-test/${a.id}`,
-    });
-  }
-
+  // ---------------------------------------------------------------- 4. chốt tuần MT
   for (const a of attempts as any[]) {
     if (a.period || a.status !== 'planned') continue;
     if (!can(p, PERMISSIONS.PLAN_WEEK, { classId: a.classId })) continue;
@@ -521,7 +498,7 @@ export function myWork(p: Principal, f: { branchId?: number | null } = {}) {
    * nào là cái nào. Nay GIỮ ĐÚNG LOẠI VIỆC, chỉ xếp việc gấp lên đầu TRONG nhóm của nó, và
    * xếp nhóm nào có việc gấp lên trước.
    */
-  const order: WorkGroupKey[] = ['class_phase', 'score', 'approval', 'action', 'review', 'support', 'schedule', 'week'];
+  const order: WorkGroupKey[] = ['class_phase', 'score', 'approval', 'action', 'review', 'support', 'week'];
   const weight = (u: WorkUrgency) => (u === 'overdue' ? 0 : u === 'today' ? 1 : 2);
 
   const groups = order

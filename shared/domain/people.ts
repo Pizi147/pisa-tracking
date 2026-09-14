@@ -18,13 +18,14 @@ export const ROLE_LABEL: Record<Role, string> = {
 };
 
 export const PERMISSIONS = {
-  // --- Lịch: tuần và ngày là hai quyền KHÁC NHAU ---
-  /** Chốt và đổi TUẦN kế hoạch của một lượt MT. Việc của Quản lý. */
+  /*
+   * --- Lịch: CHỈ CÒN TUẦN ---
+   *
+   * Một lượt MT được xác định bằng đúng một TUẦN. Không còn quyền "chốt ngày giờ" và "đổi
+   * lịch Speaking" — hai quyền đó tồn tại chỉ để phục vụ một đầu việc đã bỏ.
+   */
+  /** Chốt và đổi TUẦN của một lượt MT. Việc của Quản lý. */
   PLAN_WEEK: 'plan.week',
-  /** Chốt và đổi NGÀY–GIỜ trong tuần đã được duyệt. Việc của Admin chi nhánh. */
-  SCHEDULE_DATE: 'schedule.date',
-  /** Đổi riêng lịch Speaking. Giáo viên Speaking được cấp trong phạm vi phân công. */
-  SCHEDULE_SPEAKING: 'schedule.speaking',
   ATTEMPT_CANCEL: 'attempt.cancel',
   /** Đánh dấu một kỹ năng là KHÔNG MOCK cho chính lượt đó. */
   ATTEMPT_SKIP_SKILL: 'attempt.skip_skill',
@@ -75,9 +76,7 @@ export const PERMISSIONS = {
 export type PermissionKey = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
 
 export const PERMISSION_LABEL: Record<string, string> = {
-  'plan.week': 'Chốt tuần kế hoạch MT',
-  'schedule.date': 'Chốt ngày giờ trong tuần',
-  'schedule.speaking': 'Đổi lịch Speaking',
+  'plan.week': 'Chốt tuần MT',
   'attempt.cancel': 'Huỷ lượt MT',
   'attempt.skip_skill': 'Đánh dấu kỹ năng không mock',
   'deadline.override': 'Đặt hạn nhập điểm riêng',
@@ -115,14 +114,12 @@ export const PERMISSION_LABEL: Record<string, string> = {
  */
 export type StudentFilterKey =
   | 'classes' | 'sos' | 'case_working' | 'case_no_plan' | 'case_overdue'
-  | 'my_scores' | 'no_plan' | 'need_date';
+  | 'my_scores' | 'no_plan';
 
 export const STUDENT_FILTERS: {
   key: StudentFilterKey; label: string; hint: string;
   /** Quyền tối thiểu; `null` = ai xem được lớp thì thấy. */
   needs: string | null;
-  /** Chỉ hiện với người có quyền này, ngoài `needs`. */
-  onlyWith?: string;
 }[] = [
   { key: 'classes', label: 'Theo lớp', needs: null,
     hint: 'Danh sách lớp trong phạm vi bạn được xem. Mở một lớp để thấy học viên.' },
@@ -136,15 +133,13 @@ export const STUDENT_FILTERS: {
     hint: 'Đã qua hẹn xem lại mà chưa ai cập nhật kết quả sau hỗ trợ.' },
   { key: 'my_scores', label: 'Cần nhập điểm MT', needs: 'attempt.view',
     hint: 'Lượt MT đã thi mà còn ô điểm để trống.' },
-  { key: 'no_plan', label: 'Chưa có lịch MT', needs: 'plan.week', onlyWith: 'schedule.date',
+  { key: 'no_plan', label: 'Chưa có tuần MT', needs: 'plan.week',
     hint: 'Học viên chưa được chốt tuần cho lượt MT tiếp theo. Việc của Quản lý.' },
-  { key: 'need_date', label: 'Cần cập nhật ngày MT', needs: 'schedule.date',
-    hint: 'Tuần MT đã tới mà chưa có ngày cụ thể. Việc của Admin CN.' },
 ];
 
 /** Bộ lọc nào hiện ra với người mang bộ quyền này. */
 export function studentFiltersFor(has: (key: string) => boolean): StudentFilterKey[] {
   return STUDENT_FILTERS
-    .filter((f) => !f.needs || has(f.needs) || (f.onlyWith ? has(f.onlyWith) : false))
+    .filter((f) => !f.needs || has(f.needs))
     .map((f) => f.key);
 }

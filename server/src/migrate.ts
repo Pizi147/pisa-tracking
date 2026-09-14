@@ -395,6 +395,7 @@ function migrateCaseEngine(applied: string[], skipped: string[]) {
     migrateSchedulingFields(conn, applied);
     migratePermissions(conn, applied);
     migrateAccounts(conn, applied);
+    migrateWeekOnlySchedule(conn, applied);
 
     /*
      * Case đã đóng theo hệ thống cũ mà không có hướng xử lý: ghi rõ là "đóng theo hệ thống
@@ -1317,4 +1318,138 @@ function mondayOfIso(date: string): string {
   const dow = (d.getUTCDay() + 6) % 7;        // thứ Hai = 0
   d.setUTCDate(d.getUTCDate() - dow);
   return d.toISOString().slice(0, 10);
+}
+
+/**
+ * VÒNG 5 — BỎ HẲN NGÀY THI, CHỈ CÒN TUẦN.
+ *
+ * Ba việc, làm trên dữ liệu đang có và KHÔNG xoá gì của người dùng:
+ *
+ *  1. Lượt MT nào chỉ có ngày mà chưa có tuần thì SUY RA TUẦN từ chính ngày đó trước, rồi
+ *     mới bỏ hai cột ngày. Bỏ trước khi suy là làm mất lịch của người ta.
+ *  2. Ngày làm bài của từng kỹ năng (`taken_on`) biến mất. Nó chỉ dùng để tính hạn và
+ *     thời gian chấm, mà cả hai nay đếm theo tuần.
+ *  3. Ngày thi IELTS cụ thể (`exam_date`) thành TUẦN DỰ KIẾN THI. Có ngày thì lấy tuần
+ *     chứa ngày đó; tháng thi giữ nguyên như cũ.
+ *
+ * Hai quyền "Chốt ngày giờ trong tuần" và "Đổi lịch Speaking" bị gỡ khỏi mọi vai và mọi
+ * cá nhân, vì việc chúng cho phép làm không còn tồn tại.
+ */
+function migrateWeekOnlySchedule(conn: any, applied: string[]) {
+  const cols = (t: string) => (conn.prepare(`PRAGMA table_info(${t})`).all() as any[]).map((c: any) => c.name);
+  const has = (t: string) =>
+    !!conn.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name = ?").get(t);
+  if (!has('assessment_attempts') || !has('report_periods')) return;
+
+  const ensurePeriodFor = (date: string): number | null => {
+    const weekStart = mondayOfIso(date);
+    const found = conn.prepare('SELECT id FROM report_periods WHERE week_start = ?').get(weekStart) as any;
+    if (found) return found.id;
+    const d = new Date(weekStart + 'T00:00:00Z');
+    d.setUTCDate(d.getUTCDate() + 3);                       // thứ Năm quyết định tháng sở hữu
+    const year = d.getUTCFullYear();
+    const month = d.getUTCMonth() + 1;
+    const weekEnd = (() => {
+      const e = new Date(weekStart + 'T00:00:00Z');
+      e.setUTCDate(e.getUTCDate() + 6);
+      return e.toISOString().slice(0, 10);
+    })();
+    const before = conn
+      .prepare(`SELECT COUNT(*) AS n FROM report_periods WHERE year = ? AND month = ? AND week_start < ?`)
+      .get(year, month, weekStart) as any;
+    const MONTHS = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+    const weekNo = (before?.n ?? 0) + 1;
+    conn
+      .prepare(
+        `INSERT INTO report_periods (week_start, week_end, year, month, week_no, code, created_at)
+         VALUES (?,?,?,?,?,?,?)`,
+      )
+      .run(weekStart, weekEnd, year, month, weekNo, `W${weekNo} ${MONTHS[month - 1]} ${year}`, new Date().toISOString());
+    return (conn.prepare('SELECT id FROM report_periods WHERE week_start = ?').get(weekStart) as any)?.id ?? null;
+  };
+
+  /* --------------------------------------------- 1. mã tuần phải kèm NĂM */
+  let recoded = 0;
+  for (const r of conn.prepare('SELECT id, week_start, year, month, week_no, code FROM report_periods').all() as any[]) {
+    const MONTHS = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+    const want = `W${r.week_no} ${MONTHS[r.month - 1]} ${r.year}`;
+    if (r.code !== want) {
+      conn.prepare('UPDATE report_periods SET code = ? WHERE id = ?').run(want, r.id);
+      recoded += 1;
+    }
+  }
+  if (recoded) applied.push(`Thêm năm vào mã tuần của ${recoded} tuần (W1 SEP → W1 SEP 2026)`);
+
+  /* --------------------------------------------- 2. suy tuần rồi bỏ cột ngày */
+  const attemptCols = cols('assessment_attempts');
+  if (attemptCols.includes('lrw_scheduled_at')) {
+    let inferred = 0;
+    for (const a of conn
+      .prepare(`SELECT id, lrw_scheduled_at FROM assessment_attempts
+                 WHERE planned_period_id IS NULL AND lrw_scheduled_at IS NOT NULL`)
+      .all() as any[]) {
+      const pid = ensurePeriodFor(String(a.lrw_scheduled_at).slice(0, 10));
+      if (!pid) continue;
+      conn.prepare('UPDATE assessment_attempts SET planned_period_id = ? WHERE id = ?').run(pid, a.id);
+      inferred += 1;
+    }
+    if (inferred) applied.push(`Suy tuần MT cho ${inferred} lượt chỉ có ngày mà chưa có tuần`);
+
+    conn.exec('ALTER TABLE assessment_attempts DROP COLUMN lrw_scheduled_at');
+    if (cols('assessment_attempts').includes('speaking_scheduled_at')) {
+      conn.exec('ALTER TABLE assessment_attempts DROP COLUMN speaking_scheduled_at');
+    }
+    applied.push('Bỏ ngày buổi L/R/W và ngày Speaking — một lượt MT nay chỉ thuộc một tuần');
+  }
+
+  /* --------------------------------------------- 3. bỏ ngày làm bài của từng kỹ năng */
+  if (has('assessment_scores') && cols('assessment_scores').includes('taken_on')) {
+    conn.exec('ALTER TABLE assessment_scores DROP COLUMN taken_on');
+    applied.push('Bỏ ngày làm bài riêng của từng kỹ năng — hạn và thời gian chấm đếm theo tuần');
+  }
+
+  /* --------------------------------------------- 4. ngày thi IELTS → tuần dự kiến thi */
+  if (has('learning_cycles') && cols('learning_cycles').includes('exam_date')) {
+    if (!cols('learning_cycles').includes('exam_period_id')) {
+      conn.exec('ALTER TABLE learning_cycles ADD COLUMN exam_period_id INTEGER REFERENCES report_periods(id)');
+    }
+    let moved = 0;
+    for (const c of conn
+      .prepare('SELECT id, exam_date, exam_month FROM learning_cycles WHERE exam_date IS NOT NULL')
+      .all() as any[]) {
+      const day = String(c.exam_date).slice(0, 10);
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) continue;
+      const pid = ensurePeriodFor(day);
+      if (!pid) continue;
+      // Tháng thi để trống thì điền theo chính ngày cũ — không làm mất thông tin đang có.
+      conn
+        .prepare(`UPDATE learning_cycles SET exam_period_id = ?,
+                    exam_month = COALESCE(exam_month, ?) WHERE id = ?`)
+        .run(pid, day.slice(0, 7), c.id);
+      moved += 1;
+    }
+    conn.exec('ALTER TABLE learning_cycles DROP COLUMN exam_date');
+    applied.push(`Đổi ngày thi IELTS thành tuần dự kiến thi (${moved} lộ trình có ngày cũ)`);
+  }
+
+  /* --------------------------------------------- 5. FT = Fast Track, không phải Full-time */
+  if (has('classes') && cols('classes').includes('is_fulltime') && !cols('classes').includes('is_fast_track')) {
+    conn.exec('ALTER TABLE classes RENAME COLUMN is_fulltime TO is_fast_track');
+    applied.push('Đổi tên cột lớp FT cho đúng nghĩa Fast Track (dữ liệu giữ nguyên)');
+  }
+
+  /* --------------------------------------------- 6. gỡ hai quyền không còn việc để làm */
+  if (has('permissions')) {
+    const gone = ['schedule.date', 'schedule.speaking'];
+    let removed = 0;
+    for (const key of gone) {
+      const perm = conn.prepare('SELECT id FROM permissions WHERE key = ?').get(key) as any;
+      if (!perm) continue;
+      for (const t of ['role_permissions', 'user_permissions']) {
+        if (has(t)) removed += (conn.prepare(`DELETE FROM ${t} WHERE permission_id = ?`).run(perm.id) as any).changes;
+      }
+      conn.prepare('DELETE FROM permissions WHERE id = ?').run(perm.id);
+    }
+    if (removed) applied.push(`Gỡ quyền "Chốt ngày giờ" và "Đổi lịch Speaking" khỏi ${removed} lượt cấp quyền`);
+  }
 }

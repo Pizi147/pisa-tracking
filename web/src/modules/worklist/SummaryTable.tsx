@@ -41,7 +41,7 @@ type Summary = {
 };
 
 const PREF_KEY = 'summary.preset';
-const GROUP_LABEL: Record<string, string> = { normal: 'Normal', ft: 'Fulltime IELTS' };
+const GROUP_LABEL: Record<string, string> = { normal: 'Normal', ft: 'Fast Track' };
 
 export function SummaryTable({ branchId, onPickBranch }: {
   branchId: number | null;

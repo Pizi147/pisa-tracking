@@ -62,7 +62,7 @@ CREATE TABLE classes (
   -- còn mọi tính toán đọc cột này. Không đổi mã lớp lịch sử chỉ vì đổi mã chương trình.
   programme_code TEXT REFERENCES programmes(code),
   route TEXT,                         -- LT1 | LT2, chỉ áp dụng lớp FT
-  is_fulltime INTEGER NOT NULL DEFAULT 0,
+  is_fast_track INTEGER NOT NULL DEFAULT 0,
   start_date TEXT,
 
   /*
@@ -284,14 +284,24 @@ CREATE TABLE learning_cycles (
   /*
    * THÁNG/NĂM DỰ KIẾN THI, dạng 'YYYY-MM'. CHỈ áp dụng lớp FT.
    *
-   * Tách khỏi `exam_date` vì hai thứ khác nhau về độ chắc chắn: tháng thi là thứ biết ngay
-   * lúc tư vấn và dùng để xếp lịch cả khoá; ngày thi cụ thể thì đăng ký xong mới có. Ép khai
-   * ngày ngay từ đầu thì người ta gõ bừa một ngày rồi không ai sửa lại.
+   * Tách khỏi `exam_period_id` vì hai thứ khác nhau về độ chắc chắn: tháng thi là thứ biết
+   * ngay lúc tư vấn và dùng để xếp lịch cả khoá; tuần thi thì gần ngày đăng ký mới chốt
+   * được. Ép khai tuần ngay từ đầu thì người ta chọn bừa một tuần rồi không ai sửa lại.
    *
    * Lớp Normal để TRỐNG và KHÔNG bị badge nhắc — các em đó chưa thi IELTS.
    */
   exam_month TEXT,
-  exam_date TEXT,                     -- ngày thi IELTS cụ thể, cập nhật sau
+
+  /*
+   * TUẦN DỰ KIẾN THI, khi đã biết chắc hơn tháng. Không lưu ngày cụ thể.
+   *
+   * Ba mức chắc chắn, hiển thị đúng như vậy:
+   *   có tuần    → "W2 FEB 2027"
+   *   chỉ tháng  → "FEB 2027 · chưa xác định tuần"
+   *   chưa gì cả → "Chưa xác định"
+   * Chỉ đếm ngược khi đã có tuần; biết mỗi tháng thì không đếm ngược.
+   */
+  exam_period_id INTEGER REFERENCES report_periods(id),
 
   -- ĐIỂM XUẤT PHÁT. Phải ghi rõ NGUỒN, vì "em vào học ở mức nào" là câu hỏi khác hẳn
   -- "bài Mock đầu tiên được mấy điểm". Không có căn cứ thì để trống và hiển thị "chưa rõ",
@@ -377,7 +387,7 @@ CREATE TABLE report_periods (
   year INTEGER NOT NULL,
   month INTEGER NOT NULL,
   week_no INTEGER NOT NULL,
-  code TEXT NOT NULL,                 -- "W1 SEP" — chỉ là nhãn hiển thị
+  code TEXT NOT NULL,                 -- "W1 SEP 2026" — nhãn hiển thị, luôn kèm năm
   created_at TEXT NOT NULL
 );
 CREATE INDEX idx_period_code ON report_periods(year, month, week_no);
@@ -409,10 +419,14 @@ CREATE TABLE assessment_attempts (
    */
   plan_source TEXT NOT NULL DEFAULT 'manual',
 
-  -- NGÀY–GIỜ cụ thể do Admin chi nhánh chốt trong tuần đã duyệt.
-  -- LRW đi chung một buổi; Speaking có thể khác ngày nhưng vẫn cùng lượt MT này.
-  lrw_scheduled_at TEXT,              -- 'YYYY-MM-DD' hoặc 'YYYY-MM-DD HH:MM'
-  speaking_scheduled_at TEXT,
+  /*
+   * KHÔNG có cột ngày thi cụ thể. Một lượt MT được xác định bằng ĐÚNG MỘT TUẦN.
+   *
+   * Trước đây có `lrw_scheduled_at` và `speaking_scheduled_at`; bỏ hẳn từ vòng 5 vì hai
+   * cột đó tạo ra một đầu việc "cập nhật ngày MT" mà không ai dùng tới: mọi báo cáo, hạn
+   * nhập điểm và bộ đếm đều đã đếm theo tuần. Cần biết buổi nào ngày nào thì xem lịch dạy
+   * của lớp, không phải bắt khai lại ở đây.
+   */
 
   status TEXT NOT NULL DEFAULT 'planned',         -- planned | done | cancelled
   cancel_reason TEXT,
@@ -462,13 +476,14 @@ CREATE TABLE attempt_skill_skips (
   UNIQUE (attempt_id, skill)
 );
 
--- Mỗi kỹ năng NHẬP ĐIỂM một dòng, có ngày mock thực tế riêng.
--- Có dòng với taken_on mà chưa có band = ĐÃ MOCK, CHƯA NHẬP ĐIỂM.
+-- Mỗi kỹ năng NHẬP ĐIỂM một dòng.
+-- Không có dòng, hoặc có dòng mà `band` còn trống = CHƯA NHẬP ĐIỂM.
 CREATE TABLE assessment_scores (
   id INTEGER PRIMARY KEY,
   attempt_id INTEGER NOT NULL REFERENCES assessment_attempts(id),
   skill TEXT NOT NULL,                -- listening | reading | writing1 | writing2 | speaking
-  taken_on TEXT,                      -- ngày MOCK thực tế của riêng kỹ năng này
+  -- Không lưu ngày làm bài của riêng kỹ năng: lượt MT thuộc về một TUẦN, và thời điểm cần
+  -- biết duy nhất là lúc điểm được nhập (`entered_at`).
   raw_score INTEGER,                  -- FT: 0..40 với listening/reading. Lớp thường: số câu đúng.
   -- Tổng số câu của chính đề đó. Lớp thường bắt buộc có, vì số câu KHÔNG cố định giữa các
   -- kỹ năng và các đề; không có tổng thì không tính được tỷ lệ đạt.

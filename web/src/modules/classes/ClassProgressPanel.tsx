@@ -149,7 +149,7 @@ export function ClassProgressPanel({ classId, classCode, onClose, onDone }: {
             </>
           ) : (
             <SectionNote>
-              Đây là lớp Fulltime nên không có mốc Progress/Final Test chung cho cả lớp — lịch MT
+              Đây là lớp Fast Track nên không có mốc Progress/Final Test chung cho cả lớp — lịch MT
               đi theo <strong>từng em</strong>, tính từ tuần em vào học. Mở hồ sơ một em rồi bấm
               “Kế hoạch học” để xem và xếp lịch MT của em đó.
             </SectionNote>

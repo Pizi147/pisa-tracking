@@ -316,7 +316,7 @@ function computeProgress(
     }
     label = parts.join(' · ');
   } else if (code === 'FT') {
-    label = c.route ? `Fulltime · ${c.route}` : 'Fulltime';
+    label = c.route ? `Fast Track · ${c.route}` : 'Fast Track';
   }
 
   return {
@@ -437,11 +437,11 @@ const miss = (key: MissingInfo['key']): MissingInfo => ({ key, ...MISSING_LABEL[
 export function missingForStudent(input: {
   cycle: { start_period_id?: number | null; exam_month?: string | null; target_score?: number | null } | null;
   student: { dob?: string | null } | null;
-  isFulltime: boolean;
+  isFastTrack: boolean;
 }): MissingInfo[] {
   const out: MissingInfo[] = [];
   if (!input.cycle?.start_period_id) out.push(miss('start_week'));
-  if (input.isFulltime) {
+  if (input.isFastTrack) {
     if (!input.cycle?.exam_month) out.push(miss('exam_month'));
     if (input.cycle?.target_score === null || input.cycle?.target_score === undefined) out.push(miss('target'));
   }

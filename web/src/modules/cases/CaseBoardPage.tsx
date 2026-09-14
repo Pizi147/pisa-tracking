@@ -39,7 +39,7 @@ type Facets = {
 /** Bộ lọc loại lớp — thay cho bộ lọc "Đầu mục" đã bỏ (mục 10.1). */
 const CLASS_KINDS = [
   { key: 'normal', label: 'Normal', hint: 'Lớp Foundation, Beginner, Elementary — chấm theo tỷ lệ câu đúng.' },
-  { key: 'ft', label: 'Fulltime IELTS', hint: 'Lớp FT — chấm theo band và có lịch MT riêng từng em.' },
+  { key: 'ft', label: 'Fast Track', hint: 'Lớp FT — chấm theo band và có lịch MT riêng từng em.' },
 ] as const;
 
 const STATE_LABEL: Record<string, string> = {

@@ -9,7 +9,6 @@ import type { Branch } from '../../ui/Filters.tsx';
 import { IntakePanel } from './IntakePanel.tsx';
 import { ClassCreatePanel } from '../classes/ClassCreatePanel.tsx';
 import { ClassRoster } from './ClassRoster.tsx';
-import { DateDutyPanel } from '../fasttrack/DateDutyPanel.tsx';
 import { MockPlanPanel } from '../fasttrack/MockPlanPanel.tsx';
 import { MissingBadge } from './MissingBadge.tsx';
 import { PERMISSIONS, STUDENT_FILTERS, skillShort, type StudentFilterKey } from '@shared/domain/index.ts';
@@ -18,7 +17,7 @@ export type ClassSummary = {
   id: number; code: string; kind: string; route: string | null;
   branchId: number; branchCode: string; branchName: string;
   startDate: string | null;
-  studentCount: number; needScores: number; openCases: number; needsDate: number;
+  studentCount: number; needScores: number; openCases: number;
   /** `ratio` = lớp thường chấm theo số câu đúng; `ielts_band` = lớp FT. */
   scoringMode: string | null;
   programmeName: string | null;
@@ -53,7 +52,7 @@ export default function StudentsPage() {
   const { session, can, branchCount } = useSession();
   const [params, setParams] = useSearchParams();
   const views = useMemo(
-    () => STUDENT_FILTERS.filter((f) => !f.needs || can(f.needs) || (f.onlyWith ? can(f.onlyWith) : false)),
+    () => STUDENT_FILTERS.filter((f) => !f.needs || can(f.needs)),
     [can],
   );
   const rawView = (params.get('view') ?? 'classes') as StudentFilterKey;
@@ -172,12 +171,8 @@ export default function StudentsPage() {
         )}
       </div>
 
-      {/* Cập nhật ngày là thao tác HÀNG LOẠT, không phải một danh sách để bấm vào từng em. */}
-      {view === 'need_date' && (
-        <DateDutyPanel branchId={branchId} classId={params.get('classId') ? Number(params.get('classId')) : null} />
-      )}
       {view === 'no_plan' && (
-        <Card title="Chưa có lịch MT tiếp theo" bodyClass="p-4">
+        <Card title="Chưa có tuần MT tiếp theo" bodyClass="p-4">
           <p className="text-sm text-slate-400 mb-3">
             Đây là việc của <strong>Quản lý</strong>: quyết định em sẽ MT tiếp theo vào tuần nào.
             Lên kế hoạch cho nhiều em một lần thay vì mở từng hồ sơ.
@@ -365,12 +360,7 @@ function ClassRow({ cls, expanded, studentQuery, onToggle, onAddStudents }: {
               <Pill tone="danger">{cls.openCases} case SOS</Pill>
             </button>
           )}
-          {cls.needsDate > 0 && (
-            <button className="appearance-none bg-transparent border-0 p-0" onClick={go(`/hoc-vien?view=need_date&classId=${cls.id}`)}>
-              <Pill tone="info">{cls.needsDate} cần cập nhật ngày MT</Pill>
-            </button>
-          )}
-          {cls.needScores + cls.openCases + cls.needsDate === 0
+          {cls.needScores + cls.openCases === 0
             && !cls.needsPlacement && !cls.missing.length && cls.phase === 'running' && (
             <span className="text-xs text-slate-600">Không có việc cần chú ý</span>
           )}

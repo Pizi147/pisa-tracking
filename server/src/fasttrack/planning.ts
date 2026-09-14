@@ -1,18 +1,18 @@
 import { db, tx } from '../db.ts';
 import { ASSESSED_SKILLS, PERMISSIONS, type AssessedSkill } from '../../../shared/domain/index.ts';
-import { badRequest, isIsoDate, nowIso } from '../util.ts';
+import { badRequest, nowIso } from '../util.ts';
 import { can, require_, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
-import { createAttempt, setSchedule, setSkillSkip } from './attempts.ts';
+import { createAttempt, setSkillSkip } from './attempts.ts';
 
 /**
  * Thao tác HÀNG LOẠT cho lịch MT.
  *
- * Một Admin chi nhánh phải cập nhật ngày cho hai mươi học viên trong cùng một buổi. Bắt họ
- * mở từng hồ sơ là bắt làm hai mươi lần một việc. Ở đây gom lại: chọn nhiều em, một ngày,
+ * Một Quản lý phải xếp tuần MT cho hai mươi học viên trong cùng một lần. Bắt họ
+ * mở từng hồ sơ là bắt làm hai mươi lần một việc. Ở đây gom lại: chọn nhiều em, một tuần,
  * một lần bấm.
  *
- * Từng dòng vẫn qua ĐÚNG hàm nghiệp vụ của thao tác lẻ (`createAttempt`, `setSchedule`),
+ * Từng dòng vẫn qua ĐÚNG hàm nghiệp vụ của thao tác lẻ (`createAttempt`),
  * nên mọi kiểm tra quyền, ràng buộc tuần và ghi lịch sử đều giữ nguyên — hàng loạt không
  * phải là một đường vòng lỏng hơn.
  */
@@ -110,93 +110,6 @@ export function bulkPlan(p: Principal, input: {
     }
     return created;
   }));
-}
-
-/**
- * Cập nhật NGÀY MT thực tế cho nhiều lượt cùng lúc.
- *
- * Chỉ ngày, không giờ. Lượt nào có tuần kế hoạch không chứa ngày đó thì báo lỗi riêng dòng
- * ấy — không âm thầm bỏ qua, cũng không huỷ cả lô.
- */
-export function bulkSetDate(p: Principal, input: {
-  attemptIds: number[];
-  lrwAt?: string | null;
-  speakingAt?: string | null;
-  reason?: string | null;
-}): BulkResult {
-  const conn = db();
-  const ids = [...new Set((input.attemptIds ?? []).map(Number).filter(Boolean))];
-  if (!ids.length) throw badRequest('Chưa chọn lượt MT nào.');
-  const touchLrw = input.lrwAt !== undefined;
-  const touchSpeaking = input.speakingAt !== undefined;
-  if (!touchLrw && !touchSpeaking) throw badRequest('Chưa chọn ngày để cập nhật.');
-  for (const [v, label] of [[input.lrwAt, 'Ngày L/R/W'], [input.speakingAt, 'Ngày Speaking']] as const) {
-    if (v !== undefined && v !== null && v !== '' && !isIsoDate(String(v).slice(0, 10))) {
-      throw badRequest(`${label} không hợp lệ.`);
-    }
-  }
-
-  const labels = new Map<number, string>(
-    (conn.prepare(
-      `SELECT a.id, s.full_name, a.attempt_no FROM assessment_attempts a
-         JOIN students s ON s.id = a.student_id
-        WHERE a.id IN (${ids.map(() => '?').join(',')})`,
-    ).all(...ids) as any[]).map((r) => [r.id, `${r.full_name} · MT${r.attempt_no}`]),
-  );
-
-  return tx(() => runEach(ids, (id) => labels.get(id), (id) => id, (attemptId) => setSchedule(p, attemptId, {
-    ...(touchLrw ? { lrwAt: input.lrwAt } : {}),
-    ...(touchSpeaking ? { speakingAt: input.speakingAt } : {}),
-    reason: input.reason ?? undefined,
-  })));
-}
-
-/**
- * Nghĩa vụ hàng tuần của Admin chi nhánh: trước khi hết Chủ nhật, những em có MT trong tuần
- * phải được cập nhật ngày thực tế.
- *
- * Trả về đúng hai nhóm — tuần này còn thiếu, và tuần trước đã quá hạn mà vẫn thiếu. Những
- * MT còn cách nhiều tuần KHÔNG xuất hiện ở đây: chưa đến lượt thì chưa phải việc.
- */
-export function dateDutyQueue(p: Principal, f: { branchId?: number | null; classId?: number | null } = {}) {
-  const conn = db();
-  const today = demoToday();
-  const where: string[] = [`a.status = 'planned'`, 'a.lrw_scheduled_at IS NULL', 'rp.week_start <= ?'];
-  const params: unknown[] = [today];
-  if (f.branchId) { where.push('c.branch_id = ?'); params.push(f.branchId); }
-  if (f.classId) { where.push('a.class_id = ?'); params.push(f.classId); }
-
-  const rows = conn
-    .prepare(
-      `SELECT a.id, a.attempt_no, a.speaking_scheduled_at, a.class_id,
-              s.id AS student_id, s.full_name, s.student_code,
-              c.code AS class_code, c.branch_id, b.name AS branch_name,
-              rp.code AS period_code, rp.week_start, rp.week_end
-         FROM assessment_attempts a
-         JOIN students s ON s.id = a.student_id
-         LEFT JOIN classes c ON c.id = a.class_id
-         LEFT JOIN branches b ON b.id = c.branch_id
-         JOIN report_periods rp ON rp.id = a.planned_period_id
-        WHERE ${where.join(' AND ')} AND s.archived_at IS NULL
-        ORDER BY rp.week_start, c.code, s.full_name`,
-    )
-    .all(...params) as any[];
-
-  const visible = rows.filter((r) => can(p, PERMISSIONS.ATTEMPT_VIEW, { classId: r.class_id, studentId: r.student_id }));
-  return {
-    rows: visible.map((r) => ({
-      attemptId: r.id, attemptNo: r.attempt_no, studentId: r.student_id,
-      studentName: r.full_name, studentCode: r.student_code,
-      classId: r.class_id, classCode: r.class_code, branchName: r.branch_name,
-      periodCode: r.period_code, weekStart: r.week_start, weekEnd: r.week_end,
-      speakingScheduledAt: r.speaking_scheduled_at,
-      // Đã qua Chủ nhật của tuần MT mà vẫn chưa có ngày.
-      overdue: r.week_end < today,
-      canEdit: can(p, PERMISSIONS.SCHEDULE_DATE, { classId: r.class_id, studentId: r.student_id }),
-    })),
-    overdueCount: visible.filter((r) => r.week_end < today).length,
-    thisWeekCount: visible.filter((r) => r.week_end >= today).length,
-  };
 }
 
 /**

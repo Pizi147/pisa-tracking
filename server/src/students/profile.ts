@@ -10,7 +10,7 @@ import { can, require_, type Principal } from '../permissions.ts';
 import { entryBandsOf, scoresOf, skipsOf } from '../fasttrack/attempts.ts';
 import { assessedBands, evaluateAttempt } from '../fasttrack/scoring.ts';
 import { evaluateRegular, programmeByCode, programmeOfClass } from '../normal/regular.ts';
-import { cycleById, cyclesOf, currentCycle, targetRevisions } from '../fasttrack/cycles.ts';
+import { cycleById, cyclesOf, currentCycle, examPlanOf, targetRevisions } from '../fasttrack/cycles.ts';
 import { canCloseCase } from '../cases/cases.ts';
 import { missingForStudent, suggestedMockWeeks } from '../classes/schedule.ts';
 
@@ -32,7 +32,8 @@ import { missingForStudent, suggestedMockWeeks } from '../classes/schedule.ts';
 type SkillPoint = {
   kind: 'baseline' | 'official' | 'checkin';
   label: string;
-  date: string | null;
+  /** Mã tuần của lượt MT, ví dụ "W2 SEP 2026". Điểm đầu vào thì không có tuần. */
+  week: string | null;
   band: number | null;
   detail: string | null;
 };
@@ -103,7 +104,7 @@ export function typedResult(attempt: any) {
  * một lượt duy nhất có đủ bốn kỹ năng.
  */
 function currentBands(attempts: any[]) {
-  const per: Partial<Record<AssessedSkill, { band: number; attemptNo: number; on: string | null }>> = {};
+  const per: Partial<Record<AssessedSkill, { band: number; attemptNo: number; week: string | null }>> = {};
   for (const a of attempts) {
     if (a.status === 'cancelled') continue;
     const bands = assessedBands(entryBandsOf(scoresOf(a.id)));
@@ -111,7 +112,7 @@ function currentBands(attempts: any[]) {
       if (per[s]) continue;                              // đã có lượt mới hơn
       const b = bands[s];
       if (b === null || b === undefined) continue;
-      per[s] = { band: b, attemptNo: a.attempt_no, on: a.lrw_scheduled_at?.slice(0, 10) ?? null };
+      per[s] = { band: b, attemptNo: a.attempt_no, week: a.period_code ?? null };
     }
   }
   return per;
@@ -131,7 +132,7 @@ function checkpointView(attempts: any[]) {
       if (r.failedCount === null) continue;
       return {
         attemptNo: a.attempt_no, kind: a.kind, mode: 'ratio' as const,
-        date: a.lrw_scheduled_at?.slice(0, 10) ?? null,
+        week: a.period_code ?? null,
         coverage: `${r.scored}/${r.required}`,
         provisional: r.provisional,
         status: r.failedCount === 0 ? 'met' : 'below',
@@ -149,7 +150,7 @@ function checkpointView(attempts: any[]) {
       if (r.complete && r.expectation === null) {
         return {
           attemptNo: a.attempt_no, kind: a.kind, mode: 'ielts' as const,
-          date: a.lrw_scheduled_at?.slice(0, 10) ?? null,
+          week: a.period_code ?? null,
           coverage: `${r.scoredRequired}/${r.required.length}`,
           provisional: false, status: 'no_target' as const, expectation: null,
           skills: ASSESSED_SKILLS.map((s) => ({
@@ -164,7 +165,7 @@ function checkpointView(attempts: any[]) {
     const allAbove = required.length > 0 && required.every((v) => v.band !== null && r.expectation !== null && v.band > r.expectation);
     return {
       attemptNo: a.attempt_no, kind: a.kind, mode: 'ielts' as const,
-      date: a.lrw_scheduled_at?.slice(0, 10) ?? null,
+      week: a.period_code ?? null,
       coverage: `${r.scoredRequired}/${r.required.length}`,
       provisional: r.provisional,
       status: r.failedCount === 0 ? (allAbove ? 'above' : 'met') : 'below',
@@ -302,8 +303,7 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
     const c = caseByAttempt.get(a.id) ?? null;
     const base = {
       id: a.id, attemptNo: a.attempt_no, kind: a.kind, status: a.status,
-      classCode: a.class_code, periodCode: a.period_code,
-      lrwScheduledAt: a.lrw_scheduled_at, speakingScheduledAt: a.speaking_scheduled_at,
+      classCode: a.class_code, periodCode: a.period_code, weekStart: a.week_start ?? null,
       mode: t.mode,
       caseId: c?.id ?? null, caseStatus: c?.status ?? null,
     };
@@ -355,7 +355,7 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
   const target = selected?.target_score ?? null;
 
   const today = demoToday();
-  const examDate = selected?.exam_date ?? null;
+  const examPlan = examPlanOf(selected);
 
   // Mốc tiếp theo: lượt đã lên kế hoạch gần nhất chưa xong.
   const nextRow = attemptRows.filter((a) => a.status === 'planned')
@@ -370,7 +370,7 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
   const trajectory = (isRatioCycle(selected ?? {}) ? [] : ASSESSED_SKILLS).map((skill) => {
     const points: SkillPoint[] = [];
     if (baseline?.bands?.[skill] !== null && baseline?.bands?.[skill] !== undefined) {
-      points.push({ kind: 'baseline', label: 'Đầu vào', date: null, band: baseline.bands[skill], detail: baseline.sourceLabel });
+      points.push({ kind: 'baseline', label: 'Đầu vào', week: null, band: baseline.bands[skill], detail: baseline.sourceLabel });
     }
     for (const a of [...attemptRows].sort((x, y) => x.attempt_no - y.attempt_no)) {
       if (a.status === 'cancelled') continue;
@@ -378,7 +378,7 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
       if (b === null || b === undefined) continue;
       points.push({
         kind: 'official', label: `MT${a.attempt_no}`,
-        date: a.lrw_scheduled_at?.slice(0, 10) ?? null, band: b, detail: null,
+        week: a.period_code ?? null, band: b, detail: null,
       });
     }
     return {
@@ -453,19 +453,23 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
     })),
     cycles: allCycles.map((c) => ({
       id: c.id, seq: c.seq, route: c.route, label: cycleLabel(c), target: c.target_score,
-      examDate: c.exam_date, startedAt: c.started_at, endedAt: c.ended_at, status: c.status,
+      examPlan: examPlanOf(c), startedAt: c.started_at, endedAt: c.ended_at, status: c.status,
       outcome: c.outcome, ratio: isRatioCycle(c),
     })),
     cycle: selected
       ? {
         id: selected.id, seq: selected.seq, route: selected.route, label: cycleLabel(selected),
         programmeCode: selected.programme_code, ratio: isRatioCycle(selected),
-        target, examDate, startedAt: selected.started_at, endedAt: selected.ended_at,
+        target, examPlan, startedAt: selected.started_at, endedAt: selected.ended_at,
         status: selected.status,
-        daysToExam: examDate ? diffDays(examDate, today) : null,
         /*
-         * TUẦN BẮT ĐẦU HỌC và THÁNG THI DỰ KIẾN — hai trường của vòng 4 (mục 7.5).
-         * Tuần bắt đầu là mốc gốc sinh ra lịch MT mặc định; tháng thi chỉ có với lớp FT.
+         * ĐẾM NGƯỢC CHỈ KHI ĐÃ CÓ TUẦN THI. Biết mỗi tháng mà vẫn hiện "còn 134 ngày" là
+         * bịa ra một độ chính xác không có thật, và người đọc sẽ tin con số đó.
+         */
+        daysToExam: examPlan.weekStart ? diffDays(examPlan.weekStart, today) : null,
+        /*
+         * TUẦN BẮT ĐẦU HỌC và DỰ KIẾN THI — hai trường của vòng 4 (mục 7.5).
+         * Tuần bắt đầu là mốc gốc sinh ra lịch MT mặc định; dự kiến thi chỉ có với lớp FT.
          */
         startPeriodId: selected.start_period_id ?? null,
         startWeek: selected.start_period_id
@@ -473,6 +477,7 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
               .get(selected.start_period_id) as any) ?? null
           : null,
         examMonth: selected.exam_month ?? null,
+        examPeriodId: selected.exam_period_id ?? null,
         /* Lịch MT hệ thống đề xuất, và những lượt người đã chốt tay thì ghi rõ là giữ nguyên. */
         suggestedMocks: isRatioCycle(selected) ? [] : suggestedMockWeeks(selected.id),
         baseline,
@@ -503,7 +508,6 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
       ? {
         id: nextRow.id, attemptNo: nextRow.attempt_no, kind: nextRow.kind,
         periodCode: nextRow.period_code, weekStart: nextRow.week_start,
-        scheduledAt: nextRow.lrw_scheduled_at, needsDate: !nextRow.lrw_scheduled_at,
       }
       : null,
     /*
@@ -519,7 +523,7 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
         }
         : null,
       student: { dob: s.dob },
-      isFulltime: !isRatioCycle(selected ?? {}),
+      isFastTrack: !isRatioCycle(selected ?? {}),
     }),
     concerns: {
       openCases: openCases.length,
@@ -536,7 +540,6 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
     viewer: {
       canEdit: can(p, PERMISSIONS.STUDENT_EDIT, { studentId }),
       canPlanWeek: can(p, PERMISSIONS.PLAN_WEEK, { studentId }),
-      canSetDate: can(p, PERMISSIONS.SCHEDULE_DATE, { studentId }),
       canReport: can(p, PERMISSIONS.SOS_EDIT, { classId: current?.class_id ?? null, studentId }),
       canClose: canCloseCase(p, { class_id: current?.class_id ?? null, student_id: studentId }),
     },

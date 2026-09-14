@@ -187,7 +187,7 @@ export function runSeed() {
       const programme = programmeOf(c.kind);
       const info = conn
         .prepare(
-          `INSERT INTO classes (code, branch_id, kind, programme_code, route, is_fulltime, start_date,
+          `INSERT INTO classes (code, branch_id, kind, programme_code, route, is_fast_track, start_date,
                                 start_period_id, status, note, created_at)
            VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
         )
@@ -196,7 +196,7 @@ export function runSeed() {
          * ở tuần thứ mấy và tuần nào là Progress/Final Test — thiếu nó thì cả ba thông báo
          * của lớp không có căn cứ nào để tính.
          */
-        .run(c.code, branchId.get(c.branch)!, c.kind, programme, c.route, c.isFulltime ? 1 : 0,
+        .run(c.code, branchId.get(c.branch)!, c.kind, programme, c.route, c.isFastTrack ? 1 : 0,
              c.startDate, c.startDate ? ensurePeriod(c.startDate).id : null,
              'active', null, NOW);
       const id = Number(info.lastInsertRowid);
@@ -298,18 +298,19 @@ export function runSeed() {
         const target = TARGET_SCORES[i % TARGET_SCORES.length];
         const cycleInfo = conn
           .prepare(
-            `INSERT INTO learning_cycles (student_id, seq, route, target_score, exam_date, exam_month,
+            `INSERT INTO learning_cycles (student_id, seq, route, target_score, exam_period_id, exam_month,
                                           start_period_id, started_at, status, created_at)
              VALUES (?, 1, ?, ?, ?, ?, ?, ?, 'active', ?)`,
           )
           /*
-           * TUẦN BẮT ĐẦU HỌC của em, và THÁNG THI DỰ KIẾN.
+           * TUẦN BẮT ĐẦU HỌC, và DỰ KIẾN THI ở BA MỨC CHẮC CHẮN KHÁC NHAU.
            *
-           * Cứ năm em thì một em CHƯA khai tuần bắt đầu và một em chưa khai tháng thi — để
-           * badge "Thiếu thông tin" có dữ liệu thật mà hiện, chứ không phải một badge chỉ
-           * tồn tại trên lý thuyết.
+           * Cứ năm em thì một em chưa khai tuần bắt đầu, một em chưa khai gì về kỳ thi, và
+           * một em mới biết THÁNG chứ chưa biết TUẦN — để cả ba cách hiển thị "Dự kiến thi"
+           * đều có dữ liệu thật mà xem, chứ không phải chỉ tồn tại trên lý thuyết.
            */
-          .run(sid, c.route, target, addDays(c.startDate, 200),
+          .run(sid, c.route, target,
+               i % 5 === 3 || i % 5 === 2 ? null : ensurePeriod(addDays(c.startDate, 200)).id,
                i % 5 === 3 ? null : String(addDays(c.startDate, 200)).slice(0, 7),
                i % 5 === 1 ? null : ensurePeriod(c.startDate).id,
                c.startDate, NOW);
@@ -403,32 +404,19 @@ function seedAttempts(conn: any, ctx: {
     const info = conn
       .prepare(
         `INSERT INTO assessment_attempts (cycle_id, student_id, attempt_no, kind, class_id, planned_period_id,
-                                          lrw_scheduled_at, speaking_scheduled_at, status, target_at_attempt,
-                                          created_by, created_at)
-         VALUES (?,?,?, 'mock', ?,?,?,?,?,?,?,?)`,
+                                          status, target_at_attempt, created_by, created_at)
+         VALUES (?,?,?, 'mock', ?,?,?,?,?,?)`,
       )
-      .run(cycleId, sid, step.attemptNo, cid, periodId, step.lrwAt ?? null, step.speakingAt ?? null,
+      .run(cycleId, sid, step.attemptNo, cid, periodId,
            step.done ? 'done' : 'planned', target, manager, NOW);
     const attemptId = Number(info.lastInsertRowid);
     counts.attempts += 1;
 
-    // Lịch sử: Quản lý chốt tuần trước, Admin chi nhánh chốt ngày sau.
+    // Lịch sử: Quản lý chốt tuần. Đây là thao tác xếp lịch duy nhất của một lượt.
     conn.prepare(
       `INSERT INTO attempt_schedule_history (attempt_id, action, field, new_value, reason, actor_user_id, created_at)
        VALUES (?, 'created', 'planned_period', ?, ?, ?, ?)`,
     ).run(attemptId, step.week, 'Kế hoạch đầu khoá', manager, NOW);
-    if (step.lrwAt) {
-      conn.prepare(
-        `INSERT INTO attempt_schedule_history (attempt_id, action, field, new_value, actor_user_id, created_at)
-         VALUES (?, 'lrw_set', 'lrw_scheduled_at', ?, ?, ?)`,
-      ).run(attemptId, step.lrwAt, recorder, NOW);
-    }
-    if (step.speakingAt) {
-      conn.prepare(
-        `INSERT INTO attempt_schedule_history (attempt_id, action, field, new_value, actor_user_id, created_at)
-         VALUES (?, 'speaking_set', 'speaking_scheduled_at', ?, ?, ?)`,
-      ).run(attemptId, step.speakingAt, recorder, NOW);
-    }
     conn
       .prepare(
         `INSERT INTO journey_events (student_id, event_type, event_date, title, ref_table, ref_id, created_by, created_at)
@@ -453,7 +441,6 @@ function seedAttempts(conn: any, ctx: {
 
     const expectation = target - (step.attemptNo === 1 ? 1 : step.attemptNo === 2 ? 0.5 : 0);
     const missing = new Set(outcome.missing ?? []);
-    const performedOnly = new Set(outcome.performedOnly ?? []);
     const assessedOrder = OUTCOME_SKILL_ORDER.filter((sk) => sk !== skipped);
     const failing = new Set(assessedOrder.slice(Math.max(0, assessedOrder.length - outcome.fails)));
 
@@ -465,31 +452,21 @@ function seedAttempts(conn: any, ctx: {
     for (const skill of ENTRY_SKILLS) {
       const assessed = skill === 'writing1' || skill === 'writing2' ? 'writing' : skill;
       if (assessed === skipped) continue;          // không mock thì không có dòng điểm
-      if (missing.has(skill)) continue;            // chưa mock: không có dòng nào
+      if (missing.has(skill)) continue;            // chưa nhập điểm: không có dòng nào
 
-      // Ngày mock thực tế: Speaking theo lịch Speaking nếu có, còn lại theo buổi chính.
-      const scheduled = (skill === 'speaking' ? step.speakingAt : step.lrwAt) ?? step.lrwAt ?? step.week;
-      const takenOn = String(scheduled).slice(0, 10);
-
-      if (performedOnly.has(skill)) {
-        // Đã mock nhưng CHƯA nhập điểm — có dòng, có ngày, chưa có band.
-        conn.prepare(
-          'INSERT INTO assessment_scores (attempt_id, skill, taken_on, entered_by, entered_at) VALUES (?,?,?,?,?)',
-        ).run(attemptId, skill, takenOn, recorder, NOW);
-        continue;
-      }
-
-      const resultDate = addDays(takenOn, 2 + (studentIdx % 3));
+      // Ngày có kết quả tính từ HẾT TUẦN MT — mốc duy nhất còn lại sau khi bỏ ngày thi.
+      const weekEnd = addDays(step.week, 6);
+      const resultDate = addDays(weekEnd, 1 + (studentIdx % 3));
       if (skill === 'listening' || skill === 'reading') {
         const band = bandOf(skill);
         const raw = rawFor(skill, band);
         const realBand = (skill === 'listening' ? LISTENING_BY_RAW : READING_BY_RAW)[raw];
         conn
           .prepare(
-            `INSERT INTO assessment_scores (attempt_id, skill, taken_on, raw_score, raw_total, band, result_date, entered_by, entered_at)
-             VALUES (?,?,?,?,40,?,?,?,?)`,
+            `INSERT INTO assessment_scores (attempt_id, skill, raw_score, raw_total, band, result_date, entered_by, entered_at)
+             VALUES (?,?,?,40,?,?,?,?)`,
           )
-          .run(attemptId, skill, takenOn, raw, realBand, resultDate, recorder, NOW);
+          .run(attemptId, skill, raw, realBand, resultDate, recorder, NOW);
         entryBand[skill] = realBand;
       } else {
         const target2 = bandOf(skill === 'speaking' ? 'speaking' : 'writing');
@@ -510,10 +487,10 @@ function seedAttempts(conn: any, ctx: {
         const crit = criteriaFor(band);
         conn
           .prepare(
-            `INSERT INTO assessment_scores (attempt_id, skill, taken_on, c1, c2, c3, c4, band, result_date, entered_by, entered_at)
-             VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
+            `INSERT INTO assessment_scores (attempt_id, skill, c1, c2, c3, c4, band, result_date, entered_by, entered_at)
+             VALUES (?,?,?,?,?,?,?,?,?,?)`,
           )
-          .run(attemptId, skill, takenOn, crit[0], crit[1], crit[2], crit[3],
+          .run(attemptId, skill, crit[0], crit[1], crit[2], crit[3],
                roundToHalf((crit[0] + crit[1] + crit[2] + crit[3]) / 4), resultDate, recorder, NOW);
         entryBand[skill] = roundToHalf((crit[0] + crit[1] + crit[2] + crit[3]) / 4);
       }
@@ -526,9 +503,9 @@ function seedAttempts(conn: any, ctx: {
      * SOS là hai con số khác nhau và không cộng khớp; đó là chủ ý.
      */
     const failingEntry = ENTRY_SKILLS.filter((k) => entryBand[k] !== undefined && entryBand[k] < expectation);
-    if (missing.size === 0 && performedOnly.size === 0 && failingEntry.length > 0) {
+    if (missing.size === 0 && failingEntry.length > 0) {
       const pattern = CASE_PATTERNS[(classIdx + studentIdx + step.attemptNo) % CASE_PATTERNS.length];
-      const testDate = String(step.lrwAt ?? step.week).slice(0, 10);
+      const testDate = String(step.week).slice(0, 10);
       const level = Math.min(3, outcome.fails) || 1;
       for (const topic of failingEntry) {
         seedCase(conn, {
@@ -1210,17 +1187,16 @@ function seedRegularClasses(conn: any, ctx: {
         // Tuần học N bắt đầu sau (N-1) tuần kể từ ngày khai giảng.
         const week = mondayOf(addDays(cls.startDate, (cp.studyWeek - 1) * 7));
         const period = ensurePeriod(week);
-        const taken = addDays(week, 2);              // làm bài vào thứ Tư của tuần đó
-        const past = taken <= DEMO_DATE;
+        // Tuần đã bắt đầu thì bài đã làm — không cần một ngày cụ thể để biết điều đó.
+        const past = week <= DEMO_DATE;
 
         const info = conn
           .prepare(
             `INSERT INTO assessment_attempts (cycle_id, student_id, attempt_no, kind, class_id, planned_period_id,
-                                              lrw_scheduled_at, status, created_by, created_at)
-             VALUES (?,?,?,?,?,?,?,?,?,?)`,
+                                              status, created_by, created_at)
+             VALUES (?,?,?,?,?,?,?,?,?)`,
           )
-          .run(cycleId, st.id, ci + 1, cp.kind, cid, period.id, past ? taken : null,
-               'planned', manager, NOW);
+          .run(cycleId, st.id, ci + 1, cp.kind, cid, period.id, 'planned', manager, NOW);
         counts.attempts += 1;
         const attemptId = Number(info.lastInsertRowid);
         if (!past) return;                            // bài của tuần sau: chỉ có kế hoạch
@@ -1236,10 +1212,10 @@ function seedRegularClasses(conn: any, ctx: {
           const score = Math.round(ratio * total);
           conn
             .prepare(
-              `INSERT INTO assessment_scores (attempt_id, skill, taken_on, raw_score, raw_total, entered_by, entered_at)
-               VALUES (?,?,?,?,?,?,?)`,
+              `INSERT INTO assessment_scores (attempt_id, skill, raw_score, raw_total, entered_by, entered_at)
+               VALUES (?,?,?,?,?,?)`,
             )
-            .run(attemptId, skill, taken, score, total, manager, NOW);
+            .run(attemptId, skill, score, total, manager, NOW);
           counts.scores += 1;
           scored += 1;
           if (score / total < 0.6) { failed += 1; failingSkills.push(skill); }
@@ -1263,13 +1239,13 @@ function seedRegularClasses(conn: any, ctx: {
                    ON CONFLICT(dedup_key) DO NOTHING`,
                 )
                 .run(attemptId, st.id, cycleId, skill, categoryOf('academic', skill),
-                     taken, level, ci === 0 ? 'in_progress' : 'open',
+                     week, level, ci === 0 ? 'in_progress' : 'open',
                      `a:${st.id}:${cycleId ?? 0}:${categoryOf('academic', skill)}`, NOW);
               counts.cases += 1;
             }
             /* Lớp thường CÓ hai việc trao đổi, nhưng KHÔNG tự sinh phương án hỗ trợ. */
             seedBehaviourCase(conn, {
-              attemptId, attemptNo: 1, sid: st.id, cycleId, testDate: taken, level,
+              attemptId, attemptNo: 1, sid: st.id, cycleId, testDate: week, level,
               failedCount: failed, gvcn: manager, counts,
             });
           }
@@ -1469,11 +1445,11 @@ function seedSpecialCases(conn: any, ctx: {
     const newTarget = (old.target_score ?? 6) + 0.5;
     const cyc = conn
       .prepare(
-        `INSERT INTO learning_cycles (student_id, seq, route, target_score, exam_date, exam_month,
+        `INSERT INTO learning_cycles (student_id, seq, route, target_score, exam_period_id, exam_month,
                                       start_period_id, started_at, status, note, created_at)
          VALUES (?,?, 'LT2', ?, ?, '2027-03', ?, ?, 'active', ?, ?)`,
       )
-      .run(promoted.id, old.seq + 1, newTarget, '2027-03-06',
+      .run(promoted.id, old.seq + 1, newTarget, ensurePeriod('2027-03-01').id,
            ensurePeriod('2026-09-07').id, '2026-09-07',
            'Đã thi xong LT1, sang lộ trình mới với target cao hơn', NOW);
     const cycleId = Number(cyc.lastInsertRowid);

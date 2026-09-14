@@ -11,10 +11,6 @@ export type Cell = {
   assessedSkill: string;
   /** false khi Quản lý/Admin CN đã đánh dấu kỹ năng này là không mock ở lượt đó. */
   required: boolean;
-  /** Ngày theo LỊCH của kỹ năng này. Nhập điểm không sửa được trường này. */
-  scheduledAt: string | null;
-  /** Ngày mock THỰC TẾ, do người nhập điểm ghi. */
-  takenOn: string | null;
   rawScore: number | null;
   criteria: (number | null)[];
   band: number | null;
@@ -29,7 +25,7 @@ export type Cell = {
 };
 
 export type SavePatch = {
-  takenOn?: string | null; rawScore?: number | null;
+  rawScore?: number | null;
   criteria?: (number | null)[]; resultDate?: string | null;
 };
 
@@ -189,31 +185,17 @@ export function CriteriaModal({ cell, onSave, onClose }: {
   );
 }
 
-/** Hạn nhập của một kỹ năng. Chưa có lịch thì KHÔNG dựng hạn giả. */
+/**
+ * Hạn nhập điểm. Cả lượt MT dùng chung một hạn, đếm từ TUẦN của lượt đó.
+ * Chưa xếp tuần thì KHÔNG dựng hạn giả.
+ */
 export function DeadlinePill({ cell }: { cell: Cell }) {
   if (!cell.required) return <Pill tone="muted">Không áp dụng</Pill>;
   if (cell.band !== null) return <Pill tone="ok">Đã nhập</Pill>;
-  if (!cell.deadline) return <Pill tone="muted">Chưa có lịch</Pill>;
+  if (!cell.deadline) return <Pill tone="muted">Chưa xếp tuần</Pill>;
   const label = cell.deadlineSource === 'override' ? 'Hạn riêng' : 'Hạn';
   return cell.overdue
     ? <Pill tone="danger">Quá hạn {fmtDate(cell.deadline)}</Pill>
     : <Pill tone="warn">{label} {fmtDate(cell.deadline)}</Pill>;
 }
 
-/** Ngày mock THỰC TẾ của một kỹ năng. Khác ngày lịch — sửa ô này không đụng lịch. */
-export function TakenOnInput({ cell, onSave }: { cell: Cell; onSave: (p: SavePatch) => Promise<boolean> }) {
-  const [value, setValue] = useState(cell.takenOn ?? '');
-  useEffect(() => { setValue(cell.takenOn ?? ''); }, [cell.takenOn]);
-  if (!cell.required) return <span className="text-slate-500 text-xs">—</span>;
-  if (!cell.canEdit) return <span className="text-slate-400 text-sm">{fmtDate(cell.takenOn)}</span>;
-  return (
-    <input
-      type="date"
-      className="field w-36"
-      value={value}
-      aria-label={`Ngày mock thực tế ${skillLabel(cell.skill)}`}
-      onChange={(e) => setValue(e.target.value)}
-      onBlur={() => { if (value !== (cell.takenOn ?? '')) void onSave({ takenOn: value || null }); }}
-    />
-  );
-}

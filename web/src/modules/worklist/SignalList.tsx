@@ -21,7 +21,7 @@ const OWNER_LABEL: Record<Signal['owner'], string> = {
  * Có nút đóng ở đây thì chỉ để che một con số vẫn đang đúng.
  *
  * Mỗi dòng ghi rõ VIỆC CỦA AI, vì đó chính là chỗ hay lẫn: xếp tuần MT là của Quản lý,
- * cập nhật ngày thực tế là của Admin chi nhánh.
+ * nhập điểm là của giáo viên bộ môn.
  */
 export function SignalList({ branchId, periodId }: { branchId?: number | null; periodId?: number | null }) {
   const qs = new URLSearchParams();

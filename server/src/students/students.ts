@@ -6,7 +6,7 @@ import { can, classScopeSql, require_, scopeFor, type Principal } from '../permi
 import { addJourney, writeAudit } from '../platform/audit.ts';
 import { entryBandsOf, scoresOf, skipsOf } from '../fasttrack/attempts.ts';
 import { evaluateAttempt } from '../fasttrack/scoring.ts';
-import { currentCycle, cyclesOf } from '../fasttrack/cycles.ts';
+import { currentCycle, cyclesOf, examPlanOf } from '../fasttrack/cycles.ts';
 
 import { weekInfo } from '../platform/week.ts';
 
@@ -59,7 +59,7 @@ export function listStudents(p: Principal, f: { q?: string; branchId?: number; c
     const latest = latestResult(s.id);
     const next = conn
       .prepare(
-        `SELECT a.id, a.attempt_no, a.lrw_scheduled_at, a.status, pr.code AS period_code, pr.week_start
+        `SELECT a.id, a.attempt_no, a.status, pr.code AS period_code, pr.week_start
            FROM assessment_attempts a LEFT JOIN report_periods pr ON pr.id = a.planned_period_id
           WHERE a.student_id = ? AND a.status = 'planned' ORDER BY pr.week_start, a.attempt_no LIMIT 1`,
       )
@@ -73,12 +73,12 @@ export function listStudents(p: Principal, f: { q?: string; branchId?: number; c
     return {
       id: s.id, studentCode: s.student_code, fullName: s.full_name, status: s.status,
       cycleId: cycle?.id ?? null, route: cycle?.route ?? null,
-      target: cycle?.target_score ?? null, examDate: cycle?.exam_date ?? null,
+      target: cycle?.target_score ?? null, examPlan: examPlanOf(cycle),
       classId: cur?.id ?? null, classCode: cur?.code ?? null, branchName: cur?.branch_name ?? null,
       latest,
       nextMock: next
         ? { id: next.id, attemptNo: next.attempt_no, periodCode: next.period_code,
-            scheduledAt: next.lrw_scheduled_at, needsDate: !next.lrw_scheduled_at }
+            weekStart: next.week_start ?? null }
         : null,
       openCase: openCase ?? null,
     };

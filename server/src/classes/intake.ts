@@ -32,7 +32,8 @@ export type IntakeRow = {
   dob?: string;
   /** Điểm đầu vào, ưu tiên OVR. Không phải em nào cũng có điểm chi tiết — bổ sung sau. */
   baselineScore?: number | string | null;
-  examDate?: string;
+  /** THÁNG dự kiến thi, dạng 'YYYY-MM'. Tuần thi thì chốt sau ở panel Kế hoạch học. */
+  examMonth?: string;
   route?: string;
   target?: number | string | null;
   consultant?: string;
@@ -58,7 +59,8 @@ const HEADER_ALIASES: Record<string, keyof IntakeRow> = {
   'ho ten': 'fullName', 'hoten': 'fullName', 'ten': 'fullName', 'full name': 'fullName', 'name': 'fullName',
   'lop': 'classCode', 'ma lop': 'classCode', 'class': 'classCode',
   'ngay sinh': 'dob', 'dob': 'dob',
-  'ngay thi': 'examDate', 'ngay thi ielts': 'examDate', 'exam': 'examDate', 'exam date': 'examDate',
+  'thang thi': 'examMonth', 'thang du kien thi': 'examMonth', 'du kien thi': 'examMonth',
+  'ngay thi': 'examMonth', 'ngay thi ielts': 'examMonth', 'exam': 'examMonth', 'exam date': 'examMonth',
   'lo trinh': 'route', 'route': 'route',
   'target': 'target', 'diem cam ket': 'target', 'cam ket': 'target',
   'diem dau vao': 'baselineScore', 'dau vao': 'baselineScore', 'ovr': 'baselineScore',
@@ -159,8 +161,22 @@ export function previewIntake(
 
     const dob = parseDateAs(r.dob, fmt);
     if (dob === 'invalid') rowIssues.push({ row: rowNo, field: 'dob', message: `Ngày sinh "${r.dob}" không đọc được` });
-    const examDate = parseDateAs(r.examDate, fmt);
-    if (examDate === 'invalid') rowIssues.push({ row: rowNo, field: 'examDate', message: `Ngày thi "${r.examDate}" không đọc được` });
+    /*
+     * DỰ KIẾN THI trong file Excel chỉ nhận đến THÁNG. Nhận cả một ngày đầy đủ rồi cắt lấy
+     * tháng, vì file của các chi nhánh vẫn hay ghi cả ngày — nhưng lưu thì chỉ lưu tháng,
+     * không giữ lại một ngày mà không ai xác nhận.
+     */
+    const examMonth = (() => {
+      const raw = (r.examMonth ?? '').toString().trim();
+      if (!raw) return null;
+      if (/^\d{4}-\d{2}$/.test(raw)) return raw;
+      const d = parseDateAs(raw, fmt);
+      if (d === 'invalid' || !d) return 'invalid' as const;
+      return d.slice(0, 7);
+    })();
+    if (examMonth === 'invalid') {
+      rowIssues.push({ row: rowNo, field: 'examMonth', message: `Dự kiến thi "${r.examMonth}" không đọc được` });
+    }
     const startDate = parseDateAs(r.startDate, fmt);
     if (startDate === 'invalid') rowIssues.push({ row: rowNo, field: 'startDate', message: `Ngày bắt đầu "${r.startDate}" không đọc được` });
 
@@ -199,7 +215,7 @@ export function previewIntake(
       classCode: cls?.code,
       classId: cls?.id ?? null,
       dob: dob === 'invalid' ? undefined : dob ?? undefined,
-      examDate: examDate === 'invalid' ? undefined : examDate ?? undefined,
+      examMonth: examMonth === 'invalid' ? undefined : examMonth ?? undefined,
       startDate: startDate === 'invalid' ? undefined : startDate ?? undefined,
       route: route ?? undefined,
       target,
@@ -287,7 +303,7 @@ export function commitIntake(
       {
         const cyc = conn
           .prepare(
-            `INSERT INTO learning_cycles (student_id, seq, route, programme_code, target_score, exam_date,
+            `INSERT INTO learning_cycles (student_id, seq, route, programme_code, target_score, exam_month,
                                           baseline_score, baseline_source, start_period_id,
                                           started_at, status, created_at)
              VALUES (?, 1, ?, ?, ?, ?, ?, ?, ?, ?, 'active', ?)`,
@@ -296,7 +312,7 @@ export function commitIntake(
            * TUẦN BẮT ĐẦU HỌC suy từ ngày vào lớp — đó là thông tin duy nhất có thật lúc này,
            * và khai lại được bất cứ lúc nào ở panel "Kế hoạch học".
            */
-          .run(sid, route, cls.programme_code ?? null, r.target ?? null, r.examDate ?? null,
+          .run(sid, route, cls.programme_code ?? null, r.target ?? null, r.examMonth ?? null,
                baselineOf(r.baselineScore), r.baselineScore ? 'entrance' : null,
                ensurePeriod(startedAt).id, startedAt, nowIso());
         addJourney({ studentId: sid, eventType: 'cycle_start', eventDate: startedAt,
@@ -341,7 +357,7 @@ export function commitIntake(
 /** Tạo lớp mới. Kỹ năng lấy theo cấu hình gửi lên, không suy từ tên lớp. */
 export function createClass(p: Principal, input: {
   code: string; branchId: number; kind: string; route?: Route | null;
-  isFulltime?: boolean; startDate?: string | null; skills?: string[]; note?: string | null;
+  isFastTrack?: boolean; startDate?: string | null; skills?: string[]; note?: string | null;
   /** Tuần khai giảng — với lớp Normal đây là mốc gốc của hai kỳ kiểm tra. */
   startPeriodId?: number | null;
 }) {
@@ -367,13 +383,13 @@ export function createClass(p: Principal, input: {
          * Thiếu nó thì hệ thống không biết lớp chấm theo band hay theo tỷ lệ, và trang lớp
          * dựng ra bảng band IELTS cho một lớp Foundation — lỗi im lặng đã từng xảy ra.
          */
-        `INSERT INTO classes (code, branch_id, kind, programme_code, route, is_fulltime,
+        `INSERT INTO classes (code, branch_id, kind, programme_code, route, is_fast_track,
                               start_date, start_period_id, status, note, created_at)
          VALUES (?,?,?,?,?,?,?,?, 'active', ?, ?)`,
       )
       .run(code, input.branchId, (input.kind ?? 'FT').trim(),
            programmeOf(input.kind ?? 'FT'), input.route ?? null,
-           input.isFulltime ? 1 : 0, input.startDate ?? null, input.startPeriodId ?? null,
+           input.isFastTrack ? 1 : 0, input.startDate ?? null, input.startPeriodId ?? null,
            input.note ?? null, nowIso());
     const id = Number(info.lastInsertRowid);
     for (const skill of input.skills?.length ? input.skills : ['listening', 'reading', 'writing1', 'writing2', 'speaking']) {

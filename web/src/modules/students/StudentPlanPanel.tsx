@@ -35,6 +35,7 @@ export function StudentPlanPanel({ cycleId, studentName, ratio, onClose, onDone 
   const sugg = useApi<Suggested[]>(ratio ? null : `/cycles/${cycleId}/suggested-mocks`, [cycleId]);
   const [startPeriodId, setStartPeriodId] = useState<number | null>(null);
   const [examMonth, setExamMonth] = useState<string>('');
+  const [examPeriodId, setExamPeriodId] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const [touched, setTouched] = useState(false);
 
@@ -43,6 +44,7 @@ export function StudentPlanPanel({ cycleId, studentName, ratio, onClose, onDone 
   if (cy && !touched) {
     if (startPeriodId === null && cy.start_period_id) setStartPeriodId(cy.start_period_id);
     if (examMonth === '' && cy.exam_month) setExamMonth(cy.exam_month);
+    if (examPeriodId === null && cy.exam_period_id) setExamPeriodId(cy.exam_period_id);
   }
 
   const save = async () => {
@@ -50,7 +52,7 @@ export function StudentPlanPanel({ cycleId, studentName, ratio, onClose, onDone 
     try {
       await api.patch(`/cycles/${cycleId}`, {
         startPeriodId: startPeriodId ?? null,
-        ...(ratio ? {} : { examMonth: examMonth || null }),
+        ...(ratio ? {} : { examMonth: examMonth || null, examPeriodId: examPeriodId ?? null }),
       });
       invalidate('/cycles'); invalidate('/students'); invalidate('/classes'); invalidate('/attempts');
       toast.push('ok', 'Đã lưu kế hoạch học');
@@ -99,13 +101,28 @@ export function StudentPlanPanel({ cycleId, studentName, ratio, onClose, onDone 
               onPeriod={(id) => { setTouched(true); setStartPeriodId(id); }} className="w-full" />
           </Field>
 
-          {/* Lớp Normal KHÔNG có ô này — các em đó chưa thi IELTS, hỏi là hỏi thừa. */}
+          {/*
+            DỰ KIẾN THI: HAI Ô, THEO ĐÚNG HAI LÚC BIẾT KHÁC NHAU.
+
+            Lúc tư vấn thì chỉ biết THÁNG, và đó đã là một thông tin có ích để xếp cả khoá.
+            Gần ngày đăng ký mới chốt được TUẦN. Ép khai tuần ngay từ đầu thì người ta chọn
+            bừa một tuần rồi không ai sửa lại — nên để trống tuần là chuyện bình thường.
+
+            Lớp Normal KHÔNG có hai ô này — các em đó chưa thi IELTS, hỏi là hỏi thừa.
+          */}
           {!ratio && (
-            <Field label="Tháng dự kiến thi"
-              hint="Ngày thi cụ thể cập nhật sau, khi đã đăng ký xong.">
-              <input type="month" className="field w-full" value={examMonth}
-                onChange={(e) => { setTouched(true); setExamMonth(e.target.value); }} />
-            </Field>
+            <>
+              <Field label="Tháng dự kiến thi"
+                hint="Biết được ngay lúc tư vấn. Đủ để xếp lịch cả khoá.">
+                <input type="month" className="field w-full" value={examMonth}
+                  onChange={(e) => { setTouched(true); setExamMonth(e.target.value); }} />
+              </Field>
+              <Field label="Tuần dự kiến thi"
+                hint="Chốt được thì hệ thống mới đếm ngược. Chưa chốt cứ để trống.">
+                <WeekPicker periodId={examPeriodId} label={null} scope="planning" clearable
+                  onPeriod={(id) => { setTouched(true); setExamPeriodId(id); }} className="w-full" />
+              </Field>
+            </>
           )}
 
           {ratio ? (

@@ -560,7 +560,7 @@ export const ACADEMIC_SUPPORTS = [
 
 export const OPS_POLICIES = [
   'Buổi bổ trợ với tutor',
-  'Buổi bổ trợ với GV fulltime',
+  'Buổi bổ trợ với GV cơ hữu',
   'Tặng thêm mock test',
   'Khác',
 ] as const;

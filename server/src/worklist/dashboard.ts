@@ -20,14 +20,12 @@ export function overview(p: Principal, periodId: number, branchId?: number) {
 
   const all = listAttempts(p, { branchId }).rows;
 
-  // Tuần kết quả LUÔN là tuần kế hoạch của lượt, nên LRW/Speaking lệch tuần không làm
-  // một lượt bị đếm hai lần.
+  // Tuần kết quả LUÔN là tuần của lượt, nên một lượt không bị đếm vào hai tuần.
   const inWeek = all.filter((m) => m.period?.id === periodId);
   const scheduled = inWeek.filter((m) => m.status !== 'cancelled');
   const cancelled = inWeek.filter((m) => m.status === 'cancelled');
   const done = inWeek.filter((m) => m.status === 'done');
   const uniqueStudents = new Set(scheduled.map((m) => m.studentId)).size;
-  const needsDate = scheduled.filter((m) => m.needsDate).length;
 
   const active = all.filter((m) => m.status !== 'cancelled');
   const missingScores = active.filter((m) => !m.complete && m.scoredRequired > 0);
@@ -68,14 +66,6 @@ export function overview(p: Principal, periodId: number, branchId?: number) {
       action: 'Nhắc giáo viên bộ môn nhập điểm',
     });
   }
-  for (const m of scheduled.filter((x) => x.needsDate).slice(0, 8)) {
-    priority.push({
-      kind: 'needs_date', studentId: m.studentId, studentName: m.studentName, studentCode: m.studentCode,
-      classCode: m.classCode, attemptId: m.id, attemptNo: m.attemptNo,
-      reason: `MT${m.attemptNo} đã có tuần ${m.period?.code ?? ''} nhưng chưa có ngày`,
-      action: 'Cập nhật ngày MT thực tế',
-    });
-  }
   for (const t of tasks.filter((t) => t.dueState === 'overdue').slice(0, 8)) {
     priority.push({
       kind: 'overdue_task', taskId: t.id, taskCode: t.code, title: t.title,
@@ -92,7 +82,6 @@ export function overview(p: Principal, periodId: number, branchId?: number) {
         done: done.length,
         cancelled: cancelled.length,
         uniqueStudents,
-        needsDate,
       },
       scoring: {
         missing: missingScores.length,
@@ -153,20 +142,27 @@ function supportMetrics(active: any[], inWeek: any[]) {
     )
     .get(...caseIds) as any).n;
 
-  // Thời gian trả kết quả = ngày có kết quả − ngày thi (không phải số ngày quá hạn).
+  /*
+   * Thời gian trả kết quả = ngày có kết quả − CHỦ NHẬT của tuần MT.
+   * Không còn ngày thi cụ thể, nên mốc gốc là hết tuần MT — cùng một mốc cho mọi kỹ năng.
+   */
   const diffs: number[] = [];
   for (const m of inWeek) {
-    const rows = conn.prepare('SELECT taken_on, result_date FROM assessment_scores WHERE attempt_id = ?').all(m.id) as any[];
+    if (!m.period?.weekEnd) continue;
+    const rows = conn.prepare('SELECT result_date FROM assessment_scores WHERE attempt_id = ?').all(m.id) as any[];
     for (const r of rows) {
-      if (r.taken_on && r.result_date) {
-        diffs.push(Math.round((Date.parse(r.result_date) - Date.parse(r.taken_on)) / 86400000));
+      if (r.result_date) {
+        diffs.push(Math.round((Date.parse(r.result_date) - Date.parse(m.period.weekEnd)) / 86400000));
       }
     }
   }
-  /* Thời gian bắt đầu can thiệp = lần trao đổi đầu tiên − ngày thi đầu tiên của lượt. */
+  /* Thời gian bắt đầu can thiệp = lần trao đổi đầu tiên − hết tuần MT của lượt. */
   const interv: number[] = [];
   for (const aid of attemptIds) {
-    const first = conn.prepare('SELECT MIN(taken_on) AS d FROM assessment_scores WHERE attempt_id = ?').get(aid) as any;
+    const first = conn
+      .prepare(`SELECT rp.week_end AS d FROM assessment_attempts a
+                  JOIN report_periods rp ON rp.id = a.planned_period_id WHERE a.id = ?`)
+      .get(aid) as any;
     const contact = conn
       .prepare(
         `SELECT MIN(iv.completed_date) AS d

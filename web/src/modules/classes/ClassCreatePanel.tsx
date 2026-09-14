@@ -55,7 +55,7 @@ export function ClassCreatePanel({ onClose, onDone }: {
         branchId,
         kind: isFt ? 'FT' : programme,
         route: isFt ? route : null,
-        isFulltime: isFt,
+        isFastTrack: isFt,
         skills: [...tpl.skills],
         startPeriodId,
       });
@@ -93,7 +93,7 @@ export function ClassCreatePanel({ onClose, onDone }: {
         <Field label="Loại lớp" required>
           <div className="flex flex-wrap gap-2">
             <button type="button" className={`btn btn-sm ${isFt ? 'btn-primary' : ''}`}
-              onClick={() => setIsFt(true)}>Fulltime IELTS (FT)</button>
+              onClick={() => setIsFt(true)}>Fast Track (FT)</button>
             <button type="button" className={`btn btn-sm ${!isFt ? 'btn-primary' : ''}`}
               onClick={() => setIsFt(false)}>Normal</button>
           </div>

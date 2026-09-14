@@ -68,8 +68,8 @@ function assertThrows(fn: () => unknown, match: RegExp, msg: string) {
 const conn = db();
 const TODAY = demoToday();
 const classId = (code: string) => (conn.prepare('SELECT id FROM classes WHERE code = ?').get(code) as any).id;
-const periodOf = (weekStart: string) =>
-  (conn.prepare('SELECT id FROM report_periods WHERE week_start = ?').get(weekStart) as any).id;
+/* Tuần chưa từng dùng tới thì chưa có trong bảng — tạo luôn, đúng như hệ thống vẫn làm. */
+const periodOf = (weekStart: string) => week.ensurePeriod(weekStart).id;
 
 function userByRole(roleKey: string, branchCode: string | null) {
   const row = conn
@@ -235,7 +235,7 @@ check('Đánh dấu không mock Speaking: đủ 3/3 là hoàn thành và SOS tí
   assert(/Đánh giá trên 3 kỹ năng/.test(r.scopeDetail ?? ''), 'Màn chi tiết vẫn phải giải thích đầy đủ');
   assert(r.verdicts.find((v) => v.skill === 'speaking')!.passed === null, 'Kỹ năng không mock không được tính đạt/trượt');
 });
-check('Seed có sẵn lượt đánh dấu không mock và lượt đã mock chưa nhập điểm', () => {
+check('Seed có sẵn lượt đánh dấu không mock và lượt còn ô điểm trống', () => {
   const skip = conn.prepare('SELECT * FROM attempt_skill_skips LIMIT 1').get() as any;
   assert(skip, 'Seed thiếu trường hợp kỹ năng không mock');
   const d = attempts.attemptDetail(P.admin, skip.attempt_id);
@@ -243,13 +243,38 @@ check('Seed có sẵn lượt đánh dấu không mock và lượt đã mock ch�
   assert(cell.progress === 'skipped' && !cell.required, 'Ô kỹ năng không mock hiển thị sai');
   assert(!cell.overdue && cell.deadline === null, 'Kỹ năng không mock không được tính thiếu điểm hay quá hạn');
 
-  const performed = conn.prepare('SELECT * FROM assessment_scores WHERE taken_on IS NOT NULL AND band IS NULL LIMIT 1').get() as any;
-  assert(performed, 'Seed thiếu trường hợp đã mock nhưng chưa nhập điểm');
-  const d2 = attempts.attemptDetail(P.admin, performed.attempt_id);
-  const c2 = d2.cells.find((c) => c.skill === performed.skill)!;
-  assert(c2.progress === 'performed', `Đã mock chưa nhập điểm phải là "performed", đang là ${c2.progress}`);
-  const notMocked = d2.cells.find((c) => c.required && c.band === null && !c.takenOn);
-  assert(notMocked && notMocked.progress !== 'performed', 'Chưa mock phải khác đã mock chưa nhập điểm');
+  /*
+   * TUẦN MT ĐÃ TỚI MÀ Ô ĐIỂM CÒN TRỐNG = "Chưa nhập điểm".
+   * Không còn trạng thái "đã mock, chưa nhập điểm": một lượt chỉ thuộc một tuần, nên chỉ
+   * có hai câu hỏi — tuần tới chưa, và điểm có chưa.
+   */
+  const pending = conn
+    .prepare(`SELECT a.id FROM assessment_attempts a
+                JOIN report_periods rp ON rp.id = a.planned_period_id
+               WHERE a.kind = 'mock' AND a.status != 'cancelled' AND rp.week_start <= ?
+                 AND (SELECT COUNT(*) FROM assessment_scores sc
+                       WHERE sc.attempt_id = a.id AND sc.band IS NOT NULL) < 4
+                 AND NOT EXISTS (SELECT 1 FROM attempt_skill_skips k WHERE k.attempt_id = a.id)
+               LIMIT 1`)
+    .get(demoToday()) as any;
+  assert(pending, 'Seed thiếu trường hợp tuần MT đã tới mà còn ô điểm trống');
+  const d2 = attempts.attemptDetail(P.admin, pending.id);
+  const due = d2.cells.find((c) => c.required && c.band === null);
+  assert(due && due.progress === 'due', `Ô điểm trống của tuần đã tới phải là "due", đang là ${due?.progress}`);
+  assert(d2.cells.every((c) => (c as any).takenOn === undefined),
+         'Ô điểm không được còn trường ngày làm bài');
+
+  // Tuần MT chưa tới thì KHÔNG phải việc phải làm — nhãn là "Tuần sau", không phải "Chưa nhập điểm".
+  const future = conn
+    .prepare(`SELECT a.id FROM assessment_attempts a
+                JOIN report_periods rp ON rp.id = a.planned_period_id
+               WHERE a.status = 'planned' AND rp.week_start > ? LIMIT 1`)
+    .get(demoToday()) as any;
+  if (future) {
+    const d3 = attempts.attemptDetail(P.admin, future.id);
+    assert(d3.cells.filter((c) => c.required).every((c) => c.progress === 'upcoming'),
+      'Lượt MT của tuần sau không được đánh dấu là chưa nhập điểm');
+  }
 });
 check('Thiếu target thì vẫn nhập được điểm, chỉ là chưa kết luận được', () => {
   const r = scoring.evaluateAttempt(null, 2, { listening: 7, reading: 7, writing1: 7, writing2: 7, speaking: 7 });
@@ -262,24 +287,36 @@ check('Thiếu target thì vẫn nhập được điểm, chỉ là chưa kết 
 
 console.log('\n4. Tuần, lịch và hạn nhập điểm');
 check('Tuần thuộc tháng chứa thứ Năm', () => {
-  assert(week.weekInfo('2026-09-28').code === 'W1 OCT', '28/09–04/10/2026 phải là W1 OCT');
-  assert(week.weekInfo('2026-09-07').code === 'W2 SEP', '07/09–13/09/2026 phải là W2 SEP');
-  assert(week.weekInfo('2027-01-01').code === 'W5 DEC', '01/01/2027 vẫn thuộc W5 DEC');
-  assert(week.weekInfo('2027-01-04').code === 'W1 JAN', 'Tuần sau đó mới là W1 JAN');
+  assert(week.weekInfo('2026-09-28').code === 'W1 OCT 2026', '28/09–04/10/2026 phải là W1 OCT 2026');
+  assert(week.weekInfo('2026-09-07').code === 'W2 SEP 2026', '07/09–13/09/2026 phải là W2 SEP 2026');
+  // Mã tuần PHẢI có năm: tuần cuối tháng 12/2026 và tuần đầu 2027 nằm cạnh nhau trên lịch.
+  assert(week.weekInfo('2027-01-01').code === 'W5 DEC 2026', '01/01/2027 vẫn thuộc W5 DEC 2026');
+  assert(week.weekInfo('2027-01-04').code === 'W1 JAN 2027', 'Tuần sau đó mới là W1 JAN 2027');
 });
 check('Hạn mặc định là thứ Tư tuần kế tiếp, hết ngày mới quá hạn', () => {
   assert(week.defaultScoreDeadline('2026-09-13') === '2026-09-16', 'Mock 13/09 phải có hạn 16/09');
   assert(week.isOverdue('2026-09-16', '2026-09-16') === false, 'Trong ngày 16/09 chưa được tính quá hạn');
   assert(week.isOverdue('2026-09-16', '2026-09-17') === true, 'Sang 17/09 phải tính quá hạn');
 });
-check('Chưa có lịch thì KHÔNG có hạn, không dựng hạn giả', () => {
-  assert(week.effectiveDeadline({ scheduledFor: null, override: null }).date === null, 'Chưa có lịch mà đã có hạn');
-  assert(week.effectiveDeadline({ scheduledFor: null, override: null }).source === 'none', 'Nguồn hạn sai');
-  const d = week.effectiveDeadline({ scheduledFor: '2026-09-13', override: null });
+check('Chưa xếp tuần thì KHÔNG có hạn, không dựng hạn giả', () => {
+  assert(week.effectiveDeadline({ weekStart: null, override: null }).date === null, 'Chưa có tuần mà đã có hạn');
+  assert(week.effectiveDeadline({ weekStart: null, override: null }).source === 'none', 'Nguồn hạn sai');
+  const d = week.effectiveDeadline({ weekStart: '2026-09-07', override: null });
   assert(d.date === '2026-09-16' && d.source === 'default', 'Hạn mặc định sai');
 });
+check('Cả năm kỹ năng của một lượt dùng CHUNG một hạn, đếm từ tuần MT', () => {
+  const a = conn
+    .prepare(`SELECT a.id FROM assessment_attempts a
+                WHERE a.planned_period_id IS NOT NULL AND a.deadline_override IS NULL
+                  AND a.status != 'cancelled' LIMIT 1`)
+    .get() as any;
+  assert(a, 'Seed thiếu lượt MT đã xếp tuần');
+  const d = attempts.attemptDetail(P.admin, a.id);
+  const deadlines = new Set(d.cells.filter((c) => c.required).map((c) => c.deadline));
+  assert(deadlines.size === 1, `Một lượt MT phải có đúng một hạn, đang có ${deadlines.size}`);
+});
 check('Chỉ MỘT hạn có hiệu lực: hạn tự đặt thay hạn mặc định', () => {
-  const d = week.effectiveDeadline({ scheduledFor: '2026-09-13', override: '2026-09-30' });
+  const d = week.effectiveDeadline({ weekStart: '2026-09-07', override: '2026-09-30' });
   assert(d.date === '2026-09-30' && d.source === 'override', 'Hạn tự đặt không được ưu tiên');
   const seeded = conn.prepare('SELECT * FROM assessment_attempts WHERE deadline_override IS NOT NULL LIMIT 1').get() as any;
   assert(seeded, 'Seed thiếu trường hợp hạn tự đặt');
@@ -287,27 +324,21 @@ check('Chỉ MỘT hạn có hiệu lực: hạn tự đặt thay hạn mặc đ
   const det = attempts.attemptDetail(P.admin, seeded.id);
   assert(det.cells.some((c) => c.deadlineSource === 'override'), 'Chi tiết không dùng hạn tự đặt');
 });
-check('Speaking khác ngày vẫn là CÙNG một lượt MT, hạn tính theo lịch của chính kỹ năng', () => {
-  const a = conn.prepare('SELECT * FROM assessment_attempts WHERE speaking_scheduled_at IS NOT NULL LIMIT 1').get() as any;
-  assert(a, 'Seed thiếu trường hợp Speaking khác ngày');
-  const d = attempts.attemptDetail(P.admin, a.id);
-  const s = d.cells.find((c) => c.skill === 'speaking')!;
-  const l = d.cells.find((c) => c.skill === 'listening')!;
-  assert(s.scheduledAt !== l.scheduledAt, 'Speaking phải có ngày riêng');
-  assert(d.attemptNo && d.cells.length === 5, 'Không được tách thành hai lượt MT khác nhau');
-});
-
 // ==================================================================== 5
 
-console.log('\n5. Quyền lịch: tuần và ngày là hai việc khác nhau');
+console.log('\n5. Quyền lịch: chỉ còn TUẦN');
 const planned = conn
-  .prepare(`SELECT * FROM assessment_attempts WHERE class_id = ? AND status='planned' AND lrw_scheduled_at IS NULL LIMIT 1`)
+  .prepare(`SELECT * FROM assessment_attempts WHERE class_id = ? AND status='planned' LIMIT 1`)
   .get(mbClass) as any;
 
-check('Seed có lượt đã chốt tuần nhưng chưa có ngày', () => {
-  assert(planned, 'Seed thiếu lượt đã có tuần mà chưa có ngày');
-  assert(planned.planned_period_id, 'Lượt phải đã có tuần kế hoạch');
-  assert(!planned.lrw_scheduled_at, 'Không được tự điền ngày khi mới chốt tuần');
+check('Một lượt MT chỉ mang TUẦN, không có cột ngày nào', () => {
+  assert(planned, 'Seed thiếu lượt đã chốt tuần');
+  assert(planned.planned_period_id, 'Lượt phải đã có tuần');
+  const cols = (conn.prepare('PRAGMA table_info(assessment_attempts)').all() as any[]).map((c) => c.name);
+  assert(!cols.includes('lrw_scheduled_at') && !cols.includes('speaking_scheduled_at'),
+    'Bảng lượt MT vẫn còn cột ngày thi');
+  const scoreCols = (conn.prepare('PRAGMA table_info(assessment_scores)').all() as any[]).map((c) => c.name);
+  assert(!scoreCols.includes('taken_on'), 'Bảng điểm vẫn còn cột ngày làm bài');
 });
 check('Quản lý chốt tuần; Admin CN không chốt tuần được', () => {
   assert(can(P.mbManager, PERMISSIONS.PLAN_WEEK, { classId: mbClass }), 'Quản lý phải chốt được tuần');
@@ -315,64 +346,37 @@ check('Quản lý chốt tuần; Admin CN không chốt tuần được', () => 
   assertThrows(() => attempts.setPlanningWeek(P.mbAdmin, planned.id, periodOf('2026-10-12')), /Quản lý/,
     'Admin chi nhánh đổi tuần');
 });
-check('Admin CN và Quản lý đều cập nhật được ngày MT thực tế; lưu NGÀY, không lưu giờ', () => {
-  // Lịch buổi học do bộ phận xếp lịch bố trí từ Chủ nhật tuần trước. Việc ở đây là ghi lại
-  // ngày học viên thực sự làm bài — và khi em nghỉ phải dời thì Quản lý sửa được ngay.
-  assert(can(P.mbAdmin, PERMISSIONS.SCHEDULE_DATE, { classId: mbClass }), 'Admin chi nhánh phải cập nhật được ngày');
-  assert(can(P.mbManager, PERMISSIONS.SCHEDULE_DATE, { classId: mbClass }), 'Quản lý cũng phải cập nhật được ngày');
-  const period = conn.prepare('SELECT * FROM report_periods WHERE id = ?').get(planned.planned_period_id) as any;
-  attempts.setSchedule(P.mbAdmin, planned.id, { lrwAt: `${period.week_start} 18:00` });
-  const after = conn.prepare('SELECT * FROM assessment_attempts WHERE id = ?').get(planned.id) as any;
-  assert(after.lrw_scheduled_at === period.week_start,
-    `Giờ phải bị cắt bỏ, chỉ giữ ngày — thực tế lưu "${after.lrw_scheduled_at}"`);
-  // Quản lý dời ngày khi học viên nghỉ.
-  attempts.setSchedule(P.mbManager, planned.id, { lrwAt: period.week_end, reason: 'Học viên nghỉ, dời sang cuối tuần' });
-  const moved = conn.prepare('SELECT * FROM assessment_attempts WHERE id = ?').get(planned.id) as any;
-  assert(moved.lrw_scheduled_at === period.week_end, 'Quản lý không dời được ngày');
-  attempts.setSchedule(P.mbAdmin, planned.id, { lrwAt: period.week_start });
+check('Hai quyền về ngày MT đã bị gỡ khỏi hệ thống', () => {
+  const gone = conn
+    .prepare(`SELECT key FROM permissions WHERE key IN ('schedule.date','schedule.speaking')`)
+    .all() as any[];
+  assert(gone.length === 0, `Vẫn còn quyền về ngày MT: ${gone.map((g) => g.key).join(', ')}`);
+  assert(!(PERMISSIONS as any).SCHEDULE_DATE && !(PERMISSIONS as any).SCHEDULE_SPEAKING,
+    'Từ vựng quyền vẫn còn hai quyền về ngày');
 });
-check('Ngày ngoài tuần đã duyệt bị từ chối, không âm thầm đổi tuần', () => {
-  assertThrows(
-    () => attempts.setSchedule(P.mbAdmin, planned.id, { lrwAt: '2026-12-25 18:00' }),
-    /ngoài tuần/, 'Xếp ngày ngoài tuần kế hoạch',
-  );
-});
-check('GVCN chỉ đọc lịch: API từ chối cả đổi tuần lẫn đổi ngày', () => {
+check('GVCN chỉ đọc lịch: không chốt được tuần', () => {
   assert(!can(P.coreTeacher, PERMISSIONS.PLAN_WEEK, { classId: mbClass }), 'GVCN không được chốt tuần');
-  assert(!can(P.coreTeacher, PERMISSIONS.SCHEDULE_DATE, { classId: mbClass }), 'GVCN không được chốt ngày');
   assertThrows(() => attempts.setPlanningWeek(P.coreTeacher, planned.id, periodOf('2026-10-12')), /quyền|Quản lý/, 'GVCN đổi tuần');
-  assertThrows(() => attempts.setSchedule(P.coreTeacher, planned.id, { lrwAt: null }), /quyền|Admin/, 'GVCN đổi ngày');
-  // Chủ nhiệm KHÔNG phải là quyền lịch: có phụ trách lớp cũng không đụng được ngày MT.
   assert(can(P.coreTeacher, PERMISSIONS.ATTEMPT_VIEW, { classId: mbClass }), 'GVCN vẫn phải xem được lịch');
 });
-check('GV Speaking cập nhật được ngày Speaking; GV L/R/W tuyệt đối không đụng ngày', () => {
-  const period = conn.prepare('SELECT * FROM report_periods WHERE id = ?').get(planned.planned_period_id) as any;
-  attempts.setSchedule(P.sTeacher, planned.id, { speakingAt: `${period.week_end} 09:00` });
-  const after = conn.prepare('SELECT * FROM assessment_attempts WHERE id = ?').get(planned.id) as any;
-  assert(after.speaking_scheduled_at === period.week_end,
-    `GV Speaking phải cập nhật được ngày Speaking, và chỉ lưu ngày — thực tế "${after.speaking_scheduled_at}"`);
-  assertThrows(() => attempts.setSchedule(P.sTeacher, planned.id, { lrwAt: period.week_start }),
-    /Admin chi nhánh|Quản lý/, 'GV Speaking đổi ngày buổi L/R/W');
-  assertThrows(() => attempts.setSchedule(P.w1Teacher, planned.id, { speakingAt: period.week_end }),
-    /Speaking/, 'GV Writing đổi ngày Speaking');
-});
-check('Nhập điểm KHÔNG kèm quyền sửa lịch: payload điểm không có trường lịch', () => {
+check('Nhập điểm KHÔNG kèm quyền sửa lịch: payload điểm không đụng tới tuần', () => {
   const a = conn.prepare(`SELECT * FROM assessment_attempts WHERE class_id = ? AND status='done' LIMIT 1`).get(mbClass) as any;
-  const before = conn.prepare('SELECT lrw_scheduled_at, speaking_scheduled_at FROM assessment_attempts WHERE id = ?').get(a.id) as any;
+  const before = (conn.prepare('SELECT planned_period_id FROM assessment_attempts WHERE id = ?').get(a.id) as any).planned_period_id;
   attempts.saveScore(P.w1Teacher, a.id, 'writing1', { criteria: [6, 6, 6, 6] });
-  const after = conn.prepare('SELECT lrw_scheduled_at, speaking_scheduled_at FROM assessment_attempts WHERE id = ?').get(a.id) as any;
-  assert(before.lrw_scheduled_at === after.lrw_scheduled_at
-      && before.speaking_scheduled_at === after.speaking_scheduled_at, 'Nhập điểm đã làm đổi lịch');
+  const after = (conn.prepare('SELECT planned_period_id FROM assessment_attempts WHERE id = ?').get(a.id) as any).planned_period_id;
+  assert(before === after, 'Nhập điểm đã làm đổi tuần MT');
 });
-check('Đổi tuần khi ngày cũ nằm ngoài tuần mới thì bỏ ngày để xếp lại, không tự dịch bảy ngày', () => {
+check('Đổi tuần ghi lại lịch sử và dời cả hạn nhập điểm theo', () => {
   const target = conn
-    .prepare(`SELECT * FROM assessment_attempts WHERE class_id = ? AND lrw_scheduled_at IS NOT NULL AND status='planned' LIMIT 1`)
+    .prepare(`SELECT * FROM assessment_attempts WHERE class_id = ? AND status='planned' LIMIT 1`)
     .get(classId('HD-FT 302')) as any;
-  assert(target, 'Seed thiếu lượt planned đã có ngày ở HD-FT 302');
+  assert(target, 'Seed thiếu lượt planned ở HD-FT 302');
   const hdManager = loadPrincipal(userByRole('manager', 'HD'));
-  const r = attempts.setPlanningWeek(hdManager, target.id, periodOf('2026-11-02'), 'Dời sang tháng 11') as any;
-  const after = conn.prepare('SELECT * FROM assessment_attempts WHERE id = ?').get(target.id) as any;
-  assert(r.droppedDates === true && after.lrw_scheduled_at === null, 'Ngày cũ ngoài tuần mới phải được bỏ để xếp lại');
+  attempts.setPlanningWeek(hdManager, target.id, periodOf('2026-11-02'), 'Dời sang tháng 11');
+  const det = attempts.attemptDetail(hdManager, target.id);
+  const dl = det.cells.find((c) => c.required)!.deadline;
+  // Tuần mới bắt đầu 02/11 → hạn mặc định là thứ Tư tuần kế tiếp, tức 11/11.
+  assert(dl === '2026-11-11', `Hạn phải dời theo tuần mới, đang là ${dl}`);
   const hist = conn.prepare(`SELECT * FROM attempt_schedule_history WHERE attempt_id = ? AND action='week_set'`).all(target.id) as any[];
   assert(hist.length >= 1, 'Thiếu lịch sử đổi tuần');
 });
@@ -494,14 +498,14 @@ check('Học lại trong cùng lộ trình làm số MT tăng tiếp, target gi�
 check('Mở lộ trình mới không đụng ràng buộc số MT của lộ trình cũ', () => {
   const s = conn.prepare(`SELECT student_id FROM learning_cycles GROUP BY student_id HAVING COUNT(*)=1 LIMIT 1`).get() as any;
   const created = cycles.createCycle(P.admin, {
-    studentId: s.student_id, route: 'LT2', targetScore: 7.5, examDate: '2027-05-08', startedAt: '2026-09-23',
+    studentId: s.student_id, route: 'LT2', targetScore: 7.5, examPeriodId: periodOf('2027-05-03'), startedAt: '2026-09-23',
   }) as any;
   const a = attempts.createAttempt(P.admin, {
     studentId: s.student_id, cycleId: created.id, periodId: periodOf('2026-11-02'),
   }) as any;
   assert(a.attempt_no === 1, 'Lộ trình mới phải bắt đầu từ MT1 dù học viên đã có MT1 ở lộ trình cũ');
   assert(a.target_at_attempt === 7.5, 'Lượt mới phải chốt target của lộ trình mới');
-  assert(!a.lrw_scheduled_at, 'Tạo lượt chỉ chốt tuần, chưa có ngày');
+  assert(a.planned_period_id, 'Tạo lượt phải gắn đúng một tuần');
 });
 
 // ==================================================================== 8
@@ -567,22 +571,23 @@ check('Hai nhóm case chưa xử lý / đang xử lý không chồng nhau', () =
   assert(o.kpis.caseHandling === handling, `Card "đang xử lý" lệch danh sách: ${o.kpis.caseHandling} vs ${handling}`);
   assert(o.kpis.caseNew + o.kpis.caseHandling === rows.length, 'Hai nhóm phải rời nhau và phủ hết case chưa xong');
 });
-check('Tuần kết quả là tuần KẾ HOẠCH, lượt lệch tuần không bị đếm hai lần', () => {
-  const split = conn.prepare('SELECT * FROM assessment_attempts WHERE speaking_scheduled_at IS NOT NULL LIMIT 1').get() as any;
+check('Một lượt MT chỉ thuộc ĐÚNG MỘT tuần, không bị đếm hai lần', () => {
+  const split = conn
+    .prepare(`SELECT * FROM assessment_attempts WHERE planned_period_id IS NOT NULL AND status != 'cancelled' LIMIT 1`)
+    .get() as any;
   const periods = week.listPeriods(40);
   let seen = 0;
   for (const per of periods) {
     if (attempts.listAttempts(P.admin, { periodId: per.id }).rows.some((r) => r.id === split.id)) seen += 1;
   }
-  assert(seen === 1, `Lượt lệch tuần xuất hiện ở ${seen} tuần, phải đúng một tuần`);
+  assert(seen === 1, `Một lượt xuất hiện ở ${seen} tuần, phải đúng một tuần`);
   const rows = attempts.listAttempts(P.admin, { periodId: split.planned_period_id }).rows;
-  assert(rows.some((r) => r.id === split.id), 'Lượt phải thuộc tuần kế hoạch của chính nó');
+  assert(rows.some((r) => r.id === split.id), 'Lượt phải thuộc tuần của chính nó');
 });
-check('Phân biệt lịch, đã xong, học viên duy nhất và lượt chưa có ngày', () => {
+check('Phân biệt lịch, đã xong và học viên duy nhất', () => {
   const o = dashboard.overview(P.admin, currentPeriod.id);
   assert(o.kpis.week.scheduled >= o.kpis.week.done, 'Số đã xong không thể lớn hơn số có lịch');
   assert(o.kpis.week.uniqueStudents <= o.kpis.week.scheduled, 'Học viên duy nhất phải ≤ số lượt');
-  assert(typeof o.kpis.week.needsDate === 'number', 'Thiếu số lượt chưa có ngày');
 });
 check('Lượt đã huỷ không bị tính thiếu điểm hay quá hạn', () => {
   const all = attempts.listAttempts(P.admin, {}).rows;
@@ -594,8 +599,6 @@ check('Mỗi KPI mở đúng danh sách bản ghi', () => {
   const o = dashboard.overview(P.admin, currentPeriod.id);
   assert(attempts.listAttempts(P.admin, { need: 'overdue' }).rows.length === o.kpis.scoring.overdue, 'Bộ lọc quá hạn lệch KPI');
   assert(attempts.listAttempts(P.admin, { need: 'missing_scores' }).rows.length === o.kpis.scoring.missing, 'Bộ lọc thiếu điểm lệch KPI');
-  assert(attempts.listAttempts(P.admin, { need: 'needs_date', periodId: currentPeriod.id }).rows.length === o.kpis.week.needsDate,
-    'Bộ lọc chưa có ngày lệch KPI');
 });
 check('Case cũ và việc quá hạn không biến mất khi đổi tuần', () => {
   const other = week.listPeriods(30).find((p) => p.id !== currentPeriod.id)!;
@@ -621,7 +624,6 @@ check('Mở case ngay khi kết luận được; mức tăng dần không nhân 
   const attempt = attempts.createAttempt(P.cpManager, {
     studentId: s.id, cycleId: s.cycle_id, classId: classId('CP-FT 110'), periodId: cpPeriod,
   }) as any;
-  attempts.setSchedule(P.cpAdmin, attempt.id, { lrwAt: '2026-11-09' });
 
   const exp = s.target_score;           // từ MT3 trở đi kỳ vọng bằng target
   const low = exp - 0.5;
@@ -808,8 +810,6 @@ check('Badge chỉ đếm việc cần làm, đếm đúng tập mà bấm vào 
   for (const c of rows) {
     const sos = attempts.listAttempts(P.admin, { classId: c.id, need: 'sos_open' }).rows.length;
     assert(c.openCases === sos, `Lớp ${c.code}: badge case SOS ${c.openCases} khác danh sách ${sos}`);
-    const dates = attempts.listAttempts(P.admin, { classId: c.id, need: 'needs_date' }).rows.length;
-    assert(c.needsDate === dates, `Lớp ${c.code}: badge cần cập nhật ngày ${c.needsDate} khác danh sách ${dates}`);
   }
 });
 check('Badge "cần nhập điểm" theo đúng phân công của người đang xem', () => {
@@ -965,7 +965,7 @@ check('Tuần MT đề xuất chỉ thành kế hoạch khi người nhập có 
   const s2 = conn.prepare("SELECT id FROM students WHERE full_name = 'Học Viên Có Quyền Tuần'").get() as any;
   const rows2 = conn.prepare('SELECT * FROM assessment_attempts WHERE student_id = ? ORDER BY attempt_no').all(s2.id) as any[];
   assert(rows2.length === 2 && rows2[0].attempt_no === 1, 'Quản lý nhập hàng loạt phải tạo được kế hoạch tuần');
-  assert(!rows2[0].lrw_scheduled_at, 'Nhập hàng loạt chỉ chốt tuần, không tự điền ngày');
+  assert(rows2[0].planned_period_id, 'Nhập hàng loạt phải gắn tuần cho từng lượt');
 });
 check('Tạo lớp: mã phải bắt đầu bằng mã chi nhánh và không trùng', () => {
   const mb = (conn.prepare("SELECT id FROM branches WHERE code='MB'").get() as any).id;
@@ -1026,59 +1026,14 @@ check('Không được lên kế hoạch một lượt MT không yêu cầu kỹ
     /ít nhất một kỹ năng/, 'Lượt MT rỗng kỹ năng',
   );
 });
-check('Cập nhật ngày MT hàng loạt: một dòng lỗi không làm hỏng cả lô', () => {
-  const rows = conn
-    .prepare(
-      `SELECT a.id, rp.week_start FROM assessment_attempts a
-         JOIN report_periods rp ON rp.id = a.planned_period_id
-        WHERE a.class_id = ? AND a.status='planned' LIMIT 3`,
-    )
-    .all(mbClass) as any[];
-  assert(rows.length >= 2, 'Cần ít nhất hai lượt đã có tuần để thử');
-  const sameWeek = rows.filter((r) => r.week_start === rows[0].week_start);
-  const r = planning.bulkSetDate(P.mbAdmin, {
-    attemptIds: rows.map((x) => x.id), lrwAt: rows[0].week_start,
-  });
-  assert(r.done === sameWeek.length,
-    `Chỉ những lượt có tuần chứa ngày đó mới được cập nhật: kỳ vọng ${sameWeek.length}, thực tế ${r.done}`);
-  assert(r.done + r.failed.length === rows.length, 'Mọi dòng phải có kết quả rõ ràng');
-  for (const f of r.failed) assert(/ngoài tuần/.test(f.message), `Lý do lỗi phải nói rõ: ${f.message}`);
-  const saved = conn.prepare('SELECT lrw_scheduled_at FROM assessment_attempts WHERE id = ?').get(rows[0].id) as any;
-  assert(saved.lrw_scheduled_at === rows[0].week_start, 'Ngày hàng loạt phải lưu đúng, và chỉ ngày');
-});
-check('Giáo viên không được cập nhật ngày hàng loạt', () => {
-  const a = conn.prepare(`SELECT id FROM assessment_attempts WHERE class_id=? AND status='planned' LIMIT 1`).get(mbClass) as any;
-  const r = planning.bulkSetDate(P.w1Teacher, { attemptIds: [a.id], lrwAt: null });
-  assert(r.done === 0 && r.failed.length === 1, 'Giáo viên W1 vẫn cập nhật được ngày hàng loạt');
-});
-check('"Cần cập nhật ngày" chỉ tính khi ĐÃ ĐẾN tuần MT, không tính MT còn xa', () => {
-  const q = planning.dateDutyQueue(P.mbAdmin, {});
-  const today = demoToday();
-  // Dữ liệu mẫu phải có sẵn cả hai nhóm, nếu không màn này chỉ là một khung rỗng.
-  assert(q.thisWeekCount > 0, 'Dữ liệu mẫu thiếu MT tuần này chưa có ngày');
-  const wide = planning.dateDutyQueue(P.admin, {});
-  assert(wide.overdueCount > 0, 'Dữ liệu mẫu thiếu MT tuần trước còn quá hạn');
-  // MT của các tuần sau tuyệt đối không được lọt vào danh sách việc.
-  const future = (conn.prepare(
-    `SELECT COUNT(*) n FROM assessment_attempts a JOIN report_periods rp ON rp.id = a.planned_period_id
-      WHERE a.status='planned' AND a.lrw_scheduled_at IS NULL AND rp.week_start > ?`,
-  ).get(today) as any).n;
-  assert(future > 0, 'Dữ liệu mẫu cần có MT tương lai chưa có ngày để chứng minh nó bị loại');
-  assert(!wide.rows.some((r) => r.weekStart > today), 'MT tuần sau vẫn bị đưa vào việc cần làm');
-  for (const r of q.rows) {
-    assert(r.weekStart <= today, `MT ${r.periodCode} chưa tới tuần mà đã bị đưa vào việc cần làm`);
-  }
-  assert(q.rows.every((r) => r.overdue === (r.weekEnd < today)), 'Cờ quá hạn không khớp với tuần đã qua');
-  assert(q.overdueCount + q.thisWeekCount === q.rows.length, 'Hai nhóm phải phủ hết danh sách');
-});
 check('Đường dẫn cố định của /attempts đứng TRƯỚC /attempts/:id', () => {
   /*
-   * Express khớp route theo thứ tự khai báo. Đặt "no-plan" và "date-duty" sau `:id` thì
-   * chúng bị nuốt và request đi vào hàm chi tiết với một id không phải số.
+   * Express khớp route theo thứ tự khai báo. Đặt "no-plan" sau `:id` thì nó bị nuốt và
+   * request đi vào hàm chi tiết với một id không phải số.
    */
   const src = fs.readFileSync(new URL('../routes/index.ts', import.meta.url).pathname.replace('/dist-server', ''), 'utf8');
   const byId = src.indexOf("api.get('/attempts/:id'");
-  for (const fixed of ["api.get('/attempts/date-duty'", "api.get('/attempts/no-plan'"]) {
+  for (const fixed of ["api.get('/attempts/no-plan'"]) {
     const at = src.indexOf(fixed);
     assert(at > -1 && at < byId, `${fixed} phải khai báo trước /attempts/:id`);
   }
@@ -1193,12 +1148,12 @@ check('Tín hiệu sinh từ dữ liệu, không tạo bản ghi mới mỗi l�
   assert(new Set(a.map((x) => x.key)).size === a.length, 'Khoá tín hiệu bị trùng');
   for (const sig of a) assert(sig.count > 0, 'Không được hiện tín hiệu bằng 0');
 });
-check('Tín hiệu chia đúng việc cho đúng vai: tuần MT là của Quản lý, ngày là của Admin CN', () => {
+check('Tín hiệu chia đúng việc cho đúng vai: tuần MT là của Quản lý, điểm là của giáo viên', () => {
   const a = signals.signalsFor(P.admin, {});
   const noPlan = a.find((x) => x.kind === 'no_plan');
-  const needDate = a.find((x) => x.kind === 'need_date' || x.kind === 'date_overdue');
+  const missing = a.find((x) => x.kind === 'missing_scores');
   if (noPlan) assert(noPlan.owner === 'manager', 'Chưa có tuần MT phải là việc của Quản lý');
-  if (needDate) assert(needDate.owner === 'branch_admin', 'Cập nhật ngày phải là việc của Admin chi nhánh');
+  if (missing) assert(missing.owner === 'teacher', 'Thiếu điểm phải là việc của giáo viên');
 });
 check('Tín hiệu chỉ trong phạm vi được cấp quyền', () => {
   const mine = signals.signalsFor(P.mbManager, {});
@@ -1444,7 +1399,8 @@ check('Sửa điểm làm đổi mức SOS thì GIỮ case và ghi lịch sử, 
     .prepare(
       `SELECT sc.id AS case_id, sc.sos_level, a.id AS attempt_id, a.class_id
          FROM sos_cases sc JOIN assessment_attempts a ON a.id = sc.attempt_id
-        WHERE a.kind != 'mock' AND sc.sos_level >= 2 LIMIT 1`,
+        WHERE a.kind != 'mock' AND sc.sos_level >= 2 AND sc.track = 'academic'
+        ORDER BY sc.id LIMIT 1`,
     )
     .get() as any;
   assert(target, 'Cần một case lớp thường mức từ 2 trở lên để thử');
@@ -1465,7 +1421,7 @@ check('Đủ điểm mọi kỹ năng thì bài mới chuyển sang đã xong', 
   const planned = conn
     .prepare(
       `SELECT a.id, a.class_id FROM assessment_attempts a
-        WHERE a.kind != 'mock' AND a.status = 'planned' AND a.lrw_scheduled_at IS NOT NULL LIMIT 1`,
+        WHERE a.kind != 'mock' AND a.status = 'planned' AND a.planned_period_id IS NOT NULL LIMIT 1`,
     )
     .get() as any;
   if (!planned) return;
@@ -1902,17 +1858,17 @@ check('Case sinh từ điểm ghi thẳng học viên và lộ trình, không ch
     .get(made.id, a.id) as any;
   assert(ms, 'Lượt MT không để lại mốc nào trong case — lịch sử sẽ mất');
   /*
-   * NGÀY LÀM BÀI nằm ở MỐC, không phải ở cột `detected_at` của case.
+   * TUẦN CỦA TỪNG LẦN TRƯỢT nằm ở MỐC, không phải ở cột `detected_at` của case.
    *
    * Case sống suốt khoá nên `detected_at` là ngày phát hiện LẦN ĐẦU — nó phải đứng yên khi
    * MT sau lại trượt, nếu không thì "em này vướng Listening từ bao giờ" mất câu trả lời.
-   * Ngày của từng lần trượt thuộc về mốc của chính lần đó.
    */
-  if (a.lrw_scheduled_at) {
-    assert(ms.occurred_on === a.lrw_scheduled_at.slice(0, 10),
-      `Mốc ghi ngày ${ms.occurred_on}, khác ngày làm bài ${a.lrw_scheduled_at.slice(0, 10)}`);
-    assert(made.detected_at <= a.lrw_scheduled_at.slice(0, 10),
-      `Ngày phát hiện ${made.detected_at} lại SAU ngày làm bài — case không thể phát hiện ở tương lai`);
+  const wk = conn.prepare('SELECT week_start FROM report_periods WHERE id = ?').get(a.planned_period_id) as any;
+  if (wk) {
+    assert(ms.occurred_on === wk.week_start,
+      `Mốc ghi ngày ${ms.occurred_on}, khác thứ Hai của tuần MT ${wk.week_start}`);
+    assert(made.detected_at <= wk.week_start,
+      `Ngày phát hiện ${made.detected_at} lại SAU tuần MT — case không thể phát hiện ở tương lai`);
   }
   // Và hồ sơ học viên phải thấy nó.
   const prof = profile.studentProfile(P.admin, a.student_id) as any;
@@ -2812,7 +2768,6 @@ check('Trượt Listening ở MT1 rồi MT2 → ĐÚNG MỘT case, tên đổi t
     const a = attempts.createAttempt(mgr, {
       studentId: s.id, cycleId: s.cycle_id, classId: classId(cls), periodId: periodOf(date),
     }) as any;
-    attempts.setSchedule(P.bcAdmin, a.id, { lrwAt: date });
     return a;
   };
   const bandBelow = (no: number) => {
@@ -2879,7 +2834,6 @@ check('Case đã chốt "kết thúc hẳn" mà MT sau trượt lại → MỞ L
     const a = attempts.createAttempt(mgr, {
       studentId: s.id, cycleId: s.cycle_id, classId: classId(cls), periodId: periodOf(date),
     }) as any;
-    attempts.setSchedule(P.bcAdmin, a.id, { lrwAt: date });
     return a;
   };
   const low = (no: number) => {
@@ -3206,7 +3160,7 @@ check('Badge "Thiếu thông tin" gom mọi thứ còn thiếu vào MỘT nhãn'
   /* Lớp Normal KHÔNG bị nhắc tháng thi — các em đó chưa thi IELTS. */
   const normal = schedule.missingForStudent({
     cycle: { start_period_id: null, exam_month: null, target_score: null },
-    student: { dob: null }, isFulltime: false,
+    student: { dob: null }, isFastTrack: false,
   });
   assert(normal.some((m) => m.key === 'start_week'), 'Thiếu tuần bắt đầu mà không nhắc');
   assert(!normal.some((m) => m.key === 'exam_month'), 'Lớp Normal bị nhắc tháng thi IELTS');
@@ -3214,7 +3168,7 @@ check('Badge "Thiếu thông tin" gom mọi thứ còn thiếu vào MỘT nhãn'
 
   const ft = schedule.missingForStudent({
     cycle: { start_period_id: null, exam_month: null, target_score: null },
-    student: { dob: null }, isFulltime: true,
+    student: { dob: null }, isFastTrack: true,
   });
   assert(ft.some((m) => m.key === 'exam_month') && ft.some((m) => m.key === 'target'),
     'Lớp FT phải bị nhắc cả tháng thi lẫn Target');
@@ -3223,7 +3177,7 @@ check('Badge "Thiếu thông tin" gom mọi thứ còn thiếu vào MỘT nhãn'
   /* Khai đủ thì badge biến mất hẳn, không để lại một nhãn rỗng. */
   const full = schedule.missingForStudent({
     cycle: { start_period_id: 1, exam_month: '2026-11', target_score: 6.5 },
-    student: { dob: '2008-01-01' }, isFulltime: true,
+    student: { dob: '2008-01-01' }, isFastTrack: true,
   });
   assert(full.length === 0, `Khai đủ rồi mà vẫn báo thiếu: ${full.map((m) => m.label).join(', ')}`);
 });
@@ -3245,28 +3199,29 @@ check('Ô chọn tuần mở đủ xa về tương lai để xếp lịch MT', (
 
 console.log('\n29. Vòng 4 phase 3 — bảng, bộ lọc và cách gọi tên');
 
-check('Tám bộ lọc học viên định nghĩa MỘT chỗ, và hiện đúng theo vai', () => {
+check('Bộ lọc học viên định nghĩa MỘT chỗ, và hiện đúng theo vai', () => {
   const keys = domain.STUDENT_FILTERS.map((x) => x.key);
-  assert(keys.length === 8, `Phải đủ tám bộ lọc của mục 6, đang có ${keys.length}`);
-  assert(new Set(domain.STUDENT_FILTERS.map((x) => x.label)).size === 8, 'Có hai bộ lọc trùng tên');
+  // Bảy bộ lọc: bỏ "Cần cập nhật ngày MT" cùng với việc mà nó phục vụ.
+  assert(keys.length === 7, `Phải đủ bảy bộ lọc, đang có ${keys.length}`);
+  assert(new Set(domain.STUDENT_FILTERS.map((x) => x.label)).size === domain.STUDENT_FILTERS.length,
+    'Có hai bộ lọc trùng tên');
 
   const has = (p: any) => (key: string) => can(p, key, { anyScope: true });
   const forTeacher = domain.studentFiltersFor(has(P.lrTeacher));
   const forManager = domain.studentFiltersFor(has(P.mbManager));
   const forAdmin = domain.studentFiltersFor(has(P.mbAdmin));
 
-  /* Bảng ở mục 6: GV không có "Chưa có lịch MT" và "Cần cập nhật ngày MT". */
-  assert(!forTeacher.includes('no_plan') && !forTeacher.includes('need_date'),
-    'Giáo viên không được thấy hai bộ lọc lịch');
+  /* Bảng ở mục 6: GV không có "Chưa có tuần MT" — xếp lịch là việc của Quản lý. */
+  assert(!forTeacher.includes('no_plan'), 'Giáo viên không được thấy bộ lọc lịch');
   assert(forTeacher.includes('sos') && forTeacher.includes('case_overdue'),
     'Giáo viên phải thấy bộ lọc SOS và case quá hạn');
   /* Admin CN không có bộ lọc case, nhưng CÓ "Cần nhập điểm MT" để đôn đốc (owner xác nhận Q9). */
   assert(!forAdmin.includes('case_no_plan') && !forAdmin.includes('sos'),
     'Admin CN không được thấy bộ lọc case');
-  assert(forAdmin.includes('my_scores') && forAdmin.includes('need_date'),
-    'Admin CN phải thấy bộ lọc nhập điểm và cập nhật ngày');
-  /* Quản lý thấy nhiều nhất, và luôn có "Chưa có lịch MT" vì đó là việc của họ. */
-  assert(forManager.includes('no_plan'), 'Quản lý phải thấy bộ lọc chưa có lịch MT');
+  assert(forAdmin.includes('my_scores'), 'Admin CN phải thấy bộ lọc nhập điểm để đôn đốc');
+  assert(!forAdmin.includes('no_plan'), 'Admin CN không chốt tuần nên không thấy bộ lọc đó');
+  /* Quản lý thấy nhiều nhất, và luôn có "Chưa có tuần MT" vì đó là việc của họ. */
+  assert(forManager.includes('no_plan'), 'Quản lý phải thấy bộ lọc chưa có tuần MT');
   for (const k of ['classes', 'sos', 'case_working', 'case_no_plan', 'case_overdue']) {
     assert(forManager.includes(k as any), `Quản lý thiếu bộ lọc ${k}`);
   }

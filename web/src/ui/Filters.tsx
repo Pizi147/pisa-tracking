@@ -31,11 +31,16 @@ export function usePeriodWindow(anchorId: number | null, scope?: 'planning') {
  * Phần lớn thao tác là đi sang tuần liền kề. Bắt mở dropdown rồi tìm đúng dòng cho một
  * việc như thế là ba thao tác cho một bước — hai mũi tên giải quyết bằng một cú bấm.
  */
-export function WeekPicker({ periodId, onPeriod, className = 'w-52', label = 'Tuần', scope }: {
-  periodId: number | null; onPeriod: (id: number) => void;
+export function WeekPicker({ periodId, onPeriod, className = 'w-52', label = 'Tuần', scope, clearable }: {
+  periodId: number | null; onPeriod: (id: number | null) => void;
   className?: string; label?: string | null;
   /** 'planning' mở cửa sổ tuần XA về tương lai — xếp lịch MT là việc của tương lai. */
   scope?: 'planning';
+  /**
+   * Cho phép BỎ TRỐNG. Chỉ bật ở những chỗ mà "chưa biết" là một câu trả lời hợp lệ —
+   * tuần dự kiến thi là ví dụ: ép chọn thì người ta chọn bừa rồi không ai sửa lại.
+   */
+  clearable?: boolean;
 }) {
   const { data } = usePeriodWindow(periodId, scope);
   const list = data ?? [];
@@ -70,14 +75,16 @@ export function WeekPicker({ periodId, onPeriod, className = 'w-52', label = 'Tu
           onClick={() => prev && onPeriod(prev.id)}
           aria-label="Tuần trước" title={prev ? `Tuần trước · ${prev.code}` : 'Đã ở đầu khoảng đang xem'}
         >←</button>
-        <select className={`field ${className}`} value={periodId ?? shown?.id ?? ''}
-          onChange={(e) => onPeriod(Number(e.target.value))}>
+        <select className={`field ${className}`}
+          value={clearable ? (periodId ?? '') : (periodId ?? shown?.id ?? '')}
+          onChange={(e) => onPeriod(e.target.value ? Number(e.target.value) : null)}>
+          {clearable && <option value="">Chưa xác định</option>}
           {/*
             Chưa chọn thì vẫn phải chọn được CHÍNH tuần đang hiện — nếu không, người dùng
             muốn lấy đúng tuần này lại phải bấm sang tuần khác rồi bấm ngược lại.
           */}
-          {!periodId && shown && <option value={shown.id}>{shown.code} · {shown.range}</option>}
-          {list.filter((p) => periodId || p.id !== shown?.id)
+          {!periodId && !clearable && shown && <option value={shown.id}>{shown.code} · {shown.range}</option>}
+          {list.filter((p) => clearable || periodId || p.id !== shown?.id)
             .map((p) => <option key={p.id} value={p.id}>{p.code} · {p.range}</option>)}
         </select>
         <button
@@ -127,7 +134,7 @@ export function WeekBranchFilter({ periodId, onPeriod, branchId, onBranch, child
 
   return (
     <div className="flex flex-wrap items-end gap-2">
-      <WeekPicker periodId={periodId} onPeriod={onPeriod} className="w-52" />
+      <WeekPicker periodId={periodId} onPeriod={(id) => id && onPeriod(id)} className="w-52" />
       {showBranch && (
         <label className="block">
           <span className="label">Chi nhánh</span>

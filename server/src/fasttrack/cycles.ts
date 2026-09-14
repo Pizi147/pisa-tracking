@@ -1,6 +1,6 @@
 import { db, tx } from '../db.ts';
 import {
-  BASELINE_SOURCES, CYCLE_OUTCOMES, CYCLE_OUTCOME_LABEL, PERMISSIONS, type Route,
+  BASELINE_SOURCES, CYCLE_OUTCOMES, CYCLE_OUTCOME_LABEL, PERMISSIONS, type ExamPlan, type Route,
 } from '../../../shared/domain/index.ts';
 import { badRequest, isIsoDate, notFound, nowIso } from '../util.ts';
 import { require_, type Principal } from '../permissions.ts';
@@ -39,16 +39,54 @@ export function nextAttemptNo(cycleId: number): number {
   return (row?.n ?? 0) + 1;
 }
 
+/**
+ * DỰ KIẾN THI của một lộ trình, ở đúng mức chắc chắn mà người ta thực sự biết.
+ *
+ * Ba mức, và giao diện hiển thị đúng ba mức đó chứ không quy về một:
+ *   `week`  đã chốt tuần        → "W2 FEB 2027"   — có đếm ngược
+ *   `month` mới biết tháng      → "FEB 2027 · chưa xác định tuần" — KHÔNG đếm ngược
+ *   `none`  chưa biết gì        → "Chưa xác định"
+ *
+ * Chỉ đếm ngược khi đã có tuần. Biết mỗi tháng mà vẫn hiện "còn 134 ngày" là bịa ra một
+ * độ chính xác không có thật, và người đọc sẽ tin con số đó.
+ */
+const MONTH_CODE = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+
+export function examPlanOf(cycle: {
+  exam_period_id?: number | null; exam_month?: string | null;
+  /* Truy vấn nào JOIN sẵn bảng tuần thì truyền hai cột này vào, khỏi hỏi lại từng dòng. */
+  exam_week_code?: string | null; exam_week_start?: string | null;
+} | null | undefined): ExamPlan {
+  const none: ExamPlan = { confidence: 'none', periodId: null, weekStart: null, month: null, label: 'Chưa xác định' };
+  if (!cycle) return none;
+  if (cycle.exam_period_id) {
+    const w = cycle.exam_week_code && cycle.exam_week_start
+      ? { code: cycle.exam_week_code, weekStart: cycle.exam_week_start }
+      : periodById(cycle.exam_period_id);
+    if (w) {
+      return { confidence: 'week', periodId: cycle.exam_period_id, weekStart: w.weekStart,
+               month: w.weekStart.slice(0, 7), label: w.code };
+    }
+  }
+  if (cycle.exam_month) {
+    const mm = Number(cycle.exam_month.slice(5, 7));
+    const name = MONTH_CODE[mm - 1] ?? cycle.exam_month.slice(5, 7);
+    return { confidence: 'month', periodId: null, weekStart: null, month: cycle.exam_month,
+             label: `${name} ${cycle.exam_month.slice(0, 4)} · chưa xác định tuần` };
+  }
+  return none;
+}
+
 export function createCycle(p: Principal, input: {
   studentId: number; route?: Route | null; targetScore?: number | null;
-  examDate?: string | null; startedAt?: string; note?: string | null;
+  examPeriodId?: number | null; startedAt?: string; note?: string | null;
 }) {
   require_(p, PERMISSIONS.STUDENT_EDIT, { studentId: input.studentId },
     'Bạn không có quyền mở lộ trình mới cho học viên này.');
   const conn = db();
   const student = conn.prepare('SELECT * FROM students WHERE id = ?').get(input.studentId) as any;
   if (!student) throw notFound('Không tìm thấy học viên');
-  if (input.examDate && !isIsoDate(input.examDate)) throw badRequest('Ngày thi IELTS không hợp lệ.');
+  if (input.examPeriodId && !periodById(Number(input.examPeriodId))) throw badRequest('Tuần dự kiến thi không hợp lệ.');
   const startedAt = input.startedAt ?? nowIso().slice(0, 10);
   if (!isIsoDate(startedAt)) throw badRequest('Ngày bắt đầu không hợp lệ.');
 
@@ -60,11 +98,11 @@ export function createCycle(p: Principal, input: {
       .run(startedAt, input.studentId);
     const info = conn
       .prepare(
-        `INSERT INTO learning_cycles (student_id, seq, route, target_score, exam_date, started_at, status, note, created_at)
+        `INSERT INTO learning_cycles (student_id, seq, route, target_score, exam_period_id, started_at, status, note, created_at)
          VALUES (?,?,?,?,?,?, 'active', ?, ?)`,
       )
       .run(input.studentId, seq, input.route ?? null, input.targetScore ?? null,
-           input.examDate ?? null, startedAt, input.note ?? null, nowIso());
+           input.examPeriodId ?? null, startedAt, input.note ?? null, nowIso());
     const id = Number(info.lastInsertRowid);
     addJourney({
       studentId: input.studentId, eventType: 'cycle_start', eventDate: startedAt,
@@ -83,17 +121,17 @@ export function updateCycle(p: Principal, cycleId: number, patch: any) {
   if (!c) throw notFound('Không tìm thấy lộ trình');
   require_(p, PERMISSIONS.STUDENT_EDIT, { studentId: c.student_id });
   const map: Record<string, string> = {
-    targetScore: 'target_score', examDate: 'exam_date', route: 'route', note: 'note', status: 'status',
+    targetScore: 'target_score', route: 'route', note: 'note', status: 'status',
     /*
      * Hai trường của vòng 4. Quyền sửa: Admin CN · Quản lý · GVCN của lớp (mục 7.5) —
      * `student.edit` đã bao đúng ba vai đó, nên không thêm quyền mới.
      */
-    startPeriodId: 'start_period_id', examMonth: 'exam_month',
+    startPeriodId: 'start_period_id', examMonth: 'exam_month', examPeriodId: 'exam_period_id',
   };
   const sets: string[] = []; const params: unknown[] = [];
   for (const [k, v] of Object.entries(patch)) {
     if (!map[k]) continue;
-    if (k === 'examDate' && v && !isIsoDate(String(v))) throw badRequest('Ngày thi IELTS không hợp lệ.');
+    if (k === 'examPeriodId' && v && !periodById(Number(v))) throw badRequest('Tuần dự kiến thi không hợp lệ.');
     /*
      * Tháng thi dạng 'YYYY-MM'. Nhận CẢ một ngày đầy đủ rồi cắt lấy tháng — ô chọn tháng
      * của trình duyệt trả về đúng dạng này, nhưng người dán tay hay dán cả ngày.
@@ -115,12 +153,15 @@ export function updateCycle(p: Principal, cycleId: number, patch: any) {
   params.push(cycleId);
   db().prepare(`UPDATE learning_cycles SET ${sets.join(', ')} WHERE id = ?`).run(...params);
   const after = cycleById(cycleId);
-  // Đổi ngày thi IELTS là sự kiện đáng ghi vào hành trình học.
-  if (patch.examDate !== undefined && patch.examDate !== c.exam_date) {
+  // Đổi tuần dự kiến thi là sự kiện đáng ghi vào hành trình học.
+  if (patch.examPeriodId !== undefined && patch.examPeriodId !== c.exam_period_id) {
+    const before = c.exam_period_id ? periodById(c.exam_period_id)?.code ?? null : null;
+    const now = patch.examPeriodId ? periodById(Number(patch.examPeriodId)) : null;
     addJourney({
-      studentId: c.student_id, eventType: 'exam_date_changed', eventDate: String(patch.examDate ?? nowIso().slice(0, 10)),
-      title: 'Đổi ngày thi IELTS chính thức',
-      detail: `${c.exam_date ?? 'chưa có'} → ${patch.examDate ?? 'chưa có'}`,
+      studentId: c.student_id, eventType: 'exam_plan_changed',
+      eventDate: now?.weekStart ?? nowIso().slice(0, 10),
+      title: 'Đổi tuần dự kiến thi IELTS',
+      detail: `${before ?? 'chưa có'} → ${now?.code ?? 'chưa có'}`,
       refTable: 'learning_cycles', refId: cycleId, createdBy: p.userId,
     });
   }

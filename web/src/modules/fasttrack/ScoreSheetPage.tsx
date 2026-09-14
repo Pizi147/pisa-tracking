@@ -6,7 +6,7 @@ import { Card, Empty, ErrorState, Pill, SectionNote, Skeleton } from '../../ui/u
 import { usePeriods } from '../../ui/Filters.tsx';
 import { CriteriaButton, DeadlinePill, RawScoreInput, useSaveScore, type Cell } from './ScoreEntry.tsx';
 import {
-  attemptStatusLabel, attemptStatusTone, fmtBand, fmtSlot, skillShort, sosLabel, sosTone,
+  attemptStatusLabel, attemptStatusTone, fmtBand, skillShort, sosLabel, sosTone,
 } from '../../lib/format.ts';
 import { ENTRY_SKILLS } from '@shared/domain/index.ts';
 
@@ -17,7 +17,6 @@ type Sheet = {
   rows: {
     attemptId: number; studentId: number; studentName: string; studentCode: string;
     attemptNo: number; status: string;
-    lrwScheduledAt: string | null; speakingScheduledAt: string | null;
     cells: Cell[]; result: any;
   }[];
 };
@@ -95,7 +94,8 @@ export default function ScoreSheetPage() {
                   <tr>
                     <th className="th sticky-col">Học viên</th>
                     <th className="th">MT</th>
-                    <th className="th">Lịch</th>
+                    <th className="th">Trạng thái</th>
+                    <th className="th">Hạn nhập</th>
                     {rawSkills.map((s) => <th key={s} className="th">{skillShort(s)} <span className="normal-case text-slate-500">(số câu)</span></th>)}
                     {critSkills.map((s) => <th key={s} className="th">{skillShort(s)} <span className="normal-case text-slate-500">(band)</span></th>)}
                     <th className="th">Kỳ vọng</th>
@@ -128,8 +128,8 @@ export default function ScoreSheetPage() {
 
       <SectionNote>
         Ô để trống nghĩa là chưa nhập, không phải điểm 0. Chỉ những kỹ năng bạn được phân công mới sửa được;
-        các kỹ năng khác vẫn đọc được để đối chiếu. Hạn nhập tính theo buổi mock của từng kỹ năng, nên
-        Speaking khác ngày sẽ có hạn riêng. Kỹ năng đã đánh dấu không mock hiện mờ và không bị tính thiếu điểm.
+        các kỹ năng khác vẫn đọc được để đối chiếu. Cả lượt MT dùng CHUNG một hạn nhập điểm, đếm từ tuần MT.
+        Kỹ năng đã đánh dấu không mock hiện mờ và không bị tính thiếu điểm.
       </SectionNote>
     </div>
   );
@@ -144,8 +144,6 @@ function SheetRow({ row, rowIndex, rawSkills, critSkills, onReload, register, on
 }) {
   const { save } = useSaveScore(row.attemptId, onReload);
   const cellOf = (skill: string) => row.cells.find((c) => c.skill === skill);
-  const split = !!row.speakingScheduledAt
-    && row.speakingScheduledAt.slice(0, 10) !== (row.lrwScheduledAt ?? '').slice(0, 10);
 
   return (
     <tr className="row-hover">
@@ -155,13 +153,14 @@ function SheetRow({ row, rowIndex, rawSkills, critSkills, onReload, register, on
       </td>
       <td className="td tabular-nums whitespace-nowrap">MT{row.attemptNo}</td>
       <td className="td whitespace-nowrap text-xs text-slate-400">
-        {row.lrwScheduledAt ? fmtSlot(row.lrwScheduledAt) : <Pill tone="warn">Chưa xếp ngày</Pill>}
-        <div><Pill tone={attemptStatusTone(row.status)}>{attemptStatusLabel(row.status)}</Pill></div>
-        {split && (
-          <div className="mt-1">
-            <Pill tone="info" title={`Speaking ${fmtSlot(row.speakingScheduledAt)}`}>Speaking khác ngày</Pill>
-          </div>
-        )}
+        <Pill tone={attemptStatusTone(row.status)}>{attemptStatusLabel(row.status)}</Pill>
+      </td>
+      {/*
+        MỘT HẠN CHO CẢ DÒNG. Trước đây mỗi kỹ năng có ngày mock riêng nên mỗi ô một hạn;
+        nay cả lượt MT thuộc một tuần, nên in năm lần cùng một ngày chỉ là nhiễu.
+      */}
+      <td className="td whitespace-nowrap">
+        <DeadlinePill cell={row.cells.find((c) => c.required) ?? row.cells[0]} />
       </td>
       {rawSkills.map((s, ci) => {
         const cell = cellOf(s);
@@ -177,7 +176,6 @@ function SheetRow({ row, rowIndex, rawSkills, critSkills, onReload, register, on
                 if (e.key === 'ArrowUp') { e.preventDefault(); onMove(rowIndex, ci, -1, 0); }
               }}
             />
-            <div className="mt-1"><DeadlinePill cell={cell} /></div>
           </td>
         );
       })}
@@ -187,7 +185,6 @@ function SheetRow({ row, rowIndex, rawSkills, critSkills, onReload, register, on
         return (
           <td key={s} className="td">
             <CriteriaButton cell={cell} onSave={(p) => save(s, p)} />
-            <div className="mt-1"><DeadlinePill cell={cell} /></div>
           </td>
         );
       })}

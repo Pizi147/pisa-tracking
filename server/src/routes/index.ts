@@ -262,14 +262,9 @@ api.get('/attempts', requireAuth, wrap((req) => {
 
 /*
  * CÁC ĐƯỜNG DẪN CỐ ĐỊNH PHẢI ĐỨNG TRƯỚC `/attempts/:id`.
- * Express khớp theo thứ tự khai báo, nên đặt sau thì `:id` sẽ nuốt luôn "no-plan" và
- * "date-duty" — request đi vào hàm chi tiết với một id không phải số.
+ * Express khớp theo thứ tự khai báo, nên đặt sau thì `:id` sẽ nuốt luôn "no-plan" —
+ * request đi vào hàm chi tiết với một id không phải số.
  */
-
-/** Nghĩa vụ hàng tuần của Admin chi nhánh: MT tuần này và tuần trước còn thiếu ngày. */
-api.get('/attempts/date-duty', requireAuth, wrap((req) => planningSvc.dateDutyQueue(principalOf(req), {
-  branchId: toInt(req.query?.branchId), classId: toInt(req.query?.classId),
-})));
 
 /** Học viên chưa có tuần MT tiếp theo — việc của Quản lý. */
 api.get('/attempts/no-plan', requireAuth, wrap((req) => planningSvc.noPlanQueue(principalOf(req), {
@@ -304,12 +299,6 @@ api.post('/attempts/bulk-plan', requireAuth, wrap((req) => {
   return planningSvc.bulkPlan(principalOf(req), { ...req.body, periodId });
 }));
 
-/** Cập nhật NGÀY MT thực tế cho nhiều lượt cùng lúc — chỉ ngày, không giờ. */
-api.post('/attempts/bulk-date', requireAuth, wrap((req) => {
-  maybeSimulateSaveFailure();
-  return planningSvc.bulkSetDate(principalOf(req), req.body ?? {});
-}));
-
 /** Tổng hợp theo tuần cho Quản lý: mỗi tuần một dòng, mọi con số bấm được. */
 api.get('/weekly-rollup', requireAuth, wrap((req) => weeklyRollup(principalOf(req), {
   branchId: toInt(req.query?.branchId),
@@ -336,16 +325,6 @@ api.post('/attempts/:id/week', requireAuth, wrap((req) => {
   return attemptSvc.setPlanningWeek(principalOf(req), pInt(req, 'id'), periodId, req.body?.reason);
 }));
 
-/** Cập nhật NGÀY thực tế trong tuần kế hoạch. Lịch chính do Admin CN, lịch Speaking có thể do GV Speaking. */
-api.post('/attempts/:id/schedule', requireAuth, wrap((req) => {
-  maybeSimulateSaveFailure();
-  return attemptSvc.setSchedule(principalOf(req), pInt(req, 'id'), {
-    lrwAt: req.body?.lrwAt,
-    speakingAt: req.body?.speakingAt,
-    reason: req.body?.reason,
-  });
-}));
-
 /** Đánh dấu một kỹ năng đánh giá là không mock ở lượt này, hoặc bỏ đánh dấu. */
 api.post('/attempts/:id/skills/:skill/skip', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
@@ -370,8 +349,8 @@ api.post('/attempts/:id/reopen', requireAuth, wrap((req) => {
 }));
 
 /**
- * Ghi điểm MỘT kỹ năng. Payload KHÔNG nhận trường lịch — quyền nhập điểm không kèm
- * quyền sửa ngày kế hoạch. `takenOn` là ngày mock thực tế, khác ngày lịch.
+ * Ghi điểm MỘT kỹ năng. Payload KHÔNG nhận trường lịch nào — quyền nhập điểm không kèm
+ * quyền đổi tuần MT.
  */
 api.put('/attempts/:id/scores/:skill', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
@@ -379,7 +358,7 @@ api.put('/attempts/:id/scores/:skill', requireAuth, wrap((req) => {
   if (!(ENTRY_SKILLS as readonly string[]).includes(skill)) throw badRequest('Kỹ năng không hợp lệ.');
   const b = req.body ?? {};
   return attemptSvc.saveScore(principalOf(req), pInt(req, 'id'), skill, {
-    takenOn: b.takenOn, rawScore: b.rawScore, rawTotal: b.rawTotal,
+    rawScore: b.rawScore, rawTotal: b.rawTotal,
     criteria: b.criteria, resultDate: b.resultDate, note: b.note,
   });
 }));

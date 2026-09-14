@@ -15,7 +15,7 @@ type SkillResult = {
 type Row = {
   attemptId: number; kind: AttemptKind; kindLabel: string;
   studentId: number; studentName: string; studentCode: string; studentStatus: string;
-  periodCode: string | null; takenOn: string | null; status: string;
+  periodCode: string | null; status: string;
   result: {
     skills: SkillResult[]; scored: number; required: number; complete: boolean;
     failedCount: number | null; sosLevel: number | null; passThreshold: number;

@@ -87,7 +87,7 @@ export type ProgrammeTemplate = {
 
 export const PROGRAMME_TEMPLATES: Record<ProgrammeCode, ProgrammeTemplate> = {
   FT: {
-    code: 'FT', name: 'Fulltime IELTS', weeks: null, scoringMode: 'ielts_band',
+    code: 'FT', name: 'Fast Track', weeks: null, scoringMode: 'ielts_band',
     skills: ENTRY_SKILLS,
     checkpoints: [],   // MT theo mốc riêng của FT, xem MOCK_FT_STUDY_WEEK
   },

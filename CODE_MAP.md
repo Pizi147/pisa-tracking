@@ -14,7 +14,7 @@ ba nơi.
 |---|---|---|---|
 | **Học viên** | Em này là ai, đang học gì, đã đi qua những đâu | `server/src/students/` | `web/src/modules/students/` |
 | **Lớp học** | Lớp nào, ai dạy, ai đang học, chuyển lớp thế nào | `server/src/classes/` | `web/src/modules/classes/` |
-| **Fast Track** | Lịch Mock Test, điểm band, mức SOS | `server/src/fasttrack/` | `web/src/modules/fasttrack/` |
+| **Fast Track** | Tuần Mock Test, điểm band, mức SOS, dự kiến thi | `server/src/fasttrack/` | `web/src/modules/fasttrack/` |
 | **Normal** | FOU/BE/ELE, Progress Test, Final Test, điểm đạt/tổng | `server/src/normal/` | `web/src/modules/normal/` |
 | **Case** | Vấn đề của em, phương án, phê duyệt, kết quả | `server/src/cases/` | `web/src/modules/cases/` |
 | **Tổng quan và công việc** | Ai phải làm gì, cả chi nhánh đang thế nào | `server/src/worklist/` | `web/src/modules/worklist/` |
@@ -64,6 +64,8 @@ cùng một thứ bằng hai cái tên.
 | Màn một lượt MT | `web/src/modules/fasttrack/MockDetailPage.tsx` |
 | Bảng nhập điểm cả lớp | `web/src/modules/fasttrack/ScoreSheetPage.tsx` |
 | Panel "Lên kế hoạch MT" | `web/src/modules/fasttrack/MockPlanPanel.tsx` · `server/src/fasttrack/planning.ts` |
+| Nhãn "Dự kiến thi" (tuần / chỉ tháng / chưa biết) | `server/src/fasttrack/cycles.ts` → `examPlanOf` · `web/src/ui/ui.tsx` → `ExamPlanText` |
+| Hạn nhập điểm của một lượt MT | `server/src/platform/week.ts` → `effectiveDeadline` |
 | Lịch MT tự đề xuất | `server/src/classes/schedule.ts` → `suggestedMockWeeks` |
 | Lộ trình học của một em, target, dự kiến thi | `server/src/fasttrack/cycles.ts` |
 
@@ -139,7 +141,9 @@ qua đây. Quyền = quyền của vai × chi nhánh của chính grant đó × 
 thêm quyền cấp riêng cho cá nhân.
 
 **`server/src/platform/week.ts`** — quy ước tuần (thứ Hai → Chủ nhật, thuộc tháng chứa thứ
-Năm). Lịch MT, hạn nhập điểm, chu kỳ case và bảng theo tuần đều đếm từ đây.
+Năm; mã tuần LUÔN kèm năm). Lịch MT, hạn nhập điểm, chu kỳ case và bảng theo tuần đều đếm từ
+đây. Từ vòng 5, một lượt MT được xác định bằng ĐÚNG MỘT TUẦN — không còn ngày thi cụ thể ở
+bất kỳ đâu trong luồng MT, nên cả năm kỹ năng của một lượt dùng chung một hạn nhập điểm.
 
 ---
 

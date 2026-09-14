@@ -43,7 +43,7 @@ Mở **Tổng quan** lần lượt bằng ba tài khoản:
 |---|---|
 | `huy.le.pisa@gmail.com` — Giáo viên Monbay | Nhập điểm · Kết quả sau hỗ trợ · Phương án hỗ trợ |
 | `ha.tran.pisa@gmail.com` — Quản lý Monbay | Thêm **Việc cần lưu ý** và **Chờ duyệt phương án**, và tab thứ hai **Thực trạng** |
-| `khoa.dang.pisa@gmail.com` — Admin CN Monbay | **Chỉ** Cập nhật ngày MT, và không có bộ lọc case nào |
+| `khoa.dang.pisa@gmail.com` — Admin CN Monbay | Không có bộ lọc case nào; thấy "Cần nhập điểm MT" nhưng chỉ để đôn đốc |
 
 Đây là lọc **ở máy chủ**, không phải ẩn nút: việc bạn không có quyền làm thì không được trả về.
 
@@ -54,7 +54,7 @@ chứ không phải một chữ "Quá hạn" trơ trọi.
 
 Vai **Quản trị hệ thống** → **Tổng quan**. Nhóm **Mốc của lớp** có đúng ba dòng:
 
-- `UB-FOUND 07` — *Đã học hết 8 tuần, 6 học viên cần xếp lớp tiếp (Beginner hoặc Fulltime IELTS)*
+- `UB-FOUND 07` — *Đã học hết 8 tuần, 6 học viên cần xếp lớp tiếp (Beginner hoặc Fast Track)*
 - `MB-FOU 12` — *Final Test tuần này · đang ở tuần 8/8*
 - `BC-ELE 01` — *Progress Test tuần này · đang ở tuần 5/10*
 
@@ -70,7 +70,7 @@ Vai **Quản trị hệ thống** → **Tổng quan**. Bảng ngay dưới tiêu
   Hàng tổng **không** bị cuốn theo.
 - Bấm một con số → sang **Học viên** với đúng bộ lọc tạo nên con số đó.
 - Chọn một chi nhánh ở ô trên cùng bên phải → hàng đầu thành **Cả chi nhánh**, dưới là hai nhóm
-  **Normal** và **Fulltime IELTS**, thu gọn sẵn. Mở ra mới thấy từng lớp.
+  **Normal** và **Fast Track**, thu gọn sẵn. Mở ra mới thấy từng lớp.
 - Bấm **▾ Việc cần lưu ý** ở tiêu đề → gập cả bảng lại, phần việc của chính mình lên ngay.
 - **+ Xem theo giáo viên** → bảng theo người: *MT chưa nhập · MT quá hạn nhập · Case · …*
   Cố tình **không** tô màu tốt/xấu và **không** xếp hạng.
@@ -79,13 +79,17 @@ Vai **Quản trị hệ thống** → **Tổng quan**. Bảng ngay dưới tiêu
 
 Vai **Quản trị hệ thống** → **Học viên** → bấm thanh lớp `MB-FT 101`.
 
-Cột: **Học viên · Target · Ngày thi · OVR · L · R · S · W1 · W2 · Trạng thái · Việc cần làm**.
+Cột: **Học viên · Target · Dự kiến thi · OVR · L · R · S · W1 · W2 · Trạng thái · Việc cần làm**.
+
+- Cột **Dự kiến thi** nói đúng mức chắc chắn đang có, không nói hơn: `W2 FEB 2027` khi đã chốt
+  tuần, `DEC 2026 · chưa xác định tuần` khi mới biết tháng, `Chưa xác định` khi chưa biết gì.
+  Chỉ khi đã có tuần mới có đếm ngược — biết mỗi tháng mà vẫn hiện "còn 134 ngày" là bịa.
 
 - Mỗi ô điểm có **mũi tên** so với lượt trước; rê chuột lên hiện *"Lượt trước 5.5 → lượt này 6"*.
 - Rê chuột lên **tiêu đề cột** một lúc → một câu giải thích. Thử cột **OVR** và **W2**.
 - Cột **Việc cần làm** chỉ hiện việc **của chính bạn**. Đổi sang một tài khoản giáo viên rồi mở
   lại cùng lớp đó — cột này ngắn hẳn đi.
-- Dòng phụ dưới tên em là dải **MT1 ✓ · MT2 ✓ · MT3 W3 SEP**.
+- Dòng phụ dưới tên em là dải **MT1 ✓ · MT2 ✓ · MT3 W3 SEP 2026**. Mã tuần luôn kèm **năm**.
 - Bấm một bộ lọc bất kỳ ở hàng trên → **lớp vẫn mở**. Trạng thái thu gọn/mở rộng là thứ bạn đã
   sắp đặt, bộ lọc chỉ đổi danh sách.
 
@@ -104,7 +108,7 @@ Vai `ha.tran.pisa@gmail.com` (Quản lý Monbay) → **Tổng quan → Thực tr
 Vào thẳng **góc nhìn theo lớp**, không phải bấm thêm: người quản một chi nhánh mà phải bấm vào
 chi nhánh của chính mình là một cú bấm thừa lặp lại mỗi ngày.
 
-- Hàng **Cả chi nhánh** ở đầu, dưới là hai nhóm **Normal** và **Fulltime IELTS** thu gọn sẵn.
+- Hàng **Cả chi nhánh** ở đầu, dưới là hai nhóm **Normal** và **Fast Track** thu gọn sẵn.
 - Bấm tên lớp → mở **thẳng trang lớp** đó.
 - Bốn bộ cột: **Mặc định · SOS · Cụ thể · Cần chú ý · Tất cả**. Chọn một bộ rồi thoát, đăng nhập lại
   → **vẫn là bộ đó**; đăng nhập bằng người khác → bộ mặc định.
@@ -116,7 +120,7 @@ chi nhánh của chính mình là một cú bấm thừa lặp lại mỗi ngày
 
 Trong khối **Lọc**:
 
-- Không còn bộ lọc "Đầu mục". Thay bằng **Loại lớp**: *Tất cả · Normal · Fulltime IELTS*.
+- Không còn bộ lọc "Đầu mục". Thay bằng **Loại lớp**: *Tất cả · Normal · Fast Track*.
 - Chọn một loại lớp → bộ lọc **Cụ thể** mới hiện ra, kỹ năng trước rồi tới ý thức.
   Chưa chọn loại lớp thì không hiện, vì danh sách "cụ thể" của hai loại lớp khác nhau.
 - Số trên mỗi chip đếm **trong loại lớp đang chọn** — bấm vào ra đúng bấy nhiêu dòng.

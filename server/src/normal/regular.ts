@@ -10,6 +10,7 @@ import { can, editableSkills, require_, scoreEditPath, type Principal } from '..
 import { demoToday } from '../demoConfig.ts';
 import { addJourney, writeAudit } from '../platform/audit.ts';
 import { ensurePeriod, mondayOf } from '../platform/week.ts';
+import { weekStartOf } from '../fasttrack/attempts.ts';
 
 /**
  * LỚP THƯỜNG (Foundation / Beginner / Elementary).
@@ -270,7 +271,7 @@ export function planRegularTests(p: Principal, classId: number) {
  */
 export function saveRegularScore(
   p: Principal, attemptId: number, skill: string,
-  patch: { score?: number | null; total?: number | null; takenOn?: string | null; note?: string | null },
+  patch: { score?: number | null; total?: number | null; note?: string | null },
 ) {
   const conn = db();
   const a = conn.prepare('SELECT * FROM assessment_attempts WHERE id = ?').get(attemptId) as any;
@@ -310,27 +311,22 @@ export function saveRegularScore(
     if (score > total) throw badRequest(`Số câu đúng (${score}) không thể lớn hơn tổng số câu (${total}).`);
   }
 
-  const takenOn = patch.takenOn !== undefined
-    ? patch.takenOn
-    : existing?.taken_on ?? (a.lrw_scheduled_at ? String(a.lrw_scheduled_at).slice(0, 10) : null);
-  if (takenOn && !isIsoDate(takenOn)) throw badRequest('Ngày làm bài không hợp lệ.');
-
   return tx(() => {
     if (existing) {
       conn
         .prepare(
-          `UPDATE assessment_scores SET raw_score=?, raw_total=?, taken_on=?, entered_by=?, entered_at=?, note=?
+          `UPDATE assessment_scores SET raw_score=?, raw_total=?, entered_by=?, entered_at=?, note=?
             WHERE id=?`,
         )
-        .run(score ?? null, total ?? null, takenOn, p.userId, nowIso(),
+        .run(score ?? null, total ?? null, p.userId, nowIso(),
              patch.note !== undefined ? patch.note : existing.note ?? null, existing.id);
     } else {
       conn
         .prepare(
-          `INSERT INTO assessment_scores (attempt_id, skill, taken_on, raw_score, raw_total, entered_by, entered_at, note)
-           VALUES (?,?,?,?,?,?,?,?)`,
+          `INSERT INTO assessment_scores (attempt_id, skill, raw_score, raw_total, entered_by, entered_at, note)
+           VALUES (?,?,?,?,?,?,?)`,
         )
-        .run(attemptId, skill, takenOn, score ?? null, total ?? null, p.userId, nowIso(), patch.note ?? null);
+        .run(attemptId, skill, score ?? null, total ?? null, p.userId, nowIso(), patch.note ?? null);
     }
     const after = conn.prepare('SELECT * FROM assessment_scores WHERE attempt_id = ? AND skill = ?')
       .get(attemptId, skill);
@@ -383,7 +379,8 @@ export function refreshRegularOutcome(p: Principal, attemptId: number) {
     )
     .all(a.student_id, a.cycle_id ?? 0) as any[];
 
-  const detectedAt = (a.lrw_scheduled_at ?? '').slice(0, 10) || demoToday();
+  // Ngày phát hiện = thứ Hai của TUẦN bài kiểm tra; không còn ngày làm bài riêng.
+  const detectedAt = weekStartOf(a) ?? demoToday();
   for (const c of open) {
     const cat = c.category ?? categoryOf('academic', c.topic);
     if (!cat) continue;
@@ -527,7 +524,6 @@ export function regularSheet(p: Principal, classId: number, kind?: string) {
         studentId: a.student_id, studentName: a.full_name, studentCode: a.student_code,
         studentStatus: a.student_status,
         periodCode: a.period_code ?? null,
-        takenOn: rows.find((r) => r.taken_on)?.taken_on ?? null,
         status: a.status,
         result,
         caseId: c?.id ?? null, caseStatus: c?.status ?? null, caseLevel: c?.sos_level ?? null,

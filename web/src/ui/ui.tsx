@@ -274,3 +274,22 @@ export function BandCell({ cell, target }: {
     </span>
   );
 }
+
+/**
+ * DỰ KIẾN THI — nói đúng mức chắc chắn đang có, không nói hơn.
+ *
+ * Ba trạng thái và ba cách hiện khác nhau, cố ý:
+ *   đã có TUẦN   → "W2 FEB 2027" in đậm như một thông tin chắc chắn
+ *   mới có THÁNG → chữ thường kèm ghi chú "chưa xác định tuần", để người đọc biết là còn lỏng
+ *   chưa có gì   → một nhãn xám "Chưa xác định"
+ *
+ * Đây là chỗ duy nhất quyết định cách nói. Màn nào tự viết lấy thì sớm muộn sẽ có một màn
+ * hiện tháng thi như thể đã chốt ngày.
+ */
+export function ExamPlanText({ plan }: { plan?: { confidence: string; label: string } | null }) {
+  if (!plan || plan.confidence === 'none') return <Pill tone="muted">Chưa xác định</Pill>;
+  if (plan.confidence === 'month') {
+    return <span className="text-slate-300" title="Chưa chốt tuần thi nên chưa đếm ngược">{plan.label}</span>;
+  }
+  return <span className="text-slate-100 font-medium">{plan.label}</span>;
+}

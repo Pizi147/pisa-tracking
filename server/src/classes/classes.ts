@@ -8,6 +8,7 @@ import { badRequest, notFound, nowIso } from '../util.ts';
 import { can, classScopeSql, editableSkills, isCoreTeacherOf, require_, scopeFor, type Principal } from '../permissions.ts';
 import { writeAudit } from '../platform/audit.ts';
 import { loadBundle, resultOf, skillCells } from '../fasttrack/attempts.ts';
+import { examPlanOf } from '../fasttrack/cycles.ts';
 import { currentSosByStudent } from '../cases/cases.ts';
 import { allProgrammes, evaluateRegular, programmeOfClass } from '../normal/regular.ts';
 import { classProgressMany, missingForClasses, missingForStudent } from './schedule.ts';
@@ -29,8 +30,6 @@ export type ClassSummary = {
   needScores: number;
   /** Số CASE SOS chưa xử lý xong — đếm case, không phải học viên. */
   openCases: number;
-  /** Số LƯỢT đã chốt tuần nhưng chưa có ngày thực tế. */
-  needsDate: number;
   programmeCode: string | null;
   programmeName: string | null;
   scoringMode: string | null;
@@ -122,7 +121,7 @@ export function listClassSummaries(p: Principal, f: { branchId?: number; q?: str
   const ph = ids.map(() => '?').join(',');
   const attempts = conn
     .prepare(
-      `SELECT a.id, a.class_id, a.status, a.planned_period_id, a.lrw_scheduled_at, a.speaking_scheduled_at,
+      `SELECT a.id, a.class_id, a.status, a.planned_period_id,
               a.deadline_override, a.target_at_attempt, a.attempt_no,
               rp.week_start AS period_start, rp.week_end AS period_end
          FROM assessment_attempts a
@@ -135,7 +134,6 @@ export function listClassSummaries(p: Principal, f: { branchId?: number; q?: str
 
   const needScores = new Map<number, number>();
   const openCases = new Map<number, number>();
-  const needsDate = new Map<number, number>();
   /*
    * Lớp FT và lớp thường có bộ kỹ năng khác nhau, nên phải hỏi quyền theo đúng bộ của lớp
    * đó — hỏi bằng bộ kỹ năng IELTS cho một lớp Foundation thì luôn ra rỗng.
@@ -154,14 +152,6 @@ export function listClassSummaries(p: Principal, f: { branchId?: number; q?: str
 
   const bump = (m: Map<number, number>, k: number) => m.set(k, (m.get(k) ?? 0) + 1);
   for (const a of attempts) {
-    /*
-     * "Cần cập nhật ngày MT" chỉ tính khi ĐÃ ĐẾN tuần MT đó (hoặc đã qua mà vẫn thiếu).
-     * MT còn cách vài tuần thì chưa ai phải làm gì — đếm nó vào đây chỉ tạo một con số to
-     * lúc nào cũng đỏ, và người dùng học cách phớt lờ badge.
-     */
-    if (a.status === 'planned' && !a.lrw_scheduled_at && a.period_start && a.period_start <= today) {
-      bump(needsDate, a.class_id);
-    }
     const c = bundle.cases.get(a.id);
     if (c && c.sos_level > 0 && c.status !== 'done') bump(openCases, a.class_id);
 
@@ -174,7 +164,7 @@ export function listClassSummaries(p: Principal, f: { branchId?: number; q?: str
        * đã tới ngày làm. Thiếu điểm KHÁC trượt, nên chỉ đếm là việc phải làm chứ không kết luận.
        */
       const rows = bundle.scores.get(a.id) ?? [];
-      const dueForEntry = !!a.lrw_scheduled_at && String(a.lrw_scheduled_at).slice(0, 10) <= today;
+      const dueForEntry = !!a.period_start && a.period_start <= today;
       const missingMine = editable.some((k) => {
         const row = rows.find((r) => r.skill === k);
         return row?.raw_score === null || row?.raw_score === undefined;
@@ -184,7 +174,7 @@ export function listClassSummaries(p: Principal, f: { branchId?: number; q?: str
     }
 
     const cells = skillCells(p, a, bundle.scores.get(a.id) ?? [], bundle.skips.get(a.id) ?? [], today);
-    if (cells.some((x) => x.canEdit && x.band === null && (x.progress === 'performed' || x.progress === 'due'))) {
+    if (cells.some((x) => x.canEdit && x.band === null && x.progress === 'due')) {
       bump(needScores, a.class_id);
     }
   }
@@ -202,7 +192,6 @@ export function listClassSummaries(p: Principal, f: { branchId?: number; q?: str
     studentCount: c.student_count,
     needScores: needScores.get(c.id) ?? 0,
     openCases: openCases.get(c.id) ?? 0,
-    needsDate: needsDate.get(c.id) ?? 0,
     /*
      * Kỹ năng người ĐANG XEM dạy ở chính lớp này.
      *
@@ -249,12 +238,14 @@ export function classRoster(p: Principal, classId: number, q?: string) {
   const conn = db();
   const params: unknown[] = [classId];
   let sql = `SELECT s.*, e.status AS enrollment_status,
-                    cy.id AS cycle_id, cy.seq AS cycle_seq, cy.route, cy.target_score, cy.exam_date,
-                    cy.start_period_id, cy.exam_month, sp.week_start AS start_week
+                    cy.id AS cycle_id, cy.seq AS cycle_seq, cy.route, cy.target_score,
+                    cy.start_period_id, cy.exam_month, cy.exam_period_id, sp.week_start AS start_week,
+                    ep.code AS exam_week_code, ep.week_start AS exam_week_start
                FROM enrollments e
                JOIN students s ON s.id = e.student_id
                LEFT JOIN learning_cycles cy ON cy.student_id = s.id AND cy.status = 'active'
                LEFT JOIN report_periods sp ON sp.id = cy.start_period_id
+               LEFT JOIN report_periods ep ON ep.id = cy.exam_period_id
               WHERE e.class_id = ? AND e.status = 'active'`;
   if (q?.trim()) {
     sql += ' AND (s.full_name LIKE ? OR s.normalized_name LIKE ? OR s.student_code LIKE ?)';
@@ -321,14 +312,12 @@ export function classRoster(p: Principal, classId: number, q?: string) {
          * target. Chỉ có đạt/trượt theo tỷ lệ số câu đúng, và số môn trượt ra mức SOS.
          */
         const r = evaluateRegular(prog!.skills, scores);
-        const dueForEntry = !!a.lrw_scheduled_at && String(a.lrw_scheduled_at).slice(0, 10) <= today;
+        const dueForEntry = !!a.period_start && a.period_start <= today;
         return {
           id: a.id, attemptNo: a.attempt_no, cycleSeq: a.cycle_seq, route: null,
           kind: a.kind, kindLabel: ATTEMPT_KIND_SHORT[a.kind as AttemptKind] ?? a.kind,
-          periodCode: a.period_code, lrwScheduledAt: a.lrw_scheduled_at,
+          periodCode: a.period_code,
           status: a.status,
-          needsDate: a.status === 'planned' && !a.lrw_scheduled_at
-            && !!a.week_start && a.week_start <= today,
           scoredRequired: r.scored, requiredCount: r.required,
           // Lớp thường KHÔNG có Overall IELTS — để trống thay vì dựng một con số giả.
           overall: null,
@@ -351,11 +340,8 @@ export function classRoster(p: Principal, classId: number, q?: string) {
       const cells = skillCells(p, a, scores, skips, today);
       return {
         id: a.id, attemptNo: a.attempt_no, cycleSeq: a.cycle_seq, route: a.route,
-        periodCode: a.period_code, lrwScheduledAt: a.lrw_scheduled_at,
+        periodCode: a.period_code,
         status: a.status,
-        // Cùng quy tắc thời điểm với badge của lớp: chưa đến tuần thì chưa phải việc.
-        needsDate: a.status === 'planned' && !a.lrw_scheduled_at
-          && !!a.week_start && a.week_start <= today,
         kind: a.kind, kindLabel: `MT${a.attempt_no}`,
         scoredRequired: result.scoredRequired, requiredCount: result.required.length,
         overall: result.overall,
@@ -370,7 +356,7 @@ export function classRoster(p: Principal, classId: number, q?: string) {
         passedCount: null, failedCount: result.failedCount,
         sosLevel: result.sosLevel, evaluable: result.evaluable,
         caseStatus: c?.status ?? null,
-        myPending: cells.filter((x) => x.canEdit && x.band === null && (x.progress === 'performed' || x.progress === 'due'))
+        myPending: cells.filter((x) => x.canEdit && x.band === null && x.progress === 'due')
           .map((x) => x.skill),
         overdueSkills: cells.filter((x) => x.overdue).length,
       };
@@ -408,13 +394,14 @@ export function classRoster(p: Principal, classId: number, q?: string) {
       /** Mức SOS đang có hiệu lực và số case chưa xong — hai con số của cột Trạng thái. */
       sosLevel: openSos.get(s.id) ?? null,
       openCases: openCaseCount.get(s.id) ?? 0,
-      examDate: s.exam_date ?? null,
+      /** DỰ KIẾN THI ở đúng mức chắc chắn đang có: tuần, hoặc tháng, hoặc chưa biết. */
+      examPlan: examPlanOf(s),
       archived: !!s.archived_at,
       cycle: s.cycle_id
         ? {
           id: s.cycle_id, seq: s.cycle_seq, route: s.route,
-          target: s.target_score, examDate: s.exam_date,
-          examMonth: s.exam_month ?? null,
+          target: s.target_score,
+          examMonth: s.exam_month ?? null, examPeriodId: s.exam_period_id ?? null,
           startPeriodId: s.start_period_id ?? null, startWeek: s.start_week ?? null,
         }
         : null,
@@ -427,7 +414,7 @@ export function classRoster(p: Principal, classId: number, q?: string) {
       missing: missingForStudent({
         cycle: s.cycle_id ? { start_period_id: s.start_period_id, exam_month: s.exam_month, target_score: s.target_score } : null,
         student: { dob: s.dob },
-        isFulltime: !!isFt,
+        isFastTrack: !!isFt,
       }),
       latest: done.length ? done[done.length - 1] : null,
       next: timeline.find((t) => t.status === 'planned') ?? null,
@@ -464,7 +451,7 @@ export function classOverview(p: Principal, classId: number) {
 
   return {
     id: cls.id, code: cls.code, kind: cls.kind, route: cls.route,
-    isFulltime: cls.is_fulltime === 1, startDate: cls.start_date, note: cls.note,
+    isFastTrack: cls.is_fast_track === 1, startDate: cls.start_date, note: cls.note,
     branchId: cls.branch_id, branchCode: cls.branch_code, branchName: cls.branch_name,
     programme: prog ? { code: prog.code, name: prog.name, weeks: prog.weeks, scoringMode: prog.scoringMode } : null,
     summary,
@@ -473,7 +460,6 @@ export function classOverview(p: Principal, classId: number) {
     skillTeachers: assignments.filter((a) => a.skill).map((a) => ({ skill: a.skill, id: a.user_id, name: a.full_name })),
     viewer: {
       canPlanWeek: can(p, PERMISSIONS.PLAN_WEEK, { classId }),
-      canSetDate: can(p, PERMISSIONS.SCHEDULE_DATE, { classId }),
       canAddStudents: can(p, PERMISSIONS.STUDENT_EDIT, { classId }),
       canAssign: can(p, PERMISSIONS.CLASS_ASSIGN, { classId }),
       /** Sửa tuần khai giảng và hai mốc kiểm tra — Admin CN và Quản lý CN (mục 7.6). */

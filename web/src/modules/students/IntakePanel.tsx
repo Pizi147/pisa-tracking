@@ -11,7 +11,7 @@ type Row = {
   baselineScore?: number | string | null;
   target?: number | string | null;
   /* Vẫn nhận được nếu bảng dán có các cột cũ, nhưng lưới nhập tay không bày ra nữa. */
-  examDate?: string; route?: string; consultant?: string; mockWeeks?: string[];
+  examMonth?: string; route?: string; consultant?: string; mockWeeks?: string[];
 };
 type PreviewRow = Row & {
   row: number; classId: number | null;
@@ -22,7 +22,7 @@ type PreviewRow = Row & {
 /**
  * NĂM CỘT, KHÔNG HƠN — owner chốt 13/09/2026 (mục 7.4).
  *
- * Ba cột bỏ đi và lý do: lộ trình suy từ chính lớp em vào; ngày thi IELTS lúc nhập chưa ai
+ * Ba cột bỏ đi và lý do: lộ trình suy từ chính lớp em vào; kỳ thi IELTS lúc nhập chưa ai
  * biết; tư vấn viên không đổi được quyết định nào trong phần mềm này. Bảng dán có các cột
  * đó thì hệ thống vẫn đọc — chỉ là không bắt ai gõ tay nữa.
  */

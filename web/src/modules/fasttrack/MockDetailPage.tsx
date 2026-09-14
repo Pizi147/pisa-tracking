@@ -3,10 +3,11 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
-import { Card, Empty, ErrorState, Pill, SectionNote, Skeleton } from '../../ui/ui.tsx';
+import { Card, Empty, ErrorState, ExamPlanText, Pill, SectionNote, Skeleton } from '../../ui/ui.tsx';
+import type { ExamPlan } from '../../../../shared/domain/index.ts';
 import { ConfirmDialog, Modal } from '../../ui/Drawer.tsx';
 import {
-  CriteriaButton, DeadlinePill, RawScoreInput, TakenOnInput, useSaveScore, type Cell,
+  CriteriaButton, DeadlinePill, RawScoreInput, useSaveScore, type Cell,
 } from './ScoreEntry.tsx';
 import {
   attemptStatusLabel, attemptStatusTone, fmtBand, fmtDate, fmtDateTime,
@@ -19,17 +20,16 @@ import { usePeriods } from '../../ui/Filters.tsx';
 type Detail = {
   id: number;
   student: { id: number; name: string; code: string };
-  cycle: { id: number; seq: number; route: string | null; target: number | null; examDate: string | null };
+  cycle: { id: number; seq: number; route: string | null; target: number | null; examPlan: ExamPlan };
   classId: number | null; classCode: string | null; branchName: string | null;
   attemptNo: number; targetAtAttempt: number | null; studyWeekHint: number | null;
   period: { id: number; code: string; weekStart: string; weekEnd: string; range: string } | null;
-  lrwScheduledAt: string | null; speakingScheduledAt: string | null;
   deadlineOverride: { date: string; reason: string | null; at: string | null; by: string | null } | null;
   status: string; cancelReason: string | null; note: string | null;
   result: any; cells: Cell[]; skips: any[];
   history: any[]; sosCase: any; caseSteps: any[]; caseHistory: any[]; tasks: any[];
   viewer: {
-    canPlanWeek: boolean; canSetDate: boolean; canSetSpeaking: boolean; canCancel: boolean;
+    canPlanWeek: boolean; canCancel: boolean;
     canSkipSkill: boolean; canOverrideDeadline: boolean;
     canEditSos: boolean; editableSkills: string[];
   };
@@ -43,7 +43,6 @@ export default function MockDetailPage() {
   const { save } = useSaveScore(Number(id), reload);
   const [showHistory, setShowHistory] = useState(false);
   const [weekOpen, setWeekOpen] = useState(false);
-  const [scheduleOpen, setScheduleOpen] = useState(false);
   const [deadlineOpen, setDeadlineOpen] = useState(false);
   const [cancelOpen, setCancelOpen] = useState(false);
 
@@ -75,11 +74,8 @@ export default function MockDetailPage() {
           {d.viewer.canPlanWeek && d.status !== 'cancelled' && (
             <button className="btn" onClick={() => setWeekOpen(true)}>Đổi tuần</button>
           )}
-          {(d.viewer.canSetDate || d.viewer.canSetSpeaking) && d.status !== 'cancelled' && (
-            <button className="btn" onClick={() => setScheduleOpen(true)}>Cập nhật ngày</button>
-          )}
           {d.viewer.canCancel && d.status === 'planned' && (
-            <button className="btn btn-danger" onClick={() => setCancelOpen(true)}>Huỷ lịch</button>
+            <button className="btn btn-danger" onClick={() => setCancelOpen(true)}>Huỷ lượt MT</button>
           )}
           {d.viewer.canCancel && d.status === 'cancelled' && (
             <button className="btn" onClick={async () => {
@@ -91,23 +87,18 @@ export default function MockDetailPage() {
       </div>
 
       {/* 1. Nhận diện, lịch và target */}
-      <Card title="Kế hoạch và lịch">
+      <Card title="Kế hoạch MT">
         <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 m-0">
           <Info label="Trạng thái">
             <Pill tone={attemptStatusTone(d.status)}>{attemptStatusLabel(d.status)}</Pill>
           </Info>
-          <Info label="Tuần kế hoạch">
+          <Info label="Tuần MT">
             {d.period
               ? <>{d.period.code} <span className="text-slate-500 text-xs">({d.period.range})</span></>
               : <Pill tone="muted">Chưa chốt tuần</Pill>}
           </Info>
-          <Info label="Buổi chính L/R/W">
-            {d.lrwScheduledAt ? fmtSlot(d.lrwScheduledAt) : <Pill tone="warn">Chưa chốt ngày</Pill>}
-          </Info>
-          <Info label="Buổi Speaking">
-            {d.speakingScheduledAt
-              ? fmtSlot(d.speakingScheduledAt)
-              : <span className="text-slate-500 text-xs">Theo buổi chính</span>}
+          <Info label="Dự kiến thi">
+            <ExamPlanText plan={d.cycle.examPlan} />
           </Info>
           <Info label="Target lúc đánh giá">{fmtBand(d.targetAtAttempt)}</Info>
           <Info label="Kỳ vọng MT này">{fmtBand(d.result.expectation)}</Info>
@@ -119,7 +110,7 @@ export default function MockDetailPage() {
               Hạn riêng {fmtDate(d.deadlineOverride.date)}{d.deadlineOverride.by ? ` · ${d.deadlineOverride.by}` : ''}
             </Pill>
           ) : (
-            <span className="text-xs text-slate-500">Đang dùng hạn mặc định: thứ Tư tuần kế tiếp sau buổi mock.</span>
+            <span className="text-xs text-slate-500">Đang dùng hạn mặc định: hết thứ Tư của tuần kế tiếp sau tuần MT.</span>
           )}
           {d.viewer.canOverrideDeadline && (
             <button className="btn btn-sm" onClick={() => setDeadlineOpen(true)}>
@@ -150,8 +141,6 @@ export default function MockDetailPage() {
                 <thead>
                   <tr>
                     <th className="th">Kỹ năng</th>
-                    <th className="th">Lịch</th>
-                    <th className="th">Ngày mock thực tế</th>
                     <th className="th">Số câu đúng / tiêu chí</th>
                     <th className="th">Band</th>
                     <th className="th">Tiến độ</th>
@@ -163,10 +152,6 @@ export default function MockDetailPage() {
                   {[...raw, ...crit].map((c) => (
                     <tr key={c.skill} className={c.required ? '' : 'row-muted'}>
                       <td className="td text-slate-200 whitespace-nowrap">{skillLabel(c.skill)}</td>
-                      <td className="td text-xs text-slate-400 whitespace-nowrap">{fmtSlot(c.scheduledAt)}</td>
-                      <td className="td">
-                        <TakenOnInput cell={c} onSave={(p) => save(c.skill, p)} />
-                      </td>
                       <td className="td">
                         {!c.required
                           ? <span className="text-slate-500 text-xs">—</span>
@@ -240,9 +225,8 @@ export default function MockDetailPage() {
             )}
             {!d.result.complete && (
               <SectionNote>
-                Chưa chốt kết quả vì còn thiếu kỹ năng bắt buộc. Speaking có thể mock khác ngày với buổi chính —
-                mỗi kỹ năng có lịch và hạn nhập riêng. Ô trống là chưa nhập, không phải điểm 0.
-                “Đã mock, chưa nhập điểm” khác hẳn “chưa mock”.
+                Chưa chốt kết quả vì còn thiếu kỹ năng bắt buộc. Cả lượt MT thuộc MỘT tuần và dùng
+                CHUNG một hạn nhập điểm. Ô trống là chưa nhập, không phải điểm 0.
               </SectionNote>
             )}
             {d.result.complete && !d.result.evaluable && (
@@ -330,7 +314,6 @@ export default function MockDetailPage() {
 
       <WeekModal open={weekOpen} onClose={() => setWeekOpen(false)} attemptId={d.id}
         currentPeriodId={d.period?.id ?? null} onDone={reload} />
-      <ScheduleModal open={scheduleOpen} onClose={() => setScheduleOpen(false)} detail={d} onDone={reload} />
       <DeadlineModal open={deadlineOpen} onClose={() => setDeadlineOpen(false)} detail={d} onDone={reload} />
       <CancelDialog open={cancelOpen} onClose={() => setCancelOpen(false)} attemptId={d.id} onDone={reload} />
     </div>
@@ -426,71 +409,6 @@ function WeekModal({ open, onClose, attemptId, currentPeriodId, onDone }: {
   );
 }
 
-/** Cập nhật NGÀY thực tế trong tuần kế hoạch. Ngày ngoài tuần bị từ chối. */
-function ScheduleModal({ open, onClose, detail, onDone }: {
-  open: boolean; onClose: () => void; detail: Detail; onDone: () => void;
-}) {
-  const toast = useToast();
-  const [lrw, setLrw] = useState(detail.lrwScheduledAt ?? '');
-  const [speaking, setSpeaking] = useState(detail.speakingScheduledAt ?? '');
-  const [reason, setReason] = useState('');
-  const [busy, setBusy] = useState(false);
-  // Chỉ NGÀY. Dữ liệu cũ có thể còn đuôi giờ nên cắt luôn khi đổ vào ô nhập.
-  const toDay = (v: string) => (v ? v.slice(0, 10) : '');
-  const fromLocal = (v: string) => (v ? v.replace('T', ' ') : null);
-
-  return (
-    <Modal open={open} onClose={onClose} title="Cập nhật ngày trong tuần" width="max-w-lg"
-      footer={<>
-        <button className="btn" onClick={onClose} disabled={busy}>Đóng</button>
-        <button className="btn btn-primary" disabled={busy} onClick={async () => {
-          setBusy(true);
-          try {
-            const body: any = { reason };
-            if (detail.viewer.canSetDate) body.lrwAt = fromLocal(lrw);
-            body.speakingAt = fromLocal(speaking);
-            await api.post(`/attempts/${detail.id}/schedule`, body);
-            invalidate('/attempts'); invalidate('/overview');
-            onDone(); onClose(); toast.push('ok', 'Đã chốt lịch');
-          } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
-        }}>{busy ? 'Đang lưu…' : 'Lưu lịch'}</button>
-      </>}>
-      <div className="space-y-3">
-        {detail.period ? (
-          <p className="text-xs text-slate-400">
-            Tuần đã duyệt: <strong className="text-slate-200">{detail.period.code}</strong>{' '}
-            ({fmtDate(detail.period.weekStart)} – {fmtDate(detail.period.weekEnd)}). Ngày phải nằm trong tuần này.
-          </p>
-        ) : (
-          <p className="text-xs text-amber-200">Chưa có tuần kế hoạch. Quản lý cần chốt tuần trước.</p>
-        )}
-        <label className="block">
-          <span className="label">Ngày buổi chính — Listening / Reading / Writing</span>
-          <input type="date" className="field" value={toDay(lrw)} disabled={!detail.viewer.canSetDate}
-            onChange={(e) => setLrw(e.target.value)} />
-          {!detail.viewer.canSetDate && (
-            <span className="block text-[11px] text-slate-500 mt-1">
-              Chỉ Admin chi nhánh và Quản lý cập nhật được ngày buổi chính.
-            </span>
-          )}
-        </label>
-        <label className="block">
-          <span className="label">Ngày buổi Speaking (có thể khác ngày)</span>
-          <input type="date" className="field" value={toDay(speaking)}
-            onChange={(e) => setSpeaking(e.target.value)} />
-        </label>
-        <label className="block">
-          <span className="label">Lý do / ghi chú</span>
-          <input className="field" value={reason} onChange={(e) => setReason(e.target.value)} />
-        </label>
-        <SectionNote>
-          Speaking khác ngày vẫn thuộc CÙNG lượt MT{detail.attemptNo} này, không tách thành lượt riêng.
-          Muốn xếp ngoài tuần thì đề nghị Quản lý đổi tuần kế hoạch trước.
-        </SectionNote>
-      </div>
-    </Modal>
-  );
-}
 
 /** Hạn nhập điểm riêng, thay hạn mặc định. Chỉ một hạn có hiệu lực tại một thời điểm. */
 function DeadlineModal({ open, onClose, detail, onDone }: {
@@ -533,7 +451,7 @@ function DeadlineModal({ open, onClose, detail, onDone }: {
             placeholder="Ví dụ: giáo viên Writing nghỉ phép" />
         </label>
         <SectionNote>
-          Hạn mặc định là thứ Tư của tuần kế tiếp sau buổi mock của từng kỹ năng. Đặt hạn riêng sẽ thay
+          Hạn mặc định là hết thứ Tư của tuần kế tiếp sau tuần MT. Đặt hạn riêng sẽ thay
           hạn mặc định cho cả lượt này; hết ngày hạn mới tính quá hạn.
           Phạm vi hạn riêng theo từng kỹ năng còn chờ chốt (O02).
         </SectionNote>
@@ -550,7 +468,7 @@ function CancelDialog({ open, onClose, attemptId, onDone }: {
   const [busy, setBusy] = useState(false);
   return (
     <ConfirmDialog
-      open={open} onClose={onClose} danger busy={busy} title="Huỷ lịch Mock" confirmLabel="Huỷ lịch"
+      open={open} onClose={onClose} danger busy={busy} title="Huỷ lượt Mock Test" confirmLabel="Huỷ lượt"
       body={
         <div className="space-y-2">
           <p>Huỷ vẫn giữ nguyên lịch sử và không đổi số MT. Lượt đã huỷ không tính vào “đã xong” hay “thiếu điểm”.</p>
@@ -562,7 +480,7 @@ function CancelDialog({ open, onClose, attemptId, onDone }: {
         try {
           await api.post(`/attempts/${attemptId}/cancel`, { reason });
           invalidate('/attempts'); invalidate('/overview');
-          onDone(); onClose(); toast.push('ok', 'Đã huỷ lịch');
+          onDone(); onClose(); toast.push('ok', 'Đã huỷ lượt MT');
         } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
       }}
     />

@@ -3,14 +3,15 @@ import { addDays, nowIso, parseDate } from '../util.ts';
 import { demoToday } from '../demoConfig.ts';
 
 /**
- * Mã tuần dạng "W1 SEP".
+ * Mã tuần dạng "W1 SEP 2026".
  *
  * Tuần chạy từ thứ Hai đến Chủ nhật. Tuần thuộc THÁNG CÓ NHIỀU NGÀY HƠN, tương đương
  * tháng chứa ngày thứ Năm của tuần đó. Các tuần thuộc cùng một tháng được đánh số theo
  * thứ tự thời gian, bắt đầu từ W1.
  *
- * Mã tuần chỉ là NHÃN. Khoá thật luôn là ngày thứ Hai (có cả năm), vì "W1 SEP" lặp lại
- * mỗi năm.
+ * Mã tuần chỉ là NHÃN, nhưng NHÃN PHẢI CÓ NĂM. "W1 SEP" lặp lại mỗi năm, mà lịch MT và
+ * dự kiến thi hay rơi sang năm sau, nên thiếu năm là người đọc hiểu nhầm. Khoá thật vẫn
+ * luôn là ngày thứ Hai.
  */
 
 const MONTH_CODE = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
@@ -50,7 +51,7 @@ export type WeekInfo = {
   year: number;
   month: number;
   weekNo: number;
-  code: string;        // "W1 SEP"
+  code: string;        // "W1 SEP 2026"
   range: string;       // "28/09 – 04/10"
 };
 
@@ -62,13 +63,13 @@ export function weekInfo(date: string): WeekInfo {
   const f = (s: string) => `${s.slice(8, 10)}/${s.slice(5, 7)}`;
   return {
     weekStart, weekEnd, year, month, weekNo,
-    code: `W${weekNo} ${MONTH_CODE[month - 1]}`,
+    code: `W${weekNo} ${MONTH_CODE[month - 1]} ${year}`,
     range: `${f(weekStart)} – ${f(weekEnd)}`,
   };
 }
 
 /**
- * Hạn nhập điểm MẶC ĐỊNH: thứ Tư của tuần KẾ TIẾP sau tuần diễn ra buổi mock.
+ * Hạn nhập điểm MẶC ĐỊNH: thứ Tư của tuần KẾ TIẾP sau tuần MT.
  * Hết ngày thứ Tư mới tính quá hạn, không đánh quá hạn ngay đầu ngày.
  */
 export function defaultScoreDeadline(baseDate: string): string {
@@ -233,19 +234,20 @@ export function periodById(id: number) {
 }
 
 /**
- * Hạn có hiệu lực của một kỹ năng.
+ * Hạn có hiệu lực của một lượt MT.
  *
- * Chỉ MỘT hạn có hiệu lực tại một thời điểm: nếu lượt MT có hạn tự đặt thì dùng hạn đó,
- * không thì lấy hạn mặc định tính từ tuần diễn ra buổi mock của chính kỹ năng đó
- * (LRW theo lịch chính, Speaking theo lịch Speaking).
+ * Đếm từ TUẦN của lượt MT, không từ ngày của từng kỹ năng — hệ thống không còn giữ ngày
+ * thi cụ thể nữa. Cả năm kỹ năng trong một lượt vì thế dùng CHUNG một hạn, đúng như cách
+ * người ta nói ngoài đời: "điểm MT tuần này phải xong trước thứ Tư tuần sau".
  *
- * Chưa có ngày lịch nào thì KHÔNG có hạn — trả về null thay vì dựng một hạn giả.
+ * Có hạn tự đặt thì hạn đó thắng. Chưa xếp tuần thì KHÔNG có hạn — trả về null thay vì
+ * dựng một hạn giả.
  */
 export function effectiveDeadline(input: {
-  scheduledFor: string | null;
+  weekStart: string | null;
   override: string | null;
 }): { date: string | null; source: 'override' | 'default' | 'none' } {
   if (input.override) return { date: input.override, source: 'override' };
-  if (input.scheduledFor) return { date: defaultScoreDeadline(input.scheduledFor), source: 'default' };
+  if (input.weekStart) return { date: defaultScoreDeadline(input.weekStart), source: 'default' };
   return { date: null, source: 'none' };
 }

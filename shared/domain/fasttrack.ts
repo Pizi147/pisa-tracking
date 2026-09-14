@@ -137,15 +137,39 @@ export const SKILL_REQUIREMENT_LABEL: Record<SkillRequirement, string> = {
   required: 'Có mock', skipped: 'Không mock',
 };
 
-/** Tiến độ thực hiện của một kỹ năng — tách rõ "chưa mock" với "đã mock, chưa nhập điểm". */
-export const SKILL_PROGRESS = ['skipped', 'not_scheduled', 'upcoming', 'due', 'performed', 'scored'] as const;
+/**
+ * Tiến độ thực hiện của một kỹ năng, đếm theo TUẦN của lượt MT.
+ *
+ * Bỏ trạng thái "đã mock, chưa nhập điểm": nó chỉ tồn tại được khi hệ thống giữ ngày làm
+ * bài của riêng từng kỹ năng, mà từ vòng 5 thì một lượt MT chỉ có một tuần. Nay chỉ còn
+ * hai câu hỏi thật: đã tới tuần chưa, và đã có điểm chưa.
+ */
+export const SKILL_PROGRESS = ['skipped', 'not_scheduled', 'upcoming', 'due', 'scored'] as const;
 export type SkillProgress = (typeof SKILL_PROGRESS)[number];
 export const SKILL_PROGRESS_LABEL: Record<SkillProgress, string> = {
   skipped: 'Không mock',
-  not_scheduled: 'Chờ xếp lịch',
-  upcoming: 'Sắp tới',
-  /** Đã tới ngày trong lịch nhưng chưa có ghi nhận nào — ngày trôi qua KHÔNG chứng minh đã mock. */
-  due: 'Chưa ghi nhận',
-  performed: 'Đã mock, chưa nhập điểm',
+  not_scheduled: 'Chưa xếp tuần',
+  upcoming: 'Tuần sau',
+  /** Tuần MT đã tới hoặc đã qua mà ô điểm còn trống. */
+  due: 'Chưa nhập điểm',
   scored: 'Đã có điểm',
+};
+
+/**
+ * DỰ KIẾN THI của một lộ trình, ở đúng mức chắc chắn mà người ta thực sự biết.
+ *
+ *   `week`  đã chốt tuần   → "W2 FEB 2027"                  — có đếm ngược
+ *   `month` mới biết tháng → "FEB 2027 · chưa xác định tuần" — KHÔNG đếm ngược
+ *   `none`  chưa biết gì   → "Chưa xác định"
+ *
+ * Máy chủ dựng sẵn cả nhãn lẫn mức chắc chắn, để không màn hình nào tự bịa ra cách nói
+ * riêng của mình — và để không chỗ nào lỡ hiển thị "còn 134 ngày" từ một cái tháng.
+ */
+export type ExamPlan = {
+  confidence: 'week' | 'month' | 'none';
+  periodId: number | null;
+  /** Thứ Hai của tuần thi. CHỈ có khi `confidence = 'week'`. */
+  weekStart: string | null;
+  month: string | null;
+  label: string;
 };

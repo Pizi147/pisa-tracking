@@ -21,7 +21,7 @@ import { reportEditWindow } from '../platform/week.ts';
 export type Signal = {
   /** Khoá ổn định theo nguồn, không đổi giữa các lần tải trang. */
   key: string;
-  kind: 'no_plan' | 'need_date' | 'date_overdue' | 'missing_scores' | 'sos_open' | 'report_due';
+  kind: 'no_plan' | 'missing_scores' | 'sos_open' | 'report_due';
   label: string;
   count: number;
   /** Vai trò nào cần xử lý — để mỗi người thấy đúng việc của mình. */
@@ -84,37 +84,15 @@ export function signalsFor(p: Principal, f: { branchId?: number | null; periodId
          'manager', 'info', `/hoc-vien?view=no_plan&branchId=${r.branch_id}`);
   }
 
-  // 2 & 3. Chưa cập nhật ngày MT — chỉ tính khi ĐÃ ĐẾN tuần MT đó.
-  for (const r of conn
-    .prepare(
-      `SELECT c.branch_id,
-              SUM(CASE WHEN rp.week_end >= ? THEN 1 ELSE 0 END) AS this_week,
-              SUM(CASE WHEN rp.week_end <  ? THEN 1 ELSE 0 END) AS overdue
-         FROM assessment_attempts a
-         JOIN classes c ON c.id = a.class_id
-         JOIN report_periods rp ON rp.id = a.planned_period_id
-         JOIN students s ON s.id = a.student_id
-        WHERE a.status='planned' AND a.lrw_scheduled_at IS NULL
-          AND s.archived_at IS NULL AND rp.week_start <= ? AND c.branch_id IN (${ph})
-        GROUP BY c.branch_id`,
-    )
-    .all(today, today, today, ...ids) as any[]) {
-    push('date_overdue', r.branch_id, r.overdue ?? 0,
-         `${r.overdue} MT tuần trước vẫn chưa có ngày thực tế`,
-         'branch_admin', 'danger', `/hoc-vien?view=need_date&branchId=${r.branch_id}`);
-    push('need_date', r.branch_id, r.this_week ?? 0,
-         `${r.this_week} MT tuần này cần cập nhật ngày thực tế`,
-         'branch_admin', 'warn', `/hoc-vien?view=need_date&branchId=${r.branch_id}`);
-  }
-
-  // 4. Thiếu điểm — tự hết khi giáo viên nhập đủ, không có nút đóng giả.
+  // 2. Thiếu điểm — tự hết khi giáo viên nhập đủ, không có nút đóng giả.
   for (const r of conn
     .prepare(
       `SELECT c.branch_id, COUNT(*) AS n FROM assessment_attempts a
          JOIN classes c ON c.id = a.class_id
          JOIN students s ON s.id = a.student_id
+         JOIN report_periods rp ON rp.id = a.planned_period_id
         WHERE a.status != 'cancelled' AND s.archived_at IS NULL AND c.branch_id IN (${ph})
-          AND a.lrw_scheduled_at IS NOT NULL AND a.lrw_scheduled_at <= ?
+          AND a.planned_period_id IS NOT NULL AND rp.week_start <= ?
           AND (SELECT COUNT(*) FROM assessment_scores sc
                 WHERE sc.attempt_id = a.id AND sc.band IS NOT NULL) <
               (4 - (SELECT COUNT(*) FROM attempt_skill_skips k WHERE k.attempt_id = a.id))
@@ -125,7 +103,7 @@ export function signalsFor(p: Principal, f: { branchId?: number | null; periodId
          'teacher', 'warn', `/hoc-vien?view=missing_scores&branchId=${r.branch_id}`);
   }
 
-  // 5. Case SOS chưa xử lý xong — đếm CASE, không phải học viên.
+  // 3. Case SOS chưa xử lý xong — đếm CASE, không phải học viên.
   for (const r of conn
     .prepare(
       `SELECT c.branch_id, COUNT(*) AS n FROM sos_cases sc
@@ -139,7 +117,7 @@ export function signalsFor(p: Principal, f: { branchId?: number | null; periodId
          'manager', 'danger', `/hoc-vien?view=sos_open&branchId=${r.branch_id}`);
   }
 
-  // 6. Báo cáo tuần còn trống — chỉ nhắc khi cửa sổ cập nhật ĐANG MỞ.
+  // 4. Báo cáo tuần còn trống — chỉ nhắc khi cửa sổ cập nhật ĐANG MỞ.
   if (f.periodId) {
     const period = conn.prepare('SELECT * FROM report_periods WHERE id = ?').get(f.periodId) as any;
     if (period && reportEditWindow(period, today).open) {

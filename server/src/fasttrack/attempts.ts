@@ -15,11 +15,11 @@ import {
 } from './scoring.ts';
 import { effectiveDeadline, isOverdue, weekInfo } from '../platform/week.ts';
 import { stepsFor, upsertCaseForResult } from '../cases/sos.ts';
-import { currentCycle, cycleById, nextAttemptNo } from './cycles.ts';
+import { currentCycle, cycleById, examPlanOf, nextAttemptNo } from './cycles.ts';
 import { allProgrammes, evaluateRegular, regularDeadline } from '../normal/regular.ts';
 
 export type ScoreRow = {
-  id: number; skill: EntrySkill; taken_on: string | null;
+  id: number; skill: EntrySkill;
   raw_score: number | null; raw_total: number | null;
   c1: number | null; c2: number | null; c3: number | null; c4: number | null;
   band: number | null; result_date: string | null; note: string | null;
@@ -132,20 +132,28 @@ export function resultOf(attempt: any, rows?: ScoreRow[], skips?: AssessedSkill[
 }
 
 /**
- * Buổi mock của một kỹ năng: Speaking theo lịch Speaking, còn lại theo lịch chính LRW.
- * Trả về ngày (bỏ phần giờ) để tính hạn.
+ * Tuần của một lượt MT — thứ Hai của tuần kế hoạch, hoặc null nếu chưa xếp tuần.
+ *
+ * Cả năm kỹ năng trong một lượt dùng chung tuần này. Không còn ngày riêng cho Speaking.
+ *
+ * Hàng thô của hầu hết truy vấn đã JOIN sẵn bảng tuần (`period_start` / `week_start`), nên
+ * dùng luôn giá trị đó. CHỈ khi hàng không mang tuần theo thì mới hỏi lại cơ sở dữ liệu —
+ * hỏi theo từng dòng trong một vòng lặp là cách chắc chắn biến một màn thành trăm câu lệnh.
  */
-export function scheduledDateFor(attempt: any, skill: EntrySkill): string | null {
-  const raw = skill === 'speaking' ? attempt.speaking_scheduled_at : attempt.lrw_scheduled_at;
-  return raw ? String(raw).slice(0, 10) : null;
+export function weekStartOf(attempt: any): string | null {
+  if (attempt.period_start) return attempt.period_start;
+  if (attempt.week_start) return attempt.week_start;
+  if (!attempt.planned_period_id) return null;
+  const row = db()
+    .prepare('SELECT week_start FROM report_periods WHERE id = ?')
+    .get(attempt.planned_period_id) as any;
+  return row?.week_start ?? null;
 }
 
 export type SkillCell = {
   skill: EntrySkill;
   assessedSkill: AssessedSkill;
   required: boolean;
-  scheduledAt: string | null;
-  takenOn: string | null;
   rawScore: number | null;
   criteria: [number | null, number | null, number | null, number | null];
   band: number | null;
@@ -161,29 +169,26 @@ export type SkillCell = {
 
 export function skillCells(p: Principal, attempt: any, rows: ScoreRow[], skips: AssessedSkill[], today = demoToday()): SkillCell[] {
   const editable = attempt.class_id ? editableSkills(p, attempt.class_id, ENTRY_SKILLS) : [];
+  const weekStart = weekStartOf(attempt);
   return ENTRY_SKILLS.map((skill) => {
     const assessed = assessedSkillOf(skill);
     const required = !skips.includes(assessed);
     const row = rows.find((r) => r.skill === skill);
-    const scheduled = scheduledDateFor(attempt, skill);
     const dl = required && attempt.status !== 'cancelled'
-      ? effectiveDeadline({ scheduledFor: row?.taken_on ?? scheduled, override: attempt.deadline_override })
+      ? effectiveDeadline({ weekStart, override: attempt.deadline_override })
       : { date: null, source: 'none' as const };
 
-    // "Đã mock" chỉ được kết luận khi CÓ ghi nhận, không suy từ việc ngày lịch đã trôi qua.
+    // Chỉ hai câu hỏi: tuần MT đã tới chưa, và ô điểm đã có chưa.
     let progress: SkillProgress;
     if (!required) progress = 'skipped';
     else if (row?.band !== null && row?.band !== undefined) progress = 'scored';
-    else if (row?.taken_on) progress = 'performed';
-    else if (!scheduled) progress = 'not_scheduled';
-    else progress = scheduled > today ? 'upcoming' : 'due';
+    else if (!weekStart) progress = 'not_scheduled';
+    else progress = weekStart > today ? 'upcoming' : 'due';
 
     return {
       skill,
       assessedSkill: assessed,
       required,
-      scheduledAt: scheduled,
-      takenOn: row?.taken_on ?? null,
       rawScore: row?.raw_score ?? null,
       criteria: [row?.c1 ?? null, row?.c2 ?? null, row?.c3 ?? null, row?.c4 ?? null],
       band: row?.band ?? null,
@@ -208,13 +213,13 @@ export type AttemptFilters = {
   classId?: number;
   studentId?: number;
   status?: string;
-  need?: 'my_scores' | 'missing_scores' | 'overdue' | 'sos_open' | 'needs_date';
+  need?: 'my_scores' | 'missing_scores' | 'overdue' | 'sos_open';
   q?: string;
 };
 
 const ATTEMPT_SELECT = `
   SELECT a.*, s.full_name, s.student_code,
-         cy.route, cy.target_score, cy.exam_date, cy.seq AS cycle_seq,
+         cy.route, cy.target_score, cy.exam_month, cy.exam_period_id, cy.seq AS cycle_seq,
          c.code AS class_code, c.programme_code, c.branch_id, b.name AS branch_name, b.code AS branch_code,
          pr.code AS period_code, pr.week_start AS period_start, pr.week_end AS period_end
     FROM assessment_attempts a
@@ -275,8 +280,7 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
     if (regularSkills) {
       const r = evaluateRegular(regularSkills, scores);
       const editable = a.class_id ? editableSkills(p, a.class_id, regularSkills) : [];
-      const dueForEntry = !!a.lrw_scheduled_at && String(a.lrw_scheduled_at).slice(0, 10) <= today
-        && a.status !== 'cancelled';
+      const dueForEntry = !!a.period_start && a.period_start <= today && a.status !== 'cancelled';
       const c = bundle.cases.get(a.id);
       return {
         id: a.id,
@@ -289,12 +293,6 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
         period: a.planned_period_id
           ? { id: a.planned_period_id, code: a.period_code, weekStart: a.period_start, weekEnd: a.period_end }
           : null,
-        lrwScheduledAt: a.lrw_scheduled_at,
-        speakingScheduledAt: null,
-        needsDate: a.status === 'planned' && !a.lrw_scheduled_at
-          && !!a.period_start && a.period_start <= today,
-        dateOverdue: a.status === 'planned' && !a.lrw_scheduled_at
-          && !!a.period_end && a.period_end < today,
         status: a.status,
         // Lớp thường không có kỳ vọng theo target, không có band, không có Overall.
         expectation: null, bands: null, overall: null,
@@ -328,7 +326,6 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
         caseLevel: c?.sos_level ?? null,
         caseFollowUp: c?.followUp ?? null,
         canPlanWeek: can(p, PERMISSIONS.PLAN_WEEK, { classId: a.class_id }),
-        canSetDate: can(p, PERMISSIONS.SCHEDULE_DATE, { classId: a.class_id }),
         activeSkillCount: regularSkills.length,
       };
     }
@@ -351,22 +348,10 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
       route: a.route,
       attemptNo: a.attempt_no,
       target: a.target_at_attempt,
-      /** Tuần kế hoạch — có thể đã chốt tuần mà chưa có ngày. */
+      /** TUẦN của lượt MT. Đây là thứ duy nhất định vị lượt này trên lịch. */
       period: a.planned_period_id
         ? { id: a.planned_period_id, code: a.period_code, weekStart: a.period_start, weekEnd: a.period_end }
         : null,
-      lrwScheduledAt: a.lrw_scheduled_at,
-      speakingScheduledAt: a.speaking_scheduled_at,
-      /*
-       * "Cần cập nhật ngày" là VIỆC CẦN LÀM, nên chỉ đúng khi đã ĐẾN tuần MT đó.
-       * Hôm nay W2 SEP mà MT3 xếp W4 OCT thì chưa ai phải làm gì — surface nó chỉ tạo
-       * một danh sách dài vô nghĩa mà Admin chi nhánh học cách phớt lờ.
-       */
-      needsDate: a.status === 'planned' && !a.lrw_scheduled_at
-        && !!a.period_start && a.period_start <= today,
-      /** Đã qua tuần MT mà vẫn chưa có ngày — quá hạn nghĩa vụ hàng tuần của Admin chi nhánh. */
-      dateOverdue: a.status === 'planned' && !a.lrw_scheduled_at
-        && !!a.period_end && a.period_end < today,
       status: a.status,
       expectation: result.expectation,
       bands: result.bands,
@@ -381,17 +366,16 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
       scopeNote: result.scopeNote,
       overdueSkills: cells.filter((c) => c.overdue).length,
       myPendingSkills: cells
-        .filter((c) => c.canEdit && c.band === null && (c.progress === 'performed' || c.progress === 'due'))
+        .filter((c) => c.canEdit && c.band === null && c.progress === 'due')
         .map((c) => c.skill),
       myPendingDetail: cells
-        .filter((c) => c.canEdit && c.band === null && (c.progress === 'performed' || c.progress === 'due'))
+        .filter((c) => c.canEdit && c.band === null && c.progress === 'due')
         .map((c) => ({ skill: c.skill, deadline: c.deadline })),
       caseStatus: bundle.cases.get(a.id)?.status ?? null,
       caseId: bundle.cases.get(a.id)?.id ?? null,
       caseLevel: bundle.cases.get(a.id)?.sos_level ?? null,
       caseFollowUp: bundle.cases.get(a.id)?.followUp ?? null,
       canPlanWeek: can(p, PERMISSIONS.PLAN_WEEK, { classId: a.class_id }),
-      canSetDate: can(p, PERMISSIONS.SCHEDULE_DATE, { classId: a.class_id }),
       activeSkillCount: active.length,
     };
   });
@@ -401,7 +385,6 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
     case 'missing_scores': mapped = mapped.filter((m) => m.status !== 'cancelled' && !m.complete && m.scoredRequired > 0); break;
     case 'overdue': mapped = mapped.filter((m) => m.overdueSkills > 0); break;
     case 'sos_open': mapped = mapped.filter((m) => m.caseId && m.caseStatus !== 'done'); break;
-    case 'needs_date': mapped = mapped.filter((m) => m.needsDate); break;
   }
   return { rows: mapped, scopeEmpty: false };
 }
@@ -446,7 +429,7 @@ export function attemptDetail(p: Principal, attemptId: number) {
   return {
     id: a.id,
     student: { id: a.student_id, name: a.full_name, code: a.student_code },
-    cycle: { id: a.cycle_id, seq: a.cycle_seq, route: a.route, target: a.target_score, examDate: a.exam_date },
+    cycle: { id: a.cycle_id, seq: a.cycle_seq, route: a.route, target: a.target_score, examPlan: examPlanOf(a) },
     classId: a.class_id, classCode: a.class_code, branchId: a.branch_id, branchName: a.branch_name,
     attemptNo: a.attempt_no,
     targetAtAttempt: a.target_at_attempt,
@@ -455,8 +438,6 @@ export function attemptDetail(p: Principal, attemptId: number) {
       ? { id: a.planned_period_id, code: a.period_code, weekStart: a.period_start, weekEnd: a.period_end,
           range: weekInfo(a.period_start).range }
       : null,
-    lrwScheduledAt: a.lrw_scheduled_at,
-    speakingScheduledAt: a.speaking_scheduled_at,
     deadlineOverride: a.deadline_override
       ? {
           date: a.deadline_override,
@@ -503,9 +484,6 @@ export function attemptDetail(p: Principal, attemptId: number) {
       : [],
     viewer: {
       canPlanWeek: can(p, PERMISSIONS.PLAN_WEEK, { classId: a.class_id }),
-      canSetDate: can(p, PERMISSIONS.SCHEDULE_DATE, { classId: a.class_id }),
-      canSetSpeaking: can(p, PERMISSIONS.SCHEDULE_DATE, { classId: a.class_id })
-        || can(p, PERMISSIONS.SCHEDULE_SPEAKING, { classId: a.class_id }),
       canCancel: can(p, PERMISSIONS.ATTEMPT_CANCEL, { classId: a.class_id }),
       canSkipSkill: can(p, PERMISSIONS.ATTEMPT_SKIP_SKILL, { classId: a.class_id }),
       canOverrideDeadline: can(p, PERMISSIONS.DEADLINE_OVERRIDE, { classId: a.class_id }),
@@ -518,8 +496,7 @@ export function attemptDetail(p: Principal, attemptId: number) {
 // ---------------------------------------------------------------- tạo lượt
 
 /**
- * Tạo một lượt MT. Quản lý chốt TUẦN ở bước này; ngày thực tế do Admin chi nhánh hoặc Quản lý cập nhật sau,
- * nên `periodId` là bắt buộc còn ngày thì không.
+ * Tạo một lượt MT. Quản lý chốt TUẦN — và tuần là thứ duy nhất phải khai.
  */
 export function createAttempt(p: Principal, input: {
   studentId: number; cycleId?: number; classId?: number | null; attemptNo?: number;
@@ -589,7 +566,7 @@ function loadAttempt(attemptId: number) {
   return a;
 }
 
-/** Quản lý chốt TUẦN. Có thể chốt tuần khi chưa có ngày — không tự điền ngày giả. */
+/** Quản lý chốt TUẦN của một lượt MT. Đây là thao tác xếp lịch DUY NHẤT của một lượt. */
 export function setPlanningWeek(p: Principal, attemptId: number, periodId: number, reason?: string) {
   const a = loadAttempt(attemptId);
   require_(p, PERMISSIONS.PLAN_WEEK, { classId: a.class_id, studentId: a.student_id },
@@ -604,22 +581,10 @@ export function setPlanningWeek(p: Principal, attemptId: number, periodId: numbe
     const old = a.planned_period_id
       ? (conn.prepare('SELECT code FROM report_periods WHERE id = ?').get(a.planned_period_id) as any)?.code
       : null;
-    // Ngày đã chốt nằm ngoài tuần mới thì BỎ ra để Admin CN xếp lại, không tự dịch bảy ngày.
-    const outside = (v: string | null) => !!v && (String(v).slice(0, 10) < period.week_start || String(v).slice(0, 10) > period.week_end);
-    const dropLrw = outside(a.lrw_scheduled_at);
-    const dropSpeaking = outside(a.speaking_scheduled_at);
-
     conn
-      .prepare(
-        `UPDATE assessment_attempts SET planned_period_id = ?,
-           lrw_scheduled_at = CASE WHEN ? THEN NULL ELSE lrw_scheduled_at END,
-           speaking_scheduled_at = CASE WHEN ? THEN NULL ELSE speaking_scheduled_at END,
-           updated_at = ? WHERE id = ?`,
-      )
-      .run(periodId, dropLrw ? 1 : 0, dropSpeaking ? 1 : 0, nowIso(), attemptId);
+      .prepare('UPDATE assessment_attempts SET planned_period_id = ?, updated_at = ? WHERE id = ?')
+      .run(periodId, nowIso(), attemptId);
     logSchedule(attemptId, { action: 'week_set', field: 'planned_period', oldValue: old, newValue: period.code, reason, actor: p.userId });
-    if (dropLrw) logSchedule(attemptId, { action: 'lrw_set', field: 'lrw_scheduled_at', oldValue: a.lrw_scheduled_at, newValue: null, reason: 'Ngày cũ nằm ngoài tuần mới, cần xếp lại', actor: p.userId });
-    if (dropSpeaking) logSchedule(attemptId, { action: 'speaking_set', field: 'speaking_scheduled_at', oldValue: a.speaking_scheduled_at, newValue: null, reason: 'Ngày cũ nằm ngoài tuần mới, cần xếp lại', actor: p.userId });
 
     addJourney({
       studentId: a.student_id, eventType: 'mock_rescheduled', eventDate: period.week_start,
@@ -627,83 +592,8 @@ export function setPlanningWeek(p: Principal, attemptId: number, periodId: numbe
       refTable: 'assessment_attempts', refId: attemptId, createdBy: p.userId,
     });
     writeAudit({ actorUserId: p.userId, action: 'attempt.plan_week', entityType: 'assessment_attempt', entityId: attemptId,
-      entityLabel: `MT${a.attempt_no}`, before: { period: old }, after: { period: period.code, droppedDates: dropLrw || dropSpeaking } });
-    return { ok: true, droppedDates: dropLrw || dropSpeaking };
-  });
-}
-
-/**
- * CẬP NHẬT NGÀY MT THỰC TẾ trong tuần kế hoạch đã chốt.
- *
- * Đây không phải "chốt lịch": bộ phận xếp lịch đã bố trí buổi học từ Chủ nhật tuần trước.
- * Việc ở đây là ghi lại ngày học viên THỰC SỰ làm bài, theo lịch tổng của chi nhánh — và
- * cập nhật lại khi em nghỉ và được dời.
- *
- * CHỈ NGÀY, KHÔNG GIỜ. Giờ không giúp ích cho việc theo dõi tiến độ, chỉ thêm một ô phải nhập.
- * Ngày ngoài tuần kế hoạch bị từ chối — muốn xếp ngoài tuần phải để Quản lý đổi tuần trước,
- * không âm thầm thay tuần qua đường cập nhật ngày.
- */
-export function setSchedule(
-  p: Principal,
-  attemptId: number,
-  input: { lrwAt?: string | null; speakingAt?: string | null; reason?: string },
-) {
-  const a = loadAttempt(attemptId);
-  if (a.status === 'cancelled') throw badRequest('Lượt này đã huỷ. Hãy mở lại trước khi xếp lịch.');
-  const touchLrw = input.lrwAt !== undefined;
-  const touchSpeaking = input.speakingAt !== undefined;
-  if (!touchLrw && !touchSpeaking) throw badRequest('Không có thay đổi lịch nào.');
-
-  // Ngày buổi L/R/W: chỉ Admin chi nhánh và Quản lý. Giáo viên L/R/W không sửa được ngày,
-  // GVCN cũng không — chủ nhiệm không phải là quyền lịch.
-  if (touchLrw) {
-    require_(p, PERMISSIONS.SCHEDULE_DATE, { classId: a.class_id, studentId: a.student_id },
-      'Chỉ Admin chi nhánh và Quản lý mới cập nhật được ngày buổi L/R/W.');
-  }
-  // Speaking thường diễn ra khác ngày với L/R/W, nên GV Speaking của chính học viên đó
-  // cũng cập nhật được ngày Speaking.
-  if (touchSpeaking && !can(p, PERMISSIONS.SCHEDULE_DATE, { classId: a.class_id, studentId: a.student_id })) {
-    require_(p, PERMISSIONS.SCHEDULE_SPEAKING, { classId: a.class_id, studentId: a.student_id },
-      'Chỉ Admin chi nhánh, Quản lý hoặc giáo viên Speaking của lớp mới cập nhật được ngày Speaking.');
-  }
-
-  const period = a.planned_period_id
-    ? (db().prepare('SELECT * FROM report_periods WHERE id = ?').get(a.planned_period_id) as any)
-    : null;
-  if (!period) throw badRequest('Chưa có tuần kế hoạch. Quản lý cần chốt tuần trước khi xếp ngày.');
-
-  const check = (v: string | null | undefined, label: string) => {
-    if (v === null || v === undefined || v === '') return null;
-    // Cắt về NGÀY. Dữ liệu cũ có thể còn kèm giờ; đọc vào thì bỏ giờ đi luôn.
-    const day = String(v).slice(0, 10);
-    if (!isIsoDate(day)) throw badRequest(`${label} không hợp lệ.`);
-    if (day < period.week_start || day > period.week_end) {
-      throw badRequest(
-        `${label} nằm ngoài tuần ${period.code} (${period.week_start} → ${period.week_end}). `
-        + 'Muốn xếp ngoài tuần thì đề nghị Quản lý đổi tuần kế hoạch trước.',
-      );
-    }
-    return day;
-  };
-
-  const nextLrw = touchLrw ? check(input.lrwAt, 'Ngày buổi L/R/W') : a.lrw_scheduled_at;
-  const nextSpeaking = touchSpeaking ? check(input.speakingAt, 'Ngày Speaking') : a.speaking_scheduled_at;
-
-  return tx(() => {
-    db()
-      .prepare('UPDATE assessment_attempts SET lrw_scheduled_at = ?, speaking_scheduled_at = ?, updated_at = ? WHERE id = ?')
-      .run(nextLrw, nextSpeaking, nowIso(), attemptId);
-    if (touchLrw && nextLrw !== a.lrw_scheduled_at) {
-      logSchedule(attemptId, { action: 'lrw_set', field: 'lrw_scheduled_at', oldValue: a.lrw_scheduled_at, newValue: nextLrw, reason: input.reason, actor: p.userId });
-    }
-    if (touchSpeaking && nextSpeaking !== a.speaking_scheduled_at) {
-      logSchedule(attemptId, { action: 'speaking_set', field: 'speaking_scheduled_at', oldValue: a.speaking_scheduled_at, newValue: nextSpeaking, reason: input.reason, actor: p.userId });
-    }
-    writeAudit({ actorUserId: p.userId, action: 'attempt.schedule', entityType: 'assessment_attempt', entityId: attemptId,
-      entityLabel: `MT${a.attempt_no}`,
-      before: { lrw: a.lrw_scheduled_at, speaking: a.speaking_scheduled_at },
-      after: { lrw: nextLrw, speaking: nextSpeaking } });
-    return db().prepare('SELECT * FROM assessment_attempts WHERE id = ?').get(attemptId);
+      entityLabel: `MT${a.attempt_no}`, before: { period: old }, after: { period: period.code } });
+    return { ok: true };
   });
 }
 
@@ -789,8 +679,6 @@ export function reopenAttempt(p: Principal, attemptId: number) {
 // ---------------------------------------------------------------- nhập điểm
 
 export type ScorePatch = {
-  /** Ngày MOCK thực tế của kỹ năng này. Không phải ngày lịch — nhập điểm không sửa được lịch. */
-  takenOn?: string | null;
   rawScore?: number | null;
   rawTotal?: number | null;
   criteria?: (number | null)[];
@@ -841,13 +729,8 @@ export function saveScore(p: Principal, attemptId: number, skill: string, patch:
       .get(attemptId, skill) as ScoreRow | undefined;
     const before = existing ? { ...existing } : null;
 
-    // Chưa ghi ngày mock thì lấy theo lịch của chính kỹ năng đó.
-    const fallback = scheduledDateFor(a, skill as EntrySkill);
-    const takenOn = patch.takenOn !== undefined ? patch.takenOn : existing?.taken_on ?? fallback;
-    if (takenOn && !isIsoDate(takenOn)) throw badRequest('Ngày mock không hợp lệ.');
     const resultDate = patch.resultDate !== undefined ? patch.resultDate : existing?.result_date ?? null;
     if (resultDate && !isIsoDate(resultDate)) throw badRequest('Ngày có kết quả không hợp lệ.');
-    if (takenOn && resultDate && resultDate < takenOn) throw badRequest('Ngày có kết quả không thể trước ngày mock.');
 
     let raw: number | null = existing?.raw_score ?? null;
     let total: number | null = existing?.raw_total ?? null;
@@ -876,19 +759,19 @@ export function saveScore(p: Principal, attemptId: number, skill: string, patch:
     if (existing) {
       conn
         .prepare(
-          `UPDATE assessment_scores SET taken_on=?, raw_score=?, raw_total=?, c1=?, c2=?, c3=?, c4=?, band=?,
+          `UPDATE assessment_scores SET raw_score=?, raw_total=?, c1=?, c2=?, c3=?, c4=?, band=?,
                                         result_date=?, entered_by=?, entered_at=?, note=? WHERE id=?`,
         )
-        .run(takenOn, raw, total, crit[0], crit[1], crit[2], crit[3], band, resultDate, p.userId, nowIso(),
+        .run(raw, total, crit[0], crit[1], crit[2], crit[3], band, resultDate, p.userId, nowIso(),
              patch.note !== undefined ? patch.note : existing.note ?? null, existing.id);
     } else {
       conn
         .prepare(
-          `INSERT INTO assessment_scores (attempt_id, skill, taken_on, raw_score, raw_total, c1, c2, c3, c4, band,
+          `INSERT INTO assessment_scores (attempt_id, skill, raw_score, raw_total, c1, c2, c3, c4, band,
                                           result_date, entered_by, entered_at, note)
-           VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+           VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
         )
-        .run(attemptId, skill, takenOn, raw, total, crit[0], crit[1], crit[2], crit[3], band,
+        .run(attemptId, skill, raw, total, crit[0], crit[1], crit[2], crit[3], band,
              resultDate, p.userId, nowIso(), patch.note ?? null);
     }
 
@@ -936,8 +819,6 @@ export function classScoreSheet(p: Principal, classId: number, periodId: number 
         studentCode: a.student_code,
         attemptNo: a.attempt_no,
         status: a.status,
-        lrwScheduledAt: a.lrw_scheduled_at,
-        speakingScheduledAt: a.speaking_scheduled_at,
         cells: skillCells(p, a, scores, skips),
         result: resultOf(a, scores, skips),
       };

@@ -15,10 +15,10 @@ import { useSession } from '../../lib/session.tsx';
 
 type Overview = {
   id: number; code: string; kind: string; route: string | null;
-  isFulltime: boolean; startDate: string | null; note: string | null;
+  isFastTrack: boolean; startDate: string | null; note: string | null;
   branchId: number; branchCode: string; branchName: string;
   summary: {
-    studentCount: number; needScores: number; openCases: number; needsDate: number;
+    studentCount: number; needScores: number; openCases: number;
     /* Tiến độ lớp và những thứ còn thiếu — dùng chung một bộ với danh sách lớp. */
     progressLabel: string | null; phase: string; phaseLabel: string;
     currentWeek: number | null; totalWeeks: number | null;
@@ -31,7 +31,7 @@ type Overview = {
   skillTeachers: { skill: string; id: number; name: string }[];
   programme: { code: string; name: string; weeks: number | null; scoringMode: string } | null;
   viewer: {
-    canPlanWeek: boolean; canSetDate: boolean; canAddStudents: boolean; canAssign: boolean;
+    canPlanWeek: boolean; canAddStudents: boolean; canAssign: boolean;
     canEditProgress: boolean;
     editableSkills: string[]; isCoreTeacher: boolean;
   };
@@ -81,7 +81,6 @@ export default function ClassOverviewPage() {
   const jobs = [
     { n: s?.needScores ?? 0, label: 'cần nhập điểm MT', tone: 'warn' as const, view: 'my_scores' },
     { n: s?.openCases ?? 0, label: 'case chưa xong', tone: 'danger' as const, view: 'case_working' },
-    { n: s?.needsDate ?? 0, label: 'cần cập nhật ngày MT', tone: 'info' as const, view: 'need_date' },
   ].filter((j) => j.n > 0);
 
   /* Một dòng cho mỗi kỹ năng của chương trình lớp — kể cả kỹ năng chưa có ai dạy. */
@@ -102,7 +101,7 @@ export default function ClassOverviewPage() {
             TIẾN ĐỘ LỚP ngay dưới tên lớp — với lớp Normal đây là câu quan trọng nhất của
             trang: đang ở tuần thứ mấy, sắp thi gì, hay đã hết chương trình.
 
-            Với lớp FT thì `progressLabel` chỉ là "Fulltime · LT1", đúng bằng chữ đã có ở
+            Với lớp FT thì `progressLabel` chỉ là "Fast Track · LT1", đúng bằng chữ đã có ở
             dòng ngay trên. Nên chỉ vẽ dòng này khi nó nói thêm được điều gì: lớp Normal có
             tuần học, hoặc lớp đang thiếu thông tin gì đó.
           */}

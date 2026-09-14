@@ -925,7 +925,7 @@ export function caseDetail(p: Principal, caseId: number) {
     .prepare('SELECT id, student_code, full_name, status FROM students WHERE id = ?')
     .get(c.eff_student_id) as any;
   const cycle = c.eff_cycle_id
-    ? conn.prepare('SELECT id, seq, route, target_score, exam_date FROM learning_cycles WHERE id = ?')
+    ? conn.prepare('SELECT id, seq, route, target_score, exam_month, exam_period_id FROM learning_cycles WHERE id = ?')
         .get(c.eff_cycle_id) as any
     : null;
 
@@ -1176,7 +1176,7 @@ export function listCases(p: Principal, f: CaseFilters = {}) {
               COALESCE(a.class_id, cur.class_id) AS eff_class_id,
               COALESCE(ac.branch_id, cc.branch_id) AS eff_branch_id,
               COALESCE(ac.code, cc.code) AS class_code,
-              COALESCE(ac.is_fulltime, cc.is_fulltime) AS class_is_ft,
+              COALESCE(ac.is_fast_track, cc.is_fast_track) AS class_is_ft,
               s.full_name, s.student_code,
               a.attempt_no, a.kind AS attempt_kind,
               u.full_name AS reporter_name,
@@ -1402,21 +1402,22 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
 
   /*
    * ĐIỂM HAI LƯỢT GẦN NHẤT của từng ô nhập điểm, để nói được "tăng hay giảm".
-   * Chỉ lấy lượt đã có ngày làm bài và chưa bị huỷ — lượt mới xếp lịch chưa nói gì về em.
+   * Chỉ lấy lượt đã có điểm và chưa bị huỷ — lượt mới xếp tuần chưa nói gì về em.
    */
   const scoreRows = conn
     .prepare(
-      `SELECT a.attempt_no, a.id AS attempt_id, a.lrw_scheduled_at, a.target_at_attempt,
+      `SELECT a.attempt_no, a.id AS attempt_id, rp.code AS period_code, a.target_at_attempt,
               sc.skill, sc.band
          FROM assessment_attempts a
          JOIN assessment_scores sc ON sc.attempt_id = a.id
+         LEFT JOIN report_periods rp ON rp.id = a.planned_period_id
         WHERE a.student_id = ? AND COALESCE(a.cycle_id, 0) = ?
           AND a.status != 'cancelled' AND sc.band IS NOT NULL
         ORDER BY a.attempt_no`,
     )
     .all(studentId, cycle?.id ?? 0) as any[];
 
-  type Point = { attemptNo: number; attemptId: number; band: number; on: string | null; expectation: number | null };
+  type Point = { attemptNo: number; attemptId: number; band: number; week: string | null; expectation: number | null };
   const byCategory = new Map<string, Point[]>();
   for (const r of scoreRows) {
     const cat = categoryOf('academic', r.skill);
@@ -1424,7 +1425,7 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
     const list = byCategory.get(cat) ?? [];
     list.push({
       attemptNo: r.attempt_no, attemptId: r.attempt_id, band: r.band,
-      on: (r.lrw_scheduled_at ?? '').slice(0, 10) || null,
+      week: r.period_code ?? null,
       expectation: r.target_at_attempt !== null && r.target_at_attempt !== undefined
         ? expectationFor(r.target_at_attempt, r.attempt_no) : null,
     });
@@ -1510,7 +1511,7 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
       /* Band MT gần nhất — hạng mục Ý thức/Khác không có điểm, để trống chứ không ghi 0. */
       band: latest?.band ?? null,
       bandAttemptNo: latest?.attemptNo ?? null,
-      bandOn: latest?.on ?? null,
+      bandWeek: latest?.week ?? null,
       expectation: latest?.expectation ?? null,
       /* So với LƯỢT TRƯỚC, không phải so với kỳ vọng — hai câu hỏi khác nhau. */
       delta: latest && prev ? Math.round((latest.band - prev.band) * 10) / 10 : null,

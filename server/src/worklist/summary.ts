@@ -139,7 +139,7 @@ export function branchSummary(p: Principal, f: { branchId?: number | null } = {}
   }>();
   const branches = conn.prepare('SELECT id, code, name FROM branches ORDER BY id').all() as any[];
   const classes = conn
-    .prepare(`SELECT id, code, branch_id, is_fulltime FROM classes WHERE status = 'active' ORDER BY branch_id, code`)
+    .prepare(`SELECT id, code, branch_id, is_fast_track FROM classes WHERE status = 'active' ORDER BY branch_id, code`)
     .all() as any[];
   if (byBranch) {
     for (const b of branches) {
@@ -149,7 +149,7 @@ export function branchSummary(p: Principal, f: { branchId?: number | null } = {}
   } else {
     for (const c of classes.filter((x) => x.branch_id === f.branchId)) {
       groups.set(`c${c.id}`, {
-        key: `c${c.id}`, label: c.code, branchId: c.branch_id, classId: c.id, isFt: !!c.is_fulltime,
+        key: `c${c.id}`, label: c.code, branchId: c.branch_id, classId: c.id, isFt: !!c.is_fast_track,
       });
     }
   }
