@@ -22,7 +22,7 @@ CREATE TABLE reporting_units (
 
 -- ===================== CHƯƠNG TRÌNH HỌC =====================
 -- FT dùng Mock Test và band IELTS. Lớp thường (FOU/BE/ELE) dùng bài kiểm tra chấm theo
--- số câu đúng trên tổng số câu, KHÔNG đi qua bảng quy đổi IELTS.
+-- điểm đạt trên tổng điểm, KHÔNG đi qua bảng quy đổi IELTS.
 --
 -- Để bảng riêng thay vì viết cứng trong code: sau này chương trình đổi, hoặc trung tâm mở
 -- một chương trình mới, thì thêm dữ liệu chứ không phải sửa mã nguồn. Nhưng CHỈ đến thế —
@@ -62,7 +62,7 @@ CREATE TABLE classes (
   -- còn mọi tính toán đọc cột này. Không đổi mã lớp lịch sử chỉ vì đổi mã chương trình.
   programme_code TEXT REFERENCES programmes(code),
   route TEXT,                         -- LT1 | LT2, chỉ áp dụng lớp FT
-  is_fulltime INTEGER NOT NULL DEFAULT 0,
+  is_fast_track INTEGER NOT NULL DEFAULT 0,
   start_date TEXT,
 
   /*
@@ -87,6 +87,15 @@ CREATE TABLE classes (
    */
   progress_week_override INTEGER,
   final_week_override INTEGER,
+
+  /*
+   * LỚP NÀY HỌC TIẾP TỪ LỚP NÀO — chuỗi chuyển tiếp FOU → BE → FT.
+   *
+   * Hết khoá thì KHÔNG đổi loại ngay trên lớp cũ: làm thế là xoá mất dấu giai đoạn trước,
+   * và ba tháng sau không ai trả lời được "hồi đó em học Foundation ở lớp nào". Thay vào
+   * đó mở một LỚP MỚI rồi chuyển học viên sang, và cột này giữ sợi dây giữa hai lớp.
+   */
+  previous_class_id INTEGER REFERENCES classes(id),
 
   status TEXT NOT NULL DEFAULT 'active',
   note TEXT,
@@ -284,14 +293,24 @@ CREATE TABLE learning_cycles (
   /*
    * THÁNG/NĂM DỰ KIẾN THI, dạng 'YYYY-MM'. CHỈ áp dụng lớp FT.
    *
-   * Tách khỏi `exam_date` vì hai thứ khác nhau về độ chắc chắn: tháng thi là thứ biết ngay
-   * lúc tư vấn và dùng để xếp lịch cả khoá; ngày thi cụ thể thì đăng ký xong mới có. Ép khai
-   * ngày ngay từ đầu thì người ta gõ bừa một ngày rồi không ai sửa lại.
+   * Tách khỏi `exam_period_id` vì hai thứ khác nhau về độ chắc chắn: tháng thi là thứ biết
+   * ngay lúc tư vấn và dùng để xếp lịch cả khoá; tuần thi thì gần ngày đăng ký mới chốt
+   * được. Ép khai tuần ngay từ đầu thì người ta chọn bừa một tuần rồi không ai sửa lại.
    *
    * Lớp Normal để TRỐNG và KHÔNG bị badge nhắc — các em đó chưa thi IELTS.
    */
   exam_month TEXT,
-  exam_date TEXT,                     -- ngày thi IELTS cụ thể, cập nhật sau
+
+  /*
+   * TUẦN DỰ KIẾN THI, khi đã biết chắc hơn tháng. Không lưu ngày cụ thể.
+   *
+   * Ba mức chắc chắn, hiển thị đúng như vậy:
+   *   có tuần    → "W2 FEB 2027"
+   *   chỉ tháng  → "FEB 2027 · chưa xác định tuần"
+   *   chưa gì cả → "Chưa xác định"
+   * Chỉ đếm ngược khi đã có tuần; biết mỗi tháng thì không đếm ngược.
+   */
+  exam_period_id INTEGER REFERENCES report_periods(id),
 
   -- ĐIỂM XUẤT PHÁT. Phải ghi rõ NGUỒN, vì "em vào học ở mức nào" là câu hỏi khác hẳn
   -- "bài Mock đầu tiên được mấy điểm". Không có căn cứ thì để trống và hiển thị "chưa rõ",
@@ -377,7 +396,7 @@ CREATE TABLE report_periods (
   year INTEGER NOT NULL,
   month INTEGER NOT NULL,
   week_no INTEGER NOT NULL,
-  code TEXT NOT NULL,                 -- "W1 SEP" — chỉ là nhãn hiển thị
+  code TEXT NOT NULL,                 -- "W1 SEP 2026" — nhãn hiển thị, luôn kèm năm
   created_at TEXT NOT NULL
 );
 CREATE INDEX idx_period_code ON report_periods(year, month, week_no);
@@ -409,10 +428,14 @@ CREATE TABLE assessment_attempts (
    */
   plan_source TEXT NOT NULL DEFAULT 'manual',
 
-  -- NGÀY–GIỜ cụ thể do Admin chi nhánh chốt trong tuần đã duyệt.
-  -- LRW đi chung một buổi; Speaking có thể khác ngày nhưng vẫn cùng lượt MT này.
-  lrw_scheduled_at TEXT,              -- 'YYYY-MM-DD' hoặc 'YYYY-MM-DD HH:MM'
-  speaking_scheduled_at TEXT,
+  /*
+   * KHÔNG có cột ngày thi cụ thể. Một lượt MT được xác định bằng ĐÚNG MỘT TUẦN.
+   *
+   * Trước đây có `lrw_scheduled_at` và `speaking_scheduled_at`; bỏ hẳn từ vòng 5 vì hai
+   * cột đó tạo ra một đầu việc "cập nhật ngày MT" mà không ai dùng tới: mọi báo cáo, hạn
+   * nhập điểm và bộ đếm đều đã đếm theo tuần. Cần biết buổi nào ngày nào thì xem lịch dạy
+   * của lớp, không phải bắt khai lại ở đây.
+   */
 
   status TEXT NOT NULL DEFAULT 'planned',         -- planned | done | cancelled
   cancel_reason TEXT,
@@ -462,16 +485,17 @@ CREATE TABLE attempt_skill_skips (
   UNIQUE (attempt_id, skill)
 );
 
--- Mỗi kỹ năng NHẬP ĐIỂM một dòng, có ngày mock thực tế riêng.
--- Có dòng với taken_on mà chưa có band = ĐÃ MOCK, CHƯA NHẬP ĐIỂM.
+-- Mỗi kỹ năng NHẬP ĐIỂM một dòng.
+-- Không có dòng, hoặc có dòng mà `band` còn trống = CHƯA NHẬP ĐIỂM.
 CREATE TABLE assessment_scores (
   id INTEGER PRIMARY KEY,
   attempt_id INTEGER NOT NULL REFERENCES assessment_attempts(id),
   skill TEXT NOT NULL,                -- listening | reading | writing1 | writing2 | speaking
-  taken_on TEXT,                      -- ngày MOCK thực tế của riêng kỹ năng này
-  raw_score INTEGER,                  -- FT: 0..40 với listening/reading. Lớp thường: số câu đúng.
-  -- Tổng số câu của chính đề đó. Lớp thường bắt buộc có, vì số câu KHÔNG cố định giữa các
-  -- kỹ năng và các đề; không có tổng thì không tính được tỷ lệ đạt.
+  -- Không lưu ngày làm bài của riêng kỹ năng: lượt MT thuộc về một TUẦN, và thời điểm cần
+  -- biết duy nhất là lúc điểm được nhập (`entered_at`).
+  raw_score INTEGER,                  -- FT: số câu đúng 0..40 với L/R. Normal: ĐIỂM ĐẠT.
+  -- TỔNG ĐIỂM của chính đề đó. Lớp Normal bắt buộc có, vì thang điểm KHÔNG cố định giữa các
+  -- môn và các đề; không có tổng thì không tính được tỷ lệ đạt.
   raw_total INTEGER,
   c1 REAL, c2 REAL, c3 REAL, c4 REAL, -- bốn tiêu chí, chỉ với writing1/writing2/speaking
   band REAL,                          -- band IELTS, hoặc NULL khi chưa nhập điểm
@@ -599,6 +623,27 @@ CREATE TABLE sos_cases (
   outcome_decision TEXT,
   outcome_by INTEGER REFERENCES users(id),
   outcome_at TEXT,
+
+  /*
+   * TÊN CASE DO NGƯỜI TẠO ĐẶT. Chỉ case tạo tay mới có.
+   *
+   * Case sinh từ điểm KHÔNG lưu tên: tên của nó suy ra lúc hiển thị từ lượt và hạng mục
+   * ("MT2 - Reading dưới kỳ vọng"), nên sửa điểm thì tên đổi theo thay vì để lại một cái
+   * tên cũ nói sai sự thật. Case tạo tay thì ngược lại — không có gì để suy ra, và người
+   * tạo biết rõ nhất nên gọi nó là gì.
+   */
+  title TEXT,
+
+  /*
+   * CASE NÀY TÁI DIỄN TỪ CASE NÀO — mục 7.5.
+   *
+   * Cùng một kỹ năng trượt lại sau khi case cũ ĐÃ ĐÓNG thì mở case MỚI chứ không mở lại
+   * case cũ: case cũ đã có kết luận của người phụ trách, và đè lên kết luận đó là xoá mất
+   * một quyết định có thật. Cột này giữ sợi dây để hồ sơ đọc được thành một mạch.
+   *
+   * Case cũ CÒN MỞ thì không sinh case mới — chỉ thêm một mốc và một chu kỳ xử lý tiếp.
+   */
+  previous_case_id INTEGER REFERENCES sos_cases(id),
 
   origin_kind TEXT NOT NULL DEFAULT 'mock',  -- mock | teacher_report | manager_task
   detected_at TEXT,                   -- ngày phát hiện vấn đề, khác ngày ghi vào hệ thống
@@ -752,6 +797,30 @@ CREATE TABLE case_interventions (
   approval_note TEXT,
 
   -- Khoá migration: mỗi cột cũ chỉ chuyển thành một tác động, chạy lại không nhân đôi.
+  /*
+   * CHU KỲ THỨ MẤY của phương án này, và chu kỳ hiện tại bắt đầu ngày nào.
+   *
+   * Một phương án chạy nhiều chu kỳ hai tuần: hết chu kỳ thì giáo viên cập nhật kết quả,
+   * chọn "theo dõi thêm" hoặc "tiếp tục", và một chu kỳ MỚI mở ra với hạn mới. Giữ số chu
+   * kỳ để lịch sử đọc được là "đã ba vòng mà vẫn chưa chuyển", chứ không phải một cái hạn
+   * bị đẩy lùi ba lần mà không ai biết.
+   *
+   * Hạn cũ KHÔNG bị xoá — nó nằm trong `case_followups` của chính chu kỳ đó.
+   */
+  cycle_no INTEGER NOT NULL DEFAULT 1,
+  cycle_started_on TEXT,
+
+  /*
+   * PHƯƠNG ÁN NÀY BỊ THAY BẰNG PHƯƠNG ÁN NÀO — mục 7.7 [4].
+   *
+   * Khi giáo viên đề xuất một phương án mới thay cho phương án cũ, phương án cũ được khép
+   * lại với lý do "Được thay thế". KHÔNG đánh dấu nó là "đã hoàn thành thành công" — nó
+   * không thành công, đó là cả lý do phải thay. Nhưng cũng không để nó treo vô hạn, vì
+   * case sẽ không bao giờ đủ điều kiện đóng.
+   */
+  closed_reason TEXT,                 -- NULL | 'superseded' | 'done'
+  superseded_by INTEGER REFERENCES case_interventions(id),
+
   migration_key TEXT UNIQUE,
   created_at TEXT NOT NULL,
   updated_at TEXT
@@ -779,6 +848,33 @@ CREATE TABLE case_followups (
   note TEXT,
   -- Bằng chứng kèm theo, ví dụ một lượt đánh giá sau đó.
   evidence_attempt_id INTEGER REFERENCES assessment_attempts(id),
+
+  /*
+   * BƯỚC TIẾP THEO người cập nhật đã chọn — complete | monitor | continue | propose | ask_manager.
+   *
+   * Ghi lại vì đây là QUYẾT ĐỊNH, không phải trạng thái suy được. Ba tháng sau, "lần đó em
+   * chưa tiến bộ và cô chọn tiếp tục phương án cũ" là một câu khác hẳn "lần đó em chưa tiến
+   * bộ và cô đổi sang tutor".
+   */
+  next_step TEXT,
+  /** Chu kỳ thứ mấy, và hạn của CHÍNH chu kỳ đó — không bị ghi đè khi mở chu kỳ mới. */
+  cycle_no INTEGER,
+  cycle_due TEXT,
+  /** Cập nhật sau hạn: giữ nguyên trong lịch sử, không reset để che quá hạn. */
+  late INTEGER NOT NULL DEFAULT 0,
+
+  /*
+   * ĐIỂM GIÁO VIÊN TỰ ĐÁNH GIÁ khi cập nhật kết quả (mục 7.7 [5] Option 2).
+   *
+   * JSON: [{ "skill": "reading", "score": 24, "total": 40 }] hoặc band cho lớp Fast Track.
+   *
+   * ĐÂY KHÔNG PHẢI ĐIỂM CHÍNH THỨC. Nó không ghi đè điểm entrance/mock/test, không đổi mức
+   * SOS, và trên biểu đồ tiến bộ nó dùng KÝ HIỆU KHÁC, không nối chung một đường với điểm
+   * chính thức. Cô đọc một bài viết rồi ước lượng 5.5 là một thông tin có ích, nhưng nó
+   * không cùng loại với 5.5 chấm trong phòng thi.
+   */
+  metrics TEXT,
+
   created_at TEXT NOT NULL
 );
 CREATE INDEX idx_followup_case ON case_followups(case_id);

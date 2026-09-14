@@ -1,0 +1,536 @@
+import { useState } from 'react';
+import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
+import { useApi } from '../../lib/useApi.ts';
+import { api, invalidate } from '../../lib/api.ts';
+import { useToast } from '../../ui/Toast.tsx';
+import { Card, Empty, ErrorState, ExamPlanText, Info as Tag, Level, Outcome, SectionNote, Skeleton, Status, Th} from '../../ui/ui.tsx';
+import type { ExamPlan } from '../../../../shared/domain/index.ts';
+import { ConfirmDialog, Modal } from '../../ui/Drawer.tsx';
+import {
+  CriteriaButton, DeadlinePill, RawScoreInput, useSaveScore, type Cell,
+} from './ScoreEntry.tsx';
+import {
+  attemptHref, attemptStatusLabel, attemptStatusTone, fmtBand, fmtDate, fmtDateTime,
+  progressLabel, progressTone, skillLabel, sosLabel, sosTone,
+} from '../../lib/format.ts';
+import { CasePanel } from '../cases/CasePanel.tsx';
+import { ASSESSED_SKILLS, ASSESSED_SKILL_LABEL } from '@shared/domain/index.ts';
+import { usePeriods } from '../../ui/Filters.tsx';
+
+type Detail = {
+  id: number;
+  /** `mock` với Fast Track; `progress` / `final` là bài của lớp Normal — màn khác hẳn. */
+  kind: string;
+  student: { id: number; name: string; code: string };
+  cycle: { id: number; seq: number; route: string | null; target: number | null; examPlan: ExamPlan };
+  classId: number | null; classCode: string | null; branchName: string | null;
+  attemptNo: number; targetAtAttempt: number | null; studyWeekHint: number | null;
+  period: { id: number; code: string; weekStart: string; weekEnd: string; range: string } | null;
+  deadlineOverride: { date: string; reason: string | null; at: string | null; by: string | null } | null;
+  status: string; cancelReason: string | null; note: string | null;
+  result: any; cells: Cell[]; skips: any[];
+  history: any[]; sosCase: any; caseSteps: any[]; caseHistory: any[]; tasks: any[];
+  viewer: {
+    canPlanWeek: boolean; canCancel: boolean;
+    canSkipSkill: boolean; canOverrideDeadline: boolean;
+    canEditSos: boolean; editableSkills: string[];
+  };
+};
+
+export default function MockDetailPage() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const toast = useToast();
+  const { data, loading, error, reload } = useApi<Detail>(id ? `/attempts/${id}` : null);
+  const { save } = useSaveScore(Number(id), reload);
+  const [showHistory, setShowHistory] = useState(false);
+  const [weekOpen, setWeekOpen] = useState(false);
+  const [deadlineOpen, setDeadlineOpen] = useState(false);
+  const [cancelOpen, setCancelOpen] = useState(false);
+
+  if (error) return <ErrorState message={error.message} hint={error.hint} onRetry={reload} />;
+  if (loading || !data) return <Skeleton rows={10} />;
+
+  /*
+   * CHẶN CỬA: bài của lớp Normal KHÔNG được dựng bằng màn này.
+   *
+   * Màn Mock Test gọi mọi lượt là "MT{n}", chấm theo band và so với kỳ vọng target — cả ba
+   * thứ đó đều sai với một bài Progress Test. Mọi đường dẫn trong hệ thống đã trỏ đúng màn,
+   * nhưng đường dẫn cũ, thông báo cũ và link người dùng lưu lại thì vẫn còn, nên chặn ngay
+   * ở đây thay vì tin rằng không ai vào được.
+   */
+  if (data.kind && data.kind !== 'mock') {
+    return <Navigate to={attemptHref({ id: data.id, kind: data.kind, classId: data.classId })} replace />;
+  }
+
+  const d = data;
+  const raw = d.cells.filter((c) => c.skill === 'listening' || c.skill === 'reading');
+  const crit = d.cells.filter((c) => c.skill !== 'listening' && c.skill !== 'reading');
+
+  return (
+    <div className="page space-y-4">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <button className="btn btn-sm btn-ghost mb-1" onClick={() => navigate(-1)}>← Quay lại</button>
+          <h1 className="text-lg font-semibold text-slate-100">
+            {d.student.name} <span className="text-slate-500 text-sm">· {d.student.code}</span>
+          </h1>
+          <p className="text-xs text-slate-500 mt-0.5">
+            MT{d.attemptNo} · Lớp lúc đánh giá: {d.classCode ?? '—'} · {d.branchName ?? '—'}
+            {d.cycle.route && ` · Lộ trình ${d.cycle.route}`}
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Link className="btn no-underline" to={`/hoc-vien/${d.student.id}`}>Hồ sơ học viên</Link>
+          {d.classId && (
+            <Link className="btn no-underline" to={`/nhap-diem/${d.classId}`}>Nhập điểm cả lớp</Link>
+          )}
+          {d.viewer.canPlanWeek && d.status !== 'cancelled' && (
+            <button className="btn" onClick={() => setWeekOpen(true)}>Đổi tuần</button>
+          )}
+          {d.viewer.canCancel && d.status === 'planned' && (
+            <button className="btn btn-danger" onClick={() => setCancelOpen(true)}>Huỷ lượt MT</button>
+          )}
+          {d.viewer.canCancel && d.status === 'cancelled' && (
+            <button className="btn" onClick={async () => {
+              await api.post(`/attempts/${d.id}/reopen`);
+              invalidate('/attempts'); reload(); toast.push('ok', 'Đã mở lại lượt MT');
+            }}>Mở lại</button>
+          )}
+        </div>
+      </div>
+
+      {/* 1. Nhận diện, lịch và target */}
+      <Card title="Kế hoạch MT">
+        <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 m-0">
+          <Info label="Trạng thái">
+            <Status kind={d.status === 'done' ? 'done' : d.status === 'cancelled' ? 'idle' : 'doing'}>
+              {attemptStatusLabel(d.status)}
+            </Status>
+          </Info>
+          <Info label="Tuần MT">
+            {d.period
+              ? <>{d.period.code} <span className="text-slate-500 text-xs">({d.period.range})</span></>
+              : <Tag pending>Chưa chốt tuần</Tag>}
+          </Info>
+          <Info label="Dự kiến thi">
+            <ExamPlanText plan={d.cycle.examPlan} />
+          </Info>
+          <Info label="Target lúc đánh giá">{fmtBand(d.targetAtAttempt)}</Info>
+          <Info label="Kỳ vọng MT này">{fmtBand(d.result.expectation)}</Info>
+        </dl>
+        {d.cancelReason && <p className="text-xs text-rose-200 mt-3">Đã huỷ: {d.cancelReason}</p>}
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          {d.deadlineOverride ? (
+            <Tag title={d.deadlineOverride.reason ?? undefined}>
+              Hạn riêng {fmtDate(d.deadlineOverride.date)}{d.deadlineOverride.by ? ` · ${d.deadlineOverride.by}` : ''}
+            </Tag>
+          ) : (
+            <span className="text-xs text-slate-500">Đang dùng hạn mặc định: hết thứ Tư của tuần kế tiếp sau tuần MT.</span>
+          )}
+          {d.viewer.canOverrideDeadline && (
+            <button className="btn btn-sm" onClick={() => setDeadlineOpen(true)}>
+              {d.deadlineOverride ? 'Sửa hạn riêng' : 'Đặt hạn riêng'}
+            </button>
+          )}
+        </div>
+        {d.studyWeekHint && (
+          <SectionNote>
+            Mốc gợi ý cho MT{d.attemptNo} là <strong>tuần học</strong> FT {d.studyWeekHint}.
+            Tuần học của chương trình và mã tuần lịch là hai khái niệm khác nhau.
+          </SectionNote>
+        )}
+      </Card>
+
+      {/* 2. Điểm từng kỹ năng */}
+      <Card title="Điểm theo kỹ năng"
+        action={<span className="text-xs text-slate-500">
+          Đã nhập {d.result.scoredRequired}/{d.result.required.length} kỹ năng bắt buộc
+          {d.result.skipped.length > 0 && ` · ${d.result.skipped.length} kỹ năng không mock`}
+        </span>}>
+        {d.cells.length === 0 ? (
+          <Empty title="Lớp này chưa cấu hình kỹ năng nào" />
+        ) : (
+          <div className="space-y-4">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr>
+                    <Th hint="Năm ô của Fast Track: L · R · W1 · W2 · S. W1 và W2 chấm riêng từng task.">Kỹ năng</Th>
+                    <Th hint="Listening và Reading nhập số câu đúng; Writing và Speaking nhập điểm bốn tiêu chí.">Số câu đúng / tiêu chí</Th>
+                    <Th hint="Band quy đổi từ ô bên trái. Không gõ tay được — để hai người cùng chấm ra cùng một số.">Band</Th>
+                    <Th hint="Kỹ năng này đã nhập điểm chưa, và có nằm trong lượt này không.">Tiến độ</Th>
+                    <Th hint="Cả lượt dùng chung một hạn: hết thứ Tư của tuần kế tiếp sau tuần MT.">Hạn nhập</Th>
+                    <Th hint="Ai nhập ô điểm này và nhập lúc nào — để tra lại khi có thắc mắc.">Người nhập</Th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[...raw, ...crit].map((c) => (
+                    <tr key={c.skill} className={c.required ? '' : 'row-muted'}>
+                      <td className="td text-slate-200 whitespace-nowrap">{skillLabel(c.skill)}</td>
+                      <td className="td">
+                        {!c.required
+                          ? <span className="text-slate-500 text-xs">—</span>
+                          : c.skill === 'listening' || c.skill === 'reading'
+                            ? <RawScoreInput cell={c} onSave={(p) => save(c.skill, p)} />
+                            : <CriteriaButton cell={c} onSave={(p) => save(c.skill, p)} />}
+                      </td>
+                      <td className="td tabular-nums text-slate-100">{fmtBand(c.band)}</td>
+                      <td className="td">
+                        <Status kind={c.progress === 'scored' ? 'done'
+                          : c.progress === 'skipped' || c.progress === 'not_scheduled' ? 'idle'
+                          : c.progress === 'due' ? 'doing' : 'waiting'}>
+                          {progressLabel(c.progress)}
+                        </Status>
+                      </td>
+                      <td className="td"><DeadlinePill cell={c} /></td>
+                      <td className="td text-xs text-slate-500">
+                        {c.enteredByName ?? '—'}
+                        {c.enteredAt && <div>{fmtDateTime(c.enteredAt)}</div>}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5 border-t pt-4" style={{ borderColor: 'var(--line)' }}>
+              {ASSESSED_SKILLS.map((key) => {
+                const v = d.result.verdicts.find((x: any) => x.skill === key);
+                const skipped = d.result.skipped.includes(key);
+                return (
+                  <div key={key} className={`surface-2 rounded-lg p-3 ${skipped ? 'opacity-80' : ''}`}>
+                    <div className="text-[11px] uppercase tracking-wide text-slate-500 font-semibold">
+                      {ASSESSED_SKILL_LABEL[key]}
+                    </div>
+                    <div className="text-xl tabular-nums mt-1 text-slate-100">{fmtBand(v?.band)}</div>
+                    <div className="mt-1">
+                      {skipped
+                        ? <Tag pending>Không mock</Tag>
+                        : v?.passed === null
+                          ? <Tag pending>Chưa đủ điểm</Tag>
+                          : v?.passed
+                            ? <Outcome tone="ok" mark="✓">Đạt kỳ vọng</Outcome>
+                            : <Outcome tone="danger" mark="↓">Dưới kỳ vọng</Outcome>}
+                    </div>
+                    {d.viewer.canSkipSkill && d.status !== 'cancelled' && (
+                      <button
+                        className="btn btn-sm btn-ghost mt-2 px-0"
+                        onClick={async () => {
+                          try {
+                            await api.post(`/attempts/${d.id}/skills/${key}/skip`, {
+                              skipped: !skipped,
+                              reason: skipped ? undefined : 'Học viên không mock kỹ năng này',
+                            });
+                            invalidate('/attempts'); invalidate('/overview'); reload();
+                            toast.push('ok', skipped ? `Đã tính lại ${ASSESSED_SKILL_LABEL[key]}` : `Đã đánh dấu không mock ${ASSESSED_SKILL_LABEL[key]}`);
+                          } catch (e: any) { toast.push('error', e.message); }
+                        }}
+                      >
+                        {skipped ? 'Tính lại kỹ năng này' : 'Đánh dấu không mock'}
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+              <div className="surface-2 rounded-lg p-3 border border-sky-300/25">
+                <div className="text-[11px] uppercase tracking-wide text-slate-500 font-semibold">Overall</div>
+                <div className="text-xl tabular-nums mt-1 text-slate-100">{fmtBand(d.result.overall)}</div>
+                <div className="mt-1"><Level tone={sosTone(d.result.sosLevel)}>{sosLabel(d.result.sosLevel)}</Level></div>
+              </div>
+            </div>
+
+            {d.result.scopeDetail && (
+              <SectionNote>
+                {d.result.scopeDetail}. Kỹ năng <strong>không được yêu cầu</strong> ở lượt này không tính vào
+                mẫu số SOS và không bị coi là thiếu điểm — khác hẳn kỹ năng có yêu cầu mà chưa có điểm.
+                Vì lượt này không còn đủ bốn kỹ năng nên không có Overall IELTS.
+              </SectionNote>
+            )}
+            {!d.result.complete && (
+              <SectionNote>
+                Chưa chốt kết quả vì còn thiếu kỹ năng bắt buộc. Cả lượt MT thuộc MỘT tuần và dùng
+                CHUNG một hạn nhập điểm. Ô trống là chưa nhập, không phải điểm 0.
+              </SectionNote>
+            )}
+            {d.result.complete && !d.result.evaluable && (
+              <SectionNote>
+                Đã đủ điểm các kỹ năng bắt buộc nhưng lộ trình chưa có target, nên chưa tính được kỳ vọng và SOS.
+              </SectionNote>
+            )}
+          </div>
+        )}
+      </Card>
+
+      {/*
+        3–4. VẤN ĐỀ HỌC VỤ.
+        Hiện bất cứ khi nào bài này ĐANG CÓ một vấn đề — kể cả khi điểm sau đó đã sửa lên
+        thành đạt. Giấu nó đi thì mọi việc đã làm để hỗ trợ em cũng biến mất khỏi màn hình,
+        trong khi đó chính là phần đáng đọc nhất.
+      */}
+      {d.sosCase ? (
+        <Card title="Vấn đề - Case" action={
+          <Link className="btn btn-sm" to={`/hoc-thuat/case/${d.sosCase.id}`}>Mở trang riêng</Link>
+        }>
+          {d.result.evaluable && d.result.sosLevel === 0 && (
+            <p className="text-xs text-slate-400 mt-0 mb-3">
+              Điểm hiện tại đã đạt kỳ vọng ở mọi kỹ năng. Vấn đề này vẫn còn đây để tra lại đã
+              hỗ trợ những gì — người có quyền quyết định có kết thúc theo dõi hay không.
+            </p>
+          )}
+          <CasePanel caseId={d.sosCase.id} compact />
+          {d.caseSteps.length > 0 && <Playbook steps={d.caseSteps} />}
+          {d.tasks.length > 0 && (
+            <div className="border-t pt-3 mt-3" style={{ borderColor: 'var(--line)' }}>
+              <div className="label">Công việc gắn với vấn đề này</div>
+              <ul className="text-xs space-y-1 list-none p-0 m-0">
+                {d.tasks.map((t) => (
+                  <li key={t.id} className="text-slate-300">
+                    <Link className="link" to="/tien-trinh">{t.code}</Link> · {t.title}
+                    <span className="text-slate-500"> · {t.assignee_name ?? 'Chưa giao'} · hạn {fmtDate(t.due_date)}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </Card>
+      ) : d.result.evaluable && d.result.sosLevel === 0 ? (
+        <Card title="Kết quả"><Empty title={`Đạt kỳ vọng ở cả ${d.result.required.length} kỹ năng được đánh giá`}
+          hint="Không phát sinh vấn đề nào cần theo dõi." /></Card>
+      ) : null}
+
+      {/* 5. Lịch sử */}
+      <Card title="Lịch sử thay đổi"
+        action={<button className="btn btn-sm" onClick={() => setShowHistory((s) => !s)}>{showHistory ? 'Thu gọn' : 'Mở'}</button>}>
+        {!showHistory ? (
+          <SectionNote>{d.history.length} thay đổi lịch · {d.caseHistory.length} thay đổi xử lý.</SectionNote>
+        ) : (
+          <div className="grid gap-4 md:grid-cols-2">
+            <div>
+              <div className="label">Lịch và phạm vi</div>
+              <ul className="space-y-1.5 text-xs list-none p-0 m-0">
+                {d.history.map((h) => (
+                  <li key={h.id} className="text-slate-400">
+                    <span className="text-slate-200">{actionLabel(h.action)}</span>
+                    {h.oldValue && <> {h.oldValue} →</>} {h.newValue && <> {h.newValue}</>}
+                    {h.reason && <> · {h.reason}</>}
+                    <span className="text-slate-600"> · {h.actorName ?? '—'}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div>
+              <div className="label">Xử lý sau Mock</div>
+              {d.caseHistory.length === 0 ? <p className="text-xs text-slate-500">Chưa có thay đổi nào.</p> : (
+                <ul className="space-y-1.5 text-xs list-none p-0 m-0">
+                  {d.caseHistory.map((h) => (
+                    <li key={h.id} className="text-slate-400">
+                      <span className="text-slate-200">{fieldLabel(h.field)}</span>: {h.oldValue ?? '—'} → {h.newValue ?? '—'}
+                      <span className="text-slate-600"> · {h.actorName ?? '—'}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+        )}
+      </Card>
+
+      <WeekModal open={weekOpen} onClose={() => setWeekOpen(false)} attemptId={d.id}
+        currentPeriodId={d.period?.id ?? null} onDone={reload} />
+      <DeadlineModal open={deadlineOpen} onClose={() => setDeadlineOpen(false)} detail={d} onDone={reload} />
+      <CancelDialog open={cancelOpen} onClose={() => setCancelOpen(false)} attemptId={d.id} onDone={reload} />
+    </div>
+  );
+}
+
+function Info({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <dt className="text-[11px] uppercase tracking-wide text-slate-500 font-semibold">{label}</dt>
+      <dd className="text-sm text-slate-100 mt-1 m-0">{children}</dd>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------- vấn đề học vụ
+
+/**
+ * HƯỚNG DẪN PHỐI HỢP theo lần MT × mức SOS, lấy từ quy trình của trung tâm.
+ *
+ * Đây là GỢI Ý, không phải việc đã làm. Trước đây hai thứ này nằm chung một chỗ: điền tên
+ * vào ô hướng dẫn là case trông như đã xử lý xong, dù chưa ai làm gì. Nay việc đã làm nằm
+ * ở phần trên — có người thực hiện, có ngày thật, có lần xem lại — còn đây chỉ nhắc nên
+ * làm gì tiếp.
+ */
+function Playbook({ steps }: { steps: any[] }) {
+  return (
+    <div className="border-t pt-3 mt-3" style={{ borderColor: 'var(--line)' }}>
+      <div className="label">Quy trình gợi ý cho mức này</div>
+      <ul className="mt-1 space-y-1 list-none p-0 m-0">
+        {steps.map((s: any) => (
+          <li key={s.key} className="text-xs text-slate-400">
+            <span className="text-slate-200">{s.label}</span>
+            {!s.required && <span className="text-slate-500"> (theo từng trường hợp)</span>}
+            {' — '}{s.detail}
+          </li>
+        ))}
+      </ul>
+      <SectionNote>
+        Hệ thống không tự cấp buổi học, không tự lùi lịch thi và không tự kết thúc theo dõi.
+        Trao đổi phụ huynh do CS thực hiện ngoài hệ thống — ghi lại tên người làm và ngày thật.
+      </SectionNote>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------- thao tác lịch
+
+/** Đổi TUẦN kế hoạch — việc của Quản lý. Ngày cũ ngoài tuần mới sẽ bị bỏ để xếp lại. */
+function WeekModal({ open, onClose, attemptId, currentPeriodId, onDone }: {
+  open: boolean; onClose: () => void; attemptId: number; currentPeriodId: number | null; onDone: () => void;
+}) {
+  const toast = useToast();
+  const periods = usePeriods();
+  const [periodId, setPeriodId] = useState<number | null>(currentPeriodId);
+  const [reason, setReason] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  return (
+    <Modal open={open} onClose={onClose} title="Đổi tuần kế hoạch" width="max-w-md"
+      footer={<>
+        <button className="btn" onClick={onClose} disabled={busy}>Huỷ</button>
+        <button className="btn btn-primary" disabled={busy || !periodId || periodId === currentPeriodId} onClick={async () => {
+          setBusy(true);
+          try {
+            const r = await api.post<any>(`/attempts/${attemptId}/week`, { periodId, reason });
+            invalidate('/attempts'); invalidate('/overview');
+            onDone(); onClose();
+            toast.push('ok', r?.droppedDates
+              ? 'Đã đổi tuần. Ngày cũ nằm ngoài tuần mới nên đã bỏ để Admin chi nhánh xếp lại.'
+              : 'Đã đổi tuần kế hoạch');
+          } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
+        }}>{busy ? 'Đang lưu…' : 'Lưu'}</button>
+      </>}>
+      <div className="space-y-3">
+        <label className="block">
+          <span className="label">Tuần mới</span>
+          <select className="field" value={periodId ?? ''} onChange={(e) => setPeriodId(Number(e.target.value) || null)}>
+            <option value="">Chọn tuần…</option>
+            {(periods.data ?? []).map((p) => <option key={p.id} value={p.id}>{p.code} · {p.range}</option>)}
+          </select>
+        </label>
+        <label className="block">
+          <span className="label">Lý do</span>
+          <input className="field" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Ví dụ: trùng lịch phòng thi" />
+        </label>
+        <SectionNote>
+          Đổi tuần cập nhật chính lượt MT này, không tạo lượt mới và không tăng số MT.
+          Ngày đã chốt mà nằm ngoài tuần mới sẽ được bỏ để xếp lại — hệ thống không tự dịch bảy ngày.
+        </SectionNote>
+      </div>
+    </Modal>
+  );
+}
+
+
+/** Hạn nhập điểm riêng, thay hạn mặc định. Chỉ một hạn có hiệu lực tại một thời điểm. */
+function DeadlineModal({ open, onClose, detail, onDone }: {
+  open: boolean; onClose: () => void; detail: Detail; onDone: () => void;
+}) {
+  const toast = useToast();
+  const [date, setDate] = useState(detail.deadlineOverride?.date ?? '');
+  const [reason, setReason] = useState(detail.deadlineOverride?.reason ?? '');
+  const [busy, setBusy] = useState(false);
+
+  const submit = async (value: string | null) => {
+    setBusy(true);
+    try {
+      await api.post(`/attempts/${detail.id}/deadline`, { deadline: value, reason });
+      invalidate('/attempts'); invalidate('/overview');
+      onDone(); onClose();
+      toast.push('ok', value ? 'Đã đặt hạn riêng' : 'Đã quay lại hạn mặc định');
+    } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
+  };
+
+  return (
+    <Modal open={open} onClose={onClose} title="Hạn nhập điểm" width="max-w-md"
+      footer={<>
+        <button className="btn" onClick={onClose} disabled={busy}>Đóng</button>
+        {detail.deadlineOverride && (
+          <button className="btn" disabled={busy} onClick={() => submit(null)}>Dùng lại hạn mặc định</button>
+        )}
+        <button className="btn btn-primary" disabled={busy || !date} onClick={() => submit(date)}>
+          {busy ? 'Đang lưu…' : 'Lưu hạn riêng'}
+        </button>
+      </>}>
+      <div className="space-y-3">
+        <label className="block">
+          <span className="label">Hạn riêng</span>
+          <input type="date" className="field" value={date} onChange={(e) => setDate(e.target.value)} />
+        </label>
+        <label className="block">
+          <span className="label">Lý do</span>
+          <input className="field" value={reason ?? ''} onChange={(e) => setReason(e.target.value)}
+            placeholder="Ví dụ: giáo viên Writing nghỉ phép" />
+        </label>
+        <SectionNote>
+          Hạn mặc định là hết thứ Tư của tuần kế tiếp sau tuần MT. Đặt hạn riêng sẽ thay
+          hạn mặc định cho cả lượt này; hết ngày hạn mới tính quá hạn.
+          Phạm vi hạn riêng theo từng kỹ năng còn chờ chốt (O02).
+        </SectionNote>
+      </div>
+    </Modal>
+  );
+}
+
+function CancelDialog({ open, onClose, attemptId, onDone }: {
+  open: boolean; onClose: () => void; attemptId: number; onDone: () => void;
+}) {
+  const toast = useToast();
+  const [reason, setReason] = useState('');
+  const [busy, setBusy] = useState(false);
+  return (
+    <ConfirmDialog
+      open={open} onClose={onClose} danger busy={busy} title="Huỷ lượt Mock Test" confirmLabel="Huỷ lượt"
+      body={
+        <div className="space-y-2">
+          <p>Huỷ vẫn giữ nguyên lịch sử và không đổi số MT. Lượt đã huỷ không tính vào “đã xong” hay “thiếu điểm”.</p>
+          <input className="field" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Lý do huỷ (bắt buộc)" />
+        </div>
+      }
+      onConfirm={async () => {
+        setBusy(true);
+        try {
+          await api.post(`/attempts/${attemptId}/cancel`, { reason });
+          invalidate('/attempts'); invalidate('/overview');
+          onDone(); onClose(); toast.push('ok', 'Đã huỷ lượt MT');
+        } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
+      }}
+    />
+  );
+}
+
+const actionLabel = (a: string) =>
+  ({
+    created: 'Tạo kế hoạch', week_set: 'Đổi tuần', lrw_set: 'Chốt buổi chính',
+    speaking_set: 'Chốt buổi Speaking', cancelled: 'Huỷ lượt', reopened: 'Mở lại',
+    skill_skipped: 'Đánh dấu không mock', skill_restored: 'Tính lại kỹ năng',
+    deadline_set: 'Đặt hạn riêng', deadline_cleared: 'Bỏ hạn riêng',
+  }[a] ?? a);
+
+/*
+ * Nhãn cho cột `field` của lịch sử vấn đề. Những tên cũ (trao đổi HS/PH, chính sách vận
+ * hành…) GIỮ LẠI dù các cột đó đã bỏ: các dòng lịch sử ghi từ trước vẫn còn, và đọc lại
+ * thấy "talk_parent_date" thì không ai hiểu.
+ */
+const fieldLabel = (f: string) =>
+  ({
+    track: 'Đầu mục', topic: 'Kỹ năng',
+    sos_level: 'Mức SOS', status: 'Trạng thái', talk_student_person: 'Người trao đổi HS',
+    talk_student_date: 'Ngày trao đổi HS', talk_parent_person: 'Người trao đổi PH',
+    talk_parent_date: 'Ngày trao đổi PH', academic_support: 'Hỗ trợ học thuật',
+    academic_person: 'Người phụ trách học thuật', academic_start_date: 'Ngày bắt đầu hỗ trợ',
+    ops_policy: 'Chính sách vận hành', ops_date: 'Ngày áp dụng', meeting_kind: 'Meeting',
+    meeting_date: 'Ngày meeting', head_confirmed: 'Head xác nhận', note: 'Ghi chú',
+  }[f] ?? f);

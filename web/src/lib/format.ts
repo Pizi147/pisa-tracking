@@ -3,14 +3,13 @@ import {
   ENTRY_SKILL_SHORT, REGULAR_SKILL_LABEL, REGULAR_SKILL_SHORT, ROLE_LABEL, SKILL_PROGRESS_LABEL, SOS_LABEL, STUDENT_STATUS_LABEL,
   TASK_PROGRESS_LABEL, TASK_TYPE_LABEL, UNIT_STATUS_LABEL,
   type AssessedSkill, type EntrySkill, type SkillProgress, type SosLevel, type StudentStatus,
-} from '@shared/domain.ts';
+} from '@shared/domain/index.ts';
 
 /*
  * Tên đầy đủ của một kỹ năng, tra qua CẢ BA bộ.
  *
- * Thiếu `REGULAR_SKILL_LABEL` thì Pronunciation của lớp Foundation rơi xuống nhánh cuối và
- * hiện nguyên mã máy "pronunciation" trên giao diện — chữ thường, không dấu, giữa một danh
- * sách tên riêng viết hoa.
+ * Thiếu `REGULAR_SKILL_LABEL` thì môn của lớp Normal rơi xuống nhánh cuối và hiện nguyên mã
+ * máy trên giao diện — chữ thường, không dấu, giữa một danh sách tên riêng viết hoa.
  */
 export const skillLabel = (s: string) =>
   ENTRY_SKILL_LABEL[s as EntrySkill] ?? ASSESSED_SKILL_LABEL[s as AssessedSkill]
@@ -32,21 +31,6 @@ export function fmtDate(d?: string | null): string {
   if (!d) return '—';
   const s = d.slice(0, 10);
   return `${s.slice(8, 10)}/${s.slice(5, 7)}/${s.slice(0, 4)}`;
-}
-/** Ngày ngắn dùng trong bảng, bỏ năm khi cùng năm với ngày tham chiếu. */
-export function fmtDay(d?: string | null): string {
-  if (!d) return '—';
-  return `${d.slice(8, 10)}/${d.slice(5, 7)}`;
-}
-
-/**
- * Ngày của một buổi đánh giá — CHỈ NGÀY, không bao giờ có giờ.
- *
- * Giờ mock đã bỏ khỏi nghiệp vụ. Dữ liệu cũ có thể còn đuôi giờ, nên cắt ở đây luôn
- * để không có màn hình nào lỡ hiện lại.
- */
-export function fmtSlot(v?: string | null): string {
-  return fmtDay(v ? v.slice(0, 10) : null);
 }
 
 export function fmtDateTime(d?: string | null): string {
@@ -97,9 +81,27 @@ export function attemptStatusTone(s: string): Tone {
   return s === 'cancelled' ? 'muted' : s === 'done' ? 'info' : 'neutral';
 }
 
-export function unitTone(status: string | null): Tone {
+/**
+ * Ô họp tuần là một KẾT QUẢ (ổn · cần theo dõi · có vấn đề), nên chỉ nhận bốn tông của họ
+ * nhãn kết quả — không có `info`, vì "đang thực hiện" không phải một kết luận về lớp.
+ */
+export function unitTone(status: string | null): 'ok' | 'warn' | 'danger' | 'muted' {
   return status === null ? 'muted' : status === 'problem' ? 'danger' : status === 'watch' ? 'warn' : 'ok';
 }
 export function caseTone(status: string | null): Tone {
   return status === 'done' ? 'ok' : status === 'in_progress' ? 'info' : 'warn';
+}
+
+/**
+ * ĐƯỜNG DẪN TỚI ĐIỂM CỦA MỘT LƯỢT ĐÁNH GIÁ — chọn ĐÚNG MÀN theo loại bài.
+ *
+ * Đây là lỗi owner chỉ ra ở mục 6.3: hồ sơ một em lớp Normal, bấm vào bài giữa khoá thì màn
+ * Mock Test mở ra và hiện "MT1" cho một bài Progress Test. Hai loại bài có hai màn riêng vì
+ * chúng chấm theo hai cách khác nhau; mở nhầm màn là đọc sai cả kết quả.
+ *
+ * Một chỗ quyết định duy nhất. Màn nào tự ghép đường dẫn lấy thì sớm muộn lại ghép sai.
+ */
+export function attemptHref(a: { id: number; kind?: string | null; classId?: number | null }): string {
+  if (!a.kind || a.kind === 'mock') return `/mock-test/${a.id}`;
+  return a.classId ? `/bang-diem-thuong/${a.classId}?kind=${a.kind}` : `/mock-test/${a.id}`;
 }

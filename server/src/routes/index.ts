@@ -3,37 +3,38 @@ import { db, isInitialised } from '../db.ts';
 import {
   BEHAVIOUR_TOPICS, BEHAVIOUR_TOPIC_LABEL, ENTRY_SKILLS, ENTRY_SKILL_LABEL, ISSUE_TAXONOMY,
   PERMISSIONS, REGULAR_SKILLS, ROLE_LABEL, THREAD_TRACKS, THREAD_TRACK_LABEL, type Role,
-} from '../../../shared/domain.ts';
+} from '../../../shared/domain/index.ts';
 import { demoToday, getConfig, scenarioMode, setConfig } from '../demoConfig.ts';
 import { HttpError, badRequest, isIsoDate, notFound, toInt } from '../util.ts';
 import { SESSION_COOKIE, createSession, destroySession, principalOf, requireAuth } from '../auth.ts';
 import { can, loadPrincipal, permissionSummary, require_, scopeFor } from '../permissions.ts';
-import { writeAudit } from '../services/audit.ts';
+import { writeAudit } from '../platform/audit.ts';
 import { maybeSimulateReadError, maybeSimulateSaveFailure, pInt, qInt, qStr, wrap } from './helpers.ts';
-import * as attemptSvc from '../services/attempts.ts';
-import * as cycleSvc from '../services/cycles.ts';
-import * as summarySvc from '../services/summary.ts';
-import * as pulseSvc from '../services/branchpulse.ts';
-import * as prefSvc from '../services/prefs.ts';
-import * as profileSvc from '../services/profile.ts';
-import * as classSvc from '../services/classes.ts';
-import * as scheduleSvc from '../services/schedule.ts';
-import * as intakeSvc from '../services/intake.ts';
-import * as studentSvc from '../services/students.ts';
-import * as meetingSvc from '../services/meeting.ts';
-import * as dashboardSvc from '../services/dashboard.ts';
+import * as attemptSvc from '../fasttrack/attempts.ts';
+import * as cycleSvc from '../fasttrack/cycles.ts';
+import * as summarySvc from '../worklist/summary.ts';
+import * as pulseSvc from '../worklist/branchpulse.ts';
+import * as prefSvc from '../platform/prefs.ts';
+import * as profileSvc from '../students/profile.ts';
+import * as classSvc from '../classes/classes.ts';
+import * as scheduleSvc from '../classes/schedule.ts';
+import * as intakeSvc from '../classes/intake.ts';
+import * as transitionSvc from '../classes/transition.ts';
+import * as studentSvc from '../students/students.ts';
+import * as meetingSvc from '../worklist/meeting.ts';
+import * as dashboardSvc from '../worklist/dashboard.ts';
 import {
   PERIOD_WINDOW_PLANNING_FORWARD_WEEKS,
   ensurePeriod, listPeriods, periodById, periodWindow, reportEditWindow, setPeriodUnlocked,
-} from '../services/week.ts';
-import * as planningSvc from '../services/planning.ts';
-import { signalsFor } from '../services/signals.ts';
-import * as accountSvc from '../services/accounts.ts';
-import * as sysconfigSvc from '../services/sysconfig.ts';
-import { weeklyRollup } from '../services/weekly.ts';
-import { myWork } from '../services/mywork.ts';
-import * as caseSvc from '../services/cases.ts';
-import * as regularSvc from '../services/regular.ts';
+} from '../platform/week.ts';
+import * as planningSvc from '../fasttrack/planning.ts';
+import { signalsFor } from '../worklist/signals.ts';
+import * as accountSvc from '../platform/accounts.ts';
+import * as sysconfigSvc from '../platform/sysconfig.ts';
+import { weeklyRollup } from '../worklist/weekly.ts';
+import { myWork } from '../worklist/mywork.ts';
+import * as caseSvc from '../cases/cases.ts';
+import * as regularSvc from '../normal/regular.ts';
 
 export const api = Router();
 
@@ -262,14 +263,9 @@ api.get('/attempts', requireAuth, wrap((req) => {
 
 /*
  * CÁC ĐƯỜNG DẪN CỐ ĐỊNH PHẢI ĐỨNG TRƯỚC `/attempts/:id`.
- * Express khớp theo thứ tự khai báo, nên đặt sau thì `:id` sẽ nuốt luôn "no-plan" và
- * "date-duty" — request đi vào hàm chi tiết với một id không phải số.
+ * Express khớp theo thứ tự khai báo, nên đặt sau thì `:id` sẽ nuốt luôn "no-plan" —
+ * request đi vào hàm chi tiết với một id không phải số.
  */
-
-/** Nghĩa vụ hàng tuần của Admin chi nhánh: MT tuần này và tuần trước còn thiếu ngày. */
-api.get('/attempts/date-duty', requireAuth, wrap((req) => planningSvc.dateDutyQueue(principalOf(req), {
-  branchId: toInt(req.query?.branchId), classId: toInt(req.query?.classId),
-})));
 
 /** Học viên chưa có tuần MT tiếp theo — việc của Quản lý. */
 api.get('/attempts/no-plan', requireAuth, wrap((req) => planningSvc.noPlanQueue(principalOf(req), {
@@ -304,12 +300,6 @@ api.post('/attempts/bulk-plan', requireAuth, wrap((req) => {
   return planningSvc.bulkPlan(principalOf(req), { ...req.body, periodId });
 }));
 
-/** Cập nhật NGÀY MT thực tế cho nhiều lượt cùng lúc — chỉ ngày, không giờ. */
-api.post('/attempts/bulk-date', requireAuth, wrap((req) => {
-  maybeSimulateSaveFailure();
-  return planningSvc.bulkSetDate(principalOf(req), req.body ?? {});
-}));
-
 /** Tổng hợp theo tuần cho Quản lý: mỗi tuần một dòng, mọi con số bấm được. */
 api.get('/weekly-rollup', requireAuth, wrap((req) => weeklyRollup(principalOf(req), {
   branchId: toInt(req.query?.branchId),
@@ -336,16 +326,6 @@ api.post('/attempts/:id/week', requireAuth, wrap((req) => {
   return attemptSvc.setPlanningWeek(principalOf(req), pInt(req, 'id'), periodId, req.body?.reason);
 }));
 
-/** Cập nhật NGÀY thực tế trong tuần kế hoạch. Lịch chính do Admin CN, lịch Speaking có thể do GV Speaking. */
-api.post('/attempts/:id/schedule', requireAuth, wrap((req) => {
-  maybeSimulateSaveFailure();
-  return attemptSvc.setSchedule(principalOf(req), pInt(req, 'id'), {
-    lrwAt: req.body?.lrwAt,
-    speakingAt: req.body?.speakingAt,
-    reason: req.body?.reason,
-  });
-}));
-
 /** Đánh dấu một kỹ năng đánh giá là không mock ở lượt này, hoặc bỏ đánh dấu. */
 api.post('/attempts/:id/skills/:skill/skip', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
@@ -370,8 +350,8 @@ api.post('/attempts/:id/reopen', requireAuth, wrap((req) => {
 }));
 
 /**
- * Ghi điểm MỘT kỹ năng. Payload KHÔNG nhận trường lịch — quyền nhập điểm không kèm
- * quyền sửa ngày kế hoạch. `takenOn` là ngày mock thực tế, khác ngày lịch.
+ * Ghi điểm MỘT kỹ năng. Payload KHÔNG nhận trường lịch nào — quyền nhập điểm không kèm
+ * quyền đổi tuần MT.
  */
 api.put('/attempts/:id/scores/:skill', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
@@ -379,7 +359,7 @@ api.put('/attempts/:id/scores/:skill', requireAuth, wrap((req) => {
   if (!(ENTRY_SKILLS as readonly string[]).includes(skill)) throw badRequest('Kỹ năng không hợp lệ.');
   const b = req.body ?? {};
   return attemptSvc.saveScore(principalOf(req), pInt(req, 'id'), skill, {
-    takenOn: b.takenOn, rawScore: b.rawScore, rawTotal: b.rawTotal,
+    rawScore: b.rawScore, rawTotal: b.rawTotal,
     criteria: b.criteria, resultDate: b.resultDate, note: b.note,
   });
 }));
@@ -460,7 +440,7 @@ api.get('/classes/:id/suggested-weeks', requireAuth, wrap((req) => {
 
 // ============================================================ Lớp thường (FOU/BE/ELE)
 
-/** Bảng nhập điểm của lớp thường: số câu đúng / tổng số câu, đạt từ 60%. */
+/** Bảng nhập điểm của lớp Normal: điểm đạt / tổng điểm, đạt từ 60%. */
 api.get('/regular/classes/:classId/sheet', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   return regularSvc.regularSheet(principalOf(req), pInt(req, 'classId'), qStr(req, 'kind'));
@@ -472,7 +452,7 @@ api.post('/regular/classes/:classId/plan', requireAuth, wrap((req) => {
   return regularSvc.planRegularTests(principalOf(req), pInt(req, 'classId'));
 }));
 
-/** Nhập điểm một kỹ năng: cả số câu đúng và tổng số câu, không tự điền tổng. */
+/** Nhập điểm một môn: cả điểm đạt và tổng điểm, không tự điền tổng. */
 api.put('/regular/attempts/:id/scores/:skill', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return regularSvc.saveRegularScore(principalOf(req), pInt(req, 'id'), req.params.skill, req.body ?? {});
@@ -546,6 +526,23 @@ api.get('/classes/:id/progress', requireAuth, wrap((req) => {
 }));
 
 /**
+ * KẾ HOẠCH CHUYỂN TIẾP khi lớp học hết chương trình (mục 6.1) — chỉ đọc.
+ * Trả về chương trình kế tiếp theo luồng mặc định, lớp đích đang có, và danh sách học viên.
+ */
+api.get('/classes/:id/transition', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return transitionSvc.transitionPlan(principalOf(req), pInt(req, 'id'));
+}));
+
+/** Xác nhận chuyển tiếp: mở lớp mới (nếu có) rồi chuyển từng em sang lớp đích của em. */
+api.post('/classes/:id/transition', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return transitionSvc.applyTransition(principalOf(req), {
+    ...(req.body ?? {}), fromClassId: pInt(req, 'id'),
+  });
+}));
+
+/**
  * Đổi tuần bắt đầu và mốc kiểm tra của lớp. Quyền: Admin CN và Quản lý CN (mục 7.6).
  * Đặt mốc về trống là quay lại mốc mặc định của chương trình, không phải xoá mốc.
  */
@@ -586,6 +583,8 @@ api.get('/cases', requireAuth, wrap((req) => {
     status: qStr(req, 'status'), origin: qStr(req, 'origin'),
     group: qStr(req, 'group'), skill: qStr(req, 'skill'), queue: qStr(req, 'queue'),
     classKind: qStr(req, 'classKind'),
+    /* Có `cycleId` = chỉ lộ trình đó; không có = TOÀN BỘ hành trình, kể cả lớp cũ. */
+    cycleId: toInt(req.query?.cycleId),
   });
 }));
 
@@ -638,10 +637,22 @@ api.post('/interventions/:id/respond', requireAuth, wrap((req) => {
 }));
 
 /**
+ * CẬP NHẬT KẾT QUẢ — một thao tác duy nhất khép lại một chu kỳ xử lý (mục 7.7 [3], 7.9).
+ *
+ * Gộp ba nút cũ: "Đánh dấu đã làm" · "Ghi quan sát" · "Hướng xử lý". Payload hỏi đúng ba
+ * câu: kết quả ra sao, ghi chú, và bước tiếp theo là gì.
+ */
+api.post('/interventions/:id/result', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return caseSvc.updateResult(principalOf(req), pInt(req, 'id'), req.body ?? {});
+}));
+
+/**
  * Đánh dấu một phương án ĐÃ LÀM XONG kèm ngày thực hiện.
  *
- * Dùng chung cho cả hai việc trao đổi lẫn phương án học thuật — vòng 4 bỏ đường ghi riêng
- * của bảng Liên hệ, nên chỉ còn một cách xác nhận "việc này đã làm".
+ * Chỉ còn dùng cho việc TRAO ĐỔI (gặp em, gọi phụ huynh) — những việc không có kết quả
+ * chuyên môn để ghi, chỉ cần xác nhận đã diễn ra. Phương án học thuật đi qua
+ * `/interventions/:id/result`.
  */
 api.post('/interventions/:id/complete', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
@@ -831,6 +842,15 @@ api.post('/notifications/:id/read', requireAuth, wrap((req) => {
 }));
 
 // ============================================================ Quản trị (lối phụ)
+
+api.put('/admin/role-permissions', requireAuth, wrap((req) => {
+  const b = req.body ?? {};
+  return sysconfigSvc.setRolePermission(principalOf(req), {
+    roleKey: String(b.roleKey ?? ''),
+    permissionKey: String(b.permissionKey ?? ''),
+    granted: !!b.granted,
+  });
+}));
 
 api.get('/admin/overview', requireAuth, wrap((req) => {
   const p = principalOf(req);

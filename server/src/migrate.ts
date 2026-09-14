@@ -1,9 +1,9 @@
 import { db, isInitialised } from './db.ts';
 import { nowIso } from './util.ts';
 import crypto from 'node:crypto';
-import { PERMISSION_LABEL } from '../../shared/domain.ts';
-import { DEFAULT_ADMIN_EMAIL, DEFAULT_ADMIN_PASSWORD, EMAIL_SUFFIX } from './services/accounts.ts';
-import { seedRoutes } from './services/sysconfig.ts';
+import { PERMISSION_LABEL } from '../../shared/domain/index.ts';
+import { DEFAULT_ADMIN_EMAIL, DEFAULT_ADMIN_PASSWORD, EMAIL_SUFFIX } from './platform/accounts.ts';
+import { seedRoutes } from './platform/sysconfig.ts';
 import { ROLE_PERMISSIONS } from './seed/data.ts';
 
 /**
@@ -395,6 +395,9 @@ function migrateCaseEngine(applied: string[], skipped: string[]) {
     migrateSchedulingFields(conn, applied);
     migratePermissions(conn, applied);
     migrateAccounts(conn, applied);
+    migrateWeekOnlySchedule(conn, applied);
+    migrateNormalFourSkills(conn, applied);
+    migrateCaseCycles(conn, applied);
 
     /*
      * Case đã đóng theo hệ thống cũ mà không có hướng xử lý: ghi rõ là "đóng theo hệ thống
@@ -1317,4 +1320,325 @@ function mondayOfIso(date: string): string {
   const dow = (d.getUTCDay() + 6) % 7;        // thứ Hai = 0
   d.setUTCDate(d.getUTCDate() - dow);
   return d.toISOString().slice(0, 10);
+}
+
+/**
+ * VÒNG 5 — BỎ HẲN NGÀY THI, CHỈ CÒN TUẦN.
+ *
+ * Ba việc, làm trên dữ liệu đang có và KHÔNG xoá gì của người dùng:
+ *
+ *  1. Lượt MT nào chỉ có ngày mà chưa có tuần thì SUY RA TUẦN từ chính ngày đó trước, rồi
+ *     mới bỏ hai cột ngày. Bỏ trước khi suy là làm mất lịch của người ta.
+ *  2. Ngày làm bài của từng kỹ năng (`taken_on`) biến mất. Nó chỉ dùng để tính hạn và
+ *     thời gian chấm, mà cả hai nay đếm theo tuần.
+ *  3. Ngày thi IELTS cụ thể (`exam_date`) thành TUẦN DỰ KIẾN THI. Có ngày thì lấy tuần
+ *     chứa ngày đó; tháng thi giữ nguyên như cũ.
+ *
+ * Hai quyền "Chốt ngày giờ trong tuần" và "Đổi lịch Speaking" bị gỡ khỏi mọi vai và mọi
+ * cá nhân, vì việc chúng cho phép làm không còn tồn tại.
+ */
+function migrateWeekOnlySchedule(conn: any, applied: string[]) {
+  const cols = (t: string) => (conn.prepare(`PRAGMA table_info(${t})`).all() as any[]).map((c: any) => c.name);
+  const has = (t: string) =>
+    !!conn.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name = ?").get(t);
+  if (!has('assessment_attempts') || !has('report_periods')) return;
+
+  const ensurePeriodFor = (date: string): number | null => {
+    const weekStart = mondayOfIso(date);
+    const found = conn.prepare('SELECT id FROM report_periods WHERE week_start = ?').get(weekStart) as any;
+    if (found) return found.id;
+    const d = new Date(weekStart + 'T00:00:00Z');
+    d.setUTCDate(d.getUTCDate() + 3);                       // thứ Năm quyết định tháng sở hữu
+    const year = d.getUTCFullYear();
+    const month = d.getUTCMonth() + 1;
+    const weekEnd = (() => {
+      const e = new Date(weekStart + 'T00:00:00Z');
+      e.setUTCDate(e.getUTCDate() + 6);
+      return e.toISOString().slice(0, 10);
+    })();
+    const before = conn
+      .prepare(`SELECT COUNT(*) AS n FROM report_periods WHERE year = ? AND month = ? AND week_start < ?`)
+      .get(year, month, weekStart) as any;
+    const MONTHS = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+    const weekNo = (before?.n ?? 0) + 1;
+    conn
+      .prepare(
+        `INSERT INTO report_periods (week_start, week_end, year, month, week_no, code, created_at)
+         VALUES (?,?,?,?,?,?,?)`,
+      )
+      .run(weekStart, weekEnd, year, month, weekNo, `W${weekNo} ${MONTHS[month - 1]} ${year}`, new Date().toISOString());
+    return (conn.prepare('SELECT id FROM report_periods WHERE week_start = ?').get(weekStart) as any)?.id ?? null;
+  };
+
+  /* --------------------------------------------- 1. mã tuần phải kèm NĂM */
+  let recoded = 0;
+  for (const r of conn.prepare('SELECT id, week_start, year, month, week_no, code FROM report_periods').all() as any[]) {
+    const MONTHS = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+    const want = `W${r.week_no} ${MONTHS[r.month - 1]} ${r.year}`;
+    if (r.code !== want) {
+      conn.prepare('UPDATE report_periods SET code = ? WHERE id = ?').run(want, r.id);
+      recoded += 1;
+    }
+  }
+  if (recoded) applied.push(`Thêm năm vào mã tuần của ${recoded} tuần (W1 SEP → W1 SEP 2026)`);
+
+  /* --------------------------------------------- 2. suy tuần rồi bỏ cột ngày */
+  const attemptCols = cols('assessment_attempts');
+  if (attemptCols.includes('lrw_scheduled_at')) {
+    let inferred = 0;
+    for (const a of conn
+      .prepare(`SELECT id, lrw_scheduled_at FROM assessment_attempts
+                 WHERE planned_period_id IS NULL AND lrw_scheduled_at IS NOT NULL`)
+      .all() as any[]) {
+      const pid = ensurePeriodFor(String(a.lrw_scheduled_at).slice(0, 10));
+      if (!pid) continue;
+      conn.prepare('UPDATE assessment_attempts SET planned_period_id = ? WHERE id = ?').run(pid, a.id);
+      inferred += 1;
+    }
+    if (inferred) applied.push(`Suy tuần MT cho ${inferred} lượt chỉ có ngày mà chưa có tuần`);
+
+    conn.exec('ALTER TABLE assessment_attempts DROP COLUMN lrw_scheduled_at');
+    if (cols('assessment_attempts').includes('speaking_scheduled_at')) {
+      conn.exec('ALTER TABLE assessment_attempts DROP COLUMN speaking_scheduled_at');
+    }
+    applied.push('Bỏ ngày buổi L/R/W và ngày Speaking — một lượt MT nay chỉ thuộc một tuần');
+  }
+
+  /* --------------------------------------------- 3. bỏ ngày làm bài của từng kỹ năng */
+  if (has('assessment_scores') && cols('assessment_scores').includes('taken_on')) {
+    conn.exec('ALTER TABLE assessment_scores DROP COLUMN taken_on');
+    applied.push('Bỏ ngày làm bài riêng của từng kỹ năng — hạn và thời gian chấm đếm theo tuần');
+  }
+
+  /* --------------------------------------------- 4. ngày thi IELTS → tuần dự kiến thi */
+  if (has('learning_cycles') && cols('learning_cycles').includes('exam_date')) {
+    if (!cols('learning_cycles').includes('exam_period_id')) {
+      conn.exec('ALTER TABLE learning_cycles ADD COLUMN exam_period_id INTEGER REFERENCES report_periods(id)');
+    }
+    let moved = 0;
+    for (const c of conn
+      .prepare('SELECT id, exam_date, exam_month FROM learning_cycles WHERE exam_date IS NOT NULL')
+      .all() as any[]) {
+      const day = String(c.exam_date).slice(0, 10);
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) continue;
+      const pid = ensurePeriodFor(day);
+      if (!pid) continue;
+      // Tháng thi để trống thì điền theo chính ngày cũ — không làm mất thông tin đang có.
+      conn
+        .prepare(`UPDATE learning_cycles SET exam_period_id = ?,
+                    exam_month = COALESCE(exam_month, ?) WHERE id = ?`)
+        .run(pid, day.slice(0, 7), c.id);
+      moved += 1;
+    }
+    conn.exec('ALTER TABLE learning_cycles DROP COLUMN exam_date');
+    applied.push(`Đổi ngày thi IELTS thành tuần dự kiến thi (${moved} lộ trình có ngày cũ)`);
+  }
+
+  /* --------------------------------------------- 5. FT = Fast Track, không phải Full-time */
+  if (has('classes') && cols('classes').includes('is_fulltime') && !cols('classes').includes('is_fast_track')) {
+    conn.exec('ALTER TABLE classes RENAME COLUMN is_fulltime TO is_fast_track');
+    applied.push('Đổi tên cột lớp FT cho đúng nghĩa Fast Track (dữ liệu giữ nguyên)');
+  }
+
+  /* --------------------------------------------- 6. gỡ hai quyền không còn việc để làm */
+  if (has('permissions')) {
+    const gone = ['schedule.date', 'schedule.speaking'];
+    let removed = 0;
+    for (const key of gone) {
+      const perm = conn.prepare('SELECT id FROM permissions WHERE key = ?').get(key) as any;
+      if (!perm) continue;
+      for (const t of ['role_permissions', 'user_permissions']) {
+        if (has(t)) removed += (conn.prepare(`DELETE FROM ${t} WHERE permission_id = ?`).run(perm.id) as any).changes;
+      }
+      conn.prepare('DELETE FROM permissions WHERE id = ?').run(perm.id);
+    }
+    if (removed) applied.push(`Gỡ quyền "Chốt ngày giờ" và "Đổi lịch Speaking" khỏi ${removed} lượt cấp quyền`);
+  }
+}
+
+/**
+ * VÒNG 5 — LỚP NORMAL CHỈ CÒN BỐN MÔN L/R/W/S, VÀ W KHÔNG CÒN LÀ W2.
+ *
+ * Hai việc trên dữ liệu đang có:
+ *
+ * 1. PRONUNCIATION → SPEAKING. Foundation trước đây gọi môn nói là Pronunciation. Hai môn
+ *    đó đo cùng một thứ ở hai cái tên, nên mọi bảng tổng hợp phải cộng hai cột lại mới trả
+ *    lời được "cả trung tâm yếu nói đến đâu".
+ *
+ *    NHƯNG KHÔNG GHI ĐÈ. Nếu một lượt đã có CẢ Pronunciation lẫn Speaking thì đó là hai
+ *    điểm thật của hai lần chấm, và đổi tên một cái sẽ đè lên cái kia. Những lượt như vậy
+ *    được ĐỂ NGUYÊN và báo ra thành một con số, để người phụ trách quyết định — máy không
+ *    được tự chọn hộ điểm nào sống điểm nào chết.
+ *
+ * 2. CASE MÔN W TÁCH KHỎI W2. Vòng 4 xếp case môn Writing của lớp Normal vào hạng mục
+ *    `writing2` của Fast Track; owner bác bỏ ở vòng 5. Đổi lại hạng mục và đặt lại khoá
+ *    chống trùng cho đúng.
+ */
+function migrateNormalFourSkills(conn: any, applied: string[]) {
+  const has = (t: string) =>
+    !!conn.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name = ?").get(t);
+  const cols = (t: string) => (conn.prepare(`PRAGMA table_info(${t})`).all() as any[]).map((c: any) => c.name);
+
+  /* ------------------------------------------- 1. Pronunciation → Speaking, không ghi đè */
+  if (has('assessment_scores')) {
+    const clash = conn
+      .prepare(
+        `SELECT COUNT(*) AS n FROM assessment_scores p
+          WHERE p.skill = 'pronunciation'
+            AND EXISTS (SELECT 1 FROM assessment_scores s
+                         WHERE s.attempt_id = p.attempt_id AND s.skill = 'speaking')`,
+      )
+      .get() as any;
+    const moved = conn
+      .prepare(
+        `UPDATE assessment_scores SET skill = 'speaking'
+          WHERE skill = 'pronunciation'
+            AND NOT EXISTS (SELECT 1 FROM assessment_scores s
+                             WHERE s.attempt_id = assessment_scores.attempt_id AND s.skill = 'speaking')`,
+      )
+      .run().changes;
+    if (moved) applied.push(`Gộp ${moved} điểm Pronunciation vào môn Speaking`);
+    if (clash?.n) {
+      applied.push(
+        `${clash.n} điểm Pronunciation ĐỂ NGUYÊN vì lượt đó đã có điểm Speaking riêng `
+        + '— hai điểm thật của hai lần chấm, cần người xem và quyết định, máy không gộp hộ',
+      );
+    }
+  }
+
+  /* Phân công giáo viên và danh sách môn của chương trình: đổi thẳng, không có xung đột. */
+  for (const [table, col] of [
+    ['teacher_assignments', 'skill'],
+    ['programme_skills', 'skill'],
+    ['attempt_skill_skips', 'skill'],
+    ['user_skills', 'skill'],
+  ] as const) {
+    if (!has(table) || !cols(table).includes(col)) continue;
+    // Bỏ dòng sẽ trùng sau khi đổi tên, rồi mới đổi — tránh vi phạm ràng buộc duy nhất.
+    try {
+      conn.prepare(
+        `DELETE FROM ${table} WHERE ${col} = 'pronunciation'
+          AND EXISTS (SELECT 1 FROM ${table} b WHERE b.${col} = 'speaking'
+                        AND b.rowid != ${table}.rowid)`,
+      ).run();
+    } catch { /* bảng không có ràng buộc phù hợp thì bỏ qua bước dọn */ }
+    conn.prepare(`UPDATE ${table} SET ${col} = 'speaking' WHERE ${col} = 'pronunciation'`).run();
+  }
+
+  /* ------------------------------------------- 2. case môn W tách khỏi W2 */
+  if (has('sos_cases') && cols('sos_cases').includes('category')) {
+    const n = conn
+      .prepare(
+        `UPDATE sos_cases SET category = 'writing'
+          WHERE category = 'writing2' AND topic IN ('writing', 'prep_writing')`,
+      )
+      .run().changes;
+    // Case chủ đề Pronunciation nay thuộc hạng mục Speaking.
+    const m = conn
+      .prepare(`UPDATE sos_cases SET category = 'speaking', topic = 'speaking' WHERE topic = 'pronunciation'`)
+      .run().changes;
+    if (n) applied.push(`Tách ${n} case môn W của lớp Normal ra khỏi hạng mục Writing Task 2`);
+    if (m) applied.push(`Chuyển ${m} case Pronunciation sang hạng mục Speaking`);
+
+    /*
+     * ĐẶT LẠI KHOÁ CHỐNG TRÙNG. Khoá chứa tên hạng mục, nên đổi hạng mục mà quên khoá thì
+     * lần trượt sau sinh ra một case thứ hai ở cùng một hạng mục — đúng cái khoá này sinh
+     * ra để chặn. Case nào đổi khoá mà đụng một case đã có thì để nguyên khoá cũ và báo ra.
+     */
+    if (cols('sos_cases').includes('dedup_key')) {
+      let rekeyed = 0;
+      let conflicts = 0;
+      for (const c of conn
+        .prepare(`SELECT id, student_id, cycle_id, category, dedup_key FROM sos_cases WHERE track = 'academic'`)
+        .all() as any[]) {
+        const want = `a:${c.student_id}:${c.cycle_id ?? 0}:${c.category}`;
+        if (c.dedup_key === want) continue;
+        const taken = conn.prepare('SELECT id FROM sos_cases WHERE dedup_key = ? AND id != ?').get(want, c.id) as any;
+        if (taken) { conflicts += 1; continue; }
+        conn.prepare('UPDATE sos_cases SET dedup_key = ? WHERE id = ?').run(want, c.id);
+        rekeyed += 1;
+      }
+      if (rekeyed) applied.push(`Đặt lại khoá chống trùng cho ${rekeyed} case sau khi đổi hạng mục`);
+      if (conflicts) applied.push(`${conflicts} case giữ khoá cũ vì hạng mục đó đã có case khác — cần người gộp tay`);
+    }
+  }
+}
+
+/**
+ * VÒNG 5 — CỘT MỚI CHO WORKFLOW CASE HAI TUẦN (mục 7.5, 7.7).
+ *
+ * Cơ sở dữ liệu mới dựng thì đã có sẵn các cột này từ `schema.sql`; hàm này chỉ vá cho cơ
+ * sở dữ liệu CŨ, vì thêm cột là thao tác duy nhất SQLite làm được mà không phải dựng lại
+ * bảng. Mọi bước đều kiểm tra trước, nên chạy lần hai không đổi gì.
+ *
+ * Bản ghi cũ được đặt về chu kỳ 1 và mốc bắt đầu lấy theo ngày đã có — không bịa ra một
+ * ngày bắt đầu mới, và cũng không để trống khiến mọi phương án cũ trông như chưa từng chạy.
+ */
+function migrateCaseCycles(conn: any, applied: string[]) {
+  const has = (t: string) =>
+    !!conn.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name = ?").get(t);
+  const cols = (t: string) => (conn.prepare(`PRAGMA table_info(${t})`).all() as any[]).map((c: any) => c.name);
+  const addCol = (table: string, col: string, decl: string) => {
+    if (!has(table) || cols(table).includes(col)) return false;
+    conn.exec(`ALTER TABLE ${table} ADD COLUMN ${col} ${decl}`);
+    return true;
+  };
+
+  let added = 0;
+  /* Tên case người dùng tự đặt, và mối nối sang case trước khi vấn đề tái phát. */
+  if (addCol('sos_cases', 'title', 'TEXT')) added += 1;
+  if (addCol('sos_cases', 'previous_case_id', 'INTEGER REFERENCES sos_cases(id)')) added += 1;
+
+  /* Chu kỳ xử lý nằm TRONG phương án — không có màn quản lý chu kỳ riêng. */
+  if (addCol('case_interventions', 'cycle_no', 'INTEGER NOT NULL DEFAULT 1')) added += 1;
+  if (addCol('case_interventions', 'cycle_started_on', 'TEXT')) added += 1;
+  if (addCol('case_interventions', 'closed_reason', 'TEXT')) added += 1;
+  if (addCol('case_interventions', 'superseded_by', 'INTEGER REFERENCES case_interventions(id)')) added += 1;
+
+  /* Mỗi lần cập nhật kết quả ghi luôn bước tiếp theo, hạn của chính chu kỳ đó và có trễ không. */
+  if (addCol('case_followups', 'next_step', 'TEXT')) added += 1;
+  if (addCol('case_followups', 'cycle_no', 'INTEGER')) added += 1;
+  if (addCol('case_followups', 'cycle_due', 'TEXT')) added += 1;
+  if (addCol('case_followups', 'late', 'INTEGER NOT NULL DEFAULT 0')) added += 1;
+  /* Điểm giáo viên tự chấm — lưu riêng, không đụng vào điểm chính thức. */
+  if (addCol('case_followups', 'metrics', 'TEXT')) added += 1;
+
+  /* Lớp nối tiếp: lớp BE mở ra từ lớp FOU nào. */
+  if (addCol('classes', 'previous_class_id', 'INTEGER REFERENCES classes(id)')) added += 1;
+
+  if (added) applied.push(`Bổ sung ${added} cột cho workflow case theo chu kỳ hai tuần`);
+
+  /*
+   * MỐC BẮT ĐẦU CHU KỲ cho phương án cũ: lấy ngày đã bắt đầu, hoặc ngày tạo. Chỉ điền vào
+   * chỗ còn trống, nên chạy lại không ghi đè cái đã có.
+   */
+  if (has('case_interventions') && cols('case_interventions').includes('cycle_started_on')) {
+    const filled = conn
+      .prepare(
+        `UPDATE case_interventions
+            SET cycle_started_on = COALESCE(started_date, planned_date, DATE(created_at))
+          WHERE cycle_started_on IS NULL
+            AND COALESCE(started_date, planned_date, DATE(created_at)) IS NOT NULL`,
+      )
+      .run().changes;
+    if (filled) applied.push(`Điền mốc bắt đầu chu kỳ cho ${filled} phương án cũ`);
+
+    /* Phương án cũ đã hoàn thành thì lý do khép lại là "đã xong", không phải "bị thay thế". */
+    const closed = conn
+      .prepare(
+        `UPDATE case_interventions SET closed_reason = 'done'
+          WHERE closed_reason IS NULL AND status = 'completed'`,
+      )
+      .run().changes;
+    if (closed) applied.push(`Ghi lý do khép lại cho ${closed} phương án đã hoàn thành trước đây`);
+  }
+
+  /*
+   * LẦN CẬP NHẬT CŨ chưa có số chu kỳ: gán chu kỳ 1. Không suy ra bước tiếp theo — bước
+   * tiếp theo là một QUYẾT ĐỊNH của người dùng, và đoán hộ thì lịch sử nói sai.
+   */
+  if (has('case_followups') && cols('case_followups').includes('cycle_no')) {
+    const n = conn.prepare('UPDATE case_followups SET cycle_no = 1 WHERE cycle_no IS NULL').run().changes;
+    if (n) applied.push(`Gán chu kỳ 1 cho ${n} lần cập nhật kết quả cũ`);
+  }
 }

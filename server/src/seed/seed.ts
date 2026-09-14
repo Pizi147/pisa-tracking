@@ -1,17 +1,17 @@
 import crypto from 'node:crypto';
 import { db, recreateSchema, tx } from '../db.ts';
 import {
-  BRANCH_REPORT_CATEGORIES, CONTACT_KINDS, CONTACT_KIND_LABEL, ENTRY_SKILLS,
+  BRANCH_REPORT_CATEGORIES, CONTACT_KINDS, CONTACT_KIND_LABEL, ENTRY_SKILLS, cycleDeadline,
   PERMISSION_LABEL, PROGRAMME_TEMPLATES, categoryOf,
   TUTOR_REPORT_CATEGORIES, programmeOf,
   type EntrySkill,
-} from '../../../shared/domain.ts';
+} from '../../../shared/domain/index.ts';
 import { addDays, normalizeName, nowIso, padCode } from '../util.ts';
 import { setConfig } from '../demoConfig.ts';
-import { DEFAULT_ADMIN_EMAIL, DEFAULT_ADMIN_PASSWORD, EMAIL_SUFFIX } from '../services/accounts.ts';
-import { seedRoutes } from '../services/sysconfig.ts';
-import { LISTENING_BY_RAW, READING_BY_RAW, roundToHalf } from '../services/scoring.ts';
-import { ensurePeriod, mondayOf, weekInfo } from '../services/week.ts';
+import { DEFAULT_ADMIN_EMAIL, DEFAULT_ADMIN_PASSWORD, EMAIL_SUFFIX } from '../platform/accounts.ts';
+import { seedRoutes } from '../platform/sysconfig.ts';
+import { LISTENING_BY_RAW, READING_BY_RAW, roundToHalf } from '../fasttrack/scoring.ts';
+import { ensurePeriod, mondayOf, weekInfo } from '../platform/week.ts';
 import {
   BRANCHES, CASE_PATTERNS, CLASSES, DEMO_DATE, GIVEN_NAMES, MIDDLE_NAMES, MT_OUTCOMES,
   ROLES, ROLE_PERMISSIONS, SURNAMES, TARGET_SCORES, TEACHER_GAPS,
@@ -187,7 +187,7 @@ export function runSeed() {
       const programme = programmeOf(c.kind);
       const info = conn
         .prepare(
-          `INSERT INTO classes (code, branch_id, kind, programme_code, route, is_fulltime, start_date,
+          `INSERT INTO classes (code, branch_id, kind, programme_code, route, is_fast_track, start_date,
                                 start_period_id, status, note, created_at)
            VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
         )
@@ -196,7 +196,7 @@ export function runSeed() {
          * ở tuần thứ mấy và tuần nào là Progress/Final Test — thiếu nó thì cả ba thông báo
          * của lớp không có căn cứ nào để tính.
          */
-        .run(c.code, branchId.get(c.branch)!, c.kind, programme, c.route, c.isFulltime ? 1 : 0,
+        .run(c.code, branchId.get(c.branch)!, c.kind, programme, c.route, c.isFastTrack ? 1 : 0,
              c.startDate, c.startDate ? ensurePeriod(c.startDate).id : null,
              'active', null, NOW);
       const id = Number(info.lastInsertRowid);
@@ -229,8 +229,8 @@ export function runSeed() {
       const missing = new Set(gap.skills ?? []);
       const taught = skills.filter((sk) => !missing.has(sk));
 
-      // Phân công theo ĐÚNG kỹ năng của chương trình lớp đó: lớp Foundation có
-      // Pronunciation chứ không có Writing task 1/2, nên không giao những ô không tồn tại.
+      // Phân công theo ĐÚNG kỹ năng của chương trình lớp đó: lớp Normal có bốn môn L/R/W/S,
+      // không có Writing task 1/2, nên không giao những ô không tồn tại.
       taught.forEach((skill, i) => assign(pick(1 + (i % 4)), skill, false));
 
       /*
@@ -298,18 +298,19 @@ export function runSeed() {
         const target = TARGET_SCORES[i % TARGET_SCORES.length];
         const cycleInfo = conn
           .prepare(
-            `INSERT INTO learning_cycles (student_id, seq, route, target_score, exam_date, exam_month,
+            `INSERT INTO learning_cycles (student_id, seq, route, target_score, exam_period_id, exam_month,
                                           start_period_id, started_at, status, created_at)
              VALUES (?, 1, ?, ?, ?, ?, ?, ?, 'active', ?)`,
           )
           /*
-           * TUẦN BẮT ĐẦU HỌC của em, và THÁNG THI DỰ KIẾN.
+           * TUẦN BẮT ĐẦU HỌC, và DỰ KIẾN THI ở BA MỨC CHẮC CHẮN KHÁC NHAU.
            *
-           * Cứ năm em thì một em CHƯA khai tuần bắt đầu và một em chưa khai tháng thi — để
-           * badge "Thiếu thông tin" có dữ liệu thật mà hiện, chứ không phải một badge chỉ
-           * tồn tại trên lý thuyết.
+           * Cứ năm em thì một em chưa khai tuần bắt đầu, một em chưa khai gì về kỳ thi, và
+           * một em mới biết THÁNG chứ chưa biết TUẦN — để cả ba cách hiển thị "Dự kiến thi"
+           * đều có dữ liệu thật mà xem, chứ không phải chỉ tồn tại trên lý thuyết.
            */
-          .run(sid, c.route, target, addDays(c.startDate, 200),
+          .run(sid, c.route, target,
+               i % 5 === 3 || i % 5 === 2 ? null : ensurePeriod(addDays(c.startDate, 200)).id,
                i % 5 === 3 ? null : String(addDays(c.startDate, 200)).slice(0, 7),
                i % 5 === 1 ? null : ensurePeriod(c.startDate).id,
                c.startDate, NOW);
@@ -403,32 +404,19 @@ function seedAttempts(conn: any, ctx: {
     const info = conn
       .prepare(
         `INSERT INTO assessment_attempts (cycle_id, student_id, attempt_no, kind, class_id, planned_period_id,
-                                          lrw_scheduled_at, speaking_scheduled_at, status, target_at_attempt,
-                                          created_by, created_at)
-         VALUES (?,?,?, 'mock', ?,?,?,?,?,?,?,?)`,
+                                          status, target_at_attempt, created_by, created_at)
+         VALUES (?,?,?, 'mock', ?,?,?,?,?,?)`,
       )
-      .run(cycleId, sid, step.attemptNo, cid, periodId, step.lrwAt ?? null, step.speakingAt ?? null,
+      .run(cycleId, sid, step.attemptNo, cid, periodId,
            step.done ? 'done' : 'planned', target, manager, NOW);
     const attemptId = Number(info.lastInsertRowid);
     counts.attempts += 1;
 
-    // Lịch sử: Quản lý chốt tuần trước, Admin chi nhánh chốt ngày sau.
+    // Lịch sử: Quản lý chốt tuần. Đây là thao tác xếp lịch duy nhất của một lượt.
     conn.prepare(
       `INSERT INTO attempt_schedule_history (attempt_id, action, field, new_value, reason, actor_user_id, created_at)
        VALUES (?, 'created', 'planned_period', ?, ?, ?, ?)`,
     ).run(attemptId, step.week, 'Kế hoạch đầu khoá', manager, NOW);
-    if (step.lrwAt) {
-      conn.prepare(
-        `INSERT INTO attempt_schedule_history (attempt_id, action, field, new_value, actor_user_id, created_at)
-         VALUES (?, 'lrw_set', 'lrw_scheduled_at', ?, ?, ?)`,
-      ).run(attemptId, step.lrwAt, recorder, NOW);
-    }
-    if (step.speakingAt) {
-      conn.prepare(
-        `INSERT INTO attempt_schedule_history (attempt_id, action, field, new_value, actor_user_id, created_at)
-         VALUES (?, 'speaking_set', 'speaking_scheduled_at', ?, ?, ?)`,
-      ).run(attemptId, step.speakingAt, recorder, NOW);
-    }
     conn
       .prepare(
         `INSERT INTO journey_events (student_id, event_type, event_date, title, ref_table, ref_id, created_by, created_at)
@@ -453,7 +441,6 @@ function seedAttempts(conn: any, ctx: {
 
     const expectation = target - (step.attemptNo === 1 ? 1 : step.attemptNo === 2 ? 0.5 : 0);
     const missing = new Set(outcome.missing ?? []);
-    const performedOnly = new Set(outcome.performedOnly ?? []);
     const assessedOrder = OUTCOME_SKILL_ORDER.filter((sk) => sk !== skipped);
     const failing = new Set(assessedOrder.slice(Math.max(0, assessedOrder.length - outcome.fails)));
 
@@ -465,31 +452,21 @@ function seedAttempts(conn: any, ctx: {
     for (const skill of ENTRY_SKILLS) {
       const assessed = skill === 'writing1' || skill === 'writing2' ? 'writing' : skill;
       if (assessed === skipped) continue;          // không mock thì không có dòng điểm
-      if (missing.has(skill)) continue;            // chưa mock: không có dòng nào
+      if (missing.has(skill)) continue;            // chưa nhập điểm: không có dòng nào
 
-      // Ngày mock thực tế: Speaking theo lịch Speaking nếu có, còn lại theo buổi chính.
-      const scheduled = (skill === 'speaking' ? step.speakingAt : step.lrwAt) ?? step.lrwAt ?? step.week;
-      const takenOn = String(scheduled).slice(0, 10);
-
-      if (performedOnly.has(skill)) {
-        // Đã mock nhưng CHƯA nhập điểm — có dòng, có ngày, chưa có band.
-        conn.prepare(
-          'INSERT INTO assessment_scores (attempt_id, skill, taken_on, entered_by, entered_at) VALUES (?,?,?,?,?)',
-        ).run(attemptId, skill, takenOn, recorder, NOW);
-        continue;
-      }
-
-      const resultDate = addDays(takenOn, 2 + (studentIdx % 3));
+      // Ngày có kết quả tính từ HẾT TUẦN MT — mốc duy nhất còn lại sau khi bỏ ngày thi.
+      const weekEnd = addDays(step.week, 6);
+      const resultDate = addDays(weekEnd, 1 + (studentIdx % 3));
       if (skill === 'listening' || skill === 'reading') {
         const band = bandOf(skill);
         const raw = rawFor(skill, band);
         const realBand = (skill === 'listening' ? LISTENING_BY_RAW : READING_BY_RAW)[raw];
         conn
           .prepare(
-            `INSERT INTO assessment_scores (attempt_id, skill, taken_on, raw_score, raw_total, band, result_date, entered_by, entered_at)
-             VALUES (?,?,?,?,40,?,?,?,?)`,
+            `INSERT INTO assessment_scores (attempt_id, skill, raw_score, raw_total, band, result_date, entered_by, entered_at)
+             VALUES (?,?,?,40,?,?,?,?)`,
           )
-          .run(attemptId, skill, takenOn, raw, realBand, resultDate, recorder, NOW);
+          .run(attemptId, skill, raw, realBand, resultDate, recorder, NOW);
         entryBand[skill] = realBand;
       } else {
         const target2 = bandOf(skill === 'speaking' ? 'speaking' : 'writing');
@@ -510,10 +487,10 @@ function seedAttempts(conn: any, ctx: {
         const crit = criteriaFor(band);
         conn
           .prepare(
-            `INSERT INTO assessment_scores (attempt_id, skill, taken_on, c1, c2, c3, c4, band, result_date, entered_by, entered_at)
-             VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
+            `INSERT INTO assessment_scores (attempt_id, skill, c1, c2, c3, c4, band, result_date, entered_by, entered_at)
+             VALUES (?,?,?,?,?,?,?,?,?,?)`,
           )
-          .run(attemptId, skill, takenOn, crit[0], crit[1], crit[2], crit[3],
+          .run(attemptId, skill, crit[0], crit[1], crit[2], crit[3],
                roundToHalf((crit[0] + crit[1] + crit[2] + crit[3]) / 4), resultDate, recorder, NOW);
         entryBand[skill] = roundToHalf((crit[0] + crit[1] + crit[2] + crit[3]) / 4);
       }
@@ -526,9 +503,9 @@ function seedAttempts(conn: any, ctx: {
      * SOS là hai con số khác nhau và không cộng khớp; đó là chủ ý.
      */
     const failingEntry = ENTRY_SKILLS.filter((k) => entryBand[k] !== undefined && entryBand[k] < expectation);
-    if (missing.size === 0 && performedOnly.size === 0 && failingEntry.length > 0) {
+    if (missing.size === 0 && failingEntry.length > 0) {
       const pattern = CASE_PATTERNS[(classIdx + studentIdx + step.attemptNo) % CASE_PATTERNS.length];
-      const testDate = String(step.lrwAt ?? step.week).slice(0, 10);
+      const testDate = String(step.week).slice(0, 10);
       const level = Math.min(3, outcome.fails) || 1;
       for (const topic of failingEntry) {
         seedCase(conn, {
@@ -591,7 +568,7 @@ function seedBehaviourCase(conn: any, o: {
     )
     .run(caseId, o.attemptId, o.attemptNo, o.level, o.testDate, NOW, `mt:${o.attemptId}:${caseId}:opened`);
 
-  const due = addDays(o.testDate, DUE_DAYS_BY_SOS[o.level] ?? 7);
+  const due = cycleDeadline(o.testDate, 'behaviour');
   /*
    * ĐỢT MT CŨ THÌ HAI VIỆC TRAO ĐỔI COI NHƯ ĐÃ LÀM XONG.
    *
@@ -626,9 +603,6 @@ function seedBehaviourCase(conn: any, o: {
            due, `auto:${o.attemptId}:${kind}`, NOW);
   }
 }
-
-/** Hạn làm phương án theo mức SOS — cùng thang với `URGENCY_DUE_DAYS` của `shared/domain.ts`. */
-const DUE_DAYS_BY_SOS: Record<number, number> = { 1: 7, 2: 5, 3: 3 };
 
 const TEACHER_HANDLERS = ['GVCN Thu Trang', 'GVBM Minh Khoa', 'GVCN Bảo Nam', 'GVBM Gia Hân', 'GVCN Quang Duy'];
 const CS_HANDLERS = ['CS Ngọc Diệp', 'CS Hải Yến', 'CS Thanh Vân', 'CS Bảo Ngân'];
@@ -1180,8 +1154,12 @@ function seedRegularClasses(conn: any, ctx: {
     [0.40, 0.45, 0.50, 0.55],   // trượt 3 môn  -> SOS 3
     [0.75, 0.65, null, null],   // mới nhập một nửa -> chưa kết luận
   ];
+  /*
+   * TỔNG ĐIỂM khác nhau giữa các môn — đúng như ngoài đời, và cũng là lý do ô nhập bắt gõ
+   * CẢ tổng: L/R chấm trên 40, W trên 20, S trên 25.
+   */
   const TOTALS: Record<string, number> = {
-    listening: 40, reading: 40, writing: 20, pronunciation: 25, speaking: 25,
+    listening: 40, reading: 40, writing: 20, speaking: 25,
   };
 
   for (const cls of CLASSES) {
@@ -1210,17 +1188,16 @@ function seedRegularClasses(conn: any, ctx: {
         // Tuần học N bắt đầu sau (N-1) tuần kể từ ngày khai giảng.
         const week = mondayOf(addDays(cls.startDate, (cp.studyWeek - 1) * 7));
         const period = ensurePeriod(week);
-        const taken = addDays(week, 2);              // làm bài vào thứ Tư của tuần đó
-        const past = taken <= DEMO_DATE;
+        // Tuần đã bắt đầu thì bài đã làm — không cần một ngày cụ thể để biết điều đó.
+        const past = week <= DEMO_DATE;
 
         const info = conn
           .prepare(
             `INSERT INTO assessment_attempts (cycle_id, student_id, attempt_no, kind, class_id, planned_period_id,
-                                              lrw_scheduled_at, status, created_by, created_at)
-             VALUES (?,?,?,?,?,?,?,?,?,?)`,
+                                              status, created_by, created_at)
+             VALUES (?,?,?,?,?,?,?,?,?)`,
           )
-          .run(cycleId, st.id, ci + 1, cp.kind, cid, period.id, past ? taken : null,
-               'planned', manager, NOW);
+          .run(cycleId, st.id, ci + 1, cp.kind, cid, period.id, 'planned', manager, NOW);
         counts.attempts += 1;
         const attemptId = Number(info.lastInsertRowid);
         if (!past) return;                            // bài của tuần sau: chỉ có kế hoạch
@@ -1236,10 +1213,10 @@ function seedRegularClasses(conn: any, ctx: {
           const score = Math.round(ratio * total);
           conn
             .prepare(
-              `INSERT INTO assessment_scores (attempt_id, skill, taken_on, raw_score, raw_total, entered_by, entered_at)
-               VALUES (?,?,?,?,?,?,?)`,
+              `INSERT INTO assessment_scores (attempt_id, skill, raw_score, raw_total, entered_by, entered_at)
+               VALUES (?,?,?,?,?,?)`,
             )
-            .run(attemptId, skill, taken, score, total, manager, NOW);
+            .run(attemptId, skill, score, total, manager, NOW);
           counts.scores += 1;
           scored += 1;
           if (score / total < 0.6) { failed += 1; failingSkills.push(skill); }
@@ -1252,7 +1229,7 @@ function seedRegularClasses(conn: any, ctx: {
             const level = failed >= 3 ? 3 : failed;
             /*
              * MỘT VẤN ĐỀ CHO MỖI KỸ NĂNG, kỹ năng của chính chương trình lớp đó
-             * (Prep-Writing, Pronunciation…), không ép về bộ năm ô IELTS.
+             * (môn W của Normal), không ép về bộ năm ô IELTS.
              */
             for (const skill of failingSkills) {
               conn
@@ -1263,13 +1240,13 @@ function seedRegularClasses(conn: any, ctx: {
                    ON CONFLICT(dedup_key) DO NOTHING`,
                 )
                 .run(attemptId, st.id, cycleId, skill, categoryOf('academic', skill),
-                     taken, level, ci === 0 ? 'in_progress' : 'open',
+                     week, level, ci === 0 ? 'in_progress' : 'open',
                      `a:${st.id}:${cycleId ?? 0}:${categoryOf('academic', skill)}`, NOW);
               counts.cases += 1;
             }
             /* Lớp thường CÓ hai việc trao đổi, nhưng KHÔNG tự sinh phương án hỗ trợ. */
             seedBehaviourCase(conn, {
-              attemptId, attemptNo: 1, sid: st.id, cycleId, testDate: taken, level,
+              attemptId, attemptNo: 1, sid: st.id, cycleId, testDate: week, level,
               failedCount: failed, gvcn: manager, counts,
             });
           }
@@ -1414,6 +1391,11 @@ function seedSpecialCases(conn: any, ctx: {
   seedAcademicCases(conn, { classId, allStudents, adminId, managers, counts });
 
   /*
+   * 5e) MA TRẬN TÌNH HUỐNG VÒNG 5 (mục 8.2) — thêm đúng những ô mà dữ liệu nền chưa có.
+   */
+  seedVong5(conn, { classId, allStudents, adminId, branchAdmins: ctx.branchAdmins, managers, counts });
+
+  /*
    * 6) Cảnh báo — dữ liệu lịch sử để thử bộ lọc hành trình.
    *
    * Dòng "Đánh giá GV" của bản trước đã bỏ cùng với chức năng ghi nhận của giáo viên: để
@@ -1469,11 +1451,11 @@ function seedSpecialCases(conn: any, ctx: {
     const newTarget = (old.target_score ?? 6) + 0.5;
     const cyc = conn
       .prepare(
-        `INSERT INTO learning_cycles (student_id, seq, route, target_score, exam_date, exam_month,
+        `INSERT INTO learning_cycles (student_id, seq, route, target_score, exam_period_id, exam_month,
                                       start_period_id, started_at, status, note, created_at)
          VALUES (?,?, 'LT2', ?, ?, '2027-03', ?, ?, 'active', ?, ?)`,
       )
-      .run(promoted.id, old.seq + 1, newTarget, '2027-03-06',
+      .run(promoted.id, old.seq + 1, newTarget, ensurePeriod('2027-03-01').id,
            ensurePeriod('2026-09-07').id, '2026-09-07',
            'Đã thi xong LT1, sang lộ trình mới với target cao hơn', NOW);
     const cycleId = Number(cyc.lastInsertRowid);
@@ -1627,3 +1609,571 @@ function seedMeeting(conn: any, ctx: {
 }
 
 export { weekInfo };
+
+// ==================================================================== vòng 5 · ma trận mục 8.2
+
+/**
+ * MA TRẬN TÌNH HUỐNG CỦA VÒNG 5 (mục 8.2).
+ *
+ * Phần seed cũ đã dựng sẵn phần lớn dữ liệu nền: lớp, điểm, case sinh từ điểm, mức SOS các
+ * loại. Hàm này KHÔNG dựng lại những thứ đó. Nó chỉ thêm đúng những tình huống mà kiểm tra
+ * bằng truy vấn thấy CHƯA CÓ ô nào trong dữ liệu — và thêm trên những em đã có sẵn, vì thêm
+ * bản ghi chỉ để bảng trông nhiều số là đúng thứ mục 8.1 cấm.
+ *
+ * Mười ba tình huống, mỗi tình huống một em, ghi rõ ở tài liệu bàn giao:
+ *
+ *   A  case tên tự nhập, chưa có phương án nào
+ *   B  hai case CÙNG một kỹ năng, mở song song có chủ ý
+ *   C  case đã chốt xong rồi tái phát → case MỚI nối vào case cũ
+ *   D  một phương án đi qua ba chu kỳ nối tiếp
+ *   E  phương án bị THAY THẾ, không phải đã thành công
+ *   F  xin hỗ trợ Quản lý — chu kỳ dừng lại chờ người khác
+ *   G  case mở đúng ngày demo 14/09/2026, hạn phải ra 27/09/2026
+ *   H  phương án cần duyệt: chu kỳ chỉ chạy TỪ LÚC ĐƯỢC DUYỆT
+ *   I  Quản lý KHÔNG duyệt, có lý do và hướng sửa
+ *   J  điểm giáo viên tự chấm, khác điểm chính thức
+ *   K  case Ý thức/Khác đủ vòng: hạn một tuần, kết quả xấu, vẫn đóng được
+ *   L  FOU → BE: chuyển tiếp cả lớp, giữ nguyên lịch sử lớp cũ
+ *   M  BE → FT: chuyển một em vào lớp Fast Track đang chạy
+ */
+function seedVong5(conn: any, ctx: {
+  classId: Map<string, number>;
+  allStudents: { id: number; classCode: string; branch: string }[];
+  adminId: number; branchAdmins: Map<string, number>; managers: Map<string, number[]>;
+  counts: Record<string, number>;
+}) {
+  const { classId, allStudents, adminId, managers, counts } = ctx;
+  const inClass = (code: string) => allStudents.filter((s) => s.classCode === code);
+  const cycleOf = (sid: number) =>
+    (conn.prepare(`SELECT id FROM learning_cycles WHERE student_id = ? AND status='active' ORDER BY seq DESC LIMIT 1`)
+      .get(sid) as any)?.id ?? null;
+  const coreOf = (classCode: string) =>
+    (conn.prepare(
+      `SELECT user_id FROM teacher_assignments WHERE class_id = ? AND is_core = 1 AND status='active' LIMIT 1`,
+    ).get(classId.get(classCode)) as any)?.user_id ?? adminId;
+
+  /*
+   * CHỌN MỘT EM CÒN TRỐNG HẠNG MỤC ĐÓ.
+   *
+   * Seed nền đã mở sẵn rất nhiều case sinh từ điểm, nên chọn em theo số thứ tự trong lớp là
+   * đâm thẳng vào luật chống trùng hạng mục. Hàm này chọn em ĐẦU TIÊN trong lớp chưa có case
+   * nào ở hạng mục cần dùng — nhờ vậy mỗi tình huống dưới đây đứng một mình, đọc ra đúng cái
+   * nó muốn minh hoạ, và chạy lại seed vẫn cho ra đúng em cũ.
+   */
+  const pick = (classCode: string, track: string, topic: string) => {
+    const category = categoryOf(track, topic);
+    return inClass(classCode).find((st) => {
+      const cycleId = cycleOf(st.id);
+      const key = track === 'behaviour'
+        ? `bt:${st.id}:${cycleId ?? 0}`
+        : `a:${st.id}:${cycleId ?? 0}:${category}`;
+      return !conn.prepare('SELECT 1 FROM sos_cases WHERE dedup_key = ?').get(key);
+    }) ?? null;
+  };
+
+  /** Mở một case với TÊN TỰ NHẬP — không dùng tên tự sinh kiểu "MT2 - Reading dưới kỳ vọng". */
+  const named = (o: {
+    sid: number; classCode: string; title: string; summary: string;
+    track?: string; topic: string; detectedAt: string;
+    parallel?: boolean; previousCaseId?: number | null; status?: string;
+  }): number => {
+    const track = o.track ?? 'academic';
+    const cycleId = cycleOf(o.sid);
+    const category = categoryOf(track, o.topic);
+    const dedupKey = o.parallel ? null
+      : track === 'behaviour' ? `bt:${o.sid}:${cycleId ?? 0}` : `a:${o.sid}:${cycleId ?? 0}:${category}`;
+    const info = conn
+      .prepare(
+        `INSERT INTO sos_cases (student_id, cycle_id, track, topic, category, title, summary,
+                                origin_kind, detected_at, urgency, status, dedup_key, parallel,
+                                previous_case_id, reported_by, created_at)
+         VALUES (?,?,?,?,?,?,?, 'teacher_report', ?, 'normal', ?, ?, ?, ?, ?, ?)`,
+      )
+      .run(o.sid, cycleId, track, o.topic, category, o.title, o.summary,
+           o.detectedAt, o.status ?? 'open', dedupKey, o.parallel ? 1 : 0,
+           o.previousCaseId ?? null, coreOf(o.classCode), NOW);
+    counts.cases += 1;
+    return Number(info.lastInsertRowid);
+  };
+
+  /** Thêm một phương án. `cycleStart` quyết định hạn — đúng luật chu kỳ hai tuần. */
+  const plan = (o: {
+    caseId: number; kind: string; description: string; performer: number;
+    cycleStart: string; cycleNo?: number; status?: string; track?: string;
+    needsApproval?: boolean; approvalState?: string | null; approvalNote?: string | null;
+    approvalAt?: string | null; approver?: number | null;
+    completedDate?: string | null; closedReason?: string | null;
+  }): number => {
+    const due = cycleDeadline(o.cycleStart, o.track ?? 'academic');
+    const running = (o.status ?? 'started') !== 'completed' && o.approvalState !== 'pending';
+    const info = conn
+      .prepare(
+        `INSERT INTO case_interventions (case_id, kind, description, performer_user_id,
+                                         status, planned_date, started_date, completed_date,
+                                         cycle_no, cycle_started_on, action_due, followup_due,
+                                         needs_approval, approval_state, approval_due, approval_note,
+                                         approval_by, approval_at, closed_reason,
+                                         recorded_by, created_at)
+         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+      )
+      .run(o.caseId, o.kind, o.description, o.performer,
+           o.status ?? 'started', o.cycleStart,
+           o.approvalState === 'pending' ? null : o.cycleStart,
+           o.completedDate ?? null,
+           o.cycleNo ?? 1, o.approvalState === 'pending' ? null : o.cycleStart,
+           running ? due : null, running ? due : null,
+           o.needsApproval ? 1 : 0, o.approvalState ?? null,
+           o.approvalState === 'pending' ? cycleDeadline(o.cycleStart, o.track ?? 'academic') : null,
+           o.approvalNote ?? null, o.approver ?? null, o.approvalAt ?? null,
+           o.closedReason ?? null, adminId, NOW);
+    counts.interventions += 1;
+    return Number(info.lastInsertRowid);
+  };
+
+  /** Ghi một lần cập nhật kết quả, kèm bước tiếp theo và (tuỳ chọn) điểm giáo viên tự chấm. */
+  const result = (o: {
+    caseId: number; ivId: number | null; observedOn: string;
+    outcome: string; nextStep: string | null; note: string;
+    cycleNo?: number; cycleDue?: string | null; late?: boolean;
+    metrics?: { skill: string; score: number; total: number | null }[] | null;
+    observer: number;
+  }) => {
+    conn
+      .prepare(
+        `INSERT INTO case_followups (case_id, intervention_id, observed_on, observer_user_id,
+                                     outcome, note, next_step, cycle_no, cycle_due, late, metrics, created_at)
+         VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
+      )
+      .run(o.caseId, o.ivId, o.observedOn, o.observer, o.outcome, o.note,
+           o.nextStep, o.cycleNo ?? 1, o.cycleDue ?? null, o.late ? 1 : 0,
+           o.metrics ? JSON.stringify(o.metrics) : null, NOW);
+    counts.followups += 1;
+  };
+
+  const journey = (sid: number, type: string, date: string, title: string, detail: string | null) =>
+    conn
+      .prepare(
+        `INSERT INTO journey_events (student_id, event_type, event_date, title, detail, created_by, created_at)
+         VALUES (?,?,?,?,?,?,?)`,
+      )
+      .run(sid, type, date, title, detail, adminId, NOW);
+
+  // ───────────────────────────────────────────── A · case tên tự nhập, chưa có phương án
+  /*
+   * Nút "Hoàn thành case" phải MỜ ĐI và nói rõ vì sao: chưa làm gì cho em thì chưa có gì để
+   * kết luận. Đây là em để thử đúng chỗ đó.
+   */
+  const a = pick('CP-FT 110', 'academic', 'reading');
+  if (a) {
+    named({
+      sid: a.id, classCode: 'CP-FT 110', topic: 'reading',
+      title: 'Đọc chậm, không kịp bài Reading',
+      summary: 'Em làm hết passage 1 thì đã hết 25 phút, hai passage sau đoán bừa.',
+      detectedAt: '2026-09-09',
+    });
+  }
+
+  // ───────────────────────────────────────────── B · hai case CÙNG kỹ năng, song song
+  /*
+   * Bảng tóm tắt theo kỹ năng chỉ trỏ được vào MỘT case mỗi hạng mục. Em này có hai case
+   * Speaking cùng lúc — một về phát âm, một về vốn từ — nên là chỗ chứng minh khối "Các case
+   * của em" mở được cả hai, còn bảng phía trên thì không.
+   */
+  const bStudent = pick('MB-FT 101', 'academic', 'speaking');
+  if (bStudent) {
+    named({
+      sid: bStudent.id, classCode: 'MB-FT 101', topic: 'speaking',
+      title: 'Phát âm đuôi -s, -ed chưa rõ',
+      summary: 'Giám khảo phải hỏi lại hai lần trong phần 2.',
+      detectedAt: '2026-08-24', status: 'in_progress',
+    });
+    named({
+      sid: bStudent.id, classCode: 'MB-FT 101', topic: 'speaking',
+      title: 'Vốn từ Speaking chủ đề học thuật còn mỏng',
+      summary: 'Phần 3 em lặp lại ý của phần 2, chưa mở rộng được.',
+      detectedAt: '2026-09-07', parallel: true,
+    });
+  }
+
+  // ───────────────────────────────────────────── C · tái phát sau khi đã chốt xong
+  const c = pick('UB-FT 401', 'academic', 'listening');
+  if (c) {
+    const old = named({
+      sid: c.id, classCode: 'UB-FT 401', topic: 'listening',
+      title: 'Nghe sót số và tên riêng',
+      summary: 'Mất điểm đều ở phần 1 và phần 4.',
+      detectedAt: '2026-06-08', status: 'done',
+    });
+    conn.prepare(
+      `UPDATE sos_cases SET dedup_key = NULL, disposition = 'action', outcome = 'improved',
+              outcome_decision = 'end', outcome_at = ?, closed_by = ?, closed_at = ?
+        WHERE id = ?`,
+    ).run(NOW, adminId, '2026-07-20', old);
+    const ivOld = plan({
+      caseId: old, kind: 'tutor', description: 'Học tutor Listening hai buổi mỗi tuần',
+      performer: coreOf('UB-FT 401'), cycleStart: '2026-06-08',
+      status: 'completed', completedDate: '2026-07-20', closedReason: 'done',
+    });
+    result({
+      caseId: old, ivId: ivOld, observedOn: '2026-07-20', outcome: 'improved', nextStep: 'complete',
+      note: 'MT3 em bắt được cả số lẫn tên riêng, Listening lên 0.5.',
+      cycleDue: cycleDeadline('2026-06-08'), observer: coreOf('UB-FT 401'),
+    });
+    conn.prepare(
+      `INSERT INTO case_milestones (case_id, kind, occurred_on, note, created_by, created_at, dedup_key)
+       VALUES (?, 'recurrence', ?, ?, ?, ?, ?)`,
+    ).run(old, '2026-09-07', 'Vấn đề quay lại ở MT4 — đã mở case mới nối tiếp case này.',
+          adminId, NOW, `recurrence:${old}:2026-09-07`);
+
+    const fresh = named({
+      sid: c.id, classCode: 'UB-FT 401', topic: 'listening',
+      title: 'Nghe sót số và tên riêng — tái phát sau MT4',
+      summary: 'Đợt hỗ trợ trước đã có kết quả, nhưng MT4 lỗi cũ quay lại.',
+      detectedAt: '2026-09-07', previousCaseId: old, status: 'in_progress',
+    });
+    plan({
+      caseId: fresh, kind: 'self_study', description: 'Luyện nghe số và tên riêng 15 phút mỗi ngày',
+      performer: coreOf('UB-FT 401'), cycleStart: '2026-09-07',
+    });
+    journey(c.id, 'case_opened', '2026-09-07', 'Vấn đề Listening tái phát',
+      'Case cũ đã chốt xong từ 20/07; mở case mới nối vào case cũ.');
+  }
+
+  // ───────────────────────────────────────────── D · ba chu kỳ nối tiếp trên một phương án
+  /*
+   * Chu kỳ 1 tiến bộ một phần → theo dõi thêm. Chu kỳ 2 chưa thay đổi → tiếp tục phương án
+   * cũ. Chu kỳ 3 đang chạy. Lịch sử hai chu kỳ trước GIỮ NGUYÊN hạn và kết quả của chính nó.
+   */
+  const d = pick('CP-FT 110', 'academic', 'writing2');
+  if (d) {
+    const cs = named({
+      sid: d.id, classCode: 'CP-FT 110', topic: 'writing2',
+      title: 'Writing Task 2 lạc đề ở dạng hai phía',
+      summary: 'Em chỉ bàn một phía của đề, mất điểm Task Response.',
+      detectedAt: '2026-07-06', status: 'in_progress',
+    });
+    const iv = plan({
+      caseId: cs, kind: 'extra_homework',
+      description: 'Mỗi tuần một bài Task 2 dạng hai phía, cô chữa tay',
+      performer: coreOf('CP-FT 110'), cycleStart: '2026-08-17', cycleNo: 3,
+    });
+    result({
+      caseId: cs, ivId: iv, observedOn: '2026-07-19', outcome: 'partial', nextStep: 'monitor',
+      note: 'Em đã nêu được cả hai phía nhưng phần kết luận còn bỏ lửng.',
+      cycleNo: 1, cycleDue: cycleDeadline('2026-07-06'), observer: coreOf('CP-FT 110'),
+    });
+    result({
+      caseId: cs, ivId: iv, observedOn: '2026-08-19', outcome: 'unchanged', nextStep: 'continue',
+      note: 'Hai bài gần nhất vẫn quên phần kết luận. Giữ nguyên cách làm, thêm một vòng nữa.',
+      cycleNo: 2, cycleDue: cycleDeadline('2026-07-19'), late: true, observer: coreOf('CP-FT 110'),
+    });
+  }
+
+  // ───────────────────────────────────────────── E · phương án bị THAY THẾ
+  const e = pick('BC-FT 205', 'academic', 'reading');
+  if (e) {
+    const cs = named({
+      sid: e.id, classCode: 'BC-FT 205', topic: 'reading',
+      title: 'Reading sai dạng True/False/Not Given',
+      summary: 'Em chọn False cho mọi câu không thấy thông tin.',
+      detectedAt: '2026-08-10', status: 'in_progress',
+    });
+    const oldIv = plan({
+      caseId: cs, kind: 'self_study', description: 'Tự luyện 20 câu T/F/NG mỗi tuần',
+      performer: coreOf('BC-FT 205'), cycleStart: '2026-08-10',
+      status: 'completed', completedDate: '2026-08-24', closedReason: 'superseded',
+    });
+    const newIv = plan({
+      caseId: cs, kind: 'tutor', description: 'Học tutor Reading, tập trung riêng dạng T/F/NG',
+      performer: coreOf('BC-FT 205'), cycleStart: '2026-08-24',
+    });
+    conn.prepare('UPDATE case_interventions SET superseded_by = ? WHERE id = ?').run(newIv, oldIv);
+    result({
+      caseId: cs, ivId: oldIv, observedOn: '2026-08-24', outcome: 'worse', nextStep: 'propose',
+      note: 'Tự luyện không ăn thua, em vẫn giữ nguyên cách hiểu sai. Đổi sang học tutor.',
+      cycleDue: cycleDeadline('2026-08-10'), observer: coreOf('BC-FT 205'),
+    });
+  }
+
+  // ───────────────────────────────────────────── F · xin hỗ trợ Quản lý
+  const f = pick('BC-FT 205', 'academic', 'speaking');
+  if (f) {
+    const cs = named({
+      sid: f.id, classCode: 'BC-FT 205', topic: 'speaking',
+      title: 'Em gần như không nói trong giờ Speaking',
+      summary: 'Ba buổi liền em chỉ trả lời một câu rồi im.',
+      detectedAt: '2026-08-31', status: 'in_progress',
+    });
+    const iv = plan({
+      caseId: cs, kind: 'teacher_change', description: 'Xin đổi giờ Speaking sang lớp nhỏ hơn',
+      performer: coreOf('BC-FT 205'), cycleStart: '2026-09-07',
+      status: 'planned', needsApproval: true, approvalState: 'pending',
+    });
+    result({
+      caseId: cs, ivId: iv, observedOn: '2026-09-07', outcome: 'insufficient', nextStep: 'ask_manager',
+      note: 'Chưa đủ căn cứ nói em tiến bộ hay không — cần Quản lý quyết định việc đổi lớp trước.',
+      cycleDue: cycleDeadline('2026-08-31'), observer: coreOf('BC-FT 205'),
+    });
+  }
+
+  // ───────────────────────────────────────────── G · case mở 14/09 → hạn phải là 27/09
+  /*
+   * ĐÂY LÀ Ô KIỂM TRA LUẬT HẠN đã chốt ở mục 7.7, viết thẳng vào dữ liệu mẫu để mở màn hình
+   * lên là đối chiếu được bằng mắt: case mở ngày demo, hạn hiện 27/09/2026 — KHÔNG phải
+   * 04/10/2026.
+   */
+  const g = pick('MB-FT 102', 'academic', 'writing1');
+  if (g) {
+    const cs = named({
+      sid: g.id, classCode: 'MB-FT 102', topic: 'writing1',
+      title: 'Writing Task 1 thiếu câu tổng quan',
+      summary: 'Hai bài gần nhất em vào thẳng số liệu, không có overview.',
+      detectedAt: DEMO_DATE, status: 'in_progress',
+    });
+    plan({
+      caseId: cs, kind: 'extra_homework', description: 'Viết lại phần overview của ba bài cũ',
+      performer: coreOf('MB-FT 102'), cycleStart: DEMO_DATE,
+    });
+  }
+
+  // ───────────────────────────────────────────── H · chu kỳ chỉ chạy TỪ LÚC ĐƯỢC DUYỆT
+  /*
+   * Đề xuất gửi 24/08, Quản lý duyệt 07/09. Chu kỳ hai tuần tính từ 07/09 — thời gian chờ
+   * Quản lý KHÔNG bị tính là giáo viên đã có thời gian làm.
+   */
+  const h = pick('UB-FT 401', 'academic', 'writing2');
+  if (h) {
+    const cs = named({
+      sid: h.id, classCode: 'UB-FT 401', topic: 'writing2',
+      title: 'Cần học thêm ngoài giờ cho Writing',
+      summary: 'Em kẹt ở 5.5 suốt ba lượt MT.',
+      detectedAt: '2026-08-24', status: 'in_progress',
+    });
+    plan({
+      caseId: cs, kind: 'tutor', description: 'Tutor Writing 1 kèm 1, hai buổi mỗi tuần',
+      performer: coreOf('UB-FT 401'), cycleStart: '2026-09-07',
+      needsApproval: true, approvalState: 'approved',
+      approvalNote: 'Duyệt, xếp vào khung tối thứ Ba và thứ Năm.',
+      approver: managers.get('UB')?.[0] ?? adminId, approvalAt: '2026-09-07',
+    });
+    journey(h.id, 'case_action', '2026-09-07', 'Quản lý duyệt phương án tutor Writing',
+      'Đề xuất gửi 24/08, được duyệt 07/09 — chu kỳ thực hiện bắt đầu từ ngày duyệt.');
+  }
+
+  // ───────────────────────────────────────────── I · Quản lý KHÔNG duyệt, có lý do
+  const i = pick('HD-FT 302', 'academic', 'listening');
+  if (i) {
+    const cs = named({
+      sid: i.id, classCode: 'HD-FT 302', topic: 'listening',
+      title: 'Đề nghị chuyển em sang lớp khác',
+      summary: 'Giáo viên thấy em theo không kịp tốc độ lớp.',
+      detectedAt: '2026-09-01', status: 'in_progress',
+    });
+    plan({
+      caseId: cs, kind: 'class_change', description: 'Chuyển em sang lớp chậm hơn',
+      performer: coreOf('HD-FT 302'), cycleStart: '2026-09-01',
+      status: 'cancelled', needsApproval: true, approvalState: 'declined',
+      approvalNote: 'Chưa chuyển lớp khi mới có một lượt MT. Thử kèm thêm hai tuần rồi báo lại.',
+      approver: managers.get('HD')?.[0] ?? adminId, approvalAt: '2026-09-04',
+    });
+    plan({
+      caseId: cs, kind: 'extra_homework', description: 'Kèm thêm 15 phút cuối mỗi buổi, hai tuần',
+      performer: coreOf('HD-FT 302'), cycleStart: '2026-09-04',
+    });
+  }
+
+  // ───────────────────────────────────────────── J · điểm giáo viên tự chấm
+  /*
+   * Cô đọc bài viết ở nhà rồi ước lượng 6.0, trong khi điểm mock chính thức là 5.5. Hai con
+   * số cùng nằm trên biểu đồ tiến bộ nhưng KHÔNG nối chung một đường.
+   */
+  const j = pick('MB-FT 101', 'academic', 'writing1');
+  if (j) {
+    const cs = named({
+      sid: j.id, classCode: 'MB-FT 101', topic: 'writing1',
+      title: 'Task 1 mô tả số liệu rời rạc',
+      summary: 'Em liệt kê từng con số, chưa nhóm được xu hướng.',
+      detectedAt: '2026-08-10', status: 'in_progress',
+    });
+    const iv = plan({
+      caseId: cs, kind: 'extra_homework', description: 'Mỗi tuần một bài Task 1 nhóm xu hướng',
+      performer: coreOf('MB-FT 101'), cycleStart: '2026-08-24', cycleNo: 2,
+    });
+    result({
+      caseId: cs, ivId: iv, observedOn: '2026-08-23', outcome: 'partial', nextStep: 'monitor',
+      note: 'Cô chấm thử hai bài ở nhà: đã nhóm được xu hướng, còn thiếu so sánh cuối.',
+      cycleDue: cycleDeadline('2026-08-10'),
+      metrics: [{ skill: 'writing1', score: 6, total: null }],
+      observer: coreOf('MB-FT 101'),
+    });
+    /* Điểm cô chấm khi kết luận — vẫn là ước lượng của cô, không đụng vào điểm mock. */
+    result({
+      caseId: cs, ivId: null, observedOn: '2026-09-07', outcome: 'partial', nextStep: null,
+      note: 'Chấm lại toàn bộ bài viết trong tháng.',
+      cycleNo: 2, metrics: [{ skill: 'writing1', score: 6.5, total: null }],
+      observer: coreOf('MB-FT 101'),
+    });
+  }
+
+  // ───────────────────────────────────────────── K · Ý thức/Khác đủ vòng, kết quả xấu vẫn đóng
+  /*
+   * Case Ý thức/Khác dùng chu kỳ MỘT TUẦN và ba mức kết quả riêng. Em này kết thúc ở "Kém
+   * hơn" mà case vẫn đóng được — vì mọi phương án đã khép lại và giáo viên đã ghi kết luận.
+   * Quan trọng: case đóng KHÔNG được tô xanh như thể đã giải quyết xong tốt đẹp.
+   */
+  const k = pick('CP-FT 110', 'behaviour', 'homework');
+  if (k) {
+    const cs = named({
+      sid: k.id, classCode: 'CP-FT 110', track: 'behaviour', topic: 'homework',
+      title: 'Không làm bài về nhà ba tuần liền',
+      summary: 'Em nhận bài nhưng không nộp, hỏi thì nói quên.',
+      detectedAt: '2026-08-10', status: 'done',
+    });
+    const iv1 = plan({
+      caseId: cs, kind: 'talk_student', description: 'GVCN trao đổi riêng với em cuối buổi',
+      performer: coreOf('CP-FT 110'), cycleStart: '2026-08-10', track: 'behaviour',
+      status: 'completed', completedDate: '2026-08-17', closedReason: 'done',
+    });
+    result({
+      caseId: cs, ivId: iv1, observedOn: '2026-08-17', outcome: 'unchanged', nextStep: 'continue',
+      note: 'Em hứa sẽ nộp nhưng tuần đó vẫn trống hai bài.',
+      cycleDue: cycleDeadline('2026-08-10', 'behaviour'), observer: coreOf('CP-FT 110'),
+    });
+    const iv2 = plan({
+      caseId: cs, kind: 'talk_parent', description: 'CS gọi trao đổi với phụ huynh',
+      performer: coreOf('CP-FT 110'), cycleStart: '2026-08-17', cycleNo: 2, track: 'behaviour',
+      status: 'completed', completedDate: '2026-08-24', closedReason: 'done',
+    });
+    result({
+      caseId: cs, ivId: iv2, observedOn: '2026-08-24', outcome: 'worse', nextStep: 'complete',
+      note: 'Sau buổi gọi em nghỉ thêm một buổi. Gia đình đang có việc riêng, xin tạm dừng can thiệp.',
+      cycleNo: 2, cycleDue: cycleDeadline('2026-08-17', 'behaviour'), observer: coreOf('CP-FT 110'),
+    });
+    conn.prepare(
+      `UPDATE sos_cases SET disposition = 'action', disposition_note = ?,
+              outcome = 'no_change', outcome_decision = 'end', outcome_note = ?,
+              outcome_by = ?, outcome_at = ?, closed_by = ?, closed_at = ?
+        WHERE id = ?`,
+    ).run('Đã làm hết những gì trong khả năng của lớp',
+          'Kết thúc đợt này với kết quả KÉM HƠN. Gia đình xin tạm dừng; sẽ mở case mới khi em quay lại nhịp học.',
+          adminId, NOW, adminId, '2026-08-24', cs);
+  }
+
+  /*
+   * HAI MỐC CỦA CHƯƠNG TRÌNH BEGINNER cho một em vừa chuyển lên.
+   *
+   * Điểm đặt nhỉnh hơn giai đoạn Foundation của chính em — đó là cả lý do em được lên lớp —
+   * nhưng KHÔNG nối vào một đường điểm chung với giai đoạn trước: hai chương trình chấm trên
+   * hai thang khác nhau, và hồ sơ tách chúng bằng bộ chọn lộ trình.
+   */
+  const beCheckpoints = (sid: number, cycleId: number, classIdOf: number, startDate: string) => {
+    const tpl = PROGRAMME_TEMPLATES.BE;
+    const totals: Record<string, number> = { listening: 40, reading: 40, writing: 20, speaking: 25 };
+    const ratios: Record<string, number> = { listening: 0.72, reading: 0.70, writing: 0.65, speaking: 0.68 };
+    tpl.checkpoints.forEach((cp, ci) => {
+      const week = mondayOf(addDays(startDate, (cp.studyWeek - 1) * 7));
+      const period = ensurePeriod(week);
+      const info = conn
+        .prepare(
+          `INSERT INTO assessment_attempts (cycle_id, student_id, attempt_no, kind, class_id,
+                                            planned_period_id, status, created_by, created_at)
+           VALUES (?,?,?,?,?,?,?,?,?)`,
+        )
+        .run(cycleId, sid, ci + 1, cp.kind, classIdOf, period.id,
+             week <= DEMO_DATE ? 'done' : 'planned', adminId, NOW);
+      counts.attempts += 1;
+      if (week > DEMO_DATE) return;                 // bài của tuần sau: chỉ có kế hoạch
+      const attemptId = Number(info.lastInsertRowid);
+      for (const skill of tpl.skills) {
+        const total = totals[skill] ?? 40;
+        conn
+          .prepare(
+            `INSERT INTO assessment_scores (attempt_id, skill, raw_score, raw_total, entered_by, entered_at)
+             VALUES (?,?,?,?,?,?)`,
+          )
+          .run(attemptId, skill, Math.round((ratios[skill] ?? 0.7) * total), total, adminId, NOW);
+        counts.scores += 1;
+      }
+    });
+  };
+
+  // ───────────────────────────────────────────── L · FOU → BE, giữ nguyên lịch sử lớp cũ
+  /*
+   * Bốn trong sáu em của HD-FOU 05 được chuyển sang HD-BE 21 sau khi hết chương trình. Lớp
+   * cũ GIỮ NGUYÊN: vẫn là lớp Foundation, ghi danh cũ chuyển sang trạng thái "đã chuyển",
+   * điểm và case cũ vẫn gắn với lớp cũ. Hai em còn lại cố ý chưa xếp lớp.
+   */
+  const beId = classId.get('HD-BE 21');
+  const fouStudents = inClass('HD-FOU 05');
+  if (beId && fouStudents.length >= 4) {
+    const moveOn = '2026-08-03';
+    for (const st of fouStudents.slice(0, 4)) {
+      const cur = conn.prepare(`SELECT id FROM enrollments WHERE student_id = ? AND status='active'`).get(st.id) as any;
+      if (!cur) continue;
+      conn.prepare(`UPDATE enrollments SET status='transferred', ended_at=?, end_reason=? WHERE id=?`)
+        .run(moveOn, 'Hết chương trình Foundation, lên Beginner', cur.id);
+      conn.prepare(`INSERT INTO enrollments (student_id, class_id, status, started_at, created_at) VALUES (?,?, 'active', ?, ?)`)
+        .run(st.id, beId, moveOn, NOW);
+      /* Khoá Foundation ĐÓNG LẠI có kết luận; khoá Beginner là một lộ trình MỚI. */
+      conn.prepare(
+        `UPDATE learning_cycles SET status='ended', ended_at=?, outcome='completed',
+                outcome_note='Hoàn thành chương trình Foundation, lên Beginner'
+          WHERE student_id = ? AND status='active'`,
+      ).run(moveOn, st.id);
+      conn.prepare(
+        `INSERT INTO learning_cycles (student_id, seq, route, programme_code, target_score,
+                                      start_period_id, started_at, status, note, created_at)
+         VALUES (?, 2, NULL, 'BE', NULL, ?, ?, 'active', ?, ?)`,
+      ).run(st.id, ensurePeriod(moveOn).id, moveOn, 'Khoá Beginner — lớp HD-BE 21', NOW);
+      counts.cycles += 1;
+      const beCycle = Number(
+        (conn.prepare('SELECT id FROM learning_cycles WHERE student_id = ? ORDER BY id DESC LIMIT 1')
+          .get(st.id) as any).id,
+      );
+      /*
+       * KHOÁ MỚI PHẢI CÓ BÀI CỦA CHÍNH NÓ.
+       *
+       * Chuyển em sang lớp mới mà lộ trình mới trống trơn thì bảng lớp không có gì để hiện,
+       * và biểu đồ tiến bộ của giai đoạn Beginner cũng rỗng. Dựng đủ hai mốc của chương
+       * trình Beginner: Progress Test tuần học 5 đã có điểm, Final Test tuần học 10 còn ở
+       * phía trước.
+       */
+      beCheckpoints(st.id, beCycle, beId, moveOn);
+      journey(st.id, 'transfer', moveOn, 'Lên lớp Beginner HD-BE 21',
+        'Hết chương trình Foundation. Điểm và case của lớp cũ vẫn xem được ở "Toàn bộ hành trình".');
+      /* Danh sách tình huống này cũng chính là "học viên đi qua nhiều chương trình". */
+      ctx.allStudents.push({ id: st.id, classCode: 'HD-BE 21', branch: st.branch });
+    }
+  }
+
+  // ───────────────────────────────────────────── M · BE → FT, chuyển một em vào lớp đang chạy
+  /*
+   * Không phải ai học xong Beginner cũng lên Elementary: em này đủ sức vào thẳng Fast Track.
+   * Đây là "chuyển cá nhân vào lớp có sẵn", khác hẳn "mở lớp mới và chuyển cả lớp".
+   */
+  const ftId = classId.get('HD-FT 302');
+  const mover = fouStudents[0];
+  if (ftId && mover) {
+    const moveOn = '2026-08-31';
+    const cur = conn.prepare(`SELECT id FROM enrollments WHERE student_id = ? AND status='active'`).get(mover.id) as any;
+    if (cur) {
+      conn.prepare(`UPDATE enrollments SET status='transferred', ended_at=?, end_reason=? WHERE id=?`)
+        .run(moveOn, 'Đủ trình độ vào Fast Track sớm', cur.id);
+      conn.prepare(`INSERT INTO enrollments (student_id, class_id, status, started_at, created_at) VALUES (?,?, 'active', ?, ?)`)
+        .run(mover.id, ftId, moveOn, NOW);
+      conn.prepare(
+        `UPDATE learning_cycles SET status='ended', ended_at=?, outcome='completed',
+                outcome_note='Chuyển sang Fast Track sớm'
+          WHERE student_id = ? AND status='active'`,
+      ).run(moveOn, mover.id);
+      conn.prepare(
+        `INSERT INTO learning_cycles (student_id, seq, route, programme_code, target_score,
+                                      start_period_id, started_at, status, note, created_at)
+         VALUES (?, 3, 'LT1', 'FT', 6.5, ?, ?, 'active', ?, ?)`,
+      ).run(mover.id, ensurePeriod(moveOn).id, moveOn, 'Vào Fast Track giữa chừng — lớp HD-FT 302', NOW);
+      counts.cycles += 1;
+      journey(mover.id, 'transfer', moveOn, 'Vào thẳng lớp Fast Track HD-FT 302',
+        'Chuyển cá nhân vào một lớp đang chạy, không mở lớp mới.');
+    }
+  }
+}

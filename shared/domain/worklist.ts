@@ -1,0 +1,42 @@
+/** TỔNG QUAN VÀ CÔNG VIỆC — báo cáo đơn vị, loại việc và nhãn thời hạn. */
+
+// ---------------------------------------------------------------- Họp tuần
+
+/** Ba nhóm báo cáo cho chi nhánh (chốt theo DANH MỤC của workbook họp). */
+export const BRANCH_REPORT_CATEGORIES = [
+  { key: 'teachers', label: 'Giáo viên', hint: 'Thái độ làm việc, chất lượng giảng dạy' },
+  // Vấn đề vận hành đến từ cả hai phía, nên một nhóm chung thay vì tách hai module.
+  { key: 'students', label: 'Học viên / Phụ huynh', hint: 'Lịch học, thái độ, lực học, phản hồi từ phụ huynh' },
+  { key: 'curriculum', label: 'Giáo trình', hint: 'Mức độ phù hợp, đề xuất điều chỉnh' },
+] as const;
+
+/** Tutor part-time là đơn vị báo cáo riêng, không phải chi nhánh thứ sáu. */
+export const TUTOR_REPORT_CATEGORIES = [
+  { key: 'tutor_count', label: 'Số lượng tutor', hint: '' },
+  { key: 'tutor_quality', label: 'Chất lượng dạy học', hint: '' },
+  { key: 'tutor_other', label: 'Các vấn đề khác', hint: '' },
+] as const;
+
+export const UNIT_STATUSES = ['ok', 'watch', 'problem'] as const;
+export type UnitStatus = (typeof UNIT_STATUSES)[number];
+export const UNIT_STATUS_LABEL: Record<UnitStatus, string> = {
+  ok: 'Ổn', watch: 'Cần theo dõi', problem: 'Có vấn đề',
+};
+
+export const TASK_TYPES = ['in_period', 'long_term'] as const;
+export type TaskType = (typeof TASK_TYPES)[number];
+export const TASK_TYPE_LABEL: Record<TaskType, string> = {
+  in_period: 'Trong kỳ', long_term: 'Dài hạn',
+};
+
+export const TASK_PROGRESS = ['not_started', 'doing', 'done', 'paused'] as const;
+export type TaskProgress = (typeof TASK_PROGRESS)[number];
+export const TASK_PROGRESS_LABEL: Record<TaskProgress, string> = {
+  not_started: 'Chưa bắt đầu', doing: 'Đang làm', done: 'Hoàn thành', paused: 'Tạm dừng',
+};
+
+export type DueState = 'overdue' | 'due_soon' | 'on_track' | 'no_due' | 'closed';
+export const DUE_LABEL: Record<DueState, string> = {
+  overdue: 'Quá hạn', due_soon: 'Sắp đến hạn', on_track: 'Trong hạn',
+  no_due: 'Chưa có hạn', closed: 'Đã đóng',
+};

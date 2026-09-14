@@ -1,5 +1,5 @@
 import { db } from './db.ts';
-import { PERMISSIONS } from '../../shared/domain.ts';
+import { PERMISSIONS } from '../../shared/domain/index.ts';
 import { demoToday } from './demoConfig.ts';
 import { forbidden } from './util.ts';
 
@@ -188,8 +188,8 @@ function grantCovers(g: Grant, ctx: Ctx): boolean {
 }
 
 /**
- * Ràng buộc thêm cho vai trò Giáo viên. Quyền lịch KHÔNG còn đi kèm quyền chấm điểm,
- * và GVCN không vì chủ nhiệm mà có quyền lịch hay quyền sửa mọi kỹ năng.
+ * Ràng buộc thêm cho vai trò Giáo viên. Giáo viên không có quyền nào về lịch, và GVCN
+ * không vì chủ nhiệm mà có quyền sửa mọi kỹ năng.
  */
 function teacherAllows(p: Principal, permission: string, ctx: Ctx): boolean {
   switch (permission) {
@@ -197,10 +197,6 @@ function teacherAllows(p: Principal, permission: string, ctx: Ctx): boolean {
     case PERMISSIONS.SCORE_EDIT:
     case PERMISSIONS.ESTIMATE_EDIT:
       return hasAssignment(p, ctx, 'skill');
-
-    // Ngoại lệ có chủ đích: giáo viên Speaking đổi được lịch Speaking của lớp mình dạy.
-    case PERMISSIONS.SCHEDULE_SPEAKING:
-      return hasAssignment(p, { ...ctx, skill: 'speaking' }, 'skill');
 
     // Xem và ghi nhận xử lý: chỉ trong lớp được phân công.
     case PERMISSIONS.ATTEMPT_VIEW:
@@ -234,14 +230,12 @@ export function require_(p: Principal, permission: string, ctx: Ctx = {}, messag
 export function explain(p: Principal, permission: string, ctx: Ctx): string {
   const holders = p.grants.filter((g) => g.permissions.has(permission));
   if (!holders.length) {
-    if (permission === PERMISSIONS.PLAN_WEEK) return 'Chỉ Quản lý mới chốt được tuần kế hoạch.';
-    if (permission === PERMISSIONS.SCHEDULE_DATE) return 'Chỉ Admin chi nhánh và Quản lý mới cập nhật được ngày trong tuần.';
+    if (permission === PERMISSIONS.PLAN_WEEK) return 'Chỉ Quản lý mới chốt được tuần MT.';
     return 'Vai trò hiện tại của bạn không có chức năng này.';
   }
   if (holders.every((g) => g.roleKey === 'teacher')) {
     if (permission === PERMISSIONS.SCORE_EDIT) return 'Bạn chỉ nhập được điểm của kỹ năng mình được phân công.';
     if (permission === PERMISSIONS.ESTIMATE_EDIT) return 'Bạn chỉ ước lượng được kỹ năng mình được phân công.';
-    if (permission === PERMISSIONS.SCHEDULE_SPEAKING) return 'Chỉ giáo viên Speaking của lớp mới đổi được lịch Speaking.';
     return 'Bạn chỉ thao tác được trong lớp mình được phân công.';
   }
   return 'Đối tượng này nằm ngoài chi nhánh bạn được cấp quyền.';

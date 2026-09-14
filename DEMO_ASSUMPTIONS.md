@@ -29,23 +29,34 @@ Khi hai nguồn nói khác nhau, thứ tự ưu tiên là: **lời owner mới n
 | **Lịch MT mặc định của lớp FT** | Sinh từ **tuần bắt đầu học** của từng em: tuần học **6 · 12 · 16 · 20 · 24**. Hệ thống chỉ **đề xuất**, người bấm áp; lượt Quản lý đã chốt tay hoặc em đã làm xong thì **đứng yên** |
 | **Mốc kiểm tra lớp Normal** | Theo **tuần học của LỚP**: FOU tuần 4 và 8; BE/ELE tuần 5 và 10. Admin CN và Quản lý xê dịch được; để ô trống là **quay lại** mốc mặc định |
 | **Hạn nhập điểm** | Lớp FT: **thứ Tư tuần kế tiếp**. Lớp Normal: **hết Chủ nhật chính tuần đó**. Chưa có tuần thì **không có hạn** |
-| **Hạn làm một phương án** | Suy từ mức gấp: **7 · 5 · 3 ngày** (bình thường · cần chú ý · gấp). Dùng chung cho cả hạn Quản lý trả lời đề xuất |
+| **Hạn một chu kỳ xử lý** *(vòng 5 — THAY luật cũ theo mức gấp)* | **Chủ nhật của tuần thứ hai**, tính tuần case xuất hiện là tuần thứ nhất. Case mở 14/09/2026 → hạn **27/09/2026**, không phải 04/10. Case Ý thức/Khác: **một tuần** kể từ lúc phương án bắt đầu |
+| **Phương án cần duyệt** | Chu kỳ thực hiện **bắt đầu khi được duyệt**, không phải khi gửi. Thời gian chờ hiện riêng và quy trách nhiệm cho Quản lý |
+| **Chu kỳ tiếp theo** | Bắt đầu từ lần xác nhận tiếp tục/điều chỉnh, tính lại theo đúng cách trên. Hạn cũ và việc cập nhật trễ **giữ nguyên** trong lịch sử — không reset để che quá hạn |
 | **Hạn cập nhật kết quả case** | **Hết tuần MT tiếp theo**, đổi được |
 
-## 3. Case — mô hình vòng 4
+> Mức gấp (*bình thường · cần chú ý · gấp*) vẫn còn để xếp thứ tự việc, nhưng **không còn quyết
+> định hạn**. Luật `7 · 5 · 3 ngày` của các vòng trước đã bị thay.
 
-Đây là chỗ vòng 4 **đảo ngược** vòng 3, nên đọc kỹ ba dòng đầu.
+
+## 3. Case — mô hình vòng 5
+
+Vòng 5 **nới** mô hình vòng 4 ở hai chỗ: một em có thể có **nhiều case cùng hạng mục**, và case
+đã chốt xong mà vấn đề tái phát thì **mở case mới nối vào case cũ** chứ không mở lại case cũ.
 
 | | |
 |---|---|
 | **Một case** | = **một học viên × một hạng mục**. Sáu hạng mục: `L · R · W1 · W2 · S · Ý thức/Khác`. Không hơn |
-| **Case sống suốt khoá** | MT2 yếu lại ở đúng hạng mục đó thì **mở lại chính nó** và thêm một mốc, KHÔNG mở case mới. Tên case đổi theo lượt mới nhất |
+| **Case còn mở, trượt lại** | MT2 yếu lại ở đúng hạng mục đó thì **giữ nguyên case**, thêm mốc tái diễn và mở một chu kỳ xử lý tiếp. Tên case đổi theo lượt mới nhất |
+| **Case đã chốt xong, tái phát** *(vòng 5)* | Mở **case MỚI**, nối vào case cũ bằng `previous_case_id`; case cũ được thêm mốc *tái phát* và **giữ nguyên** trạng thái đã đóng. Không mở lại một case đã kết luận |
+| **Nhiều case cùng hạng mục** *(vòng 5)* | Được phép, khi người tạo chọn **mở case riêng**. Case thứ hai mang cờ `parallel` và **không** dùng khoá chống trùng |
 | **Mức 0 là mức hợp lệ** | Chấm lại một bài cũ thành đạt thì case **hạ về 0 và mang mốc "đã đạt lại"**, không bị xoá — xoá là mất luôn những việc đã làm cho em vì nó |
-| **Tên case** | `MT2 - Listening dưới kỳ vọng`. Case Ý thức sinh sau MT tên là `MT2 - Trao đổi sau SOS 2` — nói đúng việc phải làm |
+| **Tên case** | Sinh từ điểm: `MT2 - Listening dưới kỳ vọng`. Case Ý thức sinh sau MT: `MT2 - Trao đổi sau SOS 2`. Lớp Normal dùng tên bài thật (`Cuối khoá - …`), **không** gắn nhãn MT |
+| **Tên case tạo tay** *(vòng 5)* | Người tạo **tự nhập tên**, và tên đó thắng tên tự sinh ở **mọi màn**. Hệ thống không tự gán cụm *"… dưới kỳ vọng"* cho case tạo tay |
 | **Case GV báo** | `sos_level` để **trống** — SOS là số kỹ năng dưới kỳ vọng ở một bài, giáo viên không có bài nào để đếm. Mức gấp là thang riêng |
 | **Case trùng** | GV báo lại một hạng mục đã có case chưa xong → hệ thống **hỏi trước**: ghi vào case đang có (mặc định), hay mở case song song có chủ ý |
 | **Quy tắc Writing** | W1 và W2 so **riêng từng task**. Nhưng nếu band Writing **gộp** đã đạt thì **không có case nào** ở cả W1 lẫn W2, dù một task dưới kỳ vọng |
-| **Chốt kết quả case** | Chỉ chốt được khi **mọi phương án** đã có kết quả. Bốn mức: *đã tốt hơn hẳn · có tiến bộ · chưa chuyển biến · tệ hơn*, kèm ô ghi chú |
+| **Chốt kết quả case** | Chỉ chốt được khi **mọi phương án đã khép lại**, không còn việc đang chạy, đang chờ duyệt hay yêu cầu hỗ trợ chưa xử lý — và case **chưa có phương án nào** cũng không đủ điều kiện. Giao diện nói rõ còn thiếu gì. Bốn mức: *đã tốt hơn hẳn · có tiến bộ · chưa chuyển biến · tệ hơn* |
+| **Điểm giáo viên tự chấm** *(vòng 5)* | Ghi kèm khi cập nhật kết quả hoặc kết luận case, **tuỳ chọn**. Lưu riêng: **không** ghi đè điểm entrance/mock/test, **không** đổi mức SOS, và trên biểu đồ tiến bộ dùng **ký hiệu khác**, không nối chung một đường |
 
 ## 4. Khi có SOS, hệ thống tự sinh gì
 
@@ -69,9 +80,34 @@ Chọn một mục ở cột phải **tức là** đang xin ý kiến, nên ô t
 - Đã trả lời rồi thì **không sửa đè**. Đổi ý thì đề xuất lại, để hồ sơ giữ cả lý do lần trước.
 - **Cập nhật kết quả** là việc của **người thực hiện**; quá hạn thì Quản lý cũng thấy.
 
+### Kết thúc một chu kỳ (vòng 5)
+
+Một nút duy nhất — **Cập nhật kết quả** — hỏi ba câu: kết quả, ghi chú, bước tiếp theo. Ba nút cũ
+(*Đánh dấu đã làm*, *Ghi quan sát*, *Hướng xử lý*) đã gộp vào đây.
+
+| Kết quả | Bước tiếp theo được phép |
+|---|---|
+| Tiến bộ rõ rệt · Tiến bộ một phần | Hoàn thành phương án · Theo dõi thêm |
+| Chưa thay đổi · Kém hơn · Không đủ căn cứ | **Bắt buộc** chọn: Tiếp tục phương án cũ · Đề xuất phương án mới · Xin hỗ trợ từ Quản lý |
+
+Kết quả chưa tốt **không có đường "ghi nhận rồi thôi"** — một kết quả *Kém hơn* mà không ai phải
+làm gì tiếp là một kết quả sẽ bị quên, và em đó nằm im.
+
+- **Theo dõi thêm / Tiếp tục phương án cũ** → mở chu kỳ mới trên **chính phương án đó**, không
+  sinh một phương án thứ hai giống hệt.
+- **Đề xuất phương án mới** → phương án cũ khép lại với lý do **"Được thay thế"** và nối sang
+  phương án mới. **Không** đánh dấu là đã hoàn thành thành công — nó không thành công, đó là cả
+  lý do phải thay.
+- **Xin hỗ trợ từ Quản lý** → chu kỳ **dừng lại**, chuyển sang chờ Quản lý. Thời gian chờ tính
+  cho Quản lý.
+
+Case Ý thức/Khác dùng **ba** mức kết quả riêng: *Đã tiến bộ · Không thay đổi · Kém hơn*. Case đó
+**đóng được cả khi kết quả xấu**, miễn mọi phương án đã khép lại và giáo viên đã ghi kết luận —
+và màn hình **giữ đúng kết quả xấu**, không tô xanh như đã giải quyết xong.
+
 ## 6. Vai trò, bộ lọc và quyền
 
-Tám bộ lọc học viên, định nghĩa **một chỗ** trong `shared/domain.ts` để mọi trang gọi giống hệt nhau:
+Bảy bộ lọc học viên, định nghĩa **một chỗ** trong `shared/domain/people.ts` để mọi trang gọi giống hệt nhau:
 
 | # | Bộ lọc | GV | QL | Admin CN |
 |---|---|:--:|:--:|:--:|
@@ -81,15 +117,13 @@ Tám bộ lọc học viên, định nghĩa **một chỗ** trong `shared/domain
 | 4 | Case thiếu phương án | ✓ | ✓ | |
 | 5 | Case quá hạn cập nhật | ✓ | ✓ | |
 | 6 | Cần nhập điểm MT | ✓ | ✓ | ✓ *(chỉ xem để đôn đốc)* |
-| 7 | Chưa có lịch MT | | ✓ | ✓ |
-| 8 | Cần cập nhật ngày MT | | | ✓ |
+| 7 | Chưa có tuần MT | | ✓ | |
 
 Bảng quyền:
 
 | | Quản trị HT | Admin CN | Quản lý | Giáo viên |
 |---|:--:|:--:|:--:|:--:|
-| Chốt **tuần** kế hoạch MT | ✓ | — | ✓ | — |
-| Chốt **ngày** trong tuần | ✓ | ✓ | ✓ | GV Speaking đổi được ngày Speaking |
+| Chốt **tuần** của một lượt MT | ✓ | — | ✓ | — |
 | Nhập điểm | nhập bù | — | — | ✓ đúng kỹ năng được phân công |
 | **Xem danh sách case** | ✓ | — | ✓ | ✓ |
 | Ghi nhận xử lý case | ✓ | ✓ | ✓ | ✓ trong phạm vi phụ trách |
@@ -144,6 +178,8 @@ thấy đúng ai dạy lúc đó, và điểm đã nhập giữ nguyên tên ng�
 | **Lộ trình khi bảng nhập bỏ trống** | Kế thừa lộ trình của **lớp** | Sai nếu một lớp chứa học viên nhiều lộ trình khác nhau |
 | **Lưu trữ học viên** | 14 ngày kể từ `finished_at`; chỉ ẩn khỏi danh sách, **không** đóng lịch/case còn dở | Mốc chính xác và quyền khôi phục |
 | **Kỹ năng không mock ở mức task** | Bỏ Writing là bỏ **cả W1 và W2** | Nếu chỉ cần mock một task thì phải có quy tắc tính W riêng |
-| **Chuyển lớp khi lớp Normal hết chương trình** | Hệ thống **chỉ báo** "N em cần xếp lớp tiếp" và bày hai đường đi; **không tự chuyển ai** | Nếu muốn chuyển cả nhóm một lần thì cần một màn riêng |
+| **Chuyển lớp khi lớp Normal hết chương trình** | **Đã chốt vòng 5:** hệ thống dựng sẵn **lớp nháp** của chương trình kế tiếp và **chọn sẵn cả lớp**; người phụ trách xác nhận thì mới chuyển. Vẫn **không tự chuyển ai** | — |
+| **Case còn mở sau khi chuyển lớp** | Case cũ **không mất**: bảng lớp mới hiện nhãn **"n case bàn giao"** riêng, và nó **không** bị tính thành mức SOS của lớp mới — mức SOS là kết luận của một lượt trong một chương trình | — |
+| **Sửa bảng quyền theo vai** | **Đã làm vòng 5:** bấm một ô là bật/tắt ngay, ghi nhật ký từng lần. Hai quyền `admin.config` và `student.view` của vai Quản trị hệ thống KHÔNG gỡ được | — |
 | **Tab Báo cáo tuần** | **Bỏ tạm** (owner chốt mục 12). Chức năng Quản lý giao việc cho GV thì giữ, chuyển vào Thực trạng | Khi nào cần lại thì mở, mã và dữ liệu vẫn còn |
 | **Đánh giá điểm của GV ngoài luồng case** | **Bỏ hẳn** — điểm GV ước lượng chỉ còn trong phần cập nhật kết quả case | Owner nêu hai hướng ở mục 7.17, chọn hướng gọn hơn |
