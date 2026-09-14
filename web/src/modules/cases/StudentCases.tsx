@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { useApi } from '../../lib/useApi.ts';
-import { Alert, Empty, ErrorState, Info, Level, SectionNote, Skeleton, Status } from '../../ui/ui.tsx';
+import { Alert, Empty, ErrorState, Info, Level, Outcome, SectionNote, Skeleton, Status } from '../../ui/ui.tsx';
 import { fmtDate, sosTone } from '../../lib/format.ts';
 import { CasePanel } from './CasePanel.tsx';
-import { CASE_CATEGORY_LABEL } from '@shared/domain/index.ts';
+import {
+  CASE_CATEGORY_LABEL, NEXT_STEP_LABEL, OUTCOME_MARK, OUTCOME_TONE, outcomeLabelFor,
+} from '@shared/domain/index.ts';
 
 /**
  * CÁC CASE CỦA MỘT HỌC VIÊN — mỗi case một KHỐI ĐỘC LẬP (mục 7.2, 7.4).
@@ -24,11 +26,20 @@ import { CASE_CATEGORY_LABEL } from '@shared/domain/index.ts';
  *    nhìn một danh sách ngắn mà không biết mình đang xem phạm vi nào thì dễ tưởng lịch sử
  *    đã mất.
  */
-export function StudentCases({ studentId, cycleId, cycleLabel }: {
+export function StudentCases({ studentId, cycleId, cycleLabel, category: outer, onCategory }: {
   studentId: number; cycleId: number | null; cycleLabel?: string | null;
+  /** Hạng mục do bảng kỹ năng phía trên chọn — một state duy nhất cho cả hai khối. */
+  category?: string | null;
+  onCategory?: (c: string | null) => void;
 }) {
   const [allJourney, setAllJourney] = useState(false);
-  const [category, setCategory] = useState('');
+  const [own, setOwn] = useState('');
+  /*
+   * BỘ LỌC HẠNG MỤC dùng CHUNG với bảng kỹ năng phía trên khi được truyền vào. Hai bộ lọc
+   * riêng cho cùng một thứ là cách chắc chắn nhất để người dùng bấm ở trên mà dưới không đổi.
+   */
+  const category = outer !== undefined ? (outer ?? '') : own;
+  const setCategory = (c: string) => (onCategory ? onCategory(c || null) : setOwn(c));
   const [showDone, setShowDone] = useState(true);
   const [open, setOpen] = useState<Record<number, boolean>>({});
 
@@ -114,16 +125,55 @@ export function StudentCases({ studentId, cycleId, cycleLabel }: {
                 {c.dueOverdue && <Alert>Quá hạn</Alert>}
               </button>
 
-              {/* ─── Dòng phụ: nguồn, ngày tạo, lớp/lộ trình — thông tin phụ, không thành node. */}
-              <p className="px-3 pb-2 m-0 text-[11px] text-slate-500 flex flex-wrap gap-x-3 gap-y-0.5">
+              {/*
+                ĐỌC NHANH MỘT CASE MÀ KHÔNG PHẢI MỞ RA (mục 6.2 C):
+                  Vấn đề → Người phụ trách → Phương án → Kết quả gần nhất → Bước tiếp theo
+
+                Trước vòng này dòng phụ chỉ nói "đang xử lý · 2 việc" — đúng, nhưng không nói
+                đang làm gì cho em và có ăn thua không, nên vẫn phải mở từng case ra mới biết.
+              */}
+              {c.summary && (
+                <p className="px-3 pt-0 pb-1.5 m-0 text-xs text-slate-300">{c.summary}</p>
+              )}
+              <p className="px-3 pb-2 m-0 text-xs text-slate-400 flex flex-wrap items-center gap-x-2 gap-y-1">
+                {c.ownerName
+                  ? <span className="text-slate-300">{c.ownerName}</span>
+                  : <Alert tone="warn">Chưa có người phụ trách</Alert>}
+                {c.currentPlan && (
+                  <>
+                    <span className="text-slate-700" aria-hidden>·</span>
+                    <span>{c.currentPlan}</span>
+                    {c.currentPlanDue && (
+                      <span className="text-slate-500">hạn {fmtDate(c.currentPlanDue)}</span>
+                    )}
+                  </>
+                )}
+                {c.lastOutcome && (
+                  <>
+                    <span className="text-slate-700" aria-hidden>·</span>
+                    <Outcome tone={OUTCOME_TONE[c.lastOutcome] ?? 'muted'} mark={OUTCOME_MARK[c.lastOutcome]}>
+                      {outcomeLabelFor(c.track ?? 'academic', c.lastOutcome)}
+                    </Outcome>
+                    {c.lastNextStep && (
+                      <span className="text-slate-500">
+                        → {NEXT_STEP_LABEL[c.lastNextStep as keyof typeof NEXT_STEP_LABEL] ?? c.lastNextStep}
+                      </span>
+                    )}
+                  </>
+                )}
+                {!c.currentPlan && !c.lastOutcome && c.status !== 'done' && (
+                  <span className="text-slate-500">· chưa có phương án nào</span>
+                )}
+              </p>
+
+              {/* Nguồn, ngày mở, lớp — thông tin phụ, chữ nhạt, không thành nhãn. */}
+              <p className="px-3 pb-2 m-0 text-[11px] text-slate-600 flex flex-wrap gap-x-3 gap-y-0.5">
                 <span>
                   {c.originKind === 'mock' ? 'Sinh từ kết quả bài đánh giá'
                     : c.originKind === 'manager_task' ? 'Quản lý giao' : 'Giáo viên ghi nhận'}
                 </span>
                 <span>Mở {fmtDate(c.detectedAt)}</span>
                 {c.classCode && <span>Lớp {c.classCode}</span>}
-                {c.reporterName && <span>{c.reporterName}</span>}
-                {c.interventionCount > 0 && <span>{c.interventionCount} lượt đã làm</span>}
               </p>
 
               {isOpen(c) && (

@@ -1285,6 +1285,9 @@ export type MappedCase = {
   detectedAt: string; reporterName: string | null;
   /** NGƯỜI PHỤ TRÁCH CHÍNH — NULL nghĩa là chưa ai nhận, và đó là một việc phải xử lý. */
   ownerUserId: number | null; ownerName: string | null;
+  /** Bốn ô để đọc một case mà không phải mở ra (mục 6.2 C). */
+  currentPlan: string | null; currentPlanDue: string | null;
+  lastOutcome: string | null; lastOutcomeOn: string | null; lastNextStep: string | null;
   interventionCount: number; nextDue: string | null; dueOverdue: boolean;
   /** Case mở SONG SONG có chủ ý với một case khác cùng hạng mục. */
   parallel: boolean;
@@ -1371,6 +1374,37 @@ export function listCases(p: Principal, f: CaseFilters = {}) {
     latestAttemptByCase.set(r.case_id, r.n);
   }
 
+  /*
+   * PHƯƠNG ÁN ĐANG CHẠY và KẾT QUẢ GẦN NHẤT của từng case, lấy MỘT LẦN cho cả danh sách.
+   *
+   * Đây là hai thứ khiến một dòng case đọc được mà không phải mở ra: "đang làm gì" và "lần
+   * gần nhất ăn thua đến đâu". Trước vòng này dòng case chỉ nói "đang xử lý · 2 việc" —
+   * đúng nhưng vô dụng, vì nó không nói đang làm gì cho em cả.
+   */
+  const planOf = new Map<number, { kind: string; description: string | null; due: string | null }>();
+  for (const r of conn
+    .prepare(
+      `SELECT case_id, kind, description, action_due FROM case_interventions
+        WHERE status IN ('planned','started') AND COALESCE(approval_state,'') != 'pending'
+        ORDER BY id DESC`,
+    )
+    .all() as any[]) {
+    if (!planOf.has(r.case_id)) {
+      planOf.set(r.case_id, { kind: r.kind, description: r.description, due: r.action_due });
+    }
+  }
+  const lastResultOf = new Map<number, { outcome: string | null; nextStep: string | null; on: string }>();
+  for (const r of conn
+    .prepare(
+      `SELECT case_id, outcome, next_step, observed_on FROM case_followups
+        WHERE outcome IS NOT NULL ORDER BY observed_on DESC, id DESC`,
+    )
+    .all() as any[]) {
+    if (!lastResultOf.has(r.case_id)) {
+      lastResultOf.set(r.case_id, { outcome: r.outcome, nextStep: r.next_step, on: r.observed_on });
+    }
+  }
+
   /* Kỹ năng của một case = kỹ năng của các dòng phân loại. Một case có thể chạm nhiều kỹ năng. */
   const skillsByCase = new Map<number, string[]>();
   for (const r of conn
@@ -1433,6 +1467,18 @@ export function listCases(p: Principal, f: CaseFilters = {}) {
       reporterName: r.reporter_name ?? null,
       ownerUserId: r.owner_user_id ?? null,
       ownerName: r.owner_name ?? null,
+      /* PHƯƠNG ÁN ĐANG LÀM — tên việc, không phải một con số đếm. */
+      currentPlan: (() => {
+        const iv = planOf.get(r.id);
+        if (!iv) return null;
+        return (iv.description ?? '').trim()
+          || INTERVENTION_KIND_LABEL[iv.kind as InterventionKind] || iv.kind;
+      })(),
+      currentPlanDue: planOf.get(r.id)?.due ?? null,
+      /* KẾT QUẢ GẦN NHẤT và bước tiếp theo đã chọn — hai thứ nói "ăn thua đến đâu, rồi sao". */
+      lastOutcome: lastResultOf.get(r.id)?.outcome ?? null,
+      lastOutcomeOn: lastResultOf.get(r.id)?.on ?? null,
+      lastNextStep: lastResultOf.get(r.id)?.nextStep ?? null,
       parallel: !!r.parallel,
       previousCaseId: r.previous_case_id ?? null,
       interventionCount: r.intervention_count as number,

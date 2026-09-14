@@ -114,10 +114,63 @@ export function latestResult(studentId: number) {
   return null;
 }
 
-export function transferStudent(p: Principal, studentId: number, toClassId: number, effectiveDate: string, reason?: string) {
+/**
+ * NHỮNG THỨ CÒN DỞ khi một em sắp chuyển lớp — để màn hình bày sẵn, người chuyển không phải
+ * chép tay (mục 6.4).
+ *
+ * Trước vòng này, chuyển lớp xong là case còn mở rơi vào khoảng trống: giáo viên cũ không
+ * còn dạy em, giáo viên mới không biết em đang dở chuyện gì. Nay chuyển lớp BẮT BUỘC có
+ * thông tin bàn giao, và đây là nguồn để viết thông tin đó.
+ */
+export function handoverBrief(studentId: number) {
+  const conn = db();
+  const cases = conn
+    .prepare(
+      `SELECT sc.id, sc.title, sc.category, sc.track, sc.status,
+              u.full_name AS owner_name,
+              (SELECT COUNT(*) FROM case_interventions iv
+                WHERE iv.case_id = sc.id AND iv.status IN ('planned','started')) AS open_plans,
+              (SELECT MIN(iv.action_due) FROM case_interventions iv
+                WHERE iv.case_id = sc.id AND iv.status IN ('planned','started')
+                  AND iv.action_due IS NOT NULL) AS next_due
+         FROM sos_cases sc LEFT JOIN users u ON u.id = sc.owner_user_id
+        WHERE sc.student_id = ? AND sc.status != 'done'
+        ORDER BY sc.id DESC`,
+    )
+    .all(studentId) as any[];
+  return {
+    cases: cases.map((c) => ({
+      id: c.id, title: c.title, category: c.category, track: c.track,
+      ownerName: c.owner_name ?? null, openPlans: c.open_plans as number,
+      nextDue: c.next_due as string | null,
+    })),
+    openPlans: cases.reduce((n, c) => n + (c.open_plans as number), 0),
+  };
+}
+
+export function transferStudent(p: Principal, studentId: number, toClassId: number, effectiveDate: string, reason?: string, handover?: {
+  /** Ghi chú bàn giao — BẮT BUỘC khi em còn case chưa xong. */
+  note?: string | null;
+  /** Người tiếp nhận: đổi người phụ trách của các case còn mở sang người này. */
+  receiverUserId?: number | null;
+}) {
   require_(p, PERMISSIONS.STUDENT_EDIT, { studentId }, 'Bạn không có quyền chuyển lớp học viên này.');
   require_(p, PERMISSIONS.STUDENT_EDIT, { classId: toClassId }, 'Lớp đích nằm ngoài phạm vi bạn được cấp quyền.');
   if (!isIsoDate(effectiveDate)) throw badRequest('Ngày hiệu lực không hợp lệ.');
+
+  /*
+   * CÒN CASE DỞ THÌ BẮT BUỘC BÀN GIAO (mục 6.4).
+   *
+   * Không phải một ô cho đủ thủ tục: giáo viên mới nhận em sẽ đọc đúng dòng này để biết em
+   * đang vướng gì. Em không còn case nào thì không hỏi — đừng bắt gõ cho có.
+   */
+  const brief = handoverBrief(studentId);
+  if (brief.cases.length > 0 && !(handover?.note ?? '').trim()) {
+    throw badRequest(
+      `Em còn ${brief.cases.length} case chưa xong. Ghi thông tin bàn giao để người nhận lớp `
+      + 'biết em đang vướng gì và đang làm dở đến đâu.',
+    );
+  }
   return tx(() => {
     const conn = db();
     const toClass = conn.prepare('SELECT * FROM classes WHERE id = ?').get(toClassId) as any;
@@ -137,8 +190,29 @@ export function transferStudent(p: Principal, studentId: number, toClassId: numb
     // Lượt CHƯA xong chuyển sang lớp mới; lượt đã xong giữ nguyên lớp cũ để không viết lại lịch sử.
     conn.prepare(`UPDATE assessment_attempts SET class_id = ? WHERE student_id = ? AND status = 'planned'`)
       .run(toClassId, studentId);
-    addJourney({ studentId, eventType: 'transfer', eventDate: effectiveDate,
-      title: `Chuyển sang lớp ${toClass.code}`, detail: reason ?? null, createdBy: p.userId });
+    /*
+     * BÀN GIAO CASE CÒN MỞ. Đổi người phụ trách sang người nhận nếu có chỉ định — nhưng
+     * KHÔNG viết lại lịch sử: ai đã làm gì trước đó vẫn nguyên trong từng phương án.
+     */
+    if (handover?.receiverUserId) {
+      for (const c of brief.cases) {
+        const before = c.ownerName;
+        conn.prepare('UPDATE sos_cases SET owner_user_id = ?, updated_at = ? WHERE id = ?')
+          .run(handover.receiverUserId, nowIso(), c.id);
+        conn
+          .prepare(
+            `INSERT INTO sos_case_history (case_id, field, old_value, new_value, actor_user_id, created_at)
+             VALUES (?, 'owner', ?, ?, ?, ?)`,
+          )
+          .run(c.id, before, 'bàn giao khi chuyển lớp', p.userId, nowIso());
+      }
+    }
+    addJourney({
+      studentId, eventType: 'transfer', eventDate: effectiveDate,
+      title: `Chuyển sang lớp ${toClass.code}`,
+      detail: [reason, (handover?.note ?? '').trim() || null].filter(Boolean).join(' — ') || null,
+      createdBy: p.userId,
+    });
     writeAudit({ actorUserId: p.userId, action: 'student.transfer', entityType: 'student', entityId: studentId,
       entityLabel: toClass.code, before: cur, after: { classId: toClassId, effectiveDate } });
     return { newEnrollmentId: Number(info.lastInsertRowid), closedEnrollmentId: cur?.id ?? null };

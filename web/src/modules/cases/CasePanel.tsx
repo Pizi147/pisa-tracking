@@ -14,7 +14,6 @@ import {
   NEXT_STEP_HINT, NEXT_STEP_LABEL, OUTCOME_MARK, OUTCOME_TONE,
   PROPOSAL_KINDS, SUPPORT_KINDS,
   cycleDeadlineHint, isContactKind, isProposalKind, nextStepsFor, outcomeLabelFor, outcomesFor,
-  URGENCY_LABEL,
 } from '@shared/domain/index.ts';
 
 /**
@@ -132,11 +131,13 @@ export function CasePanel({ caseId, compact = false, hideHeader = false }: {
           {data.sosLevel !== null && data.status !== 'done' && (
             <Level tone={sosTone(data.sosLevel)}>{sosLabel(data.sosLevel)}</Level>
           )}
-          {data.urgency && data.urgency !== 'normal' && data.status !== 'done' && (
-            <Alert tone={data.urgency === 'urgent' ? 'danger' : 'warn'}>
-              {URGENCY_LABEL[data.urgency as keyof typeof URGENCY_LABEL]}
-            </Alert>
-          )}
+          {/*
+            KHÔNG CÓ BADGE "GẤP" Ở ĐÂY NỮA (mục 6.1).
+            Mức gấp là một con số được suy ra lúc case sinh, và nó không đổi theo việc thực
+            tế đang chạy nhanh hay chậm. Đặt nó cạnh tên case thì mọi case SOS 3 đều đỏ rực
+            ngay từ đầu, kể cả những case đang được xử lý đúng hạn — nên cái đỏ ấy mất nghĩa.
+            Cái người đọc cần là QUÁ HẠN THẬT, và nó nằm ở đúng phương án đang trễ, bên dưới.
+          */}
           {data.parallel && <Info>Case riêng, song song</Info>}
         </h3>
         )}

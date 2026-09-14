@@ -757,10 +757,21 @@ api.patch('/students/:id', requireAuth, wrap((req) => {
 
 api.post('/students/:id/transfer', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
-  const { toClassId, effectiveDate, reason } = req.body ?? {};
+  const { toClassId, effectiveDate, reason, handoverNote, receiverUserId } = req.body ?? {};
   if (!toClassId) throw badRequest('Cần chọn lớp đích.');
   return studentSvc.transferStudent(principalOf(req), pInt(req, 'id'), Number(toClassId),
-    effectiveDate ?? demoToday(), reason);
+    effectiveDate ?? demoToday(), reason, {
+      note: handoverNote ?? null,
+      receiverUserId: receiverUserId ? Number(receiverUserId) : null,
+    });
+}));
+
+/** Những thứ còn dở của một em — để màn chuyển lớp bày sẵn, người chuyển không phải chép tay. */
+api.get('/students/:id/handover', requireAuth, wrap((req) => {
+  const p = principalOf(req);
+  const id = pInt(req, 'id');
+  require_(p, PERMISSIONS.STUDENT_VIEW, { studentId: id }, 'Học viên này nằm ngoài phạm vi bạn được xem.');
+  return studentSvc.handoverBrief(id);
 }));
 
 api.post('/students/:id/status', requireAuth, wrap((req) => {

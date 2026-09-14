@@ -731,7 +731,8 @@ check('Chuyển lớp giữ lớp cũ cho lượt đã xong, chuyển lượt ch
   const before = conn.prepare('SELECT id, class_id, status FROM assessment_attempts WHERE student_id = ?').all(s.id) as any[];
   const done = before.filter((a) => a.status === 'done');
   const target = classId('BC-ELE 01');
-  students.transferStudent(P.admin, s.id, target, '2026-09-21', 'Đổi ca học');
+  students.transferStudent(P.admin, s.id, target, '2026-09-21', 'Đổi ca học',
+    { note: 'Em còn case Reading đang theo dõi, cô mới nhận lớp đọc kỹ phần phương án.' });
   const after = conn.prepare('SELECT id, class_id, status FROM assessment_attempts WHERE student_id = ?').all(s.id) as any[];
   for (const t of done) assert(after.find((a) => a.id === t.id)!.class_id === t.class_id, 'Lượt đã xong bị viết lại lớp');
   for (const a of after.filter((x) => x.status === 'planned')) {
@@ -4416,6 +4417,50 @@ check('Sửa được bảng quyền theo vai, và không tự khoá mình ra ng
     .prepare(`SELECT COUNT(*) n FROM audit_logs WHERE action LIKE 'role.permission.%'`)
     .get() as any;
   assert(log.n >= 2, `Chỉ ghi được ${log.n} dòng nhật ký cho việc sửa quyền`);
+});
+
+check('Chuyển lớp khi còn case dở thì BẮT BUỘC có thông tin bàn giao', () => {
+  const row = conn
+    .prepare(
+      `SELECT e.student_id AS sid, e.class_id AS cid FROM enrollments e
+        WHERE e.status = 'active'
+          AND EXISTS (SELECT 1 FROM sos_cases sc
+                       WHERE sc.student_id = e.student_id AND sc.status != 'done')
+        ORDER BY e.student_id LIMIT 1`,
+    )
+    .get() as any;
+  assert(row, 'Dữ liệu demo không có em nào vừa đang học vừa còn case dở');
+  const target = (conn
+    .prepare(`SELECT id FROM classes WHERE id != ? AND status = 'active' ORDER BY id LIMIT 1`)
+    .get(row.cid) as any).id;
+
+  /* Thiếu thông tin bàn giao thì KHÔNG chuyển được — và lời từ chối nói rõ vì sao. */
+  assertThrows(
+    () => students.transferStudent(P.admin, row.sid, target, demoToday(), 'Đổi lớp'),
+    /bàn giao/i, 'Chuyển được lớp mà không bàn giao gì cả',
+  );
+
+  /* Bản tóm tắt bàn giao phải bày sẵn đúng những case còn dở, không bắt gõ lại. */
+  const brief = students.handoverBrief(row.sid);
+  assert(brief.cases.length > 0, 'Bản tóm tắt bàn giao không liệt kê case nào');
+
+  /* Có ghi chú và người nhận thì chuyển được, và case đổi người phụ trách. */
+  const receiver = (conn.prepare(`SELECT id FROM users WHERE status='active' ORDER BY id LIMIT 1`).get() as any).id;
+  students.transferStudent(P.admin, row.sid, target, demoToday(), 'Đổi lớp', {
+    note: 'Em đang dở phương án Reading, tuần sau có buổi tutor.',
+    receiverUserId: receiver,
+  });
+  for (const c of brief.cases) {
+    const now = conn.prepare('SELECT owner_user_id, status FROM sos_cases WHERE id = ?').get(c.id) as any;
+    if (now.status !== 'done') {
+      assert(now.owner_user_id === receiver, `Case ${c.id} không được bàn giao sang người nhận`);
+    }
+  }
+  /* Và ghi chú bàn giao nằm trong hành trình của em, không biến mất. */
+  const ev = conn
+    .prepare(`SELECT detail FROM journey_events WHERE student_id = ? AND event_type = 'transfer' ORDER BY id DESC LIMIT 1`)
+    .get(row.sid) as any;
+  assert((ev?.detail ?? '').includes('tutor'), 'Ghi chú bàn giao không được lưu vào hành trình');
 });
 
 console.log(`\n${'='.repeat(60)}`);

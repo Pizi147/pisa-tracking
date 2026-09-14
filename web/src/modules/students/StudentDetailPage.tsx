@@ -51,6 +51,11 @@ export default function StudentDetailPage() {
   const [planOpen, setPlanOpen] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
   const [openCase, setOpenCase] = useState<number | null>(null);
+  /*
+   * HẠNG MỤC ĐANG LỌC — một state duy nhất nối bảng kỹ năng với khối case bên dưới.
+   * Bấm "Reading" ở bảng trên là khối dưới chỉ còn case Reading; bấm lại thì bỏ lọc.
+   */
+  const [skillPick, setSkillPick] = useState<string | null>(null);
   /* Tầng 3 mặc định mở bảng điểm: đó là thứ người ta mở hồ sơ để xem nhiều nhất. */
   const [tier3, setTier3] = useState<'scores' | 'journey'>('scores');
 
@@ -68,13 +73,15 @@ export default function StudentDetailPage() {
 
   return (
     <div className="page space-y-4">
-      {/* ══════════════════════════════════════════ TẦNG 1 — EM NÀY LÀ AI */}
+      {/* ══════════════════════════════════════════ A — EM NÀY LÀ AI */}
       {/*
-        Thẻ tên DÍNH TRÊN ĐẦU khi cuộn: xuống tới bảng điểm mà quên đang xem em nào là
-        chuyện xảy ra thật, nhất là khi mở liền mấy em.
+        ĐẦU HỒ SƠ CUỘN BÌNH THƯỜNG, KHÔNG DÍNH TRÊN ĐẦU (mục 6.1).
+        Bản trước ghim khối này lại khi cuộn. Ý định thì tốt — biết đang xem em nào — nhưng
+        cái giá là một dải chiếm chỗ vĩnh viễn ở mọi màn hình, và trên laptop thì phần nội
+        dung thật chỉ còn hơn nửa màn. Tên em đã ở ngay đầu trang; cuộn xuống đọc bảng điểm
+        thì cái cần thấy là bảng điểm.
       */}
-      <div className="sticky top-0 z-10 -mx-4 px-4 pt-2 pb-3 backdrop-blur"
-           style={{ background: 'color-mix(in srgb, var(--bg) 88%, transparent)' }}>
+      <div>
         <button className="btn btn-sm btn-ghost mb-1.5" onClick={() => navigate(-1)}>← Quay lại</button>
         <div className="rounded-xl border p-3 sm:p-4"
              style={{ borderColor: 'var(--line-strong)', background: 'var(--surface)' }}>
@@ -83,96 +90,98 @@ export default function StudentDetailPage() {
               <h1 className="text-lg font-semibold text-slate-100 flex flex-wrap items-center gap-2 m-0">
                 {data.fullName}
                 <span className="text-slate-500 text-sm font-normal">· {data.studentCode}</span>
-                {data.concerns.maxSos > 0 && (
-                  <Level tone={sosTone(data.concerns.maxSos)}>{sosLabel(data.concerns.maxSos)}</Level>
-                )}
                 <MissingBadge items={data.missing} />
-                {data.status !== 'active' && (
-                  <Info>{studentStatusLabel(data.status)}</Info>
-                )}
+                {data.status !== 'active' && <Info>{studentStatusLabel(data.status)}</Info>}
                 {data.archivedAt && <Info>Đã lưu trữ</Info>}
               </h1>
-              {/*
-                MỘT DÒNG NHẬN DIỆN, không phải ba ô số to.
-                Ba ô "Đầu vào → Hiện tại → Mục tiêu" của bản cũ chiếm gần một màn hình để nói
-                ba con số; gộp vào một dòng thì phần quan trọng hơn — em đang vướng gì — được
-                nhìn thấy mà không phải cuộn.
-              */}
+
+              {/* Lớp · chi nhánh · chương trình · GVCN — bốn thứ nhận diện chỗ đứng của em. */}
               <p className="text-xs text-slate-400 mt-1 mb-0">
                 {data.currentClass
-                  ? <>Lớp {data.currentClass.code} · {data.currentClass.branchName}</>
+                  ? <>Lớp {data.currentClass.code} · {data.currentClass.branchName}
+                      {data.currentClass.programme && <> · {data.currentClass.programme}</>}
+                      {data.currentClass.coreTeacher && <> · GVCN {data.currentClass.coreTeacher}</>}</>
                   : 'Chưa xếp lớp'}
-                {cy && !cy.ratio && cy.target !== null && <> · Target {fmtBand(cy.target)}</>}
-                {/*
-                  TUẦN BẮT ĐẦU HỌC đứng trước dự kiến thi, vì nó là mốc gốc: lịch MT của em
-                  tính ra từ đây. Thiếu thì nói thẳng "chưa khai" chứ không để trống im lặng.
-                */}
-                {cy && <> · Vào học {cy.startWeek ? cy.startWeek.code : <span className="text-amber-300">chưa khai tuần</span>}</>}
-                {/*
-                  ĐẾM NGƯỢC CHỈ KHI ĐÃ CHỐT TUẦN THI. Mới biết tháng thì nói đúng là mới biết
-                  tháng — thêm "còn 134 ngày" vào một cái tháng là bịa ra độ chính xác.
-                */}
-                {cy && !cy.ratio && cy.examPlan && cy.examPlan.confidence !== 'none' && (
-                  <> · Dự kiến thi {cy.examPlan.label}
-                    {cy.daysToExam !== null && <span className="text-slate-500"> (còn {cy.daysToExam} ngày)</span>}</>
+              </p>
+
+              {/*
+                TÌNH TRẠNG HỌC THUẬT HIỆN TẠI — một câu, dựng ở máy chủ (mục 2.1).
+                "MT2 đạt kỳ vọng · còn 2 case đang theo dõi" nói đủ ba việc mà trước đây phải
+                đọc ba chỗ mới ra: kết quả bài gần nhất, mức SOS của chính bài đó, và số case.
+              */}
+              {data.standing && (
+                <p className="text-sm mt-1.5 mb-0 flex flex-wrap items-center gap-2">
+                  {data.standing.sosLevel !== null && data.standing.sosLevel > 0 ? (
+                    <Level tone={sosTone(data.standing.sosLevel)}>
+                      {sosLabel(data.standing.sosLevel)}{data.standing.provisional ? ' tạm thời' : ''}
+                    </Level>
+                  ) : data.standing.sosLevel === 0 ? (
+                    <Outcome tone="ok" mark="✓">Đạt kỳ vọng</Outcome>
+                  ) : (
+                    <Info pending>Chưa có kết quả</Info>
+                  )}
+                  <span className="text-slate-300">{data.standingLine}</span>
+                </p>
+              )}
+
+              {/* Đầu vào · target · dự kiến thi — chỉ lớp Fast Track mới có ba thứ này. */}
+              <p className="text-xs text-slate-400 mt-1.5 mb-0">
+                {cy && !cy.ratio && (
+                  <>
+                    {cy.baseline?.score !== null && cy.baseline?.score !== undefined
+                      ? <>Đầu vào {fmtBand(cy.baseline.score)}</>
+                      : <span className="text-amber-300">Chưa ghi đầu vào</span>}
+                    {cy.target !== null && <> · Target {fmtBand(cy.target)}</>}
+                    {' · '}Vào học {cy.startWeek ? cy.startWeek.code
+                      : <span className="text-amber-300">chưa khai tuần</span>}
+                    {/*
+                      DỰ KIẾN THI nói đúng mức chắc chắn đang có. Biết mỗi tháng mà hiện
+                      "còn 134 ngày" là bịa ra một độ chính xác không ai bảo đảm; biết tuần
+                      thì nói "còn khoảng N tuần", không quy về ngày (mục 6.4).
+                    */}
+                    {cy.examPlan && cy.examPlan.confidence !== 'none' && (
+                      <> · Dự kiến thi {cy.examPlan.label}
+                        {cy.examPlan.confidence === 'week' && cy.daysToExam !== null && (
+                          <span className="text-slate-500"> (còn khoảng {Math.max(0, Math.round(cy.daysToExam / 7))} tuần)</span>
+                        )}</>
+                    )}
+                  </>
+                )}
+                {cy?.ratio && (
+                  <>{cy.label} · bắt đầu {fmtDate(cy.startedAt)} ·{' '}
+                    {data.attempts.filter((a: any) => a.scored > 0).length}/{data.attempts.length} bài đã chấm</>
                 )}
               </p>
-              {cy && !cy.ratio && (
-                <p className="text-xs text-slate-400 mt-1 mb-0">
-                  Overall gần nhất{' '}
-                  <strong className="text-slate-100 tabular-nums">
-                    {data.current.overall !== null ? fmtBand(data.current.overall) : '—'}
-                  </strong>
-                  {data.current.overallFrom && <span className="text-slate-500"> · MT{data.current.overallFrom}</span>}
-                  {cy.baseline?.score !== null && cy.baseline?.score !== undefined && (
-                    <span className="text-slate-500"> · đầu vào {fmtBand(cy.baseline.score)}</span>
-                  )}
-                  {data.nextCheckpoint && (
-                    <span className="text-slate-500">
-                      {' · '}MT{data.nextCheckpoint.attemptNo} tới:{' '}
-                      {data.nextCheckpoint.periodCode ?? 'chưa có tuần'}
-                    </span>
-                  )}
-                </p>
-              )}
-              {cy?.ratio && (
-                <p className="text-xs text-slate-400 mt-1 mb-0">
-                  {cy.label} · bắt đầu {fmtDate(cy.startedAt)} ·{' '}
-                  {data.attempts.filter((a: any) => a.scored > 0).length}/{data.attempts.length} bài đã chấm
-                  {data.checkpoint && (
-                    <span className="text-slate-500">
-                      {' · '}gần nhất {data.checkpoint.status === 'met' ? 'Đạt' : 'có phần chưa đạt'}
-                    </span>
-                  )}
-                </p>
-              )}
             </div>
-            <div className="flex flex-wrap gap-2">
-              {/*
-                HAI NÚT, KHÔNG PHẢI SÁU (mục 5.1). "+ Case" là việc hằng ngày nên đứng riêng
-                và nổi bật; năm việc quản trị còn lại — kế hoạch học, điểm đầu vào, mục tiêu,
-                chuyển lớp, kết luận lộ trình — mỗi năm làm một lần nên gom vào một panel.
-              */}
+
+            <div className="flex flex-wrap gap-2 items-start">
               {data.viewer.canReport && (
                 <button className="btn btn-primary" onClick={() => setReportOpen(true)}>+ Case</button>
               )}
-              <button className="btn" onClick={() => setManageOpen(true)}>Quản lý học viên</button>
+              {/* Menu ⋮ — bốn việc quản trị, gom lại để không chiếm chỗ của việc hằng ngày. */}
+              <button className="btn" title="Quản lý học viên" aria-label="Quản lý học viên"
+                onClick={() => setManageOpen(true)}>⋮</button>
             </div>
           </div>
 
-          {/* Chọn lộ trình — chỉ hiện khi em có nhiều hơn một, nên đa số em không thấy dòng này. */}
-          {data.cycles.length > 1 && (
-            <div className="flex flex-wrap items-center gap-2 mt-3 pt-3 border-t" style={{ borderColor: 'var(--line)' }}>
-              <span className="text-xs text-slate-500">Lộ trình:</span>
-              {data.cycles.map((c: any) => (
-                <button key={c.id}
-                  className={`btn btn-sm ${c.id === cy?.id ? 'btn-primary' : ''}`}
-                  onClick={() => setCycle(c.id)}>
-                  {c.label}
-                  <span className="text-[10px] opacity-70 ml-1">
-                    {c.target ? `· ${fmtBand(c.target)}` : ''}{c.status !== 'active' ? ' · đã đóng' : ''}
-                  </span>
-                </button>
+          {/*
+            DẢI HÀNH TRÌNH NGẮN (mục 6.2 A) — chỉ để NHẬN BIẾT em đã đi qua những chương
+            trình nào, không phải chỗ đọc lịch sử. Bấm một chặng là xem chặng đó.
+          */}
+          {data.journeyStrip?.length > 1 && (
+            <div className="flex flex-wrap items-center gap-1.5 mt-3 pt-3 border-t"
+                 style={{ borderColor: 'var(--line)' }}>
+              <span className="text-[11px] text-slate-500 mr-1">Hành trình</span>
+              {data.journeyStrip.map((j: any, i: number) => (
+                <span key={j.id} className="flex items-center gap-1.5">
+                  {i > 0 && <span className="text-slate-700" aria-hidden>→</span>}
+                  <button
+                    className={`btn btn-sm ${j.id === cy?.id ? 'btn-primary' : ''}`}
+                    onClick={() => setCycle(j.id)}>
+                    {j.label}
+                    {j.current && <span className="opacity-70 ml-1">· đang học</span>}
+                  </button>
+                </span>
               ))}
             </div>
           )}
@@ -183,34 +192,43 @@ export default function StudentDetailPage() {
         <Empty title="Học viên chưa có lộ trình nào" hint="Mở lộ trình để bắt đầu theo dõi mục tiêu và các mốc đánh giá." />
       ) : (
         <>
-          {/* ══════════════════════════════════ TẦNG 2 — YẾU CHỖ NÀO, ĐÃ LÀM GÌ */}
+          {/* ══════════════════════════════════════ B — TIẾN ĐỘ HIỆN TẠI */}
           {/*
-            TRÁI TIM CỦA TRANG. Sáu hạng mục, mỗi hạng mục một dòng, bấm là giãn ra xem lịch sử.
-            Khối này thay cho BA khu rời rạc của bản cũ — "Đang cần chú ý", "Đường đi từng kỹ
-            năng" và bảng "Vấn đề học vụ" — vốn nói cùng một chuyện bằng ba cách khác nhau,
-            khiến người đọc phải tự ghép lại mới ra kết luận.
+            BẢNG TÓM TẮT, KHÔNG PHẢI CHỖ MỞ CASE (mục 6.2 B).
+            Bấm một dòng thì LỌC khối case bên dưới theo hạng mục đó. Trước vòng này dòng
+            giãn ra dựng nguyên một CasePanel, trong khi chính case ấy lại nằm lần nữa ở khối
+            bên dưới — một case hiện hai lần trên cùng một trang.
           */}
-          <Card title="Theo dõi hỗ trợ theo kỹ năng"
-            action={<span className="text-xs text-slate-500">Bấm một dòng để xem lịch sử</span>}
+          <Card title="Tiến độ hiện tại"
+            action={
+              <span className="flex items-center gap-2">
+                {skillPick && (
+                  <button className="btn btn-sm btn-ghost" onClick={() => setSkillPick(null)}>
+                    Bỏ lọc {skillPick}
+                  </button>
+                )}
+                <span className="text-xs text-slate-500">Bấm một dòng để lọc case bên dưới</span>
+              </span>
+            }
             bodyClass="p-0">
             <SkillBoard studentId={data.id} cycleId={cy.id}
-              onOpenCase={setOpenCase}
+              selected={skillPick}
+              onPick={setSkillPick}
               onReport={() => setReportOpen(true)} />
           </Card>
 
-          {/* ══════════════════════════════════ TẦNG 2B — TỪNG CASE MỘT KHỐI */}
+          {/* ══════════════════════════════ C — CASE VÀ KẾT QUẢ HỖ TRỢ */}
           {/*
-            Bảng phía trên tóm tắt THEO KỸ NĂNG: mỗi hạng mục một dòng, và dòng đó chỉ trỏ
-            được vào MỘT case đại diện. Em có hai case Reading song song thì cái thứ hai
-            không có đường nào vào, và một case Ý thức mới mở làm case cũ trông như biến mất.
+            Bảng phía trên tóm tắt THEO KỸ NĂNG và chỉ trỏ được vào MỘT case đại diện mỗi
+            hạng mục. Em có hai case Reading song song thì cái thứ hai không có đường nào vào.
 
-            Nên phía dưới là DANH SÁCH CASE THẬT: mỗi case một khối riêng, mở đóng độc lập,
-            xem được cả case của lộ trình trước. Hai khối trả lời hai câu khác nhau —
-            "kỹ năng nào đang có chuyện" và "cụ thể đang có những case nào".
+            Nên đây là DANH SÁCH CASE THẬT: mỗi case một khối riêng, mở đóng độc lập, xem
+            được cả case của lộ trình trước.
           */}
-          <Card title="Các case của em"
+          <Card title="Case và kết quả hỗ trợ"
             action={<span className="text-xs text-slate-500">Mỗi case mở đóng riêng</span>}>
-            <StudentCases studentId={data.id} cycleId={cy.id} cycleLabel={cy.label} />
+            <StudentCases studentId={data.id} cycleId={cy.id} cycleLabel={cy.label}
+              category={skillPick} onCategory={setSkillPick} />
           </Card>
 
           {/* ══════════════════════════════ TẦNG 3 — KẾT QUẢ VÀ HÀNH TRÌNH */}
@@ -315,7 +333,10 @@ export default function StudentDetailPage() {
 
       <StudentManagePanel
         open={manageOpen} onClose={() => setManageOpen(false)}
-        student={{ id: data.id, name: data.fullName, classId: data.currentClass?.id ?? null }}
+        student={{
+          id: data.id, name: data.fullName, classId: data.currentClass?.id ?? null,
+          dob: data.dob ?? null, consultantName: data.consultantName ?? null, note: data.note ?? null,
+        }}
         cycle={cy} attempts={data.attempts} canEdit={data.viewer.canEdit}
         onOpenPlan={() => setPlanOpen(true)} onDone={reload}
       />

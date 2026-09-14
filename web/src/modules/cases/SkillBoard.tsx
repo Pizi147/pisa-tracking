@@ -62,11 +62,24 @@ const STATE_BAR: Record<Row['state'], string> = {
   none: 'var(--line)', no_plan: 'var(--warn)', working: 'var(--accent)', done: 'var(--line-strong)',
 };
 
-export function SkillBoard({ studentId, cycleId, onOpenCase, onReport }: {
+/**
+ * BẢNG TÓM TẮT THEO KỸ NĂNG — CHỈ TÓM TẮT, KHÔNG MỞ CASE (mục 6.2 B).
+ *
+ * Trước vòng này, bấm một dòng kỹ năng sẽ giãn ra và dựng nguyên một `CasePanel` đầy đủ
+ * ngay trong bảng — trong khi CHÍNH case đó lại nằm lần nữa ở khối "Các case của em" ngay
+ * bên dưới. Hậu quả: cùng một case hiện hai lần trên một trang, và mở hồ sơ là tải chi tiết
+ * của cả sáu hạng mục dù người xem chưa hỏi.
+ *
+ * Nay bảng này chỉ trả lời "kỹ năng nào đang có chuyện". Bấm một dòng thì LỌC khối case bên
+ * dưới theo hạng mục đó — một case, một chỗ hiển thị.
+ */
+export function SkillBoard({ studentId, cycleId, selected, onPick, onReport }: {
   studentId: number;
   cycleId?: number | null;
-  /** Mở màn case đầy đủ. */
-  onOpenCase: (caseId: number) => void;
+  /** Hạng mục đang được lọc ở khối case bên dưới. */
+  selected?: string | null;
+  /** Bấm một dòng: lọc khối case bên dưới theo hạng mục đó (bấm lại để bỏ lọc). */
+  onPick: (category: string | null) => void;
   /** Mở ô báo case mới cho đúng hạng mục này. */
   onReport?: (category: string) => void;
 }) {
@@ -74,7 +87,6 @@ export function SkillBoard({ studentId, cycleId, onOpenCase, onReport }: {
   const { data, loading, error, reload } = useApi<{ rows: Row[] }>(
     `/students/${studentId}/skill-board${q}`, [studentId, cycleId],
   );
-  const [open, setOpen] = useState<string | null>(null);
 
   if (error) return <ErrorState message={error.message} hint={error.hint} onRetry={reload} />;
   if (loading || !data) return <Skeleton rows={6} />;
@@ -84,18 +96,17 @@ export function SkillBoard({ studentId, cycleId, onOpenCase, onReport }: {
     <div>
       {data.rows.map((r) => (
         <SkillRow key={r.category} row={r}
-          open={open === r.category}
-          onToggle={() => setOpen(open === r.category ? null : r.category)}
-          onOpenCase={onOpenCase}
+          open={selected === r.category}
+          onToggle={() => onPick(selected === r.category ? null : r.category)}
           onReport={onReport} />
       ))}
     </div>
   );
 }
 
-function SkillRow({ row, open, onToggle, onOpenCase, onReport }: {
+function SkillRow({ row, open, onToggle, onReport }: {
   row: Row; open: boolean; onToggle: () => void;
-  onOpenCase: (id: number) => void; onReport?: (category: string) => void;
+  onReport?: (category: string) => void;
 }) {
   const bodyId = `skill-${row.category}`;
   /*
@@ -195,34 +206,21 @@ function SkillRow({ row, open, onToggle, onOpenCase, onReport }: {
         </div>
       </button>
 
+      {/*
+        DÒNG ĐANG CHỌN chỉ đổi màu và nói một câu — không giãn ra dựng case ở đây.
+        Case của hạng mục này nằm ở khối "Các case của em" phía dưới, đã được lọc sẵn.
+      */}
       {open && (
-        <div id={bodyId} role="region" aria-labelledby={`${bodyId}-btn`}
-             className="pl-6 pr-3 pb-4 pt-1">
-          <div className="border-l-2 pl-4" style={{ borderColor: 'var(--accent-line)' }}>
-            {row.caseId ? (
-              <>
-                <CasePanel caseId={row.caseId} compact />
-                <button type="button" className="btn btn-sm mt-3" onClick={() => onOpenCase(row.caseId!)}>
-                  Mở màn case đầy đủ ›
-                </button>
-              </>
-            ) : (
-              <div className="py-1">
-                <p className="text-xs text-slate-400 m-0">
-                  Chưa từng có case nào ở {row.label}.
-                  {row.band !== null && row.missed === false
-                    ? ' Điểm gần nhất đã đạt kỳ vọng.'
-                    : ''}
-                </p>
-                {onReport && (
-                  <button type="button" className="btn btn-sm mt-2" onClick={() => onReport(row.category)}>
-                    + Case cho {row.label}
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
+        <p id={bodyId} className="px-4 pb-3 pt-0 m-0 text-xs text-slate-400">
+          {row.caseId
+            ? `Đang lọc khối case bên dưới theo ${row.label}. Bấm lại dòng này để bỏ lọc.`
+            : `Chưa từng có case nào ở ${row.label}.`}
+          {!row.caseId && onReport && (
+            <button type="button" className="btn btn-sm ml-2" onClick={() => onReport(row.category)}>
+              + Case cho {row.label}
+            </button>
+          )}
+        </p>
       )}
     </div>
   );
