@@ -57,14 +57,15 @@ npm run seed
 ```
 
 Lệnh này tạo lại toàn bộ dữ liệu giả: **5 chi nhánh** (Monbay, Bãi Cháy, Cẩm Phả, Hải Dương, Uông Bí),
-**9 lớp** (6 lớp FT + 3 lớp Normal Foundation/Elementary), **26 tài khoản** (mỗi chi nhánh 1 Quản lý +
-1 Admin văn phòng + 3 giáo viên, cộng tài khoản Quản trị hệ thống), **62 học viên**, **168 lượt Mock Test**
-và các bài kiểm tra lớp Normal kèm điểm từng kỹ năng, **138 case sinh từ điểm** cộng **8 case giáo viên
-tự báo**, với **242 việc đã làm** và **51 lần xem lại**, cùng báo cáo tuần và công việc.
+**13 lớp** (11 đang chạy + 2 đã kết thúc), **21 tài khoản** (mỗi chi nhánh 1 Quản lý + 1 Admin văn phòng,
+10 giáo viên dùng chung cả trung tâm, cộng tài khoản Quản trị hệ thống), **41 học viên**,
+**115 lượt kiểm tra** với **369 ô điểm kỹ năng**, **52 case**, **80 phương án hỗ trợ**,
+**62 lần cập nhật kết quả** và **14 việc quản lý**, có lịch sử từ **12/2025**.
 
-Quy mô cố tình **nhỏ**, và **mỗi lớp là một tình huống** — lớp sắp Final Test, lớp đang trong tuần
-Progress Test, lớp đã hết chương trình, lớp thiếu GV, lớp chưa có GVCN, case kéo dài qua ba lượt MT.
-Bảng đầy đủ nằm ở `DEMO_SCENARIOS.md`.
+Dữ liệu **không sinh ngẫu nhiên**: mỗi em có một hành trình được viết tay theo đúng chiều đời thật —
+ghi danh → chương trình → bài kiểm tra → vấn đề → phương án → cập nhật kết quả → chuyển tiếp.
+**Mỗi lớp là một tình huống**: lớp đang tuần Progress Test, lớp tuần Final Test, lớp đã hết chương trình,
+lớp thiếu GV bộ môn, lớp chưa có GVCN, lớp có bài quá hạn chấm. Bảng đầy đủ nằm ở `DEMO_SCENARIOS.md`.
 
 Màn hình sẽ in ra bảng tóm tắt số lượng bản ghi đã tạo.
 
@@ -118,11 +119,11 @@ Gợi ý tài khoản nên dùng đầu tiên:
 | Muốn xem gì | Chọn tài khoản |
 |---|---|
 | Toàn cảnh cả hệ thống, quản trị tài khoản và danh mục | **Đỗ Vũ Tuấn Phong** — `dovutuanphong95.pisa@gmail.com` |
-| Bảng **Việc cần lưu ý**, tab **Thực trạng**, chốt **tuần** kế hoạch | **Trần Ngọc Hà** — `ha.tran.pisa@gmail.com` (Quản lý Monbay) |
-| **Duyệt phương án hỗ trợ** (có một đề xuất đã quá hạn duyệt) | **Đặng Thanh Quân** — `quan.dang.pisa@gmail.com` (Quản lý Bãi Cháy) |
-| Chốt **ngày** MT trong tuần đã có kế hoạch | **Đặng Bảo Khoa** — `khoa.dang.pisa@gmail.com` (Admin CN Monbay) |
-| Góc nhìn GVCN, dạy nhiều kỹ năng (L · W2 · S) | **Đỗ Thu Huy** — `huy.do.pisa@gmail.com` (GVCN lớp MB-FT 101) |
-| Giáo viên chỉ dạy một kỹ năng | **Đỗ Minh Chi** — `chi.do.pisa@gmail.com` (W1 lớp MB-FT 101) |
+| **Màn Tổng quan đầy đủ nhất**: đề xuất quá hạn duyệt, bài quá hạn chấm, lớp chưa có GVCN | **Trần Hải Đăng** — `dang.tran.pisa@gmail.com` (Quản lý Bãi Cháy) |
+| Bảng **Việc cần lưu ý** và tab **Thực trạng** của một chi nhánh đông lớp | **Nguyễn Khánh Vy** — `vy.nguyen.pisa@gmail.com` (Quản lý Monbay) |
+| Chốt **ngày** MT trong tuần đã có kế hoạch | **Vũ Thuỳ Dương** — `duong.vu.pisa@gmail.com` (Admin CN Monbay) |
+| Góc nhìn GVCN, thấy đúng lớp mình dạy | **Trần Ngọc Hà** — `ha.tran.pisa@gmail.com` (GVCN lớp MB-FT 101) |
+| Giáo viên dạy ở **hai** chi nhánh, số liệu mỗi nơi đứng riêng | **Phạm Thu Trang** — `trang.pham.pisa@gmail.com` (Monbay + Bãi Cháy) |
 
 Mỗi vai trò mở vào đúng việc thường làm nhất. Đây chỉ là lối vào, không đổi quyền.
 
@@ -130,11 +131,10 @@ Mỗi vai trò mở vào đúng việc thường làm nhất. Đây chỉ là l�
 > **ngày** khi tới gần tuần đó (`14/10`). Speaking có thể khác ngày nhưng vẫn là cùng một lượt MT.
 > Lịch **chỉ có ngày, không có giờ**.
 
-> **Muốn xem nhanh phần mới nhất?** Đăng nhập bằng tài khoản Quản trị hệ thống: màn **Tổng quan** mở ra
-> có bảng **Việc cần lưu ý** (thu gọn được, sắp theo cột, bấm số là đi đúng chỗ) và nhóm **Mốc của lớp**
-> với ba lớp Normal đang ở ba trạng thái khác nhau. Đổi sang tab **Thực trạng** để xem hai chế độ
-> chi nhánh/lớp và theo tuần. `DEMO_SCENARIOS.md` đi qua đủ mười sáu luồng, kể cả tự đăng ký và duyệt
-> tài khoản, cấp quyền riêng cho một người, và sửa lộ trình / loại lớp.
+> **Chỉ có mười phút?** Mở [`BAN_GIAO_VONG6.md`](BAN_GIAO_VONG6.md) — trong đó có **sáu hồ sơ học viên
+> nên mở đầu tiên**, mỗi hồ sơ minh hoạ một tình huống khác nhau (đi qua ba chương trình · hỗ trợ có tác dụng ·
+> case tái diễn · đổi phương án giữa chừng · bàn giao khi chuyển lớp · kết quả thi thật).
+> `DEMO_SCENARIOS.md` đi chi tiết hơn: bấm vào đâu, đăng nhập bằng ai, và cần thấy gì.
 
 Muốn đổi tài khoản bất cứ lúc nào: bấm nút **"Đổi tài khoản demo"** ở thanh trên cùng.
 
@@ -168,10 +168,13 @@ npm run seed
 Lệnh này **xoá toàn bộ thay đổi** của bạn và dựng lại dữ liệu gốc.
 Bạn có thể chạy ngay cả khi ứng dụng đang chạy — giao diện sẽ thấy dữ liệu mới sau khi tải lại trang.
 
-Bộ dữ liệu gốc: **11 lớp · 71 học viên · 5 chi nhánh**, đủ bốn chương trình Foundation ·
+Bộ dữ liệu gốc: **13 lớp · 41 học viên · 10 giáo viên · 5 chi nhánh**, đủ bốn chương trình Foundation ·
 Beginner · Elementary · Fast Track, ngày demo cố định **14/09/2026**. Chạy lại nhiều lần cho ra
 đúng bộ cũ, không nhân đôi bản ghi nào. Danh sách từng tình huống và chỗ bấm để xem nằm ở
 [`DEMO_SCENARIOS.md`](DEMO_SCENARIOS.md).
+
+> Chạy `npm run seed` là **mất hết** những gì bạn đã nhập tay. Muốn giữ lại thì copy tệp
+> `data/pisa-demo.sqlite` ra chỗ khác **trước khi** chạy.
 
 ---
 
@@ -244,10 +247,13 @@ Hệ thống **không bao giờ** tự sinh lỗi ngẫu nhiên khi bạn dùng 
 
 Tài liệu liên quan:
 
-- **`vong4/`** — bộ tài liệu bàn giao **vòng 4 đang chạy**. Bắt đầu ở `vong4/README.md`.
+- **`BAN_GIAO_VONG6.md`** — **báo cáo bàn giao mới nhất**: đã sửa những logic nào, đã làm lại
+  khu vực nào, đã kiểm luồng nào, nên mở hồ sơ nào trước, còn hạn chế gì. **Đọc cái này trước tiên**
+- **`vong4/`** — bộ tài liệu bàn giao vòng 4. Bắt đầu ở `vong4/README.md`.
   Chỗ nào mâu thuẫn với các tài liệu bên dưới thì `vong4/` thắng
 - `PISA_Design_Master_Reference.md` — sổ quyết định: trạng thái từng quyết định, cái gì đã chốt, cái gì còn chờ
 - `PRODUCT_DEMO_SPEC.md` — Product / Web Design: **A. Current MVP · B. Simplify–Remove · C. Future Design**
 - `DEMO_ASSUMPTIONS.md` — các câu đã chốt (Q1–Q15) và những điểm còn cần bạn xác nhận
-- `DEMO_SCENARIOS.md` — **mười chín luồng** để bấm thử, bảng kiểm tra quyền, các tình huống cài sẵn.
-  Phần mới nhất bắt đầu từ **Luồng 15**
+- `DEMO_SCENARIOS.md` — sáu hồ sơ nên mở đầu tiên, bảng kịch bản J01–J12, và bốn màn nên mở kèm
+  mô tả cần thấy gì
+- `CODE_MAP.md` — bản đồ mã nguồn, dành cho người sẽ tiếp tục xây phần mềm

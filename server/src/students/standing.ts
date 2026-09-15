@@ -110,13 +110,22 @@ export function standingFor(studentIds: number[]): Map<number, Standing> {
   const conn = db();
   const ph = studentIds.map(() => '?').join(',');
 
-  /* Lộ trình ĐANG CHẠY của từng em. Không có lộ trình nào thì không có tình trạng nào. */
+  /*
+   * LỘ TRÌNH ĐANG CHẠY của từng em; không có lộ trình đang chạy thì lấy LỘ TRÌNH GẦN NHẤT.
+   *
+   * Một em đã hoàn thành lộ trình và đi thi thật vẫn có kết quả để nói. Chỉ đọc lộ trình
+   * `active` thì đầu hồ sơ em đó ghi "Chưa có kết quả trong lộ trình này" trong khi ngay bên
+   * dưới là bốn lượt MT đã chấm xong — người đọc chỉ có thể kết luận là phần mềm hỏng.
+   *
+   * `ORDER BY status='active' DESC, seq` cho lộ trình đang chạy thắng; ghi sau đè lên ghi
+   * trước nên phải xếp cái muốn giữ xuống CUỐI.
+   */
   const cycleOf = new Map<number, any>();
   for (const r of conn
     .prepare(
       `SELECT * FROM learning_cycles
-        WHERE student_id IN (${ph}) AND status = 'active'
-        ORDER BY seq`,
+        WHERE student_id IN (${ph})
+        ORDER BY (status = 'active') ASC, seq ASC`,
     )
     .all(...studentIds) as any[]) cycleOf.set(r.student_id, r);
   for (const id of studentIds) out.set(id, EMPTY(id, cycleOf.get(id)?.id ?? null));

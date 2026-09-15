@@ -142,6 +142,115 @@ const P = {
 
 const mbClass = classId('MB-FT 101');
 
+// ==================================================================== 0
+
+/*
+ * HAI PHÉP KIỂM VỀ CHÍNH BỘ DEMO, chạy NGAY SAU KHI DỰNG và trước mọi phép kiểm khác.
+ *
+ * Chúng nói về dữ liệu seed, không phải về trạng thái sau khi các phép kiểm đã tạo case,
+ * duyệt đề xuất và chuyển lớp. Đặt ở cuối file thì chúng đọc nhầm hậu quả của chính bộ kiểm
+ * tra thành lỗi của bộ demo.
+ */
+console.log('\n0. Bộ demo vừa dựng có nhất quán không');
+
+check('[12.1-16] Bộ demo nhất quán: không có sự kiện "đã xong" nào nằm ở tương lai', () => {
+  const t = demoToday();
+  const bad: string[] = [];
+  const later = (table: string, col: string) => (conn
+    .prepare(`SELECT COUNT(*) n FROM ${table} WHERE ${col} IS NOT NULL AND ${col} > ?`)
+    .get(t) as any).n;
+
+  for (const [table, col] of [
+    ['sos_cases', 'closed_at'],
+    ['case_interventions', 'completed_date'],
+    ['case_interventions', 'started_date'],
+    ['case_interventions', 'approval_at'],
+    ['case_followups', 'observed_on'],
+    ['case_milestones', 'occurred_on'],
+    ['learning_cycles', 'ended_at'],
+  ] as const) {
+    const n = later(table, col);
+    if (n > 0) bad.push(`${table}.${col}: ${n}`);
+  }
+  assert(bad.length === 0, `Có sự kiện đã xảy ra nhưng ngày nằm ở tương lai — ${bad.join(' · ')}`);
+
+  /* Và không lượt nào ở tuần tương lai mà đã có điểm. */
+  const future = (conn
+    .prepare(
+      `SELECT COUNT(*) n FROM assessment_scores s
+         JOIN assessment_attempts a ON a.id = s.attempt_id
+         JOIN report_periods rp ON rp.id = a.planned_period_id
+        WHERE rp.week_start > ? AND (s.band IS NOT NULL OR s.raw_score IS NOT NULL)`,
+    )
+    .get(t) as any).n;
+  assert(future === 0, `${future} ô điểm nằm ở một tuần chưa tới`);
+
+  /* Kết quả sau hỗ trợ không bao giờ ghi trước ngày phương án bắt đầu. */
+  const early = (conn
+    .prepare(
+      `SELECT COUNT(*) n FROM case_followups f
+         JOIN case_interventions iv ON iv.id = f.intervention_id
+        WHERE iv.cycle_started_on IS NOT NULL AND f.observed_on < iv.cycle_started_on`,
+    )
+    .get() as any).n;
+  assert(early === 0, `${early} lần cập nhật kết quả ghi trước ngày phương án bắt đầu`);
+});
+
+check('[12.1] Bộ demo có đủ độ đa dạng mà mục 11.4 yêu cầu', () => {
+  const one = (sql: string, ...args: unknown[]) => (conn.prepare(sql).get(...args) as any).n as number;
+  const need: [string, number][] = [
+    ['học viên ổn định không case',
+      one(`SELECT COUNT(*) n FROM students s WHERE s.status='active'
+             AND NOT EXISTS (SELECT 1 FROM sos_cases c WHERE c.student_id = s.id)`)],
+    ['case đã hoàn thành có kết quả',
+      one(`SELECT COUNT(*) n FROM sos_cases WHERE status='done' AND outcome IS NOT NULL`)],
+    ['case chưa có người phụ trách',
+      one(`SELECT COUNT(*) n FROM sos_cases WHERE status!='done' AND owner_user_id IS NULL`)],
+    ['case song song', one(`SELECT COUNT(*) n FROM sos_cases WHERE parallel = 1`)],
+    ['case tái diễn', one(`SELECT COUNT(*) n FROM sos_cases WHERE previous_case_id IS NOT NULL`)],
+    ['phương án bị thay thế',
+      one(`SELECT COUNT(*) n FROM case_interventions WHERE closed_reason='superseded'`)],
+    ['đề xuất chờ duyệt',
+      one(`SELECT COUNT(*) n FROM case_interventions WHERE approval_state='pending'`)],
+    ['đề xuất bị từ chối',
+      one(`SELECT COUNT(*) n FROM case_interventions WHERE approval_state='declined'`)],
+    ['xin hỗ trợ Quản lý',
+      one(`SELECT COUNT(*) n FROM case_followups WHERE next_step='ask_manager'`)],
+    ['kết quả "không đủ căn cứ"',
+      one(`SELECT COUNT(*) n FROM case_followups WHERE outcome='insufficient'`)],
+    ['điểm giáo viên tự chấm',
+      one(`SELECT COUNT(*) n FROM case_followups WHERE metrics IS NOT NULL`)],
+    ['kỹ năng không mock', one(`SELECT COUNT(*) n FROM attempt_skill_skips`)],
+    ['hạn nhập điểm tự đặt',
+      one(`SELECT COUNT(*) n FROM assessment_attempts WHERE deadline_override IS NOT NULL`)],
+    ['lộ trình đã đạt mục tiêu',
+      one(`SELECT COUNT(*) n FROM learning_cycles WHERE outcome='reached'`)],
+    ['lộ trình chưa đạt mục tiêu',
+      one(`SELECT COUNT(*) n FROM learning_cycles WHERE outcome='not_reached'`)],
+    ['học viên đã kết thúc học',
+      one(`SELECT COUNT(*) n FROM students WHERE status='finished'`)],
+    ['thi thật chỉ biết tháng',
+      one(`SELECT COUNT(*) n FROM learning_cycles
+            WHERE exam_month IS NOT NULL AND exam_period_id IS NULL`)],
+    ['thi thật đã biết tuần',
+      one(`SELECT COUNT(*) n FROM learning_cycles WHERE exam_period_id IS NOT NULL`)],
+    ['chưa có kế hoạch thi',
+      one(`SELECT COUNT(*) n FROM learning_cycles
+            WHERE route IS NOT NULL AND exam_month IS NULL AND status='active'`)],
+    ['công việc quản lý tạm ngưng có lý do',
+      one(`SELECT COUNT(*) n FROM tasks WHERE progress='paused' AND stop_reason IS NOT NULL`)],
+    ['công việc quản lý dừng hẳn có lý do',
+      one(`SELECT COUNT(*) n FROM tasks WHERE progress='stopped' AND stop_reason IS NOT NULL`)],
+    ['công việc con', one(`SELECT COUNT(*) n FROM tasks WHERE parent_task_id IS NOT NULL`)],
+    ['người theo dõi khác người phụ trách',
+      one(`SELECT COUNT(*) n FROM tasks
+            WHERE watcher_user_id IS NOT NULL AND watcher_user_id != assignee_user_id`)],
+    ['công việc gắn case làm căn cứ', one(`SELECT COUNT(*) n FROM task_case_links`)],
+  ];
+  const missing = need.filter(([, n]) => n === 0).map(([label]) => label);
+  assert(missing.length === 0, `Bộ demo còn thiếu: ${missing.join(' · ')}`);
+});
+
 // ==================================================================== 1
 
 console.log('\n1. Quy đổi điểm và công thức');
@@ -2966,8 +3075,25 @@ check('GVCN nhận việc gặp học viên, văn phòng nhận việc gọi ph�
    * Hai việc trao đổi nay là phương án, nên chúng tới tay người ta qua nhóm việc
    * "Làm phương án đã hẹn" chứ không qua một bảng Liên hệ riêng. Cách CHIA VIỆC thì giữ
    * nguyên — đó mới là thứ nghiệp vụ, không phải bảng nào chứa nó.
+   *
+   * Phải chọn lớp CÓ ĐỢT ĐÁNH GIÁ GẦN ĐÂY: hai việc trao đổi của những đợt đã xa đều đã làm
+   * xong trong bộ demo, nên ở đó không còn việc nào đang chờ để mà kiểm ai nhận.
    */
-  const gv = loadPrincipal(teacherOfSkill('MB-FT 102', 'listening'));
+  const pendingTalk = conn
+    .prepare(
+      `SELECT ta.user_id AS id, cl.branch_id AS branch FROM case_interventions iv
+         JOIN sos_cases sc ON sc.id = iv.case_id
+         JOIN assessment_attempts a ON a.id = sc.attempt_id
+         JOIN classes cl ON cl.id = a.class_id
+         JOIN teacher_assignments ta ON ta.class_id = cl.id AND ta.status = 'active'
+                                    AND ta.skill IS NOT NULL
+        WHERE iv.kind = 'talk_student' AND iv.status IN ('planned','started')
+          AND iv.action_due IS NOT NULL AND iv.action_due <= ?
+        LIMIT 1`,
+    )
+    .get(TODAY) as any;
+  assert(pendingTalk, 'Bộ demo không còn việc trao đổi nào đang chờ để kiểm ai nhận');
+  const gv = loadPrincipal(pendingTalk.id);
   const kinds = (who: any) => {
     const out = new Set<string>();
     for (const g of mywork.myWork(who, {}).groups) {
@@ -2982,10 +3108,20 @@ check('GVCN nhận việc gặp học viên, văn phòng nhận việc gọi ph�
   const gvKinds = kinds(gv);
   assert(gvKinds.has('talk_student'), 'Giáo viên không nhận việc gặp học viên');
   assert(!gvKinds.has('talk_parent'), 'Giáo viên bị giao việc gọi phụ huynh của văn phòng');
-  const adminKinds = kinds(P.mbAdmin);
+  const adminKinds = kinds(loadPrincipal(
+    (conn.prepare(
+      `SELECT ur.user_id AS id FROM user_roles ur JOIN roles r ON r.id = ur.role_id
+        WHERE r.key = 'branch_admin' AND ur.branch_id = ? LIMIT 1`,
+    ).get(pendingTalk.branch) as any).id,
+  ));
   assert(adminKinds.has('talk_parent'), 'Admin chi nhánh không nhận việc gọi phụ huynh');
-  // Quản lý thấy cả hai: họ là người đôn đốc khi có ai đó quên.
-  const mgrKinds = kinds(P.mbManager);
+  // Quản lý thấy cả hai: họ là người đôn đốc khi có ai đó quên. Quản lý CỦA CHÍNH chi nhánh đó.
+  const mgrKinds = kinds(loadPrincipal(
+    (conn.prepare(
+      `SELECT ur.user_id AS id FROM user_roles ur JOIN roles r ON r.id = ur.role_id
+        WHERE r.key = 'manager' AND ur.branch_id = ? LIMIT 1`,
+    ).get(pendingTalk.branch) as any).id,
+  ));
   assert(mgrKinds.has('talk_student') && mgrKinds.has('talk_parent'), 'Quản lý phải thấy cả hai loại');
 });
 
@@ -4680,13 +4816,168 @@ check('Bảng "Việc cần lưu ý" chỉ đếm trong phạm vi người đang
    * Lỗi cũ: hàng của chi nhánh ghi 11 học viên mà hàng "Tất cả chi nhánh" ngay dưới ghi 40 —
    * vì câu lệnh lấy sĩ số của mọi lớp trong trung tâm, không lọc theo phạm vi người xem.
    */
-  const all = pulse.branchPulse(P.admin, {})!;
-  const mine = pulse.branchPulse(P.mbManager, {})!;
+  const all = pulse.branchPulse(P.admin, {}) as any;
+  const mine = pulse.branchPulse(P.mbManager, {}) as any;
   assert(mine.total.size < all.total.size,
     `Quản lý một chi nhánh thấy tổng ${mine.total.size} bằng cả trung tâm ${all.total.size}`);
   const sumRows = mine.rows.reduce((z: number, r: any) => z + r.metrics.size, 0);
   assert(sumRows <= mine.total.size,
     `Cộng các hàng ra ${sumRows} mà hàng tổng ghi ${mine.total.size}`);
+});
+
+
+// ==================================================================== mục 12.1
+
+console.log('\n32. Mười sáu phép kiểm nghiệp vụ bắt buộc của mục 12.1');
+
+check('[12.1-5] Bảng giáo viên đếm case theo NGƯỜI PHỤ TRÁCH, không theo mọi GV cùng lớp', () => {
+  const branch = (conn.prepare("SELECT id FROM branches WHERE code = 'CP'").get() as any).id;
+  const board = pulse.branchPulse(P.admin, { branchId: branch }) as any;
+  assert(board, 'Không đọc được bảng Việc cần lưu ý của Cẩm Phả');
+  for (const person of board.people as any[]) {
+    const real = (conn
+      .prepare(
+        `SELECT COUNT(*) n FROM sos_cases sc
+           LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
+           LEFT JOIN enrollments e ON e.student_id = sc.student_id AND e.status = 'active'
+           JOIN classes cl ON cl.id = COALESCE(e.class_id, a.class_id)
+          WHERE sc.owner_user_id = ? AND sc.status != 'done' AND cl.branch_id = ?`,
+      )
+      .get(person.id, branch) as any).n;
+    assert(person.cases === real,
+      `${person.name}: bảng ghi ${person.cases} case phụ trách, dữ liệu có ${real}`);
+  }
+  /* Và phải có ít nhất một người thật sự đang phụ trách case, nếu không phép kiểm rỗng nghĩa. */
+  assert(board.people.some((x: any) => x.cases > 0), 'Không ai đang phụ trách case ở Cẩm Phả');
+});
+
+check('[12.1-6] Người được phép nhập hộ KHÔNG tự thành người nợ việc của cả chi nhánh', () => {
+  /*
+   * Quản trị hệ thống có quyền sửa điểm mọi kỹ năng để gỡ sự cố. Nhưng "sửa được" không phải
+   * "đây là việc của tôi" — nếu trộn hai thứ đó thì mở Toàn cảnh lên là thấy mình đang nợ
+   * điểm của cả trung tâm, và danh sách việc đó không ai đọc.
+   */
+  const adminScore = (mywork.myWork(P.admin, {}).items ?? []).filter((i: any) => i.group === 'score');
+  assert(adminScore.length === 0,
+    `Quản trị hệ thống đang bị giao ${adminScore.length} nhóm việc nhập điểm mà họ không được phân công`);
+  /*
+   * Nhưng giáo viên ĐƯỢC PHÂN CÔNG thì vẫn phải thấy việc của mình. Chọn người theo phân
+   * công ĐANG CÓ chứ không viết cứng một lớp: các phép kiểm trước đó có xếp lại giáo viên.
+   */
+  const anyTeacher = conn
+    .prepare(
+      `SELECT ta.user_id AS id FROM teacher_assignments ta
+         JOIN assessment_attempts a ON a.class_id = ta.class_id
+         JOIN report_periods rp ON rp.id = a.planned_period_id
+         LEFT JOIN assessment_scores sc ON sc.attempt_id = a.id AND sc.skill = ta.skill
+        WHERE ta.status = 'active' AND ta.skill IS NOT NULL
+          AND a.status != 'cancelled' AND rp.week_start <= ?
+          AND sc.band IS NULL AND sc.raw_score IS NULL
+        LIMIT 1`,
+    )
+    .get(TODAY) as any;
+  assert(anyTeacher, 'Không còn giáo viên nào đang nợ điểm để đối chứng');
+  const gv = loadPrincipal(anyTeacher.id);
+  assert((mywork.myWork(gv, {}).items ?? []).some((i: any) => i.group === 'score'),
+    'Giáo viên được phân công lại không thấy việc nhập điểm của chính mình');
+});
+
+check('[12.1-9] Bấm một con số mở đúng tập dữ liệu — kể cả SOS 3 và Chờ duyệt', () => {
+  /* SOS 3 trên bảng tổng hợp = số HỌC VIÊN có kết quả gần nhất ở mức 3, đếm bằng standing. */
+  const board = summary.branchSummary(P.admin, {});
+  const sos3 = board.rows.reduce((z: number, r: any) => z + (r.cells.sos3?.value ?? 0), 0);
+  const ids = (conn
+    .prepare(
+      `SELECT DISTINCT e.student_id AS id FROM enrollments e
+         JOIN students s ON s.id = e.student_id
+        WHERE e.status = 'active' AND s.status = 'active' AND s.archived_at IS NULL`,
+    )
+    .all() as any[]).map((r) => r.id);
+  const real = [...standing.standingFor(ids).values()].filter((x: any) => x.sosLevel === 3).length;
+  assert(sos3 === real, `Bảng nói ${sos3} em ở SOS 3, standing tính ra ${real}`);
+
+  /* Chờ duyệt phải lọc đúng chi nhánh, không lấy cả hệ thống. */
+  const cp = (conn.prepare("SELECT id FROM branches WHERE code = 'CP'").get() as any).id;
+  const cpBoard = pulse.branchPulse(P.admin, { branchId: cp }) as any;
+  assert(cpBoard, 'Không đọc được bảng Việc cần lưu ý của Cẩm Phả');
+  const cpReal = (conn
+    .prepare(
+      `SELECT COUNT(*) n FROM case_interventions iv
+         JOIN sos_cases sc ON sc.id = iv.case_id
+         LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
+         LEFT JOIN enrollments e ON e.student_id = sc.student_id AND e.status = 'active'
+         JOIN classes cl ON cl.id = COALESCE(e.class_id, a.class_id)
+        WHERE iv.approval_state = 'pending' AND cl.branch_id = ?`,
+    )
+    .get(cp) as any).n;
+  assert(cpBoard.total.pendingApproval === cpReal,
+    `Cẩm Phả: bảng nói ${cpBoard.total.pendingApproval} đề xuất chờ duyệt, dữ liệu có ${cpReal}`);
+});
+
+check('[12.1] Chỉ một số ít việc quá hạn — không để cả màn hình đỏ', () => {
+  /*
+   * Mục 11.6: khoảng một nửa học viên ổn định, và chỉ vài case quá hạn rõ ràng. Một bản demo
+   * đỏ rực thì người xem không phân biệt được chỗ nào thật sự gấp, và cũng không tin nữa.
+   */
+  const t = demoToday();
+  const openPlans = (conn
+    .prepare(
+      `SELECT COUNT(*) n FROM case_interventions iv
+        WHERE iv.followup_due IS NOT NULL AND iv.status NOT IN ('completed','cancelled')`,
+    )
+    .get() as any).n;
+  const overdue = (conn
+    .prepare(
+      `SELECT COUNT(*) n FROM case_interventions iv
+        WHERE iv.followup_due IS NOT NULL AND iv.followup_due < ?
+          AND iv.status NOT IN ('completed','cancelled')
+          AND NOT EXISTS (SELECT 1 FROM case_followups f WHERE f.intervention_id = iv.id)`,
+    )
+    .get(t) as any).n;
+  assert(overdue > 0, 'Không có phương án nào quá hạn — không thử được cách hệ thống báo quá hạn');
+  assert(overdue <= Math.ceil(openPlans / 2),
+    `${overdue}/${openPlans} phương án đang chạy bị quá hạn — quá nửa, bản demo đỏ rực`);
+
+  /* Và khoảng một nửa học viên đang học không có case nào đang mở. */
+  const active = (conn
+    .prepare(`SELECT COUNT(DISTINCT student_id) n FROM enrollments WHERE status='active'`)
+    .get() as any).n;
+  const withCase = (conn
+    .prepare(
+      `SELECT COUNT(DISTINCT sc.student_id) n FROM sos_cases sc
+         JOIN enrollments e ON e.student_id = sc.student_id AND e.status='active'
+        WHERE sc.status != 'done'`,
+    )
+    .get() as any).n;
+  assert(withCase < active,
+    `Cả ${withCase}/${active} học viên đang học đều có case mở — bộ demo mất cân bằng`);
+});
+
+
+check('[12.1-1] Lộ trình đã khép vẫn nói được kết quả gần nhất, không ghi "chưa có kết quả"', () => {
+  /*
+   * Em đã hoàn thành lộ trình và đi thi thật vẫn có bốn lượt MT đã chấm. Nếu đầu hồ sơ chỉ
+   * đọc lộ trình đang chạy thì nó ghi "Chưa có kết quả trong lộ trình này" ngay phía trên
+   * bảng điểm đầy đủ — người đọc chỉ có thể kết luận là phần mềm hỏng.
+   */
+  const done = conn
+    .prepare(
+      `SELECT lc.student_id AS id FROM learning_cycles lc
+        WHERE lc.status = 'completed'
+          AND NOT EXISTS (SELECT 1 FROM learning_cycles o
+                           WHERE o.student_id = lc.student_id AND o.status = 'active')
+          AND EXISTS (SELECT 1 FROM assessment_attempts a
+                       JOIN assessment_scores s ON s.attempt_id = a.id
+                      WHERE a.cycle_id = lc.id AND s.band IS NOT NULL)
+        LIMIT 1`,
+    )
+    .get() as any;
+  assert(done, 'Bộ demo thiếu em đã khép lộ trình mà vẫn có điểm');
+  const st = standing.standingFor([done.id]).get(done.id)!;
+  assert(st.attemptId !== null,
+    'Em đã khép lộ trình lại không có kết quả nào — đầu hồ sơ sẽ ghi "chưa có kết quả"');
+  assert(!/chưa có kết quả/i.test(standing.standingLine(st)),
+    `Câu tình trạng vẫn nói chưa có kết quả: "${standing.standingLine(st)}"`);
 });
 
 console.log(`\n${'='.repeat(60)}`);

@@ -305,6 +305,77 @@ function insertAttempt(
   return aid;
 }
 
+/**
+ * PHÂN CÔNG VÀ KHÉP LẠI case Ý thức/Khác mà engine vừa tự mở.
+ *
+ * Người phụ trách và người thực hiện lấy GVCN của lớp — đúng luật mục 2.3 (case Ý thức/Khác
+ * thuộc về giáo viên chủ nhiệm). Đợt cách ngày demo hơn ba tuần thì hai việc trao đổi coi như
+ * đã làm xong và case đã khép; đợt gần đây thì để nguyên là việc đang chờ.
+ */
+function finishBehaviourCase(
+  ctx: BuildCtx, sid: number, attemptId: number, classCode: string, detectedAt: string,
+) {
+  const { conn } = ctx;
+  const row = conn
+    .prepare(
+      `SELECT id FROM sos_cases
+        WHERE student_id = ? AND attempt_id = ? AND track = 'behaviour' AND origin_kind = 'mock'`,
+    )
+    .get(sid, attemptId) as any;
+  if (!row) return;
+
+  const core = conn
+    .prepare(
+      `SELECT user_id FROM teacher_assignments
+        WHERE class_id = ? AND is_core = 1 AND status = 'active' LIMIT 1`,
+    )
+    .get(ctx.classId.get(classCode)) as any;
+  const owner = core?.user_id ?? ctx.adminId;
+  conn.prepare('UPDATE sos_cases SET owner_user_id = ?, reported_by = ?, updated_at = ? WHERE id = ?')
+    .run(owner, owner, NOW, row.id);
+  conn
+    .prepare('UPDATE case_interventions SET performer_user_id = ?, recorded_by = ?, updated_at = ? WHERE case_id = ?')
+    .run(owner, owner, NOW, row.id);
+
+  /* Ba tuần: đủ xa để hai việc trao đổi chắc chắn đã diễn ra. */
+  const stale = addDays(detectedAt, 21) <= DEMO_DATE;
+  if (!stale) return;
+
+  const doneOn = past(addDays(detectedAt, 3))!;
+  conn
+    .prepare(
+      `UPDATE case_interventions
+          SET status = 'completed', started_date = ?, completed_date = ?,
+              action_due = NULL, followup_due = NULL, closed_reason = 'done', updated_at = ?
+        WHERE case_id = ?`,
+    )
+    .run(doneOn, doneOn, NOW, row.id);
+  for (const iv of conn
+    .prepare('SELECT id, kind FROM case_interventions WHERE case_id = ? ORDER BY id')
+    .all(row.id) as any[]) {
+    conn
+      .prepare(
+        `INSERT INTO case_followups (case_id, intervention_id, observed_on, observer_user_id,
+                                     outcome, note, next_step, cycle_no, cycle_due, late, created_at)
+         VALUES (?,?,?,?,?,?,?,1,?,0,?)`,
+      )
+      .run(row.id, iv.id, doneOn, owner, 'improved',
+           iv.kind === 'talk_parent'
+             ? 'Đã gọi phụ huynh, gia đình nắm được tình hình và đồng ý phối hợp.'
+             : 'Đã gặp em, em hiểu vì sao cần tập trung vào kỹ năng đang yếu.',
+           'complete', cycleDeadline(detectedAt, 'behaviour'), NOW);
+  }
+  conn
+    .prepare(
+      `UPDATE sos_cases
+          SET status = 'done', disposition = 'monitor',
+              disposition_note = 'Đã trao đổi với em và phụ huynh sau đợt đánh giá này.',
+              outcome = 'improved', closed_by = ?, closed_at = ?, updated_at = ?
+        WHERE id = ?`,
+    )
+    .run(owner, doneOn, NOW, row.id);
+}
+
 function insertCase(
   ctx: BuildCtx, sid: number, cycleId: number, cy: CycleSeed, c: CaseSeed,
   attemptByNo: Map<number, number>, closedByTopic: Map<string, number>, counts: BuildCounts,
@@ -409,6 +480,17 @@ function insertCase(
   if (track === 'academic' && attemptId && (c.sosLevel ?? 0) > 0) {
     const attempt = conn.prepare('SELECT * FROM assessment_attempts WHERE id = ?').get(attemptId);
     ensureBehaviourCase({ userId: ctx.adminId } as any, attempt, c.sosLevel as number, c.detectedAt);
+    /*
+     * ENGINE CHỈ MỞ CASE VÀ LÊN LỊCH HAI VIỆC TRAO ĐỔI — nó không biết ai sẽ làm, vì ngoài
+     * đời người ta phân công sau. Ở dữ liệu mẫu thì phải phân công, nếu không mọi case Ý
+     * thức/Khác đều hiện "chưa có người phụ trách · chưa có người thực hiện" và bản demo
+     * trông như một trung tâm bỏ rơi học viên.
+     *
+     * Và việc của những đợt ĐÃ XA thì đã làm xong rồi: một cuộc trao đổi hẹn từ tháng Bảy mà
+     * tới giữa tháng Chín vẫn "chưa ai làm" là dữ liệu vô lý, không phải một cảnh báo hữu ích.
+     * Chỉ những đợt gần đây mới còn là việc đang chờ — đó mới là thứ đáng đỏ.
+     */
+    finishBehaviourCase(ctx, sid, attemptId, cy.classCode, c.detectedAt);
   }
   for (const no of c.repeatsAt ?? []) {
     const aid = attemptByNo.get(no) ?? null;

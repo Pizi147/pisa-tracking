@@ -16,6 +16,8 @@ Khi hai nguồn nói khác nhau, thứ tự ưu tiên là: **lời owner mới n
 | **Kỳ vọng của một lượt** | `mục tiêu − 1.0` ở MT1, `− 0.5` ở MT2, `− 0` từ MT3 |
 | **Mức SOS** | Số **kỹ năng có band** dưới kỳ vọng: 1 → SOS 1, 2 → SOS 2, từ 3 → SOS 3. Đếm trên **bốn** kỹ năng (Writing gộp) |
 | **SOS là tình trạng HIỆN TẠI** | Mức của một em là mức ở **lượt MT mới nhất** em đã làm, không cộng dồn. Nên tổng ba cột SOS **không bao giờ** vượt sĩ số |
+| **SOS lấy từ KẾT QUẢ BÀI, không từ case** *(vòng 6 — THAY cách cũ)* | Mức SOS hiện tại đọc từ **lượt đánh giá gần nhất có điểm trong lộ trình đang chạy**. Đóng một case **không** làm mức SOS đổi; một MT mới đạt **không** tự đóng case nào; case của lộ trình trước **không** thành SOS của lộ trình mới. Một chỗ tính duy nhất: `server/src/students/standing.ts` |
+| **Lộ trình đã khép vẫn có kết luận** *(vòng 6)* | Em đã hoàn thành lộ trình và đi thi thật thì đầu hồ sơ vẫn nói kết quả gần nhất, không ghi *"chưa có kết quả"* |
 | **Thiếu điểm ≠ trượt** | Kết luận ngay trên phần điểm đang có; ô chưa chấm **không** bị đếm là dưới kỳ vọng. Giao diện ghi rõ *"mới có 2/4 kỹ năng"* |
 | **Kỹ năng không mock** | Quản lý/Admin CN đánh dấu cho từng lượt; kỹ năng đó rời khỏi mẫu số, và lượt **không còn Overall** |
 | **Lớp Normal** | Chấm `số câu đúng / tổng`, đạt từ **60%** tính trên tỷ lệ thật (25/42 hiện "60%" nhưng vẫn trượt). Không band, không kỳ vọng, không Overall |
@@ -55,6 +57,8 @@ Vòng 5 **nới** mô hình vòng 4 ở hai chỗ: một em có thể có **nhi�
 | **Case GV báo** | `sos_level` để **trống** — SOS là số kỹ năng dưới kỳ vọng ở một bài, giáo viên không có bài nào để đếm. Mức gấp là thang riêng |
 | **Case trùng** | GV báo lại một hạng mục đã có case chưa xong → hệ thống **hỏi trước**: ghi vào case đang có (mặc định), hay mở case song song có chủ ý |
 | **Quy tắc Writing** | W1 và W2 so **riêng từng task**. Nhưng nếu band Writing **gộp** đã đạt thì **không có case nào** ở cả W1 lẫn W2, dù một task dưới kỳ vọng |
+| **Người phụ trách case** *(vòng 6)* | Mỗi case có **một người phụ trách chính**; mỗi phương án có **người thực hiện riêng**; người ghi hộ lưu riêng. Không suy người phụ trách từ toàn bộ giáo viên dạy lớp. Chưa xác định được thì hiện **"Chưa có người phụ trách"** và đó là một **việc cần làm**, không phải một ô trống |
+| **Dòng mô tả của case sinh từ điểm** *(vòng 6)* | Luôn nói **bài nào và mấy kỹ năng dưới kỳ vọng** trước, ghi chú của người dạy đứng sau. Trước đây chỉ cần ai đó gõ một câu là phần căn cứ biến mất |
 | **Chốt kết quả case** | Chỉ chốt được khi **mọi phương án đã khép lại**, không còn việc đang chạy, đang chờ duyệt hay yêu cầu hỗ trợ chưa xử lý — và case **chưa có phương án nào** cũng không đủ điều kiện. Giao diện nói rõ còn thiếu gì. Bốn mức: *đã tốt hơn hẳn · có tiến bộ · chưa chuyển biến · tệ hơn* |
 | **Điểm giáo viên tự chấm** *(vòng 5)* | Ghi kèm khi cập nhật kết quả hoặc kết luận case, **tuỳ chọn**. Lưu riêng: **không** ghi đè điểm entrance/mock/test, **không** đổi mức SOS, và trên biểu đồ tiến bộ dùng **ký hiệu khác**, không nối chung một đường |
 
@@ -104,6 +108,53 @@ làm gì tiếp là một kết quả sẽ bị quên, và em đó nằm im.
 Case Ý thức/Khác dùng **ba** mức kết quả riêng: *Đã tiến bộ · Không thay đổi · Kém hơn*. Case đó
 **đóng được cả khi kết quả xấu**, miễn mọi phương án đã khép lại và giáo viên đã ghi kết luận —
 và màn hình **giữ đúng kết quả xấu**, không tô xanh như đã giải quyết xong.
+
+## 5b. Đơn vị đếm — vòng 6
+
+Sáu đơn vị **không bao giờ** được trộn, và mỗi bảng phải nói rõ mình đang đếm cái nào:
+
+| Đơn vị | Ví dụ |
+|---|---|
+| **Học viên** | Một em có ba case = **1** học viên |
+| **Lượt Test / lượt MT** | Một lượt MT sinh ba case = **1** lượt |
+| **Case** | …và **3** case |
+| **Phương án** | Một phương án có ba lần cập nhật = **1** phương án |
+| **Lần / chu kỳ cập nhật** | …và **3** lần cập nhật |
+| **Nhóm công việc** | Một dòng nhập điểm cho sáu em = **1** nhóm việc, **6** học viên cần nhập |
+
+Hệ quả cụ thể, đã sửa ở vòng 6:
+
+- Cột tên **"Case"** đếm đúng từng case, không đếm *"lượt MT có case"*. Bảng nào cần số học
+  viên thì có cột **"HV có case"** riêng.
+- **Quá hạn** là **thuộc tính của một việc**, không phải một bản ghi việc bổ sung — nên nó
+  không bao giờ được đếm thành một dòng thứ hai.
+- Bảng theo tuần có **sáu cột kết luận loại trừ nhau** cộng lại đúng bằng số lượt:
+  *Đạt · SOS 1 · SOS 2 · SOS 3 · Tạm thời · Chưa đủ điểm*. Một bài chưa đủ điểm nằm ở **đúng
+  một** trong hai cột cuối.
+- **"Được phép sửa" khác "đây là việc của tôi".** Quản trị hệ thống và Quản lý sửa được điểm
+  mọi kỹ năng để gỡ sự cố, nhưng việc **nhập điểm** chỉ thuộc về người được **phân công** dạy
+  kỹ năng đó. Lớp thiếu giáo viên có nhãn *"Thiếu GV …"* riêng — đó mới là việc cần làm, và
+  nó là việc **phân công**.
+- Mọi bảng tổng hợp chỉ đếm **trong phạm vi người đang xem**. Hàng tổng của Quản lý một chi
+  nhánh là tổng của chi nhánh đó, không phải của cả trung tâm.
+
+## 5c. Công việc quản lý — vòng 6
+
+Bảng **Tiến độ công việc** là mục điều hướng riêng, chỉ **Quản trị hệ thống** và **Quản lý
+chi nhánh** nhìn thấy toàn bộ tab. Giáo viên vẫn nhận và cập nhật được việc con giao cho mình,
+nhưng qua Toàn cảnh chứ không qua tab quản lý.
+
+| | |
+|---|---|
+| **Một định danh xuyên nhiều tuần** | Việc chưa xong hiện sang tuần sau, **không** nhân bản thành một bản ghi mới mỗi tuần |
+| **Bốn nhóm** | Học sinh / Phụ huynh · Giáo trình · Giáo viên · Tutor |
+| **Năm trạng thái** | Chưa bắt đầu · Tiếp tục xử lý · Đã hoàn thành · Tạm ngưng · Dừng hẳn |
+| **Tạm ngưng và Dừng hẳn** | **Bắt buộc có lý do**. Tạm ngưng nên có ngày xem lại để không rơi vào quên lãng |
+| **Việc con** | **Một tầng**, không có việc cháu. Hạn mặc định của việc con là **trước hạn việc cha một ngày**, nhưng sửa được — và hai mốc độc lập với nhau |
+| **Đóng việc cha** | Không đóng được khi còn việc con chưa khép |
+| **Người theo dõi** | Xem được, **không** cập nhật hộ. Khác hẳn người phụ trách |
+| **Mỗi lần cập nhật là một dòng lịch sử** | Không đè lên trạng thái cũ |
+| **Gắn case làm căn cứ** | Một công việc quản lý **liên kết** tới case để nói con số từ đâu ra, nhưng **không** tự tạo phương án trong case và **không** tự đóng case nào |
 
 ## 6. Vai trò, bộ lọc và quyền
 
@@ -183,3 +234,6 @@ thấy đúng ai dạy lúc đó, và điểm đã nhập giữ nguyên tên ng�
 | **Sửa bảng quyền theo vai** | **Đã làm vòng 5:** bấm một ô là bật/tắt ngay, ghi nhật ký từng lần. Hai quyền `admin.config` và `student.view` của vai Quản trị hệ thống KHÔNG gỡ được | — |
 | **Tab Báo cáo tuần** | **Bỏ tạm** (owner chốt mục 12). Chức năng Quản lý giao việc cho GV thì giữ, chuyển vào Thực trạng | Khi nào cần lại thì mở, mã và dữ liệu vẫn còn |
 | **Đánh giá điểm của GV ngoài luồng case** | **Bỏ hẳn** — điểm GV ước lượng chỉ còn trong phần cập nhật kết quả case | Owner nêu hai hướng ở mục 7.17, chọn hướng gọn hơn |
+| **Báo cáo "đúng trạng thái tại cuối tuần trước"** | **Không làm** đợt này (owner chốt mục 4.1). Mở một tuần cũ thì kết quả Test thuộc tuần đó, còn tình hình xử lý case ghi rõ là **"tình trạng hiện tại"** | Dựng lại ảnh chụp quá khứ cần lưu lịch sử trạng thái từng ngày — một việc lớn và chưa cần |
+| **Cột "Trễ chấm TB"** | **Bỏ** khỏi bảng theo tuần. Hệ thống chỉ biết **tuần kế hoạch**, không biết ngày làm bài, nên một cột nói *"số ngày từ ngày làm bài"* là nói sai cách nó được tính | Muốn có lại thì phải khai ngày làm bài của từng lượt |
+| **Ngày sinh học viên** | Vẫn lưu và sửa được, nhưng **không** còn lên badge *"Thiếu thông tin"*: nó là thông tin hành chính, không cản trở buổi dạy hay việc đánh giá nào | — |
