@@ -1,0 +1,597 @@
+import {
+  ATTEMPT_KIND_SHORT, PROGRAMME_TEMPLATES, categoryOf, cycleDeadline, programmeOf,
+  type AttemptKind,
+} from '../../../shared/domain/index.ts';
+import { addDays, normalizeName, nowIso, padCode } from '../util.ts';
+import { ensurePeriod } from '../platform/week.ts';
+import { LISTENING_BY_RAW, READING_BY_RAW } from '../fasttrack/scoring.ts';
+import { ensureBehaviourCase } from '../cases/sos.ts';
+import { DEMO_DATE, type CaseSeed, type CycleSeed, type StudentSeed, type TestSeed } from './journeys.ts';
+import { STUDENTS } from './students.ts';
+
+/**
+ * DỰNG DỮ LIỆU TỪ KỊCH BẢN HÀNH TRÌNH — mục 11.2.
+ *
+ * File này KHÔNG chứa quyết định nghiệp vụ nào. Nó chỉ đọc kịch bản trong `students.ts` rồi
+ * viết xuống đúng các bảng, theo đúng thứ tự đời thật:
+ *
+ *   học viên → ghi danh → lộ trình → lượt đánh giá → điểm → case → phương án → cập nhật
+ *
+ * BA LUẬT CỨNG, kiểm ngay khi ghi chứ không để sót vào dữ liệu:
+ *   1. Không có ngày "đã hoàn thành" nào nằm sau ngày demo.
+ *   2. Không lượt nào ở tương lai mà có điểm.
+ *   3. Ngày ghi kết quả luôn ≥ ngày phương án bắt đầu.
+ */
+
+const NOW = nowIso();
+
+/** Chặn mọi ngày "đã xảy ra" vượt quá ngày demo — dữ liệu mẫu phải theo đúng luật nó dạy. */
+function past(d: string | null | undefined): string | null {
+  if (!d) return null;
+  return d > DEMO_DATE ? DEMO_DATE : d;
+}
+
+/** Số câu đúng tương ứng một band, để điểm thô của Listening/Reading hợp lệ. */
+function rawFor(skill: 'listening' | 'reading', band: number): number {
+  const table = skill === 'listening' ? LISTENING_BY_RAW : READING_BY_RAW;
+  for (let raw = 40; raw >= 0; raw -= 1) if (table[raw] <= band) return raw;
+  return 0;
+}
+
+/** Bốn tiêu chí quanh band, để ô Writing/Speaking có dữ liệu chi tiết đọc được. */
+function criteriaFor(band: number): [number, number, number, number] {
+  const step = 0.5;
+  return [band, Math.max(0, band - step), band, Math.min(9, band + step)];
+}
+
+export type BuildCtx = {
+  conn: any;
+  adminId: number;
+  branchId: Map<string, number>;
+  classId: Map<string, number>;
+  /** Mã người (T_*, MGR_*, ADM_*) → id tài khoản. */
+  userId: Map<string, number>;
+  /** Mã lớp → mã chi nhánh, để tra người của đúng nơi. */
+  classBranch: Map<string, string>;
+  nextStudentCode: () => string;
+};
+
+export type BuildCounts = {
+  students: number; cycles: number; attempts: number; scores: number; skips: number;
+  cases: number; interventions: number; followups: number; milestones: number;
+};
+
+export function buildJourneys(ctx: BuildCtx): BuildCounts {
+  const { conn, adminId } = ctx;
+  const counts: BuildCounts = {
+    students: 0, cycles: 0, attempts: 0, scores: 0, skips: 0,
+    cases: 0, interventions: 0, followups: 0, milestones: 0,
+  };
+
+  const journey = (sid: number, cycleId: number | null, type: string, date: string,
+                   title: string, detail: string | null, ref?: { table: string; id: number }) =>
+    conn
+      .prepare(
+        `INSERT INTO journey_events (student_id, cycle_id, event_type, event_date, title, detail,
+                                     ref_table, ref_id, created_by, created_at)
+         VALUES (?,?,?,?,?,?,?,?,?,?)`,
+      )
+      .run(sid, cycleId, type, date, title, detail, ref?.table ?? null, ref?.id ?? null, adminId, NOW);
+
+  for (const s of STUDENTS) {
+    /* ---------------------------------------------------------------- 1. học viên */
+    const info = conn
+      .prepare(
+        `INSERT INTO students (student_code, full_name, normalized_name, dob, branch_id, status,
+                               consultant_name, note, archived_at, created_at)
+         VALUES (?,?,?,?,?,?,?,?,?,?)`,
+      )
+      .run(ctx.nextStudentCode(), s.name, normalizeName(s.name), s.dob ?? null,
+           ctx.branchId.get(s.branch)!,
+           s.status === 'finished' ? 'finished' : 'active',
+           null, null, null, NOW);
+    if (s.status === 'finished' && s.finishedAt) {
+      conn.prepare('UPDATE students SET finished_at = ? WHERE id = ?')
+        .run(s.finishedAt, Number(info.lastInsertRowid));
+    }
+    const sid = Number(info.lastInsertRowid);
+    counts.students += 1;
+
+    /* ---------------------------------------------------------------- 2. ghi danh */
+    for (const e of s.enrollments) {
+      const cid = ctx.classId.get(e.class);
+      if (!cid) throw new Error(`Kịch bản ${s.code} nhắc tới lớp không có: ${e.class}`);
+      conn
+        .prepare(
+          `INSERT INTO enrollments (student_id, class_id, status, started_at, ended_at, end_reason, created_at)
+           VALUES (?,?,?,?,?,?,?)`,
+        )
+        .run(sid, cid, e.status === 'active' ? 'active' : e.status, e.from, e.to ?? null,
+             e.handover ?? null, NOW);
+      journey(sid, null, 'enrollment', e.from, `Vào lớp ${e.class}`, null);
+      if (e.to) {
+        /*
+         * CHUYỂN LỚP VÀ KẾT THÚC LÀ HAI SỰ KIỆN KHÁC NHAU, và ghi chú bàn giao nằm ở sự
+         * kiện chuyển lớp — đó là chỗ giáo viên mới đọc để biết em đang dở dang chuyện gì.
+         */
+        journey(
+          sid, null, e.status === 'transferred' ? 'transfer' : 'finish', e.to,
+          e.status === 'transferred' ? `Rời lớp ${e.class}` : `Kết thúc lớp ${e.class}`,
+          e.handover ?? null,
+        );
+      }
+    }
+
+    /* ---------------------------------------------------------------- 3. từng lộ trình */
+    /** Case đã đóng của CHÍNH em này, theo hạng mục — để case tái diễn nối vào đúng cái cũ. */
+    const closedByTopic = new Map<string, number>();
+
+    for (const cy of s.cycles) {
+      const cycleId = insertCycle(ctx, sid, cy);
+      counts.cycles += 1;
+      journey(
+        sid, cycleId, 'cycle_start', cy.startedAt,
+        cy.route ? `Bắt đầu lộ trình ${cy.route}` : `Bắt đầu chương trình ${classProgramme(ctx, cy.classCode)}`,
+        cy.target !== null && cy.target !== undefined ? `Target ${cy.target}` : null,
+        { table: 'learning_cycles', id: cycleId },
+      );
+
+      /* --------------------------------------------------- 3a. lượt đánh giá và điểm */
+      const attemptByNo = new Map<number, number>();
+      for (const t of cy.tests) {
+        const aid = insertAttempt(ctx, sid, cycleId, cy, t, counts);
+        attemptByNo.set(t.no, aid);
+        if (t.status === 'done') {
+          journey(
+            sid, cycleId, 'mock_result', weekEnd(t.week),
+            `Kết quả ${testLabel(t)}`, scoreLine(t),
+            { table: 'assessment_attempts', id: aid },
+          );
+        }
+      }
+
+      /* --------------------------------------------------- 3b. case và phương án */
+      for (const c of cy.cases ?? []) {
+        const caseId = insertCase(ctx, sid, cycleId, cy, c, attemptByNo, closedByTopic, counts);
+        if (c.status === 'done') closedByTopic.set(c.topic, caseId);
+      }
+
+      /* Lộ trình đã khép: ghi kết quả cuối, và nếu là kỳ thi thật thì nói rõ ra. */
+      if (cy.status === 'completed' && cy.outcomeNote) {
+        journey(
+          sid, cycleId, cy.examMonth && cy.outcome !== 'unknown' ? 'exam_result' : 'finish',
+          cy.endedAt ?? cy.startedAt,
+          cy.outcome === 'reached' ? 'Đạt mục tiêu lộ trình'
+            : cy.outcome === 'not_reached' ? 'Chưa đạt mục tiêu lộ trình'
+            : 'Kết thúc lộ trình',
+          cy.outcomeNote, { table: 'learning_cycles', id: cycleId },
+        );
+      }
+    }
+  }
+
+  return counts;
+}
+
+/* ================================================================= chi tiết từng bảng */
+
+function classProgramme(ctx: BuildCtx, classCode: string): string {
+  const row = ctx.conn.prepare('SELECT programme_code FROM classes WHERE id = ?')
+    .get(ctx.classId.get(classCode)) as any;
+  const code = row?.programme_code as keyof typeof PROGRAMME_TEMPLATES | null;
+  return code ? PROGRAMME_TEMPLATES[code].name : classCode;
+}
+
+function insertCycle(ctx: BuildCtx, sid: number, cy: CycleSeed): number {
+  const { conn } = ctx;
+  const programme = programmeOf(
+    (conn.prepare('SELECT kind FROM classes WHERE id = ?').get(ctx.classId.get(cy.classCode)) as any)?.kind,
+  );
+  const info = conn
+    .prepare(
+      `INSERT INTO learning_cycles (student_id, seq, route, programme_code, target_score,
+                                    start_period_id, exam_month, exam_period_id,
+                                    baseline_score, baseline_source, baseline_note,
+                                    started_at, ended_at, status, outcome, outcome_note, created_at)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+    )
+    .run(
+      sid, cy.seq, cy.route ?? null, programme, cy.target ?? null,
+      cy.startWeek ? ensurePeriod(cy.startWeek).id : null,
+      cy.examMonth ?? null,
+      cy.examWeek ? ensurePeriod(cy.examWeek).id : null,
+      cy.baseline?.score ?? null, cy.baseline?.source ?? null, cy.baseline?.note ?? null,
+      cy.startedAt, cy.endedAt ?? null,
+      cy.status, cy.outcome ?? null, cy.outcomeNote ?? null, NOW,
+    );
+  return Number(info.lastInsertRowid);
+}
+
+function testLabel(t: TestSeed): string {
+  return t.kind === 'mock' ? `MT${t.no}` : ATTEMPT_KIND_SHORT[t.kind as AttemptKind] ?? t.kind;
+}
+
+/** Chủ nhật của tuần — mốc "đã xong" của một lượt, và hạn gốc để tính hạn nhập điểm. */
+function weekEnd(week: string): string {
+  return addDays(week, 6);
+}
+
+function scoreLine(t: TestSeed): string | null {
+  if (t.bands) {
+    return Object.entries(t.bands).map(([k, v]) => `${k}: ${v}`).join(' · ');
+  }
+  if (t.ratios) {
+    return Object.entries(t.ratios).map(([k, v]) => `${k}: ${v![0]}/${v![1]}`).join(' · ');
+  }
+  return null;
+}
+
+function insertAttempt(
+  ctx: BuildCtx, sid: number, cycleId: number, cy: CycleSeed, t: TestSeed, counts: BuildCounts,
+): number {
+  const { conn } = ctx;
+  const classIdOf = ctx.classId.get(cy.classCode)!;
+  const period = ensurePeriod(t.week);
+  /*
+   * MỘT LƯỢT TRONG TƯƠNG LAI LUÔN Ở TRẠNG THÁI KẾ HOẠCH VÀ KHÔNG BAO GIỜ CÓ ĐIỂM.
+   * Kịch bản có thể viết nhầm; chỗ này chặn lại thay vì để dữ liệu sai lọt vào bản demo.
+   */
+  const inFuture = t.week > DEMO_DATE;
+  const status = inFuture ? 'planned' : t.status;
+
+  const info = conn
+    .prepare(
+      `INSERT INTO assessment_attempts (cycle_id, student_id, attempt_no, kind, class_id,
+                                        planned_period_id, plan_source, status,
+                                        target_at_attempt, note,
+                                        deadline_override, deadline_override_by,
+                                        deadline_override_at, deadline_override_reason,
+                                        created_by, created_at)
+       VALUES (?,?,?,?,?,?, 'manual', ?,?,?,?,?,?,?,?,?)`,
+    )
+    .run(cycleId, sid, t.no, t.kind, classIdOf, period.id, status,
+         cy.target ?? null, t.note ?? null,
+         t.deadlineOverride?.date ?? null,
+         t.deadlineOverride ? ctx.userId.get(t.deadlineOverride.by) ?? ctx.adminId : null,
+         t.deadlineOverride ? NOW : null,
+         t.deadlineOverride?.reason ?? null,
+         ctx.adminId, NOW);
+  const aid = Number(info.lastInsertRowid);
+  counts.attempts += 1;
+
+  if (t.skip) {
+    conn
+      .prepare('INSERT INTO attempt_skill_skips (attempt_id, skill, reason, created_by, created_at) VALUES (?,?,?,?,?)')
+      .run(aid, t.skip, 'Học viên vắng buổi đánh giá kỹ năng này, đã báo trước.', ctx.adminId, NOW);
+    counts.skips += 1;
+  }
+
+  if (inFuture) return aid;
+
+  const enteredAt = past(t.enteredOn ?? weekEnd(t.week)) ?? weekEnd(t.week);
+  const enteredIso = `${enteredAt}T09:00:00.000Z`;
+
+  /* Fast Track: band từng ô nhập. Ô không có trong kịch bản = CHƯA NHẬP, không ghi dòng nào. */
+  for (const [skill, band] of Object.entries(t.bands ?? {})) {
+    if (band === undefined || band === null) continue;
+    const raw = skill === 'listening' || skill === 'reading'
+      ? rawFor(skill as 'listening' | 'reading', band) : null;
+    const cr = skill === 'listening' || skill === 'reading' ? null : criteriaFor(band);
+    conn
+      .prepare(
+        `INSERT INTO assessment_scores (attempt_id, skill, raw_score, raw_total, c1, c2, c3, c4,
+                                        band, result_date, entered_by, entered_at)
+         VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
+      )
+      .run(aid, skill, raw, raw === null ? null : 40,
+           cr?.[0] ?? null, cr?.[1] ?? null, cr?.[2] ?? null, cr?.[3] ?? null,
+           band, enteredAt, ctx.adminId, enteredIso);
+    counts.scores += 1;
+  }
+
+  /* Normal: điểm đạt / tổng điểm. Không quy về band, không quy về phần trăm. */
+  for (const [skill, pair] of Object.entries(t.ratios ?? {})) {
+    if (!pair) continue;
+    conn
+      .prepare(
+        `INSERT INTO assessment_scores (attempt_id, skill, raw_score, raw_total,
+                                        band, result_date, entered_by, entered_at)
+         VALUES (?,?,?,?,?,?,?,?)`,
+      )
+      .run(aid, skill, pair[0], pair[1], null, enteredAt, ctx.adminId, enteredIso);
+    counts.scores += 1;
+  }
+
+  return aid;
+}
+
+/**
+ * PHÂN CÔNG VÀ KHÉP LẠI case Ý thức/Khác mà engine vừa tự mở.
+ *
+ * Người phụ trách và người thực hiện lấy GVCN của lớp — đúng luật mục 2.3 (case Ý thức/Khác
+ * thuộc về giáo viên chủ nhiệm). Đợt cách ngày demo hơn ba tuần thì hai việc trao đổi coi như
+ * đã làm xong và case đã khép; đợt gần đây thì để nguyên là việc đang chờ.
+ */
+function finishBehaviourCase(
+  ctx: BuildCtx, sid: number, attemptId: number, classCode: string, detectedAt: string,
+) {
+  const { conn } = ctx;
+  const row = conn
+    .prepare(
+      `SELECT id FROM sos_cases
+        WHERE student_id = ? AND attempt_id = ? AND track = 'behaviour' AND origin_kind = 'mock'`,
+    )
+    .get(sid, attemptId) as any;
+  if (!row) return;
+
+  const core = conn
+    .prepare(
+      `SELECT user_id FROM teacher_assignments
+        WHERE class_id = ? AND is_core = 1 AND status = 'active' LIMIT 1`,
+    )
+    .get(ctx.classId.get(classCode)) as any;
+  const owner = core?.user_id ?? ctx.adminId;
+  conn.prepare('UPDATE sos_cases SET owner_user_id = ?, reported_by = ?, updated_at = ? WHERE id = ?')
+    .run(owner, owner, NOW, row.id);
+  conn
+    .prepare('UPDATE case_interventions SET performer_user_id = ?, recorded_by = ?, updated_at = ? WHERE case_id = ?')
+    .run(owner, owner, NOW, row.id);
+
+  /* Ba tuần: đủ xa để hai việc trao đổi chắc chắn đã diễn ra. */
+  const stale = addDays(detectedAt, 21) <= DEMO_DATE;
+  if (!stale) return;
+
+  const doneOn = past(addDays(detectedAt, 3))!;
+  conn
+    .prepare(
+      `UPDATE case_interventions
+          SET status = 'completed', started_date = ?, completed_date = ?,
+              action_due = NULL, followup_due = NULL, closed_reason = 'done', updated_at = ?
+        WHERE case_id = ?`,
+    )
+    .run(doneOn, doneOn, NOW, row.id);
+  for (const iv of conn
+    .prepare('SELECT id, kind FROM case_interventions WHERE case_id = ? ORDER BY id')
+    .all(row.id) as any[]) {
+    conn
+      .prepare(
+        `INSERT INTO case_followups (case_id, intervention_id, observed_on, observer_user_id,
+                                     outcome, note, next_step, cycle_no, cycle_due, late, created_at)
+         VALUES (?,?,?,?,?,?,?,1,?,0,?)`,
+      )
+      .run(row.id, iv.id, doneOn, owner, 'improved',
+           iv.kind === 'talk_parent'
+             ? 'Đã gọi phụ huynh, gia đình nắm được tình hình và đồng ý phối hợp.'
+             : 'Đã gặp em, em hiểu vì sao cần tập trung vào kỹ năng đang yếu.',
+           'complete', cycleDeadline(detectedAt, 'behaviour'), NOW);
+  }
+  conn
+    .prepare(
+      `UPDATE sos_cases
+          SET status = 'done', disposition = 'monitor',
+              disposition_note = 'Đã trao đổi với em và phụ huynh sau đợt đánh giá này.',
+              outcome = 'improved', closed_by = ?, closed_at = ?, updated_at = ?
+        WHERE id = ?`,
+    )
+    .run(owner, doneOn, NOW, row.id);
+}
+
+function insertCase(
+  ctx: BuildCtx, sid: number, cycleId: number, cy: CycleSeed, c: CaseSeed,
+  attemptByNo: Map<number, number>, closedByTopic: Map<string, number>, counts: BuildCounts,
+): number {
+  const { conn } = ctx;
+  const track = c.track ?? 'academic';
+  const category = categoryOf(track, c.topic);
+  const attemptId = c.fromTest ? attemptByNo.get(c.fromTest) ?? null : null;
+  const originKind = c.originKind ?? (attemptId ? 'mock' : 'teacher_report');
+
+  /*
+   * ĐỊNH DANH CASE: một em × một hạng mục × một lộ trình = MỘT case.
+   *
+   * Hai ngoại lệ, và cả hai đều có chủ ý:
+   *   · `parallel` — hai vấn đề khác nhau trong cùng một hạng mục, mở song song;
+   *   · case TÁI DIỄN — case cũ đã đóng, mở case mới nối vào nó.
+   * Cả hai đều để `dedup_key` trống, vì chúng cố tình KHÔNG phải cùng một bản ghi.
+   */
+  const previousCaseId = c.linksPreviousOf ? closedByTopic.get(c.linksPreviousOf) ?? null : null;
+  /*
+   * CASE TÁI DIỄN NHẬN LẠI KHOÁ CHỐNG TRÙNG, và case CŨ nhả khoá ra.
+   *
+   * Đây đúng là cách engine làm khi một case đã chốt mà em yếu lại: case cũ giữ nguyên kết
+   * quả của nó nhưng thôi giữ chỗ, để case mới trở thành case đang có hiệu lực ở hạng mục
+   * đó. Nếu case cũ giữ khoá thì case mới không tồn tại song song được, và lần yếu lại sau
+   * nữa sẽ lặng lẽ ghi đè lên lịch sử.
+   */
+  if (previousCaseId) {
+    conn.prepare('UPDATE sos_cases SET dedup_key = NULL, updated_at = ? WHERE id = ?')
+      .run(NOW, previousCaseId);
+  }
+  const dedupKey = c.parallel
+    ? null
+    : track === 'behaviour' ? `bt:${sid}:${cycleId}:${category}` : `a:${sid}:${cycleId}:${category}`;
+
+  const ownerId = c.owner ? ctx.userId.get(c.owner) ?? null : null;
+  const reporterId = c.reportedBy ? ctx.userId.get(c.reportedBy) ?? null : (ownerId ?? null);
+
+  const info = conn
+    .prepare(
+      `INSERT INTO sos_cases (attempt_id, student_id, cycle_id, track, topic, category,
+                              dedup_key, parallel, previous_case_id, owner_user_id, title,
+                              origin_kind, detected_at, reported_by, summary, urgency, sos_level,
+                              status, disposition, disposition_note, outcome, outcome_note,
+                              closed_by, closed_at, created_at)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+    )
+    .run(
+      attemptId, sid, cycleId, track, c.topic, category,
+      dedupKey, c.parallel ? 1 : 0, previousCaseId, ownerId, c.title ?? null,
+      originKind, c.detectedAt, reporterId, c.summary, c.urgency ?? 'normal',
+      c.sosLevel ?? null,
+      c.status, c.disposition ?? null, c.dispositionNote ?? null,
+      c.outcome ?? null, c.outcomeNote ?? null,
+      c.status === 'done' ? (ctx.userId.get(c.closedBy ?? '') ?? ownerId ?? ctx.adminId) : null,
+      c.status === 'done' ? past(c.closedOn ?? c.detectedAt) : null,
+      NOW,
+    );
+  const caseId = Number(info.lastInsertRowid);
+  counts.cases += 1;
+
+  /* Mốc MỞ, và mốc TÁI DIỄN ở mỗi lượt sau mà em vẫn yếu ở hạng mục này. */
+  const milestone = (kind: string, aid: number | null, no: number | null, on: string) => {
+    conn
+      .prepare(
+        `INSERT INTO case_milestones (case_id, kind, attempt_id, attempt_no, sos_level,
+                                      occurred_on, created_by, created_at, dedup_key)
+         VALUES (?,?,?,?,?,?,?,?,?)
+         ON CONFLICT(dedup_key) DO NOTHING`,
+      )
+      .run(caseId, kind, aid, no, c.sosLevel ?? null, on, ctx.adminId, NOW,
+           `ms:${caseId}:${kind}:${no ?? 0}`);
+    counts.milestones += 1;
+  };
+  milestone('opened', attemptId, c.fromTest ?? null, c.detectedAt);
+  /*
+   * MỐC TÁI PHÁT NẰM Ở CASE CŨ, trỏ sang chuyện vừa xảy ra.
+   *
+   * Mở hồ sơ ra đọc case cũ là thấy ngay "sau đó em yếu lại" — không phải đọc hết danh sách
+   * case rồi tự nối hai cái với nhau bằng mắt.
+   */
+  if (previousCaseId) {
+    conn
+      .prepare(
+        `INSERT INTO case_milestones (case_id, kind, attempt_id, attempt_no, sos_level,
+                                      occurred_on, note, created_by, created_at, dedup_key)
+         VALUES (?, 'recurrence', ?,?,?,?,?,?,?,?)
+         ON CONFLICT(dedup_key) DO NOTHING`,
+      )
+      .run(previousCaseId, attemptId, c.fromTest ?? null, c.sosLevel ?? null, c.detectedAt,
+           `Tái diễn ở một case mới: ${c.title ?? category}`, ctx.adminId, NOW,
+           `rec:${previousCaseId}:${caseId}`);
+    counts.milestones += 1;
+  }
+  /*
+   * CASE Ý THỨC/KHÁC TỰ SINH SAU MỘT ĐỢT ĐÁNH GIÁ CÓ SOS.
+   *
+   * Đây là luật của hệ thống, không phải một lựa chọn của kịch bản: em vừa có SOS thì phải
+   * cho em và phụ huynh biết. Gọi thẳng hàm của engine để dữ liệu mẫu đi qua ĐÚNG con đường
+   * mà ứng dụng đi — nếu tự viết lại ở đây thì sớm muộn hai chỗ sẽ lệch nhau.
+   */
+  if (track === 'academic' && attemptId && (c.sosLevel ?? 0) > 0) {
+    const attempt = conn.prepare('SELECT * FROM assessment_attempts WHERE id = ?').get(attemptId);
+    ensureBehaviourCase({ userId: ctx.adminId } as any, attempt, c.sosLevel as number, c.detectedAt);
+    /*
+     * ENGINE CHỈ MỞ CASE VÀ LÊN LỊCH HAI VIỆC TRAO ĐỔI — nó không biết ai sẽ làm, vì ngoài
+     * đời người ta phân công sau. Ở dữ liệu mẫu thì phải phân công, nếu không mọi case Ý
+     * thức/Khác đều hiện "chưa có người phụ trách · chưa có người thực hiện" và bản demo
+     * trông như một trung tâm bỏ rơi học viên.
+     *
+     * Và việc của những đợt ĐÃ XA thì đã làm xong rồi: một cuộc trao đổi hẹn từ tháng Bảy mà
+     * tới giữa tháng Chín vẫn "chưa ai làm" là dữ liệu vô lý, không phải một cảnh báo hữu ích.
+     * Chỉ những đợt gần đây mới còn là việc đang chờ — đó mới là thứ đáng đỏ.
+     */
+    finishBehaviourCase(ctx, sid, attemptId, cy.classCode, c.detectedAt);
+  }
+  for (const no of c.repeatsAt ?? []) {
+    const aid = attemptByNo.get(no) ?? null;
+    const t = cy.tests.find((x) => x.no === no);
+    if (aid && t) milestone('repeat', aid, no, weekEnd(t.week));
+  }
+
+  /* ---------------------------------------------------------------- phương án */
+  const plans = c.plans ?? [];
+  let prevPlanId: number | null = null;
+  let prevSuperseded = false;
+  for (const p of plans) {
+    const performer = ctx.userId.get(p.performer ?? '') ?? ownerId ?? ctx.adminId;
+    const recorder = ctx.userId.get(p.recordedBy ?? '') ?? performer;
+    const pending = p.approval?.state === 'pending';
+    const declined = p.approval?.state === 'declined';
+    /*
+     * CHU KỲ CHỈ CHẠY TỪ LÚC ĐƯỢC PHÉP LÀM.
+     *
+     * Đang chờ duyệt thì chưa bắt đầu, nên không có hạn làm và không có hẹn xem lại — thúc
+     * người ta làm một việc Quản lý chưa đồng ý là thúc sai người. Bị từ chối thì phương án
+     * đó dừng hẳn ở đó.
+     */
+    const running = !pending && !declined && p.status !== 'completed' && p.status !== 'cancelled';
+    /*
+     * CHU KỲ TÍNH TỪ NGÀY ĐƯỢC DUYỆT, không phải từ ngày đề xuất (mục 7.7).
+     *
+     * Thời gian Quản lý cầm hồ sơ là thời gian của Quản lý; tính nó vào chu kỳ của giáo viên
+     * là bắt người ta chịu trách nhiệm cho một khoảng họ không được phép làm gì.
+     */
+    const effectiveStart = p.approval?.state === 'approved' && p.approval.on
+      ? p.approval.on : p.cycleStart;
+    const due = cycleDeadline(effectiveStart, track);
+    const pinfo = conn
+      .prepare(
+        `INSERT INTO case_interventions (case_id, kind, description, performer_user_id, recorded_by,
+                                         status, planned_date, started_date, completed_date,
+                                         cycle_no, cycle_started_on, action_due, followup_due,
+                                         needs_approval, approval_state, approval_due,
+                                         approval_by, approval_at, approval_note,
+                                         closed_reason, created_at)
+         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+      )
+      .run(
+        caseId, p.kind, p.description, performer, recorder,
+        declined ? 'cancelled' : p.status,
+        p.cycleStart,
+        pending || declined ? null : past(p.startedOn ?? effectiveStart),
+        past(p.completedOn),
+        p.cycleNo ?? 1,
+        pending || declined ? null : effectiveStart,
+        running ? (p.actionDue ?? due) : null,
+        running ? (p.followupDue ?? due) : null,
+        p.approval ? 1 : 0,
+        p.approval?.state ?? null,
+        p.approval?.due ?? null,
+        p.approval?.by ? ctx.userId.get(p.approval.by) ?? null : null,
+        past(p.approval?.on),
+        p.approval?.note ?? null,
+        /*
+         * ĐỀ XUẤT BỊ TỪ CHỐI KHÔNG PHẢI "BỊ THAY THẾ".
+         *
+         * `closed_reason = 'superseded'` có nghĩa là có một phương án khác đã thay chỗ nó, và
+         * bảng kết quả đọc cột đó để biết phương án nào bị thay. Một đề xuất bị Quản lý từ
+         * chối thì `approval_state` đã nói rõ chuyện gì xảy ra; ghi thêm "bị thay thế" là kể
+         * một câu chuyện không có thật.
+         */
+        p.closedReason ?? null,
+        NOW,
+      );
+    const planId = Number(pinfo.lastInsertRowid);
+    counts.interventions += 1;
+
+    /*
+     * PHƯƠNG ÁN BỊ THAY THẾ trỏ sang phương án đã thay nó — lịch sử đọc được cả hai chiều,
+     * và bảng kết quả biết rằng nó KHÔNG phải một thành công.
+     */
+    if (prevPlanId && prevSuperseded) {
+      conn.prepare('UPDATE case_interventions SET superseded_by = ? WHERE id = ?').run(planId, prevPlanId);
+    }
+    prevPlanId = planId;
+    prevSuperseded = p.closedReason === 'superseded';
+
+    for (const f of p.followups ?? []) {
+      /* Không bao giờ ghi kết quả trước ngày phương án bắt đầu. */
+      const on = f.on < effectiveStart ? effectiveStart : (past(f.on) ?? effectiveStart);
+      conn
+        .prepare(
+          `INSERT INTO case_followups (case_id, intervention_id, observed_on, observer_user_id,
+                                       outcome, note, next_step, cycle_no, cycle_due, late,
+                                       metrics, created_at)
+           VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
+        )
+        .run(caseId, planId, on, ctx.userId.get(f.by ?? '') ?? performer,
+             f.outcome, f.note, f.nextStep, p.cycleNo ?? 1, due, on > due ? 1 : 0,
+             f.metrics ? JSON.stringify(f.metrics) : null, NOW);
+      counts.followups += 1;
+    }
+  }
+
+  return caseId;
+}
+
+export { padCode };

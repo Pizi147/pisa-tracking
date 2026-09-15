@@ -9,7 +9,7 @@ import { can, classScopeSql, editableSkills, isCoreTeacherOf, require_, scopeFor
 import { writeAudit } from '../platform/audit.ts';
 import { loadBundle, resultOf, skillCells } from '../fasttrack/attempts.ts';
 import { examPlanOf } from '../fasttrack/cycles.ts';
-import { currentSosByStudent } from '../cases/cases.ts';
+import { standingFor, standingLine } from '../students/standing.ts';
 import { allProgrammes, evaluateRegular, programmeOfClass } from '../normal/regular.ts';
 import { classProgressMany, missingForClasses, missingForStudent } from './schedule.ts';
 import { SKILL_SHORT } from '../../../shared/domain/index.ts';
@@ -239,6 +239,7 @@ export function classRoster(p: Principal, classId: number, q?: string) {
   const params: unknown[] = [classId];
   let sql = `SELECT s.*, e.status AS enrollment_status,
                     cy.id AS cycle_id, cy.seq AS cycle_seq, cy.route, cy.target_score,
+                    cy.baseline_attempt_id, cy.baseline_score,
                     cy.start_period_id, cy.exam_month, cy.exam_period_id, sp.week_start AS start_week,
                     ep.code AS exam_week_code, ep.week_start AS exam_week_start
                FROM enrollments e
@@ -313,15 +314,14 @@ export function classRoster(p: Principal, classId: number, q?: string) {
     openCaseCount.set(r.student_id, (openCaseCount.get(r.student_id) ?? 0) + 1);
     if (carried) handoverCount.set(r.student_id, (handoverCount.get(r.student_id) ?? 0) + 1);
   }
-  /* Mức SOS hiện tại: dùng CHUNG phép tính với bảng tổng hợp, không tự đếm lại ở đây. */
-  const openSos = currentSosByStudent(
-    openRows
-      .filter((r) => {
-        const cur = activeCycle.get(r.student_id) ?? null;
-        return cur === null || r.cycle_id === null || r.cycle_id === cur;
-      })
-      .map((r) => ({ studentId: r.student_id, sosLevel: r.sos_level, attemptNo: r.attempt_no })),
-  );
+  /*
+   * TÌNH TRẠNG HỌC THUẬT lấy từ KẾT QUẢ BÀI GẦN NHẤT, không suy từ case còn mở.
+   *
+   * Trước đây bảng này đọc mức SOS đã đóng băng trong case: em thi MT3 đạt hết mà case
+   * Reading của MT2 chưa đóng thì vẫn bị gọi là SOS 1. Nay một chỗ tính duy nhất —
+   * `standingFor` — dùng chung cho bảng lớp, danh sách học viên và bảng tổng hợp.
+   */
+  const standing = standingFor(sids);
 
   return students.map((s) => {
     /*
@@ -358,6 +358,17 @@ export function classRoster(p: Principal, classId: number, q?: string) {
           passedCount: r.complete ? r.required - (r.failedCount ?? 0) : null,
           failedCount: r.failedCount,
           sosLevel: r.sosLevel, evaluable: r.complete,
+          /*
+           * ĐIỂM TỪNG MÔN của lớp Normal, dạng ĐIỂM ĐẠT / TỔNG ĐIỂM (mục 5.1).
+           *
+           * Không quy về band và không quy về phần trăm: lớp Normal chấm theo điểm đạt trên
+           * tổng điểm, và đổi sang một thang khác là đổi luôn ý nghĩa của con số người dạy
+           * đã gõ vào.
+           */
+          ratios: Object.fromEntries(r.skills.map((x: any) => [
+            x.skill, { score: x.score, total: x.total, outcome: x.outcome },
+          ])),
+          bands: null,
           caseStatus: c?.status ?? null,
           myPending: dueForEntry
             ? myRegularSkills.filter((k) => {
@@ -387,6 +398,7 @@ export function classRoster(p: Principal, classId: number, q?: string) {
          * cần đúng con số người dạy đã gõ vào từng ô.
          */
         bands: Object.fromEntries(scores.map((x: any) => [x.skill, x.band ?? null])),
+        ratios: null,
         passedCount: null, failedCount: result.failedCount,
         sosLevel: result.sosLevel, evaluable: result.evaluable,
         caseStatus: c?.status ?? null,
@@ -422,11 +434,51 @@ export function classRoster(p: Principal, classId: number, q?: string) {
       writing2: cell(bandAt(cur, 'writing2'), bandAt(before, 'writing2')),
     };
 
+    /*
+     * LỊCH SỬ ĐIỂM 2–3 MỐC (mục 5.4) — MỚI NHẤT LÊN ĐẦU.
+     *
+     * Lấy những mốc ĐÃ CÓ ÍT NHẤT MỘT Ô ĐIỂM, không chỉ mốc đã chấm xong: một MT mới nhập
+     * hai kỹ năng vẫn là thông tin thật, và giấu nó đi thì bảng nói em chưa có gì trong khi
+     * giáo viên vừa gõ điểm hôm qua.
+     *
+     * KHÔNG lấy điểm mốc cũ lấp vào ô trống của mốc mới. Ô trống ở đây nghĩa là CHƯA NHẬP,
+     * và đó chính là thông tin cần thấy.
+     */
+    const history = timeline
+      .filter((t) => t.scoredRequired > 0)
+      .slice(-3)
+      .reverse()
+      .map((t) => ({
+        id: t.id, label: t.kindLabel, kind: t.kind, periodCode: t.periodCode,
+        sosLevel: t.sosLevel, evaluable: t.evaluable,
+        scoredRequired: t.scoredRequired, requiredCount: t.requiredCount,
+        overall: t.overall,
+        bands: (t as any).bands ?? null,
+        ratios: (t as any).ratios ?? null,
+      }));
+
     return {
       id: s.id, studentCode: s.student_code, fullName: s.full_name, status: s.status,
+      /*
+       * CÁCH CHẤM CỦA LỚP đi kèm từng dòng, để bảng biết bày bộ cột nào (mục 5.1 · 5.2).
+       * Lặp lại ở mỗi dòng là thừa một chút, nhưng nó giữ cho mọi màn đang đọc danh sách
+       * này chạy y như cũ — đổi hình dạng trả về thì phải sửa cả những chỗ không liên quan.
+       */
+      scoring: isRatio ? 'ratio' : 'band',
+      skills: prog?.skills ?? null,
       scores,
-      /** Mức SOS đang có hiệu lực và số case chưa xong — hai con số của cột Trạng thái. */
-      sosLevel: openSos.get(s.id) ?? null,
+      history,
+      /*
+       * BA THÔNG TIN TÁCH RỜI, KHÔNG CÁI NÀO SUY RA TỪ CÁI KIA (mục 2.1):
+       *   · `standing` — kết quả bài gần nhất, nói mức SOS của CHÍNH bài đó
+       *   · `openCases` — số case đang theo dõi, chỉ là một con số đếm
+       *   · `handoverCases` — trong đó bao nhiêu cái mang từ lộ trình trước sang
+       */
+      standing: standing.get(s.id) ?? null,
+      standingLine: standing.has(s.id) ? standingLine(standing.get(s.id)!) : null,
+      /** Giữ tên cũ cho các màn đang đọc, nhưng nay lấy từ KẾT QUẢ BÀI chứ không từ case. */
+      sosLevel: standing.get(s.id)?.sosLevel ?? null,
+      provisional: !!standing.get(s.id)?.provisional,
       openCases: openCaseCount.get(s.id) ?? 0,
       /** Case còn mở từ lớp/chương trình TRƯỚC — việc phải bàn giao, không phải mức SOS ở đây. */
       handoverCases: handoverCount.get(s.id) ?? 0,
@@ -448,9 +500,21 @@ export function classRoster(p: Principal, classId: number, q?: string) {
        * nhìn chúng. Một nhãn, bấm vào thấy danh sách, là đủ.
        */
       missing: missingForStudent({
-        cycle: s.cycle_id ? { start_period_id: s.start_period_id, exam_month: s.exam_month, target_score: s.target_score } : null,
+        cycle: s.cycle_id
+          ? {
+            start_period_id: s.start_period_id, exam_month: s.exam_month, target_score: s.target_score,
+            baseline: s.baseline_attempt_id !== null || s.baseline_score !== null,
+          }
+          : null,
         student: { dob: s.dob },
         isFastTrack: !!isFt,
+        /*
+         * THIẾU MỐC ĐÁNH GIÁ TIẾP THEO cản trở việc lên kế hoạch, nên nó thuộc badge này —
+         * nhưng chỉ khi em CÒN ĐANG HỌC. Em đã kết thúc thì không cần mốc tiếp nào nữa.
+         */
+        hasNextMilestone: s.status === 'active'
+          ? timeline.some((t) => t.status === 'planned')
+          : undefined,
       }),
       latest: done.length ? done[done.length - 1] : null,
       next: timeline.find((t) => t.status === 'planned') ?? null,

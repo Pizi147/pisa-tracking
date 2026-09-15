@@ -1,14 +1,15 @@
 import { db } from '../db.ts';
 import {
-  CONTACT_KIND_SHORT, ENTRY_SKILL_LABEL, INTERVENTION_KIND_LABEL, PERMISSIONS, isContactKind,
-  REGULAR_SKILL_LABEL, SOS_LABEL, URGENCY_LABEL, caseHeadline, cycleDeadline,
-  type ContactKind, type EntrySkill, type InterventionKind,
+  ATTEMPT_KIND_SHORT, CONTACT_KIND_SHORT, ENTRY_SKILL_LABEL, INTERVENTION_KIND_LABEL, PERMISSIONS,
+  isContactKind, REGULAR_SKILL_LABEL, SOS_LABEL, URGENCY_LABEL, caseHeadline, cycleDeadline,
+  type AttemptKind, type ContactKind, type EntrySkill, type InterventionKind,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { diffDays } from '../util.ts';
 import { can, scopeFor, teachesClass, type Principal } from '../permissions.ts';
 import { attemptHref, listAttempts } from '../fasttrack/attempts.ts';
 import { classAlerts } from '../classes/schedule.ts';
+import { myMgmtTasks } from './mgmttasks.ts';
 
 /**
  * VIỆC CỦA CHÍNH NGƯỜI ĐANG XEM.
@@ -63,9 +64,34 @@ export type WorkItem = {
   mine: boolean;
   due: string | null;
   statusLabel: string;
+  /**
+   * BÀI/CASE LIÊN QUAN — ô thứ hai của một dòng việc (mục 3.3).
+   *
+   * "Nói rõ MT/Test nào" là yêu cầu nguyên văn: một dòng chỉ ghi "nhập điểm Reading" mà
+   * không nói của bài nào thì người nhận phải mở ra mới biết mình đang được nhắc chuyện gì.
+   */
+  contextLabel: string | null;
+  /**
+   * SỐ HỌC VIÊN trong một dòng việc gom (mục 2.2 · 3.3).
+   *
+   * Một dòng nhập điểm cho sáu em là MỘT nhóm việc và SÁU học viên cần nhập — hai đơn vị
+   * khác nhau, nên số em đi kèm dòng chứ không biến thành sáu dòng riêng.
+   */
+  count: number | null;
 };
 
-export type WorkGroupKey = 'score' | 'approval' | 'action' | 'review' | 'support' | 'week' | 'class_phase';
+/**
+ * CHÍN LOẠI VIỆC, BA LOẠI ĐẦU LÀ HỌC THUẬT (mục 3.2).
+ *
+ * Ba nhóm học thuật chính — nhập điểm, thiếu phương án, cập nhật kết quả — là phần lớn việc
+ * hằng ngày của giáo viên. Quản lý có thêm "Chờ tôi xử lý". Những nhóm còn lại ít gặp hơn
+ * nhưng KHÔNG được bỏ: giấu một nghĩa vụ đi chỉ vì nó không thuộc ba nhóm chính là cách chắc
+ * chắn nhất để nó không bao giờ được làm.
+ */
+export type WorkGroupKey =
+  | 'score' | 'no_plan' | 'result'
+  | 'decide'
+  | 'do_plan' | 'no_owner' | 'placement' | 'missing_data' | 'mgmt';
 
 /**
  * Mỗi nhóm có MỘT DÒNG nói rõ nhóm đó nghĩa là gì.
@@ -74,57 +100,55 @@ export type WorkGroupKey = 'score' | 'approval' | 'action' | 'review' | 'support
  * làm gì. Một dòng giải thích ở đầu nhóm rẻ hơn nhiều so với việc mỗi người tự hiểu một kiểu.
  */
 const GROUP_META: Record<WorkGroupKey, { label: string; hint: string; overdue: string }> = {
+  /* ---------------------------------------------------- ba nhóm học thuật chính (mục 3.2) */
   score: {
     label: 'Nhập điểm Test',
-    hint: 'Em đã làm bài rồi nhưng kỹ năng này chưa có điểm.',
+    hint: 'Học viên đã làm bài rồi mà kỹ năng này chưa có điểm. Các em cùng lớp, cùng bài, cùng kỹ năng gom thành một dòng để nhập một lượt.',
     overdue: 'Quá hạn nhập điểm',
   },
-  approval: {
-    label: 'Chờ duyệt phương án',
-    hint: 'Giáo viên đề xuất một phương án và đang chờ bạn quyết: duyệt, không duyệt (ghi rõ lý do), hoặc góp ý thêm.',
-    overdue: 'Quá hạn duyệt',
+  no_plan: {
+    label: 'Thiếu phương án',
+    hint: 'Vấn đề đã mở nhưng chưa ai ghi sẽ làm gì cho em.',
+    overdue: 'Quá hạn đề xuất phương án',
   },
-  /*
-   * NHÓM NÀY THAY CHO NHÓM "Xác nhận đã trao đổi" CŨ.
-   *
-   * Hai việc trao đổi nay là hai phương án bình thường của case Ý thức/Khác, nên chúng vào
-   * chung một nhóm với mọi phương án đã lên kế hoạch mà tới hạn làm. Giữ một nhóm riêng chỉ
-   * cho hai loại việc là bắt người đọc học thêm một khái niệm mà không được gì.
-   */
-  action: {
-    label: 'Phương án tới hạn làm',
-    hint: 'Phương án đã lên kế hoạch cho em mà tới hạn phải làm. Làm xong thì đánh dấu đã hoàn thành kèm ngày thực hiện.',
-    overdue: 'Quá hạn làm phương án',
-  },
-  review: {
-    label: 'Kết quả sau hỗ trợ',
-    hint: 'Bạn đã hỗ trợ em và hẹn một ngày xem lại. Ngày đó đã tới — ghi lại sau khi hỗ trợ em có tiến bộ không.',
+  result: {
+    label: 'Cập nhật kết quả',
+    hint: 'Đã tới hẹn xem lại: ghi lại sau khi hỗ trợ em có tiến bộ không, rồi chọn bước tiếp theo.',
     overdue: 'Quá hạn cập nhật kết quả',
   },
-  support: {
-    label: 'Phương án hỗ trợ',
-    hint: 'Em đang có vấn đề mở mà chưa ai chọn hướng xử lý, cũng chưa ai ghi việc nào.',
-    overdue: 'Quá hạn hỗ trợ',
+
+  /* ------------------------------------------------------- việc chỉ Quản lý làm được */
+  decide: {
+    label: 'Chờ tôi xử lý',
+    hint: 'Đề xuất phương án cần bạn duyệt, và những case giáo viên đã xin ý kiến Quản lý. Chừng nào chưa có câu trả lời thì bên kia không đi tiếp được.',
+    overdue: 'Quá hạn trả lời',
   },
-  /*
-   * MỐC CỦA CẢ LỚP — owner yêu cầu 13/09/2026.
-   *
-   * Ba chuyện lớp Normal phải tự báo: sắp tới tuần Progress Test, sắp tới tuần Final Test,
-   * và đã học hết chương trình. Cái cuối là nặng nhất: lớp xong rồi thì mọi em còn đang học
-   * PHẢI được xếp lớp tiếp, và việc đó không tự xảy ra.
-   *
-   * Xếp lên ĐẦU danh sách vì nó là việc của cả một lớp, không phải của một em — bỏ lỡ thì
-   * cả lớp treo, chứ không phải một người.
-   */
-  class_phase: {
-    label: 'Mốc của lớp',
-    hint: 'Lớp sắp tới tuần kiểm tra, hoặc đã học hết chương trình và học viên cần được xếp lớp tiếp.',
-    overdue: 'Lớp đã hết chương trình',
+
+  /* --------------------------------------------- những nghĩa vụ khác, vẫn phải thấy được */
+  do_plan: {
+    label: 'Làm phương án đã hẹn',
+    hint: 'Phương án đã lên kế hoạch và tới ngày phải làm. Làm xong thì đánh dấu đã hoàn thành kèm ngày thực hiện.',
+    overdue: 'Quá hạn làm',
   },
-  week: {
-    label: 'Chưa có tuần kế hoạch',
-    hint: 'Bài MT chưa được xếp vào tuần nào.',
-    overdue: 'Quá hạn chốt tuần',
+  no_owner: {
+    label: 'Chưa có người phụ trách',
+    hint: 'Case đang mở mà chưa ai nhận điều phối. Chọn người phụ trách trước, vì mọi việc sau đó đều treo vào chỗ này.',
+    overdue: 'Quá hạn phân công người phụ trách',
+  },
+  placement: {
+    label: 'Cần xếp lớp tiếp',
+    hint: 'Lớp đã học hết chương trình. Học viên còn đang học phải được xếp lớp tiếp, việc này không tự xảy ra.',
+    overdue: 'Quá hạn xếp lớp tiếp',
+  },
+  missing_data: {
+    label: 'Thiếu dữ liệu cần cho đánh giá',
+    hint: 'Thiếu những thông tin mà không có thì không đánh giá hay lên kế hoạch được: bài chưa xếp vào tuần nào, lớp chưa có tuần bắt đầu, học viên FT chưa có mục tiêu.',
+    overdue: 'Quá hạn bổ sung dữ liệu',
+  },
+  mgmt: {
+    label: 'Công việc được giao',
+    hint: 'Công việc quản lý hoặc việc con được giao cho bạn ở bảng Tiến độ công việc.',
+    overdue: 'Quá hạn hoàn thành',
   },
 };
 
@@ -182,39 +206,87 @@ export function myWork(p: Principal, f: { branchId?: number | null } = {}) {
 
   // ---------------------------------------------------------------- 1. nhập điểm
   /*
-   * `myPendingSkills` đã là những ô mà CHÍNH người này được phân công và chưa nhập.
-   * Không dùng "lượt còn thiếu điểm" chung — đó là số của quản lý, không phải việc của ai.
+   * GOM THEO LỚP · BÀI · KỸ NĂNG (mục 3.3).
+   *
+   * Trước đây mỗi học viên còn thiếu điểm là một dòng, nên một lớp mười hai em chưa nhập
+   * Reading sinh ra mười hai dòng giống hệt nhau, đẩy mọi việc khác xuống dưới — trong khi
+   * người nhập chỉ mở MỘT bảng điểm và gõ một lượt.
+   *
+   * Nay một dòng là một NHÓM VIỆC: "CP-FT110 · MT2 · Nhập điểm R cho 6 học viên". Số em là
+   * thông tin của dòng, không phải số dòng (mục 2.2).
+   *
+   * Hạn của nhóm lấy hạn SỚM NHẤT trong nhóm — nhóm quá hạn khi có bất kỳ em nào quá hạn.
    */
+  type ScoreBucket = {
+    classId: number | null; classCode: string | null; attemptNo: number | null;
+    kind: string | null; testLabel: string; skill: string; skillLabel: string;
+    students: Map<number, string>; due: string | null; href: string; attemptId: number;
+  };
+  const scoreBuckets = new Map<string, ScoreBucket>();
   for (const a of attempts as any[]) {
     const mine: any[] = a.myPendingDetail ?? [];
     if (!mine.length) continue;
-    const worst = mine.reduce((w: any, c: any) => {
-      if (!c.deadline) return w;
-      if (!w?.deadline || c.deadline < w.deadline) return c;
-      return w;
-    }, null as any);
-    // Lớp Normal có môn W riêng, không nằm trong bộ năm ô của Fast Track.
-    const names = mine
-      .map((c: any) => ENTRY_SKILL_LABEL[c.skill as EntrySkill]
+    const testLabel = a.kind && a.kind !== 'mock'
+      ? (ATTEMPT_KIND_SHORT[a.kind as AttemptKind] ?? 'Bài kiểm tra')
+      : `MT${a.attemptNo}`;
+    for (const c of mine) {
+      const skillLabel = ENTRY_SKILL_LABEL[c.skill as EntrySkill]
         ?? REGULAR_SKILL_LABEL[c.skill as keyof typeof REGULAR_SKILL_LABEL]
-        ?? c.skill)
-      .join(', ');
-    const u = urgencyOf(worst?.deadline ?? null, today);
+        ?? c.skill;
+      const k = `${a.classId ?? 0}|${a.kind ?? 'mock'}|${a.attemptNo ?? 0}|${c.skill}`;
+      let b = scoreBuckets.get(k);
+      if (!b) {
+        b = {
+          classId: a.classId ?? null, classCode: a.classCode ?? null, attemptNo: a.attemptNo ?? null,
+          kind: a.kind ?? null, testLabel, skill: c.skill, skillLabel,
+          students: new Map(), due: null, href: attemptHref(a), attemptId: a.id,
+        };
+        scoreBuckets.set(k, b);
+      }
+      b.students.set(a.studentId, a.studentName);
+      if (c.deadline && (!b.due || c.deadline < b.due)) b.due = c.deadline;
+    }
+  }
+  /*
+   * MỘT LỚP · MỘT BÀI · NHIỀU KỸ NĂNG vẫn nên là MỘT dòng nếu cùng hạn — người nhập mở đúng
+   * một bảng điểm và gõ cả hai cột. Gộp ở bước này, sau khi đã biết đủ số em của từng kỹ năng.
+   */
+  const byTest = new Map<string, ScoreBucket[]>();
+  for (const b of scoreBuckets.values()) {
+    const k = `${b.classId ?? 0}|${b.kind ?? 'mock'}|${b.attemptNo ?? 0}|${b.due ?? ''}`;
+    (byTest.get(k) ?? byTest.set(k, []).get(k)!).push(b);
+  }
+  for (const [k, list] of byTest) {
+    const first = list[0];
+    const skills = list.map((b) => b.skillLabel).join(', ');
+    const students = new Map<number, string>();
+    for (const b of list) for (const [sid, name] of b.students) students.set(sid, name);
+    const u = urgencyOf(first.due, today);
+    /*
+     * ĐÚNG MỘT EM thì gọi tên em, không nói "Lớp X" — người đọc đi tìm một cái tên, và
+     * "cả lớp" cho một học viên là một câu nói vòng vo.
+     */
+    const only = students.size === 1 ? [...students.entries()][0] : null;
+    const where = only ? only[1] : (first.classCode ? `Lớp ${first.classCode}` : 'Bài đánh giá');
     items.push({
-      key: `score:${a.id}`,
+      key: `score:${k}`,
       group: 'score', urgency: u,
-      studentId: a.studentId, studentName: a.studentName,
-      classId: a.classId ?? null, classCode: a.classCode ?? null,
-      attemptId: a.id, attemptNo: a.attemptNo, caseId: null, level: null,
       /*
-        NGÀY HẠN KHÔNG LẶP LẠI Ở ĐÂY NỮA — nó đã là một ô riêng trên dòng việc (mục 5.3).
-        Câu này chỉ giữ phần một ô ngày không nói được: TRỄ BAO LÂU RỒI.
-      */
-      reason: u === 'overdue' ? `${names} — ${lateText(worst.deadline, today)}` : names,
-      actionLabel: `Nhập điểm ${names}`, overdueLabel: badge('score', u),
-      href: attemptHref(a),
+       * Ô ĐẦU là LỚP, không phải một em đại diện: việc này làm cho cả nhóm cùng lúc. Chỉ khi
+       * đúng một em còn thiếu thì mới nói tên em — lúc đó "lớp" là cách nói vòng vo.
+       */
+      studentId: only ? only[0] : null,
+      studentName: where,
+      classId: first.classId, classCode: first.classCode,
+      attemptId: first.attemptId, attemptNo: first.attemptNo, caseId: null, level: null,
+      contextLabel: first.testLabel,
+      count: students.size,
+      reason: u === 'overdue' && first.due ? `${skills} — ${lateText(first.due, today)}` : skills,
+      actionLabel: `Nhập điểm ${skills}`,
+      overdueLabel: badge('score', u),
+      href: first.href,
       ownerId: p.userId, owner: null, mine: true,
-      due: worst?.deadline ?? null, statusLabel: 'Chưa nhập điểm',
+      due: first.due, statusLabel: 'Chưa nhập điểm',
     });
   }
 
@@ -233,7 +305,10 @@ export function myWork(p: Principal, f: { branchId?: number | null } = {}) {
               COALESCE(ac.branch_id, cc.branch_id) AS eff_branch_id,
               COALESCE(ac.code, cc.code) AS class_code,
               s.full_name, a.attempt_no,
-              pu.full_name AS proposer_name
+              pu.full_name AS proposer_name,
+              EXISTS (SELECT 1 FROM case_followups fu
+                       WHERE fu.intervention_id = iv.id AND fu.next_step = 'ask_manager')
+                AS asked_manager
          FROM case_interventions iv
          JOIN sos_cases sc ON sc.id = iv.case_id
          LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
@@ -252,20 +327,32 @@ export function myWork(p: Principal, f: { branchId?: number | null } = {}) {
     const u = urgencyOf(iv.approval_due, today);
     const what = (iv.description ?? '').trim() || INTERVENTION_KIND_LABEL[iv.kind as InterventionKind] || 'phương án hỗ trợ';
     items.push({
-      key: `approval:${iv.id}`, group: 'approval', urgency: u,
+      key: `approval:${iv.id}`, group: 'decide', urgency: u,
       studentId: iv.eff_student_id, studentName: iv.full_name ?? 'Học viên',
       classId: iv.eff_class_id ?? null, classCode: iv.class_code ?? null,
       attemptId: iv.attempt_id ?? null, attemptNo: iv.attempt_no ?? null,
       caseId: iv.case_id as number, level: levelOf(iv),
+      contextLabel: iv.attempt_no ? `MT${iv.attempt_no}` : 'Case',
+      count: null,
+      /*
+       * HAI LOẠI VIỆC TRONG CÙNG MỘT NHÓM, và câu lý do phải phân biệt được:
+       *   - giáo viên ĐỀ XUẤT một phương án mới và chờ Quản lý duyệt;
+       *   - giáo viên đã làm rồi nhưng XIN Ý KIẾN Quản lý vì tự mình không quyết được.
+       * Cùng là "bên kia đang chờ tôi", nhưng người đọc cần biết mình đang được hỏi gì.
+       */
       reason: [
-        iv.proposer_name ? `${iv.proposer_name} đề xuất: ${what}` : `Đề xuất: ${what}`,
+        iv.asked_manager
+          ? `${iv.proposer_name ?? 'Giáo viên'} xin ý kiến: ${what}`
+          : (iv.proposer_name ? `${iv.proposer_name} đề xuất: ${what}` : `Đề xuất: ${what}`),
         u === 'overdue' && iv.approval_due ? lateText(iv.approval_due, today) : null,
       ].filter(Boolean).join(' — '),
-      actionLabel: 'Duyệt phương án', overdueLabel: badge('approval', u),
+      actionLabel: iv.asked_manager ? 'Trả lời giáo viên' : 'Duyệt phương án',
+      overdueLabel: badge('decide', u),
       href: iv.eff_student_id ? `/hoc-vien/${iv.eff_student_id}` : `/hoc-thuat/case/${iv.case_id}`,
       /* Việc này là của QUẢN LÝ đang xem, dù người đề xuất là giáo viên khác. */
       ownerId: p.userId, owner: null, mine: true,
-      due: iv.approval_due ?? null, statusLabel: 'Chờ Quản lý duyệt',
+      due: iv.approval_due ?? null,
+      statusLabel: iv.asked_manager ? 'Chờ Quản lý trả lời' : 'Chờ Quản lý duyệt',
     });
   }
 
@@ -323,15 +410,16 @@ export function myWork(p: Principal, f: { branchId?: number | null } = {}) {
       ?? INTERVENTION_KIND_LABEL[iv.kind as keyof typeof INTERVENTION_KIND_LABEL]
       ?? iv.kind;
     items.push({
-      key: `action:${iv.id}`, group: 'action', urgency: u,
+      key: `action:${iv.id}`, group: 'do_plan', urgency: u,
       studentId: iv.eff_student_id, studentName: iv.full_name ?? 'Học viên',
       classId: iv.eff_class_id ?? null, classCode: iv.class_code ?? null,
       attemptId: iv.attempt_id ?? null, attemptNo: iv.attempt_no ?? null,
       caseId: iv.case_id, level: null,
-      reason: `${what}${iv.attempt_no ? ` sau MT${iv.attempt_no}` : ''}`
-        + (u === 'overdue' ? ` — ${lateText(iv.action_due, today)}` : ''),
+      contextLabel: iv.attempt_no ? `MT${iv.attempt_no}` : 'Case',
+      count: null,
+      reason: what + (u === 'overdue' ? ` — ${lateText(iv.action_due, today)}` : ''),
       actionLabel: isContactKind(iv.kind) ? 'Xác nhận đã trao đổi' : 'Đánh dấu đã làm',
-      overdueLabel: badge('action', u),
+      overdueLabel: badge('do_plan', u),
       href: iv.eff_student_id ? `/hoc-vien/${iv.eff_student_id}` : `/hoc-thuat/case/${iv.case_id}`,
       /*
        * NGƯỜI PHỤ TRÁCH có thể là một tài khoản, hoặc chỉ là một cái tên ai đó gõ vào (người
@@ -345,11 +433,17 @@ export function myWork(p: Principal, f: { branchId?: number | null } = {}) {
     });
   }
 
-  // ------------------------------------------------- 2c. mốc của lớp Normal
+  // ------------------------------------------------- 2c. lớp đã hết chương trình
   /*
-   * Chỉ những vai CÓ TRÁCH NHIỆM với lớp mới thấy: Admin CN và Quản lý sửa được tiến độ và
-   * xếp lớp; giáo viên thì không. Đưa vào danh sách việc của người không làm được gì với nó
-   * là cách nhanh nhất để họ bỏ qua cả danh sách.
+   * CHỈ GIỮ LẠI MỘT VIỆC: lớp đã học hết chương trình mà học viên chưa được xếp lớp tiếp.
+   *
+   * "Sắp tới tuần Progress Test", "sắp tới tuần Final Test" KHÔNG còn nằm ở đây — chúng là
+   * SỰ KIỆN sắp đến, không phải việc đang nợ, và một sự kiện chưa đến mà nằm trong danh sách
+   * việc thì người đọc học cách bỏ qua cả danh sách (mục 3.5). Chúng chuyển sang khối "Sự
+   * kiện nổi bật" ở đầu màn.
+   *
+   * Lớp đã hết chương trình thì khác: mỗi ngày trôi qua là mỗi ngày học viên không được học,
+   * và việc đó không tự xảy ra.
    */
   for (const [classId, pr] of classAlerts(
     (conn
@@ -358,26 +452,24 @@ export function myWork(p: Principal, f: { branchId?: number | null } = {}) {
       )
       .all(...(f.branchId ? [f.branchId] : [])) as any[]).map((r) => r.id),
   )) {
-    if (pr.phase === 'unknown') continue;   // thiếu tuần bắt đầu đã có badge riêng, không nhân đôi
+    if (pr.phase !== 'finished') continue;
+    if (pr.activeStudents === 0) continue;   // đã xếp hết rồi thì không còn việc gì
     if (!can(p, PERMISSIONS.CLASS_EDIT, { classId })) continue;
-    const cls = conn.prepare('SELECT code, branch_id FROM classes WHERE id = ?').get(classId) as any;
-    const finished = pr.phase === 'finished';
+    const cls = conn.prepare('SELECT code FROM classes WHERE id = ?').get(classId) as any;
     items.push({
-      key: `class:${classId}`, group: 'class_phase',
-      urgency: finished ? 'overdue' : pr.phase.endsWith('_week') ? 'today' : 'normal',
+      key: `class:${classId}`, group: 'placement', urgency: 'overdue',
       studentId: null, studentName: `Lớp ${cls.code}`,
       classId, classCode: cls.code,
       attemptId: null, attemptNo: null, caseId: null, level: null,
-      reason: finished
-        ? `Đã học hết ${pr.totalWeeks} tuần — ${pr.activeStudents} học viên cần xếp lớp tiếp`
-          + ` (${pr.placementOptions.map((o) => o.name).join(' hoặc ')})`
-        : `${pr.phaseLabel}${pr.currentWeek !== null ? ` · đang ở tuần ${pr.currentWeek}/${pr.totalWeeks}` : ''}`,
-      actionLabel: finished ? 'Xếp lớp tiếp theo' : 'Mở lớp',
-      overdueLabel: finished ? 'Quá hạn xếp lớp tiếp theo' : null,
+      contextLabel: `Hết ${pr.totalWeeks} tuần`, count: pr.activeStudents,
+      reason: `${pr.activeStudents} học viên chưa được xếp lớp tiếp`
+        + (pr.placementOptions.length ? ` (${pr.placementOptions.map((o) => o.name).join(' hoặc ')})` : ''),
+      actionLabel: 'Xếp lớp tiếp theo',
+      overdueLabel: badge('placement', 'overdue'),
       href: `/hoc-vien/lop/${classId}`,
       /* Việc của cả lớp, không của riêng ai — nên không gán người phụ trách. */
       ownerId: null, owner: null, mine: false,
-      due: null, statusLabel: finished ? 'Đã hết chương trình' : pr.phaseLabel,
+      due: null, statusLabel: 'Đã hết chương trình',
     });
   }
 
@@ -424,7 +516,7 @@ export function myWork(p: Principal, f: { branchId?: number | null } = {}) {
     if (!can(p, PERMISSIONS.SOS_EDIT, { classId: iv.eff_class_id, studentId: iv.eff_student_id })) continue;
     reviewedCases.add(iv.case_id);
     items.push({
-      key: `review:${iv.id}`, group: 'review', urgency: u,
+      key: `review:${iv.id}`, group: 'result', urgency: u,
       studentId: iv.eff_student_id, studentName: iv.full_name ?? 'Học viên',
       classId: iv.eff_class_id ?? null, classCode: iv.class_code ?? null,
       attemptId: iv.attempt_id ?? null, attemptNo: iv.attempt_no ?? null,
@@ -434,7 +526,9 @@ export function myWork(p: Principal, f: { branchId?: number | null } = {}) {
         u === 'overdue' ? lateText(iv.followup_due, today) : null,
         mine ? null : 'người thực hiện chưa cập nhật',
       ].filter(Boolean).join(' — '),
-      actionLabel: 'Cập nhật kết quả', overdueLabel: badge('review', u),
+      contextLabel: iv.attempt_no ? `MT${iv.attempt_no}` : 'Case',
+      count: null,
+      actionLabel: 'Cập nhật kết quả', overdueLabel: badge('result', u),
       href: iv.eff_student_id ? `/hoc-vien/${iv.eff_student_id}` : `/hoc-thuat/case/${iv.case_id}`,
       ownerId: iv.owner_id ?? null, owner: null, mine,
       due: iv.followup_due ?? null, statusLabel: 'Chờ cập nhật kết quả',
@@ -492,7 +586,7 @@ export function myWork(p: Principal, f: { branchId?: number | null } = {}) {
       summary: c.summary, originKind: c.origin_kind, sosLevel: c.sos_level, attemptNo: c.attempt_no,
     });
     items.push({
-      key: `support:${c.id}`, group: 'support', urgency: u,
+      key: `support:${c.id}`, group: 'no_plan', urgency: u,
       studentId: c.eff_student_id, studentName: c.full_name ?? 'Học viên',
       classId: c.eff_class_id ?? null, classCode: c.class_code ?? null,
       attemptId: c.attempt_id ?? null, attemptNo: c.attempt_no ?? null,
@@ -500,7 +594,9 @@ export function myWork(p: Principal, f: { branchId?: number | null } = {}) {
       reason: u === 'overdue'
         ? `${head} — chưa có phương án hỗ trợ ${days} ngày`
         : `${head} — chưa có phương án hỗ trợ`,
-      actionLabel: 'Đề xuất phương án', overdueLabel: badge('support', u),
+      contextLabel: c.attempt_no ? `MT${c.attempt_no}` : 'Case',
+      count: null,
+      actionLabel: 'Đề xuất phương án', overdueLabel: badge('no_plan', u),
       href: c.eff_student_id ? `/hoc-vien/${c.eff_student_id}` : `/hoc-thuat/case/${c.id}`,
       /* Chưa ai nhận — và đó chính là vấn đề, nên để trống chứ không gán bừa cho người xem. */
       ownerId: null, owner: null, mine: false,
@@ -513,14 +609,89 @@ export function myWork(p: Principal, f: { branchId?: number | null } = {}) {
     if (a.period || a.status !== 'planned') continue;
     if (!can(p, PERMISSIONS.PLAN_WEEK, { classId: a.classId })) continue;
     items.push({
-      key: `week:${a.id}`, group: 'week', urgency: 'normal',
+      key: `week:${a.id}`, group: 'missing_data', urgency: 'normal',
       studentId: a.studentId, studentName: a.studentName,
       classId: a.classId ?? null, classCode: a.classCode ?? null,
       attemptId: a.id, attemptNo: a.attemptNo, caseId: null, level: null,
-      reason: `MT${a.attemptNo} chưa được xếp vào tuần nào`,
+      contextLabel: `MT${a.attemptNo}`, count: null,
+      reason: 'Bài chưa được xếp vào tuần nào nên chưa tính được hạn nhập điểm',
       actionLabel: 'Chốt tuần MT', overdueLabel: null, href: attemptHref(a),
       ownerId: p.userId, owner: null, mine: true,
       due: null, statusLabel: 'Chưa có tuần',
+    });
+  }
+
+  // ------------------------------------------------- 5. case chưa có người phụ trách
+  /*
+   * "CHƯA CÓ NGƯỜI PHỤ TRÁCH" LÀ MỘT VIỆC, KHÔNG PHẢI MỘT Ô TRỐNG (mục 2.3 · 3.2).
+   *
+   * Case không có người điều phối thì mọi việc sau đó — đề xuất phương án, làm, xem lại —
+   * đều không có ai để nhắc. Nên nó phải nổi lên thành một dòng việc riêng, và người làm
+   * được là người có quyền phân công.
+   */
+  const ownerless = conn
+    .prepare(
+      `SELECT sc.id, sc.summary, sc.origin_kind, sc.sos_level, sc.urgency, sc.track,
+              sc.detected_at, sc.created_at, sc.attempt_id,
+              COALESCE(sc.student_id, a.student_id) AS eff_student_id,
+              COALESCE(a.class_id, cur.class_id) AS eff_class_id,
+              COALESCE(ac.branch_id, cc.branch_id) AS eff_branch_id,
+              COALESCE(ac.code, cc.code) AS class_code,
+              s.full_name, a.attempt_no
+         FROM sos_cases sc
+         LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
+         LEFT JOIN students s ON s.id = COALESCE(sc.student_id, a.student_id)
+         LEFT JOIN enrollments cur ON cur.student_id = s.id AND cur.status = 'active'
+         LEFT JOIN classes ac ON ac.id = a.class_id
+         LEFT JOIN classes cc ON cc.id = cur.class_id
+        WHERE sc.status != 'done' AND sc.owner_user_id IS NULL
+          AND s.archived_at IS NULL`,
+    )
+    .all() as any[];
+  for (const c of ownerless) {
+    if (f.branchId && c.eff_branch_id !== f.branchId) continue;
+    if (!can(p, PERMISSIONS.CASE_APPROVE, { classId: c.eff_class_id, studentId: c.eff_student_id })
+        && !teachesClass(p, c.eff_class_id)) continue;
+    const head = caseHeadline({
+      summary: c.summary, originKind: c.origin_kind, sosLevel: c.sos_level, attemptNo: c.attempt_no,
+    });
+    items.push({
+      key: `owner:${c.id}`, group: 'no_owner', urgency: 'normal',
+      studentId: c.eff_student_id, studentName: c.full_name ?? 'Học viên',
+      classId: c.eff_class_id ?? null, classCode: c.class_code ?? null,
+      attemptId: c.attempt_id ?? null, attemptNo: c.attempt_no ?? null,
+      caseId: c.id as number, level: levelOf(c),
+      contextLabel: c.attempt_no ? `MT${c.attempt_no}` : 'Case',
+      count: null,
+      reason: `${head} — chưa ai nhận điều phối`,
+      actionLabel: 'Chọn người phụ trách', overdueLabel: null,
+      href: c.eff_student_id ? `/hoc-vien/${c.eff_student_id}` : `/hoc-thuat/case/${c.id}`,
+      ownerId: null, owner: null, mine: false,
+      due: null, statusLabel: 'Chưa có người phụ trách',
+    });
+  }
+
+  // ------------------------------------------------- 6. công việc quản lý được giao
+  /*
+   * VIỆC Ở BẢNG "TIẾN ĐỘ CÔNG VIỆC" CŨNG LÀ VIỆC CỦA NGƯỜI NÀY (mục 3.2).
+   *
+   * Giáo viên không nhìn thấy cả bảng đó, nhưng việc con giao cho họ thì vẫn phải hiện ở
+   * đây — nếu không, giao việc xong là việc biến mất khỏi tầm mắt người nhận.
+   */
+  for (const t of myMgmtTasks(p)) {
+    const u = urgencyOf(t.due, today);
+    items.push({
+      key: `mgmt:${t.id}`, group: 'mgmt', urgency: u,
+      studentId: null, studentName: t.title,
+      classId: null, classCode: null,
+      attemptId: null, attemptNo: null, caseId: null, level: null,
+      contextLabel: t.parentTitle ? `Việc con của: ${t.parentTitle}` : 'Công việc quản lý',
+      count: null,
+      reason: t.due && u === 'overdue' ? `${t.progressLabel} — ${lateText(t.due, today)}` : t.progressLabel,
+      actionLabel: 'Cập nhật tiến độ', overdueLabel: badge('mgmt', u),
+      href: `/tien-do-cong-viec?viec=${t.id}`,
+      ownerId: p.userId, owner: null, mine: true,
+      due: t.due, statusLabel: t.progressLabel,
     });
   }
 
@@ -532,7 +703,15 @@ export function myWork(p: Principal, f: { branchId?: number | null } = {}) {
    * nào là cái nào. Nay GIỮ ĐÚNG LOẠI VIỆC, chỉ xếp việc gấp lên đầu TRONG nhóm của nó, và
    * xếp nhóm nào có việc gấp lên trước.
    */
-  const order: WorkGroupKey[] = ['class_phase', 'score', 'approval', 'action', 'review', 'support', 'week'];
+  /*
+   * Ba nhóm học thuật đứng trước, rồi tới việc chỉ Quản lý làm được, rồi những nghĩa vụ
+   * còn lại. "Cần xếp lớp tiếp" đứng ngay sau ba nhóm chính vì nó treo cả một lớp.
+   */
+  const order: WorkGroupKey[] = [
+    'score', 'no_plan', 'result',
+    'decide',
+    'placement', 'do_plan', 'no_owner', 'mgmt', 'missing_data',
+  ];
   const weight = (u: WorkUrgency) => (u === 'overdue' ? 0 : u === 'today' ? 1 : 2);
 
   /*
@@ -595,7 +774,7 @@ export function myWork(p: Principal, f: { branchId?: number | null } = {}) {
       overdue: items.filter((i) => i.urgency === 'overdue').length,
       today: items.filter((i) => i.urgency === 'today').length,
       /* Việc đang chờ NGƯỜI KHÁC quyết — đếm riêng vì nó không phải việc mình làm được ngay. */
-      approval: items.filter((i) => i.group === 'approval').length,
+      approval: items.filter((i) => i.group === 'decide').length,
       mine: items.filter((i) => i.mine).length,
     },
     items: flat,

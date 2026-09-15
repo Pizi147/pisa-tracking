@@ -11,9 +11,11 @@ import { ManagerTasks, ManagerTaskList } from '../worklist/ManagerTasks.tsx';
 import { WeekPicker } from '../../ui/Filters.tsx';
 import { fmtDate, sosLabel, sosTone } from '../../lib/format.ts';
 import {
-  BEHAVIOUR_TOPICS, BEHAVIOUR_TOPIC_LABEL, ENTRY_SKILLS, ENTRY_SKILL_LABEL,
-  ISSUE_TAXONOMY, PERMISSIONS, REGULAR_SKILL_LABEL, issueLabel,
+  BEHAVIOUR_TOPICS, BEHAVIOUR_TOPIC_LABEL, CASE_CATEGORY_LABEL, ENTRY_SKILL_LABEL,
+  FT_CASE_CATEGORIES, ISSUE_TAXONOMY, NORMAL_CASE_CATEGORIES, PERMISSIONS,
+  REGULAR_SKILL_LABEL, issueLabel,
 } from '@shared/domain/index.ts';
+import { OutcomeTable } from './OutcomeTable.tsx';
 
 /**
  * HỌC THUẬT — nơi Quản lý nhìn thấy VẤN ĐỀ, không phải ba mươi chỉ số.
@@ -82,8 +84,18 @@ export function CaseBoard({ embedded = false }: { embedded?: boolean } = {}) {
   const classKind = params.get('loai-lop') ?? '';
   const group = params.get('nhom') ?? '';
   const skill = params.get('ky-nang') ?? '';
-  /* Hai chế độ xem của Thực trạng (mục 10.5): bảng chi nhánh/lớp, và bảng theo tuần. */
+  /*
+   * HAI TRỤC, KHÔNG PHẢI MỘT DANH SÁCH TAB DÀI (mục 4.1 · 4.3).
+   *
+   *   `xem`  Theo tuần  — kết quả Test theo tuần kế hoạch
+   *          Theo chi nhánh — tình hình case đang theo dõi HIỆN TẠI
+   *   `goc`  trong "Theo chi nhánh": Vấn đề · Phương án & kết quả
+   *
+   * Hai chế độ của trục thứ hai trả lời hai câu khác hẳn nhau: "em nào đang yếu" và "những
+   * gì mình đã làm có ăn thua không". Bày cả hai bảng cùng lúc thì không ai đọc hết.
+   */
   const mode = params.get('xem') === 'tuan' ? 'week' : 'place';
+  const angle = params.get('goc') === 'ket-qua' ? 'outcome' : 'issue';
   const [taskPeriod, setTaskPeriod] = useState<number | null>(null);
   /*
    * BA TRẠNG THÁI LOẠI TRỪ NHAU, cộng lại đúng bằng tổng — đây là câu hỏi "bức tranh chung
@@ -96,6 +108,26 @@ export function CaseBoard({ embedded = false }: { embedded?: boolean } = {}) {
   const set = (k: string, v: string) => {
     const next = new URLSearchParams(params);
     if (v) next.set(k, v); else next.delete(k);
+    setParams(next, { replace: false });
+  };
+  /*
+   * ĐỔI LOẠI LỚP THÌ XOÁ KỸ NĂNG KHÔNG CÒN HỢP LỆ (mục 4.3).
+   *
+   * Đang lọc W2 rồi chuyển sang Normal thì W2 không tồn tại ở đó nữa — giữ lại là cho ra một
+   * danh sách rỗng mà người dùng không hiểu vì sao, đúng lỗi mục 4.4 cấm.
+   */
+  const setKind = (v: string) => {
+    const valid: readonly string[] = v === 'normal' ? NORMAL_CASE_CATEGORIES
+      : v === 'ft' ? FT_CASE_CATEGORIES : [];
+    const next = new URLSearchParams(params);
+    if (v) next.set('loai-lop', v); else next.delete('loai-lop');
+    const cur = next.get('ky-nang');
+    if (cur && cur !== 'none' && !valid.includes(cur)) next.delete('ky-nang');
+    setParams(next, { replace: false });
+  };
+  const clearFilters = () => {
+    const next = new URLSearchParams(params);
+    for (const k of ['loai-lop', 'ky-nang', 'tinh-hinh', 'hang-doi', 'nhom']) next.delete(k);
     setParams(next, { replace: false });
   };
 
@@ -152,12 +184,6 @@ export function CaseBoard({ embedded = false }: { embedded?: boolean } = {}) {
     ?? ENTRY_SKILL_LABEL[k as keyof typeof ENTRY_SKILL_LABEL]
     ?? REGULAR_SKILL_LABEL[k as keyof typeof REGULAR_SKILL_LABEL]
     ?? k;
-  /* Thứ tự cố định trước, rồi tới những chủ đề khác thực sự có mặt (kỹ năng lớp thường). */
-  const known = group === 'behaviour' ? [...BEHAVIOUR_TOPICS] : [...ENTRY_SKILLS];
-  const topicKeys = [
-    ...known.filter((k) => (f?.skill[k] ?? 0) > 0 || !skill),
-    ...Object.keys(f?.skill ?? {}).filter((k) => !known.includes(k as never)).sort(),
-  ];
 
   return (
     <div className="space-y-4">
@@ -172,11 +198,20 @@ export function CaseBoard({ embedded = false }: { embedded?: boolean } = {}) {
         lớp là việc làm NGAY SAU KHI nhìn bảng thực trạng, nên nó phải nằm cạnh bảng đó.
       */}
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex flex-wrap gap-1">
+        <div className="flex flex-wrap items-center gap-1">
+          <ModeTab active={mode === 'week'} onClick={() => set('xem', 'tuan')}>Theo tuần</ModeTab>
           <ModeTab active={mode === 'place'} onClick={() => set('xem', '')}>
             {branchId ? 'Theo lớp' : 'Theo chi nhánh'}
           </ModeTab>
-          <ModeTab active={mode === 'week'} onClick={() => set('xem', 'tuan')}>Theo tuần</ModeTab>
+          {mode === 'place' && (
+            <>
+              <span className="w-px h-5 mx-1.5" style={{ background: 'var(--line)' }} />
+              <Chip active={angle === 'issue'} onClick={() => set('goc', '')}>Vấn đề</Chip>
+              <Chip active={angle === 'outcome'} onClick={() => set('goc', 'ket-qua')}>
+                Phương án &amp; kết quả
+              </Chip>
+            </>
+          )}
         </div>
         {can(PERMISSIONS.MEETING_EDIT) && mode === 'place' && (
           <div className="flex flex-wrap items-end gap-2">
@@ -186,18 +221,23 @@ export function CaseBoard({ embedded = false }: { embedded?: boolean } = {}) {
         )}
       </div>
 
+      {/*
+        MỞ MỘT TUẦN CŨ KHÔNG PHẢI LÀ XEM ẢNH CHỤP CỦA TUẦN ĐÓ (mục 4.1).
+        Kết quả Test thuộc đúng tuần đang chọn; còn tình hình xử lý case là TÌNH TRẠNG HIỆN
+        TẠI. Nói rõ ngay đây, vì đọc nhầm hai thứ đó là đọc sai cả bảng.
+      */}
       {mode === 'week' ? (
         <WeeklyBoard branchId={branchId ? Number(branchId) : null} />
+      ) : angle === 'outcome' ? (
+        <OutcomeTable branchId={branchId ? Number(branchId) : null} track={classKind} topic={skill} />
       ) : (
-        <>
-          {/*
-            BẢNG TỔNG HỢP trước, danh sách sau: Quản lý mở màn này để trả lời "chi nhánh nào,
-            lớp nào đang nặng nhất", rồi mới đi vào từng em. Bấm một hàng chi nhánh là xuống
-            tầng lớp của chính chi nhánh đó.
-          */}
-          <SummaryTable branchId={branchId ? Number(branchId) : null}
-            onPickBranch={(id) => set('cn', String(id))} />
-        </>
+        /*
+          BẢNG TỔNG HỢP trước, danh sách sau: Quản lý mở màn này để trả lời "chi nhánh nào,
+          lớp nào đang nặng nhất", rồi mới đi vào từng em. Bấm một hàng chi nhánh là xuống
+          tầng lớp của chính chi nhánh đó.
+        */
+        <SummaryTable branchId={branchId ? Number(branchId) : null}
+          onPickBranch={(id) => set('cn', String(id))} />
       )}
 
       {/*
@@ -208,15 +248,22 @@ export function CaseBoard({ embedded = false }: { embedded?: boolean } = {}) {
         và người đọc không biết mình đang nhìn một phép chia hay một danh sách. Nay ba ô ở
         đây là BỨC TRANH CHUNG; hai câu hỏi còn lại xuống dưới, nói rõ là câu hỏi.
       */}
-      <div className="grid gap-3 grid-cols-1 sm:grid-cols-3">
-        {(['no_plan', 'working', 'done'] as const).map((k) => (
-          <QueueTile key={k} label={STATE_LABEL[k]} value={stateCount(k)} active={state === k}
-            dim={k === 'done'}
-            onClick={() => set('tinh-hinh', state === k ? '' : k)} />
-        ))}
-      </div>
+      {mode === 'place' && angle === 'issue' && (
+        <div className="grid gap-3 grid-cols-1 sm:grid-cols-3">
+          {(['no_plan', 'working', 'done'] as const).map((k) => (
+            <QueueTile key={k} label={STATE_LABEL[k]} value={stateCount(k)} active={state === k}
+              dim={k === 'done'}
+              onClick={() => set('tinh-hinh', state === k ? '' : k)} />
+          ))}
+        </div>
+      )}
 
-      {/* ---------------------------------------------- bộ lọc */}
+      {/*
+        BỘ LỌC VÀ DANH SÁCH CASE thuộc về góc nhìn "Vấn đề". Bảng theo tuần và bảng kết quả
+        có bộ điều khiển riêng ngay trên đầu chúng; bày thêm một khu lọc thứ hai bên dưới là
+        hai bộ lọc cùng nghĩa trên một màn — đúng thứ mục 3.1 cấm.
+      */}
+      {mode === 'place' && angle === 'issue' && (<>
       <Card title="Lọc">
         <div className="space-y-3">
           {/*
@@ -236,60 +283,73 @@ export function CaseBoard({ embedded = false }: { embedded?: boolean } = {}) {
             </FilterRow>
           )}
           {/*
-            HAI CÂU HỎI, không phải hai phần của một tổng: một em có thể vừa tới hạn xem
-            lại vừa ở mức cao. Để riêng khỏi ba ô trên, và nói thẳng là câu hỏi.
-          */}
-          <FilterRow label="Cần chú ý">
-            <Chip active={queue === 'due'} onClick={() => set('hang-doi', queue === 'due' ? '' : 'due')}>
-              Tới hạn xem lại · {counts.data?.due ?? 0}
-            </Chip>
-            <Chip active={queue === 'review'} onClick={() => set('hang-doi', queue === 'review' ? '' : 'review')}>
-              Mức cao hoặc gấp · {counts.data?.review ?? 0}
-            </Chip>
-          </FilterRow>
-          {/*
             LOẠI LỚP ĐỨNG TRƯỚC, và "Cụ thể" chỉ hiện SAU KHI đã chọn loại lớp (mục 10.1).
             Lý do rất thực tế: danh sách "cụ thể" của hai loại lớp khác nhau — lớp Normal có
             một môn W, lớp Fast Track có W1 và W2 — nên bày cả hai bộ cùng lúc là bày ra những
             ô không tồn tại ở loại lớp người dùng đang nghĩ tới.
           */}
           <FilterRow label="Loại lớp">
-            <Chip active={!classKind} onClick={() => set('loai-lop', '')}>Tất cả</Chip>
+            <Chip active={!classKind} onClick={() => setKind('')}>Tất cả</Chip>
             {CLASS_KINDS.map((k) => (
               <Chip key={k.key} active={classKind === k.key}
-                onClick={() => set('loai-lop', classKind === k.key ? '' : k.key)}>
+                onClick={() => setKind(classKind === k.key ? '' : k.key)}>
                 {k.label} · {f?.classKind[k.key] ?? 0}
               </Chip>
             ))}
           </FilterRow>
+          {/*
+            BỘ KỸ NĂNG KHÁC NHAU GIỮA HAI LOẠI LỚP (mục 4.3):
+              Normal      Tổng hợp · L · R · W · S · Ý thức/Khác
+              Fast Track  Tổng hợp · L · R · S · W1 · W2 · Ý thức/Khác
+            Chưa chọn loại lớp thì chưa bày ô nào: bày cả hai bộ cùng lúc là bày ra những ô
+            không tồn tại ở loại lớp người dùng đang nghĩ tới.
+          */}
           {classKind && (
-            <FilterRow label="Cụ thể">
-              <Chip active={!skill} onClick={() => set('ky-nang', '')}>Tất cả</Chip>
-              {/*
-                KỸ NĂNG TRƯỚC, Ý THỨC SAU (mục 10.1). Chip dựng từ CHÍNH số đếm trả về chứ
-                không từ một danh sách viết cứng: lớp Normal có môn W riêng, không gộp vào W2
-                của Fast Track, nên nếu chỉ vẽ năm ô IELTS thì các số cộng lại không bằng tổng
-                — đúng thứ đang cố tránh.
-              */}
-              {topicKeys.map((k) => (
+            <FilterRow label="Kỹ năng">
+              <Chip active={!skill} onClick={() => set('ky-nang', '')}>Tổng hợp</Chip>
+              {(classKind === 'normal' ? NORMAL_CASE_CATEGORIES : FT_CASE_CATEGORIES).map((k) => (
                 <Chip key={k} active={skill === k} onClick={() => set('ky-nang', skill === k ? '' : k)}>
-                  {topicLabel(k)} · {f?.skill[k] ?? 0}
-                </Chip>
-              ))}
-              {BEHAVIOUR_TOPICS.filter((k) => (f?.skill[k] ?? 0) > 0 || !skill).map((k) => (
-                <Chip key={k} active={skill === k} onClick={() => set('ky-nang', skill === k ? '' : k)}>
-                  {BEHAVIOUR_TOPIC_LABEL[k]} · {f?.skill[k] ?? 0}
+                  {k === 'behaviour' ? 'Ý thức/Khác' : CASE_CATEGORY_LABEL[k]}
+                  {f?.skill[k] !== undefined ? ` · ${f.skill[k]}` : ''}
                 </Chip>
               ))}
               {/*
-                Case cũ chưa gắn được kỹ năng: bước nâng cấp cố ý không đoán bừa khi một lượt
-                trượt từ hai kỹ năng trở lên. Có ô riêng để các số cộng lại đúng bằng tổng.
+                CHƯA XÁC ĐỊNH CỤ THỂ phải giữ lại (mục 4.3): bước nâng cấp cố ý không đoán
+                bừa kỹ năng khi một lượt trượt từ hai kỹ năng trở lên. Bỏ nhóm này đi thì các
+                số cộng lại không bằng tổng, và những case đó biến mất khỏi mọi bộ lọc.
               */}
               {(f?.skillNone ?? 0) > 0 && (
                 <Chip active={skill === 'none'} onClick={() => set('ky-nang', skill === 'none' ? '' : 'none')}>
-                  Chưa gắn kỹ năng · {f?.skillNone}
+                  Chưa xác định cụ thể · {f?.skillNone}
                 </Chip>
               )}
+            </FilterRow>
+          )}
+          {/*
+            BỘ LỌC ĐANG ÁP DỤNG PHẢI NHÌN THẤY VÀ XOÁ ĐƯỢC (mục 4.4). Một danh sách rỗng vì
+            một tham số còn sót lại từ màn trước là lỗi khó chịu nhất của loại màn này.
+          */}
+          {(classKind || skill || state || queue) && (
+            <FilterRow label="Đang lọc">
+              {classKind && (
+                <Chip active onClick={() => setKind('')}>
+                  {CLASS_KINDS.find((k) => k.key === classKind)?.label} ✕
+                </Chip>
+              )}
+              {skill && (
+                <Chip active onClick={() => set('ky-nang', '')}>
+                  {skill === 'none' ? 'Chưa xác định cụ thể'
+                    : skill === 'behaviour' ? 'Ý thức/Khác'
+                    : topicLabel(skill)} ✕
+                </Chip>
+              )}
+              {state && <Chip active onClick={() => set('tinh-hinh', '')}>{STATE_LABEL[state]} ✕</Chip>}
+              {queue && (
+                <Chip active onClick={() => set('hang-doi', '')}>
+                  {queue === 'due' ? 'Tới hạn xem lại' : 'Mức cao hoặc gấp'} ✕
+                </Chip>
+              )}
+              <button className="btn btn-sm btn-ghost" onClick={clearFilters}>Xoá hết bộ lọc</button>
             </FilterRow>
           )}
         </div>
@@ -392,6 +452,8 @@ export function CaseBoard({ embedded = false }: { embedded?: boolean } = {}) {
             </div>
           )}
       </Card>
+
+      </>)}
 
       {/*
         VIỆC ĐÃ GIAO nằm CUỐI màn, không chen giữa bảng tổng hợp và danh sách case.

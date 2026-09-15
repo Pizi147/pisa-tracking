@@ -43,6 +43,8 @@ const domain = await import('../../../shared/domain/index.ts');
 const accounts = await import('../platform/accounts.ts');
 const sysconfig = await import('../platform/sysconfig.ts');
 const mywork = await import('../worklist/mywork.ts');
+const standing = await import('../students/standing.ts');
+const mgmt = await import('../worklist/mgmttasks.ts');
 const { ratioResult: domainRatio } = await import('../../../shared/domain/index.ts');
 const { demoToday } = await import('../demoConfig.ts');
 const { addDays } = await import('../util.ts');
@@ -54,7 +56,10 @@ const failures: string[] = [];
 
 function check(name: string, fn: () => void) {
   try { fn(); passed++; console.log(`  ✓ ${name}`); }
-  catch (e: any) { failures.push(`${name}: ${e.message}`); console.log(`  ✗ ${name}\n      ${e.message}`); }
+  catch (e: any) {
+    failures.push(`${name}: ${e.message}`);
+    console.log(`  ✗ ${name}\n      ${e.message}`);
+  }
 }
 function assert(cond: unknown, msg: string) { if (!cond) throw new Error(msg); }
 function assertThrows(fn: () => unknown, match: RegExp, msg: string) {
@@ -136,6 +141,115 @@ const P = {
 };
 
 const mbClass = classId('MB-FT 101');
+
+// ==================================================================== 0
+
+/*
+ * HAI PHÉP KIỂM VỀ CHÍNH BỘ DEMO, chạy NGAY SAU KHI DỰNG và trước mọi phép kiểm khác.
+ *
+ * Chúng nói về dữ liệu seed, không phải về trạng thái sau khi các phép kiểm đã tạo case,
+ * duyệt đề xuất và chuyển lớp. Đặt ở cuối file thì chúng đọc nhầm hậu quả của chính bộ kiểm
+ * tra thành lỗi của bộ demo.
+ */
+console.log('\n0. Bộ demo vừa dựng có nhất quán không');
+
+check('[12.1-16] Bộ demo nhất quán: không có sự kiện "đã xong" nào nằm ở tương lai', () => {
+  const t = demoToday();
+  const bad: string[] = [];
+  const later = (table: string, col: string) => (conn
+    .prepare(`SELECT COUNT(*) n FROM ${table} WHERE ${col} IS NOT NULL AND ${col} > ?`)
+    .get(t) as any).n;
+
+  for (const [table, col] of [
+    ['sos_cases', 'closed_at'],
+    ['case_interventions', 'completed_date'],
+    ['case_interventions', 'started_date'],
+    ['case_interventions', 'approval_at'],
+    ['case_followups', 'observed_on'],
+    ['case_milestones', 'occurred_on'],
+    ['learning_cycles', 'ended_at'],
+  ] as const) {
+    const n = later(table, col);
+    if (n > 0) bad.push(`${table}.${col}: ${n}`);
+  }
+  assert(bad.length === 0, `Có sự kiện đã xảy ra nhưng ngày nằm ở tương lai — ${bad.join(' · ')}`);
+
+  /* Và không lượt nào ở tuần tương lai mà đã có điểm. */
+  const future = (conn
+    .prepare(
+      `SELECT COUNT(*) n FROM assessment_scores s
+         JOIN assessment_attempts a ON a.id = s.attempt_id
+         JOIN report_periods rp ON rp.id = a.planned_period_id
+        WHERE rp.week_start > ? AND (s.band IS NOT NULL OR s.raw_score IS NOT NULL)`,
+    )
+    .get(t) as any).n;
+  assert(future === 0, `${future} ô điểm nằm ở một tuần chưa tới`);
+
+  /* Kết quả sau hỗ trợ không bao giờ ghi trước ngày phương án bắt đầu. */
+  const early = (conn
+    .prepare(
+      `SELECT COUNT(*) n FROM case_followups f
+         JOIN case_interventions iv ON iv.id = f.intervention_id
+        WHERE iv.cycle_started_on IS NOT NULL AND f.observed_on < iv.cycle_started_on`,
+    )
+    .get() as any).n;
+  assert(early === 0, `${early} lần cập nhật kết quả ghi trước ngày phương án bắt đầu`);
+});
+
+check('[12.1] Bộ demo có đủ độ đa dạng mà mục 11.4 yêu cầu', () => {
+  const one = (sql: string, ...args: unknown[]) => (conn.prepare(sql).get(...args) as any).n as number;
+  const need: [string, number][] = [
+    ['học viên ổn định không case',
+      one(`SELECT COUNT(*) n FROM students s WHERE s.status='active'
+             AND NOT EXISTS (SELECT 1 FROM sos_cases c WHERE c.student_id = s.id)`)],
+    ['case đã hoàn thành có kết quả',
+      one(`SELECT COUNT(*) n FROM sos_cases WHERE status='done' AND outcome IS NOT NULL`)],
+    ['case chưa có người phụ trách',
+      one(`SELECT COUNT(*) n FROM sos_cases WHERE status!='done' AND owner_user_id IS NULL`)],
+    ['case song song', one(`SELECT COUNT(*) n FROM sos_cases WHERE parallel = 1`)],
+    ['case tái diễn', one(`SELECT COUNT(*) n FROM sos_cases WHERE previous_case_id IS NOT NULL`)],
+    ['phương án bị thay thế',
+      one(`SELECT COUNT(*) n FROM case_interventions WHERE closed_reason='superseded'`)],
+    ['đề xuất chờ duyệt',
+      one(`SELECT COUNT(*) n FROM case_interventions WHERE approval_state='pending'`)],
+    ['đề xuất bị từ chối',
+      one(`SELECT COUNT(*) n FROM case_interventions WHERE approval_state='declined'`)],
+    ['xin hỗ trợ Quản lý',
+      one(`SELECT COUNT(*) n FROM case_followups WHERE next_step='ask_manager'`)],
+    ['kết quả "không đủ căn cứ"',
+      one(`SELECT COUNT(*) n FROM case_followups WHERE outcome='insufficient'`)],
+    ['điểm giáo viên tự chấm',
+      one(`SELECT COUNT(*) n FROM case_followups WHERE metrics IS NOT NULL`)],
+    ['kỹ năng không mock', one(`SELECT COUNT(*) n FROM attempt_skill_skips`)],
+    ['hạn nhập điểm tự đặt',
+      one(`SELECT COUNT(*) n FROM assessment_attempts WHERE deadline_override IS NOT NULL`)],
+    ['lộ trình đã đạt mục tiêu',
+      one(`SELECT COUNT(*) n FROM learning_cycles WHERE outcome='reached'`)],
+    ['lộ trình chưa đạt mục tiêu',
+      one(`SELECT COUNT(*) n FROM learning_cycles WHERE outcome='not_reached'`)],
+    ['học viên đã kết thúc học',
+      one(`SELECT COUNT(*) n FROM students WHERE status='finished'`)],
+    ['thi thật chỉ biết tháng',
+      one(`SELECT COUNT(*) n FROM learning_cycles
+            WHERE exam_month IS NOT NULL AND exam_period_id IS NULL`)],
+    ['thi thật đã biết tuần',
+      one(`SELECT COUNT(*) n FROM learning_cycles WHERE exam_period_id IS NOT NULL`)],
+    ['chưa có kế hoạch thi',
+      one(`SELECT COUNT(*) n FROM learning_cycles
+            WHERE route IS NOT NULL AND exam_month IS NULL AND status='active'`)],
+    ['công việc quản lý tạm ngưng có lý do',
+      one(`SELECT COUNT(*) n FROM tasks WHERE progress='paused' AND stop_reason IS NOT NULL`)],
+    ['công việc quản lý dừng hẳn có lý do',
+      one(`SELECT COUNT(*) n FROM tasks WHERE progress='stopped' AND stop_reason IS NOT NULL`)],
+    ['công việc con', one(`SELECT COUNT(*) n FROM tasks WHERE parent_task_id IS NOT NULL`)],
+    ['người theo dõi khác người phụ trách',
+      one(`SELECT COUNT(*) n FROM tasks
+            WHERE watcher_user_id IS NOT NULL AND watcher_user_id != assignee_user_id`)],
+    ['công việc gắn case làm căn cứ', one(`SELECT COUNT(*) n FROM task_case_links`)],
+  ];
+  const missing = need.filter(([, n]) => n === 0).map(([label]) => label);
+  assert(missing.length === 0, `Bộ demo còn thiếu: ${missing.join(' · ')}`);
+});
 
 // ==================================================================== 1
 
@@ -474,11 +588,19 @@ check('Đã bỏ hẳn bước "Head xác nhận" khỏi hệ thống', () => {
 
 console.log('\n7. Lộ trình và số lần MT');
 check('Số MT là duy nhất TRONG một lộ trình, lộ trình mới đánh số lại từ 1', () => {
+  /*
+   * Chỉ lộ trình Fast Track mới có target, nên phép so target phải chọn một em có HAI lộ
+   * trình Fast Track — em đi FOU → BE → FT có ba lộ trình nhưng hai lộ trình đầu không có
+   * target nào để so.
+   */
   const multi = conn
-    .prepare('SELECT student_id FROM learning_cycles GROUP BY student_id HAVING COUNT(*) > 1 LIMIT 1')
+    .prepare(
+      `SELECT student_id FROM learning_cycles WHERE target_score IS NOT NULL
+        GROUP BY student_id HAVING COUNT(*) > 1 LIMIT 1`,
+    )
     .get() as any;
-  assert(multi, 'Seed thiếu học viên có hai lộ trình');
-  const cs = cycles.cyclesOf(multi.student_id);
+  assert(multi, 'Seed thiếu học viên có hai lộ trình Fast Track');
+  const cs = cycles.cyclesOf(multi.student_id).filter((c: any) => c.target_score !== null);
   assert(cs.length >= 2 && cs[1].target_score !== cs[0].target_score, 'Lộ trình mới phải có target mới');
   const first = conn.prepare('SELECT MIN(attempt_no) n FROM assessment_attempts WHERE cycle_id = ?').get(cs[1].id) as any;
   assert(first.n === 1, 'Lộ trình mới phải bắt đầu lại từ MT1');
@@ -574,7 +696,12 @@ check('Hai nhóm case chưa xử lý / đang xử lý không chồng nhau', () =
 });
 check('Một lượt MT chỉ thuộc ĐÚNG MỘT tuần, không bị đếm hai lần', () => {
   const split = conn
-    .prepare(`SELECT * FROM assessment_attempts WHERE planned_period_id IS NOT NULL AND status != 'cancelled' LIMIT 1`)
+    .prepare(
+      `SELECT a.* FROM assessment_attempts a
+         JOIN report_periods rp ON rp.id = a.planned_period_id
+        WHERE a.status != 'cancelled'
+        ORDER BY rp.week_start DESC LIMIT 1`,
+    )
     .get() as any;
   const periods = week.listPeriods(40);
   let seen = 0;
@@ -615,10 +742,18 @@ console.log('\n10. Xử lý sau Mock và lưu dữ liệu');
 check('Mở case ngay khi kết luận được; mức tăng dần không nhân đôi case', () => {
   const s = conn
     .prepare(
+      /*
+       * Chọn em CHƯA có case Reading nào. Bộ demo mới cố tình có một em mang case Reading
+       * tái diễn (case cũ đã chốt, case mới nối vào); mở thêm một case Reading cho chính em
+       * đó thì phép kiểm này không còn nói về điều nó muốn nói nữa.
+       */
       `SELECT s.id, cy.id AS cycle_id, cy.target_score FROM students s
          JOIN enrollments e ON e.student_id = s.id
-         JOIN learning_cycles cy ON cy.student_id = s.id
-        WHERE e.class_id = ? AND cy.target_score IS NOT NULL ORDER BY s.id LIMIT 1`,
+         JOIN learning_cycles cy ON cy.student_id = s.id AND cy.status = 'active'
+        WHERE e.class_id = ? AND e.status = 'active' AND cy.target_score IS NOT NULL
+          AND NOT EXISTS (SELECT 1 FROM sos_cases sc
+                           WHERE sc.student_id = s.id AND sc.category = 'reading')
+        ORDER BY s.id LIMIT 1`,
     )
     .get(classId('CP-FT 110')) as any;
   const cpPeriod = periodOf('2026-11-09');
@@ -730,7 +865,8 @@ check('Chuyển lớp giữ lớp cũ cho lượt đã xong, chuyển lượt ch
   const before = conn.prepare('SELECT id, class_id, status FROM assessment_attempts WHERE student_id = ?').all(s.id) as any[];
   const done = before.filter((a) => a.status === 'done');
   const target = classId('BC-ELE 01');
-  students.transferStudent(P.admin, s.id, target, '2026-09-21', 'Đổi ca học');
+  students.transferStudent(P.admin, s.id, target, '2026-09-21', 'Đổi ca học',
+    { note: 'Em còn case Reading đang theo dõi, cô mới nhận lớp đọc kỹ phần phương án.' });
   const after = conn.prepare('SELECT id, class_id, status FROM assessment_attempts WHERE student_id = ?').all(s.id) as any[];
   for (const t of done) assert(after.find((a) => a.id === t.id)!.class_id === t.class_id, 'Lượt đã xong bị viết lại lớp');
   for (const a of after.filter((x) => x.status === 'planned')) {
@@ -1172,11 +1308,15 @@ check('Đã bỏ trường "Loại" khỏi việc mới, giữ nguyên dữ li�
 // ==================================================================== 14
 
 console.log('\n14. Lớp thường: Foundation / Beginner / Elementary');
-const fouClass = (conn.prepare(`SELECT id, code, start_date FROM classes WHERE kind = 'FOU' ORDER BY id LIMIT 1`).get() as any);
+const fouClass = (conn.prepare(
+  `SELECT id, code, start_date FROM classes WHERE kind = 'FOU' AND status = 'active' ORDER BY id LIMIT 1`,
+).get() as any);
 /* Lớp mang MÃ CŨ "FOUND" — dùng để chứng minh ánh xạ mã cũ không viết đè lên mã lớp. */
 const legacyClass = (conn.prepare(`SELECT id, kind, programme_code FROM classes WHERE kind = 'FOUND' LIMIT 1`).get() as any);
 /* Chương trình 10 tuần (BE hoặc ELE dùng chung một khuôn) — lớp nào cũng chứng minh được. */
-const beClass = (conn.prepare(`SELECT id, code, start_date FROM classes WHERE programme_code IN ('BE','ELE') ORDER BY id LIMIT 1`).get() as any);
+const beClass = (conn.prepare(
+  `SELECT id, code, start_date FROM classes WHERE programme_code IN ('BE','ELE') AND status = 'active' ORDER BY id LIMIT 1`,
+).get() as any);
 
 check('Chương trình nằm trong dữ liệu, mã cũ FOUND ánh xạ về FOU mà không đổi mã lớp', () => {
   const fou = regular.programmeByCode('FOU');
@@ -1334,7 +1474,7 @@ check('Nhập điểm phải có cả số câu đúng và tổng; không tự �
     .get(fouClass.id) as any;
   if (fresh) {
     assertThrows(() => regular.saveRegularScore(T, fresh.id, 'listening', { score: 20 }),
-      /tổng số câu/, 'Nhập số câu đúng mà không có tổng');
+      /tổng điểm/, 'Nhập điểm đạt mà không có tổng điểm');
   }
   assertThrows(() => regular.saveRegularScore(T, row.attemptId, 'listening', { score: 45, total: 40 }),
     /không thể lớn hơn/, 'Số câu đúng lớn hơn tổng');
@@ -1500,12 +1640,12 @@ check('Chuyển từ lớp FT sang lớp thường thì mở KHOÁ MỚI, không
 // ==================================================================== 15
 
 console.log('\n15. Tổng hợp theo tuần');
-check('Bốn cột kết quả cộng lại đúng bằng số lượt có kết quả', () => {
+check('Sáu cột kết quả cộng lại đúng bằng số lượt có kết quả', () => {
   const r = weekly.weeklyRollup(P.admin, {});
   assert(r.rows.length > 0, 'Không có tuần nào có dữ liệu');
   for (const row of r.rows) {
-    assert(row.onTarget + row.sos1 + row.sos2 + row.sos3 + row.pending === row.attempts,
-      `Tuần ${row.code}: ${row.onTarget}+${row.sos1}+${row.sos2}+${row.sos3}+${row.pending} khác ${row.attempts} lượt`);
+    const sum = row.onTarget + row.sos1 + row.sos2 + row.sos3 + row.provisional + row.pending;
+    assert(sum === row.attempts, `Tuần ${row.code}: sáu cột cộng lại ${sum}, khác ${row.attempts} lượt`);
   }
 });
 check('Chỉ đếm lượt ĐÃ CHẤM, và chỉ hiện tuần có dữ liệu', () => {
@@ -1537,12 +1677,44 @@ check('Tổng hợp tuần chỉ trong phạm vi được cấp quyền', () => 
   assert(mineTotal < allTotal, 'Quản lý một chi nhánh lại thấy đúng bằng toàn hệ thống');
   assert(mineTotal > 0, 'Quản lý MB không thấy số nào');
 });
-check('Trễ chấm để trống khi chưa đủ căn cứ, không hiện số 0 giả', () => {
-  const r = weekly.weeklyRollup(P.admin, {});
-  for (const row of r.rows) {
-    assert(row.scoreLagDays === null || row.scoreLagDays >= 0, `Trễ chấm âm ở tuần ${row.code}`);
+check('Sáu cột kết luận loại trừ nhau và cộng lại đúng bằng số lượt', () => {
+  /*
+   * Đây là phép kiểm tra chính của mục 4.2: một lượt chưa đủ điểm không được vừa nằm ở cột
+   * "kết luận tạm thời" vừa được đếm lại ở cột "chưa đủ điểm", và không lượt nào chưa đủ
+   * căn cứ mà bị ghi thành "Đạt".
+   */
+  for (const track of [null, 'normal', 'ft'] as const) {
+    const r = weekly.weeklyRollup(P.admin, { track });
+    for (const row of r.rows) {
+      const sum = row.onTarget + row.sos1 + row.sos2 + row.sos3 + row.provisional + row.pending;
+      assert(sum === row.attempts,
+        `Tuần ${row.code} (${track ?? 'tất cả'}): sáu cột cộng lại ${sum} nhưng có ${row.attempts} lượt`);
+    }
   }
-  assert(r.rows.some((x) => x.scoreLagDays === null), 'Tuần chưa có căn cứ phải để trống thay vì 0');
+  /* Và lọc theo loại lớp thì tổng hai phần phải bằng tổng chung — không mất, không trùng. */
+  const all = weekly.weeklyRollup(P.admin, {});
+  const n = (x: any) => x.rows.reduce((z: number, r: any) => z + r.attempts, 0);
+  assert(n(weekly.weeklyRollup(P.admin, { track: 'normal' }))
+       + n(weekly.weeklyRollup(P.admin, { track: 'ft' })) === n(all),
+    'Lượt Normal cộng lượt FT không bằng tổng chung');
+});
+
+check('Cột Case đếm CASE, không đếm lượt có case', () => {
+  const r = weekly.weeklyRollup(P.admin, {});
+  const cases = r.rows.reduce((z, x) => z + x.cases, 0);
+  const students = r.rows.reduce((z, x) => z + x.caseStudents, 0);
+  assert(cases > 0, 'Không tuần nào có case — dữ liệu mẫu không đủ để kiểm tra');
+  /* Một em có thể có nhiều case, nên số case luôn ≥ số học viên có case. */
+  assert(cases >= students, `Đếm ${cases} case nhưng lại ${students} học viên có case`);
+  /* Và con số phải khớp với số case thật sinh từ những lượt trong cửa sổ đang xem. */
+  const pids = r.rows.map((x) => x.periodId);
+  const real = (conn.prepare(
+    `SELECT COUNT(*) n FROM sos_cases sc
+       JOIN assessment_attempts a ON a.id = sc.attempt_id
+      WHERE COALESCE(sc.sos_level, 1) > 0
+        AND a.planned_period_id IN (${pids.map(() => '?').join(',')})`,
+  ).get(...pids) as any).n;
+  assert(cases === real, `Bảng nói ${cases} case, cơ sở dữ liệu có ${real}`);
 });
 
 // ==================================================================== 16
@@ -1816,13 +1988,18 @@ check('Lọc theo đầu mục và theo chủ đề', () => {
   for (const r of listening) assert(r.topic === 'listening', 'Lọc chủ đề sai');
 });
 
-check('Case sinh từ điểm và case giáo viên báo dùng CHUNG một vòng đời', () => {
+check('Ba nguồn case dùng CHUNG một vòng đời', () => {
+  /*
+   * BA nguồn, không phải hai: sinh từ điểm, giáo viên tự báo, và mở theo yêu cầu Quản lý.
+   * Cả ba nằm cùng một bảng với cùng bộ trạng thái, nên cộng lại phải đúng bằng tổng.
+   */
   const fromMock = cases.listCases(P.admin, { origin: 'mock' }).rows;
   const fromTeacher = cases.listCases(P.admin, { origin: 'teacher_report' }).rows;
-  assert(fromMock.length > 0 && fromTeacher.length > 0, 'Thiếu một trong hai nguồn case');
-  // Cùng một bảng, cùng bộ trạng thái, nên đếm chung được.
+  const fromTask = cases.listCases(P.admin, { origin: 'manager_task' }).rows;
+  assert(fromMock.length > 0 && fromTeacher.length > 0, 'Thiếu một trong hai nguồn case chính');
   const total = cases.listCases(P.admin, {}).rows.length;
-  assert(total === fromMock.length + fromTeacher.length, 'Hai nguồn không cộng lại thành tổng');
+  assert(total === fromMock.length + fromTeacher.length + fromTask.length,
+    `Ba nguồn cộng lại ${fromMock.length + fromTeacher.length + fromTask.length} khác tổng ${total}`);
   /*
    * `origin_kind` nói AI MỞ case, không phải case đó thuộc về thế giới nào.
    *
@@ -2116,14 +2293,14 @@ check('Không duyệt thì phương án dừng lại, không âm thầm thành v
 
 console.log('\n18. Việc của chính người đang xem');
 
-check('Quản lý thấy nhóm "Chờ duyệt phương án", giáo viên thì không', () => {
-  const gv = loadPrincipal(teacherOfSkill('MB-FT 101', 'listening'));
+check('Quản lý thấy nhóm "Chờ tôi xử lý", giáo viên thì không', () => {
+  const gv = loadPrincipal(teacherOfSkill('MB-FT 102', 'listening'));
   const mgrGroups = mywork.myWork(P.mbManager).groups.map((g: any) => g.key);
   const gvGroups = mywork.myWork(gv).groups.map((g: any) => g.key);
-  assert(!gvGroups.includes('approval'), 'Giáo viên bị giao việc duyệt mà họ không có quyền làm');
+  assert(!gvGroups.includes('decide'), 'Giáo viên bị giao việc duyệt mà họ không có quyền làm');
   const anyManagerHasIt = ['MB', 'CP', 'BC', 'HD']
     .map((b) => loadPrincipal(userByRole('manager', b)))
-    .some((m) => mywork.myWork(m).groups.some((g: any) => g.key === 'approval'));
+    .some((m) => mywork.myWork(m).groups.some((g: any) => g.key === 'decide'));
   assert(anyManagerHasIt, 'Không Quản lý nào thấy đề xuất đang chờ duyệt');
   assert(Array.isArray(mgrGroups), 'myWork không trả về nhóm');
 });
@@ -2150,7 +2327,7 @@ check('Mỗi việc quá hạn nói rõ quá hạn CÁI GÌ', () => {
 check('Kết quả sau hỗ trợ là việc của NGƯỜI THỰC HIỆN; quá hạn thì Quản lý cũng thấy', () => {
   const gv = loadPrincipal(teacherOfSkill('CP-FT 110', 'speaking'));
   const mgr = loadPrincipal(userByRole('manager', 'CP'));
-  const reviewOf = (p: any) => (mywork.myWork(p).groups.find((g: any) => g.key === 'review')?.items ?? []);
+  const reviewOf = (p: any) => (mywork.myWork(p).groups.find((g: any) => g.key === 'result')?.items ?? []);
 
   // Dữ liệu mẫu: tutor CP-FT 110 hẹn 10/09, nay đã 14/09 — quá hạn, nên cả hai đều thấy.
   const gvItems = reviewOf(gv);
@@ -2170,7 +2347,7 @@ check('Đề xuất đang chờ duyệt thì chưa đòi cập nhật kết qu�
     kind: 'tutor', description: 'Xin tutor, hẹn xem lại ngay', status: 'planned',
     needsApproval: true, followupDue: addDays(demoToday(), -1),
   });
-  const items = (mywork.myWork(P.coreTeacher).groups.find((g: any) => g.key === 'review')?.items ?? []);
+  const items = (mywork.myWork(P.coreTeacher).groups.find((g: any) => g.key === 'result')?.items ?? []);
   assert(!items.some((i: any) => i.caseId === c.id),
     'Phương án chưa được duyệt đã bị đòi cập nhật kết quả');
 });
@@ -2178,7 +2355,7 @@ check('Đề xuất đang chờ duyệt thì chưa đòi cập nhật kết qu�
 console.log('\n19. Phân công giáo viên');
 
 check('Giáo viên không tự phân công mình vào lớp', () => {
-  const gv = loadPrincipal(teacherOfSkill('MB-FT 101', 'listening'));
+  const gv = loadPrincipal(teacherOfSkill('MB-FT 102', 'listening'));
   assertThrows(() => classesSvc.setClassTeachers(gv, mbClass, { slots: [] }),
     /Quản lý|Admin|quyền/, 'Giáo viên đổi phân công');
   assert(!can(gv, PERMISSIONS.CLASS_ASSIGN, { classId: mbClass }), 'Giáo viên đang có quyền phân công');
@@ -2292,8 +2469,17 @@ check('MỖI KỸ NĂNG CHỈ MỘT GIÁO VIÊN — xếp hai người vào mộ
    * Listening thì cả hai đều tưởng người kia nhập điểm, và không ai nhập.
    */
   const t = classesSvc.classTeachers(P.mbManager, mbClass);
-  const two = t.candidates.slice(0, 2);
-  assert(two.length === 2, 'Chi nhánh không đủ hai giáo viên để thử');
+  /*
+   * Phải chọn hai người ĐANG DẠY một kỹ năng ở chính lớp này.
+   *
+   * Luật khác của cùng mục 7.7 nói GVCN phải dạy ít nhất một kỹ năng ở lớp mình chủ nhiệm.
+   * Lấy bừa hai cái tên trong chi nhánh thì phép kiểm rơi vào luật ấy trước và không bao giờ
+   * chạm tới luật đang muốn kiểm.
+   */
+  const two = [...new Set(t.bySkill.map((b: any) => b.userId))]
+    .slice(0, 2)
+    .map((id) => ({ id }));
+  assert(two.length === 2, 'Lớp không đủ hai giáo viên bộ môn để thử');
 
   const base = [
     ...t.core.map((c: any) => ({ userId: c.userId, skill: null, isCore: true })),
@@ -2375,8 +2561,14 @@ console.log('\n20. Vấn đề gắn với một kỹ năng');
 check('Một lượt trượt nhiều kỹ năng sinh NHIỀU vấn đề, mỗi kỹ năng một cái', () => {
   const rows = conn
     .prepare(
+      /*
+       * Loại case SONG SONG và case TÁI DIỄN: cả hai cố tình là case thứ hai ở cùng hạng
+       * mục, và người dùng đã thấy cảnh báo trùng trước khi mở. Phép kiểm này nói về việc
+       * MÁY tự mở trùng, không phải về lựa chọn của người dùng.
+       */
       `SELECT attempt_id, COUNT(*) n, COUNT(DISTINCT topic) t FROM sos_cases
-        WHERE attempt_id IS NOT NULL GROUP BY attempt_id`,
+        WHERE attempt_id IS NOT NULL AND parallel = 0 AND previous_case_id IS NULL
+        GROUP BY attempt_id`,
     )
     .all() as any[];
   assert(rows.some((r) => r.n > 1), 'Không lượt nào sinh quá một vấn đề — vẫn đang gom cả lượt');
@@ -2678,16 +2870,82 @@ check('Số trên bảng tổng hợp khớp với danh sách bên dưới', () 
   assert(s.total.cells.openCases?.value === fromTable, 'Hàng tổng không bằng tổng các hàng trên');
 });
 
-check('SOS đếm HỌC VIÊN, cột kỹ năng đếm VẤN ĐỀ — hai đơn vị khác nhau', () => {
+check('SOS đếm HỌC VIÊN theo KẾT QUẢ BÀI GẦN NHẤT, không đếm case', () => {
+  /*
+   * Mục 2.1: mức SOS là kết luận của MỘT bài đánh giá, không phải "còn việc đang làm dở".
+   * Nên ba cột SOS phải đếm được lại từ `standingFor`, và mỗi em chỉ đứng ở đúng một cột.
+   */
   const s = summary.branchSummary(P.admin, {});
   const r = s.rows.find((x) => (x.cells.sos2?.value ?? 0) > 0);
   assert(r, 'Không có hàng nào có SOS 2 để thử');
-  const open = cases.listCases(P.admin, { branchId: r!.branchId ?? undefined }).rows
-    .filter((c) => c.state !== 'done' && c.sosLevel === 2);
-  const students = new Set(open.map((c) => c.studentId)).size;
-  assert(r!.cells.sos2!.value === students,
-    `Cột SOS 2 đang là ${r!.cells.sos2!.value} nhưng chỉ có ${students} học viên — đang đếm vấn đề chứ không đếm em`);
-  assert(open.length >= students, 'Một em SOS 2 phải sinh ít nhất một vấn đề');
+
+  const ids = (conn
+    .prepare(
+      `SELECT e.student_id AS id FROM enrollments e
+         JOIN students st ON st.id = e.student_id
+         JOIN classes cl ON cl.id = e.class_id
+        WHERE e.status = 'active' AND st.status = 'active' AND st.archived_at IS NULL
+          AND cl.branch_id = ?`,
+    )
+    .all(r!.branchId) as any[]).map((x) => x.id);
+  const st = standing.standingFor(ids);
+  const atLevel = (lv: number) => ids.filter((id) => st.get(id)?.sosLevel === lv).length;
+
+  for (const lv of [1, 2, 3]) {
+    const shown = r!.cells[`sos${lv}`]?.value ?? 0;
+    assert(shown === atLevel(lv),
+      `Cột SOS ${lv} nói ${shown} em, nhưng kết quả bài gần nhất cho ra ${atLevel(lv)} em`);
+  }
+  /* Ba cột loại trừ nhau và không bao giờ vượt sĩ số. */
+  const total = atLevel(1) + atLevel(2) + atLevel(3);
+  assert(total <= (r!.cells.students?.value ?? 0), 'Ba cột SOS cộng lại vượt sĩ số');
+});
+
+check('Mức SOS KHÔNG đổi khi đóng case, và KHÔNG kéo theo case còn mở', () => {
+  /*
+   * Đây là lỗi gốc mục 2.1 nêu đích danh: em thi MT gần nhất ĐẠT mà case cũ chưa đóng thì
+   * vẫn bị gọi là SOS. Kiểm bằng một em có đúng tình huống đó.
+   */
+  const row = conn
+    .prepare(
+      `SELECT sc.student_id AS sid, sc.id AS cid FROM sos_cases sc
+        WHERE sc.status != 'done' AND sc.student_id IS NOT NULL AND sc.sos_level > 0
+        ORDER BY sc.id LIMIT 1`,
+    )
+    .get() as any;
+  assert(row, 'Dữ liệu demo không có case SOS nào đang mở');
+
+  const before = standing.standingFor([row.sid]).get(row.sid)!;
+  /* Đóng case: mức SOS KHÔNG được đổi, vì nó nói về bài thi chứ không về case. */
+  conn.prepare(`UPDATE sos_cases SET status = 'done' WHERE id = ?`).run(row.cid);
+  const after = standing.standingFor([row.sid]).get(row.sid)!;
+  conn.prepare(`UPDATE sos_cases SET status = 'in_progress' WHERE id = ?`).run(row.cid);
+
+  assert(before.sosLevel === after.sosLevel,
+    `Đóng case làm mức SOS đổi từ ${before.sosLevel} thành ${after.sosLevel}`);
+  assert(before.attemptId === after.attemptId, 'Đóng case làm đổi bài đánh giá đang được lấy làm căn cứ');
+  /* Và số case thì PHẢI đổi — đó mới là con số case. */
+  assert(after.openCases === before.openCases - 1, 'Đóng case mà số case đang theo dõi không giảm');
+});
+
+check('Lộ trình mới chưa có bài nào thì KHÔNG mang SOS của lộ trình cũ', () => {
+  const row = conn
+    .prepare(
+      `SELECT cy.student_id AS sid, cy.id AS cid FROM learning_cycles cy
+        WHERE cy.status = 'active'
+          AND NOT EXISTS (SELECT 1 FROM assessment_attempts a
+                           JOIN assessment_scores s ON s.attempt_id = a.id
+                          WHERE a.cycle_id = cy.id)
+          AND EXISTS (SELECT 1 FROM sos_cases sc
+                       WHERE sc.student_id = cy.student_id AND sc.status != 'done'
+                         AND sc.cycle_id IS NOT NULL AND sc.cycle_id != cy.id)
+        LIMIT 1`,
+    )
+    .get() as any;
+  if (!row) return;   // bộ demo hiện tại chưa có tình huống này thì bỏ qua, không bịa ra
+  const s = standing.standingFor([row.sid]).get(row.sid)!;
+  assert(s.sosLevel === null, `Lộ trình mới chưa thi mà vẫn mang mức SOS ${s.sosLevel}`);
+  assert(s.handoverCases > 0, 'Case của lộ trình trước không được đếm là việc bàn giao');
 });
 
 check('Bộ cột đặt sẵn nhớ theo tài khoản, và không rò sang người khác', () => {
@@ -2815,14 +3073,31 @@ console.log('\n26. Việc trao đổi tới tay đúng người');
 check('GVCN nhận việc gặp học viên, văn phòng nhận việc gọi phụ huynh', () => {
   /*
    * Hai việc trao đổi nay là phương án, nên chúng tới tay người ta qua nhóm việc
-   * "Phương án tới hạn làm" chứ không qua một bảng Liên hệ riêng. Cách CHIA VIỆC thì giữ
+   * "Làm phương án đã hẹn" chứ không qua một bảng Liên hệ riêng. Cách CHIA VIỆC thì giữ
    * nguyên — đó mới là thứ nghiệp vụ, không phải bảng nào chứa nó.
+   *
+   * Phải chọn lớp CÓ ĐỢT ĐÁNH GIÁ GẦN ĐÂY: hai việc trao đổi của những đợt đã xa đều đã làm
+   * xong trong bộ demo, nên ở đó không còn việc nào đang chờ để mà kiểm ai nhận.
    */
-  const gv = loadPrincipal(teacherOfSkill('MB-FT 102', 'listening'));
+  const pendingTalk = conn
+    .prepare(
+      `SELECT ta.user_id AS id, cl.branch_id AS branch FROM case_interventions iv
+         JOIN sos_cases sc ON sc.id = iv.case_id
+         JOIN assessment_attempts a ON a.id = sc.attempt_id
+         JOIN classes cl ON cl.id = a.class_id
+         JOIN teacher_assignments ta ON ta.class_id = cl.id AND ta.status = 'active'
+                                    AND ta.skill IS NOT NULL
+        WHERE iv.kind = 'talk_student' AND iv.status IN ('planned','started')
+          AND iv.action_due IS NOT NULL AND iv.action_due <= ?
+        LIMIT 1`,
+    )
+    .get(TODAY) as any;
+  assert(pendingTalk, 'Bộ demo không còn việc trao đổi nào đang chờ để kiểm ai nhận');
+  const gv = loadPrincipal(pendingTalk.id);
   const kinds = (who: any) => {
     const out = new Set<string>();
     for (const g of mywork.myWork(who, {}).groups) {
-      if (g.key !== 'action') continue;
+      if (g.key !== 'do_plan') continue;
       for (const it of g.items) {
         if (/trao đổi với học viên/i.test(it.reason)) out.add('talk_student');
         if (/trao đổi với phụ huynh/i.test(it.reason)) out.add('talk_parent');
@@ -2833,10 +3108,20 @@ check('GVCN nhận việc gặp học viên, văn phòng nhận việc gọi ph�
   const gvKinds = kinds(gv);
   assert(gvKinds.has('talk_student'), 'Giáo viên không nhận việc gặp học viên');
   assert(!gvKinds.has('talk_parent'), 'Giáo viên bị giao việc gọi phụ huynh của văn phòng');
-  const adminKinds = kinds(P.mbAdmin);
+  const adminKinds = kinds(loadPrincipal(
+    (conn.prepare(
+      `SELECT ur.user_id AS id FROM user_roles ur JOIN roles r ON r.id = ur.role_id
+        WHERE r.key = 'branch_admin' AND ur.branch_id = ? LIMIT 1`,
+    ).get(pendingTalk.branch) as any).id,
+  ));
   assert(adminKinds.has('talk_parent'), 'Admin chi nhánh không nhận việc gọi phụ huynh');
-  // Quản lý thấy cả hai: họ là người đôn đốc khi có ai đó quên.
-  const mgrKinds = kinds(P.mbManager);
+  // Quản lý thấy cả hai: họ là người đôn đốc khi có ai đó quên. Quản lý CỦA CHÍNH chi nhánh đó.
+  const mgrKinds = kinds(loadPrincipal(
+    (conn.prepare(
+      `SELECT ur.user_id AS id FROM user_roles ur JOIN roles r ON r.id = ur.role_id
+        WHERE r.key = 'manager' AND ur.branch_id = ? LIMIT 1`,
+    ).get(pendingTalk.branch) as any).id,
+  ));
   assert(mgrKinds.has('talk_student') && mgrKinds.has('talk_parent'), 'Quản lý phải thấy cả hai loại');
 });
 
@@ -3067,8 +3352,16 @@ check('Bảng theo dõi hỗ trợ luôn đủ SÁU hạng mục, kể cả hạ
 check('Cảnh báo case trùng: báo lại hạng mục đã có case chưa xong thì phải hỏi trước', () => {
   const open = conn
     .prepare(
+      /*
+       * Case phải nằm trong LỘ TRÌNH ĐANG CHẠY của em.
+       *
+       * Khoá chống trùng tính theo từng lộ trình, nên một case còn mở từ chương trình TRƯỚC
+       * không chặn việc mở case mới ở chương trình hiện tại — và đúng là không nên chặn.
+       */
       `SELECT sc.id, sc.student_id, sc.topic FROM sos_cases sc
+         JOIN learning_cycles cy ON cy.id = sc.cycle_id AND cy.status = 'active'
         WHERE sc.track = 'academic' AND sc.status != 'done' AND sc.parallel = 0
+          AND sc.previous_case_id IS NULL
           AND sc.topic IS NOT NULL LIMIT 1`,
     )
     .get() as any;
@@ -3114,7 +3407,13 @@ check('Lớp Normal: chấm lại một bài CŨ vẫn hạ được mức của
     .prepare(
       `SELECT sc.id, sc.category, sc.topic, sc.sos_level, a.id AS attempt_id, a.student_id, a.cycle_id
          FROM sos_cases sc
-         JOIN assessment_attempts a ON a.student_id = sc.student_id
+         /*
+          * Lượt phải thuộc CHÍNH LỘ TRÌNH của case. Một em đi Foundation → Beginner có bài
+          * ở cả hai chương trình; chấm lại một bài Foundation không nói gì về case của lớp
+          * Beginner, và cũng không nên nói.
+          */
+         JOIN assessment_attempts a
+           ON a.student_id = sc.student_id AND a.cycle_id = sc.cycle_id
          JOIN classes cl ON cl.id = a.class_id
         WHERE sc.track = 'academic' AND sc.status != 'done' AND sc.sos_level > 0
           AND cl.kind != 'FT' AND a.status = 'done'
@@ -3414,10 +3713,9 @@ check('Mức SOS trên bảng lớp dùng CHUNG phép tính với bảng tổng 
    */
   const cid = classId('CP-FT 110');
   const roster = classesSvc.classRoster(P.admin, cid) as any[];
-  const open = cases.listCases(P.admin, { classId: cid }).rows.filter((c: any) => c.state !== 'done');
-  const expect = cases.currentSosByStudent(open);
+  const expect = standing.standingFor(roster.map((r) => r.id));
   for (const r of roster) {
-    const want = expect.get(r.id) ?? null;
+    const want = expect.get(r.id)?.sosLevel ?? null;
     assert((r.sosLevel ?? null) === want,
       `Học viên ${r.fullName}: bảng lớp nói SOS ${r.sosLevel}, phép tính chung nói ${want}`);
   }
@@ -3427,12 +3725,12 @@ check('Mức SOS trên bảng lớp dùng CHUNG phép tính với bảng tổng 
     `Tổng ba mức SOS ${byLevel.join('+')} vượt sĩ số ${roster.length}`);
 });
 
-check('Bảng theo tuần đếm đúng: Đạt + SOS 1..3 + Chưa đủ điểm = số lượt có kết quả', () => {
+check('Bảng theo tuần: Đạt + SOS 1..3 + Tạm thời + Chưa đủ điểm = số lượt có kết quả', () => {
   const r = weekly.weeklyRollup(P.admin, { weeks: 26 });
   assert(r.rows.length > 0, 'Không có tuần nào có dữ liệu');
   for (const w of r.rows) {
-    assert(w.onTarget + w.sos1 + w.sos2 + w.sos3 + w.pending === w.attempts,
-      `Tuần ${w.code}: ${w.onTarget}+${w.sos1}+${w.sos2}+${w.sos3}+${w.pending} ≠ ${w.attempts} lượt`);
+    const sum = w.onTarget + w.sos1 + w.sos2 + w.sos3 + w.provisional + w.pending;
+    assert(sum === w.attempts, `Tuần ${w.code}: sáu cột cộng lại ${sum} ≠ ${w.attempts} lượt`);
     assert(typeof w.pendingApproval === 'number', `Tuần ${w.code} thiếu cột Chờ duyệt`);
   }
 });
@@ -3679,10 +3977,20 @@ check('Case sinh từ bài Normal KHÔNG mang tên "MT"', () => {
 });
 
 check('Chuyển tiếp: FOU → BE là luồng mặc định, và hệ thống KHÔNG tự chuyển ai', () => {
+  /*
+   * Bộ demo có cả lớp Foundation ĐÃ KẾT THÚC (giữ lại để tra lịch sử), và một lớp đã hết
+   * chương trình mà học viên chưa được xếp lớp tiếp. Kế hoạch chuyển tiếp chỉ có nghĩa với
+   * lớp thứ hai, nên phải chọn lớp CÒN HỌC VIÊN ĐANG HỌC.
+   */
   const fou = conn
-    .prepare(`SELECT id, code FROM classes WHERE programme_code = 'FOU' ORDER BY id LIMIT 1`)
+    .prepare(
+      `SELECT c.id, c.code FROM classes c
+        WHERE c.programme_code = 'FOU' AND c.status = 'active'
+          AND EXISTS (SELECT 1 FROM enrollments e WHERE e.class_id = c.id AND e.status = 'active')
+        ORDER BY c.id LIMIT 1`,
+    )
     .get() as any;
-  assert(fou, 'Seed thiếu lớp Foundation');
+  assert(fou, 'Seed thiếu lớp Foundation còn học viên đang học');
   const plan = transition.transitionPlan(P.admin, fou.id) as any;
   assert(plan.defaultProgramme === 'BE', `Luồng mặc định của FOU phải là BE, đang là ${plan.defaultProgramme}`);
   assert(plan.students.length > 0, 'Kế hoạch chuyển tiếp không có học viên nào');
@@ -3696,7 +4004,12 @@ check('Chuyển tiếp: FOU → BE là luồng mặc định, và hệ thống K
 
 check('Chuyển tiếp: mở lớp mới, chuyển cả lớp, GIỮ NGUYÊN lớp cũ trong lịch sử', () => {
   const src = conn
-    .prepare(`SELECT id, code, programme_code FROM classes WHERE programme_code = 'FOU' ORDER BY id LIMIT 1`)
+    .prepare(
+      `SELECT c.id, c.code, c.programme_code FROM classes c
+        WHERE c.programme_code = 'FOU' AND c.status = 'active'
+          AND EXISTS (SELECT 1 FROM enrollments e WHERE e.class_id = c.id AND e.status = 'active')
+        ORDER BY c.id LIMIT 1`,
+    )
     .get() as any;
   const plan = transition.transitionPlan(P.admin, src.id) as any;
   const ids = plan.students.map((s: any) => s.id);
@@ -3986,7 +4299,8 @@ check('Case của lớp trước là việc BÀN GIAO, không phải mức SOS c
           AND EXISTS (SELECT 1 FROM enrollments o WHERE o.student_id = e.student_id AND o.status='transferred')
           AND EXISTS (SELECT 1 FROM sos_cases sc
                        JOIN learning_cycles cy ON cy.id = sc.cycle_id
-                      WHERE sc.student_id = e.student_id AND sc.status != 'done' AND cy.status = 'ended')
+                      WHERE sc.student_id = e.student_id AND sc.status != 'done'
+                        AND cy.status = 'completed')
         ORDER BY e.student_id LIMIT 1`,
     )
     .get() as any;
@@ -4145,10 +4459,18 @@ check('[6] Hạn: chu kỳ đầu, chu kỳ tiếp, chờ duyệt, cập nhật 
     'Phương án chờ duyệt đã bị tính hạn thực hiện như thể đang chạy');
   assert(pending.approval_due !== null, 'Phương án chờ duyệt không có hạn cho Quản lý trả lời');
   /* Được duyệt thì chu kỳ chạy TỪ NGÀY DUYỆT. */
+  /*
+   * Phải chọn một phương án ĐÃ DUYỆT VÀ CÒN ĐANG CHẠY: phương án đã hoàn thành thì không
+   * còn hạn thực hiện nào để kiểm, và để trống hạn ở đó là đúng chứ không phải lỗi.
+   */
   const appr = conn
-    .prepare(`SELECT * FROM case_interventions WHERE approval_state = 'approved' AND approval_at IS NOT NULL LIMIT 1`)
+    .prepare(
+      `SELECT * FROM case_interventions
+        WHERE approval_state = 'approved' AND approval_at IS NOT NULL
+          AND status IN ('planned', 'started') LIMIT 1`,
+    )
     .get() as any;
-  assert(appr, 'Không có phương án nào đã được duyệt');
+  assert(appr, 'Không có phương án nào đã được duyệt và còn đang chạy');
   assert(appr.cycle_started_on === appr.approval_at.slice(0, 10),
     `Chu kỳ bắt đầu ${appr.cycle_started_on} mà duyệt ngày ${appr.approval_at.slice(0, 10)}`);
   assert(appr.action_due === domain.cycleDeadline(appr.cycle_started_on),
@@ -4295,6 +4617,7 @@ check('[12] Seed chạy lại cho ra đúng bộ dữ liệu cũ, không nhân �
       `SELECT COUNT(*) n FROM (
          SELECT student_id, category FROM sos_cases
           WHERE status != 'done' AND student_id IS NOT NULL AND parallel = 0
+            AND previous_case_id IS NULL
             AND track = 'academic'
           GROUP BY student_id, cycle_id, category HAVING COUNT(*) > 1)`,
     )
@@ -4303,7 +4626,14 @@ check('[12] Seed chạy lại cho ra đúng bộ dữ liệu cũ, không nhân �
    * Luật một-case-một-hạng-mục chỉ áp cho case HỌC THUẬT trong cùng một lộ trình. Case Ý
    * thức/Khác gắn với từng sự việc, nên một em có thể có nhiều case cùng lúc mà không trùng.
    */
-  assert(dupCase.n === 0, `${dupCase.n} nhóm case học thuật trùng hạng mục mà không đánh dấu song song`);
+  const dupDetail = conn.prepare(
+    `SELECT student_id, cycle_id, category, GROUP_CONCAT(id) ids FROM sos_cases
+      WHERE status != 'done' AND student_id IS NOT NULL AND parallel = 0
+        AND previous_case_id IS NULL AND track = 'academic'
+      GROUP BY student_id, cycle_id, category HAVING COUNT(*) > 1`).all() as any[];
+  assert(dupCase.n === 0,
+    `${dupCase.n} nhóm case học thuật trùng hạng mục mà không đánh dấu song song: `
+    + dupDetail.map((d) => `hv${d.student_id}/${d.category}[${d.ids}]`).join(' · '));
   /* Mọi bản ghi đều nối đúng chỗ — không có case mồ côi sau khi dựng lại dữ liệu. */
   const fk = conn.prepare('PRAGMA foreign_key_check').all() as any[];
   assert(fk.length === 0, `${fk.length} bản ghi vi phạm khoá ngoại`);
@@ -4350,6 +4680,304 @@ check('Sửa được bảng quyền theo vai, và không tự khoá mình ra ng
     .prepare(`SELECT COUNT(*) n FROM audit_logs WHERE action LIKE 'role.permission.%'`)
     .get() as any;
   assert(log.n >= 2, `Chỉ ghi được ${log.n} dòng nhật ký cho việc sửa quyền`);
+});
+
+check('Chuyển lớp khi còn case dở thì BẮT BUỘC có thông tin bàn giao', () => {
+  const row = conn
+    .prepare(
+      `SELECT e.student_id AS sid, e.class_id AS cid FROM enrollments e
+        WHERE e.status = 'active'
+          AND EXISTS (SELECT 1 FROM sos_cases sc
+                       WHERE sc.student_id = e.student_id AND sc.status != 'done')
+        ORDER BY e.student_id LIMIT 1`,
+    )
+    .get() as any;
+  assert(row, 'Dữ liệu demo không có em nào vừa đang học vừa còn case dở');
+  const target = (conn
+    .prepare(`SELECT id FROM classes WHERE id != ? AND status = 'active' ORDER BY id LIMIT 1`)
+    .get(row.cid) as any).id;
+
+  /* Thiếu thông tin bàn giao thì KHÔNG chuyển được — và lời từ chối nói rõ vì sao. */
+  assertThrows(
+    () => students.transferStudent(P.admin, row.sid, target, demoToday(), 'Đổi lớp'),
+    /bàn giao/i, 'Chuyển được lớp mà không bàn giao gì cả',
+  );
+
+  /* Bản tóm tắt bàn giao phải bày sẵn đúng những case còn dở, không bắt gõ lại. */
+  const brief = students.handoverBrief(row.sid);
+  assert(brief.cases.length > 0, 'Bản tóm tắt bàn giao không liệt kê case nào');
+
+  /* Có ghi chú và người nhận thì chuyển được, và case đổi người phụ trách. */
+  const receiver = (conn.prepare(`SELECT id FROM users WHERE status='active' ORDER BY id LIMIT 1`).get() as any).id;
+  students.transferStudent(P.admin, row.sid, target, demoToday(), 'Đổi lớp', {
+    note: 'Em đang dở phương án Reading, tuần sau có buổi tutor.',
+    receiverUserId: receiver,
+  });
+  for (const c of brief.cases) {
+    const now = conn.prepare('SELECT owner_user_id, status FROM sos_cases WHERE id = ?').get(c.id) as any;
+    if (now.status !== 'done') {
+      assert(now.owner_user_id === receiver, `Case ${c.id} không được bàn giao sang người nhận`);
+    }
+  }
+  /* Và ghi chú bàn giao nằm trong hành trình của em, không biến mất. */
+  const ev = conn
+    .prepare(`SELECT detail FROM journey_events WHERE student_id = ? AND event_type = 'transfer' ORDER BY id DESC LIMIT 1`)
+    .get(row.sid) as any;
+  assert((ev?.detail ?? '').includes('tutor'), 'Ghi chú bàn giao không được lưu vào hành trình');
+});
+
+
+/* ============================================================ mục 8 · Tiến độ công việc */
+
+check('Bảng Tiến độ công việc chỉ mở cho Quản trị hệ thống và Quản lý chi nhánh', () => {
+  assert(mgmt.canSeeBoard(P.admin), 'Quản trị hệ thống không vào được bảng công việc');
+  assert(mgmt.canSeeBoard(P.mbManager), 'Quản lý chi nhánh không vào được bảng công việc');
+  const teacher = Object.entries(P).find(([k]) => k.toLowerCase().includes('teacher'))?.[1] as any;
+  if (teacher) assert(!mgmt.canSeeBoard(teacher), 'Giáo viên vẫn nhìn thấy toàn bộ bảng công việc');
+});
+
+check('Một công việc có MỘT định danh: việc con không lên bảng chính, việc cha đếm hộ', () => {
+  const board = mgmt.listMgmtTasks(P.admin, {});
+  const withSubs = board.rows.find((r: any) => r.subTotal > 0);
+  assert(withSubs, 'Dữ liệu demo không có việc nào chia việc con');
+  const detail = mgmt.mgmtTaskDetail(P.admin, withSubs!.id);
+  assert(detail.subtasks.length === withSubs!.subTotal,
+    `Bảng nói ${withSubs!.subTotal} việc con nhưng mở ra thấy ${detail.subtasks.length}`);
+  /* Không việc con nào được xuất hiện thành một dòng riêng trên bảng chính. */
+  for (const sub of detail.subtasks) {
+    assert(!board.rows.some((r: any) => r.id === sub.id),
+      `Việc con "${sub.title}" bị đếm hai lần: vừa là việc con, vừa là một dòng riêng`);
+  }
+});
+
+check('Việc con chỉ có MỘT tầng, và tạm ngưng / dừng hẳn bắt buộc có lý do', () => {
+  const board = mgmt.listMgmtTasks(P.admin, {});
+  const parent = board.rows.find((r: any) => r.subTotal > 0)!;
+  const sub = mgmt.mgmtTaskDetail(P.admin, parent.id).subtasks[0];
+
+  assertThrows(
+    () => mgmt.createMgmtTask(P.admin, {
+      title: 'Việc cháu', group: 'curriculum', assigneeUserId: parent.assigneeUserId,
+      due: '2026-10-01', parentTaskId: sub.id,
+    }),
+    /một tầng/i, 'Tạo được việc con của việc con',
+  );
+
+  for (const p of ['paused', 'stopped'] as const) {
+    assertThrows(
+      () => mgmt.updateMgmtTask(P.admin, parent.id, { progress: p, note: null }),
+      /lý do|vì sao/i, `Đổi sang "${p}" mà không cần nói lý do`,
+    );
+  }
+});
+
+check('Việc cha còn việc con dang dở thì chưa đánh dấu hoàn thành được', () => {
+  const board = mgmt.listMgmtTasks(P.admin, {});
+  const parent = board.rows.find((r: any) => r.subTotal > r.subDone);
+  assert(parent, 'Dữ liệu demo không có việc cha nào còn việc con dở');
+  assertThrows(
+    () => mgmt.updateMgmtTask(P.admin, parent!.id, { progress: 'done', note: 'xong rồi' }),
+    /việc con/i, 'Đóng được việc cha trong khi việc con còn dở',
+  );
+});
+
+check('Mỗi lần cập nhật là một dòng lịch sử, không đè lên lần trước', () => {
+  const board = mgmt.listMgmtTasks(P.admin, {});
+  const row = board.rows.find((r: any) => r.subTotal === 0 && r.progress !== 'done' && r.progress !== 'stopped')!;
+  const before = mgmt.mgmtTaskDetail(P.admin, row.id).updates.length;
+  mgmt.updateMgmtTask(P.admin, row.id, { progress: 'doing', note: 'Đã gọi điện lần một.' });
+  mgmt.updateMgmtTask(P.admin, row.id, { progress: 'doing', note: 'Đã gọi điện lần hai.' });
+  const after = mgmt.mgmtTaskDetail(P.admin, row.id);
+  assert(after.updates.length === before + 2,
+    `Ghi hai lần cập nhật nhưng lịch sử chỉ tăng ${after.updates.length - before} dòng`);
+  /* Lần mới nhất đứng đầu, và nội dung cũ vẫn đọc lại được. */
+  assert(after.updates[0].note === 'Đã gọi điện lần hai.', 'Lần cập nhật mới nhất không đứng đầu lịch sử');
+  assert(after.updates.some((u: any) => u.note === 'Đã gọi điện lần một.'),
+    'Lần cập nhật trước đã bị xoá mất');
+});
+
+check('Người theo dõi xem được nhưng không cập nhật hộ', () => {
+  const board = mgmt.listMgmtTasks(P.admin, {});
+  const row = board.rows.find((r: any) => r.subTotal === 0 && r.progress !== 'done' && r.progress !== 'stopped')!;
+  const other = (conn
+    .prepare(`SELECT id FROM users WHERE status='active' AND id != ? ORDER BY id LIMIT 1`)
+    .get(row.assigneeUserId) as any).id;
+  mgmt.editMgmtTask(P.admin, row.id, { watcherUserId: other });
+  const detail = mgmt.mgmtTaskDetail(P.admin, row.id);
+  assert(detail.watcherUserId === other, 'Không gán được người theo dõi');
+  /* Người theo dõi không phải người phụ trách — bảng phải nói rõ hai vai khác nhau. */
+  assert(detail.watcherUserId !== detail.assigneeUserId,
+    'Người theo dõi và người phụ trách đang bị trộn làm một');
+});
+
+
+check('Bảng "Việc cần lưu ý" chỉ đếm trong phạm vi người đang xem', () => {
+  /*
+   * Lỗi cũ: hàng của chi nhánh ghi 11 học viên mà hàng "Tất cả chi nhánh" ngay dưới ghi 40 —
+   * vì câu lệnh lấy sĩ số của mọi lớp trong trung tâm, không lọc theo phạm vi người xem.
+   */
+  const all = pulse.branchPulse(P.admin, {}) as any;
+  const mine = pulse.branchPulse(P.mbManager, {}) as any;
+  assert(mine.total.size < all.total.size,
+    `Quản lý một chi nhánh thấy tổng ${mine.total.size} bằng cả trung tâm ${all.total.size}`);
+  const sumRows = mine.rows.reduce((z: number, r: any) => z + r.metrics.size, 0);
+  assert(sumRows <= mine.total.size,
+    `Cộng các hàng ra ${sumRows} mà hàng tổng ghi ${mine.total.size}`);
+});
+
+
+// ==================================================================== mục 12.1
+
+console.log('\n32. Mười sáu phép kiểm nghiệp vụ bắt buộc của mục 12.1');
+
+check('[12.1-5] Bảng giáo viên đếm case theo NGƯỜI PHỤ TRÁCH, không theo mọi GV cùng lớp', () => {
+  const branch = (conn.prepare("SELECT id FROM branches WHERE code = 'CP'").get() as any).id;
+  const board = pulse.branchPulse(P.admin, { branchId: branch }) as any;
+  assert(board, 'Không đọc được bảng Việc cần lưu ý của Cẩm Phả');
+  for (const person of board.people as any[]) {
+    const real = (conn
+      .prepare(
+        `SELECT COUNT(*) n FROM sos_cases sc
+           LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
+           LEFT JOIN enrollments e ON e.student_id = sc.student_id AND e.status = 'active'
+           JOIN classes cl ON cl.id = COALESCE(e.class_id, a.class_id)
+          WHERE sc.owner_user_id = ? AND sc.status != 'done' AND cl.branch_id = ?`,
+      )
+      .get(person.id, branch) as any).n;
+    assert(person.cases === real,
+      `${person.name}: bảng ghi ${person.cases} case phụ trách, dữ liệu có ${real}`);
+  }
+  /* Và phải có ít nhất một người thật sự đang phụ trách case, nếu không phép kiểm rỗng nghĩa. */
+  assert(board.people.some((x: any) => x.cases > 0), 'Không ai đang phụ trách case ở Cẩm Phả');
+});
+
+check('[12.1-6] Người được phép nhập hộ KHÔNG tự thành người nợ việc của cả chi nhánh', () => {
+  /*
+   * Quản trị hệ thống có quyền sửa điểm mọi kỹ năng để gỡ sự cố. Nhưng "sửa được" không phải
+   * "đây là việc của tôi" — nếu trộn hai thứ đó thì mở Toàn cảnh lên là thấy mình đang nợ
+   * điểm của cả trung tâm, và danh sách việc đó không ai đọc.
+   */
+  const adminScore = (mywork.myWork(P.admin, {}).items ?? []).filter((i: any) => i.group === 'score');
+  assert(adminScore.length === 0,
+    `Quản trị hệ thống đang bị giao ${adminScore.length} nhóm việc nhập điểm mà họ không được phân công`);
+  /*
+   * Nhưng giáo viên ĐƯỢC PHÂN CÔNG thì vẫn phải thấy việc của mình. Chọn người theo phân
+   * công ĐANG CÓ chứ không viết cứng một lớp: các phép kiểm trước đó có xếp lại giáo viên.
+   */
+  const anyTeacher = conn
+    .prepare(
+      `SELECT ta.user_id AS id FROM teacher_assignments ta
+         JOIN assessment_attempts a ON a.class_id = ta.class_id
+         JOIN report_periods rp ON rp.id = a.planned_period_id
+         LEFT JOIN assessment_scores sc ON sc.attempt_id = a.id AND sc.skill = ta.skill
+        WHERE ta.status = 'active' AND ta.skill IS NOT NULL
+          AND a.status != 'cancelled' AND rp.week_start <= ?
+          AND sc.band IS NULL AND sc.raw_score IS NULL
+        LIMIT 1`,
+    )
+    .get(TODAY) as any;
+  assert(anyTeacher, 'Không còn giáo viên nào đang nợ điểm để đối chứng');
+  const gv = loadPrincipal(anyTeacher.id);
+  assert((mywork.myWork(gv, {}).items ?? []).some((i: any) => i.group === 'score'),
+    'Giáo viên được phân công lại không thấy việc nhập điểm của chính mình');
+});
+
+check('[12.1-9] Bấm một con số mở đúng tập dữ liệu — kể cả SOS 3 và Chờ duyệt', () => {
+  /* SOS 3 trên bảng tổng hợp = số HỌC VIÊN có kết quả gần nhất ở mức 3, đếm bằng standing. */
+  const board = summary.branchSummary(P.admin, {});
+  const sos3 = board.rows.reduce((z: number, r: any) => z + (r.cells.sos3?.value ?? 0), 0);
+  const ids = (conn
+    .prepare(
+      `SELECT DISTINCT e.student_id AS id FROM enrollments e
+         JOIN students s ON s.id = e.student_id
+        WHERE e.status = 'active' AND s.status = 'active' AND s.archived_at IS NULL`,
+    )
+    .all() as any[]).map((r) => r.id);
+  const real = [...standing.standingFor(ids).values()].filter((x: any) => x.sosLevel === 3).length;
+  assert(sos3 === real, `Bảng nói ${sos3} em ở SOS 3, standing tính ra ${real}`);
+
+  /* Chờ duyệt phải lọc đúng chi nhánh, không lấy cả hệ thống. */
+  const cp = (conn.prepare("SELECT id FROM branches WHERE code = 'CP'").get() as any).id;
+  const cpBoard = pulse.branchPulse(P.admin, { branchId: cp }) as any;
+  assert(cpBoard, 'Không đọc được bảng Việc cần lưu ý của Cẩm Phả');
+  const cpReal = (conn
+    .prepare(
+      `SELECT COUNT(*) n FROM case_interventions iv
+         JOIN sos_cases sc ON sc.id = iv.case_id
+         LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
+         LEFT JOIN enrollments e ON e.student_id = sc.student_id AND e.status = 'active'
+         JOIN classes cl ON cl.id = COALESCE(e.class_id, a.class_id)
+        WHERE iv.approval_state = 'pending' AND cl.branch_id = ?`,
+    )
+    .get(cp) as any).n;
+  assert(cpBoard.total.pendingApproval === cpReal,
+    `Cẩm Phả: bảng nói ${cpBoard.total.pendingApproval} đề xuất chờ duyệt, dữ liệu có ${cpReal}`);
+});
+
+check('[12.1] Chỉ một số ít việc quá hạn — không để cả màn hình đỏ', () => {
+  /*
+   * Mục 11.6: khoảng một nửa học viên ổn định, và chỉ vài case quá hạn rõ ràng. Một bản demo
+   * đỏ rực thì người xem không phân biệt được chỗ nào thật sự gấp, và cũng không tin nữa.
+   */
+  const t = demoToday();
+  const openPlans = (conn
+    .prepare(
+      `SELECT COUNT(*) n FROM case_interventions iv
+        WHERE iv.followup_due IS NOT NULL AND iv.status NOT IN ('completed','cancelled')`,
+    )
+    .get() as any).n;
+  const overdue = (conn
+    .prepare(
+      `SELECT COUNT(*) n FROM case_interventions iv
+        WHERE iv.followup_due IS NOT NULL AND iv.followup_due < ?
+          AND iv.status NOT IN ('completed','cancelled')
+          AND NOT EXISTS (SELECT 1 FROM case_followups f WHERE f.intervention_id = iv.id)`,
+    )
+    .get(t) as any).n;
+  assert(overdue > 0, 'Không có phương án nào quá hạn — không thử được cách hệ thống báo quá hạn');
+  assert(overdue <= Math.ceil(openPlans / 2),
+    `${overdue}/${openPlans} phương án đang chạy bị quá hạn — quá nửa, bản demo đỏ rực`);
+
+  /* Và khoảng một nửa học viên đang học không có case nào đang mở. */
+  const active = (conn
+    .prepare(`SELECT COUNT(DISTINCT student_id) n FROM enrollments WHERE status='active'`)
+    .get() as any).n;
+  const withCase = (conn
+    .prepare(
+      `SELECT COUNT(DISTINCT sc.student_id) n FROM sos_cases sc
+         JOIN enrollments e ON e.student_id = sc.student_id AND e.status='active'
+        WHERE sc.status != 'done'`,
+    )
+    .get() as any).n;
+  assert(withCase < active,
+    `Cả ${withCase}/${active} học viên đang học đều có case mở — bộ demo mất cân bằng`);
+});
+
+
+check('[12.1-1] Lộ trình đã khép vẫn nói được kết quả gần nhất, không ghi "chưa có kết quả"', () => {
+  /*
+   * Em đã hoàn thành lộ trình và đi thi thật vẫn có bốn lượt MT đã chấm. Nếu đầu hồ sơ chỉ
+   * đọc lộ trình đang chạy thì nó ghi "Chưa có kết quả trong lộ trình này" ngay phía trên
+   * bảng điểm đầy đủ — người đọc chỉ có thể kết luận là phần mềm hỏng.
+   */
+  const done = conn
+    .prepare(
+      `SELECT lc.student_id AS id FROM learning_cycles lc
+        WHERE lc.status = 'completed'
+          AND NOT EXISTS (SELECT 1 FROM learning_cycles o
+                           WHERE o.student_id = lc.student_id AND o.status = 'active')
+          AND EXISTS (SELECT 1 FROM assessment_attempts a
+                       JOIN assessment_scores s ON s.attempt_id = a.id
+                      WHERE a.cycle_id = lc.id AND s.band IS NOT NULL)
+        LIMIT 1`,
+    )
+    .get() as any;
+  assert(done, 'Bộ demo thiếu em đã khép lộ trình mà vẫn có điểm');
+  const st = standing.standingFor([done.id]).get(done.id)!;
+  assert(st.attemptId !== null,
+    'Em đã khép lộ trình lại không có kết quả nào — đầu hồ sơ sẽ ghi "chưa có kết quả"');
+  assert(!/chưa có kết quả/i.test(standing.standingLine(st)),
+    `Câu tình trạng vẫn nói chưa có kết quả: "${standing.standingLine(st)}"`);
 });
 
 console.log(`\n${'='.repeat(60)}`);

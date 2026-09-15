@@ -5,7 +5,8 @@ import {
 } from '../../../shared/domain/index.ts';
 import { scopeFor, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
-import { currentSosByStudent, listCases } from '../cases/cases.ts';
+import { listCases } from '../cases/cases.ts';
+import { standingFor } from '../students/standing.ts';
 
 /**
  * BẢNG TỔNG HỢP CHO QUẢN LÝ — một hàng cho mỗi chi nhánh, hoặc mỗi lớp khi đã chọn chi nhánh.
@@ -40,22 +41,28 @@ export type SummaryColumn = {
 /** Sáu cột môn của bảng tổng hợp: năm ô của Fast Track cộng thêm W của Normal. */
 const SUMMARY_SKILLS = ['listening', 'reading', 'writing1', 'writing2', 'writing', 'speaking'] as const;
 
+/**
+ * BỐN BỘ CỘT (mục 4.3).
+ *
+ * Bộ MẶC ĐỊNH nay đúng bằng bộ cột owner chốt cho chế độ "Vấn đề":
+ *
+ *   Chi nhánh/Lớp · HV có case · Case mở · Thiếu phương án · Cần cập nhật · Quá hạn
+ *
+ * Bộ "Cần chú ý" cũ đã BỎ: nó trộn ba loại số khác đơn vị (học viên, case, phương án) vào
+ * một bảng không có tên chung, và không ai đọc ra được nó đang nói về cái gì.
+ */
 export const SUMMARY_PRESETS = [
   {
-    key: 'default', label: 'Mặc định',
-    columns: ['students', 'openCases', 'sos3', 'sos2', 'sos1', 'behaviour'],
+    key: 'default', label: 'Vấn đề',
+    columns: ['caseStudents', 'openCases', 'noPlan', 'overdueReview', 'overdueContact'],
   },
   {
-    key: 'sos', label: 'SOS',
-    columns: ['students', 'sos3', 'sos2', 'sos1', 'openCases'],
+    key: 'sos', label: 'Mức SOS',
+    columns: ['students', 'sos3', 'sos2', 'sos1', 'caseStudents', 'openCases'],
   },
   {
-    key: 'skills', label: 'Cụ thể',
+    key: 'skills', label: 'Theo kỹ năng',
     columns: ['openCases', ...SUMMARY_SKILLS.map((s) => `skill_${s}`), 'behaviour'],
-  },
-  {
-    key: 'attention', label: 'Cần chú ý',
-    columns: ['students', 'sos3', 'working', 'noPlan', 'overdueReview', 'pendingApproval', 'overdueContact'],
   },
   { key: 'all', label: 'Tất cả', columns: [] as string[] },
 ] as const;
@@ -75,7 +82,10 @@ export const SUMMARY_PRESETS = [
 export function summaryColumns(): SummaryColumn[] {
   return [
     { key: 'students', label: 'Sĩ số', group: 'total', hint: 'Học viên đang học, không tính em đã kết thúc' },
-    { key: 'openCases', label: 'Case', group: 'total', hint: 'Tổng case đang mở / trong đó chưa có phương án' },
+    { key: 'caseStudents', label: 'HV có case', group: 'total',
+      hint: 'Đếm HỌC VIÊN đang có ít nhất một case mở — một em ba case vẫn chỉ tính một lần' },
+    { key: 'openCases', label: 'Case mở', group: 'total',
+      hint: 'Đếm từng CASE đang mở — đơn vị khác cột bên trái. Số sau gạch chéo là phần chưa có phương án' },
     { key: 'sos3', label: SOS_LABEL[3], group: 'sos', hint: 'Học viên đang ở mức SOS 3 — đếm người, mỗi em một cột' },
     { key: 'sos2', label: SOS_LABEL[2], group: 'sos', hint: 'Học viên đang ở mức SOS 2' },
     { key: 'sos1', label: SOS_LABEL[1], group: 'sos' , hint: 'Học viên đang ở mức SOS 1' },
@@ -95,13 +105,13 @@ export function summaryColumns(): SummaryColumn[] {
     },
     { key: 'working', label: 'Đang xử lý', group: 'total', hint: 'Case đã có phương án và đang theo dõi' },
     { key: 'noPlan', label: 'Thiếu phương án', group: 'total', hint: 'Case chưa ai ghi sẽ làm gì cho em' },
-    { key: 'overdueReview', label: 'Quá hạn cập nhật', group: 'total',
+    { key: 'overdueReview', label: 'Cần cập nhật', group: 'total',
       hint: 'Đã qua hẹn xem lại mà chưa cập nhật tình hình hoặc kết quả' },
     { key: 'pendingApproval', label: 'Chờ duyệt', group: 'total',
       hint: 'Phương án giáo viên đề xuất, đang chờ Quản lý trả lời' },
     { key: 'reported', label: 'GV báo', group: 'total', hint: 'Case giáo viên tự ghi nhận, không sinh từ điểm' },
     {
-      key: 'overdueContact', label: 'Quá hạn làm', group: 'total',
+      key: 'overdueContact', label: 'Quá hạn', group: 'total',
       hint: 'Học viên có phương án đã lên kế hoạch mà quá hạn làm (3/5/7 ngày theo mức SOS)',
     },
   ];
@@ -165,19 +175,35 @@ export function branchSummary(p: Principal, f: { branchId?: number | null } = {}
   }
 
   const studentCounts = new Map<string, number>();
+  /*
+   * HỌC VIÊN ĐANG HỌC của từng nhóm, kèm mã nhóm để tính tình trạng học thuật ngay bên dưới.
+   * Sĩ số chỉ đếm ghi danh ĐANG HOẠT ĐỘNG — em đã kết thúc hoặc đã chuyển đi không tính.
+   */
+  const studentsOf = new Map<string, number[]>();
   for (const r of conn
     .prepare(
-      `SELECT cl.id AS class_id, cl.branch_id, COUNT(*) AS n
+      `SELECT e.student_id, cl.id AS class_id, cl.branch_id
          FROM enrollments e
          JOIN students s ON s.id = e.student_id
          JOIN classes cl ON cl.id = e.class_id
-        WHERE e.status = 'active' AND s.status = 'active' AND s.archived_at IS NULL
-        GROUP BY cl.id`,
+        WHERE e.status = 'active' AND s.status = 'active' AND s.archived_at IS NULL`,
     )
     .all() as any[]) {
     const k = byBranch ? `b${r.branch_id}` : `c${r.class_id}`;
-    studentCounts.set(k, (studentCounts.get(k) ?? 0) + r.n);
+    studentCounts.set(k, (studentCounts.get(k) ?? 0) + 1);
+    if (!studentsOf.has(k)) studentsOf.set(k, []);
+    studentsOf.get(k)!.push(r.student_id);
   }
+
+  /*
+   * MỨC SOS LẤY TỪ KẾT QUẢ BÀI GẦN NHẤT (mục 2.1), không suy từ case còn mở.
+   *
+   * Tính một lần cho toàn bộ học viên đang hiện trên bảng, rồi mỗi hàng chỉ việc đếm. Đây
+   * cũng chính là phép tính mà bảng lớp và hồ sơ học viên dùng, nên ba màn không thể nói ba
+   * con số khác nhau về cùng một em.
+   */
+  const allStudentIds = [...new Set([...studentsOf.values()].flat())];
+  const standing = standingFor(allStudentIds);
 
   /*
    * PHƯƠNG ÁN QUÁ HẠN LÀM — đếm theo HỌC VIÊN, không theo phương án.
@@ -244,20 +270,16 @@ export function branchSummary(p: Principal, f: { branchId?: number | null } = {}
     const q = (extra: string) => `/?tab=tinh-hinh${g.branchId ? `&cn=${g.branchId}` : ''}${extra}`;
 
     /*
-     * MỖI HỌC VIÊN CHỈ ĐỨNG Ở ĐÚNG MỘT CỘT SOS — cột của LƯỢT MT GẦN NHẤT.
+     * MỖI HỌC VIÊN ĐỨNG ĐÚNG MỘT CỘT SOS — cột của BÀI ĐÁNH GIÁ GẦN NHẤT của em.
      *
-     * Phép đếm nằm ở `currentSosByStudent` của `services/cases.ts` — dùng chung với bảng
-     * lớp và khối Việc cần lưu ý, để ba màn không thể nói ba con số khác nhau về một em.
+     * Em chưa thi lượt nào, hoặc thi rồi mà chưa nhập ô điểm nào, thì KHÔNG vào cột nào cả:
+     * "chưa biết" không phải là "đạt", và cũng không phải là một mức SOS.
      *
-     * Case do giáo viên tự báo không có `sosLevel` nên không tham gia phép đếm này —
-     * chúng đã có cột "GV báo" riêng.
+     * Ba cột SOS cộng lại vì thế luôn ≤ sĩ số, và chúng loại trừ nhau thật.
      */
-    const currentSos = currentSosByStudent(open);
-    const sosStudents = (lv: number) => {
-      let n = 0;
-      for (const level of currentSos.values()) if (level === lv) n += 1;
-      return n;
-    };
+    const mineStudents = studentsOf.get(g.key) ?? [];
+    const sosStudents = (lv: number) =>
+      mineStudents.filter((id) => standing.get(id)?.sosLevel === lv).length;
     const skillCell = (s: string): Cell => {
       const list = open.filter((c) => (LEGACY_SKILL_ROLLUP[c.topic ?? ''] ?? c.topic) === s);
       return { value: list.length, of: list.filter((c) => c.state === 'no_plan').length, href: q(`&ky-nang=${s}`) };
@@ -276,6 +298,14 @@ export function branchSummary(p: Principal, f: { branchId?: number | null } = {}
       openCases: {
         value: open.length,
         of: open.filter((c) => c.state === 'no_plan').length,
+        href: q(''),
+      },
+      /*
+       * HỌC VIÊN CÓ CASE — đơn vị khác hẳn cột "Case mở" ngay bên cạnh, và cố ý khác (mục 2.2).
+       * Một em ba case là MỘT học viên và BA case; hai con số này không bao giờ được trộn.
+       */
+      caseStudents: {
+        value: new Set(open.map((c) => c.studentId).filter((x) => x !== null)).size,
         href: q(''),
       },
       working: { value: open.filter((c) => c.state === 'working').length, href: q('&tinh-hinh=working') },

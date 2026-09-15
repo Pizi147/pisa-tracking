@@ -4,7 +4,7 @@ import { useApi } from '../../lib/useApi.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { Drawer } from '../../ui/Drawer.tsx';
 import { Field, SectionNote } from '../../ui/ui.tsx';
-import { fmtBand } from '../../lib/format.ts';
+import { fmtBand, fmtDate } from '../../lib/format.ts';
 import {
   BASELINE_SOURCES, BASELINE_SOURCE_LABEL, CYCLE_OUTCOMES, CYCLE_OUTCOME_LABEL,
 } from '@shared/domain/index.ts';
@@ -25,15 +25,17 @@ import {
  * Riêng "Kế hoạch học" là một panel lớn có sẵn — chọn nó thì panel này ĐÓNG rồi panel kia
  * mở, để không bao giờ có hai lớp panel chồng nhau.
  */
-type Job = 'menu' | 'baseline' | 'target' | 'outcome' | 'transfer';
+type Job = 'menu' | 'info' | 'baseline' | 'target' | 'outcome' | 'transfer';
 
 const JOB_LABEL: Record<Exclude<Job, 'menu'>, string> = {
+  info: 'Thông tin học viên',
   baseline: 'Điểm đầu vào của lộ trình',
   target: 'Đổi mục tiêu',
   outcome: 'Kết luận lộ trình',
   transfer: 'Chuyển lớp',
 };
 const JOB_HINT: Record<Exclude<Job, 'menu'>, string> = {
+  info: 'Tên, ngày sinh, người tư vấn, ghi chú.',
   baseline: 'Em vào học ở mức nào — khác hẳn “bài Mock đầu tiên được mấy điểm”.',
   target: 'Đổi đích cần đạt, và ghi lại vì sao đổi.',
   outcome: 'Khép lại lộ trình này: có đạt mục tiêu hay không, dựa trên đâu.',
@@ -44,7 +46,10 @@ export function StudentManagePanel({
   open, onClose, student, cycle, attempts, canEdit, onOpenPlan, onDone,
 }: {
   open: boolean; onClose: () => void;
-  student: { id: number; name: string; classId: number | null };
+  student: {
+    id: number; name: string; classId: number | null;
+    dob?: string | null; consultantName?: string | null; note?: string | null;
+  };
   cycle: any | null;
   attempts: any[];
   canEdit: boolean;
@@ -55,9 +60,16 @@ export function StudentManagePanel({
   const [job, setJob] = useState<Job>('menu');
   const close = () => { onClose(); setJob('menu'); };
 
+  /*
+   * BỐN VIỆC CỦA MENU ⋮ (mục 6.4): Thông tin · Lộ trình · Chuyển lớp · Kết luận lộ trình.
+   *
+   * "Lộ trình" gồm đầu vào, mục tiêu, dự kiến thi và lịch MT — nên ở đây nó tách thành mấy
+   * mục con thay vì một mục gộp mơ hồ. Lớp Normal không có target hay đầu vào IELTS nên hai
+   * mục đó không hiện: một mục bấm vào rồi mới biết không dùng được là một mục thừa.
+   */
   const jobs: Exclude<Job, 'menu'>[] = cycle
-    ? (cycle.ratio ? ['outcome', 'transfer'] : ['baseline', 'target', 'outcome', 'transfer'])
-    : ['transfer'];
+    ? (cycle.ratio ? ['info', 'outcome', 'transfer'] : ['info', 'baseline', 'target', 'outcome', 'transfer'])
+    : ['info', 'transfer'];
 
   return (
     <Drawer open={open} onClose={close} width="max-w-xl"
@@ -91,8 +103,10 @@ export function StudentManagePanel({
           {job === 'transfer'
             ? <TransferForm studentId={student.id} currentClassId={student.classId}
                 onDone={() => { onDone(); close(); }} />
-            : <CycleForm kind={job} cycle={cycle} attempts={attempts}
-                onDone={() => { onDone(); close(); }} />}
+            : job === 'info'
+              ? <InfoForm student={student} onDone={() => { onDone(); close(); }} />
+              : <CycleForm kind={job} cycle={cycle} attempts={attempts}
+                  onDone={() => { onDone(); close(); }} />}
         </div>
       )}
     </Drawer>
@@ -249,15 +263,70 @@ function CycleForm({ kind, cycle, attempts, onDone }: {
   );
 }
 
+/** Thông tin cá nhân — chỗ SỬA những thứ mà hồ sơ đang báo là thiếu (mục 6.4). */
+function InfoForm({ student, onDone }: {
+  student: { id: number; name: string; dob?: string | null; consultantName?: string | null; note?: string | null };
+  onDone: () => void;
+}) {
+  const toast = useToast();
+  const [fullName, setFullName] = useState(student.name);
+  const [dob, setDob] = useState(student.dob ?? '');
+  const [consultantName, setConsultant] = useState(student.consultantName ?? '');
+  const [note, setNote] = useState(student.note ?? '');
+  const [busy, setBusy] = useState(false);
+
+  return (
+    <div className="space-y-3">
+      <Field label="Họ tên" required>
+        <input className="field" value={fullName} onChange={(e) => setFullName(e.target.value)} />
+      </Field>
+      <Field label="Ngày sinh">
+        <input type="date" className="field" value={dob} onChange={(e) => setDob(e.target.value)} />
+      </Field>
+      <Field label="Người tư vấn">
+        <input className="field" value={consultantName} onChange={(e) => setConsultant(e.target.value)} />
+      </Field>
+      <Field label="Ghi chú">
+        <textarea className="field" rows={3} value={note} onChange={(e) => setNote(e.target.value)} />
+      </Field>
+      <SectionNote>
+        Mục tiêu, dự kiến thi và lịch MT KHÔNG nằm ở đây — chúng thuộc về lộ trình, sửa ở mục
+        “Kế hoạch học” và “Đổi mục tiêu”.
+      </SectionNote>
+      <button className="btn btn-primary" disabled={busy}
+        onClick={async () => {
+          setBusy(true);
+          try {
+            await api.patch(`/students/${student.id}`, {
+              fullName, dob: dob || null,
+              consultantName: consultantName || null, note: note || null,
+            });
+            invalidate('/students'); onDone(); toast.push('ok', 'Đã lưu');
+          } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
+        }}>
+        {busy ? 'Đang lưu…' : 'Lưu'}
+      </button>
+    </div>
+  );
+}
+
 function TransferForm({ studentId, currentClassId, onDone }: {
   studentId: number; currentClassId: number | null; onDone: () => void;
 }) {
   const toast = useToast();
   const classes = useApi<any[]>('/ref/classes');
+  /* Những thứ còn dở của em — bày sẵn để người chuyển không phải tự nhớ và chép lại. */
+  const brief = useApi<{ cases: any[]; openPlans: number }>(`/students/${studentId}/handover`, [studentId]);
+  const people = useApi<any[]>('/ref/people');
   const [toClassId, setToClassId] = useState<number | null>(null);
   const [date, setDate] = useState('');
   const [reason, setReason] = useState('');
+  const [handoverNote, setHandoverNote] = useState('');
+  const [receiverUserId, setReceiver] = useState('');
   const [busy, setBusy] = useState(false);
+
+  const openCases = brief.data?.cases ?? [];
+  const needHandover = openCases.length > 0;
 
   const submit = async () => {
     if (!toClassId) { toast.push('error', 'Cần chọn lớp đích.'); return; }
@@ -265,8 +334,10 @@ function TransferForm({ studentId, currentClassId, onDone }: {
     try {
       await api.post(`/students/${studentId}/transfer`, {
         toClassId, effectiveDate: date || undefined, reason,
+        handoverNote: handoverNote || undefined,
+        receiverUserId: receiverUserId || undefined,
       });
-      invalidate('/students'); invalidate('/attempts'); invalidate('/overview');
+      invalidate('/students'); invalidate('/attempts'); invalidate('/overview'); invalidate('/cases');
       onDone(); toast.push('ok', 'Đã chuyển lớp');
     } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
   };
@@ -288,6 +359,47 @@ function TransferForm({ studentId, currentClassId, onDone }: {
       <Field label="Lý do">
         <input className="field" value={reason} onChange={(e) => setReason(e.target.value)} />
       </Field>
+
+      {/*
+        THÔNG TIN BÀN GIAO — bắt buộc khi em còn case dở (mục 6.4).
+
+        Chuyển lớp xong mà không bàn giao thì case còn mở rơi vào khoảng trống: cô cũ không
+        còn dạy em, cô mới không biết em đang dở chuyện gì. Danh sách bên dưới bày sẵn đúng
+        những thứ đang dở, nên người chuyển chỉ cần dặn thêm, không phải chép lại.
+      */}
+      {needHandover && (
+        <div className="surface-2 rounded-lg p-3 space-y-2">
+          <span className="label m-0">Thông tin bàn giao</span>
+          <ul className="text-xs text-slate-300 list-none p-0 m-0 space-y-1">
+            {openCases.map((c) => (
+              <li key={c.id} className="flex flex-wrap items-center gap-2">
+                <span className="text-slate-100">{c.title}</span>
+                <span className="text-slate-500">
+                  {c.ownerName ?? 'chưa có người phụ trách'}
+                  {c.openPlans > 0 ? ` · ${c.openPlans} phương án đang chạy` : ' · chưa có phương án'}
+                  {c.nextDue ? ` · hạn ${fmtDate(c.nextDue)}` : ''}
+                </span>
+              </li>
+            ))}
+          </ul>
+          <Field label="Dặn người nhận" required
+            hint="Cô mới nhận lớp sẽ đọc đúng dòng này để biết em đang vướng gì.">
+            <textarea className="field" rows={2} value={handoverNote}
+              onChange={(e) => setHandoverNote(e.target.value)}
+              placeholder="Em đang dở phương án Reading, tuần sau có buổi tutor đã hẹn." />
+          </Field>
+          <Field label="Người tiếp nhận"
+            hint="Chọn thì các case còn mở đổi người phụ trách sang người này. Lịch sử ai đã làm gì vẫn giữ nguyên.">
+            <select className="field" value={receiverUserId} onChange={(e) => setReceiver(e.target.value)}>
+              <option value="">Giữ nguyên người phụ trách hiện tại</option>
+              {(people.data ?? []).map((u: any) => (
+                <option key={u.id} value={u.id}>{u.fullName ?? u.full_name}</option>
+              ))}
+            </select>
+          </Field>
+        </div>
+      )}
+
       <SectionNote>
         Lượt chưa xong sẽ chuyển sang lớp mới. Lượt đã xong giữ nguyên lớp cũ để không viết
         lại lịch sử.

@@ -31,6 +31,9 @@ import * as planningSvc from '../fasttrack/planning.ts';
 import { signalsFor } from '../worklist/signals.ts';
 import * as accountSvc from '../platform/accounts.ts';
 import * as sysconfigSvc from '../platform/sysconfig.ts';
+import * as mgmtSvc from '../worklist/mgmttasks.ts';
+import * as highlightSvc from '../worklist/highlights.ts';
+import * as outcomeSvc from '../worklist/outcomes.ts';
 import { weeklyRollup } from '../worklist/weekly.ts';
 import { myWork } from '../worklist/mywork.ts';
 import * as caseSvc from '../cases/cases.ts';
@@ -101,6 +104,12 @@ api.get('/demo/session', wrap((req) => {
        * được xem cái nào có thể tách ra mà không phải sửa giao diện.
        */
       academic: !scopeFor(p, PERMISSIONS.MEETING_VIEW).none,
+      /*
+       * TIẾN ĐỘ CÔNG VIỆC — toàn bộ tab chỉ dành cho Quản trị hệ thống và Quản lý chi nhánh
+       * (mục 8.3). Giáo viên vẫn nhận và cập nhật được việc con giao cho mình, nhưng qua
+       * Toàn cảnh và đường dẫn trực tiếp, không qua tab quản lý.
+       */
+      mgmtTasks: mgmtSvc.canSeeBoard(p),
       admin: can(p, PERMISSIONS.ADMIN_CONFIG, { anyScope: true }),
     },
   };
@@ -304,6 +313,8 @@ api.post('/attempts/bulk-plan', requireAuth, wrap((req) => {
 api.get('/weekly-rollup', requireAuth, wrap((req) => weeklyRollup(principalOf(req), {
   branchId: toInt(req.query?.branchId),
   weeks: toInt(req.query?.weeks) ?? undefined,
+  /* Normal và FT đếm hai thứ khác nhau (mục 4.2) — bộ lọc này quyết định nhãn cột luôn. */
+  track: req.query?.track === 'normal' ? 'normal' : req.query?.track === 'ft' ? 'ft' : null,
 })));
 
 /** Việc sinh ra từ dữ liệu — tự hết khi nguồn được xử lý, không có nút đóng giả. */
@@ -583,6 +594,8 @@ api.get('/cases', requireAuth, wrap((req) => {
     status: qStr(req, 'status'), origin: qStr(req, 'origin'),
     group: qStr(req, 'group'), skill: qStr(req, 'skill'), queue: qStr(req, 'queue'),
     classKind: qStr(req, 'classKind'),
+    ownerUserId: toInt(req.query?.ownerUserId),
+    noOwner: qStr(req, 'noOwner') === '1',
     /* Có `cycleId` = chỉ lộ trình đó; không có = TOÀN BỘ hành trình, kể cả lớp cũ. */
     cycleId: toInt(req.query?.cycleId),
   });
@@ -597,10 +610,32 @@ api.get('/summary', requireAuth, wrap((req) => {
   return summarySvc.branchSummary(principalOf(req), { branchId: qInt(req, 'branchId') });
 }));
 
+/**
+ * Phương án & kết quả (mục 4.3): những gì đã làm cho học viên có ăn thua không.
+ * Một phương án là MỘT phương án dù cập nhật ba lần; báo cáo dùng kết quả gần nhất.
+ */
+api.get('/outcomes', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return outcomeSvc.outcomeReport(principalOf(req), {
+    branchId: qInt(req, 'branchId'),
+    track: req.query?.track === 'normal' ? 'normal' : req.query?.track === 'ft' ? 'ft' : null,
+    topic: req.query?.topic ? String(req.query.topic) : null,
+  });
+}));
+
 /** Khối riêng của Quản lý: chi nhánh đang tắc ở đâu (theo lớp), và ai đang tắc (theo người). */
 api.get('/branch-pulse', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   return pulseSvc.branchPulse(principalOf(req), { branchId: qInt(req, 'branchId') });
+}));
+
+/**
+ * Sự kiện nổi bật: tuần này, tuần tới, tuần nữa có gì đáng để ý (mục 3.5).
+ * Đây là SỰ KIỆN sắp đến, không phải việc đang nợ — nên tách hẳn khỏi `/my-work`.
+ */
+api.get('/highlights', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return highlightSvc.highlights(principalOf(req), { branchId: qInt(req, 'branchId') });
 }));
 
 /** Lựa chọn hiển thị riêng của từng người — bộ cột đang xem, chi nhánh xem lần cuối… */
@@ -695,6 +730,12 @@ api.patch('/cases/:id/disposition', requireAuth, wrap((req) => {
   return caseSvc.setDisposition(principalOf(req), pInt(req, 'id'), req.body ?? {});
 }));
 
+api.put('/cases/:id/owner', requireAuth, wrap((req) => {
+  const raw = (req.body ?? {}).ownerUserId;
+  return caseSvc.setCaseOwner(principalOf(req), pInt(req, 'id'),
+    raw === null || raw === undefined || raw === '' ? null : Number(raw));
+}));
+
 /** Bộ phân loại vấn đề để dựng ô chọn. Dữ liệu, không viết cứng trong giao diện. */
 api.get('/ref/issue-taxonomy', requireAuth, wrap(() => ({
   /** Hai đầu mục và chủ đề của chúng — dựng ô chọn từ dữ liệu, không viết cứng trong giao diện. */
@@ -749,10 +790,21 @@ api.patch('/students/:id', requireAuth, wrap((req) => {
 
 api.post('/students/:id/transfer', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
-  const { toClassId, effectiveDate, reason } = req.body ?? {};
+  const { toClassId, effectiveDate, reason, handoverNote, receiverUserId } = req.body ?? {};
   if (!toClassId) throw badRequest('Cần chọn lớp đích.');
   return studentSvc.transferStudent(principalOf(req), pInt(req, 'id'), Number(toClassId),
-    effectiveDate ?? demoToday(), reason);
+    effectiveDate ?? demoToday(), reason, {
+      note: handoverNote ?? null,
+      receiverUserId: receiverUserId ? Number(receiverUserId) : null,
+    });
+}));
+
+/** Những thứ còn dở của một em — để màn chuyển lớp bày sẵn, người chuyển không phải chép tay. */
+api.get('/students/:id/handover', requireAuth, wrap((req) => {
+  const p = principalOf(req);
+  const id = pInt(req, 'id');
+  require_(p, PERMISSIONS.STUDENT_VIEW, { studentId: id }, 'Học viên này nằm ngoài phạm vi bạn được xem.');
+  return studentSvc.handoverBrief(id);
 }));
 
 api.post('/students/:id/status', requireAuth, wrap((req) => {
@@ -840,6 +892,48 @@ api.post('/notifications/:id/read', requireAuth, wrap((req) => {
     .run(demoToday(), pInt(req, 'id'), p.userId);
   return { ok: true };
 }));
+
+// ============================================================ Tiến độ công việc (mục 8)
+
+api.get('/mgmt-tasks', requireAuth, wrap((req) => mgmtSvc.listMgmtTasks(principalOf(req), {
+  branchId: qInt(req, 'branchId'),
+  group: qStr(req, 'group'),
+  progress: qStr(req, 'progress'),
+  assigneeUserId: qInt(req, 'assigneeUserId'),
+  periodId: qInt(req, 'periodId'),
+})));
+
+/** Việc được giao cho chính người đang xem — hiện ở Toàn cảnh, không cần mở tab quản lý. */
+api.get('/mgmt-tasks/mine', requireAuth, wrap((req) => mgmtSvc.myMgmtTasks(principalOf(req))));
+
+api.get('/mgmt-tasks/:id', requireAuth, wrap((req) =>
+  mgmtSvc.mgmtTaskDetail(principalOf(req), pInt(req, 'id'))));
+
+api.post('/mgmt-tasks', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  const b = req.body ?? {};
+  return mgmtSvc.createMgmtTask(principalOf(req), {
+    title: String(b.title ?? ''), group: String(b.group ?? ''),
+    branchId: b.branchId ? Number(b.branchId) : null,
+    assigneeUserId: b.assigneeUserId ? Number(b.assigneeUserId) : null,
+    watcherUserId: b.watcherUserId ? Number(b.watcherUserId) : null,
+    due: b.due ?? null, note: b.note ?? null,
+    parentTaskId: b.parentTaskId ? Number(b.parentTaskId) : null,
+    caseIds: Array.isArray(b.caseIds) ? b.caseIds.map(Number) : [],
+  });
+}));
+
+api.post('/mgmt-tasks/:id/update', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  const b = req.body ?? {};
+  return mgmtSvc.updateMgmtTask(principalOf(req), pInt(req, 'id'), {
+    progress: String(b.progress ?? ''), note: b.note ?? null, reason: b.reason ?? null,
+    on: b.on ?? null, reviewOn: b.reviewOn ?? null,
+  });
+}));
+
+api.patch('/mgmt-tasks/:id', requireAuth, wrap((req) =>
+  mgmtSvc.editMgmtTask(principalOf(req), pInt(req, 'id'), req.body ?? {})));
 
 // ============================================================ Quản trị (lối phụ)
 

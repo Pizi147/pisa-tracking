@@ -60,32 +60,57 @@ const CLASS_COLS: { key: keyof Metrics; label: string; hint: string; tone?: 'war
 const PEOPLE_COLS: { key: keyof PersonRow; label: string; hint: string }[] = [
   { key: 'mtPending', label: 'MT chưa nhập', hint: 'Ô điểm còn trống ở các lượt MT đã thi.' },
   { key: 'mtOverdue', label: 'MT quá hạn nhập', hint: 'Trong số trên, phần đã qua hạn nhập điểm.' },
-  { key: 'cases', label: 'Case', hint: 'Case của học viên trong những lớp người này dạy.' },
+  { key: 'cases', label: 'Case phụ trách', hint: 'Case mà người này là NGƯỜI PHỤ TRÁCH chính — không phải mọi case của lớp họ dạy.' },
   { key: 'noPlan', label: 'Thiếu phương án', hint: 'Case chưa ai ghi sẽ làm gì.' },
   { key: 'overdueUpdate', label: 'Quá hạn cập nhật case', hint: 'Đã qua hẹn xem lại mà chưa cập nhật.' },
   { key: 'pendingApproval', label: 'Đề xuất chờ duyệt', hint: 'Đề xuất của người này đang chờ trả lời.' },
 ];
 
-/** Bộ lọc học viên mà mỗi cột dẫn tới — bấm một con số phải ra đúng những bản ghi tạo nên nó. */
-const COL_FILTER: Partial<Record<keyof Metrics, string>> = {
+/**
+ * BẤM MỘT CON SỐ PHẢI RA ĐÚNG NHỮNG BẢN GHI TẠO NÊN NÓ (mục 3.1 · 4.4) — nhưng "đúng chỗ"
+ * khác nhau tuỳ cột đang đếm cái gì:
+ *
+ *   ĐẾM HỌC VIÊN  → mở danh sách học viên, vì đó là thứ con số đang nói tới.
+ *   ĐẾM VIỆC      → LỌC ngay danh sách Việc cần làm ở dưới, không nhảy sang màn khác.
+ *                   Nhảy đi là mất chỗ đang đứng, mà việc thì vẫn ở màn này.
+ */
+const COL_STUDENTS: Partial<Record<keyof Metrics, string>> = {
   needSupport: 'case_working',
   cases: 'case_working',
-  noPlan: 'case_no_plan',
-  overdueUpdate: 'case_overdue',
+};
+const COL_WORK: Partial<Record<keyof Metrics, string>> = {
+  noPlan: 'no_plan',
+  overdueUpdate: 'result',
+  pendingApproval: 'decide',
 };
 
-export function BranchPulse({ branchId }: { branchId: number | null }) {
+export function BranchPulse({ branchId, activeGroup, onGroup }: {
+  branchId: number | null;
+  /** Nhóm việc đang lọc ở danh sách bên dưới — để bảng tô sáng đúng cột đang áp dụng. */
+  activeGroup?: string | null;
+  onGroup?: (g: string | null) => void;
+}) {
   const navigate = useNavigate();
   const { data, loading } = useApi<Pulse | null>(
     `/branch-pulse${branchId ? `?branchId=${branchId}` : ''}`, [branchId],
   );
   const [open, setOpen] = useState(true);
-  const [showPeople, setShowPeople] = useState(false);
+  /*
+   * THEO LỚP hay THEO GIÁO VIÊN — hai góc nhìn của CÙNG một khu tổng hợp (mục 3.4), không
+   * phải hai bảng xếp chồng. Chỉ có góc nhìn theo giáo viên khi đã chọn MỘT chi nhánh: trộn
+   * giáo viên của năm chi nhánh vào một bảng thì không ai đọc ra điều gì.
+   */
+  const [view, setView] = useState<'classes' | 'people'>('classes');
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [sort, setSort] = useState<{ col: keyof Metrics; dir: 'asc' | 'desc' } | null>(null);
+  const [pSort, setPSort] = useState<{ col: keyof PersonRow; dir: 'asc' | 'desc' } | null>(null);
 
   if (loading) return <Card title="Việc cần lưu ý"><Skeleton rows={3} /></Card>;
   if (!data) return null;
+
+  /* Chưa chọn chi nhánh thì không có góc nhìn theo giáo viên — và cũng không giữ lại nút. */
+  const canSeePeople = branchId !== null && data.people.length > 0;
+  const mode = canSeePeople ? view : 'classes';
 
   const cols = data.canApprove ? CLASS_COLS : CLASS_COLS.filter((c) => c.key !== 'pendingApproval');
 
@@ -102,7 +127,10 @@ export function BranchPulse({ branchId }: { branchId: number | null }) {
   };
 
   const goto = (col: keyof Metrics, row: { id?: number; classId?: number }) => {
-    const f = COL_FILTER[col];
+    /* Cột đếm VIỆC: lọc tại chỗ, không rời màn. */
+    const work = COL_WORK[col];
+    if (work && onGroup) { onGroup(activeGroup === work ? null : work); return; }
+    const f = COL_STUDENTS[col];
     const p = new URLSearchParams();
     if (f) p.set('view', f);
     if (row.classId) p.set('open', String(row.classId));
@@ -126,6 +154,19 @@ export function BranchPulse({ branchId }: { branchId: number | null }) {
       : { col: key, dir: 'desc' })),
   });
 
+  const pSortOf = (key: keyof PersonRow) => ({
+    active: pSort?.col === key,
+    dir: (pSort?.col === key ? pSort.dir : 'desc') as 'asc' | 'desc',
+    onSort: () => setPSort((x) => (x?.col === key
+      ? { col: key, dir: x.dir === 'desc' ? 'asc' : 'desc' }
+      : { col: key, dir: 'desc' })),
+  });
+  const sortedPeople = pSort
+    ? [...data.people].sort((a, b) => (pSort.dir === 'desc'
+        ? (b[pSort.col] as number) - (a[pSort.col] as number)
+        : (a[pSort.col] as number) - (b[pSort.col] as number)))
+    : data.people;
+
   const metricCells = (m: Metrics, row: { id?: number; classId?: number }) =>
     cols.map((c) => (
       <td key={c.key} className="td text-right">{num(m[c.key], c.tone, () => goto(c.key, row))}</td>
@@ -145,9 +186,17 @@ export function BranchPulse({ branchId }: { branchId: number | null }) {
           )}
         </button>
       }
+      action={open && canSeePeople ? (
+        <div className="flex flex-wrap gap-1">
+          <button className={`btn btn-sm ${mode === 'classes' ? 'btn-primary' : ''}`}
+            onClick={() => setView('classes')}>Theo lớp</button>
+          <button className={`btn btn-sm ${mode === 'people' ? 'btn-primary' : ''}`}
+            onClick={() => setView('people')}>Theo giáo viên</button>
+        </div>
+      ) : undefined}
       bodyClass="p-0"
     >
-      {!open ? null : data.rows.length === 0 ? (
+      {!open || mode === 'people' ? null : data.rows.length === 0 ? (
         <p className="px-4 py-3 text-sm text-slate-400 m-0">
           Không lớp nào đang tồn việc. Bảng này chỉ hiện chỗ đang tắc, nên trống là tin tốt.
         </p>
@@ -206,46 +255,41 @@ export function BranchPulse({ branchId }: { branchId: number | null }) {
         </div>
       )}
 
-      {open && (
-        <div className="border-t" style={{ borderColor: 'var(--line)' }}>
-          <button className="btn btn-sm btn-ghost m-2" onClick={() => setShowPeople((v) => !v)}>
-            {showPeople ? '− Ẩn' : '+ Xem theo giáo viên'} ({data.people.length})
-          </button>
-          {showPeople && (
-            <>
-              <div className="table-scroll">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr>
-                      <Th className="sticky-col">Giáo viên</Th>
-                      <Th align="right" hint="Số lớp người này dạy trong chi nhánh đang xem.">Lớp</Th>
-                      {PEOPLE_COLS.map((c) => (
-                        <Th key={c.key} align="right" hint={c.hint}>{c.label}</Th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {data.people.map((x) => (
-                      <tr key={x.id}>
-                        <td className="td sticky-col whitespace-nowrap text-slate-100">{x.name}</td>
-                        <td className="td text-right">{num(x.classCount)}</td>
-                        {PEOPLE_COLS.map((c) => (
-                          <td key={c.key} className="td text-right">{num(x[c.key] as number)}</td>
-                        ))}
-                      </tr>
+      {open && mode === 'people' && (
+        <>
+          <div className="table-scroll border-t" style={{ borderColor: 'var(--line)' }}>
+            <table className="w-full text-sm">
+              <thead>
+                <tr>
+                  <Th className="sticky-col">Giáo viên</Th>
+                  <Th align="right" hint="Số lớp người này dạy trong chi nhánh đang xem."
+                    sort={pSortOf('classCount')}>Lớp</Th>
+                  {PEOPLE_COLS.map((c) => (
+                    <Th key={c.key} align="right" hint={c.hint} sort={pSortOf(c.key)}>{c.label}</Th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {sortedPeople.map((x) => (
+                  <tr key={x.id}>
+                    <td className="td sticky-col whitespace-nowrap text-slate-100">{x.name}</td>
+                    <td className="td text-right">{num(x.classCount)}</td>
+                    {PEOPLE_COLS.map((c) => (
+                      <td key={c.key} className="td text-right">{num(x[c.key] as number)}</td>
                     ))}
-                  </tbody>
-                </table>
-              </div>
-              <p className="px-4 py-2.5 text-[11px] text-slate-500 m-0">
-                Bảng này để biết <strong>cần nói chuyện với ai</strong>, không phải để xếp hạng — nên
-                không có màu tốt/xấu và không sắp theo "ai tệ nhất". Số ở đây là việc đang tồn, và tồn
-                vì nhiều lý do khác nhau. Khi đang xem một chi nhánh, số chỉ tính phần việc của người
-                đó <strong>tại chi nhánh ấy</strong>.
-              </p>
-            </>
-          )}
-        </div>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p className="px-4 py-2.5 text-[11px] text-slate-500 m-0 border-t" style={{ borderColor: 'var(--line)' }}>
+            Bảng này để biết <strong>cần nói chuyện với ai</strong>, không phải để xếp hạng — nên
+            không có màu tốt/xấu. Số ở đây là việc đang tồn, và tồn vì nhiều lý do khác nhau. Số
+            case là case người này <strong>phụ trách</strong>, còn đề xuất chờ duyệt là đề xuất
+            <strong> chính họ gửi</strong> — không đếm sang đầu người nhập hộ. Tất cả chỉ tính
+            trong chi nhánh đang xem.
+          </p>
+        </>
       )}
     </Card>
   );

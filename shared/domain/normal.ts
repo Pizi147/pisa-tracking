@@ -175,11 +175,23 @@ export function caseHeadline(c: {
   sosLevel?: number | null; attemptNo?: number | null;
 }): string {
   const written = (c.summary ?? '').trim();
-  if (written) return written;
-  if (c.originKind === 'teacher_report') return 'Chưa có tóm tắt';
+  /*
+   * CASE DO NGƯỜI BÁO thì lấy đúng câu người ta viết. Không có thì nói thật là chưa có,
+   * chứ không dựng một câu từ dữ liệu mà người báo không hề nói.
+   */
+  if (c.originKind === 'teacher_report') return written || 'Chưa có tóm tắt';
+
+  /*
+   * CASE SINH TỪ ĐIỂM thì PHẦN SUY RA TỪ DỮ LIỆU ĐỨNG TRƯỚC, ghi chú của người dạy đứng sau.
+   *
+   * Trước đây chỉ cần có ai đó gõ một câu là câu suy ra biến mất — và "Em bỏ trống phần
+   * True/False/Not Given" thì hay, nhưng người đọc mất luôn thông tin bài nào và mấy kỹ năng
+   * dưới kỳ vọng. Hai thứ không loại trừ nhau: một cái là căn cứ, một cái là quan sát.
+   */
   const level = c.sosLevel ?? null;
   const where = c.attemptNo ? `MT${c.attemptNo}` : 'Bài đánh giá';
-  if (level === null) return `${where}: chưa đủ căn cứ kết luận`;
-  if (level === 0) return `${where}: đạt kỳ vọng ở mọi kỹ năng`;
-  return `${where}: ${level} kỹ năng dưới kỳ vọng`;
+  const derived = level === null ? `${where}: chưa đủ căn cứ kết luận`
+    : level === 0 ? `${where}: đạt kỳ vọng ở mọi kỹ năng`
+    : `${where}: ${level} kỹ năng dưới kỳ vọng`;
+  return written ? `${derived} — ${written}` : derived;
 }

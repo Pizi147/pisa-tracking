@@ -632,6 +632,18 @@ CREATE TABLE sos_cases (
    * tên cũ nói sai sự thật. Case tạo tay thì ngược lại — không có gì để suy ra, và người
    * tạo biết rõ nhất nên gọi nó là gì.
    */
+  /*
+   * NGƯỜI PHỤ TRÁCH CHÍNH của case — MỘT người, chịu trách nhiệm điều phối (mục 2.3).
+   *
+   * Tách hẳn khỏi hai vai khác vẫn thường bị lẫn với nó:
+   *   · `reported_by`            — người GHI NHẬN vấn đề, có thể là người nhập hộ
+   *   · `case_interventions.performer_user_id` — người THỰC HIỆN một phương án cụ thể
+   *
+   * Không suy người phụ trách từ "mọi giáo viên dạy lớp đó": một lớp có năm giáo viên thì
+   * suy như thế là năm người cùng nợ một việc, và cuối cùng không ai làm. Chưa xác định được
+   * thì để TRỐNG và nói thẳng "chưa có người phụ trách" — đó là một tin cần biết.
+   */
+  owner_user_id INTEGER REFERENCES users(id),
   title TEXT,
 
   /*
@@ -981,6 +993,22 @@ CREATE TABLE tasks (
   due_date TEXT,
   progress TEXT NOT NULL DEFAULT 'not_started',
   note TEXT,
+
+  /*
+   * TIẾN ĐỘ CÔNG VIỆC (mục 8) — bốn cột thêm ở vòng này.
+   *
+   * `group_key`   một trong bốn nhóm quản lý; NULL với việc cũ chưa phân nhóm
+   * `parent_task_id` công việc con — CHỈ MỘT TẦNG. Cây nhiều tầng nghe thì linh hoạt,
+   *               nhưng đọc một bảng lồng bốn tầng thì không ai biết việc nào của ai nữa.
+   * `watcher_user_id` người THEO DÕI — nhìn thấy nhưng KHÔNG tự có quyền sửa (mục 8.3)
+   * `stop_reason` lý do tạm ngưng hoặc dừng hẳn, bắt buộc với hai trạng thái đó
+   * `review_on`   ngày hẹn xem lại của việc đang tạm ngưng
+   */
+  group_key TEXT,
+  parent_task_id INTEGER REFERENCES tasks(id),
+  watcher_user_id INTEGER REFERENCES users(id),
+  stop_reason TEXT,
+  review_on TEXT,
   /*
    * HAI LOẠI VIỆC KHÁC HẲN NHAU:
    *   branch_ops   — giáo trình, vận hành chi nhánh. KHÔNG gắn học viên nào.
@@ -1051,6 +1079,41 @@ CREATE TABLE task_followers (
   PRIMARY KEY (task_id, user_id)
 );
 CREATE INDEX idx_task_follower_user ON task_followers(user_id);
+
+/*
+ * MỖI LẦN CẬP NHẬT MỘT CÔNG VIỆC — ai, lúc nào, trạng thái nào, ghi chú gì (mục 8.4).
+ *
+ * MỘT công việc có MỘT định danh xuyên nhiều tuần; tuần chỉ là cách LỌC các lần cập nhật,
+ * không phải lý do để nhân bản công việc mỗi tuần. Bản trước không có bảng này nên "tiến độ
+ * tuần" phải suy từ trường `progress` hiện tại — tức là mất sạch những gì đã xảy ra trước đó.
+ */
+CREATE TABLE task_updates (
+  id INTEGER PRIMARY KEY,
+  task_id INTEGER NOT NULL REFERENCES tasks(id),
+  /* Tuần của lần cập nhật — để bộ lọc "tuần cập nhật" chạy mà không phải đoán từ ngày. */
+  period_id INTEGER REFERENCES report_periods(id),
+  progress TEXT NOT NULL,
+  note TEXT,
+  actor_user_id INTEGER REFERENCES users(id),
+  updated_on TEXT NOT NULL,
+  created_at TEXT NOT NULL
+);
+CREATE INDEX idx_task_update_task ON task_updates(task_id);
+CREATE INDEX idx_task_update_period ON task_updates(period_id);
+
+/*
+ * CASE LÀM CĂN CỨ cho một công việc quản lý (mục 8.7).
+ *
+ * Liên kết là để nói "việc này sinh ra từ mấy case này", KHÔNG phải để tự tạo phương án cho
+ * từng học viên và cũng không phải để hoàn thành việc là đóng case. Hai thứ có nhịp khác
+ * nhau: tổ chức một lớp tutor xong không có nghĩa là em nào cũng đã tiến bộ.
+ */
+CREATE TABLE task_case_links (
+  task_id INTEGER NOT NULL REFERENCES tasks(id),
+  case_id INTEGER NOT NULL REFERENCES sos_cases(id),
+  created_at TEXT NOT NULL,
+  PRIMARY KEY (task_id, case_id)
+);
 
 CREATE TABLE task_history (
   id INTEGER PRIMARY KEY,

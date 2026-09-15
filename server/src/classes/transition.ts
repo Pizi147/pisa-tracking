@@ -139,10 +139,23 @@ export type TransitionInput = {
   fromClassId: number;
   /** Mở lớp mới: khai mã, chương trình và tuần khai giảng. Bỏ trống nếu chuyển vào lớp có sẵn. */
   newClass?: { code: string; programme: string; startWeekStart?: string | null } | null;
-  /** Mỗi em một lớp đích. Em không có trong danh sách này thì KHÔNG chuyển. */
-  moves: { studentId: number; toClassId?: number | null; toNewClass?: boolean }[];
+  /**
+   * Mỗi em một lớp đích. Em không có trong danh sách này thì KHÔNG chuyển.
+   *
+   * `handoverNote` và `receiverUserId` là NGOẠI LỆ CỦA TỪNG EM: đa số dùng ghi chú chung của
+   * cả đợt, nhưng luôn có một hai em cần dặn riêng — và chỗ dặn riêng ấy phải có, nếu không
+   * người ta sẽ nhét mọi thứ vào ghi chú chung rồi không ai đọc.
+   */
+  moves: {
+    studentId: number; toClassId?: number | null; toNewClass?: boolean;
+    handoverNote?: string | null; receiverUserId?: number | null;
+  }[];
   effectiveDate: string;
   note?: string | null;
+  /** Thông tin bàn giao CHUNG cho cả đợt chuyển tiếp (mục 6.4). */
+  handoverNote?: string | null;
+  /** Người tiếp nhận chung — đổi người phụ trách các case còn mở sang người này. */
+  receiverUserId?: number | null;
 };
 
 /**
@@ -191,8 +204,17 @@ export function applyTransition(p: Principal, input: TransitionInput) {
         continue;
       }
       try {
+        /*
+         * CHUYỂN CẢ LỚP vẫn phải có thông tin bàn giao: ghi chú chung của cả đợt dùng làm
+         * mặc định, còn từng em có ngoại lệ thì ghi riêng ở `m.handoverNote` (mục 6.4).
+         */
         transferStudent(p, m.studentId, target, input.effectiveDate,
-          input.note ?? `Học tiếp sau lớp ${from.code}`);
+          input.note ?? `Học tiếp sau lớp ${from.code}`, {
+            note: (m.handoverNote ?? '').trim()
+              || (input.handoverNote ?? '').trim()
+              || `Chuyển tiếp cả lớp từ ${from.code}. Case còn mở đi theo em sang lớp mới.`,
+            receiverUserId: m.receiverUserId ?? input.receiverUserId ?? null,
+          });
         done.push({ studentId: m.studentId, toClassId: target });
       } catch (e: any) {
         failed.push({ studentId: m.studentId, message: e?.message ?? 'Không chuyển được' });

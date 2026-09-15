@@ -13,6 +13,7 @@ import { assessedBands, evaluateAttempt } from '../fasttrack/scoring.ts';
 import { evaluateRegular, isRatioCycle, programmeByCode, programmeCodeOfCycle, programmeOfClass } from '../normal/regular.ts';
 import { cycleById, cyclesOf, currentCycle, examPlanOf, targetRevisions } from '../fasttrack/cycles.ts';
 import { canCloseCase, parseMetrics } from '../cases/cases.ts';
+import { standingFor, standingLine } from './standing.ts';
 import { missingForStudent, suggestedMockWeeks } from '../classes/schedule.ts';
 
 /**
@@ -514,13 +515,41 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
     )
     .all(...(selected ? [studentId, selected.id] : [studentId])) as any[];
 
+  const standingNow = standingFor([studentId]).get(studentId) ?? null;
+
   return {
     id: s.id, studentCode: s.student_code, fullName: s.full_name, dob: s.dob,
     status: s.status, finishedAt: s.finished_at, archivedAt: s.archived_at,
     consultantName: s.consultant_name, note: s.note,
     currentClass: current
-      ? { id: current.class_id, code: current.class_code, kind: current.class_kind, branchName: current.branch_name }
+      ? {
+        id: current.class_id, code: current.class_code, kind: current.class_kind,
+        branchName: current.branch_name,
+        /* Chương trình của LỚP, và GVCN — hai thứ đầu hồ sơ phải nói ngay (mục 6.2 A). */
+        programme: programmeOfClass(current.class_id)?.name ?? null,
+        coreTeacher: (conn
+          .prepare(
+            `SELECT u.full_name FROM teacher_assignments t JOIN users u ON u.id = t.user_id
+              WHERE t.class_id = ? AND t.is_core = 1 AND t.status = 'active' LIMIT 1`,
+          )
+          .get(current.class_id) as any)?.full_name ?? null,
+      }
       : null,
+    /*
+     * DẢI HÀNH TRÌNH NGẮN (mục 6.2 A): các chương trình em đã đi qua, theo đúng thứ tự.
+     *
+     * Cố ý là một DẢI CHỮ, không phải một timeline lớn: nó chỉ để nhận biết "em này đã qua
+     * FOU rồi BE, giờ đang FT", chứ không phải chỗ đọc lịch sử. Lịch sử đầy đủ nằm ở tab
+     * Hành trình học tập phía dưới.
+     */
+    journeyStrip: allCycles.map((c) => ({
+      id: c.id,
+      label: programmeByCode(c.programme_code)?.name
+        ?? (c.route ? `Fast Track ${c.route}` : cycleLabel(c)),
+      current: c.status === 'active',
+      startedAt: c.started_at, endedAt: c.ended_at,
+      outcome: c.outcome ?? null,
+    })),
     enrollments: enrollments.map((e) => ({
       id: e.id, classId: e.class_id, classCode: e.class_code, branchName: e.branch_name,
       status: e.status, startedAt: e.started_at, endedAt: e.ended_at, endReason: e.end_reason,
@@ -594,16 +623,25 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
           start_period_id: selected.start_period_id,
           exam_month: selected.exam_month,
           target_score: selected.target_score,
+          baseline: selected.baseline_attempt_id !== null || selected.baseline_score !== null,
         }
         : null,
       student: { dob: s.dob },
       isFastTrack: !isRatioCycle(selected ?? {}),
     }),
+    /*
+     * TÌNH TRẠNG HỌC THUẬT HIỆN TẠI — lấy từ KẾT QUẢ BÀI GẦN NHẤT (mục 2.1).
+     *
+     * Đây là thứ thay cho `concerns.maxSos` cũ. `maxSos` đọc mức SOS đã đóng băng trong case
+     * còn mở, nên một em thi MT3 đạt hết mà case MT2 chưa đóng vẫn bị gọi là SOS 1 ngay trên
+     * thẻ tên. Nay mức SOS chỉ nói về BÀI, còn case là một con số đếm riêng.
+     */
+    standing: standingNow,
+    /** Câu tóm tắt một dòng, dựng ở máy chủ để mọi màn nói y hệt nhau. */
+    standingLine: standingNow ? standingLine(standingNow) : null,
     concerns: {
       openCases: openCases.length,
       carriedOver: openCases.filter((c) => c.carriedOver).length,
-      urgent: openCases.filter((c) => c.urgency === 'urgent').length,
-      maxSos: openCases.reduce((m, c) => Math.max(m, c.sosLevel ?? 0), 0),
       activeInterventions: openCases.reduce((n, c) => n + (c.interventionCount ?? 0), 0),
       dueOverdue: openCases.filter((c) => c.dueOverdue).length,
     },

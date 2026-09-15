@@ -27,6 +27,23 @@ cùng một thứ bằng hai cái tên.
 
 ---
 
+## Bộ dữ liệu demo nằm ở đâu
+
+Bộ demo được dựng **từ hành trình học viên**, không phải sinh ngẫu nhiên rồi ghép lại. Bốn
+file, mỗi file một việc:
+
+| File | Chứa gì |
+|---|---|
+| `server/src/seed/journeys.ts` | Kiểu dữ liệu kịch bản · 10 giáo viên · 13 lớp và phân công |
+| `server/src/seed/students.ts` | **Toàn bộ hành trình của 41 học viên**, viết tay từng con số |
+| `server/src/seed/build.ts` | Đọc kịch bản rồi ghi xuống đúng các bảng, theo đúng thứ tự đời thật |
+| `server/src/seed/seed.ts` | Chi nhánh, vai trò, quyền, tài khoản, chương trình, tuần, công việc quản lý |
+
+Muốn **đổi một câu chuyện** thì sửa `students.ts` rồi chạy `npm run seed`. Muốn **thêm một
+loại dữ liệu mới** vào kịch bản thì thêm trường ở `journeys.ts` và xử lý ở `build.ts`.
+
+---
+
 ## Tra nhanh theo việc muốn sửa
 
 ### Học viên
@@ -42,7 +59,9 @@ cùng một thứ bằng hai cái tên.
 | Danh sách lớp và tám bộ lọc | `web/src/modules/students/StudentsPage.tsx` |
 | Tên và điều kiện của tám bộ lọc | `shared/domain/people.ts` → `STUDENT_FILTERS` |
 | Thêm học viên, nhập Excel | `web/src/modules/students/IntakePanel.tsx` · `server/src/classes/intake.ts` |
-| Badge "Thiếu thông tin" | `web/src/modules/students/MissingBadge.tsx` · `server/src/classes/schedule.ts` → `missingForStudent` |
+| Badge "Thiếu thông tin" (chỉ thiếu sót CẢN TRỞ chuyên môn) | `web/src/modules/students/MissingBadge.tsx` · `server/src/classes/schedule.ts` → `missingForStudent` |
+| Câu tình trạng đầu hồ sơ ("MT2 đạt kỳ vọng · còn 2 case…") | `server/src/students/standing.ts` |
+| Lịch sử điểm 2–3 mốc trên bảng lớp | `web/src/modules/students/ClassRoster.tsx` · `server/src/classes/classes.ts` → `classRoster` (`history`) |
 | Chuyển lớp | `server/src/students/students.ts` → `transferStudent` |
 
 ### Lớp học
@@ -114,6 +133,18 @@ cùng một thứ bằng hai cái tên.
 | Bảng tổng hợp chi nhánh/lớp | `web/src/modules/worklist/SummaryTable.tsx` · `server/src/worklist/summary.ts` |
 | Bảng tổng hợp theo tuần | `web/src/modules/worklist/WeeklyBoard.tsx` · `server/src/worklist/weekly.ts` |
 | Quản lý giao việc cho giáo viên | `web/src/modules/worklist/ManagerTasks.tsx` · `server/src/worklist/meeting.ts` |
+| Khối "Sự kiện nổi bật" (tuần này · tuần tới · tuần nữa) | `web/src/modules/worklist/Highlights.tsx` · `server/src/worklist/highlights.ts` |
+| Bảng "Phương án & kết quả" của tab Thực trạng | `web/src/modules/cases/OutcomeTable.tsx` · `server/src/worklist/outcomes.ts` |
+| Tên và ý nghĩa của chín nhóm việc | `server/src/worklist/mywork.ts` → `GROUP_META` |
+| "Việc của tôi" khác "tôi sửa được" | `server/src/permissions.ts` → `mySkills` vs `editableSkills` |
+
+### Tiến độ công việc
+
+| Muốn sửa | Mở file |
+|---|---|
+| Bảng Tiến độ công việc | `web/src/modules/worklist/MgmtTasksPage.tsx` |
+| Luật của bảng đó: việc con một tầng, lý do bắt buộc, đóng việc cha | `server/src/worklist/mgmttasks.ts` |
+| Bốn nhóm công việc và năm trạng thái | `shared/domain/worklist.ts` → `TASK_GROUPS`, `TASK_PROGRESS` |
 
 ### Nền tảng
 

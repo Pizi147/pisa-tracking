@@ -398,6 +398,7 @@ function migrateCaseEngine(applied: string[], skipped: string[]) {
     migrateWeekOnlySchedule(conn, applied);
     migrateNormalFourSkills(conn, applied);
     migrateCaseCycles(conn, applied);
+    migrateMgmtTasks(conn, applied);
 
     /*
      * Case đã đóng theo hệ thống cũ mà không có hướng xử lý: ghi rõ là "đóng theo hệ thống
@@ -1587,6 +1588,8 @@ function migrateCaseCycles(conn: any, applied: string[]) {
   let added = 0;
   /* Tên case người dùng tự đặt, và mối nối sang case trước khi vấn đề tái phát. */
   if (addCol('sos_cases', 'title', 'TEXT')) added += 1;
+  /* Người phụ trách chính của case — tách khỏi người ghi nhận và người thực hiện. */
+  if (addCol('sos_cases', 'owner_user_id', 'INTEGER REFERENCES users(id)')) added += 1;
   if (addCol('sos_cases', 'previous_case_id', 'INTEGER REFERENCES sos_cases(id)')) added += 1;
 
   /* Chu kỳ xử lý nằm TRONG phương án — không có màn quản lý chu kỳ riêng. */
@@ -1641,4 +1644,88 @@ function migrateCaseCycles(conn: any, applied: string[]) {
     const n = conn.prepare('UPDATE case_followups SET cycle_no = 1 WHERE cycle_no IS NULL').run().changes;
     if (n) applied.push(`Gán chu kỳ 1 cho ${n} lần cập nhật kết quả cũ`);
   }
+
+  /*
+   * NGƯỜI PHỤ TRÁCH của case cũ: lấy người THỰC HIỆN phương án đầu tiên, vì đó là người
+   * thật sự đang làm. KHÔNG lấy người ghi nhận — rất nhiều case do Quản lý hoặc người nhập
+   * hộ mở, và gán họ làm người phụ trách là ghi sai trách nhiệm cho cả trăm bản ghi.
+   *
+   * Không suy được thì để TRỐNG, và màn hình sẽ nói "chưa có người phụ trách" kèm đường
+   * phân công — thà nói thật là chưa ai nhận còn hơn gán bừa một cái tên.
+   */
+  if (has('sos_cases') && cols('sos_cases').includes('owner_user_id')) {
+    const n = conn
+      .prepare(
+        `UPDATE sos_cases SET owner_user_id = (
+            SELECT iv.performer_user_id FROM case_interventions iv
+             WHERE iv.case_id = sos_cases.id AND iv.performer_user_id IS NOT NULL
+             ORDER BY iv.id LIMIT 1)
+          WHERE owner_user_id IS NULL
+            AND EXISTS (SELECT 1 FROM case_interventions iv
+                         WHERE iv.case_id = sos_cases.id AND iv.performer_user_id IS NOT NULL)`,
+      )
+      .run().changes;
+    if (n) applied.push(`Gán người phụ trách cho ${n} case cũ theo người thực hiện phương án đầu tiên`);
+  }
+}
+
+/**
+ * VÒNG 6 — BẢNG "TIẾN ĐỘ CÔNG VIỆC" (mục 8).
+ *
+ * Việc của Quản lý trước đây chỉ có tên, hạn và người nhận. Nay mỗi việc còn thuộc một
+ * NHÓM, có thể có VIỆC CON một tầng, có người THEO DÕI, và mỗi lần cập nhật được ghi lại
+ * thành một dòng lịch sử thay vì đè lên trạng thái cũ.
+ *
+ * Cơ sở dữ liệu dựng mới đã có sẵn từ `schema.sql`; hàm này chỉ vá cho cơ sở dữ liệu cũ.
+ * Mọi bước đều kiểm tra trước nên chạy lại lần hai không đổi gì.
+ */
+function migrateMgmtTasks(conn: any, applied: string[]) {
+  const cols = (t: string) => (conn.prepare(`PRAGMA table_info(${t})`).all() as any[]).map((c: any) => c.name);
+  let added = 0;
+  for (const [c, d] of [
+    ['group_key', 'TEXT'],
+    ['parent_task_id', 'INTEGER REFERENCES tasks(id)'],
+    ['watcher_user_id', 'INTEGER REFERENCES users(id)'],
+    ['stop_reason', 'TEXT'],
+    ['review_on', 'TEXT'],
+  ] as const) {
+    if (!cols('tasks').includes(c)) {
+      conn.exec(`ALTER TABLE tasks ADD COLUMN ${c} ${d}`);
+      added++;
+    }
+  }
+  if (added) applied.push(`Bổ sung ${added} cột cho bảng Tiến độ công việc`);
+
+  conn.exec(`
+    CREATE TABLE IF NOT EXISTS task_updates (
+      id INTEGER PRIMARY KEY,
+      task_id INTEGER NOT NULL REFERENCES tasks(id),
+      period_id INTEGER REFERENCES periods(id),
+      progress TEXT NOT NULL,
+      note TEXT,
+      actor_user_id INTEGER REFERENCES users(id),
+      updated_on TEXT NOT NULL,
+      created_at TEXT NOT NULL);
+    CREATE INDEX IF NOT EXISTS idx_task_updates_task ON task_updates(task_id);
+    CREATE TABLE IF NOT EXISTS task_case_links (
+      task_id INTEGER NOT NULL REFERENCES tasks(id),
+      case_id INTEGER NOT NULL REFERENCES sos_cases(id),
+      created_at TEXT NOT NULL,
+      PRIMARY KEY (task_id, case_id));
+    CREATE INDEX IF NOT EXISTS idx_task_parent ON tasks(parent_task_id);
+  `);
+
+  /*
+   * VIỆC CŨ CHƯA CÓ NHÓM: xếp vào "Học sinh / Phụ huynh" nếu việc đó có gắn học viên, còn
+   * lại để TRỐNG. Không đoán bừa nhóm cho việc không có dấu hiệu nào — bảng lọc theo nhóm
+   * mà nhóm sai thì người dùng tìm mãi không thấy việc của mình.
+   */
+  const n = conn
+    .prepare(
+      `UPDATE tasks SET group_key = 'student_parent'
+        WHERE group_key IS NULL
+          AND EXISTS (SELECT 1 FROM task_students ts WHERE ts.task_id = tasks.id)`,
+    )
+    .run().changes;
+  if (n) applied.push(`Xếp ${n} việc cũ có gắn học viên vào nhóm Học sinh / Phụ huynh`);
 }
