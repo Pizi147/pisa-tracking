@@ -5,6 +5,7 @@ import { addDays, badRequest, isIsoDate, normalizeName, notFound, nowIso, padCod
 import { can, require_, type Principal } from '../permissions.ts';
 import { addJourney, writeAudit } from '../platform/audit.ts';
 import { ensurePeriod, mondayOf } from '../platform/week.ts';
+import { ensureSkillRows } from '../fasttrack/skillSchedule.ts';
 
 /**
  * Thêm học viên hàng loạt.
@@ -337,6 +338,8 @@ export function commitIntake(
                  VALUES (?,?,?, 'mock', ?,?, 'planned', ?, ?, ?)`,
               )
               .run(Number(cyc.lastInsertRowid), sid, idx + 1, r.classId, period.id, r.target ?? null, p.userId, nowIso());
+            /* Bốn dòng lịch kỹ năng phải có ngay từ lúc tạo, kể cả khi tạo hàng loạt từ file. */
+            ensureSkillRows(Number((conn.prepare('SELECT last_insert_rowid() AS id').get() as any).id));
           });
         }
       }

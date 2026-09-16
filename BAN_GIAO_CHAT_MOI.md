@@ -59,7 +59,7 @@ quyết. Không dừng ở kế hoạch hay mockup.
 | PR15 | đã merge — https://github.com/Pizi147/pisa-tracking/pull/15 |
 | `main` sau khi merge | `718f81f` (đúng mốc đề bài nêu) |
 | Nhánh làm việc hiện tại | `claude/pisa-progress-local-demo-42ct9j`, đã fast-forward lên `718f81f` |
-| Commit mới của vòng 7 | `0fa1fee` — mục 11 và 3.1 |
+| Commit mới của vòng 7 | `0fa1fee` — mục 11 và 3.1 · tiếp theo là việc 21 (lịch theo kỹ năng) |
 
 ---
 
@@ -88,13 +88,45 @@ quyết. Không dừng ở kế hoạch hay mockup.
 **Kiểm chứng:** 235 phép kiểm tự động đạt hết; hai lượt kiểm lỗi kiểu dữ liệu sạch; bước nâng
 cấp chạy sạch trên database đang có.
 
-### ⬜ Còn lại — chín nhóm việc
+### ✅ Xong — mục 10.1 / 10.4 / 10.5 / 10.7 và 18.1 (việc 21)
+
+**Lịch thi tách ra theo TỪNG KỸ NĂNG.**
+
+- Một đợt kiểm tra không còn buộc phải thi gọn trong một tuần. Mỗi kỹ năng có **tuần thi,
+  phạm vi yêu cầu, trạng thái thi và hạn chấm riêng**. Điểm vẫn thuộc **một đợt duy nhất**:
+  một bảng điểm, một kết luận, không sinh thêm MT nào.
+- **Hạn chấm tính từ tuần thi của chính môn đó.** Fast Track: hết thứ Tư của tuần kế tiếp.
+  Normal: hết Chủ nhật của chính tuần thi. Nên **dời Speaking chỉ đổi hạn Speaking** — ba môn
+  đã thi tuần trước giữ nguyên hạn cũ. Trước đây cả đợt dùng chung một hạn, nên dời một môn
+  là vô tình gia hạn cho cả đợt.
+- **Môn chưa đến tuần thi thì chưa nợ điểm** và không bao giờ bị tô đỏ quá hạn.
+- Một đợt có **tuần hoàn tất theo kế hoạch** = tuần của môn thi muộn nhất. Mọi bảng theo tuần
+  vẫn đếm mỗi đợt đúng một lần, ở tuần đó.
+- Đổi lịch một môn bị **chặn** nếu nó vượt qua đợt MT kế tiếp, và **cảnh báo** (cho xác nhận
+  lại) nếu hai đợt chỉ cách nhau một tuần. R/L/W và Speaking của cùng một đợt không bao giờ
+  bị gọi là "hai MT quá gần". Phần đã thi hoặc đã có điểm thì không dời được.
+- **Trạng thái thi là một xác nhận của người**, không suy từ ô điểm: ô trống có thể là chưa
+  chấm, không được đọc thành "em vắng". Và không nhập được điểm vào phần đã vắng hoặc đã huỷ.
+- **Không bỏ một môn khỏi phạm vi sau khi đã xác nhận em vắng môn đó** — đường lách để biến
+  một đợt thiếu kết quả thành "hoàn tất" đã bị chặn. Lớp Normal luôn phải đủ bốn môn.
+- Bộ đếm dời do vắng đếm **riêng từng kỹ năng trong từng đợt**; dời chủ động của Quản lý không
+  làm tăng nó. (Luồng duyệt dời là việc 25.)
+
+**Trên màn hình:** màn một lượt MT có thêm thẻ **"Lịch thi theo kỹ năng"** — bốn hàng, mỗi
+hàng nói tuần thi, tình trạng, hạn chấm và các nút thao tác của riêng môn đó. Bảng điểm cả lớp
+(cả FT và Normal) hiện hạn theo từng môn thay vì một hạn chung.
+
+**Kiểm chứng:** 250 phép kiểm tự động đạt hết; hai lượt kiểm lỗi kiểu dữ liệu sạch; bước nâng
+cấp chạy sạch trên database đang có — dựng 460 dòng lịch cho 115 đợt, **không đợt nào bị đổi
+tuần**, không dòng vắng nào bị bịa ra, chạy lại lần hai là no-op. Đã bấm thử thật trên trình
+duyệt: đổi tuần Speaking chỉ đổi hạn Speaking, Writing giữ nguyên hạn 23/09.
+
+### ⬜ Còn lại — tám nhóm việc
 
 Đây là danh sách việc đã chia sẵn, theo đúng thứ tự phụ thuộc. **Làm từ trên xuống.**
 
 | # | Việc | Mục trong đề bài |
 |---|---|---|
-| 21 | **Lịch test theo kỹ năng** — một đợt test có lịch, phạm vi yêu cầu, trạng thái thi và hạn chấm **riêng từng kỹ năng**; điểm vẫn thuộc một đợt duy nhất. Hạn chấm FT hết thứ Tư sau tuần thi của chính kỹ năng đó, Normal hết Chủ nhật tuần thi | 10.1 · 10.4 · 10.5 · 10.7 · 18.1 |
 | 22 | **SOS chỉ sinh tín hiệu** — bỏ hẳn việc tự sinh case hoàn chỉnh và phương án; tín hiệu phải được giáo viên xác minh trong **3 ngày** | 6.1 · 6.2 · 9.4 |
 | 23 | **Case: form, phân loại, mức độ, gộp đợt Ý thức/Khác** — tên và mô tả bắt buộc, mức độ chỉ còn **Cần chú ý / Gấp**, phân loại bắt buộc; Ý thức/Khác gộp theo **cửa sổ 4 ngày** | 6.3 · 6.4 · 7 |
 | 24 | **Phương án hỗ trợ** — danh mục theo nhóm, form mới, **bảng hạn**, cập nhật hai tab, một nút hoàn thành case | 8 · 9 |
@@ -119,7 +151,7 @@ Ghi ở đây để người tiếp theo không mất một buổi mò lại.
 | Đường dẫn khi nhập file | Bắt buộc có đuôi `.ts` / `.tsx` trong câu lệnh nhập. Thiếu là gãy |
 | Sau khi sửa phần máy chủ | **Bắt buộc** chạy `npm run build:server`, nếu không thì thay đổi không có tác dụng |
 | Kiểm lỗi kiểu dữ liệu | `npx tsc -p tsconfig.build.json --noEmit` và `npx tsc -p tsconfig.web.json --noEmit` |
-| Chạy kiểm thử | `npm test` — hiện **235 phép kiểm**, phải đạt hết |
+| Chạy kiểm thử | `npm test` — hiện **250 phép kiểm**, phải đạt hết |
 | Dựng lại bộ demo | `npm run seed` (xoá sạch rồi dựng lại) · nâng cấp database đang có: `npm run migrate` |
 | Bật thử | `npm run dev` → http://localhost:5173 |
 | Tắt máy chủ | `for p in 5173 4000; do pid=$(fuser -n tcp $p 2>/dev/null \| tr -d ' '); [ -n "$pid" ] && kill -9 $pid; done` |
@@ -171,7 +203,7 @@ Ba ràng buộc của tôi:
 2. Đừng để máy chủ chạy ngầm. Xong việc thì tắt, kiểm cổng 5173/4000 đã trống.
 3. Đừng merge, đừng deploy, đừng gửi gì ra ngoài nếu tôi không bảo.
 
-Bắt đầu từ việc số 21 trong danh sách còn lại.
+Bắt đầu từ việc số 22 trong danh sách còn lại.
 ```
 
 ### Bước 3 — Kiểm tra chat mới đã hiểu đúng
@@ -180,7 +212,7 @@ Hỏi nó ba câu, nếu trả lời đúng cả ba thì yên tâm giao việc:
 
 1. *"Ngưỡng đạt của lớp Normal bây giờ là bao nhiêu?"* → phải trả lời **70%**
 2. *"Vai trò Admin chi nhánh còn không?"* → phải trả lời **đã bỏ**, vẫn giữ để đọc lịch sử
-3. *"Việc tiếp theo là gì?"* → phải nói về **lịch test tách theo từng kỹ năng**
+3. *"Việc tiếp theo là gì?"* → phải nói về **SOS chỉ sinh tín hiệu, không tự sinh case và phương án**
 
 Nếu nó trả lời sai bất kỳ câu nào, bảo nó đọc lại `BAN_GIAO_CHAT_MOI.md` trước khi làm.
 
@@ -201,4 +233,4 @@ số trên một màn hình là cách chắc chắn nhất để hai màn nói h
 
 ---
 
-*Cập nhật lần cuối: sau commit `0fa1fee`, ngày demo 14/09/2026, 235 phép kiểm đạt.*
+*Cập nhật lần cuối: sau việc 21 (lịch thi theo từng kỹ năng), ngày demo 14/09/2026, 250 phép kiểm đạt.*

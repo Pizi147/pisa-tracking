@@ -34,8 +34,17 @@ export type TestSeed = {
   bands?: Partial<Record<FtSkill, number>>;
   /** Normal: [điểm đạt, tổng điểm]. Thiếu một khoá = chưa nhập. */
   ratios?: Partial<Record<NormalSkill, [number, number]>>;
-  /** Kỹ năng ĐÁNH GIÁ được đánh dấu không mock ở lượt này. */
+  /** Kỹ năng ĐÁNH GIÁ nằm ngoài phạm vi yêu cầu của lượt này. */
   skip?: 'listening' | 'reading' | 'writing' | 'speaking';
+  /**
+   * TUẦN THI RIÊNG của một số kỹ năng, khi đợt này KHÔNG thi gọn trong một tuần (mục 10.1).
+   *
+   * Khoá nào không khai thì dùng `week` chung ở trên. Ví dụ FT thi R/L/W tuần 14/9 rồi
+   * Speaking tuần 21/9: `week: '2026-09-14'` và `skillWeeks: { speaking: '2026-09-21' }`.
+   *
+   * Đây vẫn là MỘT đợt: một định danh, một bảng điểm, một kết luận.
+   */
+  skillWeeks?: Partial<Record<'listening' | 'reading' | 'writing' | 'speaking', string>>;
   /** Ngày nhập điểm. Bỏ trống thì lấy Chủ nhật của tuần. */
   enteredOn?: string;
   /** Hạn nhập điểm riêng do Quản lý đặt, thay hạn mặc định. */

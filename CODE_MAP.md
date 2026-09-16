@@ -86,7 +86,11 @@ loại dữ liệu mới** vào kịch bản thì thêm trường ở `journeys.
 | Bảng nhập điểm cả lớp | `web/src/modules/fasttrack/ScoreSheetPage.tsx` |
 | Panel "Lên kế hoạch MT" | `web/src/modules/fasttrack/MockPlanPanel.tsx` · `server/src/fasttrack/planning.ts` |
 | Nhãn "Dự kiến thi" (tuần / chỉ tháng / chưa biết) | `server/src/fasttrack/cycles.ts` → `examPlanOf` · `web/src/ui/ui.tsx` → `ExamPlanText` |
-| Hạn nhập điểm của một lượt MT | `server/src/platform/week.ts` → `effectiveDeadline` |
+| **Lịch thi, phạm vi, trạng thái thi và hạn chấm CỦA TỪNG KỸ NĂNG** | `server/src/fasttrack/skillSchedule.ts` |
+| Hạn chấm của một kỹ năng (FT thứ Tư tuần sau · Normal Chủ nhật cùng tuần) | `server/src/platform/week.ts` → `skillScoreDeadline` · `effectiveSkillDeadline` |
+| Tuần kế hoạch hoàn tất của một đợt | `server/src/fasttrack/skillSchedule.ts` → `completionWeekOf` · `recomputeCompletionWeek` |
+| Ràng buộc thứ tự đợt khi đổi lịch một kỹ năng | `server/src/fasttrack/skillSchedule.ts` → `checkSkillWeekMove` |
+| Bảng "Lịch thi theo kỹ năng" trong màn một lượt MT | `web/src/modules/fasttrack/MockDetailPage.tsx` → `SkillScheduleCard` |
 | Lịch MT tự đề xuất | `server/src/classes/schedule.ts` → `suggestedMockWeeks` |
 | Lộ trình học của một em, target, dự kiến thi | `server/src/fasttrack/cycles.ts` |
 
@@ -96,7 +100,7 @@ loại dữ liệu mới** vào kịch bản thì thêm trường ở `journeys.
 |---|---|
 | Bốn môn của Normal (L/R/W/S) | `shared/domain/normal.ts` → `REGULAR_SKILLS` |
 | Số tuần và mốc kiểm tra từng chương trình | `shared/domain/normal.ts` → `PROGRAMME_TEMPLATES` |
-| Ngưỡng đạt (60%) và cách chấm theo tỷ lệ | `shared/domain/normal.ts` → `ratioResult` |
+| Ngưỡng đạt (70%) và cách chấm theo tỷ lệ | `shared/domain/normal.ts` → `ratioResult` · `RATIO_PASS_THRESHOLD` |
 | Bảng nhập điểm Progress/Final Test | `web/src/modules/normal/RegularSheetPage.tsx` |
 | Xử lý điểm và sinh case của Normal | `server/src/normal/regular.ts` |
 | Chuyển tiếp lớp FOU → BE → Fast Track | `server/src/classes/transition.ts` · `web/src/modules/classes/TransitionPanel.tsx` |
@@ -184,9 +188,19 @@ qua đây. Quyền = quyền của vai × chi nhánh của chính grant đó × 
 thêm quyền cấp riêng cho cá nhân.
 
 **`server/src/platform/week.ts`** — quy ước tuần (thứ Hai → Chủ nhật, thuộc tháng chứa thứ
-Năm; mã tuần LUÔN kèm năm). Lịch MT, hạn nhập điểm, chu kỳ case và bảng theo tuần đều đếm từ
-đây. Từ vòng 5, một lượt MT được xác định bằng ĐÚNG MỘT TUẦN — không còn ngày thi cụ thể ở
-bất kỳ đâu trong luồng MT, nên cả năm kỹ năng của một lượt dùng chung một hạn nhập điểm.
+Năm; mã tuần LUÔN kèm năm). Lịch MT, hạn chấm, chu kỳ case và bảng theo tuần đều đếm từ đây.
+Không có ngày thi cụ thể ở bất kỳ đâu trong luồng MT: đơn vị nhỏ nhất là TUẦN.
+
+**`server/src/fasttrack/skillSchedule.ts`** — từ vòng 7, mỗi KỸ NĂNG trong một đợt có lịch,
+phạm vi yêu cầu, trạng thái thi và hạn chấm của RIÊNG nó (bảng `attempt_skills`). Đây là nơi
+sở hữu duy nhất của bốn thứ đó; màn nào tự đọc bảng rồi tính lấy hạn là màn sớm muộn nói một
+con số khác. Hai điều dễ hiểu nhầm nhất:
+
+- `assessment_attempts.planned_period_id` KHÔNG còn là "tuần thi của đợt". Nó là **tuần kế
+  hoạch hoàn tất** — tuần muộn nhất trong các kỹ năng bắt buộc — và được tính lại mỗi khi một
+  kỹ năng đổi tuần. Nhờ vậy bảng kết quả theo tuần vẫn đếm mỗi đợt đúng một lần.
+- Điểm vẫn thuộc **một đợt duy nhất**. Tách tuần không tạo đợt mới, không đổi số MT, không
+  ghép điểm từ đợt khác.
 
 **`shared/domain/cases.ts`** — từ vựng của case: sáu hạng mục, năm kết quả, năm bước tiếp theo,
 và `cycleDeadline`. Từ vòng 5, HẠN của một chu kỳ tính ở ĐÚNG MỘT CHỖ này (Chủ nhật của tuần thứ

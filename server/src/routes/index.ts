@@ -11,6 +11,7 @@ import { can, loadPrincipal, permissionSummary, require_, scopeFor } from '../pe
 import { writeAudit } from '../platform/audit.ts';
 import { maybeSimulateReadError, maybeSimulateSaveFailure, pInt, qInt, qStr, wrap } from './helpers.ts';
 import * as attemptSvc from '../fasttrack/attempts.ts';
+import * as skillScheduleSvc from '../fasttrack/skillSchedule.ts';
 import * as cycleSvc from '../fasttrack/cycles.ts';
 import * as summarySvc from '../worklist/summary.ts';
 import * as pulseSvc from '../worklist/branchpulse.ts';
@@ -334,14 +335,45 @@ api.post('/attempts/:id/week', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   const periodId = toInt(req.body?.periodId);
   if (!periodId) throw badRequest('Cần chọn tuần.');
-  return attemptSvc.setPlanningWeek(principalOf(req), pInt(req, 'id'), periodId, req.body?.reason);
+  return attemptSvc.setPlanningWeek(principalOf(req), pInt(req, 'id'), periodId, req.body?.reason,
+    { force: req.body?.force === true });
 }));
 
-/** Đánh dấu một kỹ năng đánh giá là không mock ở lượt này, hoặc bỏ đánh dấu. */
+/** Đánh dấu một kỹ năng đánh giá là ngoài phạm vi yêu cầu của lượt này, hoặc bỏ đánh dấu. */
 api.post('/attempts/:id/skills/:skill/skip', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return attemptSvc.setSkillSkip(principalOf(req), pInt(req, 'id'), String(req.params.skill),
     req.body?.skipped !== false, req.body?.reason);
+}));
+
+/*
+ * LỊCH THI RIÊNG TỪNG KỸ NĂNG (mục 10.1). Ba thao tác, ba câu hỏi khác nhau:
+ * thi tuần nào · đã thi hay vắng · hạn chấm là ngày nào.
+ *
+ * Mỗi đường đi qua đúng hàm nghiệp vụ của nó, nên ràng buộc thứ tự đợt, quyền theo lớp và
+ * nhật ký giữ nguyên dù người dùng vào từ màn chi tiết, bảng điểm hay panel Kế hoạch MT.
+ */
+api.post('/attempts/:id/skills/:skill/week', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  const periodId = toInt(req.body?.periodId);
+  if (!periodId) throw badRequest('Cần chọn tuần thi cho kỹ năng này.');
+  return skillScheduleSvc.setSkillWeek(principalOf(req), pInt(req, 'id'), String(req.params.skill), periodId, {
+    reason: req.body?.reason ?? null,
+    /* Chỉ vượt được CẢNH BÁO (hai đợt cách nhau một tuần), không vượt được ràng buộc thứ tự. */
+    force: req.body?.force === true,
+  });
+}));
+
+api.post('/attempts/:id/skills/:skill/sit', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return skillScheduleSvc.setSitStatus(principalOf(req), pInt(req, 'id'), String(req.params.skill),
+    String(req.body?.status ?? ''), req.body?.note ?? null);
+}));
+
+api.post('/attempts/:id/skills/:skill/deadline', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return skillScheduleSvc.setSkillDeadline(principalOf(req), pInt(req, 'id'), String(req.params.skill),
+    req.body?.deadline ?? null, req.body?.reason ?? null);
 }));
 
 api.post('/attempts/:id/deadline', requireAuth, wrap((req) => {

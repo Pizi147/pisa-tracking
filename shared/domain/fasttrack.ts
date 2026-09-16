@@ -130,30 +130,72 @@ export const ATTEMPT_STATUS_LABEL: Record<AttemptStatus, string> = {
   planned: 'Đã lên lịch', done: 'Đã xong', cancelled: 'Đã huỷ',
 };
 
-/** Kỹ năng của một lượt: mặc định bắt buộc, chỉ Quản lý/Admin CN mới đánh dấu không mock. */
+/**
+ * PHẠM VI YÊU CẦU của một kỹ năng trong một đợt (mục 10.1).
+ *
+ * Mặc định MỌI kỹ năng đều nằm trong phạm vi. Quản lý có thể chốt TRƯỚC là đợt này chỉ
+ * mock một số kỹ năng — trường hợp rất hiếm. Lớp Normal thì không: Progress/Final Test
+ * luôn phải đủ bốn môn, không có thao tác miễn môn.
+ *
+ * "Ngoài phạm vi" KHÁC "vắng": vắng là em đã được xếp lịch mà không thi, và đợt đó vẫn
+ * còn thiếu kết quả. Bỏ một môn khỏi phạm vi SAU khi em vắng chính là cách hợp thức hoá
+ * một đợt thiếu thành hoàn tất, nên hệ thống chặn.
+ */
 export const SKILL_REQUIREMENTS = ['required', 'skipped'] as const;
 export type SkillRequirement = (typeof SKILL_REQUIREMENTS)[number];
 export const SKILL_REQUIREMENT_LABEL: Record<SkillRequirement, string> = {
-  required: 'Có mock', skipped: 'Không mock',
+  required: 'Trong phạm vi', skipped: 'Ngoài phạm vi',
 };
 
 /**
- * Tiến độ thực hiện của một kỹ năng, đếm theo TUẦN của lượt MT.
+ * TRẠNG THÁI THI của một kỹ năng trong một đợt — thứ được LƯU, không suy ra từ điểm.
  *
- * Bỏ trạng thái "đã mock, chưa nhập điểm": nó chỉ tồn tại được khi hệ thống giữ ngày làm
- * bài của riêng từng kỹ năng, mà từ vòng 5 thì một lượt MT chỉ có một tuần. Nay chỉ còn
- * hai câu hỏi thật: đã tới tuần chưa, và đã có điểm chưa.
+ * Ô điểm trống KHÔNG đủ để kết luận em vắng (mục 10.6): có thể giáo viên chưa chấm, có
+ * thể bài thất lạc. Vì thế trạng thái thi là một bản ghi riêng, do người xác nhận.
  */
-export const SKILL_PROGRESS = ['skipped', 'not_scheduled', 'upcoming', 'due', 'scored'] as const;
+export const SIT_STATUSES = ['scheduled', 'sat', 'absent', 'cancelled'] as const;
+export type SitStatus = (typeof SIT_STATUSES)[number];
+export const SIT_STATUS_LABEL: Record<SitStatus, string> = {
+  scheduled: 'Theo lịch',
+  sat: 'Đã thi',
+  absent: 'Đã xác nhận vắng',
+  cancelled: 'Đã huỷ phần thi',
+};
+
+/**
+ * TIẾN ĐỘ của một kỹ năng trong một đợt — mỗi giá trị là MỘT việc khác nhau của người dùng.
+ *
+ * Từ vòng 7 mỗi kỹ năng có LỊCH RIÊNG, nên bảy câu hỏi dưới đây không còn gộp được nữa
+ * (mục 10.5). Đặc biệt "chưa đến lịch" phải tách khỏi "đã đến lịch mà chưa ai xác nhận":
+ * môn thi tuần sau thì chưa nợ ai cái gì, còn môn thi tuần trước thì đang nợ.
+ */
+export const SKILL_PROGRESS = [
+  'skipped', 'not_scheduled', 'upcoming', 'due', 'sat', 'absent', 'scored',
+  'reschedule_pending', 'cancelled',
+] as const;
 export type SkillProgress = (typeof SKILL_PROGRESS)[number];
 export const SKILL_PROGRESS_LABEL: Record<SkillProgress, string> = {
-  skipped: 'Không mock',
+  skipped: 'Ngoài phạm vi',
   not_scheduled: 'Chưa xếp tuần',
-  upcoming: 'Tuần sau',
-  /** Tuần MT đã tới hoặc đã qua mà ô điểm còn trống. */
-  due: 'Chưa nhập điểm',
+  upcoming: 'Chưa đến lịch',
+  /** Tuần thi của CHÍNH kỹ năng này đã tới hoặc đã qua mà chưa ai xác nhận em đã thi. */
+  due: 'Chưa xác nhận đã thi',
+  sat: 'Đã thi, chờ chấm',
+  absent: 'Đã xác nhận vắng',
   scored: 'Đã có điểm',
+  reschedule_pending: 'Chờ duyệt dời',
+  cancelled: 'Đã huỷ phần thi',
 };
+
+/**
+ * Kỹ năng này có đang NỢ ĐIỂM không — tức là đã đến lúc phải có điểm mà chưa có.
+ *
+ * Một nơi trả lời, để hàng đợi "cần nhập điểm", con số quá hạn và badge trên hồ sơ không
+ * bao giờ đếm lệch nhau.
+ */
+export function awaitingScore(progress: SkillProgress): boolean {
+  return progress === 'due' || progress === 'sat';
+}
 
 /**
  * DỰ KIẾN THI của một lộ trình, ở đúng mức chắc chắn mà người ta thực sự biết.

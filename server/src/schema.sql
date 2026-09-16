@@ -488,6 +488,78 @@ CREATE TABLE attempt_skill_skips (
   UNIQUE (attempt_id, skill)
 );
 
+/*
+ * LỊCH THI RIÊNG TỪNG KỸ NĂNG trong một đợt (mục 10.1).
+ *
+ * Một đợt MT vẫn là MỘT đợt, có một định danh, một bảng điểm và một kết luận. Nhưng ngoài
+ * đời các kỹ năng của nó KHÔNG thi cùng lúc: FT hay thi R/L/W một buổi rồi Speaking tuần
+ * sau; lớp Normal có thể trải bốn môn ra hai ba tuần. Trước vòng 7 cả đợt dùng chung một
+ * tuần, nên dời Speaking là kéo theo hạn chấm của cả ba môn đã thi xong từ tuần trước.
+ *
+ * Bảng này là NƠI SỞ HỮU DUY NHẤT của bốn câu hỏi, hỏi riêng cho từng kỹ năng:
+ *
+ *   1. có nằm trong phạm vi yêu cầu của đợt này không   → `required`
+ *   2. thi tuần nào                                     → `planned_period_id`
+ *   3. đã thi, đã vắng hay đã huỷ phần thi              → `sit_status`
+ *   4. hạn chấm là ngày nào                             → suy từ (2) + `deadline_override`
+ *
+ * `assessment_attempts.planned_period_id` KHÔNG biến mất: nó trở thành TUẦN KẾ HOẠCH HOÀN
+ * TẤT của cả đợt — tuần muộn nhất trong các kỹ năng bắt buộc (mục 10.7) — và được tính lại
+ * mỗi khi một kỹ năng đổi tuần. Nhờ đó bảng kết quả theo tuần vẫn đếm mỗi đợt đúng một lần.
+ *
+ * Kỹ năng ở đây là kỹ năng ĐÁNH GIÁ: Writing là MỘT môn thi, không tách W1/W2. Hai task
+ * Writing chấm riêng nhưng luôn làm trong cùng một buổi, nên chúng dùng chung một lịch.
+ */
+CREATE TABLE attempt_skills (
+  id INTEGER PRIMARY KEY,
+  attempt_id INTEGER NOT NULL REFERENCES assessment_attempts(id),
+  skill TEXT NOT NULL,                -- listening | reading | writing | speaking
+
+  /*
+   * PHẠM VI YÊU CẦU. Mặc định 1. Đặt 0 nghĩa là ngay từ đầu đợt này không yêu cầu kỹ năng
+   * đó — KHÁC hẳn "có yêu cầu nhưng chưa có điểm", và cũng khác "đã xếp lịch mà vắng".
+   * Lớp Normal luôn phải đủ bốn môn nên không bao giờ có dòng `required = 0`.
+   */
+  required INTEGER NOT NULL DEFAULT 1,
+  scope_reason TEXT,
+  scope_by INTEGER REFERENCES users(id),
+  scope_at TEXT,
+
+  -- Tuần thi CỦA CHÍNH KỸ NĂNG NÀY. Trống = chưa xếp; không suy ra từ tuần của đợt.
+  planned_period_id INTEGER REFERENCES report_periods(id),
+  /*
+   * 'auto'   tuần này thừa hưởng từ tuần chung của đợt, chưa ai chốt riêng cho kỹ năng
+   * 'manual' một người đã xếp riêng tuần cho kỹ năng này
+   * Cơ chế tự tính lịch theo tuần bắt đầu học chỉ được đụng vào dòng 'auto' (mục 10.4).
+   */
+  plan_source TEXT NOT NULL DEFAULT 'auto',
+
+  -- scheduled (chưa xác nhận gì) | sat (đã thi) | absent (đã xác nhận vắng) | cancelled
+  sit_status TEXT NOT NULL DEFAULT 'scheduled',
+  sit_by INTEGER REFERENCES users(id),
+  sit_at TEXT,
+  sit_note TEXT,
+
+  -- Hạn chấm riêng cho ĐÚNG kỹ năng này, đè lên hạn riêng của cả đợt và hạn mặc định.
+  deadline_override TEXT,
+  deadline_override_by INTEGER REFERENCES users(id),
+  deadline_override_at TEXT,
+  deadline_override_reason TEXT,
+
+  /*
+   * Số lần đã dời vì VẮNG, đếm riêng cho KỸ NĂNG NÀY TRONG ĐỢT NÀY (mục 10.6).
+   * Không dùng chung một lượt miễn phí cho cả R/L/W và Speaking. Dời chủ động của Quản lý
+   * không làm tăng con số này.
+   */
+  absence_move_count INTEGER NOT NULL DEFAULT 0,
+
+  created_at TEXT NOT NULL,
+  updated_at TEXT,
+  UNIQUE (attempt_id, skill)
+);
+CREATE INDEX idx_attempt_skills_attempt ON attempt_skills(attempt_id);
+CREATE INDEX idx_attempt_skills_period ON attempt_skills(planned_period_id);
+
 -- Mỗi kỹ năng NHẬP ĐIỂM một dòng.
 -- Không có dòng, hoặc có dòng mà `band` còn trống = CHƯA NHẬP ĐIỂM.
 CREATE TABLE assessment_scores (

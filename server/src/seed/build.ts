@@ -237,7 +237,25 @@ function insertAttempt(
    * Kịch bản có thể viết nhầm; chỗ này chặn lại thay vì để dữ liệu sai lọt vào bản demo.
    */
   const inFuture = t.week > DEMO_DATE;
-  const status = inFuture ? 'planned' : t.status;
+  /*
+   * "ĐÃ XONG" NGHĨA LÀ ĐỦ ĐIỂM MỌI KỸ NĂNG TRONG PHẠM VI YÊU CẦU — không phải "tuần đã trôi qua".
+   *
+   * Kịch bản khai `status: 'done'` để nói "đợt này đã diễn ra", nhưng một số kịch bản cố ý
+   * chỉ có điểm vài kỹ năng (ví dụ J08 mới nhập 2/4). Tin theo lời khai thì màn hình ghi
+   * "Đã xong" ngay cạnh câu "Có điểm 2/4 kỹ năng" — hai câu nói ngược nhau trên cùng một
+   * thẻ. Nên ở đây tính lại từ chính số điểm trong kịch bản.
+   */
+  const scopeSkills = (['listening', 'reading', 'writing', 'speaking'] as const).filter((k) => k !== t.skip);
+  const scoredKeys = new Set<string>([
+    ...Object.entries(t.bands ?? {}).filter(([, v]) => v !== undefined && v !== null).map(([k]) => k),
+    ...Object.entries(t.ratios ?? {}).filter(([, v]) => !!v).map(([k]) => k),
+  ]);
+  const skillComplete = (skill: string) =>
+    skill === 'writing'
+      ? (scoredKeys.has('writing1') && scoredKeys.has('writing2')) || scoredKeys.has('writing')
+      : scoredKeys.has(skill);
+  const allScored = scopeSkills.length > 0 && scopeSkills.every(skillComplete);
+  const status = inFuture ? 'planned' : t.status === 'done' && !allScored ? 'planned' : t.status;
 
   const info = conn
     .prepare(
@@ -262,8 +280,51 @@ function insertAttempt(
   if (t.skip) {
     conn
       .prepare('INSERT INTO attempt_skill_skips (attempt_id, skill, reason, created_by, created_at) VALUES (?,?,?,?,?)')
-      .run(aid, t.skip, 'Học viên vắng buổi đánh giá kỹ năng này, đã báo trước.', ctx.adminId, NOW);
+      .run(aid, t.skip, 'Quản lý chốt trước: đợt này không yêu cầu kỹ năng đó.', ctx.adminId, NOW);
     counts.skips += 1;
+  }
+
+  /*
+   * BỐN DÒNG LỊCH KỸ NĂNG. Mặc định cả bốn cùng tuần của đợt; kịch bản nào khai `skillWeeks`
+   * thì kỹ năng đó có tuần riêng và được đánh dấu 'manual' — một người đã chốt riêng cho nó.
+   *
+   * Trạng thái thi để 'scheduled', trừ kỹ năng đã có điểm trong chính kịch bản này: có điểm
+   * thì chắc chắn đã thi. KHÔNG dựng sẵn trạng thái vắng ở đây — vắng là một xác nhận của
+   * người, và bộ demo nào cần nó thì khai riêng.
+   */
+  for (const skill of ['listening', 'reading', 'writing', 'speaking'] as const) {
+    const ownWeek = t.skillWeeks?.[skill];
+    const skillPeriod = ownWeek ? ensurePeriod(ownWeek) : period;
+    const didSit = !inFuture && skillComplete(skill);
+    conn
+      .prepare(
+        `INSERT INTO attempt_skills (attempt_id, skill, required, scope_reason, planned_period_id,
+                                     plan_source, sit_status, created_at)
+         VALUES (?,?,?,?,?,?,?,?)`,
+      )
+      .run(
+        aid, skill, t.skip === skill ? 0 : 1,
+        t.skip === skill ? 'Quản lý chốt trước: đợt này không yêu cầu kỹ năng đó.' : null,
+        skillPeriod.id, ownWeek ? 'manual' : 'auto',
+        didSit ? 'sat' : 'scheduled', NOW,
+      );
+  }
+
+  /*
+   * TUẦN KẾ HOẠCH HOÀN TẤT của đợt = tuần MUỘN NHẤT trong các kỹ năng bắt buộc (mục 10.7).
+   * Đợt tách tuần vì thế nằm ở tuần của phần thi cuối cùng, và bảng kết quả theo tuần đếm
+   * nó đúng một lần ở đó.
+   */
+  const latest = conn
+    .prepare(
+      `SELECT ask.planned_period_id AS id FROM attempt_skills ask
+         JOIN report_periods pr ON pr.id = ask.planned_period_id
+        WHERE ask.attempt_id = ? AND ask.required = 1
+        ORDER BY pr.week_start DESC LIMIT 1`,
+    )
+    .get(aid) as any;
+  if (latest?.id && latest.id !== period.id) {
+    conn.prepare('UPDATE assessment_attempts SET planned_period_id = ? WHERE id = ?').run(latest.id, aid);
   }
 
   if (inFuture) return aid;

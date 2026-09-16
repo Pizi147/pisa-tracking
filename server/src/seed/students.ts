@@ -275,9 +275,16 @@ export const STUDENTS: StudentSeed[] = [
             bands: { listening: 6.5, reading: 7.0, writing1: 6.5, writing2: 6.5, speaking: 6.5 },
           },
           {
-            /* Kỳ vọng 7.0. Mới có L và R; Writing và Speaking CHƯA NHẬP → kết luận tạm thời. */
+            /*
+             * Kỳ vọng 7.0. Mới có L và R; Writing và Speaking CHƯA NHẬP → kết luận tạm thời.
+             *
+             * ĐỢT NÀY TÁCH TUẦN: R/L/W thi tuần 14–20/9, Speaking tuần 21–27/9 (mục 10.1).
+             * Writing đang chờ chấm với hạn thứ Tư 23/9, còn Speaking thì CHƯA ĐẾN LỊCH nên
+             * không hiện nợ nhập điểm — đúng điều mục 10.5 đòi.
+             */
             no: 3, kind: 'mock', week: '2026-09-14', status: 'done',
             bands: { listening: 6.5, reading: 7.0 }, enteredOn: '2026-09-14',
+            skillWeeks: { speaking: '2026-09-21' },
           },
         ],
         cases: [
@@ -348,7 +355,15 @@ export const STUDENTS: StudentSeed[] = [
           no: 1, kind: 'mock', week: '2026-08-03', status: 'done',
           bands: { listening: 5.0, reading: 5.5, writing1: 5.5, writing2: 5.5, speaking: 6.0 },
         },
-        { no: 2, kind: 'mock', week: '2026-09-14', status: 'planned' },
+        {
+          /*
+           * CHIỀU NGƯỢC LẠI của J08: Speaking thi TRƯỚC (tuần 14–20/9), R/L/W thi tuần sau
+           * (21–27/9). Đề bài nói rõ cả hai chiều đều có thật, nên bộ demo phải có cả hai.
+           * Tuần kế hoạch hoàn tất của đợt vì thế là tuần 21–27/9, tuần muộn nhất.
+           */
+          no: 2, kind: 'mock', week: '2026-09-14', status: 'planned',
+          skillWeeks: { listening: '2026-09-21', reading: '2026-09-21', writing: '2026-09-21' },
+        },
       ],
       cases: [
         {
@@ -390,7 +405,17 @@ export const STUDENTS: StudentSeed[] = [
         tests: [
           { no: 1, kind: 'progress', week: '2026-08-17', status: 'done',
             ratios: { listening: [28, 40], reading: [27, 40], writing: [15, 20], speaking: [18, 25] } },
-          { no: 2, kind: 'final', week: '2026-09-14', status: 'planned' },
+          {
+            /*
+             * FINAL TEST TRẢI BA TUẦN — cả lớp MB-FOU 12 thi như nhau.
+             * L và R tuần 14–20/9, Writing tuần 21–27/9, Speaking tuần 28/9–4/10.
+             * Hạn chấm của lớp Normal là hết CHỦ NHẬT của chính tuần thi môn đó, nên ba
+             * môn có ba hạn khác nhau và môn chưa tới tuần thì chưa nợ ai cái gì.
+             * Vẫn là MỘT bài Final Test, vẫn phải đủ bốn môn mới hoàn tất.
+             */
+            no: 2, kind: 'final', week: '2026-09-14', status: 'planned',
+            skillWeeks: { writing: '2026-09-21', speaking: '2026-09-28' },
+          },
         ],
       },
     ],
@@ -408,7 +433,17 @@ export const STUDENTS: StudentSeed[] = [
         tests: [
           { no: 1, kind: 'progress', week: '2026-08-17', status: 'done',
             ratios: { listening: [26, 40], reading: [25, 40], writing: [10, 20], speaking: [17, 25] } },
-          { no: 2, kind: 'final', week: '2026-09-14', status: 'planned' },
+          {
+            /*
+             * FINAL TEST TRẢI BA TUẦN — cả lớp MB-FOU 12 thi như nhau.
+             * L và R tuần 14–20/9, Writing tuần 21–27/9, Speaking tuần 28/9–4/10.
+             * Hạn chấm của lớp Normal là hết CHỦ NHẬT của chính tuần thi môn đó, nên ba
+             * môn có ba hạn khác nhau và môn chưa tới tuần thì chưa nợ ai cái gì.
+             * Vẫn là MỘT bài Final Test, vẫn phải đủ bốn môn mới hoàn tất.
+             */
+            no: 2, kind: 'final', week: '2026-09-14', status: 'planned',
+            skillWeeks: { writing: '2026-09-21', speaking: '2026-09-28' },
+          },
         ],
         cases: [
           {
@@ -441,7 +476,17 @@ export const STUDENTS: StudentSeed[] = [
         tests: [
           { no: 1, kind: 'progress', week: '2026-08-17', status: 'done',
             ratios: { listening: [27, 40], reading: [26, 40], writing: [14, 20] } },
-          { no: 2, kind: 'final', week: '2026-09-14', status: 'planned' },
+          {
+            /*
+             * FINAL TEST TRẢI BA TUẦN — cả lớp MB-FOU 12 thi như nhau.
+             * L và R tuần 14–20/9, Writing tuần 21–27/9, Speaking tuần 28/9–4/10.
+             * Hạn chấm của lớp Normal là hết CHỦ NHẬT của chính tuần thi môn đó, nên ba
+             * môn có ba hạn khác nhau và môn chưa tới tuần thì chưa nợ ai cái gì.
+             * Vẫn là MỘT bài Final Test, vẫn phải đủ bốn môn mới hoàn tất.
+             */
+            no: 2, kind: 'final', week: '2026-09-14', status: 'planned',
+            skillWeeks: { writing: '2026-09-21', speaking: '2026-09-28' },
+          },
         ],
       },
     ],
@@ -459,7 +504,17 @@ export const STUDENTS: StudentSeed[] = [
         tests: [
           { no: 1, kind: 'progress', week: '2026-08-17', status: 'done',
             ratios: { listening: [20, 40], reading: [21, 40], writing: [13, 20], speaking: [16, 25] } },
-          { no: 2, kind: 'final', week: '2026-09-14', status: 'planned' },
+          {
+            /*
+             * FINAL TEST TRẢI BA TUẦN — cả lớp MB-FOU 12 thi như nhau.
+             * L và R tuần 14–20/9, Writing tuần 21–27/9, Speaking tuần 28/9–4/10.
+             * Hạn chấm của lớp Normal là hết CHỦ NHẬT của chính tuần thi môn đó, nên ba
+             * môn có ba hạn khác nhau và môn chưa tới tuần thì chưa nợ ai cái gì.
+             * Vẫn là MỘT bài Final Test, vẫn phải đủ bốn môn mới hoàn tất.
+             */
+            no: 2, kind: 'final', week: '2026-09-14', status: 'planned',
+            skillWeeks: { writing: '2026-09-21', speaking: '2026-09-28' },
+          },
         ],
         cases: [
           {

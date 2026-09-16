@@ -1,13 +1,13 @@
 import { db, tx } from '../db.ts';
 import {
-  ATTEMPT_KIND_SHORT, ENTRY_SKILLS, PERMISSIONS,
+  ATTEMPT_KIND_SHORT, ENTRY_SKILLS, PERMISSIONS, awaitingScore,
   type AssessedSkill, type AttemptKind,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { badRequest, notFound, nowIso } from '../util.ts';
 import { can, classScopeSql, editableSkills, isCoreTeacherOf, require_, scopeFor, type Principal } from '../permissions.ts';
 import { writeAudit } from '../platform/audit.ts';
-import { loadBundle, resultOf, skillCells } from '../fasttrack/attempts.ts';
+import { loadBundle, regularSkillViews, resultOf, skillCells } from '../fasttrack/attempts.ts';
 import { examPlanOf } from '../fasttrack/cycles.ts';
 import { standingFor, standingLine } from '../students/standing.ts';
 import { allProgrammes, evaluateRegular, programmeOfClass } from '../normal/regular.ts';
@@ -164,17 +164,20 @@ export function listClassSummaries(p: Principal, f: { branchId?: number; q?: str
        * đã tới ngày làm. Thiếu điểm KHÁC trượt, nên chỉ đếm là việc phải làm chứ không kết luận.
        */
       const rows = bundle.scores.get(a.id) ?? [];
-      const dueForEntry = !!a.period_start && a.period_start <= today;
+      /* Hỏi theo TỪNG MÔN: bốn môn của một bài có thể ở ba tuần khác nhau (mục 10.1). */
+      const views = regularSkillViews(a, bundle.skillRows.get(a.id), rows, today);
       const missingMine = editable.some((k) => {
         const row = rows.find((r) => r.skill === k);
-        return row?.raw_score === null || row?.raw_score === undefined;
+        const scored = row?.raw_score !== null && row?.raw_score !== undefined;
+        const v = views.get(k);
+        return !scored && !!v && awaitingScore(v.progress);
       });
-      if (dueForEntry && missingMine) bump(needScores, a.class_id);
+      if (missingMine) bump(needScores, a.class_id);
       continue;
     }
 
-    const cells = skillCells(p, a, bundle.scores.get(a.id) ?? [], bundle.skips.get(a.id) ?? [], today);
-    if (cells.some((x) => x.canEdit && x.band === null && x.progress === 'due')) {
+    const cells = skillCells(p, a, bundle.scores.get(a.id) ?? [], bundle.skips.get(a.id) ?? [], today, bundle.skillRows.get(a.id));
+    if (cells.some((x) => x.canEdit && x.band === null && awaitingScore(x.progress))) {
       bump(needScores, a.class_id);
     }
   }
@@ -346,7 +349,8 @@ export function classRoster(p: Principal, classId: number, q?: string) {
          * target. Chỉ có đạt/trượt theo tỷ lệ điểm đạt/tổng điểm, và số môn trượt ra mức SOS.
          */
         const r = evaluateRegular(prog!.skills, scores);
-        const dueForEntry = !!a.period_start && a.period_start <= today;
+        /* Lịch và hạn của TỪNG môn — bốn môn của một bài có thể trải hai ba tuần. */
+        const regViews = regularSkillViews(a, bundle.skillRows.get(a.id), scores, today);
         return {
           id: a.id, attemptNo: a.attempt_no, cycleSeq: a.cycle_seq, route: null,
           kind: a.kind, kindLabel: ATTEMPT_KIND_SHORT[a.kind as AttemptKind] ?? a.kind,
@@ -370,19 +374,23 @@ export function classRoster(p: Principal, classId: number, q?: string) {
           ])),
           bands: null,
           caseStatus: c?.status ?? null,
-          myPending: dueForEntry
-            ? myRegularSkills.filter((k) => {
-                const row = scores.find((x) => x.skill === k);
-                return row?.raw_score === null || row?.raw_score === undefined;
-              })
-            : [],
-          overdueSkills: 0,
+          myPending: myRegularSkills.filter((k) => {
+            const row = scores.find((x) => x.skill === k);
+            const scored = row?.raw_score !== null && row?.raw_score !== undefined;
+            const v = regViews.get(k);
+            return !scored && !!v && awaitingScore(v.progress);
+          }),
+          overdueSkills: myRegularSkills.filter((k) => {
+            const row = scores.find((x) => x.skill === k);
+            const scored = row?.raw_score !== null && row?.raw_score !== undefined;
+            return !scored && !!regViews.get(k)?.overdue;
+          }).length,
         };
       }
 
       const skips = bundle.skips.get(a.id) ?? [];
       const result = resultOf(a, scores, skips);
-      const cells = skillCells(p, a, scores, skips, today);
+      const cells = skillCells(p, a, scores, skips, today, bundle.skillRows.get(a.id));
       return {
         id: a.id, attemptNo: a.attempt_no, cycleSeq: a.cycle_seq, route: a.route,
         periodCode: a.period_code,

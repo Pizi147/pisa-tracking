@@ -401,6 +401,7 @@ function migrateCaseEngine(applied: string[], skipped: string[]) {
     migrateMgmtTasks(conn, applied);
     migrateDropBranchAdmin(conn, applied);
     migrateNormalPassThreshold(conn, applied);
+    migrateSkillSchedule(conn, applied);
 
     /*
      * Case đã đóng theo hệ thống cũ mà không có hướng xử lý: ghi rõ là "đóng theo hệ thống
@@ -1860,4 +1861,153 @@ function migrateNormalPassThreshold(conn: any, applied: string[]) {
     `Ngưỡng đạt lớp Normal: ${Math.round(Number(from) * 100)}% → 70%. ` +
       'Không sửa điểm gốc, không xoá kết luận cũ, không sinh nợ quá hạn ngược về quá khứ.',
   );
+}
+
+/**
+ * TÁCH LỊCH THI RA THEO TỪNG KỸ NĂNG (mục 10.1 · 18.1).
+ *
+ * Trước bước này một đợt kiểm tra chỉ có MỘT tuần dùng chung cho cả bốn kỹ năng. Sau bước
+ * này mỗi kỹ năng có lịch, phạm vi, trạng thái thi và hạn chấm của riêng nó.
+ *
+ * NGUYÊN TẮC: chỉ chuyển những gì dữ liệu cũ THỰC SỰ NÓI, không bịa phần còn lại.
+ *
+ *   ✓ Tuần chung cũ trở thành tuần khởi tạo của cả bốn kỹ năng — đây là căn cứ có thật,
+ *     và nó được đánh dấu 'auto' để ai đọc cũng biết chưa có ai chốt riêng cho kỹ năng nào.
+ *   ✓ Kỹ năng từng bị đánh dấu "không mock" trở thành "ngoài phạm vi yêu cầu".
+ *   ✓ Kỹ năng ĐÃ CÓ ĐIỂM được ghi là đã thi — có điểm thì chắc chắn đã thi.
+ *
+ *   ✗ KHÔNG bịa ngày thi chính xác. Dữ liệu cũ chỉ có tuần, nên bản mới cũng chỉ có tuần.
+ *   ✗ KHÔNG bịa xác nhận có mặt cho kỹ năng chưa có điểm: ô trống có thể là chưa chấm,
+ *     không được đọc thành "em đã thi" mà cũng không được đọc thành "em vắng".
+ *   ✗ KHÔNG bịa nguyên nhân vắng. Không dòng nào ra khỏi bước này với trạng thái 'absent'.
+ *   ✗ KHÔNG sinh nợ quá hạn ngược về quá khứ: hạn được TÍNH RA mỗi lần đọc từ tuần thi,
+ *     không lưu sẵn, nên không có khoản nợ nào được dựng thêm ở đây.
+ *
+ * Giữ nguyên định danh đợt, điểm, người nhập, liên kết case và toàn bộ lịch sử. Chạy lại
+ * lần hai là no-op: những đợt đã có đủ bốn dòng bị bỏ qua.
+ */
+function migrateSkillSchedule(conn: any, applied: string[]) {
+  const has = (t: string) =>
+    !!conn.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name = ?").get(t);
+  if (!has('assessment_attempts') || !has('assessment_scores')) return;
+
+  conn.exec(`
+    CREATE TABLE IF NOT EXISTS attempt_skills (
+      id INTEGER PRIMARY KEY,
+      attempt_id INTEGER NOT NULL REFERENCES assessment_attempts(id),
+      skill TEXT NOT NULL,
+      required INTEGER NOT NULL DEFAULT 1,
+      scope_reason TEXT,
+      scope_by INTEGER REFERENCES users(id),
+      scope_at TEXT,
+      planned_period_id INTEGER REFERENCES report_periods(id),
+      plan_source TEXT NOT NULL DEFAULT 'auto',
+      sit_status TEXT NOT NULL DEFAULT 'scheduled',
+      sit_by INTEGER REFERENCES users(id),
+      sit_at TEXT,
+      sit_note TEXT,
+      deadline_override TEXT,
+      deadline_override_by INTEGER REFERENCES users(id),
+      deadline_override_at TEXT,
+      deadline_override_reason TEXT,
+      absence_move_count INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL,
+      updated_at TEXT,
+      UNIQUE (attempt_id, skill));
+    CREATE INDEX IF NOT EXISTS idx_attempt_skills_attempt ON attempt_skills(attempt_id);
+    CREATE INDEX IF NOT EXISTS idx_attempt_skills_period ON attempt_skills(planned_period_id);
+  `);
+
+  const now = nowIso();
+  const skills = ['listening', 'reading', 'writing', 'speaking'];
+  /* Ô nhập điểm nào thuộc về kỹ năng đánh giá nào — Writing gồm cả hai task. */
+  const entryOf: Record<string, string[]> = {
+    listening: ['listening'], reading: ['reading'],
+    writing: ['writing1', 'writing2'], speaking: ['speaking'],
+  };
+
+  const attempts = conn
+    .prepare(
+      `SELECT a.id, a.planned_period_id, a.status
+         FROM assessment_attempts a
+        WHERE (SELECT COUNT(*) FROM attempt_skills ask WHERE ask.attempt_id = a.id) < 4`,
+    )
+    .all() as any[];
+  if (!attempts.length) return;
+
+  const hasSkips = has('attempt_skill_skips');
+  let created = 0;
+  let sat = 0;
+  let outOfScope = 0;
+
+  for (const a of attempts) {
+    const skipped = new Set<string>(
+      hasSkips
+        ? (conn.prepare('SELECT skill FROM attempt_skill_skips WHERE attempt_id = ?').all(a.id) as any[])
+            .map((r: any) => r.skill as string)
+        : [],
+    );
+    const scored = new Set<string>(
+      (conn.prepare('SELECT skill FROM assessment_scores WHERE attempt_id = ? AND band IS NOT NULL').all(a.id) as any[])
+        .map((r: any) => r.skill as string),
+    );
+    for (const skill of skills) {
+      const exists = conn.prepare('SELECT 1 FROM attempt_skills WHERE attempt_id = ? AND skill = ?').get(a.id, skill);
+      if (exists) continue;
+      const isRequired = skipped.has(skill) ? 0 : 1;
+      /*
+       * "Đã thi" CHỈ khi mọi ô nhập điểm của kỹ năng đó đã có band. Writing có W1 mà chưa
+       * có W2 thì chưa kết luận gì — đúng như cách band Writing được tính.
+       */
+      const didSit = entryOf[skill].every((k) => scored.has(k));
+      const sitStatus = a.status === 'cancelled' ? 'cancelled' : didSit ? 'sat' : 'scheduled';
+      conn
+        .prepare(
+          `INSERT INTO attempt_skills (attempt_id, skill, required, scope_reason, planned_period_id,
+                                       plan_source, sit_status, sit_note, created_at)
+           VALUES (?,?,?,?,?, 'auto', ?,?,?)`,
+        )
+        .run(
+          a.id, skill, isRequired,
+          isRequired ? null : 'Chuyển từ đánh dấu "không mock" của bản trước',
+          a.planned_period_id ?? null,
+          sitStatus,
+          didSit ? 'Suy từ việc đã có điểm ở bản trước' : null,
+          now,
+        );
+      created += 1;
+      if (didSit) sat += 1;
+      if (!isRequired) outOfScope += 1;
+    }
+  }
+
+  applied.push(
+    `Tách lịch thi theo kỹ năng: dựng ${created} dòng cho ${attempts.length} đợt kiểm tra. `
+      + `${sat} kỹ năng đã có điểm được ghi là đã thi, ${outOfScope} kỹ năng chuyển sang "ngoài phạm vi yêu cầu". `
+      + 'Tuần thi của từng kỹ năng lấy từ tuần chung cũ và đánh dấu "chưa ai chốt riêng"; '
+      + 'không bịa ngày thi, không bịa xác nhận có mặt, không bịa nguyên nhân vắng.',
+  );
+
+  /*
+   * TUẦN KẾ HOẠCH HOÀN TẤT (mục 10.7) sau bước này bằng đúng tuần chung cũ, vì cả bốn kỹ
+   * năng vừa được khởi tạo cùng một tuần. Nên KHÔNG có đợt nào bị đổi tuần ở đây, và không
+   * bảng báo cáo theo tuần nào đổi kết quả chỉ vì chạy nâng cấp.
+   */
+  if (has('audit_logs')) {
+    conn
+      .prepare(
+        `INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, entity_label,
+                                 before_json, after_json, created_at)
+         VALUES (NULL, 'rule.changed', 'scheduling', NULL, 'Lịch thi và hạn chấm theo từng kỹ năng', ?, ?, ?)`,
+      )
+      .run(
+        JSON.stringify({ schedule: 'một tuần chung cho cả đợt', deadline: 'một hạn chung cho cả đợt' }),
+        JSON.stringify({
+          schedule: 'mỗi kỹ năng một tuần thi riêng',
+          deadline: 'FT hết thứ Tư tuần sau tuần thi của kỹ năng đó; Normal hết Chủ nhật tuần thi',
+          note: 'Owner chốt sau PR15. Tuần kế hoạch hoàn tất của đợt = tuần muộn nhất trong các kỹ năng bắt buộc.',
+        }),
+        now,
+      );
+  }
 }

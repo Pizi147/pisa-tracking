@@ -26,15 +26,34 @@ type Detail = {
   classId: number | null; classCode: string | null; branchName: string | null;
   attemptNo: number; targetAtAttempt: number | null; studyWeekHint: number | null;
   period: { id: number; code: string; weekStart: string; weekEnd: string; range: string } | null;
+  /** Tuần kế hoạch hoàn tất đã đủ căn cứ chưa, và môn nào đang chặn. */
+  completionWeek: { valid: boolean; blocking: string[]; blockingLabels: string[] };
+  /** Lịch, phạm vi, trạng thái thi và hạn chấm của TỪNG kỹ năng. */
+  skillSchedule: SkillRow[];
+  splitWeeks: boolean;
+  scheduleHeadline: string;
+  scoringMode: 'band' | 'ratio';
   deadlineOverride: { date: string; reason: string | null; at: string | null; by: string | null } | null;
   status: string; cancelReason: string | null; note: string | null;
   result: any; cells: Cell[]; skips: any[];
   history: any[]; sosCase: any; caseSteps: any[]; caseHistory: any[]; tasks: any[];
   viewer: {
     canPlanWeek: boolean; canCancel: boolean;
-    canSkipSkill: boolean; canOverrideDeadline: boolean;
+    canSkipSkill: boolean; canOverrideDeadline: boolean; canSetSitStatus: boolean;
     canEditSos: boolean; editableSkills: string[];
   };
+};
+
+type SkillRow = {
+  skill: string; label: string;
+  required: boolean; scopeReason: string | null;
+  periodId: number | null; periodCode: string | null;
+  weekStart: string | null; weekRange: string | null;
+  planSource: string;
+  sitStatus: string; sitNote: string | null;
+  deadline: string | null; deadlineSource: string;
+  overdue: boolean; scored: boolean; progress: string;
+  absenceMoveCount: number;
 };
 
 export default function MockDetailPage() {
@@ -86,7 +105,7 @@ export default function MockDetailPage() {
             <Link className="btn no-underline" to={`/nhap-diem/${d.classId}`}>Nhập điểm cả lớp</Link>
           )}
           {d.viewer.canPlanWeek && d.status !== 'cancelled' && (
-            <button className="btn" onClick={() => setWeekOpen(true)}>Đổi tuần</button>
+            <button className="btn" onClick={() => setWeekOpen(true)}>Xếp cả đợt một tuần</button>
           )}
           {d.viewer.canCancel && d.status === 'planned' && (
             <button className="btn btn-danger" onClick={() => setCancelOpen(true)}>Huỷ lượt MT</button>
@@ -102,13 +121,14 @@ export default function MockDetailPage() {
 
       {/* 1. Nhận diện, lịch và target */}
       <Card title="Kế hoạch MT">
+        <p className="text-sm text-slate-200 mt-0 mb-3">{d.scheduleHeadline}</p>
         <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 m-0">
           <Info label="Trạng thái">
             <Status kind={d.status === 'done' ? 'done' : d.status === 'cancelled' ? 'idle' : 'doing'}>
               {attemptStatusLabel(d.status)}
             </Status>
           </Info>
-          <Info label="Tuần MT">
+          <Info label="Tuần hoàn tất">
             {d.period
               ? <>{d.period.code} <span className="text-slate-500 text-xs">({d.period.range})</span></>
               : <Tag pending>Chưa chốt tuần</Tag>}
@@ -123,10 +143,12 @@ export default function MockDetailPage() {
         <div className="mt-3 flex flex-wrap items-center gap-2">
           {d.deadlineOverride ? (
             <Tag title={d.deadlineOverride.reason ?? undefined}>
-              Hạn riêng {fmtDate(d.deadlineOverride.date)}{d.deadlineOverride.by ? ` · ${d.deadlineOverride.by}` : ''}
+              Hạn riêng cả đợt {fmtDate(d.deadlineOverride.date)}{d.deadlineOverride.by ? ` · ${d.deadlineOverride.by}` : ''}
             </Tag>
           ) : (
-            <span className="text-xs text-slate-500">Đang dùng hạn mặc định: hết thứ Tư của tuần kế tiếp sau tuần MT.</span>
+            <span className="text-xs text-slate-500">
+              Hạn chấm mặc định tính riêng cho từng môn: hết thứ Tư của tuần kế tiếp sau tuần thi môn đó.
+            </span>
           )}
           {d.viewer.canOverrideDeadline && (
             <button className="btn btn-sm" onClick={() => setDeadlineOpen(true)}>
@@ -134,19 +156,25 @@ export default function MockDetailPage() {
             </button>
           )}
         </div>
-        {d.studyWeekHint && (
-          <SectionNote>
-            Mốc gợi ý cho MT{d.attemptNo} là <strong>tuần học</strong> FT {d.studyWeekHint}.
-            Tuần học của chương trình và mã tuần lịch là hai khái niệm khác nhau.
-          </SectionNote>
-        )}
+        <SectionNote>
+          Tuần ở trên là <strong>tuần hoàn tất theo kế hoạch</strong> — tuần của môn thi muộn nhất,
+          dùng để xếp đợt này vào đúng một dòng trong các bảng theo tuần. Nó không phải ngày thi
+          và cũng không phải ngày đã hoàn thành thật.
+          {d.studyWeekHint && <>
+            {' '}Mốc gợi ý cho MT{d.attemptNo} là <strong>tuần học</strong> FT {d.studyWeekHint};
+            tuần học của chương trình và mã tuần lịch là hai khái niệm khác nhau.
+          </>}
+        </SectionNote>
       </Card>
+
+      {/* 1b. Lịch thi từng kỹ năng — nơi đọc và sửa lịch thật */}
+      <SkillScheduleCard d={d} onDone={reload} />
 
       {/* 2. Điểm từng kỹ năng */}
       <Card title="Điểm theo kỹ năng"
         action={<span className="text-xs text-slate-500">
           Đã nhập {d.result.scoredRequired}/{d.result.required.length} kỹ năng bắt buộc
-          {d.result.skipped.length > 0 && ` · ${d.result.skipped.length} kỹ năng không mock`}
+          {d.result.skipped.length > 0 && ` · ${d.result.skipped.length} kỹ năng ngoài phạm vi`}
         </span>}>
         {d.cells.length === 0 ? (
           <Empty title="Lớp này chưa cấu hình kỹ năng nào" />
@@ -160,7 +188,7 @@ export default function MockDetailPage() {
                     <Th hint="Listening và Reading nhập số câu đúng; Writing và Speaking nhập điểm bốn tiêu chí.">Số câu đúng / tiêu chí</Th>
                     <Th hint="Band quy đổi từ ô bên trái. Không gõ tay được — để hai người cùng chấm ra cùng một số.">Band</Th>
                     <Th hint="Kỹ năng này đã nhập điểm chưa, và có nằm trong lượt này không.">Tiến độ</Th>
-                    <Th hint="Cả lượt dùng chung một hạn: hết thứ Tư của tuần kế tiếp sau tuần MT.">Hạn nhập</Th>
+                    <Th hint="Hạn chấm tính từ tuần thi của CHÍNH môn đó. Môn chưa đến lịch thì chưa nợ điểm.">Hạn nhập</Th>
                     <Th hint="Ai nhập ô điểm này và nhập lúc nào — để tra lại khi có thắc mắc.">Người nhập</Th>
                   </tr>
                 </thead>
@@ -206,30 +234,18 @@ export default function MockDetailPage() {
                     <div className="text-xl tabular-nums mt-1 text-slate-100">{fmtBand(v?.band)}</div>
                     <div className="mt-1">
                       {skipped
-                        ? <Tag pending>Không mock</Tag>
+                        ? <Tag pending>Ngoài phạm vi</Tag>
                         : v?.passed === null
                           ? <Tag pending>Chưa đủ điểm</Tag>
                           : v?.passed
                             ? <Outcome tone="ok" mark="✓">Đạt kỳ vọng</Outcome>
                             : <Outcome tone="danger" mark="↓">Dưới kỳ vọng</Outcome>}
                     </div>
-                    {d.viewer.canSkipSkill && d.status !== 'cancelled' && (
-                      <button
-                        className="btn btn-sm btn-ghost mt-2 px-0"
-                        onClick={async () => {
-                          try {
-                            await api.post(`/attempts/${d.id}/skills/${key}/skip`, {
-                              skipped: !skipped,
-                              reason: skipped ? undefined : 'Học viên không mock kỹ năng này',
-                            });
-                            invalidate('/attempts'); invalidate('/overview'); reload();
-                            toast.push('ok', skipped ? `Đã tính lại ${ASSESSED_SKILL_LABEL[key]}` : `Đã đánh dấu không mock ${ASSESSED_SKILL_LABEL[key]}`);
-                          } catch (e: any) { toast.push('error', e.message); }
-                        }}
-                      >
-                        {skipped ? 'Tính lại kỹ năng này' : 'Đánh dấu không mock'}
-                      </button>
-                    )}
+                    {/*
+                      * Phạm vi yêu cầu được sửa ở bảng "Lịch thi theo kỹ năng" phía trên, cùng
+                      * chỗ với tuần thi và hạn chấm. Trước đây nút này nằm ở đây, tách khỏi lịch,
+                      * nên người dùng đổi phạm vi mà không nhìn thấy lịch mình đang đổi.
+                      */}
                   </div>
                 );
               })}
@@ -249,8 +265,9 @@ export default function MockDetailPage() {
             )}
             {!d.result.complete && (
               <SectionNote>
-                Chưa chốt kết quả vì còn thiếu kỹ năng bắt buộc. Cả lượt MT thuộc MỘT tuần và dùng
-                CHUNG một hạn nhập điểm. Ô trống là chưa nhập, không phải điểm 0.
+                Chưa chốt kết quả vì còn thiếu kỹ năng bắt buộc. Mỗi kỹ năng có tuần thi và hạn
+                chấm riêng — xem bảng lịch phía trên. Ô trống là chưa nhập, không phải điểm 0, và
+                cũng không có nghĩa là học viên đã vắng.
               </SectionNote>
             )}
             {d.result.complete && !d.result.evaluable && (
@@ -353,6 +370,298 @@ function Info({ label, children }: { label: string; children: React.ReactNode })
   );
 }
 
+// ---------------------------------------------------------------- lịch thi từng kỹ năng
+
+/**
+ * LỊCH THI THEO TỪNG KỸ NĂNG — bảng mà người xếp lịch thực sự làm việc trên đó.
+ *
+ * Bốn cột trả lời bốn câu hỏi khác nhau, và cố tình KHÔNG gộp: thi tuần nào · đang ở đâu ·
+ * hạn chấm ngày nào · làm gì tiếp. Đây là chỗ nhìn ra ngay chuyện R/L/W thi tuần này còn
+ * Speaking tuần sau, và vì sao Speaking chưa bị đòi điểm trong khi R/L/W thì có.
+ */
+function SkillScheduleCard({ d, onDone }: { d: Detail; onDone: () => void }) {
+  const [weekFor, setWeekFor] = useState<SkillRow | null>(null);
+  const [deadlineFor, setDeadlineFor] = useState<SkillRow | null>(null);
+  const toast = useToast();
+  const editable = d.status !== 'cancelled';
+
+  const act = async (fn: () => Promise<unknown>, okMsg: string) => {
+    try {
+      await fn();
+      invalidate('/attempts'); invalidate('/overview'); invalidate('/classes');
+      onDone();
+      toast.push('ok', okMsg);
+    } catch (e: any) { toast.push('error', e.message); }
+  };
+
+  return (
+    <Card title="Lịch thi theo kỹ năng"
+      action={d.splitWeeks
+        ? <Tag>Đợt này thi ở nhiều tuần</Tag>
+        : <span className="text-xs text-slate-500">Cả đợt thi trong một tuần</span>}>
+      {!d.completionWeek.valid && (
+        <p className="text-xs text-amber-200 mt-0 mb-3">
+          Chưa có kế hoạch hoàn tất hợp lệ: {d.completionWeek.blockingLabels.join(', ')} chưa có tuần thi
+          hoặc đã bị huỷ phần thi. Đợt vẫn chưa đủ kết quả cho tới khi Quản lý xếp lại.
+        </p>
+      )}
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr>
+              <Th hint="Bốn kỹ năng đánh giá. Writing là MỘT môn thi — W1 và W2 chấm riêng nhưng làm cùng buổi.">Kỹ năng</Th>
+              <Th hint="Tuần thi của CHÍNH kỹ năng này. Các kỹ năng trong một đợt có thể ở các tuần khác nhau.">Tuần thi</Th>
+              <Th hint="Đã đến lịch chưa, đã thi chưa, hay đã xác nhận vắng. Ô điểm trống không đủ để kết luận là vắng.">Tình trạng</Th>
+              <Th hint="Hạn chấm tính từ tuần thi của chính môn đó: hết thứ Tư tuần kế tiếp với Fast Track, hết Chủ nhật cùng tuần với lớp Normal.">Hạn chấm</Th>
+              <Th>Thao tác</Th>
+            </tr>
+          </thead>
+          <tbody>
+            {d.skillSchedule.map((r) => (
+              <tr key={r.skill} className={r.required ? '' : 'row-muted'}>
+                <td className="td text-slate-200 whitespace-nowrap">
+                  {r.label}
+                  {r.planSource === 'manual' && (
+                    <span className="text-slate-500 text-[11px] block">đã xếp riêng</span>
+                  )}
+                </td>
+                <td className="td whitespace-nowrap">
+                  {!r.required ? <span className="text-slate-500 text-xs">—</span>
+                    : r.periodCode
+                      ? <>{r.periodCode} <span className="text-slate-500 text-xs">({r.weekRange})</span></>
+                      : <Tag pending>Chưa xếp tuần</Tag>}
+                </td>
+                <td className="td">
+                  <Status kind={r.progress === 'scored' ? 'done'
+                    : r.progress === 'skipped' || r.progress === 'cancelled' || r.progress === 'not_scheduled' ? 'idle'
+                    : r.progress === 'due' || r.progress === 'sat' ? 'doing' : 'waiting'}>
+                    {progressLabel(r.progress)}
+                  </Status>
+                  {r.absenceMoveCount > 0 && (
+                    <div className="text-[11px] text-amber-200 mt-1">
+                      Đã dời do vắng {r.absenceMoveCount} lần
+                    </div>
+                  )}
+                  {!r.required && r.scopeReason && (
+                    <div className="text-[11px] text-slate-500 mt-1">{r.scopeReason}</div>
+                  )}
+                  {r.sitNote && <div className="text-[11px] text-slate-500 mt-1">{r.sitNote}</div>}
+                </td>
+                <td className="td whitespace-nowrap">
+                  {!r.required || r.progress === 'cancelled' ? <span className="text-slate-500 text-xs">—</span>
+                    /* Đã chấm rồi thì hạn không còn là việc phải làm, nhưng vẫn để đọc lại được. */
+                    : r.scored ? <span className="text-slate-500 text-xs">đã chấm · hạn {fmtDate(r.deadline)}</span>
+                    : r.progress === 'upcoming' ? <span className="text-slate-400 text-xs">Sau khi thi · {fmtDate(r.deadline)}</span>
+                    : r.overdue ? <span className="text-rose-200">Quá hạn {fmtDate(r.deadline)}</span>
+                    : r.deadline ? <span className="text-slate-300">{fmtDate(r.deadline)}</span>
+                    : <Tag pending>Chưa có hạn</Tag>}
+                  {r.deadlineSource === 'skill_override' && (
+                    <span className="text-[11px] text-slate-500 block">hạn riêng môn này</span>
+                  )}
+                </td>
+                <td className="td">
+                  <div className="flex flex-wrap gap-1.5">
+                    {d.viewer.canPlanWeek && editable && r.required && !r.scored && r.progress !== 'cancelled' && (
+                      <button className="btn btn-sm" onClick={() => setWeekFor(r)}>Đổi tuần</button>
+                    )}
+                    {d.viewer.canSetSitStatus && editable && r.required && !r.scored
+                      && r.progress !== 'cancelled' && r.periodCode && (
+                      <>
+                        {r.sitStatus !== 'sat' && (
+                          <button className="btn btn-sm btn-ghost" onClick={() => act(
+                            () => api.post(`/attempts/${d.id}/skills/${r.skill}/sit`, { status: 'sat' }),
+                            `Đã ghi nhận ${r.label}: học viên đã thi`,
+                          )}>Đã thi</button>
+                        )}
+                        {r.sitStatus !== 'absent' && (
+                          <button className="btn btn-sm btn-ghost" onClick={() => act(
+                            () => api.post(`/attempts/${d.id}/skills/${r.skill}/sit`, {
+                              status: 'absent', note: 'GVCN xác minh học viên vắng buổi này',
+                            }),
+                            `Đã ghi nhận ${r.label}: học viên vắng`,
+                          )}>Xác nhận vắng</button>
+                        )}
+                        {r.sitStatus !== 'scheduled' && (
+                          <button className="btn btn-sm btn-ghost" onClick={() => act(
+                            () => api.post(`/attempts/${d.id}/skills/${r.skill}/sit`, { status: 'scheduled' }),
+                            `Đã bỏ xác nhận cho ${r.label}`,
+                          )}>Bỏ xác nhận</button>
+                        )}
+                      </>
+                    )}
+                    {d.viewer.canOverrideDeadline && editable && r.required && (
+                      <button className="btn btn-sm btn-ghost" onClick={() => setDeadlineFor(r)}>Hạn riêng</button>
+                    )}
+                    {d.viewer.canSkipSkill && editable && d.scoringMode === 'band' && (
+                      <button className="btn btn-sm btn-ghost" onClick={() => act(
+                        () => api.post(`/attempts/${d.id}/skills/${r.skill}/skip`, {
+                          skipped: r.required,
+                          reason: r.required ? 'Quản lý chốt trước: đợt này không yêu cầu kỹ năng đó' : undefined,
+                        }),
+                        r.required ? `${r.label} đã ra khỏi phạm vi yêu cầu` : `${r.label} đã trở lại phạm vi yêu cầu`,
+                      )}>
+                        {r.required ? 'Bỏ khỏi phạm vi' : 'Đưa lại vào phạm vi'}
+                      </button>
+                    )}
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <SectionNote>
+        Mỗi kỹ năng mang lịch và hạn chấm của riêng nó, nên dời Speaking chỉ đổi hạn Speaking —
+        các môn đã thi tuần trước giữ nguyên hạn cũ. Môn <strong>chưa đến lịch</strong> thì chưa
+        nợ điểm và không bao giờ bị tính quá hạn.
+        {d.scoringMode === 'ratio'
+          ? ' Lớp Normal luôn phải đủ bốn môn — không có thao tác miễn môn.'
+          : ' Bỏ một môn khỏi phạm vi là quyết định chốt TRƯỚC khi thi, không dùng để hợp thức hoá một đợt học viên đã vắng.'}
+      </SectionNote>
+
+      <SkillWeekModal
+        open={!!weekFor} row={weekFor} attemptId={d.id}
+        onClose={() => setWeekFor(null)} onDone={onDone}
+      />
+      <SkillDeadlineModal
+        open={!!deadlineFor} row={deadlineFor} attemptId={d.id}
+        onClose={() => setDeadlineFor(null)} onDone={onDone}
+      />
+    </Card>
+  );
+}
+
+/** Đổi TUẦN THI của đúng một kỹ năng. Cảnh báo về khoảng cách giữa các đợt cần xác nhận lại. */
+function SkillWeekModal({ open, row, attemptId, onClose, onDone }: {
+  open: boolean; row: SkillRow | null; attemptId: number; onClose: () => void; onDone: () => void;
+}) {
+  const toast = useToast();
+  const periods = usePeriods();
+  const [periodId, setPeriodId] = useState<number | null>(null);
+  const [reason, setReason] = useState('');
+  const [absence, setAbsence] = useState(false);
+  const [busy, setBusy] = useState(false);
+  /* Cảnh báo cần người xác nhận lại; lần bấm thứ hai mới gửi kèm dấu đã xác nhận. */
+  const [warning, setWarning] = useState<string | null>(null);
+
+  const close = () => {
+    setPeriodId(null); setReason(''); setAbsence(false); setWarning(null); onClose();
+  };
+
+  const submit = async (force: boolean) => {
+    if (!row || !periodId) return;
+    setBusy(true);
+    try {
+      await api.post(`/attempts/${attemptId}/skills/${row.skill}/week`, { periodId, reason, force, absence });
+      invalidate('/attempts'); invalidate('/overview'); invalidate('/classes');
+      onDone(); close();
+      toast.push('ok', `Đã đổi tuần thi ${row.label}`);
+    } catch (e: any) {
+      if (/Xác nhận lại/.test(e.message)) setWarning(e.message);
+      else toast.push('error', e.message);
+    } finally { setBusy(false); }
+  };
+
+  return (
+    <Modal open={open} onClose={close} title={`Tuần thi · ${row?.label ?? ''}`} width="max-w-md"
+      footer={<>
+        <button className="btn" onClick={close} disabled={busy}>Huỷ</button>
+        <button className="btn btn-primary" disabled={busy || !periodId}
+          onClick={() => submit(!!warning)}>
+          {busy ? 'Đang lưu…' : warning ? 'Vẫn xếp vào tuần này' : 'Lưu'}
+        </button>
+      </>}>
+      <div className="space-y-3">
+        <p className="text-xs text-slate-400 m-0">
+          Đang thi {row?.periodCode ? `${row.periodCode} (${row.weekRange})` : 'chưa xếp tuần'}.
+          Chỉ kỹ năng này đổi lịch; các kỹ năng khác của đợt giữ nguyên tuần và hạn chấm.
+        </p>
+        <label className="block">
+          <span className="label">Tuần thi mới</span>
+          <select className="field" value={periodId ?? ''}
+            onChange={(e) => { setPeriodId(Number(e.target.value) || null); setWarning(null); }}>
+            <option value="">Chọn tuần…</option>
+            {(periods.data ?? []).map((p) => <option key={p.id} value={p.id}>{p.code} · {p.range}</option>)}
+          </select>
+        </label>
+        <label className="block">
+          <span className="label">Lý do</span>
+          <input className="field" value={reason} onChange={(e) => setReason(e.target.value)}
+            placeholder="Ví dụ: trùng lịch phòng thi Speaking" />
+        </label>
+        <label className="flex items-start gap-2 text-sm text-slate-300">
+          <input type="checkbox" className="mt-1" checked={absence} onChange={(e) => setAbsence(e.target.checked)} />
+          <span>
+            Dời vì học viên <strong>vắng</strong> buổi thi kỹ năng này
+            <span className="block text-xs text-slate-500">
+              Chỉ tick khi em thật sự vắng. Ô này làm tăng bộ đếm dời do vắng của riêng kỹ năng này;
+              dời chủ động để xếp lại phòng thi thì không tick.
+            </span>
+          </span>
+        </label>
+        {warning && <p className="text-xs text-amber-200 m-0">{warning}</p>}
+        <SectionNote>
+          Đổi tuần sửa chính đợt này, không tạo đợt mới và không đổi số MT. Phần thi đã có điểm
+          thì không đổi lịch được — lịch sử thực tế sai là một hiệu chỉnh riêng, không phải một lần dời.
+        </SectionNote>
+      </div>
+    </Modal>
+  );
+}
+
+/** Hạn chấm riêng cho ĐÚNG một kỹ năng, đè lên hạn riêng của cả đợt và hạn mặc định. */
+function SkillDeadlineModal({ open, row, attemptId, onClose, onDone }: {
+  open: boolean; row: SkillRow | null; attemptId: number; onClose: () => void; onDone: () => void;
+}) {
+  const toast = useToast();
+  const [date, setDate] = useState('');
+  const [reason, setReason] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  const submit = async (value: string | null) => {
+    if (!row) return;
+    setBusy(true);
+    try {
+      await api.post(`/attempts/${attemptId}/skills/${row.skill}/deadline`, { deadline: value, reason });
+      invalidate('/attempts'); invalidate('/overview');
+      onDone(); onClose(); setDate(''); setReason('');
+      toast.push('ok', value ? `Đã đặt hạn riêng cho ${row.label}` : `${row.label} quay lại hạn mặc định`);
+    } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
+  };
+
+  return (
+    <Modal open={open} onClose={onClose} title={`Hạn chấm · ${row?.label ?? ''}`} width="max-w-md"
+      footer={<>
+        <button className="btn" onClick={onClose} disabled={busy}>Đóng</button>
+        {row?.deadlineSource === 'skill_override' && (
+          <button className="btn" disabled={busy} onClick={() => submit(null)}>Dùng lại hạn mặc định</button>
+        )}
+        <button className="btn btn-primary" disabled={busy || !date} onClick={() => submit(date)}>
+          {busy ? 'Đang lưu…' : 'Lưu hạn riêng'}
+        </button>
+      </>}>
+      <div className="space-y-3">
+        <p className="text-xs text-slate-400 m-0">
+          Hạn đang áp dụng: {row?.deadline ? fmtDate(row.deadline) : 'chưa có'}.
+        </p>
+        <label className="block">
+          <span className="label">Hạn riêng cho kỹ năng này</span>
+          <input type="date" className="field" value={date} onChange={(e) => setDate(e.target.value)} />
+        </label>
+        <label className="block">
+          <span className="label">Lý do</span>
+          <input className="field" value={reason} onChange={(e) => setReason(e.target.value)}
+            placeholder="Ví dụ: giáo viên Writing nghỉ phép" />
+        </label>
+        <SectionNote>
+          Hạn riêng đặt ở đây chỉ áp cho kỹ năng này, không đụng tới các kỹ năng khác của đợt.
+          Hết ngày hạn mới tính quá hạn.
+        </SectionNote>
+      </div>
+    </Modal>
+  );
+}
+
 // ---------------------------------------------------------------- vấn đề học vụ
 
 /**
@@ -397,18 +706,18 @@ function WeekModal({ open, onClose, attemptId, currentPeriodId, onDone }: {
   const [busy, setBusy] = useState(false);
 
   return (
-    <Modal open={open} onClose={onClose} title="Đổi tuần kế hoạch" width="max-w-md"
+    <Modal open={open} onClose={onClose} title="Xếp cả đợt vào một tuần" width="max-w-md"
       footer={<>
         <button className="btn" onClick={onClose} disabled={busy}>Huỷ</button>
         <button className="btn btn-primary" disabled={busy || !periodId || periodId === currentPeriodId} onClick={async () => {
           setBusy(true);
           try {
-            const r = await api.post<any>(`/attempts/${attemptId}/week`, { periodId, reason });
-            invalidate('/attempts'); invalidate('/overview');
+            const r = await api.post<any>(`/attempts/${attemptId}/week`, { periodId, reason, force: true });
+            invalidate('/attempts'); invalidate('/overview'); invalidate('/classes');
             onDone(); onClose();
-            toast.push('ok', r?.droppedDates
-              ? 'Đã đổi tuần. Ngày cũ nằm ngoài tuần mới nên đã bỏ để Admin chi nhánh xếp lại.'
-              : 'Đã đổi tuần kế hoạch');
+            toast.push('ok', r?.keptInPlace?.length
+              ? `Đã đổi tuần ${r.moved.length} kỹ năng. Giữ nguyên lịch của ${r.keptInPlace.length} kỹ năng đã thi hoặc đã có điểm.`
+              : `Đã đổi tuần ${r?.moved?.length ?? ''} kỹ năng`);
           } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
         }}>{busy ? 'Đang lưu…' : 'Lưu'}</button>
       </>}>
@@ -425,8 +734,10 @@ function WeekModal({ open, onClose, attemptId, currentPeriodId, onDone }: {
           <input className="field" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Ví dụ: trùng lịch phòng thi" />
         </label>
         <SectionNote>
+          Đây là lối tắt: nó xếp <strong>mọi kỹ năng còn dời được</strong> vào cùng một tuần.
+          Kỹ năng đã thi hoặc đã có điểm giữ nguyên lịch thật của nó. Muốn tách R/L/W với Speaking
+          thì dùng nút "Đổi tuần" của từng kỹ năng ở bảng lịch.
           Đổi tuần cập nhật chính lượt MT này, không tạo lượt mới và không tăng số MT.
-          Ngày đã chốt mà nằm ngoài tuần mới sẽ được bỏ để xếp lại — hệ thống không tự dịch bảy ngày.
         </SectionNote>
       </div>
     </Modal>
@@ -475,9 +786,9 @@ function DeadlineModal({ open, onClose, detail, onDone }: {
             placeholder="Ví dụ: giáo viên Writing nghỉ phép" />
         </label>
         <SectionNote>
-          Hạn mặc định là hết thứ Tư của tuần kế tiếp sau tuần MT. Đặt hạn riêng sẽ thay
-          hạn mặc định cho cả lượt này; hết ngày hạn mới tính quá hạn.
-          Phạm vi hạn riêng theo từng kỹ năng còn chờ chốt (O02).
+          Hạn mặc định tính riêng cho từng môn: hết thứ Tư của tuần kế tiếp sau tuần thi môn đó
+          (lớp Normal là hết Chủ nhật của chính tuần thi). Hạn đặt ở đây áp cho CẢ ĐỢT; muốn đặt
+          cho một môn thôi thì dùng nút "Hạn riêng" của môn đó ở bảng lịch. Hết ngày hạn mới tính quá hạn.
         </SectionNote>
       </div>
     </Modal>
@@ -515,8 +826,11 @@ const actionLabel = (a: string) =>
   ({
     created: 'Tạo kế hoạch', week_set: 'Đổi tuần', lrw_set: 'Chốt buổi chính',
     speaking_set: 'Chốt buổi Speaking', cancelled: 'Huỷ lượt', reopened: 'Mở lại',
-    skill_skipped: 'Đánh dấu không mock', skill_restored: 'Tính lại kỹ năng',
-    deadline_set: 'Đặt hạn riêng', deadline_cleared: 'Bỏ hạn riêng',
+    skill_skipped: 'Bỏ khỏi phạm vi', skill_restored: 'Đưa lại vào phạm vi',
+    deadline_set: 'Đặt hạn riêng cả đợt', deadline_cleared: 'Bỏ hạn riêng cả đợt',
+    skill_week_set: 'Đổi tuần thi', skill_week_moved_absence: 'Dời do vắng',
+    skill_sit_status: 'Trạng thái thi', completion_week: 'Tuần hoàn tất theo kế hoạch',
+    skill_deadline_set: 'Đặt hạn riêng cho môn', skill_deadline_cleared: 'Bỏ hạn riêng của môn',
   }[a] ?? a);
 
 /*

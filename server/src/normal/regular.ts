@@ -10,7 +10,8 @@ import { can, editableSkills, require_, scoreEditPath, type Principal } from '..
 import { demoToday } from '../demoConfig.ts';
 import { addJourney, writeAudit } from '../platform/audit.ts';
 import { ensurePeriod, mondayOf } from '../platform/week.ts';
-import { weekStartOf } from '../fasttrack/attempts.ts';
+import { regularSkillViews, weekStartOf } from '../fasttrack/attempts.ts';
+import { ensureSkillRows, loadSkillRows } from '../fasttrack/skillSchedule.ts';
 
 /**
  * LỚP THƯỜNG (Foundation / Beginner / Elementary).
@@ -299,6 +300,8 @@ export function planRegularTests(p: Principal, classId: number) {
              VALUES (?,?,?,?,?,?, 'planned', ?,?)`,
           )
           .run(cycle.id, st.id, nextNo, cp.kind, classId, period.id, p.userId, nowIso());
+        /* Bốn môn cùng tuần khi mới lập; trải ra nhiều tuần là thao tác đổi lịch sau đó. */
+        ensureSkillRows(Number(info.lastInsertRowid));
         created.push(Number(info.lastInsertRowid));
         addJourney({
           studentId: st.id, eventType: 'mock_scheduled', eventDate: week,
@@ -552,6 +555,8 @@ export function regularSheet(p: Principal, classId: number, kind?: string) {
   }
 
   const editable = editableSkills(p, classId, prog.skills);
+  /* Lịch và hạn chấm RIÊNG từng môn — một bài có thể trải hai ba tuần (mục 10.1). */
+  const skillRows = loadSkillRows(attempts.map((a) => a.id));
 
   return {
     class: { id: cls.id, code: cls.code, branchName: cls.branch_name, startDate: cls.start_date },
@@ -564,13 +569,45 @@ export function regularSheet(p: Principal, classId: number, kind?: string) {
       const rows = byAttempt.get(a.id) ?? [];
       const result = evaluateRegular(prog.skills, rows);
       const c = cases.get(a.id);
-      const dl = regularDeadline(a);
+      const views = regularSkillViews({ ...a, period_start: a.week_start }, skillRows.get(a.id), rows as any, demoToday());
+      /*
+       * HẠN CỦA CẢ BÀI chỉ còn là hạn MUỘN NHẤT trong các môn còn phải chấm — một con số
+       * để xếp thứ tự, không phải một luật riêng. Luật nằm ở từng môn, và cột "Hạn từng
+       * môn" bên dưới mới là thứ giáo viên đọc.
+       */
+      const pending = prog.skills
+        .map((k) => ({ k, v: views.get(k) }))
+        .filter((x) => {
+          const row = rows.find((r: any) => r.skill === x.k);
+          const scored = row?.raw_score !== null && row?.raw_score !== undefined;
+          return !scored && !!x.v?.deadline;
+        });
+      const dl = pending.length
+        ? pending.map((x) => x.v!.deadline!).sort().slice(-1)[0]
+        : null;
       return {
         attemptId: a.id,
-        deadline: dl.date,
-        deadlineSource: dl.source,
-        // Quá hạn khi đã hết ngày hạn mà vẫn còn kỹ năng chưa chấm.
-        overdue: !!dl.date && dl.date < demoToday() && !result.complete,
+        deadline: dl,
+        deadlineSource: dl ? 'week_end' : 'none',
+        /** Hạn chấm CỦA TỪNG MÔN, kèm tuần thi và trạng thái — mục 10.5. */
+        skillSchedule: prog.skills.map((k) => {
+          const v = views.get(k)!;
+          const row = rows.find((r: any) => r.skill === k);
+          const scored = row?.raw_score !== null && row?.raw_score !== undefined;
+          return {
+            skill: k,
+            label: REGULAR_SKILL_LABEL[k as keyof typeof REGULAR_SKILL_LABEL] ?? k,
+            periodCode: v.periodCode, weekRange: v.weekRange,
+            deadline: v.deadline, progress: v.progress, sitStatus: v.sitStatus,
+            overdue: !scored && v.overdue,
+          };
+        }),
+        // Quá hạn khi có ÍT NHẤT MỘT môn đã tới hạn mà chưa chấm — không xét theo cả bài.
+        overdue: prog.skills.some((k) => {
+          const row = rows.find((r: any) => r.skill === k);
+          const scored = row?.raw_score !== null && row?.raw_score !== undefined;
+          return !scored && !!views.get(k)?.overdue;
+        }),
         kind: a.kind as AttemptKind,
         kindLabel: ATTEMPT_KIND_LABEL[a.kind as AttemptKind] ?? a.kind,
         studentId: a.student_id, studentName: a.full_name, studentCode: a.student_code,

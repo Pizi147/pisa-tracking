@@ -4,7 +4,7 @@ import { useApi } from '../../lib/useApi.ts';
 import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { Card, Empty, ErrorState, Info, Level, Outcome as Verdict, SectionNote, Skeleton, Status, Th} from '../../ui/ui.tsx';
-import { caseStatusLabel, caseStatusTone, sosLabel, sosTone } from '../../lib/format.ts';
+import { caseStatusLabel, caseStatusTone, fmtDate, sosLabel, sosTone } from '../../lib/format.ts';
 import { ATTEMPT_KIND_LABEL, type AttemptKind } from '@shared/domain/index.ts';
 
 type SkillResult = {
@@ -12,10 +12,18 @@ type SkillResult = {
   score: number | null; total: number | null;
   ratio: number | null; outcome: 'pass' | 'fail' | 'missing';
 };
+/** Lịch và hạn chấm của MỘT môn trong bài — bốn môn có thể ở ba tuần khác nhau. */
+type SkillSchedule = {
+  skill: string; label: string;
+  periodCode: string | null; weekRange: string | null;
+  deadline: string | null; progress: string; sitStatus: string; overdue: boolean;
+};
 type Row = {
   attemptId: number; kind: AttemptKind; kindLabel: string;
   studentId: number; studentName: string; studentCode: string; studentStatus: string;
   periodCode: string | null; status: string;
+  deadline: string | null; overdue: boolean;
+  skillSchedule: SkillSchedule[];
   result: {
     skills: SkillResult[]; scored: number; required: number; complete: boolean;
     failedCount: number | null; sosLevel: number | null; passThreshold: number;
@@ -39,7 +47,7 @@ const pct = (r: number | null) => (r === null ? '—' : `${Math.round(r * 1000) 
 /**
  * BẢNG ĐIỂM LỚP THƯỜNG (Foundation / Beginner / Elementary).
  *
- * Khác lớp Fast Track: nhập `điểm đạt / tổng điểm`, đạt từ 60%. Không có band IELTS, không có
+ * Khác lớp Fast Track: nhập `điểm đạt / tổng điểm`, đạt từ 70%. Không có band IELTS, không có
  * kỳ vọng theo target, không có Overall — vì bài này không phải bài Mock Test IELTS.
  *
  * ĐÂY LÀ MÀN RIÊNG, KHÔNG PHẢI MÀN MOCK TEST ẨN BỚT Ô. Mọi đường dẫn tới điểm của một em
@@ -156,7 +164,7 @@ export default function RegularSheetPage() {
                 <tr>
                   <th className="th">Học viên</th>
                   <Th hint="Progress Test (giữa khoá) hay Final Test (cuối khoá) của chương trình lớp này.">Bài</Th>
-                  <Th hint="Tuần học của LỚP, tính từ tuần khai giảng — không phải tuần MT của Fast Track.">Tuần</Th>
+                  <Th hint="Tuần hoàn tất theo kế hoạch của cả bài — tuần của môn thi muộn nhất. Lịch thật của từng môn hiện ngay dưới ô điểm.">Tuần</Th>
                   {data.programme.skills.map((k) => (
                     <th key={k} className="th text-center">{data.skillLabels[k] ?? k}</th>
                   ))}
@@ -189,6 +197,11 @@ export default function RegularSheetPage() {
               mới sinh case SOS — để không đẩy học viên lên SOS oan, cũng không báo an toàn giả.
               Số môn chưa đạt ra mức SOS theo đúng ngưỡng của lớp Fast Track: 1 môn → SOS 1, 2 môn → SOS 2,
               từ 3 môn → SOS 3.
+              <br />
+              <strong>Mỗi môn có tuần thi và hạn chấm riêng.</strong> Một bài có thể trải hai ba tuần;
+              hạn chấm của lớp Normal là hết <strong>Chủ nhật của chính tuần thi môn đó</strong>. Môn chưa
+              đến lịch thì chưa nợ điểm và không bị tính quá hạn — dòng nhỏ dưới mỗi ô cho biết môn đó
+              đang ở đâu. Bài vẫn phải đủ cả bốn môn mới hoàn tất; không có thao tác miễn môn.
             </SectionNote>
           </div>
         </Card>
@@ -211,6 +224,7 @@ function SheetRow({ row, sheet, bulkTotal, onSaved }: {
 
       {sheet.programme.skills.map((k) => {
         const cell = row.result.skills.find((s) => s.skill === k)!;
+        const sch = row.skillSchedule?.find((x) => x.skill === k);
         return (
           <td key={k} className="td">
             <ScoreCell
@@ -219,6 +233,27 @@ function SheetRow({ row, sheet, bulkTotal, onSaved }: {
               defaultTotal={bulkTotal[k] ?? ''}
               onSaved={onSaved}
             />
+            {/*
+              LỊCH VÀ HẠN CỦA CHÍNH MÔN NÀY, ngay dưới ô điểm.
+              Bốn môn của một bài có thể thi ba tuần khác nhau, nên một dòng "hạn chấm" chung
+              cho cả bài là sai với ba trong bốn ô. Môn chưa đến tuần thi thì nói rõ tuần nào,
+              không hiện một cái hạn trông như đang đếm ngược.
+            */}
+            {sch && cell.outcome === 'missing' && (
+              <div className="text-[10px] mt-1 leading-tight">
+                {sch.progress === 'upcoming'
+                  ? <span className="text-slate-500">Thi {sch.weekRange ?? sch.periodCode}</span>
+                  : sch.progress === 'absent'
+                    ? <span className="text-amber-200">Đã vắng · chờ xếp lại</span>
+                    : sch.progress === 'cancelled'
+                      ? <span className="text-slate-500">Đã huỷ phần thi</span>
+                      : sch.overdue
+                        ? <span className="text-rose-300">Quá hạn {fmtDate(sch.deadline)}</span>
+                        : sch.deadline
+                          ? <span className="text-slate-500">Hạn {fmtDate(sch.deadline)}</span>
+                          : <span className="text-slate-500">Chưa xếp tuần</span>}
+              </div>
+            )}
           </td>
         );
       })}
@@ -258,6 +293,10 @@ function SheetRow({ row, sheet, bulkTotal, onSaved }: {
               <span className="text-[10px] text-slate-500">
                 {row.result.scored === 0 ? 'Bài chưa chấm' : 'Chưa đủ điểm để kết luận'}
               </span>
+              {/* Chỉ gọi là quá hạn khi có môn ĐÃ tới hạn mà chưa chấm — môn thi tuần sau thì không. */}
+              {row.overdue && (
+                <span className="text-[10px] text-rose-300">Có môn đã quá hạn chấm</span>
+              )}
             </>
           )}
           {row.caseStatus && (
