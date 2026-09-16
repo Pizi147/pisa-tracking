@@ -1,7 +1,7 @@
 import { db, tx } from '../db.ts';
 import {
   ASSESSED_SKILLS, ASSESSED_SKILL_LABEL, ENTRY_SKILLS, MOCK_FT_STUDY_WEEK, PERMISSIONS,
-  awaitingScore,
+  SIGNAL_WITHDRAW_SCORE_FIXED, awaitingScore,
   type AssessedSkill, type EntrySkill, type SkillProgress,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -12,7 +12,7 @@ import {
 import { addJourney, notify, writeAudit } from '../platform/audit.ts';
 import {
   ScoreError, assessedSkillOf, bandFromCriteria, bandFromRaw, entrySkillsOf, evaluateAttempt,
-  isCriteriaSkill, isRawSkill, type AttemptResult,
+  failingEntrySkills, isCriteriaSkill, isRawSkill, type AttemptResult,
 } from './scoring.ts';
 import { weekInfo } from '../platform/week.ts';
 import {
@@ -20,7 +20,10 @@ import {
   setSkillScope, setSkillWeek, skillScheduleOf, skippedSkillsOf, viewSkill,
   type SkillRow, type SkillScheduleView,
 } from './skillSchedule.ts';
-import { stepsFor, upsertCaseForResult } from '../cases/sos.ts';
+import { raiseSignalsForResult, stepsFor } from '../cases/sos.ts';
+import {
+  caseHasIndependentBasis, retireCaseForCorrectedScore, withdrawSignalsNoLongerValid,
+} from '../cases/signals.ts';
 import { currentCycle, cycleById, examPlanOf, nextAttemptNo } from './cycles.ts';
 import { allProgrammes, evaluateRegular, regularDeadline } from '../normal/regular.ts';
 
@@ -928,7 +931,82 @@ function refreshOutcome(p: Principal, attemptId: number) {
     conn.prepare('UPDATE assessment_attempts SET status = ?, updated_at = ? WHERE id = ?')
       .run(nextStatus, nowIso(), attemptId);
   }
-  upsertCaseForResult(p, { ...fresh, status: nextStatus }, result);
+  raiseSignalsForResult(p, { ...fresh, status: nextStatus }, result);
+
+  /*
+   * ĐỐI SOÁT NGƯỢC SAU KHI SỬA ĐIỂM (mục 9.4).
+   *
+   * `raiseSignalsForResult` ở trên lo chiều "trượt". Chiều còn lại — một ô vừa được sửa từ
+   * trượt thành ĐẠT — cũng phải được dọn, nếu không hệ thống sẽ giữ mãi một tín hiệu và có
+   * khi cả một case dựng trên một con số đã biết là sai.
+   *
+   * Phân biệt then chốt của mục 9.4 nằm ở đây: nhập sai rồi sửa KHÁC với thi lại rồi tiến
+   * bộ. Nên đường này KHÔNG ghi mốc "đã tiến bộ" nào cả — nó chỉ rút lại thứ không còn căn
+   * cứ. Và case đã có việc thật diễn ra thì không bị đụng tới, chỉ được nhắc xem lại.
+   */
+  reconcileCorrectedScores(p, attemptId, result);
+}
+
+/**
+ * Những ô nhập điểm nay đã ĐẠT kỳ vọng thì rút lại tín hiệu tương ứng, và xử lý case đi kèm.
+ *
+ * Hai nhánh, đúng như mục 9.4:
+ *
+ *   · case CHỈ có căn cứ từ con số vừa sửa  → rút khỏi danh sách đang xử lý với lý do rõ
+ *     ràng, huỷ các phương án chưa ai làm, giữ nguyên toàn bộ lịch sử.
+ *   · case còn căn cứ khác (mốc từ đợt khác, quan sát, phương án đã chạy) → GIỮ, và báo
+ *     người phụ trách xem lại xem có cần theo tiếp không. Không xoá việc đã diễn ra.
+ */
+function reconcileCorrectedScores(p: Principal, attemptId: number, result: AttemptResult) {
+  const conn = db();
+  const rows = scoresOf(attemptId);
+  const entry = entryBandsOf(rows);
+  const failing = new Set(failingEntrySkills(result.expectation, entry, result.skipped));
+
+  /* Ô đã có điểm mà KHÔNG nằm trong danh sách dưới kỳ vọng = ô đang đạt. */
+  const passing = ENTRY_SKILLS.filter(
+    (k) => (entry[k] ?? null) !== null && !failing.has(k),
+  ) as string[];
+  if (!passing.length) return;
+
+  const { withdrawn, casesToReview } = withdrawSignalsNoLongerValid({
+    actorUserId: p.userId, attemptId, passingSkills: passing,
+  });
+
+  for (const item of casesToReview) {
+    if (caseHasIndependentBasis(item.caseId, attemptId)) {
+      /* Giữ case, chỉ nhắc xem lại — người phụ trách quyết định có theo tiếp hay không. */
+      const c = conn
+        .prepare('SELECT owner_user_id, student_id FROM sos_cases WHERE id = ?')
+        .get(item.caseId) as any;
+      if (c?.owner_user_id) {
+        const st = conn.prepare('SELECT full_name FROM students WHERE id = ?').get(c.student_id) as any;
+        notify({
+          userId: c.owner_user_id, kind: 'sos',
+          title: `Xem lại case ${item.label} — ${st?.full_name ?? ''}`,
+          body: 'Điểm nguồn đã được sửa thành đạt kỳ vọng. Case vẫn còn căn cứ khác; '
+            + 'hãy xem có cần theo tiếp không.',
+          entityType: 'sos_case', entityId: item.caseId,
+          dedupKey: `case_review:${item.caseId}:${attemptId}`,
+        });
+      }
+    } else {
+      retireCaseForCorrectedScore(p, item.caseId, item.label);
+      conn
+        .prepare(
+          `UPDATE case_signals SET status = 'withdrawn', withdrawn_reason = ?, updated_at = ? WHERE id = ?`,
+        )
+        .run(SIGNAL_WITHDRAW_SCORE_FIXED, nowIso(), item.signalId);
+    }
+  }
+
+  if (withdrawn.length) {
+    writeAudit({
+      actorUserId: p.userId, action: 'signal.withdrawn_batch', entityType: 'assessment_attempt',
+      entityId: attemptId, entityLabel: `${withdrawn.length} tín hiệu`,
+      after: { reason: SIGNAL_WITHDRAW_SCORE_FIXED, skills: withdrawn.map((w) => w.skill) },
+    });
+  }
 }
 
 export function saveScore(p: Principal, attemptId: number, skill: string, patch: ScorePatch) {

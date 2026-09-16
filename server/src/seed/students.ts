@@ -336,7 +336,18 @@ export const STUDENTS: StudentSeed[] = [
       tests: [
         { no: 1, kind: 'mock', week: '2026-08-03', status: 'done',
           bands: { listening: 5.5, reading: 5.5, writing1: 5.0, writing2: 5.5, speaking: 5.5 } },
-        { no: 2, kind: 'mock', week: '2026-09-14', status: 'planned' },
+        {
+          /*
+           * MT2 TUẦN NÀY, ĐIỂM VỪA VÀO. Kỳ vọng 5.5; Reading 5.0 dưới kỳ vọng nên sinh một
+           * tín hiệu cho cô Reading, hạn xác minh 16/09 — CHƯA quá hạn.
+           *
+           * Đây là ca "vừa có tín hiệu, còn trong hạn" của bộ demo: mở hàng việc ra phải
+           * thấy cả việc còn thời gian, không chỉ toàn việc đã đỏ.
+           */
+          no: 2, kind: 'mock', week: '2026-09-14', status: 'done',
+          bands: { listening: 6.0, reading: 5.0, writing1: 5.5, writing2: 5.5, speaking: 6.0 },
+          enteredOn: '2026-09-14',
+        },
       ],
     }],
   },
@@ -579,6 +590,27 @@ export const STUDENTS: StudentSeed[] = [
         ],
         cases: [
           {
+            /*
+             * CASE CỦA RIÊNG WRITING TASK 1.
+             *
+             * MT1 của em có band Writing gộp 5.0, dưới kỳ vọng 5.5, và cả W1 lẫn W2 đều dưới.
+             * Hai task chấm riêng và thường do hai giáo viên khác nhau dạy, nên tín hiệu của
+             * chúng cũng riêng — cô W1 xác minh và mở case cho đúng task mình phụ trách.
+             */
+            topic: 'writing1', fromTest: 1, sosLevel: 2, detectedAt: '2026-07-19',
+            title: 'Writing Task 1: đọc sai xu hướng của biểu đồ',
+            summary: 'Em tả đủ số liệu nhưng nêu sai xu hướng chính, và thiếu câu tổng quan.',
+            status: 'in_progress', owner: 'T_TRANG',
+            plans: [
+              {
+                kind: 'teaching_adjust',
+                description: 'Mỗi buổi 10 phút luyện viết câu tổng quan từ một biểu đồ mẫu',
+                performer: 'T_TRANG', cycleStart: '2026-07-20', status: 'started',
+                startedOn: '2026-07-21', followupDue: '2026-09-20',
+              },
+            ],
+          },
+          {
             topic: 'speaking', fromTest: 1, sosLevel: 2, detectedAt: '2026-07-19',
             title: 'Speaking phát âm đuôi từ chưa rõ',
             summary: 'Giám khảo khó nghe ở các từ có đuôi -ed và -s.',
@@ -713,7 +745,22 @@ export const STUDENTS: StudentSeed[] = [
             no: 1, kind: 'mock', week: '2026-07-13', status: 'done',
             bands: { listening: 6.0, reading: 5.0, writing1: 5.5, writing2: 6.0, speaking: 6.0 },
           },
-          { no: 2, kind: 'mock', week: '2026-09-07', status: 'planned' },
+          {
+            /*
+             * MT2 TUẦN TRƯỚC, ĐÃ CÓ ĐIỂM, MÀ CHƯA AI XÁC MINH TÍN HIỆU.
+             *
+             * Kỳ vọng MT2 = 6.0. Speaking 5.5 dưới kỳ vọng nên sinh một tín hiệu cho cô
+             * Speaking từ 07/09, hạn xác minh 09/09 — nay đã quá hạn. Đây là ca QUÁ HẠN XÁC
+             * MINH có chủ đích của bộ demo: bản demo phải có cả trường hợp chưa ai xem, nếu
+             * không thì hàng việc mới của mục 6.2 nhìn lúc nào cũng trống.
+             *
+             * Reading đã đạt lại ở lượt này, nên case Reading đang mở nhận một mốc "đã đạt
+             * kỳ vọng" và mức hạ về 0 — nhưng KHÔNG tự đóng.
+             */
+            no: 2, kind: 'mock', week: '2026-09-07', status: 'done',
+            bands: { listening: 6.0, reading: 6.0, writing1: 6.0, writing2: 6.0, speaking: 5.5 },
+            enteredOn: '2026-09-07',
+          },
         ],
         cases: [
           {

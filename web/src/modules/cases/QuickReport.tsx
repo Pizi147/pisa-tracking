@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { Modal } from '../../ui/Drawer.tsx';
@@ -23,10 +23,18 @@ import {
  * chọn chúng chỉ mất hai lần bấm và không cần suy nghĩ: em vướng kỹ năng nào, hay là chuyện
  * ý thức.
  */
-export function QuickReport({ open, onClose, studentId, studentName, cycleId, onDone }: {
+export function QuickReport({ open, onClose, studentId, studentName, cycleId, onDone, signal }: {
   open: boolean; onClose: () => void;
   studentId: number; studentName?: string; cycleId?: number | null;
   onDone?: (caseId: number) => void;
+  /**
+   * TÍN HIỆU mà case này ra đời để trả lời (mục 6.2).
+   *
+   * Khi mở form từ một tín hiệu, đầu mục và kỹ năng được điền sẵn — đó là phần máy BIẾT
+   * chắc. Tên và mô tả thì không: máy chỉ đọc được con số, còn vấn đề thật là gì thì người
+   * dạy mới biết, và đó chính là lý do bước xác minh này tồn tại.
+   */
+  signal?: { id: number; track: string; skill: string | null; label: string } | null;
 }) {
   const toast = useToast();
   const [title, setTitle] = useState('');
@@ -48,6 +56,13 @@ export function QuickReport({ open, onClose, studentId, studentName, cycleId, on
     () => `report:${studentId}:${Date.now()}:${Math.random().toString(36).slice(2, 8)}`,
     [studentId, open],
   );
+
+  /* Mở từ một tín hiệu: điền sẵn đầu mục và kỹ năng, để người dạy chỉ còn phải viết nhận định. */
+  useEffect(() => {
+    if (!open || !signal) return;
+    setTrack(signal.track);
+    setTopic(signal.skill ?? '');
+  }, [open, signal?.id]);
 
   const topics: readonly string[] = track === 'behaviour' ? BEHAVIOUR_TOPICS : ENTRY_SKILLS;
   const topicLabel = (k: string) => (track === 'behaviour'
@@ -80,6 +95,7 @@ export function QuickReport({ open, onClose, studentId, studentName, cycleId, on
         note: note.trim() || undefined,
         detectedAt: detectedAt || undefined,
         idempotencyKey,
+        fromSignalId: signal?.id ?? undefined,
         ...extra,
       });
       invalidate('/cases'); invalidate('/students'); invalidate('/overview');
@@ -105,7 +121,9 @@ export function QuickReport({ open, onClose, studentId, studentName, cycleId, on
 
   return (
     <Modal open={open} onClose={onClose}
-      title={studentName ? `+ Case · ${studentName}` : '+ Case'}
+      title={signal
+        ? `Xác minh tín hiệu ${signal.label}${studentName ? ` · ${studentName}` : ''}`
+        : (studentName ? `+ Case · ${studentName}` : '+ Case')}
       footer={
         <>
           <button className="btn" onClick={onClose}>Huỷ</button>

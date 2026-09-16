@@ -402,6 +402,7 @@ function migrateCaseEngine(applied: string[], skipped: string[]) {
     migrateDropBranchAdmin(conn, applied);
     migrateNormalPassThreshold(conn, applied);
     migrateSkillSchedule(conn, applied);
+    migrateSignals(conn, applied);
 
     /*
      * Case đã đóng theo hệ thống cũ mà không có hướng xử lý: ghi rõ là "đóng theo hệ thống
@@ -2006,6 +2007,166 @@ function migrateSkillSchedule(conn: any, applied: string[]) {
           schedule: 'mỗi kỹ năng một tuần thi riêng',
           deadline: 'FT hết thứ Tư tuần sau tuần thi của kỹ năng đó; Normal hết Chủ nhật tuần thi',
           note: 'Owner chốt sau PR15. Tuần kế hoạch hoàn tất của đợt = tuần muộn nhất trong các kỹ năng bắt buộc.',
+        }),
+        now,
+      );
+  }
+}
+
+/**
+ * TÍN HIỆU THAY CHO CASE TỰ SINH (mục 6.2 · 9.4 · 18.1).
+ *
+ * Trước bước này, một kết quả dưới kỳ vọng tự mở ra case hoàn chỉnh kèm phương án hỗ trợ.
+ * Sau bước này, nó chỉ sinh tín hiệu cần giáo viên xác minh trong ba ngày.
+ *
+ * Việc khó nhất của bước nâng cấp là KHÔNG PHÁ DỮ LIỆU CŨ. Những case đã mở là có thật, và
+ * rất nhiều case trong số đó đã có người làm việc trên chúng. Nên:
+ *
+ *   ✓ Case cũ GIỮ NGUYÊN, không case nào bị đóng hay xoá.
+ *   ✓ Dựng tín hiệu NGƯỢC từ các mốc đã có, ở trạng thái "đã thành case" — để hồ sơ đọc ra
+ *     một mạch: có tín hiệu, rồi ai đó đã xác minh, rồi thành case này.
+ *   ✓ Phương án TỰ SINH mà CHƯA AI ĐỤNG VÀO thì vô hiệu hoá: chúng không phải việc thật,
+ *     và để lại thì bảng hiệu quả đếm chúng như những lần hỗ trợ đã lên kế hoạch.
+ *
+ *   ✗ KHÔNG đụng phương án đã bắt đầu hoặc đã xong — việc đã diễn ra thì đã diễn ra, kể cả
+ *     khi nó vốn sinh ra tự động. Mục 18.1 nói rõ điều này.
+ *   ✗ KHÔNG bịa tín hiệu đang chờ xác minh cho dữ liệu cũ: mọi tín hiệu dựng ngược đều ở
+ *     trạng thái đã xử lý, nên không có khoản nợ quá hạn nào được sinh về quá khứ.
+ */
+function migrateSignals(conn: any, applied: string[]) {
+  const has = (t: string) =>
+    !!conn.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name = ?").get(t);
+  if (!has('sos_cases') || !has('case_milestones')) return;
+
+  conn.exec(`
+    CREATE TABLE IF NOT EXISTS case_signals (
+      id INTEGER PRIMARY KEY,
+      student_id INTEGER NOT NULL REFERENCES students(id),
+      cycle_id INTEGER REFERENCES learning_cycles(id),
+      attempt_id INTEGER REFERENCES assessment_attempts(id),
+      class_id INTEGER REFERENCES classes(id),
+      track TEXT NOT NULL,
+      skill TEXT,
+      category TEXT,
+      band REAL,
+      expectation REAL,
+      sos_level INTEGER,
+      detected_on TEXT NOT NULL,
+      raised_on TEXT NOT NULL,
+      verify_due TEXT NOT NULL,
+      owner_user_id INTEGER REFERENCES users(id),
+      status TEXT NOT NULL DEFAULT 'pending',
+      case_id INTEGER REFERENCES sos_cases(id),
+      resolved_by INTEGER REFERENCES users(id),
+      resolved_at TEXT,
+      resolution_note TEXT,
+      withdrawn_reason TEXT,
+      dedup_key TEXT UNIQUE,
+      created_at TEXT NOT NULL,
+      updated_at TEXT);
+    CREATE INDEX IF NOT EXISTS idx_signal_student ON case_signals(student_id);
+    CREATE INDEX IF NOT EXISTS idx_signal_status ON case_signals(status);
+    CREATE INDEX IF NOT EXISTS idx_signal_owner ON case_signals(owner_user_id);
+    CREATE INDEX IF NOT EXISTS idx_signal_attempt ON case_signals(attempt_id);
+  `);
+
+  const now = nowIso();
+  const addDaysIso = (date: string, n: number) => {
+    const d = new Date(`${date.slice(0, 10)}T00:00:00Z`);
+    d.setUTCDate(d.getUTCDate() + n);
+    return d.toISOString().slice(0, 10);
+  };
+
+  /*
+   * DỰNG TÍN HIỆU NGƯỢC TỪ MỐC CASE.
+   *
+   * Mỗi mốc gắn với một lượt đánh giá là dấu vết của đúng một tín hiệu đã từng tồn tại:
+   * "đợt này, hạng mục này, dưới kỳ vọng". Lấy mốc sớm nhất của mỗi cặp (lượt, case) để
+   * không dựng hai tín hiệu cho cùng một nguồn.
+   *
+   * `raised_on` lấy ngày mốc xảy ra — đó là căn cứ có thật gần nhất với thời điểm tín hiệu
+   * được ghi nhận. Không bịa ra một ngày khác.
+   */
+  const rows = conn
+    .prepare(
+      `SELECT m.attempt_id, m.case_id, MIN(m.occurred_on) AS on_date,
+              c.student_id, c.cycle_id, c.track, c.category, c.topic, c.owner_user_id,
+              a.class_id
+         FROM case_milestones m
+         JOIN sos_cases c ON c.id = m.case_id
+         LEFT JOIN assessment_attempts a ON a.id = m.attempt_id
+        WHERE m.attempt_id IS NOT NULL
+          AND m.kind IN ('opened', 'repeat', 'recurrence')
+        GROUP BY m.attempt_id, m.case_id`,
+    )
+    .all() as any[];
+
+  let built = 0;
+  for (const r of rows) {
+    const skill = r.track === 'behaviour' ? null : (r.topic ?? null);
+    const key = `mt:${r.attempt_id}:${skill ?? 'behaviour'}`;
+    const seen = conn.prepare('SELECT id FROM case_signals WHERE dedup_key = ?').get(key);
+    if (seen) continue;
+    const on = r.on_date as string;
+    conn
+      .prepare(
+        `INSERT INTO case_signals (student_id, cycle_id, attempt_id, class_id, track, skill, category,
+                                   detected_on, raised_on, verify_due, owner_user_id, status, case_id,
+                                   resolved_by, resolved_at, resolution_note, dedup_key, created_at)
+         VALUES (?,?,?,?,?,?,?,?,?,?,?, 'linked', ?, NULL, ?, ?, ?, ?)`,
+      )
+      .run(r.student_id, r.cycle_id, r.attempt_id, r.class_id ?? null,
+           r.track ?? 'academic', skill, r.category ?? null,
+           on, on, addDaysIso(on, 2), r.owner_user_id ?? null, r.case_id,
+           on, 'Dựng lại từ lịch sử: case này đã được mở từ kết quả của đợt đó.',
+           key, now);
+    built += 1;
+  }
+
+  /*
+   * PHƯƠNG ÁN TỰ SINH CHƯA AI ĐỤNG VÀO → vô hiệu hoá.
+   *
+   * Nhận ra chúng bằng `migration_key` bắt đầu bằng 'auto:' — đó là dấu hàm sinh tự động cũ
+   * để lại. Chỉ những phương án còn ở trạng thái "đã lên kế hoạch" mới bị huỷ; cái nào đã
+   * bắt đầu hoặc đã xong thì giữ nguyên, vì đằng sau nó là một người đã thực sự làm.
+   *
+   * `closed_reason = 'auto_retired'` để báo cáo hiệu quả không đếm chúng vào mẫu số: một
+   * phương án chưa từng chạy thì không thành công cũng không thất bại.
+   */
+  let retired = 0;
+  if (has('case_interventions')) {
+    retired = conn
+      .prepare(
+        `UPDATE case_interventions
+            SET status = 'cancelled', closed_reason = 'auto_retired', updated_at = ?
+          WHERE status = 'planned' AND migration_key LIKE 'auto:%'`,
+      )
+      .run(now).changes;
+  }
+
+  /* Chạy lại lần hai là no-op: không dựng thêm gì thì cũng không báo cáo gì. */
+  if (!built && !retired) return;
+
+  applied.push(
+    `Tín hiệu thay cho case tự sinh: dựng ${built} tín hiệu từ lịch sử (đều ở trạng thái "đã thành case"), `
+      + `vô hiệu hoá ${retired} phương án tự sinh chưa ai thực hiện. `
+      + 'Không case nào bị đóng hay xoá; phương án đã bắt đầu hoặc đã xong giữ nguyên; '
+      + 'không sinh tín hiệu quá hạn nào về quá khứ.',
+  );
+
+  if (has('audit_logs')) {
+    conn
+      .prepare(
+        `INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, entity_label,
+                                 before_json, after_json, created_at)
+         VALUES (NULL, 'rule.changed', 'cases', NULL, 'Điểm dưới kỳ vọng sinh gì', ?, ?, ?)`,
+      )
+      .run(
+        JSON.stringify({ creates: 'case hoàn chỉnh + phương án hỗ trợ tự sinh' }),
+        JSON.stringify({
+          creates: 'tín hiệu cần giáo viên xác minh',
+          verifyDays: 3,
+          note: 'Owner chốt sau PR15. Máy không chẩn đoán nguyên nhân và không xếp tutor thay người.',
         }),
         now,
       );

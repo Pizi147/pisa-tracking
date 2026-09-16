@@ -1012,6 +1012,60 @@ CREATE INDEX idx_case_source_case ON case_sources(case_id);
  *
  * `dedup_key` để chấm lại hay sửa điểm không nhân đôi mốc.
  */
+/*
+ * TÍN HIỆU — điểm dưới kỳ vọng sinh ra cái này, KHÔNG sinh ra case (mục 6.2).
+ *
+ * Một tín hiệu nói đúng một câu: "môn này của em này dưới kỳ vọng ở đợt đó, ai đó phải xem".
+ * Nó KHÔNG nói vì sao, KHÔNG nói phải làm gì, và KHÔNG được đếm như một case đã xác định.
+ *
+ * Người phải xác minh: GVBM của chính môn đó; riêng tín hiệu Ý thức/Khác về GVCN để xem
+ * tình hình chung. Hạn xác minh là BA NGÀY tính cả ngày đầu, đếm từ `raised_on` — ngày tín
+ * hiệu được ghi nhận, không phải thứ Hai của tuần thi đã qua. Điểm nhập muộn vì thế không
+ * làm giáo viên quá hạn ngay lúc điểm vừa được công bố.
+ *
+ * `dedup_key` khoá theo (đợt, kỹ năng) nên nhập bổ sung, chấm lại hay lưu lại nhiều lần
+ * KHÔNG nhân tín hiệu và KHÔNG đặt lại hạn.
+ */
+CREATE TABLE case_signals (
+  id INTEGER PRIMARY KEY,
+  student_id INTEGER NOT NULL REFERENCES students(id),
+  cycle_id INTEGER REFERENCES learning_cycles(id),
+  attempt_id INTEGER REFERENCES assessment_attempts(id),
+  class_id INTEGER REFERENCES classes(id),
+
+  track TEXT NOT NULL,                -- academic | behaviour
+  /* Ô nhập điểm sinh ra tín hiệu: listening | reading | writing1 | writing2 | speaking.
+     Tín hiệu Ý thức/Khác không gắn với môn nào nên để trống. */
+  skill TEXT,
+  category TEXT,                      -- hạng mục GỢI Ý, người xác minh vẫn đổi được
+
+  band REAL,                          -- band thực tế lúc sinh tín hiệu
+  expectation REAL,                   -- kỳ vọng của đợt đó
+  sos_level INTEGER,
+
+  /* Ngày nghiệp vụ của kết quả (thứ Hai tuần thi) — KHÁC với ngày ghi nhận tín hiệu. */
+  detected_on TEXT NOT NULL,
+  raised_on TEXT NOT NULL,            -- ngày hệ thống ghi nhận và giao trách nhiệm
+  verify_due TEXT NOT NULL,           -- raised_on + 2 ngày
+  owner_user_id INTEGER REFERENCES users(id),
+
+  -- pending (chờ xác minh) | linked (đã thành case) | noted (đã xem, không thành case) | withdrawn
+  status TEXT NOT NULL DEFAULT 'pending',
+  case_id INTEGER REFERENCES sos_cases(id),
+  resolved_by INTEGER REFERENCES users(id),
+  resolved_at TEXT,
+  resolution_note TEXT,
+  withdrawn_reason TEXT,
+
+  dedup_key TEXT UNIQUE,
+  created_at TEXT NOT NULL,
+  updated_at TEXT
+);
+CREATE INDEX idx_signal_student ON case_signals(student_id);
+CREATE INDEX idx_signal_status ON case_signals(status);
+CREATE INDEX idx_signal_owner ON case_signals(owner_user_id);
+CREATE INDEX idx_signal_attempt ON case_signals(attempt_id);
+
 CREATE TABLE case_milestones (
   id INTEGER PRIMARY KEY,
   case_id INTEGER NOT NULL REFERENCES sos_cases(id),

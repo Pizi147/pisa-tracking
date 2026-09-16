@@ -18,6 +18,7 @@ import { currentCycle } from '../fasttrack/cycles.ts';
 import { expectationFor } from '../fasttrack/scoring.ts';
 import { isRatioCycle } from '../normal/regular.ts';
 import { suggestCaseOwner } from './owner.ts';
+import { linkSignalToCase } from './signals.ts';
 
 /**
  * CASE HỌC VỤ — một vòng đời cho cả hai nguồn.
@@ -260,6 +261,13 @@ export function reportIssue(p: Principal, input: {
   parallel?: boolean;
   /** Người phụ trách chính. Bỏ trống thì hệ thống gợi ý theo phân công của lớp. */
   ownerUserId?: number | null;
+  /**
+   * TÍN HIỆU mà case này ra đời để trả lời (mục 6.2).
+   *
+   * Đây là đường DUY NHẤT một tín hiệu trở thành case: người dùng mở form, đặt tên, viết mô
+   * tả rồi gửi. Hệ thống không tự đi con đường này thay họ.
+   */
+  fromSignalId?: number | null;
 }) {
   const conn = db();
   const student = conn.prepare('SELECT * FROM students WHERE id = ?').get(input.studentId) as any;
@@ -380,11 +388,27 @@ export function reportIssue(p: Principal, input: {
       writeAudit({ actorUserId: p.userId, action: 'case.report.merge', entityType: 'sos_case',
         entityId: existing.id, entityLabel: `${student.student_code} · ${summary.slice(0, 40)}`,
         after: { mergedInto: existing.id } });
+      if (input.fromSignalId) linkSignalToCase(p, input.fromSignalId, existing.id, summary);
       return caseDetail(p, existing.id);
     });
   }
 
   return tx(() => {
+    /*
+     * CASE CŨ ĐÃ ĐÓNG NHẢ KHOÁ CHỐNG TRÙNG RA (mục 6.2 · 7.5).
+     *
+     * Khoá `(học viên, lộ trình, hạng mục)` luôn thuộc về case ĐANG MỞ của hạng mục đó. Một
+     * case đã chốt kết thúc mà vẫn giữ khoá thì hạng mục ấy bị khoá vĩnh viễn: vấn đề tái
+     * diễn sau đó không mở được case mới.
+     *
+     * Nhả khoá KHÔNG đụng gì tới nội dung case cũ — kết luận, phương án và lịch sử của nó
+     * giữ nguyên. Việc nối case mới vào case cũ do đường tín hiệu lo, vì chỉ ở đó mới biết
+     * đây là tái diễn hay là một vấn đề khác.
+     */
+    if (dedupKey) {
+      conn.prepare(`UPDATE sos_cases SET dedup_key = NULL, updated_at = ? WHERE dedup_key = ? AND status = 'done'`)
+        .run(nowIso(), dedupKey);
+    }
     const info = conn
       .prepare(
         `INSERT INTO sos_cases (attempt_id, student_id, cycle_id, track, topic, category, origin_kind,
@@ -429,6 +453,8 @@ export function reportIssue(p: Principal, input: {
     );
     writeAudit({ actorUserId: p.userId, action: 'case.report', entityType: 'sos_case', entityId: caseId,
       entityLabel: `${student.student_code} · ${summary.slice(0, 40)}`, after: { urgency, detectedAt } });
+    /* Tín hiệu đã được trả lời: từ đây nó không còn nằm trong hàng chờ xác minh nữa. */
+    if (input.fromSignalId) linkSignalToCase(p, input.fromSignalId, caseId, summary);
     return caseDetail(p, caseId);
   });
 }

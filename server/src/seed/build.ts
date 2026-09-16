@@ -1,11 +1,11 @@
 import {
-  ATTEMPT_KIND_SHORT, PROGRAMME_TEMPLATES, categoryOf, cycleDeadline, programmeOf,
+  ATTEMPT_KIND_SHORT, PROGRAMME_TEMPLATES, categoryOf, cycleDeadline, programmeOf, ratioResult,
   type AttemptKind,
 } from '../../../shared/domain/index.ts';
 import { addDays, normalizeName, nowIso, padCode } from '../util.ts';
 import { ensurePeriod } from '../platform/week.ts';
-import { LISTENING_BY_RAW, READING_BY_RAW } from '../fasttrack/scoring.ts';
-import { ensureBehaviourCase } from '../cases/sos.ts';
+import { LISTENING_BY_RAW, READING_BY_RAW, expectationFor, failingEntrySkills } from '../fasttrack/scoring.ts';
+import { raiseSignal } from '../cases/signals.ts';
 import { DEMO_DATE, type CaseSeed, type CycleSeed, type StudentSeed, type TestSeed } from './journeys.ts';
 import { STUDENTS } from './students.ts';
 
@@ -59,13 +59,15 @@ export type BuildCtx = {
 export type BuildCounts = {
   students: number; cycles: number; attempts: number; scores: number; skips: number;
   cases: number; interventions: number; followups: number; milestones: number;
+  /** Tín hiệu từ điểm — đếm riêng vì nó KHÔNG phải case (mục 6.2). */
+  signals: number;
 };
 
 export function buildJourneys(ctx: BuildCtx): BuildCounts {
   const { conn, adminId } = ctx;
   const counts: BuildCounts = {
     students: 0, cycles: 0, attempts: 0, scores: 0, skips: 0,
-    cases: 0, interventions: 0, followups: 0, milestones: 0,
+    cases: 0, interventions: 0, followups: 0, milestones: 0, signals: 0,
   };
 
   const journey = (sid: number, cycleId: number | null, type: string, date: string,
@@ -154,6 +156,12 @@ export function buildJourneys(ctx: BuildCtx): BuildCounts {
       for (const c of cy.cases ?? []) {
         const caseId = insertCase(ctx, sid, cycleId, cy, c, attemptByNo, closedByTopic, counts);
         if (c.status === 'done') closedByTopic.set(c.topic, caseId);
+      }
+
+      /* --------------------------------------------------- 3c. tín hiệu từ điểm */
+      for (const t of cy.tests) {
+        const aid = attemptByNo.get(t.no);
+        if (aid) academicSignals(ctx, sid, cycleId, aid, counts);
       }
 
       /* Lộ trình đã khép: ghi kết quả cuối, và nếu là kỳ thi thật thì nói rõ ra. */
@@ -373,6 +381,192 @@ function insertAttempt(
  * thuộc về giáo viên chủ nhiệm). Đợt cách ngày demo hơn ba tuần thì hai việc trao đổi coi như
  * đã làm xong và case đã khép; đợt gần đây thì để nguyên là việc đang chờ.
  */
+/**
+ * GVCN XEM TÍN HIỆU Ý THỨC/KHÁC RỒI QUYẾT ĐỊNH MỞ CASE — việc của NGƯỜI, không của máy.
+ *
+ * Hàm này dựng lại đúng thứ một GVCN làm sau khi thấy tín hiệu: đặt tên case, viết mô tả,
+ * và lên hai việc trao đổi (với em, với phụ huynh). Bộ demo phải tự làm phần này vì engine
+ * không còn làm hộ nữa — và đó chính là điều mục 6.2 muốn.
+ */
+/**
+ * TÍN HIỆU HỌC THUẬT CỦA MỘT ĐỢT, và ba kết cục có thật của chúng.
+ *
+ * Mọi môn dưới kỳ vọng đều sinh một tín hiệu — đó là luật (mục 6.2). Nhưng một tín hiệu
+ * không nằm mãi ở trạng thái chờ, nên bộ demo phải bày ra cả ba đường nó có thể đi:
+ *
+ *   linked   kịch bản có case cho hạng mục đó  → giáo viên đã xác minh và mở/nối case
+ *   noted    đợt đã xa mà kịch bản không có case → giáo viên đã xem, thấy không cần mở case
+ *   pending  đợt gần đây, chưa ai xem          → việc đang chờ, có hạn ba ngày
+ *
+ * Nếu để tất cả ở `pending` thì mở bản demo ra là một màn hình đỏ quá hạn, và người xem sẽ
+ * học sai rằng trung tâm đang bỏ bê mọi học viên.
+ */
+function academicSignals(
+  ctx: BuildCtx, sid: number, cycleId: number, attemptId: number, counts: BuildCounts,
+) {
+  const { conn } = ctx;
+  const a = conn.prepare('SELECT * FROM assessment_attempts WHERE id = ?').get(attemptId) as any;
+  if (!a || a.status === 'cancelled') return;
+
+  const scores = conn
+    .prepare('SELECT skill, band, raw_score, raw_total FROM assessment_scores WHERE attempt_id = ?')
+    .all(attemptId) as any[];
+  if (!scores.length) return;
+
+  const prog = a.class_id
+    ? (conn
+        .prepare(
+          `SELECT p.scoring_mode AS mode FROM classes c
+             LEFT JOIN programmes p ON p.code = c.programme_code WHERE c.id = ?`,
+        )
+        .get(a.class_id) as any)
+    : null;
+  const isRatio = prog?.mode === 'ratio';
+
+  /* Môn nào dưới kỳ vọng — hai cách chấm, hai phép so, không dùng chung công thức. */
+  let failing: string[] = [];
+  let expectation: number | null = null;
+  if (isRatio) {
+    failing = scores
+      .filter((r) => r.raw_score !== null && r.raw_total)
+      .filter((r) => ratioResult(r.raw_score, r.raw_total).outcome === 'fail')
+      .map((r) => r.skill as string);
+  } else {
+    expectation = expectationFor(a.target_at_attempt, a.attempt_no);
+    const entry: Record<string, number | null> = {};
+    for (const r of scores) entry[r.skill] = r.band;
+    const skips = (conn
+      .prepare('SELECT skill FROM attempt_skills WHERE attempt_id = ? AND required = 0')
+      .all(attemptId) as any[]).map((r) => r.skill as string);
+    failing = failingEntrySkills(expectation, entry as any, skips);
+  }
+  if (!failing.length) return;
+
+  const detectedOn = weekStartOfRow(conn, a) ?? DEMO_DATE;
+  /* Ngày ghi nhận tín hiệu = lúc điểm được nhập, không lùi về thứ Hai tuần thi. */
+  const raisedOn = past(detectedOn) ?? detectedOn;
+  /*
+   * HAI TUẦN: quá mốc này thì giáo viên bộ môn chắc chắn đã xem — hạn xác minh chỉ có ba
+   * ngày. Để ngưỡng quá dài thì mở bản demo ra là một màn hình đỏ quá hạn, và người xem sẽ
+   * học sai rằng trung tâm đang bỏ bê mọi học viên (mục 18.2).
+   *
+   * Trường hợp QUÁ HẠN vẫn phải có, nhưng là vài ca có chủ đích trong kịch bản, không phải
+   * hệ quả của một ngưỡng đặt bừa.
+   */
+  const stale = addDays(detectedOn, 14) <= DEMO_DATE;
+
+  for (const skill of failing) {
+    const category = categoryOf('academic', skill);
+    if (!category) continue;
+    const signal = raiseSignal({
+      actorUserId: ctx.adminId,
+      studentId: sid, cycleId, attemptId, classId: a.class_id ?? null,
+      track: 'academic', skill, category,
+      band: scores.find((r) => r.skill === skill)?.band ?? null,
+      expectation, sosLevel: a.sos_level ?? null,
+      detectedOn, raisedOn,
+    });
+    counts.signals += 1;
+    if (signal.status !== 'pending') continue;
+
+    const owner = conn
+      .prepare('SELECT owner_user_id AS id FROM case_signals WHERE id = ?')
+      .get(signal.id) as any;
+    const linked = conn
+      .prepare(
+        `SELECT id FROM sos_cases
+          WHERE student_id = ? AND COALESCE(cycle_id, 0) = ? AND track = 'academic'
+            AND category = ? ORDER BY id DESC LIMIT 1`,
+      )
+      .get(sid, cycleId, category) as any;
+
+    if (linked) {
+      conn
+        .prepare(
+          `UPDATE case_signals SET status = 'linked', case_id = ?, resolved_by = ?, resolved_at = ?,
+                  resolution_note = ?, updated_at = ? WHERE id = ?`,
+        )
+        .run(linked.id, owner?.id ?? ctx.adminId, NOW,
+             'Giáo viên bộ môn đã xác minh và đưa vào case của kỹ năng này.', NOW, signal.id);
+    } else if (stale) {
+      conn
+        .prepare(
+          `UPDATE case_signals SET status = 'noted', resolved_by = ?, resolved_at = ?,
+                  resolution_note = ?, updated_at = ? WHERE id = ?`,
+        )
+        .run(owner?.id ?? ctx.adminId, NOW,
+             'Đã xem lại bài của em: lần này em mất điểm ở một dạng bài lạ, không phải vấn đề kéo dài. '
+             + 'Chưa cần mở case, sẽ theo dõi ở đợt sau.',
+             NOW, signal.id);
+    }
+    /* Còn lại để nguyên `pending`: đó là việc đang chờ, và bản demo cần có nó. */
+  }
+}
+
+/** Thứ Hai của tuần kế hoạch hoàn tất của một đợt — chỉ dùng trong lúc dựng bộ demo. */
+function weekStartOfRow(conn: any, a: any): string | null {
+  if (!a.planned_period_id) return null;
+  const r = conn.prepare('SELECT week_start FROM report_periods WHERE id = ?').get(a.planned_period_id) as any;
+  return r?.week_start ?? null;
+}
+
+function behaviourCaseFromSignal(
+  ctx: BuildCtx, sid: number, attemptId: number, classCode: string, detectedAt: string,
+) {
+  const { conn } = ctx;
+  const signal = conn
+    .prepare(`SELECT * FROM case_signals WHERE student_id = ? AND attempt_id = ? AND track = 'behaviour'`)
+    .get(sid, attemptId) as any;
+  if (!signal || signal.status !== 'pending') return;
+
+  const attempt = conn.prepare('SELECT * FROM assessment_attempts WHERE id = ?').get(attemptId) as any;
+  const core = conn
+    .prepare(
+      `SELECT user_id FROM teacher_assignments
+        WHERE class_id = ? AND is_core = 1 AND status = 'active' LIMIT 1`,
+    )
+    .get(ctx.classId.get(classCode)) as any;
+  const owner = core?.user_id ?? ctx.adminId;
+
+  const info = conn
+    .prepare(
+      `INSERT INTO sos_cases (attempt_id, student_id, cycle_id, track, topic, category,
+                              origin_kind, title, summary, detected_at, sos_level, status,
+                              dedup_key, owner_user_id, reported_by, created_at)
+       VALUES (?,?,?, 'behaviour', 'other', 'behaviour', 'mock', ?,?,?,?, 'open', ?,?,?,?)`,
+    )
+    .run(attemptId, sid, attempt.cycle_id ?? null,
+         'Thông báo kết quả và phối hợp với gia đình',
+         'Em có kết quả dưới kỳ vọng ở đợt đánh giá này. GVCN trao đổi với em và với phụ huynh '
+         + 'để gia đình nắm tình hình và cùng phối hợp.',
+         detectedAt, signal.sos_level,
+         `behaviour:mock:${sid}:${attempt.cycle_id ?? 0}:${attemptId}`,
+         owner, owner, NOW);
+  const caseId = Number(info.lastInsertRowid);
+
+  conn
+    .prepare(
+      `UPDATE case_signals SET status = 'linked', case_id = ?, resolved_by = ?, resolved_at = ?,
+              resolution_note = ?, updated_at = ? WHERE id = ?`,
+    )
+    .run(caseId, owner, NOW,
+         'GVCN đã xem và quyết định mở case để trao đổi với em và phụ huynh.', NOW, signal.id);
+
+  const due = cycleDeadline(detectedAt, 'behaviour');
+  for (const kind of ['talk_student', 'talk_parent'] as const) {
+    conn
+      .prepare(
+        `INSERT INTO case_interventions (case_id, kind, description, status, action_due,
+                                         performer_user_id, recorded_by, migration_key, created_at)
+         VALUES (?,?,?, 'planned', ?,?,?,?,?)
+         ON CONFLICT(migration_key) DO NOTHING`,
+      )
+      .run(caseId, kind,
+           kind === 'talk_parent' ? 'Trao đổi với phụ huynh' : 'Trao đổi với học viên',
+           due, owner, owner, `behaviour:${attemptId}:${kind}`, NOW);
+  }
+}
+
 function finishBehaviourCase(
   ctx: BuildCtx, sid: number, attemptId: number, classCode: string, detectedAt: string,
 ) {
@@ -398,8 +592,8 @@ function finishBehaviourCase(
     .prepare('UPDATE case_interventions SET performer_user_id = ?, recorded_by = ?, updated_at = ? WHERE case_id = ?')
     .run(owner, owner, NOW, row.id);
 
-  /* Ba tuần: đủ xa để hai việc trao đổi chắc chắn đã diễn ra. */
-  const stale = addDays(detectedAt, 21) <= DEMO_DATE;
+  /* Bốn tuần: đủ xa để hai việc trao đổi chắc chắn đã diễn ra. */
+  const stale = addDays(detectedAt, 28) <= DEMO_DATE;
   if (!stale) return;
 
   const doneOn = past(addDays(detectedAt, 3))!;
@@ -532,26 +726,46 @@ function insertCase(
     counts.milestones += 1;
   }
   /*
-   * CASE Ý THỨC/KHÁC TỰ SINH SAU MỘT ĐỢT ĐÁNH GIÁ CÓ SOS.
+   * TÍN HIỆU Ý THỨC/KHÁC SAU MỘT ĐỢT ĐÁNH GIÁ CÓ SOS — và nó CHỈ là một tín hiệu.
    *
-   * Đây là luật của hệ thống, không phải một lựa chọn của kịch bản: em vừa có SOS thì phải
-   * cho em và phụ huynh biết. Gọi thẳng hàm của engine để dữ liệu mẫu đi qua ĐÚNG con đường
-   * mà ứng dụng đi — nếu tự viết lại ở đây thì sớm muộn hai chỗ sẽ lệch nhau.
+   * Từ vòng 7 hệ thống không tự mở case Ý thức/Khác nữa (mục 6.2): em có SOS thì GVCN được
+   * báo để xem tình hình chung, còn có phải mở case hay không là nhận định của cô.
+   *
+   * Bộ demo vì thế phải bày ra CẢ HAI kết cục, vì cả hai đều có thật:
+   *
+   *   · Đợt ĐÃ XA (trên ba tuần): GVCN đã xem, đã quyết định mở case, đã trao đổi với em và
+   *     phụ huynh, và đã chốt. Đây là đường đi đầy đủ của một tín hiệu.
+   *   · Đợt GẦN ĐÂY: tín hiệu còn nằm chờ xác minh, hiện trong hàng việc của GVCN kèm hạn
+   *     ba ngày. Đó mới là thứ đáng đỏ trên màn hình.
    */
   if (track === 'academic' && attemptId && (c.sosLevel ?? 0) > 0) {
-    const attempt = conn.prepare('SELECT * FROM assessment_attempts WHERE id = ?').get(attemptId);
-    ensureBehaviourCase({ userId: ctx.adminId } as any, attempt, c.sosLevel as number, c.detectedAt);
+    const attempt = conn.prepare('SELECT * FROM assessment_attempts WHERE id = ?').get(attemptId) as any;
+    raiseSignal({
+      actorUserId: ctx.adminId,
+      studentId: sid, cycleId: attempt.cycle_id ?? null,
+      attemptId, classId: attempt.class_id ?? null,
+      track: 'behaviour', skill: null, category: 'behaviour',
+      sosLevel: c.sosLevel as number,
+      detectedOn: c.detectedAt,
+      /* Tín hiệu được ghi nhận ngay khi có điểm — đó là mốc hạn ba ngày đếm từ đó. */
+      raisedOn: past(c.detectedAt) ?? c.detectedAt,
+    });
     /*
-     * ENGINE CHỈ MỞ CASE VÀ LÊN LỊCH HAI VIỆC TRAO ĐỔI — nó không biết ai sẽ làm, vì ngoài
-     * đời người ta phân công sau. Ở dữ liệu mẫu thì phải phân công, nếu không mọi case Ý
-     * thức/Khác đều hiện "chưa có người phụ trách · chưa có người thực hiện" và bản demo
-     * trông như một trung tâm bỏ rơi học viên.
+     * BA MỐC THỜI GIAN, BA TRẠNG THÁI KHÁC NHAU — và cả ba đều phải có trong bản demo:
      *
-     * Và việc của những đợt ĐÃ XA thì đã làm xong rồi: một cuộc trao đổi hẹn từ tháng Bảy mà
-     * tới giữa tháng Chín vẫn "chưa ai làm" là dữ liệu vô lý, không phải một cảnh báo hữu ích.
-     * Chỉ những đợt gần đây mới còn là việc đang chờ — đó mới là thứ đáng đỏ.
+     *   trên 4 tuần   GVCN đã xem, đã mở case, đã trao đổi với em và phụ huynh, đã chốt
+     *   1–4 tuần      GVCN đã xem và đã mở case, nhưng hai việc trao đổi CÒN PHẢI LÀM
+     *   dưới 1 tuần   tín hiệu còn nằm chờ xác minh, chưa ai đụng tới
+     *
+     * Thiếu mốc giữa thì bản demo không còn việc trao đổi nào đang chờ, và người xem không
+     * kiểm chứng được ai nhận việc gặp em, ai nhận việc gọi phụ huynh, hạn là ngày nào.
      */
-    finishBehaviourCase(ctx, sid, attemptId, cy.classCode, c.detectedAt);
+    if (addDays(c.detectedAt, 7) <= DEMO_DATE) {
+      behaviourCaseFromSignal(ctx, sid, attemptId, cy.classCode, c.detectedAt);
+      if (addDays(c.detectedAt, 28) <= DEMO_DATE) {
+        finishBehaviourCase(ctx, sid, attemptId, cy.classCode, c.detectedAt);
+      }
+    }
   }
   for (const no of c.repeatsAt ?? []) {
     const aid = attemptByNo.get(no) ?? null;

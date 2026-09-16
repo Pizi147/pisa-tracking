@@ -2,7 +2,9 @@ import { useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { Card, Empty, ErrorState, Info, Level, Outcome, SectionNote, Skeleton, Status, Th} from '../../ui/ui.tsx';
-import { Drawer } from '../../ui/Drawer.tsx';
+import { Drawer, Modal } from '../../ui/Drawer.tsx';
+import { api, invalidate } from '../../lib/api.ts';
+import { useToast } from '../../ui/Toast.tsx';
 import { CasePanel } from '../cases/CasePanel.tsx';
 import { SkillBoard } from '../cases/SkillBoard.tsx';
 import { StudentCases } from '../cases/StudentCases.tsx';
@@ -50,6 +52,8 @@ export default function StudentDetailPage() {
   const [manageOpen, setManageOpen] = useState(false);
   const [planOpen, setPlanOpen] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
+  /** Tín hiệu đang được xác minh — mở form case với đầu mục và kỹ năng điền sẵn. */
+  const [verify, setVerify] = useState<any | null>(null);
   const [openCase, setOpenCase] = useState<number | null>(null);
   /*
    * HẠNG MỤC ĐANG LỌC — một state duy nhất nối bảng kỹ năng với khối case bên dưới.
@@ -193,6 +197,14 @@ export default function StudentDetailPage() {
       ) : (
         <>
           {/* ══════════════════════════════════════ B — TIẾN ĐỘ HIỆN TẠI */}
+          {/* ══════════════════════════════ B0 — TÍN HIỆU CHỜ XÁC MINH */}
+          <PendingSignals
+            signals={data.pendingSignals ?? []}
+            studentName={data.fullName}
+            onVerify={(sg) => setVerify(sg)}
+            onDone={reload}
+          />
+
           {/*
             BẢNG TÓM TẮT, KHÔNG PHẢI CHỖ MỞ CASE (mục 6.2 B).
             Bấm một dòng thì LỌC khối case bên dưới theo hạng mục đó. Trước vòng này dòng
@@ -322,6 +334,12 @@ export default function StudentDetailPage() {
       <QuickReport open={reportOpen} onClose={() => setReportOpen(false)}
         studentId={data.id} studentName={data.fullName} cycleId={cy?.id ?? null}
         onDone={(cid) => { reload(); setOpenCase(cid); }} />
+
+      {/* Mở case ĐỂ TRẢ LỜI một tín hiệu: đầu mục và kỹ năng điền sẵn, nhận định do người viết. */}
+      <QuickReport open={!!verify} onClose={() => setVerify(null)}
+        studentId={data.id} studentName={data.fullName} cycleId={cy?.id ?? null}
+        signal={verify}
+        onDone={(cid) => { setVerify(null); reload(); setOpenCase(cid); }} />
 
       <Drawer open={openCase !== null} onClose={() => setOpenCase(null)} title="Vấn đề - Case"
         subtitle={data.fullName}
@@ -506,3 +524,122 @@ function Episode({ ep, onOpenCase }: { ep: any; onOpenCase: (id: number) => void
 }
 
 export { skillLabel };
+
+/**
+ * TÍN HIỆU CHỜ XÁC MINH — khối riêng, đặt TRƯỚC bảng tiến độ và danh sách case.
+ *
+ * Đây là thứ chặn đầu chuỗi: chừng nào chưa ai xem, chưa ai biết vấn đề thật là gì, nên
+ * không có phương án nào để làm và không có kết quả nào để cập nhật.
+ *
+ * Nó cố ý KHÔNG nằm chung với danh sách case. Một tín hiệu chưa ai xác minh không phải một
+ * vấn đề đã được xác định; để lẫn vào nhau là cách chắc chắn nhất để con số "em này đang có
+ * mấy vấn đề" nói quá sự thật.
+ *
+ * Hai lối ra, cả hai đều hợp lệ:
+ *   · mở case — khi xem lại bài thấy có vấn đề thật
+ *   · ghi nhận đã xem — khi không có vấn đề thật, và phải viết ra vì sao
+ */
+function PendingSignals({ signals, studentName, onVerify, onDone }: {
+  signals: any[]; studentName: string;
+  onVerify: (sg: any) => void; onDone: () => void;
+}) {
+  const toast = useToast();
+  const [noteFor, setNoteFor] = useState<any | null>(null);
+  if (!signals.length) return null;
+
+  const overdue = signals.filter((s) => s.overdue).length;
+  return (
+    <>
+      <Card title="Tín hiệu chờ xác minh"
+        action={<span className="text-xs text-slate-500">
+          {signals.length} tín hiệu{overdue > 0 ? ` · ${overdue} quá hạn` : ''}
+        </span>}>
+        <ul className="space-y-2 list-none p-0 m-0">
+          {signals.map((sg) => (
+            <li key={sg.id} className="surface-2 rounded-lg p-3 flex flex-wrap items-start justify-between gap-3">
+              <div className="min-w-0">
+                <div className="text-sm text-slate-100">
+                  {sg.label}
+                  {sg.band !== null && sg.expectation !== null && (
+                    <span className="text-slate-400"> · {fmtBand(sg.band)} so với kỳ vọng {fmtBand(sg.expectation)}</span>
+                  )}
+                  {sg.attemptNo && <span className="text-slate-500 text-xs"> · MT{sg.attemptNo}</span>}
+                </div>
+                <div className="text-xs text-slate-500 mt-0.5">
+                  {sg.track === 'behaviour'
+                    ? 'Em vừa có SOS — xem tình hình chung. Đây KHÔNG phải kết luận em thiếu ý thức.'
+                    : 'Hệ thống mới chỉ đọc được con số. Xem lại bài rồi quyết định.'}
+                </div>
+                <div className="text-xs mt-1">
+                  {sg.overdue
+                    ? <span className="text-rose-300">Quá hạn xác minh {fmtDate(sg.verifyDue)}</span>
+                    : <span className="text-slate-400">Hạn xác minh {fmtDate(sg.verifyDue)}</span>}
+                  {sg.ownerName && <span className="text-slate-500"> · {sg.ownerName}</span>}
+                </div>
+              </div>
+              {sg.canResolve && (
+                <div className="flex flex-wrap gap-2">
+                  <button className="btn btn-sm btn-primary" onClick={() => onVerify(sg)}>Mở case</button>
+                  <button className="btn btn-sm" onClick={() => setNoteFor(sg)}>Đã xem, không mở case</button>
+                </div>
+              )}
+            </li>
+          ))}
+        </ul>
+        <SectionNote>
+          Điểm dưới kỳ vọng chỉ sinh <strong>tín hiệu</strong>, không tự mở case và không tự
+          sinh phương án hỗ trợ: máy đọc được con số nhưng không biết vì sao, và cũng không xếp
+          được tutor thay người. Hạn xác minh là <strong>ba ngày</strong> kể từ lúc tín hiệu được
+          ghi nhận, tính cả ngày đầu.
+        </SectionNote>
+      </Card>
+
+      <NoteSignalDialog
+        signal={noteFor} studentName={studentName}
+        onClose={() => setNoteFor(null)}
+        onSaved={() => { setNoteFor(null); onDone(); toast.push('ok', 'Đã ghi nhận'); }}
+      />
+    </>
+  );
+}
+
+/** Ghi nhận đã xem mà không mở case. Bắt buộc viết nhận định — bấm cho xong thì không được. */
+function NoteSignalDialog({ signal, studentName, onClose, onSaved }: {
+  signal: any | null; studentName: string; onClose: () => void; onSaved: () => void;
+}) {
+  const toast = useToast();
+  const [note, setNote] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  return (
+    <Modal open={!!signal} onClose={onClose} width="max-w-md"
+      title={`Đã xem · ${signal?.label ?? ''} · ${studentName}`}
+      footer={<>
+        <button className="btn" onClick={onClose} disabled={busy}>Huỷ</button>
+        <button className="btn btn-primary" disabled={busy || note.trim().length < 10}
+          onClick={async () => {
+            if (!signal) return;
+            setBusy(true);
+            try {
+              await api.post(`/signals/pending/${signal.id}/note`, { note });
+              invalidate('/students'); invalidate('/overview'); invalidate('/signals');
+              setNote(''); onSaved();
+            } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
+          }}>
+          {busy ? 'Đang lưu…' : 'Ghi nhận'}
+        </button>
+      </>}>
+      <div className="space-y-3">
+        <label className="block">
+          <span className="label">Bạn thấy gì khi xem lại?</span>
+          <textarea className="field min-h-24" value={note} onChange={(e) => setNote(e.target.value)}
+            placeholder="Ví dụ: em mất điểm ở một dạng bài lạ, không phải vấn đề kéo dài. Sẽ theo dõi ở đợt sau." />
+        </label>
+        <SectionNote>
+          Ghi nhận đã xem là một kết thúc hợp lệ của tín hiệu, ngang hàng với việc mở case —
+          nhưng phải viết ra nhận định. Không ép tạo một nguyên nhân giả chỉ để xoá nợ.
+        </SectionNote>
+      </div>
+    </Modal>
+  );
+}

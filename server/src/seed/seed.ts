@@ -265,7 +265,13 @@ export function runSeed() {
       'Lộ trình': counts.cycles,
       'Lượt đánh giá': counts.attempts,
       'Ô điểm': counts.scores,
-      'Kỹ năng không mock': counts.skips,
+      'Kỹ năng ngoài phạm vi': counts.skips,
+      /*
+       * TÍN HIỆU ĐẾM RIÊNG, KHÔNG GỘP VÀO CASE (mục 6.2). Một tín hiệu chưa ai xác minh
+       * không phải một vấn đề đã được xác định; cộng chung là nói quá số việc đang có.
+       */
+      'Tín hiệu từ điểm': (conn.prepare('SELECT COUNT(*) AS n FROM case_signals').get() as any).n,
+      '— trong đó chờ xác minh': (conn.prepare("SELECT COUNT(*) AS n FROM case_signals WHERE status = 'pending'").get() as any).n,
       /*
        * ĐẾM TỪ CHÍNH DATABASE, không cộng dồn trong lúc dựng.
        *

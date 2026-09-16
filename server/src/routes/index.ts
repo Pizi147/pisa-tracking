@@ -38,6 +38,7 @@ import * as outcomeSvc from '../worklist/outcomes.ts';
 import { weeklyRollup } from '../worklist/weekly.ts';
 import { myWork } from '../worklist/mywork.ts';
 import * as caseSvc from '../cases/cases.ts';
+import * as caseSignalSvc from '../cases/signals.ts';
 import * as regularSvc from '../normal/regular.ts';
 
 export const api = Router();
@@ -616,6 +617,36 @@ api.post('/cycles/:id/apply-suggested-mocks', requireAuth, wrap((req) => {
 api.post('/cases/report', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return caseSvc.reportIssue(principalOf(req), req.body ?? {});
+}));
+
+/*
+ * TÍN HIỆU TỪ ĐIỂM (mục 6.2) — hàng riêng, KHÔNG trộn vào danh sách case.
+ *
+ * Một tín hiệu chưa ai xác minh không phải một vấn đề đã được xác định. Trộn hai thứ lại là
+ * cách chắc chắn nhất để con số "đang có bao nhiêu vấn đề" nói quá sự thật.
+ */
+api.get('/signals/pending', requireAuth, wrap((req) => caseSignalSvc.listSignals(principalOf(req), {
+  status: (qStr(req, 'status') as any) ?? 'open',
+  branchId: qInt(req, 'branchId'),
+  classId: qInt(req, 'classId'),
+  studentId: qInt(req, 'studentId'),
+  mine: req.query?.mine === '1',
+  overdueOnly: req.query?.overdue === '1',
+})));
+
+api.get('/signals/pending/:id', requireAuth, wrap((req) =>
+  caseSignalSvc.signalDetail(principalOf(req), pInt(req, 'id'))));
+
+/** GVCN/GVBM ghi nhận đã xem mà KHÔNG mở case — một kết thúc hợp lệ, nhưng phải viết nhận định. */
+api.post('/signals/pending/:id/note', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return caseSignalSvc.noteSignal(principalOf(req), pInt(req, 'id'), String(req.body?.note ?? ''));
+}));
+
+/** Quản lý giao tín hiệu cho người khác xác minh, khi chưa ai được phân công đúng môn. */
+api.post('/signals/pending/:id/assign', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return caseSignalSvc.assignSignal(principalOf(req), pInt(req, 'id'), toInt(req.body?.userId));
 }));
 
 api.get('/cases', requireAuth, wrap((req) => {

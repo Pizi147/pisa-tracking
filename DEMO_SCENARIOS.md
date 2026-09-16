@@ -48,6 +48,41 @@ Mã J01–J12 chỉ dùng trong tài liệu này, **không hiện ra sản phẩ
 
 ---
 
+## Điểm dưới kỳ vọng sinh TÍN HIỆU, không tự mở case
+
+Trước đây, một môn dưới kỳ vọng tự mở ra một case hoàn chỉnh kèm một phương án hỗ trợ
+("xếp tự học", "học tutor"). Nghe thì tiện, nhưng nó nói dối ở hai chỗ: máy chỉ đọc được
+con số chứ không biết **vì sao**, và nó không xếp được tutor thay người. Bảng tổng hợp vì
+thế đầy case và phương án mà không có việc thật nào đứng sau.
+
+Nay điểm chỉ sinh **tín hiệu**: *"môn này dưới kỳ vọng, ai đó phải xem"*. Giáo viên bộ môn
+xác minh môn mình; GVCN nhận tín hiệu Ý thức/Khác để xem tình hình chung.
+
+**Hạn xác minh: ba ngày, tính cả ngày đầu.** Ghi nhận thứ Hai thì hết thứ Tư. Mốc đếm là
+ngày tín hiệu được ghi nhận, không phải thứ Hai của tuần thi — nên điểm nhập muộn không làm
+giáo viên quá hạn ngay lúc điểm vừa công bố.
+
+Tín hiệu có ba lối ra, và cả ba đều hợp lệ:
+
+| Lối ra | Khi nào |
+|---|---|
+| **Mở case** | Xem lại bài thấy có vấn đề thật. Người dạy đặt tên và viết mô tả — máy không làm hộ. |
+| **Đã xem, không mở case** | Không có vấn đề thật. Vẫn phải viết nhận định; không ép tạo một nguyên nhân giả để xoá nợ. |
+| **Tự thu hồi** | Điểm nguồn được sửa lại thành đạt. Lý do ghi rõ "Không còn hợp lệ do sửa điểm". |
+
+| Mở ở đâu | Đăng nhập bằng | Cần thấy gì |
+|---|---|---|
+| **Chu Minh Hiếu** · MB-FT 102 → hồ sơ | Quản lý Monbay, hoặc tài khoản quản trị | Thẻ **"Tín hiệu chờ xác minh"** nằm TRƯỚC bảng tiến độ: *"Reading · 5.0 so với kỳ vọng 5.5 · MT2"*, hạn 16/09, giao cho cô Cao Khánh Linh. **Chưa có case nào** trong bảng bên dưới — đó là điểm mấu chốt. Bấm **Mở case** để thấy form đã điền sẵn Học thuật + Reading, chỉ còn chờ bạn viết tên và mô tả. |
+| **Mai Ngọc Diệp** · BC-FT 205 → hồ sơ | Quản lý Bãi Cháy | Tín hiệu Speaking **đã quá hạn xác minh** (hạn 09/09) — ca quá hạn có chủ đích của bộ demo. |
+| **Tổng quan** của cô **Phạm Thu Trang** (`trang.pham.pisa@gmail.com`) | chính cô | Nhóm việc mới **"Xác minh tín hiệu"** đứng đầu hàng việc, kèm nhãn *"Quá hạn xác minh"* và câu *"Speaking dưới kỳ vọng (5.5 so với 6). Xem lại bài rồi xác minh."* |
+| **Phạm Bảo Ngọc** · MB-FT 101 → hồ sơ | GV Trần Ngọc Hà | Tín hiệu **Ý thức/Khác** cho GVCN sau đợt có SOS. Nó KHÔNG kết luận em thiếu ý thức — cô được phép ghi nhận "đã xem, không mở case". |
+
+**Thử một thao tác:** bấm **"Đã xem, không mở case"** rồi để trống ô nhận định — hệ thống
+không cho lưu. Viết một câu thật rồi lưu: tín hiệu biến khỏi hàng chờ, và nhận định của bạn
+được giữ lại để sau này đọc lại.
+
+---
+
 ## Lịch thi tách theo từng kỹ năng
 
 Một đợt kiểm tra **không nhất thiết thi gọn trong một tuần**. Fast Track hay thi R/L/W một

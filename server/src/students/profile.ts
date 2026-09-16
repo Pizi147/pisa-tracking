@@ -15,6 +15,7 @@ import { cycleById, cyclesOf, currentCycle, examPlanOf, targetRevisions } from '
 import { canCloseCase, parseMetrics } from '../cases/cases.ts';
 import { standingFor, standingLine } from './standing.ts';
 import { missingForStudent, suggestedMockWeeks } from '../classes/schedule.ts';
+import { listSignals } from '../cases/signals.ts';
 
 /**
  * HỒ SƠ HỌC VIÊN — phần trả lời câu hỏi "em này đang thế nào" trong khoảng ba mươi giây.
@@ -517,10 +518,20 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
 
   const standingNow = standingFor([studentId]).get(studentId) ?? null;
 
+  /*
+   * TÍN HIỆU CÒN CHỜ XÁC MINH — phải thấy được ngay ở hồ sơ (mục 6.2).
+   *
+   * Đây là những chỗ hệ thống đã thấy con số bất thường mà chưa ai kết luận gì. Chúng KHÔNG
+   * được trộn vào danh sách case: một tín hiệu chưa ai xem không phải một vấn đề đã xác định,
+   * và đếm chung là nói quá số việc đang có. Nên nó đi ra ở một khoá riêng.
+   */
+  const signals = listSignals(p, { studentId, status: 'pending' }).rows;
+
   return {
     id: s.id, studentCode: s.student_code, fullName: s.full_name, dob: s.dob,
     status: s.status, finishedAt: s.finished_at, archivedAt: s.archived_at,
     consultantName: s.consultant_name, note: s.note,
+    pendingSignals: signals,
     currentClass: current
       ? {
         id: current.class_id, code: current.class_code, kind: current.class_kind,

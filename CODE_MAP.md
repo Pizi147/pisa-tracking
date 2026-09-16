@@ -110,6 +110,10 @@ loại dữ liệu mới** vào kịch bản thì thêm trường ở `journeys.
 
 | Muốn sửa | Mở file |
 |---|---|
+| **Tín hiệu từ điểm** (điểm dưới kỳ vọng sinh gì) | `server/src/cases/signals.ts` |
+| Hạn xác minh tín hiệu (3 ngày, tính cả ngày đầu) | `shared/domain/cases.ts` → `signalVerifyDue` |
+| Thu hồi tín hiệu và case khi sửa điểm (mục 9.4) | `server/src/cases/signals.ts` → `withdrawSignalsNoLongerValid` · `caseHasIndependentBasis` |
+| Thẻ "Tín hiệu chờ xác minh" ở hồ sơ học viên | `web/src/modules/students/StudentDetailPage.tsx` → `PendingSignals` |
 | Sáu hạng mục case | `shared/domain/cases.ts` → `CASE_CATEGORIES` |
 | Tên case tự sinh | `shared/domain/cases.ts` → `caseTitle` |
 | Bảng phân loại nguyên nhân | `shared/domain/cases.ts` → `ISSUE_TAXONOMY` |
@@ -201,6 +205,21 @@ con số khác. Hai điều dễ hiểu nhầm nhất:
   kỹ năng đổi tuần. Nhờ vậy bảng kết quả theo tuần vẫn đếm mỗi đợt đúng một lần.
 - Điểm vẫn thuộc **một đợt duy nhất**. Tách tuần không tạo đợt mới, không đổi số MT, không
   ghép điểm từ đợt khác.
+
+**`server/src/cases/signals.ts`** — từ vòng 7, điểm dưới kỳ vọng **không tự mở case và không
+tự sinh phương án hỗ trợ** (mục 6.2). Nó sinh một TÍN HIỆU, giao cho đúng một người, kèm hạn
+ba ngày. Lý do: máy đọc được "band 5.5 < kỳ vọng 6.0" nhưng không biết VÌ SAO, và không xếp
+được tutor thay người — nên case và phương án tự sinh chỉ làm bảng tổng hợp đầy số mà không
+có việc thật nào đứng sau.
+
+Ba chỗ dễ hiểu nhầm:
+
+- Tín hiệu **không phải case** và không được đếm chung. Nó đi ra ở khoá riêng (`pendingSignals`
+  trên hồ sơ, `/signals/pending` ở API, nhóm `verify` ở hàng việc).
+- Hạn ba ngày đếm từ `raised_on` — NGÀY GHI NHẬN, không phải thứ Hai của tuần thi. Điểm nhập
+  muộn vì thế không làm giáo viên quá hạn ngay lúc điểm vừa công bố.
+- Hạng mục ĐÃ CÓ case đang mở thì tín hiệu tự nối vào case đó (thêm một mốc, không mở case
+  thứ hai). Chỉ khi chưa có case nào thì nó mới nằm chờ người xác minh.
 
 **`shared/domain/cases.ts`** — từ vựng của case: sáu hạng mục, năm kết quả, năm bước tiếp theo,
 và `cycleDeadline`. Từ vòng 5, HẠN của một chu kỳ tính ở ĐÚNG MỘT CHỖ này (Chủ nhật của tuần thứ

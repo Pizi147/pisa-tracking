@@ -59,7 +59,7 @@ quyết. Không dừng ở kế hoạch hay mockup.
 | PR15 | đã merge — https://github.com/Pizi147/pisa-tracking/pull/15 |
 | `main` sau khi merge | `718f81f` (đúng mốc đề bài nêu) |
 | Nhánh làm việc hiện tại | `claude/pisa-progress-local-demo-42ct9j`, đã fast-forward lên `718f81f` |
-| Commit mới của vòng 7 | `0fa1fee` — mục 11 và 3.1 · tiếp theo là việc 21 (lịch theo kỹ năng) |
+| Commit mới của vòng 7 | `0fa1fee` mục 11 và 3.1 · `b6e46e6` việc 21 (lịch theo kỹ năng) · việc 22 (tín hiệu) |
 
 ---
 
@@ -121,13 +121,50 @@ cấp chạy sạch trên database đang có — dựng 460 dòng lịch cho 115
 tuần**, không dòng vắng nào bị bịa ra, chạy lại lần hai là no-op. Đã bấm thử thật trên trình
 duyệt: đổi tuần Speaking chỉ đổi hạn Speaking, Writing giữ nguyên hạn 23/09.
 
-### ⬜ Còn lại — tám nhóm việc
+### ✅ Xong — mục 6.1 / 6.2 / 9.4 (việc 22)
+
+**Điểm dưới kỳ vọng sinh TÍN HIỆU, không tự mở case và không tự sinh phương án.**
+
+- Trước đây một môn dưới kỳ vọng tự mở case hoàn chỉnh kèm một phương án ("xếp tự học",
+  "học tutor"). Đã bỏ hẳn. Lý do: máy đọc được con số nhưng **không biết vì sao**, và
+  **không xếp được tutor thay người** — hai thứ đó làm bảng tổng hợp đầy số mà không có việc
+  thật nào đứng sau.
+- Nay nó sinh một **tín hiệu**, giao cho đúng một người: giáo viên bộ môn xác minh môn mình,
+  GVCN nhận tín hiệu Ý thức/Khác để xem tình hình chung.
+- **Hạn xác minh ba ngày, tính cả ngày đầu.** Đếm từ lúc tín hiệu được ghi nhận, không phải
+  thứ Hai của tuần thi — điểm nhập muộn không làm giáo viên quá hạn ngay lúc điểm vừa công bố.
+- **Tín hiệu không phải case** và không bị đếm chung. Nó có chỗ riêng ở hồ sơ học viên, ở
+  hàng việc (nhóm mới "Xác minh tín hiệu") và ở một tổng hợp riêng.
+- Nhập bổ sung môn khác, chấm lại hay lưu lại nhiều lần **không nhân tín hiệu và không đặt
+  lại hạn**.
+- Hạng mục đã có case đang mở thì tín hiệu **tự nối vào case đó** (thêm một mốc), không mở
+  case thứ hai. Case đã đóng mà tái diễn thì tín hiệu nằm chờ — mở case mới nối vào case cũ
+  là quyết định của người dạy, và kết luận cũ giữ nguyên.
+- Mốc Ý thức/Khác **không tự kết luận em thiếu ý thức**. GVCN được ghi nhận "đã xem, không mở
+  case" — nhưng phải viết nhận định, không bấm cho xong.
+- **Sửa điểm (mục 9.4):** tín hiệu còn chờ mà điểm đã sửa thành đạt thì bị thu hồi với lý do
+  "Không còn hợp lệ do sửa điểm". Case chỉ sống nhờ con số vừa sửa thì rút khỏi danh sách
+  đang xử lý, phương án chưa ai làm bị huỷ và **không tính thành công hay thất bại**. Case
+  còn căn cứ khác thì **giữ nguyên**, chỉ báo người phụ trách xem lại. Không ghi mốc "đã tiến
+  bộ" giả — sửa một con số nhập sai không phải một lần thi thứ hai.
+
+**Trên màn hình:** hồ sơ học viên có thêm thẻ **"Tín hiệu chờ xác minh"** đặt trước bảng tiến
+độ, với hai nút "Mở case" và "Đã xem, không mở case". Hàng việc có nhóm mới **"Xác minh tín
+hiệu"** đứng đầu. Bấm "Mở case" mở form đã điền sẵn đầu mục và kỹ năng — tên và mô tả do người
+dạy viết.
+
+**Kiểm chứng:** 257 phép kiểm tự động đạt hết; hai lượt kiểm lỗi kiểu dữ liệu sạch; bước nâng
+cấp chạy sạch trên database đang có — dựng tín hiệu ngược từ lịch sử (đều ở trạng thái "đã
+thành case"), vô hiệu hoá phương án tự sinh **chưa ai thực hiện**, giữ nguyên phương án đã bắt
+đầu hoặc đã xong, không case nào bị đóng hay xoá, chạy lại lần hai là no-op. Đã bấm thử thật
+trên trình duyệt cả ba lối ra của một tín hiệu.
+
+### ⬜ Còn lại — bảy nhóm việc
 
 Đây là danh sách việc đã chia sẵn, theo đúng thứ tự phụ thuộc. **Làm từ trên xuống.**
 
 | # | Việc | Mục trong đề bài |
 |---|---|---|
-| 22 | **SOS chỉ sinh tín hiệu** — bỏ hẳn việc tự sinh case hoàn chỉnh và phương án; tín hiệu phải được giáo viên xác minh trong **3 ngày** | 6.1 · 6.2 · 9.4 |
 | 23 | **Case: form, phân loại, mức độ, gộp đợt Ý thức/Khác** — tên và mô tả bắt buộc, mức độ chỉ còn **Cần chú ý / Gấp**, phân loại bắt buộc; Ý thức/Khác gộp theo **cửa sổ 4 ngày** | 6.3 · 6.4 · 7 |
 | 24 | **Phương án hỗ trợ** — danh mục theo nhóm, form mới, **bảng hạn**, cập nhật hai tab, một nút hoàn thành case | 8 · 9 |
 | 25 | **Dời lịch, vắng, duyệt, khôi phục** — bộ đếm dời theo **kỹ năng trong từng đợt**, lần đầu GVCN, lần hai cần Quản lý duyệt | 10.2 · 10.3 · 10.6 |
@@ -151,7 +188,7 @@ Ghi ở đây để người tiếp theo không mất một buổi mò lại.
 | Đường dẫn khi nhập file | Bắt buộc có đuôi `.ts` / `.tsx` trong câu lệnh nhập. Thiếu là gãy |
 | Sau khi sửa phần máy chủ | **Bắt buộc** chạy `npm run build:server`, nếu không thì thay đổi không có tác dụng |
 | Kiểm lỗi kiểu dữ liệu | `npx tsc -p tsconfig.build.json --noEmit` và `npx tsc -p tsconfig.web.json --noEmit` |
-| Chạy kiểm thử | `npm test` — hiện **250 phép kiểm**, phải đạt hết |
+| Chạy kiểm thử | `npm test` — hiện **257 phép kiểm**, phải đạt hết |
 | Dựng lại bộ demo | `npm run seed` (xoá sạch rồi dựng lại) · nâng cấp database đang có: `npm run migrate` |
 | Bật thử | `npm run dev` → http://localhost:5173 |
 | Tắt máy chủ | `for p in 5173 4000; do pid=$(fuser -n tcp $p 2>/dev/null \| tr -d ' '); [ -n "$pid" ] && kill -9 $pid; done` |
@@ -203,7 +240,7 @@ Ba ràng buộc của tôi:
 2. Đừng để máy chủ chạy ngầm. Xong việc thì tắt, kiểm cổng 5173/4000 đã trống.
 3. Đừng merge, đừng deploy, đừng gửi gì ra ngoài nếu tôi không bảo.
 
-Bắt đầu từ việc số 22 trong danh sách còn lại.
+Bắt đầu từ việc số 23 trong danh sách còn lại.
 ```
 
 ### Bước 3 — Kiểm tra chat mới đã hiểu đúng
@@ -212,7 +249,7 @@ Hỏi nó ba câu, nếu trả lời đúng cả ba thì yên tâm giao việc:
 
 1. *"Ngưỡng đạt của lớp Normal bây giờ là bao nhiêu?"* → phải trả lời **70%**
 2. *"Vai trò Admin chi nhánh còn không?"* → phải trả lời **đã bỏ**, vẫn giữ để đọc lịch sử
-3. *"Việc tiếp theo là gì?"* → phải nói về **SOS chỉ sinh tín hiệu, không tự sinh case và phương án**
+3. *"Việc tiếp theo là gì?"* → phải nói về **form case: tên và mô tả bắt buộc, mức độ chỉ còn Cần chú ý / Gấp**
 
 Nếu nó trả lời sai bất kỳ câu nào, bảo nó đọc lại `BAN_GIAO_CHAT_MOI.md` trước khi làm.
 
@@ -233,4 +270,4 @@ số trên một màn hình là cách chắc chắn nhất để hai màn nói h
 
 ---
 
-*Cập nhật lần cuối: sau việc 21 (lịch thi theo từng kỹ năng), ngày demo 14/09/2026, 250 phép kiểm đạt.*
+*Cập nhật lần cuối: sau việc 22 (tín hiệu thay cho case tự sinh), ngày demo 14/09/2026, 257 phép kiểm đạt.*

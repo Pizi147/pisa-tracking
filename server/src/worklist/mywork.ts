@@ -10,6 +10,7 @@ import { can, scopeFor, teachesClass, type Principal } from '../permissions.ts';
 import { attemptHref, listAttempts } from '../fasttrack/attempts.ts';
 import { classAlerts } from '../classes/schedule.ts';
 import { myMgmtTasks } from './mgmttasks.ts';
+import { listSignals } from '../cases/signals.ts';
 
 /**
  * VIỆC CỦA CHÍNH NGƯỜI ĐANG XEM.
@@ -89,7 +90,7 @@ export type WorkItem = {
  * chắn nhất để nó không bao giờ được làm.
  */
 export type WorkGroupKey =
-  | 'score' | 'no_plan' | 'result'
+  | 'verify' | 'score' | 'no_plan' | 'result'
   | 'decide'
   | 'do_plan' | 'no_owner' | 'placement' | 'missing_data' | 'mgmt';
 
@@ -100,6 +101,21 @@ export type WorkGroupKey =
  * làm gì. Một dòng giải thích ở đầu nhóm rẻ hơn nhiều so với việc mỗi người tự hiểu một kiểu.
  */
 const GROUP_META: Record<WorkGroupKey, { label: string; hint: string; overdue: string }> = {
+  /*
+   * NHÓM ĐẦU TIÊN, VÌ NÓ ĐỨNG TRƯỚC MỌI THỨ KHÁC (mục 6.2).
+   *
+   * Điểm dưới kỳ vọng không còn tự mở case. Nó sinh một tín hiệu, và chừng nào chưa ai xác
+   * minh thì chưa ai biết vấn đề thật là gì — nên không có phương án nào để làm, không có
+   * kết quả nào để cập nhật. Đây là việc chặn đầu chuỗi, và hạn của nó chỉ có ba ngày.
+   */
+  verify: {
+    label: 'Xác minh tín hiệu',
+    hint: 'Kết quả của em dưới kỳ vọng ở kỹ năng này. Hệ thống chỉ báo con số — bạn xem lại bài '
+      + 'rồi quyết định: mở case với tên và mô tả cụ thể, hay ghi nhận là chưa cần mở case. '
+      + 'Hạn ba ngày kể từ lúc tín hiệu được ghi nhận, tính cả ngày đầu.',
+    overdue: 'Quá hạn xác minh',
+  },
+
   /* ---------------------------------------------------- ba nhóm học thuật chính (mục 3.2) */
   score: {
     label: 'Nhập điểm Test',
@@ -203,6 +219,42 @@ export function myWork(p: Principal, f: { branchId?: number | null } = {}) {
   const items: WorkItem[] = [];
   const attempts = listAttempts(p, { branchId: f.branchId ?? undefined }).rows
     .filter((a: any) => a.status !== 'cancelled');
+
+  // ---------------------------------------------------------------- 0. xác minh tín hiệu
+  /*
+   * MỘT DÒNG CHO MỖI TÍN HIỆU, KHÔNG GOM.
+   *
+   * Khác với nhập điểm — nơi một người mở một bảng và gõ cho cả lớp — mỗi tín hiệu là một
+   * nhận định riêng về một em và một kỹ năng. Gom sáu em vào một dòng "xác minh Reading" sẽ
+   * mời người ta bấm một nút cho cả sáu, mà đó đúng là thứ mục 6.2 muốn bỏ.
+   */
+  for (const sg of listSignals(p, { status: 'pending', branchId: f.branchId ?? undefined, mine: true }).rows) {
+    const u = urgencyOf(sg.verifyDue, today);
+    items.push({
+      key: `verify:${sg.id}`,
+      group: 'verify', urgency: u,
+      studentId: sg.studentId, studentName: sg.studentName,
+      classId: sg.classId, classCode: sg.classCode,
+      attemptId: sg.attemptId, attemptNo: sg.attemptNo, caseId: null,
+      level: sg.sosLevel !== null ? { tone: sosTone(sg.sosLevel), text: SOS_LABEL[sg.sosLevel as 0 | 1 | 2 | 3] } : null,
+      reason: sg.track === 'behaviour'
+        ? `Em vừa có ${SOS_LABEL[(sg.sosLevel ?? 0) as 0 | 1 | 2 | 3]}. Xem tình hình chung của em và ghi nhận nhận định.`
+        : `${sg.label} dưới kỳ vọng${sg.band !== null ? ` (${sg.band} so với ${sg.expectation ?? '—'})` : ''}.`
+          + ' Xem lại bài rồi xác minh.',
+      actionLabel: 'Xác minh',
+      overdueLabel: badge('verify', u),
+      href: `/hoc-vien/${sg.studentId}`,
+      ownerId: sg.ownerUserId, owner: null, mine: true,
+      due: sg.verifyDue,
+      statusLabel: u === 'overdue' ? `Chờ xác minh · ${lateText(sg.verifyDue, today)}` : 'Chờ xác minh',
+      contextLabel: sg.attemptNo
+        ? (sg.attemptKind && sg.attemptKind !== 'mock'
+            ? `${ATTEMPT_KIND_SHORT[sg.attemptKind as AttemptKind] ?? 'Bài kiểm tra'} · ${sg.label}`
+            : `MT${sg.attemptNo} · ${sg.label}`)
+        : sg.label,
+      count: null,
+    });
+  }
 
   // ---------------------------------------------------------------- 1. nhập điểm
   /*
@@ -713,7 +765,7 @@ export function myWork(p: Principal, f: { branchId?: number | null } = {}) {
    * còn lại. "Cần xếp lớp tiếp" đứng ngay sau ba nhóm chính vì nó treo cả một lớp.
    */
   const order: WorkGroupKey[] = [
-    'score', 'no_plan', 'result',
+    'verify', 'score', 'no_plan', 'result',
     'decide',
     'placement', 'do_plan', 'no_owner', 'mgmt', 'missing_data',
   ];

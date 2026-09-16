@@ -46,6 +46,7 @@ const mywork = await import('../worklist/mywork.ts');
 const standing = await import('../students/standing.ts');
 const mgmt = await import('../worklist/mgmttasks.ts');
 const skillSchedule = await import('../fasttrack/skillSchedule.ts');
+const signalsSvc = await import('../cases/signals.ts');
 const { ratioResult: domainRatio } = await import('../../../shared/domain/index.ts');
 const { demoToday } = await import('../demoConfig.ts');
 const { addDays } = await import('../util.ts');
@@ -849,14 +850,9 @@ check('Case cũ và việc quá hạn không biến mất khi đổi tuần', ()
 // ==================================================================== 10
 
 console.log('\n10. Xử lý sau Mock và lưu dữ liệu');
-check('Mở case ngay khi kết luận được; mức tăng dần không nhân đôi case', () => {
+check('[6.2] Điểm dưới kỳ vọng sinh TÍN HIỆU, không tự mở case và không tự sinh phương án', () => {
   const s = conn
     .prepare(
-      /*
-       * Chọn em CHƯA có case Reading nào. Bộ demo mới cố tình có một em mang case Reading
-       * tái diễn (case cũ đã chốt, case mới nối vào); mở thêm một case Reading cho chính em
-       * đó thì phép kiểm này không còn nói về điều nó muốn nói nữa.
-       */
       `SELECT s.id, cy.id AS cycle_id, cy.target_score FROM students s
          JOIN enrollments e ON e.student_id = s.id
          JOIN learning_cycles cy ON cy.student_id = s.id AND cy.status = 'active'
@@ -874,51 +870,92 @@ check('Mở case ngay khi kết luận được; mức tăng dần không nhân 
   const exp = s.target_score;           // từ MT3 trở đi kỳ vọng bằng target
   const low = exp - 0.5;
   const t = (skill: string) => loadPrincipal(teacherOfSkill('CP-FT 110', skill));
+  /*
+   * Đếm case MỚI RA ĐỜI, không đếm case đang có.
+   *
+   * Tín hiệu của một hạng mục ĐÃ CÓ case đang mở thì nối vào chính case đó — đó là hành vi
+   * đúng của mục 6.2 ("không mặc định thêm case/phương án mới"), và nó làm case cũ mang
+   * `attempt_id` của đợt này. Đếm theo `attempt_id` sẽ hiểu nhầm việc nối đó là mở mới.
+   */
+  const caseIdBefore = (conn.prepare('SELECT COALESCE(MAX(id), 0) m FROM sos_cases').get() as any).m;
+  const casesOf = () => (conn
+    .prepare('SELECT COUNT(*) n FROM sos_cases WHERE student_id = ? AND id > ?')
+    .get(s.id, caseIdBefore) as any).n;
+  const planIdBefore = (conn.prepare('SELECT COALESCE(MAX(id), 0) m FROM case_interventions').get() as any).m;
+  const plansOf = () => (conn
+    .prepare(
+      `SELECT COUNT(*) n FROM case_interventions iv
+         JOIN sos_cases c ON c.id = iv.case_id
+        WHERE c.student_id = ? AND iv.id > ?`,
+    )
+    .get(s.id, planIdBefore) as any).n;
 
-  // Một kỹ năng dưới kỳ vọng là mở case NGAY, không chờ ba kỹ năng còn lại.
+  /* Một kỹ năng dưới kỳ vọng: kết luận SOS ra ngay, nhưng KHÔNG có case nào ra đời. */
   attempts.saveScore(t('listening'), attempt.id, 'listening', { rawScore: scoring.LISTENING_BY_RAW.indexOf(low) });
   const early = attempts.attemptDetail(P.cpManager, attempt.id);
-  assert(early.result.sosLevel === 1, `Một kỹ năng dưới kỳ vọng phải mở SOS 1 ngay, đang là ${early.result.sosLevel}`);
+  assert(early.result.sosLevel === 1, `Một kỹ năng dưới kỳ vọng phải ra SOS 1 ngay, đang là ${early.result.sosLevel}`);
   assert(early.result.provisional, 'Chưa đủ điểm thì phải đánh dấu là kết luận tạm thời');
-  assert(early.sosCase, 'Chưa mở case dù đã kết luận được');
-  const firstCaseId = early.sosCase.id;
+  assert(casesOf() === 0, 'Điểm dưới kỳ vọng đã tự mở case — mục 6.2 cấm');
+  assert(plansOf() === 0, 'Điểm dưới kỳ vọng đã tự sinh phương án hỗ trợ — mục 6.2 cấm');
 
+  const sig = conn
+    .prepare(`SELECT * FROM case_signals WHERE attempt_id = ? AND skill = 'listening'`)
+    .get(attempt.id) as any;
+  assert(sig, 'Không sinh tín hiệu nào cho môn dưới kỳ vọng');
+  assert(sig.status === 'pending', `Tín hiệu mới phải ở trạng thái chờ xác minh, đang là ${sig.status}`);
+  assert(sig.owner_user_id, 'Tín hiệu phải được giao cho một người cụ thể để xác minh');
+  /* Hạn BA NGÀY tính cả ngày đầu: ghi nhận hôm nay thì hết ngày kia, không phải ngày kìa. */
+  assert(sig.verify_due === addDays(sig.raised_on, 2),
+    `Hạn xác minh phải là 3 ngày tính cả ngày đầu, đang là ${sig.raised_on} → ${sig.verify_due}`);
+  /* Và mốc đếm hạn là NGÀY GHI NHẬN, không phải thứ Hai của tuần thi đã qua. */
+  assert(sig.raised_on >= demoToday(),
+    'Hạn xác minh bị lùi về tuần thi — giáo viên sẽ quá hạn ngay lúc điểm vừa công bố');
+
+  /* Một tín hiệu Ý thức/Khác cho GVCN, cũng không phải case. */
+  const beh = conn
+    .prepare(`SELECT * FROM case_signals WHERE attempt_id = ? AND track = 'behaviour'`)
+    .all(attempt.id) as any[];
+  assert(beh.length === 1, `Mỗi đợt có SOS sinh đúng MỘT tín hiệu Ý thức/Khác, đang có ${beh.length}`);
+  assert(beh[0].skill === null, 'Tín hiệu Ý thức/Khác không gắn với môn nào');
+
+  /* Nhập thêm môn khác: thêm tín hiệu, vẫn không case nào, và hạn cũ KHÔNG bị đặt lại. */
+  const dueBefore = sig.verify_due;
   attempts.saveScore(t('reading'), attempt.id, 'reading', { rawScore: scoring.READING_BY_RAW.indexOf(low) });
   attempts.saveScore(t('writing1'), attempt.id, 'writing1', { criteria: [low, low, low, low] });
   attempts.saveScore(t('writing2'), attempt.id, 'writing2', { criteria: [low, low, low, low] });
   const three = attempts.attemptDetail(P.cpManager, attempt.id);
   assert(three.result.sosLevel === 3, `Ba kỹ năng dưới kỳ vọng phải lên SOS 3, đang là ${three.result.sosLevel}`);
-  /*
-   * Từ vòng 4, "case của một lượt MT" không còn là một khái niệm: một lượt CHẠM VÀO nhiều
-   * case sống suốt khoá. Điều phải kiểm là mỗi HẠNG MỤC chỉ có đúng một case, và cái case
-   * Listening mở lúc nãy vẫn là chính nó — không đẻ thêm cái thứ hai khi mức SOS tăng.
-   */
-  const catCount = conn
-    .prepare(
-      `SELECT category, COUNT(*) n FROM sos_cases
-        WHERE student_id = ? AND COALESCE(cycle_id,0) = ? AND track = 'academic' AND parallel = 0
-        GROUP BY category HAVING n > 1`,
-    )
-    .all(s.id, s.cycle_id ?? 0) as any[];
-  assert(catCount.length === 0,
-    `Hạng mục ${catCount[0]?.category} có ${catCount[0]?.n} case — mức SOS tăng mà lại mở case thứ hai`);
-  const listeningCase = conn
-    .prepare(
-      `SELECT id FROM sos_cases WHERE student_id = ? AND COALESCE(cycle_id,0) = ? AND category = 'listening'`,
-    )
-    .get(s.id, s.cycle_id ?? 0) as any;
-  assert(listeningCase?.id === firstCaseId,
-    'Case Listening bị thay bằng một case khác khi nhập thêm điểm');
+  assert(casesOf() === 0, 'Mức SOS tăng đã tự mở case');
+  assert(plansOf() === 0, 'Mức SOS tăng đã tự sinh phương án');
+  const sigAfter = conn
+    .prepare(`SELECT * FROM case_signals WHERE attempt_id = ? AND skill = 'listening'`)
+    .get(attempt.id) as any;
+  assert(sigAfter.verify_due === dueBefore, 'Lưu điểm môn khác đã đặt lại hạn của tín hiệu Listening');
+  const dupe = (conn
+    .prepare(`SELECT COUNT(*) n FROM case_signals WHERE attempt_id = ? AND skill = 'listening'`)
+    .get(attempt.id) as any).n;
+  assert(dupe === 1, `Nhập bổ sung đã nhân tín hiệu Listening thành ${dupe} dòng`);
 
-  attempts.saveScore(t('speaking'), attempt.id, 'speaking', { criteria: [exp, exp, exp, exp] });
-  const after = attempts.attemptDetail(P.cpManager, attempt.id);
-  assert(!after.result.provisional, 'Đủ điểm rồi mà vẫn coi là tạm thời');
-  assert(after.result.sosLevel === 3, `Ba kỹ năng dưới kỳ vọng phải là SOS 3, đang là ${after.result.sosLevel}`);
-  assert(after.status === 'done', 'Đủ điểm mọi kỹ năng bắt buộc phải chuyển sang Đã xong');
-  assert(after.sosCase, 'Chưa mở case SOS');
+  /* Nhập LẠI cùng ô điểm (retry) cũng không nhân tín hiệu và không đổi hạn. */
+  attempts.saveScore(t('listening'), attempt.id, 'listening', { rawScore: scoring.LISTENING_BY_RAW.indexOf(low) });
+  const afterRetry = conn
+    .prepare(`SELECT COUNT(*) n, MIN(verify_due) d FROM case_signals WHERE attempt_id = ? AND skill = 'listening'`)
+    .get(attempt.id) as any;
+  assert(afterRetry.n === 1 && afterRetry.d === dueBefore, 'Lưu lại cùng một ô điểm đã nhân tín hiệu hoặc đổi hạn');
 
-  // Ghi một việc đã làm, rồi sửa điểm — việc đã làm KHÔNG được biến mất theo.
-  cases.recordIntervention(P.cpManager, after.sosCase.id, {
+  /* GIÁO VIÊN XÁC MINH → đây mới là lúc case ra đời, và nó đi qua đúng form của người dùng. */
+  const made = cases.reportIssue(t('listening'), {
+    studentId: s.id, cycleId: s.cycle_id, track: 'academic', topic: 'listening',
+    title: 'Listening: nghe số và ngày tháng còn sai',
+    summary: 'Em bắt được ý chính nhưng mất điểm ở phần điền số, ngày tháng và tên riêng.',
+    fromSignalId: sig.id,
+  }) as any;
+  const linked = conn.prepare('SELECT * FROM case_signals WHERE id = ?').get(sig.id) as any;
+  assert(linked.status === 'linked' && linked.case_id === made.id,
+    'Tạo case từ tín hiệu mà tín hiệu không được gắn vào case đó');
+
+  /* Ghi một việc đã làm, rồi SỬA ĐIỂM Writing thành đạt — việc đã làm KHÔNG được biến mất. */
+  cases.recordIntervention(t('listening'), made.id, {
     kind: 'teaching_adjust', description: 'GVCN điều chỉnh cách chữa bài cho em',
     performerSelf: true, status: 'completed', completedDate: '2026-11-12',
   });
@@ -926,19 +963,90 @@ check('Mở case ngay khi kết luận được; mức tăng dần không nhân 
   attempts.saveScore(t('writing2'), attempt.id, 'writing2', { criteria: [exp, exp, exp, exp] });
   const reread = attempts.attemptDetail(P.cpManager, attempt.id);
   assert(reread.result.sosLevel === 2, `Sau khi sửa Writing phải còn SOS 2, đang là ${reread.result.sosLevel}`);
-  const stillOne = conn
-    .prepare(
-      `SELECT category, COUNT(*) n FROM sos_cases
-        WHERE student_id = ? AND COALESCE(cycle_id,0) = ? AND track = 'academic' AND parallel = 0
-        GROUP BY category HAVING n > 1`,
-    )
-    .all(s.id, s.cycle_id ?? 0) as any[];
-  assert(stillOne.length === 0, 'Sửa điểm đã nhân đôi case');
-  const kept = cases.caseDetail(P.cpManager, after.sosCase.id) as any;
+
+  /*
+   * [9.4] TÍN HIỆU W1/W2 MẤT CĂN CỨ — và hai nhánh của mục 9.4 phải rẽ đúng chỗ:
+   *
+   *   · tín hiệu còn CHỜ XÁC MINH  → thu hồi, ghi rõ "Không còn hợp lệ do sửa điểm"
+   *   · tín hiệu ĐÃ thành case     → không tự đụng vào case, chỉ báo người phụ trách xem lại
+   *
+   * Điểm chung: KHÔNG tín hiệu nào được phép còn nằm chờ xác minh trên một con số đã biết
+   * là sai — đó mới là khoản nợ giả mà mục 9.4 muốn dọn.
+   */
+  const w = conn
+    .prepare(`SELECT * FROM case_signals WHERE attempt_id = ? AND skill IN ('writing1','writing2')`)
+    .all(attempt.id) as any[];
+  assert(w.length > 0, 'Không có tín hiệu Writing nào để kiểm');
+  assert(w.every((x: any) => x.status !== 'pending'),
+    'Sửa điểm thành đạt mà tín hiệu Writing vẫn còn nằm chờ xác minh');
+  const pulled = w.filter((x: any) => x.status === 'withdrawn');
+  assert(pulled.length > 0, 'Không tín hiệu Writing nào bị thu hồi sau khi sửa điểm');
+  assert(pulled.every((x: any) => /sửa điểm/i.test(x.withdrawn_reason ?? '')),
+    'Tín hiệu bị thu hồi mà không ghi lý do "Không còn hợp lệ do sửa điểm"');
+  /* Tín hiệu đã thành case thì case đó vẫn còn — việc đã diễn ra không bị xoá theo. */
+  for (const x of w.filter((y: any) => y.status === 'linked')) {
+    const c = conn.prepare('SELECT id FROM sos_cases WHERE id = ?').get(x.case_id) as any;
+    assert(c, 'Sửa điểm đã xoá mất case mà tín hiệu này đã được đưa vào');
+  }
+
+  /* Case Listening KHÔNG bị đụng: nó có căn cứ riêng, và đã có người làm việc thật trên nó. */
+  const kept = cases.caseDetail(t('listening'), made.id) as any;
   assert(kept.interventions.some((i: any) => i.completedDate === '2026-11-12'),
     'Sửa điểm đã xoá mất việc đã làm để hỗ trợ');
-  assert(reread.caseHistory.length > 0, 'Thiếu lịch sử thay đổi của case');
+  assert(kept.status !== 'done', 'Sửa điểm môn khác đã đóng nhầm case Listening');
+
+  /* Và tuyệt đối không có mốc "đã tiến bộ" nào: sửa một con số nhập sai không phải một lần thi. */
+  const fakeProgress = conn
+    .prepare(
+      `SELECT COUNT(*) n FROM case_milestones
+        WHERE case_id = ? AND kind = 'passed' AND attempt_id = ?`,
+    )
+    .get(made.id, attempt.id) as any;
+  assert(fakeProgress.n === 0, 'Sửa điểm đã ghi một mốc tiến bộ giả');
 });
+
+check('[9.4] Case chỉ sống nhờ con số vừa sửa thì rút khỏi danh sách đang xử lý', () => {
+  const s = conn
+    .prepare(
+      `SELECT s.id, cy.id AS cycle_id, cy.target_score FROM students s
+         JOIN enrollments e ON e.student_id = s.id
+         JOIN learning_cycles cy ON cy.student_id = s.id AND cy.status = 'active'
+        WHERE e.class_id = ? AND e.status = 'active' AND cy.target_score IS NOT NULL
+        ORDER BY s.id DESC LIMIT 1`,
+    )
+    .get(classId('UB-FT 401')) as any;
+  const ubManager = loadPrincipal(userByRole('manager', 'UB'));
+  const attempt = attempts.createAttempt(ubManager, {
+    studentId: s.id, cycleId: s.cycle_id, classId: classId('UB-FT 401'), periodId: periodOf('2026-12-07'),
+  }) as any;
+  const exp = s.target_score;
+  const t = (skill: string) => loadPrincipal(teacherOfSkill('UB-FT 401', skill));
+
+  attempts.saveScore(t('speaking'), attempt.id, 'speaking', { criteria: [exp - 0.5, exp - 0.5, exp - 0.5, exp - 0.5] });
+  const sig = conn
+    .prepare(`SELECT * FROM case_signals WHERE attempt_id = ? AND skill = 'speaking'`)
+    .get(attempt.id) as any;
+  assert(sig?.status === 'pending', 'Thiếu tín hiệu Speaking đang chờ xác minh');
+
+  /* Giáo viên mở case ngay. Case này CHƯA có việc gì được làm, và chỉ dựa trên đợt này. */
+  const made = cases.reportIssue(t('speaking'), {
+    studentId: s.id, cycleId: s.cycle_id, track: 'academic', topic: 'speaking',
+    title: 'Speaking: nói ngắt quãng khi gặp chủ đề lạ',
+    summary: 'Em dừng lâu giữa câu khi chủ đề nằm ngoài vốn từ quen thuộc.',
+    fromSignalId: sig.id,
+  }) as any;
+
+  /* Hoá ra điểm nhập sai: sửa lại thành đạt. */
+  attempts.saveScore(t('speaking'), attempt.id, 'speaking', { criteria: [exp, exp, exp, exp] });
+  const after = conn.prepare('SELECT * FROM sos_cases WHERE id = ?').get(made.id) as any;
+  assert(after.status === 'done', 'Case chỉ dựa trên điểm sai vẫn nằm trong danh sách đang xử lý');
+  assert(/sửa điểm/i.test(after.outcome_note ?? ''),
+    `Case bị rút mà không ghi rõ lý do, đang là "${after.outcome_note}"`);
+  /* Rút KHÁC xoá: mọi lịch sử vẫn đọc được. */
+  const hist = conn.prepare('SELECT COUNT(*) n FROM sos_case_history WHERE case_id = ?').get(made.id) as any;
+  assert(hist.n > 0, 'Rút case đã xoá mất lịch sử');
+});
+
 check('Bỏ một kỹ năng khỏi phạm vi sau khi đã có điểm thì giữ điểm và tính lại kết quả', () => {
   const a = conn
     .prepare(`SELECT * FROM assessment_attempts WHERE class_id = ? AND status='done' ORDER BY id DESC LIMIT 1`)
@@ -2801,25 +2909,50 @@ check('Mỗi lượt có SOS sinh đúng MỘT case Ý thức/Khác, không ph�
   assert(dup.length === 0, `${dup.length} lượt bị sinh trùng case Ý thức/Khác`);
 
   /*
-   * Mọi lượt đang có case học thuật với SOS > 0 phải có một case Ý thức/Khác đi kèm.
-   * Chiều ngược lại KHÔNG bắt buộc bằng nhau: điểm sửa lên thành đạt thì mức về 0 nhưng
-   * cuộc trao đổi đã diễn ra rồi, không xoá ngược lịch sử được.
+   * MỌI ĐỢT CÓ SOS PHẢI CÓ MỘT TÍN HIỆU Ý THỨC/KHÁC — nhưng KHÔNG nhất thiết có case.
+   *
+   * Đây là chỗ vòng 7 đảo lại (mục 6.2). Trước đây mỗi đợt có SOS tự mở một case Ý thức/Khác
+   * kèm sẵn hai việc trao đổi; nay nó chỉ sinh một tín hiệu cho GVCN, và cô quyết định có mở
+   * case hay không. Một mốc Ý thức/Khác KHÔNG tự kết luận em thiếu ý thức.
+   *
+   * Nên điều phải kiểm đổi thành: mỗi đợt đúng MỘT tín hiệu Ý thức/Khác, không thừa không
+   * thiếu — còn case thì chỉ có khi đã có người xác minh.
    */
   const missing = conn
     .prepare(
-      `SELECT sc.attempt_id FROM sos_cases sc
-        WHERE sc.track = 'academic' AND sc.origin_kind = 'mock'
-          AND sc.attempt_id IS NOT NULL AND sc.sos_level > 0
-          AND NOT EXISTS (SELECT 1 FROM sos_cases b
-                           WHERE b.attempt_id = sc.attempt_id AND b.track = 'behaviour')
-        GROUP BY sc.attempt_id`,
+      `SELECT sg.attempt_id FROM case_signals sg
+        WHERE sg.track = 'academic' AND sg.attempt_id IS NOT NULL AND sg.sos_level > 0
+          AND NOT EXISTS (SELECT 1 FROM case_signals b
+                           WHERE b.attempt_id = sg.attempt_id AND b.track = 'behaviour')
+        GROUP BY sg.attempt_id`,
     )
     .all() as any[];
   assert(missing.length === 0,
-    `${missing.length} lượt có SOS mà thiếu case Ý thức/Khác (ví dụ lượt ${missing[0]?.attempt_id})`);
+    `${missing.length} đợt có SOS mà thiếu tín hiệu Ý thức/Khác (ví dụ đợt ${missing[0]?.attempt_id})`);
+
+  const dupSignal = conn
+    .prepare(
+      `SELECT attempt_id, COUNT(*) n FROM case_signals
+        WHERE track = 'behaviour' AND attempt_id IS NOT NULL
+        GROUP BY attempt_id HAVING n > 1`,
+    )
+    .all() as any[];
+  assert(dupSignal.length === 0, `${dupSignal.length} đợt bị sinh trùng tín hiệu Ý thức/Khác`);
+
+  /* Và KHÔNG case Ý thức/Khác nào được ra đời mà không có người xác minh đứng tên. */
+  const orphan = conn
+    .prepare(
+      `SELECT COUNT(*) n FROM sos_cases sc
+        WHERE sc.track = 'behaviour' AND sc.origin_kind = 'mock'
+          AND NOT EXISTS (SELECT 1 FROM case_signals sg
+                           WHERE sg.case_id = sc.id AND sg.resolved_by IS NOT NULL)`,
+    )
+    .get() as any;
+  assert(orphan.n === 0,
+    `${orphan.n} case Ý thức/Khác ra đời mà không ai xác minh — máy vẫn đang tự mở case`);
 });
 
-check('Case Ý thức/Khác tự sinh mang đúng HAI phương án trao đổi', () => {
+check('Case Ý thức/Khác do GVCN mở mang đúng HAI việc trao đổi', () => {
   const rows = conn
     .prepare(
       `SELECT sc.id,
@@ -3311,10 +3444,30 @@ check('Trượt Listening ở MT1 rồi MT2 → ĐÚNG MỘT case, tên đổi t
 
   const a1 = mk(1, '2026-10-12');
   attempts.saveScore(lr, a1.id, 'listening', { rawScore: bandBelow(a1.attempt_no) });
+
+  /*
+   * LẦN TRƯỢT ĐẦU CHỈ SINH TÍN HIỆU (mục 6.2). Giáo viên bộ môn xác minh rồi mới có case —
+   * đó là bước mà vòng 7 thêm vào, và là lý do case có tên và mô tả do người viết.
+   */
+  const noCaseYet = conn
+    .prepare(`SELECT COUNT(*) n FROM sos_cases WHERE student_id = ? AND category = 'listening'`)
+    .get(s.id) as any;
+  assert(noCaseYet.n === 0, 'Lần trượt đầu đã tự mở case — mục 6.2 cấm');
+  const sig1 = conn
+    .prepare(`SELECT * FROM case_signals WHERE attempt_id = ? AND skill = 'listening'`)
+    .get(a1.id) as any;
+  assert(sig1?.status === 'pending', 'Lần trượt đầu phải sinh một tín hiệu chờ xác minh');
+
+  cases.reportIssue(lr, {
+    studentId: s.id, cycleId: s.cycle_id, track: 'academic', topic: 'listening',
+    title: 'Listening chưa bắt kịp tốc độ bài nghe',
+    summary: 'Em nghe được ý chính nhưng mất các chi tiết ở phần 3 và 4.',
+    fromSignalId: sig1.id,
+  });
   const after1 = conn
     .prepare(`SELECT * FROM sos_cases WHERE student_id = ? AND category = 'listening'`)
     .all(s.id) as any[];
-  assert(after1.length === 1, `Lần trượt đầu phải mở đúng 1 case, đang có ${after1.length}`);
+  assert(after1.length === 1, `Xác minh xong phải có đúng 1 case, đang có ${after1.length}`);
   const caseId = after1[0].id;
 
   /* Ghi một phương án và một kết quả để kiểm rằng chúng SỐNG SÓT qua lần trượt thứ hai. */
@@ -3335,8 +3488,15 @@ check('Trượt Listening ở MT1 rồi MT2 → ĐÚNG MỘT case, tên đổi t
   assert(after2[0].id === caseId, 'Case Listening bị thay bằng một case khác');
 
   const d = cases.caseDetail(mgr, caseId) as any;
-  assert(d.title === `MT${a2.attempt_no} - Listening dưới kỳ vọng`,
-    `Tên case phải đổi theo lượt mới nhất, đang là "${d.title}"`);
+  /*
+   * TÊN CASE DO NGƯỜI ĐẶT VÀ KHÔNG BỊ MÁY VIẾT LẠI.
+   *
+   * Vòng trước, mỗi lần trượt lại máy đổi tên case thành "MT{n} - Listening dưới kỳ vọng".
+   * Nay tên là nhận định của người dạy (mục 6.3), nên nó phải đứng yên — lần trượt thứ hai
+   * thêm một MỐC, không sửa lời của ai.
+   */
+  assert(d.title === 'Listening chưa bắt kịp tốc độ bài nghe',
+    `Tên case do người dạy đặt đã bị máy viết lại thành "${d.title}"`);
   assert(d.interventions.some((i: any) => i.completedDate === '2026-10-20'),
     'Phương án của MT1 biến mất sau khi MT2 trượt lại');
   assert(d.followups.some((f: any) => f.observedOn === '2026-10-25'),
@@ -3377,9 +3537,32 @@ check('Case đã đóng mà MT sau trượt lại → MỞ CASE MỚI nối vào
 
   const a1 = mk('2026-10-19');
   attempts.saveScore(rt, a1.id, 'reading', { rawScore: low(a1.attempt_no) });
+  const sigA = conn
+    .prepare(`SELECT * FROM case_signals WHERE attempt_id = ? AND skill = 'reading'`)
+    .get(a1.id) as any;
+  assert(sigA?.status === 'pending', 'Lần trượt đầu phải sinh một tín hiệu chờ xác minh');
+  cases.reportIssue(rt, {
+    studentId: s.id, cycleId: s.cycle_id, track: 'academic', topic: 'reading',
+    title: 'Reading đọc chậm, không kịp bài cuối',
+    summary: 'Em đọc kỹ từng câu nên hết giờ khi còn hai câu cuối.',
+    fromSignalId: sigA.id,
+  });
   const c = conn.prepare(`SELECT * FROM sos_cases WHERE student_id = ? AND category = 'reading'`)
     .get(s.id) as any;
   assert(c, 'Chưa mở case Reading');
+
+  /*
+   * CHƯA LÀM GÌ THÌ CHƯA CHỐT ĐƯỢC. Từ vòng 7 case mới mở KHÔNG có phương án tự sinh nào,
+   * nên chặn đầu tiên người dùng gặp là "chưa có phương án nào" — đúng và đáng có.
+   */
+  assertThrows(
+    () => cases.closeCaseOutcome(mgr, c.id, { outcome: 'improved', decision: 'end' }),
+    /chưa có phương án nào/, 'Chốt được kết quả một case chưa ai làm gì',
+  );
+  cases.recordIntervention(rt, c.id, {
+    kind: 'teaching_adjust', description: 'Luyện bấm giờ từng passage, 20 phút mỗi passage',
+    performerSelf: true, status: 'started', startedDate: '2026-10-26',
+  });
 
   /* Mọi phương án phải xong trước, rồi mới chốt được — đó chính là quy tắc cần kiểm. */
   const open = conn
@@ -3399,6 +3582,22 @@ check('Case đã đóng mà MT sau trượt lại → MỞ CASE MỚI nối vào
   /* Rồi MT sau trượt lại. */
   const a2 = mk('2026-11-23');
   attempts.saveScore(rt, a2.id, 'reading', { rawScore: low(a2.attempt_no) });
+
+  /*
+   * Case cũ ĐÃ ĐÓNG nên tín hiệu lần này KHÔNG nối vào nó — nó nằm chờ xác minh. Mở case
+   * mới hay không là một quyết định có chủ đích của người dạy, không phải phản xạ của máy.
+   */
+  const sigB = conn
+    .prepare(`SELECT * FROM case_signals WHERE attempt_id = ? AND skill = 'reading'`)
+    .get(a2.id) as any;
+  assert(sigB?.status === 'pending',
+    'Case cũ đã đóng mà tín hiệu mới đã tự nối vào đâu đó thay vì chờ xác minh');
+  cases.reportIssue(rt, {
+    studentId: s.id, cycleId: s.cycle_id, track: 'academic', topic: 'reading',
+    title: 'Reading chậm lại ở dạng bài True/False/Not Given',
+    summary: 'Lần này em mất thời gian ở dạng True/False/Not Given, khác với lần trước.',
+    fromSignalId: sigB.id,
+  });
 
   /*
    * VÒNG 5 ĐẢO LẠI QUYẾT ĐỊNH CỦA VÒNG 4 (mục 7.5).
@@ -5408,6 +5607,147 @@ check('[18.1] Mọi đợt đều có đủ bốn dòng lịch kỹ năng, khôn
     )
     .get() as any;
   assert(contradiction.n === 0, `${contradiction.n} kỹ năng đã có điểm mà vẫn ghi là chưa xác nhận đã thi`);
+});
+
+// ============================================================ 35. Mục 6.2 — tín hiệu, không phải case
+
+console.log('\n35. Tín hiệu từ điểm: xác minh trong ba ngày (mục 6.2 · 9.4)');
+
+check('[6.2] Không phương án nào còn được sinh tự động từ điểm', () => {
+  /*
+   * Dấu của hàm sinh tự động cũ là `migration_key` bắt đầu bằng 'auto:'. Bộ demo dựng lại
+   * từ đầu nên không được còn dòng nào như thế — nếu còn, nghĩa là một đường auto vẫn sống.
+   */
+  const auto = conn
+    .prepare(`SELECT COUNT(*) n FROM case_interventions WHERE migration_key LIKE 'auto:%'`)
+    .get() as any;
+  assert(auto.n === 0, `${auto.n} phương án vẫn được sinh tự động — mục 6.2 bỏ hẳn đường này`);
+
+  /* Và không phương án nào thuộc về một case mà không ai đứng tên mở. */
+  const orphan = conn
+    .prepare(
+      `SELECT COUNT(*) n FROM case_interventions iv
+         JOIN sos_cases c ON c.id = iv.case_id
+        WHERE c.reported_by IS NULL AND c.origin_kind = 'mock'
+          AND NOT EXISTS (SELECT 1 FROM case_signals sg WHERE sg.case_id = c.id AND sg.resolved_by IS NOT NULL)`,
+    )
+    .get() as any;
+  assert(orphan.n === 0, `${orphan.n} phương án thuộc case chưa ai xác minh`);
+});
+
+check('[6.2] Tín hiệu chờ xác minh KHÔNG được đếm như case đã xác định', () => {
+  const pending = conn
+    .prepare(`SELECT COUNT(*) n FROM case_signals WHERE status = 'pending'`)
+    .get() as any;
+  assert(pending.n > 0, 'Bộ demo thiếu tín hiệu đang chờ xác minh — hàng việc mới sẽ trống');
+
+  /* Không tín hiệu chờ nào có case: chờ nghĩa là chưa thành gì cả. */
+  const wrong = conn
+    .prepare(`SELECT COUNT(*) n FROM case_signals WHERE status = 'pending' AND case_id IS NOT NULL`)
+    .get() as any;
+  assert(wrong.n === 0, `${wrong.n} tín hiệu vừa "chờ xác minh" vừa đã có case`);
+
+  /*
+   * Và tín hiệu đã xử lý xong cũng không được quay lại hàng chờ: mỗi dòng đúng một trạng
+   * thái, không có dòng vừa chờ vừa xong.
+   */
+  const muddled = conn
+    .prepare(
+      `SELECT COUNT(*) n FROM case_signals
+        WHERE (status = 'noted' AND resolution_note IS NULL)
+           OR (status = 'linked' AND case_id IS NULL)
+           OR (status = 'withdrawn' AND withdrawn_reason IS NULL)`,
+    )
+    .get() as any;
+  assert(muddled.n === 0, `${muddled.n} tín hiệu có trạng thái không khớp với dữ liệu của chính nó`);
+
+  /* Tổng hợp riêng phải đếm được, và con số phải khớp với chính bảng dữ liệu. */
+  const listed = signalsSvc.listSignals(P.admin, { status: 'pending' });
+  assert(listed.rows.length === pending.n,
+    `Tổng hợp tín hiệu đếm ${listed.rows.length} mà bảng có ${pending.n}`);
+});
+
+check('[6.2] Tín hiệu hiện ở hồ sơ học viên và ở hàng việc của đúng người', () => {
+  const sg = conn
+    .prepare(`SELECT * FROM case_signals WHERE status = 'pending' AND owner_user_id IS NOT NULL LIMIT 1`)
+    .get() as any;
+  assert(sg, 'Bộ demo thiếu tín hiệu chờ xác minh đã có người phụ trách');
+
+  const prof = profile.studentProfile(P.admin, sg.student_id) as any;
+  assert(prof.pendingSignals.some((x: any) => x.id === sg.id),
+    'Hồ sơ học viên không hiện tín hiệu đang chờ xác minh');
+
+  const owner = loadPrincipal(sg.owner_user_id);
+  const work = mywork.myWork(owner);
+  assert((work.items ?? []).some((i: any) => i.key === `verify:${sg.id}`),
+    'Tín hiệu không xuất hiện trong hàng việc của người phải xác minh');
+
+  /* Người KHÁC không thấy nó như việc của mình. */
+  const other = conn
+    .prepare(`SELECT user_id AS id FROM teacher_assignments WHERE class_id = ? AND user_id != ? LIMIT 1`)
+    .get(sg.class_id, sg.owner_user_id) as any;
+  if (other) {
+    const w2 = mywork.myWork(loadPrincipal(other.id));
+    assert(!(w2.items ?? []).some((i: any) => i.key === `verify:${sg.id}`),
+      'Tín hiệu của người khác lại nằm trong hàng việc của mình');
+  }
+});
+
+check('[6.2] Ghi nhận "đã xem, không mở case" là kết thúc hợp lệ — nhưng phải viết nhận định', () => {
+  const sg = conn
+    .prepare(`SELECT * FROM case_signals WHERE status = 'pending' AND track = 'behaviour' LIMIT 1`)
+    .get() as any;
+  assert(sg, 'Bộ demo thiếu tín hiệu Ý thức/Khác đang chờ');
+  const who = P.admin;
+
+  /* Bấm cho xong không được: mục 6.2 cấm "ép tạo nguyên nhân giả để xoá nợ". */
+  assertThrows(() => signalsSvc.noteSignal(who, sg.id, 'ok'), /nhận định/,
+    'Ghi nhận được mà không cần viết gì');
+
+  signalsSvc.noteSignal(who, sg.id,
+    'Đã gặp em đầu giờ: em vẫn đi học đều và làm bài đủ, lần này em ốm đúng tuần thi. '
+    + 'Chưa cần mở case ý thức.');
+  const after = conn.prepare('SELECT * FROM case_signals WHERE id = ?').get(sg.id) as any;
+  assert(after.status === 'noted', `Trạng thái sau khi ghi nhận phải là "noted", đang là ${after.status}`);
+  assert(after.case_id === null, 'Ghi nhận đã xem mà lại tạo ra một case');
+  assert(after.resolved_by && after.resolution_note, 'Thiếu người ghi nhận hoặc nội dung nhận định');
+});
+
+check('[6.2] Chỉ người trong phạm vi phụ trách mới xác minh được tín hiệu', () => {
+  const sg = conn
+    .prepare(
+      `SELECT sg.* FROM case_signals sg
+         JOIN classes c ON c.id = sg.class_id
+         JOIN branches b ON b.id = c.branch_id
+        WHERE sg.status = 'pending' AND b.code = 'MB' LIMIT 1`,
+    )
+    .get() as any;
+  if (!sg) return;
+  /* Quản lý chi nhánh khác không đụng được. */
+  assertThrows(
+    () => signalsSvc.noteSignal(P.cpManager, sg.id, 'Tôi xem hộ chi nhánh khác một cái nhé'),
+    /phạm vi/, 'Quản lý chi nhánh khác xác minh được tín hiệu ngoài phạm vi',
+  );
+});
+
+check('[9.4] Phương án chưa ai làm bị huỷ do sửa điểm KHÔNG tính thành công hay thất bại', () => {
+  const cancelled = conn
+    .prepare(
+      `SELECT COUNT(*) n FROM case_interventions
+        WHERE status = 'cancelled' AND closed_reason IN ('score_fixed', 'auto_retired')`,
+    )
+    .get() as any;
+  /* Có hay không tuỳ bộ demo; điều bắt buộc là nếu có thì không nằm trong tỷ lệ hiệu quả. */
+  if (cancelled.n === 0) return;
+  const counted = conn
+    .prepare(
+      `SELECT COUNT(*) n FROM case_followups f
+         JOIN case_interventions iv ON iv.id = f.intervention_id
+        WHERE iv.closed_reason IN ('score_fixed', 'auto_retired')`,
+    )
+    .get() as any;
+  assert(counted.n === 0,
+    `${counted.n} phương án chưa từng chạy lại có kết quả — không thành công cũng không thất bại`);
 });
 
 console.log(`\n${'='.repeat(60)}`);

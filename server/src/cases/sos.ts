@@ -1,14 +1,15 @@
 import { suggestCaseOwner } from './owner.ts';
 import { db, tx } from '../db.ts';
 import {
-  CONTACT_KINDS, CONTACT_KIND_LABEL, ENTRY_SKILL_LABEL, INTERVENTION_KIND_LABEL, PERMISSIONS,
-  SOS_LABEL, autoSupportKind, caseDedupKey, categoryOf, cycleDeadline,
+  ENTRY_SKILL_LABEL,
+  SOS_LABEL, caseDedupKey, categoryOf,
   type CaseCategory, type EntrySkill, type MilestoneKind, type SosLevel,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
-import { addDays, badRequest, isIsoDate, notFound, nowIso } from '../util.ts';
-import { require_, type Principal } from '../permissions.ts';
+import { addDays, nowIso } from '../util.ts';
+import { type Principal } from '../permissions.ts';
 import { addJourney, notify, writeAudit } from '../platform/audit.ts';
+import { raiseSignal } from './signals.ts';
 import { failingEntrySkills, type AttemptResult, type EntryBands } from '../fasttrack/scoring.ts';
 import { weekStartOf } from '../fasttrack/attempts.ts';
 import { mondayOf } from '../platform/week.ts';
@@ -236,22 +237,30 @@ export function addMilestone(input: {
 }
 
 /**
- * MỞ / CẬP NHẬT CASE TỪ KẾT QUẢ MỘT LƯỢT ĐÁNH GIÁ.
+ * KẾT QUẢ MỘT ĐỢT ĐÁNH GIÁ SINH RA TÍN HIỆU — KHÔNG SINH CASE, KHÔNG SINH PHƯƠNG ÁN.
  *
- * VÒNG 4 ĐỔI ĐƠN VỊ: một case = một HỌC VIÊN × một HẠNG MỤC, sống xuyên suốt khoá học.
- * Một lượt MT không còn "đẻ" ra case; nó chỉ THÊM MỐC vào những case đã có và mở case mới
- * cho hạng mục chưa từng có vấn đề.
+ * Đây là thay đổi lớn nhất của vòng 7 trong luồng SOS (mục 6.2). Trước đây hàm này tự mở
+ * case hoàn chỉnh cho từng môn trượt, tự mở một case Ý thức/Khác kèm hai việc trao đổi, và
+ * tự sinh một phương án "xếp tự học" hoặc "học tutor". Tất cả đã bị bỏ.
  *
- * Writing xét hai tầng (xem `failingEntrySkills`): band W tổng hợp đạt thì không mở case
- * nào, kể cả khi riêng W1 dưới kỳ vọng.
+ * Lý do bỏ, nói gọn: máy đọc được "band 5.5 < kỳ vọng 6.0", nhưng nó không biết VÌ SAO và
+ * không xếp được tutor thay người. Những case và phương án tự sinh ấy làm bảng tổng hợp đầy
+ * số mà không có một việc thật nào đứng sau.
  *
- * Kèm theo, mỗi lượt có SOS sinh đúng MỘT case Ý thức/Khác chứa hai việc trao đổi — đây là
- * ngoại lệ duy nhất còn gắn với một lượt MT cụ thể, vì nó là việc THÔNG BÁO cho lượt đó.
+ * Nay hàm làm đúng ba việc:
  *
- * Kết luận sinh NGAY trên phần điểm đang có, không chờ đủ mọi kỹ năng: chờ đủ nghĩa là một
- * giáo viên nhập muộn thì việc hỗ trợ học viên dừng theo.
+ *   1. Ghi mốc "đã đạt kỳ vọng" vào case đang mở của hạng mục lần này đã đạt, hạ mức về 0 —
+ *      nhưng KHÔNG tự đóng case. Một lần đạt chưa chứng minh vấn đề đã hết.
+ *   2. Với môn dưới kỳ vọng: nếu hạng mục ĐÃ CÓ case đang mở thì thêm một mốc vào chính case
+ *      đó và gắn tín hiệu vào nó — "không mặc định thêm case/phương án mới". Nếu chưa có
+ *      case nào thì ghi một TÍN HIỆU CHỜ XÁC MINH, giao cho giáo viên bộ môn, hạn ba ngày.
+ *   3. Có SOS thì ghi thêm một tín hiệu Ý thức/Khác cho GVCN xem tình hình chung. Nó KHÔNG
+ *      kết luận em thiếu ý thức, và GVCN được phép ghi nhận "đã xem, không có vấn đề".
+ *
+ * Case đã ĐÓNG mà trượt lại cũng chỉ ra tín hiệu: mở case mới nối vào case cũ là một quyết
+ * định có chủ đích của người dạy, không phải phản xạ của máy.
  */
-export function upsertCaseForResult(p: Principal, attempt: any, result: AttemptResult) {
+export function raiseSignalsForResult(p: Principal, attempt: any, result: AttemptResult) {
   if (result.sosLevel === null) return null;
   const conn = db();
   const rows = conn
@@ -262,8 +271,9 @@ export function upsertCaseForResult(p: Principal, attempt: any, result: AttemptR
   const failing = failingEntrySkills(result.expectation, entry, result.skipped);
 
   /*
-   * NGÀY PHÁT HIỆN = thứ Hai của TUẦN MT. Không còn ngày thi cụ thể để bám vào, và tuần
-   * là đơn vị đúng: case sinh ra từ kết quả của cả một tuần MT, không của một buổi.
+   * NGÀY PHÁT HIỆN = thứ Hai của TUẦN THI. Đây là ngày NGHIỆP VỤ của kết quả.
+   * Nó KHÁC ngày ghi nhận tín hiệu (hôm nay) — và hạn ba ngày đếm từ ngày ghi nhận, không
+   * từ ngày này, để điểm nhập muộn không làm giáo viên quá hạn ngay lúc điểm vừa công bố.
    */
   const detectedAt = weekStartOf(attempt) ?? demoToday();
 
@@ -298,31 +308,75 @@ export function upsertCaseForResult(p: Principal, attempt: any, result: AttemptR
   }
 
   if (result.sosLevel === 0 || !failing.length) {
-    ensureBehaviourCase(p, attempt, result.sosLevel, detectedAt);
     return null;
   }
 
-  const touched: any[] = [];
+  const raised: { skill: string; signalId: number; linkedCaseId: number | null }[] = [];
   for (const skill of failing) {
     const category = categoryOf('academic', skill);
     if (!category) continue;
     const band = entry[skill] ?? null;
-    const { id, kind } = upsertCategoryCase(p, attempt, category, skill, result.sosLevel, detectedAt);
-    addMilestone({
-      caseId: id, kind, attemptId: attempt.id, attemptNo: attempt.attempt_no,
-      band, expectation: result.expectation, sosLevel: result.sosLevel,
-      occurredOn: detectedAt, createdBy: p.userId,
-      dedupKey: `mt:${attempt.id}:${id}:${kind}`,
-    });
+
     /*
-     * PHƯƠNG ÁN TỰ SINH CHO LẦN TRƯỢT NÀY. Case sống suốt khoá nên mỗi lần trượt lại phải
-     * có một phương án MỚI — phương án cũ đã có kết quả rồi, và rõ ràng là chưa đủ.
+     * CASE ĐANG MỞ CHO HẠNG MỤC NÀY thì tín hiệu về thẳng case đó — không mở case thứ hai,
+     * không sinh phương án. Vấn đề vẫn là vấn đề cũ; cái mới chỉ là một bằng chứng nữa.
      */
-    autoSupportPlan(id, attempt, result.sosLevel, skill, detectedAt);
-    touched.push(conn.prepare('SELECT * FROM sos_cases WHERE id = ?').get(id));
+    const open = openHere.find((c) => c.category === category) ?? null;
+    const signal = raiseSignal({
+      actorUserId: p.userId,
+      studentId: attempt.student_id, cycleId: attempt.cycle_id ?? null,
+      attemptId: attempt.id, classId: attempt.class_id ?? null,
+      track: 'academic', skill, category,
+      band, expectation: result.expectation, sosLevel: result.sosLevel,
+      detectedOn: detectedAt,
+    });
+
+    if (open) {
+      addMilestone({
+        caseId: open.id, kind: 'repeat', attemptId: attempt.id, attemptNo: attempt.attempt_no,
+        band, expectation: result.expectation, sosLevel: result.sosLevel,
+        occurredOn: detectedAt, createdBy: p.userId,
+        dedupKey: `mt:${attempt.id}:${open.id}:repeat`,
+      });
+      const followUntil = followUntilAfter(attempt);
+      conn
+        .prepare(
+          `UPDATE sos_cases SET attempt_id = ?, sos_level = ?,
+                  follow_until = COALESCE(?, follow_until), updated_at = ? WHERE id = ?`,
+        )
+        .run(attempt.id, result.sosLevel, followUntil, nowIso(), open.id);
+      if (open.sos_level !== result.sosLevel) {
+        recordChange(open.id, 'sos_level', String(open.sos_level), String(result.sosLevel), p.userId);
+      }
+      /* Gắn thẳng, không qua tay người: case này đã có người phụ trách và đang chạy. */
+      if (signal.status === 'pending') {
+        conn
+          .prepare(
+            `UPDATE case_signals SET status = 'linked', case_id = ?, resolved_by = ?, resolved_at = ?,
+                    resolution_note = ?, updated_at = ? WHERE id = ?`,
+          )
+          .run(open.id, p.userId, nowIso(),
+               'Nối vào case đang mở của hạng mục này — cùng một vấn đề, thêm một bằng chứng.',
+               nowIso(), signal.id);
+      }
+    }
+    raised.push({ skill, signalId: signal.id, linkedCaseId: open?.id ?? null });
   }
 
-  if (touched.length) {
+  /*
+   * TÍN HIỆU Ý THỨC/KHÁC cho GVCN. Nó KHÔNG phải kết luận "em thiếu ý thức" và không kèm
+   * sẵn hai việc trao đổi như trước: trao đổi với em và với phụ huynh là những việc có thật,
+   * phải có người và ngày thật, nên chúng chỉ ra đời khi GVCN quyết định mở case.
+   */
+  raiseSignal({
+    actorUserId: p.userId,
+    studentId: attempt.student_id, cycleId: attempt.cycle_id ?? null,
+    attemptId: attempt.id, classId: attempt.class_id ?? null,
+    track: 'behaviour', skill: null, category: 'behaviour',
+    sosLevel: result.sosLevel, detectedOn: detectedAt,
+  });
+
+  if (raised.length) {
     addJourney({
       studentId: attempt.student_id, cycleId: attempt.cycle_id,
       eventType: 'mock_result', eventDate: detectedAt,
@@ -337,99 +391,11 @@ export function upsertCaseForResult(p: Principal, attempt: any, result: AttemptR
       dedupKey: `mock_result:${attempt.id}`,
     });
     notifyTeachers(attempt, result.sosLevel);
-    writeAudit({ actorUserId: p.userId, action: 'sos.open', entityType: 'sos_case',
-      entityId: touched[0].id, entityLabel: `MT${attempt.attempt_no} SOS ${result.sosLevel}`,
-      after: { level: result.sosLevel, skills: failing } });
+    writeAudit({ actorUserId: p.userId, action: 'signal.raised', entityType: 'assessment_attempt',
+      entityId: attempt.id, entityLabel: `MT${attempt.attempt_no} SOS ${result.sosLevel}`,
+      after: { level: result.sosLevel, skills: failing, signals: raised.length } });
   }
-
-  ensureBehaviourCase(p, attempt, result.sosLevel, detectedAt);
-  return touched[0] ?? null;
-}
-
-/**
- * CASE Ý THỨC/KHÁC TỰ SINH SAU MỘT ĐỢT MT CÓ SOS — ngoại lệ duy nhất còn gắn với một lượt.
- *
- * Nó là một case THÔNG BÁO: "em này vừa có SOS, phải cho em và phụ huynh biết". Xong cả hai
- * việc trao đổi là đóng. MT sau lại có SOS thì sinh case Ý thức/Khác MỚI — khác hẳn case
- * học thuật sống suốt khoá, vì mỗi lần trượt là một lần phải báo lại, không phải một vấn đề
- * kéo dài.
- *
- * Hai việc trao đổi nay là hai PHƯƠNG ÁN nằm ngay trong case (vòng 3a để chúng ở bảng riêng;
- * vòng 4 đảo lại). Chúng ở trạng thái đã lên kế hoạch, chưa có người thực hiện.
- */
-export function ensureBehaviourCase(p: Principal, attempt: any, sosLevel: number, detectedAt: string) {
-  if (!sosLevel || !attempt.student_id) return;
-  const conn = db();
-  const key = caseDedupKey({
-    track: 'behaviour', category: 'behaviour', originKind: 'mock',
-    studentId: attempt.student_id, cycleId: attempt.cycle_id, attemptId: attempt.id,
-  });
-  if (!key) return;
-
-  let row = conn.prepare('SELECT * FROM sos_cases WHERE dedup_key = ?').get(key) as any;
-  if (!row) {
-    const info = conn
-      .prepare(
-        `INSERT INTO sos_cases (attempt_id, student_id, cycle_id, track, topic, category,
-                                origin_kind, detected_at, sos_level, status, dedup_key,
-                                follow_until, created_at)
-         VALUES (?,?,?, 'behaviour', 'other', 'behaviour', 'mock', ?,?, 'open', ?,?,?)`,
-      )
-      .run(attempt.id, attempt.student_id, attempt.cycle_id, detectedAt, sosLevel,
-           key, followUntilAfter(attempt), nowIso());
-    row = { id: Number(info.lastInsertRowid) };
-    addMilestone({
-      caseId: row.id, kind: 'opened', attemptId: attempt.id, attemptNo: attempt.attempt_no,
-      sosLevel, occurredOn: detectedAt, createdBy: p.userId,
-      dedupKey: `mt:${attempt.id}:${row.id}:opened`,
-    });
-  } else if (row.sos_level !== sosLevel) {
-    conn.prepare('UPDATE sos_cases SET sos_level = ?, updated_at = ? WHERE id = ?')
-      .run(sosLevel, nowIso(), row.id);
-  }
-
-  /*
-   * HẠN LÀM hai việc trao đổi: MỘT TUẦN kể từ lúc phương án bắt đầu — luật của case
-   * Ý thức/Khác (mục 7.8). Việc gặp em hay gọi phụ huynh làm xong trong vài ngày; bắt chờ
-   * đến Chủ nhật tuần sau mới phải báo lại là kéo dài một việc ngắn một cách vô ích.
-   */
-  const due = cycleDeadline(detectedAt, 'behaviour');
-  for (const kind of CONTACT_KINDS) {
-    conn
-      .prepare(
-        `INSERT INTO case_interventions (case_id, kind, description, status, action_due,
-                                         migration_key, created_at)
-         VALUES (?,?,?, 'planned', ?,?,?)
-         ON CONFLICT(migration_key) DO NOTHING`,
-      )
-      .run(row.id, kind, CONTACT_KIND_LABEL[kind], due, `auto:${attempt.id}:${kind}`, nowIso());
-  }
-}
-
-/**
- * PHƯƠNG ÁN TỰ SINH THEO QUY ĐỊNH CŨ — xếp tự học, hoặc tutor từ SOS 3 và từ MT3 trở đi.
- *
- * Sinh ở trạng thái ĐÃ LÊN KẾ HOẠCH, KHÔNG có người thực hiện và KHÔNG gửi duyệt. Máy không
- * đặt tutor thay người: nó chỉ nói "theo quy định em này phải có cái này", còn ai làm và có
- * đúng là cái đó không thì GVCN xác nhận hoặc đổi.
- *
- * Mỗi LƯỢT MT một phương án riêng, khoá theo `(lượt, case)`: case sống suốt khoá nên lần
- * trượt thứ hai phải có phương án của riêng nó, còn chấm lại hay sửa điểm thì không nhân đôi.
- */
-function autoSupportPlan(caseId: number, attempt: any, level: number, skill: string, detectedAt: string) {
-  const kind = autoSupportKind(level, attempt.attempt_no);
-  db()
-    .prepare(
-      `INSERT INTO case_interventions (case_id, kind, description, status, action_due,
-                                       migration_key, created_at)
-       VALUES (?,?,?, 'planned', ?,?,?)
-       ON CONFLICT(migration_key) DO NOTHING`,
-    )
-    .run(caseId, kind,
-         `${INTERVENTION_KIND_LABEL[kind]} cho ${ENTRY_SKILL_LABEL[skill as EntrySkill] ?? skill}`
-         + ` — theo quy định khi ${SOS_LABEL[level as SosLevel]}`,
-         cycleDeadline(detectedAt, 'academic'),
-         `auto:${attempt.id}:${caseId}:${skill}`, nowIso());
+  return raised;
 }
 
 function recordChange(caseId: number, field: string, oldValue: string | null, newValue: string | null, actor: number | null) {

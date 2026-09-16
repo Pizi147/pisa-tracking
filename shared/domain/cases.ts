@@ -497,11 +497,12 @@ export const CONTACT_KIND_SHORT: Record<ContactKind, string> = {
 };
 
 /**
- * PHƯƠNG ÁN TỰ SINH THEO MỨC SOS — quy định cũ của trung tâm, owner xác nhận giữ 10/09/2026.
+ * QUY ĐỊNH CŨ "SOS 1–2 tự học, SOS 3 tutor" — GIỮ ĐỂ ĐỌC LẠI DỮ LIỆU CŨ, KHÔNG CÒN TỰ SINH.
  *
- * Từ MT3 trở đi luôn là tutor bất kể mức: gần ngày thi thì tự học không kịp sửa.
- * Phương án sinh ra ở trạng thái ĐÃ LÊN KẾ HOẠCH, chưa có người thực hiện, chưa gửi duyệt —
- * máy không tự đặt tutor thay người, nó chỉ nói "theo quy định em này phải có cái này".
+ * Từ vòng 7, điểm dưới kỳ vọng KHÔNG tự tạo phương án hỗ trợ nào nữa (mục 6.2). Hàm này chỉ
+ * còn dùng để giải thích những phương án đã được sinh tự động trước đây, và để bước nâng cấp
+ * nhận ra chúng. Đừng gọi nó để tạo phương án mới: quy định này nói em PHẢI được hỗ trợ, chứ
+ * không nói ai làm, làm cái gì cụ thể và làm khi nào — ba thứ mà một phương án thật phải có.
  */
 export function autoSupportKind(sosLevel: number, attemptNo: number): 'self_study' | 'tutor' {
   if (attemptNo >= 3) return 'tutor';
@@ -595,6 +596,52 @@ export function cycleDeadlineHint(track: string = 'academic'): string {
     ? 'Hạn mặc định: một tuần kể từ lúc phương án bắt đầu.'
     : 'Hạn mặc định: hết Chủ nhật của tuần kế tiếp (chu kỳ hai tuần, tính tuần bắt đầu là tuần thứ nhất).';
 }
+
+/**
+ * TÍN HIỆU — thứ mà một kết quả dưới kỳ vọng sinh ra, và nó KHÔNG phải một case (mục 6.2).
+ *
+ * Trước vòng 7, điểm dưới kỳ vọng tự mở ra một case hoàn chỉnh kèm phương án hỗ trợ. Nghe
+ * thì tiện, nhưng nó nói dối ở hai chỗ:
+ *
+ *   1. Máy KHÔNG chẩn đoán được nguyên nhân. Nó chỉ biết "band 5.5 < kỳ vọng 6.0". Một case
+ *      hoàn chỉnh phải có tên, mô tả và phân loại vấn đề — ba thứ chỉ người dạy mới biết.
+ *   2. Máy KHÔNG xếp được tutor thay người. Một phương án tự sinh trông như đã có ai đó lo,
+ *      trong khi thật ra chưa ai đụng vào.
+ *
+ * Nên từ nay điểm chỉ sinh TÍN HIỆU: "môn này dưới kỳ vọng, ai đó phải xem". Giáo viên bộ
+ * môn xác minh môn mình; GVCN nhận tín hiệu Ý thức/Khác để xem tình hình chung. Chỉ khi có
+ * người xác minh thì mới thành case — hoặc được ghi nhận là không có vấn đề thật.
+ */
+export const SIGNAL_STATUSES = ['pending', 'linked', 'noted', 'withdrawn'] as const;
+export type SignalStatus = (typeof SIGNAL_STATUSES)[number];
+export const SIGNAL_STATUS_LABEL: Record<SignalStatus, string> = {
+  pending: 'Chờ xác minh',
+  linked: 'Đã thành case',
+  noted: 'Đã xem, không thành case',
+  withdrawn: 'Đã thu hồi',
+};
+
+/**
+ * HẠN XÁC MINH MỘT TÍN HIỆU: **3 ngày, TÍNH CẢ NGÀY ĐẦU** (mục 6.2).
+ *
+ * Tín hiệu ghi nhận thứ Hai thì hết thứ Tư, không phải hết thứ Năm. Đây là chỗ rất dễ lệch
+ * một ngày, nên con số cộng thêm là 2 chứ không phải 3.
+ */
+export const SIGNAL_VERIFY_DAYS = 3;
+
+/**
+ * Hạn xác minh, tính từ NGÀY TÍN HIỆU ĐƯỢC GHI NHẬN — không phải từ thứ Hai của tuần thi.
+ *
+ * Điều này quan trọng với điểm nhập muộn: một bài thi tuần trước mà hôm nay mới có điểm thì
+ * giáo viên vẫn có đủ ba ngày kể từ hôm nay. Neo vào tuần thi sẽ làm họ quá hạn ngay tại
+ * giây điểm được công bố — phạt người ta vì việc của người khác.
+ */
+export function signalVerifyDue(raisedOn: string): string {
+  return addDaysIso(raisedOn, SIGNAL_VERIFY_DAYS - 1);
+}
+
+/** Lý do chuẩn khi một tín hiệu mất căn cứ vì điểm được sửa lại (mục 9.4). */
+export const SIGNAL_WITHDRAW_SCORE_FIXED = 'Không còn hợp lệ do sửa điểm';
 
 export const INTERVENTION_STATUSES = ['planned', 'started', 'completed', 'cancelled'] as const;
 export type InterventionStatus = (typeof INTERVENTION_STATUSES)[number];
