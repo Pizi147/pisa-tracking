@@ -118,6 +118,47 @@ export function caseCategoriesFor(scoringMode: string | null | undefined): reado
 }
 
 /**
+ * CÁC THÀNH PHẦN CÓ THỂ GHI Ở PHẦN KẾT LUẬN CASE — mục 9.3, và luôn là TUỲ CHỌN.
+ *
+ * Trước vòng 7, phần kết luận mời người dùng chấm CẢ NĂM kỹ năng, kể cả khi case chỉ về
+ * Listening. Kết quả là bốn ô trống vô nghĩa, hoặc tệ hơn, bốn con số bịa cho đủ form.
+ *
+ * Nay chỉ hiện đúng thành phần của KỸ NĂNG CASE ĐANG NÓI TỚI, và chỉ phần nào thật sự được
+ * đánh giá mới phải điền. Đây là QUAN SÁT của người dạy lúc kết luận: nó KHÔNG ghi đè điểm
+ * Test chính thức và không đổi mức SOS.
+ *
+ * Lớp Normal không áp rubric IELTS: W của Normal chấm theo bài của chương trình, nên không
+ * có bộ bốn tiêu chí band ở đây.
+ */
+export const SKILL_COMPONENTS: Record<string, readonly string[]> = {
+  listening: ['Section 1', 'Section 2', 'Section 3', 'Section 4'],
+  reading: ['Passage 1', 'Passage 2', 'Passage 3'],
+  writing1: ['Task Achievement', 'Coherence & Cohesion', 'Lexical Resource', 'Grammatical Range & Accuracy'],
+  writing2: ['Task Response', 'Coherence & Cohesion', 'Lexical Resource', 'Grammatical Range & Accuracy'],
+  speaking: ['Fluency & Coherence', 'Lexical Resource', 'Grammatical Range & Accuracy', 'Pronunciation'],
+};
+
+/**
+ * L/R ghi theo ĐƠN VỊ ĐẠT/TỔNG, không phải band.
+ *
+ * "Section 3: 5/10" là một câu đọc được. "Section 3: 5.0" thì người đọc sau ba tháng sẽ
+ * tưởng em được band 5 ở Section 3 — một con số không tồn tại trong IELTS.
+ */
+export function componentsAreCounts(skill: string | null | undefined): boolean {
+  return skill === 'listening' || skill === 'reading';
+}
+
+/** Thành phần chấm được của một hạng mục case; rỗng nghĩa là không có bộ nào để gợi ý. */
+export function componentsFor(
+  category: string | null | undefined,
+  scoringMode?: string | null,
+): readonly string[] {
+  if (!category) return [];
+  if (scoringMode === 'ratio') return componentsAreCounts(category) ? SKILL_COMPONENTS[category] ?? [] : [];
+  return SKILL_COMPONENTS[category] ?? [];
+}
+
+/**
  * Môn của lớp Normal → hạng mục case.
  *
  * W CỦA NORMAL LÀ HẠNG MỤC RIÊNG, KHÔNG PHẢI W2 CỦA FAST TRACK. Vòng 4 từng gộp chúng để
@@ -541,8 +582,8 @@ export const DISPOSITION_LABEL: Record<Disposition, string> = {
  * Khác với phương án học thuật, phương án trao đổi thường chỉ cần ĐÃ HOÀN THÀNH + NGÀY
  * THỰC HIỆN, ghi chú tuỳ chọn — không duyệt, không hẹn xem lại.
  */
-export const SUPPORT_KINDS = ['self_study', 'tutor', 'teaching_adjust', 'other'] as const;
-export const CONTACT_KINDS = ['talk_student', 'talk_parent'] as const;
+export const SUPPORT_KINDS = ['self_study', 'tutor', 'teaching_adjust', 'extra_homework', 'other'] as const;
+export const CONTACT_KINDS = ['talk_student', 'talk_parent', 'warning_letter'] as const;
 export const PROPOSAL_KINDS = ['reschedule_mt', 'extra_support', 'meeting_cx', 'other_proposal'] as const;
 export const INTERVENTION_KINDS = [...SUPPORT_KINDS, ...CONTACT_KINDS, ...PROPOSAL_KINDS] as const;
 export type InterventionKind = (typeof INTERVENTION_KINDS)[number];
@@ -550,13 +591,62 @@ export const INTERVENTION_KIND_LABEL: Record<InterventionKind, string> = {
   self_study: 'Xếp tự học',
   tutor: 'Học tutor',
   teaching_adjust: 'Điều chỉnh cách dạy',
-  other: 'Khác',
-  talk_student: 'Trao đổi với học viên',
-  talk_parent: 'Trao đổi với phụ huynh',
+  extra_homework: 'Tăng cường bài tập',
+  /* Mã cũ: "Khác" tự thực hiện đã bỏ khỏi danh sách chọn (mục 8.1), giữ để đọc dữ liệu cũ. */
+  other: 'Khác (mục cũ)',
+  talk_student: 'Meeting với học sinh',
+  talk_parent: 'Report cho gia đình',
+  warning_letter: 'Gửi thư cảnh cáo',
   reschedule_mt: 'Lùi lịch thi',
-  extra_support: 'Hỗ trợ học thuật ngoài định mức',
+  extra_support: 'Hỗ trợ học thuật',
+  /* Giữ ĐÚNG chức danh của trung tâm, không tự đổi thành "Ban giám đốc" hay tên khác. */
   meeting_cx: 'Meeting CX / GĐCN',
   other_proposal: 'Khác',
+};
+
+/**
+ * DANH MỤC PHƯƠNG ÁN THEO NHÓM CASE (mục 8.1).
+ *
+ * Hai nhóm case cần hai bộ phương án khác nhau, và bày nhầm bộ là mời người dùng chọn sai:
+ * "Xếp tự học" không giải quyết được chuyện em hay nghỉ học, còn "Gửi thư cảnh cáo" thì
+ * không phải cách chữa một lỗ hổng ngữ pháp.
+ *
+ * Trong mỗi nhóm lại tách hai họ: việc GIÁO VIÊN TỰ LÀM ĐƯỢC, và việc PHẢI CÓ QUẢN LÝ TRẢ
+ * LỜI. Chọn một mục ở cột thứ hai TỨC LÀ đang xin ý kiến — không cần tick thêm ô nào.
+ *
+ * "Khác" chỉ còn ở cột đề xuất. Một việc không gọi được tên mà giáo viên tự làm luôn thì
+ * không ai biết đã làm gì; nếu nó thật sự cần thiết, nó đáng để Quản lý biết.
+ */
+export const SELF_SERVE_KINDS_BY_TRACK: Record<string, readonly InterventionKind[]> = {
+  academic: ['self_study', 'tutor', 'teaching_adjust', 'extra_homework'],
+  behaviour: ['talk_parent', 'talk_student', 'warning_letter'],
+};
+export const PROPOSAL_KINDS_BY_TRACK: Record<string, readonly InterventionKind[]> = {
+  academic: ['extra_support', 'other_proposal'],
+  behaviour: ['meeting_cx', 'reschedule_mt', 'other_proposal'],
+};
+
+/** Toàn bộ phương án chọn được cho một nhóm case, theo đúng thứ tự bày ra trên form. */
+export function interventionKindsFor(track: string | null | undefined): {
+  selfServe: readonly InterventionKind[]; proposals: readonly InterventionKind[];
+} {
+  const t = track === 'behaviour' ? 'behaviour' : 'academic';
+  return { selfServe: SELF_SERVE_KINDS_BY_TRACK[t], proposals: PROPOSAL_KINDS_BY_TRACK[t] };
+}
+
+/**
+ * "Lùi lịch thi" phải nói rõ LÙI CÁI GÌ (mục 8.1).
+ *
+ * Hai thứ hoàn toàn khác nhau cùng được gọi là "lịch thi": kế hoạch thi IELTS thật của em,
+ * và một phần thi trong một đợt MT. Chúng có quy tắc khác nhau, người quyết khác nhau, và
+ * hệ quả khác nhau. Một đề xuất không nói rõ đối tượng thì người duyệt không biết mình đang
+ * đồng ý với chuyện gì.
+ */
+export const RESCHEDULE_TARGETS = ['real_exam', 'mock_skill'] as const;
+export type RescheduleTarget = (typeof RESCHEDULE_TARGETS)[number];
+export const RESCHEDULE_TARGET_LABEL: Record<RescheduleTarget, string> = {
+  real_exam: 'Kế hoạch thi thật của em',
+  mock_skill: 'Một phần thi trong đợt MT',
 };
 
 /**
@@ -587,12 +677,14 @@ export const LEGACY_INTERVENTION_KIND_MAP: Record<string, InterventionKind> = {
  */
 export type ContactKind = (typeof CONTACT_KINDS)[number];
 export const CONTACT_KIND_LABEL: Record<ContactKind, string> = {
-  talk_student: 'GVCN + GVBM trao đổi với học viên',
-  talk_parent: 'CS trao đổi với phụ huynh',
+  talk_student: 'GVCN + GVBM meeting với học sinh',
+  talk_parent: 'Report cho gia đình',
+  warning_letter: 'Gửi thư cảnh cáo',
 };
 export const CONTACT_KIND_SHORT: Record<ContactKind, string> = {
-  talk_student: 'Trao đổi với học viên',
-  talk_parent: 'Trao đổi với phụ huynh',
+  talk_student: 'Meeting với học sinh',
+  talk_parent: 'Report cho gia đình',
+  warning_letter: 'Thư cảnh cáo',
 };
 
 /**
@@ -750,6 +842,55 @@ export function signalVerifyDue(raisedOn: string): string {
 /** Lý do chuẩn khi một tín hiệu mất căn cứ vì điểm được sửa lại (mục 9.4). */
 export const SIGNAL_WITHDRAW_SCORE_FIXED = 'Không còn hợp lệ do sửa điểm';
 
+/**
+ * BẢNG HẠN CỦA MỤC 8.3 — mọi hạn theo ngày đều TÍNH CẢ NGÀY ĐẦU.
+ *
+ * Ba ngày là ngày đầu + 2, năm ngày là + 4, bảy ngày là + 6. Đây là chỗ rất dễ lệch một
+ * ngày, nên con số cộng thêm luôn nhỏ hơn số ngày đúng một đơn vị, và không nơi nào được
+ * tự cộng lấy.
+ *
+ * Hạn phụ thuộc MỨC ĐỘ, và đó là lý do mức độ chỉ còn hai bậc chứ không phải ba: mỗi bậc
+ * dẫn tới một con số khác nhau, nên nó có việc để làm.
+ */
+export const PLAN_DUE_DAYS: Record<string, number> = { urgent: 3, attention: 5 };
+
+/**
+ * HẠN PHẢI CÓ PHƯƠNG ÁN, tính từ lúc case được xác định và giao trách nhiệm.
+ *
+ * Áp cho CẢ case học thuật lẫn Ý thức/Khác (mục 8.3) — với Ý thức/Khác thì đây vừa là hạn
+ * phải có phương án, vừa là hạn phải LÀM XONG nó.
+ *
+ * Đổi người phụ trách hay chuyển lớp KHÔNG đặt lại hạn này: nơi gọi luôn truyền vào mốc
+ * gốc, vì một nghĩa vụ đã phát sinh thì không biến mất khi người giữ nó đổi tên.
+ */
+export function planDueDate(assignedOn: string, urgency: string | null | undefined): string {
+  const days = PLAN_DUE_DAYS[urgency ?? DEFAULT_URGENCY] ?? PLAN_DUE_DAYS.attention;
+  return addDaysIso(assignedOn, days - 1);
+}
+
+/**
+ * HẠN CẬP NHẬT PHƯƠNG ÁN HỌC THUẬT: trước hết CHỦ NHẬT hằng tuần (mục 8.3).
+ *
+ * Bắt đầu 19/9 (thứ Bảy) thì vẫn phải cập nhật ngày 20/9 — chưa đủ dữ liệu thì ghi đúng là
+ * chưa đủ, chứ không được bỏ qua một tuần. Đó là điều kiện để bảng theo tuần nói đúng.
+ */
+export function weeklyUpdateDue(fromDate: string): string {
+  const d = new Date(`${fromDate.slice(0, 10)}T00:00:00Z`);
+  const dow = d.getUTCDay();                    // 0 = Chủ nhật
+  return addDaysIso(fromDate, dow === 0 ? 0 : 7 - dow);
+}
+
+/**
+ * NGÀY DỰ KIẾN KẾT THÚC PHƯƠNG ÁN HỌC THUẬT khi người dùng không chọn: CHỦ NHẬT TUẦN TIẾP
+ * THEO tính từ lúc bắt đầu thực hiện (mục 8.3).
+ *
+ * Bắt đầu 19/9 → kết thúc mặc định 27/9. Trùng đúng Chủ nhật thì MỘT lần cập nhật kết thúc
+ * đáp ứng cả hai nghĩa vụ; không bắt người dùng bấm hai lần cho cùng một ngày.
+ */
+export function planEndDefault(startDate: string): string {
+  return addDaysIso(weeklyUpdateDue(startDate), 7);
+}
+
 export const INTERVENTION_STATUSES = ['planned', 'started', 'completed', 'cancelled'] as const;
 export type InterventionStatus = (typeof INTERVENTION_STATUSES)[number];
 export const INTERVENTION_STATUS_LABEL: Record<InterventionStatus, string> = {
@@ -766,11 +907,11 @@ export const INTERVENTION_STATUS_LABEL: Record<InterventionStatus, string> = {
 export const FOLLOWUP_OUTCOMES = ['improved', 'partial', 'unchanged', 'worse', 'insufficient'] as const;
 export type FollowUpOutcome = (typeof FOLLOWUP_OUTCOMES)[number];
 export const FOLLOWUP_OUTCOME_LABEL: Record<FollowUpOutcome, string> = {
-  improved: 'Tiến bộ rõ rệt',
+  improved: 'Tiến bộ rõ',
   partial: 'Tiến bộ một phần',
-  unchanged: 'Chưa thay đổi',
+  unchanged: 'Không tiến bộ',
   worse: 'Kém hơn',
-  insufficient: 'Không đủ căn cứ',
+  insufficient: 'Chưa đủ dữ liệu',
 };
 /** Ba kết quả của case Ý thức/Khác. `improved` ở đây đọc là "Đã tiến bộ". */
 export const BEHAVIOUR_OUTCOMES = ['improved', 'unchanged', 'worse'] as const;
@@ -832,6 +973,55 @@ export function nextStepsFor(outcome: string): NextStep[] {
   return GOOD_OUTCOMES.includes(outcome)
     ? ['complete', 'monitor']
     : ['continue', 'propose', 'ask_manager'];
+}
+
+/**
+ * HAI TAB CỦA BẢNG CẬP NHẬT KẾT QUẢ (mục 9.1).
+ *
+ * Trước vòng 7, mọi lần ghi kết quả đều bắt chọn thêm "bước tiếp theo", kể cả khi người
+ * dạy chỉ muốn nói "tuần này em có tiến bộ một phần, tôi làm tiếp". Hệ quả là để sang được
+ * tuần mới, người ta phải khai một bước đi tiếp không có thật — hoặc tệ hơn, mở một phương
+ * án thứ hai giống hệt phương án cũ.
+ *
+ * Tách làm hai việc rõ ràng:
+ *
+ *   · THEO DÕI TIẾP — ghi kết quả chu kỳ vừa rồi rồi lưu, hết. Phương án vẫn đang chạy.
+ *   · KẾT THÚC PHƯƠNG ÁN — mới cần ngày hoàn thành thật và một bước tiếp theo.
+ *
+ * Và chỉ hai đường đó khép được một phương án: thao tác kết thúc, hoặc nhập lịch sử "đã
+ * xong" có ngày thật. Không còn nút "đánh dấu đã làm" chạy song song mà không hỏi kết quả.
+ */
+export const RESULT_MODES = ['monitor', 'end'] as const;
+export type ResultMode = (typeof RESULT_MODES)[number];
+export const RESULT_MODE_LABEL: Record<ResultMode, string> = {
+  monitor: 'Tiếp tục theo dõi',
+  end: 'Kết thúc phương án',
+};
+
+/**
+ * "Chưa đủ dữ liệu" KHÔNG đóng được phương án (mục 9.1).
+ *
+ * Nó là một câu trung thực khi chưa có bài mới để nhìn, nhưng nó không phải một kết luận.
+ * Cho phép nó khép phương án là mở đúng cái cửa mà cả mục này muốn đóng: khép việc lại mà
+ * chưa ai biết em khá hơn hay kém đi.
+ */
+export function canEndWithOutcome(outcome: string): boolean {
+  return outcome !== 'insufficient';
+}
+
+/**
+ * Các bước tiếp theo ở TAB KẾT THÚC. "Tiếp tục chính phương án này" không nằm ở đây — nhu
+ * cầu đó thuộc tab theo dõi, và để nó ở cả hai chỗ là mời người dùng chọn nhầm.
+ */
+export function endStepsFor(outcome: string): NextStep[] {
+  return GOOD_OUTCOMES.includes(outcome)
+    ? ['complete', 'propose', 'ask_manager']
+    : ['propose', 'ask_manager'];
+}
+
+/** Bước tiếp theo hợp lệ theo tab đang đứng. */
+export function stepsForMode(mode: string, outcome: string): NextStep[] {
+  return mode === 'end' ? endStepsFor(outcome) : ['continue'];
 }
 
 /** Nguồn của điểm xuất phát. Thiếu căn cứ thì để trống, KHÔNG lấy MT1 làm điểm đầu vào. */

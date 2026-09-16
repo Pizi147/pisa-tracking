@@ -2,6 +2,7 @@ import { db } from '../db.ts';
 import {
   ATTEMPT_KIND_SHORT, CONTACT_KIND_SHORT, ENTRY_SKILL_LABEL, INTERVENTION_KIND_LABEL, PERMISSIONS,
   isContactKind, REGULAR_SKILL_LABEL, SOS_LABEL, URGENCY_LABEL, caseHeadline, cycleDeadline,
+  planDueDate, urgencyFromSos,
   type AttemptKind, type ContactKind, type EntrySkill, type InterventionKind,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -631,13 +632,18 @@ export function myWork(p: Principal, f: { branchId?: number | null } = {}) {
     if (!mayDecide) continue;
 
     /*
-     * CASE CHƯA CÓ PHƯƠNG ÁN quá hạn khi đã qua chu kỳ đầu — hai tuần với case học thuật,
-     * một tuần với Ý thức/Khác. Không ép ai phải làm ngay, nhưng cũng không để một em nằm
-     * im hết cả chu kỳ mà không ai biết.
+     * HẠN PHẢI CÓ PHƯƠNG ÁN THEO MỨC ĐỘ (mục 8.3): Gấp 3 ngày, Cần chú ý 5 ngày, tính cả
+     * ngày đầu. Áp cho cả case học thuật lẫn Ý thức/Khác.
+     *
+     * Trước vòng 7 hạn này bằng nguyên một chu kỳ hỗ trợ (hai tuần), nên một case Gấp nằm
+     * im mười ba ngày vẫn chưa bị coi là chậm. Nay mức độ quyết định hạn — và đó là lý do
+     * mức độ chỉ còn hai bậc, mỗi bậc một con số.
      */
     const detected = c.detected_at ?? (c.created_at ?? '').slice(0, 10);
     const days = detected ? diffDays(today, detected) : 0;
-    const deadline = detected ? cycleDeadline(detected, c.track ?? 'academic') : null;
+    const deadline = detected
+      ? planDueDate(detected, c.urgency ?? urgencyFromSos(c.sos_level ?? null))
+      : null;
     const u: WorkUrgency = deadline !== null && today > deadline ? 'overdue' : 'normal';
     const head = caseHeadline({
       summary: c.summary, originKind: c.origin_kind, sosLevel: c.sos_level, attemptNo: c.attempt_no,

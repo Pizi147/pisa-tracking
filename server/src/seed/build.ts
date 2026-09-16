@@ -1,5 +1,6 @@
 import {
-  ATTEMPT_KIND_SHORT, PROGRAMME_TEMPLATES, categoryOf, cycleDeadline, programmeOf, ratioResult,
+  ATTEMPT_KIND_SHORT, PROGRAMME_TEMPLATES, categoryOf, cycleDeadline, planDueDate, planEndDefault,
+  programmeOf, ratioResult, weeklyUpdateDue,
   type AttemptKind,
 } from '../../../shared/domain/index.ts';
 import { addDays, normalizeName, nowIso, padCode } from '../util.ts';
@@ -552,7 +553,12 @@ function behaviourCaseFromSignal(
     .run(caseId, owner, NOW,
          'GVCN đã xem và quyết định mở case để trao đổi với em và phụ huynh.', NOW, signal.id);
 
-  const due = cycleDeadline(detectedAt, 'behaviour');
+  /*
+   * HẠN PHƯƠNG ÁN Ý THỨC/KHÁC (mục 8.3): Gấp 3 ngày · Cần chú ý 5 ngày, tính từ lúc NHẬN
+   * CASE. Đây vừa là hạn phải có phương án, vừa là hạn phải làm xong nó — không dùng mặc
+   * định "Chủ nhật tuần tiếp theo" của học thuật, vì như thế là vượt hạn.
+   */
+  const due = planDueDate(detectedAt, signal.sos_level >= 3 ? 'urgent' : 'attention');
   for (const kind of ['talk_student', 'talk_parent'] as const) {
     conn
       .prepare(
@@ -847,6 +853,14 @@ function insertCase(
      */
     const effectiveStart = p.approval?.state === 'approved' && p.approval.on
       ? p.approval.on : p.cycleStart;
+    /*
+     * HAI MỐC KHÁC NHAU (mục 8.3), không còn gộp làm một con số:
+     *   · HẠN CẬP NHẬT — học thuật: Chủ nhật gần nhất. Ý thức/Khác: 3/5 ngày từ lúc nhận case.
+     *   · DỰ KIẾN KẾT THÚC — học thuật: Chủ nhật tuần tiếp theo. Ý thức/Khác: cùng hạn trên.
+     */
+    const behaviourDue = planDueDate(c.detectedAt ?? effectiveStart, c.urgency ?? 'attention');
+    const updateDue = track === 'behaviour' ? behaviourDue : weeklyUpdateDue(effectiveStart);
+    const planEnd = track === 'behaviour' ? behaviourDue : planEndDefault(effectiveStart);
     const due = cycleDeadline(effectiveStart, track);
     const pinfo = conn
       .prepare(
@@ -866,8 +880,8 @@ function insertCase(
         past(p.completedOn),
         p.cycleNo ?? 1,
         pending || declined ? null : effectiveStart,
-        running ? (p.actionDue ?? due) : null,
-        running ? (p.followupDue ?? due) : null,
+        running ? (p.actionDue ?? updateDue) : null,
+        running ? (p.followupDue ?? planEnd) : null,
         p.approval ? 1 : 0,
         p.approval?.state ?? null,
         p.approval?.due ?? null,

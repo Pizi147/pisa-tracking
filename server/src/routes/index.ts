@@ -781,11 +781,15 @@ api.post('/cases/:id/followups', requireAuth, wrap((req) => {
   return caseSvc.recordFollowUp(principalOf(req), pInt(req, 'id'), req.body ?? {});
 }));
 
-/** Đổi hướng xử lý, hoặc đóng case. Đóng thì bắt buộc có hướng xử lý. */
-api.patch('/cases/:id/disposition', requireAuth, wrap((req) => {
-  maybeSimulateSaveFailure();
-  return caseSvc.setDisposition(principalOf(req), pInt(req, 'id'), req.body ?? {});
-}));
+/*
+ * ĐƯỜNG "HƯỚNG XỬ LÝ" ĐÃ BỎ (mục 9.3).
+ *
+ * Case chỉ còn MỘT đường kết thúc: nút "Hoàn thành case" → POST /cases/:id/outcome. Giữ hai
+ * đường đóng song song là giữ hai dấu vết khác nhau cho cùng một việc, và sớm muộn sẽ có
+ * case đóng được ở đường này mà màn hình ở đường kia bảo là chưa đóng được.
+ *
+ * Bản ghi cũ vẫn đọc được hướng xử lý của mình; chỉ không sửa qua đường riêng nữa.
+ */
 
 api.put('/cases/:id/owner', requireAuth, wrap((req) => {
   const raw = (req.body ?? {}).ownerUserId;

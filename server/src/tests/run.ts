@@ -958,7 +958,7 @@ check('[6.2] Điểm dưới kỳ vọng sinh TÍN HIỆU, không tự mở case
   /* Ghi một việc đã làm, rồi SỬA ĐIỂM Writing thành đạt — việc đã làm KHÔNG được biến mất. */
   cases.recordIntervention(t('listening'), made.id, {
     kind: 'teaching_adjust', description: 'GVCN điều chỉnh cách chữa bài cho em',
-    performerSelf: true, status: 'completed', completedDate: '2026-11-12',
+    performerSelf: true, status: 'completed', completedDate: TODAY,
   });
   attempts.saveScore(t('writing1'), attempt.id, 'writing1', { criteria: [exp, exp, exp, exp] });
   attempts.saveScore(t('writing2'), attempt.id, 'writing2', { criteria: [exp, exp, exp, exp] });
@@ -992,7 +992,7 @@ check('[6.2] Điểm dưới kỳ vọng sinh TÍN HIỆU, không tự mở case
 
   /* Case Listening KHÔNG bị đụng: nó có căn cứ riêng, và đã có người làm việc thật trên nó. */
   const kept = cases.caseDetail(t('listening'), made.id) as any;
-  assert(kept.interventions.some((i: any) => i.completedDate === '2026-11-12'),
+  assert(kept.interventions.some((i: any) => i.completedDate === TODAY),
     'Sửa điểm đã xoá mất việc đã làm để hỗ trợ');
   assert(kept.status !== 'done', 'Sửa điểm môn khác đã đóng nhầm case Listening');
 
@@ -2093,9 +2093,13 @@ check('MỌI phương án đều có chu kỳ và hạn — không có phương 
     studentId: someStudent.id, topic: 'listening', summary: 'Thử quá hạn — mô tả cụ thể cho phép kiểm này.', idempotencyKey: 'test-report-4', parallel: true,
   }) as any;
   /*
-   * LUẬT VÒNG 5 (mục 7.7): chu kỳ hai tuần gắn vào MỌI phương án học thuật ngay khi nó bắt
-   * đầu. Trước đây một phương án không hẹn ngày thì không bao giờ quá hạn — nghĩa là nó nằm
-   * im mãi mà không ai bị nhắc, đúng thứ luật mới sinh ra để chặn.
+   * BẢNG HẠN MỤC 8.3: mỗi phương án học thuật mang HAI mốc khác nhau ngay khi bắt đầu.
+   *
+   *   · HẠN CẬP NHẬT — trước hết Chủ nhật hằng tuần. Đây là thứ nổi lên màn việc.
+   *   · NGÀY DỰ KIẾN KẾT THÚC — Chủ nhật của tuần TIẾP THEO nếu người dùng không chọn.
+   *
+   * Trước vòng 7 cả hai là một con số, nên "đến lúc báo tiến độ" và "đến hạn xong việc" lẫn
+   * vào nhau: một phương án chạy bốn tuần không ai phải báo gì cho tới tuần cuối.
    */
   const started = cases.recordIntervention(P.coreTeacher, c.id, {
     kind: 'tutor', description: 'Bắt đầu từ 20 ngày trước', performerName: 'Tutor A',
@@ -2103,9 +2107,12 @@ check('MỌI phương án đều có chu kỳ và hạn — không có phương 
   }) as any;
   const iv = started.interventions.find((i: any) => i.description === 'Bắt đầu từ 20 ngày trước')!;
   assert(iv.actionDue, 'Phương án bắt đầu rồi mà không có hạn nào');
-  assert(iv.actionDue === domain.cycleDeadline(addDays(TODAY, -20)),
-    `Hạn phải theo chu kỳ hai tuần: kỳ vọng ${domain.cycleDeadline(addDays(TODAY, -20))}, đang là ${iv.actionDue}`);
-  assert(iv.overdue || iv.actionOverdue, 'Bắt đầu 20 ngày trước, quá chu kỳ hai tuần mà không báo quá hạn');
+  assert(iv.actionDue === domain.weeklyUpdateDue(addDays(TODAY, -20)),
+    `Hạn cập nhật phải là Chủ nhật đầu tiên: kỳ vọng ${domain.weeklyUpdateDue(addDays(TODAY, -20))}, đang là ${iv.actionDue}`);
+  assert(iv.followupDue === domain.planEndDefault(addDays(TODAY, -20)),
+    `Dự kiến kết thúc phải là Chủ nhật tuần tiếp theo: kỳ vọng ${domain.planEndDefault(addDays(TODAY, -20))}, đang là ${iv.followupDue}`);
+  assert(iv.actionDue < iv.followupDue, 'Hạn cập nhật và ngày kết thúc bị gộp làm một con số');
+  assert(iv.overdue || iv.actionOverdue, 'Bắt đầu 20 ngày trước, chưa cập nhật tuần nào mà không báo quá hạn');
 
   // Phương án CHỜ DUYỆT thì chu kỳ CHƯA chạy — thời gian chờ là của Quản lý.
   const proposed = cases.recordIntervention(P.coreTeacher, c.id, {
@@ -2116,22 +2123,44 @@ check('MỌI phương án đều có chu kỳ và hạn — không có phương 
   assert(!waiting.actionDue, 'Đang chờ duyệt mà đã tính hạn cho giáo viên — thời gian chờ là của Quản lý');
 });
 
-check('Hoàn thành case: bắt buộc có hướng xử lý VÀ mọi phương án đã khép lại', () => {
+/*
+ * MỤC 9.3: MỘT ĐƯỜNG DUY NHẤT ĐỂ HOÀN THÀNH CASE.
+ *
+ * "Kéo dài theo dõi", "Chọn hướng xử lý" và "Đổi hướng xử lý" đã bỏ — bốn cái tên cho cùng
+ * một câu hỏi thì hai case đóng giống nhau lại để lại hai dấu vết khác nhau.
+ */
+check('[9.3] Hoàn thành case: một đường duy nhất, có kết luận và mọi phương án đã khép', () => {
   const c = cases.reportIssue(P.coreTeacher, {
     title: 'Vấn đề cần theo dõi ở kỹ năng này',
     primaryCode: 'student.listening.technique',
     studentId: someStudent.id, topic: 'listening', summary: 'Thử đóng case — mô tả cụ thể cho phép kiểm này.', idempotencyKey: 'test-report-6', parallel: true,
   }) as any;
-  assertThrows(() => cases.setDisposition(P.mbManager, c.id, { status: 'done' }),
-    /hướng xử lý/, 'Đóng case mà không có hướng xử lý');
+
+  // "Kéo dài theo dõi" không còn là một cách kết thúc.
+  assertThrows(
+    () => cases.closeCaseOutcome(P.mbManager, c.id, {
+      outcome: 'improved', decision: 'extend', note: 'Muốn theo dõi thêm một tuần nữa',
+    }),
+    /Kéo dài theo dõi/, '"Kéo dài theo dõi" vẫn đóng được case',
+  );
+
+  // KẾT LUẬN LÀ BẮT BUỘC — bốn cái nhãn "tiến bộ đến đâu" không nói được đã làm gì cho em.
+  assertThrows(
+    () => cases.closeCaseOutcome(P.mbManager, c.id, { outcome: 'improved', note: 'ok' }),
+    /ghi kết luận/, 'Hoàn thành case mà không phải viết kết luận',
+  );
 
   /*
    * MỤC 7.7 [5]: case CHƯA CÓ PHƯƠNG ÁN NÀO không đủ điều kiện đóng. Đếm được "0 phương án
    * còn mở" không có nghĩa là đã làm gì cho em.
    */
   assert(cases.closeBlockers(c.id).length === 1, 'Case chưa có phương án phải có đúng một lý do chặn');
-  assertThrows(() => cases.setDisposition(P.mbManager, c.id, { status: 'done', disposition: 'no_action' }),
-    /chưa có phương án/, 'Case chưa có phương án nào mà vẫn đóng được');
+  assertThrows(
+    () => cases.closeCaseOutcome(P.mbManager, c.id, {
+      outcome: 'improved', note: 'Đã trao đổi, em ổn định lại hẳn',
+    }),
+    /chưa có phương án/, 'Case chưa có phương án nào mà vẫn đóng được',
+  );
 
   // Có phương án nhưng CHƯA cập nhật kết quả → vẫn chặn, và nói rõ còn thiếu gì.
   const withPlan = cases.recordIntervention(P.coreTeacher, c.id, {
@@ -2141,21 +2170,72 @@ check('Hoàn thành case: bắt buộc có hướng xử lý VÀ mọi phương 
   const ivId = withPlan.interventions.find((i: any) => i.description === 'Học tutor Listening').id;
   assert(cases.closeBlockers(c.id).some((b: string) => /chưa cập nhật kết quả/.test(b)),
     'Phương án chưa có kết quả mà không bị chặn');
-  assertThrows(() => cases.setDisposition(P.mbManager, c.id, { status: 'done', disposition: 'no_action' }),
-    /chưa cập nhật kết quả/, 'Còn phương án chưa cập nhật mà vẫn đóng được');
+  assertThrows(
+    () => cases.closeCaseOutcome(P.mbManager, c.id, {
+      outcome: 'improved', note: 'Đã trao đổi, em ổn định lại hẳn',
+    }),
+    /chưa cập nhật kết quả/, 'Còn phương án chưa cập nhật mà vẫn đóng được',
+  );
 
-  // Cập nhật kết quả và khép phương án → lúc này mới đóng được.
+  // Kết thúc phương án (tab "Kết thúc") → lúc này mới đóng được.
   cases.updateResult(P.coreTeacher, ivId, {
-    outcome: 'improved', nextStep: 'complete', note: 'Em nghe bắt ý tốt hơn hẳn',
+    mode: 'end', outcome: 'improved', nextStep: 'complete',
+    note: 'Em nghe bắt ý tốt hơn hẳn, đã hết buổi tutor cuối',
   });
   assert(cases.closeBlockers(c.id).length === 0, 'Mọi phương án đã khép mà vẫn còn lý do chặn');
-  const done = cases.setDisposition(P.mbManager, c.id, {
-    status: 'done', disposition: 'no_action', note: 'Đã trao đổi, em ổn định lại',
+  const done = cases.closeCaseOutcome(P.mbManager, c.id, {
+    outcome: 'improved', note: 'Đã trao đổi và học tutor, em ổn định lại',
   }) as any;
   assert(done.status === 'done' && done.closedAt, 'Không đóng được case dù mọi điều kiện đã đủ');
+
+  /* ĐÁNH GIÁ CHI TIẾT phải đúng kỹ năng của case — không ghi Reading vào case Listening. */
+  const c2 = cases.reportIssue(P.coreTeacher, {
+    title: 'Vấn đề cần theo dõi ở kỹ năng này',
+    primaryCode: 'student.listening.technique',
+    studentId: someStudent.id, topic: 'listening', summary: 'Thử ghi chi tiết sai kỹ năng cho phép kiểm.', idempotencyKey: 'test-report-6b', parallel: true,
+  }) as any;
+  const iv2 = cases.recordIntervention(P.coreTeacher, c2.id, {
+    kind: 'self_study', description: 'Nghe 30 phút mỗi ngày', performerName: 'GVCN',
+    status: 'started', startedDate: demoToday(),
+  }) as any;
+  const iv2Id = iv2.interventions.find((i: any) => i.description === 'Nghe 30 phút mỗi ngày').id;
+  cases.updateResult(P.coreTeacher, iv2Id, {
+    mode: 'end', outcome: 'improved', nextStep: 'complete', note: 'Em đã nghe đều hơn hẳn',
+  });
+  assertThrows(
+    () => cases.closeCaseOutcome(P.mbManager, c2.id, {
+      outcome: 'improved', note: 'Kết luận đủ dài cho phép kiểm này',
+      metrics: [{ skill: 'reading', component: 'Passage 1', score: 8, total: 13 }],
+    }),
+    /đúng kỹ năng/, 'Ghi được điểm Reading vào phần kết luận của một case Listening',
+  );
+  assertThrows(
+    () => cases.closeCaseOutcome(P.mbManager, c2.id, {
+      outcome: 'improved', note: 'Kết luận đủ dài cho phép kiểm này',
+      metrics: [{ skill: 'listening', component: 'Passage 1', score: 8, total: 13 }],
+    }),
+    /không phải thành phần/, 'Passage 1 được nhận như một thành phần của Listening',
+  );
+  assertThrows(
+    () => cases.closeCaseOutcome(P.mbManager, c2.id, {
+      outcome: 'improved', note: 'Kết luận đủ dài cho phép kiểm này',
+      metrics: [{ skill: 'listening', component: 'Section 3', score: 5.5, total: null }],
+    }),
+    /đạt\/tổng/, 'Section của Listening được ghi như một band IELTS',
+  );
+  const detailed = cases.closeCaseOutcome(P.mbManager, c2.id, {
+    outcome: 'improved', note: 'Em đã bắt được số và tên riêng, còn vướng matching',
+    metrics: [{ skill: 'listening', component: 'Section 3', score: 5, total: 10 }],
+  }) as any;
+  assert(detailed.status === 'done', 'Không đóng được case dù phần chi tiết đã hợp lệ');
 });
 
-check('Cập nhật kết quả: kết quả chưa tốt BẮT BUỘC chọn đường đi tiếp', () => {
+/*
+ * MỤC 9.1: HAI TAB, HAI VIỆC. Bản cũ bắt mọi lần ghi kết quả phải kèm một "bước tiếp theo",
+ * nên để sang tuần mới người dạy phải khai một quyết định không có thật — và ai chọn nhầm ô
+ * đầu là phương án bị khép lại, case theo đó đóng sớm.
+ */
+check('[9.1] Hai tab cập nhật kết quả: theo dõi tiếp thì không phải khai bước đi tiếp', () => {
   const c = cases.reportIssue(P.coreTeacher, {
     title: 'Vấn đề cần theo dõi ở kỹ năng này',
     primaryCode: 'student.reading.technique',
@@ -2168,30 +2248,56 @@ check('Cập nhật kết quả: kết quả chưa tốt BẮT BUỘC chọn đ�
   }) as any;
   const ivId = d.interventions.find((i: any) => i.description === 'Xếp tự học Reading').id;
 
-  assertThrows(() => cases.updateResult(P.coreTeacher, ivId, { outcome: 'worse', nextStep: 'complete' }),
-    /chỉ đi tiếp được bằng/, 'Kết quả "Kém hơn" mà vẫn khép lại được');
-  assertThrows(() => cases.updateResult(P.coreTeacher, ivId, { outcome: 'unchanged', nextStep: 'propose' }),
-    /phương án mới là gì/, 'Chọn đề xuất phương án mới mà không nói phương án nào');
+  // GHI CHÚ BẮT BUỘC: một dòng "Tiến bộ một phần" trơ trọi không giúp được ai ở tuần sau.
+  assertThrows(() => cases.updateResult(P.coreTeacher, ivId, { outcome: 'partial', note: 'ok' }),
+    /ít nhất 8 ký tự/, 'Cập nhật kết quả mà không phải viết gì');
 
-  // "Tiếp tục phương án cũ" mở CHU KỲ MỚI trên chính phương án đó, không nhân đôi phương án.
+  // "CHƯA ĐỦ DỮ LIỆU" chỉ ở được tab theo dõi — nó không phải một kết luận để khép việc.
+  assertThrows(
+    () => cases.updateResult(P.coreTeacher, ivId, {
+      mode: 'end', outcome: 'insufficient', nextStep: 'complete', note: 'Chưa có bài mới để nhìn',
+    }),
+    /Tiếp tục theo dõi/, '"Chưa đủ dữ liệu" vẫn kết thúc được phương án',
+  );
+  assertThrows(
+    () => cases.updateResult(P.coreTeacher, ivId, {
+      mode: 'end', outcome: 'worse', nextStep: 'complete', note: 'Em kém hơn hẳn tuần trước',
+    }),
+    /chỉ kết thúc được bằng/, 'Kết quả "Kém hơn" mà vẫn khép lại được',
+  );
+  assertThrows(
+    () => cases.updateResult(P.coreTeacher, ivId, {
+      mode: 'end', outcome: 'unchanged', nextStep: 'propose', note: 'Em chưa chuyển gì cả',
+    }),
+    /phương án mới là gì/, 'Chọn đề xuất phương án mới mà không nói phương án nào',
+  );
+
+  /*
+   * TAB THEO DÕI: ghi kết quả rồi lưu, KHÔNG phải khai bước tiếp theo, và phương án vẫn
+   * đang chạy — không nhân đôi thành một phương án thứ hai giống hệt.
+   */
   const before = d.interventions.length;
   const after = cases.updateResult(P.coreTeacher, ivId, {
-    outcome: 'unchanged', nextStep: 'continue', note: 'Em có làm nhưng chưa đều',
+    outcome: 'unchanged', note: 'Em có làm nhưng chưa đều, còn sai dạng T/F/NG',
   }) as any;
-  assert(after.interventions.length === before, 'Tiếp tục phương án cũ mà lại sinh thêm một phương án');
+  assert(after.interventions.length === before, 'Tiếp tục theo dõi mà lại sinh thêm một phương án');
   const iv2 = after.interventions.find((i: any) => i.id === ivId);
+  assert(iv2.status === 'started', 'Theo dõi tiếp mà phương án lại bị khép lại');
   assert(iv2.cycleNo === 2, `Phải sang chu kỳ 2, đang là ${iv2.cycleNo}`);
-  assert(iv2.actionDue === domain.cycleDeadline(demoToday()), 'Chu kỳ mới phải có hạn mới theo luật hai tuần');
+  assert(iv2.actionDue === domain.weeklyUpdateDue(addDays(demoToday(), 1)),
+    `Hạn cập nhật mới phải là Chủ nhật kế tiếp, đang là ${iv2.actionDue}`);
+  assert(iv2.actionDue > demoToday(), 'Vừa cập nhật xong đã báo quá hạn');
 
   // "Đề xuất phương án mới" khép phương án cũ với lý do ĐƯỢC THAY THẾ, không phải đã thành công.
   const replaced = cases.updateResult(P.coreTeacher, ivId, {
-    outcome: 'worse', nextStep: 'propose', note: 'Tự học không ăn thua',
-    newPlan: { kind: 'tutor', description: 'Chuyển sang tutor', performerName: 'Tutor C' },
+    mode: 'end', outcome: 'worse', nextStep: 'propose', note: 'Tự học không ăn thua với em này',
+    newPlan: { kind: 'tutor', description: 'Chuyển sang tutor hai buổi mỗi tuần', performerName: 'Tutor C' },
   }) as any;
   const old = replaced.interventions.find((i: any) => i.id === ivId);
   assert(old.closedReason === 'superseded', `Phương án cũ phải ghi "được thay thế", đang là ${old.closedReason}`);
   assert(old.supersededBy, 'Phương án cũ không nối sang phương án mới');
-  assert(replaced.interventions.some((i: any) => i.description === 'Chuyển sang tutor'), 'Không tạo phương án mới');
+  assert(replaced.interventions.some((i: any) => i.description === 'Chuyển sang tutor hai buổi mỗi tuần'),
+    'Không tạo phương án mới');
 });
 
 check('Chỉ GVCN của lớp và Quản lý mới đóng được case', () => {
@@ -3022,7 +3128,7 @@ check('Hai việc trao đổi nằm CHUNG bảng phương án, không còn bản
   assert(stray === 0, `${stray} việc trao đổi lạc vào case học thuật`);
 });
 
-check('Hạn làm việc trao đổi: một tuần kể từ lúc bắt đầu', () => {
+check('[8.3] Hạn việc trao đổi: 3 ngày nếu Gấp, 5 ngày nếu Cần chú ý, từ lúc nhận case', () => {
   const rows = conn
     .prepare(
       `SELECT iv.action_due, iv.kind, sc.sos_level, sc.detected_at
@@ -3036,8 +3142,12 @@ check('Hạn làm việc trao đổi: một tuần kể từ lúc bắt đầu',
     .all() as any[];
   assert(rows.length > 0, 'Không có việc trao đổi nào có hạn để kiểm');
   for (const r of rows) {
-    // Việc trao đổi thuộc case Ý thức/Khác → hạn một tuần kể từ lúc bắt đầu.
-    const expected = domain.cycleDeadline(r.detected_at, 'behaviour');
+    /*
+     * Việc trao đổi thuộc case Ý thức/Khác. Bảng hạn mục 8.3: nghĩa vụ "có VÀ hoàn thành
+     * phương án" tính từ lúc NHẬN CASE — Gấp 3 ngày, Cần chú ý 5 ngày. Không dùng mặc định
+     * "Chủ nhật tuần tiếp theo" của học thuật, vì nó vượt hẳn hạn 3/5 ngày.
+     */
+    const expected = domain.planDueDate(r.detected_at, r.sos_level >= 3 ? 'urgent' : 'attention');
     assert(r.action_due === expected,
       `Việc trao đổi phát hiện ${r.detected_at} phải có hạn ${expected}, đang là ${r.action_due}`);
   }
@@ -3122,15 +3232,34 @@ check('Chọn loại trong nhóm Đề xuất TỨC LÀ xin duyệt, không ph�
     studentId: someStudent.id, topic: 'reading', summary: 'Thử nhóm đề xuất',
     idempotencyKey: 'test-proposal-1', parallel: true,
   }) as any;
+  /*
+   * MỤC 8.1: LÙI LỊCH THI PHẢI NÓI RÕ LÙI CÁI GÌ. Kế hoạch thi thật của em và một phần thi
+   * trong đợt MT là hai chuyện khác hẳn — người duyệt cần biết mình đang đồng ý với cái nào.
+   */
+  assertThrows(
+    () => cases.recordIntervention(P.coreTeacher, c.id, {
+      kind: 'reschedule_mt', description: 'Xin lùi MT3 cho em', status: 'planned',
+    }),
+    /lùi cái gì/, 'Đề xuất lùi lịch thi không nói rõ đối tượng mà vẫn gửi được',
+  );
   const r = cases.recordIntervention(P.coreTeacher, c.id, {
-    kind: 'reschedule_mt', description: 'Xin lùi MT3', status: 'planned',
+    kind: 'reschedule_mt', description: 'Xin lùi MT3 cho em', status: 'planned',
+    rescheduleTarget: 'mock_skill',
   }) as any;
   const iv = r.interventions[r.interventions.length - 1];
   assert(iv.approvalState === 'pending', 'Đề xuất lùi lịch thi phải tự vào trạng thái chờ duyệt');
   assert(iv.approvalDue, 'Đề xuất phải có hạn Quản lý trả lời');
+  assert(iv.rescheduleTarget === 'mock_skill', 'Không lưu lại đang xin lùi cái gì');
+
+  // MÔ TẢ NGẮN BẮT BUỘC (mục 8.2): tên loại phương án không nói được làm gì cho em.
+  assertThrows(
+    () => cases.recordIntervention(P.coreTeacher, c.id, { kind: 'self_study', description: 'tự học' }),
+    /Mô tả ngắn/, 'Phương án không có mô tả mà vẫn lưu được',
+  );
+
   // Còn phương án giáo viên tự làm thì KHÔNG tự đòi duyệt.
   const r2 = cases.recordIntervention(P.coreTeacher, c.id, {
-    kind: 'self_study', description: 'Xếp tự học buổi tối', status: 'planned',
+    kind: 'self_study', description: 'Xếp tự học buổi tối, 30 phút mỗi ngày', status: 'planned',
   }) as any;
   const iv2 = r2.interventions[r2.interventions.length - 1];
   assert(iv2.approvalState === null, 'Xếp tự học không cần duyệt mà lại bị đòi duyệt');
@@ -3407,8 +3536,9 @@ check('GVCN nhận việc gặp học viên; việc gọi phụ huynh về Quả
     for (const g of mywork.myWork(who, {}).groups) {
       if (g.key !== 'do_plan') continue;
       for (const it of g.items) {
-        if (/trao đổi với học viên/i.test(it.reason)) out.add('talk_student');
-        if (/trao đổi với phụ huynh/i.test(it.reason)) out.add('talk_parent');
+        /* Nhãn đổi ở mục 8.1: "Meeting với học sinh" và "Report cho gia đình". */
+        if (/meeting với học sinh/i.test(it.reason)) out.add('talk_student');
+        if (/report cho gia đình/i.test(it.reason)) out.add('talk_parent');
       }
     }
     return out;
@@ -3511,7 +3641,7 @@ check('Trượt Listening ở MT1 rồi MT2 → ĐÚNG MỘT case, tên đổi t
   /* Ghi một phương án và một kết quả để kiểm rằng chúng SỐNG SÓT qua lần trượt thứ hai. */
   cases.recordIntervention(mgr, caseId, {
     kind: 'self_study', description: 'Nghe 30 phút mỗi ngày',
-    performerSelf: true, status: 'completed', completedDate: '2026-10-20',
+    performerSelf: true, status: 'completed', completedDate: TODAY,
   });
   cases.recordFollowUp(mgr, caseId, { observedOn: '2026-10-25', outcome: 'partial', note: 'Có làm nhưng chưa đều' });
 
@@ -3535,7 +3665,7 @@ check('Trượt Listening ở MT1 rồi MT2 → ĐÚNG MỘT case, tên đổi t
    */
   assert(d.title === 'Listening chưa bắt kịp tốc độ bài nghe',
     `Tên case do người dạy đặt đã bị máy viết lại thành "${d.title}"`);
-  assert(d.interventions.some((i: any) => i.completedDate === '2026-10-20'),
+  assert(d.interventions.some((i: any) => i.completedDate === TODAY),
     'Phương án của MT1 biến mất sau khi MT2 trượt lại');
   assert(d.followups.some((f: any) => f.observedOn === '2026-10-25'),
     'Kết quả ghi ở MT1 biến mất sau khi MT2 trượt lại');
@@ -3595,7 +3725,9 @@ check('Case đã đóng mà MT sau trượt lại → MỞ CASE MỚI nối vào
    * nên chặn đầu tiên người dùng gặp là "chưa có phương án nào" — đúng và đáng có.
    */
   assertThrows(
-    () => cases.closeCaseOutcome(mgr, c.id, { outcome: 'improved', decision: 'end' }),
+    () => cases.closeCaseOutcome(mgr, c.id, {
+      outcome: 'improved', note: 'Kết luận đủ dài cho phép kiểm này',
+    }),
     /chưa có phương án nào/, 'Chốt được kết quả một case chưa ai làm gì',
   );
   cases.recordIntervention(rt, c.id, {
@@ -3608,7 +3740,9 @@ check('Case đã đóng mà MT sau trượt lại → MỞ CASE MỚI nối vào
     .prepare(`SELECT id FROM case_interventions WHERE case_id = ? AND status IN ('planned','started')`)
     .all(c.id) as any[];
   assertThrows(
-    () => cases.closeCaseOutcome(mgr, c.id, { outcome: 'improved', decision: 'end' }),
+    () => cases.closeCaseOutcome(mgr, c.id, {
+      outcome: 'improved', note: 'Kết luận đủ dài cho phép kiểm này',
+    }),
     /chưa cập nhật kết quả cuối cùng/, 'Chốt được kết quả case khi còn phương án treo',
   );
   for (const iv of open) cases.completeIntervention(mgr, iv.id, { doneOn: demoToday() });
@@ -4505,21 +4639,24 @@ check('Điểm giáo viên tự chấm bị chặn khi vô lý', () => {
   // Band phải 0–9 khi không có tổng điểm.
   assertThrows(
     () => cases.updateResult(P.admin, c.id, {
-      outcome: 'partial', nextStep: 'monitor', metrics: [{ skill: 'reading', score: 24, total: null }],
+      outcome: 'partial', note: 'Thử một con số vô lý cho phép kiểm này',
+      metrics: [{ skill: 'reading', score: 24, total: null }],
     }),
     /0–9/, 'Nhận band 24 như một band hợp lệ',
   );
   // Điểm đạt không thể lớn hơn tổng.
   assertThrows(
     () => cases.updateResult(P.admin, c.id, {
-      outcome: 'partial', nextStep: 'monitor', metrics: [{ skill: 'reading', score: 41, total: 40 }],
+      outcome: 'partial', note: 'Thử một con số vô lý cho phép kiểm này',
+      metrics: [{ skill: 'reading', score: 41, total: 40 }],
     }),
     /lớn hơn tổng/, 'Nhận điểm đạt lớn hơn tổng điểm',
   );
   // Ý thức không phải là một môn để chấm điểm.
   assertThrows(
     () => cases.updateResult(P.admin, c.id, {
-      outcome: 'partial', nextStep: 'monitor', metrics: [{ skill: 'behaviour', score: 6, total: null }],
+      outcome: 'partial', note: 'Thử một con số vô lý cho phép kiểm này',
+      metrics: [{ skill: 'behaviour', score: 6, total: null }],
     }),
     /kỹ năng cụ thể/, 'Nhận điểm cho hạng mục Ý thức',
   );
@@ -4570,7 +4707,9 @@ check('Case CHƯA CÓ PHƯƠNG ÁN NÀO thì không chốt kết quả được'
     title: 'Nghỉ nhiều không báo', summary: 'Ba buổi liên tiếp không tới lớp',
   }) as any;
   assertThrows(
-    () => cases.closeCaseOutcome(P.admin, d.id, { outcome: 'improved', decision: 'end' }),
+    () => cases.closeCaseOutcome(P.admin, d.id, {
+      outcome: 'improved', note: 'Kết luận đủ dài cho phép kiểm này',
+    }),
     /chưa có phương án/i, 'Đóng được case chưa làm gì cho em',
   );
 });
@@ -4657,27 +4796,38 @@ check('Ma trận tình huống vòng 5 có đủ những ô đã chốt ở mụ
   one('lộ trình đã chốt TUẦN thi', 'SELECT COUNT(*) n FROM learning_cycles WHERE exam_period_id IS NOT NULL');
 });
 
-check('Case mở đúng ngày demo 14/09/2026 có hạn 27/09/2026', () => {
+check('[8.3] Phương án bắt đầu 14/09/2026: cập nhật trước 20/09, kết thúc 27/09', () => {
   /*
-   * Ô kiểm tra LUẬT HẠN đã chốt ở mục 7.7, viết thẳng vào dữ liệu mẫu: chu kỳ đầu kết thúc
-   * Chủ nhật của TUẦN THỨ HAI, tính tuần case xuất hiện là tuần thứ nhất. 14/09 là thứ Hai,
-   * nên hạn là 27/09 — KHÔNG phải 04/10.
+   * Ô kiểm tra BẢNG HẠN MỤC 8.3, viết thẳng vào dữ liệu mẫu và đối chiếu được bằng mắt trên
+   * màn hình. Ví dụ của chính đề bài: bắt đầu thứ Bảy 19/9 → cập nhật 20/9, kết thúc 27/9.
+   *
+   * Hai mốc, hai câu hỏi khác nhau. Gộp làm một là để một phương án chạy bốn tuần mà tới
+   * tuần cuối mới có người phải báo gì.
    */
   assert(demoToday() === '2026-09-14', `Ngày demo đã đổi thành ${demoToday()} — kiểm lại ví dụ hạn`);
-  assert(domain.cycleDeadline('2026-09-14') === '2026-09-27',
-    `Luật hạn sai: 14/09 ra ${domain.cycleDeadline('2026-09-14')}`);
+  assert(domain.weeklyUpdateDue('2026-09-14') === '2026-09-20',
+    `Bắt đầu thứ Hai 14/09 thì cập nhật trước 20/09, đang ra ${domain.weeklyUpdateDue('2026-09-14')}`);
+  assert(domain.weeklyUpdateDue('2026-09-19') === '2026-09-20',
+    'Bắt đầu thứ Bảy 19/09 vẫn phải cập nhật ngay 20/09 — chưa đủ dữ liệu thì ghi đúng là chưa đủ');
+  assert(domain.weeklyUpdateDue('2026-09-20') === '2026-09-20', 'Đúng Chủ nhật thì hạn là chính hôm đó');
+  assert(domain.planEndDefault('2026-09-19') === '2026-09-27',
+    `Ví dụ của đề bài: bắt đầu 19/09 → kết thúc mặc định 27/09, đang ra ${domain.planEndDefault('2026-09-19')}`);
+
   const row = conn
     .prepare(
-      `SELECT iv.action_due FROM case_interventions iv
+      `SELECT iv.action_due, iv.followup_due FROM case_interventions iv
          JOIN sos_cases sc ON sc.id = iv.case_id
         WHERE sc.detected_at = '2026-09-14' AND iv.cycle_started_on = '2026-09-14'
-          /* CHỈ CASE HỌC THUẬT: Ý thức/Khác dùng luật một tuần, không phải hai tuần. */
+          /* CHỈ CASE HỌC THUẬT: Ý thức/Khác dùng hạn 3/5 ngày theo mức, không theo tuần. */
           AND sc.track = 'academic'
         ORDER BY iv.id LIMIT 1`,
     )
     .get() as any | undefined;
   assert(row, 'Dữ liệu demo không có case nào mở đúng ngày demo để đối chiếu bằng mắt');
-  assert(row!.action_due === '2026-09-27', `Hạn trong dữ liệu mẫu là ${row!.action_due}, phải là 2026-09-27`);
+  assert(row!.action_due === '2026-09-20',
+    `Hạn cập nhật trong dữ liệu mẫu là ${row!.action_due}, phải là 2026-09-20`);
+  assert(row!.followup_due === '2026-09-27',
+    `Ngày dự kiến kết thúc trong dữ liệu mẫu là ${row!.followup_due}, phải là 2026-09-27`);
 });
 
 check('Case của lớp trước là việc BÀN GIAO, không phải mức SOS của lớp này', () => {
@@ -4880,8 +5030,10 @@ check('[6] Hạn: chu kỳ đầu, chu kỳ tiếp, chờ duyệt, cập nhật 
   assert(appr, 'Không có phương án nào đã được duyệt và còn đang chạy');
   assert(appr.cycle_started_on === appr.approval_at.slice(0, 10),
     `Chu kỳ bắt đầu ${appr.cycle_started_on} mà duyệt ngày ${appr.approval_at.slice(0, 10)}`);
-  assert(appr.action_due === domain.cycleDeadline(appr.cycle_started_on),
-    'Hạn không tính từ ngày được duyệt');
+  assert(appr.action_due === domain.weeklyUpdateDue(appr.cycle_started_on),
+    'Hạn cập nhật không tính từ ngày được duyệt');
+  assert(appr.followup_due === domain.planEndDefault(appr.cycle_started_on),
+    'Ngày dự kiến kết thúc không tính từ ngày được duyệt');
   /* Cập nhật trễ GIỮ NGUYÊN dấu vết, không reset để che. */
   const late = conn.prepare('SELECT * FROM case_followups WHERE late = 1 LIMIT 1').get() as any;
   assert(late, 'Không có lần cập nhật trễ nào trong dữ liệu mẫu');

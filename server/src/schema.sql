@@ -853,6 +853,17 @@ CREATE TABLE case_interventions (
   kind TEXT NOT NULL,                 -- talk_student | talk_parent | tutor | self_study |
                                       -- teaching_adjust | meeting | ops_policy | other
   description TEXT,
+
+  /*
+   * LÙI LỊCH THI THÌ LÙI CÁI GÌ (mục 8.1).
+   *
+   * 'real_exam'  = kế hoạch thi IELTS thật của em.
+   * 'mock_skill' = một phần thi trong một đợt MT.
+   *
+   * Hai thứ này có người quyết khác nhau và hệ quả khác nhau, nên một đề xuất lùi lịch
+   * không nói rõ đối tượng là một đề xuất không duyệt được. NULL với mọi loại khác.
+   */
+  reschedule_target TEXT,
   -- Người thực hiện: ưu tiên tài khoản, không có thì ghi tên (CS, phụ huynh, người ngoài).
   performer_user_id INTEGER REFERENCES users(id),
   performer_name TEXT,
@@ -862,16 +873,24 @@ CREATE TABLE case_interventions (
   planned_date TEXT,
   started_date TEXT,
   completed_date TEXT,
-  -- Hẹn xem lại. Chỉ tính quá hạn khi CÓ ngày hẹn và chưa xem lại; theo dõi không hẹn thì
-  -- không bao giờ quá hạn.
+  /*
+   * NGÀY DỰ KIẾN KẾT THÚC PHƯƠNG ÁN (mục 8.2, trước đây là "hẹn xem lại").
+   *
+   * Đây là HẠN HOÀN THÀNH, không phải một cái nhắc suông. Học thuật không chọn ngày thì
+   * mặc định là Chủ nhật của tuần TIẾP THEO tính từ lúc bắt đầu thực hiện.
+   */
   followup_due TEXT,
 
   /*
    * HẠN LÀM XONG PHƯƠNG ÁN — mốc thứ nhất trong hai mốc owner giữ (xác nhận 13/09/2026).
    *
-   * Tính từ ngày phát hiện, theo mức SOS: SOS 1 → 7 ngày · SOS 2 → 5 ngày · SOS 3 → 3 ngày.
-   * Khác với `followup_due` (hẹn XEM LẠI sau khi đã làm) và `approval_due` (hạn Quản lý trả
-   * lời). Ba mốc, ba câu hỏi khác nhau, nên không gộp cột.
+   * HỌC THUẬT: hạn CẬP NHẬT gần nhất — trước hết Chủ nhật hằng tuần kể từ lúc phương án
+   * bắt đầu chạy (mục 8.3). Mỗi chu kỳ mới đặt lại sang Chủ nhật kế tiếp.
+   * Ý THỨC/KHÁC: hạn phải LÀM XONG phương án, tính từ lúc nhận case — Gấp 3 ngày, Cần chú
+   * ý 5 ngày.
+   *
+   * Khác với `followup_due` (ngày dự kiến KẾT THÚC phương án) và `approval_due` (hạn Quản
+   * lý trả lời). Ba mốc, ba câu hỏi khác nhau, nên không gộp cột.
    *
    * Quá hạn KHÔNG chặn gì — chỉ nổi lên màn việc để không ai bị bỏ quên.
    */

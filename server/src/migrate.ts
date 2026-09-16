@@ -1,5 +1,6 @@
 import { db, isInitialised } from './db.ts';
 import { nowIso } from './util.ts';
+import { demoToday } from './demoConfig.ts';
 import crypto from 'node:crypto';
 import { PERMISSION_LABEL } from '../../shared/domain/index.ts';
 import { DEFAULT_ADMIN_EMAIL, DEFAULT_ADMIN_PASSWORD, EMAIL_SUFFIX } from './platform/accounts.ts';
@@ -404,6 +405,7 @@ function migrateCaseEngine(applied: string[], skipped: string[]) {
     migrateSkillSchedule(conn, applied);
     migrateSignals(conn, applied);
     migrateCaseForm(conn, applied);
+    migratePlanForm(conn, applied);
 
     /*
      * Case đã đóng theo hệ thống cũ mà không có hướng xử lý: ghi rõ là "đóng theo hệ thống
@@ -2182,6 +2184,94 @@ function migrateSignals(conn: any, applied: string[]) {
  * ghi nhận là thiếu và để người có trách nhiệm rà, chứ không điền bừa một giá trị cho đủ ô.
  * Một phân loại đoán sai còn tệ hơn một ô trống, vì nó sẽ được cộng vào báo cáo.
  */
+/**
+ * FORM PHƯƠNG ÁN VÀ BẢNG HẠN CỦA VÒNG 7 (mục 8.2 · 8.3).
+ *
+ * Hai thay đổi, và cả hai đều KHÔNG được bịa nợ ngược về quá khứ:
+ *
+ *   1. Thêm chỗ ghi "lùi lịch thi thì lùi cái gì". Đề xuất cũ để trống — bước nâng cấp
+ *      không đoán hộ, vì đoán sai là sửa nhầm lịch thi thật của một em.
+ *   2. Tách hạn CẬP NHẬT khỏi ngày DỰ KIẾN KẾT THÚC. Trước đây hai cột mang cùng một con
+ *      số, nên "đến lúc báo tiến độ" và "đến hạn xong việc" lẫn vào nhau.
+ *
+ * Với phương án CŨ ĐANG CHẠY, hạn cập nhật đặt là CHỦ NHẬT SẮP TỚI tính từ hôm nay, KHÔNG
+ * phải Chủ nhật đầu tiên kể từ ngày nó bắt đầu. Cách thứ hai đúng về luật nhưng sai về
+ * người: nó biến mọi phương án đang chạy thành quá hạn ngay lúc nâng cấp, vì nghĩa vụ cập
+ * nhật hằng tuần hôm qua chưa tồn tại. Nghĩa vụ mới bắt đầu từ hôm nay.
+ */
+function migratePlanForm(conn: any, applied: string[]) {
+  const has = (t: string) =>
+    !!conn.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name = ?").get(t);
+  const cols = (t: string) => (conn.prepare(`PRAGMA table_info(${t})`).all() as any[]).map((c: any) => c.name);
+  if (!has('case_interventions')) return;
+
+  let added = 0;
+  if (!cols('case_interventions').includes('reschedule_target')) {
+    conn.exec('ALTER TABLE case_interventions ADD COLUMN reschedule_target TEXT');
+    added = 1;
+  }
+
+  const now = nowIso();
+  /* Dùng ĐỒNG HỒ CỦA BẢN DEMO để hạn mới khớp với mọi màn hình, không lệch hai ngày. */
+  const today = demoToday();
+  const addDaysIso = (date: string, n: number) => {
+    const d = new Date(`${date.slice(0, 10)}T00:00:00Z`);
+    d.setUTCDate(d.getUTCDate() + n);
+    return d.toISOString().slice(0, 10);
+  };
+  /* Chủ nhật SẮP TỚI: hôm nay đã là Chủ nhật thì vẫn là hôm nay. */
+  const nextSunday = (from: string) => {
+    const dow = new Date(`${from.slice(0, 10)}T00:00:00Z`).getUTCDay();
+    return addDaysIso(from, dow === 0 ? 0 : 7 - dow);
+  };
+
+  /*
+   * Phương án HỌC THUẬT còn đang chạy: hạn cập nhật chuyển sang Chủ nhật sắp tới; ngày dự
+   * kiến kết thúc giữ nguyên con số cũ nếu đã có, vì đó là ngày người ta đã hẹn nhau.
+   */
+  let moved = 0;
+  const running = conn
+    .prepare(
+      `SELECT iv.id, iv.action_due, iv.followup_due, iv.cycle_started_on, iv.started_date
+         FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id
+        WHERE iv.status IN ('planned','started')
+          AND COALESCE(iv.approval_state,'') != 'pending'
+          AND iv.cycle_started_on IS NOT NULL
+          AND COALESCE(sc.track,'academic') = 'academic'`,
+    )
+    .all() as any[];
+  for (const iv of running) {
+    const updateDue = nextSunday(today);
+    /* Ngày kết thúc cũ (nếu có) là lời hẹn đã chốt — chỉ điền khi đang trống. */
+    const planEnd = iv.followup_due ?? addDaysIso(nextSunday(iv.cycle_started_on), 7);
+    if (iv.action_due === updateDue && iv.followup_due === planEnd) continue;
+    conn
+      .prepare('UPDATE case_interventions SET action_due = ?, followup_due = ?, updated_at = ? WHERE id = ?')
+      .run(updateDue, planEnd, now, iv.id);
+    moved += 1;
+  }
+
+  if (!added && !moved) return;
+  applied.push(
+    `Phương án vòng 7: ${added ? 'thêm chỗ ghi "lùi lịch thi thì lùi cái gì"; ' : ''}`
+      + `${moved} phương án học thuật đang chạy được tách hạn cập nhật (Chủ nhật sắp tới) `
+      + 'khỏi ngày dự kiến kết thúc. Nghĩa vụ cập nhật hằng tuần tính TỪ HÔM NAY, '
+      + 'không tạo nợ ngược về những tuần trước khi luật này tồn tại.',
+  );
+  const blank = (conn
+    .prepare(`SELECT COUNT(*) n FROM case_interventions
+               WHERE kind = 'reschedule_mt' AND reschedule_target IS NULL
+                 AND status NOT IN ('completed','cancelled')`)
+    .get() as any).n;
+  if (blank) {
+    applied.push(
+      `CẦN RÀ LẠI — ${blank} đề xuất lùi lịch thi chưa nói rõ lùi cái gì (kế hoạch thi thật `
+        + 'hay một phần thi trong đợt MT). Bước nâng cấp KHÔNG đoán: người đề xuất chọn lại '
+        + 'khi mở đề xuất lần tới.',
+    );
+  }
+}
+
 function migrateCaseForm(conn: any, applied: string[]) {
   const has = (t: string) =>
     !!conn.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name = ?").get(t);
@@ -2289,7 +2379,9 @@ function migrateCaseForm(conn: any, applied: string[]) {
       /* "Mơ hồ ý chính" của Reading là chuyện đọc hiểu, gần "Tư duy logic" nhất. */
       'student.reading.mainidea': 'student.reading.logic',
     })) {
-      remapped += conn.prepare('UPDATE case_issues SET code = ? WHERE code = ?').run(to, from).changes;
+      remapped += conn
+        .prepare('UPDATE case_issues SET taxonomy_code = ? WHERE taxonomy_code = ?')
+        .run(to, from).changes;
     }
   }
 
