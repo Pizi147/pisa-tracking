@@ -4,13 +4,13 @@ import { Card, Info, SectionNote, Skeleton, Task } from '../../ui/ui.tsx';
 
 type Signal = {
   key: string; kind: string; label: string; count: number;
-  owner: 'manager' | 'branch_admin' | 'teacher';
+  owner: 'manager' | 'teacher';
   tone: 'danger' | 'warn' | 'info';
   branchId: number | null; branchName: string | null; href: string;
 };
 
 const OWNER_LABEL: Record<Signal['owner'], string> = {
-  manager: 'Quản lý', branch_admin: 'Admin chi nhánh', teacher: 'Giáo viên',
+  manager: 'Quản lý', teacher: 'Giáo viên',
 };
 
 /**

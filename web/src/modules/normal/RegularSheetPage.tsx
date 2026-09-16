@@ -181,8 +181,8 @@ export default function RegularSheetPage() {
               cố định giữa các môn và các đề, nên cả hai số đều phải nhập.
               <br />
               Đạt từ <strong>{Math.round(data.passThreshold * 100)}%</strong> trở lên. Hệ thống xét trên
-              <strong> tỷ lệ chính xác</strong>, không làm tròn phần trăm rồi mới so — 25/42 hiện ra “60%”
-              nhưng thực tế là 59,5% nên vẫn là chưa đạt.
+              <strong> tỷ lệ chính xác</strong>, không làm tròn phần trăm rồi mới so — 23/33 hiện ra “70%”
+              nhưng thực tế là 69,7% nên vẫn là chưa đạt.
               <br />
               <strong>Thiếu điểm khác với trượt, và cũng khác đạt.</strong> Ô trống là <strong>chưa nhập</strong>,
               không phải 0 điểm và cũng không được suy thành “đạt”. Phải đủ điểm cả bốn môn mới kết luận và

@@ -49,7 +49,7 @@ export type BuildCtx = {
   adminId: number;
   branchId: Map<string, number>;
   classId: Map<string, number>;
-  /** Mã người (T_*, MGR_*, ADM_*) → id tài khoản. */
+  /** Mã người (T_*, MGR_*) → id tài khoản. */
   userId: Map<string, number>;
   /** Mã lớp → mã chi nhánh, để tra người của đúng nơi. */
   classBranch: Map<string, string>;

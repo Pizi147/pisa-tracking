@@ -18,8 +18,9 @@ import { weekStartOf } from '../fasttrack/attempts.ts';
  * Dùng CHUNG bảng dữ liệu và CHUNG hệ thống case SOS với lớp FT — cùng `assessment_attempts`,
  * `assessment_scores`, `sos_cases`. Chỉ khác ba thứ:
  *
- *   1. CÁCH CHẤM: nhập `điểm đạt / tổng điểm`, đạt từ 60% trở lên. Không quy ra band
- *      IELTS, không có kỳ vọng theo target, không có Overall.
+ *   1. CÁCH CHẤM: nhập `điểm đạt / tổng điểm`, đạt từ 70% trở lên (ngưỡng owner chốt sau
+ *      PR15, trước đó là 60%). Không quy ra band IELTS, không có kỳ vọng theo target,
+ *      không có Overall. Ngưỡng đọc từ `RATIO_PASS_THRESHOLD`, không gõ lại con số.
  *   2. MỐC KIỂM TRA: theo TUẦN HỌC của lớp (FOU tuần 4 và 8; BE/ELE tuần 5 và 10),
  *      không phải theo lịch MT của FT.
  *   3. KỸ NĂNG: bốn môn L/R/W/S, giống nhau ở mọi chương trình Normal.

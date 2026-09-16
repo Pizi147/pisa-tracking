@@ -451,7 +451,7 @@ api.get('/classes/:id/suggested-weeks', requireAuth, wrap((req) => {
 
 // ============================================================ Lớp thường (FOU/BE/ELE)
 
-/** Bảng nhập điểm của lớp Normal: điểm đạt / tổng điểm, đạt từ 60%. */
+/** Bảng nhập điểm của lớp Normal: điểm đạt / tổng điểm, đạt từ 70%. */
 api.get('/regular/classes/:classId/sheet', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   return regularSvc.regularSheet(principalOf(req), pInt(req, 'classId'), qStr(req, 'kind'));

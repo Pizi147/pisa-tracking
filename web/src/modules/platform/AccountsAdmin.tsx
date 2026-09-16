@@ -5,7 +5,7 @@ import { useToast } from '../../ui/Toast.tsx';
 import { Card, Empty, Field, Forbidden, Info, SectionNote, Skeleton, Th} from '../../ui/ui.tsx';
 import { Drawer } from '../../ui/Drawer.tsx';
 import { fmtDate, skillLabel } from '../../lib/format.ts';
-import { PERMISSION_LABEL, ROLES, ROLE_LABEL, type Role } from '@shared/domain/index.ts';
+import { PERMISSION_LABEL, ROLES, ROLE_LABEL, roleLabel, type Role } from '@shared/domain/index.ts';
 
 type Branch = { id: number; code: string; name: string };
 type RoleGrant = { role: string; roleName: string; branchCode: string | null; branchName: string | null };
@@ -101,7 +101,7 @@ export function AccountsAdmin() {
                       {u.roles.length === 0 && <span className="text-xs text-slate-600">chưa có vai</span>}
                       {u.roles.map((g, i) => (
                         <Info key={i}>
-                          {ROLE_LABEL[g.role as Role] ?? g.roleName} · {g.branchName ?? 'Toàn hệ thống'}
+                          {roleLabel(g.role) || g.roleName} · {g.branchName ?? 'Toàn hệ thống'}
                         </Info>
                       ))}
                     </span>

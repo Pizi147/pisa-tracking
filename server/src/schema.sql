@@ -203,7 +203,10 @@ CREATE TABLE routes (
 CREATE TABLE roles (
   id INTEGER PRIMARY KEY,
   key TEXT NOT NULL UNIQUE,
-  name_vi TEXT NOT NULL
+  name_vi TEXT NOT NULL,
+  -- 'active' = giao mới được. 'retired' = vai trò đã bỏ, chỉ còn để ĐỌC lịch sử.
+  -- Vai đã bỏ không bị xoá dòng vì user_roles và nhật ký cũ còn trỏ vào nó.
+  status TEXT NOT NULL DEFAULT 'active'
 );
 
 CREATE TABLE permissions (

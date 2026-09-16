@@ -9,7 +9,7 @@ import { setConfig } from '../demoConfig.ts';
 import { DEFAULT_ADMIN_EMAIL, DEFAULT_ADMIN_PASSWORD, EMAIL_SUFFIX } from '../platform/accounts.ts';
 import { seedRoutes } from '../platform/sysconfig.ts';
 import { ensurePeriod, mondayOf, weekInfo } from '../platform/week.ts';
-import { BRANCHES, ROLES, ROLE_PERMISSIONS } from './data.ts';
+import { BRANCHES, RETIRED_ROLES, ROLES, ROLE_PERMISSIONS } from './data.ts';
 import { CLASSES, DEMO_DATE, TEACHERS } from './journeys.ts';
 import { buildJourneys } from './build.ts';
 
@@ -45,12 +45,25 @@ export function runSeed() {
     }
     const roleId = new Map<string, number>();
     for (const r of ROLES) {
-      const info = conn.prepare('INSERT INTO roles (key, name_vi) VALUES (?,?)').run(r.key, r.name);
+      const info = conn.prepare("INSERT INTO roles (key, name_vi, status) VALUES (?,?,'active')")
+        .run(r.key, r.name);
       roleId.set(r.key, Number(info.lastInsertRowid));
       for (const p of ROLE_PERMISSIONS[r.key]) {
         conn.prepare('INSERT INTO role_permissions (role_id, permission_id) VALUES (?,?)')
           .run(Number(info.lastInsertRowid), permId.get(p)!);
       }
+    }
+    /*
+     * VAI TRÒ ĐÃ BỎ vẫn có dòng trong bảng, ở trạng thái `retired` và KHÔNG kèm quyền nào.
+     *
+     * Bộ demo cần nó để chứng minh đúng một điều: một database đã chạy thật, có người từng
+     * mang vai đó, thì sau khi bỏ vai vẫn đọc được lịch sử. Không tài khoản demo nào được
+     * giao vai này.
+     */
+    for (const r of RETIRED_ROLES) {
+      const info = conn.prepare("INSERT INTO roles (key, name_vi, status) VALUES (?,?,'retired')")
+        .run(r.key, r.name);
+      roleId.set(r.key, Number(info.lastInsertRowid));
     }
 
     // ---------------------------------------------------------------- người dùng
@@ -101,29 +114,23 @@ export function runSeed() {
     /*
      * BỘ MÃ NGƯỜI DÙNG dùng chung với kịch bản hành trình.
      *
-     *   T_*    giáo viên      MGR_*  Quản lý chi nhánh      ADM_*  Admin văn phòng
+     *   T_*    giáo viên      MGR_*  Quản lý chi nhánh
      *
      * Kịch bản trong `students.ts` gọi người bằng những mã này, nên đổi một cái tên chỉ cần
      * sửa đúng một chỗ và mọi hành trình vẫn trỏ đúng người.
+     *
+     * KHÔNG CÒN MÃ `ADM_*`. Vai Admin chi nhánh đã bỏ sau PR15; những việc trước đây ghi
+     * tên văn phòng nay ghi tên Quản lý chi nhánh, vì đó mới là người quyết định thật.
      */
     const userId = new Map<string, number>();
-    const branchAdmins = new Map<string, number>();
     const managers = new Map<string, number[]>();
 
     const MANAGER_NAME: Record<string, string> = {
       MB: 'Nguyễn Khánh Vy', BC: 'Trần Hải Đăng', CP: 'Lê Ngọc Mai',
       HD: 'Phạm Quang Anh', UB: 'Hoàng Thanh Bình',
     };
-    const ADMIN_NAME: Record<string, string> = {
-      MB: 'Vũ Thuỳ Dương', BC: 'Đỗ Hồng Nhung', CP: 'Bùi Phương Thảo',
-      HD: 'Ngô Thu Hiền', UB: 'Đinh Lan Anh',
-    };
 
     for (const b of BRANCHES) {
-      const ba = addUser(ADMIN_NAME[b.code], `Admin văn phòng ${b.name}`);
-      grant(ba, 'branch_admin', b.code);
-      branchAdmins.set(b.code, ba);
-      userId.set(`ADM_${b.code}`, ba);
 
       const m = addUser(MANAGER_NAME[b.code], `Quản lý ${b.name}`);
       grant(m, 'manager', b.code);
@@ -242,7 +249,7 @@ export function runSeed() {
 
     // ---------------------------------------------------------------- công việc quản lý
     const tasks = seedMeeting(conn, {
-      branchId, managers, branchAdmins, adminId, userId, currentPeriodId: currentPeriod.id,
+      branchId, managers, adminId, userId, currentPeriodId: currentPeriod.id,
     });
 
     setConfig('demo_date', DEMO_DATE);
@@ -287,8 +294,7 @@ export { weekInfo };
  *   CÔNG VIỆC       việc vận hành của Quản lý — có nhóm, có việc con, có lịch sử cập nhật.
  */
 function seedMeeting(conn: any, ctx: {
-  branchId: Map<string, number>; managers: Map<string, number[]>;
-  branchAdmins: Map<string, number>; adminId: number;
+  branchId: Map<string, number>; managers: Map<string, number[]>; adminId: number;
   userId: Map<string, number>; currentPeriodId: number;
 }) {
   const { branchId, adminId, userId, currentPeriodId } = ctx;
@@ -389,8 +395,13 @@ function seedMeeting(conn: any, ctx: {
   /* ── 1. Giáo trình: việc CHA chia bốn việc con theo kỹ năng, người và hạn khác nhau ── */
   const curriculum = addTask({
     title: 'Xây dựng giáo trình Beginner bản 2027', unit: unitOf('HD'), branch: 'HD',
-    assignee: 'MGR_HD', due: '2026-10-30', progress: 'doing', type: 'long_term',
-    periodId: prevId, group: 'curriculum', watcher: 'ADM_HD',
+    /*
+     * NGƯỜI LÀM khác NGƯỜI THEO DÕI. Giáo viên biên soạn là người làm; Quản lý chi nhánh
+     * theo dõi để biết việc còn kịp hạn không. Hai vai này phải tách được trên màn hình,
+     * nếu không thì không ai biết hỏi ai khi việc chậm.
+     */
+    assignee: 'T_YEN', due: '2026-10-30', progress: 'doing', type: 'long_term',
+    periodId: prevId, group: 'curriculum', watcher: 'MGR_HD',
     updates: [
       { progress: 'not_started', note: 'Đã chốt khung bốn kỹ năng và số buổi.', on: '2026-08-24' },
       { progress: 'doing', note: 'Listening và Reading xong bản nháp, đang soát.', on: '2026-08-31' },
@@ -457,8 +468,8 @@ function seedMeeting(conn: any, ctx: {
   /* ── 5. Việc TỪNG TẠM NGƯNG rồi TIẾP TỤC — cùng một định danh, lịch sử giữ đủ cả hai chặng ── */
   addTask({
     title: 'Chuẩn hoá quy trình bàn giao lớp giữa các ca', unit: unitOf('UB'), branch: 'UB',
-    assignee: 'MGR_UB', due: '2026-11-30', progress: 'doing', type: 'long_term',
-    periodId: prevId, group: 'teacher', watcher: 'ADM_UB',
+    assignee: 'T_KIEN', due: '2026-11-30', progress: 'doing', type: 'long_term',
+    periodId: prevId, group: 'teacher', watcher: 'MGR_UB',
     updates: [
       { progress: 'doing', note: 'Viết xong bản nháp quy trình bốn bước.', on: '2026-07-20' },
       { progress: 'paused', note: 'Tạm ngưng vì đang vào mùa thi, giáo viên không họp được.', on: '2026-08-03' },
@@ -492,13 +503,13 @@ function seedMeeting(conn: any, ctx: {
   /* ── 8. Nhóm TUTOR — việc dài hạn không có hạn, nên không bao giờ tự tính quá hạn ── */
   addTask({
     title: 'Sưu tầm đề Speaking Part 2 theo chủ đề mới', unit: unitOf('TUTOR'), branch: null,
-    assignee: 'ADM_MB', due: null, progress: 'doing', type: 'long_term',
+    assignee: 'MGR_MB', due: null, progress: 'doing', type: 'long_term',
     periodId: currentPeriodId, group: 'tutor',
     updates: [{ progress: 'doing', note: 'Đã gom 40 đề, đang phân theo chủ đề.', on: '2026-09-07' }],
   });
   addTask({
     title: 'Tuyển thêm 2 tutor part-time cho ca cuối tuần', unit: unitOf('TUTOR'), branch: null,
-    assignee: 'ADM_MB', due: '2026-10-15', progress: 'not_started', type: 'long_term',
+    assignee: 'MGR_MB', due: '2026-10-15', progress: 'not_started', type: 'long_term',
     periodId: currentPeriodId, group: 'tutor',
   });
 

@@ -126,16 +126,13 @@ function coreTeacherOf(classCode: string) {
 
 const P = {
   admin: loadPrincipal(userByRole('system_admin', null)),
-  mbAdmin: loadPrincipal(userByRole('branch_admin', 'MB')),
   mbManager: loadPrincipal(userByRole('manager', 'MB')),
   cpManager: loadPrincipal(userByRole('manager', 'CP')),
-  cpAdmin: loadPrincipal(userByRole('branch_admin', 'CP')),
   w1Teacher: loadPrincipal(teacherOfSkill('MB-FT 101', 'writing1')),
   w2Teacher: loadPrincipal(teacherOfSkill('MB-FT 101', 'writing2')),
   sTeacher: loadPrincipal(teacherOfSkill('MB-FT 101', 'speaking')),
   lrTeacher: loadPrincipal(teacherOfSkill('MB-FT 101', 'listening')),
   bcManager: loadPrincipal(userByRole('manager', 'BC')),
-  bcAdmin: loadPrincipal(userByRole('branch_admin', 'BC')),
   coreTeacher: loadPrincipal(coreTeacherOf('MB-FT 101')),
   subjectTeacher: loadPrincipal(subjectOnlyTeacherOf('MB-FT 101')),
 };
@@ -455,11 +452,15 @@ check('Một lượt MT chỉ mang TUẦN, không có cột ngày nào', () => {
   const scoreCols = (conn.prepare('PRAGMA table_info(assessment_scores)').all() as any[]).map((c) => c.name);
   assert(!scoreCols.includes('taken_on'), 'Bảng điểm vẫn còn cột ngày làm bài');
 });
-check('Quản lý chốt tuần; Admin CN không chốt tuần được', () => {
+check('Chỉ Quản lý chốt tuần MT; giáo viên không chốt được', () => {
+  /*
+   * Vai Admin chi nhánh đã bỏ, nên ranh giới cần giữ bây giờ là giữa Quản lý và giáo viên:
+   * lập lịch MT chủ động là việc của Quản lý, kể cả với GVCN.
+   */
   assert(can(P.mbManager, PERMISSIONS.PLAN_WEEK, { classId: mbClass }), 'Quản lý phải chốt được tuần');
-  assert(!can(P.mbAdmin, PERMISSIONS.PLAN_WEEK, { classId: mbClass }), 'Admin chi nhánh không được tự chốt tuần');
-  assertThrows(() => attempts.setPlanningWeek(P.mbAdmin, planned.id, periodOf('2026-10-12')), /Quản lý/,
-    'Admin chi nhánh đổi tuần');
+  assert(!can(P.coreTeacher, PERMISSIONS.PLAN_WEEK, { classId: mbClass }), 'GVCN không được tự chốt tuần MT');
+  assertThrows(() => attempts.setPlanningWeek(P.coreTeacher, planned.id, periodOf('2026-10-12')), /Quản lý/,
+    'GVCN đổi tuần MT');
 });
 check('Hai quyền về ngày MT đã bị gỡ khỏi hệ thống', () => {
   const gone = conn
@@ -525,17 +526,17 @@ check('GVCN không vì chủ nhiệm mà sửa được mọi kỹ năng', () =>
   assert(skills.length < 5, `GVCN đang sửa được cả 5 kỹ năng: ${skills.join(', ')}`);
 });
 /*
- * ĐIỂM CHỈ NGƯỜI DẠY NHẬP. Owner chốt 10/09: bỏ hẳn đường nhập bù của Admin chi nhánh —
- * người không dạy kỹ năng đó thì không có căn cứ nào để chấm. Đường nhập bù còn lại chỉ
- * thuộc về quản trị hệ thống, và vẫn đi nhật ký riêng để soi lại được.
+ * ĐIỂM CHỈ NGƯỜI DẠY NHẬP. Người không dạy kỹ năng đó thì không có căn cứ nào để chấm —
+ * kể cả Quản lý và GVCN. Đường nhập bù còn lại chỉ thuộc về quản trị hệ thống, và vẫn đi
+ * nhật ký riêng để soi lại được.
  */
 check('Chỉ quản trị hệ thống nhập bù được, và đi nhật ký riêng', () => {
-  assert(!can(P.mbAdmin, PERMISSIONS.SCORE_OVERRIDE, { classId: mbClass }), 'Admin chi nhánh không được nhập bù điểm');
   assert(!can(P.mbManager, PERMISSIONS.SCORE_OVERRIDE, { classId: mbClass }), 'Quản lý không có đường nhập bù điểm');
+  assert(!can(P.coreTeacher, PERMISSIONS.SCORE_OVERRIDE, { classId: mbClass }), 'GVCN không có đường nhập bù điểm');
   assert(can(P.admin, PERMISSIONS.SCORE_OVERRIDE, { classId: mbClass }), 'Quản trị hệ thống phải nhập bù được');
   const a = conn.prepare(`SELECT * FROM assessment_attempts WHERE class_id = ? AND status='done' LIMIT 1`).get(mbClass) as any;
-  assertThrows(() => attempts.saveScore(P.mbAdmin, a.id, 'writing2', { criteria: [6, 6, 6, 6] }), /phân công/,
-    'Admin chi nhánh nhập bù điểm W2');
+  assertThrows(() => attempts.saveScore(P.coreTeacher, a.id, 'writing2', { criteria: [6, 6, 6, 6] }), /phân công/,
+    'GVCN nhập bù điểm W2 của kỹ năng mình không dạy');
   attempts.saveScore(P.admin, a.id, 'writing2', { criteria: [6, 6, 6, 6] });
   const log = conn.prepare(`SELECT * FROM audit_logs WHERE action='score.override' ORDER BY id DESC LIMIT 1`).get() as any;
   assert(log, 'Nhập bù không được ghi nhật ký riêng');
@@ -562,10 +563,10 @@ check('Một người có hai grant khác chi nhánh không cộng chéo quyền
   assert(!can(mixed, PERMISSIONS.MEETING_VIEW, { branchId: cpBranch }), 'Quyền họp của MB không được dùng ở CP');
   conn.prepare('DELETE FROM user_roles WHERE user_id = ? AND role_id = ? AND branch_id = ?').run(uid, teacherRole, cpBranch);
 });
-check('Admin chi nhánh không vào được Tiến trình công việc', () => {
-  assert(!can(P.mbAdmin, PERMISSIONS.MEETING_VIEW, { anyScope: true }), 'Admin chi nhánh không được cấp module quản lý');
-  assert(can(P.mbManager, PERMISSIONS.MEETING_VIEW, { anyScope: true }), 'Quản lý phải xem được Tiến trình công việc');
-  assertThrows(() => meeting.meetingBoard(P.mbAdmin, 1), /quyền/, 'Admin chi nhánh gọi API báo cáo tuần');
+check('Giáo viên không vào được Tiến độ công việc', () => {
+  assert(!can(P.coreTeacher, PERMISSIONS.MEETING_VIEW, { anyScope: true }), 'GVCN không được cấp module quản lý');
+  assert(can(P.mbManager, PERMISSIONS.MEETING_VIEW, { anyScope: true }), 'Quản lý phải xem được Tiến độ công việc');
+  assertThrows(() => meeting.meetingBoard(P.coreTeacher, 1), /quyền/, 'GVCN gọi API báo cáo tuần');
 });
 check('Đã bỏ hẳn bước "Head xác nhận" khỏi hệ thống', () => {
   // Bước này chỉ ghi tên và ngày: không khoá điểm, không là điều kiện đổi trạng thái,
@@ -1083,12 +1084,12 @@ check('Bấm hai lần hoặc thử lại không tạo học viên trùng', () =
   assert(again.added === 2, 'Kết quả lần gửi lại phải giống lần đầu');
 });
 check('Tuần MT đề xuất chỉ thành kế hoạch khi người nhập có quyền chốt tuần', () => {
-  const r = intake.commitIntake(P.mbAdmin, {
+  const r = intake.commitIntake(P.coreTeacher, {
     rows: [{ fullName: 'Học Viên Không Quyền Tuần', classCode: 'MB-FT 101', route: 'LT1', target: 6,
              mockWeeks: ['2026-11-02'] }],
     dateFormat: 'iso', idempotencyKey: 'test-intake-2',
   });
-  assert(r.added === 1, 'Admin chi nhánh phải thêm được học viên');
+  assert(r.added === 1, 'GVCN phải thêm được học viên vào lớp mình phụ trách');
   const s = conn.prepare("SELECT id FROM students WHERE full_name = 'Học Viên Không Quyền Tuần'").get() as any;
   const n = (conn.prepare('SELECT COUNT(*) n FROM assessment_attempts WHERE student_id = ?').get(s.id) as any).n;
   assert(n === 0, 'Người không có quyền chốt tuần mà nhập hàng loạt lại tạo được kế hoạch MT');
@@ -1341,18 +1342,23 @@ check('Chương trình nằm trong dữ liệu, mã cũ FOUND ánh xạ về FOU
     `Mã lớp gốc phải giữ nguyên "FOUND", chương trình chuẩn hoá là "FOU" — đang là ${cls.kind}/${cls.programme_code}`);
 });
 
-check('Đạt từ 60%, xét trên tỷ lệ CHÍNH XÁC chứ không làm tròn phần trăm rồi mới so', () => {
-  assert(domainRatio(24, 40).outcome === 'pass', '24/40 = 60% phải là đạt');
-  assert(domainRatio(23, 40).outcome === 'fail', '23/40 = 57.5% phải là trượt');
+check('Đạt từ 70%, xét trên tỷ lệ CHÍNH XÁC chứ không làm tròn phần trăm rồi mới so', () => {
+  /* Đúng biên: 70% chẵn là ĐẠT, không phải "trên 70%". */
+  assert(domainRatio(7, 10).outcome === 'pass', '7/10 = 70% phải là đạt');
+  assert(domainRatio(28, 40).outcome === 'pass', '28/40 = 70% phải là đạt');
+  assert(domainRatio(69, 100).outcome === 'fail', '69/100 = 69% phải là trượt');
+
   /*
-   * Ca bẫy thật sự: 25/42 = 59.52%, hiển thị làm tròn thành "60%" nhưng vẫn phải là TRƯỢT.
+   * Ca bẫy thật sự: 23/33 = 69.7%, hiển thị làm tròn thành "70%" nhưng vẫn phải là TRƯỢT.
    * Nếu xét trên số phần trăm ĐÃ LÀM TRÒN thì em này thành đạt — đó chính là lỗi cần tránh.
    */
-  const tricky = domainRatio(25, 42);
-  assert(Math.round(tricky.ratio! * 100) === 60, 'Ca này chỉ có nghĩa khi hiển thị làm tròn ra 60%');
-  assert(tricky.outcome === 'fail', '25/42 = 59.52% phải là trượt, dù hiển thị ra 60%');
-  assert(domainRatio(12, 20).outcome === 'pass', '12/20 = 60% phải là đạt');
-  assert(domainRatio(11, 20).outcome === 'fail', '11/20 = 55% phải là trượt');
+  const tricky = domainRatio(23, 33);
+  assert(Math.round(tricky.ratio! * 100) === 70, 'Ca này chỉ có nghĩa khi hiển thị làm tròn ra 70%');
+  assert(tricky.outcome === 'fail', '23/33 = 69.7% phải là trượt, dù hiển thị ra 70%');
+
+  /* Ngưỡng CŨ đã bỏ: 60% từng là đạt, từ nay là trượt. Đây là thay đổi có chủ đích. */
+  assert(domainRatio(24, 40).outcome === 'fail', '24/40 = 60% nay phải là trượt, không còn đạt');
+  assert(domainRatio(12, 20).outcome === 'fail', '12/20 = 60% nay phải là trượt, không còn đạt');
 });
 
 check('Kết luận ngay trên phần đã chấm; ô trống KHÔNG bị đếm thành môn chưa đạt', () => {
@@ -2360,7 +2366,6 @@ check('Giáo viên không tự phân công mình vào lớp', () => {
     /Quản lý|Admin|quyền/, 'Giáo viên đổi phân công');
   assert(!can(gv, PERMISSIONS.CLASS_ASSIGN, { classId: mbClass }), 'Giáo viên đang có quyền phân công');
   assert(can(P.mbManager, PERMISSIONS.CLASS_ASSIGN, { classId: mbClass }), 'Quản lý phải phân công được');
-  assert(can(P.mbAdmin, PERMISSIONS.CLASS_ASSIGN, { classId: mbClass }), 'Admin chi nhánh phải phân công được');
 });
 
 check('Không xếp người của chi nhánh khác, và không xếp kỹ năng lớp không dạy', () => {
@@ -3070,7 +3075,7 @@ check('Giao việc cho giáo viên phải chọn lớp và kỹ năng', () => {
 
 console.log('\n26. Việc trao đổi tới tay đúng người');
 
-check('GVCN nhận việc gặp học viên, văn phòng nhận việc gọi phụ huynh', () => {
+check('GVCN nhận việc gặp học viên; việc gọi phụ huynh về Quản lý, không rơi vào GVBM', () => {
   /*
    * Hai việc trao đổi nay là phương án, nên chúng tới tay người ta qua nhóm việc
    * "Làm phương án đã hẹn" chứ không qua một bảng Liên hệ riêng. Cách CHIA VIỆC thì giữ
@@ -3086,13 +3091,16 @@ check('GVCN nhận việc gặp học viên, văn phòng nhận việc gọi ph�
          JOIN assessment_attempts a ON a.id = sc.attempt_id
          JOIN classes cl ON cl.id = a.class_id
          JOIN teacher_assignments ta ON ta.class_id = cl.id AND ta.status = 'active'
-                                    AND ta.skill IS NOT NULL
+                                    AND ta.skill IS NOT NULL AND ta.is_core = 0
+                                    AND NOT EXISTS (SELECT 1 FROM teacher_assignments c2
+                                                     WHERE c2.class_id = cl.id AND c2.user_id = ta.user_id
+                                                       AND c2.is_core = 1 AND c2.status = 'active')
         WHERE iv.kind = 'talk_student' AND iv.status IN ('planned','started')
           AND iv.action_due IS NOT NULL AND iv.action_due <= ?
         LIMIT 1`,
     )
     .get(TODAY) as any;
-  assert(pendingTalk, 'Bộ demo không còn việc trao đổi nào đang chờ để kiểm ai nhận');
+  assert(pendingTalk, 'Bộ demo không còn việc trao đổi nào đang chờ, do một GVBM thuần, để kiểm ai nhận');
   const gv = loadPrincipal(pendingTalk.id);
   const kinds = (who: any) => {
     const out = new Set<string>();
@@ -3107,22 +3115,33 @@ check('GVCN nhận việc gặp học viên, văn phòng nhận việc gọi ph�
   };
   const gvKinds = kinds(gv);
   assert(gvKinds.has('talk_student'), 'Giáo viên không nhận việc gặp học viên');
-  assert(!gvKinds.has('talk_parent'), 'Giáo viên bị giao việc gọi phụ huynh của văn phòng');
-  const adminKinds = kinds(loadPrincipal(
-    (conn.prepare(
-      `SELECT ur.user_id AS id FROM user_roles ur JOIN roles r ON r.id = ur.role_id
-        WHERE r.key = 'branch_admin' AND ur.branch_id = ? LIMIT 1`,
-    ).get(pendingTalk.branch) as any).id,
-  ));
-  assert(adminKinds.has('talk_parent'), 'Admin chi nhánh không nhận việc gọi phụ huynh');
-  // Quản lý thấy cả hai: họ là người đôn đốc khi có ai đó quên. Quản lý CỦA CHÍNH chi nhánh đó.
+  assert(!gvKinds.has('talk_parent'), 'GVBM bị giao việc gọi phụ huynh — việc đó không phải của họ');
+
+  /*
+   * VAI ADMIN CHI NHÁNH ĐÃ BỎ sau PR15. Trước đây việc gọi phụ huynh tới tay văn phòng;
+   * nay nó về Quản lý chi nhánh, đúng người có thẩm quyền xử lý phương án Ý thức/Khác.
+   * Quản lý thấy CẢ HAI loại vì họ còn là người đôn đốc khi có ai đó quên.
+   */
   const mgrKinds = kinds(loadPrincipal(
     (conn.prepare(
       `SELECT ur.user_id AS id FROM user_roles ur JOIN roles r ON r.id = ur.role_id
-        WHERE r.key = 'manager' AND ur.branch_id = ? LIMIT 1`,
+        WHERE r.key = 'manager' AND ur.branch_id = ? AND ur.status = 'active' LIMIT 1`,
     ).get(pendingTalk.branch) as any).id,
   ));
-  assert(mgrKinds.has('talk_student') && mgrKinds.has('talk_parent'), 'Quản lý phải thấy cả hai loại');
+  assert(mgrKinds.has('talk_parent'), 'Quản lý không nhận việc gọi phụ huynh sau khi bỏ vai văn phòng');
+  assert(mgrKinds.has('talk_student'), 'Quản lý phải thấy cả việc gặp học viên để còn đôn đốc');
+
+  /* Vai đã bỏ không được phép quay lại danh sách giao mới. */
+  const retired = conn.prepare("SELECT status FROM roles WHERE key = 'branch_admin'").get() as any;
+  assert(retired && retired.status === 'retired',
+    'Vai Admin chi nhánh phải còn trong bảng ở trạng thái đã bỏ, để đọc được lịch sử');
+  const stillGranted = conn
+    .prepare(
+      `SELECT COUNT(*) AS n FROM user_roles ur JOIN roles r ON r.id = ur.role_id
+        WHERE r.key = 'branch_admin' AND ur.status = 'active'`,
+    )
+    .get() as any;
+  assert(stillGranted.n === 0, 'Không tài khoản nào được còn giữ vai Admin chi nhánh');
 });
 
 console.log('\n27. Vòng 4 — case sống suốt khoá');
@@ -3625,17 +3644,14 @@ check('Bộ lọc học viên định nghĩa MỘT chỗ, và hiện đúng theo
   const has = (p: any) => (key: string) => can(p, key, { anyScope: true });
   const forTeacher = domain.studentFiltersFor(has(P.lrTeacher));
   const forManager = domain.studentFiltersFor(has(P.mbManager));
-  const forAdmin = domain.studentFiltersFor(has(P.mbAdmin));
 
   /* Bảng ở mục 6: GV không có "Chưa có tuần MT" — xếp lịch là việc của Quản lý. */
   assert(!forTeacher.includes('no_plan'), 'Giáo viên không được thấy bộ lọc lịch');
   assert(forTeacher.includes('sos') && forTeacher.includes('case_overdue'),
     'Giáo viên phải thấy bộ lọc SOS và case quá hạn');
-  /* Admin CN không có bộ lọc case, nhưng CÓ "Cần nhập điểm MT" để đôn đốc (owner xác nhận Q9). */
-  assert(!forAdmin.includes('case_no_plan') && !forAdmin.includes('sos'),
-    'Admin CN không được thấy bộ lọc case');
-  assert(forAdmin.includes('my_scores'), 'Admin CN phải thấy bộ lọc nhập điểm để đôn đốc');
-  assert(!forAdmin.includes('no_plan'), 'Admin CN không chốt tuần nên không thấy bộ lọc đó');
+  /* Quản lý thấy đủ bộ lọc case của chi nhánh mình — họ là người đôn đốc. */
+  assert(forManager.includes('case_no_plan') && forManager.includes('sos'),
+    'Quản lý phải thấy bộ lọc case');
   /* Quản lý thấy nhiều nhất, và luôn có "Chưa có tuần MT" vì đó là việc của họ. */
   assert(forManager.includes('no_plan'), 'Quản lý phải thấy bộ lọc chưa có tuần MT');
   for (const k of ['classes', 'sos', 'case_working', 'case_no_plan', 'case_overdue']) {

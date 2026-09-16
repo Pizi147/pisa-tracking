@@ -204,6 +204,19 @@ function teacherAllows(p: Principal, permission: string, ctx: Ctx): boolean {
     case PERMISSIONS.SOS_EDIT:
       return ctx.anyScope === true || hasAssignment(p, ctx, 'any');
 
+    /*
+     * SỬA HỒ SƠ HỌC VIÊN: CHỈ GVCN, và chỉ học viên của chính lớp mình chủ nhiệm.
+     *
+     * Trước PR15 việc này thuộc Admin chi nhánh. Vai đó đã bỏ, và người thật sự nắm tình
+     * hình từng em là giáo viên chủ nhiệm, nên quyền về tay họ. GVBM thì KHÔNG: dạy một kỹ
+     * năng không cho ai căn cứ để sửa target, đầu vào hay kế hoạch thi của học viên.
+     *
+     * Đây cũng không phải cửa sau để nhập điểm hay chốt lịch MT — hai quyền đó vẫn đứng
+     * riêng và vẫn theo phân công kỹ năng / vai Quản lý như cũ.
+     */
+    case PERMISSIONS.STUDENT_EDIT:
+      return ctx.anyScope === true || hasAssignment(p, ctx, 'core');
+
     default:
       return true;
   }

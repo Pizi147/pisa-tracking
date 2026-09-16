@@ -607,7 +607,7 @@ export const STUDENTS: StudentSeed[] = [
               {
                 /* NGƯỜI NHẬP HỘ KHÁC NGƯỜI THỰC HIỆN: văn phòng gọi, giáo viên ghi lại. */
                 kind: 'talk_parent', description: 'Gọi phụ huynh trao đổi về lịch đi học',
-                performer: 'T_QUAN', recordedBy: 'ADM_BC',
+                performer: 'T_QUAN', recordedBy: 'MGR_BC',
                 cycleNo: 2, cycleStart: '2026-08-17', status: 'completed',
                 startedOn: '2026-08-19', completedOn: '2026-08-19', followupDue: '2026-09-07',
                 closedReason: 'done',

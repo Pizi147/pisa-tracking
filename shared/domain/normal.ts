@@ -29,8 +29,24 @@ export const SCORING_MODE_LABEL: Record<ScoringMode, string> = {
  * Gọi là "điểm đạt / tổng điểm" chứ không phải "số câu đúng / tổng số câu": Writing và
  * Speaking của lớp Normal chấm theo thang điểm, không đếm câu. Một cái tên chỉ đúng với
  * Listening và Reading thì hai môn kia phải gõ vào một ô mang tên sai.
+ *
+ * MỘT NGƯỠNG CHO TOÀN HỆ THỐNG. Nhập điểm, kết luận đợt, tín hiệu, hồ sơ, bảng lớp, bảng
+ * tuần, báo cáo, bộ demo và kiểm thử đều đọc đúng hằng số này — không nơi nào gõ lại con số.
  */
-export const RATIO_PASS_THRESHOLD = 0.6;
+export const RATIO_PASS_THRESHOLD = 0.7;
+
+/**
+ * NGƯỠNG CŨ, giữ lại để ĐỌC ĐƯỢC LỊCH SỬ chứ không để tính.
+ *
+ * Owner nâng ngưỡng đạt của lớp Normal từ 60% lên 70% sau PR15. Điểm gốc không bị sửa và
+ * kết luận đã ghi không bị xoá, nhưng một bài 62% trước đây đọc là "đạt" thì từ nay đọc là
+ * "trượt". Ai đối chiếu với biên bản cũ cần biết vì sao hai bên lệch nhau, nên căn cứ của
+ * quy tắc cũ được ghi ở đây và trong nhật ký nâng cấp, thay vì chỉ lặng lẽ biến mất.
+ *
+ * KHÔNG dùng hằng số này để tính lại bất cứ thứ gì đang chạy: báo cáo hiện hành chỉ có
+ * MỘT cách tính, là `RATIO_PASS_THRESHOLD`.
+ */
+export const RATIO_PASS_THRESHOLD_PREVIOUS = 0.6;
 
 /**
  * Loại lượt đánh giá. `mock` là MT của FT; lớp thường có bài giữa và bài cuối khoá.

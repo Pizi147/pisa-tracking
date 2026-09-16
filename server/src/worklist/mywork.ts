@@ -392,11 +392,16 @@ export function myWork(p: Principal, f: { branchId?: number | null } = {}) {
     if (f.branchId && iv.branch_id !== f.branchId) continue;
     if (!can(p, PERMISSIONS.SOS_EDIT, { classId: iv.eff_class_id, studentId: iv.eff_student_id })) continue;
     /*
-     * AI THẤY VIỆC NÀY — giữ nguyên cách chia của bảng Liên hệ cũ, vì nó đúng:
-     *   gặp học viên   → người ĐANG DẠY em
-     *   gọi phụ huynh  → văn phòng (người sửa được hồ sơ học viên)
+     * AI THẤY VIỆC NÀY:
+     *   gặp học viên        → người ĐANG DẠY em
+     *   gọi phụ huynh       → Quản lý hoặc GVCN
      *   phương án học thuật → người đang dạy em
      * Quản lý thấy hết, vì họ là người đôn đốc khi có ai đó quên.
+     *
+     * Việc gọi phụ huynh trước PR15 thuộc Admin chi nhánh. Vai đó đã bỏ, và quyền sửa hồ sơ
+     * học viên nay chỉ nằm ở Quản lý và GVCN — đúng hai người được phép xử lý phương án
+     * Ý thức/Khác. Nên phép kiểm dưới đây không đổi câu chữ mà vẫn ra đúng người: GVBM
+     * không sửa được hồ sơ thì cũng không bị giao việc gọi phụ huynh.
      */
     const isManager = can(p, PERMISSIONS.CASE_APPROVE, { classId: iv.eff_class_id, studentId: iv.eff_student_id });
     if (!isManager) {

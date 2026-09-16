@@ -3,19 +3,37 @@
 // ---------------------------------------------------------------- Quyền
 
 /*
- * Bốn nhóm tài khoản.
+ * BA nhóm tài khoản giao được.
  *
- * `system_admin` là người quản trị PHẦN MỀM (tài khoản, vai trò, cấu hình).
- * `branch_admin` là nhân sự VĂN PHÒNG của chi nhánh: quản danh sách lớp, giáo viên và
- * tổng hợp việc trung gian giữa các phòng ban. Hai vai trò này khác hẳn nhau nên không
- * dùng chung chữ "Admin" trong nhãn hiển thị.
+ * `system_admin` là người quản trị PHẦN MỀM (tài khoản, vai trò, cấu hình) — giữ nguyên.
+ * `manager` điều hành chuyên môn của chi nhánh. `teacher` là GVCN và/hoặc GVBM.
+ *
+ * ADMIN CHI NHÁNH ĐÃ BỎ (owner chốt sau PR15). Nhân sự văn phòng từng giữ vai này làm
+ * những việc mà người quyết định thật sự là Quản lý hoặc GVCN — huỷ lượt MT, bỏ một kỹ
+ * năng, đặt hạn nhập điểm riêng — nên một vai trung gian chỉ làm chậm việc và làm mờ
+ * trách nhiệm. Nhiệm vụ đã chuyển về Quản lý và GVCN theo ma trận nghiệp vụ.
  */
-export const ROLES = ['system_admin', 'branch_admin', 'manager', 'teacher'] as const;
+export const ROLES = ['system_admin', 'manager', 'teacher'] as const;
 export type Role = (typeof ROLES)[number];
 export const ROLE_LABEL: Record<Role, string> = {
-  system_admin: 'Quản trị hệ thống', branch_admin: 'Admin chi nhánh',
-  manager: 'Quản lý', teacher: 'Giáo viên',
+  system_admin: 'Quản trị hệ thống', manager: 'Quản lý', teacher: 'Giáo viên',
 };
+
+/**
+ * VAI TRÒ ĐÃ BỎ — chỉ để ĐỌC lịch sử, không bao giờ để giao mới.
+ *
+ * Dữ liệu cũ vẫn còn những dòng phân quyền mang mã này, và nhật ký vẫn ghi "ai đã làm gì"
+ * dưới vai đó. Xoá mã đi thì các màn lịch sử hiện ra một chuỗi trống không ai hiểu, nên mã
+ * được giữ kèm nhãn nói rõ nó đã bỏ.
+ */
+export const RETIRED_ROLE_LABEL: Record<string, string> = {
+  branch_admin: 'Admin chi nhánh (vai trò đã bỏ)',
+};
+
+/** Nhãn của một mã vai trò bất kỳ, kể cả mã đã bỏ. Dùng ở mọi nơi hiển thị lịch sử. */
+export function roleLabel(key: string): string {
+  return (ROLE_LABEL as Record<string, string>)[key] ?? RETIRED_ROLE_LABEL[key] ?? key;
+}
 
 export const PERMISSIONS = {
   /*

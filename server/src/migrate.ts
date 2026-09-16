@@ -399,6 +399,8 @@ function migrateCaseEngine(applied: string[], skipped: string[]) {
     migrateNormalFourSkills(conn, applied);
     migrateCaseCycles(conn, applied);
     migrateMgmtTasks(conn, applied);
+    migrateDropBranchAdmin(conn, applied);
+    migrateNormalPassThreshold(conn, applied);
 
     /*
      * Case đã đóng theo hệ thống cũ mà không có hướng xử lý: ghi rõ là "đóng theo hệ thống
@@ -1728,4 +1730,134 @@ function migrateMgmtTasks(conn: any, applied: string[]) {
     )
     .run().changes;
   if (n) applied.push(`Xếp ${n} việc cũ có gắn học viên vào nhóm Học sinh / Phụ huynh`);
+}
+
+
+/**
+ * BỎ VAI TRÒ "ADMIN CHI NHÁNH" mà không đánh mất ai.
+ *
+ * Ba việc, theo đúng thứ tự đó:
+ *
+ *   1. Đánh dấu vai trò là ĐÃ BỎ chứ không xoá dòng. `user_roles` và nhật ký cũ còn trỏ
+ *      vào nó; xoá đi thì lịch sử "ai đã làm gì" gãy ngay.
+ *   2. Thu hồi các dòng phân quyền đang hiệu lực của vai đó, vì từ nay nó không cho phép
+ *      làm gì nữa. Ghi mỗi lần thu hồi vào nhật ký, kèm TÊN người, để còn tra được.
+ *   3. Người nào sau bước 2 KHÔNG CÒN VAI NÀO thì tài khoản vẫn giữ nguyên, chỉ chuyển
+ *      sang trạng thái chờ phân công. Owner chốt rõ: không tự biến Admin cũ thành Quản lý
+ *      toàn hệ thống, mà nêu tên ra để người có thẩm quyền quyết.
+ */
+function migrateDropBranchAdmin(conn: any, applied: string[]) {
+  const has = (t: string) =>
+    !!conn.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name = ?").get(t);
+  if (!has('roles') || !has('user_roles')) return;
+
+  const cols = (t: string) => (conn.prepare(`PRAGMA table_info(${t})`).all() as any[]).map((c: any) => c.name);
+  if (!cols('roles').includes('status')) {
+    conn.exec("ALTER TABLE roles ADD COLUMN status TEXT NOT NULL DEFAULT 'active'");
+  }
+
+  const role = conn.prepare("SELECT id FROM roles WHERE key = 'branch_admin'").get() as any;
+  if (!role) return;
+
+  const already = conn.prepare("SELECT status FROM roles WHERE id = ?").get(role.id) as any;
+  if (already?.status === 'retired') return;
+
+  conn.prepare("UPDATE roles SET status = 'retired' WHERE id = ?").run(role.id);
+
+  /* Quyền của vai đã bỏ không còn hiệu lực. Bảng role_permissions không có cột trạng thái
+     nên ở đây xoá đúng các dòng nối vai–quyền; bản thân vai và quyền vẫn còn để đọc. */
+  const perms = has('role_permissions')
+    ? conn.prepare('DELETE FROM role_permissions WHERE role_id = ?').run(role.id).changes
+    : 0;
+
+  const grants = conn
+    .prepare(
+      `SELECT ur.id, ur.user_id, u.full_name, b.name AS branch
+         FROM user_roles ur
+         JOIN users u ON u.id = ur.user_id
+    LEFT JOIN branches b ON b.id = ur.branch_id
+        WHERE ur.role_id = ? AND ur.status = 'active'`,
+    )
+    .all(role.id) as any[];
+
+  for (const g of grants) {
+    conn.prepare("UPDATE user_roles SET status = 'retired' WHERE id = ?").run(g.id);
+    conn
+      .prepare(
+        `INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, entity_label,
+                                 before_json, after_json, created_at)
+         VALUES (NULL, 'role.retired', 'user', ?, ?, ?, ?, ?)`,
+      )
+      .run(
+        g.user_id,
+        g.full_name,
+        JSON.stringify({ role: 'branch_admin', branch: g.branch ?? null, status: 'active' }),
+        JSON.stringify({ role: 'branch_admin', branch: g.branch ?? null, status: 'retired',
+                         reason: 'Vai trò Admin chi nhánh đã bỏ sau PR15' }),
+        nowIso(),
+      );
+  }
+
+  const orphans = conn
+    .prepare(
+      `SELECT u.full_name FROM users u
+        WHERE u.status = 'active'
+          AND NOT EXISTS (SELECT 1 FROM user_roles ur WHERE ur.user_id = u.id AND ur.status = 'active')
+          AND EXISTS (SELECT 1 FROM user_roles ur WHERE ur.user_id = u.id AND ur.role_id = ?)`,
+    )
+    .all(role.id) as any[];
+
+  applied.push(
+    `Bỏ vai trò Admin chi nhánh: thu hồi ${grants.length} phân quyền, gỡ ${perms} dòng quyền của vai đó`,
+  );
+  if (orphans.length) {
+    applied.push(
+      `CẦN PHÂN CÔNG LẠI — ${orphans.length} tài khoản không còn vai trò nào: ` +
+        orphans.map((o: any) => o.full_name).join(', '),
+    );
+  }
+}
+
+/**
+ * GHI DẤU VIỆC NÂNG NGƯỠNG ĐẠT CỦA LỚP NORMAL TỪ 60% LÊN 70%.
+ *
+ * Kết quả đạt/trượt của lớp Normal được TÍNH RA từ `điểm đạt / tổng điểm` mỗi lần đọc,
+ * không lưu sẵn trong database. Nên bước nâng cấp này KHÔNG sửa một dòng dữ liệu nào:
+ * điểm gốc giữ nguyên, kết luận đã ghi tay giữ nguyên, và không có khoản quá hạn nào
+ * được sinh ngược về quá khứ.
+ *
+ * Việc duy nhất cần làm là ghi lại MỐC ĐỔI LUẬT. Một bài 62% hôm qua đọc là "đạt", hôm
+ * nay đọc là "trượt"; ai đối chiếu với biên bản cũ phải tra ra được vì sao hai bên lệch.
+ */
+function migrateNormalPassThreshold(conn: any, applied: string[]) {
+  const has = (t: string) =>
+    !!conn.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name = ?").get(t);
+  if (!has('demo_config')) return;
+
+  const key = 'normal_pass_threshold';
+  const current = conn.prepare('SELECT value FROM demo_config WHERE key = ?').get(key) as any;
+  if (current?.value === '0.7') return;
+
+  const from = current?.value ?? '0.6';
+  conn.prepare('INSERT OR REPLACE INTO demo_config (key, value, updated_at) VALUES (?,?,?)')
+    .run(key, '0.7', nowIso());
+
+  if (has('audit_logs')) {
+    conn
+      .prepare(
+        `INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, entity_label,
+                                 before_json, after_json, created_at)
+         VALUES (NULL, 'rule.changed', 'scoring', NULL, 'Ngưỡng đạt lớp Normal', ?, ?, ?)`,
+      )
+      .run(
+        JSON.stringify({ passThreshold: Number(from) }),
+        JSON.stringify({ passThreshold: 0.7, note: 'Owner nâng ngưỡng đạt lớp Normal sau PR15' }),
+        nowIso(),
+      );
+  }
+
+  applied.push(
+    `Ngưỡng đạt lớp Normal: ${Math.round(Number(from) * 100)}% → 70%. ` +
+      'Không sửa điểm gốc, không xoá kết luận cũ, không sinh nợ quá hạn ngược về quá khứ.',
+  );
 }

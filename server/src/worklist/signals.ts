@@ -25,7 +25,7 @@ export type Signal = {
   label: string;
   count: number;
   /** Vai trò nào cần xử lý — để mỗi người thấy đúng việc của mình. */
-  owner: 'manager' | 'branch_admin' | 'teacher';
+  owner: 'manager' | 'teacher';
   tone: 'danger' | 'warn' | 'info';
   branchId: number | null;
   branchName: string | null;
