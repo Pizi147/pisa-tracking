@@ -1,9 +1,10 @@
 import { db } from '../db.ts';
 import {
-  ATTEMPT_KIND_SHORT, CONTACT_KIND_SHORT, ENTRY_SKILL_LABEL, INTERVENTION_KIND_LABEL, PERMISSIONS,
+  ASSESSED_SKILL_LABEL, ATTEMPT_KIND_SHORT, CONTACT_KIND_SHORT, ENTRY_SKILL_LABEL,
+  INTERVENTION_KIND_LABEL, PERMISSIONS,
   isContactKind, REGULAR_SKILL_LABEL, SOS_LABEL, URGENCY_LABEL, caseHeadline, cycleDeadline,
   planDueDate, urgencyFromSos,
-  type AttemptKind, type ContactKind, type EntrySkill, type InterventionKind,
+  type AssessedSkill, type AttemptKind, type ContactKind, type EntrySkill, type InterventionKind,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { diffDays } from '../util.ts';
@@ -12,6 +13,7 @@ import { attemptHref, listAttempts } from '../fasttrack/attempts.ts';
 import { classAlerts } from '../classes/schedule.ts';
 import { myMgmtTasks } from './mgmttasks.ts';
 import { listSignals } from '../cases/signals.ts';
+import { sweepExpiredMoves } from '../fasttrack/absence.ts';
 
 /**
  * VIỆC CỦA CHÍNH NGƯỜI ĐANG XEM.
@@ -92,7 +94,7 @@ export type WorkItem = {
  */
 export type WorkGroupKey =
   | 'verify' | 'score' | 'no_plan' | 'result'
-  | 'decide'
+  | 'decide' | 'decide_move'
   | 'do_plan' | 'no_owner' | 'placement' | 'missing_data' | 'mgmt';
 
 /**
@@ -115,6 +117,21 @@ const GROUP_META: Record<WorkGroupKey, { label: string; hint: string; overdue: s
       + 'rồi mở case với tên và mô tả cụ thể. Hạn ba ngày kể từ lúc tín hiệu được ghi nhận, '
       + 'tính cả ngày đầu.',
     overdue: 'Quá hạn xác minh',
+  },
+
+  /*
+   * DUYỆT DỜI LỊCH DO VẮNG (mục 10.6) — nhóm riêng, không gộp vào "Duyệt phương án".
+   *
+   * Hai việc khác hẳn nhau về hậu quả của việc KHÔNG làm: một đề xuất hỗ trợ nằm chờ thì
+   * chậm, còn một đề nghị dời nằm chờ quá hạn thì PHẦN THI BỊ HUỶ. Trộn chúng vào một nhóm
+   * là để cái thứ hai trôi qua trong đám cái thứ nhất.
+   */
+  decide_move: {
+    label: 'Duyệt dời lịch do vắng',
+    hint: 'Em đã vắng và đã dời một lần rồi, nên lần này cần bạn quyết. Phải trả lời TRƯỚC khi '
+      + 'tuần mới bắt đầu — từ chối hoặc để quá hạn thì phần thi (Fast Track) hoặc lịch hẹn '
+      + '(Normal) bị huỷ, và chỉ Quản lý mới khôi phục được.',
+    overdue: 'Quá hạn trả lời — phần thi đã huỷ',
   },
 
   /* ---------------------------------------------------- ba nhóm học thuật chính (mục 3.2) */
@@ -406,6 +423,59 @@ export function myWork(p: Principal, f: { branchId?: number | null } = {}) {
       ownerId: p.userId, owner: null, mine: true,
       due: iv.approval_due ?? null,
       statusLabel: iv.asked_manager ? 'Chờ Quản lý trả lời' : 'Chờ Quản lý duyệt',
+    });
+  }
+
+  // ------------------------------------- 2a-bis. đề nghị dời lịch do vắng chờ Quản lý
+  /*
+   * MỤC 10.6 — và hạn ở đây KHÔNG phải một chu kỳ, mà là NGÀY TRƯỚC KHI TUẦN MỚI BẮT ĐẦU.
+   *
+   * Quá hạn không chỉ là chậm: phần thi (Fast Track) hoặc lịch hẹn (Normal) bị huỷ, và từ
+   * đó chỉ Quản lý mới khôi phục được. Nên việc này phải nổi lên trước khi tuần ấy tới, chứ
+   * không phải sau khi đã muộn.
+   */
+  sweepExpiredMoves();
+  const pendingMoves = conn
+    .prepare(
+      `SELECT r.id, r.attempt_id, r.skill, r.move_no, r.decide_by, r.reason,
+              a.attempt_no, a.class_id, a.student_id, a.kind,
+              s.full_name, cl.code AS class_code, cl.branch_id,
+              pr.code AS to_week, ru.full_name AS asker_name
+         FROM skill_move_requests r
+         JOIN assessment_attempts a ON a.id = r.attempt_id
+         JOIN students s ON s.id = a.student_id
+         LEFT JOIN classes cl ON cl.id = a.class_id
+         LEFT JOIN report_periods pr ON pr.id = r.to_period_id
+         LEFT JOIN users ru ON ru.id = r.requested_by
+        WHERE r.status = 'pending'`,
+    )
+    .all() as any[];
+
+  for (const r of pendingMoves) {
+    if (f.branchId && r.branch_id !== f.branchId) continue;
+    if (!can(p, PERMISSIONS.PLAN_WEEK, { classId: r.class_id, studentId: r.student_id })) continue;
+    const u = urgencyOf(r.decide_by, today);
+    items.push({
+      key: `move:${r.id}`, group: 'decide_move', urgency: u,
+      studentId: r.student_id, studentName: r.full_name ?? 'Học viên',
+      classId: r.class_id ?? null, classCode: r.class_code ?? null,
+      attemptId: r.attempt_id, attemptNo: r.attempt_no ?? null,
+      caseId: null, level: { tone: u === 'overdue' ? 'danger' : 'warn', text: `Lần dời ${r.move_no}` },
+      contextLabel: r.attempt_no ? `MT${r.attempt_no}` : 'Lịch thi',
+      count: null,
+      reason: [
+        `${r.asker_name ?? 'GVCN'} đề nghị dời ${ASSESSED_SKILL_LABEL[r.skill as AssessedSkill] ?? r.skill}`
+        + `${r.to_week ? ` sang tuần ${r.to_week}` : ''} (lần ${r.move_no} do vắng)`,
+        r.reason ? `Lý do: ${r.reason}` : null,
+        u === 'overdue' && r.decide_by ? lateText(r.decide_by, today) : null,
+      ].filter(Boolean).join(' — '),
+      actionLabel: 'Trả lời đề nghị',
+      overdueLabel: badge('decide_move', u),
+      /* Đi thẳng vào bảng lịch kỹ năng của đợt đó — nơi có nút trả lời đề nghị. */
+      href: attemptHref({ id: r.attempt_id, kind: r.kind, classId: r.class_id }),
+      ownerId: p.userId, owner: null, mine: true,
+      due: r.decide_by,
+      statusLabel: 'Chờ Quản lý trả lời trước khi tuần mới bắt đầu',
     });
   }
 
@@ -772,7 +842,7 @@ export function myWork(p: Principal, f: { branchId?: number | null } = {}) {
    */
   const order: WorkGroupKey[] = [
     'verify', 'score', 'no_plan', 'result',
-    'decide',
+    'decide', 'decide_move',
     'placement', 'do_plan', 'no_owner', 'mgmt', 'missing_data',
   ];
   const weight = (u: WorkUrgency) => (u === 'overdue' ? 0 : u === 'today' ? 1 : 2);

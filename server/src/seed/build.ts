@@ -320,6 +320,57 @@ function insertAttempt(
   }
 
   /*
+   * EM VẮNG BUỔI THI (mục 10.6) — chỉ dựng khi kịch bản khai rõ.
+   *
+   * Vắng là một XÁC NHẬN CỦA NGƯỜI, có tên và có thời điểm; ô điểm trống không đủ để kết
+   * luận. Nên ở đây ghi đủ `sit_by` và `sit_note` — nếu không, bộ kiểm tra bắt ngay một
+   * trạng thái vắng không ai nhận đã xác minh.
+   */
+  if (t.absent) {
+    const core = conn
+      .prepare(
+        `SELECT user_id FROM teacher_assignments
+          WHERE class_id = ? AND is_core = 1 AND status = 'active' LIMIT 1`,
+      )
+      .get(ctx.classId.get(cy.classCode)) as any;
+    const who = ctx.userId.get(t.absent.by ?? '') ?? core?.user_id ?? ctx.adminId;
+    conn
+      .prepare(
+        `UPDATE attempt_skills
+            SET sit_status = 'absent', sit_by = ?, sit_at = ?, sit_note = ?,
+                absence_move_count = ?, updated_at = ?
+          WHERE attempt_id = ? AND skill = ?`,
+      )
+      .run(who, NOW, t.absent.note ?? 'GVCN xác minh học viên không tới buổi thi',
+           t.absent.moveCount ?? 0, NOW, aid, t.absent.skill);
+
+    /*
+     * ĐỀ NGHỊ ĐANG CHỜ DUYỆT: dời sang tuần kế tiếp của lịch đang có, hạn trả lời là ngày
+     * TRƯỚC khi tuần ấy bắt đầu. Cả hai con số suy từ chính lịch, không gõ tay — gõ tay thì
+     * bộ demo và luật thật sẽ lệch nhau ngay lần đầu ai đó đổi lịch.
+     */
+    if (t.absent.pending) {
+      const cur = t.skillWeeks?.[t.absent.skill] ?? t.week;
+      const to = ensurePeriod(addDays(cur, 7));
+      conn
+        .prepare(
+          `INSERT INTO skill_move_requests (attempt_id, skill, move_no, from_period_id, to_period_id,
+                                            reason, requested_by, requested_on, decide_by, status,
+                                            idempotency_key, created_at)
+           VALUES (?,?,?,?,?,?,?,?,?, 'pending', ?, ?)
+           ON CONFLICT(idempotency_key) DO NOTHING`,
+        )
+        .run(
+          aid, t.absent.skill, (t.absent.moveCount ?? 0) + 1,
+          ensurePeriod(cur).id, to.id,
+          t.absent.reason ?? 'Em ốm, gia đình đã báo trước',
+          who, DEMO_DATE, addDays(to.weekStart, -1),
+          `seed-move:${aid}:${t.absent.skill}`, NOW,
+        );
+    }
+  }
+
+  /*
    * TUẦN KẾ HOẠCH HOÀN TẤT của đợt = tuần MUỘN NHẤT trong các kỹ năng bắt buộc (mục 10.7).
    * Đợt tách tuần vì thế nằm ở tuần của phần thi cuối cùng, và bảng kết quả theo tuần đếm
    * nó đúng một lần ở đó.

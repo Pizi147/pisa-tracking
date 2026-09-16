@@ -54,6 +54,8 @@ type SkillRow = {
   deadline: string | null; deadlineSource: string;
   overdue: boolean; scored: boolean; progress: string;
   absenceMoveCount: number;
+  /** Đề nghị dời do vắng đang chờ Quản lý trả lời (mục 10.6), nếu có. */
+  pendingMove: { id: number; decideBy: string; toWeek: string | null; moveNo: number } | null;
 };
 
 export default function MockDetailPage() {
@@ -382,6 +384,9 @@ function Info({ label, children }: { label: string; children: React.ReactNode })
 function SkillScheduleCard({ d, onDone }: { d: Detail; onDone: () => void }) {
   const [weekFor, setWeekFor] = useState<SkillRow | null>(null);
   const [deadlineFor, setDeadlineFor] = useState<SkillRow | null>(null);
+  const [moveFor, setMoveFor] = useState<SkillRow | null>(null);
+  const [restoreFor, setRestoreFor] = useState<SkillRow | null>(null);
+  const [decideFor, setDecideFor] = useState<SkillRow | null>(null);
   const toast = useToast();
   const editable = d.status !== 'cancelled';
 
@@ -442,6 +447,16 @@ function SkillScheduleCard({ d, onDone }: { d: Detail; onDone: () => void }) {
                       Đã dời do vắng {r.absenceMoveCount} lần
                     </div>
                   )}
+                  {/*
+                    ĐANG CHỜ AI, ĐẾN NGÀY NÀO. Một dòng "chờ duyệt dời" mà không nói hạn thì
+                    người xem không biết còn bao lâu nữa phần thi bị huỷ.
+                  */}
+                  {r.pendingMove && (
+                    <div className="text-[11px] text-amber-200 mt-1">
+                      Đề nghị dời sang {r.pendingMove.toWeek ?? 'tuần kế tiếp'} (lần {r.pendingMove.moveNo})
+                      — Quản lý cần trả lời trước {fmtDate(r.pendingMove.decideBy)}, quá hạn thì huỷ phần thi.
+                    </div>
+                  )}
                   {!r.required && r.scopeReason && (
                     <div className="text-[11px] text-slate-500 mt-1">{r.scopeReason}</div>
                   )}
@@ -489,6 +504,28 @@ function SkillScheduleCard({ d, onDone }: { d: Detail; onDone: () => void }) {
                         )}
                       </>
                     )}
+                    {/*
+                      XỬ LÝ VẮNG là một đường RIÊNG, không phải "đổi tuần" (mục 10.6): nó có
+                      bộ đếm, có người duyệt và có hạn trả lời. Chỉ hiện khi đã xác nhận vắng
+                      — ô điểm trống chưa đủ để kết luận em không đi thi.
+                    */}
+                    {editable && r.required && !r.scored && r.sitStatus === 'absent' && !r.pendingMove && (
+                      <button className="btn btn-sm btn-primary" onClick={() => setMoveFor(r)}>
+                        Xử lý vắng
+                      </button>
+                    )}
+                    {/* Chỉ Quản lý trả lời được — và trả lời TRƯỚC khi tuần mới bắt đầu. */}
+                    {d.viewer.canPlanWeek && editable && r.pendingMove && (
+                      <button className="btn btn-sm btn-primary" onClick={() => setDecideFor(r)}>
+                        Trả lời đề nghị
+                      </button>
+                    )}
+                    {d.viewer.canPlanWeek && editable && r.required
+                      && (r.progress === 'cancelled' || (!r.periodCode && !r.scored)) && (
+                      <button className="btn btn-sm btn-primary" onClick={() => setRestoreFor(r)}>
+                        Khôi phục và đặt tuần
+                      </button>
+                    )}
                     {d.viewer.canOverrideDeadline && editable && r.required && (
                       <button className="btn btn-sm btn-ghost" onClick={() => setDeadlineFor(r)}>Hạn riêng</button>
                     )}
@@ -527,6 +564,18 @@ function SkillScheduleCard({ d, onDone }: { d: Detail; onDone: () => void }) {
         open={!!deadlineFor} row={deadlineFor} attemptId={d.id}
         onClose={() => setDeadlineFor(null)} onDone={onDone}
       />
+      <AbsenceMoveModal
+        open={!!moveFor} row={moveFor} detail={d}
+        onClose={() => setMoveFor(null)} onDone={onDone}
+      />
+      <RestoreModal
+        open={!!restoreFor} row={restoreFor} detail={d}
+        onClose={() => setRestoreFor(null)} onDone={onDone}
+      />
+      <DecideMoveModal
+        open={!!decideFor} row={decideFor} detail={d}
+        onClose={() => setDecideFor(null)} onDone={onDone}
+      />
     </Card>
   );
 }
@@ -539,20 +588,19 @@ function SkillWeekModal({ open, row, attemptId, onClose, onDone }: {
   const periods = usePeriods();
   const [periodId, setPeriodId] = useState<number | null>(null);
   const [reason, setReason] = useState('');
-  const [absence, setAbsence] = useState(false);
   const [busy, setBusy] = useState(false);
   /* Cảnh báo cần người xác nhận lại; lần bấm thứ hai mới gửi kèm dấu đã xác nhận. */
   const [warning, setWarning] = useState<string | null>(null);
 
   const close = () => {
-    setPeriodId(null); setReason(''); setAbsence(false); setWarning(null); onClose();
+    setPeriodId(null); setReason(''); setWarning(null); onClose();
   };
 
   const submit = async (force: boolean) => {
     if (!row || !periodId) return;
     setBusy(true);
     try {
-      await api.post(`/attempts/${attemptId}/skills/${row.skill}/week`, { periodId, reason, force, absence });
+      await api.post(`/attempts/${attemptId}/skills/${row.skill}/week`, { periodId, reason, force });
       invalidate('/attempts'); invalidate('/overview'); invalidate('/classes');
       onDone(); close();
       toast.push('ok', `Đã đổi tuần thi ${row.label}`);
@@ -589,18 +637,11 @@ function SkillWeekModal({ open, row, attemptId, onClose, onDone }: {
           <input className="field" value={reason} onChange={(e) => setReason(e.target.value)}
             placeholder="Ví dụ: trùng lịch phòng thi Speaking" />
         </label>
-        <label className="flex items-start gap-2 text-sm text-slate-300">
-          <input type="checkbox" className="mt-1" checked={absence} onChange={(e) => setAbsence(e.target.checked)} />
-          <span>
-            Dời vì học viên <strong>vắng</strong> buổi thi kỹ năng này
-            <span className="block text-xs text-slate-500">
-              Chỉ tick khi em thật sự vắng. Ô này làm tăng bộ đếm dời do vắng của riêng kỹ năng này;
-              dời chủ động để xếp lại phòng thi thì không tick.
-            </span>
-          </span>
-        </label>
         {warning && <p className="text-xs text-amber-200 m-0">{warning}</p>}
         <SectionNote>
+          Đây là <strong>dời chủ động</strong>: xếp lại phòng thi, tách R/L/W với Speaking, đổi theo
+          lịch học. Nó KHÔNG tiêu lượt dời nào của em. Em vắng buổi thi thì dùng nút{' '}
+          <strong>“Xử lý vắng”</strong> — ở đó mới có bộ đếm, người duyệt và hạn trả lời.
           Đổi tuần sửa chính đợt này, không tạo đợt mới và không đổi số MT. Phần thi đã có điểm
           thì không đổi lịch được — lịch sử thực tế sai là một hiệu chỉnh riêng, không phải một lần dời.
         </SectionNote>
@@ -848,3 +889,271 @@ const fieldLabel = (f: string) =>
     ops_policy: 'Chính sách vận hành', ops_date: 'Ngày áp dụng', meeting_kind: 'Meeting',
     meeting_date: 'Ngày meeting', head_confirmed: 'Head xác nhận', note: 'Ghi chú',
   }[f] ?? f);
+
+/**
+ * XỬ LÝ VẮNG MỘT BUỔI THI (mục 10.6).
+ *
+ * Form này cố tình KHÔNG cho chọn tuần. Luật nói rõ: lần đầu dời đúng TUẦN KẾ TIẾP của lịch
+ * đang có. Bày một ô chọn tuần ra đây là mời người dùng làm đúng cái việc mà luật cấm — và
+ * một GVCN xử lý muộn ba tuần sẽ chọn tuần hiện tại, âm thầm cho em thêm hai tuần.
+ *
+ * Buổi R/L/W là MỘT lần vắng của nhiều kỹ năng, nên tick được nhiều môn. Nhưng máy chủ vẫn
+ * xét TỪNG MÔN riêng: môn đã dời một lần thì đi xin duyệt, môn chưa dời thì đổi được ngay.
+ */
+function AbsenceMoveModal({ open, row, detail, onClose, onDone }: {
+  open: boolean; row: SkillRow | null; detail: Detail; onClose: () => void; onDone: () => void;
+}) {
+  const toast = useToast();
+  const [picked, setPicked] = useState<string[]>([]);
+  const [reason, setReason] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [result, setResult] = useState<any[] | null>(null);
+
+  /* Các môn khác cũng đang mang dấu vắng — nhiều khả năng là cùng một buổi. */
+  const alsoAbsent = detail.skillSchedule.filter(
+    (r) => r.required && !r.scored && r.sitStatus === 'absent' && !r.pendingMove && r.skill !== row?.skill,
+  );
+  const skills = [row?.skill, ...picked].filter(Boolean) as string[];
+
+  const close = () => { setPicked([]); setReason(''); setResult(null); onClose(); };
+
+  const submit = async () => {
+    if (!row) return;
+    setBusy(true);
+    try {
+      const res: any = await api.post(`/attempts/${detail.id}/absence-move`, {
+        skills, reason,
+        /* Bấm hai lần hay mạng chập không được thành hai lần dời. */
+        idempotencyKey: `${detail.id}:${skills.join('+')}:${reason}`,
+      });
+      invalidate('/attempts'); invalidate('/overview'); invalidate('/classes'); invalidate('/my-work');
+      onDone();
+      setResult(res.outcomes ?? []);
+      toast.push('ok', 'Đã xử lý việc vắng');
+    } catch (e: any) { toast.push('error', e.message); }
+    finally { setBusy(false); }
+  };
+
+  return (
+    <Modal open={open} onClose={close} title={`Xử lý vắng · ${row?.label ?? ''}`} width="max-w-md"
+      footer={result
+        ? <button className="btn btn-primary" onClick={close}>Đóng</button>
+        : <>
+          <button className="btn" onClick={close} disabled={busy}>Huỷ</button>
+          <button className="btn btn-primary" disabled={busy} onClick={submit}>
+            {busy ? 'Đang xử lý…' : 'Xử lý việc vắng'}
+          </button>
+        </>}>
+      {result ? (
+        <div className="space-y-2">
+          {result.map((o: any) => (
+            <p key={o.skill} className={`text-sm m-0 ${o.result === 'moved' ? 'text-slate-200' : 'text-amber-200'}`}>
+              {o.message}
+            </p>
+          ))}
+        </div>
+      ) : (
+        <div className="space-y-3">
+          <p className="text-xs text-slate-400 m-0">
+            {row?.label} đang xếp {row?.periodCode} ({row?.weekRange}), đã xác nhận vắng.
+            {(row?.absenceMoveCount ?? 0) > 0 && ` Môn này đã dời do vắng ${row?.absenceMoveCount} lần.`}
+          </p>
+
+          {alsoAbsent.length > 0 && (
+            <div>
+              <span className="label">Cùng buổi thi này còn môn nào vắng?</span>
+              <div className="space-y-1 mt-1">
+                {alsoAbsent.map((r) => (
+                  <label key={r.skill} className="flex items-center gap-2 text-sm text-slate-300">
+                    <input type="checkbox" checked={picked.includes(r.skill)}
+                      onChange={(e) => setPicked(
+                        e.target.checked ? [...picked, r.skill] : picked.filter((x) => x !== r.skill),
+                      )} />
+                    <span>{r.label} <span className="text-slate-500 text-xs">({r.periodCode})</span></span>
+                  </label>
+                ))}
+              </div>
+              <p className="text-[11px] text-slate-500 mt-1 mb-0">
+                Tick các môn thi CÙNG buổi. Mỗi môn vẫn được xét riêng: môn đã dời một lần thì
+                phải xin Quản lý duyệt, môn chưa dời lần nào thì đổi được ngay.
+              </p>
+            </div>
+          )}
+
+          <label className="block">
+            <span className="label">Lý do</span>
+            <input className="field" value={reason} onChange={(e) => setReason(e.target.value)}
+              placeholder="Ví dụ: em ốm, gia đình đã báo trước" />
+          </label>
+
+          <SectionNote>
+            {(row?.absenceMoveCount ?? 0) === 0 ? (
+              <>
+                Đây là <strong>lần dời thứ nhất</strong>: lịch chuyển sang đúng tuần kế tiếp của
+                lịch đang có — không chọn tuỳ ý, và không lấy tuần hiện tại để nhảy nhiều tuần
+                khi xử lý muộn.
+              </>
+            ) : (
+              <>
+                Môn này đã dời do vắng rồi, nên lần này là <strong>đề nghị cần Quản lý duyệt</strong>.
+                Lịch giữ nguyên cho tới khi có quyết định. Quản lý phải trả lời TRƯỚC khi tuần mới bắt
+                đầu; từ chối hoặc hết hạn thì phần thi bị huỷ và chỉ Quản lý mới khôi phục được.
+              </>
+            )}
+          </SectionNote>
+        </div>
+      )}
+    </Modal>
+  );
+}
+
+/**
+ * KHÔI PHỤC PHẦN THI ĐÃ HUỶ và ĐẶT TUẦN MỚI — trong CÙNG một thao tác (mục 10.6).
+ *
+ * Tách làm hai bước thì sẽ có những phần được khôi phục mà không có tuần, nằm im ở đúng
+ * trạng thái mà cả mục này sinh ra để dọn. Nên form này không có nút "khôi phục thôi".
+ */
+function RestoreModal({ open, row, detail, onClose, onDone }: {
+  open: boolean; row: SkillRow | null; detail: Detail; onClose: () => void; onDone: () => void;
+}) {
+  const toast = useToast();
+  const periods = usePeriods();
+  const [periodId, setPeriodId] = useState<number | null>(null);
+  const [reason, setReason] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  const close = () => { setPeriodId(null); setReason(''); onClose(); };
+
+  const submit = async () => {
+    if (!row || !periodId) return;
+    setBusy(true);
+    try {
+      await api.post(`/attempts/${detail.id}/skills/${row.skill}/restore`, { periodId, reason });
+      invalidate('/attempts'); invalidate('/overview'); invalidate('/classes');
+      onDone(); close();
+      toast.push('ok', `Đã khôi phục ${row.label} và đặt tuần mới`);
+    } catch (e: any) { toast.push('error', e.message); }
+    finally { setBusy(false); }
+  };
+
+  return (
+    <Modal open={open} onClose={close} title={`Khôi phục · ${row?.label ?? ''}`} width="max-w-md"
+      footer={<>
+        <button className="btn" onClick={close} disabled={busy}>Huỷ</button>
+        <button className="btn btn-primary" disabled={busy || !periodId} onClick={submit}>
+          {busy ? 'Đang lưu…' : 'Khôi phục và đặt tuần'}
+        </button>
+      </>}>
+      <div className="space-y-3">
+        <p className="text-xs text-slate-400 m-0">
+          {detail.scoringMode === 'ratio'
+            ? 'Lớp Normal: lịch hẹn đã bị huỷ nhưng em vẫn phải thi đủ bốn môn. Xếp lại tuần cho môn này.'
+            : 'Phần thi này đã bị huỷ. Đợt vẫn chưa đủ kết quả cho tới khi em thi bù xong.'}
+        </p>
+        <label className="block">
+          <span className="label">Tuần thi mới</span>
+          <select className="field" value={periodId ?? ''}
+            onChange={(e) => setPeriodId(Number(e.target.value) || null)}>
+            <option value="">Chọn tuần…</option>
+            {(periods.data ?? []).map((p) => <option key={p.id} value={p.id}>{p.code} · {p.range}</option>)}
+          </select>
+        </label>
+        <label className="block">
+          <span className="label">Lý do</span>
+          <input className="field" value={reason} onChange={(e) => setReason(e.target.value)}
+            placeholder="Ví dụ: xếp cho em thi bù cùng lớp khác" />
+        </label>
+        <SectionNote>
+          Khôi phục KHÔNG đặt lại bộ đếm dời do vắng — những lần em vắng trước đó vẫn đã xảy ra.
+          Tuần mới phải là một tuần <strong>chưa tới</strong>: xếp vào một tuần đã bắt đầu là ghi vào
+          hệ thống một buổi thi không thể diễn ra.
+        </SectionNote>
+      </div>
+    </Modal>
+  );
+}
+
+/**
+ * QUẢN LÝ TRẢ LỜI MỘT ĐỀ NGHỊ DỜI DO VẮNG (mục 10.6).
+ *
+ * Hai nút, và cái thứ hai phải nói rõ hậu quả: TỪ CHỐI KHÔNG PHẢI LÀ "giữ nguyên lịch cũ",
+ * mà là HUỶ phần thi (Fast Track) hoặc huỷ lịch hẹn (Normal). Một cái nút "Từ chối" trơ
+ * trọi sẽ được bấm bởi người tưởng mình chỉ đang nói "không dời nữa".
+ *
+ * Ô chọn tuần chỉ dùng khi tuần được đề nghị đã trôi qua — đồng ý một lịch đã qua là ghi
+ * vào hệ thống một buổi thi không thể diễn ra.
+ */
+function DecideMoveModal({ open, row, detail, onClose, onDone }: {
+  open: boolean; row: SkillRow | null; detail: Detail; onClose: () => void; onDone: () => void;
+}) {
+  const toast = useToast();
+  const periods = usePeriods();
+  const [note, setNote] = useState('');
+  const [periodId, setPeriodId] = useState<number | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const close = () => { setNote(''); setPeriodId(null); onClose(); };
+
+  const decide = async (approve: boolean) => {
+    if (!row?.pendingMove) return;
+    setBusy(true);
+    try {
+      await api.post(`/move-requests/${row.pendingMove.id}/decide`, {
+        approve, note, periodId: approve ? periodId : null,
+      });
+      invalidate('/attempts'); invalidate('/overview'); invalidate('/classes'); invalidate('/my-work');
+      onDone(); close();
+      toast.push('ok', approve ? `Đã duyệt dời ${row.label}` : `Đã từ chối — phần thi ${row.label} bị huỷ`);
+    } catch (e: any) { toast.push('error', e.message); }
+    finally { setBusy(false); }
+  };
+
+  return (
+    <Modal open={open} onClose={close} title={`Đề nghị dời · ${row?.label ?? ''}`} width="max-w-md"
+      footer={<>
+        <button className="btn" onClick={close} disabled={busy}>Để sau</button>
+        <button className="btn btn-ghost" disabled={busy} onClick={() => decide(false)}>
+          Từ chối và huỷ phần thi
+        </button>
+        <button className="btn btn-primary" disabled={busy} onClick={() => decide(true)}>
+          {busy ? 'Đang lưu…' : 'Đồng ý dời'}
+        </button>
+      </>}>
+      <div className="space-y-3">
+        <p className="text-sm text-slate-200 m-0">
+          GVCN đề nghị dời {row?.label} sang tuần <strong>{row?.pendingMove?.toWeek ?? '—'}</strong>.
+          Đây là lần dời do vắng thứ {row?.pendingMove?.moveNo}.
+        </p>
+        <p className="text-xs text-amber-200 m-0">
+          Bạn cần trả lời trước {fmtDate(row?.pendingMove?.decideBy ?? null)} — tức là trước khi tuần mới
+          bắt đầu. Quá hạn mà chưa có quyết định thì hệ thống tự huỷ như một lần từ chối.
+        </p>
+
+        <label className="block">
+          <span className="label">Đổi sang tuần khác (không bắt buộc)</span>
+          <select className="field" value={periodId ?? ''}
+            onChange={(e) => setPeriodId(Number(e.target.value) || null)}>
+            <option value="">Giữ tuần GVCN đề nghị</option>
+            {(periods.data ?? []).map((p) => <option key={p.id} value={p.id}>{p.code} · {p.range}</option>)}
+          </select>
+          <span className="block text-[11px] text-slate-500 mt-1">
+            Chỉ cần khi tuần được đề nghị đã bắt đầu — lúc đó phải chọn một tuần chưa tới.
+          </span>
+        </label>
+
+        <label className="block">
+          <span className="label">Ghi chú quyết định</span>
+          <input className="field" value={note} onChange={(e) => setNote(e.target.value)}
+            placeholder="Ví dụ: đồng ý lần cuối, lần sau xếp thi cùng lớp khác" />
+        </label>
+
+        <SectionNote>
+          <strong>Từ chối không phải là giữ nguyên lịch cũ.</strong>{' '}
+          {detail.scoringMode === 'ratio'
+            ? 'Lớp Normal: lịch hẹn bị huỷ, nhưng em vẫn phải thi đủ bốn môn — môn này chuyển sang chờ bạn xếp lại.'
+            : 'Fast Track: phần thi chưa thi bị huỷ, điểm các phần đã xong giữ nguyên. Đợt này chưa đủ kết quả cho tới khi bạn khôi phục và đặt tuần mới.'}
+        </SectionNote>
+      </div>
+    </Modal>
+  );
+}

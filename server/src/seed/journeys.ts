@@ -45,6 +45,27 @@ export type TestSeed = {
    * Đây vẫn là MỘT đợt: một định danh, một bảng điểm, một kết luận.
    */
   skillWeeks?: Partial<Record<'listening' | 'reading' | 'writing' | 'speaking', string>>;
+  /**
+   * EM VẮNG BUỔI THI của kỹ năng này, và bộ demo đang đứng ở khúc nào của mục 10.6.
+   *
+   * `moveCount` là số lần đã dời do vắng TRƯỚC thời điểm demo — nó quyết định lần tới GVCN
+   * tự dời được hay phải xin duyệt. `pending` dựng sẵn một đề nghị đang chờ Quản lý, để màn
+   * hình có thứ để bấm mà không ai phải tự tạo dữ liệu.
+   *
+   * KHÔNG bịa trạng thái vắng ở chỗ nào khác: vắng là một xác nhận CỦA NGƯỜI, nên chỉ kịch
+   * bản nào khai ở đây mới có nó.
+   */
+  absent?: {
+    skill: 'listening' | 'reading' | 'writing' | 'speaking';
+    /** Số lần đã dời do vắng trước đó. 0 = GVCN còn tự dời được. */
+    moveCount?: number;
+    /** Dựng sẵn một đề nghị đang chờ Quản lý duyệt, dời sang tuần kế tiếp. */
+    pending?: boolean;
+    /** Ai xác minh em vắng. Mặc định là GVCN của lớp. */
+    by?: string;
+    note?: string;
+    reason?: string;
+  };
   /** Ngày nhập điểm. Bỏ trống thì lấy Chủ nhật của tuần. */
   enteredOn?: string;
   /** Hạn nhập điểm riêng do Quản lý đặt, thay hạn mặc định. */

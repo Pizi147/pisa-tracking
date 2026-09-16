@@ -406,6 +406,7 @@ function migrateCaseEngine(applied: string[], skipped: string[]) {
     migrateSignals(conn, applied);
     migrateCaseForm(conn, applied);
     migratePlanForm(conn, applied);
+    migrateMoveRequests(conn, applied);
 
     /*
      * Case đã đóng theo hệ thống cũ mà không có hướng xử lý: ghi rõ là "đóng theo hệ thống
@@ -2199,6 +2200,50 @@ function migrateSignals(conn: any, applied: string[]) {
  * người: nó biến mọi phương án đang chạy thành quá hạn ngay lúc nâng cấp, vì nghĩa vụ cập
  * nhật hằng tuần hôm qua chưa tồn tại. Nghĩa vụ mới bắt đầu từ hôm nay.
  */
+/**
+ * BẢNG ĐỀ NGHỊ DỜI DO VẮNG (mục 10.6).
+ *
+ * Chỉ TẠO BẢNG, không suy ngược lịch sử. Dữ liệu cũ không ghi lại "lần dời này là do em
+ * vắng hay do Quản lý sắp lại lịch", nên mọi con số đếm ngược đều là đoán — và đoán sai ở
+ * đây nghĩa là một em bị coi như đã tiêu hết lượt dời mà chưa từng vắng buổi nào.
+ *
+ * Bộ đếm cũ (nếu có) giữ nguyên; bộ đếm mới bắt đầu đếm từ những lần vắng kể từ hôm nay.
+ */
+function migrateMoveRequests(conn: any, applied: string[]) {
+  const has = (t: string) =>
+    !!conn.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name = ?").get(t);
+  if (has('skill_move_requests')) return;
+  conn.exec(`
+    CREATE TABLE skill_move_requests (
+      id INTEGER PRIMARY KEY,
+      attempt_id INTEGER NOT NULL REFERENCES assessment_attempts(id),
+      skill TEXT NOT NULL,
+      move_no INTEGER NOT NULL,
+      from_period_id INTEGER REFERENCES report_periods(id),
+      to_period_id INTEGER NOT NULL REFERENCES report_periods(id),
+      reason TEXT,
+      requested_by INTEGER REFERENCES users(id),
+      requested_on TEXT NOT NULL,
+      decide_by TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'pending',
+      decided_by INTEGER REFERENCES users(id),
+      decided_at TEXT,
+      decision_note TEXT,
+      cancelled_part INTEGER NOT NULL DEFAULT 0,
+      idempotency_key TEXT UNIQUE,
+      created_at TEXT NOT NULL,
+      updated_at TEXT,
+      UNIQUE (attempt_id, skill, move_no));
+    CREATE INDEX idx_move_req_attempt ON skill_move_requests(attempt_id);
+    CREATE INDEX idx_move_req_open ON skill_move_requests(status, decide_by) WHERE status = 'pending';
+  `);
+  applied.push(
+    'Thêm chỗ ghi đề nghị dời lịch do vắng (mục 10.6). Lịch sử cũ KHÔNG được suy ngược: '
+      + 'dữ liệu trước đây không phân biệt dời do vắng với dời chủ động, nên bộ đếm mới '
+      + 'bắt đầu từ những lần vắng kể từ nay.',
+  );
+}
+
 function migratePlanForm(conn: any, applied: string[]) {
   const has = (t: string) =>
     !!conn.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name = ?").get(t);

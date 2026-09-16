@@ -46,6 +46,7 @@ const mywork = await import('../worklist/mywork.ts');
 const standing = await import('../students/standing.ts');
 const mgmt = await import('../worklist/mgmttasks.ts');
 const skillSchedule = await import('../fasttrack/skillSchedule.ts');
+const absence = await import('../fasttrack/absence.ts');
 const signalsSvc = await import('../cases/signals.ts');
 const { ratioResult: domainRatio } = await import('../../../shared/domain/index.ts');
 const { demoToday } = await import('../demoConfig.ts');
@@ -5734,8 +5735,15 @@ check('[10.6] Ô điểm trống KHÔNG tự thành vắng; và không nhập đ
 check('[10.6] Bộ đếm dời do vắng tính RIÊNG từng kỹ năng trong từng đợt', () => {
   const a = freshPlannedAttempt('HD-FT 302');
   const mgr = loadPrincipal(userByRole('manager', 'HD'));
-  const target = periodOf(addDays(demoToday(), 35));
-  skillSchedule.setSkillWeek(mgr, a.id, 'speaking', target, { reason: 'Em vắng buổi Speaking', absence: true, force: true });
+  /*
+   * CHỈ MỘT CỬA VÀO BỘ ĐẾM. Trước đây ô "đổi tuần" có thêm một ô tick "dời vì em vắng" chạy
+   * song song với luồng xử lý vắng — hai cửa vào cùng một con số là cách chắc chắn nhất để
+   * con số ấy không còn nghĩa gì. Nay chỉ `absence.requestAbsenceMove` mới làm nó nhích.
+   */
+  skillSchedule.setSkillWeek(mgr, a.id, 'speaking', periodOf(addDays(demoToday(), 35)),
+    { reason: 'Xếp lịch cho phép kiểm', force: true });
+  skillSchedule.setSitStatus(mgr, a.id, 'speaking', 'absent', 'GVCN xác minh em vắng buổi Speaking');
+  absence.requestAbsenceMove(mgr, a.id, ['speaking'], { reason: 'Em vắng buổi Speaking' });
 
   const rows = conn
     .prepare('SELECT skill, absence_move_count FROM attempt_skills WHERE attempt_id = ?')
@@ -6163,6 +6171,316 @@ check('[7.2] Bộ demo có một đợt gộp hai báo cáo và đã được n�
     .get() as any;
   assert(row, 'Bộ demo thiếu đợt Ý thức/Khác gộp nhiều báo cáo — mục 7.3 đòi phải nhìn thấy');
   assert(row.urgency === 'urgent', 'Đợt gộp nhiều báo cáo mà chưa được nâng lên Gấp');
+});
+
+
+console.log('\n37. Vắng, dời có giới hạn, duyệt và khôi phục (mục 10.6)');
+
+/*
+ * Mỗi phép kiểm dưới đây cần một đợt RIÊNG: chúng đều đụng vào bộ đếm dời, nên dùng chung
+ * một đợt là phép kiểm sau đọc phải tàn dư của phép kiểm trước.
+ */
+const takenAttempts = new Set<number>();
+function takePlannedAttempt() {
+  const row = (conn
+    .prepare(
+      `SELECT a.*, b.code AS branch_code FROM assessment_attempts a
+         JOIN classes c ON c.id = a.class_id
+         JOIN branches b ON b.id = c.branch_id
+         JOIN programmes pg ON pg.code = c.programme_code
+        WHERE a.status = 'planned' AND a.kind = 'mock' AND pg.scoring_mode != 'ratio'
+          AND NOT EXISTS (SELECT 1 FROM assessment_scores s WHERE s.attempt_id = a.id AND s.band IS NOT NULL)
+          /* Bỏ qua các đợt bộ demo đã dựng sẵn tình huống vắng — chúng có câu chuyện riêng. */
+          AND NOT EXISTS (SELECT 1 FROM attempt_skills k WHERE k.attempt_id = a.id AND k.sit_status = 'absent')
+          AND NOT EXISTS (SELECT 1 FROM skill_move_requests r WHERE r.attempt_id = a.id)
+        ORDER BY a.id`,
+    )
+    .all() as any[]).find((r) => !takenAttempts.has(r.id));
+  assert(row, 'Seed hết lượt MT chưa chấm để kiểm — thêm lớp hoặc bớt phép kiểm');
+  takenAttempts.add(row.id);
+  return row;
+}
+
+/**
+ * Dựng một kỹ năng ĐÃ XÁC NHẬN VẮNG ở một tuần chưa tới, để mọi phép kiểm dưới đây đứng
+ * trên cùng một điểm xuất phát: em vắng buổi đó, tuần đích còn ở tương lai, và bộ đếm dời
+ * bắt đầu từ con số đã khai.
+ */
+function absentSkill(skill: string, weeksAhead = 3, startCount = 0) {
+  const a = takePlannedAttempt();
+  const mgr = loadPrincipal(userByRole('manager', a.branch_code));
+  skillSchedule.setSkillWeek(mgr, a.id, skill, periodOf(addDays(demoToday(), weeksAhead * 7)),
+    { reason: 'Xếp lịch cho phép kiểm', force: true });
+  conn.prepare('UPDATE attempt_skills SET absence_move_count = ? WHERE attempt_id = ? AND skill = ?')
+    .run(startCount, a.id, skill);
+  skillSchedule.setSitStatus(mgr, a.id, skill, 'absent', 'GVCN xác minh em không tới buổi thi');
+  return { a, mgr };
+}
+
+check('[10.6] Ô điểm trống chưa đủ: chưa xác nhận vắng thì không dời được', () => {
+  const a = takePlannedAttempt();
+  const mgr = loadPrincipal(userByRole('manager', a.branch_code));
+  skillSchedule.setSkillWeek(mgr, a.id, 'speaking', periodOf(addDays(demoToday(), 21)),
+    { reason: 'Xếp lịch cho phép kiểm', force: true });
+  assertThrows(
+    () => absence.requestAbsenceMove(mgr, a.id, ['speaking'], { reason: 'Chắc em vắng' }),
+    /chưa được xác nhận là vắng/, 'Dời được lịch mà chưa ai xác nhận em vắng',
+  );
+});
+
+check('[10.6] Lần đầu: GVCN dời ĐÚNG tuần kế tiếp của lịch đang có, không chọn tuỳ ý', () => {
+  const { a, mgr } = absentSkill('speaking', 3);
+  const before = conn
+    .prepare(`SELECT pr.week_start FROM attempt_skills ask JOIN report_periods pr ON pr.id = ask.planned_period_id
+               WHERE ask.attempt_id = ? AND ask.skill = 'speaking'`)
+    .get(a.id) as any;
+
+  const out = absence.requestAbsenceMove(mgr, a.id, ['speaking'], { reason: 'Em ốm, có phép' });
+  const o = out.outcomes[0];
+  assert(o.result === 'moved', `Lần đầu phải dời được ngay, đang là ${o.result}`);
+  assert(o.moveNo === 1, `Đây phải là lần dời thứ nhất, đang là ${o.moveNo}`);
+
+  const after = conn
+    .prepare(`SELECT pr.week_start, ask.absence_move_count AS n, ask.sit_status
+                FROM attempt_skills ask JOIN report_periods pr ON pr.id = ask.planned_period_id
+               WHERE ask.attempt_id = ? AND ask.skill = 'speaking'`)
+    .get(a.id) as any;
+  /*
+   * ĐÚNG MỘT TUẦN, không phải "tuần sau của hôm nay". Đây là chỗ một dòng code tưởng vô hại
+   * đổi hẳn nghĩa của luật: xử lý muộn ba tuần mà nhảy sang tuần hiện tại là âm thầm cho em
+   * thêm ba tuần, trong khi bộ đếm vẫn chỉ nhích một.
+   */
+  assert(after.week_start === addDays(before.week_start, 7),
+    `Phải dời đúng một tuần: ${before.week_start} → ${after.week_start}`);
+  assert(after.n === 1, `Bộ đếm phải là 1, đang là ${after.n}`);
+  assert(after.sit_status === 'scheduled', 'Dời xong mà vẫn còn mang dấu vắng của buổi cũ');
+});
+
+check('[10.6] Lần thứ hai: GVCN gửi đề nghị, lịch KHÔNG đổi trước khi Quản lý duyệt', () => {
+  const { a, mgr } = absentSkill('speaking', 3);
+  absence.requestAbsenceMove(mgr, a.id, ['speaking'], { reason: 'Lần một' });
+  skillSchedule.setSitStatus(mgr, a.id, 'speaking', 'absent', 'Em lại vắng buổi dời');
+
+  const weekBefore = conn
+    .prepare(`SELECT planned_period_id AS p FROM attempt_skills WHERE attempt_id = ? AND skill = 'speaking'`)
+    .get(a.id) as any;
+  const out = absence.requestAbsenceMove(mgr, a.id, ['speaking'], { reason: 'Lần hai' });
+  const o = out.outcomes[0];
+  assert(o.result === 'pending', `Lần thứ hai phải chờ duyệt, đang là ${o.result}`);
+  assert(o.moveNo === 2, `Phải là lần dời thứ hai, đang là ${o.moveNo}`);
+
+  const weekAfter = conn
+    .prepare(`SELECT planned_period_id AS p, absence_move_count AS n
+                FROM attempt_skills WHERE attempt_id = ? AND skill = 'speaking'`)
+    .get(a.id) as any;
+  assert(weekAfter.p === weekBefore.p, 'Chưa duyệt mà lịch đã đổi');
+  assert(weekAfter.n === 1, 'Chưa duyệt mà bộ đếm đã nhích');
+
+  /* HẠN DUYỆT LÀ TRƯỚC KHI TUẦN MỚI BẮT ĐẦU — không phải một con số chu kỳ nào khác. */
+  const req = conn.prepare('SELECT * FROM skill_move_requests WHERE id = ?').get(o.requestId!) as any;
+  const target = conn.prepare('SELECT week_start FROM report_periods WHERE id = ?').get(req.to_period_id) as any;
+  assert(req.decide_by === addDays(target.week_start, -1),
+    `Hạn duyệt phải là ngày trước khi tuần mới bắt đầu, đang là ${req.decide_by}`);
+
+  /* Gửi lại cùng một đề nghị không thành hai đề nghị. */
+  const n1 = (conn.prepare(`SELECT COUNT(*) n FROM skill_move_requests WHERE attempt_id = ?`).get(a.id) as any).n;
+  assertThrows(
+    () => absence.requestAbsenceMove(mgr, a.id, ['speaking'], { reason: 'Lần hai gửi lại' }),
+    /đang chờ/, 'Gửi được đề nghị thứ hai khi đề nghị cũ còn chờ',
+  );
+  const n2 = (conn.prepare(`SELECT COUNT(*) n FROM skill_move_requests WHERE attempt_id = ?`).get(a.id) as any).n;
+  assert(n1 === n2, 'Gửi lại đã sinh thêm một đề nghị');
+
+  /* Và Quản lý cũng không được đổi lịch bằng đường thường khi còn một đề nghị treo. */
+  assertThrows(
+    () => skillSchedule.setSkillWeek(mgr, a.id, 'speaking', periodOf(addDays(demoToday(), 56)),
+      { reason: 'Sửa tay', force: true }),
+    /đang có một đề nghị dời/, 'Đổi được lịch trong khi một đề nghị còn chờ — em bị dời hai lần',
+  );
+
+  /* Duyệt thì lịch đổi và bộ đếm nhích — lần dời này là của em, không phải lượt mới của GVCN. */
+  absence.decideAbsenceMove(mgr, o.requestId!, { approve: true, note: 'Đồng ý, lần cuối' });
+  const done = conn
+    .prepare(`SELECT planned_period_id AS p, absence_move_count AS n
+                FROM attempt_skills WHERE attempt_id = ? AND skill = 'speaking'`)
+    .get(a.id) as any;
+  assert(done.p !== weekBefore.p, 'Duyệt rồi mà lịch không đổi');
+  assert(done.n === 2, `Bộ đếm phải là 2, đang là ${done.n}`);
+});
+
+check('[10.6] Quản lý từ chối: Fast Track huỷ PHẦN THI, giữ nguyên điểm các phần đã xong', () => {
+  const { a, mgr } = absentSkill('speaking', 3);
+  absence.requestAbsenceMove(mgr, a.id, ['speaking'], { reason: 'Lần một' });
+  skillSchedule.setSitStatus(mgr, a.id, 'speaking', 'absent', 'Em vắng tiếp');
+  const out = absence.requestAbsenceMove(mgr, a.id, ['speaking'], { reason: 'Lần hai' });
+
+  absence.decideAbsenceMove(mgr, out.outcomes[0].requestId!, {
+    approve: false, note: 'Đã dời hai lần, không dời nữa',
+  });
+  const sp = conn
+    .prepare(`SELECT sit_status, planned_period_id AS p FROM attempt_skills WHERE attempt_id = ? AND skill = 'speaking'`)
+    .get(a.id) as any;
+  assert(sp.sit_status === 'cancelled', `Từ chối rồi mà phần thi vẫn là ${sp.sit_status}`);
+  assert(sp.p, 'Huỷ phần thi đã xoá luôn lịch cũ — không tra lại được kế hoạch trước khi huỷ');
+
+  /*
+   * ĐỢT NÀY CHƯA ĐỦ KẾT QUẢ, không phải "môn đó 0 điểm" và cũng không phải "môn vốn không
+   * yêu cầu". Hai cách đọc sai đó đều làm một đợt thiếu bài trông như một đợt đã xong.
+   */
+  const d = attempts.attemptDetail(mgr, a.id) as any;
+  assert(!d.completionWeek.valid, 'Phần thi bị huỷ mà kế hoạch hoàn tất vẫn hợp lệ');
+  assert(d.completionWeek.blocking.includes('speaking'), 'Không chỉ ra được môn đang chặn');
+  const still = conn
+    .prepare(`SELECT required FROM attempt_skills WHERE attempt_id = ? AND skill = 'speaking'`)
+    .get(a.id) as any;
+  assert(still.required === 1, 'Huỷ phần thi đã âm thầm bỏ môn khỏi phạm vi yêu cầu');
+  assertThrows(
+    () => attempts.saveScore(P.admin, a.id, 'speaking', { criteria: [6, 6, 6, 6] }),
+    /đã bị huỷ/, 'Nhập được điểm vào phần thi đã huỷ',
+  );
+
+  /* KHÔI PHỤC là việc của Quản lý, VÀ phải đặt luôn tuần mới trong cùng thao tác. */
+  const back = absence.restoreCancelledSkill(mgr, a.id, 'speaking', periodOf(addDays(demoToday(), 28)),
+    { reason: 'Xếp lại cho em thi bù' });
+  assert(back.ok, 'Không khôi phục được phần thi đã huỷ');
+  const after = conn
+    .prepare(`SELECT sit_status, absence_move_count AS n FROM attempt_skills WHERE attempt_id = ? AND skill = 'speaking'`)
+    .get(a.id) as any;
+  assert(after.sit_status === 'scheduled', 'Khôi phục rồi mà trạng thái vẫn là huỷ');
+  /*
+   * BỘ ĐẾM GIỮ NGUYÊN Ở 1: lần dời đầu đã dùng, còn lần thứ hai bị từ chối nên không tiêu
+   * lượt nào. Khôi phục cũng KHÔNG đặt lại về 0 — những lần em vắng vẫn đã xảy ra.
+   */
+  assert(after.n === 1, `Bộ đếm phải giữ nguyên ở 1, đang là ${after.n}`);
+});
+
+check('[10.6] Lớp Normal: huỷ LỊCH HẸN, giữ nghĩa vụ thi đủ môn', () => {
+  const row = conn
+    .prepare(
+      `SELECT a.id, a.class_id FROM assessment_attempts a
+         JOIN classes c ON c.id = a.class_id
+         JOIN programmes pg ON pg.code = c.programme_code
+        WHERE pg.scoring_mode = 'ratio' AND a.status = 'planned'
+          AND NOT EXISTS (SELECT 1 FROM assessment_scores s WHERE s.attempt_id = a.id AND s.band IS NOT NULL)
+        ORDER BY a.id LIMIT 1`,
+    )
+    .get() as any;
+  assert(row, 'Seed thiếu bài lớp Normal chưa chấm để kiểm');
+  const cls = conn.prepare('SELECT b.code FROM classes c JOIN branches b ON b.id = c.branch_id WHERE c.id = ?')
+    .get(row.class_id) as any;
+  const mgr = loadPrincipal(userByRole('manager', cls.code));
+
+  skillSchedule.setSkillWeek(mgr, row.id, 'speaking', periodOf(addDays(demoToday(), 21)),
+    { reason: 'Xếp lịch cho phép kiểm', force: true });
+  skillSchedule.setSitStatus(mgr, row.id, 'speaking', 'absent', 'Em không tới buổi nói');
+  absence.requestAbsenceMove(mgr, row.id, ['speaking'], { reason: 'Lần một' });
+  skillSchedule.setSitStatus(mgr, row.id, 'speaking', 'absent', 'Em vắng tiếp');
+  const out = absence.requestAbsenceMove(mgr, row.id, ['speaking'], { reason: 'Lần hai' });
+  absence.decideAbsenceMove(mgr, out.outcomes[0].requestId!, { approve: false, note: 'Không dời nữa' });
+
+  const sp = conn
+    .prepare(`SELECT sit_status, planned_period_id AS p, required FROM attempt_skills
+               WHERE attempt_id = ? AND skill = 'speaking'`)
+    .get(row.id) as any;
+  /*
+   * NORMAL KHÁC FAST TRACK ở đúng chỗ này: huỷ LỊCH HẸN chứ không huỷ phần thi. Nghĩa vụ
+   * thi đủ bốn môn còn nguyên — môn đó chuyển sang "chờ Quản lý xếp lại", không biến mất để
+   * đợt trông như đã hoàn tất vì đã thi ba môn kia.
+   */
+  assert(sp.sit_status !== 'cancelled', 'Lớp Normal bị huỷ phần thi như Fast Track');
+  assert(sp.p === null, 'Từ chối rồi mà lịch hẹn vẫn còn');
+  assert(sp.required === 1, 'Huỷ lịch hẹn đã làm biến mất nghĩa vụ thi môn này');
+  const d = attempts.attemptDetail(mgr, row.id) as any;
+  assert(!d.completionWeek.valid, 'Còn môn chưa xếp lại mà kế hoạch hoàn tất vẫn hợp lệ');
+});
+
+check('[10.6] Hết hạn duyệt mà chưa ai trả lời thì huỷ — không huỷ ngay lúc vừa gửi', () => {
+  /* Đã dời một lần từ trước, nên lần này là đề nghị phải chờ Quản lý. */
+  const { a, mgr } = absentSkill('speaking', 3, 1);
+  const out = absence.requestAbsenceMove(mgr, a.id, ['speaking'], { reason: 'Lần hai' });
+  assert(out.outcomes[0].result === 'pending',
+    `Cần một đề nghị đang chờ để kiểm, đang là ${out.outcomes[0].result}`);
+  const reqId = out.outcomes[0].requestId!;
+
+  /* Vừa gửi xong: KHÔNG huỷ gì cả — khoảng chờ là có thật, và nó là của Quản lý. */
+  absence.sweepExpiredMoves();
+  const fresh = conn.prepare('SELECT status FROM skill_move_requests WHERE id = ?').get(reqId) as any;
+  assert(fresh.status === 'pending', 'Vừa gửi đề nghị đã bị huỷ ngay');
+
+  /* Đẩy hạn về quá khứ rồi quét lại: lúc này mới huỷ. */
+  conn.prepare('UPDATE skill_move_requests SET decide_by = ? WHERE id = ?')
+    .run(addDays(demoToday(), -1), reqId);
+  const n = absence.sweepExpiredMoves();
+  assert(n >= 1, 'Quá hạn duyệt mà không huỷ gì');
+  const expired = conn.prepare('SELECT status, cancelled_part FROM skill_move_requests WHERE id = ?').get(reqId) as any;
+  assert(expired.status === 'expired', `Đề nghị quá hạn phải chuyển sang "expired", đang là ${expired.status}`);
+  assert(expired.cancelled_part === 1, 'Quá hạn mà phần thi không bị huỷ');
+  const sp = conn
+    .prepare(`SELECT sit_status FROM attempt_skills WHERE attempt_id = ? AND skill = 'speaking'`)
+    .get(a.id) as any;
+  assert(sp.sit_status === 'cancelled', 'Hết hạn mà phần thi vẫn còn hiệu lực');
+
+  /* Đã huỷ rồi thì không duyệt vòng sau lưng nữa — phải đi qua khôi phục. */
+  assertThrows(
+    () => absence.decideAbsenceMove(mgr, reqId, { approve: true }),
+    /đã được xử lý/, 'Duyệt được một đề nghị đã hết hạn và đã huỷ phần thi',
+  );
+});
+
+check('[10.6] Xử lý muộn: tuần kế tiếp đã qua thì CHUYỂN QUẢN LÝ, không tự nhảy tuần', () => {
+  const a = takePlannedAttempt();
+  const mgr = loadPrincipal(userByRole('manager', a.branch_code));
+  /* Buổi thi nằm ở quá khứ — GVCN xử lý muộn, tuần kế tiếp của nó cũng đã trôi qua. */
+  skillSchedule.setSkillWeek(mgr, a.id, 'speaking', periodOf(addDays(demoToday(), -21)),
+    { reason: 'Buổi thi đã qua', force: true });
+  skillSchedule.setSitStatus(mgr, a.id, 'speaking', 'absent', 'Giờ mới xác minh em vắng');
+
+  const out = absence.requestAbsenceMove(mgr, a.id, ['speaking'], { reason: 'Xử lý muộn' });
+  const o = out.outcomes[0];
+  assert(o.result === 'escalated', `Tuần đích đã qua thì phải chuyển Quản lý, đang là ${o.result}`);
+  const sp = conn
+    .prepare(`SELECT absence_move_count AS n FROM attempt_skills WHERE attempt_id = ? AND skill = 'speaking'`)
+    .get(a.id) as any;
+  assert(sp.n === 0, 'Việc chuyển cho Quản lý đã bị tính thành một lần dời');
+  const req = conn.prepare('SELECT decide_by FROM skill_move_requests WHERE id = ?').get(o.requestId!) as any;
+  assert(req.decide_by >= demoToday(),
+    'Hạn duyệt bị đặt vào quá khứ — giả một khoảng chờ đã hết ngay lúc vừa tạo');
+});
+
+check('[10.6] Một thao tác nhóm cho buổi R/L/W, nhưng mỗi kỹ năng vẫn xử lý riêng', () => {
+  const a = takePlannedAttempt();
+  const mgr = loadPrincipal(userByRole('manager', a.branch_code));
+  for (const s of ['listening', 'reading', 'writing']) {
+    skillSchedule.setSkillWeek(mgr, a.id, s, periodOf(addDays(demoToday(), 21)),
+      { reason: 'Buổi R/L/W', force: true });
+    skillSchedule.setSitStatus(mgr, a.id, s, 'absent', 'Em vắng cả buổi R/L/W');
+  }
+  /* Listening đã dời một lần từ trước → nó phải đi xin duyệt, hai môn kia thì không. */
+  conn.prepare(`UPDATE attempt_skills SET absence_move_count = 1 WHERE attempt_id = ? AND skill = 'listening'`)
+    .run(a.id);
+
+  const out = absence.requestAbsenceMove(mgr, a.id, ['listening', 'reading', 'writing'], {
+    reason: 'Em vắng buổi R/L/W',
+  });
+  const by = new Map(out.outcomes.map((o: any) => [o.skill, o]));
+  assert(by.get('listening')!.result === 'pending',
+    'Môn đã dời một lần vẫn tự dời được khi đi theo nhóm — dùng thao tác nhóm để vượt quyền');
+  assert(by.get('reading')!.result === 'moved', 'Môn chưa dời lần nào mà không dời được');
+  assert(by.get('writing')!.result === 'moved', 'Môn chưa dời lần nào mà không dời được');
+
+  /* Speaking KHÔNG đụng tới: vắng buổi R/L/W không tiêu lượt của buổi nói. */
+  const sp = conn
+    .prepare(`SELECT absence_move_count AS n FROM attempt_skills WHERE attempt_id = ? AND skill = 'speaking'`)
+    .get(a.id) as any;
+  assert(sp.n === 0, 'Vắng buổi R/L/W đã tiêu mất lượt dời của Speaking');
+});
+
+check('[10.6] Giáo viên bộ môn không tự xử lý việc vắng của lớp', () => {
+  const { a } = absentSkill('speaking', 3);
+  assertThrows(
+    () => absence.requestAbsenceMove(P.subjectTeacher, a.id, ['speaking'], { reason: 'Thử' }),
+    /chủ nhiệm|Quản lý/, 'Giáo viên bộ môn xử lý được việc vắng',
+  );
 });
 
 console.log(`\n${'='.repeat(60)}`);

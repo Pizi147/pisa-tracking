@@ -12,6 +12,7 @@ import { writeAudit } from '../platform/audit.ts';
 import { maybeSimulateReadError, maybeSimulateSaveFailure, pInt, qInt, qStr, wrap } from './helpers.ts';
 import * as attemptSvc from '../fasttrack/attempts.ts';
 import * as skillScheduleSvc from '../fasttrack/skillSchedule.ts';
+import * as absenceSvc from '../fasttrack/absence.ts';
 import * as cycleSvc from '../fasttrack/cycles.ts';
 import * as summarySvc from '../worklist/summary.ts';
 import * as pulseSvc from '../worklist/branchpulse.ts';
@@ -358,6 +359,10 @@ api.post('/attempts/:id/skills/:skill/week', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   const periodId = toInt(req.body?.periodId);
   if (!periodId) throw badRequest('Cần chọn tuần thi cho kỹ năng này.');
+  /*
+   * ĐƯỜNG NÀY LÀ DỜI CHỦ ĐỘNG. Dời vì em vắng đi qua `/attempts/:id/absence-move` — ở đó mới
+   * có bộ đếm, người duyệt và hạn trả lời (mục 10.6).
+   */
   return skillScheduleSvc.setSkillWeek(principalOf(req), pInt(req, 'id'), String(req.params.skill), periodId, {
     reason: req.body?.reason ?? null,
     /* Chỉ vượt được CẢNH BÁO (hai đợt cách nhau một tuần), không vượt được ràng buộc thứ tự. */
@@ -375,6 +380,43 @@ api.post('/attempts/:id/skills/:skill/deadline', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return skillScheduleSvc.setSkillDeadline(principalOf(req), pInt(req, 'id'), String(req.params.skill),
     req.body?.deadline ?? null, req.body?.reason ?? null);
+}));
+
+/*
+ * VẮNG, DỜI CÓ GIỚI HẠN VÀ KHÔI PHỤC (mục 10.6).
+ *
+ * Bốn đường, và chúng KHÁC HẲN đường đổi lịch thường ở trên: đổi lịch là quyết định về kế
+ * hoạch, còn đây là hệ quả của việc em không có mặt — có bộ đếm, có người duyệt, và có hạn
+ * trả lời. Trộn hai đường vào một là mất hẳn bộ đếm.
+ */
+api.post('/attempts/:id/absence-move', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  const skills = Array.isArray(req.body?.skills) ? req.body.skills.map(String) : [];
+  return absenceSvc.requestAbsenceMove(principalOf(req), pInt(req, 'id'), skills, {
+    reason: req.body?.reason ?? null,
+    /* Bấm hai lần hay mạng chập không được thành hai lần dời. */
+    idempotencyKey: req.body?.idempotencyKey ?? null,
+  });
+}));
+
+api.post('/move-requests/:id/decide', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return absenceSvc.decideAbsenceMove(principalOf(req), pInt(req, 'id'), {
+    approve: req.body?.approve === true,
+    note: req.body?.note ?? null,
+    periodId: toInt(req.body?.periodId) || null,
+  });
+}));
+
+api.get('/move-requests', requireAuth, wrap((req) => absenceSvc.openMoveRequests(principalOf(req))));
+
+api.post('/attempts/:id/skills/:skill/restore', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  const periodId = toInt(req.body?.periodId);
+  if (!periodId) throw badRequest('Khôi phục thì phải đặt luôn tuần mới — không để phần thi treo không lịch.');
+  return absenceSvc.restoreCancelledSkill(principalOf(req), pInt(req, 'id'), String(req.params.skill), periodId, {
+    reason: req.body?.reason ?? null,
+  });
 }));
 
 api.post('/attempts/:id/deadline', requireAuth, wrap((req) => {

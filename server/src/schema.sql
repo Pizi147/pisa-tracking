@@ -560,6 +560,47 @@ CREATE TABLE attempt_skills (
 CREATE INDEX idx_attempt_skills_attempt ON attempt_skills(attempt_id);
 CREATE INDEX idx_attempt_skills_period ON attempt_skills(planned_period_id);
 
+/*
+ * ĐỀ NGHỊ DỜI LỊCH DO VẮNG — mục 10.6.
+ *
+ * Lần đầu vắng một kỹ năng, GVCN tự dời được, và dời đúng TUẦN KẾ TIẾP của lịch đang có —
+ * không chọn tuỳ ý, không lấy tuần hiện tại để nhảy nhiều tuần khi xử lý muộn. Từ lần thứ
+ * hai trở đi thì phải có Quản lý duyệt, và bảng này là chỗ lời đề nghị đó nằm chờ.
+ *
+ * HẠN DUYỆT LÀ TRƯỚC KHI TUẦN MỚI BẮT ĐẦU. Quá hạn mà chưa ai trả lời thì phần thi/lịch hẹn
+ * bị huỷ — vì để nguyên thì em có một lịch thi mà không ai xác nhận, và cả đợt treo theo nó.
+ * Huỷ KHÔNG xoá điểm hay lịch sử: nó chỉ dừng đúng hàng công việc của phần đã huỷ.
+ *
+ * `idempotency_key` chặn hai lần gửi cùng một đề nghị (bấm hai lần, mạng chập) biến thành
+ * hai lần dời.
+ */
+CREATE TABLE skill_move_requests (
+  id INTEGER PRIMARY KEY,
+  attempt_id INTEGER NOT NULL REFERENCES assessment_attempts(id),
+  skill TEXT NOT NULL,
+  /* Lần dời do vắng thứ mấy của CHÍNH kỹ năng này trong CHÍNH đợt này. */
+  move_no INTEGER NOT NULL,
+  from_period_id INTEGER REFERENCES report_periods(id),
+  to_period_id INTEGER NOT NULL REFERENCES report_periods(id),
+  reason TEXT,
+  requested_by INTEGER REFERENCES users(id),
+  requested_on TEXT NOT NULL,
+  /* Hạn Quản lý phải trả lời: ngày TRƯỚC khi tuần mới được đề nghị bắt đầu. */
+  decide_by TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'pending',  -- pending | approved | declined | expired | withdrawn
+  decided_by INTEGER REFERENCES users(id),
+  decided_at TEXT,
+  decision_note TEXT,
+  /* Phần thi/lịch hẹn đã bị huỷ vì từ chối hoặc hết hạn — chờ Quản lý khôi phục. */
+  cancelled_part INTEGER NOT NULL DEFAULT 0,
+  idempotency_key TEXT UNIQUE,
+  created_at TEXT NOT NULL,
+  updated_at TEXT,
+  UNIQUE (attempt_id, skill, move_no)
+);
+CREATE INDEX idx_move_req_attempt ON skill_move_requests(attempt_id);
+CREATE INDEX idx_move_req_open ON skill_move_requests(status, decide_by) WHERE status = 'pending';
+
 -- Mỗi kỹ năng NHẬP ĐIỂM một dòng.
 -- Không có dòng, hoặc có dòng mà `band` còn trống = CHƯA NHẬP ĐIỂM.
 CREATE TABLE assessment_scores (

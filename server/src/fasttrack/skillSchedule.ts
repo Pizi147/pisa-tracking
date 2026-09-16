@@ -208,6 +208,8 @@ export type SkillScheduleView = {
   scored: boolean;
   progress: SkillProgress;
   absenceMoveCount: number;
+  /** Đề nghị dời do vắng đang chờ Quản lý trả lời (mục 10.6), nếu có. */
+  pendingMove: { id: number; decideBy: string; toWeek: string | null; moveNo: number } | null;
 };
 
 /**
@@ -230,6 +232,12 @@ export function viewSkill(input: {
   attemptCancelled: boolean;
   scored: boolean;
   today?: string;
+  /**
+   * Đang có một đề nghị dời do vắng chờ Quản lý (mục 10.6). Truyền vào từ nơi gọi chứ không
+   * tự đọc bảng, để hai module không gọi vòng nhau — và để một màn hình đọc nhiều đợt chỉ
+   * phải hỏi một câu chung thay vì hỏi từng dòng.
+   */
+  pendingMove?: { id: number; decideBy: string; toWeek: string | null; moveNo: number } | null;
 }): SkillScheduleView {
   const { row, mode, scored } = input;
   const today = input.today ?? demoToday();
@@ -248,6 +256,11 @@ export function viewSkill(input: {
   if (!required) progress = 'skipped';
   else if (input.attemptCancelled || row.sit_status === 'cancelled') progress = 'cancelled';
   else if (scored) progress = 'scored';
+  /*
+   * CHỜ DUYỆT DỜI đứng TRƯỚC "vắng": lịch cũ vẫn nguyên đó, nhưng điều đang thật sự xảy ra
+   * là một đề nghị nằm chờ. Hiện "vắng" lúc này là giấu mất việc phải làm của Quản lý.
+   */
+  else if (input.pendingMove) progress = 'reschedule_pending';
   else if (row.sit_status === 'absent') progress = 'absent';
   else if (!weekStart) progress = 'not_scheduled';
   else if (weekStart > today) progress = 'upcoming';
@@ -283,6 +296,8 @@ export function viewSkill(input: {
     scored,
     progress,
     absenceMoveCount: row.absence_move_count,
+    /** Đề nghị dời do vắng đang chờ Quản lý trả lời, nếu có. */
+    pendingMove: input.pendingMove ?? null,
   };
 }
 
@@ -484,8 +499,6 @@ function hasScore(attemptId: number, skill: AssessedSkill): boolean {
 export function setSkillWeek(p: Principal, attemptId: number, skill: string, periodId: number, opts: {
   reason?: string | null;
   force?: boolean;
-  /** Dời vì học viên vắng — chỉ đường gọi của mục 10.6 mới đặt cờ này. */
-  absence?: boolean;
 } = {}) {
   const { attempt, row } = loadOne(attemptId, skill);
   require_(p, PERMISSIONS.PLAN_WEEK, { classId: attempt.class_id, studentId: attempt.student_id },
@@ -513,26 +526,54 @@ export function setSkillWeek(p: Principal, attemptId: number, skill: string, per
     throw badRequest(`${check.warnings.join(' ')} Xác nhận lại nếu vẫn muốn xếp vào tuần này.`);
   }
 
+  /*
+   * ĐANG CÓ ĐỀ NGHỊ DỜI CHỜ DUYỆT thì không đổi lịch bằng đường thường (mục 10.6).
+   *
+   * Nếu cho phép, sẽ có hai đường cùng đổi một lịch: Quản lý sửa tay ở đây rồi lát nữa lại
+   * duyệt chính đề nghị kia, và em bị dời hai tuần. Trả lời đề nghị đó là cách đúng — nó
+   * vừa đổi lịch vừa ghi lại ai quyết định.
+   */
+  const waiting = db()
+    .prepare(
+      `SELECT id, decide_by FROM skill_move_requests
+        WHERE attempt_id = ? AND skill = ? AND status = 'pending' LIMIT 1`,
+    )
+    .get(attemptId, row.skill) as any;
+  if (waiting) {
+    throw badRequest(
+      `${skill} đang có một đề nghị dời do vắng chờ Quản lý trả lời (hạn ${waiting.decide_by}). `
+      + 'Hãy trả lời đề nghị đó thay vì đổi lịch ở đây — nếu không, em bị dời hai lần.',
+    );
+  }
+
   return tx(() => {
     const conn = db();
     const oldCode = row.period_code;
+    /*
+     * ĐƯỜNG NÀY KHÔNG BAO GIỜ TĂNG BỘ ĐẾM DỜI DO VẮNG (mục 10.6).
+     *
+     * Đây là dời CHỦ ĐỘNG: Quản lý sắp lại lịch học, đổi phòng thi, tách R/L/W với Speaking.
+     * Bộ đếm kia đếm những lần em KHÔNG CÓ MẶT, và nó chỉ nhích ở `absence.ts`. Trước đây
+     * hàm này có một ô tick "dời vì em vắng" chạy song song — hai cửa vào cùng một bộ đếm là
+     * cách chắc chắn nhất để con số ấy không còn nghĩa gì.
+     */
     conn
       .prepare(
         `UPDATE attempt_skills SET planned_period_id = ?, plan_source = 'manual',
                 sit_status = CASE WHEN sit_status = 'absent' THEN 'scheduled' ELSE sit_status END,
-                absence_move_count = absence_move_count + ?, updated_at = ?
+                updated_at = ?
           WHERE id = ?`,
       )
-      .run(periodId, opts.absence ? 1 : 0, nowIso(), row.id);
+      .run(periodId, nowIso(), row.id);
     logSchedule(attemptId, {
-      action: opts.absence ? 'skill_week_moved_absence' : 'skill_week_set',
+      action: 'skill_week_set',
       field: skill, oldValue: oldCode, newValue: period.code, reason: opts.reason ?? null, actor: p.userId,
     });
     const cw = recomputeCompletionWeek(attemptId, p.userId);
     writeAudit({
       actorUserId: p.userId, action: 'attempt.skill_week', entityType: 'assessment_attempt',
       entityId: attemptId, entityLabel: `${attempt.kind === 'mock' ? `MT${attempt.attempt_no}` : attempt.kind} · ${skill}`,
-      before: { week: oldCode }, after: { week: period.code, absence: !!opts.absence },
+      before: { week: oldCode }, after: { week: period.code },
     });
     return { ok: true, warnings: check.warnings, completionWeek: cw };
   });

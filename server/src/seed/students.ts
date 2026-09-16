@@ -96,7 +96,20 @@ export const STUDENTS: StudentSeed[] = [
             no: 2, kind: 'mock', week: '2026-08-17', status: 'done',
             bands: { listening: 6.0, reading: 6.0, writing1: 5.5, writing2: 6.0, speaking: 6.0 },
           },
-          { no: 3, kind: 'mock', week: '2026-09-14', status: 'planned' },
+          {
+            /*
+             * VẮNG LẦN ĐẦU, CHƯA AI XỬ LÝ (mục 10.6).
+             *
+             * GVCN đã xác minh em vắng buổi Speaking nhưng chưa bấm dời. Đây là lần thứ nhất,
+             * nên GVCN tự dời được — và chỉ dời đúng sang tuần kế tiếp của lịch đang có, không
+             * chọn tuỳ ý. Bộ demo cần cả hai khúc này để so được hai đường đi.
+             */
+            no: 3, kind: 'mock', week: '2026-09-14', status: 'planned',
+            absent: {
+              skill: 'speaking',
+              note: 'GVCN xác minh em không tới buổi Speaking',
+            },
+          },
         ],
         cases: [
           {
@@ -147,7 +160,24 @@ export const STUDENTS: StudentSeed[] = [
             no: 2, kind: 'mock', week: '2026-08-17', status: 'done',
             bands: { listening: 5.5, reading: 5.5, writing1: 5.5, writing2: 5.5, speaking: 5.0 },
           },
-          { no: 3, kind: 'mock', week: '2026-09-14', status: 'planned' },
+          {
+            /*
+             * VẮNG LẦN HAI, ĐANG CHỜ QUẢN LÝ DUYỆT (mục 10.6).
+             *
+             * Em đã vắng buổi Speaking một lần và được GVCN dời; lần này vắng tiếp, nên GVCN
+             * chỉ ĐỀ NGHỊ được, còn lịch giữ nguyên cho tới khi Quản lý trả lời. Hạn trả lời
+             * là ngày TRƯỚC khi tuần mới bắt đầu — quá hạn thì phần thi bị huỷ.
+             *
+             * Đây là ô để người xem bấm thử đường duyệt, và để thấy một "Chờ duyệt dời" thật
+             * trên bảng lịch kỹ năng.
+             */
+            no: 3, kind: 'mock', week: '2026-09-14', status: 'planned',
+            absent: {
+              skill: 'speaking', moveCount: 1, pending: true,
+              note: 'GVCN xác minh em không tới buổi Speaking',
+              reason: 'Em ốm, gia đình báo sáng cùng ngày',
+            },
+          },
         ],
         cases: [
           {

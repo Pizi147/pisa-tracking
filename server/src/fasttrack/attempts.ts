@@ -20,6 +20,7 @@ import {
   setSkillScope, setSkillWeek, skillScheduleOf, skippedSkillsOf, viewSkill,
   type SkillRow, type SkillScheduleView,
 } from './skillSchedule.ts';
+import { pendingMove } from './absence.ts';
 import { raiseSignalsForResult, stepsFor } from '../cases/sos.ts';
 import {
   caseHasIndependentBasis, retireCaseForCorrectedScore, withdrawSignalsNoLongerValid,
@@ -239,6 +240,7 @@ export function skillCells(
       attemptCancelled: cancelled,
       scored: scoredAssessed(assessed),
       today,
+      pendingMove: pendingView(attempt.id, assessed),
     });
     const row = rows.find((r) => r.skill === skill);
 
@@ -312,6 +314,7 @@ export function regularSkillViews(
       attemptCancelled: attempt.status === 'cancelled',
       scored: entry?.raw_score !== null && entry?.raw_score !== undefined,
       today,
+      pendingMove: pendingView(attempt.id, skill),
     }));
   }
   return out;
@@ -596,6 +599,7 @@ export function attemptDetail(p: Principal, attemptId: number) {
       attemptOverride: a.deadline_override ?? null,
       attemptCancelled: a.status === 'cancelled',
       scored: entrySkillsOf(skill).every((k) => (scores.find((x) => x.skill === k)?.band ?? null) !== null),
+      pendingMove: pendingView(a.id, skill),
     });
     return { ...view, label: ASSESSED_SKILL_LABEL[skill] };
   });
@@ -1172,4 +1176,19 @@ export { notify };
 export function attemptHref(a: { id: number; kind?: string | null; classId?: number | null }): string {
   if (!a.kind || a.kind === 'mock') return `/mock-test/${a.id}`;
   return a.classId ? `/bang-diem-thuong/${a.classId}?kind=${a.kind}` : `/mock-test/${a.id}`;
+}
+
+/**
+ * Đề nghị dời do vắng đang chờ, gói lại đúng ba con số màn hình cần (mục 10.6).
+ *
+ * Để ở đây chứ không trong `skillSchedule.ts`: module lịch không được biết tới module vắng,
+ * nếu không hai file gọi vòng nhau và không file nào nạp được trước.
+ */
+function pendingView(attemptId: number, skill: string) {
+  const r = pendingMove(attemptId, skill);
+  if (!r) return null;
+  const w = r.to_period_id
+    ? (db().prepare('SELECT code FROM report_periods WHERE id = ?').get(r.to_period_id) as any)
+    : null;
+  return { id: r.id, decideBy: r.decide_by, toWeek: w?.code ?? null, moveNo: r.move_no };
 }
