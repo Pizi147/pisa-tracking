@@ -945,6 +945,7 @@ check('[6.2] Điểm dưới kỳ vọng sinh TÍN HIỆU, không tự mở case
 
   /* GIÁO VIÊN XÁC MINH → đây mới là lúc case ra đời, và nó đi qua đúng form của người dùng. */
   const made = cases.reportIssue(t('listening'), {
+    primaryCode: 'student.listening.technique',
     studentId: s.id, cycleId: s.cycle_id, track: 'academic', topic: 'listening',
     title: 'Listening: nghe số và ngày tháng còn sai',
     summary: 'Em bắt được ý chính nhưng mất điểm ở phần điền số, ngày tháng và tên riêng.',
@@ -1030,6 +1031,7 @@ check('[9.4] Case chỉ sống nhờ con số vừa sửa thì rút khỏi danh 
 
   /* Giáo viên mở case ngay. Case này CHƯA có việc gì được làm, và chỉ dựa trên đợt này. */
   const made = cases.reportIssue(t('speaking'), {
+    primaryCode: 'student.speaking.fluency',
     studentId: s.id, cycleId: s.cycle_id, track: 'academic', topic: 'speaking',
     title: 'Speaking: nói ngắt quãng khi gặp chủ đề lạ',
     summary: 'Em dừng lâu giữa câu khi chủ đề nằm ngoài vốn từ quen thuộc.',
@@ -1974,11 +1976,13 @@ const someStudent = conn
 check('Giáo viên báo vấn đề khi CHƯA có bài đánh giá nào — không tạo bài giả', () => {
   const before = (conn.prepare('SELECT COUNT(*) n FROM assessment_attempts').get() as any).n;
   const r = cases.reportIssue(P.coreTeacher, {
+    title: 'Vấn đề cần theo dõi ở kỹ năng này',
+    primaryCode: 'student.behaviour.homework',
     studentId: someStudent.id,
-    summary: 'Em hay quên bài về nhà, hai tuần liền',
+    summary: 'Em hay quên bài về nhà hai tuần liền. Nhà xa, bố mẹ đi làm ca nên em phải trông em nhỏ.',
     urgency: 'attention',
     track: 'behaviour', topic: 'homework',
-    note: 'Nhà xa, bố mẹ đi làm ca nên em phải trông em nhỏ',
+    /* Hoàn cảnh nằm trong chính câu mô tả — không còn ô Ghi chú riêng. */
   }) as any;
   const after = (conn.prepare('SELECT COUNT(*) n FROM assessment_attempts').get() as any).n;
   assert(after === before, 'Báo vấn đề mà lại tạo thêm một bài đánh giá giả');
@@ -1992,15 +1996,22 @@ check('Giáo viên báo vấn đề khi CHƯA có bài đánh giá nào — khô
   assert(r.sosLevel === null, `Case giáo viên báo phải để trống mức SOS, đang là ${r.sosLevel}`);
   assert(r.urgency === 'attention', 'Mức độ gấp là thang riêng của người báo');
   assert(r.track === 'behaviour' && r.topic === 'homework', 'Vấn đề ý thức phải vào đúng đầu mục và nhóm');
-  // "Hoàn cảnh kèm theo" đã bỏ: nhà xa, gia đình… nay là một câu Ghi chú, không phải một nhãn.
-  assert(/Nhà xa/.test(r.note ?? ''), 'Ghi chú phải giữ nguyên chữ người báo viết');
+  /*
+   * Ô "GHI CHÚ" ĐÃ BỎ (mục 6.3) — nó trùng việc với "Mô tả". Hoàn cảnh kèm theo (nhà xa,
+   * bố mẹ đi làm ca…) thuộc về chính câu mô tả, không phải một ô thứ hai.
+   */
+  assert(!r.note, 'Ô Ghi chú đã bỏ mà vẫn còn lưu giá trị mới');
+  assert(/trông em nhỏ/.test(r.summary ?? ''), 'Mô tả phải giữ nguyên chữ người báo viết');
 });
 
 check('Bấm hai lần hoặc thử lại không tạo case trùng', () => {
   const before = (conn.prepare('SELECT COUNT(*) n FROM sos_cases').get() as any).n;
   const args = {
     studentId: someStudent.id, topic: 'listening',
-    summary: 'Thử chống trùng', idempotencyKey: 'test-report-1', parallel: true,
+    title: 'Listening: bắt chưa kịp phần điền số',
+    summary: 'Em nghe được ý chính nhưng mất điểm ở phần điền số và ngày tháng.',
+    primaryCode: 'student.listening.sound',
+    idempotencyKey: 'test-report-1', parallel: true,
   };
   const a = cases.reportIssue(P.coreTeacher, args) as any;
   const b = cases.reportIssue(P.coreTeacher, args) as any;
@@ -2011,6 +2022,8 @@ check('Bấm hai lần hoặc thử lại không tạo case trùng', () => {
 
 check('Một case có NHIỀU tác động, mỗi tác động xem lại nhiều lần', () => {
   const c = cases.reportIssue(P.coreTeacher, {
+    title: 'Vấn đề cần theo dõi ở kỹ năng này',
+    primaryCode: 'student.listening.technique',
     studentId: someStudent.id, topic: 'listening', summary: 'Thử nhiều tác động', idempotencyKey: 'test-report-2', parallel: true,
   }) as any;
   cases.recordIntervention(P.coreTeacher, c.id, {
@@ -2036,6 +2049,8 @@ check('Một case có NHIỀU tác động, mỗi tác động xem lại nhiều
 
 check('"Đã xong" phải có ngày thực tế; người nhập không mặc định là người làm', () => {
   const c = cases.reportIssue(P.coreTeacher, {
+    title: 'Vấn đề cần theo dõi ở kỹ năng này',
+    primaryCode: 'student.listening.technique',
     studentId: someStudent.id, topic: 'listening', summary: 'Thử ràng buộc tác động', idempotencyKey: 'test-report-3', parallel: true,
   }) as any;
   assertThrows(
@@ -2073,7 +2088,9 @@ check('"Đã xong" phải có ngày thực tế; người nhập không mặc đ
 
 check('MỌI phương án đều có chu kỳ và hạn — không có phương án treo vô thời hạn', () => {
   const c = cases.reportIssue(P.coreTeacher, {
-    studentId: someStudent.id, topic: 'listening', summary: 'Thử quá hạn', idempotencyKey: 'test-report-4', parallel: true,
+    title: 'Vấn đề cần theo dõi ở kỹ năng này',
+    primaryCode: 'student.listening.technique',
+    studentId: someStudent.id, topic: 'listening', summary: 'Thử quá hạn — mô tả cụ thể cho phép kiểm này.', idempotencyKey: 'test-report-4', parallel: true,
   }) as any;
   /*
    * LUẬT VÒNG 5 (mục 7.7): chu kỳ hai tuần gắn vào MỌI phương án học thuật ngay khi nó bắt
@@ -2101,7 +2118,9 @@ check('MỌI phương án đều có chu kỳ và hạn — không có phương 
 
 check('Hoàn thành case: bắt buộc có hướng xử lý VÀ mọi phương án đã khép lại', () => {
   const c = cases.reportIssue(P.coreTeacher, {
-    studentId: someStudent.id, topic: 'listening', summary: 'Thử đóng case', idempotencyKey: 'test-report-6', parallel: true,
+    title: 'Vấn đề cần theo dõi ở kỹ năng này',
+    primaryCode: 'student.listening.technique',
+    studentId: someStudent.id, topic: 'listening', summary: 'Thử đóng case — mô tả cụ thể cho phép kiểm này.', idempotencyKey: 'test-report-6', parallel: true,
   }) as any;
   assertThrows(() => cases.setDisposition(P.mbManager, c.id, { status: 'done' }),
     /hướng xử lý/, 'Đóng case mà không có hướng xử lý');
@@ -2138,6 +2157,8 @@ check('Hoàn thành case: bắt buộc có hướng xử lý VÀ mọi phương 
 
 check('Cập nhật kết quả: kết quả chưa tốt BẮT BUỘC chọn đường đi tiếp', () => {
   const c = cases.reportIssue(P.coreTeacher, {
+    title: 'Vấn đề cần theo dõi ở kỹ năng này',
+    primaryCode: 'student.reading.technique',
     studentId: someStudent.id, topic: 'reading', summary: 'Thử luồng kết quả',
     idempotencyKey: 'test-result-1', parallel: true,
   }) as any;
@@ -2175,7 +2196,9 @@ check('Cập nhật kết quả: kết quả chưa tốt BẮT BUỘC chọn đ�
 
 check('Chỉ GVCN của lớp và Quản lý mới đóng được case', () => {
   const c = cases.reportIssue(P.subjectTeacher, {
-    studentId: someStudent.id, topic: 'listening', summary: 'Thử quyền đóng', idempotencyKey: 'test-report-7', parallel: true,
+    title: 'Vấn đề cần theo dõi ở kỹ năng này',
+    primaryCode: 'student.listening.technique',
+    studentId: someStudent.id, topic: 'listening', summary: 'Thử quyền đóng — mô tả cụ thể cho phép kiểm này.', idempotencyKey: 'test-report-7', parallel: true,
   }) as any;
   // Giáo viên bộ môn ghi nhận được nhưng không đóng.
   assertThrows(
@@ -2200,7 +2223,7 @@ check('Case của học viên ngoài phạm vi bị chặn ở máy chủ', () =
     .prepare(`SELECT s.id FROM students s JOIN enrollments e ON e.student_id = s.id
                WHERE e.class_id = ? LIMIT 1`)
     .get(classId('CP-FT 110')) as any;
-  assertThrows(() => cases.reportIssue(P.coreTeacher, { studentId: cp.id, topic: 'listening', summary: 'Ngoài phạm vi' }),
+  assertThrows(() => cases.reportIssue(P.coreTeacher, { studentId: cp.id, topic: 'listening', summary: 'Ngoài phạm vi phụ trách của người báo.' }),
     /phạm vi/, 'GVCN lớp MB báo vấn đề học viên lớp CP');
 });
 
@@ -2270,7 +2293,9 @@ check('Ba nguồn case dùng CHUNG một vòng đời', () => {
 check('Hành trình ghi ngày SỰ VIỆC XẢY RA, và lưu lại nhiều lần không nhân đôi', () => {
   const before = (conn.prepare('SELECT COUNT(*) n FROM journey_events').get() as any).n;
   const c = cases.reportIssue(P.coreTeacher, {
-    studentId: someStudent.id, topic: 'listening', summary: 'Thử hành trình',
+    title: 'Vấn đề cần theo dõi ở kỹ năng này',
+    primaryCode: 'student.listening.technique',
+    studentId: someStudent.id, topic: 'listening', summary: 'Thử hành trình — mô tả cụ thể cho phép kiểm này.',
     detectedAt: addDays(TODAY, -10),          // ghi bù một việc của mười ngày trước
     idempotencyKey: 'test-report-8', parallel: true,
   }) as any;
@@ -2299,7 +2324,9 @@ check('Hành trình ghi ngày SỰ VIỆC XẢY RA, và lưu lại nhiều lần
   assert(ev.cycle_id !== null, 'Sự kiện phải gắn đúng lộ trình');
   // Gửi lại cùng khoá: không thêm case, nên cũng không thêm sự kiện.
   cases.reportIssue(P.coreTeacher, {
-    studentId: someStudent.id, topic: 'listening', summary: 'Thử hành trình', idempotencyKey: 'test-report-8', parallel: true,
+    title: 'Vấn đề cần theo dõi ở kỹ năng này',
+    primaryCode: 'student.listening.technique',
+    studentId: someStudent.id, topic: 'listening', summary: 'Thử hành trình — mô tả cụ thể cho phép kiểm này.', idempotencyKey: 'test-report-8', parallel: true,
   });
   const n = (conn.prepare(`SELECT COUNT(*) n FROM journey_events WHERE ref_table='sos_cases' AND ref_id = ?`)
     .get(c.id) as any).n;
@@ -2410,7 +2437,9 @@ check('Vấn đề sinh từ điểm có dòng mô tả suy ra từ dữ liệu,
 
 check('Bằng chứng phải thuộc đúng học viên của case', () => {
   const c = cases.reportIssue(P.coreTeacher, {
-    studentId: someStudent.id, topic: 'listening', summary: 'Thử bằng chứng', idempotencyKey: 'test-report-9', parallel: true,
+    title: 'Vấn đề cần theo dõi ở kỹ năng này',
+    primaryCode: 'student.listening.technique',
+    studentId: someStudent.id, topic: 'listening', summary: 'Thử bằng chứng — mô tả cụ thể cho phép kiểm này.', idempotencyKey: 'test-report-9', parallel: true,
   }) as any;
   const other = conn
     .prepare('SELECT id FROM assessment_attempts WHERE student_id != ? LIMIT 1')
@@ -2463,7 +2492,9 @@ check('Dữ liệu mẫu có đủ bốn trạng thái duyệt, không chỉ m�
 
 check('Chỉ ĐỀ XUẤT mới gửi duyệt được — việc đã làm rồi thì không còn gì để duyệt', () => {
   const c = cases.reportIssue(P.coreTeacher, {
-    studentId: someStudent.id, topic: 'listening', summary: 'Thử gửi duyệt', idempotencyKey: 'test-approval-1', parallel: true,
+    title: 'Vấn đề cần theo dõi ở kỹ năng này',
+    primaryCode: 'student.listening.technique',
+    studentId: someStudent.id, topic: 'listening', summary: 'Thử gửi duyệt — mô tả cụ thể cho phép kiểm này.', idempotencyKey: 'test-approval-1', parallel: true,
   }) as any;
   assertThrows(
     () => cases.recordIntervention(P.coreTeacher, c.id, {
@@ -2485,7 +2516,9 @@ check('Chỉ ĐỀ XUẤT mới gửi duyệt được — việc đã làm rồ
 
 check('Không cần duyệt thì để TRỐNG, không phải "đã duyệt"', () => {
   const c = cases.reportIssue(P.coreTeacher, {
-    studentId: someStudent.id, topic: 'listening', summary: 'Việc tự làm', idempotencyKey: 'test-approval-2', parallel: true,
+    title: 'Vấn đề cần theo dõi ở kỹ năng này',
+    primaryCode: 'student.listening.technique',
+    studentId: someStudent.id, topic: 'listening', summary: 'Việc tự làm — mô tả cụ thể cho phép kiểm này.', idempotencyKey: 'test-approval-2', parallel: true,
   }) as any;
   cases.recordIntervention(P.coreTeacher, c.id, {
     kind: 'teaching_adjust', description: 'Tăng luyện nghe chi tiết mỗi buổi', status: 'completed',
@@ -2585,6 +2618,8 @@ check('Kết quả sau hỗ trợ là việc của NGƯỜI THỰC HIỆN; quá 
 
 check('Đề xuất đang chờ duyệt thì chưa đòi cập nhật kết quả', () => {
   const c = cases.reportIssue(P.coreTeacher, {
+    title: 'Vấn đề cần theo dõi ở kỹ năng này',
+    primaryCode: 'student.listening.technique',
     studentId: someStudent.id, topic: 'listening', summary: 'Chờ duyệt đã hẹn xem lại', idempotencyKey: 'test-approval-3', parallel: true,
   }) as any;
   cases.recordIntervention(P.coreTeacher, c.id, {
@@ -3082,6 +3117,8 @@ check('Kết quả tốt được khép lại; kết quả chưa tốt BẮT BU�
 
 check('Chọn loại trong nhóm Đề xuất TỨC LÀ xin duyệt, không phải tick thêm', () => {
   const c = cases.reportIssue(P.coreTeacher, {
+    title: 'Vấn đề cần theo dõi ở kỹ năng này',
+    primaryCode: 'student.reading.technique',
     studentId: someStudent.id, topic: 'reading', summary: 'Thử nhóm đề xuất',
     idempotencyKey: 'test-proposal-1', parallel: true,
   }) as any;
@@ -3459,6 +3496,7 @@ check('Trượt Listening ở MT1 rồi MT2 → ĐÚNG MỘT case, tên đổi t
   assert(sig1?.status === 'pending', 'Lần trượt đầu phải sinh một tín hiệu chờ xác minh');
 
   cases.reportIssue(lr, {
+    primaryCode: 'student.listening.technique',
     studentId: s.id, cycleId: s.cycle_id, track: 'academic', topic: 'listening',
     title: 'Listening chưa bắt kịp tốc độ bài nghe',
     summary: 'Em nghe được ý chính nhưng mất các chi tiết ở phần 3 và 4.',
@@ -3542,6 +3580,7 @@ check('Case đã đóng mà MT sau trượt lại → MỞ CASE MỚI nối vào
     .get(a1.id) as any;
   assert(sigA?.status === 'pending', 'Lần trượt đầu phải sinh một tín hiệu chờ xác minh');
   cases.reportIssue(rt, {
+    primaryCode: 'student.reading.technique',
     studentId: s.id, cycleId: s.cycle_id, track: 'academic', topic: 'reading',
     title: 'Reading đọc chậm, không kịp bài cuối',
     summary: 'Em đọc kỹ từng câu nên hết giờ khi còn hai câu cuối.',
@@ -3593,6 +3632,7 @@ check('Case đã đóng mà MT sau trượt lại → MỞ CASE MỚI nối vào
   assert(sigB?.status === 'pending',
     'Case cũ đã đóng mà tín hiệu mới đã tự nối vào đâu đó thay vì chờ xác minh');
   cases.reportIssue(rt, {
+    primaryCode: 'student.reading.technique',
     studentId: s.id, cycleId: s.cycle_id, track: 'academic', topic: 'reading',
     title: 'Reading chậm lại ở dạng bài True/False/Not Given',
     summary: 'Lần này em mất thời gian ở dạng True/False/Not Given, khác với lần trước.',
@@ -3718,7 +3758,9 @@ check('Cảnh báo case trùng: báo lại hạng mục đã có case chưa xong
   let caught: any = null;
   try {
     cases.reportIssue(P.admin, {
-      studentId: open.student_id, topic: open.topic, summary: 'Thử case trùng',
+      title: 'Vấn đề cần theo dõi ở kỹ năng này',
+      primaryCode: 'student.listening.technique',
+      studentId: open.student_id, topic: open.topic, summary: 'Thử case trùng — mô tả cụ thể cho phép kiểm này.',
       idempotencyKey: `dup-${open.id}-a`,
     });
   } catch (e) { caught = e; }
@@ -3729,6 +3771,8 @@ check('Cảnh báo case trùng: báo lại hạng mục đã có case chưa xong
   /* Chọn "Ghi vào case đang có" → không có case mới. */
   const before = (conn.prepare('SELECT COUNT(*) n FROM sos_cases').get() as any).n;
   const merged = cases.reportIssue(P.admin, {
+    title: 'Vấn đề cần theo dõi ở kỹ năng này',
+    primaryCode: 'student.listening.technique',
     studentId: open.student_id, topic: open.topic, summary: 'Ghi vào case đang có',
     mergeIntoExisting: true, idempotencyKey: `dup-${open.id}-b`,
   }) as any;
@@ -3738,6 +3782,8 @@ check('Cảnh báo case trùng: báo lại hạng mục đã có case chưa xong
 
   /* Chọn "Mở case riêng" → có case mới, đánh dấu là song song. */
   const parallel = cases.reportIssue(P.admin, {
+    title: 'Vấn đề cần theo dõi ở kỹ năng này',
+    primaryCode: 'student.listening.technique',
     studentId: open.student_id, topic: open.topic, summary: 'Đây là vấn đề khác',
     parallel: true, idempotencyKey: `dup-${open.id}-c`,
   }) as any;
@@ -4519,6 +4565,7 @@ check('Case CHƯA CÓ PHƯƠNG ÁN NÀO thì không chốt kết quả được'
     .get() as any;
   assert(s, 'Không còn em nào chưa có case Ý thức để kiểm');
   const d = cases.reportIssue(P.admin, {
+    primaryCode: 'student.behaviour.attendance',
     studentId: s.id, track: 'behaviour', topic: 'attendance',
     title: 'Nghỉ nhiều không báo', summary: 'Ba buổi liên tiếp không tới lớp',
   }) as any;
@@ -4624,6 +4671,8 @@ check('Case mở đúng ngày demo 14/09/2026 có hạn 27/09/2026', () => {
       `SELECT iv.action_due FROM case_interventions iv
          JOIN sos_cases sc ON sc.id = iv.case_id
         WHERE sc.detected_at = '2026-09-14' AND iv.cycle_started_on = '2026-09-14'
+          /* CHỈ CASE HỌC THUẬT: Ý thức/Khác dùng luật một tuần, không phải hai tuần. */
+          AND sc.track = 'academic'
         ORDER BY iv.id LIMIT 1`,
     )
     .get() as any | undefined;
@@ -4736,16 +4785,29 @@ check('[3] Tạo case mới mở đúng case đó; nhiều case cùng kỹ năng
     const d = cases.caseDetail(P.admin, c.id) as any;
     assert(d.id === c.id, `Mở case ${c.id} lại ra case ${d.id}`);
   }
-  /* Thêm case Ý thức/Khác KHÔNG làm case SOS học thuật biến mất. */
+  /*
+   * Báo một vấn đề Ý thức/Khác KHÔNG làm case học thuật biến mất.
+   *
+   * Từ vòng 7, báo cáo ý thức có thể GỘP vào một đợt đang mở thay vì mở case mới (mục 7.2),
+   * nên số case không nhất thiết tăng. Điều phải đúng trong cả hai trường hợp là: có thêm
+   * MỘT báo cáo thành phần, và mọi case học thuật của em vẫn còn nguyên.
+   */
   const before = cases.listCases(P.admin, { studentId: st.sid }).rows.length;
+  const reportsBefore = (conn.prepare('SELECT COUNT(*) n FROM case_reports').get() as any).n;
   const created = cases.reportIssue(P.admin, {
+    primaryCode: 'student.behaviour.participation',
     studentId: st.sid, track: 'behaviour', topic: 'participation',
-    title: 'Kiểm tra: thêm case Ý thức', summary: 'Dòng này do bài kiểm tra tạo ra.',
+    title: 'Kiểm tra: thêm case Ý thức',
+    summary: 'Dòng này do bài kiểm tra tạo ra để xem case học thuật có còn không.',
     parallel: true,
   }) as any;
   const after = cases.listCases(P.admin, { studentId: st.sid }).rows;
-  assert(after.length === before + 1, `Thêm một case mà tổng số đổi từ ${before} thành ${after.length}`);
-  assert(after.some((c: any) => c.id === created.id), 'Không mở được case vừa tạo');
+  const reportsAfter = (conn.prepare('SELECT COUNT(*) n FROM case_reports').get() as any).n;
+  assert(reportsAfter === reportsBefore + 1,
+    `Báo một vấn đề mà số báo cáo thành phần đổi từ ${reportsBefore} thành ${reportsAfter}`);
+  assert(after.length === before || after.length === before + 1,
+    `Số case đổi bất thường: ${before} → ${after.length}`);
+  assert(after.some((c: any) => c.id === created.id), 'Không mở được case vừa tạo hoặc vừa gộp vào');
   for (const c of mine) {
     assert(after.some((x: any) => x.id === c.id), `Case học thuật ${c.id} biến mất sau khi thêm case Ý thức`);
   }
@@ -5693,24 +5755,32 @@ check('[6.2] Tín hiệu hiện ở hồ sơ học viên và ở hàng việc c�
   }
 });
 
-check('[6.2] Ghi nhận "đã xem, không mở case" là kết thúc hợp lệ — nhưng phải viết nhận định', () => {
+check('[6.2] Xác minh MỘT tín hiệu chỉ có MỘT lối ra: mở case', () => {
+  /*
+   * Chủ sản phẩm chốt 16/09/2026, ngược với câu "ghi nhận đã xem" của đề bài mục 6.2:
+   * xác minh nghĩa là MỞ CASE, không có đường nào khác. Nên không còn thao tác nào sinh ra
+   * trạng thái "đã xem, không thành case" — trạng thái đó chỉ còn trên dữ liệu có từ trước.
+   */
+  assert(!('noteSignal' in signalsSvc),
+    'Vẫn còn đường ghi nhận đã xem mà không mở case — chủ sản phẩm đã bỏ lối ra này');
+
   const sg = conn
-    .prepare(`SELECT * FROM case_signals WHERE status = 'pending' AND track = 'behaviour' LIMIT 1`)
+    .prepare(`SELECT * FROM case_signals WHERE status = 'pending' LIMIT 1`)
     .get() as any;
-  assert(sg, 'Bộ demo thiếu tín hiệu Ý thức/Khác đang chờ');
-  const who = P.admin;
-
-  /* Bấm cho xong không được: mục 6.2 cấm "ép tạo nguyên nhân giả để xoá nợ". */
-  assertThrows(() => signalsSvc.noteSignal(who, sg.id, 'ok'), /nhận định/,
-    'Ghi nhận được mà không cần viết gì');
-
-  signalsSvc.noteSignal(who, sg.id,
-    'Đã gặp em đầu giờ: em vẫn đi học đều và làm bài đủ, lần này em ốm đúng tuần thi. '
-    + 'Chưa cần mở case ý thức.');
+  assert(sg, 'Bộ demo thiếu tín hiệu đang chờ xác minh');
+  const made = cases.reportIssue(P.admin, {
+    studentId: sg.student_id, cycleId: sg.cycle_id,
+    track: sg.track, topic: sg.skill ?? 'attendance',
+    title: 'Xác minh từ tín hiệu của đợt đánh giá',
+    summary: 'Đã xem lại bài và xác định vấn đề cụ thể của em ở phần này.',
+    primaryCode: sg.skill
+      ? `student.${sg.skill.replace(/[12]$/, '')}.${sg.skill.startsWith('writing') ? 'task' : sg.skill === 'speaking' ? 'fluency' : 'technique'}`
+      : 'student.behaviour.attendance',
+    fromSignalId: sg.id,
+  }) as any;
   const after = conn.prepare('SELECT * FROM case_signals WHERE id = ?').get(sg.id) as any;
-  assert(after.status === 'noted', `Trạng thái sau khi ghi nhận phải là "noted", đang là ${after.status}`);
-  assert(after.case_id === null, 'Ghi nhận đã xem mà lại tạo ra một case');
-  assert(after.resolved_by && after.resolution_note, 'Thiếu người ghi nhận hoặc nội dung nhận định');
+  assert(after.status === 'linked' && after.case_id === made.id,
+    'Xác minh xong mà tín hiệu không gắn vào case vừa mở');
 });
 
 check('[6.2] Chỉ người trong phạm vi phụ trách mới xác minh được tín hiệu', () => {
@@ -5725,7 +5795,14 @@ check('[6.2] Chỉ người trong phạm vi phụ trách mới xác minh đượ
   if (!sg) return;
   /* Quản lý chi nhánh khác không đụng được. */
   assertThrows(
-    () => signalsSvc.noteSignal(P.cpManager, sg.id, 'Tôi xem hộ chi nhánh khác một cái nhé'),
+    () => cases.reportIssue(P.cpManager, {
+      studentId: sg.student_id, cycleId: sg.cycle_id,
+      track: sg.track, topic: sg.skill ?? 'attendance',
+      title: 'Xem hộ chi nhánh khác một chút',
+      summary: 'Tôi xem hộ chi nhánh khác một cái cho nhanh, xem em vướng gì.',
+      primaryCode: 'student.behaviour.attendance',
+      fromSignalId: sg.id,
+    }),
     /phạm vi/, 'Quản lý chi nhánh khác xác minh được tín hiệu ngoài phạm vi',
   );
 });
@@ -5748,6 +5825,192 @@ check('[9.4] Phương án chưa ai làm bị huỷ do sửa điểm KHÔNG tính
     .get() as any;
   assert(counted.n === 0,
     `${counted.n} phương án chưa từng chạy lại có kết quả — không thành công cũng không thất bại`);
+});
+
+// ============================================================ 36. Mục 6.3 · 6.4 · 7
+
+console.log('\n36. Form case, phân loại và gộp đợt Ý thức/Khác (mục 6.3 · 6.4 · 7)');
+
+/** Một học viên sạch để thử form mà không đụng dữ liệu kịch bản. */
+function formTestStudent() {
+  const row = conn
+    .prepare(
+      `SELECT s.id, cy.id AS cycle_id FROM students s
+         JOIN enrollments e ON e.student_id = s.id AND e.status = 'active'
+         JOIN classes c ON c.id = e.class_id
+         JOIN branches b ON b.id = c.branch_id
+         LEFT JOIN learning_cycles cy ON cy.student_id = s.id AND cy.status = 'active'
+        WHERE b.code = 'MB' AND s.status = 'active'
+        ORDER BY s.id DESC LIMIT 1`,
+    )
+    .get() as any;
+  assert(row, 'Không tìm được học viên để thử form');
+  return row;
+}
+
+check('[6.3] Bốn trường bắt buộc: tên, mô tả, mức độ hai bậc, phân loại', () => {
+  const st = formTestStudent();
+  const base = {
+    studentId: st.id, cycleId: st.cycle_id, track: 'academic', topic: 'reading',
+    parallel: true,
+  } as any;
+
+  assertThrows(() => cases.reportIssue(P.admin, { ...base, summary: 'Em đọc chậm lắm luôn ấy' }),
+    /đặt tên/, 'Mở được case không tên');
+  assertThrows(() => cases.reportIssue(P.admin, { ...base, title: 'Reading chậm', summary: 'Chậm' }),
+    /cụ thể hơn/, 'Mở được case với mô tả một chữ');
+  assertThrows(
+    () => cases.reportIssue(P.admin, {
+      ...base, title: 'Reading đọc chậm', summary: 'Em đọc kỹ từng câu nên hết giờ.',
+    }),
+    /phân loại/, 'Mở được case không có phân loại vấn đề',
+  );
+
+  /* "Bình thường" đã bỏ — gửi lên là bị từ chối, không phải âm thầm hạ xuống. */
+  assertThrows(
+    () => cases.reportIssue(P.admin, {
+      ...base, title: 'Reading đọc chậm', summary: 'Em đọc kỹ từng câu nên hết giờ.',
+      primaryCode: 'student.reading.time', urgency: 'normal',
+    }),
+    /hai bậc/, 'Vẫn nhận được mức "Bình thường"',
+  );
+
+  /* Chọn "Khác" thì mô tả phải nói rõ — nếu không thì "Khác" chính là "Chưa rõ" đổi tên. */
+  assertThrows(
+    () => cases.reportIssue(P.admin, {
+      ...base, title: 'Reading có vấn đề', summary: 'Em đọc chưa tốt lắm.',
+      primaryCode: 'student.reading.other',
+    }),
+    /nói rõ vấn đề cụ thể/, 'Chọn "Khác" mà mô tả qua loa vẫn mở được case',
+  );
+
+  /* Đủ bốn trường thì mở được, và mức mặc định là "Cần chú ý" chứ không phải không có mức. */
+  const ok = cases.reportIssue(P.admin, {
+    ...base, title: 'Reading: hết giờ ở hai câu cuối',
+    summary: 'Em đọc kỹ từng câu nên luôn hết giờ khi còn hai câu cuối của passage 3.',
+    primaryCode: 'student.reading.time',
+  }) as any;
+  assert(ok.urgency === 'attention', `Mức mặc định phải là "Cần chú ý", đang là ${ok.urgency}`);
+  assert(ok.title === 'Reading: hết giờ ở hai câu cuối', 'Tên case bị máy viết lại');
+});
+
+check('[6.4] Bộ phân loại đúng của mục 6.4, và phân loại phải thuộc đúng kỹ năng', () => {
+  const codes = (topic: string) => domain.issuesForTopic(topic).map((i: any) => i.label);
+  assert(codes('reading').join(' | ') === 'Từ vựng / ngữ pháp | Kỹ năng làm bài | Tư duy logic | Quản lý thời gian | Khác',
+    `Bộ Reading sai: ${codes('reading').join(' | ')}`);
+  assert(codes('listening').join(' | ') === 'Từ vựng / ngữ pháp | Tư duy và kỹ năng làm bài | Tâm lý và độ tập trung | Ngôn ngữ | Khác',
+    `Bộ Listening sai: ${codes('listening').join(' | ')}`);
+  assert(codes('homework').join(' | ') === 'BTVN | Chuyên cần | Tham gia trên lớp | Khác',
+    `Bộ Ý thức/Khác sai: ${codes('homework').join(' | ')}`);
+  /* W1 và W2 dùng chung bộ Writing. */
+  assert(codes('writing1').join('|') === codes('writing2').join('|'), 'W1 và W2 phải dùng chung bộ phân loại');
+
+  /* "Ngôn ngữ" của Listening phải có câu giải thích, nếu không nó lẫn với "Từ vựng / ngữ pháp". */
+  const sound = domain.issuesForTopic('listening').find((i: any) => i.label === 'Ngôn ngữ') as any;
+  assert(sound?.hint && /nối âm|trọng âm/.test(sound.hint),
+    'Nhãn "Ngôn ngữ" của Listening thiếu câu giải thích phân biệt với vốn từ');
+
+  /* Phân loại của môn khác thì không nhận. */
+  const st = formTestStudent();
+  assertThrows(
+    () => cases.reportIssue(P.admin, {
+      studentId: st.id, cycleId: st.cycle_id, track: 'academic', topic: 'speaking', parallel: true,
+      title: 'Speaking nói ngắt quãng',
+      summary: 'Em dừng lâu giữa câu khi gặp chủ đề lạ ngoài vốn từ quen.',
+      primaryCode: 'student.reading.time',
+    }),
+    /không thuộc bộ phân loại/, 'Nhận phân loại của môn khác',
+  );
+});
+
+check('[7.2] Ý thức/Khác: báo trong bốn ngày thì GỘP, ngày thứ năm thì mở đợt mới', () => {
+  const st = formTestStudent();
+  const mk = (title: string, summary: string) => cases.reportIssue(P.admin, {
+    studentId: st.id, cycleId: st.cycle_id, track: 'behaviour', topic: 'homework',
+    title, summary, primaryCode: 'student.behaviour.homework',
+  }) as any;
+
+  const first = mk('Thiếu BTVN nhiều buổi', 'Ba buổi liền em không nộp bài về nhà môn Reading.');
+  const row1 = conn.prepare('SELECT * FROM sos_cases WHERE id = ?').get(first.id) as any;
+  assert(row1.merge_until === addDays(demoToday(), 3),
+    `Cửa sổ gộp phải là bốn ngày kể cả ngày mở: ${demoToday()} → ${row1.merge_until}`);
+  assert(row1.episode_no === 1, `Đợt đầu phải là lần 1, đang là ${row1.episode_no}`);
+  assert(row1.urgency === 'attention', 'Đợt mới mở đã bị đánh Gấp');
+
+  /* Báo lần hai TRONG cửa sổ: gộp vào chính đợt đó và nâng lên Gấp. */
+  const second = mk('Lại thiếu BTVN', 'Buổi Listening hôm nay em cũng không có bài, nói là quên.');
+  assert(second.id === first.id, 'Báo cáo trong cửa sổ bốn ngày mà lại mở case mới');
+  const row2 = conn.prepare('SELECT * FROM sos_cases WHERE id = ?').get(first.id) as any;
+  assert(row2.urgency === 'urgent', 'Có báo cáo bổ sung mà case không được nâng lên Gấp');
+  assert(row2.episode_no === 1, 'Số đợt tăng theo mỗi báo cáo — phải tăng theo ĐỢT');
+  const reports = conn
+    .prepare('SELECT * FROM case_reports WHERE case_id = ? ORDER BY id').all(first.id) as any[];
+  assert(reports.length === 2, `Đợt phải giữ cả hai báo cáo nguồn, đang có ${reports.length}`);
+  assert(reports[0].summary !== reports[1].summary, 'Báo cáo sau đã ghi đè báo cáo trước');
+
+  /* Hạn KẾT LUẬN của case vẫn tính từ ngày mở, không lùi theo báo cáo mới. */
+  assert(row2.follow_until === addDays(row1.detected_at, 6),
+    `Hạn case phải là ngày mở + 6, đang là ${row2.follow_until}`);
+
+  /* Phân loại KHÁC thì không gộp, dù cùng một ngày và cùng một em. */
+  const other = cases.reportIssue(P.admin, {
+    studentId: st.id, cycleId: st.cycle_id, track: 'behaviour', topic: 'participation',
+    title: 'Ít phát biểu trên lớp', summary: 'Em ngồi im cả buổi, gọi mới trả lời một câu ngắn.',
+    primaryCode: 'student.behaviour.participation',
+  }) as any;
+  assert(other.id !== first.id, 'Hai phân loại ý thức khác nhau bị gộp vào một case');
+});
+
+check('[7.2] Gửi lại cùng một request không tạo báo cáo thứ hai và không tự nâng mức', () => {
+  const st = formTestStudent();
+  const args = {
+    studentId: st.id, cycleId: st.cycle_id, track: 'behaviour', topic: 'attendance',
+    title: 'Nghỉ học không báo trước',
+    summary: 'Tuần này em nghỉ hai buổi mà gia đình không báo trước cho lớp.',
+    primaryCode: 'student.behaviour.attendance',
+    idempotencyKey: 'test-behaviour-retry-1',
+  } as any;
+  const a = cases.reportIssue(P.admin, args) as any;
+  const urgencyAfterFirst = (conn.prepare('SELECT urgency FROM sos_cases WHERE id = ?').get(a.id) as any).urgency;
+  const b = cases.reportIssue(P.admin, args) as any;
+  assert(a.id === b.id, 'Gửi lại cùng request cho ra hai case khác nhau');
+  const n = (conn.prepare('SELECT COUNT(*) n FROM case_reports WHERE case_id = ?').get(a.id) as any).n;
+  assert(n === 1, `Gửi lại cùng request đã tạo ${n} báo cáo`);
+  const after = (conn.prepare('SELECT urgency FROM sos_cases WHERE id = ?').get(a.id) as any).urgency;
+  assert(after === urgencyAfterFirst,
+    'Bấm lại vì mạng chập chờn đã bị tính thành một lần tái phạm và nâng mức');
+});
+
+check('[7.2] Ngày gửi của hệ thống quyết định cửa sổ, không phải ngày người dùng khai', () => {
+  const st = formTestStudent();
+  const made = cases.reportIssue(P.admin, {
+    studentId: st.id, cycleId: st.cycle_id, track: 'behaviour', topic: 'other',
+    title: 'Chuyện khác cần theo dõi',
+    summary: 'Em có biểu hiện mệt mỏi kéo dài trong giờ học, cần để ý thêm vài buổi.',
+    primaryCode: 'student.behaviour.other',
+    /* Khai lùi ngày để thử: cửa sổ gộp KHÔNG được đổi theo con số này. */
+    detectedAt: addDays(demoToday(), -20),
+  }) as any;
+  const row = conn.prepare('SELECT * FROM sos_cases WHERE id = ?').get(made.id) as any;
+  assert(row.merge_until === addDays(demoToday(), 3),
+    `Khai lùi ngày đã đổi được cửa sổ gộp: ${row.merge_until}`);
+  const rep = conn.prepare('SELECT * FROM case_reports WHERE case_id = ?').get(made.id) as any;
+  assert(rep.reported_on === demoToday(), 'Ngày gửi của báo cáo bị lấy theo ngày người dùng khai');
+  assert(rep.observed_on === addDays(demoToday(), -20), 'Mất ngày người dùng khai ở "Theo dõi từ ngày"');
+});
+
+check('[7.2] Bộ demo có một đợt gộp hai báo cáo và đã được nâng lên Gấp', () => {
+  const row = conn
+    .prepare(
+      `SELECT c.id, c.title, c.urgency, c.episode_no, COUNT(r.id) n
+         FROM sos_cases c JOIN case_reports r ON r.case_id = c.id
+        WHERE c.track = 'behaviour'
+        GROUP BY c.id HAVING n > 1
+        ORDER BY c.id LIMIT 1`,
+    )
+    .get() as any;
+  assert(row, 'Bộ demo thiếu đợt Ý thức/Khác gộp nhiều báo cáo — mục 7.3 đòi phải nhìn thấy');
+  assert(row.urgency === 'urgent', 'Đợt gộp nhiều báo cáo mà chưa được nâng lên Gấp');
 });
 
 console.log(`\n${'='.repeat(60)}`);

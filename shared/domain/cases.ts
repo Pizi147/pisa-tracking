@@ -277,27 +277,46 @@ export type IssueNode = {
   /** Mã ỔN ĐỊNH. Đổi nhãn hiển thị được, đổi mã thì mất lịch sử. */
   code: string;
   label: string;
+  /** Một câu giải thích khi nhãn dễ bị hiểu lẫn với nhãn bên cạnh. */
+  hint?: string;
 };
 
 export type IssueBranch = {
   /** Khớp với chủ đề mạch. Writing dùng chung cho `writing1` và `writing2`. */
-  key: 'listening' | 'reading' | 'writing' | 'speaking';
+  key: 'listening' | 'reading' | 'writing' | 'speaking' | 'behaviour';
   label: string;
   items: IssueNode[];
 };
 
 const other = (code: string): IssueNode => ({ code, label: 'Khác' });
 
+/**
+ * DANH MỤC PHÂN LOẠI VẤN ĐỀ — bộ của vòng 7 (mục 6.4).
+ *
+ * Đây là câu trả lời cho "vấn đề của em thuộc loại gì", và nó **bắt buộc** khi mở case:
+ * không có phân loại thì case không vào được bảng tổng hợp nào, và ba tháng sau không ai
+ * trả lời được "trung tâm mình hay vướng cái gì nhất".
+ *
+ * Bộ cũ bị THAY, không phải bổ sung. Để hai bộ cùng sống thì cùng một vấn đề sẽ được đếm
+ * dưới hai cái tên và mọi báo cáo đều sai — mục 6.4 nói rõ điều này.
+ */
 export const ISSUE_TAXONOMY: IssueBranch[] = [
   {
     key: 'listening', label: 'Listening',
     items: [
       { code: 'student.listening.language', label: 'Từ vựng / ngữ pháp' },
-      { code: 'student.listening.technique', label: 'Kỹ năng làm bài' },
-      { code: 'student.listening.sound', label: 'Cảm âm' },
-      { code: 'student.listening.distractor', label: 'Hay dính bẫy distractors' },
-      { code: 'student.listening.focus', label: 'Tâm lý / khả năng tập trung' },
-      { code: 'student.listening.mainidea', label: 'Nghe hiểu ý chính' },
+      { code: 'student.listening.technique', label: 'Tư duy và kỹ năng làm bài' },
+      { code: 'student.listening.focus', label: 'Tâm lý và độ tập trung' },
+      {
+        code: 'student.listening.sound',
+        label: 'Ngôn ngữ',
+        /*
+         * "Ngôn ngữ" ở Listening KHÔNG phải vốn từ — nó là chuyện tai nghe ra được gì.
+         * Không giải thích thì nó và "Từ vựng / ngữ pháp" sẽ bị chọn lẫn lộn, và hai hạng
+         * mục lẫn nhau thì bảng tổng hợp mất nghĩa.
+         */
+        hint: 'Nhận diện âm, nối âm, trọng âm, tốc độ lời nói — khác với vốn từ và ngữ pháp.',
+      },
       other('student.listening.other'),
     ],
   },
@@ -306,8 +325,8 @@ export const ISSUE_TAXONOMY: IssueBranch[] = [
     items: [
       { code: 'student.reading.language', label: 'Từ vựng / ngữ pháp' },
       { code: 'student.reading.technique', label: 'Kỹ năng làm bài' },
-      { code: 'student.reading.mainidea', label: 'Mơ hồ ý chính' },
       { code: 'student.reading.logic', label: 'Tư duy logic' },
+      { code: 'student.reading.time', label: 'Quản lý thời gian' },
       other('student.reading.other'),
     ],
   },
@@ -331,6 +350,22 @@ export const ISSUE_TAXONOMY: IssueBranch[] = [
       other('student.speaking.other'),
     ],
   },
+  {
+    /*
+     * Ý THỨC/KHÁC CŨNG PHẢI CÓ PHÂN LOẠI (mục 6.4).
+     *
+     * Trước đây nhóm ý thức chỉ có "chủ đề" (chuyên cần / BTVN / tham gia) và không có tầng
+     * phân loại, nên nó nằm ngoài mọi bảng tổng hợp nguyên nhân. Nay nó dùng chung một cơ
+     * chế với học thuật — và đó cũng là khoá để gộp báo cáo theo đợt ở mục 7.
+     */
+    key: 'behaviour', label: 'Ý thức / Khác',
+    items: [
+      { code: 'student.behaviour.homework', label: 'BTVN' },
+      { code: 'student.behaviour.attendance', label: 'Chuyên cần' },
+      { code: 'student.behaviour.participation', label: 'Tham gia trên lớp' },
+      other('student.behaviour.other'),
+    ],
+  },
 ];
 
 const ISSUE_INDEX: Record<string, { label: string; branch: IssueBranch['key'] }> = {};
@@ -348,9 +383,16 @@ export function issueBranchOf(code: string | null | undefined): IssueBranch['key
   return code ? ISSUE_INDEX[code]?.branch ?? null : null;
 }
 
-/** Bộ phân loại dùng được cho một chủ đề mạch. W1 và W2 cùng dùng bộ Writing. */
+/**
+ * Bộ phân loại dùng được cho một chủ đề.
+ *
+ * W1 và W2 cùng dùng bộ Writing — hai task chấm riêng nhưng nguyên nhân thì cùng một họ.
+ * Bốn nhóm ý thức (chuyên cần / BTVN / tham gia / khác) cùng dùng bộ Ý thức/Khác.
+ */
 export function issuesForTopic(topic: string): IssueNode[] {
-  const key = topic === 'writing1' || topic === 'writing2' ? 'writing' : topic;
+  const key = topic === 'writing1' || topic === 'writing2' ? 'writing'
+    : (BEHAVIOUR_TOPICS as readonly string[]).includes(topic) ? 'behaviour'
+    : topic;
   return ISSUE_TAXONOMY.find((b) => b.key === key)?.items ?? [];
 }
 
@@ -399,14 +441,71 @@ export const CASE_ORIGIN_LABEL: Record<CaseOrigin, string> = {
  * cảm nhận của người báo. Nếu để giáo viên gõ thẳng "SOS 2" mà không có bài nào, thì con
  * số SOS trên mọi báo cáo sẽ mang hai nghĩa khác nhau và không cộng được nữa.
  */
-export const URGENCY_LEVELS = ['normal', 'attention', 'urgent'] as const;
+/**
+ * HAI MỨC, KHÔNG BA (mục 6.3). "Bình thường" đã bỏ.
+ *
+ * Lý do bỏ: một vấn đề đã được mở thành case thì tự nó đã là việc phải làm — gắn nhãn "bình
+ * thường" cho nó chỉ nói được một điều là người báo không muốn chọn gì cả. Và vì nó là mặc
+ * định nên gần như mọi case đều mang nhãn đó, khiến cột Mức độ không phân biệt được gì.
+ *
+ * Hai mức còn lại đều DẪN TỚI MỘT HẠN KHÁC NHAU, nên chúng có việc để làm.
+ */
+export const URGENCY_LEVELS = ['attention', 'urgent'] as const;
 export type UrgencyLevel = (typeof URGENCY_LEVELS)[number];
-export const URGENCY_LABEL: Record<UrgencyLevel, string> = {
-  normal: 'Bình thường', attention: 'Cần chú ý', urgent: 'Gấp',
+
+/** Mức mặc định khi người báo không chọn gì — vẫn là một mức có hạn, không phải "không sao". */
+export const DEFAULT_URGENCY: UrgencyLevel = 'attention';
+
+/**
+ * Nhãn CÓ CẢ MỨC ĐÃ BỎ, để dữ liệu và nhật ký cũ đọc ra được chữ chứ không ra mã thô.
+ * Danh sách chọn thì chỉ lấy từ `URGENCY_LEVELS`.
+ */
+export const URGENCY_LABEL: Record<string, string> = {
+  normal: 'Bình thường (mức cũ)', attention: 'Cần chú ý', urgent: 'Gấp',
 };
-export const URGENCY_TONE: Record<UrgencyLevel, 'neutral' | 'warn' | 'danger'> = {
+export const URGENCY_TONE: Record<string, 'neutral' | 'warn' | 'danger'> = {
   normal: 'neutral', attention: 'warn', urgent: 'danger',
 };
+
+// ---------------------------------------------------------------- gộp báo cáo Ý thức/Khác
+
+/**
+ * CỬA SỔ GỘP BÁO CÁO Ý THỨC/KHÁC — BỐN NGÀY LỊCH, TÍNH CẢ NGÀY MỞ (mục 7.2).
+ *
+ * Case mở 14/9 thì báo cáo ngày 14, 15, 16, 17 gộp vào chính nó; từ 18/9 là một ĐỢT MỚI.
+ *
+ * Vì sao phải có cửa sổ: "em không làm bài tập" báo ba lần trong một tuần là MỘT chuyện, và
+ * mở ba case thì ba người cùng theo dõi mà không ai thấy việc của người kia. Nhưng cùng
+ * chuyện đó tái diễn sau nửa tháng lại là một đợt khác — gộp hết vào một case thì cái case
+ * ấy không bao giờ đóng được và không đo được gì.
+ */
+export const BEHAVIOUR_MERGE_WINDOW_DAYS = 4;
+
+/** Ngày CUỐI CÙNG còn gộp được vào một case mở ngày `openedOn`. */
+export function behaviourMergeUntil(openedOn: string): string {
+  return addDaysIso(openedOn, BEHAVIOUR_MERGE_WINDOW_DAYS - 1);
+}
+
+/**
+ * Hạn kết luận của một case Ý thức/Khác: ngày mở + 6 ngày (mục 7.2).
+ * KHÔNG đặt lại theo báo cáo gộp thêm sau đó — nếu không thì một case cứ có báo cáo mới là
+ * hạn lại lùi ra, và nó sẽ không bao giờ tới hạn.
+ */
+export const BEHAVIOUR_CASE_DAYS = 6;
+export function behaviourCaseDeadline(openedOn: string): string {
+  return addDaysIso(openedOn, BEHAVIOUR_CASE_DAYS);
+}
+
+/**
+ * Sau khi case bị NÂNG LÊN GẤP, hạn của phương án là ngày SỚM HƠN giữa hạn đang có và
+ * "ngày nâng + 2 ngày" (mục 7.2). Nâng mức chỉ được kéo hạn GẦN LẠI, không bao giờ đẩy ra xa.
+ */
+export const URGENT_RAISE_DAYS = 2;
+export function deadlineAfterRaise(current: string | null, raisedOn: string): string {
+  const tight = addDaysIso(raisedOn, URGENT_RAISE_DAYS);
+  if (!current) return tight;
+  return current < tight ? current : tight;
+}
 
 /**
  * HƯỚNG XỬ LÝ — khác với TRẠNG THÁI.
@@ -617,7 +716,15 @@ export type SignalStatus = (typeof SIGNAL_STATUSES)[number];
 export const SIGNAL_STATUS_LABEL: Record<SignalStatus, string> = {
   pending: 'Chờ xác minh',
   linked: 'Đã thành case',
-  noted: 'Đã xem, không thành case',
+  /*
+   * TRẠNG THÁI CŨ, CHỈ CÒN ĐỂ ĐỌC LẠI LỊCH SỬ.
+   *
+   * Đề bài mục 6.2 cho phép GVCN "ghi nhận đã xem" một mốc Ý thức/Khác mà không mở case.
+   * Chủ sản phẩm chốt ngược lại (16/09/2026): xác minh một tín hiệu nghĩa là MỞ CASE, không
+   * có lối ra nào khác. Nên không thao tác nào còn sinh ra trạng thái này; nó chỉ nằm trên
+   * dữ liệu có từ trước và trên bộ demo lịch sử.
+   */
+  noted: 'Đã xem (dữ liệu cũ)',
   withdrawn: 'Đã thu hồi',
 };
 

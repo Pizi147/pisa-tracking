@@ -109,10 +109,10 @@ const GROUP_META: Record<WorkGroupKey, { label: string; hint: string; overdue: s
    * kết quả nào để cập nhật. Đây là việc chặn đầu chuỗi, và hạn của nó chỉ có ba ngày.
    */
   verify: {
-    label: 'Xác minh tín hiệu',
+    label: 'Xác minh SOS',
     hint: 'Kết quả của em dưới kỳ vọng ở kỹ năng này. Hệ thống chỉ báo con số — bạn xem lại bài '
-      + 'rồi quyết định: mở case với tên và mô tả cụ thể, hay ghi nhận là chưa cần mở case. '
-      + 'Hạn ba ngày kể từ lúc tín hiệu được ghi nhận, tính cả ngày đầu.',
+      + 'rồi mở case với tên và mô tả cụ thể. Hạn ba ngày kể từ lúc tín hiệu được ghi nhận, '
+      + 'tính cả ngày đầu.',
     overdue: 'Quá hạn xác minh',
   },
 
@@ -241,7 +241,7 @@ export function myWork(p: Principal, f: { branchId?: number | null } = {}) {
         ? `Em vừa có ${SOS_LABEL[(sg.sosLevel ?? 0) as 0 | 1 | 2 | 3]}. Xem tình hình chung của em và ghi nhận nhận định.`
         : `${sg.label} dưới kỳ vọng${sg.band !== null ? ` (${sg.band} so với ${sg.expectation ?? '—'})` : ''}.`
           + ' Xem lại bài rồi xác minh.',
-      actionLabel: 'Xác minh',
+      actionLabel: 'Mở case',
       overdueLabel: badge('verify', u),
       href: `/hoc-vien/${sg.studentId}`,
       ownerId: sg.ownerUserId, owner: null, mine: true,

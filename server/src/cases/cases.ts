@@ -2,7 +2,9 @@ import { db, tx } from '../db.ts';
 import {
   DISPOSITIONS, INTERVENTION_KINDS, INTERVENTION_KIND_LABEL, INTERVENTION_STATUSES,
   FOLLOWUP_OUTCOMES, BEHAVIOUR_TOPICS, CASE_DECISIONS, CASE_OUTCOMES, ENTRY_SKILLS,
-  ISSUE_ROLES, PERMISSIONS, THREAD_TRACKS, URGENCY_LEVELS,
+  ISSUE_ROLES, PERMISSIONS, THREAD_TRACKS, URGENCY_LEVELS, DEFAULT_URGENCY,
+  BEHAVIOUR_MERGE_WINDOW_DAYS, behaviourCaseDeadline, behaviourMergeUntil, deadlineAfterRaise,
+  issuesForTopic,
   CASE_CATEGORY_SHORT, CASE_CATEGORIES, FOLLOWUP_OUTCOME_LABEL, caseCategoriesFor,
   CASE_OUTCOME_LABEL, caseCategoryLabel, caseDedupKey, caseHeadline, caseTitle, categoryOf,
   NEXT_STEP_LABEL, cycleDeadline, isProposalKind, nextStepsFor, outcomeLabelFor, outcomesFor,
@@ -237,6 +239,65 @@ function loadCase(caseId: number) {
  *
  * Chống trùng bằng `idempotency_key`: bấm hai lần hoặc thử lại sau lỗi mạng chỉ ra một case.
  */
+/**
+ * GHI MỘT BÁO CÁO THÀNH PHẦN vào một đợt case Ý thức/Khác (mục 7.2).
+ *
+ * Trả về `false` khi báo cáo này đã có rồi — tức là cùng một request được gửi lại. Nơi gọi
+ * dùng dấu đó để KHÔNG nâng mức và KHÔNG ghi thêm nhật ký: bấm lại vì mạng chập chờn không
+ * được biến thành một lần tái phạm của học viên.
+ */
+function addCaseReport(conn: any, r: {
+  caseId: number; reportedBy: number | null;
+  sourceSkill: string | null; sourceAttemptId?: number | null;
+  reportedOn: string; observedOn: string | null; summary: string;
+  idempotencyKey?: string | null;
+}): boolean {
+  if (r.idempotencyKey) {
+    const seen = conn.prepare('SELECT id FROM case_reports WHERE idempotency_key = ?').get(r.idempotencyKey);
+    if (seen) return false;
+  }
+  conn
+    .prepare(
+      `INSERT INTO case_reports (case_id, reported_by, source_skill, source_attempt_id,
+                                 reported_on, observed_on, summary, idempotency_key, created_at)
+       VALUES (?,?,?,?,?,?,?,?,?)`,
+    )
+    .run(r.caseId, r.reportedBy, r.sourceSkill, r.sourceAttemptId ?? null,
+         r.reportedOn, r.observedOn, r.summary, r.idempotencyKey ?? null, nowIso());
+  return true;
+}
+
+/**
+ * CÓ BÁO CÁO BỔ SUNG TRONG CÙNG ĐỢT → NÂNG CASE LÊN **GẤP** (mục 7.2).
+ *
+ * Nâng kể cả khi người gửi chọn "Cần chú ý": hai người khác nhau cùng thấy một chuyện trong
+ * bốn ngày là một tín hiệu mạnh hơn nhận định của riêng ai.
+ *
+ * Nâng mức SIẾT hạn phương án lại — sớm hơn giữa hạn đang có và "ngày nâng + 2 ngày" — chứ
+ * không bao giờ đẩy hạn ra xa. Và hạn KẾT LUẬN của cả case thì GIỮ NGUYÊN theo ngày mở: nếu
+ * nó cũng lùi theo báo cáo mới thì một case cứ có báo cáo là hạn lại lùi, và sẽ không bao
+ * giờ tới hạn.
+ */
+function raiseBehaviourUrgency(conn: any, actorUserId: number | null, c: any, today: string) {
+  if (c.urgency === 'urgent') return;
+  conn
+    .prepare(`UPDATE sos_cases SET urgency = 'urgent', urgency_raised_at = ?, updated_at = ? WHERE id = ?`)
+    .run(today, nowIso(), c.id);
+  conn
+    .prepare(
+      `INSERT INTO sos_case_history (case_id, field, old_value, new_value, actor_user_id, created_at)
+       VALUES (?, 'urgency', ?, 'urgent', ?, ?)`,
+    )
+    .run(c.id, c.urgency ?? null, actorUserId, nowIso());
+
+  for (const iv of conn
+    .prepare(`SELECT id, action_due FROM case_interventions WHERE case_id = ? AND status IN ('planned','started')`)
+    .all(c.id) as any[]) {
+    conn.prepare('UPDATE case_interventions SET action_due = ?, updated_at = ? WHERE id = ?')
+      .run(deadlineAfterRaise(iv.action_due ?? null, today), nowIso(), iv.id);
+  }
+}
+
 export function reportIssue(p: Principal, input: {
   studentId: number;
   cycleId?: number | null;
@@ -251,6 +312,13 @@ export function reportIssue(p: Principal, input: {
   topic?: string | null;
   primaryCode?: string | null;
   secondaryCodes?: string[];
+  /**
+   * BỎ TỪ VÒNG 7 (mục 6.3): "Ghi chú" trùng việc với "Mô tả".
+   *
+   * Hai ô cùng hỏi một chuyện thì người dùng phải tự chia đôi câu chuyện của mình, và người
+   * đọc sau phải ghép lại. Cột vẫn còn trong database để đọc dữ liệu cũ; đường ghi mới đã
+   * đóng — truyền vào đây cũng không được lưu.
+   */
   note?: string | null;
   observation?: string | null;
   detectedAt?: string | null;
@@ -286,8 +354,22 @@ export function reportIssue(p: Principal, input: {
   require_(p, PERMISSIONS.SOS_EDIT, { classId, studentId: input.studentId },
     'Bạn chỉ báo được vấn đề của học viên trong phạm vi mình phụ trách.');
 
+  /*
+   * BỐN TRƯỜNG BẮT BUỘC (mục 6.3): tên, mô tả, mức độ, phân loại.
+   *
+   * Ba trong bốn cái đó trước đây không bắt buộc, và hệ quả rất cụ thể: hồ sơ đầy những
+   * case tên "Reading dưới kỳ vọng" do máy đặt, mô tả trống, phân loại "Chưa rõ" — mở ra
+   * không biết em vướng gì, và không bảng tổng hợp nào đếm được.
+   */
+  const title = (input.title ?? '').trim();
+  if (title.length < 6) {
+    throw badRequest('Hãy đặt tên cho case — một câu ngắn nói đúng vấn đề, ví dụ '
+      + '"Reading: chưa xử lý được dạng True/False/Not Given".');
+  }
   const summary = (input.summary ?? '').trim();
-  if (!summary) throw badRequest('Cần một câu mô tả vấn đề.');
+  if (summary.length < 15) {
+    throw badRequest('Cần mô tả vấn đề cụ thể hơn: em sai ở đâu, sai như thế nào.');
+  }
 
   /*
    * MỌI VẤN ĐỀ PHẢI CÓ CHỖ CẤT. Không có đầu mục và chủ đề thì nó rơi vào "chưa phân loại"
@@ -303,8 +385,11 @@ export function reportIssue(p: Principal, input: {
       : 'Hãy chọn kỹ năng: Listening, Reading, Writing Task 1, Writing Task 2 hay Speaking.');
   }
   if (!topics.includes(topic)) throw badRequest(`Chủ đề không hợp lệ: ${topic}`);
-  const urgency = input.urgency && (URGENCY_LEVELS as readonly string[]).includes(input.urgency)
-    ? input.urgency : 'normal';
+  /* Hai mức, không ba. "Bình thường" đã bỏ (mục 6.3); không chọn thì là "Cần chú ý". */
+  if (input.urgency && !(URGENCY_LEVELS as readonly string[]).includes(input.urgency)) {
+    throw badRequest('Mức độ chỉ còn hai bậc: Cần chú ý hoặc Gấp.');
+  }
+  const urgency = input.urgency ?? DEFAULT_URGENCY;
   const detectedAt = input.detectedAt ?? demoToday();
   if (!isIsoDate(detectedAt)) throw badRequest('Ngày phát hiện không hợp lệ.');
 
@@ -332,7 +417,150 @@ export function reportIssue(p: Principal, input: {
    * Kiểm ở đây chứ không chỉ dựa vào chỉ mục duy nhất: chỉ mục chỉ biết chặn, không nói
    * được cho người dùng biết case đang vướng là case nào.
    */
+  /*
+   * PHÂN LOẠI BẮT BUỘC, và không có lối thoát "Chưa rõ" (mục 6.3).
+   *
+   * Chọn "Khác" thì được, nhưng lúc đó mô tả phải nói rõ vấn đề cụ thể — nếu không, "Khác"
+   * trở thành đúng cái ô "Chưa rõ" vừa bị bỏ, chỉ khác tên.
+   */
+  const allowed = issuesForTopic(topic).map((i) => i.code);
+  const primaryCode = (input.primaryCode ?? '').trim();
+  if (!primaryCode) throw badRequest('Hãy chọn phân loại vấn đề — đây là căn cứ để tổng hợp về sau.');
+  if (!allowed.includes(primaryCode)) {
+    throw badRequest(`Phân loại "${primaryCode}" không thuộc bộ phân loại của ${topic}.`);
+  }
+  if (primaryCode.endsWith('.other') && summary.length < 30) {
+    throw badRequest('Chọn "Khác" thì mô tả phải nói rõ vấn đề cụ thể là gì.');
+  }
+
   const category = categoryOf(track, topic);
+
+  /*
+   * ========================= Ý THỨC/KHÁC: GỘP THEO ĐỢT, KHÔNG HỎI NGƯỜI DÙNG (mục 7.2)
+   *
+   * Học thuật và Ý thức/Khác gộp theo hai luật khác nhau, vì bản chất khác nhau:
+   *
+   *   Học thuật   một case SỐNG SUỐT KHOÁ cho mỗi hạng mục. "Reading yếu" là một vấn đề
+   *               kéo dài, và mỗi lần trượt lại là thêm một bằng chứng cho chính nó.
+   *   Ý thức/Khác một case là một ĐỢT NGẮN. "Tuần này em không làm bài tập" báo ba lần
+   *               trong bốn ngày là MỘT chuyện; tái diễn sau nửa tháng là chuyện khác.
+   *
+   * Nên ở đây KHÔNG hiện pop-up hỏi "ghi vào case đang có hay mở riêng": cửa sổ bốn ngày đã
+   * trả lời câu đó rồi, và hỏi lại chỉ mời người dùng trả lời sai.
+   *
+   * Cửa sổ xét bằng NGÀY GỬI CỦA HỆ THỐNG. Ô "Theo dõi từ ngày" người dùng khai không được
+   * dùng — nếu dùng thì chỉ cần khai lùi ngày là đổi được cửa sổ gộp.
+   */
+  if (track === 'behaviour') {
+    const today = demoToday();
+    const openEpisode = conn
+      .prepare(
+        /*
+         * GỘP THEO PHÂN LOẠI, KHÔNG THEO HẠNG MỤC (mục 7.3).
+         *
+         * Bốn nhóm ý thức đều nằm chung hạng mục `behaviour`, nên nếu gộp theo hạng mục thì
+         * "em thiếu BTVN" và "em ít phát biểu" chui vào cùng một case — hai chuyện khác nhau,
+         * hai cách xử lý khác nhau, và một phương án chung cho cả hai thì không giải quyết
+         * được cái nào.
+         */
+        `SELECT * FROM sos_cases
+          WHERE student_id = ? AND track = 'behaviour' AND topic = ?
+            AND status != 'done' AND merge_until IS NOT NULL AND merge_until >= ?
+          ORDER BY id DESC LIMIT 1`,
+      )
+      .get(input.studentId, topic, today) as any;
+
+    if (openEpisode) {
+      return tx(() => {
+        const added = addCaseReport(conn, {
+          caseId: openEpisode.id, reportedBy: p.userId,
+          sourceSkill: input.observation ?? null,
+          reportedOn: today, observedOn: detectedAt, summary, idempotencyKey: key,
+        });
+        /*
+         * GỬI LẠI CÙNG MỘT REQUEST không tạo báo cáo thứ hai và KHÔNG tự nâng mức (mục 7.2).
+         * Mạng chập chờn rồi bấm lại là chuyện thường; nó không được biến thành một lần tái
+         * phạm của học viên.
+         */
+        if (!added) return caseDetail(p, openEpisode.id);
+
+        raiseBehaviourUrgency(conn, p.userId, openEpisode, today);
+        addJourney({
+          studentId: input.studentId, cycleId: openEpisode.cycle_id ?? null,
+          eventType: 'case_opened', eventDate: today,
+          title: `Báo cáo bổ sung: ${caseCategoryLabel(category)}`, detail: summary,
+          refTable: 'sos_cases', refId: openEpisode.id, createdBy: p.userId,
+          dedupKey: `case_report:${openEpisode.id}:${key ?? summary.slice(0, 24)}`,
+        });
+        writeAudit({
+          actorUserId: p.userId, action: 'case.report.merged_episode', entityType: 'sos_case',
+          entityId: openEpisode.id, entityLabel: `${student.student_code} · ${caseCategoryLabel(category)}`,
+          after: { mergedInto: openEpisode.id, window: `${openEpisode.detected_at} → ${openEpisode.merge_until}` },
+        });
+        if (input.fromSignalId) linkSignalToCase(p, input.fromSignalId, openEpisode.id, summary);
+        return caseDetail(p, openEpisode.id);
+      });
+    }
+
+    /*
+     * NGOÀI CỬA SỔ → ĐỢT MỚI, kể cả khi một case cùng loại vẫn còn mở (mục 7.2).
+     * Liên kết hai đợt để đọc ra được là chuyện đang tiếp diễn, nhưng không gộp chúng: gộp
+     * thì case cũ không bao giờ đóng được và "lần thứ mấy" mất nghĩa.
+     */
+    const previous = conn
+      .prepare(
+        `SELECT id, episode_no FROM sos_cases
+          WHERE student_id = ? AND track = 'behaviour' AND topic = ?
+          ORDER BY id DESC LIMIT 1`,
+      )
+      .get(input.studentId, topic) as any;
+
+    return tx(() => {
+      const info = conn
+        .prepare(
+          `INSERT INTO sos_cases (student_id, cycle_id, track, topic, category, origin_kind,
+                                  detected_at, reported_by, title, summary, urgency, status,
+                                  idempotency_key, previous_case_id, episode_no, merge_until,
+                                  follow_until, owner_user_id, created_at)
+           VALUES (?,?, 'behaviour', ?,?, 'teacher_report', ?,?,?,?,?, 'open', ?,?,?,?,?,?,?)`,
+        )
+        .run(input.studentId, cycle?.id ?? null, topic, category,
+             detectedAt, p.userId, title, summary, urgency, key,
+             previous?.id ?? null, (previous?.episode_no ?? 0) + 1,
+             behaviourMergeUntil(today), behaviourCaseDeadline(today),
+             /*
+              * GVCN LÀ NGƯỜI ĐẢM BẢO CASE Ý THỨC ĐƯỢC XỬ LÝ (mục 7.1).
+              * Giáo viên bộ môn được BÁO, nhưng báo xong không mặc nhiên thành người phải
+              * gọi gia đình — nên người phụ trách mặc định là GVCN, không phải người báo.
+              */
+             suggestCaseOwner({ classId, track: 'behaviour', category }),
+             nowIso());
+      const caseId = Number(info.lastInsertRowid);
+      addIssues(caseId, p.userId, { ...input, topic, primaryCode });
+      addCaseReport(conn, {
+        caseId, reportedBy: p.userId, sourceSkill: input.observation ?? null,
+        reportedOn: today, observedOn: detectedAt, summary, idempotencyKey: key,
+      });
+      addJourney({
+        studentId: input.studentId, cycleId: cycle?.id ?? null,
+        eventType: 'case_opened', eventDate: detectedAt,
+        title: `Ý thức/Khác: ${caseCategoryLabel(category)}`, detail: summary,
+        refTable: 'sos_cases', refId: caseId, createdBy: p.userId,
+        dedupKey: `case_open:${caseId}`,
+      });
+      notifyManagers(
+        { id: caseId, class_id: classId, eff_student_id: input.studentId }, 'report', summary, caseId, p.userId,
+      );
+      writeAudit({
+        actorUserId: p.userId, action: 'case.report', entityType: 'sos_case', entityId: caseId,
+        entityLabel: `${student.student_code} · ${caseCategoryLabel(category)}`,
+        after: { urgency, episode: (previous?.episode_no ?? 0) + 1 },
+      });
+      if (input.fromSignalId) linkSignalToCase(p, input.fromSignalId, caseId, summary);
+      return caseDetail(p, caseId);
+    });
+  }
+
   const dedupKey = caseDedupKey({
     track, category, originKind: 'teacher_report',
     studentId: input.studentId, cycleId: cycle?.id ?? null, attemptId: null,
@@ -417,8 +645,8 @@ export function reportIssue(p: Principal, input: {
          VALUES (NULL, ?,?,?,?,?, 'teacher_report', ?,?,?,?,?, NULL, 'open', ?,?,?,?,?,?)`,
       )
       .run(input.studentId, cycle?.id ?? null, track, topic, category,
-           detectedAt, p.userId, (input.title ?? '').trim() || null, summary, urgency,
-           (input.note ?? '').trim() || null, key,
+           detectedAt, p.userId, title, summary, urgency,
+           null, key,
            input.parallel ? null : dedupKey, input.parallel ? 1 : 0,
            /*
             * NGƯỜI BÁO KHÔNG MẶC NHIÊN LÀ NGƯỜI PHỤ TRÁCH (mục 2.3). Quản lý hoặc người nhập
@@ -438,7 +666,7 @@ export function reportIssue(p: Principal, input: {
      * sinh case" (`addJourney` ngay dưới), vì ở đó nó thật sự là một mốc.
      */
 
-    addIssues(caseId, p.userId, { ...input, topic });
+    addIssues(caseId, p.userId, { ...input, topic, primaryCode });
 
     addJourney({
       studentId: input.studentId, cycleId: cycle?.id ?? null,

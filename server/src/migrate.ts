@@ -403,6 +403,7 @@ function migrateCaseEngine(applied: string[], skipped: string[]) {
     migrateNormalPassThreshold(conn, applied);
     migrateSkillSchedule(conn, applied);
     migrateSignals(conn, applied);
+    migrateCaseForm(conn, applied);
 
     /*
      * Case đã đóng theo hệ thống cũ mà không có hướng xử lý: ghi rõ là "đóng theo hệ thống
@@ -2170,5 +2171,148 @@ function migrateSignals(conn: any, applied: string[]) {
         }),
         now,
       );
+  }
+}
+
+/**
+ * FORM CASE VÒNG 7: mức độ hai bậc, phân loại bắt buộc, Ý thức/Khác gộp theo đợt
+ * (mục 6.3 · 6.4 · 7 · 18.1).
+ *
+ * Nguyên tắc xuyên suốt của bước này: **không đoán hộ người dùng.** Dữ liệu cũ thiếu gì thì
+ * ghi nhận là thiếu và để người có trách nhiệm rà, chứ không điền bừa một giá trị cho đủ ô.
+ * Một phân loại đoán sai còn tệ hơn một ô trống, vì nó sẽ được cộng vào báo cáo.
+ */
+function migrateCaseForm(conn: any, applied: string[]) {
+  const has = (t: string) =>
+    !!conn.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name = ?").get(t);
+  const cols = (t: string) => (conn.prepare(`PRAGMA table_info(${t})`).all() as any[]).map((c: any) => c.name);
+  if (!has('sos_cases')) return;
+
+  for (const [c, d] of [
+    ['episode_no', 'INTEGER NOT NULL DEFAULT 1'],
+    ['merge_until', 'TEXT'],
+    ['urgency_raised_at', 'TEXT'],
+  ] as const) {
+    if (!cols('sos_cases').includes(c)) conn.exec(`ALTER TABLE sos_cases ADD COLUMN ${c} ${d}`);
+  }
+
+  conn.exec(`
+    CREATE TABLE IF NOT EXISTS case_reports (
+      id INTEGER PRIMARY KEY,
+      case_id INTEGER NOT NULL REFERENCES sos_cases(id),
+      reported_by INTEGER REFERENCES users(id),
+      source_skill TEXT,
+      source_attempt_id INTEGER REFERENCES assessment_attempts(id),
+      reported_on TEXT NOT NULL,
+      observed_on TEXT,
+      summary TEXT NOT NULL,
+      idempotency_key TEXT UNIQUE,
+      created_at TEXT NOT NULL);
+    CREATE INDEX IF NOT EXISTS idx_case_reports_case ON case_reports(case_id);
+  `);
+
+  const now = nowIso();
+  const addDaysIso = (date: string, n: number) => {
+    const d = new Date(`${date.slice(0, 10)}T00:00:00Z`);
+    d.setUTCDate(d.getUTCDate() + n);
+    return d.toISOString().slice(0, 10);
+  };
+
+  /*
+   * MỨC "BÌNH THƯỜNG" ĐÃ BỎ → chuyển thành "Cần chú ý".
+   *
+   * Đây là ánh xạ CÓ CĂN CỨ, không phải đoán: một vấn đề đã được mở thành case thì tự nó đã
+   * là việc phải làm, nên bậc thấp nhất còn lại là đúng chỗ của nó. Không đẩy lên "Gấp" —
+   * làm thế là tự tiện tăng mức khẩn cho hàng loạt case cũ.
+   */
+  const bumped = conn
+    .prepare(`UPDATE sos_cases SET urgency = 'attention', updated_at = ? WHERE urgency = 'normal'`)
+    .run(now).changes;
+
+  /* Case cũ chưa có đợt nào: mỗi case Ý thức/Khác là đợt 1 của chính nó. */
+  let windows = 0;
+  if (cols('sos_cases').includes('merge_until')) {
+    windows = conn
+      .prepare(
+        `UPDATE sos_cases SET merge_until = ?
+          WHERE track = 'behaviour' AND merge_until IS NULL AND detected_at IS NOT NULL`,
+      )
+      .run(null).changes;
+    /* Đặt cửa sổ theo chính ngày mở của từng case — SQLite không có hàm ngày +3 tiện ở đây. */
+    windows = 0;
+    for (const c of conn
+      .prepare(`SELECT id, detected_at FROM sos_cases WHERE track = 'behaviour' AND merge_until IS NULL AND detected_at IS NOT NULL`)
+      .all() as any[]) {
+      conn.prepare('UPDATE sos_cases SET merge_until = ? WHERE id = ?')
+        .run(addDaysIso(c.detected_at, 3), c.id);
+      windows += 1;
+    }
+  }
+
+  /*
+   * ĐÁNH SỐ ĐỢT cho case Ý thức/Khác cũ, theo thứ tự thời gian trong từng (học viên, phân loại).
+   * Đây là suy ra từ dữ liệu có thật, không phải bịa: đợt nào mở trước thì là lần trước.
+   */
+  let numbered = 0;
+  const groups = conn
+    .prepare(
+      /* Đếm đợt theo PHÂN LOẠI (topic), không theo hạng mục chung `behaviour`. */
+      `SELECT student_id, topic FROM sos_cases
+        WHERE track = 'behaviour' AND topic IS NOT NULL
+        GROUP BY student_id, topic HAVING COUNT(*) > 1`,
+    )
+    .all() as any[];
+  for (const g of groups) {
+    const list = conn
+      .prepare(
+        `SELECT id FROM sos_cases WHERE student_id = ? AND track = 'behaviour' AND topic = ?
+          ORDER BY COALESCE(detected_at, created_at), id`,
+      )
+      .all(g.student_id, g.topic) as any[];
+    list.forEach((c: any, i: number) => {
+      conn.prepare('UPDATE sos_cases SET episode_no = ? WHERE id = ?').run(i + 1, c.id);
+      numbered += 1;
+    });
+  }
+
+  /*
+   * PHÂN LOẠI CŨ: giữ mã còn dùng được, và CHỈ đổi những mã có ánh xạ chắc chắn.
+   * Mã không ánh xạ được thì để nguyên — case đó sẽ hiện ra ở hàng "cần rà lại phân loại",
+   * và một người sẽ quyết định. Máy không đoán.
+   */
+  let remapped = 0;
+  if (has('case_issues')) {
+    for (const [from, to] of Object.entries({
+      /* Bộ Listening cũ gộp về bốn nhóm mới, theo đúng nghĩa của từng nhãn. */
+      'student.listening.distractor': 'student.listening.technique',
+      'student.listening.mainidea': 'student.listening.technique',
+      /* "Mơ hồ ý chính" của Reading là chuyện đọc hiểu, gần "Tư duy logic" nhất. */
+      'student.reading.mainidea': 'student.reading.logic',
+    })) {
+      remapped += conn.prepare('UPDATE case_issues SET code = ? WHERE code = ?').run(to, from).changes;
+    }
+  }
+
+  const missing = has('case_issues')
+    ? (conn
+        .prepare(
+          `SELECT COUNT(*) n FROM sos_cases c
+            WHERE c.status != 'done'
+              AND NOT EXISTS (SELECT 1 FROM case_issues i WHERE i.case_id = c.id AND i.role = 'primary')`,
+        )
+        .get() as any).n
+    : 0;
+
+  if (!bumped && !windows && !numbered && !remapped) return;
+  applied.push(
+    `Form case vòng 7: ${bumped} case chuyển mức "Bình thường" → "Cần chú ý"; `
+      + `${windows} case Ý thức/Khác được đặt cửa sổ gộp bốn ngày; ${numbered} case được đánh số đợt; `
+      + `${remapped} phân loại cũ được ánh xạ sang bộ mới.`,
+  );
+  if (missing) {
+    applied.push(
+      `CẦN RÀ LẠI — ${missing} case đang mở chưa có phân loại vấn đề. `
+        + 'Bước nâng cấp KHÔNG đoán hộ: người phụ trách chọn phân loại khi mở case lần tới.',
+    );
   }
 }

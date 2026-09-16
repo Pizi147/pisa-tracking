@@ -198,12 +198,7 @@ export default function StudentDetailPage() {
         <>
           {/* ══════════════════════════════════════ B — TIẾN ĐỘ HIỆN TẠI */}
           {/* ══════════════════════════════ B0 — TÍN HIỆU CHỜ XÁC MINH */}
-          <PendingSignals
-            signals={data.pendingSignals ?? []}
-            studentName={data.fullName}
-            onVerify={(sg) => setVerify(sg)}
-            onDone={reload}
-          />
+          <PendingSignals signals={data.pendingSignals ?? []} onVerify={(sg) => setVerify(sg)} />
 
           {/*
             BẢNG TÓM TẮT, KHÔNG PHẢI CHỖ MỞ CASE (mục 6.2 B).
@@ -539,18 +534,15 @@ export { skillLabel };
  *   · mở case — khi xem lại bài thấy có vấn đề thật
  *   · ghi nhận đã xem — khi không có vấn đề thật, và phải viết ra vì sao
  */
-function PendingSignals({ signals, studentName, onVerify, onDone }: {
-  signals: any[]; studentName: string;
-  onVerify: (sg: any) => void; onDone: () => void;
+function PendingSignals({ signals, onVerify }: {
+  signals: any[]; onVerify: (sg: any) => void;
 }) {
-  const toast = useToast();
-  const [noteFor, setNoteFor] = useState<any | null>(null);
   if (!signals.length) return null;
 
   const overdue = signals.filter((s) => s.overdue).length;
   return (
     <>
-      <Card title="Tín hiệu chờ xác minh"
+      <Card title="Xác minh vấn đề SOS"
         action={<span className="text-xs text-slate-500">
           {signals.length} tín hiệu{overdue > 0 ? ` · ${overdue} quá hạn` : ''}
         </span>}>
@@ -578,68 +570,20 @@ function PendingSignals({ signals, studentName, onVerify, onDone }: {
                 </div>
               </div>
               {sg.canResolve && (
-                <div className="flex flex-wrap gap-2">
-                  <button className="btn btn-sm btn-primary" onClick={() => onVerify(sg)}>Mở case</button>
-                  <button className="btn btn-sm" onClick={() => setNoteFor(sg)}>Đã xem, không mở case</button>
-                </div>
+                <button className="btn btn-sm btn-primary" onClick={() => onVerify(sg)}>Mở case</button>
               )}
             </li>
           ))}
         </ul>
         <SectionNote>
-          Điểm dưới kỳ vọng chỉ sinh <strong>tín hiệu</strong>, không tự mở case và không tự
-          sinh phương án hỗ trợ: máy đọc được con số nhưng không biết vì sao, và cũng không xếp
-          được tutor thay người. Hạn xác minh là <strong>ba ngày</strong> kể từ lúc tín hiệu được
-          ghi nhận, tính cả ngày đầu.
+          Điểm dưới kỳ vọng chỉ sinh một <strong>tín hiệu cần xác minh</strong>, không tự mở case
+          và không tự sinh phương án hỗ trợ: máy đọc được con số nhưng không biết vì sao, và cũng
+          không xếp được tutor thay người. Xác minh nghĩa là <strong>mở case</strong> với tên và
+          mô tả cụ thể — đó là nhận định của người dạy, máy không viết hộ.
+          Hạn là <strong>ba ngày</strong> kể từ lúc tín hiệu được ghi nhận, tính cả ngày đầu.
         </SectionNote>
       </Card>
 
-      <NoteSignalDialog
-        signal={noteFor} studentName={studentName}
-        onClose={() => setNoteFor(null)}
-        onSaved={() => { setNoteFor(null); onDone(); toast.push('ok', 'Đã ghi nhận'); }}
-      />
     </>
-  );
-}
-
-/** Ghi nhận đã xem mà không mở case. Bắt buộc viết nhận định — bấm cho xong thì không được. */
-function NoteSignalDialog({ signal, studentName, onClose, onSaved }: {
-  signal: any | null; studentName: string; onClose: () => void; onSaved: () => void;
-}) {
-  const toast = useToast();
-  const [note, setNote] = useState('');
-  const [busy, setBusy] = useState(false);
-
-  return (
-    <Modal open={!!signal} onClose={onClose} width="max-w-md"
-      title={`Đã xem · ${signal?.label ?? ''} · ${studentName}`}
-      footer={<>
-        <button className="btn" onClick={onClose} disabled={busy}>Huỷ</button>
-        <button className="btn btn-primary" disabled={busy || note.trim().length < 10}
-          onClick={async () => {
-            if (!signal) return;
-            setBusy(true);
-            try {
-              await api.post(`/signals/pending/${signal.id}/note`, { note });
-              invalidate('/students'); invalidate('/overview'); invalidate('/signals');
-              setNote(''); onSaved();
-            } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
-          }}>
-          {busy ? 'Đang lưu…' : 'Ghi nhận'}
-        </button>
-      </>}>
-      <div className="space-y-3">
-        <label className="block">
-          <span className="label">Bạn thấy gì khi xem lại?</span>
-          <textarea className="field min-h-24" value={note} onChange={(e) => setNote(e.target.value)}
-            placeholder="Ví dụ: em mất điểm ở một dạng bài lạ, không phải vấn đề kéo dài. Sẽ theo dõi ở đợt sau." />
-        </label>
-        <SectionNote>
-          Ghi nhận đã xem là một kết thúc hợp lệ của tín hiệu, ngang hàng với việc mở case —
-          nhưng phải viết ra nhận định. Không ép tạo một nguyên nhân giả chỉ để xoá nợ.
-        </SectionNote>
-      </div>
-    </Modal>
   );
 }

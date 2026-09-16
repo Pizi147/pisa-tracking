@@ -732,6 +732,16 @@ CREATE TABLE sos_cases (
    */
   previous_case_id INTEGER REFERENCES sos_cases(id),
 
+  /*
+   * ĐỢT THỨ MẤY của cùng một phân loại (mục 7.2). Tăng theo ĐỢT, không theo mỗi báo cáo:
+   * một đợt có ba báo cáo vẫn là "lần 1". Giao diện đọc nó ra thành "Thiếu BTVN — lần 2".
+   */
+  episode_no INTEGER NOT NULL DEFAULT 1,
+  /* Ngày cuối còn gộp được báo cáo mới vào chính case này = ngày mở + 3. */
+  merge_until TEXT,
+  /* Lúc case bị nâng lên Gấp vì có báo cáo bổ sung — dùng để siết hạn phương án. */
+  urgency_raised_at TEXT,
+
   origin_kind TEXT NOT NULL DEFAULT 'mock',  -- mock | teacher_report | manager_task
   detected_at TEXT,                   -- ngày phát hiện vấn đề, khác ngày ghi vào hệ thống
   reported_by INTEGER REFERENCES users(id),
@@ -971,6 +981,35 @@ CREATE INDEX idx_followup_case ON case_followups(case_id);
  * `role` phân biệt bằng chứng GỐC (thứ mở ra case) với bằng chứng bổ sung và bằng chứng
  * kiểm chứng sau hỗ trợ.
  */
+/*
+ * BÁO CÁO THÀNH PHẦN CỦA MỘT ĐỢT CASE Ý THỨC/KHÁC (mục 7.2).
+ *
+ * Một case Ý thức/Khác là một ĐỢT, và một đợt chứa nhiều báo cáo của nhiều giáo viên trong
+ * cùng một khoảng ngắn. Mỗi báo cáo giữ NGUYÊN của riêng nó: ai gửi, gửi lúc nào, thấy ở
+ * môn nào, và mô tả bằng lời của chính người đó. Báo cáo sau KHÔNG ghi đè báo cáo trước —
+ * đó là điều kiện để đọc lại một đợt và biết chuyện đã diễn ra như thế nào.
+ *
+ * `reported_on` là NGÀY GỬI CỦA HỆ THỐNG và là thứ duy nhất dùng để xét cửa sổ gộp. Ngày
+ * người dùng khai ở ô "Theo dõi từ ngày" nằm ở `observed_on` và KHÔNG được dùng cho việc
+ * này: nếu dùng, chỉ cần khai lùi ngày là đổi được cửa sổ gộp.
+ */
+CREATE TABLE case_reports (
+  id INTEGER PRIMARY KEY,
+  case_id INTEGER NOT NULL REFERENCES sos_cases(id),
+  reported_by INTEGER REFERENCES users(id),
+  /* Môn giáo viên đang dạy khi thấy, hoặc để trống khi báo cáo không gắn với môn nào. */
+  source_skill TEXT,
+  /* Đợt đánh giá sinh ra tín hiệu, khi báo cáo này đến từ một mốc SOS. */
+  source_attempt_id INTEGER REFERENCES assessment_attempts(id),
+  reported_on TEXT NOT NULL,
+  observed_on TEXT,
+  summary TEXT NOT NULL,
+  /* Gửi lại cùng một request không được tạo báo cáo thứ hai (mục 7.2). */
+  idempotency_key TEXT UNIQUE,
+  created_at TEXT NOT NULL
+);
+CREATE INDEX idx_case_reports_case ON case_reports(case_id);
+
 CREATE TABLE case_sources (
   id INTEGER PRIMARY KEY,
   case_id INTEGER NOT NULL REFERENCES sos_cases(id),

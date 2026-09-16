@@ -107,7 +107,16 @@ export type CaseSeed = {
   fromTest?: number;
   originKind?: 'mock' | 'teacher_report' | 'manager_task';
   sosLevel?: number | null;
-  urgency?: 'normal' | 'attention' | 'urgent';
+  /** Hai bậc, "Bình thường" đã bỏ (mục 6.3). Không khai thì là "Cần chú ý". */
+  urgency?: 'attention' | 'urgent';
+  /**
+   * BÁO CÁO THÀNH PHẦN của một đợt case Ý thức/Khác (mục 7.2).
+   *
+   * Báo cáo đầu tiên là chính `summary` của case; khai thêm ở đây là những báo cáo GỘP vào
+   * cùng đợt. Ngày phải nằm trong cửa sổ bốn ngày kể từ ngày mở, nếu không thì theo luật nó
+   * đã phải là một đợt khác — bộ dựng kiểm điều đó và báo lỗi thay vì âm thầm ghi sai.
+   */
+  reports?: { on: string; by: string; skill?: string; summary: string }[];
   status: 'open' | 'in_progress' | 'done';
   /** Mã người phụ trách. Bỏ trống = CHƯA CÓ AI — và đó là một tình huống có thật. */
   owner?: string;

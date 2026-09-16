@@ -359,36 +359,6 @@ export function linkSignalToCase(p: Principal, signalId: number, caseId: number,
   return { ok: true };
 }
 
-/**
- * GHI NHẬN ĐÃ XEM MÀ KHÔNG MỞ CASE.
- *
- * Mục 6.2 nói thẳng: mốc Ý thức/Khác từ SOS không tự kết luận em thiếu ý thức, và **không
- * được ép tạo một nguyên nhân giả chỉ để xoá nợ**. Nên đây là một kết thúc hợp lệ của tín
- * hiệu, ngang hàng với việc mở case — nhưng phải viết ra nhận định, không bấm cho xong.
- */
-export function noteSignal(p: Principal, signalId: number, note: string) {
-  const sg = loadSignal(signalId);
-  require_(p, PERMISSIONS.SOS_EDIT, { classId: sg.class_id, studentId: sg.student_id },
-    'Bạn chỉ xác minh được tín hiệu của học viên trong phạm vi mình phụ trách.');
-  if (sg.status === 'withdrawn') throw badRequest('Tín hiệu này đã được thu hồi vì không còn căn cứ.');
-  const text = (note ?? '').trim();
-  if (text.length < 10) {
-    throw badRequest('Hãy ghi nhận định của bạn (ít nhất một câu) — đây là căn cứ để sau này đọc lại.');
-  }
-
-  db()
-    .prepare(
-      `UPDATE case_signals SET status = 'noted', resolved_by = ?, resolved_at = ?,
-              resolution_note = ?, updated_at = ? WHERE id = ?`,
-    )
-    .run(p.userId, nowIso(), text, nowIso(), signalId);
-  writeAudit({
-    actorUserId: p.userId, action: 'signal.noted', entityType: 'case_signal', entityId: signalId,
-    entityLabel: labelOf(sg), before: { status: sg.status }, after: { status: 'noted', note: text },
-  });
-  return { ok: true };
-}
-
 /** Quản lý giao tín hiệu cho người khác xác minh — khi chưa có ai được phân công đúng môn. */
 export function assignSignal(p: Principal, signalId: number, userId: number | null) {
   const sg = loadSignal(signalId);

@@ -637,12 +637,6 @@ api.get('/signals/pending', requireAuth, wrap((req) => caseSignalSvc.listSignals
 api.get('/signals/pending/:id', requireAuth, wrap((req) =>
   caseSignalSvc.signalDetail(principalOf(req), pInt(req, 'id'))));
 
-/** GVCN/GVBM ghi nhận đã xem mà KHÔNG mở case — một kết thúc hợp lệ, nhưng phải viết nhận định. */
-api.post('/signals/pending/:id/note', requireAuth, wrap((req) => {
-  maybeSimulateSaveFailure();
-  return caseSignalSvc.noteSignal(principalOf(req), pInt(req, 'id'), String(req.body?.note ?? ''));
-}));
-
 /** Quản lý giao tín hiệu cho người khác xác minh, khi chưa ai được phân công đúng môn. */
 api.post('/signals/pending/:id/assign', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();

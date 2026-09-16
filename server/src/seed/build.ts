@@ -662,9 +662,18 @@ function insertCase(
     conn.prepare('UPDATE sos_cases SET dedup_key = NULL, updated_at = ? WHERE id = ?')
       .run(NOW, previousCaseId);
   }
-  const dedupKey = c.parallel
+  /*
+   * CASE Ý THỨC/KHÁC KHÔNG DÙNG KHOÁ CHỐNG TRÙNG (mục 7.2).
+   *
+   * Nó là một ĐỢT NGẮN, và cùng một phân loại có thể có nhiều đợt nối nhau trong một khoá
+   * học. Cái quyết định gộp hay mở đợt mới là CỬA SỔ BỐN NGÀY, không phải một cái khoá —
+   * khoá chỉ chặn được đợt thứ hai ra đời, mà đợt thứ hai lại đúng là thứ phải có.
+   *
+   * Case học thuật thì ngược lại: một hạng mục đúng một case sống suốt khoá, nên có khoá.
+   */
+  const dedupKey = c.parallel || track === 'behaviour'
     ? null
-    : track === 'behaviour' ? `bt:${sid}:${cycleId}:${category}` : `a:${sid}:${cycleId}:${category}`;
+    : `a:${sid}:${cycleId}:${category}`;
 
   const ownerId = c.owner ? ctx.userId.get(c.owner) ?? null : null;
   const reporterId = c.reportedBy ? ctx.userId.get(c.reportedBy) ?? null : (ownerId ?? null);
@@ -681,7 +690,7 @@ function insertCase(
     .run(
       attemptId, sid, cycleId, track, c.topic, category,
       dedupKey, c.parallel ? 1 : 0, previousCaseId, ownerId, c.title ?? null,
-      originKind, c.detectedAt, reporterId, c.summary, c.urgency ?? 'normal',
+      originKind, c.detectedAt, reporterId, c.summary, c.urgency ?? 'attention',
       c.sosLevel ?? null,
       c.status, c.disposition ?? null, c.dispositionNote ?? null,
       c.outcome ?? null, c.outcomeNote ?? null,
@@ -691,6 +700,46 @@ function insertCase(
     );
   const caseId = Number(info.lastInsertRowid);
   counts.cases += 1;
+
+  /*
+   * CASE Ý THỨC/KHÁC LÀ MỘT ĐỢT (mục 7.2): có số đợt, có cửa sổ gộp bốn ngày, và có các
+   * báo cáo thành phần. Báo cáo đầu tiên chính là câu mô tả của case.
+   */
+  if (track === 'behaviour') {
+    /* Đếm đợt theo PHÂN LOẠI (BTVN / chuyên cần / tham gia), không theo hạng mục chung. */
+    const prior = (conn
+      .prepare(
+        `SELECT COUNT(*) n FROM sos_cases
+          WHERE student_id = ? AND track = 'behaviour' AND topic = ? AND id < ?`,
+      )
+      .get(sid, c.topic, caseId) as any).n;
+    const mergeUntil = addDays(c.detectedAt, 3);
+    conn.prepare('UPDATE sos_cases SET episode_no = ?, merge_until = ? WHERE id = ?')
+      .run(prior + 1, mergeUntil, caseId);
+
+    const addReport = (on: string, by: number | null, skill: string | null, text: string) =>
+      conn
+        .prepare(
+          `INSERT INTO case_reports (case_id, reported_by, source_skill, reported_on, observed_on,
+                                     summary, created_at)
+           VALUES (?,?,?,?,?,?,?)`,
+        )
+        .run(caseId, by, skill, on, c.detectedAt, text, NOW);
+    addReport(c.detectedAt, reporterId, null, c.summary);
+
+    for (const r of c.reports ?? []) {
+      if (r.on > mergeUntil || r.on < c.detectedAt) {
+        throw new Error(
+          `Kịch bản sai: báo cáo ngày ${r.on} nằm ngoài cửa sổ gộp ${c.detectedAt}–${mergeUntil} `
+          + 'của case Ý thức/Khác. Ngoài cửa sổ thì theo luật nó phải là một đợt khác.',
+        );
+      }
+      addReport(r.on, ctx.userId.get(r.by) ?? null, r.skill ?? null, r.summary);
+      /* Có báo cáo bổ sung trong cùng đợt thì case được NÂNG LÊN GẤP (mục 7.2). */
+      conn.prepare(`UPDATE sos_cases SET urgency = 'urgent', urgency_raised_at = ? WHERE id = ?`)
+        .run(r.on, caseId);
+    }
+  }
 
   /* Mốc MỞ, và mốc TÁI DIỄN ở mỗi lượt sau mà em vẫn yếu ở hạng mục này. */
   const milestone = (kind: string, aid: number | null, no: number | null, on: string) => {

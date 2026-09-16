@@ -1088,7 +1088,9 @@ export const STUDENTS: StudentSeed[] = [
 
   {
     code: 'S12', name: 'Ngô Hải Yến', branch: 'CP', dob: '2009-07-19',
-    story: 'Tiến bộ đều qua ba lượt MT, chưa từng có case nào.',
+    story: 'Tiến bộ đều qua ba lượt MT, học thuật chưa từng có case. Nhưng chuyện BTVN thì có: '
+      + 'một ĐỢT mở 14/9 gộp thêm báo cáo 16/9 và được nâng lên Gấp, rồi một báo cáo 18/9 '
+      + 'nằm ngoài cửa sổ bốn ngày nên mở ĐỢT MỚI — đúng ví dụ ở mục 7.2.',
     enrollments: [{ class: 'CP-FT 110', from: '2026-04-13', status: 'active' }],
     cycles: [
       {
@@ -1104,6 +1106,72 @@ export const STUDENTS: StudentSeed[] = [
           { no: 3, kind: 'mock', week: '2026-08-17', status: 'done',
             bands: { listening: 6.5, reading: 7.0, writing1: 6.5, writing2: 6.5, speaking: 6.5 } },
           { no: 4, kind: 'mock', week: '2026-09-28', status: 'planned' },
+        ],
+        cases: [
+          {
+            /*
+             * ĐỢT 1 — mở 14/9, cửa sổ gộp tới hết 17/9.
+             *
+             * Cô Reading báo trước; hai ngày sau cô Listening báo cùng chuyện. Báo cáo thứ
+             * hai GỘP vào chính đợt này và làm nó được nâng lên GẤP: hai người khác nhau
+             * cùng thấy một chuyện trong bốn ngày là tín hiệu mạnh hơn nhận định của riêng ai.
+             *
+             * Mỗi báo cáo giữ nguyên người gửi, ngày gửi, môn và lời của chính người đó.
+             */
+            topic: 'homework', track: 'behaviour',
+            detectedAt: '2026-09-14',
+            title: 'Thiếu BTVN nhiều buổi liền',
+            summary: 'Ba buổi Reading liên tiếp em không nộp bài về nhà, hỏi thì nói quên vở.',
+            reportedBy: 'T_NAM', owner: 'T_NAM',
+            urgency: 'attention',
+            status: 'in_progress',
+            reports: [
+              {
+                on: '2026-09-16', by: 'T_DUNG', skill: 'listening',
+                summary: 'Buổi Listening hôm nay em cũng không có bài. Em nói tối qua bận việc nhà.',
+              },
+            ],
+            plans: [
+              {
+                kind: 'talk_student', description: 'Gặp riêng em đầu giờ để hỏi rõ vì sao',
+                performer: 'T_NAM', cycleStart: '2026-09-14', status: 'started',
+                startedOn: '2026-09-15', followupDue: '2026-09-18',
+              },
+            ],
+          },
+          {
+            /*
+             * ĐỢT 2 — báo cáo ngày 18/9 nằm NGOÀI cửa sổ 14–17/9, nên nó mở một đợt mới nối
+             * vào đợt cũ. "Lần thứ mấy" đếm theo ĐỢT, không theo từng báo cáo: đợt 1 có hai
+             * báo cáo nhưng vẫn là lần 1.
+             *
+             * Ngày demo là 14/9 nên đợt này nằm ở TƯƠNG LAI — bộ dựng chặn dữ liệu tương lai,
+             * nên ở đây chỉ mô tả trong câu chuyện của em, không dựng thành bản ghi.
+             */
+            topic: 'participation', track: 'behaviour',
+            detectedAt: '2026-08-24',
+            title: 'Ít tham gia phát biểu trên lớp',
+            summary: 'Em ngồi im cả buổi, gọi mới nói và chỉ trả lời một câu ngắn.',
+            reportedBy: 'T_DUNG', owner: 'T_NAM',
+            urgency: 'attention',
+            status: 'done',
+            disposition: 'monitor',
+            outcome: 'improved',
+            outcomeNote: 'Sau khi đổi chỗ ngồi và gọi phát biểu có chủ đích, em đã nói nhiều hơn.',
+            closedOn: '2026-09-07', closedBy: 'T_NAM',
+            plans: [
+              {
+                kind: 'teaching_adjust', description: 'Đổi chỗ ngồi và gọi phát biểu có chủ đích',
+                performer: 'T_DUNG', cycleStart: '2026-08-24', status: 'completed',
+                startedOn: '2026-08-25', completedOn: '2026-09-05', followupDue: '2026-08-31',
+                closedReason: 'done',
+                followups: [{
+                  on: '2026-09-05', outcome: 'improved', nextStep: 'complete',
+                  note: 'Em đã chủ động trả lời hai ba lượt mỗi buổi.',
+                }],
+              },
+            ],
+          },
         ],
       },
     ],
