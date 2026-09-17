@@ -74,7 +74,7 @@ export function ProgressChart({ data, only, onOpenCase }: {
 
       {!cur.enough ? (
         <div className="rounded-lg border p-4" style={{ borderColor: 'var(--line)' }}>
-          <p className="text-sm text-slate-200 m-0">Chưa đủ dữ liệu để nói {cur.label} đang lên hay đang xuống.</p>
+          <p className="text-sm text-slate-200 m-0">Chưa đủ dữ liệu để đánh giá tiến độ {cur.label}.</p>
           <p className="text-xs text-slate-500 mt-1 mb-0">
             Mới có {cur.officialCount} mốc chính thức. Cần ít nhất hai mốc thì mới có một
             hướng đi để nhìn.

@@ -166,8 +166,19 @@ function SkillRow({ row, open, onToggle, onReport, progress, onOpenCase, onChang
         onClick={onToggle}
         className={`w-full text-left appearance-none border-0 bg-transparent p-0 ${expandable ? 'cursor-pointer row-hover' : 'cursor-default'}`}
       >
+        {/*
+          BỀ RỘNG CỘT PHẢI CỐ ĐỊNH, KHÔNG ĐỂ `auto`.
+
+          Mỗi hàng ở đây là một lưới RIÊNG (nó phải là một cái nút bấm được), nên một cột
+          `auto` co giãn theo nội dung của CHÍNH hàng đó. Hậu quả nhìn thấy ngay: hàng
+          "Writing Task 1" có tên dài hơn "Listening" nên cột điểm của nó bị đẩy lệch sang
+          trái so với các hàng khác, và cả bảng đọc như bị xô.
+
+          Cho cột điểm một bề rộng cố định và các cột còn lại chia theo tỷ lệ thì mọi hàng
+          bắt đầu ở cùng một vạch, dù tên môn dài ngắn thế nào.
+        */}
         <div className="grid gap-x-3 gap-y-1 px-3 py-2.5 items-center
-                        grid-cols-[1fr_auto] md:grid-cols-[minmax(8rem,1.1fr)_minmax(7rem,auto)_minmax(9rem,auto)_minmax(0,1.4fr)_1.25rem]"
+                        grid-cols-[1fr_auto] md:grid-cols-[minmax(8rem,1.1fr)_7.5rem_minmax(9rem,1.1fr)_minmax(0,1.4fr)_1.25rem]"
              style={{ boxShadow: `inset 3px 0 0 ${STATE_BAR[row.state]}` }}>
 
           {/* ---------------------------------------------------------- 1. hạng mục */}
@@ -318,8 +329,8 @@ function SkillDetail({ row, progress, onOpenCase, onReport, onChanged }: {
       )}
       {!hasChart && row.category !== 'behaviour' && (
         <p className="text-xs text-slate-500 m-0">
-          Chưa có điểm nào ở {row.label} trong lộ trình này — chưa đủ căn cứ để nói em đang lên
-          hay đang xuống. Đây là <strong>chưa có dữ liệu</strong>, không phải là không có vấn đề.
+          Chưa đủ dữ liệu để đánh giá tiến độ {row.label}: lộ trình này chưa có điểm nào ở môn
+          đó. Đây là <strong>chưa có dữ liệu</strong>, không phải là không có vấn đề.
         </p>
       )}
 
