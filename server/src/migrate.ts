@@ -407,6 +407,7 @@ function migrateCaseEngine(applied: string[], skipped: string[]) {
     migrateCaseForm(conn, applied);
     migratePlanForm(conn, applied);
     migrateMoveRequests(conn, applied);
+    migrateEntryBands(conn, applied);
 
     /*
      * Case đã đóng theo hệ thống cũ mà không có hướng xử lý: ghi rõ là "đóng theo hệ thống
@@ -2209,6 +2210,25 @@ function migrateSignals(conn: any, applied: string[]) {
  *
  * Bộ đếm cũ (nếu có) giữ nguyên; bộ đếm mới bắt đầu đếm từ những lần vắng kể từ hôm nay.
  */
+/**
+ * BAND ĐẦU VÀO TỪNG KỸ NĂNG (mục 12.1) — chỉ THÊM CHỖ GHI, không suy ngược gì.
+ *
+ * Dữ liệu cũ chỉ có OVR đầu vào. Không được lấy OVR điền vào cả bốn môn: một em vào học với
+ * OVR 5.5 hoàn toàn có thể là Listening 6.0 và Writing 4.5, và ghi 5.5 cho cả bốn là bịa ra
+ * bốn con số chưa ai đo. Bốn cột mới để trống cho tới khi có người nhập điểm thật.
+ */
+function migrateEntryBands(conn: any, applied: string[]) {
+  const cols = (conn.prepare('PRAGMA table_info(learning_cycles)').all() as any[]).map((c: any) => c.name);
+  const want = ['baseline_listening', 'baseline_reading', 'baseline_writing', 'baseline_speaking'];
+  const missing = want.filter((c) => !cols.includes(c));
+  if (!missing.length) return;
+  for (const c of missing) conn.exec(`ALTER TABLE learning_cycles ADD COLUMN ${c} REAL`);
+  applied.push(
+    'Thêm chỗ ghi band đầu vào từng kỹ năng (mục 12.1). Dữ liệu cũ chỉ có OVR và KHÔNG được '
+      + 'suy ra bốn môn: một em OVR 5.5 có thể là Listening 6.0 và Writing 4.5.',
+  );
+}
+
 function migrateMoveRequests(conn: any, applied: string[]) {
   const has = (t: string) =>
     !!conn.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name = ?").get(t);

@@ -59,7 +59,7 @@ type CaseDetail = {
   outcomeNote: string | null; outcomeDecision: string | null; outcomeAt: string | null;
   /** Mọi phương án đã có kết quả chưa — điều kiện để chốt kết quả chung. */
   canFinish: boolean;
-  /** Các mốc trong vòng đời case, cũ trước mới sau. */
+  /** Các mốc trong vòng đời case. Giao diện xếp MỚI NHẤT LÊN ĐẦU (mục 4.3). */
   milestones: any[];
   issues: any[]; interventions: any[]; followups: any[]; history: any[];
   viewer: { canEdit: boolean; canClose: boolean; canApprove: boolean };
@@ -425,11 +425,9 @@ function buildTimeline(data: any, act: TimelineActions): TimelineItem[] {
     });
   }
 
-  items.sort((a, b) => (a.on ?? '').localeCompare(b.on ?? '') || a.rank - b.rank || a.key.localeCompare(b.key));
-
   /*
-   * ĐANG CHỜ GÌ — mốc cuối cùng, rỗng ruột, chỉ có khi case còn mở. Không có nó thì dòng
-   * thời gian kết thúc lửng lơ và người đọc không biết bước tiếp theo là chờ ai.
+   * ĐANG CHỜ GÌ — mốc rỗng ruột, chỉ có khi case còn mở. Không có nó thì dòng thời gian
+   * cụt lủn và người đọc không biết bước tiếp theo là chờ ai.
    */
   if (data.status !== 'done' && data.followUntil) {
     items.push({
@@ -439,6 +437,16 @@ function buildTimeline(data: any, act: TimelineActions): TimelineItem[] {
       badge: null, body: null,
     });
   }
+
+  /*
+   * MỚI NHẤT LÊN ĐẦU (chủ sản phẩm chốt 17/09/2026), và mục 4.3 nói cùng một điều: phương
+   * án hiện tại và cập nhật mới nhất đứng TRÊN những gì đã xong, lịch sử cũ thu gọn ở dưới.
+   *
+   * Người mở một case đang chạy hỏi "giờ đang thế nào", không hỏi "ba tháng trước bắt đầu ra
+   * sao". Xếp cũ trước thì câu trả lời nằm ở cuối, và với case kéo dài thì nó nằm sau mười
+   * lăm dòng không ai đọc.
+   */
+  items.sort((a, b) => (b.on ?? '').localeCompare(a.on ?? '') || b.rank - a.rank || b.key.localeCompare(a.key));
   return items;
 }
 

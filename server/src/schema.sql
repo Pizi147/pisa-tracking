@@ -323,6 +323,21 @@ CREATE TABLE learning_cycles (
   baseline_source TEXT,               -- 'entrance' | 'previous_cycle' | 'external' | 'manual'
   baseline_note TEXT,
 
+  /*
+   * ĐIỂM ĐẦU VÀO TỪNG KỸ NĂNG (mục 12.1) — chỉ lớp Fast Track có.
+   *
+   * OVR nhập ĐỘC LẬP với bốn môn: nó là con số trên phiếu điểm chính thức, không phải trung
+   * bình bốn cột này. Thiếu vài môn KHÔNG được lấy OVR lấp vào, và có đủ bốn môn cũng không
+   * được ghi đè OVR bằng một phép tính — hai thứ đến từ hai nguồn khác nhau.
+   *
+   * WRITING LÀ MỘT CON SỐ, không tự chia W1/W2: phiếu điểm IELTS chỉ có một band Writing,
+   * còn W1/W2 là cách chấm nội bộ của đợt MT. Chia đôi một con số không tồn tại là bịa.
+   */
+  baseline_listening REAL,
+  baseline_reading REAL,
+  baseline_writing REAL,
+  baseline_speaking REAL,
+
   started_at TEXT NOT NULL,
   ended_at TEXT,
   status TEXT NOT NULL DEFAULT 'active',   -- active | completed | abandoned

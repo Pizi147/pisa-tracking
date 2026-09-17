@@ -15,32 +15,47 @@ import { ensureSkillRows } from '../fasttrack/skillSchedule.ts';
  * không tạo bản ghi trùng.
  */
 /**
- * NĂM CỘT, KHÔNG HƠN — owner chốt 13/09/2026 (mục 7.4):
+ * CỘT CỦA BẢNG NHẬP THEO ĐÚNG CHƯƠNG TRÌNH CỦA LỚP (mục 12.1).
  *
- *     Họ và tên · Lớp · Ngày sinh · Điểm đầu vào · Target
+ *   Fast Track  Họ tên · Ngày sinh · OVR đầu vào · L · R · W · S đầu vào · Target · Tuần bắt đầu
+ *   Normal      Họ tên · Ngày sinh · OVR đầu vào · Tuần bắt đầu
  *
- * Những gì bỏ khỏi bảng dán, và vì sao:
- *   · Lộ trình (LT1/LT2)  suy từ chính lớp em vào — lớp đã có lộ trình rồi
- *   · Ngày thi IELTS      chưa ai biết lúc nhập; khai sau khi đăng ký xong
- *   · Tư vấn viên         không đổi được quyết định nào trong phần mềm này
+ * LỚP KHÔNG CÒN LÀ MỘT CỘT. Nó được chọn MỘT LẦN ở đầu panel, và cả lô vào lớp đó. Bản
+ * trước để lớp thành một cột dán, nên một file bốn mươi dòng gõ sai mã lớp ở dòng ba mươi
+ * là ba mươi em vào đúng lớp còn mười em rơi đi đâu không ai biết. Lớp là quyết định của cả
+ * lô, không phải một ô dữ liệu lặp lại bốn mươi lần.
  *
- * Các trường đó VẪN đọc được nếu bảng dán có cột tương ứng — người ta dán cả file cũ là
- * chuyện thường. Chỉ là lưới nhập tay không còn bày chúng ra nữa.
+ * KHÔNG BÀY TRƯỜNG CỦA FAST TRACK CHO LỚP NORMAL rồi bắt người dùng điền dấu '-'. Em lớp
+ * Foundation không có target IELTS và không có band từng kỹ năng; hỏi là hỏi thừa, và một
+ * cột thừa luôn được ai đó điền bừa.
  */
 export type IntakeRow = {
   fullName?: string;
+  /**
+   * Chỉ còn để ĐỌC file cũ. Bảng dán của các chi nhánh vẫn hay có cột "Lớp", và bỏ hẳn alias
+   * thì cột đó bị hiểu nhầm thành cột bên cạnh — đúng kiểu "silently shift cột" mà mục 12.1
+   * cấm. Nên vẫn nhận diện, nhưng KHÔNG dùng: lớp lấy từ ô chọn ở đầu panel.
+   */
   classCode?: string;
   dob?: string;
-  /** Điểm đầu vào, ưu tiên OVR. Không phải em nào cũng có điểm chi tiết — bổ sung sau. */
+  /**
+   * OVR ĐẦU VÀO — con số trên phiếu điểm chính thức, nhập ĐỘC LẬP với bốn môn bên dưới.
+   * Thiếu vài môn không được lấy OVR lấp vào, và có đủ bốn môn cũng không ghi đè OVR.
+   */
   baselineScore?: number | string | null;
-  /** THÁNG dự kiến thi, dạng 'YYYY-MM'. Tuần thi thì chốt sau ở panel Kế hoạch học. */
+  /** Band đầu vào từng kỹ năng — chỉ lớp Fast Track. W là Writing TỔNG, không chia W1/W2. */
+  entryListening?: number | string | null;
+  entryReading?: number | string | null;
+  entryWriting?: number | string | null;
+  entrySpeaking?: number | string | null;
+  target?: number | string | null;
+  /** Thứ Hai của TUẦN BẮT ĐẦU HỌC. Có mặc định cho cả lô, ghi đè được từng dòng. */
+  startWeek?: string;
+  /* Mã cũ, còn đọc được từ file: ngày bắt đầu, tháng thi, lộ trình, tư vấn viên. */
   examMonth?: string;
   route?: string;
-  target?: number | string | null;
   consultant?: string;
   startDate?: string;
-  /** Các tuần MT ĐỀ XUẤT, dạng ngày thứ Hai. Chỉ thành kế hoạch khi người có quyền chốt tuần. */
-  mockWeeks?: string[];
 };
 
 export type RowIssue = { row: number; field: string; message: string };
@@ -54,12 +69,25 @@ export type IntakePreview = {
   })[];
   issues: RowIssue[];
   canPlanWeeks: boolean;
+  /** Chương trình của lớp đã chọn — giao diện bày đúng bộ cột của nó (mục 12.1). */
+  programme: string | null;
+  /** Lớp chấm điểm đạt/tổng (Normal) hay band IELTS (Fast Track). */
+  ratio: boolean;
+  classCode: string | null;
+  defaultStartWeek?: string | null;
 };
 
 const HEADER_ALIASES: Record<string, keyof IntakeRow> = {
   'ho ten': 'fullName', 'hoten': 'fullName', 'ten': 'fullName', 'full name': 'fullName', 'name': 'fullName',
+  /* Nhận diện để KHÔNG đọc lệch cột, rồi bỏ qua — lớp chọn ở đầu panel (mục 12.1). */
   'lop': 'classCode', 'ma lop': 'classCode', 'class': 'classCode',
   'ngay sinh': 'dob', 'dob': 'dob',
+  /* Band đầu vào từng kỹ năng của Fast Track. */
+  'l': 'entryListening', 'listening': 'entryListening', 'nghe': 'entryListening',
+  'r': 'entryReading', 'reading': 'entryReading', 'doc': 'entryReading',
+  'w': 'entryWriting', 'writing': 'entryWriting', 'viet': 'entryWriting',
+  's': 'entrySpeaking', 'speaking': 'entrySpeaking', 'noi': 'entrySpeaking',
+  'tuan bat dau': 'startWeek', 'tuan hoc dau tien': 'startWeek', 'start week': 'startWeek',
   'thang thi': 'examMonth', 'thang du kien thi': 'examMonth', 'du kien thi': 'examMonth',
   'ngay thi': 'examMonth', 'ngay thi ielts': 'examMonth', 'exam': 'examMonth', 'exam date': 'examMonth',
   'lo trinh': 'route', 'route': 'route',
@@ -68,7 +96,6 @@ const HEADER_ALIASES: Record<string, keyof IntakeRow> = {
   'diem ovr': 'baselineScore', 'baseline': 'baselineScore', 'entry': 'baselineScore',
   'tu van vien': 'consultant', 'tvv': 'consultant', 'consultant': 'consultant',
   'ngay bat dau': 'startDate', 'bat dau': 'startDate',
-  'tuan mt': 'mockWeeks', 'cac tuan mt': 'mockWeeks',
 };
 
 /**
@@ -78,9 +105,29 @@ const HEADER_ALIASES: Record<string, keyof IntakeRow> = {
  * một bảng bốn mươi em có ba ô trống là cả bảng không nhập được.
  */
 function baselineOf(v: number | string | null | undefined): number | null {
-  if (v === null || v === undefined || String(v).trim() === '') return null;
-  const n = Number(String(v).replace(',', '.'));
+  if (v === null || v === undefined) return null;
+  const raw = String(v).trim();
+  /*
+   * DẤU '-' VÀ Ô TRỐNG ĐỀU LÀ "CHƯA CÓ THÔNG TIN", KHÔNG PHẢI 0 (mục 12.1).
+   *
+   * File của các chi nhánh gõ '-' cho ô chưa có là chuyện thường. Đọc nó thành 0 thì em đó
+   * vào hệ thống với điểm đầu vào 0 — và mọi biểu đồ tiến bộ về sau đều kể một câu chuyện
+   * sai ngay từ điểm xuất phát.
+   */
+  if (raw === '' || raw === '-' || raw === '–' || raw === '—' || raw === 'n/a' || raw === 'N/A') return null;
+  const n = Number(raw.replace(',', '.'));
   if (!Number.isFinite(n) || n < 0 || n > 9) return null;
+  return n;
+}
+
+/** Band 0–9 bước 0,5. Trả về `'invalid'` để nơi gọi báo lỗi tại đúng ô, không im lặng bỏ qua. */
+function bandOf(v: number | string | null | undefined): number | null | 'invalid' {
+  if (v === null || v === undefined) return null;
+  const raw = String(v).trim();
+  if (raw === '' || raw === '-' || raw === '–' || raw === '—' || raw === 'n/a' || raw === 'N/A') return null;
+  const n = Number(raw.replace(',', '.'));
+  if (!Number.isFinite(n) || n < 0 || n > 9) return 'invalid';
+  if (Math.round(n * 2) !== n * 2) return 'invalid';
   return n;
 }
 
@@ -99,10 +146,15 @@ export function parsePaste(text: string): { rows: IntakeRow[]; usedHeader: boole
   const first = split(lines[0]).map(deaccent);
   const mapped = first.map((h) => HEADER_ALIASES[h]);
   const usedHeader = mapped.filter(Boolean).length >= 2;
+  /*
+   * THỨ TỰ MẶC ĐỊNH KHI BẢNG DÁN KHÔNG CÓ DÒNG TIÊU ĐỀ — đúng thứ tự cột của Fast Track ở
+   * mục 12.1. Lớp Normal dán ít cột hơn thì bốn cột band cuối để trống, và phần xem trước
+   * sẽ nói rõ nếu chúng có dữ liệu mà lớp không dùng tới.
+   */
   const order: (keyof IntakeRow | undefined)[] = usedHeader
     ? mapped
-    /* Thứ tự mặc định khi bảng dán KHÔNG có dòng tiêu đề — đúng năm cột của mục 7.4. */
-    : ['fullName', 'classCode', 'dob', 'baselineScore', 'target'];
+    : ['fullName', 'dob', 'baselineScore', 'entryListening', 'entryReading',
+       'entryWriting', 'entrySpeaking', 'target', 'startWeek'];
 
   const out: IntakeRow[] = [];
   for (const line of lines.slice(usedHeader ? 1 : 0)) {
@@ -112,8 +164,7 @@ export function parsePaste(text: string): { rows: IntakeRow[]; usedHeader: boole
       if (!key) return;
       const v = cells[i];
       if (v === undefined || v === '') return;
-      if (key === 'mockWeeks') row.mockWeeks = v.split(/[;|]/).map((x) => x.trim()).filter(Boolean);
-      else (row as any)[key] = v;
+      (row as any)[key] = v;
     });
     if (Object.keys(row).length) out.push(row);
   }
@@ -137,69 +188,123 @@ export function parseDateAs(value: string | undefined, format: 'dmy' | 'mdy' | '
 
 export function previewIntake(
   p: Principal,
-  input: { rows: IntakeRow[]; defaultClassId?: number | null; dateFormat?: 'dmy' | 'mdy' | 'iso' },
+  input: {
+    rows: IntakeRow[];
+    /** Lớp của CẢ LÔ, chọn một lần ở đầu panel (mục 12.1). */
+    classId?: number | null;
+    /** Tuần bắt đầu mặc định cho cả lô; từng dòng vẫn ghi đè được. */
+    defaultStartWeek?: string | null;
+    dateFormat?: 'dmy' | 'mdy' | 'iso';
+    /* Tên cũ của `classId`, giữ để đường gọi cũ không gãy. */
+    defaultClassId?: number | null;
+  },
 ): IntakePreview {
   const conn = db();
   const fmt = input.dateFormat ?? 'dmy';
   const issues: RowIssue[] = [];
-  const classes = conn.prepare("SELECT id, code, route, start_date FROM classes WHERE status='active'").all() as any[];
-  const byCode = new Map(classes.map((c) => [c.code.toLowerCase(), c]));
-  const defaultClass = input.defaultClassId ? classes.find((c) => c.id === input.defaultClassId) ?? null : null;
+
+  /*
+   * LỚP LÀ QUYẾT ĐỊNH CỦA CẢ LÔ, không phải một ô lặp lại ở từng dòng (mục 12.1).
+   * Thiếu lớp thì không soát được gì có ý nghĩa — chương trình của lớp quyết định bảng này
+   * có những cột nào và cột nào hợp lệ.
+   */
+  const classId = input.classId ?? input.defaultClassId ?? null;
+  const cls = classId
+    ? (conn.prepare("SELECT id, code, route, start_date, programme_code, branch_id, status FROM classes WHERE id = ?")
+        .get(classId) as any)
+    : null;
+  if (!cls) {
+    return {
+      rows: [], issues: [{ row: 0, field: 'classId', message: 'Chưa chọn lớp cho lô này.' }],
+      canPlanWeeks: false, programme: null, ratio: false, classCode: null,
+    };
+  }
+  if (!can(p, PERMISSIONS.STUDENT_EDIT, { classId: cls.id })) {
+    return {
+      rows: [],
+      issues: [{ row: 0, field: 'classId', message: `Lớp ${cls.code} nằm ngoài phạm vi bạn được cấp quyền.` }],
+      canPlanWeeks: false, programme: cls.programme_code ?? null, ratio: false, classCode: cls.code,
+    };
+  }
+
+  /* Chương trình quyết định bộ cột: Fast Track có band từng kỹ năng và target, Normal không. */
+  const tpl = cls.programme_code ? PROGRAMME_TEMPLATES[programmeOf(cls.programme_code) ?? 'FT'] : null;
+  const ratio = (tpl?.scoringMode ?? 'ielts_band') === 'ratio';
+
+  const defaultWeek = input.defaultStartWeek
+    ? mondayOf(input.defaultStartWeek)
+    : (cls.start_date ? mondayOf(cls.start_date) : null);
 
   const rows = input.rows.map((r, i) => {
     const rowNo = i + 1;
     const rowIssues: RowIssue[] = [];
     const name = (r.fullName ?? '').trim();
-    if (!name) rowIssues.push({ row: rowNo, field: 'fullName', message: 'Thiếu họ tên' });
-
-    // Mở từ một lớp thì lớp được điền sẵn; dán có cột lớp thì ưu tiên cột đó.
-    const cls = r.classCode ? byCode.get(r.classCode.trim().toLowerCase()) ?? null : defaultClass;
-    if (!cls) {
-      rowIssues.push({ row: rowNo, field: 'classCode', message: r.classCode ? `Không có lớp "${r.classCode}"` : 'Thiếu lớp' });
-    } else if (!can(p, PERMISSIONS.STUDENT_EDIT, { classId: cls.id })) {
-      rowIssues.push({ row: rowNo, field: 'classCode', message: `Lớp ${cls.code} nằm ngoài phạm vi bạn được cấp quyền` });
-    }
+    /*
+     * THIẾU TÊN LÀ LỖI TẠI DÒNG ĐÓ, không phải lý do tạo một em tên '-' (mục 12.1).
+     * Dòng hỏng vẫn nằm lại trong lưới để người nhập sửa; cả lô không vì thế mà hỏng.
+     */
+    if (!name || name === '-') rowIssues.push({ row: rowNo, field: 'fullName', message: 'Thiếu họ tên' });
 
     const dob = parseDateAs(r.dob, fmt);
     if (dob === 'invalid') rowIssues.push({ row: rowNo, field: 'dob', message: `Ngày sinh "${r.dob}" không đọc được` });
-    /*
-     * DỰ KIẾN THI trong file Excel chỉ nhận đến THÁNG. Nhận cả một ngày đầy đủ rồi cắt lấy
-     * tháng, vì file của các chi nhánh vẫn hay ghi cả ngày — nhưng lưu thì chỉ lưu tháng,
-     * không giữ lại một ngày mà không ai xác nhận.
-     */
-    const examMonth = (() => {
-      const raw = (r.examMonth ?? '').toString().trim();
-      if (!raw) return null;
-      if (/^\d{4}-\d{2}$/.test(raw)) return raw;
-      const d = parseDateAs(raw, fmt);
-      if (d === 'invalid' || !d) return 'invalid' as const;
-      return d.slice(0, 7);
-    })();
-    if (examMonth === 'invalid') {
-      rowIssues.push({ row: rowNo, field: 'examMonth', message: `Dự kiến thi "${r.examMonth}" không đọc được` });
-    }
-    const startDate = parseDateAs(r.startDate, fmt);
-    if (startDate === 'invalid') rowIssues.push({ row: rowNo, field: 'startDate', message: `Ngày bắt đầu "${r.startDate}" không đọc được` });
 
-    const route = r.route ? r.route.trim().toUpperCase() : cls?.route ?? null;
-    /*
-     * Lộ trình nay là DỮ LIỆU (mục 7.3), nên kiểm theo BẢNG chứ không theo hằng số trong mã.
-     * Kiểm bằng hằng số thì lộ trình Quản trị hệ thống vừa tạo lại bị coi là sai.
-     */
-    if (route && !activeRouteCodes().includes(route)) {
-      rowIssues.push({ row: rowNo, field: 'route', message: `Lộ trình "${r.route}" không hợp lệ` });
-    }
-    const target = r.target === undefined || r.target === null || r.target === '' ? null : Number(r.target);
-    if (target !== null && (!Number.isFinite(target) || target < 0 || target > 9)) {
-      rowIssues.push({ row: rowNo, field: 'target', message: 'Target phải nằm trong khoảng 0–9' });
-    }
-    // Có lộ trình mà thiếu target thì vẫn nhập được, chỉ là chưa tính được kỳ vọng.
-    const warnings: RowIssue[] = [];
-    if (route && target === null) {
-      warnings.push({ row: rowNo, field: 'target', message: 'Chưa có target — nhập được nhưng chưa tính được kỳ vọng' });
+    /* OVR đầu vào: sai định dạng thì báo tại ô, không im lặng bỏ qua rồi ghi trống. */
+    const ovrRaw = r.baselineScore;
+    const ovr = bandOf(ovrRaw);
+    if (ovr === 'invalid') {
+      rowIssues.push({ row: rowNo, field: 'baselineScore', message: `OVR "${ovrRaw}" phải là band 0–9 bước 0,5` });
     }
 
-    // Trùng tên + ngày sinh chỉ là GỢI Ý, không tự gộp hồ sơ.
+    /* BỐN BAND ĐẦU VÀO — chỉ Fast Track. Lớp Normal có dữ liệu ở đây là do dán nhầm cột. */
+    const entry: Record<string, number | null> = {};
+    const ENTRY: [keyof IntakeRow, string, string][] = [
+      ['entryListening', 'entryListening', 'L'],
+      ['entryReading', 'entryReading', 'R'],
+      ['entryWriting', 'entryWriting', 'W'],
+      ['entrySpeaking', 'entrySpeaking', 'S'],
+    ];
+    for (const [key, field, label] of ENTRY) {
+      const v = bandOf(r[key] as any);
+      if (v === 'invalid') {
+        rowIssues.push({ row: rowNo, field, message: `${label} đầu vào phải là band 0–9 bước 0,5` });
+        entry[field] = null;
+      } else if (v !== null && ratio) {
+        rowIssues.push({
+          row: rowNo, field,
+          message: `Lớp ${cls.code} không chấm band IELTS — bỏ cột ${label} đầu vào đi`,
+        });
+        entry[field] = null;
+      } else entry[field] = v;
+    }
+
+    /* TARGET — chỉ Fast Track. Lớp Normal không có mục tiêu IELTS. */
+    const target = bandOf(r.target);
+    if (target === 'invalid') {
+      rowIssues.push({ row: rowNo, field: 'target', message: 'Target phải là band 0–9 bước 0,5' });
+    } else if (target !== null && ratio) {
+      rowIssues.push({ row: rowNo, field: 'target', message: `Lớp ${cls.code} không có target IELTS` });
+    }
+
+    /* TUẦN BẮT ĐẦU: ô trống thì dùng mặc định của cả lô. */
+    const weekRaw = (r.startWeek ?? r.startDate ?? '').toString().trim();
+    let startWeek: string | null = defaultWeek;
+    if (weekRaw) {
+      const d = parseDateAs(weekRaw, fmt);
+      if (d === 'invalid' || !d) {
+        rowIssues.push({ row: rowNo, field: 'startWeek', message: `Tuần bắt đầu "${weekRaw}" không đọc được` });
+      } else startWeek = mondayOf(d);
+    }
+    if (!startWeek) {
+      rowIssues.push({ row: rowNo, field: 'startWeek', message: 'Chưa có tuần bắt đầu, và lớp cũng chưa khai ngày bắt đầu' });
+    }
+
+    /*
+     * CẢNH BÁO TRÙNG HỒ SƠ — dựa trên TÊN VÀ NGÀY SINH, và chỉ là gợi ý.
+     *
+     * Trùng mỗi tên thì KHÔNG gộp: "Nguyễn Văn An" là một cái tên rất nhiều người mang. Em
+     * đã có hồ sơ thì nên dùng ghi danh hoặc chuyển lớp, chứ tạo mã mới là chẻ lịch sử của
+     * một đứa trẻ thành hai hồ sơ không ai nối lại được.
+     */
     const duplicates = name
       ? (conn
           .prepare(
@@ -209,25 +314,51 @@ export function previewIntake(
           .all(...(dob && dob !== 'invalid' ? [normalizeName(name), dob] : [normalizeName(name)])) as any[])
       : [];
 
+    const warnings: RowIssue[] = [];
+    if (!ratio && target === null) {
+      warnings.push({ row: rowNo, field: 'target', message: 'Chưa có target — nhập được nhưng chưa tính được kỳ vọng' });
+    }
+    if (r.classCode && r.classCode.trim() && r.classCode.trim().toLowerCase() !== cls.code.toLowerCase()) {
+      warnings.push({
+        row: rowNo, field: 'classCode',
+        message: `Bỏ qua cột lớp "${r.classCode}" — cả lô này vào ${cls.code} theo ô chọn ở trên`,
+      });
+    }
+    if (duplicates.length) {
+      warnings.push({
+        row: rowNo, field: 'fullName',
+        message: `Có thể trùng hồ sơ ${duplicates.map((d) => d.student_code).join(', ')} — kiểm lại trước khi tạo mã mới`,
+      });
+    }
+
     issues.push(...rowIssues, ...warnings);
     return {
       row: rowNo,
       fullName: name,
-      classCode: cls?.code,
-      classId: cls?.id ?? null,
+      classCode: cls.code,
+      classId: cls.id,
       dob: dob === 'invalid' ? undefined : dob ?? undefined,
-      examMonth: examMonth === 'invalid' ? undefined : examMonth ?? undefined,
-      startDate: startDate === 'invalid' ? undefined : startDate ?? undefined,
-      route: route ?? undefined,
-      target,
-      consultant: r.consultant,
-      mockWeeks: r.mockWeeks,
+      baselineScore: ovr === 'invalid' ? null : ovr,
+      entryListening: entry.entryListening ?? null,
+      entryReading: entry.entryReading ?? null,
+      entryWriting: entry.entryWriting ?? null,
+      entrySpeaking: entry.entrySpeaking ?? null,
+      target: target === 'invalid' ? null : target,
+      startWeek: startWeek ?? undefined,
       duplicates: duplicates.map((d) => ({ id: d.id, studentCode: d.student_code, fullName: d.full_name, dob: d.dob })),
       issues: [...rowIssues, ...warnings],
     };
   });
 
-  return { rows, issues, canPlanWeeks: can(p, PERMISSIONS.PLAN_WEEK, { anyScope: true }) };
+  return {
+    rows, issues,
+    /* Nhập hàng loạt KHÔNG lập lịch MT (mục 12.1) — đó là việc của Quản lý ở panel Lộ trình. */
+    canPlanWeeks: false,
+    programme: cls.programme_code ?? null,
+    ratio,
+    classCode: cls.code,
+    defaultStartWeek: defaultWeek,
+  };
 }
 
 /** Tuần MT gợi ý theo mốc tuần HỌC của FT. Chỉ là đề xuất, quản lý sửa được. */
@@ -244,7 +375,10 @@ export type IntakeResult = { added: number; skipped: number; failed: RowIssue[];
 export function commitIntake(
   p: Principal,
   input: {
-    rows: IntakeRow[]; defaultClassId?: number | null; dateFormat?: 'dmy' | 'mdy' | 'iso';
+    rows: IntakeRow[];
+    classId?: number | null; defaultStartWeek?: string | null;
+    defaultClassId?: number | null;
+    dateFormat?: 'dmy' | 'mdy' | 'iso';
     skipRows?: number[]; idempotencyKey?: string;
   },
 ): IntakeResult {
@@ -272,7 +406,8 @@ export function commitIntake(
       require_(p, PERMISSIONS.STUDENT_EDIT, { classId: r.classId },
         `Lớp ${r.classCode} nằm ngoài phạm vi bạn được cấp quyền.`);
       const cls = conn.prepare('SELECT * FROM classes WHERE id = ?').get(r.classId) as any;
-      const startedAt = r.startDate ?? cls.start_date ?? nowIso().slice(0, 10);
+      const startWeek = r.startWeek ?? cls.start_date ?? nowIso().slice(0, 10);
+      const startedAt = startWeek;
 
       const seq = (conn.prepare('SELECT next_value FROM student_code_seq WHERE id = 1').get() as any)?.next_value ?? 1;
       conn.prepare('UPDATE student_code_seq SET next_value = next_value + 1 WHERE id = 1').run();
@@ -302,46 +437,46 @@ export function commitIntake(
        */
       const route = r.route ?? cls.route ?? null;
       {
+        /*
+         * OVR VÀ BỐN BAND LÀ HAI NGUỒN KHÁC NHAU (mục 12.1).
+         *
+         * OVR là con số trên phiếu điểm; bốn band là bốn con số cũng trên phiếu đó. Không
+         * suy cái này ra cái kia: thiếu vài môn thì để trống đúng những môn thiếu, và có đủ
+         * bốn môn cũng không tính lại OVR — làm tròn của IELTS không phải trung bình cộng.
+         */
+        const ovr = baselineOf(r.baselineScore);
+        const bands = {
+          l: baselineOf(r.entryListening), r: baselineOf(r.entryReading),
+          w: baselineOf(r.entryWriting), s: baselineOf(r.entrySpeaking),
+        };
+        const hasEntry = ovr !== null || bands.l !== null || bands.r !== null
+          || bands.w !== null || bands.s !== null;
         const cyc = conn
           .prepare(
             `INSERT INTO learning_cycles (student_id, seq, route, programme_code, target_score, exam_month,
-                                          baseline_score, baseline_source, start_period_id,
-                                          started_at, status, created_at)
-             VALUES (?, 1, ?, ?, ?, ?, ?, ?, ?, ?, 'active', ?)`,
+                                          baseline_score, baseline_source,
+                                          baseline_listening, baseline_reading, baseline_writing, baseline_speaking,
+                                          start_period_id, started_at, status, created_at)
+             VALUES (?, 1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', ?)`,
           )
-          /*
-           * TUẦN BẮT ĐẦU HỌC suy từ ngày vào lớp — đó là thông tin duy nhất có thật lúc này,
-           * và khai lại được bất cứ lúc nào ở panel "Kế hoạch học".
-           */
+          /* TUẦN BẮT ĐẦU HỌC lấy từ ô của dòng, hoặc mặc định của cả lô (mục 12.1). */
           .run(sid, route, cls.programme_code ?? null, r.target ?? null, r.examMonth ?? null,
-               baselineOf(r.baselineScore), r.baselineScore ? 'entrance' : null,
-               ensurePeriod(startedAt).id, startedAt, nowIso());
+               ovr, hasEntry ? 'entrance' : null,
+               bands.l, bands.r, bands.w, bands.s,
+               ensurePeriod(startWeek).id, startedAt, nowIso());
         addJourney({ studentId: sid, eventType: 'cycle_start', eventDate: startedAt,
           title: route ? `Bắt đầu lộ trình ${route}` : 'Bắt đầu khoá học',
           detail: r.target ? `Target ${r.target}` : 'Chưa có target',
           refTable: 'learning_cycles', refId: Number(cyc.lastInsertRowid), createdBy: p.userId });
 
         /*
-         * Tuần MT chỉ trở thành KẾ HOẠCH khi người nhập có quyền chốt tuần.
-         * Người không có quyền vẫn nhập được học viên, nhưng tuần đề xuất bị bỏ qua để
-         * đường nhập hàng loạt không thành lối vượt quyền lập kế hoạch.
+         * NHẬP HÀNG LOẠT KHÔNG LẬP LỊCH MT (mục 12.1).
+         *
+         * Trước đây file dán có cột "Tuần MT" thì đường này tạo luôn các lượt thi. Nghe thì
+         * tiện, nhưng nó biến ô nhập danh sách thành một lối vòng quanh quyền xếp lịch: ai
+         * dán được file là xếp được lịch thi cho cả lớp. Lịch MT là việc của Quản lý, ở panel
+         * Lộ trình, nơi có đủ ràng buộc thứ tự đợt và cảnh báo khoảng cách.
          */
-        if (preview.canPlanWeeks && r.mockWeeks?.length) {
-          r.mockWeeks.forEach((w, idx) => {
-            const iso = parseDateAs(w, input.dateFormat ?? 'dmy');
-            if (!iso || iso === 'invalid') return;
-            const period = ensurePeriod(iso);
-            conn
-              .prepare(
-                `INSERT INTO assessment_attempts (cycle_id, student_id, attempt_no, kind, class_id,
-                                                  planned_period_id, status, target_at_attempt, created_by, created_at)
-                 VALUES (?,?,?, 'mock', ?,?, 'planned', ?, ?, ?)`,
-              )
-              .run(Number(cyc.lastInsertRowid), sid, idx + 1, r.classId, period.id, r.target ?? null, p.userId, nowIso());
-            /* Bốn dòng lịch kỹ năng phải có ngay từ lúc tạo, kể cả khi tạo hàng loạt từ file. */
-            ensureSkillRows(Number((conn.prepare('SELECT last_insert_rowid() AS id').get() as any).id));
-          });
-        }
       }
     }
 

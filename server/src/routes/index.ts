@@ -13,6 +13,7 @@ import { maybeSimulateReadError, maybeSimulateSaveFailure, pInt, qInt, qStr, wra
 import * as attemptSvc from '../fasttrack/attempts.ts';
 import * as skillScheduleSvc from '../fasttrack/skillSchedule.ts';
 import * as absenceSvc from '../fasttrack/absence.ts';
+import * as effectiveness from '../cases/effectiveness.ts';
 import * as cycleSvc from '../fasttrack/cycles.ts';
 import * as summarySvc from '../worklist/summary.ts';
 import * as pulseSvc from '../worklist/branchpulse.ts';
@@ -179,9 +180,13 @@ api.get('/ref/classes', requireAuth, wrap((req) => {
   const branchId = qInt(req, 'branchId');
   const rows = db()
     .prepare(
-      `SELECT c.id, c.code, c.kind, c.route, c.branch_id, c.start_date, b.name AS branch_name, b.code AS branch_code,
+      /* Tên và cách chấm của chương trình đi kèm luôn: ô chọn lớp cần nói lớp đó học gì. */
+      `SELECT c.id, c.code, c.kind, c.route, c.branch_id, c.start_date, c.programme_code,
+              pg.name AS programme_name, pg.scoring_mode,
+              b.name AS branch_name, b.code AS branch_code,
               (SELECT COUNT(*) FROM enrollments e WHERE e.class_id = c.id AND e.status='active') AS student_count
          FROM classes c JOIN branches b ON b.id = c.branch_id
+         LEFT JOIN programmes pg ON pg.code = c.programme_code
         WHERE c.status = 'active' ORDER BY b.id, c.code`,
     )
     .all() as any[];
@@ -231,6 +236,34 @@ api.get('/ref/users', requireAuth, wrap((req) => {
   return db()
     .prepare("SELECT id, code, full_name AS fullName, title FROM users WHERE status='active' ORDER BY full_name")
     .all();
+}));
+
+/**
+ * GIÁO VIÊN CÓ THỂ PHÂN CÔNG, để form TẠO LỚP phân công được ngay trong cùng panel (mục 12.2).
+ *
+ * Phải có đường riêng vì lúc này LỚP CHƯA TỒN TẠI — đường `/classes/:id/teachers` cần một
+ * lớp đã có. Tách một lớp ra rồi mới đi tìm người dạy là cách chắc chắn nhất để có những
+ * lớp không ai phụ trách nằm im vài tuần.
+ *
+ * Kèm số lớp mỗi người đang dạy, để người phân công thấy ai đang gánh nhiều.
+ */
+api.get('/ref/teachers', requireAuth, wrap((req) => {
+  const p = principalOf(req);
+  if (!can(p, PERMISSIONS.CLASS_ASSIGN, { anyScope: true })) return [];
+  const branchId = qInt(req, 'branchId');
+  return db()
+    .prepare(
+      `SELECT u.id, u.code, u.full_name AS name, u.title,
+              (SELECT COUNT(DISTINCT ta.class_id) FROM teacher_assignments ta
+                WHERE ta.user_id = u.id AND ta.status = 'active') AS classCount
+         FROM users u
+        WHERE u.status = 'active'
+          AND EXISTS (SELECT 1 FROM user_roles ur JOIN roles r ON r.id = ur.role_id
+                       WHERE ur.user_id = u.id AND r.key IN ('teacher', 'manager', 'system_admin')
+                         AND (? IS NULL OR ur.branch_id IS NULL OR ur.branch_id = ?))
+        ORDER BY u.full_name`,
+    )
+    .all(branchId ?? null, branchId ?? null);
 }));
 
 api.get('/ref/units', requireAuth, wrap((req) => {
@@ -471,6 +504,30 @@ api.get('/classes/:id/roster', requireAuth, wrap((req) => {
   return classSvc.classRoster(principalOf(req), pInt(req, 'id'), qStr(req, 'q'));
 }));
 
+/*
+ * HAI DẠNG XEM DANH SÁCH HỌC VIÊN CỦA MỘT LỚP (mục 13.3), và BẢNG PHÂN TÍCH VẤN ĐỀ (13.4).
+ *
+ * Tách đường riêng chứ không nhồi vào `/roster`: bảng Ý thức hỏi những câu khác hẳn — số đợt
+ * case từng nhóm, số lần đã report gia đình, số thư cảnh cáo — và tải chúng cho mọi người
+ * mở trang lớp là tính một đống thứ đa số lần không ai xem.
+ */
+api.get('/classes/:id/behaviour', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return classSvc.classBehaviourBoard(principalOf(req), pInt(req, 'id'), {
+    allJourney: qStr(req, 'scope') === 'all',
+  });
+}));
+
+api.get('/classes/:id/issue-board', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  const p = principalOf(req);
+  const id = pInt(req, 'id');
+  require_(p, PERMISSIONS.CASE_VIEW, { classId: id }, 'Lớp này nằm ngoài phạm vi bạn được xem.');
+  const category = qStr(req, 'category');
+  if (!category) throw badRequest('Chưa chọn kỹ năng để phân tích.');
+  return effectiveness.classIssueBoard(id, category, { fromDate: qStr(req, 'from') ?? null });
+}));
+
 api.get('/classes/:id/overview', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   return classSvc.classOverview(principalOf(req), pInt(req, 'id'));
@@ -502,11 +559,15 @@ api.post('/intake/parse', requireAuth, wrap((req) => {
   return intakeSvc.parsePaste(text);
 }));
 
-/** Xem trước: soát lỗi từng dòng, gợi ý trùng hồ sơ. Vẫn không ghi gì. */
+/** Xem trước: soát lỗi từng ô, gợi ý trùng hồ sơ. Vẫn không ghi gì. */
 api.post('/intake/preview', requireAuth, wrap((req) => {
   const b = req.body ?? {};
   return intakeSvc.previewIntake(principalOf(req), {
-    rows: b.rows ?? [], defaultClassId: b.defaultClassId ?? null, dateFormat: b.dateFormat,
+    rows: b.rows ?? [],
+    /* Lớp của CẢ LÔ, chọn một lần ở đầu panel (mục 12.1). */
+    classId: toInt(b.classId) || toInt(b.defaultClassId) || null,
+    defaultStartWeek: b.defaultStartWeek ?? null,
+    dateFormat: b.dateFormat,
   });
 }));
 
@@ -514,7 +575,10 @@ api.post('/intake/commit', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   const b = req.body ?? {};
   return intakeSvc.commitIntake(principalOf(req), {
-    rows: b.rows ?? [], defaultClassId: b.defaultClassId ?? null, dateFormat: b.dateFormat,
+    rows: b.rows ?? [],
+    classId: toInt(b.classId) || toInt(b.defaultClassId) || null,
+    defaultStartWeek: b.defaultStartWeek ?? null,
+    dateFormat: b.dateFormat,
     skipRows: b.skipRows ?? [], idempotencyKey: b.idempotencyKey,
   });
 }));

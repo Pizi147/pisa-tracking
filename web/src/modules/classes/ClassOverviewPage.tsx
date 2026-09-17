@@ -5,6 +5,7 @@ import { invalidate } from '../../lib/api.ts';
 import { Alert, Card, ErrorState, Info, SectionNote, Skeleton, Status, Task } from '../../ui/ui.tsx';
 import { Drawer } from '../../ui/Drawer.tsx';
 import { ClassRoster } from '../students/ClassRoster.tsx';
+import { QuickReport } from '../cases/QuickReport.tsx';
 import { IntakePanel } from '../students/IntakePanel.tsx';
 import { TeacherAssignDialog } from './TeacherAssignPanel.tsx';
 import { ClassProgressPanel } from './ClassProgressPanel.tsx';
@@ -68,7 +69,12 @@ export default function ClassOverviewPage() {
   const [progressOpen, setProgressOpen] = useState(false);
   const [transitionOpen, setTransitionOpen] = useState(false);
   const [manageOpen, setManageOpen] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
+  const [reportFor, setReportFor] = useState<number>(0);
+  const [infoOpen, setInfoOpen] = useState(false);
   const { data, loading, error, reload } = useApi<Overview>(classId ? `/classes/${classId}/overview` : null);
+  /* Danh sách em trong lớp, để ô "+ Case" chọn được học viên ngay tại trang lớp. */
+  const roster = useApi<any[]>(classId ? `/classes/${classId}/roster` : null, [classId]);
 
   useEffect(() => {
     if (periodId === null && periods.data?.length && session) {
@@ -143,19 +149,27 @@ export default function ClassOverviewPage() {
           với việc làm mỗi tuần.
         */}
         <div className="flex flex-wrap gap-2">
+          {/* "Nhập điểm test" — gọi đúng việc, vì lớp Normal làm Progress/Final chứ không làm MT. */}
           <Link
             className="btn btn-primary no-underline"
             to={data.programme?.scoringMode === 'ratio'
               ? `/bang-diem-thuong/${data.id}`
               : `/nhap-diem/${data.id}${periodId ? `?periodId=${periodId}` : ''}`}
           >
-            Nhập điểm cả lớp
+            Nhập điểm test
           </Link>
+          {/*
+            +CASE NGAY Ở TRANG LỚP (mục 13.1) — cùng một form với hồ sơ học viên, chỉ thêm ô
+            chọn em ở đầu. Dựng một form thứ hai cho trang lớp là cách chắc chắn nhất để hai
+            chỗ dần khác nhau về luật.
+          */}
+          <button className="btn" onClick={() => { setReportFor(0); setReportOpen(true); }}>+ Case</button>
           {data.viewer.canAddStudents && (
             <button className="btn" onClick={() => setIntake(true)}>Thêm học viên</button>
           )}
           {(data.viewer.canEditProgress || data.viewer.canAssign) && (
-            <button className="btn" onClick={() => setManageOpen(true)}>Quản lý lớp</button>
+            <button className="btn" title="Quản lý lớp" aria-label="Quản lý lớp"
+              onClick={() => setManageOpen(true)}>⋮</button>
           )}
         </div>
       </div>
@@ -249,20 +263,33 @@ export default function ClassOverviewPage() {
       <Drawer open={manageOpen} onClose={() => setManageOpen(false)} width="max-w-md"
         title="Quản lý lớp" subtitle={`${data.code} · ${data.branchName}`}>
         <div className="space-y-2">
-          {data.viewer.canEditProgress && (
-            <ManageItem label="Tiến độ lớp"
-              hint="Tuần khai giảng, số tuần học, tuần Progress Test và Final Test."
-              onClick={() => { setManageOpen(false); setProgressOpen(true); }} />
+          {/*
+            THÔNG TIN LỚP gộp "Tiến độ lớp" và "Phân công giáo viên" (mục 13.1). Hai mục cũ
+            đều trả lời cùng một câu — lớp này được cấu hình thế nào — nên tách ra chỉ bắt
+            người dùng đoán xem tuần khai giảng nằm ở mục nào.
+          */}
+          {(data.viewer.canEditProgress || data.viewer.canAssign) && (
+            <ManageItem label="Thông tin lớp"
+              hint="Tuần khai giảng, số tuần học, mốc Test, và phân công GVCN/GVBM."
+              onClick={() => { setManageOpen(false); setInfoOpen(true); }} />
           )}
-          {data.viewer.canAssign && (
-            <ManageItem label="Phân công giáo viên"
-              hint="Chủ nhiệm và giáo viên từng kỹ năng của lớp này."
-              onClick={() => { setManageOpen(false); setAssign(true); }} />
-          )}
-          {data.viewer.canEditProgress && (
+          {/*
+            CHUYỂN TIẾP LÊN LỚP SAU CHỈ CÓ Ở LỚP NORMAL (mục 13.2).
+            Fast Track không có "lớp sau": em học theo lộ trình của riêng mình rồi đi thi.
+            Nhu cầu chuyển ngang hoặc đổi chi nhánh vẫn có, và nó nằm ở "Chuyển lớp" trong
+            hồ sơ từng em.
+          */}
+          {data.viewer.canEditProgress && data.programme?.scoringMode === 'ratio' && (
             <ManageItem label="Chuyển tiếp lên lớp sau"
               hint="Mở lớp tiếp theo và chuyển học viên sang. Lớp cũ giữ nguyên lịch sử."
               onClick={() => { setManageOpen(false); setTransitionOpen(true); }} />
+          )}
+          {data.programme?.scoringMode !== 'ratio' && (
+            <SectionNote>
+              Lớp Fast Track không có “chuyển tiếp lên lớp sau” — em học theo lộ trình riêng rồi đi
+              thi. Chuyển ngang hoặc đổi chi nhánh thì làm ở <strong>Chuyển lớp</strong> trong hồ sơ
+              từng em.
+            </SectionNote>
           )}
         </div>
       </Drawer>
@@ -273,6 +300,37 @@ export default function ClassOverviewPage() {
         <ClassProgressPanel classId={data.id} classCode={data.code}
           onClose={() => setProgressOpen(false)} onDone={reload} />
       )}
+
+      {/*
+        THÔNG TIN LỚP (mục 13.1) — một chỗ cho cả cấu hình lớp lẫn phân công, vì cả hai đều
+        trả lời cùng một câu: lớp này được dựng thế nào.
+      */}
+      <Drawer open={infoOpen} onClose={() => setInfoOpen(false)} width="max-w-md"
+        title="Thông tin lớp" subtitle={`${data.code} · ${data.branchName}`}>
+        <div className="space-y-2">
+          {data.viewer.canEditProgress && (
+            <ManageItem label="Tiến độ lớp"
+              hint="Tuần khai giảng, số tuần học, tuần Progress Test và Final Test."
+              onClick={() => { setInfoOpen(false); setProgressOpen(true); }} />
+          )}
+          {data.viewer.canAssign && (
+            <ManageItem label="Phân công giáo viên"
+              hint="Chủ nhiệm và giáo viên từng kỹ năng của lớp này."
+              onClick={() => { setInfoOpen(false); setAssign(true); }} />
+          )}
+        </div>
+      </Drawer>
+
+      {/* Cùng form +Case với hồ sơ học viên, chỉ thêm ô chọn em ở đầu (mục 13.1). */}
+      <QuickReport
+        open={reportOpen} onClose={() => { setReportOpen(false); setReportFor(0); }}
+        studentId={reportFor}
+        students={(roster.data ?? []).map((r: any) => ({
+          id: r.id, name: r.fullName, code: r.studentCode ?? null,
+        }))}
+        onPickStudent={setReportFor}
+        onDone={() => { setReportOpen(false); setReportFor(0); reload(); }}
+      />
     </div>
   );
 }

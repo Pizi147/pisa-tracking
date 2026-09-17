@@ -1218,56 +1218,97 @@ check('Ngày đọc theo đúng định dạng được chọn, ngày mơ hồ t
   assert(intake.parseDateAs('linh tinh', 'dmy') === 'invalid', 'Ngày sai phải báo lỗi, không đoán');
   assert(intake.parseDateAs('', 'dmy') === null, 'Ô trống phải là null');
 });
-check('Xem trước bắt lỗi từng dòng và gợi ý trùng, không tự gộp', () => {
+check('[12.1] Xem trước bắt lỗi từng ô và gợi ý trùng, không tự gộp', () => {
   const existing = conn.prepare('SELECT full_name, dob FROM students WHERE dob IS NOT NULL LIMIT 1').get() as any;
   const pv = intake.previewIntake(P.admin, {
+    classId: classId('MB-FT 101'),
     rows: [
-      { fullName: '', classCode: 'MB-FT 101' },
-      { fullName: 'Người Mới Một', classCode: 'KHONG-CO 99' },
-      { fullName: 'Người Mới Hai', classCode: 'MB-FT 101', dob: 'linh tinh' },
-      { fullName: 'Người Mới Ba', classCode: 'MB-FT 101', route: 'LT9' },
+      { fullName: '' },
+      { fullName: 'Người Mới Một', dob: 'linh tinh' },
+      { fullName: 'Người Mới Hai', target: '12' },
+      { fullName: 'Người Mới Ba', entryListening: '5.3' },
+      { fullName: '-' },
     ],
     dateFormat: 'dmy',
   });
   assert(pv.rows[0].issues.some((i) => i.field === 'fullName'), 'Không bắt lỗi thiếu họ tên');
-  assert(pv.rows[1].issues.some((i) => i.field === 'classCode'), 'Không bắt lỗi lớp không tồn tại');
-  assert(pv.rows[2].issues.some((i) => i.field === 'dob'), 'Không bắt lỗi ngày sai');
-  assert(pv.rows[3].issues.some((i) => i.field === 'route'), 'Không bắt lỗi lộ trình sai');
+  assert(pv.rows[1].issues.some((i) => i.field === 'dob'), 'Không bắt lỗi ngày sai');
+  assert(pv.rows[2].issues.some((i) => i.field === 'target'), 'Không bắt lỗi target ngoài 0–9');
+  assert(pv.rows[3].issues.some((i) => i.field === 'entryListening'), 'Không bắt lỗi band lẻ 5.3');
+  /* Dấu '-' ở cột tên là THIẾU TÊN, không phải một em tên '-'. */
+  assert(pv.rows[4].issues.some((i) => i.field === 'fullName'), 'Nhận "-" như một cái tên hợp lệ');
+
+  /* Chưa chọn lớp thì không soát được gì có ý nghĩa — nói thẳng thay vì soát nửa vời. */
+  const noClass = intake.previewIntake(P.admin, { rows: [{ fullName: 'A' }], dateFormat: 'dmy' });
+  assert(noClass.issues.some((i) => i.field === 'classId'), 'Không báo thiếu lớp cho cả lô');
+
   if (existing) {
     const dup = intake.previewIntake(P.admin, {
-      rows: [{ fullName: existing.full_name, classCode: 'MB-FT 101', dob: existing.dob }], dateFormat: 'iso',
+      classId: classId('MB-FT 101'),
+      rows: [{ fullName: existing.full_name, dob: existing.dob }], dateFormat: 'iso',
     });
     assert(dup.rows[0].duplicates.length > 0, 'Không gợi ý hồ sơ trùng');
+    assert(dup.rows[0].issues.some((i) => /trùng hồ sơ/.test(i.message)),
+      'Gợi ý trùng mà không nói ra cho người nhập thấy');
   }
+});
+
+check('[12.1] Lớp là quyết định của cả lô, cột "Lớp" trong file bị bỏ qua có báo', () => {
+  const pv = intake.previewIntake(P.admin, {
+    classId: classId('MB-FT 101'),
+    rows: [{ fullName: 'Người Dán Nhầm Lớp', classCode: 'CP-FT 110' }],
+    dateFormat: 'dmy',
+  });
+  assert(pv.rows[0].classCode === 'MB-FT 101',
+    `Cột lớp trong file đã đè lên ô chọn lớp: ${pv.rows[0].classCode}`);
+  assert(pv.rows[0].issues.some((i) => i.field === 'classCode' && /Bỏ qua cột lớp/.test(i.message)),
+    'Bỏ qua cột lớp mà không nói — người nhập tưởng em vào lớp ghi trong file');
+});
+
+check('[12.1] Lớp Normal không nhận target IELTS và band từng kỹ năng', () => {
+  const normal = conn
+    .prepare(`SELECT c.id FROM classes c JOIN programmes pg ON pg.code = c.programme_code
+               WHERE pg.scoring_mode = 'ratio' LIMIT 1`)
+    .get() as any;
+  assert(normal, 'Bộ demo thiếu lớp Normal');
+  const pv = intake.previewIntake(P.admin, {
+    classId: normal.id,
+    rows: [{ fullName: 'Em Lớp Thường', target: '6.5', entryListening: '5.0' }],
+    dateFormat: 'dmy',
+  });
+  assert(pv.ratio === true, 'Không nhận ra đây là lớp Normal');
+  assert(pv.rows[0].issues.some((i) => i.field === 'target' && /không có target/.test(i.message)),
+    'Lớp Normal vẫn nhận target IELTS');
+  assert(pv.rows[0].issues.some((i) => i.field === 'entryListening'),
+    'Lớp Normal vẫn nhận band đầu vào từng kỹ năng');
 });
 check('Nhập ngoài phạm vi quyền bị chặn ở server', () => {
   const pv = intake.previewIntake(P.mbManager, {
-    rows: [{ fullName: 'Ngoài Phạm Vi', classCode: 'CP-FT 110' }], dateFormat: 'dmy',
+    classId: classId('CP-FT 110'), rows: [{ fullName: 'Ngoài Phạm Vi' }], dateFormat: 'dmy',
   });
-  assert(pv.rows[0].issues.some((i) => /phạm vi/.test(i.message)), 'Không chặn lớp ngoài chi nhánh khi xem trước');
+  assert(pv.issues.some((i) => /phạm vi/.test(i.message)), 'Không chặn lớp ngoài chi nhánh khi xem trước');
   /*
-   * Nhập hàng loạt KHÔNG ném lỗi cả lô khi một dòng ngoài phạm vi: một dòng sai không được
-   * làm hỏng 39 dòng đúng. Dòng đó bị bỏ qua, báo lỗi rõ ràng, và tuyệt đối không ghi gì.
+   * Cả lô vào MỘT lớp, nên lớp ngoài phạm vi là chặn CẢ LÔ ngay từ đầu — không có chuyện
+   * ghi được một phần. Còn một dòng hỏng trong một lô hợp lệ thì chỉ dòng đó bị bỏ.
    */
   const r = intake.commitIntake(P.mbManager, {
-    rows: [
-      { fullName: 'Ngoài Phạm Vi 2', classCode: 'CP-FT 110' },
-      { fullName: 'Trong Phạm Vi 2', classCode: 'MB-FT 101' },
-    ],
+    classId: classId('CP-FT 110'),
+    rows: [{ fullName: 'Ngoài Phạm Vi 2' }],
     dateFormat: 'dmy', idempotencyKey: 'test-intake-scope',
   });
-  assert(r.added === 1 && r.skipped === 1, `Kỳ vọng thêm 1 bỏ 1, thực tế thêm ${r.added} bỏ ${r.skipped}`);
-  assert(r.failed.some((i) => /phạm vi/.test(i.message)), 'Không báo lại lý do dòng bị bỏ');
+  assert(r.added === 0, `Lớp ngoài phạm vi mà vẫn ghi được ${r.added} học viên`);
   assert(!conn.prepare("SELECT id FROM students WHERE full_name = 'Ngoài Phạm Vi 2'").get(),
     'Học viên ngoài phạm vi quyền vẫn bị ghi vào database');
 });
 check('Ghi thật: tạo học viên, enrollment và lộ trình; bỏ qua dòng lỗi', () => {
   const before = (conn.prepare('SELECT COUNT(*) n FROM students').get() as any).n;
   const r = intake.commitIntake(P.admin, {
+    classId: classId('MB-FT 101'),
     rows: [
-      { fullName: 'Học Viên Nhập Một', classCode: 'MB-FT 101', route: 'LT1', target: 6.5, dob: '01/02/2009' },
-      { fullName: '', classCode: 'MB-FT 101' },
-      { fullName: 'Học Viên Nhập Hai', classCode: 'MB-FT 101' },
+      { fullName: 'Học Viên Nhập Một', target: 6.5, dob: '01/02/2009',
+        entryListening: 5, entryReading: '5.5', entryWriting: '-', baselineScore: '5.0' },
+      { fullName: '' },
+      { fullName: 'Học Viên Nhập Hai' },
     ],
     dateFormat: 'dmy', idempotencyKey: 'test-intake-1',
   });
@@ -1288,8 +1329,19 @@ check('Ghi thật: tạo học viên, enrollment và lộ trình; bỏ qua dòng
   const cyc2 = conn.prepare('SELECT * FROM learning_cycles WHERE student_id = ?').get(two.id) as any;
   assert(cyc2 && cyc2.route === 'LT1', 'Không kế thừa lộ trình của lớp');
   assert(cyc2.target_score === null, 'Không được tự đoán target khi bảng nhập bỏ trống');
+  /*
+   * BAND ĐẦU VÀO TỪNG KỸ NĂNG, và dấu '-' là CHƯA CÓ chứ không phải 0 (mục 12.1).
+   * OVR nhập độc lập: nó không bị bốn band ghi đè, và cũng không lấp vào chỗ band còn thiếu.
+   */
+  assert(cyc.baseline_listening === 5 && cyc.baseline_reading === 5.5,
+    `Band đầu vào ghi sai: L=${cyc.baseline_listening} R=${cyc.baseline_reading}`);
+  assert(cyc.baseline_writing === null,
+    `Ô '-' phải là CHƯA CÓ, đang lưu ${cyc.baseline_writing}`);
+  assert(cyc.baseline_score === 5, `OVR phải giữ nguyên 5.0, đang là ${cyc.baseline_score}`);
+
   const warn = intake.previewIntake(P.admin, {
-    rows: [{ fullName: 'Học Viên Nhập Hai', classCode: 'MB-FT 101' }], dateFormat: 'dmy',
+    classId: classId('MB-FT 101'),
+    rows: [{ fullName: 'Học Viên Nhập Hai' }], dateFormat: 'dmy',
   });
   assert(warn.rows[0].issues.some((i) => i.field === 'target' && /Chưa có target/.test(i.message)),
     'Thiếu target phải cảnh báo để người nhập biết còn phải bổ sung');
@@ -1297,10 +1349,11 @@ check('Ghi thật: tạo học viên, enrollment và lộ trình; bỏ qua dòng
 check('Bấm hai lần hoặc thử lại không tạo học viên trùng', () => {
   const before = (conn.prepare('SELECT COUNT(*) n FROM students').get() as any).n;
   const again = intake.commitIntake(P.admin, {
+    classId: classId('MB-FT 101'),
     rows: [
-      { fullName: 'Học Viên Nhập Một', classCode: 'MB-FT 101', route: 'LT1', target: 6.5, dob: '01/02/2009' },
-      { fullName: '', classCode: 'MB-FT 101' },
-      { fullName: 'Học Viên Nhập Hai', classCode: 'MB-FT 101' },
+      { fullName: 'Học Viên Nhập Một', target: 6.5, dob: '01/02/2009' },
+      { fullName: '' },
+      { fullName: 'Học Viên Nhập Hai' },
     ],
     dateFormat: 'dmy', idempotencyKey: 'test-intake-1',
   });
@@ -1308,27 +1361,54 @@ check('Bấm hai lần hoặc thử lại không tạo học viên trùng', () =
   assert(after === before, `Gửi lại cùng khoá đã tạo thêm ${after - before} học viên`);
   assert(again.added === 2, 'Kết quả lần gửi lại phải giống lần đầu');
 });
-check('Tuần MT đề xuất chỉ thành kế hoạch khi người nhập có quyền chốt tuần', () => {
+check('[12.1] Nhập hàng loạt KHÔNG lập lịch MT, kể cả người có quyền xếp lịch', () => {
+  /*
+   * Trước đây file dán có cột "Tuần MT" thì đường nhập này tạo luôn các lượt thi. Nghe thì
+   * tiện, nhưng nó biến ô nhập danh sách thành một lối vòng quanh quyền xếp lịch — và lịch
+   * tạo kiểu đó không đi qua ràng buộc thứ tự đợt nào cả.
+   */
   const r = intake.commitIntake(P.coreTeacher, {
-    rows: [{ fullName: 'Học Viên Không Quyền Tuần', classCode: 'MB-FT 101', route: 'LT1', target: 6,
-             mockWeeks: ['2026-11-02'] }],
+    classId: classId('MB-FT 101'),
+    rows: [{ fullName: 'Học Viên Không Quyền Tuần', target: 6 }],
     dateFormat: 'iso', idempotencyKey: 'test-intake-2',
   });
   assert(r.added === 1, 'GVCN phải thêm được học viên vào lớp mình phụ trách');
   const s = conn.prepare("SELECT id FROM students WHERE full_name = 'Học Viên Không Quyền Tuần'").get() as any;
-  const n = (conn.prepare('SELECT COUNT(*) n FROM assessment_attempts WHERE student_id = ?').get(s.id) as any).n;
-  assert(n === 0, 'Người không có quyền chốt tuần mà nhập hàng loạt lại tạo được kế hoạch MT');
+  assert((conn.prepare('SELECT COUNT(*) n FROM assessment_attempts WHERE student_id = ?').get(s.id) as any).n === 0,
+    'Nhập hàng loạt đã tạo kế hoạch MT');
 
   const r2 = intake.commitIntake(P.mbManager, {
-    rows: [{ fullName: 'Học Viên Có Quyền Tuần', classCode: 'MB-FT 101', route: 'LT1', target: 6,
-             mockWeeks: ['2026-11-02', '2026-11-16'] }],
+    classId: classId('MB-FT 101'),
+    rows: [{ fullName: 'Học Viên Có Quyền Tuần', target: 6 }],
     dateFormat: 'iso', idempotencyKey: 'test-intake-3',
   });
   assert(r2.added === 1, 'Quản lý phải thêm được học viên');
   const s2 = conn.prepare("SELECT id FROM students WHERE full_name = 'Học Viên Có Quyền Tuần'").get() as any;
-  const rows2 = conn.prepare('SELECT * FROM assessment_attempts WHERE student_id = ? ORDER BY attempt_no').all(s2.id) as any[];
-  assert(rows2.length === 2 && rows2[0].attempt_no === 1, 'Quản lý nhập hàng loạt phải tạo được kế hoạch tuần');
-  assert(rows2[0].planned_period_id, 'Nhập hàng loạt phải gắn tuần cho từng lượt');
+  assert((conn.prepare('SELECT COUNT(*) n FROM assessment_attempts WHERE student_id = ?').get(s2.id) as any).n === 0,
+    'Người có quyền xếp lịch vẫn không được xếp lịch qua đường nhập danh sách — đó là việc của panel Lộ trình');
+});
+
+check('[12.1] Tuần bắt đầu: mặc định cho cả lô, ghi đè được từng dòng', () => {
+  const r = intake.commitIntake(P.admin, {
+    classId: classId('MB-FT 101'),
+    defaultStartWeek: '2026-10-05',
+    rows: [
+      { fullName: 'Em Theo Tuần Chung' },
+      { fullName: 'Em Vào Muộn Một Tuần', startWeek: '2026-10-12' },
+    ],
+    dateFormat: 'iso', idempotencyKey: 'test-intake-week',
+  });
+  assert(r.added === 2, `Kỳ vọng thêm 2, thực tế ${r.added}`);
+  const weekOf = (name: string) => (conn
+    .prepare(`SELECT pr.week_start w FROM learning_cycles lc
+                JOIN students s ON s.id = lc.student_id
+                JOIN report_periods pr ON pr.id = lc.start_period_id
+               WHERE s.full_name = ?`)
+    .get(name) as any)?.w;
+  assert(weekOf('Em Theo Tuần Chung') === '2026-10-05',
+    `Tuần mặc định của lô không được áp: ${weekOf('Em Theo Tuần Chung')}`);
+  assert(weekOf('Em Vào Muộn Một Tuần') === '2026-10-12',
+    `Ô tuần của dòng không ghi đè được mặc định: ${weekOf('Em Vào Muộn Một Tuần')}`);
 });
 check('Tạo lớp: mã phải bắt đầu bằng mã chi nhánh và không trùng', () => {
   const mb = (conn.prepare("SELECT id FROM branches WHERE code='MB'").get() as any).id;
