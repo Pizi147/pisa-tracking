@@ -69,11 +69,33 @@ export function weekInfo(date: string): WeekInfo {
 }
 
 /**
- * Hạn nhập điểm MẶC ĐỊNH: thứ Tư của tuần KẾ TIẾP sau tuần MT.
+ * Hạn nhập điểm MẶC ĐỊNH của Fast Track: thứ Tư của tuần KẾ TIẾP sau tuần thi.
  * Hết ngày thứ Tư mới tính quá hạn, không đánh quá hạn ngay đầu ngày.
  */
 export function defaultScoreDeadline(baseDate: string): string {
   return addDays(mondayOf(baseDate), 7 + 2);
+}
+
+/** Lớp nào chấm theo band IELTS (Fast Track), lớp nào chấm theo tỷ lệ điểm đạt (Normal). */
+export type ScoringMode = 'band' | 'ratio';
+
+/**
+ * HẠN CHẤM CỦA MỘT KỸ NĂNG — tính từ TUẦN THI CỦA CHÍNH KỸ NĂNG ĐÓ (mục 10.5).
+ *
+ *     Fast Track   hết thứ Tư của tuần kế tiếp sau tuần thi kỹ năng đó
+ *     Normal       hết Chủ nhật của chính tuần thi kỹ năng đó
+ *
+ * Đây là ĐIỂM KHÁC BIỆT LỚN NHẤT của vòng 7 so với trước. Trước đây cả đợt dùng chung một
+ * hạn, nên dời Speaking sang tuần sau là vô tình gia hạn luôn cho R/L/W đã thi từ tuần
+ * trước — ba môn đang quá hạn bỗng sạch nợ. Nay mỗi kỹ năng mang hạn của riêng nó: dời
+ * Speaking chỉ đổi hạn Speaking.
+ *
+ * Hệ quả thứ hai: kỹ năng có tuần thi CHƯA TỚI thì chưa có gì để nợ. Hàm này vẫn trả về
+ * một ngày, nhưng nơi gọi phải kiểm "đã đến tuần chưa" trước khi gọi một môn là quá hạn.
+ */
+export function skillScoreDeadline(mode: ScoringMode, weekStart: string): string {
+  const monday = mondayOf(weekStart);
+  return mode === 'ratio' ? addDays(monday, 6) : addDays(monday, 7 + 2);
 }
 
 export function isOverdue(deadline: string, today: string): boolean {
@@ -249,5 +271,27 @@ export function effectiveDeadline(input: {
 }): { date: string | null; source: 'override' | 'default' | 'none' } {
   if (input.override) return { date: input.override, source: 'override' };
   if (input.weekStart) return { date: defaultScoreDeadline(input.weekStart), source: 'default' };
+  return { date: null, source: 'none' };
+}
+
+/**
+ * HẠN CÓ HIỆU LỰC CỦA MỘT KỸ NĂNG. Ba nguồn, xét theo thứ tự hẹp dần:
+ *
+ *   1. hạn riêng đặt cho ĐÚNG kỹ năng đó      → `skillOverride`
+ *   2. hạn riêng đặt cho CẢ ĐỢT               → `attemptOverride`
+ *   3. hạn mặc định theo tuần thi của kỹ năng → `skillScoreDeadline`
+ *
+ * Chưa xếp tuần cho kỹ năng thì KHÔNG có hạn — trả về null thay vì dựng một hạn giả từ
+ * tuần của đợt. Một môn chưa có lịch thì không ai đang nợ điểm môn đó.
+ */
+export function effectiveSkillDeadline(input: {
+  mode: ScoringMode;
+  weekStart: string | null;
+  skillOverride?: string | null;
+  attemptOverride?: string | null;
+}): { date: string | null; source: 'skill_override' | 'attempt_override' | 'default' | 'none' } {
+  if (input.skillOverride) return { date: input.skillOverride, source: 'skill_override' };
+  if (input.attemptOverride) return { date: input.attemptOverride, source: 'attempt_override' };
+  if (input.weekStart) return { date: skillScoreDeadline(input.mode, input.weekStart), source: 'default' };
   return { date: null, source: 'none' };
 }

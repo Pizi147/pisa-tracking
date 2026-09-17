@@ -11,6 +11,8 @@ import { can, loadPrincipal, permissionSummary, require_, scopeFor } from '../pe
 import { writeAudit } from '../platform/audit.ts';
 import { maybeSimulateReadError, maybeSimulateSaveFailure, pInt, qInt, qStr, wrap } from './helpers.ts';
 import * as attemptSvc from '../fasttrack/attempts.ts';
+import * as skillScheduleSvc from '../fasttrack/skillSchedule.ts';
+import * as absenceSvc from '../fasttrack/absence.ts';
 import * as cycleSvc from '../fasttrack/cycles.ts';
 import * as summarySvc from '../worklist/summary.ts';
 import * as pulseSvc from '../worklist/branchpulse.ts';
@@ -37,6 +39,7 @@ import * as outcomeSvc from '../worklist/outcomes.ts';
 import { weeklyRollup } from '../worklist/weekly.ts';
 import { myWork } from '../worklist/mywork.ts';
 import * as caseSvc from '../cases/cases.ts';
+import * as caseSignalSvc from '../cases/signals.ts';
 import * as regularSvc from '../normal/regular.ts';
 
 export const api = Router();
@@ -334,14 +337,86 @@ api.post('/attempts/:id/week', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   const periodId = toInt(req.body?.periodId);
   if (!periodId) throw badRequest('Cần chọn tuần.');
-  return attemptSvc.setPlanningWeek(principalOf(req), pInt(req, 'id'), periodId, req.body?.reason);
+  return attemptSvc.setPlanningWeek(principalOf(req), pInt(req, 'id'), periodId, req.body?.reason,
+    { force: req.body?.force === true });
 }));
 
-/** Đánh dấu một kỹ năng đánh giá là không mock ở lượt này, hoặc bỏ đánh dấu. */
+/** Đánh dấu một kỹ năng đánh giá là ngoài phạm vi yêu cầu của lượt này, hoặc bỏ đánh dấu. */
 api.post('/attempts/:id/skills/:skill/skip', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return attemptSvc.setSkillSkip(principalOf(req), pInt(req, 'id'), String(req.params.skill),
     req.body?.skipped !== false, req.body?.reason);
+}));
+
+/*
+ * LỊCH THI RIÊNG TỪNG KỸ NĂNG (mục 10.1). Ba thao tác, ba câu hỏi khác nhau:
+ * thi tuần nào · đã thi hay vắng · hạn chấm là ngày nào.
+ *
+ * Mỗi đường đi qua đúng hàm nghiệp vụ của nó, nên ràng buộc thứ tự đợt, quyền theo lớp và
+ * nhật ký giữ nguyên dù người dùng vào từ màn chi tiết, bảng điểm hay panel Kế hoạch MT.
+ */
+api.post('/attempts/:id/skills/:skill/week', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  const periodId = toInt(req.body?.periodId);
+  if (!periodId) throw badRequest('Cần chọn tuần thi cho kỹ năng này.');
+  /*
+   * ĐƯỜNG NÀY LÀ DỜI CHỦ ĐỘNG. Dời vì em vắng đi qua `/attempts/:id/absence-move` — ở đó mới
+   * có bộ đếm, người duyệt và hạn trả lời (mục 10.6).
+   */
+  return skillScheduleSvc.setSkillWeek(principalOf(req), pInt(req, 'id'), String(req.params.skill), periodId, {
+    reason: req.body?.reason ?? null,
+    /* Chỉ vượt được CẢNH BÁO (hai đợt cách nhau một tuần), không vượt được ràng buộc thứ tự. */
+    force: req.body?.force === true,
+  });
+}));
+
+api.post('/attempts/:id/skills/:skill/sit', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return skillScheduleSvc.setSitStatus(principalOf(req), pInt(req, 'id'), String(req.params.skill),
+    String(req.body?.status ?? ''), req.body?.note ?? null);
+}));
+
+api.post('/attempts/:id/skills/:skill/deadline', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return skillScheduleSvc.setSkillDeadline(principalOf(req), pInt(req, 'id'), String(req.params.skill),
+    req.body?.deadline ?? null, req.body?.reason ?? null);
+}));
+
+/*
+ * VẮNG, DỜI CÓ GIỚI HẠN VÀ KHÔI PHỤC (mục 10.6).
+ *
+ * Bốn đường, và chúng KHÁC HẲN đường đổi lịch thường ở trên: đổi lịch là quyết định về kế
+ * hoạch, còn đây là hệ quả của việc em không có mặt — có bộ đếm, có người duyệt, và có hạn
+ * trả lời. Trộn hai đường vào một là mất hẳn bộ đếm.
+ */
+api.post('/attempts/:id/absence-move', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  const skills = Array.isArray(req.body?.skills) ? req.body.skills.map(String) : [];
+  return absenceSvc.requestAbsenceMove(principalOf(req), pInt(req, 'id'), skills, {
+    reason: req.body?.reason ?? null,
+    /* Bấm hai lần hay mạng chập không được thành hai lần dời. */
+    idempotencyKey: req.body?.idempotencyKey ?? null,
+  });
+}));
+
+api.post('/move-requests/:id/decide', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return absenceSvc.decideAbsenceMove(principalOf(req), pInt(req, 'id'), {
+    approve: req.body?.approve === true,
+    note: req.body?.note ?? null,
+    periodId: toInt(req.body?.periodId) || null,
+  });
+}));
+
+api.get('/move-requests', requireAuth, wrap((req) => absenceSvc.openMoveRequests(principalOf(req))));
+
+api.post('/attempts/:id/skills/:skill/restore', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  const periodId = toInt(req.body?.periodId);
+  if (!periodId) throw badRequest('Khôi phục thì phải đặt luôn tuần mới — không để phần thi treo không lịch.');
+  return absenceSvc.restoreCancelledSkill(principalOf(req), pInt(req, 'id'), String(req.params.skill), periodId, {
+    reason: req.body?.reason ?? null,
+  });
 }));
 
 api.post('/attempts/:id/deadline', requireAuth, wrap((req) => {
@@ -451,7 +526,7 @@ api.get('/classes/:id/suggested-weeks', requireAuth, wrap((req) => {
 
 // ============================================================ Lớp thường (FOU/BE/ELE)
 
-/** Bảng nhập điểm của lớp Normal: điểm đạt / tổng điểm, đạt từ 60%. */
+/** Bảng nhập điểm của lớp Normal: điểm đạt / tổng điểm, đạt từ 70%. */
 api.get('/regular/classes/:classId/sheet', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   return regularSvc.regularSheet(principalOf(req), pInt(req, 'classId'), qStr(req, 'kind'));
@@ -584,6 +659,30 @@ api.post('/cycles/:id/apply-suggested-mocks', requireAuth, wrap((req) => {
 api.post('/cases/report', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return caseSvc.reportIssue(principalOf(req), req.body ?? {});
+}));
+
+/*
+ * TÍN HIỆU TỪ ĐIỂM (mục 6.2) — hàng riêng, KHÔNG trộn vào danh sách case.
+ *
+ * Một tín hiệu chưa ai xác minh không phải một vấn đề đã được xác định. Trộn hai thứ lại là
+ * cách chắc chắn nhất để con số "đang có bao nhiêu vấn đề" nói quá sự thật.
+ */
+api.get('/signals/pending', requireAuth, wrap((req) => caseSignalSvc.listSignals(principalOf(req), {
+  status: (qStr(req, 'status') as any) ?? 'open',
+  branchId: qInt(req, 'branchId'),
+  classId: qInt(req, 'classId'),
+  studentId: qInt(req, 'studentId'),
+  mine: req.query?.mine === '1',
+  overdueOnly: req.query?.overdue === '1',
+})));
+
+api.get('/signals/pending/:id', requireAuth, wrap((req) =>
+  caseSignalSvc.signalDetail(principalOf(req), pInt(req, 'id'))));
+
+/** Quản lý giao tín hiệu cho người khác xác minh, khi chưa ai được phân công đúng môn. */
+api.post('/signals/pending/:id/assign', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return caseSignalSvc.assignSignal(principalOf(req), pInt(req, 'id'), toInt(req.body?.userId));
 }));
 
 api.get('/cases', requireAuth, wrap((req) => {
@@ -724,11 +823,15 @@ api.post('/cases/:id/followups', requireAuth, wrap((req) => {
   return caseSvc.recordFollowUp(principalOf(req), pInt(req, 'id'), req.body ?? {});
 }));
 
-/** Đổi hướng xử lý, hoặc đóng case. Đóng thì bắt buộc có hướng xử lý. */
-api.patch('/cases/:id/disposition', requireAuth, wrap((req) => {
-  maybeSimulateSaveFailure();
-  return caseSvc.setDisposition(principalOf(req), pInt(req, 'id'), req.body ?? {});
-}));
+/*
+ * ĐƯỜNG "HƯỚNG XỬ LÝ" ĐÃ BỎ (mục 9.3).
+ *
+ * Case chỉ còn MỘT đường kết thúc: nút "Hoàn thành case" → POST /cases/:id/outcome. Giữ hai
+ * đường đóng song song là giữ hai dấu vết khác nhau cho cùng một việc, và sớm muộn sẽ có
+ * case đóng được ở đường này mà màn hình ở đường kia bảo là chưa đóng được.
+ *
+ * Bản ghi cũ vẫn đọc được hướng xử lý của mình; chỉ không sửa qua đường riêng nữa.
+ */
 
 api.put('/cases/:id/owner', requireAuth, wrap((req) => {
   const raw = (req.body ?? {}).ownerUserId;

@@ -96,7 +96,20 @@ export const STUDENTS: StudentSeed[] = [
             no: 2, kind: 'mock', week: '2026-08-17', status: 'done',
             bands: { listening: 6.0, reading: 6.0, writing1: 5.5, writing2: 6.0, speaking: 6.0 },
           },
-          { no: 3, kind: 'mock', week: '2026-09-14', status: 'planned' },
+          {
+            /*
+             * VẮNG LẦN ĐẦU, CHƯA AI XỬ LÝ (mục 10.6).
+             *
+             * GVCN đã xác minh em vắng buổi Speaking nhưng chưa bấm dời. Đây là lần thứ nhất,
+             * nên GVCN tự dời được — và chỉ dời đúng sang tuần kế tiếp của lịch đang có, không
+             * chọn tuỳ ý. Bộ demo cần cả hai khúc này để so được hai đường đi.
+             */
+            no: 3, kind: 'mock', week: '2026-09-14', status: 'planned',
+            absent: {
+              skill: 'speaking',
+              note: 'GVCN xác minh em không tới buổi Speaking',
+            },
+          },
         ],
         cases: [
           {
@@ -147,7 +160,24 @@ export const STUDENTS: StudentSeed[] = [
             no: 2, kind: 'mock', week: '2026-08-17', status: 'done',
             bands: { listening: 5.5, reading: 5.5, writing1: 5.5, writing2: 5.5, speaking: 5.0 },
           },
-          { no: 3, kind: 'mock', week: '2026-09-14', status: 'planned' },
+          {
+            /*
+             * VẮNG LẦN HAI, ĐANG CHỜ QUẢN LÝ DUYỆT (mục 10.6).
+             *
+             * Em đã vắng buổi Speaking một lần và được GVCN dời; lần này vắng tiếp, nên GVCN
+             * chỉ ĐỀ NGHỊ được, còn lịch giữ nguyên cho tới khi Quản lý trả lời. Hạn trả lời
+             * là ngày TRƯỚC khi tuần mới bắt đầu — quá hạn thì phần thi bị huỷ.
+             *
+             * Đây là ô để người xem bấm thử đường duyệt, và để thấy một "Chờ duyệt dời" thật
+             * trên bảng lịch kỹ năng.
+             */
+            no: 3, kind: 'mock', week: '2026-09-14', status: 'planned',
+            absent: {
+              skill: 'speaking', moveCount: 1, pending: true,
+              note: 'GVCN xác minh em không tới buổi Speaking',
+              reason: 'Em ốm, gia đình báo sáng cùng ngày',
+            },
+          },
         ],
         cases: [
           {
@@ -275,9 +305,16 @@ export const STUDENTS: StudentSeed[] = [
             bands: { listening: 6.5, reading: 7.0, writing1: 6.5, writing2: 6.5, speaking: 6.5 },
           },
           {
-            /* Kỳ vọng 7.0. Mới có L và R; Writing và Speaking CHƯA NHẬP → kết luận tạm thời. */
+            /*
+             * Kỳ vọng 7.0. Mới có L và R; Writing và Speaking CHƯA NHẬP → kết luận tạm thời.
+             *
+             * ĐỢT NÀY TÁCH TUẦN: R/L/W thi tuần 14–20/9, Speaking tuần 21–27/9 (mục 10.1).
+             * Writing đang chờ chấm với hạn thứ Tư 23/9, còn Speaking thì CHƯA ĐẾN LỊCH nên
+             * không hiện nợ nhập điểm — đúng điều mục 10.5 đòi.
+             */
             no: 3, kind: 'mock', week: '2026-09-14', status: 'done',
             bands: { listening: 6.5, reading: 7.0 }, enteredOn: '2026-09-14',
+            skillWeeks: { speaking: '2026-09-21' },
           },
         ],
         cases: [
@@ -329,7 +366,18 @@ export const STUDENTS: StudentSeed[] = [
       tests: [
         { no: 1, kind: 'mock', week: '2026-08-03', status: 'done',
           bands: { listening: 5.5, reading: 5.5, writing1: 5.0, writing2: 5.5, speaking: 5.5 } },
-        { no: 2, kind: 'mock', week: '2026-09-14', status: 'planned' },
+        {
+          /*
+           * MT2 TUẦN NÀY, ĐIỂM VỪA VÀO. Kỳ vọng 5.5; Reading 5.0 dưới kỳ vọng nên sinh một
+           * tín hiệu cho cô Reading, hạn xác minh 16/09 — CHƯA quá hạn.
+           *
+           * Đây là ca "vừa có tín hiệu, còn trong hạn" của bộ demo: mở hàng việc ra phải
+           * thấy cả việc còn thời gian, không chỉ toàn việc đã đỏ.
+           */
+          no: 2, kind: 'mock', week: '2026-09-14', status: 'done',
+          bands: { listening: 6.0, reading: 5.0, writing1: 5.5, writing2: 5.5, speaking: 6.0 },
+          enteredOn: '2026-09-14',
+        },
       ],
     }],
   },
@@ -348,7 +396,15 @@ export const STUDENTS: StudentSeed[] = [
           no: 1, kind: 'mock', week: '2026-08-03', status: 'done',
           bands: { listening: 5.0, reading: 5.5, writing1: 5.5, writing2: 5.5, speaking: 6.0 },
         },
-        { no: 2, kind: 'mock', week: '2026-09-14', status: 'planned' },
+        {
+          /*
+           * CHIỀU NGƯỢC LẠI của J08: Speaking thi TRƯỚC (tuần 14–20/9), R/L/W thi tuần sau
+           * (21–27/9). Đề bài nói rõ cả hai chiều đều có thật, nên bộ demo phải có cả hai.
+           * Tuần kế hoạch hoàn tất của đợt vì thế là tuần 21–27/9, tuần muộn nhất.
+           */
+          no: 2, kind: 'mock', week: '2026-09-14', status: 'planned',
+          skillWeeks: { listening: '2026-09-21', reading: '2026-09-21', writing: '2026-09-21' },
+        },
       ],
       cases: [
         {
@@ -390,7 +446,17 @@ export const STUDENTS: StudentSeed[] = [
         tests: [
           { no: 1, kind: 'progress', week: '2026-08-17', status: 'done',
             ratios: { listening: [28, 40], reading: [27, 40], writing: [15, 20], speaking: [18, 25] } },
-          { no: 2, kind: 'final', week: '2026-09-14', status: 'planned' },
+          {
+            /*
+             * FINAL TEST TRẢI BA TUẦN — cả lớp MB-FOU 12 thi như nhau.
+             * L và R tuần 14–20/9, Writing tuần 21–27/9, Speaking tuần 28/9–4/10.
+             * Hạn chấm của lớp Normal là hết CHỦ NHẬT của chính tuần thi môn đó, nên ba
+             * môn có ba hạn khác nhau và môn chưa tới tuần thì chưa nợ ai cái gì.
+             * Vẫn là MỘT bài Final Test, vẫn phải đủ bốn môn mới hoàn tất.
+             */
+            no: 2, kind: 'final', week: '2026-09-14', status: 'planned',
+            skillWeeks: { writing: '2026-09-21', speaking: '2026-09-28' },
+          },
         ],
       },
     ],
@@ -408,7 +474,17 @@ export const STUDENTS: StudentSeed[] = [
         tests: [
           { no: 1, kind: 'progress', week: '2026-08-17', status: 'done',
             ratios: { listening: [26, 40], reading: [25, 40], writing: [10, 20], speaking: [17, 25] } },
-          { no: 2, kind: 'final', week: '2026-09-14', status: 'planned' },
+          {
+            /*
+             * FINAL TEST TRẢI BA TUẦN — cả lớp MB-FOU 12 thi như nhau.
+             * L và R tuần 14–20/9, Writing tuần 21–27/9, Speaking tuần 28/9–4/10.
+             * Hạn chấm của lớp Normal là hết CHỦ NHẬT của chính tuần thi môn đó, nên ba
+             * môn có ba hạn khác nhau và môn chưa tới tuần thì chưa nợ ai cái gì.
+             * Vẫn là MỘT bài Final Test, vẫn phải đủ bốn môn mới hoàn tất.
+             */
+            no: 2, kind: 'final', week: '2026-09-14', status: 'planned',
+            skillWeeks: { writing: '2026-09-21', speaking: '2026-09-28' },
+          },
         ],
         cases: [
           {
@@ -441,7 +517,17 @@ export const STUDENTS: StudentSeed[] = [
         tests: [
           { no: 1, kind: 'progress', week: '2026-08-17', status: 'done',
             ratios: { listening: [27, 40], reading: [26, 40], writing: [14, 20] } },
-          { no: 2, kind: 'final', week: '2026-09-14', status: 'planned' },
+          {
+            /*
+             * FINAL TEST TRẢI BA TUẦN — cả lớp MB-FOU 12 thi như nhau.
+             * L và R tuần 14–20/9, Writing tuần 21–27/9, Speaking tuần 28/9–4/10.
+             * Hạn chấm của lớp Normal là hết CHỦ NHẬT của chính tuần thi môn đó, nên ba
+             * môn có ba hạn khác nhau và môn chưa tới tuần thì chưa nợ ai cái gì.
+             * Vẫn là MỘT bài Final Test, vẫn phải đủ bốn môn mới hoàn tất.
+             */
+            no: 2, kind: 'final', week: '2026-09-14', status: 'planned',
+            skillWeeks: { writing: '2026-09-21', speaking: '2026-09-28' },
+          },
         ],
       },
     ],
@@ -459,7 +545,17 @@ export const STUDENTS: StudentSeed[] = [
         tests: [
           { no: 1, kind: 'progress', week: '2026-08-17', status: 'done',
             ratios: { listening: [20, 40], reading: [21, 40], writing: [13, 20], speaking: [16, 25] } },
-          { no: 2, kind: 'final', week: '2026-09-14', status: 'planned' },
+          {
+            /*
+             * FINAL TEST TRẢI BA TUẦN — cả lớp MB-FOU 12 thi như nhau.
+             * L và R tuần 14–20/9, Writing tuần 21–27/9, Speaking tuần 28/9–4/10.
+             * Hạn chấm của lớp Normal là hết CHỦ NHẬT của chính tuần thi môn đó, nên ba
+             * môn có ba hạn khác nhau và môn chưa tới tuần thì chưa nợ ai cái gì.
+             * Vẫn là MỘT bài Final Test, vẫn phải đủ bốn môn mới hoàn tất.
+             */
+            no: 2, kind: 'final', week: '2026-09-14', status: 'planned',
+            skillWeeks: { writing: '2026-09-21', speaking: '2026-09-28' },
+          },
         ],
         cases: [
           {
@@ -523,6 +619,27 @@ export const STUDENTS: StudentSeed[] = [
           },
         ],
         cases: [
+          {
+            /*
+             * CASE CỦA RIÊNG WRITING TASK 1.
+             *
+             * MT1 của em có band Writing gộp 5.0, dưới kỳ vọng 5.5, và cả W1 lẫn W2 đều dưới.
+             * Hai task chấm riêng và thường do hai giáo viên khác nhau dạy, nên tín hiệu của
+             * chúng cũng riêng — cô W1 xác minh và mở case cho đúng task mình phụ trách.
+             */
+            topic: 'writing1', fromTest: 1, sosLevel: 2, detectedAt: '2026-07-19',
+            title: 'Writing Task 1: đọc sai xu hướng của biểu đồ',
+            summary: 'Em tả đủ số liệu nhưng nêu sai xu hướng chính, và thiếu câu tổng quan.',
+            status: 'in_progress', owner: 'T_TRANG',
+            plans: [
+              {
+                kind: 'teaching_adjust',
+                description: 'Mỗi buổi 10 phút luyện viết câu tổng quan từ một biểu đồ mẫu',
+                performer: 'T_TRANG', cycleStart: '2026-07-20', status: 'started',
+                startedOn: '2026-07-21', followupDue: '2026-09-20',
+              },
+            ],
+          },
           {
             topic: 'speaking', fromTest: 1, sosLevel: 2, detectedAt: '2026-07-19',
             title: 'Speaking phát âm đuôi từ chưa rõ',
@@ -607,7 +724,7 @@ export const STUDENTS: StudentSeed[] = [
               {
                 /* NGƯỜI NHẬP HỘ KHÁC NGƯỜI THỰC HIỆN: văn phòng gọi, giáo viên ghi lại. */
                 kind: 'talk_parent', description: 'Gọi phụ huynh trao đổi về lịch đi học',
-                performer: 'T_QUAN', recordedBy: 'ADM_BC',
+                performer: 'T_QUAN', recordedBy: 'MGR_BC',
                 cycleNo: 2, cycleStart: '2026-08-17', status: 'completed',
                 startedOn: '2026-08-19', completedOn: '2026-08-19', followupDue: '2026-09-07',
                 closedReason: 'done',
@@ -658,7 +775,22 @@ export const STUDENTS: StudentSeed[] = [
             no: 1, kind: 'mock', week: '2026-07-13', status: 'done',
             bands: { listening: 6.0, reading: 5.0, writing1: 5.5, writing2: 6.0, speaking: 6.0 },
           },
-          { no: 2, kind: 'mock', week: '2026-09-07', status: 'planned' },
+          {
+            /*
+             * MT2 TUẦN TRƯỚC, ĐÃ CÓ ĐIỂM, MÀ CHƯA AI XÁC MINH TÍN HIỆU.
+             *
+             * Kỳ vọng MT2 = 6.0. Speaking 5.5 dưới kỳ vọng nên sinh một tín hiệu cho cô
+             * Speaking từ 07/09, hạn xác minh 09/09 — nay đã quá hạn. Đây là ca QUÁ HẠN XÁC
+             * MINH có chủ đích của bộ demo: bản demo phải có cả trường hợp chưa ai xem, nếu
+             * không thì hàng việc mới của mục 6.2 nhìn lúc nào cũng trống.
+             *
+             * Reading đã đạt lại ở lượt này, nên case Reading đang mở nhận một mốc "đã đạt
+             * kỳ vọng" và mức hạ về 0 — nhưng KHÔNG tự đóng.
+             */
+            no: 2, kind: 'mock', week: '2026-09-07', status: 'done',
+            bands: { listening: 6.0, reading: 6.0, writing1: 6.0, writing2: 6.0, speaking: 5.5 },
+            enteredOn: '2026-09-07',
+          },
         ],
         cases: [
           {
@@ -986,7 +1118,9 @@ export const STUDENTS: StudentSeed[] = [
 
   {
     code: 'S12', name: 'Ngô Hải Yến', branch: 'CP', dob: '2009-07-19',
-    story: 'Tiến bộ đều qua ba lượt MT, chưa từng có case nào.',
+    story: 'Tiến bộ đều qua ba lượt MT, học thuật chưa từng có case. Nhưng chuyện BTVN thì có: '
+      + 'một ĐỢT mở 14/9 gộp thêm báo cáo 16/9 và được nâng lên Gấp, rồi một báo cáo 18/9 '
+      + 'nằm ngoài cửa sổ bốn ngày nên mở ĐỢT MỚI — đúng ví dụ ở mục 7.2.',
     enrollments: [{ class: 'CP-FT 110', from: '2026-04-13', status: 'active' }],
     cycles: [
       {
@@ -1002,6 +1136,72 @@ export const STUDENTS: StudentSeed[] = [
           { no: 3, kind: 'mock', week: '2026-08-17', status: 'done',
             bands: { listening: 6.5, reading: 7.0, writing1: 6.5, writing2: 6.5, speaking: 6.5 } },
           { no: 4, kind: 'mock', week: '2026-09-28', status: 'planned' },
+        ],
+        cases: [
+          {
+            /*
+             * ĐỢT 1 — mở 14/9, cửa sổ gộp tới hết 17/9.
+             *
+             * Cô Reading báo trước; hai ngày sau cô Listening báo cùng chuyện. Báo cáo thứ
+             * hai GỘP vào chính đợt này và làm nó được nâng lên GẤP: hai người khác nhau
+             * cùng thấy một chuyện trong bốn ngày là tín hiệu mạnh hơn nhận định của riêng ai.
+             *
+             * Mỗi báo cáo giữ nguyên người gửi, ngày gửi, môn và lời của chính người đó.
+             */
+            topic: 'homework', track: 'behaviour',
+            detectedAt: '2026-09-14',
+            title: 'Thiếu BTVN nhiều buổi liền',
+            summary: 'Ba buổi Reading liên tiếp em không nộp bài về nhà, hỏi thì nói quên vở.',
+            reportedBy: 'T_NAM', owner: 'T_NAM',
+            urgency: 'attention',
+            status: 'in_progress',
+            reports: [
+              {
+                on: '2026-09-16', by: 'T_DUNG', skill: 'listening',
+                summary: 'Buổi Listening hôm nay em cũng không có bài. Em nói tối qua bận việc nhà.',
+              },
+            ],
+            plans: [
+              {
+                kind: 'talk_student', description: 'Gặp riêng em đầu giờ để hỏi rõ vì sao',
+                performer: 'T_NAM', cycleStart: '2026-09-14', status: 'started',
+                startedOn: '2026-09-15', followupDue: '2026-09-18',
+              },
+            ],
+          },
+          {
+            /*
+             * ĐỢT 2 — báo cáo ngày 18/9 nằm NGOÀI cửa sổ 14–17/9, nên nó mở một đợt mới nối
+             * vào đợt cũ. "Lần thứ mấy" đếm theo ĐỢT, không theo từng báo cáo: đợt 1 có hai
+             * báo cáo nhưng vẫn là lần 1.
+             *
+             * Ngày demo là 14/9 nên đợt này nằm ở TƯƠNG LAI — bộ dựng chặn dữ liệu tương lai,
+             * nên ở đây chỉ mô tả trong câu chuyện của em, không dựng thành bản ghi.
+             */
+            topic: 'participation', track: 'behaviour',
+            detectedAt: '2026-08-24',
+            title: 'Ít tham gia phát biểu trên lớp',
+            summary: 'Em ngồi im cả buổi, gọi mới nói và chỉ trả lời một câu ngắn.',
+            reportedBy: 'T_DUNG', owner: 'T_NAM',
+            urgency: 'attention',
+            status: 'done',
+            disposition: 'monitor',
+            outcome: 'improved',
+            outcomeNote: 'Sau khi đổi chỗ ngồi và gọi phát biểu có chủ đích, em đã nói nhiều hơn.',
+            closedOn: '2026-09-07', closedBy: 'T_NAM',
+            plans: [
+              {
+                kind: 'teaching_adjust', description: 'Đổi chỗ ngồi và gọi phát biểu có chủ đích',
+                performer: 'T_DUNG', cycleStart: '2026-08-24', status: 'completed',
+                startedOn: '2026-08-25', completedOn: '2026-09-05', followupDue: '2026-08-31',
+                closedReason: 'done',
+                followups: [{
+                  on: '2026-09-05', outcome: 'improved', nextStep: 'complete',
+                  note: 'Em đã chủ động trả lời hai ba lượt mỗi buổi.',
+                }],
+              },
+            ],
+          },
         ],
       },
     ],

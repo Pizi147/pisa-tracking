@@ -203,7 +203,10 @@ CREATE TABLE routes (
 CREATE TABLE roles (
   id INTEGER PRIMARY KEY,
   key TEXT NOT NULL UNIQUE,
-  name_vi TEXT NOT NULL
+  name_vi TEXT NOT NULL,
+  -- 'active' = giao mới được. 'retired' = vai trò đã bỏ, chỉ còn để ĐỌC lịch sử.
+  -- Vai đã bỏ không bị xoá dòng vì user_roles và nhật ký cũ còn trỏ vào nó.
+  status TEXT NOT NULL DEFAULT 'active'
 );
 
 CREATE TABLE permissions (
@@ -485,6 +488,119 @@ CREATE TABLE attempt_skill_skips (
   UNIQUE (attempt_id, skill)
 );
 
+/*
+ * LỊCH THI RIÊNG TỪNG KỸ NĂNG trong một đợt (mục 10.1).
+ *
+ * Một đợt MT vẫn là MỘT đợt, có một định danh, một bảng điểm và một kết luận. Nhưng ngoài
+ * đời các kỹ năng của nó KHÔNG thi cùng lúc: FT hay thi R/L/W một buổi rồi Speaking tuần
+ * sau; lớp Normal có thể trải bốn môn ra hai ba tuần. Trước vòng 7 cả đợt dùng chung một
+ * tuần, nên dời Speaking là kéo theo hạn chấm của cả ba môn đã thi xong từ tuần trước.
+ *
+ * Bảng này là NƠI SỞ HỮU DUY NHẤT của bốn câu hỏi, hỏi riêng cho từng kỹ năng:
+ *
+ *   1. có nằm trong phạm vi yêu cầu của đợt này không   → `required`
+ *   2. thi tuần nào                                     → `planned_period_id`
+ *   3. đã thi, đã vắng hay đã huỷ phần thi              → `sit_status`
+ *   4. hạn chấm là ngày nào                             → suy từ (2) + `deadline_override`
+ *
+ * `assessment_attempts.planned_period_id` KHÔNG biến mất: nó trở thành TUẦN KẾ HOẠCH HOÀN
+ * TẤT của cả đợt — tuần muộn nhất trong các kỹ năng bắt buộc (mục 10.7) — và được tính lại
+ * mỗi khi một kỹ năng đổi tuần. Nhờ đó bảng kết quả theo tuần vẫn đếm mỗi đợt đúng một lần.
+ *
+ * Kỹ năng ở đây là kỹ năng ĐÁNH GIÁ: Writing là MỘT môn thi, không tách W1/W2. Hai task
+ * Writing chấm riêng nhưng luôn làm trong cùng một buổi, nên chúng dùng chung một lịch.
+ */
+CREATE TABLE attempt_skills (
+  id INTEGER PRIMARY KEY,
+  attempt_id INTEGER NOT NULL REFERENCES assessment_attempts(id),
+  skill TEXT NOT NULL,                -- listening | reading | writing | speaking
+
+  /*
+   * PHẠM VI YÊU CẦU. Mặc định 1. Đặt 0 nghĩa là ngay từ đầu đợt này không yêu cầu kỹ năng
+   * đó — KHÁC hẳn "có yêu cầu nhưng chưa có điểm", và cũng khác "đã xếp lịch mà vắng".
+   * Lớp Normal luôn phải đủ bốn môn nên không bao giờ có dòng `required = 0`.
+   */
+  required INTEGER NOT NULL DEFAULT 1,
+  scope_reason TEXT,
+  scope_by INTEGER REFERENCES users(id),
+  scope_at TEXT,
+
+  -- Tuần thi CỦA CHÍNH KỸ NĂNG NÀY. Trống = chưa xếp; không suy ra từ tuần của đợt.
+  planned_period_id INTEGER REFERENCES report_periods(id),
+  /*
+   * 'auto'   tuần này thừa hưởng từ tuần chung của đợt, chưa ai chốt riêng cho kỹ năng
+   * 'manual' một người đã xếp riêng tuần cho kỹ năng này
+   * Cơ chế tự tính lịch theo tuần bắt đầu học chỉ được đụng vào dòng 'auto' (mục 10.4).
+   */
+  plan_source TEXT NOT NULL DEFAULT 'auto',
+
+  -- scheduled (chưa xác nhận gì) | sat (đã thi) | absent (đã xác nhận vắng) | cancelled
+  sit_status TEXT NOT NULL DEFAULT 'scheduled',
+  sit_by INTEGER REFERENCES users(id),
+  sit_at TEXT,
+  sit_note TEXT,
+
+  -- Hạn chấm riêng cho ĐÚNG kỹ năng này, đè lên hạn riêng của cả đợt và hạn mặc định.
+  deadline_override TEXT,
+  deadline_override_by INTEGER REFERENCES users(id),
+  deadline_override_at TEXT,
+  deadline_override_reason TEXT,
+
+  /*
+   * Số lần đã dời vì VẮNG, đếm riêng cho KỸ NĂNG NÀY TRONG ĐỢT NÀY (mục 10.6).
+   * Không dùng chung một lượt miễn phí cho cả R/L/W và Speaking. Dời chủ động của Quản lý
+   * không làm tăng con số này.
+   */
+  absence_move_count INTEGER NOT NULL DEFAULT 0,
+
+  created_at TEXT NOT NULL,
+  updated_at TEXT,
+  UNIQUE (attempt_id, skill)
+);
+CREATE INDEX idx_attempt_skills_attempt ON attempt_skills(attempt_id);
+CREATE INDEX idx_attempt_skills_period ON attempt_skills(planned_period_id);
+
+/*
+ * ĐỀ NGHỊ DỜI LỊCH DO VẮNG — mục 10.6.
+ *
+ * Lần đầu vắng một kỹ năng, GVCN tự dời được, và dời đúng TUẦN KẾ TIẾP của lịch đang có —
+ * không chọn tuỳ ý, không lấy tuần hiện tại để nhảy nhiều tuần khi xử lý muộn. Từ lần thứ
+ * hai trở đi thì phải có Quản lý duyệt, và bảng này là chỗ lời đề nghị đó nằm chờ.
+ *
+ * HẠN DUYỆT LÀ TRƯỚC KHI TUẦN MỚI BẮT ĐẦU. Quá hạn mà chưa ai trả lời thì phần thi/lịch hẹn
+ * bị huỷ — vì để nguyên thì em có một lịch thi mà không ai xác nhận, và cả đợt treo theo nó.
+ * Huỷ KHÔNG xoá điểm hay lịch sử: nó chỉ dừng đúng hàng công việc của phần đã huỷ.
+ *
+ * `idempotency_key` chặn hai lần gửi cùng một đề nghị (bấm hai lần, mạng chập) biến thành
+ * hai lần dời.
+ */
+CREATE TABLE skill_move_requests (
+  id INTEGER PRIMARY KEY,
+  attempt_id INTEGER NOT NULL REFERENCES assessment_attempts(id),
+  skill TEXT NOT NULL,
+  /* Lần dời do vắng thứ mấy của CHÍNH kỹ năng này trong CHÍNH đợt này. */
+  move_no INTEGER NOT NULL,
+  from_period_id INTEGER REFERENCES report_periods(id),
+  to_period_id INTEGER NOT NULL REFERENCES report_periods(id),
+  reason TEXT,
+  requested_by INTEGER REFERENCES users(id),
+  requested_on TEXT NOT NULL,
+  /* Hạn Quản lý phải trả lời: ngày TRƯỚC khi tuần mới được đề nghị bắt đầu. */
+  decide_by TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'pending',  -- pending | approved | declined | expired | withdrawn
+  decided_by INTEGER REFERENCES users(id),
+  decided_at TEXT,
+  decision_note TEXT,
+  /* Phần thi/lịch hẹn đã bị huỷ vì từ chối hoặc hết hạn — chờ Quản lý khôi phục. */
+  cancelled_part INTEGER NOT NULL DEFAULT 0,
+  idempotency_key TEXT UNIQUE,
+  created_at TEXT NOT NULL,
+  updated_at TEXT,
+  UNIQUE (attempt_id, skill, move_no)
+);
+CREATE INDEX idx_move_req_attempt ON skill_move_requests(attempt_id);
+CREATE INDEX idx_move_req_open ON skill_move_requests(status, decide_by) WHERE status = 'pending';
+
 -- Mỗi kỹ năng NHẬP ĐIỂM một dòng.
 -- Không có dòng, hoặc có dòng mà `band` còn trống = CHƯA NHẬP ĐIỂM.
 CREATE TABLE assessment_scores (
@@ -657,6 +773,16 @@ CREATE TABLE sos_cases (
    */
   previous_case_id INTEGER REFERENCES sos_cases(id),
 
+  /*
+   * ĐỢT THỨ MẤY của cùng một phân loại (mục 7.2). Tăng theo ĐỢT, không theo mỗi báo cáo:
+   * một đợt có ba báo cáo vẫn là "lần 1". Giao diện đọc nó ra thành "Thiếu BTVN — lần 2".
+   */
+  episode_no INTEGER NOT NULL DEFAULT 1,
+  /* Ngày cuối còn gộp được báo cáo mới vào chính case này = ngày mở + 3. */
+  merge_until TEXT,
+  /* Lúc case bị nâng lên Gấp vì có báo cáo bổ sung — dùng để siết hạn phương án. */
+  urgency_raised_at TEXT,
+
   origin_kind TEXT NOT NULL DEFAULT 'mock',  -- mock | teacher_report | manager_task
   detected_at TEXT,                   -- ngày phát hiện vấn đề, khác ngày ghi vào hệ thống
   reported_by INTEGER REFERENCES users(id),
@@ -768,6 +894,17 @@ CREATE TABLE case_interventions (
   kind TEXT NOT NULL,                 -- talk_student | talk_parent | tutor | self_study |
                                       -- teaching_adjust | meeting | ops_policy | other
   description TEXT,
+
+  /*
+   * LÙI LỊCH THI THÌ LÙI CÁI GÌ (mục 8.1).
+   *
+   * 'real_exam'  = kế hoạch thi IELTS thật của em.
+   * 'mock_skill' = một phần thi trong một đợt MT.
+   *
+   * Hai thứ này có người quyết khác nhau và hệ quả khác nhau, nên một đề xuất lùi lịch
+   * không nói rõ đối tượng là một đề xuất không duyệt được. NULL với mọi loại khác.
+   */
+  reschedule_target TEXT,
   -- Người thực hiện: ưu tiên tài khoản, không có thì ghi tên (CS, phụ huynh, người ngoài).
   performer_user_id INTEGER REFERENCES users(id),
   performer_name TEXT,
@@ -777,16 +914,24 @@ CREATE TABLE case_interventions (
   planned_date TEXT,
   started_date TEXT,
   completed_date TEXT,
-  -- Hẹn xem lại. Chỉ tính quá hạn khi CÓ ngày hẹn và chưa xem lại; theo dõi không hẹn thì
-  -- không bao giờ quá hạn.
+  /*
+   * NGÀY DỰ KIẾN KẾT THÚC PHƯƠNG ÁN (mục 8.2, trước đây là "hẹn xem lại").
+   *
+   * Đây là HẠN HOÀN THÀNH, không phải một cái nhắc suông. Học thuật không chọn ngày thì
+   * mặc định là Chủ nhật của tuần TIẾP THEO tính từ lúc bắt đầu thực hiện.
+   */
   followup_due TEXT,
 
   /*
    * HẠN LÀM XONG PHƯƠNG ÁN — mốc thứ nhất trong hai mốc owner giữ (xác nhận 13/09/2026).
    *
-   * Tính từ ngày phát hiện, theo mức SOS: SOS 1 → 7 ngày · SOS 2 → 5 ngày · SOS 3 → 3 ngày.
-   * Khác với `followup_due` (hẹn XEM LẠI sau khi đã làm) và `approval_due` (hạn Quản lý trả
-   * lời). Ba mốc, ba câu hỏi khác nhau, nên không gộp cột.
+   * HỌC THUẬT: hạn CẬP NHẬT gần nhất — trước hết Chủ nhật hằng tuần kể từ lúc phương án
+   * bắt đầu chạy (mục 8.3). Mỗi chu kỳ mới đặt lại sang Chủ nhật kế tiếp.
+   * Ý THỨC/KHÁC: hạn phải LÀM XONG phương án, tính từ lúc nhận case — Gấp 3 ngày, Cần chú
+   * ý 5 ngày.
+   *
+   * Khác với `followup_due` (ngày dự kiến KẾT THÚC phương án) và `approval_due` (hạn Quản
+   * lý trả lời). Ba mốc, ba câu hỏi khác nhau, nên không gộp cột.
    *
    * Quá hạn KHÔNG chặn gì — chỉ nổi lên màn việc để không ai bị bỏ quên.
    */
@@ -896,6 +1041,35 @@ CREATE INDEX idx_followup_case ON case_followups(case_id);
  * `role` phân biệt bằng chứng GỐC (thứ mở ra case) với bằng chứng bổ sung và bằng chứng
  * kiểm chứng sau hỗ trợ.
  */
+/*
+ * BÁO CÁO THÀNH PHẦN CỦA MỘT ĐỢT CASE Ý THỨC/KHÁC (mục 7.2).
+ *
+ * Một case Ý thức/Khác là một ĐỢT, và một đợt chứa nhiều báo cáo của nhiều giáo viên trong
+ * cùng một khoảng ngắn. Mỗi báo cáo giữ NGUYÊN của riêng nó: ai gửi, gửi lúc nào, thấy ở
+ * môn nào, và mô tả bằng lời của chính người đó. Báo cáo sau KHÔNG ghi đè báo cáo trước —
+ * đó là điều kiện để đọc lại một đợt và biết chuyện đã diễn ra như thế nào.
+ *
+ * `reported_on` là NGÀY GỬI CỦA HỆ THỐNG và là thứ duy nhất dùng để xét cửa sổ gộp. Ngày
+ * người dùng khai ở ô "Theo dõi từ ngày" nằm ở `observed_on` và KHÔNG được dùng cho việc
+ * này: nếu dùng, chỉ cần khai lùi ngày là đổi được cửa sổ gộp.
+ */
+CREATE TABLE case_reports (
+  id INTEGER PRIMARY KEY,
+  case_id INTEGER NOT NULL REFERENCES sos_cases(id),
+  reported_by INTEGER REFERENCES users(id),
+  /* Môn giáo viên đang dạy khi thấy, hoặc để trống khi báo cáo không gắn với môn nào. */
+  source_skill TEXT,
+  /* Đợt đánh giá sinh ra tín hiệu, khi báo cáo này đến từ một mốc SOS. */
+  source_attempt_id INTEGER REFERENCES assessment_attempts(id),
+  reported_on TEXT NOT NULL,
+  observed_on TEXT,
+  summary TEXT NOT NULL,
+  /* Gửi lại cùng một request không được tạo báo cáo thứ hai (mục 7.2). */
+  idempotency_key TEXT UNIQUE,
+  created_at TEXT NOT NULL
+);
+CREATE INDEX idx_case_reports_case ON case_reports(case_id);
+
 CREATE TABLE case_sources (
   id INTEGER PRIMARY KEY,
   case_id INTEGER NOT NULL REFERENCES sos_cases(id),
@@ -937,6 +1111,60 @@ CREATE INDEX idx_case_source_case ON case_sources(case_id);
  *
  * `dedup_key` để chấm lại hay sửa điểm không nhân đôi mốc.
  */
+/*
+ * TÍN HIỆU — điểm dưới kỳ vọng sinh ra cái này, KHÔNG sinh ra case (mục 6.2).
+ *
+ * Một tín hiệu nói đúng một câu: "môn này của em này dưới kỳ vọng ở đợt đó, ai đó phải xem".
+ * Nó KHÔNG nói vì sao, KHÔNG nói phải làm gì, và KHÔNG được đếm như một case đã xác định.
+ *
+ * Người phải xác minh: GVBM của chính môn đó; riêng tín hiệu Ý thức/Khác về GVCN để xem
+ * tình hình chung. Hạn xác minh là BA NGÀY tính cả ngày đầu, đếm từ `raised_on` — ngày tín
+ * hiệu được ghi nhận, không phải thứ Hai của tuần thi đã qua. Điểm nhập muộn vì thế không
+ * làm giáo viên quá hạn ngay lúc điểm vừa được công bố.
+ *
+ * `dedup_key` khoá theo (đợt, kỹ năng) nên nhập bổ sung, chấm lại hay lưu lại nhiều lần
+ * KHÔNG nhân tín hiệu và KHÔNG đặt lại hạn.
+ */
+CREATE TABLE case_signals (
+  id INTEGER PRIMARY KEY,
+  student_id INTEGER NOT NULL REFERENCES students(id),
+  cycle_id INTEGER REFERENCES learning_cycles(id),
+  attempt_id INTEGER REFERENCES assessment_attempts(id),
+  class_id INTEGER REFERENCES classes(id),
+
+  track TEXT NOT NULL,                -- academic | behaviour
+  /* Ô nhập điểm sinh ra tín hiệu: listening | reading | writing1 | writing2 | speaking.
+     Tín hiệu Ý thức/Khác không gắn với môn nào nên để trống. */
+  skill TEXT,
+  category TEXT,                      -- hạng mục GỢI Ý, người xác minh vẫn đổi được
+
+  band REAL,                          -- band thực tế lúc sinh tín hiệu
+  expectation REAL,                   -- kỳ vọng của đợt đó
+  sos_level INTEGER,
+
+  /* Ngày nghiệp vụ của kết quả (thứ Hai tuần thi) — KHÁC với ngày ghi nhận tín hiệu. */
+  detected_on TEXT NOT NULL,
+  raised_on TEXT NOT NULL,            -- ngày hệ thống ghi nhận và giao trách nhiệm
+  verify_due TEXT NOT NULL,           -- raised_on + 2 ngày
+  owner_user_id INTEGER REFERENCES users(id),
+
+  -- pending (chờ xác minh) | linked (đã thành case) | noted (đã xem, không thành case) | withdrawn
+  status TEXT NOT NULL DEFAULT 'pending',
+  case_id INTEGER REFERENCES sos_cases(id),
+  resolved_by INTEGER REFERENCES users(id),
+  resolved_at TEXT,
+  resolution_note TEXT,
+  withdrawn_reason TEXT,
+
+  dedup_key TEXT UNIQUE,
+  created_at TEXT NOT NULL,
+  updated_at TEXT
+);
+CREATE INDEX idx_signal_student ON case_signals(student_id);
+CREATE INDEX idx_signal_status ON case_signals(status);
+CREATE INDEX idx_signal_owner ON case_signals(owner_user_id);
+CREATE INDEX idx_signal_attempt ON case_signals(attempt_id);
+
 CREATE TABLE case_milestones (
   id INTEGER PRIMARY KEY,
   case_id INTEGER NOT NULL REFERENCES sos_cases(id),

@@ -9,7 +9,7 @@ import { CRITERIA, CRITERIA_SHORT, criteriaSetFor, type EntrySkill } from '@shar
 export type Cell = {
   skill: EntrySkill;
   assessedSkill: string;
-  /** false khi Quản lý/Admin CN đã đánh dấu kỹ năng này là không mock ở lượt đó. */
+  /** false khi Quản lý đã chốt trước là đợt này không yêu cầu kỹ năng đó. */
   required: boolean;
   rawScore: number | null;
   criteria: (number | null)[];
@@ -17,11 +17,18 @@ export type Cell = {
   resultDate: string | null;
   enteredByName: string | null;
   enteredAt: string | null;
+  /** Hạn chấm CỦA CHÍNH MÔN NÀY, tính từ tuần thi của nó — không phải hạn của cả đợt. */
   deadline: string | null;
-  deadlineSource: 'override' | 'default' | 'none';
+  deadlineSource: 'skill_override' | 'attempt_override' | 'default' | 'none';
   overdue: boolean;
   progress: string;
   canEdit: boolean;
+  /** Tuần thi riêng của môn này. W1 và W2 dùng chung lịch của môn Writing. */
+  periodId?: number | null;
+  periodCode?: string | null;
+  weekStart?: string | null;
+  weekRange?: string | null;
+  sitStatus?: string;
 };
 
 export type SavePatch = {
@@ -186,15 +193,28 @@ export function CriteriaModal({ cell, onSave, onClose }: {
 }
 
 /**
- * Hạn nhập điểm. Cả lượt MT dùng chung một hạn, đếm từ TUẦN của lượt đó.
- * Chưa xếp tuần thì KHÔNG dựng hạn giả.
+ * HẠN CHẤM CỦA CHÍNH MÔN NÀY — không phải hạn của cả đợt.
+ *
+ * Môn chưa tới tuần thi thì chưa nợ ai cái gì, nên nó hiện tuần thi chứ không hiện một
+ * cái hạn trông như đang đếm ngược. Đây là chỗ dễ đọc nhầm nhất của lịch tách tuần.
  */
 export function DeadlinePill({ cell }: { cell: Cell }) {
-  if (!cell.required) return <Info pending>Không áp dụng</Info>;
+  if (!cell.required) return <Info pending>Ngoài phạm vi</Info>;
+  if (cell.progress === 'cancelled') return <Info pending>Đã huỷ phần thi</Info>;
   /* "Đã nhập" là TRẠNG THÁI CÔNG VIỆC, không phải điểm tốt — nên không tô xanh lá. */
   if (cell.band !== null) return <Status kind="done">Đã nhập</Status>;
+  if (cell.progress === 'absent') return <Info pending>Đã vắng — chờ xếp lại</Info>;
   if (!cell.deadline) return <Info pending>Chưa xếp tuần</Info>;
-  const label = cell.deadlineSource === 'override' ? 'Hạn riêng' : 'Hạn';
+  if (cell.progress === 'upcoming') {
+    return (
+      <Status kind="waiting">
+        Thi {cell.weekRange ?? cell.periodCode} · hạn {fmtDate(cell.deadline)}
+      </Status>
+    );
+  }
+  const label = cell.deadlineSource === 'skill_override' ? 'Hạn riêng môn này'
+    : cell.deadlineSource === 'attempt_override' ? 'Hạn riêng cả đợt'
+    : 'Hạn';
   return cell.overdue
     ? <Alert>Quá hạn {fmtDate(cell.deadline)}</Alert>
     : <Status kind="waiting">{label} {fmtDate(cell.deadline)}</Status>;

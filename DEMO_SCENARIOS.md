@@ -40,11 +40,77 @@ Mã J01–J12 chỉ dùng trong tài liệu này, **không hiện ra sản phẩ
 | **J05** | Đinh Ngọc Quyên · CP-FT 110 | GV Hoàng Quang Dũng | Hồ sơ → hạng mục Writing Task 2 | **Hai case song song** cùng một hạng mục, tên khác nhau: một về bố cục bài, một về vốn từ. Mỗi case có phương án riêng và mở được độc lập. |
 | **J06** | Lý Tuấn Bình · CP-FT 110 | GV Ngô Bảo Nam | Hồ sơ → case Listening | Phương án 1 "Được thay thế" sau kết quả "Chưa thay đổi"; phương án 2 cho kết quả "Tiến bộ rõ rệt". Ghi chú nói rõ nhận định ban đầu đã sai ở đâu. |
 | **J07** | Phan Minh Tú · BC-FT 205 | Quản lý Bãi Cháy (Trần Hải Đăng) | Tổng quan → Toàn cảnh → nhóm **Chờ tôi xử lý** | Một đề xuất **bị từ chối** kèm lý do và mức thay thế; một đề xuất **được duyệt** — chu kỳ chạy từ ngày duyệt, không từ ngày đề xuất; một đề xuất **đang chờ**, quá hạn trả lời. |
-| **J08** | Phạm Bảo Ngọc · MB-FT 101 | GV Trần Ngọc Hà | Học viên → MB-FT 101 | MT3 của tuần này mới có 2/4 kỹ năng → kết luận **tạm thời**. Điểm MT2 đầy đủ vẫn xem được nhưng **không lấp vào ô trống** của MT3 và không ghép thành Overall. |
+| **J08** | Phạm Bảo Ngọc · MB-FT 101 | GV Trần Ngọc Hà | Học viên → MB-FT 101 | MT3 của tuần này mới có 2/4 kỹ năng → kết luận **tạm thời**. Điểm MT2 đầy đủ vẫn xem được nhưng **không lấp vào ô trống** của MT3 và không ghép thành Overall. Cũng là ví dụ **tách tuần**: R/L/W thi tuần 14–20/9, Speaking tuần 21–27/9 — xem mục dưới. |
 | **J09** | Trần Hải Kiên · HD-FT 302 | GV Bùi Hải Yến | Hồ sơ học viên | Lộ trình Fast Track mới, **chưa có kết quả MT nào** → không có mức SOS. Nhưng case Ý thức/Khác từ lớp Beginner cũ vẫn theo em sang, hiện là việc bàn giao. |
 | **J10** | Phạm Gia Hân · HD-BE 21 | GV Bùi Hải Yến hoặc Hoàng Quang Dũng | Hồ sơ → hành trình | Chuyển lớp giữa chừng khi case còn mở. Ghi chú bàn giao nằm ở sự kiện "Rời lớp HD-FOU 05". Chu kỳ 1 do cô Yến làm, chu kỳ 2 do thầy Dũng. |
 | **J11** | Đặng Thu Vân · BC-FT 205 | Quản lý Bãi Cháy | Hồ sơ → case Ý thức/Khác | Trao đổi với học viên → trao đổi với phụ huynh (**văn phòng gọi, giáo viên ghi lại** — hai vai khác nhau). Kết thúc với kết quả **"Không thay đổi"** và kết luận rõ ràng, không bỏ lửng. |
 | **J12** | Dương Minh Quân + Lý Thanh Trúc · UB-FT 401 | GV Dương Tuấn Kiên | Hai hồ sơ, đọc phần kết luận lộ trình | Cùng thi 15/08/2026. Một em **đạt** target 7.0; một em **chưa đạt** (6.0 so với 6.5), có hướng tiếp tục được ghi nhận. |
+
+---
+
+## Điểm dưới kỳ vọng sinh TÍN HIỆU, không tự mở case
+
+Trước đây, một môn dưới kỳ vọng tự mở ra một case hoàn chỉnh kèm một phương án hỗ trợ
+("xếp tự học", "học tutor"). Nghe thì tiện, nhưng nó nói dối ở hai chỗ: máy chỉ đọc được
+con số chứ không biết **vì sao**, và nó không xếp được tutor thay người. Bảng tổng hợp vì
+thế đầy case và phương án mà không có việc thật nào đứng sau.
+
+Nay điểm chỉ sinh **tín hiệu**: *"môn này dưới kỳ vọng, ai đó phải xem"*. Giáo viên bộ môn
+xác minh môn mình; GVCN nhận tín hiệu Ý thức/Khác để xem tình hình chung.
+
+**Hạn xác minh: ba ngày, tính cả ngày đầu.** Ghi nhận thứ Hai thì hết thứ Tư. Mốc đếm là
+ngày tín hiệu được ghi nhận, không phải thứ Hai của tuần thi — nên điểm nhập muộn không làm
+giáo viên quá hạn ngay lúc điểm vừa công bố.
+
+Tín hiệu có ba lối ra, và cả ba đều hợp lệ:
+
+| Lối ra | Khi nào |
+|---|---|
+| **Mở case** | Xem lại bài thấy có vấn đề thật. Người dạy đặt tên và viết mô tả — máy không làm hộ. |
+| **Đã xem, không mở case** | Không có vấn đề thật. Vẫn phải viết nhận định; không ép tạo một nguyên nhân giả để xoá nợ. |
+| **Tự thu hồi** | Điểm nguồn được sửa lại thành đạt. Lý do ghi rõ "Không còn hợp lệ do sửa điểm". |
+
+| Mở ở đâu | Đăng nhập bằng | Cần thấy gì |
+|---|---|---|
+| **Chu Minh Hiếu** · MB-FT 102 → hồ sơ | Quản lý Monbay, hoặc tài khoản quản trị | Thẻ **"Tín hiệu chờ xác minh"** nằm TRƯỚC bảng tiến độ: *"Reading · 5.0 so với kỳ vọng 5.5 · MT2"*, hạn 16/09, giao cho cô Cao Khánh Linh. **Chưa có case nào** trong bảng bên dưới — đó là điểm mấu chốt. Bấm **Mở case** để thấy form đã điền sẵn Học thuật + Reading, chỉ còn chờ bạn viết tên và mô tả. |
+| **Mai Ngọc Diệp** · BC-FT 205 → hồ sơ | Quản lý Bãi Cháy | Tín hiệu Speaking **đã quá hạn xác minh** (hạn 09/09) — ca quá hạn có chủ đích của bộ demo. |
+| **Tổng quan** của cô **Phạm Thu Trang** (`trang.pham.pisa@gmail.com`) | chính cô | Nhóm việc mới **"Xác minh tín hiệu"** đứng đầu hàng việc, kèm nhãn *"Quá hạn xác minh"* và câu *"Speaking dưới kỳ vọng (5.5 so với 6). Xem lại bài rồi xác minh."* |
+| **Phạm Bảo Ngọc** · MB-FT 101 → hồ sơ | GV Trần Ngọc Hà | Tín hiệu **Ý thức/Khác** cho GVCN sau đợt có SOS. Nó KHÔNG kết luận em thiếu ý thức — cô được phép ghi nhận "đã xem, không mở case". |
+
+**Thử một thao tác:** bấm **"Đã xem, không mở case"** rồi để trống ô nhận định — hệ thống
+không cho lưu. Viết một câu thật rồi lưu: tín hiệu biến khỏi hàng chờ, và nhận định của bạn
+được giữ lại để sau này đọc lại.
+
+---
+
+## Lịch thi tách theo từng kỹ năng
+
+Một đợt kiểm tra **không nhất thiết thi gọn trong một tuần**. Fast Track hay thi R/L/W một
+buổi rồi Speaking tuần sau; lớp Normal có thể trải bốn môn ra hai ba tuần. Điểm thì vẫn
+thuộc **một đợt duy nhất** — một bảng điểm, một kết luận, không sinh thêm MT nào.
+
+Điều này đổi một thứ rất cụ thể: **hạn chấm tính riêng cho từng môn**, từ tuần thi của
+chính môn đó.
+
+| | Hạn chấm |
+|---|---|
+| Fast Track | hết **thứ Tư của tuần kế tiếp** sau tuần thi môn đó |
+| Normal | hết **Chủ nhật của chính tuần thi** môn đó |
+
+Hệ quả người dùng thấy ngay: dời Speaking sang tuần sau **chỉ đổi hạn Speaking**, các môn đã
+thi tuần trước giữ nguyên hạn cũ. Và môn **chưa đến tuần thi thì chưa nợ điểm**, không bao
+giờ bị tô đỏ quá hạn.
+
+| Mở ở đâu | Đăng nhập bằng | Cần thấy gì |
+|---|---|---|
+| **Phạm Bảo Ngọc** (J08) → MT3 → thẻ "Lịch thi theo kỹ năng" | Quản lý Monbay, hoặc tài khoản quản trị | Nhãn "Đợt này thi ở nhiều tuần". L và R đã có điểm (tuần 14–20/9, hạn 23/9). **Writing** cùng tuần đó, chưa chấm, hạn 23/9. **Speaking** ở tuần 21–27/9, ghi "Chưa đến lịch" và hạn 30/9 — chưa phải việc phải làm. Dòng "Tuần hoàn tất" của cả đợt là **W4 SEP** (tuần của môn muộn nhất). |
+| **Tạ Thu Quỳnh** (S27) · MB-FT 102 → MT2 | Quản lý Monbay | **Chiều ngược lại**: Speaking thi trước (tuần 14–20/9), R/L/W tuần sau (21–27/9). Đề bài nói cả hai chiều đều có thật. |
+| **Lớp MB-FOU 12** → Bảng điểm → bài **cuối khoá** | Quản lý Monbay | Bài Final Test trải **ba tuần**: L và R tuần 14–20/9 (hạn 20/9), Writing tuần 21–27/9, Speaking tuần 28/9–4/10. Dòng nhỏ dưới mỗi ô điểm nói rõ môn đó đang ở đâu. Bài vẫn **phải đủ cả bốn môn** mới hoàn tất — lớp Normal không có thao tác miễn môn. |
+
+**Thử một thao tác:** ở thẻ "Lịch thi theo kỹ năng", bấm **Đổi tuần** trên hàng Speaking và
+chọn một tuần khác. Chỉ hàng Speaking đổi lịch và đổi hạn; các hàng còn lại đứng yên. Hệ
+thống chặn nếu tuần mới vượt qua đợt MT kế tiếp, và cảnh báo (cho xác nhận lại) nếu hai đợt
+chỉ cách nhau đúng một tuần.
 
 ---
 

@@ -1,8 +1,10 @@
 import { db } from '../db.ts';
 import {
-  ATTEMPT_KIND_SHORT, CONTACT_KIND_SHORT, ENTRY_SKILL_LABEL, INTERVENTION_KIND_LABEL, PERMISSIONS,
+  ASSESSED_SKILL_LABEL, ATTEMPT_KIND_SHORT, CONTACT_KIND_SHORT, ENTRY_SKILL_LABEL,
+  INTERVENTION_KIND_LABEL, PERMISSIONS,
   isContactKind, REGULAR_SKILL_LABEL, SOS_LABEL, URGENCY_LABEL, caseHeadline, cycleDeadline,
-  type AttemptKind, type ContactKind, type EntrySkill, type InterventionKind,
+  planDueDate, urgencyFromSos,
+  type AssessedSkill, type AttemptKind, type ContactKind, type EntrySkill, type InterventionKind,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { diffDays } from '../util.ts';
@@ -10,6 +12,8 @@ import { can, scopeFor, teachesClass, type Principal } from '../permissions.ts';
 import { attemptHref, listAttempts } from '../fasttrack/attempts.ts';
 import { classAlerts } from '../classes/schedule.ts';
 import { myMgmtTasks } from './mgmttasks.ts';
+import { listSignals } from '../cases/signals.ts';
+import { sweepExpiredMoves } from '../fasttrack/absence.ts';
 
 /**
  * VIỆC CỦA CHÍNH NGƯỜI ĐANG XEM.
@@ -89,8 +93,8 @@ export type WorkItem = {
  * chắn nhất để nó không bao giờ được làm.
  */
 export type WorkGroupKey =
-  | 'score' | 'no_plan' | 'result'
-  | 'decide'
+  | 'verify' | 'score' | 'no_plan' | 'result'
+  | 'decide' | 'decide_move'
   | 'do_plan' | 'no_owner' | 'placement' | 'missing_data' | 'mgmt';
 
 /**
@@ -100,6 +104,36 @@ export type WorkGroupKey =
  * làm gì. Một dòng giải thích ở đầu nhóm rẻ hơn nhiều so với việc mỗi người tự hiểu một kiểu.
  */
 const GROUP_META: Record<WorkGroupKey, { label: string; hint: string; overdue: string }> = {
+  /*
+   * NHÓM ĐẦU TIÊN, VÌ NÓ ĐỨNG TRƯỚC MỌI THỨ KHÁC (mục 6.2).
+   *
+   * Điểm dưới kỳ vọng không còn tự mở case. Nó sinh một tín hiệu, và chừng nào chưa ai xác
+   * minh thì chưa ai biết vấn đề thật là gì — nên không có phương án nào để làm, không có
+   * kết quả nào để cập nhật. Đây là việc chặn đầu chuỗi, và hạn của nó chỉ có ba ngày.
+   */
+  verify: {
+    label: 'Xác minh SOS',
+    hint: 'Kết quả của em dưới kỳ vọng ở kỹ năng này. Hệ thống chỉ báo con số — bạn xem lại bài '
+      + 'rồi mở case với tên và mô tả cụ thể. Hạn ba ngày kể từ lúc tín hiệu được ghi nhận, '
+      + 'tính cả ngày đầu.',
+    overdue: 'Quá hạn xác minh',
+  },
+
+  /*
+   * DUYỆT DỜI LỊCH DO VẮNG (mục 10.6) — nhóm riêng, không gộp vào "Duyệt phương án".
+   *
+   * Hai việc khác hẳn nhau về hậu quả của việc KHÔNG làm: một đề xuất hỗ trợ nằm chờ thì
+   * chậm, còn một đề nghị dời nằm chờ quá hạn thì PHẦN THI BỊ HUỶ. Trộn chúng vào một nhóm
+   * là để cái thứ hai trôi qua trong đám cái thứ nhất.
+   */
+  decide_move: {
+    label: 'Duyệt dời lịch do vắng',
+    hint: 'Em đã vắng và đã dời một lần rồi, nên lần này cần bạn quyết. Phải trả lời TRƯỚC khi '
+      + 'tuần mới bắt đầu — từ chối hoặc để quá hạn thì phần thi (Fast Track) hoặc lịch hẹn '
+      + '(Normal) bị huỷ, và chỉ Quản lý mới khôi phục được.',
+    overdue: 'Quá hạn trả lời — phần thi đã huỷ',
+  },
+
   /* ---------------------------------------------------- ba nhóm học thuật chính (mục 3.2) */
   score: {
     label: 'Nhập điểm Test',
@@ -203,6 +237,42 @@ export function myWork(p: Principal, f: { branchId?: number | null } = {}) {
   const items: WorkItem[] = [];
   const attempts = listAttempts(p, { branchId: f.branchId ?? undefined }).rows
     .filter((a: any) => a.status !== 'cancelled');
+
+  // ---------------------------------------------------------------- 0. xác minh tín hiệu
+  /*
+   * MỘT DÒNG CHO MỖI TÍN HIỆU, KHÔNG GOM.
+   *
+   * Khác với nhập điểm — nơi một người mở một bảng và gõ cho cả lớp — mỗi tín hiệu là một
+   * nhận định riêng về một em và một kỹ năng. Gom sáu em vào một dòng "xác minh Reading" sẽ
+   * mời người ta bấm một nút cho cả sáu, mà đó đúng là thứ mục 6.2 muốn bỏ.
+   */
+  for (const sg of listSignals(p, { status: 'pending', branchId: f.branchId ?? undefined, mine: true }).rows) {
+    const u = urgencyOf(sg.verifyDue, today);
+    items.push({
+      key: `verify:${sg.id}`,
+      group: 'verify', urgency: u,
+      studentId: sg.studentId, studentName: sg.studentName,
+      classId: sg.classId, classCode: sg.classCode,
+      attemptId: sg.attemptId, attemptNo: sg.attemptNo, caseId: null,
+      level: sg.sosLevel !== null ? { tone: sosTone(sg.sosLevel), text: SOS_LABEL[sg.sosLevel as 0 | 1 | 2 | 3] } : null,
+      reason: sg.track === 'behaviour'
+        ? `Em vừa có ${SOS_LABEL[(sg.sosLevel ?? 0) as 0 | 1 | 2 | 3]}. Xem tình hình chung của em và ghi nhận nhận định.`
+        : `${sg.label} dưới kỳ vọng${sg.band !== null ? ` (${sg.band} so với ${sg.expectation ?? '—'})` : ''}.`
+          + ' Xem lại bài rồi xác minh.',
+      actionLabel: 'Mở case',
+      overdueLabel: badge('verify', u),
+      href: `/hoc-vien/${sg.studentId}`,
+      ownerId: sg.ownerUserId, owner: null, mine: true,
+      due: sg.verifyDue,
+      statusLabel: u === 'overdue' ? `Chờ xác minh · ${lateText(sg.verifyDue, today)}` : 'Chờ xác minh',
+      contextLabel: sg.attemptNo
+        ? (sg.attemptKind && sg.attemptKind !== 'mock'
+            ? `${ATTEMPT_KIND_SHORT[sg.attemptKind as AttemptKind] ?? 'Bài kiểm tra'} · ${sg.label}`
+            : `MT${sg.attemptNo} · ${sg.label}`)
+        : sg.label,
+      count: null,
+    });
+  }
 
   // ---------------------------------------------------------------- 1. nhập điểm
   /*
@@ -356,6 +426,59 @@ export function myWork(p: Principal, f: { branchId?: number | null } = {}) {
     });
   }
 
+  // ------------------------------------- 2a-bis. đề nghị dời lịch do vắng chờ Quản lý
+  /*
+   * MỤC 10.6 — và hạn ở đây KHÔNG phải một chu kỳ, mà là NGÀY TRƯỚC KHI TUẦN MỚI BẮT ĐẦU.
+   *
+   * Quá hạn không chỉ là chậm: phần thi (Fast Track) hoặc lịch hẹn (Normal) bị huỷ, và từ
+   * đó chỉ Quản lý mới khôi phục được. Nên việc này phải nổi lên trước khi tuần ấy tới, chứ
+   * không phải sau khi đã muộn.
+   */
+  sweepExpiredMoves();
+  const pendingMoves = conn
+    .prepare(
+      `SELECT r.id, r.attempt_id, r.skill, r.move_no, r.decide_by, r.reason,
+              a.attempt_no, a.class_id, a.student_id, a.kind,
+              s.full_name, cl.code AS class_code, cl.branch_id,
+              pr.code AS to_week, ru.full_name AS asker_name
+         FROM skill_move_requests r
+         JOIN assessment_attempts a ON a.id = r.attempt_id
+         JOIN students s ON s.id = a.student_id
+         LEFT JOIN classes cl ON cl.id = a.class_id
+         LEFT JOIN report_periods pr ON pr.id = r.to_period_id
+         LEFT JOIN users ru ON ru.id = r.requested_by
+        WHERE r.status = 'pending'`,
+    )
+    .all() as any[];
+
+  for (const r of pendingMoves) {
+    if (f.branchId && r.branch_id !== f.branchId) continue;
+    if (!can(p, PERMISSIONS.PLAN_WEEK, { classId: r.class_id, studentId: r.student_id })) continue;
+    const u = urgencyOf(r.decide_by, today);
+    items.push({
+      key: `move:${r.id}`, group: 'decide_move', urgency: u,
+      studentId: r.student_id, studentName: r.full_name ?? 'Học viên',
+      classId: r.class_id ?? null, classCode: r.class_code ?? null,
+      attemptId: r.attempt_id, attemptNo: r.attempt_no ?? null,
+      caseId: null, level: { tone: u === 'overdue' ? 'danger' : 'warn', text: `Lần dời ${r.move_no}` },
+      contextLabel: r.attempt_no ? `MT${r.attempt_no}` : 'Lịch thi',
+      count: null,
+      reason: [
+        `${r.asker_name ?? 'GVCN'} đề nghị dời ${ASSESSED_SKILL_LABEL[r.skill as AssessedSkill] ?? r.skill}`
+        + `${r.to_week ? ` sang tuần ${r.to_week}` : ''} (lần ${r.move_no} do vắng)`,
+        r.reason ? `Lý do: ${r.reason}` : null,
+        u === 'overdue' && r.decide_by ? lateText(r.decide_by, today) : null,
+      ].filter(Boolean).join(' — '),
+      actionLabel: 'Trả lời đề nghị',
+      overdueLabel: badge('decide_move', u),
+      /* Đi thẳng vào bảng lịch kỹ năng của đợt đó — nơi có nút trả lời đề nghị. */
+      href: attemptHref({ id: r.attempt_id, kind: r.kind, classId: r.class_id }),
+      ownerId: p.userId, owner: null, mine: true,
+      due: r.decide_by,
+      statusLabel: 'Chờ Quản lý trả lời trước khi tuần mới bắt đầu',
+    });
+  }
+
   // ------------------------------------- 2b. phương án đã lên kế hoạch mà tới hạn làm
   /*
    * MỐC THỨ NHẤT trong hai mốc owner giữ: hạn LÀM XONG phương án, 3/5/7 ngày theo mức SOS.
@@ -392,11 +515,16 @@ export function myWork(p: Principal, f: { branchId?: number | null } = {}) {
     if (f.branchId && iv.branch_id !== f.branchId) continue;
     if (!can(p, PERMISSIONS.SOS_EDIT, { classId: iv.eff_class_id, studentId: iv.eff_student_id })) continue;
     /*
-     * AI THẤY VIỆC NÀY — giữ nguyên cách chia của bảng Liên hệ cũ, vì nó đúng:
-     *   gặp học viên   → người ĐANG DẠY em
-     *   gọi phụ huynh  → văn phòng (người sửa được hồ sơ học viên)
+     * AI THẤY VIỆC NÀY:
+     *   gặp học viên        → người ĐANG DẠY em
+     *   gọi phụ huynh       → Quản lý hoặc GVCN
      *   phương án học thuật → người đang dạy em
      * Quản lý thấy hết, vì họ là người đôn đốc khi có ai đó quên.
+     *
+     * Việc gọi phụ huynh trước PR15 thuộc Admin chi nhánh. Vai đó đã bỏ, và quyền sửa hồ sơ
+     * học viên nay chỉ nằm ở Quản lý và GVCN — đúng hai người được phép xử lý phương án
+     * Ý thức/Khác. Nên phép kiểm dưới đây không đổi câu chữ mà vẫn ra đúng người: GVBM
+     * không sửa được hồ sơ thì cũng không bị giao việc gọi phụ huynh.
      */
     const isManager = can(p, PERMISSIONS.CASE_APPROVE, { classId: iv.eff_class_id, studentId: iv.eff_student_id });
     if (!isManager) {
@@ -574,13 +702,18 @@ export function myWork(p: Principal, f: { branchId?: number | null } = {}) {
     if (!mayDecide) continue;
 
     /*
-     * CASE CHƯA CÓ PHƯƠNG ÁN quá hạn khi đã qua chu kỳ đầu — hai tuần với case học thuật,
-     * một tuần với Ý thức/Khác. Không ép ai phải làm ngay, nhưng cũng không để một em nằm
-     * im hết cả chu kỳ mà không ai biết.
+     * HẠN PHẢI CÓ PHƯƠNG ÁN THEO MỨC ĐỘ (mục 8.3): Gấp 3 ngày, Cần chú ý 5 ngày, tính cả
+     * ngày đầu. Áp cho cả case học thuật lẫn Ý thức/Khác.
+     *
+     * Trước vòng 7 hạn này bằng nguyên một chu kỳ hỗ trợ (hai tuần), nên một case Gấp nằm
+     * im mười ba ngày vẫn chưa bị coi là chậm. Nay mức độ quyết định hạn — và đó là lý do
+     * mức độ chỉ còn hai bậc, mỗi bậc một con số.
      */
     const detected = c.detected_at ?? (c.created_at ?? '').slice(0, 10);
     const days = detected ? diffDays(today, detected) : 0;
-    const deadline = detected ? cycleDeadline(detected, c.track ?? 'academic') : null;
+    const deadline = detected
+      ? planDueDate(detected, c.urgency ?? urgencyFromSos(c.sos_level ?? null))
+      : null;
     const u: WorkUrgency = deadline !== null && today > deadline ? 'overdue' : 'normal';
     const head = caseHeadline({
       summary: c.summary, originKind: c.origin_kind, sosLevel: c.sos_level, attemptNo: c.attempt_no,
@@ -708,8 +841,8 @@ export function myWork(p: Principal, f: { branchId?: number | null } = {}) {
    * còn lại. "Cần xếp lớp tiếp" đứng ngay sau ba nhóm chính vì nó treo cả một lớp.
    */
   const order: WorkGroupKey[] = [
-    'score', 'no_plan', 'result',
-    'decide',
+    'verify', 'score', 'no_plan', 'result',
+    'decide', 'decide_move',
     'placement', 'do_plan', 'no_owner', 'mgmt', 'missing_data',
   ];
   const weight = (u: WorkUrgency) => (u === 'overdue' ? 0 : u === 'today' ? 1 : 2);

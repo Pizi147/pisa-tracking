@@ -43,12 +43,17 @@ export function nextAttemptNo(cycleId: number): number {
  * DỰ KIẾN THI của một lộ trình, ở đúng mức chắc chắn mà người ta thực sự biết.
  *
  * Ba mức, và giao diện hiển thị đúng ba mức đó chứ không quy về một:
- *   `week`  đã chốt tuần        → "W2 FEB 2027"   — có đếm ngược
- *   `month` mới biết tháng      → "FEB 2027 · chưa xác định tuần" — KHÔNG đếm ngược
- *   `none`  chưa biết gì        → "Chưa xác định"
+ *   `week`  đã chốt tuần   → "W2 FEB 2027"  — có đếm ngược theo tuần
+ *   `month` mới biết tháng → "FEB 2027"     — KHÔNG đếm ngược
+ *   `none`  chưa biết gì   → "Chưa xác định"
  *
  * Chỉ đếm ngược khi đã có tuần. Biết mỗi tháng mà vẫn hiện "còn 134 ngày" là bịa ra một
  * độ chính xác không có thật, và người đọc sẽ tin con số đó.
+ *
+ * NHÃN CỦA MỨC `month` CHỈ CÒN TÊN THÁNG (mục 5.2). Cụm "· chưa xác định tuần" đã bỏ: nó
+ * dài hơn chính thông tin nó bổ nghĩa, lặp ở mọi chỗ hiện kế hoạch thi, và nói một điều đã
+ * nằm sẵn trong `confidence` — chỗ nào cần phân biệt thì đọc `confidence`, đừng nhồi vào
+ * chuỗi hiển thị.
  */
 const MONTH_CODE = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
 
@@ -72,7 +77,7 @@ export function examPlanOf(cycle: {
     const mm = Number(cycle.exam_month.slice(5, 7));
     const name = MONTH_CODE[mm - 1] ?? cycle.exam_month.slice(5, 7);
     return { confidence: 'month', periodId: null, weekStart: null, month: cycle.exam_month,
-             label: `${name} ${cycle.exam_month.slice(0, 4)} · chưa xác định tuần` };
+             label: `${name} ${cycle.exam_month.slice(0, 4)}` };
   }
   return none;
 }
@@ -274,7 +279,10 @@ export function setBaseline(p: Principal, cycleId: number, input: {
  * một kết luận riêng, phải có bằng chứng, và "chưa có căn cứ" là một câu trả lời hợp lệ.
  */
 export function setOutcome(p: Principal, cycleId: number, input: {
-  outcome: string | null; attemptId?: number | null; score?: number | null; note?: string | null;
+  outcome: string | null;
+  /** Mã cũ. Từ vòng 7 KHÔNG nhận nữa — xem ghi chú ở dưới (mục 5.1). */
+  attemptId?: number | null;
+  score?: number | null; note?: string | null;
 }) {
   const c = cycleById(cycleId);
   if (!c) throw notFound('Không tìm thấy lộ trình');
@@ -284,9 +292,19 @@ export function setOutcome(p: Principal, cycleId: number, input: {
     throw badRequest('Kết luận không hợp lệ.');
   }
   const conn = db();
+  /*
+   * MỘT LƯỢT MT KHÔNG PHẢI MỘT KỲ THI THẬT (mục 5.1).
+   *
+   * Đường cũ cho chọn "một bài đã có" rồi lấy điểm bài đó làm kết quả cuối lộ trình. Nghe
+   * thì tiện, nhưng nó ghi vào hồ sơ một câu không đúng: em chưa thi IELTS mà hồ sơ nói em
+   * được 6.5. Mock Test chấm nội bộ, không có phòng thi và không có chứng chỉ; kết quả thật
+   * là con số em báo về từ BC hay IDP.
+   */
   if (input.attemptId) {
-    const a = conn.prepare('SELECT * FROM assessment_attempts WHERE id = ?').get(input.attemptId) as any;
-    if (!a || a.student_id !== c.student_id) throw badRequest('Bài đánh giá không thuộc học viên này.');
+    throw badRequest(
+      'Không lấy một lượt Mock Test làm kết quả thi thật. Nhập điểm IELTS em báo về, '
+      + 'hoặc để trống nếu em chưa thi.',
+    );
   }
   let score = input.score ?? null;
   if (score !== null && score !== undefined && score !== ('' as any)) {
@@ -294,8 +312,8 @@ export function setOutcome(p: Principal, cycleId: number, input: {
     if (!Number.isFinite(score) || score < 0 || score > 9) throw badRequest('Điểm phải nằm trong khoảng 0–9.');
   } else score = null;
 
-  conn.prepare(`UPDATE learning_cycles SET outcome=?, outcome_attempt_id=?, outcome_score=?, outcome_note=? WHERE id=?`)
-    .run(input.outcome, input.attemptId ?? null, score, input.note ?? null, cycleId);
+  conn.prepare(`UPDATE learning_cycles SET outcome=?, outcome_attempt_id=NULL, outcome_score=?, outcome_note=? WHERE id=?`)
+    .run(input.outcome, score, input.note ?? null, cycleId);
   if (input.outcome) {
     addJourney({
       studentId: c.student_id, cycleId, eventType: 'cycle_outcome',

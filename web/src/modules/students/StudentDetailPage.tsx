@@ -2,10 +2,11 @@ import { useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { Card, Empty, ErrorState, Info, Level, Outcome, SectionNote, Skeleton, Status, Th} from '../../ui/ui.tsx';
-import { Drawer } from '../../ui/Drawer.tsx';
+import { Drawer, Modal } from '../../ui/Drawer.tsx';
+import { api, invalidate } from '../../lib/api.ts';
+import { useToast } from '../../ui/Toast.tsx';
 import { CasePanel } from '../cases/CasePanel.tsx';
 import { SkillBoard } from '../cases/SkillBoard.tsx';
-import { StudentCases } from '../cases/StudentCases.tsx';
 import { MissingBadge } from './MissingBadge.tsx';
 import { StudentPlanPanel } from './StudentPlanPanel.tsx';
 import { ProgressChart } from './ProgressChart.tsx';
@@ -50,6 +51,8 @@ export default function StudentDetailPage() {
   const [manageOpen, setManageOpen] = useState(false);
   const [planOpen, setPlanOpen] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
+  /** Tín hiệu đang được xác minh — mở form case với đầu mục và kỹ năng điền sẵn. */
+  const [verify, setVerify] = useState<any | null>(null);
   const [openCase, setOpenCase] = useState<number | null>(null);
   /*
    * HẠNG MỤC ĐANG LỌC — một state duy nhất nối bảng kỹ năng với khối case bên dưới.
@@ -58,6 +61,8 @@ export default function StudentDetailPage() {
   const [skillPick, setSkillPick] = useState<string | null>(null);
   /* Tầng 3 mặc định mở bảng điểm: đó là thứ người ta mở hồ sơ để xem nhiều nhất. */
   const [tier3, setTier3] = useState<'scores' | 'journey'>('scores');
+  /** Hành trình: chỉ mốc xuyên chương trình, hay toàn bộ ghi nhận (mục 4.5). */
+  const [allJourney, setAllJourney] = useState(false);
 
   if (error) return <ErrorState message={error.message} hint={error.hint} onRetry={reload} />;
   if (loading || !data) return <Skeleton rows={10} />;
@@ -124,6 +129,46 @@ export default function StudentDetailPage() {
                 </p>
               )}
 
+              {/*
+                MỘT CÂU NÓI RÕ TỪNG KỸ NĂNG (mục 4.1).
+                "SOS 2" ở trên vừa đúng vừa vô dụng: nó không nói môn nào đang ổn, môn nào
+                chưa. Câu này nói tên môn — và nó cũng là chỗ tín hiệu chưa ai xác minh được
+                nhắc, vì đó là việc chặn đầu chuỗi.
+              */}
+              {data.headline && (
+                <p className="text-xs mt-1.5 mb-0 flex flex-wrap items-center gap-x-2 gap-y-1">
+                  {data.headline.below.length > 0 && (
+                    <span className="text-rose-200">
+                      Dưới kỳ vọng: {data.headline.below.join(', ')}
+                    </span>
+                  )}
+                  {data.headline.signals.length > 0 && (
+                    <span className="text-amber-200">
+                      Chờ xác minh: {data.headline.signals.join(', ')}
+                    </span>
+                  )}
+                  {data.headline.openCases > 0 && (
+                    <span className="text-slate-400">
+                      {data.headline.openCases} vấn đề đang xử lý
+                    </span>
+                  )}
+                  {data.headline.next && (
+                    <span className="text-slate-200">
+                      → Việc tiếp theo: {data.headline.next.text}
+                      {data.headline.next.due && (
+                        <span className="text-slate-500"> (hạn {fmtDate(data.headline.next.due)})</span>
+                      )}
+                    </span>
+                  )}
+                  {data.headline.below.length === 0 && data.headline.signals.length === 0
+                    && data.headline.openCases === 0 && (
+                    <span className="text-slate-500">
+                      Không có kỹ năng nào dưới kỳ vọng và không có vấn đề nào đang theo dõi.
+                    </span>
+                  )}
+                </p>
+              )}
+
               {/* Đầu vào · target · dự kiến thi — chỉ lớp Fast Track mới có ba thứ này. */}
               <p className="text-xs text-slate-400 mt-1.5 mb-0">
                 {cy && !cy.ratio && (
@@ -147,9 +192,19 @@ export default function StudentDetailPage() {
                     )}
                   </>
                 )}
+                {/*
+                  LỚP NORMAL KHÔNG CÓ TARGET IELTS VÀ KHÔNG CÓ KẾ HOẠCH THI THẬT (mục 5.3).
+                  Cái tương đương của nó là CHƯƠNG TRÌNH và TUẦN KẾT THÚC — đó mới là hai
+                  con số một GVCN lớp Foundation thật sự dùng.
+                */}
                 {cy?.ratio && (
-                  <>{cy.label} · bắt đầu {fmtDate(cy.startedAt)} ·{' '}
-                    {data.attempts.filter((a: any) => a.scored > 0).length}/{data.attempts.length} bài đã chấm</>
+                  <>
+                    {cy.programmeName ?? cy.label} · bắt đầu {fmtDate(cy.startedAt)}
+                    {cy.endWeek
+                      ? <> · kết thúc chương trình {cy.endWeek.code}</>
+                      : <> · <span className="text-amber-300">chưa khai tuần kết thúc</span></>}
+                    {' · '}{data.attempts.filter((a: any) => a.scored > 0).length}/{data.attempts.length} bài đã chấm
+                  </>
                 )}
               </p>
             </div>
@@ -193,42 +248,26 @@ export default function StudentDetailPage() {
       ) : (
         <>
           {/* ══════════════════════════════════════ B — TIẾN ĐỘ HIỆN TẠI */}
+          {/* ══════════════════════════════ B0 — TÍN HIỆU CHỜ XÁC MINH */}
+          <PendingSignals signals={data.pendingSignals ?? []} onVerify={(sg) => setVerify(sg)} />
+
           {/*
-            BẢNG TÓM TẮT, KHÔNG PHẢI CHỖ MỞ CASE (mục 6.2 B).
-            Bấm một dòng thì LỌC khối case bên dưới theo hạng mục đó. Trước vòng này dòng
-            giãn ra dựng nguyên một CasePanel, trong khi chính case ấy lại nằm lần nữa ở khối
-            bên dưới — một case hiện hai lần trên cùng một trang.
+            KHỐI CHÍNH CỦA HỒ SƠ (mục 4.2). Bấm một hàng thì nội dung mở ra NGAY DƯỚI hàng
+            đó — biểu đồ của chính kỹ năng ấy, các case đang mở, lịch sử đã kết thúc.
+
+            Khối "Case và kết quả hỗ trợ" tách riêng ở dưới đã BỎ: nó kể lại đúng những case
+            mà bảng này vừa tóm tắt, nên cùng một case hiện hai lần trên một trang, và bấm
+            một hàng ở đây thì phải cuộn xuống chỗ khác mới thấy kết quả.
           */}
-          <Card title="Tiến độ hiện tại"
-            action={
-              <span className="flex items-center gap-2">
-                {skillPick && (
-                  <button className="btn btn-sm btn-ghost" onClick={() => setSkillPick(null)}>
-                    Bỏ lọc {skillPick}
-                  </button>
-                )}
-                <span className="text-xs text-slate-500">Bấm một dòng để lọc case bên dưới</span>
-              </span>
-            }
+          <Card title="Tiến độ và hỗ trợ theo kỹ năng"
+            action={<span className="text-xs text-slate-500">Bấm một hàng để mở chi tiết ngay bên dưới</span>}
             bodyClass="p-0">
             <SkillBoard studentId={data.id} cycleId={cy.id}
               selected={skillPick}
               onPick={setSkillPick}
-              onReport={() => setReportOpen(true)} />
-          </Card>
-
-          {/* ══════════════════════════════ C — CASE VÀ KẾT QUẢ HỖ TRỢ */}
-          {/*
-            Bảng phía trên tóm tắt THEO KỸ NĂNG và chỉ trỏ được vào MỘT case đại diện mỗi
-            hạng mục. Em có hai case Reading song song thì cái thứ hai không có đường nào vào.
-
-            Nên đây là DANH SÁCH CASE THẬT: mỗi case một khối riêng, mở đóng độc lập, xem
-            được cả case của lộ trình trước.
-          */}
-          <Card title="Case và kết quả hỗ trợ"
-            action={<span className="text-xs text-slate-500">Mỗi case mở đóng riêng</span>}>
-            <StudentCases studentId={data.id} cycleId={cy.id} cycleLabel={cy.label}
-              category={skillPick} onCategory={setSkillPick} />
+              onReport={() => setReportOpen(true)}
+              progress={data.progress ?? null}
+              onOpenCase={setOpenCase} />
           </Card>
 
           {/* ══════════════════════════════ TẦNG 3 — KẾT QUẢ VÀ HÀNH TRÌNH */}
@@ -295,12 +334,32 @@ export default function StudentDetailPage() {
                   <ProgressChart data={data.progress} />
                 )}
                 <div>
-                  <h3 className="text-sm font-semibold text-slate-200 mt-0 mb-2">Các mốc đã qua</h3>
-                  {data.episodes.length === 0 ? <Empty title="Chưa có sự kiện nào" /> : (
-                    <ol className="space-y-3 list-none p-0 m-0">
-                      {data.episodes.map((ep: any) => <Episode key={ep.key} ep={ep} onOpenCase={setOpenCase} />)}
-                    </ol>
-                  )}
+                  {/*
+                    MỐC XUYÊN CHƯƠNG TRÌNH (mục 4.5): vào học, vào lớp, chuyển chương trình,
+                    đổi target hay kế hoạch thi, bàn giao case, kết quả thi thật, kết luận lộ
+                    trình. Mọi cập nhật phương án đã nằm trong hàng kỹ năng ở khối trên —
+                    kể lại lần nữa ở đây chỉ làm cả hai chỗ cùng dài ra mà không rõ hơn.
+                  */}
+                  <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+                    <h3 className="text-sm font-semibold text-slate-200 m-0">
+                      {allJourney ? 'Toàn bộ ghi nhận' : 'Các mốc đã qua'}
+                    </h3>
+                    <button className="btn btn-sm btn-ghost" onClick={() => setAllJourney(!allJourney)}>
+                      {allJourney ? 'Chỉ xem mốc chính' : 'Mở toàn hành trình'}
+                    </button>
+                  </div>
+                  {(() => {
+                    const eps = allJourney ? (data.allEpisodes ?? data.episodes) : data.episodes;
+                    return eps.length === 0 ? <Empty title="Chưa có sự kiện nào" /> : (
+                      <ol className="space-y-3 list-none p-0 m-0">
+                        {eps.map((ep: any) => <Episode key={ep.key} ep={ep} onOpenCase={setOpenCase} />)}
+                      </ol>
+                    );
+                  })()}
+                  <SectionNote>
+                    Phần này là hành trình của CẢ em, không riêng lộ trình đang xem: lớp cũ, lộ
+                    trình cũ và case đã bàn giao đều tra lại được ở đây.
+                  </SectionNote>
                 </div>
               </div>
             )}
@@ -322,6 +381,12 @@ export default function StudentDetailPage() {
       <QuickReport open={reportOpen} onClose={() => setReportOpen(false)}
         studentId={data.id} studentName={data.fullName} cycleId={cy?.id ?? null}
         onDone={(cid) => { reload(); setOpenCase(cid); }} />
+
+      {/* Mở case ĐỂ TRẢ LỜI một tín hiệu: đầu mục và kỹ năng điền sẵn, nhận định do người viết. */}
+      <QuickReport open={!!verify} onClose={() => setVerify(null)}
+        studentId={data.id} studentName={data.fullName} cycleId={cy?.id ?? null}
+        signal={verify}
+        onDone={(cid) => { setVerify(null); reload(); setOpenCase(cid); }} />
 
       <Drawer open={openCase !== null} onClose={() => setOpenCase(null)} title="Vấn đề - Case"
         subtitle={data.fullName}
@@ -506,3 +571,71 @@ function Episode({ ep, onOpenCase }: { ep: any; onOpenCase: (id: number) => void
 }
 
 export { skillLabel };
+
+/**
+ * TÍN HIỆU CHỜ XÁC MINH — khối riêng, đặt TRƯỚC bảng tiến độ và danh sách case.
+ *
+ * Đây là thứ chặn đầu chuỗi: chừng nào chưa ai xem, chưa ai biết vấn đề thật là gì, nên
+ * không có phương án nào để làm và không có kết quả nào để cập nhật.
+ *
+ * Nó cố ý KHÔNG nằm chung với danh sách case. Một tín hiệu chưa ai xác minh không phải một
+ * vấn đề đã được xác định; để lẫn vào nhau là cách chắc chắn nhất để con số "em này đang có
+ * mấy vấn đề" nói quá sự thật.
+ *
+ * Hai lối ra, cả hai đều hợp lệ:
+ *   · mở case — khi xem lại bài thấy có vấn đề thật
+ *   · ghi nhận đã xem — khi không có vấn đề thật, và phải viết ra vì sao
+ */
+function PendingSignals({ signals, onVerify }: {
+  signals: any[]; onVerify: (sg: any) => void;
+}) {
+  if (!signals.length) return null;
+
+  const overdue = signals.filter((s) => s.overdue).length;
+  return (
+    <>
+      <Card title="Xác minh vấn đề SOS"
+        action={<span className="text-xs text-slate-500">
+          {signals.length} tín hiệu{overdue > 0 ? ` · ${overdue} quá hạn` : ''}
+        </span>}>
+        <ul className="space-y-2 list-none p-0 m-0">
+          {signals.map((sg) => (
+            <li key={sg.id} className="surface-2 rounded-lg p-3 flex flex-wrap items-start justify-between gap-3">
+              <div className="min-w-0">
+                <div className="text-sm text-slate-100">
+                  {sg.label}
+                  {sg.band !== null && sg.expectation !== null && (
+                    <span className="text-slate-400"> · {fmtBand(sg.band)} so với kỳ vọng {fmtBand(sg.expectation)}</span>
+                  )}
+                  {sg.attemptNo && <span className="text-slate-500 text-xs"> · MT{sg.attemptNo}</span>}
+                </div>
+                <div className="text-xs text-slate-500 mt-0.5">
+                  {sg.track === 'behaviour'
+                    ? 'Em vừa có SOS — xem tình hình chung. Đây KHÔNG phải kết luận em thiếu ý thức.'
+                    : 'Hệ thống mới chỉ đọc được con số. Xem lại bài rồi quyết định.'}
+                </div>
+                <div className="text-xs mt-1">
+                  {sg.overdue
+                    ? <span className="text-rose-300">Quá hạn xác minh {fmtDate(sg.verifyDue)}</span>
+                    : <span className="text-slate-400">Hạn xác minh {fmtDate(sg.verifyDue)}</span>}
+                  {sg.ownerName && <span className="text-slate-500"> · {sg.ownerName}</span>}
+                </div>
+              </div>
+              {sg.canResolve && (
+                <button className="btn btn-sm btn-primary" onClick={() => onVerify(sg)}>Mở case</button>
+              )}
+            </li>
+          ))}
+        </ul>
+        <SectionNote>
+          Điểm dưới kỳ vọng chỉ sinh một <strong>tín hiệu cần xác minh</strong>, không tự mở case
+          và không tự sinh phương án hỗ trợ: máy đọc được con số nhưng không biết vì sao, và cũng
+          không xếp được tutor thay người. Xác minh nghĩa là <strong>mở case</strong> với tên và
+          mô tả cụ thể — đó là nhận định của người dạy, máy không viết hộ.
+          Hạn là <strong>ba ngày</strong> kể từ lúc tín hiệu được ghi nhận, tính cả ngày đầu.
+        </SectionNote>
+      </Card>
+
+    </>
+  );
+}

@@ -1,11 +1,11 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { Modal } from '../../ui/Drawer.tsx';
 import { Field, SectionNote } from '../../ui/ui.tsx';
 import {
   BEHAVIOUR_TOPICS, BEHAVIOUR_TOPIC_LABEL, ENTRY_SKILLS, ENTRY_SKILL_LABEL,
-  THREAD_TRACKS, THREAD_TRACK_LABEL, URGENCY_LEVELS, URGENCY_LABEL, issuesForTopic,
+  THREAD_TRACKS, THREAD_TRACK_LABEL, URGENCY_LEVELS, URGENCY_LABEL, issuesForTopic, DEFAULT_URGENCY,
 } from '@shared/domain/index.ts';
 
 /**
@@ -23,19 +23,26 @@ import {
  * chọn chúng chỉ mất hai lần bấm và không cần suy nghĩ: em vướng kỹ năng nào, hay là chuyện
  * ý thức.
  */
-export function QuickReport({ open, onClose, studentId, studentName, cycleId, onDone }: {
+export function QuickReport({ open, onClose, studentId, studentName, cycleId, onDone, signal }: {
   open: boolean; onClose: () => void;
   studentId: number; studentName?: string; cycleId?: number | null;
   onDone?: (caseId: number) => void;
+  /**
+   * TÍN HIỆU mà case này ra đời để trả lời (mục 6.2).
+   *
+   * Khi mở form từ một tín hiệu, đầu mục và kỹ năng được điền sẵn — đó là phần máy BIẾT
+   * chắc. Tên và mô tả thì không: máy chỉ đọc được con số, còn vấn đề thật là gì thì người
+   * dạy mới biết, và đó chính là lý do bước xác minh này tồn tại.
+   */
+  signal?: { id: number; track: string; skill: string | null; label: string } | null;
 }) {
   const toast = useToast();
   const [title, setTitle] = useState('');
   const [summary, setSummary] = useState('');
-  const [urgency, setUrgency] = useState('normal');
+  const [urgency, setUrgency] = useState<string>(DEFAULT_URGENCY);
   const [track, setTrack] = useState<string>('academic');
   const [topic, setTopic] = useState('');
   const [primaryCode, setPrimaryCode] = useState('');
-  const [note, setNote] = useState('');
   const [detectedAt, setDetectedAt] = useState('');
   const [busy, setBusy] = useState(false);
   const [more, setMore] = useState(false);
@@ -49,6 +56,13 @@ export function QuickReport({ open, onClose, studentId, studentName, cycleId, on
     [studentId, open],
   );
 
+  /* Mở từ một tín hiệu: điền sẵn đầu mục và kỹ năng, để người dạy chỉ còn phải viết nhận định. */
+  useEffect(() => {
+    if (!open || !signal) return;
+    setTrack(signal.track);
+    setTopic(signal.skill ?? '');
+  }, [open, signal?.id]);
+
   const topics: readonly string[] = track === 'behaviour' ? BEHAVIOUR_TOPICS : ENTRY_SKILLS;
   const topicLabel = (k: string) => (track === 'behaviour'
     ? BEHAVIOUR_TOPIC_LABEL[k as keyof typeof BEHAVIOUR_TOPIC_LABEL]
@@ -57,8 +71,8 @@ export function QuickReport({ open, onClose, studentId, studentName, cycleId, on
   const causes = track === 'academic' && topic ? issuesForTopic(topic) : [];
 
   const reset = () => {
-    setSummary(''); setUrgency('normal'); setTrack('academic'); setTopic('');
-    setPrimaryCode(''); setNote(''); setDetectedAt(''); setMore(false); setDup(null);
+    setSummary(''); setUrgency(DEFAULT_URGENCY); setTrack('academic'); setTopic('');
+    setTitle(''); setPrimaryCode(''); setDetectedAt(''); setMore(false); setDup(null);
   };
 
   /*
@@ -77,9 +91,9 @@ export function QuickReport({ open, onClose, studentId, studentName, cycleId, on
         studentId, cycleId: cycleId ?? undefined, title: title.trim() || null, summary, urgency,
         track, topic,
         primaryCode: primaryCode || undefined,
-        note: note.trim() || undefined,
         detectedAt: detectedAt || undefined,
         idempotencyKey,
+        fromSignalId: signal?.id ?? undefined,
         ...extra,
       });
       invalidate('/cases'); invalidate('/students'); invalidate('/overview');
@@ -94,18 +108,31 @@ export function QuickReport({ open, onClose, studentId, studentName, cycleId, on
   };
 
   const submit = async () => {
-    if (!summary.trim()) { toast.push('error', 'Hãy mô tả vấn đề trong một câu.'); return; }
+    /*
+     * BỐN TRƯỜNG BẮT BUỘC (mục 6.3). Kiểm ngay ở đây chứ không chỉ chờ máy chủ báo lỗi:
+     * người dùng đang gõ dở, nói cho họ biết thiếu gì trước khi bấm rẻ hơn nhiều.
+     */
+    if (title.trim().length < 6) { toast.push('error', 'Hãy đặt tên cho case.'); return; }
+    if (summary.trim().length < 15) {
+      toast.push('error', 'Hãy mô tả cụ thể hơn: em sai ở đâu, sai như thế nào.'); return;
+    }
     if (!topic) {
       toast.push('error', track === 'behaviour'
         ? 'Hãy chọn nhóm ý thức.' : 'Hãy chọn kỹ năng em đang vướng.');
       return;
+    }
+    if (!primaryCode) { toast.push('error', 'Hãy chọn phân loại vấn đề.'); return; }
+    if (primaryCode.endsWith('.other') && summary.trim().length < 30) {
+      toast.push('error', 'Chọn "Khác" thì mô tả phải nói rõ vấn đề cụ thể là gì.'); return;
     }
     await send();
   };
 
   return (
     <Modal open={open} onClose={onClose}
-      title={studentName ? `+ Case · ${studentName}` : '+ Case'}
+      title={signal
+        ? `Xác minh tín hiệu ${signal.label}${studentName ? ` · ${studentName}` : ''}`
+        : (studentName ? `+ Case · ${studentName}` : '+ Case')}
       footer={
         <>
           <button className="btn" onClick={onClose}>Huỷ</button>
@@ -118,20 +145,21 @@ export function QuickReport({ open, onClose, studentId, studentName, cycleId, on
           Case sinh từ điểm có tên suy ra được ("MT2 - Reading dưới kỳ vọng"); case tạo tay
           thì không có gì để suy, và hệ thống KHÔNG được tự gán "… dưới kỳ vọng" cho nó.
         */}
-        <Field label="Tên case"
-          hint="Bỏ trống thì hệ thống gọi theo hạng mục. Đặt tên riêng thì dễ tìm lại hơn.">
+        <Field label="Tên case" required
+          hint="Một câu ngắn nói đúng vấn đề, để sau này nhìn danh sách là nhận ra ngay.">
           <input className="field" value={title} onChange={(e) => setTitle(e.target.value)}
-            placeholder="Ví dụ: Không làm bài nghe ở nhà" />
+            placeholder="Ví dụ: Reading — chưa xử lý được dạng True/False/Not Given" />
         </Field>
 
         <Field label="Mô tả" required
-          hint="Một câu là đủ. Những mục còn lại đều có thể bỏ trống.">
+          hint="Em sai ở đâu, sai như thế nào. Đây là nhận định của bạn — hệ thống chỉ đọc được con số.">
           <textarea className="field" rows={3} value={summary} autoFocus
             onChange={(e) => setSummary(e.target.value)}
-            placeholder="Ba tuần nay em không làm bài nghe ở nhà, trên lớp cũng ít tập trung." />
+            placeholder="Em đọc kỹ từng câu nên hết giờ khi còn hai câu cuối; dạng Not Given thì đoán." />
         </Field>
 
-        <Field label="Mức độ" hint="Đây là nhận định của người báo, KHÔNG phải mức SOS tính từ điểm.">
+        <Field label="Mức độ" required
+          hint="Hai bậc, và mỗi bậc dẫn tới một hạn khác nhau. Đây là nhận định của người báo, KHÔNG phải mức SOS tính từ điểm.">
           <div className="flex gap-1 flex-wrap">
             {URGENCY_LEVELS.map((u) => (
               <button key={u} type="button"
@@ -171,38 +199,57 @@ export function QuickReport({ open, onClose, studentId, studentName, cycleId, on
           </div>
         </Field>
 
+        {/*
+          PHÂN LOẠI LÀ BẮT BUỘC, nên nó nằm NGAY ĐÂY, không giấu dưới "xem thêm" (mục 6.3).
+          Trước đây nó là ô "Vì sao" không bắt buộc với lựa chọn mặc định "Chưa rõ" — và
+          "Chưa rõ" chính là thứ làm mọi bảng tổng hợp nguyên nhân trở nên vô dụng.
+        */}
+        {topic && (
+          <Field label="Phân loại vấn đề" required
+            hint="Căn cứ để sau này trả lời được: trung tâm mình hay vướng cái gì nhất.">
+            <div className="flex gap-1 flex-wrap">
+              {causes.map((i) => (
+                <button key={i.code} type="button" title={i.hint}
+                  className={`btn btn-sm ${primaryCode === i.code ? 'btn-primary' : ''}`}
+                  onClick={() => setPrimaryCode(i.code)}>
+                  {i.label}
+                </button>
+              ))}
+            </div>
+            {causes.find((i) => i.code === primaryCode)?.hint && (
+              <p className="text-xs text-slate-500 mt-1 mb-0">
+                {causes.find((i) => i.code === primaryCode)!.hint}
+              </p>
+            )}
+            {primaryCode.endsWith('.other') && (
+              <p className="text-xs text-amber-200 mt-1 mb-0">
+                Chọn "Khác" thì mô tả phải nói rõ vấn đề cụ thể là gì.
+              </p>
+            )}
+          </Field>
+        )}
+
         {!more && (
           <button type="button" className="btn btn-sm btn-ghost" onClick={() => setMore(true)}>
-            + Nguyên nhân và ghi chú (không bắt buộc)
+            + Theo dõi từ ngày khác hôm nay
           </button>
         )}
 
         {more && (
-          <>
-            {causes.length > 0 && (
-              <Field label="Vì sao"
-                hint="Nhận định của bạn, không phải kết luận của hệ thống. Chưa chắc thì bỏ trống.">
-                <select className="field" value={primaryCode} onChange={(e) => setPrimaryCode(e.target.value)}>
-                  <option value="">Chưa rõ</option>
-                  {causes.map((i) => <option key={i.code} value={i.code}>{i.label}</option>)}
-                </select>
-              </Field>
-            )}
-            <Field label="Ghi chú"
-              hint="Hoàn cảnh, chuyện riêng, bất cứ điều gì người đọc sau cần biết.">
-              <textarea className="field" rows={2} value={note}
-                onChange={(e) => setNote(e.target.value)}
-                placeholder="Nhà xa, bố mẹ đi làm ca nên em phải trông em nhỏ buổi tối." />
-            </Field>
-        <Field label="Bắt đầu để ý từ ngày" hint="Bỏ trống thì lấy hôm nay.">
-              <input type="date" className="field" value={detectedAt} onChange={(e) => setDetectedAt(e.target.value)} />
-            </Field>
-          </>
+          <Field label="Theo dõi từ ngày" hint="Bỏ trống thì lấy hôm nay.">
+            <input type="date" className="field" value={detectedAt} onChange={(e) => setDetectedAt(e.target.value)} />
+          </Field>
         )}
 
         <SectionNote>
           Ghi nhận này KHÔNG tạo ra một bài đánh giá và cũng không có mức SOS — SOS là số kỹ
           năng dưới kỳ vọng ở một bài cụ thể, ở đây chưa có bài nào.
+          {track === 'behaviour' && (
+            <> Vấn đề <strong>Ý thức/Khác</strong> báo trong <strong>bốn ngày</strong> kể từ lúc
+            mở một đợt sẽ được gộp vào chính đợt đó, và làm nó được nâng lên <strong>Gấp</strong> —
+            hai người cùng thấy một chuyện trong bốn ngày là một tín hiệu mạnh hơn nhận định
+            của riêng ai. Từ ngày thứ năm trở đi là một đợt mới.</>
+          )}
         </SectionNote>
       </div>
 

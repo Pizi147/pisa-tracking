@@ -9,6 +9,7 @@ import { demoToday } from '../demoConfig.ts';
 import { require_, type Principal } from '../permissions.ts';
 import { writeAudit } from '../platform/audit.ts';
 import { ensurePeriod, mondayOf, periodById, weekInfo } from '../platform/week.ts';
+import { ensureSkillRows, recomputeCompletionWeek } from '../fasttrack/skillSchedule.ts';
 
 /**
  * TUẦN BẮT ĐẦU HỌC → LỊCH MT MẶC ĐỊNH, VÀ TIẾN ĐỘ LỚP.
@@ -121,11 +122,22 @@ export function applySuggestedMockWeeks(p: Principal, cycleId: number): { create
           )
           .run(cycleId, cy.student_id, s.attemptNo, classId, s.periodId,
                cy.target_score ?? null, p.userId, nowIso());
+        ensureSkillRows(Number((conn.prepare('SELECT last_insert_rowid() AS id').get() as any).id));
         created += 1;
       } else if (s.existingPeriodId !== s.periodId) {
         conn
           .prepare(`UPDATE assessment_attempts SET planned_period_id = ?, plan_source = 'auto', updated_at = ? WHERE id = ?`)
           .run(s.periodId, nowIso(), s.existingAttemptId);
+        /*
+         * Lịch GỢI Ý chỉ được đụng vào những kỹ năng chưa ai chốt riêng ('auto'). Kỹ năng
+         * nào một người đã xếp tay thì đứng yên — đúng lời hứa "hệ thống không ghi đè cái
+         * Quản lý đã xếp" (mục 10.4).
+         */
+        conn
+          .prepare(`UPDATE attempt_skills SET planned_period_id = ?, updated_at = ?
+                     WHERE attempt_id = ? AND plan_source = 'auto' AND sit_status = 'scheduled'`)
+          .run(s.periodId, nowIso(), s.existingAttemptId);
+        recomputeCompletionWeek(s.existingAttemptId, p.userId);
         moved += 1;
       } else {
         kept += 1;

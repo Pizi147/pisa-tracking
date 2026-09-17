@@ -1,5 +1,6 @@
 import { db, tx } from '../db.ts';
-import { addMilestone, ensureBehaviourCase, upsertCategoryCase } from '../cases/sos.ts';
+import { addMilestone, followUntilAfter } from '../cases/sos.ts';
+import { raiseSignal } from '../cases/signals.ts';
 import {
   ATTEMPT_KIND_LABEL, PERMISSIONS, RATIO_PASS_THRESHOLD, REGULAR_SKILL_LABEL,
   caseCategoriesFor, categoryOf, ratioResult, sosFromFailCount,
@@ -10,7 +11,8 @@ import { can, editableSkills, require_, scoreEditPath, type Principal } from '..
 import { demoToday } from '../demoConfig.ts';
 import { addJourney, writeAudit } from '../platform/audit.ts';
 import { ensurePeriod, mondayOf } from '../platform/week.ts';
-import { weekStartOf } from '../fasttrack/attempts.ts';
+import { regularSkillViews, weekStartOf } from '../fasttrack/attempts.ts';
+import { ensureSkillRows, loadSkillRows } from '../fasttrack/skillSchedule.ts';
 
 /**
  * LỚP THƯỜNG (Foundation / Beginner / Elementary).
@@ -18,8 +20,9 @@ import { weekStartOf } from '../fasttrack/attempts.ts';
  * Dùng CHUNG bảng dữ liệu và CHUNG hệ thống case SOS với lớp FT — cùng `assessment_attempts`,
  * `assessment_scores`, `sos_cases`. Chỉ khác ba thứ:
  *
- *   1. CÁCH CHẤM: nhập `điểm đạt / tổng điểm`, đạt từ 60% trở lên. Không quy ra band
- *      IELTS, không có kỳ vọng theo target, không có Overall.
+ *   1. CÁCH CHẤM: nhập `điểm đạt / tổng điểm`, đạt từ 70% trở lên (ngưỡng owner chốt sau
+ *      PR15, trước đó là 60%). Không quy ra band IELTS, không có kỳ vọng theo target,
+ *      không có Overall. Ngưỡng đọc từ `RATIO_PASS_THRESHOLD`, không gõ lại con số.
  *   2. MỐC KIỂM TRA: theo TUẦN HỌC của lớp (FOU tuần 4 và 8; BE/ELE tuần 5 và 10),
  *      không phải theo lịch MT của FT.
  *   3. KỸ NĂNG: bốn môn L/R/W/S, giống nhau ở mọi chương trình Normal.
@@ -298,6 +301,8 @@ export function planRegularTests(p: Principal, classId: number) {
              VALUES (?,?,?,?,?,?, 'planned', ?,?)`,
           )
           .run(cycle.id, st.id, nextNo, cp.kind, classId, period.id, p.userId, nowIso());
+        /* Bốn môn cùng tuần khi mới lập; trải ra nhiều tuần là thao tác đổi lịch sau đó. */
+        ensureSkillRows(Number(info.lastInsertRowid));
         created.push(Number(info.lastInsertRowid));
         addJourney({
           studentId: st.id, eventType: 'mock_scheduled', eventDate: week,
@@ -465,27 +470,66 @@ export function refreshRegularOutcome(p: Principal, attemptId: number) {
    * Progress Test rồi Final Test cùng trượt một môn thì đó là MỘT case với hai mốc, không
    * phải hai case rời — giống hệt MT1/MT2 của lớp FT.
    */
+  /*
+   * MÔN DƯỚI NGƯỠNG SINH TÍN HIỆU, KHÔNG SINH CASE (mục 6.2) — giống hệt lớp Fast Track.
+   *
+   * Hạng mục đã có case đang mở thì thêm một mốc vào chính case đó và gắn tín hiệu vào nó:
+   * Progress Test rồi Final Test cùng trượt một môn là MỘT vấn đề với hai bằng chứng, không
+   * phải hai vấn đề. Chưa có case nào thì tín hiệu nằm chờ giáo viên bộ môn xác minh.
+   */
+  const conn2 = conn;
   for (const skill of failing) {
     const category = categoryOf('academic', skill);
     if (!category) continue;
-    const { id, kind } = upsertCategoryCase(p, a, category, skill, r.sosLevel, detectedAt);
-    addMilestone({
-      caseId: id, kind, attemptId: a.id, attemptNo: a.attempt_no,
-      sosLevel: r.sosLevel, occurredOn: detectedAt, createdBy: p.userId,
-      note: REGULAR_SKILL_LABEL[skill as keyof typeof REGULAR_SKILL_LABEL] ?? skill,
-      dedupKey: `mt:${a.id}:${id}:${kind}`,
+    const existing = open.find((c: any) => (c.category ?? categoryOf('academic', c.topic)) === category) ?? null;
+    const signal = raiseSignal({
+      actorUserId: p.userId,
+      studentId: a.student_id, cycleId: a.cycle_id ?? null,
+      attemptId: a.id, classId: a.class_id ?? null,
+      track: 'academic', skill, category,
+      sosLevel: r.sosLevel, detectedOn: detectedAt,
     });
+    if (existing) {
+      addMilestone({
+        caseId: existing.id, kind: 'repeat', attemptId: a.id, attemptNo: a.attempt_no,
+        sosLevel: r.sosLevel, occurredOn: detectedAt, createdBy: p.userId,
+        note: REGULAR_SKILL_LABEL[skill as keyof typeof REGULAR_SKILL_LABEL] ?? skill,
+        dedupKey: `mt:${a.id}:${existing.id}:repeat`,
+      });
+      conn2
+        .prepare(
+          `UPDATE sos_cases SET attempt_id = ?, sos_level = ?,
+                  follow_until = COALESCE(?, follow_until), updated_at = ? WHERE id = ?`,
+        )
+        .run(a.id, r.sosLevel, followUntilAfter(a), nowIso(), existing.id);
+      if (signal.status === 'pending') {
+        conn2
+          .prepare(
+            `UPDATE case_signals SET status = 'linked', case_id = ?, resolved_by = ?, resolved_at = ?,
+                    resolution_note = ?, updated_at = ? WHERE id = ?`,
+          )
+          .run(existing.id, p.userId, nowIso(),
+               'Nối vào case đang mở của môn này — cùng một vấn đề, thêm một bằng chứng.',
+               nowIso(), signal.id);
+      }
+    }
   }
 
   /*
-   * Hai việc trao đổi bắt buộc áp cho CẢ lớp thường (owner chốt 10/09/2026): trượt thì phải
-   * báo em và phụ huynh, điều đó đúng với mọi lớp. Nay chúng là hai phương án của case
-   * Ý thức/Khác, nên gọi chung một hàm với lớp FT.
+   * Một tín hiệu Ý thức/Khác cho GVCN xem tình hình chung — KHÔNG kèm sẵn hai việc trao đổi.
    *
-   * Vẫn KHÔNG tự sinh phương án hỗ trợ học thuật — quy định "SOS 1-2 tự học, SOS 3 tutor"
-   * gắn với mức SOS theo band IELTS, mà lớp thường không chấm theo band.
+   * Trước đây lớp Normal cũng tự sinh một case Ý thức/Khác chứa sẵn "trao đổi với học viên"
+   * và "trao đổi với phụ huynh". Hai việc đó có thật và vẫn phải làm, nhưng chúng cần người
+   * thực hiện và ngày thật; dựng sẵn thì chúng nằm đó mãi ở trạng thái "đã lên kế hoạch" và
+   * không ai coi là của mình.
    */
-  ensureBehaviourCase(p, a, r.sosLevel, detectedAt);
+  raiseSignal({
+    actorUserId: p.userId,
+    studentId: a.student_id, cycleId: a.cycle_id ?? null,
+    attemptId: a.id, classId: a.class_id ?? null,
+    track: 'behaviour', skill: null, category: 'behaviour',
+    sosLevel: r.sosLevel, detectedOn: detectedAt,
+  });
   return r;
 }
 
@@ -551,6 +595,8 @@ export function regularSheet(p: Principal, classId: number, kind?: string) {
   }
 
   const editable = editableSkills(p, classId, prog.skills);
+  /* Lịch và hạn chấm RIÊNG từng môn — một bài có thể trải hai ba tuần (mục 10.1). */
+  const skillRows = loadSkillRows(attempts.map((a) => a.id));
 
   return {
     class: { id: cls.id, code: cls.code, branchName: cls.branch_name, startDate: cls.start_date },
@@ -563,13 +609,45 @@ export function regularSheet(p: Principal, classId: number, kind?: string) {
       const rows = byAttempt.get(a.id) ?? [];
       const result = evaluateRegular(prog.skills, rows);
       const c = cases.get(a.id);
-      const dl = regularDeadline(a);
+      const views = regularSkillViews({ ...a, period_start: a.week_start }, skillRows.get(a.id), rows as any, demoToday());
+      /*
+       * HẠN CỦA CẢ BÀI chỉ còn là hạn MUỘN NHẤT trong các môn còn phải chấm — một con số
+       * để xếp thứ tự, không phải một luật riêng. Luật nằm ở từng môn, và cột "Hạn từng
+       * môn" bên dưới mới là thứ giáo viên đọc.
+       */
+      const pending = prog.skills
+        .map((k) => ({ k, v: views.get(k) }))
+        .filter((x) => {
+          const row = rows.find((r: any) => r.skill === x.k);
+          const scored = row?.raw_score !== null && row?.raw_score !== undefined;
+          return !scored && !!x.v?.deadline;
+        });
+      const dl = pending.length
+        ? pending.map((x) => x.v!.deadline!).sort().slice(-1)[0]
+        : null;
       return {
         attemptId: a.id,
-        deadline: dl.date,
-        deadlineSource: dl.source,
-        // Quá hạn khi đã hết ngày hạn mà vẫn còn kỹ năng chưa chấm.
-        overdue: !!dl.date && dl.date < demoToday() && !result.complete,
+        deadline: dl,
+        deadlineSource: dl ? 'week_end' : 'none',
+        /** Hạn chấm CỦA TỪNG MÔN, kèm tuần thi và trạng thái — mục 10.5. */
+        skillSchedule: prog.skills.map((k) => {
+          const v = views.get(k)!;
+          const row = rows.find((r: any) => r.skill === k);
+          const scored = row?.raw_score !== null && row?.raw_score !== undefined;
+          return {
+            skill: k,
+            label: REGULAR_SKILL_LABEL[k as keyof typeof REGULAR_SKILL_LABEL] ?? k,
+            periodCode: v.periodCode, weekRange: v.weekRange,
+            deadline: v.deadline, progress: v.progress, sitStatus: v.sitStatus,
+            overdue: !scored && v.overdue,
+          };
+        }),
+        // Quá hạn khi có ÍT NHẤT MỘT môn đã tới hạn mà chưa chấm — không xét theo cả bài.
+        overdue: prog.skills.some((k) => {
+          const row = rows.find((r: any) => r.skill === k);
+          const scored = row?.raw_score !== null && row?.raw_score !== undefined;
+          return !scored && !!views.get(k)?.overdue;
+        }),
         kind: a.kind as AttemptKind,
         kindLabel: ATTEMPT_KIND_LABEL[a.kind as AttemptKind] ?? a.kind,
         studentId: a.student_id, studentName: a.full_name, studentCode: a.student_code,

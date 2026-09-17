@@ -1,5 +1,6 @@
 import { db, isInitialised } from './db.ts';
 import { nowIso } from './util.ts';
+import { demoToday } from './demoConfig.ts';
 import crypto from 'node:crypto';
 import { PERMISSION_LABEL } from '../../shared/domain/index.ts';
 import { DEFAULT_ADMIN_EMAIL, DEFAULT_ADMIN_PASSWORD, EMAIL_SUFFIX } from './platform/accounts.ts';
@@ -399,6 +400,13 @@ function migrateCaseEngine(applied: string[], skipped: string[]) {
     migrateNormalFourSkills(conn, applied);
     migrateCaseCycles(conn, applied);
     migrateMgmtTasks(conn, applied);
+    migrateDropBranchAdmin(conn, applied);
+    migrateNormalPassThreshold(conn, applied);
+    migrateSkillSchedule(conn, applied);
+    migrateSignals(conn, applied);
+    migrateCaseForm(conn, applied);
+    migratePlanForm(conn, applied);
+    migrateMoveRequests(conn, applied);
 
     /*
      * Case đã đóng theo hệ thống cũ mà không có hướng xử lý: ghi rõ là "đóng theo hệ thống
@@ -1728,4 +1736,720 @@ function migrateMgmtTasks(conn: any, applied: string[]) {
     )
     .run().changes;
   if (n) applied.push(`Xếp ${n} việc cũ có gắn học viên vào nhóm Học sinh / Phụ huynh`);
+}
+
+
+/**
+ * BỎ VAI TRÒ "ADMIN CHI NHÁNH" mà không đánh mất ai.
+ *
+ * Ba việc, theo đúng thứ tự đó:
+ *
+ *   1. Đánh dấu vai trò là ĐÃ BỎ chứ không xoá dòng. `user_roles` và nhật ký cũ còn trỏ
+ *      vào nó; xoá đi thì lịch sử "ai đã làm gì" gãy ngay.
+ *   2. Thu hồi các dòng phân quyền đang hiệu lực của vai đó, vì từ nay nó không cho phép
+ *      làm gì nữa. Ghi mỗi lần thu hồi vào nhật ký, kèm TÊN người, để còn tra được.
+ *   3. Người nào sau bước 2 KHÔNG CÒN VAI NÀO thì tài khoản vẫn giữ nguyên, chỉ chuyển
+ *      sang trạng thái chờ phân công. Owner chốt rõ: không tự biến Admin cũ thành Quản lý
+ *      toàn hệ thống, mà nêu tên ra để người có thẩm quyền quyết.
+ */
+function migrateDropBranchAdmin(conn: any, applied: string[]) {
+  const has = (t: string) =>
+    !!conn.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name = ?").get(t);
+  if (!has('roles') || !has('user_roles')) return;
+
+  const cols = (t: string) => (conn.prepare(`PRAGMA table_info(${t})`).all() as any[]).map((c: any) => c.name);
+  if (!cols('roles').includes('status')) {
+    conn.exec("ALTER TABLE roles ADD COLUMN status TEXT NOT NULL DEFAULT 'active'");
+  }
+
+  const role = conn.prepare("SELECT id FROM roles WHERE key = 'branch_admin'").get() as any;
+  if (!role) return;
+
+  const already = conn.prepare("SELECT status FROM roles WHERE id = ?").get(role.id) as any;
+  if (already?.status === 'retired') return;
+
+  conn.prepare("UPDATE roles SET status = 'retired' WHERE id = ?").run(role.id);
+
+  /* Quyền của vai đã bỏ không còn hiệu lực. Bảng role_permissions không có cột trạng thái
+     nên ở đây xoá đúng các dòng nối vai–quyền; bản thân vai và quyền vẫn còn để đọc. */
+  const perms = has('role_permissions')
+    ? conn.prepare('DELETE FROM role_permissions WHERE role_id = ?').run(role.id).changes
+    : 0;
+
+  const grants = conn
+    .prepare(
+      `SELECT ur.id, ur.user_id, u.full_name, b.name AS branch
+         FROM user_roles ur
+         JOIN users u ON u.id = ur.user_id
+    LEFT JOIN branches b ON b.id = ur.branch_id
+        WHERE ur.role_id = ? AND ur.status = 'active'`,
+    )
+    .all(role.id) as any[];
+
+  for (const g of grants) {
+    conn.prepare("UPDATE user_roles SET status = 'retired' WHERE id = ?").run(g.id);
+    conn
+      .prepare(
+        `INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, entity_label,
+                                 before_json, after_json, created_at)
+         VALUES (NULL, 'role.retired', 'user', ?, ?, ?, ?, ?)`,
+      )
+      .run(
+        g.user_id,
+        g.full_name,
+        JSON.stringify({ role: 'branch_admin', branch: g.branch ?? null, status: 'active' }),
+        JSON.stringify({ role: 'branch_admin', branch: g.branch ?? null, status: 'retired',
+                         reason: 'Vai trò Admin chi nhánh đã bỏ sau PR15' }),
+        nowIso(),
+      );
+  }
+
+  const orphans = conn
+    .prepare(
+      `SELECT u.full_name FROM users u
+        WHERE u.status = 'active'
+          AND NOT EXISTS (SELECT 1 FROM user_roles ur WHERE ur.user_id = u.id AND ur.status = 'active')
+          AND EXISTS (SELECT 1 FROM user_roles ur WHERE ur.user_id = u.id AND ur.role_id = ?)`,
+    )
+    .all(role.id) as any[];
+
+  applied.push(
+    `Bỏ vai trò Admin chi nhánh: thu hồi ${grants.length} phân quyền, gỡ ${perms} dòng quyền của vai đó`,
+  );
+  if (orphans.length) {
+    applied.push(
+      `CẦN PHÂN CÔNG LẠI — ${orphans.length} tài khoản không còn vai trò nào: ` +
+        orphans.map((o: any) => o.full_name).join(', '),
+    );
+  }
+}
+
+/**
+ * GHI DẤU VIỆC NÂNG NGƯỠNG ĐẠT CỦA LỚP NORMAL TỪ 60% LÊN 70%.
+ *
+ * Kết quả đạt/trượt của lớp Normal được TÍNH RA từ `điểm đạt / tổng điểm` mỗi lần đọc,
+ * không lưu sẵn trong database. Nên bước nâng cấp này KHÔNG sửa một dòng dữ liệu nào:
+ * điểm gốc giữ nguyên, kết luận đã ghi tay giữ nguyên, và không có khoản quá hạn nào
+ * được sinh ngược về quá khứ.
+ *
+ * Việc duy nhất cần làm là ghi lại MỐC ĐỔI LUẬT. Một bài 62% hôm qua đọc là "đạt", hôm
+ * nay đọc là "trượt"; ai đối chiếu với biên bản cũ phải tra ra được vì sao hai bên lệch.
+ */
+function migrateNormalPassThreshold(conn: any, applied: string[]) {
+  const has = (t: string) =>
+    !!conn.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name = ?").get(t);
+  if (!has('demo_config')) return;
+
+  const key = 'normal_pass_threshold';
+  const current = conn.prepare('SELECT value FROM demo_config WHERE key = ?').get(key) as any;
+  if (current?.value === '0.7') return;
+
+  const from = current?.value ?? '0.6';
+  conn.prepare('INSERT OR REPLACE INTO demo_config (key, value, updated_at) VALUES (?,?,?)')
+    .run(key, '0.7', nowIso());
+
+  if (has('audit_logs')) {
+    conn
+      .prepare(
+        `INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, entity_label,
+                                 before_json, after_json, created_at)
+         VALUES (NULL, 'rule.changed', 'scoring', NULL, 'Ngưỡng đạt lớp Normal', ?, ?, ?)`,
+      )
+      .run(
+        JSON.stringify({ passThreshold: Number(from) }),
+        JSON.stringify({ passThreshold: 0.7, note: 'Owner nâng ngưỡng đạt lớp Normal sau PR15' }),
+        nowIso(),
+      );
+  }
+
+  applied.push(
+    `Ngưỡng đạt lớp Normal: ${Math.round(Number(from) * 100)}% → 70%. ` +
+      'Không sửa điểm gốc, không xoá kết luận cũ, không sinh nợ quá hạn ngược về quá khứ.',
+  );
+}
+
+/**
+ * TÁCH LỊCH THI RA THEO TỪNG KỸ NĂNG (mục 10.1 · 18.1).
+ *
+ * Trước bước này một đợt kiểm tra chỉ có MỘT tuần dùng chung cho cả bốn kỹ năng. Sau bước
+ * này mỗi kỹ năng có lịch, phạm vi, trạng thái thi và hạn chấm của riêng nó.
+ *
+ * NGUYÊN TẮC: chỉ chuyển những gì dữ liệu cũ THỰC SỰ NÓI, không bịa phần còn lại.
+ *
+ *   ✓ Tuần chung cũ trở thành tuần khởi tạo của cả bốn kỹ năng — đây là căn cứ có thật,
+ *     và nó được đánh dấu 'auto' để ai đọc cũng biết chưa có ai chốt riêng cho kỹ năng nào.
+ *   ✓ Kỹ năng từng bị đánh dấu "không mock" trở thành "ngoài phạm vi yêu cầu".
+ *   ✓ Kỹ năng ĐÃ CÓ ĐIỂM được ghi là đã thi — có điểm thì chắc chắn đã thi.
+ *
+ *   ✗ KHÔNG bịa ngày thi chính xác. Dữ liệu cũ chỉ có tuần, nên bản mới cũng chỉ có tuần.
+ *   ✗ KHÔNG bịa xác nhận có mặt cho kỹ năng chưa có điểm: ô trống có thể là chưa chấm,
+ *     không được đọc thành "em đã thi" mà cũng không được đọc thành "em vắng".
+ *   ✗ KHÔNG bịa nguyên nhân vắng. Không dòng nào ra khỏi bước này với trạng thái 'absent'.
+ *   ✗ KHÔNG sinh nợ quá hạn ngược về quá khứ: hạn được TÍNH RA mỗi lần đọc từ tuần thi,
+ *     không lưu sẵn, nên không có khoản nợ nào được dựng thêm ở đây.
+ *
+ * Giữ nguyên định danh đợt, điểm, người nhập, liên kết case và toàn bộ lịch sử. Chạy lại
+ * lần hai là no-op: những đợt đã có đủ bốn dòng bị bỏ qua.
+ */
+function migrateSkillSchedule(conn: any, applied: string[]) {
+  const has = (t: string) =>
+    !!conn.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name = ?").get(t);
+  if (!has('assessment_attempts') || !has('assessment_scores')) return;
+
+  conn.exec(`
+    CREATE TABLE IF NOT EXISTS attempt_skills (
+      id INTEGER PRIMARY KEY,
+      attempt_id INTEGER NOT NULL REFERENCES assessment_attempts(id),
+      skill TEXT NOT NULL,
+      required INTEGER NOT NULL DEFAULT 1,
+      scope_reason TEXT,
+      scope_by INTEGER REFERENCES users(id),
+      scope_at TEXT,
+      planned_period_id INTEGER REFERENCES report_periods(id),
+      plan_source TEXT NOT NULL DEFAULT 'auto',
+      sit_status TEXT NOT NULL DEFAULT 'scheduled',
+      sit_by INTEGER REFERENCES users(id),
+      sit_at TEXT,
+      sit_note TEXT,
+      deadline_override TEXT,
+      deadline_override_by INTEGER REFERENCES users(id),
+      deadline_override_at TEXT,
+      deadline_override_reason TEXT,
+      absence_move_count INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL,
+      updated_at TEXT,
+      UNIQUE (attempt_id, skill));
+    CREATE INDEX IF NOT EXISTS idx_attempt_skills_attempt ON attempt_skills(attempt_id);
+    CREATE INDEX IF NOT EXISTS idx_attempt_skills_period ON attempt_skills(planned_period_id);
+  `);
+
+  const now = nowIso();
+  const skills = ['listening', 'reading', 'writing', 'speaking'];
+  /* Ô nhập điểm nào thuộc về kỹ năng đánh giá nào — Writing gồm cả hai task. */
+  const entryOf: Record<string, string[]> = {
+    listening: ['listening'], reading: ['reading'],
+    writing: ['writing1', 'writing2'], speaking: ['speaking'],
+  };
+
+  const attempts = conn
+    .prepare(
+      `SELECT a.id, a.planned_period_id, a.status
+         FROM assessment_attempts a
+        WHERE (SELECT COUNT(*) FROM attempt_skills ask WHERE ask.attempt_id = a.id) < 4`,
+    )
+    .all() as any[];
+  if (!attempts.length) return;
+
+  const hasSkips = has('attempt_skill_skips');
+  let created = 0;
+  let sat = 0;
+  let outOfScope = 0;
+
+  for (const a of attempts) {
+    const skipped = new Set<string>(
+      hasSkips
+        ? (conn.prepare('SELECT skill FROM attempt_skill_skips WHERE attempt_id = ?').all(a.id) as any[])
+            .map((r: any) => r.skill as string)
+        : [],
+    );
+    const scored = new Set<string>(
+      (conn.prepare('SELECT skill FROM assessment_scores WHERE attempt_id = ? AND band IS NOT NULL').all(a.id) as any[])
+        .map((r: any) => r.skill as string),
+    );
+    for (const skill of skills) {
+      const exists = conn.prepare('SELECT 1 FROM attempt_skills WHERE attempt_id = ? AND skill = ?').get(a.id, skill);
+      if (exists) continue;
+      const isRequired = skipped.has(skill) ? 0 : 1;
+      /*
+       * "Đã thi" CHỈ khi mọi ô nhập điểm của kỹ năng đó đã có band. Writing có W1 mà chưa
+       * có W2 thì chưa kết luận gì — đúng như cách band Writing được tính.
+       */
+      const didSit = entryOf[skill].every((k) => scored.has(k));
+      const sitStatus = a.status === 'cancelled' ? 'cancelled' : didSit ? 'sat' : 'scheduled';
+      conn
+        .prepare(
+          `INSERT INTO attempt_skills (attempt_id, skill, required, scope_reason, planned_period_id,
+                                       plan_source, sit_status, sit_note, created_at)
+           VALUES (?,?,?,?,?, 'auto', ?,?,?)`,
+        )
+        .run(
+          a.id, skill, isRequired,
+          isRequired ? null : 'Chuyển từ đánh dấu "không mock" của bản trước',
+          a.planned_period_id ?? null,
+          sitStatus,
+          didSit ? 'Suy từ việc đã có điểm ở bản trước' : null,
+          now,
+        );
+      created += 1;
+      if (didSit) sat += 1;
+      if (!isRequired) outOfScope += 1;
+    }
+  }
+
+  applied.push(
+    `Tách lịch thi theo kỹ năng: dựng ${created} dòng cho ${attempts.length} đợt kiểm tra. `
+      + `${sat} kỹ năng đã có điểm được ghi là đã thi, ${outOfScope} kỹ năng chuyển sang "ngoài phạm vi yêu cầu". `
+      + 'Tuần thi của từng kỹ năng lấy từ tuần chung cũ và đánh dấu "chưa ai chốt riêng"; '
+      + 'không bịa ngày thi, không bịa xác nhận có mặt, không bịa nguyên nhân vắng.',
+  );
+
+  /*
+   * TUẦN KẾ HOẠCH HOÀN TẤT (mục 10.7) sau bước này bằng đúng tuần chung cũ, vì cả bốn kỹ
+   * năng vừa được khởi tạo cùng một tuần. Nên KHÔNG có đợt nào bị đổi tuần ở đây, và không
+   * bảng báo cáo theo tuần nào đổi kết quả chỉ vì chạy nâng cấp.
+   */
+  if (has('audit_logs')) {
+    conn
+      .prepare(
+        `INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, entity_label,
+                                 before_json, after_json, created_at)
+         VALUES (NULL, 'rule.changed', 'scheduling', NULL, 'Lịch thi và hạn chấm theo từng kỹ năng', ?, ?, ?)`,
+      )
+      .run(
+        JSON.stringify({ schedule: 'một tuần chung cho cả đợt', deadline: 'một hạn chung cho cả đợt' }),
+        JSON.stringify({
+          schedule: 'mỗi kỹ năng một tuần thi riêng',
+          deadline: 'FT hết thứ Tư tuần sau tuần thi của kỹ năng đó; Normal hết Chủ nhật tuần thi',
+          note: 'Owner chốt sau PR15. Tuần kế hoạch hoàn tất của đợt = tuần muộn nhất trong các kỹ năng bắt buộc.',
+        }),
+        now,
+      );
+  }
+}
+
+/**
+ * TÍN HIỆU THAY CHO CASE TỰ SINH (mục 6.2 · 9.4 · 18.1).
+ *
+ * Trước bước này, một kết quả dưới kỳ vọng tự mở ra case hoàn chỉnh kèm phương án hỗ trợ.
+ * Sau bước này, nó chỉ sinh tín hiệu cần giáo viên xác minh trong ba ngày.
+ *
+ * Việc khó nhất của bước nâng cấp là KHÔNG PHÁ DỮ LIỆU CŨ. Những case đã mở là có thật, và
+ * rất nhiều case trong số đó đã có người làm việc trên chúng. Nên:
+ *
+ *   ✓ Case cũ GIỮ NGUYÊN, không case nào bị đóng hay xoá.
+ *   ✓ Dựng tín hiệu NGƯỢC từ các mốc đã có, ở trạng thái "đã thành case" — để hồ sơ đọc ra
+ *     một mạch: có tín hiệu, rồi ai đó đã xác minh, rồi thành case này.
+ *   ✓ Phương án TỰ SINH mà CHƯA AI ĐỤNG VÀO thì vô hiệu hoá: chúng không phải việc thật,
+ *     và để lại thì bảng hiệu quả đếm chúng như những lần hỗ trợ đã lên kế hoạch.
+ *
+ *   ✗ KHÔNG đụng phương án đã bắt đầu hoặc đã xong — việc đã diễn ra thì đã diễn ra, kể cả
+ *     khi nó vốn sinh ra tự động. Mục 18.1 nói rõ điều này.
+ *   ✗ KHÔNG bịa tín hiệu đang chờ xác minh cho dữ liệu cũ: mọi tín hiệu dựng ngược đều ở
+ *     trạng thái đã xử lý, nên không có khoản nợ quá hạn nào được sinh về quá khứ.
+ */
+function migrateSignals(conn: any, applied: string[]) {
+  const has = (t: string) =>
+    !!conn.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name = ?").get(t);
+  if (!has('sos_cases') || !has('case_milestones')) return;
+
+  conn.exec(`
+    CREATE TABLE IF NOT EXISTS case_signals (
+      id INTEGER PRIMARY KEY,
+      student_id INTEGER NOT NULL REFERENCES students(id),
+      cycle_id INTEGER REFERENCES learning_cycles(id),
+      attempt_id INTEGER REFERENCES assessment_attempts(id),
+      class_id INTEGER REFERENCES classes(id),
+      track TEXT NOT NULL,
+      skill TEXT,
+      category TEXT,
+      band REAL,
+      expectation REAL,
+      sos_level INTEGER,
+      detected_on TEXT NOT NULL,
+      raised_on TEXT NOT NULL,
+      verify_due TEXT NOT NULL,
+      owner_user_id INTEGER REFERENCES users(id),
+      status TEXT NOT NULL DEFAULT 'pending',
+      case_id INTEGER REFERENCES sos_cases(id),
+      resolved_by INTEGER REFERENCES users(id),
+      resolved_at TEXT,
+      resolution_note TEXT,
+      withdrawn_reason TEXT,
+      dedup_key TEXT UNIQUE,
+      created_at TEXT NOT NULL,
+      updated_at TEXT);
+    CREATE INDEX IF NOT EXISTS idx_signal_student ON case_signals(student_id);
+    CREATE INDEX IF NOT EXISTS idx_signal_status ON case_signals(status);
+    CREATE INDEX IF NOT EXISTS idx_signal_owner ON case_signals(owner_user_id);
+    CREATE INDEX IF NOT EXISTS idx_signal_attempt ON case_signals(attempt_id);
+  `);
+
+  const now = nowIso();
+  const addDaysIso = (date: string, n: number) => {
+    const d = new Date(`${date.slice(0, 10)}T00:00:00Z`);
+    d.setUTCDate(d.getUTCDate() + n);
+    return d.toISOString().slice(0, 10);
+  };
+
+  /*
+   * DỰNG TÍN HIỆU NGƯỢC TỪ MỐC CASE.
+   *
+   * Mỗi mốc gắn với một lượt đánh giá là dấu vết của đúng một tín hiệu đã từng tồn tại:
+   * "đợt này, hạng mục này, dưới kỳ vọng". Lấy mốc sớm nhất của mỗi cặp (lượt, case) để
+   * không dựng hai tín hiệu cho cùng một nguồn.
+   *
+   * `raised_on` lấy ngày mốc xảy ra — đó là căn cứ có thật gần nhất với thời điểm tín hiệu
+   * được ghi nhận. Không bịa ra một ngày khác.
+   */
+  const rows = conn
+    .prepare(
+      `SELECT m.attempt_id, m.case_id, MIN(m.occurred_on) AS on_date,
+              c.student_id, c.cycle_id, c.track, c.category, c.topic, c.owner_user_id,
+              a.class_id
+         FROM case_milestones m
+         JOIN sos_cases c ON c.id = m.case_id
+         LEFT JOIN assessment_attempts a ON a.id = m.attempt_id
+        WHERE m.attempt_id IS NOT NULL
+          AND m.kind IN ('opened', 'repeat', 'recurrence')
+        GROUP BY m.attempt_id, m.case_id`,
+    )
+    .all() as any[];
+
+  let built = 0;
+  for (const r of rows) {
+    const skill = r.track === 'behaviour' ? null : (r.topic ?? null);
+    const key = `mt:${r.attempt_id}:${skill ?? 'behaviour'}`;
+    const seen = conn.prepare('SELECT id FROM case_signals WHERE dedup_key = ?').get(key);
+    if (seen) continue;
+    const on = r.on_date as string;
+    conn
+      .prepare(
+        `INSERT INTO case_signals (student_id, cycle_id, attempt_id, class_id, track, skill, category,
+                                   detected_on, raised_on, verify_due, owner_user_id, status, case_id,
+                                   resolved_by, resolved_at, resolution_note, dedup_key, created_at)
+         VALUES (?,?,?,?,?,?,?,?,?,?,?, 'linked', ?, NULL, ?, ?, ?, ?)`,
+      )
+      .run(r.student_id, r.cycle_id, r.attempt_id, r.class_id ?? null,
+           r.track ?? 'academic', skill, r.category ?? null,
+           on, on, addDaysIso(on, 2), r.owner_user_id ?? null, r.case_id,
+           on, 'Dựng lại từ lịch sử: case này đã được mở từ kết quả của đợt đó.',
+           key, now);
+    built += 1;
+  }
+
+  /*
+   * PHƯƠNG ÁN TỰ SINH CHƯA AI ĐỤNG VÀO → vô hiệu hoá.
+   *
+   * Nhận ra chúng bằng `migration_key` bắt đầu bằng 'auto:' — đó là dấu hàm sinh tự động cũ
+   * để lại. Chỉ những phương án còn ở trạng thái "đã lên kế hoạch" mới bị huỷ; cái nào đã
+   * bắt đầu hoặc đã xong thì giữ nguyên, vì đằng sau nó là một người đã thực sự làm.
+   *
+   * `closed_reason = 'auto_retired'` để báo cáo hiệu quả không đếm chúng vào mẫu số: một
+   * phương án chưa từng chạy thì không thành công cũng không thất bại.
+   */
+  let retired = 0;
+  if (has('case_interventions')) {
+    retired = conn
+      .prepare(
+        `UPDATE case_interventions
+            SET status = 'cancelled', closed_reason = 'auto_retired', updated_at = ?
+          WHERE status = 'planned' AND migration_key LIKE 'auto:%'`,
+      )
+      .run(now).changes;
+  }
+
+  /* Chạy lại lần hai là no-op: không dựng thêm gì thì cũng không báo cáo gì. */
+  if (!built && !retired) return;
+
+  applied.push(
+    `Tín hiệu thay cho case tự sinh: dựng ${built} tín hiệu từ lịch sử (đều ở trạng thái "đã thành case"), `
+      + `vô hiệu hoá ${retired} phương án tự sinh chưa ai thực hiện. `
+      + 'Không case nào bị đóng hay xoá; phương án đã bắt đầu hoặc đã xong giữ nguyên; '
+      + 'không sinh tín hiệu quá hạn nào về quá khứ.',
+  );
+
+  if (has('audit_logs')) {
+    conn
+      .prepare(
+        `INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, entity_label,
+                                 before_json, after_json, created_at)
+         VALUES (NULL, 'rule.changed', 'cases', NULL, 'Điểm dưới kỳ vọng sinh gì', ?, ?, ?)`,
+      )
+      .run(
+        JSON.stringify({ creates: 'case hoàn chỉnh + phương án hỗ trợ tự sinh' }),
+        JSON.stringify({
+          creates: 'tín hiệu cần giáo viên xác minh',
+          verifyDays: 3,
+          note: 'Owner chốt sau PR15. Máy không chẩn đoán nguyên nhân và không xếp tutor thay người.',
+        }),
+        now,
+      );
+  }
+}
+
+/**
+ * FORM CASE VÒNG 7: mức độ hai bậc, phân loại bắt buộc, Ý thức/Khác gộp theo đợt
+ * (mục 6.3 · 6.4 · 7 · 18.1).
+ *
+ * Nguyên tắc xuyên suốt của bước này: **không đoán hộ người dùng.** Dữ liệu cũ thiếu gì thì
+ * ghi nhận là thiếu và để người có trách nhiệm rà, chứ không điền bừa một giá trị cho đủ ô.
+ * Một phân loại đoán sai còn tệ hơn một ô trống, vì nó sẽ được cộng vào báo cáo.
+ */
+/**
+ * FORM PHƯƠNG ÁN VÀ BẢNG HẠN CỦA VÒNG 7 (mục 8.2 · 8.3).
+ *
+ * Hai thay đổi, và cả hai đều KHÔNG được bịa nợ ngược về quá khứ:
+ *
+ *   1. Thêm chỗ ghi "lùi lịch thi thì lùi cái gì". Đề xuất cũ để trống — bước nâng cấp
+ *      không đoán hộ, vì đoán sai là sửa nhầm lịch thi thật của một em.
+ *   2. Tách hạn CẬP NHẬT khỏi ngày DỰ KIẾN KẾT THÚC. Trước đây hai cột mang cùng một con
+ *      số, nên "đến lúc báo tiến độ" và "đến hạn xong việc" lẫn vào nhau.
+ *
+ * Với phương án CŨ ĐANG CHẠY, hạn cập nhật đặt là CHỦ NHẬT SẮP TỚI tính từ hôm nay, KHÔNG
+ * phải Chủ nhật đầu tiên kể từ ngày nó bắt đầu. Cách thứ hai đúng về luật nhưng sai về
+ * người: nó biến mọi phương án đang chạy thành quá hạn ngay lúc nâng cấp, vì nghĩa vụ cập
+ * nhật hằng tuần hôm qua chưa tồn tại. Nghĩa vụ mới bắt đầu từ hôm nay.
+ */
+/**
+ * BẢNG ĐỀ NGHỊ DỜI DO VẮNG (mục 10.6).
+ *
+ * Chỉ TẠO BẢNG, không suy ngược lịch sử. Dữ liệu cũ không ghi lại "lần dời này là do em
+ * vắng hay do Quản lý sắp lại lịch", nên mọi con số đếm ngược đều là đoán — và đoán sai ở
+ * đây nghĩa là một em bị coi như đã tiêu hết lượt dời mà chưa từng vắng buổi nào.
+ *
+ * Bộ đếm cũ (nếu có) giữ nguyên; bộ đếm mới bắt đầu đếm từ những lần vắng kể từ hôm nay.
+ */
+function migrateMoveRequests(conn: any, applied: string[]) {
+  const has = (t: string) =>
+    !!conn.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name = ?").get(t);
+  if (has('skill_move_requests')) return;
+  conn.exec(`
+    CREATE TABLE skill_move_requests (
+      id INTEGER PRIMARY KEY,
+      attempt_id INTEGER NOT NULL REFERENCES assessment_attempts(id),
+      skill TEXT NOT NULL,
+      move_no INTEGER NOT NULL,
+      from_period_id INTEGER REFERENCES report_periods(id),
+      to_period_id INTEGER NOT NULL REFERENCES report_periods(id),
+      reason TEXT,
+      requested_by INTEGER REFERENCES users(id),
+      requested_on TEXT NOT NULL,
+      decide_by TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'pending',
+      decided_by INTEGER REFERENCES users(id),
+      decided_at TEXT,
+      decision_note TEXT,
+      cancelled_part INTEGER NOT NULL DEFAULT 0,
+      idempotency_key TEXT UNIQUE,
+      created_at TEXT NOT NULL,
+      updated_at TEXT,
+      UNIQUE (attempt_id, skill, move_no));
+    CREATE INDEX idx_move_req_attempt ON skill_move_requests(attempt_id);
+    CREATE INDEX idx_move_req_open ON skill_move_requests(status, decide_by) WHERE status = 'pending';
+  `);
+  applied.push(
+    'Thêm chỗ ghi đề nghị dời lịch do vắng (mục 10.6). Lịch sử cũ KHÔNG được suy ngược: '
+      + 'dữ liệu trước đây không phân biệt dời do vắng với dời chủ động, nên bộ đếm mới '
+      + 'bắt đầu từ những lần vắng kể từ nay.',
+  );
+}
+
+function migratePlanForm(conn: any, applied: string[]) {
+  const has = (t: string) =>
+    !!conn.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name = ?").get(t);
+  const cols = (t: string) => (conn.prepare(`PRAGMA table_info(${t})`).all() as any[]).map((c: any) => c.name);
+  if (!has('case_interventions')) return;
+
+  let added = 0;
+  if (!cols('case_interventions').includes('reschedule_target')) {
+    conn.exec('ALTER TABLE case_interventions ADD COLUMN reschedule_target TEXT');
+    added = 1;
+  }
+
+  const now = nowIso();
+  /* Dùng ĐỒNG HỒ CỦA BẢN DEMO để hạn mới khớp với mọi màn hình, không lệch hai ngày. */
+  const today = demoToday();
+  const addDaysIso = (date: string, n: number) => {
+    const d = new Date(`${date.slice(0, 10)}T00:00:00Z`);
+    d.setUTCDate(d.getUTCDate() + n);
+    return d.toISOString().slice(0, 10);
+  };
+  /* Chủ nhật SẮP TỚI: hôm nay đã là Chủ nhật thì vẫn là hôm nay. */
+  const nextSunday = (from: string) => {
+    const dow = new Date(`${from.slice(0, 10)}T00:00:00Z`).getUTCDay();
+    return addDaysIso(from, dow === 0 ? 0 : 7 - dow);
+  };
+
+  /*
+   * Phương án HỌC THUẬT còn đang chạy: hạn cập nhật chuyển sang Chủ nhật sắp tới; ngày dự
+   * kiến kết thúc giữ nguyên con số cũ nếu đã có, vì đó là ngày người ta đã hẹn nhau.
+   */
+  let moved = 0;
+  const running = conn
+    .prepare(
+      `SELECT iv.id, iv.action_due, iv.followup_due, iv.cycle_started_on, iv.started_date
+         FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id
+        WHERE iv.status IN ('planned','started')
+          AND COALESCE(iv.approval_state,'') != 'pending'
+          AND iv.cycle_started_on IS NOT NULL
+          AND COALESCE(sc.track,'academic') = 'academic'`,
+    )
+    .all() as any[];
+  for (const iv of running) {
+    const updateDue = nextSunday(today);
+    /* Ngày kết thúc cũ (nếu có) là lời hẹn đã chốt — chỉ điền khi đang trống. */
+    const planEnd = iv.followup_due ?? addDaysIso(nextSunday(iv.cycle_started_on), 7);
+    if (iv.action_due === updateDue && iv.followup_due === planEnd) continue;
+    conn
+      .prepare('UPDATE case_interventions SET action_due = ?, followup_due = ?, updated_at = ? WHERE id = ?')
+      .run(updateDue, planEnd, now, iv.id);
+    moved += 1;
+  }
+
+  if (!added && !moved) return;
+  applied.push(
+    `Phương án vòng 7: ${added ? 'thêm chỗ ghi "lùi lịch thi thì lùi cái gì"; ' : ''}`
+      + `${moved} phương án học thuật đang chạy được tách hạn cập nhật (Chủ nhật sắp tới) `
+      + 'khỏi ngày dự kiến kết thúc. Nghĩa vụ cập nhật hằng tuần tính TỪ HÔM NAY, '
+      + 'không tạo nợ ngược về những tuần trước khi luật này tồn tại.',
+  );
+  const blank = (conn
+    .prepare(`SELECT COUNT(*) n FROM case_interventions
+               WHERE kind = 'reschedule_mt' AND reschedule_target IS NULL
+                 AND status NOT IN ('completed','cancelled')`)
+    .get() as any).n;
+  if (blank) {
+    applied.push(
+      `CẦN RÀ LẠI — ${blank} đề xuất lùi lịch thi chưa nói rõ lùi cái gì (kế hoạch thi thật `
+        + 'hay một phần thi trong đợt MT). Bước nâng cấp KHÔNG đoán: người đề xuất chọn lại '
+        + 'khi mở đề xuất lần tới.',
+    );
+  }
+}
+
+function migrateCaseForm(conn: any, applied: string[]) {
+  const has = (t: string) =>
+    !!conn.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name = ?").get(t);
+  const cols = (t: string) => (conn.prepare(`PRAGMA table_info(${t})`).all() as any[]).map((c: any) => c.name);
+  if (!has('sos_cases')) return;
+
+  for (const [c, d] of [
+    ['episode_no', 'INTEGER NOT NULL DEFAULT 1'],
+    ['merge_until', 'TEXT'],
+    ['urgency_raised_at', 'TEXT'],
+  ] as const) {
+    if (!cols('sos_cases').includes(c)) conn.exec(`ALTER TABLE sos_cases ADD COLUMN ${c} ${d}`);
+  }
+
+  conn.exec(`
+    CREATE TABLE IF NOT EXISTS case_reports (
+      id INTEGER PRIMARY KEY,
+      case_id INTEGER NOT NULL REFERENCES sos_cases(id),
+      reported_by INTEGER REFERENCES users(id),
+      source_skill TEXT,
+      source_attempt_id INTEGER REFERENCES assessment_attempts(id),
+      reported_on TEXT NOT NULL,
+      observed_on TEXT,
+      summary TEXT NOT NULL,
+      idempotency_key TEXT UNIQUE,
+      created_at TEXT NOT NULL);
+    CREATE INDEX IF NOT EXISTS idx_case_reports_case ON case_reports(case_id);
+  `);
+
+  const now = nowIso();
+  const addDaysIso = (date: string, n: number) => {
+    const d = new Date(`${date.slice(0, 10)}T00:00:00Z`);
+    d.setUTCDate(d.getUTCDate() + n);
+    return d.toISOString().slice(0, 10);
+  };
+
+  /*
+   * MỨC "BÌNH THƯỜNG" ĐÃ BỎ → chuyển thành "Cần chú ý".
+   *
+   * Đây là ánh xạ CÓ CĂN CỨ, không phải đoán: một vấn đề đã được mở thành case thì tự nó đã
+   * là việc phải làm, nên bậc thấp nhất còn lại là đúng chỗ của nó. Không đẩy lên "Gấp" —
+   * làm thế là tự tiện tăng mức khẩn cho hàng loạt case cũ.
+   */
+  const bumped = conn
+    .prepare(`UPDATE sos_cases SET urgency = 'attention', updated_at = ? WHERE urgency = 'normal'`)
+    .run(now).changes;
+
+  /* Case cũ chưa có đợt nào: mỗi case Ý thức/Khác là đợt 1 của chính nó. */
+  let windows = 0;
+  if (cols('sos_cases').includes('merge_until')) {
+    windows = conn
+      .prepare(
+        `UPDATE sos_cases SET merge_until = ?
+          WHERE track = 'behaviour' AND merge_until IS NULL AND detected_at IS NOT NULL`,
+      )
+      .run(null).changes;
+    /* Đặt cửa sổ theo chính ngày mở của từng case — SQLite không có hàm ngày +3 tiện ở đây. */
+    windows = 0;
+    for (const c of conn
+      .prepare(`SELECT id, detected_at FROM sos_cases WHERE track = 'behaviour' AND merge_until IS NULL AND detected_at IS NOT NULL`)
+      .all() as any[]) {
+      conn.prepare('UPDATE sos_cases SET merge_until = ? WHERE id = ?')
+        .run(addDaysIso(c.detected_at, 3), c.id);
+      windows += 1;
+    }
+  }
+
+  /*
+   * ĐÁNH SỐ ĐỢT cho case Ý thức/Khác cũ, theo thứ tự thời gian trong từng (học viên, phân loại).
+   * Đây là suy ra từ dữ liệu có thật, không phải bịa: đợt nào mở trước thì là lần trước.
+   */
+  let numbered = 0;
+  const groups = conn
+    .prepare(
+      /* Đếm đợt theo PHÂN LOẠI (topic), không theo hạng mục chung `behaviour`. */
+      `SELECT student_id, topic FROM sos_cases
+        WHERE track = 'behaviour' AND topic IS NOT NULL
+        GROUP BY student_id, topic HAVING COUNT(*) > 1`,
+    )
+    .all() as any[];
+  for (const g of groups) {
+    const list = conn
+      .prepare(
+        `SELECT id FROM sos_cases WHERE student_id = ? AND track = 'behaviour' AND topic = ?
+          ORDER BY COALESCE(detected_at, created_at), id`,
+      )
+      .all(g.student_id, g.topic) as any[];
+    list.forEach((c: any, i: number) => {
+      conn.prepare('UPDATE sos_cases SET episode_no = ? WHERE id = ?').run(i + 1, c.id);
+      numbered += 1;
+    });
+  }
+
+  /*
+   * PHÂN LOẠI CŨ: giữ mã còn dùng được, và CHỈ đổi những mã có ánh xạ chắc chắn.
+   * Mã không ánh xạ được thì để nguyên — case đó sẽ hiện ra ở hàng "cần rà lại phân loại",
+   * và một người sẽ quyết định. Máy không đoán.
+   */
+  let remapped = 0;
+  if (has('case_issues')) {
+    for (const [from, to] of Object.entries({
+      /* Bộ Listening cũ gộp về bốn nhóm mới, theo đúng nghĩa của từng nhãn. */
+      'student.listening.distractor': 'student.listening.technique',
+      'student.listening.mainidea': 'student.listening.technique',
+      /* "Mơ hồ ý chính" của Reading là chuyện đọc hiểu, gần "Tư duy logic" nhất. */
+      'student.reading.mainidea': 'student.reading.logic',
+    })) {
+      remapped += conn
+        .prepare('UPDATE case_issues SET taxonomy_code = ? WHERE taxonomy_code = ?')
+        .run(to, from).changes;
+    }
+  }
+
+  const missing = has('case_issues')
+    ? (conn
+        .prepare(
+          `SELECT COUNT(*) n FROM sos_cases c
+            WHERE c.status != 'done'
+              AND NOT EXISTS (SELECT 1 FROM case_issues i WHERE i.case_id = c.id AND i.role = 'primary')`,
+        )
+        .get() as any).n
+    : 0;
+
+  if (!bumped && !windows && !numbered && !remapped) return;
+  applied.push(
+    `Form case vòng 7: ${bumped} case chuyển mức "Bình thường" → "Cần chú ý"; `
+      + `${windows} case Ý thức/Khác được đặt cửa sổ gộp bốn ngày; ${numbered} case được đánh số đợt; `
+      + `${remapped} phân loại cũ được ánh xạ sang bộ mới.`,
+  );
+  if (missing) {
+    applied.push(
+      `CẦN RÀ LẠI — ${missing} case đang mở chưa có phân loại vấn đề. `
+        + 'Bước nâng cấp KHÔNG đoán hộ: người phụ trách chọn phân loại khi mở case lần tới.',
+    );
+  }
 }

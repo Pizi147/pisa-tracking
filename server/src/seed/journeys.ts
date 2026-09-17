@@ -34,8 +34,38 @@ export type TestSeed = {
   bands?: Partial<Record<FtSkill, number>>;
   /** Normal: [điểm đạt, tổng điểm]. Thiếu một khoá = chưa nhập. */
   ratios?: Partial<Record<NormalSkill, [number, number]>>;
-  /** Kỹ năng ĐÁNH GIÁ được đánh dấu không mock ở lượt này. */
+  /** Kỹ năng ĐÁNH GIÁ nằm ngoài phạm vi yêu cầu của lượt này. */
   skip?: 'listening' | 'reading' | 'writing' | 'speaking';
+  /**
+   * TUẦN THI RIÊNG của một số kỹ năng, khi đợt này KHÔNG thi gọn trong một tuần (mục 10.1).
+   *
+   * Khoá nào không khai thì dùng `week` chung ở trên. Ví dụ FT thi R/L/W tuần 14/9 rồi
+   * Speaking tuần 21/9: `week: '2026-09-14'` và `skillWeeks: { speaking: '2026-09-21' }`.
+   *
+   * Đây vẫn là MỘT đợt: một định danh, một bảng điểm, một kết luận.
+   */
+  skillWeeks?: Partial<Record<'listening' | 'reading' | 'writing' | 'speaking', string>>;
+  /**
+   * EM VẮNG BUỔI THI của kỹ năng này, và bộ demo đang đứng ở khúc nào của mục 10.6.
+   *
+   * `moveCount` là số lần đã dời do vắng TRƯỚC thời điểm demo — nó quyết định lần tới GVCN
+   * tự dời được hay phải xin duyệt. `pending` dựng sẵn một đề nghị đang chờ Quản lý, để màn
+   * hình có thứ để bấm mà không ai phải tự tạo dữ liệu.
+   *
+   * KHÔNG bịa trạng thái vắng ở chỗ nào khác: vắng là một xác nhận CỦA NGƯỜI, nên chỉ kịch
+   * bản nào khai ở đây mới có nó.
+   */
+  absent?: {
+    skill: 'listening' | 'reading' | 'writing' | 'speaking';
+    /** Số lần đã dời do vắng trước đó. 0 = GVCN còn tự dời được. */
+    moveCount?: number;
+    /** Dựng sẵn một đề nghị đang chờ Quản lý duyệt, dời sang tuần kế tiếp. */
+    pending?: boolean;
+    /** Ai xác minh em vắng. Mặc định là GVCN của lớp. */
+    by?: string;
+    note?: string;
+    reason?: string;
+  };
   /** Ngày nhập điểm. Bỏ trống thì lấy Chủ nhật của tuần. */
   enteredOn?: string;
   /** Hạn nhập điểm riêng do Quản lý đặt, thay hạn mặc định. */
@@ -98,7 +128,16 @@ export type CaseSeed = {
   fromTest?: number;
   originKind?: 'mock' | 'teacher_report' | 'manager_task';
   sosLevel?: number | null;
-  urgency?: 'normal' | 'attention' | 'urgent';
+  /** Hai bậc, "Bình thường" đã bỏ (mục 6.3). Không khai thì là "Cần chú ý". */
+  urgency?: 'attention' | 'urgent';
+  /**
+   * BÁO CÁO THÀNH PHẦN của một đợt case Ý thức/Khác (mục 7.2).
+   *
+   * Báo cáo đầu tiên là chính `summary` của case; khai thêm ở đây là những báo cáo GỘP vào
+   * cùng đợt. Ngày phải nằm trong cửa sổ bốn ngày kể từ ngày mở, nếu không thì theo luật nó
+   * đã phải là một đợt khác — bộ dựng kiểm điều đó và báo lỗi thay vì âm thầm ghi sai.
+   */
+  reports?: { on: string; by: string; skill?: string; summary: string }[];
   status: 'open' | 'in_progress' | 'done';
   /** Mã người phụ trách. Bỏ trống = CHƯA CÓ AI — và đó là một tình huống có thật. */
   owner?: string;

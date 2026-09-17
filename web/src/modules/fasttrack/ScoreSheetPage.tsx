@@ -95,7 +95,7 @@ export default function ScoreSheetPage() {
                     <Th className="sticky-col" hint="Cột này đứng yên khi cuộn ngang, để không lạc mất đang nhập cho em nào.">Học viên</Th>
                     <Th hint="Số thứ tự lượt Mock Test trong lộ trình của em.">MT</Th>
                     <Th hint="Lượt đã chấm xong, đang chờ, hay đã huỷ.">Trạng thái</Th>
-                    <Th hint="Hết thứ Tư của tuần kế tiếp sau tuần MT. Admin chi nhánh đặt được hạn riêng cho một lượt.">Hạn nhập</Th>
+                    <Th hint="Hạn chấm tính riêng cho từng môn, từ tuần thi của chính môn đó: hết thứ Tư của tuần kế tiếp. Quản lý đặt được hạn riêng.">Hạn nhập</Th>
                     {rawSkills.map((s) => <th key={s} className="th">{skillShort(s)} <span className="normal-case text-slate-500">(số câu)</span></th>)}
                     {critSkills.map((s) => <th key={s} className="th">{skillShort(s)} <span className="normal-case text-slate-500">(band)</span></th>)}
                     <Th hint="Mức mong đợi của chính lượt này, tính theo mục tiêu tại thời điểm đó.">Kỳ vọng</Th>
@@ -128,9 +128,36 @@ export default function ScoreSheetPage() {
 
       <SectionNote>
         Ô để trống nghĩa là chưa nhập, không phải điểm 0. Chỉ những kỹ năng bạn được phân công mới sửa được;
-        các kỹ năng khác vẫn đọc được để đối chiếu. Cả lượt MT dùng CHUNG một hạn nhập điểm, đếm từ tuần MT.
-        Kỹ năng đã đánh dấu không mock hiện mờ và không bị tính thiếu điểm.
+        các kỹ năng khác vẫn đọc được để đối chiếu. <strong>Mỗi kỹ năng có tuần thi và hạn chấm riêng</strong> —
+        cột Hạn nhập chỉ ra môn đang đến hạn sớm nhất; mở một em ra để xem lịch đầy đủ của từng môn.
+        Môn chưa đến tuần thi thì chưa nợ điểm. Kỹ năng ngoài phạm vi yêu cầu hiện mờ và không bị tính thiếu điểm.
       </SectionNote>
+    </div>
+  );
+}
+
+/**
+ * HẠN NHẬP ĐIỂM GỌN TRONG MỘT Ô, cho một dòng của bảng điểm cả lớp.
+ *
+ * Chọn môn đang nợ có hạn SỚM NHẤT — đó là việc phải làm trước. Khi đợt tách tuần thì các
+ * môn có hạn khác nhau, nên phải gọi tên môn ra; nếu không, người đọc sẽ tưởng một ngày duy
+ * nhất đó áp cho cả năm ô điểm bên cạnh.
+ */
+function DeadlineSummary({ cells }: { cells: Cell[] }) {
+  const owing = cells.filter((c) => c.required && c.band === null && c.deadline
+    && c.progress !== 'cancelled' && c.progress !== 'absent');
+  if (!owing.length) return <DeadlinePill cell={cells.find((c) => c.required) ?? cells[0]} />;
+
+  const soonest = owing.reduce((a, b) => (a.deadline! <= b.deadline! ? a : b));
+  const weeks = new Set(cells.filter((c) => c.required && c.periodCode).map((c) => c.periodCode));
+  return (
+    <div className="flex flex-col items-start gap-0.5">
+      <DeadlinePill cell={soonest} />
+      {weeks.size > 1 && (
+        <span className="text-[10px] text-slate-500">
+          {skillShort(soonest.skill)} · đợt này thi {weeks.size} tuần
+        </span>
+      )}
     </div>
   );
 }
@@ -158,11 +185,13 @@ function SheetRow({ row, rowIndex, rawSkills, critSkills, onReload, register, on
         </Status>
       </td>
       {/*
-        MỘT HẠN CHO CẢ DÒNG. Trước đây mỗi kỹ năng có ngày mock riêng nên mỗi ô một hạn;
-        nay cả lượt MT thuộc một tuần, nên in năm lần cùng một ngày chỉ là nhiễu.
+        HẠN SỚM NHẤT CÒN NỢ, kèm tên môn khi đợt tách tuần.
+        Từ vòng 7 mỗi môn có tuần thi riêng nên có thể có nhiều hạn khác nhau trên một dòng.
+        In cả năm cái là nhiễu; in một cái mà không nói của môn nào thì người đọc tưởng nó
+        áp cho cả dòng. Nên: hạn gần nhất trong các môn CÒN NỢ, và gọi tên môn đó.
       */}
       <td className="td whitespace-nowrap">
-        <DeadlinePill cell={row.cells.find((c) => c.required) ?? row.cells[0]} />
+        <DeadlineSummary cells={row.cells} />
       </td>
       {rawSkills.map((s, ci) => {
         const cell = cellOf(s);

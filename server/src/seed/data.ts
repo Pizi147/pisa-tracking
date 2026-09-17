@@ -24,9 +24,18 @@ export const BRANCHES = [
 
 export const ROLES = [
   { key: 'system_admin', name: 'Quản trị hệ thống' },
-  { key: 'branch_admin', name: 'Admin chi nhánh' },
   { key: 'manager', name: 'Quản lý' },
   { key: 'teacher', name: 'Giáo viên' },
+] as const;
+
+/**
+ * VAI TRÒ ĐÃ BỎ, giữ trong bảng `roles` ở trạng thái `retired`.
+ *
+ * Không xoá dòng: `user_roles` và nhật ký cũ còn trỏ vào nó. Giữ ở trạng thái đã bỏ thì
+ * lịch sử vẫn đọc được mà màn giao vai trò không còn bày ra cho ai chọn.
+ */
+export const RETIRED_ROLES = [
+  { key: 'branch_admin', name: 'Admin chi nhánh' },
 ] as const;
 
 /**
@@ -41,20 +50,6 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
     'class.assign', 'class.edit', 'student.view', 'student.edit',
     'meeting.view', 'meeting.edit', 'admin.config',
   ],
-  /*
-   * Văn phòng chi nhánh: giữ danh sách lớp và học viên, ghi phân công giáo viên mà Quản lý
-   * đã quyết ở ngoài, và xử lý các ngoại lệ về lượt MT (huỷ lượt, bỏ một kỹ năng, đặt hạn
-   * nhập điểm riêng).
-   *
-   * KHÔNG chốt tuần MT (việc của Quản lý), KHÔNG nhập điểm (owner chốt 10/09/2026 — trước
-   * đây họ có quyền nhập bù; nay giáo viên vắng thì Quản lý đổi phân công chứ văn phòng
-   * không gõ điểm hộ), và KHÔNG vào Tiến trình công việc.
-   */
-  branch_admin: [
-    'attempt.cancel', 'attempt.skip_skill',
-    'deadline.override', 'attempt.view', 'sos.edit', 'class.assign', 'class.edit',
-    'student.view', 'student.edit',
-  ],
   // Quản lý: chốt TUẦN của mọi lượt MT trong chi nhánh mình.
   manager: [
     'plan.week', 'attempt.cancel', 'attempt.skip_skill',
@@ -63,10 +58,15 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
     'case.view', 'sos.edit', 'case.close', 'case.approve', 'class.assign', 'class.edit',
     'student.view', 'student.edit', 'meeting.view', 'meeting.edit',
   ],
-  // Giáo viên: nhập điểm và đánh giá ĐÚNG kỹ năng được phân công.
-  // GVCN không vì chủ nhiệm mà có thêm quyền về lịch.
+  /*
+   * Giáo viên: nhập điểm và đánh giá ĐÚNG kỹ năng được phân công.
+   *
+   * `student.edit` vào đây sau khi bỏ vai Admin chi nhánh, nhưng KHÔNG phải mọi giáo viên
+   * đều dùng được: `teacherAllows` siết nó xuống đúng GVCN của chính lớp đó. GVCN vẫn
+   * KHÔNG vì chủ nhiệm mà có thêm quyền về lịch MT hay quyền nhập điểm kỹ năng khác.
+   */
   teacher: ['attempt.view', 'score.edit', 'estimate.edit',
-    'case.view', 'sos.edit', 'student.view'],
+    'case.view', 'sos.edit', 'student.view', 'student.edit'],
 };
 
 /*

@@ -118,6 +118,47 @@ export function caseCategoriesFor(scoringMode: string | null | undefined): reado
 }
 
 /**
+ * CÁC THÀNH PHẦN CÓ THỂ GHI Ở PHẦN KẾT LUẬN CASE — mục 9.3, và luôn là TUỲ CHỌN.
+ *
+ * Trước vòng 7, phần kết luận mời người dùng chấm CẢ NĂM kỹ năng, kể cả khi case chỉ về
+ * Listening. Kết quả là bốn ô trống vô nghĩa, hoặc tệ hơn, bốn con số bịa cho đủ form.
+ *
+ * Nay chỉ hiện đúng thành phần của KỸ NĂNG CASE ĐANG NÓI TỚI, và chỉ phần nào thật sự được
+ * đánh giá mới phải điền. Đây là QUAN SÁT của người dạy lúc kết luận: nó KHÔNG ghi đè điểm
+ * Test chính thức và không đổi mức SOS.
+ *
+ * Lớp Normal không áp rubric IELTS: W của Normal chấm theo bài của chương trình, nên không
+ * có bộ bốn tiêu chí band ở đây.
+ */
+export const SKILL_COMPONENTS: Record<string, readonly string[]> = {
+  listening: ['Section 1', 'Section 2', 'Section 3', 'Section 4'],
+  reading: ['Passage 1', 'Passage 2', 'Passage 3'],
+  writing1: ['Task Achievement', 'Coherence & Cohesion', 'Lexical Resource', 'Grammatical Range & Accuracy'],
+  writing2: ['Task Response', 'Coherence & Cohesion', 'Lexical Resource', 'Grammatical Range & Accuracy'],
+  speaking: ['Fluency & Coherence', 'Lexical Resource', 'Grammatical Range & Accuracy', 'Pronunciation'],
+};
+
+/**
+ * L/R ghi theo ĐƠN VỊ ĐẠT/TỔNG, không phải band.
+ *
+ * "Section 3: 5/10" là một câu đọc được. "Section 3: 5.0" thì người đọc sau ba tháng sẽ
+ * tưởng em được band 5 ở Section 3 — một con số không tồn tại trong IELTS.
+ */
+export function componentsAreCounts(skill: string | null | undefined): boolean {
+  return skill === 'listening' || skill === 'reading';
+}
+
+/** Thành phần chấm được của một hạng mục case; rỗng nghĩa là không có bộ nào để gợi ý. */
+export function componentsFor(
+  category: string | null | undefined,
+  scoringMode?: string | null,
+): readonly string[] {
+  if (!category) return [];
+  if (scoringMode === 'ratio') return componentsAreCounts(category) ? SKILL_COMPONENTS[category] ?? [] : [];
+  return SKILL_COMPONENTS[category] ?? [];
+}
+
+/**
  * Môn của lớp Normal → hạng mục case.
  *
  * W CỦA NORMAL LÀ HẠNG MỤC RIÊNG, KHÔNG PHẢI W2 CỦA FAST TRACK. Vòng 4 từng gộp chúng để
@@ -277,27 +318,46 @@ export type IssueNode = {
   /** Mã ỔN ĐỊNH. Đổi nhãn hiển thị được, đổi mã thì mất lịch sử. */
   code: string;
   label: string;
+  /** Một câu giải thích khi nhãn dễ bị hiểu lẫn với nhãn bên cạnh. */
+  hint?: string;
 };
 
 export type IssueBranch = {
   /** Khớp với chủ đề mạch. Writing dùng chung cho `writing1` và `writing2`. */
-  key: 'listening' | 'reading' | 'writing' | 'speaking';
+  key: 'listening' | 'reading' | 'writing' | 'speaking' | 'behaviour';
   label: string;
   items: IssueNode[];
 };
 
 const other = (code: string): IssueNode => ({ code, label: 'Khác' });
 
+/**
+ * DANH MỤC PHÂN LOẠI VẤN ĐỀ — bộ của vòng 7 (mục 6.4).
+ *
+ * Đây là câu trả lời cho "vấn đề của em thuộc loại gì", và nó **bắt buộc** khi mở case:
+ * không có phân loại thì case không vào được bảng tổng hợp nào, và ba tháng sau không ai
+ * trả lời được "trung tâm mình hay vướng cái gì nhất".
+ *
+ * Bộ cũ bị THAY, không phải bổ sung. Để hai bộ cùng sống thì cùng một vấn đề sẽ được đếm
+ * dưới hai cái tên và mọi báo cáo đều sai — mục 6.4 nói rõ điều này.
+ */
 export const ISSUE_TAXONOMY: IssueBranch[] = [
   {
     key: 'listening', label: 'Listening',
     items: [
       { code: 'student.listening.language', label: 'Từ vựng / ngữ pháp' },
-      { code: 'student.listening.technique', label: 'Kỹ năng làm bài' },
-      { code: 'student.listening.sound', label: 'Cảm âm' },
-      { code: 'student.listening.distractor', label: 'Hay dính bẫy distractors' },
-      { code: 'student.listening.focus', label: 'Tâm lý / khả năng tập trung' },
-      { code: 'student.listening.mainidea', label: 'Nghe hiểu ý chính' },
+      { code: 'student.listening.technique', label: 'Tư duy và kỹ năng làm bài' },
+      { code: 'student.listening.focus', label: 'Tâm lý và độ tập trung' },
+      {
+        code: 'student.listening.sound',
+        label: 'Ngôn ngữ',
+        /*
+         * "Ngôn ngữ" ở Listening KHÔNG phải vốn từ — nó là chuyện tai nghe ra được gì.
+         * Không giải thích thì nó và "Từ vựng / ngữ pháp" sẽ bị chọn lẫn lộn, và hai hạng
+         * mục lẫn nhau thì bảng tổng hợp mất nghĩa.
+         */
+        hint: 'Nhận diện âm, nối âm, trọng âm, tốc độ lời nói — khác với vốn từ và ngữ pháp.',
+      },
       other('student.listening.other'),
     ],
   },
@@ -306,8 +366,8 @@ export const ISSUE_TAXONOMY: IssueBranch[] = [
     items: [
       { code: 'student.reading.language', label: 'Từ vựng / ngữ pháp' },
       { code: 'student.reading.technique', label: 'Kỹ năng làm bài' },
-      { code: 'student.reading.mainidea', label: 'Mơ hồ ý chính' },
       { code: 'student.reading.logic', label: 'Tư duy logic' },
+      { code: 'student.reading.time', label: 'Quản lý thời gian' },
       other('student.reading.other'),
     ],
   },
@@ -331,6 +391,22 @@ export const ISSUE_TAXONOMY: IssueBranch[] = [
       other('student.speaking.other'),
     ],
   },
+  {
+    /*
+     * Ý THỨC/KHÁC CŨNG PHẢI CÓ PHÂN LOẠI (mục 6.4).
+     *
+     * Trước đây nhóm ý thức chỉ có "chủ đề" (chuyên cần / BTVN / tham gia) và không có tầng
+     * phân loại, nên nó nằm ngoài mọi bảng tổng hợp nguyên nhân. Nay nó dùng chung một cơ
+     * chế với học thuật — và đó cũng là khoá để gộp báo cáo theo đợt ở mục 7.
+     */
+    key: 'behaviour', label: 'Ý thức / Khác',
+    items: [
+      { code: 'student.behaviour.homework', label: 'BTVN' },
+      { code: 'student.behaviour.attendance', label: 'Chuyên cần' },
+      { code: 'student.behaviour.participation', label: 'Tham gia trên lớp' },
+      other('student.behaviour.other'),
+    ],
+  },
 ];
 
 const ISSUE_INDEX: Record<string, { label: string; branch: IssueBranch['key'] }> = {};
@@ -348,9 +424,16 @@ export function issueBranchOf(code: string | null | undefined): IssueBranch['key
   return code ? ISSUE_INDEX[code]?.branch ?? null : null;
 }
 
-/** Bộ phân loại dùng được cho một chủ đề mạch. W1 và W2 cùng dùng bộ Writing. */
+/**
+ * Bộ phân loại dùng được cho một chủ đề.
+ *
+ * W1 và W2 cùng dùng bộ Writing — hai task chấm riêng nhưng nguyên nhân thì cùng một họ.
+ * Bốn nhóm ý thức (chuyên cần / BTVN / tham gia / khác) cùng dùng bộ Ý thức/Khác.
+ */
 export function issuesForTopic(topic: string): IssueNode[] {
-  const key = topic === 'writing1' || topic === 'writing2' ? 'writing' : topic;
+  const key = topic === 'writing1' || topic === 'writing2' ? 'writing'
+    : (BEHAVIOUR_TOPICS as readonly string[]).includes(topic) ? 'behaviour'
+    : topic;
   return ISSUE_TAXONOMY.find((b) => b.key === key)?.items ?? [];
 }
 
@@ -399,14 +482,71 @@ export const CASE_ORIGIN_LABEL: Record<CaseOrigin, string> = {
  * cảm nhận của người báo. Nếu để giáo viên gõ thẳng "SOS 2" mà không có bài nào, thì con
  * số SOS trên mọi báo cáo sẽ mang hai nghĩa khác nhau và không cộng được nữa.
  */
-export const URGENCY_LEVELS = ['normal', 'attention', 'urgent'] as const;
+/**
+ * HAI MỨC, KHÔNG BA (mục 6.3). "Bình thường" đã bỏ.
+ *
+ * Lý do bỏ: một vấn đề đã được mở thành case thì tự nó đã là việc phải làm — gắn nhãn "bình
+ * thường" cho nó chỉ nói được một điều là người báo không muốn chọn gì cả. Và vì nó là mặc
+ * định nên gần như mọi case đều mang nhãn đó, khiến cột Mức độ không phân biệt được gì.
+ *
+ * Hai mức còn lại đều DẪN TỚI MỘT HẠN KHÁC NHAU, nên chúng có việc để làm.
+ */
+export const URGENCY_LEVELS = ['attention', 'urgent'] as const;
 export type UrgencyLevel = (typeof URGENCY_LEVELS)[number];
-export const URGENCY_LABEL: Record<UrgencyLevel, string> = {
-  normal: 'Bình thường', attention: 'Cần chú ý', urgent: 'Gấp',
+
+/** Mức mặc định khi người báo không chọn gì — vẫn là một mức có hạn, không phải "không sao". */
+export const DEFAULT_URGENCY: UrgencyLevel = 'attention';
+
+/**
+ * Nhãn CÓ CẢ MỨC ĐÃ BỎ, để dữ liệu và nhật ký cũ đọc ra được chữ chứ không ra mã thô.
+ * Danh sách chọn thì chỉ lấy từ `URGENCY_LEVELS`.
+ */
+export const URGENCY_LABEL: Record<string, string> = {
+  normal: 'Bình thường (mức cũ)', attention: 'Cần chú ý', urgent: 'Gấp',
 };
-export const URGENCY_TONE: Record<UrgencyLevel, 'neutral' | 'warn' | 'danger'> = {
+export const URGENCY_TONE: Record<string, 'neutral' | 'warn' | 'danger'> = {
   normal: 'neutral', attention: 'warn', urgent: 'danger',
 };
+
+// ---------------------------------------------------------------- gộp báo cáo Ý thức/Khác
+
+/**
+ * CỬA SỔ GỘP BÁO CÁO Ý THỨC/KHÁC — BỐN NGÀY LỊCH, TÍNH CẢ NGÀY MỞ (mục 7.2).
+ *
+ * Case mở 14/9 thì báo cáo ngày 14, 15, 16, 17 gộp vào chính nó; từ 18/9 là một ĐỢT MỚI.
+ *
+ * Vì sao phải có cửa sổ: "em không làm bài tập" báo ba lần trong một tuần là MỘT chuyện, và
+ * mở ba case thì ba người cùng theo dõi mà không ai thấy việc của người kia. Nhưng cùng
+ * chuyện đó tái diễn sau nửa tháng lại là một đợt khác — gộp hết vào một case thì cái case
+ * ấy không bao giờ đóng được và không đo được gì.
+ */
+export const BEHAVIOUR_MERGE_WINDOW_DAYS = 4;
+
+/** Ngày CUỐI CÙNG còn gộp được vào một case mở ngày `openedOn`. */
+export function behaviourMergeUntil(openedOn: string): string {
+  return addDaysIso(openedOn, BEHAVIOUR_MERGE_WINDOW_DAYS - 1);
+}
+
+/**
+ * Hạn kết luận của một case Ý thức/Khác: ngày mở + 6 ngày (mục 7.2).
+ * KHÔNG đặt lại theo báo cáo gộp thêm sau đó — nếu không thì một case cứ có báo cáo mới là
+ * hạn lại lùi ra, và nó sẽ không bao giờ tới hạn.
+ */
+export const BEHAVIOUR_CASE_DAYS = 6;
+export function behaviourCaseDeadline(openedOn: string): string {
+  return addDaysIso(openedOn, BEHAVIOUR_CASE_DAYS);
+}
+
+/**
+ * Sau khi case bị NÂNG LÊN GẤP, hạn của phương án là ngày SỚM HƠN giữa hạn đang có và
+ * "ngày nâng + 2 ngày" (mục 7.2). Nâng mức chỉ được kéo hạn GẦN LẠI, không bao giờ đẩy ra xa.
+ */
+export const URGENT_RAISE_DAYS = 2;
+export function deadlineAfterRaise(current: string | null, raisedOn: string): string {
+  const tight = addDaysIso(raisedOn, URGENT_RAISE_DAYS);
+  if (!current) return tight;
+  return current < tight ? current : tight;
+}
 
 /**
  * HƯỚNG XỬ LÝ — khác với TRẠNG THÁI.
@@ -442,8 +582,8 @@ export const DISPOSITION_LABEL: Record<Disposition, string> = {
  * Khác với phương án học thuật, phương án trao đổi thường chỉ cần ĐÃ HOÀN THÀNH + NGÀY
  * THỰC HIỆN, ghi chú tuỳ chọn — không duyệt, không hẹn xem lại.
  */
-export const SUPPORT_KINDS = ['self_study', 'tutor', 'teaching_adjust', 'other'] as const;
-export const CONTACT_KINDS = ['talk_student', 'talk_parent'] as const;
+export const SUPPORT_KINDS = ['self_study', 'tutor', 'teaching_adjust', 'extra_homework', 'other'] as const;
+export const CONTACT_KINDS = ['talk_student', 'talk_parent', 'warning_letter'] as const;
 export const PROPOSAL_KINDS = ['reschedule_mt', 'extra_support', 'meeting_cx', 'other_proposal'] as const;
 export const INTERVENTION_KINDS = [...SUPPORT_KINDS, ...CONTACT_KINDS, ...PROPOSAL_KINDS] as const;
 export type InterventionKind = (typeof INTERVENTION_KINDS)[number];
@@ -451,13 +591,62 @@ export const INTERVENTION_KIND_LABEL: Record<InterventionKind, string> = {
   self_study: 'Xếp tự học',
   tutor: 'Học tutor',
   teaching_adjust: 'Điều chỉnh cách dạy',
-  other: 'Khác',
-  talk_student: 'Trao đổi với học viên',
-  talk_parent: 'Trao đổi với phụ huynh',
+  extra_homework: 'Tăng cường bài tập',
+  /* Mã cũ: "Khác" tự thực hiện đã bỏ khỏi danh sách chọn (mục 8.1), giữ để đọc dữ liệu cũ. */
+  other: 'Khác (mục cũ)',
+  talk_student: 'Meeting với học sinh',
+  talk_parent: 'Report cho gia đình',
+  warning_letter: 'Gửi thư cảnh cáo',
   reschedule_mt: 'Lùi lịch thi',
-  extra_support: 'Hỗ trợ học thuật ngoài định mức',
+  extra_support: 'Hỗ trợ học thuật',
+  /* Giữ ĐÚNG chức danh của trung tâm, không tự đổi thành "Ban giám đốc" hay tên khác. */
   meeting_cx: 'Meeting CX / GĐCN',
   other_proposal: 'Khác',
+};
+
+/**
+ * DANH MỤC PHƯƠNG ÁN THEO NHÓM CASE (mục 8.1).
+ *
+ * Hai nhóm case cần hai bộ phương án khác nhau, và bày nhầm bộ là mời người dùng chọn sai:
+ * "Xếp tự học" không giải quyết được chuyện em hay nghỉ học, còn "Gửi thư cảnh cáo" thì
+ * không phải cách chữa một lỗ hổng ngữ pháp.
+ *
+ * Trong mỗi nhóm lại tách hai họ: việc GIÁO VIÊN TỰ LÀM ĐƯỢC, và việc PHẢI CÓ QUẢN LÝ TRẢ
+ * LỜI. Chọn một mục ở cột thứ hai TỨC LÀ đang xin ý kiến — không cần tick thêm ô nào.
+ *
+ * "Khác" chỉ còn ở cột đề xuất. Một việc không gọi được tên mà giáo viên tự làm luôn thì
+ * không ai biết đã làm gì; nếu nó thật sự cần thiết, nó đáng để Quản lý biết.
+ */
+export const SELF_SERVE_KINDS_BY_TRACK: Record<string, readonly InterventionKind[]> = {
+  academic: ['self_study', 'tutor', 'teaching_adjust', 'extra_homework'],
+  behaviour: ['talk_parent', 'talk_student', 'warning_letter'],
+};
+export const PROPOSAL_KINDS_BY_TRACK: Record<string, readonly InterventionKind[]> = {
+  academic: ['extra_support', 'other_proposal'],
+  behaviour: ['meeting_cx', 'reschedule_mt', 'other_proposal'],
+};
+
+/** Toàn bộ phương án chọn được cho một nhóm case, theo đúng thứ tự bày ra trên form. */
+export function interventionKindsFor(track: string | null | undefined): {
+  selfServe: readonly InterventionKind[]; proposals: readonly InterventionKind[];
+} {
+  const t = track === 'behaviour' ? 'behaviour' : 'academic';
+  return { selfServe: SELF_SERVE_KINDS_BY_TRACK[t], proposals: PROPOSAL_KINDS_BY_TRACK[t] };
+}
+
+/**
+ * "Lùi lịch thi" phải nói rõ LÙI CÁI GÌ (mục 8.1).
+ *
+ * Hai thứ hoàn toàn khác nhau cùng được gọi là "lịch thi": kế hoạch thi IELTS thật của em,
+ * và một phần thi trong một đợt MT. Chúng có quy tắc khác nhau, người quyết khác nhau, và
+ * hệ quả khác nhau. Một đề xuất không nói rõ đối tượng thì người duyệt không biết mình đang
+ * đồng ý với chuyện gì.
+ */
+export const RESCHEDULE_TARGETS = ['real_exam', 'mock_skill'] as const;
+export type RescheduleTarget = (typeof RESCHEDULE_TARGETS)[number];
+export const RESCHEDULE_TARGET_LABEL: Record<RescheduleTarget, string> = {
+  real_exam: 'Kế hoạch thi thật của em',
+  mock_skill: 'Một phần thi trong đợt MT',
 };
 
 /**
@@ -488,20 +677,23 @@ export const LEGACY_INTERVENTION_KIND_MAP: Record<string, InterventionKind> = {
  */
 export type ContactKind = (typeof CONTACT_KINDS)[number];
 export const CONTACT_KIND_LABEL: Record<ContactKind, string> = {
-  talk_student: 'GVCN + GVBM trao đổi với học viên',
-  talk_parent: 'CS trao đổi với phụ huynh',
+  talk_student: 'GVCN + GVBM meeting với học sinh',
+  talk_parent: 'Report cho gia đình',
+  warning_letter: 'Gửi thư cảnh cáo',
 };
 export const CONTACT_KIND_SHORT: Record<ContactKind, string> = {
-  talk_student: 'Trao đổi với học viên',
-  talk_parent: 'Trao đổi với phụ huynh',
+  talk_student: 'Meeting với học sinh',
+  talk_parent: 'Report cho gia đình',
+  warning_letter: 'Thư cảnh cáo',
 };
 
 /**
- * PHƯƠNG ÁN TỰ SINH THEO MỨC SOS — quy định cũ của trung tâm, owner xác nhận giữ 10/09/2026.
+ * QUY ĐỊNH CŨ "SOS 1–2 tự học, SOS 3 tutor" — GIỮ ĐỂ ĐỌC LẠI DỮ LIỆU CŨ, KHÔNG CÒN TỰ SINH.
  *
- * Từ MT3 trở đi luôn là tutor bất kể mức: gần ngày thi thì tự học không kịp sửa.
- * Phương án sinh ra ở trạng thái ĐÃ LÊN KẾ HOẠCH, chưa có người thực hiện, chưa gửi duyệt —
- * máy không tự đặt tutor thay người, nó chỉ nói "theo quy định em này phải có cái này".
+ * Từ vòng 7, điểm dưới kỳ vọng KHÔNG tự tạo phương án hỗ trợ nào nữa (mục 6.2). Hàm này chỉ
+ * còn dùng để giải thích những phương án đã được sinh tự động trước đây, và để bước nâng cấp
+ * nhận ra chúng. Đừng gọi nó để tạo phương án mới: quy định này nói em PHẢI được hỗ trợ, chứ
+ * không nói ai làm, làm cái gì cụ thể và làm khi nào — ba thứ mà một phương án thật phải có.
  */
 export function autoSupportKind(sosLevel: number, attemptNo: number): 'self_study' | 'tutor' {
   if (attemptNo >= 3) return 'tutor';
@@ -596,6 +788,109 @@ export function cycleDeadlineHint(track: string = 'academic'): string {
     : 'Hạn mặc định: hết Chủ nhật của tuần kế tiếp (chu kỳ hai tuần, tính tuần bắt đầu là tuần thứ nhất).';
 }
 
+/**
+ * TÍN HIỆU — thứ mà một kết quả dưới kỳ vọng sinh ra, và nó KHÔNG phải một case (mục 6.2).
+ *
+ * Trước vòng 7, điểm dưới kỳ vọng tự mở ra một case hoàn chỉnh kèm phương án hỗ trợ. Nghe
+ * thì tiện, nhưng nó nói dối ở hai chỗ:
+ *
+ *   1. Máy KHÔNG chẩn đoán được nguyên nhân. Nó chỉ biết "band 5.5 < kỳ vọng 6.0". Một case
+ *      hoàn chỉnh phải có tên, mô tả và phân loại vấn đề — ba thứ chỉ người dạy mới biết.
+ *   2. Máy KHÔNG xếp được tutor thay người. Một phương án tự sinh trông như đã có ai đó lo,
+ *      trong khi thật ra chưa ai đụng vào.
+ *
+ * Nên từ nay điểm chỉ sinh TÍN HIỆU: "môn này dưới kỳ vọng, ai đó phải xem". Giáo viên bộ
+ * môn xác minh môn mình; GVCN nhận tín hiệu Ý thức/Khác để xem tình hình chung. Chỉ khi có
+ * người xác minh thì mới thành case — hoặc được ghi nhận là không có vấn đề thật.
+ */
+export const SIGNAL_STATUSES = ['pending', 'linked', 'noted', 'withdrawn'] as const;
+export type SignalStatus = (typeof SIGNAL_STATUSES)[number];
+export const SIGNAL_STATUS_LABEL: Record<SignalStatus, string> = {
+  pending: 'Chờ xác minh',
+  linked: 'Đã thành case',
+  /*
+   * TRẠNG THÁI CŨ, CHỈ CÒN ĐỂ ĐỌC LẠI LỊCH SỬ.
+   *
+   * Đề bài mục 6.2 cho phép GVCN "ghi nhận đã xem" một mốc Ý thức/Khác mà không mở case.
+   * Chủ sản phẩm chốt ngược lại (16/09/2026): xác minh một tín hiệu nghĩa là MỞ CASE, không
+   * có lối ra nào khác. Nên không thao tác nào còn sinh ra trạng thái này; nó chỉ nằm trên
+   * dữ liệu có từ trước và trên bộ demo lịch sử.
+   */
+  noted: 'Đã xem (dữ liệu cũ)',
+  withdrawn: 'Đã thu hồi',
+};
+
+/**
+ * HẠN XÁC MINH MỘT TÍN HIỆU: **3 ngày, TÍNH CẢ NGÀY ĐẦU** (mục 6.2).
+ *
+ * Tín hiệu ghi nhận thứ Hai thì hết thứ Tư, không phải hết thứ Năm. Đây là chỗ rất dễ lệch
+ * một ngày, nên con số cộng thêm là 2 chứ không phải 3.
+ */
+export const SIGNAL_VERIFY_DAYS = 3;
+
+/**
+ * Hạn xác minh, tính từ NGÀY TÍN HIỆU ĐƯỢC GHI NHẬN — không phải từ thứ Hai của tuần thi.
+ *
+ * Điều này quan trọng với điểm nhập muộn: một bài thi tuần trước mà hôm nay mới có điểm thì
+ * giáo viên vẫn có đủ ba ngày kể từ hôm nay. Neo vào tuần thi sẽ làm họ quá hạn ngay tại
+ * giây điểm được công bố — phạt người ta vì việc của người khác.
+ */
+export function signalVerifyDue(raisedOn: string): string {
+  return addDaysIso(raisedOn, SIGNAL_VERIFY_DAYS - 1);
+}
+
+/** Lý do chuẩn khi một tín hiệu mất căn cứ vì điểm được sửa lại (mục 9.4). */
+export const SIGNAL_WITHDRAW_SCORE_FIXED = 'Không còn hợp lệ do sửa điểm';
+
+/**
+ * BẢNG HẠN CỦA MỤC 8.3 — mọi hạn theo ngày đều TÍNH CẢ NGÀY ĐẦU.
+ *
+ * Ba ngày là ngày đầu + 2, năm ngày là + 4, bảy ngày là + 6. Đây là chỗ rất dễ lệch một
+ * ngày, nên con số cộng thêm luôn nhỏ hơn số ngày đúng một đơn vị, và không nơi nào được
+ * tự cộng lấy.
+ *
+ * Hạn phụ thuộc MỨC ĐỘ, và đó là lý do mức độ chỉ còn hai bậc chứ không phải ba: mỗi bậc
+ * dẫn tới một con số khác nhau, nên nó có việc để làm.
+ */
+export const PLAN_DUE_DAYS: Record<string, number> = { urgent: 3, attention: 5 };
+
+/**
+ * HẠN PHẢI CÓ PHƯƠNG ÁN, tính từ lúc case được xác định và giao trách nhiệm.
+ *
+ * Áp cho CẢ case học thuật lẫn Ý thức/Khác (mục 8.3) — với Ý thức/Khác thì đây vừa là hạn
+ * phải có phương án, vừa là hạn phải LÀM XONG nó.
+ *
+ * Đổi người phụ trách hay chuyển lớp KHÔNG đặt lại hạn này: nơi gọi luôn truyền vào mốc
+ * gốc, vì một nghĩa vụ đã phát sinh thì không biến mất khi người giữ nó đổi tên.
+ */
+export function planDueDate(assignedOn: string, urgency: string | null | undefined): string {
+  const days = PLAN_DUE_DAYS[urgency ?? DEFAULT_URGENCY] ?? PLAN_DUE_DAYS.attention;
+  return addDaysIso(assignedOn, days - 1);
+}
+
+/**
+ * HẠN CẬP NHẬT PHƯƠNG ÁN HỌC THUẬT: trước hết CHỦ NHẬT hằng tuần (mục 8.3).
+ *
+ * Bắt đầu 19/9 (thứ Bảy) thì vẫn phải cập nhật ngày 20/9 — chưa đủ dữ liệu thì ghi đúng là
+ * chưa đủ, chứ không được bỏ qua một tuần. Đó là điều kiện để bảng theo tuần nói đúng.
+ */
+export function weeklyUpdateDue(fromDate: string): string {
+  const d = new Date(`${fromDate.slice(0, 10)}T00:00:00Z`);
+  const dow = d.getUTCDay();                    // 0 = Chủ nhật
+  return addDaysIso(fromDate, dow === 0 ? 0 : 7 - dow);
+}
+
+/**
+ * NGÀY DỰ KIẾN KẾT THÚC PHƯƠNG ÁN HỌC THUẬT khi người dùng không chọn: CHỦ NHẬT TUẦN TIẾP
+ * THEO tính từ lúc bắt đầu thực hiện (mục 8.3).
+ *
+ * Bắt đầu 19/9 → kết thúc mặc định 27/9. Trùng đúng Chủ nhật thì MỘT lần cập nhật kết thúc
+ * đáp ứng cả hai nghĩa vụ; không bắt người dùng bấm hai lần cho cùng một ngày.
+ */
+export function planEndDefault(startDate: string): string {
+  return addDaysIso(weeklyUpdateDue(startDate), 7);
+}
+
 export const INTERVENTION_STATUSES = ['planned', 'started', 'completed', 'cancelled'] as const;
 export type InterventionStatus = (typeof INTERVENTION_STATUSES)[number];
 export const INTERVENTION_STATUS_LABEL: Record<InterventionStatus, string> = {
@@ -612,11 +907,11 @@ export const INTERVENTION_STATUS_LABEL: Record<InterventionStatus, string> = {
 export const FOLLOWUP_OUTCOMES = ['improved', 'partial', 'unchanged', 'worse', 'insufficient'] as const;
 export type FollowUpOutcome = (typeof FOLLOWUP_OUTCOMES)[number];
 export const FOLLOWUP_OUTCOME_LABEL: Record<FollowUpOutcome, string> = {
-  improved: 'Tiến bộ rõ rệt',
+  improved: 'Tiến bộ rõ',
   partial: 'Tiến bộ một phần',
-  unchanged: 'Chưa thay đổi',
+  unchanged: 'Không tiến bộ',
   worse: 'Kém hơn',
-  insufficient: 'Không đủ căn cứ',
+  insufficient: 'Chưa đủ dữ liệu',
 };
 /** Ba kết quả của case Ý thức/Khác. `improved` ở đây đọc là "Đã tiến bộ". */
 export const BEHAVIOUR_OUTCOMES = ['improved', 'unchanged', 'worse'] as const;
@@ -678,6 +973,55 @@ export function nextStepsFor(outcome: string): NextStep[] {
   return GOOD_OUTCOMES.includes(outcome)
     ? ['complete', 'monitor']
     : ['continue', 'propose', 'ask_manager'];
+}
+
+/**
+ * HAI TAB CỦA BẢNG CẬP NHẬT KẾT QUẢ (mục 9.1).
+ *
+ * Trước vòng 7, mọi lần ghi kết quả đều bắt chọn thêm "bước tiếp theo", kể cả khi người
+ * dạy chỉ muốn nói "tuần này em có tiến bộ một phần, tôi làm tiếp". Hệ quả là để sang được
+ * tuần mới, người ta phải khai một bước đi tiếp không có thật — hoặc tệ hơn, mở một phương
+ * án thứ hai giống hệt phương án cũ.
+ *
+ * Tách làm hai việc rõ ràng:
+ *
+ *   · THEO DÕI TIẾP — ghi kết quả chu kỳ vừa rồi rồi lưu, hết. Phương án vẫn đang chạy.
+ *   · KẾT THÚC PHƯƠNG ÁN — mới cần ngày hoàn thành thật và một bước tiếp theo.
+ *
+ * Và chỉ hai đường đó khép được một phương án: thao tác kết thúc, hoặc nhập lịch sử "đã
+ * xong" có ngày thật. Không còn nút "đánh dấu đã làm" chạy song song mà không hỏi kết quả.
+ */
+export const RESULT_MODES = ['monitor', 'end'] as const;
+export type ResultMode = (typeof RESULT_MODES)[number];
+export const RESULT_MODE_LABEL: Record<ResultMode, string> = {
+  monitor: 'Tiếp tục theo dõi',
+  end: 'Kết thúc phương án',
+};
+
+/**
+ * "Chưa đủ dữ liệu" KHÔNG đóng được phương án (mục 9.1).
+ *
+ * Nó là một câu trung thực khi chưa có bài mới để nhìn, nhưng nó không phải một kết luận.
+ * Cho phép nó khép phương án là mở đúng cái cửa mà cả mục này muốn đóng: khép việc lại mà
+ * chưa ai biết em khá hơn hay kém đi.
+ */
+export function canEndWithOutcome(outcome: string): boolean {
+  return outcome !== 'insufficient';
+}
+
+/**
+ * Các bước tiếp theo ở TAB KẾT THÚC. "Tiếp tục chính phương án này" không nằm ở đây — nhu
+ * cầu đó thuộc tab theo dõi, và để nó ở cả hai chỗ là mời người dùng chọn nhầm.
+ */
+export function endStepsFor(outcome: string): NextStep[] {
+  return GOOD_OUTCOMES.includes(outcome)
+    ? ['complete', 'propose', 'ask_manager']
+    : ['propose', 'ask_manager'];
+}
+
+/** Bước tiếp theo hợp lệ theo tab đang đứng. */
+export function stepsForMode(mode: string, outcome: string): NextStep[] {
+  return mode === 'end' ? endStepsFor(outcome) : ['continue'];
 }
 
 /** Nguồn của điểm xuất phát. Thiếu căn cứ thì để trống, KHÔNG lấy MT1 làm điểm đầu vào. */

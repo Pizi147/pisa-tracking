@@ -7,8 +7,16 @@ type Point = {
   at: string | null; label: string;
   value: number | null; total: number | null; expectation: number | null;
 };
+/** Một khoảng thực hiện phương án, vẽ ở dải dưới cùng trục thời gian (mục 4.4). */
+type PlanBand = {
+  id: number; caseId: number; kind: string; description: string | null;
+  from: string; to: string | null; expectedTo: string | null; running: boolean;
+};
+/** Một lần người thật nhìn lại và ghi kết quả — mốc nhỏ trên chính dải phương án. */
+type Review = { on: string; outcome: string; caseId: number };
 type Series = {
   skill: string; label: string; points: Point[]; officialCount: number; enough: boolean;
+  plans?: PlanBand[]; reviews?: Review[];
 };
 
 /**
@@ -32,39 +40,53 @@ type Series = {
  *    xếp chiều cao trong CÙNG một bài, không dùng để nói bài này hơn bài kia.
  * 4. KHÔNG KẾT LUẬN HỘ. Biểu đồ cho thấy hình dạng; nhận định là việc của người đọc.
  */
-export function ProgressChart({ data }: { data: { mode: 'ielts' | 'ratio'; skills: Series[] } }) {
-  const usable = data.skills.filter((s) => s.points.length > 0);
-  const [skill, setSkill] = useState<string>(usable[0]?.skill ?? '');
-  const cur = usable.find((s) => s.skill === skill) ?? usable[0] ?? null;
+export function ProgressChart({ data, only, onOpenCase }: {
+  data: { mode: 'ielts' | 'ratio'; skills: Series[] };
+  /**
+   * Chỉ vẽ MỘT kỹ năng, không bày thanh chọn. Dùng khi biểu đồ nằm trong hàng kỹ năng của
+   * bảng tiến độ — ở đó người xem đã chọn kỹ năng bằng chính cú bấm mở hàng, hỏi lại một
+   * lần nữa là thừa.
+   */
+  only?: string | null;
+  /** Bấm một dải phương án thì mở đúng case đó (mục 4.4). */
+  onOpenCase?: (caseId: number) => void;
+}) {
+  const usable = data.skills.filter((s) => s.points.length > 0 || (s.plans?.length ?? 0) > 0);
+  const [skill, setSkill] = useState<string>(only ?? usable[0]?.skill ?? '');
+  const cur = usable.find((s) => s.skill === (only ?? skill)) ?? (only ? null : usable[0]) ?? null;
 
   if (!cur) return <Empty title="Chưa có điểm nào để vẽ tiến bộ" />;
 
   return (
     <div className="space-y-3">
-      <div className="flex flex-wrap gap-1">
-        {usable.map((s) => (
-          <button key={s.skill}
-            className={`btn btn-sm ${s.skill === cur.skill ? 'btn-primary' : ''}`}
-            onClick={() => setSkill(s.skill)}>
-            {s.label}
-            {!s.enough && <span className="opacity-60 ml-1">·</span>}
-          </button>
-        ))}
-      </div>
+      {!only && (
+        <div className="flex flex-wrap gap-1">
+          {usable.map((s) => (
+            <button key={s.skill}
+              className={`btn btn-sm ${s.skill === cur.skill ? 'btn-primary' : ''}`}
+              onClick={() => setSkill(s.skill)}>
+              {s.label}
+              {!s.enough && <span className="opacity-60 ml-1">·</span>}
+            </button>
+          ))}
+        </div>
+      )}
 
       {!cur.enough ? (
         <div className="rounded-lg border p-4" style={{ borderColor: 'var(--line)' }}>
-          <p className="text-sm text-slate-200 m-0">Chưa đủ dữ liệu để nói {cur.label} đang lên hay đang xuống.</p>
+          <p className="text-sm text-slate-200 m-0">Chưa đủ dữ liệu để đánh giá tiến độ {cur.label}.</p>
           <p className="text-xs text-slate-500 mt-1 mb-0">
             Mới có {cur.officialCount} mốc chính thức. Cần ít nhất hai mốc thì mới có một
             hướng đi để nhìn.
           </p>
           <PointList points={cur.points} mode={data.mode} />
+          <PlanList series={cur} onOpenCase={onOpenCase} />
         </div>
       ) : (
         <>
-          <Plot series={cur} mode={data.mode} />
+          <Plot series={cur} mode={data.mode} onOpenCase={onOpenCase} />
           <PointList points={cur.points} mode={data.mode} />
+          <PlanList series={cur} onOpenCase={onOpenCase} />
         </>
       )}
 
@@ -114,8 +136,16 @@ function fmtValue(p: Point, mode: 'ielts' | 'ratio'): string {
  * Vẽ bằng SVG thuần, không thư viện. Một biểu đồ bốn điểm không đáng để kéo thêm vài trăm
  * kilobyte về máy người dùng, và thư viện nào cũng có mặc định riêng phải gỡ đi.
  */
-function Plot({ series, mode }: { series: Series; mode: 'ielts' | 'ratio' }) {
-  const W = 640, H = 170, PAD_X = 30, PAD_Y = 26;
+function Plot({ series, mode, onOpenCase }: {
+  series: Series; mode: 'ielts' | 'ratio'; onOpenCase?: (caseId: number) => void;
+}) {
+  const plans = series.plans ?? [];
+  /*
+   * DẢI PHƯƠNG ÁN chiếm thêm chiều cao ở dưới, KHÔNG đè lên đường điểm (mục 4.4). Đổ chữ và
+   * nhãn lên chính đường điểm là cách chắc chắn nhất để không đọc được cả hai.
+   */
+  const laneH = plans.length ? 14 * Math.min(plans.length, 4) + 16 : 0;
+  const W = 640, H = 170 + laneH, PAD_X = 30, PAD_Y = 26;
   const pts = series.points.filter((p) => rawOf(p, mode) !== null);
   if (pts.length === 0) return null;
 
@@ -129,7 +159,35 @@ function Plot({ series, mode }: { series: Series; mode: 'ielts' | 'ratio' }) {
 
   const x = (i: number) => PAD_X + (pts.length === 1 ? (W - 2 * PAD_X) / 2
     : (i * (W - 2 * PAD_X)) / (pts.length - 1));
-  const y = (v: number) => H - PAD_Y - ((v - lo) / span) * (H - 2 * PAD_Y);
+  /* Vùng vẽ đường điểm dừng TRÊN dải phương án, nên trừ luôn chiều cao dải ra khỏi trục dọc. */
+  const plotH = H - laneH;
+  const y = (v: number) => plotH - PAD_Y - ((v - lo) / span) * (plotH - 2 * PAD_Y);
+
+  /*
+   * TRỤC THỜI GIAN DÙNG CHUNG cho cả điểm và dải phương án.
+   *
+   * Các mốc điểm được xếp CÁCH ĐỀU nhau (đó là cách đọc quen của một bảng MT), nên một ngày
+   * bất kỳ phải được nội suy về đúng khoảng giữa hai mốc gần nó. Vẽ dải theo ngày thật trên
+   * một trục cách đều là cách làm hai thứ lệch nhau ngay lần đầu có hai MT cách nhau xa.
+   */
+  const dated = pts.map((p, i) => ({ t: p.at ? Date.parse(`${p.at}T00:00:00Z`) : null, i }))
+    .filter((d): d is { t: number; i: number } => d.t !== null);
+  const xAt = (iso: string | null): number | null => {
+    if (!iso || dated.length === 0) return null;
+    const t = Date.parse(`${iso.slice(0, 10)}T00:00:00Z`);
+    if (dated.length === 1) return x(dated[0].i);
+    if (t <= dated[0].t) return x(dated[0].i);
+    const last = dated[dated.length - 1];
+    if (t >= last.t) return x(last.i);
+    for (let k = 1; k < dated.length; k += 1) {
+      const a = dated[k - 1], b = dated[k];
+      if (t <= b.t) {
+        const f = b.t === a.t ? 0 : (t - a.t) / (b.t - a.t);
+        return x(a.i) + f * (x(b.i) - x(a.i));
+      }
+    }
+    return x(last.i);
+  };
 
   const official = pts.map((p, i) => ({ p, i })).filter((n) => n.p.kind === 'official');
   const line = official.map((n) => `${x(n.i)},${y(rawOf(n.p, mode)!)}`).join(' ');
@@ -176,7 +234,75 @@ function Plot({ series, mode }: { series: Series; mode: 'ielts' | 'ratio' }) {
             </g>
           );
         })}
+
+        {/*
+          DẢI PHƯƠNG ÁN — nhóm THEO CASE, mỗi phương án một vạch, tối đa bốn vạch. Vạch có
+          đuôi mờ nghĩa là phương án CHƯA xong: nó chạy tới ngày dự kiến kết thúc chứ không
+          phải đã kết thúc ở đó.
+        */}
+        {plans.slice(0, 4).map((pl, k) => {
+          const x1 = xAt(pl.from);
+          const x2 = xAt(pl.to ?? pl.expectedTo ?? pl.from);
+          if (x1 === null || x2 === null) return null;
+          const yy = plotH + 10 + k * 14;
+          const w = Math.max(6, (x2 ?? x1) - x1);
+          return (
+            <g key={pl.id} className={onOpenCase ? 'cursor-pointer' : undefined}
+               onClick={onOpenCase ? () => onOpenCase(pl.caseId) : undefined}>
+              <title>{`${pl.description ?? pl.kind} — từ ${pl.from}${pl.to ? ` đến ${pl.to}` : ' (đang chạy)'}`}</title>
+              <rect x={x1} y={yy} width={w} height="7" rx="3"
+                fill={pl.running ? 'var(--warn, #fbbf24)' : 'var(--accent, #60a5fa)'}
+                opacity={pl.running ? 0.45 : 0.65} />
+              {/* Các lần đánh giá hỗ trợ: chấm nhỏ ngay trên dải của chính case đó. */}
+              {(series.reviews ?? []).filter((rv) => rv.caseId === pl.caseId).map((rv, j) => {
+                const rx = xAt(rv.on);
+                return rx === null ? null : (
+                  <circle key={j} cx={rx} cy={yy + 3.5} r="2.5" fill="currentColor" opacity="0.8" />
+                );
+              })}
+            </g>
+          );
+        })}
       </svg>
+    </div>
+  );
+}
+
+/**
+ * DANH SÁCH KHOẢNG PHƯƠNG ÁN — để đọc được trên điện thoại và bằng trình đọc màn hình.
+ *
+ * Mục 4.4 đòi "mobile có danh sách mốc tương đương dễ đọc, không ép người dùng kéo một biểu
+ * đồ quá rộng". Danh sách này cũng là chỗ nói rõ điều biểu đồ cố ý KHÔNG nói: hai thứ nằm
+ * cạnh nhau trên trục thời gian không có nghĩa cái này gây ra cái kia.
+ */
+function PlanList({ series, onOpenCase }: {
+  series: Series; onOpenCase?: (caseId: number) => void;
+}) {
+  const plans = series.plans ?? [];
+  if (!plans.length) return null;
+  return (
+    <div className="space-y-1">
+      <span className="text-[11px] text-slate-500">Phương án hỗ trợ trong cùng khoảng thời gian</span>
+      <ul className="list-none p-0 m-0 space-y-1">
+        {plans.map((pl) => (
+          <li key={pl.id} className="text-xs text-slate-300">
+            <button type="button"
+              className="appearance-none border-0 bg-transparent p-0 text-left text-slate-300 hover:underline"
+              onClick={onOpenCase ? () => onOpenCase(pl.caseId) : undefined}>
+              <span aria-hidden className={pl.running ? 'text-amber-300' : 'text-sky-300'}>▬</span>{' '}
+              {pl.description ?? pl.kind}
+              <span className="text-slate-500">
+                {' '}· {pl.from}
+                {pl.to ? ` → ${pl.to}` : pl.expectedTo ? ` → dự kiến ${pl.expectedTo}` : ' → đang chạy'}
+              </span>
+            </button>
+          </li>
+        ))}
+      </ul>
+      <SectionNote>
+        Hai thứ nằm cạnh nhau trên trục thời gian KHÔNG có nghĩa cái này gây ra cái kia. Biểu
+        đồ bày ra điều đã xảy ra; kết luận là việc của người đọc.
+      </SectionNote>
     </div>
   );
 }

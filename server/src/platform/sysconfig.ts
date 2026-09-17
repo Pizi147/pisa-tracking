@@ -1,6 +1,7 @@
 import { db, tx } from '../db.ts';
 import { PERMISSIONS, PROGRAMME_TEMPLATES, ROUTES as BUILTIN_ROUTES } from '../../../shared/domain/index.ts';
 import { badRequest, notFound, nowIso } from '../util.ts';
+import { clearScoringModeCache } from '../fasttrack/skillSchedule.ts';
 import { require_, type Principal } from '../permissions.ts';
 import { writeAudit } from './audit.ts';
 
@@ -113,6 +114,11 @@ export function saveProgramme(p: Principal, input: {
   const status = input.status === 'inactive' ? 'inactive' : 'active';
 
   return tx(() => {
+    /*
+     * Cách chấm quyết định hạn chấm của từng môn, và câu trả lời đó được nhớ lại theo lớp
+     * để danh sách không phải hỏi từng dòng. Sửa chương trình thì bỏ hết phần đã nhớ.
+     */
+    clearScoringModeCache();
     if (had) {
       conn.prepare('UPDATE programmes SET name=?, weeks=?, scoring_mode=?, status=? WHERE code=?')
         .run(name, weeks, scoring, status, code);

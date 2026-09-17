@@ -68,12 +68,21 @@ export function caseStatusTone(status: string | null): Tone {
 export function dueTone(state: string): Tone {
   return state === 'overdue' ? 'danger' : state === 'due_soon' ? 'warn' : state === 'closed' ? 'ok' : 'neutral';
 }
+/**
+ * Màu của tiến độ một kỹ năng. Mỗi màu là một việc khác nhau của người đọc:
+ *
+ *   đỏ    đang nợ — đã đến tuần thi mà chưa xác nhận đã thi, hoặc đã thi mà chưa chấm
+ *   vàng  cần một quyết định — đã vắng, hoặc đang chờ duyệt dời
+ *   xanh  xong
+ *   lam   chưa đến lịch, chưa phải việc của ai
+ *   xám   ngoài phạm vi, chưa xếp tuần, hoặc đã huỷ phần thi
+ */
 export function progressTone(p: string): Tone {
   return p === 'scored' ? 'ok'
-    : p === 'performed' ? 'warn'
-    : p === 'due' ? 'danger'
+    : p === 'due' || p === 'sat' ? 'danger'
+    : p === 'absent' || p === 'reschedule_pending' ? 'warn'
     : p === 'upcoming' ? 'info'
-    : p === 'skipped' ? 'muted'
+    : p === 'skipped' || p === 'cancelled' ? 'muted'
     : 'neutral';
 }
 

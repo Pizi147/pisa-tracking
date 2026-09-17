@@ -3,6 +3,7 @@ import { useApi } from '../../lib/useApi.ts';
 import { Empty, ErrorState, Skeleton, Status } from '../../ui/ui.tsx';
 import { fmtBand, fmtDate } from '../../lib/format.ts';
 import { CasePanel } from './CasePanel.tsx';
+import { ProgressChart } from '../students/ProgressChart.tsx';
 
 /**
  * THEO DÕI HỖ TRỢ THEO KỸ NĂNG — mục 7.11, phần giữa của hồ sơ học viên.
@@ -33,7 +34,24 @@ type Row = {
   outcome: string | null; outcomeLabel: string | null;
   supportLine: string | null; openActions: number;
   overdueActionDue: string | null; pendingApproval: boolean;
-  points: { attemptNo: number; band: number; expectation: number | null }[];
+  points: {
+    attemptNo: number; band: number; expectation: number | null;
+    score: number | null; total: number | null; passed: boolean | null;
+  }[];
+  /** Lớp Normal chấm ĐIỂM ĐẠT trên TỔNG của chính đề đó, không có band IELTS. */
+  score: number | null; total: number | null; ratio: boolean;
+  /** Tín hiệu chưa ai xác minh ở chính kỹ năng này — KHÔNG phải một case (mục 4.2). */
+  signal: {
+    id: number; skill: string | null; band: number | null; expectation: number | null;
+    verifyDue: string | null; overdue: boolean; ownerName: string | null;
+  } | null;
+  /** ĐỦ các case của kỹ năng này, đang mở trước (mục 4.2). */
+  cases: {
+    id: number; title: string; status: string; track: string;
+    urgency: string | null; sosLevel: number | null;
+    carriedOver: boolean; parallel: boolean;
+    openedOn: string | null; touchedOn: string | null;
+  }[];
 };
 
 /** Bốn trạng thái, bốn việc khác nhau — nên bốn nhãn khác nhau, không gộp. */
@@ -63,25 +81,41 @@ const STATE_BAR: Record<Row['state'], string> = {
 };
 
 /**
- * BẢNG TÓM TẮT THEO KỸ NĂNG — CHỈ TÓM TẮT, KHÔNG MỞ CASE (mục 6.2 B).
+ * TIẾN ĐỘ VÀ HỖ TRỢ THEO KỸ NĂNG — khối chính của hồ sơ học viên (mục 4.2).
  *
- * Trước vòng này, bấm một dòng kỹ năng sẽ giãn ra và dựng nguyên một `CasePanel` đầy đủ
- * ngay trong bảng — trong khi CHÍNH case đó lại nằm lần nữa ở khối "Các case của em" ngay
- * bên dưới. Hậu quả: cùng một case hiện hai lần trên một trang, và mở hồ sơ là tải chi tiết
- * của cả sáu hạng mục dù người xem chưa hỏi.
+ * Mỗi hàng trả lời bốn câu, đúng thứ tự người dạy hỏi:
  *
- * Nay bảng này chỉ trả lời "kỹ năng nào đang có chuyện". Bấm một dòng thì LỌC khối case bên
- * dưới theo hạng mục đó — một case, một chỗ hiển thị.
+ *   kỹ năng  ·  kết quả gần nhất  ·  vấn đề đang theo dõi  ·  hỗ trợ, kết quả và việc tiếp theo
+ *
+ * BẤM MỘT HÀNG THÌ MỞ NỘI DUNG NGAY BÊN DƯỚI hàng đó: biểu đồ của chính kỹ năng ấy, các
+ * case đang mở, và lịch sử đã kết thúc thu gọn.
+ *
+ * Vòng trước bấm một hàng chỉ LỌC một khối case nằm tách ở dưới trang. Nghe thì gọn, nhưng
+ * thực tế là: bấm xong không thấy gì đổi ở chỗ mình đang nhìn, phải cuộn xuống tìm — và cái
+ * khối ở dưới ấy lại kể lại đúng những case mà bảng này vừa tóm tắt. Mục 4.2 gọi đúng tên
+ * hai lỗi đó: "không chỉ thêm bộ lọc rồi bắt cuộn tìm ở một khối khác" và "bỏ danh sách
+ * case thứ hai bị lặp dưới bảng". Nên khối kia đã bỏ, và nội dung về đúng chỗ nó thuộc về.
+ *
+ * MỘT KỸ NĂNG CÓ NHIỀU CASE THÌ THẤY ĐỦ. Em có hai case Reading song song thì cả hai đều có
+ * khối riêng, mở đóng độc lập — mở cái này không đóng cái kia.
+ *
+ * KỸ NĂNG KHÔNG CÓ CASE VẪN CÓ HÀNG, và vẫn xem được điểm với lịch sử. Bỏ hàng đi thì
+ * "không thấy Reading" có hai nghĩa — đang ổn, hoặc chưa ai nhập điểm — và hai nghĩa ấy dẫn
+ * tới hai việc khác hẳn nhau.
  */
-export function SkillBoard({ studentId, cycleId, selected, onPick, onReport }: {
+export function SkillBoard({ studentId, cycleId, selected, onPick, onReport, progress, onOpenCase }: {
   studentId: number;
   cycleId?: number | null;
-  /** Hạng mục đang được lọc ở khối case bên dưới. */
+  /** Hàng đang mở. */
   selected?: string | null;
-  /** Bấm một dòng: lọc khối case bên dưới theo hạng mục đó (bấm lại để bỏ lọc). */
+  /** Bấm một hàng: mở nội dung ngay dưới hàng đó (bấm lại để đóng). */
   onPick: (category: string | null) => void;
   /** Mở ô báo case mới cho đúng hạng mục này. */
   onReport?: (category: string) => void;
+  /** Dữ liệu biểu đồ của cả hồ sơ; hàng nào mở thì vẽ đúng kỹ năng của hàng đó. */
+  progress?: { mode: 'ielts' | 'ratio'; skills: any[] } | null;
+  /** Mở trang case đầy đủ. */
+  onOpenCase?: (caseId: number) => void;
 }) {
   const q = cycleId ? `?cycleId=${cycleId}` : '';
   const { data, loading, error, reload } = useApi<{ rows: Row[] }>(
@@ -98,22 +132,28 @@ export function SkillBoard({ studentId, cycleId, selected, onPick, onReport }: {
         <SkillRow key={r.category} row={r}
           open={selected === r.category}
           onToggle={() => onPick(selected === r.category ? null : r.category)}
-          onReport={onReport} />
+          onReport={onReport}
+          progress={progress}
+          onOpenCase={onOpenCase}
+          onChanged={reload} />
       ))}
     </div>
   );
 }
 
-function SkillRow({ row, open, onToggle, onReport }: {
+function SkillRow({ row, open, onToggle, onReport, progress, onOpenCase, onChanged }: {
   row: Row; open: boolean; onToggle: () => void;
   onReport?: (category: string) => void;
+  progress?: { mode: 'ielts' | 'ratio'; skills: any[] } | null;
+  onOpenCase?: (caseId: number) => void;
+  onChanged?: () => void;
 }) {
   const bodyId = `skill-${row.category}`;
   /*
-   * Dòng KHÔNG CÓ GÌ ĐỂ MỞ thì không phải là nút bấm: một cái nút bấm vào chẳng xảy ra gì
+   * Hàng KHÔNG CÓ GÌ ĐỂ MỞ thì không phải là nút bấm: một cái nút bấm vào chẳng xảy ra gì
    * là cách nhanh nhất khiến người dùng thôi tin vào mọi nút khác trên trang.
    */
-  const expandable = !!row.caseId || row.band !== null;
+  const expandable = row.cases.length > 0 || row.band !== null || !!row.signal;
 
   return (
     <div className="border-b last:border-b-0" style={{ borderColor: 'var(--line)' }}>
@@ -126,8 +166,19 @@ function SkillRow({ row, open, onToggle, onReport }: {
         onClick={onToggle}
         className={`w-full text-left appearance-none border-0 bg-transparent p-0 ${expandable ? 'cursor-pointer row-hover' : 'cursor-default'}`}
       >
+        {/*
+          BỀ RỘNG CỘT PHẢI CỐ ĐỊNH, KHÔNG ĐỂ `auto`.
+
+          Mỗi hàng ở đây là một lưới RIÊNG (nó phải là một cái nút bấm được), nên một cột
+          `auto` co giãn theo nội dung của CHÍNH hàng đó. Hậu quả nhìn thấy ngay: hàng
+          "Writing Task 1" có tên dài hơn "Listening" nên cột điểm của nó bị đẩy lệch sang
+          trái so với các hàng khác, và cả bảng đọc như bị xô.
+
+          Cho cột điểm một bề rộng cố định và các cột còn lại chia theo tỷ lệ thì mọi hàng
+          bắt đầu ở cùng một vạch, dù tên môn dài ngắn thế nào.
+        */}
         <div className="grid gap-x-3 gap-y-1 px-3 py-2.5 items-center
-                        grid-cols-[1fr_auto] md:grid-cols-[minmax(8rem,1.1fr)_minmax(7rem,auto)_minmax(9rem,auto)_minmax(0,1.4fr)_1.25rem]"
+                        grid-cols-[1fr_auto] md:grid-cols-[minmax(8rem,1.1fr)_7.5rem_minmax(9rem,1.1fr)_minmax(0,1.4fr)_1.25rem]"
              style={{ boxShadow: `inset 3px 0 0 ${STATE_BAR[row.state]}` }}>
 
           {/* ---------------------------------------------------------- 1. hạng mục */}
@@ -141,38 +192,67 @@ function SkillRow({ row, open, onToggle, onReport }: {
             <Trend row={row} />
           </div>
 
-          {/* ---------------------------------------------------------- 2. band gần nhất */}
+          {/* ------------------------------------------ 2. kết quả gần nhất (mục 4.2) */}
+          {/*
+            HAI CHƯƠNG TRÌNH, HAI CÁCH GHI. Fast Track ghi band IELTS và kỳ vọng của chính
+            lượt đó; lớp Normal ghi ĐIỂM ĐẠT trên TỔNG của đề đó — "21/40", không phải một
+            band. Quy điểm Normal về band là bịa ra một con số không tồn tại.
+          */}
           <div className="whitespace-nowrap">
             {row.band === null ? (
               <span className="text-slate-600 text-sm">—</span>
             ) : (
               <>
                 <span className={`text-base font-semibold tabular-nums ${row.missed ? 'text-rose-300' : 'text-emerald-200'}`}>
-                  {fmtBand(row.band)}
+                  {row.ratio && row.total ? `${row.score}/${row.total}` : fmtBand(row.band)}
                 </span>
-                <Delta value={row.delta} />
+                {!row.ratio && <Delta value={row.delta} />}
                 <span className="block text-[10px] text-slate-500">
-                  {row.bandAttemptNo ? `MT${row.bandAttemptNo}` : ''}
-                  {row.expectation !== null ? ` · kỳ vọng ${fmtBand(row.expectation)}` : ''}
+                  {row.bandAttemptNo ? (row.ratio ? row.bandWeek ?? '' : `MT${row.bandAttemptNo}`) : ''}
+                  {row.ratio
+                    ? (row.missed === false ? ' · đạt' : row.missed === true ? ' · chưa đạt' : '')
+                    : row.expectation !== null ? ` · kỳ vọng ${fmtBand(row.expectation)}` : ''}
                 </span>
               </>
             )}
           </div>
 
-          {/* ---------------------------------------------------------- 3. tình trạng */}
-          <div className="whitespace-nowrap">
-            <Status kind={STATE_KIND[row.state]}>{STATE_LABEL[row.state]}</Status>
-            <span className="block text-[10px] text-slate-500 mt-0.5">
-              {row.carriedOver
-                ? 'từ lộ trình trước'
-                : row.attemptsSpanned > 1
-                ? `kéo qua ${row.attemptsSpanned} lượt MT`
-                : row.state === 'done' && row.outcomeLabel
-                ? row.outcomeLabel
-                : row.parallelCount > 1
-                ? `${row.parallelCount} case song song`
-                : row.caseTitle ?? ''}
-            </span>
+          {/* ------------------------------------------- 3. vấn đề đang theo dõi (mục 4.2) */}
+          {/*
+            TÊN VẤN ĐỀ ĐỨNG TRƯỚC, trạng thái là chữ nhỏ bên dưới. Bản trước làm ngược lại —
+            nhãn "Đang xử lý" to, tên case bé xíu — nên liếc qua sáu hàng chỉ đọc được sáu
+            lần chữ "Đang xử lý", đúng thứ không cần đọc.
+
+            TÍN HIỆU CHƯA XÁC MINH cũng thuộc cột này: nó chưa là case, nhưng nó đúng là
+            "vấn đề đang theo dõi", và nó là việc gấp nhất trong cột.
+          */}
+          <div className="min-w-0">
+            {row.signal ? (
+              <>
+                <span className={`block text-xs font-medium truncate ${row.signal.overdue ? 'text-rose-200' : 'text-amber-200'}`}>
+                  Tín hiệu chờ xác minh
+                </span>
+                <span className="block text-[10px] text-slate-500">
+                  {row.signal.overdue ? '⚠ quá hạn ' : 'hạn '}{fmtDate(row.signal.verifyDue)}
+                  {row.signal.ownerName ? ` · ${row.signal.ownerName}` : ''}
+                </span>
+              </>
+            ) : row.caseTitle ? (
+              <>
+                <span className="block text-xs text-slate-200 truncate" title={row.caseTitle}>
+                  {row.caseTitle}
+                </span>
+                <span className="flex flex-wrap items-center gap-x-1.5 text-[10px] text-slate-500 mt-0.5">
+                  <Status kind={STATE_KIND[row.state]}>{STATE_LABEL[row.state]}</Status>
+                  {row.carriedOver && <span>từ lộ trình trước</span>}
+                  {row.parallelCount > 1 && <span>{row.parallelCount} case song song</span>}
+                  {row.attemptsSpanned > 1 && <span>kéo qua {row.attemptsSpanned} lượt MT</span>}
+                  {row.state === 'done' && row.outcomeLabel && <span>{row.outcomeLabel}</span>}
+                </span>
+              </>
+            ) : (
+              <span className="text-xs text-slate-600">Không có vấn đề nào đang theo dõi</span>
+            )}
           </div>
 
           {/* ---------------------------------------------------------- 4. đã hỗ trợ gì */}
@@ -206,23 +286,110 @@ function SkillRow({ row, open, onToggle, onReport }: {
         </div>
       </button>
 
-      {/*
-        DÒNG ĐANG CHỌN chỉ đổi màu và nói một câu — không giãn ra dựng case ở đây.
-        Case của hạng mục này nằm ở khối "Các case của em" phía dưới, đã được lọc sẵn.
-      */}
+      {/* NỘI DUNG MỞ NGAY DƯỚI HÀNG (mục 4.2) — không bắt cuộn đi tìm ở khối khác. */}
       {open && (
-        <p id={bodyId} className="px-4 pb-3 pt-0 m-0 text-xs text-slate-400">
-          {row.caseId
-            ? `Đang lọc khối case bên dưới theo ${row.label}. Bấm lại dòng này để bỏ lọc.`
-            : `Chưa từng có case nào ở ${row.label}.`}
-          {!row.caseId && onReport && (
+        <div id={bodyId} className="px-3 pb-4 pt-1 space-y-4"
+             style={{ background: 'var(--surface-2, rgba(255,255,255,.02))' }}>
+          <SkillDetail row={row} progress={progress} onOpenCase={onOpenCase}
+            onReport={onReport} onChanged={onChanged} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * NỘI DUNG MỞ RA CỦA MỘT KỸ NĂNG (mục 4.2), đúng ba phần và đúng thứ tự này:
+ *
+ *   1. BIỂU ĐỒ của chính kỹ năng đó — câu hỏi đầu tiên luôn là "em đang lên hay đang xuống".
+ *   2. CASE ĐANG MỞ, mỗi case một khối độc lập. Mở cái này không đóng cái kia.
+ *   3. LỊCH SỬ ĐÃ KẾT THÚC, thu gọn — vẫn phải thấy được là nó tồn tại.
+ *
+ * Kỹ năng KHÔNG có case vẫn xem được điểm và lịch sử: "không có dữ liệu" và "không có vấn
+ * đề" là hai câu khác nhau, và phần mềm phải phân biệt được.
+ */
+function SkillDetail({ row, progress, onOpenCase, onReport, onChanged }: {
+  row: Row;
+  progress?: { mode: 'ielts' | 'ratio'; skills: any[] } | null;
+  onOpenCase?: (caseId: number) => void;
+  onReport?: (category: string) => void;
+  onChanged?: () => void;
+}) {
+  /* W1 và W2 của Fast Track cùng thuộc đường Writing khi vẽ. */
+  const chartSkill = row.category === 'writing1' || row.category === 'writing2' ? 'writing' : row.category;
+  const hasChart = !!progress?.skills?.some((sk: any) => sk.skill === chartSkill);
+  const openCases = row.cases.filter((c) => c.status !== 'done');
+  const doneCases = row.cases.filter((c) => c.status === 'done');
+  const [showDone, setShowDone] = useState(false);
+
+  return (
+    <>
+      {hasChart && row.category !== 'behaviour' && (
+        <ProgressChart data={progress!} only={chartSkill} onOpenCase={onOpenCase} />
+      )}
+      {!hasChart && row.category !== 'behaviour' && (
+        <p className="text-xs text-slate-500 m-0">
+          Chưa đủ dữ liệu để đánh giá tiến độ {row.label}: lộ trình này chưa có điểm nào ở môn
+          đó. Đây là <strong>chưa có dữ liệu</strong>, không phải là không có vấn đề.
+        </p>
+      )}
+
+      {openCases.length === 0 ? (
+        <p className="text-xs text-slate-400 m-0">
+          Không có vấn đề nào đang theo dõi ở {row.label}.
+          {onReport && (
             <button type="button" className="btn btn-sm ml-2" onClick={() => onReport(row.category)}>
               + Case cho {row.label}
             </button>
           )}
         </p>
+      ) : (
+        <div className="space-y-3">
+          {openCases.map((c) => (
+            <div key={c.id} className="rounded-lg border" style={{ borderColor: 'var(--line)' }}>
+              <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 border-b"
+                   style={{ borderColor: 'var(--line)' }}>
+                <span className="text-sm text-slate-100">
+                  {c.title}
+                  {c.carriedOver && <span className="text-[10px] text-slate-500 ml-2">từ lộ trình trước</span>}
+                </span>
+                {onOpenCase && (
+                  <button className="btn btn-sm btn-ghost" onClick={() => onOpenCase(c.id)}>
+                    Mở trang riêng
+                  </button>
+                )}
+              </div>
+              <div className="p-2">
+                <CasePanel caseId={c.id} compact hideHeader onChanged={onChanged} />
+              </div>
+            </div>
+          ))}
+        </div>
       )}
-    </div>
+
+      {doneCases.length > 0 && (
+        <div>
+          <button type="button" className="btn btn-sm btn-ghost"
+            onClick={() => setShowDone(!showDone)}>
+            {showDone ? 'Ẩn' : 'Xem'} {doneCases.length} vấn đề đã kết thúc
+          </button>
+          {showDone && (
+            <ul className="list-none p-0 m-0 mt-2 space-y-1">
+              {doneCases.map((c) => (
+                <li key={c.id} className="text-xs text-slate-400">
+                  <button type="button"
+                    className="appearance-none border-0 bg-transparent p-0 text-left text-slate-400 hover:underline"
+                    onClick={onOpenCase ? () => onOpenCase(c.id) : undefined}>
+                    {c.title}
+                    <span className="text-slate-600"> · kết thúc {fmtDate(c.touchedOn)}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+    </>
   );
 }
 
@@ -243,9 +410,11 @@ function Trend({ row }: { row: Row }) {
     );
   }
   if (pts.length === 1) {
+    /* Lớp Normal không đánh số MT — bài của nó là Giữa khoá và Cuối khoá. */
     return (
       <span className="block text-[10px] text-slate-500">
-        mới có MT{pts[0].attemptNo}{row.bandWeek ? ` · ${row.bandWeek}` : ''}
+        {row.ratio ? 'mới có một bài' : `mới có MT${pts[0].attemptNo}`}
+        {row.bandWeek ? ` · ${row.bandWeek}` : ''}
       </span>
     );
   }
@@ -255,9 +424,11 @@ function Trend({ row }: { row: Row }) {
         <span key={pt.attemptNo} className="inline-flex items-center gap-1">
           {i > 0 && <span className="text-slate-700">→</span>}
           <span className={`tabular-nums ${
-            pt.expectation !== null && pt.band < pt.expectation ? 'text-rose-300/80' : 'text-slate-400'
+            pt.passed === false || (pt.expectation !== null && pt.band < pt.expectation)
+              ? 'text-rose-300/80' : 'text-slate-400'
           }`} title={`MT${pt.attemptNo}${pt.expectation !== null ? ` · kỳ vọng ${fmtBand(pt.expectation)}` : ''}`}>
-            {fmtBand(pt.band)}
+            {/* Điểm Normal giữ nguyên đạt/tổng — hai đề khác thang thì không so thẳng được. */}
+            {row.ratio && pt.total ? `${pt.score}/${pt.total}` : fmtBand(pt.band)}
           </span>
         </span>
       ))}
