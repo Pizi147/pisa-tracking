@@ -8,17 +8,26 @@ import { Card, Empty, ErrorState, Outcome, SectionNote, Skeleton, Status } from 
 import { WeekPicker, usePeriodWindow } from '../../ui/Filters.tsx';
 import { SignalList } from './SignalList.tsx';
 import { ManagerTaskList, ManagerTasks } from './ManagerTasks.tsx';
-import { unitStatusLabel, unitTone } from '../../lib/format.ts';
+import { fmtDate, unitStatusLabel, unitTone } from '../../lib/format.ts';
 import { UNIT_STATUSES } from '@shared/domain/index.ts';
 
 type Board = {
   period: { id: number; code: string; range: string };
   units: {
     unitId: number; unitName: string; unitCode: string; kind: string; branchId: number | null;
-    cells: { key: string; label: string; hint: string; status: string | null; note: string | null; reporterName: string | null }[];
+    cells: {
+      key: string; label: string; hint: string;
+      status: string | null; note: string | null;
+      reporterName: string | null; reportedOn: string | null;
+      worstStatus: string | null; weeksReported: number | null; weeksTotal: number | null;
+      taskGroup: string | null;
+      tasks: { id: number; code: string; title: string; progress: string; progressLabel: string; due: string | null; overdue: boolean }[];
+      history: { status: string | null; note: string | null; at: string; actor: string | null }[];
+    }[];
     reported: number; total: number; canEdit: boolean;
   }[];
   totals: { total: number; ok: number; watch: number; problem: number; notReported: number };
+  scope: { kind: 'week' | 'month'; month: string | null; weeks: string[]; editable: boolean };
   /** Báo cáo tuần chỉ được cập nhật trong hai ngày cuối tuần đó. Máy chủ mới là nơi chặn thật. */
   editWindow: { open: boolean; reason: string | null; opensOn: string } | null;
 };
@@ -44,6 +53,11 @@ export default function MeetingPage() {
 export function MeetingBoard() {
   const { session } = useSession();
   const [periodId, setPeriodId] = useState<number | null>(null);
+  /*
+   * KỲ TUẦN HAY KỲ THÁNG (mục 14.2). Báo cáo được GHI theo tuần; kỳ tháng là cách đọc lại
+   * các tuần của tháng đó và cố ý CHỈ ĐỂ ĐỌC — một nhận định thuộc về tuần người ta viết nó.
+   */
+  const [byMonth, setByMonth] = useState(false);
 
   // Mở đúng tuần hiện tại. Cửa sổ tuần trượt theo tuần đang xem nên không cần nạp cả lịch sử.
   const window = usePeriodWindow(periodId);
@@ -54,7 +68,17 @@ export function MeetingBoard() {
     }
   }, [window.data, periodId, session]);
 
-  const board = useApi<Board>(periodId ? `/meeting/board?periodId=${periodId}` : null);
+  const week = window.data?.find((p) => p.id === periodId) ?? null;
+  const month = (() => {
+    if (!byMonth || !week) return null;
+    /* Tuần thuộc về tháng chứa ngày thứ Năm của nó — cùng quy ước với cả hệ thống. */
+    const thu = new Date(Date.parse(`${week.weekStart}T00:00:00Z`) + 3 * 86_400_000);
+    return `${thu.getUTCFullYear()}-${String(thu.getUTCMonth() + 1).padStart(2, '0')}`;
+  })();
+  const board = useApi<Board>(
+    periodId ? `/meeting/board?periodId=${periodId}${month ? `&month=${month}` : ''}` : null,
+    [periodId, month],
+  );
 
   if (board.error) return <ErrorState message={board.error.message} hint={board.error.hint} onRetry={board.reload} />;
 
@@ -62,7 +86,16 @@ export function MeetingBoard() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="flex flex-wrap items-end gap-2">
-          <WeekPicker periodId={periodId} onPeriod={setPeriodId} label="Tuần báo cáo" className="w-52" />
+          <WeekPicker periodId={periodId} onPeriod={setPeriodId}
+            label={byMonth ? 'Tuần bất kỳ trong tháng' : 'Tuần báo cáo'} className="w-52" />
+          <label className="block">
+            <span className="label">Kỳ</span>
+            <select className="field w-28" value={byMonth ? 'month' : 'week'}
+              onChange={(e) => setByMonth(e.target.value === 'month')}>
+              <option value="week">Tuần</option>
+              <option value="month">Tháng</option>
+            </select>
+          </label>
           {/* Bảng số liệu theo tuần: cùng dữ liệu, khác lát cắt — nhiều tuần cạnh nhau. */}
           <Link className="btn no-underline" to="/tong-hop-tuan">Tổng hợp theo tuần</Link>
         </div>
@@ -70,6 +103,15 @@ export function MeetingBoard() {
       </div>
 
       <ManagerTaskList periodId={periodId} />
+
+      {board.data?.scope.kind === 'month' && (
+        <SectionNote>
+          Đang đọc <strong>cả tháng {board.data.scope.month}</strong> ({board.data.scope.weeks.join(' · ')}).
+          Ô hiện <strong>lần báo cáo gần nhất</strong> của tháng, kèm tình trạng nặng nhất đã xuất
+          hiện — một tuần “Có vấn đề” rồi ba tuần “Ổn” không phải là một tháng ổn. Muốn sửa thì
+          chuyển về kỳ tuần, vì nhận định thuộc về tuần người ta viết nó.
+        </SectionNote>
+      )}
 
       {/* Báo cáo tuần chỉ mở trong hai ngày cuối tuần — nói rõ vì sao, không chỉ làm mờ ô nhập. */}
       {board.data?.editWindow && !board.data.editWindow.open && (
@@ -127,7 +169,12 @@ function UnitRow({ unit, periodId, windowOpen, onSaved }: {
         <span className="font-medium text-slate-100 w-40 shrink-0">{unit.unitName}</span>
         <span className="flex flex-wrap gap-1.5 flex-1">
           {unit.cells.map((c) => (
-            <Outcome key={c.key} tone={unitTone(c.status)}>{c.label}: {unitStatusLabel(c.status)}</Outcome>
+            <Outcome key={c.key} tone={unitTone(c.status)}>
+              {c.label}: {unitStatusLabel(c.status)}
+              {/* Kỳ tháng: tình trạng nặng nhất trong tháng, nếu nó nặng hơn lần gần nhất. */}
+              {c.worstStatus && c.worstStatus !== c.status && ` (từng ${unitStatusLabel(c.worstStatus).toLowerCase()})`}
+              {c.weeksTotal ? ` · ${c.weeksReported}/${c.weeksTotal} tuần` : ''}
+            </Outcome>
           ))}
         </span>
         <span className="text-xs text-slate-500 shrink-0">{unit.reported}/{unit.total} đã báo cáo</span>
@@ -181,11 +228,63 @@ function CellEditor({ unitId, periodId, cell, canEdit, onSaved }: {
         {UNIT_STATUSES.map((s) => <option key={s} value={s}>{unitStatusLabel(s)}</option>)}
       </select>
       <textarea className="field" rows={2} value={note} disabled={!canEdit}
-        onChange={(e) => setNote(e.target.value)} placeholder="Ghi chú ngắn, có thông tin cụ thể" />
-      <div className="flex items-center justify-between">
-        <span className="text-[11px] text-slate-500">{cell.reporterName ? `Người báo cáo: ${cell.reporterName}` : 'Chưa có người báo cáo'}</span>
+        onChange={(e) => setNote(e.target.value)}
+        placeholder="Bằng chứng cụ thể: chuyện gì, ở lớp nào, buổi nào" />
+      <div className="flex items-center justify-between gap-2">
+        {/* NGƯỜI VÀ NGÀY BÁO CÁO đứng cạnh nội dung — đọc một nhận định mà không biết ai viết,
+            viết khi nào thì không dùng để họp được (mục 14.2). */}
+        <span className="text-[11px] text-slate-500">
+          {cell.reporterName
+            ? <>Người báo cáo: {cell.reporterName}{cell.reportedOn ? ` · ${fmtDate(cell.reportedOn)}` : ''}</>
+            : 'Chưa có người báo cáo'}
+        </span>
         {canEdit && <button className="btn btn-sm btn-primary" disabled={!dirty || busy} onClick={save}>{busy ? 'Đang lưu…' : 'Lưu'}</button>}
       </div>
+
+      {/*
+        CÔNG VIỆC LIÊN QUAN, với TRẠNG THÁI HIỆN TẠI (mục 14.2).
+        Một việc sống xuyên nhiều kỳ, nên đây là chỗ để nối vào việc ĐANG CÓ chứ không phải
+        chỗ đẻ ra một việc mới mỗi tuần.
+      */}
+      {cell.tasks.length > 0 && (
+        <div className="pt-1.5 border-t" style={{ borderColor: 'var(--line)' }}>
+          <span className="block text-[11px] text-slate-500 mb-1">Công việc liên quan (trạng thái hiện tại)</span>
+          <ul className="list-none p-0 m-0 space-y-0.5">
+            {cell.tasks.map((t) => (
+              <li key={t.id} className="text-[11px]">
+                <Link className="text-slate-300 no-underline hover:underline"
+                  to={`/tien-do-cong-viec?open=${t.id}`}>{t.title}</Link>
+                <span className={t.overdue ? 'text-rose-300' : 'text-slate-500'}>
+                  {' · '}{t.progressLabel}{t.due ? ` · hạn ${fmtDate(t.due)}` : ''}{t.overdue ? ' · quá hạn' : ''}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {cell.taskGroup && (
+        <Link className="btn btn-sm no-underline"
+          to={`/tien-do-cong-viec?tao=1&nhom=${cell.taskGroup}`}>
+          + Tạo việc từ mục này
+        </Link>
+      )}
+
+      {/* LỊCH SỬ CHỈNH SỬA — ô đổi từ "Có vấn đề" sang "Ổn" trước giờ họp phải truy lại được. */}
+      {cell.history.length > 1 && (
+        <details>
+          <summary className="text-[11px] text-slate-500 cursor-pointer">
+            Lịch sử chỉnh sửa ({cell.history.length} lần)
+          </summary>
+          <ul className="list-none p-0 m-0 mt-1 space-y-0.5">
+            {cell.history.map((h, i) => (
+              <li key={i} className="text-[11px] text-slate-500">
+                {fmtDate(h.at.slice(0, 10))} · {unitStatusLabel(h.status)}
+                {h.actor ? ` · ${h.actor}` : ''}
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
     </div>
   );
 }

@@ -235,8 +235,12 @@ export const STUDENTS: StudentSeed[] = [
 
   {
     code: 'J03', name: 'Lê Quang Huy', branch: 'MB', dob: '2008-09-30',
-    story: 'Listening dưới kỳ vọng ở cả MT1 lẫn MT2. CÙNG MỘT case đi qua hai chu kỳ hỗ trợ, '
-      + 'không nhân đôi thành hai case và không nhân đôi phương án.',
+    story: 'HỒ SƠ DÀY NHẤT của bộ demo — dựng để xem một em nhiều case thì màn hình ra sao. '
+      + 'Sáu case ở năm hạng mục, đủ mọi trạng thái: một case Listening đi qua hai chu kỳ hỗ '
+      + 'trợ mà chưa xong; một case Reading đã khép lại có kết quả tốt; một case Writing 2 có '
+      + 'phương án KHÔNG ăn thua rồi bị thay bằng phương án khác — kết quả thất bại cũ vẫn ở '
+      + 'lại trong báo cáo; một case Speaking đã đóng rồi TÁI DIỄN nên có case mới nối vào case '
+      + 'cũ; và hai đợt Ý thức, một đợt đã report cho gia đình, một đợt đã gửi thư cảnh cáo.',
     enrollments: [{ class: 'MB-FT 101', from: '2026-06-01', status: 'active' }],
     cycles: [
       {
@@ -279,6 +283,164 @@ export const STUDENTS: StudentSeed[] = [
                 kind: 'tutor', description: 'Thêm một buổi tutor Listening mỗi tuần',
                 performer: 'T_HA', cycleNo: 2, cycleStart: '2026-08-24', status: 'started',
                 startedOn: '2026-08-26', followupDue: '2026-09-28',
+              },
+            ],
+          },
+
+          /*
+           * CASE ĐÃ KHÉP LẠI VÀ ĂN THUA — để bảng hiệu quả có một "thành công" thật, và để
+           * hồ sơ không chỉ toàn việc đang dở. Case đã đóng vẫn phải vào báo cáo hiệu quả
+           * (mục 15.3), nếu không thì phần thành công đã khép biến mất khỏi mọi con số.
+           */
+          {
+            topic: 'reading', fromTest: 1, sosLevel: 1, detectedAt: '2026-07-12',
+            primaryCode: 'student.reading.time',
+            title: 'Reading: hết giờ khi còn hai câu cuối',
+            summary: 'Em đọc kỹ từng câu nên luôn hết giờ khi còn hai câu cuối của Passage 3.',
+            status: 'done', owner: 'T_HA',
+            disposition: 'action', outcome: 'improved',
+            outcomeNote: 'MT2 Reading 6.0, làm hết bài còn dư hai phút. Khép lại, theo dõi ở MT3.',
+            closedOn: '2026-08-24', closedBy: 'T_HA',
+            plans: [
+              {
+                kind: 'teaching_adjust',
+                description: 'Buổi chữa bài làm chậm phần tìm dẫn chứng, ép bấm giờ từng passage',
+                performer: 'T_HA', cycleStart: '2026-07-13', status: 'completed',
+                startedOn: '2026-07-15', completedOn: '2026-08-10', followupDue: '2026-08-24',
+                closedReason: 'done',
+                followups: [
+                  /*
+                   * "CHƯA ĐỦ DỮ LIỆU" rồi mới tới tiến bộ (tình huống 11 của mục 18.2).
+                   * Lần cập nhật đầu KHÔNG được vào mẫu số hiệu quả; kết quả cuối mới tính.
+                   */
+                  {
+                    on: '2026-07-27', outcome: 'insufficient', nextStep: 'continue',
+                    note: 'Tuần này lớp chưa có bài Reading bấm giờ nào nên chưa nhìn được gì.',
+                  },
+                  {
+                    on: '2026-08-24', outcome: 'improved', nextStep: 'complete',
+                    note: 'Bài bấm giờ hai tuần liền em làm hết Passage 3 còn dư hai phút.',
+                    metrics: [{ skill: 'reading', score: 32, total: 40 }],
+                  },
+                ],
+              },
+            ],
+          },
+
+          /*
+           * PHƯƠNG ÁN KHÔNG ĂN THUA RỒI BỊ THAY (tình huống 12 của mục 18.2).
+           *
+           * Phương án cũ đóng với lý do "bị thay thế" nhưng kết quả "Không tiến bộ" của nó
+           * VẪN NẰM LẠI trong báo cáo hiệu quả. Loại hết phương án bị thay là loại đúng những
+           * phương án kém, và tỷ lệ còn lại đẹp giả.
+           */
+          {
+            topic: 'writing2', fromTest: 1, sosLevel: 1, detectedAt: '2026-07-12',
+            primaryCode: 'student.writing.organisation',
+            title: 'Task 2: hai thân bài nói chồng ý nhau',
+            summary: 'Hai thân bài của em nói cùng một ý bằng hai cách, kết luận nhắc lại đề.',
+            status: 'in_progress', owner: 'T_HA',
+            plans: [
+              {
+                kind: 'extra_homework', description: 'Mỗi tuần viết một dàn ý Task 2 rồi nộp chữa',
+                performer: 'T_HA', cycleStart: '2026-07-13', status: 'completed',
+                startedOn: '2026-07-14', completedOn: '2026-08-17', followupDue: '2026-08-24',
+                closedReason: 'superseded',
+                followups: [{
+                  on: '2026-08-24', outcome: 'unchanged', nextStep: 'propose',
+                  note: 'Bốn tuần nộp dàn ý nhưng bài viết vẫn chồng ý — em làm dàn ý xong lại '
+                    + 'viết theo cách cũ. Đổi cách khác.',
+                }],
+              },
+              {
+                kind: 'tutor', description: 'Tutor Writing 1-1, chữa trực tiếp bố cục từng bài',
+                performer: 'T_HA', cycleNo: 2, cycleStart: '2026-08-24', status: 'started',
+                startedOn: '2026-08-26', followupDue: '2026-09-21',
+              },
+            ],
+          },
+
+          /*
+           * CASE ĐÃ ĐÓNG RỒI TÁI DIỄN — hai bản ghi nối nhau, không phải một case bị mở lại.
+           * Kết luận cũ giữ nguyên; case mới nói rõ nó nối vào case nào.
+           */
+          {
+            topic: 'speaking', fromTest: 1, sosLevel: 1, detectedAt: '2026-07-12',
+            primaryCode: 'student.speaking.fluency',
+            title: 'Speaking Part 2 nói chưa đủ hai phút',
+            summary: 'Part 2 em nói khoảng một phút rồi dừng, phần lý do bỏ trống.',
+            status: 'done', owner: 'T_TRANG',
+            disposition: 'action', outcome: 'improved',
+            outcomeNote: 'MT2 Speaking 6.0, nói đủ hai phút. Khép lại.',
+            closedOn: '2026-08-24', closedBy: 'T_TRANG',
+            plans: [
+              {
+                kind: 'self_study', description: 'Ghi âm một đề Part 2 mỗi tuần, tự nghe lại',
+                performer: 'T_TRANG', cycleStart: '2026-07-13', status: 'completed',
+                startedOn: '2026-07-15', completedOn: '2026-08-12', followupDue: '2026-08-24',
+                closedReason: 'done',
+                followups: [{
+                  on: '2026-08-24', outcome: 'improved', nextStep: 'complete',
+                  note: 'Em nói đủ hai phút, có phần lý do. MT2 Speaking 6.0.',
+                }],
+              },
+            ],
+          },
+          {
+            topic: 'speaking', detectedAt: '2026-09-07', sosLevel: null,
+            originKind: 'teacher_report',
+            primaryCode: 'student.speaking.lexical',
+            linksPreviousOf: 'speaking',
+            title: 'Speaking tái diễn: nói dài nhưng lặp từ',
+            summary: 'Nay em nói đủ giờ nhưng dùng đi dùng lại bốn năm từ, Part 3 gần như không '
+              + 'triển khai được ý nào mới.',
+            status: 'open', owner: 'T_TRANG', reportedBy: 'T_TRANG',
+          },
+
+          /*
+           * HAI ĐỢT Ý THỨC — một đợt đã report cho gia đình, một đợt đã gửi thư cảnh cáo.
+           * Đây là dữ liệu để bảng "Ý thức" của lớp có số khác không ở cả hai cột hành động.
+           */
+          {
+            topic: 'homework', track: 'behaviour', originKind: 'teacher_report',
+            primaryCode: 'student.behaviour.homework',
+            title: 'Không nộp BTVN Listening ba buổi liền',
+            summary: 'Ba buổi Listening liên tiếp em không nộp bài về nhà, hỏi thì nói để quên.',
+            detectedAt: '2026-08-10', urgency: 'attention',
+            status: 'done', owner: 'T_HA', reportedBy: 'T_HA',
+            disposition: 'action', outcome: 'improved',
+            outcomeNote: 'Sau khi gọi cho gia đình, ba tuần liền em nộp đủ bài.',
+            closedOn: '2026-09-07', closedBy: 'T_HA',
+            reports: [{
+              on: '2026-08-12', by: 'T_TRANG', skill: 'speaking',
+              summary: 'Buổi Speaking hôm nay em cũng không chuẩn bị bài nói ở nhà.',
+            }],
+            plans: [
+              {
+                kind: 'talk_parent', description: 'Gọi cho mẹ em trao đổi về việc không nộp bài',
+                performer: 'T_HA', cycleStart: '2026-08-13', status: 'completed',
+                startedOn: '2026-08-13', completedOn: '2026-08-13',
+              },
+            ],
+          },
+          {
+            topic: 'attendance', track: 'behaviour', originKind: 'teacher_report',
+            primaryCode: 'student.behaviour.attendance',
+            parallel: true,
+            title: 'Nghỉ bốn buổi trong hai tuần',
+            summary: 'Hai tuần đầu tháng 9 em nghỉ bốn buổi, chỉ báo trước một buổi.',
+            detectedAt: '2026-09-01', urgency: 'urgent',
+            status: 'in_progress', owner: 'T_HA', reportedBy: 'T_HA',
+            plans: [
+              {
+                kind: 'talk_parent', description: 'Gọi cho gia đình về bốn buổi nghỉ trong hai tuần',
+                performer: 'T_HA', cycleStart: '2026-09-02', status: 'completed',
+                startedOn: '2026-09-02', completedOn: '2026-09-02',
+              },
+              {
+                kind: 'warning_letter', description: 'Gửi thư cảnh cáo về chuyên cần',
+                performer: 'T_HA', cycleStart: '2026-09-08', status: 'completed',
+                startedOn: '2026-09-08', completedOn: '2026-09-08',
               },
             ],
           },

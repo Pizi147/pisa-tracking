@@ -1224,6 +1224,25 @@ CREATE TABLE unit_reports (
 );
 CREATE INDEX idx_ur_period ON unit_reports(period_id);
 
+/*
+ * LỊCH SỬ CHỈNH SỬA BÁO CÁO (mục 14.2).
+ *
+ * `unit_reports` giữ NỘI DUNG HIỆN TẠI của một ô; bảng này giữ mọi lần ô đó được sửa. Không
+ * có nó thì một ô đổi từ "Có vấn đề" sang "Ổn" trước giờ họp là chuyện không ai truy lại
+ * được — và đó đúng là lúc người ta cần truy nhất.
+ */
+CREATE TABLE unit_report_history (
+  id INTEGER PRIMARY KEY,
+  reporting_unit_id INTEGER NOT NULL REFERENCES reporting_units(id),
+  period_id INTEGER NOT NULL REFERENCES report_periods(id),
+  category_key TEXT NOT NULL,
+  status TEXT,
+  note TEXT,
+  actor_user_id INTEGER REFERENCES users(id),
+  at TEXT NOT NULL
+);
+CREATE INDEX idx_urh_cell ON unit_report_history(reporting_unit_id, period_id, category_key);
+
 CREATE TABLE tasks (
   id INTEGER PRIMARY KEY,
   code TEXT NOT NULL UNIQUE,

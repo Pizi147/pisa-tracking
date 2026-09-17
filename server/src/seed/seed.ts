@@ -316,6 +316,18 @@ function seedMeeting(conn: any, ctx: {
   };
 
   const cellsOf = (u: any) => (u.kind === 'branch' ? BRANCH_REPORT_CATEGORIES : TUTOR_REPORT_CATEGORIES);
+  /*
+   * NGÀY BÁO CÁO PHẢI LÀ NGÀY CỦA BỘ DEMO, không phải đồng hồ thật của máy.
+   *
+   * Ô báo cáo hiện "Người báo cáo: … · ngày". Lấy `nowIso()` thì bộ demo chạy ngày 14/09 lại
+   * hiện một nhận định đề ngày 17/09 — một việc đã xảy ra ở tương lai, đúng thứ mục 18.2 cấm.
+   * Nên ngày báo cáo là ngày CUỐI TUẦN đó, và không bao giờ vượt quá ngày demo.
+   */
+  const reportedAt = (periodId: number) => {
+    const p = conn.prepare('SELECT week_end FROM report_periods WHERE id = ?').get(periodId) as any;
+    const day = !p?.week_end || p.week_end > DEMO_DATE ? DEMO_DATE : p.week_end;
+    return `${day}T09:00:00.000Z`;
+  };
   const save = (unit: any, periodId: number, key: string, label: string, status: string | null, note: string | null, by: number) =>
     conn
       .prepare(
@@ -323,7 +335,7 @@ function seedMeeting(conn: any, ctx: {
                                    status, note, reporter_user_id, updated_at)
          VALUES (?,?,?,?,?,?,?,?)`,
       )
-      .run(periodId, unit.id, key, label, status, note, by, NOW);
+      .run(periodId, unit.id, key, label, status, note, by, reportedAt(periodId));
 
   units.forEach((u, ui) => {
     const reporter = u.branch_id

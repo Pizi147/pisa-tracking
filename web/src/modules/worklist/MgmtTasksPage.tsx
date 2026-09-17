@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { api, invalidate } from '../../lib/api.ts';
@@ -44,16 +44,32 @@ export default function MgmtTasksPage() {
   const branchId = params.get('cn') ? Number(params.get('cn')) : null;
   const [group, setGroup] = useState('');
   const [progress, setProgress] = useState('');
-  const [open, setOpen] = useState<number | null>(null);
-  const [creating, setCreating] = useState(false);
+  /*
+   * MỞ THẲNG TỪ ĐƯỜNG DẪN (mục 14.2): báo cáo kỳ họp liên kết sang đây để "tạo hoặc liên
+   * kết task ngay từ báo cáo". Đọc một lần lúc vào màn, rồi xoá tham số khỏi URL để nút Back
+   * không mở lại hộp thoại.
+   */
+  const [open, setOpen] = useState<number | null>(
+    params.get('open') ? Number(params.get('open')) : null,
+  );
+  const [creating, setCreating] = useState(params.get('tao') === '1');
+  const preGroup = params.get('nhom') ?? '';
+  useEffect(() => {
+    if (!params.get('open') && !params.get('tao')) return;
+    const next = new URLSearchParams(params);
+    next.delete('open'); next.delete('tao');
+    setParams(next, { replace: true });
+  }, [params, setParams]);
 
   const qs = new URLSearchParams();
   if (branchId) qs.set('branchId', String(branchId));
   if (group) qs.set('group', group);
   if (progress) qs.set('progress', progress);
-  const { data, loading, error, reload } = useApi<{ rows: Row[]; canEdit: boolean; scopeEmpty: boolean }>(
-    `/mgmt-tasks?${qs}`, [branchId, group, progress],
-  );
+  const { data, loading, error, reload } = useApi<{
+    rows: Row[]; canEdit: boolean; scopeEmpty: boolean;
+    facets?: { group: Record<string, number>; progress: Record<string, number> };
+    summary?: { doing: number; overdue: number; dueSoon: number; paused: number; total: number };
+  }>(`/mgmt-tasks?${qs}`, [branchId, group, progress]);
 
   if (error) return <ErrorState message={error.message} hint={error.hint} onRetry={reload} />;
   if (data?.scopeEmpty) {
@@ -66,7 +82,14 @@ export default function MgmtTasksPage() {
   }
 
   const rows = data?.rows ?? [];
-  const countOf = (g: string) => rows.filter((r) => r.group === g).length;
+  /*
+   * SỐ TRÊN NÚT NHÓM LẤY TỪ MÁY CHỦ, đếm trên phạm vi quyền/chi nhánh TRƯỚC KHI áp chính bộ
+   * lọc nhóm (mục 14.1). Đếm trên `rows` như bản trước là sai: chọn "Học sinh/Phụ huynh" thì
+   * ba nhóm kia tụt về 0 và người dùng tưởng trung tâm hết việc về giáo trình.
+   */
+  const countOf = (g: string) => data?.facets?.group[g] ?? 0;
+  const countProgress = (k: string) => data?.facets?.progress[k] ?? 0;
+  const sum = data?.summary;
 
   return (
     <div className="page space-y-4">
@@ -88,6 +111,32 @@ export default function MgmtTasksPage() {
           )}
         </div>
       </div>
+
+      {/*
+        DÒNG TỔNG HỢP GỌN (mục 14.2), và nó CỐ Ý KHÔNG cộng thành tổng: một việc quá hạn thì
+        cũng đang thực hiện. Bốn con số là bốn câu hỏi, nên câu chú thích nói thẳng điều đó
+        thay vì để người đọc cộng lại rồi thấy lệch và mất tin.
+      */}
+      {sum && (
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs surface-2 rounded-lg px-3 py-2">
+          <span className="text-slate-300">
+            <strong className="tabular-nums text-slate-100">{sum.doing}</strong> đang thực hiện
+          </span>
+          <span className={sum.overdue ? 'text-rose-300' : 'text-slate-400'}>
+            <strong className="tabular-nums">{sum.overdue}</strong> quá hạn
+          </span>
+          <span className={sum.dueSoon ? 'text-amber-200' : 'text-slate-400'}>
+            <strong className="tabular-nums">{sum.dueSoon}</strong> đến hạn trong ba ngày
+          </span>
+          <span className="text-slate-400">
+            <strong className="tabular-nums">{sum.paused}</strong> tạm ngưng
+          </span>
+          <span className="text-[11px] text-slate-500">
+            Bốn nhóm này chồng nhau — một việc quá hạn cũng đang thực hiện — nên chúng không
+            cộng thành {sum.total} việc.
+          </span>
+        </div>
+      )}
 
       <Card bodyClass="p-0"
         title={
@@ -114,7 +163,7 @@ export default function MgmtTasksPage() {
           {TASK_PROGRESS.map((s) => (
             <button key={s} className={`btn btn-sm ${progress === s ? 'btn-primary' : ''}`}
               onClick={() => setProgress(progress === s ? '' : s)}>
-              {TASK_PROGRESS_LABEL[s]}
+              {TASK_PROGRESS_LABEL[s]} <span className="tabular-nums opacity-70 ml-1">{countProgress(s)}</span>
             </button>
           ))}
         </div>
@@ -195,7 +244,7 @@ export default function MgmtTasksPage() {
 
       <TaskDetail taskId={open} onClose={() => setOpen(null)} onDone={reload} />
       <CreateTask open={creating} onClose={() => setCreating(false)} onDone={reload}
-        branchId={branchId} />
+        branchId={branchId} defaultGroup={preGroup || undefined} />
     </div>
   );
 }
@@ -387,15 +436,17 @@ function UpdateDialog({ open, onClose, task, onDone }: {
   );
 }
 
-function CreateTask({ open, onClose, onDone, branchId, parent }: {
+function CreateTask({ open, onClose, onDone, branchId, parent, defaultGroup }: {
   open: boolean; onClose: () => void; onDone: () => void;
   branchId: number | null; parent?: any;
+  /** Mở từ một mục báo cáo kỳ họp thì nhóm đã biết trước — đỡ một lần chọn và một lần chọn sai. */
+  defaultGroup?: string;
 }) {
   const toast = useToast();
   const people = useApi<any[]>(open ? '/ref/people' : null);
   const branches = useApi<any[]>(open ? '/ref/branches' : null);
   const [title, setTitle] = useState('');
-  const [group, setGroup] = useState<string>(parent?.group ?? 'curriculum');
+  const [group, setGroup] = useState<string>(parent?.group ?? defaultGroup ?? 'curriculum');
   const [assignee, setAssignee] = useState('');
   const [watcher, setWatcher] = useState('');
   /*

@@ -1,5 +1,5 @@
 import { db, isInitialised } from './db.ts';
-import { nowIso } from './util.ts';
+import { addDays, nowIso } from './util.ts';
 import { demoToday } from './demoConfig.ts';
 import crypto from 'node:crypto';
 import { PERMISSION_LABEL } from '../../shared/domain/index.ts';
@@ -408,6 +408,7 @@ function migrateCaseEngine(applied: string[], skipped: string[]) {
     migratePlanForm(conn, applied);
     migrateMoveRequests(conn, applied);
     migrateEntryBands(conn, applied);
+    migrateReportHistory(conn, applied);
 
     /*
      * Case đã đóng theo hệ thống cũ mà không có hướng xử lý: ghi rõ là "đóng theo hệ thống
@@ -851,16 +852,38 @@ function migrateCaseLifecycle(conn: any, applied: string[]) {
   const groups = new Map<string, any[]>();
   for (const r of conn
     .prepare(
+      /*
+       * KHÔNG GỘP CHUỖI TÁI DIỄN.
+       *
+       * `parallel = 1` là "hai case cùng hạng mục mở CÙNG LÚC có chủ ý". Nhưng còn một thứ
+       * nữa cũng cố ý là hai bản ghi: case đã ĐÓNG rồi vấn đề TÁI DIỄN, nên case mới nối vào
+       * case cũ qua `previous_case_id`. Gộp chúng lại là xoá mất đúng điều người dạy muốn nói
+       * — "tưởng xong rồi mà hỏng lại" — và kết luận của lần đóng trước cũng biến mất theo.
+       *
+       * Nên loại khỏi bước gộp cả hai đầu của mọi sợi dây tái diễn.
+       */
       `SELECT id, student_id, cycle_id, category, track, origin_kind, attempt_id, status,
-              detected_at, sos_level, created_at, closed_at, disposition
+              detected_at, sos_level, created_at, closed_at, disposition, topic, merge_until
          FROM sos_cases
         WHERE student_id IS NOT NULL AND category IS NOT NULL AND parallel = 0
+          AND previous_case_id IS NULL
+          AND id NOT IN (SELECT previous_case_id FROM sos_cases WHERE previous_case_id IS NOT NULL)
         ORDER BY COALESCE(detected_at, substr(created_at, 1, 10)), id`,
     )
     .all() as any[]) {
     if (r.track === 'behaviour' && r.origin_kind === 'mock') continue;
+    /*
+     * Ý THỨC/KHÁC LÀ ĐỢT, KHÔNG PHẢI MỘT CASE SỐNG SUỐT LỘ TRÌNH (mục 7.2).
+     *
+     * Khoá cũ `bt:học viên:lộ trình` là luật của vòng trước, khi cả nhóm ý thức chỉ có đúng
+     * một case cho mỗi lộ trình. Từ vòng 7, "thiếu BTVN tháng 8" và "ít phát biểu tháng 9"
+     * là HAI ĐỢT khác nhau của hai phân loại khác nhau — gộp chúng lại là xoá mất một đợt,
+     * và bảng Ý thức của lớp sẽ đếm thiếu.
+     *
+     * Nên khoá gộp nay có cả PHÂN LOẠI, và bên dưới còn một cửa chặn nữa theo cửa sổ bốn ngày.
+     */
     const key = r.track === 'behaviour'
-      ? `bt:${r.student_id}:${r.cycle_id ?? 0}`
+      ? `bt:${r.student_id}:${r.cycle_id ?? 0}:${r.topic ?? 'other'}`
       : `a:${r.student_id}:${r.cycle_id ?? 0}:${r.category}`;
     const list = groups.get(key) ?? [];
     list.push(r);
@@ -895,9 +918,25 @@ function migrateCaseLifecycle(conn: any, applied: string[]) {
     });
 
     if (ordered.length < 2) continue;
+
+    /*
+     * CỬA SỔ BỐN NGÀY CHẶN LẦN CUỐI (mục 7.2).
+     *
+     * Hai đợt Ý thức cùng phân loại nhưng cách nhau ba tuần vẫn là HAI ĐỢT. Chỉ những báo
+     * cáo rơi trong bốn ngày kể từ ngày mở đợt mới thuộc về đợt đó — đúng luật mà chính
+     * sản phẩm đang chạy, nên bước nâng cấp không được nới rộng hơn.
+     */
+    const mergeable = survivor.track === 'behaviour'
+      ? ordered.slice(1).filter((c) => {
+        const from = survivor.detected_at ?? String(survivor.created_at).slice(0, 10);
+        const on = c.detected_at ?? String(c.created_at).slice(0, 10);
+        return on >= from && on <= addDays(from, 3);
+      })
+      : ordered.slice(1);
+    if (!mergeable.length) continue;
     mergedGroups += 1;
 
-    for (const c of ordered.slice(1)) {
+    for (const c of mergeable) {
       repoint(c.id, survivor.id);
       conn.prepare('DELETE FROM sos_cases WHERE id = ?').run(c.id);
       mergedCases += 1;
@@ -908,8 +947,9 @@ function migrateCaseLifecycle(conn: any, applied: string[]) {
      * Trạng thái lấy theo cái CÒN MỞ: gộp một case đã đóng với một case đang mở thì kết quả
      * phải là ĐANG MỞ, không được tự đóng lại việc chưa xong.
      */
-    const latest = ordered[ordered.length - 1];
-    const anyOpen = ordered.some((c) => c.status !== 'done');
+    const kept = [survivor, ...mergeable];
+    const latest = kept[kept.length - 1];
+    const anyOpen = kept.some((c) => c.status !== 'done');
     conn
       .prepare(
         `UPDATE sos_cases
@@ -2227,6 +2267,31 @@ function migrateEntryBands(conn: any, applied: string[]) {
     'Thêm chỗ ghi band đầu vào từng kỹ năng (mục 12.1). Dữ liệu cũ chỉ có OVR và KHÔNG được '
       + 'suy ra bốn môn: một em OVR 5.5 có thể là Listening 6.0 và Writing 4.5.',
   );
+}
+
+/**
+ * LỊCH SỬ CHỈNH SỬA BÁO CÁO KỲ HỌP (mục 14.2).
+ *
+ * KHÔNG dựng ngược lịch sử từ nội dung hiện tại: một dòng "đã sửa" mà không biết ai sửa và
+ * sửa lúc nào là một dòng bịa. Lịch sử bắt đầu từ lần lưu tiếp theo, và bảng nói rõ như vậy.
+ */
+function migrateReportHistory(conn: any, applied: string[]) {
+  const has = (t: string) =>
+    !!conn.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name = ?").get(t);
+  if (has('unit_report_history')) return;
+  conn.exec(`
+    CREATE TABLE unit_report_history (
+      id INTEGER PRIMARY KEY,
+      reporting_unit_id INTEGER NOT NULL REFERENCES reporting_units(id),
+      period_id INTEGER NOT NULL REFERENCES report_periods(id),
+      category_key TEXT NOT NULL,
+      status TEXT,
+      note TEXT,
+      actor_user_id INTEGER REFERENCES users(id),
+      at TEXT NOT NULL);
+    CREATE INDEX idx_urh_cell ON unit_report_history(reporting_unit_id, period_id, category_key);
+  `);
+  applied.push('Thêm lịch sử chỉnh sửa báo cáo kỳ họp (bắt đầu ghi từ lần lưu tiếp theo)');
 }
 
 function migrateMoveRequests(conn: any, applied: string[]) {

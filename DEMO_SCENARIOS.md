@@ -35,7 +35,7 @@ Mã J01–J12 chỉ dùng trong tài liệu này, **không hiện ra sản phẩ
 |---|---|---|---|---|
 | **J01** | Nguyễn Minh An · MB-FT 101 | Bất kỳ ai xem được Monbay | Học viên → MB-FT 101 → bấm tên em | Ba chương trình nối nhau từ 12/2025. Case Reading của lớp Beginner còn mở → hiện là **case bàn giao**, không tính thành SOS của lớp Fast Track. |
 | **J02** | Trần Thu Hà · MB-FT 101 | GV Trần Ngọc Hà, hoặc Quản lý Monbay | Hồ sơ học viên | MT1 SOS 2 → MT2 SOS 1. Bảng "Tiến độ hiện tại": Reading đã hết case, Speaking còn một case đang ở chu kỳ hai. |
-| **J03** | Lê Quang Huy · MB-FT 101 | GV Trần Ngọc Hà | Hồ sơ → case Listening | **Một** case đi qua **hai** chu kỳ hỗ trợ. Không có case thứ hai, không có phương án bị nhân đôi. Lần cập nhật đầu chọn "Tiếp tục phương án cũ". |
+| **J03** | Lê Quang Huy · MB-FT 101 | GV Trần Ngọc Hà | Hồ sơ học viên | **HỒ SƠ DÀY NHẤT — mở đây để xem một em nhiều case thì màn hình ra sao.** Sáu case ở năm hạng mục, đủ mọi trạng thái. Xem chi tiết ở mục riêng bên dưới. |
 | **J04** | Hồ Thanh Tùng · CP-FT 110 | GV Ngô Bảo Nam | Hồ sơ → bật "Hiện cả case đã hoàn thành" | Hai case Reading: một đã chốt (MT1), một đang mở (MT3) nối vào cái cũ. Case cũ có thêm mốc "tái phát". |
 | **J05** | Đinh Ngọc Quyên · CP-FT 110 | GV Hoàng Quang Dũng | Hồ sơ → hạng mục Writing Task 2 | **Hai case song song** cùng một hạng mục, tên khác nhau: một về bố cục bài, một về vốn từ. Mỗi case có phương án riêng và mở được độc lập. |
 | **J06** | Lý Tuấn Bình · CP-FT 110 | GV Ngô Bảo Nam | Hồ sơ → case Listening | Phương án 1 "Được thay thế" sau kết quả "Chưa thay đổi"; phương án 2 cho kết quả "Tiến bộ rõ rệt". Ghi chú nói rõ nhận định ban đầu đã sai ở đâu. |
@@ -159,6 +159,50 @@ Chỉ **Quản trị hệ thống** và **Quản lý chi nhánh** thấy tab nà
 
 ---
 
+## Hồ sơ dày nhất: Lê Quang Huy (J03)
+
+Mở `Học viên → MB-FT 101 → Lê Quang Huy`. Đây là hồ sơ dựng riêng để xem **một em có nhiều
+case thì màn hình đọc ra sao** — mỗi hàng kỹ năng một trạng thái khác nhau:
+
+| Hàng kỹ năng | Trạng thái | Bấm vào sẽ thấy |
+|---|---|---|
+| **Listening** | Đang xử lý | MỘT case đi qua HAI chu kỳ hỗ trợ: tự học (đã xong, "Tiến bộ một phần") rồi tutor (đang làm, quá hạn cập nhật). Không có case thứ hai. |
+| **Reading** | Đã kết thúc · có tiến bộ | Case đã khép với kết quả tốt. Phương án của nó có **hai** lần cập nhật: lần đầu "Chưa đủ dữ liệu" (không vào mẫu số hiệu quả), lần sau "Tiến bộ rõ" kèm điểm cô tự chấm 32/40. |
+| **Writing Task 2** | Đang xử lý | Phương án đầu **KHÔNG ăn thua** ("Không tiến bộ") rồi bị thay bằng tutor. Trên dải thời gian, thanh cũ là **đỏ mờ**, thanh mới là **xanh sáng**. Kết quả thất bại cũ vẫn nằm trong báo cáo hiệu quả. |
+| **Speaking** | Chưa có phương án | Case cũ đã đóng ("nói đủ hai phút"), rồi **TÁI DIỄN** với vấn đề khác (lặp từ). Case mới nối vào case cũ; kết luận cũ giữ nguyên. |
+| **Ý thức/Khác** | Đang xử lý | Hai đợt: đợt BTVN tháng 8 (đã gọi cho gia đình, đã khép) và đợt chuyên cần tháng 9 (đã gọi **và** đã gửi thư cảnh cáo). Ở dạng xem **Ý thức** của lớp, em này có số khác không ở cả hai cột hành động. |
+
+**Dải thời gian của từng kỹ năng** là chỗ đọc nhanh nhất: mỗi ô nền là một tuần, tên tháng ở
+trên, vạch mốc MT xuyên suốt, vạch xanh là **hôm nay**. Màu nói kết quả, độ sáng nói còn sống
+hay đã khép — và mỗi dòng đều có chữ nói đúng điều màu đang nói, nên không ai phải đoán theo màu.
+
+---
+
+## Mười bốn tình huống của đề bài — mở ở đâu
+
+Mỗi dòng dưới đây có một phép kiểm tự động canh chừng (mục **42** của `npm test`), nên nếu
+bộ demo lỡ mất một tình huống thì phép kiểm đỏ chứ không lặng lẽ biến mất.
+
+| # | Tình huống | Mở ở đâu |
+|---|---|---|
+| 1 | MT tách tuần theo **cả hai chiều** | Phạm Bảo Ngọc (RLW trước, S sau) · Tạ Thu Quỳnh (S trước, RLW sau) |
+| 2 | FT chỉ thi một phần kỹ năng, **không có Overall giả** | Đợt MT có kỹ năng "không yêu cầu" — ô Overall để trống, không ghép từ các môn còn lại |
+| 3 | Normal đủ bốn môn, ngưỡng 70% | Lớp MB-FOU 12 → Bảng điểm |
+| 4 | Dời vì vắng: lần đầu GVCN · lần hai chờ duyệt · đã trả lời | Nguyễn Minh An (lần đầu) · Trần Thu Hà (lần hai, đang chờ) |
+| 5 | Huỷ riêng một kỹ năng, các kỹ năng khác giữ nguyên | Thẻ "Lịch thi theo kỹ năng" của đợt có hàng **Đã huỷ** |
+| 6 | Kỹ năng đang chờ xếp lại, đợt **chưa** kết thúc | Đợt còn hàng "Chưa có tuần" hoặc "Đã xác nhận vắng" |
+| 7 | GVBM đổi được môn mình, GVCN đổi nhiều môn | Đăng nhập bằng một GVBM rồi thử đổi tuần một môn không phải của mình |
+| 8 | SOS 2 từ điểm, **không** có phương án tự sinh | Bất kỳ case nào sinh từ MT — phần phương án trống cho tới khi có người ghi |
+| 9 | Trượt thật ở MT trước rồi tiến bộ ở MT sau | Trần Thu Hà · Lê Quang Huy |
+| 10 | Đợt Ý thức gộp trong cửa sổ bốn ngày | Lê Quang Huy → Ý thức/Khác → đợt BTVN có hai báo cáo |
+| 11 | "Chưa đủ dữ liệu" rồi mới tới tiến bộ | Lê Quang Huy → Reading |
+| 12 | Phương án bị thay, kết quả thất bại cũ **vẫn còn** | Lê Quang Huy → Writing Task 2 · Lý Tuấn Bình → Listening |
+| 12b | Đã report gia đình mà hành vi **vẫn tái diễn** | Lê Quang Huy → Ý thức/Khác (gọi tháng 8, nghỉ tiếp tháng 9) |
+| 13 | Case bàn giao khi chuyển lớp · em chưa xếp lớp tiếp | Nguyễn Minh An (bàn giao) · lớp đã hết chương trình còn học viên |
+| 14 | Báo cáo kỳ họp đủ bốn tình trạng, task nối nhiều kỳ | Tiến trình → Tình hình đơn vị (có cả ô "Chưa báo cáo") |
+
+---
+
 ## Quy mô bộ demo
 
 | | |
@@ -170,8 +214,8 @@ Chỉ **Quản trị hệ thống** và **Quản lý chi nhánh** thấy tab nà
 | Giáo viên | 10, trong đó **2 người dạy ở hai chi nhánh** |
 | Tài khoản khác | 1 Quản trị hệ thống · 5 Quản lý · 5 Admin văn phòng |
 | Lượt đánh giá | 115 (MT của Fast Track + Progress/Final Test của Normal) |
-| Case | 52 |
-| Phương án | 80 |
+| Case | 60 |
+| Phương án | 88 |
 | Công việc quản lý | 14 (bao gồm 4 việc con) |
 | Lịch sử | Từ 12/2025 |
 
@@ -182,7 +226,7 @@ Chỉ **Quản trị hệ thống** và **Quản lý chi nhánh** thấy tab nà
 ```bash
 npm run seed      # dựng lại từ đầu — XOÁ hết dữ liệu demo đang có
 npm run dev       # chạy thử ở http://localhost:5173
-npm test          # 235 phép kiểm nghiệp vụ
+npm test          # 319 phép kiểm nghiệp vụ
 ```
 
 `npm run seed` chạy lại bao nhiêu lần cũng cho ra **đúng một bộ dữ liệu** — không nhân bản,

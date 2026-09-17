@@ -1,16 +1,32 @@
 import { db, tx } from '../db.ts';
 import {
   BEHAVIOUR_TOPIC_LABEL, BRANCH_REPORT_CATEGORIES, ENTRY_SKILL_LABEL, PERMISSIONS,
-  TASK_PROGRESS, TASK_TYPES,
+  TASK_PROGRESS, TASK_PROGRESS_LABEL, TASK_TYPES,
   TUTOR_REPORT_CATEGORIES, UNIT_STATUSES, type DueState,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { badRequest, diffDays, isIsoDate, notFound, nowIso, padCode } from '../util.ts';
 import { can, require_, scopeFor, type Principal } from '../permissions.ts';
 import { writeAudit } from '../platform/audit.ts';
-import { periodById, reportEditWindow } from '../platform/week.ts';
+import { owningMonth, periodById, reportEditWindow } from '../platform/week.ts';
 
 export const DUE_SOON_DAYS = 3;
+
+/**
+ * MỤC BÁO CÁO ↔ NHÓM CÔNG VIỆC.
+ *
+ * Bốn nhóm công việc và ba mục báo cáo chi nhánh không trùng tên nhau, nên chỗ nối phải nằm
+ * ở đúng một nơi. Thiếu bảng này thì mỗi màn tự đoán lấy, và "Giáo trình" ở báo cáo sẽ hiện
+ * việc của "Giáo viên".
+ */
+const TASK_GROUP_OF_CATEGORY: Record<string, string> = {
+  teachers: 'teacher',
+  students: 'student_parent',
+  curriculum: 'curriculum',
+  tutor_count: 'tutor',
+  tutor_quality: 'tutor',
+  tutor_other: 'tutor',
+};
 
 /** Nhóm báo cáo phụ thuộc loại đơn vị. Tutor part-time có bộ nhóm riêng. */
 export function categoriesFor(unit: { kind: string }) {
@@ -26,21 +42,84 @@ export function visibleUnits(p: Principal) {
   return all.filter((u) => u.branch_id === null || scope.branchIds.includes(u.branch_id));
 }
 
-/** Tình hình các đơn vị trong một kỳ. Ô trống = CHƯA BÁO CÁO, khác hẳn "Ổn". */
-export function meetingBoard(p: Principal, periodId: number) {
+/**
+ * Tình hình các đơn vị trong một kỳ. Ô trống = CHƯA BÁO CÁO, khác hẳn "Ổn".
+ *
+ * KỲ TUẦN HAY KỲ THÁNG (mục 14.2). Báo cáo được GHI theo tuần — đó là nhịp thật của trung
+ * tâm — còn kỳ tháng là một cách ĐỌC LẠI các tuần của tháng đó:
+ *
+ *   · Tình trạng hiện ở ô tháng là lần báo cáo GẦN NHẤT trong tháng, vì đó là điều đơn vị
+ *     nói sau cùng.
+ *   · Kèm theo là tình trạng NẶNG NHẤT đã xuất hiện trong tháng: một tuần "Có vấn đề" rồi
+ *     ba tuần "Ổn" không phải là một tháng ổn, và giấu nó đi là giấu đúng thứ cần mang ra họp.
+ *   · Kỳ tháng KHÔNG sửa được. Một nhận định thuộc về tuần người ta viết nó; cho sửa ở tầng
+ *     tháng thì không biết phải ghi vào tuần nào.
+ */
+export function meetingBoard(p: Principal, periodId: number, opts: { month?: string | null } = {}) {
   require_(p, PERMISSIONS.MEETING_VIEW, { anyScope: true }, 'Bạn không có quyền xem họp tuần.');
   const period = periodById(periodId);
   if (!period) throw notFound('Không tìm thấy kỳ họp');
   const conn = db();
   const units = visibleUnits(p);
 
+  /* Các tuần THUỘC tháng đang xem — tuần thuộc về tháng chứa ngày thứ Năm của nó. */
+  const monthPeriods = opts.month
+    ? (conn.prepare('SELECT id, week_start, code FROM report_periods ORDER BY week_start').all() as any[])
+        .filter((r) => {
+          const m = owningMonth(r.week_start);
+          return `${m.year}-${String(m.month).padStart(2, '0')}` === opts.month;
+        })
+    : [];
+  const monthIds = monthPeriods.map((r) => r.id);
+
   const unitRows = units.map((u) => {
     const cats = categoriesFor(u);
-    const saved = conn
-      .prepare('SELECT * FROM unit_reports WHERE reporting_unit_id = ? AND period_id = ?')
-      .all(u.id, periodId) as any[];
+    /* Kỳ tháng đọc TẤT CẢ các tuần của tháng; kỳ tuần đọc đúng một tuần. */
+    const saved = monthIds.length
+      ? (conn
+          .prepare(
+            `SELECT ur.*, rp.week_start FROM unit_reports ur
+               JOIN report_periods rp ON rp.id = ur.period_id
+              WHERE ur.reporting_unit_id = ? AND ur.period_id IN (${monthIds.map(() => '?').join(',')})
+              ORDER BY rp.week_start`,
+          )
+          .all(u.id, ...monthIds) as any[])
+      : (conn
+          .prepare('SELECT * FROM unit_reports WHERE reporting_unit_id = ? AND period_id = ?')
+          .all(u.id, periodId) as any[]);
     const cells = cats.map((c) => {
-      const r = saved.find((x) => x.category_key === c.key);
+      const mineAll = saved.filter((x) => x.category_key === c.key);
+      /* Kỳ tháng: lần báo cáo GẦN NHẤT là điều đơn vị nói sau cùng. */
+      const r = monthIds.length ? mineAll[mineAll.length - 1] : mineAll[0];
+      const RANK: Record<string, number> = { ok: 1, watch: 2, problem: 3 };
+      const worstStatus = monthIds.length
+        ? mineAll.map((x) => x.status).filter(Boolean)
+          .sort((a, b) => (RANK[b] ?? 0) - (RANK[a] ?? 0))[0] ?? null
+        : null;
+      /*
+       * CÔNG VIỆC LIÊN QUAN của chính ô này (mục 14.2), lấy theo NHÓM và CHI NHÁNH — không
+       * dựng thêm một bảng liên kết, và cũng không tạo lại một việc mới mỗi kỳ. Một việc
+       * sống xuyên nhiều kỳ thì mọi kỳ đều nhìn thấy đúng nó, với TRẠNG THÁI HIỆN TẠI.
+       */
+      const group = TASK_GROUP_OF_CATEGORY[c.key] ?? null;
+      const tasks = group
+        ? (conn
+            .prepare(
+              `SELECT id, code, title, progress, due_date FROM tasks
+                WHERE kind = 'branch_ops' AND parent_task_id IS NULL AND group_key = ?
+                  AND (branch_id IS ? OR branch_id = ?)
+                ORDER BY progress IN ('done','stopped'), due_date IS NULL, due_date LIMIT 6`,
+            )
+            .all(group, u.branch_id, u.branch_id) as any[])
+          .map((t) => ({
+            id: t.id, code: t.code, title: t.title,
+            progress: t.progress,
+            progressLabel: TASK_PROGRESS_LABEL[t.progress as keyof typeof TASK_PROGRESS_LABEL] ?? t.progress,
+            due: t.due_date ?? null,
+            /* TRẠNG THÁI HIỆN TẠI, không phải trạng thái ở cuối kỳ đang xem (mục 14.2). */
+            overdue: !['done', 'stopped'].includes(t.progress) && !!t.due_date && t.due_date < demoToday(),
+          }))
+        : [];
       return {
         key: c.key, label: c.label, hint: c.hint,
         status: r?.status ?? null,          // null = chưa báo cáo
@@ -49,7 +128,24 @@ export function meetingBoard(p: Principal, periodId: number) {
           ? (conn.prepare('SELECT full_name FROM users WHERE id = ?').get(r.reporter_user_id) as any)?.full_name ?? null
           : null,
         updatedAt: r?.updated_at ?? null,
+        /* Ngày báo cáo, tách khỏi dấu thời gian đầy đủ để giao diện khỏi tự cắt chuỗi. */
+        reportedOn: r?.updated_at ? String(r.updated_at).slice(0, 10) : null,
         reportId: r?.id ?? null,
+        taskGroup: group,
+        tasks,
+        /* Chỉ có ở kỳ tháng: tuần nặng nhất đã xuất hiện, và đã báo cáo mấy tuần trên mấy. */
+        worstStatus,
+        weeksReported: monthIds.length ? mineAll.filter((x) => x.status).length : null,
+        weeksTotal: monthIds.length ? monthIds.length : null,
+        history: (conn
+          .prepare(
+            `SELECT h.status, h.note, h.at, us.full_name AS actor
+               FROM unit_report_history h LEFT JOIN users us ON us.id = h.actor_user_id
+              WHERE h.reporting_unit_id = ? AND h.period_id = ? AND h.category_key = ?
+              ORDER BY h.id DESC LIMIT 10`,
+          )
+          .all(u.id, periodId, c.key) as any[])
+          .map((h) => ({ status: h.status ?? null, note: h.note ?? null, at: h.at, actor: h.actor ?? null })),
       };
     });
     return {
@@ -75,7 +171,15 @@ export function meetingBoard(p: Principal, periodId: number) {
     { total: 0, ok: 0, watch: 0, problem: 0, notReported: 0 },
   );
 
-  return { period, units: unitRows, totals };
+  return {
+    period,
+    /* Nói rõ mình đang đọc ở tầng nào, để không ai tưởng ô tháng sửa được. */
+    scope: monthIds.length
+      ? { kind: 'month' as const, month: opts.month!, weeks: monthPeriods.map((r) => r.code), editable: false }
+      : { kind: 'week' as const, month: null, weeks: [period.code], editable: true },
+    units: unitRows,
+    totals,
+  };
 }
 
 export function saveUnitReport(
@@ -122,7 +226,19 @@ export function saveUnitReport(
 
   const after = conn
     .prepare('SELECT * FROM unit_reports WHERE reporting_unit_id = ? AND period_id = ? AND category_key = ?')
-    .get(unitId, periodId, categoryKey);
+    .get(unitId, periodId, categoryKey) as any;
+  /*
+   * LỊCH SỬ CHỈNH SỬA (mục 14.2) — một dòng cho mỗi lần lưu.
+   *
+   * Một ô đổi từ "Có vấn đề" sang "Ổn" ngay trước giờ họp là chuyện phải truy lại được, và
+   * nhật ký hệ thống thì người dùng không mở. Nên lịch sử nằm ngay trong ô, cạnh nội dung.
+   */
+  conn
+    .prepare(
+      `INSERT INTO unit_report_history (reporting_unit_id, period_id, category_key, status, note, actor_user_id, at)
+       VALUES (?,?,?,?,?,?,?)`,
+    )
+    .run(unitId, periodId, categoryKey, after.status ?? null, after.note ?? null, p.userId, nowIso());
   writeAudit({ actorUserId: p.userId, action: 'unit_report.save', entityType: 'unit_report',
     entityId: (after as any).id, entityLabel: `${unit.name} · ${cat.label}`, before, after });
   return after;

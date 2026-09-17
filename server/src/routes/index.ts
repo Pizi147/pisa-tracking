@@ -5,7 +5,7 @@ import {
   PERMISSIONS, REGULAR_SKILLS, ROLE_LABEL, THREAD_TRACKS, THREAD_TRACK_LABEL, type Role,
 } from '../../../shared/domain/index.ts';
 import { demoToday, getConfig, scenarioMode, setConfig } from '../demoConfig.ts';
-import { HttpError, badRequest, isIsoDate, notFound, toInt } from '../util.ts';
+import { HttpError, badRequest, forbidden, isIsoDate, notFound, toInt } from '../util.ts';
 import { SESSION_COOKIE, createSession, destroySession, principalOf, requireAuth } from '../auth.ts';
 import { can, loadPrincipal, permissionSummary, require_, scopeFor } from '../permissions.ts';
 import { writeAudit } from '../platform/audit.ts';
@@ -36,7 +36,6 @@ import * as accountSvc from '../platform/accounts.ts';
 import * as sysconfigSvc from '../platform/sysconfig.ts';
 import * as mgmtSvc from '../worklist/mgmttasks.ts';
 import * as highlightSvc from '../worklist/highlights.ts';
-import * as outcomeSvc from '../worklist/outcomes.ts';
 import { weeklyRollup } from '../worklist/weekly.ts';
 import { myWork } from '../worklist/mywork.ts';
 import * as caseSvc from '../cases/cases.ts';
@@ -528,6 +527,55 @@ api.get('/classes/:id/issue-board', requireAuth, wrap((req) => {
   return effectiveness.classIssueBoard(id, category, { fromDate: qStr(req, 'from') ?? null });
 }));
 
+/*
+ * BẢNG PHÂN TÍCH VẤN ĐỀ Ở PHẠM VI CHI NHÁNH — trang Thực trạng (mục 15).
+ *
+ * Ba đường dưới đây dùng CHUNG một bộ lọc phạm vi và CHUNG một cách đếm với bảng của từng
+ * lớp (mục 13.4). Số tổng, bảng phân loại và danh sách khi bấm số vì thế không thể lệch
+ * nhau — đó là cả lý do chúng gọi vào cùng một nơi thay vì mỗi màn tự đếm lấy.
+ */
+function issueScopeOf(req: any) {
+  const p = principalOf(req);
+  const sc = scopeFor(p, PERMISSIONS.CASE_VIEW);
+  if (sc.none) throw forbidden('Bạn không có quyền xem thực trạng.');
+  const asked = qInt(req, 'branchId') ?? null;
+  /* Không có quyền toàn hệ thống thì phạm vi luôn là giao của quyền và ô người dùng chọn. */
+  const allowed = sc.all ? null : sc.branchIds;
+  const branchIds: number[] | null = asked !== null
+    ? (allowed && !allowed.includes(asked) ? [] : [asked])
+    : allowed;
+  const classId = qInt(req, 'classId');
+  return {
+    classId: classId ?? null,
+    branchIds: classId ? null : branchIds,
+    ratio: qStr(req, 'lop') === 'normal',
+    fromDate: qStr(req, 'from') ?? null,
+    toDate: qStr(req, 'to') ?? null,
+  };
+}
+
+/** Hàng kỹ năng: mỗi hạng mục một hàng, kể cả hạng mục chưa có case nào (mục 15.1). */
+api.get('/issue-board/skills', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return { rows: effectiveness.issueSkillRows(issueScopeOf(req)) };
+}));
+
+/** Bảng phân loại vấn đề của MỘT hạng mục, kèm hiệu quả theo loại phương án. */
+api.get('/issue-board', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  const category = qStr(req, 'category');
+  if (!category) throw badRequest('Chưa chọn kỹ năng để phân tích.');
+  return effectiveness.issueBoard(issueScopeOf(req), category);
+}));
+
+/** Bấm một số thì ra đúng tập bản ghi tạo nên số đó (mục 15.2). */
+api.get('/issue-board/cases', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  const category = qStr(req, 'category');
+  if (!category) throw badRequest('Chưa chọn kỹ năng để xem chi tiết.');
+  return effectiveness.issueBoardCases(issueScopeOf(req), category, qStr(req, 'code'));
+}));
+
 api.get('/classes/:id/overview', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   return classSvc.classOverview(principalOf(req), pInt(req, 'id'));
@@ -773,18 +821,13 @@ api.get('/summary', requireAuth, wrap((req) => {
   return summarySvc.branchSummary(principalOf(req), { branchId: qInt(req, 'branchId') });
 }));
 
-/**
- * Phương án & kết quả (mục 4.3): những gì đã làm cho học viên có ăn thua không.
- * Một phương án là MỘT phương án dù cập nhật ba lần; báo cáo dùng kết quả gần nhất.
+/*
+ * ĐƯỜNG `/outcomes` ĐÃ BỎ cùng với bảng "Phương án & kết quả" đứng riêng (mục 15.1).
+ *
+ * Nó là CÁCH ĐẾM THỨ HAI cho cùng một câu hỏi "những gì đã làm có ăn thua không", chạy
+ * song song với `cases/effectiveness.ts`. Hai cách đếm cho một câu hỏi thì sớm muộn cũng ra
+ * hai con số, và lúc đó không ai biết tin bên nào. Nay chỉ còn một nơi sở hữu luật 15.3.
  */
-api.get('/outcomes', requireAuth, wrap((req) => {
-  maybeSimulateReadError();
-  return outcomeSvc.outcomeReport(principalOf(req), {
-    branchId: qInt(req, 'branchId'),
-    track: req.query?.track === 'normal' ? 'normal' : req.query?.track === 'ft' ? 'ft' : null,
-    topic: req.query?.topic ? String(req.query.topic) : null,
-  });
-}));
 
 /** Khối riêng của Quản lý: chi nhánh đang tắc ở đâu (theo lớp), và ai đang tắc (theo người). */
 api.get('/branch-pulse', requireAuth, wrap((req) => {
@@ -987,10 +1030,17 @@ api.post('/students/:id/status', requireAuth, wrap((req) => {
 api.get('/meeting/board', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   const periodId = qInt(req, 'periodId') ?? ensurePeriod(demoToday()).id;
-  const board = meetingSvc.meetingBoard(principalOf(req), periodId) as any;
+  /* `month=YYYY-MM` đọc cả tháng; không có thì đọc đúng tuần đang chọn (mục 14.2). */
+  const month = qStr(req, 'month');
+  const board = meetingSvc.meetingBoard(principalOf(req), periodId, { month }) as any;
   const period = periodById(periodId);
   // Giao diện phải biết tuần này có đang mở để cập nhật không, và nếu không thì vì sao.
-  return { ...board, editWindow: period ? reportEditWindow(period) : null };
+  return {
+    ...board,
+    editWindow: month
+      ? { open: false, reason: 'Kỳ tháng chỉ để đọc — nhận định thuộc về tuần người ta viết nó.', opensOn: '' }
+      : (period ? reportEditWindow(period) : null),
+  };
 }));
 
 /**

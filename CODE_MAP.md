@@ -131,6 +131,8 @@ loại dữ liệu mới** vào kịch bản thì thêm trường ở `journeys.
 | Điều kiện được hoàn thành case | `server/src/cases/cases.ts` → `closeBlockers` |
 | Điểm giáo viên tự chấm | `server/src/cases/cases.ts` → `normalizeMetrics`, `parseMetrics` |
 | **Cách đếm hiệu quả phương án** — thành công/thất bại/chưa xác định, n/N, mẫu nhỏ | `server/src/cases/effectiveness.ts` (nơi sở hữu duy nhất; bảng của lớp và trang Thực trạng đều gọi vào đây) |
+| **Phân tích vấn đề ở Thực trạng** — tab Normal/FT, hàng kỹ năng, bấm số ra case | `web/src/modules/cases/IssueAnalysis.tsx` · `server/src/cases/effectiveness.ts` → `issueSkillRows`, `issueBoard`, `issueBoardCases` |
+| **Dải thời gian phương án** ở hồ sơ (Gantt theo tuần, màu theo kết quả) | `web/src/modules/students/ProgressChart.tsx` → `PlanLane` · dữ liệu ở `server/src/students/profile.ts` |
 | Bảng "Vấn đề - Case" và bộ lọc | `web/src/modules/cases/CaseBoardPage.tsx` |
 
 ### Tổng quan và công việc

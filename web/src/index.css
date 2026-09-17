@@ -123,6 +123,8 @@
   .td { padding: 0.55rem 0.75rem; border-bottom: 1px solid var(--line); vertical-align: middle; }
   .row-hover:hover { background: var(--accent-soft); }
   /* Học viên đã kết thúc: làm dịu nhưng vẫn phải đọc rõ, không hạ opacity tới mức mất chữ. */
+  /* Hàng ĐANG ĐƯỢC CHỌN — sáng hơn hàng chỉ đang bị rê chuột, để biết mình đang xem cái nào. */
+  .row-active { background: var(--accent-soft); box-shadow: inset 2px 0 0 var(--accent); }
   .row-muted { color: var(--text-faint); }
   .row-muted .link { color: var(--text-dim); }
 

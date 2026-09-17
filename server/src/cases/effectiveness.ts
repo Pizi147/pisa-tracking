@@ -1,7 +1,7 @@
 import { db } from '../db.ts';
 import {
   BEHAVIOUR_TOPICS, CASE_CATEGORY_SHORT, INTERVENTION_KIND_LABEL,
-  caseCategoryLabel, categoryOf, issueBoardCategoriesFor, issueLabel,
+  caseCategoriesFor, caseCategoryLabel, categoryOf, issueBoardCategoriesFor, issueLabel,
   type InterventionKind,
 } from '../../../shared/domain/index.ts';
 
@@ -46,6 +46,15 @@ type Scope = {
   /** Giới hạn theo lớp; bỏ trống thì lấy theo danh sách học viên. */
   classId?: number | null;
   studentIds?: number[];
+  /**
+   * PHẠM VI RỘNG HƠN MỘT LỚP — trang Thực trạng (mục 15).
+   *
+   * `branchIds` là danh sách chi nhánh ĐƯỢC PHÉP XEM, đã tính quyền ở tầng route; `ratio`
+   * chia hai tab Normal / Fast Track. Số tổng, bộ lọc và mọi lần bấm số đi sâu đều đi qua
+   * đúng bộ lọc này, nên ba nơi không thể ra ba con số khác nhau (mục 15.2).
+   */
+  branchIds?: number[] | null;
+  ratio?: boolean | null;
   /** Khoảng báo cáo cho phần HIỆU QUẢ. Hiện trạng vấn đề luôn là hiện tại (mục 15.2). */
   fromDate?: string | null;
   toDate?: string | null;
@@ -53,10 +62,33 @@ type Scope = {
 
 function studentsOf(scope: Scope): number[] {
   if (scope.studentIds?.length) return scope.studentIds;
-  if (!scope.classId) return [];
-  return (db()
-    .prepare(`SELECT student_id FROM enrollments WHERE class_id = ? AND status = 'active'`)
-    .all(scope.classId) as any[]).map((r) => r.student_id);
+  const conn = db();
+  if (scope.classId) {
+    return (conn
+      .prepare(`SELECT student_id FROM enrollments WHERE class_id = ? AND status = 'active'`)
+      .all(scope.classId) as any[]).map((r) => r.student_id);
+  }
+  /*
+   * HIỆN TRẠNG LẤY NƠI ĐANG CHỊU TRÁCH NHIỆM (mục 15.2): em thuộc về lớp em đang học, nên
+   * phạm vi chi nhánh tính theo lớp hiện tại chứ không theo lớp cũ em từng học.
+   */
+  const where: string[] = [`e.status = 'active'`];
+  const params: unknown[] = [];
+  if (scope.branchIds && scope.branchIds.length) {
+    where.push(`c.branch_id IN (${scope.branchIds.map(() => '?').join(',')})`);
+    params.push(...scope.branchIds);
+  }
+  if (scope.ratio !== null && scope.ratio !== undefined) {
+    where.push(`pg.scoring_mode ${scope.ratio ? '=' : '!='} 'ratio'`);
+  }
+  return (conn
+    .prepare(
+      `SELECT DISTINCT e.student_id FROM enrollments e
+         JOIN classes c ON c.id = e.class_id
+         JOIN programmes pg ON pg.code = c.programme_code
+        WHERE ${where.join(' AND ')}`,
+    )
+    .all(...params) as any[]).map((r) => r.student_id);
 }
 
 /**
@@ -157,9 +189,26 @@ export function planEffectiveness(scope: Scope & { category?: string | null }) {
  * thể gặp nhiều phân loại — và bảng phải NÓI RA điều đó thay vì để người đọc tự cộng.
  */
 export function classIssueBoard(classId: number, category: string, opts: { fromDate?: string | null } = {}) {
+  return issueBoard({ classId, fromDate: opts.fromDate ?? null }, category);
+}
+
+/**
+ * CÙNG MỘT BẢNG, CHẠY TRÊN PHẠM VI BẤT KỲ — một lớp (mục 13.4) hay cả chi nhánh (mục 15).
+ *
+ * Hai màn hỏi cùng những câu và chỉ khác phạm vi, nên chúng dùng chung đúng một hàm. Viết
+ * hai bản là cách chắc chắn để một hôm nào đó bảng của lớp và trang Thực trạng cãi nhau về
+ * cùng một case, và lúc đó không ai biết bên nào đúng.
+ */
+export function issueBoard(scope: Scope, category: string) {
   const conn = db();
-  const sids = studentsOf({ classId });
-  if (!sids.length) return { category, rows: [], plans: [], studentCount: 0, note: null };
+  const sids = studentsOf(scope);
+  if (!sids.length) {
+    return {
+      category, label: caseCategoryLabel(category),
+      short: (CASE_CATEGORY_SHORT as Record<string, string>)[category] ?? category,
+      rows: [], plans: [], studentCount: 0, note: null,
+    };
+  }
   const ph = sids.map(() => '?').join(',');
 
   const cases = conn
@@ -191,7 +240,10 @@ export function classIssueBoard(classId: number, category: string, opts: { fromD
         )
         .all(...caseIds) as any[])
     : [];
-  const outcomes = new Map(planOutcomes({ studentIds: sids, fromDate: opts.fromDate }).map((r) => [r.id, r]));
+  const outcomes = new Map(
+    planOutcomes({ studentIds: sids, fromDate: scope.fromDate, toDate: scope.toDate })
+      .map((r) => [r.id, r]),
+  );
 
   /*
    * MỘT HÀNG CHO MỖI PHÂN LOẠI ĐANG CÓ MẶT, cộng một hàng riêng cho case CHƯA PHÂN LOẠI.
@@ -232,12 +284,111 @@ export function classIssueBoard(classId: number, category: string, opts: { fromD
     short: (CASE_CATEGORY_SHORT as Record<string, string>)[category] ?? category,
     rows,
     /* Hiệu quả theo LOẠI phương án của chính kỹ năng này — mở ra khi người dùng cần. */
-    plans: planEffectiveness({ classId, category, fromDate: opts.fromDate }),
+    plans: planEffectiveness({ studentIds: sids, category, fromDate: scope.fromDate, toDate: scope.toDate }),
     studentCount: uniqueStudents,
     /* Nói thẳng vì sao cộng các hàng lại ra số lớn hơn (mục 15.2). */
     note: rowSum > uniqueStudents
       ? `${uniqueStudents} học viên, nhưng cộng các hàng ra ${rowSum} vì một em có thể gặp nhiều phân loại.`
       : null,
+  };
+}
+
+/**
+ * HÀNG KỸ NĂNG CỦA TRANG THỰC TRẠNG — mục 15.1, bước 2.
+ *
+ * Mỗi hạng mục một hàng, KỂ CẢ hạng mục đang không có case nào: "chưa có case" là một câu
+ * trả lời, còn một hàng biến mất thì người đọc không biết mình đang thiếu gì.
+ *
+ * Bốn con số mỗi hàng là bốn câu hỏi khác nhau, không phải một phép chia:
+ *   HV đang gặp     học viên ĐẾM DUY NHẤT có case đang mở ở hạng mục này
+ *   Case đang mở    số case — một em có thể có hai case song song
+ *   Thiếu phương án case đang mở mà chưa ai đề ra phương án nào
+ *   Đang hỗ trợ     case đang mở và có ít nhất một phương án chưa khép
+ */
+export function issueSkillRows(scope: Scope) {
+  const conn = db();
+  const sids = studentsOf(scope);
+  const cats = caseCategoriesFor(scope.ratio ? 'ratio' : 'ielts_band');
+  if (!sids.length) {
+    return cats.map((c) => ({
+      code: c, label: caseCategoryLabel(c), short: CASE_CATEGORY_SHORT[c] ?? c,
+      students: 0, openCases: 0, noPlan: 0, supporting: 0, unclassified: 0,
+    }));
+  }
+  const ph = sids.map(() => '?').join(',');
+  const cases = conn
+    .prepare(
+      `SELECT sc.id, sc.student_id, sc.status, sc.track, sc.category, sc.topic,
+              (SELECT COUNT(*) FROM case_interventions iv
+                WHERE iv.case_id = sc.id AND iv.status != 'cancelled') AS plan_count,
+              (SELECT COUNT(*) FROM case_interventions iv
+                WHERE iv.case_id = sc.id AND iv.status IN ('planned','started')) AS open_plans,
+              (SELECT COUNT(*) FROM case_issues ci
+                WHERE ci.case_id = sc.id AND ci.role = 'primary') AS issue_count
+         FROM sos_cases sc
+        WHERE sc.student_id IN (${ph})`,
+    )
+    .all(...sids) as any[];
+
+  return cats.map((cat) => {
+    const mine = cases.filter((c) => (c.category ?? categoryOf(c.track ?? 'academic', c.topic)) === cat);
+    const open = mine.filter((c) => c.status !== 'done');
+    return {
+      code: cat, label: caseCategoryLabel(cat), short: CASE_CATEGORY_SHORT[cat] ?? cat,
+      /* ĐẾM DUY NHẤT — một em hai case cùng hạng mục vẫn là một em (mục 15.2). */
+      students: new Set(open.map((c) => c.student_id)).size,
+      openCases: open.length,
+      noPlan: open.filter((c) => c.plan_count === 0).length,
+      supporting: open.filter((c) => c.open_plans > 0).length,
+      /*
+       * TẬP CHƯA PHÂN LOẠI ĐƯỢC hiện thành một con số riêng (mục 15.1) — phần lớn là dữ
+       * liệu cũ, và nó cần người xử lý chứ không phải bị gộp im lặng vào "Khác".
+       */
+      unclassified: open.filter((c) => c.issue_count === 0).length,
+    };
+  });
+}
+
+/**
+ * BẤM MỘT SỐ THÌ RA ĐÚNG TẬP BẢN GHI TẠO NÊN SỐ ĐÓ — mục 15.1 và 15.2.
+ *
+ * Danh sách này đi qua CÙNG bộ lọc phạm vi với con số vừa bấm, nên không có chuyện ô ghi 7
+ * mà mở ra 5 dòng. `code` rỗng nghĩa là cả hạng mục; `__unclassified__` là tập chưa phân loại.
+ */
+export function issueBoardCases(scope: Scope, category: string, code?: string | null) {
+  const conn = db();
+  const sids = studentsOf(scope);
+  if (!sids.length) return { rows: [] };
+  const ph = sids.map(() => '?').join(',');
+  const rows = conn
+    .prepare(
+      `SELECT sc.id, sc.title, sc.status, sc.track, sc.category, sc.topic, sc.detected_at,
+              sc.sos_level, s.full_name, s.student_code, s.id AS student_id,
+              (SELECT ci.taxonomy_code FROM case_issues ci
+                WHERE ci.case_id = sc.id AND ci.role = 'primary' LIMIT 1) AS code,
+              (SELECT c.code FROM enrollments e JOIN classes c ON c.id = e.class_id
+                WHERE e.student_id = sc.student_id AND e.status = 'active'
+                ORDER BY e.id DESC LIMIT 1) AS class_code,
+              (SELECT COUNT(*) FROM case_interventions iv
+                WHERE iv.case_id = sc.id AND iv.status != 'cancelled') AS plan_count
+         FROM sos_cases sc JOIN students s ON s.id = sc.student_id
+        WHERE sc.student_id IN (${ph})
+        ORDER BY sc.status = 'done', sc.detected_at DESC`,
+    )
+    .all(...sids) as any[];
+
+  return {
+    rows: rows
+      .filter((r) => (r.category ?? categoryOf(r.track ?? 'academic', r.topic)) === category)
+      .filter((r) => !code || (code === '__unclassified__' ? !r.code : r.code === code))
+      .map((r) => ({
+        caseId: r.id, studentId: r.student_id, studentName: r.full_name,
+        studentCode: r.student_code, classCode: r.class_code ?? null,
+        title: r.title ?? caseCategoryLabel(r.category ?? r.topic),
+        issueLabel: r.code ? issueLabel(r.code) : 'Chưa phân loại vấn đề',
+        status: r.status, sosLevel: r.sos_level ?? null,
+        detectedAt: r.detected_at, planCount: r.plan_count,
+      })),
   };
 }
 

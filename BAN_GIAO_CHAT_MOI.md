@@ -195,14 +195,51 @@ trên trình duyệt cả ba lối ra của một tín hiệu.
 lượt kiểm lỗi kiểu dữ liệu sạch; đã bấm thử thật trên trình duyệt cả hai dạng xem và bảng
 phân tích của lớp CP-FT 110.
 
-### ⬜ Còn lại — hai nhóm việc
+### ✅ Xong — mục 14 · 15 · 16 và mục 18.2 · 20 (việc 28 và 29)
 
-Đây là danh sách việc đã chia sẵn, theo đúng thứ tự phụ thuộc. **Làm từ trên xuống.**
+**Ba màn của Quản lý nay đếm cùng một bộ số, và bộ demo bày ra đủ mười bốn tình huống.**
 
-| # | Việc | Mục trong đề bài |
-|---|---|---|
-| 28 | **Tiến độ công việc, báo cáo kỳ họp, Thực trạng, Toàn cảnh** | 14 · 15 · 16 |
-| 29 | **Demo 14 tình huống, kiểm thử, bàn giao** | 18.2 · 20 |
+- **Thực trạng làm lại phần phân tích vấn đề** theo đúng bốn bước: chọn Fast Track hay Normal
+  → xem hạng mục nào đang nặng (một hàng mỗi môn, cộng Ý thức/Khác) → mở bảng phân loại vấn
+  đề của hạng mục đó → **bấm một con số thì ra đúng những case tạo nên nó**.
+- **Bảng “Phương án & kết quả” đứng riêng đã bỏ.** Nó là cách đếm THỨ HAI cho cùng một câu
+  hỏi, chạy song song với cách đếm của bảng lớp — hai cách đếm thì sớm muộn ra hai con số.
+  Nay hiệu quả phương án nằm trong phần mở rộng của chính nhóm vấn đề đang xem.
+- **Khoảng báo cáo hiệu quả** mặc định 12 tuần gần nhất, đổi được. Hiện trạng vấn đề vẫn
+  luôn là hiện tại, và màn hình ghi rõ hai phạm vi đó ngay chỗ đọc.
+- **Tiến độ công việc:** sửa lỗi số trên bốn nhóm. Trước đây chọn “Học sinh/Phụ huynh” thì ba
+  nhóm còn lại tụt về 0 — người dùng tưởng trung tâm hết việc về giáo trình. Nay số đếm trên
+  phạm vi quyền/chi nhánh TRƯỚC khi áp bộ lọc nhóm. Thêm dòng tổng hợp: đang thực hiện · quá
+  hạn · đến hạn trong ba ngày · tạm ngưng, kèm câu nói rõ bốn số này chồng nhau.
+- **Báo cáo kỳ họp:** chọn được kỳ **Tuần** hoặc **Tháng**. Kỳ tháng hiện lần báo cáo gần
+  nhất kèm tình trạng nặng nhất đã xuất hiện trong tháng — một tuần “Có vấn đề” rồi ba tuần
+  “Ổn” không phải là một tháng ổn. Kỳ tháng chỉ để đọc.
+- Mỗi ô báo cáo nay có **người và ngày báo cáo**, **lịch sử chỉnh sửa**, **công việc liên
+  quan với trạng thái hiện tại**, và nút **“+ Tạo việc từ mục này”** mở thẳng form tạo việc
+  đã chọn sẵn nhóm.
+- **Bộ demo dày lên.** Lê Quang Huy nay có sáu case ở năm hạng mục với đủ trạng thái: đang
+  xử lý, đã khép có tiến bộ, phương án thất bại bị thay, case đã đóng rồi tái diễn, và hai
+  đợt Ý thức có cả report gia đình lẫn thư cảnh cáo.
+- **Hai lỗi của bước nâng cấp đã sửa**, cả hai đều xoá dữ liệu thật: bước gộp case cũ đang
+  gộp nhầm **chuỗi tái diễn** (case đã đóng + case mới nối vào nó) và gộp nhầm **hai đợt Ý
+  thức khác phân loại** thành một. Nay chuỗi tái diễn được để yên, và đợt Ý thức chỉ gộp khi
+  cùng phân loại VÀ nằm trong cửa sổ bốn ngày.
+
+**Kiểm chứng:** 319 phép kiểm tự động đạt hết. Trong đó có **mục 42 riêng cho bộ demo**: mười
+sáu phép kiểm soi thẳng vào dữ liệu demo để bảo đảm mười bốn tình huống của đề bài đều có
+thật, không có sự việc nào ghi là đã xảy ra sau ngày demo, và bộ demo không “đỏ rực”. Bước
+nâng cấp chạy hai lượt trên bản sao database demo: không mất case, phương án, kết quả hay
+báo cáo nào; lượt hai là no-op.
+
+### ⬜ Còn lại
+
+Toàn bộ danh sách việc 21–29 đã xong. Những gì còn lại là việc của người tiếp theo sau khi
+chủ sản phẩm xem bản này:
+
+| Việc | Vì sao chưa làm |
+|---|---|
+| Dọn các màn phụ chưa rà theo mục 17 (tiêu chuẩn UI) | Đề bài xếp sau cùng, và nó cần chủ sản phẩm xem trước để biết chỗ nào thật sự vướng |
+| Bấm thật trên máy tính bảng và điện thoại | Đã kiểm khổ 390px không tràn ngang ở hồ sơ học viên, Thực trạng và Tiến độ công việc, nhưng mới là kiểm bằng ảnh chứ chưa bấm bằng tay |
 
 > Mục **19** của đề bài liệt kê sẵn những chỗ code đã phát hiện có vấn đề, kèm tên file.
 > Đọc nó trước khi bắt tay vào từng nhóm việc — nhưng **đối chiếu, không vá mù**.
@@ -219,7 +256,7 @@ Ghi ở đây để người tiếp theo không mất một buổi mò lại.
 | Đường dẫn khi nhập file | Bắt buộc có đuôi `.ts` / `.tsx` trong câu lệnh nhập. Thiếu là gãy |
 | Sau khi sửa phần máy chủ | **Bắt buộc** chạy `npm run build:server`, nếu không thì thay đổi không có tác dụng |
 | Kiểm lỗi kiểu dữ liệu | `npx tsc -p tsconfig.build.json --noEmit` và `npx tsc -p tsconfig.web.json --noEmit` |
-| Chạy kiểm thử | `npm test` — hiện **294 phép kiểm**, phải đạt hết |
+| Chạy kiểm thử | `npm test` — hiện **319 phép kiểm**, phải đạt hết |
 | Dựng lại bộ demo | `npm run seed` (xoá sạch rồi dựng lại) · nâng cấp database đang có: `npm run migrate` |
 | Bật thử | `npm run dev` → http://localhost:5173 |
 | Tắt máy chủ | `for p in 5173 4000; do pid=$(fuser -n tcp $p 2>/dev/null \| tr -d ' '); [ -n "$pid" ] && kill -9 $pid; done` |
