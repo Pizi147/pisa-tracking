@@ -1,7 +1,7 @@
 import { db } from '../db.ts';
 import {
   BEHAVIOUR_TOPICS, CASE_CATEGORY_SHORT, INTERVENTION_KIND_LABEL,
-  caseCategoriesFor, caseCategoryLabel, categoryOf, issueLabel,
+  caseCategoryLabel, categoryOf, issueBoardCategoriesFor, issueLabel,
   type InterventionKind,
 } from '../../../shared/domain/index.ts';
 
@@ -241,9 +241,15 @@ export function classIssueBoard(classId: number, category: string, opts: { fromD
   };
 }
 
-/** Bộ hạng mục của lớp, để giao diện bày đúng tab: Normal L/R/W/S, Fast Track thêm W1/W2. */
+/**
+ * Bộ tab của bảng phân tích: Normal L/R/W/S, Fast Track L/R/W1/W2/S (mục 13.4).
+ *
+ * Ý THỨC/KHÁC CỐ Ý KHÔNG CÓ TAB Ở ĐÂY. Bảng này báo cáo hiệu quả phương án bằng tỷ lệ thành
+ * công, và nhóm ý thức không có thứ đó: gia đình đã nhận report không chứng minh em tiến bộ.
+ * Nhóm ấy có chỗ riêng — dạng xem "Ý thức" ở mục 13.3, nơi đếm SỐ ĐỢT và SỐ LẦN ĐÃ LÀM.
+ */
 export function issueBoardCategories(ratio: boolean) {
-  return caseCategoriesFor(ratio ? 'ratio' : 'ielts_band').map((c) => ({
+  return issueBoardCategoriesFor(ratio ? 'ratio' : 'ielts_band').map((c) => ({
     code: c, label: caseCategoryLabel(c), short: CASE_CATEGORY_SHORT[c] ?? c,
   }));
 }

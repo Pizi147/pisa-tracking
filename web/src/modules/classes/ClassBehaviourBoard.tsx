@@ -93,12 +93,11 @@ export function ClassBehaviourBoard({ classId }: { classId: number }) {
                     </td>
                   );
                 })}
-                <td className="td text-right tabular-nums text-slate-300">
-                  {r.reports || <span className="text-slate-600">—</span>}
-                </td>
-                <td className="td text-right tabular-nums text-slate-300">
-                  {r.warningLetters || <span className="text-slate-600">—</span>}
-                </td>
+                {/* Bấm số MỞ ĐƯỢC các bản ghi tạo ra nó (mục 13.3) — hồ sơ em là nơi có đủ. */}
+                <CountCell n={r.reports} studentId={r.studentId}
+                  title="Mở hồ sơ em để xem từng lần đã report cho gia đình" />
+                <CountCell n={r.warningLetters} studentId={r.studentId}
+                  title="Mở hồ sơ em để xem từng thư cảnh cáo đã gửi" />
               </tr>
             ))}
           </tbody>
@@ -118,5 +117,19 @@ export function ClassBehaviourBoard({ classId }: { classId: number }) {
         report không chứng minh em đã khá hơn.
       </SectionNote>
     </div>
+  );
+}
+
+/** Một ô số bấm được — số 0 là một gạch ngang, và gạch ngang thì không bấm. */
+function CountCell({ n, studentId, title }: { n: number; studentId: number; title: string }) {
+  return (
+    <td className="td text-right tabular-nums text-slate-300">
+      {n ? (
+        <Link className="text-slate-300 no-underline hover:underline" title={title}
+          to={`/hoc-vien/${studentId}`}>
+          {n}
+        </Link>
+      ) : <span className="text-slate-600">—</span>}
+    </td>
   );
 }

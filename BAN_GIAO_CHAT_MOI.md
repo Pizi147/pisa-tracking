@@ -159,17 +159,48 @@ thành case"), vô hiệu hoá phương án tự sinh **chưa ai thực hiện**
 đầu hoặc đã xong, không case nào bị đóng hay xoá, chạy lại lần hai là no-op. Đã bấm thử thật
 trên trình duyệt cả ba lối ra của một tín hiệu.
 
-### ⬜ Còn lại — bảy nhóm việc
+### ✅ Xong — mục 12 và mục 13 (việc 27)
+
+**Trang lớp trả lời được hai câu khác nhau, và bảng phân tích không còn chia chéo hai đơn vị.**
+
+- **Hai dạng xem danh sách học viên.** Ngay cạnh chữ "Học viên" có hai nút **Học thuật** và
+  **Ý thức**. Học thuật giữ nguyên bảng điểm cũ; Ý thức đổi sang bảng: mỗi hàng là một em,
+  mỗi cột là **số đợt** BTVN · Chuyên cần · Tham gia trên lớp · Khác, cộng hai cột hành động
+  thật — **đã report gia đình mấy lần**, **đã gửi thư cảnh cáo mấy lần**. Bấm vào số mở hồ sơ
+  em để xem các bản ghi tạo ra nó.
+- Bảng Ý thức mặc định đếm **từ lúc em vào lớp này**; có nút chuyển sang **toàn hành trình**
+  và câu chữ ngay trên bảng nói rõ mình đang nhìn khoảng nào. Chuyển lớp không biến việc của
+  lớp cũ thành việc của lớp mới.
+- Đếm **đợt**, không đếm từng lần giáo viên báo: nhiều lần báo trong bốn ngày là một đợt.
+  Hai cột hành động đếm **lần đã làm thật** — một cuộc gọi nói cả hai chuyện vẫn là một lần,
+  và phương án mới dự kiến thì chưa tính.
+- **Bảng phân tích vấn đề của lớp** nằm ngay dưới box lớp, **mặc định thu gọn** để không đẩy
+  danh sách học viên xuống dưới màn hình. Tab kỹ năng cố định theo chương trình: lớp Normal
+  bốn tab L/R/W/S, lớp Fast Track năm tab có cả W1 và W2 — kỹ năng chưa có case vẫn còn tab
+  và nói "chưa có case", không lặng lẽ biến mất.
+- Mỗi hàng là một **phân loại vấn đề**, kèm năm con số: Case · Phương án · Đang theo dõi ·
+  Thành công · Không thành công. Chúng là **năm đơn vị khác nhau** nên bảng không chia chúng
+  cho nhau — một case có thể có ba phương án. Tỷ lệ chỉ xuất hiện ở phần mở rộng, theo
+  **loại phương án**, luôn hiện n/N trước phần trăm, và mẫu dưới năm thì ghi rõ "mẫu nhỏ".
+- **"Chưa đủ dữ liệu" không bị tính là thất bại** và không vào mẫu số. Cách đếm này nằm ở
+  đúng một chỗ, dùng chung cho bảng của lớp và cho trang Thực trạng sau này.
+- Case **chưa phân loại** có hàng riêng, không dồn vào "Khác" — đó là một tập cần người xử lý.
+- Bộ demo nay **có phân loại cho mọi case**. Trước đó 54 case đều trống phân loại, nên bảng
+  phân tích chỉ hiện đúng một hàng "Chưa phân loại" — tức là không nói gì cả.
+- Danh sách bên ngoài: chưa có kế hoạch thi thì cột **Dự kiến thi** hiện một gạch ngang, không
+  phải một nhãn vàng. Nhãn đó trước đây nằm ở gần hết các hàng, và một cảnh báo xuất hiện ở
+  mọi hàng thì không còn là cảnh báo.
+
+**Kiểm chứng:** 294 phép kiểm tự động đạt hết, trong đó 8 phép mới cho mục 13.3 và 13.4; hai
+lượt kiểm lỗi kiểu dữ liệu sạch; đã bấm thử thật trên trình duyệt cả hai dạng xem và bảng
+phân tích của lớp CP-FT 110.
+
+### ⬜ Còn lại — hai nhóm việc
 
 Đây là danh sách việc đã chia sẵn, theo đúng thứ tự phụ thuộc. **Làm từ trên xuống.**
 
 | # | Việc | Mục trong đề bài |
 |---|---|---|
-| 23 | **Case: form, phân loại, mức độ, gộp đợt Ý thức/Khác** — tên và mô tả bắt buộc, mức độ chỉ còn **Cần chú ý / Gấp**, phân loại bắt buộc; Ý thức/Khác gộp theo **cửa sổ 4 ngày** | 6.3 · 6.4 · 7 |
-| 24 | **Phương án hỗ trợ** — danh mục theo nhóm, form mới, **bảng hạn**, cập nhật hai tab, một nút hoàn thành case | 8 · 9 |
-| 25 | **Dời lịch, vắng, duyệt, khôi phục** — bộ đếm dời theo **kỹ năng trong từng đợt**, lần đầu GVCN, lần hai cần Quản lý duyệt | 10.2 · 10.3 · 10.6 |
-| 26 | **Overhaul hồ sơ học viên** ⭐ *ưu tiên cao nhất* — bảng tiến độ theo kỹ năng, **bấm hàng mở ngay bên dưới**, menu FT đúng bốn mục | 4 · 5 |
-| 27 | **Trang Học viên, nhập danh sách, tạo lớp, hồ sơ lớp** | 12 · 13 |
 | 28 | **Tiến độ công việc, báo cáo kỳ họp, Thực trạng, Toàn cảnh** | 14 · 15 · 16 |
 | 29 | **Demo 14 tình huống, kiểm thử, bàn giao** | 18.2 · 20 |
 
@@ -188,7 +219,7 @@ Ghi ở đây để người tiếp theo không mất một buổi mò lại.
 | Đường dẫn khi nhập file | Bắt buộc có đuôi `.ts` / `.tsx` trong câu lệnh nhập. Thiếu là gãy |
 | Sau khi sửa phần máy chủ | **Bắt buộc** chạy `npm run build:server`, nếu không thì thay đổi không có tác dụng |
 | Kiểm lỗi kiểu dữ liệu | `npx tsc -p tsconfig.build.json --noEmit` và `npx tsc -p tsconfig.web.json --noEmit` |
-| Chạy kiểm thử | `npm test` — hiện **257 phép kiểm**, phải đạt hết |
+| Chạy kiểm thử | `npm test` — hiện **294 phép kiểm**, phải đạt hết |
 | Dựng lại bộ demo | `npm run seed` (xoá sạch rồi dựng lại) · nâng cấp database đang có: `npm run migrate` |
 | Bật thử | `npm run dev` → http://localhost:5173 |
 | Tắt máy chủ | `for p in 5173 4000; do pid=$(fuser -n tcp $p 2>/dev/null \| tr -d ' '); [ -n "$pid" ] && kill -9 $pid; done` |

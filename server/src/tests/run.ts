@@ -48,6 +48,7 @@ const mgmt = await import('../worklist/mgmttasks.ts');
 const skillSchedule = await import('../fasttrack/skillSchedule.ts');
 const absence = await import('../fasttrack/absence.ts');
 const signalsSvc = await import('../cases/signals.ts');
+const effectiveness = await import('../cases/effectiveness.ts');
 const { ratioResult: domainRatio } = await import('../../../shared/domain/index.ts');
 const { demoToday } = await import('../demoConfig.ts');
 const { addDays } = await import('../util.ts');
@@ -6808,6 +6809,235 @@ check('[4.2] Lớp Normal có kết quả trong bảng kỹ năng — không đ�
       `Hàng ${r.category} kết luận đạt/chưa đạt không khớp ngưỡng 70%`);
   }
 });
+
+
+// ==================================================================== 39
+
+console.log('\n39. Hai dạng xem của lớp và bảng phân tích vấn đề (mục 13.3 · 13.4)');
+
+/** Một em ở lớp MB-FT 101, kèm lớp và chu kỳ — đủ để mở case và ghi phương án. */
+function boardStudent(offset = 0) {
+  const row = conn
+    .prepare(
+      `SELECT s.id, e.class_id, cy.id AS cycle_id FROM students s
+         JOIN enrollments e ON e.student_id = s.id AND e.status = 'active'
+         LEFT JOIN learning_cycles cy ON cy.student_id = s.id AND cy.status = 'active'
+        WHERE e.class_id = ? AND s.status = 'active'
+        ORDER BY s.id LIMIT 1 OFFSET ?`,
+    )
+    .get(classId('MB-FT 101'), offset) as any;
+  assert(row, 'Không tìm được học viên ở MB-FT 101 để thử');
+  return row;
+}
+
+function behaviourRow(classIdOf: number, studentId: number, allJourney = false) {
+  const board = classesSvc.classBehaviourBoard(P.admin, classIdOf, { allJourney }) as any;
+  const row = board.rows.find((r: any) => r.studentId === studentId);
+  assert(row, 'Bảng Ý thức thiếu chính học viên đang xét');
+  return row;
+}
+
+check('[13.3] Cột nhóm đếm số ĐỢT case, không đếm từng lần giáo viên báo', () => {
+  const st = boardStudent(0);
+  const before = behaviourRow(st.class_id, st.id).topics.homework.episodes;
+
+  const base = {
+    studentId: st.id, cycleId: st.cycle_id, track: 'behaviour', topic: 'homework',
+    primaryCode: 'student.behaviour.homework',
+  } as any;
+  const first = cases.reportIssue(P.admin, {
+    ...base, title: 'BTVN: không nộp bài tuần này',
+    summary: 'Em không nộp bài Writing tuần này, nhắc hai lần vẫn chưa có bài.',
+  }) as any;
+  /* Lần báo thứ hai trong cửa sổ bốn ngày phải NHẬP VÀO ĐỢT CŨ, không mở đợt mới (mục 7.2). */
+  const second = cases.reportIssue(P.admin, {
+    ...base, title: 'BTVN: lại không nộp',
+    summary: 'Hôm nay em vẫn chưa nộp bài, đây là buổi thứ hai liên tiếp.',
+  }) as any;
+  assert(second.id === first.id, 'Hai lần báo trong bốn ngày đã thành hai đợt');
+
+  const after = behaviourRow(st.class_id, st.id).topics.homework.episodes;
+  assert(after === before + 1,
+    `Bảng đếm ${after - before} đợt cho hai lần báo của cùng một đợt`);
+  const reports = (conn
+    .prepare('SELECT COUNT(*) n FROM case_reports WHERE case_id = ?')
+    .get(first.id) as any).n;
+  assert(reports >= 2, 'Lần báo thứ hai không được lưu lại thành báo cáo thành phần');
+});
+
+check('[13.3] Report gia đình và thư cảnh cáo đếm LẦN ĐÃ LÀM, một lần chỉ tính một', () => {
+  const st = boardStudent(1);
+  const before = behaviourRow(st.class_id, st.id);
+
+  const base = {
+    studentId: st.id, cycleId: st.cycle_id, track: 'behaviour', topic: 'attendance',
+    primaryCode: 'student.behaviour.attendance',
+  } as any;
+  const a = cases.reportIssue(P.admin, {
+    ...base, title: 'Chuyên cần: nghỉ hai buổi liên tiếp',
+    summary: 'Em nghỉ hai buổi liên tiếp trong tuần này và không báo trước.',
+  }) as any;
+  /* Case thứ hai song song, để thử "một cuộc gọi phục vụ hai case". */
+  const b = cases.reportIssue(P.admin, {
+    ...base, topic: 'participation', primaryCode: 'student.behaviour.participation',
+    parallel: true, title: 'Tham gia: không phát biểu buổi nào',
+    summary: 'Cả tuần em không phát biểu buổi nào, hỏi tới thì im lặng.',
+  }) as any;
+  assert(b.id !== a.id, 'Case song song vẫn bị gộp vào đợt cũ');
+
+  const call = { kind: 'talk_parent', status: 'completed', completedDate: demoToday(), performerSelf: true };
+  cases.recordIntervention(P.admin, a.id, { ...call, description: 'Gọi cho mẹ em về việc nghỉ học hai buổi.' });
+  cases.recordIntervention(P.admin, b.id, { ...call, description: 'Cùng cuộc gọi đó nói luôn chuyện em không phát biểu.' });
+  /* Thư cảnh cáo mới DỰ KIẾN, chưa gửi — không được đếm. */
+  cases.recordIntervention(P.admin, a.id, {
+    kind: 'warning_letter', status: 'planned', plannedDate: demoToday(),
+    performerSelf: true, description: 'Dự kiến gửi thư cảnh cáo nếu em còn nghỉ tiếp.',
+  });
+
+  const after = behaviourRow(st.class_id, st.id);
+  assert(after.reports === before.reports + 1,
+    `Hai phương án cùng một cuộc gọi trong cùng một ngày đếm thành ${after.reports - before.reports} lần`);
+  assert(after.warningLetters === before.warningLetters,
+    'Thư cảnh cáo mới dự kiến đã bị đếm như đã gửi');
+});
+
+check('[13.3] Mặc định chỉ đếm từ lúc em vào lớp này; toàn hành trình là một lựa chọn riêng', () => {
+  const st = boardStudent(2);
+  const joined = (conn
+    .prepare(`SELECT started_at FROM enrollments WHERE student_id = ? AND class_id = ? AND status = 'active'`)
+    .get(st.id, st.class_id) as any)?.started_at;
+  assert(joined, 'Học viên thử nghiệm không có ngày vào lớp');
+
+  const c = cases.reportIssue(P.admin, {
+    studentId: st.id, cycleId: st.cycle_id, track: 'behaviour', topic: 'other',
+    primaryCode: 'student.behaviour.other', parallel: true,
+    title: 'Việc từ lớp cũ',
+    summary: 'Sự việc xảy ra từ trước khi em chuyển sang lớp này, ghi lại để theo dõi.',
+  }) as any;
+  /* Đẩy ngày phát hiện về TRƯỚC ngày em vào lớp — đúng hình dạng của một việc ở lớp cũ. */
+  conn.prepare('UPDATE sos_cases SET detected_at = ? WHERE id = ?')
+    .run(addDays(joined, -30), c.id);
+
+  const here = behaviourRow(st.class_id, st.id, false);
+  const all = behaviourRow(st.class_id, st.id, true);
+  assert(all.totalEpisodes === here.totalEpisodes + 1,
+    'Việc của lớp cũ không hiện ra ngay cả khi chọn xem toàn hành trình');
+  assert(here.totalEpisodes < all.totalEpisodes,
+    'Việc xảy ra trước ngày vào lớp đang bị tính thành việc của lớp này');
+});
+
+check('[15.3] "Chưa đủ dữ liệu" không vào nhóm nào và không vào mẫu số', () => {
+  assert(effectiveness.outcomeGroup('improved') === 'success', 'Khá hơn phải là thành công');
+  assert(effectiveness.outcomeGroup('partial') === 'success', 'Đỡ một phần phải là thành công');
+  assert(effectiveness.outcomeGroup('unchanged') === 'failure', 'Không đổi phải là không thành công');
+  assert(effectiveness.outcomeGroup('worse') === 'failure', 'Tệ hơn phải là không thành công');
+  assert(effectiveness.outcomeGroup('insufficient') === 'undetermined',
+    '"Chưa đủ dữ liệu" đang bị xếp vào một nhóm — đó là lấy sự trung thực của người dạy trừ điểm họ');
+  assert(effectiveness.outcomeGroup(null) === 'undetermined',
+    'Phương án chưa có kết quả nào đang bị tính là một nhóm');
+});
+
+check('[13.4] Năm con số là năm đơn vị khác nhau, và phương án chưa rõ kết quả không phải thất bại', () => {
+  const st = boardStudent(3);
+  const c = cases.reportIssue(P.admin, {
+    studentId: st.id, cycleId: st.cycle_id, track: 'academic', topic: 'reading',
+    parallel: true, title: 'Reading: hết giờ ở passage 3',
+    summary: 'Em đọc kỹ từng câu nên luôn hết giờ khi còn hai câu cuối của passage 3.',
+    primaryCode: 'student.reading.time',
+  }) as any;
+
+  /* Một case, HAI phương án — nên số phương án không bằng số case. */
+  const planIdOf = (detail: any, kind: string) => {
+    const iv = detail.interventions.find((i: any) => i.kind === kind);
+    assert(iv, `Không tìm thấy phương án ${kind} vừa ghi`);
+    return iv.id as number;
+  };
+  const p1 = planIdOf(cases.recordIntervention(P.admin, c.id, {
+    kind: 'self_study', status: 'started', startedDate: demoToday(), performerSelf: true,
+    description: 'Mỗi ngày làm một passage bấm giờ 18 phút.',
+  }) as any, 'self_study');
+  const p2 = planIdOf(cases.recordIntervention(P.admin, c.id, {
+    kind: 'teaching_adjust', status: 'started', startedDate: demoToday(), performerSelf: true,
+    description: 'Buổi chữa bài sẽ làm chậm phần tìm dẫn chứng trong bài.',
+  }) as any, 'teaching_adjust');
+
+  /*
+   * Một phương án vẫn ĐANG THEO DÕI với kết quả "chưa đủ dữ liệu"; một phương án KẾT THÚC
+   * với kết quả khá hơn. Hai thứ đó phải nằm ở hai cột khác nhau của bảng.
+   */
+  cases.updateResult(P.admin, p2, {
+    outcome: 'insufficient', nextStep: 'continue',
+    note: 'Tuần này chưa có bài Reading mới nên chưa nhìn được gì.',
+    observedOn: demoToday(),
+  });
+  cases.updateResult(P.admin, p1, {
+    mode: 'end', outcome: 'improved', nextStep: 'complete',
+    note: 'Bài bấm giờ tuần này em làm hết passage 3 còn dư hai phút.',
+    observedOn: demoToday(), completedOn: demoToday(),
+  });
+
+  const board = effectiveness.classIssueBoard(st.class_id, 'reading') as any;
+  const row = board.rows.find((r: any) => r.code === 'student.reading.time');
+  assert(row, 'Bảng phân tích thiếu hàng phân loại của case vừa mở');
+  assert(row.plans >= 2, `Hàng này phải có ít nhất hai phương án, đang có ${row.plans}`);
+  assert(row.plans > row.cases || row.cases > 1,
+    'Số phương án đang bằng số case — bảng sẽ dụ người đọc chia hai con số cho nhau');
+  assert(row.success >= 1, 'Phương án kết thúc với kết quả khá hơn không được đếm là thành công');
+  assert(row.running >= 1, 'Phương án đang theo dõi không được đếm');
+
+  /* Cộng các hàng lớn hơn số em duy nhất thì bảng phải NÓI RA, không để người đọc tự cộng. */
+  const rowSum = board.rows.reduce((n: number, r: any) => n + r.students, 0);
+  if (rowSum > board.studentCount) assert(!!board.note, 'Cộng các hàng ra số khác mà bảng không giải thích');
+});
+
+check('[13.4] Tỷ lệ theo LOẠI phương án: mẫu số bỏ phương án chưa rõ, mẫu nhỏ phải nói là mẫu nhỏ', () => {
+  const st = boardStudent(3);
+  const eff = effectiveness.planEffectiveness({ classId: st.class_id, category: 'reading' }) as any[];
+  assert(eff.length > 0, 'Không có loại phương án nào của Reading được tổng hợp');
+  for (const k of eff) {
+    assert(k.decided === k.success + k.failure,
+      `Loại ${k.kind}: mẫu số ${k.decided} không bằng số phương án có kết quả xác định`);
+    assert(k.rate === null || (k.rate >= 0 && k.rate <= 100), `Loại ${k.kind}: tỷ lệ ra ngoài 0–100`);
+    assert(k.smallSample === (k.decided > 0 && k.decided < 5),
+      `Loại ${k.kind}: cờ mẫu nhỏ không khớp mẫu số ${k.decided}`);
+  }
+});
+
+check('[13.4] Bốn tab cố định của Normal, năm tab của Fast Track — W1 và W2 không mất', () => {
+  const normal = effectiveness.issueBoardCategories(true).map((c: any) => c.code);
+  const ft = effectiveness.issueBoardCategories(false).map((c: any) => c.code);
+  assert(normal.join(',') === 'listening,reading,writing,speaking',
+    `Bộ tab lớp Normal sai: ${normal.join(',')}`);
+  /* Ý thức/Khác KHÔNG có tab ở đây — nhóm đó không có tỷ lệ tiến bộ để báo cáo. */
+  assert(!normal.includes('behaviour') && !ft.includes('behaviour'),
+    'Bảng phân tích đang có tab Ý thức/Khác, nơi mọi cột tỷ lệ đều vô nghĩa');
+  assert(ft.includes('writing1') && ft.includes('writing2'),
+    `Lớp Fast Track mất W1/W2: ${ft.join(',')}`);
+  assert(!ft.includes('writing'), 'Lớp Fast Track không được có tab Writing gộp');
+});
+
+check('[13.4] Case chưa phân loại có hàng riêng, không bị dồn vào "Khác"', () => {
+  const st = boardStudent(4);
+  const c = cases.reportIssue(P.admin, {
+    studentId: st.id, cycleId: st.cycle_id, track: 'academic', topic: 'listening',
+    parallel: true, title: 'Listening: nghe sót số liệu',
+    summary: 'Em nghe sót phần số liệu ở section 2, nghe lại thì nhận ra ngay.',
+    primaryCode: 'student.listening.technique',
+  }) as any;
+  /* Dữ liệu cũ có case chưa kịp phân loại — bảng phải hiện chúng, không gộp vào "Khác". */
+  conn.prepare('DELETE FROM case_issues WHERE case_id = ?').run(c.id);
+
+  const board = effectiveness.classIssueBoard(st.class_id, 'listening') as any;
+  const un = board.rows.find((r: any) => r.code === '__unclassified__');
+  assert(un && un.cases >= 1, 'Case chưa phân loại biến mất khỏi bảng phân tích');
+  assert(un.label === 'Chưa phân loại vấn đề', `Hàng chưa phân loại đang mang nhãn "${un.label}"`);
+  /* Và nó phải là MỘT HÀNG KHÁC với hàng "Khác" — hai tập này cần hai người xử lý khác nhau. */
+  assert(board.rows.filter((r: any) => r.code === '__unclassified__').length === 1,
+    'Case chưa phân loại bị tách thành nhiều hàng');
+  assert(!board.rows.some((r: any) => r.code === 'student.listening.other' && r.label === un.label),
+    'Hàng chưa phân loại và hàng "Khác" đang mang cùng một nhãn');
+});
+
 
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0

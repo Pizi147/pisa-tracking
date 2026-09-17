@@ -24,7 +24,11 @@ export const THREAD_TRACK_LABEL: Record<ThreadTrack, string> = {
  * tiết bên dưới. "Em hay nghỉ học" đã đủ để bắt đầu làm việc; ép chọn thêm một nhánh con
  * chỉ làm chậm người ghi mà không thêm thông tin nào dùng được.
  */
-export const BEHAVIOUR_TOPICS = ['attendance', 'homework', 'participation', 'other'] as const;
+/*
+ * Thứ tự này là thứ tự BÀY RA: BTVN · Chuyên cần · Tham gia trên lớp · Khác (mục 13.3).
+ * Không chỗ nào dựa vào vị trí trong mảng, nên đổi thứ tự chỉ đổi cách đọc trên màn hình.
+ */
+export const BEHAVIOUR_TOPICS = ['homework', 'attendance', 'participation', 'other'] as const;
 export type BehaviourTopic = (typeof BEHAVIOUR_TOPICS)[number];
 export const BEHAVIOUR_TOPIC_LABEL: Record<BehaviourTopic, string> = {
   attendance: 'Chuyên cần',
@@ -115,6 +119,20 @@ export const NORMAL_CASE_CATEGORIES = [
 /** `ratio` = lớp Normal. Không rõ chương trình thì lấy bộ của Fast Track. */
 export function caseCategoriesFor(scoringMode: string | null | undefined): readonly CaseCategory[] {
   return scoringMode === 'ratio' ? NORMAL_CASE_CATEGORIES : FT_CASE_CATEGORIES;
+}
+
+/**
+ * BỘ TAB CỦA BẢNG PHÂN TÍCH VẤN ĐỀ — mục 13.4: Normal L/R/W/S, Fast Track L/R/W1/W2/S.
+ *
+ * Ý THỨC/KHÁC CỐ Ý KHÔNG CÓ TAB Ở ĐÂY. Bảng đó báo cáo hiệu quả phương án bằng tỷ lệ thành
+ * công, và nhóm ý thức không có thứ đó: gia đình đã nhận report không chứng minh em tiến bộ.
+ * Nhóm ấy có chỗ riêng — dạng xem "Ý thức" ở mục 13.3, nơi đếm SỐ ĐỢT và SỐ LẦN ĐÃ LÀM.
+ *
+ * Để ở đây vì giao diện và máy chủ phải bày ĐÚNG MỘT bộ tab; hai nơi tự lọc lấy là cách để
+ * một hôm nào đó bảng có một tab mà máy chủ không trả số nào.
+ */
+export function issueBoardCategoriesFor(scoringMode: string | null | undefined): readonly CaseCategory[] {
+  return caseCategoriesFor(scoringMode).filter((c) => c !== 'behaviour');
 }
 
 /**

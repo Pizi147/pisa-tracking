@@ -67,6 +67,7 @@ export const STUDENTS: StudentSeed[] = [
         cases: [
           {
             topic: 'reading', fromTest: 2, sosLevel: 1, detectedAt: '2026-04-26',
+            primaryCode: 'student.reading.technique',
             title: 'Reading cuối khoá Beginner còn dưới ngưỡng',
             summary: 'Em làm hết bài nhưng sai nhiều câu dạng matching headings.',
             status: 'in_progress', owner: 'T_KHOA',
@@ -114,6 +115,7 @@ export const STUDENTS: StudentSeed[] = [
         cases: [
           {
             topic: 'reading', fromTest: 1, sosLevel: 1, detectedAt: '2026-07-12',
+            primaryCode: 'student.reading.technique',
             title: 'Reading MT1 dưới kỳ vọng',
             summary: 'Vẫn là dạng matching headings — đúng vấn đề đã theo dõi từ lớp Beginner.',
             status: 'done', owner: 'T_HA',
@@ -182,6 +184,7 @@ export const STUDENTS: StudentSeed[] = [
         cases: [
           {
             topic: 'reading', fromTest: 1, sosLevel: 2, detectedAt: '2026-07-12',
+            primaryCode: 'student.reading.time',
             title: 'Reading chậm, không kịp giờ',
             summary: 'Em đọc kỹ từng câu nên hết giờ khi còn 8 câu chưa làm.',
             status: 'done', owner: 'T_HA', disposition: 'action', outcome: 'improved',
@@ -202,6 +205,7 @@ export const STUDENTS: StudentSeed[] = [
           },
           {
             topic: 'speaking', fromTest: 1, sosLevel: 2, detectedAt: '2026-07-12',
+            primaryCode: 'student.speaking.fluency',
             title: 'Speaking Part 2 nói ngắn',
             summary: 'Part 2 em chỉ nói được khoảng 45 giây rồi dừng.',
             status: 'in_progress', owner: 'T_TRANG',
@@ -256,6 +260,7 @@ export const STUDENTS: StudentSeed[] = [
         cases: [
           {
             topic: 'listening', fromTest: 1, sosLevel: 1, detectedAt: '2026-07-12',
+            primaryCode: 'student.listening.technique',
             title: 'Listening mất điểm ở Section 3',
             summary: 'Em theo kịp Section 1–2 nhưng mất mạch khi có ba người nói.',
             status: 'in_progress', owner: 'T_HA', repeatsAt: [2],
@@ -320,6 +325,7 @@ export const STUDENTS: StudentSeed[] = [
         cases: [
           {
             topic: 'listening', fromTest: 3, sosLevel: 1, detectedAt: '2026-09-14',
+            primaryCode: 'student.listening.other',
             title: 'Listening MT3 chưa chạm kỳ vọng 7.0',
             summary: 'Mới có điểm 2/4 kỹ năng nên đây là kết luận tạm thời của MT3.',
             status: 'open', owner: 'T_HA',
@@ -409,6 +415,7 @@ export const STUDENTS: StudentSeed[] = [
       cases: [
         {
           topic: 'listening', fromTest: 1, sosLevel: 1, detectedAt: '2026-08-09',
+          primaryCode: 'student.listening.sound',
           summary: 'Em mất điểm ở phần điền số và ngày tháng.',
           status: 'done', owner: 'T_LINH', disposition: 'monitor', outcome: 'improved',
           outcomeNote: 'Sau ba tuần luyện nghe số, cô nghe thử lại thấy em bắt được. '
@@ -489,6 +496,7 @@ export const STUDENTS: StudentSeed[] = [
         cases: [
           {
             topic: 'writing', fromTest: 1, sosLevel: 1, detectedAt: '2026-08-23',
+            primaryCode: 'student.writing.organisation',
             title: 'Writing giữa khoá chưa đạt',
             summary: 'Bài viết đủ ý nhưng câu rời rạc, thiếu từ nối.',
             status: 'in_progress', owner: 'T_KHOA',
@@ -560,6 +568,7 @@ export const STUDENTS: StudentSeed[] = [
         cases: [
           {
             topic: 'listening', fromTest: 1, sosLevel: 2, detectedAt: '2026-08-23',
+            primaryCode: 'student.listening.sound',
             summary: 'Em chưa quen tốc độ nói của bài nghe.',
             status: 'in_progress', owner: 'T_HA',
             plans: [
@@ -576,6 +585,7 @@ export const STUDENTS: StudentSeed[] = [
              * Hai vai khác nhau: cô Hà là người ghi nhận, còn ai điều phối case thì chưa ai nhận.
              */
             topic: 'reading', fromTest: 1, sosLevel: 2, detectedAt: '2026-08-23',
+            primaryCode: 'student.reading.language',
             summary: 'Vốn từ còn hẹp nên đọc chậm.',
             reportedBy: 'T_HA',
             status: 'open',
@@ -628,6 +638,7 @@ export const STUDENTS: StudentSeed[] = [
              * chúng cũng riêng — cô W1 xác minh và mở case cho đúng task mình phụ trách.
              */
             topic: 'writing1', fromTest: 1, sosLevel: 2, detectedAt: '2026-07-19',
+            primaryCode: 'student.writing.task',
             title: 'Writing Task 1: đọc sai xu hướng của biểu đồ',
             summary: 'Em tả đủ số liệu nhưng nêu sai xu hướng chính, và thiếu câu tổng quan.',
             status: 'in_progress', owner: 'T_TRANG',
@@ -642,6 +653,7 @@ export const STUDENTS: StudentSeed[] = [
           },
           {
             topic: 'speaking', fromTest: 1, sosLevel: 2, detectedAt: '2026-07-19',
+            primaryCode: 'student.speaking.pronunciation',
             title: 'Speaking phát âm đuôi từ chưa rõ',
             summary: 'Giám khảo khó nghe ở các từ có đuôi -ed và -s.',
             status: 'in_progress', owner: 'T_TRANG',
@@ -702,6 +714,7 @@ export const STUDENTS: StudentSeed[] = [
         cases: [
           {
             topic: 'attendance', track: 'behaviour', originKind: 'teacher_report',
+            primaryCode: 'student.behaviour.attendance',
             title: 'Nghỉ ba buổi liên tiếp không báo',
             summary: 'Em nghỉ ba buổi tuần đầu tháng 8, không ai báo trước.',
             detectedAt: '2026-08-10', urgency: 'attention',
@@ -800,6 +813,7 @@ export const STUDENTS: StudentSeed[] = [
              * giờ bị đếm vào nhóm "chưa có phương án".
              */
             topic: 'reading', fromTest: 1, sosLevel: 1, detectedAt: '2026-07-19',
+            primaryCode: 'student.reading.logic',
             originKind: 'manager_task',
             summary: 'Em bỏ trống phần True/False/Not Given.',
             status: 'in_progress', owner: 'T_QUAN',
@@ -837,6 +851,7 @@ export const STUDENTS: StudentSeed[] = [
         cases: [
           {
             topic: 'listening', fromTest: 1, sosLevel: 3, detectedAt: '2026-07-19',
+            primaryCode: 'student.listening.sound',
             summary: 'Nghe không kịp, mất điểm đều ở cả bốn section.',
             status: 'in_progress', owner: 'T_QUAN',
             plans: [
@@ -849,6 +864,7 @@ export const STUDENTS: StudentSeed[] = [
           },
           {
             topic: 'reading', fromTest: 1, sosLevel: 3, detectedAt: '2026-07-19',
+            primaryCode: 'student.reading.time',
             summary: 'Đọc chậm, chưa hết bài đã hết giờ.',
             status: 'open', owner: 'T_QUAN',
           },
@@ -937,6 +953,7 @@ export const STUDENTS: StudentSeed[] = [
         cases: [
           {
             topic: 'reading', fromTest: 1, sosLevel: 1, detectedAt: '2026-05-24',
+            primaryCode: 'student.reading.technique',
             title: 'Reading MT1 dưới kỳ vọng',
             summary: 'Em chưa quen dạng bài True/False/Not Given.',
             status: 'done', owner: 'T_NAM', disposition: 'action', outcome: 'improved',
@@ -957,6 +974,7 @@ export const STUDENTS: StudentSeed[] = [
           },
           {
             topic: 'reading', fromTest: 3, sosLevel: 1, detectedAt: '2026-08-23',
+            primaryCode: 'student.reading.technique',
             title: 'Reading tái diễn ở MT3',
             summary: 'Lần này mất điểm ở dạng matching information, không phải dạng cũ.',
             status: 'in_progress', owner: 'T_NAM', linksPreviousOf: 'reading',
@@ -1007,6 +1025,7 @@ export const STUDENTS: StudentSeed[] = [
         cases: [
           {
             topic: 'writing2', fromTest: 2, sosLevel: 1, detectedAt: '2026-07-05',
+            primaryCode: 'student.writing.organisation',
             title: 'Task 2: bố cục bài chưa rõ',
             summary: 'Hai thân bài nói chồng ý nhau, kết luận nhắc lại đề.',
             status: 'in_progress', owner: 'T_DUNG', repeatsAt: [3],
@@ -1026,6 +1045,7 @@ export const STUDENTS: StudentSeed[] = [
           },
           {
             topic: 'writing2', fromTest: 2, sosLevel: 1, detectedAt: '2026-07-05',
+            primaryCode: 'student.writing.lexical',
             title: 'Task 2: vốn từ học thuật còn hẹp',
             summary: 'Em lặp lại đúng những từ trong đề, chưa paraphrase được.',
             status: 'in_progress', owner: 'T_DUNG', parallel: true,
@@ -1079,6 +1099,7 @@ export const STUDENTS: StudentSeed[] = [
         cases: [
           {
             topic: 'listening', fromTest: 1, sosLevel: 1, detectedAt: '2026-05-24',
+            primaryCode: 'student.listening.sound',
             title: 'Listening không theo kịp bài',
             summary: 'Ban đầu nhận định là em thiếu từ vựng.',
             status: 'done', owner: 'T_NAM', disposition: 'action', outcome: 'improved',
@@ -1149,6 +1170,7 @@ export const STUDENTS: StudentSeed[] = [
              * Mỗi báo cáo giữ nguyên người gửi, ngày gửi, môn và lời của chính người đó.
              */
             topic: 'homework', track: 'behaviour',
+            primaryCode: 'student.behaviour.homework',
             detectedAt: '2026-09-14',
             title: 'Thiếu BTVN nhiều buổi liền',
             summary: 'Ba buổi Reading liên tiếp em không nộp bài về nhà, hỏi thì nói quên vở.',
@@ -1179,6 +1201,7 @@ export const STUDENTS: StudentSeed[] = [
              * nên ở đây chỉ mô tả trong câu chuyện của em, không dựng thành bản ghi.
              */
             topic: 'participation', track: 'behaviour',
+            primaryCode: 'student.behaviour.participation',
             detectedAt: '2026-08-24',
             title: 'Ít tham gia phát biểu trên lớp',
             summary: 'Em ngồi im cả buổi, gọi mới nói và chỉ trả lời một câu ngắn.',
@@ -1237,6 +1260,7 @@ export const STUDENTS: StudentSeed[] = [
         cases: [
           {
             topic: 'speaking', fromTest: 3, sosLevel: 1, detectedAt: '2026-08-23',
+            primaryCode: 'student.speaking.fluency',
             summary: 'Em ngại nói, Part 3 gần như không trả lời được.',
             reportedBy: 'T_NAM',
             status: 'open',
@@ -1309,6 +1333,7 @@ export const STUDENTS: StudentSeed[] = [
         cases: [
           {
             topic: 'writing', fromTest: 1, sosLevel: 1, detectedAt: '2026-06-28',
+            primaryCode: 'student.writing.grammar',
             title: 'Writing: câu sai ngữ pháp cơ bản',
             summary: 'Em viết được ý nhưng sai thì và sai giới từ gần như mọi câu.',
             status: 'in_progress', owner: 'T_YEN', repeatsAt: [2],
@@ -1403,6 +1428,7 @@ export const STUDENTS: StudentSeed[] = [
         cases: [
           {
             topic: 'reading', fromTest: 1, sosLevel: 1, detectedAt: '2026-09-06',
+            primaryCode: 'student.reading.time',
             summary: 'Em đọc từng chữ nên không kịp hết bài.',
             status: 'in_progress', owner: 'T_YEN',
             plans: [
@@ -1440,6 +1466,7 @@ export const STUDENTS: StudentSeed[] = [
         cases: [
           {
             topic: 'participation', track: 'behaviour', originKind: 'teacher_report',
+            primaryCode: 'student.behaviour.participation',
             title: 'Gần như không nói trong giờ Speaking',
             summary: 'Ba buổi liền em chỉ trả lời một câu rồi im.',
             detectedAt: '2026-08-05', urgency: 'attention',
@@ -1561,6 +1588,7 @@ export const STUDENTS: StudentSeed[] = [
         cases: [
           {
             topic: 'writing2', fromTest: 3, sosLevel: 1, detectedAt: '2026-06-14',
+            primaryCode: 'student.writing.task',
             title: 'Writing Task 2 không lên được band',
             summary: 'Ý đủ nhưng lập luận chưa triển khai, ví dụ chung chung.',
             status: 'done', owner: 'T_KIEN', repeatsAt: [4],
@@ -1643,6 +1671,7 @@ export const STUDENTS: StudentSeed[] = [
       cases: [
         {
           topic: 'writing2', fromTest: 4, sosLevel: 1, detectedAt: '2026-07-12',
+          primaryCode: 'student.writing.task',
           summary: 'Task 2 viết chưa đủ 250 từ trong thời gian cho phép.',
           status: 'in_progress', owner: 'T_KIEN',
           plans: [
@@ -1693,6 +1722,7 @@ export const STUDENTS: StudentSeed[] = [
       cases: [
         {
           topic: 'listening', fromTest: 2, sosLevel: 2, detectedAt: '2026-08-30',
+          primaryCode: 'student.listening.other',
           summary: 'Cuối khoá vẫn dưới ngưỡng ở cả Listening và Reading.',
           status: 'in_progress', owner: 'T_KIEN',
           plans: [
@@ -1728,6 +1758,7 @@ export const STUDENTS: StudentSeed[] = [
       cases: [
         {
           topic: 'reading', fromTest: 2, sosLevel: 1, detectedAt: '2026-04-26',
+          primaryCode: 'student.reading.other',
           summary: 'Reading cuối khoá còn dưới ngưỡng; em nghỉ học ngay sau đó nên chưa xử lý xong.',
           status: 'in_progress', owner: 'T_KHOA',
         },
@@ -1804,6 +1835,7 @@ export const STUDENTS: StudentSeed[] = [
       cases: [
         {
           topic: 'listening', fromTest: 2, sosLevel: 3, detectedAt: '2026-08-30',
+          primaryCode: 'student.listening.other',
           summary: 'Ba môn cùng dưới ngưỡng ở bài cuối khoá.',
           status: 'in_progress', owner: 'T_KIEN',
           plans: [

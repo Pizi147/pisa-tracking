@@ -73,6 +73,8 @@ loại dữ liệu mới** vào kịch bản thì thêm trường ở `journeys.
 | Phân công giáo viên, ba luật phân công | `server/src/classes/classes.ts` → `setClassTeachers` |
 | Tuần khai giảng, tuần Progress/Final Test | `web/src/modules/classes/ClassProgressPanel.tsx` · `server/src/classes/schedule.ts` |
 | Lớp đang ở tuần thứ mấy, sắp thi gì | `server/src/classes/schedule.ts` → `classProgress` |
+| Dạng xem **Ý thức** của lớp (số đợt, report gia đình, thư cảnh cáo) | `web/src/modules/classes/ClassBehaviourBoard.tsx` · `server/src/classes/classes.ts` → `classBehaviourBoard` |
+| **Bảng phân tích vấn đề** của lớp (tab kỹ năng, năm con số mỗi hàng) | `web/src/modules/classes/ClassIssueBoard.tsx` · `server/src/cases/effectiveness.ts` → `classIssueBoard` |
 
 ### Fast Track
 
@@ -128,6 +130,7 @@ loại dữ liệu mới** vào kịch bản thì thêm trường ở `journeys.
 | Một chu kỳ khép lại (gộp ba nút cũ) | `server/src/cases/cases.ts` → `updateResult` |
 | Điều kiện được hoàn thành case | `server/src/cases/cases.ts` → `closeBlockers` |
 | Điểm giáo viên tự chấm | `server/src/cases/cases.ts` → `normalizeMetrics`, `parseMetrics` |
+| **Cách đếm hiệu quả phương án** — thành công/thất bại/chưa xác định, n/N, mẫu nhỏ | `server/src/cases/effectiveness.ts` (nơi sở hữu duy nhất; bảng của lớp và trang Thực trạng đều gọi vào đây) |
 | Bảng "Vấn đề - Case" và bộ lọc | `web/src/modules/cases/CaseBoardPage.tsx` |
 
 ### Tổng quan và công việc

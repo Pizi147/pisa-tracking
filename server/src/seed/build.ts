@@ -1,6 +1,6 @@
 import {
-  ATTEMPT_KIND_SHORT, PROGRAMME_TEMPLATES, categoryOf, cycleDeadline, planDueDate, planEndDefault,
-  programmeOf, ratioResult, weeklyUpdateDue,
+  ATTEMPT_KIND_SHORT, PROGRAMME_TEMPLATES, categoryOf, cycleDeadline, issuesForTopic,
+  planDueDate, planEndDefault, programmeOf, ratioResult, weeklyUpdateDue,
   type AttemptKind,
 } from '../../../shared/domain/index.ts';
 import { addDays, normalizeName, nowIso, padCode } from '../util.ts';
@@ -595,6 +595,13 @@ function behaviourCaseFromSignal(
          `behaviour:mock:${sid}:${attempt.cycle_id ?? 0}:${attemptId}`,
          owner, owner, NOW);
   const caseId = Number(info.lastInsertRowid);
+  /* Case này cũng phải có phân loại — nó là "Khác" của nhóm Ý thức, và nói thẳng như vậy. */
+  conn
+    .prepare(
+      `INSERT INTO case_issues (case_id, role, taxonomy_code, skill, created_by, created_at)
+       VALUES (?, 'primary', 'student.behaviour.other', 'other', ?, ?)`,
+    )
+    .run(caseId, owner, NOW);
 
   conn
     .prepare(
@@ -757,6 +764,25 @@ function insertCase(
     );
   const caseId = Number(info.lastInsertRowid);
   counts.cases += 1;
+
+  /*
+   * PHÂN LOẠI VẤN ĐỀ, GHI NGAY CÙNG CASE (mục 6.4).
+   *
+   * Case không phân loại không vào được bảng phân tích của lớp lẫn trang Thực trạng, nên
+   * một bộ demo thiếu phân loại sẽ bày ra hai màn hình rỗng. Mã phải thuộc đúng hạng mục —
+   * sai thì dừng bộ dựng, vì một mã lạc hạng mục làm hỏng cả cột tổng hợp về sau.
+   */
+  if (!issuesForTopic(c.topic).some((i) => i.code === c.primaryCode)) {
+    throw new Error(
+      `Kịch bản sai: phân loại "${c.primaryCode}" không thuộc hạng mục "${c.topic}".`,
+    );
+  }
+  conn
+    .prepare(
+      `INSERT INTO case_issues (case_id, role, taxonomy_code, skill, created_by, created_at)
+       VALUES (?, 'primary', ?, ?, ?, ?)`,
+    )
+    .run(caseId, c.primaryCode, c.topic, reporterId ?? ownerId ?? ctx.adminId, NOW);
 
   /*
    * CASE Ý THỨC/KHÁC LÀ MỘT ĐỢT (mục 7.2): có số đợt, có cửa sổ gộp bốn ngày, và có các
