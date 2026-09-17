@@ -23,10 +23,19 @@ import {
  * chọn chúng chỉ mất hai lần bấm và không cần suy nghĩ: em vướng kỹ năng nào, hay là chuyện
  * ý thức.
  */
-export function QuickReport({ open, onClose, studentId, studentName, cycleId, onDone, signal }: {
+export function QuickReport({
+  open, onClose, studentId, studentName, cycleId, onDone, signal, students, onPickStudent,
+}: {
   open: boolean; onClose: () => void;
   studentId: number; studentName?: string; cycleId?: number | null;
   onDone?: (caseId: number) => void;
+  /**
+   * MỞ TỪ TRANG LỚP (mục 13.1): chọn học viên ngay ở đầu form, rồi mọi thứ còn lại giữ
+   * nguyên — cùng một form, cùng quy tắc, cùng quyền. Dựng một form thứ hai cho trang lớp
+   * là cách chắc chắn nhất để hai chỗ dần khác nhau về luật.
+   */
+  students?: { id: number; name: string; code?: string | null }[];
+  onPickStudent?: (id: number) => void;
   /**
    * TÍN HIỆU mà case này ra đời để trả lời (mục 6.2).
    *
@@ -136,10 +145,26 @@ export function QuickReport({ open, onClose, studentId, studentName, cycleId, on
       footer={
         <>
           <button className="btn" onClick={onClose}>Huỷ</button>
-          <button className="btn btn-primary" disabled={busy} onClick={submit}>Ghi nhận</button>
+          <button className="btn btn-primary" disabled={busy || !studentId} onClick={submit}>Ghi nhận</button>
         </>
       }>
       <div className="space-y-3">
+        {/*
+          CHỌN HỌC VIÊN — chỉ khi mở từ trang lớp (mục 13.1). Ở hồ sơ một em thì không hỏi
+          lại: người dùng đã đứng sẵn trong hồ sơ của em đó rồi.
+        */}
+        {students && (
+          <Field label="Học viên" required hint="Case thuộc về một em cụ thể trong lớp này.">
+            <select className="field" value={studentId || ''}
+              onChange={(e) => onPickStudent?.(Number(e.target.value) || 0)}>
+              <option value="">Chọn học viên…</option>
+              {students.map((st) => (
+                <option key={st.id} value={st.id}>{st.name}{st.code ? ` · ${st.code}` : ''}</option>
+              ))}
+            </select>
+          </Field>
+        )}
+
         {/*
           TÊN CASE DO NGƯỜI TẠO ĐẶT (mục 7.3).
           Case sinh từ điểm có tên suy ra được ("MT2 - Reading dưới kỳ vọng"); case tạo tay
@@ -151,11 +176,17 @@ export function QuickReport({ open, onClose, studentId, studentName, cycleId, on
             placeholder="Ví dụ: Reading — chưa xử lý được dạng True/False/Not Given" />
         </Field>
 
-        <Field label="Mô tả" required
-          hint="Em sai ở đâu, sai như thế nào. Đây là nhận định của bạn — hệ thống chỉ đọc được con số.">
+        {/*
+          "MÔ TẢ VẤN ĐỀ + DẪN CHỨNG CỤ THỂ" — nhãn nói rõ đang xin HAI thứ.
+          Một ô tên là "Mô tả" thì nhận được "em yếu Reading", và ba tuần sau không ai suy ra
+          được đã quan sát thấy gì. Xin luôn dẫn chứng thì người viết nhớ kể ra bài nào, câu
+          nào, buổi nào — đó mới là thứ người tiếp nhận case dùng được.
+        */}
+        <Field label="Mô tả vấn đề + dẫn chứng cụ thể" required
+          hint="Em sai ở đâu, sai thế nào, và bạn thấy điều đó ở bài nào/buổi nào. Hệ thống chỉ đọc được con số — phần này là quan sát của bạn.">
           <textarea className="field" rows={3} value={summary} autoFocus
             onChange={(e) => setSummary(e.target.value)}
-            placeholder="Em đọc kỹ từng câu nên hết giờ khi còn hai câu cuối; dạng Not Given thì đoán." />
+            placeholder="MT2 Reading: hết giờ khi còn hai câu cuối của Passage 3; dạng Not Given sai 4/5 câu. Buổi 12/08 chữa bài em cũng đoán chứ không tìm được căn cứ trong bài." />
         </Field>
 
         <Field label="Mức độ" required

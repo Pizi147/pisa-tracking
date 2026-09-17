@@ -159,19 +159,87 @@ thành case"), vô hiệu hoá phương án tự sinh **chưa ai thực hiện**
 đầu hoặc đã xong, không case nào bị đóng hay xoá, chạy lại lần hai là no-op. Đã bấm thử thật
 trên trình duyệt cả ba lối ra của một tín hiệu.
 
-### ⬜ Còn lại — bảy nhóm việc
+### ✅ Xong — mục 12 và mục 13 (việc 27)
 
-Đây là danh sách việc đã chia sẵn, theo đúng thứ tự phụ thuộc. **Làm từ trên xuống.**
+**Trang lớp trả lời được hai câu khác nhau, và bảng phân tích không còn chia chéo hai đơn vị.**
 
-| # | Việc | Mục trong đề bài |
-|---|---|---|
-| 23 | **Case: form, phân loại, mức độ, gộp đợt Ý thức/Khác** — tên và mô tả bắt buộc, mức độ chỉ còn **Cần chú ý / Gấp**, phân loại bắt buộc; Ý thức/Khác gộp theo **cửa sổ 4 ngày** | 6.3 · 6.4 · 7 |
-| 24 | **Phương án hỗ trợ** — danh mục theo nhóm, form mới, **bảng hạn**, cập nhật hai tab, một nút hoàn thành case | 8 · 9 |
-| 25 | **Dời lịch, vắng, duyệt, khôi phục** — bộ đếm dời theo **kỹ năng trong từng đợt**, lần đầu GVCN, lần hai cần Quản lý duyệt | 10.2 · 10.3 · 10.6 |
-| 26 | **Overhaul hồ sơ học viên** ⭐ *ưu tiên cao nhất* — bảng tiến độ theo kỹ năng, **bấm hàng mở ngay bên dưới**, menu FT đúng bốn mục | 4 · 5 |
-| 27 | **Trang Học viên, nhập danh sách, tạo lớp, hồ sơ lớp** | 12 · 13 |
-| 28 | **Tiến độ công việc, báo cáo kỳ họp, Thực trạng, Toàn cảnh** | 14 · 15 · 16 |
-| 29 | **Demo 14 tình huống, kiểm thử, bàn giao** | 18.2 · 20 |
+- **Hai dạng xem danh sách học viên.** Ngay cạnh chữ "Học viên" có hai nút **Học thuật** và
+  **Ý thức**. Học thuật giữ nguyên bảng điểm cũ; Ý thức đổi sang bảng: mỗi hàng là một em,
+  mỗi cột là **số đợt** BTVN · Chuyên cần · Tham gia trên lớp · Khác, cộng hai cột hành động
+  thật — **đã report gia đình mấy lần**, **đã gửi thư cảnh cáo mấy lần**. Bấm vào số mở hồ sơ
+  em để xem các bản ghi tạo ra nó.
+- Bảng Ý thức mặc định đếm **từ lúc em vào lớp này**; có nút chuyển sang **toàn hành trình**
+  và câu chữ ngay trên bảng nói rõ mình đang nhìn khoảng nào. Chuyển lớp không biến việc của
+  lớp cũ thành việc của lớp mới.
+- Đếm **đợt**, không đếm từng lần giáo viên báo: nhiều lần báo trong bốn ngày là một đợt.
+  Hai cột hành động đếm **lần đã làm thật** — một cuộc gọi nói cả hai chuyện vẫn là một lần,
+  và phương án mới dự kiến thì chưa tính.
+- **Bảng phân tích vấn đề của lớp** nằm ngay dưới box lớp, **mặc định thu gọn** để không đẩy
+  danh sách học viên xuống dưới màn hình. Tab kỹ năng cố định theo chương trình: lớp Normal
+  bốn tab L/R/W/S, lớp Fast Track năm tab có cả W1 và W2 — kỹ năng chưa có case vẫn còn tab
+  và nói "chưa có case", không lặng lẽ biến mất.
+- Mỗi hàng là một **phân loại vấn đề**, kèm năm con số: Case · Phương án · Đang theo dõi ·
+  Thành công · Không thành công. Chúng là **năm đơn vị khác nhau** nên bảng không chia chúng
+  cho nhau — một case có thể có ba phương án. Tỷ lệ chỉ xuất hiện ở phần mở rộng, theo
+  **loại phương án**, luôn hiện n/N trước phần trăm, và mẫu dưới năm thì ghi rõ "mẫu nhỏ".
+- **"Chưa đủ dữ liệu" không bị tính là thất bại** và không vào mẫu số. Cách đếm này nằm ở
+  đúng một chỗ, dùng chung cho bảng của lớp và cho trang Thực trạng sau này.
+- Case **chưa phân loại** có hàng riêng, không dồn vào "Khác" — đó là một tập cần người xử lý.
+- Bộ demo nay **có phân loại cho mọi case**. Trước đó 54 case đều trống phân loại, nên bảng
+  phân tích chỉ hiện đúng một hàng "Chưa phân loại" — tức là không nói gì cả.
+- Danh sách bên ngoài: chưa có kế hoạch thi thì cột **Dự kiến thi** hiện một gạch ngang, không
+  phải một nhãn vàng. Nhãn đó trước đây nằm ở gần hết các hàng, và một cảnh báo xuất hiện ở
+  mọi hàng thì không còn là cảnh báo.
+
+**Kiểm chứng:** 294 phép kiểm tự động đạt hết, trong đó 8 phép mới cho mục 13.3 và 13.4; hai
+lượt kiểm lỗi kiểu dữ liệu sạch; đã bấm thử thật trên trình duyệt cả hai dạng xem và bảng
+phân tích của lớp CP-FT 110.
+
+### ✅ Xong — mục 14 · 15 · 16 và mục 18.2 · 20 (việc 28 và 29)
+
+**Ba màn của Quản lý nay đếm cùng một bộ số, và bộ demo bày ra đủ mười bốn tình huống.**
+
+- **Thực trạng làm lại phần phân tích vấn đề** theo đúng bốn bước: chọn Fast Track hay Normal
+  → xem hạng mục nào đang nặng (một hàng mỗi môn, cộng Ý thức/Khác) → mở bảng phân loại vấn
+  đề của hạng mục đó → **bấm một con số thì ra đúng những case tạo nên nó**.
+- **Bảng “Phương án & kết quả” đứng riêng đã bỏ.** Nó là cách đếm THỨ HAI cho cùng một câu
+  hỏi, chạy song song với cách đếm của bảng lớp — hai cách đếm thì sớm muộn ra hai con số.
+  Nay hiệu quả phương án nằm trong phần mở rộng của chính nhóm vấn đề đang xem.
+- **Khoảng báo cáo hiệu quả** mặc định 12 tuần gần nhất, đổi được. Hiện trạng vấn đề vẫn
+  luôn là hiện tại, và màn hình ghi rõ hai phạm vi đó ngay chỗ đọc.
+- **Tiến độ công việc:** sửa lỗi số trên bốn nhóm. Trước đây chọn “Học sinh/Phụ huynh” thì ba
+  nhóm còn lại tụt về 0 — người dùng tưởng trung tâm hết việc về giáo trình. Nay số đếm trên
+  phạm vi quyền/chi nhánh TRƯỚC khi áp bộ lọc nhóm. Thêm dòng tổng hợp: đang thực hiện · quá
+  hạn · đến hạn trong ba ngày · tạm ngưng, kèm câu nói rõ bốn số này chồng nhau.
+- **Báo cáo kỳ họp:** chọn được kỳ **Tuần** hoặc **Tháng**. Kỳ tháng hiện lần báo cáo gần
+  nhất kèm tình trạng nặng nhất đã xuất hiện trong tháng — một tuần “Có vấn đề” rồi ba tuần
+  “Ổn” không phải là một tháng ổn. Kỳ tháng chỉ để đọc.
+- Mỗi ô báo cáo nay có **người và ngày báo cáo**, **lịch sử chỉnh sửa**, **công việc liên
+  quan với trạng thái hiện tại**, và nút **“+ Tạo việc từ mục này”** mở thẳng form tạo việc
+  đã chọn sẵn nhóm.
+- **Bộ demo dày lên.** Lê Quang Huy nay có sáu case ở năm hạng mục với đủ trạng thái: đang
+  xử lý, đã khép có tiến bộ, phương án thất bại bị thay, case đã đóng rồi tái diễn, và hai
+  đợt Ý thức có cả report gia đình lẫn thư cảnh cáo.
+- **Hai lỗi của bước nâng cấp đã sửa**, cả hai đều xoá dữ liệu thật: bước gộp case cũ đang
+  gộp nhầm **chuỗi tái diễn** (case đã đóng + case mới nối vào nó) và gộp nhầm **hai đợt Ý
+  thức khác phân loại** thành một. Nay chuỗi tái diễn được để yên, và đợt Ý thức chỉ gộp khi
+  cùng phân loại VÀ nằm trong cửa sổ bốn ngày.
+
+**Kiểm chứng:** 319 phép kiểm tự động đạt hết. Trong đó có **mục 42 riêng cho bộ demo**: mười
+sáu phép kiểm soi thẳng vào dữ liệu demo để bảo đảm mười bốn tình huống của đề bài đều có
+thật, không có sự việc nào ghi là đã xảy ra sau ngày demo, và bộ demo không “đỏ rực”. Bước
+nâng cấp chạy hai lượt trên bản sao database demo: không mất case, phương án, kết quả hay
+báo cáo nào; lượt hai là no-op.
+
+### ⬜ Còn lại
+
+Toàn bộ danh sách việc 21–29 đã xong. Những gì còn lại là việc của người tiếp theo sau khi
+chủ sản phẩm xem bản này:
+
+| Việc | Vì sao chưa làm |
+|---|---|
+| Dọn các màn phụ chưa rà theo mục 17 (tiêu chuẩn UI) | Đề bài xếp sau cùng, và nó cần chủ sản phẩm xem trước để biết chỗ nào thật sự vướng |
+| Bấm thật trên máy tính bảng và điện thoại | Đã kiểm khổ 390px không tràn ngang ở hồ sơ học viên, Thực trạng và Tiến độ công việc, nhưng mới là kiểm bằng ảnh chứ chưa bấm bằng tay |
 
 > Mục **19** của đề bài liệt kê sẵn những chỗ code đã phát hiện có vấn đề, kèm tên file.
 > Đọc nó trước khi bắt tay vào từng nhóm việc — nhưng **đối chiếu, không vá mù**.
@@ -188,7 +256,7 @@ Ghi ở đây để người tiếp theo không mất một buổi mò lại.
 | Đường dẫn khi nhập file | Bắt buộc có đuôi `.ts` / `.tsx` trong câu lệnh nhập. Thiếu là gãy |
 | Sau khi sửa phần máy chủ | **Bắt buộc** chạy `npm run build:server`, nếu không thì thay đổi không có tác dụng |
 | Kiểm lỗi kiểu dữ liệu | `npx tsc -p tsconfig.build.json --noEmit` và `npx tsc -p tsconfig.web.json --noEmit` |
-| Chạy kiểm thử | `npm test` — hiện **257 phép kiểm**, phải đạt hết |
+| Chạy kiểm thử | `npm test` — hiện **319 phép kiểm**, phải đạt hết |
 | Dựng lại bộ demo | `npm run seed` (xoá sạch rồi dựng lại) · nâng cấp database đang có: `npm run migrate` |
 | Bật thử | `npm run dev` → http://localhost:5173 |
 | Tắt máy chủ | `for p in 5173 4000; do pid=$(fuser -n tcp $p 2>/dev/null \| tr -d ' '); [ -n "$pid" ] && kill -9 $pid; done` |

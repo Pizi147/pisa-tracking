@@ -1,10 +1,11 @@
 import { db } from '../db.ts';
 import {
   ASSESSED_SKILLS, BASELINE_SOURCE_LABEL, CYCLE_OUTCOME_LABEL, ENTRY_SKILLS,
-  ASSESSED_SKILL_LABEL, JOURNEY_GROUP, PERMISSIONS, caseHeadline, issueLabel,
-  caseCategoryLabel, categoryOf,
-  type AssessedSkill, type EntrySkill,
+  ASSESSED_SKILL_LABEL, INTERVENTION_KIND_LABEL, JOURNEY_GROUP, PERMISSIONS,
+  caseHeadline, issueLabel, caseCategoryLabel, categoryOf,
+  type AssessedSkill, type EntrySkill, type InterventionKind,
 } from '../../../shared/domain/index.ts';
+import { outcomeGroup } from '../cases/effectiveness.ts';
 import { demoToday } from '../demoConfig.ts';
 import { diffDays, notFound } from '../util.ts';
 import { can, require_, type Principal } from '../permissions.ts';
@@ -346,9 +347,12 @@ function progressOf(
   if (caseIds.length) {
     const rows = conn
       .prepare(
-        `SELECT iv.id, iv.case_id, iv.kind, iv.description, iv.status,
+        `SELECT iv.id, iv.case_id, iv.kind, iv.description, iv.status, iv.approval_state,
                 iv.started_date, iv.cycle_started_on, iv.completed_date, iv.followup_due,
-                sc.category, sc.track, sc.topic, sc.status AS case_status
+                sc.category, sc.track, sc.topic, sc.status AS case_status,
+                (SELECT fu.outcome FROM case_followups fu
+                  WHERE fu.intervention_id = iv.id AND fu.outcome IS NOT NULL
+                  ORDER BY fu.observed_on DESC, fu.id DESC LIMIT 1) AS final_outcome
            FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id
           WHERE iv.case_id IN (${caseIds.map(() => '?').join(',')})
             AND iv.status != 'cancelled'
@@ -364,14 +368,25 @@ function progressOf(
       /* Chưa bắt đầu thì chưa có khoảng nào để vẽ — không lấy ngày lập kế hoạch làm ngày làm. */
       if (!from) continue;
       const list = bands.get(skill) ?? [];
+      const running = r.status !== 'completed';
       list.push({
         id: r.id, caseId: r.case_id, kind: r.kind,
+        kindLabel: INTERVENTION_KIND_LABEL[r.kind as InterventionKind] ?? r.kind,
         description: r.description ?? null,
         from,
         /* Chưa xong thì dải kéo tới ngày dự kiến kết thúc, và giao diện vẽ nó mở đuôi. */
         to: r.completed_date ?? null,
         expectedTo: r.followup_due ?? null,
-        running: r.status !== 'completed',
+        running,
+        /* Đang chờ Quản lý trả lời thì chu kỳ thực hiện CHƯA bắt đầu — vẽ khác hẳn. */
+        pending: r.approval_state === 'pending',
+        /*
+         * KẾT QUẢ CUỐI của phương án, theo đúng cách đếm của mục 15.3 — để dải màu nói được
+         * "đã xong và ăn thua" khác "đã xong mà không ăn thua". Phương án còn chạy thì chưa
+         * có kết quả cuối, dù các chu kỳ giữa chừng đã ghi gì đi nữa.
+         */
+        outcome: running ? null : (r.final_outcome ?? null),
+        result: running ? 'running' : outcomeGroup(r.final_outcome),
       });
       bands.set(skill, list);
     }
@@ -386,7 +401,8 @@ function progressOf(
   if (caseIds.length) {
     const rows = conn
       .prepare(
-        `SELECT fu.observed_on, fu.outcome, fu.case_id, sc.category, sc.track, sc.topic
+        `SELECT fu.observed_on, fu.outcome, fu.case_id, fu.intervention_id,
+                sc.category, sc.track, sc.topic
            FROM case_followups fu JOIN sos_cases sc ON sc.id = fu.case_id
           WHERE fu.case_id IN (${caseIds.map(() => '?').join(',')}) AND fu.outcome IS NOT NULL
           ORDER BY fu.observed_on`,
@@ -397,7 +413,11 @@ function progressOf(
       if (!cat || cat === 'behaviour') continue;
       const skill = cat === 'writing1' || cat === 'writing2' ? 'writing' : cat;
       const list = marks.get(skill) ?? [];
-      list.push({ on: r.observed_on, outcome: r.outcome, caseId: r.case_id });
+      list.push({
+        on: r.observed_on, outcome: r.outcome, caseId: r.case_id,
+        /* Chấm phải rơi đúng thanh của phương án sinh ra nó, không rơi bừa lên thanh cùng case. */
+        interventionId: r.intervention_id ?? null,
+      });
       marks.set(skill, list);
     }
   }

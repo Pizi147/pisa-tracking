@@ -7,34 +7,66 @@ import { Outcome, SectionNote, Th} from '../../ui/ui.tsx';
 
 
 type Row = {
-  fullName?: string; classCode?: string; dob?: string;
+  fullName?: string; dob?: string;
   baselineScore?: number | string | null;
+  entryListening?: number | string | null;
+  entryReading?: number | string | null;
+  entryWriting?: number | string | null;
+  entrySpeaking?: number | string | null;
   target?: number | string | null;
-  /* Vẫn nhận được nếu bảng dán có các cột cũ, nhưng lưới nhập tay không bày ra nữa. */
-  examMonth?: string; route?: string; consultant?: string; mockWeeks?: string[];
+  startWeek?: string;
+  /* Vẫn nhận được nếu bảng dán có cột cũ, nhưng lưới nhập tay không bày ra nữa. */
+  classCode?: string; examMonth?: string; route?: string; consultant?: string;
 };
 type PreviewRow = Row & {
   row: number; classId: number | null;
   duplicates: { id: number; studentCode: string; fullName: string; dob: string | null }[];
   issues: { row: number; field: string; message: string }[];
 };
+type Preview = {
+  rows: PreviewRow[];
+  issues: { row: number; field: string; message: string }[];
+  ratio: boolean; classCode: string | null; programme: string | null;
+  defaultStartWeek?: string | null;
+};
+
+type Col = { key: keyof Row; label: string; width: string; hint?: string };
 
 /**
- * NĂM CỘT, KHÔNG HƠN — owner chốt 13/09/2026 (mục 7.4).
+ * BỘ CỘT THEO ĐÚNG CHƯƠNG TRÌNH CỦA LỚP (mục 12.1).
  *
- * Ba cột bỏ đi và lý do: lộ trình suy từ chính lớp em vào; kỳ thi IELTS lúc nhập chưa ai
- * biết; tư vấn viên không đổi được quyết định nào trong phần mềm này. Bảng dán có các cột
- * đó thì hệ thống vẫn đọc — chỉ là không bắt ai gõ tay nữa.
+ *   Fast Track  Họ tên · Ngày sinh · OVR · L · R · W · S · Target · Tuần bắt đầu
+ *   Normal      Họ tên · Ngày sinh · OVR · Tuần bắt đầu
+ *
+ * KHÔNG bày trường Fast Track cho lớp Normal rồi bắt điền dấu '-'. Em lớp Foundation không
+ * có target IELTS và không có band từng kỹ năng — hỏi là hỏi thừa, và một cột thừa thì luôn
+ * có ai đó điền bừa cho xong.
+ *
+ * LỚP KHÔNG CÒN LÀ MỘT CỘT: nó chọn một lần ở đầu panel. Bản trước để lớp thành một ô lặp
+ * lại ở từng dòng, nên một file bốn mươi dòng gõ sai mã lớp ở dòng ba mươi là mười em rơi
+ * đi đâu không ai biết.
  */
-const COLUMNS: { key: keyof Row; label: string; width: string; hint?: string }[] = [
-  { key: 'fullName', label: 'Họ và tên', width: 'w-48' },
-  { key: 'classCode', label: 'Lớp', width: 'w-32' },
+const COMMON: Col[] = [
+  { key: 'fullName', label: 'Họ và tên', width: 'w-44' },
   { key: 'dob', label: 'Ngày sinh', width: 'w-28' },
-  { key: 'baselineScore', label: 'Điểm đầu vào', width: 'w-28', hint: 'Ưu tiên OVR. Bỏ trống được, bổ sung sau.' },
+  { key: 'baselineScore', label: 'OVR đầu vào', width: 'w-24',
+    hint: 'Con số trên phiếu điểm chính thức. Nhập độc lập với bốn môn — không phải trung bình cộng.' },
+];
+const FT_ONLY: Col[] = [
+  { key: 'entryListening', label: 'L', width: 'w-16' },
+  { key: 'entryReading', label: 'R', width: 'w-16' },
+  { key: 'entryWriting', label: 'W', width: 'w-16', hint: 'Writing TỔNG trên phiếu điểm — không chia W1/W2.' },
+  { key: 'entrySpeaking', label: 'S', width: 'w-16' },
   { key: 'target', label: 'Target', width: 'w-20' },
 ];
+const WEEK_COL: Col = {
+  key: 'startWeek', label: 'Tuần bắt đầu', width: 'w-32',
+  hint: 'Bỏ trống thì dùng tuần mặc định chọn ở trên. Nhập ngày bất kỳ trong tuần cũng được.',
+};
+const columnsFor = (ratio: boolean): Col[] =>
+  ratio ? [...COMMON, WEEK_COL] : [...COMMON, ...FT_ONLY, WEEK_COL];
 
-const EMPTY: Row = { fullName: '', classCode: '', dob: '', baselineScore: '', target: '' };
+const EMPTY: Row = { fullName: '', dob: '', baselineScore: '', target: '', startWeek: '' };
 
 /**
  * Thêm nhiều học viên trong một lần.
@@ -49,18 +81,26 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
 }) {
   const toast = useToast();
   const classes = useApi<any[]>('/ref/classes');
-  /* Lộ trình đọc từ BẢNG, không từ hằng số: lộ trình Quản trị hệ thống vừa tạo phải chọn được ngay. */
-  const routes = useApi<{ code: string }[]>('/ref/routes');
-  const routeCodes = (routes.data ?? []).map((r) => r.code);
-  const [rows, setRows] = useState<Row[]>([{ ...EMPTY, classCode: defaultClass?.code ?? '' }]);
+  /*
+   * LỚP CHỌN MỘT LẦN, Ở ĐẦU PANEL (mục 12.1). Mở từ hồ sơ lớp thì chọn sẵn đúng lớp đó.
+   * Cả lô vào lớp này — đó là quyết định của cả lần nhập, không phải một ô lặp bốn mươi lần.
+   */
+  const [classId, setClassId] = useState<number | null>(defaultClass?.id ?? null);
+  const [startWeek, setStartWeek] = useState<string>('');
+  const [rows, setRows] = useState<Row[]>([{ ...EMPTY }]);
   const [dateFormat, setDateFormat] = useState<'dmy' | 'mdy' | 'iso'>('dmy');
-  const [preview, setPreview] = useState<PreviewRow[] | null>(null);
+  const [preview, setPreview] = useState<Preview | null>(null);
   const [skipRows, setSkipRows] = useState<Set<number>>(new Set());
   const [busy, setBusy] = useState(false);
   const [pasteText, setPasteText] = useState('');
   // Khoá idempotency giữ nguyên trong suốt một lần nhập, nên bấm hai lần hoặc thử lại
   // sau lỗi mạng cũng không tạo thêm học viên.
   const idempotencyKey = useRef(`intake-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`);
+
+  const pv = preview;
+  const ratio = !!pv?.ratio;
+  const cols = columnsFor(ratio);
+  const cls = (classes.data ?? []).find((c: any) => c.id === classId) ?? null;
 
   const setCell = (i: number, key: keyof Row, v: string) => {
     setRows((rs) => rs.map((r, j) => (j === i ? { ...r, [key]: v } : r)));
@@ -72,7 +112,7 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
     try {
       const r = await api.post<{ rows: Row[]; usedHeader: boolean }>('/intake/parse', { text });
       if (!r.rows.length) { toast.push('error', 'Không đọc được dòng nào từ nội dung đã dán.'); return; }
-      setRows(r.rows.map((x) => ({ ...x, classCode: x.classCode || defaultClass?.code || '' })));
+      setRows(r.rows);
       setPreview(null);
       setPasteText('');
       toast.push('ok', `Đã đọc ${r.rows.length} dòng${r.usedHeader ? ' (có dòng tiêu đề)' : ''}.`);
@@ -80,30 +120,30 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
   };
 
   const runPreview = useCallback(async () => {
+    if (!classId) { setPreview(null); return; }
     try {
-      const r = await api.post<{ rows: PreviewRow[] }>('/intake/preview', {
-        rows, defaultClassId: defaultClass?.id ?? null, dateFormat,
+      const r = await api.post<Preview>('/intake/preview', {
+        rows, classId, defaultStartWeek: startWeek || null, dateFormat,
       });
-      setPreview(r.rows);
+      setPreview(r);
     } catch (e: any) { toast.push('error', e.message); }
-  }, [rows, defaultClass?.id, dateFormat, toast]);
+  }, [rows, classId, startWeek, dateFormat, toast]);
 
   /*
    * Xem trước chạy TỰ ĐỘNG chứ không đợi bấm nút: người nhập phải nhìn thấy dòng nào hỏng
    * ngay khi vừa dán hoặc vừa gõ xong, chứ không phải đến lúc bấm Thêm mới biết.
    */
   useEffect(() => {
-    if (rows.every((r) => !r.fullName?.trim() && !r.classCode?.trim())) { setPreview(null); return; }
     const t = setTimeout(() => { void runPreview(); }, 400);
     return () => clearTimeout(t);
-  }, [runPreview, rows]);
+  }, [runPreview]);
 
   const commit = async () => {
     if (busy) return;
     setBusy(true);
     try {
       const r = await api.post<{ added: number; skipped: number; failed: any[] }>('/intake/commit', {
-        rows, defaultClassId: defaultClass?.id ?? null, dateFormat,
+        rows, classId, defaultStartWeek: startWeek || null, dateFormat,
         skipRows: [...skipRows], idempotencyKey: idempotencyKey.current,
       });
       toast.push(r.added > 0 ? 'ok' : 'info',
@@ -116,42 +156,91 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
     } finally { setBusy(false); }
   };
 
+  /* Cảnh báo KHÔNG chặn: thiếu target, trùng hồ sơ và cột lớp bị bỏ qua đều là tin, không phải lỗi. */
+  const isWarning = (m: string) =>
+    m.includes('Chưa có target') || m.includes('trùng hồ sơ') || m.includes('Bỏ qua cột lớp');
   const blocking = useMemo(
-    () => (preview ?? []).filter((r) => !skipRows.has(r.row)
-      && r.issues.some((i) => !i.message.includes('Chưa có target'))).length,
-    [preview, skipRows],
+    () => (pv?.rows ?? []).filter((r) => !skipRows.has(r.row)
+      && r.issues.some((i) => !isWarning(i.message))).length,
+    [pv, skipRows],
   );
   // Nhãn nút phải nói đúng số dòng SẼ được ghi, không đếm cả dòng hỏng và dòng đã bỏ qua.
   const willAdd = useMemo(() => {
-    if (!preview) return rows.length - skipRows.size;
-    return preview.filter((r) => !skipRows.has(r.row)
-      && !r.issues.some((i) => !i.message.includes('Chưa có target'))).length;
-  }, [preview, rows.length, skipRows]);
+    if (!pv) return 0;
+    return pv.rows.filter((r) => !skipRows.has(r.row)
+      && !r.issues.some((i) => !isWarning(i.message))).length;
+  }, [pv, skipRows]);
 
   return (
     <Drawer
       open
       onClose={onClose}
       width="max-w-5xl"
-      title={defaultClass ? `Thêm học viên vào ${defaultClass.code}` : 'Thêm học viên'}
-      subtitle="Dán từ Excel/Google Sheets hoặc gõ thẳng vào lưới"
+      title={cls ? `Thêm học viên vào ${cls.code}` : 'Thêm học viên'}
+      subtitle="Chọn lớp, rồi dán từ Excel/Google Sheets hoặc gõ thẳng vào lưới"
       footer={
         <>
           <button className="btn" onClick={onClose} disabled={busy}>Đóng</button>
-          <button className="btn btn-primary" onClick={commit} disabled={busy || willAdd === 0 || blocking > 0}>
+          <button className="btn btn-primary" onClick={commit}
+            disabled={busy || !classId || willAdd === 0 || blocking > 0}>
             {busy ? 'Đang lưu…' : `Thêm ${willAdd} học viên`}
           </button>
         </>
       }
     >
       <div className="space-y-4">
+        {/*
+          LỚP VÀ TUẦN BẮT ĐẦU — hai quyết định của CẢ LÔ, đặt ở trên cùng (mục 12.1).
+          Lớp quyết định bảng bên dưới có những cột nào, nên nó phải được chọn trước.
+        */}
+        <div className="surface-2 rounded-lg p-3 grid gap-3 sm:grid-cols-2">
+          <label className="block">
+            <span className="label">Thêm vào lớp <span className="text-rose-300">*</span></span>
+            <select className="field w-full" value={classId ?? ''}
+              onChange={(e) => { setClassId(Number(e.target.value) || null); setPreview(null); }}>
+              <option value="">Chọn lớp…</option>
+              {(classes.data ?? []).map((c: any) => (
+                <option key={c.id} value={c.id}>{c.code}{c.programme_name ? ` · ${c.programme_name}` : ''}</option>
+              ))}
+            </select>
+            <span className="block text-[11px] text-slate-500 mt-1">
+              Cả lô này vào một lớp. Cột “Lớp” trong file dán sẽ bị bỏ qua.
+            </span>
+          </label>
+          <label className="block">
+            <span className="label">Tuần bắt đầu học — mặc định cho cả lô</span>
+            <input type="date" className="field w-full" value={startWeek}
+              onChange={(e) => { setStartWeek(e.target.value); setPreview(null); }} />
+            <span className="block text-[11px] text-slate-500 mt-1">
+              {pv?.defaultStartWeek
+                ? `Đang dùng tuần bắt đầu ${pv.defaultStartWeek}. Em nào vào muộn thì ghi đè ở cột cuối.`
+                : 'Bỏ trống thì lấy ngày bắt đầu của lớp. Em nào vào muộn thì ghi đè ở cột cuối.'}
+            </span>
+          </label>
+          {pv && (
+            <p className="text-xs text-slate-400 m-0 sm:col-span-2">
+              {ratio
+                ? `Lớp ${pv.classCode} học theo chương trình ${pv.programme ?? ''} — bảng dưới chỉ hỏi họ tên, `
+                  + 'ngày sinh, OVR đầu vào và tuần bắt đầu. Lớp này không có target IELTS và không có band từng kỹ năng.'
+                : `Lớp ${pv.classCode} là lớp Fast Track — bảng dưới hỏi thêm band đầu vào từng kỹ năng và target.`}
+            </p>
+          )}
+          {!classId && (
+            <p className="text-xs text-amber-200 m-0 sm:col-span-2">
+              Chọn lớp trước thì bảng bên dưới mới biết phải hỏi những cột nào.
+            </p>
+          )}
+        </div>
+
         <div className="grid gap-3 sm:grid-cols-3">
           <label className="block sm:col-span-2">
             <span className="label">Dán vùng bảng từ Excel / Google Sheets</span>
             <textarea
               className="field font-mono text-xs"
               rows={3}
-              placeholder={'Họ tên\tLớp\tNgày sinh\tLộ trình\tTarget\nNguyễn Văn A\tMB-FT 101\t12/05/2008\tLT1\t6.5'}
+              placeholder={ratio
+                ? 'Họ tên\tNgày sinh\tOVR\nNguyễn Văn A\t12/05/2008\t5.0'
+                : 'Họ tên\tNgày sinh\tOVR\tL\tR\tW\tS\tTarget\nNguyễn Văn A\t12/05/2008\t5.0\t5.5\t5.0\t4.5\t5.0\t6.5'}
               value={pasteText}
               onChange={(e) => setPasteText(e.target.value)}
               onPaste={(e) => {
@@ -180,37 +269,37 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
             <thead>
               <tr>
                 <th className="th w-10">#</th>
-                {COLUMNS.map((c) => <th key={c.key} className="th">{c.label}</th>)}
+                {cols.map((c) => (
+                  <Th key={c.key} className={c.width} hint={c.hint}>{c.label}</Th>
+                ))}
                 <Th className="w-16" hint="Tick để không nhập dòng này. Dòng lỗi vẫn giữ lại để bạn sửa, không làm hỏng cả lô.">Bỏ qua</Th>
               </tr>
             </thead>
             <tbody>
               {rows.map((r, i) => {
-                const pv = preview?.find((x) => x.row === i + 1);
+                const rowPv = pv?.rows.find((x) => x.row === i + 1);
                 const skipped = skipRows.has(i + 1);
                 return (
                   <tr key={i} className={skipped ? 'row-muted' : ''}>
                     <td className="td text-xs text-slate-500">{i + 1}</td>
-                    {COLUMNS.map((c) => {
-                      const issue = pv?.issues.find((x) => x.field === c.key);
+                    {cols.map((c) => {
+                      const issue = rowPv?.issues.find((x) => x.field === c.key);
                       return (
                         <td key={c.key} className="td">
-                          {c.key === 'route' ? (
-                            <select className="field" value={String(r.route ?? '')} disabled={skipped}
-                              onChange={(e) => setCell(i, 'route', e.target.value)}>
-                              <option value="">—</option>
-                              {routeCodes.map((x) => <option key={x} value={x}>{x}</option>)}
-                            </select>
-                          ) : (
-                            <input
-                              className={`field ${c.width} ${issue ? 'border-rose-300/60' : ''}`}
-                              value={String((r as any)[c.key] ?? '')}
-                              disabled={skipped}
-                              aria-label={`${c.label} dòng ${i + 1}`}
-                              onChange={(e) => setCell(i, c.key, e.target.value)}
-                            />
+                          <input
+                            className={`field ${c.width} ${issue && !isWarning(issue.message) ? 'border-rose-300/60' : ''}`}
+                            value={String((r as any)[c.key] ?? '')}
+                            disabled={skipped}
+                            /* Ô tuần bỏ trống thì hiện tuần mặc định của cả lô, để không ai phải đoán. */
+                            placeholder={c.key === 'startWeek' ? (pv?.defaultStartWeek ?? '') : undefined}
+                            aria-label={`${c.label} dòng ${i + 1}`}
+                            onChange={(e) => setCell(i, c.key, e.target.value)}
+                          />
+                          {issue && (
+                            <div className={`text-[11px] mt-0.5 ${isWarning(issue.message) ? 'text-amber-200' : 'text-rose-200'}`}>
+                              {issue.message}
+                            </div>
                           )}
-                          {issue && <div className="text-[11px] text-rose-200 mt-0.5">{issue.message}</div>}
                         </td>
                       );
                     })}
@@ -234,7 +323,7 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <button className="btn btn-sm" onClick={() => setRows((rs) => [...rs, { ...EMPTY, classCode: defaultClass?.code ?? '' }])}>
+          <button className="btn btn-sm" onClick={() => setRows((rs) => [...rs, { ...EMPTY }])}>
             Thêm dòng
           </button>
           {rows.length > 1 && (
@@ -247,13 +336,13 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
             * Nhưng phải gỡ được trong một lần bấm: dán 40 dòng mà 2 dòng sai thì không thể bắt
             * người nhập tick tay từng dòng.
             */}
-          {preview && (blocking > 0 ? (
+          {pv && (blocking > 0 ? (
             <button
               className="btn btn-sm"
               onClick={() => setSkipRows((s) => {
                 const next = new Set(s);
-                preview.forEach((r) => {
-                  if (r.issues.some((i) => !i.message.includes('Chưa có target'))) next.add(r.row);
+                pv.rows.forEach((r) => {
+                  if (r.issues.some((i) => !isWarning(i.message))) next.add(r.row);
                 });
                 return next;
               })}
@@ -265,11 +354,11 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
           ))}
         </div>
 
-        {preview?.some((r) => r.duplicates.length) && (
+        {pv?.rows.some((r) => r.duplicates.length) && (
           <div className="surface-2 rounded-lg p-3">
             <div className="label">Có thể trùng hồ sơ đã có</div>
             <ul className="text-xs space-y-1 list-none p-0 m-0">
-              {preview.filter((r) => r.duplicates.length).map((r) => (
+              {pv.rows.filter((r) => r.duplicates.length).map((r) => (
                 <li key={r.row} className="text-slate-300">
                   Dòng {r.row} — {r.fullName}: giống {r.duplicates.map((d) => `${d.fullName} (${d.studentCode})`).join(', ')}
                 </li>
@@ -283,11 +372,17 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
         )}
 
         <SectionNote>
-          Mã học viên do máy chủ sinh, giữ nguyên khi chuyển lớp hay học lại. Lộ trình có target thì tính
-          được kỳ vọng; thiếu target vẫn thêm được, chỉ là chưa kết luận được SOS.
+          Ô trống hoặc dấu <strong>“-”</strong> nghĩa là CHƯA CÓ THÔNG TIN, không phải 0 — bổ sung sau
+          được. OVR đầu vào nhập độc lập với bốn môn: thiếu vài môn thì để trống đúng những môn thiếu,
+          và có đủ bốn môn cũng không tính lại OVR.
           <br />
-          Tuần MT ở đây chỉ là <strong>đề xuất</strong>: chỉ trở thành kế hoạch khi người có quyền chốt tuần
-          thực hiện, nên nhập hàng loạt không thành đường vượt quyền lập kế hoạch.
+          Mã học viên do máy chủ sinh, giữ nguyên khi chuyển lớp hay học lại. Em đã có hồ sơ thì nên
+          dùng <strong>ghi danh / chuyển lớp</strong> chứ đừng tạo mã mới — tạo mã mới là chẻ lịch sử của
+          một đứa trẻ thành hai hồ sơ không ai nối lại được.
+          <br />
+          Đường nhập này <strong>không xếp lịch MT</strong>. Lịch thi là việc của Quản lý ở panel Lộ trình,
+          nơi có đủ ràng buộc thứ tự đợt — nếu không, ô nhập danh sách thành một lối vòng quanh quyền
+          xếp lịch.
         </SectionNote>
       </div>
     </Drawer>

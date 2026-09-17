@@ -323,6 +323,21 @@ CREATE TABLE learning_cycles (
   baseline_source TEXT,               -- 'entrance' | 'previous_cycle' | 'external' | 'manual'
   baseline_note TEXT,
 
+  /*
+   * ĐIỂM ĐẦU VÀO TỪNG KỸ NĂNG (mục 12.1) — chỉ lớp Fast Track có.
+   *
+   * OVR nhập ĐỘC LẬP với bốn môn: nó là con số trên phiếu điểm chính thức, không phải trung
+   * bình bốn cột này. Thiếu vài môn KHÔNG được lấy OVR lấp vào, và có đủ bốn môn cũng không
+   * được ghi đè OVR bằng một phép tính — hai thứ đến từ hai nguồn khác nhau.
+   *
+   * WRITING LÀ MỘT CON SỐ, không tự chia W1/W2: phiếu điểm IELTS chỉ có một band Writing,
+   * còn W1/W2 là cách chấm nội bộ của đợt MT. Chia đôi một con số không tồn tại là bịa.
+   */
+  baseline_listening REAL,
+  baseline_reading REAL,
+  baseline_writing REAL,
+  baseline_speaking REAL,
+
   started_at TEXT NOT NULL,
   ended_at TEXT,
   status TEXT NOT NULL DEFAULT 'active',   -- active | completed | abandoned
@@ -1208,6 +1223,25 @@ CREATE TABLE unit_reports (
   UNIQUE (reporting_unit_id, period_id, category_key)
 );
 CREATE INDEX idx_ur_period ON unit_reports(period_id);
+
+/*
+ * LỊCH SỬ CHỈNH SỬA BÁO CÁO (mục 14.2).
+ *
+ * `unit_reports` giữ NỘI DUNG HIỆN TẠI của một ô; bảng này giữ mọi lần ô đó được sửa. Không
+ * có nó thì một ô đổi từ "Có vấn đề" sang "Ổn" trước giờ họp là chuyện không ai truy lại
+ * được — và đó đúng là lúc người ta cần truy nhất.
+ */
+CREATE TABLE unit_report_history (
+  id INTEGER PRIMARY KEY,
+  reporting_unit_id INTEGER NOT NULL REFERENCES reporting_units(id),
+  period_id INTEGER NOT NULL REFERENCES report_periods(id),
+  category_key TEXT NOT NULL,
+  status TEXT,
+  note TEXT,
+  actor_user_id INTEGER REFERENCES users(id),
+  at TEXT NOT NULL
+);
+CREATE INDEX idx_urh_cell ON unit_report_history(reporting_unit_id, period_id, category_key);
 
 CREATE TABLE tasks (
   id INTEGER PRIMARY KEY,

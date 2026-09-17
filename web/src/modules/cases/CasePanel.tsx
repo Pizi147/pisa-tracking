@@ -59,7 +59,7 @@ type CaseDetail = {
   outcomeNote: string | null; outcomeDecision: string | null; outcomeAt: string | null;
   /** Mọi phương án đã có kết quả chưa — điều kiện để chốt kết quả chung. */
   canFinish: boolean;
-  /** Các mốc trong vòng đời case, cũ trước mới sau. */
+  /** Các mốc trong vòng đời case. Giao diện xếp MỚI NHẤT LÊN ĐẦU (mục 4.3). */
   milestones: any[];
   issues: any[]; interventions: any[]; followups: any[]; history: any[];
   viewer: { canEdit: boolean; canClose: boolean; canApprove: boolean };
@@ -196,7 +196,7 @@ export function CasePanel({ caseId, compact = false, hideHeader = false, onChang
           <ol className="list-none p-0 m-0 relative pl-6"
               style={{ borderLeft: '2px solid var(--line-strong)', marginLeft: '5px' }}>
             {timeline.map((ev) => (
-              <li key={ev.key} className="relative pb-5 last:pb-1">
+              <li key={ev.key} className="relative pb-4 last:pb-1">
                 {/* Chấm mốc: đặc = chuyện xảy ra với em, rỗng = việc mình làm. */}
                 <span className="absolute rounded-full"
                       style={{
@@ -206,11 +206,24 @@ export function CasePanel({ caseId, compact = false, hideHeader = false, onChang
                 <span className="text-[11px] text-slate-500 tabular-nums tracking-wide">
                   {fmtDate(ev.on)}{ev.attemptNo ? ` · MT${ev.attemptNo}` : ''}
                 </span>
-                <p className="text-sm font-semibold text-slate-100 mt-0.5 mb-0 flex flex-wrap items-center gap-2">
-                  {ev.title}
-                  {ev.badge}
-                </p>
-                {ev.body}
+                {ev.card ? (
+                  <div className="rounded-lg border mt-1 px-3 py-2.5 surface-2"
+                       style={{ borderColor: 'var(--line)' }}>
+                    <p className="text-sm font-semibold text-slate-100 m-0 flex flex-wrap items-center gap-2">
+                      {ev.title}
+                      {ev.badge}
+                    </p>
+                    {ev.body}
+                  </div>
+                ) : (
+                  <>
+                    <p className="text-sm font-semibold text-slate-100 mt-0.5 mb-0 flex flex-wrap items-center gap-2">
+                      {ev.title}
+                      {ev.badge}
+                    </p>
+                    {ev.body}
+                  </>
+                )}
               </li>
             ))}
           </ol>
@@ -309,6 +322,15 @@ type TimelineItem = {
   key: string; on: string; attemptNo: number | null;
   title: ReactNode; badge: ReactNode; body: ReactNode;
   dotFill: string; dotEdge: string;
+  /**
+   * PHƯƠNG ÁN ĐƯỢC ĐÓNG KHUNG, MỐC THÌ KHÔNG.
+   *
+   * Một phương án là một VẬT có nhiều phần — mô tả, người làm, hạn, các chu kỳ kết quả, và
+   * một cái nút. Không có khung thì các phần ấy trôi lẫn vào mốc đứng ngay dưới, và người
+   * đọc phải tự đoán câu nào thuộc việc nào. Mốc thì ngược lại: nó là một câu, đóng khung
+   * chỉ làm nó nặng bằng một việc phải làm trong khi nó không phải.
+   */
+  card?: boolean;
   /** Thứ tự phụ trong cùng một ngày: chuyện xảy ra trước, việc mình làm sau. */
   rank: number;
 };
@@ -373,7 +395,7 @@ function buildTimeline(data: any, act: TimelineActions): TimelineItem[] {
     const on = iv.completedDate ?? iv.startedDate ?? iv.plannedDate ?? iv.actionDue ?? data.detectedAt;
     const mine = (data.followups ?? []).filter((f: any) => f.interventionId === iv.id);
     items.push({
-      key: `i${iv.id}`, on, attemptNo: null, rank: 1,
+      key: `i${iv.id}`, on, attemptNo: null, rank: 1, card: true,
       dotFill: 'var(--surface)',
       dotEdge: iv.status === 'completed' ? 'var(--accent)' : 'var(--line-strong)',
       title: (
@@ -425,11 +447,9 @@ function buildTimeline(data: any, act: TimelineActions): TimelineItem[] {
     });
   }
 
-  items.sort((a, b) => (a.on ?? '').localeCompare(b.on ?? '') || a.rank - b.rank || a.key.localeCompare(b.key));
-
   /*
-   * ĐANG CHỜ GÌ — mốc cuối cùng, rỗng ruột, chỉ có khi case còn mở. Không có nó thì dòng
-   * thời gian kết thúc lửng lơ và người đọc không biết bước tiếp theo là chờ ai.
+   * ĐANG CHỜ GÌ — mốc rỗng ruột, chỉ có khi case còn mở. Không có nó thì dòng thời gian
+   * cụt lủn và người đọc không biết bước tiếp theo là chờ ai.
    */
   if (data.status !== 'done' && data.followUntil) {
     items.push({
@@ -439,6 +459,16 @@ function buildTimeline(data: any, act: TimelineActions): TimelineItem[] {
       badge: null, body: null,
     });
   }
+
+  /*
+   * MỚI NHẤT LÊN ĐẦU (chủ sản phẩm chốt 17/09/2026), và mục 4.3 nói cùng một điều: phương
+   * án hiện tại và cập nhật mới nhất đứng TRÊN những gì đã xong, lịch sử cũ thu gọn ở dưới.
+   *
+   * Người mở một case đang chạy hỏi "giờ đang thế nào", không hỏi "ba tháng trước bắt đầu ra
+   * sao". Xếp cũ trước thì câu trả lời nằm ở cuối, và với case kéo dài thì nó nằm sau mười
+   * lăm dòng không ai đọc.
+   */
+  items.sort((a, b) => (b.on ?? '').localeCompare(a.on ?? '') || b.rank - a.rank || b.key.localeCompare(a.key));
   return items;
 }
 
@@ -500,27 +530,48 @@ function InterventionBody({ iv, followups, data, act }: {
         </p>
       )}
       {/*
-        MỘT DÒNG CHO MỖI CHU KỲ ĐÃ KHÉP. Màu và dấu theo bảng ở mục 7.10 — trạng thái và
-        KẾT QUẢ là hai thông tin khác nhau, nên một phương án "đã hoàn thành" với kết quả
-        "Kém hơn" vẫn hiện màu đỏ. Tô xanh mọi thứ đã xong là nói dối.
+        MỘT KHỐI CHO MỖI CHU KỲ ĐÃ KHÉP, KHÔNG PHẢI MỘT DÒNG NHỒI BẢY THỨ.
+        
+        Bản trước xếp ngày · chu kỳ · kết quả · bước tiếp · "cập nhật trễ" · người ghi · ghi
+        chú vào cùng một dòng chảy chữ. Ở màn hẹp nó xuống dòng ở chỗ ngẫu nhiên, và câu ghi
+        chú — phần duy nhất do người thật viết — bị đẩy thành cái đuôi sau một dấu gạch.
+        
+        Nay mỗi chu kỳ là một khối ba tầng: NGÀY và KẾT QUẢ ở tầng trên, BƯỚC TIẾP THEO ở
+        tầng giữa, CÂU CỦA NGƯỜI DẠY đứng riêng một tầng và được đọc như một câu.
+        
+        Màu và dấu theo bảng ở mục 7.10 — trạng thái và KẾT QUẢ là hai thông tin khác nhau,
+        nên một phương án "đã hoàn thành" với kết quả "Kém hơn" vẫn hiện màu đỏ. Tô xanh mọi
+        thứ đã xong là nói dối.
       */}
-      {followups.map((f) => (
-        <p key={f.id} className="text-xs mt-1 mb-0 pl-3 border-l flex flex-wrap items-baseline gap-1.5"
-           style={{ borderColor: 'var(--accent-line)' }}>
-          <span className="text-slate-500 tabular-nums">{fmtDate(f.observedOn)}</span>
-          {f.cycleNo && <span className="text-slate-600">chu kỳ {f.cycleNo}</span>}
-          <Outcome tone={OUTCOME_TONE[f.outcome] ?? 'muted'} mark={OUTCOME_MARK[f.outcome]}>
-            {outcomeLabelFor(data.track ?? 'academic', f.outcome)}
-          </Outcome>
-          {f.nextStep && (
-            <span className="text-slate-500">→ {NEXT_STEP_LABEL[f.nextStep as keyof typeof NEXT_STEP_LABEL] ?? f.nextStep}</span>
-          )}
-          {f.late && <Alert tone="warn">cập nhật trễ</Alert>}
-          {f.observerName && <span className="text-slate-500">· {f.observerName}</span>}
-          {f.note && <span className="text-slate-400">— {f.note}</span>}
-          <MetricPills metrics={f.metrics} />
-        </p>
-      ))}
+      {followups.length > 0 && (
+        <ul className="list-none p-0 m-0 mt-2 space-y-1.5">
+          {followups.map((f) => (
+            <li key={f.id} className="pl-2.5 border-l" style={{ borderColor: 'var(--accent-line)' }}>
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="text-[11px] text-slate-500 tabular-nums">
+                  {fmtDate(f.observedOn)}{f.cycleNo ? ` · chu kỳ ${f.cycleNo}` : ''}
+                </span>
+                <Outcome tone={OUTCOME_TONE[f.outcome] ?? 'muted'} mark={OUTCOME_MARK[f.outcome]}>
+                  {outcomeLabelFor(data.track ?? 'academic', f.outcome)}
+                </Outcome>
+                {f.late && <Alert tone="warn">cập nhật trễ</Alert>}
+              </div>
+              {(f.nextStep || f.observerName) && (
+                <div className="text-[11px] text-slate-500 mt-0.5">
+                  {f.nextStep && <>→ {NEXT_STEP_LABEL[f.nextStep as keyof typeof NEXT_STEP_LABEL] ?? f.nextStep}</>}
+                  {f.nextStep && f.observerName && ' · '}
+                  {f.observerName && <>{f.observerName} ghi</>}
+                </div>
+              )}
+              {/* CÂU CỦA NGƯỜI DẠY đứng riêng — đó là phần duy nhất máy không viết được. */}
+              {f.note && <p className="text-xs text-slate-300 mt-1 mb-0 leading-relaxed">{f.note}</p>}
+              {f.metrics?.length > 0 && (
+                <div className="flex flex-wrap gap-1 mt-1"><MetricPills metrics={f.metrics} /></div>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
 
       {/*
         Nút nằm NGAY DƯỚI phương án nó tác động tới, không gom xuống cuối trang: gom lại thì

@@ -15,7 +15,7 @@ import {
   FT_CASE_CATEGORIES, ISSUE_TAXONOMY, NORMAL_CASE_CATEGORIES, PERMISSIONS,
   REGULAR_SKILL_LABEL, issueLabel,
 } from '@shared/domain/index.ts';
-import { OutcomeTable } from './OutcomeTable.tsx';
+import { IssueAnalysis } from './IssueAnalysis.tsx';
 
 /**
  * HỌC THUẬT — nơi Quản lý nhìn thấy VẤN ĐỀ, không phải ba mươi chỉ số.
@@ -95,7 +95,18 @@ export function CaseBoard({ embedded = false }: { embedded?: boolean } = {}) {
    * gì mình đã làm có ăn thua không". Bày cả hai bảng cùng lúc thì không ai đọc hết.
    */
   const mode = params.get('xem') === 'tuan' ? 'week' : 'place';
-  const angle = params.get('goc') === 'ket-qua' ? 'outcome' : 'issue';
+  /*
+   * BẢNG "PHƯƠNG ÁN & KẾT QUẢ" ĐỨNG RIÊNG ĐÃ BỎ (mục 15.1).
+   *
+   * Nó bắt người đọc nhớ mình vừa xem nhóm vấn đề nào rồi tự tìm lại nhóm đó ở một bảng
+   * khác — và hai bảng đếm trên hai tập khác nhau thì sớm muộn cũng lệch. Nay hiệu quả
+   * phương án nằm trong phần mở rộng của CHÍNH nhóm vấn đề đang xem.
+   *
+   * Hai góc còn lại:
+   *   Phân tích   bốn bước của mục 15.1 — loại lớp → hạng mục → phân loại → bấm số ra case
+   *   Danh sách   danh sách phẳng có bộ lọc, là nơi các đường dẫn từ Tổng quan đi tới
+   */
+  const angle = params.get('goc') === 'danh-sach' || params.get('hang-doi') ? 'list' : 'analysis';
   const [taskPeriod, setTaskPeriod] = useState<number | null>(null);
   /*
    * BA TRẠNG THÁI LOẠI TRỪ NHAU, cộng lại đúng bằng tổng — đây là câu hỏi "bức tranh chung
@@ -206,10 +217,8 @@ export function CaseBoard({ embedded = false }: { embedded?: boolean } = {}) {
           {mode === 'place' && (
             <>
               <span className="w-px h-5 mx-1.5" style={{ background: 'var(--line)' }} />
-              <Chip active={angle === 'issue'} onClick={() => set('goc', '')}>Vấn đề</Chip>
-              <Chip active={angle === 'outcome'} onClick={() => set('goc', 'ket-qua')}>
-                Phương án &amp; kết quả
-              </Chip>
+              <Chip active={angle === 'analysis'} onClick={() => set('goc', '')}>Phân tích vấn đề</Chip>
+              <Chip active={angle === 'list'} onClick={() => set('goc', 'danh-sach')}>Danh sách case</Chip>
             </>
           )}
         </div>
@@ -228,8 +237,6 @@ export function CaseBoard({ embedded = false }: { embedded?: boolean } = {}) {
       */}
       {mode === 'week' ? (
         <WeeklyBoard branchId={branchId ? Number(branchId) : null} />
-      ) : angle === 'outcome' ? (
-        <OutcomeTable branchId={branchId ? Number(branchId) : null} track={classKind} topic={skill} />
       ) : (
         /*
           BẢNG TỔNG HỢP trước, danh sách sau: Quản lý mở màn này để trả lời "chi nhánh nào,
@@ -240,6 +247,13 @@ export function CaseBoard({ embedded = false }: { embedded?: boolean } = {}) {
           onPickBranch={(id) => set('cn', String(id))} />
       )}
 
+      {/* ───── PHÂN TÍCH VẤN ĐỀ — bốn bước của mục 15.1 ───── */}
+      {mode === 'place' && angle === 'analysis' && (
+        <Card title="Phân tích vấn đề" bodyClass="p-3">
+          <IssueAnalysis branchId={branchId ? Number(branchId) : null} />
+        </Card>
+      )}
+
       {/*
         BA TRẠNG THÁI LOẠI TRỪ NHAU, cộng lại đúng bằng tổng.
 
@@ -248,7 +262,7 @@ export function CaseBoard({ embedded = false }: { embedded?: boolean } = {}) {
         và người đọc không biết mình đang nhìn một phép chia hay một danh sách. Nay ba ô ở
         đây là BỨC TRANH CHUNG; hai câu hỏi còn lại xuống dưới, nói rõ là câu hỏi.
       */}
-      {mode === 'place' && angle === 'issue' && (
+      {mode === 'place' && angle === 'list' && (
         <div className="grid gap-3 grid-cols-1 sm:grid-cols-3">
           {(['no_plan', 'working', 'done'] as const).map((k) => (
             <QueueTile key={k} label={STATE_LABEL[k]} value={stateCount(k)} active={state === k}
@@ -263,7 +277,7 @@ export function CaseBoard({ embedded = false }: { embedded?: boolean } = {}) {
         có bộ điều khiển riêng ngay trên đầu chúng; bày thêm một khu lọc thứ hai bên dưới là
         hai bộ lọc cùng nghĩa trên một màn — đúng thứ mục 3.1 cấm.
       */}
-      {mode === 'place' && angle === 'issue' && (<>
+      {mode === 'place' && angle === 'list' && (<>
       <Card title="Lọc">
         <div className="space-y-3">
           {/*

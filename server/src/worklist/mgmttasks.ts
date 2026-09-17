@@ -57,25 +57,38 @@ export function listMgmtTasks(p: Principal, f: TaskFilter = {}) {
   const conn = db();
   const scope = scopeFor(p, PERMISSIONS.MEETING_EDIT);
 
-  const where: string[] = ['t.parent_task_id IS NULL', "t.kind = 'branch_ops'"];
-  const params: unknown[] = [];
-  if (f.branchId) { where.push('t.branch_id = ?'); params.push(f.branchId); }
+  /*
+   * HAI TẦNG BỘ LỌC, VÀ SỐ TRÊN NÚT NHÓM TÍNH Ở TẦNG THỨ NHẤT (mục 14.1).
+   *
+   * `base` là phạm vi quyền + chi nhánh + tuần — tức là tập người này được nhìn thấy.
+   * `where` thêm chính bộ lọc nhóm và trạng thái đang chọn.
+   *
+   * Số trên bốn nút nhóm PHẢI đếm trên `base`. Đếm trên `where` là lỗi cũ: chọn
+   * "Học sinh/Phụ huynh" thì ba nhóm còn lại tụt về 0, và người dùng tưởng trung tâm
+   * không còn việc nào về giáo trình — trong khi chúng vẫn nằm đó, chỉ là đang bị lọc ra.
+   */
+  const base: string[] = ['t.parent_task_id IS NULL', "t.kind = 'branch_ops'"];
+  const baseParams: unknown[] = [];
+  if (f.branchId) { base.push('t.branch_id = ?'); baseParams.push(f.branchId); }
   else if (!scope.all && scope.branchIds?.length) {
-    where.push(`(t.branch_id IS NULL OR t.branch_id IN (${scope.branchIds.map(() => '?').join(',')}))`);
-    params.push(...scope.branchIds);
+    base.push(`(t.branch_id IS NULL OR t.branch_id IN (${scope.branchIds.map(() => '?').join(',')}))`);
+    baseParams.push(...scope.branchIds);
   }
-  if (f.group) { where.push('t.group_key = ?'); params.push(f.group); }
-  if (f.progress) { where.push('t.progress = ?'); params.push(f.progress); }
-  if (f.assigneeUserId) { where.push('t.assignee_user_id = ?'); params.push(f.assigneeUserId); }
+  if (f.assigneeUserId) { base.push('t.assignee_user_id = ?'); baseParams.push(f.assigneeUserId); }
   /*
    * LỌC THEO TUẦN CẬP NHẬT: giữ những việc CÓ cập nhật trong tuần đó. Việc chưa xong mà tuần
    * đó không ai động vào thì VẪN HIỆN — đó chính là việc cần hỏi "tuần rồi sao không ai làm".
    */
   if (f.periodId) {
-    where.push(`(EXISTS (SELECT 1 FROM task_updates u WHERE u.task_id = t.id AND u.period_id = ?)
+    base.push(`(EXISTS (SELECT 1 FROM task_updates u WHERE u.task_id = t.id AND u.period_id = ?)
                  OR t.progress NOT IN ('done','stopped'))`);
-    params.push(f.periodId);
+    baseParams.push(f.periodId);
   }
+
+  const where = [...base];
+  const params = [...baseParams];
+  if (f.group) { where.push('t.group_key = ?'); params.push(f.group); }
+  if (f.progress) { where.push('t.progress = ?'); params.push(f.progress); }
 
   const rows = conn
     .prepare(
@@ -111,9 +124,42 @@ export function listMgmtTasks(p: Principal, f: TaskFilter = {}) {
     }
   }
 
+  /*
+   * SỐ DỰ ĐOÁN KHI CHỌN LỰA CHỌN ĐÓ (mục 14.1) — đếm trên TOÀN TẬP `base`, không đếm trên
+   * trang đang hiển thị và không đếm sau khi đã áp chính lựa chọn đang xét.
+   */
+  const countBy = (col: string) => {
+    const out: Record<string, number> = {};
+    for (const r of conn
+      .prepare(`SELECT ${col} AS k, COUNT(*) AS n FROM tasks t WHERE ${base.join(' AND ')} GROUP BY 1`)
+      .all(...baseParams) as any[]) out[r.k ?? ''] = r.n;
+    return out;
+  };
+
+  /*
+   * DÒNG TỔNG HỢP GỌN (mục 14.2). Bốn con số này CHỒNG NHAU có chủ ý — một việc quá hạn
+   * cũng đang thực hiện — nên giao diện không được bày chúng như một phép chia cộng bằng
+   * tổng. Chúng là bốn câu hỏi, không phải bốn phần của một cái bánh.
+   */
+  const soon = addDays(today, 3);
+  const all = conn
+    .prepare(`SELECT t.progress, t.due_date FROM tasks t WHERE ${base.join(' AND ')}`)
+    .all(...baseParams) as any[];
+  const summary = {
+    doing: all.filter((r) => r.progress === 'doing').length,
+    overdue: all.filter((r) => !closed(r.progress) && r.due_date && r.due_date < today).length,
+    dueSoon: all.filter((r) => !closed(r.progress) && r.due_date
+      && r.due_date >= today && r.due_date <= soon).length,
+    paused: all.filter((r) => r.progress === 'paused').length,
+    total: all.length,
+  };
+
   return {
     canEdit: true,
     scopeEmpty: false,
+    /* Đếm theo nhóm và theo trạng thái, cả hai trên `base` — xem chú thích ở trên. */
+    facets: { group: countBy('t.group_key'), progress: countBy('t.progress') },
+    summary,
     rows: rows.map((r) => ({
       id: r.id, code: r.code, title: r.title,
       group: r.group_key as TaskGroup | null,

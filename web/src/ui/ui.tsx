@@ -370,7 +370,14 @@ export function BandCell({ cell, target }: {
  * hiện tháng thi như thể đã chốt ngày.
  */
 export function ExamPlanText({ plan }: { plan?: { confidence: string; label: string } | null }) {
-  if (!plan || plan.confidence === 'none') return <Info pending>Chưa xác định</Info>;
+  /*
+    CHƯA CÓ KẾ HOẠCH THI thì hiện đúng MỘT GẠCH NGANG (mục 12.3), không phải một nhãn.
+    Phần lớn học viên chưa chốt ngày thi, nên một nhãn vàng ở đây sẽ nằm gần hết các hàng —
+    và một cảnh báo xuất hiện ở mọi hàng thì không còn là cảnh báo.
+  */
+  if (!plan || plan.confidence === 'none') {
+    return <span className="text-slate-600" title="Chưa có kế hoạch thi IELTS">—</span>;
+  }
   if (plan.confidence === 'month') {
     return <span className="text-slate-300" title="Chưa chốt tuần thi nên chưa đếm ngược">{plan.label}</span>;
   }

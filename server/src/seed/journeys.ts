@@ -119,6 +119,14 @@ export type PlanSeed = {
 export type CaseSeed = {
   /** Hạng mục — quyết định định danh của case. Một em × một hạng mục = một case. */
   topic: string;
+  /**
+   * PHÂN LOẠI VẤN ĐỀ, BẮT BUỘC (mục 6.4).
+   *
+   * Để tuỳ chọn thì bộ demo sẽ có case không phân loại, và bảng phân tích vấn đề của lớp
+   * (mục 13.4) chỉ còn đúng một hàng "Chưa phân loại" — tức là cái bảng không nói gì cả.
+   * Bộ dựng kiểm mã này có thuộc đúng hạng mục không, và dừng ngay nếu không.
+   */
+  primaryCode: string;
   track?: 'academic' | 'behaviour';
   /** Tên case do người báo đặt. Bỏ trống thì hệ thống tự đặt theo hạng mục. */
   title?: string;
