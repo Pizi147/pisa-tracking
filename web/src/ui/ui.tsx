@@ -363,7 +363,7 @@ export function BandCell({ cell, target }: {
  *
  * Ba trạng thái và ba cách hiện khác nhau, cố ý:
  *   đã có TUẦN   → "W2 FEB 2027" in đậm như một thông tin chắc chắn
- *   mới có THÁNG → chữ thường kèm ghi chú "chưa xác định tuần", để người đọc biết là còn lỏng
+ *   mới có THÁNG → chữ thường, và độ chắc chắn nằm ở tooltip chứ không nhồi vào nhãn (mục 5.2)
  *   chưa có gì   → một nhãn xám "Chưa xác định"
  *
  * Đây là chỗ duy nhất quyết định cách nói. Màn nào tự viết lấy thì sớm muộn sẽ có một màn

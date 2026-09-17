@@ -5,7 +5,7 @@ import {
   ISSUE_ROLES, PERMISSIONS, THREAD_TRACKS, URGENCY_LEVELS, DEFAULT_URGENCY,
   BEHAVIOUR_MERGE_WINDOW_DAYS, behaviourCaseDeadline, behaviourMergeUntil, deadlineAfterRaise,
   issuesForTopic,
-  CASE_CATEGORY_SHORT, CASE_CATEGORIES, CASE_CATEGORY_LABEL, FOLLOWUP_OUTCOME_LABEL,
+  CASE_CATEGORY_SHORT, CASE_CATEGORIES, CASE_CATEGORY_LABEL, FOLLOWUP_OUTCOME_LABEL, ratioResult,
   caseCategoriesFor, componentsAreCounts, componentsFor, type CaseCategory,
   CASE_OUTCOME_LABEL, caseCategoryLabel, caseDedupKey, caseHeadline, caseTitle, categoryOf,
   NEXT_STEP_LABEL, cycleDeadline, isProposalKind, outcomeLabelFor, outcomesFor,
@@ -1975,29 +1975,50 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
    * ĐIỂM HAI LƯỢT GẦN NHẤT của từng ô nhập điểm, để nói được "tăng hay giảm".
    * Chỉ lấy lượt đã có điểm và chưa bị huỷ — lượt mới xếp tuần chưa nói gì về em.
    */
+  const ratio = isRatioCycle(cycle);
+  /*
+   * ĐIỂM CỦA TỪNG Ô NHẬP — và LỚP NORMAL KHÔNG DÙNG CỘT `band`.
+   *
+   * Fast Track chấm band IELTS nên đọc `band`. Lớp Normal chấm ĐIỂM ĐẠT trên TỔNG của chính
+   * đề đó (21/40), nên `band` của nó luôn trống. Bản trước chỉ đọc `band`, nên hồ sơ một em
+   * lớp Foundation có cột "Kết quả gần nhất" trống trơn trong khi bảng điểm ngay bên dưới
+   * bày đủ bốn môn — đúng kiểu số liệu đá nhau mà cả mục 4.2 sinh ra để dẹp.
+   */
   const scoreRows = conn
     .prepare(
-      `SELECT a.attempt_no, a.id AS attempt_id, rp.code AS period_code, a.target_at_attempt,
-              sc.skill, sc.band
+      `SELECT a.attempt_no, a.id AS attempt_id, a.kind, rp.code AS period_code, a.target_at_attempt,
+              sc.skill, sc.band, sc.raw_score, sc.raw_total
          FROM assessment_attempts a
          JOIN assessment_scores sc ON sc.attempt_id = a.id
          LEFT JOIN report_periods rp ON rp.id = a.planned_period_id
         WHERE a.student_id = ? AND COALESCE(a.cycle_id, 0) = ?
-          AND a.status != 'cancelled' AND sc.band IS NOT NULL
+          AND a.status != 'cancelled'
+          AND (sc.band IS NOT NULL OR (sc.raw_score IS NOT NULL AND sc.raw_total IS NOT NULL))
         ORDER BY a.attempt_no`,
     )
     .all(studentId, cycle?.id ?? 0) as any[];
 
-  type Point = { attemptNo: number; attemptId: number; band: number; week: string | null; expectation: number | null };
+  type Point = {
+    attemptNo: number; attemptId: number; band: number; week: string | null; expectation: number | null;
+    /* Lớp Normal: điểm đạt/tổng của chính đề đó. Fast Track để trống. */
+    score: number | null; total: number | null; passed: boolean | null;
+  };
   const byCategory = new Map<string, Point[]>();
   for (const r of scoreRows) {
     const cat = categoryOf('academic', r.skill);
     if (!cat) continue;
+    if (ratio && (r.raw_score === null || r.raw_total === null)) continue;
+    if (!ratio && r.band === null) continue;
+    const rr = ratio ? ratioResult(r.raw_score, r.raw_total) : null;
     const list = byCategory.get(cat) ?? [];
     list.push({
-      attemptNo: r.attempt_no, attemptId: r.attempt_id, band: r.band,
+      attemptNo: r.attempt_no, attemptId: r.attempt_id,
+      band: ratio ? r.raw_score : r.band,
+      score: ratio ? r.raw_score : null,
+      total: ratio ? r.raw_total : null,
+      passed: rr ? rr.outcome === 'pass' : null,
       week: r.period_code ?? null,
-      expectation: r.target_at_attempt !== null && r.target_at_attempt !== undefined
+      expectation: !ratio && r.target_at_attempt !== null && r.target_at_attempt !== undefined
         ? expectationFor(r.target_at_attempt, r.attempt_no) : null,
     });
     byCategory.set(cat, list);
@@ -2029,6 +2050,41 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
    * là bày hai dòng vĩnh viễn trống. Em lớp Fast Track thì ngược lại: một dòng "W" gộp mất
    * mất phân biệt giữa hai bài do hai giáo viên khác nhau chấm.
    */
+  /*
+   * TÍN HIỆU CHỜ XÁC MINH, gom sẵn theo hạng mục (mục 4.2).
+   *
+   * Cột "Vấn đề đang theo dõi" phải nói được CẢ HAI thứ: case đã mở, và tín hiệu chưa ai
+   * xác minh. Bỏ tín hiệu ra khỏi bảng này thì một kỹ năng vừa trượt trông như đang yên —
+   * trong khi việc phải làm đang nằm ở đúng dòng đó.
+   */
+  const signalRows = conn
+    .prepare(
+      `SELECT sg.*, u.full_name AS owner_name FROM case_signals sg
+         LEFT JOIN users u ON u.id = sg.owner_user_id
+        WHERE sg.student_id = ? AND sg.status = 'pending'`,
+    )
+    .all(studentId) as any[];
+
+  /*
+   * THỨ TỰ CASE TRONG MỘT KỸ NĂNG (mục 4.3): đang mở trước, rồi tới cập nhật NGHIỆP VỤ mới
+   * nhất, rồi ngày tạo.
+   *
+   * "Cập nhật nghiệp vụ" là một lần ai đó làm gì với case — ghi kết quả, thêm phương án,
+   * đổi kết luận. KHÔNG dùng `updated_at` chung: một lần chạy nền chạm vào bản ghi sẽ đẩy
+   * case đó lên đầu như thể vừa có người xử lý, và thứ tự trên màn hình thành vô nghĩa.
+   */
+  const lastTouch = (caseId: number): string | null => {
+    const r = conn
+      .prepare(
+        `SELECT MAX(d) AS d FROM (
+            SELECT MAX(observed_on) d FROM case_followups WHERE case_id = ?
+            UNION ALL SELECT MAX(COALESCE(completed_date, started_date, planned_date)) FROM case_interventions WHERE case_id = ?
+            UNION ALL SELECT MAX(occurred_on) FROM case_milestones WHERE case_id = ?)`,
+      )
+      .get(caseId, caseId, caseId) as any;
+    return r?.d ?? null;
+  };
+
   const rows = caseCategoriesFor(isRatioCycle(cycle) ? 'ratio' : 'ielts_band').map((category) => {
     const points = byCategory.get(category) ?? [];
     const latest = points[points.length - 1] ?? null;
@@ -2102,9 +2158,20 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
        */
       points: points.slice(-4).map((pt) => ({
         attemptNo: pt.attemptNo, band: pt.band, expectation: pt.expectation,
+        score: pt.score, total: pt.total, passed: pt.passed,
       })),
-      missed: latest?.expectation !== null && latest?.expectation !== undefined && latest
-        ? latest.band < latest.expectation : null,
+      /* Lớp Normal: điểm đạt/tổng của đề gần nhất, để giao diện ghi "21/40" chứ không ghi band. */
+      score: latest?.score ?? null,
+      total: latest?.total ?? null,
+      ratio,
+      /*
+       * DƯỚI KỲ VỌNG — hai chương trình, hai cách hỏi. Fast Track so band với kỳ vọng của
+       * chính lượt đó; lớp Normal so tỷ lệ đạt với ngưỡng của chương trình.
+       */
+      missed: ratio
+        ? (latest ? latest.passed === false : null)
+        : (latest?.expectation !== null && latest?.expectation !== undefined && latest
+          ? latest.band < latest.expectation : null),
       state,
       caseId: primary?.id ?? null,
       caseTitle: primary ? caseTitleOf(primary) : null,
@@ -2125,6 +2192,50 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
       openActions: openIv.length,
       overdueActionDue: overdueAction?.action_due ?? null,
       pendingApproval: interventions.some((i) => i.approval_state === 'pending'),
+
+      /*
+       * TÍN HIỆU CHƯA AI XÁC MINH ở chính kỹ năng này (mục 4.2). Nó KHÔNG phải một case —
+       * chưa ai xem bài, chưa ai đặt tên vấn đề — nên để riêng chứ không trộn vào `caseId`.
+       */
+      signal: (() => {
+        const sg = signalRows.find((x) => (x.category ?? categoryOf(x.track, x.skill)) === category);
+        if (!sg) return null;
+        return {
+          id: sg.id, skill: sg.skill, band: sg.band, expectation: sg.expectation,
+          verifyDue: sg.verify_due, overdue: !!sg.verify_due && sg.verify_due < demoToday(),
+          ownerName: sg.owner_name ?? null,
+        };
+      })(),
+
+      /*
+       * ĐỦ CÁC CASE CỦA KỸ NĂNG NÀY (mục 4.2) — không chỉ một case đại diện.
+       *
+       * Em có hai case Reading song song thì cái thứ hai phải có đường vào. Trước đây bảng
+       * này chỉ trỏ được vào một case, nên case còn lại chỉ tồn tại ở một khối khác bên
+       * dưới — và khối ấy chính là danh sách lặp mà mục 4.2 bảo bỏ đi.
+       *
+       * Đang mở trước; trong nhóm mở xếp theo lần cập nhật nghiệp vụ mới nhất rồi ngày tạo.
+       */
+      cases: mine
+        .map((c) => ({
+          id: c.id as number,
+          title: caseTitleOf(c),
+          status: c.status as string,
+          track: c.track as string,
+          urgency: c.urgency ?? null,
+          sosLevel: c.sos_level ?? null,
+          carriedOver: !!c.carried_over,
+          parallel: !!c.parallel,
+          openedOn: c.detected_at ?? null,
+          touchedOn: lastTouch(c.id) ?? c.detected_at ?? null,
+        }))
+        .sort((a, b) => {
+          const open = (x: typeof a) => (x.status === 'done' ? 1 : 0);
+          if (open(a) !== open(b)) return open(a) - open(b);
+          const t = (b.touchedOn ?? '').localeCompare(a.touchedOn ?? '');
+          if (t !== 0) return t;
+          return b.id - a.id;
+        }),
     };
   });
 

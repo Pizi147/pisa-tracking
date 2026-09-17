@@ -201,7 +201,7 @@ export function awaitingScore(progress: SkillProgress): boolean {
  * DỰ KIẾN THI của một lộ trình, ở đúng mức chắc chắn mà người ta thực sự biết.
  *
  *   `week`  đã chốt tuần   → "W2 FEB 2027"                  — có đếm ngược
- *   `month` mới biết tháng → "FEB 2027 · chưa xác định tuần" — KHÔNG đếm ngược
+ *   `month` mới biết tháng → "FEB 2027" — KHÔNG đếm ngược, và KHÔNG kèm chú thích dài dòng
  *   `none`  chưa biết gì   → "Chưa xác định"
  *
  * Máy chủ dựng sẵn cả nhãn lẫn mức chắc chắn, để không màn hình nào tự bịa ra cách nói

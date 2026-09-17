@@ -6483,6 +6483,252 @@ check('[10.6] Giáo viên bộ môn không tự xử lý việc vắng của l�
   );
 });
 
+
+console.log('\n38. Hồ sơ học viên: đầu hồ sơ, bảng kỹ năng và bốn mục menu (mục 4 · 5)');
+
+check('[4.1] Câu tổng hợp đầu hồ sơ nói rõ TỪNG kỹ năng, không gộp thành một mức', () => {
+  /*
+   * Ví dụ của chính đề bài: Listening đã đạt nhưng W2/S còn dưới kỳ vọng thì phải nói rõ
+   * từng kỹ năng — không làm toàn học viên hết SOS chỉ vì Listening đạt, và cũng không
+   * khiến case Listening đang chờ kết luận trông như vẫn chưa đạt.
+   */
+  const row = conn
+    .prepare(
+      `SELECT a.student_id sid, a.cycle_id cid FROM assessment_attempts a
+         JOIN assessment_scores s ON s.attempt_id = a.id
+        WHERE s.band IS NOT NULL GROUP BY a.student_id ORDER BY COUNT(*) DESC LIMIT 1`,
+    )
+    .get() as any;
+  const pr = profile.studentProfile(P.admin, row.sid, row.cid) as any;
+  assert(pr.headline, 'Hồ sơ không có câu tổng hợp nào ở đầu');
+  assert(Array.isArray(pr.headline.below) && Array.isArray(pr.headline.signals),
+    'Câu tổng hợp không tách được kỹ năng dưới kỳ vọng với tín hiệu chờ xác minh');
+
+  /* Câu tổng hợp phải khớp với BẢNG BÊN DƯỚI — hai chỗ không được nói ngược nhau. */
+  const board = (cases.skillSupportBoard(P.admin, row.sid, row.cid) as any).rows;
+  const belowFromBoard = board.filter((r: any) => r.missed === true).map((r: any) => r.short ?? r.label);
+  assert(JSON.stringify(pr.headline.below) === JSON.stringify(belowFromBoard),
+    `Đầu hồ sơ nói ${JSON.stringify(pr.headline.below)} còn bảng nói ${JSON.stringify(belowFromBoard)}`);
+});
+
+check('[4.1] Một em có kỹ năng đạt và kỹ năng chưa đạt thì câu tổng hợp nêu đúng môn chưa đạt', () => {
+  const mixed = conn
+    .prepare(
+      `SELECT a.student_id sid, a.cycle_id cid, a.id aid FROM assessment_attempts a
+        WHERE a.status != 'cancelled' AND a.target_at_attempt IS NOT NULL
+          AND (SELECT COUNT(*) FROM assessment_scores s WHERE s.attempt_id = a.id AND s.band IS NOT NULL) >= 4
+        ORDER BY a.id DESC`,
+    )
+    .all() as any[];
+  let found = false;
+  for (const m of mixed) {
+    const board = (cases.skillSupportBoard(P.admin, m.sid, m.cid) as any).rows;
+    const below = board.filter((r: any) => r.missed === true);
+    const met = board.filter((r: any) => r.missed === false);
+    if (!below.length || !met.length) continue;
+    found = true;
+    const pr = profile.studentProfile(P.admin, m.sid, m.cid) as any;
+    for (const r of below) {
+      assert(pr.headline.below.includes(r.short ?? r.label),
+        `${r.label} dưới kỳ vọng mà câu tổng hợp không nêu`);
+    }
+    for (const r of met) {
+      assert(!pr.headline.below.includes(r.short ?? r.label),
+        `${r.label} đã đạt mà câu tổng hợp vẫn kể vào nhóm dưới kỳ vọng`);
+    }
+    break;
+  }
+  assert(found, 'Bộ demo thiếu em có kỹ năng đạt lẫn kỹ năng chưa đạt trong cùng một đợt');
+});
+
+check('[4.2] Mỗi hàng kỹ năng mang ĐỦ case của nó, không chỉ một case đại diện', () => {
+  const dup = conn
+    .prepare(
+      `SELECT student_id sid, category, COUNT(*) n FROM sos_cases
+        WHERE category IS NOT NULL GROUP BY student_id, category HAVING n > 1 LIMIT 1`,
+    )
+    .get() as any;
+  assert(dup, 'Bộ demo thiếu em có nhiều case trong cùng một kỹ năng');
+  const cid = (conn.prepare('SELECT cycle_id FROM sos_cases WHERE student_id = ? AND category = ? LIMIT 1')
+    .get(dup.sid, dup.category) as any).cycle_id;
+  const board = (cases.skillSupportBoard(P.admin, dup.sid, cid) as any).rows;
+  const row = board.find((r: any) => r.category === dup.category);
+  assert(row, `Không có hàng ${dup.category} trong bảng kỹ năng`);
+  assert(row.cases.length >= 2,
+    `Kỹ năng có ${dup.n} case mà bảng chỉ trỏ được vào ${row.cases.length} — case còn lại không có đường vào`);
+
+  /* Đang mở TRƯỚC, rồi tới cập nhật nghiệp vụ mới nhất (mục 4.3). */
+  const openFirst = row.cases.map((c: any) => (c.status === 'done' ? 1 : 0));
+  assert(openFirst.every((v: number, i: number) => i === 0 || openFirst[i - 1] <= v),
+    'Case đã hoàn thành chen lên trên case đang mở');
+});
+
+check('[4.2] Kỹ năng KHÔNG có case vẫn có hàng riêng — "chưa có dữ liệu" khác "không có vấn đề"', () => {
+  const s = conn.prepare('SELECT id FROM students LIMIT 1').get() as any;
+  const cy = conn.prepare(`SELECT id FROM learning_cycles WHERE student_id = ? LIMIT 1`).get(s.id) as any;
+  const board = (cases.skillSupportBoard(P.admin, s.id, cy?.id ?? null) as any).rows;
+  assert(board.length >= 5, `Bảng phải có đủ hàng cho mọi kỹ năng, đang có ${board.length}`);
+  for (const r of board) {
+    assert(Array.isArray(r.cases), `Hàng ${r.category} không có danh sách case`);
+    assert(r.signal === null || typeof r.signal === 'object',
+      `Hàng ${r.category} có tín hiệu sai kiểu`);
+  }
+});
+
+check('[4.2] Tín hiệu chờ xác minh nằm ở ĐÚNG hàng kỹ năng của nó', () => {
+  const sg = conn
+    .prepare(`SELECT * FROM case_signals WHERE status = 'pending' AND category IS NOT NULL LIMIT 1`)
+    .get() as any;
+  assert(sg, 'Bộ demo không còn tín hiệu nào chờ xác minh');
+  const board = (cases.skillSupportBoard(P.admin, sg.student_id, sg.cycle_id) as any).rows;
+  const row = board.find((r: any) => r.category === sg.category);
+  assert(row?.signal?.id === sg.id,
+    `Tín hiệu ${sg.category} không hiện ở hàng ${sg.category} của bảng kỹ năng`);
+  for (const other of board.filter((r: any) => r.category !== sg.category)) {
+    assert(other.signal?.id !== sg.id, `Tín hiệu ${sg.category} lọt sang hàng ${other.category}`);
+  }
+});
+
+check('[4.4] Biểu đồ có khoảng thực hiện phương án trên cùng trục thời gian', () => {
+  const row = conn
+    .prepare(
+      `SELECT sc.student_id sid, sc.cycle_id cid FROM case_interventions iv
+         JOIN sos_cases sc ON sc.id = iv.case_id
+        WHERE iv.started_date IS NOT NULL AND sc.track = 'academic'
+          AND sc.category IS NOT NULL AND sc.category != 'behaviour'
+        LIMIT 1`,
+    )
+    .get() as any;
+  assert(row, 'Bộ demo thiếu phương án học thuật đã bắt đầu để vẽ');
+  const pr = profile.studentProfile(P.admin, row.sid, row.cid) as any;
+  const withPlans = pr.progress.skills.filter((s: any) => (s.plans ?? []).length > 0);
+  assert(withPlans.length > 0, 'Không kỹ năng nào có khoảng phương án để vẽ dưới đường điểm');
+  for (const s of withPlans) {
+    for (const pl of s.plans) {
+      assert(pl.from, 'Khoảng phương án không có ngày bắt đầu — không vẽ được');
+      assert(pl.caseId, 'Khoảng phương án không nối về case nào — bấm vào không mở được gì');
+      /* Chưa xong thì KHÔNG có ngày kết thúc thật; giao diện vẽ đuôi mở tới ngày dự kiến. */
+      if (pl.running) assert(pl.to === null, 'Phương án đang chạy mà đã có ngày kết thúc thật');
+    }
+  }
+});
+
+check('[4.5] Hành trình chỉ giữ mốc xuyên chương trình, không lặp mọi cập nhật phương án', () => {
+  const row = conn
+    .prepare(
+      `SELECT student_id sid, cycle_id cid FROM journey_events
+        WHERE event_type = 'intervention' AND cycle_id IS NOT NULL LIMIT 1`,
+    )
+    .get() as any;
+  assert(row, 'Bộ demo thiếu sự kiện phương án trong hành trình');
+  const pr = profile.studentProfile(P.admin, row.sid, row.cid) as any;
+  const types = new Set<string>();
+  for (const ep of pr.episodes) for (const e of ep.events) types.add(e.eventType);
+  assert(!types.has('intervention') && !types.has('followup'),
+    `Mốc hành trình vẫn lặp lại cập nhật phương án: ${[...types].join(', ')}`);
+
+  /* Nhưng TOÀN BỘ ghi nhận vẫn tra lại được — chỉ là không bày mặc định. */
+  const allTypes = new Set<string>();
+  for (const ep of pr.allEpisodes) for (const e of ep.events) allTypes.add(e.eventType);
+  assert(allTypes.has('intervention') || allTypes.has('followup'),
+    'Mở toàn hành trình mà vẫn không thấy các cập nhật phương án');
+});
+
+check('[4.5] Hành trình là của CẢ em, không bị cắt theo lộ trình đang xem', () => {
+  const many = conn
+    .prepare(
+      `SELECT student_id sid, COUNT(*) n FROM learning_cycles
+        GROUP BY student_id HAVING n > 1 LIMIT 1`,
+    )
+    .get() as any;
+  assert(many, 'Bộ demo thiếu em đi qua nhiều lộ trình');
+  const cys = conn.prepare('SELECT id FROM learning_cycles WHERE student_id = ? ORDER BY seq').all(many.sid) as any[];
+  const first = profile.studentProfile(P.admin, many.sid, cys[0].id) as any;
+  const last = profile.studentProfile(P.admin, many.sid, cys[cys.length - 1].id) as any;
+  assert(first.allEpisodes.length === last.allEpisodes.length,
+    'Đổi lộ trình đang xem làm hành trình toàn học viên dài ngắn khác nhau');
+});
+
+check('[5.1] Kết luận lộ trình KHÔNG lấy một lượt Mock Test làm kết quả thi thật', () => {
+  const cy = conn
+    .prepare(`SELECT lc.id, lc.student_id FROM learning_cycles lc
+               JOIN assessment_attempts a ON a.cycle_id = lc.id LIMIT 1`)
+    .get() as any;
+  const a = conn.prepare('SELECT id FROM assessment_attempts WHERE cycle_id = ? LIMIT 1').get(cy.id) as any;
+  assertThrows(
+    () => cycles.setOutcome(P.admin, cy.id, { outcome: 'reached', attemptId: a.id }),
+    /Mock Test/, 'Lấy được một lượt MT làm kết quả thi thật',
+  );
+  /* Nhập điểm thật thì bình thường. */
+  cycles.setOutcome(P.admin, cy.id, { outcome: 'reached', score: 6.5, note: 'Em báo điểm BC' });
+  const after = conn.prepare('SELECT outcome_score, outcome_attempt_id FROM learning_cycles WHERE id = ?')
+    .get(cy.id) as any;
+  assert(after.outcome_score === 6.5, 'Không lưu được điểm thi thật');
+  assert(after.outcome_attempt_id === null, 'Kết luận vẫn còn trỏ vào một lượt MT');
+  /* Dọn lại để các phép kiểm sau không đọc phải kết luận vừa dựng. */
+  cycles.setOutcome(P.admin, cy.id, { outcome: null, note: null });
+});
+
+check('[5.3] Lớp Normal có tuần kết thúc chương trình, không có target IELTS', () => {
+  const row = conn
+    .prepare(
+      `SELECT lc.student_id sid, lc.id cid FROM learning_cycles lc
+         JOIN programmes pg ON pg.code = lc.programme_code
+        WHERE pg.scoring_mode = 'ratio' AND lc.start_period_id IS NOT NULL LIMIT 1`,
+    )
+    .get() as any;
+  assert(row, 'Bộ demo thiếu lộ trình lớp Normal đã khai tuần bắt đầu');
+  const pr = profile.studentProfile(P.admin, row.sid, row.cid) as any;
+  assert(pr.cycle.ratio, 'Lộ trình này không được nhận là lớp Normal');
+  assert(pr.cycle.endWeek?.code, 'Lớp Normal không có tuần kết thúc chương trình');
+  assert(pr.cycle.programmeName, 'Lớp Normal không nói được đang học chương trình nào');
+  /*
+   * TUẦN KẾT THÚC SUY RA từ tuần bắt đầu cộng độ dài chương trình, không lưu thành cột thứ
+   * hai — hai nguồn cho cùng một ngày thì sớm muộn chúng lệch nhau.
+   */
+  const weeks = { FOU: 8, BE: 10, ELE: 10 }[
+    conn.prepare('SELECT programme_code c FROM learning_cycles WHERE id = ?').get(row.cid) as any
+      ? (conn.prepare('SELECT programme_code c FROM learning_cycles WHERE id = ?').get(row.cid) as any).c as 'FOU'
+      : 'FOU'
+  ] ?? 8;
+  const start = conn
+    .prepare(`SELECT week_start FROM report_periods WHERE id =
+              (SELECT start_period_id FROM learning_cycles WHERE id = ?)`)
+    .get(row.cid) as any;
+  assert(pr.cycle.endWeek.weekStart === addDays(start.week_start, (weeks - 1) * 7),
+    `Tuần kết thúc phải là tuần thứ ${weeks} kể từ tuần bắt đầu, đang là ${pr.cycle.endWeek.weekStart}`);
+});
+
+
+check('[4.2] Lớp Normal có kết quả trong bảng kỹ năng — không để trống vì thiếu cột band', () => {
+  /*
+   * Lớp Normal chấm ĐIỂM ĐẠT trên TỔNG, nên cột `band` của nó luôn trống. Bản trước bảng kỹ
+   * năng chỉ đọc `band`, nên hồ sơ một em Foundation có cột "Kết quả gần nhất" trống trơn
+   * trong khi bảng điểm ngay bên dưới bày đủ bốn môn.
+   */
+  const row = conn
+    .prepare(
+      `SELECT a.student_id sid, a.cycle_id cid FROM assessment_attempts a
+         JOIN classes c ON c.id = a.class_id
+         JOIN programmes pg ON pg.code = c.programme_code
+         JOIN assessment_scores s ON s.attempt_id = a.id
+        WHERE pg.scoring_mode = 'ratio' AND s.raw_score IS NOT NULL
+        LIMIT 1`,
+    )
+    .get() as any;
+  assert(row, 'Bộ demo thiếu bài lớp Normal đã chấm');
+  const board = (cases.skillSupportBoard(P.admin, row.sid, row.cid) as any).rows;
+  const scored = board.filter((r: any) => r.category !== 'behaviour' && r.band !== null);
+  assert(scored.length > 0, 'Bảng kỹ năng của em lớp Normal không có kết quả nào');
+  for (const r of scored) {
+    assert(r.ratio === true, `Hàng ${r.category} không được đánh dấu là lớp Normal`);
+    assert(r.total && r.score !== null,
+      `Hàng ${r.category} thiếu đạt/tổng — giao diện sẽ phải bịa ra một band`);
+    assert(r.missed === (r.score / r.total < 0.7),
+      `Hàng ${r.category} kết luận đạt/chưa đạt không khớp ngưỡng 70%`);
+  }
+});
+
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`

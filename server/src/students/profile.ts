@@ -2,7 +2,7 @@ import { db } from '../db.ts';
 import {
   ASSESSED_SKILLS, BASELINE_SOURCE_LABEL, CYCLE_OUTCOME_LABEL, ENTRY_SKILLS,
   ASSESSED_SKILL_LABEL, JOURNEY_GROUP, PERMISSIONS, caseHeadline, issueLabel,
-  caseCategoryLabel,
+  caseCategoryLabel, categoryOf,
   type AssessedSkill, type EntrySkill,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -12,10 +12,11 @@ import { entryBandsOf, scoresOf, skipsOf } from '../fasttrack/attempts.ts';
 import { assessedBands, evaluateAttempt } from '../fasttrack/scoring.ts';
 import { evaluateRegular, isRatioCycle, programmeByCode, programmeCodeOfCycle, programmeOfClass } from '../normal/regular.ts';
 import { cycleById, cyclesOf, currentCycle, examPlanOf, targetRevisions } from '../fasttrack/cycles.ts';
-import { canCloseCase, parseMetrics } from '../cases/cases.ts';
+import { canCloseCase, parseMetrics, skillSupportBoard } from '../cases/cases.ts';
 import { standingFor, standingLine } from './standing.ts';
 import { missingForStudent, suggestedMockWeeks } from '../classes/schedule.ts';
 import { listSignals } from '../cases/signals.ts';
+import { ensurePeriod } from '../platform/week.ts';
 
 /**
  * HỒ SƠ HỌC VIÊN — phần trả lời câu hỏi "em này đang thế nào" trong khoảng ba mươi giây.
@@ -328,7 +329,143 @@ function progressOf(
   const order = ['listening', 'reading', 'writing', 'speaking'];
   skills.sort((x, y) => order.indexOf(x.skill) - order.indexOf(y.skill));
 
+  /*
+   * KHOẢNG THỰC HIỆN PHƯƠNG ÁN, vẽ ở DẢI DƯỚI cùng trục thời gian với đường điểm (mục 4.4).
+   *
+   * Đây là thứ biến một biểu đồ điểm thành một biểu đồ ĐỌC ĐƯỢC: nhìn thấy em tụt ở MT2 rồi
+   * có một khoảng tutor chạy suốt tháng 9 là một câu chuyện; nhìn thấy mỗi hai cái chấm thì
+   * không.
+   *
+   * Nhưng đúng là KHÔNG kết luận hộ. Phần mềm chỉ bày ra hai thứ nằm cạnh nhau trên trục
+   * thời gian; nó không viết "nhờ tutor nên tăng một band", vì thứ tự thời gian không phải
+   * là quan hệ nhân quả và không ai đo được cái phản chứng.
+   *
+   * Nhóm THEO CASE để nhiều phương án không đổ thành một rừng vạch — một case là một dải.
+   */
+  const bands = new Map<string, any[]>();
+  if (caseIds.length) {
+    const rows = conn
+      .prepare(
+        `SELECT iv.id, iv.case_id, iv.kind, iv.description, iv.status,
+                iv.started_date, iv.cycle_started_on, iv.completed_date, iv.followup_due,
+                sc.category, sc.track, sc.topic, sc.status AS case_status
+           FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id
+          WHERE iv.case_id IN (${caseIds.map(() => '?').join(',')})
+            AND iv.status != 'cancelled'
+          ORDER BY iv.id`,
+      )
+      .all(...caseIds) as any[];
+    for (const r of rows) {
+      const cat = r.category ?? categoryOf(r.track ?? 'academic', r.topic);
+      if (!cat || cat === 'behaviour') continue;
+      /* W1 và W2 của Fast Track cùng thuộc đường Writing khi vẽ, như điểm cô tự chấm. */
+      const skill = cat === 'writing1' || cat === 'writing2' ? 'writing' : cat;
+      const from = r.started_date ?? r.cycle_started_on ?? null;
+      /* Chưa bắt đầu thì chưa có khoảng nào để vẽ — không lấy ngày lập kế hoạch làm ngày làm. */
+      if (!from) continue;
+      const list = bands.get(skill) ?? [];
+      list.push({
+        id: r.id, caseId: r.case_id, kind: r.kind,
+        description: r.description ?? null,
+        from,
+        /* Chưa xong thì dải kéo tới ngày dự kiến kết thúc, và giao diện vẽ nó mở đuôi. */
+        to: r.completed_date ?? null,
+        expectedTo: r.followup_due ?? null,
+        running: r.status !== 'completed',
+      });
+      bands.set(skill, list);
+    }
+  }
+
+  /*
+   * CÁC LẦN ĐÁNH GIÁ HỖ TRỢ — mốc nhỏ trên chính dải phương án (mục 4.4). Đây là những lần
+   * một người thật nhìn lại và ghi kết quả, nên nó là tin tức; `updated_at` của bản ghi thì
+   * không.
+   */
+  const marks = new Map<string, any[]>();
+  if (caseIds.length) {
+    const rows = conn
+      .prepare(
+        `SELECT fu.observed_on, fu.outcome, fu.case_id, sc.category, sc.track, sc.topic
+           FROM case_followups fu JOIN sos_cases sc ON sc.id = fu.case_id
+          WHERE fu.case_id IN (${caseIds.map(() => '?').join(',')}) AND fu.outcome IS NOT NULL
+          ORDER BY fu.observed_on`,
+      )
+      .all(...caseIds) as any[];
+    for (const r of rows) {
+      const cat = r.category ?? categoryOf(r.track ?? 'academic', r.topic);
+      if (!cat || cat === 'behaviour') continue;
+      const skill = cat === 'writing1' || cat === 'writing2' ? 'writing' : cat;
+      const list = marks.get(skill) ?? [];
+      list.push({ on: r.observed_on, outcome: r.outcome, caseId: r.case_id });
+      marks.set(skill, list);
+    }
+  }
+
+  for (const sk of skills) {
+    (sk as any).plans = bands.get(sk.skill) ?? [];
+    (sk as any).reviews = marks.get(sk.skill) ?? [];
+  }
+
   return { mode: ratio ? ('ratio' as const) : ('ielts' as const), skills };
+}
+
+/**
+ * CÂU TỔNG HỢP ĐẦU HỒ SƠ (mục 4.1), dựng từ đúng bảng kỹ năng mà người đọc sẽ thấy ngay
+ * bên dưới. Trả về ba mảnh rời để giao diện tô màu từng mảnh, chứ không phải một chuỗi dài
+ * đã ghép sẵn — ghép sẵn thì mọi thứ cùng một màu và cái gấp nhất chìm vào giữa câu.
+ */
+function headlineOf(p: Principal, studentId: number, cycleId: number | null) {
+  const rows = (skillSupportBoard(p, studentId, cycleId) as any).rows as any[];
+  const today = demoToday();
+
+  /* Kỹ năng đang DƯỚI KỲ VỌNG ở bài gần nhất — nói tên môn, không gộp thành một mức. */
+  const below = rows.filter((r) => r.missed === true).map((r) => r.short ?? r.label);
+  /* Kỹ năng còn TÍN HIỆU chưa ai xác minh — việc chặn đầu chuỗi, nên tách riêng. */
+  const signals = rows.filter((r) => r.signal).map((r) => r.short ?? r.label);
+  /* Vấn đề ĐANG xử lý, đếm theo case chứ không theo kỹ năng: một kỹ năng có thể hai case. */
+  const open = rows.reduce((n, r) => n + r.cases.filter((c: any) => c.status !== 'done').length, 0);
+
+  /*
+   * VIỆC TIẾP THEO QUAN TRỌNG NHẤT — MỘT việc, chọn theo hạn sớm nhất và mức chặn nhiều
+   * nhất. Bày ba việc ở đầu hồ sơ thì không việc nào được làm trước.
+   */
+  type Next = { text: string; due: string | null; rank: number };
+  const cands: Next[] = [];
+  for (const r of rows) {
+    if (r.signal) {
+      cands.push({
+        text: `xác minh tín hiệu ${r.short ?? r.label}`,
+        due: r.signal.verifyDue ?? null, rank: 0,
+      });
+    }
+    if (r.state === 'no_plan') {
+      cands.push({ text: `chưa có phương án cho ${r.short ?? r.label}`, due: null, rank: 1 });
+    }
+    if (r.overdueActionDue) {
+      cands.push({ text: `phương án ${r.short ?? r.label} quá hạn`, due: r.overdueActionDue, rank: 1 });
+    }
+    if (r.pendingApproval) {
+      cands.push({ text: `đề xuất ${r.short ?? r.label} đang chờ Quản lý duyệt`, due: null, rank: 2 });
+    }
+    if (r.followOverdue) {
+      cands.push({ text: `quá hạn báo kết quả ${r.short ?? r.label}`, due: r.followUntil, rank: 1 });
+    }
+  }
+  cands.sort((a, b) => {
+    /* Quá hạn trước, rồi hạn sớm hơn, rồi bậc chặn. */
+    const lateA = a.due && a.due < today ? 0 : 1;
+    const lateB = b.due && b.due < today ? 0 : 1;
+    if (lateA !== lateB) return lateA - lateB;
+    if (a.due && b.due && a.due !== b.due) return a.due < b.due ? -1 : 1;
+    if (!!a.due !== !!b.due) return a.due ? -1 : 1;
+    return a.rank - b.rank;
+  });
+
+  return {
+    below, signals, openCases: open,
+    next: cands[0] ? { text: cands[0].text, due: cands[0].due } : null,
+  };
 }
 
 export function studentProfile(p: Principal, studentId: number, wantCycleId?: number | null) {
@@ -506,15 +643,38 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
   }));
   const openCases = cases.filter((c) => c.status !== 'done');
 
-  // --------------------------------------------------------- hành trình
+  /*
+   * HÀNH TRÌNH TOÀN HỌC VIÊN (mục 4.5) — KHÔNG lọc theo lộ trình đang xem.
+   *
+   * Phần này trả lời một câu hỏi khác hẳn phần trên: em đã đi qua những đâu. Lọc nó theo
+   * lộ trình đang chọn thì "toàn hành trình" chỉ còn một chặng, và lịch sử lớp/lộ trình cũ
+   * — kể cả case đã bàn giao — biến mất đúng lúc người ta cần tra lại.
+   */
   const journeyRows = conn
     .prepare(
-      `SELECT j.*, u.full_name AS actor_name FROM journey_events j
+      `SELECT j.*, u.full_name AS actor_name, lc.seq AS cycle_seq, lc.programme_code
+         FROM journey_events j
          LEFT JOIN users u ON u.id = j.created_by
-        WHERE j.student_id = ? ${selected ? 'AND (j.cycle_id = ? OR j.cycle_id IS NULL)' : ''}
+         LEFT JOIN learning_cycles lc ON lc.id = j.cycle_id
+        WHERE j.student_id = ?
         ORDER BY j.event_date DESC, j.id DESC`,
     )
-    .all(...(selected ? [studentId, selected.id] : [studentId])) as any[];
+    .all(studentId) as any[];
+
+  /*
+   * MỐC XUYÊN CHƯƠNG TRÌNH — cái duy nhất thuộc về phần này (mục 4.5).
+   *
+   * Mọi cập nhật phương án đã nằm ngay trong hàng kỹ năng ở khối trên, kèm biểu đồ và case.
+   * Kể lại chúng lần nữa ở đây là biến một mục "em đã đi qua những đâu" thành một cuộn giấy
+   * mười lăm dòng cho một vấn đề, và cả hai chỗ cùng dài ra mà không chỗ nào rõ hơn.
+   */
+  const JOURNEY_MILESTONES = new Set([
+    'enrollment', 'transfer', 'pause', 'resume', 'finish',
+    'cycle_start', 'repeat', 'exam_date_changed', 'exam_result',
+    'case_handover', 'cycle_outcome', 'warning', 'wl',
+  ]);
+  const milestoneRows = journeyRows.filter((r) => JOURNEY_MILESTONES.has(r.event_type)
+    || r.ref_table === 'learning_cycles' || r.ref_table === 'cycle_target_revisions');
 
   const standingNow = standingFor([studentId]).get(studentId) ?? null;
 
@@ -572,7 +732,7 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
     })),
     cycle: selected
       ? {
-        id: selected.id, seq: selected.seq, route: selected.route, label: cycleLabel(selected),
+        id: selected.id, studentId, seq: selected.seq, route: selected.route, label: cycleLabel(selected),
         programmeCode: selected.programme_code, ratio: isRatioCycle(selected),
         target, examPlan, startedAt: selected.started_at, endedAt: selected.ended_at,
         status: selected.status,
@@ -592,6 +752,28 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
           : null,
         examMonth: selected.exam_month ?? null,
         examPeriodId: selected.exam_period_id ?? null,
+        /*
+         * LỚP NORMAL KHÔNG CÓ KẾ HOẠCH THI IELTS; cái tương đương là TUẦN KẾT THÚC CHƯƠNG
+         * TRÌNH (mục 5.3).
+         *
+         * SUY RA từ tuần bắt đầu cộng độ dài chương trình, KHÔNG lưu thành một cột thứ hai:
+         * hai nguồn cho cùng một ngày thì sớm muộn chúng lệch nhau, và lúc đó không ai biết
+         * cột nào đúng. Foundation 8 tuần bắt đầu tuần 27/07 thì kết thúc tuần thứ 8.
+         */
+        programmeName: programmeByCode(
+          selected.programme_code ?? programmeCodeOfCycle(selected.id),
+        )?.name ?? null,
+        endWeek: (() => {
+          const tpl = programmeByCode(selected.programme_code ?? programmeCodeOfCycle(selected.id));
+          if (!isRatioCycle(selected) || !tpl?.weeks || !selected.start_period_id) return null;
+          const start = conn
+            .prepare('SELECT week_start FROM report_periods WHERE id = ?')
+            .get(selected.start_period_id) as any;
+          if (!start?.week_start) return null;
+          const d = new Date(`${start.week_start}T00:00:00Z`);
+          d.setUTCDate(d.getUTCDate() + (tpl.weeks - 1) * 7);
+          return ensurePeriod(d.toISOString().slice(0, 10));
+        })(),
         /* Lịch MT hệ thống đề xuất, và những lượt người đã chốt tay thì ghi rõ là giữ nguyên. */
         suggestedMocks: isRatioCycle(selected) ? [] : suggestedMockWeeks(selected.id),
         baseline,
@@ -650,6 +832,21 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
     standing: standingNow,
     /** Câu tóm tắt một dòng, dựng ở máy chủ để mọi màn nói y hệt nhau. */
     standingLine: standingNow ? standingLine(standingNow) : null,
+    /**
+     * CÂU TỔNG HỢP CỦA ĐẦU HỒ SƠ (mục 4.1) — dựng từ CHÍNH bảng kỹ năng bên dưới.
+     *
+     * Ba mệnh đề, đúng thứ tự người đọc cần: kỹ năng nào đang dưới kỳ vọng hoặc còn tín
+     * hiệu chờ xác minh · vấn đề nào đang xử lý · việc tiếp theo quan trọng nhất là gì.
+     *
+     * NÓI RÕ TỪNG KỸ NĂNG, không gộp thành một mức chung. Một em Listening đã đạt mà W2 và
+     * Speaking còn dưới kỳ vọng thì câu "SOS 2" ở đầu trang vừa đúng vừa vô dụng: nó không
+     * nói được môn nào đang ổn, môn nào chưa. Và nó tuyệt đối không được làm case Listening
+     * đang chờ kết luận trông như vẫn chưa đạt.
+     *
+     * Dựng từ cùng một nguồn với bảng bên dưới là điều kiện để hai chỗ không bao giờ nói
+     * ngược nhau — tính lại lần thứ hai ở đây là tự tạo ra một nguồn sự thật thứ hai.
+     */
+    headline: headlineOf(p, studentId, selected?.id ?? null),
     concerns: {
       openCases: openCases.length,
       carriedOver: openCases.filter((c) => c.carriedOver).length,
@@ -660,7 +857,9 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
     attempts,
     progress: progressOf(attempts, isRatioCycle(selected ?? {}), cases.map((c: any) => c.id)),
     cases,
-    episodes: episodesOf(journeyRows),
+    /* Mặc định chỉ mốc xuyên chương trình; giao diện mở được toàn bộ khi cần tra lại. */
+    episodes: episodesOf(milestoneRows),
+    allEpisodes: episodesOf(journeyRows),
     viewer: {
       canEdit: can(p, PERMISSIONS.STUDENT_EDIT, { studentId }),
       canPlanWeek: can(p, PERMISSIONS.PLAN_WEEK, { studentId }),

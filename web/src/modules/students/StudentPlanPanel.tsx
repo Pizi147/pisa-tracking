@@ -6,6 +6,7 @@ import { WeekPicker } from '../../ui/Filters.tsx';
 import { useToast } from '../../ui/Toast.tsx';
 import { Empty, Field, SectionNote, Skeleton, Status, Th} from '../../ui/ui.tsx';
 import { fmtDate } from '../../lib/format.ts';
+import { BASELINE_SOURCES, BASELINE_SOURCE_LABEL } from '@shared/domain/index.ts';
 
 type Suggested = {
   attemptNo: number; studyWeek: number; periodId: number; weekStart: string; code: string;
@@ -15,16 +16,23 @@ type Suggested = {
 };
 
 /**
- * KẾ HOẠCH HỌC CỦA MỘT EM — mục 7.5 và 7.6.
+ * LỘ TRÌNH — mục 2 của menu hồ sơ học viên (mục 5.1), thay cho "Kế hoạch học".
  *
- * Hai ô thông tin, và một hệ quả:
+ * Đổi tên vì đây đúng là lộ trình chứ không phải một cái lịch: nó giữ MỌI thứ quyết định
+ * đường đi của em trong giai đoạn này, và chúng phải nằm cạnh nhau mới nhìn được ảnh hưởng
+ * của nhau.
  *
- *   tuần bắt đầu học  →  lịch MT mặc định của cả khoá tính ra từ đây
- *   tháng thi dự kiến →  chỉ lớp FT; lớp Normal không có ô này
+ *   tuần bắt đầu học   →  lịch MT mặc định của cả khoá tính ra từ đây
+ *   kế hoạch thi thật  →  tháng, hoặc tuần khi đã chốt được
+ *   MỤC TIÊU           →  đổi thì BẮT BUỘC có lý do và ngày hiệu lực
+ *   ĐIỂM ĐẦU VÀO       →  em vào học ở mức nào
+ *   bảng các đợt MT    →  mỗi đợt mở được lịch từng kỹ năng
  *
- * Cái đáng nói là phần dưới: hệ thống ĐỀ XUẤT lịch MT rồi để người bấm áp, chứ không tự ghi.
- * Và khi áp, nó KHÔNG đụng vào lượt Quản lý đã chốt tay hay lượt đã làm xong — bảng bên dưới
- * nói rõ từng lượt sẽ ra sao trước khi bấm, để không ai phải bấm rồi mới biết chuyện gì xảy ra.
+ * Mục tiêu và điểm đầu vào trước đây là HAI mục menu riêng, nên muốn sửa mục tiêu người dùng
+ * phải đoán nó nằm ở "Kế hoạch học" hay ở "Đổi mục tiêu". Nay chúng về đúng chỗ.
+ *
+ * Phần lịch MT vẫn giữ nguyên tinh thần cũ: hệ thống ĐỀ XUẤT rồi để người bấm áp, và khi áp
+ * thì KHÔNG đụng vào lượt Quản lý đã chốt tay hay lượt đã làm xong.
  */
 export function StudentPlanPanel({ cycleId, studentName, ratio, onClose, onDone }: {
   cycleId: number; studentName: string; ratio: boolean;
@@ -84,7 +92,7 @@ export function StudentPlanPanel({ cycleId, studentName, ratio, onClose, onDone 
   return (
     <Drawer
       open onClose={onClose} width="max-w-2xl"
-      title="Kế hoạch học"
+      title="Lộ trình"
       subtitle={studentName}
       footer={
         <>
@@ -125,6 +133,9 @@ export function StudentPlanPanel({ cycleId, studentName, ratio, onClose, onDone 
             </>
           )}
 
+          {/* ------------------------------------------ MỤC TIÊU và ĐIỂM ĐẦU VÀO (mục 5.1) */}
+          {!ratio && <TargetAndBaseline cycleId={cycleId} cy={cy} onDone={() => { cycle.reload(); onDone(); }} />}
+
           {ratio ? (
             <SectionNote>
               Đây là lớp Normal nên không có lịch MT riêng từng em — cả lớp làm Progress Test và
@@ -153,6 +164,7 @@ export function StudentPlanPanel({ cycleId, studentName, ratio, onClose, onDone 
                         <Th hint="Tuần thứ mấy kể từ tuần em bắt đầu học. Mốc mặc định của Fast Track là tuần 6 · 12 · 16 · 20 · 24.">Tuần học</Th>
                         <Th hint="Tuần hệ thống tính ra từ tuần bắt đầu học. Chỉ là đề xuất — bấm Áp lịch mới thật sự đổi.">Tuần đề xuất</Th>
                         <Th hint="Bấm Áp lịch thì lượt này sẽ ra sao. Lượt Quản lý đã chốt tay và lượt đã làm xong thì đứng yên.">Hiện tại</Th>
+                        <Th hint="Mở đợt đó ra để xem và sửa lịch của từng kỹ năng — R/L/W và Speaking có thể ở hai tuần khác nhau.">Lịch kỹ năng</Th>
                       </tr>
                     </thead>
                     <tbody>
@@ -176,6 +188,20 @@ export function StudentPlanPanel({ cycleId, studentName, ratio, onClose, onDone 
                               : r.existingPeriodId !== r.periodId ? <Status kind="waiting">Sẽ dời sang tuần đề xuất</Status>
                               : <Status kind="done">Đã đúng</Status>}
                           </td>
+                          <td className="td whitespace-nowrap">
+                            {/*
+                              MỖI ĐỢT MỞ ĐƯỢC LỊCH TỪNG KỸ NĂNG (mục 5.1). Từ vòng 7 một đợt
+                              không còn là một tuần duy nhất: R/L/W có thể thi tuần này còn
+                              Speaking tuần sau, và mỗi kỹ năng mang hạn chấm của riêng nó.
+                            */}
+                            {r.existingAttemptId ? (
+                              <a className="btn btn-sm btn-ghost" href={`/mock-test/${r.existingAttemptId}`}>
+                                Mở lịch kỹ năng
+                              </a>
+                            ) : (
+                              <span className="text-xs text-slate-600">chưa có đợt</span>
+                            )}
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -193,5 +219,135 @@ export function StudentPlanPanel({ cycleId, studentName, ratio, onClose, onDone 
         </div>
       )}
     </Drawer>
+  );
+}
+
+/**
+ * MỤC TIÊU VÀ ĐIỂM ĐẦU VÀO — hai ô của lộ trình, trước đây là hai mục menu riêng (mục 5.1).
+ *
+ * ĐỔI MỤC TIÊU BẮT BUỘC CÓ LÝ DO VÀ NGÀY HIỆU LỰC (mục 5.2), và ở đâu cũng vậy — đây không
+ * phải một lời nhắc lịch sự, mà là điều kiện để lịch sử đọc được: vài tháng sau, lý do là
+ * thứ duy nhất giải thích vì sao kỳ vọng của MT3 khác MT2.
+ *
+ * Và nó KHÔNG chấm lại quá khứ: các lượt đã chốt giữ nguyên kỳ vọng tính theo mục tiêu lúc
+ * đó. Đổi mục tiêu từ hôm nay mà viết lại mức SOS của ba tháng trước là sửa lịch sử.
+ */
+function TargetAndBaseline({ cycleId, cy, onDone }: {
+  cycleId: number; cy: any; onDone: () => void;
+}) {
+  const toast = useToast();
+  const [openTarget, setOpenTarget] = useState(false);
+  const [openBaseline, setOpenBaseline] = useState(false);
+  const [newTarget, setNewTarget] = useState('');
+  const [reason, setReason] = useState('');
+  const [effectiveFrom, setEffectiveFrom] = useState('');
+  const [source, setSource] = useState('entrance');
+  const [score, setScore] = useState('');
+  const [note, setNote] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  const saveTarget = async () => {
+    setBusy(true);
+    try {
+      await api.post(`/cycles/${cycleId}/target-revision`, {
+        newTarget: newTarget === '' ? null : Number(newTarget),
+        reason, effectiveFrom: effectiveFrom || undefined,
+      });
+      invalidate('/cycles'); invalidate('/students'); invalidate('/attempts');
+      toast.push('ok', 'Đã đổi mục tiêu');
+      setOpenTarget(false); setReason(''); onDone();
+    } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
+  };
+
+  const saveBaseline = async () => {
+    setBusy(true);
+    try {
+      await api.put(`/cycles/${cycleId}/baseline`, { source, note, score });
+      invalidate('/cycles'); invalidate('/students');
+      toast.push('ok', 'Đã ghi điểm đầu vào');
+      setOpenBaseline(false); onDone();
+    } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
+  };
+
+  return (
+    <div className="rounded-lg border p-3 space-y-3" style={{ borderColor: 'var(--line)' }}>
+      {/* ------------------------------------------------------------------ mục tiêu */}
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <span className="text-sm text-slate-200">
+          Mục tiêu:{' '}
+          {cy?.target_score !== null && cy?.target_score !== undefined
+            ? <strong>{cy.target_score}</strong>
+            : <span className="text-amber-300">chưa đặt</span>}
+        </span>
+        <button className="btn btn-sm" onClick={() => setOpenTarget(!openTarget)}>
+          {openTarget ? 'Thôi' : 'Đổi mục tiêu'}
+        </button>
+      </div>
+      {openTarget && (
+        <div className="space-y-2">
+          <Field label="Mục tiêu mới" required>
+            <input className="field max-w-[8rem]" type="number" step="0.5" min={0} max={9}
+              value={newTarget} onChange={(e) => setNewTarget(e.target.value)} />
+          </Field>
+          <Field label="Lý do" required
+            hint="Vài tháng sau, đây là thứ duy nhất giải thích vì sao mục tiêu đổi.">
+            <input className="field" value={reason} onChange={(e) => setReason(e.target.value)}
+              placeholder="Gia đình lùi kế hoạch du học sang năm sau" />
+          </Field>
+          <Field label="Có hiệu lực từ ngày" required
+            hint="Các lượt trước ngày này giữ nguyên kỳ vọng cũ.">
+            <input type="date" className="field" value={effectiveFrom}
+              onChange={(e) => setEffectiveFrom(e.target.value)} />
+          </Field>
+          <button className="btn btn-primary btn-sm" disabled={busy || !reason.trim() || !newTarget}
+            onClick={saveTarget}>
+            {busy ? 'Đang lưu…' : 'Lưu mục tiêu mới'}
+          </button>
+          <SectionNote>
+            Các lượt đã chốt GIỮ NGUYÊN kỳ vọng tính theo mục tiêu lúc đó. Đổi mục tiêu từ hôm
+            nay không chấm lại quá khứ — sửa một mục tiêu lịch sử ghi sai là một thao tác hiệu
+            chỉnh riêng, có nhật ký và phải đối soát lại các kết luận đã ra.
+          </SectionNote>
+        </div>
+      )}
+
+      {/* --------------------------------------------------------------- điểm đầu vào */}
+      <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t"
+           style={{ borderColor: 'var(--line)' }}>
+        <span className="text-sm text-slate-200">
+          Đầu vào:{' '}
+          {cy?.baseline_score !== null && cy?.baseline_score !== undefined
+            ? <strong>{cy.baseline_score}</strong>
+            : <span className="text-amber-300">chưa ghi</span>}
+        </span>
+        <button className="btn btn-sm" onClick={() => setOpenBaseline(!openBaseline)}>
+          {openBaseline ? 'Thôi' : 'Ghi điểm đầu vào'}
+        </button>
+      </div>
+      {openBaseline && (
+        <div className="space-y-2">
+          <Field label="Điểm này lấy từ đâu" required>
+            <select className="field" value={source} onChange={(e) => setSource(e.target.value)}>
+              {BASELINE_SOURCES.map((x) => <option key={x} value={x}>{BASELINE_SOURCE_LABEL[x]}</option>)}
+            </select>
+          </Field>
+          <Field label="Điểm đầu vào (OVR)" required>
+            <input className="field max-w-[8rem]" type="number" step="0.5" min={0} max={9}
+              value={score} onChange={(e) => setScore(e.target.value)} />
+          </Field>
+          <Field label="Ghi chú">
+            <input className="field" value={note} onChange={(e) => setNote(e.target.value)}
+              placeholder="Điểm IELTS thi tại BC tháng 3/2026" />
+          </Field>
+          <button className="btn btn-primary btn-sm" disabled={busy || !score} onClick={saveBaseline}>
+            {busy ? 'Đang lưu…' : 'Lưu điểm đầu vào'}
+          </button>
+          <SectionNote>
+            Hệ thống KHÔNG tự lấy MT1 làm điểm đầu vào. “Em vào học ở mức nào” là câu hỏi khác
+            hẳn “bài Mock đầu tiên được mấy điểm”.
+          </SectionNote>
+        </div>
+      )}
+    </div>
   );
 }

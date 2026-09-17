@@ -65,8 +65,13 @@ type CaseDetail = {
   viewer: { canEdit: boolean; canClose: boolean; canApprove: boolean };
 };
 
-export function CasePanel({ caseId, compact = false, hideHeader = false }: {
+export function CasePanel({ caseId, compact = false, hideHeader = false, onChanged }: {
   caseId: number; compact?: boolean;
+  /**
+   * Báo cho khối bên ngoài biết case này vừa đổi, để bảng tóm tắt ở trên nạp lại.
+   * Không có nó thì bấm "Hoàn thành case" xong, dòng kỹ năng phía trên vẫn ghi "đang xử lý".
+   */
+  onChanged?: () => void;
   /**
    * Bỏ phần đầu case khi panel nằm TRONG một khối đã có sẵn tên và trạng thái ở trên
    * (danh sách case của một em). Hiện hai lần cùng một dòng tiêu đề chỉ làm người đọc
@@ -76,14 +81,16 @@ export function CasePanel({ caseId, compact = false, hideHeader = false }: {
 }) {
   const { session } = useSession();
   const todayIso = session?.demoDate ?? '';
-  const { data, loading, error, reload } = useApi<CaseDetail>(`/cases/${caseId}`);
+  const { data, loading, error, reload: reloadOnly } = useApi<CaseDetail>(`/cases/${caseId}`);
+  /* Nạp lại case NÀY, rồi báo ra ngoài để bảng tóm tắt ở trên cũng nói đúng. */
+  const reload = () => { reloadOnly(); onChanged?.(); };
   const [addAction, setAddAction] = useState(false);
   const [resultFor, setResultFor] = useState<any | null>(null);
   const [respondTo, setRespondTo] = useState<any | null>(null);
   const [outcome, setOutcome] = useState(false);
   const [completing, setCompleting] = useState<any | null>(null);
 
-  if (error) return <ErrorState message={error.message} hint={error.hint} onRetry={reload} />;
+  if (error) return <ErrorState message={error.message} hint={error.hint} onRetry={reloadOnly} />;
   if (loading || !data) return <Skeleton rows={6} />;
 
   const primary = data.issues.find((i) => i.role === 'primary') ?? null;

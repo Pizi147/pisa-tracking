@@ -6,7 +6,7 @@ import { Drawer } from '../../ui/Drawer.tsx';
 import { Field, SectionNote } from '../../ui/ui.tsx';
 import { fmtBand, fmtDate } from '../../lib/format.ts';
 import {
-  BASELINE_SOURCES, BASELINE_SOURCE_LABEL, CYCLE_OUTCOMES, CYCLE_OUTCOME_LABEL,
+  CYCLE_OUTCOMES, CYCLE_OUTCOME_LABEL,
 } from '@shared/domain/index.ts';
 
 /**
@@ -25,20 +25,30 @@ import {
  * Riêng "Kế hoạch học" là một panel lớn có sẵn — chọn nó thì panel này ĐÓNG rồi panel kia
  * mở, để không bao giờ có hai lớp panel chồng nhau.
  */
-type Job = 'menu' | 'info' | 'baseline' | 'target' | 'outcome' | 'transfer';
+/*
+ * ĐÚNG BỐN MỤC, ĐÚNG THỨ TỰ NÀY (mục 5.1) — với lớp Fast Track:
+ *
+ *   1. Thông tin học viên    2. Lộ trình    3. Chuyển lớp    4. Kết luận lộ trình
+ *
+ * Vòng trước menu có SÁU mục, trong đó "Điểm đầu vào" và "Đổi mục tiêu" là hai mục riêng
+ * cho hai ô dữ liệu thuộc về cùng một thứ — cái lộ trình. Kết quả là để sửa mục tiêu, người
+ * dùng phải đoán xem nó nằm ở "Kế hoạch học" hay ở "Đổi mục tiêu". Nay cả hai về đúng chỗ
+ * của chúng: mục Lộ trình.
+ *
+ * LỚP NORMAL KHÔNG CÓ MỤC LỘ TRÌNH (mục 5.3): không target IELTS, không LT1/LT2, giai đoạn
+ * là chương trình Foundation/Beginner/Elementary và nằm ngay trong Thông tin học viên. Lịch
+ * test Normal chỉnh từ màn lớp, không đi qua Kế hoạch MT của Fast Track.
+ */
+type Job = 'menu' | 'info' | 'outcome' | 'transfer';
 
 const JOB_LABEL: Record<Exclude<Job, 'menu'>, string> = {
   info: 'Thông tin học viên',
-  baseline: 'Điểm đầu vào của lộ trình',
-  target: 'Đổi mục tiêu',
   outcome: 'Kết luận lộ trình',
   transfer: 'Chuyển lớp',
 };
 const JOB_HINT: Record<Exclude<Job, 'menu'>, string> = {
-  info: 'Tên, ngày sinh, người tư vấn, ghi chú.',
-  baseline: 'Em vào học ở mức nào — khác hẳn “bài Mock đầu tiên được mấy điểm”.',
-  target: 'Đổi đích cần đạt, và ghi lại vì sao đổi.',
-  outcome: 'Khép lại lộ trình này: có đạt mục tiêu hay không, dựa trên đâu.',
+  info: 'Họ tên, ngày sinh, người tư vấn, và thông tin giai đoạn đang học.',
+  outcome: 'Khép lại lộ trình này: kết quả thi thật và kết luận có đạt mục tiêu hay không.',
   transfer: 'Chuyển em sang lớp khác. Lượt đã xong vẫn giữ nguyên lớp cũ.',
 };
 
@@ -60,16 +70,7 @@ export function StudentManagePanel({
   const [job, setJob] = useState<Job>('menu');
   const close = () => { onClose(); setJob('menu'); };
 
-  /*
-   * BỐN VIỆC CỦA MENU ⋮ (mục 6.4): Thông tin · Lộ trình · Chuyển lớp · Kết luận lộ trình.
-   *
-   * "Lộ trình" gồm đầu vào, mục tiêu, dự kiến thi và lịch MT — nên ở đây nó tách thành mấy
-   * mục con thay vì một mục gộp mơ hồ. Lớp Normal không có target hay đầu vào IELTS nên hai
-   * mục đó không hiện: một mục bấm vào rồi mới biết không dùng được là một mục thừa.
-   */
-  const jobs: Exclude<Job, 'menu'>[] = cycle
-    ? (cycle.ratio ? ['info', 'outcome', 'transfer'] : ['info', 'baseline', 'target', 'outcome', 'transfer'])
-    : ['info', 'transfer'];
+  const ratio = !!cycle?.ratio;
 
   return (
     <Drawer open={open} onClose={close} width="max-w-xl"
@@ -77,24 +78,38 @@ export function StudentManagePanel({
       subtitle={student.name}>
       {job === 'menu' ? (
         <div className="space-y-2">
-          {/*
-            KẾ HOẠCH HỌC đứng đầu vì nó là việc hay dùng nhất trong nhóm này, và nó là việc
-            duy nhất phải mở sang panel khác.
-          */}
-          {canEdit && cycle && (
-            <MenuItem
-              label="Kế hoạch học"
-              hint="Tuần bắt đầu học, lịch các mốc đánh giá, tuần thi dự kiến."
-              onClick={() => { close(); onOpenPlan(); }}
-            />
-          )}
-          {canEdit ? jobs.map((k) => (
-            <MenuItem key={k} label={JOB_LABEL[k]} hint={JOB_HINT[k]} onClick={() => setJob(k)} />
-          )) : (
+          {!canEdit ? (
             <SectionNote>
               Bạn không có quyền sửa hồ sơ của em này. Vẫn xem được mọi thông tin, và vẫn mở
               được case mới từ nút “+ Case”.
             </SectionNote>
+          ) : (
+            <>
+              <MenuItem label={JOB_LABEL.info} hint={JOB_HINT.info} onClick={() => setJob('info')} />
+              {/*
+                LỘ TRÌNH — mục 2 của Fast Track, thay cho "Kế hoạch học" cũ. Gồm tuần bắt đầu,
+                kế hoạch thi thật, mục tiêu, điểm đầu vào và bảng các MT với lịch từng kỹ năng.
+                Lớp Normal KHÔNG có mục này (mục 5.3).
+              */}
+              {cycle && !ratio && (
+                <MenuItem
+                  label="Lộ trình"
+                  hint="Tuần bắt đầu học, kế hoạch thi thật, mục tiêu, điểm đầu vào, và lịch các đợt MT."
+                  onClick={() => { close(); onOpenPlan(); }}
+                />
+              )}
+              <MenuItem label={JOB_LABEL.transfer} hint={JOB_HINT.transfer} onClick={() => setJob('transfer')} />
+              {cycle && (
+                <MenuItem label={JOB_LABEL.outcome} hint={JOB_HINT.outcome} onClick={() => setJob('outcome')} />
+              )}
+              {ratio && (
+                <SectionNote>
+                  Lớp Normal không có mục Lộ trình riêng: không có target IELTS và không có LT1/LT2.
+                  Giai đoạn là chương trình đang học, nằm trong <strong>Thông tin học viên</strong>;
+                  lịch kiểm tra chỉnh từ màn hình lớp.
+                </SectionNote>
+              )}
+            </>
           )}
         </div>
       ) : (
@@ -104,7 +119,7 @@ export function StudentManagePanel({
             ? <TransferForm studentId={student.id} currentClassId={student.classId}
                 onDone={() => { onDone(); close(); }} />
             : job === 'info'
-              ? <InfoForm student={student} onDone={() => { onDone(); close(); }} />
+              ? <InfoForm student={student} cycle={cycle} onDone={() => { onDone(); close(); }} />
               : <CycleForm kind={job} cycle={cycle} attempts={attempts}
                   onDone={() => { onDone(); close(); }} />}
         </div>
@@ -126,136 +141,99 @@ function MenuItem({ label, hint, onClick }: { label: string; hint: string; onCli
 
 // ==================================================================== các form
 
+/**
+ * KẾT LUẬN LỘ TRÌNH — mục 4 của menu (mục 5.1).
+ *
+ * Ba thay đổi so với bản trước, và mỗi cái sửa một câu nói sai:
+ *
+ * 1. BỎ "CHỌN MỘT BÀI ĐÃ CÓ". Một lượt Mock Test không phải một kỳ thi IELTS: nó chấm nội
+ *    bộ, không có phòng thi, không có chứng chỉ. Lấy điểm MT làm kết quả thi thật là ghi
+ *    vào hồ sơ một điều chưa xảy ra. Kết quả thật là con số em báo về từ BC hay IDP.
+ * 2. NÓI RÕ CÒN GÌ PHẢI BÀN GIAO. Kết thúc lộ trình KHÔNG đóng hộ các case chưa xử lý và
+ *    càng không đánh dấu chúng là thành công — nên người kết luận phải nhìn thấy chúng ngay
+ *    tại đây, trước khi bấm.
+ * 3. HỌC LẠI LÀ MỘT LỘ TRÌNH MỚI, không phải đổi nhãn lộ trình cũ. Giữ định danh giai đoạn
+ *    thì lịch sử mới đọc được là em đã đi qua hai chặng.
+ */
 function CycleForm({ kind, cycle, attempts, onDone }: {
-  kind: 'baseline' | 'target' | 'outcome'; cycle: any; attempts: any[]; onDone: () => void;
+  kind: 'outcome'; cycle: any; attempts: any[]; onDone: () => void;
 }) {
   const toast = useToast();
-  const [source, setSource] = useState(cycle?.baseline?.source ?? 'entrance');
-  const [score, setScore] = useState('');
-  const [attemptId, setAttemptId] = useState('');
-  const [note, setNote] = useState('');
-  const [newTarget, setNewTarget] = useState(cycle?.target !== null && cycle?.target !== undefined ? String(cycle.target) : '');
-  const [reason, setReason] = useState('');
-  const [effectiveFrom, setEffectiveFrom] = useState('');
   const [outcome, setOutcome] = useState(cycle?.outcome?.outcome ?? 'unknown');
+  const [score, setScore] = useState('');
+  const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
+  void attempts;
+  void kind;
 
-  const done = attempts.filter((a) => a.status !== 'cancelled');
+  /* Case còn mở của chính em này — thứ phải bàn giao chứ không biến mất khi lộ trình khép. */
+  const open = useApi<{ rows: any[] }>(`/cases?studentId=${cycle?.studentId ?? ''}&status=open`,
+    [cycle?.studentId]);
+  const pending = (open.data?.rows ?? []).filter((c: any) => c.status !== 'done');
 
   const submit = async () => {
     setBusy(true);
     try {
-      if (kind === 'baseline') {
-        await api.put(`/cycles/${cycle.id}/baseline`, {
-          source, note,
-          attemptId: attemptId ? Number(attemptId) : undefined,
-          score: attemptId ? undefined : score,
-        });
-      } else if (kind === 'target') {
-        await api.post(`/cycles/${cycle.id}/target-revision`, {
-          newTarget: newTarget === '' ? null : Number(newTarget),
-          reason, effectiveFrom: effectiveFrom || undefined,
-        });
-      } else {
-        await api.put(`/cycles/${cycle.id}/outcome`, {
-          outcome, note, attemptId: attemptId ? Number(attemptId) : undefined,
-          score: attemptId ? undefined : score || undefined,
-        });
-      }
+      await api.put(`/cycles/${cycle.id}/outcome`, {
+        outcome, note, score: score || undefined,
+      });
       invalidate('/students'); onDone(); toast.push('ok', 'Đã lưu');
     } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
   };
 
-  const attemptOptions = (
-    <Field label="Chọn một bài đã có"
-      hint="Hoặc bỏ trống và nhập điểm bên dưới nếu điểm đến từ ngoài hệ thống.">
-      <select className="field" value={attemptId} onChange={(e) => setAttemptId(e.target.value)}>
-        <option value="">Không lấy từ bài nào</option>
-        {done.map((a) => (
-          <option key={a.id} value={a.id}>
-            MT{a.attemptNo}{a.overall !== null ? ` · Overall ${a.overall}` : ''}
-          </option>
-        ))}
-      </select>
-    </Field>
-  );
-
   return (
     <div className="space-y-3">
-      {kind === 'baseline' && (
-        <>
-          <Field label="Điểm này lấy từ đâu" required>
-            <select className="field" value={source} onChange={(e) => setSource(e.target.value)}>
-              {BASELINE_SOURCES.map((s) => <option key={s} value={s}>{BASELINE_SOURCE_LABEL[s]}</option>)}
-            </select>
-          </Field>
-          {attemptOptions}
-          {!attemptId && (
-            <Field label="Điểm đầu vào" required>
-              <input className="field max-w-[8rem]" type="number" step="0.5" min={0} max={9}
-                value={score} onChange={(e) => setScore(e.target.value)} />
-            </Field>
-          )}
-          <Field label="Ghi chú">
-            <input className="field" value={note} onChange={(e) => setNote(e.target.value)}
-              placeholder="Điểm IELTS thi tại BC tháng 3/2026" />
-          </Field>
-          <SectionNote>
-            Hệ thống KHÔNG tự lấy MT1 làm điểm đầu vào. “Em vào học ở mức nào” là câu hỏi khác
-            hẳn “bài Mock đầu tiên được mấy điểm”.
-          </SectionNote>
-        </>
-      )}
+      <Field label="Kết luận" required>
+        <select className="field" value={outcome} onChange={(e) => setOutcome(e.target.value)}>
+          {CYCLE_OUTCOMES.map((o) => <option key={o} value={o}>{CYCLE_OUTCOME_LABEL[o]}</option>)}
+        </select>
+      </Field>
 
-      {kind === 'target' && (
+      {!cycle?.ratio ? (
         <>
-          <Field label="Mục tiêu mới" required>
+          <Field label="Điểm IELTS thật (Overall)"
+            hint="Con số em báo về từ phòng thi. Chưa thi thì để trống — “chưa có căn cứ” là một câu trả lời hợp lệ.">
             <input className="field max-w-[8rem]" type="number" step="0.5" min={0} max={9}
-              value={newTarget} onChange={(e) => setNewTarget(e.target.value)} />
-          </Field>
-          <Field label="Lý do" required
-            hint="Vài tháng sau, đây là thứ duy nhất giải thích vì sao mục tiêu đổi.">
-            <input className="field" value={reason} onChange={(e) => setReason(e.target.value)}
-              placeholder="Gia đình lùi kế hoạch du học sang năm sau" />
-          </Field>
-          <Field label="Có hiệu lực từ ngày">
-            <input type="date" className="field" value={effectiveFrom}
-              onChange={(e) => setEffectiveFrom(e.target.value)} />
+              value={score} onChange={(e) => setScore(e.target.value)} />
           </Field>
           <SectionNote>
-            Các lượt đã chốt GIỮ NGUYÊN kỳ vọng tính theo mục tiêu lúc đó. Đổi mục tiêu không
-            chấm lại quá khứ.
+            KHÔNG lấy một lượt Mock Test làm kết quả thi thật. MT chấm nội bộ, không có phòng
+            thi và không có chứng chỉ — ghi nó vào đây là nói em đã thi trong khi em chưa thi.
           </SectionNote>
         </>
+      ) : (
+        <SectionNote>
+          Lớp Normal kết luận theo <strong>Final Test</strong> của đúng đợt cuối, đủ cả bốn môn
+          L/R/W/S — kể cả khi đợt đó thi rải ra nhiều tuần. Thiếu một môn thì đợt vẫn là chưa
+          đủ: môn thiếu KHÔNG được tính bằng 0 và cũng không tự chốt hộ.
+        </SectionNote>
       )}
 
-      {kind === 'outcome' && (
-        <>
-          <Field label="Kết luận" required>
-            <select className="field" value={outcome} onChange={(e) => setOutcome(e.target.value)}>
-              {CYCLE_OUTCOMES.map((o) => <option key={o} value={o}>{CYCLE_OUTCOME_LABEL[o]}</option>)}
-            </select>
-          </Field>
-          {attemptOptions}
-          {!attemptId && (
-            <Field label="Điểm cuối" hint="Ví dụ điểm IELTS chính thức em báo về.">
-              <input className="field max-w-[8rem]" type="number" step="0.5" min={0} max={9}
-                value={score} onChange={(e) => setScore(e.target.value)} />
-            </Field>
-          )}
-          <Field label="Ghi chú">
-            <input className="field" value={note} onChange={(e) => setNote(e.target.value)} />
-          </Field>
-          <SectionNote>
-            Đóng lộ trình chỉ nói “không học theo lộ trình này nữa”. Có đạt mục tiêu hay không
-            là kết luận riêng, và “chưa có căn cứ” là một câu trả lời hợp lệ.
-          </SectionNote>
-        </>
+      <Field label="Ghi chú">
+        <input className="field" value={note} onChange={(e) => setNote(e.target.value)} />
+      </Field>
+
+      {/* CÒN GÌ PHẢI BÀN GIAO — nhìn thấy trước khi bấm, không phải sau. */}
+      {pending.length > 0 && (
+        <div className="rounded-lg border p-3" style={{ borderColor: 'var(--warn, #fbbf24)' }}>
+          <p className="text-sm text-amber-200 m-0">
+            Còn {pending.length} vấn đề chưa kết luận. Khép lộ trình KHÔNG đóng hộ chúng và
+            không đánh dấu là đã xử lý xong — chúng đi theo em sang giai đoạn sau.
+          </p>
+          <ul className="list-disc pl-5 mt-1 mb-0">
+            {pending.slice(0, 6).map((c: any) => (
+              <li key={c.id} className="text-xs text-slate-300">{c.title ?? c.headline}</li>
+            ))}
+          </ul>
+        </div>
       )}
 
-      {cycle?.target !== null && cycle?.target !== undefined && kind !== 'target' && (
-        <p className="text-xs text-slate-500 m-0">Mục tiêu hiện tại: {fmtBand(cycle.target)}</p>
-      )}
+      <SectionNote>
+        Đóng lộ trình chỉ nói “không học theo lộ trình này nữa”. Có đạt mục tiêu hay không là
+        kết luận riêng. Em học lại thì mở một lộ trình MỚI — không đổi nhãn lộ trình cũ rồi
+        kéo lịch sử sang, vì như thế hai chặng biến thành một.
+      </SectionNote>
+
       <button className="btn btn-primary" onClick={submit} disabled={busy}>
         {busy ? 'Đang lưu…' : 'Lưu'}
       </button>
@@ -263,9 +241,20 @@ function CycleForm({ kind, cycle, attempts, onDone }: {
   );
 }
 
-/** Thông tin cá nhân — chỗ SỬA những thứ mà hồ sơ đang báo là thiếu (mục 6.4). */
-function InfoForm({ student, onDone }: {
+/**
+ * THÔNG TIN HỌC VIÊN — mục 1 của menu (mục 5.1).
+ *
+ * Với lớp Fast Track, mục tiêu và kế hoạch thi thật sửa được ở CẢ ĐÂY lẫn ở mục Lộ trình.
+ * Đó là chủ ý của mục 5.2: cùng một dữ liệu, cùng một phép kiểm, không hai nguồn sự thật —
+ * nên ở đâu cũng đi qua đúng một đường của máy chủ, và sửa mục tiêu ở đâu cũng hỏi lý do và
+ * ngày hiệu lực.
+ *
+ * Với lớp Normal thì đây là chỗ DUY NHẤT nói về giai đoạn đang học, vì Normal không có mục
+ * Lộ trình (mục 5.3): không target IELTS, không LT1/LT2.
+ */
+function InfoForm({ student, cycle, onDone }: {
   student: { id: number; name: string; dob?: string | null; consultantName?: string | null; note?: string | null };
+  cycle: any | null;
   onDone: () => void;
 }) {
   const toast = useToast();
@@ -289,10 +278,46 @@ function InfoForm({ student, onDone }: {
       <Field label="Ghi chú">
         <textarea className="field" rows={3} value={note} onChange={(e) => setNote(e.target.value)} />
       </Field>
-      <SectionNote>
-        Mục tiêu, dự kiến thi và lịch MT KHÔNG nằm ở đây — chúng thuộc về lộ trình, sửa ở mục
-        “Kế hoạch học” và “Đổi mục tiêu”.
-      </SectionNote>
+      {/*
+        GIAI ĐOẠN ĐANG HỌC. Lớp Normal đọc ở đây là hết — nó không có mục Lộ trình. Lớp Fast
+        Track đọc ở đây để nhận biết, còn sửa thì ở mục Lộ trình, nơi có đủ mục tiêu, kế
+        hoạch thi thật và bảng MT trong một màn.
+      */}
+      {cycle && (
+        <div className="rounded-lg border p-3 space-y-1" style={{ borderColor: 'var(--line)' }}>
+          <span className="label m-0">Giai đoạn đang học</span>
+          {cycle.ratio ? (
+            <>
+              <p className="text-sm text-slate-200 m-0">
+                {cycle.programmeName ?? cycle.label}
+                {cycle.startWeek && <span className="text-slate-500"> · bắt đầu {cycle.startWeek.code}</span>}
+                {cycle.endWeek && <span className="text-slate-500"> · kết thúc {cycle.endWeek.code}</span>}
+              </p>
+              <SectionNote>
+                Lớp Normal không có target IELTS và không có LT1/LT2. Giai đoạn là chương trình
+                đang học; tuần kết thúc suy ra từ tuần bắt đầu và độ dài chương trình. Lịch kiểm
+                tra chỉnh từ màn hình lớp, không đi qua Kế hoạch MT của Fast Track.
+              </SectionNote>
+            </>
+          ) : (
+            <>
+              <p className="text-sm text-slate-200 m-0">
+                {cycle.label}
+                {cycle.target !== null && cycle.target !== undefined
+                  && <span className="text-slate-500"> · mục tiêu {fmtBand(cycle.target)}</span>}
+                {cycle.startWeek && <span className="text-slate-500"> · vào học {cycle.startWeek.code}</span>}
+                {cycle.examPlan?.confidence !== 'none'
+                  && <span className="text-slate-500"> · dự kiến thi {cycle.examPlan?.label}</span>}
+              </p>
+              <SectionNote>
+                Sửa mục tiêu, kế hoạch thi thật, điểm đầu vào và lịch MT ở mục <strong>Lộ trình</strong> —
+                ở đó chúng nằm cạnh nhau nên nhìn được ảnh hưởng của nhau. Đổi mục tiêu ở đâu cũng
+                bắt ghi lý do và ngày hiệu lực.
+              </SectionNote>
+            </>
+          )}
+        </div>
+      )}
       <button className="btn btn-primary" disabled={busy}
         onClick={async () => {
           setBusy(true);

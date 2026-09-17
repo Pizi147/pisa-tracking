@@ -7,7 +7,6 @@ import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { CasePanel } from '../cases/CasePanel.tsx';
 import { SkillBoard } from '../cases/SkillBoard.tsx';
-import { StudentCases } from '../cases/StudentCases.tsx';
 import { MissingBadge } from './MissingBadge.tsx';
 import { StudentPlanPanel } from './StudentPlanPanel.tsx';
 import { ProgressChart } from './ProgressChart.tsx';
@@ -62,6 +61,8 @@ export default function StudentDetailPage() {
   const [skillPick, setSkillPick] = useState<string | null>(null);
   /* Tầng 3 mặc định mở bảng điểm: đó là thứ người ta mở hồ sơ để xem nhiều nhất. */
   const [tier3, setTier3] = useState<'scores' | 'journey'>('scores');
+  /** Hành trình: chỉ mốc xuyên chương trình, hay toàn bộ ghi nhận (mục 4.5). */
+  const [allJourney, setAllJourney] = useState(false);
 
   if (error) return <ErrorState message={error.message} hint={error.hint} onRetry={reload} />;
   if (loading || !data) return <Skeleton rows={10} />;
@@ -128,6 +129,46 @@ export default function StudentDetailPage() {
                 </p>
               )}
 
+              {/*
+                MỘT CÂU NÓI RÕ TỪNG KỸ NĂNG (mục 4.1).
+                "SOS 2" ở trên vừa đúng vừa vô dụng: nó không nói môn nào đang ổn, môn nào
+                chưa. Câu này nói tên môn — và nó cũng là chỗ tín hiệu chưa ai xác minh được
+                nhắc, vì đó là việc chặn đầu chuỗi.
+              */}
+              {data.headline && (
+                <p className="text-xs mt-1.5 mb-0 flex flex-wrap items-center gap-x-2 gap-y-1">
+                  {data.headline.below.length > 0 && (
+                    <span className="text-rose-200">
+                      Dưới kỳ vọng: {data.headline.below.join(', ')}
+                    </span>
+                  )}
+                  {data.headline.signals.length > 0 && (
+                    <span className="text-amber-200">
+                      Chờ xác minh: {data.headline.signals.join(', ')}
+                    </span>
+                  )}
+                  {data.headline.openCases > 0 && (
+                    <span className="text-slate-400">
+                      {data.headline.openCases} vấn đề đang xử lý
+                    </span>
+                  )}
+                  {data.headline.next && (
+                    <span className="text-slate-200">
+                      → Việc tiếp theo: {data.headline.next.text}
+                      {data.headline.next.due && (
+                        <span className="text-slate-500"> (hạn {fmtDate(data.headline.next.due)})</span>
+                      )}
+                    </span>
+                  )}
+                  {data.headline.below.length === 0 && data.headline.signals.length === 0
+                    && data.headline.openCases === 0 && (
+                    <span className="text-slate-500">
+                      Không có kỹ năng nào dưới kỳ vọng và không có vấn đề nào đang theo dõi.
+                    </span>
+                  )}
+                </p>
+              )}
+
               {/* Đầu vào · target · dự kiến thi — chỉ lớp Fast Track mới có ba thứ này. */}
               <p className="text-xs text-slate-400 mt-1.5 mb-0">
                 {cy && !cy.ratio && (
@@ -151,9 +192,19 @@ export default function StudentDetailPage() {
                     )}
                   </>
                 )}
+                {/*
+                  LỚP NORMAL KHÔNG CÓ TARGET IELTS VÀ KHÔNG CÓ KẾ HOẠCH THI THẬT (mục 5.3).
+                  Cái tương đương của nó là CHƯƠNG TRÌNH và TUẦN KẾT THÚC — đó mới là hai
+                  con số một GVCN lớp Foundation thật sự dùng.
+                */}
                 {cy?.ratio && (
-                  <>{cy.label} · bắt đầu {fmtDate(cy.startedAt)} ·{' '}
-                    {data.attempts.filter((a: any) => a.scored > 0).length}/{data.attempts.length} bài đã chấm</>
+                  <>
+                    {cy.programmeName ?? cy.label} · bắt đầu {fmtDate(cy.startedAt)}
+                    {cy.endWeek
+                      ? <> · kết thúc chương trình {cy.endWeek.code}</>
+                      : <> · <span className="text-amber-300">chưa khai tuần kết thúc</span></>}
+                    {' · '}{data.attempts.filter((a: any) => a.scored > 0).length}/{data.attempts.length} bài đã chấm
+                  </>
                 )}
               </p>
             </div>
@@ -201,41 +252,22 @@ export default function StudentDetailPage() {
           <PendingSignals signals={data.pendingSignals ?? []} onVerify={(sg) => setVerify(sg)} />
 
           {/*
-            BẢNG TÓM TẮT, KHÔNG PHẢI CHỖ MỞ CASE (mục 6.2 B).
-            Bấm một dòng thì LỌC khối case bên dưới theo hạng mục đó. Trước vòng này dòng
-            giãn ra dựng nguyên một CasePanel, trong khi chính case ấy lại nằm lần nữa ở khối
-            bên dưới — một case hiện hai lần trên cùng một trang.
+            KHỐI CHÍNH CỦA HỒ SƠ (mục 4.2). Bấm một hàng thì nội dung mở ra NGAY DƯỚI hàng
+            đó — biểu đồ của chính kỹ năng ấy, các case đang mở, lịch sử đã kết thúc.
+
+            Khối "Case và kết quả hỗ trợ" tách riêng ở dưới đã BỎ: nó kể lại đúng những case
+            mà bảng này vừa tóm tắt, nên cùng một case hiện hai lần trên một trang, và bấm
+            một hàng ở đây thì phải cuộn xuống chỗ khác mới thấy kết quả.
           */}
-          <Card title="Tiến độ hiện tại"
-            action={
-              <span className="flex items-center gap-2">
-                {skillPick && (
-                  <button className="btn btn-sm btn-ghost" onClick={() => setSkillPick(null)}>
-                    Bỏ lọc {skillPick}
-                  </button>
-                )}
-                <span className="text-xs text-slate-500">Bấm một dòng để lọc case bên dưới</span>
-              </span>
-            }
+          <Card title="Tiến độ và hỗ trợ theo kỹ năng"
+            action={<span className="text-xs text-slate-500">Bấm một hàng để mở chi tiết ngay bên dưới</span>}
             bodyClass="p-0">
             <SkillBoard studentId={data.id} cycleId={cy.id}
               selected={skillPick}
               onPick={setSkillPick}
-              onReport={() => setReportOpen(true)} />
-          </Card>
-
-          {/* ══════════════════════════════ C — CASE VÀ KẾT QUẢ HỖ TRỢ */}
-          {/*
-            Bảng phía trên tóm tắt THEO KỸ NĂNG và chỉ trỏ được vào MỘT case đại diện mỗi
-            hạng mục. Em có hai case Reading song song thì cái thứ hai không có đường nào vào.
-
-            Nên đây là DANH SÁCH CASE THẬT: mỗi case một khối riêng, mở đóng độc lập, xem
-            được cả case của lộ trình trước.
-          */}
-          <Card title="Case và kết quả hỗ trợ"
-            action={<span className="text-xs text-slate-500">Mỗi case mở đóng riêng</span>}>
-            <StudentCases studentId={data.id} cycleId={cy.id} cycleLabel={cy.label}
-              category={skillPick} onCategory={setSkillPick} />
+              onReport={() => setReportOpen(true)}
+              progress={data.progress ?? null}
+              onOpenCase={setOpenCase} />
           </Card>
 
           {/* ══════════════════════════════ TẦNG 3 — KẾT QUẢ VÀ HÀNH TRÌNH */}
@@ -302,12 +334,32 @@ export default function StudentDetailPage() {
                   <ProgressChart data={data.progress} />
                 )}
                 <div>
-                  <h3 className="text-sm font-semibold text-slate-200 mt-0 mb-2">Các mốc đã qua</h3>
-                  {data.episodes.length === 0 ? <Empty title="Chưa có sự kiện nào" /> : (
-                    <ol className="space-y-3 list-none p-0 m-0">
-                      {data.episodes.map((ep: any) => <Episode key={ep.key} ep={ep} onOpenCase={setOpenCase} />)}
-                    </ol>
-                  )}
+                  {/*
+                    MỐC XUYÊN CHƯƠNG TRÌNH (mục 4.5): vào học, vào lớp, chuyển chương trình,
+                    đổi target hay kế hoạch thi, bàn giao case, kết quả thi thật, kết luận lộ
+                    trình. Mọi cập nhật phương án đã nằm trong hàng kỹ năng ở khối trên —
+                    kể lại lần nữa ở đây chỉ làm cả hai chỗ cùng dài ra mà không rõ hơn.
+                  */}
+                  <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+                    <h3 className="text-sm font-semibold text-slate-200 m-0">
+                      {allJourney ? 'Toàn bộ ghi nhận' : 'Các mốc đã qua'}
+                    </h3>
+                    <button className="btn btn-sm btn-ghost" onClick={() => setAllJourney(!allJourney)}>
+                      {allJourney ? 'Chỉ xem mốc chính' : 'Mở toàn hành trình'}
+                    </button>
+                  </div>
+                  {(() => {
+                    const eps = allJourney ? (data.allEpisodes ?? data.episodes) : data.episodes;
+                    return eps.length === 0 ? <Empty title="Chưa có sự kiện nào" /> : (
+                      <ol className="space-y-3 list-none p-0 m-0">
+                        {eps.map((ep: any) => <Episode key={ep.key} ep={ep} onOpenCase={setOpenCase} />)}
+                      </ol>
+                    );
+                  })()}
+                  <SectionNote>
+                    Phần này là hành trình của CẢ em, không riêng lộ trình đang xem: lớp cũ, lộ
+                    trình cũ và case đã bàn giao đều tra lại được ở đây.
+                  </SectionNote>
                 </div>
               </div>
             )}
