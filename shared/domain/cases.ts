@@ -456,6 +456,23 @@ export function issuesForTopic(topic: string): IssueNode[] {
 }
 
 /**
+ * SUY CHỦ ĐỀ TỪ MÃ PHÂN LOẠI — CASE-01 làm nốt (PR-C).
+ *
+ * Nhóm Ý thức chỉ có MỘT tầng phân loại (bốn nhóm BTVN/Chuyên cần/Tham gia/Khác cũng chính
+ * là bốn mã `student.behaviour.*`), nên form không cần hỏi "Về việc gì" rồi hỏi tiếp "Phân
+ * loại vấn đề" ra cùng một câu trả lời — sổ CASE-01 cấm rõ "không cần dropdown nguyên nhân
+ * thứ hai dư thừa". Suy `topic` thẳng từ `primaryCode` thay vì bắt người dùng chọn hai lần.
+ *
+ * CHỖ DỄ HỎNG NHẤT CỦA PR-C: `topic` là khoá gộp báo cáo theo đợt (sổ §13.12) — ánh xạ lệch
+ * một mã là hai báo cáo cùng loại rơi vào hai đợt khác nhau, không ai nhìn màn hình mà thấy
+ * được. Phải phủ hết `BEHAVIOUR_TOPICS`, và giao diện lẫn máy chủ dùng ĐÚNG MỘT hàm này.
+ */
+export function topicFromBehaviourCode(code: string): BehaviourTopic | null {
+  const found = BEHAVIOUR_TOPICS.find((t) => code === `student.behaviour.${t}`);
+  return found ?? null;
+}
+
+/**
  * CHUYỂN MÃ CŨ SANG MÃ MỚI.
  *
  * Giữ lại để dữ liệu cũ đọc được và để bước nâng cấp chạy đúng một lần. Hai dòng đầu của

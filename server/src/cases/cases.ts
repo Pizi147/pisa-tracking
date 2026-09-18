@@ -5,7 +5,7 @@ import {
   FOLLOWUP_OUTCOMES, BEHAVIOUR_TOPICS, CASE_DECISIONS, CASE_OUTCOMES, ENTRY_SKILLS,
   ISSUE_ROLES, PERMISSIONS, THREAD_TRACKS, URGENCY_LEVELS, DEFAULT_URGENCY,
   BEHAVIOUR_MERGE_WINDOW_DAYS, behaviourCaseDeadline, behaviourMergeUntil, deadlineAfterRaise,
-  issuesForTopic,
+  issuesForTopic, topicFromBehaviourCode,
   CASE_CATEGORY_SHORT, CASE_CATEGORIES, CASE_CATEGORY_LABEL, FOLLOWUP_OUTCOME_LABEL, ratioResult,
   caseCategoriesFor, componentsAreCounts, componentsFor, type CaseCategory,
   CASE_OUTCOME_LABEL, caseCategoryLabel, caseDedupKey, caseHeadline, caseTitle, categoryOf,
@@ -403,7 +403,16 @@ export function reportIssue(p: Principal, input: {
   const track = (THREAD_TRACKS as readonly string[]).includes(input.track ?? '')
     ? input.track! : 'academic';
   const topics: readonly string[] = track === 'behaviour' ? BEHAVIOUR_TOPICS : ENTRY_SKILLS;
-  const topic = (input.topic ?? '').trim() || null;
+  /*
+   * CASE-01 làm nốt: nhóm Ý thức chỉ có MỘT tầng phân loại — bốn nhóm chủ đề CHÍNH LÀ bốn mã
+   * phân loại. Form không còn hỏi "Về việc gì" cho nhóm Ý thức, nên suy `topic` thẳng từ
+   * `primaryCode` khi thiếu, bằng ĐÚNG MỘT hàm dùng chung với giao diện
+   * (`topicFromBehaviourCode`) — không để hai nơi tự suy theo hai cách.
+   */
+  let topic = (input.topic ?? '').trim() || null;
+  if (!topic && track === 'behaviour' && input.primaryCode) {
+    topic = topicFromBehaviourCode(input.primaryCode.trim());
+  }
   if (!topic) {
     throw badRequest(track === 'behaviour'
       ? 'Hãy chọn nhóm ý thức: chuyên cần, BTVN, tham gia trên lớp hay khác.'
@@ -417,6 +426,16 @@ export function reportIssue(p: Principal, input: {
   const urgency = input.urgency ?? DEFAULT_URGENCY;
   const detectedAt = input.detectedAt ?? demoToday();
   if (!isIsoDate(detectedAt)) throw badRequest('Ngày phát hiện không hợp lệ.');
+  /*
+   * Ý THỨC KHÔNG CÓ NGÀY QUÁ KHỨ (CASE-01 Task 2). Ngày mở là gốc tính CẢ BA thứ cùng lúc:
+   * hạn phương án, hạn hoàn thành case, và cửa sổ gộp đợt bốn ngày — cho chọn ngày quá khứ
+   * nghĩa là tạo được case sinh ra đã quá hạn, hoặc lùi ngày để lách luật gộp. Học thuật
+   * KHÔNG đụng: hạn ở đó chạy theo cơ chế khác (`weeklyUpdateDue`), và lệch ngày báo là
+   * chuyện có thật đã xảy ra trước khi hệ thống biết.
+   */
+  if (track === 'behaviour' && input.detectedAt && detectedAt !== demoToday()) {
+    throw badRequest('Case Ý thức chỉ ghi nhận theo ngày hôm nay — không chọn được ngày khác.');
+  }
 
   const key = input.idempotencyKey?.trim() || null;
   if (key) {

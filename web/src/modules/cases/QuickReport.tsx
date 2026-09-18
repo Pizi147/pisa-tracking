@@ -6,6 +6,7 @@ import { Field, SectionNote } from '../../ui/ui.tsx';
 import {
   BEHAVIOUR_TOPICS, BEHAVIOUR_TOPIC_LABEL, ENTRY_SKILLS, ENTRY_SKILL_LABEL,
   THREAD_TRACKS, THREAD_TRACK_LABEL, URGENCY_LEVELS, URGENCY_LABEL, issuesForTopic, DEFAULT_URGENCY,
+  topicFromBehaviourCode,
 } from '@shared/domain/index.ts';
 
 /**
@@ -76,8 +77,14 @@ export function QuickReport({
   const topicLabel = (k: string) => (track === 'behaviour'
     ? BEHAVIOUR_TOPIC_LABEL[k as keyof typeof BEHAVIOUR_TOPIC_LABEL]
     : ENTRY_SKILL_LABEL[k as keyof typeof ENTRY_SKILL_LABEL]) ?? k;
-  /* Nhóm Ý thức CŨNG có bộ phân loại riêng — thiếu nó thì form tự chặn chính mình. */
-  const causes = topic ? issuesForTopic(topic) : [];
+  /*
+   * CASE-01 làm nốt: Ý thức chỉ có MỘT tầng phân loại — bốn nhóm chủ đề (BTVN/Chuyên cần/
+   * Tham gia/Khác) CHÍNH LÀ bốn mã phân loại, nên form không hỏi "Về việc gì" nữa. Bộ phân
+   * loại của Ý thức không phụ thuộc topic nào cụ thể (cả bốn nhóm dùng chung một bộ), nên
+   * lấy causes qua BẤT KỲ giá trị nào trong BEHAVIOUR_TOPICS — không cần chờ chọn topic.
+   */
+  const causes = track === 'behaviour' ? issuesForTopic(BEHAVIOUR_TOPICS[0])
+    : topic ? issuesForTopic(topic) : [];
 
   const reset = () => {
     setSummary(''); setUrgency(DEFAULT_URGENCY); setTrack('academic'); setTopic('');
@@ -218,31 +225,38 @@ export function QuickReport({
           </div>
         </Field>
 
-        <Field label={track === 'behaviour' ? 'Về việc gì' : 'Kỹ năng nào'} required>
-          <div className="flex gap-1 flex-wrap">
-            {topics.map((k) => (
-              <button key={k} type="button"
-                className={`btn btn-sm ${topic === k ? 'btn-primary' : ''}`}
-                onClick={() => { setTopic(k); setPrimaryCode(''); }}>
-                {topicLabel(k)}
-              </button>
-            ))}
-          </div>
-        </Field>
+        {/* Ý thức không còn hỏi "Về việc gì" — bốn nhóm chủ đề chính là bốn mã phân loại (CASE-01). */}
+        {track === 'academic' && (
+          <Field label="Kỹ năng nào" required>
+            <div className="flex gap-1 flex-wrap">
+              {topics.map((k) => (
+                <button key={k} type="button"
+                  className={`btn btn-sm ${topic === k ? 'btn-primary' : ''}`}
+                  onClick={() => { setTopic(k); setPrimaryCode(''); }}>
+                  {topicLabel(k)}
+                </button>
+              ))}
+            </div>
+          </Field>
+        )}
 
         {/*
           PHÂN LOẠI LÀ BẮT BUỘC, nên nó nằm NGAY ĐÂY, không giấu dưới "xem thêm" (mục 6.3).
           Trước đây nó là ô "Vì sao" không bắt buộc với lựa chọn mặc định "Chưa rõ" — và
           "Chưa rõ" chính là thứ làm mọi bảng tổng hợp nguyên nhân trở nên vô dụng.
+          Ý thức hiện ngay khi đã chọn nhóm (không chờ topic — chọn phân loại TỰ đặt topic).
         */}
-        {topic && (
+        {(track === 'behaviour' || topic) && (
           <Field label="Phân loại vấn đề" required
             hint="Căn cứ để sau này trả lời được: trung tâm mình hay vướng cái gì nhất.">
             <div className="flex gap-1 flex-wrap">
               {causes.map((i) => (
                 <button key={i.code} type="button" title={i.hint}
                   className={`btn btn-sm ${primaryCode === i.code ? 'btn-primary' : ''}`}
-                  onClick={() => setPrimaryCode(i.code)}>
+                  onClick={() => {
+                    setPrimaryCode(i.code);
+                    if (track === 'behaviour') setTopic(topicFromBehaviourCode(i.code) ?? '');
+                  }}>
                   {i.label}
                 </button>
               ))}
@@ -260,13 +274,14 @@ export function QuickReport({
           </Field>
         )}
 
-        {!more && (
+        {/* Ý thức KHÔNG có ô ngày nào — ngày mở là gốc tính hạn/cửa sổ gộp, không cho lùi (CASE-01 Task 2). */}
+        {track === 'academic' && !more && (
           <button type="button" className="btn btn-sm btn-ghost" onClick={() => setMore(true)}>
             + Theo dõi từ ngày khác hôm nay
           </button>
         )}
 
-        {more && (
+        {track === 'academic' && more && (
           <Field label="Theo dõi từ ngày" hint="Bỏ trống thì lấy hôm nay.">
             <input type="date" className="field" value={detectedAt} onChange={(e) => setDetectedAt(e.target.value)} />
           </Field>

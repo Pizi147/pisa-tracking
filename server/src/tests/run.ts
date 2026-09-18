@@ -6364,22 +6364,31 @@ check('[7.2] Gửi lại cùng một request không tạo báo cáo thứ hai v�
     'Bấm lại vì mạng chập chờn đã bị tính thành một lần tái phạm và nâng mức');
 });
 
-check('[7.2] Ngày gửi của hệ thống quyết định cửa sổ, không phải ngày người dùng khai', () => {
+check('[7.2] Ngày gửi của hệ thống quyết định cửa sổ — Ý thức nay TỪ CHỐI thẳng ngày quá khứ, không âm thầm bỏ qua', () => {
+  /*
+   * CẬP NHẬT (PR-C, CASE-01 Task 2): trước đây máy chủ ÂM THẦM CHẤP NHẬN detectedAt quá khứ
+   * cho case Ý thức rồi bỏ qua khi tính cửa sổ gộp (merge_until luôn theo `today`) — người
+   * dùng khai lùi ngày mà không biết nó vô nghĩa. Nay máy chủ TỪ CHỐI thẳng, rõ ràng hơn: xem
+   * "CASE-01 Task 2" bên dưới. Test này giữ lại đúng phần ý nghĩa chưa đổi — Học thuật vẫn
+   * nhận và GIỮ NGUYÊN ngày người dùng khai cho "Theo dõi từ ngày".
+   */
+  /*
+   * `case_reports` (bảng lưu "ngày gửi hệ thống" tách khỏi "ngày quan sát") chỉ dùng cho
+   * đường Ý thức/Khác — case Học thuật ghi `detected_at` thẳng trên `sos_cases`, không qua
+   * bảng đó. Kiểm đúng cơ chế thật: Học thuật vẫn giữ nguyên ngày người dùng khai.
+   */
   const st = formTestStudent();
   const made = cases.reportIssue(P.admin, {
-    studentId: st.id, cycleId: st.cycle_id, track: 'behaviour', topic: 'other',
-    title: 'Chuyện khác cần theo dõi',
-    summary: 'Em có biểu hiện mệt mỏi kéo dài trong giờ học, cần để ý thêm vài buổi.',
-    primaryCode: 'student.behaviour.other',
-    /* Khai lùi ngày để thử: cửa sổ gộp KHÔNG được đổi theo con số này. */
+    studentId: st.id, cycleId: st.cycle_id, track: 'academic', topic: 'listening',
+    title: 'Listening: quan sát từ buổi học trước',
+    summary: 'Em mất tập trung ở đoạn hội thoại nhiều người nói, quan sát từ buổi tuần trước.',
+    primaryCode: 'student.listening.focus',
     detectedAt: addDays(demoToday(), -20),
+    parallel: true, // học viên cố định có thể đã có case cùng hạng mục từ test khác trong lượt chạy
   }) as any;
-  const row = conn.prepare('SELECT * FROM sos_cases WHERE id = ?').get(made.id) as any;
-  assert(row.merge_until === addDays(demoToday(), 3),
-    `Khai lùi ngày đã đổi được cửa sổ gộp: ${row.merge_until}`);
-  const rep = conn.prepare('SELECT * FROM case_reports WHERE case_id = ?').get(made.id) as any;
-  assert(rep.reported_on === demoToday(), 'Ngày gửi của báo cáo bị lấy theo ngày người dùng khai');
-  assert(rep.observed_on === addDays(demoToday(), -20), 'Mất ngày người dùng khai ở "Theo dõi từ ngày"');
+  const row = conn.prepare('SELECT detected_at FROM sos_cases WHERE id = ?').get(made.id) as any;
+  assert(row.detected_at === addDays(demoToday(), -20),
+    `Case Học thuật phải giữ nguyên ngày người dùng khai, đang ra ${row.detected_at}`);
 });
 
 check('[7.2] Bộ demo có một đợt gộp hai báo cáo và đã được nâng lên Gấp', () => {
@@ -7636,6 +7645,84 @@ check('CASE-01 · Tạo được case Ý thức bằng đúng phân loại của
     summary: 'Em nghỉ bốn buổi trong hai tuần, chưa có lý do từ gia đình.',
   });
   assert(made?.id, 'Phải tạo được case Ý thức');
+});
+
+// ==================================================================== PR-C
+
+check('CASE-01 (nốt) · topicFromBehaviourCode phủ hết BEHAVIOUR_TOPICS', () => {
+  for (const t of domain.BEHAVIOUR_TOPICS) {
+    const got = domain.topicFromBehaviourCode(`student.behaviour.${t}`);
+    assert(got === t, `Mã student.behaviour.${t} phải suy ra topic "${t}", đang ra "${got}"`);
+  }
+  assert(domain.topicFromBehaviourCode('student.listening.technique') === null,
+    'Mã không thuộc nhóm Ý thức phải suy ra null, không đoán bừa');
+});
+
+check('CASE-01 (nốt) · Tạo case Ý thức CHỈ truyền primaryCode, không truyền topic', () => {
+  const made = cases.reportIssue(P.coreTeacher, {
+    studentId: 3, track: 'behaviour', primaryCode: 'student.behaviour.homework',
+    title: 'Ý thức: em không làm bài tập về nhà',
+    summary: 'Ba tuần liên tiếp không nộp bài tập, đã nhắc trực tiếp hai lần.',
+  });
+  assert(made?.id, 'Phải tạo được case dù không truyền topic');
+  const row = conn.prepare('SELECT topic FROM sos_cases WHERE id = ?').get(made.id) as any;
+  assert(row.topic === 'homework', `topic đọc ra phải là "homework" (BTVN), đang ra "${row.topic}"`);
+});
+
+check('CASE-01 (nốt) · Hai báo cáo BTVN trong cửa sổ gộp MỘT đợt; ngoài cửa sổ thành HAI đợt', () => {
+  /*
+   * `demoToday()` cố định trong một lượt chạy test nên không mô phỏng được "cách N ngày thật"
+   * qua `detectedAt` (server luôn so `merge_until` với CHÍNH `today` lúc gọi — hai lệnh gọi
+   * liên tiếp trong cùng lượt test luôn cùng `today`). Mô phỏng đúng bằng cách chỉnh thẳng
+   * `merge_until` của case đầu về quá khứ, tương đương "cửa sổ bốn ngày đã đóng".
+   */
+  const first = cases.reportIssue(P.coreTeacher, {
+    studentId: 3, track: 'behaviour', primaryCode: 'student.behaviour.attendance',
+    title: 'Ý thức: em nghỉ học không phép',
+    summary: 'Nghỉ học không phép, chưa rõ lý do từ gia đình.',
+  });
+  const secondNear = cases.reportIssue(P.mbManager, {
+    studentId: 3, track: 'behaviour', primaryCode: 'student.behaviour.attendance',
+    title: 'Ý thức: em tiếp tục nghỉ học',
+    summary: 'Vẫn nghỉ, không phép, chưa liên lạc được gia đình.',
+  });
+  assert(first.id === secondNear.id,
+    `Trong cửa sổ gộp (cùng today) phải chung một case, đang ra ${first.id} và ${secondNear.id}`);
+
+  conn.prepare('UPDATE sos_cases SET merge_until = ? WHERE id = ?').run(addDays(demoToday(), -1), first.id);
+  const farAway = cases.reportIssue(P.mbManager, {
+    studentId: 3, track: 'behaviour', primaryCode: 'student.behaviour.attendance',
+    title: 'Ý thức: em nghỉ học đợt mới',
+    summary: 'Sau một thời gian đi học đều, nay lại nghỉ không phép — đợt mới.',
+  });
+  assert(farAway.id !== first.id,
+    `Cửa sổ gộp đã đóng (merge_until < today) phải thành đợt MỚI, đang gộp chung với case ${first.id}`);
+});
+
+check('CASE-01 Task 2 · Case Ý thức với detectedAt lùi 10 ngày bị TỪ CHỐI', () => {
+  let threw = false;
+  try {
+    cases.reportIssue(P.coreTeacher, {
+      studentId: 3, track: 'behaviour', primaryCode: 'student.behaviour.participation',
+      title: 'Ý thức: em ít phát biểu trên lớp',
+      summary: 'Ba buổi liên tiếp không giơ tay, gọi tên mới trả lời.',
+      detectedAt: addDays(demoToday(), -10),
+    });
+  } catch (e: any) { threw = true; }
+  assert(threw, 'Case Ý thức chọn ngày quá khứ phải bị máy chủ từ chối, không im lặng bỏ qua');
+});
+
+check('CASE-01 Task 2 · Case Học thuật vẫn chọn được ngày quá khứ như cũ', () => {
+  const st = formTestStudent();
+  const made = cases.reportIssue(P.admin, {
+    studentId: st.id, cycleId: st.cycle_id, track: 'academic', topic: 'reading',
+    primaryCode: 'student.reading.time',
+    title: 'Reading: quản lý thời gian còn chậm',
+    summary: 'Ghi nhận từ buổi học tuần trước, em làm không kịp hai bài cuối.',
+    detectedAt: addDays(demoToday(), -10),
+    parallel: true,
+  });
+  assert(made?.id, 'Case Học thuật phải vẫn chọn ngày quá khứ được như trước PR-C');
 });
 
 console.log(`\n${'='.repeat(60)}`);

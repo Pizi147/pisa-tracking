@@ -1235,19 +1235,19 @@ PR-A mở lại được việc tạo case Ý thức bằng cách cho bốn nhó
 bộ đó **đúng là bốn nhóm ấy**. Kết quả: form hỏi "Về việc gì: BTVN?" rồi hỏi tiếp "Phân loại
 vấn đề: BTVN?". Sổ audit CASE-01 đã cấm từ đầu: *"không cần dropdown nguyên nhân thứ hai dư thừa."*
 
-- [ ] **Step 1: Phép kiểm trước.** Trong `server/src/tests/run.ts`: tạo case Ý thức chỉ truyền
+- [x] **Step 1: Phép kiểm trước.** Trong `server/src/tests/run.ts`: tạo case Ý thức chỉ truyền
       `primaryCode = 'student.behaviour.homework'`, **không** truyền `topic`. Phải lưu được, và
       `topic` đọc ra phải là nhóm BTVN. Chạy `npm test`, phép kiểm này phải ĐỎ trước khi sửa.
-- [ ] **Step 2: Suy chủ đề từ phân loại.** Thêm vào `shared/domain/cases.ts` hàm
+- [x] **Step 2: Suy chủ đề từ phân loại.** Thêm vào `shared/domain/cases.ts` hàm
       `topicFromBehaviourCode(code)` ánh xạ `student.behaviour.homework → homework`,
       `.attendance → attendance`, `.participation → participation`, `.other → other`.
       **Ánh xạ phải phủ hết `BEHAVIOUR_TOPICS`** — viết phép kiểm quét cả bốn mã.
-- [ ] **Step 3: Giao diện.** `web/src/modules/cases/QuickReport.tsx` — khi `track === 'behaviour'`,
+- [x] **Step 3: Giao diện.** `web/src/modules/cases/QuickReport.tsx` — khi `track === 'behaviour'`,
       **không render** ô "Về việc gì" (hiện ở dòng 221). Chỉ còn ô "Phân loại vấn đề". Chọn phân
       loại thì đặt `topic` ngầm bằng hàm ở Step 2. Nhóm **Học thuật giữ nguyên hai ô** — ở đó
       "Kỹ năng nào" (Listening) và "Phân loại vấn đề" (Tư duy và kỹ năng làm bài) là hai câu hỏi
       khác nhau thật.
-- [ ] **Step 4: Máy chủ.** `reportIssue` (`server/src/cases/cases.ts:326`) — với
+- [x] **Step 4: Máy chủ.** `reportIssue` (`server/src/cases/cases.ts:326`) — với
       `track = 'behaviour'`, thiếu `topic` thì suy từ `primaryCode` bằng **cùng** hàm ở Step 2.
       Không để hai nơi tự suy theo hai cách.
 
@@ -1263,16 +1263,22 @@ Ngày mở đang là gốc tính của **ba** thứ cùng lúc: hạn phương �
 (`behaviourCaseDeadline`, `cases.ts:554` — ngày mở + 6), và cửa sổ gộp đợt bốn ngày. Cho chọn
 ngày quá khứ nghĩa là **tạo được case sinh ra đã quá hạn**, hoặc lùi ngày để lách luật gộp.
 
-- [ ] **Step 1: Giao diện.** `QuickReport.tsx` — khi `track === 'behaviour'`, ẩn cả nút
+- [x] **Step 1: Giao diện.** `QuickReport.tsx` — khi `track === 'behaviour'`, ẩn cả nút
       `+ Theo dõi từ ngày khác hôm nay` (dòng 264) lẫn ô ngày (dòng 270). Không có ô hạn, và
       chưa bao giờ có — đừng thêm.
-- [ ] **Step 2: Máy chủ chặn thật.** `reportIssue` — `track = 'behaviour'` mà nhận `detectedAt`
+- [x] **Step 2: Máy chủ chặn thật.** `reportIssue` — `track = 'behaviour'` mà nhận `detectedAt`
       khác hôm nay thì **từ chối**, không im lặng bỏ qua.
-- [ ] **Step 3: Học thuật giữ nguyên.** Ô ngày của nhóm Học thuật không đụng tới — ở đó hạn
+- [x] **Step 3: Học thuật giữ nguyên.** Ô ngày của nhóm Học thuật không đụng tới — ở đó hạn
       chạy theo cơ chế khác (`weeklyUpdateDue`, `cases.ts:895`), và ngày phát hiện lệch ngày
       báo là chuyện có thật.
-- [ ] **Step 4: Phép kiểm.** Tạo case Ý thức với `detectedAt` lùi 10 ngày → API từ chối. Tạo
+- [x] **Step 4: Phép kiểm.** Tạo case Ý thức với `detectedAt` lùi 10 ngày → API từ chối. Tạo
       case Học thuật cùng ngày đó → lưu được.
+      > **Cập nhật lúc code:** test có sẵn `[7.2] Ngày gửi của hệ thống quyết định cửa sổ...`
+      > giả định hành vi CŨ (Ý thức nhận `detectedAt` quá khứ rồi âm thầm bỏ qua khi tính cửa
+      > sổ gộp) — nay hành vi đổi có chủ đích (từ chối hẳn), nên đã sửa lại test đó cho đúng ý
+      > nghĩa còn lại (Học thuật vẫn giữ ngày người dùng khai), không xoá. Phát hiện thêm:
+      > `case_reports` (bảng có `reported_on`/`observed_on`) chỉ dùng cho đường Ý thức — Học
+      > thuật lưu `detected_at` thẳng trên `sos_cases`, không qua bảng đó.
 
 ### 10.3. Task 3 — Tab "Đã xong từ trước"
 
