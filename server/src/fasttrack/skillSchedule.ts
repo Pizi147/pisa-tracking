@@ -3,13 +3,36 @@ import {
   ASSESSED_SKILLS, PERMISSIONS, SIT_STATUSES,
   type AssessedSkill, type SitStatus, type SkillProgress,
 } from '../../../shared/domain/index.ts';
-import { badRequest, isIsoDate, notFound, nowIso } from '../util.ts';
-import { can, require_, type Principal } from '../permissions.ts';
+import { badRequest, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
+import { can, explain, require_, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
 import { writeAudit } from '../platform/audit.ts';
 import {
   effectiveSkillDeadline, isOverdue, weekInfo, type ScoringMode,
 } from '../platform/week.ts';
+
+/**
+ * QUYỀN DỜI LỊCH MỘT KỸ NĂNG (sổ SCH-01, SCH-02) — MỘT capability, dùng CHUNG cho
+ * `setSkillWeek` và `setSitStatus`/`canSetSitStatus`, để giao diện và máy chủ không lệch nhau.
+ *
+ *   Quản lý / Quản trị  → `PLAN_WEEK` (như cũ, mọi loại lớp).
+ *   GVCN / GVBM         → `SCHEDULE_MOVE` (mới) — CHỈ lớp Normal, CHỈ lớp/môn mình phụ trách.
+ *
+ * Không gộp thành một quyền — cấp `PLAN_WEEK` cho giáo viên sẽ vô tình mở luôn xếp lịch Fast
+ * Track chủ động (`bulkPlan`), đúng cái sổ cấm.
+ */
+export function canMoveSkillSchedule(
+  p: Principal, ctx: { classId: number; studentId: number; skill?: string },
+): boolean {
+  return can(p, PERMISSIONS.PLAN_WEEK, ctx) || can(p, PERMISSIONS.SCHEDULE_MOVE, ctx);
+}
+
+function requireMoveSkillSchedule(
+  p: Principal, ctx: { classId: number; studentId: number; skill?: string }, message: string,
+) {
+  if (canMoveSkillSchedule(p, ctx)) return;
+  throw forbidden(message, { hint: explain(p, PERMISSIONS.SCHEDULE_MOVE, ctx) });
+}
 
 /**
  * LỊCH THI THEO TỪNG KỸ NĂNG — nơi sở hữu DUY NHẤT của mục 10.
@@ -501,8 +524,10 @@ export function setSkillWeek(p: Principal, attemptId: number, skill: string, per
   force?: boolean;
 } = {}) {
   const { attempt, row } = loadOne(attemptId, skill);
-  require_(p, PERMISSIONS.PLAN_WEEK, { classId: attempt.class_id, studentId: attempt.student_id },
-    'Bạn không có quyền đổi lịch thi của kỹ năng này.');
+  requireMoveSkillSchedule(
+    p, { classId: attempt.class_id, studentId: attempt.student_id, skill: row.skill },
+    'Bạn không có quyền đổi lịch thi của kỹ năng này.',
+  );
   if (attempt.status === 'cancelled') throw badRequest('Đợt này đã huỷ. Hãy mở lại trước khi đổi lịch.');
   if (!row.required) throw badRequest(`Kỹ năng ${skill} không nằm trong phạm vi yêu cầu của đợt này.`);
 
@@ -653,8 +678,10 @@ export function setSkillScope(p: Principal, attemptId: number, skill: string, re
 export function setSitStatus(p: Principal, attemptId: number, skill: string, status: string, note?: string | null) {
   const { attempt, row } = loadOne(attemptId, skill);
   if (!(SIT_STATUSES as readonly string[]).includes(status)) throw badRequest('Trạng thái thi không hợp lệ.');
-  require_(p, PERMISSIONS.PLAN_WEEK, { classId: attempt.class_id, studentId: attempt.student_id },
-    'Bạn không có quyền xác nhận trạng thái thi của kỹ năng này.');
+  requireMoveSkillSchedule(
+    p, { classId: attempt.class_id, studentId: attempt.student_id, skill: row.skill },
+    'Bạn không có quyền xác nhận trạng thái thi của kỹ năng này.',
+  );
   if (!row.required) throw badRequest(`Kỹ năng ${skill} không nằm trong phạm vi yêu cầu của đợt này.`);
   if (status === 'absent' && hasScore(attemptId, row.skill)) {
     throw badRequest(`${skill} đã có điểm ở đợt này, không thể xác nhận là vắng.`);
