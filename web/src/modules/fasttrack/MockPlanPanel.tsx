@@ -55,7 +55,8 @@ export function MockPlanPanel({ classId, branchId, onClose, onDone }: {
   const { data, loading, reload } = useApi<{ rows: NoPlan[]; total: number; noPlanCount: number }>(
     `/attempts/no-plan${qs.toString() ? `?${qs}` : ''}`, [qs.toString()],
   );
-  const classes = useApi<{ id: number; code: string }[]>('/ref/classes');
+  /* Kế hoạch Test chỉ dành cho Fast Track (sổ MT-01) — Normal thi theo lịch lớp, không xếp lượt MT. */
+  const classes = useApi<{ id: number; code: string }[]>('/ref/classes?fastTrackOnly=1');
 
   /** studentId → lượt MT đang chọn. Mỗi em một lượt riêng. */
   const [picks, setPicks] = useState<Map<number, number>>(new Map());
@@ -113,16 +114,10 @@ export function MockPlanPanel({ classId, branchId, onClose, onDone }: {
     } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
   };
 
-  /* Các lượt MT đang được chọn, để nói đúng việc sắp xảy ra thay vì một câu chung chung. */
-  const pickedNos = useMemo(
-    () => [...new Set(chosen.map((c) => picks.get(c.studentId)!))].sort((a, b) => a - b),
-    [chosen, picks],
-  );
-
   return (
     <Drawer
       open onClose={onClose} width="max-w-4xl"
-      title="Lên kế hoạch MT"
+      title="Kế hoạch Test"
       subtitle="Chọn lượt MT riêng cho từng em, rồi chốt chung một tuần"
       footer={
         <>
@@ -140,14 +135,9 @@ export function MockPlanPanel({ classId, branchId, onClose, onDone }: {
       <div className="space-y-4">
         {/* ------------------------------------------------ 1. tuần chốt chung */}
         <div className="grid gap-3 sm:grid-cols-2">
-          <WeekPicker periodId={periodId} onPeriod={setPeriodId} className="w-full"
-            label="Tuần MT" scope="planning" />
           <div>
-            <span className="label">Lượt MT đang chọn</span>
-            <div className="field flex items-center text-slate-300">
-              {pickedNos.length === 0 ? 'Chưa chọn em nào'
-                : pickedNos.map((n) => `MT${n}`).join(' · ')}
-            </div>
+            <WeekPicker periodId={periodId} onPeriod={setPeriodId} className="w-full"
+              label="Tuần MT" scope="planning" />
             <p className="text-[11px] text-slate-500 mt-1">
               Các em xếp chung một tuần vẫn có thể ở những lượt MT khác nhau.
             </p>

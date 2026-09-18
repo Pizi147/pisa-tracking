@@ -17,6 +17,7 @@ for (const suffix of ['', '-wal', '-shm']) {
 const { db } = await import('../db.ts');
 const { runSeed } = await import('../seed/seed.ts');
 const { loadPrincipal, can } = await import('../permissions.ts');
+const permissions = await import('../permissions.ts');
 const { PERMISSIONS, expectationDelta } = await import('../../../shared/domain/index.ts');
 const scoring = await import('../fasttrack/scoring.ts');
 const week = await import('../platform/week.ts');
@@ -155,6 +156,9 @@ const P = {
   bcManager: loadPrincipal(userByRole('manager', 'BC')),
   coreTeacher: loadPrincipal(coreTeacherOf('MB-FT 101')),
   subjectTeacher: loadPrincipal(subjectOnlyTeacherOf('MB-FT 101')),
+  /* MB-FOU 12 là lớp Normal (is_fast_track=0) — dùng cho các phép kiểm SCH-01/02, T10. */
+  normalCoreTeacher: loadPrincipal(coreTeacherOf('MB-FOU 12')),
+  normalSubjectTeacher: loadPrincipal(subjectOnlyTeacherOf('MB-FOU 12')),
 };
 
 const mbClass = classId('MB-FT 101');
@@ -7636,6 +7640,178 @@ check('CASE-01 · Tạo được case Ý thức bằng đúng phân loại của
     summary: 'Em nghỉ bốn buổi trong hai tuần, chưa có lý do từ gia đình.',
   });
   assert(made?.id, 'Phải tạo được case Ý thức');
+});
+
+// ==================================================================== PR2b
+
+function normalWritingAttemptSkill() {
+  const row = conn.prepare(
+    `SELECT a.id AS attemptId, s.skill, s.planned_period_id AS periodId
+       FROM assessment_attempts a JOIN attempt_skills s ON s.attempt_id = a.id
+      WHERE a.class_id = ? AND a.status != 'cancelled' AND s.skill = 'writing'
+        AND s.required = 1 AND s.sit_status != 'sat' AND s.planned_period_id IS NOT NULL
+      LIMIT 1`,
+  ).get(classId('MB-FOU 12')) as any;
+  assert(row, 'Seed thiếu một bài Writing lớp Normal chưa chấm để kiểm SCH-01');
+  return row as { attemptId: number; skill: string; periodId: number };
+}
+
+check('SCH-01 · GVBM lớp Normal dời được ĐÚNG môn mình dạy, không dời được môn khác', () => {
+  const { attemptId, periodId } = normalWritingAttemptSkill();
+  const otherPeriod = periodOf(addDays(week.periodById(periodId)!.week_start, 7));
+  assert(
+    !can(P.normalSubjectTeacher, PERMISSIONS.SCHEDULE_MOVE, { classId: classId('MB-FOU 12'), skill: 'speaking' }),
+    'GVBM Writing không được có quyền dời Speaking',
+  );
+  assert(
+    can(P.normalSubjectTeacher, PERMISSIONS.SCHEDULE_MOVE, { classId: classId('MB-FOU 12'), skill: 'writing' }),
+    'GVBM Writing phải dời được đúng môn Writing',
+  );
+  const r = skillSchedule.setSkillWeek(P.normalSubjectTeacher, attemptId, 'writing', otherPeriod, {});
+  assert(r.ok, 'GVBM Writing phải dời được lịch Writing của lớp Normal mình dạy');
+});
+
+check('SCH-01 · GVCN lớp Normal dời được mọi môn trong lớp mình chủ nhiệm', () => {
+  const cid = classId('MB-FOU 12');
+  for (const skill of ['listening', 'reading', 'writing', 'speaking']) {
+    assert(
+      can(P.normalCoreTeacher, PERMISSIONS.SCHEDULE_MOVE, { classId: cid, skill }),
+      `GVCN lớp Normal phải dời được ${skill}`,
+    );
+  }
+});
+
+check('SCH-01 · Giáo viên lớp Fast Track KHÔNG dời được lịch dù là GVCN — FT chủ động vẫn của Quản lý', () => {
+  assert(
+    !can(P.coreTeacher, PERMISSIONS.SCHEDULE_MOVE, { classId: mbClass, skill: 'listening' }),
+    'GVCN Fast Track không được cấp SCHEDULE_MOVE — dời FT chủ động vẫn phải qua Quản lý',
+  );
+  assert(
+    !can(P.coreTeacher, PERMISSIONS.PLAN_WEEK, { classId: mbClass }),
+    'GVCN Fast Track vẫn không có PLAN_WEEK — không được "chữa tạm" bằng cách cấp quyền chung',
+  );
+});
+
+check('SCH-01 · Cấp SCHEDULE_MOVE cho giáo viên KHÔNG vô tình mở luôn xếp lịch Fast Track chủ động', () => {
+  // Giáo viên Normal có schedule.move nhưng KHÔNG được đồng thời có plan.week (mở bulkPlan/FT).
+  assert(
+    !can(P.normalCoreTeacher, PERMISSIONS.PLAN_WEEK, { classId: classId('MB-FOU 12') }),
+    'Cấp SCHEDULE_MOVE không được kèm PLAN_WEEK — nếu không sẽ vô tình mở luôn xếp lịch FT chủ động',
+  );
+});
+
+check('SCH-02 · Xác nhận trạng thái thi dùng ĐÚNG cùng quyền với dời lịch (moveableSkills)', () => {
+  const cid = classId('MB-FOU 12');
+  const list = permissions.moveableSkills(P.normalSubjectTeacher, cid, ['listening', 'reading', 'writing', 'speaking']);
+  assert(list.join(',') === 'writing', `GVBM Writing chỉ được liệt kê đúng writing, đang ra: ${list.join(',')}`);
+  const listCore = permissions.moveableSkills(P.normalCoreTeacher, cid, ['listening', 'reading', 'writing', 'speaking']);
+  assert(listCore.length === 4, 'GVCN phải dời được cả bốn môn của lớp Normal mình');
+});
+
+/** MT1/MT2/MT3 liên tiếp cùng lộ trình ở MB-FT 101, dùng chung cho các phép kiểm T13. */
+function threeConsecutiveMocks() {
+  const rows = conn.prepare(
+    `SELECT a.id AS attemptId, a.attempt_no, a.cycle_id, s.skill, s.planned_period_id
+       FROM assessment_attempts a JOIN attempt_skills s ON s.attempt_id = a.id
+      WHERE a.class_id = ? AND a.status != 'cancelled' AND s.required = 1 AND s.skill = 'listening'
+        AND s.planned_period_id IS NOT NULL
+      ORDER BY a.cycle_id, a.attempt_no`,
+  ).all(mbClass) as any[];
+  const byCycle = new Map<number, any[]>();
+  for (const r of rows) { if (!byCycle.has(r.cycle_id)) byCycle.set(r.cycle_id, []); byCycle.get(r.cycle_id)!.push(r); }
+  for (const list of byCycle.values()) {
+    if (list.length >= 3) return list.sort((a, b) => a.attempt_no - b.attempt_no).slice(0, 3);
+  }
+  assert(false, 'Seed thiếu một lộ trình có đủ MT1, MT2, MT3 đã xếp tuần để kiểm T13');
+  return [] as any[];
+}
+
+check('T13 · Dời MT2 VƯỢT quá tuần đầu MT3 (đợt sau) bị CHẶN, chỉ rõ xung đột', () => {
+  const [mt1, mt2, mt3] = threeConsecutiveMocks();
+  const mt3Week = week.periodById(mt3.planned_period_id)!.week_start;
+  const pastMt3 = addDays(mt3Week, 7); // hẳn sau tuần đầu MT3 — đây mới là "vượt", không phải "trùng"
+  const check = skillSchedule.checkSkillWeekMove({
+    attemptId: mt2.attemptId, skill: 'listening', newWeekStart: pastMt3,
+  });
+  assert(check.blockers.length > 0, `Dời MT2 vượt quá tuần đầu MT3 phải bị CHẶN, đang ra: ${JSON.stringify(check)}`);
+});
+
+check('T13 · Dời MT2 TRÙNG đúng tuần đầu MT3 chỉ CẢNH BÁO, không chặn', () => {
+  const [mt1, mt2, mt3] = threeConsecutiveMocks();
+  const mt3Week = week.periodById(mt3.planned_period_id)!.week_start;
+  const check = skillSchedule.checkSkillWeekMove({
+    attemptId: mt2.attemptId, skill: 'listening', newWeekStart: mt3Week,
+  });
+  assert(check.blockers.length === 0, `Trùng tuần (chưa vượt) không được CHẶN, đang ra: ${JSON.stringify(check)}`);
+  assert(check.warnings.length > 0, 'Trùng đúng tuần đầu đợt sau phải có CẢNH BÁO');
+});
+
+check('T13 · Hai đợt MT cách nhau đúng một tuần chỉ CẢNH BÁO, không chặn', () => {
+  const [mt1, mt2, mt3] = threeConsecutiveMocks();
+  const mt3Week = week.periodById(mt3.planned_period_id)!.week_start;
+  const oneWeekBeforeMt3 = addDays(mt3Week, -7);
+  const check = skillSchedule.checkSkillWeekMove({
+    attemptId: mt2.attemptId, skill: 'listening', newWeekStart: oneWeekBeforeMt3,
+  });
+  assert(check.blockers.length === 0, `Cách một tuần không được CHẶN, đang ra: ${JSON.stringify(check)}`);
+  assert(check.warnings.length > 0, 'Cách đúng một tuần với đợt sau phải có CẢNH BÁO, không được lặng thinh');
+});
+
+check('T13 · RLW và Speaking CÙNG một đợt không bị hiểu nhầm là hai đợt MT khác nhau, không cảnh báo giả', () => {
+  // checkSkillWeekMove chỉ so với ĐỢT KHÁC (attempt_id khác) — kỹ năng khác của CÙNG đợt không vào vòng lặp others.
+  const row = conn.prepare(
+    `SELECT a.id AS attemptId, s.skill, s.planned_period_id
+       FROM assessment_attempts a JOIN attempt_skills s ON s.attempt_id = a.id
+      WHERE a.class_id = ? AND a.status != 'cancelled' AND s.skill = 'speaking'
+        AND s.required = 1 AND s.planned_period_id IS NOT NULL LIMIT 1`,
+  ).get(mbClass) as any;
+  assert(row, 'Seed thiếu một đợt FT có Speaking đã xếp tuần để kiểm T13');
+  const rlw = conn.prepare(
+    `SELECT s.planned_period_id FROM attempt_skills s
+      WHERE s.attempt_id = ? AND s.skill IN ('listening','reading','writing1','writing2') AND s.planned_period_id IS NOT NULL LIMIT 1`,
+  ).get(row.attemptId) as any;
+  if (!rlw) return; // đợt này không tách tuần RLW/S — không kiểm được tổ hợp này, bỏ qua thay vì báo sai
+  const check = skillSchedule.checkSkillWeekMove({
+    attemptId: row.attemptId, skill: 'speaking', newWeekStart: week.periodById(rlw.planned_period_id)!.week_start,
+  });
+  assert(
+    check.blockers.length === 0 && check.warnings.length === 0,
+    `Dời Speaking về đúng tuần RLW của CÙNG đợt không được cảnh báo gì, đang ra: ${JSON.stringify(check)}`,
+  );
+});
+
+check('T07 · Kế hoạch Test chỉ hiện học viên lớp Fast Track, KHÔNG có Normal', () => {
+  const q = planning.noPlanQueue(P.admin, { includePlanned: true });
+  const normalClass = classId('MB-FOU 12');
+  assert(q.rows.length > 0, 'Cần có học viên FT trong hàng đợi để kiểm');
+  assert(
+    q.rows.every((r: any) => r.classId !== normalClass),
+    'Kế hoạch Test không được hiện học viên của lớp Normal (MB-FOU 12)',
+  );
+});
+
+check('T07 · Sửa lượt cũ (dời lịch một kỹ năng) KHÔNG tạo lượt trùng', () => {
+  const { attemptId, periodId } = normalWritingAttemptSkill();
+  const before = (conn.prepare('SELECT COUNT(*) n FROM assessment_attempts').get() as any).n;
+  const otherPeriod = periodOf(addDays(week.periodById(periodId)!.week_start, 14));
+  const r = skillSchedule.setSkillWeek(P.normalCoreTeacher, attemptId, 'writing', otherPeriod, {});
+  assert(r.ok, 'Phải dời lịch được');
+  const after = (conn.prepare('SELECT COUNT(*) n FROM assessment_attempts').get() as any).n;
+  assert(after === before, `Sửa lịch một kỹ năng không được tạo thêm lượt (đợt) nào, chênh lệch ${after - before}`);
+  const row = conn.prepare('SELECT planned_period_id FROM attempt_skills WHERE attempt_id = ? AND skill = ?')
+    .get(attemptId, 'writing') as any;
+  assert(row.planned_period_id === otherPeriod, 'Tuần mới phải được ghi đúng vào ĐÚNG dòng attempt_skills cũ, không phải dòng mới');
+});
+
+check('T09 · Đợt FT định trước chỉ L/R: đủ điểm L/R là đợt hoàn tất, không chờ S/W, không bịa Overall', () => {
+  // Định trước chỉ L/R = Writing và Speaking bị loại khỏi phạm vi (skippedSkills dùng tên
+  // ASSESSED_SKILLS — 'writing' gộp cả W1/W2, không phải 'writing1'/'writing2').
+  const r = scoring.evaluateAttempt(6.5, 1, { listening: 6.0, reading: 6.5 }, ['writing', 'speaking']);
+  assert(r.complete === true, `Đủ điểm L/R (đã loại S/W khỏi phạm vi) phải là ĐỦ, đang ra complete=${r.complete}`);
+  assert(r.evaluable === true, 'Đợt phải evaluable — không chờ S/W vì chúng không thuộc phạm vi yêu cầu');
+  assert(r.overall === null, `KHÔNG được bịa Overall khi chỉ có 2/4 cấu phần, đang ra overall=${r.overall}`);
+  assert(r.required.length === 2 && r.required.includes('listening') && r.required.includes('reading'),
+    `required phải đúng chỉ L/R, đang ra: ${r.required.join(',')}`);
 });
 
 console.log(`\n${'='.repeat(60)}`);

@@ -39,7 +39,9 @@ type Detail = {
   history: any[]; sosCase: any; caseSteps: any[]; caseHistory: any[]; tasks: any[];
   viewer: {
     canPlanWeek: boolean; canCancel: boolean;
-    canSkipSkill: boolean; canOverrideDeadline: boolean; canSetSitStatus: boolean;
+    canSkipSkill: boolean; canOverrideDeadline: boolean;
+    /** Kỹ năng dời lịch/xác nhận thi được — GVCN·GVBM Normal + Quản lý mọi kỹ năng (SCH-01). */
+    moveableSkills: string[];
     canEditSos: boolean; editableSkills: string[];
   };
 };
@@ -476,10 +478,10 @@ function SkillScheduleCard({ d, onDone }: { d: Detail; onDone: () => void }) {
                 </td>
                 <td className="td">
                   <div className="flex flex-wrap gap-1.5">
-                    {d.viewer.canPlanWeek && editable && r.required && !r.scored && r.progress !== 'cancelled' && (
+                    {d.viewer.moveableSkills.includes(r.skill) && editable && r.required && !r.scored && r.progress !== 'cancelled' && (
                       <button className="btn btn-sm" onClick={() => setWeekFor(r)}>Đổi tuần</button>
                     )}
-                    {d.viewer.canSetSitStatus && editable && r.required && !r.scored
+                    {d.viewer.moveableSkills.includes(r.skill) && editable && r.required && !r.scored
                       && r.progress !== 'cancelled' && r.periodCode && (
                       <>
                         {r.sitStatus !== 'sat' && (
@@ -632,6 +634,15 @@ function SkillWeekModal({ open, row, attemptId, onClose, onDone }: {
             {(periods.data ?? []).map((p) => <option key={p.id} value={p.id}>{p.code} · {p.range}</option>)}
           </select>
         </label>
+        {/* PREVIEW "tuần cũ → tuần mới" TRƯỚC KHI LƯU — sổ §D/T07: thấy rõ đang đổi gì, không đoán. */}
+        {periodId && (() => {
+          const next = (periods.data ?? []).find((p) => p.id === periodId);
+          return next ? (
+            <p className="text-sm text-slate-200 m-0">
+              {row?.periodCode ?? 'chưa có tuần'} <strong>→</strong> {next.code} · {next.range}
+            </p>
+          ) : null;
+        })()}
         <label className="block">
           <span className="label">Lý do</span>
           <input className="field" value={reason} onChange={(e) => setReason(e.target.value)}
