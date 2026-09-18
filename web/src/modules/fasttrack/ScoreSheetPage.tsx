@@ -21,6 +21,18 @@ type Sheet = {
 };
 
 /**
+ * "01/02 – 07/02" — khoảng ngày của một tuần, viết như mọi dòng khác trong ô chọn tuần.
+ *
+ * Tuần mở thẳng từ đường dẫn đi qua đường bảng điểm chứ không qua danh sách tuần, mà đường
+ * ấy không trả về sẵn chuỗi khoảng ngày. Dựng lại ở đây rẻ hơn là thêm một trường chỉ để
+ * phục vụ đúng một chỗ.
+ */
+function rangeOf(from: string, to: string): string {
+  const dm = (d: string) => `${d.slice(8, 10)}/${d.slice(5, 7)}`;
+  return `${dm(from)} – ${dm(to)}`;
+}
+
+/**
  * Bảng nhập điểm cho cả lớp trong một tuần.
  * Điều hướng bàn phím: Enter/↓ xuống ô cùng cột, ↑ lên, ←/→ sang kỹ năng khác cùng dòng.
  */
@@ -61,7 +73,7 @@ export default function ScoreSheetPage() {
     ? (list.find((p) => p.id === periodId)
       ?? (current.data?.id === periodId ? current.data : null)
       ?? (data?.period?.id === periodId
-        ? { ...data.period, range: data.period.code }
+        ? { ...data.period, range: rangeOf(data.period.weekStart, data.period.weekEnd) }
         : null))
     : null;
   const weeks = chosen && !list.some((p) => p.id === chosen.id)

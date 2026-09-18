@@ -1,7 +1,13 @@
 import { useState } from 'react';
 import { Empty, ErrorState, Level, Skeleton, Status } from '../../ui/ui.tsx';
 import { fmtBand, fmtDate, sosLabel, sosTone } from '../../lib/format.ts';
+import { api, invalidate } from '../../lib/api.ts';
+import { useSession } from '../../lib/session.tsx';
+import { useToast } from '../../ui/Toast.tsx';
 import { CasePanel } from './CasePanel.tsx';
+import {
+  OUTCOME_MARK, isContactKind, outcomeLabelFor, outcomesFor,
+} from '@shared/domain/index.ts';
 
 /**
  * TIẾN ĐỘ VÀ HỖ TRỢ THEO KỸ NĂNG — khối chính của hồ sơ học viên (mục 4.2).
@@ -36,6 +42,7 @@ type CaseCard = {
   openedOn: string | null; touchedOn: string | null;
   issueCode: string | null; issueLabel: string | null;
   summary: string | null; behaviour: boolean;
+  canEdit: boolean;
   plans: Plan[];
   reports: { on: string; by: string | null; skill: string | null; summary: string }[];
   attempts: { attemptNo: number; week: string | null }[];
@@ -278,8 +285,10 @@ function CaseCardView({ c, skillLabel, onOpenCase, onChanged }: {
           {c.plans.length === 0 ? (
             <p className="text-xs text-amber-200/90 m-0">Chưa có phương án nào — case này đang chờ người quyết.</p>
           ) : (
-            <div className="space-y-2">
-              {c.plans.map((p) => <PlanBlock key={p.id} p={p} behaviour={c.behaviour} />)}
+            <div className="rounded-lg border px-2.5 py-2" style={{ borderColor: 'var(--line)' }}>
+              {c.plans.map((p) => (
+                <PlanRow key={p.id} p={p} track={c.track} canEdit={c.canEdit} onChanged={onChanged} />
+              ))}
             </div>
           )}
 
@@ -302,7 +311,7 @@ function CaseCardView({ c, skillLabel, onOpenCase, onChanged }: {
               </Chip>
             )}
             <button type="button" className="btn btn-sm btn-ghost" onClick={() => setHistory(!history)}>
-              {history ? 'Ẩn lịch sử hỗ trợ' : 'Mở lịch sử hỗ trợ'}
+              {history ? 'Ẩn lịch sử hỗ trợ' : 'Lịch sử và kết thúc phương án'}
             </button>
             {onOpenCase && (
               <button type="button" className="btn btn-sm btn-ghost" onClick={() => onOpenCase(c.id)}>
@@ -323,89 +332,202 @@ function CaseCardView({ c, skillLabel, onOpenCase, onChanged }: {
 }
 
 /**
- * MỘT PHƯƠNG ÁN — ba cột, ba câu hỏi khác nhau.
+ * MỘT PHƯƠNG ÁN — MỘT DÒNG, và ghi kết quả NGAY TRONG DÒNG ĐÓ.
  *
- * Hạn LÀM và hạn CẬP NHẬT là hai mốc khác nhau của cùng một phương án, nên chúng đứng tách
- * dòng. Gộp lại thành "hạn 30/08" thì người đọc không biết mình đang trễ việc gì.
+ * Bản trước bày mỗi phương án thành một khối ba cột. Ba cột nói được ba câu, nhưng tốn ba
+ * lần chiều ngang cho ba câu ngắn, và việc làm nhiều nhất — ghi kết quả — lại không có mặt
+ * ở đó: phải mở trang riêng mới ghi được.
+ *
+ * Nay một dòng nói đủ: phương án là gì · ai làm · hạn · kết quả gần nhất, và nút ghi kết
+ * quả mở form ngay bên dưới chính dòng ấy.
+ *
+ * Hạn LÀM và hạn DỰ KIẾN XONG vẫn là hai mốc khác nhau và vẫn có nhãn riêng — gộp thành
+ * "hạn 30/08" thì người đọc không biết mình đang trễ việc gì.
  */
-function PlanBlock({ p, behaviour }: { p: Plan; behaviour: boolean }) {
+function PlanRow({ p, track, canEdit, onChanged }: {
+  p: Plan; track: string; canEdit: boolean; onChanged?: () => void;
+}) {
+  const [editing, setEditing] = useState(false);
   const running = p.status === 'planned' || p.status === 'started';
+  /* Việc TRAO ĐỔI (gặp em, gọi phụ huynh) không có kết quả chuyên môn — chỉ xác nhận đã làm. */
+  const contact = isContactKind(p.kind);
+
   return (
-    <div className="rounded-lg border grid gap-x-3 gap-y-2 p-2.5 sm:grid-cols-3"
-         style={{ borderColor: 'var(--line)' }}>
-      <div className="min-w-0">
-        <span className="block text-[10px] uppercase tracking-wide text-slate-500">
-          {running ? 'Phương án đang làm' : 'Phương án đã xong'}
+    <div className="border-t first:border-t-0 py-2 first:pt-0 last:pb-0" style={{ borderColor: 'var(--line)' }}>
+      <div className="grid gap-x-3 gap-y-1 items-start grid-cols-[1rem_minmax(0,1fr)_auto]">
+        <span aria-hidden className={`text-xs leading-5 ${running ? 'text-sky-300' : 'text-emerald-300'}`}>
+          {running ? '▶' : '✓'}
         </span>
-        <span className="block text-sm text-slate-100 leading-snug">{p.name}</span>
-        <span className="block text-[11px] text-slate-500 mt-0.5">
-          {p.performer ?? 'chưa có người thực hiện'}
-          {p.startedOn && <> · bắt đầu {fmtDate(p.startedOn)}</>}
-          {p.completedOn && <> · xong {fmtDate(p.completedOn)}</>}
+
+        <div className="min-w-0">
+          <span className={`block text-sm leading-snug ${running ? 'text-slate-100' : 'text-slate-300'}`}>
+            {p.name}
+          </span>
+          <span className="block text-[11px] text-slate-500 mt-0.5">
+            {p.performer ?? 'chưa có người thực hiện'}
+            {p.startedOn && <> · từ {fmtDate(p.startedOn)}</>}
+            {p.completedOn && <> → {fmtDate(p.completedOn)}</>}
+            {running && !contact && !p.lastOutcomeLabel && <> · chưa có kết quả</>}
+          </span>
+        </div>
+
+        <div className="flex flex-col items-end gap-1 text-right">
+          {p.pendingApproval ? (
+            <>
+              <span className="text-[11px] text-sky-300">Chờ Quản lý trả lời</span>
+              {p.approvalDue && (
+                <span className="text-[11px] text-slate-500">hạn {fmtDate(p.approvalDue)}</span>
+              )}
+            </>
+          ) : (
+            <>
+              {p.lastOutcomeLabel && (
+                <span className={`text-[11px] rounded px-1.5 py-0.5 border whitespace-nowrap ${outcomeTone(p.lastOutcome)}`}
+                  style={{ borderColor: 'var(--line)' }}>
+                  {OUTCOME_MARK[p.lastOutcome ?? ''] ?? ''} {p.lastOutcomeLabel}
+                  <span className="text-slate-500"> · {fmtDate(p.lastOutcomeOn)}</span>
+                </span>
+              )}
+              {contact && !running && !p.lastOutcomeLabel && (
+                <span className="text-[11px] text-slate-400">
+                  {p.statusLabel}{p.completedOn ? ` · ${fmtDate(p.completedOn)}` : ''}
+                </span>
+              )}
+              {running && <PlanDue p={p} />}
+              {running && canEdit && !editing && (
+                <button type="button" className="btn btn-sm" onClick={() => setEditing(true)}>
+                  {contact ? 'Đánh dấu đã làm' : 'Ghi kết quả'}
+                </button>
+              )}
+            </>
+          )}
+        </div>
+      </div>
+
+      {editing && (
+        <InlineResult p={p} track={track} contact={contact}
+          onClose={() => setEditing(false)} onDone={() => onChanged?.()} />
+      )}
+    </div>
+  );
+}
+
+/** Hạn LÀM và hạn DỰ KIẾN XONG — hai mốc, hai nhãn, không gộp. */
+function PlanDue({ p }: { p: Plan }) {
+  if (!p.actionDue && !p.followupDue) {
+    return <span className="text-[11px] text-slate-600">chưa đặt hạn</span>;
+  }
+  return (
+    <span className="text-[11px] whitespace-nowrap">
+      {p.actionDue && (
+        <span className={p.actionOverdue ? 'text-rose-300' : 'text-slate-500'}>
+          {p.actionOverdue ? '⚠ quá hạn làm ' : 'hạn làm '}{fmtDate(p.actionDue)}
+        </span>
+      )}
+      {p.actionDue && p.followupDue && <span className="text-slate-600"> · </span>}
+      {p.followupDue && (
+        <span className={p.followupOverdue ? 'text-rose-300' : 'text-slate-500'}>
+          dự kiến xong {fmtDate(p.followupDue)}
+        </span>
+      )}
+    </span>
+  );
+}
+
+/**
+ * GHI KẾT QUẢ NGAY TRONG THẺ — không ngăn kéo, không sang trang.
+ *
+ * Form này CỐ Ý chỉ làm MỘT việc: ghi một chu kỳ theo dõi, thứ người dạy làm hàng tuần.
+ *
+ * KẾT THÚC phương án là quyết định khác hẳn — nó buộc phải trả lời "rồi sao nữa", có khi
+ * kéo theo cả một phương án mới thay thế — nên nó KHÔNG nhét vào đây. Nhét vào thì đúng
+ * bằng cái form cũ, chỉ đổi chỗ đứng. Nó vẫn nằm ở khối đầy đủ ngay dưới thẻ, và dòng chú
+ * thích cuối form này chỉ đường sang đó.
+ */
+function InlineResult({ p, track, contact, onClose, onDone }: {
+  p: Plan; track: string; contact: boolean;
+  onClose: () => void; onDone: () => void;
+}) {
+  const { session } = useSession();
+  const toast = useToast();
+  const today = session?.demoDate ?? '';
+  const [outcome, setOutcome] = useState('');
+  const [note, setNote] = useState('');
+  const [on, setOn] = useState(today);
+  const [busy, setBusy] = useState(false);
+
+  const noteOk = note.trim().length >= 8;
+  const ready = contact ? true : !!outcome && noteOk;
+
+  const save = async () => {
+    setBusy(true);
+    try {
+      if (contact) {
+        await api.post(`/interventions/${p.id}/complete`, {
+          doneOn: on, note: note.trim() || null,
+        });
+      } else {
+        await api.post(`/interventions/${p.id}/result`, {
+          mode: 'monitor', outcome, note, observedOn: on,
+        });
+      }
+      invalidate('/cases'); invalidate('/my-work');
+      invalidate('/students'); invalidate('/overview');
+      toast.push('ok', contact ? 'Đã ghi nhận' : 'Đã ghi kết quả — phương án vẫn đang chạy');
+      onDone(); onClose();
+    } catch (e: any) {
+      toast.push('error', e?.message ?? 'Không lưu được');
+    } finally { setBusy(false); }
+  };
+
+  return (
+    <div className="rounded-lg mt-2 ml-4 p-2.5 space-y-2" style={{ background: 'var(--surface-1)' }}>
+      {!contact && (
+        <>
+          <span className="block text-[11px] text-slate-400">Chu kỳ vừa rồi em thế nào</span>
+          <div className="flex flex-wrap gap-1.5">
+            {outcomesFor(track).map((o) => (
+              <button key={o} type="button"
+                className={`btn btn-sm ${outcome === o ? 'btn-primary' : ''}`}
+                onClick={() => setOutcome(o)}>
+                {OUTCOME_MARK[o] ?? ''} {outcomeLabelFor(track, o)}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+
+      <textarea className="field w-full" rows={2} value={note}
+        onChange={(e) => setNote(e.target.value)}
+        placeholder={contact
+          ? 'Đã trao đổi những gì (không bắt buộc)'
+          : 'Tiến bộ ở đâu, còn kẹt chỗ nào, tuần tới làm gì'} />
+      {!contact && note.length > 0 && !noteOk && (
+        <span className="block text-[11px] text-rose-300">
+          Ghi chú phải nói rõ quan sát được gì — ít nhất 8 ký tự.
+        </span>
+      )}
+
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <label className="flex items-center gap-1.5 text-[11px] text-slate-400">
+          {contact ? 'Ngày làm' : 'Ngày ghi'}
+          <input type="date" className="field" style={{ width: '9.5rem' }}
+            value={on} max={today} onChange={(e) => setOn(e.target.value)} />
+        </label>
+        <span className="flex gap-1.5">
+          <button type="button" className="btn btn-sm" onClick={onClose} disabled={busy}>Huỷ</button>
+          <button type="button" className="btn btn-sm btn-primary" disabled={busy || !ready} onClick={save}>
+            {busy ? 'Đang lưu…' : 'Lưu'}
+          </button>
         </span>
       </div>
 
-      <div className="min-w-0">
-        <span className="block text-[10px] uppercase tracking-wide text-slate-500">
-          {behaviour ? 'Đã thực hiện' : 'Kết quả gần nhất'}
-        </span>
-        {behaviour ? (
-          <>
-            <span className="block text-sm text-slate-200 leading-snug">{p.statusLabel}</span>
-            {p.completedOn && (
-              <span className="block text-[11px] text-slate-500 mt-0.5">ngày {fmtDate(p.completedOn)}</span>
-            )}
-          </>
-        ) : p.lastOutcomeLabel ? (
-          <>
-            <span className={`block text-sm leading-snug ${outcomeTone(p.lastOutcome)}`}>
-              {p.lastOutcomeLabel}
-            </span>
-            <span className="block text-[11px] text-slate-500 mt-0.5">
-              cập nhật {fmtDate(p.lastOutcomeOn)}
-            </span>
-          </>
-        ) : (
-          <>
-            <span className="block text-sm text-slate-400 leading-snug">Chưa có kết quả</span>
-            <span className="block text-[11px] text-slate-500 mt-0.5">cần thêm một lần đánh giá</span>
-          </>
-        )}
-      </div>
-
-      <div className="min-w-0">
-        <span className="block text-[10px] uppercase tracking-wide text-slate-500">Việc tiếp theo</span>
-        {p.pendingApproval ? (
-          <>
-            <span className="block text-sm text-sky-300 leading-snug">Chờ Quản lý trả lời</span>
-            {p.approvalDue && (
-              <span className="block text-[11px] text-slate-500 mt-0.5">hạn {fmtDate(p.approvalDue)}</span>
-            )}
-          </>
-        ) : !running ? (
-          <span className="block text-sm text-slate-500 leading-snug">Đã khép lại</span>
-        ) : (
-          <>
-            <span className="block text-sm text-slate-200 leading-snug">
-              {behaviour ? 'Đánh dấu đã làm' : 'Ghi cập nhật tuần'}
-            </span>
-            <span className="block text-[11px] mt-0.5">
-              {p.actionDue && (
-                <span className={p.actionOverdue ? 'text-rose-300' : 'text-slate-500'}>
-                  {p.actionOverdue ? '⚠ quá hạn làm ' : 'hạn làm '}{fmtDate(p.actionDue)}
-                </span>
-              )}
-              {p.actionDue && p.followupDue && <span className="text-slate-600"> · </span>}
-              {p.followupDue && (
-                <span className={p.followupOverdue ? 'text-rose-300' : 'text-slate-500'}>
-                  dự kiến xong {fmtDate(p.followupDue)}
-                </span>
-              )}
-              {!p.actionDue && !p.followupDue && <span className="text-slate-600">chưa đặt hạn</span>}
-            </span>
-          </>
-        )}
-      </div>
+      {!contact && (
+        <p className="text-[11px] text-slate-500 m-0">
+          Lưu xong phương án <strong>vẫn đang chạy</strong>. Muốn kết thúc hẳn hoặc thay bằng
+          phương án khác thì mở “Lịch sử và kết thúc phương án” ở dưới thẻ này.
+        </p>
+      )}
     </div>
   );
 }

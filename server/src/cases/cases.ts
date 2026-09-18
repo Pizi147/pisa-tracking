@@ -1968,6 +1968,15 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
   require_(p, PERMISSIONS.ATTEMPT_VIEW, { classId: enr?.class_id ?? null, studentId },
     'Bạn không có quyền xem học viên này.');
 
+  /*
+   * ĐƯỢC SỬA HAY KHÔNG — trả về sẵn cùng bảng kỹ năng.
+   *
+   * Hồ sơ học viên nay ghi kết quả NGAY TRONG THẺ CASE, nên nó phải biết trước có được ghi
+   * hay không: người chỉ có quyền xem thì không thấy nút, thay vì bấm vào rồi nhận một câu
+   * từ chối. Một lần hỏi cho cả bảng, không hỏi lại cho từng case.
+   */
+  const canEdit = can(p, PERMISSIONS.SOS_EDIT, { classId: enr?.class_id ?? null, studentId });
+
   const cycle = cycleId
     ? (conn.prepare('SELECT * FROM learning_cycles WHERE id = ? AND student_id = ?').get(cycleId, studentId) as any)
     : currentCycle(studentId);
@@ -2229,6 +2238,7 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
           parallel: !!c.parallel,
           openedOn: c.detected_at ?? null,
           touchedOn: lastTouch(c.id) ?? c.detected_at ?? null,
+          canEdit,
           /* Đủ thứ để vẽ MỘT THẺ CASE mà không phải gọi thêm một đường nữa (mục 1 · 2). */
           ...caseCardOf(c.id, c),
         }))
