@@ -46,7 +46,8 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
   // Quản trị phần mềm: toàn quyền, kể cả các ngoại lệ sửa sai về lịch.
   system_admin: [
     'plan.week', 'schedule.move', 'attempt.cancel', 'attempt.skip_skill',
-    'deadline.override', 'attempt.view', 'score.override', 'case.view', 'sos.edit', 'case.close', 'case.approve',
+    'deadline.override', 'attempt.view', 'score.override', 'case.view', 'sos.report', 'sos.edit',
+    'case.close', 'case.approve',
     'class.assign', 'class.edit', 'student.view', 'student.edit',
     'meeting.view', 'meeting.edit', 'admin.config',
   ],
@@ -55,7 +56,7 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
     'plan.week', 'schedule.move', 'attempt.cancel', 'attempt.skip_skill',
     'deadline.override', 'attempt.view',
     // Quản lý đóng được case trong chi nhánh mình; GVCN đóng case lớp mình (kiểm theo phân công).
-    'case.view', 'sos.edit', 'case.close', 'case.approve', 'class.assign', 'class.edit',
+    'case.view', 'sos.report', 'sos.edit', 'case.close', 'case.approve', 'class.assign', 'class.edit',
     'student.view', 'student.edit', 'meeting.view', 'meeting.edit',
   ],
   /*
@@ -64,9 +65,12 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
    * `student.edit` vào đây sau khi bỏ vai Admin chi nhánh, nhưng KHÔNG phải mọi giáo viên
    * đều dùng được: `teacherAllows` siết nó xuống đúng GVCN của chính lớp đó. GVCN vẫn
    * KHÔNG vì chủ nhiệm mà có thêm quyền về lịch MT hay quyền nhập điểm kỹ năng khác.
+   *
+   * `sos.report` (báo vấn đề) rộng — bất kỳ môn nào trong lớp. `sos.edit` (sửa/xử lý case đã
+   * có) hẹp hơn — `teacherAllows` siết đúng kỹ năng (Học thuật) hoặc GVCN (Ý thức), AUTH-01.
    */
   teacher: ['attempt.view', 'score.edit', 'estimate.edit', 'schedule.move',
-    'case.view', 'sos.edit', 'student.view', 'student.edit'],
+    'case.view', 'sos.report', 'sos.edit', 'student.view', 'student.edit'],
 };
 
 /*

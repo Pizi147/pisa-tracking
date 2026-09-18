@@ -883,7 +883,7 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
     viewer: {
       canEdit: can(p, PERMISSIONS.STUDENT_EDIT, { studentId }),
       canPlanWeek: can(p, PERMISSIONS.PLAN_WEEK, { studentId }),
-      canReport: can(p, PERMISSIONS.SOS_EDIT, { classId: current?.class_id ?? null, studentId }),
+      canReport: can(p, PERMISSIONS.SOS_REPORT, { classId: current?.class_id ?? null, studentId }),
       canClose: canCloseCase(p, { class_id: current?.class_id ?? null, student_id: studentId }),
     },
   };

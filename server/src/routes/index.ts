@@ -801,6 +801,16 @@ api.post('/cases/report', requireAuth, wrap((req) => {
   return caseSvc.reportIssue(principalOf(req), req.body ?? {});
 }));
 
+/**
+ * NHẬP BÙ MỘT CASE ĐÃ XỬ LÝ XONG TỪ LÂU (PR-C Task 3, mục 10.3). Xem `backfillCase` ở
+ * `cases.ts` — reuse trọn vẹn `reportIssue`/`recordIntervention`/`closeCaseOutcome`, chỉ
+ * khác ở những gì KHÔNG được sinh ra (bảy chốt chặn mục 10.4).
+ */
+api.post('/cases/backfill', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return caseSvc.backfillCase(principalOf(req), req.body ?? {});
+}));
+
 /*
  * TÍN HIỆU TỪ ĐIỂM (mục 6.2) — hàng riêng, KHÔNG trộn vào danh sách case.
  *

@@ -204,11 +204,32 @@ function teacherAllows(p: Principal, permission: string, ctx: Ctx): boolean {
     case PERMISSIONS.ESTIMATE_EDIT:
       return hasAssignment(p, ctx, 'skill');
 
-    // Xem và ghi nhận xử lý: chỉ trong lớp được phân công.
+    // Xem: chỉ trong lớp được phân công, bất kỳ môn nào (xem KHÔNG cần đúng môn).
     case PERMISSIONS.ATTEMPT_VIEW:
     case PERMISSIONS.STUDENT_VIEW:
-    case PERMISSIONS.SOS_EDIT:
       return ctx.anyScope === true || hasAssignment(p, ctx, 'any');
+
+    /*
+     * BÁO VẤN ĐỀ MỚI (sổ §13.12: "GV trong lớp có thể báo vấn đề") — rộng, bất kỳ môn nào
+     * trong lớp, khớp `ATTEMPT_VIEW`/`STUDENT_VIEW`. Đây KHÔNG phải AUTH-01 — báo được không
+     * có nghĩa sửa/xử lý được, đó là `SOS_EDIT` ngay dưới.
+     */
+    case PERMISSIONS.SOS_REPORT:
+      return ctx.anyScope === true || hasAssignment(p, ctx, 'any');
+
+    /*
+     * SỬA/XỬ LÝ MỘT CASE ĐÃ CÓ (AUTH-01) — tách khỏi cụm "xem", siết đúng phạm vi:
+     *
+     *   Học thuật (ctx.skill có giá trị)  → đúng kỹ năng mình dạy (`hasAssignment(..., 'skill')`)
+     *   Ý thức (ctx.skill rỗng)           → chỉ GVCN (`hasAssignment(..., 'core')`)
+     *
+     * GVCN luôn qua được ở cả hai nhánh (dạy kỹ năng nào cũng là GVCN của lớp), nên viết một
+     * điều kiện OR duy nhất là đủ, không cần biết trước đang ở nhánh nào. `hasAssignment`
+     * với `need='skill'` đã tự trả `false` khi `ctx.skill` rỗng — nên thiếu truyền `ctx.skill`
+     * ở nơi gọi là KHOÁ HẾT chứ không phải MỞ HẾT; nơi gọi phải truyền đúng.
+     */
+    case PERMISSIONS.SOS_EDIT:
+      return ctx.anyScope === true || hasAssignment(p, ctx, 'core') || hasAssignment(p, ctx, 'skill');
 
     /*
      * SỬA HỒ SƠ HỌC VIÊN: CHỈ GVCN, và chỉ học viên của chính lớp mình chủ nhiệm.
@@ -266,6 +287,9 @@ export function explain(p: Principal, permission: string, ctx: Ctx): string {
   if (holders.every((g) => g.roleKey === 'teacher')) {
     if (permission === PERMISSIONS.SCORE_EDIT) return 'Bạn chỉ nhập được điểm của kỹ năng mình được phân công.';
     if (permission === PERMISSIONS.ESTIMATE_EDIT) return 'Bạn chỉ ước lượng được kỹ năng mình được phân công.';
+    if (permission === PERMISSIONS.SOS_EDIT) {
+      return 'Bạn chỉ sửa/xử lý được case đúng kỹ năng mình dạy — case Ý thức thì chỉ GVCN.';
+    }
     if (permission === PERMISSIONS.SCHEDULE_MOVE) {
       return 'Bạn chỉ dời được lịch lớp Normal mình phụ trách — Fast Track vẫn do Quản lý xếp.';
     }

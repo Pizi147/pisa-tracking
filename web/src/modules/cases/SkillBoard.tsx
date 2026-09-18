@@ -48,6 +48,8 @@ type CaseCard = {
   attempts: { attemptNo: number; week: string | null }[];
   followUntil: string | null; followOverdue: boolean;
   outcomeLabel: string | null; outcomeNote: string | null; closedOn: string | null;
+  /** NHẬP BÙ (PR-C Task 3, chốt 7) — ai ghi lại, ghi lúc nào. Null khi ghi tại chỗ như bình thường. */
+  backfilledBy: string | null; backfilledOn: string | null;
 };
 export type Row = {
   category: string; label: string; short: string;
@@ -266,6 +268,12 @@ function CaseCardView({ c, skillLabel, onOpenCase, onChanged }: {
             {c.carriedOver && <> · từ lộ trình trước</>}
             {c.parallel && <> · case song song</>}
           </p>
+          {/* NHẬP BÙ (mục 10.3 Step 5) — ghi rõ ngay trên thẻ case, không giấu trong tooltip. */}
+          {c.backfilledOn && (
+            <p className="text-[11px] text-amber-200/80 m-0">
+              nhập bù{c.backfilledBy ? ` · ${c.backfilledBy}` : ''} ghi ngày {fmtDate(c.backfilledOn)}
+            </p>
+          )}
           {c.summary && <p className="text-sm text-slate-300 m-0 leading-relaxed">{c.summary}</p>}
 
           {/* NHÓM Ý THỨC/KHÁC: bằng chứng là BÁO CÁO NGUỒN, không phải một con điểm. */}

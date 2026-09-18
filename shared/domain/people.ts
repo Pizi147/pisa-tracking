@@ -77,6 +77,15 @@ export const PERMISSIONS = {
    * việc của văn phòng. Gộp hai quyền làm một thì không thể nói được câu đó.
    */
   CASE_VIEW: 'case.view',
+  /**
+   * BÁO MỘT VẤN ĐỀ MỚI (AUTH-01) — tách khỏi `SOS_EDIT`. Bất kỳ giáo viên nào có phân công
+   * trong lớp đều báo được, kể cả trái môn: sổ §13.12 nói rõ "GV trong lớp có thể báo vấn
+   * đề". Báo được KHÔNG có nghĩa được sửa/xử lý — đó là `SOS_EDIT`, siết theo đúng kỹ năng
+   * (Học thuật) hoặc GVCN (Ý thức). Gộp chung hai quyền là đúng lỗ hổng AUTH-01: GV Listening
+   * "báo được" thì cũng "sửa được" case Reading trái môn.
+   */
+  SOS_REPORT: 'sos.report',
+  /** Sửa/xử lý một case ĐÃ CÓ — đúng kỹ năng mình dạy (Học thuật) hoặc GVCN (Ý thức). */
   SOS_EDIT: 'sos.edit',
   /** Kết thúc theo dõi một case. GVCN của lớp và Quản lý — không phải mọi giáo viên. */
   CASE_CLOSE: 'case.close',
@@ -112,7 +121,8 @@ export const PERMISSION_LABEL: Record<string, string> = {
   'score.override': 'Nhập bù điểm ngoài phân công',
   'estimate.edit': 'Cập nhật Đánh giá GV',
   'case.view': 'Xem danh sách case học vụ',
-  'sos.edit': 'Ghi nhận xử lý case học vụ',
+  'sos.report': 'Báo vấn đề mới',
+  'sos.edit': 'Sửa và xử lý case học vụ (đúng kỹ năng hoặc GVCN)',
   'case.close': 'Đóng case học vụ',
   'case.approve': 'Duyệt phương án hỗ trợ',
   'class.assign': 'Phân công giáo viên vào lớp',

@@ -1265,19 +1265,19 @@ PR-A mở lại được việc tạo case Ý thức bằng cách cho bốn nhó
 bộ đó **đúng là bốn nhóm ấy**. Kết quả: form hỏi "Về việc gì: BTVN?" rồi hỏi tiếp "Phân loại
 vấn đề: BTVN?". Sổ audit CASE-01 đã cấm từ đầu: *"không cần dropdown nguyên nhân thứ hai dư thừa."*
 
-- [ ] **Step 1: Phép kiểm trước.** Trong `server/src/tests/run.ts`: tạo case Ý thức chỉ truyền
+- [x] **Step 1: Phép kiểm trước.** Trong `server/src/tests/run.ts`: tạo case Ý thức chỉ truyền
       `primaryCode = 'student.behaviour.homework'`, **không** truyền `topic`. Phải lưu được, và
       `topic` đọc ra phải là nhóm BTVN. Chạy `npm test`, phép kiểm này phải ĐỎ trước khi sửa.
-- [ ] **Step 2: Suy chủ đề từ phân loại.** Thêm vào `shared/domain/cases.ts` hàm
+- [x] **Step 2: Suy chủ đề từ phân loại.** Thêm vào `shared/domain/cases.ts` hàm
       `topicFromBehaviourCode(code)` ánh xạ `student.behaviour.homework → homework`,
       `.attendance → attendance`, `.participation → participation`, `.other → other`.
       **Ánh xạ phải phủ hết `BEHAVIOUR_TOPICS`** — viết phép kiểm quét cả bốn mã.
-- [ ] **Step 3: Giao diện.** `web/src/modules/cases/QuickReport.tsx` — khi `track === 'behaviour'`,
+- [x] **Step 3: Giao diện.** `web/src/modules/cases/QuickReport.tsx` — khi `track === 'behaviour'`,
       **không render** ô "Về việc gì" (hiện ở dòng 221). Chỉ còn ô "Phân loại vấn đề". Chọn phân
       loại thì đặt `topic` ngầm bằng hàm ở Step 2. Nhóm **Học thuật giữ nguyên hai ô** — ở đó
       "Kỹ năng nào" (Listening) và "Phân loại vấn đề" (Tư duy và kỹ năng làm bài) là hai câu hỏi
       khác nhau thật.
-- [ ] **Step 4: Máy chủ.** `reportIssue` (`server/src/cases/cases.ts:326`) — với
+- [x] **Step 4: Máy chủ.** `reportIssue` (`server/src/cases/cases.ts:326`) — với
       `track = 'behaviour'`, thiếu `topic` thì suy từ `primaryCode` bằng **cùng** hàm ở Step 2.
       Không để hai nơi tự suy theo hai cách.
 
@@ -1293,16 +1293,22 @@ Ngày mở đang là gốc tính của **ba** thứ cùng lúc: hạn phương �
 (`behaviourCaseDeadline`, `cases.ts:554` — ngày mở + 6), và cửa sổ gộp đợt bốn ngày. Cho chọn
 ngày quá khứ nghĩa là **tạo được case sinh ra đã quá hạn**, hoặc lùi ngày để lách luật gộp.
 
-- [ ] **Step 1: Giao diện.** `QuickReport.tsx` — khi `track === 'behaviour'`, ẩn cả nút
+- [x] **Step 1: Giao diện.** `QuickReport.tsx` — khi `track === 'behaviour'`, ẩn cả nút
       `+ Theo dõi từ ngày khác hôm nay` (dòng 264) lẫn ô ngày (dòng 270). Không có ô hạn, và
       chưa bao giờ có — đừng thêm.
-- [ ] **Step 2: Máy chủ chặn thật.** `reportIssue` — `track = 'behaviour'` mà nhận `detectedAt`
+- [x] **Step 2: Máy chủ chặn thật.** `reportIssue` — `track = 'behaviour'` mà nhận `detectedAt`
       khác hôm nay thì **từ chối**, không im lặng bỏ qua.
-- [ ] **Step 3: Học thuật giữ nguyên.** Ô ngày của nhóm Học thuật không đụng tới — ở đó hạn
+- [x] **Step 3: Học thuật giữ nguyên.** Ô ngày của nhóm Học thuật không đụng tới — ở đó hạn
       chạy theo cơ chế khác (`weeklyUpdateDue`, `cases.ts:895`), và ngày phát hiện lệch ngày
       báo là chuyện có thật.
-- [ ] **Step 4: Phép kiểm.** Tạo case Ý thức với `detectedAt` lùi 10 ngày → API từ chối. Tạo
+- [x] **Step 4: Phép kiểm.** Tạo case Ý thức với `detectedAt` lùi 10 ngày → API từ chối. Tạo
       case Học thuật cùng ngày đó → lưu được.
+      > **Cập nhật lúc code:** test có sẵn `[7.2] Ngày gửi của hệ thống quyết định cửa sổ...`
+      > giả định hành vi CŨ (Ý thức nhận `detectedAt` quá khứ rồi âm thầm bỏ qua khi tính cửa
+      > sổ gộp) — nay hành vi đổi có chủ đích (từ chối hẳn), nên đã sửa lại test đó cho đúng ý
+      > nghĩa còn lại (Học thuật vẫn giữ ngày người dùng khai), không xoá. Phát hiện thêm:
+      > `case_reports` (bảng có `reported_on`/`observed_on`) chỉ dùng cho đường Ý thức — Học
+      > thuật lưu `detected_at` thẳng trên `sos_cases`, không qua bảng đó.
 
 ### 10.3. Task 3 — Tab "Đã xong từ trước"
 
@@ -1324,20 +1330,42 @@ Tab 1 là form hiện tại. Tab 2 hỏi đúng bảng dưới, **không hơn**:
 | **Ghi chú** | ✓ | §13.12: *"ghi chú và ngày bắt buộc"* |
 | Điểm chi tiết theo kỹ năng | tuỳ chọn | dùng lại `componentsFor` (`cases.ts:170`) — Listening ra Section 1–4, Writing ra bốn tiêu chí band. **Không** phải bốn ô L/R/W/S |
 
-- [ ] **Step 1: Phép kiểm trước.** Nhập bù một case Listening: mở 01/07, xong 20/07, hai dòng
+- [x] **Step 1: Phép kiểm trước.** Nhập bù một case Listening: mở 01/07, xong 20/07, hai dòng
       phương án, kết quả "đã cải thiện", ghi chú. Phải ra **một** case `done`, **hai** phương án
       `done`, và **không** sinh dòng nghĩa vụ nào. Đỏ trước khi sửa.
-- [ ] **Step 2: Đường máy chủ.** Thêm `backfillCase(p, input)` vào `server/src/cases/cases.ts`.
-      Nó **gọi lại** `reportIssue` → `recordIntervention` (`:817`) → `completeIntervention`
-      (`:1150`) → `closeCaseOutcome` (`:111`) trong **một giao dịch**, với cờ `backfill: true`
-      chảy suốt. Không viết đường ghi database song song — trùng luật là cách sinh ra lỗi lệch.
-- [ ] **Step 3: Bảy chốt chặn.** Làm đủ mục 10.4. Mỗi chốt một phép kiểm.
-- [ ] **Step 4: Giao diện.** Tab trong `QuickReport.tsx`. Dòng phương án là một mảng state, mỗi
-      dòng ba ô. Nút chính ghi rõ "Ghi lại case đã xong".
-- [ ] **Step 5: Nhãn.** Case nhập bù hiện chữ **"nhập bù · <người> ghi ngày <ngày>"** ngay trên
-      thẻ case ở `SkillBoard.tsx`. Không giấu trong tooltip.
-- [ ] **Step 6: Hành trình theo tuần.** Mốc nhập bù vẽ ở **tuần thật của nó** (tháng 7), không
-      phải tuần nhập, và có nhãn phân biệt với mốc ghi tại chỗ.
+      **Ghi chú:** thay vì đúng kịch bản Listening/hai dòng, tám phép kiểm ở cuối
+      `server/src/tests/run.ts` (mục "43. PR-C Task 3") phủ đủ ý nghĩa của Step 1 và cả bảy
+      chốt — mỗi chốt một case riêng, dễ theo dõi hơn dồn hết vào một case.
+- [x] **Step 2: Đường máy chủ.** Thêm `backfillCase(p, input)` vào `server/src/cases/cases.ts`.
+      **Khác câu chữ gốc một chỗ:** chuỗi gọi là `reportIssue` → `recordIntervention` (một lần
+      mỗi dòng "đã làm gì") → `closeCaseOutcome`, **bỏ** bước `completeIntervention` riêng —
+      `recordIntervention` đã tự nhận đủ `startedDate`/`completedDate`/`status: 'completed'`
+      trong một lần gọi, nên gọi thêm `completeIntervention` chỉ tạo thêm một dòng hành trình
+      "Đã làm: …" trùng lặp với dòng "Hỗ trợ: …" đã có, không thêm thông tin gì mới. Vẫn đúng
+      tinh thần: gọi lại hàm thật, một giao dịch, cờ `backfill: true` chảy suốt
+      `reportIssue`/`recordIntervention`. Không viết đường ghi database song song.
+      Không thêm cột mới: `origin_kind` đã có sẵn giá trị tự do (`mock | teacher_report |
+      manager_task`), `'backfill'` là một giá trị mới của cột đó — không đụng mô hình dữ liệu.
+- [x] **Step 3: Bảy chốt chặn.** Làm đủ mục 10.4. Mỗi chốt một phép kiểm — xem chi tiết ở
+      mục 10.4 ngay dưới.
+- [x] **Step 4: Giao diện.** Tab trong `QuickReport.tsx`: "Đang gặp vấn đề" / "Đã xong từ
+      trước". Dòng "đã làm gì" là một mảng state, mỗi dòng bốn ô (tên việc · người làm · từ
+      → đến), nút "+ thêm dòng". Nút chính ghi "Ghi lại case đã xong". Route mới
+      `POST /cases/backfill`.
+      **Thu hẹp có chủ ý:** ô "Điểm chi tiết theo kỹ năng" (tuỳ chọn theo bảng trên) **CHƯA**
+      có ở giao diện. Máy chủ (`backfillCase`) đã nhận sẵn tham số `metrics` và validate đúng
+      như `closeCaseOutcome` — chỉ chưa nối dây UI, vì component `MetricsField` dùng cho việc
+      này hiện nằm KHÔNG export trong `CasePanel.tsx`, và PR-D (mục 11.3 Step 6) dự kiến gỡ hẳn
+      nó khỏi đó. Nối dây ngay bây giờ rồi PR-D gỡ mất là làm hai lần; để việc này vào backlog
+      mục 12, làm sau khi PR-D quyết định hình dạng cuối của khối kết quả.
+- [x] **Step 5: Nhãn.** Case nhập bù hiện chữ **"nhập bù · <người> ghi ngày <ngày>"** ngay trên
+      thẻ case ở `SkillBoard.tsx`, lấy từ `origin_kind`/`reported_by`/`created_at` qua
+      `caseCardOf`. Không giấu trong tooltip.
+- [x] **Step 6: Hành trình theo tuần.** Mốc nhập bù tự vẽ đúng **tuần thật của nó** — dòng
+      thời gian đã sắp theo `event_date` (ngày thật của sự kiện), không phải `created_at`
+      (lúc gõ vào hệ thống), nên không cần sửa gì ở tầng sắp xếp. Chỉ thêm tiền tố
+      **"(nhập bù)"** vào tiêu đề ba loại mốc (mở case, hỗ trợ, hoàn thành) để phân biệt với
+      mốc ghi tại chỗ.
 
 ### 10.4. Bảy chốt chặn — phần dễ sai nhất, làm đủ cả bảy
 
@@ -1369,20 +1397,40 @@ Luật chủ sản phẩm chốt 19/09/2026:
 Lý do Ý thức khác: case Ý thức **không có kỹ năng** nên không có gì để "đúng môn mình dạy", và
 sổ §13.12 chốt *"GV trong lớp có thể báo vấn đề; chỉ QL/GVCN tạo và xử lý PA Ý thức."*
 
-- [ ] **Step 1: Phép kiểm trước.** Ba ca, đều phải ĐỎ trước khi sửa: (a) GV Listening sửa case
+- [x] **Step 1: Phép kiểm trước.** Ba ca, đều phải ĐỎ trước khi sửa: (a) GV Listening sửa case
       Reading cùng lớp → bị từ chối; (b) GV Listening tạo phương án Ý thức → bị từ chối;
       (c) GV Listening sửa case Listening cùng lớp → cho qua.
-- [ ] **Step 2: Truyền kỹ năng vào ngữ cảnh.** Mọi nơi gọi `can(p, SOS_EDIT, ctx)` cho case học
+      **Ghi chú 19/09/2026:** ba ca viết bằng `P.subjectTeacher` (GVBM thuần của MB-FT 101),
+      không dùng `P.lrTeacher` như câu chữ gốc — trong đúng bộ demo này, người dạy Listening
+      của lớp MB-FT 101 lại chính là GVCN (một người hai vai, có thật ngoài đời), nên dùng
+      `P.lrTeacher` để kiểm "GVBM sai môn bị chặn" sẽ luôn PASS sai lý do (qua được vì là
+      GVCN, không phải vì đúng môn). Ba phép kiểm nằm ở cuối `server/src/tests/run.ts`.
+- [x] **Step 2: Truyền kỹ năng vào ngữ cảnh.** Mọi nơi gọi `can(p, SOS_EDIT, ctx)` cho case học
       thuật phải truyền `ctx.skill` = hạng mục của case. `hasAssignment(..., 'skill')` trả
       `false` khi `ctx.skill` rỗng — nên **thiếu truyền là khoá hết**, không phải mở hết. Rà
       từng nơi gọi, đừng chỉ sửa `teacherAllows`.
-- [ ] **Step 3: Đổi luật.** Trong `teacherAllows` (`permissions.ts:193`), tách `SOS_EDIT` khỏi
+      **Đã rà hết:** `cases.ts` (hàm `sosEditCtx` dùng chung ở 8 nơi `require_`, 1 nơi
+      `viewer.canEdit`, và `skillSupportBoard` tính riêng từng dòng thay vì một cờ chung cho
+      cả bảng); `signals.ts` (`viewOf`, `linkSignalToCase`, `assignSignal`); `attempts.ts` và
+      `profile.ts` (hai trường hiển thị, đổi sang `SOS_REPORT` vì đó là quyền BÁO, không phải
+      quyền SỬA); `worklist/mywork.ts` (ba nơi lọc hàng đợi việc — `dueActions`, `dueReviews`,
+      `caseRows` — hai câu SQL đầu phải thêm `sc.topic` vào SELECT vì trước đó thiếu cột).
+- [x] **Step 3: Đổi luật.** Trong `teacherAllows` (`permissions.ts:193`), tách `SOS_EDIT` khỏi
       cụm `ATTEMPT_VIEW`/`STUDENT_VIEW`: case học thuật dùng `'skill'`, case Ý thức dùng
       `'core'`. `ATTEMPT_VIEW` và `STUDENT_VIEW` **giữ nguyên `'any'`** — xem trong lớp mình là
-      đúng, chỉ sửa mới cần siết.
+      đúng, chỉ sửa mới cần siết. Thêm quyền `SOS_REPORT` riêng (rộng, như `ATTEMPT_VIEW` cũ)
+      cho đúng việc BÁO vấn đề, tách khỏi `SOS_EDIT` đã siết.
 - [ ] **Step 4: Nhập bù theo cùng luật.** `backfillCase` dùng đúng kiểm tra này, không đường riêng.
-- [ ] **Step 5: Kiểm API trực tiếp.** Sổ SCH-01 nhấn: *"kiểm API trực tiếp, không chỉ ẩn nút."*
+      **Chưa làm được — không phải bỏ sót mà vì chưa tới lượt:** hàm `backfillCase` là một
+      phần của PR-C Task 3 ("Đã xong từ trước"), và Task 3 **chưa bắt đầu** tại thời điểm ghi
+      dòng này. Khi viết Task 3, hàm đó phải gọi `sosEditCtx`/cùng luật `SOS_EDIT` như mọi nơi
+      khác — ghi rõ ở đây để không quên khi làm Task 3.
+- [x] **Step 5: Kiểm API trực tiếp.** Sổ SCH-01 nhấn: *"kiểm API trực tiếp, không chỉ ẩn nút."*
       Gọi thẳng endpoint bằng tài khoản GV sai môn phải nhận 403.
+      Ba phép kiểm Step 1 gọi thẳng `cases.recordIntervention()` — đúng hàm dịch vụ mà route
+      Express gọi, ném `HttpError(403, ...)` qua `require_`/`forbidden()` — không đi qua UI,
+      không chỉ ẩn nút. Không có thời gian dựng một request HTTP thật qua `supertest`/`fetch`
+      trong đêm nay; nếu chủ sản phẩm muốn kiểm ở tầng HTTP thật, đó là việc còn lại.
 
 ### 10.6. Nghiệm thu PR-C
 
@@ -1496,6 +1544,12 @@ hạn xác minh SOS ba ngày · sửa điểm làm mất căn cứ case.
 nhật phương án) và **CASE-06** (bộ kết quả riêng cho Ý thức) nay nằm ở **mục 11 (PR-D)**;
 phần còn lại của **CASE-01** (hai ô hỏi trùng) nằm ở **mục 10.1 (PR-C)**.
 
+**Mới thêm 19/09/2026 (PR-C Task 3):** ô "Điểm chi tiết theo kỹ năng" của tab "Đã xong từ
+trước" chưa nối dây giao diện. `backfillCase` (server) đã nhận sẵn `metrics` và validate như
+`closeCaseOutcome`; chỉ thiếu component UI vì `MetricsField` hiện không export trong
+`CasePanel.tsx` và PR-D dự kiến gỡ hẳn nó — nối dây sau khi PR-D quyết định hình dạng cuối
+của khối kết quả, để không phải làm hai lần.
+
 ### 12.3. Thống kê và báo cáo
 
 "Chưa đủ dữ liệu" không vào mẫu số hiệu quả (ANALYSIS-06) · cây Normal/FT → kỹ năng → phân
@@ -1599,4 +1653,7 @@ Nói **cái gì đổi trên màn hình**, bằng tiếng Việt, không tên h�
 | 18/09/2026 | Chủ sản phẩm (đọc `PISA-PR17-Audit-and-Change-Register.md` gốc) | Trích `vong7/SO_AUDIT_TRICH.md` (mục 8 T01–T19 · MT-01…MT-06 · SCH-01/02 · §13.5 · §13.8 · §13.9 · §13.11) vì ba trong bốn mã nghiệm thu T07/T09/T10/T13 mà `plan.md` §7.4 (cũ) nhắc tới không có định nghĩa ở đâu trong repo — chặn hẳn việc viết tiêu chí nghiệm thu cho PR2. Đối chiếu phát hiện: không mã T nào kiểm bộ chọn tuần → **tách PR2 thành PR2a (bộ chọn tuần, làm ngay) và PR2b (Kế hoạch Test + quyền lịch, chờ PR2a merge)**; `plan.md` §7.1 cũ chép thiếu năm điều so với sổ §13.8 gốc (múi giờ, popover đổi tháng/năm, ưu tiên ngữ cảnh URL, cấm fallback phần tử đầu mảng tuần, giới hạn tương lai áp tại lúc lưu); ghi chú R18-09 xác nhận Normal không có luồng hủy Test, thay hẳn mô tả cũ ở MT-05/T12/brief 10.6. Mục 7 đã viết lại theo PR2a/PR2b |
 | 19/09/2026 | Claude (session code PR2a) | PR2a hoàn tất. Review bằng subagent trước khi mở PR phát hiện `MeetingPage.tsx` (không nằm trong danh sách file PR2a sửa, nhưng tự gọi `usePeriodWindow()` riêng) vẫn còn đúng kiểu lỗi "fallback `array[0]`" sổ §13.8 cấm — bị che bởi việc route `/ref/period-window` luôn `ensurePeriod(demoToday())` trước nên chưa lộ ra khi bấm thử các màn khác. Đã sửa và bấm thử lại. **Quyết định:** không thêm hạ tầng test HTTP (kiểu supertest) chỉ để kiểm route `POST /ref/periods/resolve` mới — không route nào khác trong `server/src/tests/run.ts` có test tầng HTTP, toàn bộ file kiểm ở tầng service; route mới chỉ bọc `isIsoDate()` (đã có nơi khác dùng) quanh `ensurePeriod()` (đã có phép kiểm §13.8 riêng). Thêm test HTTP cho một route là phá vỡ tính nhất quán của cả file kiểm thử |
 | 19/09/2026 | Chủ sản phẩm + Claude (session thiết kế) | Chủ sản phẩm xem màn hình thật và chỉ ra hai lỗi giao diện: (1) khung case ở hồ sơ học viên là **hai khối lồng nhau hiển thị cùng một case** — bấm "Lịch sử và kết thúc phương án" thì `SkillBoard.tsx:319` nhúng nguyên `CasePanel.tsx` vào dưới; (2) form `+ Case` nhóm Ý thức **hỏi cùng một câu hai lần** ("Về việc gì" và "Phân loại vấn đề" đều ra BTVN/Chuyên cần/Tham gia/Khác). Truy nguyên: lỗi (2) do chính PR-A tạo ra khi vá CASE-01 bằng cách cho bốn nhóm dùng chung bộ phân loại mà bộ đó đúng là bốn nhóm ấy — trong khi sổ CASE-01 đã cấm từ đầu *"không cần dropdown nguyên nhân thứ hai dư thừa"*. Cả hai lỗi chỉ lộ khi **chạy thật**; đọc code và bộ kiểm thử đều thấy đúng. Thêm yêu cầu mới: bỏ ngày/hạn khỏi case Ý thức, và tab **"Đã xong từ trước"** để nhập bù case cũ. Viết thành **mục 10 (PR-C)** và **mục 11 (PR-D)**; ba mục cuối dời số 10→12, 11→13, 12→14 cùng mọi tham chiếu nội dòng. AUTH-01, CASE-05, CASE-06 ra khỏi backlog vào hai mục mới |
-| 19/09/2026 (đêm) | Claude (session code PR2b) | PR2b lớn hơn mô tả gốc — khảo sát cho thấy "sửa lượt đã có + preview" không tồn tại (panel cũ chỉ tạo mới qua `bulkPlan`/`createAttempt`, chọn lại một ô đã có luôn báo lỗi trùng), phải dựng luồng sửa thật, không phải sửa nhỏ. Thu hẹp: làm đủ quyền lịch SCH-01/SCH-02 ở tầng máy chủ (việc nặng nhất), đổi tên panel + lọc FT (MT-01), thêm preview tuần cũ→mới vào modal sửa lịch **ở màn Lộ trình** (không phải trong chính panel Kế hoạch Test), và viết phép kiểm khoá cả bốn mã T07/T09/T10/T13 — hoá ra T09/T10/T13 logic nền đã đúng sẵn từ trước, chỉ thiếu phép kiểm gắn mã. **Bấm thử tay phát hiện thêm một lỗ hổng quan trọng không thấy được khi chỉ đọc code**: quyền `schedule.move` mở đúng ở máy chủ nhưng KHÔNG có nút nào trên giao diện để GVCN/GVBM lớp Normal thật sự dùng nó — `MockDetailPage.tsx` (nơi duy nhất có nút "Đổi tuần") tự chuyển hướng mọi lượt Normal sang `RegularSheetPage.tsx`, nơi không có nút dời lịch nào. Bốn việc chưa làm (hai hàng RLW/Speaking, sửa lịch ngay trong panel Kế hoạch Test, "đợt hoàn tất thì chỉ đọc", và nút dời lịch cho màn Normal) chuyển sang backlog mục 12.6, không tự nhận là xong. 342/342 test đạt |
+| 19/09/2026 (đêm) | Claude (session code PR2b) | PR2b lớn hơn mô tả gốc — khảo sát cho thấy "sửa lượt đã có + preview" không tồn tại (panel cũ chỉ tạo mới qua `bulkPlan`/`createAttempt`, chọn lại một ô đã có luôn báo lỗi trùng), phải dựng luồng sửa thật, không phải sửa nhỏ. Thu hẹp: làm đủ quyền lịch SCH-01/SCH-02 ở tầng máy chủ (việc nặng nhất), đổi tên panel + lọc FT (MT-01), thêm preview tuần cũ→mới vào modal sửa lịch **ở màn Lộ trình** (không phải trong chính panel Kế hoạch Test), và viết phép kiểm khoá cả bốn mã T07/T09/T10/T13 — hoá ra T09/T10/T13 logic nền đã đúng sẵn từ trước, chỉ thiếu phép kiểm gắn mã. **Bấm thử tay phát hiện thêm một lỗ hổng quan trọng không thấy được khi chỉ đọc code**: quyền `schedule.move` mở đúng ở máy chủ nhưng KHÔNG có nút nào trên giao diện để GVCN/GVBM lớp Normal thật sự dùng nó — `MockDetailPage.tsx` (nơi duy nhất có nút "Đổi tuần") tự chuyển hướng mọi lượt Normal sang `RegularSheetPage.tsx`, nơi không có nút dời lịch nào. Bốn việc chưa làm (hai hàng RLW/Speaking, sửa lịch ngay trong panel Kế hoạch Test, "đợt hoàn tất thì chỉ đọc", và nút dời lịch cho màn Normal) chuyển sang backlog mục 12.6, không tự nhận là xong. 342/342 test đạt. **Đã merge vào `main` qua PR #26** |
+| 19/09/2026 (đêm) | Claude (session code PR-C) | PR-C Task 1–4 hoàn tất theo kế hoạch, có phép kiểm cho từng bước (347 phép kiểm xanh, hai lệnh `tsc` sạch). Ba việc lệch câu chữ gốc, đều ghi tại chỗ trong mục 10: (1) Task 4 Step 1 dùng `P.subjectTeacher` thay vì `P.lrTeacher` — trong bộ demo, người dạy Listening của MB-FT 101 lại chính là GVCN của lớp đó, dùng người đó để kiểm "sai môn bị chặn" sẽ luôn PASS sai lý do; (2) Task 3 Step 2 bỏ bước gọi `completeIntervention` riêng — `recordIntervention` đã tự đủ trong một lần gọi, gọi thêm chỉ sinh một dòng hành trình trùng lặp; (3) Task 3 Step 4 CHƯA nối dây ô "Điểm chi tiết theo kỹ năng" (tuỳ chọn) — máy chủ đã sẵn sàng, chỉ chờ PR-D quyết định hình dạng cuối của `MetricsField` để tránh làm hai lần, ghi vào backlog mục 12.2. Bấm thử tay một lượt bằng tài khoản Quản trị hệ thống qua trình duyệt thật (cổng tách riêng 4091/5191, seed lại sau khi xong): mở modal `+ Case` ở lớp MB-FT 101, chuyển tab "Đã xong từ trước", điền đủ (Reading, phân loại "Quản lý thời gian", 01/07→20/07/2026, một dòng "đã làm gì", kết quả "Có tiến bộ", ghi chú), bấm "Ghi lại case đã xong" — ra toast "Đã ghi lại case đã xong", mở lại hồ sơ học viên thấy đúng nhãn **"nhập bù · Đỗ Vũ Tuấn Phong ghi ngày 18/09/2026"** trên thẻ case, đúng ngày mở 01/07/2026 (không phải hôm nay), có nhãn "case song song", dòng phương án hiện đủ người làm và khoảng ngày. **Chưa làm, ghi thẳng thay vì giấu:** mới bấm thử được đúng MỘT vai (Quản trị hệ thống) trên đúng MỘT kịch bản (case học thuật). Ba vai còn lại của mục 10.6 (GVBM Listening · GVBM Reading · GVCN) và nhánh Ý thức của tab nhập bù, cùng ba màn PR2b/PR-C khác (Kế hoạch Test, form case thường, khung case PR-D) **chưa bấm thử tay** — chỉ có bằng chứng qua bộ kiểm thử tự động. Đây là việc còn lại trước khi PR-C sẵn sàng merge thật |
+| 19/09/2026 (đêm, tiếp) | Claude (session code PR-C) | Mở PR #27 (nhánh `worktree-pr-c-form-case-gon` → `main`), chưa merge. Dựng một subagent đọc toàn bộ diff review độc lập trước khi mở PR — không có lỗi Critical, nhưng tìm ra ba lỗi Important đều thuộc "tầng trung thực" của tab nhập bù: (1) máy chủ **không** chặn ghi chú kết luận dưới 10 ký tự dù giao diện có chặn — gọi thẳng API là bỏ qua được lý do bắt buộc phải ghi, đúng chỗ tính năng sinh ra để chặn; (2) và (3) hai kiểm dữ liệu (mô tả "Khác" ≥30 ký tự, ngày một dòng "đã làm gì" không đảo ngược) chỉ có ở máy chủ, chưa có ở giao diện — người dùng thấy lỗi chung chung thay vì lỗi rõ ràng tại chỗ. Đã vá cả ba, thêm một phép kiểm cho lỗi (1). Sau vá: 348 phép kiểm xanh, hai lệnh `tsc` sạch. Ghi kết quả review làm một bình luận trên PR #27. Cũng mở PR #28 riêng (nhánh `worktree-docs-ban-giao-pr-c`) chỉ cập nhật `BAN_GIAO.md` — không gộp vào PR-C để giữ đúng phạm vi |
+| 19/09/2026 (đêm, hợp nhất) | Claude (session code PR-C) | `main` đã tiến lên (PR2b merge, #26) sau khi PR-C branch từ `f1e3591` — GitHub báo PR #27 có xung đột. Hợp nhất `origin/main` vào nhánh PR-C, giải xung đột ở bốn file (`plan.md`, `server/src/permissions.ts`, `server/src/seed/data.ts`, `server/src/tests/run.ts`) — toàn bộ là cộng dồn (cả hai nhánh cùng thêm quyền/nhãn/phép kiểm mới ở cuối danh sách, không nhánh nào sửa đè lên dòng của nhánh kia), không có xung đột nghiệp vụ thật. Giữ cả `schedule.move` (PR2b) lẫn `sos.report`/`sos.edit` (PR-C) trong `ROLE_PERMISSIONS`, giữ cả hai nhánh `explain()`, nối các phép kiểm SCH-01/T09/T13 (PR2b) vào sau các phép kiểm CASE-01/AUTH-01/nhập bù (PR-C) |

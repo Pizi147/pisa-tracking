@@ -494,7 +494,7 @@ export function myWork(p: Principal, f: { branchId?: number | null } = {}) {
     .prepare(
       `SELECT iv.id, iv.case_id, iv.kind, iv.description, iv.action_due,
               iv.performer_user_id, iv.performer_name,
-              sc.track, sc.category, sc.attempt_id, sc.sos_level,
+              sc.track, sc.topic, sc.category, sc.attempt_id, sc.sos_level,
               COALESCE(sc.student_id, a.student_id) AS eff_student_id,
               COALESCE(a.class_id, cur.class_id) AS eff_class_id,
               s.full_name, cl.code AS class_code, cl.branch_id, a.attempt_no
@@ -513,7 +513,10 @@ export function myWork(p: Principal, f: { branchId?: number | null } = {}) {
     .all(today) as any[];
   for (const iv of dueActions) {
     if (f.branchId && iv.branch_id !== f.branchId) continue;
-    if (!can(p, PERMISSIONS.SOS_EDIT, { classId: iv.eff_class_id, studentId: iv.eff_student_id })) continue;
+    if (!can(p, PERMISSIONS.SOS_EDIT, {
+      classId: iv.eff_class_id, studentId: iv.eff_student_id,
+      skill: iv.track === 'academic' ? iv.topic ?? undefined : undefined,
+    })) continue;
     /*
      * AI THẤY VIỆC NÀY:
      *   gặp học viên        → người ĐANG DẠY em
@@ -612,7 +615,7 @@ export function myWork(p: Principal, f: { branchId?: number | null } = {}) {
     .prepare(
       `SELECT iv.id, iv.case_id, iv.kind, iv.description, iv.followup_due,
               COALESCE(iv.performer_user_id, iv.recorded_by) AS owner_id,
-              sc.sos_level, sc.urgency, sc.summary, sc.origin_kind, sc.attempt_id,
+              sc.track, sc.topic, sc.sos_level, sc.urgency, sc.summary, sc.origin_kind, sc.attempt_id,
               COALESCE(sc.student_id, a.student_id) AS eff_student_id,
               COALESCE(a.class_id, cur.class_id) AS eff_class_id,
               COALESCE(ac.branch_id, cc.branch_id) AS eff_branch_id,
@@ -641,7 +644,10 @@ export function myWork(p: Principal, f: { branchId?: number | null } = {}) {
     const asManager = u === 'overdue'
       && can(p, PERMISSIONS.CASE_APPROVE, { classId: iv.eff_class_id, studentId: iv.eff_student_id });
     if (!mine && !asManager) continue;
-    if (!can(p, PERMISSIONS.SOS_EDIT, { classId: iv.eff_class_id, studentId: iv.eff_student_id })) continue;
+    if (!can(p, PERMISSIONS.SOS_EDIT, {
+      classId: iv.eff_class_id, studentId: iv.eff_student_id,
+      skill: iv.track === 'academic' ? iv.topic ?? undefined : undefined,
+    })) continue;
     reviewedCases.add(iv.case_id);
     items.push({
       key: `review:${iv.id}`, group: 'result', urgency: u,
@@ -690,7 +696,10 @@ export function myWork(p: Principal, f: { branchId?: number | null } = {}) {
     if (f.branchId && c.eff_branch_id !== f.branchId) continue;
     if (c.iv_count > 0 || reviewedCases.has(c.id)) continue;
     // Quyền GHI NHẬN xử lý, không phải quyền xem — việc chỉ hiện với người làm được.
-    if (!can(p, PERMISSIONS.SOS_EDIT, { classId: c.eff_class_id, studentId: c.eff_student_id })) continue;
+    if (!can(p, PERMISSIONS.SOS_EDIT, {
+      classId: c.eff_class_id, studentId: c.eff_student_id,
+      skill: c.track === 'academic' ? c.topic ?? undefined : undefined,
+    })) continue;
     /*
      * ĐỀ XUẤT PHƯƠNG ÁN là việc của người DẠY em, hoặc của Quản lý. Admin chi nhánh ghi hộ
      * được việc CS gọi phụ huynh nên vẫn có `sos.edit`, nhưng giao cho văn phòng năm dòng

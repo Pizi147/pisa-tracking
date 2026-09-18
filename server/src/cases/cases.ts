@@ -5,7 +5,7 @@ import {
   FOLLOWUP_OUTCOMES, BEHAVIOUR_TOPICS, CASE_DECISIONS, CASE_OUTCOMES, ENTRY_SKILLS,
   ISSUE_ROLES, PERMISSIONS, THREAD_TRACKS, URGENCY_LEVELS, DEFAULT_URGENCY,
   BEHAVIOUR_MERGE_WINDOW_DAYS, behaviourCaseDeadline, behaviourMergeUntil, deadlineAfterRaise,
-  issuesForTopic,
+  issuesForTopic, topicFromBehaviourCode,
   CASE_CATEGORY_SHORT, CASE_CATEGORIES, CASE_CATEGORY_LABEL, FOLLOWUP_OUTCOME_LABEL, ratioResult,
   caseCategoriesFor, componentsAreCounts, componentsFor, type CaseCategory,
   CASE_OUTCOME_LABEL, caseCategoryLabel, caseDedupKey, caseHeadline, caseTitle, categoryOf,
@@ -205,7 +205,8 @@ export function closeCaseOutcome(p: Principal, caseId: number, input: {
     addJourney({
       studentId: c.eff_student_id, cycleId: c.eff_cycle_id,
       eventType: 'case_closed', eventDate: closedOn,
-      title: `Hoàn thành case: ${CASE_OUTCOME_LABEL[input.outcome as CaseOutcome]}`,
+      /* Chốt 6/mục 10.3 Step 6: nhãn phân biệt mốc nhập bù với mốc ghi tại chỗ. */
+      title: `${c.origin_kind === 'backfill' ? '(nhập bù) ' : ''}Hoàn thành case: ${CASE_OUTCOME_LABEL[input.outcome as CaseOutcome]}`,
       detail: closeNote,
       refTable: 'sos_cases', refId: caseId, createdBy: p.userId,
       dedupKey: `case_outcome:${caseId}:${closedOn}:end`,
@@ -220,7 +221,7 @@ export function closeCaseOutcome(p: Principal, caseId: number, input: {
 /** Đổi hạn BÁO KẾT QUẢ của case. Mặc định là hết tuần MT kế tiếp, nhưng sửa được. */
 export function setFollowUntil(p: Principal, caseId: number, date: string | null) {
   const c = loadCase(caseId);
-  require_(p, PERMISSIONS.SOS_EDIT, { classId: c.class_id, studentId: c.eff_student_id },
+  require_(p, PERMISSIONS.SOS_EDIT, sosEditCtx(c),
     'Bạn không có quyền đổi hạn theo dõi của case này.');
   if (date && !isIsoDate(date)) throw badRequest('Hạn theo dõi không hợp lệ.');
   db().prepare('UPDATE sos_cases SET follow_until = ?, updated_at = ? WHERE id = ?')
@@ -252,6 +253,21 @@ function loadCase(caseId: number) {
   if (!c) throw notFound('Không tìm thấy case');
   c.class_id = c.attempt_class_id ?? c.current_class_id ?? null;
   return c;
+}
+
+/**
+ * NGỮ CẢNH QUYỀN CHO SOS_EDIT (AUTH-01) — MỘT chỗ dựng, dùng ở mọi nơi sửa/xử lý case.
+ *
+ * Học thuật truyền đúng kỹ năng (`c.topic`, ví dụ "listening") để `teacherAllows` so khớp
+ * phân công GVBM. Ý thức KHÔNG có kỹ năng — để `skill` rỗng để chỉ GVCN qua được. Thiếu hàm
+ * này thì mỗi nơi gọi `require_`/`can` tự viết một cách khác, và đó chính là kiểu lỗi sinh ra
+ * AUTH-01 lần đầu.
+ */
+function sosEditCtx(c: { class_id?: number | null; eff_student_id?: number | null; track?: string | null; topic?: string | null }) {
+  return {
+    classId: c.class_id, studentId: c.eff_student_id,
+    skill: c.track === 'academic' ? c.topic ?? undefined : undefined,
+  };
 }
 
 // ---------------------------------------------------------------- giáo viên báo vấn đề
@@ -361,6 +377,19 @@ export function reportIssue(p: Principal, input: {
    * tả rồi gửi. Hệ thống không tự đi con đường này thay họ.
    */
   fromSignalId?: number | null;
+  /**
+   * NHẬP BÙ MỘT CASE ĐÃ XONG TỪ LÂU (PR-C Task 3, mục 10.3–10.4) — cờ chảy suốt cả chuỗi
+   * `reportIssue` → `recordIntervention` → `completeIntervention` → `closeCaseOutcome`.
+   *
+   * Ba việc khác hẳn đường thường khi cờ này bật:
+   *   · `origin_kind = 'backfill'` thay vì `'teacher_report'` — chốt 7, phân biệt được ghi
+   *     tại chỗ với nhớ lại rồi điền.
+   *   · KHÔNG gộp vào đợt Ý thức đang mở (chốt 3) — một case tháng 7 không được lẫn vào đợt
+   *     tháng 9, dù ngày rơi trong cửa sổ gộp bốn ngày.
+   *   · KHÔNG có `merge_until`/`follow_until` (chốt 2) — case nhập bù không có hạn nào, vì
+   *     nó là chuyện đã xảy ra, không phải một nghĩa vụ đang chạy.
+   */
+  backfill?: boolean;
 }) {
   const conn = db();
   const student = conn.prepare('SELECT * FROM students WHERE id = ?').get(input.studentId) as any;
@@ -376,7 +405,7 @@ export function reportIssue(p: Principal, input: {
    * Listening vẫn được báo "em này hay nghỉ học". Nhưng báo được KHÔNG có nghĩa là được
    * ghi điểm kỹ năng khác — đó là hai quyền riêng.
    */
-  require_(p, PERMISSIONS.SOS_EDIT, { classId, studentId: input.studentId },
+  require_(p, PERMISSIONS.SOS_REPORT, { classId, studentId: input.studentId },
     'Bạn chỉ báo được vấn đề của học viên trong phạm vi mình phụ trách.');
 
   /*
@@ -403,7 +432,16 @@ export function reportIssue(p: Principal, input: {
   const track = (THREAD_TRACKS as readonly string[]).includes(input.track ?? '')
     ? input.track! : 'academic';
   const topics: readonly string[] = track === 'behaviour' ? BEHAVIOUR_TOPICS : ENTRY_SKILLS;
-  const topic = (input.topic ?? '').trim() || null;
+  /*
+   * CASE-01 làm nốt: nhóm Ý thức chỉ có MỘT tầng phân loại — bốn nhóm chủ đề CHÍNH LÀ bốn mã
+   * phân loại. Form không còn hỏi "Về việc gì" cho nhóm Ý thức, nên suy `topic` thẳng từ
+   * `primaryCode` khi thiếu, bằng ĐÚNG MỘT hàm dùng chung với giao diện
+   * (`topicFromBehaviourCode`) — không để hai nơi tự suy theo hai cách.
+   */
+  let topic = (input.topic ?? '').trim() || null;
+  if (!topic && track === 'behaviour' && input.primaryCode) {
+    topic = topicFromBehaviourCode(input.primaryCode.trim());
+  }
   if (!topic) {
     throw badRequest(track === 'behaviour'
       ? 'Hãy chọn nhóm ý thức: chuyên cần, BTVN, tham gia trên lớp hay khác.'
@@ -417,6 +455,16 @@ export function reportIssue(p: Principal, input: {
   const urgency = input.urgency ?? DEFAULT_URGENCY;
   const detectedAt = input.detectedAt ?? demoToday();
   if (!isIsoDate(detectedAt)) throw badRequest('Ngày phát hiện không hợp lệ.');
+  /*
+   * Ý THỨC KHÔNG CÓ NGÀY QUÁ KHỨ (CASE-01 Task 2). Ngày mở là gốc tính CẢ BA thứ cùng lúc:
+   * hạn phương án, hạn hoàn thành case, và cửa sổ gộp đợt bốn ngày — cho chọn ngày quá khứ
+   * nghĩa là tạo được case sinh ra đã quá hạn, hoặc lùi ngày để lách luật gộp. Học thuật
+   * KHÔNG đụng: hạn ở đó chạy theo cơ chế khác (`weeklyUpdateDue`), và lệch ngày báo là
+   * chuyện có thật đã xảy ra trước khi hệ thống biết.
+   */
+  if (!input.backfill && track === 'behaviour' && input.detectedAt && detectedAt !== demoToday()) {
+    throw badRequest('Case Ý thức chỉ ghi nhận theo ngày hôm nay — không chọn được ngày khác.');
+  }
 
   const key = input.idempotencyKey?.trim() || null;
   if (key) {
@@ -478,7 +526,13 @@ export function reportIssue(p: Principal, input: {
    */
   if (track === 'behaviour') {
     const today = demoToday();
-    const openEpisode = conn
+    /*
+     * NHẬP BÙ KHÔNG GỘP VÀO ĐỢT ĐANG MỞ (chốt 3, mục 10.4). Cửa sổ gộp bốn ngày dùng để gộp
+     * BÁO CÁO MỚI về cùng một chuyện đang diễn ra; một case nhớ lại từ tháng 7 không phải
+     * báo cáo mới, và gộp nó vào đợt tháng 9 đang mở là sai hẳn — nên bỏ qua hẳn bước tìm
+     * đợt đang mở khi đang nhập bù.
+     */
+    const openEpisode = input.backfill ? null : conn
       .prepare(
         /*
          * GỘP THEO PHÂN LOẠI, KHÔNG THEO HẠNG MỤC (mục 7.3).
@@ -547,12 +601,15 @@ export function reportIssue(p: Principal, input: {
                                   detected_at, reported_by, title, summary, urgency, status,
                                   idempotency_key, previous_case_id, episode_no, merge_until,
                                   follow_until, owner_user_id, created_at)
-           VALUES (?,?, 'behaviour', ?,?, 'teacher_report', ?,?,?,?,?, 'open', ?,?,?,?,?,?,?)`,
+           VALUES (?,?, 'behaviour', ?,?, ?, ?,?,?,?,?, 'open', ?,?,?,?,?,?,?)`,
         )
         .run(input.studentId, cycle?.id ?? null, topic, category,
+             input.backfill ? 'backfill' : 'teacher_report',
              detectedAt, p.userId, title, summary, urgency, key,
              previous?.id ?? null, (previous?.episode_no ?? 0) + 1,
-             behaviourMergeUntil(today), behaviourCaseDeadline(today),
+             /* Chốt 2 (mục 10.4): nhập bù không có hạn nào — case đã xong từ lâu, không phải một nghĩa vụ đang chạy. */
+             input.backfill ? null : behaviourMergeUntil(today),
+             input.backfill ? null : behaviourCaseDeadline(today),
              /*
               * GVCN LÀ NGƯỜI ĐẢM BẢO CASE Ý THỨC ĐƯỢC XỬ LÝ (mục 7.1).
               * Giáo viên bộ môn được BÁO, nhưng báo xong không mặc nhiên thành người phải
@@ -569,15 +626,18 @@ export function reportIssue(p: Principal, input: {
       addJourney({
         studentId: input.studentId, cycleId: cycle?.id ?? null,
         eventType: 'case_opened', eventDate: detectedAt,
-        title: `Ý thức/Khác: ${caseCategoryLabel(category)}`, detail: summary,
+        title: `${input.backfill ? '(nhập bù) ' : ''}Ý thức/Khác: ${caseCategoryLabel(category)}`, detail: summary,
         refTable: 'sos_cases', refId: caseId, createdBy: p.userId,
         dedupKey: `case_open:${caseId}`,
       });
-      notifyManagers(
-        { id: caseId, class_id: classId, eff_student_id: input.studentId }, 'report', summary, caseId, p.userId,
-      );
+      if (!input.backfill) {
+        notifyManagers(
+          { id: caseId, class_id: classId, eff_student_id: input.studentId }, 'report', summary, caseId, p.userId,
+        );
+      }
       writeAudit({
-        actorUserId: p.userId, action: 'case.report', entityType: 'sos_case', entityId: caseId,
+        actorUserId: p.userId, action: input.backfill ? 'case.backfill' : 'case.report',
+        entityType: 'sos_case', entityId: caseId,
         entityLabel: `${student.student_code} · ${caseCategoryLabel(category)}`,
         after: { urgency, episode: (previous?.episode_no ?? 0) + 1 },
       });
@@ -667,9 +727,10 @@ export function reportIssue(p: Principal, input: {
         `INSERT INTO sos_cases (attempt_id, student_id, cycle_id, track, topic, category, origin_kind,
                                 detected_at, reported_by, title, summary, urgency, sos_level, status,
                                 note, idempotency_key, dedup_key, parallel, owner_user_id, created_at)
-         VALUES (NULL, ?,?,?,?,?, 'teacher_report', ?,?,?,?,?, NULL, 'open', ?,?,?,?,?,?)`,
+         VALUES (NULL, ?,?,?,?,?, ?, ?,?,?,?,?, NULL, 'open', ?,?,?,?,?,?)`,
       )
       .run(input.studentId, cycle?.id ?? null, track, topic, category,
+           input.backfill ? 'backfill' : 'teacher_report',
            detectedAt, p.userId, title, summary, urgency,
            null, key,
            input.parallel ? null : dedupKey, input.parallel ? 1 : 0,
@@ -696,15 +757,18 @@ export function reportIssue(p: Principal, input: {
     addJourney({
       studentId: input.studentId, cycleId: cycle?.id ?? null,
       eventType: 'case_opened', eventDate: detectedAt,
-      title: `Giáo viên ghi nhận vấn đề${input.primaryCode ? `: ${issueLabel(input.primaryCode)}` : ''}`,
+      title: `${input.backfill ? '(nhập bù) ' : ''}Giáo viên ghi nhận vấn đề${input.primaryCode ? `: ${issueLabel(input.primaryCode)}` : ''}`,
       detail: summary,
       refTable: 'sos_cases', refId: caseId, createdBy: p.userId,
       dedupKey: `case_open:${caseId}`,
     });
-    notifyManagers(
-      { id: caseId, class_id: classId, eff_student_id: input.studentId }, 'report', summary, caseId, p.userId,
-    );
-    writeAudit({ actorUserId: p.userId, action: 'case.report', entityType: 'sos_case', entityId: caseId,
+    if (!input.backfill) {
+      notifyManagers(
+        { id: caseId, class_id: classId, eff_student_id: input.studentId }, 'report', summary, caseId, p.userId,
+      );
+    }
+    writeAudit({ actorUserId: p.userId, action: input.backfill ? 'case.backfill' : 'case.report',
+      entityType: 'sos_case', entityId: caseId,
       entityLabel: `${student.student_code} · ${summary.slice(0, 40)}`, after: { urgency, detectedAt } });
     /* Tín hiệu đã được trả lời: từ đây nó không còn nằm trong hàng chờ xác minh nữa. */
     if (input.fromSignalId) linkSignalToCase(p, input.fromSignalId, caseId, summary);
@@ -743,7 +807,7 @@ export function setIssues(p: Principal, caseId: number, input: {
 }) {
   const conn = db();
   const c = loadCase(caseId);
-  require_(p, PERMISSIONS.SOS_EDIT, { classId: c.class_id, studentId: c.eff_student_id },
+  require_(p, PERMISSIONS.SOS_EDIT, sosEditCtx(c),
     'Bạn không có quyền phân loại vấn đề cho case này.');
   for (const code of [input.primaryCode, ...(input.secondaryCodes ?? [])]) {
     if (code && !issueBranchOf(code)) throw badRequest(`Mã vấn đề không hợp lệ: ${code}`);
@@ -837,10 +901,12 @@ export function recordIntervention(p: Principal, caseId: number, input: {
   needsApproval?: boolean;
   status?: string; plannedDate?: string | null; startedDate?: string | null;
   completedDate?: string | null; followupDue?: string | null;
+  /** NHẬP BÙ (PR-C Task 3) — xem ghi chú đầy đủ ở `reportIssue`. Chảy tiếp từ đó. */
+  backfill?: boolean;
 }) {
   const conn = db();
   const c = loadCase(caseId);
-  require_(p, PERMISSIONS.SOS_EDIT, { classId: c.class_id, studentId: c.eff_student_id },
+  require_(p, PERMISSIONS.SOS_EDIT, sosEditCtx(c),
     'Bạn không có quyền ghi nhận hỗ trợ cho case này.');
   if (!(INTERVENTION_KINDS as readonly string[]).includes(input.kind)) throw badRequest('Loại hỗ trợ không hợp lệ.');
   const status = input.status && (INTERVENTION_STATUSES as readonly string[]).includes(input.status)
@@ -956,10 +1022,17 @@ export function recordIntervention(p: Principal, caseId: number, input: {
      */
     const receivedOn = c.detected_at ?? c.created_at?.slice(0, 10) ?? today;
     const behaviourDue = planDueDate(receivedOn, c.urgency ?? urgencyFromSos(c.sos_level));
-    const updateDue = !cycleStart ? null
-      : track === 'behaviour' ? behaviourDue : weeklyUpdateDue(cycleStart);
-    const planEnd = input.followupDue
-      ?? (!cycleStart ? null : track === 'behaviour' ? behaviourDue : planEndDefault(cycleStart));
+    /*
+     * CHỐT 1 + 2 (mục 10.4) CHO PHƯƠNG ÁN NHẬP BÙ: không hạn cập nhật, không hạn kết thúc.
+     * Phương án bắt đầu từ một ngày quá khứ xa (ví dụ tháng 7) mà vẫn tính hạn kiểu bình
+     * thường thì `weeklyUpdateDue`/`behaviourDue` ra một hạn đã trôi qua từ lâu — chính là
+     * "sinh ~10 dòng quá hạn giả" mà chủ sản phẩm cảnh báo. Việc đã xong rồi thì không còn gì
+     * để mà tới hạn.
+     */
+    const updateDue = input.backfill ? null : (!cycleStart ? null
+      : track === 'behaviour' ? behaviourDue : weeklyUpdateDue(cycleStart));
+    const planEnd = input.backfill ? null : (input.followupDue
+      ?? (!cycleStart ? null : track === 'behaviour' ? behaviourDue : planEndDefault(cycleStart)));
     const cycleDue = updateDue;
 
     const info = conn
@@ -984,8 +1057,13 @@ export function recordIntervention(p: Principal, caseId: number, input: {
      *
      * Cần duyệt thì đây là việc phải làm; không cần duyệt thì vẫn là tin đáng biết — Quản lý
      * nắm được giáo viên đang xoay xở thế nào mà không phải đi hỏi từng người.
+     *
+     * NHẬP BÙ THÌ KHÔNG BÁO: đây là chuyện đã xảy ra và đã xong từ lâu, không phải một việc
+     * Quản lý cần biết "vừa mới có" — báo thì chỉ tạo tin giả về thời điểm.
      */
-    notifyManagers(c, needsApproval ? 'approval' : 'plan', description || input.kind, id, p.userId);
+    if (!input.backfill) {
+      notifyManagers(c, needsApproval ? 'approval' : 'plan', description || input.kind, id, p.userId);
+    }
 
     // Có tác động thì case chuyển sang đang xử lý — trừ khi đã đóng.
     if (c.status === 'open') {
@@ -994,7 +1072,7 @@ export function recordIntervention(p: Principal, caseId: number, input: {
     addJourney({
       studentId: c.eff_student_id, cycleId: c.eff_cycle_id,
       eventType: 'intervention', eventDate: input.completedDate ?? input.startedDate ?? today,
-      title: `Hỗ trợ: ${description.slice(0, 60) || input.kind}`,
+      title: `${input.backfill ? '(nhập bù) ' : ''}Hỗ trợ: ${description.slice(0, 60) || input.kind}`,
       detail: input.performerName ?? null,
       refTable: 'case_interventions', refId: id, createdBy: p.userId,
       dedupKey: `intervention:${id}`,
@@ -1155,7 +1233,7 @@ export function completeIntervention(p: Principal, interventionId: number, input
   const iv = conn.prepare('SELECT * FROM case_interventions WHERE id = ?').get(interventionId) as any;
   if (!iv) throw notFound('Không tìm thấy phương án.');
   const c = loadCase(iv.case_id);
-  require_(p, PERMISSIONS.SOS_EDIT, { classId: c.class_id, studentId: c.eff_student_id },
+  require_(p, PERMISSIONS.SOS_EDIT, sosEditCtx(c),
     'Bạn không có quyền cập nhật phương án của case này.');
 
   if (iv.approval_state === 'pending') {
@@ -1210,6 +1288,124 @@ export function completeIntervention(p: Principal, interventionId: number, input
 }
 
 /**
+ * NHẬP BÙ MỘT CASE ĐÃ XỬ LÝ XONG TỪ LÂU (PR-C Task 3, mục 10.3–10.4).
+ *
+ * Ghi lại trí nhớ, không phải một sự kiện mới — nên gọi lại ĐÚNG BA hàm của đường thường
+ * (`reportIssue` → `recordIntervention` × N → `closeCaseOutcome`) trong MỘT giao dịch, với
+ * cờ `backfill: true` chảy suốt `reportIssue`/`recordIntervention`. Không viết đường ghi
+ * database song song — trùng luật là cách sinh ra lỗi lệch giữa hai đường.
+ *
+ * KHÁC MỘT CHỖ SO VỚI CÂU CHỮ GỐC Ở `plan.md`: chuỗi gốc viết là `recordIntervention` →
+ * `completeIntervention`, nhưng `recordIntervention` đã tự nhận đủ `startedDate`/
+ * `completedDate`/`status: 'completed'` trong MỘT lần gọi — gọi thêm `completeIntervention`
+ * sau đó chỉ tạo thêm một dòng hành trình "Đã làm: …" trùng lặp với dòng "Hỗ trợ: …" đã có,
+ * không thêm thông tin gì mới. Bỏ bước thừa đó, ghi rõ ở đây để không ai tưởng là bỏ sót.
+ */
+export function backfillCase(p: Principal, input: {
+  studentId: number; cycleId?: number | null;
+  track: string; topic: string; primaryCode: string;
+  title?: string | null; summary: string;
+  fromDate: string; toDate: string;
+  actions: { description: string; performerName?: string | null; fromDate: string; toDate: string }[];
+  outcome: string; note: string;
+  metrics?: unknown;
+  /** Người dùng đã thấy cảnh báo trùng nhập bù (chốt 6) và xác nhận đây là lần khác. */
+  confirmDuplicate?: boolean;
+}) {
+  const conn = db();
+  const today = demoToday();
+  if (!isIsoDate(input.fromDate) || !isIsoDate(input.toDate)) {
+    throw badRequest('Khoảng ngày "từ → đến" không hợp lệ.');
+  }
+  if (input.fromDate > input.toDate) throw badRequest('Ngày bắt đầu phải trước ngày kết thúc.');
+  if (input.toDate > today) throw badRequest('Không nhập bù được một case kết thúc ở tương lai.');
+
+  if (!input.actions?.length) {
+    throw badRequest('Ghi ít nhất một dòng "đã làm gì" — nhập bù mà không có việc gì đã làm thì không có gì để ghi.');
+  }
+  for (const a of input.actions) {
+    if (!isIsoDate(a.fromDate) || !isIsoDate(a.toDate)) throw badRequest('Một dòng "đã làm gì" có ngày không hợp lệ.');
+    if (a.fromDate > a.toDate) throw badRequest('Một dòng "đã làm gì" có ngày bắt đầu sau ngày kết thúc.');
+    if (a.toDate > today) throw badRequest('Không ghi được một việc đã xong ở ngày tương lai.');
+    if ((a.description ?? '').trim().length < 3) throw badRequest('Mỗi dòng "đã làm gì" phải nói rõ đã làm gì.');
+    if (!(a.performerName ?? '').trim()) throw badRequest('Mỗi dòng "đã làm gì" phải ghi người làm.');
+  }
+  const note = (input.note ?? '').trim();
+  /*
+   * GHI CHÚ KẾT LUẬN BẮT BUỘC — "ngày quá khứ không tự chứng minh hiệu quả" (mục 2 sổ audio).
+   * Giao diện đã chặn dưới 10 ký tự, nhưng chặn TAY ở đây nữa: đây là API thật, gọi thẳng
+   * (không qua form) mà thiếu ghi chú thì lỗ đúng thứ tính năng này sinh ra để chặn.
+   */
+  if (note.length < 10) {
+    throw badRequest('Nhập bù phải có ghi chú kết luận — ít nhất 10 ký tự.');
+  }
+  /*
+   * CASE-03: nhập bù không có lối thoát "Chưa đủ dữ liệu" — bộ `CASE_OUTCOMES` dùng lại ở
+   * đây vốn đã không có mức đó (nó chỉ tồn tại ở `FOLLOWUP_OUTCOMES`, cho MỘT lần xem lại
+   * giữa chừng chứ không phải kết luận cuối của cả case), nên không cần chặn tay thêm.
+   */
+  if (!(CASE_OUTCOMES as readonly string[]).includes(input.outcome)) {
+    throw badRequest('Mức độ thành công không hợp lệ.');
+  }
+
+  const category = categoryOf(
+    (THREAD_TRACKS as readonly string[]).includes(input.track) ? input.track : 'academic',
+    (input.topic ?? '').trim() || null,
+  );
+
+  /*
+   * CHỐT 6 (mục 10.4): KHÔNG kích hoạt cảnh báo case trùng như đường thường (đường thường
+   * chặn khi hạng mục đã có case đang mở — case nhập bù đã đóng ngay khi tạo nên không đụng
+   * luật đó). NHƯNG phải cảnh báo khi trùng với MỘT CASE NHẬP BÙ KHÁC cùng khoảng thời gian
+   * — đó mới thật sự là nhập hai lần cùng một chuyện.
+   */
+  if (category && !input.confirmDuplicate) {
+    const overlap = conn
+      .prepare(
+        `SELECT id, title, detected_at, closed_at FROM sos_cases
+          WHERE student_id = ? AND category = ? AND origin_kind = 'backfill'
+            AND NOT (closed_at < ? OR detected_at > ?)
+          LIMIT 1`,
+      )
+      .get(input.studentId, category, input.fromDate, input.toDate) as any;
+    if (overlap) {
+      throw badRequest(
+        `Học viên này đã có một case nhập bù "${overlap.title ?? caseCategoryLabel(category)}" `
+        + `trùng khoảng ${overlap.detected_at} → ${overlap.closed_at} — có phải cùng một lần không?`,
+        { duplicateBackfill: { id: overlap.id, title: overlap.title, from: overlap.detected_at, to: overlap.closed_at } },
+      );
+    }
+  }
+
+  return tx(() => {
+    const created = reportIssue(p, {
+      studentId: input.studentId, cycleId: input.cycleId,
+      track: input.track, topic: input.topic, primaryCode: input.primaryCode,
+      title: input.title, summary: input.summary,
+      detectedAt: input.fromDate,
+      parallel: true,
+      backfill: true,
+    }) as any;
+
+    for (const a of input.actions) {
+      recordIntervention(p, created.id, {
+        kind: 'other', description: a.description, performerName: a.performerName,
+        status: 'completed', startedDate: a.fromDate, completedDate: a.toDate,
+        backfill: true,
+      });
+    }
+
+    const closed = closeCaseOutcome(p, created.id, {
+      outcome: input.outcome, note, closedOn: input.toDate, metrics: input.metrics,
+    });
+    writeAudit({ actorUserId: p.userId, action: 'case.backfill.done', entityType: 'sos_case',
+      entityId: created.id, entityLabel: input.title ?? input.summary.slice(0, 40),
+      after: { from: input.fromDate, to: input.toDate, actions: input.actions.length } });
+    return closed;
+  });
+}
+
+/**
  * Ghi một lần XEM LẠI. Gắn với một tác động, hoặc gắn thẳng vào case khi chỉ đang theo dõi.
  *
  * `outcome` là quan sát, KHÔNG phải khẳng định tác động gây ra thay đổi. Vì vậy điểm tăng
@@ -1221,7 +1417,7 @@ export function recordFollowUp(p: Principal, caseId: number, input: {
 }) {
   const conn = db();
   const c = loadCase(caseId);
-  require_(p, PERMISSIONS.SOS_EDIT, { classId: c.class_id, studentId: c.eff_student_id },
+  require_(p, PERMISSIONS.SOS_EDIT, sosEditCtx(c),
     'Bạn không có quyền ghi nhận theo dõi cho case này.');
   const observedOn = input.observedOn ?? demoToday();
   if (!isIsoDate(observedOn)) throw badRequest('Ngày quan sát không hợp lệ.');
@@ -1304,7 +1500,7 @@ export function setDisposition(p: Principal, caseId: number, input: {
       throw badRequest('"Chỉ theo dõi thêm" nghĩa là case còn mở. Chọn hướng khác nếu muốn đóng.');
     }
   } else {
-    require_(p, PERMISSIONS.SOS_EDIT, { classId: c.class_id, studentId: c.eff_student_id },
+    require_(p, PERMISSIONS.SOS_EDIT, sosEditCtx(c),
       'Bạn không có quyền cập nhật case này.');
   }
   if (input.disposition && !(DISPOSITIONS as readonly string[]).includes(input.disposition)) {
@@ -1566,7 +1762,7 @@ export function caseDetail(p: Principal, caseId: number) {
      */
     closeBlockers: c.status === 'done' ? [] : closeBlockers(caseId),
     viewer: {
-      canEdit: can(p, PERMISSIONS.SOS_EDIT, { classId: c.class_id, studentId: c.eff_student_id }),
+      canEdit: can(p, PERMISSIONS.SOS_EDIT, sosEditCtx(c)),
       canClose: canCloseCase(p, c),
       canApprove: can(p, PERMISSIONS.CASE_APPROVE, { classId: c.class_id, studentId: c.eff_student_id }),
     },
@@ -1973,9 +2169,13 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
    *
    * Hồ sơ học viên nay ghi kết quả NGAY TRONG THẺ CASE, nên nó phải biết trước có được ghi
    * hay không: người chỉ có quyền xem thì không thấy nút, thay vì bấm vào rồi nhận một câu
-   * từ chối. Một lần hỏi cho cả bảng, không hỏi lại cho từng case.
+   * từ chối.
+   *
+   * (AUTH-01) KHÔNG còn một cờ chung cho cả bảng — case Học thuật siết đúng kỹ năng, nên
+   * GV Listening được sửa case Listening mà KHÔNG được sửa case Reading trên CÙNG một bảng.
+   * Tính riêng cho từng case ở chỗ dựng thẻ case bên dưới (`sosEditCtx(c)`), không phải một
+   * lần hỏi chung ở đây.
    */
-  const canEdit = can(p, PERMISSIONS.SOS_EDIT, { classId: enr?.class_id ?? null, studentId });
 
   const cycle = cycleId
     ? (conn.prepare('SELECT * FROM learning_cycles WHERE id = ? AND student_id = ?').get(cycleId, studentId) as any)
@@ -2247,7 +2447,16 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
           parallel: !!c.parallel,
           openedOn: c.detected_at ?? null,
           touchedOn: lastTouch(c.id) ?? c.detected_at ?? null,
-          canEdit,
+          /*
+           * `c` ở đây đến từ `SELECT * FROM sos_cases` thẳng (không JOIN ra `class_id` như
+           * `loadCase()`) — dùng `classId`/`studentId` đã có sẵn trong phạm vi hàm này, chỉ
+           * lấy riêng `skill` theo đúng case (`sosEditCtx` không dùng được thẳng ở đây vì
+           * khác tên trường `class_id`/`eff_student_id`).
+           */
+          canEdit: can(p, PERMISSIONS.SOS_EDIT, {
+            classId: enr?.class_id ?? null, studentId,
+            skill: c.track === 'academic' ? c.topic ?? undefined : undefined,
+          }),
           /* Đủ thứ để vẽ MỘT THẺ CASE mà không phải gọi thêm một đường nữa (mục 1 · 2). */
           ...caseCardOf(c.id, c),
         }))
@@ -2394,6 +2603,15 @@ function caseCardOf(caseId: number, c: any) {
     outcomeLabel: c.outcome ? CASE_OUTCOME_LABEL[c.outcome as CaseOutcome] ?? null : null,
     outcomeNote: c.outcome_note ?? null,
     closedOn: c.closed_at ? String(c.closed_at).slice(0, 10) : null,
+    /*
+     * NHẬP BÙ (PR-C Task 3, chốt 7) — "ai nhập, nhập lúc nào" phải hiện ngay trên thẻ case,
+     * không giấu trong tooltip. `created_at` là lúc GÕ VÀO hệ thống, khác hẳn `detected_at`
+     * (lúc chuyện thật sự xảy ra) — đúng khác biệt chốt 7 đòi phải phân biệt được.
+     */
+    backfilledBy: c.origin_kind === 'backfill'
+      ? ((conn.prepare('SELECT full_name FROM users WHERE id = ?').get(c.reported_by) as any)?.full_name ?? null)
+      : null,
+    backfilledOn: c.origin_kind === 'backfill' && c.created_at ? String(c.created_at).slice(0, 10) : null,
   };
 }
 
@@ -2441,7 +2659,7 @@ function supportLineOf(openIv: any[], lastDone: any | null, lastFollow: any | nu
 export function setCaseOwner(p: Principal, caseId: number, ownerUserId: number | null) {
   const conn = db();
   const c = loadCase(caseId);
-  require_(p, PERMISSIONS.SOS_EDIT, { classId: c.class_id, studentId: c.eff_student_id },
+  require_(p, PERMISSIONS.SOS_EDIT, sosEditCtx(c),
     'Bạn không có quyền đổi người phụ trách case này.');
   if (ownerUserId !== null) {
     const u = conn.prepare("SELECT id, full_name FROM users WHERE id = ? AND status = 'active'").get(ownerUserId) as any;
@@ -2586,7 +2804,7 @@ export function updateResult(p: Principal, interventionId: number, input: {
   const iv = conn.prepare('SELECT * FROM case_interventions WHERE id = ?').get(interventionId) as any;
   if (!iv) throw notFound('Không tìm thấy phương án.');
   const c = loadCase(iv.case_id);
-  require_(p, PERMISSIONS.SOS_EDIT, { classId: c.class_id, studentId: c.eff_student_id },
+  require_(p, PERMISSIONS.SOS_EDIT, sosEditCtx(c),
     'Bạn không có quyền cập nhật kết quả của case này.');
 
   const track = c.track ?? 'academic';
