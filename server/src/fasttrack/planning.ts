@@ -132,7 +132,10 @@ export function noPlanQueue(
   } = {},
 ) {
   const conn = db();
-  const where: string[] = [`s.status = 'active'`, 's.archived_at IS NULL', 'cy.id IS NOT NULL'];
+  /* Kế hoạch Test CHỈ dành cho Fast Track (sổ MT-01) — Normal thi theo lịch lớp, không có lượt MT để xếp. */
+  const where: string[] = [
+    `s.status = 'active'`, 's.archived_at IS NULL', 'cy.id IS NOT NULL', `pg.scoring_mode = 'ielts_band'`,
+  ];
   const params: unknown[] = [];
   if (f.branchId) { where.push('c.branch_id = ?'); params.push(f.branchId); }
   if (f.classId) { where.push('e.class_id = ?'); params.push(f.classId); }
@@ -155,6 +158,7 @@ export function noPlanQueue(
          JOIN enrollments e ON e.student_id = s.id AND e.status = 'active'
          JOIN classes c ON c.id = e.class_id
          JOIN branches b ON b.id = c.branch_id
+         LEFT JOIN programmes pg ON pg.code = c.programme_code
          LEFT JOIN learning_cycles cy ON cy.student_id = s.id AND cy.status = 'active'
         WHERE ${where.join(' AND ')}
         ORDER BY c.code, s.full_name`,

@@ -7,7 +7,7 @@ import {
 import { demoToday } from '../demoConfig.ts';
 import { badRequest, isIsoDate, notFound, nowIso } from '../util.ts';
 import {
-  can, classScopeSql, defaultWorkScope, editableSkills, mySkills, require_, scopeFor, scoreEditPath,
+  can, classScopeSql, defaultWorkScope, editableSkills, moveableSkills, mySkills, require_, scopeFor, scoreEditPath,
   type Principal,
 } from '../permissions.ts';
 import { addJourney, notify, writeAudit } from '../platform/audit.ts';
@@ -785,8 +785,13 @@ export function attemptDetail(p: Principal, attemptId: number) {
       canPlanWeek: can(p, PERMISSIONS.PLAN_WEEK, { classId: a.class_id }),
       canCancel: can(p, PERMISSIONS.ATTEMPT_CANCEL, { classId: a.class_id }),
       canSkipSkill: can(p, PERMISSIONS.ATTEMPT_SKIP_SKILL, { classId: a.class_id }),
-      /** Xác nhận đã thi / vắng cho từng kỹ năng — cùng quyền với việc xếp lịch. */
-      canSetSitStatus: can(p, PERMISSIONS.PLAN_WEEK, { classId: a.class_id }),
+      /**
+       * Xác nhận đã thi / vắng CHO TỪNG KỸ NĂNG — cùng quyền với việc dời lịch kỹ năng đó
+       * (sổ SCH-01, SCH-02: một capability, không lệch giữa hai thao tác). Không còn một cờ
+       * `canSetSitStatus` chung cho cả đợt — giao diện đọc `moveableSkills` theo từng kỹ
+       * năng, đúng cho cả Quản lý (mọi kỹ năng) lẫn GVCN/GVBM lớp Normal (đúng phần phụ trách).
+       */
+      moveableSkills: a.class_id ? moveableSkills(p, a.class_id, ENTRY_SKILLS) : [],
       canOverrideDeadline: can(p, PERMISSIONS.DEADLINE_OVERRIDE, { classId: a.class_id }),
       /* Không có kỹ năng cụ thể ở mức cả đợt — dùng SOS_REPORT (rộng), đúng nghĩa "báo được". */
       canEditSos: can(p, PERMISSIONS.SOS_REPORT, { classId: a.class_id, studentId: a.student_id }),

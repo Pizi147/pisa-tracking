@@ -199,9 +199,12 @@ api.get('/ref/classes', requireAuth, wrap((req) => {
         WHERE c.status = 'active' ORDER BY b.id, c.code`,
     )
     .all() as any[];
+  /* Kế hoạch Test CHỈ dành cho Fast Track (sổ MT-01) — Normal thi theo lịch lớp, không xếp lượt. */
+  const fastTrackOnly = qStr(req, 'fastTrackOnly') === '1';
   return rows
     .filter((c) => scope.all || scope.branchIds.includes(c.branch_id) || scope.classIds.includes(c.id))
-    .filter((c) => !branchId || c.branch_id === branchId);
+    .filter((c) => !branchId || c.branch_id === branchId)
+    .filter((c) => !fastTrackOnly || c.scoring_mode === 'ielts_band');
 }));
 
 api.get('/ref/periods', requireAuth, wrap(() => {

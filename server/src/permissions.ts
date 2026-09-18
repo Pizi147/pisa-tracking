@@ -142,6 +142,12 @@ function branchOfClass(classId: number): number | null {
   return r?.branch_id ?? null;
 }
 
+/** Fast Track hay Normal — sổ SCH-01: quyền dời lịch của giáo viên chỉ mở cho lớp Normal. */
+function classIsFastTrack(classId: number): boolean {
+  const r = db().prepare('SELECT is_fast_track FROM classes WHERE id = ?').get(classId) as any;
+  return !!r?.is_fast_track;
+}
+
 function branchesOfStudent(studentId: number): number[] {
   const rows = db()
     .prepare(
@@ -238,6 +244,17 @@ function teacherAllows(p: Principal, permission: string, ctx: Ctx): boolean {
     case PERMISSIONS.STUDENT_EDIT:
       return ctx.anyScope === true || hasAssignment(p, ctx, 'core');
 
+    /*
+     * DỜI LỊCH MỘT KỸ NĂNG (sổ SCH-01) — CHỈ lớp Normal, và CHỈ GVCN (mọi môn của lớp mình
+     * chủ nhiệm) hoặc GVBM (đúng môn mình dạy). Fast Track chủ động vẫn là việc của Quản lý —
+     * `PLAN_WEEK` giữ nguyên, không đụng ở đây.
+     */
+    case PERMISSIONS.SCHEDULE_MOVE: {
+      const classIds = ctx.classId ? [ctx.classId] : ctx.studentId ? classesOfStudent(ctx.studentId) : [];
+      if (!classIds.length || classIds.some((id) => classIsFastTrack(id))) return false;
+      return hasAssignment(p, ctx, 'core') || hasAssignment(p, ctx, 'skill');
+    }
+
     default:
       return true;
   }
@@ -272,6 +289,9 @@ export function explain(p: Principal, permission: string, ctx: Ctx): string {
     if (permission === PERMISSIONS.ESTIMATE_EDIT) return 'Bạn chỉ ước lượng được kỹ năng mình được phân công.';
     if (permission === PERMISSIONS.SOS_EDIT) {
       return 'Bạn chỉ sửa/xử lý được case đúng kỹ năng mình dạy — case Ý thức thì chỉ GVCN.';
+    }
+    if (permission === PERMISSIONS.SCHEDULE_MOVE) {
+      return 'Bạn chỉ dời được lịch lớp Normal mình phụ trách — Fast Track vẫn do Quản lý xếp.';
     }
     return 'Bạn chỉ thao tác được trong lớp mình được phân công.';
   }
@@ -348,6 +368,16 @@ export function editableSkills(p: Principal, classId: number, skills: readonly s
  */
 export function mySkills(p: Principal, classId: number, skills: readonly string[]): string[] {
   return skills.filter((skill) => can(p, PERMISSIONS.SCORE_EDIT, { classId, skill }));
+}
+
+/**
+ * CÁC KỸ NĂNG dời được lịch ở một lớp (sổ SCH-01) — Quản lý/Quản trị dời được mọi kỹ năng
+ * (kể cả Fast Track); giáo viên chỉ dời được ở lớp Normal, đúng phần mình phụ trách
+ * (`SCHEDULE_MOVE` đã tự chặn Fast Track và khớp GVCN/GVBM — xem `teacherAllows`).
+ */
+export function moveableSkills(p: Principal, classId: number, skills: readonly string[]): string[] {
+  if (can(p, PERMISSIONS.PLAN_WEEK, { classId })) return [...skills];
+  return skills.filter((skill) => can(p, PERMISSIONS.SCHEDULE_MOVE, { classId, skill }));
 }
 
 /**

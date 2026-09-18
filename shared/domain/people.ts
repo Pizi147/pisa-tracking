@@ -44,6 +44,14 @@ export const PERMISSIONS = {
    */
   /** Chốt và đổi TUẦN của một lượt MT. Việc của Quản lý. */
   PLAN_WEEK: 'plan.week',
+  /**
+   * DỜI LỊCH MỘT KỸ NĂNG — sổ SCH-01/SCH-02. Tách khỏi `PLAN_WEEK` vì `PLAN_WEEK` còn kèm
+   * theo xếp lịch Fast Track chủ động (`bulkPlan`), việc vẫn của riêng Quản lý. Quyền này chỉ
+   * mở cho GVCN (lớp Normal mình chủ nhiệm) và GVBM (đúng môn mình dạy, lớp Normal) — xem
+   * `teacherAllows` ở `server/src/permissions.ts`. Cấp thẳng `PLAN_WEEK` cho giáo viên để
+   * "chữa tạm" sẽ vô tình mở luôn quyền xếp lịch Fast Track — sổ cấm rõ.
+   */
+  SCHEDULE_MOVE: 'schedule.move',
   ATTEMPT_CANCEL: 'attempt.cancel',
   /** Đánh dấu một kỹ năng là KHÔNG MOCK cho chính lượt đó. */
   ATTEMPT_SKIP_SKILL: 'attempt.skip_skill',
@@ -104,6 +112,7 @@ export type PermissionKey = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
 
 export const PERMISSION_LABEL: Record<string, string> = {
   'plan.week': 'Chốt tuần MT',
+  'schedule.move': 'Dời lịch một kỹ năng (lớp Normal, đúng phần phụ trách)',
   'attempt.cancel': 'Huỷ lượt MT',
   'attempt.skip_skill': 'Đánh dấu kỹ năng không mock',
   'deadline.override': 'Đặt hạn nhập điểm riêng',
