@@ -1,3 +1,7 @@
+> ⚠️ **TÀI LIỆU LỊCH SỬ — KHÔNG PHẢI LUẬT.** Bàn giao hiện hành là `BAN_GIAO.md`; kế hoạch
+> đang chạy là `plan.md`. File này chép lại *thứ đã code ở vòng đó*, không phải *thứ đã
+> chốt* — đã có một lần tin nó và đi sai (xem `BAN_GIAO.md` mục 5). Chỉ dùng để tra lịch sử.
+
 # Báo cáo bàn giao — vòng 6 (sau PR14)
 
 Một trang. Đọc xong là biết **cái gì đã đổi**, **mở gì trước**, và **chỗ nào còn chưa chắc**.

@@ -1,3 +1,7 @@
+> ⚠️ **TÀI LIỆU LỊCH SỬ — KHÔNG PHẢI LUẬT.** Bàn giao hiện hành là `BAN_GIAO.md`; kế hoạch
+> đang chạy là `plan.md`. File này chép lại *thứ đã code ở vòng đó*, không phải *thứ đã
+> chốt* — đã có một lần tin nó và đi sai (xem `BAN_GIAO.md` mục 5). Chỉ dùng để tra lịch sử.
+
 # Bàn giao sang chat mới — PISA Progress, vòng 7 (overhaul sau PR15)
 
 Mở file này khi bắt đầu một cuộc trò chuyện mới. Nó chứa **mọi thứ** người tiếp theo cần biết.
