@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useApi } from '../lib/useApi.ts';
 import { useSession } from '../lib/session.tsx';
 import { api } from '../lib/api.ts';
+import { useToast } from './Toast.tsx';
 import { addDaysStr } from '../lib/format.ts';
 import { MONTH_CODE, mondayOfDate, owningMonthOf, weekNumberInMonthOf } from '@shared/domain/index.ts';
 
@@ -84,7 +85,7 @@ function monthGrid(year: number, month: number): string[][] {
  * lịch tháng, gõ ngày, "Tuần này"), không phải khi chỉ đang hiển thị cửa sổ. Đây là ĐƯỜNG DUY
  * NHẤT tạo một hàng `report_periods` từ giao diện chọn tuần, và luôn đúng một hàng.
  */
-function resolveWeek(weekStart: string): Promise<{ id: number }> {
+export function resolveWeek(weekStart: string): Promise<{ id: number }> {
   return api.post<{ id: number }>('/ref/periods/resolve', { weekStart });
 }
 
@@ -106,8 +107,14 @@ export function WeekPicker({ periodId, onPeriod, className = 'w-52', label = 'Tu
   clearable?: boolean;
 }) {
   const { session } = useSession();
-  const today = session?.demoDate || new Date().toISOString().slice(0, 10);
-  const todayWeekStart = mondayOfDate(today);
+  const toast = useToast();
+  /*
+   * `demoDate` là NGUỒN DUY NHẤT cho "hôm nay" (sổ §13.8: demo dùng ngày demo, thật dùng hôm
+   * nay thực tế — cả hai đều đi qua trường này, KHÔNG đọc đồng hồ trình duyệt). Component này
+   * chỉ render sau khi phiên đăng nhập đã tải (App.tsx chặn trước đó), nên `session` luôn có.
+   */
+  const today = session?.demoDate ?? '';
+  const todayWeekStart = today ? mondayOfDate(today) : '';
 
   const { data } = usePeriodWindow(periodId, scope);
   const list = data ?? [];
@@ -149,6 +156,8 @@ export function WeekPicker({ periodId, onPeriod, className = 'w-52', label = 'Tu
       const r = await resolveWeek(weekStart);
       onPeriod(r.id);
       setOpen(false);
+    } catch (e: any) {
+      toast.push('error', e.message ?? 'Không đổi được tuần — thử lại.');
     } finally {
       setBusy(false);
     }
