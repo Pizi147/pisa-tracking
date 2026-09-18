@@ -549,6 +549,8 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
         pendingSkills: pending,
         /* Ai phụ trách từng bài — danh sách của Quản lý là để ĐÔN ĐỐC, nên phải có tên. */
         pendingOwners: ownersOf(a.class_id, pending),
+        /** Tuần thi của CHÍNH các môn còn nợ — để hàng đợi nói "nợ từ tuần nào". */
+        pendingWeeks: [...new Set(pending.map((k) => views.get(k)?.periodCode).filter(Boolean))],
         /** Lịch từng môn của bài này — bốn môn có thể ở ba tuần khác nhau. */
         skillWeeks: [...new Set(regularSkills.map((k) => views.get(k)?.periodCode).filter(Boolean))],
         caseStatus: c?.status ?? null,
@@ -616,6 +618,10 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
       pendingSkills: pending,
       /* Ai phụ trách từng bài — danh sách của Quản lý là để ĐÔN ĐỐC, nên phải có tên. */
       pendingOwners: ownersOf(a.class_id, pending),
+      /** Tuần thi của CHÍNH các môn còn nợ — để hàng đợi nói "nợ từ tuần nào". */
+      pendingWeeks: [...new Set(
+        pending.map((k) => cells.find((c) => c.skill === k)?.periodCode).filter(Boolean),
+      )],
       /** Câu tóm tắt lịch tách tuần — mục 10.1. Danh sách hiện luôn, không phải mở chi tiết. */
       scheduleHeadline: scheduleHeadline({
         label: a.kind === 'mock' ? `MT${a.attempt_no}` : (a.period_code ?? ''),

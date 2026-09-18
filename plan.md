@@ -452,7 +452,7 @@ git commit -m "Ô điểm mang theo required, độc lập với quyền ngườ
   `pendingOwners: Record<string, string | null>`; `listClassSummaries(p, { scope })` →
   `needScores` là **số ô**. Task 4 dùng cả hai.
 
-- [ ] **Step 1: Viết phép kiểm — đây là phép kiểm chặn lỗi gốc**
+- [x] **Step 1: Viết phép kiểm — đây là phép kiểm chặn lỗi gốc**
 
 ```ts
 check('Badge bằng đúng danh sách — cả ba vai, cả hai phạm vi', () => {
@@ -487,7 +487,7 @@ Sửa luôn phép kiểm cũ ở dòng 1195 (`Badge "cần nhập điểm" theo 
 xem`): nó so badge với **số hàng**, giờ badge là **số ô**. Đổi thành so với tổng
 `pendingSkills.length` như trên, giữ nguyên tên phép kiểm.
 
-- [ ] **Step 2: Chạy và xác nhận nó HỎNG**
+- [x] **Step 2: Chạy và xác nhận nó HỎNG**
 
 ```bash
 npm test
@@ -495,7 +495,7 @@ npm test
 
 Kỳ vọng: ✗ ở cả hai phép kiểm mới, và thông báo chỉ ra đúng lớp bị lệch.
 
-- [ ] **Step 3: Phạm vi mặc định**
+- [x] **Step 3: Phạm vi mặc định**
 
 Thêm vào `server/src/permissions.ts`, cạnh `mySkills` (dòng 325). Nhớ thêm `WorkScope` vào
 khối import từ `../../shared/domain/index.ts` ở đầu file:
@@ -511,7 +511,7 @@ export function defaultWorkScope(p: Principal): WorkScope {
 }
 ```
 
-- [ ] **Step 4: Đếm ô ở danh sách lớp**
+- [x] **Step 4: Đếm ô ở danh sách lớp**
 
 Trong `server/src/classes/classes.ts`:
 
@@ -552,7 +552,7 @@ Nhánh Normal đang dùng `regularSkillViews`; map sang `PendingCell` tại ch�
 `editableOrAll` là bộ kỹ năng của chương trình (`skillsByClass`), **không** phải
 `editableByClass` — phạm vi quản lý phải đếm cả môn người xem không sửa được.
 
-- [ ] **Step 5: Trả `pendingSkills` ở danh sách đợt**
+- [x] **Step 5: Trả `pendingSkills` ở danh sách đợt**
 
 Trong `server/src/fasttrack/attempts.ts`:
 
@@ -599,13 +599,13 @@ function pendingInputOf(cells: Cell[]): PendingCell[] {
       break;
 ```
 
-- [ ] **Step 6: Nhận `scope` trên đường API**
+- [x] **Step 6: Nhận `scope` trên đường API**
 
 `server/src/routes/index.ts`: cả `/attempts` và `/classes` đọc `qStr(req, 'scope')`, chỉ nhận
 giá trị thuộc `WORK_SCOPES`, sai thì bỏ qua và để máy chủ tự chọn mặc định. **Không** báo lỗi
 vì tham số hỏng — màn hình vẫn phải mở được.
 
-- [ ] **Step 7: Chạy và xác nhận nó ĐẠT**
+- [x] **Step 7: Chạy và xác nhận nó ĐẠT**
 
 ```bash
 npm run build:server && npm test
@@ -613,7 +613,7 @@ npm run build:server && npm test
 
 Kỳ vọng: **323 đạt, 0 không đạt**.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add server/src shared/domain
@@ -631,7 +631,7 @@ git commit -m "Badge và danh sách việc cần chấm dùng cùng một phép 
 **Interfaces:**
 - Consumes: `loadSkillRows` / `skillScheduleOf` từ `server/src/fasttrack/skillSchedule.ts`
 
-- [ ] **Step 1: Viết phép kiểm T08**
+- [x] **Step 1: Viết phép kiểm T08**
 
 ```ts
 check('T08 · RLW tuần này, S tuần sau: mỗi bảng tuần hiện đúng phần của nó', () => {
@@ -659,7 +659,7 @@ check('T08 · RLW tuần này, S tuần sau: mỗi bảng tuần hiện đúng p
 });
 ```
 
-- [ ] **Step 2: Chạy và xác nhận nó HỎNG**
+- [x] **Step 2: Chạy và xác nhận nó HỎNG**
 
 ```bash
 npm test
@@ -667,7 +667,7 @@ npm test
 
 Kỳ vọng: ✗ ở **một** trong hai tuần — tuần không phải `planned_period_id` của đợt.
 
-- [ ] **Step 3: Lọc theo lịch từng kỹ năng**
+- [x] **Step 3: Lọc theo lịch từng kỹ năng**
 
 Trong `classScoreSheet`, thay dòng 1137:
 
@@ -702,7 +702,7 @@ bằng:
 Giữ `a.planned_period_id = ?` ở nhánh đầu: đợt cũ chưa có dòng lịch kỹ năng nào vẫn phải hiện
 ra (xem chú thích của `loadSkillRows` — danh sách là màn chỉ đọc, không tự tạo dòng).
 
-- [ ] **Step 4: Chạy và xác nhận nó ĐẠT**
+- [x] **Step 4: Chạy và xác nhận nó ĐẠT**
 
 ```bash
 npm run build:server && npm test
@@ -710,7 +710,7 @@ npm run build:server && npm test
 
 Kỳ vọng: **324 đạt, 0 không đạt**.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add server/src/fasttrack/attempts.ts server/src/tests/run.ts
