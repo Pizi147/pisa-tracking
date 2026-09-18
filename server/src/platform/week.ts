@@ -14,7 +14,12 @@ import { demoToday } from '../demoConfig.ts';
  * luôn là ngày thứ Hai.
  */
 
-const MONTH_CODE = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+/*
+ * QUY ƯỚC MÃ TUẦN nay nằm ở `shared/domain/week.ts` — giao diện cũng cần dựng mã tuần khi
+ * vẽ trục thời gian của hành trình, và hai bản cài đặt cho một quy ước thì sớm muộn hai chỗ
+ * gọi cùng một tuần bằng hai cái tên. Ở đây chỉ còn phần đụng tới database.
+ */
+import { MONTH_CODE, owningMonthOf, weekNumberInMonthOf } from '../../../shared/domain/index.ts';
 
 export function mondayOf(date: string): string {
   const d = parseDate(date);
@@ -24,25 +29,12 @@ export function mondayOf(date: string): string {
 
 /** Tháng sở hữu tuần = tháng chứa thứ Năm (ngày thứ 4 tính từ thứ Hai). */
 export function owningMonth(weekStart: string): { year: number; month: number } {
-  const thursday = parseDate(addDays(weekStart, 3));
-  return { year: thursday.getUTCFullYear(), month: thursday.getUTCMonth() + 1 };
+  return owningMonthOf(weekStart);
 }
 
 /** Thứ tự tuần trong tháng sở hữu: đếm các thứ Hai có cùng tháng sở hữu. */
 export function weekNumberInMonth(weekStart: string): number {
-  const { year, month } = owningMonth(weekStart);
-  // Lùi về thứ Hai đầu tiên còn thuộc tháng này.
-  let cursor = weekStart;
-  let n = 1;
-  for (;;) {
-    const prev = addDays(cursor, -7);
-    const om = owningMonth(prev);
-    if (om.year !== year || om.month !== month) break;
-    cursor = prev;
-    n += 1;
-    if (n > 6) break;                   // chặn vòng lặp bất thường
-  }
-  return n;
+  return weekNumberInMonthOf(weekStart);
 }
 
 export type WeekInfo = {

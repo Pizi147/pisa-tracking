@@ -1491,7 +1491,12 @@ check('Đường dẫn cố định của /attempts đứng TRƯỚC /attempts/:
    * Express khớp route theo thứ tự khai báo. Đặt "no-plan" sau `:id` thì nó bị nuốt và
    * request đi vào hàm chi tiết với một id không phải số.
    */
-  const src = fs.readFileSync(new URL('../routes/index.ts', import.meta.url).pathname.replace('/dist-server', ''), 'utf8');
+  /*
+   * Đọc CHÍNH file nguồn, qua `path` chứ không qua `URL.pathname`: trên Windows pathname trả
+   * về "/C:/..." và mã hoá khoảng trắng thành %20, nên phép kiểm này hỏng ở máy có dấu cách
+   * trong đường dẫn — hỏng vì môi trường, không phải vì route sai.
+   */
+  const src = fs.readFileSync(path.resolve(__dirname, '../../../../server/src/routes/index.ts'), 'utf8');
   const byId = src.indexOf("api.get('/attempts/:id'");
   for (const fixed of ["api.get('/attempts/no-plan'"]) {
     const at = src.indexOf(fixed);
@@ -3770,7 +3775,7 @@ check('Trượt Listening ở MT1 rồi MT2 → ĐÚNG MỘT case, tên đổi t
   assert(d.milestones.filter((m: any) => m.attemptNo).length >= 2,
     'Case phải có mốc của cả hai lượt MT');
   assert(d.milestones.some((m: any) => m.kind === 'repeat'),
-    'Thiếu mốc "trượt lại" — nhìn vào không biết phương án cũ chưa ăn thua');
+    'Thiếu mốc "trượt lại" — nhìn vào không biết phương án cũ chưa đạt kết quả');
 });
 
 check('Case đã đóng mà MT sau trượt lại → MỞ CASE MỚI nối vào case cũ (mục 7.5)', () => {

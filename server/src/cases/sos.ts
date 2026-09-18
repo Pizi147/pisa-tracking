@@ -125,7 +125,7 @@ export function followUntilAfter(attempt: any): string | null {
  *
  * Ba tình huống, ba loại mốc khác nhau, vì ba thứ này người đọc cần phân biệt:
  *   opened      lần đầu
- *   repeat      case đang mở mà lại trượt   → "phương án cũ chưa ăn thua"
+ *   repeat      case đang mở mà lại trượt   → "phương án cũ chưa đạt kết quả"
  *   recurrence  case đã CHỐT KẾT THÚC mà lại trượt → "tưởng xong rồi mà hỏng lại"
  */
 export function upsertCategoryCase(

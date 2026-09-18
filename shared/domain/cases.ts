@@ -242,7 +242,7 @@ export function caseDedupKey(input: {
  * MỐC trong vòng đời một case. Case sống suốt khoá nên phải đọc được nó đã đi qua những gì.
  *
  * `repeat` và `recurrence` khác nhau ở chỗ case lúc đó đang mở hay đã đóng — và đó là khác
- * biệt người dùng cần thấy: "vẫn chưa ăn thua" khác hẳn "tưởng xong rồi mà hỏng lại".
+ * biệt người dùng cần thấy: "vẫn chưa đạt kết quả" khác hẳn "tưởng xong rồi mà hỏng lại".
  */
 export const MILESTONE_KINDS = [
   'opened', 'repeat', 'recurrence', 'passed', 'closed', 'extended',

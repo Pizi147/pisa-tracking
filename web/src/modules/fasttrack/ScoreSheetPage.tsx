@@ -1,9 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
-import { useSession } from '../../lib/session.tsx';
 import { Card, Empty, ErrorState, Level, SectionNote, Skeleton, Status, Th} from '../../ui/ui.tsx';
-import { usePeriods } from '../../ui/Filters.tsx';
+import { usePeriods, useCurrentPeriod, type Period } from '../../ui/Filters.tsx';
 import { CriteriaButton, DeadlinePill, RawScoreInput, useSaveScore, type Cell } from './ScoreEntry.tsx';
 import {
   attemptStatusLabel, attemptStatusTone, fmtBand, skillShort, sosLabel, sosTone,
@@ -22,28 +21,64 @@ type Sheet = {
 };
 
 /**
+ * "01/02 – 07/02" — khoảng ngày của một tuần, viết như mọi dòng khác trong ô chọn tuần.
+ *
+ * Tuần mở thẳng từ đường dẫn đi qua đường bảng điểm chứ không qua danh sách tuần, mà đường
+ * ấy không trả về sẵn chuỗi khoảng ngày. Dựng lại ở đây rẻ hơn là thêm một trường chỉ để
+ * phục vụ đúng một chỗ.
+ */
+function rangeOf(from: string, to: string): string {
+  const dm = (d: string) => `${d.slice(8, 10)}/${d.slice(5, 7)}`;
+  return `${dm(from)} – ${dm(to)}`;
+}
+
+/**
  * Bảng nhập điểm cho cả lớp trong một tuần.
  * Điều hướng bàn phím: Enter/↓ xuống ô cùng cột, ↑ lên, ←/→ sang kỹ năng khác cùng dòng.
  */
 export default function ScoreSheetPage() {
   const { classId } = useParams();
-  const { session } = useSession();
   const [params, setParams] = useSearchParams();
   const periods = usePeriods();
+  const current = useCurrentPeriod();
   const [periodId, setPeriodId] = useState<number | null>(params.get('periodId') ? Number(params.get('periodId')) : null);
 
+  /*
+   * MỞ RA LÀ ĐỨNG Ở TUẦN HIỆN TẠI — đây là lỗi owner báo: bảng chấm tự nhảy sang tuần xa nhất.
+   *
+   * Nguyên nhân: ô chọn tuần nạp 26 tuần MỚI NHẤT của lịch, mà lịch có sẵn cả tuần tương lai
+   * (kế hoạch MT xếp tới đầu 2027). Khi phần tương lai dài hơn 26 tuần thì tuần hiện tại rơi
+   * khỏi danh sách, bản cũ tìm không thấy nên lấy phần tử đầu — chính là tuần xa nhất.
+   *
+   * Nay: có tuần trên đường dẫn thì giữ nguyên tuần đó; không có thì hỏi thẳng máy chủ tuần
+   * hiện tại, không phụ thuộc danh sách.
+   */
   useEffect(() => {
-    if (periodId === null && periods.data?.length) {
-      const cur = periods.data.find((p) => p.weekStart <= session!.demoDate && p.weekEnd >= session!.demoDate);
-      setPeriodId(cur?.id ?? periods.data[0].id);
-    }
-  }, [periods.data, periodId, session]);
+    if (periodId === null && current.data) setPeriodId(current.data.id);
+  }, [current.data, periodId]);
 
   const path = classId ? `/classes/${classId}/score-sheet${periodId ? `?periodId=${periodId}` : ''}` : null;
   const { data, loading, error, reload } = useApi<Sheet>(path);
   const grid = useRef<(HTMLInputElement | null)[][]>([]);
 
   if (error) return <ErrorState message={error.message} hint={error.hint} onRetry={reload} />;
+
+  /*
+   * TUẦN ĐANG CHỌN LUÔN CÓ MẶT TRONG Ô CHỌN. Danh sách tuần là một cửa sổ, nên tuần hiện tại
+   * — hoặc tuần mở thẳng từ đường dẫn — có thể không nằm trong đó. Thiếu nó thì ô chọn hiện
+   * trống và lần bấm kế tiếp lại rơi về một tuần khác.
+   */
+  const list = periods.data ?? [];
+  const chosen: Period | null = periodId
+    ? (list.find((p) => p.id === periodId)
+      ?? (current.data?.id === periodId ? current.data : null)
+      ?? (data?.period?.id === periodId
+        ? { ...data.period, range: rangeOf(data.period.weekStart, data.period.weekEnd) }
+        : null))
+    : null;
+  const weeks = chosen && !list.some((p) => p.id === chosen.id)
+    ? [chosen, ...list].sort((a, b) => b.weekStart.localeCompare(a.weekStart))
+    : list;
 
   const rawSkills = ENTRY_SKILLS.filter((s) => s === 'listening' || s === 'reading');
   const critSkills = ENTRY_SKILLS.filter((s) => s !== 'listening' && s !== 'reading');
@@ -75,7 +110,7 @@ export default function ScoreSheetPage() {
             setPeriodId(v);
             const next = new URLSearchParams(params); next.set('periodId', String(v)); setParams(next, { replace: true });
           }}>
-            {(periods.data ?? []).map((p) => <option key={p.id} value={p.id}>{p.code} · {p.range}</option>)}
+            {weeks.map((p) => <option key={p.id} value={p.id}>{p.code} · {p.range}</option>)}
           </select>
         </label>
       </div>
