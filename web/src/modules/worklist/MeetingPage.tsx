@@ -1,11 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
-import { useSession } from '../../lib/session.tsx';
 import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { Card, Empty, ErrorState, Outcome, SectionNote, Skeleton, Status } from '../../ui/ui.tsx';
-import { WeekPicker, usePeriodWindow } from '../../ui/Filters.tsx';
+import { WeekPicker, usePeriodWindow, resolveWeek } from '../../ui/Filters.tsx';
 import { SignalList } from './SignalList.tsx';
 import { ManagerTaskList, ManagerTasks } from './ManagerTasks.tsx';
 import { fmtDate, unitStatusLabel, unitTone } from '../../lib/format.ts';
@@ -51,7 +50,6 @@ export default function MeetingPage() {
  * Tổng quan. Một bản cài đặt, một cách đọc số — hai màn hình không bao giờ lệch nhau.
  */
 export function MeetingBoard() {
-  const { session } = useSession();
   const [periodId, setPeriodId] = useState<number | null>(null);
   /*
    * KỲ TUẦN HAY KỲ THÁNG (mục 14.2). Báo cáo được GHI theo tuần; kỳ tháng là cách đọc lại
@@ -59,14 +57,24 @@ export function MeetingBoard() {
    */
   const [byMonth, setByMonth] = useState(false);
 
-  // Mở đúng tuần hiện tại. Cửa sổ tuần trượt theo tuần đang xem nên không cần nạp cả lịch sử.
+  /*
+   * MỞ ĐÚNG TUẦN HIỆN TẠI. Cửa sổ tuần trượt theo tuần đang xem nên không cần nạp cả lịch sử.
+   *
+   * Tuần hiện tại lấy qua cờ `isAnchor` máy chủ trả về (neo mặc định vào hôm nay khi chưa có
+   * `periodId`) — KHÔNG fallback về `window.data[0]` (phần tử đầu, tức tuần TƯƠNG LAI nhất của
+   * cửa sổ): đó đúng là kiểu lỗi sổ §13.8 cấm, tuần rơi khỏi cửa sổ thì nhảy sang tuần khác
+   * thay vì báo lỗi rõ ràng. Tuần hiện tại có thể chưa có hàng (`id: null`) nên phải resolve.
+   */
   const window = usePeriodWindow(periodId);
   useEffect(() => {
-    if (periodId === null && window.data?.length) {
-      const cur = window.data.find((p) => p.weekStart <= session!.demoDate && p.weekEnd >= session!.demoDate);
-      setPeriodId(cur?.id ?? window.data[0].id);
-    }
-  }, [window.data, periodId, session]);
+    if (periodId !== null || !window.data?.length) return;
+    const cur = window.data.find((p) => p.isAnchor);
+    if (!cur) return;
+    if (cur.id !== null) { setPeriodId(cur.id); return; }
+    let cancelled = false;
+    void resolveWeek(cur.weekStart).then((r) => { if (!cancelled) setPeriodId(r.id); });
+    return () => { cancelled = true; };
+  }, [window.data, periodId]);
 
   const week = window.data?.find((p) => p.id === periodId) ?? null;
   const month = (() => {

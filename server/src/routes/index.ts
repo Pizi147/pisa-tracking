@@ -233,6 +233,19 @@ api.get('/ref/period-window', requireAuth, wrap((req) => {
   }));
 }));
 
+/**
+ * RESOLVE ĐÚNG MỘT TUẦN THÀNH ID THẬT (sổ §13.8).
+ *
+ * Đường đọc `/ref/period-window` không còn tự tạo hàng cho cả cửa sổ — tuần chưa có hàng trả
+ * về `id: null` để vẫn hiện/chọn được, nhưng bộ chọn tuần và các màn cần LƯU vào đúng tuần đó
+ * phải gọi route này để lấy ID thật, đúng lúc cần, đúng một tuần — không phải hàng loạt.
+ */
+api.post('/ref/periods/resolve', requireAuth, wrap((req) => {
+  const weekStart = req.body?.weekStart;
+  if (!isIsoDate(weekStart)) throw badRequest('Cần một ngày hợp lệ (YYYY-MM-DD) để xác định tuần.');
+  return ensurePeriod(weekStart);
+}));
+
 /** Danh sách người cho ô chọn Người phụ trách / Người theo dõi — gõ để lọc. */
 api.get('/ref/people', requireAuth, wrap((req) =>
   meetingSvc.searchPeople(principalOf(req), qStr(req, 'q'))));
