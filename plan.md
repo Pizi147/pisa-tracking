@@ -1345,20 +1345,40 @@ Luật chủ sản phẩm chốt 19/09/2026:
 Lý do Ý thức khác: case Ý thức **không có kỹ năng** nên không có gì để "đúng môn mình dạy", và
 sổ §13.12 chốt *"GV trong lớp có thể báo vấn đề; chỉ QL/GVCN tạo và xử lý PA Ý thức."*
 
-- [ ] **Step 1: Phép kiểm trước.** Ba ca, đều phải ĐỎ trước khi sửa: (a) GV Listening sửa case
+- [x] **Step 1: Phép kiểm trước.** Ba ca, đều phải ĐỎ trước khi sửa: (a) GV Listening sửa case
       Reading cùng lớp → bị từ chối; (b) GV Listening tạo phương án Ý thức → bị từ chối;
       (c) GV Listening sửa case Listening cùng lớp → cho qua.
-- [ ] **Step 2: Truyền kỹ năng vào ngữ cảnh.** Mọi nơi gọi `can(p, SOS_EDIT, ctx)` cho case học
+      **Ghi chú 19/09/2026:** ba ca viết bằng `P.subjectTeacher` (GVBM thuần của MB-FT 101),
+      không dùng `P.lrTeacher` như câu chữ gốc — trong đúng bộ demo này, người dạy Listening
+      của lớp MB-FT 101 lại chính là GVCN (một người hai vai, có thật ngoài đời), nên dùng
+      `P.lrTeacher` để kiểm "GVBM sai môn bị chặn" sẽ luôn PASS sai lý do (qua được vì là
+      GVCN, không phải vì đúng môn). Ba phép kiểm nằm ở cuối `server/src/tests/run.ts`.
+- [x] **Step 2: Truyền kỹ năng vào ngữ cảnh.** Mọi nơi gọi `can(p, SOS_EDIT, ctx)` cho case học
       thuật phải truyền `ctx.skill` = hạng mục của case. `hasAssignment(..., 'skill')` trả
       `false` khi `ctx.skill` rỗng — nên **thiếu truyền là khoá hết**, không phải mở hết. Rà
       từng nơi gọi, đừng chỉ sửa `teacherAllows`.
-- [ ] **Step 3: Đổi luật.** Trong `teacherAllows` (`permissions.ts:193`), tách `SOS_EDIT` khỏi
+      **Đã rà hết:** `cases.ts` (hàm `sosEditCtx` dùng chung ở 8 nơi `require_`, 1 nơi
+      `viewer.canEdit`, và `skillSupportBoard` tính riêng từng dòng thay vì một cờ chung cho
+      cả bảng); `signals.ts` (`viewOf`, `linkSignalToCase`, `assignSignal`); `attempts.ts` và
+      `profile.ts` (hai trường hiển thị, đổi sang `SOS_REPORT` vì đó là quyền BÁO, không phải
+      quyền SỬA); `worklist/mywork.ts` (ba nơi lọc hàng đợi việc — `dueActions`, `dueReviews`,
+      `caseRows` — hai câu SQL đầu phải thêm `sc.topic` vào SELECT vì trước đó thiếu cột).
+- [x] **Step 3: Đổi luật.** Trong `teacherAllows` (`permissions.ts:193`), tách `SOS_EDIT` khỏi
       cụm `ATTEMPT_VIEW`/`STUDENT_VIEW`: case học thuật dùng `'skill'`, case Ý thức dùng
       `'core'`. `ATTEMPT_VIEW` và `STUDENT_VIEW` **giữ nguyên `'any'`** — xem trong lớp mình là
-      đúng, chỉ sửa mới cần siết.
+      đúng, chỉ sửa mới cần siết. Thêm quyền `SOS_REPORT` riêng (rộng, như `ATTEMPT_VIEW` cũ)
+      cho đúng việc BÁO vấn đề, tách khỏi `SOS_EDIT` đã siết.
 - [ ] **Step 4: Nhập bù theo cùng luật.** `backfillCase` dùng đúng kiểm tra này, không đường riêng.
-- [ ] **Step 5: Kiểm API trực tiếp.** Sổ SCH-01 nhấn: *"kiểm API trực tiếp, không chỉ ẩn nút."*
+      **Chưa làm được — không phải bỏ sót mà vì chưa tới lượt:** hàm `backfillCase` là một
+      phần của PR-C Task 3 ("Đã xong từ trước"), và Task 3 **chưa bắt đầu** tại thời điểm ghi
+      dòng này. Khi viết Task 3, hàm đó phải gọi `sosEditCtx`/cùng luật `SOS_EDIT` như mọi nơi
+      khác — ghi rõ ở đây để không quên khi làm Task 3.
+- [x] **Step 5: Kiểm API trực tiếp.** Sổ SCH-01 nhấn: *"kiểm API trực tiếp, không chỉ ẩn nút."*
       Gọi thẳng endpoint bằng tài khoản GV sai môn phải nhận 403.
+      Ba phép kiểm Step 1 gọi thẳng `cases.recordIntervention()` — đúng hàm dịch vụ mà route
+      Express gọi, ném `HttpError(403, ...)` qua `require_`/`forbidden()` — không đi qua UI,
+      không chỉ ẩn nút. Không có thời gian dựng một request HTTP thật qua `supertest`/`fetch`
+      trong đêm nay; nếu chủ sản phẩm muốn kiểm ở tầng HTTP thật, đó là việc còn lại.
 
 ### 10.6. Nghiệm thu PR-C
 

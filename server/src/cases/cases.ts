@@ -220,7 +220,7 @@ export function closeCaseOutcome(p: Principal, caseId: number, input: {
 /** Đổi hạn BÁO KẾT QUẢ của case. Mặc định là hết tuần MT kế tiếp, nhưng sửa được. */
 export function setFollowUntil(p: Principal, caseId: number, date: string | null) {
   const c = loadCase(caseId);
-  require_(p, PERMISSIONS.SOS_EDIT, { classId: c.class_id, studentId: c.eff_student_id },
+  require_(p, PERMISSIONS.SOS_EDIT, sosEditCtx(c),
     'Bạn không có quyền đổi hạn theo dõi của case này.');
   if (date && !isIsoDate(date)) throw badRequest('Hạn theo dõi không hợp lệ.');
   db().prepare('UPDATE sos_cases SET follow_until = ?, updated_at = ? WHERE id = ?')
@@ -252,6 +252,21 @@ function loadCase(caseId: number) {
   if (!c) throw notFound('Không tìm thấy case');
   c.class_id = c.attempt_class_id ?? c.current_class_id ?? null;
   return c;
+}
+
+/**
+ * NGỮ CẢNH QUYỀN CHO SOS_EDIT (AUTH-01) — MỘT chỗ dựng, dùng ở mọi nơi sửa/xử lý case.
+ *
+ * Học thuật truyền đúng kỹ năng (`c.topic`, ví dụ "listening") để `teacherAllows` so khớp
+ * phân công GVBM. Ý thức KHÔNG có kỹ năng — để `skill` rỗng để chỉ GVCN qua được. Thiếu hàm
+ * này thì mỗi nơi gọi `require_`/`can` tự viết một cách khác, và đó chính là kiểu lỗi sinh ra
+ * AUTH-01 lần đầu.
+ */
+function sosEditCtx(c: { class_id?: number | null; eff_student_id?: number | null; track?: string | null; topic?: string | null }) {
+  return {
+    classId: c.class_id, studentId: c.eff_student_id,
+    skill: c.track === 'academic' ? c.topic ?? undefined : undefined,
+  };
 }
 
 // ---------------------------------------------------------------- giáo viên báo vấn đề
@@ -376,7 +391,7 @@ export function reportIssue(p: Principal, input: {
    * Listening vẫn được báo "em này hay nghỉ học". Nhưng báo được KHÔNG có nghĩa là được
    * ghi điểm kỹ năng khác — đó là hai quyền riêng.
    */
-  require_(p, PERMISSIONS.SOS_EDIT, { classId, studentId: input.studentId },
+  require_(p, PERMISSIONS.SOS_REPORT, { classId, studentId: input.studentId },
     'Bạn chỉ báo được vấn đề của học viên trong phạm vi mình phụ trách.');
 
   /*
@@ -762,7 +777,7 @@ export function setIssues(p: Principal, caseId: number, input: {
 }) {
   const conn = db();
   const c = loadCase(caseId);
-  require_(p, PERMISSIONS.SOS_EDIT, { classId: c.class_id, studentId: c.eff_student_id },
+  require_(p, PERMISSIONS.SOS_EDIT, sosEditCtx(c),
     'Bạn không có quyền phân loại vấn đề cho case này.');
   for (const code of [input.primaryCode, ...(input.secondaryCodes ?? [])]) {
     if (code && !issueBranchOf(code)) throw badRequest(`Mã vấn đề không hợp lệ: ${code}`);
@@ -859,7 +874,7 @@ export function recordIntervention(p: Principal, caseId: number, input: {
 }) {
   const conn = db();
   const c = loadCase(caseId);
-  require_(p, PERMISSIONS.SOS_EDIT, { classId: c.class_id, studentId: c.eff_student_id },
+  require_(p, PERMISSIONS.SOS_EDIT, sosEditCtx(c),
     'Bạn không có quyền ghi nhận hỗ trợ cho case này.');
   if (!(INTERVENTION_KINDS as readonly string[]).includes(input.kind)) throw badRequest('Loại hỗ trợ không hợp lệ.');
   const status = input.status && (INTERVENTION_STATUSES as readonly string[]).includes(input.status)
@@ -1174,7 +1189,7 @@ export function completeIntervention(p: Principal, interventionId: number, input
   const iv = conn.prepare('SELECT * FROM case_interventions WHERE id = ?').get(interventionId) as any;
   if (!iv) throw notFound('Không tìm thấy phương án.');
   const c = loadCase(iv.case_id);
-  require_(p, PERMISSIONS.SOS_EDIT, { classId: c.class_id, studentId: c.eff_student_id },
+  require_(p, PERMISSIONS.SOS_EDIT, sosEditCtx(c),
     'Bạn không có quyền cập nhật phương án của case này.');
 
   if (iv.approval_state === 'pending') {
@@ -1240,7 +1255,7 @@ export function recordFollowUp(p: Principal, caseId: number, input: {
 }) {
   const conn = db();
   const c = loadCase(caseId);
-  require_(p, PERMISSIONS.SOS_EDIT, { classId: c.class_id, studentId: c.eff_student_id },
+  require_(p, PERMISSIONS.SOS_EDIT, sosEditCtx(c),
     'Bạn không có quyền ghi nhận theo dõi cho case này.');
   const observedOn = input.observedOn ?? demoToday();
   if (!isIsoDate(observedOn)) throw badRequest('Ngày quan sát không hợp lệ.');
@@ -1323,7 +1338,7 @@ export function setDisposition(p: Principal, caseId: number, input: {
       throw badRequest('"Chỉ theo dõi thêm" nghĩa là case còn mở. Chọn hướng khác nếu muốn đóng.');
     }
   } else {
-    require_(p, PERMISSIONS.SOS_EDIT, { classId: c.class_id, studentId: c.eff_student_id },
+    require_(p, PERMISSIONS.SOS_EDIT, sosEditCtx(c),
       'Bạn không có quyền cập nhật case này.');
   }
   if (input.disposition && !(DISPOSITIONS as readonly string[]).includes(input.disposition)) {
@@ -1585,7 +1600,7 @@ export function caseDetail(p: Principal, caseId: number) {
      */
     closeBlockers: c.status === 'done' ? [] : closeBlockers(caseId),
     viewer: {
-      canEdit: can(p, PERMISSIONS.SOS_EDIT, { classId: c.class_id, studentId: c.eff_student_id }),
+      canEdit: can(p, PERMISSIONS.SOS_EDIT, sosEditCtx(c)),
       canClose: canCloseCase(p, c),
       canApprove: can(p, PERMISSIONS.CASE_APPROVE, { classId: c.class_id, studentId: c.eff_student_id }),
     },
@@ -1992,9 +2007,13 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
    *
    * Hồ sơ học viên nay ghi kết quả NGAY TRONG THẺ CASE, nên nó phải biết trước có được ghi
    * hay không: người chỉ có quyền xem thì không thấy nút, thay vì bấm vào rồi nhận một câu
-   * từ chối. Một lần hỏi cho cả bảng, không hỏi lại cho từng case.
+   * từ chối.
+   *
+   * (AUTH-01) KHÔNG còn một cờ chung cho cả bảng — case Học thuật siết đúng kỹ năng, nên
+   * GV Listening được sửa case Listening mà KHÔNG được sửa case Reading trên CÙNG một bảng.
+   * Tính riêng cho từng case ở chỗ dựng thẻ case bên dưới (`sosEditCtx(c)`), không phải một
+   * lần hỏi chung ở đây.
    */
-  const canEdit = can(p, PERMISSIONS.SOS_EDIT, { classId: enr?.class_id ?? null, studentId });
 
   const cycle = cycleId
     ? (conn.prepare('SELECT * FROM learning_cycles WHERE id = ? AND student_id = ?').get(cycleId, studentId) as any)
@@ -2266,7 +2285,16 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
           parallel: !!c.parallel,
           openedOn: c.detected_at ?? null,
           touchedOn: lastTouch(c.id) ?? c.detected_at ?? null,
-          canEdit,
+          /*
+           * `c` ở đây đến từ `SELECT * FROM sos_cases` thẳng (không JOIN ra `class_id` như
+           * `loadCase()`) — dùng `classId`/`studentId` đã có sẵn trong phạm vi hàm này, chỉ
+           * lấy riêng `skill` theo đúng case (`sosEditCtx` không dùng được thẳng ở đây vì
+           * khác tên trường `class_id`/`eff_student_id`).
+           */
+          canEdit: can(p, PERMISSIONS.SOS_EDIT, {
+            classId: enr?.class_id ?? null, studentId,
+            skill: c.track === 'academic' ? c.topic ?? undefined : undefined,
+          }),
           /* Đủ thứ để vẽ MỘT THẺ CASE mà không phải gọi thêm một đường nữa (mục 1 · 2). */
           ...caseCardOf(c.id, c),
         }))
@@ -2460,7 +2488,7 @@ function supportLineOf(openIv: any[], lastDone: any | null, lastFollow: any | nu
 export function setCaseOwner(p: Principal, caseId: number, ownerUserId: number | null) {
   const conn = db();
   const c = loadCase(caseId);
-  require_(p, PERMISSIONS.SOS_EDIT, { classId: c.class_id, studentId: c.eff_student_id },
+  require_(p, PERMISSIONS.SOS_EDIT, sosEditCtx(c),
     'Bạn không có quyền đổi người phụ trách case này.');
   if (ownerUserId !== null) {
     const u = conn.prepare("SELECT id, full_name FROM users WHERE id = ? AND status = 'active'").get(ownerUserId) as any;
@@ -2605,7 +2633,7 @@ export function updateResult(p: Principal, interventionId: number, input: {
   const iv = conn.prepare('SELECT * FROM case_interventions WHERE id = ?').get(interventionId) as any;
   if (!iv) throw notFound('Không tìm thấy phương án.');
   const c = loadCase(iv.case_id);
-  require_(p, PERMISSIONS.SOS_EDIT, { classId: c.class_id, studentId: c.eff_student_id },
+  require_(p, PERMISSIONS.SOS_EDIT, sosEditCtx(c),
     'Bạn không có quyền cập nhật kết quả của case này.');
 
   const track = c.track ?? 'academic';

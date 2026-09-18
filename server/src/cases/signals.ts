@@ -208,7 +208,11 @@ function viewOf(p: Principal, r: any, today: string): SignalView {
     resolutionNote: r.resolution_note, withdrawnReason: r.withdrawn_reason,
     overdue: r.status === 'pending' && r.verify_due < today,
     mine: r.owner_user_id === p.userId,
-    canResolve: can(p, PERMISSIONS.SOS_EDIT, { classId: r.class_id, studentId: r.student_id }),
+    /* AUTH-01: tín hiệu Học thuật siết đúng kỹ năng; Ý thức (track !== 'academic') chỉ GVCN. */
+    canResolve: can(p, PERMISSIONS.SOS_EDIT, {
+      classId: r.class_id, studentId: r.student_id,
+      skill: r.track === 'academic' ? r.skill ?? undefined : undefined,
+    }),
   };
 }
 
@@ -284,8 +288,10 @@ function loadSignal(id: number): SignalRow {
  */
 export function linkSignalToCase(p: Principal, signalId: number, caseId: number, note?: string | null) {
   const sg = loadSignal(signalId);
-  require_(p, PERMISSIONS.SOS_EDIT, { classId: sg.class_id, studentId: sg.student_id },
-    'Bạn chỉ xác minh được tín hiệu của học viên trong phạm vi mình phụ trách.');
+  require_(p, PERMISSIONS.SOS_EDIT, {
+    classId: sg.class_id, studentId: sg.student_id,
+    skill: sg.track === 'academic' ? sg.skill ?? undefined : undefined,
+  }, 'Bạn chỉ xác minh được tín hiệu của học viên trong phạm vi mình phụ trách.');
   if (sg.status === 'withdrawn') throw badRequest('Tín hiệu này đã được thu hồi vì không còn căn cứ.');
 
   const conn = db();
@@ -362,8 +368,10 @@ export function linkSignalToCase(p: Principal, signalId: number, caseId: number,
 /** Quản lý giao tín hiệu cho người khác xác minh — khi chưa có ai được phân công đúng môn. */
 export function assignSignal(p: Principal, signalId: number, userId: number | null) {
   const sg = loadSignal(signalId);
-  require_(p, PERMISSIONS.SOS_EDIT, { classId: sg.class_id, studentId: sg.student_id },
-    'Bạn không có quyền giao tín hiệu này cho người khác.');
+  require_(p, PERMISSIONS.SOS_EDIT, {
+    classId: sg.class_id, studentId: sg.student_id,
+    skill: sg.track === 'academic' ? sg.skill ?? undefined : undefined,
+  }, 'Bạn không có quyền giao tín hiệu này cho người khác.');
   db().prepare('UPDATE case_signals SET owner_user_id = ?, updated_at = ? WHERE id = ?')
     .run(userId, nowIso(), signalId);
   writeAudit({

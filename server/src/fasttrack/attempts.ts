@@ -788,7 +788,8 @@ export function attemptDetail(p: Principal, attemptId: number) {
       /** Xác nhận đã thi / vắng cho từng kỹ năng — cùng quyền với việc xếp lịch. */
       canSetSitStatus: can(p, PERMISSIONS.PLAN_WEEK, { classId: a.class_id }),
       canOverrideDeadline: can(p, PERMISSIONS.DEADLINE_OVERRIDE, { classId: a.class_id }),
-      canEditSos: can(p, PERMISSIONS.SOS_EDIT, { classId: a.class_id, studentId: a.student_id }),
+      /* Không có kỹ năng cụ thể ở mức cả đợt — dùng SOS_REPORT (rộng), đúng nghĩa "báo được". */
+      canEditSos: can(p, PERMISSIONS.SOS_REPORT, { classId: a.class_id, studentId: a.student_id }),
       editableSkills: a.class_id ? editableSkills(p, a.class_id, ENTRY_SKILLS) : [],
     },
   };

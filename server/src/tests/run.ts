@@ -2525,10 +2525,17 @@ check('[9.1] Hai tab cập nhật kết quả: theo dõi tiếp thì không ph�
 });
 
 check('Chỉ GVCN của lớp và Quản lý mới đóng được case', () => {
+  /*
+   * AUTH-01: `recordIntervention` nay đòi ĐÚNG kỹ năng mình dạy, nên case dựng ở đây phải
+   * đúng kỹ năng của `P.subjectTeacher` — không cứng "listening" như trước AUTH-01.
+   */
+  const subjectSkill = (conn
+    .prepare(`SELECT skill FROM teacher_assignments WHERE class_id = ? AND user_id = ? AND skill IS NOT NULL LIMIT 1`)
+    .get(mbClass, P.subjectTeacher.userId) as any).skill as string;
   const c = cases.reportIssue(P.subjectTeacher, {
     title: 'Vấn đề cần theo dõi ở kỹ năng này',
-    primaryCode: 'student.listening.technique',
-    studentId: someStudent.id, topic: 'listening', summary: 'Thử quyền đóng — mô tả cụ thể cho phép kiểm này.', idempotencyKey: 'test-report-7', parallel: true,
+    primaryCode: domain.issuesForTopic(subjectSkill)[0].code,
+    studentId: someStudent.id, topic: subjectSkill, summary: 'Thử quyền đóng — mô tả cụ thể cho phép kiểm này.', idempotencyKey: 'test-report-7', parallel: true,
   }) as any;
   // Giáo viên bộ môn ghi nhận được nhưng không đóng.
   assertThrows(
@@ -3728,38 +3735,70 @@ check('Giao việc cho giáo viên phải chọn lớp và kỹ năng', () => {
 
 console.log('\n26. Việc trao đổi tới tay đúng người');
 
-check('GVCN nhận việc gặp học viên; việc gọi phụ huynh về Quản lý, không rơi vào GVBM', () => {
+check('GVCN nhận việc gặp học viên; việc gọi phụ huynh về Quản lý, không rơi vào GVBM sai môn', () => {
   /*
    * Hai việc trao đổi nay là phương án, nên chúng tới tay người ta qua nhóm việc
    * "Làm phương án đã hẹn" chứ không qua một bảng Liên hệ riêng. Cách CHIA VIỆC thì giữ
    * nguyên — đó mới là thứ nghiệp vụ, không phải bảng nào chứa nó.
    *
-   * Phải chọn lớp CÓ ĐỢT ĐÁNH GIÁ GẦN ĐÂY: hai việc trao đổi của những đợt đã xa đều đã làm
-   * xong trong bộ demo, nên ở đó không còn việc nào đang chờ để mà kiểm ai nhận.
+   * AUTH-01 (mục 10.5): case HỌC THUẬT nay chỉ đúng GVBM của ĐÚNG kỹ năng, hoặc GVCN, hoặc
+   * Quản lý mới xử lý được — nên bộ demo không còn sẵn một việc "gặp học viên" nào đang chờ
+   * mà một GVBM BẤT KỲ (không đúng môn) còn nhận được. Dựng riêng một case + phương án ở
+   * đây, biết trước đúng kỹ năng của từng vai, thay vì dò trong dữ liệu demo đổi theo thời
+   * gian — đúng cách các phép kiểm AUTH-01 khác trong file này đã làm.
    */
-  const pendingTalk = conn
+  const subjectSkill = (conn
+    .prepare(`SELECT skill FROM teacher_assignments WHERE class_id = ? AND user_id = ? AND skill IS NOT NULL LIMIT 1`)
+    .get(mbClass, P.subjectTeacher.userId) as any).skill as string;
+  /*
+   * Loại cả người VỪA dạy kỹ năng khác VỪA là GVCN (một người có thể mang hai vai, như
+   * `subjectOnlyTeacherOf` đã lưu ý) — người đó qua được bằng vai GVCN, không phải bằng
+   * đúng môn, nên không dùng được để kiểm "GVBM sai môn thì bị chặn".
+   */
+  const mismatchRow = conn
     .prepare(
-      `SELECT ta.user_id AS id, cl.branch_id AS branch FROM case_interventions iv
-         JOIN sos_cases sc ON sc.id = iv.case_id
-         JOIN assessment_attempts a ON a.id = sc.attempt_id
-         JOIN classes cl ON cl.id = a.class_id
-         JOIN teacher_assignments ta ON ta.class_id = cl.id AND ta.status = 'active'
-                                    AND ta.skill IS NOT NULL AND ta.is_core = 0
-                                    AND NOT EXISTS (SELECT 1 FROM teacher_assignments c2
-                                                     WHERE c2.class_id = cl.id AND c2.user_id = ta.user_id
-                                                       AND c2.is_core = 1 AND c2.status = 'active')
-        WHERE iv.kind = 'talk_student' AND iv.status IN ('planned','started')
-          AND iv.action_due IS NOT NULL AND iv.action_due <= ?
+      `SELECT ta.user_id AS id FROM teacher_assignments ta
+        WHERE ta.class_id = ? AND ta.skill IS NOT NULL AND ta.skill != ? AND ta.is_core = 0 AND ta.status = 'active'
+          AND NOT EXISTS (SELECT 1 FROM teacher_assignments c2
+                            WHERE c2.class_id = ta.class_id AND c2.user_id = ta.user_id
+                              AND c2.is_core = 1 AND c2.status = 'active')
         LIMIT 1`,
     )
-    .get(TODAY) as any;
-  assert(pendingTalk, 'Bộ demo không còn việc trao đổi nào đang chờ, do một GVBM thuần, để kiểm ai nhận');
-  const gv = loadPrincipal(pendingTalk.id);
+    .get(mbClass, subjectSkill) as any;
+  assert(mismatchRow, 'Seed thiếu một GVBM khác môn (không kiêm GVCN) ở MB-FT 101 để kiểm AUTH-01');
+  const mismatchTeacher = loadPrincipal(mismatchRow.id);
+
+  const enr = conn.prepare(`SELECT student_id FROM enrollments WHERE class_id = ? AND status = 'active' LIMIT 1`).get(mbClass) as any;
+  const cy = conn.prepare(
+    `SELECT id FROM learning_cycles WHERE student_id = ? AND status = 'active' LIMIT 1`,
+  ).get(enr.student_id) as any;
+  const ownSkillCase = cases.reportIssue(P.admin, {
+    studentId: enr.student_id, cycleId: cy?.id, track: 'academic', topic: subjectSkill,
+    primaryCode: domain.issuesForTopic(subjectSkill)[0].code,
+    title: `${subjectSkill}: kiểm việc gặp học viên`,
+    summary: `Ghi nhận riêng để kiểm ai nhận việc "gặp học viên" của case ${subjectSkill}.`,
+    parallel: true,
+  }) as any;
+  const iv = cases.recordIntervention(P.subjectTeacher, ownSkillCase.id, {
+    kind: 'talk_student', description: 'Hẹn nói chuyện riêng về việc học gần đây.', status: 'planned',
+  }) as any;
+  const ivId = iv.interventions[iv.interventions.length - 1].id as number;
+  // Đưa hạn về hôm nay để việc rơi vào nhóm "tới hạn", giống cách các phép kiểm khác dựng dữ liệu quá hạn.
+  conn.prepare('UPDATE case_interventions SET action_due = ? WHERE id = ?').run(TODAY, ivId);
+
+  // Chỉ GVCN mới ghi nhận được việc "gọi phụ huynh" của case này (AUTH-01: cả hai đều đòi đúng người).
+  const ivParent = cases.recordIntervention(P.coreTeacher, ownSkillCase.id, {
+    kind: 'talk_parent', description: 'Gọi phụ huynh trao đổi tình hình gần đây.', status: 'planned',
+  }) as any;
+  const ivParentId = ivParent.interventions[ivParent.interventions.length - 1].id as number;
+  conn.prepare('UPDATE case_interventions SET action_due = ? WHERE id = ?').run(TODAY, ivParentId);
+
   const kinds = (who: any) => {
     const out = new Set<string>();
     for (const g of mywork.myWork(who, {}).groups) {
       if (g.key !== 'do_plan') continue;
       for (const it of g.items) {
+        if (it.caseId !== ownSkillCase.id) continue;
         /* Nhãn đổi ở mục 8.1: "Meeting với học sinh" và "Report cho gia đình". */
         if (/meeting với học sinh/i.test(it.reason)) out.add('talk_student');
         if (/report cho gia đình/i.test(it.reason)) out.add('talk_parent');
@@ -3767,21 +3806,22 @@ check('GVCN nhận việc gặp học viên; việc gọi phụ huynh về Quả
     }
     return out;
   };
-  const gvKinds = kinds(gv);
-  assert(gvKinds.has('talk_student'), 'Giáo viên không nhận việc gặp học viên');
-  assert(!gvKinds.has('talk_parent'), 'GVBM bị giao việc gọi phụ huynh — việc đó không phải của họ');
+
+  const ownGvKinds = kinds(P.subjectTeacher);
+  assert(ownGvKinds.has('talk_student'), 'GVBM đúng kỹ năng không nhận việc gặp học viên của case kỹ năng mình');
+  assert(!ownGvKinds.has('talk_parent'), 'GVBM bị giao việc gọi phụ huynh — việc đó không phải của họ');
+
+  const wrongGvKinds = kinds(mismatchTeacher);
+  assert(!wrongGvKinds.has('talk_student'), 'AUTH-01: GVBM sai môn vẫn nhận được việc gặp học viên của case kỹ năng khác');
+
+  assert(kinds(P.coreTeacher).has('talk_student'), 'GVCN không nhận việc gặp học viên của case trong lớp mình');
 
   /*
    * VAI ADMIN CHI NHÁNH ĐÃ BỎ sau PR15. Trước đây việc gọi phụ huynh tới tay văn phòng;
    * nay nó về Quản lý chi nhánh, đúng người có thẩm quyền xử lý phương án Ý thức/Khác.
    * Quản lý thấy CẢ HAI loại vì họ còn là người đôn đốc khi có ai đó quên.
    */
-  const mgrKinds = kinds(loadPrincipal(
-    (conn.prepare(
-      `SELECT ur.user_id AS id FROM user_roles ur JOIN roles r ON r.id = ur.role_id
-        WHERE r.key = 'manager' AND ur.branch_id = ? AND ur.status = 'active' LIMIT 1`,
-    ).get(pendingTalk.branch) as any).id,
-  ));
+  const mgrKinds = kinds(P.mbManager);
   assert(mgrKinds.has('talk_parent'), 'Quản lý không nhận việc gọi phụ huynh sau khi bỏ vai văn phòng');
   assert(mgrKinds.has('talk_student'), 'Quản lý phải thấy cả việc gặp học viên để còn đôn đốc');
 
@@ -7723,6 +7763,66 @@ check('CASE-01 Task 2 · Case Học thuật vẫn chọn được ngày quá kh�
     parallel: true,
   });
   assert(made?.id, 'Case Học thuật phải vẫn chọn ngày quá khứ được như trước PR-C');
+});
+
+/*
+ * BA PHÉP KIỂM AUTH-01 (mục 10.5 Step 1) dùng đúng `P.subjectTeacher` — GVBM THUẦN của
+ * MB-FT 101 (không kiêm GVCN). `P.lrTeacher` KHÔNG dùng được ở đây: bộ demo chỉ có 3 giáo
+ * viên cho 5 kỹ năng của lớp này, và trong đúng lớp MB-FT 101, người dạy Listening lại
+ * chính là GVCN — dùng người đó để kiểm "GVBM sai môn bị từ chối" sẽ luôn PASS sai lý do
+ * (qua được vì là GVCN, không phải vì đúng môn).
+ */
+const authSubjectSkill = (conn
+  .prepare(`SELECT skill FROM teacher_assignments WHERE class_id = ? AND user_id = ? AND skill IS NOT NULL LIMIT 1`)
+  .get(mbClass, P.subjectTeacher.userId) as any).skill as string;
+const authMismatchSkill = domain.ENTRY_SKILLS.find((s: string) => s !== authSubjectSkill) as string;
+
+check('CASE-01 Task 4 (AUTH-01) · GVBM sửa case của một kỹ năng KHÁC cùng lớp → bị từ chối', () => {
+  const enr = conn.prepare(`SELECT student_id FROM enrollments WHERE class_id = ? AND status = 'active' LIMIT 1`).get(mbClass) as any;
+  const cy = conn.prepare(
+    `SELECT id FROM learning_cycles WHERE student_id = ? AND status = 'active' LIMIT 1`,
+  ).get(enr.student_id) as any;
+  const otherCase = cases.reportIssue(P.admin, {
+    studentId: enr.student_id, cycleId: cy?.id, track: 'academic', topic: authMismatchSkill,
+    primaryCode: domain.issuesForTopic(authMismatchSkill)[0].code,
+    title: `${authMismatchSkill}: kiểm quyền AUTH-01`,
+    summary: `Ghi nhận riêng để kiểm quyền AUTH-01 — GVBM ${authSubjectSkill} không được sửa case ${authMismatchSkill}.`,
+    parallel: true,
+  });
+  assertThrows(() => cases.recordIntervention(P.subjectTeacher, otherCase.id, {
+    kind: 'self_study', description: 'Giao thêm bài luyện ngoài giờ.', status: 'planned',
+  }), /quyền/, `GVBM ${authSubjectSkill} ghi nhận phương án cho case ${authMismatchSkill}`);
+});
+
+check('CASE-01 Task 4 (AUTH-01) · GVBM tạo phương án cho case Ý thức → bị từ chối', () => {
+  const enr = conn.prepare(`SELECT student_id FROM enrollments WHERE class_id = ? AND status = 'active' LIMIT 1`).get(mbClass) as any;
+  const behaviourCase = cases.reportIssue(P.admin, {
+    studentId: enr.student_id, track: 'behaviour', primaryCode: 'student.behaviour.attendance',
+    title: 'Ý thức: kiểm quyền AUTH-01',
+    summary: 'Ghi nhận riêng để kiểm quyền — GV bộ môn không phải GVCN không được xử lý case Ý thức.',
+    parallel: true,
+  });
+  assertThrows(() => cases.recordIntervention(P.subjectTeacher, behaviourCase.id, {
+    kind: 'talk_student', description: 'Nói chuyện riêng về việc đi học đều.', status: 'planned',
+  }), /quyền/, 'GVBM ghi nhận phương án cho case Ý thức');
+});
+
+check('CASE-01 Task 4 (AUTH-01) · GVBM sửa case ĐÚNG kỹ năng mình dạy cùng lớp → được phép', () => {
+  const enr = conn.prepare(`SELECT student_id FROM enrollments WHERE class_id = ? AND status = 'active' LIMIT 1`).get(mbClass) as any;
+  const cy = conn.prepare(
+    `SELECT id FROM learning_cycles WHERE student_id = ? AND status = 'active' LIMIT 1`,
+  ).get(enr.student_id) as any;
+  const ownCase = cases.reportIssue(P.admin, {
+    studentId: enr.student_id, cycleId: cy?.id, track: 'academic', topic: authSubjectSkill,
+    primaryCode: domain.issuesForTopic(authSubjectSkill)[0].code,
+    title: `${authSubjectSkill}: kiểm quyền AUTH-01`,
+    summary: `Ghi nhận riêng để kiểm quyền — GVBM ${authSubjectSkill} phải sửa được đúng case kỹ năng của mình.`,
+    parallel: true,
+  });
+  const iv = cases.recordIntervention(P.subjectTeacher, ownCase.id, {
+    kind: 'self_study', description: 'Giao thêm bài luyện đúng kỹ năng đang dạy.', status: 'planned',
+  });
+  assert(iv?.id, `GVBM ${authSubjectSkill} phải ghi nhận được phương án cho đúng case kỹ năng của lớp mình dạy`);
 });
 
 console.log(`\n${'='.repeat(60)}`);
