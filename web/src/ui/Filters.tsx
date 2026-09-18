@@ -14,6 +14,17 @@ export function usePeriods() {
 }
 
 /**
+ * TUẦN HIỆN TẠI theo ngày demo — hỏi thẳng máy chủ, KHÔNG đi tìm trong danh sách tuần.
+ *
+ * `/ref/periods` chỉ trả 26 tuần mới nhất trong lịch, mà lịch có sẵn cả những tuần tương lai
+ * (kế hoạch MT xếp tới đầu 2027). Khi phần tương lai dài hơn thế thì tuần hiện tại rơi khỏi
+ * danh sách, và màn nào đi tìm nó trong đó sẽ không thấy rồi rơi về một tuần bất kỳ.
+ */
+export function useCurrentPeriod() {
+  return useApi<Period>('/ref/current-period');
+}
+
+/**
  * Cửa sổ tuần quanh tuần đang xem: hai tháng lịch sử, một tuần tới.
  * Chọn một tuần cũ thì cửa sổ dịch theo, nên vẫn đi tiếp về quá khứ được mà danh sách
  * không bao giờ dài ra thành một cuộn vô tận.

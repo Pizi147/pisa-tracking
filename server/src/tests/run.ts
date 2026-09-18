@@ -1491,7 +1491,12 @@ check('Đường dẫn cố định của /attempts đứng TRƯỚC /attempts/:
    * Express khớp route theo thứ tự khai báo. Đặt "no-plan" sau `:id` thì nó bị nuốt và
    * request đi vào hàm chi tiết với một id không phải số.
    */
-  const src = fs.readFileSync(new URL('../routes/index.ts', import.meta.url).pathname.replace('/dist-server', ''), 'utf8');
+  /*
+   * Đọc CHÍNH file nguồn, qua `path` chứ không qua `URL.pathname`: trên Windows pathname trả
+   * về "/C:/..." và mã hoá khoảng trắng thành %20, nên phép kiểm này hỏng ở máy có dấu cách
+   * trong đường dẫn — hỏng vì môi trường, không phải vì route sai.
+   */
+  const src = fs.readFileSync(path.resolve(__dirname, '../../../../server/src/routes/index.ts'), 'utf8');
   const byId = src.indexOf("api.get('/attempts/:id'");
   for (const fixed of ["api.get('/attempts/no-plan'"]) {
     const at = src.indexOf(fixed);
