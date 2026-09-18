@@ -842,7 +842,7 @@ Một em nợ hai lượt (VD MT2 và MT3) ra đúng hai dòng, không gộp.
   `:487–492` (`outcomeTone`) và `scoreTone`
 - Test: `server/src/tests/run.ts`
 
-- [ ] **Step 1: Viết phép kiểm**
+- [x] **Step 1: Viết phép kiểm**
 
 ```ts
 check('Ô điểm: ± là khoảng cách tới kỳ vọng của chính đợt đó', () => {
@@ -859,13 +859,13 @@ check('Ô điểm: ± là khoảng cách tới kỳ vọng của chính đợt �
 
 Học viên id 3 là Lê Quang Huy (hồ sơ dày nhất, xem `DEMO_SCENARIOS.md`).
 
-- [ ] **Step 2: Chạy và xác nhận nó HỎNG**
+- [x] **Step 2: Chạy và xác nhận nó HỎNG**
 
 ```bash
 npm test
 ```
 
-- [ ] **Step 3: Sửa máy chủ**
+- [x] **Step 3: Sửa máy chủ**
 
 `server/src/cases/cases.ts:2161`, thay dòng `delta:` bằng:
 
@@ -883,7 +883,7 @@ npm test
       trendFrom: prev ? prev.attemptNo : null,
 ```
 
-- [ ] **Step 4: Sửa giao diện**
+- [x] **Step 4: Sửa giao diện**
 
 `SkillBoard.tsx` kiểu `Row`: bỏ `delta`, thêm `gap: number | null; trend: number | null;
 trendFrom: number | null;`. Trong `ScoreCell`:
@@ -894,7 +894,7 @@ trendFrom: number | null;`. Trong `ScoreCell`:
 - `row.ratio` (lớp Normal) **không** dùng `gap` band — Normal đánh giá theo tỷ lệ 70%, chênh
   nếu có phải ghi bằng phần trăm (sổ §13.4). Giữ nhánh `ratio` như cũ.
 
-- [ ] **Step 5: Làm bốn màu dễ nhìn hơn**
+- [x] **Step 5: Làm bốn màu dễ nhìn hơn**
 
 Chủ sản phẩm yêu cầu riêng. `scoreTone` hiện dùng `text-rose-300` / `text-sky-300` /
 `text-emerald-300` — chữ màu trên nền tối, tương phản yếu. Đổi sang **chip có nền**: nền
@@ -902,13 +902,13 @@ Chủ sản phẩm yêu cầu riêng. `scoreTone` hiện dùng `text-rose-300` /
 `Status` khác trong `web/src/ui/ui.tsx` đang làm. Giữ đúng bốn màu, chỉ tăng tương phản.
 Chụp ảnh trước/sau cho chủ sản phẩm xem.
 
-- [ ] **Step 6: Chạy và xác nhận nó ĐẠT**
+- [x] **Step 6: Chạy và xác nhận nó ĐẠT**
 
 ```bash
 npm run build:server && npm test && npx tsc -p tsconfig.web.json --noEmit
 ```
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add server/src web/src
@@ -919,17 +919,17 @@ git commit -m "Ô điểm: dấu cộng trừ là khoảng cách tới kỳ vọ
 
 ### 5.2. Nghiệm thu PR1 — làm đủ trước khi báo xong
 
-- [ ] **T08** RLW tuần 14–20/9, S tuần 21–27/9: bảng tuần này có RLW, bảng tuần sau có S, cùng một đợt
-- [ ] Badge = số dòng danh sách, kiểm bằng **cả ba vai**: GVBM · Quản lý · Quản trị
-- [ ] Quản lý nay **có** số ở phạm vi quản lý (trước đây là 0)
-- [ ] Badge ghi rõ "bài", không ghi "lượt"; chấm xong một ô thì số giảm một
-- [ ] Đổi tuần trên bảng chấm **không** làm mất việc nợ ở hàng đợi
-- [ ] Một em nợ hai đợt thì ra **hai dòng**, không gom một dòng
-- [ ] Seed lịch tới 2027: mở nhập điểm ngày 14/09/2026 vẫn vào đúng tuần hiện tại
-- [ ] Listening 5.0→5.5 kỳ vọng 6.0 → **đỏ**, ghi "thiếu 0.5", kèm "Tăng 0.5 so với MT1" trung tính
-- [ ] Đi hết sáu đường vào nhập điểm; Back giữ bộ lọc
-- [ ] `npm test` đạt hết · hai lệnh kiểm kiểu sạch · không lỗi ở bảng điều khiển trình duyệt
-- [ ] Tắt máy chủ, kiểm cổng 5173 và 4000 đã trống
+- [x] **T08** RLW tuần 14–20/9, S tuần 21–27/9: bảng tuần này có RLW, bảng tuần sau có S, cùng một đợt — phép kiểm tự động + đọc code
+- [x] Badge = số dòng danh sách, kiểm bằng **cả ba vai**: GVBM · Quản lý · Quản trị — phép kiểm tự động + bấm thử thật cả ba tài khoản (mục 11.2), kể cả ca gốc "28→0" (Quản trị: badge 9 → danh sách 9 dòng đúng số ở `/hoc-vien` lớp MB-FOU 12)
+- [x] Quản lý nay **có** số ở phạm vi quản lý (trước đây là 0) — bấm thử thật: Quản lý Monbay thấy 9 bài ở MB-FOU 12, không còn là 0
+- [x] Badge ghi rõ "bài", không ghi "lượt"; chấm xong một ô thì số giảm một — bấm thử thật: nhập điểm Listening cho Lê Quang Huy, badge MB-FT 101 giảm từ 20 → 19
+- [x] Đổi tuần trên bảng chấm **không** làm mất việc nợ ở hàng đợi — đúng theo kiến trúc: hàng đợi (`WorkQueue`/`/attempts?need=my_scores`) không nhận tham số tuần, tách bạch hẳn với bảng chấm theo tuần (`/nhap-diem/:id`); bấm thử thật xác nhận danh sách 19 dòng không đổi bất kể tuần nào đang mở ở bảng chấm
+- [x] Một em nợ hai đợt thì ra **hai dòng**, không gom một dòng — phép kiểm tự động mới ("Một em nợ điểm ở từ hai đợt trở lên...")
+- [x] Seed lịch tới 2027: mở nhập điểm ngày 14/09/2026 vẫn vào đúng tuần hiện tại — bấm thử thật `/nhap-diem/3` → mở đúng "W3 SEP 2026 · 14/09–20/09"
+- [x] Listening 5.0→5.5 kỳ vọng 6.0 → **đỏ**, ghi "thiếu 0.5", kèm "Tăng 0.5 so với MT1" trung tính — bấm thử thật, đúng y hệt trên hồ sơ Lê Quang Huy
+- [~] Đi hết sáu đường vào nhập điểm; Back giữ bộ lọc — **CHƯA XONG**: chỉ 2/6 đường xác nhận đúng (thanh điều hướng chính, thông báo — sau khi sửa lỗi). Bốn đường còn lại cần dựng thêm (xem mục 10.5), không làm trong PR1 để tránh mở rộng phạm vi
+- [x] `npm test` đạt hết · hai lệnh kiểm kiểu sạch · không lỗi ở bảng điều khiển trình duyệt — 326/326, cả hai `tsc --noEmit` sạch, không lỗi console khi bấm thử
+- [x] Tắt máy chủ, kiểm cổng 5173 và 4000 đã trống — xác nhận bằng `netstat`, cả hai cổng trống
 
 ---
 
@@ -1217,3 +1217,4 @@ Nói **cái gì đổi trên màn hình**, bằng tiếng Việt, không tên h�
 | 18/09/2026 | Claude + chủ sản phẩm | Tạo file. Soát prompt giai đoạn mới, đối chiếu sổ audit, tái hiện được lỗi badge (28→0) và CASE-01. Chốt: `±` so kỳ vọng · badge đếm bài kỹ năng · CASE-01 thành PR riêng · chia PR theo cách 1 |
 | 18/09/2026 | Claude (session code PR1) | Task 2 sai giả định: `SkillCell.required` đã tồn tại và độc lập với `canEdit`/`mine` từ trước — không cần sửa sản phẩm, chỉ thêm phép kiểm khoá hành vi. Ghi chú tại mục Task 2 |
 | 18/09/2026 | Claude (session code PR1) | Task 6 lớn hơn nhiều so với mô tả: khảo sát 6 đường phát hiện 4/6 cần dựng mới (quy ước tham số focus, tay bấm mốc hành trình). Thu hẹp về đúng 1 lỗi đã xác định (thông báo sai `entityType` nên chưa từng điều hướng, `web/src/modules/platform/Header.tsx`) + xác nhận Step 1 đã đúng sẵn; 4 đường còn lại chuyển sang backlog mục 10.5 làm PR riêng |
+| 18/09/2026 | Claude (session code PR1) | PR1 (Task 1–7) hoàn tất, bấm thử thật bằng cả ba vai — mục 5.2 đã cập nhật bằng chứng cho từng dòng. Chỉ mục "sáu đường vào nhập điểm" còn dở (2/6), đã ghi rõ trong mục 5.2 và 10.5, không tự nhận là xong |
