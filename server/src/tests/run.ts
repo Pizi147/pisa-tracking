@@ -1192,6 +1192,22 @@ check('Badge chỉ đếm việc cần làm, đếm đúng tập mà bấm vào 
     assert(c.openCases === sos, `Lớp ${c.code}: badge case SOS ${c.openCases} khác danh sách ${sos}`);
   }
 });
+check('Luật đếm bài cần chấm — một hàm, hai phạm vi', () => {
+  const cells = [
+    { skill: 'listening', required: true,  scored: false, progress: 'due' as const,      mine: true  },
+    { skill: 'reading',   required: true,  scored: false, progress: 'due' as const,      mine: false },
+    { skill: 'writing1',  required: true,  scored: true,  progress: 'due' as const,      mine: true  },
+    { skill: 'writing2',  required: false, scored: false, progress: 'due' as const,      mine: true  },
+    { skill: 'speaking',  required: true,  scored: false, progress: 'upcoming' as const, mine: true  },
+  ];
+  const mine = domain.pendingSkillsOf(cells, 'mine');
+  const managed = domain.pendingSkillsOf(cells, 'managed');
+  assert(mine.join(',') === 'listening', `mine phải chỉ ra listening, đang ra: ${mine.join(',')}`);
+  assert(
+    managed.join(',') === 'listening,reading',
+    `managed phải ra listening,reading, đang ra: ${managed.join(',')}`,
+  );
+});
 check('Badge "cần nhập điểm" theo đúng phân công của người đang xem', () => {
   const mine = classesSvc.listClassSummaries(P.w1Teacher, {}).rows;
   for (const c of mine) {
