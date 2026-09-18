@@ -1078,6 +1078,43 @@ thật **cả 9 màn** (8 màn dùng `WeekPicker` + `ScoreSheetPage`) với **đ
 lý Monbay · Quản trị), và báo cáo phải ghi rõ đã bấm những đâu, thấy gì — không khẳng định
 suông.
 
+- [x] **Đã xong, bằng chứng 18-19/09/2026.** `npm test`: 330/330 đạt (328 cũ + 2 phép kiểm
+  §13.8 mới). Hai lệnh `tsc` sạch. Bấm thử thật cả 9 màn, đủ ba vai:
+  - **ScoreSheetPage** (`/nhap-diem/3`, vai GVBM): bề mặt đúng `← 14/09–20/09 W3 SEP 2026 →
+    Tuần này`; bấm ngày 21 trong popover → tải đúng bảng tuần mới; F5 (re-navigate với cùng
+    `?periodId=`) giữ nguyên tuần; gõ ngày xa tới `2027-01-15` → resolve đúng tuần trống
+    (chưa có Mock nào), không lỗi. Cùng màn với vai **Quản trị hệ thống**: đúng tuần mặc định,
+    quyền sửa đủ 5 kỹ năng.
+  - **CaseBoardPage / "Thực trạng"** (tab trong Tổng quan, vai Quản lý Monbay): picker "Tuần
+    giao việc" — **bắt được và sửa một lỗi thật** ở đây: bản đầu kẹt ở "Đang tải…" vì
+    `periodId` khởi tạo `null` và không `clearable`; sau khi sửa hiện đúng tuần hiện tại ngay.
+  - **StudentPlanPanel / "Lộ trình"** (hồ sơ Lê Quang Huy, vai GVBM): "Tuần bắt đầu học"
+    (không `clearable`) hiện đúng tuần đã lưu; "Tuần dự kiến thi" (`clearable`) hiện đúng
+    "Chưa xác định" khi chưa chọn, bấm "Tuần này" → hiện tuần + nút "Bỏ chọn", bấm "Bỏ chọn"
+    → về lại "Chưa xác định". Không lưu (đóng panel) để không đổi dữ liệu demo.
+  - **MockPlanPanel / "Lên kế hoạch MT"** (trang Học viên, vai Quản lý Monbay): gõ ngày
+    `2027-03-10` → resolve đúng "08/03 – 14/03 · W2 MAR 2027" (scope planning, xa hơn 6
+    tháng); chuyển tháng trong popover 4 lần từ Sept 2026 → Tháng 1/2027, đúng cả khi qua năm.
+  - **ClassProgressPanel / "Tiến độ lớp"** (MB-FT 101, vai Quản lý Monbay): "Tuần khai giảng"
+    hiện đúng tuần đã lưu.
+  - **ClassCreatePanel / "Tạo lớp"** (trang Học viên, vai Quản lý Monbay): "Tuần khai giảng"
+    mặc định đúng tuần hiện tại.
+  - **MeetingPage / "Báo cáo tuần chi nhánh"** (`/tien-trinh`, vai Quản lý Monbay): phát hiện
+    ở vòng review — file này tự gọi `usePeriodWindow()` riêng (không chỉ qua `WeekPicker`) để
+    dò tuần hiện tại, và còn đúng kiểu lỗi "fallback `array[0]`" sổ §13.8 cấm (bị che vì route
+    luôn `ensurePeriod(demoToday())` trước). Đã sửa dùng cờ `isAnchor` + resolve qua endpoint
+    mới. Bấm thử lại: mở đúng "14/09–20/09"; bấm chọn "24/08–30/08" trong popover → tải đúng
+    dữ liệu tuần đó (đổi từ "3 việc đã giao" xuống "1 việc đã giao").
+  - **TransitionPanel / "Chuyển tiếp lên lớp sau"** (MB-FOU 12, vai Quản lý Monbay): "Tuần
+    khai giảng lớp mới" (`scope=planning clearable`) hiện đúng "Chưa xác định" → bấm "Tuần
+    này" → resolve đúng "14/09–20/09" + nút "Bỏ chọn". Đóng, không xác nhận chuyển lớp (tránh
+    tạo lớp thật trong demo).
+  - Review bằng subagent (superpowers:requesting-code-review) trước khi mở PR: 4 issue quan
+    trọng, đã sửa 3 (MeetingPage fallback array[0], WeekPicker im lặng khi lỗi mạng, fallback
+    giờ trình duyệt thật); quyết định **không** thêm hạ tầng test HTTP chỉ cho một route mới
+    (`POST /ref/periods/resolve`) vì không route nào khác trong `run.ts` có test tầng HTTP —
+    ghi lại ở mục 12.
+
 ### 7b. PR2b — Kế hoạch Test + quyền lịch (sổ §MT-01…MT-06, SCH-01/02, chép đủ ở
 `vong7/SO_AUDIT_TRICH.md` mục B, C)
 
@@ -1279,3 +1316,4 @@ Nói **cái gì đổi trên màn hình**, bằng tiếng Việt, không tên h�
 | 18/09/2026 | Claude (session code PR1) | PR1 (Task 1–7) hoàn tất, bấm thử thật bằng cả ba vai — mục 5.2 đã cập nhật bằng chứng cho từng dòng. Chỉ mục "sáu đường vào nhập điểm" còn dở (2/6), đã ghi rõ trong mục 5.2 và 10.5, không tự nhận là xong |
 | 18/09/2026 | Claude (session code PR-A) | Task 1 Step 3 sai giả định: `shared/domain/cases.ts:412–427` đã có sẵn nhánh phân loại `behaviour` (bốn mã BTVN/Chuyên cần/Tham gia/Khác dùng CHUNG, không phải mỗi nhóm một bộ riêng như mô tả gốc) và `issuesForTopic()` đã ánh xạ đúng — không cần sửa domain/server. Lỗi CASE-01 nằm ĐÚNG MỘT chỗ: `QuickReport.tsx:80` tự chặn với điều kiện `track === 'academic'`. Đã sửa đúng một dòng đó. Phép kiểm Step 1 cũng cần thêm trường `title` (bắt buộc ở `reportIssue`, thiếu trong bảng mô tả gốc của plan) |
 | 18/09/2026 | Chủ sản phẩm (đọc `PISA-PR17-Audit-and-Change-Register.md` gốc) | Trích `vong7/SO_AUDIT_TRICH.md` (mục 8 T01–T19 · MT-01…MT-06 · SCH-01/02 · §13.5 · §13.8 · §13.9 · §13.11) vì ba trong bốn mã nghiệm thu T07/T09/T10/T13 mà `plan.md` §7.4 (cũ) nhắc tới không có định nghĩa ở đâu trong repo — chặn hẳn việc viết tiêu chí nghiệm thu cho PR2. Đối chiếu phát hiện: không mã T nào kiểm bộ chọn tuần → **tách PR2 thành PR2a (bộ chọn tuần, làm ngay) và PR2b (Kế hoạch Test + quyền lịch, chờ PR2a merge)**; `plan.md` §7.1 cũ chép thiếu năm điều so với sổ §13.8 gốc (múi giờ, popover đổi tháng/năm, ưu tiên ngữ cảnh URL, cấm fallback phần tử đầu mảng tuần, giới hạn tương lai áp tại lúc lưu); ghi chú R18-09 xác nhận Normal không có luồng hủy Test, thay hẳn mô tả cũ ở MT-05/T12/brief 10.6. Mục 7 đã viết lại theo PR2a/PR2b |
+| 19/09/2026 | Claude (session code PR2a) | PR2a hoàn tất. Review bằng subagent trước khi mở PR phát hiện `MeetingPage.tsx` (không nằm trong danh sách file PR2a sửa, nhưng tự gọi `usePeriodWindow()` riêng) vẫn còn đúng kiểu lỗi "fallback `array[0]`" sổ §13.8 cấm — bị che bởi việc route `/ref/period-window` luôn `ensurePeriod(demoToday())` trước nên chưa lộ ra khi bấm thử các màn khác. Đã sửa và bấm thử lại. **Quyết định:** không thêm hạ tầng test HTTP (kiểu supertest) chỉ để kiểm route `POST /ref/periods/resolve` mới — không route nào khác trong `server/src/tests/run.ts` có test tầng HTTP, toàn bộ file kiểm ở tầng service; route mới chỉ bọc `isIsoDate()` (đã có nơi khác dùng) quanh `ensurePeriod()` (đã có phép kiểm §13.8 riêng). Thêm test HTTP cho một route là phá vỡ tính nhất quán của cả file kiểm thử |
