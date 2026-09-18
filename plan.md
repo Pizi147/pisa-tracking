@@ -1022,29 +1022,68 @@ theo cửa sổ bốn ngày. Chúng ở backlog mục 10.
 
 ## 7. PR2 — Bộ chọn tuần dùng chung, rồi Kế hoạch Test
 
-> **Mức chi tiết: thiết kế.** Viết chi tiết mức task **khi PR1 đã merge**, vì lúc đó mới biết
-> chắc `WeekPicker` còn lại những gì. Session nào bắt tay vào PR2 thì viết task rồi cập nhật
-> mục này, theo quy tắc 0.2.
+> **18/09/2026 — Tách PR2 làm hai (quyết định chủ sản phẩm, sau khi đọc `vong7/SO_AUDIT_TRICH.md`
+> mục A):** cả bốn mã nghiệm thu T07 · T09 · T10 · T13 đều kiểm Kế hoạch MT, bộ kỹ năng bắt
+> buộc và quyền chấm Normal — **không mã nào kiểm bộ chọn tuần**. Nên bộ chọn tuần tách ra làm
+> **PR2a** ngay, không chờ gì cả; phần còn lại (Kế hoạch Test + quyền lịch, cái thật sự cần
+> bốn mã T) dời thành **PR2b**, viết task khi PR2a đã merge. Xem mục 12.
 
-### 7.1. Bộ chọn tuần dùng chung (sổ §13.8)
+### 7a. PR2a — Bộ chọn tuần dùng chung (sổ §13.8, chép đủ ở `vong7/SO_AUDIT_TRICH.md` mục D)
 
-Đã có `WeekPicker` và `usePeriodWindow` ở `web/src/ui/Filters.tsx`, có hai mũi tên và cửa sổ
-tuần trượt. **Việc là đem nó đi dùng và bù phần thiếu, không phải thiết kế lại.**
+> **Mức chi tiết: task. Làm ngay.** Đọc **mục D của bản trích**, không đọc bản tóm tắt dưới
+> đây làm luật — bản trích có năm điều bản tóm tắt cũ (từng ở §7.1) chép thiếu, xem cảnh báo
+> ngay dưới.
 
-- Bề mặt: `← · 14–20/09/2026 · → · Tuần này`. Khoảng ngày là định danh chính; mã `W3 SEP` là
-  nhãn phụ, **có năm** khi thiếu ngữ cảnh.
-- Bấm vào trường mở popover: gõ ngày `dd/mm/yyyy`, hoặc chọn ngày trên lịch tháng → chọn cả
-  tuần chứa ngày đó. **Không dropdown vài chục dòng.**
-- Luôn chọn được tuần hiện tại và tuần đang được link tới, kể cả khi chưa có hàng trong
-  database. Đường API **đọc** không được tạo hàng loạt tuần; chỉ `ensurePeriod` khi nghiệp vụ
-  lưu cần ID.
-- Lưu lựa chọn vào đường dẫn. Tải lại và Back không nhảy tuần.
-- `scope='planning'` mở xa về tương lai; màn báo cáo kết quả giữ cửa sổ hẹp.
+Đã có `WeekPicker` và `usePeriodWindow` ở `web/src/ui/Filters.tsx`, có hai mũi tên và một
+`<select>` (không phải popover). **Việc là sửa ruột nó cho đủ đặc tả, rồi đem đi dùng — không
+thiết kế lại từ đầu.**
 
-**Nơi phải đổi sang dùng chung:** `ScoreSheetPage.tsx` (đang là `<select>` 26 tuần — đúng cái
-sổ bảo đừng làm), `MockPlanPanel.tsx`, Lộ trình, báo cáo kỳ họp, Thực trạng.
+**Năm điều bản trích §D có mà bản tóm tắt cũ (PR1 khảo sát) thiếu — dễ vấp nhất:**
 
-### 7.2. Kế hoạch Test (sổ §MT-01…MT-06)
+1. Tuần **Thứ Hai–Chủ nhật**, theo ngày nghiệp vụ **Asia/Ho_Chi_Minh** (demo dùng ngày demo,
+   thật dùng hôm nay thực tế) — không phải giờ máy chủ/trình duyệt.
+2. Popover phải có **đổi tháng/năm** và **gợi ý tuần gần đây**, không chỉ ô gõ ngày trơn.
+3. **Ưu tiên ngữ cảnh URL** khi đi từ badge hoặc mốc Test — mở trang nhập điểm độc lập (không
+   từ link nào) thì mới dùng tuần hiện tại/tồn đọng làm mặc định.
+4. **Không fallback về phần tử đầu của một mảng tuần.** Đây đúng là cái bẫy khoá hai mũi tên
+   đã sập một lần: tuần được link tới rơi ngoài cửa sổ tải về → `idx` thành `-1` → nếu code có
+   chỗ nào `array[idx] ?? array[0]` thì âm thầm nhảy sang tuần khác và khoá luôn điều hướng.
+5. Giới hạn tuần tương lai (planning) áp **tại thời điểm LƯU**, không áp theo danh sách tuần
+   đã tải về ở client — client tải bao nhiêu không phải là luật, chỉ là hiệu năng hiển thị.
+
+**Bề mặt đích:** nút Trước · `14–20/09/2026` · nút Sau · **Tuần này**; nhãn phụ `W3 SEP` có
+**năm** khi thiếu ngữ cảnh. Bấm vào trường mở **popover**: gõ `dd/mm/yyyy` hoặc bấm một ngày
+trên lịch tháng → chọn cả tuần chứa ngày đó. Luôn chọn được tuần hiện tại và tuần đang được
+link tới, kể cả chưa có hàng trong database — đường **đọc** không được tạo hàng loạt tuần
+(hiện `periodWindow` đang vi phạm, xem Task 1). Lưu lựa chọn vào URL (mẫu `useSearchParams` đã
+có ở 9 màn trong repo, làm theo mẫu đó) — tải lại và Back không nhảy tuần. `scope='planning'`
+mở xa về tương lai; màn báo cáo kết quả giữ cửa sổ hẹp.
+
+**Nơi phải đổi sang dùng chung** — sửa ruột `WeekPicker` là đổi **8 màn cùng lúc** vì chúng
+compose cùng component: Bảng case, Tạo lớp, Tiến độ lớp, Chuyển lớp, Kế hoạch MT, Lộ trình học
+viên, Báo cáo kỳ họp, bộ lọc tuần+chi nhánh dùng chung — cộng `ScoreSheetPage.tsx` (đang có
+`<select>` 26 tuần riêng, phải thay hẳn bằng `WeekPicker` và mang theo cơ chế đồng bộ URL nó
+đang tự làm, vì bản thân `WeekPicker`/`usePeriodWindow` chưa có).
+
+**Nghiệm thu PR2a** (không dùng mã T — bốn mã đó thuộc PR2b):
+- Đổi năm và giao năm (31/12 → 01/01) chạy đúng.
+- Tuần không có dữ liệu trong database vẫn chọn được (không bắt phải có sẵn record).
+- Tải lại trang (F5) và bấm Back giữ nguyên tuần đang xem.
+- Lịch xa tới 2027 vẫn mở đúng (không giới hạn cứng theo 26 tuần cũ).
+- Sổ §13.11: seed lịch tới APR 2027, mở nhập điểm ngày 17/09/2026 vẫn đúng tuần và ngữ cảnh;
+  tuần hiện tại luôn tìm được.
+
+**Bắt buộc trước khi báo xong:** bộ kiểm thử tự động không chạm được giao diện. Phải bấm thử
+thật **cả 9 màn** (8 màn dùng `WeekPicker` + `ScoreSheetPage`) với **đủ ba vai** (GVBM · Quản
+lý Monbay · Quản trị), và báo cáo phải ghi rõ đã bấm những đâu, thấy gì — không khẳng định
+suông.
+
+### 7b. PR2b — Kế hoạch Test + quyền lịch (sổ §MT-01…MT-06, SCH-01/02, chép đủ ở
+`vong7/SO_AUDIT_TRICH.md` mục B, C)
+
+> **Mức chi tiết: thiết kế.** Viết chi tiết mức task **khi PR2a đã merge**, vì Kế hoạch Test
+> dùng lại `WeekPicker` của PR2a — viết task trước khi biết `WeekPicker` thật trông ra sao là
+> đoán mò.
 
 - Đổi tên panel thành **Kế hoạch Test**; bỏ trường "Lượt MT đang chọn"; chỉ hiện lớp FT ở
   **cả** giao diện và API.
@@ -1056,21 +1095,21 @@ sổ bảo đừng làm), `MockPlanPanel.tsx`, Lộ trình, báo cáo kỳ họp
 - Dời lịch ở Kế hoạch Test và ở panel Lộ trình dùng **cùng** luật và quyền. Không vượt đợt
   Test kế tiếp; hai đợt cách một tuần thì **cảnh báo**; RLW và S cùng một đợt thì **không**
   cảnh báo.
+- Quyền lịch (SCH-01, SCH-02): `setSkillWeek` (`server/src/fasttrack/skillSchedule.ts:499`)
+  hiện luôn đòi `PLAN_WEEK`, mà GV không có quyền đó. Mở cho **GVCN** đổi lịch Normal trong
+  lớp mình và **GVBM** đổi đúng môn mình phụ trách. **Không** mở quyền FT chủ động — FT chủ
+  động vẫn là của Quản lý. `canSetSitStatus`/`setSitStatus` cũng đang dựa `PLAN_WEEK` — cần
+  cùng một capability theo vai trò ở **cả UI và API**, không cấp `PLAN_WEEK` chung để chữa tạm.
+- **Ghi chú R18-09 (bản trích mục B, dưới bảng MT-06):** Normal **không có** thao tác hủy bài
+  Test, luôn phải đủ bốn kỹ năng. Quyết định này **thay** luồng hủy mô tả ở mục 2, MT-05, T12
+  và brief 10.6 — **đừng code luồng hủy cho Normal dù T12 có nhắc tới huỷ**, dùng "chờ bài /
+  chờ xếp lại" thay thế.
 
-### 7.3. Quyền lịch (sổ SCH-01, SCH-02)
-
-`setSkillWeek` (`server/src/fasttrack/skillSchedule.ts:499`) hiện luôn đòi `PLAN_WEEK`, mà GV
-không có quyền đó. Mở cho **GVCN** đổi lịch Normal trong lớp mình và **GVBM** đổi đúng môn
-mình phụ trách. **Không** mở quyền FT chủ động — FT chủ động vẫn là của Quản lý.
-
-### 7.4. Nghiệm thu PR2
-
-T07 · **T09** · T10 · T13, cộng: đổi năm và giao năm chạy đúng; tuần không có dữ liệu vẫn
-chọn được; tải lại và Back giữ tuần; lịch xa tới 2027 vẫn mở đúng.
+**Nghiệm thu PR2b:** T07 · **T09** · T10 · T13 (định nghĩa đủ ở `vong7/SO_AUDIT_TRICH.md` mục
+A — không còn là đường dẫn chết).
 
 **T09** là ca chủ sản phẩm nêu riêng: *một đợt FT định trước chỉ thi L/R thì đủ điểm L/R là
-đợt hoàn tất* — không chờ S/W, và **không bịa Overall bốn môn** khi thiếu cấu phần. Nó nằm ở
-PR2 vì PR2 là chỗ bộ kỹ năng bắt buộc của đợt được đặt.
+đợt hoàn tất* — không chờ S/W, và **không bịa Overall bốn môn** khi thiếu cấu phần.
 
 ---
 
@@ -1239,3 +1278,4 @@ Nói **cái gì đổi trên màn hình**, bằng tiếng Việt, không tên h�
 | 18/09/2026 | Claude (session code PR1) | Task 6 lớn hơn nhiều so với mô tả: khảo sát 6 đường phát hiện 4/6 cần dựng mới (quy ước tham số focus, tay bấm mốc hành trình). Thu hẹp về đúng 1 lỗi đã xác định (thông báo sai `entityType` nên chưa từng điều hướng, `web/src/modules/platform/Header.tsx`) + xác nhận Step 1 đã đúng sẵn; 4 đường còn lại chuyển sang backlog mục 10.5 làm PR riêng |
 | 18/09/2026 | Claude (session code PR1) | PR1 (Task 1–7) hoàn tất, bấm thử thật bằng cả ba vai — mục 5.2 đã cập nhật bằng chứng cho từng dòng. Chỉ mục "sáu đường vào nhập điểm" còn dở (2/6), đã ghi rõ trong mục 5.2 và 10.5, không tự nhận là xong |
 | 18/09/2026 | Claude (session code PR-A) | Task 1 Step 3 sai giả định: `shared/domain/cases.ts:412–427` đã có sẵn nhánh phân loại `behaviour` (bốn mã BTVN/Chuyên cần/Tham gia/Khác dùng CHUNG, không phải mỗi nhóm một bộ riêng như mô tả gốc) và `issuesForTopic()` đã ánh xạ đúng — không cần sửa domain/server. Lỗi CASE-01 nằm ĐÚNG MỘT chỗ: `QuickReport.tsx:80` tự chặn với điều kiện `track === 'academic'`. Đã sửa đúng một dòng đó. Phép kiểm Step 1 cũng cần thêm trường `title` (bắt buộc ở `reportIssue`, thiếu trong bảng mô tả gốc của plan) |
+| 18/09/2026 | Chủ sản phẩm (đọc `PISA-PR17-Audit-and-Change-Register.md` gốc) | Trích `vong7/SO_AUDIT_TRICH.md` (mục 8 T01–T19 · MT-01…MT-06 · SCH-01/02 · §13.5 · §13.8 · §13.9 · §13.11) vì ba trong bốn mã nghiệm thu T07/T09/T10/T13 mà `plan.md` §7.4 (cũ) nhắc tới không có định nghĩa ở đâu trong repo — chặn hẳn việc viết tiêu chí nghiệm thu cho PR2. Đối chiếu phát hiện: không mã T nào kiểm bộ chọn tuần → **tách PR2 thành PR2a (bộ chọn tuần, làm ngay) và PR2b (Kế hoạch Test + quyền lịch, chờ PR2a merge)**; `plan.md` §7.1 cũ chép thiếu năm điều so với sổ §13.8 gốc (múi giờ, popover đổi tháng/năm, ưu tiên ngữ cảnh URL, cấm fallback phần tử đầu mảng tuần, giới hạn tương lai áp tại lúc lưu); ghi chú R18-09 xác nhận Normal không có luồng hủy Test, thay hẳn mô tả cũ ở MT-05/T12/brief 10.6. Mục 7 đã viết lại theo PR2a/PR2b |
