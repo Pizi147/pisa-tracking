@@ -729,7 +729,7 @@ git commit -m "Bảng chấm theo tuần lọc theo lịch từng kỹ năng"
 **Interfaces:**
 - Consumes: `pendingSkills`, `pendingOwners`, `needScores` (Task 3); `WORK_SCOPE_LABEL` (Task 1)
 
-- [ ] **Step 1: Nút chuyển phạm vi**
+- [x] **Step 1: Nút chuyển phạm vi**
 
 Đặt cạnh thanh bộ lọc học viên, dùng đúng kiểu tab của dự án (xem `StudentDetailPage.tsx:283`):
 
@@ -755,30 +755,30 @@ git commit -m "Bảng chấm theo tuần lọc theo lịch từng kỹ năng"
 </span>
 ```
 
-- [ ] **Step 2: Nhãn badge nói rõ đơn vị và phạm vi**
+- [x] **Step 2: Nhãn badge nói rõ đơn vị và phạm vi**
 
 `{cls.needScores} bài cần chấm`, và `title` của nó là `WORK_SCOPE_HINT[scope]`. Bỏ chữ "lượt".
 Sửa cả `ClassOverviewPage.tsx:96` cho khớp — hai màn không được gọi khác nhau.
 
-- [ ] **Step 3: Hàng đợi bỏ khoá theo tuần**
+- [x] **Step 3: Hàng đợi bỏ khoá theo tuần**
 
 `WorkQueue` **không** nhận tuần. Tiêu đề đổi thành `{n} bài cần chấm`, và thêm một cột
 **"Nợ từ tuần"** lấy tuần thi của chính kỹ năng còn thiếu (`pendingDetail[].weekCode`, hoặc
 `period.code` nếu đợt chưa tách lịch). Cột "Việc cần làm" đọc `pendingSkills`; khi
 `scope === 'managed'` thì hiện thêm tên người phụ trách từ `pendingOwners`.
 
-- [ ] **Step 4: Nói rõ khi Quản lý nhập hộ**
+- [x] **Step 4: Nói rõ khi Quản lý nhập hộ**
 
 Ở phạm vi quản lý, dòng nào người xem không được phân công thì ghi một dòng nhỏ **"bạn không
 phụ trách bài này — nhập sẽ được ghi là sửa hộ"**. Máy chủ đã phân biệt sẵn
 (`scoreEditPath` trả `'override'`, `server/src/permissions.ts:330`); việc ở đây chỉ là **nói
 ra** điều đó, không đổi quyền.
 
-- [ ] **Step 5: Kiểm bằng tay**
+- [x] **Step 5: Kiểm bằng tay**
 
 Theo mục 11.2. Bắt buộc thử bằng **cả ba** tài khoản: một GVBM · Quản lý Monbay · Quản trị.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add web/src
@@ -789,34 +789,48 @@ git commit -m "Hai phạm vi công việc hiện rõ trên màn, badge ghi đơn
 
 ### Task 6: Sáu đường vào nhập điểm
 
+> **Cập nhật 18/09/2026 (session code PR1):** khảo sát cả sáu đường trước khi sửa cho thấy
+> phạm vi thật lớn hơn nhiều so với hai bước mô tả sẵn ở đây — bốn trên sáu đường cần dựng
+> mới (một quy ước tham số "đợt đang focus" trên hồ sơ học viên, tay bấm trên mốc hành
+> trình, sửa hướng hai nhãn MT2/MT3/Final, và một bộ resolver cho thông báo). Đó là việc
+> **thiết kế thêm**, không phải nốt hai bước còn thiếu của Task này — làm ẩu để "cho xong"
+> sẽ tạo ra đúng kiểu vá tạm mà mục 1.2 cảnh báo. Theo mục 0.3 (đừng gộp) và mục 3
+> ("phát hiện lỗi mới ngoài phạm vi → thêm vào mục 10, đừng tự mở rộng PR đang làm"),
+> quyết định là: làm **Step 1** (đã đúng sẵn, chỉ xác nhận) + sửa đúng **một lỗi thật đã xác
+> định** (thông báo không điều hướng đi đâu, mục 10.5), rồi dừng Task 6 ở đây. Bốn đường còn
+> lại ghi vào backlog mục 10.5 làm PR riêng.
+
 **Files:**
 - Modify: `web/src/modules/students/StudentsPage.tsx`, `web/src/modules/classes/ClassOverviewPage.tsx`,
   `web/src/modules/students/StudentDetailPage.tsx`, `web/src/modules/students/JourneyTimeline.tsx`
 
 Theo bảng sổ §13.9. Mỗi đường mang theo **học viên + đợt + kỹ năng đang focus** trên đường dẫn.
 
-| Xuất phát | Đích |
-|---|---|
-| Thanh điều hướng chính | Hàng đợi, phạm vi mặc định theo vai |
-| Hàng lớp ở danh sách học viên | Bảng chấm đúng lớp, đúng phạm vi đang đếm |
-| Hàng học viên — bấm nhãn MT2/MT3/Final | Hồ sơ đúng đợt đó |
-| Đầu hồ sơ học viên | Panel danh sách đợt |
-| Mốc Test trên hành trình | Cùng hồ sơ Test, Back giữ ngữ cảnh |
-| Thông báo | Focus đúng ô học viên/đợt/kỹ năng |
+| Xuất phát | Đích | Trạng thái sau khảo sát 18/09 |
+|---|---|---|
+| Thanh điều hướng chính | Hàng đợi, phạm vi mặc định theo vai | OK — `/my-work` đã đúng |
+| Hàng lớp ở danh sách học viên | Bảng chấm đúng lớp, đúng phạm vi đang đếm | Badge đã mang `scope` (Task 5), nhưng mở ra hàng đợi lọc, không phải bảng chấm dạng lưới — xem mục 10.5 |
+| Hàng học viên — bấm nhãn MT2/MT3/Final | Hồ sơ đúng đợt đó | Hiện mở thẳng màn chấm điểm, không mở hồ sơ — xem mục 10.5 |
+| Đầu hồ sơ học viên | Panel danh sách đợt | Ô đầu hồ sơ không bấm được, không dẫn tới panel đợt — xem mục 10.5 |
+| Mốc Test trên hành trình | Cùng hồ sơ Test, Back giữ ngữ cảnh | Mốc chỉ có tooltip, không có bấm — xem mục 10.5 |
+| Thông báo | Focus đúng ô học viên/đợt/kỹ năng | **Đã sửa lỗi chặn hẳn** (entityType sai chuỗi nên chưa từng điều hướng); phần "focus đúng ô" vẫn ở mục 10.5 |
 
-- [ ] **Step 1: Mỗi dòng chấm định danh học viên + đợt**
+- [x] **Step 1: Mỗi dòng chấm định danh học viên + đợt**
 
 Một học viên có thể nợ **nhiều đợt**. Khoá của dòng phải là `attemptId`, không phải
 `studentId`. Kiểm bằng cách tìm một em có hai đợt còn nợ và xem có ra hai dòng.
 
-- [ ] **Step 2: Đi hết sáu đường bằng tay**, mỗi đường xác nhận Back giữ bộ lọc.
+**Đã đúng sẵn, không cần sửa** (xác nhận qua đọc code, không phải suy đoán):
+`WorkQueue` (`StudentsPage.tsx`) dựng hàng từ `/attempts`, mỗi hàng một lượt (`key={r.id}`,
+`r.id` là `attemptId`); `mywork.ts:306` gom theo `classId|kind|attemptNo|skill`, không theo
+`studentId`; `ClassRoster.tsx:201` mỗi lượt trong lịch sử một em có link riêng theo `h.id`.
+Một em nợ hai lượt (VD MT2 và MT3) ra đúng hai dòng, không gộp.
 
-- [ ] **Step 3: Commit**
+- [~] **Step 2: Đi hết sáu đường bằng tay** — làm dở: 2/6 đường đã đúng (thanh điều hướng
+  chính, thông báo — sau khi sửa lỗi ở trên), 4/6 còn lại chuyển sang backlog mục 10.5 vì
+  cần dựng thêm quy ước tham số, không phải một phép sửa nhỏ.
 
-```bash
-git add web/src
-git commit -m "Sáu đường vào nhập điểm, mỗi dòng định danh học viên và đợt"
-```
+- [x] **Step 3: Commit** — gộp vào lần sửa lỗi thông báo, xem mục 12.
 
 ---
 
@@ -1127,6 +1141,24 @@ báo cáo · WORK-03 liên kết task thật.
 - Hồ sơ trên **máy tính bảng và điện thoại thật** — hiện chỉ kiểm bằng khổ mô phỏng 375px.
 - Rà các màn phụ theo **mục 17** của brief (tiêu chuẩn UI).
 
+### 10.5. Bốn đường vào nhập điểm còn lại của Task 6 (khảo sát 18/09/2026)
+
+PR1 chỉ sửa lỗi thông báo không điều hướng (đã xong, xem mục 12). Bốn đường sau cần dựng
+mới, không phải sửa nhỏ — làm PR riêng, có kèm quyết định thiết kế trước khi code:
+
+| Đường | Hiện trạng | Việc cần làm |
+|---|---|---|
+| Hàng lớp ở danh sách học viên → bảng chấm | Badge "X bài cần chấm" (đã có `scope` từ Task 5) mở **hàng đợi lọc** (`WorkQueue`), không mở **bảng chấm dạng lưới** (`ScoreSheetPage`/`RegularSheetPage`). Nút "Nhập điểm test" thật ở `ClassOverviewPage.tsx:157–164` không mang `scope` | Quyết định trước: hàng đợi lọc có tính là "bảng chấm" theo sổ §13.9 không, hay phải là lưới chấm? Nếu là lưới, nút ở ClassOverviewPage cần mang `scope` |
+| Nhãn MT2/MT3/Final ở `ClassRoster.tsx:200–212` → hồ sơ đúng đợt | Link thẳng tới `/mock-test/:id` hoặc `/bang-diem-thuong/:classId` (màn chấm điểm), không phải `/hoc-vien/:id` (hồ sơ) | Cần một quy ước tham số "đợt đang focus" trên `StudentDetailPage` trước, xem dòng dưới |
+| Đầu hồ sơ học viên → panel danh sách đợt | `HeaderStats`/`Stat` ở `StudentDetailPage.tsx:355–416` là `<div>` tĩnh, không bấm được | Thêm `onClick` mở tab đợt (đã có sẵn ở `tier3==='scores'`, dòng 217–222 · 418–466); cần định vị đúng đợt nếu có tham số focus |
+| Mốc Test trên hành trình → cùng hồ sơ Test | `JourneyTimeline.tsx` — mốc chỉ có `title` (tooltip), không có `onClick`; chỉ mục case đã có `onOpenCase` | Thêm `onClick` cho mốc Test, dùng chung quy ước tham số focus với hai dòng trên |
+| Thông báo → focus đúng ô | Điều hướng đã chạy lại (sửa 18/09), nhưng chỉ tới đúng TRANG — `sos_case`/`case_signal`/`skill_move_requests` không tra được `studentId` để mở đúng hồ sơ (bảng `notifications` không có cột đó; không được thêm cột ở PR1) | Thêm JOIN ở `GET /notifications` để trả kèm `studentId` đã tra sẵn theo `entity_type` — **không đổi schema**, chỉ đổi câu SELECT |
+
+**Việc chung cho bốn dòng trên:** một quy ước tham số duy nhất trên `StudentDetailPage`
+(gợi ý: `?attempt=<id>` hoặc `?focus=<attemptId>:<skill>`) để "mở đúng đợt/kỹ năng" — dựng
+lẻ tẻ ở từng nơi gọi thì lại sinh ra đúng kiểu hai định nghĩa một khái niệm mà mục 5.1 cảnh
+báo.
+
 ---
 
 ## 11. Lệnh kiểm bắt buộc
@@ -1184,3 +1216,4 @@ Nói **cái gì đổi trên màn hình**, bằng tiếng Việt, không tên h�
 |---|---|---|
 | 18/09/2026 | Claude + chủ sản phẩm | Tạo file. Soát prompt giai đoạn mới, đối chiếu sổ audit, tái hiện được lỗi badge (28→0) và CASE-01. Chốt: `±` so kỳ vọng · badge đếm bài kỹ năng · CASE-01 thành PR riêng · chia PR theo cách 1 |
 | 18/09/2026 | Claude (session code PR1) | Task 2 sai giả định: `SkillCell.required` đã tồn tại và độc lập với `canEdit`/`mine` từ trước — không cần sửa sản phẩm, chỉ thêm phép kiểm khoá hành vi. Ghi chú tại mục Task 2 |
+| 18/09/2026 | Claude (session code PR1) | Task 6 lớn hơn nhiều so với mô tả: khảo sát 6 đường phát hiện 4/6 cần dựng mới (quy ước tham số focus, tay bấm mốc hành trình). Thu hẹp về đúng 1 lỗi đã xác định (thông báo sai `entityType` nên chưa từng điều hướng, `web/src/modules/platform/Header.tsx`) + xác nhận Step 1 đã đúng sẵn; 4 đường còn lại chuyển sang backlog mục 10.5 làm PR riêng |

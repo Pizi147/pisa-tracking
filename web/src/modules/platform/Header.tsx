@@ -90,8 +90,12 @@ export function Header() {
                     Thông báo chỉ lưu id của lượt, không lưu loại bài. Đi qua màn Mock Test
                     là đủ: màn đó tự chuyển tiếp sang bảng điểm lớp Normal khi bài không
                     phải Mock Test.
+
+                    SỬA 18/09/2026: máy chủ ghi `entityType: 'assessment_attempt'`
+                    (`server/src/cases/sos.ts:421`), không phải `'mock_attempt'` — chuỗi cũ
+                    không khớp gì nên bấm thông báo chưa từng điều hướng đi đâu.
                   */
-                  if (n.entity_type === 'mock_attempt') navigate(`/mock-test/${n.entity_id}`);
+                  if (n.entity_type === 'assessment_attempt') navigate(`/mock-test/${n.entity_id}`);
                   setOpenMenu(null);
                 }}
               >
