@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Empty, ErrorState, Level, Skeleton, Status } from '../../ui/ui.tsx';
 import { fmtBand, fmtDate, sosLabel, sosTone } from '../../lib/format.ts';
-<<<<<<< Updated upstream
 import { api, invalidate } from '../../lib/api.ts';
 import { useSession } from '../../lib/session.tsx';
 import { useToast } from '../../ui/Toast.tsx';
@@ -9,9 +8,6 @@ import { CasePanel } from './CasePanel.tsx';
 import {
   OUTCOME_MARK, isContactKind, outcomeLabelFor, outcomesFor,
 } from '@shared/domain/index.ts';
-=======
-import { CasePanel } from './CasePanel.tsx';
->>>>>>> Stashed changes
 
 /**
  * TIẾN ĐỘ VÀ HỖ TRỢ THEO KỸ NĂNG — khối chính của hồ sơ học viên (mục 4.2).
@@ -46,10 +42,7 @@ type CaseCard = {
   openedOn: string | null; touchedOn: string | null;
   issueCode: string | null; issueLabel: string | null;
   summary: string | null; behaviour: boolean;
-<<<<<<< Updated upstream
   canEdit: boolean;
-=======
->>>>>>> Stashed changes
   plans: Plan[];
   reports: { on: string; by: string | null; skill: string | null; summary: string }[];
   attempts: { attemptNo: number; week: string | null }[];
@@ -292,15 +285,10 @@ function CaseCardView({ c, skillLabel, onOpenCase, onChanged }: {
           {c.plans.length === 0 ? (
             <p className="text-xs text-amber-200/90 m-0">Chưa có phương án nào — case này đang chờ người quyết.</p>
           ) : (
-<<<<<<< Updated upstream
             <div className="rounded-lg border px-2.5 py-2" style={{ borderColor: 'var(--line)' }}>
               {c.plans.map((p) => (
                 <PlanRow key={p.id} p={p} track={c.track} canEdit={c.canEdit} onChanged={onChanged} />
               ))}
-=======
-            <div className="space-y-2">
-              {c.plans.map((p) => <PlanBlock key={p.id} p={p} behaviour={c.behaviour} />)}
->>>>>>> Stashed changes
             </div>
           )}
 
@@ -323,11 +311,7 @@ function CaseCardView({ c, skillLabel, onOpenCase, onChanged }: {
               </Chip>
             )}
             <button type="button" className="btn btn-sm btn-ghost" onClick={() => setHistory(!history)}>
-<<<<<<< Updated upstream
               {history ? 'Ẩn lịch sử hỗ trợ' : 'Lịch sử và kết thúc phương án'}
-=======
-              {history ? 'Ẩn lịch sử hỗ trợ' : 'Mở lịch sử hỗ trợ'}
->>>>>>> Stashed changes
             </button>
             {onOpenCase && (
               <button type="button" className="btn btn-sm btn-ghost" onClick={() => onOpenCase(c.id)}>
@@ -348,7 +332,6 @@ function CaseCardView({ c, skillLabel, onOpenCase, onChanged }: {
 }
 
 /**
-<<<<<<< Updated upstream
  * MỘT PHƯƠNG ÁN — MỘT DÒNG, và ghi kết quả NGAY TRONG DÒNG ĐÓ.
  *
  * Bản trước bày mỗi phương án thành một khối ba cột. Ba cột nói được ba câu, nhưng tốn ba
@@ -545,91 +528,6 @@ function InlineResult({ p, track, contact, onClose, onDone }: {
           phương án khác thì mở “Lịch sử và kết thúc phương án” ở dưới thẻ này.
         </p>
       )}
-=======
- * MỘT PHƯƠNG ÁN — ba cột, ba câu hỏi khác nhau.
- *
- * Hạn LÀM và hạn CẬP NHẬT là hai mốc khác nhau của cùng một phương án, nên chúng đứng tách
- * dòng. Gộp lại thành "hạn 30/08" thì người đọc không biết mình đang trễ việc gì.
- */
-function PlanBlock({ p, behaviour }: { p: Plan; behaviour: boolean }) {
-  const running = p.status === 'planned' || p.status === 'started';
-  return (
-    <div className="rounded-lg border grid gap-x-3 gap-y-2 p-2.5 sm:grid-cols-3"
-         style={{ borderColor: 'var(--line)' }}>
-      <div className="min-w-0">
-        <span className="block text-[10px] uppercase tracking-wide text-slate-500">
-          {running ? 'Phương án đang làm' : 'Phương án đã xong'}
-        </span>
-        <span className="block text-sm text-slate-100 leading-snug">{p.name}</span>
-        <span className="block text-[11px] text-slate-500 mt-0.5">
-          {p.performer ?? 'chưa có người thực hiện'}
-          {p.startedOn && <> · bắt đầu {fmtDate(p.startedOn)}</>}
-          {p.completedOn && <> · xong {fmtDate(p.completedOn)}</>}
-        </span>
-      </div>
-
-      <div className="min-w-0">
-        <span className="block text-[10px] uppercase tracking-wide text-slate-500">
-          {behaviour ? 'Đã thực hiện' : 'Kết quả gần nhất'}
-        </span>
-        {behaviour ? (
-          <>
-            <span className="block text-sm text-slate-200 leading-snug">{p.statusLabel}</span>
-            {p.completedOn && (
-              <span className="block text-[11px] text-slate-500 mt-0.5">ngày {fmtDate(p.completedOn)}</span>
-            )}
-          </>
-        ) : p.lastOutcomeLabel ? (
-          <>
-            <span className={`block text-sm leading-snug ${outcomeTone(p.lastOutcome)}`}>
-              {p.lastOutcomeLabel}
-            </span>
-            <span className="block text-[11px] text-slate-500 mt-0.5">
-              cập nhật {fmtDate(p.lastOutcomeOn)}
-            </span>
-          </>
-        ) : (
-          <>
-            <span className="block text-sm text-slate-400 leading-snug">Chưa có kết quả</span>
-            <span className="block text-[11px] text-slate-500 mt-0.5">cần thêm một lần đánh giá</span>
-          </>
-        )}
-      </div>
-
-      <div className="min-w-0">
-        <span className="block text-[10px] uppercase tracking-wide text-slate-500">Việc tiếp theo</span>
-        {p.pendingApproval ? (
-          <>
-            <span className="block text-sm text-sky-300 leading-snug">Chờ Quản lý trả lời</span>
-            {p.approvalDue && (
-              <span className="block text-[11px] text-slate-500 mt-0.5">hạn {fmtDate(p.approvalDue)}</span>
-            )}
-          </>
-        ) : !running ? (
-          <span className="block text-sm text-slate-500 leading-snug">Đã khép lại</span>
-        ) : (
-          <>
-            <span className="block text-sm text-slate-200 leading-snug">
-              {behaviour ? 'Đánh dấu đã làm' : 'Ghi cập nhật tuần'}
-            </span>
-            <span className="block text-[11px] mt-0.5">
-              {p.actionDue && (
-                <span className={p.actionOverdue ? 'text-rose-300' : 'text-slate-500'}>
-                  {p.actionOverdue ? '⚠ quá hạn làm ' : 'hạn làm '}{fmtDate(p.actionDue)}
-                </span>
-              )}
-              {p.actionDue && p.followupDue && <span className="text-slate-600"> · </span>}
-              {p.followupDue && (
-                <span className={p.followupOverdue ? 'text-rose-300' : 'text-slate-500'}>
-                  dự kiến xong {fmtDate(p.followupDue)}
-                </span>
-              )}
-              {!p.actionDue && !p.followupDue && <span className="text-slate-600">chưa đặt hạn</span>}
-            </span>
-          </>
-        )}
-      </div>
->>>>>>> Stashed changes
     </div>
   );
 }

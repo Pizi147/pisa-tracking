@@ -2238,10 +2238,7 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
           parallel: !!c.parallel,
           openedOn: c.detected_at ?? null,
           touchedOn: lastTouch(c.id) ?? c.detected_at ?? null,
-<<<<<<< Updated upstream
           canEdit,
-=======
->>>>>>> Stashed changes
           /* Đủ thứ để vẽ MỘT THẺ CASE mà không phải gọi thêm một đường nữa (mục 1 · 2). */
           ...caseCardOf(c.id, c),
         }))
