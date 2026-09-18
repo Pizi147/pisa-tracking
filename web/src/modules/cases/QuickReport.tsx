@@ -198,6 +198,9 @@ export function QuickReport({
       return;
     }
     if (!primaryCode) { toast.push('error', 'Hãy chọn phân loại vấn đề.'); return; }
+    if (primaryCode.endsWith('.other') && summary.trim().length < 30) {
+      toast.push('error', 'Chọn "Khác" thì mô tả phải nói rõ vấn đề cụ thể là gì.'); return;
+    }
     if (!bfFrom || !bfTo) { toast.push('error', 'Hãy ghi từ ngày nào đến ngày nào.'); return; }
     if (bfFrom > bfTo) { toast.push('error', 'Ngày bắt đầu phải trước ngày kết thúc.'); return; }
     const rows = bfActions.filter((a) => a.description.trim() || a.performerName.trim());
@@ -206,6 +209,7 @@ export function QuickReport({
       if (a.description.trim().length < 3) { toast.push('error', 'Mỗi dòng "đã làm gì" phải nói rõ đã làm gì.'); return; }
       if (!a.performerName.trim()) { toast.push('error', 'Mỗi dòng "đã làm gì" phải ghi người làm.'); return; }
       if (!a.fromDate || !a.toDate) { toast.push('error', 'Mỗi dòng "đã làm gì" phải có từ ngày → đến ngày.'); return; }
+      if (a.fromDate > a.toDate) { toast.push('error', 'Một dòng "đã làm gì" có ngày bắt đầu sau ngày kết thúc.'); return; }
     }
     if (!bfOutcome) { toast.push('error', 'Hãy chọn kết quả cuối.'); return; }
     if (bfNote.trim().length < 10) { toast.push('error', 'Hãy ghi chú kết luận — ít nhất 10 ký tự.'); return; }

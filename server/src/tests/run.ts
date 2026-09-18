@@ -8007,6 +8007,19 @@ check('Nhập bù (chốt 7, tiếp) · Nhãn "nhập bù" hiện trên thẻ ca
   assert(card.backfilledBy, 'Chốt 7: thẻ case nhập bù phải có tên người ghi');
 });
 
+check('Nhập bù · Ghi chú kết luận bắt buộc ngay ở máy chủ, không chỉ ở giao diện', () => {
+  const enrN = conn.prepare(`SELECT student_id FROM enrollments WHERE class_id = ? AND status = 'active' LIMIT 1`)
+    .get(mbClass) as any;
+  assertThrows(() => cases.backfillCase(P.coreTeacher, {
+    studentId: enrN.student_id, track: 'behaviour', primaryCode: 'student.behaviour.homework',
+    topic: 'homework',
+    title: 'Ý thức: kiểm ghi chú bắt buộc', summary: 'Case nhập bù để kiểm ghi chú kết luận bắt buộc ở tầng máy chủ.',
+    fromDate: '2025-11-01', toDate: '2025-11-05',
+    actions: [{ description: 'Trao đổi với em', performerName: 'GVCN', fromDate: '2025-11-01', toDate: '2025-11-05' }],
+    outcome: 'improved', note: 'quá ngắn',
+  }), /ghi chú/, 'Gọi thẳng API nhập bù với ghi chú quá ngắn (dưới 10 ký tự)');
+});
+
 check('Nhập bù · Chỉ GVCN/Quản lý mới CHỐT được — GVBM sai vai bị chặn, không tạo case nửa vời', () => {
   const enr8 = conn.prepare(`SELECT student_id FROM enrollments WHERE class_id = ? AND status = 'active' LIMIT 1`)
     .get(mbClass) as any;

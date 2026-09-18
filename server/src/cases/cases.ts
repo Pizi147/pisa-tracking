@@ -1332,6 +1332,14 @@ export function backfillCase(p: Principal, input: {
   }
   const note = (input.note ?? '').trim();
   /*
+   * GHI CHÚ KẾT LUẬN BẮT BUỘC — "ngày quá khứ không tự chứng minh hiệu quả" (mục 2 sổ audio).
+   * Giao diện đã chặn dưới 10 ký tự, nhưng chặn TAY ở đây nữa: đây là API thật, gọi thẳng
+   * (không qua form) mà thiếu ghi chú thì lỗ đúng thứ tính năng này sinh ra để chặn.
+   */
+  if (note.length < 10) {
+    throw badRequest('Nhập bù phải có ghi chú kết luận — ít nhất 10 ký tự.');
+  }
+  /*
    * CASE-03: nhập bù không có lối thoát "Chưa đủ dữ liệu" — bộ `CASE_OUTCOMES` dùng lại ở
    * đây vốn đã không có mức đó (nó chỉ tồn tại ở `FOLLOWUP_OUTCOMES`, cho MỘT lần xem lại
    * giữa chừng chứ không phải kết luận cuối của cả case), nên không cần chặn tay thêm.
