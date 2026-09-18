@@ -36,8 +36,8 @@ viết đủ chữ. Không có "TBD", không có "xử lý lỗi cho phù hợp"
 | Chủ sản phẩm chốt một quyết định mới | Thêm một dòng vào **mục 3**, có ngày. Nếu nó thay thế quyết định cũ thì ghi rõ "thay thế ...", **không xoá dòng cũ** |
 | Làm xong một bước | Đánh dấu `- [x]` ngay tại bước đó |
 | Làm xong một PR | Chuyển cả mục PR đó xuống **mục 2** (đã xong, có bằng chứng), ghi số PR và cách đã kiểm |
-| Phát hiện kế hoạch sai khi bắt tay vào code | Sửa mục PR đó, **và** ghi một dòng vào **mục 12** nói vì sao đổi |
-| Phát hiện lỗi mới ngoài phạm vi | Thêm vào **mục 10 (backlog)**. Đừng tự mở rộng PR đang làm |
+| Phát hiện kế hoạch sai khi bắt tay vào code | Sửa mục PR đó, **và** ghi một dòng vào **mục 14** nói vì sao đổi |
+| Phát hiện lỗi mới ngoài phạm vi | Thêm vào **mục 12 (backlog)**. Đừng tự mở rộng PR đang làm |
 | Chốt xong thiết kế cho PR2 hoặc PR3 | Viết chi tiết mức task cho PR đó, thay cho phần mô tả thiết kế hiện có |
 
 Không cập nhật file này = lần bàn giao sau lại rơi vào đúng cái bẫy ở mục 1.2.
@@ -178,6 +178,13 @@ Thêm dòng mới ở cuối, có ngày. **Không xoá dòng cũ** — ghi "thay
 | 18/09/2026 | **CASE-01** làm thành **PR riêng, ngay sau PR1**, trong cùng giai đoạn này | Chủ sản phẩm |
 | 18/09/2026 | Chia **cách 1**: PR1 số và đường vào → PR2 bộ chọn tuần + Kế hoạch Test → PR3 chấm điểm. Hai PR nhỏ độc lập | Chủ sản phẩm |
 | 18/09/2026 | Ngoài `±`, làm **bốn màu điểm dễ nhìn hơn** | Chủ sản phẩm |
+| 19/09/2026 | Case **Ý thức/Khác** khi tạo mới **không được chọn ngày lẫn hạn** — ngày mở luôn là hôm nay, hạn 3/5 ngày và 7 ngày tự ép. Học thuật giữ ô ngày | Chủ sản phẩm |
+| 19/09/2026 | Thêm tab **"Đã xong từ trước"** trong form `+ Case`, cho **cả hai nhóm** học thuật và Ý thức. Đây là chỗ **duy nhất** được nhập ngày quá khứ, và bắt buộc có ngày hoàn thành | Chủ sản phẩm |
+| 19/09/2026 | Case nhập bù **KHÔNG vào mẫu số hiệu quả hỗ trợ**. Vẫn hiện đủ trên hồ sơ và hành trình theo tuần. *(Làm rõ câu "ngày quá khứ không tự chứng minh hiệu quả" ở sổ mục 2)* | Chủ sản phẩm |
+| 19/09/2026 | Một lần nhập bù ghi được **nhiều dòng phương án**, mỗi dòng `tên việc · người làm · từ → đến`. Kết quả và ghi chú ghi **một lần** cho cả case | Chủ sản phẩm |
+| 19/09/2026 | Quyền case theo **đúng kỹ năng mình dạy** (AUTH-01): học thuật GVBM đúng kỹ năng · GVCN cả lớp · QL tất cả. **Ý thức/Khác chỉ GVCN và QL** — GVBM báo được vấn đề nhưng không tạo/xử lý phương án | Chủ sản phẩm · Sổ §13.12 |
+| 19/09/2026 | Bỏ nút **"Mở trang riêng"** khỏi mọi màn, nhưng **GIỮ route** `/hoc-thuat/case/:id` cho link sâu từ thông báo và badge | Chủ sản phẩm |
+| 19/09/2026 | Bỏ ô **điểm tự chấm** khỏi cập nhật phương án (CASE-05). Giữ ô điểm ở màn Hoàn thành case, nơi đã hiện đúng tiêu chí của kỹ năng | Chủ sản phẩm |
 
 ---
 
@@ -190,6 +197,8 @@ Thêm dòng mới ở cuối, có ngày. **Không xoá dòng cũ** — ghi "thay
 | **PR2** | Bộ chọn tuần dùng chung → Kế hoạch Test | PR1 | Bộ chọn tuần là nền cho PR3; Kế hoạch Test là màn cần nó nhất |
 | **PR3** | Chấm điểm, dấu "–", màn hồ sơ Test gọn | PR2 | Dùng bộ chọn tuần của PR2 cho việc hoãn hạn chấm |
 | **PR-B** | Phân công GV — nốt phần còn thiếu | — | Không chặn ai; ba luật chính đã chạy đúng (mục 2.2) |
+| **PR-C** | Form case đúng và gọn — ô trùng, ngày Ý thức, tab nhập bù, AUTH-01 | — | Chủ sản phẩm ưu tiên 19/09. Gom vì cùng đụng form tạo case, máy chủ và tầng quyền |
+| **PR-D** | Khung case gọn — gộp hai khối lồng nhau làm một | PR-C | Dùng form đã sửa ở PR-C. Thuần màn hiển thị hồ sơ |
 
 **Giá phải trả của cách 1, đã chấp nhận:** bảng chấm bị chạm hai lần — PR1 đổi *hàng nào hiện
 ra*, PR2 đổi *cách chọn tuần*. Hai phần khác nhau của cùng màn hình, không phải làm lại.
@@ -353,7 +362,7 @@ git commit -m "Luật đếm bài cần chấm gom về một hàm dùng chung"
 > `server/src/fasttrack/attempts.ts` thì `SkillCell` (tên thật của "`Cell`" nói ở đây) đã có
 > sẵn `required: boolean`, độc lập với `canEdit`/`mine`, và đã được gán trong `skillCells()`
 > từ trước (rất có thể từ PR18). Không cần sửa sản phẩm — chỉ thêm đúng phép kiểm ở Step 1 để
-> khoá lại hành vi đó (đã ĐẠT ngay, không cần Step 3). Xem mục 12.
+> khoá lại hành vi đó (đã ĐẠT ngay, không cần Step 3). Xem mục 14.
 
 `pendingSkillsOf` cần `required`, nhưng `Cell` hiện chỉ có `canEdit` và `mine` — cả hai đã
 nhân `required` vào rồi nên không tách ra được. Quản lý không có quyền sửa nào, nên
@@ -724,7 +733,7 @@ git commit -m "Bảng chấm theo tuần lọc theo lịch từng kỹ năng"
 **Files:**
 - Modify: `web/src/modules/students/StudentsPage.tsx` — badge (353–355), `WorkQueue` (380–450)
 - Modify: `web/src/modules/classes/ClassOverviewPage.tsx:96`
-- Kiểm: bằng tay trên trình duyệt (mục 11.2)
+- Kiểm: bằng tay trên trình duyệt (mục 13.2)
 
 **Interfaces:**
 - Consumes: `pendingSkills`, `pendingOwners`, `needScores` (Task 3); `WORK_SCOPE_LABEL` (Task 1)
@@ -776,7 +785,7 @@ ra** điều đó, không đổi quyền.
 
 - [x] **Step 5: Kiểm bằng tay**
 
-Theo mục 11.2. Bắt buộc thử bằng **cả ba** tài khoản: một GVBM · Quản lý Monbay · Quản trị.
+Theo mục 13.2. Bắt buộc thử bằng **cả ba** tài khoản: một GVBM · Quản lý Monbay · Quản trị.
 
 - [x] **Step 6: Commit**
 
@@ -795,10 +804,10 @@ git commit -m "Hai phạm vi công việc hiện rõ trên màn, badge ghi đơn
 > trình, sửa hướng hai nhãn MT2/MT3/Final, và một bộ resolver cho thông báo). Đó là việc
 > **thiết kế thêm**, không phải nốt hai bước còn thiếu của Task này — làm ẩu để "cho xong"
 > sẽ tạo ra đúng kiểu vá tạm mà mục 1.2 cảnh báo. Theo mục 0.3 (đừng gộp) và mục 3
-> ("phát hiện lỗi mới ngoài phạm vi → thêm vào mục 10, đừng tự mở rộng PR đang làm"),
+> ("phát hiện lỗi mới ngoài phạm vi → thêm vào mục 12, đừng tự mở rộng PR đang làm"),
 > quyết định là: làm **Step 1** (đã đúng sẵn, chỉ xác nhận) + sửa đúng **một lỗi thật đã xác
-> định** (thông báo không điều hướng đi đâu, mục 10.5), rồi dừng Task 6 ở đây. Bốn đường còn
-> lại ghi vào backlog mục 10.5 làm PR riêng.
+> định** (thông báo không điều hướng đi đâu, mục 12.5), rồi dừng Task 6 ở đây. Bốn đường còn
+> lại ghi vào backlog mục 12.5 làm PR riêng.
 
 **Files:**
 - Modify: `web/src/modules/students/StudentsPage.tsx`, `web/src/modules/classes/ClassOverviewPage.tsx`,
@@ -809,11 +818,11 @@ Theo bảng sổ §13.9. Mỗi đường mang theo **học viên + đợt + kỹ
 | Xuất phát | Đích | Trạng thái sau khảo sát 18/09 |
 |---|---|---|
 | Thanh điều hướng chính | Hàng đợi, phạm vi mặc định theo vai | OK — `/my-work` đã đúng |
-| Hàng lớp ở danh sách học viên | Bảng chấm đúng lớp, đúng phạm vi đang đếm | Badge đã mang `scope` (Task 5), nhưng mở ra hàng đợi lọc, không phải bảng chấm dạng lưới — xem mục 10.5 |
-| Hàng học viên — bấm nhãn MT2/MT3/Final | Hồ sơ đúng đợt đó | Hiện mở thẳng màn chấm điểm, không mở hồ sơ — xem mục 10.5 |
-| Đầu hồ sơ học viên | Panel danh sách đợt | Ô đầu hồ sơ không bấm được, không dẫn tới panel đợt — xem mục 10.5 |
-| Mốc Test trên hành trình | Cùng hồ sơ Test, Back giữ ngữ cảnh | Mốc chỉ có tooltip, không có bấm — xem mục 10.5 |
-| Thông báo | Focus đúng ô học viên/đợt/kỹ năng | **Đã sửa lỗi chặn hẳn** (entityType sai chuỗi nên chưa từng điều hướng); phần "focus đúng ô" vẫn ở mục 10.5 |
+| Hàng lớp ở danh sách học viên | Bảng chấm đúng lớp, đúng phạm vi đang đếm | Badge đã mang `scope` (Task 5), nhưng mở ra hàng đợi lọc, không phải bảng chấm dạng lưới — xem mục 12.5 |
+| Hàng học viên — bấm nhãn MT2/MT3/Final | Hồ sơ đúng đợt đó | Hiện mở thẳng màn chấm điểm, không mở hồ sơ — xem mục 12.5 |
+| Đầu hồ sơ học viên | Panel danh sách đợt | Ô đầu hồ sơ không bấm được, không dẫn tới panel đợt — xem mục 12.5 |
+| Mốc Test trên hành trình | Cùng hồ sơ Test, Back giữ ngữ cảnh | Mốc chỉ có tooltip, không có bấm — xem mục 12.5 |
+| Thông báo | Focus đúng ô học viên/đợt/kỹ năng | **Đã sửa lỗi chặn hẳn** (entityType sai chuỗi nên chưa từng điều hướng); phần "focus đúng ô" vẫn ở mục 12.5 |
 
 - [x] **Step 1: Mỗi dòng chấm định danh học viên + đợt**
 
@@ -827,10 +836,10 @@ Một học viên có thể nợ **nhiều đợt**. Khoá của dòng phải l�
 Một em nợ hai lượt (VD MT2 và MT3) ra đúng hai dòng, không gộp.
 
 - [~] **Step 2: Đi hết sáu đường bằng tay** — làm dở: 2/6 đường đã đúng (thanh điều hướng
-  chính, thông báo — sau khi sửa lỗi ở trên), 4/6 còn lại chuyển sang backlog mục 10.5 vì
+  chính, thông báo — sau khi sửa lỗi ở trên), 4/6 còn lại chuyển sang backlog mục 12.5 vì
   cần dựng thêm quy ước tham số, không phải một phép sửa nhỏ.
 
-- [x] **Step 3: Commit** — gộp vào lần sửa lỗi thông báo, xem mục 12.
+- [x] **Step 3: Commit** — gộp vào lần sửa lỗi thông báo, xem mục 14.
 
 ---
 
@@ -920,14 +929,14 @@ git commit -m "Ô điểm: dấu cộng trừ là khoảng cách tới kỳ vọ
 ### 5.2. Nghiệm thu PR1 — làm đủ trước khi báo xong
 
 - [x] **T08** RLW tuần 14–20/9, S tuần 21–27/9: bảng tuần này có RLW, bảng tuần sau có S, cùng một đợt — phép kiểm tự động + đọc code
-- [x] Badge = số dòng danh sách, kiểm bằng **cả ba vai**: GVBM · Quản lý · Quản trị — phép kiểm tự động + bấm thử thật cả ba tài khoản (mục 11.2), kể cả ca gốc "28→0" (Quản trị: badge 9 → danh sách 9 dòng đúng số ở `/hoc-vien` lớp MB-FOU 12)
+- [x] Badge = số dòng danh sách, kiểm bằng **cả ba vai**: GVBM · Quản lý · Quản trị — phép kiểm tự động + bấm thử thật cả ba tài khoản (mục 13.2), kể cả ca gốc "28→0" (Quản trị: badge 9 → danh sách 9 dòng đúng số ở `/hoc-vien` lớp MB-FOU 12)
 - [x] Quản lý nay **có** số ở phạm vi quản lý (trước đây là 0) — bấm thử thật: Quản lý Monbay thấy 9 bài ở MB-FOU 12, không còn là 0
 - [x] Badge ghi rõ "bài", không ghi "lượt"; chấm xong một ô thì số giảm một — bấm thử thật: nhập điểm Listening cho Lê Quang Huy, badge MB-FT 101 giảm từ 20 → 19
 - [x] Đổi tuần trên bảng chấm **không** làm mất việc nợ ở hàng đợi — đúng theo kiến trúc: hàng đợi (`WorkQueue`/`/attempts?need=my_scores`) không nhận tham số tuần, tách bạch hẳn với bảng chấm theo tuần (`/nhap-diem/:id`); bấm thử thật xác nhận danh sách 19 dòng không đổi bất kể tuần nào đang mở ở bảng chấm
 - [x] Một em nợ hai đợt thì ra **hai dòng**, không gom một dòng — phép kiểm tự động mới ("Một em nợ điểm ở từ hai đợt trở lên...")
 - [x] Seed lịch tới 2027: mở nhập điểm ngày 14/09/2026 vẫn vào đúng tuần hiện tại — bấm thử thật `/nhap-diem/3` → mở đúng "W3 SEP 2026 · 14/09–20/09"
 - [x] Listening 5.0→5.5 kỳ vọng 6.0 → **đỏ**, ghi "thiếu 0.5", kèm "Tăng 0.5 so với MT1" trung tính — bấm thử thật, đúng y hệt trên hồ sơ Lê Quang Huy
-- [~] Đi hết sáu đường vào nhập điểm; Back giữ bộ lọc — **CHƯA XONG**: chỉ 2/6 đường xác nhận đúng (thanh điều hướng chính, thông báo — sau khi sửa lỗi). Bốn đường còn lại cần dựng thêm (xem mục 10.5), không làm trong PR1 để tránh mở rộng phạm vi
+- [~] Đi hết sáu đường vào nhập điểm; Back giữ bộ lọc — **CHƯA XONG**: chỉ 2/6 đường xác nhận đúng (thanh điều hướng chính, thông báo — sau khi sửa lỗi). Bốn đường còn lại cần dựng thêm (xem mục 12.5), không làm trong PR1 để tránh mở rộng phạm vi
 - [x] `npm test` đạt hết · hai lệnh kiểm kiểu sạch · không lỗi ở bảng điều khiển trình duyệt — 326/326, cả hai `tsc --noEmit` sạch, không lỗi console khi bấm thử
 - [x] Tắt máy chủ, kiểm cổng 5173 và 4000 đã trống — xác nhận bằng `netstat`, cả hai cổng trống
 
@@ -968,12 +977,12 @@ check('CASE-01 · Tạo được case Ý thức bằng đúng phân loại của
 
 `reportIssue` ở `server/src/cases/cases.ts:326` là hàm máy chủ nhận việc tạo case. Chữ ký thật
 đòi thêm `title` (bắt buộc, ≥6 ký tự) — bảng mô tả gốc thiếu trường này; đã thêm vào phép kiểm
-trên, ghi ở mục 12.
+trên, ghi ở mục 14.
 
 - [x] **Step 2: Chạy và xác nhận nó HỎNG** — `npm test`. Thực tế: phép kiểm đầu (bộ phân loại
   có sẵn) ĐẠT ngay; phép kiểm thứ hai (tạo case) HỎNG với lý do "Hãy đặt tên cho case" (thiếu
   `title`, không liên quan gì tới phân loại) — sau khi thêm `title` thì cả hai ĐẠT, không cần
-  sửa gì ở tầng máy chủ/domain. Xem Step 3 và mục 12: lỗi CASE-01 nằm hoàn toàn ở giao diện.
+  sửa gì ở tầng máy chủ/domain. Xem Step 3 và mục 14: lỗi CASE-01 nằm hoàn toàn ở giao diện.
 
 - [x] **Step 3: Thêm bộ phân loại.**
   > **Cập nhật 18/09/2026 (session code PR-A):** giả định của bước này SAI. Đọc
@@ -983,7 +992,7 @@ trên, ghi ở mục 12.
   > `BEHAVIOUR_TOPICS` sang nhánh đó từ trước. Phép kiểm Step 1 xác nhận: cả hai check đều
   > ĐẠT ngay khi chạy — check thứ hai chỉ cần thêm `title` (trường bắt buộc, thiếu trong bảng
   > mô tả gốc) để qua được bước kiểm đầu vào của `reportIssue`, không phải sửa phân loại. Xem
-  > mục 12.
+  > mục 14.
 
 - [x] **Step 4: Sửa giao diện.** `QuickReport.tsx:80` bỏ điều kiện `track === 'academic'`:
 
@@ -1016,7 +1025,7 @@ git commit -m "Mở lại việc tạo case Ý thức: mỗi nhóm có bộ phâ
 ```
 
 **Không làm trong PR-A:** file/link bằng chứng (CASE-04), quyền theo môn (AUTH-01), gộp đợt
-theo cửa sổ bốn ngày. Chúng ở backlog mục 10.
+theo cửa sổ bốn ngày. Chúng ở backlog mục 12.
 
 ---
 
@@ -1026,7 +1035,7 @@ theo cửa sổ bốn ngày. Chúng ở backlog mục 10.
 > mục A):** cả bốn mã nghiệm thu T07 · T09 · T10 · T13 đều kiểm Kế hoạch MT, bộ kỹ năng bắt
 > buộc và quyền chấm Normal — **không mã nào kiểm bộ chọn tuần**. Nên bộ chọn tuần tách ra làm
 > **PR2a** ngay, không chờ gì cả; phần còn lại (Kế hoạch Test + quyền lịch, cái thật sự cần
-> bốn mã T) dời thành **PR2b**, viết task khi PR2a đã merge. Xem mục 12.
+> bốn mã T) dời thành **PR2b**, viết task khi PR2a đã merge. Xem mục 14.
 
 ### 7a. PR2a — Bộ chọn tuần dùng chung (sổ §13.8, chép đủ ở `vong7/SO_AUDIT_TRICH.md` mục D)
 
@@ -1113,7 +1122,7 @@ suông.
     trọng, đã sửa 3 (MeetingPage fallback array[0], WeekPicker im lặng khi lỗi mạng, fallback
     giờ trình duyệt thật); quyết định **không** thêm hạ tầng test HTTP chỉ cho một route mới
     (`POST /ref/periods/resolve`) vì không route nào khác trong `run.ts` có test tầng HTTP —
-    ghi lại ở mục 12.
+    ghi lại ở mục 14.
 
 ### 7b. PR2b — Kế hoạch Test + quyền lịch (sổ §MT-01…MT-06, SCH-01/02, chép đủ ở
 `vong7/SO_AUDIT_TRICH.md` mục B, C)
@@ -1209,37 +1218,268 @@ thấy **và** API từ chối; đổi môn cuối của GVCN không để lại
 
 ---
 
-## 10. Backlog — KHÔNG thuộc giai đoạn này
+## 10. PR-C — Form case đúng và gọn (CASE-01 · ngày Ý thức · nhập bù · AUTH-01)
+
+> **Mức chi tiết: task.** Làm được ngay, không chờ ai.
+>
+> **Goal:** Form `+ Case` hỏi đúng những gì cần hỏi, không hỏi hai lần, không cho nhập thứ làm
+> hỏng hạn — và mở thêm một đường ghi lại case cũ đã xử lý xong, để hành trình học viên không
+> bị trống ở quá khứ.
+>
+> **Ràng buộc kiến trúc:** không đổi mô hình dữ liệu case. Đường nhập bù dùng lại đúng bảng và
+> đúng hàm của đường thường; cái khác nhau nằm ở **những gì KHÔNG được sinh ra**, ghi ở mục 10.4.
+
+### 10.1. Task 1 — Bỏ ô hỏi trùng ở nhóm Ý thức (CASE-01, làm nốt)
+
+PR-A mở lại được việc tạo case Ý thức bằng cách cho bốn nhóm dùng chung một bộ phân loại — mà
+bộ đó **đúng là bốn nhóm ấy**. Kết quả: form hỏi "Về việc gì: BTVN?" rồi hỏi tiếp "Phân loại
+vấn đề: BTVN?". Sổ audit CASE-01 đã cấm từ đầu: *"không cần dropdown nguyên nhân thứ hai dư thừa."*
+
+- [ ] **Step 1: Phép kiểm trước.** Trong `server/src/tests/run.ts`: tạo case Ý thức chỉ truyền
+      `primaryCode = 'student.behaviour.homework'`, **không** truyền `topic`. Phải lưu được, và
+      `topic` đọc ra phải là nhóm BTVN. Chạy `npm test`, phép kiểm này phải ĐỎ trước khi sửa.
+- [ ] **Step 2: Suy chủ đề từ phân loại.** Thêm vào `shared/domain/cases.ts` hàm
+      `topicFromBehaviourCode(code)` ánh xạ `student.behaviour.homework → homework`,
+      `.attendance → attendance`, `.participation → participation`, `.other → other`.
+      **Ánh xạ phải phủ hết `BEHAVIOUR_TOPICS`** — viết phép kiểm quét cả bốn mã.
+- [ ] **Step 3: Giao diện.** `web/src/modules/cases/QuickReport.tsx` — khi `track === 'behaviour'`,
+      **không render** ô "Về việc gì" (hiện ở dòng 221). Chỉ còn ô "Phân loại vấn đề". Chọn phân
+      loại thì đặt `topic` ngầm bằng hàm ở Step 2. Nhóm **Học thuật giữ nguyên hai ô** — ở đó
+      "Kỹ năng nào" (Listening) và "Phân loại vấn đề" (Tư duy và kỹ năng làm bài) là hai câu hỏi
+      khác nhau thật.
+- [ ] **Step 4: Máy chủ.** `reportIssue` (`server/src/cases/cases.ts:326`) — với
+      `track = 'behaviour'`, thiếu `topic` thì suy từ `primaryCode` bằng **cùng** hàm ở Step 2.
+      Không để hai nơi tự suy theo hai cách.
+
+> ⚠️ **CHỖ DỄ HỎNG NHẤT CỦA CẢ PR NÀY.** `topic` đang là **khoá gộp báo cáo theo đợt** (sổ
+> §13.12). Ánh xạ lệch một mã là hai báo cáo cùng loại rơi vào hai đợt khác nhau, và không ai
+> nhìn màn hình mà thấy được. Bắt buộc có phép kiểm: hai báo cáo BTVN cách nhau 2 ngày phải vào
+> **một** đợt; cách nhau 5 ngày phải thành **hai** đợt.
+
+### 10.2. Task 2 — Bỏ ngày và hạn khỏi case Ý thức
+
+Ngày mở đang là gốc tính của **ba** thứ cùng lúc: hạn phương án (`planDueDate`, `cases.ts:884`
+— 3 ngày nếu Gấp, 5 ngày nếu Cần chú ý, tính cả ngày đầu), hạn hoàn thành case
+(`behaviourCaseDeadline`, `cases.ts:554` — ngày mở + 6), và cửa sổ gộp đợt bốn ngày. Cho chọn
+ngày quá khứ nghĩa là **tạo được case sinh ra đã quá hạn**, hoặc lùi ngày để lách luật gộp.
+
+- [ ] **Step 1: Giao diện.** `QuickReport.tsx` — khi `track === 'behaviour'`, ẩn cả nút
+      `+ Theo dõi từ ngày khác hôm nay` (dòng 264) lẫn ô ngày (dòng 270). Không có ô hạn, và
+      chưa bao giờ có — đừng thêm.
+- [ ] **Step 2: Máy chủ chặn thật.** `reportIssue` — `track = 'behaviour'` mà nhận `detectedAt`
+      khác hôm nay thì **từ chối**, không im lặng bỏ qua.
+- [ ] **Step 3: Học thuật giữ nguyên.** Ô ngày của nhóm Học thuật không đụng tới — ở đó hạn
+      chạy theo cơ chế khác (`weeklyUpdateDue`, `cases.ts:895`), và ngày phát hiện lệch ngày
+      báo là chuyện có thật.
+- [ ] **Step 4: Phép kiểm.** Tạo case Ý thức với `detectedAt` lùi 10 ngày → API từ chối. Tạo
+      case Học thuật cùng ngày đó → lưu được.
+
+### 10.3. Task 3 — Tab "Đã xong từ trước"
+
+Ghi lại một case **đã xử lý xong từ lâu**, để hành trình học viên không trống ở quá khứ. Luật
+gốc: sổ mục 2 (*"Đang theo dõi / Đã xong, mặc định Đang theo dõi. Nhập lịch sử Đã xong phải có
+thông tin kết quả phù hợp; ngày quá khứ không tự chứng minh hiệu quả"*), **T03** (*"bắt ngày
+thực tế, kết quả xác định, ghi chú; lưu một lần; không sinh nợ tuần trước khi nhập"*) và
+**CASE-03** (*"trong một giao dịch; không cho Chưa đủ dữ liệu đóng PA; không tự gán thành công"*).
+
+**Bề mặt:** modal `+ Case` có hai tab ở đầu — **[Đang gặp vấn đề]** · **[Đã xong từ trước]**.
+Tab 1 là form hiện tại. Tab 2 hỏi đúng bảng dưới, **không hơn**:
+
+| Trường | Bắt buộc | Ghi chú |
+|---|---|---|
+| Thuộc nhóm · Kỹ năng (học thuật) hoặc Phân loại (Ý thức) · Mô tả vấn đề khi đó | ✓ | giống tab 1, **đã áp Task 1** nên Ý thức chỉ còn một ô |
+| **Từ ngày → đến ngày** | ✓ cả hai | chỗ **duy nhất** được nhập ngày quá khứ. Áp cho **cả hai nhóm**, kể cả Ý thức |
+| **Đã làm gì** — mỗi dòng `tên việc · người làm · từ → đến`, nút `+ thêm dòng` | ✓ ít nhất một dòng | dòng gọn, **không** mở panel phương án đầy đủ |
+| **Kết quả cuối** | ✓ | bộ đúng nhánh: học thuật một bộ, Ý thức một bộ (CASE-06). **KHÔNG có lựa chọn "Chưa đủ dữ liệu"** — CASE-03 cấm nó đóng phương án |
+| **Ghi chú** | ✓ | §13.12: *"ghi chú và ngày bắt buộc"* |
+| Điểm chi tiết theo kỹ năng | tuỳ chọn | dùng lại `componentsFor` (`cases.ts:170`) — Listening ra Section 1–4, Writing ra bốn tiêu chí band. **Không** phải bốn ô L/R/W/S |
+
+- [ ] **Step 1: Phép kiểm trước.** Nhập bù một case Listening: mở 01/07, xong 20/07, hai dòng
+      phương án, kết quả "đã cải thiện", ghi chú. Phải ra **một** case `done`, **hai** phương án
+      `done`, và **không** sinh dòng nghĩa vụ nào. Đỏ trước khi sửa.
+- [ ] **Step 2: Đường máy chủ.** Thêm `backfillCase(p, input)` vào `server/src/cases/cases.ts`.
+      Nó **gọi lại** `reportIssue` → `recordIntervention` (`:817`) → `completeIntervention`
+      (`:1150`) → `closeCaseOutcome` (`:111`) trong **một giao dịch**, với cờ `backfill: true`
+      chảy suốt. Không viết đường ghi database song song — trùng luật là cách sinh ra lỗi lệch.
+- [ ] **Step 3: Bảy chốt chặn.** Làm đủ mục 10.4. Mỗi chốt một phép kiểm.
+- [ ] **Step 4: Giao diện.** Tab trong `QuickReport.tsx`. Dòng phương án là một mảng state, mỗi
+      dòng ba ô. Nút chính ghi rõ "Ghi lại case đã xong".
+- [ ] **Step 5: Nhãn.** Case nhập bù hiện chữ **"nhập bù · <người> ghi ngày <ngày>"** ngay trên
+      thẻ case ở `SkillBoard.tsx`. Không giấu trong tooltip.
+- [ ] **Step 6: Hành trình theo tuần.** Mốc nhập bù vẽ ở **tuần thật của nó** (tháng 7), không
+      phải tuần nhập, và có nhãn phân biệt với mốc ghi tại chỗ.
+
+### 10.4. Bảy chốt chặn — phần dễ sai nhất, làm đủ cả bảy
+
+| # | Chốt chặn | Hỏng thế nào nếu thiếu |
+|---|---|---|
+| 1 | **Không sinh nghĩa vụ cập nhật tuần** nào giữa ngày bắt đầu và hôm nay | T03 nguyên văn: *"không sinh nợ tuần trước khi nhập"*. Phương án bắt đầu tháng 7 sẽ đẻ ra ~10 dòng quá hạn giả trong hàng đợi |
+| 2 | **Không có hạn nào** — không hạn lập phương án, không hạn hoàn thành, không vào hàng đợi quá hạn | Case Ý thức nhập bù kéo ba tuần là chuyện **đã xảy ra**, không phải vi phạm. Đem `behaviourCaseDeadline` áp lên nó thì mọi case cũ hiện đỏ |
+| 3 | **Không gộp vào đợt đang mở**, kể cả khi ngày rơi trong cửa sổ bốn ngày | Cửa sổ bốn ngày để gộp báo cáo **mới** về cùng một chuyện. Case tháng 7 gộp vào đợt tháng 9 là sai hẳn |
+| 4 | **Không tạo tín hiệu, không đổi mức SOS** | Nhập bù là trí nhớ, không phải một bài đánh giá |
+| 5 | **Không vào mẫu số hiệu quả hỗ trợ** (`server/src/cases/effectiveness.ts`) | Chủ sản phẩm chốt 19/09/2026. Nhưng **vẫn hiện đủ** trên hồ sơ và hành trình theo tuần — đó là mục đích của tính năng |
+| 6 | **Không kích hoạt cảnh báo case trùng** như đường thường | Case cũ trùng hạng mục với case đang mở là bình thường. **Nhưng** phải cảnh báo khi trùng với một case nhập bù khác **cùng khoảng thời gian** — đó mới là nhập hai lần |
+| 7 | **Ghi rõ là nhập bù**: ai nhập, nhập lúc nào, lưu cùng case | *"Ngày quá khứ không tự chứng minh hiệu quả."* Người đọc sau ba tháng phải phân biệt được ghi tại chỗ với nhớ lại rồi điền |
+
+### 10.5. Task 4 — AUTH-01: dạy kỹ năng nào sửa kỹ năng đó
+
+Lỗ quyền P0 ở backlog mục 12.1. Tin tốt: **hệ thống đã có sẵn dây đúng, chỉ đang đấu nhầm.**
+`hasAssignment(p, ctx, need)` (`server/src/permissions.ts:171`) đã hỗ trợ ba chế độ
+`'any' | 'skill' | 'core'`, và `'skill'` đang dùng đúng cho `SCORE_EDIT`. Nhưng
+`PERMISSIONS.SOS_EDIT` — quyền của case — đang gọi `hasAssignment(p, ctx, 'any')`
+(`permissions.ts:205`), tức **có dạy bất kỳ môn nào ở lớp là sửa được mọi case của lớp**.
+
+Luật chủ sản phẩm chốt 19/09/2026:
+
+| Nhóm case | Ai được tạo, sửa, nhập bù |
+|---|---|
+| **Học thuật** | **GVBM** đúng kỹ năng mình dạy · **GVCN** mọi kỹ năng trong lớp mình · **Quản lý** tất cả |
+| **Ý thức / Khác** | **GVCN** và **Quản lý**. GVBM **báo được vấn đề** nhưng không tạo/xử lý phương án |
+
+Lý do Ý thức khác: case Ý thức **không có kỹ năng** nên không có gì để "đúng môn mình dạy", và
+sổ §13.12 chốt *"GV trong lớp có thể báo vấn đề; chỉ QL/GVCN tạo và xử lý PA Ý thức."*
+
+- [ ] **Step 1: Phép kiểm trước.** Ba ca, đều phải ĐỎ trước khi sửa: (a) GV Listening sửa case
+      Reading cùng lớp → bị từ chối; (b) GV Listening tạo phương án Ý thức → bị từ chối;
+      (c) GV Listening sửa case Listening cùng lớp → cho qua.
+- [ ] **Step 2: Truyền kỹ năng vào ngữ cảnh.** Mọi nơi gọi `can(p, SOS_EDIT, ctx)` cho case học
+      thuật phải truyền `ctx.skill` = hạng mục của case. `hasAssignment(..., 'skill')` trả
+      `false` khi `ctx.skill` rỗng — nên **thiếu truyền là khoá hết**, không phải mở hết. Rà
+      từng nơi gọi, đừng chỉ sửa `teacherAllows`.
+- [ ] **Step 3: Đổi luật.** Trong `teacherAllows` (`permissions.ts:193`), tách `SOS_EDIT` khỏi
+      cụm `ATTEMPT_VIEW`/`STUDENT_VIEW`: case học thuật dùng `'skill'`, case Ý thức dùng
+      `'core'`. `ATTEMPT_VIEW` và `STUDENT_VIEW` **giữ nguyên `'any'`** — xem trong lớp mình là
+      đúng, chỉ sửa mới cần siết.
+- [ ] **Step 4: Nhập bù theo cùng luật.** `backfillCase` dùng đúng kiểm tra này, không đường riêng.
+- [ ] **Step 5: Kiểm API trực tiếp.** Sổ SCH-01 nhấn: *"kiểm API trực tiếp, không chỉ ẩn nút."*
+      Gọi thẳng endpoint bằng tài khoản GV sai môn phải nhận 403.
+
+### 10.6. Nghiệm thu PR-C
+
+Chạy thật, đủ **bốn vai**: GVBM Listening · GVBM Reading · GVCN · Quản lý.
+
+- Form `+ Case` nhóm Ý thức chỉ còn **một** ô phân loại, không còn ô "Về việc gì".
+- Nhóm Ý thức **không có** ô ngày nào. Nhóm Học thuật vẫn có.
+- Hai báo cáo BTVN cách 2 ngày → một đợt; cách 5 ngày → hai đợt.
+- Tab "Đã xong từ trước" nhập được **cả hai nhóm**, bắt buộc từ ngày → đến ngày, ít nhất một
+  dòng phương án, kết quả và ghi chú.
+- Case nhập bù: không sinh dòng quá hạn nào · không hiện hạn · không đổi SOS · không vào tỷ lệ
+  hiệu quả · hiện đúng tuần cũ trên hành trình · có nhãn "nhập bù".
+- GV Listening **không** sửa được case Reading và **không** tạo được phương án Ý thức, cả trên
+  giao diện lẫn khi gọi thẳng API.
+- `npm test` xanh; hai lệnh `tsc` sạch.
+
+---
+
+## 11. PR-D — Khung case gọn
+
+> **Mức chi tiết: task.** Phụ thuộc **PR-C** (dùng form đã sửa).
+>
+> **Goal:** Một case đọc ở **một** khối, không phải hai khối lồng nhau hiển thị cùng một dữ
+> liệu theo hai kiểu.
+
+### 11.1. Vấn đề
+
+Hồ sơ học viên đang có **một khung case lồng trong một khung case**. Khối trên là
+`SkillBoard.tsx`; bấm "Lịch sử và kết thúc phương án" (`SkillBoard.tsx:319`) thì nó nhúng
+nguyên `CasePanel.tsx` vào bên dưới. Hai khối hiển thị **cùng một case** bằng hai cách trình
+bày khác nhau. Chủ sản phẩm: *"rất rối rắm và thừa"*.
+
+### 11.2. Bề mặt đích
+
+```
+▾ Listening · Listening mất điểm ở Section 3                    [SOS 1]
+  Phân loại: Tư duy và kỹ năng làm bài · mở 12/07/2026
+  "Em theo kịp Section 1–2 nhưng mất mạch khi có ba người nói."
+
+  ▸ ✓ Thêm một buổi tutor Listening mỗi tuần      [Tiến bộ một phần] 14/08
+      Trần Ngọc Hà · từ 20/08 → 14/09                      [Ghi kết quả]
+
+  ▾ ✓ Nghe chép chính tả Section 3, hai bài/tuần  [Tiến bộ một phần] 24/08
+      Trần Ngọc Hà · từ 14/07 → 10/08                      [Ghi kết quả]
+      ├ 24/08 · chu kỳ 1 · Tiến bộ một phần · ⚠ cập nhật trễ
+      │   "MT2 Listening lên 5.5 nhưng kỳ vọng cũng lên 6.0..."
+      └ 10/08 · bắt đầu thực hiện
+
+  Case đang xử lý, chưa kết luận.
+  [+ Thêm phương án]  [Hoàn thành case]
+```
+
+### 11.3. Các bước
+
+- [ ] **Step 1: Gỡ hai nút thừa.** Bỏ nút "Lịch sử và kết thúc phương án" (`SkillBoard.tsx:319`)
+      và bỏ hẳn phần nhúng `CasePanel` bên dưới nó.
+- [ ] **Step 2: Bỏ nút "Mở trang riêng", GIỮ đường dẫn.** Gỡ nút ở `SkillBoard.tsx:323`,
+      `CaseBoardPage.tsx:482`, `StudentDetailPage.tsx:324`, `MockDetailPage.tsx:292`. **KHÔNG
+      xoá route `/hoc-thuat/case/:id`** — thông báo và badge đang trỏ vào đó; xoá là gãy link
+      sâu. Chủ sản phẩm chốt 19/09/2026.
+- [ ] **Step 3: Hai nút thật vào chân khối case.** `+ Thêm phương án` và `Hoàn thành case`, đặt
+      cùng dòng trạng thái. Dùng lại đúng hai hàm `CasePanel` đang gọi (`:256`, `:265`) — không
+      viết luồng mới.
+- [ ] **Step 4: Timeline phương án đóng/mở tại dòng.** Mỗi dòng phương án có mũi tên. **Đóng mặc
+      định**, chỉ hiện kết quả mới nhất như hiện nay. Mở ra thấy lịch sử cập nhật của **chính
+      phương án đó**. Lý do đóng mặc định: Lê Quang Huy có 5 case, mở hết là một trang cuộn vô
+      tận. Sổ CASE-08 cũng chốt: *"không mở tất cả mặc định."*
+- [ ] **Step 5: Panel "Ghi kết quả" hai lựa chọn.** `InlineResult` trong `SkillBoard.tsx` thêm
+      một cặp lựa chọn: *Ghi kết quả, tiếp tục theo dõi* (phương án vẫn chạy) hoặc *Hoàn thành
+      phương án* (hiện thêm ô ngày kết thúc, phương án đóng). **Một** panel, **một** nút chính
+      đổi chữ theo lựa chọn — không phải hai nút cạnh nhau.
+- [ ] **Step 6: Bỏ ô điểm tự chấm khỏi cập nhật phương án (CASE-05).** Gỡ `MetricsField` khỏi
+      `ResultDialog` (`CasePanel.tsx:1356`) và khỏi panel ghi kết quả. Ô đó đang bày **bốn kỹ
+      năng L/R/W/S** cho một case Listening — chủ sản phẩm gọi là "RẤT VÔ LÝ", và sổ CASE-05 đã
+      chốt bỏ từ trước. **Dữ liệu điểm tự chấm cũ đã lưu thì GIỮ, không xoá** (CASE-05 nguyên
+      văn: *"giữ quan sát định lượng lịch sử nếu đã có"*).
+- [ ] **Step 7: Màn "Hoàn thành case" giữ nguyên.** Nó đang dùng `componentsFor` nên đã hiện
+      **đúng tiêu chí của kỹ năng** (Listening → Section 1–4). Không đụng. Chỉ thêm nhánh Ý thức
+      theo CASE-06: ghi chú bắt buộc + ngày + nút Hoàn thành case, **không** có ô điểm.
+
+### 11.4. Nghiệm thu PR-D
+
+- Mở hồ sơ **Lê Quang Huy** (`/hoc-vien/3` — 5 case, một case hai phương án hạn khác nhau) và
+  **Đinh Ngọc Quyên** (hai case song song cùng một kỹ năng): mỗi case đọc ở **một** khối.
+- Không còn nút "Lịch sử và kết thúc phương án", không còn nút "Mở trang riêng".
+- Dán thẳng `/hoc-thuat/case/<id>` vào thanh địa chỉ vẫn mở đúng case.
+- Mở/đóng timeline từng phương án chạy đúng; mặc định đóng.
+- "Ghi kết quả" cho chọn theo dõi tiếp hoặc hoàn thành phương án, đúng một nút chính.
+- Không còn ô điểm L/R/W/S ở bất kỳ màn cập nhật phương án nào; điểm tự chấm cũ vẫn đọc được.
+- Đủ **ba vai**: GVBM · Quản lý Monbay · Quản trị.
+
+---
+
+## 12. Backlog — KHÔNG thuộc giai đoạn này
 
 Hoãn **không** có nghĩa là đã xong. Đừng đánh dấu hoàn tất vì chưa làm.
 
-### 10.1. P0 còn tồn — sổ §4.A
+### 12.1. P0 còn tồn — sổ §4.A
 
 | Mã | Lỗi | Vì sao đáng ghi |
 |---|---|---|
-| **AUTH-01** | Quyền case chỉ kiểm "có phân công **bất kỳ** môn nào ở lớp" | GV Listening sửa được case Reading, tạo được PA Ý thức dù không phải GVCN. Lỗ quyền |
+| ~~**AUTH-01**~~ | Quyền case chỉ kiểm "có phân công **bất kỳ** môn nào ở lớp" | **ĐÃ RA KHỎI BACKLOG 19/09/2026 → mục 10.5 (PR-C).** Giữ dòng này để không ai đi tìm lại |
 | **DATA-01** | `server/src/worklist/weekly.ts` lọc scope ở tập đợt thi, nhưng các phép đếm case/HV sau đó chỉ lọc `planned_period_id` | Hai chi nhánh cùng tuần **cộng lẫn số của nhau**. Sai theo hướng người xem không phát hiện được |
 
-### 10.2. Case và Ý thức
+### 12.2. Case và Ý thức
 
-CASE-04 file/link bằng chứng · CASE-05 bỏ điểm tự chấm khỏi cập nhật PA · CASE-06 bộ kết quả
-riêng cho Ý thức · CASE-07 nhãn hạn đúng nghĩa · gộp đợt theo cửa sổ bốn ngày · hạn xác minh
-SOS ba ngày · sửa điểm làm mất căn cứ case.
+CASE-04 file/link bằng chứng · CASE-07 nhãn hạn đúng nghĩa · gộp đợt theo cửa sổ bốn ngày ·
+hạn xác minh SOS ba ngày · sửa điểm làm mất căn cứ case.
 
-### 10.3. Thống kê và báo cáo
+**Đã ra khỏi backlog 19/09/2026** — đừng làm lại ở đây: **CASE-05** (bỏ điểm tự chấm khỏi cập
+nhật phương án) và **CASE-06** (bộ kết quả riêng cho Ý thức) nay nằm ở **mục 11 (PR-D)**;
+phần còn lại của **CASE-01** (hai ô hỏi trùng) nằm ở **mục 10.1 (PR-C)**.
+
+### 12.3. Thống kê và báo cáo
 
 "Chưa đủ dữ liệu" không vào mẫu số hiệu quả (ANALYSIS-06) · cây Normal/FT → kỹ năng → phân
 loại → chi nhánh/lớp (ANALYSIS-01) · drill-down ra đúng số (ANALYSIS-02) · WORK-02 ma trận
 báo cáo · WORK-03 liên kết task thật.
 
-### 10.4. Chưa có bằng chứng, cần chạy thật
+### 12.4. Chưa có bằng chứng, cần chạy thật
 
 - Hồ sơ trên **máy tính bảng và điện thoại thật** — hiện chỉ kiểm bằng khổ mô phỏng 375px.
 - Rà các màn phụ theo **mục 17** của brief (tiêu chuẩn UI).
 
-### 10.5. Bốn đường vào nhập điểm còn lại của Task 6 (khảo sát 18/09/2026)
+### 12.5. Bốn đường vào nhập điểm còn lại của Task 6 (khảo sát 18/09/2026)
 
-PR1 chỉ sửa lỗi thông báo không điều hướng (đã xong, xem mục 12). Bốn đường sau cần dựng
+PR1 chỉ sửa lỗi thông báo không điều hướng (đã xong, xem mục 14). Bốn đường sau cần dựng
 mới, không phải sửa nhỏ — làm PR riêng, có kèm quyết định thiết kế trước khi code:
 
 | Đường | Hiện trạng | Việc cần làm |
@@ -1257,9 +1497,9 @@ báo.
 
 ---
 
-## 11. Lệnh kiểm bắt buộc
+## 13. Lệnh kiểm bắt buộc
 
-### 11.1. Trước mỗi commit
+### 13.1. Trước mỗi commit
 
 ```bash
 npm run build:server && npm test && npx tsc -p tsconfig.build.json --noEmit && npx tsc -p tsconfig.web.json --noEmit
@@ -1267,7 +1507,7 @@ npm run build:server && npm test && npx tsc -p tsconfig.build.json --noEmit && n
 
 Cả bốn phải sạch. `npm test` phải **đạt hết** — số phép kiểm chỉ tăng, không giảm.
 
-### 11.2. Bấm thử thật trước khi báo xong
+### 13.2. Bấm thử thật trước khi báo xong
 
 Chủ sản phẩm đọc bằng mắt, không đọc số phép kiểm.
 
@@ -1287,7 +1527,7 @@ Rồi mở http://localhost:5173, đăng nhập qua tab **"Vào nhanh bằng tà
 Kiểm bằng **ba vai**: một GVBM · Quản lý Monbay · Quản trị hệ thống. Lỗi badge chỉ lộ ra ở
 vai Quản trị và Quản lý.
 
-### 11.3. Dọn sau khi xong — ràng buộc số 2 của chủ sản phẩm
+### 13.3. Dọn sau khi xong — ràng buộc số 2 của chủ sản phẩm
 
 ```bash
 pkill -f concurrently
@@ -1298,7 +1538,7 @@ curl -s -o /dev/null -w "4000:%{http_code}\n" --max-time 3 http://localhost:4000
 Cả hai phải **không** trả về gì. Nếu đã gỡ Playwright tạm thì `git checkout -- package.json
 package-lock.json`.
 
-### 11.4. Báo cáo cho chủ sản phẩm
+### 13.4. Báo cáo cho chủ sản phẩm
 
 Nói **cái gì đổi trên màn hình**, bằng tiếng Việt, không tên hàm. Mục nào chưa làm thì ghi
 **chưa làm** — đừng ghi hoàn tất khi còn component chưa nối. Kèm ảnh trước/sau cho mỗi màn
@@ -1306,14 +1546,15 @@ Nói **cái gì đổi trên màn hình**, bằng tiếng Việt, không tên h�
 
 ---
 
-## 12. Lịch sử cập nhật file này
+## 14. Lịch sử cập nhật file này
 
 | Ngày | Ai | Đổi gì và vì sao |
 |---|---|---|
 | 18/09/2026 | Claude + chủ sản phẩm | Tạo file. Soát prompt giai đoạn mới, đối chiếu sổ audit, tái hiện được lỗi badge (28→0) và CASE-01. Chốt: `±` so kỳ vọng · badge đếm bài kỹ năng · CASE-01 thành PR riêng · chia PR theo cách 1 |
 | 18/09/2026 | Claude (session code PR1) | Task 2 sai giả định: `SkillCell.required` đã tồn tại và độc lập với `canEdit`/`mine` từ trước — không cần sửa sản phẩm, chỉ thêm phép kiểm khoá hành vi. Ghi chú tại mục Task 2 |
-| 18/09/2026 | Claude (session code PR1) | Task 6 lớn hơn nhiều so với mô tả: khảo sát 6 đường phát hiện 4/6 cần dựng mới (quy ước tham số focus, tay bấm mốc hành trình). Thu hẹp về đúng 1 lỗi đã xác định (thông báo sai `entityType` nên chưa từng điều hướng, `web/src/modules/platform/Header.tsx`) + xác nhận Step 1 đã đúng sẵn; 4 đường còn lại chuyển sang backlog mục 10.5 làm PR riêng |
+| 18/09/2026 | Claude (session code PR1) | Task 6 lớn hơn nhiều so với mô tả: khảo sát 6 đường phát hiện 4/6 cần dựng mới (quy ước tham số focus, tay bấm mốc hành trình). Thu hẹp về đúng 1 lỗi đã xác định (thông báo sai `entityType` nên chưa từng điều hướng, `web/src/modules/platform/Header.tsx`) + xác nhận Step 1 đã đúng sẵn; 4 đường còn lại chuyển sang backlog mục 12.5 làm PR riêng |
 | 18/09/2026 | Claude (session code PR1) | PR1 (Task 1–7) hoàn tất, bấm thử thật bằng cả ba vai — mục 5.2 đã cập nhật bằng chứng cho từng dòng. Chỉ mục "sáu đường vào nhập điểm" còn dở (2/6), đã ghi rõ trong mục 5.2 và 10.5, không tự nhận là xong |
 | 18/09/2026 | Claude (session code PR-A) | Task 1 Step 3 sai giả định: `shared/domain/cases.ts:412–427` đã có sẵn nhánh phân loại `behaviour` (bốn mã BTVN/Chuyên cần/Tham gia/Khác dùng CHUNG, không phải mỗi nhóm một bộ riêng như mô tả gốc) và `issuesForTopic()` đã ánh xạ đúng — không cần sửa domain/server. Lỗi CASE-01 nằm ĐÚNG MỘT chỗ: `QuickReport.tsx:80` tự chặn với điều kiện `track === 'academic'`. Đã sửa đúng một dòng đó. Phép kiểm Step 1 cũng cần thêm trường `title` (bắt buộc ở `reportIssue`, thiếu trong bảng mô tả gốc của plan) |
 | 18/09/2026 | Chủ sản phẩm (đọc `PISA-PR17-Audit-and-Change-Register.md` gốc) | Trích `vong7/SO_AUDIT_TRICH.md` (mục 8 T01–T19 · MT-01…MT-06 · SCH-01/02 · §13.5 · §13.8 · §13.9 · §13.11) vì ba trong bốn mã nghiệm thu T07/T09/T10/T13 mà `plan.md` §7.4 (cũ) nhắc tới không có định nghĩa ở đâu trong repo — chặn hẳn việc viết tiêu chí nghiệm thu cho PR2. Đối chiếu phát hiện: không mã T nào kiểm bộ chọn tuần → **tách PR2 thành PR2a (bộ chọn tuần, làm ngay) và PR2b (Kế hoạch Test + quyền lịch, chờ PR2a merge)**; `plan.md` §7.1 cũ chép thiếu năm điều so với sổ §13.8 gốc (múi giờ, popover đổi tháng/năm, ưu tiên ngữ cảnh URL, cấm fallback phần tử đầu mảng tuần, giới hạn tương lai áp tại lúc lưu); ghi chú R18-09 xác nhận Normal không có luồng hủy Test, thay hẳn mô tả cũ ở MT-05/T12/brief 10.6. Mục 7 đã viết lại theo PR2a/PR2b |
 | 19/09/2026 | Claude (session code PR2a) | PR2a hoàn tất. Review bằng subagent trước khi mở PR phát hiện `MeetingPage.tsx` (không nằm trong danh sách file PR2a sửa, nhưng tự gọi `usePeriodWindow()` riêng) vẫn còn đúng kiểu lỗi "fallback `array[0]`" sổ §13.8 cấm — bị che bởi việc route `/ref/period-window` luôn `ensurePeriod(demoToday())` trước nên chưa lộ ra khi bấm thử các màn khác. Đã sửa và bấm thử lại. **Quyết định:** không thêm hạ tầng test HTTP (kiểu supertest) chỉ để kiểm route `POST /ref/periods/resolve` mới — không route nào khác trong `server/src/tests/run.ts` có test tầng HTTP, toàn bộ file kiểm ở tầng service; route mới chỉ bọc `isIsoDate()` (đã có nơi khác dùng) quanh `ensurePeriod()` (đã có phép kiểm §13.8 riêng). Thêm test HTTP cho một route là phá vỡ tính nhất quán của cả file kiểm thử |
+| 19/09/2026 | Chủ sản phẩm + Claude (session thiết kế) | Chủ sản phẩm xem màn hình thật và chỉ ra hai lỗi giao diện: (1) khung case ở hồ sơ học viên là **hai khối lồng nhau hiển thị cùng một case** — bấm "Lịch sử và kết thúc phương án" thì `SkillBoard.tsx:319` nhúng nguyên `CasePanel.tsx` vào dưới; (2) form `+ Case` nhóm Ý thức **hỏi cùng một câu hai lần** ("Về việc gì" và "Phân loại vấn đề" đều ra BTVN/Chuyên cần/Tham gia/Khác). Truy nguyên: lỗi (2) do chính PR-A tạo ra khi vá CASE-01 bằng cách cho bốn nhóm dùng chung bộ phân loại mà bộ đó đúng là bốn nhóm ấy — trong khi sổ CASE-01 đã cấm từ đầu *"không cần dropdown nguyên nhân thứ hai dư thừa"*. Cả hai lỗi chỉ lộ khi **chạy thật**; đọc code và bộ kiểm thử đều thấy đúng. Thêm yêu cầu mới: bỏ ngày/hạn khỏi case Ý thức, và tab **"Đã xong từ trước"** để nhập bù case cũ. Viết thành **mục 10 (PR-C)** và **mục 11 (PR-D)**; ba mục cuối dời số 10→12, 11→13, 12→14 cùng mọi tham chiếu nội dòng. AUTH-01, CASE-05, CASE-06 ra khỏi backlog vào hai mục mới |
