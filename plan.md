@@ -941,11 +941,11 @@ bấm, và lưu được. Hiện tại **không có đường nào lưu được
 ### Task 1: Bộ phân loại cho nhóm Ý thức
 
 **Files:**
-- Modify: `shared/domain/cases.ts` (bộ phân loại theo `BEHAVIOUR_TOPICS`)
+- ~~Modify: `shared/domain/cases.ts`~~ — không cần, bộ phân loại đã có sẵn (xem Step 3)
 - Modify: `web/src/modules/cases/QuickReport.tsx:80`
 - Test: `server/src/tests/run.ts`
 
-- [ ] **Step 1: Viết phép kiểm**
+- [x] **Step 1: Viết phép kiểm**
 
 ```ts
 check('CASE-01 · Mỗi nhóm Ý thức đều có bộ phân loại để chọn', () => {
@@ -959,36 +959,56 @@ check('CASE-01 · Tạo được case Ý thức bằng đúng phân loại của
   const code = domain.issuesForTopic(topic)[0].code;
   const made = cases.reportIssue(P.coreTeacher, {
     studentId: 3, track: 'behaviour', topic, primaryCode: code,
+    title: 'Ý thức: em nghỉ nhiều buổi liên tiếp',
     summary: 'Em nghỉ bốn buổi trong hai tuần, chưa có lý do từ gia đình.',
   });
   assert(made?.id, 'Phải tạo được case Ý thức');
 });
 ```
 
-`reportIssue` ở `server/src/cases/cases.ts:326` là hàm máy chủ nhận việc tạo case. Nếu chữ ký
-của nó khác bảng trên thì đọc lại đúng chữ ký đó, sửa phép kiểm, và ghi một dòng vào mục 12.
+`reportIssue` ở `server/src/cases/cases.ts:326` là hàm máy chủ nhận việc tạo case. Chữ ký thật
+đòi thêm `title` (bắt buộc, ≥6 ký tự) — bảng mô tả gốc thiếu trường này; đã thêm vào phép kiểm
+trên, ghi ở mục 12.
 
-- [ ] **Step 2: Chạy và xác nhận nó HỎNG** — `npm test`, kỳ vọng ✗ ở phép kiểm đầu.
+- [x] **Step 2: Chạy và xác nhận nó HỎNG** — `npm test`. Thực tế: phép kiểm đầu (bộ phân loại
+  có sẵn) ĐẠT ngay; phép kiểm thứ hai (tạo case) HỎNG với lý do "Hãy đặt tên cho case" (thiếu
+  `title`, không liên quan gì tới phân loại) — sau khi thêm `title` thì cả hai ĐẠT, không cần
+  sửa gì ở tầng máy chủ/domain. Xem Step 3 và mục 12: lỗi CASE-01 nằm hoàn toàn ở giao diện.
 
-- [ ] **Step 3: Thêm bộ phân loại.** Bốn nhóm `BEHAVIOUR_TOPICS` (BTVN · Chuyên cần · Tham gia
-  trên lớp · Khác) mỗi nhóm có bộ mã riêng, **không** dùng lại bộ học thuật. Sổ §13.12 nói rõ:
-  *"Chọn BTVN/Chuyên cần/Tham gia/Khác phải có mã phân loại tương ứng, không cần dropdown
-  nguyên nhân thứ hai dư thừa."* Mã theo cùng quy ước `<topic>.<cause>` để `.other` vẫn kích
-  hoạt luật "mô tả tối thiểu 30 ký tự".
+- [x] **Step 3: Thêm bộ phân loại.**
+  > **Cập nhật 18/09/2026 (session code PR-A):** giả định của bước này SAI. Đọc
+  > `shared/domain/cases.ts:412–427` thì `ISSUE_TAXONOMY` đã có sẵn nhánh `behaviour` (BTVN ·
+  > Chuyên cần · Tham gia trên lớp · Khác — dùng CHUNG một bộ bốn mã cho cả bốn nhóm chủ đề,
+  > không phải mỗi nhóm một bộ riêng như mô tả gốc), và `issuesForTopic()` đã ánh xạ mọi
+  > `BEHAVIOUR_TOPICS` sang nhánh đó từ trước. Phép kiểm Step 1 xác nhận: cả hai check đều
+  > ĐẠT ngay khi chạy — check thứ hai chỉ cần thêm `title` (trường bắt buộc, thiếu trong bảng
+  > mô tả gốc) để qua được bước kiểm đầu vào của `reportIssue`, không phải sửa phân loại. Xem
+  > mục 12.
 
-- [ ] **Step 4: Sửa giao diện.** `QuickReport.tsx:80` bỏ điều kiện `track === 'academic'`:
+- [x] **Step 4: Sửa giao diện.** `QuickReport.tsx:80` bỏ điều kiện `track === 'academic'`:
 
 ```ts
   /* Nhóm Ý thức CŨNG có bộ phân loại riêng — thiếu nó thì form tự chặn chính mình. */
   const causes = topic ? issuesForTopic(topic) : [];
 ```
 
-- [ ] **Step 5: Chạy và xác nhận nó ĐẠT** — `npm run build:server && npm test`.
+  Không có server nào bị đổi ở Task 1, nên `npm run build:server` không cần chạy lại — vẫn
+  chạy ở bước xác minh cuối cho chắc.
 
-- [ ] **Step 6: Kiểm bằng tay.** Mở hồ sơ một học viên → `+ Case` → chọn Ý thức/Khác → chọn
-  từng nhóm → phải có phân loại để bấm → lưu được → case hiện trong khối Ý thức của hồ sơ.
+- [x] **Step 5: Chạy và xác nhận nó ĐẠT** — `npm test`: **328/328 đạt** (326 cũ + 2 phép kiểm
+  CASE-01 mới). `npx tsc -p tsconfig.build.json --noEmit` và `npx tsc -p tsconfig.web.json
+  --noEmit` đều sạch.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 6: Kiểm bằng tay.** Mở hồ sơ Lê Quang Huy (`/hoc-vien/3`) → `+ Case` → chọn
+  **Ý thức** → mỗi nhóm trong bốn nhóm (BTVN · Chuyên cần · Tham gia trên lớp · Khác) đều hiện
+  khối "Phân loại vấn đề" với đủ bốn lựa chọn (trước đây trống, không bấm được gì) → lưu được
+  → case hiện trong khối Ý thức/Khác của hồ sơ, đúng tên phân loại đã chọn. Đã thử với **cả
+  ba vai**: giáo viên bộ môn (Trần Ngọc Hà, nhóm Chuyên cần), Quản lý Monbay (Nguyễn Khánh Vy,
+  nhóm BTVN), Quản trị hệ thống (Đỗ Vũ Tuấn Phong, nhóm Tham gia trên lớp) — cả ba đều lưu
+  thành công. Ba case thử đã bị xoá bằng cách chạy lại `npm run seed` sau khi kiểm xong, dữ
+  liệu demo về đúng trạng thái gốc (60 case).
+
+- [x] **Step 7: Commit**
 
 ```bash
 git add shared/domain/cases.ts web/src/modules/cases/QuickReport.tsx server/src/tests/run.ts
@@ -1218,3 +1238,4 @@ Nói **cái gì đổi trên màn hình**, bằng tiếng Việt, không tên h�
 | 18/09/2026 | Claude (session code PR1) | Task 2 sai giả định: `SkillCell.required` đã tồn tại và độc lập với `canEdit`/`mine` từ trước — không cần sửa sản phẩm, chỉ thêm phép kiểm khoá hành vi. Ghi chú tại mục Task 2 |
 | 18/09/2026 | Claude (session code PR1) | Task 6 lớn hơn nhiều so với mô tả: khảo sát 6 đường phát hiện 4/6 cần dựng mới (quy ước tham số focus, tay bấm mốc hành trình). Thu hẹp về đúng 1 lỗi đã xác định (thông báo sai `entityType` nên chưa từng điều hướng, `web/src/modules/platform/Header.tsx`) + xác nhận Step 1 đã đúng sẵn; 4 đường còn lại chuyển sang backlog mục 10.5 làm PR riêng |
 | 18/09/2026 | Claude (session code PR1) | PR1 (Task 1–7) hoàn tất, bấm thử thật bằng cả ba vai — mục 5.2 đã cập nhật bằng chứng cho từng dòng. Chỉ mục "sáu đường vào nhập điểm" còn dở (2/6), đã ghi rõ trong mục 5.2 và 10.5, không tự nhận là xong |
+| 18/09/2026 | Claude (session code PR-A) | Task 1 Step 3 sai giả định: `shared/domain/cases.ts:412–427` đã có sẵn nhánh phân loại `behaviour` (bốn mã BTVN/Chuyên cần/Tham gia/Khác dùng CHUNG, không phải mỗi nhóm một bộ riêng như mô tả gốc) và `issuesForTopic()` đã ánh xạ đúng — không cần sửa domain/server. Lỗi CASE-01 nằm ĐÚNG MỘT chỗ: `QuickReport.tsx:80` tự chặn với điều kiện `track === 'academic'`. Đã sửa đúng một dòng đó. Phép kiểm Step 1 cũng cần thêm trường `title` (bắt buộc ở `reportIssue`, thiếu trong bảng mô tả gốc của plan) |

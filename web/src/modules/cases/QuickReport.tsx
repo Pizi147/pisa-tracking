@@ -76,8 +76,8 @@ export function QuickReport({
   const topicLabel = (k: string) => (track === 'behaviour'
     ? BEHAVIOUR_TOPIC_LABEL[k as keyof typeof BEHAVIOUR_TOPIC_LABEL]
     : ENTRY_SKILL_LABEL[k as keyof typeof ENTRY_SKILL_LABEL]) ?? k;
-  /* Ý thức không có tầng nguyên nhân — bốn nhóm đã là chỗ cất cuối cùng. */
-  const causes = track === 'academic' && topic ? issuesForTopic(topic) : [];
+  /* Nhóm Ý thức CŨNG có bộ phân loại riêng — thiếu nó thì form tự chặn chính mình. */
+  const causes = topic ? issuesForTopic(topic) : [];
 
   const reset = () => {
     setSummary(''); setUrgency(DEFAULT_URGENCY); setTrack('academic'); setTopic('');

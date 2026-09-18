@@ -54,7 +54,7 @@ chưa sao lưu ở đâu cả**, phải đẩy lên trước.
 
 | | |
 |---|---|
-| `main` | `a0a0766` — Merge PR #20 |
+| `main` | `fe18661` — Merge PR #21 |
 | `npm test` | **326 phép kiểm, đạt hết** |
 | `npx tsc -p tsconfig.build.json --noEmit` | sạch |
 | `npx tsc -p tsconfig.web.json --noEmit` | sạch |
