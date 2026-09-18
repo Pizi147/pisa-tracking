@@ -109,6 +109,11 @@ export function planOutcomes(scope: Scope) {
 
   return (db()
     .prepare(
+      /*
+       * CHỐT 5 (PR-C mục 10.4): case NHẬP BÙ không vào mẫu số hiệu quả hỗ trợ — nó ghi lại
+       * trí nhớ, không phải một phương án đang được theo dõi hôm nay. Vẫn hiện đủ trên hồ sơ
+       * và hành trình theo tuần; chỉ loại khỏi phép tính tỷ lệ ở đây.
+       */
       `SELECT iv.id, iv.kind, iv.status, iv.closed_reason, iv.completed_date,
               sc.id AS case_id, sc.student_id, sc.track, sc.category, sc.topic,
               (SELECT fu.outcome FROM case_followups fu
@@ -118,7 +123,8 @@ export function planOutcomes(scope: Scope) {
          JOIN sos_cases sc ON sc.id = iv.case_id
         WHERE sc.student_id IN (${ph})
           AND iv.status = 'completed'
-          AND COALESCE(iv.approval_state, '') != 'pending'${range}`,
+          AND COALESCE(iv.approval_state, '') != 'pending'
+          AND sc.origin_kind != 'backfill'${range}`,
     )
     .all(...params) as any[])
     .map((r) => ({

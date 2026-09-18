@@ -7825,6 +7825,186 @@ check('CASE-01 Task 4 (AUTH-01) · GVBM sửa case ĐÚNG kỹ năng mình dạy
   assert(iv?.id, `GVBM ${authSubjectSkill} phải ghi nhận được phương án cho đúng case kỹ năng của lớp mình dạy`);
 });
 
+console.log('\n43. PR-C Task 3 — Tab "Đã xong từ trước" (nhập bù), bảy chốt chặn (mục 10.4)');
+
+/*
+ * ĐỦ SINH VIÊN RIÊNG CHO TỪNG PHÉP KIỂM: dùng đúng học viên đang học ở MB-FT 101 (khớp
+ * `authSubjectSkill`/`authMismatchSkill` đã tính ở trên), nhưng mỗi phép kiểm chọn một
+ * PHÂN LOẠI/khoảng ngày khác nhau để không tự đụng chỉ mục chống trùng của CHÍNH các phép
+ * kiểm này với nhau.
+ */
+const backfillEnr = conn
+  .prepare(`SELECT student_id FROM enrollments WHERE class_id = ? AND status = 'active' LIMIT 1`)
+  .get(mbClass) as any;
+const backfillCycle = conn
+  .prepare(`SELECT id FROM learning_cycles WHERE student_id = ? AND status = 'active' LIMIT 1`)
+  .get(backfillEnr.student_id) as any;
+
+check('Nhập bù (chốt 1) · Không sinh nghĩa vụ cập nhật tuần nào cho phương án đã xong', () => {
+  const done = cases.backfillCase(P.coreTeacher, {
+    studentId: backfillEnr.student_id, cycleId: backfillCycle?.id,
+    track: 'academic', topic: authSubjectSkill,
+    primaryCode: domain.issuesForTopic(authSubjectSkill)[0].code,
+    title: `${authSubjectSkill}: nhập bù chốt 1`, summary: 'Case nhập bù để kiểm chốt 1 — không sinh hạn cập nhật tuần.',
+    fromDate: '2026-07-01', toDate: '2026-07-20',
+    actions: [{ description: 'Giao bài luyện thêm mỗi tuần', performerName: 'GV bộ môn', fromDate: '2026-07-01', toDate: '2026-07-20' }],
+    outcome: 'improved', note: 'Case nhập bù, kiểm chốt 1: đã cải thiện rõ sau ba tuần.',
+  }) as any;
+  const iv = (conn.prepare('SELECT action_due, followup_due FROM case_interventions WHERE case_id = ?').all(done.id) as any[])[0];
+  assert(iv.action_due === null, `Chốt 1: phương án nhập bù không được có hạn cập nhật, đang là ${iv.action_due}`);
+  assert(iv.followup_due === null, `Chốt 1: phương án nhập bù không được có hạn kết thúc, đang là ${iv.followup_due}`);
+});
+
+check('Nhập bù (chốt 2) · Case nhập bù không có hạn nào, không vào hàng đợi quá hạn', () => {
+  const enr2 = conn.prepare(`SELECT student_id FROM enrollments WHERE class_id = ? AND status = 'active' AND student_id != ? LIMIT 1`)
+    .get(mbClass, backfillEnr.student_id) as any ?? backfillEnr;
+  const done = cases.backfillCase(P.coreTeacher, {
+    studentId: enr2.student_id, cycleId: null,
+    track: 'behaviour', primaryCode: 'student.behaviour.homework',
+    topic: 'homework',
+    title: 'Ý thức: nhập bù chốt 2', summary: 'Case nhập bù để kiểm chốt 2 — không hạn nào cả.',
+    fromDate: '2026-06-01', toDate: '2026-06-10',
+    actions: [{ description: 'Trao đổi với em về việc làm bài', performerName: 'GVCN', fromDate: '2026-06-01', toDate: '2026-06-10' }],
+    outcome: 'improved', note: 'Case nhập bù, kiểm chốt 2: em đã làm bài đều trở lại.',
+  }) as any;
+  const row = conn.prepare('SELECT merge_until, follow_until FROM sos_cases WHERE id = ?').get(done.id) as any;
+  assert(row.merge_until === null, `Chốt 2: case nhập bù không được có cửa sổ gộp, đang là ${row.merge_until}`);
+  assert(row.follow_until === null, `Chốt 2: case nhập bù không được có hạn báo kết quả, đang là ${row.follow_until}`);
+  const dueRows = mywork.myWork(P.coreTeacher, {}).groups
+    .flatMap((g: any) => g.items).filter((it: any) => it.caseId === done.id);
+  assert(dueRows.length === 0, `Chốt 2: case nhập bù không được rơi vào hàng đợi việc, đang có ${dueRows.length} dòng`);
+});
+
+check('Nhập bù (chốt 3) · Không gộp vào đợt Ý thức đang mở, dù ngày rơi trong cửa sổ gộp', () => {
+  const enr3 = conn.prepare(`SELECT student_id FROM enrollments WHERE class_id = ? AND status = 'active' LIMIT 1`)
+    .get(mbClass) as any;
+  const open = cases.reportIssue(P.coreTeacher, {
+    studentId: enr3.student_id, track: 'behaviour', primaryCode: 'student.behaviour.participation',
+    title: 'Ý thức: đợt đang mở để kiểm chốt 3',
+    summary: 'Đợt Ý thức ĐANG MỞ hôm nay, dùng để kiểm case nhập bù không được gộp vào đây.',
+    parallel: true,
+  }) as any;
+  const done = cases.backfillCase(P.coreTeacher, {
+    studentId: enr3.student_id, track: 'behaviour', primaryCode: 'student.behaviour.participation',
+    topic: 'participation',
+    title: 'Ý thức: nhập bù chốt 3', summary: 'Case nhập bù cùng phân loại "tham gia trên lớp" nhưng ở quá khứ xa.',
+    fromDate: '2026-05-01', toDate: '2026-05-05',
+    actions: [{ description: 'Nhắc em phát biểu nhiều hơn', performerName: 'GVCN', fromDate: '2026-05-01', toDate: '2026-05-05' }],
+    outcome: 'improved', note: 'Case nhập bù, kiểm chốt 3: không được gộp vào đợt đang mở hôm nay.',
+  }) as any;
+  assert(done.id !== open.id, 'Chốt 3: case nhập bù bị gộp nhầm vào đợt Ý thức đang mở hôm nay');
+  const stillOpen = conn.prepare('SELECT status FROM sos_cases WHERE id = ?').get(open.id) as any;
+  assert(stillOpen.status !== 'done', 'Chốt 3: đợt đang mở bị đóng lây khi nhập bù một case khác');
+});
+
+check('Nhập bù (chốt 4) · Không tạo tín hiệu, không đổi mức SOS', () => {
+  const enr4 = conn.prepare(`SELECT student_id FROM enrollments WHERE class_id = ? AND status = 'active' LIMIT 1`)
+    .get(mbClass) as any;
+  const done = cases.backfillCase(P.coreTeacher, {
+    studentId: enr4.student_id, cycleId: backfillCycle?.id,
+    track: 'academic', topic: authMismatchSkill,
+    primaryCode: domain.issuesForTopic(authMismatchSkill)[0].code,
+    title: `${authMismatchSkill}: nhập bù chốt 4`, summary: 'Case nhập bù để kiểm chốt 4 — không tự sinh mức SOS.',
+    fromDate: '2026-04-01', toDate: '2026-04-15',
+    actions: [{ description: 'Ôn lại kỹ thuật làm bài', performerName: 'GV bộ môn', fromDate: '2026-04-01', toDate: '2026-04-15' }],
+    outcome: 'improved', note: 'Case nhập bù, kiểm chốt 4: là trí nhớ, không phải một bài đánh giá mới.',
+  }) as any;
+  const row = conn.prepare('SELECT sos_level, origin_kind FROM sos_cases WHERE id = ?').get(done.id) as any;
+  assert(row.sos_level === null, `Chốt 4: case nhập bù không được tự có mức SOS, đang là ${row.sos_level}`);
+  assert(row.origin_kind === 'backfill', `Chốt 4/7: origin_kind phải là "backfill", đang là ${row.origin_kind}`);
+});
+
+check('Nhập bù (chốt 5) · Không vào mẫu số hiệu quả hỗ trợ, nhưng vẫn hiện trên hồ sơ', () => {
+  const enr5 = conn.prepare(`SELECT student_id FROM enrollments WHERE class_id = ? AND status = 'active' LIMIT 1`)
+    .get(mbClass) as any;
+  const before = effectiveness.planOutcomes({ studentIds: [enr5.student_id] }).length;
+  const done = cases.backfillCase(P.coreTeacher, {
+    studentId: enr5.student_id, cycleId: backfillCycle?.id,
+    track: 'academic', topic: authSubjectSkill,
+    primaryCode: domain.issuesForTopic(authSubjectSkill)[0].code,
+    title: `${authSubjectSkill}: nhập bù chốt 5`, summary: 'Case nhập bù để kiểm chốt 5 — không vào mẫu số hiệu quả.',
+    fromDate: '2026-03-01', toDate: '2026-03-10',
+    actions: [{ description: 'Luyện thêm dạng bài hay sai', performerName: 'GV bộ môn', fromDate: '2026-03-01', toDate: '2026-03-10' }],
+    outcome: 'improved', note: 'Case nhập bù, kiểm chốt 5: không được tính vào tỷ lệ thành công hôm nay.',
+  }) as any;
+  const after = effectiveness.planOutcomes({ studentIds: [enr5.student_id] });
+  assert(after.length === before, `Chốt 5: phương án nhập bù lọt vào mẫu số hiệu quả (${before} → ${after.length})`);
+  assert(!after.some((r: any) => r.caseId === done.id), 'Chốt 5: case nhập bù xuất hiện trong danh sách hiệu quả hỗ trợ');
+  // Vẫn hiện đủ trên hồ sơ — case đọc lại được, không bị ẩn.
+  const detail = cases.caseDetail(P.coreTeacher, done.id) as any;
+  assert(detail?.id === done.id && detail.interventions?.length === 1,
+    'Chốt 5: case nhập bù phải vẫn đọc lại được đầy đủ trên hồ sơ');
+});
+
+check('Nhập bù (chốt 6) · Cảnh báo khi trùng với MỘT CASE NHẬP BÙ KHÁC cùng khoảng thời gian', () => {
+  const enr6 = conn.prepare(`SELECT student_id FROM enrollments WHERE class_id = ? AND status = 'active' LIMIT 1`)
+    .get(mbClass) as any;
+  const first = cases.backfillCase(P.coreTeacher, {
+    studentId: enr6.student_id, cycleId: backfillCycle?.id,
+    track: 'academic', topic: authSubjectSkill,
+    primaryCode: domain.issuesForTopic(authSubjectSkill)[0].code,
+    title: `${authSubjectSkill}: nhập bù chốt 6 lần 1`, summary: 'Case nhập bù lần đầu để kiểm chốt 6 — cảnh báo trùng.',
+    fromDate: '2026-02-01', toDate: '2026-02-10',
+    actions: [{ description: 'Ôn bài với em', performerName: 'GV bộ môn', fromDate: '2026-02-01', toDate: '2026-02-10' }],
+    outcome: 'improved', note: 'Case nhập bù chốt 6, lần 1.',
+  }) as any;
+  assertThrows(() => cases.backfillCase(P.coreTeacher, {
+    studentId: enr6.student_id, cycleId: backfillCycle?.id,
+    track: 'academic', topic: authSubjectSkill,
+    primaryCode: domain.issuesForTopic(authSubjectSkill)[0].code,
+    title: `${authSubjectSkill}: nhập bù chốt 6 lần 2 (trùng)`, summary: 'Case nhập bù thứ hai, TRÙNG khoảng ngày với lần 1.',
+    fromDate: '2026-02-05', toDate: '2026-02-15',
+    actions: [{ description: 'Ôn bài với em', performerName: 'GV bộ môn', fromDate: '2026-02-05', toDate: '2026-02-15' }],
+    outcome: 'improved', note: 'Case nhập bù chốt 6, lần 2 — phải bị cảnh báo trùng.',
+  }), /trùng|nhập bù/, 'Nhập bù trùng khoảng ngày với một case nhập bù khác cùng hạng mục');
+  // Xác nhận "đây là lần khác" thì vẫn tạo được.
+  const second = cases.backfillCase(P.coreTeacher, {
+    studentId: enr6.student_id, cycleId: backfillCycle?.id,
+    track: 'academic', topic: authSubjectSkill,
+    primaryCode: domain.issuesForTopic(authSubjectSkill)[0].code,
+    title: `${authSubjectSkill}: nhập bù chốt 6 lần 2 (xác nhận)`, summary: 'Case nhập bù thứ hai, đã xác nhận là lần khác.',
+    fromDate: '2026-02-05', toDate: '2026-02-15',
+    actions: [{ description: 'Ôn bài với em', performerName: 'GV bộ môn', fromDate: '2026-02-05', toDate: '2026-02-15' }],
+    outcome: 'improved', note: 'Case nhập bù chốt 6, lần 2 — đã xác nhận qua cảnh báo.',
+    confirmDuplicate: true,
+  }) as any;
+  assert(second.id !== first.id, 'Xác nhận trùng vẫn phải tạo được một case nhập bù riêng');
+});
+
+check('Nhập bù (chốt 7) · Ghi rõ ai nhập, nhập lúc nào, lưu cùng case', () => {
+  const enr7 = conn.prepare(`SELECT student_id FROM enrollments WHERE class_id = ? AND status = 'active' LIMIT 1`)
+    .get(mbClass) as any;
+  const done = cases.backfillCase(P.coreTeacher, {
+    studentId: enr7.student_id, track: 'behaviour', primaryCode: 'student.behaviour.other',
+    topic: 'other',
+    title: 'Ý thức: nhập bù chốt 7', summary: 'Case nhập bù để kiểm chốt 7 — phải ghi rõ ai nhập và lúc nào.',
+    fromDate: '2026-01-05', toDate: '2026-01-12',
+    actions: [{ description: 'Trao đổi riêng với em', performerName: 'GVCN', fromDate: '2026-01-05', toDate: '2026-01-12' }],
+    outcome: 'improved', note: 'Case nhập bù, kiểm chốt 7.',
+  }) as any;
+  const row = conn.prepare('SELECT origin_kind, reported_by, created_at FROM sos_cases WHERE id = ?').get(done.id) as any;
+  assert(row.origin_kind === 'backfill', 'Chốt 7: phải phân biệt được với case ghi tại chỗ qua origin_kind');
+  assert(row.reported_by === P.coreTeacher.userId, 'Chốt 7: phải ghi đúng ai đã nhập bù');
+  assert(!!row.created_at, 'Chốt 7: phải ghi rõ lúc nhập (khác ngày xảy ra thật)');
+});
+
+check('Nhập bù · Chỉ GVCN/Quản lý mới CHỐT được — GVBM sai vai bị chặn, không tạo case nửa vời', () => {
+  const enr8 = conn.prepare(`SELECT student_id FROM enrollments WHERE class_id = ? AND status = 'active' LIMIT 1`)
+    .get(mbClass) as any;
+  const before = (conn.prepare('SELECT COUNT(*) n FROM sos_cases').get() as any).n;
+  assertThrows(() => cases.backfillCase(P.subjectTeacher, {
+    studentId: enr8.student_id, cycleId: backfillCycle?.id,
+    track: 'academic', topic: authSubjectSkill,
+    primaryCode: domain.issuesForTopic(authSubjectSkill)[0].code,
+    title: `${authSubjectSkill}: nhập bù bởi GVBM`, summary: 'GVBM tự nhập bù case kỹ năng mình dạy, nhưng không có quyền chốt.',
+    fromDate: '2026-01-20', toDate: '2026-01-25',
+    actions: [{ description: 'Ôn bài với em', performerName: 'GV bộ môn', fromDate: '2026-01-20', toDate: '2026-01-25' }],
+    outcome: 'improved', note: 'GVBM tự nhập, phải bị chặn ở bước chốt kết quả.',
+  }), /chủ nhiệm|Quản lý/, 'GVBM (không phải GVCN) tự chốt được case nhập bù');
+  const after = (conn.prepare('SELECT COUNT(*) n FROM sos_cases').get() as any).n;
+  assert(before === after, 'GVBM bị chặn ở bước chốt nhưng vẫn để lại một case dở dang — cả chuỗi phải cùng một giao dịch');
+});
+
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`
