@@ -1,13 +1,14 @@
 import { db, tx } from '../db.ts';
 import {
   ASSESSED_SKILLS, ASSESSED_SKILL_LABEL, ENTRY_SKILLS, MOCK_FT_STUDY_WEEK, PERMISSIONS,
-  SIGNAL_WITHDRAW_SCORE_FIXED, awaitingScore,
-  type AssessedSkill, type EntrySkill, type SkillProgress,
+  SIGNAL_WITHDRAW_SCORE_FIXED, awaitingScore, pendingSkillsOf,
+  type AssessedSkill, type EntrySkill, type PendingCell, type SkillProgress, type WorkScope,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { badRequest, isIsoDate, notFound, nowIso } from '../util.ts';
 import {
-  can, classScopeSql, editableSkills, mySkills, require_, scopeFor, scoreEditPath, type Principal,
+  can, classScopeSql, defaultWorkScope, editableSkills, mySkills, require_, scopeFor, scoreEditPath,
+  type Principal,
 } from '../permissions.ts';
 import { addJourney, notify, writeAudit } from '../platform/audit.ts';
 import {
@@ -204,6 +205,17 @@ export type SkillCell = {
   sitStatus: string;
 };
 
+/** Đưa ô điểm về đúng hình dạng mà luật đếm dùng chung cần. */
+export function pendingInputOf(cells: SkillCell[]): PendingCell[] {
+  return cells.map((c) => ({
+    skill: c.skill,
+    required: c.required,
+    scored: c.band !== null,
+    progress: c.progress,
+    mine: c.mine,
+  }));
+}
+
 /**
  * NĂM Ô NHẬP ĐIỂM của một lượt, mỗi ô kèm LỊCH VÀ HẠN CỦA CHÍNH MÔN NÓ.
  *
@@ -368,7 +380,34 @@ export type AttemptFilters = {
   status?: string;
   need?: 'my_scores' | 'missing_scores' | 'overdue' | 'sos_open';
   q?: string;
+  /** Phạm vi đếm bài cần chấm — mặc định theo vai nếu không truyền (`defaultWorkScope`). */
+  scope?: WorkScope;
 };
+
+/**
+ * AI PHỤ TRÁCH TỪNG MÔN của một lớp, cho CẢ DANH SÁCH lượt trong một lần đọc.
+ *
+ * Danh sách ở phạm vi quản lý là để ĐÔN ĐỐC nên phải kèm tên; nạp theo từng lớp một lần,
+ * đừng hỏi lại cho từng hàng — một trang danh sách có thể có hàng chục lượt.
+ */
+function ownersByClass(classIds: number[]): Map<number, Record<string, string>> {
+  const map = new Map<number, Record<string, string>>();
+  if (!classIds.length) return map;
+  const ids = [...new Set(classIds)];
+  const ph = ids.map(() => '?').join(',');
+  const rows = db()
+    .prepare(
+      `SELECT ta.class_id, ta.skill, u.full_name FROM teacher_assignments ta
+         JOIN users u ON u.id = ta.user_id
+        WHERE ta.class_id IN (${ph}) AND ta.status = 'active' AND ta.skill IS NOT NULL`,
+    )
+    .all(...ids) as any[];
+  for (const r of rows) {
+    if (!map.has(r.class_id)) map.set(r.class_id, {});
+    map.get(r.class_id)![r.skill] = r.full_name;
+  }
+  return map;
+}
 
 const ATTEMPT_SELECT = `
   SELECT a.*, s.full_name, s.student_code,
@@ -407,6 +446,17 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
 
   const today = demoToday();
   const bundle = loadBundle(rows.map((r) => r.id));
+  /* Tập bài cần chấm THEO PHẠM VI ĐANG XEM — cùng hàm với badge ở danh sách lớp. */
+  const workScope: WorkScope = f.scope ?? defaultWorkScope(p);
+  const ownersMap = ownersByClass(
+    rows.map((r) => r.class_id).filter((id): id is number => id !== null),
+  );
+  const ownersOf = (classId: number | null, skills: string[]): Record<string, string | null> => {
+    const rec = (classId !== null && ownersMap.get(classId)) || {};
+    const out: Record<string, string | null> = {};
+    for (const s of skills) out[s] = rec[s] ?? null;
+    return out;
+  };
 
   /*
    * Lớp thường chấm theo số câu đúng chứ không theo band, nên KHÔNG được đo bằng bộ kỹ năng
@@ -449,6 +499,17 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
         return !scored && awaitingScore(v.progress) ? v : null;
       };
       const c = bundle.cases.get(a.id);
+      /* Cùng hình dạng PendingCell mà luật đếm dùng chung cần — dựng thẳng, không qua bộ chuyển. */
+      const pendingCells: PendingCell[] = regularSkills.map((k) => {
+        const v = views.get(k);
+        const row = scores.find((x) => x.skill === k);
+        const scoredFlag = row?.raw_score !== null && row?.raw_score !== undefined;
+        return {
+          skill: k, required: !!v, scored: scoredFlag,
+          progress: v?.progress ?? 'upcoming', mine: mineSkills.includes(k),
+        };
+      });
+      const pending = pendingSkillsOf(pendingCells, workScope);
       return {
         id: a.id,
         kind: a.kind,
@@ -484,6 +545,10 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
           .map((k) => ({ skill: k, v: pendingOf(k) }))
           .filter((x) => !!x.v)
           .map((x) => ({ skill: x.skill, deadline: x.v!.deadline, weekCode: x.v!.periodCode })),
+        /* Tập bài cần chấm THEO PHẠM VI ĐANG XEM — cùng hàm với badge ở danh sách lớp. */
+        pendingSkills: pending,
+        /* Ai phụ trách từng bài — danh sách của Quản lý là để ĐÔN ĐỐC, nên phải có tên. */
+        pendingOwners: ownersOf(a.class_id, pending),
         /** Lịch từng môn của bài này — bốn môn có thể ở ba tuần khác nhau. */
         skillWeeks: [...new Set(regularSkills.map((k) => views.get(k)?.periodCode).filter(Boolean))],
         caseStatus: c?.status ?? null,
@@ -498,6 +563,7 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
     const result = resultOf(a, scores, skips);
     const cells = skillCells(p, a, scores, skips, today, bundle.skillRows.get(a.id));
     const active = cells.filter((c) => c.required);
+    const pending = pendingSkillsOf(pendingInputOf(cells), workScope);
     return {
       id: a.id,
       /*
@@ -546,6 +612,10 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
       myPendingDetail: cells
         .filter((c) => c.mine && c.band === null && awaitingScore(c.progress))
         .map((c) => ({ skill: c.skill, deadline: c.deadline, weekCode: c.periodCode })),
+      /* Tập bài cần chấm THEO PHẠM VI ĐANG XEM — cùng hàm với badge ở danh sách lớp. */
+      pendingSkills: pending,
+      /* Ai phụ trách từng bài — danh sách của Quản lý là để ĐÔN ĐỐC, nên phải có tên. */
+      pendingOwners: ownersOf(a.class_id, pending),
       /** Câu tóm tắt lịch tách tuần — mục 10.1. Danh sách hiện luôn, không phải mở chi tiết. */
       scheduleHeadline: scheduleHeadline({
         label: a.kind === 'mock' ? `MT${a.attempt_no}` : (a.period_code ?? ''),
@@ -563,7 +633,9 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
   });
 
   switch (f.need) {
-    case 'my_scores': mapped = mapped.filter((m) => m.myPendingSkills.length > 0 && m.status !== 'cancelled'); break;
+    case 'my_scores':
+      mapped = mapped.filter((m) => m.pendingSkills.length > 0 && m.status !== 'cancelled');
+      break;
     case 'missing_scores': mapped = mapped.filter((m) => m.status !== 'cancelled' && !m.complete && m.scoredRequired > 0); break;
     case 'overdue': mapped = mapped.filter((m) => m.overdueSkills > 0); break;
     case 'sos_open': mapped = mapped.filter((m) => m.caseId && m.caseStatus !== 'done'); break;

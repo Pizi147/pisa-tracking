@@ -1,13 +1,16 @@
 import { db, tx } from '../db.ts';
 import {
-  ATTEMPT_KIND_SHORT, BEHAVIOUR_TOPICS, ENTRY_SKILLS, PERMISSIONS, awaitingScore,
-  type AssessedSkill, type AttemptKind,
+  ATTEMPT_KIND_SHORT, BEHAVIOUR_TOPICS, ENTRY_SKILLS, PERMISSIONS, awaitingScore, pendingSkillsOf,
+  type AssessedSkill, type AttemptKind, type PendingCell, type WorkScope,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { badRequest, notFound, nowIso } from '../util.ts';
-import { can, classScopeSql, editableSkills, isCoreTeacherOf, require_, scopeFor, type Principal } from '../permissions.ts';
+import {
+  can, classScopeSql, defaultWorkScope, editableSkills, isCoreTeacherOf, mySkills, require_, scopeFor,
+  type Principal,
+} from '../permissions.ts';
 import { writeAudit } from '../platform/audit.ts';
-import { loadBundle, regularSkillViews, resultOf, skillCells } from '../fasttrack/attempts.ts';
+import { loadBundle, pendingInputOf, regularSkillViews, resultOf, skillCells } from '../fasttrack/attempts.ts';
 import { examPlanOf } from '../fasttrack/cycles.ts';
 import { standingFor, standingLine } from '../students/standing.ts';
 import { allProgrammes, evaluateRegular, programmeOfClass } from '../normal/regular.ts';
@@ -93,9 +96,10 @@ function progressMapOf(classIds: number[]) {
 }
 
 /** Một truy vấn cho mỗi loại dữ liệu, không hỏi lại theo từng lớp. */
-export function listClassSummaries(p: Principal, f: { branchId?: number; q?: string } = {}) {
+export function listClassSummaries(p: Principal, f: { branchId?: number; q?: string; scope?: WorkScope } = {}) {
   const scope = scopeFor(p, PERMISSIONS.ATTEMPT_VIEW);
   if (scope.none) return { rows: [] as ClassSummary[], scopeEmpty: true };
+  const workScope: WorkScope = f.scope ?? defaultWorkScope(p);
   const conn = db();
   const cs = classScopeSql(scope);
   const where: string[] = [cs.sql, "c.status = 'active'"];
@@ -139,6 +143,7 @@ export function listClassSummaries(p: Principal, f: { branchId?: number; q?: str
    * đó — hỏi bằng bộ kỹ năng IELTS cho một lớp Foundation thì luôn ra rỗng.
    */
   const editableByClass = new Map<number, string[]>();
+  const mineByClass = new Map<number, string[]>();
   const skillsByClass = new Map<number, string[]>();
   const ratioClasses = new Set<number>();
   const programmes = allProgrammes();          // ba câu lệnh cho cả bảng, không phải ba câu mỗi lớp
@@ -148,38 +153,50 @@ export function listClassSummaries(p: Principal, f: { branchId?: number; q?: str
     if (prog?.scoringMode === 'ratio') ratioClasses.add(c.id);
     skillsByClass.set(c.id, skills);
     editableByClass.set(c.id, editableSkills(p, c.id, skills));
+    mineByClass.set(c.id, mySkills(p, c.id, skills));
   }
 
-  const bump = (m: Map<number, number>, k: number) => m.set(k, (m.get(k) ?? 0) + 1);
+  const bump = (m: Map<number, number>, k: number, by = 1) => m.set(k, (m.get(k) ?? 0) + by);
   for (const a of attempts) {
     const c = bundle.cases.get(a.id);
     if (c && c.sos_level > 0 && c.status !== 'done') bump(openCases, a.class_id);
 
-    const editable = editableByClass.get(a.class_id) ?? [];
-    if (!editable.length) continue;
-
     if (ratioClasses.has(a.class_id)) {
       /*
-       * Lớp thường: "cần nhập điểm" là kỹ năng người này phụ trách mà chưa có điểm, và bài
-       * đã tới ngày làm. Thiếu điểm KHÁC trượt, nên chỉ đếm là việc phải làm chứ không kết luận.
+       * Lớp thường: "cần nhập điểm" là kỹ năng còn thiếu điểm mà đã tới ngày làm, trong
+       * ĐÚNG PHẠM VI đang xem. Thiếu điểm KHÁC trượt, nên chỉ đếm là việc phải làm chứ
+       * không kết luận. `editableOrAll` là bộ kỹ năng CỦA CHƯƠNG TRÌNH, không phải riêng
+       * kỹ năng sửa được — phạm vi quản lý phải đếm cả môn người xem không sửa được.
        */
       const rows = bundle.scores.get(a.id) ?? [];
+      const editableOrAll = skillsByClass.get(a.class_id) ?? [];
+      const mineSkills = mineByClass.get(a.class_id) ?? [];
       /* Hỏi theo TỪNG MÔN: bốn môn của một bài có thể ở ba tuần khác nhau (mục 10.1). */
       const views = regularSkillViews(a, bundle.skillRows.get(a.id), rows, today);
-      const missingMine = editable.some((k) => {
+      const cells: PendingCell[] = editableOrAll.map((k) => {
         const row = rows.find((r) => r.skill === k);
-        const scored = row?.raw_score !== null && row?.raw_score !== undefined;
         const v = views.get(k);
-        return !scored && !!v && awaitingScore(v.progress);
+        return {
+          skill: k,
+          required: !!v,
+          scored: row?.raw_score !== null && row?.raw_score !== undefined,
+          progress: v?.progress ?? 'upcoming',
+          mine: mineSkills.includes(k),
+        };
       });
-      if (missingMine) bump(needScores, a.class_id);
+      /*
+       * ĐẾM Ô, KHÔNG ĐẾM ĐỢT. Chấm xong ba trong bốn môn mà số không giảm thì người dùng
+       * tưởng mình chưa làm gì. Và dùng ĐÚNG hàm mà danh sách đích dùng, để hai số không
+       * thể lệch.
+       */
+      const pending = pendingSkillsOf(cells, workScope);
+      if (pending.length) bump(needScores, a.class_id, pending.length);
       continue;
     }
 
     const cells = skillCells(p, a, bundle.scores.get(a.id) ?? [], bundle.skips.get(a.id) ?? [], today, bundle.skillRows.get(a.id));
-    if (cells.some((x) => x.canEdit && x.band === null && awaitingScore(x.progress))) {
-      bump(needScores, a.class_id);
-    }
+    const pending = pendingSkillsOf(pendingInputOf(cells), workScope);
+    if (pending.length) bump(needScores, a.class_id, pending.length);
   }
 
   const progressByClass = progressMapOf(classes.map((c) => c.id));

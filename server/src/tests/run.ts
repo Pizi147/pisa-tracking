@@ -1223,15 +1223,43 @@ check('Ô điểm nói rõ kỹ năng có bắt buộc, độc lập với quy�
     'Quản lý không sửa được ô nào nhưng vẫn phải thấy ô nào bắt buộc',
   );
 });
+check('Badge bằng đúng danh sách — cả ba vai, cả hai phạm vi', () => {
+  for (const [who, p] of [
+    ['Quản trị', P.admin], ['Quản lý MB', P.mbManager], ['GV W1', P.w1Teacher],
+  ] as const) {
+    for (const scope of ['mine', 'managed'] as const) {
+      const rows = classesSvc.listClassSummaries(p, { scope }).rows;
+      for (const c of rows) {
+        const listed = attempts
+          .listAttempts(p, { classId: c.id, need: 'my_scores', scope })
+          .rows.reduce((n: number, r: any) => n + r.pendingSkills.length, 0);
+        assert(
+          c.needScores === listed,
+          `${who} · ${scope} · lớp ${c.code}: badge ${c.needScores} khác danh sách ${listed}`,
+        );
+      }
+    }
+  }
+});
+check('Phạm vi quản lý nhìn thấy việc mà người xem không được phân công', () => {
+  const managed = classesSvc.listClassSummaries(P.admin, { scope: 'managed' }).rows
+    .reduce((n: number, c: any) => n + c.needScores, 0);
+  const mine = classesSvc.listClassSummaries(P.admin, { scope: 'mine' }).rows
+    .reduce((n: number, c: any) => n + c.needScores, 0);
+  assert(managed > 0, 'Quản trị phải thấy có việc trong phạm vi quản lý');
+  assert(mine === 0, 'Quản trị không dạy lớp nào nên "việc của tôi" phải bằng 0');
+});
 check('Badge "cần nhập điểm" theo đúng phân công của người đang xem', () => {
-  const mine = classesSvc.listClassSummaries(P.w1Teacher, {}).rows;
+  const mine = classesSvc.listClassSummaries(P.w1Teacher, { scope: 'mine' }).rows;
   for (const c of mine) {
-    const q = attempts.listAttempts(P.w1Teacher, { classId: c.id, need: 'my_scores' }).rows.length;
+    const q = attempts
+      .listAttempts(P.w1Teacher, { classId: c.id, need: 'my_scores', scope: 'mine' })
+      .rows.reduce((n: number, r: any) => n + r.pendingSkills.length, 0);
     assert(c.needScores === q, `Lớp ${c.code}: badge ${c.needScores} khác hàng đợi ${q} của chính giáo viên đó`);
   }
-  const asAdmin = classesSvc.listClassSummaries(P.admin, {}).rows.find((c) => c.code === 'MB-FT 101')!;
+  const asAdmin = classesSvc.listClassSummaries(P.admin, { scope: 'managed' }).rows.find((c) => c.code === 'MB-FT 101')!;
   const asTeacher = mine.find((c) => c.code === 'MB-FT 101');
-  assert(!asTeacher || asTeacher.needScores <= asAdmin.needScores, 'Giáo viên không thể có nhiều việc hơn Admin');
+  assert(!asTeacher || asTeacher.needScores <= asAdmin.needScores, 'Giáo viên không thể có nhiều việc hơn Admin (phạm vi quản lý)');
 });
 check('Tìm theo tên học viên trả về đúng lớp chứa em đó', () => {
   const s = conn
@@ -1972,7 +2000,9 @@ check('Badge của lớp thường đếm đúng theo bộ kỹ năng của chư
   const summary = (classesSvc.listClassSummaries(T, {}) as any).rows.find((c: any) => c.id === fouClass.id);
   assert(summary, 'Giáo viên lớp Foundation phải thấy lớp của mình');
   assert(summary.scoringMode === 'ratio', 'Danh sách lớp phải cho biết lớp này chấm theo tỷ lệ');
-  const queue = attempts.listAttempts(T, { classId: fouClass.id, need: 'my_scores' }).rows.length;
+  // Badge đếm BÀI KỸ NĂNG, không đếm LƯỢT — một lượt có thể nợ nhiều môn cùng lúc.
+  const queue = attempts.listAttempts(T, { classId: fouClass.id, need: 'my_scores' }).rows
+    .reduce((n: number, r: any) => n + r.pendingSkills.length, 0);
   assert(summary.needScores === queue,
     `Badge ${summary.needScores} khác hàng đợi ${queue} của chính giáo viên đó`);
 });
