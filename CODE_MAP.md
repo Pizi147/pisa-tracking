@@ -2,6 +2,55 @@
 
 Tài liệu này để trả lời đúng một câu hỏi: *"tôi muốn đổi chỗ này, phải mở file nào."*
 
+> **BẮT BUỘC CẬP NHẬT.** Xoá hoặc đổi tên một file thì sửa file này **trong cùng commit**.
+> Một đường dẫn chết ở đây đắt hơn là không có dòng nào: người đọc tin nó, mở ra không thấy,
+> rồi đi tìm tay — mất đúng cái thời gian mà tài liệu này sinh ra để tiết kiệm.
+>
+> Kiểm nhanh mọi đường dẫn trong file này còn sống hay không:
+>
+> ```bash
+> grep -oE '`[a-zA-Z0-9_./-]+\.(ts|tsx|sql|md)`' CODE_MAP.md | tr -d '`' | sort -u | while read -r f; do [ -e "$f" ] || echo "CHET: $f"; done
+> ```
+
+---
+
+## Tra theo MÀN HÌNH — dành cho người không đọc code
+
+Nếu bạn nghĩ theo "cái tôi thấy trên màn hình" chứ không theo tên module, bắt đầu từ bảng này.
+
+| Trên màn hình | File chính | Dữ liệu từ |
+|---|---|---|
+| Danh sách lớp, các bộ lọc, badge "n bài cần chấm" | `web/src/modules/students/StudentsPage.tsx` | `server/src/classes/classes.ts` → `listClassSummaries` |
+| Hàng đợi việc cần chấm, nút **Việc của tôi / Trong phạm vi quản lý** | `web/src/modules/students/StudentsPage.tsx` → `WorkQueue` | `server/src/fasttrack/attempts.ts` → `listAttempts` |
+| Trang một lớp | `web/src/modules/classes/ClassOverviewPage.tsx` | `server/src/classes/classes.ts` |
+| **Hồ sơ một học viên** (đầu hồ sơ, bốn ô số, hai tab dưới) | `web/src/modules/students/StudentDetailPage.tsx` | `server/src/students/profile.ts` |
+| Bảng kỹ năng trong hồ sơ · **ô điểm bốn màu** | `web/src/modules/cases/SkillBoard.tsx` → `ScoreCell` | `server/src/cases/cases.ts` → `skillSupportBoard` |
+| **Thẻ case** và từng dòng phương án trong hồ sơ | `web/src/modules/cases/SkillBoard.tsx` → `PlanRow` | `server/src/cases/cases.ts` → `caseCardOf` |
+| **Ghi kết quả ngay trong dòng phương án** | `web/src/modules/cases/SkillBoard.tsx` → `InlineResult` | `POST /interventions/:id/result` |
+| Tab **Hành trình học tập** — hai cách đọc | `web/src/modules/students/JourneyTimeline.tsx` | `server/src/students/profile.ts` + bảng kỹ năng |
+| Màn một lượt Test | `web/src/modules/fasttrack/MockDetailPage.tsx` | `server/src/fasttrack/attempts.ts` → `attemptDetail` |
+| **Bảng nhập điểm cả lớp** | `web/src/modules/fasttrack/ScoreSheetPage.tsx` | `server/src/fasttrack/attempts.ts` → `classScoreSheet` |
+| Bảng nhập điểm lớp Normal | `web/src/modules/normal/RegularSheetPage.tsx` | `server/src/normal/regular.ts` |
+| **Tiến độ công việc** — tab Công việc | `web/src/modules/worklist/MgmtTasksPage.tsx` → `TasksBoard` | `server/src/worklist/mgmttasks.ts` |
+| **Tiến độ công việc** — tab Tình hình đơn vị | `web/src/modules/worklist/MeetingPage.tsx` → `MeetingBoard` | `server/src/worklist/meeting.ts` |
+| Màn Tổng quan | `web/src/modules/worklist/OverviewPage.tsx` | `server/src/worklist/mywork.ts` |
+| Trang **Thực trạng** — phân tích vấn đề | `web/src/modules/cases/IssueAnalysis.tsx` | `server/src/cases/effectiveness.ts` |
+| Form **+ Case** | `web/src/modules/cases/QuickReport.tsx` | `server/src/cases/cases.ts` → `reportIssue` |
+| Màn một case đầy đủ | `web/src/modules/cases/CasePanel.tsx` | `server/src/cases/cases.ts` → `caseDetail` |
+| Trang đăng nhập và vào nhanh bằng tài khoản demo | `web/src/modules/platform/WelcomePage.tsx` | `server/src/platform/accounts.ts` |
+
+## Tài liệu nào để làm gì
+
+| File | Dùng khi nào |
+|---|---|
+| **`plan.md`** | **Kế hoạch đang chạy.** Đọc trước khi code. File sống, có quy tắc bắt buộc cập nhật ở mục 0.2 |
+| `CODE_MAP.md` | File này — muốn sửa chỗ nào thì mở file nào |
+| `DEMO_SCENARIOS.md` | Mở hồ sơ nào để xem tình huống nào |
+| `DEMO_ASSUMPTIONS.md` | Bộ demo giả định những gì |
+| `vong7/BRIEF_OVERHAUL_SAU_PR15.md` | Đề bài nghiệp vụ gốc |
+| `BAN_GIAO.md` | Bàn giao hiện hành: đang ở đâu, làm gì tiếp |
+| `BAN_GIAO_*.md` (các file cũ) | **Lịch sử, không phải luật.** Xem cảnh báo ở `plan.md` mục 1.2 |
+
 Hệ thống chia theo **nghiệp vụ**, không chia theo kỹ thuật. Cùng một module thì cả phần dữ
 liệu, phần giao diện và phần kiểm thử nằm cạnh nhau, để sửa một chức năng không phải đi tìm
 ba nơi.
@@ -54,7 +103,7 @@ loại dữ liệu mới** vào kịch bản thì thêm trường ở `journeys.
 | Dữ liệu đổ vào bảng đó | `server/src/classes/classes.ts` → `classRoster` |
 | Trang hồ sơ một em | `web/src/modules/students/StudentDetailPage.tsx` |
 | Panel "Quản lý học viên" (kế hoạch · đầu vào · mục tiêu · kết luận · chuyển lớp) | `web/src/modules/students/StudentManagePanel.tsx` |
-| Biểu đồ tiến bộ theo kỹ năng | `web/src/modules/students/ProgressChart.tsx` · `server/src/students/profile.ts` → `progressOf` |
+| Tab Hành trình học tập — **hai cách đọc**: "Điểm và can thiệp" · "Dòng sự kiện" | `web/src/modules/students/JourneyTimeline.tsx` · `server/src/students/profile.ts` → `progressOf` |
 | Dữ liệu hồ sơ | `server/src/students/profile.ts` |
 | Danh sách lớp và tám bộ lọc | `web/src/modules/students/StudentsPage.tsx` |
 | Tên và điều kiện của tám bộ lọc | `shared/domain/people.ts` → `STUDENT_FILTERS` |
@@ -82,10 +131,17 @@ loại dữ liệu mới** vào kịch bản thì thêm trường ở `journeys.
 |---|---|
 | Mốc lịch MT mặc định (tuần học 6/12/16/20/24) | `shared/domain/fasttrack.ts` → `MOCK_FT_STUDY_WEEK` |
 | Kỳ vọng của từng lượt MT | `shared/domain/fasttrack.ts` → `expectationDelta` |
+| **Ô điểm: số ± là khoảng cách tới kỳ vọng** (`gap`), xu hướng so lượt trước là chữ trung tính (`trend`) | `server/src/cases/cases.ts` → `skillSupportBoard` · `web/src/modules/cases/SkillBoard.tsx` → `ScoreCell`, `gapText` |
+| Bốn màu của ô điểm (dưới đỏ · bằng xanh dương · vượt xanh lá · thiếu xám) | `web/src/modules/cases/SkillBoard.tsx` → `scoreTone` |
 | Bảng quy đổi số câu đúng → band | `server/src/fasttrack/scoring.ts` |
 | Cách tính mức SOS | `server/src/fasttrack/scoring.ts` → `resultOf` |
 | Màn một lượt MT | `web/src/modules/fasttrack/MockDetailPage.tsx` |
-| Bảng nhập điểm cả lớp | `web/src/modules/fasttrack/ScoreSheetPage.tsx` |
+| Bảng nhập điểm cả lớp | `web/src/modules/fasttrack/ScoreSheetPage.tsx` · `server/src/fasttrack/attempts.ts` → `classScoreSheet` |
+| **Hàng nào hiện ra ở bảng chấm của một tuần** — lọc theo lịch TỪNG KỸ NĂNG, không theo tuần cả đợt | `server/src/fasttrack/attempts.ts` → `classScoreSheet` |
+| **Luật đếm "bài cần chấm"** — badge và danh sách đều gọi vào đây | `shared/domain/fasttrack.ts` → `pendingSkillsOf` |
+| Hai phạm vi công việc và nhãn của chúng | `shared/domain/people.ts` → `WORK_SCOPES`, `WORK_SCOPE_LABEL`, `WORK_SCOPE_HINT` |
+| Phạm vi mở ra mặc định theo vai | `server/src/permissions.ts` → `defaultWorkScope` |
+| Ai phụ trách từng bài còn thiếu (cột GV ở hàng đợi) | `server/src/fasttrack/attempts.ts` → `ownersOf` |
 | Panel "Lên kế hoạch MT" | `web/src/modules/fasttrack/MockPlanPanel.tsx` · `server/src/fasttrack/planning.ts` |
 | Nhãn "Dự kiến thi" (tuần / chỉ tháng / chưa biết) | `server/src/fasttrack/cycles.ts` → `examPlanOf` · `web/src/ui/ui.tsx` → `ExamPlanText` |
 | **Lịch thi, phạm vi, trạng thái thi và hạn chấm CỦA TỪNG KỸ NĂNG** | `server/src/fasttrack/skillSchedule.ts` |
@@ -124,7 +180,7 @@ loại dữ liệu mới** vào kịch bản thì thêm trường ở `journeys.
 | Vòng đời case, phương án, phê duyệt, kết quả | `server/src/cases/cases.ts` |
 | Màn một case | `web/src/modules/cases/CasePanel.tsx` |
 | Bảng theo dõi sáu hạng mục ở hồ sơ | `web/src/modules/cases/SkillBoard.tsx` |
-| Khối "Các case của em" ở hồ sơ | `web/src/modules/cases/StudentCases.tsx` |
+| Case của em ở hồ sơ — **nằm ngay dưới hàng kỹ năng**, không còn khối danh sách riêng | `web/src/modules/cases/SkillBoard.tsx` → `CaseCardView` |
 | Luật hạn chu kỳ hai tuần / một tuần | `shared/domain/cases.ts` → `cycleDeadline` |
 | Năm kết quả và năm bước tiếp theo | `shared/domain/cases.ts` → `FOLLOWUP_OUTCOMES`, `nextStepsFor` |
 | Một chu kỳ khép lại (gộp ba nút cũ) | `server/src/cases/cases.ts` → `updateResult` |
@@ -132,7 +188,7 @@ loại dữ liệu mới** vào kịch bản thì thêm trường ở `journeys.
 | Điểm giáo viên tự chấm | `server/src/cases/cases.ts` → `normalizeMetrics`, `parseMetrics` |
 | **Cách đếm hiệu quả phương án** — thành công/thất bại/chưa xác định, n/N, mẫu nhỏ | `server/src/cases/effectiveness.ts` (nơi sở hữu duy nhất; bảng của lớp và trang Thực trạng đều gọi vào đây) |
 | **Phân tích vấn đề ở Thực trạng** — tab Normal/FT, hàng kỹ năng, bấm số ra case | `web/src/modules/cases/IssueAnalysis.tsx` · `server/src/cases/effectiveness.ts` → `issueSkillRows`, `issueBoard`, `issueBoardCases` |
-| **Dải thời gian phương án** ở hồ sơ (Gantt theo tuần, màu theo kết quả) | `web/src/modules/students/ProgressChart.tsx` → `PlanLane` · dữ liệu ở `server/src/students/profile.ts` |
+| **Làn thời gian phương án** ở tab Hành trình (thanh theo tuần, màu theo kết quả) | `web/src/modules/students/JourneyTimeline.tsx` → `PlanLane` · dữ liệu ở `server/src/cases/cases.ts` → `caseCardOf` |
 | Bảng "Vấn đề - Case" và bộ lọc | `web/src/modules/cases/CaseBoardPage.tsx` |
 
 ### Tổng quan và công việc
@@ -147,7 +203,7 @@ loại dữ liệu mới** vào kịch bản thì thêm trường ở `journeys.
 | Bảng tổng hợp theo tuần | `web/src/modules/worklist/WeeklyBoard.tsx` · `server/src/worklist/weekly.ts` |
 | Quản lý giao việc cho giáo viên | `web/src/modules/worklist/ManagerTasks.tsx` · `server/src/worklist/meeting.ts` |
 | Khối "Sự kiện nổi bật" (tuần này · tuần tới · tuần nữa) | `web/src/modules/worklist/Highlights.tsx` · `server/src/worklist/highlights.ts` |
-| Bảng "Phương án & kết quả" của tab Thực trạng | `web/src/modules/cases/OutcomeTable.tsx` · `server/src/worklist/outcomes.ts` |
+| Bảng "Phương án và kết quả" của tab Thực trạng | `web/src/modules/cases/IssueAnalysis.tsx` · `server/src/cases/effectiveness.ts` |
 | Tên và ý nghĩa của chín nhóm việc | `server/src/worklist/mywork.ts` → `GROUP_META` |
 | "Việc của tôi" khác "tôi sửa được" | `server/src/permissions.ts` → `mySkills` vs `editableSkills` |
 
@@ -210,6 +266,17 @@ con số khác. Hai điều dễ hiểu nhầm nhất:
   kỹ năng đổi tuần. Nhờ vậy bảng kết quả theo tuần vẫn đếm mỗi đợt đúng một lần.
 - Điểm vẫn thuộc **một đợt duy nhất**. Tách tuần không tạo đợt mới, không đổi số MT, không
   ghép điểm từ đợt khác.
+
+**`shared/domain/fasttrack.ts` → `pendingSkillsOf`** — từ PR1, "bài cần chấm" được đếm ở
+ĐÚNG MỘT CHỖ, và badge ở danh sách lớp lẫn hàng đợi việc đều gọi vào đó. Trước PR1 mỗi bên
+đếm một kiểu: badge đếm theo "kỹ năng tôi ĐƯỢC PHÉP SỬA", danh sách lọc theo "kỹ năng tôi
+ĐƯỢC PHÂN CÔNG" — nên Quản trị hệ thống thấy badge 28 rồi bấm vào ra danh sách rỗng, còn Quản
+lý thấy 0 ở mọi lớp. Hai phép đếm riêng thì dù sửa cho khớp hôm nay, lần sửa sau chúng lệch
+lại. Thêm một màn cần con số này thì gọi hàm đó, đừng viết phép đếm thứ hai.
+
+Kèm theo: `Cell.required` (`server/src/fasttrack/attempts.ts`) cố ý **độc lập với quyền người
+xem**. `canEdit` và `mine` đều đã nhân `required` vào rồi, nên đếm phạm vi quản lý bằng
+`canEdit` sẽ luôn ra 0 với Quản lý — đó đúng là lỗi cũ.
 
 **`server/src/cases/signals.ts`** — từ vòng 7, điểm dưới kỳ vọng **không tự mở case và không
 tự sinh phương án hỗ trợ** (mục 6.2). Nó sinh một TÍN HIỆU, giao cho đúng một người, kèm hạn
