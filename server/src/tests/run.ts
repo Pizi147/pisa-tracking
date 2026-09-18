@@ -1284,6 +1284,22 @@ check('T08 · RLW tuần này, S tuần sau: mỗi bảng tuần hiện đúng p
     );
   }
 });
+check('Một em nợ điểm ở từ hai đợt trở lên thì hàng đợi ra đúng số dòng, không gộp', () => {
+  const rows = attempts.listAttempts(P.admin, { need: 'my_scores', scope: 'managed' }).rows;
+  const byStudent = new Map<number, Set<number>>();
+  for (const r of rows as any[]) {
+    if (!byStudent.has(r.studentId)) byStudent.set(r.studentId, new Set());
+    byStudent.get(r.studentId)!.add(r.id);
+  }
+  const twoOrMore = [...byStudent.entries()].find(([, ids]) => ids.size >= 2);
+  assert(twoOrMore, 'Bộ demo phải có ít nhất một em nợ điểm ở từ hai đợt trở lên để kiểm');
+  const [studentId, ids] = twoOrMore!;
+  const studentRows = rows.filter((r: any) => r.studentId === studentId);
+  assert(
+    studentRows.length === ids.size,
+    `Học viên ${studentId} nợ ${ids.size} đợt nhưng hàng đợi chỉ ra ${studentRows.length} dòng — khoá dòng theo studentId thay vì attemptId`,
+  );
+});
 check('Tìm theo tên học viên trả về đúng lớp chứa em đó', () => {
   const s = conn
     .prepare(`SELECT s.full_name, c.code FROM students s JOIN enrollments e ON e.student_id=s.id
