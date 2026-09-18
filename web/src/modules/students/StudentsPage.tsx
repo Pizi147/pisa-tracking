@@ -183,7 +183,7 @@ export default function StudentsPage() {
         )}
         <div className="flex-1" />
         {can(PERMISSIONS.PLAN_WEEK) && (
-          <button className="btn btn-sm" onClick={() => setPlanOpen(true)}>Lên kế hoạch MT</button>
+          <button className="btn btn-sm" onClick={() => setPlanOpen(true)}>Kế hoạch Test</button>
         )}
         {can(PERMISSIONS.STUDENT_EDIT) && view === 'classes' && (
           <button className="btn btn-sm" onClick={() => setClassCreate(true)}>Tạo lớp</button>
@@ -201,7 +201,7 @@ export default function StudentsPage() {
             Đây là việc của <strong>Quản lý</strong>: quyết định em sẽ MT tiếp theo vào tuần nào.
             Lên kế hoạch cho nhiều em một lần thay vì mở từng hồ sơ.
           </p>
-          <button className="btn btn-primary btn-sm" onClick={() => setPlanOpen(true)}>Lên kế hoạch MT</button>
+          <button className="btn btn-primary btn-sm" onClick={() => setPlanOpen(true)}>Kế hoạch Test</button>
         </Card>
       )}
       {(view === 'my_scores' || view === 'sos') && <WorkQueue view={view} branchId={branchId} q={q} scope={scope} />}

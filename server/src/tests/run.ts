@@ -7780,6 +7780,16 @@ check('T13 · RLW và Speaking CÙNG một đợt không bị hiểu nhầm là 
   );
 });
 
+check('T07 · Kế hoạch Test chỉ hiện học viên lớp Fast Track, KHÔNG có Normal', () => {
+  const q = planning.noPlanQueue(P.admin, { includePlanned: true });
+  const normalClass = classId('MB-FOU 12');
+  assert(q.rows.length > 0, 'Cần có học viên FT trong hàng đợi để kiểm');
+  assert(
+    q.rows.every((r: any) => r.classId !== normalClass),
+    'Kế hoạch Test không được hiện học viên của lớp Normal (MB-FOU 12)',
+  );
+});
+
 check('T07 · Sửa lượt cũ (dời lịch một kỹ năng) KHÔNG tạo lượt trùng', () => {
   const { attemptId, periodId } = normalWritingAttemptSkill();
   const before = (conn.prepare('SELECT COUNT(*) n FROM assessment_attempts').get() as any).n;
