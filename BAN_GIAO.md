@@ -1,7 +1,7 @@
 # Bàn giao hiện hành — PISA Progress
 
-> Cập nhật **18/09/2026**. File này **thay thế** mọi `BAN_GIAO_*.md` cũ; chúng giữ lại chỉ để
-> tra lịch sử, **không phải luật**.
+> Cập nhật **19/09/2026 (đêm)**. File này **thay thế** mọi `BAN_GIAO_*.md` cũ; chúng giữ lại
+> chỉ để tra lịch sử, **không phải luật**.
 >
 > File này cố ý **ngắn**. Nó chỉ trả lời: *đang ở đâu · thư mục nào · làm gì tiếp*.
 > Kế hoạch chi tiết nằm ở **`plan.md`** và không được chép lại ở đây — chép lại là cách đã
@@ -50,44 +50,72 @@ chưa sao lưu ở đâu cả**, phải đẩy lên trước.
 
 ---
 
-## 3. Trạng thái — đã kiểm bằng lệnh, ngày 18/09/2026
+## 3. Trạng thái — đã kiểm bằng lệnh, đêm 19/09/2026
 
 | | |
 |---|---|
-| `main` | `fe18661` — Merge PR #21 |
-| `npm test` | **326 phép kiểm, đạt hết** |
-| `npx tsc -p tsconfig.build.json --noEmit` | sạch |
-| `npx tsc -p tsconfig.web.json --noEmit` | sạch |
-| Nhánh còn tồn | **không** — mọi nhánh phụ đã merge trọn vào `main` |
+| `main` | `98efd88` — Merge PR #26 (PR2b) |
+| `npm test` trên `main` | **342 phép kiểm, đạt hết** |
+| `npx tsc -p tsconfig.build.json --noEmit` trên `main` | sạch |
+| `npx tsc -p tsconfig.web.json --noEmit` trên `main` | sạch |
+| Nhánh còn mở, **chưa merge** | `worktree-pr-c-form-case-gon` — xem mục 4 |
 
-### Đã merge
+### Đã merge vào `main`
 
 | PR | Nội dung |
 |---|---|
 | **#17** | Việc 27 · 28 · 29 — hồ sơ lớp, Thực trạng, công việc quản lý, bộ demo |
 | **#18** | Hồ sơ A: thẻ case ghi kết quả tại chỗ · Hành trình hai cách đọc · tab Tình hình đơn vị · tuần mặc định bảng chấm |
 | **#19** | `plan.md` — kế hoạch giai đoạn sau PR18 |
-| **#20** | **PR1: Số khớp danh sách, và có đường đi tới đó** |
+| **#20** | PR1: Số khớp danh sách, và có đường đi tới đó |
+| **#24** | PR2a: bộ chọn tuần dùng chung (`WeekPicker`/`usePeriodWindow`) |
+| **#25** | Kế hoạch PR-C và PR-D viết vào `plan.md` (chưa code, chỉ thiết kế) |
+| **#26** | PR2b: Kế hoạch Test chỉ hiện lớp Fast Track, quyền dời lịch skill của lớp Normal (`SCHEDULE_MOVE`) |
 
-PR1 đã xong. Chi tiết nó làm gì: `plan.md` mục 5. Điểm đáng nhớ nhất là luật đếm "bài cần
-chấm" nay ở **đúng một hàm** (`shared/domain/fasttrack.ts` → `pendingSkillsOf`), nên badge và
-danh sách không thể lệch nhau nữa — trước đó Quản trị thấy badge 28 mà bấm vào ra 0.
+PR2b đã merge nhưng **để lại một lỗ chưa vá**: quyền `SCHEDULE_MOVE` mới cho giáo viên lớp
+Normal đã đúng ở máy chủ, nhưng **chưa có nút nào trên giao diện gọi tới nó** — giáo viên lớp
+Normal vẫn không tự dời được lịch skill qua màn hình. Ghi ở `plan.md` mục 7b/12.6. Không chặn
+việc gì khác, nhưng đừng báo là "đã xong" nếu chưa vá.
 
 ---
 
-## 4. Làm gì tiếp
+## 4. Làm gì tiếp — đúng thứ tự
 
-Theo `plan.md` mục 4, đúng thứ tự này:
+### 4.1. PR-C — đang mở PR, **CHƯA MERGE**, việc đầu tiên cần làm
 
-| Việc tiếp | Ở đâu trong `plan.md` | Mức chi tiết |
-|---|---|---|
-| **PR-A — Mở lại việc tạo case Ý thức** (lỗi P0) | mục 6 | **Đã viết tới mức bước**, làm được ngay |
-| PR2 — Bộ chọn tuần dùng chung, rồi Kế hoạch Test | mục 7 | Mức thiết kế; viết task khi tới lượt |
-| PR3 — Chấm điểm, dấu "–", màn hồ sơ Test gọn | mục 8 | Mức thiết kế |
-| PR-B — Phân công GV, nốt phần còn thiếu | mục 9 | Mức thiết kế; không chặn ai |
+- Nhánh: `worktree-pr-c-form-case-gon` (đã đẩy lên GitHub)
+- PR: **#27** — https://github.com/Pizi147/pisa-tracking/pull/27
+- Nội dung: form `+ Case` nhóm Ý thức chỉ hỏi một câu (không hỏi trùng), case Ý thức không
+  nhận ngày quá khứ, thêm tab "Đã xong từ trước" để nhập bù case cũ, và siết quyền sửa case
+  đúng giáo viên dạy đúng môn (trước đây một GVBM sửa được MỌI case của lớp, kể cả môn khác).
+- Trạng thái: **347 phép kiểm tự động đạt hết**, hai lệnh `tsc` sạch. Đã bấm thử tay **một
+  vai** (Quản trị hệ thống) qua trình duyệt cho tab nhập bù — xem chi tiết và danh sách CHƯA
+  bấm thử ở `plan.md` mục 14, dòng "19/09/2026 (đêm)".
+- **Việc cần làm tiếp với PR-C, trước khi merge:**
+  1. Bấm thử tay ba vai còn lại của mục 10.6: GVBM Listening · GVBM Reading · GVCN — cả hai
+     nhóm Học thuật lẫn Ý thức của tab "Đã xong từ trước".
+  2. Đọc kết quả review tự động (nếu đã chạy — tìm bình luận trên PR #27) và xử lý các điểm
+     Critical/Important nếu có.
+  3. Sau khi chủ sản phẩm xem và đồng ý, **chủ sản phẩm sẽ tự merge** — session code không tự
+     merge PR này.
 
-**PR-A nên làm trước** vì nó là lỗi chặn hẳn: chọn nhóm Ý thức trong form `+ Case` thì không
-có phân loại nào để bấm, mà form lại đòi phân loại. Không tạo được case Ý thức qua giao diện.
+### 4.2. PR-D — Khung case gọn, **phải branch từ PR-C, không phải từ `main`**
+
+- `plan.md` mục 11. Phụ thuộc PR-C: PR-D dùng đúng cái form và cái quyền PR-C vừa sửa, và gỡ
+  bớt khung case lồng nhau ở hồ sơ học viên (`SkillBoard.tsx` đang nhúng nguyên `CasePanel.tsx`
+  vào bên dưới — hai khối hiện cùng một case bằng hai cách khác nhau).
+- **Trước khi mở PR-D:** `git diff --stat worktree-pr-c-form-case-gon` để chắc PR-D không
+  đảo ngược việc gì PR-C vừa làm.
+- Nếu lúc làm PR-D mà PR-C **đã merge vào `main`** rồi, branch PR-D từ `main` như bình thường
+  — chỉ cần branch-từ-PR-C khi PR-C còn chưa merge.
+
+### 4.3. PR-B — Phân công GV, độc lập, branch từ `main`
+
+`plan.md` mục 9. Không phụ thuộc PR-C/PR-D, làm lúc nào cũng được.
+
+### 4.4. PR3 — Chấm điểm, dấu "–", màn hồ sơ Test gọn
+
+`plan.md` mục 8. Mức thiết kế, chưa viết tới mức bước — viết task khi tới lượt.
 
 ---
 
@@ -170,3 +198,4 @@ Rồi kiểm cổng 5173 và 4000 đã trống.
 | Ngày | Đổi gì |
 |---|---|
 | 18/09/2026 | Tạo file, thay thế ba file `BAN_GIAO_*.md` cũ. Gộp một bản thư mục duy nhất ở `Downloads\Github\...`, xoá bản trùng sau khi kiểm không có commit nào nằm ngoài `origin/main`. Ghi lại cả hai lần sập bẫy ở mục 5 |
+| 19/09/2026 (đêm) | Cập nhật sau một phiên làm việc qua đêm: PR2a (#24) và PR2b (#26) đã merge; PR-C mở PR #27 (form case, nhập bù, siết quyền AUTH-01) — **chưa merge**, chờ chủ sản phẩm xem. Ghi rõ PR-D phải branch từ nhánh PR-C chứ không phải từ `main`, và PR2b để lại một lỗ UI chưa vá (giáo viên Normal chưa có nút dời lịch). Việc cập nhật này viết ở nhánh riêng `worktree-docs-ban-giao-pr-c`, không gộp vào PR-C, để giữ PR-C gọn đúng phạm vi của nó |
