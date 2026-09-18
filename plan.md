@@ -1137,14 +1137,23 @@ suông.
   đọc danh sách học viên chưa có tuần MT (`noPlanQueue`, lọc theo `programmes.scoring_mode`).
 - [ ] ~~Hai hàng lịch nhanh RLW và Speaking~~ — **CHƯA LÀM**, ghi backlog mục 12.6. Panel vẫn
   dùng 4 checkbox kỹ năng rời như trước.
-- [x] Quyền lịch (SCH-01, SCH-02) — **phần việc nặng nhất, đã làm đầy đủ**: quyền mới
-  `schedule.move` (`shared/domain/people.ts`), tách khỏi `PLAN_WEEK`. GVCN dời được mọi kỹ
-  năng của lớp Normal mình chủ nhiệm; GVBM dời đúng môn mình dạy; **không** mở Fast Track chủ
-  động (vẫn `PLAN_WEEK`, chỉ Quản lý). `setSkillWeek` và `setSitStatus` dùng CHUNG một hàm
-  kiểm quyền (`requireMoveSkillSchedule`/`canMoveSkillSchedule`,
-  `server/src/fasttrack/skillSchedule.ts`) — không lệch nhau giữa hai thao tác. Nút "Đổi
-  tuần"/"Đã thi"/"Vắng" ở màn Lộ trình (`MockDetailPage.tsx`) đọc theo `moveableSkills` mới
-  (từng kỹ năng), không còn một cờ chung cho cả đợt.
+- [x] Quyền lịch (SCH-01, SCH-02) ở **tầng máy chủ** — quyền mới `schedule.move`
+  (`shared/domain/people.ts`), tách khỏi `PLAN_WEEK`. GVCN dời được mọi kỹ năng của lớp Normal
+  mình chủ nhiệm; GVBM dời đúng môn mình dạy; **không** mở Fast Track chủ động (vẫn
+  `PLAN_WEEK`, chỉ Quản lý). `setSkillWeek` và `setSitStatus` dùng CHUNG một hàm kiểm quyền
+  (`requireMoveSkillSchedule`/`canMoveSkillSchedule`, `server/src/fasttrack/skillSchedule.ts`)
+  — không lệch nhau giữa hai thao tác. Đã kiểm bằng tay (Quản lý, MT3 lớp FT): nút "Đổi tuần"
+  vẫn hiện đúng, preview "W3 SEP 2026 → W1 OCT 2026" chạy đúng, không có gì hỏng.
+  > ⚠️ **PHÁT HIỆN LÚC BẤM THỬ — GHI THẲNG, KHÔNG GIẤU:** quyền mới hoạt động đúng ở tầng máy
+  > chủ (12 phép kiểm tự động xác nhận), nhưng **KHÔNG có chỗ nào trên giao diện để GVCN/GVBM
+  > lớp Normal thực sự dùng nó**. Nút "Đổi tuần"/"Đã thi"/"Xác nhận vắng" chỉ tồn tại ở
+  > `MockDetailPage.tsx` (`/mock-test/:id`) — mà chính file đó tự chuyển hướng (dòng 85-86,
+  > `data.kind !== 'mock'`) sang `RegularSheetPage.tsx` (`/bang-diem-thuong/:classId`) cho MỌI
+  > lượt của lớp Normal, và `RegularSheetPage.tsx` **không có bất kỳ nút dời-lịch-một-kỹ-năng
+  > nào** (đã grep xác nhận: 0 kết quả cho "Đổi tuần"/"setSkillWeek"/"WeekPicker"). Nghĩa là
+  > SCH-01/SCH-02 hiện là "quyền đã mở nhưng chưa ai bấm được" — cần thêm việc dựng UI dời
+  > lịch cho `RegularSheetPage.tsx` (hoặc một màn chi tiết Normal riêng) mới thật sự dùng
+  > được. Đã ghi vào backlog mục 12.6, dòng thứ tư mới thêm.
 - [x] Preview **"tuần cũ → tuần mới"** thêm vào `SkillWeekModal` (màn Lộ trình) trước khi lưu
   — đáp ứng đúng yêu cầu T07 về preview, nhưng đường sửa lịch vẫn nằm ở màn **Lộ trình**, CHƯA
   có đường sửa-tại-chỗ ngay trong panel Kế hoạch Test (xem mục "chưa làm" bên dưới).
@@ -1518,13 +1527,14 @@ báo.
 
 ### 12.6. PR2b thu hẹp lại lúc code (đêm 19/09/2026) — phần còn thiếu
 
-Xem mục 7b để biết phần đã làm. Ba việc sau **chưa làm**, không phải đã xong rồi quên ghi:
+Xem mục 7b để biết phần đã làm. Bốn việc sau **chưa làm**, không phải đã xong rồi quên ghi:
 
 | Việc | Vì sao chưa làm đêm nay | Việc cần làm khi quay lại |
 |---|---|---|
 | Hai hàng lịch nhanh RLW/Speaking trong panel Kế hoạch Test | Đổi cách bày 4 checkbox rời thành hai hàng xếp riêng từng kỹ năng là một thiết kế UI cần cân nhắc, không phải đổi một dòng | Thiết kế lại khối "Kỹ năng lượt này yêu cầu" trong `MockPlanPanel.tsx`, tách RLW/Speaking thành hai nhóm bấm riêng |
 | Sửa lịch một lượt **ngay trong** panel Kế hoạch Test (có preview) | Panel hiện chỉ gọi `bulkPlan`→`createAttempt` (luôn INSERT); sửa thật phải gọi `setSkillWeek` (UPDATE) cho từng kỹ năng của lượt đã chọn — cần dựng lại luồng chọn/preview trong chính panel, không chỉ thêm một dòng | Khi bấm vào ô MT đã có lịch (`had`, `MockPlanPanel.tsx` `MockSlots`), mở modal cùng kiểu `SkillWeekModal` (đã có preview + đúng quyền từ PR2b) thay vì gọi `pick()`→`bulkPlan` |
 | "Đợt hoàn tất thì chỉ đọc" ở `setSkillWeek` | `assessment_attempts.status` không có giá trị riêng cho "hoàn tất" — trạng thái này đang được SUY ra (đủ điểm required), không phải một cột. Chặn nhầm có thể khoá luôn việc hiệu chỉnh hợp lệ | Xác định rõ "hoàn tất" nghĩa là gì ở tầng dữ liệu trước khi chặn — cần chủ sản phẩm xác nhận định nghĩa, không tự suy |
+| **Nút dời lịch một kỹ năng cho lớp Normal — chưa có ở BẤT KỲ đâu trên giao diện** | Quyền `schedule.move` đã mở đúng ở máy chủ (12 phép kiểm xác nhận), nhưng nút "Đổi tuần"/"Đã thi"/"Xác nhận vắng" chỉ tồn tại ở `MockDetailPage.tsx`, mà file đó tự điều hướng MỌI lượt Normal sang `RegularSheetPage.tsx` — nơi không có nút nào như vậy. Phát hiện lúc bấm thử tay, không phải lúc viết kế hoạch | Dựng UI dời lịch cho `RegularSheetPage.tsx` (hoặc một màn chi tiết riêng cho lượt Normal) — tái dùng `moveableSkills`/`canMoveSkillSchedule` đã có sẵn ở máy chủ, chỉ còn thiếu giao diện |
 
 ---
 
@@ -1589,4 +1599,4 @@ Nói **cái gì đổi trên màn hình**, bằng tiếng Việt, không tên h�
 | 18/09/2026 | Chủ sản phẩm (đọc `PISA-PR17-Audit-and-Change-Register.md` gốc) | Trích `vong7/SO_AUDIT_TRICH.md` (mục 8 T01–T19 · MT-01…MT-06 · SCH-01/02 · §13.5 · §13.8 · §13.9 · §13.11) vì ba trong bốn mã nghiệm thu T07/T09/T10/T13 mà `plan.md` §7.4 (cũ) nhắc tới không có định nghĩa ở đâu trong repo — chặn hẳn việc viết tiêu chí nghiệm thu cho PR2. Đối chiếu phát hiện: không mã T nào kiểm bộ chọn tuần → **tách PR2 thành PR2a (bộ chọn tuần, làm ngay) và PR2b (Kế hoạch Test + quyền lịch, chờ PR2a merge)**; `plan.md` §7.1 cũ chép thiếu năm điều so với sổ §13.8 gốc (múi giờ, popover đổi tháng/năm, ưu tiên ngữ cảnh URL, cấm fallback phần tử đầu mảng tuần, giới hạn tương lai áp tại lúc lưu); ghi chú R18-09 xác nhận Normal không có luồng hủy Test, thay hẳn mô tả cũ ở MT-05/T12/brief 10.6. Mục 7 đã viết lại theo PR2a/PR2b |
 | 19/09/2026 | Claude (session code PR2a) | PR2a hoàn tất. Review bằng subagent trước khi mở PR phát hiện `MeetingPage.tsx` (không nằm trong danh sách file PR2a sửa, nhưng tự gọi `usePeriodWindow()` riêng) vẫn còn đúng kiểu lỗi "fallback `array[0]`" sổ §13.8 cấm — bị che bởi việc route `/ref/period-window` luôn `ensurePeriod(demoToday())` trước nên chưa lộ ra khi bấm thử các màn khác. Đã sửa và bấm thử lại. **Quyết định:** không thêm hạ tầng test HTTP (kiểu supertest) chỉ để kiểm route `POST /ref/periods/resolve` mới — không route nào khác trong `server/src/tests/run.ts` có test tầng HTTP, toàn bộ file kiểm ở tầng service; route mới chỉ bọc `isIsoDate()` (đã có nơi khác dùng) quanh `ensurePeriod()` (đã có phép kiểm §13.8 riêng). Thêm test HTTP cho một route là phá vỡ tính nhất quán của cả file kiểm thử |
 | 19/09/2026 | Chủ sản phẩm + Claude (session thiết kế) | Chủ sản phẩm xem màn hình thật và chỉ ra hai lỗi giao diện: (1) khung case ở hồ sơ học viên là **hai khối lồng nhau hiển thị cùng một case** — bấm "Lịch sử và kết thúc phương án" thì `SkillBoard.tsx:319` nhúng nguyên `CasePanel.tsx` vào dưới; (2) form `+ Case` nhóm Ý thức **hỏi cùng một câu hai lần** ("Về việc gì" và "Phân loại vấn đề" đều ra BTVN/Chuyên cần/Tham gia/Khác). Truy nguyên: lỗi (2) do chính PR-A tạo ra khi vá CASE-01 bằng cách cho bốn nhóm dùng chung bộ phân loại mà bộ đó đúng là bốn nhóm ấy — trong khi sổ CASE-01 đã cấm từ đầu *"không cần dropdown nguyên nhân thứ hai dư thừa"*. Cả hai lỗi chỉ lộ khi **chạy thật**; đọc code và bộ kiểm thử đều thấy đúng. Thêm yêu cầu mới: bỏ ngày/hạn khỏi case Ý thức, và tab **"Đã xong từ trước"** để nhập bù case cũ. Viết thành **mục 10 (PR-C)** và **mục 11 (PR-D)**; ba mục cuối dời số 10→12, 11→13, 12→14 cùng mọi tham chiếu nội dòng. AUTH-01, CASE-05, CASE-06 ra khỏi backlog vào hai mục mới |
-| 19/09/2026 (đêm) | Claude (session code PR2b) | PR2b lớn hơn mô tả gốc — khảo sát cho thấy "sửa lượt đã có + preview" không tồn tại (panel cũ chỉ tạo mới qua `bulkPlan`/`createAttempt`, chọn lại một ô đã có luôn báo lỗi trùng), phải dựng luồng sửa thật, không phải sửa nhỏ. Thu hẹp: làm đủ quyền lịch SCH-01/SCH-02 (việc nặng nhất, xong hoàn chỉnh), đổi tên panel + lọc FT (MT-01), thêm preview tuần cũ→mới vào modal sửa lịch **ở màn Lộ trình** (không phải trong chính panel Kế hoạch Test), và viết phép kiểm khoá cả bốn mã T07/T09/T10/T13 — hoá ra T09/T10/T13 logic nền đã đúng sẵn từ trước, chỉ thiếu phép kiểm gắn mã. Ba việc chưa làm (hai hàng RLW/Speaking, sửa lịch ngay trong panel Kế hoạch Test, "đợt hoàn tất thì chỉ đọc") chuyển sang backlog mục 12.6, không tự nhận là xong. 342/342 test đạt |
+| 19/09/2026 (đêm) | Claude (session code PR2b) | PR2b lớn hơn mô tả gốc — khảo sát cho thấy "sửa lượt đã có + preview" không tồn tại (panel cũ chỉ tạo mới qua `bulkPlan`/`createAttempt`, chọn lại một ô đã có luôn báo lỗi trùng), phải dựng luồng sửa thật, không phải sửa nhỏ. Thu hẹp: làm đủ quyền lịch SCH-01/SCH-02 ở tầng máy chủ (việc nặng nhất), đổi tên panel + lọc FT (MT-01), thêm preview tuần cũ→mới vào modal sửa lịch **ở màn Lộ trình** (không phải trong chính panel Kế hoạch Test), và viết phép kiểm khoá cả bốn mã T07/T09/T10/T13 — hoá ra T09/T10/T13 logic nền đã đúng sẵn từ trước, chỉ thiếu phép kiểm gắn mã. **Bấm thử tay phát hiện thêm một lỗ hổng quan trọng không thấy được khi chỉ đọc code**: quyền `schedule.move` mở đúng ở máy chủ nhưng KHÔNG có nút nào trên giao diện để GVCN/GVBM lớp Normal thật sự dùng nó — `MockDetailPage.tsx` (nơi duy nhất có nút "Đổi tuần") tự chuyển hướng mọi lượt Normal sang `RegularSheetPage.tsx`, nơi không có nút dời lịch nào. Bốn việc chưa làm (hai hàng RLW/Speaking, sửa lịch ngay trong panel Kế hoạch Test, "đợt hoàn tất thì chỉ đọc", và nút dời lịch cho màn Normal) chuyển sang backlog mục 12.6, không tự nhận là xong. 342/342 test đạt |
