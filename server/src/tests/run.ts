@@ -7988,6 +7988,25 @@ check('Nhập bù (chốt 7) · Ghi rõ ai nhập, nhập lúc nào, lưu cùng 
   assert(!!row.created_at, 'Chốt 7: phải ghi rõ lúc nhập (khác ngày xảy ra thật)');
 });
 
+check('Nhập bù (chốt 7, tiếp) · Nhãn "nhập bù" hiện trên thẻ case của hồ sơ học viên', () => {
+  const enr7b = conn.prepare(`SELECT student_id FROM enrollments WHERE class_id = ? AND status = 'active' LIMIT 1`)
+    .get(mbClass) as any;
+  const done = cases.backfillCase(P.coreTeacher, {
+    studentId: enr7b.student_id, track: 'behaviour', primaryCode: 'student.behaviour.attendance',
+    topic: 'attendance',
+    title: 'Ý thức: nhập bù chốt 7 tiếp', summary: 'Case nhập bù để kiểm nhãn hiện trên thẻ case của hồ sơ.',
+    fromDate: '2025-12-01', toDate: '2025-12-08',
+    actions: [{ description: 'Gọi điện trao đổi với phụ huynh', performerName: 'GVCN', fromDate: '2025-12-01', toDate: '2025-12-08' }],
+    outcome: 'improved', note: 'Case nhập bù, kiểm nhãn "nhập bù" trên thẻ case.',
+  }) as any;
+  const board = cases.skillSupportBoard(P.coreTeacher, enr7b.student_id) as any;
+  const card = board.rows.flatMap((r: any) => r.cases).find((c: any) => c.id === done.id);
+  assert(card, 'Case nhập bù không xuất hiện trên bảng kỹ năng của hồ sơ');
+  assert(card.backfilledOn === '2025-09-19' || /^\d{4}-\d{2}-\d{2}$/.test(card.backfilledOn ?? ''),
+    `Chốt 7: thẻ case nhập bù phải có ngày ghi, đang là ${card.backfilledOn}`);
+  assert(card.backfilledBy, 'Chốt 7: thẻ case nhập bù phải có tên người ghi');
+});
+
 check('Nhập bù · Chỉ GVCN/Quản lý mới CHỐT được — GVBM sai vai bị chặn, không tạo case nửa vời', () => {
   const enr8 = conn.prepare(`SELECT student_id FROM enrollments WHERE class_id = ? AND status = 'active' LIMIT 1`)
     .get(mbClass) as any;

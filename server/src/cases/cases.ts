@@ -205,7 +205,8 @@ export function closeCaseOutcome(p: Principal, caseId: number, input: {
     addJourney({
       studentId: c.eff_student_id, cycleId: c.eff_cycle_id,
       eventType: 'case_closed', eventDate: closedOn,
-      title: `Hoàn thành case: ${CASE_OUTCOME_LABEL[input.outcome as CaseOutcome]}`,
+      /* Chốt 6/mục 10.3 Step 6: nhãn phân biệt mốc nhập bù với mốc ghi tại chỗ. */
+      title: `${c.origin_kind === 'backfill' ? '(nhập bù) ' : ''}Hoàn thành case: ${CASE_OUTCOME_LABEL[input.outcome as CaseOutcome]}`,
       detail: closeNote,
       refTable: 'sos_cases', refId: caseId, createdBy: p.userId,
       dedupKey: `case_outcome:${caseId}:${closedOn}:end`,
@@ -625,7 +626,7 @@ export function reportIssue(p: Principal, input: {
       addJourney({
         studentId: input.studentId, cycleId: cycle?.id ?? null,
         eventType: 'case_opened', eventDate: detectedAt,
-        title: `Ý thức/Khác: ${caseCategoryLabel(category)}`, detail: summary,
+        title: `${input.backfill ? '(nhập bù) ' : ''}Ý thức/Khác: ${caseCategoryLabel(category)}`, detail: summary,
         refTable: 'sos_cases', refId: caseId, createdBy: p.userId,
         dedupKey: `case_open:${caseId}`,
       });
@@ -756,7 +757,7 @@ export function reportIssue(p: Principal, input: {
     addJourney({
       studentId: input.studentId, cycleId: cycle?.id ?? null,
       eventType: 'case_opened', eventDate: detectedAt,
-      title: `Giáo viên ghi nhận vấn đề${input.primaryCode ? `: ${issueLabel(input.primaryCode)}` : ''}`,
+      title: `${input.backfill ? '(nhập bù) ' : ''}Giáo viên ghi nhận vấn đề${input.primaryCode ? `: ${issueLabel(input.primaryCode)}` : ''}`,
       detail: summary,
       refTable: 'sos_cases', refId: caseId, createdBy: p.userId,
       dedupKey: `case_open:${caseId}`,
@@ -1071,7 +1072,7 @@ export function recordIntervention(p: Principal, caseId: number, input: {
     addJourney({
       studentId: c.eff_student_id, cycleId: c.eff_cycle_id,
       eventType: 'intervention', eventDate: input.completedDate ?? input.startedDate ?? today,
-      title: `Hỗ trợ: ${description.slice(0, 60) || input.kind}`,
+      title: `${input.backfill ? '(nhập bù) ' : ''}Hỗ trợ: ${description.slice(0, 60) || input.kind}`,
       detail: input.performerName ?? null,
       refTable: 'case_interventions', refId: id, createdBy: p.userId,
       dedupKey: `intervention:${id}`,
@@ -2594,6 +2595,15 @@ function caseCardOf(caseId: number, c: any) {
     outcomeLabel: c.outcome ? CASE_OUTCOME_LABEL[c.outcome as CaseOutcome] ?? null : null,
     outcomeNote: c.outcome_note ?? null,
     closedOn: c.closed_at ? String(c.closed_at).slice(0, 10) : null,
+    /*
+     * NHẬP BÙ (PR-C Task 3, chốt 7) — "ai nhập, nhập lúc nào" phải hiện ngay trên thẻ case,
+     * không giấu trong tooltip. `created_at` là lúc GÕ VÀO hệ thống, khác hẳn `detected_at`
+     * (lúc chuyện thật sự xảy ra) — đúng khác biệt chốt 7 đòi phải phân biệt được.
+     */
+    backfilledBy: c.origin_kind === 'backfill'
+      ? ((conn.prepare('SELECT full_name FROM users WHERE id = ?').get(c.reported_by) as any)?.full_name ?? null)
+      : null,
+    backfilledOn: c.origin_kind === 'backfill' && c.created_at ? String(c.created_at).slice(0, 10) : null,
   };
 }
 

@@ -6,7 +6,7 @@ import { Field, SectionNote } from '../../ui/ui.tsx';
 import {
   BEHAVIOUR_TOPICS, BEHAVIOUR_TOPIC_LABEL, ENTRY_SKILLS, ENTRY_SKILL_LABEL,
   THREAD_TRACKS, THREAD_TRACK_LABEL, URGENCY_LEVELS, URGENCY_LABEL, issuesForTopic, DEFAULT_URGENCY,
-  topicFromBehaviourCode,
+  topicFromBehaviourCode, CASE_OUTCOMES, CASE_OUTCOME_LABEL,
 } from '@shared/domain/index.ts';
 
 /**
@@ -47,6 +47,12 @@ export function QuickReport({
   signal?: { id: number; track: string; skill: string | null; label: string } | null;
 }) {
   const toast = useToast();
+  /*
+   * HAI TAB (mục 10.3): "Đang gặp vấn đề" (đường thường) và "Đã xong từ trước" (nhập bù).
+   * Cùng bốn trường đầu (nhóm/kỹ năng/phân loại/mô tả) — chỉ khác NHỮNG GÌ hỏi thêm sau đó,
+   * nên dùng chung state của bốn trường đó thay vì dựng một bộ state thứ hai.
+   */
+  const [mode, setMode] = useState<'now' | 'backfill'>('now');
   const [title, setTitle] = useState('');
   const [summary, setSummary] = useState('');
   const [urgency, setUrgency] = useState<string>(DEFAULT_URGENCY);
@@ -56,6 +62,16 @@ export function QuickReport({
   const [detectedAt, setDetectedAt] = useState('');
   const [busy, setBusy] = useState(false);
   const [more, setMore] = useState(false);
+
+  /* NHẬP BÙ (mục 10.3) — chỉ dùng khi mode === 'backfill'. */
+  const [bfFrom, setBfFrom] = useState('');
+  const [bfTo, setBfTo] = useState('');
+  const [bfActions, setBfActions] = useState<{ description: string; performerName: string; fromDate: string; toDate: string }[]>([
+    { description: '', performerName: '', fromDate: '', toDate: '' },
+  ]);
+  const [bfOutcome, setBfOutcome] = useState<string>('');
+  const [bfNote, setBfNote] = useState('');
+  const [bfDup, setBfDup] = useState<any | null>(null);
 
   /*
    * Khoá chống trùng sinh MỘT LẦN cho mỗi lần mở hộp thoại. Bấm hai lần, mạng chập chờn
@@ -89,6 +105,9 @@ export function QuickReport({
   const reset = () => {
     setSummary(''); setUrgency(DEFAULT_URGENCY); setTrack('academic'); setTopic('');
     setTitle(''); setPrimaryCode(''); setDetectedAt(''); setMore(false); setDup(null);
+    setMode('now'); setBfFrom(''); setBfTo('');
+    setBfActions([{ description: '', performerName: '', fromDate: '', toDate: '' }]);
+    setBfOutcome(''); setBfNote(''); setBfDup(null);
   };
 
   /*
@@ -144,6 +163,56 @@ export function QuickReport({
     await send();
   };
 
+  const sendBackfill = async (extra: Record<string, unknown> = {}) => {
+    setBusy(true);
+    try {
+      const res = await api.post<any>('/cases/backfill', {
+        studentId, cycleId: cycleId ?? undefined,
+        track, topic, primaryCode: primaryCode || undefined,
+        title: title.trim() || null, summary,
+        fromDate: bfFrom, toDate: bfTo,
+        actions: bfActions.map((a) => ({
+          description: a.description.trim(), performerName: a.performerName.trim(),
+          fromDate: a.fromDate, toDate: a.toDate,
+        })),
+        outcome: bfOutcome, note: bfNote,
+        ...extra,
+      });
+      invalidate('/cases'); invalidate('/students'); invalidate('/overview');
+      toast.push('ok', 'Đã ghi lại case đã xong');
+      reset(); onClose(); onDone?.(res.id);
+    } catch (e: any) {
+      const d = e?.details?.duplicateBackfill;
+      if (d) { setBfDup(d); return; }
+      toast.push('error', e.message);
+    } finally { setBusy(false); }
+  };
+
+  const submitBackfill = async () => {
+    if (title.trim().length < 6) { toast.push('error', 'Hãy đặt tên cho case.'); return; }
+    if (summary.trim().length < 15) {
+      toast.push('error', 'Hãy mô tả cụ thể hơn: khi đó em vướng gì.'); return;
+    }
+    if (!topic) {
+      toast.push('error', track === 'behaviour' ? 'Hãy chọn nhóm ý thức.' : 'Hãy chọn kỹ năng.');
+      return;
+    }
+    if (!primaryCode) { toast.push('error', 'Hãy chọn phân loại vấn đề.'); return; }
+    if (!bfFrom || !bfTo) { toast.push('error', 'Hãy ghi từ ngày nào đến ngày nào.'); return; }
+    if (bfFrom > bfTo) { toast.push('error', 'Ngày bắt đầu phải trước ngày kết thúc.'); return; }
+    const rows = bfActions.filter((a) => a.description.trim() || a.performerName.trim());
+    if (!rows.length) { toast.push('error', 'Ghi ít nhất một dòng "đã làm gì".'); return; }
+    for (const a of rows) {
+      if (a.description.trim().length < 3) { toast.push('error', 'Mỗi dòng "đã làm gì" phải nói rõ đã làm gì.'); return; }
+      if (!a.performerName.trim()) { toast.push('error', 'Mỗi dòng "đã làm gì" phải ghi người làm.'); return; }
+      if (!a.fromDate || !a.toDate) { toast.push('error', 'Mỗi dòng "đã làm gì" phải có từ ngày → đến ngày.'); return; }
+    }
+    if (!bfOutcome) { toast.push('error', 'Hãy chọn kết quả cuối.'); return; }
+    if (bfNote.trim().length < 10) { toast.push('error', 'Hãy ghi chú kết luận — ít nhất 10 ký tự.'); return; }
+    setBfActions(rows);
+    await sendBackfill();
+  };
+
   return (
     <Modal open={open} onClose={onClose}
       title={signal
@@ -152,10 +221,30 @@ export function QuickReport({
       footer={
         <>
           <button className="btn" onClick={onClose}>Huỷ</button>
-          <button className="btn btn-primary" disabled={busy || !studentId} onClick={submit}>Ghi nhận</button>
+          {mode === 'now'
+            ? <button className="btn btn-primary" disabled={busy || !studentId} onClick={submit}>Ghi nhận</button>
+            : <button className="btn btn-primary" disabled={busy || !studentId} onClick={submitBackfill}>Ghi lại case đã xong</button>}
         </>
       }>
       <div className="space-y-3">
+        {/*
+          HAI TAB (mục 10.3): "Đang gặp vấn đề" (đường thường) và "Đã xong từ trước" (nhập
+          bù). Không hiện khi mở từ một tín hiệu — xác minh tín hiệu luôn là chuyện đang xảy
+          ra, không phải chuyện đã xong từ lâu.
+        */}
+        {!signal && (
+          <div className="flex gap-1">
+            <button type="button" className={`btn btn-sm ${mode === 'now' ? 'btn-primary' : ''}`}
+              onClick={() => setMode('now')}>
+              Đang gặp vấn đề
+            </button>
+            <button type="button" className={`btn btn-sm ${mode === 'backfill' ? 'btn-primary' : ''}`}
+              onClick={() => setMode('backfill')}>
+              Đã xong từ trước
+            </button>
+          </div>
+        )}
+
         {/*
           CHỌN HỌC VIÊN — chỉ khi mở từ trang lớp (mục 13.1). Ở hồ sơ một em thì không hỏi
           lại: người dùng đã đứng sẵn trong hồ sơ của em đó rồi.
@@ -196,18 +285,21 @@ export function QuickReport({
             placeholder="MT2 Reading: hết giờ khi còn hai câu cuối của Passage 3; dạng Not Given sai 4/5 câu. Buổi 12/08 chữa bài em cũng đoán chứ không tìm được căn cứ trong bài." />
         </Field>
 
-        <Field label="Mức độ" required
-          hint="Hai bậc, và mỗi bậc dẫn tới một hạn khác nhau. Đây là nhận định của người báo, KHÔNG phải mức SOS tính từ điểm.">
-          <div className="flex gap-1 flex-wrap">
-            {URGENCY_LEVELS.map((u) => (
-              <button key={u} type="button"
-                className={`btn btn-sm ${urgency === u ? 'btn-primary' : ''}`}
-                onClick={() => setUrgency(u)}>
-                {URGENCY_LABEL[u]}
-              </button>
-            ))}
-          </div>
-        </Field>
+        {/* Nhập bù là chuyện ĐÃ XONG — không còn "mức độ gấp" để mà xin. */}
+        {mode === 'now' && (
+          <Field label="Mức độ" required
+            hint="Hai bậc, và mỗi bậc dẫn tới một hạn khác nhau. Đây là nhận định của người báo, KHÔNG phải mức SOS tính từ điểm.">
+            <div className="flex gap-1 flex-wrap">
+              {URGENCY_LEVELS.map((u) => (
+                <button key={u} type="button"
+                  className={`btn btn-sm ${urgency === u ? 'btn-primary' : ''}`}
+                  onClick={() => setUrgency(u)}>
+                  {URGENCY_LABEL[u]}
+                </button>
+              ))}
+            </div>
+          </Field>
+        )}
 
         {/*
           ĐẦU MỤC VÀ CHỦ ĐỀ LÀ BẮT BUỘC, nên để ngay đây chứ không giấu dưới "xem thêm":
@@ -274,29 +366,119 @@ export function QuickReport({
           </Field>
         )}
 
-        {/* Ý thức KHÔNG có ô ngày nào — ngày mở là gốc tính hạn/cửa sổ gộp, không cho lùi (CASE-01 Task 2). */}
-        {track === 'academic' && !more && (
+        {/* Ý thức KHÔNG có ô ngày nào ở tab "Đang gặp vấn đề" — ngày mở là gốc tính hạn/cửa sổ gộp, không cho lùi (CASE-01 Task 2). */}
+        {mode === 'now' && track === 'academic' && !more && (
           <button type="button" className="btn btn-sm btn-ghost" onClick={() => setMore(true)}>
             + Theo dõi từ ngày khác hôm nay
           </button>
         )}
 
-        {track === 'academic' && more && (
+        {mode === 'now' && track === 'academic' && more && (
           <Field label="Theo dõi từ ngày" hint="Bỏ trống thì lấy hôm nay.">
             <input type="date" className="field" value={detectedAt} onChange={(e) => setDetectedAt(e.target.value)} />
           </Field>
         )}
 
-        <SectionNote>
-          Ghi nhận này KHÔNG tạo ra một bài đánh giá và cũng không có mức SOS — SOS là số kỹ
-          năng dưới kỳ vọng ở một bài cụ thể, ở đây chưa có bài nào.
-          {track === 'behaviour' && (
-            <> Vấn đề <strong>Ý thức/Khác</strong> báo trong <strong>bốn ngày</strong> kể từ lúc
-            mở một đợt sẽ được gộp vào chính đợt đó, và làm nó được nâng lên <strong>Gấp</strong> —
-            hai người cùng thấy một chuyện trong bốn ngày là một tín hiệu mạnh hơn nhận định
-            của riêng ai. Từ ngày thứ năm trở đi là một đợt mới.</>
-          )}
-        </SectionNote>
+        {mode === 'now' && (
+          <SectionNote>
+            Ghi nhận này KHÔNG tạo ra một bài đánh giá và cũng không có mức SOS — SOS là số kỹ
+            năng dưới kỳ vọng ở một bài cụ thể, ở đây chưa có bài nào.
+            {track === 'behaviour' && (
+              <> Vấn đề <strong>Ý thức/Khác</strong> báo trong <strong>bốn ngày</strong> kể từ lúc
+              mở một đợt sẽ được gộp vào chính đợt đó, và làm nó được nâng lên <strong>Gấp</strong> —
+              hai người cùng thấy một chuyện trong bốn ngày là một tín hiệu mạnh hơn nhận định
+              của riêng ai. Từ ngày thứ năm trở đi là một đợt mới.</>
+            )}
+          </SectionNote>
+        )}
+
+        {/*
+          TAB "ĐÃ XONG TỪ TRƯỚC" (mục 10.3) — chỗ DUY NHẤT được nhập ngày quá khứ, áp cho
+          CẢ HAI nhóm kể cả Ý thức. Không có ô "Mức độ": việc đã xong rồi thì không còn gì
+          để mà gấp.
+        */}
+        {mode === 'backfill' && (
+          <>
+            <Field label="Từ ngày → đến ngày" required
+              hint="Khoảng thời gian vấn đề thật sự diễn ra, không phải hôm nay.">
+              <div className="flex items-center gap-2">
+                <input type="date" className="field" value={bfFrom} onChange={(e) => setBfFrom(e.target.value)} />
+                <span className="text-slate-500">→</span>
+                <input type="date" className="field" value={bfTo} onChange={(e) => setBfTo(e.target.value)} />
+              </div>
+            </Field>
+
+            <Field label="Đã làm gì" required hint="Mỗi dòng một việc: tên việc, người làm, từ ngày → đến ngày.">
+              <div className="space-y-2">
+                {bfActions.map((a, i) => (
+                  <div key={i} className="surface-2 rounded-lg p-2 space-y-1.5">
+                    <input className="field" placeholder="Đã làm gì (ví dụ: tutor Listening mỗi tuần)"
+                      value={a.description}
+                      onChange={(e) => setBfActions(bfActions.map((x, j) => j === i ? { ...x, description: e.target.value } : x))} />
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <input className="field max-w-[10rem]" placeholder="Người làm"
+                        value={a.performerName}
+                        onChange={(e) => setBfActions(bfActions.map((x, j) => j === i ? { ...x, performerName: e.target.value } : x))} />
+                      <input type="date" className="field max-w-[9rem]" value={a.fromDate}
+                        onChange={(e) => setBfActions(bfActions.map((x, j) => j === i ? { ...x, fromDate: e.target.value } : x))} />
+                      <span className="text-slate-500">→</span>
+                      <input type="date" className="field max-w-[9rem]" value={a.toDate}
+                        onChange={(e) => setBfActions(bfActions.map((x, j) => j === i ? { ...x, toDate: e.target.value } : x))} />
+                      {bfActions.length > 1 && (
+                        <button type="button" className="btn btn-sm btn-ghost"
+                          onClick={() => setBfActions(bfActions.filter((_, j) => j !== i))}>
+                          Bỏ dòng
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+                <button type="button" className="btn btn-sm btn-ghost"
+                  onClick={() => setBfActions([...bfActions, { description: '', performerName: '', fromDate: '', toDate: '' }])}>
+                  + thêm dòng
+                </button>
+              </div>
+            </Field>
+
+            <Field label="Kết quả cuối" required>
+              <div className="flex gap-1 flex-wrap">
+                {CASE_OUTCOMES.map((o) => (
+                  <button key={o} type="button"
+                    className={`btn btn-sm ${bfOutcome === o ? 'btn-primary' : ''}`}
+                    onClick={() => setBfOutcome(o)}>
+                    {CASE_OUTCOME_LABEL[o]}
+                  </button>
+                ))}
+              </div>
+            </Field>
+
+            <Field label="Ghi chú" required hint="Ngày quá khứ không tự chứng minh hiệu quả — nói rõ vì sao kết luận vậy.">
+              <textarea className="field" rows={2} value={bfNote} onChange={(e) => setBfNote(e.target.value)} />
+            </Field>
+
+            <SectionNote>
+              Case nhập bù sẽ hiện nhãn <strong>"nhập bù"</strong> ngay trên thẻ case, không có
+              hạn cập nhật hay hạn báo kết quả nào, và không tính vào tỷ lệ hiệu quả hỗ trợ —
+              đây là trí nhớ, không phải một phương án đang chạy.
+            </SectionNote>
+
+            {bfDup && (
+              <div className="mt-2 rounded-lg border p-3"
+                   style={{ borderColor: 'var(--warn)', background: 'rgba(240, 201, 135, 0.08)' }}>
+                <p className="text-sm text-slate-100 m-0">
+                  Học viên này đã có một case nhập bù <strong>"{bfDup.title}"</strong> trùng
+                  khoảng {bfDup.from} → {bfDup.to}. Có phải cùng một lần không?
+                </p>
+                <div className="flex flex-wrap gap-2 mt-2">
+                  <button className="btn btn-sm" disabled={busy}
+                    onClick={() => sendBackfill({ confirmDuplicate: true })}>
+                    Đây là lần khác, vẫn ghi riêng
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
+        )}
       </div>
 
       {/*
