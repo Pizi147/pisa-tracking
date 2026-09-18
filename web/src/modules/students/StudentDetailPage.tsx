@@ -6,10 +6,10 @@ import { Drawer, Modal } from '../../ui/Drawer.tsx';
 import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { CasePanel } from '../cases/CasePanel.tsx';
-import { SkillBoard } from '../cases/SkillBoard.tsx';
+import { SkillBoard, type SkillBoardRow } from '../cases/SkillBoard.tsx';
+import { JourneyTimeline } from './JourneyTimeline.tsx';
 import { MissingBadge } from './MissingBadge.tsx';
 import { StudentPlanPanel } from './StudentPlanPanel.tsx';
-import { ProgressChart } from './ProgressChart.tsx';
 import { StudentManagePanel } from './StudentManagePanel.tsx';
 import { QuickReport } from '../cases/QuickReport.tsx';
 import {
@@ -63,6 +63,22 @@ export default function StudentDetailPage() {
   const [tier3, setTier3] = useState<'scores' | 'journey'>('scores');
   /** Hành trình: chỉ mốc xuyên chương trình, hay toàn bộ ghi nhận (mục 4.5). */
   const [allJourney, setAllJourney] = useState(false);
+  /** Dải chọn lộ trình — chỉ bày khi người dùng hỏi tới, không chiếm chỗ mặc định. */
+  const [cycleOpen, setCycleOpen] = useState(false);
+  /*
+   * BẢNG KỸ NĂNG NẠP Ở ĐÂY, KHÔNG NẠP TRONG KHỐI CON.
+   *
+   * Hai chỗ cần đúng bộ dữ liệu này: bảng "Tiến độ và hỗ trợ theo kỹ năng" và dòng thời gian
+   * ở tab Hành trình. Để mỗi khối tự gọi lấy là hai lần gọi cho một lần mở trang, và tệ hơn:
+   * hai khối có thể hiện hai trạng thái khác nhau của cùng một case.
+   */
+  /* Lộ trình ĐANG XEM, không phải tham số trên URL: không có tham số thì là lộ trình đang chạy. */
+  const boardCycleId: number | null = data?.cycle?.id ?? null;
+  const board = useApi<{ rows: SkillBoardRow[] }>(
+    id && boardCycleId ? `/students/${id}/skill-board?cycleId=${boardCycleId}` : null,
+    [id, boardCycleId],
+  );
+  const skillRows = board.data?.rows ?? null;
 
   if (error) return <ErrorState message={error.message} hint={error.hint} onRetry={reload} />;
   if (loading || !data) return <Skeleton rows={10} />;
@@ -81,10 +97,12 @@ export default function StudentDetailPage() {
       {/* ══════════════════════════════════════════ A — EM NÀY LÀ AI */}
       {/*
         ĐẦU HỒ SƠ CUỘN BÌNH THƯỜNG, KHÔNG DÍNH TRÊN ĐẦU (mục 6.1).
-        Bản trước ghim khối này lại khi cuộn. Ý định thì tốt — biết đang xem em nào — nhưng
-        cái giá là một dải chiếm chỗ vĩnh viễn ở mọi màn hình, và trên laptop thì phần nội
-        dung thật chỉ còn hơn nửa màn. Tên em đã ở ngay đầu trang; cuộn xuống đọc bảng điểm
-        thì cái cần thấy là bảng điểm.
+        Một dải ghim lại chiếm chỗ vĩnh viễn ở mọi màn hình; cuộn xuống đọc bảng điểm thì
+        cái cần thấy là bảng điểm.
+
+        BỐN Ô SỐ thay cho năm đoạn chữ của bản trước. Bốn ô trả lời đúng bốn câu người ta mở
+        hồ sơ để hỏi — bài gần nhất ra sao, giờ đang yếu ở đâu, còn bao nhiêu việc đang mở,
+        và việc tiếp theo là gì — mỗi câu một ô, đọc được trong một cái liếc.
       */}
       <div>
         <button className="btn btn-sm btn-ghost mb-1.5" onClick={() => navigate(-1)}>← Quay lại</button>
@@ -92,146 +110,50 @@ export default function StudentDetailPage() {
              style={{ borderColor: 'var(--line-strong)', background: 'var(--surface)' }}>
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0">
-              <h1 className="text-lg font-semibold text-slate-100 flex flex-wrap items-center gap-2 m-0">
+              <span className="block text-[11px] text-slate-500">
+                Hồ sơ học viên · {data.studentCode}
+              </span>
+              <h1 className="text-xl font-semibold text-slate-100 flex flex-wrap items-center gap-2 m-0 mt-0.5">
                 {data.fullName}
-                <span className="text-slate-500 text-sm font-normal">· {data.studentCode}</span>
                 <MissingBadge items={data.missing} />
                 {data.status !== 'active' && <Info>{studentStatusLabel(data.status)}</Info>}
                 {data.archivedAt && <Info>Đã lưu trữ</Info>}
               </h1>
-
-              {/* Lớp · chi nhánh · chương trình · GVCN — bốn thứ nhận diện chỗ đứng của em. */}
               <p className="text-xs text-slate-400 mt-1 mb-0">
                 {data.currentClass
-                  ? <>Lớp {data.currentClass.code} · {data.currentClass.branchName}
-                      {data.currentClass.programme && <> · {data.currentClass.programme}</>}
+                  ? <>{data.currentClass.code} · {data.currentClass.programme ?? data.currentClass.branchName}
                       {data.currentClass.coreTeacher && <> · GVCN {data.currentClass.coreTeacher}</>}</>
                   : 'Chưa xếp lớp'}
-              </p>
-
-              {/*
-                TÌNH TRẠNG HỌC THUẬT HIỆN TẠI — một câu, dựng ở máy chủ (mục 2.1).
-                "MT2 đạt kỳ vọng · còn 2 case đang theo dõi" nói đủ ba việc mà trước đây phải
-                đọc ba chỗ mới ra: kết quả bài gần nhất, mức SOS của chính bài đó, và số case.
-              */}
-              {data.standing && (
-                <p className="text-sm mt-1.5 mb-0 flex flex-wrap items-center gap-2">
-                  {data.standing.sosLevel !== null && data.standing.sosLevel > 0 ? (
-                    <Level tone={sosTone(data.standing.sosLevel)}>
-                      {sosLabel(data.standing.sosLevel)}{data.standing.provisional ? ' tạm thời' : ''}
-                    </Level>
-                  ) : data.standing.sosLevel === 0 ? (
-                    <Outcome tone="ok" mark="✓">Đạt kỳ vọng</Outcome>
-                  ) : (
-                    <Info pending>Chưa có kết quả</Info>
-                  )}
-                  <span className="text-slate-300">{data.standingLine}</span>
-                </p>
-              )}
-
-              {/*
-                MỘT CÂU NÓI RÕ TỪNG KỸ NĂNG (mục 4.1).
-                "SOS 2" ở trên vừa đúng vừa vô dụng: nó không nói môn nào đang ổn, môn nào
-                chưa. Câu này nói tên môn — và nó cũng là chỗ tín hiệu chưa ai xác minh được
-                nhắc, vì đó là việc chặn đầu chuỗi.
-              */}
-              {data.headline && (
-                <p className="text-xs mt-1.5 mb-0 flex flex-wrap items-center gap-x-2 gap-y-1">
-                  {data.headline.below.length > 0 && (
-                    <span className="text-rose-200">
-                      Dưới kỳ vọng: {data.headline.below.join(', ')}
-                    </span>
-                  )}
-                  {data.headline.signals.length > 0 && (
-                    <span className="text-amber-200">
-                      Chờ xác minh: {data.headline.signals.join(', ')}
-                    </span>
-                  )}
-                  {data.headline.openCases > 0 && (
-                    <span className="text-slate-400">
-                      {data.headline.openCases} vấn đề đang xử lý
-                    </span>
-                  )}
-                  {data.headline.next && (
-                    <span className="text-slate-200">
-                      → Việc tiếp theo: {data.headline.next.text}
-                      {data.headline.next.due && (
-                        <span className="text-slate-500"> (hạn {fmtDate(data.headline.next.due)})</span>
-                      )}
-                    </span>
-                  )}
-                  {data.headline.below.length === 0 && data.headline.signals.length === 0
-                    && data.headline.openCases === 0 && (
-                    <span className="text-slate-500">
-                      Không có kỹ năng nào dưới kỳ vọng và không có vấn đề nào đang theo dõi.
-                    </span>
-                  )}
-                </p>
-              )}
-
-              {/* Đầu vào · target · dự kiến thi — chỉ lớp Fast Track mới có ba thứ này. */}
-              <p className="text-xs text-slate-400 mt-1.5 mb-0">
-                {cy && !cy.ratio && (
-                  <>
-                    {cy.baseline?.score !== null && cy.baseline?.score !== undefined
-                      ? <>Đầu vào {fmtBand(cy.baseline.score)}</>
-                      : <span className="text-amber-300">Chưa ghi đầu vào</span>}
-                    {cy.target !== null && <> · Target {fmtBand(cy.target)}</>}
-                    {' · '}Vào học {cy.startWeek ? cy.startWeek.code
-                      : <span className="text-amber-300">chưa khai tuần</span>}
-                    {/*
-                      DỰ KIẾN THI nói đúng mức chắc chắn đang có. Biết mỗi tháng mà hiện
-                      "còn 134 ngày" là bịa ra một độ chính xác không ai bảo đảm; biết tuần
-                      thì nói "còn khoảng N tuần", không quy về ngày (mục 6.4).
-                    */}
-                    {cy.examPlan && cy.examPlan.confidence !== 'none' && (
-                      <> · Dự kiến thi {cy.examPlan.label}
-                        {cy.examPlan.confidence === 'week' && cy.daysToExam !== null && (
-                          <span className="text-slate-500"> (còn khoảng {Math.max(0, Math.round(cy.daysToExam / 7))} tuần)</span>
-                        )}</>
-                    )}
-                  </>
-                )}
-                {/*
-                  LỚP NORMAL KHÔNG CÓ TARGET IELTS VÀ KHÔNG CÓ KẾ HOẠCH THI THẬT (mục 5.3).
-                  Cái tương đương của nó là CHƯƠNG TRÌNH và TUẦN KẾT THÚC — đó mới là hai
-                  con số một GVCN lớp Foundation thật sự dùng.
-                */}
-                {cy?.ratio && (
-                  <>
-                    {cy.programmeName ?? cy.label} · bắt đầu {fmtDate(cy.startedAt)}
-                    {cy.endWeek
-                      ? <> · kết thúc chương trình {cy.endWeek.code}</>
-                      : <> · <span className="text-amber-300">chưa khai tuần kết thúc</span></>}
-                    {' · '}{data.attempts.filter((a: any) => a.scored > 0).length}/{data.attempts.length} bài đã chấm
-                  </>
-                )}
+                {cy && !cy.ratio && cy.target !== null && <> · mục tiêu {fmtBand(cy.target)}</>}
+                {cy?.ratio && cy.endWeek && <> · kết thúc {cy.endWeek.code}</>}
               </p>
             </div>
 
             <div className="flex flex-wrap gap-2 items-start">
+              {data.journeyStrip?.length > 1 && (
+                <button className={`btn ${cycleOpen ? 'btn-primary' : ''}`}
+                  onClick={() => setCycleOpen(!cycleOpen)}>Lộ trình</button>
+              )}
               {data.viewer.canReport && (
                 <button className="btn btn-primary" onClick={() => setReportOpen(true)}>+ Case</button>
               )}
-              {/* Menu ⋮ — bốn việc quản trị, gom lại để không chiếm chỗ của việc hằng ngày. */}
               <button className="btn" title="Quản lý học viên" aria-label="Quản lý học viên"
                 onClick={() => setManageOpen(true)}>⋮</button>
             </div>
           </div>
 
           {/*
-            DẢI HÀNH TRÌNH NGẮN (mục 6.2 A) — chỉ để NHẬN BIẾT em đã đi qua những chương
-            trình nào, không phải chỗ đọc lịch sử. Bấm một chặng là xem chặng đó.
+            DẢI LỘ TRÌNH chỉ bày khi được hỏi tới. Nó là thứ dùng vài lần một khoá, không đáng
+            chiếm một tầng cố định ở đầu mọi hồ sơ.
           */}
-          {data.journeyStrip?.length > 1 && (
+          {cycleOpen && data.journeyStrip?.length > 1 && (
             <div className="flex flex-wrap items-center gap-1.5 mt-3 pt-3 border-t"
                  style={{ borderColor: 'var(--line)' }}>
-              <span className="text-[11px] text-slate-500 mr-1">Hành trình</span>
+              <span className="text-[11px] text-slate-500 mr-1">Chọn lộ trình để xem</span>
               {data.journeyStrip.map((j: any, i: number) => (
                 <span key={j.id} className="flex items-center gap-1.5">
                   {i > 0 && <span className="text-slate-700" aria-hidden>→</span>}
-                  <button
-                    className={`btn btn-sm ${j.id === cy?.id ? 'btn-primary' : ''}`}
+                  <button className={`btn btn-sm ${j.id === cy?.id ? 'btn-primary' : ''}`}
                     onClick={() => setCycle(j.id)}>
                     {j.label}
                     {j.current && <span className="opacity-70 ml-1">· đang học</span>}
@@ -242,6 +164,9 @@ export default function StudentDetailPage() {
           )}
         </div>
       </div>
+
+      {/* BỐN Ô SỐ — bốn câu hỏi, không phải một phép chia. */}
+      {cy && <HeaderStats data={data} cy={cy} rows={skillRows} />}
 
       {!cy ? (
         <Empty title="Học viên chưa có lộ trình nào" hint="Mở lộ trình để bắt đầu theo dõi mục tiêu và các mốc đánh giá." />
@@ -262,12 +187,13 @@ export default function StudentDetailPage() {
           <Card title="Tiến độ và hỗ trợ theo kỹ năng"
             action={<span className="text-xs text-slate-500">Bấm một hàng để mở chi tiết ngay bên dưới</span>}
             bodyClass="p-0">
-            <SkillBoard studentId={data.id} cycleId={cy.id}
+            <SkillBoard rows={skillRows}
+              loading={board.loading} error={board.error} onRetry={board.reload}
               selected={skillPick}
               onPick={setSkillPick}
               onReport={() => setReportOpen(true)}
-              progress={data.progress ?? null}
-              onOpenCase={setOpenCase} />
+              onOpenCase={setOpenCase}
+              onChanged={() => { board.reload(); reload(); }} />
           </Card>
 
           {/* ══════════════════════════════ TẦNG 3 — KẾT QUẢ VÀ HÀNH TRÌNH */}
@@ -325,14 +251,18 @@ export default function StudentDetailPage() {
             ) : (
               <div className="p-4 space-y-4">
                 {/*
-                  BIỂU ĐỒ TRƯỚC, DÒNG THỜI GIAN SAU (mục 7.12).
-                  "Em có đang tiến bộ không" là câu hỏi đầu tiên ai mở tab này cũng hỏi, và
-                  một hình nhỏ trả lời nó nhanh hơn mười dòng chữ. Dòng thời gian trả lời
-                  câu thứ hai: vì sao lại thành ra như thế.
+                  DÒNG THỜI GIAN NGANG, KHÔNG LẶP LẠI BIỂU ĐỒ ĐIỂM.
+
+                  Bản trước vẽ thêm một biểu đồ điểm ở đây, đúng cái biểu đồ đã có trong từng
+                  hàng kỹ năng ở khối trên. Hai hình giống nhau trên một trang thì người đọc
+                  phải so xem chúng có khác gì không — mất công mà không thêm thông tin.
+
+                  Ở đây câu hỏi khác: CẢ HÀNH TRÌNH đã diễn ra theo trình tự nào. Nên nó là
+                  một dòng thời gian theo tuần, mỗi case một nhóm, mỗi phương án một làn.
                 */}
-                {data.progress && data.progress.skills.length > 0 && (
-                  <ProgressChart data={data.progress} />
-                )}
+                <JourneyTimeline rows={skillRows} progress={data.progress ?? null}
+                  onOpenCase={setOpenCase} />
+
                 <div>
                   {/*
                     MỐC XUYÊN CHƯƠNG TRÌNH (mục 4.5): vào học, vào lớp, chuyển chương trình,
@@ -410,6 +340,80 @@ export default function StudentDetailPage() {
 }
 
 // ==================================================================== khối nhỏ
+
+/**
+ * BỐN Ô SỐ Ở ĐẦU HỒ SƠ — bốn câu hỏi khác nhau, cố ý không cộng thành gì.
+ *
+ *   MT gần nhất   bài vừa rồi ra sao
+ *   Hiện tại      giờ đang yếu nhất ở đâu
+ *   Case đang mở  còn bao nhiêu việc chưa xong
+ *   Việc tiếp theo phải làm gì, trước ngày nào
+ *
+ * Mỗi ô nói ĐÚNG MỘT điều và nói bằng con số trước, chữ sau. Bản trước gói cả bốn vào năm
+ * đoạn chữ chạy ngang, nên muốn biết "còn mấy case" thì phải đọc hết cả đoạn.
+ */
+function HeaderStats({ data, cy, rows }: { data: any; cy: any; rows: SkillBoardRow[] | null }) {
+  const scored = (rows ?? []).filter((r) => r.band !== null);
+  const latestNo = scored.reduce((m, r) => Math.max(m, r.bandAttemptNo ?? 0), 0);
+  const latestRow = scored.find((r) => r.bandAttemptNo === latestNo) ?? null;
+
+  /* Ô "Hiện tại" lấy kỹ năng ĐANG YẾU NHẤT — thấp nhất trong những môn dưới kỳ vọng. */
+  const below = scored.filter((r) => r.missed === true).sort((a, b) => (a.band ?? 9) - (b.band ?? 9));
+  const worst = below[0] ?? null;
+
+  const openCases = (rows ?? []).flatMap((r) => r.cases).filter((c) => c.status !== 'done');
+  const runningPlans = openCases.flatMap((c) => c.plans)
+    .filter((p) => p.status === 'planned' || p.status === 'started').length;
+  const next = data.headline?.next ?? null;
+
+  return (
+    <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
+      <Stat label={cy.ratio ? 'Bài gần nhất' : 'MT gần nhất'}
+        value={latestRow
+          ? (cy.ratio ? (latestRow.bandWeek ?? '—') : `MT${latestNo}`)
+          : '—'}
+        sub={latestRow
+          ? (data.standing?.sosLevel !== null && data.standing?.sosLevel !== undefined
+            ? `${sosLabel(data.standing.sosLevel)}${data.standing.provisional ? ' tạm thời' : ''}`
+            : 'chưa kết luận')
+          : 'chưa có điểm nào'} />
+
+      <Stat label="Hiện tại"
+        value={worst ? (worst.ratio && worst.total ? `${worst.score}/${worst.total}` : fmtBand(worst.band)) : '—'}
+        tone={worst ? 'danger' : scored.length ? 'ok' : undefined}
+        sub={worst
+          ? `${worst.label} · dưới kỳ vọng`
+          : scored.length ? 'mọi môn đạt kỳ vọng' : 'chưa có điểm nào'} />
+
+      <Stat label="Case đang mở"
+        value={String(openCases.length)}
+        tone={openCases.length ? 'warn' : undefined}
+        sub={openCases.length
+          ? `${runningPlans} phương án đang theo dõi`
+          : 'không có việc nào đang tồn'} />
+
+      <Stat label="Việc tiếp theo"
+        value={next?.due ? fmtDate(next.due) : next ? '—' : 'Không có'}
+        tone={next?.overdue ? 'danger' : undefined}
+        sub={next?.text ?? 'không có việc nào đang chờ'} />
+    </div>
+  );
+}
+
+function Stat({ label, value, sub, tone }: {
+  label: string; value: string; sub?: string; tone?: 'ok' | 'warn' | 'danger';
+}) {
+  const color = tone === 'danger' ? 'text-rose-300'
+    : tone === 'warn' ? 'text-amber-200'
+    : tone === 'ok' ? 'text-emerald-300' : 'text-slate-100';
+  return (
+    <div className="rounded-xl border px-3 py-2.5" style={{ borderColor: 'var(--line)' }}>
+      <span className="block text-[11px] text-slate-500">{label}</span>
+      <span className={`block text-lg font-semibold leading-tight mt-0.5 ${color}`}>{value}</span>
+      {sub && <span className="block text-[11px] text-slate-500 mt-0.5">{sub}</span>}
+    </div>
+  );
+}
 
 function IeltsAttempts({ attempts, onOpen }: { attempts: any[]; onOpen: (a: any) => void }) {
   return (

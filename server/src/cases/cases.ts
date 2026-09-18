@@ -1,6 +1,7 @@
 import { db, tx } from '../db.ts';
 import {
   DISPOSITIONS, INTERVENTION_KINDS, INTERVENTION_KIND_LABEL, INTERVENTION_STATUSES,
+  INTERVENTION_STATUS_LABEL,
   FOLLOWUP_OUTCOMES, BEHAVIOUR_TOPICS, CASE_DECISIONS, CASE_OUTCOMES, ENTRY_SKILLS,
   ISSUE_ROLES, PERMISSIONS, THREAD_TRACKS, URGENCY_LEVELS, DEFAULT_URGENCY,
   BEHAVIOUR_MERGE_WINDOW_DAYS, behaviourCaseDeadline, behaviourMergeUntil, deadlineAfterRaise,
@@ -2179,7 +2180,7 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
       carriedOver: !!primary?.carried_over,
       caseStatus: primary?.status ?? null,
       sosLevel: primary?.sos_level ?? null,
-      /** Case đã kéo qua mấy lượt MT — đây là thứ nói "phương án cũ chưa ăn thua". */
+      /** Case đã kéo qua mấy lượt MT — đây là thứ nói "phương án cũ chưa đạt kết quả". */
       attemptsSpanned: milestoneCount,
       parallelCount: mine.filter((c) => c.status !== 'done').length,
       followUntil: primary?.follow_until ?? null,
@@ -2228,6 +2229,8 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
           parallel: !!c.parallel,
           openedOn: c.detected_at ?? null,
           touchedOn: lastTouch(c.id) ?? c.detected_at ?? null,
+          /* Đủ thứ để vẽ MỘT THẺ CASE mà không phải gọi thêm một đường nữa (mục 1 · 2). */
+          ...caseCardOf(c.id, c),
         }))
         .sort((a, b) => {
           const open = (x: typeof a) => (x.status === 'done' ? 1 : 0);
@@ -2240,6 +2243,139 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
   });
 
   return { studentId, cycleId: cycle?.id ?? null, rows };
+}
+
+/**
+ * MỘT THẺ CASE, ĐỦ ĐỂ ĐỌC MÀ KHÔNG PHẢI MỞ THÊM GÌ.
+ *
+ * Hồ sơ học viên bày case thành các khối gọn: phân loại, câu mô tả, rồi MỖI PHƯƠNG ÁN MỘT
+ * KHỐI NHỎ có tên, người làm, kết quả gần nhất kèm ngày, hạn cập nhật và ngày dự kiến xong.
+ *
+ * Gộp sẵn ở máy chủ vì giao diện cần cả mấy thứ này CÙNG LÚC cho từng case, và một em có thể
+ * có năm case: để giao diện tự gọi từng case một là năm lần gọi cho một lần mở trang.
+ *
+ * NHÓM Ý THỨC/KHÁC KHÔNG CÓ THANG TIẾN BỘ HỌC THUẬT. Nó trả về BÁO CÁO NGUỒN — ai báo, ngày
+ * nào, thấy gì — và các hành động đã làm. Gia đình đã nhận report không chứng minh em tiến bộ,
+ * nên ép nhóm này vào thang "tiến bộ rõ / một phần" là bịa một kết luận chuyên môn.
+ */
+function caseCardOf(caseId: number, c: any) {
+  const conn = db();
+  const today = demoToday();
+  const behaviour = (c.track ?? 'academic') === 'behaviour';
+
+  const issue = conn
+    .prepare(`SELECT taxonomy_code FROM case_issues WHERE case_id = ? AND role = 'primary' LIMIT 1`)
+    .get(caseId) as any;
+
+  const ivs = conn
+    .prepare(
+      `SELECT iv.*, u.full_name AS performer_user_name FROM case_interventions iv
+         LEFT JOIN users u ON u.id = iv.performer_user_id
+        WHERE iv.case_id = ? AND iv.status != 'cancelled'
+        ORDER BY iv.status IN ('completed'), COALESCE(iv.started_date, iv.planned_date, iv.created_at) DESC, iv.id DESC`,
+    )
+    .all(caseId) as any[];
+
+  const follows = conn
+    .prepare(
+      `SELECT fu.*, u.full_name AS observer FROM case_followups fu
+         LEFT JOIN users u ON u.id = fu.observer_user_id
+        WHERE fu.case_id = ? ORDER BY fu.observed_on DESC, fu.id DESC`,
+    )
+    .all(caseId) as any[];
+
+  const plans = ivs.map((iv) => {
+    const last = follows.find((f) => f.intervention_id === iv.id && f.outcome) ?? null;
+    const open = iv.status === 'planned' || iv.status === 'started';
+    const pending = (iv.approval_state ?? '') === 'pending';
+    return {
+      id: iv.id as number,
+      kind: iv.kind as string,
+      kindLabel: INTERVENTION_KIND_LABEL[iv.kind as InterventionKind] ?? iv.kind,
+      /* Tên phương án là câu người dạy viết; thiếu thì lùi về tên loại, không để trống. */
+      name: (iv.description ?? '').trim() || (INTERVENTION_KIND_LABEL[iv.kind as InterventionKind] ?? iv.kind),
+      performer: iv.performer_user_name ?? iv.performer_name ?? null,
+      status: iv.status as string,
+      statusLabel: INTERVENTION_STATUS_LABEL[iv.status as keyof typeof INTERVENTION_STATUS_LABEL] ?? iv.status,
+      startedOn: iv.started_date ?? iv.planned_date ?? null,
+      completedOn: iv.completed_date ?? null,
+      /* HAI HẠN KHÁC NHAU của cùng một phương án, và chúng không được gộp một dòng. */
+      actionDue: open ? iv.action_due ?? null : null,
+      actionOverdue: !!(open && !pending && iv.action_due && iv.action_due < today),
+      followupDue: open ? iv.followup_due ?? null : null,
+      followupOverdue: !!(open && iv.followup_due && iv.followup_due < today),
+      pendingApproval: pending,
+      approvalDue: pending ? iv.approval_due ?? null : null,
+      lastOutcome: last?.outcome ?? null,
+      lastOutcomeLabel: last?.outcome
+        ? outcomeLabelFor(c.track ?? 'academic', last.outcome) : null,
+      lastOutcomeOn: last?.observed_on ?? null,
+      lastNote: last?.note ?? null,
+      /*
+       * MỌI LẦN CÓ NGƯỜI NHÌN LẠI VÀ GHI KẾT QUẢ, theo thứ tự thời gian.
+       *
+       * Dòng thời gian ở tab Hành trình vẽ chúng thành MỐC CÓ NGÀY — không phải mấy cái chấm
+       * trắng không đọc được. Một cái chấm không nói được ngày nào, ai ghi, kết quả ra sao,
+       * nên nó chỉ là trang trí.
+       */
+      updates: follows
+        .filter((f) => f.intervention_id === iv.id && f.outcome)
+        .map((f) => ({
+          on: f.observed_on as string,
+          outcome: f.outcome as string,
+          label: outcomeLabelFor(c.track ?? 'academic', f.outcome),
+          by: f.observer ?? null,
+        }))
+        .sort((a, b) => a.on.localeCompare(b.on)),
+    };
+  });
+
+  /*
+   * BÁO CÁO NGUỒN của nhóm Ý thức/Khác (mục 2). Một đợt gộp nhiều lần giáo viên báo, và
+   * chính các lần báo đó mới là bằng chứng — không phải một con điểm.
+   */
+  const reports = behaviour
+    ? (conn
+        .prepare(
+          `SELECT r.reported_on, r.source_skill, r.summary, u.full_name AS reporter
+             FROM case_reports r LEFT JOIN users u ON u.id = r.reported_by
+            WHERE r.case_id = ? ORDER BY r.reported_on, r.id`,
+        )
+        .all(caseId) as any[])
+      .map((r) => ({
+        on: r.reported_on as string,
+        by: r.reporter ?? null,
+        skill: r.source_skill ?? null,
+        summary: r.summary as string,
+      }))
+    : [];
+
+  /* Lượt đánh giá mà case này đã đi qua — "MT2 · 17/08" ở chân thẻ. */
+  const attempts = (conn
+    .prepare(
+      `SELECT DISTINCT m.attempt_no, rp.week_start FROM case_milestones m
+         LEFT JOIN assessment_attempts a ON a.id = m.attempt_id
+         LEFT JOIN report_periods rp ON rp.id = a.planned_period_id
+        WHERE m.case_id = ? AND m.attempt_no IS NOT NULL
+        ORDER BY m.attempt_no`,
+    )
+    .all(caseId) as any[])
+    .map((r) => ({ attemptNo: r.attempt_no as number, week: r.week_start ?? null }));
+
+  return {
+    issueCode: issue?.taxonomy_code ?? null,
+    issueLabel: issue?.taxonomy_code ? issueLabel(issue.taxonomy_code) : null,
+    summary: c.summary ?? null,
+    behaviour,
+    plans,
+    reports,
+    attempts,
+    followUntil: c.follow_until ?? null,
+    followOverdue: c.status !== 'done' && !!c.follow_until && c.follow_until < today,
+    outcomeLabel: c.outcome ? CASE_OUTCOME_LABEL[c.outcome as CaseOutcome] ?? null : null,
+    outcomeNote: c.outcome_note ?? null,
+    closedOn: c.closed_at ? String(c.closed_at).slice(0, 10) : null,
+  };
 }
 
 /**

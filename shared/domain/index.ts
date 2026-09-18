@@ -18,5 +18,6 @@ export * from './students.ts';
 export * from './fasttrack.ts';
 export * from './normal.ts';
 export * from './cases.ts';
+export * from './week.ts';
 export * from './worklist.ts';
 export * from './people.ts';
