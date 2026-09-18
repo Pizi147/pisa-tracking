@@ -13,7 +13,8 @@ import {
 
 /**
  * QUYỀN DỜI LỊCH MỘT KỸ NĂNG (sổ SCH-01, SCH-02) — MỘT capability, dùng CHUNG cho
- * `setSkillWeek` và `setSitStatus`/`canSetSitStatus`, để giao diện và máy chủ không lệch nhau.
+ * `setSkillWeek` và `setSitStatus`, để giao diện (đọc qua `moveableSkills`) và máy chủ
+ * không lệch nhau.
  *
  *   Quản lý / Quản trị  → `PLAN_WEEK` (như cũ, mọi loại lớp).
  *   GVCN / GVBM         → `SCHEDULE_MOVE` (mới) — CHỈ lớp Normal, CHỈ lớp/môn mình phụ trách.

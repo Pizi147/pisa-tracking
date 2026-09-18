@@ -39,7 +39,7 @@ type Detail = {
   history: any[]; sosCase: any; caseSteps: any[]; caseHistory: any[]; tasks: any[];
   viewer: {
     canPlanWeek: boolean; canCancel: boolean;
-    canSkipSkill: boolean; canOverrideDeadline: boolean; canSetSitStatus: boolean;
+    canSkipSkill: boolean; canOverrideDeadline: boolean;
     /** Kỹ năng dời lịch/xác nhận thi được — GVCN·GVBM Normal + Quản lý mọi kỹ năng (SCH-01). */
     moveableSkills: string[];
     canEditSos: boolean; editableSkills: string[];

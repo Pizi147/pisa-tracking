@@ -787,12 +787,10 @@ export function attemptDetail(p: Principal, attemptId: number) {
       canSkipSkill: can(p, PERMISSIONS.ATTEMPT_SKIP_SKILL, { classId: a.class_id }),
       /**
        * Xác nhận đã thi / vắng CHO TỪNG KỸ NĂNG — cùng quyền với việc dời lịch kỹ năng đó
-       * (sổ SCH-01, SCH-02: một capability, không lệch giữa hai thao tác). `canSetSitStatus`
-       * giữ lại cho tương thích (Quản lý mọi kỹ năng); `moveableSkills` mới là danh sách
-       * ĐÚNG cho GVCN/GVBM ở lớp Normal — giao diện phải đọc theo từng kỹ năng, không phải
-       * một cờ chung cho cả đợt.
+       * (sổ SCH-01, SCH-02: một capability, không lệch giữa hai thao tác). Không còn một cờ
+       * `canSetSitStatus` chung cho cả đợt — giao diện đọc `moveableSkills` theo từng kỹ
+       * năng, đúng cho cả Quản lý (mọi kỹ năng) lẫn GVCN/GVBM lớp Normal (đúng phần phụ trách).
        */
-      canSetSitStatus: can(p, PERMISSIONS.PLAN_WEEK, { classId: a.class_id }),
       moveableSkills: a.class_id ? moveableSkills(p, a.class_id, ENTRY_SKILLS) : [],
       canOverrideDeadline: can(p, PERMISSIONS.DEADLINE_OVERRIDE, { classId: a.class_id }),
       canEditSos: can(p, PERMISSIONS.SOS_EDIT, { classId: a.class_id, studentId: a.student_id }),
