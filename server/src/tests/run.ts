@@ -7572,6 +7572,17 @@ check('[18.2] Không có sự kiện nào đã xảy ra ở TƯƠNG LAI so với
     `Có ${late.length} sự kiện ghi là đã xảy ra sau ngày demo, ví dụ ${late[0]?.k} ngày ${late[0]?.d}`);
 });
 
+check('Ô điểm: ± là khoảng cách tới kỳ vọng của chính đợt đó', () => {
+  const board = cases.skillSupportBoard(P.admin, 3);
+  const row = board.rows.find((r: any) => r.band !== null && r.expectation !== null) as any;
+  assert(row, 'Cần một hàng có cả điểm và kỳ vọng để kiểm');
+  assert(
+    row.gap === Math.round((row.band - row.expectation) * 10) / 10,
+    `gap phải bằng điểm trừ kỳ vọng, đang là ${row.gap}`,
+  );
+  assert(!('delta' in row), 'Trường delta cũ phải bị bỏ để không ai đọc nhầm');
+});
+
 
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
