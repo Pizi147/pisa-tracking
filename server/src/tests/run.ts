@@ -7599,6 +7599,23 @@ check('Ô điểm: ± là khoảng cách tới kỳ vọng của chính đợt �
   assert(!('delta' in row), 'Trường delta cũ phải bị bỏ để không ai đọc nhầm');
 });
 
+// ==================================================================== PR-A
+check('CASE-01 · Mỗi nhóm Ý thức đều có bộ phân loại để chọn', () => {
+  for (const topic of domain.BEHAVIOUR_TOPICS) {
+    const list = domain.issuesForTopic(topic);
+    assert(list.length > 0, `Nhóm ý thức "${topic}" không có phân loại nào để chọn`);
+  }
+});
+check('CASE-01 · Tạo được case Ý thức bằng đúng phân loại của nhóm đó', () => {
+  const topic = domain.BEHAVIOUR_TOPICS[0];
+  const code = domain.issuesForTopic(topic)[0].code;
+  const made = cases.reportIssue(P.coreTeacher, {
+    studentId: 3, track: 'behaviour', topic, primaryCode: code,
+    title: 'Ý thức: em nghỉ nhiều buổi liên tiếp',
+    summary: 'Em nghỉ bốn buổi trong hai tuần, chưa có lý do từ gia đình.',
+  });
+  assert(made?.id, 'Phải tạo được case Ý thức');
+});
 
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
