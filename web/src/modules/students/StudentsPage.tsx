@@ -352,7 +352,7 @@ function ClassRow({ cls, expanded, studentQuery, onToggle, onAddStudents }: {
           <MissingBadge items={cls.missing.filter((m) => m.key !== 'teachers')} />
           {cls.needScores > 0 && (
             <Task tone="warn" as="button" onClick={go(`/hoc-vien?view=my_scores&classId=${cls.id}`)}>
-              {cls.needScores} cần nhập điểm MT
+              {cls.needScores} cần nhập điểm Test
             </Task>
           )}
           {cls.openCases > 0 && (
@@ -395,7 +395,7 @@ function WorkQueue({ view, branchId, q }: { view: string; branchId: number | nul
   if (loading) return <Skeleton rows={6} />;
   if (!data) return null;
 
-  const label = view === 'my_scores' ? 'cần nhập điểm MT' : 'đang ở mức SOS';
+  const label = view === 'my_scores' ? 'cần nhập điểm Test' : 'đang ở mức SOS';
 
   return (
     <Card bodyClass="p-0"

@@ -3775,7 +3775,7 @@ check('Trượt Listening ở MT1 rồi MT2 → ĐÚNG MỘT case, tên đổi t
   assert(d.milestones.filter((m: any) => m.attemptNo).length >= 2,
     'Case phải có mốc của cả hai lượt MT');
   assert(d.milestones.some((m: any) => m.kind === 'repeat'),
-    'Thiếu mốc "trượt lại" — nhìn vào không biết phương án cũ chưa ăn thua');
+    'Thiếu mốc "trượt lại" — nhìn vào không biết phương án cũ chưa đạt kết quả');
 });
 
 check('Case đã đóng mà MT sau trượt lại → MỞ CASE MỚI nối vào case cũ (mục 7.5)', () => {

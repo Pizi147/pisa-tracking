@@ -127,7 +127,7 @@ export const PERMISSION_LABEL: Record<string, string> = {
  * ba cái tên khác nhau ở ba màn hình.
  *
  * `needs` là quyền TỐI THIỂU để bộ lọc có nghĩa với người đang xem. Admin CN vẫn thấy
- * "Cần nhập điểm MT" dù họ không nhập — họ dùng nó để ĐÔN ĐỐC giáo viên (owner xác nhận Q9),
+ * "Cần nhập điểm Test" dù họ không nhập — họ dùng nó để ĐÔN ĐỐC giáo viên (owner xác nhận Q9),
  * nên cờ `readOnly` nói rõ điều đó trên giao diện thay vì giấu bộ lọc đi.
  */
 export type StudentFilterKey =
@@ -149,7 +149,7 @@ export const STUDENT_FILTERS: {
     hint: 'Case đã mở nhưng chưa ai ghi sẽ làm gì cho em.' },
   { key: 'case_overdue', label: 'Case quá hạn cập nhật', needs: 'case.view',
     hint: 'Đã qua hẹn xem lại mà chưa ai cập nhật kết quả sau hỗ trợ.' },
-  { key: 'my_scores', label: 'Cần nhập điểm MT', needs: 'attempt.view',
+  { key: 'my_scores', label: 'Cần nhập điểm Test', needs: 'attempt.view',
     hint: 'Lượt MT đã thi mà còn ô điểm để trống.' },
   { key: 'no_plan', label: 'Chưa có tuần MT', needs: 'plan.week',
     hint: 'Học viên chưa được chốt tuần cho lượt MT tiếp theo. Việc của Quản lý.' },
