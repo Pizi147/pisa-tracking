@@ -1208,6 +1208,21 @@ check('Luật đếm bài cần chấm — một hàm, hai phạm vi', () => {
     `managed phải ra listening,reading, đang ra: ${managed.join(',')}`,
   );
 });
+check('Ô điểm nói rõ kỹ năng có bắt buộc, độc lập với quyền người xem', () => {
+  const a = conn
+    .prepare(`SELECT a.* FROM assessment_attempts a WHERE a.status != 'cancelled' LIMIT 1`)
+    .get() as any;
+  const d = attempts.attemptDetail(P.mbManager, a.id);
+  assert(d.cells.length > 0, 'Không lấy được ô điểm nào để kiểm');
+  assert(
+    d.cells.every((c: any) => typeof c.required === 'boolean'),
+    'Mọi ô điểm phải có trường required',
+  );
+  assert(
+    d.cells.some((c: any) => c.required) && d.cells.every((c: any) => !c.canEdit),
+    'Quản lý không sửa được ô nào nhưng vẫn phải thấy ô nào bắt buộc',
+  );
+});
 check('Badge "cần nhập điểm" theo đúng phân công của người đang xem', () => {
   const mine = classesSvc.listClassSummaries(P.w1Teacher, {}).rows;
   for (const c of mine) {
