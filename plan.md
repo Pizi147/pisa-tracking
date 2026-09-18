@@ -236,7 +236,7 @@ sửa sau. Đó chính là cách lỗi này sinh ra lần đầu.
 **Interfaces:**
 - Produces: `WorkScope`, `WORK_SCOPE_LABEL`, `pendingSkillsOf(cells, scope)` — Task 2, 3, 4 đều dùng.
 
-- [ ] **Step 1: Viết phép kiểm cho luật đếm**
+- [x] **Step 1: Viết phép kiểm cho luật đếm**
 
 Thêm vào `server/src/tests/run.ts`, ngay trước phép kiểm ở dòng 1195:
 
@@ -263,7 +263,7 @@ check('Luật đếm bài cần chấm — một hàm, hai phạm vi', () => {
 `domain.pendingSkillsOf(...)`. Đừng thêm tên vào khối destructure ở dòng 20 — thêm vào đó là
 sửa một dòng nhiều phép kiểm khác đang dùng, không cần thiết.
 
-- [ ] **Step 2: Chạy và xác nhận nó HỎNG**
+- [x] **Step 2: Chạy và xác nhận nó HỎNG**
 
 ```bash
 npm test
@@ -272,7 +272,7 @@ npm test
 Kỳ vọng: phép kiểm mới báo ✗ với `domain.pendingSkillsOf is not a function`.
 Nếu nó **đạt** ngay thì dừng lại — nghĩa là hàm đã tồn tại và mục 2 của file này sai.
 
-- [ ] **Step 3: Viết hàm**
+- [x] **Step 3: Viết hàm**
 
 Thêm cuối `shared/domain/fasttrack.ts`:
 
@@ -304,7 +304,7 @@ export function pendingSkillsOf(cells: PendingCell[], scope: 'mine' | 'managed')
 }
 ```
 
-- [ ] **Step 4: Đặt tên phạm vi ở một chỗ**
+- [x] **Step 4: Đặt tên phạm vi ở một chỗ**
 
 Thêm cuối phần bộ lọc học viên trong `shared/domain/people.ts`:
 
@@ -330,7 +330,7 @@ export const WORK_SCOPE_HINT: Record<WorkScope, string> = {
 };
 ```
 
-- [ ] **Step 5: Chạy và xác nhận nó ĐẠT**
+- [x] **Step 5: Chạy và xác nhận nó ĐẠT**
 
 ```bash
 npm test
@@ -338,7 +338,7 @@ npm test
 
 Kỳ vọng: `✓ Luật đếm bài cần chấm — một hàm, hai phạm vi`, và **320 đạt, 0 không đạt**.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add shared/domain/fasttrack.ts shared/domain/people.ts server/src/tests/run.ts
@@ -348,6 +348,12 @@ git commit -m "Luật đếm bài cần chấm gom về một hàm dùng chung"
 ---
 
 ### Task 2: Ô điểm biết mình có bắt buộc hay không
+
+> **Cập nhật 18/09/2026 (session code PR1):** giả định của mục này SAI. Đọc
+> `server/src/fasttrack/attempts.ts` thì `SkillCell` (tên thật của "`Cell`" nói ở đây) đã có
+> sẵn `required: boolean`, độc lập với `canEdit`/`mine`, và đã được gán trong `skillCells()`
+> từ trước (rất có thể từ PR18). Không cần sửa sản phẩm — chỉ thêm đúng phép kiểm ở Step 1 để
+> khoá lại hành vi đó (đã ĐẠT ngay, không cần Step 3). Xem mục 12.
 
 `pendingSkillsOf` cần `required`, nhưng `Cell` hiện chỉ có `canEdit` và `mine` — cả hai đã
 nhân `required` vào rồi nên không tách ra được. Quản lý không có quyền sửa nào, nên
@@ -361,7 +367,7 @@ nhân `required` vào rồi nên không tách ra được. Quản lý không có
 - Consumes: `pendingSkillsOf` (Task 1)
 - Produces: `Cell.required: boolean` — Task 3 và 4 dùng.
 
-- [ ] **Step 1: Viết phép kiểm**
+- [x] **Step 1: Viết phép kiểm**
 
 ```ts
 check('Ô điểm nói rõ kỹ năng có bắt buộc, độc lập với quyền người xem', () => {
@@ -384,7 +390,7 @@ check('Ô điểm nói rõ kỹ năng có bắt buộc, độc lập với quy�
 `attemptDetail` ở `server/src/fasttrack/attempts.ts:576`; các phép kiểm sẵn có đã gọi nó theo
 đúng kiểu này (xem `run.ts:381`).
 
-- [ ] **Step 2: Chạy và xác nhận nó HỎNG**
+- [x] **Step 2: Chạy và xác nhận nó HỎNG**
 
 ```bash
 npm test
@@ -392,7 +398,7 @@ npm test
 
 Kỳ vọng: ✗ với "phải có trường required".
 
-- [ ] **Step 3: Thêm trường**
+- [x] **Step 3: Thêm trường**
 
 Trong kiểu `Cell` (`attempts.ts:190–204`), thêm ngay trên `canEdit`:
 
@@ -413,7 +419,7 @@ Trong phần dựng ô (`attempts.ts` khoảng dòng 275, cạnh `canEdit`), th�
       required,
 ```
 
-- [ ] **Step 4: Chạy và xác nhận nó ĐẠT**
+- [x] **Step 4: Chạy và xác nhận nó ĐẠT**
 
 ```bash
 npm run build:server && npm test
@@ -421,7 +427,7 @@ npm run build:server && npm test
 
 Kỳ vọng: **321 đạt, 0 không đạt**.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add server/src/fasttrack/attempts.ts server/src/tests/run.ts
@@ -1177,3 +1183,4 @@ Nói **cái gì đổi trên màn hình**, bằng tiếng Việt, không tên h�
 | Ngày | Ai | Đổi gì và vì sao |
 |---|---|---|
 | 18/09/2026 | Claude + chủ sản phẩm | Tạo file. Soát prompt giai đoạn mới, đối chiếu sổ audit, tái hiện được lỗi badge (28→0) và CASE-01. Chốt: `±` so kỳ vọng · badge đếm bài kỹ năng · CASE-01 thành PR riêng · chia PR theo cách 1 |
+| 18/09/2026 | Claude (session code PR1) | Task 2 sai giả định: `SkillCell.required` đã tồn tại và độc lập với `canEdit`/`mine` từ trước — không cần sửa sản phẩm, chỉ thêm phép kiểm khoá hành vi. Ghi chú tại mục Task 2 |
