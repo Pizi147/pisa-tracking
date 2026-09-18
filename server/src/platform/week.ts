@@ -142,10 +142,17 @@ export const PERIOD_WINDOW_PLANNING_FORWARD_WEEKS = 30;
  *
  * Tương lai chỉ mở MỘT tuần: mở báo cáo của tháng sau thì chẳng có gì để báo cáo.
  */
+/**
+ * ĐƯỜNG ĐỌC — KHÔNG TẠO HÀNG (sổ §13.8): mỗi tuần trong khoảng được dựng bằng `weekInfo()`
+ * thuần (không đụng database) rồi ghép với hàng thật nếu có. Tuần chưa từng được dùng tới thì
+ * `id` là `null` — vẫn xuất hiện đủ trong danh sách (vẫn "chọn được"), chỉ là chưa có ID thật.
+ * Nơi nào thật sự cần ID (xếp lịch, lưu) thì tự gọi `ensurePeriod(weekStart)` cho ĐÚNG MỘT tuần
+ * đó tại thời điểm cần — không phải ở đây, và không phải cho cả cửa sổ.
+ */
 export function periodWindow(
   anchorId?: number | null,
   opts: { forward?: number; back?: number } = {},
-): (WeekInfo & { id: number; isAnchor: boolean })[] {
+): (WeekInfo & { id: number | null; isAnchor: boolean })[] {
   const conn = db();
   const anchor = anchorId
     ? (conn.prepare('SELECT * FROM report_periods WHERE id = ?').get(anchorId) as any)
@@ -153,16 +160,15 @@ export function periodWindow(
   const center = anchor?.week_start ?? mondayOf(demoToday());
   const from = addDays(center, -7 * (opts.back ?? PERIOD_WINDOW_BACK_WEEKS));
   const to = addDays(center, 7 * (opts.forward ?? PERIOD_WINDOW_FORWARD_WEEKS));
-  /*
-   * TẠO SẴN TUẦN CÒN THIẾU trong khoảng. Bảng tuần chỉ có những tuần đã từng được dùng tới;
-   * xếp lịch cho tháng sau mà tuần đó chưa tồn tại thì danh sách hiện ra một khoảng trống và
-   * người dùng tưởng không xếp được.
-   */
-  for (let d = from; d <= to; d = addDays(d, 7)) ensurePeriod(d);
   const rows = conn
-    .prepare('SELECT * FROM report_periods WHERE week_start >= ? AND week_start <= ? ORDER BY week_start DESC')
+    .prepare('SELECT * FROM report_periods WHERE week_start >= ? AND week_start <= ?')
     .all(from, to) as any[];
-  return rows.map((r) => ({ id: r.id, ...weekInfo(r.week_start), isAnchor: r.week_start === center }));
+  const idByWeekStart = new Map(rows.map((r) => [r.week_start as string, r.id as number]));
+  const out: (WeekInfo & { id: number | null; isAnchor: boolean })[] = [];
+  for (let d = to; d >= from; d = addDays(d, -7)) {
+    out.push({ id: idByWeekStart.get(d) ?? null, ...weekInfo(d), isAnchor: d === center });
+  }
+  return out;
 }
 
 /** Số ngày cuối tuần mà báo cáo tuần bắt đầu mở để cập nhật. */

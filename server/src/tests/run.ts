@@ -1674,6 +1674,27 @@ check('Ô chọn tuần là cửa sổ trượt, không phải toàn bộ lịch
   assert(shifted.some((x) => x.weekStart < oldest.weekStart), 'Cửa sổ không dịch theo tuần đang xem');
   assert(shifted.some((x) => x.isAnchor), 'Tuần đang xem phải nằm trong cửa sổ');
 });
+check('§13.8 · Đường đọc cửa sổ tuần KHÔNG tạo hàng loạt hàng trong database', () => {
+  const before = (conn.prepare('SELECT COUNT(*) n FROM report_periods').get() as any).n;
+  const wide = week.periodWindow(null, { forward: week.PERIOD_WINDOW_PLANNING_FORWARD_WEEKS });
+  const after = (conn.prepare('SELECT COUNT(*) n FROM report_periods').get() as any).n;
+  assert(
+    after === before,
+    `Mở cửa sổ rộng (kế hoạch) không được tạo hàng mới — trước ${before} hàng, sau ${after} hàng`,
+  );
+  // Nhưng vẫn phải LIỆT KÊ đủ tuần trong khoảng, kể cả tuần chưa có hàng — "luôn chọn được".
+  assert(wide.length >= 30, `Cửa sổ rộng phải liệt kê đủ tuần dù chưa có hàng, đang ra ${wide.length}`);
+});
+check('§13.8 · Chọn một tuần chưa có hàng thì luôn resolve được, không fallback bừa', () => {
+  const before = (conn.prepare('SELECT COUNT(*) n FROM report_periods').get() as any).n;
+  const wide = week.periodWindow(null, { forward: week.PERIOD_WINDOW_PLANNING_FORWARD_WEEKS });
+  const gap = wide.find((p) => p.id === null);
+  assert(gap, 'Cần ít nhất một tuần trong cửa sổ rộng chưa có hàng để kiểm — nếu bộ demo đã phủ hết thì test này không kiểm được gì, cần seed thêm tuần xa hơn');
+  const resolved = week.ensurePeriod(gap!.weekStart);
+  assert(resolved.id > 0, 'Phải resolve được thành một id thật khi thật sự cần dùng');
+  const after = (conn.prepare('SELECT COUNT(*) n FROM report_periods').get() as any).n;
+  assert(after === before + 1, `Resolve một tuần chỉ được tạo ĐÚNG MỘT hàng, đang ra chênh lệch ${after - before}`);
+});
 check('Người theo dõi mặc định là Quản lý của chính chi nhánh đó', () => {
   const unit = conn.prepare(`SELECT * FROM reporting_units WHERE kind='branch' AND branch_id IS NOT NULL LIMIT 1`).get() as any;
   const t = meeting.createTask(P.admin, { title: 'Việc thử người theo dõi', unitId: unit.id }) as any;
