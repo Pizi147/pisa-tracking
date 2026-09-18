@@ -1,8 +1,9 @@
-import { Router } from 'express';
+import { Router, type Request } from 'express';
 import { db, isInitialised } from '../db.ts';
 import {
   BEHAVIOUR_TOPICS, BEHAVIOUR_TOPIC_LABEL, ENTRY_SKILLS, ENTRY_SKILL_LABEL, ISSUE_TAXONOMY,
-  PERMISSIONS, REGULAR_SKILLS, ROLE_LABEL, THREAD_TRACKS, THREAD_TRACK_LABEL, type Role,
+  PERMISSIONS, REGULAR_SKILLS, ROLE_LABEL, THREAD_TRACKS, THREAD_TRACK_LABEL, WORK_SCOPES,
+  type Role, type WorkScope,
 } from '../../../shared/domain/index.ts';
 import { demoToday, getConfig, scenarioMode, setConfig } from '../demoConfig.ts';
 import { HttpError, badRequest, forbidden, isIsoDate, notFound, toInt } from '../util.ts';
@@ -10,6 +11,15 @@ import { SESSION_COOKIE, createSession, destroySession, principalOf, requireAuth
 import { can, loadPrincipal, permissionSummary, require_, scopeFor } from '../permissions.ts';
 import { writeAudit } from '../platform/audit.ts';
 import { maybeSimulateReadError, maybeSimulateSaveFailure, pInt, qInt, qStr, wrap } from './helpers.ts';
+
+/**
+ * PHẠM VI TRÊN ĐƯỜNG DẪN — sai giá trị thì BỎ QUA, không báo lỗi. Màn hình vẫn phải mở
+ * được; máy chủ tự chọn mặc định theo vai khi tham số hỏng hoặc thiếu.
+ */
+const qScope = (req: Request): WorkScope | undefined => {
+  const raw = qStr(req, 'scope');
+  return (WORK_SCOPES as readonly string[]).includes(raw ?? '') ? (raw as WorkScope) : undefined;
+};
 import * as attemptSvc from '../fasttrack/attempts.ts';
 import * as skillScheduleSvc from '../fasttrack/skillSchedule.ts';
 import * as absenceSvc from '../fasttrack/absence.ts';
@@ -302,6 +312,7 @@ api.get('/attempts', requireAuth, wrap((req) => {
     status: qStr(req, 'status'),
     need: qStr(req, 'need') as any,
     q: qStr(req, 'q'),
+    scope: qScope(req),
   });
 }));
 
@@ -494,6 +505,7 @@ api.get('/classes', requireAuth, wrap((req) => {
   return classSvc.listClassSummaries(principalOf(req), {
     branchId: qInt(req, 'branchId'),
     q: qStr(req, 'q'),
+    scope: qScope(req),
   });
 }));
 

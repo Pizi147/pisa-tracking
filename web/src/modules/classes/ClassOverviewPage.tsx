@@ -93,7 +93,7 @@ export default function ClassOverviewPage() {
   const s = data.summary;
   /* Chỉ những việc THỰC SỰ đang tồn mới được chiếm chỗ trên màn hình. */
   const jobs = [
-    { n: s?.needScores ?? 0, label: 'cần nhập điểm Test', tone: 'warn' as const, view: 'my_scores' },
+    { n: s?.needScores ?? 0, label: 'bài cần chấm', tone: 'warn' as const, view: 'my_scores' },
     { n: s?.openCases ?? 0, label: 'case chưa xong', tone: 'danger' as const, view: 'case_working' },
   ].filter((j) => j.n > 0);
 

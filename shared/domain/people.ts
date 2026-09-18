@@ -161,3 +161,23 @@ export function studentFiltersFor(has: (key: string) => boolean): StudentFilterK
     .filter((f) => !f.needs || has(f.needs))
     .map((f) => f.key);
 }
+
+/**
+ * HAI PHẠM VI CÔNG VIỆC — đặt tên ở ĐÂY vì cùng lý do với `STUDENT_FILTERS`: chủ sản phẩm
+ * yêu cầu "cách gọi phải giống hệt nhau ở mọi trang". Mỗi màn tự viết nhãn của mình là cách
+ * chắc chắn nhất để cùng một việc mang hai cái tên.
+ *
+ * Cố ý để hai vai thấy HAI CON SỐ KHÁC NHAU ở cùng một lớp: GVBM Listening thấy 2, Quản lý
+ * thấy 8. Họ hỏi hai câu khác nhau. Vì thế badge BẮT BUỘC ghi kèm phạm vi, không để trơ
+ * một con số rồi ai đoán nấy.
+ */
+export const WORK_SCOPES = ['mine', 'managed'] as const;
+export type WorkScope = (typeof WORK_SCOPES)[number];
+export const WORK_SCOPE_LABEL: Record<WorkScope, string> = {
+  mine: 'Việc của tôi',
+  managed: 'Trong phạm vi quản lý',
+};
+export const WORK_SCOPE_HINT: Record<WorkScope, string> = {
+  mine: 'Kỹ năng bạn được phân công dạy.',
+  managed: 'Mọi bài chưa chấm trong phạm vi bạn được xem, kèm tên giáo viên phụ trách.',
+};

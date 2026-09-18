@@ -236,7 +236,7 @@ sửa sau. Đó chính là cách lỗi này sinh ra lần đầu.
 **Interfaces:**
 - Produces: `WorkScope`, `WORK_SCOPE_LABEL`, `pendingSkillsOf(cells, scope)` — Task 2, 3, 4 đều dùng.
 
-- [ ] **Step 1: Viết phép kiểm cho luật đếm**
+- [x] **Step 1: Viết phép kiểm cho luật đếm**
 
 Thêm vào `server/src/tests/run.ts`, ngay trước phép kiểm ở dòng 1195:
 
@@ -263,7 +263,7 @@ check('Luật đếm bài cần chấm — một hàm, hai phạm vi', () => {
 `domain.pendingSkillsOf(...)`. Đừng thêm tên vào khối destructure ở dòng 20 — thêm vào đó là
 sửa một dòng nhiều phép kiểm khác đang dùng, không cần thiết.
 
-- [ ] **Step 2: Chạy và xác nhận nó HỎNG**
+- [x] **Step 2: Chạy và xác nhận nó HỎNG**
 
 ```bash
 npm test
@@ -272,7 +272,7 @@ npm test
 Kỳ vọng: phép kiểm mới báo ✗ với `domain.pendingSkillsOf is not a function`.
 Nếu nó **đạt** ngay thì dừng lại — nghĩa là hàm đã tồn tại và mục 2 của file này sai.
 
-- [ ] **Step 3: Viết hàm**
+- [x] **Step 3: Viết hàm**
 
 Thêm cuối `shared/domain/fasttrack.ts`:
 
@@ -304,7 +304,7 @@ export function pendingSkillsOf(cells: PendingCell[], scope: 'mine' | 'managed')
 }
 ```
 
-- [ ] **Step 4: Đặt tên phạm vi ở một chỗ**
+- [x] **Step 4: Đặt tên phạm vi ở một chỗ**
 
 Thêm cuối phần bộ lọc học viên trong `shared/domain/people.ts`:
 
@@ -330,7 +330,7 @@ export const WORK_SCOPE_HINT: Record<WorkScope, string> = {
 };
 ```
 
-- [ ] **Step 5: Chạy và xác nhận nó ĐẠT**
+- [x] **Step 5: Chạy và xác nhận nó ĐẠT**
 
 ```bash
 npm test
@@ -338,7 +338,7 @@ npm test
 
 Kỳ vọng: `✓ Luật đếm bài cần chấm — một hàm, hai phạm vi`, và **320 đạt, 0 không đạt**.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add shared/domain/fasttrack.ts shared/domain/people.ts server/src/tests/run.ts
@@ -348,6 +348,12 @@ git commit -m "Luật đếm bài cần chấm gom về một hàm dùng chung"
 ---
 
 ### Task 2: Ô điểm biết mình có bắt buộc hay không
+
+> **Cập nhật 18/09/2026 (session code PR1):** giả định của mục này SAI. Đọc
+> `server/src/fasttrack/attempts.ts` thì `SkillCell` (tên thật của "`Cell`" nói ở đây) đã có
+> sẵn `required: boolean`, độc lập với `canEdit`/`mine`, và đã được gán trong `skillCells()`
+> từ trước (rất có thể từ PR18). Không cần sửa sản phẩm — chỉ thêm đúng phép kiểm ở Step 1 để
+> khoá lại hành vi đó (đã ĐẠT ngay, không cần Step 3). Xem mục 12.
 
 `pendingSkillsOf` cần `required`, nhưng `Cell` hiện chỉ có `canEdit` và `mine` — cả hai đã
 nhân `required` vào rồi nên không tách ra được. Quản lý không có quyền sửa nào, nên
@@ -361,7 +367,7 @@ nhân `required` vào rồi nên không tách ra được. Quản lý không có
 - Consumes: `pendingSkillsOf` (Task 1)
 - Produces: `Cell.required: boolean` — Task 3 và 4 dùng.
 
-- [ ] **Step 1: Viết phép kiểm**
+- [x] **Step 1: Viết phép kiểm**
 
 ```ts
 check('Ô điểm nói rõ kỹ năng có bắt buộc, độc lập với quyền người xem', () => {
@@ -384,7 +390,7 @@ check('Ô điểm nói rõ kỹ năng có bắt buộc, độc lập với quy�
 `attemptDetail` ở `server/src/fasttrack/attempts.ts:576`; các phép kiểm sẵn có đã gọi nó theo
 đúng kiểu này (xem `run.ts:381`).
 
-- [ ] **Step 2: Chạy và xác nhận nó HỎNG**
+- [x] **Step 2: Chạy và xác nhận nó HỎNG**
 
 ```bash
 npm test
@@ -392,7 +398,7 @@ npm test
 
 Kỳ vọng: ✗ với "phải có trường required".
 
-- [ ] **Step 3: Thêm trường**
+- [x] **Step 3: Thêm trường**
 
 Trong kiểu `Cell` (`attempts.ts:190–204`), thêm ngay trên `canEdit`:
 
@@ -413,7 +419,7 @@ Trong phần dựng ô (`attempts.ts` khoảng dòng 275, cạnh `canEdit`), th�
       required,
 ```
 
-- [ ] **Step 4: Chạy và xác nhận nó ĐẠT**
+- [x] **Step 4: Chạy và xác nhận nó ĐẠT**
 
 ```bash
 npm run build:server && npm test
@@ -421,7 +427,7 @@ npm run build:server && npm test
 
 Kỳ vọng: **321 đạt, 0 không đạt**.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add server/src/fasttrack/attempts.ts server/src/tests/run.ts
@@ -446,7 +452,7 @@ git commit -m "Ô điểm mang theo required, độc lập với quyền ngườ
   `pendingOwners: Record<string, string | null>`; `listClassSummaries(p, { scope })` →
   `needScores` là **số ô**. Task 4 dùng cả hai.
 
-- [ ] **Step 1: Viết phép kiểm — đây là phép kiểm chặn lỗi gốc**
+- [x] **Step 1: Viết phép kiểm — đây là phép kiểm chặn lỗi gốc**
 
 ```ts
 check('Badge bằng đúng danh sách — cả ba vai, cả hai phạm vi', () => {
@@ -481,7 +487,7 @@ Sửa luôn phép kiểm cũ ở dòng 1195 (`Badge "cần nhập điểm" theo 
 xem`): nó so badge với **số hàng**, giờ badge là **số ô**. Đổi thành so với tổng
 `pendingSkills.length` như trên, giữ nguyên tên phép kiểm.
 
-- [ ] **Step 2: Chạy và xác nhận nó HỎNG**
+- [x] **Step 2: Chạy và xác nhận nó HỎNG**
 
 ```bash
 npm test
@@ -489,7 +495,7 @@ npm test
 
 Kỳ vọng: ✗ ở cả hai phép kiểm mới, và thông báo chỉ ra đúng lớp bị lệch.
 
-- [ ] **Step 3: Phạm vi mặc định**
+- [x] **Step 3: Phạm vi mặc định**
 
 Thêm vào `server/src/permissions.ts`, cạnh `mySkills` (dòng 325). Nhớ thêm `WorkScope` vào
 khối import từ `../../shared/domain/index.ts` ở đầu file:
@@ -505,7 +511,7 @@ export function defaultWorkScope(p: Principal): WorkScope {
 }
 ```
 
-- [ ] **Step 4: Đếm ô ở danh sách lớp**
+- [x] **Step 4: Đếm ô ở danh sách lớp**
 
 Trong `server/src/classes/classes.ts`:
 
@@ -546,7 +552,7 @@ Nhánh Normal đang dùng `regularSkillViews`; map sang `PendingCell` tại ch�
 `editableOrAll` là bộ kỹ năng của chương trình (`skillsByClass`), **không** phải
 `editableByClass` — phạm vi quản lý phải đếm cả môn người xem không sửa được.
 
-- [ ] **Step 5: Trả `pendingSkills` ở danh sách đợt**
+- [x] **Step 5: Trả `pendingSkills` ở danh sách đợt**
 
 Trong `server/src/fasttrack/attempts.ts`:
 
@@ -593,13 +599,13 @@ function pendingInputOf(cells: Cell[]): PendingCell[] {
       break;
 ```
 
-- [ ] **Step 6: Nhận `scope` trên đường API**
+- [x] **Step 6: Nhận `scope` trên đường API**
 
 `server/src/routes/index.ts`: cả `/attempts` và `/classes` đọc `qStr(req, 'scope')`, chỉ nhận
 giá trị thuộc `WORK_SCOPES`, sai thì bỏ qua và để máy chủ tự chọn mặc định. **Không** báo lỗi
 vì tham số hỏng — màn hình vẫn phải mở được.
 
-- [ ] **Step 7: Chạy và xác nhận nó ĐẠT**
+- [x] **Step 7: Chạy và xác nhận nó ĐẠT**
 
 ```bash
 npm run build:server && npm test
@@ -607,7 +613,7 @@ npm run build:server && npm test
 
 Kỳ vọng: **323 đạt, 0 không đạt**.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add server/src shared/domain
@@ -625,7 +631,7 @@ git commit -m "Badge và danh sách việc cần chấm dùng cùng một phép 
 **Interfaces:**
 - Consumes: `loadSkillRows` / `skillScheduleOf` từ `server/src/fasttrack/skillSchedule.ts`
 
-- [ ] **Step 1: Viết phép kiểm T08**
+- [x] **Step 1: Viết phép kiểm T08**
 
 ```ts
 check('T08 · RLW tuần này, S tuần sau: mỗi bảng tuần hiện đúng phần của nó', () => {
@@ -653,7 +659,7 @@ check('T08 · RLW tuần này, S tuần sau: mỗi bảng tuần hiện đúng p
 });
 ```
 
-- [ ] **Step 2: Chạy và xác nhận nó HỎNG**
+- [x] **Step 2: Chạy và xác nhận nó HỎNG**
 
 ```bash
 npm test
@@ -661,7 +667,7 @@ npm test
 
 Kỳ vọng: ✗ ở **một** trong hai tuần — tuần không phải `planned_period_id` của đợt.
 
-- [ ] **Step 3: Lọc theo lịch từng kỹ năng**
+- [x] **Step 3: Lọc theo lịch từng kỹ năng**
 
 Trong `classScoreSheet`, thay dòng 1137:
 
@@ -696,7 +702,7 @@ bằng:
 Giữ `a.planned_period_id = ?` ở nhánh đầu: đợt cũ chưa có dòng lịch kỹ năng nào vẫn phải hiện
 ra (xem chú thích của `loadSkillRows` — danh sách là màn chỉ đọc, không tự tạo dòng).
 
-- [ ] **Step 4: Chạy và xác nhận nó ĐẠT**
+- [x] **Step 4: Chạy và xác nhận nó ĐẠT**
 
 ```bash
 npm run build:server && npm test
@@ -704,7 +710,7 @@ npm run build:server && npm test
 
 Kỳ vọng: **324 đạt, 0 không đạt**.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add server/src/fasttrack/attempts.ts server/src/tests/run.ts
@@ -723,7 +729,7 @@ git commit -m "Bảng chấm theo tuần lọc theo lịch từng kỹ năng"
 **Interfaces:**
 - Consumes: `pendingSkills`, `pendingOwners`, `needScores` (Task 3); `WORK_SCOPE_LABEL` (Task 1)
 
-- [ ] **Step 1: Nút chuyển phạm vi**
+- [x] **Step 1: Nút chuyển phạm vi**
 
 Đặt cạnh thanh bộ lọc học viên, dùng đúng kiểu tab của dự án (xem `StudentDetailPage.tsx:283`):
 
@@ -749,30 +755,30 @@ git commit -m "Bảng chấm theo tuần lọc theo lịch từng kỹ năng"
 </span>
 ```
 
-- [ ] **Step 2: Nhãn badge nói rõ đơn vị và phạm vi**
+- [x] **Step 2: Nhãn badge nói rõ đơn vị và phạm vi**
 
 `{cls.needScores} bài cần chấm`, và `title` của nó là `WORK_SCOPE_HINT[scope]`. Bỏ chữ "lượt".
 Sửa cả `ClassOverviewPage.tsx:96` cho khớp — hai màn không được gọi khác nhau.
 
-- [ ] **Step 3: Hàng đợi bỏ khoá theo tuần**
+- [x] **Step 3: Hàng đợi bỏ khoá theo tuần**
 
 `WorkQueue` **không** nhận tuần. Tiêu đề đổi thành `{n} bài cần chấm`, và thêm một cột
 **"Nợ từ tuần"** lấy tuần thi của chính kỹ năng còn thiếu (`pendingDetail[].weekCode`, hoặc
 `period.code` nếu đợt chưa tách lịch). Cột "Việc cần làm" đọc `pendingSkills`; khi
 `scope === 'managed'` thì hiện thêm tên người phụ trách từ `pendingOwners`.
 
-- [ ] **Step 4: Nói rõ khi Quản lý nhập hộ**
+- [x] **Step 4: Nói rõ khi Quản lý nhập hộ**
 
 Ở phạm vi quản lý, dòng nào người xem không được phân công thì ghi một dòng nhỏ **"bạn không
 phụ trách bài này — nhập sẽ được ghi là sửa hộ"**. Máy chủ đã phân biệt sẵn
 (`scoreEditPath` trả `'override'`, `server/src/permissions.ts:330`); việc ở đây chỉ là **nói
 ra** điều đó, không đổi quyền.
 
-- [ ] **Step 5: Kiểm bằng tay**
+- [x] **Step 5: Kiểm bằng tay**
 
 Theo mục 11.2. Bắt buộc thử bằng **cả ba** tài khoản: một GVBM · Quản lý Monbay · Quản trị.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add web/src
@@ -783,34 +789,48 @@ git commit -m "Hai phạm vi công việc hiện rõ trên màn, badge ghi đơn
 
 ### Task 6: Sáu đường vào nhập điểm
 
+> **Cập nhật 18/09/2026 (session code PR1):** khảo sát cả sáu đường trước khi sửa cho thấy
+> phạm vi thật lớn hơn nhiều so với hai bước mô tả sẵn ở đây — bốn trên sáu đường cần dựng
+> mới (một quy ước tham số "đợt đang focus" trên hồ sơ học viên, tay bấm trên mốc hành
+> trình, sửa hướng hai nhãn MT2/MT3/Final, và một bộ resolver cho thông báo). Đó là việc
+> **thiết kế thêm**, không phải nốt hai bước còn thiếu của Task này — làm ẩu để "cho xong"
+> sẽ tạo ra đúng kiểu vá tạm mà mục 1.2 cảnh báo. Theo mục 0.3 (đừng gộp) và mục 3
+> ("phát hiện lỗi mới ngoài phạm vi → thêm vào mục 10, đừng tự mở rộng PR đang làm"),
+> quyết định là: làm **Step 1** (đã đúng sẵn, chỉ xác nhận) + sửa đúng **một lỗi thật đã xác
+> định** (thông báo không điều hướng đi đâu, mục 10.5), rồi dừng Task 6 ở đây. Bốn đường còn
+> lại ghi vào backlog mục 10.5 làm PR riêng.
+
 **Files:**
 - Modify: `web/src/modules/students/StudentsPage.tsx`, `web/src/modules/classes/ClassOverviewPage.tsx`,
   `web/src/modules/students/StudentDetailPage.tsx`, `web/src/modules/students/JourneyTimeline.tsx`
 
 Theo bảng sổ §13.9. Mỗi đường mang theo **học viên + đợt + kỹ năng đang focus** trên đường dẫn.
 
-| Xuất phát | Đích |
-|---|---|
-| Thanh điều hướng chính | Hàng đợi, phạm vi mặc định theo vai |
-| Hàng lớp ở danh sách học viên | Bảng chấm đúng lớp, đúng phạm vi đang đếm |
-| Hàng học viên — bấm nhãn MT2/MT3/Final | Hồ sơ đúng đợt đó |
-| Đầu hồ sơ học viên | Panel danh sách đợt |
-| Mốc Test trên hành trình | Cùng hồ sơ Test, Back giữ ngữ cảnh |
-| Thông báo | Focus đúng ô học viên/đợt/kỹ năng |
+| Xuất phát | Đích | Trạng thái sau khảo sát 18/09 |
+|---|---|---|
+| Thanh điều hướng chính | Hàng đợi, phạm vi mặc định theo vai | OK — `/my-work` đã đúng |
+| Hàng lớp ở danh sách học viên | Bảng chấm đúng lớp, đúng phạm vi đang đếm | Badge đã mang `scope` (Task 5), nhưng mở ra hàng đợi lọc, không phải bảng chấm dạng lưới — xem mục 10.5 |
+| Hàng học viên — bấm nhãn MT2/MT3/Final | Hồ sơ đúng đợt đó | Hiện mở thẳng màn chấm điểm, không mở hồ sơ — xem mục 10.5 |
+| Đầu hồ sơ học viên | Panel danh sách đợt | Ô đầu hồ sơ không bấm được, không dẫn tới panel đợt — xem mục 10.5 |
+| Mốc Test trên hành trình | Cùng hồ sơ Test, Back giữ ngữ cảnh | Mốc chỉ có tooltip, không có bấm — xem mục 10.5 |
+| Thông báo | Focus đúng ô học viên/đợt/kỹ năng | **Đã sửa lỗi chặn hẳn** (entityType sai chuỗi nên chưa từng điều hướng); phần "focus đúng ô" vẫn ở mục 10.5 |
 
-- [ ] **Step 1: Mỗi dòng chấm định danh học viên + đợt**
+- [x] **Step 1: Mỗi dòng chấm định danh học viên + đợt**
 
 Một học viên có thể nợ **nhiều đợt**. Khoá của dòng phải là `attemptId`, không phải
 `studentId`. Kiểm bằng cách tìm một em có hai đợt còn nợ và xem có ra hai dòng.
 
-- [ ] **Step 2: Đi hết sáu đường bằng tay**, mỗi đường xác nhận Back giữ bộ lọc.
+**Đã đúng sẵn, không cần sửa** (xác nhận qua đọc code, không phải suy đoán):
+`WorkQueue` (`StudentsPage.tsx`) dựng hàng từ `/attempts`, mỗi hàng một lượt (`key={r.id}`,
+`r.id` là `attemptId`); `mywork.ts:306` gom theo `classId|kind|attemptNo|skill`, không theo
+`studentId`; `ClassRoster.tsx:201` mỗi lượt trong lịch sử một em có link riêng theo `h.id`.
+Một em nợ hai lượt (VD MT2 và MT3) ra đúng hai dòng, không gộp.
 
-- [ ] **Step 3: Commit**
+- [~] **Step 2: Đi hết sáu đường bằng tay** — làm dở: 2/6 đường đã đúng (thanh điều hướng
+  chính, thông báo — sau khi sửa lỗi ở trên), 4/6 còn lại chuyển sang backlog mục 10.5 vì
+  cần dựng thêm quy ước tham số, không phải một phép sửa nhỏ.
 
-```bash
-git add web/src
-git commit -m "Sáu đường vào nhập điểm, mỗi dòng định danh học viên và đợt"
-```
+- [x] **Step 3: Commit** — gộp vào lần sửa lỗi thông báo, xem mục 12.
 
 ---
 
@@ -822,7 +842,7 @@ git commit -m "Sáu đường vào nhập điểm, mỗi dòng định danh họ
   `:487–492` (`outcomeTone`) và `scoreTone`
 - Test: `server/src/tests/run.ts`
 
-- [ ] **Step 1: Viết phép kiểm**
+- [x] **Step 1: Viết phép kiểm**
 
 ```ts
 check('Ô điểm: ± là khoảng cách tới kỳ vọng của chính đợt đó', () => {
@@ -839,13 +859,13 @@ check('Ô điểm: ± là khoảng cách tới kỳ vọng của chính đợt �
 
 Học viên id 3 là Lê Quang Huy (hồ sơ dày nhất, xem `DEMO_SCENARIOS.md`).
 
-- [ ] **Step 2: Chạy và xác nhận nó HỎNG**
+- [x] **Step 2: Chạy và xác nhận nó HỎNG**
 
 ```bash
 npm test
 ```
 
-- [ ] **Step 3: Sửa máy chủ**
+- [x] **Step 3: Sửa máy chủ**
 
 `server/src/cases/cases.ts:2161`, thay dòng `delta:` bằng:
 
@@ -863,7 +883,7 @@ npm test
       trendFrom: prev ? prev.attemptNo : null,
 ```
 
-- [ ] **Step 4: Sửa giao diện**
+- [x] **Step 4: Sửa giao diện**
 
 `SkillBoard.tsx` kiểu `Row`: bỏ `delta`, thêm `gap: number | null; trend: number | null;
 trendFrom: number | null;`. Trong `ScoreCell`:
@@ -874,7 +894,7 @@ trendFrom: number | null;`. Trong `ScoreCell`:
 - `row.ratio` (lớp Normal) **không** dùng `gap` band — Normal đánh giá theo tỷ lệ 70%, chênh
   nếu có phải ghi bằng phần trăm (sổ §13.4). Giữ nhánh `ratio` như cũ.
 
-- [ ] **Step 5: Làm bốn màu dễ nhìn hơn**
+- [x] **Step 5: Làm bốn màu dễ nhìn hơn**
 
 Chủ sản phẩm yêu cầu riêng. `scoreTone` hiện dùng `text-rose-300` / `text-sky-300` /
 `text-emerald-300` — chữ màu trên nền tối, tương phản yếu. Đổi sang **chip có nền**: nền
@@ -882,13 +902,13 @@ Chủ sản phẩm yêu cầu riêng. `scoreTone` hiện dùng `text-rose-300` /
 `Status` khác trong `web/src/ui/ui.tsx` đang làm. Giữ đúng bốn màu, chỉ tăng tương phản.
 Chụp ảnh trước/sau cho chủ sản phẩm xem.
 
-- [ ] **Step 6: Chạy và xác nhận nó ĐẠT**
+- [x] **Step 6: Chạy và xác nhận nó ĐẠT**
 
 ```bash
 npm run build:server && npm test && npx tsc -p tsconfig.web.json --noEmit
 ```
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add server/src web/src
@@ -899,17 +919,17 @@ git commit -m "Ô điểm: dấu cộng trừ là khoảng cách tới kỳ vọ
 
 ### 5.2. Nghiệm thu PR1 — làm đủ trước khi báo xong
 
-- [ ] **T08** RLW tuần 14–20/9, S tuần 21–27/9: bảng tuần này có RLW, bảng tuần sau có S, cùng một đợt
-- [ ] Badge = số dòng danh sách, kiểm bằng **cả ba vai**: GVBM · Quản lý · Quản trị
-- [ ] Quản lý nay **có** số ở phạm vi quản lý (trước đây là 0)
-- [ ] Badge ghi rõ "bài", không ghi "lượt"; chấm xong một ô thì số giảm một
-- [ ] Đổi tuần trên bảng chấm **không** làm mất việc nợ ở hàng đợi
-- [ ] Một em nợ hai đợt thì ra **hai dòng**, không gom một dòng
-- [ ] Seed lịch tới 2027: mở nhập điểm ngày 14/09/2026 vẫn vào đúng tuần hiện tại
-- [ ] Listening 5.0→5.5 kỳ vọng 6.0 → **đỏ**, ghi "thiếu 0.5", kèm "Tăng 0.5 so với MT1" trung tính
-- [ ] Đi hết sáu đường vào nhập điểm; Back giữ bộ lọc
-- [ ] `npm test` đạt hết · hai lệnh kiểm kiểu sạch · không lỗi ở bảng điều khiển trình duyệt
-- [ ] Tắt máy chủ, kiểm cổng 5173 và 4000 đã trống
+- [x] **T08** RLW tuần 14–20/9, S tuần 21–27/9: bảng tuần này có RLW, bảng tuần sau có S, cùng một đợt — phép kiểm tự động + đọc code
+- [x] Badge = số dòng danh sách, kiểm bằng **cả ba vai**: GVBM · Quản lý · Quản trị — phép kiểm tự động + bấm thử thật cả ba tài khoản (mục 11.2), kể cả ca gốc "28→0" (Quản trị: badge 9 → danh sách 9 dòng đúng số ở `/hoc-vien` lớp MB-FOU 12)
+- [x] Quản lý nay **có** số ở phạm vi quản lý (trước đây là 0) — bấm thử thật: Quản lý Monbay thấy 9 bài ở MB-FOU 12, không còn là 0
+- [x] Badge ghi rõ "bài", không ghi "lượt"; chấm xong một ô thì số giảm một — bấm thử thật: nhập điểm Listening cho Lê Quang Huy, badge MB-FT 101 giảm từ 20 → 19
+- [x] Đổi tuần trên bảng chấm **không** làm mất việc nợ ở hàng đợi — đúng theo kiến trúc: hàng đợi (`WorkQueue`/`/attempts?need=my_scores`) không nhận tham số tuần, tách bạch hẳn với bảng chấm theo tuần (`/nhap-diem/:id`); bấm thử thật xác nhận danh sách 19 dòng không đổi bất kể tuần nào đang mở ở bảng chấm
+- [x] Một em nợ hai đợt thì ra **hai dòng**, không gom một dòng — phép kiểm tự động mới ("Một em nợ điểm ở từ hai đợt trở lên...")
+- [x] Seed lịch tới 2027: mở nhập điểm ngày 14/09/2026 vẫn vào đúng tuần hiện tại — bấm thử thật `/nhap-diem/3` → mở đúng "W3 SEP 2026 · 14/09–20/09"
+- [x] Listening 5.0→5.5 kỳ vọng 6.0 → **đỏ**, ghi "thiếu 0.5", kèm "Tăng 0.5 so với MT1" trung tính — bấm thử thật, đúng y hệt trên hồ sơ Lê Quang Huy
+- [~] Đi hết sáu đường vào nhập điểm; Back giữ bộ lọc — **CHƯA XONG**: chỉ 2/6 đường xác nhận đúng (thanh điều hướng chính, thông báo — sau khi sửa lỗi). Bốn đường còn lại cần dựng thêm (xem mục 10.5), không làm trong PR1 để tránh mở rộng phạm vi
+- [x] `npm test` đạt hết · hai lệnh kiểm kiểu sạch · không lỗi ở bảng điều khiển trình duyệt — 326/326, cả hai `tsc --noEmit` sạch, không lỗi console khi bấm thử
+- [x] Tắt máy chủ, kiểm cổng 5173 và 4000 đã trống — xác nhận bằng `netstat`, cả hai cổng trống
 
 ---
 
@@ -1121,6 +1141,24 @@ báo cáo · WORK-03 liên kết task thật.
 - Hồ sơ trên **máy tính bảng và điện thoại thật** — hiện chỉ kiểm bằng khổ mô phỏng 375px.
 - Rà các màn phụ theo **mục 17** của brief (tiêu chuẩn UI).
 
+### 10.5. Bốn đường vào nhập điểm còn lại của Task 6 (khảo sát 18/09/2026)
+
+PR1 chỉ sửa lỗi thông báo không điều hướng (đã xong, xem mục 12). Bốn đường sau cần dựng
+mới, không phải sửa nhỏ — làm PR riêng, có kèm quyết định thiết kế trước khi code:
+
+| Đường | Hiện trạng | Việc cần làm |
+|---|---|---|
+| Hàng lớp ở danh sách học viên → bảng chấm | Badge "X bài cần chấm" (đã có `scope` từ Task 5) mở **hàng đợi lọc** (`WorkQueue`), không mở **bảng chấm dạng lưới** (`ScoreSheetPage`/`RegularSheetPage`). Nút "Nhập điểm test" thật ở `ClassOverviewPage.tsx:157–164` không mang `scope` | Quyết định trước: hàng đợi lọc có tính là "bảng chấm" theo sổ §13.9 không, hay phải là lưới chấm? Nếu là lưới, nút ở ClassOverviewPage cần mang `scope` |
+| Nhãn MT2/MT3/Final ở `ClassRoster.tsx:200–212` → hồ sơ đúng đợt | Link thẳng tới `/mock-test/:id` hoặc `/bang-diem-thuong/:classId` (màn chấm điểm), không phải `/hoc-vien/:id` (hồ sơ) | Cần một quy ước tham số "đợt đang focus" trên `StudentDetailPage` trước, xem dòng dưới |
+| Đầu hồ sơ học viên → panel danh sách đợt | `HeaderStats`/`Stat` ở `StudentDetailPage.tsx:355–416` là `<div>` tĩnh, không bấm được | Thêm `onClick` mở tab đợt (đã có sẵn ở `tier3==='scores'`, dòng 217–222 · 418–466); cần định vị đúng đợt nếu có tham số focus |
+| Mốc Test trên hành trình → cùng hồ sơ Test | `JourneyTimeline.tsx` — mốc chỉ có `title` (tooltip), không có `onClick`; chỉ mục case đã có `onOpenCase` | Thêm `onClick` cho mốc Test, dùng chung quy ước tham số focus với hai dòng trên |
+| Thông báo → focus đúng ô | Điều hướng đã chạy lại (sửa 18/09), nhưng chỉ tới đúng TRANG — `sos_case`/`case_signal`/`skill_move_requests` không tra được `studentId` để mở đúng hồ sơ (bảng `notifications` không có cột đó; không được thêm cột ở PR1) | Thêm JOIN ở `GET /notifications` để trả kèm `studentId` đã tra sẵn theo `entity_type` — **không đổi schema**, chỉ đổi câu SELECT |
+
+**Việc chung cho bốn dòng trên:** một quy ước tham số duy nhất trên `StudentDetailPage`
+(gợi ý: `?attempt=<id>` hoặc `?focus=<attemptId>:<skill>`) để "mở đúng đợt/kỹ năng" — dựng
+lẻ tẻ ở từng nơi gọi thì lại sinh ra đúng kiểu hai định nghĩa một khái niệm mà mục 5.1 cảnh
+báo.
+
 ---
 
 ## 11. Lệnh kiểm bắt buộc
@@ -1177,3 +1215,6 @@ Nói **cái gì đổi trên màn hình**, bằng tiếng Việt, không tên h�
 | Ngày | Ai | Đổi gì và vì sao |
 |---|---|---|
 | 18/09/2026 | Claude + chủ sản phẩm | Tạo file. Soát prompt giai đoạn mới, đối chiếu sổ audit, tái hiện được lỗi badge (28→0) và CASE-01. Chốt: `±` so kỳ vọng · badge đếm bài kỹ năng · CASE-01 thành PR riêng · chia PR theo cách 1 |
+| 18/09/2026 | Claude (session code PR1) | Task 2 sai giả định: `SkillCell.required` đã tồn tại và độc lập với `canEdit`/`mine` từ trước — không cần sửa sản phẩm, chỉ thêm phép kiểm khoá hành vi. Ghi chú tại mục Task 2 |
+| 18/09/2026 | Claude (session code PR1) | Task 6 lớn hơn nhiều so với mô tả: khảo sát 6 đường phát hiện 4/6 cần dựng mới (quy ước tham số focus, tay bấm mốc hành trình). Thu hẹp về đúng 1 lỗi đã xác định (thông báo sai `entityType` nên chưa từng điều hướng, `web/src/modules/platform/Header.tsx`) + xác nhận Step 1 đã đúng sẵn; 4 đường còn lại chuyển sang backlog mục 10.5 làm PR riêng |
+| 18/09/2026 | Claude (session code PR1) | PR1 (Task 1–7) hoàn tất, bấm thử thật bằng cả ba vai — mục 5.2 đã cập nhật bằng chứng cho từng dòng. Chỉ mục "sáu đường vào nhập điểm" còn dở (2/6), đã ghi rõ trong mục 5.2 và 10.5, không tự nhận là xong |

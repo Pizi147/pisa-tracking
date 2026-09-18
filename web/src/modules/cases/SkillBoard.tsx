@@ -52,7 +52,12 @@ type CaseCard = {
 export type Row = {
   category: string; label: string; short: string;
   band: number | null; bandAttemptNo: number | null; bandWeek: string | null;
-  expectation: number | null; delta: number | null; missed: boolean | null;
+  expectation: number | null; missed: boolean | null;
+  /** Còn thiếu bao nhiêu để đạt kỳ vọng CỦA CHÍNH ĐỢT ĐÓ — đây là dấu ± hiện mặc định. */
+  gap: number | null;
+  /** Tăng giảm so với LƯỢT TRƯỚC — hiện bằng chữ trung tính, không phải mũi tên màu. */
+  trend: number | null;
+  trendFrom: number | null;
   state: 'none' | 'no_plan' | 'working' | 'done';
   caseId: number | null; caseTitle: string | null; caseStatus: string | null;
   carriedOver: boolean;
@@ -554,50 +559,93 @@ function Chip({ children, tone }: { children: React.ReactNode; tone?: 'danger' }
  * ĐIỂM TĂNG MÀ VẪN CHƯA ĐẠT THÌ VẪN ĐỎ. Mũi tên nói hướng đi, màu nói đã đạt hay chưa — hai
  * câu khác nhau, và tô xanh một điểm còn dưới kỳ vọng là khen sớm.
  */
+/**
+ * MỘT LƯỢT, HAI CÂU HỎI KHÁC NHAU (chốt 17/09, sửa lại 18/09 vì PR18 làm sai):
+ *
+ *   `gap`   khoảng cách tới KỲ VỌNG CỦA CHÍNH ĐỢT ĐÓ — dấu ± hiện mặc định, tô theo bốn màu.
+ *   `trend` tăng giảm so với LƯỢT TRƯỚC — chỉ để biết xu hướng, nên chữ TRUNG TÍNH. Một điểm
+ *           còn dưới kỳ vọng mà tô mũi tên xanh vì nó nhích lên là khen sớm.
+ */
 function ScoreCell({ row }: { row: Row }) {
+  const chip = scoreTone(row);
   if (row.band === null) {
     return (
       <div className="whitespace-nowrap">
-        <span className="text-base font-semibold text-slate-600">—</span>
-        <span className="block text-[10px] text-slate-600">chưa có dữ liệu</span>
+        <span className={`inline-flex items-center rounded-md border px-2 py-0.5 text-base font-bold ${chip}`}>—</span>
+        <span className="block text-[10px] text-slate-600 mt-0.5">chưa có dữ liệu</span>
       </div>
     );
   }
   const value = row.ratio && row.total ? `${row.score}/${row.total}` : fmtBand(row.band);
-  const cls = scoreTone(row);
-  const d = row.delta;
+  const g = row.gap;
+  const t = row.trend;
   return (
     <div className="whitespace-nowrap">
-      <span className={`text-base font-semibold tabular-nums ${cls}`}>{value}</span>
-      {!row.ratio && d !== null && d !== 0 && (
-        <span className={`text-[11px] ml-1 tabular-nums ${d > 0 ? 'text-emerald-300' : 'text-rose-300'}`}
-              title={`So với lượt trước: ${d > 0 ? '+' : ''}${d}`}>
-          {d > 0 ? '↑' : '↓'} {Math.abs(d)}
-        </span>
+      <span className={`inline-flex items-center rounded-md border px-2 py-0.5 text-base font-bold tabular-nums ${chip}`}>
+        {value}
+      </span>
+      {!row.ratio && g !== null && (
+        <span className={`text-[11px] ml-1.5 font-medium ${scoreToneText(row)}`}>{gapText(g)}</span>
       )}
-      {!row.ratio && d === 0 && <span className="text-[11px] ml-1 text-slate-500">→ 0.0</span>}
-      <span className="block text-[10px] text-slate-500">
+      <span className="block text-[10px] text-slate-500 mt-0.5">
         {row.bandAttemptNo ? (row.ratio ? row.bandWeek ?? '' : `MT${row.bandAttemptNo}`) : ''}
         {row.ratio
           ? (row.missed === false ? ' · đạt' : row.missed === true ? ' · chưa đạt' : '')
           : row.expectation !== null ? ` · kỳ vọng ${fmtBand(row.expectation)}` : ''}
       </span>
+      {!row.ratio && t !== null && row.trendFrom !== null && (
+        <span className="block text-[10px] text-slate-500">
+          {t > 0 ? `Tăng ${t}` : t < 0 ? `Giảm ${Math.abs(t)}` : 'Không đổi'} so với MT{row.trendFrom}
+        </span>
+      )}
     </div>
   );
 }
 
-/** Dưới kỳ vọng đỏ · bằng xanh dương · vượt xanh lá · thiếu dữ liệu xám. */
-function scoreTone(row: Row): string {
-  if (row.band === null) return 'text-slate-600';
-  if (row.ratio) {
-    if (row.missed === null) return 'text-slate-300';
-    return row.missed ? 'text-rose-300' : 'text-emerald-300';
-  }
-  if (row.expectation === null) return 'text-slate-300';
-  if (row.band < row.expectation) return 'text-rose-300';
-  if (row.band === row.expectation) return 'text-sky-300';
-  return 'text-emerald-300';
+function gapText(gap: number): string {
+  if (gap === 0) return 'đạt kỳ vọng';
+  return gap < 0 ? `thiếu ${Math.abs(gap)}` : `vượt ${gap}`;
 }
+
+type ScoreToneFamily = 'rose' | 'sky' | 'emerald' | 'slate';
+
+function scoreToneFamily(row: Row): ScoreToneFamily {
+  if (row.band === null) return 'slate';
+  if (row.ratio) {
+    if (row.missed === null) return 'slate';
+    return row.missed ? 'rose' : 'emerald';
+  }
+  if (row.expectation === null) return 'slate';
+  if (row.band < row.expectation) return 'rose';
+  if (row.band === row.expectation) return 'sky';
+  return 'emerald';
+}
+
+/**
+ * Dưới kỳ vọng đỏ · bằng xanh dương · vượt xanh lá · thiếu dữ liệu xám.
+ *
+ * CHIP CÓ NỀN thay vì chữ màu trơn — chữ màu trên nền tối (bản trước) tương phản yếu, theo
+ * yêu cầu riêng của chủ sản phẩm. Cùng bốn màu, chỉ đổi cách tô — dùng đúng kiểu chip đã có
+ * ở `Status`/`Alert` phía trên: viền + nền nhạt cùng họ màu + chữ đậm.
+ */
+function scoreTone(row: Row): string {
+  return SCORE_CHIP_CLASS[scoreToneFamily(row)];
+}
+
+/** Chữ trơn cùng họ màu — dùng cho dòng phụ ngắn cạnh số điểm (không phải chip). */
+function scoreToneText(row: Row): string {
+  return SCORE_TEXT_CLASS[scoreToneFamily(row)];
+}
+
+const SCORE_CHIP_CLASS: Record<ScoreToneFamily, string> = {
+  rose: 'bg-rose-300/15 text-rose-200 border-rose-300/40',
+  sky: 'bg-sky-300/15 text-sky-200 border-sky-300/40',
+  emerald: 'bg-emerald-300/15 text-emerald-200 border-emerald-300/40',
+  slate: 'bg-slate-300/8 text-slate-400 border-slate-300/20',
+};
+const SCORE_TEXT_CLASS: Record<ScoreToneFamily, string> = {
+  rose: 'text-rose-300', sky: 'text-sky-300', emerald: 'text-emerald-300', slate: 'text-slate-500',
+};
 
 function outcomeTone(outcome: string | null): string {
   if (outcome === 'improved') return 'text-emerald-300';

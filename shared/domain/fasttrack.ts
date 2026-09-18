@@ -215,3 +215,29 @@ export type ExamPlan = {
   month: string | null;
   label: string;
 };
+
+/**
+ * BÀI CẦN CHẤM — MỘT LUẬT DUY NHẤT, dùng cho CẢ badge và danh sách.
+ *
+ * Đây là chỗ lỗi cũ sinh ra: badge đếm theo "được phép sửa", danh sách lọc theo "được phân
+ * công", nên Quản trị thấy badge 28 rồi bấm vào ra rỗng. Hai phép đếm riêng thì dù có sửa
+ * cho khớp hôm nay, lần sửa sau chúng lại lệch. Nên chỉ có một hàm, và hai nơi cùng gọi nó.
+ *
+ * `mine`     kỹ năng người đang xem ĐƯỢC PHÂN CÔNG dạy — việc của chính họ.
+ * `managed`  mọi bài chưa chấm trong phạm vi họ được xem, ai phụ trách cũng tính. Đây là
+ *            con số để ĐÔN ĐỐC, nên nó không phụ thuộc việc người xem có quyền sửa hay không.
+ */
+export type PendingCell = {
+  skill: string;
+  required: boolean;
+  scored: boolean;
+  progress: SkillProgress;
+  mine: boolean;
+};
+
+export function pendingSkillsOf(cells: PendingCell[], scope: 'mine' | 'managed'): string[] {
+  return cells
+    .filter((c) => c.required && !c.scored && awaitingScore(c.progress))
+    .filter((c) => (scope === 'mine' ? c.mine : true))
+    .map((c) => c.skill);
+}

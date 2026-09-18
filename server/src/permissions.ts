@@ -1,5 +1,5 @@
 import { db } from './db.ts';
-import { PERMISSIONS } from '../../shared/domain/index.ts';
+import { PERMISSIONS, type WorkScope } from '../../shared/domain/index.ts';
 import { demoToday } from './demoConfig.ts';
 import { forbidden } from './util.ts';
 
@@ -324,6 +324,15 @@ export function editableSkills(p: Principal, classId: number, skills: readonly s
  */
 export function mySkills(p: Principal, classId: number, skills: readonly string[]): string[] {
   return skills.filter((skill) => can(p, PERMISSIONS.SCORE_EDIT, { classId, skill }));
+}
+
+/**
+ * PHẠM VI MỞ RA MẶC ĐỊNH. Ai có dạy thì thấy việc của mình trước — người vừa dạy vừa quản
+ * vẫn mở ở "việc của tôi", vì việc của mình mới là thứ không ai làm thay được.
+ */
+export function defaultWorkScope(p: Principal): WorkScope {
+  const today = demoToday();
+  return p.assignments.some((a) => activeAt(a, today)) ? 'mine' : 'managed';
 }
 
 /** Người dùng đang sửa điểm bằng đường nào — dùng để ghi nhật ký cho đúng. */

@@ -11,7 +11,10 @@ import { ClassCreatePanel } from '../classes/ClassCreatePanel.tsx';
 import { ClassRoster } from './ClassRoster.tsx';
 import { MockPlanPanel } from '../fasttrack/MockPlanPanel.tsx';
 import { MissingBadge } from './MissingBadge.tsx';
-import { PERMISSIONS, STUDENT_FILTERS, skillShort, type StudentFilterKey } from '@shared/domain/index.ts';
+import {
+  PERMISSIONS, STUDENT_FILTERS, WORK_SCOPES, WORK_SCOPE_HINT, WORK_SCOPE_LABEL, skillShort,
+  type StudentFilterKey, type WorkScope,
+} from '@shared/domain/index.ts';
 
 export type ClassSummary = {
   id: number; code: string; kind: string; route: string | null;
@@ -60,6 +63,14 @@ export default function StudentsPage() {
   const q = params.get('q') ?? '';
   const branchId = params.get('branchId') ? Number(params.get('branchId')) : null;
   /*
+   * PHẠM VI LƯU VÀO ĐƯỜNG DẪN, không vào state: tải lại trang và bấm Back phải giữ đúng
+   * chỗ người dùng đang đứng. Không có trên đường dẫn thì KHÔNG tự đặt — để máy chủ chọn
+   * mặc định theo vai, rồi hiện ra phạm vi nó đã chọn.
+   */
+  const rawScope = params.get('scope');
+  const scope: WorkScope | null = (WORK_SCOPES as readonly string[]).includes(rawScope ?? '')
+    ? (rawScope as WorkScope) : null;
+  /*
    * Nhiều lớp mở cùng lúc và độc lập nhau: mở lớp thứ hai không được đóng lớp thứ nhất,
    * vì việc thật là đặt hai lớp cạnh nhau mà so. Danh sách lớp đang mở nằm trên URL nên
    * nút Back khôi phục đúng những lớp vừa mở, không chỉ lớp cuối cùng.
@@ -95,8 +106,9 @@ export default function StudentsPage() {
     const s = new URLSearchParams();
     if (branchId) s.set('branchId', String(branchId));
     if (q.trim()) s.set('q', q.trim());
+    if (scope) s.set('scope', scope);
     return `/classes?${s.toString()}`;
-  }, [branchId, q]);
+  }, [branchId, q, scope]);
   const classes = useApi<{ rows: ClassSummary[]; scopeEmpty: boolean }>(view === 'classes' ? qs : null);
 
   return (
@@ -157,6 +169,18 @@ export default function StudentsPage() {
             {v.label}
           </button>
         ))}
+        {(view === 'classes' || view === 'my_scores') && (
+          <span className="flex flex-wrap gap-1 ml-2">
+            {WORK_SCOPES.map((s) => (
+              <button key={s} type="button"
+                className={`btn btn-sm ${scope === s ? 'btn-primary' : 'btn-ghost'}`}
+                title={WORK_SCOPE_HINT[s]}
+                onClick={() => setParam({ scope: s })}>
+                {WORK_SCOPE_LABEL[s]}
+              </button>
+            ))}
+          </span>
+        )}
         <div className="flex-1" />
         {can(PERMISSIONS.PLAN_WEEK) && (
           <button className="btn btn-sm" onClick={() => setPlanOpen(true)}>Lên kế hoạch MT</button>
@@ -180,7 +204,7 @@ export default function StudentsPage() {
           <button className="btn btn-primary btn-sm" onClick={() => setPlanOpen(true)}>Lên kế hoạch MT</button>
         </Card>
       )}
-      {(view === 'my_scores' || view === 'sos') && <WorkQueue view={view} branchId={branchId} q={q} />}
+      {(view === 'my_scores' || view === 'sos') && <WorkQueue view={view} branchId={branchId} q={q} scope={scope} />}
       {/*
         BA BỘ LỌC CASE (mục 6, số 3–5) dùng CHUNG một danh sách, chỉ đổi hàng đợi. Ba bảng
         riêng cho ba câu hỏi rất giống nhau là ba chỗ để số liệu lệch nhau.
@@ -208,6 +232,7 @@ export default function StudentsPage() {
                     <ClassRow
                       key={c.id}
                       cls={c}
+                      scope={scope}
                       expanded={openIds.has(c.id)}
                       studentQuery={q}
                       onToggle={() => {
@@ -263,8 +288,8 @@ export default function StudentsPage() {
  * chevron (và nền dòng) đóng/mở danh sách học viên ngay tại chỗ. Badge và tên lớp phải
  * chặn nổi bọt sự kiện, nếu không bấm badge sẽ đồng thời mở/đóng roster.
  */
-function ClassRow({ cls, expanded, studentQuery, onToggle, onAddStudents }: {
-  cls: ClassSummary; expanded: boolean; studentQuery: string;
+function ClassRow({ cls, scope, expanded, studentQuery, onToggle, onAddStudents }: {
+  cls: ClassSummary; scope: WorkScope | null; expanded: boolean; studentQuery: string;
   onToggle: () => void; onAddStudents: () => void;
 }) {
   const navigate = useNavigate();
@@ -351,8 +376,10 @@ function ClassRow({ cls, expanded, studentQuery, onToggle, onAddStudents }: {
           )}
           <MissingBadge items={cls.missing.filter((m) => m.key !== 'teachers')} />
           {cls.needScores > 0 && (
-            <Task tone="warn" as="button" onClick={go(`/hoc-vien?view=my_scores&classId=${cls.id}`)}>
-              {cls.needScores} cần nhập điểm Test
+            <Task tone="warn" as="button"
+              title={scope ? WORK_SCOPE_HINT[scope] : 'Số bài cần chấm trong phạm vi đang xem — bấm nút phạm vi ở trên để đổi.'}
+              onClick={go(`/hoc-vien?view=my_scores&classId=${cls.id}${scope ? `&scope=${scope}` : ''}`)}>
+              {cls.needScores} bài cần chấm
             </Task>
           )}
           {cls.openCases > 0 && (
@@ -376,8 +403,15 @@ function ClassRow({ cls, expanded, studentQuery, onToggle, onAddStudents }: {
   );
 }
 
-/** Hàng đợi công việc: cùng dữ liệu lượt MT, chỉ đổi bộ lọc. */
-function WorkQueue({ view, branchId, q }: { view: string; branchId: number | null; q: string }) {
+/**
+ * Hàng đợi công việc: cùng dữ liệu lượt MT, chỉ đổi bộ lọc.
+ *
+ * KHÔNG khoá theo tuần — việc nợ từ tuần trước không biến mất khi đổi tuần ở nơi khác
+ * (bảng chấm, Kế hoạch Test). Cột "Nợ từ tuần" chỉ NÓI ra tuần của từng môn còn thiếu.
+ */
+function WorkQueue({ view, branchId, q, scope }: {
+  view: string; branchId: number | null; q: string; scope: WorkScope | null;
+}) {
   const [params] = useSearchParams();
   const classId = params.get('classId');
   const qs = useMemo(() => {
@@ -386,8 +420,9 @@ function WorkQueue({ view, branchId, q }: { view: string; branchId: number | nul
     if (branchId) s.set('branchId', String(branchId));
     if (classId) s.set('classId', classId);
     if (q.trim()) s.set('q', q.trim());
+    if (scope) s.set('scope', scope);
     return `/attempts?${s.toString()}`;
-  }, [view, branchId, classId, q]);
+  }, [view, branchId, classId, q, scope]);
   const { data, loading, error, reload } = useApi<{ rows: any[]; scopeEmpty: boolean }>(qs);
   const navigate = useNavigate();
 
@@ -395,11 +430,16 @@ function WorkQueue({ view, branchId, q }: { view: string; branchId: number | nul
   if (loading) return <Skeleton rows={6} />;
   if (!data) return null;
 
-  const label = view === 'my_scores' ? 'cần nhập điểm Test' : 'đang ở mức SOS';
+  const label = view === 'my_scores' ? 'cần chấm' : 'đang ở mức SOS';
+  // Badge đếm BÀI KỸ NĂNG, không đếm LƯỢT — một lượt có thể nợ nhiều môn cùng lúc.
+  const count = view === 'my_scores'
+    ? data.rows.reduce((n: number, r: any) => n + (r.pendingSkills?.length ?? 0), 0)
+    : data.rows.length;
+  const unit = view === 'my_scores' ? 'bài' : 'lượt';
 
   return (
     <Card bodyClass="p-0"
-      title={<span>{data.rows.length} lượt {label}{classId ? ' của lớp đang chọn' : ''}</span>}
+      title={<span>{count} {unit} {label}{classId ? ' của lớp đang chọn' : ''}</span>}
       action={classId && <Link className="btn btn-sm no-underline" to={`/hoc-vien?view=${view}`}>Bỏ lọc lớp</Link>}>
       {data.rows.length === 0 ? (
         <Empty title={`Không còn việc nào ${label}`} hint="Xem tiếp bằng cách đổi cách xem hoặc bỏ bộ lọc." />
@@ -412,7 +452,12 @@ function WorkQueue({ view, branchId, q }: { view: string; branchId: number | nul
                 <th className="th">Lớp</th>
                 <Th hint="Lượt đánh giá đang cần bạn xử lý.">Bài</Th>
                 <Th hint="Tuần kế hoạch của lượt đó. Chưa có tuần thì cũng chưa có hạn nhập điểm.">Tuần</Th>
-                <Th hint="Việc của CHÍNH bạn ở dòng này. Việc bạn không có quyền làm thì không hiện.">Việc cần làm</Th>
+                {view === 'my_scores' && (
+                  <Th hint="Tuần thi của CHÍNH môn còn thiếu điểm — có thể khác tuần của cả lượt.">Nợ từ tuần</Th>
+                )}
+                <Th hint="Bài cần chấm theo đúng phạm vi đang xem. Ở phạm vi quản lý, bài không phải việc của bạn có kèm tên giáo viên phụ trách.">
+                  Việc cần làm
+                </Th>
               </tr>
             </thead>
             <tbody>
@@ -429,9 +474,32 @@ function WorkQueue({ view, branchId, q }: { view: string; branchId: number | nul
                     {r.kind === 'mock' ? `MT${r.attemptNo}` : r.kind === 'final' ? 'Cuối khoá' : 'Giữa khoá'}
                   </td>
                   <td className="td whitespace-nowrap text-slate-300">{r.period?.code ?? '—'}</td>
+                  {view === 'my_scores' && (
+                    <td className="td whitespace-nowrap text-slate-300">
+                      {(r.pendingWeeks?.length ? r.pendingWeeks.join(', ') : r.period?.code) ?? '—'}
+                    </td>
+                  )}
                   <td className="td text-xs">
                     {view === 'my_scores' && (
-                      <span style={{ color: 'var(--accent)' }}>Nhập {r.myPendingSkills.join(', ')}</span>
+                      <div className="flex flex-col items-start gap-0.5">
+                        <span style={{ color: 'var(--accent)' }}>Nhập {r.pendingSkills.join(', ')}</span>
+                        {/*
+                          NÓI RÕ KHI QUẢN LÝ NHẬP HỘ (mục 3.3) — không đổi quyền, chỉ nói ra.
+                          `myPendingSkills` KHÔNG đổi theo phạm vi đang xem, nên so nó với
+                          `pendingSkills` (đã lọc theo phạm vi) là biết đúng bài nào không
+                          phải việc của chính người này — KHÔNG dựa vào biến `scope` phía
+                          giao diện, vì nó có thể là `null` (chưa chọn, máy chủ tự mặc định)
+                          trong khi dữ liệu vẫn đã lọc theo đúng phạm vi quản lý.
+                        */}
+                        {r.pendingSkills.some((sk: string) => !r.myPendingSkills.includes(sk)) && (
+                          <span className="text-[10px] text-slate-500">
+                            {r.pendingSkills
+                              .filter((sk: string) => !r.myPendingSkills.includes(sk))
+                              .map((sk: string) => `${sk}: ${r.pendingOwners?.[sk] ?? 'chưa phân công'}`)
+                              .join(' · ')} — bạn không phụ trách bài này, nhập sẽ được ghi là sửa hộ
+                          </span>
+                        )}
+                      </div>
                     )}
                     {/*
                       * Nhìn là biết case đã được làm hay chưa: mức SOS · trạng thái, rồi mốc

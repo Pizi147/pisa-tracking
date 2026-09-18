@@ -2157,8 +2157,17 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
       bandAttemptNo: latest?.attemptNo ?? null,
       bandWeek: latest?.week ?? null,
       expectation: latest?.expectation ?? null,
-      /* So với LƯỢT TRƯỚC, không phải so với kỳ vọng — hai câu hỏi khác nhau. */
-      delta: latest && prev ? Math.round((latest.band - prev.band) * 10) / 10 : null,
+      /*
+       * HAI SỐ, HAI CÂU HỎI KHÁC NHAU — chốt 17/09, PR18 làm sai nên phải sửa lại.
+       *
+       * `gap`   còn thiếu bao nhiêu để đạt kỳ vọng CỦA CHÍNH ĐỢT ĐÓ. Đây là số hiện mặc định.
+       * `trend` tăng giảm so với lượt trước. Vẫn giữ, nhưng hiện bằng CHỮ trung tính — mũi
+       *         tên xanh cạnh một điểm còn dưới kỳ vọng là khen sớm.
+       */
+      gap: latest && latest.expectation !== null
+        ? Math.round((latest.band - latest.expectation) * 10) / 10 : null,
+      trend: latest && prev ? Math.round((latest.band - prev.band) * 10) / 10 : null,
+      trendFrom: prev ? prev.attemptNo : null,
       /*
        * ĐƯỜNG ĐI qua các lượt, tối đa bốn mốc gần nhất.
        *

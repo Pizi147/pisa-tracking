@@ -1192,15 +1192,113 @@ check('Badge chỉ đếm việc cần làm, đếm đúng tập mà bấm vào 
     assert(c.openCases === sos, `Lớp ${c.code}: badge case SOS ${c.openCases} khác danh sách ${sos}`);
   }
 });
+check('Luật đếm bài cần chấm — một hàm, hai phạm vi', () => {
+  const cells = [
+    { skill: 'listening', required: true,  scored: false, progress: 'due' as const,      mine: true  },
+    { skill: 'reading',   required: true,  scored: false, progress: 'due' as const,      mine: false },
+    { skill: 'writing1',  required: true,  scored: true,  progress: 'due' as const,      mine: true  },
+    { skill: 'writing2',  required: false, scored: false, progress: 'due' as const,      mine: true  },
+    { skill: 'speaking',  required: true,  scored: false, progress: 'upcoming' as const, mine: true  },
+  ];
+  const mine = domain.pendingSkillsOf(cells, 'mine');
+  const managed = domain.pendingSkillsOf(cells, 'managed');
+  assert(mine.join(',') === 'listening', `mine phải chỉ ra listening, đang ra: ${mine.join(',')}`);
+  assert(
+    managed.join(',') === 'listening,reading',
+    `managed phải ra listening,reading, đang ra: ${managed.join(',')}`,
+  );
+});
+check('Ô điểm nói rõ kỹ năng có bắt buộc, độc lập với quyền người xem', () => {
+  const a = conn
+    .prepare(`SELECT a.* FROM assessment_attempts a WHERE a.status != 'cancelled' LIMIT 1`)
+    .get() as any;
+  const d = attempts.attemptDetail(P.mbManager, a.id);
+  assert(d.cells.length > 0, 'Không lấy được ô điểm nào để kiểm');
+  assert(
+    d.cells.every((c: any) => typeof c.required === 'boolean'),
+    'Mọi ô điểm phải có trường required',
+  );
+  assert(
+    d.cells.some((c: any) => c.required) && d.cells.every((c: any) => !c.canEdit),
+    'Quản lý không sửa được ô nào nhưng vẫn phải thấy ô nào bắt buộc',
+  );
+});
+check('Badge bằng đúng danh sách — cả ba vai, cả hai phạm vi', () => {
+  for (const [who, p] of [
+    ['Quản trị', P.admin], ['Quản lý MB', P.mbManager], ['GV W1', P.w1Teacher],
+  ] as const) {
+    for (const scope of ['mine', 'managed'] as const) {
+      const rows = classesSvc.listClassSummaries(p, { scope }).rows;
+      for (const c of rows) {
+        const listed = attempts
+          .listAttempts(p, { classId: c.id, need: 'my_scores', scope })
+          .rows.reduce((n: number, r: any) => n + r.pendingSkills.length, 0);
+        assert(
+          c.needScores === listed,
+          `${who} · ${scope} · lớp ${c.code}: badge ${c.needScores} khác danh sách ${listed}`,
+        );
+      }
+    }
+  }
+});
+check('Phạm vi quản lý nhìn thấy việc mà người xem không được phân công', () => {
+  const managed = classesSvc.listClassSummaries(P.admin, { scope: 'managed' }).rows
+    .reduce((n: number, c: any) => n + c.needScores, 0);
+  const mine = classesSvc.listClassSummaries(P.admin, { scope: 'mine' }).rows
+    .reduce((n: number, c: any) => n + c.needScores, 0);
+  assert(managed > 0, 'Quản trị phải thấy có việc trong phạm vi quản lý');
+  assert(mine === 0, 'Quản trị không dạy lớp nào nên "việc của tôi" phải bằng 0');
+});
 check('Badge "cần nhập điểm" theo đúng phân công của người đang xem', () => {
-  const mine = classesSvc.listClassSummaries(P.w1Teacher, {}).rows;
+  const mine = classesSvc.listClassSummaries(P.w1Teacher, { scope: 'mine' }).rows;
   for (const c of mine) {
-    const q = attempts.listAttempts(P.w1Teacher, { classId: c.id, need: 'my_scores' }).rows.length;
+    const q = attempts
+      .listAttempts(P.w1Teacher, { classId: c.id, need: 'my_scores', scope: 'mine' })
+      .rows.reduce((n: number, r: any) => n + r.pendingSkills.length, 0);
     assert(c.needScores === q, `Lớp ${c.code}: badge ${c.needScores} khác hàng đợi ${q} của chính giáo viên đó`);
   }
-  const asAdmin = classesSvc.listClassSummaries(P.admin, {}).rows.find((c) => c.code === 'MB-FT 101')!;
+  const asAdmin = classesSvc.listClassSummaries(P.admin, { scope: 'managed' }).rows.find((c) => c.code === 'MB-FT 101')!;
   const asTeacher = mine.find((c) => c.code === 'MB-FT 101');
-  assert(!asTeacher || asTeacher.needScores <= asAdmin.needScores, 'Giáo viên không thể có nhiều việc hơn Admin');
+  assert(!asTeacher || asTeacher.needScores <= asAdmin.needScores, 'Giáo viên không thể có nhiều việc hơn Admin (phạm vi quản lý)');
+});
+check('T08 · RLW tuần này, S tuần sau: mỗi bảng tuần hiện đúng phần của nó', () => {
+  const row = conn
+    .prepare(
+      `SELECT ask.attempt_id, a.class_id,
+              MIN(ask.planned_period_id) AS early, MAX(ask.planned_period_id) AS late
+         FROM attempt_skills ask
+         JOIN assessment_attempts a ON a.id = ask.attempt_id
+        WHERE ask.required = 1 AND ask.planned_period_id IS NOT NULL AND a.status != 'cancelled'
+        GROUP BY ask.attempt_id
+       HAVING early != late
+        LIMIT 1`,
+    )
+    .get() as any;
+  assert(row, 'Bộ demo phải có ít nhất một đợt tách tuần để kiểm — xem DEMO_SCENARIOS.md');
+
+  for (const periodId of [row.early, row.late]) {
+    const sheet = attempts.classScoreSheet(P.admin, row.class_id, periodId);
+    assert(
+      sheet.rows.some((r: any) => r.attemptId === row.attempt_id),
+      `Đợt ${row.attempt_id} phải hiện ở bảng tuần ${periodId} vì có kỹ năng thi tuần đó`,
+    );
+  }
+});
+check('Một em nợ điểm ở từ hai đợt trở lên thì hàng đợi ra đúng số dòng, không gộp', () => {
+  const rows = attempts.listAttempts(P.admin, { need: 'my_scores', scope: 'managed' }).rows;
+  const byStudent = new Map<number, Set<number>>();
+  for (const r of rows as any[]) {
+    if (!byStudent.has(r.studentId)) byStudent.set(r.studentId, new Set());
+    byStudent.get(r.studentId)!.add(r.id);
+  }
+  const twoOrMore = [...byStudent.entries()].find(([, ids]) => ids.size >= 2);
+  assert(twoOrMore, 'Bộ demo phải có ít nhất một em nợ điểm ở từ hai đợt trở lên để kiểm');
+  const [studentId, ids] = twoOrMore!;
+  const studentRows = rows.filter((r: any) => r.studentId === studentId);
+  assert(
+    studentRows.length === ids.size,
+    `Học viên ${studentId} nợ ${ids.size} đợt nhưng hàng đợi chỉ ra ${studentRows.length} dòng — khoá dòng theo studentId thay vì attemptId`,
+  );
 });
 check('Tìm theo tên học viên trả về đúng lớp chứa em đó', () => {
   const s = conn
@@ -1941,7 +2039,9 @@ check('Badge của lớp thường đếm đúng theo bộ kỹ năng của chư
   const summary = (classesSvc.listClassSummaries(T, {}) as any).rows.find((c: any) => c.id === fouClass.id);
   assert(summary, 'Giáo viên lớp Foundation phải thấy lớp của mình');
   assert(summary.scoringMode === 'ratio', 'Danh sách lớp phải cho biết lớp này chấm theo tỷ lệ');
-  const queue = attempts.listAttempts(T, { classId: fouClass.id, need: 'my_scores' }).rows.length;
+  // Badge đếm BÀI KỸ NĂNG, không đếm LƯỢT — một lượt có thể nợ nhiều môn cùng lúc.
+  const queue = attempts.listAttempts(T, { classId: fouClass.id, need: 'my_scores' }).rows
+    .reduce((n: number, r: any) => n + r.pendingSkills.length, 0);
   assert(summary.needScores === queue,
     `Badge ${summary.needScores} khác hàng đợi ${queue} của chính giáo viên đó`);
 });
@@ -7486,6 +7586,17 @@ check('[18.2] Không có sự kiện nào đã xảy ra ở TƯƠNG LAI so với
   ];
   assert(late.length === 0,
     `Có ${late.length} sự kiện ghi là đã xảy ra sau ngày demo, ví dụ ${late[0]?.k} ngày ${late[0]?.d}`);
+});
+
+check('Ô điểm: ± là khoảng cách tới kỳ vọng của chính đợt đó', () => {
+  const board = cases.skillSupportBoard(P.admin, 3);
+  const row = board.rows.find((r: any) => r.band !== null && r.expectation !== null) as any;
+  assert(row, 'Cần một hàng có cả điểm và kỳ vọng để kiểm');
+  assert(
+    row.gap === Math.round((row.band - row.expectation) * 10) / 10,
+    `gap phải bằng điểm trừ kỳ vọng, đang là ${row.gap}`,
+  );
+  assert(!('delta' in row), 'Trường delta cũ phải bị bỏ để không ai đọc nhầm');
 });
 
 
