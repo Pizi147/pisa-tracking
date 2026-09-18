@@ -1206,7 +1206,25 @@ export function classScoreSheet(p: Principal, classId: number, periodId: number 
 
   const params: unknown[] = [classId];
   let sql = `${ATTEMPT_SELECT} WHERE a.class_id = ? AND a.status != 'cancelled'`;
-  if (period) { sql += ' AND a.planned_period_id = ?'; params.push(period.id); }
+  /*
+   * LỌC THEO LỊCH TỪNG KỸ NĂNG, KHÔNG THEO TUẦN CỦA CẢ ĐỢT.
+   *
+   * RLW thi tuần này còn Speaking tuần sau thì đợt HOÀN TẤT ở tuần sau. Lọc theo
+   * `a.planned_period_id` như bản trước làm cả đợt biến mất khỏi bảng tuần này — giáo viên
+   * mở ra thấy trống trong khi đang có ba bài phải chấm.
+   *
+   * Quy ước "kết quả của đợt thuộc tuần hoàn tất" KHÔNG đổi. Chỗ này chỉ quyết định
+   * HÀNG NÀO HIỆN RA ĐỂ CHẤM.
+   */
+  if (period) {
+    sql += ` AND (
+      a.planned_period_id = ?
+      OR EXISTS (SELECT 1 FROM attempt_skills ask
+                  WHERE ask.attempt_id = a.id AND ask.required = 1
+                    AND ask.planned_period_id = ?)
+    )`;
+    params.push(period.id, period.id);
+  }
   sql += ' ORDER BY s.full_name';
   const attempts = conn.prepare(sql).all(...params) as any[];
 

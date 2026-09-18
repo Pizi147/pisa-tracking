@@ -1261,6 +1261,29 @@ check('Badge "cần nhập điểm" theo đúng phân công của người đang
   const asTeacher = mine.find((c) => c.code === 'MB-FT 101');
   assert(!asTeacher || asTeacher.needScores <= asAdmin.needScores, 'Giáo viên không thể có nhiều việc hơn Admin (phạm vi quản lý)');
 });
+check('T08 · RLW tuần này, S tuần sau: mỗi bảng tuần hiện đúng phần của nó', () => {
+  const row = conn
+    .prepare(
+      `SELECT ask.attempt_id, a.class_id,
+              MIN(ask.planned_period_id) AS early, MAX(ask.planned_period_id) AS late
+         FROM attempt_skills ask
+         JOIN assessment_attempts a ON a.id = ask.attempt_id
+        WHERE ask.required = 1 AND ask.planned_period_id IS NOT NULL AND a.status != 'cancelled'
+        GROUP BY ask.attempt_id
+       HAVING early != late
+        LIMIT 1`,
+    )
+    .get() as any;
+  assert(row, 'Bộ demo phải có ít nhất một đợt tách tuần để kiểm — xem DEMO_SCENARIOS.md');
+
+  for (const periodId of [row.early, row.late]) {
+    const sheet = attempts.classScoreSheet(P.admin, row.class_id, periodId);
+    assert(
+      sheet.rows.some((r: any) => r.attemptId === row.attempt_id),
+      `Đợt ${row.attempt_id} phải hiện ở bảng tuần ${periodId} vì có kỹ năng thi tuần đó`,
+    );
+  }
+});
 check('Tìm theo tên học viên trả về đúng lớp chứa em đó', () => {
   const s = conn
     .prepare(`SELECT s.full_name, c.code FROM students s JOIN enrollments e ON e.student_id=s.id
