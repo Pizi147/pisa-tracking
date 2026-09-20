@@ -1,6 +1,7 @@
 /** CASE — hạng mục, phân loại nguyên nhân, phương án, phê duyệt và kết quả. */
 
 import { ENTRY_SKILLS, ENTRY_SKILL_LABEL, type EntrySkill } from './skills.ts';
+import { C03_CUA_SO_GOP_CASE_Y_THUC_NGAY } from './policy.ts';
 
 // ------------------------------------------------ Mạch theo dõi và phân loại vấn đề
 
@@ -546,16 +547,16 @@ export const URGENCY_TONE: Record<string, 'neutral' | 'warn' | 'danger'> = {
 // ---------------------------------------------------------------- gộp báo cáo Ý thức/Khác
 
 /**
- * CỬA SỔ GỘP BÁO CÁO Ý THỨC/KHÁC — BỐN NGÀY LỊCH, TÍNH CẢ NGÀY MỞ (mục 7.2).
+ * CỬA SỔ GỘP BÁO CÁO Ý THỨC/KHÁC — BA NGÀY LỊCH ĐẦU, TÍNH CẢ NGÀY MỞ (C03, chủ sản phẩm chốt 20/09/2026; trước đó là bốn).
  *
- * Case mở 14/9 thì báo cáo ngày 14, 15, 16, 17 gộp vào chính nó; từ 18/9 là một ĐỢT MỚI.
+ * Case mở 14/9 thì báo cáo ngày 14, 15, 16 gộp vào chính nó; từ 17/9 là một ĐỢT MỚI.
  *
  * Vì sao phải có cửa sổ: "em không làm bài tập" báo ba lần trong một tuần là MỘT chuyện, và
  * mở ba case thì ba người cùng theo dõi mà không ai thấy việc của người kia. Nhưng cùng
  * chuyện đó tái diễn sau nửa tháng lại là một đợt khác — gộp hết vào một case thì cái case
  * ấy không bao giờ đóng được và không đo được gì.
  */
-export const BEHAVIOUR_MERGE_WINDOW_DAYS = 4;
+export const BEHAVIOUR_MERGE_WINDOW_DAYS: number = C03_CUA_SO_GOP_CASE_Y_THUC_NGAY;
 
 /** Ngày CUỐI CÙNG còn gộp được vào một case mở ngày `openedOn`. */
 export function behaviourMergeUntil(openedOn: string): string {
@@ -572,16 +573,10 @@ export function behaviourCaseDeadline(openedOn: string): string {
   return addDaysIso(openedOn, BEHAVIOUR_CASE_DAYS);
 }
 
-/**
- * Sau khi case bị NÂNG LÊN GẤP, hạn của phương án là ngày SỚM HƠN giữa hạn đang có và
- * "ngày nâng + 2 ngày" (mục 7.2). Nâng mức chỉ được kéo hạn GẦN LẠI, không bao giờ đẩy ra xa.
+/*
+ * ĐÃ BỎ (C03, 20/09/2026): luật "nâng mức thì siết hạn phương án về ngày nâng + 2". Chủ sản phẩm bỏ hẳn câu hỏi này —
+ * hạn mặc định của case Ý thức luôn là 1 tuần từ ngày mở (`behaviourCaseDeadline`); nâng mức ưu tiên không đổi hạn.
  */
-export const URGENT_RAISE_DAYS = 2;
-export function deadlineAfterRaise(current: string | null, raisedOn: string): string {
-  const tight = addDaysIso(raisedOn, URGENT_RAISE_DAYS);
-  if (!current) return tight;
-  return current < tight ? current : tight;
-}
 
 /**
  * HƯỚNG XỬ LÝ — khác với TRẠNG THÁI.

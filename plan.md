@@ -134,7 +134,7 @@ Và chạy thật > đọc code.
 | Đường dẫn khi import | Bắt buộc có đuôi `.ts` / `.tsx`. Thiếu là gãy |
 | Sau khi sửa máy chủ | **Bắt buộc** `npm run build:server`. `npm run dev` KHÔNG tự dựng lại máy chủ |
 | Kiểm kiểu dữ liệu | `npx tsc -p tsconfig.build.json --noEmit` và `npx tsc -p tsconfig.web.json --noEmit` |
-| Chạy kiểm thử | `npm test` — hiện **420 phép kiểm** sau rà soát (đầu đợt batch là 360, sau chặng 0 là 367, sau chặng 2 là 393, sau chặng 3 là 409, sau chặng 4 là 414, sau chặng 5 là 416; con số 319 cũ đã lạc hậu), phải đạt hết. `npm run check` chạy cả chuỗi mục 13.1. Harness **không có bộ lọc**: nó chạy cả bộ, nên xác minh một phép kiểm mới bằng cách tìm tên nó trong kết quả |
+| Chạy kiểm thử | `npm test` — hiện **421 phép kiểm** sau khi áp lời chốt C01–C10 (đầu đợt batch là 360, sau chặng 0 là 367, sau chặng 2 là 393, sau chặng 3 là 409, sau chặng 4 là 414, sau chặng 5 là 416, sau rà soát là 420; con số 319 cũ đã lạc hậu), phải đạt hết. `npm run check` chạy cả chuỗi mục 13.1. Harness **không có bộ lọc**: nó chạy cả bộ, nên xác minh một phép kiểm mới bằng cách tìm tên nó trong kết quả |
 | Ngày demo | **14/09/2026** cố định. Không lấy ngày thật của máy. Đọc qua `demoToday()` ở máy chủ, `session.demoDate` ở web |
 | Quy ước tuần | Thứ Hai → Chủ nhật; tuần thuộc tháng chứa ngày thứ Năm của nó |
 | Sao chép database | Phải chép **cả ba** file `.sqlite`, `.sqlite-wal`, `.sqlite-shm`. Chép mỗi `.sqlite` sẽ ra bản CŨ |
@@ -271,6 +271,11 @@ Thêm dòng mới ở cuối, có ngày. **Không xoá dòng cũ** — ghi "thay
 | 20/09/2026 | *(Thiết kế)* **Code một mạch trên MỘT nhánh, năm chặng** (mục 0.4). PR-D do một session khác giữ; năm file ở **mục 0.5** bị khoá cho tới khi PR-D được hợp nhất. **PR-D merge trước, nhánh batch merge sau** — lý do và cách gỡ xung đột ở mục 21 | Chủ sản phẩm 20/09 |
 | 20/09/2026 | Buổi Writing của Fast Track chỉ chốt "Không dự thi" khi **cả hai task W1 và W2 đều là `-`**; chỉ một task `-` mà task kia có điểm hoặc chưa nhập thì buổi đó không phải vắng | Chủ sản phẩm (chấp nhận đề xuất) |
 | 20/09/2026 | **`mức gấp` → `mức độ ưu tiên`**: SOS là tình trạng của học viên; mức độ ưu tiên là mức cấp bách của case. Đã đổi chữ ở mã và giao diện | Chủ sản phẩm |
+| 20/09/2026 | **C02:** GVCN không xử lý case học thuật trái môn; mọi giáo viên chỉ xử lý case đúng kỹ năng mình dạy. Case Ý thức vẫn chỉ GVCN | Chủ sản phẩm · rule book 17.7 |
+| 20/09/2026 | **C03** *(thay câu hỏi cũ)*: bỏ luật siết hạn khi nâng mức. Chỉ Ý thức: báo cáo khác cùng phân loại trong **3 ngày đầu** của case cũ thì lồng vào, không thì ra case mới; hạn mặc định 1 tuần | Chủ sản phẩm · rule book 17.7 |
+| 20/09/2026 | **C04, C06, C07, C09 giữ như hiện tại:** đợt Ý thức đã đóng → đợt mới liên kết; tab "Đã xong từ trước" chỉ nhận case đã hoàn thành; Writing phải đủ W1 và W2 (thiếu thì báo quá hạn như thường); đề nghị dời lần hai không được Quản lý phản hồi hết tuần đó thì **huỷ** (GV tự trao đổi với QL ngoài website) | Chủ sản phẩm |
+| 20/09/2026 | **C10:** nhập "-" cho tuần đã kết thúc từ trước thì **chốt ngay**. Sau cuối tuần chỉ Quản lý sửa kết luận; quyết định mới ghi đè trực tiếp, không duyệt lại; audit log chỉ để truy vết | Chủ sản phẩm |
+| 20/09/2026 | **C01 và C08 chưa chốt hẳn:** C01 — chủ sản phẩm mô tả (3 ngày phải có PA; Học thuật cập nhật mỗi Chủ nhật + chốt cuối đợt; Ý thức hoàn thành hết PA trong 1 tuần) và hỏi lại "đúng không?"; C08 — hạn chấm Normal hết Chủ nhật tuần thi (đã đúng), còn "chưa có bài thì thêm - và dời sang tuần sau" chưa rõ ai thêm và Normal có dùng "-" không | Chủ sản phẩm · chờ trả lời |
 
 ---
 
@@ -1759,6 +1764,18 @@ Một người rà soát độc lập đọc toàn bộ diff của nhánh. Đã 
 - `resolveLateNoShow` xác nhận cho Writing mới chặn khi thiếu một task; chưa có phép kiểm riêng cho nhánh đó.
 - Phép kiểm `PR-H` về `workScope` chỉ kiểm hàm thuần, chưa kiểm trường máy chủ trả về.
 
+
+### 12.13. Áp lời chốt C01–C10 ngày 20/09/2026
+
+Xem mục 3 và `shared/domain/policy.ts` (nay ghi rõ điểm nào đã nối dây). Đã áp vào mã: **C02** (quyền), **C03** (cửa sổ gộp 3 ngày, bỏ siết hạn khi nâng mức — dữ liệu mẫu và phép kiểm đổi theo), **C10** (chốt ngay). C04/C06/C07/C09 khớp hành vi cũ. Rule book (mục 17.7) và `LUAT_CHO_CHOT.md` đã cập nhật.
+
+**Hệ quả cần biết:**
+- Hàm và đường "Quản lý hiệu chỉnh dấu '-' nhập cho tuần đã qua" (mục 12.9 dòng đầu) **không còn dùng** khi C10 = chốt ngay; mã giữ lại cho phương án cũ. Sau cuối tuần Quản lý sửa qua đường sửa trạng thái thi có sẵn (ghi đè trực tiếp, có audit).
+- **C02 kéo theo:** GVCN không còn nhận việc "gặp học viên" của case môn khác (phép kiểm đổi theo). **Chưa quyết:** GVCN có còn bấm "Hoàn thành case" cho case môn khác không — hiện vẫn được.
+- **C03:** cửa sổ gộp đổi từ 4 sang 3 ngày *(hiểu "3 ngày đầu" = ngày mở + 2 ngày sau)*; case đã có sẵn trong CSDL giữ `merge_until` cũ (không có migration). Nâng mức ưu tiên vẫn xảy ra khi gộp nhưng không còn đổi hạn phương án.
+- **C09:** tài liệu từng ghi ngược lại mã; nay tài liệu khớp mã.
+- **C01 và C08 chưa nối dây** — chờ chủ sản phẩm xác nhận (mục 3, dòng cuối).
+
 ---
 
 ## 13. Lệnh kiểm bắt buộc
@@ -1834,6 +1851,7 @@ Nói **cái gì đổi trên màn hình**, bằng tiếng Việt, không tên h�
 | 20/09/2026 | Claude (session batch, chặng 4 — PR-I) | Mục 18 sai/thiếu ở bốn chỗ, đã sửa tại chỗ: (1) **Step 8 chẩn đoán sai chỗ** — coi MT-P09 là lỗi hiển thị, nhưng nguyên nhân là máy chủ ghi người nhập cả khi XOÁ điểm; đã sửa ở máy chủ bằng TDD (đỏ trước, xanh sau) và giữ luật "ô dở dang vẫn có người nhập". (2) **MT-P03 nằm ở bộ nhãn dùng chung** `SKILL_PROGRESS_LABEL`, không ở màn Test — Step 5 nói "bỏ nút" nhưng chữ `Chưa xác nhận đã thi` vẫn còn nguyên trên chip trạng thái; đã đổi nhãn (đổi cả các màn khác dùng nó) và thêm phép kiểm. (3) Step 9 đòi lịch sử "điểm" nhưng điểm không có bảng lịch sử riêng — đã dựng `scoreHistory` từ nhật ký, và không có lịch sử "kỳ vọng" vì hệ thống không lưu. (4) Mục 18 nói "sửa năm file PR-D đang giữ" — không còn nghĩa vì PR-D nằm trong nhánh (chặng 0). Việc chưa nói trong kế hoạch: bỏ khối case cũng kéo theo bỏ `sosCase` · `caseSteps` · `caseHistory` · `tasks` khỏi dữ liệu chi tiết lượt. Thêm 5 phép kiểm PR-I (414 tổng). Bấm thử trình duyệt thật (Quản lý, GVBM Speaking, GVCN): nhập W1 bằng bốn ô tại dòng, xoá và nhập lại Reading (hết/lại có "Nhập bởi"), lịch sử điểm hiện đủ, menu `Thêm` và `Chỉnh lịch` đúng quyền, hộp thoại huỷ, nút chính `Xử lý vắng` / `Trả lời đề nghị`, 375px không tràn ngang. **Chưa làm/chưa thấy:** mục 12.10 |
 | 20/09/2026 | Claude (session batch, chặng 5 — PR-H) | Mục 19 và bảng chữ có bốn điểm không khớp với mã, đã xử lý tại chỗ: (1) **Phép "grep chuỗi cũ → không còn kết quả" không chạy nguyên văn được với `mức gấp`:** bảng §1 cấm gọi SOS là "mức gấp", nhưng mức gấp của case là khái niệm thật đang dùng ở dữ liệu mẫu, luật hạn và giao diện; đã loại nó khỏi phép quét và ghi vào 12.11 để chốt. (2) **Bảng §2 thiếu dòng `Hoàn thành phương án`** — lẫn với `Hoàn thành case` ở bảng §1; bắt được nhờ đọc §1, không nhờ §2; đã đổi thành `Kết thúc phương án` ở `NEXT_STEP_LABEL` và thẻ case. (3) **`Bỏ qua N dòng lỗi` → `Xem N dòng cần sửa` là đổi hành vi**, không chỉ đổi chữ (bỏ nút bỏ-qua-hàng-loạt). (4) **Badge "Bạn cần chấm / Lớp còn" cần máy chủ nói phạm vi đang đếm** — thêm `workScope` vào tóm tắt từng lớp thay vì để giao diện đoán. Kế hoạch mục 19 Step 1, 4, 6 nói "toàn web/mỗi khối rỗng/chân trang" nhưng không nói cách kiểm; đã làm phần bảng chữ nêu tên và ghi phần còn lại ở 12.11. Thêm 2 phép kiểm PR-H (416 tổng): grep chữ cũ trên mã nguồn (kể cả chú thích) và badge/nhãn phạm vi. **Kiểm ngược:** trước khi sửa, phép grep báo đỏ 36 chỗ. Bấm thử: danh sách học viên ở Quản lý (`Lớp còn N bài chưa nhập điểm`) và GVBM (`Bạn cần chấm: N bài`), tổng quan lớp, ô `Người phụ trách`. **Chưa làm/chưa thấy:** mục 12.11 |
 | 20/09/2026 | Claude (session batch, rà soát độc lập) | Kế hoạch mục 17.4 ("sáu phép kiểm") chỉ kiểm hàm đếm thuần và bảng chấm; **không kiểm các đường đọc khác** nên "bài đã báo `-` không còn là bài cần chấm" chỉ đúng ở `pendingSkillsOf` — "việc của tôi" và đếm chi nhánh vẫn tính. Kế hoạch mục 16 Step 6 ("cùng bộ quyền") cũng chưa nói phạm vi theo LỚP của giáo viên khác phạm vi CHI NHÁNH. Đã sửa các lỗi ở 12.12; thêm 4 phép kiểm (420 tổng). |
+| 20/09/2026 | Claude (session batch, áp lời chốt C01–C10) | Kế hoạch mục 17 và bảng chín điểm coi C01–C09 là "chưa chốt, không nối dây"; khi chủ sản phẩm chốt, **tài liệu cũ (rule book §17.1, §17.2) vẫn ghi "C03 cần chọn" và "C09 giữ chờ mãi" trong khi mã làm ngược** — đã cập nhật rule book 17.7, `LUAT_CHO_CHOT.md`, `policy.ts` và mục 3. Ba điểm được nối dây (C02, C03, C10) kéo theo đổi dữ liệu mẫu (cửa sổ gộp) và bốn phép kiểm cũ; xem 12.13. Thêm 1 phép kiểm C02 (421 tổng), viết lại phép kiểm C10. |
 
 ---
 

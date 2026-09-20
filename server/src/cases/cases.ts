@@ -4,7 +4,7 @@ import {
   INTERVENTION_STATUS_LABEL,
   FOLLOWUP_OUTCOMES, BEHAVIOUR_TOPICS, CASE_DECISIONS, CASE_OUTCOMES, ENTRY_SKILLS,
   ISSUE_ROLES, PERMISSIONS, THREAD_TRACKS, URGENCY_LEVELS, DEFAULT_URGENCY,
-  BEHAVIOUR_MERGE_WINDOW_DAYS, behaviourCaseDeadline, behaviourMergeUntil, deadlineAfterRaise,
+  BEHAVIOUR_MERGE_WINDOW_DAYS, behaviourCaseDeadline, behaviourMergeUntil,
   issuesForTopic, topicFromBehaviourCode,
   CASE_CATEGORY_SHORT, CASE_CATEGORIES, CASE_CATEGORY_LABEL, FOLLOWUP_OUTCOME_LABEL, ratioResult,
   caseCategoriesFor, componentsAreCounts, componentsFor, type CaseCategory,
@@ -321,10 +321,9 @@ function addCaseReport(conn: any, r: {
  * Nâng kể cả khi người gửi chọn "Cần chú ý": hai người khác nhau cùng thấy một chuyện trong
  * bốn ngày là một tín hiệu mạnh hơn nhận định của riêng ai.
  *
- * Nâng mức SIẾT hạn phương án lại — sớm hơn giữa hạn đang có và "ngày nâng + 2 ngày" — chứ
- * không bao giờ đẩy hạn ra xa. Và hạn KẾT LUẬN của cả case thì GIỮ NGUYÊN theo ngày mở: nếu
- * nó cũng lùi theo báo cáo mới thì một case cứ có báo cáo là hạn lại lùi, và sẽ không bao
- * giờ tới hạn.
+ * Nâng mức KHÔNG đổi hạn nào (C03, chủ sản phẩm chốt 20/09/2026 — luật siết hạn "ngày nâng + 2" đã bỏ). Hạn của case
+ * giữ nguyên theo ngày mở: nếu nó lùi theo báo cáo mới thì một case cứ có báo cáo là hạn lại lùi, và sẽ không bao giờ
+ * tới hạn.
  */
 function raiseBehaviourUrgency(conn: any, actorUserId: number | null, c: any, today: string) {
   if (c.urgency === 'urgent') return;
@@ -337,13 +336,6 @@ function raiseBehaviourUrgency(conn: any, actorUserId: number | null, c: any, to
        VALUES (?, 'urgency', ?, 'urgent', ?, ?)`,
     )
     .run(c.id, c.urgency ?? null, actorUserId, nowIso());
-
-  for (const iv of conn
-    .prepare(`SELECT id, action_due FROM case_interventions WHERE case_id = ? AND status IN ('planned','started')`)
-    .all(c.id) as any[]) {
-    conn.prepare('UPDATE case_interventions SET action_due = ?, updated_at = ? WHERE id = ?')
-      .run(deadlineAfterRaise(iv.action_due ?? null, today), nowIso(), iv.id);
-  }
 }
 
 export function reportIssue(p: Principal, input: {

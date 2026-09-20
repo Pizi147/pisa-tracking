@@ -1,113 +1,97 @@
 /**
- * CHÍN ĐIỂM LUẬT CHƯA CHỐT (C01–C09) VÀ MỘT NGOẠI LỆ CỦA §17.1 (C10) — thiet-ke/LUAT_CHO_CHOT.md.
+ * CÁC ĐIỂM LUẬT TỪNG CHƯA CHỐT (C01–C10) — thiet-ke/LUAT_CHO_CHOT.md. Chủ sản phẩm trả lời ngày 20/09/2026.
  *
- * Chủ sản phẩm CHƯA TRẢ LỜI những câu này. Quy tắc của file này: **không tự chọn phương án thuận tiện
- * nhất rồi chôn nó vào giữa một hàm.** Mỗi điểm chưa chốt là MỘT HẰNG SỐ CÓ TÊN, kèm chú thích nêu CẢ HAI
- * PHƯƠNG ÁN và lý do đang dùng cái nào. Nơi gọi chỉ ĐỌC hằng số, không có `if` rải rác; đổi quyết định
- * là sửa một dòng ở đây. Và **không viết migration dữ liệu** dựa trên một điểm chưa chốt — giữ nguyên
- * dữ liệu gốc trong khi chờ.
+ * Mỗi điểm là MỘT HẰNG SỐ CÓ TÊN, kèm chú thích nêu cả hai phương án và cái nào đang dùng. Nơi gọi chỉ ĐỌC hằng số,
+ * không có `if` rải rác. Không hiển thị mã C trên giao diện người dùng (LUAT_CHO_CHOT.md §4).
  *
- * Giá trị đang dùng khi chờ luôn là hành vi ĐANG CHẠY của code hiện tại (giữ nguyên dữ liệu) — trừ C10,
- * vốn chưa có luồng nào và mặc định về phía không tự chốt.
- *
- * TRẠNG THÁI CÀI ĐẶT (20/09/2026): **chỉ C10 được code đọc.** C01–C09 là hành vi đã chạy từ trước và vẫn
- * được viết cứng ở nơi gọi; hằng số ở đây ghi lại quyết định đang chờ và là chỗ để nối dây khi chủ sản
- * phẩm trả lời. Chưa nối = đổi hằng số ở đây CHƯA đổi hành vi — cần nối từng chỗ gọi rồi mới đổi.
- * Không hiển thị mã C trên giao diện người dùng (LUAT_CHO_CHOT.md §4).
+ * TRẠNG THÁI CÀI ĐẶT (20/09/2026) — ghi rõ điểm nào ĐÃ NỐI DÂY, điểm nào chỉ ghi lại:
+ *   · NỐI DÂY, mã đọc hằng số:  C02 (quyền máy chủ) · C03 (cửa sổ gộp case Ý thức) · C10 (chốt ngay).
+ *   · GHI LẠI, KHỚP HÀNH VI ĐANG CHẠY: C04 · C06 · C07 · C09 (chủ sản phẩm chốt đúng như code đang làm).
+ *   · CHƯA CHỐT HẲN: C01 (chủ sản phẩm hỏi lại cách hiểu) · C08 (còn một nửa chưa rõ).
  */
 
 /**
- * C01 — CHƯA CHỐT 20/09/2026.
- * Sau 3 ngày xác minh SOS, phương án đầu tiên có nằm trong cùng hạn đó không?
- *   'hai-moc-rieng' : hai mốc riêng như code hiện tại — giao diện hiện HAI `<Han>` khác loại.  ← đang dùng
- *   'mot-han-chung' : một hạn 3 ngày gồm cả nguyên nhân lẫn phương án đầu tiên (rule book §13.1).
- * Ảnh hưởng: hồ sơ HV · Công việc · Tổng quan.
+ * C01 — CHỦ SẢN PHẨM ĐÃ TRẢ LỜI NHƯNG CÒN HỎI LẠI "đúng không?" (20/09/2026) — CHƯA NỐI DÂY.
+ * Cách hiểu của chủ sản phẩm: trong 3 ngày kể từ khi có SOS thì phải có phương án; có phương án rồi thì đi theo luật cũ —
+ *   Học thuật: ghi kết quả vào mỗi Chủ nhật hằng tuần và chốt kết quả vào cuối đợt.
+ *   Ý thức: hoàn thành hết phương án trong thời hạn mặc định của case là 1 tuần.
+ *   'hai-moc-rieng' : hai mốc riêng như code hiện tại (hạn xác minh SOS, rồi hạn lập phương án).  ← code đang chạy
+ *   'mot-han-chung' : MỘT hạn 3 ngày kể từ SOS, trong đó phải có phương án.  ← cách hiểu của chủ sản phẩm, chờ xác nhận
  */
 export const C01_HAN_XAC_MINH_SOS_GOM_PA = 'hai-moc-rieng' as const;
 
 /**
- * C02 — CHƯA CHỐT 20/09/2026.
- * GVCN có quyền xử lý case học thuật TRÁI MÔN trong lớp chủ nhiệm không?
- *   'gvcn-ca-lop'   : GVCN xử lý cả lớp — theo AUTH-01 đã code.  ← đang dùng, KHÔNG mở rộng thêm
- *   'gvcn-dung-mon' : GVCN chỉ xử lý môn mình dạy, như mọi GVBM.
- * Ảnh hưởng: form + Case · quyền máy chủ.
+ * C02 — ĐÃ CHỐT 20/09/2026, ĐÃ NỐI DÂY (`permissions.ts`, quyền sửa/xử lý case).
+ * GVCN KHÔNG được xử lý case học thuật TRÁI MÔN: mỗi giáo viên, kể cả GVCN, chỉ xử lý case đúng kỹ năng mình dạy.
+ * Case Ý thức (không có kỹ năng) vẫn chỉ GVCN.
+ *   'gvcn-dung-mon' : GVCN chỉ xử lý môn mình dạy, như mọi GVBM.  ← đã chốt
+ *   'gvcn-ca-lop'   : GVCN xử lý cả lớp (AUTH-01 cũ) — hết hiệu lực.
  */
-export const C02_GVCN_XU_LY_CASE_TRAI_MON = 'gvcn-ca-lop' as const;
+export const C02_GVCN_XU_LY_CASE_TRAI_MON = 'gvcn-dung-mon' as const;
 
 /**
- * C03 — CHƯA CHỐT 20/09/2026.
- * Nâng mức Gấp thì hạn tính từ ngày mở hay từ ngày nâng +2?
- *   'ngay-nang-cong-2' : `min(hạn hiện tại, ngày nâng + 2)` — code hiện tại `deadlineAfterRaise`.  ← đang dùng
- *   'tu-ngay-mo'       : hạn Gấp tính lùi từ ngày MỞ case (sổ ví dụ: mở 14/09 → 16/09).
- * Ví dụ chênh: nâng ngày 16/09 — phương án đầu cho 18/09, phương án sau cho 16/09.
- * Ảnh hưởng: case Ý thức · badge quá hạn.
+ * C03 — ĐÃ CHỐT 20/09/2026 (thay câu hỏi cũ về hạn khi nâng mức), ĐÃ NỐI DÂY (`BEHAVIOUR_MERGE_WINDOW_DAYS`).
+ * Chỉ với case Ý thức: nếu có báo cáo khác cùng phân loại trong 3 NGÀY ĐẦU tồn tại của case cũ (ngày mở + 2 ngày sau)
+ * thì được lồng vào case đang có; không thì ra case mới. Hạn mặc định của case luôn là 1 tuần từ ngày mở — nâng mức
+ * ưu tiên KHÔNG còn siết hạn phương án.
  */
-export const C03_HAN_KHI_NANG_GAP = 'ngay-nang-cong-2' as const;
+export const C03_CUA_SO_GOP_CASE_Y_THUC_NGAY = 3 as const;
 
 /**
- * C04 — CHƯA CHỐT 20/09/2026.
- * Đợt Ý thức đã đóng, có báo cáo mới trong cửa sổ gộp: mở lại hay tạo đợt mới?
- *   'doi-moi-lien-ket' : tạo ĐỢT MỚI liên kết với đợt cũ, không viết lại kết luận cũ.  ← đang dùng
- *   'mo-lai'           : mở lại chính đợt cũ.
- * Ảnh hưởng: form báo vấn đề · hồ sơ HV.
+ * C04 — ĐÃ CHỐT 20/09/2026: GIỮ như hiện tại.
+ *   'doi-moi-lien-ket' : đợt Ý thức đã đóng mà có báo cáo mới thì tạo ĐỢT MỚI liên kết, không viết lại kết luận cũ.  ← đã chốt
+ *   'mo-lai'           : mở lại đợt cũ.
  */
 export const C04_BAO_CAO_MOI_SAU_KHI_DONG = 'doi-moi-lien-ket' as const;
 
 /**
  * C05 — ĐÃ CHỐT 19/09/2026 (giữ để không ai khôi phục luật cũ).
- * SOS có bắt buộc sinh phương án trao đổi không?
- *   'khong-bat-buoc' : KHÔNG. GVCN tự quyết định và tự lập phương án.  ← đã chốt
- *   'bat-buoc'       : hai phương án trao đổi tự sinh — LUẬT CŨ, đã hết hiệu lực (rule book §17.5).
+ *   'khong-bat-buoc' : SOS KHÔNG bắt buộc sinh phương án trao đổi; GVCN tự quyết định và tự lập phương án.  ← đã chốt
+ *   'bat-buoc'       : hai phương án trao đổi tự sinh — LUẬT CŨ, hết hiệu lực (rule book §17.5).
  */
 export const C05_SOS_SINH_PA_TRAO_DOI = 'khong-bat-buoc' as const;
 
 /**
- * C06 — CHƯA CHỐT 20/09/2026.
- * "Phát hiện trước đây nhưng đang xử lý" khác "đã hoàn thành từ trước" thế nào?
- *   'chi-da-hoan-thanh' : tab "Đã xong từ trước" chỉ nhận case ĐÃ HOÀN THÀNH; case đang xử lý dùng form thường.  ← đang dùng
+ * C06 — ĐÃ CHỐT 20/09/2026: GIỮ như hiện tại.
+ *   'chi-da-hoan-thanh' : tab "Đã xong từ trước" chỉ nhận case ĐÃ HOÀN THÀNH; case đang xử lý dùng form thường.  ← đã chốt
  *   'ca-dang-xu-ly'     : tab này nhận cả case còn đang xử lý.
- * Ảnh hưởng: form + Case.
  */
 export const C06_NHAP_BU_CASE_DANG_XU_LY = 'chi-da-hoan-thanh' as const;
 
 /**
- * C07 — CHƯA CHỐT 20/09/2026.
- * Đợt FT chỉ có W1 hoặc chỉ có W2 thì tính Writing thế nào?
- *   'chua-ho-tro'          : CHƯA hỗ trợ — chặn ở cấu hình phạm vi, không lặng lẽ dùng W1 thay Writing tổng.  ← đang dùng
- *   'cho-phep-w1-hoac-w2'  : cho phép, cần luật tính Writing riêng.
- * Ảnh hưởng: Kế hoạch Test.
+ * C07 — ĐÃ CHỐT 20/09/2026 (khớp hành vi đang chạy).
+ * Writing gồm W1 và W2: PHẢI ĐỦ CẢ HAI. Thiếu một bài nghĩa là giáo viên của bài đó chưa chấm (hoặc chấm sai) — cứ báo quá
+ * hạn như bình thường; không lấy W1 thay Writing tổng, không suy ra vắng.
+ *   'phai-du-hai-task'    : đủ cả W1 và W2 mới có Writing.  ← đã chốt
+ *   'cho-phep-w1-hoac-w2' : cho phép một task — KHÔNG dùng.
  */
-export const C07_DOT_FT_CHI_W1_HOAC_W2 = 'chua-ho-tro' as const;
+export const C07_DOT_FT_CHI_W1_HOAC_W2 = 'phai-du-hai-task' as const;
 
 /**
- * C08 — CHƯA CHỐT 20/09/2026.
- * Hạn chấm Normal là Chủ nhật tuần thi hay Chủ nhật tuần kế?
- *   'theo-quy-dinh-lop'  : KHÔNG áp mặc định của FT; giao diện ghi "Hạn chấm theo quy định của lớp".  ← đang dùng
- *   'chu-nhat-tuan-thi'  : hết Chủ nhật của chính tuần thi.
- *   'chu-nhat-tuan-ke'   : hết Chủ nhật tuần kế tiếp.
- * Ảnh hưởng: bảng chấm Normal.
+ * C08 — CHỐT MỘT NỬA 20/09/2026 — CHƯA NỐI DÂY.
+ * Hạn chấm Normal: hết Chủ nhật của chính tuần thi — ĐÃ ĐÚNG với code hiện tại.
+ * Còn CHƯA RÕ và CHƯA LÀM: "hết Chủ nhật tuần thi, nếu chưa có bài thì thêm '-', dời sang tuần sau" — ai thêm "-" (hệ
+ * thống tự thêm hay giáo viên), và Normal có thật sự dùng dấu "-" không (hiện Normal luôn đủ bốn môn, không có "-").
+ *   'chu-nhat-tuan-thi'  : hết Chủ nhật của tuần thi.  ← đã chốt
  */
-export const C08_HAN_CHAM_NORMAL = 'theo-quy-dinh-lop' as const;
+export const C08_HAN_CHAM_NORMAL = 'chu-nhat-tuan-thi' as const;
 
 /**
- * C09 — CHƯA CHỐT 20/09/2026.
- * Đề nghị dời lịch lần hai tự hết hạn lúc nào, và nếu QL không trả lời thì sao?
- *   'giu-cho-ql-duyet'      : KHÔNG suy "không trả lời" = "từ chối"; giữ "Chờ quản lý duyệt" tới khi có thao tác.  ← chọn khi chờ
- *   'tu-choi-khi-het-han'   : hết hạn duyệt thì coi như bị từ chối và huỷ phần bị ảnh hưởng (code hiện tại đang làm thế
- *                             ở `sweepExpiredMoves`).
- * LƯU Ý: giá trị chọn khi chờ KHÁC hành vi code hiện tại — đây là điểm duy nhất C-nào lệch. Vì chưa chốt và
- * vì chưa nối dây, code vẫn chạy 'tu-choi-khi-het-han'; nối dây là một việc riêng cần chủ sản phẩm biết.
- * Ảnh hưởng: Kế hoạch Test · Công việc.
+ * C09 — ĐÃ CHỐT 20/09/2026 (khớp hành vi đang chạy ở `sweepExpiredMoves`).
+ * Đề nghị dời lịch lần hai: chờ Quản lý duyệt cho hết tuần đó; không phản hồi thì HUỶ phần thi. Giáo viên muốn xếp lại
+ * thì tự chủ động trao đổi với Quản lý ngoài website.
+ *   'tu-choi-khi-het-han' : hết hạn duyệt = coi như bị từ chối, huỷ phần bị ảnh hưởng.  ← đã chốt
+ *   'giu-cho-ql-duyet'    : giữ "Chờ quản lý duyệt" tới khi có thao tác — KHÔNG dùng.
  */
-export const C09_DE_NGHI_DOI_LICH_HET_HAN = 'giu-cho-ql-duyet' as const;
+export const C09_DE_NGHI_DOI_LICH_HET_HAN = 'tu-choi-khi-het-han' as const;
 
 /**
- * C10 — NGOẠI LỆ CỦA RULE BOOK §17.1, CHƯA CHỐT 20/09/2026. **Đây là hằng số DUY NHẤT code đang đọc.**
- * Nhập '-' cho một tuần ĐÃ KẾT THÚC từ trước: chốt ngay hay cần Quản lý hiệu chỉnh?
- *   'cho-ql-hieu-chinh' : KHÔNG tự chốt ngay — tạo một mục chờ Quản lý hiệu chỉnh. Không âm thầm mở lại tuần
- *                         đã chốt, cũng không cấm sửa dữ liệu sai.  ← mặc định (LUAT_CHO_CHOT.md §3)
- *   'chot-ngay'         : coi là không dự thi ngay khi nhập.
- * Hai câu ngỏ đi kèm (ai sửa kết luận sau cuối tuần; có đảo quyết định duyệt đã phát sinh không) cũng chưa
- * trả lời: hiện chỉ Quản lý sửa được sau khi đã chốt, và không đảo quyết định nào đã có.
+ * C10 — ĐÃ CHỐT 20/09/2026, ĐÃ NỐI DÂY (`saveScore`, `settleNoShows`, `noShowStateOf`).
+ * Nhập '-' cho một tuần ĐÃ KẾT THÚC từ trước: CHỐT NGAY, coi là không dự thi (ngày hiệu lực vẫn là cuối Chủ nhật của tuần
+ * lịch của bài). Sau cuối tuần CHỈ Quản lý sửa được kết luận; quyết định mới GHI ĐÈ TRỰC TIẾP quyết định trước và thành
+ * quyết định hiện hành — không có bước duyệt lại. Lịch sử thay đổi chỉ lưu ở nhật ký audit để truy vết, không hiển thị và
+ * không tham gia luồng việc.
+ *   'chot-ngay'         : coi là không dự thi ngay khi nhập.  ← đã chốt
+ *   'cho-ql-hieu-chinh' : tạo một mục chờ Quản lý hiệu chỉnh — phương án cũ, còn code nhưng không dùng.
  */
-export const C10_NHAP_DAU_TRU_TUAN_QUA_KHU = 'cho-ql-hieu-chinh' as const;
+export const C10_NHAP_DAU_TRU_TUAN_QUA_KHU = 'chot-ngay' as const;

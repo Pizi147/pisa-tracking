@@ -3791,7 +3791,7 @@ check('GVCN nhận việc gặp học viên; việc gọi phụ huynh về Quả
   conn.prepare('UPDATE case_interventions SET action_due = ? WHERE id = ?').run(TODAY, ivId);
 
   // Chỉ GVCN mới ghi nhận được việc "gọi phụ huynh" của case này (AUTH-01: cả hai đều đòi đúng người).
-  const ivParent = cases.recordIntervention(P.coreTeacher, ownSkillCase.id, {
+  const ivParent = cases.recordIntervention(P.mbManager, ownSkillCase.id, {
     kind: 'talk_parent', description: 'Gọi phụ huynh trao đổi tình hình gần đây.', status: 'planned',
   }) as any;
   const ivParentId = ivParent.interventions[ivParent.interventions.length - 1].id as number;
@@ -3818,7 +3818,8 @@ check('GVCN nhận việc gặp học viên; việc gọi phụ huynh về Quả
   const wrongGvKinds = kinds(mismatchTeacher);
   assert(!wrongGvKinds.has('talk_student'), 'AUTH-01: GVBM sai môn vẫn nhận được việc gặp học viên của case kỹ năng khác');
 
-  assert(kinds(P.coreTeacher).has('talk_student'), 'GVCN không nhận việc gặp học viên của case trong lớp mình');
+  /* C02 (đã chốt 20/09/2026): GVCN không xử lý case học thuật TRÁI MÔN, nên cũng không bị giao việc của nó. */
+  assert(!kinds(P.coreTeacher).has('talk_student'), 'GVCN vẫn nhận việc gặp học viên của case môn khác (C02)');
 
   /*
    * VAI ADMIN CHI NHÁNH ĐÃ BỎ sau PR15. Trước đây việc gọi phụ huynh tới tay văn phòng;
@@ -6350,7 +6351,7 @@ check('[6.4] Bộ phân loại đúng của mục 6.4, và phân loại phải t
   );
 });
 
-check('[7.2] Ý thức/Khác: báo trong bốn ngày thì GỘP, ngày thứ năm thì mở đợt mới', () => {
+check('[7.2] Ý thức/Khác: báo trong ba ngày đầu thì GỘP, ngày thứ tư thì mở đợt mới', () => {
   const st = formTestStudent();
   const mk = (title: string, summary: string) => cases.reportIssue(P.admin, {
     studentId: st.id, cycleId: st.cycle_id, track: 'behaviour', topic: 'homework',
@@ -6359,14 +6360,14 @@ check('[7.2] Ý thức/Khác: báo trong bốn ngày thì GỘP, ngày thứ nă
 
   const first = mk('Thiếu BTVN nhiều buổi', 'Ba buổi liền em không nộp bài về nhà môn Reading.');
   const row1 = conn.prepare('SELECT * FROM sos_cases WHERE id = ?').get(first.id) as any;
-  assert(row1.merge_until === addDays(demoToday(), 3),
-    `Cửa sổ gộp phải là bốn ngày kể cả ngày mở: ${demoToday()} → ${row1.merge_until}`);
+  assert(row1.merge_until === addDays(demoToday(), 2),
+    `Cửa sổ gộp phải là ba ngày kể cả ngày mở: ${demoToday()} → ${row1.merge_until}`);
   assert(row1.episode_no === 1, `Đợt đầu phải là lần 1, đang là ${row1.episode_no}`);
   assert(row1.urgency === 'attention', 'Đợt mới mở đã bị đánh Gấp');
 
   /* Báo lần hai TRONG cửa sổ: gộp vào chính đợt đó và nâng lên Gấp. */
   const second = mk('Lại thiếu BTVN', 'Buổi Listening hôm nay em cũng không có bài, nói là quên.');
-  assert(second.id === first.id, 'Báo cáo trong cửa sổ bốn ngày mà lại mở case mới');
+  assert(second.id === first.id, 'Báo cáo trong cửa sổ ba ngày mà lại mở case mới');
   const row2 = conn.prepare('SELECT * FROM sos_cases WHERE id = ?').get(first.id) as any;
   assert(row2.urgency === 'urgent', 'Có báo cáo bổ sung mà case không được nâng lên Gấp');
   assert(row2.episode_no === 1, 'Số đợt tăng theo mỗi báo cáo — phải tăng theo ĐỢT');
@@ -7049,7 +7050,7 @@ check('[13.3] Cột nhóm đếm số ĐỢT case, không đếm từng lần gi
     ...base, title: 'BTVN: lại không nộp',
     summary: 'Hôm nay em vẫn chưa nộp bài, đây là buổi thứ hai liên tiếp.',
   }) as any;
-  assert(second.id === first.id, 'Hai lần báo trong bốn ngày đã thành hai đợt');
+  assert(second.id === first.id, 'Hai lần báo trong ba ngày đã thành hai đợt');
 
   const after = behaviourRow(st.class_id, st.id).topics.homework.episodes;
   assert(after === before + 1,
@@ -7524,7 +7525,7 @@ check('[18.2-9] Có em trượt thật ở MT trước rồi tiến bộ ở MT 
   assert(improved, 'Không có em nào có điểm một kỹ năng tăng giữa hai đợt MT');
 });
 
-check('[18.2-10] Có đợt case Ý thức gộp nhiều báo cáo, và ranh giới bốn ngày đúng', () => {
+check('[18.2-10] Có đợt case Ý thức gộp nhiều báo cáo, và ranh giới ba ngày đúng', () => {
   const merged = many(
     `SELECT sc.id, sc.detected_at, sc.merge_until, COUNT(r.id) AS n
        FROM sos_cases sc JOIN case_reports r ON r.case_id = sc.id
@@ -7532,8 +7533,8 @@ check('[18.2-10] Có đợt case Ý thức gộp nhiều báo cáo, và ranh gi�
   );
   assert(merged.length > 0, 'Không có đợt Ý thức nào gộp từ hai báo cáo trở lên');
   for (const m of merged) {
-    assert(m.merge_until === addDays(m.detected_at, 3),
-      `Đợt ${m.id}: cửa sổ gộp không phải bốn ngày kể cả ngày đầu`);
+    assert(m.merge_until === addDays(m.detected_at, 2),
+      `Đợt ${m.id}: cửa sổ gộp không phải ba ngày kể cả ngày đầu`);
     const outside = many('SELECT reported_on FROM case_reports WHERE case_id = ?', m.id)
       .filter((r) => r.reported_on > m.merge_until || r.reported_on < m.detected_at);
     assert(outside.length === 0, `Đợt ${m.id} có báo cáo nằm ngoài cửa sổ gộp`);
@@ -7845,7 +7846,7 @@ const backfillCycle = conn
   .get(backfillEnr.student_id) as any;
 
 check('Nhập bù (chốt 1) · Không sinh nghĩa vụ cập nhật tuần nào cho phương án đã xong', () => {
-  const done = cases.backfillCase(P.coreTeacher, {
+  const done = cases.backfillCase(P.mbManager, {
     studentId: backfillEnr.student_id, cycleId: backfillCycle?.id,
     track: 'academic', topic: authSubjectSkill,
     primaryCode: domain.issuesForTopic(authSubjectSkill)[0].code,
@@ -7862,7 +7863,7 @@ check('Nhập bù (chốt 1) · Không sinh nghĩa vụ cập nhật tuần nào
 check('Nhập bù (chốt 2) · Case nhập bù không có hạn nào, không vào hàng đợi quá hạn', () => {
   const enr2 = conn.prepare(`SELECT student_id FROM enrollments WHERE class_id = ? AND status = 'active' AND student_id != ? LIMIT 1`)
     .get(mbClass, backfillEnr.student_id) as any ?? backfillEnr;
-  const done = cases.backfillCase(P.coreTeacher, {
+  const done = cases.backfillCase(P.mbManager, {
     studentId: enr2.student_id, cycleId: null,
     track: 'behaviour', primaryCode: 'student.behaviour.homework',
     topic: 'homework',
@@ -7888,7 +7889,7 @@ check('Nhập bù (chốt 3) · Không gộp vào đợt Ý thức đang mở, d
     summary: 'Đợt Ý thức ĐANG MỞ hôm nay, dùng để kiểm case nhập bù không được gộp vào đây.',
     parallel: true,
   }) as any;
-  const done = cases.backfillCase(P.coreTeacher, {
+  const done = cases.backfillCase(P.mbManager, {
     studentId: enr3.student_id, track: 'behaviour', primaryCode: 'student.behaviour.participation',
     topic: 'participation',
     title: 'Ý thức: nhập bù chốt 3', summary: 'Case nhập bù cùng phân loại "tham gia trên lớp" nhưng ở quá khứ xa.',
@@ -7904,7 +7905,7 @@ check('Nhập bù (chốt 3) · Không gộp vào đợt Ý thức đang mở, d
 check('Nhập bù (chốt 4) · Không tạo tín hiệu, không đổi mức SOS', () => {
   const enr4 = conn.prepare(`SELECT student_id FROM enrollments WHERE class_id = ? AND status = 'active' LIMIT 1`)
     .get(mbClass) as any;
-  const done = cases.backfillCase(P.coreTeacher, {
+  const done = cases.backfillCase(P.mbManager, {
     studentId: enr4.student_id, cycleId: backfillCycle?.id,
     track: 'academic', topic: authMismatchSkill,
     primaryCode: domain.issuesForTopic(authMismatchSkill)[0].code,
@@ -7922,7 +7923,7 @@ check('Nhập bù (chốt 5) · Không vào mẫu số hiệu quả hỗ trợ, 
   const enr5 = conn.prepare(`SELECT student_id FROM enrollments WHERE class_id = ? AND status = 'active' LIMIT 1`)
     .get(mbClass) as any;
   const before = effectiveness.planOutcomes({ studentIds: [enr5.student_id] }).length;
-  const done = cases.backfillCase(P.coreTeacher, {
+  const done = cases.backfillCase(P.mbManager, {
     studentId: enr5.student_id, cycleId: backfillCycle?.id,
     track: 'academic', topic: authSubjectSkill,
     primaryCode: domain.issuesForTopic(authSubjectSkill)[0].code,
@@ -7943,7 +7944,7 @@ check('Nhập bù (chốt 5) · Không vào mẫu số hiệu quả hỗ trợ, 
 check('Nhập bù (chốt 6) · Cảnh báo khi trùng với MỘT CASE NHẬP BÙ KHÁC cùng khoảng thời gian', () => {
   const enr6 = conn.prepare(`SELECT student_id FROM enrollments WHERE class_id = ? AND status = 'active' LIMIT 1`)
     .get(mbClass) as any;
-  const first = cases.backfillCase(P.coreTeacher, {
+  const first = cases.backfillCase(P.mbManager, {
     studentId: enr6.student_id, cycleId: backfillCycle?.id,
     track: 'academic', topic: authSubjectSkill,
     primaryCode: domain.issuesForTopic(authSubjectSkill)[0].code,
@@ -7952,7 +7953,7 @@ check('Nhập bù (chốt 6) · Cảnh báo khi trùng với MỘT CASE NHẬP B
     actions: [{ description: 'Ôn bài với em', performerName: 'GV bộ môn', fromDate: '2026-02-01', toDate: '2026-02-10' }],
     outcome: 'improved', note: 'Case nhập bù chốt 6, lần 1.',
   }) as any;
-  assertThrows(() => cases.backfillCase(P.coreTeacher, {
+  assertThrows(() => cases.backfillCase(P.mbManager, {
     studentId: enr6.student_id, cycleId: backfillCycle?.id,
     track: 'academic', topic: authSubjectSkill,
     primaryCode: domain.issuesForTopic(authSubjectSkill)[0].code,
@@ -7962,7 +7963,7 @@ check('Nhập bù (chốt 6) · Cảnh báo khi trùng với MỘT CASE NHẬP B
     outcome: 'improved', note: 'Case nhập bù chốt 6, lần 2 — phải bị cảnh báo trùng.',
   }), /trùng|nhập bù/, 'Nhập bù trùng khoảng ngày với một case nhập bù khác cùng hạng mục');
   // Xác nhận "đây là lần khác" thì vẫn tạo được.
-  const second = cases.backfillCase(P.coreTeacher, {
+  const second = cases.backfillCase(P.mbManager, {
     studentId: enr6.student_id, cycleId: backfillCycle?.id,
     track: 'academic', topic: authSubjectSkill,
     primaryCode: domain.issuesForTopic(authSubjectSkill)[0].code,
@@ -7995,7 +7996,7 @@ check('Nhập bù (chốt 7) · Ghi rõ ai nhập, nhập lúc nào, lưu cùng 
 check('Nhập bù (chốt 7, tiếp) · Nhãn "nhập bù" hiện trên thẻ case của hồ sơ học viên', () => {
   const enr7b = conn.prepare(`SELECT student_id FROM enrollments WHERE class_id = ? AND status = 'active' LIMIT 1`)
     .get(mbClass) as any;
-  const done = cases.backfillCase(P.coreTeacher, {
+  const done = cases.backfillCase(P.mbManager, {
     studentId: enr7b.student_id, track: 'behaviour', primaryCode: 'student.behaviour.attendance',
     topic: 'attendance',
     title: 'Ý thức: nhập bù chốt 7 tiếp', summary: 'Case nhập bù để kiểm nhãn hiện trên thẻ case của hồ sơ.',
@@ -8014,7 +8015,7 @@ check('Nhập bù (chốt 7, tiếp) · Nhãn "nhập bù" hiện trên thẻ ca
 check('Nhập bù · Ghi chú kết luận bắt buộc ngay ở máy chủ, không chỉ ở giao diện', () => {
   const enrN = conn.prepare(`SELECT student_id FROM enrollments WHERE class_id = ? AND status = 'active' LIMIT 1`)
     .get(mbClass) as any;
-  assertThrows(() => cases.backfillCase(P.coreTeacher, {
+  assertThrows(() => cases.backfillCase(P.mbManager, {
     studentId: enrN.student_id, track: 'behaviour', primaryCode: 'student.behaviour.homework',
     topic: 'homework',
     title: 'Ý thức: kiểm ghi chú bắt buộc', summary: 'Case nhập bù để kiểm ghi chú kết luận bắt buộc ở tầng máy chủ.',
@@ -8930,12 +8931,17 @@ check('PR-G · Câu trạng thái đúng chữ của bộ chữ: gợi ý, khôn
 });
 
 check('PR-G · Chín điểm luật chưa chốt (C01–C09) và C10 là HẰNG SỐ CÓ TÊN ở policy.ts, không rải if', () => {
-  const names = ['C01_HAN_XAC_MINH_SOS_GOM_PA', 'C02_GVCN_XU_LY_CASE_TRAI_MON', 'C03_HAN_KHI_NANG_GAP', 'C04_BAO_CAO_MOI_SAU_KHI_DONG',
+  const names = ['C01_HAN_XAC_MINH_SOS_GOM_PA', 'C02_GVCN_XU_LY_CASE_TRAI_MON', 'C03_CUA_SO_GOP_CASE_Y_THUC_NGAY', 'C04_BAO_CAO_MOI_SAU_KHI_DONG',
     'C05_SOS_SINH_PA_TRAO_DOI', 'C06_NHAP_BU_CASE_DANG_XU_LY', 'C07_DOT_FT_CHI_W1_HOAC_W2', 'C08_HAN_CHAM_NORMAL',
     'C09_DE_NGHI_DOI_LICH_HET_HAN', 'C10_NHAP_DAU_TRU_TUAN_QUA_KHU'];
-  for (const n of names) assert(typeof (domain as any)[n] === 'string' && (domain as any)[n].length > 0, `Thiếu hằng số ${n}`);
-  assert(domain.C10_NHAP_DAU_TRU_TUAN_QUA_KHU === 'cho-ql-hieu-chinh',
-    'C10 mặc định phải là KHÔNG tự chốt ngay (LUAT_CHO_CHOT.md §3)');
+  for (const n of names) assert((domain as any)[n] !== undefined && String((domain as any)[n]).length > 0, `Thiếu hằng số ${n}`);
+  /* Lời chốt của chủ sản phẩm 20/09/2026. */
+  assert(domain.C10_NHAP_DAU_TRU_TUAN_QUA_KHU === 'chot-ngay', 'C10 đã chốt: nhập "-" cho tuần đã qua thì CHỐT NGAY');
+  assert(domain.C02_GVCN_XU_LY_CASE_TRAI_MON === 'gvcn-dung-mon', 'C02 đã chốt: GVCN không xử lý case trái môn');
+  assert(domain.C03_CUA_SO_GOP_CASE_Y_THUC_NGAY === 3 && domain.BEHAVIOUR_MERGE_WINDOW_DAYS === 3,
+    'C03 đã chốt: gộp trong 3 ngày đầu của case Ý thức');
+  assert(domain.C07_DOT_FT_CHI_W1_HOAC_W2 === 'phai-du-hai-task', 'C07 đã chốt: Writing phải đủ cả W1 và W2');
+  assert(domain.C09_DE_NGHI_DOI_LICH_HET_HAN === 'tu-choi-khi-het-han', 'C09 đã chốt: không phản hồi thì huỷ');
   assert(domain.C05_SOS_SINH_PA_TRAO_DOI === 'khong-bat-buoc', 'C05 đã chốt: SOS không bắt buộc sinh phương án trao đổi');
 });
 
@@ -9071,25 +9077,35 @@ check('PR-G · Normal KHÔNG dùng dấu "-": vẫn phải đủ bốn môn, kh�
     'Lớp Normal nhập được dấu "-"');
 });
 
-check('PR-G · C10: nhập "-" cho tuần ĐÃ KẾT THÚC thì KHÔNG tự chốt ngay — chờ Quản lý hiệu chỉnh', () => {
-  const idConfirm = prgAttempts[6];
-  const idReject = prgAttempts[7];
+check('PR-G · C10 (đã chốt 20/09): nhập "-" cho tuần ĐÃ KẾT THÚC thì CHỐT NGAY; chỉ Quản lý sửa được, và sửa là ghi đè trực tiếp', () => {
+  const id = prgAttempts[6];
   const late = '2026-09-28';
-  attempts.saveScore(P.lrTeacher, idConfirm, 'listening', { noShow: true } as any, late);
-  attempts.saveScore(P.lrTeacher, idReject, 'listening', { noShow: true } as any, late);
-  assert(prgCell(idConfirm, 'listening', late).noShow.state === 'cho-ql-hieu-chinh',
-    `Phải chờ quản lý, đang ${JSON.stringify(prgCell(idConfirm, 'listening', late).noShow)}`);
+  attempts.saveScore(P.lrTeacher, id, 'listening', { noShow: true } as any, late);
+  assert(prgSit(id, 'listening').sit_status === 'absent' && prgSettled(id, 'listening') === 1,
+    `Phải chốt ngay đúng một lần, đang ${JSON.stringify(prgSit(id, 'listening'))} · đã chốt ${prgSettled(id, 'listening')}`);
+  assert(String(prgSit(id, 'listening').sit_at).slice(0, 10) === PRG_SUN, 'Ngày hiệu lực vẫn là cuối Chủ nhật của tuần thi, không phải ngày nhập');
+  assert(prgCell(id, 'listening', late).noShow.state === 'khong-du-thi',
+    `Phải là "Không dự thi", đang ${JSON.stringify(prgCell(id, 'listening', late).noShow)}`);
   absence.settleNoShows('2026-10-05');
-  assert(prgSit(idConfirm, 'listening').sit_status === 'scheduled', 'Tác vụ chốt tự ý chốt một dấu "-" đang chờ quản lý');
-  assertThrows(() => absence.resolveLateNoShow(P.lrTeacher, idConfirm, 'listening', 'confirm', late), /Quản lý/,
-    'GVCN tự hiệu chỉnh tuần đã kết thúc');
-  absence.resolveLateNoShow(P.mbManager, idConfirm, 'listening', 'confirm', late);
-  assert(prgSit(idConfirm, 'listening').sit_status === 'absent' && prgSettled(idConfirm, 'listening') === 1,
-    'Quản lý xác nhận thì phải chốt đúng một lần');
-  absence.resolveLateNoShow(P.mbManager, idReject, 'listening', 'reject', late);
-  const c = prgCell(idReject, 'listening', late);
-  assert(!c.noShow || c.noShow.state === 'none', `Quản lý từ chối thì dấu "-" phải gỡ: ${JSON.stringify(c.noShow)}`);
-  assert(prgSit(idReject, 'listening').sit_status === 'scheduled', 'Từ chối mà vẫn bị ghi vắng');
+  assert(prgSettled(id, 'listening') === 1, 'Chạy lại làm bộ đếm tăng');
+  /* Không còn mục "chờ Quản lý hiệu chỉnh": không có gì để xác nhận hay từ chối. */
+  assertThrows(() => absence.resolveLateNoShow(P.mbManager, id, 'listening', 'confirm', late), /Không có dấu/, 'Không còn hàng chờ hiệu chỉnh');
+  /* Sau cuối tuần chỉ Quản lý sửa kết luận; giáo viên (kể cả GVCN) thì không. */
+  assertThrows(() => attempts.saveScore(P.lrTeacher, id, 'listening', { rawScore: 30 }, late), /vắng|trạng thái thi/, 'Giáo viên tự mở lại tuần đã chốt');
+  assertThrows(() => skillSchedule.setSitStatus(P.lrTeacher, id, 'listening', 'scheduled'), /quyền/, 'GVCN sửa kết luận sau cuối tuần');
+
+  /* Quản lý sửa: GHI ĐÈ TRỰC TIẾP, có hiệu lực ngay, không phát sinh bước duyệt lại. (Dùng một bài khác để không đụng bài ở trên.) */
+  const id2 = prgAttempts[7];
+  attempts.saveScore(P.lrTeacher, id2, 'listening', { noShow: true } as any, late);
+  assert(prgSit(id2, 'listening').sit_status === 'absent', 'Tiền đề: bài thứ hai cũng phải chốt ngay');
+  skillSchedule.setSitStatus(P.mbManager, id2, 'listening', 'scheduled', 'Quản lý sửa: học viên có làm bài');
+  assert(prgSit(id2, 'listening').sit_status === 'scheduled', 'Quản lý sửa phải có hiệu lực ngay');
+  const pending = (conn.prepare(`SELECT COUNT(*) n FROM skill_move_requests WHERE attempt_id = ? AND status = 'pending'`).get(id2) as any).n;
+  assert(pending === 0, 'Quản lý sửa không được sinh thêm bước duyệt');
+  assert(!prgCell(id2, 'listening', late).noShow, 'Dấu "-" cũ không được tự sống lại sau khi Quản lý đã sửa');
+  attempts.saveScore(P.lrTeacher, id2, 'listening', { rawScore: 30 }, late);        // nhập điểm bình thường được
+  const audit = (conn.prepare(`SELECT COUNT(*) n FROM audit_logs WHERE action = 'attempt.sit_status' AND entity_id = ?`).get(id2) as any).n;
+  assert(audit >= 1, 'Lần sửa của Quản lý phải để lại nhật ký audit để truy vết');
 });
 
 check('PR-G · Chốt xong là SÁNG THỨ HAI: GVCN vẫn dời lần đầu được (tuần kế tiếp đã bắt đầu), nhưng không dời sang tuần ĐÃ QUA', () => {
@@ -9306,6 +9322,16 @@ check('Rà soát · Giao diện chỉ mời "Xử lý vắng" người làm đư
   assert(v(P.subjectTeacher).canHandleAbsence === false, 'Giáo viên bộ môn không phải GVCN thì không được mời bấm');
   assertThrows(() => absence.requestAbsenceMove(P.subjectTeacher, id, ['listening'], { today: PRG_MON }), /chủ nhiệm|Quản lý/,
     'Máy chủ vẫn phải từ chối — ẩn nút không phải là chặn');
+});
+
+
+check('C02 (đã chốt 20/09): GVCN xử lý case học thuật ĐÚNG môn mình dạy, KHÔNG xử lý trái môn; case Ý thức vẫn chỉ GVCN', () => {
+  const own = [...new Set<string>((P.coreTeacher as any).assignments.filter((x: any) => x.classId === mbClass && x.skill).map((x: any) => x.skill))];
+  const foreign = ['listening', 'reading', 'writing1', 'writing2', 'speaking'].find((k) => !own.includes(k));
+  assert(own.length > 0 && foreign, `Tiền đề: GVCN dạy [${own.join(',')}], cần một môn khác`);
+  assert(can(P.coreTeacher, PERMISSIONS.SOS_EDIT, { classId: mbClass, skill: own[0] }), 'GVCN phải xử lý được case đúng môn mình dạy');
+  assert(!can(P.coreTeacher, PERMISSIONS.SOS_EDIT, { classId: mbClass, skill: foreign }), `GVCN xử lý được case trái môn (${foreign}); dạy [${own.join(",")}]`);
+  assert(can(P.coreTeacher, PERMISSIONS.SOS_EDIT, { classId: mbClass }), 'Case Ý thức (không có kỹ năng) vẫn phải là của GVCN');
 });
 
 console.log(`\n${'='.repeat(60)}`);

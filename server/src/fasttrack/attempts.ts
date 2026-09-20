@@ -1276,7 +1276,11 @@ export function saveScore(
           entityLabel: skill, before, after: { noShow: true, week: scheduleRow.period_code, late },
         });
         /* C10: tuần đã kết thúc → không tự chốt, tạo một mục chờ Quản lý hiệu chỉnh. */
-        if (late) flagLateNoShow(a, assessed, scheduleRow.period_code ?? '', p.userId);
+        if (late) {
+          /* C10 (đã chốt 20/09/2026): CHỐT NGAY. Phương án cũ (chờ Quản lý hiệu chỉnh) còn code nhưng không dùng. */
+          if ((C10_NHAP_DAU_TRU_TUAN_QUA_KHU as string) === 'chot-ngay') settleNoShows(today);
+          else flagLateNoShow(a, assessed, scheduleRow.period_code ?? '', p.userId);
+        }
         return done();
       }
       /* patch.noShow === false: gỡ dấu trước khi tuần kết thúc. Sau chốt thì đã bị chặn ở kiểm `absent` phía trên. */
