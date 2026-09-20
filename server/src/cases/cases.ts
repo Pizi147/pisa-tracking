@@ -109,7 +109,11 @@ export function milestonesOf(caseId: number) {
  * quyền kết luận.
  */
 export function closeCaseOutcome(p: Principal, caseId: number, input: {
-  outcome: string; note?: string | null;
+  /**
+   * Mức tiến bộ. BẮT BUỘC với case học thuật; case Ý thức/Khác KHÔNG có (CASE-06, rule book
+   * §17.2): ghi nhận việc đã làm và chứng cứ rồi hoàn thành đợt, không đo hiệu quả học thuật.
+   */
+  outcome?: string | null; note?: string | null;
   /** Ngày hoàn thành thực tế. Bỏ trống thì lấy hôm nay; không nhận ngày tương lai. */
   closedOn?: string | null;
   /** Mã cũ: chỉ còn nhận 'end'. "Kéo dài theo dõi" đã bỏ (mục 9.3). */
@@ -122,7 +126,10 @@ export function closeCaseOutcome(p: Principal, caseId: number, input: {
   if (!canCloseCase(p, c)) {
     throw badRequest('Chỉ giáo viên chủ nhiệm của lớp và Quản lý mới chốt được kết quả case.');
   }
-  if (!(CASE_OUTCOMES as readonly string[]).includes(input.outcome)) {
+  const behaviour = (c.track ?? 'academic') === 'behaviour';
+  /* Ý thức bỏ trống thì lưu NULL — không bịa một mức tiến bộ chỉ để có cái điền vào. */
+  const outcome: string | null = behaviour && !input.outcome ? null : (input.outcome ?? '');
+  if (outcome !== null && !(CASE_OUTCOMES as readonly string[]).includes(outcome)) {
     throw badRequest('Mức độ thành công không hợp lệ.');
   }
   if (input.decision && input.decision !== 'end') {
@@ -179,7 +186,7 @@ export function closeCaseOutcome(p: Principal, caseId: number, input: {
                 updated_at = ?
           WHERE id = ?`,
       )
-      .run(input.outcome, closeNote, p.userId, nowIso(), p.userId, closedOn, nowIso(), caseId);
+      .run(outcome, closeNote, p.userId, nowIso(), p.userId, closedOn, nowIso(), caseId);
 
     conn
       .prepare(
@@ -188,7 +195,7 @@ export function closeCaseOutcome(p: Principal, caseId: number, input: {
          ON CONFLICT(dedup_key) DO NOTHING`,
       )
       .run(caseId, 'closed', closedOn,
-           [CASE_OUTCOME_LABEL[input.outcome as CaseOutcome], closeNote].filter(Boolean).join(' — '),
+           [outcome ? CASE_OUTCOME_LABEL[outcome as CaseOutcome] : null, closeNote].filter(Boolean).join(' — '),
            p.userId, nowIso(), `outcome:${caseId}:${closedOn}:end`);
 
     /* Đánh giá chi tiết lúc kết luận: lưu thành một dòng cập nhật gắn thẳng vào case. */
@@ -206,14 +213,14 @@ export function closeCaseOutcome(p: Principal, caseId: number, input: {
       studentId: c.eff_student_id, cycleId: c.eff_cycle_id,
       eventType: 'case_closed', eventDate: closedOn,
       /* Chốt 6/mục 10.3 Step 6: nhãn phân biệt mốc nhập bù với mốc ghi tại chỗ. */
-      title: `${c.origin_kind === 'backfill' ? '(nhập bù) ' : ''}Hoàn thành case: ${CASE_OUTCOME_LABEL[input.outcome as CaseOutcome]}`,
+      title: `${c.origin_kind === 'backfill' ? '(nhập bù) ' : ''}Hoàn thành case${outcome ? `: ${CASE_OUTCOME_LABEL[outcome as CaseOutcome]}` : ' Ý thức'}`,
       detail: closeNote,
       refTable: 'sos_cases', refId: caseId, createdBy: p.userId,
       dedupKey: `case_outcome:${caseId}:${closedOn}:end`,
     });
     writeAudit({ actorUserId: p.userId, action: 'case.outcome', entityType: 'sos_case',
       entityId: caseId, entityLabel: caseTitleOf(c),
-      after: { outcome: input.outcome, closedOn } });
+      after: { outcome, closedOn } });
     return caseDetail(p, caseId);
   });
 }
@@ -2457,6 +2464,13 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
             classId: enr?.class_id ?? null, studentId,
             skill: c.track === 'academic' ? c.topic ?? undefined : undefined,
           }),
+          /*
+           * HOÀN THÀNH CASE NGAY TRÊN THẺ (PR-D). Khối `CasePanel` nhúng bên dưới thẻ đã bị
+           * gỡ, nên thẻ tự nói: người xem có chốt được không, và còn gì đang chặn. Lấy đúng
+           * hai hàm mà nút "Hoàn thành case" ở trang riêng vẫn hỏi — không phép tính thứ hai.
+           */
+          canClose: canCloseCase(p, { class_id: enr?.class_id ?? null, student_id: studentId }),
+          closeBlockers: c.status === 'done' ? [] : closeBlockers(c.id),
           /* Đủ thứ để vẽ MỘT THẺ CASE mà không phải gọi thêm một đường nữa (mục 1 · 2). */
           ...caseCardOf(c.id, c),
         }))
@@ -2553,6 +2567,10 @@ function caseCardOf(caseId: number, c: any) {
           outcome: f.outcome as string,
           label: outcomeLabelFor(c.track ?? 'academic', f.outcome),
           by: f.observer ?? null,
+          /* Mở lịch sử ngay tại dòng phương án (PR-D) thì phải đọc được câu người dạy viết. */
+          note: (f.note as string | null) ?? null,
+          cycleNo: (f.cycle_no as number | null) ?? null,
+          late: !!f.late,
         }))
         .sort((a, b) => a.on.localeCompare(b.on)),
     };

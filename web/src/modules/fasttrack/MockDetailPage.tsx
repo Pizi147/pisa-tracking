@@ -290,9 +290,7 @@ export default function MockDetailPage() {
         trong khi đó chính là phần đáng đọc nhất.
       */}
       {d.sosCase ? (
-        <Card title="Vấn đề - Case" action={
-          <Link className="btn btn-sm" to={`/hoc-thuat/case/${d.sosCase.id}`}>Mở trang riêng</Link>
-        }>
+        <Card title="Vấn đề - Case">
           {d.result.evaluable && d.result.sosLevel === 0 && (
             <p className="text-xs text-slate-400 mt-0 mb-3">
               Điểm hiện tại đã đạt kỳ vọng ở mọi kỹ năng. Vấn đề này vẫn còn đây để tra lại đã

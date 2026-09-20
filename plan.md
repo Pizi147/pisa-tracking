@@ -134,7 +134,7 @@ Và chạy thật > đọc code.
 | Đường dẫn khi import | Bắt buộc có đuôi `.ts` / `.tsx`. Thiếu là gãy |
 | Sau khi sửa máy chủ | **Bắt buộc** `npm run build:server`. `npm run dev` KHÔNG tự dựng lại máy chủ |
 | Kiểm kiểu dữ liệu | `npx tsc -p tsconfig.build.json --noEmit` và `npx tsc -p tsconfig.web.json --noEmit` |
-| Chạy kiểm thử | `npm test` — hiện **319 phép kiểm**, phải đạt hết. Harness **không có bộ lọc**: nó chạy cả bộ, nên xác minh một phép kiểm mới bằng cách tìm tên nó trong kết quả |
+| Chạy kiểm thử | `npm test` — hiện **367 phép kiểm** sau chặng 0 (đầu đợt batch là 360; con số 319 cũ đã lạc hậu), phải đạt hết. `npm run check` chạy cả chuỗi mục 13.1. Harness **không có bộ lọc**: nó chạy cả bộ, nên xác minh một phép kiểm mới bằng cách tìm tên nó trong kết quả |
 | Ngày demo | **14/09/2026** cố định. Không lấy ngày thật của máy. Đọc qua `demoToday()` ở máy chủ, `session.demoDate` ở web |
 | Quy ước tuần | Thứ Hai → Chủ nhật; tuần thuộc tháng chứa ngày thứ Năm của nó |
 | Sao chép database | Phải chép **cả ba** file `.sqlite`, `.sqlite-wal`, `.sqlite-shm`. Chép mỗi `.sqlite` sẽ ra bản CŨ |
@@ -1561,31 +1561,38 @@ bày khác nhau. Chủ sản phẩm: *"rất rối rắm và thừa"*.
 
 ### 11.3. Các bước
 
-- [ ] **Step 1: Gỡ hai nút thừa.** Bỏ nút "Lịch sử và kết thúc phương án" (`SkillBoard.tsx:319`)
-      và bỏ hẳn phần nhúng `CasePanel` bên dưới nó.
-- [ ] **Step 2: Bỏ nút "Mở trang riêng", GIỮ đường dẫn.** Gỡ nút ở `SkillBoard.tsx:323`,
+- [x] **Step 1: Gỡ hai nút thừa.** Bỏ nút "Lịch sử và kết thúc phương án" (`SkillBoard.tsx:319`)
+      và bỏ hẳn phần nhúng `CasePanel` bên dưới nó. *(Đã làm. `CasePanel` chỉ còn ở trang riêng và ngăn kéo.)*
+- [x] **Step 2: Bỏ nút "Mở trang riêng", GIỮ đường dẫn.** Gỡ nút ở `SkillBoard.tsx:323`,
       `CaseBoardPage.tsx:482`, `StudentDetailPage.tsx:324`, `MockDetailPage.tsx:292`. **KHÔNG
       xoá route `/hoc-thuat/case/:id`** — thông báo và badge đang trỏ vào đó; xoá là gãy link
-      sâu. Chủ sản phẩm chốt 19/09/2026.
-- [ ] **Step 3: Hai nút thật vào chân khối case.** `+ Thêm phương án` và `Hoàn thành case`, đặt
+      sâu. Chủ sản phẩm chốt 19/09/2026. *(Đã làm ở cả bốn chỗ; route còn nguyên, kiểm bằng cách mở thẳng `/hoc-thuat/case/1`.
+      Ngăn kéo `CasePanel` ở hồ sơ học viên và Bảng case vẫn còn — chỉ bỏ nút dẫn sang trang riêng.)*
+- [x] **Step 3: Hai nút thật vào chân khối case.** `+ Thêm phương án` và `Hoàn thành case`, đặt
       cùng dòng trạng thái. Dùng lại đúng hai hàm `CasePanel` đang gọi (`:256`, `:265`) — không
-      viết luồng mới.
-- [ ] **Step 4: Timeline phương án đóng/mở tại dòng.** Mỗi dòng phương án có mũi tên. **Đóng mặc
+      viết luồng mới. *(Đã làm: `ActionDialog` và `OutcomeDialog` của `CasePanel` được `export` rồi gọi thẳng từ thẻ case. Thẻ tự
+      mang `canClose` + `closeBlockers` từ máy chủ — cùng hai hàm nút cũ vẫn hỏi — nên nút "Hoàn thành case" mờ kèm đúng lý do.)*
+- [x] **Step 4: Timeline phương án đóng/mở tại dòng.** Mỗi dòng phương án có mũi tên. **Đóng mặc
       định**, chỉ hiện kết quả mới nhất như hiện nay. Mở ra thấy lịch sử cập nhật của **chính
       phương án đó**. Lý do đóng mặc định: Lê Quang Huy có 5 case, mở hết là một trang cuộn vô
-      tận. Sổ CASE-08 cũng chốt: *"không mở tất cả mặc định."*
-- [ ] **Step 5: Panel "Ghi kết quả" hai lựa chọn.** `InlineResult` trong `SkillBoard.tsx` thêm
+      tận. Sổ CASE-08 cũng chốt: *"không mở tất cả mặc định."* *(Đã làm. Máy chủ trả thêm ghi chú, số chu kỳ và cờ trễ cho từng
+      lần cập nhật để mở lịch sử ngay tại dòng.)*
+- [x] **Step 5: Panel "Ghi kết quả" hai lựa chọn.** `InlineResult` trong `SkillBoard.tsx` thêm
       một cặp lựa chọn: *Ghi kết quả, tiếp tục theo dõi* (phương án vẫn chạy) hoặc *Hoàn thành
       phương án* (hiện thêm ô ngày kết thúc, phương án đóng). **Một** panel, **một** nút chính
-      đổi chữ theo lựa chọn — không phải hai nút cạnh nhau.
-- [ ] **Step 6: Bỏ ô điểm tự chấm khỏi cập nhật phương án (CASE-05).** Gỡ `MetricsField` khỏi
+      đổi chữ theo lựa chọn — không phải hai nút cạnh nhau. *(Đã làm. Máy chủ chỉ cho kết thúc suông khi kết quả tốt — nên kết quả
+      chưa tốt khoá nút chính và mở lối "Thay bằng phương án khác hoặc nhờ Quản lý" sang hộp thoại đầy đủ, đã mở sẵn tab Kết thúc.)*
+- [x] **Step 6: Bỏ ô điểm tự chấm khỏi cập nhật phương án (CASE-05).** Gỡ `MetricsField` khỏi
       `ResultDialog` (`CasePanel.tsx:1356`) và khỏi panel ghi kết quả. Ô đó đang bày **bốn kỹ
       năng L/R/W/S** cho một case Listening — chủ sản phẩm gọi là "RẤT VÔ LÝ", và sổ CASE-05 đã
       chốt bỏ từ trước. **Dữ liệu điểm tự chấm cũ đã lưu thì GIỮ, không xoá** (CASE-05 nguyên
-      văn: *"giữ quan sát định lượng lịch sử nếu đã có"*).
-- [ ] **Step 7: Màn "Hoàn thành case" giữ nguyên.** Nó đang dùng `componentsFor` nên đã hiện
+      văn: *"giữ quan sát định lượng lịch sử nếu đã có"*). *(Đã làm: `MetricsField` và `metricsPayload` xoá hẳn. Có phép kiểm khoá
+      việc điểm cũ vẫn đọc được.)*
+- [x] **Step 7: Màn "Hoàn thành case" giữ nguyên.** Nó đang dùng `componentsFor` nên đã hiện
       **đúng tiêu chí của kỹ năng** (Listening → Section 1–4). Không đụng. Chỉ thêm nhánh Ý thức
-      theo CASE-06: ghi chú bắt buộc + ngày + nút Hoàn thành case, **không** có ô điểm.
+      theo CASE-06: ghi chú bắt buộc + ngày + nút Hoàn thành case, **không** có ô điểm. *(Đã làm, và phải chạm cả máy chủ: `closeCaseOutcome`
+      trước đây bắt MỌI case chọn mức tiến bộ, kể cả Ý thức. Nay case Ý thức không cần và lưu trống — rule book §17.2 "không hỏi
+      Có tiến bộ/Không tiến bộ". Case học thuật vẫn bắt buộc.)*
 
 ### 11.4. Nghiệm thu PR-D
 
@@ -1625,6 +1632,8 @@ trước" chưa nối dây giao diện. `backfillCase` (server) đã nhận sẵ
 `closeCaseOutcome`; chỉ thiếu component UI vì `MetricsField` hiện không export trong
 `CasePanel.tsx` và PR-D dự kiến gỡ hẳn nó — nối dây sau khi PR-D quyết định hình dạng cuối
 của khối kết quả, để không phải làm hai lần.
+**Cập nhật 20/09/2026 (PR-D làm xong):** `MetricsField` đã bị gỡ. Hình dạng cuối là `ComponentsField` (Section 1–4 theo đúng
+kỹ năng) ở màn Hoàn thành case — nối ô của tab nhập bù theo hình đó, không dựng lại `MetricsField`.
 
 ### 12.3. Thống kê và báo cáo
 
@@ -1734,6 +1743,7 @@ Nói **cái gì đổi trên màn hình**, bằng tiếng Việt, không tên h�
 | 19/09/2026 (đêm, tiếp) | Claude (session code PR-C) | Mở PR #27 (nhánh `worktree-pr-c-form-case-gon` → `main`), chưa merge. Dựng một subagent đọc toàn bộ diff review độc lập trước khi mở PR — không có lỗi Critical, nhưng tìm ra ba lỗi Important đều thuộc "tầng trung thực" của tab nhập bù: (1) máy chủ **không** chặn ghi chú kết luận dưới 10 ký tự dù giao diện có chặn — gọi thẳng API là bỏ qua được lý do bắt buộc phải ghi, đúng chỗ tính năng sinh ra để chặn; (2) và (3) hai kiểm dữ liệu (mô tả "Khác" ≥30 ký tự, ngày một dòng "đã làm gì" không đảo ngược) chỉ có ở máy chủ, chưa có ở giao diện — người dùng thấy lỗi chung chung thay vì lỗi rõ ràng tại chỗ. Đã vá cả ba, thêm một phép kiểm cho lỗi (1). Sau vá: 348 phép kiểm xanh, hai lệnh `tsc` sạch. Ghi kết quả review làm một bình luận trên PR #27. Cũng mở PR #28 riêng (nhánh `worktree-docs-ban-giao-pr-c`) chỉ cập nhật `BAN_GIAO.md` — không gộp vào PR-C để giữ đúng phạm vi |
 | 19/09/2026 (đêm, hợp nhất) | Claude (session code PR-C) | `main` đã tiến lên (PR2b merge, #26) sau khi PR-C branch từ `f1e3591` — GitHub báo PR #27 có xung đột. Hợp nhất `origin/main` vào nhánh PR-C, giải xung đột ở bốn file (`plan.md`, `server/src/permissions.ts`, `server/src/seed/data.ts`, `server/src/tests/run.ts`) — toàn bộ là cộng dồn (cả hai nhánh cùng thêm quyền/nhãn/phép kiểm mới ở cuối danh sách, không nhánh nào sửa đè lên dòng của nhánh kia), không có xung đột nghiệp vụ thật. Giữ cả `schedule.move` (PR2b) lẫn `sos.report`/`sos.edit` (PR-C) trong `ROLE_PERMISSIONS`, giữ cả hai nhánh `explain()`, nối các phép kiểm SCH-01/T09/T13 (PR2b) vào sau các phép kiểm CASE-01/AUTH-01/nhập bù (PR-C) |
 | 20/09/2026 | Claude (session thiết kế) | Đọc `thiet-ke/PISA-Rulebook-2026-09-19.md` v1.1 và `thiet-ke/PISA-Design-Plan-after-PR28.md` v1.2, brainstorm bổ sung rồi viết thành việc làm được. Thêm **mục 15–19** (PR-E nền giao diện · PR-F hợp đồng số liệu · PR-G dấu '-' và chốt cuối Chủ nhật · PR-I hồ sơ Test gọn · PR-H biên tập), **mục 20** (kho ý tưởng thiết kế DS01–DS18 + ba ý tưởng đã loại), 13 dòng vào mục 3 và sáu dòng vào lộ trình mục 4. Đặt số mục mới ở **cuối file** thay vì chen vào giữa, để khỏi đánh số lại mục 12/13/14 và mọi tham chiếu nội dòng đang trỏ tới chúng. Tạo thư mục `thiet-ke/` bốn file: hệ giao diện, hợp đồng số liệu, từ điển + bộ chữ, chín điểm luật chưa chốt. **Chưa sửa một dòng mã sản phẩm nào.** Bản đầu chia năm PR thành nhiều nhánh song song; chủ sản phẩm đi vắng dài ngày nên **đổi sang một nhánh năm chặng** (mục 0.4 viết lại), thêm **mục 0.5** (năm file PR-D đang giữ) và **mục 21** (thứ tự merge + cách gỡ bốn loại xung đột, viết cho người không đọc code). Bốn chỗ quyết định đáng ghi lại: (1) chia chặng theo **file bị khoá**, không theo chủ đề — nhờ vậy ba chặng đầu chạy được ngay mà không chờ PR-D; (2) **PR-D merge trước, batch merge sau**, vì PR-D gỡ và xếp lại còn batch thêm lên trên — ngược thứ tự là biến việc của máy thành việc của người; (3) hàm chốt dấu '-' viết thành **hàm thuần theo tuần lịch của bài**, không theo thời điểm chạy, nên gọi ở đường đọc như `sweepExpiredMoves()` đã đủ đáp ứng "kể cả không ai mở web", không cần dựng cron; (4) bốn lỗi lặp ở nhiều màn (hạn không rõ loại, badge đạt khi chưa đủ điểm, % không mẫu số, tuần rớt hàng) đóng **ở component** để `tsc` chặn, không đóng bằng kỷ luật review |
+| 20/09/2026 | Claude (session batch, chặng 0 — PR-D) | **Không có nhánh PR-D nào trên `origin`** (nhánh cục bộ `claude/pr-d-implementation-fe6460` không có commit nào, chỉ đứng ở merge PR #28), nên theo mục 21.3 cách B, session batch làm luôn PR-D thành **chặng 0**, trên MỘT nhánh `worktree-batch-thiet-ke-sau-pr28`; mục 0.5 và bước hợp nhất PR-D ở mục 21.2 không còn áp dụng. Kế hoạch mục 11 sai/thiếu ở ba chỗ, đã sửa tại chỗ: (1) Step 7 nói "chỉ thêm nhánh Ý thức" nhưng máy chủ `closeCaseOutcome` bắt MỌI case chọn mức tiến bộ nên giao diện một mình không bỏ được — phải chạm máy chủ (Ý thức lưu trống); (2) Step 5 chỉ mô tả kết thúc phương án bằng một ngày, trong khi máy chủ chỉ cho kết thúc suông khi kết quả tốt — thiếu đường cho kết quả chưa tốt, đã thêm lối sang hộp thoại đầy đủ để không mất khả năng khi khối nhúng bị gỡ; (3) số dòng `SkillBoard.tsx:319/323`, `CasePanel.tsx:256/265` trong kế hoạch đã lệch so với file thật (PR-C đã đẩy các dòng đi). Cũng đính chính hai số trong mục 1.3: bộ kiểm thử đang là **360** phép kiểm trước chặng 0 (không phải 319), và **không có `npm run check`** trong `package.json` dù cả brief lẫn mục 13.1 nhắc — đã thêm script `check` chạy đúng chuỗi bốn lệnh ở 13.1. Thêm 7 phép kiểm PR-D (367/367). Bấm thử bằng trình duyệt thật: Quản trị, GVCN Trần Ngọc Hà, GVBM Phạm Thu Trang (Speaking), Quản lý Nguyễn Khánh Vy trên hồ sơ Lê Quang Huy; mở link sâu `/hoc-thuat/case/1`; không lỗi console. **Chưa bấm thử:** hồ sơ Đinh Ngọc Quyên (hai case song song cùng kỹ năng), khổ 375px, và ảnh chụp màn hình (công cụ chụp ảnh hết thời gian chờ — đã kiểm bằng cấu trúc trang và chữ trên màn, không phải bằng mắt) |
 
 ---
 

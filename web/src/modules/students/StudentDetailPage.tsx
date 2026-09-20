@@ -192,7 +192,6 @@ export default function StudentDetailPage() {
               selected={skillPick}
               onPick={setSkillPick}
               onReport={() => setReportOpen(true)}
-              onOpenCase={setOpenCase}
               onChanged={() => { board.reload(); reload(); }} />
           </Card>
 
@@ -318,11 +317,9 @@ export default function StudentDetailPage() {
         signal={verify}
         onDone={(cid) => { setVerify(null); reload(); setOpenCase(cid); }} />
 
+      {/* Không có nút "Mở trang riêng": route `/hoc-thuat/case/:id` vẫn còn cho link sâu từ thông báo. */}
       <Drawer open={openCase !== null} onClose={() => setOpenCase(null)} title="Vấn đề - Case"
-        subtitle={data.fullName}
-        footer={openCase !== null
-          ? <Link className="btn" to={`/hoc-thuat/case/${openCase}`}>Mở trang riêng</Link>
-          : null}>
+        subtitle={data.fullName}>
         {openCase !== null && <CasePanel caseId={openCase} compact />}
       </Drawer>
 

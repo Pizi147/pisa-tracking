@@ -8213,6 +8213,146 @@ check('T09 · Đợt FT định trước chỉ L/R: đủ điểm L/R là đợt
     `required phải đúng chỉ L/R, đang ra: ${r.required.join(',')}`);
 });
 
+// ==================================================================== PR-D (chặng 0)
+
+/*
+ * KHUNG CASE GỌN — một case đọc ở MỘT khối. Khối nhúng `CasePanel` bị gỡ khỏi thẻ case ở
+ * hồ sơ học viên, nên thẻ phải tự mang đủ thứ để hoàn thành case và mở lịch sử phương án
+ * TẠI CHỖ. Giao diện không tự suy: nó đọc thẳng từ máy chủ, đúng như nút cũ ở CasePanel.
+ */
+const prdStudent = conn.prepare(`SELECT s.id FROM students s JOIN enrollments e ON e.student_id = s.id AND e.status = 'active'
+                                   WHERE e.class_id = ? ORDER BY s.id DESC LIMIT 1`).get(mbClass) as any;
+const prdReportOn = (studentId: number, key: string, topic: string = 'listening') => cases.reportIssue(P.coreTeacher, {
+  title: 'Vấn đề cần theo dõi ở kỹ năng này',
+  primaryCode: 'student.listening.technique',
+  studentId, topic, summary: 'Case dựng riêng cho phép kiểm khung case gọn (PR-D).',
+  idempotencyKey: key, parallel: true,
+}) as any;
+const prdCardOf = (who: any, studentId: number, caseId: number) => {
+  const board = cases.skillSupportBoard(who, studentId) as any;
+  return board.rows.flatMap((r: any) => r.cases).find((x: any) => x.id === caseId);
+};
+
+check('PR-D · Thẻ case mang đủ để hoàn thành case ngay tại chỗ: có quyền chốt không, còn gì đang chặn', () => {
+  const c = prdReportOn(prdStudent.id, 'test-prd-1');
+  const asCore = prdCardOf(P.coreTeacher, prdStudent.id, c.id);
+  assert(asCore, 'Case vừa tạo không xuất hiện trên thẻ case của hồ sơ');
+  assert(asCore.canClose === true, 'GVCN của lớp phải thấy mình chốt được case');
+  assert(Array.isArray(asCore.closeBlockers), 'Thẻ case thiếu danh sách lý do chưa hoàn thành được');
+  assert(asCore.closeBlockers.length === cases.closeBlockers(c.id).length && asCore.closeBlockers.length > 0,
+    'Case chưa có phương án nào phải mang đúng lý do chặn của máy chủ, không phải danh sách tự suy');
+  const asSubject = prdCardOf(P.subjectTeacher, prdStudent.id, c.id);
+  assert(asSubject, 'GVBM của lớp phải thấy thẻ case của học viên trong lớp');
+  assert(asSubject.canClose === false, 'GVBM không kiêm chủ nhiệm không được thấy nút hoàn thành hoạt động');
+});
+
+check('PR-D · Thẻ case đã hoàn thành không còn lý do chặn nào', () => {
+  const c = prdReportOn(prdStudent.id, 'test-prd-1b');
+  const ivInfo = cases.recordIntervention(P.coreTeacher, c.id, {
+    kind: 'self_study', description: 'Nghe 30 phút mỗi ngày (PR-D)', performerName: 'GVCN',
+    status: 'started', startedDate: TODAY,
+  }) as any;
+  const ivId = ivInfo.interventions.find((i: any) => i.description === 'Nghe 30 phút mỗi ngày (PR-D)').id;
+  cases.updateResult(P.coreTeacher, ivId, {
+    mode: 'end', outcome: 'improved', nextStep: 'complete', note: 'Em đã nghe đều hơn hẳn (PR-D)',
+  });
+  cases.closeCaseOutcome(P.mbManager, c.id, { outcome: 'improved', note: 'Đã xong, em ổn định lại hẳn (PR-D)' });
+  const card = prdCardOf(P.coreTeacher, prdStudent.id, c.id);
+  assert(card.status === 'done' && card.closeBlockers.length === 0, 'Case đã xong mà thẻ vẫn ghi còn lý do chặn');
+});
+
+check('PR-D · Lịch sử một phương án mang đủ ngày, chu kỳ, ghi chú và cờ trễ để mở ngay tại dòng', () => {
+  const c = prdReportOn(prdStudent.id, 'test-prd-2');
+  const info = cases.recordIntervention(P.coreTeacher, c.id, {
+    kind: 'tutor', description: 'Học tutor Listening (PR-D lịch sử)', performerName: 'Tutor B',
+    /* Bắt đầu HÔM NAY thì hạn cập nhật là Chủ nhật tuần này — cập nhật hôm nay là đúng hạn. */
+    status: 'started', startedDate: TODAY,
+  }) as any;
+  const ivId = info.interventions.find((i: any) => i.description === 'Học tutor Listening (PR-D lịch sử)').id;
+  cases.updateResult(P.coreTeacher, ivId, {
+    mode: 'monitor', outcome: 'partial', observedOn: TODAY,
+    note: 'Nghe bắt ý tốt hơn, còn sai số điện thoại (PR-D)',
+  });
+  const plan = prdCardOf(P.coreTeacher, prdStudent.id, c.id).plans.find((p: any) => p.id === ivId);
+  assert(plan && plan.updates.length === 1, 'Phương án phải có đúng một lần cập nhật đã ghi');
+  const u = plan.updates[0];
+  assert(u.note === 'Nghe bắt ý tốt hơn, còn sai số điện thoại (PR-D)', `Thiếu câu ghi chú của người dạy, đang là ${JSON.stringify(u.note)}`);
+  assert(u.cycleNo === 1, `Thiếu số chu kỳ, đang là ${u.cycleNo}`);
+  assert(u.late === false, `Cập nhật đúng hạn không được ghi là trễ, đang là ${u.late}`);
+  assert(typeof u.label === 'string' && u.on === TODAY, 'Mỗi lần cập nhật phải giữ nhãn kết quả và ngày');
+});
+
+check('PR-D · Cập nhật quá hạn thì lịch sử phương án ghi đúng là trễ', () => {
+  const c = prdReportOn(prdStudent.id, 'test-prd-2b');
+  const info = cases.recordIntervention(P.coreTeacher, c.id, {
+    kind: 'tutor', description: 'Học tutor Listening (PR-D trễ)', performerName: 'Tutor B',
+    status: 'started', startedDate: addDays(TODAY, -20),
+  }) as any;
+  const ivId = info.interventions.find((i: any) => i.description === 'Học tutor Listening (PR-D trễ)').id;
+  cases.updateResult(P.coreTeacher, ivId, {
+    mode: 'monitor', outcome: 'unchanged', observedOn: TODAY,
+    note: 'Cập nhật muộn hơn hạn tuần, ghi lại để so (PR-D)',
+  });
+  const plan = prdCardOf(P.coreTeacher, prdStudent.id, c.id).plans.find((p: any) => p.id === ivId);
+  assert(plan.updates[0].late === true, 'Bắt đầu 20 ngày trước, cập nhật đúng hôm nay mà không ghi là trễ');
+});
+
+check('PR-D · CASE-05: điểm tự chấm cũ đã lưu vẫn đọc được sau khi bỏ ô nhập khỏi cập nhật phương án', () => {
+  const c = prdReportOn(prdStudent.id, 'test-prd-3a');
+  const info = cases.recordIntervention(P.coreTeacher, c.id, {
+    kind: 'tutor', description: 'Học tutor Listening (PR-D điểm cũ)', performerName: 'Tutor B',
+    status: 'started', startedDate: TODAY,
+  }) as any;
+  const ivId = info.interventions.find((i: any) => i.description === 'Học tutor Listening (PR-D điểm cũ)').id;
+  // Dữ liệu cũ: một lần cập nhật đã kèm điểm tự chấm (giao diện mới không còn gửi trường này).
+  cases.updateResult(P.coreTeacher, ivId, {
+    mode: 'monitor', outcome: 'partial', observedOn: TODAY,
+    note: 'Bản ghi cũ có kèm điểm cô tự chấm (PR-D)',
+    metrics: [{ skill: 'listening', score: 6, total: null }],
+  });
+  const detail = cases.caseDetail(P.coreTeacher, c.id) as any;
+  const f = detail.followups.find((x: any) => x.metrics?.length);
+  assert(f && f.metrics[0].skill === 'listening' && f.metrics[0].score === 6,
+    'Điểm tự chấm đã lưu bị mất — CASE-05 nói rõ phải giữ');
+});
+
+check('PR-D · CASE-06: case Ý thức hoàn thành bằng ghi chú + ngày, KHÔNG bị bắt chọn "tiến bộ đến đâu"', () => {
+  const stB = conn.prepare(`SELECT s.id FROM students s JOIN enrollments e ON e.student_id = s.id AND e.status='active'
+                             WHERE e.class_id = ? ORDER BY s.id DESC LIMIT 1`).get(mbClass) as any;
+  const c = cases.reportIssue(P.coreTeacher, {
+    title: 'Ý thức: quên bài về nhà (PR-D)', primaryCode: 'student.behaviour.participation',
+    studentId: stB.id, track: 'behaviour', topic: 'participation', urgency: 'attention',
+    summary: 'Em ít phát biểu ba buổi liền — case dựng riêng cho phép kiểm CASE-06.',
+    idempotencyKey: 'test-prd-4',
+  }) as any;
+  const kind = domain.interventionKindsFor('behaviour').selfServe[0];
+  cases.recordIntervention(P.coreTeacher, c.id, {
+    kind, description: 'Trao đổi riêng với em (PR-D)', performerName: 'GVCN',
+    status: 'completed', completedDate: TODAY,
+  });
+  assert(cases.closeBlockers(c.id).length === 0, 'Phương án đã xong mà case vẫn bị chặn');
+  const done = cases.closeCaseOutcome(P.coreTeacher, c.id, {
+    note: 'Đã trao đổi riêng, em hứa phát biểu nhiều hơn — kết thúc đợt này.', closedOn: TODAY,
+  } as any) as any;
+  assert(done.status === 'done' && done.closedAt, 'Case Ý thức không hoàn thành được nếu không chọn mức tiến bộ');
+  assert(done.outcome === null, `Ý thức không đo hiệu quả học thuật, không được bịa mức tiến bộ: ${done.outcome}`);
+  const j = conn.prepare(`SELECT title FROM journey_events WHERE event_type = 'case_closed' AND ref_table = 'sos_cases' AND ref_id = ?
+                           ORDER BY id DESC LIMIT 1`).get(c.id) as any;
+  assert(j && !/undefined/.test(j.title), `Dòng hành trình có chữ "undefined": ${j?.title}`);
+});
+
+check('PR-D · CASE-06 không nới sang học thuật: case học thuật thiếu mức tiến bộ vẫn bị từ chối', () => {
+  const c = prdReportOn(prdStudent.id, 'test-prd-5');
+  cases.recordIntervention(P.coreTeacher, c.id, {
+    kind: 'self_study', description: 'Nghe 30 phút mỗi ngày (PR-D học thuật)', performerName: 'GVCN',
+    status: 'completed', completedDate: TODAY,
+  });
+  assertThrows(
+    () => cases.closeCaseOutcome(P.coreTeacher, c.id, { note: 'Đã xong, em ổn định lại hẳn.' } as any),
+    /Mức độ thành công/, 'Case học thuật hoàn thành được mà không có mức tiến bộ',
+  );
+});
+
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`

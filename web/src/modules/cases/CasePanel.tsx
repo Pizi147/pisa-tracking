@@ -288,7 +288,7 @@ export function CasePanel({ caseId, compact = false, hideHeader = false, onChang
       </section>
 
       <OutcomeDialog open={outcome} onClose={() => setOutcome(false)} caseId={caseId}
-        category={data.category} categoryLabel={data.categoryLabel}
+        track={data.track ?? 'academic'} category={data.category} categoryLabel={data.categoryLabel}
         ratio={!!data.ratio} onDone={reload} />
       <CompleteDialog iv={completing} onClose={() => setCompleting(null)} onDone={reload} />
       <ActionDialog open={addAction} onClose={() => setAddAction(false)} caseId={caseId}
@@ -296,7 +296,6 @@ export function CasePanel({ caseId, compact = false, hideHeader = false, onChang
       <ApprovalDialog open={respondTo !== null} onClose={() => setRespondTo(null)}
         intervention={respondTo} onDone={reload} />
       <ResultDialog iv={resultFor} track={data.track ?? 'academic'}
-        ratio={!!data.ratio} categories={data.categories ?? []}
         onClose={() => setResultFor(null)} onDone={reload} />
     </div>
   );
@@ -697,8 +696,13 @@ function CompleteDialog({ iv, onClose, onDone }: {
  * Ghi chú từ nay BẮT BUỘC. Bốn cái nhãn "tiến bộ đến đâu" không nói được đã làm gì cho em
  * và vì sao dừng ở đây; ba tháng sau chính người viết cũng không đọc lại được.
  */
-function OutcomeDialog({ open, onClose, caseId, category, categoryLabel, ratio, onDone }: {
+export function OutcomeDialog({ open, onClose, caseId, track = 'academic', category, categoryLabel, ratio, onDone }: {
   open: boolean; onClose: () => void; caseId: number;
+  /**
+   * `behaviour` (Ý thức/Khác): chỉ ghi chú + ngày. KHÔNG hỏi "tiến bộ đến đâu", KHÔNG có ô
+   * điểm (CASE-06, rule book §17.2) — gia đình đã nhận report không có nghĩa là em tiến bộ.
+   */
+  track?: string;
   category: string | null; categoryLabel: string | null;
   ratio: boolean;
   onDone: () => void;
@@ -706,22 +710,25 @@ function OutcomeDialog({ open, onClose, caseId, category, categoryLabel, ratio, 
   const { session } = useSession();
   const toast = useToast();
   const today = session?.demoDate ?? '';
+  const behaviour = track === 'behaviour';
   const [outcome, setOutcome] = useState<string>('improved');
   const [note, setNote] = useState('');
   const [closedOn, setClosedOn] = useState(today);
   const [metrics, setMetrics] = useState<Record<string, { score: string; total: string }>>({});
   const [busy, setBusy] = useState(false);
 
-  const components = componentsFor(category, ratio ? 'ratio' : 'band');
+  const components = behaviour ? [] : componentsFor(category, ratio ? 'ratio' : 'band');
   const counts = componentsAreCounts(category);
 
   const submit = async () => {
     setBusy(true);
     try {
-      await api.post(`/cases/${caseId}/outcome`, {
-        outcome, note, closedOn: closedOn || undefined,
-        metrics: componentsPayload(category, metrics, counts),
-      });
+      await api.post(`/cases/${caseId}/outcome`, behaviour
+        ? { note, closedOn: closedOn || undefined }
+        : {
+          outcome, note, closedOn: closedOn || undefined,
+          metrics: componentsPayload(category, metrics, counts),
+        });
       invalidate('/cases'); invalidate('/my-work'); invalidate('/students');
       toast.push('ok', 'Đã hoàn thành case');
       onDone(); onClose(); setNote(''); setMetrics({});
@@ -733,22 +740,26 @@ function OutcomeDialog({ open, onClose, caseId, category, categoryLabel, ratio, 
   return (
     <Modal open={open} onClose={onClose} title="Hoàn thành case">
       <div className="space-y-4">
-        <div>
-          <p className="text-sm text-slate-300 m-0 mb-2">Sau cả đợt hỗ trợ, em tiến bộ đến đâu?</p>
-          <div className="flex flex-wrap gap-2">
-            {CASE_OUTCOMES.map((o) => (
-              <button key={o} type="button"
-                className={`btn btn-sm ${outcome === o ? 'btn-primary' : ''}`}
-                onClick={() => setOutcome(o)}>
-                {CASE_OUTCOME_LABEL[o]}
-              </button>
-            ))}
+        {!behaviour && (
+          <div>
+            <p className="text-sm text-slate-300 m-0 mb-2">Sau cả đợt hỗ trợ, em tiến bộ đến đâu?</p>
+            <div className="flex flex-wrap gap-2">
+              {CASE_OUTCOMES.map((o) => (
+                <button key={o} type="button"
+                  className={`btn btn-sm ${outcome === o ? 'btn-primary' : ''}`}
+                  onClick={() => setOutcome(o)}>
+                  {CASE_OUTCOME_LABEL[o]}
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
 
         <Field label="Kết luận" hint="Bắt buộc — đã làm gì cho em, kết quả ra sao, vì sao dừng ở đây.">
           <textarea className="field" rows={3} value={note} onChange={(e) => setNote(e.target.value)}
-            placeholder="Ví dụ: Em đã nghe đều hơn, bắt được số và tên riêng. Còn vướng câu hỏi dạng matching." />
+            placeholder={behaviour
+              ? 'Ví dụ: Đã gọi phụ huynh và trao đổi riêng với em. Em hứa nộp bài đúng hạn.'
+              : 'Ví dụ: Em đã nghe đều hơn, bắt được số và tên riêng. Còn vướng câu hỏi dạng matching.'} />
         </Field>
 
         <Field label="Ngày hoàn thành" hint="Ngày thật đã kết luận. Không nhận ngày ở tương lai.">
@@ -776,8 +787,9 @@ function OutcomeDialog({ open, onClose, caseId, category, categoryLabel, ratio, 
           )}
         </div>
         <SectionNote>
-          Hoàn thành KHÔNG phải là xoá: MT sau em trượt lại hạng mục này thì chính case này
-          mở lại, kèm một mốc tái phát — không sinh case mới.
+          {behaviour
+            ? 'Hoàn thành kết thúc đợt này. Nếu vấn đề tái diễn, đó là một đợt mới — kết luận cũ không bị viết lại.'
+            : 'Hoàn thành KHÔNG phải là xoá: MT sau em trượt lại hạng mục này thì chính case này mở lại, kèm một mốc tái phát — không sinh case mới.'}
         </SectionNote>
       </div>
     </Modal>
@@ -877,7 +889,7 @@ function componentsPayload(
  *   · "Hẹn xem lại" → **Dự kiến kết thúc phương án**. Đây là hạn HOÀN THÀNH, không phải một
  *     cái nhắc; bỏ trống thì lấy Chủ nhật tuần tiếp theo.
  */
-function ActionDialog({ open, onClose, caseId, track, onDone }: {
+export function ActionDialog({ open, onClose, caseId, track, onDone }: {
   open: boolean; onClose: () => void; caseId: number; track?: string | null; onDone: () => void;
 }) {
   const toast = useToast();
@@ -1142,83 +1154,6 @@ function ApprovalDialog({ open, onClose, intervention, onDone }: {
  * quả "Kém hơn" mà không ai phải làm gì tiếp là một kết quả sẽ bị quên.
  */
 /**
- * ĐIỂM GIÁO VIÊN TỰ CHẤM — ô TUỲ CHỌN, mặc định gấp lại (mục 7.7 [5] Option 2).
- *
- * Mặc định người ta chỉ ghi một câu ngắn, và bắt ai cũng phải nhìn một bảng điểm rỗng mỗi
- * lần cập nhật là cách nhanh nhất khiến họ ngại cập nhật. Ai muốn ghi kỹ thì mở ra.
- *
- * Con số ở đây KHÔNG phải điểm chính thức: nó không ghi đè điểm mock/test, không đổi mức
- * SOS, và trên biểu đồ tiến bộ nó là một ký hiệu riêng đứng rời.
- */
-function MetricsField({ ratio, categories, value, onChange }: {
-  ratio: boolean;
-  categories: { code: string; label: string }[];
-  value: Record<string, { score: string; total: string }>;
-  onChange: (v: Record<string, { score: string; total: string }>) => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const set = (code: string, part: 'score' | 'total', v: string) => {
-    const cur = value[code] ?? { score: '', total: '' };
-    onChange({ ...value, [code]: { ...cur, [part]: v } });
-  };
-
-  if (!open) {
-    return (
-      <button type="button" className="btn btn-sm btn-ghost" onClick={() => setOpen(true)}>
-        + Ghi thêm điểm bạn tự chấm (không bắt buộc)
-      </button>
-    );
-  }
-  return (
-    <div className="surface-2 rounded-lg p-3 space-y-2">
-      <div className="flex items-center justify-between gap-2">
-        <span className="label m-0">Điểm bạn tự chấm</span>
-        <button type="button" className="btn btn-sm btn-ghost" onClick={() => { setOpen(false); onChange({}); }}>
-          Bỏ phần này
-        </button>
-      </div>
-      <div className="space-y-1.5">
-        {categories.map((c) => (
-          <div key={c.code} className="flex items-center gap-2">
-            <span className="text-xs text-slate-300 w-24 shrink-0">{c.label}</span>
-            <input className="field max-w-[6rem]" type="number" inputMode="decimal"
-              step={ratio ? 1 : 0.5} min={0} max={ratio ? undefined : 9}
-              placeholder={ratio ? 'đạt' : 'band'}
-              value={value[c.code]?.score ?? ''} onChange={(e) => set(c.code, 'score', e.target.value)} />
-            {ratio && (
-              <>
-                <span className="text-slate-500">/</span>
-                <input className="field max-w-[6rem]" type="number" min={1} placeholder="tổng"
-                  value={value[c.code]?.total ?? ''} onChange={(e) => set(c.code, 'total', e.target.value)} />
-              </>
-            )}
-          </div>
-        ))}
-      </div>
-      <SectionNote>
-        Đây là ĐÁNH GIÁ CỦA BẠN, để riêng với điểm entrance/mock/test. Nó không ghi đè điểm
-        chính thức và không làm đổi mức SOS.
-      </SectionNote>
-    </div>
-  );
-}
-
-/** Đổi các ô đã nhập thành danh sách gửi lên máy chủ; ô để trống thì bỏ qua. */
-function metricsPayload(
-  v: Record<string, { score: string; total: string }>,
-  ratio: boolean,
-) {
-  const out = Object.entries(v)
-    .filter(([, m]) => m.score !== '' && m.score !== undefined)
-    .map(([skill, m]) => ({
-      skill,
-      score: Number(m.score),
-      total: ratio && m.total !== '' ? Number(m.total) : null,
-    }));
-  return out.length ? out : undefined;
-}
-
-/**
  * CẬP NHẬT KẾT QUẢ MỘT PHƯƠNG ÁN — HAI TAB (mục 9.1).
  *
  * Bản cũ bắt mọi lần ghi kết quả phải kèm một "bước tiếp theo". Nghe thì chặt chẽ, nhưng
@@ -1235,15 +1170,17 @@ function metricsPayload(
  * "Chưa đủ dữ liệu" chỉ ở được tab theo dõi: chưa có bài mới để nhìn thì đó là câu trả lời
  * trung thực, nhưng nó không phải một kết luận để khép việc lại.
  */
-function ResultDialog({ iv, track, ratio, categories, onClose, onDone }: {
+export function ResultDialog({ iv, track, startMode = 'monitor', onClose, onDone }: {
   iv: any | null; track: string;
-  ratio: boolean; categories: { code: string; label: string }[];
+  /** Tab mở sẵn — dùng khi đi từ ô ghi nhanh sang đây vì kết quả chưa tốt phải chọn cách đi tiếp. */
+  startMode?: 'monitor' | 'end';
   onClose: () => void; onDone: () => void;
 }) {
   const { session } = useSession();
   const toast = useToast();
   const today = session?.demoDate ?? '';
-  const [mode, setMode] = useState<'monitor' | 'end'>('monitor');
+  const [mode, setMode] = useState<'monitor' | 'end'>(startMode);
+  useEffect(() => { if (iv) setMode(startMode); }, [iv?.id, startMode]);
   const [outcome, setOutcome] = useState('');
   const [note, setNote] = useState('');
   const [nextStep, setNextStep] = useState('');
@@ -1252,7 +1189,6 @@ function ResultDialog({ iv, track, ratio, categories, onClose, onDone }: {
   const [newKind, setNewKind] = useState('tutor');
   const [newDesc, setNewDesc] = useState('');
   const [newTarget, setNewTarget] = useState<string>('real_exam');
-  const [metrics, setMetrics] = useState<Record<string, { score: string; total: string }>>({});
   const [busy, setBusy] = useState(false);
 
   const outcomes = outcomesFor(track).filter((o) => mode !== 'end' || canEndWithOutcome(o));
@@ -1262,8 +1198,8 @@ function ResultDialog({ iv, track, ratio, categories, onClose, onDone }: {
     && (nextStep !== 'propose' || newDesc.trim().length >= 8);
 
   const close = () => {
-    onClose(); setMode('monitor'); setOutcome(''); setNote(''); setNextStep('');
-    setNewDesc(''); setMetrics({});
+    onClose(); setMode(startMode); setOutcome(''); setNote(''); setNextStep('');
+    setNewDesc('');
   };
 
   const pickMode = (m: 'monitor' | 'end') => {
@@ -1285,7 +1221,6 @@ function ResultDialog({ iv, track, ratio, categories, onClose, onDone }: {
             rescheduleTarget: newKind === 'reschedule_mt' ? newTarget : null,
           }
           : null,
-        metrics: metricsPayload(metrics, ratio),
       });
       invalidate('/cases'); invalidate('/my-work'); invalidate('/students'); invalidate('/overview');
       toast.push('ok', mode === 'end' ? 'Đã kết thúc phương án' : 'Đã cập nhật, phương án vẫn đang chạy');
@@ -1352,10 +1287,6 @@ function ResultDialog({ iv, track, ratio, categories, onClose, onDone }: {
             <input type="date" className="field" value={observedOn} max={today}
               onChange={(e) => setObservedOn(e.target.value)} />
           </Field>
-
-          {track === 'academic' && categories.length > 0 && (
-            <MetricsField ratio={ratio} categories={categories} value={metrics} onChange={setMetrics} />
-          )}
 
           {mode === 'monitor' ? (
             <SectionNote>

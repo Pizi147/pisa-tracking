@@ -16,6 +16,7 @@
     "build": "tsc -p tsconfig.web.json --noEmit && npm run build:server && vite build",
     "typecheck": "tsc -p tsconfig.web.json --noEmit && tsc -p tsconfig.build.json --noEmit",
     "test": "npm run build:server && node dist-server/server/src/tests/run.js",
+    "check": "npm run build:server && npm test && npm run typecheck",
     "preview": "vite preview",
     "migrate": "node scripts/check-node.mjs && npm run build:server && node dist-server/server/src/migrate/run.js"
   },
