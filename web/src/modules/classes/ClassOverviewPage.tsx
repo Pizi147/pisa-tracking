@@ -15,7 +15,7 @@ import { TransitionPanel } from './TransitionPanel.tsx';
 import { MissingBadge } from '../students/MissingBadge.tsx';
 import { usePeriods } from '../../ui/Filters.tsx';
 import { fmtDate, skillLabel } from '../../lib/format.ts';
-import { skillShort } from '@shared/domain/index.ts';
+import { needScoresText, skillShort, type WorkScope } from '@shared/domain/index.ts';
 import { useSession } from '../../lib/session.tsx';
 
 type Overview = {
@@ -23,8 +23,8 @@ type Overview = {
   isFastTrack: boolean; startDate: string | null; note: string | null;
   branchId: number; branchCode: string; branchName: string;
   summary: {
-    studentCount: number; needScores: number; openCases: number;
-    /* Tiến độ lớp và những thứ còn thiếu — dùng chung một bộ với danh sách lớp. */
+    studentCount: number; needScores: number; openCases: number; workScope: WorkScope;
+    /* Lộ trình và những thứ còn thiếu — dùng chung một bộ với danh sách lớp. */
     progressLabel: string | null; phase: string; phaseLabel: string;
     currentWeek: number | null; totalWeeks: number | null;
     needsPlacement: boolean; placementOptions: { code: string; name: string }[];
@@ -93,8 +93,8 @@ export default function ClassOverviewPage() {
   const s = data.summary;
   /* Chỉ những việc THỰC SỰ đang tồn mới được chiếm chỗ trên màn hình. */
   const jobs = [
-    { n: s?.needScores ?? 0, label: 'bài cần chấm', tone: 'warn' as const, view: 'my_scores' },
-    { n: s?.openCases ?? 0, label: 'case chưa xong', tone: 'danger' as const, view: 'case_working' },
+    { n: s?.needScores ?? 0, text: needScoresText(s?.workScope ?? null, s?.needScores ?? 0), tone: 'warn' as const, view: 'my_scores' },
+    { n: s?.openCases ?? 0, text: `${s?.openCases ?? 0} case chưa xong`, tone: 'danger' as const, view: 'case_working' },
   ].filter((j) => j.n > 0);
 
   /* Một dòng cho mỗi kỹ năng của chương trình lớp — kể cả kỹ năng chưa có ai dạy. */
@@ -187,7 +187,7 @@ export default function ClassOverviewPage() {
           <span className="text-xs text-slate-500">Lớp này không có việc nào đang tồn.</span>
         ) : jobs.map((j) => (
           <Link key={j.view} className="no-underline" to={`/hoc-vien?view=${j.view}&classId=${data.id}&open=${data.id}`}>
-            <Task tone={j.tone}>{j.n} {j.label}</Task>
+            <Task tone={j.tone}>{j.text}</Task>
           </Link>
         ))}
         {/*
@@ -290,7 +290,7 @@ export default function ClassOverviewPage() {
         title="Quản lý lớp" subtitle={`${data.code} · ${data.branchName}`}>
         <div className="space-y-2">
           {/*
-            THÔNG TIN LỚP gộp "Tiến độ lớp" và "Phân công giáo viên" (mục 13.1). Hai mục cũ
+            THÔNG TIN LỚP gộp "Lộ trình" và "Phân công giáo viên" (mục 13.1). Hai mục cũ
             đều trả lời cùng một câu — lớp này được cấu hình thế nào — nên tách ra chỉ bắt
             người dùng đoán xem tuần khai giảng nằm ở mục nào.
           */}
@@ -335,7 +335,7 @@ export default function ClassOverviewPage() {
         title="Thông tin lớp" subtitle={`${data.code} · ${data.branchName}`}>
         <div className="space-y-2">
           {data.viewer.canEditProgress && (
-            <ManageItem label="Tiến độ lớp"
+            <ManageItem label="Lộ trình"
               hint="Tuần khai giảng, số tuần học, tuần Progress Test và Final Test."
               onClick={() => { setInfoOpen(false); setProgressOpen(true); }} />
           )}

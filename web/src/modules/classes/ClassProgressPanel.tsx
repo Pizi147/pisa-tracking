@@ -6,6 +6,7 @@ import { WeekPicker } from '../../ui/Filters.tsx';
 import { useToast } from '../../ui/Toast.tsx';
 import { Field, SectionNote, Skeleton, Status } from '../../ui/ui.tsx';
 import { fmtDate } from '../../lib/format.ts';
+import { MOC_KIEM_TRA_FT, MOC_KIEM_TRA_NORMAL } from '../../ui/chu.ts';
 
 type Progress = {
   programmeCode: string | null; programmeName: string | null;
@@ -69,7 +70,7 @@ export function ClassProgressPanel({ classId, classCode, onClose, onDone }: {
   return (
     <Drawer
       open onClose={onClose} width="max-w-xl"
-      title="Tiến độ lớp"
+      title="Lộ trình"
       subtitle={classCode}
       footer={
         <>
@@ -88,7 +89,7 @@ export function ClassProgressPanel({ classId, classCode, onClose, onDone }: {
           </div>
 
           <Field as="div" label="Tuần khai giảng" required={isNormal}
-            hint="Tuần này là TUẦN HỌC THỨ 1 của lớp. Hai mốc kiểm tra đếm từ đây.">
+            hint={`Tuần này là tuần học thứ 1 của lớp. ${isNormal ? MOC_KIEM_TRA_NORMAL : MOC_KIEM_TRA_FT}`}>
             <WeekPicker periodId={startPeriodId} label={null} scope="planning"
               onPeriod={(id) => { setTouched(true); setStartPeriodId(id); }} />
           </Field>

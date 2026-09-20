@@ -988,7 +988,7 @@ export const OUTCOME_MARK: Record<string, string> = {
 export const NEXT_STEPS = ['complete', 'monitor', 'continue', 'propose', 'ask_manager'] as const;
 export type NextStep = (typeof NEXT_STEPS)[number];
 export const NEXT_STEP_LABEL: Record<NextStep, string> = {
-  complete: 'Hoàn thành phương án',
+  complete: 'Kết thúc phương án',
   monitor: 'Theo dõi thêm',
   continue: 'Tiếp tục phương án cũ',
   propose: 'Đề xuất phương án mới',

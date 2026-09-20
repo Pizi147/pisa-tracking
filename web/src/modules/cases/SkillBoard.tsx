@@ -231,7 +231,7 @@ function SkillRow({ row, open, onToggle, onReport, onChanged }: {
 /**
  * MỘT THẺ CASE — MỘT KHỐI DUY NHẤT cho một case (PR-D).
  *
- * Trước đây bấm "Lịch sử và kết thúc phương án" thì nhúng nguyên `CasePanel` xuống dưới thẻ:
+ * Trước đây một nút lịch/kết thúc phương án nhúng nguyên `CasePanel` xuống dưới thẻ:
  * hai khối, cùng một case, hai cách trình bày. Nay thẻ này là nơi DUY NHẤT: một dòng phân loại,
  * câu mô tả, rồi MỖI PHƯƠNG ÁN MỘT DÒNG có mũi tên mở lịch sử ngay tại dòng. Hai việc thật
  * — thêm phương án, hoàn thành case — là hai nút ở chân thẻ, gọi đúng hộp thoại `CasePanel`
@@ -523,7 +523,7 @@ function PlanDue({ p }: { p: Plan }) {
  * MỘT panel, HAI lựa chọn, MỘT nút chính đổi chữ theo lựa chọn — không phải hai nút cạnh nhau:
  *
  *   · Ghi kết quả, tiếp tục theo dõi — ghi một chu kỳ, phương án VẪN CHẠY.
- *   · Hoàn thành phương án — thêm ngày kết thúc, phương án đóng lại.
+ *   · Kết thúc phương án — thêm ngày kết thúc, phương án đóng lại.
  *
  * Luật của máy chủ giữ nguyên: chỉ kết quả TỐT (có tiến bộ / tiến bộ một phần) mới khép được
  * một phương án suông; "Chưa đủ dữ liệu" không khép được. Kết quả chưa tốt thì BẮT BUỘC đi
@@ -581,7 +581,7 @@ function InlineResult({ p, track, contact, onClose, onDone }: {
       invalidate('/cases'); invalidate('/my-work');
       invalidate('/students'); invalidate('/overview');
       toast.push('ok', contact ? 'Đã ghi nhận'
-        : ending ? 'Đã hoàn thành phương án'
+        : ending ? 'Đã kết thúc phương án'
         : 'Đã ghi kết quả — phương án vẫn đang chạy');
       onDone(); onClose();
     } catch (e: any) {
@@ -599,7 +599,7 @@ function InlineResult({ p, track, contact, onClose, onDone }: {
           </button>
           <button type="button" aria-pressed={ending}
             className={`btn btn-sm ${ending ? 'btn-primary' : ''}`} onClick={() => pickMode('end')}>
-            Hoàn thành phương án
+            Kết thúc phương án
           </button>
         </div>
       )}
@@ -658,7 +658,7 @@ function InlineResult({ p, track, contact, onClose, onDone }: {
           <button type="button" className="btn btn-sm" onClick={onClose} disabled={busy}>Huỷ</button>
           <button type="button" className="btn btn-sm btn-primary"
             disabled={busy || !ready || (ending && !endOn)} onClick={save}>
-            {busy ? 'Đang lưu…' : contact ? 'Lưu' : ending ? 'Hoàn thành phương án' : 'Lưu, tiếp tục theo dõi'}
+            {busy ? 'Đang lưu…' : contact ? 'Lưu' : ending ? 'Kết thúc phương án' : 'Lưu, tiếp tục theo dõi'}
           </button>
         </span>
       </div>

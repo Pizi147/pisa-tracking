@@ -6,6 +6,7 @@ import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { Alert, Card, Empty, ErrorState, Field, Info, Level, Outcome, SectionNote, Skeleton, Status } from '../../ui/ui.tsx';
 import { Modal } from '../../ui/Drawer.tsx';
+import { CHUA_CO_PHUONG_AN, GOI_Y_THEM_PHUONG_AN } from '../../ui/chu.ts';
 import { caseStatusLabel, caseStatusTone, fmtBand, fmtDate, skillLabel, sosLabel, sosTone } from '../../lib/format.ts';
 import {
   CASE_CATEGORY_LABEL, CASE_OUTCOMES, CASE_OUTCOME_LABEL,
@@ -21,7 +22,7 @@ import {
  * MỘT VẤN ĐỀ HỌC VỤ, kể theo bốn câu hỏi người đọc thực sự cần:
  *
  *   1. Vì sao đang theo dõi?   → tóm tắt, ai phát hiện, phân loại, bằng chứng
- *   2. Đã làm gì?              → các tác động, ai làm, ngày nào
+ *   2. Đã áp dụng phương án nào? → các tác động, ai thực hiện, ngày nào
  *   3. Sau đó quan sát được gì?→ các lần xem lại
  *   4. Bước tiếp theo là gì?   → hướng xử lý, hẹn xem lại
  *
@@ -190,8 +191,7 @@ export function CasePanel({ caseId, compact = false, hideHeader = false, onChang
       {/* ══════════════════════════════════════════════════ dòng thời gian */}
       <section>
         {timeline.length === 0 ? (
-          <Empty title="Chưa có gì diễn ra"
-            hint="Ghi lại phương án đầu tiên để lần sau còn biết đã thử gì cho em." />
+          <Empty title={CHUA_CO_PHUONG_AN} hint={GOI_Y_THEM_PHUONG_AN} />
         ) : (
           <ol className="list-none p-0 m-0 relative pl-6"
               style={{ borderLeft: '2px solid var(--line-strong)', marginLeft: '5px' }}>
@@ -245,7 +245,7 @@ export function CasePanel({ caseId, compact = false, hideHeader = false, onChang
           */
           <p className="text-sm text-slate-400 m-0">
             {(data.interventions?.length ?? 0) === 0
-              ? 'Chưa có phương án hỗ trợ nào — chưa ai bắt tay vào việc.'
+              ? `${CHUA_CO_PHUONG_AN}.`
               : 'Case đang xử lý, chưa kết luận.'}
           </p>
         )}
@@ -512,7 +512,7 @@ function InterventionBody({ iv, followups, data, act }: {
     <>
       {iv.description && <p className="text-sm text-slate-300 mt-1 mb-0">{iv.description}</p>}
       <p className="text-xs text-slate-500 mt-1 mb-0">
-        {iv.performer ? `Người làm: ${iv.performer}` : 'Chưa có người thực hiện'}
+        {iv.performer ? `Người thực hiện: ${iv.performer}` : 'Chưa có người thực hiện'}
         {iv.byProxy && iv.recordedBy && ` · ${iv.recordedBy} nhập hộ`}
         {iv.completedDate && ` · xong ${fmtDate(iv.completedDate)}`}
         {!iv.completedDate && iv.startedDate && ` · bắt đầu ${fmtDate(iv.startedDate)}`}
@@ -1158,7 +1158,7 @@ function ApprovalDialog({ open, onClose, intervention, onDone }: {
  *
  * Bản cũ bắt mọi lần ghi kết quả phải kèm một "bước tiếp theo". Nghe thì chặt chẽ, nhưng
  * tuần nào cũng phải khai một quyết định không có thật: người dạy chỉ muốn nói "tuần này em
- * khá hơn một chút, tôi làm tiếp" mà phải chọn giữa "hoàn thành phương án" và "theo dõi
+ * khá hơn một chút, tôi làm tiếp" mà phải chọn giữa "kết thúc phương án" và "theo dõi
  * thêm". Ai chọn nhầm ô đầu là phương án bị khép lại, và case theo đó đóng sớm.
  *
  * Nay tách đúng hai việc:

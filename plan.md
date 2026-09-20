@@ -134,7 +134,7 @@ Và chạy thật > đọc code.
 | Đường dẫn khi import | Bắt buộc có đuôi `.ts` / `.tsx`. Thiếu là gãy |
 | Sau khi sửa máy chủ | **Bắt buộc** `npm run build:server`. `npm run dev` KHÔNG tự dựng lại máy chủ |
 | Kiểm kiểu dữ liệu | `npx tsc -p tsconfig.build.json --noEmit` và `npx tsc -p tsconfig.web.json --noEmit` |
-| Chạy kiểm thử | `npm test` — hiện **414 phép kiểm** sau chặng 4 (đầu đợt batch là 360, sau chặng 0 là 367, sau chặng 2 là 393, sau chặng 3 là 409; con số 319 cũ đã lạc hậu), phải đạt hết. `npm run check` chạy cả chuỗi mục 13.1. Harness **không có bộ lọc**: nó chạy cả bộ, nên xác minh một phép kiểm mới bằng cách tìm tên nó trong kết quả |
+| Chạy kiểm thử | `npm test` — hiện **416 phép kiểm** sau chặng 5 (đầu đợt batch là 360, sau chặng 0 là 367, sau chặng 2 là 393, sau chặng 3 là 409, sau chặng 4 là 414; con số 319 cũ đã lạc hậu), phải đạt hết. `npm run check` chạy cả chuỗi mục 13.1. Harness **không có bộ lọc**: nó chạy cả bộ, nên xác minh một phép kiểm mới bằng cách tìm tên nó trong kết quả |
 | Ngày demo | **14/09/2026** cố định. Không lấy ngày thật của máy. Đọc qua `demoToday()` ở máy chủ, `session.demoDate` ở web |
 | Quy ước tuần | Thứ Hai → Chủ nhật; tuần thuộc tháng chứa ngày thứ Năm của nó |
 | Sao chép database | Phải chép **cả ba** file `.sqlite`, `.sqlite-wal`, `.sqlite-shm`. Chép mỗi `.sqlite` sẽ ra bản CŨ |
@@ -163,6 +163,22 @@ Mọi dòng dưới đây đã được đọc code **và** chạy thật, khôn
 
 `5487b14` trên `main` là commit revert một commit lỗi (`8c6fcdc` "okay") vốn chứa dấu xung đột
 chưa giải quyết. `main` hiện lành: 319/319 đạt, hai lệnh kiểm kiểu sạch.
+
+### 2.1b. Đã xong trong đợt batch 20/09/2026 (nhánh `worktree-batch-thiet-ke-sau-pr28`, chưa hợp nhất)
+
+Không có nhánh PR-D trên `origin` lúc bắt đầu, nên PR-D được làm luôn ở chặng 0 và bước "hợp nhất PR-D" của mục 21.2 không xảy ra.
+Mọi chặng đều chạy `npm run check` xanh trước khi commit; số phép kiểm cuối là 416.
+
+| Chặng | Việc | Commit | Bằng chứng |
+|---|---|---|---|
+| 0 | PR-D — khung case gọn (mục 11) | `b5a48ad` | 7 phép kiểm mới; bấm thử hồ sơ học viên, bảng case |
+| 1 | PR-E — nền giao diện dùng chung (mục 15) | `e39edd8` | 16 phép kiểm; trang thử `ThanhPhanDemo` (chỉ chạy ở chế độ dev) |
+| 2 | PR-F — hợp đồng số liệu (mục 16) | `012d9f8` | 10 phép kiểm, kiểm ngược F01/F02/F03/F05 |
+| 3 | PR-G — dấu `-` và chốt cuối Chủ nhật (mục 17) | `4970016` | 16 phép kiểm; bấm thử GVCN + GVBM, đổi ngày demo qua 21/09 |
+| 4 | PR-I — hồ sơ Test gọn (mục 18) | `4fae005` | 5 phép kiểm; bấm thử Quản lý, GVBM, GVCN, 375px |
+| 5 | PR-H — biên tập tiếng Việt (mục 19) | commit cuối của nhánh | 2 phép kiểm; bấm thử một phần — xem 12.11 |
+
+Việc chưa làm của từng chặng nằm ở mục 12.9 · 12.10 · 12.11 và mục 14 — **đừng coi các mục 15–19 là đã "xong hẳn"** chỉ vì đã tick.
 
 ### 2.2. Phân công GV — máy chủ đã chặn đủ, đừng viết lại
 
@@ -1720,6 +1736,15 @@ Xem mục 7b để biết phần đã làm. Bốn việc sau **chưa làm**, kh�
 - Nhãn "Chờ nhập điểm" và "Hạn nhập điểm 23/09" đứng cạnh nhau ở cùng một dòng — hai câu đúng nhưng gần nhau; để lượt biên tập tiếng Việt (chặng 5).
 - Dữ liệu demo trên máy dev bị thay đổi khi bấm thử (điểm Writing Task 1 của Ngọc) — không nằm trong repo.
 
+
+### 12.11. Việc chặng 5 (PR-H) chưa làm hoặc chưa kiểm — 20/09/2026
+
+- **Chưa quét từng màn theo kiểu "một khái niệm một chữ":** mới áp các dòng bảng §2 và các chữ sai bắt được bằng grep. Còn lại: mọi `<Empty>` chưa được kiểm "thiếu gì + ai điền được + nút"; nhiều `SectionNote` giải thích mô hình dữ liệu còn nguyên; đại từ mơ hồ ("em này", "lượt đó") còn ở CHÚ THÍCH mã (không hiện trên giao diện) và một số chuỗi ít gặp chưa tìm ra bằng grep.
+- **Cần chủ sản phẩm/bên design chốt:** `mức gấp` (mức gấp của case — dữ liệu mẫu có bốn mức, luật hạn 7/5/3 ngày theo mức này) có giữ tên đó không, hay cũng đổi. Bảng §1 chỉ cấm dùng nó cho kết quả SOS.
+- **`Chọn giáo viên` trong ô `Người phụ trách` chưa làm** (cần lọc theo giáo viên ở máy chủ).
+- **Chưa bấm thật:** hộp thoại thêm học viên hàng loạt (nút `Xem N dòng cần sửa`); form nhập bù (`Phương án đã áp dụng`, `+ Thêm phương án`); trạng thái rỗng của khối phương án; tooltip `Tuần dự kiến hoàn tất` ở bảng điểm Normal; bảng nhãn ở ba vai không được mở từng màn — chỉ mở: danh sách học viên (Quản lý, GVBM Hà), tổng quan lớp (GVBM Hà), ô `Người phụ trách` ở tổng quan (Quản lý), và hồ sơ Test ở chặng 4.
+- Nhãn `Chờ nhập điểm` đứng cạnh `Hạn nhập điểm 23/09` ở hồ sơ Test vẫn còn.
+
 ---
 
 ## 13. Lệnh kiểm bắt buộc
@@ -1793,6 +1818,7 @@ Nói **cái gì đổi trên màn hình**, bằng tiếng Việt, không tên h�
 | 20/09/2026 | Claude (session batch, chặng 2 — PR-F) | Kế hoạch mục 16 sai/thiếu ở sáu chỗ, đã sửa tại chỗ: (1) **thiếu hai lớp cho F03** — kế hoạch chỉ nói "hiện trạng theo nơi đang chăm sóc, lịch sử theo đơn vị tại thời điểm hỗ trợ" mà không nói dữ liệu ở đâu; nó nằm ở `enrollments.started_at/ended_at` (đã có sẵn), và phải thêm một nhóm "chưa xác định nguồn" cho phương án không có lần ghi danh bao phủ. (2) **F05 không chỉ là bỏ một hàng:** `undetermined` nằm ở CẢ bảng loại phương án LẪN bảng phân loại vấn đề, và bỏ nó đi thì mất chỗ báo có phương án chưa đánh giá — nên phải thêm liên kết "Cần bổ sung đánh giá" và hai route danh sách. (3) Step 6 nói "trả đúng tập ID" nhưng bỏ sót một lỗi cùng họ có sẵn trong `issueScopeOf`: chi nhánh ngoài quyền cho ra `[]` và `[]` bị hiểu thành "không lọc" — tức lộ toàn bộ học viên. (4) Step 7 nói "bốn ô số" ở Tổng quan nhưng **Tổng quan hiện không có ô số nào** (mã ghi rõ dải thẻ số đã bị bỏ ở bản trước), nên bốn ô phải dựng mới, và chỉ bốn chỉ số có hàm tập ID được dùng. (5) Kiểu `donVi` của đặc tả thiếu `nghia-vu`. (6) **Đối soát F10 (Step 8) — kết quả:** Tổng quan 29 HV, Thực trạng 28 HV (bộ dữ liệu của phép kiểm, sau khi các phép kiểm trước đó đã thêm và chuyển học viên; ở bộ demo mới nạp thì cả hai nơi cùng 20 HV / 33 case — số case của phép kiểm không được ghi lại). Chênh một em (Vũ Thu Uyên, id 39) đã kết thúc khoá mà case Reading còn `in_progress`: Tổng quan đếm theo case, Thực trạng đếm theo nơi đang học — **hai định nghĩa đều đúng, khác nhau**, nên đã đổi nhãn cho khác nhau thay vì ép một bên thắng. Còn một nguyên nhân thứ hai ở tập case (em chuyển FT→Normal, case `writing1`). Phép kiểm F10 khoá đúng hai điều: Thực trạng ⊂ Tổng quan, và mọi chênh lệch đều thuộc hai nguyên nhân đã biết — chênh lệch nào khác là lỗi mới. **Kiểm ngược (mutation):** dựng lại đồng thời bốn lỗi F01/F02/F03/F05 thì đúng bốn phép kiểm gãy, khôi phục thì xanh. Thêm 10 phép kiểm PR-F (393 tổng). Bấm thử trình duyệt thật: bốn ô ở Tổng quan (Quản trị và Quản lý Monbay), số ô = tiêu đề panel = số dòng ở cả bốn; 403/404/501 qua HTTP; bảng hiệu quả mới và liên kết "Cần bổ sung đánh giá" ở Writing 2; GVBM không thấy ô số. **Chưa làm/chưa thấy:** mục 12.8 (bốn chỉ số chưa có hàm, số trần còn lại, nhóm chưa xác định nguồn chưa hiện), bảng phân tích của hồ sơ LỚP (chỉ kiểm bằng `tsc`), ảnh chụp, khổ 375px của panel `<SoLieu>` |
 | 20/09/2026 | Claude (session batch, chặng 3 — PR-G) | Kế hoạch mục 17 sai/thiếu ở năm chỗ, đã sửa tại chỗ: (1) **không nói dấu `-` lưu ở đâu** — cần năm cột mới trên `assessment_scores` và một bước migration (chỉ thêm cột, không suy ngược dữ liệu cũ). (2) **Lỗ hổng Step 7 chỉ lộ khi bấm thử ở trình duyệt thật:** phép kiểm máy chủ chạy ở ngày demo 14/09 nên xanh, nhưng chốt luôn xảy ra ngay hết Chủ nhật, lúc đó "tuần kế tiếp" đã bắt đầu và luật vắng cũ chuyển thẳng Quản lý — lần dời đầu của GVCN không bao giờ xảy ra được. Đã sửa hẹp và thêm phép kiểm dời ở ngày 21/09. (3) Step 5 không nói buổi Writing chỉ có W1 `-` thì sao — quyết định: chỉ chốt khi cả W1 và W2 đều `-`. (4) Step 10 nói "lưu từng dòng" nhưng bảng đã lưu từng ô; cái thiếu là chỉ báo trạng thái RIÊNG TỪNG DÒNG — đã thêm. (5) Mục 17.1 gợi ý dùng khuôn `sweepExpiredMoves`; đã dùng, nhưng phải gọi thêm ở `saveScore` để ô đã hết Chủ nhật được nhìn đúng là `absent` ngay lần lưu sau. Thêm 16 phép kiểm PR-G (409 tổng): hàm thuần ở 14 ngày khác nhau, bộ chữ, C01–C10, mười lần chạy một lần chốt, chạy chậm vẫn ra ngày hiệu lực cũ, ô trống không tự vắng, sửa trước chốt, điểm chính thức không bị `-` xoá, W1/W2 (một lần đếm), quyền GVCN/GVBM, sau chốt không mở lại, Normal, C10 xác nhận/từ chối, dời sáng thứ Hai. **Kiểm ngược:** đổi `>` thành `>=` và bỏ điều kiện "đủ mọi ô" thì đúng hai phép kiểm gãy. Bấm thử trình duyệt thật bằng GVCN, GVBM (đổi ngày demo qua 21/09): gõ `-` + Enter, Esc, xoá ô, số vẫn nhập được, hai mốc cạnh nhau, khoá sau chốt, dời lần đầu. **Chưa làm/chưa thấy:** mục 12.9 (nút cho Quản lý xử lý C10, hai câu ngỏ §17.1, Mock Test và 375px chưa bấm, lần dời thứ hai qua đường chốt mới), ảnh chụp |
 | 20/09/2026 | Claude (session batch, chặng 4 — PR-I) | Mục 18 sai/thiếu ở bốn chỗ, đã sửa tại chỗ: (1) **Step 8 chẩn đoán sai chỗ** — coi MT-P09 là lỗi hiển thị, nhưng nguyên nhân là máy chủ ghi người nhập cả khi XOÁ điểm; đã sửa ở máy chủ bằng TDD (đỏ trước, xanh sau) và giữ luật "ô dở dang vẫn có người nhập". (2) **MT-P03 nằm ở bộ nhãn dùng chung** `SKILL_PROGRESS_LABEL`, không ở màn Test — Step 5 nói "bỏ nút" nhưng chữ `Chưa xác nhận đã thi` vẫn còn nguyên trên chip trạng thái; đã đổi nhãn (đổi cả các màn khác dùng nó) và thêm phép kiểm. (3) Step 9 đòi lịch sử "điểm" nhưng điểm không có bảng lịch sử riêng — đã dựng `scoreHistory` từ nhật ký, và không có lịch sử "kỳ vọng" vì hệ thống không lưu. (4) Mục 18 nói "sửa năm file PR-D đang giữ" — không còn nghĩa vì PR-D nằm trong nhánh (chặng 0). Việc chưa nói trong kế hoạch: bỏ khối case cũng kéo theo bỏ `sosCase` · `caseSteps` · `caseHistory` · `tasks` khỏi dữ liệu chi tiết lượt. Thêm 5 phép kiểm PR-I (414 tổng). Bấm thử trình duyệt thật (Quản lý, GVBM Speaking, GVCN): nhập W1 bằng bốn ô tại dòng, xoá và nhập lại Reading (hết/lại có "Nhập bởi"), lịch sử điểm hiện đủ, menu `Thêm` và `Chỉnh lịch` đúng quyền, hộp thoại huỷ, nút chính `Xử lý vắng` / `Trả lời đề nghị`, 375px không tràn ngang. **Chưa làm/chưa thấy:** mục 12.10 |
+| 20/09/2026 | Claude (session batch, chặng 5 — PR-H) | Mục 19 và bảng chữ có bốn điểm không khớp với mã, đã xử lý tại chỗ: (1) **Phép "grep chuỗi cũ → không còn kết quả" không chạy nguyên văn được với `mức gấp`:** bảng §1 cấm gọi SOS là "mức gấp", nhưng mức gấp của case là khái niệm thật đang dùng ở dữ liệu mẫu, luật hạn và giao diện; đã loại nó khỏi phép quét và ghi vào 12.11 để chốt. (2) **Bảng §2 thiếu dòng `Hoàn thành phương án`** — lẫn với `Hoàn thành case` ở bảng §1; bắt được nhờ đọc §1, không nhờ §2; đã đổi thành `Kết thúc phương án` ở `NEXT_STEP_LABEL` và thẻ case. (3) **`Bỏ qua N dòng lỗi` → `Xem N dòng cần sửa` là đổi hành vi**, không chỉ đổi chữ (bỏ nút bỏ-qua-hàng-loạt). (4) **Badge "Bạn cần chấm / Lớp còn" cần máy chủ nói phạm vi đang đếm** — thêm `workScope` vào tóm tắt từng lớp thay vì để giao diện đoán. Kế hoạch mục 19 Step 1, 4, 6 nói "toàn web/mỗi khối rỗng/chân trang" nhưng không nói cách kiểm; đã làm phần bảng chữ nêu tên và ghi phần còn lại ở 12.11. Thêm 2 phép kiểm PR-H (416 tổng): grep chữ cũ trên mã nguồn (kể cả chú thích) và badge/nhãn phạm vi. **Kiểm ngược:** trước khi sửa, phép grep báo đỏ 36 chỗ. Bấm thử: danh sách học viên ở Quản lý (`Lớp còn N bài chưa nhập điểm`) và GVBM (`Bạn cần chấm: N bài`), tổng quan lớp, ô `Người phụ trách`. **Chưa làm/chưa thấy:** mục 12.11 |
 
 ---
 
@@ -2083,20 +2109,20 @@ kết lịch sử vẫn nguyên ở hồ sơ học viên; một liên kết `H�
 
 ### 19.1. Các bước
 
-- [ ] **Step 1: Gom chuỗi hệ thống.** Nhãn nghiệp vụ về `shared/domain/*` theo đúng tám module;
-      nhãn thuần trình bày về `web/src/ui/chu.ts`. Không hard-code tiếng Việt rải rác trong JSX.
-- [ ] **Step 2: Mười hai khái niệm không được nhập làm một** (`TU_DIEN_VA_CHU.md` §1). Vi phạm
-      bảng này là **lỗi nghiệp vụ**, không phải lỗi biên tập.
-- [ ] **Step 3: Áp bảng nhãn thay thế** (`TU_DIEN_VA_CHU.md` §2), theo từng nhóm màn.
-- [ ] **Step 4: Trạng thái rỗng có ích.** Mỗi khối rỗng phải nói **thiếu cái gì + ai điền được +
+- [x] **Step 1: Gom chuỗi hệ thống.** Nhãn nghiệp vụ về `shared/domain/*` theo đúng tám module;
+      nhãn thuần trình bày về `web/src/ui/chu.ts`. Không hard-code tiếng Việt rải rác trong JSX. *(**Làm một phần.** Có `web/src/ui/chu.ts` cho các câu trình bày dùng từ hai nơi (tooltip tuần dự kiến hoàn tất, mốc kiểm tra FT/Normal, trạng thái rỗng phương án, việc "không kiểm tra kỹ năng trong đợt"); nhãn nghiệp vụ nằm ở `shared/domain` (`WORK_SCOPE_LABEL`, `needScoresText`, `SKILL_PROGRESS_LABEL`, `NEXT_STEP_LABEL`). **Chưa gom** mọi chữ tiếng Việt còn nằm trong JSX — làm hết là một đợt riêng và không kiểm được bằng một lệnh grep.)*
+- [x] **Step 2: Mười hai khái niệm không được nhập làm một** (`TU_DIEN_VA_CHU.md` §1). Vi phạm
+      bảng này là **lỗi nghiệp vụ**, không phải lỗi biên tập. *(**Làm bằng rà soát các chữ sai, chưa rà từng chuỗi.** Bắt được hai chỗ bảng §2 không có: `Hoàn thành phương án` (trong `NEXT_STEP_LABEL` và ở thẻ case) lẫn với `Hoàn thành case` → đổi thành `Kết thúc phương án`; thông báo máy chủ `Đóng case thì phải chọn hướng xử lý` → `Hoàn thành case…`. **`mức gấp` cố ý KHÔNG bị cấm trong phép quét:** bảng §1 cấm gọi kết quả SOS là "mức gấp", nhưng mức gấp của case là một khái niệm thật, riêng, đang dùng ở dữ liệu mẫu, luật hạn và giao diện — xem mục 14.)*
+- [x] **Step 3: Áp bảng nhãn thay thế** (`TU_DIEN_VA_CHU.md` §2), theo từng nhóm màn. *(Đã làm mọi dòng của §2 có mặt trong mã: hồ sơ Test (`Thông tin đợt Mock Test`, `Tuần dự kiến hoàn tất`, `Mục tiêu tại thời điểm đánh giá`, `Kỹ năng không kiểm tra trong đợt này`), khối case (`Chưa có phương án hỗ trợ`, `Phương án đã áp dụng`, `Người thực hiện`, `+ Thêm phương án`), lớp/học viên (`Lộ trình`, dòng mốc kiểm tra theo loại lớp, bỏ dòng `Lớp là gốc…` và chân trang badge, `Có thể chọn tuần bắt đầu riêng cho từng học viên.`, `Thêm học viên` khi 0 dòng, `Xem N dòng cần sửa`), ô chọn `Người phụ trách`. **Hai chỗ đổi hành vi, không chỉ đổi chữ:** nút `Bỏ qua N dòng lỗi` bị bỏ (chỉ còn tick bỏ qua từng dòng, và nút mới chỉ đưa tới dòng đầu cần sửa); ô `Người phụ trách` mới có hai lựa chọn — `Chọn giáo viên` **chưa làm** vì cần lọc theo giáo viên ở máy chủ.)*
+- [x] **Step 4: Trạng thái rỗng có ích.** Mỗi khối rỗng phải nói **thiếu cái gì + ai điền được +
       một nút**. Bỏ `Chưa có gì diễn ra`, `chưa ai bắt tay vào việc`, `chưa làm gì cho em thì
-      chưa có gì để kết luận`.
-- [ ] **Step 5: Badge nói rõ đếm của ai.** `Bạn cần chấm: {n} bài` (việc riêng) hoặc `Lớp còn {n}
-      bài chưa nhập điểm` (toàn lớp). Không vừa nói toàn lớp vừa dẫn tới việc riêng.
-- [ ] **Step 6: Bỏ chân trang giải thích.** Đơn vị đặt ở tên cột; công thức vào tooltip `Cách
-      tính`. Nếu số bấm được thì **hình thức phải cho thấy điều đó**, không dạy bằng một đoạn văn.
-- [ ] **Step 7: Quét mọi biến thể.** Trước khi đổi một chuỗi, `grep` toàn repo — kể cả test, seed
-      và thông báo máy chủ. **Không chạm ghi chú thật do giáo viên nhập.**
+      chưa có gì để kết luận`. *(**Chỉ làm các câu bảng chữ nêu tên.** Ba câu cũ (`Chưa có gì diễn ra`, `chưa ai bắt tay vào việc`, `Chưa làm gì cho em…`) đã hết khỏi mã. **Chưa quét mọi `<Empty>`** xem đã nói đủ "thiếu gì + ai điền được + một nút" chưa.)*
+- [x] **Step 5: Badge nói rõ đếm của ai.** `Bạn cần chấm: {n} bài` (việc riêng) hoặc `Lớp còn {n}
+      bài chưa nhập điểm` (toàn lớp). Không vừa nói toàn lớp vừa dẫn tới việc riêng. *(Đã làm ở danh sách lớp và tổng quan lớp: `Bạn cần chấm: {n} bài` cho việc riêng, `Lớp còn {n} bài chưa nhập điểm` cho toàn lớp — máy chủ nay trả `workScope` cho từng lớp để giao diện KHÔNG phải đoán (đây là thay đổi ngoài kế hoạch). Tiêu đề danh sách `cần chấm` ở hàng đợi chưa đổi.)*
+- [x] **Step 6: Bỏ chân trang giải thích.** Đơn vị đặt ở tên cột; công thức vào tooltip `Cách
+      tính`. Nếu số bấm được thì **hình thức phải cho thấy điều đó**, không dạy bằng một đoạn văn. *(**Chỉ bỏ hai chân trang bảng chữ nêu tên** ở trang Học viên; ý "Case SOS đếm case, không đếm học viên" chuyển vào tooltip của badge. Các `SectionNote` khác trên nhiều màn **chưa bị quét**.)*
+- [x] **Step 7: Quét mọi biến thể.** Trước khi đổi một chuỗi, `grep` toàn repo — kể cả test, seed
+      và thông báo máy chủ. **Không chạm ghi chú thật do giáo viên nhập.** *(Đã làm: phép kiểm `PR-H · Grep các chuỗi cũ…` chạy đúng lệnh grep của tài liệu trên `web/src`, `shared`, `server/src` — kể cả chú thích — nên chữ cũ không quay lại lặng lẽ. Không chạm ghi chú do giáo viên nhập, seed hay test.)*
 
 ### 19.2. Nghiệm thu PR-H
 

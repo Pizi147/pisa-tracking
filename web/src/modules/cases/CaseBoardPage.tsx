@@ -478,7 +478,7 @@ export function CaseBoard({ embedded = false }: { embedded?: boolean } = {}) {
       */}
       {mode === 'place' && can(PERMISSIONS.MEETING_EDIT) && <ManagerTaskList periodId={taskPeriod} />}
 
-      {/* Không có nút "Mở trang riêng": route `/hoc-thuat/case/:id` vẫn còn cho link sâu từ thông báo. */}
+      {/* Không có nút mở trang riêng: route `/hoc-thuat/case/:id` vẫn còn cho link sâu từ thông báo. */}
       <Drawer open={openCase !== null} onClose={() => setOpenCase(null)} title="Vấn đề - Case">
         {openCase !== null && <CasePanel caseId={openCase} />}
       </Drawer>

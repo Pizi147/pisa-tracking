@@ -1490,7 +1490,7 @@ export function setDisposition(p: Principal, caseId: number, input: {
     }
     const disposition = input.disposition ?? c.disposition;
     if (!disposition) {
-      throw badRequest('Đóng case thì phải chọn hướng xử lý — để biết case kết thúc vì đã giải quyết hay bị bỏ quên.');
+      throw badRequest('Hoàn thành case thì phải chọn hướng xử lý — để biết case kết thúc vì đã giải quyết hay bị bỏ quên.');
     }
     /*
      * CHỈ ĐÓNG ĐƯỢC KHI MỌI PHƯƠNG ÁN ĐÃ KHÉP LẠI (mục 7.7 [5]).
@@ -2155,7 +2155,7 @@ export function caseQueueCounts(p: Principal, f: CaseFilters = {}) {
  *
  *   1. Em đang ở đâu ở môn này?      → band MT gần nhất, so với kỳ vọng, và so với lần trước
  *   2. Có case không, đang thế nào?  → trạng thái, đã kéo qua mấy lượt MT
- *   3. Đã làm gì cho em rồi?         → phương án mới nhất và kết quả của nó
+ *   3. Đã áp dụng phương án nào?     → phương án mới nhất và kết quả của nó
  *
  * Hạng mục KHÔNG có case vẫn hiện một dòng. Đó là điểm khác với danh sách case: người dạy
  * cần thấy cả những môn đang ổn, nếu không thì "không thấy Reading" có hai nghĩa — ổn, hoặc

@@ -9196,6 +9196,53 @@ check('PR-I · Nhập điểm KHÔNG cần bấm "Đã thi" (có điểm thì t�
   assert(prgSit(row.id, 'listening').sit_status === 'sat', 'Có điểm thì suy ra đã thi — không cần ai bấm "Đã thi"');
 });
 
+
+// ==================================================================== PR-H (chặng 5)
+
+/*
+ * BIÊN TẬP TIẾNG VIỆT — một khái niệm, một chữ (thiet-ke/TU_DIEN_VA_CHU.md). Nghiệm thu ở tài liệu là "grep các chuỗi cũ →
+ * không còn kết quả nào ngoài file tài liệu"; phép kiểm này CHẠY đúng lệnh grep đó trên mã nguồn, kể cả chú thích, để một
+ * lần biên tập sau không lặng lẽ đưa chữ cũ trở lại. Bản thân danh sách chuỗi cũ nằm ở đây nên file này được loại khỏi phép quét.
+ */
+const PRH_OLD_STRINGS = [
+  // hồ sơ Test
+  'Kế hoạch MT', 'Tuần hoàn tất', 'Target lúc đánh giá', 'Chưa xác nhận đã thi', 'Bỏ khỏi phạm vi', 'Đưa lại vào phạm vi',
+  // khối case và phương án
+  'Chưa có gì diễn ra', 'Ghi lại phương án đầu tiên', 'chưa ai bắt tay vào việc', 'Chưa làm gì cho em', 'Đã làm gì',
+  'Người làm', '+ thêm dòng', 'Lịch sử và kết thúc phương án', 'Mở trang riêng',
+  // danh sách lớp, học viên, nhập liệu
+  'Lớp là gốc', 'Badge chỉ xuất hiện', 'Em nào vào muộn thì ghi đè', 'Cả lô này vào một lớp', 'Bỏ qua {blocking} dòng lỗi',
+  'Thêm 0 học viên', 'Việc của tôi', 'Cả phạm vi quản lý', 'Hai mốc kiểm tra đếm từ đây', 'Tiến độ lớp',
+  // mười hai khái niệm — chữ tuyệt đối không viết
+  'SOS ý thức', 'Hoàn thành phương án', 'hoàn thành phương án', 'Đã hoàn thành phương án',
+];
+const prhSourceFiles = (dir: string): string[] => fs.readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
+  const p = path.join(dir, e.name);
+  if (e.isDirectory()) return e.name === 'tests' || e.name === 'node_modules' ? [] : prhSourceFiles(p);
+  return /\.(ts|tsx|sql)$/.test(e.name) ? [p] : [];
+});
+
+check('PR-H · Grep các chuỗi cũ của bảng chữ: không còn ở mã nguồn (kể cả chú thích), chỉ còn trong tài liệu', () => {
+  const files = ['web/src', 'shared', 'server/src'].flatMap((d) => prhSourceFiles(path.join(ROOT, '..', d)));
+  assert(files.length > 50, `Quét quá ít file (${files.length}) — sai đường dẫn gốc?`);
+  const hits: string[] = [];
+  for (const file of files) {
+    const text = fs.readFileSync(file, 'utf8');
+    for (const old of PRH_OLD_STRINGS) {
+      if (text.includes(old)) hits.push(`${path.relative(path.join(ROOT, '..'), file).replace(/\\/g, '/')}: "${old}"`);
+    }
+  }
+  assert(hits.length === 0, `Còn ${hits.length} chỗ dùng chữ cũ:\n    ${hits.join('\n    ')}`);
+});
+
+check('PR-H · Badge đếm nói rõ ĐẾM CỦA AI: việc riêng khác toàn lớp, và phạm vi có tên đúng bộ chữ', () => {
+  assert(domain.needScoresText('mine', 3) === 'Bạn cần chấm: 3 bài', `mine: "${domain.needScoresText('mine', 3)}"`);
+  assert(domain.needScoresText('managed', 5) === 'Lớp còn 5 bài chưa nhập điểm', `managed: "${domain.needScoresText('managed', 5)}"`);
+  assert(domain.needScoresText(null, 5) === 'Lớp còn 5 bài chưa nhập điểm', 'Không nói ai đang xem thì mặc định là toàn lớp');
+  assert(domain.WORK_SCOPE_LABEL.mine === 'Tôi' && domain.WORK_SCOPE_LABEL.managed === 'Tất cả trong phạm vi',
+    `Nhãn phạm vi: ${JSON.stringify(domain.WORK_SCOPE_LABEL)}`);
+});
+
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`

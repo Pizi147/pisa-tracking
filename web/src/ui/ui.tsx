@@ -63,7 +63,7 @@ export const SCORE_TEXT: Record<ScoreTone, string> = {
  * HAI LUẬT MÀU KHÔNG ĐƯỢC PHÁ (mục 2.2):
  *
  *   · XANH LÁ CHỈ DÀNH CHO `<Outcome>`. Xanh lá là một lời khen, và chỉ kết quả học tập mới
- *     có căn cứ để khen. "Đã lưu", "đã hoàn thành phương án", "không có case" đều KHÔNG phải
+ *     có căn cứ để khen. "Đã lưu", "đã kết thúc phương án", "không có case" đều KHÔNG phải
  *     là tin tốt — chúng chỉ là việc đã xong hoặc chưa có tin gì.
  *   · MÀU KHÔNG BAO GIỜ ĐỨNG MỘT MÌNH. Mỗi họ có hình dạng và biểu tượng riêng, nên người
  *     không phân biệt được màu vẫn đọc ra nghĩa.

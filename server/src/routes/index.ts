@@ -413,7 +413,7 @@ api.post('/attempts/:id/skills/:skill/skip', requireAuth, wrap((req) => {
  * thi tuần nào · đã thi hay vắng · hạn chấm là ngày nào.
  *
  * Mỗi đường đi qua đúng hàm nghiệp vụ của nó, nên ràng buộc thứ tự đợt, quyền theo lớp và
- * nhật ký giữ nguyên dù người dùng vào từ màn chi tiết, bảng điểm hay panel Kế hoạch MT.
+ * nhật ký giữ nguyên dù người dùng vào từ màn chi tiết, bảng điểm hay panel Lịch Mock Test.
  */
 api.post('/attempts/:id/skills/:skill/week', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
@@ -799,7 +799,7 @@ api.post('/cycles/:id/target-revision', requireAuth, wrap((req) => {
  * án và có kết quả.
  */
 
-// ============================================================ Tiến độ lớp và lịch MT
+// ============================================================ Lộ trình lớp và lịch MT
 
 /** Lớp đang ở tuần thứ mấy, sắp thi gì, và đã hết chương trình chưa. */
 api.get('/classes/:id/progress', requireAuth, wrap((req) => {

@@ -118,7 +118,7 @@ export function MockPlanPanel({ classId, branchId, onClose, onDone }: {
     <Drawer
       open onClose={onClose} width="max-w-4xl"
       title="Kế hoạch Test"
-      subtitle="Chọn lượt MT riêng cho từng em, rồi chốt chung một tuần"
+      subtitle="Chọn lượt MT riêng cho từng học viên, rồi xếp chung một tuần"
       footer={
         <>
           <button className="btn" onClick={onClose} disabled={busy}>Đóng</button>
@@ -204,7 +204,7 @@ export function MockPlanPanel({ classId, branchId, onClose, onDone }: {
               )}
               {/*
                 ĐĂNG KÝ HÀNG LOẠT MỘT LƯỢT — mục 10. Bấm "MT2 cho tất cả" là chọn MT2 cho
-                mọi em trong danh sách chưa có lượt đó; em đã có thì bỏ qua, không ghi đè.
+                mọi học viên trong danh sách chưa có lượt đó; ai đã có thì bỏ qua, không ghi đè.
               */}
               {missingNo && (
                 <button className="btn btn-sm" onClick={() => pickAll(missingNo)}>
@@ -306,7 +306,7 @@ function MockSlots({ row, picked, onPick }: {
               : had
               ? { borderColor: 'var(--accent-line)', color: 'var(--accent-strong)' }
               : { borderColor: 'var(--line-strong)', color: 'var(--text-dim)' }}
-            title={had ? `MT${no} đã xếp ở ${had.periodCode ?? 'một tuần'}` : `Xếp MT${no} cho em này`}
+            title={had ? `MT${no} đã xếp ở ${had.periodCode ?? 'một tuần'}` : `Xếp MT${no} cho học viên này`}
             onClick={() => onPick(no)}
           >
             MT{no}{had ? ' ·' : ''}

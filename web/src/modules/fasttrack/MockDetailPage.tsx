@@ -15,6 +15,7 @@ import {
   attemptHref, attemptStatusLabel, fmtBand, fmtDate, fmtDateTime, progressLabel, skillLabel,
 } from '../../lib/format.ts';
 import { ASSESSED_SKILL_LABEL } from '@shared/domain/index.ts';
+import { KIEM_TRA_LAI_KY_NANG, KY_NANG_KHONG_KIEM_TRA, TOOLTIP_TUAN_HOAN_TAT } from '../../ui/chu.ts';
 import { usePeriods } from '../../ui/Filters.tsx';
 
 type Detail = {
@@ -177,7 +178,7 @@ export default function MockDetailPage() {
       {d.cancelReason && cancelled && <p className="text-xs text-rose-200 m-0">Đã huỷ: {d.cancelReason}</p>}
 
       <details className="rounded-lg border px-3 py-2" style={{ borderColor: 'var(--line)' }}>
-        <summary className="cursor-pointer text-sm text-slate-300">Thông tin đợt</summary>
+        <summary className="cursor-pointer text-sm text-slate-300">Thông tin đợt Mock Test</summary>
         <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-2 lg:grid-cols-4 m-0 mt-3">
           <Info label="Trạng thái">
             <Status kind={d.status === 'done' ? 'done' : cancelled ? 'idle' : 'doing'}>
@@ -185,13 +186,13 @@ export default function MockDetailPage() {
             </Status>
           </Info>
           <Info label="Tuần dự kiến hoàn tất"
-            title="Tuần của môn thi muộn nhất, dùng để xếp đợt vào các bảng theo tuần. Không phải ngày thi và không phải ngày hoàn thành thật.">
+            title={TOOLTIP_TUAN_HOAN_TAT}>
             {d.period
               ? <>{d.period.code} <span className="text-slate-500 text-xs">({d.period.range})</span></>
               : <Tag pending>Chưa chốt tuần</Tag>}
           </Info>
           <Info label="Thi thật dự kiến"><ExamPlanText plan={d.cycle.examPlan} /></Info>
-          <Info label="Mục tiêu lộ trình">{fmtBand(d.targetAtAttempt)}</Info>
+          <Info label="Mục tiêu tại thời điểm đánh giá">{fmtBand(d.targetAtAttempt)}</Info>
           {d.studyWeekHint && (
             <Info label="Mốc gợi ý" title="Tuần học của chương trình và mã tuần lịch là hai khái niệm khác nhau.">
               Tuần học FT {d.studyWeekHint}
@@ -345,14 +346,14 @@ function SkillWorkTable({ d, save, onDone, onOpenHistory }: {
       }
       if (d.viewer.canSkipSkill && !cancelled && d.scoringMode === 'band') {
         items.push({
-          label: r.required ? 'Bỏ khỏi phạm vi' : 'Đưa lại vào phạm vi', danger: r.required,
+          label: r.required ? KY_NANG_KHONG_KIEM_TRA : KIEM_TRA_LAI_KY_NANG, danger: r.required,
           hint: r.required ? 'Quyết định chốt TRƯỚC khi thi' : undefined,
           onClick: () => void act(
             () => api.post(`/attempts/${d.id}/skills/${r.skill}/skip`, {
               skipped: r.required,
               reason: r.required ? 'Quản lý chốt trước: đợt này không yêu cầu kỹ năng đó' : undefined,
             }),
-            r.required ? `${r.label} đã ra khỏi phạm vi yêu cầu` : `${r.label} đã trở lại phạm vi yêu cầu`,
+            r.required ? `${r.label} không kiểm tra trong đợt này` : `${r.label} được kiểm tra lại trong đợt này`,
           ),
         });
       }
@@ -465,7 +466,7 @@ function SkillWorkTable({ d, save, onDone, onOpenHistory }: {
       action={d.splitWeeks ? <Tag>Đợt này thi ở nhiều tuần</Tag> : undefined}>
       {!d.completionWeek.valid && (
         <p className="text-xs text-amber-200 mt-0 mb-3">
-          Chưa có kế hoạch hoàn tất hợp lệ: {d.completionWeek.blockingLabels.join(', ')} chưa có tuần thi
+          Chưa có kế hoạch hợp lệ cho tuần dự kiến hoàn tất: {d.completionWeek.blockingLabels.join(', ')} chưa có tuần thi
           hoặc đã bị huỷ phần thi. Đợt vẫn chưa đủ kết quả cho tới khi Quản lý xếp lại.
         </p>
       )}
@@ -568,7 +569,7 @@ const actionLabel = (a: string) =>
   ({
     created: 'Tạo kế hoạch', week_set: 'Đổi lịch', lrw_set: 'Chốt buổi chính',
     speaking_set: 'Chốt buổi Speaking', cancelled: 'Huỷ lượt', reopened: 'Mở lại',
-    skill_skipped: 'Bỏ khỏi phạm vi', skill_restored: 'Đưa lại vào phạm vi',
+    skill_skipped: KY_NANG_KHONG_KIEM_TRA, skill_restored: KIEM_TRA_LAI_KY_NANG,
     deadline_set: 'Hẹn xử lý cả đợt', deadline_cleared: 'Bỏ hẹn xử lý cả đợt',
     skill_week_set: 'Đổi lịch', skill_week_moved_absence: 'Dời do vắng',
     skill_sit_status: 'Trạng thái thi', completion_week: 'Tuần dự kiến hoàn tất',
