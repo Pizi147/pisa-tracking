@@ -23,3 +23,4 @@ export * from './week.ts';
 export * from './worklist.ts';
 export * from './people.ts';
 export * from './display.ts';
+export * from './metrics.ts';

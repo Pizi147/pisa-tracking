@@ -47,6 +47,7 @@ import * as sysconfigSvc from '../platform/sysconfig.ts';
 import * as mgmtSvc from '../worklist/mgmttasks.ts';
 import * as highlightSvc from '../worklist/highlights.ts';
 import { weeklyRollup } from '../worklist/weekly.ts';
+import { metricSet, rowsFor } from '../worklist/metrics.ts';
 import { myWork } from '../worklist/mywork.ts';
 import * as caseSvc from '../cases/cases.ts';
 import * as caseSignalSvc from '../cases/signals.ts';
@@ -602,6 +603,46 @@ api.get('/issue-board/cases', requireAuth, wrap((req) => {
   const category = qStr(req, 'category');
   if (!category) throw badRequest('Chưa chọn kỹ năng để xem chi tiết.');
   return effectiveness.issueBoardCases(issueScopeOf(req), category, qStr(req, 'code'));
+}));
+
+/**
+ * PHƯƠNG ÁN CẦN BỔ SUNG ĐÁNH GIÁ (F05) — đã kết thúc nhưng chưa có kết quả xác định. Không nằm trong
+ * bảng hiệu quả và không vào mẫu số, nhưng cũng không được biến mất: đây là danh sách việc cần làm.
+ * Cùng bộ lọc phạm vi với bảng vừa bấm, nên số ghi ở liên kết và danh sách mở ra là một.
+ */
+api.get('/issue-board/needs-evaluation', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  const category = qStr(req, 'category');
+  if (!category) throw badRequest('Chưa chọn kỹ năng để xem chi tiết.');
+  const need = effectiveness.plansNeedingEvaluation({ ...issueScopeOf(req), category });
+  return { count: need.count, rows: rowsFor('phuong-an', need.ids) };
+}));
+
+api.get('/classes/:id/issue-board/needs-evaluation', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  const p = principalOf(req);
+  const id = pInt(req, 'id');
+  require_(p, PERMISSIONS.CASE_VIEW, { classId: id }, 'Lớp này nằm ngoài phạm vi bạn được xem.');
+  const category = qStr(req, 'category');
+  if (!category) throw badRequest('Chưa chọn kỹ năng để xem chi tiết.');
+  const need = effectiveness.plansNeedingEvaluation({ classId: id, category, fromDate: qStr(req, 'from') ?? null });
+  return { count: need.count, rows: rowsFor('phuong-an', need.ids) };
+}));
+
+/**
+ * DRILL-DOWN DÙNG CHUNG CỦA MỌI CON SỐ (hợp đồng số liệu, PR-F). MỘT route, mọi chỉ số: nhận `id` của
+ * chỉ số trong sổ và phạm vi, gọi ĐÚNG hàm đã sinh ra con số, áp CÙNG bộ quyền. Số là độ dài của tập;
+ * `?rows=1` thêm dòng để vẽ danh sách. Hỏi chi nhánh ngoài quyền thì bị từ chối (403) — không trả tập
+ * rút gọn; phạm vi rỗng trả rỗng, không hiểu thành toàn hệ thống.
+ */
+api.get('/metrics/:id', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  const r = metricSet(principalOf(req), String(req.params.id), { branchId: qInt(req, 'branchId') });
+  return {
+    id: r.id, unit: r.unit, n: r.n, numerator: r.numeratorIds ? r.numeratorIds.length : null,
+    empty: r.empty, note: r.note, today: r.today, ids: r.ids,
+    rows: qStr(req, 'rows') === '1' ? rowsFor(r.unit, r.ids) : undefined,
+  };
 }));
 
 api.get('/classes/:id/overview', requireAuth, wrap((req) => {

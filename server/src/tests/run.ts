@@ -8497,6 +8497,346 @@ check('PR-E · Ngày nghiệp vụ khác ngày ghi nhận thì hiện CẢ HAI (
     domain.businessDateText('2026-09-14', '2026-09-14T03:00:00Z', '2026-09-14'));
 });
 
+// ==================================================================== PR-F (chặng 2)
+
+/*
+ * HỢP ĐỒNG SỐ LIỆU — một chỉ số = một hàm trả về TẬP ID; số là độ dài của tập, danh sách khi bấm
+ * vào là chính tập đó (thiet-ke/HOP_DONG_SO_LIEU.md). Bốn lỗi được đóng bằng cấu trúc:
+ *   F01 (P0) hai chi nhánh cùng tuần cộng lẫn nhau · F02 "HV đang gặp" lẫn case đã đóng ·
+ *   F03 hiệu quả cũ đi theo lớp hiện tại · F05 hàng "chưa xác định" vẫn nằm trong bảng hiệu quả.
+ */
+const metricsSvc = await import('../worklist/metrics.ts');
+const branchIdOf = (code: string) => (conn.prepare('SELECT id FROM branches WHERE code = ?').get(code) as any).id as number;
+
+check('PR-F · Sổ chỉ số: đúng mười một chỉ số, mỗi chỉ số đủ tám trường (thiếu một trường thì không được lên dashboard)', () => {
+  const list = domain.METRICS as readonly any[];
+  assert(list.length === 11, `Phải có mười một chỉ số, đang có ${list.length}`);
+  const expected = ['hv-sos-hien-tai', 'hv-duoi-ky-vong-mon', 'hv-co-case-mo', 'case-mo', 'tin-hieu-cho-xac-minh',
+    'case-thieu-pa', 'pa-can-cap-nhat', 'pa-co-ket-qua', 'ty-le-co-cai-thien', 'dung-han-cap-nhat', 'do-phu-danh-gia'];
+  for (const id of expected) assert(list.some((m) => m.id === id), `Thiếu chỉ số ${id}`);
+  assert(new Set(list.map((m) => m.id)).size === list.length, 'Có hai chỉ số trùng mã');
+  const fields = ['id', 'ten', 'cauHoi', 'donVi', 'tapDuDieuKien', 'thoiGian', 'khuTrung', 'drilldown'];
+  for (const m of list) {
+    for (const f of fields) {
+      assert(typeof m[f] === 'string' && m[f].trim().length > 0, `Chỉ số ${m.id} thiếu trường "${f}"`);
+    }
+    assert(['hoc-vien', 'case', 'phuong-an', 'bai-thi', 'tin-hieu', 'dot-test', 'nghia-vu'].includes(m.donVi), `${m.id}: đơn vị lạ "${m.donVi}"`);
+    assert(['hien-trang', 'phat-sinh-trong-ky', 'ket-qua-trong-ky'].includes(m.thoiGian), `${m.id}: thời gian lạ "${m.thoiGian}"`);
+  }
+  assert(domain.metricById('hv-co-case-mo')?.ten === 'Học viên có case đang mở', 'metricById phải tra đúng chỉ số');
+  assert(domain.metricById('khong-co') === null, 'metricById của mã lạ phải là null');
+});
+
+check('PR-F · F01 (P0): hai chi nhánh CÙNG TUẦN không cộng lẫn số case, học viên và đề xuất chờ duyệt của nhau', () => {
+  const pid = (conn.prepare(`SELECT id FROM report_periods WHERE code = 'W3 AUG 2026'`).get() as any)?.id;
+  assert(pid, 'Bộ demo thiếu tuần W3 AUG 2026 để dựng phép kiểm F01');
+  const mb = branchIdOf('MB'), cp = branchIdOf('CP');
+  /* SỰ THẬT ĐỘC LẬP: đếm thẳng bằng SQL, không đi qua weeklyRollup. */
+  const truth = (bid: number) => conn.prepare(
+    `SELECT COUNT(DISTINCT sc.id) AS cases, COUNT(DISTINCT sc.student_id) AS students
+       FROM sos_cases sc JOIN assessment_attempts a ON a.id = sc.attempt_id JOIN classes c ON c.id = a.class_id
+      WHERE a.planned_period_id = ? AND c.branch_id = ? AND a.status != 'cancelled' AND COALESCE(sc.sos_level, 1) > 0`,
+  ).get(pid, bid) as any;
+  const tMb = truth(mb), tCp = truth(cp);
+  assert(tMb.cases > 0 && tCp.cases > 0, `Cần cả hai chi nhánh cùng có case trong tuần này, đang MB=${tMb.cases} CP=${tCp.cases}`);
+  const rowOf = (bid: number | null) => (weekly.weeklyRollup(P.admin, bid ? { branchId: bid } : {}).rows as any[])
+    .find((r) => r.periodId === pid);
+  const rMb = rowOf(mb), rCp = rowOf(cp), rAll = rowOf(null);
+  assert(rMb.cases === tMb.cases, `Lọc MB: cột Case phải là ${tMb.cases}, đang ${rMb.cases} (đang cộng lẫn case của chi nhánh khác)`);
+  assert(rMb.caseStudents === tMb.students, `Lọc MB: cột Học viên phải là ${tMb.students}, đang ${rMb.caseStudents}`);
+  assert(rCp.cases === tCp.cases, `Lọc CP: cột Case phải là ${tCp.cases}, đang ${rCp.cases}`);
+  assert(rCp.caseStudents === tCp.students, `Lọc CP: cột Học viên phải là ${tCp.students}, đang ${rCp.caseStudents}`);
+  const branchesWithCases = (conn.prepare(
+    `SELECT COUNT(DISTINCT c.branch_id) n FROM sos_cases sc JOIN assessment_attempts a ON a.id = sc.attempt_id
+       JOIN classes c ON c.id = a.class_id WHERE a.planned_period_id = ? AND a.status != 'cancelled'`,
+  ).get(pid) as any).n;
+  assert(branchesWithCases === 2, `Tiền đề của phép cộng: tuần này chỉ có case ở đúng hai chi nhánh, đang ${branchesWithCases}`);
+  assert(rAll.cases === tMb.cases + tCp.cases, `Không lọc: ${rAll.cases} phải bằng MB ${tMb.cases} + CP ${tCp.cases}`);
+
+  /* Đề xuất chờ duyệt của CP không được chảy sang hàng của MB. */
+  const before = { mb: rMb.pendingApproval, cp: rCp.pendingApproval };
+  const cpCase = conn.prepare(
+    `SELECT sc.id FROM sos_cases sc JOIN assessment_attempts a ON a.id = sc.attempt_id JOIN classes c ON c.id = a.class_id
+      WHERE a.planned_period_id = ? AND c.branch_id = ? AND sc.status != 'done' AND COALESCE(sc.sos_level, 1) > 0 LIMIT 1`,
+  ).get(pid, cp) as any;
+  assert(cpCase, 'Không có case mở của CP trong tuần để dựng đề xuất chờ duyệt');
+  cases.recordIntervention(P.admin, cpCase.id, {
+    kind: 'extra_support', description: 'Xin hỗ trợ ngoài định mức (F01 chờ duyệt)', performerName: 'GVCN',
+  });
+  assert(rowOf(mb).pendingApproval === before.mb,
+    `Đề xuất chờ duyệt của CP chảy sang hàng MB: ${before.mb} → ${rowOf(mb).pendingApproval}`);
+  assert(rowOf(cp).pendingApproval === before.cp + 1, `Hàng CP phải tăng đúng 1, đang ${rowOf(cp).pendingApproval}`);
+});
+
+/*
+ * Chỉ lấy em ĐÃ BẮT ĐẦU học trước các ngày phương án dùng trong phép kiểm (bộ demo có em ghi danh
+ * nhưng khai giảng SAU ngày demo — phương án của em đó, tính đúng luật F03, là "chưa xác định nguồn").
+ */
+const prfStudentsPool = (category: string) => conn.prepare(
+  `SELECT s.id FROM students s JOIN enrollments e ON e.student_id = s.id AND e.status = 'active'
+    WHERE e.class_id = ? AND substr(e.started_at, 1, 10) <= '2026-08-24' AND NOT EXISTS (
+      SELECT 1 FROM sos_cases sc WHERE sc.student_id = s.id AND sc.category = ?)
+    ORDER BY s.id`,
+).all(mbClass, category) as any[];
+const prfReadingCode = domain.issuesForTopic('reading')[0].code;
+const prfCase = (studentId: number, key: string) => cases.reportIssue(P.admin, {
+  title: 'Vấn đề Reading (PR-F)', primaryCode: prfReadingCode, studentId, topic: 'reading',
+  summary: 'Case dựng riêng cho phép kiểm hợp đồng số liệu PR-F.', idempotencyKey: key, parallel: true,
+}) as any;
+const prfPlan = (caseId: number, name: string, extra: Record<string, unknown> = {}) => {
+  const info = cases.recordIntervention(P.admin, caseId, {
+    kind: 'self_study', description: name, performerName: 'GVCN', status: 'started', startedDate: '2026-08-25', ...extra,
+  }) as any;
+  return info.interventions.find((i: any) => i.description === name).id as number;
+};
+const prfEnd = (ivId: number, outcome: string, day: string, next: any = { nextStep: 'complete' }) =>
+  cases.updateResult(P.admin, ivId, {
+    mode: 'end', outcome, note: 'Kết quả cuối của phương án (PR-F)', observedOn: day, completedOn: day, ...next,
+  });
+
+check('PR-F · F02: thêm một case ĐÃ ĐÓNG không làm tăng "HV đang gặp"; hiệu quả lịch sử vẫn đọc được', () => {
+  const pool = prfStudentsPool('reading');
+  assert(pool.length >= 2, `Cần hai học viên chưa có case Reading trong lớp, đang có ${pool.length}`);
+  const rowOf = () => ((effectiveness.classIssueBoard(mbClass, 'reading') as any).rows as any[])
+    .find((r) => r.code === prfReadingCode)
+    ?? { cases: 0, openCases: 0, students: 0, studentsEver: 0, plans: 0, success: 0 };
+  const before = rowOf();
+
+  const closed = prfCase(pool[0].id, 'test-prf-f02-closed');
+  prfEnd(prfPlan(closed.id, 'Ôn Reading 30 phút mỗi ngày (F02 đóng)'), 'improved', '2026-09-10');
+  cases.closeCaseOutcome(P.admin, closed.id, { outcome: 'improved', note: 'Đã xong, em ổn định lại hẳn (F02).' });
+  const mid = rowOf();
+  assert(mid.cases === before.cases + 1, `Số case phải +1, đang ${before.cases} → ${mid.cases}`);
+  assert(mid.openCases === before.openCases, 'Case đã đóng không được làm tăng số case đang mở');
+  assert(mid.students === before.students,
+    `"HV đang gặp" đếm cả em chỉ có case ĐÃ ĐÓNG (F02): ${before.students} → ${mid.students}`);
+  assert(mid.studentsEver === before.studentsEver + 1, `Chỉ số lịch sử phải đếm em này: ${before.studentsEver} → ${mid.studentsEver}`);
+  assert(mid.success === before.success + 1, 'Hiệu quả lịch sử phải VẪN đọc được phương án của case đã đóng');
+
+  const open = prfCase(pool[1].id, 'test-prf-f02-open');
+  assert(open.id, 'Không tạo được case mở');
+  const after = rowOf();
+  assert(after.students === mid.students + 1, `Em có case đang mở phải được đếm: ${mid.students} → ${after.students}`);
+  assert(after.openCases === mid.openCases + 1, 'Case mở phải tăng số case đang mở');
+});
+
+check('PR-F · F03: em chuyển chi nhánh SAU khi kết thúc phương án — hiện trạng sang nơi mới, kết quả lịch sử giữ nơi cũ', () => {
+  const single = conn.prepare(
+    `SELECT s.id, e.id AS enr FROM students s JOIN enrollments e ON e.student_id = s.id AND e.status = 'active'
+      WHERE e.class_id = ? AND (SELECT COUNT(*) FROM enrollments x WHERE x.student_id = s.id) = 1
+      ORDER BY s.id DESC`,
+  ).all(mbClass) as any[];
+  assert(single.length >= 1, 'Cần một học viên chỉ có đúng một lần ghi danh trong MB-FT 101');
+  const st = single[0];
+  const cpClass = classId('CP-FT 110');
+  /* Em học ở CP từ 01/06 đến 31/07, chuyển sang MB từ 01/08. */
+  conn.prepare(`UPDATE enrollments SET started_at = '2026-08-01' WHERE id = ?`).run(st.enr);
+  conn.prepare(
+    `INSERT INTO enrollments (student_id, class_id, status, started_at, ended_at, end_reason, created_at)
+     VALUES (?, ?, 'transferred', '2026-06-01', '2026-07-31', 'Chuyển chi nhánh (F03)', '2026-06-01T00:00:00Z')`,
+  ).run(st.id, cpClass);
+
+  const c = prfCase(st.id, 'test-prf-f03');
+  const inCp = prfPlan(c.id, 'Ôn Reading khi còn học ở CP (F03)', { startedDate: '2026-07-05' });
+  prfEnd(inCp, 'improved', '2026-07-10');                 // đang ở CP lúc kết thúc
+  const inMb = prfPlan(c.id, 'Ôn Reading sau khi sang MB (F03)', { startedDate: '2026-08-10' });
+  prfEnd(inMb, 'partial', '2026-08-20');                  // đã ở MB lúc kết thúc
+  const before = prfPlan(c.id, 'Ôn Reading trước khi vào lớp nào (F03)', { startedDate: '2026-04-20' });
+  prfEnd(before, 'improved', '2026-05-01');               // chưa có lần ghi danh nào bao phủ ngày này
+
+  const mb = branchIdOf('MB'), cp = branchIdOf('CP');
+  const ids = (branch: number) => (effectiveness.planOutcomes({ branchIds: [branch], ratio: false }) as any[]).map((r) => r.id);
+  assert(ids(cp).includes(inCp), 'Kết quả lịch sử phải GIỮ ở CP — nơi em học lúc phương án kết thúc');
+  assert(!ids(mb).includes(inCp), 'Kết quả cũ của CP bị quy sang MB chỉ vì em đang học ở MB (F03)');
+  assert(ids(mb).includes(inMb), 'Phương án kết thúc khi em đã ở MB phải thuộc MB');
+  assert(!ids(cp).includes(inMb), 'Phương án của MB bị quy sang CP');
+  /* Thiếu dữ liệu quá khứ → "chưa xác định nguồn", KHÔNG quy cho nơi hiện tại. */
+  assert(!ids(mb).includes(before) && !ids(cp).includes(before), 'Phương án không rõ nguồn bị quy cho một chi nhánh');
+  const unknown = (effectiveness.planOutcomesUnattributed({ ratio: false }) as any[]).map((r) => r.id);
+  assert(unknown.includes(before), 'Phương án không rõ nguồn phải hiện ở nhóm "chưa xác định nguồn"');
+  assert(!unknown.includes(inCp), 'Phương án đã rõ nguồn không được nằm ở nhóm chưa xác định');
+  /* HIỆN TRẠNG vẫn theo nơi đang chăm sóc: case đang mở của em này thuộc MB. */
+  const openNow = (branch: number) => (effectiveness.issueBoardCases({ branchIds: [branch], ratio: false } as any, 'reading', null) as any)
+    .rows.some((r: any) => r.caseId === c.id);
+  assert(openNow(mb), 'Hiện trạng: case đang mở phải hiện ở MB — nơi em đang học');
+  assert(!openNow(cp), 'Hiện trạng: case đang mở không được hiện ở CP — em đã rời CP');
+});
+
+check('PR-F · F05: phương án CHƯA XÁC ĐỊNH ra khỏi bảng hiệu quả, thành liên kết "Cần bổ sung đánh giá" ngoài bảng', () => {
+  const pool = prfStudentsPool('reading');
+  assert(pool.length >= 1, 'Cần một học viên chưa có case Reading');
+  const c = prfCase(pool[pool.length - 1].id, 'test-prf-f05');
+  /* Đánh dấu đã xong nhưng KHÔNG ai ghi kết quả → nhóm chưa xác định. */
+  const info = cases.recordIntervention(P.admin, c.id, {
+    kind: 'teaching_adjust', description: 'Chỉnh cách dạy Reading (F05 chưa đánh giá)', performerName: 'GVCN',
+    /* Ngày hôm nay: chắc chắn nằm SAU lần ghi danh, nên phương án gán được về lớp này. */
+    status: 'completed', completedDate: TODAY,
+  }) as any;
+  const ivId = info.interventions.find((i: any) => i.description === 'Chỉnh cách dạy Reading (F05 chưa đánh giá)').id;
+  const eff = effectiveness.planEffectiveness({ classId: mbClass, category: 'reading' }) as any[];
+  for (const k of eff) {
+    assert(!('undetermined' in k), `Hàng "${k.kind}" vẫn mang cột undetermined dù đã bị loại khỏi mẫu số (F05)`);
+    assert(k.decided === k.success + k.failure, `Loại ${k.kind}: mẫu số lẫn phương án chưa rõ`);
+  }
+  const need = effectiveness.plansNeedingEvaluation({ classId: mbClass, category: 'reading' }) as any;
+  assert(need.ids.includes(ivId) && need.count === need.ids.length,
+    `Phương án chưa đánh giá phải nằm ở "Cần bổ sung đánh giá", đang count=${need.count}`);
+  const board = effectiveness.classIssueBoard(mbClass, 'reading') as any;
+  for (const r of board.rows) assert(!('undetermined' in r), `Hàng "${r.code}" của bảng vấn đề vẫn mang cột undetermined`);
+  assert(board.needsEvaluation.count >= 1, 'Bảng phải báo có phương án cần bổ sung đánh giá (ở ngoài bảng)');
+});
+
+check('PR-F · Tỷ lệ có cải thiện là 2/3, KHÔNG phải 2/4: chưa xác định ra khỏi mẫu số; PA cập nhật 4 lần chỉ đóng góp một kết quả', () => {
+  const pool = prfStudentsPool('reading');
+  assert(pool.length >= 1, 'Cần một học viên chưa có case Reading');
+  const sid = pool[0].id;
+  const rate = () => effectiveness.improvementRate({ studentIds: [sid] }) as any;
+  const before = rate();
+  const c = prfCase(sid, 'test-prf-rate');
+
+  /* PA 1: cập nhật BỐN lần rồi kết thúc — vẫn chỉ là MỘT kết quả cuối. */
+  const four = prfPlan(c.id, 'Ôn Reading bốn lần cập nhật (rate)');
+  for (const day of ['2026-09-01', '2026-09-05', '2026-09-08']) {
+    cases.updateResult(P.admin, four, { mode: 'monitor', outcome: 'partial', note: 'Cập nhật hằng tuần (PR-F rate)', observedOn: day });
+  }
+  prfEnd(four, 'improved', '2026-09-12');
+  assert((effectiveness.planOutcomes({ studentIds: [sid] }) as any[]).filter((r) => r.id === four).length === 1,
+    'PA cập nhật bốn lần phải đóng góp đúng MỘT kết quả cuối');
+  /* PA 2: tiến bộ một phần. PA 3: kém hơn (phải đi tiếp bằng phương án mới). PA 4: chưa xác định. */
+  prfEnd(prfPlan(c.id, 'Ôn Reading tiến bộ một phần (rate)'), 'partial', '2026-09-11');
+  prfEnd(prfPlan(c.id, 'Ôn Reading kém hơn (rate)'), 'worse', '2026-09-11', {
+    nextStep: 'propose',
+    newPlan: { kind: 'self_study', description: 'Thay bằng ôn Reading có bấm giờ (rate)', performerName: 'GVCN' },
+  });
+  cases.recordIntervention(P.admin, c.id, {
+    kind: 'teaching_adjust', description: 'Chỉnh cách dạy chưa đánh giá (rate)', performerName: 'GVCN',
+    status: 'completed', completedDate: '2026-09-02',
+  });
+
+  const after = rate();
+  assert(after.N === before.N + 3, `Mẫu số phải +3 (ba PA có kết quả xác định), đang ${before.N} → ${after.N} — PA chưa xác định vào mẫu số?`);
+  assert(after.n === before.n + 2, `Tử số phải +2 (tiến bộ + một phần), đang ${before.n} → ${after.n}`);
+  assert(after.numeratorIds.length === after.n && after.denominatorIds.length === after.N,
+    'Số phải bằng độ dài của tập ID sinh ra nó');
+  assert(domain.rateText(after.n - before.n, after.N - before.N) === '2/3 (67%) · mẫu nhỏ',
+    `Câu hiển thị phải là 2/3, đang "${domain.rateText(after.n - before.n, after.N - before.N)}"`);
+});
+
+check('PR-F · Drill-down: số = độ dài tập, và tập trùng với đối chiếu độc lập bằng SQL', () => {
+  const r = metricsSvc.metricSet(P.admin, 'hv-co-case-mo', {}) as any;
+  const sql = (conn.prepare(
+    `SELECT COUNT(DISTINCT COALESCE(sc.student_id, a.student_id)) n FROM sos_cases sc
+       LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id WHERE sc.status != 'done'`,
+  ).get() as any).n;
+  assert(r.n === r.ids.length, `Số ${r.n} khác độ dài tập ${r.ids.length}`);
+  assert(r.n === sql, `hv-co-case-mo=${r.n} nhưng đếm thẳng bằng SQL ra ${sql}`);
+  const open = metricsSvc.metricSet(P.admin, 'case-mo', {}) as any;
+  const noPlan = metricsSvc.metricSet(P.admin, 'case-thieu-pa', {}) as any;
+  assert(noPlan.ids.every((id: number) => open.ids.includes(id)), 'Case thiếu phương án phải là một phần của case đang mở');
+  assert(open.ids.length >= r.ids.length, 'Số case đang mở không thể ít hơn số học viên có case đang mở');
+  /* Đơn vị khác nhau: HV ≠ case ≠ phương án — không cộng vào nhau. */
+  assert(r.unit === 'hoc-vien' && open.unit === 'case', `Đơn vị: ${r.unit} / ${open.unit}`);
+  const updates = metricsSvc.metricSet(P.admin, 'pa-can-cap-nhat', {}) as any;
+  assert(updates.unit === 'phuong-an' && updates.n === updates.ids.length, 'pa-can-cap-nhat phải đếm phương án');
+});
+
+check('PR-F · Đối soát F10: "HV có case đang mở" ở Tổng quan và ở Thực trạng là CÙNG MỘT tập (diff rỗng)', () => {
+  /*
+   * F10 có ảnh thật: Toàn cảnh 18 HV / 32 case, Thực trạng 20 HV / 34 case dưới cùng một tên. Đối soát
+   * bằng cách XUẤT TẬP ID ở hai nơi rồi diff — không so hai con số. Tổng quan đọc từ `metricSet`, Thực
+   * trạng đọc từ các hàng `issueBoardCases`; hai đường đếm khác nhau hoàn toàn về mã.
+   */
+  const overview = new Set<number>((metricsSvc.metricSet(P.admin, 'hv-co-case-mo', {}) as any).ids);
+  const openCaseIdsOverview = new Set<number>((metricsSvc.metricSet(P.admin, 'case-mo', {}) as any).ids);
+  const analysis = new Set<number>();
+  const analysisCases = new Set<number>();
+  for (const ratio of [false, true]) {
+    for (const cat of [...domain.caseCategoriesFor(ratio ? 'ratio' : 'ielts_band')]) {
+      const rows = (effectiveness.issueBoardCases({ ratio } as any, cat, null) as any).rows as any[];
+      for (const r of rows) if (r.status !== 'done') { analysis.add(r.studentId); analysisCases.add(r.caseId); }
+    }
+  }
+  /*
+   * KẾT QUẢ ĐỐI SOÁT (20/09/2026, bộ demo): Tổng quan 29 HV, Thực trạng 28 HV. MỘT em chênh: Vũ Thu Uyên
+   * (id 39) ĐÃ KẾT THÚC KHOÁ (ghi danh `completed`) nhưng case Reading vẫn `in_progress`. Hai màn định
+   * nghĩa khác nhau, và sự khác nhau ấy GIẢI THÍCH ĐƯỢC:
+   *
+   *   Tổng quan  — đếm theo CASE: em nào có case chưa kết luận trong phạm vi, kể cả em đã ra khoá.
+   *   Thực trạng — đếm theo NƠI ĐANG CHĂM SÓC: chỉ em đang học (ghi danh còn hoạt động).
+   *
+   * Nên phép kiểm không đòi hai tập BẰNG NHAU (đòi vậy là ép một định nghĩa thắng, hoặc giấu chênh lệch)
+   * mà đòi đúng hai điều: (1) Thực trạng KHÔNG có em nào mà Tổng quan không có; (2) MỌI em chỉ có ở Tổng
+   * quan đều là em không còn ghi danh hoạt động. Chênh lệch nào ngoài hai điều này là một lỗi mới. Và
+   * vì định nghĩa khác nhau, hai màn PHẢI ghi hai nhãn khác nhau (kiểm ở phép kiểm kế tiếp).
+   */
+  const onlyOverview = [...overview].filter((id) => !analysis.has(id));
+  const onlyAnalysis = [...analysis].filter((id) => !overview.has(id));
+  assert(onlyAnalysis.length === 0,
+    `Thực trạng có em mà Tổng quan không có: [${onlyAnalysis.join(',')}] — Thực trạng phải là tập con của Tổng quan`);
+  const stillEnrolled = (id: number) => !!conn.prepare(
+    `SELECT 1 FROM enrollments WHERE student_id = ? AND status = 'active' LIMIT 1`).get(id);
+  const unexplained = onlyOverview.filter(stillEnrolled);
+  assert(unexplained.length === 0,
+    `Có em VẪN đang học nhưng chỉ Tổng quan đếm: [${unexplained.join(',')}] — chênh lệch này không giải thích được bằng định nghĩa`);
+  const onlyOverviewCases = [...openCaseIdsOverview].filter((id) => !analysisCases.has(id));
+  const onlyAnalysisCases = [...analysisCases].filter((id) => !openCaseIdsOverview.has(id));
+  assert(onlyAnalysisCases.length === 0, `Thực trạng có case mở mà Tổng quan không có: [${onlyAnalysisCases.join(',')}]`);
+  const caseOwnerStudent = (id: number) => (conn.prepare(
+    `SELECT COALESCE(sc.student_id, a.student_id) AS sid FROM sos_cases sc LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
+      WHERE sc.id = ?`).get(id) as any).sid as number;
+  /*
+   * LÝ DO THỨ HAI, cũng giải thích được: Thực trạng chia hai tab theo LOẠI CHƯƠNG TRÌNH HIỆN TẠI của em
+   * (Fast Track L/R/W1/W2/S · Normal L/R/W/S). Em chuyển từ FT sang Normal mà còn case `writing1` đang
+   * mở thì case đó không có hàng nào ở tab Normal — nó biến mất khỏi Thực trạng nhưng Tổng quan vẫn đếm.
+   */
+  const coveredByAnalysis = (id: number) => {
+    const sid = caseOwnerStudent(id);
+    const category = (conn.prepare('SELECT category FROM sos_cases WHERE id = ?').get(id) as any).category as string;
+    const modes = (conn.prepare(
+      `SELECT DISTINCT pg.scoring_mode AS m FROM enrollments e JOIN classes c ON c.id = e.class_id
+         JOIN programmes pg ON pg.code = c.programme_code WHERE e.student_id = ? AND e.status = 'active'`,
+    ).all(sid) as any[]).map((r) => r.m as string);
+    return modes.some((m) => (domain.caseCategoriesFor(m) as readonly string[]).includes(category));
+  };
+  const unexplainedCases = onlyOverviewCases.filter((id) => coveredByAnalysis(id));
+  const describeCase = (id: number) => JSON.stringify({
+    sc: conn.prepare('SELECT id, status, track, topic, category, origin_kind, student_id, attempt_id FROM sos_cases WHERE id = ?').get(id),
+    enr: conn.prepare(`SELECT e.class_id, e.status, e.started_at, pg.scoring_mode FROM enrollments e JOIN classes c ON c.id = e.class_id
+                         LEFT JOIN programmes pg ON pg.code = c.programme_code WHERE e.student_id = ?`).all(caseOwnerStudent(id)),
+  });
+  assert(unexplainedCases.length === 0,
+    `Có case mở của em VẪN đang học mà chỉ Tổng quan đếm: [${unexplainedCases.join(',')}] ${unexplainedCases.map(describeCase).join(' | ')}`);
+  assert(onlyOverview.length >= 1,
+    'Bộ demo mất em đã kết thúc khoá mà case còn mở — phép đối soát này không còn chứng minh được gì, cần dựng lại tiền đề');
+});
+
+check('PR-F · Đối soát F10 (nhãn): hai định nghĩa khác nhau thì hai màn KHÔNG dùng chung một nhãn', () => {
+  const overviewLabel = domain.metricById('hv-co-case-mo')!;
+  assert(/kể cả em đã kết thúc khoá/.test(overviewLabel.tapDuDieuKien),
+    `Tổng quan phải nói rõ nó đếm CẢ em đã kết thúc khoá mà case còn mở: "${overviewLabel.tapDuDieuKien}"`);
+  assert(overviewLabel.ten === 'Học viên có case đang mở', `Nhãn Tổng quan: "${overviewLabel.ten}"`);
+  /* Thực trạng đếm em ĐANG HỌC — nhãn cột là "HV đang gặp", không phải nhãn của Tổng quan (kiểm cả ở giao diện). */
+  assert(overviewLabel.ten !== 'HV đang gặp', 'Hai màn đang dùng chung một nhãn cho hai định nghĩa khác nhau');
+});
+
+check('PR-F · Drill-down: tài khoản NGOÀI phạm vi bị từ chối, không trả tập rút gọn; phạm vi rỗng trả rỗng', () => {
+  const mb = branchIdOf('MB'), cp = branchIdOf('CP');
+  assertThrows(() => metricsSvc.metricSet(P.cpManager, 'hv-co-case-mo', { branchId: mb }), /phạm vi|quyền/,
+    'Quản lý CP gọi thẳng drill-down của chi nhánh MB');
+  assertThrows(() => metricsSvc.metricSet(P.subjectTeacher, 'case-mo', { branchId: cp }), /phạm vi|quyền/,
+    'Giáo viên MB gọi thẳng drill-down của chi nhánh CP');
+  const own = metricsSvc.metricSet(P.mbManager, 'hv-co-case-mo', { branchId: mb }) as any;
+  assert(own.n === own.ids.length, 'Quản lý MB xem chi nhánh của mình phải được');
+  const nobody = { ...P.subjectTeacher, grants: [], assignments: [] } as any;
+  const none = metricsSvc.metricSet(nobody, 'hv-co-case-mo', {}) as any;
+  assert(none.n === 0 && none.ids.length === 0 && none.empty === true,
+    'Phạm vi rỗng phải trả rỗng, KHÔNG được hiểu thành toàn hệ thống');
+  assert(none.note === 'Không có dữ liệu trong phạm vi', `Ghi chú đang là "${none.note}"`);
+  assertThrows(() => metricsSvc.metricSet(P.admin, 'khong-co-chi-so', {}), /Không tìm thấy chỉ số/, 'Mã chỉ số lạ');
+  assertThrows(() => metricsSvc.metricSet(P.admin, 'dung-han-cap-nhat', {}), /chưa có danh sách/,
+    'Chỉ số đã khai báo nhưng chưa có hàm tập ID phải nói thẳng là chưa có, không trả số bịa');
+});
+
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`

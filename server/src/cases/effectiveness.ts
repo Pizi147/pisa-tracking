@@ -42,6 +42,18 @@ export function outcomeGroup(outcome: string | null | undefined): PlanOutcome {
   return 'undetermined';
 }
 
+/**
+ * MỘT ĐƠN VỊ để gán kết quả lịch sử vào (F03): lớp, chi nhánh, hoặc loại chương trình. Rỗng hết
+ * nghĩa là không lọc theo đơn vị nào.
+ */
+type Attribution = {
+  classId?: number | null;
+  branchIds?: number[] | null;
+  ratio?: boolean | null;
+  /** Phạm vi RỖNG có chủ ý (danh sách chi nhánh được phép là `[]`) — không có gì để đếm. */
+  none?: boolean;
+};
+
 type Scope = {
   /** Giới hạn theo lớp; bỏ trống thì lấy theo danh sách học viên. */
   classId?: number | null;
@@ -58,6 +70,11 @@ type Scope = {
   /** Khoảng báo cáo cho phần HIỆU QUẢ. Hiện trạng vấn đề luôn là hiện tại (mục 15.2). */
   fromDate?: string | null;
   toDate?: string | null;
+  /**
+   * GÁN KẾT QUẢ THEO ĐƠN VỊ TẠI THỜI ĐIỂM HỖ TRỢ (F03). Truyền cùng `studentIds` khi danh sách em
+   * là "em đang thuộc phạm vi" nhưng kết quả phải được gán theo nơi em học LÚC PHƯƠNG ÁN XẢY RA.
+   */
+  attribution?: Attribution | null;
 };
 
 function studentsOf(scope: Scope): number[] {
@@ -68,6 +85,12 @@ function studentsOf(scope: Scope): number[] {
       .prepare(`SELECT student_id FROM enrollments WHERE class_id = ? AND status = 'active'`)
       .all(scope.classId) as any[]).map((r) => r.student_id);
   }
+  /*
+   * PHẠM VI RỖNG TRẢ RỖNG (hợp đồng số liệu, luật 3). `branchIds` là `[]` nghĩa là người xem không
+   * được phép chi nhánh nào (hoặc hỏi một chi nhánh ngoài quyền) — KHÔNG phải "không lọc". Trước đây
+   * mảng rỗng bị coi như không có bộ lọc và trả về MỌI học viên của hệ thống.
+   */
+  if (Array.isArray(scope.branchIds) && scope.branchIds.length === 0) return [];
   /*
    * HIỆN TRẠNG LẤY NƠI ĐANG CHỊU TRÁCH NHIỆM (mục 15.2): em thuộc về lớp em đang học, nên
    * phạm vi chi nhánh tính theo lớp hiện tại chứ không theo lớp cũ em từng học.
@@ -91,22 +114,101 @@ function studentsOf(scope: Scope): number[] {
     .all(...params) as any[]).map((r) => r.student_id);
 }
 
+// ---------------------------------------------------------------- F03: đơn vị TẠI THỜI ĐIỂM hỗ trợ
+
 /**
- * KẾT QUẢ CUỐI CỦA MỖI PHƯƠNG ÁN ĐÃ KẾT THÚC, đúng một dòng cho một phương án.
+ * KẾT QUẢ LỊCH SỬ ĐI THEO NƠI EM HỌC LÚC PHƯƠNG ÁN XẢY RA, KHÔNG THEO LỚP HIỆN TẠI (F03).
  *
- * "Đã kết thúc" nghĩa là đã khép lại vì làm xong hoặc vì bị thay — không phải mọi dòng có
- * `status = 'completed'`: một phương án trao đổi được đánh dấu xong mà chưa ai ghi kết quả
- * thì không nói gì về hiệu quả, và nó thuộc nhóm "chưa xác định".
+ * Trước đây `planOutcomes` lấy học viên từ lần ghi danh ĐANG HOẠT ĐỘNG rồi đọc mọi phương án
+ * cũ của họ. Em chuyển chi nhánh vì thế làm MẤT mẫu ở nơi cũ và MỌC mẫu ở nơi mới: cái tutor
+ * đã chạy ở Cẩm Phả bỗng thành thành tích của Monbay. Rule book §11: "hiện trạng theo nơi đang
+ * chăm sóc, lịch sử theo đơn vị tại thời điểm hỗ trợ; chuyển lớp không chuyển ngược thành tích".
+ *
+ * Dữ liệu quá khứ không đủ để biết em học ở đâu lúc đó (chưa có lần ghi danh nào bao phủ ngày ấy)
+ * thì phương án nằm ở nhóm "chưa xác định nguồn" — KHÔNG quy cho nơi hiện tại cho tiện.
  */
-export function planOutcomes(scope: Scope) {
-  const sids = studentsOf(scope);
-  if (!sids.length) return [];
+type Unit = { classId: number; branchId: number; ratio: boolean };
+
+/** Ngày phương án xảy ra — dùng để tra em thuộc đơn vị nào LÚC ĐÓ. */
+const SUPPORT_DAY = `substr(COALESCE(iv.completed_date, iv.started_date, iv.planned_date, iv.created_at), 1, 10)`;
+
+function attributionOf(scope: Scope): Attribution | null {
+  const a: Attribution | null = scope.attribution
+    ?? (scope.studentIds?.length ? null : { classId: scope.classId, branchIds: scope.branchIds, ratio: scope.ratio });
+  if (!a) return null;
+  if (Array.isArray(a.branchIds) && a.branchIds.length === 0 && !a.classId) return { ...a, none: true };
+  const has = !!a.classId || !!a.branchIds?.length || (a.ratio !== null && a.ratio !== undefined);
+  return has ? a : null;
+}
+
+/** Mọi em TỪNG thuộc đơn vị này vào bất kỳ lúc nào — ứng viên cho kết quả lịch sử của nó. */
+function historicStudentsOf(att: Attribution): number[] {
+  const where: string[] = ['1=1'];
+  const params: unknown[] = [];
+  if (att.classId) { where.push('e.class_id = ?'); params.push(att.classId); }
+  if (att.branchIds?.length) {
+    where.push(`c.branch_id IN (${att.branchIds.map(() => '?').join(',')})`);
+    params.push(...att.branchIds);
+  }
+  if (att.ratio !== null && att.ratio !== undefined) {
+    where.push(`pg.scoring_mode ${att.ratio ? '=' : '!='} 'ratio'`);
+  }
+  return (db()
+    .prepare(
+      `SELECT DISTINCT e.student_id FROM enrollments e
+         JOIN classes c ON c.id = e.class_id
+         JOIN programmes pg ON pg.code = c.programme_code
+        WHERE ${where.join(' AND ')}`,
+    )
+    .all(...params) as any[]).map((r) => r.student_id);
+}
+
+/** Tra đơn vị của một em TẠI MỘT NGÀY từ lịch sử ghi danh. Không có lần ghi danh nào bao phủ → null. */
+function unitResolver(studentIds: number[]): (studentId: number, day: string) => Unit | null {
+  const spans = new Map<number, { unit: Unit; from: string; to: string | null }[]>();
+  for (let i = 0; i < studentIds.length; i += 400) {
+    const chunk = studentIds.slice(i, i + 400);
+    for (const r of db()
+      .prepare(
+        `SELECT e.student_id, e.class_id, c.branch_id, pg.scoring_mode,
+                substr(e.started_at, 1, 10) AS from_d, substr(e.ended_at, 1, 10) AS to_d
+           FROM enrollments e
+           JOIN classes c ON c.id = e.class_id
+           JOIN programmes pg ON pg.code = c.programme_code
+          WHERE e.student_id IN (${chunk.map(() => '?').join(',')})`,
+      )
+      .all(...chunk) as any[]) {
+      if (!spans.has(r.student_id)) spans.set(r.student_id, []);
+      spans.get(r.student_id)!.push({
+        unit: { classId: r.class_id, branchId: r.branch_id, ratio: r.scoring_mode === 'ratio' },
+        from: r.from_d, to: r.to_d ?? null,
+      });
+    }
+  }
+  return (studentId, day) => {
+    let best: { unit: Unit; from: string } | null = null;
+    for (const s of spans.get(studentId) ?? []) {
+      if (s.from <= day && (s.to === null || s.to >= day) && (!best || s.from > best.from)) best = s;
+    }
+    return best ? best.unit : null;
+  };
+}
+
+function inAttribution(u: Unit | null, att: Attribution): boolean {
+  if (!u) return false;
+  if (att.classId && u.classId !== att.classId) return false;
+  if (att.branchIds?.length && !att.branchIds.includes(u.branchId)) return false;
+  if (att.ratio !== null && att.ratio !== undefined && u.ratio !== att.ratio) return false;
+  return true;
+}
+
+/** Truy vấn phương án đã kết thúc của một tập học viên — CHƯA gán đơn vị. */
+function queryPlans(sids: number[], scope: Scope) {
   const ph = sids.map(() => '?').join(',');
   const params: unknown[] = [...sids];
   let range = '';
   if (scope.fromDate) { range += ' AND COALESCE(iv.completed_date, iv.updated_at, iv.created_at) >= ?'; params.push(scope.fromDate); }
   if (scope.toDate) { range += ' AND COALESCE(iv.completed_date, iv.updated_at, iv.created_at) <= ?'; params.push(scope.toDate); }
-
   return (db()
     .prepare(
       /*
@@ -115,6 +217,7 @@ export function planOutcomes(scope: Scope) {
        * và hành trình theo tuần; chỉ loại khỏi phép tính tỷ lệ ở đây.
        */
       `SELECT iv.id, iv.kind, iv.status, iv.closed_reason, iv.completed_date,
+              ${SUPPORT_DAY} AS day,
               sc.id AS case_id, sc.student_id, sc.track, sc.category, sc.topic,
               (SELECT fu.outcome FROM case_followups fu
                 WHERE fu.intervention_id = iv.id AND fu.outcome IS NOT NULL
@@ -126,19 +229,89 @@ export function planOutcomes(scope: Scope) {
           AND COALESCE(iv.approval_state, '') != 'pending'
           AND sc.origin_kind != 'backfill'${range}`,
     )
-    .all(...params) as any[])
-    .map((r) => ({
-      id: r.id as number,
-      caseId: r.case_id as number,
-      studentId: r.student_id as number,
-      kind: r.kind as string,
-      track: (r.track ?? 'academic') as string,
-      category: (r.category ?? categoryOf(r.track ?? 'academic', r.topic)) as string | null,
-      /* Bị thay thế VẪN TÍNH nếu có kết quả cuối — lý do dừng là chuyện khác. */
-      supersededBy: r.closed_reason === 'superseded',
-      outcome: r.final_outcome as string | null,
-      group: outcomeGroup(r.final_outcome),
-    }));
+    .all(...params) as any[]);
+}
+
+function shapePlan(r: any) {
+  return {
+    id: r.id as number,
+    caseId: r.case_id as number,
+    studentId: r.student_id as number,
+    kind: r.kind as string,
+    track: (r.track ?? 'academic') as string,
+    category: (r.category ?? categoryOf(r.track ?? 'academic', r.topic)) as string | null,
+    /* Bị thay thế VẪN TÍNH nếu có kết quả cuối — lý do dừng là chuyện khác. */
+    supersededBy: r.closed_reason === 'superseded',
+    outcome: r.final_outcome as string | null,
+    group: outcomeGroup(r.final_outcome),
+    /** Ngày phương án xảy ra — căn cứ để gán đơn vị (F03). */
+    day: r.day as string,
+  };
+}
+
+/**
+ * KẾT QUẢ CUỐI CỦA MỖI PHƯƠNG ÁN ĐÃ KẾT THÚC, đúng một dòng cho một phương án.
+ *
+ * "Đã kết thúc" nghĩa là đã khép lại vì làm xong hoặc vì bị thay — không phải mọi dòng có
+ * `status = 'completed'`: một phương án trao đổi được đánh dấu xong mà chưa ai ghi kết quả
+ * thì không nói gì về hiệu quả, và nó thuộc nhóm "chưa xác định".
+ *
+ * Phạm vi lớp / chi nhánh / loại chương trình gán theo ĐƠN VỊ TẠI THỜI ĐIỂM hỗ trợ (F03). Truyền
+ * thẳng `studentIds` (không kèm `attribution`) thì lấy đúng những em đó, không gán đơn vị.
+ */
+export function planOutcomes(scope: Scope) {
+  const att = attributionOf(scope);
+  if (att?.none) return [];
+  const sids = scope.studentIds?.length
+    ? scope.studentIds
+    : att ? historicStudentsOf(att) : studentsOf(scope);
+  if (!sids.length) return [];
+  const rows = queryPlans(sids, scope);
+  if (!att) return rows.map(shapePlan);
+  const unitAt = unitResolver([...new Set(rows.map((r) => r.student_id as number))]);
+  return rows.filter((r) => inAttribution(unitAt(r.student_id, r.day), att)).map(shapePlan);
+}
+
+/**
+ * PHƯƠNG ÁN "CHƯA XÁC ĐỊNH NGUỒN" (F03): dữ liệu quá khứ không đủ để biết em học ở đâu lúc đó.
+ * Chúng KHÔNG nằm ở nơi nào cả — không quy cho nơi hiện tại — nhưng cũng không được biến mất.
+ */
+export function planOutcomesUnattributed(scope: Scope) {
+  const sids = studentsOf(scope);
+  if (!sids.length) return [];
+  const rows = queryPlans(sids, scope);
+  const unitAt = unitResolver([...new Set(rows.map((r) => r.student_id as number))]);
+  return rows.filter((r) => unitAt(r.student_id, r.day) === null).map(shapePlan);
+}
+
+/**
+ * PHƯƠNG ÁN CẦN BỔ SUNG ĐÁNH GIÁ (F05) — đã kết thúc nhưng chưa ai ghi kết quả xác định.
+ *
+ * Chúng KHÔNG nằm trong bảng hiệu quả và không vào mẫu số (D03), nhưng cũng không được biến mất:
+ * đây là một việc cần người làm. Hiện thành một liên kết ngoài bảng, có danh sách ID riêng.
+ */
+export function plansNeedingEvaluation(scope: Scope & { category?: string | null }) {
+  const all = planOutcomes(scope).filter((r) => r.track !== 'behaviour' && r.group === 'undetermined');
+  const rows = scope.category ? all.filter((r) => r.category === scope.category) : all;
+  return { count: rows.length, ids: rows.map((r) => r.id) };
+}
+
+/**
+ * TỶ LỆ CÓ CẢI THIỆN — `(có tiến bộ + một phần) / (bốn mức xác định)`, trả về CẢ HAI TẬP ID.
+ *
+ * "Chưa đủ dữ liệu" và case nhập bù KHÔNG vào mẫu số. Ba phương án đủ kết quả (tiến bộ, một
+ * phần, không tiến bộ) cộng một phương án chưa xác định cho ra 2/3, KHÔNG phải 2/4. Số là độ dài
+ * của tập, danh sách khi bấm vào là chính tập đó.
+ */
+export function improvementRate(scope: Scope & { category?: string | null }) {
+  const rows = planOutcomes(scope)
+    .filter((r) => r.track !== 'behaviour' && (!scope.category || r.category === scope.category));
+  const decided = rows.filter((r) => r.group !== 'undetermined');
+  const improved = decided.filter((r) => r.group === 'success');
+  return {
+    n: improved.length, N: decided.length,
+    numeratorIds: improved.map((r) => r.id), denominatorIds: decided.map((r) => r.id),
+  };
 }
 
 /**
@@ -150,28 +323,36 @@ export function planOutcomes(scope: Scope) {
  *
  * KHÔNG XẾP HẠNG khi mẫu quá nhỏ. 1/1 = 100% không có nghĩa là loại đó tốt nhất, và gọi tên
  * nó là "hiệu quả nhất" sẽ khiến người ta xếp tutor cho cả trăm em dựa trên một trường hợp.
+ *
+ * KHÔNG CÓ HÀNG/CỘT "CHƯA XÁC ĐỊNH" (F05): mẫu số đã loại chúng thì bảng cũng không được bày
+ * chúng ra như thể chúng thuộc mẫu. Loại nào chỉ toàn phương án chưa xác định thì không có hàng —
+ * chúng nằm ở `plansNeedingEvaluation`, ngoài bảng. Hai mức thành công vẫn hiện riêng (D03):
+ * `improved` (có tiến bộ) và `partial` (tiến bộ một phần), tổng gọi là "Có cải thiện".
  */
 export function planEffectiveness(scope: Scope & { category?: string | null }) {
   const all = planOutcomes(scope).filter((r) => r.track !== 'behaviour');
   const rows = scope.category ? all.filter((r) => r.category === scope.category) : all;
-  const byKind = new Map<string, { success: number; failure: number; undetermined: number }>();
+  const byKind = new Map<string, { improved: number; partial: number; failure: number }>();
   for (const r of rows) {
-    const cur = byKind.get(r.kind) ?? { success: 0, failure: 0, undetermined: 0 };
-    cur[r.group] += 1;
+    if (r.group === 'undetermined') continue;
+    const cur = byKind.get(r.kind) ?? { improved: 0, partial: 0, failure: 0 };
+    if (r.group === 'failure') cur.failure += 1;
+    else if (r.outcome === 'partial') cur.partial += 1;
+    else cur.improved += 1;
     byKind.set(r.kind, cur);
   }
   return [...byKind.entries()]
     .map(([kind, c]) => {
+      const success = c.improved + c.partial;
       /* MẪU SỐ chỉ gồm phương án có kết quả XÁC ĐỊNH (mục 15.3). */
-      const decided = c.success + c.failure;
+      const decided = success + c.failure;
       return {
         kind,
         label: INTERVENTION_KIND_LABEL[kind as InterventionKind] ?? kind,
-        success: c.success, failure: c.failure,
-        /* Đã kết thúc nhưng chưa có kết quả xác định — vẫn hiện, để không ai tưởng nó biến mất. */
-        undetermined: c.undetermined,
+        success, failure: c.failure,
+        improved: c.improved, partial: c.partial,
         decided,
-        rate: decided > 0 ? Math.round((c.success / decided) * 100) : null,
+        rate: decided > 0 ? Math.round((success / decided) * 100) : null,
         /* Mẫu dưới năm thì KHÔNG xếp hạng — chỉ bày con số và nói rõ là mẫu nhỏ. */
         smallSample: decided > 0 && decided < 5,
       };
@@ -213,6 +394,7 @@ export function issueBoard(scope: Scope, category: string) {
       category, label: caseCategoryLabel(category),
       short: (CASE_CATEGORY_SHORT as Record<string, string>)[category] ?? category,
       rows: [], plans: [], studentCount: 0, note: null,
+      needsEvaluation: { count: 0, ids: [] as number[] },
     };
   }
   const ph = sids.map(() => '?').join(',');
@@ -246,10 +428,16 @@ export function issueBoard(scope: Scope, category: string) {
         )
         .all(...caseIds) as any[])
     : [];
-  const outcomes = new Map(
-    planOutcomes({ studentIds: sids, fromDate: scope.fromDate, toDate: scope.toDate })
-      .map((r) => [r.id, r]),
-  );
+  /*
+   * KẾT QUẢ THEO ĐƠN VỊ TẠI THỜI ĐIỂM HỖ TRỢ (F03). Danh sách CASE ở trên là hiện trạng (em đang học
+   * ở đây), còn kết quả hỗ trợ là lịch sử: gán theo nơi em học lúc phương án xảy ra. Phạm vi không
+   * có đơn vị nào (toàn hệ thống) thì không cần gán — lấy đúng những em đang xét.
+   */
+  const att = attributionOf(scope);
+  const outcomeScope: Scope = att
+    ? { attribution: att, fromDate: scope.fromDate, toDate: scope.toDate }
+    : { studentIds: sids, fromDate: scope.fromDate, toDate: scope.toDate };
+  const outcomes = new Map(planOutcomes(outcomeScope).map((r) => [r.id, r]));
 
   /*
    * MỘT HÀNG CHO MỖI PHÂN LOẠI ĐANG CÓ MẶT, cộng một hàng riêng cho case CHƯA PHÂN LOẠI.
@@ -269,8 +457,14 @@ export function issueBoard(scope: Scope, category: string) {
       label: code === '__unclassified__' ? 'Chưa phân loại vấn đề' : issueLabel(code),
       cases: ids.length,
       openCases: mine.filter((c) => ids.includes(c.id) && c.status !== 'done').length,
-      /* HỌC VIÊN ĐẾM DUY NHẤT trong hàng này. */
-      students: new Set(mine.filter((c) => ids.includes(c.id)).map((c) => c.student_id)).size,
+      /*
+       * HV ĐANG GẶP là HIỆN TRẠNG: chỉ em có case CHƯA KẾT LUẬN (F02). Trước đây cột này đếm từ MỌI
+       * case của phân loại trong khi `openCases` bên cạnh đã lọc chưa đóng — hai cột cạnh nhau nói về
+       * hai tập khác nhau. Em chỉ có case đã đóng không còn "đang gặp" vấn đề nữa.
+       */
+      students: new Set(mine.filter((c) => ids.includes(c.id) && c.status !== 'done').map((c) => c.student_id)).size,
+      /* Chỉ số LỊCH SỬ riêng: mọi em TỪNG có case ở phân loại này, kể cả case đã đóng. */
+      studentsEver: new Set(mine.filter((c) => ids.includes(c.id)).map((c) => c.student_id)).size,
       /* Case đang mở mà chưa ai đề ra phương án — đây là việc chặn, nên tách riêng. */
       noPlan: mine.filter((c) => ids.includes(c.id) && c.status !== 'done'
         && !ivs.some((i) => i.case_id === c.id)).length,
@@ -278,11 +472,10 @@ export function issueBoard(scope: Scope, category: string) {
       running: myIvs.filter((i) => i.status === 'planned' || i.status === 'started').length,
       success: ended.filter((e) => e.group === 'success').length,
       failure: ended.filter((e) => e.group === 'failure').length,
-      undetermined: ended.filter((e) => e.group === 'undetermined').length,
     };
   }).sort((a, b) => b.openCases - a.openCases || b.cases - a.cases);
 
-  const uniqueStudents = new Set(mine.map((c) => c.student_id)).size;
+  const uniqueStudents = new Set(mine.filter((c) => c.status !== 'done').map((c) => c.student_id)).size;
   const rowSum = rows.reduce((n, r) => n + r.students, 0);
   return {
     category,
@@ -290,7 +483,9 @@ export function issueBoard(scope: Scope, category: string) {
     short: (CASE_CATEGORY_SHORT as Record<string, string>)[category] ?? category,
     rows,
     /* Hiệu quả theo LOẠI phương án của chính kỹ năng này — mở ra khi người dùng cần. */
-    plans: planEffectiveness({ studentIds: sids, category, fromDate: scope.fromDate, toDate: scope.toDate }),
+    plans: planEffectiveness({ ...outcomeScope, category }),
+    /* F05: phương án chưa xác định KHÔNG nằm trong bảng — chúng là một việc cần bổ sung đánh giá. */
+    needsEvaluation: plansNeedingEvaluation({ ...outcomeScope, category }),
     studentCount: uniqueStudents,
     /* Nói thẳng vì sao cộng các hàng lại ra số lớn hơn (mục 15.2). */
     note: rowSum > uniqueStudents

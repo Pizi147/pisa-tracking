@@ -1,22 +1,31 @@
 import { useState } from 'react';
 import { useApi } from '../../lib/useApi.ts';
 import { ErrorState, SectionNote, Skeleton, Th } from '../../ui/ui.tsx';
+import { TyLe } from '../../ui/TyLe.tsx';
+import { NeedsEvaluation } from '../cases/NeedsEvaluation.tsx';
 import { issueBoardCategoriesFor, caseCategoryLabel, CASE_CATEGORY_SHORT } from '@shared/domain/index.ts';
 
 type Row = {
   code: string; label: string;
-  cases: number; openCases: number; students: number; noPlan: number;
+  cases: number; openCases: number;
+  /** HV ĐANG GẶP — chỉ em có case chưa kết luận (hiện trạng). */
+  students: number;
+  studentsEver: number;
+  noPlan: number;
   plans: number; running: number;
-  success: number; failure: number; undetermined: number;
+  success: number; failure: number;
 };
 type PlanKind = {
   kind: string; label: string;
-  success: number; failure: number; undetermined: number;
+  success: number; failure: number;
+  improved: number; partial: number;
   decided: number; rate: number | null; smallSample: boolean;
 };
 type Board = {
   category: string; label: string; short: string;
   rows: Row[]; plans: PlanKind[]; studentCount: number; note: string | null;
+  /** Phương án đã kết thúc mà chưa có kết quả xác định — ở NGOÀI bảng hiệu quả (F05). */
+  needsEvaluation: { count: number; ids: number[] };
 };
 
 /**
@@ -95,8 +104,8 @@ function IssueTable({ classId, category }: { classId: number; category: string }
           <thead>
             <tr>
               <Th>Phân loại vấn đề</Th>
-              <Th align="right" hint="Số học viên khác nhau gặp phân loại này. Một em có hai case cùng loại vẫn là một em.">
-                HV
+              <Th align="right" hint="Học viên ĐANG HỌC và có case chưa xong ở phân loại này (hiện trạng). Em chỉ có case đã đóng, hoặc đã kết thúc khoá, không tính ở bảng này. Một em có hai case cùng loại vẫn là một em.">
+                HV đang gặp
               </Th>
               <Th align="right" hint="Số case mang phân loại này; trong ngoặc là số case chưa xong.">
                 Case
@@ -143,12 +152,6 @@ function IssueTable({ classId, category }: { classId: number; category: string }
                 </td>
                 <td className="td text-right tabular-nums">
                   {r.failure ? <span className="text-rose-300">{r.failure}</span> : <span className="text-slate-600">—</span>}
-                  {/* Đã kết thúc mà chưa có kết quả xác định thì KHÔNG phải thất bại (mục 15.3). */}
-                  {r.undetermined > 0 && (
-                    <span className="text-[10px] text-slate-500" title="Phương án đã kết thúc nhưng chưa có kết quả xác định — không tính vào hai cột trên.">
-                      {' '}+{r.undetermined} chưa rõ
-                    </span>
-                  )}
                 </td>
               </tr>
             ))}
@@ -157,6 +160,10 @@ function IssueTable({ classId, category }: { classId: number; category: string }
       </div>
 
       {data.note && <p className="text-[11px] text-slate-500 m-0">{data.note}</p>}
+
+      {/* F05: phương án chưa xác định KHÔNG nằm trong bảng — liên kết riêng, ngoài bảng. */}
+      <NeedsEvaluation count={data.needsEvaluation.count}
+        url={`/classes/${classId}/issue-board/needs-evaluation?category=${category}`} />
 
       {/*
         HIỆU QUẢ THEO LOẠI PHƯƠNG ÁN nằm trong phần mở rộng (mục 13.4): nó là câu hỏi thứ
@@ -178,38 +185,19 @@ function IssueTable({ classId, category }: { classId: number; category: string }
               <thead>
                 <tr>
                   <Th>Loại phương án</Th>
-                  <Th align="right" hint="Số phương án thành công trên số phương án đã kết thúc CÓ kết quả xác định.">
-                    Thành công
-                  </Th>
-                  <Th align="right">Tỷ lệ</Th>
+                  <Th align="right" hint="Phương án đã kết thúc với kết quả có tiến bộ rõ.">Có tiến bộ</Th>
+                  <Th align="right" hint="Phương án đã kết thúc với kết quả tiến bộ một phần.">Tiến bộ một phần</Th>
+                  <Th align="right" hint="Có tiến bộ + tiến bộ một phần, trên số phương án đã kết thúc CÓ kết quả xác định. Chưa đủ dữ liệu không vào mẫu số.">Có cải thiện</Th>
                 </tr>
               </thead>
               <tbody>
                 {data.plans.map((p) => (
                   <tr key={p.kind} className="row-hover">
-                    <td className="td text-slate-100">
-                      {p.label}
-                      {p.undetermined > 0 && (
-                        <span className="block text-[10px] text-slate-500">
-                          {p.undetermined} phương án chưa có kết quả xác định, không tính vào mẫu
-                        </span>
-                      )}
-                    </td>
-                    {/* n/N ĐỨNG TRƯỚC phần trăm: 1/1 và 18/20 không phải cùng một câu chuyện. */}
-                    <td className="td text-right tabular-nums text-slate-300">
-                      {p.success}/{p.decided}
-                    </td>
-                    <td className="td text-right tabular-nums">
-                      {p.rate === null ? (
-                        <span className="text-slate-600">—</span>
-                      ) : p.smallSample ? (
-                        <span className="text-slate-400" title="Mẫu dưới 5 phương án — con số này chưa đủ để xếp hạng.">
-                          {p.rate}% <span className="text-[10px] text-slate-500">mẫu nhỏ</span>
-                        </span>
-                      ) : (
-                        <span className="text-slate-200">{p.rate}%</span>
-                      )}
-                    </td>
+                    <td className="td text-slate-100">{p.label}</td>
+                    <td className="td text-right tabular-nums text-slate-300">{p.improved || <span className="text-slate-600">—</span>}</td>
+                    <td className="td text-right tabular-nums text-slate-300">{p.partial || <span className="text-slate-600">—</span>}</td>
+                    {/* n/N ĐỨNG TRƯỚC phần trăm, và N=0 / mẫu nhỏ do <TyLe> quyết định — không tự vẽ phần trăm. */}
+                    <td className="td text-right"><TyLe n={p.success} N={p.decided} /></td>
                   </tr>
                 ))}
               </tbody>
