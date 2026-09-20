@@ -21,7 +21,7 @@ import {
   setSkillScope, setSkillWeek, skillScheduleOf, skippedSkillsOf, viewSkill,
   type SkillRow, type SkillScheduleView,
 } from './skillSchedule.ts';
-import { flagLateNoShow, pendingMove, settleNoShows } from './absence.ts';
+import { canRequest as canRequestAbsence, flagLateNoShow, pendingMove, settleNoShows } from './absence.ts';
 import { raiseSignalsForResult, stepsFor } from '../cases/sos.ts';
 import {
   caseHasIndependentBasis, retireCaseForCorrectedScore, withdrawSignalsNoLongerValid,
@@ -298,6 +298,19 @@ export function skillCells(
       enteredAfterWeekEnd: !!row?.no_show_late,
       lateRule: C10_NHAP_DAU_TRU_TUAN_QUA_KHU,
     });
+    /*
+     * CHƯA CHỐT MÀ ĐÃ QUÁ CHỦ NHẬT: hàm thuần trả "không dự thi", nhưng việc chốt còn có điều kiện mà hàm thuần không biết —
+     * buổi vẫn phải `scheduled` và MỌI ô nhập của buổi đó đều là '-' (Writing: W1 "-" mà W2 có điểm thì buổi có người làm).
+     * Không đủ điều kiện thì `settleNoShows` sẽ không chốt, nên ô cũng KHÔNG được tự nhận "Không dự thi" (và bị khoá).
+     */
+    if (!row?.no_show_settled_at && ns.state === 'khong-du-thi') {
+      const partnersMarked = entrySkillsOf(assessed).filter((k) => k !== skill).every((k) => {
+        const o = rows.find((r) => r.skill === k);
+        return !!o?.no_show_period_id && o.no_show_period_id === view.periodId
+          && (o.band ?? null) === null && (o.raw_score ?? null) === null;
+      });
+      if (!(view.sitStatus === 'scheduled' && partnersMarked)) ns = { state: 'none', effectiveOn: null, editableUntil: null };
+    }
     if (row?.no_show_settled_at && ns.state !== 'none') {
       /*
        * ĐÃ CHỐT MỘT LẦN. Từ đó hiển thị theo trạng thái thi HIỆN TẠI: còn `absent` thì là không dự thi;
@@ -656,10 +669,11 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
        * đã xác nhận đã thi nhưng chưa chấm. Môn thi tuần sau KHÔNG tính là nợ.
        */
       myPendingSkills: cells
-        .filter((c) => c.mine && c.band === null && awaitingScore(c.progress))
+        .filter((c) => c.mine && c.band === null && awaitingScore(c.progress) && !c.noShow)
         .map((c) => c.skill),
+      /* Bài đã báo "-" không còn là việc phải chấm — cùng luật với `pendingSkillsOf`, không hai luật đếm. */
       myPendingDetail: cells
-        .filter((c) => c.mine && c.band === null && awaitingScore(c.progress))
+        .filter((c) => c.mine && c.band === null && awaitingScore(c.progress) && !c.noShow)
         .map((c) => ({ skill: c.skill, deadline: c.deadline, weekCode: c.periodCode })),
       /* Tập bài cần chấm THEO PHẠM VI ĐANG XEM — cùng hàm với badge ở danh sách lớp. */
       pendingSkills: pending,
@@ -844,6 +858,8 @@ export function attemptDetail(p: Principal, attemptId: number) {
     viewer: {
       canPlanWeek: can(p, PERMISSIONS.PLAN_WEEK, { classId: a.class_id }),
       canCancel: can(p, PERMISSIONS.ATTEMPT_CANCEL, { classId: a.class_id }),
+      /** Xử lý vắng (dời lần đầu / xin duyệt) — GVCN của lớp và Quản lý; giáo viên bộ môn thì không. */
+      canHandleAbsence: canRequestAbsence(p, a),
       canSkipSkill: can(p, PERMISSIONS.ATTEMPT_SKIP_SKILL, { classId: a.class_id }),
       /**
        * Xác nhận đã thi / vắng CHO TỪNG KỸ NĂNG — cùng quyền với việc dời lịch kỹ năng đó

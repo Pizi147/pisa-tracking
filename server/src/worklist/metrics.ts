@@ -144,17 +144,32 @@ function overdueUpdatePlans(caseIds: number[], today: string): number[] {
   return out;
 }
 
-/** Phạm vi cho hàm hiệu quả: chi nhánh được hỏi, hoặc giao của quyền; rỗng nghĩa là KHÔNG có gì. */
-function effectivenessScope(p: Principal, branchId: number | null) {
+/**
+ * Phạm vi cho hàm hiệu quả — MỘT DANH SÁCH phạm vi, kết quả là hợp của chúng.
+ *
+ * Quyền theo CHI NHÁNH (Quản lý) cho một phạm vi chi nhánh; quyền theo LỚP (giáo viên) cho MỖI LỚP một phạm vi riêng.
+ * Không được đổi quyền theo lớp thành quyền cả chi nhánh: giáo viên một lớp sẽ thấy phương án và tên học viên của mọi lớp
+ * cùng chi nhánh. Không có phạm vi nào → danh sách rỗng → kết quả rỗng.
+ */
+function effectivenessScopes(p: Principal, branchId: number | null): Array<{ branchIds?: number[] | null; classId?: number | null }> {
   const sc = scopeFor(p, PERMISSIONS.ATTEMPT_VIEW);
-  const allowed = sc.all ? null : [...new Set([
-    ...sc.branchIds,
-    ...(sc.classIds.length
-      ? (db().prepare(`SELECT DISTINCT branch_id FROM classes WHERE id IN (${sc.classIds.map(() => '?').join(',')})`)
-        .all(...sc.classIds) as any[]).map((r) => r.branch_id as number)
-      : []),
-  ])];
-  return { branchIds: branchId ? [branchId] : allowed, ratio: null as boolean | null };
+  const out: Array<{ branchIds?: number[] | null; classId?: number | null }> = [];
+  if (sc.all) {
+    out.push({ branchIds: branchId ? [branchId] : null });
+    return out;
+  }
+  if (sc.branchIds.length) {
+    const ids = branchId ? sc.branchIds.filter((b: number) => b === branchId) : sc.branchIds;
+    if (ids.length) out.push({ branchIds: ids });
+  }
+  if (sc.classIds.length) {
+    for (const c of db()
+      .prepare(`SELECT id, branch_id FROM classes WHERE id IN (${sc.classIds.map(() => '?').join(',')})`)
+      .all(...sc.classIds) as any[]) {
+      if (!branchId || c.branch_id === branchId) out.push({ classId: c.id as number });
+    }
+  }
+  return out;
 }
 
 /**
@@ -194,13 +209,20 @@ export function metricSet(p: Principal, id: string, f: { branchId?: number | nul
     case 'pa-can-cap-nhat':
       return done(overdueUpdatePlans(openCases().map((c: any) => c.id as number), today));
     case 'pa-co-ket-qua': {
-      const rows = planOutcomes(effectivenessScope(p, scope.branchId))
-        .filter((r) => r.track !== 'behaviour' && r.group !== 'undetermined');
-      return done(rows.map((r) => r.id));
+      const ids = new Set<number>();
+      for (const s of effectivenessScopes(p, scope.branchId)) {
+        for (const r of planOutcomes(s)) if (r.track !== 'behaviour' && r.group !== 'undetermined') ids.add(r.id);
+      }
+      return done([...ids]);
     }
     case 'ty-le-co-cai-thien': {
-      const r = improvementRate(effectivenessScope(p, scope.branchId));
-      return done(r.denominatorIds, { numeratorIds: r.numeratorIds });
+      const den = new Set<number>(), num = new Set<number>();
+      for (const s of effectivenessScopes(p, scope.branchId)) {
+        const r = improvementRate(s);
+        r.denominatorIds.forEach((x: number) => den.add(x));
+        r.numeratorIds.forEach((x: number) => num.add(x));
+      }
+      return done([...den], { numeratorIds: [...num] });
     }
     default:
       throw new HttpError(501, `Chỉ số "${metric.ten}" chưa có danh sách.`);

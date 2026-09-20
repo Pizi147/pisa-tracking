@@ -9164,7 +9164,7 @@ check('PR-I · Lịch sử thay đổi có CẢ điểm: ai sửa, trước → 
   const cleared = reading.find((h) => /trống/i.test(h.after));
   assert(cleared && /30/.test(cleared.before), `Phải có dòng xoá điểm 30 → trống, đang ${JSON.stringify(cleared)}`);
   const dashHist = (pri(prgAttempts[0]).scoreHistory as any[]).find((h) => h.skill === 'listening');
-  assert(dashHist && /-/.test(dashHist.after), `Dấu "-" của Listening phải có trong lịch sử, đang ${JSON.stringify(dashHist)}`);
+  assert(dashHist && dashHist.after === 'Báo "-" (không có bài)', `Dấu "-" của Listening phải có trong lịch sử, đang ${JSON.stringify(dashHist)}`);
   for (const h of history) assert(h.createdAt && h.skillLabel, 'Mỗi dòng phải có ngày và tên kỹ năng đọc được');
 });
 
@@ -9241,6 +9241,71 @@ check('PR-H · Badge đếm nói rõ ĐẾM CỦA AI: việc riêng khác toàn 
   assert(domain.needScoresText(null, 5) === 'Lớp còn 5 bài chưa nhập điểm', 'Không nói ai đang xem thì mặc định là toàn lớp');
   assert(domain.WORK_SCOPE_LABEL.mine === 'Tôi' && domain.WORK_SCOPE_LABEL.managed === 'Tất cả trong phạm vi',
     `Nhãn phạm vi: ${JSON.stringify(domain.WORK_SCOPE_LABEL)}`);
+});
+
+
+// ==================================================================== Sau rà soát độc lập
+
+/*
+ * Bốn lỗi do một người rà soát độc lập đọc toàn bộ diff tìm ra — mỗi lỗi có phép kiểm đỏ trước khi sửa.
+ */
+check('Rà soát · "-" quá Chủ nhật mà KHÔNG được chốt (W1 "-", W2 có điểm) thì ô KHÔNG tự nhận "Không dự thi" và không bị khoá', () => {
+  const id = prgAttempts[4];                                    // W2 có điểm, W1 "-" (phép kiểm PR-G ở trên)
+  assert(prgSit(id, 'writing').sit_status !== 'absent', 'Tiền đề: buổi Writing này không bị chốt vắng');
+  const c = prgCell(id, 'writing1', PRG_MON);
+  assert(!c.noShow, `Chưa chốt mà ô lại hiện "${c.noShow?.text}" (${c.noShow?.state})`);
+  assert(c.canEdit === true, 'Ô W1 vẫn phải nhập được: buổi Writing có người làm');
+  assert(c.progress !== 'absent', `Tiến độ ô: ${c.progress}`);
+});
+
+check('Rà soát · Bài đã báo "-" không còn nằm trong "việc của tôi" của giáo viên (không chỉ ở hàm đếm thuần)', () => {
+  const row = conn.prepare(
+    `SELECT k.attempt_id id FROM attempt_skills k
+       JOIN assessment_attempts a ON a.id = k.attempt_id
+      WHERE a.class_id = ? AND a.kind = 'mock' AND a.status != 'cancelled' AND k.skill = 'reading'
+        AND k.required = 1 AND k.sit_status = 'scheduled' AND k.planned_period_id = ?
+        AND NOT EXISTS (SELECT 1 FROM assessment_scores s WHERE s.attempt_id = a.id AND s.skill = 'reading')
+      ORDER BY k.attempt_id LIMIT 1`,
+  ).get(mbClass, prgWeek) as any;
+  assert(row, 'Tiền đề: cần một ô Reading còn sạch ở W3 SEP');
+  const mine = () => (attempts.listAttempts(P.lrTeacher, { classId: mbClass }) as any).rows.find((r: any) => r.id === row.id);
+  assert(mine().myPendingSkills.includes('reading'), 'Tiền đề: Reading chưa báo "-" thì còn nợ điểm');
+  attempts.saveScore(P.lrTeacher, row.id, 'reading', { noShow: true } as any);
+  assert(!mine().myPendingSkills.includes('reading'), 'Đã báo "-" mà Reading vẫn nằm trong myPendingSkills');
+  assert(!mine().myPendingDetail.some((d: any) => d.skill === 'reading'), 'Đã báo "-" mà Reading vẫn nằm trong myPendingDetail');
+  const after = priCell(row.id, 'reading');
+  assert(after.noShow && after.enteredByName === null && after.enteredAt === null,
+    `Ô vừa báo "-" phải có dấu và KHÔNG có người nhập: ${JSON.stringify([after.noShow?.state, after.enteredByName])}`);
+});
+
+check('Rà soát · Hiệu quả phương án: giáo viên chỉ thấy phương án của LỚP mình, không lan ra cả chi nhánh', () => {
+  const teacher = P.subjectTeacher as any;
+  const classIds: number[] = [...new Set<number>(teacher.assignments.map((a: any) => a.classId))];
+  assert(classIds.length > 0, 'Tiền đề: giáo viên phải có lớp');
+  const mine = metricsSvc.metricSet(teacher, 'pa-co-ket-qua', {}) as any;
+  const branch = metricsSvc.metricSet(P.mbManager, 'pa-co-ket-qua', {}) as any;
+  const branchSet = new Set<number>(branch.ids);
+  assert(mine.ids.every((x: number) => branchSet.has(x)), 'Tập của giáo viên phải nằm trong tập của Quản lý');
+  const own = new Set<number>((conn.prepare(
+    `SELECT iv.id FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id
+      WHERE sc.student_id IN (SELECT student_id FROM enrollments WHERE class_id IN (${classIds.map(() => '?').join(',')}))`,
+  ).all(...classIds) as any[]).map((r) => r.id as number));
+  const leaked = mine.ids.filter((x: number) => !own.has(x));
+  assert(leaked.length === 0, `Lộ ${leaked.length} phương án của học viên ngoài lớp giáo viên: [${leaked.slice(0, 5).join(',')}]`);
+  const rate = metricsSvc.metricSet(teacher, 'ty-le-co-cai-thien', {}) as any;
+  const rateLeak = [...rate.ids].filter((x: number) => !own.has(x));
+  assert(rateLeak.length === 0, `Mẫu tỷ lệ cải thiện lộ ${rateLeak.length} phương án ngoài lớp`);
+});
+
+
+check('Rà soát · Giao diện chỉ mời "Xử lý vắng" người làm được: GVCN và Quản lý có, giáo viên bộ môn thì không (máy chủ nói qua viewer)', () => {
+  const id = prgAttempts[0];
+  const v = (pr: any) => (attempts.attemptDetail(pr, id) as any).viewer;
+  assert(v(P.admin).canHandleAbsence === true, 'Quản trị phải được');
+  assert(v(P.lrTeacher).canHandleAbsence === true, 'GVCN của lớp phải được');
+  assert(v(P.subjectTeacher).canHandleAbsence === false, 'Giáo viên bộ môn không phải GVCN thì không được mời bấm');
+  assertThrows(() => absence.requestAbsenceMove(P.subjectTeacher, id, ['listening'], { today: PRG_MON }), /chủ nhiệm|Quản lý/,
+    'Máy chủ vẫn phải từ chối — ẩn nút không phải là chặn');
 });
 
 console.log(`\n${'='.repeat(60)}`);

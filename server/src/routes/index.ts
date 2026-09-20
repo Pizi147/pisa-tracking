@@ -589,6 +589,8 @@ function issueScopeOf(req: any) {
     ? (allowed && !allowed.includes(asked) ? [] : [asked])
     : allowed;
   const classId = qInt(req, 'classId');
+  /* Hỏi theo LỚP thì lớp đó phải nằm trong phạm vi — không được vượt quyền bằng cách truyền classId. */
+  if (classId) require_(p, PERMISSIONS.CASE_VIEW, { classId }, 'Lớp này nằm ngoài phạm vi bạn được xem.');
   return {
     classId: classId ?? null,
     branchIds: classId ? null : branchIds,

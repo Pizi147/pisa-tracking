@@ -232,9 +232,10 @@ export function CasePanel({ caseId, compact = false, hideHeader = false, onChang
 
       {/* ══════════════════════════════════════════════════ bước tiếp theo */}
       <section className="rounded-lg border p-3" style={{ borderColor: 'var(--line)' }}>
-        {data.outcome ? (
+        {/* Case Ý thức đã hoàn thành KHÔNG có hướng xử lý (outcome rỗng) — vẫn là đã kết luận, không phải "đang xử lý". */}
+        {data.outcome || data.status === 'done' ? (
           <p className="text-sm text-slate-100 m-0">
-            Đã kết luận: <strong>{data.outcomeLabel}</strong>
+            Đã kết luận{data.outcomeLabel && <>: <strong>{data.outcomeLabel}</strong></>}
             {data.outcomeNote && <span className="text-slate-400"> — {data.outcomeNote}</span>}
           </p>
         ) : (

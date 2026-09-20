@@ -41,7 +41,7 @@ type Detail = {
   /** Điểm: ai sửa, trước → sau (PR-I). */
   scoreHistory: ScoreHistoryRow[];
   viewer: {
-    canPlanWeek: boolean; canCancel: boolean;
+    canPlanWeek: boolean; canCancel: boolean; canHandleAbsence: boolean;
     canSkipSkill: boolean; canOverrideDeadline: boolean;
     /** Kỹ năng dời lịch/xác nhận thi được — GVCN·GVBM Normal + Quản lý mọi kỹ năng (SCH-01). */
     moveableSkills: string[];
@@ -127,8 +127,10 @@ export default function MockDetailPage() {
     ...(d.viewer.canCancel && cancelled ? [{
       label: `Mở lại lượt MT${d.attemptNo}`,
       onClick: async () => {
-        await api.post(`/attempts/${d.id}/reopen`);
-        invalidate('/attempts'); reload(); toast.push('ok', 'Đã mở lại lượt MT');
+        try {
+          await api.post(`/attempts/${d.id}/reopen`);
+          invalidate('/attempts'); reload(); toast.push('ok', 'Đã mở lại lượt MT');
+        } catch (e: any) { toast.push('error', e.message); }
       },
     }] : []),
   ];
@@ -309,7 +311,7 @@ function SkillWorkTable({ d, save, onDone, onOpenHistory }: {
     const hasValue = c.rawScore !== null || c.band !== null || c.criteria.some((v) => v !== null) || !!c.noShow;
 
     const needDecide = ownsSchedule && d.viewer.canPlanWeek && open && !!r.pendingMove;
-    const needAbsence = ownsSchedule && open && !r.scored && r.sitStatus === 'absent' && !r.pendingMove;
+    const needAbsence = ownsSchedule && open && d.viewer.canHandleAbsence && !r.scored && r.sitStatus === 'absent' && !r.pendingMove;
     const needRestore = ownsSchedule && d.viewer.canPlanWeek && open
       && (r.progress === 'cancelled' || (!r.periodCode && !r.scored));
 

@@ -71,7 +71,7 @@ function loadAttempt(attemptId: number): any {
  * Giáo viên bộ môn báo "không thấy bài" là một việc khác — xác minh em vắng hay chưa thi là
  * việc của GVCN (mục 10.6), vì chỉ họ mới biết hôm đó em có đi học không.
  */
-function canRequest(p: Principal, attempt: any): boolean {
+export function canRequest(p: Principal, attempt: any): boolean {
   if (can(p, PERMISSIONS.PLAN_WEEK, { classId: attempt.class_id, studentId: attempt.student_id })) return true;
   return !!attempt.class_id && isCoreTeacherOf(p, attempt.class_id);
 }
@@ -329,7 +329,7 @@ function applyMove(
     .prepare(
       `UPDATE attempt_skills
           SET planned_period_id = ?, plan_source = 'manual', sit_status = 'scheduled',
-              absence_move_count = ?, updated_at = ?
+              sit_note = NULL, absence_move_count = ?, updated_at = ?
         WHERE id = ?`,
     )
     .run(target.id, moveNo, nowIso(), row.id);
@@ -552,7 +552,10 @@ export function restoreCancelledSkill(p: Principal, attemptId: number, skill: st
 }
 
 /** Báo cho những người xếp lịch của chi nhánh — không gửi cho cả trường. */
-function notifyPlanners(attempt: any, message: string, refId: number, actor: number | null) {
+function notifyPlanners(
+  attempt: any, message: string, refId: number, actor: number | null,
+  opts: { entityType?: string; dedupBase?: string } = {},
+) {
   const conn = db();
   const cls = attempt.class_id
     ? (conn.prepare('SELECT branch_id FROM classes WHERE id = ?').get(attempt.class_id) as any)
@@ -571,8 +574,8 @@ function notifyPlanners(attempt: any, message: string, refId: number, actor: num
     if (!m.user_id || m.user_id === actor) continue;
     notify({
       userId: m.user_id, kind: 'schedule_move', title: 'Lịch thi cần xử lý',
-      body: message, entityType: 'skill_move_requests', entityId: refId,
-      dedupKey: `move:${refId}:${m.user_id}`,
+      body: message, entityType: opts.entityType ?? 'skill_move_requests', entityId: refId,
+      dedupKey: `${opts.dedupBase ?? `move:${refId}`}:${m.user_id}`,
     });
   }
 }
@@ -701,6 +704,8 @@ export function flagLateNoShow(attempt: any, assessed: string, weekCode: string,
     `Có dấu "-" nhập cho ${skillName(assessed)} tuần ${weekCode} — tuần đã kết thúc. `
       + 'Cần Quản lý xác nhận không dự thi hoặc từ chối.',
     attempt.id, actor,
+    /* Trỏ về ĐÚNG lượt thi (không phải một đề nghị dời), và mỗi (lượt, môn, tuần) một thông báo riêng. */
+    { entityType: 'assessment_attempt', dedupBase: `late_no_show:${attempt.id}:${assessed}:${weekCode}` },
   );
 }
 
@@ -732,6 +737,11 @@ export function resolveLateNoShow(
       )
       .all(assessed, attemptId, ...entrySkillsOf(assessed)) as any[];
     if (!marks.length) throw badRequest('Không có dấu "-" nào đang chờ Quản lý hiệu chỉnh.');
+    /* Cùng luật với chốt cuối Chủ nhật: buổi Writing chỉ là vắng khi CẢ HAI task đều "-". */
+    const enough = entrySkillsOf(assessed).every((k) => marks.some((m: any) => m.skill === k));
+    if (decision === 'confirm' && !enough) {
+      throw badRequest('Buổi này chỉ được xác nhận không dự thi khi mọi bài của buổi đều là "-". Bài còn lại đã có điểm hoặc chưa báo.');
+    }
     const sched = conn
       .prepare(
         `SELECT k.id, rp.week_end, rp.code FROM attempt_skills k JOIN report_periods rp ON rp.id = k.planned_period_id
