@@ -192,7 +192,6 @@ export default function StudentDetailPage() {
               selected={skillPick}
               onPick={setSkillPick}
               onReport={() => setReportOpen(true)}
-              onOpenCase={setOpenCase}
               onChanged={() => { board.reload(); reload(); }} />
           </Card>
 
@@ -318,11 +317,9 @@ export default function StudentDetailPage() {
         signal={verify}
         onDone={(cid) => { setVerify(null); reload(); setOpenCase(cid); }} />
 
+      {/* Không có nút mở trang riêng: route `/hoc-thuat/case/:id` vẫn còn cho link sâu từ thông báo. */}
       <Drawer open={openCase !== null} onClose={() => setOpenCase(null)} title="Vấn đề - Case"
-        subtitle={data.fullName}
-        footer={openCase !== null
-          ? <Link className="btn" to={`/hoc-thuat/case/${openCase}`}>Mở trang riêng</Link>
-          : null}>
+        subtitle={data.fullName}>
         {openCase !== null && <CasePanel caseId={openCase} compact />}
       </Drawer>
 
@@ -427,8 +424,8 @@ function IeltsAttempts({ attempts, onOpen }: { attempts: any[]; onOpen: (a: any)
             <Th hint="Lượt đã chấm xong, đang chờ, hay đã huỷ.">Trạng thái</Th>
             <Th hint="Band Listening">L</Th><Th hint="Band Reading">R</Th><Th hint="Band Writing — gộp từ W1 và W2">W</Th><Th hint="Band Speaking">S</Th>
             <Th hint="Band tổng của lượt, tính theo quy tắc IELTS. Thiếu một kỹ năng thì chưa có Overall.">Overall</Th>
-            <Th hint="Mức mong đợi của chính lượt đó, tính theo mục tiêu tại thời điểm ấy. Đổi mục tiêu không chấm lại quá khứ.">Kỳ vọng</Th>
-            <Th hint="Số kỹ năng dưới kỳ vọng ở lượt đó — đó chính là mức SOS. Thiếu điểm thì chưa kết luận.">Kết quả</Th>
+            <Th hint="Mức mong đợi của chính đợt Test đó, tính theo mục tiêu tại thời điểm ấy. Đổi mục tiêu không chấm lại quá khứ.">Kỳ vọng</Th>
+            <Th hint="Số kỹ năng dưới kỳ vọng của đợt Test đó — chính là mức SOS. Thiếu điểm thì chưa kết luận.">Kết quả</Th>
           </tr>
         </thead>
         <tbody>
@@ -479,7 +476,7 @@ function RatioAttempts({ attempts, onOpen }: { attempts: any[]; onOpen: (a: any)
             <th className="th">Lớp</th>
             <Th hint="Tuần kế hoạch của lượt này. Một lượt chỉ thuộc đúng một tuần — không có ngày thi cụ thể.">Tuần</Th>
             <Th hint="Điểm đạt trên tổng điểm của từng môn. Lớp Normal không quy ra band.">Điểm từng phần</Th>
-            <Th hint="Số kỹ năng dưới kỳ vọng ở lượt đó — đó chính là mức SOS. Thiếu điểm thì chưa kết luận.">Kết quả</Th>
+            <Th hint="Số kỹ năng dưới kỳ vọng của đợt Test đó — chính là mức SOS. Thiếu điểm thì chưa kết luận.">Kết quả</Th>
           </tr>
         </thead>
         <tbody>

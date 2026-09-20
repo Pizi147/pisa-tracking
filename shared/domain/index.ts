@@ -12,6 +12,7 @@
  *   cases      hạng mục case, phân loại nguyên nhân, phương án, phê duyệt, kết quả
  *   worklist   báo cáo đơn vị, loại việc, nhãn thời hạn
  *   people     vai trò, quyền, bộ lọc học viên theo vai
+ *   display    luật hiển thị dùng chung: hạn, tiến độ đợt Test, phần trăm, ngày nghiệp vụ
  */
 export * from './skills.ts';
 export * from './students.ts';
@@ -21,3 +22,6 @@ export * from './cases.ts';
 export * from './week.ts';
 export * from './worklist.ts';
 export * from './people.ts';
+export * from './display.ts';
+export * from './metrics.ts';
+export * from './policy.ts';

@@ -6,6 +6,7 @@ import { useToast } from '../../ui/Toast.tsx';
 import { Card, Empty, ErrorState, Info, Level, Outcome as Verdict, SectionNote, Skeleton, Status, Th} from '../../ui/ui.tsx';
 import { caseStatusLabel, caseStatusTone, fmtDate, sosLabel, sosTone } from '../../lib/format.ts';
 import { ATTEMPT_KIND_LABEL, type AttemptKind } from '@shared/domain/index.ts';
+import { TOOLTIP_TUAN_HOAN_TAT } from '../../ui/chu.ts';
 
 type SkillResult = {
   skill: string; label: string;
@@ -164,7 +165,7 @@ export default function RegularSheetPage() {
                 <tr>
                   <th className="th">Học viên</th>
                   <Th hint="Progress Test (giữa khoá) hay Final Test (cuối khoá) của chương trình lớp này.">Bài</Th>
-                  <Th hint="Tuần hoàn tất theo kế hoạch của cả bài — tuần của môn thi muộn nhất. Lịch thật của từng môn hiện ngay dưới ô điểm.">Tuần</Th>
+                  <Th hint={`${TOOLTIP_TUAN_HOAN_TAT} Lịch thật của từng môn hiện ngay dưới ô điểm.`}>Tuần</Th>
                   {data.programme.skills.map((k) => (
                     <th key={k} className="th text-center">{data.skillLabels[k] ?? k}</th>
                   ))}
@@ -201,7 +202,7 @@ export default function RegularSheetPage() {
               <strong>Mỗi môn có tuần thi và hạn chấm riêng.</strong> Một bài có thể trải hai ba tuần;
               hạn chấm của lớp Normal là hết <strong>Chủ nhật của chính tuần thi môn đó</strong>. Môn chưa
               đến lịch thì chưa nợ điểm và không bị tính quá hạn — dòng nhỏ dưới mỗi ô cho biết môn đó
-              đang ở đâu. Bài vẫn phải đủ cả bốn môn mới hoàn tất; không có thao tác miễn môn.
+              đang ở đâu. Bài vẫn phải đủ cả bốn môn mới đủ điểm; không có thao tác miễn môn.
             </SectionNote>
           </div>
         </Card>

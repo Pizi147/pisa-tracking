@@ -95,7 +95,7 @@ export function MeetingBoard() {
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="flex flex-wrap items-end gap-2">
           <WeekPicker periodId={periodId} onPeriod={setPeriodId}
-            label={byMonth ? 'Tuần bất kỳ trong tháng' : 'Tuần báo cáo'} className="w-52" />
+            label={byMonth ? 'Tuần bất kỳ trong tháng' : 'Tuần báo cáo'} />
           <label className="block">
             <span className="label">Kỳ</span>
             <select className="field w-28" value={byMonth ? 'month' : 'week'}

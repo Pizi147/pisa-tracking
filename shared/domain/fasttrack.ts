@@ -178,9 +178,12 @@ export const SKILL_PROGRESS_LABEL: Record<SkillProgress, string> = {
   skipped: 'Ngoài phạm vi',
   not_scheduled: 'Chưa xếp tuần',
   upcoming: 'Chưa đến lịch',
-  /** Tuần thi của CHÍNH kỹ năng này đã tới hoặc đã qua mà chưa ai xác nhận em đã thi. */
-  due: 'Chưa xác nhận đã thi',
-  sat: 'Đã thi, chờ chấm',
+  /**
+   * Tuần thi của CHÍNH kỹ năng này đã tới hoặc đã qua mà chưa có điểm. KHÔNG nói "chưa xác nhận đã thi" (MT-P03): có
+   * lịch và đúng quyền là nhập được, không có bước xác nhận bắt buộc trước khi chấm.
+   */
+  due: 'Chờ nhập điểm',
+  sat: 'Đã thi, chờ nhập điểm',
   absent: 'Đã xác nhận vắng',
   scored: 'Đã có điểm',
   reschedule_pending: 'Chờ duyệt dời',
@@ -233,11 +236,93 @@ export type PendingCell = {
   scored: boolean;
   progress: SkillProgress;
   mine: boolean;
+  /** Đã báo '-' (không có bài): không phải bài cần chấm. */
+  noShow?: boolean;
 };
 
 export function pendingSkillsOf(cells: PendingCell[], scope: 'mine' | 'managed'): string[] {
   return cells
-    .filter((c) => c.required && !c.scored && awaitingScore(c.progress))
+    .filter((c) => c.required && !c.scored && !c.noShow && awaitingScore(c.progress))
     .filter((c) => (scope === 'mine' ? c.mine : true))
     .map((c) => c.skill);
+}
+
+// ---------------------------------------------------------------- dấu '-' và chốt không dự thi (PR-G)
+
+/**
+ * DẤU '-' Ở Ô ĐIỂM VÀ VIỆC CHỐT "KHÔNG DỰ THI" CUỐI CHỦ NHẬT — rule book §17.1 (chốt mới nhất, thay mọi
+ * mô tả cũ mâu thuẫn).
+ *
+ * GV được phân công nhập '-' để báo em có lịch Mock tuần đó nhưng KHÔNG LÀM BÀI. Sửa lại được trước khi
+ * tuần kết thúc; nếu '-' vẫn còn khi hết Chủ nhật thì xác lập KHÔNG DỰ THI. Không còn bước GVCN xác minh
+ * thường lệ.
+ *
+ * "KỂ CẢ KHÔNG AI MỞ WEB" — và dự án này không có cron. Nên kết quả chốt là HÀM THUẦN THEO THỜI GIAN:
+ * hàm của (dấu '-' đang có · TUẦN LỊCH CỦA CHÍNH BÀI ĐÓ · ngày nghiệp vụ hiện tại), KHÔNG phải hàm của
+ * thời điểm chạy. Chạy Chủ nhật 23:59, sáng thứ Hai, hay thứ Năm tuần sau đều ra CÙNG MỘT kết quả và
+ * CÙNG MỘT ngày hiệu lực (cuối Chủ nhật của tuần đó). Nhờ vậy chỉ cần gọi nó ở đường đọc.
+ *
+ * Ba điều nó KHÔNG làm: không suy ô trống thành vắng (ô trống chỉ là chưa nhập); không coi '-' là điểm 0;
+ * không đụng bài khác (W1 báo '-' không xoá W2 hay S).
+ */
+export type NoShowState =
+  /** Không có dấu '-' nào còn hiệu lực. */
+  | 'none'
+  /** Đã báo '-', tuần chưa kết thúc — còn sửa được đến hết Chủ nhật. */
+  | 'khong-co-bai'
+  /** '-' còn nguyên khi hết Chủ nhật → đã xác lập không dự thi. */
+  | 'khong-du-thi'
+  /** '-' nhập cho một tuần ĐÃ kết thúc từ trước: chờ Quản lý hiệu chỉnh (C10), chưa tự chốt. */
+  | 'cho-ql-hieu-chinh';
+
+export type NoShowView = {
+  state: NoShowState;
+  /** Ngày hiệu lực của việc chốt = cuối Chủ nhật của tuần lịch của bài. Không phụ thuộc lúc chạy. */
+  effectiveOn: string | null;
+  /** Còn sửa được đến hết ngày này (chỉ khi `khong-co-bai`). */
+  editableUntil: string | null;
+};
+
+export function noShowStateOf(i: {
+  /** Có dấu '-' được lưu cho ô này. */
+  marked: boolean;
+  /** Đã có ĐIỂM (band hoặc số câu đúng) — điểm thật luôn thắng dấu '-'. */
+  hasScore: boolean;
+  /** Dấu '-' được lưu cho ĐÚNG tuần lịch hiện tại của bài. Lịch đã dời sang tuần khác thì dấu cũ hết nghĩa. */
+  sameWeek: boolean;
+  /** Chủ nhật của tuần lịch của bài. */
+  weekEnd: string | null;
+  /** Ngày nghiệp vụ hiện tại. */
+  today: string;
+  /** Dấu '-' được nhập KHI tuần đó đã kết thúc từ trước (ngoại lệ C10). */
+  enteredAfterWeekEnd: boolean;
+  /** Luật C10 đang dùng — truyền từ `policy.ts`, không tự chọn ở đây. */
+  lateRule: 'cho-ql-hieu-chinh' | 'chot-ngay';
+}): NoShowView {
+  const none: NoShowView = { state: 'none', effectiveOn: null, editableUntil: null };
+  if (!i.marked || i.hasScore || !i.sameWeek || !i.weekEnd) return none;
+  const end = i.weekEnd.slice(0, 10);
+  if (i.enteredAfterWeekEnd && i.lateRule === 'cho-ql-hieu-chinh') {
+    return { state: 'cho-ql-hieu-chinh', effectiveOn: null, editableUntil: null };
+  }
+  if (i.enteredAfterWeekEnd || i.today > end) return { state: 'khong-du-thi', effectiveOn: end, editableUntil: null };
+  return { state: 'khong-co-bai', effectiveOn: null, editableUntil: end };
+}
+
+/** Gợi ý trong ô nhập điểm (rule book §17.1, TU_DIEN_VA_CHU §3). */
+export const NO_SHOW_HINT = 'Nhập - nếu học viên không làm bài';
+
+/** Câu trạng thái của một ô có dấu '-'. `weekCode` là mã tuần đầy đủ, ví dụ `W3 SEP 2026`. */
+export function noShowText(v: NoShowView, weekCode: string | null, today: string): string | null {
+  const day = (iso: string) => {
+    const s = iso.slice(0, 10);
+    const dm = `${s.slice(8, 10)}/${s.slice(5, 7)}`;
+    return s.slice(0, 4) === today.slice(0, 4) ? dm : `${dm}/${s.slice(0, 4)}`;
+  };
+  switch (v.state) {
+    case 'khong-co-bai': return `Không có bài · Có thể sửa đến hết Chủ nhật ${day(v.editableUntil!)}`;
+    case 'khong-du-thi': return `Không dự thi · Tuần ${weekCode ?? ''}`.trim();
+    case 'cho-ql-hieu-chinh': return 'Chờ quản lý hiệu chỉnh';
+    default: return null;
+  }
 }

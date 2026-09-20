@@ -31,6 +31,8 @@ export type ClassSummary = {
   studentCount: number;
   /** Số LƯỢT có kỹ năng tới hạn mà người đang xem được phép nhập điểm. */
   needScores: number;
+  /** `needScores` đang đếm CỦA AI: `mine` (phần mình phải chấm) hay `managed` (cả lớp trong phạm vi). Badge phải nói đúng điều này. */
+  workScope: WorkScope;
   /** Số CASE SOS chưa xử lý xong — đếm case, không phải học viên. */
   openCases: number;
   programmeCode: string | null;
@@ -211,6 +213,7 @@ export function listClassSummaries(p: Principal, f: { branchId?: number; q?: str
     startDate: c.start_date,
     studentCount: c.student_count,
     needScores: needScores.get(c.id) ?? 0,
+    workScope,
     openCases: openCases.get(c.id) ?? 0,
     /*
      * Kỹ năng người ĐANG XEM dạy ở chính lớp này.

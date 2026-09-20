@@ -159,12 +159,12 @@ export function ClassCreatePanel({ onClose, onDone }: {
           {body && <p className="text-xs text-slate-400 mt-1 mb-0">Lớp sẽ là <strong>{code}</strong></p>}
         </Field>
 
-        <Field label="Tuần khai giảng"
+        <Field as="div" label="Tuần khai giảng"
           hint={isFt
             ? 'Với lớp FT đây chỉ là thông tin tham khảo — lịch MT đi theo từng em.'
             : 'Bắt buộc với lớp Normal: hai mốc Progress và Final Test đếm từ tuần này.'}>
           <WeekPicker periodId={startPeriodId} label={null} scope="planning"
-            onPeriod={setStartPeriodId} className="w-full" />
+            onPeriod={setStartPeriodId} />
         </Field>
 
         {/* Cho thấy TRƯỚC những gì đi kèm lựa chọn, để không ai phải tạo xong mới biết. */}

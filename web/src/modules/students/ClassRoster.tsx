@@ -140,7 +140,7 @@ export function ClassRoster({ classId, studentQuery, onAddStudents }: {
                 {isRatio ? 'Mốc kiểm tra' : 'Mốc'}
               </Th>
               {!isRatio && (
-                <Th align="right" hint="Overall — chỉ có khi lượt đó đủ cả bốn kỹ năng. Không ghép điểm khác lượt thành Overall.">
+                <Th align="right" hint="Overall — chỉ có khi đợt Test đó đủ cả bốn kỹ năng. Không ghép điểm của đợt khác thành Overall.">
                   OVR
                 </Th>
               )}

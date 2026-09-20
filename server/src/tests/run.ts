@@ -3141,7 +3141,7 @@ check('MỖI KỸ NĂNG CHỈ MỘT GIÁO VIÊN — xếp hai người vào mộ
   );
 });
 
-check('Dữ liệu mẫu có đủ bốn mức gấp, không phải một màu đỏ', () => {
+check('Dữ liệu mẫu có đủ bốn mức độ ưu tiên, không phải một màu đỏ', () => {
   const open = conn
     .prepare(
       `SELECT followup_due FROM case_interventions
@@ -3413,7 +3413,7 @@ check('Xác nhận đã trao đổi phải có ngày, và không nhận ngày �
     'Không lưu đúng trạng thái và ngày thực hiện');
 });
 
-console.log('\n22. Phương án tự sinh và hạn theo mức gấp');
+console.log('\n22. Phương án tự sinh và hạn theo mức độ ưu tiên');
 
 check('SOS 1-2 xếp tự học, SOS 3 xếp tutor, từ MT3 luôn là tutor', () => {
   const { autoSupportKind } = domain;
@@ -3791,7 +3791,7 @@ check('GVCN nhận việc gặp học viên; việc gọi phụ huynh về Quả
   conn.prepare('UPDATE case_interventions SET action_due = ? WHERE id = ?').run(TODAY, ivId);
 
   // Chỉ GVCN mới ghi nhận được việc "gọi phụ huynh" của case này (AUTH-01: cả hai đều đòi đúng người).
-  const ivParent = cases.recordIntervention(P.coreTeacher, ownSkillCase.id, {
+  const ivParent = cases.recordIntervention(P.mbManager, ownSkillCase.id, {
     kind: 'talk_parent', description: 'Gọi phụ huynh trao đổi tình hình gần đây.', status: 'planned',
   }) as any;
   const ivParentId = ivParent.interventions[ivParent.interventions.length - 1].id as number;
@@ -3818,7 +3818,8 @@ check('GVCN nhận việc gặp học viên; việc gọi phụ huynh về Quả
   const wrongGvKinds = kinds(mismatchTeacher);
   assert(!wrongGvKinds.has('talk_student'), 'AUTH-01: GVBM sai môn vẫn nhận được việc gặp học viên của case kỹ năng khác');
 
-  assert(kinds(P.coreTeacher).has('talk_student'), 'GVCN không nhận việc gặp học viên của case trong lớp mình');
+  /* C02 (đã chốt 20/09/2026): GVCN không xử lý case học thuật TRÁI MÔN, nên cũng không bị giao việc của nó. */
+  assert(!kinds(P.coreTeacher).has('talk_student'), 'GVCN vẫn nhận việc gặp học viên của case môn khác (C02)');
 
   /*
    * VAI ADMIN CHI NHÁNH ĐÃ BỎ sau PR15. Trước đây việc gọi phụ huynh tới tay văn phòng;
@@ -6350,7 +6351,7 @@ check('[6.4] Bộ phân loại đúng của mục 6.4, và phân loại phải t
   );
 });
 
-check('[7.2] Ý thức/Khác: báo trong bốn ngày thì GỘP, ngày thứ năm thì mở đợt mới', () => {
+check('[7.2] Ý thức/Khác: báo trong ba ngày đầu thì GỘP, ngày thứ tư thì mở đợt mới', () => {
   const st = formTestStudent();
   const mk = (title: string, summary: string) => cases.reportIssue(P.admin, {
     studentId: st.id, cycleId: st.cycle_id, track: 'behaviour', topic: 'homework',
@@ -6359,14 +6360,14 @@ check('[7.2] Ý thức/Khác: báo trong bốn ngày thì GỘP, ngày thứ nă
 
   const first = mk('Thiếu BTVN nhiều buổi', 'Ba buổi liền em không nộp bài về nhà môn Reading.');
   const row1 = conn.prepare('SELECT * FROM sos_cases WHERE id = ?').get(first.id) as any;
-  assert(row1.merge_until === addDays(demoToday(), 3),
-    `Cửa sổ gộp phải là bốn ngày kể cả ngày mở: ${demoToday()} → ${row1.merge_until}`);
+  assert(row1.merge_until === addDays(demoToday(), 2),
+    `Cửa sổ gộp phải là ba ngày kể cả ngày mở: ${demoToday()} → ${row1.merge_until}`);
   assert(row1.episode_no === 1, `Đợt đầu phải là lần 1, đang là ${row1.episode_no}`);
   assert(row1.urgency === 'attention', 'Đợt mới mở đã bị đánh Gấp');
 
   /* Báo lần hai TRONG cửa sổ: gộp vào chính đợt đó và nâng lên Gấp. */
   const second = mk('Lại thiếu BTVN', 'Buổi Listening hôm nay em cũng không có bài, nói là quên.');
-  assert(second.id === first.id, 'Báo cáo trong cửa sổ bốn ngày mà lại mở case mới');
+  assert(second.id === first.id, 'Báo cáo trong cửa sổ ba ngày mà lại mở case mới');
   const row2 = conn.prepare('SELECT * FROM sos_cases WHERE id = ?').get(first.id) as any;
   assert(row2.urgency === 'urgent', 'Có báo cáo bổ sung mà case không được nâng lên Gấp');
   assert(row2.episode_no === 1, 'Số đợt tăng theo mỗi báo cáo — phải tăng theo ĐỢT');
@@ -7049,7 +7050,7 @@ check('[13.3] Cột nhóm đếm số ĐỢT case, không đếm từng lần gi
     ...base, title: 'BTVN: lại không nộp',
     summary: 'Hôm nay em vẫn chưa nộp bài, đây là buổi thứ hai liên tiếp.',
   }) as any;
-  assert(second.id === first.id, 'Hai lần báo trong bốn ngày đã thành hai đợt');
+  assert(second.id === first.id, 'Hai lần báo trong ba ngày đã thành hai đợt');
 
   const after = behaviourRow(st.class_id, st.id).topics.homework.episodes;
   assert(after === before + 1,
@@ -7524,7 +7525,7 @@ check('[18.2-9] Có em trượt thật ở MT trước rồi tiến bộ ở MT 
   assert(improved, 'Không có em nào có điểm một kỹ năng tăng giữa hai đợt MT');
 });
 
-check('[18.2-10] Có đợt case Ý thức gộp nhiều báo cáo, và ranh giới bốn ngày đúng', () => {
+check('[18.2-10] Có đợt case Ý thức gộp nhiều báo cáo, và ranh giới ba ngày đúng', () => {
   const merged = many(
     `SELECT sc.id, sc.detected_at, sc.merge_until, COUNT(r.id) AS n
        FROM sos_cases sc JOIN case_reports r ON r.case_id = sc.id
@@ -7532,8 +7533,8 @@ check('[18.2-10] Có đợt case Ý thức gộp nhiều báo cáo, và ranh gi�
   );
   assert(merged.length > 0, 'Không có đợt Ý thức nào gộp từ hai báo cáo trở lên');
   for (const m of merged) {
-    assert(m.merge_until === addDays(m.detected_at, 3),
-      `Đợt ${m.id}: cửa sổ gộp không phải bốn ngày kể cả ngày đầu`);
+    assert(m.merge_until === addDays(m.detected_at, 2),
+      `Đợt ${m.id}: cửa sổ gộp không phải ba ngày kể cả ngày đầu`);
     const outside = many('SELECT reported_on FROM case_reports WHERE case_id = ?', m.id)
       .filter((r) => r.reported_on > m.merge_until || r.reported_on < m.detected_at);
     assert(outside.length === 0, `Đợt ${m.id} có báo cáo nằm ngoài cửa sổ gộp`);
@@ -7845,7 +7846,7 @@ const backfillCycle = conn
   .get(backfillEnr.student_id) as any;
 
 check('Nhập bù (chốt 1) · Không sinh nghĩa vụ cập nhật tuần nào cho phương án đã xong', () => {
-  const done = cases.backfillCase(P.coreTeacher, {
+  const done = cases.backfillCase(P.mbManager, {
     studentId: backfillEnr.student_id, cycleId: backfillCycle?.id,
     track: 'academic', topic: authSubjectSkill,
     primaryCode: domain.issuesForTopic(authSubjectSkill)[0].code,
@@ -7862,7 +7863,7 @@ check('Nhập bù (chốt 1) · Không sinh nghĩa vụ cập nhật tuần nào
 check('Nhập bù (chốt 2) · Case nhập bù không có hạn nào, không vào hàng đợi quá hạn', () => {
   const enr2 = conn.prepare(`SELECT student_id FROM enrollments WHERE class_id = ? AND status = 'active' AND student_id != ? LIMIT 1`)
     .get(mbClass, backfillEnr.student_id) as any ?? backfillEnr;
-  const done = cases.backfillCase(P.coreTeacher, {
+  const done = cases.backfillCase(P.mbManager, {
     studentId: enr2.student_id, cycleId: null,
     track: 'behaviour', primaryCode: 'student.behaviour.homework',
     topic: 'homework',
@@ -7888,7 +7889,7 @@ check('Nhập bù (chốt 3) · Không gộp vào đợt Ý thức đang mở, d
     summary: 'Đợt Ý thức ĐANG MỞ hôm nay, dùng để kiểm case nhập bù không được gộp vào đây.',
     parallel: true,
   }) as any;
-  const done = cases.backfillCase(P.coreTeacher, {
+  const done = cases.backfillCase(P.mbManager, {
     studentId: enr3.student_id, track: 'behaviour', primaryCode: 'student.behaviour.participation',
     topic: 'participation',
     title: 'Ý thức: nhập bù chốt 3', summary: 'Case nhập bù cùng phân loại "tham gia trên lớp" nhưng ở quá khứ xa.',
@@ -7904,7 +7905,7 @@ check('Nhập bù (chốt 3) · Không gộp vào đợt Ý thức đang mở, d
 check('Nhập bù (chốt 4) · Không tạo tín hiệu, không đổi mức SOS', () => {
   const enr4 = conn.prepare(`SELECT student_id FROM enrollments WHERE class_id = ? AND status = 'active' LIMIT 1`)
     .get(mbClass) as any;
-  const done = cases.backfillCase(P.coreTeacher, {
+  const done = cases.backfillCase(P.mbManager, {
     studentId: enr4.student_id, cycleId: backfillCycle?.id,
     track: 'academic', topic: authMismatchSkill,
     primaryCode: domain.issuesForTopic(authMismatchSkill)[0].code,
@@ -7922,7 +7923,7 @@ check('Nhập bù (chốt 5) · Không vào mẫu số hiệu quả hỗ trợ, 
   const enr5 = conn.prepare(`SELECT student_id FROM enrollments WHERE class_id = ? AND status = 'active' LIMIT 1`)
     .get(mbClass) as any;
   const before = effectiveness.planOutcomes({ studentIds: [enr5.student_id] }).length;
-  const done = cases.backfillCase(P.coreTeacher, {
+  const done = cases.backfillCase(P.mbManager, {
     studentId: enr5.student_id, cycleId: backfillCycle?.id,
     track: 'academic', topic: authSubjectSkill,
     primaryCode: domain.issuesForTopic(authSubjectSkill)[0].code,
@@ -7943,7 +7944,7 @@ check('Nhập bù (chốt 5) · Không vào mẫu số hiệu quả hỗ trợ, 
 check('Nhập bù (chốt 6) · Cảnh báo khi trùng với MỘT CASE NHẬP BÙ KHÁC cùng khoảng thời gian', () => {
   const enr6 = conn.prepare(`SELECT student_id FROM enrollments WHERE class_id = ? AND status = 'active' LIMIT 1`)
     .get(mbClass) as any;
-  const first = cases.backfillCase(P.coreTeacher, {
+  const first = cases.backfillCase(P.mbManager, {
     studentId: enr6.student_id, cycleId: backfillCycle?.id,
     track: 'academic', topic: authSubjectSkill,
     primaryCode: domain.issuesForTopic(authSubjectSkill)[0].code,
@@ -7952,7 +7953,7 @@ check('Nhập bù (chốt 6) · Cảnh báo khi trùng với MỘT CASE NHẬP B
     actions: [{ description: 'Ôn bài với em', performerName: 'GV bộ môn', fromDate: '2026-02-01', toDate: '2026-02-10' }],
     outcome: 'improved', note: 'Case nhập bù chốt 6, lần 1.',
   }) as any;
-  assertThrows(() => cases.backfillCase(P.coreTeacher, {
+  assertThrows(() => cases.backfillCase(P.mbManager, {
     studentId: enr6.student_id, cycleId: backfillCycle?.id,
     track: 'academic', topic: authSubjectSkill,
     primaryCode: domain.issuesForTopic(authSubjectSkill)[0].code,
@@ -7962,7 +7963,7 @@ check('Nhập bù (chốt 6) · Cảnh báo khi trùng với MỘT CASE NHẬP B
     outcome: 'improved', note: 'Case nhập bù chốt 6, lần 2 — phải bị cảnh báo trùng.',
   }), /trùng|nhập bù/, 'Nhập bù trùng khoảng ngày với một case nhập bù khác cùng hạng mục');
   // Xác nhận "đây là lần khác" thì vẫn tạo được.
-  const second = cases.backfillCase(P.coreTeacher, {
+  const second = cases.backfillCase(P.mbManager, {
     studentId: enr6.student_id, cycleId: backfillCycle?.id,
     track: 'academic', topic: authSubjectSkill,
     primaryCode: domain.issuesForTopic(authSubjectSkill)[0].code,
@@ -7995,7 +7996,7 @@ check('Nhập bù (chốt 7) · Ghi rõ ai nhập, nhập lúc nào, lưu cùng 
 check('Nhập bù (chốt 7, tiếp) · Nhãn "nhập bù" hiện trên thẻ case của hồ sơ học viên', () => {
   const enr7b = conn.prepare(`SELECT student_id FROM enrollments WHERE class_id = ? AND status = 'active' LIMIT 1`)
     .get(mbClass) as any;
-  const done = cases.backfillCase(P.coreTeacher, {
+  const done = cases.backfillCase(P.mbManager, {
     studentId: enr7b.student_id, track: 'behaviour', primaryCode: 'student.behaviour.attendance',
     topic: 'attendance',
     title: 'Ý thức: nhập bù chốt 7 tiếp', summary: 'Case nhập bù để kiểm nhãn hiện trên thẻ case của hồ sơ.',
@@ -8014,7 +8015,7 @@ check('Nhập bù (chốt 7, tiếp) · Nhãn "nhập bù" hiện trên thẻ ca
 check('Nhập bù · Ghi chú kết luận bắt buộc ngay ở máy chủ, không chỉ ở giao diện', () => {
   const enrN = conn.prepare(`SELECT student_id FROM enrollments WHERE class_id = ? AND status = 'active' LIMIT 1`)
     .get(mbClass) as any;
-  assertThrows(() => cases.backfillCase(P.coreTeacher, {
+  assertThrows(() => cases.backfillCase(P.mbManager, {
     studentId: enrN.student_id, track: 'behaviour', primaryCode: 'student.behaviour.homework',
     topic: 'homework',
     title: 'Ý thức: kiểm ghi chú bắt buộc', summary: 'Case nhập bù để kiểm ghi chú kết luận bắt buộc ở tầng máy chủ.',
@@ -8211,6 +8212,1126 @@ check('T09 · Đợt FT định trước chỉ L/R: đủ điểm L/R là đợt
   assert(r.overall === null, `KHÔNG được bịa Overall khi chỉ có 2/4 cấu phần, đang ra overall=${r.overall}`);
   assert(r.required.length === 2 && r.required.includes('listening') && r.required.includes('reading'),
     `required phải đúng chỉ L/R, đang ra: ${r.required.join(',')}`);
+});
+
+// ==================================================================== PR-D (chặng 0)
+
+/*
+ * KHUNG CASE GỌN — một case đọc ở MỘT khối. Khối nhúng `CasePanel` bị gỡ khỏi thẻ case ở
+ * hồ sơ học viên, nên thẻ phải tự mang đủ thứ để hoàn thành case và mở lịch sử phương án
+ * TẠI CHỖ. Giao diện không tự suy: nó đọc thẳng từ máy chủ, đúng như nút cũ ở CasePanel.
+ */
+const prdStudent = conn.prepare(`SELECT s.id FROM students s JOIN enrollments e ON e.student_id = s.id AND e.status = 'active'
+                                   WHERE e.class_id = ? ORDER BY s.id DESC LIMIT 1`).get(mbClass) as any;
+const prdReportOn = (studentId: number, key: string, topic: string = 'listening') => cases.reportIssue(P.coreTeacher, {
+  title: 'Vấn đề cần theo dõi ở kỹ năng này',
+  primaryCode: 'student.listening.technique',
+  studentId, topic, summary: 'Case dựng riêng cho phép kiểm khung case gọn (PR-D).',
+  idempotencyKey: key, parallel: true,
+}) as any;
+const prdCardOf = (who: any, studentId: number, caseId: number) => {
+  const board = cases.skillSupportBoard(who, studentId) as any;
+  return board.rows.flatMap((r: any) => r.cases).find((x: any) => x.id === caseId);
+};
+
+check('PR-D · Thẻ case mang đủ để hoàn thành case ngay tại chỗ: có quyền chốt không, còn gì đang chặn', () => {
+  const c = prdReportOn(prdStudent.id, 'test-prd-1');
+  const asCore = prdCardOf(P.coreTeacher, prdStudent.id, c.id);
+  assert(asCore, 'Case vừa tạo không xuất hiện trên thẻ case của hồ sơ');
+  assert(asCore.canClose === true, 'GVCN của lớp phải thấy mình chốt được case');
+  assert(Array.isArray(asCore.closeBlockers), 'Thẻ case thiếu danh sách lý do chưa hoàn thành được');
+  assert(asCore.closeBlockers.length === cases.closeBlockers(c.id).length && asCore.closeBlockers.length > 0,
+    'Case chưa có phương án nào phải mang đúng lý do chặn của máy chủ, không phải danh sách tự suy');
+  const asSubject = prdCardOf(P.subjectTeacher, prdStudent.id, c.id);
+  assert(asSubject, 'GVBM của lớp phải thấy thẻ case của học viên trong lớp');
+  assert(asSubject.canClose === false, 'GVBM không kiêm chủ nhiệm không được thấy nút hoàn thành hoạt động');
+});
+
+check('PR-D · Thẻ case đã hoàn thành không còn lý do chặn nào', () => {
+  const c = prdReportOn(prdStudent.id, 'test-prd-1b');
+  const ivInfo = cases.recordIntervention(P.coreTeacher, c.id, {
+    kind: 'self_study', description: 'Nghe 30 phút mỗi ngày (PR-D)', performerName: 'GVCN',
+    status: 'started', startedDate: TODAY,
+  }) as any;
+  const ivId = ivInfo.interventions.find((i: any) => i.description === 'Nghe 30 phút mỗi ngày (PR-D)').id;
+  cases.updateResult(P.coreTeacher, ivId, {
+    mode: 'end', outcome: 'improved', nextStep: 'complete', note: 'Em đã nghe đều hơn hẳn (PR-D)',
+  });
+  cases.closeCaseOutcome(P.mbManager, c.id, { outcome: 'improved', note: 'Đã xong, em ổn định lại hẳn (PR-D)' });
+  const card = prdCardOf(P.coreTeacher, prdStudent.id, c.id);
+  assert(card.status === 'done' && card.closeBlockers.length === 0, 'Case đã xong mà thẻ vẫn ghi còn lý do chặn');
+});
+
+check('PR-D · Lịch sử một phương án mang đủ ngày, chu kỳ, ghi chú và cờ trễ để mở ngay tại dòng', () => {
+  const c = prdReportOn(prdStudent.id, 'test-prd-2');
+  const info = cases.recordIntervention(P.coreTeacher, c.id, {
+    kind: 'tutor', description: 'Học tutor Listening (PR-D lịch sử)', performerName: 'Tutor B',
+    /* Bắt đầu HÔM NAY thì hạn cập nhật là Chủ nhật tuần này — cập nhật hôm nay là đúng hạn. */
+    status: 'started', startedDate: TODAY,
+  }) as any;
+  const ivId = info.interventions.find((i: any) => i.description === 'Học tutor Listening (PR-D lịch sử)').id;
+  cases.updateResult(P.coreTeacher, ivId, {
+    mode: 'monitor', outcome: 'partial', observedOn: TODAY,
+    note: 'Nghe bắt ý tốt hơn, còn sai số điện thoại (PR-D)',
+  });
+  const plan = prdCardOf(P.coreTeacher, prdStudent.id, c.id).plans.find((p: any) => p.id === ivId);
+  assert(plan && plan.updates.length === 1, 'Phương án phải có đúng một lần cập nhật đã ghi');
+  const u = plan.updates[0];
+  assert(u.note === 'Nghe bắt ý tốt hơn, còn sai số điện thoại (PR-D)', `Thiếu câu ghi chú của người dạy, đang là ${JSON.stringify(u.note)}`);
+  assert(u.cycleNo === 1, `Thiếu số chu kỳ, đang là ${u.cycleNo}`);
+  assert(u.late === false, `Cập nhật đúng hạn không được ghi là trễ, đang là ${u.late}`);
+  assert(typeof u.label === 'string' && u.on === TODAY, 'Mỗi lần cập nhật phải giữ nhãn kết quả và ngày');
+});
+
+check('PR-D · Cập nhật quá hạn thì lịch sử phương án ghi đúng là trễ', () => {
+  const c = prdReportOn(prdStudent.id, 'test-prd-2b');
+  const info = cases.recordIntervention(P.coreTeacher, c.id, {
+    kind: 'tutor', description: 'Học tutor Listening (PR-D trễ)', performerName: 'Tutor B',
+    status: 'started', startedDate: addDays(TODAY, -20),
+  }) as any;
+  const ivId = info.interventions.find((i: any) => i.description === 'Học tutor Listening (PR-D trễ)').id;
+  cases.updateResult(P.coreTeacher, ivId, {
+    mode: 'monitor', outcome: 'unchanged', observedOn: TODAY,
+    note: 'Cập nhật muộn hơn hạn tuần, ghi lại để so (PR-D)',
+  });
+  const plan = prdCardOf(P.coreTeacher, prdStudent.id, c.id).plans.find((p: any) => p.id === ivId);
+  assert(plan.updates[0].late === true, 'Bắt đầu 20 ngày trước, cập nhật đúng hôm nay mà không ghi là trễ');
+});
+
+check('PR-D · CASE-05: điểm tự chấm cũ đã lưu vẫn đọc được sau khi bỏ ô nhập khỏi cập nhật phương án', () => {
+  const c = prdReportOn(prdStudent.id, 'test-prd-3a');
+  const info = cases.recordIntervention(P.coreTeacher, c.id, {
+    kind: 'tutor', description: 'Học tutor Listening (PR-D điểm cũ)', performerName: 'Tutor B',
+    status: 'started', startedDate: TODAY,
+  }) as any;
+  const ivId = info.interventions.find((i: any) => i.description === 'Học tutor Listening (PR-D điểm cũ)').id;
+  // Dữ liệu cũ: một lần cập nhật đã kèm điểm tự chấm (giao diện mới không còn gửi trường này).
+  cases.updateResult(P.coreTeacher, ivId, {
+    mode: 'monitor', outcome: 'partial', observedOn: TODAY,
+    note: 'Bản ghi cũ có kèm điểm cô tự chấm (PR-D)',
+    metrics: [{ skill: 'listening', score: 6, total: null }],
+  });
+  const detail = cases.caseDetail(P.coreTeacher, c.id) as any;
+  const f = detail.followups.find((x: any) => x.metrics?.length);
+  assert(f && f.metrics[0].skill === 'listening' && f.metrics[0].score === 6,
+    'Điểm tự chấm đã lưu bị mất — CASE-05 nói rõ phải giữ');
+});
+
+check('PR-D · CASE-06: case Ý thức hoàn thành bằng ghi chú + ngày, KHÔNG bị bắt chọn "tiến bộ đến đâu"', () => {
+  const stB = conn.prepare(`SELECT s.id FROM students s JOIN enrollments e ON e.student_id = s.id AND e.status='active'
+                             WHERE e.class_id = ? ORDER BY s.id DESC LIMIT 1`).get(mbClass) as any;
+  const c = cases.reportIssue(P.coreTeacher, {
+    title: 'Ý thức: quên bài về nhà (PR-D)', primaryCode: 'student.behaviour.participation',
+    studentId: stB.id, track: 'behaviour', topic: 'participation', urgency: 'attention',
+    summary: 'Em ít phát biểu ba buổi liền — case dựng riêng cho phép kiểm CASE-06.',
+    idempotencyKey: 'test-prd-4',
+  }) as any;
+  const kind = domain.interventionKindsFor('behaviour').selfServe[0];
+  cases.recordIntervention(P.coreTeacher, c.id, {
+    kind, description: 'Trao đổi riêng với em (PR-D)', performerName: 'GVCN',
+    status: 'completed', completedDate: TODAY,
+  });
+  assert(cases.closeBlockers(c.id).length === 0, 'Phương án đã xong mà case vẫn bị chặn');
+  const done = cases.closeCaseOutcome(P.coreTeacher, c.id, {
+    note: 'Đã trao đổi riêng, em hứa phát biểu nhiều hơn — kết thúc đợt này.', closedOn: TODAY,
+  } as any) as any;
+  assert(done.status === 'done' && done.closedAt, 'Case Ý thức không hoàn thành được nếu không chọn mức tiến bộ');
+  assert(done.outcome === null, `Ý thức không đo hiệu quả học thuật, không được bịa mức tiến bộ: ${done.outcome}`);
+  const j = conn.prepare(`SELECT title FROM journey_events WHERE event_type = 'case_closed' AND ref_table = 'sos_cases' AND ref_id = ?
+                           ORDER BY id DESC LIMIT 1`).get(c.id) as any;
+  assert(j && !/undefined/.test(j.title), `Dòng hành trình có chữ "undefined": ${j?.title}`);
+});
+
+check('PR-D · CASE-06 không nới sang học thuật: case học thuật thiếu mức tiến bộ vẫn bị từ chối', () => {
+  const c = prdReportOn(prdStudent.id, 'test-prd-5');
+  cases.recordIntervention(P.coreTeacher, c.id, {
+    kind: 'self_study', description: 'Nghe 30 phút mỗi ngày (PR-D học thuật)', performerName: 'GVCN',
+    status: 'completed', completedDate: TODAY,
+  });
+  assertThrows(
+    () => cases.closeCaseOutcome(P.coreTeacher, c.id, { note: 'Đã xong, em ổn định lại hẳn.' } as any),
+    /Mức độ thành công/, 'Case học thuật hoàn thành được mà không có mức tiến bộ',
+  );
+});
+
+// ==================================================================== PR-E (chặng 1)
+
+/*
+ * NỀN GIAO DIỆN DÙNG CHUNG — bốn lỗi lặp ở nhiều màn được đóng ở LUẬT, không ở từng màn:
+ * hạn không nói rõ hạn gì (F11) · badge đạt khi chưa đủ điểm (MT-P01) · phần trăm không có
+ * mẫu số (rule book §11) · ngày nghiệp vụ lẫn ngày ghi nhận (MT-P10).
+ *
+ * Các luật nằm ở `shared/domain/display.ts` — hàm thuần, kiểm được ở đây. Component React chỉ
+ * là lớp vẽ mỏng phía trên: nó không có luật riêng để sai khác đi.
+ */
+
+check('PR-E · <TyLe>: mẫu số 0 ghi "Chưa có dữ liệu", KHÔNG BAO GIỜ vẽ 0%', () => {
+  const v = domain.rateView(0, 0);
+  assert(v.kind === 'no-data', `N=0 phải là no-data, đang là ${v.kind}`);
+  assert(domain.rateText(0, 0) === 'Chưa có dữ liệu', `Đang ghi "${domain.rateText(0, 0)}"`);
+  assert(!/%/.test(domain.rateText(0, 0)), 'N=0 mà vẫn có dấu %');
+});
+
+check('PR-E · <TyLe>: n/N đứng trước, phần trăm trong ngoặc đứng sau', () => {
+  assert(domain.rateText(12, 18, 'PA có cải thiện') === '12/18 PA có cải thiện (67%)',
+    `Đang ghi "${domain.rateText(12, 18, 'PA có cải thiện')}"`);
+  assert(domain.rateText(10, 15) === '10/15 (67%)', `Đang ghi "${domain.rateText(10, 15)}"`);
+  const t = domain.rateText(12, 18, 'PA có cải thiện');
+  assert(t.indexOf('12/18') < t.indexOf('%'), 'Phần trăm không được đứng trước n/N');
+});
+
+check('PR-E · <TyLe>: mẫu dưới 5 gắn nhãn "mẫu nhỏ"; từ 5 trở lên thì không', () => {
+  assert(domain.rateText(1, 1) === '1/1 (100%) · mẫu nhỏ', `Đang ghi "${domain.rateText(1, 1)}"`);
+  assert(domain.rateText(3, 4) === '3/4 (75%) · mẫu nhỏ', `Đang ghi "${domain.rateText(3, 4)}"`);
+  assert(domain.rateText(4, 5) === '4/5 (80%)', `N=5 chưa phải mẫu nhỏ, đang ghi "${domain.rateText(4, 5)}"`);
+  assert(domain.rateView(1, 1).kind === 'value' && (domain.rateView(1, 1) as any).smallSample === true,
+    'rateView phải báo smallSample để giao diện gắn nhãn');
+});
+
+check('PR-E · <TyLe>: số vô lý (n > N, số âm, không nguyên) bị báo lỗi, không được vẽ thành phần trăm', () => {
+  for (const [n, N] of [[5, 3], [-1, 4], [1.5, 4], [1, NaN]] as const) {
+    assert(domain.rateView(n, N).kind === 'invalid', `${n}/${N} phải là invalid, đang là ${domain.rateView(n, N).kind}`);
+    assert(!/%/.test(domain.rateText(n, N)), `${n}/${N} vẫn vẽ ra phần trăm: "${domain.rateText(n, N)}"`);
+  }
+});
+
+check('PR-E · <KetQuaDot> (MT-P01): ép coDiem=1, yeuCau=4, dat=true → "Chưa đủ điểm", KHÔNG có badge đạt', () => {
+  const v = domain.attemptProgressView({ scored: 1, required: 4, passed: true, sos: 0 });
+  assert(v.overall === 'incomplete', `Overall phải là incomplete, đang là ${v.overall}`);
+  assert(v.overallText === 'Chưa đủ điểm', `Overall đang ghi "${v.overallText}"`);
+  assert(v.passBadge === false, 'Chưa đủ điểm mà vẫn có badge đạt — đúng lỗi MT-P01');
+  assert(v.tone !== 'info' && v.tone !== 'ok', `Chưa đủ điểm mà vẫn tô màu đạt (${v.tone})`);
+  for (const dat of [true, false, null]) {
+    const w = domain.attemptProgressView({ scored: 3, required: 4, passed: dat, sos: 0 });
+    assert(w.passBadge === false && w.overall === 'incomplete', `scored 3/4, passed=${dat}: vẫn có badge đạt`);
+  }
+});
+
+check('PR-E · <KetQuaDot>: năm nhánh câu chữ đúng bảng ở HE_GIAO_DIEN §5', () => {
+  const s = (scored: number, sos: number | null, passed: boolean | null = null) =>
+    domain.attemptProgressView({ scored, required: 4, passed, sos });
+  assert(s(0, null).text === 'Chưa có điểm · 0/4 kỹ năng', `Nhánh 1: "${s(0, null).text}"`);
+  assert(s(0, null).tone === 'muted', 'Nhánh 1 phải xám');
+  assert(s(2, 0).text === 'Các kỹ năng đã chấm đều đạt · còn thiếu 2', `Nhánh 2: "${s(2, 0).text}"`);
+  assert(s(2, 0).tone === 'muted', 'Nhánh 2 phải xám');
+  assert(s(2, 1).text === 'SOS 1 tạm thời · 2/4 kỹ năng có điểm', `Nhánh 3: "${s(2, 1).text}"`);
+  assert(s(2, 1).tone === 'danger' && /tạm thời/.test(s(2, 1).text), 'Nhánh 3 phải đỏ và giữ chữ "tạm thời"');
+  assert(s(4, 0, true).text === 'Đã đủ điểm · Đạt kỳ vọng', `Nhánh 4: "${s(4, 0, true).text}"`);
+  assert(s(4, 0, true).overall === 'passed' && s(4, 0, true).passBadge === true, 'Đủ điểm và đạt thì mới có badge đạt');
+  assert(s(4, 2, false).text === 'Đã đủ điểm · SOS 2', `Nhánh 5: "${s(4, 2, false).text}"`);
+  assert(s(4, 2, false).tone === 'danger' && s(4, 2, false).passBadge === false, 'Nhánh 5 phải đỏ, không badge đạt');
+});
+
+check('PR-E · <KetQuaDot>: đơn vị đếm là BỐN kỹ năng — "1/5 kỹ năng" bị chặn (MT-P02)', () => {
+  // W1/W2 là hai BÀI NHẬP của một kỹ năng Writing, không phải hai kỹ năng.
+  const v = domain.attemptProgressView({ scored: 1, required: 5, passed: null, sos: null });
+  assert(v.overall === 'invalid', `yeuCau=5 phải bị chặn, đang là ${v.overall}`);
+  assert(!/1\/5/.test(v.text), `Vẫn ghi ra "1/5": "${v.text}"`);
+  assert(domain.attemptProgressView({ scored: 5, required: 4, passed: true, sos: 0 }).overall === 'invalid',
+    'Số kỹ năng có điểm vượt số yêu cầu phải bị chặn');
+  assert(domain.attemptProgressView({ scored: 0, required: 0, passed: null, sos: null }).overall === 'invalid',
+    'Đợt không có kỹ năng bắt buộc nào không được vẽ thành "0/0 kỹ năng"');
+});
+
+check('PR-E · <KetQuaDot>: đủ điểm nhưng thiếu kỳ vọng thì không bịa ra đạt/chưa đạt', () => {
+  const v = domain.attemptProgressView({ scored: 4, required: 4, passed: null, sos: null });
+  assert(v.passBadge === false && v.overall === 'no-expectation', `Đang là ${v.overall}, badge ${v.passBadge}`);
+  assert(/Đã đủ điểm/.test(v.text), `Câu phải nói đã đủ điểm: "${v.text}"`);
+});
+
+check('PR-E · <Han>: sáu loại hạn có sáu nhãn khác nhau, đúng bảng HE_GIAO_DIEN §4', () => {
+  const t = (loai: any, han = '2026-09-23') => domain.deadlineView({ kind: loai, due: han, today: '2026-09-14' }).text;
+  assert(t('xac-minh-sos') === 'Xác minh nguyên nhân · hạn 23/09', `xac-minh-sos: "${t('xac-minh-sos')}"`);
+  assert(t('lap-pa') === 'Cần có phương án · hạn 23/09', `lap-pa: "${t('lap-pa')}"`);
+  assert(t('cap-nhat-pa') === 'Cập nhật kết quả · trước CN 23/09', `cap-nhat-pa: "${t('cap-nhat-pa')}"`);
+  assert(t('thuc-hien-y-thuc') === 'Thực hiện xong · hạn 23/09', `thuc-hien-y-thuc: "${t('thuc-hien-y-thuc')}"`);
+  assert(t('hoan-thanh-y-thuc') === 'Kết luận đợt · hạn 23/09', `hoan-thanh-y-thuc: "${t('hoan-thanh-y-thuc')}"`);
+  assert(t('nhap-diem') === 'Hạn nhập điểm 23/09', `nhap-diem: "${t('nhap-diem')}"`);
+  assert(t('du-kien-ket-thuc') === 'Dự kiến kết thúc 23/09', `du-kien-ket-thuc: "${t('du-kien-ket-thuc')}"`);
+  const all = ['xac-minh-sos', 'lap-pa', 'cap-nhat-pa', 'thuc-hien-y-thuc', 'hoan-thanh-y-thuc', 'nhap-diem', 'du-kien-ket-thuc'].map((k) => t(k));
+  assert(new Set(all).size === 7, 'Có hai loại hạn dùng chung một câu — chúng là sáu đồng hồ khác nhau');
+});
+
+check('PR-E · <Han>: quá hạn ghi rõ số ngày và đếm từ HẠN GỐC, không từ hạn đã dời', () => {
+  const v = domain.deadlineView({ kind: 'nhap-diem', due: '2026-09-23', today: '2026-09-25' });
+  assert(v.text === 'Hạn nhập điểm 23/09 · quá hạn 2 ngày' && v.tone === 'overdue' && v.daysOverdue === 2,
+    `Đang ghi "${v.text}" (${v.tone}, ${v.daysOverdue})`);
+  // Hạn đã dời sang 30/09 nhưng hạn gốc 23/09 đã qua 2 ngày: vẫn đếm từ 23/09.
+  const moved = domain.deadlineView({ kind: 'nhap-diem', due: '2026-09-30', originalDue: '2026-09-23', today: '2026-09-25' });
+  assert(moved.daysOverdue === 2, `Phải đếm từ hạn gốc (2 ngày), đang là ${moved.daysOverdue}`);
+  // Chưa quá hạn thì không tô quá hạn.
+  const ok = domain.deadlineView({ kind: 'nhap-diem', due: '2026-09-23', today: '2026-09-23' });
+  assert(ok.tone !== 'overdue' && ok.daysOverdue === null, 'Đúng ngày hạn chưa phải quá hạn');
+});
+
+check('PR-E · <Han>: có hẹn xử lý thì hiện CẢ HAI, không ghi đè hạn gốc', () => {
+  const v = domain.deadlineView({ kind: 'nhap-diem', due: '2026-09-23', reschedule: '2026-09-30', today: '2026-09-14' });
+  assert(v.text === 'Hạn nhập điểm 23/09 · Hẹn xử lý 30/09', `Đang ghi "${v.text}"`);
+});
+
+check('PR-E · <Han>: "Dự kiến kết thúc" KHÔNG phải hạn — không bao giờ quá hạn, không bao giờ đỏ (F11)', () => {
+  const v = domain.deadlineView({ kind: 'du-kien-ket-thuc', due: '2026-08-30', today: '2026-09-14' });
+  assert(v.tone === 'neutral' && v.daysOverdue === null, `Đang là ${v.tone}, quá hạn ${v.daysOverdue}`);
+  assert(!/quá hạn/.test(v.text), `Ngày dự kiến bị ghi là quá hạn: "${v.text}"`);
+});
+
+check('PR-E · <Han>: cập nhật phương án là mốc Chủ nhật — không có đơn vị "ngày"', () => {
+  const v = domain.deadlineView({ kind: 'cap-nhat-pa', due: '2026-09-06', today: '2026-09-14' });
+  assert(v.tone === 'overdue' && /quá hạn/.test(v.text), `Phải báo quá hạn: "${v.text}"`);
+  assert(!/\d+ ngày/.test(v.text), `cap-nhat-pa không được đếm số ngày: "${v.text}"`);
+});
+
+check('PR-E · <Han>: thiếu ngày hạn thì nói thẳng là chưa có hạn, không vẽ "Invalid Date"', () => {
+  const v = domain.deadlineView({ kind: 'nhap-diem', due: null, today: '2026-09-14' });
+  assert(/chưa có hạn/.test(v.text) && !/Invalid|NaN|undefined/.test(v.text), `Đang ghi "${v.text}"`);
+});
+
+check('PR-E · Ngày viết ngắn 14/09 trong cùng năm, có năm khi qua năm khác', () => {
+  assert(domain.shortDate('2026-09-14', '2026-09-20') === '14/09', domain.shortDate('2026-09-14', '2026-09-20'));
+  assert(domain.shortDate('2027-01-05', '2026-09-20') === '05/01/2027', domain.shortDate('2027-01-05', '2026-09-20'));
+});
+
+check('PR-E · Ngày nghiệp vụ khác ngày ghi nhận thì hiện CẢ HAI (MT-P10), cùng ngày thì chỉ một', () => {
+  assert(domain.businessDateText('2026-09-14', '2026-09-19T10:20:00Z', '2026-09-19') === 'Ngày nghiệp vụ 14/09 · Ghi nhận 19/09',
+    domain.businessDateText('2026-09-14', '2026-09-19T10:20:00Z', '2026-09-19'));
+  assert(domain.businessDateText('2026-09-14', '2026-09-14T03:00:00Z', '2026-09-14') === '14/09',
+    domain.businessDateText('2026-09-14', '2026-09-14T03:00:00Z', '2026-09-14'));
+});
+
+// ==================================================================== PR-F (chặng 2)
+
+/*
+ * HỢP ĐỒNG SỐ LIỆU — một chỉ số = một hàm trả về TẬP ID; số là độ dài của tập, danh sách khi bấm
+ * vào là chính tập đó (thiet-ke/HOP_DONG_SO_LIEU.md). Bốn lỗi được đóng bằng cấu trúc:
+ *   F01 (P0) hai chi nhánh cùng tuần cộng lẫn nhau · F02 "HV đang gặp" lẫn case đã đóng ·
+ *   F03 hiệu quả cũ đi theo lớp hiện tại · F05 hàng "chưa xác định" vẫn nằm trong bảng hiệu quả.
+ */
+const metricsSvc = await import('../worklist/metrics.ts');
+const branchIdOf = (code: string) => (conn.prepare('SELECT id FROM branches WHERE code = ?').get(code) as any).id as number;
+
+check('PR-F · Sổ chỉ số: đúng mười một chỉ số, mỗi chỉ số đủ tám trường (thiếu một trường thì không được lên dashboard)', () => {
+  const list = domain.METRICS as readonly any[];
+  assert(list.length === 11, `Phải có mười một chỉ số, đang có ${list.length}`);
+  const expected = ['hv-sos-hien-tai', 'hv-duoi-ky-vong-mon', 'hv-co-case-mo', 'case-mo', 'tin-hieu-cho-xac-minh',
+    'case-thieu-pa', 'pa-can-cap-nhat', 'pa-co-ket-qua', 'ty-le-co-cai-thien', 'dung-han-cap-nhat', 'do-phu-danh-gia'];
+  for (const id of expected) assert(list.some((m) => m.id === id), `Thiếu chỉ số ${id}`);
+  assert(new Set(list.map((m) => m.id)).size === list.length, 'Có hai chỉ số trùng mã');
+  const fields = ['id', 'ten', 'cauHoi', 'donVi', 'tapDuDieuKien', 'thoiGian', 'khuTrung', 'drilldown'];
+  for (const m of list) {
+    for (const f of fields) {
+      assert(typeof m[f] === 'string' && m[f].trim().length > 0, `Chỉ số ${m.id} thiếu trường "${f}"`);
+    }
+    assert(['hoc-vien', 'case', 'phuong-an', 'bai-thi', 'tin-hieu', 'dot-test', 'nghia-vu'].includes(m.donVi), `${m.id}: đơn vị lạ "${m.donVi}"`);
+    assert(['hien-trang', 'phat-sinh-trong-ky', 'ket-qua-trong-ky'].includes(m.thoiGian), `${m.id}: thời gian lạ "${m.thoiGian}"`);
+  }
+  assert(domain.metricById('hv-co-case-mo')?.ten === 'Học viên có case đang mở', 'metricById phải tra đúng chỉ số');
+  assert(domain.metricById('khong-co') === null, 'metricById của mã lạ phải là null');
+});
+
+check('PR-F · F01 (P0): hai chi nhánh CÙNG TUẦN không cộng lẫn số case, học viên và đề xuất chờ duyệt của nhau', () => {
+  const pid = (conn.prepare(`SELECT id FROM report_periods WHERE code = 'W3 AUG 2026'`).get() as any)?.id;
+  assert(pid, 'Bộ demo thiếu tuần W3 AUG 2026 để dựng phép kiểm F01');
+  const mb = branchIdOf('MB'), cp = branchIdOf('CP');
+  /* SỰ THẬT ĐỘC LẬP: đếm thẳng bằng SQL, không đi qua weeklyRollup. */
+  const truth = (bid: number) => conn.prepare(
+    `SELECT COUNT(DISTINCT sc.id) AS cases, COUNT(DISTINCT sc.student_id) AS students
+       FROM sos_cases sc JOIN assessment_attempts a ON a.id = sc.attempt_id JOIN classes c ON c.id = a.class_id
+      WHERE a.planned_period_id = ? AND c.branch_id = ? AND a.status != 'cancelled' AND COALESCE(sc.sos_level, 1) > 0`,
+  ).get(pid, bid) as any;
+  const tMb = truth(mb), tCp = truth(cp);
+  assert(tMb.cases > 0 && tCp.cases > 0, `Cần cả hai chi nhánh cùng có case trong tuần này, đang MB=${tMb.cases} CP=${tCp.cases}`);
+  const rowOf = (bid: number | null) => (weekly.weeklyRollup(P.admin, bid ? { branchId: bid } : {}).rows as any[])
+    .find((r) => r.periodId === pid);
+  const rMb = rowOf(mb), rCp = rowOf(cp), rAll = rowOf(null);
+  assert(rMb.cases === tMb.cases, `Lọc MB: cột Case phải là ${tMb.cases}, đang ${rMb.cases} (đang cộng lẫn case của chi nhánh khác)`);
+  assert(rMb.caseStudents === tMb.students, `Lọc MB: cột Học viên phải là ${tMb.students}, đang ${rMb.caseStudents}`);
+  assert(rCp.cases === tCp.cases, `Lọc CP: cột Case phải là ${tCp.cases}, đang ${rCp.cases}`);
+  assert(rCp.caseStudents === tCp.students, `Lọc CP: cột Học viên phải là ${tCp.students}, đang ${rCp.caseStudents}`);
+  const branchesWithCases = (conn.prepare(
+    `SELECT COUNT(DISTINCT c.branch_id) n FROM sos_cases sc JOIN assessment_attempts a ON a.id = sc.attempt_id
+       JOIN classes c ON c.id = a.class_id WHERE a.planned_period_id = ? AND a.status != 'cancelled'`,
+  ).get(pid) as any).n;
+  assert(branchesWithCases === 2, `Tiền đề của phép cộng: tuần này chỉ có case ở đúng hai chi nhánh, đang ${branchesWithCases}`);
+  assert(rAll.cases === tMb.cases + tCp.cases, `Không lọc: ${rAll.cases} phải bằng MB ${tMb.cases} + CP ${tCp.cases}`);
+
+  /* Đề xuất chờ duyệt của CP không được chảy sang hàng của MB. */
+  const before = { mb: rMb.pendingApproval, cp: rCp.pendingApproval };
+  const cpCase = conn.prepare(
+    `SELECT sc.id FROM sos_cases sc JOIN assessment_attempts a ON a.id = sc.attempt_id JOIN classes c ON c.id = a.class_id
+      WHERE a.planned_period_id = ? AND c.branch_id = ? AND sc.status != 'done' AND COALESCE(sc.sos_level, 1) > 0 LIMIT 1`,
+  ).get(pid, cp) as any;
+  assert(cpCase, 'Không có case mở của CP trong tuần để dựng đề xuất chờ duyệt');
+  cases.recordIntervention(P.admin, cpCase.id, {
+    kind: 'extra_support', description: 'Xin hỗ trợ ngoài định mức (F01 chờ duyệt)', performerName: 'GVCN',
+  });
+  assert(rowOf(mb).pendingApproval === before.mb,
+    `Đề xuất chờ duyệt của CP chảy sang hàng MB: ${before.mb} → ${rowOf(mb).pendingApproval}`);
+  assert(rowOf(cp).pendingApproval === before.cp + 1, `Hàng CP phải tăng đúng 1, đang ${rowOf(cp).pendingApproval}`);
+});
+
+/*
+ * Chỉ lấy em ĐÃ BẮT ĐẦU học trước các ngày phương án dùng trong phép kiểm (bộ demo có em ghi danh
+ * nhưng khai giảng SAU ngày demo — phương án của em đó, tính đúng luật F03, là "chưa xác định nguồn").
+ */
+const prfStudentsPool = (category: string) => conn.prepare(
+  `SELECT s.id FROM students s JOIN enrollments e ON e.student_id = s.id AND e.status = 'active'
+    WHERE e.class_id = ? AND substr(e.started_at, 1, 10) <= '2026-08-24' AND NOT EXISTS (
+      SELECT 1 FROM sos_cases sc WHERE sc.student_id = s.id AND sc.category = ?)
+    ORDER BY s.id`,
+).all(mbClass, category) as any[];
+const prfReadingCode = domain.issuesForTopic('reading')[0].code;
+const prfCase = (studentId: number, key: string) => cases.reportIssue(P.admin, {
+  title: 'Vấn đề Reading (PR-F)', primaryCode: prfReadingCode, studentId, topic: 'reading',
+  summary: 'Case dựng riêng cho phép kiểm hợp đồng số liệu PR-F.', idempotencyKey: key, parallel: true,
+}) as any;
+const prfPlan = (caseId: number, name: string, extra: Record<string, unknown> = {}) => {
+  const info = cases.recordIntervention(P.admin, caseId, {
+    kind: 'self_study', description: name, performerName: 'GVCN', status: 'started', startedDate: '2026-08-25', ...extra,
+  }) as any;
+  return info.interventions.find((i: any) => i.description === name).id as number;
+};
+const prfEnd = (ivId: number, outcome: string, day: string, next: any = { nextStep: 'complete' }) =>
+  cases.updateResult(P.admin, ivId, {
+    mode: 'end', outcome, note: 'Kết quả cuối của phương án (PR-F)', observedOn: day, completedOn: day, ...next,
+  });
+
+check('PR-F · F02: thêm một case ĐÃ ĐÓNG không làm tăng "HV đang gặp"; hiệu quả lịch sử vẫn đọc được', () => {
+  const pool = prfStudentsPool('reading');
+  assert(pool.length >= 2, `Cần hai học viên chưa có case Reading trong lớp, đang có ${pool.length}`);
+  const rowOf = () => ((effectiveness.classIssueBoard(mbClass, 'reading') as any).rows as any[])
+    .find((r) => r.code === prfReadingCode)
+    ?? { cases: 0, openCases: 0, students: 0, studentsEver: 0, plans: 0, success: 0 };
+  const before = rowOf();
+
+  const closed = prfCase(pool[0].id, 'test-prf-f02-closed');
+  prfEnd(prfPlan(closed.id, 'Ôn Reading 30 phút mỗi ngày (F02 đóng)'), 'improved', '2026-09-10');
+  cases.closeCaseOutcome(P.admin, closed.id, { outcome: 'improved', note: 'Đã xong, em ổn định lại hẳn (F02).' });
+  const mid = rowOf();
+  assert(mid.cases === before.cases + 1, `Số case phải +1, đang ${before.cases} → ${mid.cases}`);
+  assert(mid.openCases === before.openCases, 'Case đã đóng không được làm tăng số case đang mở');
+  assert(mid.students === before.students,
+    `"HV đang gặp" đếm cả em chỉ có case ĐÃ ĐÓNG (F02): ${before.students} → ${mid.students}`);
+  assert(mid.studentsEver === before.studentsEver + 1, `Chỉ số lịch sử phải đếm em này: ${before.studentsEver} → ${mid.studentsEver}`);
+  assert(mid.success === before.success + 1, 'Hiệu quả lịch sử phải VẪN đọc được phương án của case đã đóng');
+
+  const open = prfCase(pool[1].id, 'test-prf-f02-open');
+  assert(open.id, 'Không tạo được case mở');
+  const after = rowOf();
+  assert(after.students === mid.students + 1, `Em có case đang mở phải được đếm: ${mid.students} → ${after.students}`);
+  assert(after.openCases === mid.openCases + 1, 'Case mở phải tăng số case đang mở');
+});
+
+check('PR-F · F03: em chuyển chi nhánh SAU khi kết thúc phương án — hiện trạng sang nơi mới, kết quả lịch sử giữ nơi cũ', () => {
+  const single = conn.prepare(
+    `SELECT s.id, e.id AS enr FROM students s JOIN enrollments e ON e.student_id = s.id AND e.status = 'active'
+      WHERE e.class_id = ? AND (SELECT COUNT(*) FROM enrollments x WHERE x.student_id = s.id) = 1
+      ORDER BY s.id DESC`,
+  ).all(mbClass) as any[];
+  assert(single.length >= 1, 'Cần một học viên chỉ có đúng một lần ghi danh trong MB-FT 101');
+  const st = single[0];
+  const cpClass = classId('CP-FT 110');
+  /* Em học ở CP từ 01/06 đến 31/07, chuyển sang MB từ 01/08. */
+  conn.prepare(`UPDATE enrollments SET started_at = '2026-08-01' WHERE id = ?`).run(st.enr);
+  conn.prepare(
+    `INSERT INTO enrollments (student_id, class_id, status, started_at, ended_at, end_reason, created_at)
+     VALUES (?, ?, 'transferred', '2026-06-01', '2026-07-31', 'Chuyển chi nhánh (F03)', '2026-06-01T00:00:00Z')`,
+  ).run(st.id, cpClass);
+
+  const c = prfCase(st.id, 'test-prf-f03');
+  const inCp = prfPlan(c.id, 'Ôn Reading khi còn học ở CP (F03)', { startedDate: '2026-07-05' });
+  prfEnd(inCp, 'improved', '2026-07-10');                 // đang ở CP lúc kết thúc
+  const inMb = prfPlan(c.id, 'Ôn Reading sau khi sang MB (F03)', { startedDate: '2026-08-10' });
+  prfEnd(inMb, 'partial', '2026-08-20');                  // đã ở MB lúc kết thúc
+  const before = prfPlan(c.id, 'Ôn Reading trước khi vào lớp nào (F03)', { startedDate: '2026-04-20' });
+  prfEnd(before, 'improved', '2026-05-01');               // chưa có lần ghi danh nào bao phủ ngày này
+
+  const mb = branchIdOf('MB'), cp = branchIdOf('CP');
+  const ids = (branch: number) => (effectiveness.planOutcomes({ branchIds: [branch], ratio: false }) as any[]).map((r) => r.id);
+  assert(ids(cp).includes(inCp), 'Kết quả lịch sử phải GIỮ ở CP — nơi em học lúc phương án kết thúc');
+  assert(!ids(mb).includes(inCp), 'Kết quả cũ của CP bị quy sang MB chỉ vì em đang học ở MB (F03)');
+  assert(ids(mb).includes(inMb), 'Phương án kết thúc khi em đã ở MB phải thuộc MB');
+  assert(!ids(cp).includes(inMb), 'Phương án của MB bị quy sang CP');
+  /* Thiếu dữ liệu quá khứ → "chưa xác định nguồn", KHÔNG quy cho nơi hiện tại. */
+  assert(!ids(mb).includes(before) && !ids(cp).includes(before), 'Phương án không rõ nguồn bị quy cho một chi nhánh');
+  const unknown = (effectiveness.planOutcomesUnattributed({ ratio: false }) as any[]).map((r) => r.id);
+  assert(unknown.includes(before), 'Phương án không rõ nguồn phải hiện ở nhóm "chưa xác định nguồn"');
+  assert(!unknown.includes(inCp), 'Phương án đã rõ nguồn không được nằm ở nhóm chưa xác định');
+  /* HIỆN TRẠNG vẫn theo nơi đang chăm sóc: case đang mở của em này thuộc MB. */
+  const openNow = (branch: number) => (effectiveness.issueBoardCases({ branchIds: [branch], ratio: false } as any, 'reading', null) as any)
+    .rows.some((r: any) => r.caseId === c.id);
+  assert(openNow(mb), 'Hiện trạng: case đang mở phải hiện ở MB — nơi em đang học');
+  assert(!openNow(cp), 'Hiện trạng: case đang mở không được hiện ở CP — em đã rời CP');
+});
+
+check('PR-F · F05: phương án CHƯA XÁC ĐỊNH ra khỏi bảng hiệu quả, thành liên kết "Cần bổ sung đánh giá" ngoài bảng', () => {
+  const pool = prfStudentsPool('reading');
+  assert(pool.length >= 1, 'Cần một học viên chưa có case Reading');
+  const c = prfCase(pool[pool.length - 1].id, 'test-prf-f05');
+  /* Đánh dấu đã xong nhưng KHÔNG ai ghi kết quả → nhóm chưa xác định. */
+  const info = cases.recordIntervention(P.admin, c.id, {
+    kind: 'teaching_adjust', description: 'Chỉnh cách dạy Reading (F05 chưa đánh giá)', performerName: 'GVCN',
+    /* Ngày hôm nay: chắc chắn nằm SAU lần ghi danh, nên phương án gán được về lớp này. */
+    status: 'completed', completedDate: TODAY,
+  }) as any;
+  const ivId = info.interventions.find((i: any) => i.description === 'Chỉnh cách dạy Reading (F05 chưa đánh giá)').id;
+  const eff = effectiveness.planEffectiveness({ classId: mbClass, category: 'reading' }) as any[];
+  for (const k of eff) {
+    assert(!('undetermined' in k), `Hàng "${k.kind}" vẫn mang cột undetermined dù đã bị loại khỏi mẫu số (F05)`);
+    assert(k.decided === k.success + k.failure, `Loại ${k.kind}: mẫu số lẫn phương án chưa rõ`);
+  }
+  const need = effectiveness.plansNeedingEvaluation({ classId: mbClass, category: 'reading' }) as any;
+  assert(need.ids.includes(ivId) && need.count === need.ids.length,
+    `Phương án chưa đánh giá phải nằm ở "Cần bổ sung đánh giá", đang count=${need.count}`);
+  const board = effectiveness.classIssueBoard(mbClass, 'reading') as any;
+  for (const r of board.rows) assert(!('undetermined' in r), `Hàng "${r.code}" của bảng vấn đề vẫn mang cột undetermined`);
+  assert(board.needsEvaluation.count >= 1, 'Bảng phải báo có phương án cần bổ sung đánh giá (ở ngoài bảng)');
+});
+
+check('PR-F · Tỷ lệ có cải thiện là 2/3, KHÔNG phải 2/4: chưa xác định ra khỏi mẫu số; PA cập nhật 4 lần chỉ đóng góp một kết quả', () => {
+  const pool = prfStudentsPool('reading');
+  assert(pool.length >= 1, 'Cần một học viên chưa có case Reading');
+  const sid = pool[0].id;
+  const rate = () => effectiveness.improvementRate({ studentIds: [sid] }) as any;
+  const before = rate();
+  const c = prfCase(sid, 'test-prf-rate');
+
+  /* PA 1: cập nhật BỐN lần rồi kết thúc — vẫn chỉ là MỘT kết quả cuối. */
+  const four = prfPlan(c.id, 'Ôn Reading bốn lần cập nhật (rate)');
+  for (const day of ['2026-09-01', '2026-09-05', '2026-09-08']) {
+    cases.updateResult(P.admin, four, { mode: 'monitor', outcome: 'partial', note: 'Cập nhật hằng tuần (PR-F rate)', observedOn: day });
+  }
+  prfEnd(four, 'improved', '2026-09-12');
+  assert((effectiveness.planOutcomes({ studentIds: [sid] }) as any[]).filter((r) => r.id === four).length === 1,
+    'PA cập nhật bốn lần phải đóng góp đúng MỘT kết quả cuối');
+  /* PA 2: tiến bộ một phần. PA 3: kém hơn (phải đi tiếp bằng phương án mới). PA 4: chưa xác định. */
+  prfEnd(prfPlan(c.id, 'Ôn Reading tiến bộ một phần (rate)'), 'partial', '2026-09-11');
+  prfEnd(prfPlan(c.id, 'Ôn Reading kém hơn (rate)'), 'worse', '2026-09-11', {
+    nextStep: 'propose',
+    newPlan: { kind: 'self_study', description: 'Thay bằng ôn Reading có bấm giờ (rate)', performerName: 'GVCN' },
+  });
+  cases.recordIntervention(P.admin, c.id, {
+    kind: 'teaching_adjust', description: 'Chỉnh cách dạy chưa đánh giá (rate)', performerName: 'GVCN',
+    status: 'completed', completedDate: '2026-09-02',
+  });
+
+  const after = rate();
+  assert(after.N === before.N + 3, `Mẫu số phải +3 (ba PA có kết quả xác định), đang ${before.N} → ${after.N} — PA chưa xác định vào mẫu số?`);
+  assert(after.n === before.n + 2, `Tử số phải +2 (tiến bộ + một phần), đang ${before.n} → ${after.n}`);
+  assert(after.numeratorIds.length === after.n && after.denominatorIds.length === after.N,
+    'Số phải bằng độ dài của tập ID sinh ra nó');
+  assert(domain.rateText(after.n - before.n, after.N - before.N) === '2/3 (67%) · mẫu nhỏ',
+    `Câu hiển thị phải là 2/3, đang "${domain.rateText(after.n - before.n, after.N - before.N)}"`);
+});
+
+check('PR-F · Drill-down: số = độ dài tập, và tập trùng với đối chiếu độc lập bằng SQL', () => {
+  const r = metricsSvc.metricSet(P.admin, 'hv-co-case-mo', {}) as any;
+  const sql = (conn.prepare(
+    `SELECT COUNT(DISTINCT COALESCE(sc.student_id, a.student_id)) n FROM sos_cases sc
+       LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id WHERE sc.status != 'done'`,
+  ).get() as any).n;
+  assert(r.n === r.ids.length, `Số ${r.n} khác độ dài tập ${r.ids.length}`);
+  assert(r.n === sql, `hv-co-case-mo=${r.n} nhưng đếm thẳng bằng SQL ra ${sql}`);
+  const open = metricsSvc.metricSet(P.admin, 'case-mo', {}) as any;
+  const noPlan = metricsSvc.metricSet(P.admin, 'case-thieu-pa', {}) as any;
+  assert(noPlan.ids.every((id: number) => open.ids.includes(id)), 'Case thiếu phương án phải là một phần của case đang mở');
+  assert(open.ids.length >= r.ids.length, 'Số case đang mở không thể ít hơn số học viên có case đang mở');
+  /* Đơn vị khác nhau: HV ≠ case ≠ phương án — không cộng vào nhau. */
+  assert(r.unit === 'hoc-vien' && open.unit === 'case', `Đơn vị: ${r.unit} / ${open.unit}`);
+  const updates = metricsSvc.metricSet(P.admin, 'pa-can-cap-nhat', {}) as any;
+  assert(updates.unit === 'phuong-an' && updates.n === updates.ids.length, 'pa-can-cap-nhat phải đếm phương án');
+});
+
+check('PR-F · Đối soát F10: "HV có case đang mở" ở Tổng quan và ở Thực trạng là CÙNG MỘT tập (diff rỗng)', () => {
+  /*
+   * F10 có ảnh thật: Toàn cảnh 18 HV / 32 case, Thực trạng 20 HV / 34 case dưới cùng một tên. Đối soát
+   * bằng cách XUẤT TẬP ID ở hai nơi rồi diff — không so hai con số. Tổng quan đọc từ `metricSet`, Thực
+   * trạng đọc từ các hàng `issueBoardCases`; hai đường đếm khác nhau hoàn toàn về mã.
+   */
+  const overview = new Set<number>((metricsSvc.metricSet(P.admin, 'hv-co-case-mo', {}) as any).ids);
+  const openCaseIdsOverview = new Set<number>((metricsSvc.metricSet(P.admin, 'case-mo', {}) as any).ids);
+  const analysis = new Set<number>();
+  const analysisCases = new Set<number>();
+  for (const ratio of [false, true]) {
+    for (const cat of [...domain.caseCategoriesFor(ratio ? 'ratio' : 'ielts_band')]) {
+      const rows = (effectiveness.issueBoardCases({ ratio } as any, cat, null) as any).rows as any[];
+      for (const r of rows) if (r.status !== 'done') { analysis.add(r.studentId); analysisCases.add(r.caseId); }
+    }
+  }
+  /*
+   * KẾT QUẢ ĐỐI SOÁT (20/09/2026, bộ demo): Tổng quan 29 HV, Thực trạng 28 HV. MỘT em chênh: Vũ Thu Uyên
+   * (id 39) ĐÃ KẾT THÚC KHOÁ (ghi danh `completed`) nhưng case Reading vẫn `in_progress`. Hai màn định
+   * nghĩa khác nhau, và sự khác nhau ấy GIẢI THÍCH ĐƯỢC:
+   *
+   *   Tổng quan  — đếm theo CASE: em nào có case chưa kết luận trong phạm vi, kể cả em đã ra khoá.
+   *   Thực trạng — đếm theo NƠI ĐANG CHĂM SÓC: chỉ em đang học (ghi danh còn hoạt động).
+   *
+   * Nên phép kiểm không đòi hai tập BẰNG NHAU (đòi vậy là ép một định nghĩa thắng, hoặc giấu chênh lệch)
+   * mà đòi đúng hai điều: (1) Thực trạng KHÔNG có em nào mà Tổng quan không có; (2) MỌI em chỉ có ở Tổng
+   * quan đều là em không còn ghi danh hoạt động. Chênh lệch nào ngoài hai điều này là một lỗi mới. Và
+   * vì định nghĩa khác nhau, hai màn PHẢI ghi hai nhãn khác nhau (kiểm ở phép kiểm kế tiếp).
+   */
+  const onlyOverview = [...overview].filter((id) => !analysis.has(id));
+  const onlyAnalysis = [...analysis].filter((id) => !overview.has(id));
+  assert(onlyAnalysis.length === 0,
+    `Thực trạng có em mà Tổng quan không có: [${onlyAnalysis.join(',')}] — Thực trạng phải là tập con của Tổng quan`);
+  const stillEnrolled = (id: number) => !!conn.prepare(
+    `SELECT 1 FROM enrollments WHERE student_id = ? AND status = 'active' LIMIT 1`).get(id);
+  const unexplained = onlyOverview.filter(stillEnrolled);
+  assert(unexplained.length === 0,
+    `Có em VẪN đang học nhưng chỉ Tổng quan đếm: [${unexplained.join(',')}] — chênh lệch này không giải thích được bằng định nghĩa`);
+  const onlyOverviewCases = [...openCaseIdsOverview].filter((id) => !analysisCases.has(id));
+  const onlyAnalysisCases = [...analysisCases].filter((id) => !openCaseIdsOverview.has(id));
+  assert(onlyAnalysisCases.length === 0, `Thực trạng có case mở mà Tổng quan không có: [${onlyAnalysisCases.join(',')}]`);
+  const caseOwnerStudent = (id: number) => (conn.prepare(
+    `SELECT COALESCE(sc.student_id, a.student_id) AS sid FROM sos_cases sc LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
+      WHERE sc.id = ?`).get(id) as any).sid as number;
+  /*
+   * LÝ DO THỨ HAI, cũng giải thích được: Thực trạng chia hai tab theo LOẠI CHƯƠNG TRÌNH HIỆN TẠI của em
+   * (Fast Track L/R/W1/W2/S · Normal L/R/W/S). Em chuyển từ FT sang Normal mà còn case `writing1` đang
+   * mở thì case đó không có hàng nào ở tab Normal — nó biến mất khỏi Thực trạng nhưng Tổng quan vẫn đếm.
+   */
+  const coveredByAnalysis = (id: number) => {
+    const sid = caseOwnerStudent(id);
+    const category = (conn.prepare('SELECT category FROM sos_cases WHERE id = ?').get(id) as any).category as string;
+    const modes = (conn.prepare(
+      `SELECT DISTINCT pg.scoring_mode AS m FROM enrollments e JOIN classes c ON c.id = e.class_id
+         JOIN programmes pg ON pg.code = c.programme_code WHERE e.student_id = ? AND e.status = 'active'`,
+    ).all(sid) as any[]).map((r) => r.m as string);
+    return modes.some((m) => (domain.caseCategoriesFor(m) as readonly string[]).includes(category));
+  };
+  const unexplainedCases = onlyOverviewCases.filter((id) => coveredByAnalysis(id));
+  const describeCase = (id: number) => JSON.stringify({
+    sc: conn.prepare('SELECT id, status, track, topic, category, origin_kind, student_id, attempt_id FROM sos_cases WHERE id = ?').get(id),
+    enr: conn.prepare(`SELECT e.class_id, e.status, e.started_at, pg.scoring_mode FROM enrollments e JOIN classes c ON c.id = e.class_id
+                         LEFT JOIN programmes pg ON pg.code = c.programme_code WHERE e.student_id = ?`).all(caseOwnerStudent(id)),
+  });
+  assert(unexplainedCases.length === 0,
+    `Có case mở của em VẪN đang học mà chỉ Tổng quan đếm: [${unexplainedCases.join(',')}] ${unexplainedCases.map(describeCase).join(' | ')}`);
+  assert(onlyOverview.length >= 1,
+    'Bộ demo mất em đã kết thúc khoá mà case còn mở — phép đối soát này không còn chứng minh được gì, cần dựng lại tiền đề');
+});
+
+check('PR-F · Đối soát F10 (nhãn): hai định nghĩa khác nhau thì hai màn KHÔNG dùng chung một nhãn', () => {
+  const overviewLabel = domain.metricById('hv-co-case-mo')!;
+  assert(/kể cả em đã kết thúc khoá/.test(overviewLabel.tapDuDieuKien),
+    `Tổng quan phải nói rõ nó đếm CẢ em đã kết thúc khoá mà case còn mở: "${overviewLabel.tapDuDieuKien}"`);
+  assert(overviewLabel.ten === 'Học viên có case đang mở', `Nhãn Tổng quan: "${overviewLabel.ten}"`);
+  /* Thực trạng đếm em ĐANG HỌC — nhãn cột là "HV đang gặp", không phải nhãn của Tổng quan (kiểm cả ở giao diện). */
+  assert(overviewLabel.ten !== 'HV đang gặp', 'Hai màn đang dùng chung một nhãn cho hai định nghĩa khác nhau');
+});
+
+check('PR-F · Drill-down: tài khoản NGOÀI phạm vi bị từ chối, không trả tập rút gọn; phạm vi rỗng trả rỗng', () => {
+  const mb = branchIdOf('MB'), cp = branchIdOf('CP');
+  assertThrows(() => metricsSvc.metricSet(P.cpManager, 'hv-co-case-mo', { branchId: mb }), /phạm vi|quyền/,
+    'Quản lý CP gọi thẳng drill-down của chi nhánh MB');
+  assertThrows(() => metricsSvc.metricSet(P.subjectTeacher, 'case-mo', { branchId: cp }), /phạm vi|quyền/,
+    'Giáo viên MB gọi thẳng drill-down của chi nhánh CP');
+  const own = metricsSvc.metricSet(P.mbManager, 'hv-co-case-mo', { branchId: mb }) as any;
+  assert(own.n === own.ids.length, 'Quản lý MB xem chi nhánh của mình phải được');
+  const nobody = { ...P.subjectTeacher, grants: [], assignments: [] } as any;
+  const none = metricsSvc.metricSet(nobody, 'hv-co-case-mo', {}) as any;
+  assert(none.n === 0 && none.ids.length === 0 && none.empty === true,
+    'Phạm vi rỗng phải trả rỗng, KHÔNG được hiểu thành toàn hệ thống');
+  assert(none.note === 'Không có dữ liệu trong phạm vi', `Ghi chú đang là "${none.note}"`);
+  assertThrows(() => metricsSvc.metricSet(P.admin, 'khong-co-chi-so', {}), /Không tìm thấy chỉ số/, 'Mã chỉ số lạ');
+  assertThrows(() => metricsSvc.metricSet(P.admin, 'dung-han-cap-nhat', {}), /chưa có danh sách/,
+    'Chỉ số đã khai báo nhưng chưa có hàm tập ID phải nói thẳng là chưa có, không trả số bịa');
+});
+
+// ==================================================================== PR-G (chặng 3)
+
+/*
+ * DẤU '-' VÀ CHỐT KHÔNG DỰ THI CUỐI CHỦ NHẬT — rule book §17.1.
+ *
+ * Chốt "kể cả không ai mở web" mà không có cron: kết quả là HÀM THUẦN theo (dấu '-', TUẦN CỦA CHÍNH
+ * BÀI, ngày nghiệp vụ), gọi ở đường đọc như `sweepExpiredMoves`. Chạy lúc nào cũng ra cùng kết quả và
+ * cùng ngày hiệu lực; gọi mười lần chỉ chốt một lần.
+ */
+const PRG_SUN = '2026-09-20';     // Chủ nhật cuối tuần W3 SEP 2026 (14–20/09)
+const PRG_MON = '2026-09-21';
+const prgWeek = periodOf('2026-09-14');
+const prgWeekEnd = (conn.prepare('SELECT week_end FROM report_periods WHERE id = ?').get(prgWeek) as any).week_end as string;
+/*
+ * LƯỢT DÙNG CHO PHÉP KIỂM. Bộ demo chỉ có năm lượt FT ở tuần W3 SEP của lớp này, và Speaking của vài lượt
+ * đã `absent` từ dữ liệu seed — nên chọn các ô CÒN SẠCH (chưa có dòng điểm, còn `scheduled`, đúng tuần W3)
+ * rồi phân vai: A, B chỉ có L/R/W sạch; C, D sạch cả bốn kỹ năng. Nhiều kỹ năng KHÁC NHAU của cùng một lượt
+ * được dùng cho nhiều phép kiểm vì chúng độc lập (mỗi kỹ năng có lịch và bộ đếm riêng).
+ */
+const prgSlot = (skills: string[]) => conn.prepare(
+  `SELECT a.id FROM assessment_attempts a
+    WHERE a.class_id = ? AND a.status != 'cancelled' AND a.kind = 'mock'
+      AND NOT EXISTS (SELECT 1 FROM assessment_scores s WHERE s.attempt_id = a.id)
+      AND (SELECT COUNT(*) FROM attempt_skills k WHERE k.attempt_id = a.id AND k.required = 1
+              AND k.skill IN (${skills.map(() => '?').join(',')})
+              AND k.planned_period_id = ? AND k.sit_status = 'scheduled') = ?
+    ORDER BY a.id`,
+).all(mbClass, ...skills, prgWeek, skills.length).map((r: any) => r.id as number);
+const prgLrw = prgSlot(['listening', 'reading', 'writing']);
+const prgA = prgLrw[0], prgB = prgLrw[1], prgE = prgLrw[2];
+/*
+ * Chỉ số theo VAI trong các phép kiểm bên dưới:
+ *   0 báo "-" rồi chốt (Listening của A) · 1 chốt chậm (Reading của A) · 2 ô trống (E)
+ *   3 sửa "-" thành điểm trước chốt (Reading của B) · 4 W2 có điểm, W1 "-" (Writing của B)
+ *   5 W1 và W2 cùng "-" (Writing của E) · 6 quyền và xác nhận C10 (Listening của E) · 7 từ chối C10 (Listening của B)
+ */
+const prgAttempts = [prgA, prgA, prgE, prgB, prgB, prgE, prgE, prgB];
+const prgCell = (attemptId: number, skill: string, today: string = TODAY, period: number = prgWeek) => {
+  const sheet = attempts.classScoreSheet(P.admin, mbClass, period, today) as any;
+  return sheet.rows.find((r: any) => r.attemptId === attemptId)?.cells.find((c: any) => c.skill === skill);
+};
+const prgSit = (attemptId: number, assessed: string) => (conn.prepare(
+  'SELECT sit_status, sit_at, sit_note, planned_period_id, absence_move_count FROM attempt_skills WHERE attempt_id = ? AND skill = ?',
+).get(attemptId, assessed) as any);
+/** BỘ ĐẾM VẮNG: số lần một kỹ năng của một đợt đã được CHỐT không dự thi. */
+const prgSettled = (attemptId: number, assessed: string) => (conn.prepare(
+  `SELECT COUNT(*) n FROM attempt_schedule_history WHERE attempt_id = ? AND action = 'skill_no_show_settled' AND field = ?`,
+).get(attemptId, assessed) as any).n as number;
+const prgWriting1 = loadPrincipal(teacherOfSkill('MB-FT 101', 'writing1'));
+const prgWriting2 = loadPrincipal(teacherOfSkill('MB-FT 101', 'writing2'));
+
+check('PR-G · Tiền đề: bộ demo có đủ lượt FT chưa chấm ở tuần W3 SEP để dựng các phép kiểm', () => {
+  assert(prgWeekEnd === PRG_SUN, `Cuối tuần phải là Chủ nhật ${PRG_SUN}, đang là ${prgWeekEnd}`);
+  assert(prgLrw.length >= 3, `Cần ba lượt còn sạch Listening/Reading/Writing ở W3 SEP; đang có ${prgLrw.length}`);
+});
+
+check('PR-G · Chốt là HÀM THUẦN theo tuần của bài: chạy lúc nào cũng ra cùng kết quả và cùng ngày hiệu lực', () => {
+  const st = (today: string, extra: Record<string, unknown> = {}) => domain.noShowStateOf({
+    marked: true, hasScore: false, sameWeek: true, weekEnd: PRG_SUN, today,
+    enteredAfterWeekEnd: false, lateRule: 'cho-ql-hieu-chinh', ...extra,
+  } as any);
+  const onSunday = st(PRG_SUN);
+  assert(onSunday.state === 'khong-co-bai' && onSunday.editableUntil === PRG_SUN && onSunday.effectiveOn === null,
+    `Đúng ngày Chủ nhật vẫn còn sửa được: ${JSON.stringify(onSunday)}`);
+  for (const today of [PRG_MON, '2026-09-24', '2026-10-15', '2027-01-03']) {
+    const v = st(today);
+    assert(v.state === 'khong-du-thi' && v.effectiveOn === PRG_SUN,
+      `Chạy ngày ${today}: phải chốt với ngày hiệu lực ${PRG_SUN}, đang ${JSON.stringify(v)}`);
+  }
+  assert(st(PRG_MON, { marked: false }).state === 'none', 'Ô trống KHÔNG tự thành vắng');
+  assert(st(PRG_MON, { hasScore: true }).state === 'none', 'Đã có điểm thì dấu "-" không còn hiệu lực');
+  assert(st(PRG_MON, { sameWeek: false }).state === 'none', 'Lịch đã dời sang tuần khác thì dấu "-" của tuần cũ hết nghĩa');
+  assert(st('2026-09-15').state === 'khong-co-bai', 'Chưa hết tuần thì còn là "không có bài"');
+});
+
+check('PR-G · Câu trạng thái đúng chữ của bộ chữ: gợi ý, không có bài, không dự thi, chờ quản lý', () => {
+  assert(domain.NO_SHOW_HINT === 'Nhập - nếu học viên không làm bài', `Gợi ý: "${domain.NO_SHOW_HINT}"`);
+  const early = domain.noShowStateOf({ marked: true, hasScore: false, sameWeek: true, weekEnd: PRG_SUN, today: '2026-09-14',
+    enteredAfterWeekEnd: false, lateRule: 'cho-ql-hieu-chinh' });
+  assert(domain.noShowText(early, 'W3 SEP 2026', '2026-09-14') === 'Không có bài · Có thể sửa đến hết Chủ nhật 20/09',
+    `Sau khi lưu: "${domain.noShowText(early, 'W3 SEP 2026', '2026-09-14')}"`);
+  const settled = domain.noShowStateOf({ marked: true, hasScore: false, sameWeek: true, weekEnd: PRG_SUN, today: PRG_MON,
+    enteredAfterWeekEnd: false, lateRule: 'cho-ql-hieu-chinh' });
+  assert(domain.noShowText(settled, 'W3 SEP 2026', PRG_MON) === 'Không dự thi · Tuần W3 SEP 2026',
+    `Sau chốt: "${domain.noShowText(settled, 'W3 SEP 2026', PRG_MON)}"`);
+  const late = domain.noShowStateOf({ marked: true, hasScore: false, sameWeek: true, weekEnd: PRG_SUN, today: '2026-09-28',
+    enteredAfterWeekEnd: true, lateRule: 'cho-ql-hieu-chinh' });
+  assert(late.state === 'cho-ql-hieu-chinh' && domain.noShowText(late, 'W3 SEP 2026', '2026-09-28') === 'Chờ quản lý hiệu chỉnh',
+    `Tuần đã qua: ${JSON.stringify(late)}`);
+  assert(domain.noShowText({ state: 'none', effectiveOn: null, editableUntil: null }, null, TODAY) === null, 'Không có dấu thì không có câu');
+});
+
+check('PR-G · Chín điểm luật chưa chốt (C01–C09) và C10 là HẰNG SỐ CÓ TÊN ở policy.ts, không rải if', () => {
+  const names = ['C01_HAN_XAC_MINH_SOS_GOM_PA', 'C02_GVCN_XU_LY_CASE_TRAI_MON', 'C03_CUA_SO_GOP_CASE_Y_THUC_NGAY', 'C04_BAO_CAO_MOI_SAU_KHI_DONG',
+    'C05_SOS_SINH_PA_TRAO_DOI', 'C06_NHAP_BU_CASE_DANG_XU_LY', 'C07_DOT_FT_CHI_W1_HOAC_W2', 'C08_HAN_CHAM_NORMAL',
+    'C09_DE_NGHI_DOI_LICH_HET_HAN', 'C10_NHAP_DAU_TRU_TUAN_QUA_KHU'];
+  for (const n of names) assert((domain as any)[n] !== undefined && String((domain as any)[n]).length > 0, `Thiếu hằng số ${n}`);
+  /* Lời chốt của chủ sản phẩm 20/09/2026. */
+  assert(domain.C10_NHAP_DAU_TRU_TUAN_QUA_KHU === 'chot-ngay', 'C10 đã chốt: nhập "-" cho tuần đã qua thì CHỐT NGAY');
+  assert(domain.C02_GVCN_XU_LY_CASE_TRAI_MON === 'gvcn-dung-mon', 'C02 đã chốt: GVCN không xử lý case trái môn');
+  assert(domain.C03_CUA_SO_GOP_CASE_Y_THUC_NGAY === 3 && domain.BEHAVIOUR_MERGE_WINDOW_DAYS === 3,
+    'C03 đã chốt: gộp trong 3 ngày đầu của case Ý thức');
+  assert(domain.C07_DOT_FT_CHI_W1_HOAC_W2 === 'phai-du-hai-task', 'C07 đã chốt: Writing phải đủ cả W1 và W2');
+  assert(domain.C09_DE_NGHI_DOI_LICH_HET_HAN === 'tu-choi-khi-het-han', 'C09 đã chốt: không phản hồi thì huỷ');
+  assert(domain.C05_SOS_SINH_PA_TRAO_DOI === 'khong-bat-buoc', 'C05 đã chốt: SOS không bắt buộc sinh phương án trao đổi');
+});
+
+check('PR-G · Bài đã báo "-" không còn là bài cần chấm; ô trống thì vẫn là bài cần chấm', () => {
+  const cells = [
+    { skill: 'listening', required: true, scored: false, progress: 'due', mine: true, noShow: true },
+    { skill: 'reading', required: true, scored: false, progress: 'due', mine: true },
+  ] as any[];
+  const pending = domain.pendingSkillsOf(cells, 'mine');
+  assert(pending.length === 1 && pending[0] === 'reading', `Bài cần chấm phải chỉ còn Reading, đang [${pending.join(',')}]`);
+});
+
+check('PR-G · GV nhập "-" cho bài của mình: lưu là "Không có bài", KHÔNG phải điểm 0 và KHÔNG xoá gì khác', () => {
+  const id = prgAttempts[0];
+  attempts.saveScore(P.lrTeacher, id, 'listening', { noShow: true } as any);
+  const c = prgCell(id, 'listening');
+  assert(c.noShow?.state === 'khong-co-bai', `Ô Listening phải ở trạng thái khong-co-bai, đang ${JSON.stringify(c.noShow)}`);
+  assert(c.noShow.text === 'Không có bài · Có thể sửa đến hết Chủ nhật 20/09', `Câu trạng thái: "${c.noShow.text}"`);
+  assert(c.rawScore === null && c.band === null, `"-" không phải điểm 0: raw=${c.rawScore} band=${c.band}`);
+  assert(prgCell(id, 'reading').noShow?.state === undefined || prgCell(id, 'reading').noShow.state === 'none',
+    'Dấu "-" của Listening lây sang Reading');
+  attempts.saveScore(P.lrTeacher, id, 'listening', { noShow: true } as any);          // bấm lại / retry
+  assert(prgCell(id, 'listening').noShow.state === 'khong-co-bai', 'Lưu lại lần hai phải giữ nguyên trạng thái');
+  assert(prgSit(id, 'listening').sit_status === 'scheduled', 'Trước khi hết Chủ nhật KHÔNG được ghi vắng');
+});
+
+check('PR-G · Chưa hết Chủ nhật thì chưa chốt; hết Chủ nhật thì chốt KHÔNG DỰ THI, gọi mười lần chỉ chốt một lần', () => {
+  const id = prgAttempts[0];
+  assert(absence.settleNoShows(PRG_SUN) === 0, 'Đúng Chủ nhật chưa được chốt');
+  assert(prgSit(id, 'listening').sit_status === 'scheduled', 'Chưa hết Chủ nhật mà đã ghi vắng');
+  const first = absence.settleNoShows(PRG_MON);
+  assert(first >= 1, `Sáng thứ Hai phải chốt ít nhất một bài, đang ${first}`);
+  assert(prgSit(id, 'listening').sit_status === 'absent', 'Listening phải thành đã vắng sau chốt');
+  assert(prgSettled(id, 'listening') === 1, `Bộ đếm vắng phải là 1, đang ${prgSettled(id, 'listening')}`);
+  for (const d of [PRG_MON, PRG_MON, '2026-09-23', '2026-09-30', '2026-10-01', '2026-10-02', '2026-10-03', '2026-10-04', '2026-10-05', '2026-11-01']) {
+    assert(absence.settleNoShows(d) === 0, `Chạy lại ngày ${d} lại chốt thêm một lần`);
+  }
+  assert(prgSettled(id, 'listening') === 1, `Sau mười lần chạy bộ đếm vắng vẫn phải là 1, đang ${prgSettled(id, 'listening')}`);
+  const c = prgCell(id, 'listening', PRG_MON);
+  assert(c.noShow.state === 'khong-du-thi' && c.noShow.text === 'Không dự thi · Tuần W3 SEP 2026',
+    `Sau chốt: ${JSON.stringify(c.noShow)}`);
+  assert(String(prgSit(id, 'listening').sit_at).slice(0, 10) === PRG_SUN,
+    `Ngày hiệu lực phải là cuối Chủ nhật ${PRG_SUN}, đang ${prgSit(id, 'listening').sit_at}`);
+});
+
+check('PR-G · Chạy CHẬM vẫn ra cùng ngày hiệu lực: chốt ở đầu tháng sau vẫn ghi cuối Chủ nhật của tuần thi', () => {
+  const id = prgAttempts[1];
+  attempts.saveScore(P.lrTeacher, id, 'reading', { noShow: true } as any);
+  assert(absence.settleNoShows('2026-10-03') >= 1, 'Chạy ngày 03/10 phải chốt bài Reading');
+  assert(prgSit(id, 'reading').sit_status === 'absent', 'Reading phải thành đã vắng');
+  assert(String(prgSit(id, 'reading').sit_at).slice(0, 10) === PRG_SUN,
+    `Chạy chậm ba tuần vẫn phải ghi ngày hiệu lực ${PRG_SUN}, đang ${prgSit(id, 'reading').sit_at}`);
+});
+
+check('PR-G · Ô TRỐNG không tự thành vắng, dù tuần đã hết và tác vụ chạy lặp', () => {
+  const id = prgAttempts[2];
+  absence.settleNoShows('2026-10-10');
+  for (const s of ['listening', 'reading', 'writing']) {
+    assert(prgSit(id, s).sit_status === 'scheduled', `${s} bị ghi vắng dù chỉ là ô trống`);
+  }
+  assert(prgSettled(id, 'listening') === 0, 'Ô trống không được sinh bộ đếm vắng');
+});
+
+check('PR-G · Sửa "-" thành điểm hợp lệ TRƯỚC chốt thì không tính vắng; đã có điểm thì "-" không xoá âm thầm', () => {
+  const id = prgAttempts[3];
+  attempts.saveScore(P.lrTeacher, id, 'reading', { noShow: true } as any);
+  assert(prgCell(id, 'reading').noShow.state === 'khong-co-bai', 'Phải là không có bài');
+  attempts.saveScore(P.lrTeacher, id, 'reading', { rawScore: 30 });                    // đổi ý trước cuối tuần
+  const band = prgCell(id, 'reading').band;
+  assert(band !== null, 'Điểm hợp lệ phải được lưu');
+  const after = prgCell(id, 'reading').noShow;
+  assert(!after || after.state === 'none', `Dấu "-" phải hết hiệu lực khi đã có điểm: ${JSON.stringify(after)}`);
+  absence.settleNoShows(PRG_MON);
+  assert(prgSit(id, 'reading').sit_status !== 'absent', 'Đã sửa thành điểm trước chốt mà vẫn bị tính vắng');
+  assert(prgSettled(id, 'reading') === 0, 'Không có lần vắng nào được ghi');
+  /* Đã có điểm chính thức: "-" KHÔNG được xoá âm thầm. */
+  assertThrows(() => attempts.saveScore(P.lrTeacher, id, 'reading', { noShow: true } as any), /điểm chính thức|hiệu chỉnh/,
+    'Nhập "-" đè lên một điểm chính thức');
+  assert(prgCell(id, 'reading').band === band, 'Điểm chính thức bị mất');
+});
+
+check('PR-G · "-" ở W1 KHÔNG xoá W2 và không đếm hai lần: chỉ khi CẢ HAI bài của buổi Writing đều "-" mới là vắng, và đúng MỘT lần', () => {
+  const id = prgAttempts[4];
+  /* W2 đã có điểm; W1 báo "-" → buổi Writing có người làm, không thể coi là vắng. */
+  attempts.saveScore(prgWriting2, id, 'writing2', { criteria: [6, 6, 6, 6] });
+  attempts.saveScore(prgWriting1, id, 'writing1', { noShow: true } as any);
+  assert(prgCell(id, 'writing2').band === 6, 'W1 báo "-" đã xoá điểm W2');
+  absence.settleNoShows(PRG_MON);
+  assert(prgSit(id, 'writing').sit_status !== 'absent', 'Buổi Writing có W2 mà bị ghi vắng');
+
+  const id2 = prgAttempts[5];
+  attempts.saveScore(prgWriting1, id2, 'writing1', { noShow: true } as any);
+  absence.settleNoShows(PRG_MON);
+  assert(prgSit(id2, 'writing').sit_status !== 'absent', 'Mới W1 báo "-", W2 chưa nhập — chưa đủ để coi buổi Writing là vắng');
+  attempts.saveScore(prgWriting2, id2, 'writing2', { noShow: true } as any);
+  assert(absence.settleNoShows(PRG_MON) >= 1, 'Cả W1 và W2 đều "-" thì buổi Writing phải được chốt');
+  assert(prgSit(id2, 'writing').sit_status === 'absent', 'Buổi Writing phải thành đã vắng');
+  assert(prgSettled(id2, 'writing') === 1, `Hai ô "-" cùng một buổi chỉ được đếm MỘT lần vắng, đang ${prgSettled(id2, 'writing')}`);
+  absence.settleNoShows('2026-10-20');
+  assert(prgSettled(id2, 'writing') === 1, 'Chạy lại làm bộ đếm vắng tăng');
+});
+
+check('PR-G · Quyền: GV chỉ báo "-" cho bài mình được phân công; chỉ GVCN/Quản lý dời lần đầu, GVBM thì không', () => {
+  const id = prgAttempts[6];
+  assertThrows(() => attempts.saveScore(P.sTeacher, id, 'listening', { noShow: true } as any), /phân công|quyền/,
+    'GV Speaking báo "-" cho ô Listening');
+  /* Listening của lượt đầu đã được chốt vắng ở phép kiểm trước → GVCN dời lần đầu, GVBM thì không. */
+  const settledId = prgAttempts[0];
+  assertThrows(() => absence.requestAbsenceMove(P.sTeacher, settledId, ['listening']), /chủ nhiệm|Quản lý/,
+    'GVBM (không phải GVCN) tự dời lịch chỉ vì mình là người báo "-"');
+  const r = absence.requestAbsenceMove(P.lrTeacher, settledId, ['listening']) as any;
+  assert(r.outcomes[0].result === 'moved', `GVCN dời lần đầu phải được ngay, đang ${JSON.stringify(r.outcomes[0])}`);
+  const row = prgSit(settledId, 'listening');
+  assert(row.absence_move_count === 1 && row.sit_status === 'scheduled', `Sau dời: ${JSON.stringify(row)}`);
+  /* Dấu "-" của tuần cũ hết nghĩa ở tuần mới; chạy chốt lại không tạo thêm lần vắng nào. */
+  absence.settleNoShows('2026-10-25');
+  assert(prgSit(settledId, 'listening').sit_status === 'scheduled', 'Dấu "-" của tuần cũ bị tính lại ở tuần mới');
+  assert(prgSettled(settledId, 'listening') === 1, 'Bộ đếm vắng phải giữ nguyên là 1 qua lần dời');
+  assert(prgSit(settledId, 'listening').absence_move_count === 1, 'Chốt vắng không được reset bộ đếm dời');
+});
+
+check('PR-G · Sau chốt, GV không mở lại được: nhập điểm hay gỡ "-" đều phải qua sửa trạng thái thi', () => {
+  const id = prgAttempts[1];        // Reading đã chốt vắng ở phép kiểm trước
+  assertThrows(() => attempts.saveScore(P.lrTeacher, id, 'reading', { rawScore: 30 }), /vắng|trạng thái thi/,
+    'Nhập điểm vào bài đã chốt không dự thi');
+  assertThrows(() => attempts.saveScore(P.lrTeacher, id, 'reading', { noShow: false } as any), /vắng|trạng thái thi|chốt/,
+    'Gỡ dấu "-" của bài đã chốt không dự thi');
+});
+
+check('PR-G · Normal KHÔNG dùng dấu "-": vẫn phải đủ bốn môn, không có chốt vắng', () => {
+  const { attemptId } = normalWritingAttemptSkill();
+  assertThrows(() => attempts.saveScore(P.normalCoreTeacher, attemptId, 'listening', { noShow: true } as any), /Normal/,
+    'Lớp Normal nhập được dấu "-"');
+});
+
+check('PR-G · C10 (đã chốt 20/09): nhập "-" cho tuần ĐÃ KẾT THÚC thì CHỐT NGAY; chỉ Quản lý sửa được, và sửa là ghi đè trực tiếp', () => {
+  const id = prgAttempts[6];
+  const late = '2026-09-28';
+  attempts.saveScore(P.lrTeacher, id, 'listening', { noShow: true } as any, late);
+  assert(prgSit(id, 'listening').sit_status === 'absent' && prgSettled(id, 'listening') === 1,
+    `Phải chốt ngay đúng một lần, đang ${JSON.stringify(prgSit(id, 'listening'))} · đã chốt ${prgSettled(id, 'listening')}`);
+  assert(String(prgSit(id, 'listening').sit_at).slice(0, 10) === PRG_SUN, 'Ngày hiệu lực vẫn là cuối Chủ nhật của tuần thi, không phải ngày nhập');
+  assert(prgCell(id, 'listening', late).noShow.state === 'khong-du-thi',
+    `Phải là "Không dự thi", đang ${JSON.stringify(prgCell(id, 'listening', late).noShow)}`);
+  absence.settleNoShows('2026-10-05');
+  assert(prgSettled(id, 'listening') === 1, 'Chạy lại làm bộ đếm tăng');
+  /* Không còn mục "chờ Quản lý hiệu chỉnh": không có gì để xác nhận hay từ chối. */
+  assertThrows(() => absence.resolveLateNoShow(P.mbManager, id, 'listening', 'confirm', late), /Không có dấu/, 'Không còn hàng chờ hiệu chỉnh');
+  /* Sau cuối tuần chỉ Quản lý sửa kết luận; giáo viên (kể cả GVCN) thì không. */
+  assertThrows(() => attempts.saveScore(P.lrTeacher, id, 'listening', { rawScore: 30 }, late), /vắng|trạng thái thi/, 'Giáo viên tự mở lại tuần đã chốt');
+  assertThrows(() => skillSchedule.setSitStatus(P.lrTeacher, id, 'listening', 'scheduled'), /quyền/, 'GVCN sửa kết luận sau cuối tuần');
+
+  /* Quản lý sửa: GHI ĐÈ TRỰC TIẾP, có hiệu lực ngay, không phát sinh bước duyệt lại. (Dùng một bài khác để không đụng bài ở trên.) */
+  const id2 = prgAttempts[7];
+  attempts.saveScore(P.lrTeacher, id2, 'listening', { noShow: true } as any, late);
+  assert(prgSit(id2, 'listening').sit_status === 'absent', 'Tiền đề: bài thứ hai cũng phải chốt ngay');
+  skillSchedule.setSitStatus(P.mbManager, id2, 'listening', 'scheduled', 'Quản lý sửa: học viên có làm bài');
+  assert(prgSit(id2, 'listening').sit_status === 'scheduled', 'Quản lý sửa phải có hiệu lực ngay');
+  const pending = (conn.prepare(`SELECT COUNT(*) n FROM skill_move_requests WHERE attempt_id = ? AND status = 'pending'`).get(id2) as any).n;
+  assert(pending === 0, 'Quản lý sửa không được sinh thêm bước duyệt');
+  assert(!prgCell(id2, 'listening', late).noShow, 'Dấu "-" cũ không được tự sống lại sau khi Quản lý đã sửa');
+  attempts.saveScore(P.lrTeacher, id2, 'listening', { rawScore: 30 }, late);        // nhập điểm bình thường được
+  const audit = (conn.prepare(`SELECT COUNT(*) n FROM audit_logs WHERE action = 'attempt.sit_status' AND entity_id = ?`).get(id2) as any).n;
+  assert(audit >= 1, 'Lần sửa của Quản lý phải để lại nhật ký audit để truy vết');
+});
+
+check('PR-G · Chốt xong là SÁNG THỨ HAI: GVCN vẫn dời lần đầu được (tuần kế tiếp đã bắt đầu), nhưng không dời sang tuần ĐÃ QUA', () => {
+  /*
+   * Phát hiện khi bấm thử ở trình duyệt thật: chốt xảy ra ngay khi hết Chủ nhật, nên lúc GVCN xử lý thì
+   * "tuần kế tiếp" LUÔN đã bắt đầu. Luật vắng cũ chuyển thẳng sang Quản lý khi tuần đích đã bắt đầu — vì
+   * thế "lần đầu GVCN dời" không bao giờ xảy ra được với bài không dự thi. Nay: lần đầu của một bài đã
+   * chốt "không dự thi" chỉ cần tuần đích CHƯA KẾT THÚC. Luật cho mọi trường hợp vắng khác giữ nguyên.
+   */
+  const settledWriting = prgAttempts[5];            // Writing của E đã chốt ở phép kiểm W1/W2
+  assert(prgSit(settledWriting, 'writing').sit_status === 'absent', 'Tiền đề: Writing của E phải đã chốt vắng');
+  const r = absence.requestAbsenceMove(P.lrTeacher, settledWriting, ['writing'], { today: PRG_MON }) as any;
+  assert(r.outcomes[0].result === 'moved',
+    `Sáng thứ Hai GVCN phải dời được lần đầu, đang ${JSON.stringify(r.outcomes[0])}`);
+  assert(prgSit(settledWriting, 'writing').absence_move_count === 1, 'Bộ đếm dời phải là 1');
+
+  /* Chốt bằng Quản lý xác nhận (C10) cũng đi tiếp vào luật này; nhưng xử lý quá muộn — tuần đích đã hết — thì chuyển Quản lý. */
+  const settledListening = prgAttempts[6];          // Listening của E, đã được Quản lý xác nhận ở phép kiểm C10
+  assert(prgSit(settledListening, 'listening').sit_status === 'absent', 'Tiền đề: Listening của E phải đã chốt vắng');
+  const late = absence.requestAbsenceMove(P.lrTeacher, settledListening, ['listening'], { today: '2026-10-05' }) as any;
+  assert(late.outcomes[0].result === 'escalated',
+    `Tuần đích đã kết thúc thì phải chuyển Quản lý, đang ${JSON.stringify(late.outcomes[0])}`);
+  assert(prgSit(settledListening, 'listening').absence_move_count === 0, 'Chuyển Quản lý thì bộ đếm dời chưa tăng');
+});
+
+
+// ==================================================================== PR-I (chặng 4)
+
+/*
+ * HỒ SƠ TEST GỌN — phần LUẬT của PR-I (phần còn lại là giao diện). Ba điều máy chủ phải đúng để màn gọn không nói sai:
+ *   1. NGƯỜI CẬP NHẬT ≠ NGƯỜI NHẬP ĐIỂM (MT-P09): ô điểm trống không được mang tên ai đó "nhập".
+ *   2. Lịch sử thay đổi có CẢ điểm: ai sửa, trước → sau, kể cả xoá điểm và dấu '-'.
+ *   3. Có lịch và đúng quyền thì nhập được — KHÔNG cần bấm "Đã thi"; và đến ngày cũng không tự ghi "đã thi".
+ */
+const pri = (attemptId: number) => attempts.attemptDetail(P.admin, attemptId) as any;
+const priCell = (attemptId: number, skill: string) => pri(attemptId).cells.find((c: any) => c.skill === skill);
+
+check('PR-I · Ô điểm bị xoá trống KHÔNG còn "người nhập": tác giả một thao tác không phải bằng chứng đã có điểm', () => {
+  const id = prgAttempts[3];                                   // Reading của B đã có điểm 30 từ phép kiểm PR-G
+  const before = priCell(id, 'reading');
+  assert(before.rawScore === 30 && before.enteredByName, `Tiền đề: Reading của B phải có điểm và người nhập, đang ${JSON.stringify(before)}`);
+  attempts.saveScore(P.lrTeacher, id, 'reading', { rawScore: null });
+  const cleared = priCell(id, 'reading');
+  assert(cleared.rawScore === null && cleared.band === null, 'Xoá xong ô phải trống');
+  assert(cleared.enteredByName === null && cleared.enteredAt === null,
+    `Ô trống mà còn "Người nhập ${cleared.enteredByName}" — MT-P09: ${JSON.stringify([cleared.enteredByName, cleared.enteredAt])}`);
+  attempts.saveScore(P.lrTeacher, id, 'reading', { rawScore: 28 });
+  const again = priCell(id, 'reading');
+  assert(again.enteredByName && again.enteredAt, 'Nhập lại điểm thì phải có người nhập và lúc nhập');
+});
+
+check('PR-I · Bài chỉ báo "-" hoặc mới gõ dở một tiêu chí: "-" không có người nhập; dở dang thì vẫn giữ tác giả', () => {
+  const dash = priCell(prgAttempts[0], 'listening');
+  assert(dash.enteredByName === null && dash.enteredAt === null,
+    `Báo "-" không phải nhập điểm nên không có người nhập: ${JSON.stringify([dash.noShow?.state, dash.enteredByName])}`);
+  const id = prgAttempts[4];                                    // W1 của B: đang "-", chưa chốt vì tuần đã hết -> không dùng; dùng W2 đã có điểm
+  attempts.saveScore(prgWriting2, id, 'writing2', { criteria: [6, null, null, null] });
+  const partial = priCell(id, 'writing2');
+  assert(partial.band === null && partial.criteria[0] === 6, 'Tiền đề: mới có một tiêu chí, chưa ra band');
+  assert(partial.enteredByName, 'Đã có giá trị (dù dở dang) thì còn người nhập — chỉ ô HOÀN TOÀN trống mới hết tên');
+  attempts.saveScore(prgWriting2, id, 'writing2', { criteria: [null, null, null, null] });
+  assert(priCell(id, 'writing2').enteredByName === null, 'Xoá hết bốn tiêu chí thì hết tên người nhập');
+});
+
+check('PR-I · Lịch sử thay đổi có CẢ điểm: ai sửa, trước → sau, kể cả xoá điểm và dấu "-"', () => {
+  const history = pri(prgAttempts[3]).scoreHistory as any[];
+  assert(Array.isArray(history) && history.length >= 3, `Phải có lịch sử điểm của Reading (nhập, xoá, nhập lại), đang ${history?.length}`);
+  const reading = history.filter((h) => h.skill === 'reading');
+  const last = reading[0];
+  assert(last.actorName && /28/.test(last.after), `Dòng mới nhất: nhập 28, đang ${JSON.stringify(last)}`);
+  assert(/trống/i.test(last.before), `Trước khi nhập lại là ô trống, đang "${last.before}"`);
+  const cleared = reading.find((h) => /trống/i.test(h.after));
+  assert(cleared && /30/.test(cleared.before), `Phải có dòng xoá điểm 30 → trống, đang ${JSON.stringify(cleared)}`);
+  const dashHist = (pri(prgAttempts[0]).scoreHistory as any[]).find((h) => h.skill === 'listening');
+  assert(dashHist && dashHist.after === 'Báo "-" (không có bài)', `Dấu "-" của Listening phải có trong lịch sử, đang ${JSON.stringify(dashHist)}`);
+  for (const h of history) assert(h.createdAt && h.skillLabel, 'Mỗi dòng phải có ngày và tên kỹ năng đọc được');
+});
+
+check('PR-I · Tiến độ một kỹ năng không đòi "xác nhận đã thi" trước khi chấm (MT-P03): đến lịch thì là "Chờ nhập điểm"', () => {
+  assert(domain.SKILL_PROGRESS_LABEL.due === 'Chờ nhập điểm', `due: "${domain.SKILL_PROGRESS_LABEL.due}"`);
+  for (const [k, v] of Object.entries(domain.SKILL_PROGRESS_LABEL)) {
+    assert(!/xác nhận đã thi/i.test(v as string), `Nhãn "${k}" vẫn đòi xác nhận đã thi: "${v}"`);
+  }
+  assert(domain.awaitingScore('due') && domain.awaitingScore('sat'), 'Đến lịch vẫn là đang nợ điểm');
+});
+
+check('PR-I · Nhập điểm KHÔNG cần bấm "Đã thi" (có điểm thì tự suy ra đã thi), và đến ngày cũng KHÔNG tự ghi "đã thi"', () => {
+  const row = conn.prepare(
+    `SELECT k.attempt_id id FROM attempt_skills k
+       JOIN assessment_attempts a ON a.id = k.attempt_id
+      WHERE a.class_id = ? AND a.kind = 'mock' AND a.status != 'cancelled' AND k.skill = 'listening'
+        AND k.required = 1 AND k.sit_status = 'scheduled' AND k.planned_period_id IS NOT NULL
+        AND NOT EXISTS (SELECT 1 FROM assessment_scores s WHERE s.attempt_id = a.id AND s.skill = 'listening')
+      ORDER BY k.attempt_id LIMIT 1`,
+  ).get(mbClass) as any;
+  assert(row, 'Tiền đề: cần một lượt còn Listening theo lịch và chưa có điểm');
+  const satBefore = (conn.prepare("SELECT COUNT(*) n FROM attempt_skills WHERE sit_status = 'sat'").get() as any).n;
+  attempts.classScoreSheet(P.admin, mbClass, prgWeek, '2026-11-30');                 // rất lâu sau ngày thi
+  absence.settleNoShows('2026-11-30');
+  const satAfter = (conn.prepare("SELECT COUNT(*) n FROM attempt_skills WHERE sit_status = 'sat'").get() as any).n;
+  assert(satAfter === satBefore, `Đến ngày (và quá ngày) không được tự ghi "đã thi": ${satBefore} -> ${satAfter}`);
+  assert(prgSit(row.id, 'listening').sit_status === 'scheduled', 'Ô chưa có điểm vẫn chỉ là "theo lịch"');
+  attempts.saveScore(P.lrTeacher, row.id, 'listening', { rawScore: 25 });
+  assert(prgSit(row.id, 'listening').sit_status === 'sat', 'Có điểm thì suy ra đã thi — không cần ai bấm "Đã thi"');
+});
+
+
+// ==================================================================== PR-H (chặng 5)
+
+/*
+ * BIÊN TẬP TIẾNG VIỆT — một khái niệm, một chữ (thiet-ke/TU_DIEN_VA_CHU.md). Nghiệm thu ở tài liệu là "grep các chuỗi cũ →
+ * không còn kết quả nào ngoài file tài liệu"; phép kiểm này CHẠY đúng lệnh grep đó trên mã nguồn, kể cả chú thích, để một
+ * lần biên tập sau không lặng lẽ đưa chữ cũ trở lại. Bản thân danh sách chuỗi cũ nằm ở đây nên file này được loại khỏi phép quét.
+ */
+const PRH_OLD_STRINGS = [
+  // hồ sơ Test
+  'Kế hoạch MT', 'Tuần hoàn tất', 'Target lúc đánh giá', 'Chưa xác nhận đã thi', 'Bỏ khỏi phạm vi', 'Đưa lại vào phạm vi',
+  // khối case và phương án
+  'Chưa có gì diễn ra', 'Ghi lại phương án đầu tiên', 'chưa ai bắt tay vào việc', 'Chưa làm gì cho em', 'Đã làm gì',
+  'Người làm', '+ thêm dòng', 'Lịch sử và kết thúc phương án', 'Mở trang riêng',
+  // danh sách lớp, học viên, nhập liệu
+  'Lớp là gốc', 'Badge chỉ xuất hiện', 'Em nào vào muộn thì ghi đè', 'Cả lô này vào một lớp', 'Bỏ qua {blocking} dòng lỗi',
+  'Thêm 0 học viên', 'Việc của tôi', 'Cả phạm vi quản lý', 'Hai mốc kiểm tra đếm từ đây', 'Tiến độ lớp',
+  // mười hai khái niệm — chữ tuyệt đối không viết
+  'SOS ý thức', 'Hoàn thành phương án', 'hoàn thành phương án', 'Đã hoàn thành phương án',
+];
+const prhSourceFiles = (dir: string): string[] => fs.readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
+  const p = path.join(dir, e.name);
+  if (e.isDirectory()) return e.name === 'tests' || e.name === 'node_modules' ? [] : prhSourceFiles(p);
+  return /\.(ts|tsx|sql)$/.test(e.name) ? [p] : [];
+});
+
+check('PR-H · Grep các chuỗi cũ của bảng chữ: không còn ở mã nguồn (kể cả chú thích), chỉ còn trong tài liệu', () => {
+  const files = ['web/src', 'shared', 'server/src'].flatMap((d) => prhSourceFiles(path.join(ROOT, '..', d)));
+  assert(files.length > 50, `Quét quá ít file (${files.length}) — sai đường dẫn gốc?`);
+  const hits: string[] = [];
+  for (const file of files) {
+    const text = fs.readFileSync(file, 'utf8');
+    for (const old of PRH_OLD_STRINGS) {
+      if (text.includes(old)) hits.push(`${path.relative(path.join(ROOT, '..'), file).replace(/\\/g, '/')}: "${old}"`);
+    }
+  }
+  assert(hits.length === 0, `Còn ${hits.length} chỗ dùng chữ cũ:\n    ${hits.join('\n    ')}`);
+});
+
+check('PR-H · Badge đếm nói rõ ĐẾM CỦA AI: việc riêng khác toàn lớp, và phạm vi có tên đúng bộ chữ', () => {
+  assert(domain.needScoresText('mine', 3) === 'Bạn cần chấm: 3 bài', `mine: "${domain.needScoresText('mine', 3)}"`);
+  assert(domain.needScoresText('managed', 5) === 'Lớp còn 5 bài chưa nhập điểm', `managed: "${domain.needScoresText('managed', 5)}"`);
+  assert(domain.needScoresText(null, 5) === 'Lớp còn 5 bài chưa nhập điểm', 'Không nói ai đang xem thì mặc định là toàn lớp');
+  assert(domain.WORK_SCOPE_LABEL.mine === 'Tôi' && domain.WORK_SCOPE_LABEL.managed === 'Tất cả trong phạm vi',
+    `Nhãn phạm vi: ${JSON.stringify(domain.WORK_SCOPE_LABEL)}`);
+});
+
+
+// ==================================================================== Sau rà soát độc lập
+
+/*
+ * Bốn lỗi do một người rà soát độc lập đọc toàn bộ diff tìm ra — mỗi lỗi có phép kiểm đỏ trước khi sửa.
+ */
+check('Rà soát · "-" quá Chủ nhật mà KHÔNG được chốt (W1 "-", W2 có điểm) thì ô KHÔNG tự nhận "Không dự thi" và không bị khoá', () => {
+  const id = prgAttempts[4];                                    // W2 có điểm, W1 "-" (phép kiểm PR-G ở trên)
+  assert(prgSit(id, 'writing').sit_status !== 'absent', 'Tiền đề: buổi Writing này không bị chốt vắng');
+  const c = prgCell(id, 'writing1', PRG_MON);
+  assert(!c.noShow, `Chưa chốt mà ô lại hiện "${c.noShow?.text}" (${c.noShow?.state})`);
+  assert(c.canEdit === true, 'Ô W1 vẫn phải nhập được: buổi Writing có người làm');
+  assert(c.progress !== 'absent', `Tiến độ ô: ${c.progress}`);
+});
+
+check('Rà soát · Bài đã báo "-" không còn nằm trong "việc của tôi" của giáo viên (không chỉ ở hàm đếm thuần)', () => {
+  const row = conn.prepare(
+    `SELECT k.attempt_id id FROM attempt_skills k
+       JOIN assessment_attempts a ON a.id = k.attempt_id
+      WHERE a.class_id = ? AND a.kind = 'mock' AND a.status != 'cancelled' AND k.skill = 'reading'
+        AND k.required = 1 AND k.sit_status = 'scheduled' AND k.planned_period_id = ?
+        AND NOT EXISTS (SELECT 1 FROM assessment_scores s WHERE s.attempt_id = a.id AND s.skill = 'reading')
+      ORDER BY k.attempt_id LIMIT 1`,
+  ).get(mbClass, prgWeek) as any;
+  assert(row, 'Tiền đề: cần một ô Reading còn sạch ở W3 SEP');
+  const mine = () => (attempts.listAttempts(P.lrTeacher, { classId: mbClass }) as any).rows.find((r: any) => r.id === row.id);
+  assert(mine().myPendingSkills.includes('reading'), 'Tiền đề: Reading chưa báo "-" thì còn nợ điểm');
+  attempts.saveScore(P.lrTeacher, row.id, 'reading', { noShow: true } as any);
+  assert(!mine().myPendingSkills.includes('reading'), 'Đã báo "-" mà Reading vẫn nằm trong myPendingSkills');
+  assert(!mine().myPendingDetail.some((d: any) => d.skill === 'reading'), 'Đã báo "-" mà Reading vẫn nằm trong myPendingDetail');
+  const after = priCell(row.id, 'reading');
+  assert(after.noShow && after.enteredByName === null && after.enteredAt === null,
+    `Ô vừa báo "-" phải có dấu và KHÔNG có người nhập: ${JSON.stringify([after.noShow?.state, after.enteredByName])}`);
+});
+
+check('Rà soát · Hiệu quả phương án: giáo viên chỉ thấy phương án của LỚP mình, không lan ra cả chi nhánh', () => {
+  const teacher = P.subjectTeacher as any;
+  const classIds: number[] = [...new Set<number>(teacher.assignments.map((a: any) => a.classId))];
+  assert(classIds.length > 0, 'Tiền đề: giáo viên phải có lớp');
+  const mine = metricsSvc.metricSet(teacher, 'pa-co-ket-qua', {}) as any;
+  const branch = metricsSvc.metricSet(P.mbManager, 'pa-co-ket-qua', {}) as any;
+  const branchSet = new Set<number>(branch.ids);
+  assert(mine.ids.every((x: number) => branchSet.has(x)), 'Tập của giáo viên phải nằm trong tập của Quản lý');
+  const own = new Set<number>((conn.prepare(
+    `SELECT iv.id FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id
+      WHERE sc.student_id IN (SELECT student_id FROM enrollments WHERE class_id IN (${classIds.map(() => '?').join(',')}))`,
+  ).all(...classIds) as any[]).map((r) => r.id as number));
+  const leaked = mine.ids.filter((x: number) => !own.has(x));
+  assert(leaked.length === 0, `Lộ ${leaked.length} phương án của học viên ngoài lớp giáo viên: [${leaked.slice(0, 5).join(',')}]`);
+  const rate = metricsSvc.metricSet(teacher, 'ty-le-co-cai-thien', {}) as any;
+  const rateLeak = [...rate.ids].filter((x: number) => !own.has(x));
+  assert(rateLeak.length === 0, `Mẫu tỷ lệ cải thiện lộ ${rateLeak.length} phương án ngoài lớp`);
+});
+
+
+check('Rà soát · Giao diện chỉ mời "Xử lý vắng" người làm được: GVCN và Quản lý có, giáo viên bộ môn thì không (máy chủ nói qua viewer)', () => {
+  const id = prgAttempts[0];
+  const v = (pr: any) => (attempts.attemptDetail(pr, id) as any).viewer;
+  assert(v(P.admin).canHandleAbsence === true, 'Quản trị phải được');
+  assert(v(P.lrTeacher).canHandleAbsence === true, 'GVCN của lớp phải được');
+  assert(v(P.subjectTeacher).canHandleAbsence === false, 'Giáo viên bộ môn không phải GVCN thì không được mời bấm');
+  assertThrows(() => absence.requestAbsenceMove(P.subjectTeacher, id, ['listening'], { today: PRG_MON }), /chủ nhiệm|Quản lý/,
+    'Máy chủ vẫn phải từ chối — ẩn nút không phải là chặn');
+});
+
+
+check('C02 (đã chốt 20/09): GVCN xử lý case học thuật ĐÚNG môn mình dạy, KHÔNG xử lý trái môn; case Ý thức vẫn chỉ GVCN', () => {
+  const own = [...new Set<string>((P.coreTeacher as any).assignments.filter((x: any) => x.classId === mbClass && x.skill).map((x: any) => x.skill))];
+  const foreign = ['listening', 'reading', 'writing1', 'writing2', 'speaking'].find((k) => !own.includes(k));
+  assert(own.length > 0 && foreign, `Tiền đề: GVCN dạy [${own.join(',')}], cần một môn khác`);
+  assert(can(P.coreTeacher, PERMISSIONS.SOS_EDIT, { classId: mbClass, skill: own[0] }), 'GVCN phải xử lý được case đúng môn mình dạy');
+  assert(!can(P.coreTeacher, PERMISSIONS.SOS_EDIT, { classId: mbClass, skill: foreign }), `GVCN xử lý được case trái môn (${foreign}); dạy [${own.join(",")}]`);
+  assert(can(P.coreTeacher, PERMISSIONS.SOS_EDIT, { classId: mbClass }), 'Case Ý thức (không có kỹ năng) vẫn phải là của GVCN');
 });
 
 console.log(`\n${'='.repeat(60)}`);

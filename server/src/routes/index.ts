@@ -47,6 +47,7 @@ import * as sysconfigSvc from '../platform/sysconfig.ts';
 import * as mgmtSvc from '../worklist/mgmttasks.ts';
 import * as highlightSvc from '../worklist/highlights.ts';
 import { weeklyRollup } from '../worklist/weekly.ts';
+import { metricSet, rowsFor } from '../worklist/metrics.ts';
 import { myWork } from '../worklist/mywork.ts';
 import * as caseSvc from '../cases/cases.ts';
 import * as caseSignalSvc from '../cases/signals.ts';
@@ -412,7 +413,7 @@ api.post('/attempts/:id/skills/:skill/skip', requireAuth, wrap((req) => {
  * thi tuần nào · đã thi hay vắng · hạn chấm là ngày nào.
  *
  * Mỗi đường đi qua đúng hàm nghiệp vụ của nó, nên ràng buộc thứ tự đợt, quyền theo lớp và
- * nhật ký giữ nguyên dù người dùng vào từ màn chi tiết, bảng điểm hay panel Kế hoạch MT.
+ * nhật ký giữ nguyên dù người dùng vào từ màn chi tiết, bảng điểm hay panel Lịch Mock Test.
  */
 api.post('/attempts/:id/skills/:skill/week', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
@@ -506,7 +507,22 @@ api.put('/attempts/:id/scores/:skill', requireAuth, wrap((req) => {
   return attemptSvc.saveScore(principalOf(req), pInt(req, 'id'), skill, {
     rawScore: b.rawScore, rawTotal: b.rawTotal,
     criteria: b.criteria, resultDate: b.resultDate, note: b.note,
+    /* Dấu '-' "không có bài" (PR-G) — chỉ nhận đúng true/false, không hiểu chuỗi lạ thành lệnh. */
+    noShow: b.noShow === true ? true : b.noShow === false ? false : undefined,
   });
+}));
+
+/**
+ * QUẢN LÝ HIỆU CHỈNH dấu '-' nhập cho tuần ĐÃ KẾT THÚC (C10): `{ decision: 'confirm' | 'reject' }`.
+ * Không tự chốt và không âm thầm mở lại tuần đã chốt — chỉ Quản lý có quyền xếp lịch làm được việc này.
+ */
+api.post('/attempts/:id/scores/:skill/no-show/resolve', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  const skill = String(req.params.skill);
+  if (!(ENTRY_SKILLS as readonly string[]).includes(skill)) throw badRequest('Kỹ năng không hợp lệ.');
+  const decision = req.body?.decision;
+  if (decision !== 'confirm' && decision !== 'reject') throw badRequest('Cần chọn xác nhận hoặc từ chối.');
+  return absenceSvc.resolveLateNoShow(principalOf(req), pInt(req, 'id'), skill, decision);
 }));
 
 api.get('/classes/:id/score-sheet', requireAuth, wrap((req) => {
@@ -573,6 +589,8 @@ function issueScopeOf(req: any) {
     ? (allowed && !allowed.includes(asked) ? [] : [asked])
     : allowed;
   const classId = qInt(req, 'classId');
+  /* Hỏi theo LỚP thì lớp đó phải nằm trong phạm vi — không được vượt quyền bằng cách truyền classId. */
+  if (classId) require_(p, PERMISSIONS.CASE_VIEW, { classId }, 'Lớp này nằm ngoài phạm vi bạn được xem.');
   return {
     classId: classId ?? null,
     branchIds: classId ? null : branchIds,
@@ -602,6 +620,46 @@ api.get('/issue-board/cases', requireAuth, wrap((req) => {
   const category = qStr(req, 'category');
   if (!category) throw badRequest('Chưa chọn kỹ năng để xem chi tiết.');
   return effectiveness.issueBoardCases(issueScopeOf(req), category, qStr(req, 'code'));
+}));
+
+/**
+ * PHƯƠNG ÁN CẦN BỔ SUNG ĐÁNH GIÁ (F05) — đã kết thúc nhưng chưa có kết quả xác định. Không nằm trong
+ * bảng hiệu quả và không vào mẫu số, nhưng cũng không được biến mất: đây là danh sách việc cần làm.
+ * Cùng bộ lọc phạm vi với bảng vừa bấm, nên số ghi ở liên kết và danh sách mở ra là một.
+ */
+api.get('/issue-board/needs-evaluation', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  const category = qStr(req, 'category');
+  if (!category) throw badRequest('Chưa chọn kỹ năng để xem chi tiết.');
+  const need = effectiveness.plansNeedingEvaluation({ ...issueScopeOf(req), category });
+  return { count: need.count, rows: rowsFor('phuong-an', need.ids) };
+}));
+
+api.get('/classes/:id/issue-board/needs-evaluation', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  const p = principalOf(req);
+  const id = pInt(req, 'id');
+  require_(p, PERMISSIONS.CASE_VIEW, { classId: id }, 'Lớp này nằm ngoài phạm vi bạn được xem.');
+  const category = qStr(req, 'category');
+  if (!category) throw badRequest('Chưa chọn kỹ năng để xem chi tiết.');
+  const need = effectiveness.plansNeedingEvaluation({ classId: id, category, fromDate: qStr(req, 'from') ?? null });
+  return { count: need.count, rows: rowsFor('phuong-an', need.ids) };
+}));
+
+/**
+ * DRILL-DOWN DÙNG CHUNG CỦA MỌI CON SỐ (hợp đồng số liệu, PR-F). MỘT route, mọi chỉ số: nhận `id` của
+ * chỉ số trong sổ và phạm vi, gọi ĐÚNG hàm đã sinh ra con số, áp CÙNG bộ quyền. Số là độ dài của tập;
+ * `?rows=1` thêm dòng để vẽ danh sách. Hỏi chi nhánh ngoài quyền thì bị từ chối (403) — không trả tập
+ * rút gọn; phạm vi rỗng trả rỗng, không hiểu thành toàn hệ thống.
+ */
+api.get('/metrics/:id', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  const r = metricSet(principalOf(req), String(req.params.id), { branchId: qInt(req, 'branchId') });
+  return {
+    id: r.id, unit: r.unit, n: r.n, numerator: r.numeratorIds ? r.numeratorIds.length : null,
+    empty: r.empty, note: r.note, today: r.today, ids: r.ids,
+    rows: qStr(req, 'rows') === '1' ? rowsFor(r.unit, r.ids) : undefined,
+  };
 }));
 
 api.get('/classes/:id/overview', requireAuth, wrap((req) => {
@@ -743,7 +801,7 @@ api.post('/cycles/:id/target-revision', requireAuth, wrap((req) => {
  * án và có kết quả.
  */
 
-// ============================================================ Tiến độ lớp và lịch MT
+// ============================================================ Lộ trình lớp và lịch MT
 
 /** Lớp đang ở tuần thứ mấy, sắp thi gì, và đã hết chương trình chưa. */
 api.get('/classes/:id/progress', requireAuth, wrap((req) => {

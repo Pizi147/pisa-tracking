@@ -2,7 +2,7 @@
 
 Phiên bản 1.1 · 19/09/2026 · Cập nhật theo chốt mới nhất của chủ sản phẩm.
 
-**Ưu tiên mục 17 khi triển khai:** dấu '-' còn đến hết Chủ nhật được xác lập là không dự thi, không còn bắt GVCN xác minh thường lệ; Ý thức chỉ gộp trong BA ngày đầu và hoàn thành bằng bằng chứng thực hiện, không đánh giá cải thiện; SOS không tự sinh PA trao đổi. Những đoạn lịch sử trái các chốt này hết hiệu lực. Các điểm C01/C02/C03 và ngoại lệ khác chưa được trả lời vẫn để riêng, không tự coi đã duyệt.
+**Ưu tiên mục 17 khi triển khai:** dấu '-' còn đến hết Chủ nhật được xác lập là không dự thi, không còn bắt GVCN xác minh thường lệ; Ý thức chỉ gộp trong BA ngày đầu và hoàn thành bằng bằng chứng thực hiện, không đánh giá cải thiện; SOS không tự sinh PA trao đổi. Những đoạn lịch sử trái các chốt này hết hiệu lực. **Cập nhật 20/09/2026:** các điểm C01–C10 đã được chủ sản phẩm trả lời — xem mục 17.7 (C01 chờ xác nhận cách hiểu, C08 còn một nửa chưa rõ).
 
 ## 1. Cách sử dụng và nguồn
 
@@ -282,7 +282,7 @@ Thiết kế đích: đầu trang HV/lớp/MT, kỳ vọng, tiến độ đủ �
 1. **Giữ một hạn phản hồi SOS 3 ngày:** phản hồi phải có nguyên nhân và PA đầu tiên hoặc đề nghị QL có lý do. Tránh hai đồng hồ “xác minh rồi lại chờ PA”. Cần chốt C01.
 2. **Ý thức: hạn hoàn thành công việc khác kết quả thay đổi hành vi.** Báo cáo PH đã gửi trong 3 ngày có thể hoàn thành PA, nhưng không chứng minh hết vấn đề. Đề xuất hạn 7 ngày là hạn phải kết luận/cập nhật có căn cứ, không tự đóng khi còn việc thật chưa xong.
 3. **Cửa sổ gộp đã chốt lại là 3 ngày:** không thay bằng bốn ngày hoặc gộp theo tuần. Không giữ đề xuất cũ như một phương án mặc định.
-4. **Nâng Gấp không tạo quá hạn ngược:** khuyến nghị `min(hạn hiện tại, ngày nâng +2)` như code thay vì tính lùi lại từ ngày mở. Không reset hạn case. Cần chọn C03.
+4. **[ĐÃ BỎ 20/09/2026 — C03, xem 17.7]** Nâng Gấp không tạo quá hạn ngược: khuyến nghị `min(hạn hiện tại, ngày nâng +2)` như code thay vì tính lùi lại từ ngày mở. Không reset hạn case. Cần chọn C03.
 5. **Cập nhật tuần theo bảng gọn:** cho nhập nhanh từng PA trong một màn, giữ kết quả/ghi chú riêng; không sao chép “chưa thay đổi” hàng loạt thành đánh giá mới.
 6. **Không bắt 'chọn hướng xử lý' chung:** khi thực sự kết thúc PA mà case còn mở, chỉ hỏi hành động cần thiết. Không lặp câu hỏi đó cả lúc cập nhật tuần và hoàn thành case.
 7. **Thiếu bài lặp lại:** sau một lần hẹn xử lý, đưa việc xác minh nổi bật cho GVCN; không cho dùng '-' vô hạn để làm đẹp báo cáo. Chưa thêm hình phạt/hủy tự động.
@@ -291,7 +291,7 @@ Thiết kế đích: đầu trang HV/lớp/MT, kỳ vọng, tiến độ đủ �
 
 ## 14. Những điểm cần chủ sản phẩm chốt
 
-Ưu tiên C01 (SOS 3 ngày gồm PA?), C02 (GVCN xử lý học thuật trái môn?), C03 (hạn khi nâng Gấp) và C05 (trao đổi sau mọi SOS có bắt buộc?). C04/C06/C07/C08/C09 là các ngoại lệ cần xác nhận trước khi triển khai phần tương ứng; không chặn biên tập/UI hay sửa Overall thiếu điểm.
+**[Đã trả lời 20/09/2026 — xem 17.7]** Ưu tiên C01 (SOS 3 ngày gồm PA?), C02 (GVCN xử lý học thuật trái môn?), C03 (hạn khi nâng Gấp) và C05 (trao đổi sau mọi SOS có bắt buộc?). C04/C06/C07/C08/C09 là các ngoại lệ cần xác nhận trước khi triển khai phần tương ứng; không chặn biên tập/UI hay sửa Overall thiếu điểm.
 
 Không coi việc người dùng gửi lại prompt cũ là phê duyệt khôi phục tất cả luật cũ, đặc biệt Admin, chưa đủ dữ liệu=thất bại, hủy Normal và bắt xác nhận Đã thi.
 
@@ -337,7 +337,7 @@ Không phát hành thay đổi luật chỉ từ file này khi còn nhãn Cần 
 - Chốt vắng không đồng nghĩa tự hủy toàn MT và không reset bộ đếm vắng khi đổi lịch; không mất điểm môn đã làm.
 - Mỗi lần lịch/kỹ năng chỉ chốt một lần; retry hoặc mở web nhiều lần không tăng bộ đếm. Lịch chủ động do QL đổi hợp lệ trước chốt phải dùng lịch mới, giữ nhật ký.
 - Quy định chốt vắng áp dụng cho Mock theo lời chốt mới. Normal tiếp tục không hủy nghĩa vụ đủ bốn môn; không tự đưa giới hạn/hủy FT sang Normal.
-- **Ngoại lệ cần chốt khi triển khai:** nhập '-' cho một tuần đã kết thúc từ trước sẽ chốt ngay hay cần hiệu chỉnh do QL? Ai được sửa kết luận vắng sau cuối tuần và có đảo quyết định duyệt đã phát sinh không? Không tự cấm sửa dữ liệu sai, nhưng không âm thầm mở lại tuần đã chốt. Dấu '-' sửa vào trước cuối tuần nào phải bám tuần lịch của bài, không kéo hạn sang tuần nhập muộn.
+- **[ĐÃ CHỐT 20/09/2026 — xem 17.7: chốt ngay; sau cuối tuần chỉ QL sửa và ghi đè trực tiếp]** Ngoại lệ khi triển khai: nhập '-' cho một tuần đã kết thúc từ trước sẽ chốt ngay hay cần hiệu chỉnh do QL? Ai được sửa kết luận vắng sau cuối tuần và có đảo quyết định duyệt đã phát sinh không? Không tự cấm sửa dữ liệu sai, nhưng không âm thầm mở lại tuần đã chốt. Dấu '-' sửa vào trước cuối tuần nào phải bám tuần lịch của bài, không kéo hạn sang tuần nhập muộn.
 - Hạn chấm FT thứ Tư tuần sau vẫn là hạn nhập điểm cho bài có thực hiện; chốt dấu '-' Chủ nhật chỉ áp dụng bài đã được GV báo không có. Hai mốc này không thay nhau.
 
 ### 17.2. Ý thức: đợt báo cáo và xác nhận đã thực hiện
@@ -348,7 +348,7 @@ Không phát hành thay đổi luật chỉ từ file này khi còn nhãn Cần 
 - Không hỏi Có tiến bộ/Không tiến bộ, không đo hiệu quả học thuật, không ép tiếp tục theo dõi hành vi. Case đã hoàn thành kết thúc đợt đó; lần mới là đợt mới theo luật.
 - Đề xuất UI xác nhận cuối hiển thị các PA đã áp dụng với dấu chọn “Đã thực hiện”; một lần lưu kết thúc case và ghi nhận các PA được xác nhận, không bắt mở từng panel. PA chưa làm phải được giữ đúng thực tế hoặc đánh dấu không thực hiện có lý do, không tự đếm thành report/thư đã gửi.
 - Một PA report gia đình dùng chung cho ba nguồn chỉ đếm một report. Đếm report/thư cảnh cáo theo hành động thực sự đã làm, không theo số nguồn, số lần cập nhật hoặc số tệp.
-- Giữ hạn PA3/5 ngày và case7 ngày đã chốt; không dùng hạn đó để tự đánh dấu đã làm. Mâu thuẫn cách tính khi nâng Gấp C03 vẫn cần chọn, lời chốt mới chưa trả lời.
+- Giữ hạn PA3/5 ngày và case7 ngày đã chốt; không dùng hạn đó để tự đánh dấu đã làm. Mâu thuẫn cách tính khi nâng Gấp (C03): **đã bỏ 20/09/2026** — nâng mức ưu tiên không siết hạn; xem 17.7.
 
 ### 17.3. SOS chỉ báo vấn đề
 
@@ -381,3 +381,22 @@ C05 đã giải quyết: không tự tạo PA trao đổi hoặc case Ý thức 
 6. Có SOS không sinh hai PA trao đổi tự động; GVCN vẫn tạo được PA phù hợp.
 7. Tìm người3 ký tự hiện đúng GV trong quyền; người không có role GV không chọn được cho Người thực hiện PA.
 8. Nhập danh sách có một dòng lỗi: giữ toàn bộ dữ liệu để sửa/xóa dòng, không tự bỏ bằng nút hàng loạt; lớp đích khớp ngữ cảnh mở.
+
+### 17.7. Chốt ngày 20/09/2026 cho các điểm C01–C10
+
+Chủ sản phẩm đã trả lời. Mục này **thay thế** mọi chỗ ghi "cần chốt Cxx" ở trên; không xoá dấu vết các đoạn cũ.
+
+| Mã | Đã chốt | Ghi chú |
+|---|---|---|
+| **C01** | Trong 3 ngày kể từ SOS phải có phương án; có phương án rồi thì theo luật cũ: **Học thuật** ghi kết quả vào mỗi Chủ nhật hằng tuần và chốt kết quả cuối đợt; **Ý thức** hoàn thành hết phương án trong thời hạn mặc định của case là 1 tuần | Chủ sản phẩm hỏi lại "đúng không?" — **chờ xác nhận cách hiểu**, chưa đổi mã |
+| **C02** | GVCN **không** được xử lý case học thuật trái môn: mọi giáo viên, kể cả GVCN, chỉ xử lý case đúng kỹ năng mình dạy. Case Ý thức vẫn chỉ GVCN | Đã áp ở quyền máy chủ |
+| **C03** | Bỏ câu hỏi hạn khi nâng mức. **Chỉ với Ý thức:** báo cáo khác cùng phân loại trong **3 ngày đầu** tồn tại của case cũ thì lồng vào case đang có; không thì ra case mới. Hạn mặc định của case vẫn 1 tuần từ ngày mở; nâng mức ưu tiên không siết hạn | Đã áp: cửa sổ gộp 3 ngày (ngày mở + 2), bỏ luật "ngày nâng + 2" |
+| **C04** | Giữ: đợt Ý thức đã đóng mà có báo cáo mới thì tạo **đợt mới liên kết**, không mở lại | Khớp hành vi cũ |
+| **C05** | (đã chốt 19/09) SOS không bắt buộc sinh phương án trao đổi | — |
+| **C06** | Giữ: tab "Đã xong từ trước" chỉ nhận case đã hoàn thành | Khớp hành vi cũ |
+| **C07** | Writing **phải đủ cả W1 và W2**. Thiếu một bài nghĩa là giáo viên của bài đó chưa chấm hoặc chấm sai — cứ báo quá hạn như bình thường | Khớp hành vi cũ |
+| **C08** | Hạn chấm Normal: hết Chủ nhật của tuần thi. Nếu chưa có bài thì thêm "-" và dời sang tuần sau | **Một nửa chưa rõ** (ai thêm "-", và Normal có dùng "-" không) — chưa triển khai, chờ trả lời |
+| **C09** | Đề nghị dời lịch lần hai: chờ Quản lý duyệt hết tuần đó; không phản hồi/thao tác thì **huỷ**. Giáo viên muốn xếp lại thì tự trao đổi với Quản lý ngoài website | Khớp hành vi cũ (tài liệu trước đó ghi ngược lại) |
+| **C10** | Nhập "-" cho tuần đã kết thúc từ trước: **chốt ngay** | Đã áp |
+
+**Sau cuối tuần, chỉ Quản lý được sửa kết luận không dự thi.** Quyết định mới của Quản lý **ghi đè trực tiếp** quyết định trước và trở thành quyết định hiện hành; không phát sinh bước duyệt lại. Lịch sử thay đổi chỉ lưu ở mức nhật ký audit để truy vết, không hiển thị và không tham gia luồng việc.

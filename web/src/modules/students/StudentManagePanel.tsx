@@ -37,7 +37,7 @@ import {
  *
  * LỚP NORMAL KHÔNG CÓ MỤC LỘ TRÌNH (mục 5.3): không target IELTS, không LT1/LT2, giai đoạn
  * là chương trình Foundation/Beginner/Elementary và nằm ngay trong Thông tin học viên. Lịch
- * test Normal chỉnh từ màn lớp, không đi qua Kế hoạch MT của Fast Track.
+ * test Normal chỉnh từ màn lớp, không đi qua Lịch Mock Test của Fast Track.
  */
 type Job = 'menu' | 'info' | 'outcome' | 'transfer';
 
@@ -80,7 +80,7 @@ export function StudentManagePanel({
         <div className="space-y-2">
           {!canEdit ? (
             <SectionNote>
-              Bạn không có quyền sửa hồ sơ của em này. Vẫn xem được mọi thông tin, và vẫn mở
+              Bạn không có quyền sửa hồ sơ của học viên này. Vẫn xem được mọi thông tin, và vẫn mở
               được case mới từ nút “+ Case”.
             </SectionNote>
           ) : (
@@ -296,7 +296,7 @@ function InfoForm({ student, cycle, onDone }: {
               <SectionNote>
                 Lớp Normal không có target IELTS và không có LT1/LT2. Giai đoạn là chương trình
                 đang học; tuần kết thúc suy ra từ tuần bắt đầu và độ dài chương trình. Lịch kiểm
-                tra chỉnh từ màn hình lớp, không đi qua Kế hoạch MT của Fast Track.
+                tra chỉnh từ màn hình lớp, không đi qua Lịch Mock Test của Fast Track.
               </SectionNote>
             </>
           ) : (

@@ -103,10 +103,10 @@ export function StudentPlanPanel({ cycleId, studentName, ratio, onClose, onDone 
     >
       {cycle.loading ? <Skeleton rows={6} /> : (
         <div className="space-y-4">
-          <Field label="Tuần bắt đầu học" required
+          <Field as="div" label="Tuần bắt đầu học" required
             hint="Tuần này là TUẦN HỌC THỨ 1 của em. Lịch MT mặc định tính ra từ đây.">
             <WeekPicker periodId={startPeriodId} label={null}
-              onPeriod={(id) => { setTouched(true); setStartPeriodId(id); }} className="w-full" />
+              onPeriod={(id) => { setTouched(true); setStartPeriodId(id); }} />
           </Field>
 
           {/*
@@ -125,10 +125,10 @@ export function StudentPlanPanel({ cycleId, studentName, ratio, onClose, onDone 
                 <input type="month" className="field w-full" value={examMonth}
                   onChange={(e) => { setTouched(true); setExamMonth(e.target.value); }} />
               </Field>
-              <Field label="Tuần dự kiến thi"
+              <Field as="div" label="Tuần dự kiến thi"
                 hint="Chốt được thì hệ thống mới đếm ngược. Chưa chốt cứ để trống.">
                 <WeekPicker periodId={examPeriodId} label={null} scope="planning" clearable
-                  onPeriod={(id) => { setTouched(true); setExamPeriodId(id); }} className="w-full" />
+                  onPeriod={(id) => { setTouched(true); setExamPeriodId(id); }} />
               </Field>
             </>
           )}
