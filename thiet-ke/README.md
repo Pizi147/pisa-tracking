@@ -14,10 +14,21 @@ mô tả web hiện tại.
 | `TU_DIEN_VA_CHU.md` | Một khái niệm gọi bằng đúng một chữ; toàn bộ nhãn tiếng Việt | Người code UI và người biên tập |
 | `LUAT_CHO_CHOT.md` | Chín điểm luật C01–C09 chủ sản phẩm chưa trả lời; code phải để lộ ra, không chôn | Người code nghiệp vụ |
 
+Kèm theo **hai file nguồn** do chủ sản phẩm gửi, chép nguyên văn vào repo ngày 20/09/2026 để
+session code đọc được mà không cần hỏi lại:
+
+| File | Vai trò |
+|---|---|
+| `PISA-Rulebook-2026-09-19.md` | **Luật sản phẩm.** Mục 17 ưu tiên hơn mọi mô tả cũ mâu thuẫn |
+| `PISA-Design-Plan-after-PR28.md` | **Đặc tả thiết kế.** Mục 17–22 là bản mới nhất |
+
+Hai file này là **nguồn**, không phải nơi ghi tiến độ. Đừng đánh dấu đã làm vào chúng — tiến độ
+ghi ở `plan.md`.
+
 ## Nguồn luật, theo thứ tự ưu tiên
 
-1. `PISA-Rulebook-2026-09-19.md` — luật sản phẩm. **Mục 17 ưu tiên hơn mọi mô tả cũ mâu thuẫn.**
-2. `PISA-Design-Plan-after-PR28.md` — đặc tả thiết kế, mục 17–22 là bản mới nhất.
+1. `thiet-ke/PISA-Rulebook-2026-09-19.md` — luật sản phẩm. **Mục 17 ưu tiên hơn mọi mô tả cũ mâu thuẫn.**
+2. `thiet-ke/PISA-Design-Plan-after-PR28.md` — đặc tả thiết kế, mục 17–22 là bản mới nhất.
 3. `plan.md` — kế hoạch đang chạy, có ô đánh dấu.
 4. Thư mục này — chi tiết trình bày.
 5. Mã nguồn hiện tại — **hiện trạng, không phải luật**. Không dùng code để chứng minh một

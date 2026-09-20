@@ -50,6 +50,8 @@ Nếu bạn nghĩ theo "cái tôi thấy trên màn hình" chứ không theo tê
 | `vong7/BRIEF_OVERHAUL_SAU_PR15.md` | Đề bài nghiệp vụ gốc |
 | `BAN_GIAO.md` | Bàn giao hiện hành: đang ở đâu, làm gì tiếp |
 | `BAN_GIAO_*.md` (các file cũ) | **Lịch sử, không phải luật.** Xem cảnh báo ở `plan.md` mục 1.2 |
+| `thiet-ke/PISA-Rulebook-2026-09-19.md` | **Luật sản phẩm** do chủ sản phẩm chốt. Mục 17 ưu tiên hơn mọi mô tả cũ mâu thuẫn |
+| `thiet-ke/PISA-Design-Plan-after-PR28.md` | **Đặc tả thiết kế** sau PR28; mục 17–22 là bản mới nhất |
 | `thiet-ke/HE_GIAO_DIEN.md` | Trước khi dựng bất kỳ màn nào — token, component dùng chung, bốn trạng thái dữ liệu, mobile, bàn phím |
 | `thiet-ke/HOP_DONG_SO_LIEU.md` | Khi code một con số trên dashboard/báo cáo — chỉ số đó nghĩa là gì, bấm vào ra tập nào |
 | `thiet-ke/TU_DIEN_VA_CHU.md` | Khi viết hoặc sửa chữ tiếng Việt trên giao diện |
