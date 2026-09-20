@@ -47,6 +47,61 @@ Không cập nhật file này = lần bàn giao sau lại rơi vào đúng cái 
 PR1 → PR-A → PR2 → PR3, và PR-B chen vào lúc nào cũng được (mục 4). **Đừng gộp.** Lý do ở
 mục 4; chúng được chia theo phụ thuộc thật, không phải chia cho đẹp.
 
+### 0.4. CHẠY MỘT MẠCH — thứ tự làm và thứ tự merge
+
+> **Cập nhật 20/09/2026. Chủ sản phẩm đi vắng dài ngày và muốn code liền một mạch.**
+> Bỏ phương án chia nhiều nhánh song song. **Một nhánh, năm chặng, commit riêng từng chặng.**
+
+```bash
+git fetch origin
+git checkout -b worktree-batch-thiet-ke-sau-pr28 origin/main
+```
+
+| Chặng | Nội dung | Mục | Đụng năm file PR-D? |
+|---|---|---|---|
+| 1 | **PR-E** — nền giao diện dùng chung | 15 | Không |
+| 2 | **PR-F** — hợp đồng số liệu | 16 | Không |
+| 3 | **PR-G** — dấu '-' và chốt cuối Chủ nhật | 17 | Không |
+| — | **Hợp nhất PR-D vào nhánh này** (mục 21) | 21 | — |
+| 4 | **PR-I** — hồ sơ Test gọn, áp hệ giao diện vào khối case | 18 | **Có** |
+| 5 | **PR-H** — biên tập tiếng Việt toàn web | 19 | **Có** |
+
+**Commit riêng từng chặng**, đừng gộp thành một commit khổng lồ. Chặng nào xong thì chạy
+`npm run check` (mục 13.1) rồi mới sang chặng sau. Hỏng ở chặng 4 mà chặng 1–3 đã commit sạch
+thì còn lùi lại được.
+
+**Ba chặng đầu chạy được ngay, không cần chờ ai.** Chúng không chạm file nào trong danh sách
+dưới đây — đó là lý do chúng được xếp trước, không phải vì chúng dễ hơn.
+
+### 0.5. Năm file PR-D đang giữ
+
+PR-D (mục 11) đang được làm ở một worktree khác, trên nhánh riêng theo quy ước
+`worktree-pr-d-khung-case-gon`. Nó đang **tái cấu trúc** đúng năm file này:
+
+```
+web/src/modules/cases/SkillBoard.tsx
+web/src/modules/cases/CasePanel.tsx
+web/src/modules/cases/CaseBoardPage.tsx
+web/src/modules/students/StudentDetailPage.tsx
+web/src/modules/fasttrack/MockDetailPage.tsx
+```
+
+**Chặng 1–3 tuyệt đối không mở năm file này.** Cần một thay đổi chạm vào chúng thì ghi xuống,
+để sang chặng 4 làm — lúc đó PR-D đã nằm trong nhánh rồi.
+
+Có đúng **một** chỗ dễ vấp: PR-E Step 8 quét mọi nơi dùng bộ chọn tuần, mà `CaseBoardPage.tsx`
+là một trong số đó. Bỏ qua riêng file này ở chặng 1, ghi vào việc của chặng 4.
+
+**Trước khi bắt đầu, xem nhánh PR-D tên thật là gì và đã có gì chưa:**
+
+```bash
+git fetch origin
+git branch -a | grep pr-d
+git log --oneline origin/main..origin/worktree-pr-d-khung-case-gon   # nếu đã push
+```
+
+Chưa có nhánh PR-D trên `origin` nghĩa là session kia chưa đẩy lên — xem mục 21.3 để biết làm gì.
+
 ---
 
 ## 1. Ràng buộc bất biến
@@ -185,6 +240,19 @@ Thêm dòng mới ở cuối, có ngày. **Không xoá dòng cũ** — ghi "thay
 | 19/09/2026 | Quyền case theo **đúng kỹ năng mình dạy** (AUTH-01): học thuật GVBM đúng kỹ năng · GVCN cả lớp · QL tất cả. **Ý thức/Khác chỉ GVCN và QL** — GVBM báo được vấn đề nhưng không tạo/xử lý phương án | Chủ sản phẩm · Sổ §13.12 |
 | 19/09/2026 | Bỏ nút **"Mở trang riêng"** khỏi mọi màn, nhưng **GIỮ route** `/hoc-thuat/case/:id` cho link sâu từ thông báo và badge | Chủ sản phẩm |
 | 19/09/2026 | Bỏ ô **điểm tự chấm** khỏi cập nhật phương án (CASE-05). Giữ ô điểm ở màn Hoàn thành case, nơi đã hiện đúng tiêu chí của kỹ năng | Chủ sản phẩm |
+| 20/09/2026 | **Rule book mục 17 ưu tiên hơn mọi mô tả cũ mâu thuẫn.** Dấu '-' còn đến hết Chủ nhật = **không dự thi**, bỏ bước GVCN xác minh thường lệ. Ý thức gộp **ba ngày đầu** (thay bốn ngày). SOS **không** tự sinh PA trao đổi | `PISA-Rulebook-2026-09-19.md` §17 |
+| 20/09/2026 | Bốn khu vực cấp chính: **Tổng quan / Học viên & Lớp / Test / Công việc**. Phân tích là tab trong Tổng quan, có URL riêng. *(Thay phương án năm menu ở bản brainstorm)* | Design plan §17.1, chủ sản phẩm duyệt D01 |
+| 20/09/2026 | **Hồ sơ Test bỏ hẳn khối case/phương án.** Dữ liệu case vẫn ở hồ sơ học viên; trên màn Test chỉ còn một liên kết `Hồ sơ học viên` | Design plan §22.1 |
+| 20/09/2026 | Kết quả PA: tổng improved + partial gọi là **"Có cải thiện"**, vẫn hiện hai mức riêng. **Chưa đủ dữ liệu không vào bảng và không vào mẫu số** | D03 đã duyệt · Design plan §17.3 |
+| 20/09/2026 | Báo cáo đơn vị: **lưu nháp cả tuần**, nộp theo cửa sổ cuối tuần. Ba trạng thái tách bạch **Nháp / Đã nộp / Chưa báo cáo**; nháp không tính đã báo cáo | D04 đã duyệt · Design plan §17.4 |
+| 20/09/2026 | Form tạo case có **Đính kèm tệp + Thêm liên kết ngay dưới ô Mô tả**, cho cả học thuật và Ý thức, dùng lại ở nhập bù. Bằng chứng vẫn tùy chọn; yêu cầu là form phải hỗ trợ | CASE-ATTACH · Design plan §17.5 |
+| 20/09/2026 | Bỏ cặp nút **Việc của tôi / Cả phạm vi quản lý** khỏi mặt chính Tổng quan và Học viên; thay bằng dropdown **Người phụ trách**. Không đổi ràng buộc quyền | Design plan §22.7 |
+| 20/09/2026 | *(Thiết kế)* Mọi hạn hiển thị qua component **`<Han loai=…>`**, `loai` bắt buộc — sáu đồng hồ của rule book không dùng chung một cách hiển thị | Bên design · `thiet-ke/HE_GIAO_DIEN.md` §4 |
+| 20/09/2026 | *(Thiết kế)* Tiến độ một đợt Test chỉ được render bằng **`<KetQuaDot>`**. Chưa đủ điểm thì Overall ghi `Chưa đủ điểm`, **cấm** badge đạt. Đơn vị đếm là **bốn kỹ năng L/R/W/S**, W1/W2 là hai bài nhập | Bên design · đóng lỗi MT-P01/MT-P02 |
+| 20/09/2026 | *(Thiết kế)* Phần trăm chỉ được render qua **`<TyLe n N>`**: n/N trước, % sau; `N=0` ghi `Chưa có dữ liệu`; `N<5` gắn nhãn mẫu nhỏ | Bên design · Rule book §11 |
+| 20/09/2026 | *(Thiết kế)* **Một chỉ số = một hàm trả về tập ID.** Số là `tap.length`; drill-down gọi lại đúng hàm đó với đúng quyền | Bên design · `thiet-ke/HOP_DONG_SO_LIEU.md` |
+| 20/09/2026 | *(Thiết kế)* Chín điểm luật chưa chốt **C01–C09** phải nằm thành hằng số có tên ở `shared/domain/policy.ts`, chú thích cả hai phương án. Không rải `if`, không viết migration dựa trên điểm chưa chốt | Bên design · `thiet-ke/LUAT_CHO_CHOT.md` |
+| 20/09/2026 | *(Thiết kế)* **Code một mạch trên MỘT nhánh, năm chặng** (mục 0.4). PR-D do một session khác giữ; năm file ở **mục 0.5** bị khoá cho tới khi PR-D được hợp nhất. **PR-D merge trước, nhánh batch merge sau** — lý do và cách gỡ xung đột ở mục 21 | Chủ sản phẩm 20/09 |
 
 ---
 
@@ -198,7 +266,15 @@ Thêm dòng mới ở cuối, có ngày. **Không xoá dòng cũ** — ghi "thay
 | **PR3** | Chấm điểm, dấu "–", màn hồ sơ Test gọn | PR2 | Dùng bộ chọn tuần của PR2 cho việc hoãn hạn chấm |
 | **PR-B** | Phân công GV — nốt phần còn thiếu | — | Không chặn ai; ba luật chính đã chạy đúng (mục 2.2) |
 | **PR-C** | Form case đúng và gọn — ô trùng, ngày Ý thức, tab nhập bù, AUTH-01 | — | Chủ sản phẩm ưu tiên 19/09. Gom vì cùng đụng form tạo case, máy chủ và tầng quyền |
-| **PR-D** | Khung case gọn — gộp hai khối lồng nhau làm một | PR-C | Dùng form đã sửa ở PR-C. Thuần màn hiển thị hồ sơ |
+| **PR-D** | Khung case gọn — gộp hai khối lồng nhau làm một | PR-C | Dùng form đã sửa ở PR-C. Thuần màn hiển thị hồ sơ. **Đang làm ở session/nhánh khác — mục 0.5** |
+| **PR-E** | Nền giao diện dùng chung — `<Han>`, `<KetQuaDot>`, `<TyLe>`, `<NgayNghiepVu>`, sửa bố cục bộ chọn tuần (mục 15) | — | Bốn PR sau đều cần bộ component này. Làm trước thì không phải sửa lại nhãn ba lần |
+| **PR-F** | Hợp đồng số liệu — một chỉ số một hàm, `<SoLieu>`, đóng F01/F02/F03/F05 (mục 16) | PR-E | F01 là P0: hai chi nhánh cùng tuần đang cộng lẫn. Cần `<TyLe>`/`<SoLieu>` của PR-E |
+| **PR-G** | Dấu '-' và chốt không dự thi cuối Chủ nhật (mục 17) | — | Rule book §17.1 là chốt mới nhất và chưa có luồng nào. Không đụng file PR-D nên chạy song song được |
+| **PR-I** | Hồ sơ Test gọn + áp hệ giao diện vào khối case (mục 18) | **PR-D đã nằm trong nhánh** + PR-E, PR-G | Sửa đúng năm file PR-D đang giữ. Làm trước khi hợp nhất PR-D là xung đột chắc chắn — thứ tự merge ở **mục 21** |
+| **PR-H** | Biên tập tiếng Việt toàn web theo bộ chữ (mục 19) | PR-D, PR-I | Chạm gần như mọi file JSX. Làm cuối để chỉ phải quét một lần |
+
+**Năm chặng trên chạy một mạch trên một nhánh** — xem mục 0.4. Thứ tự merge với nhánh PR-D và
+cách gỡ từng loại xung đột ở **mục 21**.
 
 **Giá phải trả của cách 1, đã chấp nhận:** bảng chấm bị chạm hai lần — PR1 đổi *hàng nào hiện
 ra*, PR2 đổi *cách chọn tuần*. Hai phần khác nhau của cùng màn hình, không phải làm lại.
@@ -1657,3 +1733,437 @@ Nói **cái gì đổi trên màn hình**, bằng tiếng Việt, không tên h�
 | 19/09/2026 (đêm) | Claude (session code PR-C) | PR-C Task 1–4 hoàn tất theo kế hoạch, có phép kiểm cho từng bước (347 phép kiểm xanh, hai lệnh `tsc` sạch). Ba việc lệch câu chữ gốc, đều ghi tại chỗ trong mục 10: (1) Task 4 Step 1 dùng `P.subjectTeacher` thay vì `P.lrTeacher` — trong bộ demo, người dạy Listening của MB-FT 101 lại chính là GVCN của lớp đó, dùng người đó để kiểm "sai môn bị chặn" sẽ luôn PASS sai lý do; (2) Task 3 Step 2 bỏ bước gọi `completeIntervention` riêng — `recordIntervention` đã tự đủ trong một lần gọi, gọi thêm chỉ sinh một dòng hành trình trùng lặp; (3) Task 3 Step 4 CHƯA nối dây ô "Điểm chi tiết theo kỹ năng" (tuỳ chọn) — máy chủ đã sẵn sàng, chỉ chờ PR-D quyết định hình dạng cuối của `MetricsField` để tránh làm hai lần, ghi vào backlog mục 12.2. Bấm thử tay một lượt bằng tài khoản Quản trị hệ thống qua trình duyệt thật (cổng tách riêng 4091/5191, seed lại sau khi xong): mở modal `+ Case` ở lớp MB-FT 101, chuyển tab "Đã xong từ trước", điền đủ (Reading, phân loại "Quản lý thời gian", 01/07→20/07/2026, một dòng "đã làm gì", kết quả "Có tiến bộ", ghi chú), bấm "Ghi lại case đã xong" — ra toast "Đã ghi lại case đã xong", mở lại hồ sơ học viên thấy đúng nhãn **"nhập bù · Đỗ Vũ Tuấn Phong ghi ngày 18/09/2026"** trên thẻ case, đúng ngày mở 01/07/2026 (không phải hôm nay), có nhãn "case song song", dòng phương án hiện đủ người làm và khoảng ngày. **Chưa làm, ghi thẳng thay vì giấu:** mới bấm thử được đúng MỘT vai (Quản trị hệ thống) trên đúng MỘT kịch bản (case học thuật). Ba vai còn lại của mục 10.6 (GVBM Listening · GVBM Reading · GVCN) và nhánh Ý thức của tab nhập bù, cùng ba màn PR2b/PR-C khác (Kế hoạch Test, form case thường, khung case PR-D) **chưa bấm thử tay** — chỉ có bằng chứng qua bộ kiểm thử tự động. Đây là việc còn lại trước khi PR-C sẵn sàng merge thật |
 | 19/09/2026 (đêm, tiếp) | Claude (session code PR-C) | Mở PR #27 (nhánh `worktree-pr-c-form-case-gon` → `main`), chưa merge. Dựng một subagent đọc toàn bộ diff review độc lập trước khi mở PR — không có lỗi Critical, nhưng tìm ra ba lỗi Important đều thuộc "tầng trung thực" của tab nhập bù: (1) máy chủ **không** chặn ghi chú kết luận dưới 10 ký tự dù giao diện có chặn — gọi thẳng API là bỏ qua được lý do bắt buộc phải ghi, đúng chỗ tính năng sinh ra để chặn; (2) và (3) hai kiểm dữ liệu (mô tả "Khác" ≥30 ký tự, ngày một dòng "đã làm gì" không đảo ngược) chỉ có ở máy chủ, chưa có ở giao diện — người dùng thấy lỗi chung chung thay vì lỗi rõ ràng tại chỗ. Đã vá cả ba, thêm một phép kiểm cho lỗi (1). Sau vá: 348 phép kiểm xanh, hai lệnh `tsc` sạch. Ghi kết quả review làm một bình luận trên PR #27. Cũng mở PR #28 riêng (nhánh `worktree-docs-ban-giao-pr-c`) chỉ cập nhật `BAN_GIAO.md` — không gộp vào PR-C để giữ đúng phạm vi |
 | 19/09/2026 (đêm, hợp nhất) | Claude (session code PR-C) | `main` đã tiến lên (PR2b merge, #26) sau khi PR-C branch từ `f1e3591` — GitHub báo PR #27 có xung đột. Hợp nhất `origin/main` vào nhánh PR-C, giải xung đột ở bốn file (`plan.md`, `server/src/permissions.ts`, `server/src/seed/data.ts`, `server/src/tests/run.ts`) — toàn bộ là cộng dồn (cả hai nhánh cùng thêm quyền/nhãn/phép kiểm mới ở cuối danh sách, không nhánh nào sửa đè lên dòng của nhánh kia), không có xung đột nghiệp vụ thật. Giữ cả `schedule.move` (PR2b) lẫn `sos.report`/`sos.edit` (PR-C) trong `ROLE_PERMISSIONS`, giữ cả hai nhánh `explain()`, nối các phép kiểm SCH-01/T09/T13 (PR2b) vào sau các phép kiểm CASE-01/AUTH-01/nhập bù (PR-C) |
+| 20/09/2026 | Claude (session thiết kế) | Đọc `PISA-Rulebook-2026-09-19.md` v1.1 và `PISA-Design-Plan-after-PR28.md` v1.2, brainstorm bổ sung rồi viết thành việc làm được. Thêm **mục 15–19** (PR-E nền giao diện · PR-F hợp đồng số liệu · PR-G dấu '-' và chốt cuối Chủ nhật · PR-I hồ sơ Test gọn · PR-H biên tập), **mục 20** (kho ý tưởng thiết kế DS01–DS18 + ba ý tưởng đã loại), 13 dòng vào mục 3 và sáu dòng vào lộ trình mục 4. Đặt số mục mới ở **cuối file** thay vì chen vào giữa, để khỏi đánh số lại mục 12/13/14 và mọi tham chiếu nội dòng đang trỏ tới chúng. Tạo thư mục `thiet-ke/` bốn file: hệ giao diện, hợp đồng số liệu, từ điển + bộ chữ, chín điểm luật chưa chốt. **Chưa sửa một dòng mã sản phẩm nào.** Bản đầu chia năm PR thành nhiều nhánh song song; chủ sản phẩm đi vắng dài ngày nên **đổi sang một nhánh năm chặng** (mục 0.4 viết lại), thêm **mục 0.5** (năm file PR-D đang giữ) và **mục 21** (thứ tự merge + cách gỡ bốn loại xung đột, viết cho người không đọc code). Bốn chỗ quyết định đáng ghi lại: (1) chia chặng theo **file bị khoá**, không theo chủ đề — nhờ vậy ba chặng đầu chạy được ngay mà không chờ PR-D; (2) **PR-D merge trước, batch merge sau**, vì PR-D gỡ và xếp lại còn batch thêm lên trên — ngược thứ tự là biến việc của máy thành việc của người; (3) hàm chốt dấu '-' viết thành **hàm thuần theo tuần lịch của bài**, không theo thời điểm chạy, nên gọi ở đường đọc như `sweepExpiredMoves()` đã đủ đáp ứng "kể cả không ai mở web", không cần dựng cron; (4) bốn lỗi lặp ở nhiều màn (hạn không rõ loại, badge đạt khi chưa đủ điểm, % không mẫu số, tuần rớt hàng) đóng **ở component** để `tsc` chặn, không đóng bằng kỷ luật review |
+
+---
+
+## 15. PR-E — Nền giao diện dùng chung
+
+> **Chặng 1.** Không phụ thuộc PR nào. **Không đụng năm file ở mục 0.5.**
+> Nhánh: `worktree-batch-thiet-ke-sau-pr28` (dùng chung cho cả năm chặng — mục 0.4).
+>
+> **Goal:** Bốn lỗi đang lặp ở nhiều màn — hạn không nói rõ hạn gì, badge "đạt" khi chưa đủ
+> điểm, phần trăm không có mẫu số, bộ chọn tuần rớt ba hàng — được đóng **ở component**, để
+> các PR sau không phải sửa lại từng màn.
+>
+> **Đặc tả đầy đủ:** `thiet-ke/HE_GIAO_DIEN.md`. Mục này chỉ là thứ tự việc.
+
+### 15.1. Bố cục file
+
+| File | Trách nhiệm sau PR-E |
+|---|---|
+| `web/src/ui/Han.tsx` | **Mới.** `<Han loai={...} han={...} hanGoc? hen? />` — sáu loại hạn + `du-kien-ket-thuc` |
+| `web/src/ui/KetQuaDot.tsx` | **Mới.** Một câu duy nhất cho tiến độ một đợt Test |
+| `web/src/ui/TyLe.tsx` | **Mới.** `n/N` trước, `%` sau; `N=0` → `Chưa có dữ liệu`; `N<5` → nhãn mẫu nhỏ |
+| `web/src/ui/ngayNghiepVu.ts` | **Mới.** `useNgayNghiepVu()` — một nguồn ngày nghiệp vụ cho UI |
+| `web/src/ui/Filters.tsx` | `WeekPicker` (`:98`): sửa bố cục một hàng + popover lịch |
+| `web/src/ui/ui.tsx` | Gom bảng tone về một chỗ; không thêm component mới ở đây |
+| `web/src/modules/fasttrack/ScoreEntry.tsx` | `DeadlinePill` (`:201`) gọi `<Han loai="nhap-diem">` thay vì tự dựng chuỗi |
+| `shared/domain/week.ts` | Dùng lại hàm mã tuần đang có cho popover — **không viết hàm tính tuần thứ hai** |
+| `server/src/tests/run.ts` | Phép kiểm cho luật của `<TyLe>` và `<KetQuaDot>` ở tầng thuần |
+
+### 15.2. Các bước
+
+- [ ] **Step 1: `<Han>`.** Sáu `loai` bắt buộc theo bảng `thiet-ke/HE_GIAO_DIEN.md` §4:
+      `xac-minh-sos` · `lap-pa` · `cap-nhat-pa` · `thuc-hien-y-thuc` · `hoan-thanh-y-thuc` ·
+      `nhap-diem`, cộng `du-kien-ket-thuc` (**không phải hạn**, luôn trung tính, không bao giờ
+      ghi "quá hạn"). `loai` không có giá trị mặc định — thiếu thì `tsc` phải báo lỗi.
+      Quá hạn đếm từ **hạn gốc**. Có hẹn xử lý thì hiện cả hai: `Hạn nhập điểm 23/09 · Hẹn xử lý 30/09`.
+- [ ] **Step 2: `DeadlinePill` dùng `<Han>`.** `ScoreEntry.tsx:201` đang tự dựng bốn nhánh chuỗi
+      (`Hạn riêng môn này` / `Hạn riêng cả đợt` / `Hạn` / `Quá hạn`). Giữ nguyên **nghĩa**, đổi
+      **đường render**. Đây là chỗ duy nhất của PR-E chạm module fasttrack — đừng mở rộng.
+- [ ] **Step 3: `<KetQuaDot>`.** Năm nhánh ở `thiet-ke/HE_GIAO_DIEN.md` §5. Hai luật cứng:
+      (a) `coDiem < yeuCau` → Overall render chữ `Chưa đủ điểm`, **cấm** badge đạt (lỗi MT-P01);
+      (b) đơn vị đếm là **bốn kỹ năng L/R/W/S** — W1/W2 là hai *bài nhập*, không bao giờ ghi
+      `1/5` ở chỗ đang nói kỹ năng.
+- [ ] **Step 4: `<TyLe>`.** Thứ tự `n/N` rồi `(%)`. `N=0` → `Chưa có dữ liệu`, **không** render
+      `0%`. `N<5` → nhãn `mẫu nhỏ`. Component **không nhận** prop kiểu `xepHang`/`totNhat`.
+- [ ] **Step 5: `useNgayNghiepVu()`.** Một nguồn duy nhất cho UI, đọc cùng đồng hồ với
+      `demoToday()` ở máy chủ. Nơi nào ngày nghiệp vụ khác ngày ghi nhận thật thì hiện cả hai:
+      `Ngày nghiệp vụ 14/09 · Ghi nhận 19/09`. **Không sửa timestamp thật.** (Lỗi MT-P10.)
+- [ ] **Step 6: Sửa bố cục `WeekPicker`.** Một hàng flex, gap 8px, cao 40–44px; mũi tên
+      `flex:none`, trường tuần `flex:1` **`min-width:0`** — thiếu dòng này chính là nguyên nhân
+      wrap trong ảnh. Panel ~600px: chỉ `Tuần này` xuống hàng. Trường tuần luôn ghi tuần **đang
+      chọn thật**, không để trống rồi chú thích dưới.
+- [ ] **Step 7: Popover lịch.** Bấm trường tuần mở popover: gõ ngày hoặc chọn tuần, đổi
+      tháng/năm. Bỏ dropdown hàng chục tuần. Render qua portal; kiểm z-index **trong `Drawer` và
+      trong modal** — hiện đang bị cắt.
+- [ ] **Step 8: Quét mọi nơi dùng bộ chọn tuần.** `CaseBoardPage` · `MeetingPage` ·
+      `TransitionPanel` · `ClassCreatePanel` · `ClassProgressPanel` · `StudentPlanPanel` ·
+      `ScoreSheetPage` · `MockPlanPanel`. Sửa CSS của **panel chứa**, không chỉ của component.
+      **Trừ `CaseBoardPage.tsx`** — file này thuộc danh sách khoá ở mục 0.5, để sang chặng 4.
+- [ ] **Step 9: Trang demo component nội bộ.** Một route dev dựng đủ sáu trạng thái mỗi
+      component: rỗng · một bản ghi · nhiều · tên dài · lỗi tải · không quyền. Không có trang này
+      thì nghiệm thu mục 15.3 không làm được.
+
+### 15.3. Nghiệm thu PR-E
+
+- `<Han>` thiếu `loai` → **`tsc` báo lỗi**, không phải cảnh báo lúc chạy.
+- Ép `coDiem=1, yeuCau=4, dat=true` vào `<KetQuaDot>`: ra `Chưa đủ điểm`, không ra badge đạt.
+- `<TyLe n={0} N={0}>` → `Chưa có dữ liệu`. `<TyLe n={1} N={1}>` → `1/1 (100%) · mẫu nhỏ`.
+- Bộ chọn tuần trong panel 600px, modal rộng và mobile: **không rớt hàng ngẫu nhiên**, popover
+  không bị cắt trong `Drawer`.
+- Ảnh chụp chuyển sang xám vẫn đọc được mọi trạng thái (không có tín hiệu chỉ bằng màu).
+- `git diff --name-only origin/main` **không chứa** file nào trong danh sách khoá ở mục 0.5.
+- `npm run check` (mục 13.1) xanh; bấm thử thật đủ ba vai theo mục 13.2.
+
+---
+
+## 16. PR-F — Hợp đồng số liệu và "Vì sao số này?"
+
+> **Chặng 2.** Phụ thuộc chặng 1 (dùng `<TyLe>`). **Không đụng năm file ở mục 0.5.**
+>
+> **Goal:** Một chỉ số = một hàm trả về **tập ID**. Số là `tap.length`, danh sách khi bấm vào
+> là chính tập đó. Hết chuyện hai màn hiện hai số dưới cùng một cái tên.
+>
+> **Đặc tả đầy đủ:** `thiet-ke/HOP_DONG_SO_LIEU.md`.
+
+### 16.1. Bố cục file
+
+| File | Trách nhiệm sau chặng 2 |
+|---|---|
+| `shared/domain/metrics.ts` | **Mới.** Kiểu `ChiSo` + khai báo mười một chỉ số, đủ tám trường |
+| `server/src/worklist/weekly.ts` | **F01 (P0)** — ba truy vấn case/HV/chờ duyệt nhận tập attempt ID đã lọc quyền, không tự lọc `planned_period_id` |
+| `server/src/cases/effectiveness.ts` | **F02** tách hiện trạng/lịch sử trong `issueBoard` · **F03** `planOutcomes` theo đơn vị lịch sử · **F05** bỏ hàng `undetermined` khỏi bảng hiệu quả |
+| `server/src/routes/index.ts` | Một route drill-down dùng chung, nhận `metricId` + phạm vi, trả đúng tập ID |
+| `web/src/ui/SoLieu.tsx` | **Mới.** Số + tooltip `Cách tính` + bấm mở panel danh sách |
+| `web/src/modules/worklist/OverviewPage.tsx` | Bốn ô số đi qua `<SoLieu>` |
+| `web/src/modules/cases/IssueAnalysis.tsx` | Bảng hiệu quả dùng `<TyLe>`; `Chưa đủ dữ liệu` ra ngoài bảng |
+| `server/src/tests/run.ts` | Phép kiểm F01/F02/F03/F05 + phép kiểm "số = độ dài tập" |
+
+### 16.2. Các bước
+
+- [ ] **Step 1: Sổ chỉ số.** `shared/domain/metrics.ts` theo bảng mười một chỉ số ở
+      `thiet-ke/HOP_DONG_SO_LIEU.md` §2. Thiếu một trong tám trường thì không được lên dashboard.
+- [ ] **Step 2: F01 — P0, làm trước.** `weekly.ts`: tập attempts đã lọc chi nhánh/chương
+      trình/quyền, nhưng ba truy vấn sau đó chỉ lọc `planned_period_id` → **hai chi nhánh cùng
+      tuần đang cộng lẫn vào nhau**. Sửa: ba truy vấn nhận chính tập attempt ID được phép.
+      Phép kiểm: dựng hai CN cùng tuần, lọc một CN, khẳng định kết quả không chứa ID của CN kia.
+- [ ] **Step 3: F02.** `issueBoard`: `students` đang đếm từ **mọi** case của phân loại trong khi
+      `openCases` đã lọc chưa done. Tách `hv-co-case-mo` (hiện trạng) khỏi chỉ số lịch sử. Hiệu
+      quả lịch sử **vẫn phải** đọc được PA của case đã đóng — đừng sửa bằng cách lọc bỏ hết.
+- [ ] **Step 4: F03.** `planOutcomes` lấy HV từ enrollment đang active rồi đọc PA lịch sử → em
+      chuyển chi nhánh làm mất mẫu ở nơi cũ và mọc ở nơi mới. Luật: **hiện trạng theo nơi đang
+      chăm sóc, lịch sử theo đơn vị/người thực hiện tại thời điểm hỗ trợ.** Không đủ dữ liệu quá
+      khứ thì ghi `chưa xác định nguồn`, **không** quy cho nơi hiện tại.
+- [ ] **Step 5: F05.** Mẫu số đã loại `undetermined` nhưng response vẫn trả hàng/cột đó. Chuyển
+      thành liên kết `Cần bổ sung đánh giá` **ngoài** bảng hiệu quả. Không xoá hồ sơ gốc.
+- [ ] **Step 6: Route drill-down dùng chung.** Nhận `metricId` + phạm vi, gọi **đúng hàm đã sinh
+      ra con số**, áp **cùng bộ quyền**. Phạm vi rỗng trả rỗng, không hiểu thành toàn hệ thống.
+- [ ] **Step 7: `<SoLieu>`.** Hover → tooltip đọc thẳng từ `ChiSo` (câu hỏi, tập đủ điều kiện,
+      quy tắc khử trùng, mốc thời gian, ngày dữ liệu). Bấm → panel `{n} {đơn vị} — {tên}` giữ
+      nguyên bộ lọc, có đường quay lại.
+- [ ] **Step 8: Đối soát F10.** Xuất tập ID sinh ra số ở Toàn cảnh và ở Phân tích rồi `diff`.
+      Chênh lệch chỉ được chấp nhận khi **giải thích được bằng định nghĩa khác nhau**, và khi đó
+      hai màn **phải đổi nhãn cho khác nhau**. Ghi kết quả đối soát vào báo cáo, kể cả khi hoá ra
+      cả hai đều đúng.
+
+### 16.3. Nghiệm thu PR-F
+
+- Hai CN cùng tuần: lọc một CN, mọi cột và mọi drill-down không chứa ID CN kia.
+- Ba PA đủ kết quả (tiến bộ · một phần · không tiến bộ) + một PA chưa đủ dữ liệu →
+  tỷ lệ **2/3**, không phải 2/4. Số PA khác số HV, hiện đủ cả hai đơn vị.
+- Một PA cập nhật 4 lần rồi kết thúc: đóng góp **một** kết quả cuối.
+- Một case đóng + một case mở cùng lỗi: `hv-co-case-mo` chỉ đếm em có case mở; bảng hiệu quả vẫn
+  đọc được kết quả lịch sử.
+- HV chuyển CN sau khi kết thúc PA: hiện trạng sang nơi mới, lịch sử giữ nơi cũ.
+- Gọi thẳng route drill-down bằng tài khoản ngoài phạm vi → **bị từ chối**, không trả tập rút gọn.
+- Mọi số trên Tổng quan bấm được và ra đúng độ dài tập; không còn số nào nằm ngoài `<SoLieu>`.
+
+---
+
+## 17. PR-G — Dấu '-' và chốt không dự thi cuối Chủ nhật
+
+> **Chặng 3.** Không phụ thuộc chặng nào trước; **không đụng năm file ở mục 0.5.**
+>
+> **Goal:** Rule book §17.1 — GV nhập `-` để báo em có lịch nhưng không làm bài; sửa được đến
+> hết Chủ nhật; còn `-` khi hết Chủ nhật thì xác lập **không dự thi**. **Bỏ bước GVCN xác minh
+> thường lệ.**
+>
+> **Đây là chốt mới nhất và thay các mô tả cũ mâu thuẫn.** Mọi câu cũ kiểu "mọi dấu '-' chỉ hẹn
+> chấm, luôn cần GVCN xác minh vắng" đã hết hiệu lực (rule book §17.5).
+
+### 17.1. Quyết định kỹ thuật quan trọng — đọc trước khi code
+
+Rule book yêu cầu việc chốt xảy ra **"kể cả không ai mở web"**. Dự án này không có cron.
+Cách làm đúng **không phải** dựng cron, mà là làm hàm chốt thành **hàm thuần theo thời gian**:
+
+> Kết quả chốt là hàm của (dấu `-` đang có · **tuần lịch của chính bài đó** · ngày nghiệp vụ
+> hiện tại), **không** phải hàm của thời điểm chạy. Chạy Chủ nhật 23:59, sáng thứ Hai, hay thứ
+> Năm tuần sau đều ra **cùng một kết quả và cùng một ngày hiệu lực**.
+
+Nhờ vậy chỉ cần gọi nó ở đường đọc, đúng như `sweepExpiredMoves()` đang được gọi từ
+`server/src/worklist/mywork.ts:437`. Dùng lại đúng khuôn mẫu đó, **đừng phát minh cơ chế thứ hai**.
+
+### 17.2. Bố cục file
+
+| File | Trách nhiệm sau PR-G |
+|---|---|
+| `shared/domain/policy.ts` | **Mới.** `C10_NHAP_DAU_TRU_TUAN_QUA_KHU` và các hằng C01–C09 (xem `thiet-ke/LUAT_CHO_CHOT.md`) |
+| `shared/domain/fasttrack.ts` | Trạng thái `khong-co-bai` và `khong-du-thi`; hàm thuần quyết định chốt |
+| `server/src/fasttrack/skillSchedule.ts` | Mốc cuối tuần theo **tuần lịch của bài**, Asia/Ho_Chi_Minh |
+| `server/src/fasttrack/absence.ts` | Sau khi chốt thì nối vào luật vắng đã có (lần 1 dời, lần 2 QL duyệt) |
+| `server/src/fasttrack/attempts.ts` | `Cell` mang trạng thái mới; sweep gọi ở đường đọc |
+| `web/src/modules/fasttrack/ScoreEntry.tsx` | Ô điểm nhận lệnh `-`; hai chuỗi trạng thái |
+| `web/src/modules/fasttrack/ScoreSheetPage.tsx` | Bàn phím: `Tab` · `Enter` · `-` · `Esc`; lưu từng dòng |
+| `server/src/tests/run.ts` | Sáu phép kiểm ở mục 17.4 |
+
+### 17.3. Các bước
+
+- [ ] **Step 1: `policy.ts`.** Chín hằng C01–C09 + `C10`. Mỗi hằng có chú thích nêu **cả hai
+      phương án** và lý do đang chọn cái nào. Không rải `if`, **không viết migration** dựa trên
+      một điểm chưa chốt.
+- [ ] **Step 2: Lệnh `-` ở ô điểm.** L/R: gõ `-` thay cho số. W1/W2/S: **một** dấu `-` trong bốn
+      tiêu chí là đủ báo chưa có bài **cho đúng bài đó**. Ô trống vẫn chỉ là chưa nhập; `-`
+      không phải 0; điểm 0 vẫn là điểm 0.
+- [ ] **Step 3: Hai chuỗi trạng thái.** Gợi ý trong ô: `Nhập - nếu học viên không làm bài`. Sau
+      lưu: `Không có bài · Có thể sửa đến hết Chủ nhật {ngày}`. Sau chốt:
+      `Không dự thi · Tuần {mã tuần}`.
+- [ ] **Step 4: Hàm chốt thuần.** Theo mục 17.1. **Idempotent**: gọi mười lần ra một lần chốt,
+      bộ đếm vắng không tăng thêm. Mỗi lần lịch/kỹ năng chỉ chốt **một lần**.
+- [ ] **Step 5: Không lây sang bài khác.** `-` ở W1 **không** xoá W2/S, không tạo điểm 0. Nếu
+      W1/W2 cùng một buổi Writing thì bộ đếm vắng **không tăng hai lần** — đếm theo đơn vị
+      lịch/buổi, không theo số ô.
+- [ ] **Step 6: Sửa trước chốt thì không tính vắng.** Đổi `-` thành điểm hợp lệ trước cuối tuần
+      → không có lần vắng nào. Đã có **điểm chính thức** thì `-` không được xoá âm thầm — phải
+      đi đường hiệu chỉnh có lý do.
+- [ ] **Step 7: Nối vào luật vắng đã có.** Sau chốt: lần đầu dời đúng tuần kế tiếp (quyền GVCN),
+      từ lần hai QL duyệt, chỉ QL khôi phục phần FT đã huỷ. **Quyền bấm dời lần đầu của GVCN
+      không được mở cho mọi GVBM** chỉ vì GV là người báo `-`.
+- [ ] **Step 8: Hai mốc không thay nhau.** `Hạn nhập điểm 23/09` (thứ Tư tuần kế, cho bài **có**
+      thực hiện) và mốc chốt Chủ nhật (cho bài GV đã báo không có) hiện **khác tên, cạnh nhau**.
+      Dùng `<Han loai="nhap-diem">` của chặng 1 — nó đã có sẵn trong cùng nhánh. **Đừng** tự
+      dựng component hạn thứ hai.
+- [ ] **Step 9: Normal không đổi.** Chốt vắng áp dụng cho Mock. Normal **vẫn phải đủ bốn môn**,
+      không có huỷ nghĩa vụ Test. Đừng mang giới hạn FT sang Normal.
+- [ ] **Step 10: Bàn phím ở bảng nhập điểm.** `Tab` sang ô kế · `Enter` xuống dòng · `-` là lệnh
+      không có bài · `Esc` huỷ ô đang sửa. Trạng thái lưu **từng dòng** (`SaveState`), không lưu
+      cả bảng rồi báo một lỗi chung.
+
+### 17.4. Nghiệm thu PR-G
+
+1. `-` ở tuần 14–20/09, còn nguyên hết ngày 20/09 → chốt `Không dự thi`. Sửa thành điểm trước đó
+   → **không** tính vắng. Ô trống → **không** tự vắng.
+2. S tuần 21–27/09 **không** bị chốt trong tuần 14–20/09.
+3. Chạy hàm chốt lặp nhiều lần: số lần vắng **không tăng**; ngày hiệu lực không đổi.
+4. `-` ở W1 không xoá W2; nếu cả hai thuộc một buổi Writing thì **không** đếm hai lần vắng.
+5. Đã có điểm chính thức: `-` không xoá được nếu không đi đường hiệu chỉnh có lý do.
+6. Vắng lần 1 → dời tuần sau; lần 2 → chờ QL; điểm RLW đã có **không mất**; chỉ QL khôi phục.
+7. Normal bốn môn ba tuần: không có huỷ; `7/10` đạt, `23/33` chưa đạt.
+8. `git diff --name-only origin/main` không chứa file khoá ở mục 0.5.
+
+---
+
+## 18. PR-I — Hồ sơ Test gọn và áp hệ giao diện vào khối case
+
+> **Chặng 4.** Chỉ bắt đầu **sau khi PR-D đã được hợp nhất vào nhánh batch** (mục 21.2 bước 3).
+> Sửa đúng năm file PR-D đang giữ. Phụ thuộc: PR-D + PR-E + PR-G.
+>
+> **Goal:** Hồ sơ Mock Test chỉ còn phục vụ đợt kiểm tra; các component của PR-E được dùng thật
+> ở khối case và bảng điểm, không chỉ nằm trong trang demo.
+
+### 18.1. Quyết định nền — rule book §17.5 và design plan §22.1
+
+**Hồ sơ MT bỏ hẳn khối case/hỗ trợ**: timeline case, phương án, gợi ý trao đổi/tutor, form hoàn
+thành case. **Không** giữ lại một card gọn ở cuối chỉ vì component đã có. Dữ liệu case và liên
+kết lịch sử vẫn nguyên ở hồ sơ học viên; một liên kết `Hồ sơ học viên` ở đầu trang là đủ.
+
+Đây là **thay thế** mục 20.2 khu vực C của design plan, không phải bổ sung.
+
+### 18.2. Các bước
+
+- [ ] **Step 1: Gỡ khối case khỏi `MockDetailPage.tsx`.** Bỏ hẳn, không thu gọn. Giữ route và
+      liên kết `Hồ sơ học viên`.
+- [ ] **Step 2: Gộp hai bảng thành một.** Hiện có `Lịch theo kỹ năng` và `Điểm theo kỹ năng` lặp
+      kỹ năng/hạn/trạng thái. Một bảng làm việc duy nhất, năm cột: **Kỹ năng · Lịch kiểm tra ·
+      Điểm · Tình trạng và hạn · Thao tác**.
+- [ ] **Step 3: Thu gọn bốn thẻ kỹ năng + Overall.** Tiến độ đợt lên header qua `<KetQuaDot>`;
+      điểm từng môn nằm ở dòng tương ứng. Không lặp năm ô lớn ngay dưới cùng bộ điểm.
+- [ ] **Step 4: Mở tiêu chí ngay tại dòng.** W1/W2/S: bốn ô + `Lưu`/`Huỷ` tại dòng; đóng lại thấy
+      điểm và ngày cập nhật. Writing tổng là **một dòng phụ** dưới W1/W2, nói rõ là điểm tính từ
+      hai task — **không** có ô nhập Writing tổng thứ ba.
+- [ ] **Step 5: Bỏ nút `Đã thi` khỏi luồng chấm thường.** Có lịch và đúng quyền thì nhập được.
+      Vắng là ngoại lệ có xác minh riêng; **không** tự ghi đã thi thật chỉ vì đến ngày.
+- [ ] **Step 6: Một hành động chính mỗi dòng.** `Nhập/Sửa điểm` là nút chính. `Đổi lịch` · `Hẹn
+      xử lý` · `Lịch sử` vào menu theo quyền. **`Huỷ lượt MT` rời khỏi đầu trang**, vào menu
+      ngoại lệ của QL, phải nói rõ huỷ phần nào và giữ phần đã có điểm.
+- [ ] **Step 7: Áp `<Han>` vào khối case ở `SkillBoard.tsx`.** Đây là chỗ F11 sai: `Dự kiến kết
+      thúc` của PA đang bị trình bày như hạn phải làm. Dùng `loai="du-kien-ket-thuc"` (trung
+      tính) cho ngày dự kiến và `loai="cap-nhat-pa"` cho nghĩa vụ cập nhật tuần.
+- [ ] **Step 8: Người cập nhật ≠ người nhập điểm.** Ô điểm trống mà vẫn hiện "Người nhập" là sai
+      (MT-P09). Tách hai khái niệm; không dùng tác giả thao tác làm bằng chứng đã có điểm.
+- [ ] **Step 9: Lịch sử thay đổi thu gọn cuối trang.** Đếm số thay đổi; mở ra thấy ai sửa
+      điểm/lịch/kỳ vọng/phạm vi, trước–sau, ngày và lý do. Không xếp log kỹ thuật ngang kết quả
+      học tập.
+
+### 18.3. Nghiệm thu PR-I
+
+- Dữ liệu Phạm Bảo Ngọc chỉ có R=7.0: R đạt, Overall ghi `Chưa đủ điểm`, **không** badge đạt.
+- Đủ bốn môn nhưng một môn dưới kỳ vọng, Overall vẫn đạt: hai thông tin cùng đúng, trình bày riêng.
+- Header và nội dung cùng nói `1/4`; không còn chỗ nào ghi `1/5 kỹ năng`.
+- RLW tuần 14–20/09 và S tuần 21–27/09 cùng một đợt: hạn 23/09 và 30/09, bảng chấm đúng môn từng tuần.
+- Trên hồ sơ MT **không còn** khối case/PA nào; bấm `Hồ sơ học viên` ra đủ case.
+- Desktop bảng gọn; mobile mỗi bài một thẻ, chỉ vùng dữ liệu cuộn, không tràn ngang cả trang.
+- Đủ ba vai GVBM · GVCN · QL, đi từ menu thật tới lưu và quay lại.
+
+---
+
+## 19. PR-H — Biên tập tiếng Việt toàn web
+
+> **Chặng 5, làm cuối cùng.** Chạm gần như mọi file JSX nên chỉ quét một lần, sau khi PR-D và
+> chặng 4 đã nằm trong nhánh.
+>
+> **Goal:** Một khái niệm gọi bằng đúng một chữ ở mọi màn. Bỏ các câu nói thiếu tự nhiên và các
+> đoạn giải thích mô hình dữ liệu trên màn đọc.
+>
+> **Bộ chữ đầy đủ:** `thiet-ke/TU_DIEN_VA_CHU.md`. Mục này chỉ là cách áp dụng.
+
+### 19.1. Các bước
+
+- [ ] **Step 1: Gom chuỗi hệ thống.** Nhãn nghiệp vụ về `shared/domain/*` theo đúng tám module;
+      nhãn thuần trình bày về `web/src/ui/chu.ts`. Không hard-code tiếng Việt rải rác trong JSX.
+- [ ] **Step 2: Mười hai khái niệm không được nhập làm một** (`TU_DIEN_VA_CHU.md` §1). Vi phạm
+      bảng này là **lỗi nghiệp vụ**, không phải lỗi biên tập.
+- [ ] **Step 3: Áp bảng nhãn thay thế** (`TU_DIEN_VA_CHU.md` §2), theo từng nhóm màn.
+- [ ] **Step 4: Trạng thái rỗng có ích.** Mỗi khối rỗng phải nói **thiếu cái gì + ai điền được +
+      một nút**. Bỏ `Chưa có gì diễn ra`, `chưa ai bắt tay vào việc`, `chưa làm gì cho em thì
+      chưa có gì để kết luận`.
+- [ ] **Step 5: Badge nói rõ đếm của ai.** `Bạn cần chấm: {n} bài` (việc riêng) hoặc `Lớp còn {n}
+      bài chưa nhập điểm` (toàn lớp). Không vừa nói toàn lớp vừa dẫn tới việc riêng.
+- [ ] **Step 6: Bỏ chân trang giải thích.** Đơn vị đặt ở tên cột; công thức vào tooltip `Cách
+      tính`. Nếu số bấm được thì **hình thức phải cho thấy điều đó**, không dạy bằng một đoạn văn.
+- [ ] **Step 7: Quét mọi biến thể.** Trước khi đổi một chuỗi, `grep` toàn repo — kể cả test, seed
+      và thông báo máy chủ. **Không chạm ghi chú thật do giáo viên nhập.**
+
+### 19.2. Nghiệm thu PR-H
+
+- Mở từng màn ở ba vai, không nghiệm thu bằng một lần tìm–thay.
+- `grep` các chuỗi cũ trong bảng §2 của bộ chữ → không còn kết quả nào ngoài file tài liệu.
+- Câu có số liệu động lấy dữ liệu hiện hành; mô tả tại thời điểm phát sinh có nhãn lịch sử
+  (`lúc mở: 2/4 kỹ năng`), không để hai câu đều trông như mô tả hiện tại.
+- Không còn đại từ mơ hồ ("em này", "lượt đó", "máy", "chốt chung") trên giao diện.
+
+---
+
+## 20. Kho ý tưởng thiết kế bổ sung — ĐỀ XUẤT, chưa duyệt
+
+> Kết quả buổi brainstorm 20/09/2026 của bên design, sau khi đọc rule book và design plan.
+> **Không mục nào ở đây được code khi chưa có dòng tương ứng ở mục 3.** Đưa vào để lần sau khỏi
+> nghĩ lại, không phải để làm hết.
+>
+> Khác với I01–I26 ở design plan §11 (ý tưởng sản phẩm), bảng này là **ý tưởng thiết kế/trình
+> bày** — thứ bên design quyết được trong phạm vi đã giao.
+
+| ID | Ý tưởng | Giải quyết việc gì | Chi phí | Nên làm khi nào |
+|---|---|---|---|---|
+| DS01 | Bản tin thứ Hai "Chốt cuối tuần": những bài vừa chuyển thành *Không dự thi*, ai bị ảnh hưởng, đường sửa nếu có quyền | Chốt tự động mà không ai biết là chốt âm thầm | Thấp | Ngay sau PR-G |
+| DS02 | Đồng hồ đếm ngược nhẹ trong ô `-`: `Còn 2 ngày để sửa` — chỉ chữ, không tô đỏ | Người nhập biết mình còn cửa sửa | Rất thấp | Trong PR-G |
+| DS03 | Hoàn tác 10 giây cho nhập điểm, `-`, kết thúc phương án | Giảm sợ thao tác không đảo được | Trung bình | Sau PR-F |
+| DS04 | Hộp **"Cách đọc"** mỗi trang, thay các chân trang dài | §18 bỏ chân trang nhưng phần giải thích vẫn cần một nhà | Thấp | Trong PR-H |
+| DS05 | Quy ước URL thống nhất: route + tham số `phạm vi/tuần/đợt/kỹ năng`, Back giữ ngữ cảnh | Deep-link từ thông báo/badge/hành trình đang mỗi nơi một kiểu | Trung bình | Trước PR-I |
+| DS06 | Thẻ **"Việc tiếp theo"** chuẩn: động từ + người + hạn | Hiện đang hiện một ngày cũ trơ trọi (F11, ảnh hồ sơ) | Thấp | Trong PR-I |
+| DS07 | Cảnh báo trùng case **trước khi lưu**: gợi ý case đang mở cùng HV + cùng kỹ năng | Hai GV mở hai case cho một vấn đề | Trung bình | Sau PR-D |
+| DS08 | Nhãn **"Có hỗ trợ đồng thời"** ngay trên dòng PA | Rule book §11 cấm quy tiến bộ cho riêng một PA | Thấp | Trong PR-F |
+| DS09 | Trung tâm chất lượng dữ liệu: bốn danh sách — thiếu điểm · thiếu người phụ trách · thiếu nguyên nhân · thiếu kết quả, mỗi dòng một nút | Chỗ thiếu dữ liệu đang bị tô như chỗ ổn | Trung bình | Sau PR-F |
+| DS10 | Bản tóm tắt bàn giao học viên/lớp, người nhận xác nhận | Đổi lớp/đổi GV đang làm mất mạch theo dõi | Trung bình | Sau PR-I |
+| DS11 | Lưu chế độ xem cá nhân (bộ lọc đã đặt tên, chia sẻ bằng URL không vượt quyền) | GV lọc lại y hệt mỗi ngày | Trung bình | Sau DS05 |
+| DS12 | Chế độ họp tuần: một trang chỉ đọc, in/xuất được, đi từ số liệu → quyết định → giao việc | Dùng lại report/task đang có, không tạo bản ghi tuần trùng | Cao | Sau PR-F |
+| DS13 | Thư viện phương án theo vấn đề, có ghi **điều kiện áp dụng** và cỡ mẫu | GV tìm cách đã có người thử | Cao | Sau nền số ổn |
+| DS14 | Skeleton đúng hình dáng bảng thật, thay spinner giữa màn | Nhảy bố cục khi tải xong | Rất thấp | Trong PR-E |
+| DS15 | Script CI kiểm tương phản và cỡ chữ tối thiểu | "Chữ nhỏ mờ cho kết quả/hạn" là lỗi lặp lại | Thấp | Sau PR-E |
+| DS16 | Script quét chuỗi tiếng Việt hard-code ngoài bộ chữ | Biên tập một lần rồi lại trôi | Thấp | Cuối PR-H |
+| DS17 | Bắt buộc ảnh trước/sau cho mỗi PR có sửa UI, lưu ở `thiet-ke/anh/` | Nghiệm thu đang dựa vào "component đã có" | Rất thấp | Từ PR-E trở đi |
+| DS18 | Trang demo component nội bộ (đã đưa vào PR-E Step 9) | Không có nơi thử sáu trạng thái của một component | Thấp | PR-E |
+
+### 20.1. Ba ý tưởng bị loại, ghi lại để khỏi đề xuất lần nữa
+
+- **Điểm tổng hợp "chất lượng giáo viên".** Rule book §11 và D02 cấm xếp hạng bằng số SOS thô;
+  một con số gộp còn khó giải thích hơn. Muốn có rubric đánh giá GV thì phải chốt riêng.
+- **Risk score tổng hợp cho học viên.** Design plan §4.1 đã loại: không thêm điểm rủi ro khó
+  giải thích. Thứ tự ưu tiên công việc dùng tiêu chí hiển thị rõ, người dùng đổi được.
+- **Kanban/Gantt làm mặc định cho Công việc.** Bảng là mặc định; Kanban chỉ là tuỳ chọn *sau*
+  nếu thực tế có nhu cầu kéo việc (design plan §7.2).
+
+---
+
+## 21. Thứ tự merge và cách gỡ xung đột
+
+> Viết cho chủ sản phẩm — người **không đọc code**. Mục này trả lời đúng một câu: *"có hai
+> nhánh, kéo cái nào trước?"*
+
+### 21.1. Câu trả lời ngắn: PR-D TRƯỚC, luôn luôn
+
+**Merge PR-D vào `main` trước. Rồi mới tới nhánh batch.** Không bao giờ ngược lại.
+
+Lý do, nói bằng tiếng Việt thường: PR-D đang **gỡ bỏ và xếp lại** những khối giao diện cũ.
+Nhánh batch thì **thêm cái mới lên trên**. Nếu gỡ trước rồi mới thêm, cái mới được đặt lên một
+nền đã sạch — máy tự ghép được. Nếu thêm trước rồi mới gỡ, PR-D phải đi gỡ những khối vừa được
+thêm vào mà nó chưa từng thấy — chỗ nào cũng phải quyết định bằng tay.
+
+Cùng một lượng công việc, nhưng một thứ tự thì máy làm, thứ tự kia thì người làm.
+
+### 21.2. Trình tự đầy đủ
+
+| Bước | Việc | Lệnh |
+|---|---|---|
+| 1 | Session batch làm xong **chặng 1–3** (PR-E, PR-F, PR-G), commit sạch, `npm run check` xanh | — |
+| 2 | Session PR-D làm xong, đẩy nhánh lên, **mở PR và merge vào `main`** | — |
+| 3 | Kéo `main` mới về nhánh batch | `git fetch origin && git merge origin/main` |
+| 4 | Gỡ xung đột nếu có — xem 21.4 | — |
+| 5 | Chạy lại `npm run check`, bấm thử thật | mục 13.1 · 13.2 |
+| 6 | Làm tiếp **chặng 4–5** (PR-I, PR-H) trên nền đã có PR-D | — |
+| 7 | Mở PR cho nhánh batch, merge vào `main` | — |
+
+Bước 3 dùng **merge**, không dùng `rebase`. Nhánh batch lúc đó đã có ba chặng commit; rebase sẽ
+phát lại từng commit lên nền mới và bắt gỡ xung đột nhiều lần cho cùng một chỗ. Merge chỉ hỏi
+một lần.
+
+### 21.3. Nếu PR-D chưa xong mà chặng 1–3 đã xong
+
+Đây là tình huống dễ xảy ra nhất khi chủ sản phẩm đi vắng. **Đừng ngồi chờ, và cũng đừng lao
+vào sửa năm file kia.** Chọn một trong hai:
+
+**Cách A — khuyến nghị.** Mở PR cho chặng 1–3 ngay, merge vào `main`. PR-D sau đó kéo `main` về
+và tự gỡ phần của nó. Phần xung đột rơi vào session PR-D, là session **đang mở đúng những file
+đó** nên biết rõ nhất. Chặng 4–5 làm sau, ở một lượt riêng.
+
+**Cách B.** Nếu session PR-D đã dừng hẳn hoặc chưa làm được gì (`git branch -a | grep pr-d`
+không thấy nhánh nào trên `origin`), thì session batch làm luôn PR-D theo mục 11 như **chặng
+3.5**, rồi chạy tiếp chặng 4–5. Một nhánh làm tất, không còn xung đột nào cả.
+
+Chọn cách B thì báo cho session kia dừng trước, **đừng để hai nơi cùng sửa `SkillBoard.tsx`**.
+
+### 21.4. Bốn loại xung đột có thể gặp, và cách gỡ từng loại
+
+| File | Vì sao đụng nhau | Cách gỡ |
+|---|---|---|
+| `plan.md` | PR-D đánh dấu `- [x]` ở **mục 11**; batch sửa **mục 15–21** và thêm dòng vào **mục 14** | **Giữ cả hai bên.** Hai bên sửa hai mục khác nhau, không bên nào đè lên nội dung của bên kia. Xung đột chỉ vì hai đoạn nằm gần nhau |
+| `server/src/tests/run.ts` | Cả hai cùng **thêm phép kiểm vào cuối file** | **Giữ cả hai bên**, nối phép kiểm của batch xuống dưới phép kiểm của PR-D. Đã xảy ra đúng kiểu này ở lần hợp nhất PR-C (mục 14) — thuần cộng dồn |
+| `BAN_GIAO.md` | Cả hai cùng cập nhật trạng thái bàn giao | **Giữ bản của PR-D**, rồi thêm một đoạn mới cho batch. Đừng cố trộn hai câu thành một |
+| Năm file ở mục 0.5 | Chỉ xảy ra nếu chặng 1–3 lỡ chạm vào | **Giữ hoàn toàn bản của PR-D**, bỏ phần của batch, rồi làm lại thay đổi đó ở chặng 4. Tuyệt đối không cố ghép tay — PR-D đã xếp lại cấu trúc file, ghép tay sẽ ra một file không giống bên nào |
+
+Ba dòng đầu đều là **cộng dồn**: không có mâu thuẫn nghiệp vụ thật, chỉ là hai người cùng viết
+thêm vào một chỗ. Dòng cuối là loại duy nhất phải bỏ đi một bên — và nếu chặng 1–3 làm đúng mục
+0.5 thì nó sẽ không xảy ra.
+
+### 21.5. Dấu hiệu đã gỡ sai
+
+Sau khi gỡ xong, kiểm ba điều này trước khi commit:
+
+1. `npm run check` (mục 13.1) **xanh hết** — không phải "chỉ còn vài lỗi cũ".
+2. Mở tay hồ sơ học viên **Lê Quang Huy** (`/hoc-vien/3`): mỗi case đọc ở **một** khối, không có
+   khối lồng khối. Nếu thấy hai khối hiện cùng một case → đã giữ nhầm bản cũ của PR-D.
+3. `git diff origin/main --stat` xem có file nào **bị mất nội dung** không. Một file JSX đột ngột
+   ngắn đi vài trăm dòng là dấu hiệu gỡ xung đột đã bỏ mất một bên.
+
+Gỡ sai thì `git merge --abort` rồi làm lại — rẻ hơn nhiều so với đi tìm một khối giao diện biến
+mất sau khi đã commit.
+
+### 21.6. Không làm những việc này
+
+- **Không `git push --force`** lên nhánh PR-D. Đó là nhánh của session khác; ép đẩy là xoá việc
+  của họ.
+- **Không `rebase`** nhánh batch sau khi đã có ba chặng commit (lý do ở 21.2 bước 3).
+- **Không merge nhánh batch vào nhánh PR-D** để "cho nó có sẵn component mới". Làm vậy là đảo
+  ngược thứ tự ở 21.1 và kéo toàn bộ xung đột về đúng session đang bận nhất.
+- **Không gộp năm chặng thành một commit.** Hỏng ở chặng 4 thì không lùi lại được.
