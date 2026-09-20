@@ -183,7 +183,7 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
           <button className="btn" onClick={onClose} disabled={busy}>Đóng</button>
           <button className="btn btn-primary" onClick={commit}
             disabled={busy || !classId || willAdd === 0 || blocking > 0}>
-            {busy ? 'Đang lưu…' : `Thêm ${willAdd} học viên`}
+            {busy ? 'Đang lưu…' : willAdd > 0 ? `Thêm ${willAdd} học viên` : 'Thêm học viên'}
           </button>
         </>
       }
@@ -204,7 +204,7 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
               ))}
             </select>
             <span className="block text-[11px] text-slate-500 mt-1">
-              Cả lô này vào một lớp. Cột “Lớp” trong file dán sẽ bị bỏ qua.
+              Cột “Lớp” trong file dán sẽ bị bỏ qua.
             </span>
           </label>
           <label className="block">
@@ -213,8 +213,8 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
               onChange={(e) => { setStartWeek(e.target.value); setPreview(null); }} />
             <span className="block text-[11px] text-slate-500 mt-1">
               {pv?.defaultStartWeek
-                ? `Đang dùng tuần bắt đầu ${pv.defaultStartWeek}. Em nào vào muộn thì ghi đè ở cột cuối.`
-                : 'Bỏ trống thì lấy ngày bắt đầu của lớp. Em nào vào muộn thì ghi đè ở cột cuối.'}
+                ? `Đang dùng tuần bắt đầu ${pv.defaultStartWeek}. Có thể chọn tuần bắt đầu riêng cho từng học viên.`
+                : 'Bỏ trống thì lấy ngày bắt đầu của lớp. Có thể chọn tuần bắt đầu riêng cho từng học viên.'}
             </span>
           </label>
           {pv && (
@@ -280,7 +280,8 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
                 const rowPv = pv?.rows.find((x) => x.row === i + 1);
                 const skipped = skipRows.has(i + 1);
                 return (
-                  <tr key={i} className={skipped ? 'row-muted' : ''}>
+                  <tr key={i} className={skipped ? 'row-muted' : ''}
+                    data-needs-fix={!skipped && !!rowPv?.issues.some((x) => !isWarning(x.message)) ? 'true' : undefined}>
                     <td className="td text-xs text-slate-500">{i + 1}</td>
                     {cols.map((c) => {
                       const issue = rowPv?.issues.find((x) => x.field === c.key);
@@ -332,22 +333,16 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
             </button>
           )}
           {/*
-            * Còn dòng lỗi thì KHOÁ nút Thêm, để không có dòng nào âm thầm biến mất khỏi lô nhập.
-            * Nhưng phải gỡ được trong một lần bấm: dán 40 dòng mà 2 dòng sai thì không thể bắt
-            * người nhập tick tay từng dòng.
+            * Còn dòng cần sửa thì KHOÁ nút Thêm, để không có dòng nào âm thầm biến mất khỏi lô nhập. Nút này đưa
+            * người nhập tới dòng đầu tiên cần sửa — KHÔNG bỏ qua hàng loạt (bộ chữ: bỏ nút "Bỏ qua N dòng"). Muốn bỏ
+            * một dòng thì tick ô "Bỏ qua dòng" của đúng dòng đó.
             */}
           {pv && (blocking > 0 ? (
             <button
               className="btn btn-sm"
-              onClick={() => setSkipRows((s) => {
-                const next = new Set(s);
-                pv.rows.forEach((r) => {
-                  if (r.issues.some((i) => !isWarning(i.message))) next.add(r.row);
-                });
-                return next;
-              })}
+              onClick={() => document.querySelector('[data-needs-fix="true"]')?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
             >
-              Bỏ qua {blocking} dòng lỗi
+              Xem {blocking} dòng cần sửa
             </button>
           ) : (
             <Outcome tone="ok" mark="✓">Không còn lỗi chặn</Outcome>

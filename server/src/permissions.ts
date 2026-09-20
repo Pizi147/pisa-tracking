@@ -1,5 +1,5 @@
 import { db } from './db.ts';
-import { PERMISSIONS, type WorkScope } from '../../shared/domain/index.ts';
+import { C02_GVCN_XU_LY_CASE_TRAI_MON, PERMISSIONS, type WorkScope } from '../../shared/domain/index.ts';
 import { demoToday } from './demoConfig.ts';
 import { forbidden } from './util.ts';
 
@@ -223,13 +223,17 @@ function teacherAllows(p: Principal, permission: string, ctx: Ctx): boolean {
      *   Học thuật (ctx.skill có giá trị)  → đúng kỹ năng mình dạy (`hasAssignment(..., 'skill')`)
      *   Ý thức (ctx.skill rỗng)           → chỉ GVCN (`hasAssignment(..., 'core')`)
      *
-     * GVCN luôn qua được ở cả hai nhánh (dạy kỹ năng nào cũng là GVCN của lớp), nên viết một
-     * điều kiện OR duy nhất là đủ, không cần biết trước đang ở nhánh nào. `hasAssignment`
+     * C02: GVCN cũng chỉ qua được nhánh Học thuật ở đúng kỹ năng mình dạy (trước đây GVCN qua cả hai nhánh). `hasAssignment`
      * với `need='skill'` đã tự trả `false` khi `ctx.skill` rỗng — nên thiếu truyền `ctx.skill`
      * ở nơi gọi là KHOÁ HẾT chứ không phải MỞ HẾT; nơi gọi phải truyền đúng.
      */
     case PERMISSIONS.SOS_EDIT:
-      return ctx.anyScope === true || hasAssignment(p, ctx, 'core') || hasAssignment(p, ctx, 'skill');
+      if (ctx.anyScope === true) return true;
+      /* C02 (đã chốt 20/09/2026): GVCN KHÔNG xử lý case học thuật trái môn — chỉ đúng kỹ năng mình dạy. */
+      if (C02_GVCN_XU_LY_CASE_TRAI_MON === ('gvcn-ca-lop' as string)) {
+        return hasAssignment(p, ctx, 'core') || hasAssignment(p, ctx, 'skill');
+      }
+      return ctx.skill ? hasAssignment(p, ctx, 'skill') : hasAssignment(p, ctx, 'core');
 
     /*
      * SỬA HỒ SƠ HỌC VIÊN: CHỈ GVCN, và chỉ học viên của chính lớp mình chủ nhiệm.

@@ -147,11 +147,12 @@ export function TransitionPanel({ classId, open, onClose, onDone }: {
                   </select>
                 </label>
               </div>
-              <label className="block">
+              {/* Không dùng <label>: nhãn bọc nhiều nút thì bấm vào chữ sẽ bấm nút đầu tiên — "Tuần trước". */}
+              <div className="block">
                 <span className="label">Tuần khai giảng lớp mới</span>
                 <WeekPicker periodId={startPeriod} label={null} scope="planning" clearable
-                  onPeriod={(id) => setStartPeriod(id)} className="w-full" />
-              </label>
+                  onPeriod={(id) => setStartPeriod(id)} />
+              </div>
             </div>
           )}
 

@@ -12,7 +12,7 @@ import { ClassRoster } from './ClassRoster.tsx';
 import { MockPlanPanel } from '../fasttrack/MockPlanPanel.tsx';
 import { MissingBadge } from './MissingBadge.tsx';
 import {
-  PERMISSIONS, STUDENT_FILTERS, WORK_SCOPES, WORK_SCOPE_HINT, WORK_SCOPE_LABEL, skillShort,
+  PERMISSIONS, STUDENT_FILTERS, WORK_SCOPES, WORK_SCOPE_HINT, WORK_SCOPE_LABEL, needScoresText, skillShort,
   type StudentFilterKey, type WorkScope,
 } from '@shared/domain/index.ts';
 
@@ -21,6 +21,8 @@ export type ClassSummary = {
   branchId: number; branchCode: string; branchName: string;
   startDate: string | null;
   studentCount: number; needScores: number; openCases: number;
+  /** `needScores` đang đếm của ai — badge nói đúng điều đó. */
+  workScope: WorkScope;
   /** `ratio` = lớp Normal chấm theo điểm đạt/tổng điểm; `ielts_band` = lớp Fast Track. */
   scoringMode: string | null;
   programmeName: string | null;
@@ -116,9 +118,6 @@ export default function StudentsPage() {
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-lg font-semibold text-slate-100">Học viên</h1>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Lớp là gốc. Mở một lớp để xem học viên và tiến độ; tìm theo tên học viên cũng ra đúng lớp chứa em đó.
-          </p>
         </div>
         <div className="flex flex-wrap items-end gap-2">
           <label className="block">
@@ -247,10 +246,6 @@ export default function StudentsPage() {
               )}
             </Card>
           )}
-          <SectionNote>
-            Badge chỉ xuất hiện khi có việc cần làm. “Case SOS” đếm <strong>case</strong>, không phải học viên —
-            một em có thể có nhiều case. Bấm badge để mở đúng những bản ghi tạo nên con số đó.
-          </SectionNote>
         </>
       )}
 
@@ -377,13 +372,14 @@ function ClassRow({ cls, scope, expanded, studentQuery, onToggle, onAddStudents 
           <MissingBadge items={cls.missing.filter((m) => m.key !== 'teachers')} />
           {cls.needScores > 0 && (
             <Task tone="warn" as="button"
-              title={scope ? WORK_SCOPE_HINT[scope] : 'Số bài cần chấm trong phạm vi đang xem — bấm nút phạm vi ở trên để đổi.'}
+              title={`${WORK_SCOPE_HINT[scope ?? cls.workScope]} Bấm để mở đúng những bài tạo nên con số này.`}
               onClick={go(`/hoc-vien?view=my_scores&classId=${cls.id}${scope ? `&scope=${scope}` : ''}`)}>
-              {cls.needScores} bài cần chấm
+              {needScoresText(scope ?? cls.workScope, cls.needScores)}
             </Task>
           )}
           {cls.openCases > 0 && (
-            <Task tone="danger" as="button" onClick={go(`/hoc-vien?view=sos&classId=${cls.id}`)}>
+            <Task tone="danger" as="button" title="Số case đang mở, không phải số học viên — một học viên có thể có nhiều case."
+              onClick={go(`/hoc-vien?view=sos&classId=${cls.id}`)}>
               {cls.openCases} case SOS
             </Task>
           )}
@@ -451,7 +447,7 @@ function WorkQueue({ view, branchId, q, scope }: {
                 <th className="th">Học viên</th>
                 <th className="th">Lớp</th>
                 <Th hint="Lượt đánh giá đang cần bạn xử lý.">Bài</Th>
-                <Th hint="Tuần kế hoạch của lượt đó. Chưa có tuần thì cũng chưa có hạn nhập điểm.">Tuần</Th>
+                <Th hint="Tuần kế hoạch của đợt Test. Chưa có tuần thì cũng chưa có hạn nhập điểm.">Tuần</Th>
                 {view === 'my_scores' && (
                   <Th hint="Tuần thi của CHÍNH môn còn thiếu điểm — có thể khác tuần của cả lượt.">Nợ từ tuần</Th>
                 )}

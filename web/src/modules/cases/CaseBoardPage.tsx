@@ -224,7 +224,7 @@ export function CaseBoard({ embedded = false }: { embedded?: boolean } = {}) {
         </div>
         {can(PERMISSIONS.MEETING_EDIT) && mode === 'place' && (
           <div className="flex flex-wrap items-end gap-2">
-            <WeekPicker periodId={taskPeriod} onPeriod={setTaskPeriod} label="Tuần giao việc" className="w-44" />
+            <WeekPicker periodId={taskPeriod} onPeriod={setTaskPeriod} label="Tuần giao việc" />
             <ManagerTasks periodId={taskPeriod} />
           </div>
         )}
@@ -403,7 +403,7 @@ export function CaseBoard({ embedded = false }: { embedded?: boolean } = {}) {
                     <Th hint="Hạng mục của case, và nhận định nguyên nhân nếu đã có người dạy phân loại.">Kỹ năng · nguyên nhân</Th>
                     <Th hint="Case sinh từ kết quả một bài đánh giá, do giáo viên ghi nhận, hay do Quản lý giao.">Nguồn</Th>
                     <Th hint="Số phương án đã ghi cho case này, và phương án đang chạy.">Đã làm</Th>
-                    <Th hint="Ba trạng thái loại trừ nhau: chưa có phương án · đang xử lý · đã hoàn thành. Mức SOS và mức gấp đứng riêng.">Tình trạng</Th>
+                    <Th hint="Ba trạng thái loại trừ nhau: chưa có phương án · đang xử lý · đã hoàn thành. Mức SOS và mức độ ưu tiên đứng riêng.">Tình trạng</Th>
                   </tr>
                 </thead>
                 <tbody>
@@ -478,8 +478,8 @@ export function CaseBoard({ embedded = false }: { embedded?: boolean } = {}) {
       */}
       {mode === 'place' && can(PERMISSIONS.MEETING_EDIT) && <ManagerTaskList periodId={taskPeriod} />}
 
-      <Drawer open={openCase !== null} onClose={() => setOpenCase(null)} title="Vấn đề - Case"
-        footer={openCase !== null ? <Link className="btn" to={`/hoc-thuat/case/${openCase}`}>Mở trang riêng</Link> : null}>
+      {/* Không có nút mở trang riêng: route `/hoc-thuat/case/:id` vẫn còn cho link sâu từ thông báo. */}
+      <Drawer open={openCase !== null} onClose={() => setOpenCase(null)} title="Vấn đề - Case">
         {openCase !== null && <CasePanel caseId={openCase} />}
       </Drawer>
     </div>

@@ -412,15 +412,15 @@ export function QuickReport({
               </div>
             </Field>
 
-            <Field label="Đã làm gì" required hint="Mỗi dòng một việc: tên việc, người làm, từ ngày → đến ngày.">
+            <Field label="Phương án đã áp dụng" required hint="Mỗi dòng một phương án: tên phương án, người thực hiện, từ ngày → đến ngày.">
               <div className="space-y-2">
                 {bfActions.map((a, i) => (
                   <div key={i} className="surface-2 rounded-lg p-2 space-y-1.5">
-                    <input className="field" placeholder="Đã làm gì (ví dụ: tutor Listening mỗi tuần)"
+                    <input className="field" placeholder="Phương án đã áp dụng (ví dụ: tutor Listening mỗi tuần)"
                       value={a.description}
                       onChange={(e) => setBfActions(bfActions.map((x, j) => j === i ? { ...x, description: e.target.value } : x))} />
                     <div className="flex items-center gap-2 flex-wrap">
-                      <input className="field max-w-[10rem]" placeholder="Người làm"
+                      <input className="field max-w-[10rem]" placeholder="Người thực hiện"
                         value={a.performerName}
                         onChange={(e) => setBfActions(bfActions.map((x, j) => j === i ? { ...x, performerName: e.target.value } : x))} />
                       <input type="date" className="field max-w-[9rem]" value={a.fromDate}
@@ -439,7 +439,7 @@ export function QuickReport({
                 ))}
                 <button type="button" className="btn btn-sm btn-ghost"
                   onClick={() => setBfActions([...bfActions, { description: '', performerName: '', fromDate: '', toDate: '' }])}>
-                  + thêm dòng
+                  + Thêm phương án
                 </button>
               </div>
             </Field>

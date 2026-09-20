@@ -1,3 +1,4 @@
+import { Suspense, lazy } from 'react';
 import { NavLink, Navigate, Route, Routes, useLocation, useParams, useSearchParams } from 'react-router-dom';
 import { useSession } from './lib/session.tsx';
 import { DemoBar } from './modules/platform/DemoBar.tsx';
@@ -17,6 +18,13 @@ import MgmtTasksPage from './modules/worklist/MgmtTasksPage.tsx';
 import AdminPage from './modules/platform/AdminPage.tsx';
 import ProfilePage from './modules/platform/ProfilePage.tsx';
 import WelcomePage from './modules/platform/WelcomePage.tsx';
+
+/**
+ * Trang thử thành phần dùng chung (PR-E Step 9) — CHỈ có khi chạy `npm run dev`. Điều kiện đứng
+ * ngay ở chỗ `import()`: bản dựng thật thay `import.meta.env.DEV` bằng `false` nên trang này
+ * không lọt vào gói gửi cho người dùng.
+ */
+const ThanhPhanDemo = import.meta.env.DEV ? lazy(() => import('./modules/dev/ThanhPhanDemo.tsx')) : null;
 
 /**
  * HAI MỤC, KHÔNG HƠN.
@@ -142,6 +150,10 @@ export default function App() {
           <Route path="/quan-tri"
             element={nav.admin ? <AdminPage /> : <Navigate to="/" replace />} />
           <Route path="/ho-so-ca-nhan" element={<ProfilePage />} />
+          {ThanhPhanDemo && (
+            <Route path="/dev/thanh-phan"
+              element={<Suspense fallback={<Skeleton rows={6} />}><ThanhPhanDemo /></Suspense>} />
+          )}
           {/* Đường dẫn cũ vẫn mở được để link đã lưu không gãy. */}
           <Route path="/mock-test" element={<Navigate to="/hoc-vien" replace />} />
           <Route path="/mock-test/lop/:classId" element={<LegacySheetRedirect />} />

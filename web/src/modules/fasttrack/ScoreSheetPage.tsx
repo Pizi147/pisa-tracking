@@ -3,11 +3,12 @@ import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { Card, Empty, ErrorState, Level, SectionNote, Skeleton, Status, Th} from '../../ui/ui.tsx';
 import { useCurrentPeriod, WeekPicker } from '../../ui/Filters.tsx';
+import { SaveIndicator } from '../../ui/SaveState.tsx';
 import { CriteriaButton, DeadlinePill, RawScoreInput, useSaveScore, type Cell } from './ScoreEntry.tsx';
 import {
   attemptStatusLabel, attemptStatusTone, fmtBand, skillShort, sosLabel, sosTone,
 } from '../../lib/format.ts';
-import { ENTRY_SKILLS } from '@shared/domain/index.ts';
+import { ENTRY_SKILLS, NO_SHOW_HINT } from '@shared/domain/index.ts';
 
 type Sheet = {
   classId: number; classCode: string; branchName: string;
@@ -81,7 +82,7 @@ export default function ScoreSheetPage() {
             {data && ` · Bạn được nhập: ${data.editableSkills.length ? data.editableSkills.map(skillShort).join(', ') : 'không kỹ năng nào'}`}
           </p>
         </div>
-        <WeekPicker periodId={periodId} onPeriod={onPeriod} label="Tuần" className="w-56" />
+        <WeekPicker periodId={periodId} onPeriod={onPeriod} label="Tuần" />
       </div>
 
       {loading && <Skeleton rows={8} />}
@@ -131,7 +132,9 @@ export default function ScoreSheetPage() {
       )}
 
       <SectionNote>
-        Ô để trống nghĩa là chưa nhập, không phải điểm 0. Chỉ những kỹ năng bạn được phân công mới sửa được;
+        Ô để trống nghĩa là chưa nhập, không phải điểm 0. <strong>{NO_SHOW_HINT}</strong> — sửa lại được đến hết
+        Chủ nhật của tuần thi; còn nguyên khi hết Chủ nhật thì thành <strong>Không dự thi</strong>. Bàn phím: <strong>Tab</strong> sang
+        ô kế, <strong>Enter</strong> xuống dòng, <strong>Esc</strong> huỷ ô đang sửa. Chỉ những kỹ năng bạn được phân công mới sửa được;
         các kỹ năng khác vẫn đọc được để đối chiếu. <strong>Mỗi kỹ năng có tuần thi và hạn chấm riêng</strong> —
         cột Hạn nhập chỉ ra môn đang đến hạn sớm nhất; mở một em ra để xem lịch đầy đủ của từng môn.
         Môn chưa đến tuần thi thì chưa nợ điểm. Kỹ năng ngoài phạm vi yêu cầu hiện mờ và không bị tính thiếu điểm.
@@ -148,9 +151,24 @@ export default function ScoreSheetPage() {
  * nhất đó áp cho cả năm ô điểm bên cạnh.
  */
 function DeadlineSummary({ cells }: { cells: Cell[] }) {
-  const owing = cells.filter((c) => c.required && c.band === null && c.deadline
+  /* Bài đã báo "-" không nợ điểm: nó có mốc chốt Chủ nhật riêng, hiện CẠNH hạn nhập điểm nhưng khác tên (§17.1). */
+  const owing = cells.filter((c) => c.required && c.band === null && c.deadline && !c.noShow
     && c.progress !== 'cancelled' && c.progress !== 'absent');
-  if (!owing.length) return <DeadlinePill cell={cells.find((c) => c.required) ?? cells[0]} />;
+  const noShows = cells.filter((c) => c.required && c.noShow);
+  const noShowLines = noShows.map((c) => (
+    <span key={c.skill} className="text-[10px] text-slate-400 leading-tight">
+      {skillShort(c.skill)}: {c.noShow!.text}
+    </span>
+  ));
+  if (!owing.length) {
+    const first = cells.find((c) => c.required && !c.noShow);
+    return (
+      <div className="flex flex-col items-start gap-0.5">
+        {first ? <DeadlinePill cell={first} /> : null}
+        {noShowLines}
+      </div>
+    );
+  }
 
   const soonest = owing.reduce((a, b) => (a.deadline! <= b.deadline! ? a : b));
   const weeks = new Set(cells.filter((c) => c.required && c.periodCode).map((c) => c.periodCode));
@@ -162,6 +180,7 @@ function DeadlineSummary({ cells }: { cells: Cell[] }) {
           {skillShort(soonest.skill)} · đợt này thi {weeks.size} tuần
         </span>
       )}
+      {noShowLines}
     </div>
   );
 }
@@ -173,7 +192,7 @@ function SheetRow({ row, rowIndex, rawSkills, critSkills, onReload, register, on
   register: (col: number, el: HTMLInputElement | null) => void;
   onMove: (row: number, col: number, dr: number, dc: number) => void;
 }) {
-  const { save } = useSaveScore(row.attemptId, onReload);
+  const { save, status, lastError, retry } = useSaveScore(row.attemptId, onReload);
   const cellOf = (skill: string) => row.cells.find((c) => c.skill === skill);
 
   return (
@@ -181,6 +200,8 @@ function SheetRow({ row, rowIndex, rawSkills, critSkills, onReload, register, on
       <td className="td sticky-col">
         <Link className="link" to={`/mock-test/${row.attemptId}`}>{row.studentName}</Link>
         <div className="text-[11px] text-slate-500">{row.studentCode}</div>
+        {/* Trạng thái lưu RIÊNG TỪNG DÒNG — lỗi nói rõ ở dòng nào, có nút Thử lại. */}
+        <div className="mt-0.5"><SaveIndicator status={status} error={lastError} onRetry={retry} /></div>
       </td>
       <td className="td tabular-nums whitespace-nowrap">MT{row.attemptNo}</td>
       <td className="td whitespace-nowrap text-xs text-slate-400">

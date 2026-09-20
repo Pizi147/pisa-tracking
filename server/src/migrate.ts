@@ -405,6 +405,7 @@ function migrateCaseEngine(applied: string[], skipped: string[]) {
     migrateSkillSchedule(conn, applied);
     migrateSignals(conn, applied);
     migrateCaseForm(conn, applied);
+    migrateNoShowMarks(conn, applied);
     migratePlanForm(conn, applied);
     migrateMoveRequests(conn, applied);
     migrateEntryBands(conn, applied);
@@ -2398,6 +2399,35 @@ function migratePlanForm(conn: any, applied: string[]) {
       `CẦN RÀ LẠI — ${blank} đề xuất lùi lịch thi chưa nói rõ lùi cái gì (kế hoạch thi thật `
         + 'hay một phần thi trong đợt MT). Bước nâng cấp KHÔNG đoán: người đề xuất chọn lại '
         + 'khi mở đề xuất lần tới.',
+    );
+  }
+}
+
+/**
+ * DẤU '-' "KHÔNG CÓ BÀI" Ở Ô ĐIỂM (PR-G, rule book §17.1): năm cột trên `assessment_scores`.
+ *
+ * Chỉ THÊM CỘT, không suy ra gì từ dữ liệu cũ: chưa có ô nào từng mang dấu '-' nên không có gì để điền,
+ * và không có lần vắng nào được sinh ngược. Idempotent — chạy lại không làm gì.
+ */
+function migrateNoShowMarks(conn: any, applied: string[]) {
+  const cols = (t: string) => (conn.prepare(`PRAGMA table_info(${t})`).all() as any[]).map((c: any) => c.name);
+  if (!(conn.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name = 'assessment_scores'").get())) return;
+  const have = cols('assessment_scores');
+  const add: [string, string][] = [
+    ['no_show_period_id', 'INTEGER REFERENCES report_periods(id)'],
+    ['no_show_by', 'INTEGER REFERENCES users(id)'],
+    ['no_show_at', 'TEXT'],
+    ['no_show_late', 'INTEGER NOT NULL DEFAULT 0'],
+    ['no_show_settled_at', 'TEXT'],
+  ];
+  let n = 0;
+  for (const [col, decl] of add) {
+    if (!have.includes(col)) { conn.exec(`ALTER TABLE assessment_scores ADD COLUMN ${col} ${decl}`); n += 1; }
+  }
+  if (n) {
+    applied.push(
+      `Thêm chỗ ghi dấu '-' "không có bài" ở ô điểm (rule book §17.1): ${n} cột trên assessment_scores. `
+        + 'Không có ô cũ nào mang dấu này nên không có gì được điền hoặc suy ngược.',
     );
   }
 }

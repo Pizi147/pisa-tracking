@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Alert, Card, Empty, Info, Level, Status, Task } from '../../ui/ui.tsx';
 import { fmtDate } from '../../lib/format.ts';
+import { WORK_SCOPE_LABEL } from '@shared/domain/index.ts';
 
 export type WorkItem = {
   key: string; group: string; urgency: 'overdue' | 'today' | 'normal';
@@ -40,7 +41,7 @@ const PAGE = 12;
  *
  *   HẠN     Tất cả · Quá hạn · Đến hạn · Chờ duyệt
  *   LOẠI    theo nhóm việc, kèm số đếm — bấm số trên dải tóm tắt là lọc đúng nhóm đó
- *   CỦA AI  Việc của tôi · Cả phạm vi quản lý (chỉ hiện khi người xem quản nhiều hơn mình)
+ *   NGƯỜI PHỤ TRÁCH  ô chọn Tôi · Tất cả trong phạm vi (chỉ hiện khi người xem quản nhiều hơn mình)
  *
  * MỘT DÒNG NĂM Ô: học viên hoặc lớp · việc cần làm · người phụ trách · hạn · trạng thái.
  * Trước đây ba ô sau nằm lẫn trong một câu văn, nên không lọc và không quét bằng mắt được.
@@ -105,12 +106,14 @@ export function WorkList({ data, defaultGroup, onGroup }: {
         </span>
       }
       action={hasOthers ? (
-        <div className="flex flex-wrap gap-1">
-          <button className={`btn btn-sm ${onlyMine ? 'btn-primary' : ''}`}
-            onClick={() => reset(setOnlyMine)(true)}>Việc của tôi</button>
-          <button className={`btn btn-sm ${!onlyMine ? 'btn-primary' : ''}`}
-            onClick={() => reset(setOnlyMine)(false)}>Cả phạm vi quản lý</button>
-        </div>
+        <label className="flex items-center gap-2 text-xs text-slate-400">
+          Người phụ trách
+          <select className="field" value={onlyMine ? 'mine' : 'managed'}
+            onChange={(e) => reset(setOnlyMine)(e.target.value === 'mine')}>
+            <option value="mine">{WORK_SCOPE_LABEL.mine}</option>
+            <option value="managed">{WORK_SCOPE_LABEL.managed}</option>
+          </select>
+        </label>
       ) : undefined}
       bodyClass="p-0"
     >
@@ -155,7 +158,7 @@ export function WorkList({ data, defaultGroup, onGroup }: {
           <Empty
             title="Không có việc nào khớp bộ lọc"
             hint={onlyMine && data.summary.total > data.summary.mine
-              ? 'Thử "Cả phạm vi quản lý" — còn việc của người khác trong phạm vi bạn quản.'
+              ? `Chọn "${WORK_SCOPE_LABEL.managed}" — còn việc của người khác trong phạm vi bạn quản.`
               : undefined}
           />
         </div>

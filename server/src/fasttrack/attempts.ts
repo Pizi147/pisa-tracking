@@ -1,8 +1,8 @@
 import { db, tx } from '../db.ts';
 import {
-  ASSESSED_SKILLS, ASSESSED_SKILL_LABEL, ENTRY_SKILLS, MOCK_FT_STUDY_WEEK, PERMISSIONS,
-  SIGNAL_WITHDRAW_SCORE_FIXED, awaitingScore, pendingSkillsOf,
-  type AssessedSkill, type EntrySkill, type PendingCell, type SkillProgress, type WorkScope,
+  ASSESSED_SKILLS, ASSESSED_SKILL_LABEL, C10_NHAP_DAU_TRU_TUAN_QUA_KHU, ENTRY_SKILLS, ENTRY_SKILL_LABEL, MOCK_FT_STUDY_WEEK, PERMISSIONS,
+  SIGNAL_WITHDRAW_SCORE_FIXED, awaitingScore, noShowStateOf, noShowText, pendingSkillsOf,
+  type AssessedSkill, type EntrySkill, type NoShowState, type PendingCell, type SkillProgress, type WorkScope,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { badRequest, isIsoDate, notFound, nowIso } from '../util.ts';
@@ -21,7 +21,7 @@ import {
   setSkillScope, setSkillWeek, skillScheduleOf, skippedSkillsOf, viewSkill,
   type SkillRow, type SkillScheduleView,
 } from './skillSchedule.ts';
-import { pendingMove } from './absence.ts';
+import { canRequest as canRequestAbsence, flagLateNoShow, pendingMove, settleNoShows } from './absence.ts';
 import { raiseSignalsForResult, stepsFor } from '../cases/sos.ts';
 import {
   caseHasIndependentBasis, retireCaseForCorrectedScore, withdrawSignalsNoLongerValid,
@@ -36,6 +36,9 @@ export type ScoreRow = {
   band: number | null; result_date: string | null; note: string | null;
   entered_by: number | null; entered_at: string | null;
   entered_by_name?: string | null;
+  /** Dấu '-' "không có bài" (PR-G) — tuần lịch lúc báo, người báo, lúc báo, báo muộn (C10), đã chốt chưa. */
+  no_show_period_id?: number | null; no_show_by?: number | null; no_show_at?: string | null;
+  no_show_late?: number | null; no_show_settled_at?: string | null;
 };
 
 export function scoresOf(attemptId: number): ScoreRow[] {
@@ -203,6 +206,17 @@ export type SkillCell = {
   weekStart: string | null;
   weekRange: string | null;
   sitStatus: string;
+  /**
+   * DẤU '-' CỦA Ô NÀY (PR-G) — `null` khi không có dấu nào còn hiệu lực. Trạng thái là HÀM THUẦN theo
+   * (dấu, tuần của bài, ngày nghiệp vụ) chứ không phải thứ được cập nhật bởi một tác vụ nền.
+   */
+  noShow: {
+    state: Exclude<NoShowState, 'none'>;
+    /** Câu hiển thị: "Không có bài · Có thể sửa đến hết Chủ nhật 20/09", "Không dự thi · Tuần W3 SEP 2026", … */
+    text: string;
+    effectiveOn: string | null;
+    editableUntil: string | null;
+  } | null;
 };
 
 /** Đưa ô điểm về đúng hình dạng mà luật đếm dùng chung cần. */
@@ -213,6 +227,8 @@ export function pendingInputOf(cells: SkillCell[]): PendingCell[] {
     scored: c.band !== null,
     progress: c.progress,
     mine: c.mine,
+    /* Bài đã báo "không có bài" không phải bài cần chấm. */
+    noShow: c.noShow !== null,
   }));
 }
 
@@ -268,6 +284,47 @@ export function skillCells(
       : view.progress === 'scored' ? 'due'
       : view.progress;
 
+    /*
+     * DẤU '-' CỦA Ô NÀY (PR-G). Một ô "có điểm" gồm cả điểm số câu đúng lẫn band: raw_score của L/R
+     * cũng là điểm thật, nên không dùng riêng `band`.
+     */
+    const hasScore = cellScored || (row?.raw_score ?? null) !== null;
+    let ns = noShowStateOf({
+      marked: !!row?.no_show_period_id,
+      hasScore,
+      sameWeek: !!row?.no_show_period_id && row.no_show_period_id === view.periodId,
+      weekEnd: view.weekEnd,
+      today,
+      enteredAfterWeekEnd: !!row?.no_show_late,
+      lateRule: C10_NHAP_DAU_TRU_TUAN_QUA_KHU,
+    });
+    /*
+     * CHƯA CHỐT MÀ ĐÃ QUÁ CHỦ NHẬT: hàm thuần trả "không dự thi", nhưng việc chốt còn có điều kiện mà hàm thuần không biết —
+     * buổi vẫn phải `scheduled` và MỌI ô nhập của buổi đó đều là '-' (Writing: W1 "-" mà W2 có điểm thì buổi có người làm).
+     * Không đủ điều kiện thì `settleNoShows` sẽ không chốt, nên ô cũng KHÔNG được tự nhận "Không dự thi" (và bị khoá).
+     */
+    if (!row?.no_show_settled_at && ns.state === 'khong-du-thi') {
+      const partnersMarked = entrySkillsOf(assessed).filter((k) => k !== skill).every((k) => {
+        const o = rows.find((r) => r.skill === k);
+        return !!o?.no_show_period_id && o.no_show_period_id === view.periodId
+          && (o.band ?? null) === null && (o.raw_score ?? null) === null;
+      });
+      if (!(view.sitStatus === 'scheduled' && partnersMarked)) ns = { state: 'none', effectiveOn: null, editableUntil: null };
+    }
+    if (row?.no_show_settled_at && ns.state !== 'none') {
+      /*
+       * ĐÃ CHỐT MỘT LẦN. Từ đó hiển thị theo trạng thái thi HIỆN TẠI: còn `absent` thì là không dự thi;
+       * Quản lý đã sửa trạng thái thi (đảo kết luận) thì dấu '-' cũ không được tự sống lại.
+       */
+      ns = view.sitStatus === 'absent'
+        ? { state: 'khong-du-thi', effectiveOn: view.weekEnd ? view.weekEnd.slice(0, 10) : null, editableUntil: null }
+        : { state: 'none', effectiveOn: null, editableUntil: null };
+    }
+    const noShow = ns.state === 'none' ? null : {
+      state: ns.state, text: noShowText(ns, view.periodCode, today) ?? '',
+      effectiveOn: ns.effectiveOn, editableUntil: ns.editableUntil,
+    };
+
     return {
       skill,
       assessedSkill: assessed,
@@ -283,7 +340,9 @@ export function skillCells(
       /* Quá hạn tính trên Ô NÀY: W2 còn trống thì W2 quá hạn, W1 đã nộp thì không. */
       overdue: required && !cellScored && !!view.deadline && !!view.weekStart
         && view.weekStart <= today && view.deadline < today
-        && progress !== 'absent' && progress !== 'cancelled',
+        && progress !== 'absent' && progress !== 'cancelled'
+        /* Đã báo "không có bài" thì không nợ điểm ở ô này — hạn nhập điểm chỉ áp cho bài CÓ thực hiện. */
+        && noShow === null,
       progress,
       canEdit: required && !cancelled && view.sitStatus !== 'cancelled' && editable.includes(skill),
       /*
@@ -296,6 +355,7 @@ export function skillCells(
       weekStart: view.weekStart,
       weekRange: view.weekRange,
       sitStatus: view.sitStatus,
+      noShow,
     };
   });
 }
@@ -609,10 +669,11 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
        * đã xác nhận đã thi nhưng chưa chấm. Môn thi tuần sau KHÔNG tính là nợ.
        */
       myPendingSkills: cells
-        .filter((c) => c.mine && c.band === null && awaitingScore(c.progress))
+        .filter((c) => c.mine && c.band === null && awaitingScore(c.progress) && !c.noShow)
         .map((c) => c.skill),
+      /* Bài đã báo "-" không còn là việc phải chấm — cùng luật với `pendingSkillsOf`, không hai luật đếm. */
       myPendingDetail: cells
-        .filter((c) => c.mine && c.band === null && awaitingScore(c.progress))
+        .filter((c) => c.mine && c.band === null && awaitingScore(c.progress) && !c.noShow)
         .map((c) => ({ skill: c.skill, deadline: c.deadline, weekCode: c.periodCode })),
       /* Tập bài cần chấm THEO PHẠM VI ĐANG XEM — cùng hàm với badge ở danh sách lớp. */
       pendingSkills: pending,
@@ -651,7 +712,52 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
 
 // ---------------------------------------------------------------- chi tiết
 
+/** Một dòng chữ mô tả một ô điểm, để "trước → sau" trong lịch sử đọc được mà không cần biết bảng dữ liệu. */
+export function scoreSummaryText(row: Partial<ScoreRow> | null | undefined): string {
+  if (!row) return 'Chưa có';
+  const band = row.band !== null && row.band !== undefined ? ` · Band ${Number(row.band).toFixed(1)}` : '';
+  if (row.raw_score !== null && row.raw_score !== undefined) return `${row.raw_score} câu đúng${band}`;
+  const crit = [row.c1, row.c2, row.c3, row.c4];
+  if (crit.some((v) => v !== null && v !== undefined)) {
+    return `Tiêu chí ${crit.map((v) => (v === null || v === undefined ? '–' : v)).join(' / ')}${band}`;
+  }
+  if (row.no_show_period_id) return 'Báo "-" (không có bài)';
+  return 'Trống';
+}
+
+/**
+ * LỊCH SỬ ĐIỂM của một lượt: ai sửa, trước → sau, lúc nào (PR-I Step 9). Đọc từ nhật ký `score.*` — điểm không có
+ * bảng lịch sử riêng như lịch. Ô điểm chỉ giữ NGƯỜI NHẬP hiện tại; câu "ai đã sửa gì" nằm ở đây.
+ */
+export function scoreHistoryOf(attemptId: number) {
+  const rows = db()
+    .prepare(
+      `SELECT l.id, l.action, l.entity_label, l.before_json, l.after_json, l.created_at, u.full_name AS actor_name
+         FROM audit_logs l LEFT JOIN users u ON u.id = l.actor_user_id
+        WHERE l.entity_type = 'assessment_attempt' AND l.entity_id = ?
+          AND l.action IN ('score.edit', 'score.override', 'score.no_show', 'score.no_show_cleared')
+        ORDER BY l.id DESC`,
+    )
+    .all(attemptId) as any[];
+  return rows.map((l) => {
+    const before = l.before_json ? JSON.parse(l.before_json) : null;
+    const after = l.after_json ? JSON.parse(l.after_json) : null;
+    const afterText = l.action === 'score.no_show' ? 'Báo "-" (không có bài)'
+      : l.action === 'score.no_show_cleared' ? 'Gỡ dấu "-"'
+      : scoreSummaryText(after);
+    return {
+      id: l.id,
+      kind: l.action === 'score.override' ? 'override' : l.action === 'score.edit' ? 'edit' : 'no_show',
+      skill: l.entity_label as string,
+      skillLabel: ENTRY_SKILL_LABEL[l.entity_label as EntrySkill] ?? l.entity_label,
+      before: scoreSummaryText(before), after: afterText,
+      actorName: l.actor_name as string | null, createdAt: l.created_at as string,
+    };
+  });
+}
+
 export function attemptDetail(p: Principal, attemptId: number) {
+  settleNoShows();
   const conn = db();
   const a = conn.prepare(`${ATTEMPT_SELECT} WHERE a.id = ?`).get(attemptId) as any;
   if (!a) throw notFound('Không tìm thấy lượt Mock Test');
@@ -687,23 +793,6 @@ export function attemptDetail(p: Principal, attemptId: number) {
          LEFT JOIN users u ON u.id = h.actor_user_id WHERE h.attempt_id = ? ORDER BY h.id DESC`,
     )
     .all(attemptId) as any[];
-  const sos = conn
-    .prepare(
-      /* Một lượt có nhiều vấn đề; màn chi tiết lấy cái nặng nhất làm đại diện. */
-      `SELECT sc.*, hu.full_name AS head_name
-         FROM sos_cases sc
-         LEFT JOIN users hu ON hu.id = sc.head_confirmed_by WHERE sc.attempt_id = ?
-        ORDER BY COALESCE(sc.sos_level, 0) DESC, sc.id LIMIT 1`,
-    )
-    .get(attemptId) as any;
-  const caseHistory = sos
-    ? (conn
-        .prepare(
-          `SELECT h.*, u.full_name AS actor_name FROM sos_case_history h
-             LEFT JOIN users u ON u.id = h.actor_user_id WHERE h.case_id = ? ORDER BY h.id DESC LIMIT 40`,
-        )
-        .all(sos.id) as any[])
-    : [];
 
   return {
     id: a.id,
@@ -760,30 +849,17 @@ export function attemptDetail(p: Principal, attemptId: number) {
       id: h.id, action: h.action, field: h.field, oldValue: h.old_value, newValue: h.new_value,
       reason: h.reason, actorName: h.actor_name, createdAt: h.created_at,
     })),
-    sosCase: sos ?? null,
     /*
-     * HƯỚNG DẪN phối hợp cho mức này — GỢI Ý, không phải việc đã làm.
-     * Việc đã làm nằm ở `case_interventions` với người thực hiện và ngày thật; trộn hai
-     * thứ vào một danh sách chính là chỗ mô hình cũ làm người đọc hiểu sai.
+     * HỒ SƠ TEST KHÔNG CÒN KHỐI CASE (PR-I, rule book §17.5): vấn đề, phương án và việc gắn với case nằm ở hồ sơ
+     * học viên và bảng case — nên payload này không còn `sosCase` · `caseSteps` · `caseHistory` · `tasks`.
+     * Điểm sửa được ai, lúc nào thì có ở `scoreHistory`.
      */
-    caseSteps: (sos?.sos_level ?? result.sosLevel ?? 0) > 0
-      ? stepsFor(a.attempt_no, (sos?.sos_level ?? result.sosLevel) as any)
-      : [],
-    caseHistory: caseHistory.map((h) => ({
-      id: h.id, field: h.field, oldValue: h.old_value, newValue: h.new_value,
-      actorName: h.actor_name, createdAt: h.created_at,
-    })),
-    tasks: sos
-      ? (conn
-          .prepare(
-            `SELECT t.id, t.code, t.title, t.progress, t.due_date, u.full_name AS assignee_name
-               FROM tasks t LEFT JOIN users u ON u.id = t.assignee_user_id WHERE t.source_sos_case_id = ?`,
-          )
-          .all(sos.id) as any[])
-      : [],
+    scoreHistory: scoreHistoryOf(attemptId),
     viewer: {
       canPlanWeek: can(p, PERMISSIONS.PLAN_WEEK, { classId: a.class_id }),
       canCancel: can(p, PERMISSIONS.ATTEMPT_CANCEL, { classId: a.class_id }),
+      /** Xử lý vắng (dời lần đầu / xin duyệt) — GVCN của lớp và Quản lý; giáo viên bộ môn thì không. */
+      canHandleAbsence: canRequestAbsence(p, a),
       canSkipSkill: can(p, PERMISSIONS.ATTEMPT_SKIP_SKILL, { classId: a.class_id }),
       /**
        * Xác nhận đã thi / vắng CHO TỪNG KỸ NĂNG — cùng quyền với việc dời lịch kỹ năng đó
@@ -998,6 +1074,11 @@ export type ScorePatch = {
   criteria?: (number | null)[];
   resultDate?: string | null;
   note?: string | null;
+  /**
+   * DẤU '-' (PR-G): `true` = báo em có lịch nhưng KHÔNG LÀM BÀI ("Không có bài"); `false` = gỡ dấu (trước
+   * khi tuần kết thúc). Không phải điểm 0, và không bao giờ xoá một điểm chính thức.
+   */
+  noShow?: boolean;
 };
 
 /**
@@ -1097,17 +1178,31 @@ function reconcileCorrectedScores(p: Principal, attemptId: number, result: Attem
   }
 }
 
-export function saveScore(p: Principal, attemptId: number, skill: string, patch: ScorePatch) {
+export function saveScore(
+  p: Principal, attemptId: number, skill: string, patch: ScorePatch, today: string = demoToday(),
+) {
   const conn = db();
   const a = loadAttempt(attemptId);
   if (!(ENTRY_SKILLS as readonly string[]).includes(skill)) throw badRequest('Kỹ năng không hợp lệ.');
   if (a.status === 'cancelled') throw badRequest('Lượt này đã huỷ, không nhập điểm được.');
+  /*
+   * CHỐT VẮNG CHỈ ÁP CHO MOCK (rule book §17.1). Lớp Normal vẫn phải đủ bốn môn, không có huỷ nghĩa vụ
+   * Test — đừng mang giới hạn FT sang Normal — nên dấu '-' không tồn tại ở đó.
+   */
+  if (patch.noShow !== undefined && scoringModeOf(a) === 'ratio') {
+    throw badRequest('Lớp Normal không dùng dấu "-": bài chưa có thì để trống, và vẫn phải đủ bốn môn.');
+  }
 
   const path = a.class_id ? scoreEditPath(p, a.class_id, skill) : null;
   if (!path) {
     require_(p, PERMISSIONS.SCORE_EDIT, { classId: a.class_id, studentId: a.student_id, skill },
       'Bạn chỉ nhập được điểm của kỹ năng mình được phân công.');
   }
+  /*
+   * CHỐT TRƯỚC KHI ĐỌC LỊCH — "kể cả không ai mở web". Hàm chốt idempotent, nên gọi ở mọi đường đọc/ghi là
+   * cách thay cho một tác vụ nền. Làm ở đây để ô đã hết Chủ nhật mà còn '-' được nhìn đúng là `absent`.
+   */
+  settleNoShows(today);
   const assessed = assessedSkillOf(skill);
   const scheduleRow = ensureSkillRows(attemptId).find((r) => r.skill === assessed)!;
   if (!scheduleRow.required) {
@@ -1134,6 +1229,74 @@ export function saveScore(p: Principal, attemptId: number, skill: string, patch:
     const existing = conn.prepare('SELECT * FROM assessment_scores WHERE attempt_id = ? AND skill = ?')
       .get(attemptId, skill) as ScoreRow | undefined;
     const before = existing ? { ...existing } : null;
+
+    /*
+     * DẤU '-' — một lệnh, không phải một điểm (PR-G). Trả về NGAY, không đụng tới điểm hay bài khác:
+     * '-' ở W1 không xoá W2 hay S, không tạo điểm 0, và không kéo theo tính toán band.
+     */
+    if (patch.noShow !== undefined) {
+      const hasOfficial = (existing?.band ?? null) !== null || (existing?.raw_score ?? null) !== null;
+      const done = () => {
+        const fresh = conn.prepare('SELECT * FROM assessment_attempts WHERE id = ?').get(attemptId) as any;
+        return {
+          score: conn.prepare('SELECT * FROM assessment_scores WHERE attempt_id = ? AND skill = ?').get(attemptId, skill),
+          result: resultOf(fresh), attemptStatus: fresh.status,
+        };
+      };
+      if (patch.noShow === true) {
+        if (hasOfficial) {
+          throw badRequest(
+            'Ô này đã có điểm chính thức — dấu "-" không xoá được điểm. Muốn sửa, hãy dùng hiệu chỉnh điểm có ghi lý do.',
+          );
+        }
+        if (!scheduleRow.planned_period_id || !scheduleRow.week_end) {
+          throw badRequest(`${assessed} chưa có tuần thi nên chưa báo "không có bài" được.`);
+        }
+        /* Báo lại cùng một tuần là VÔ HẠI: không đổi gì, và không biến một dấu báo đúng hạn thành báo muộn. */
+        if (existing?.no_show_period_id === scheduleRow.planned_period_id) return done();
+        const late = today > scheduleRow.week_end.slice(0, 10);
+        if (existing) {
+          conn
+            .prepare(
+              `UPDATE assessment_scores SET no_show_period_id = ?, no_show_by = ?, no_show_at = ?,
+                      no_show_late = ?, no_show_settled_at = NULL WHERE id = ?`,
+            )
+            .run(scheduleRow.planned_period_id, p.userId, nowIso(), late ? 1 : 0, existing.id);
+        } else {
+          /* Cố ý KHÔNG ghi entered_by: người báo "không có bài" chưa nhập điểm nào (MT-P09). */
+          conn
+            .prepare(
+              `INSERT INTO assessment_scores (attempt_id, skill, no_show_period_id, no_show_by, no_show_at, no_show_late)
+               VALUES (?,?,?,?,?,?)`,
+            )
+            .run(attemptId, skill, scheduleRow.planned_period_id, p.userId, nowIso(), late ? 1 : 0);
+        }
+        writeAudit({
+          actorUserId: p.userId, action: 'score.no_show', entityType: 'assessment_attempt', entityId: attemptId,
+          entityLabel: skill, before, after: { noShow: true, week: scheduleRow.period_code, late },
+        });
+        /* C10: tuần đã kết thúc → không tự chốt, tạo một mục chờ Quản lý hiệu chỉnh. */
+        if (late) {
+          /* C10 (đã chốt 20/09/2026): CHỐT NGAY. Phương án cũ (chờ Quản lý hiệu chỉnh) còn code nhưng không dùng. */
+          if ((C10_NHAP_DAU_TRU_TUAN_QUA_KHU as string) === 'chot-ngay') settleNoShows(today);
+          else flagLateNoShow(a, assessed, scheduleRow.period_code ?? '', p.userId);
+        }
+        return done();
+      }
+      /* patch.noShow === false: gỡ dấu trước khi tuần kết thúc. Sau chốt thì đã bị chặn ở kiểm `absent` phía trên. */
+      if (!existing?.no_show_period_id) return done();
+      conn
+        .prepare(
+          `UPDATE assessment_scores SET no_show_period_id = NULL, no_show_by = NULL, no_show_at = NULL,
+                  no_show_late = 0, no_show_settled_at = NULL WHERE id = ?`,
+        )
+        .run(existing.id);
+      writeAudit({
+        actorUserId: p.userId, action: 'score.no_show_cleared', entityType: 'assessment_attempt', entityId: attemptId,
+        entityLabel: skill, before, after: { noShow: false },
+      });
+      return done();
+    }
 
     const resultDate = patch.resultDate !== undefined ? patch.resultDate : existing?.result_date ?? null;
     if (resultDate && !isIsoDate(resultDate)) throw badRequest('Ngày có kết quả không hợp lệ.');
@@ -1162,13 +1325,21 @@ export function saveScore(p: Principal, attemptId: number, skill: string, patch:
       throw e;
     }
 
+    /*
+     * NGƯỜI NHẬP CHỈ CÓ KHI Ô CÓ GIÁ TRỊ (MT-P09). Xoá điểm là một thao tác, nhưng KHÔNG phải một lần "nhập điểm":
+     * ô trống mà còn ghi "Người nhập: X" là dùng tác giả của thao tác làm bằng chứng rằng đã có điểm. Ai đã sửa
+     * gì, lúc nào vẫn nằm trong nhật ký (`score.edit`) — hiện ở "Lịch sử thay đổi" của hồ sơ Test.
+     */
+    const hasValue = raw !== null || crit.some((v) => v !== null);
+    const enteredBy = hasValue ? p.userId : null;
+    const enteredAt = hasValue ? nowIso() : null;
     if (existing) {
       conn
         .prepare(
           `UPDATE assessment_scores SET raw_score=?, raw_total=?, c1=?, c2=?, c3=?, c4=?, band=?,
                                         result_date=?, entered_by=?, entered_at=?, note=? WHERE id=?`,
         )
-        .run(raw, total, crit[0], crit[1], crit[2], crit[3], band, resultDate, p.userId, nowIso(),
+        .run(raw, total, crit[0], crit[1], crit[2], crit[3], band, resultDate, enteredBy, enteredAt,
              patch.note !== undefined ? patch.note : existing.note ?? null, existing.id);
     } else {
       conn
@@ -1178,7 +1349,23 @@ export function saveScore(p: Principal, attemptId: number, skill: string, patch:
            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
         )
         .run(attemptId, skill, raw, total, crit[0], crit[1], crit[2], crit[3], band,
-             resultDate, p.userId, nowIso(), patch.note ?? null);
+             resultDate, enteredBy, enteredAt, patch.note ?? null);
+    }
+
+    /*
+     * ĐIỂM THẬT THẮNG DẤU '-': nhập số hoặc tiêu chí thì dấu "không có bài" hết hiệu lực — sửa "-" thành
+     * điểm hợp lệ trước cuối tuần thì không tính lần vắng nào (rule book §17.1). Xoá dấu luôn cả cột chốt.
+     */
+    const enteringScore = (patch.rawScore !== undefined && patch.rawScore !== null)
+      || (Array.isArray(patch.criteria) && patch.criteria.some((v) => v !== null && v !== undefined && (v as unknown) !== ''))
+      || raw !== null || band !== null;
+    if (enteringScore) {
+      conn
+        .prepare(
+          `UPDATE assessment_scores SET no_show_period_id = NULL, no_show_by = NULL, no_show_at = NULL,
+                  no_show_late = 0, no_show_settled_at = NULL WHERE attempt_id = ? AND skill = ?`,
+        )
+        .run(attemptId, skill);
     }
 
     const after = conn.prepare('SELECT * FROM assessment_scores WHERE attempt_id = ? AND skill = ?').get(attemptId, skill);
@@ -1208,7 +1395,11 @@ export function saveScore(p: Principal, attemptId: number, skill: string, patch:
 }
 
 /** Bảng nhập điểm theo lớp × tuần kế hoạch. */
-export function classScoreSheet(p: Principal, classId: number, periodId: number | null) {
+export function classScoreSheet(
+  p: Principal, classId: number, periodId: number | null, today: string = demoToday(),
+) {
+  /* Chốt "không dự thi" ở đường đọc — idempotent, thay cho tác vụ nền (PR-G). */
+  settleNoShows(today);
   const conn = db();
   const cls = conn.prepare('SELECT c.*, b.name AS branch_name FROM classes c JOIN branches b ON b.id=c.branch_id WHERE c.id=?')
     .get(classId) as any;
@@ -1256,7 +1447,7 @@ export function classScoreSheet(p: Principal, classId: number, periodId: number 
         studentCode: a.student_code,
         attemptNo: a.attempt_no,
         status: a.status,
-        cells: skillCells(p, a, scores, skips, demoToday(), bundle.skillRows.get(a.id)),
+        cells: skillCells(p, a, scores, skips, today, bundle.skillRows.get(a.id)),
         result: resultOf(a, scores, skips),
       };
       });

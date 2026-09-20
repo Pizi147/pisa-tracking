@@ -4,7 +4,7 @@ import {
   INTERVENTION_STATUS_LABEL,
   FOLLOWUP_OUTCOMES, BEHAVIOUR_TOPICS, CASE_DECISIONS, CASE_OUTCOMES, ENTRY_SKILLS,
   ISSUE_ROLES, PERMISSIONS, THREAD_TRACKS, URGENCY_LEVELS, DEFAULT_URGENCY,
-  BEHAVIOUR_MERGE_WINDOW_DAYS, behaviourCaseDeadline, behaviourMergeUntil, deadlineAfterRaise,
+  BEHAVIOUR_MERGE_WINDOW_DAYS, behaviourCaseDeadline, behaviourMergeUntil,
   issuesForTopic, topicFromBehaviourCode,
   CASE_CATEGORY_SHORT, CASE_CATEGORIES, CASE_CATEGORY_LABEL, FOLLOWUP_OUTCOME_LABEL, ratioResult,
   caseCategoriesFor, componentsAreCounts, componentsFor, type CaseCategory,
@@ -109,7 +109,11 @@ export function milestonesOf(caseId: number) {
  * quyền kết luận.
  */
 export function closeCaseOutcome(p: Principal, caseId: number, input: {
-  outcome: string; note?: string | null;
+  /**
+   * Mức tiến bộ. BẮT BUỘC với case học thuật; case Ý thức/Khác KHÔNG có (CASE-06, rule book
+   * §17.2): ghi nhận việc đã làm và chứng cứ rồi hoàn thành đợt, không đo hiệu quả học thuật.
+   */
+  outcome?: string | null; note?: string | null;
   /** Ngày hoàn thành thực tế. Bỏ trống thì lấy hôm nay; không nhận ngày tương lai. */
   closedOn?: string | null;
   /** Mã cũ: chỉ còn nhận 'end'. "Kéo dài theo dõi" đã bỏ (mục 9.3). */
@@ -122,7 +126,10 @@ export function closeCaseOutcome(p: Principal, caseId: number, input: {
   if (!canCloseCase(p, c)) {
     throw badRequest('Chỉ giáo viên chủ nhiệm của lớp và Quản lý mới chốt được kết quả case.');
   }
-  if (!(CASE_OUTCOMES as readonly string[]).includes(input.outcome)) {
+  const behaviour = (c.track ?? 'academic') === 'behaviour';
+  /* Ý thức bỏ trống thì lưu NULL — không bịa một mức tiến bộ chỉ để có cái điền vào. */
+  const outcome: string | null = behaviour && !input.outcome ? null : (input.outcome ?? '');
+  if (outcome !== null && !(CASE_OUTCOMES as readonly string[]).includes(outcome)) {
     throw badRequest('Mức độ thành công không hợp lệ.');
   }
   if (input.decision && input.decision !== 'end') {
@@ -179,7 +186,7 @@ export function closeCaseOutcome(p: Principal, caseId: number, input: {
                 updated_at = ?
           WHERE id = ?`,
       )
-      .run(input.outcome, closeNote, p.userId, nowIso(), p.userId, closedOn, nowIso(), caseId);
+      .run(outcome, closeNote, p.userId, nowIso(), p.userId, closedOn, nowIso(), caseId);
 
     conn
       .prepare(
@@ -188,7 +195,7 @@ export function closeCaseOutcome(p: Principal, caseId: number, input: {
          ON CONFLICT(dedup_key) DO NOTHING`,
       )
       .run(caseId, 'closed', closedOn,
-           [CASE_OUTCOME_LABEL[input.outcome as CaseOutcome], closeNote].filter(Boolean).join(' — '),
+           [outcome ? CASE_OUTCOME_LABEL[outcome as CaseOutcome] : null, closeNote].filter(Boolean).join(' — '),
            p.userId, nowIso(), `outcome:${caseId}:${closedOn}:end`);
 
     /* Đánh giá chi tiết lúc kết luận: lưu thành một dòng cập nhật gắn thẳng vào case. */
@@ -206,14 +213,14 @@ export function closeCaseOutcome(p: Principal, caseId: number, input: {
       studentId: c.eff_student_id, cycleId: c.eff_cycle_id,
       eventType: 'case_closed', eventDate: closedOn,
       /* Chốt 6/mục 10.3 Step 6: nhãn phân biệt mốc nhập bù với mốc ghi tại chỗ. */
-      title: `${c.origin_kind === 'backfill' ? '(nhập bù) ' : ''}Hoàn thành case: ${CASE_OUTCOME_LABEL[input.outcome as CaseOutcome]}`,
+      title: `${c.origin_kind === 'backfill' ? '(nhập bù) ' : ''}Hoàn thành case${outcome ? `: ${CASE_OUTCOME_LABEL[outcome as CaseOutcome]}` : ' Ý thức'}`,
       detail: closeNote,
       refTable: 'sos_cases', refId: caseId, createdBy: p.userId,
       dedupKey: `case_outcome:${caseId}:${closedOn}:end`,
     });
     writeAudit({ actorUserId: p.userId, action: 'case.outcome', entityType: 'sos_case',
       entityId: caseId, entityLabel: caseTitleOf(c),
-      after: { outcome: input.outcome, closedOn } });
+      after: { outcome, closedOn } });
     return caseDetail(p, caseId);
   });
 }
@@ -314,10 +321,9 @@ function addCaseReport(conn: any, r: {
  * Nâng kể cả khi người gửi chọn "Cần chú ý": hai người khác nhau cùng thấy một chuyện trong
  * bốn ngày là một tín hiệu mạnh hơn nhận định của riêng ai.
  *
- * Nâng mức SIẾT hạn phương án lại — sớm hơn giữa hạn đang có và "ngày nâng + 2 ngày" — chứ
- * không bao giờ đẩy hạn ra xa. Và hạn KẾT LUẬN của cả case thì GIỮ NGUYÊN theo ngày mở: nếu
- * nó cũng lùi theo báo cáo mới thì một case cứ có báo cáo là hạn lại lùi, và sẽ không bao
- * giờ tới hạn.
+ * Nâng mức KHÔNG đổi hạn nào (C03, chủ sản phẩm chốt 20/09/2026 — luật siết hạn "ngày nâng + 2" đã bỏ). Hạn của case
+ * giữ nguyên theo ngày mở: nếu nó lùi theo báo cáo mới thì một case cứ có báo cáo là hạn lại lùi, và sẽ không bao giờ
+ * tới hạn.
  */
 function raiseBehaviourUrgency(conn: any, actorUserId: number | null, c: any, today: string) {
   if (c.urgency === 'urgent') return;
@@ -330,13 +336,6 @@ function raiseBehaviourUrgency(conn: any, actorUserId: number | null, c: any, to
        VALUES (?, 'urgency', ?, 'urgent', ?, ?)`,
     )
     .run(c.id, c.urgency ?? null, actorUserId, nowIso());
-
-  for (const iv of conn
-    .prepare(`SELECT id, action_due FROM case_interventions WHERE case_id = ? AND status IN ('planned','started')`)
-    .all(c.id) as any[]) {
-    conn.prepare('UPDATE case_interventions SET action_due = ?, updated_at = ? WHERE id = ?')
-      .run(deadlineAfterRaise(iv.action_due ?? null, today), nowIso(), iv.id);
-  }
 }
 
 export function reportIssue(p: Principal, input: {
@@ -1483,7 +1482,7 @@ export function setDisposition(p: Principal, caseId: number, input: {
     }
     const disposition = input.disposition ?? c.disposition;
     if (!disposition) {
-      throw badRequest('Đóng case thì phải chọn hướng xử lý — để biết case kết thúc vì đã giải quyết hay bị bỏ quên.');
+      throw badRequest('Hoàn thành case thì phải chọn hướng xử lý — để biết case kết thúc vì đã giải quyết hay bị bỏ quên.');
     }
     /*
      * CHỈ ĐÓNG ĐƯỢC KHI MỌI PHƯƠNG ÁN ĐÃ KHÉP LẠI (mục 7.7 [5]).
@@ -1714,8 +1713,8 @@ export function caseDetail(p: Principal, caseId: number) {
     /** Số kỹ năng dưới kỳ vọng của CẢ LƯỢT. NULL với vấn đề giáo viên báo — không phải SOS 0. */
     sosLevel: c.sos_level,
     /**
-     * Mức gấp. Vấn đề sinh từ điểm không ghi mức vào database (hai thang cố tình tách nhau);
-     * suy từ SOS lúc hiển thị. Từ vòng 5 mức gấp KHÔNG còn quyết định hạn — hạn là chu kỳ
+     * Mức độ ưu tiên. Vấn đề sinh từ điểm không ghi mức vào database (hai thang cố tình tách nhau);
+     * suy từ SOS lúc hiển thị. Từ vòng 5 mức độ ưu tiên KHÔNG còn quyết định hạn — hạn là chu kỳ
      * hai tuần (học thuật) hoặc một tuần (Ý thức/Khác), xem `cycleDeadline`.
      */
     urgency: c.urgency ?? (c.sos_level !== null ? urgencyFromSos(c.sos_level) : null),
@@ -2148,7 +2147,7 @@ export function caseQueueCounts(p: Principal, f: CaseFilters = {}) {
  *
  *   1. Em đang ở đâu ở môn này?      → band MT gần nhất, so với kỳ vọng, và so với lần trước
  *   2. Có case không, đang thế nào?  → trạng thái, đã kéo qua mấy lượt MT
- *   3. Đã làm gì cho em rồi?         → phương án mới nhất và kết quả của nó
+ *   3. Đã áp dụng phương án nào?     → phương án mới nhất và kết quả của nó
  *
  * Hạng mục KHÔNG có case vẫn hiện một dòng. Đó là điểm khác với danh sách case: người dạy
  * cần thấy cả những môn đang ổn, nếu không thì "không thấy Reading" có hai nghĩa — ổn, hoặc
@@ -2457,6 +2456,13 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
             classId: enr?.class_id ?? null, studentId,
             skill: c.track === 'academic' ? c.topic ?? undefined : undefined,
           }),
+          /*
+           * HOÀN THÀNH CASE NGAY TRÊN THẺ (PR-D). Khối `CasePanel` nhúng bên dưới thẻ đã bị
+           * gỡ, nên thẻ tự nói: người xem có chốt được không, và còn gì đang chặn. Lấy đúng
+           * hai hàm mà nút "Hoàn thành case" ở trang riêng vẫn hỏi — không phép tính thứ hai.
+           */
+          canClose: canCloseCase(p, { class_id: enr?.class_id ?? null, student_id: studentId }),
+          closeBlockers: c.status === 'done' ? [] : closeBlockers(c.id),
           /* Đủ thứ để vẽ MỘT THẺ CASE mà không phải gọi thêm một đường nữa (mục 1 · 2). */
           ...caseCardOf(c.id, c),
         }))
@@ -2553,6 +2559,10 @@ function caseCardOf(caseId: number, c: any) {
           outcome: f.outcome as string,
           label: outcomeLabelFor(c.track ?? 'academic', f.outcome),
           by: f.observer ?? null,
+          /* Mở lịch sử ngay tại dòng phương án (PR-D) thì phải đọc được câu người dạy viết. */
+          note: (f.note as string | null) ?? null,
+          cycleNo: (f.cycle_no as number | null) ?? null,
+          late: !!f.late,
         }))
         .sort((a, b) => a.on.localeCompare(b.on)),
     };

@@ -1,5 +1,5 @@
 import {
-  ATTEMPT_KIND_SHORT, PROGRAMME_TEMPLATES, categoryOf, cycleDeadline, issuesForTopic,
+  ATTEMPT_KIND_SHORT, PROGRAMME_TEMPLATES, behaviourMergeUntil, categoryOf, cycleDeadline, issuesForTopic,
   planDueDate, planEndDefault, programmeOf, ratioResult, weeklyUpdateDue,
   type AttemptKind,
 } from '../../../shared/domain/index.ts';
@@ -785,7 +785,7 @@ function insertCase(
     .run(caseId, c.primaryCode, c.topic, reporterId ?? ownerId ?? ctx.adminId, NOW);
 
   /*
-   * CASE Ý THỨC/KHÁC LÀ MỘT ĐỢT (mục 7.2): có số đợt, có cửa sổ gộp bốn ngày, và có các
+   * CASE Ý THỨC/KHÁC LÀ MỘT ĐỢT (mục 7.2): có số đợt, có cửa sổ gộp ba ngày (C03), và có các
    * báo cáo thành phần. Báo cáo đầu tiên chính là câu mô tả của case.
    */
   if (track === 'behaviour') {
@@ -796,7 +796,7 @@ function insertCase(
           WHERE student_id = ? AND track = 'behaviour' AND topic = ? AND id < ?`,
       )
       .get(sid, c.topic, caseId) as any).n;
-    const mergeUntil = addDays(c.detectedAt, 3);
+    const mergeUntil = behaviourMergeUntil(c.detectedAt);
     conn.prepare('UPDATE sos_cases SET episode_no = ?, merge_until = ? WHERE id = ?')
       .run(prior + 1, mergeUntil, caseId);
 

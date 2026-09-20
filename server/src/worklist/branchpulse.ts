@@ -230,6 +230,8 @@ function peopleOf(
          LEFT JOIN assessment_scores s ON s.attempt_id = a.id AND s.skill = ta.skill
         WHERE a.status != 'cancelled' AND ta.skill IS NOT NULL
           AND rp.week_start <= ? AND s.band IS NULL
+          /* Ô đã báo "-" (PR-G) không còn nợ điểm. Ước lượng thô: không xét W1/W2 ghép đôi như bảng chấm. */
+          AND s.no_show_period_id IS NULL
           AND NOT EXISTS (SELECT 1 FROM attempt_skill_skips k
                            WHERE k.attempt_id = a.id AND k.skill = ta.skill) ${scopeSql}`,
     )

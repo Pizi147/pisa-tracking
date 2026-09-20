@@ -1,5 +1,7 @@
 # Chín điểm luật chưa chốt — C01…C09
 
+> **CẬP NHẬT 20/09/2026 — chủ sản phẩm đã trả lời.** Xem mục 5 ở cuối file: C02, C03, C04, C06, C07, C09, C10 đã chốt; C01 chờ xác nhận cách hiểu; C08 còn một nửa chưa rõ. Các mục bên dưới giữ nguyên làm lịch sử câu hỏi.
+
 Rule book mục 14. Chủ sản phẩm chưa trả lời. **Không tự chọn phương án thuận tiện nhất rồi
 chôn nó vào giữa một hàm.**
 
@@ -66,3 +68,23 @@ dữ liệu sai.
 Không dựng màn "luật chờ chốt" cho người dùng cuối. Nhưng chỗ nào một điểm chưa chốt ảnh hưởng
 trực tiếp tới con số trên màn, ghi một dòng ngắn trung tính, ví dụ hạn Normal: `Hạn chấm theo
 quy định của lớp`. Không viết "chưa chốt", không viết mã C trên giao diện người dùng.
+
+---
+
+## 5. Lời chốt ngày 20/09/2026
+
+Nguồn chi tiết: rule book mục 17.7 · `shared/domain/policy.ts`.
+
+| Mã | Đã chốt | Trạng thái mã |
+|---|---|---|
+| C01 | 3 ngày SOS phải có PA; sau đó Học thuật ghi kết quả mỗi Chủ nhật + chốt cuối đợt, Ý thức hoàn thành hết PA trong hạn 1 tuần | **Chờ xác nhận** cách hiểu (chủ sản phẩm hỏi "đúng không?") |
+| C02 | GVCN không xử lý case học thuật trái môn | Đã áp (`permissions.ts`) |
+| C03 | Bỏ câu hỏi nâng mức; Ý thức gộp trong 3 ngày đầu, ngoài ra ra case mới; hạn mặc định 1 tuần | Đã áp (cửa sổ gộp 3 ngày; bỏ siết hạn khi nâng mức) |
+| C04 | Giữ: đợt mới liên kết | Khớp hành vi cũ |
+| C06 | Giữ | Khớp hành vi cũ |
+| C07 | Writing phải đủ W1 và W2; thiếu thì báo quá hạn như bình thường | Khớp hành vi cũ |
+| C08 | Hạn chấm Normal hết Chủ nhật tuần thi; chưa có bài thì thêm "-" và dời sang tuần sau | Hạn: khớp hành vi cũ. "Thêm - và dời": **chưa rõ, chưa làm** |
+| C09 | Chờ QL hết tuần đó; không phản hồi thì huỷ | Khớp hành vi cũ |
+| C10 | Chốt ngay | Đã áp |
+
+Sau cuối tuần chỉ Quản lý sửa kết luận; quyết định mới ghi đè trực tiếp, không duyệt lại; audit log chỉ để truy vết.

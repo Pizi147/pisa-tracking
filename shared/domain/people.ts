@@ -192,10 +192,19 @@ export function studentFiltersFor(has: (key: string) => boolean): StudentFilterK
  */
 export const WORK_SCOPES = ['mine', 'managed'] as const;
 export type WorkScope = (typeof WORK_SCOPES)[number];
+/** Tên hai phạm vi trong ô chọn `Người phụ trách` (TU_DIEN_VA_CHU §2). */
 export const WORK_SCOPE_LABEL: Record<WorkScope, string> = {
-  mine: 'Việc của tôi',
-  managed: 'Trong phạm vi quản lý',
+  mine: 'Tôi',
+  managed: 'Tất cả trong phạm vi',
 };
+
+/**
+ * BADGE ĐẾM NÓI RÕ ĐẾM CỦA AI (TU_DIEN_VA_CHU §2, RB 17.4). Cùng một lớp: GV chỉ thấy phần mình phải làm, Quản lý thấy cả
+ * lớp — hai con số khác nhau cho hai câu hỏi khác nhau, nên chữ phải khác. Không bao giờ vừa nói "cả lớp" vừa dẫn tới việc riêng.
+ */
+export function needScoresText(scope: WorkScope | null, n: number): string {
+  return scope === 'mine' ? `Bạn cần chấm: ${n} bài` : `Lớp còn ${n} bài chưa nhập điểm`;
+}
 export const WORK_SCOPE_HINT: Record<WorkScope, string> = {
   mine: 'Kỹ năng bạn được phân công dạy.',
   managed: 'Mọi bài chưa chấm trong phạm vi bạn được xem, kèm tên giáo viên phụ trách.',

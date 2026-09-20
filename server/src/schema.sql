@@ -634,6 +634,21 @@ CREATE TABLE assessment_scores (
   entered_by INTEGER REFERENCES users(id),
   entered_at TEXT,
   note TEXT,
+  /*
+   * DẤU '-' = "KHÔNG CÓ BÀI" (rule book §17.1, PR-G). KHÔNG phải điểm 0 và KHÔNG xoá điểm: nó là một
+   * lời khai của người được phân công nhập điểm rằng em có lịch tuần đó nhưng không làm bài.
+   *
+   *   no_show_period_id   tuần lịch của bài LÚC báo. Lịch dời sang tuần khác thì dấu này hết nghĩa —
+   *                       nó nói về một tuần cụ thể, không phải về học viên.
+   *   no_show_late        1 = nhập khi tuần đó ĐÃ kết thúc → chờ Quản lý hiệu chỉnh, không tự chốt (C10).
+   *   no_show_settled_at  lúc đã chốt "không dự thi". Có giá trị thì việc chốt KHÔNG lặp lại — mỗi
+   *                       lần lịch/kỹ năng chỉ chốt một lần dù tác vụ chạy bao nhiêu lần.
+   */
+  no_show_period_id INTEGER REFERENCES report_periods(id),
+  no_show_by INTEGER REFERENCES users(id),
+  no_show_at TEXT,
+  no_show_late INTEGER NOT NULL DEFAULT 0,
+  no_show_settled_at TEXT,
   UNIQUE (attempt_id, skill)
 );
 CREATE INDEX idx_score_attempt ON assessment_scores(attempt_id);

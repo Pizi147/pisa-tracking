@@ -194,69 +194,75 @@ export function weeklyRollup(
   }
 
   /*
-   * CASE — ĐẾM TỪNG CASE, và học viên đếm riêng (mục 2.2).
+   * BA TRUY VẤN DƯỚI ĐÂY NHẬN CHÍNH TẬP LƯỢT ĐÃ ĐƯỢC LỌC (F01, P0 — hợp đồng số liệu).
    *
-   * Một câu truy vấn riêng thay vì nối vào câu lớn ở trên: nối vào sẽ nhân số dòng lượt lên
-   * theo số case, và mọi cột kết luận ở trên đếm sai theo.
+   * Lỗi cũ: `attempts` ở trên đã lọc chi nhánh / chương trình / quyền, nhưng ba truy vấn sau đó
+   * chỉ lọc `planned_period_id IN (...)` — tức LẠI LẤY MỌI LƯỢT CỦA TUẦN ĐÓ, bất kể chi nhánh. Hai
+   * chi nhánh cùng tuần vì thế cộng lẫn số case, số học viên và đề xuất chờ duyệt của nhau, và
+   * người xem một chi nhánh không có cách nào phát hiện: con số cứ lớn hơn thực tế.
    *
-   * Một case thuộc tuần của LƯỢT sinh ra nó, nên nó chỉ nằm ở một tuần duy nhất — hàng tổng
-   * cộng các tuần lại vẫn là số case duy nhất.
+   * Nay ba truy vấn lọc theo `a.id IN (các lượt được phép)`. Bộ lọc chi nhánh/track/quyền chỉ có
+   * MỘT nơi (câu truy vấn `attempts`), nên không thể có hai bộ lọc lệch nhau. Đếm học viên duy nhất
+   * làm trong mã, không phải `COUNT(DISTINCT)` theo từng lô, để một em nằm ở hai lô không bị đếm hai lần.
    */
-  if (byPeriod.size) {
-    const pids = [...byPeriod.keys()];
-    for (const r of conn
-      .prepare(
-        `SELECT a.planned_period_id AS pid, sc.id AS case_id, sc.student_id, sc.status,
-                (SELECT MAX(COALESCE(i.completed_date, i.started_date))
-                   FROM case_interventions i
-                  WHERE i.case_id = sc.id AND i.status != 'cancelled') AS support_done,
-                (SELECT COUNT(*) FROM case_interventions i2
-                  WHERE i2.case_id = sc.id AND i2.status != 'cancelled') AS iv_count
-           FROM sos_cases sc
-           JOIN assessment_attempts a ON a.id = sc.attempt_id
-          WHERE a.planned_period_id IN (${pids.map(() => '?').join(',')})
-            AND COALESCE(sc.sos_level, 1) > 0`,
-      )
-      .all(...pids) as any[]) {
-      const row = byPeriod.get(r.pid);
-      if (!row) continue;                     // lượt bị bộ lọc Normal/FT loại ra
-      row.cases += 1;
-      if (r.support_done && r.support_done <= today) row.withSupport += 1;
-      else if (r.iv_count === 0 && r.status !== 'done') row.untouched += 1;
-    }
-    /* Số HỌC VIÊN có case — đếm riêng, vì một em ba case vẫn là một em. */
-    for (const r of conn
-      .prepare(
-        `SELECT a.planned_period_id AS pid, COUNT(DISTINCT sc.student_id) AS n
-           FROM sos_cases sc
-           JOIN assessment_attempts a ON a.id = sc.attempt_id
-          WHERE a.planned_period_id IN (${pids.map(() => '?').join(',')})
-            AND COALESCE(sc.sos_level, 1) > 0
-          GROUP BY a.planned_period_id`,
-      )
-      .all(...pids) as any[]) {
-      const row = byPeriod.get(r.pid);
-      if (row) row.caseStudents = r.n;
-    }
+  if (attempts.length) {
+    const ids = attempts.map((a) => a.id);
+    const studentsByPeriod = new Map<number, Set<number>>();
+    for (let i = 0; i < ids.length; i += 400) {
+      const chunk = ids.slice(i, i + 400);
+      const ph = chunk.map(() => '?').join(',');
+      /*
+       * CASE — ĐẾM TỪNG CASE, và học viên đếm riêng (mục 2.2). Một case thuộc tuần của LƯỢT sinh
+       * ra nó, nên nó chỉ nằm ở một tuần duy nhất — hàng tổng cộng các tuần lại vẫn là số case
+       * duy nhất.
+       */
+      for (const r of conn
+        .prepare(
+          `SELECT a.planned_period_id AS pid, sc.id AS case_id, sc.student_id, sc.status,
+                  (SELECT MAX(COALESCE(i.completed_date, i.started_date))
+                     FROM case_interventions i
+                    WHERE i.case_id = sc.id AND i.status != 'cancelled') AS support_done,
+                  (SELECT COUNT(*) FROM case_interventions i2
+                    WHERE i2.case_id = sc.id AND i2.status != 'cancelled') AS iv_count
+             FROM sos_cases sc
+             JOIN assessment_attempts a ON a.id = sc.attempt_id
+            WHERE a.id IN (${ph})
+              AND COALESCE(sc.sos_level, 1) > 0`,
+        )
+        .all(...chunk) as any[]) {
+        const row = byPeriod.get(r.pid);
+        if (!row) continue;
+        row.cases += 1;
+        if (r.support_done && r.support_done <= today) row.withSupport += 1;
+        else if (r.iv_count === 0 && r.status !== 'done') row.untouched += 1;
+        /* Số HỌC VIÊN có case — một em ba case vẫn là một em. */
+        if (r.student_id) {
+          if (!studentsByPeriod.has(r.pid)) studentsByPeriod.set(r.pid, new Set());
+          studentsByPeriod.get(r.pid)!.add(r.student_id);
+        }
+      }
 
-    /*
-     * ĐỀ XUẤT CHỜ DUYỆT là TRẠNG THÁI HIỆN TẠI, không phải chuyện đã xảy ra trong tuần đó —
-     * nhãn cột phải nói rõ vậy. Quy về tuần của lượt sinh ra case, cùng quy ước với các cột
-     * khác, và LỌC ĐÚNG PHẠM VI đang xem (mục 4.4) thay vì lấy cả hệ thống như trước.
-     */
-    for (const r of conn
-      .prepare(
-        `SELECT a.planned_period_id AS pid, COUNT(*) AS n
-           FROM case_interventions iv
-           JOIN sos_cases sc ON sc.id = iv.case_id
-           JOIN assessment_attempts a ON a.id = sc.attempt_id
-          WHERE iv.approval_state = 'pending'
-            AND a.planned_period_id IN (${pids.map(() => '?').join(',')})
-          GROUP BY a.planned_period_id`,
-      )
-      .all(...pids) as any[]) {
-      const row = byPeriod.get(r.pid);
-      if (row) row.pendingApproval = r.n;
+      /*
+       * ĐỀ XUẤT CHỜ DUYỆT là TRẠNG THÁI HIỆN TẠI, không phải chuyện đã xảy ra trong tuần đó —
+       * nhãn cột phải nói rõ vậy. Quy về tuần của lượt sinh ra case, và LỌC ĐÚNG PHẠM VI đang xem.
+       */
+      for (const r of conn
+        .prepare(
+          `SELECT a.planned_period_id AS pid, COUNT(*) AS n
+             FROM case_interventions iv
+             JOIN sos_cases sc ON sc.id = iv.case_id
+             JOIN assessment_attempts a ON a.id = sc.attempt_id
+            WHERE iv.approval_state = 'pending' AND a.id IN (${ph})
+            GROUP BY a.planned_period_id`,
+        )
+        .all(...chunk) as any[]) {
+        const row = byPeriod.get(r.pid);
+        if (row) row.pendingApproval += r.n;
+      }
+    }
+    for (const [pid, set] of studentsByPeriod) {
+      const row = byPeriod.get(pid);
+      if (row) row.caseStudents = set.size;
     }
   }
 

@@ -7,6 +7,7 @@ import { fmtDate } from '../../lib/format.ts';
 import { CaseBoard } from '../cases/CaseBoardPage.tsx';
 import { BranchPulse } from './BranchPulse.tsx';
 import { Highlights } from './Highlights.tsx';
+import { MetricTiles } from './MetricTiles.tsx';
 import { WorkList, type WorkGroup, type WorkItem } from './WorkList.tsx';
 
 type Work = {
@@ -120,6 +121,9 @@ export default function OverviewPage() {
         người đọc phải tự đối chiếu xem chúng có khớp nhau không — và đó là việc của phần
         mềm, không phải của người dùng. Danh sách lớp đã có nguyên một mục Học viên.
       */}
+      {/* Bốn ô số — mỗi ô đi qua <SoLieu>: tự giải thích được và bấm ra đúng tập tạo nên nó. */}
+      {tab === 'work' && canSeeBoard && <MetricTiles branchId={branchId} />}
+
       {tab === 'work' && <Highlights branchId={branchId} />}
 
       {/* Bảng tổng hợp của Quản lý. Bấm một con số trong bảng là LỌC danh sách bên dưới. */}
