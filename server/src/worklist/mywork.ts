@@ -13,7 +13,7 @@ import { attemptHref, listAttempts } from '../fasttrack/attempts.ts';
 import { classAlerts } from '../classes/schedule.ts';
 import { myMgmtTasks } from './mgmttasks.ts';
 import { listSignals } from '../cases/signals.ts';
-import { sweepExpiredMoves } from '../fasttrack/absence.ts';
+import { settleNoShows, sweepExpiredMoves } from '../fasttrack/absence.ts';
 
 /**
  * VIỆC CỦA CHÍNH NGƯỜI ĐANG XEM.
@@ -435,6 +435,8 @@ export function myWork(p: Principal, f: { branchId?: number | null } = {}) {
    * không phải sau khi đã muộn.
    */
   sweepExpiredMoves();
+  /* Chốt "không dự thi" cuối Chủ nhật ở đường đọc (PR-G) — cùng khuôn mẫu, không cần tác vụ nền. */
+  settleNoShows();
   const pendingMoves = conn
     .prepare(
       `SELECT r.id, r.attempt_id, r.skill, r.move_no, r.decide_by, r.reason,

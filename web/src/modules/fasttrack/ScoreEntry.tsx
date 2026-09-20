@@ -3,9 +3,10 @@ import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { Modal } from '../../ui/Drawer.tsx';
 import { Info, SectionNote, Status } from '../../ui/ui.tsx';
+import type { SaveStatus } from '../../ui/SaveState.tsx';
 import { Han } from '../../ui/Han.tsx';
 import { fmtBand, skillLabel } from '../../lib/format.ts';
-import { CRITERIA, CRITERIA_SHORT, criteriaSetFor, type EntrySkill } from '@shared/domain/index.ts';
+import { CRITERIA, CRITERIA_SHORT, NO_SHOW_HINT, criteriaSetFor, type EntrySkill } from '@shared/domain/index.ts';
 
 export type Cell = {
   skill: EntrySkill;
@@ -30,12 +31,26 @@ export type Cell = {
   weekStart?: string | null;
   weekRange?: string | null;
   sitStatus?: string;
+  /**
+   * DẤU '-' "KHÔNG CÓ BÀI" (rule book §17.1). `null` = không có dấu nào còn hiệu lực. `text` là câu đã dựng sẵn
+   * ở máy chủ: "Không có bài · Có thể sửa đến hết Chủ nhật 20/09", "Không dự thi · Tuần W3 SEP 2026", …
+   */
+  noShow?: {
+    state: 'khong-co-bai' | 'khong-du-thi' | 'cho-ql-hieu-chinh';
+    text: string; effectiveOn: string | null; editableUntil: string | null;
+  } | null;
 };
 
 export type SavePatch = {
   rawScore?: number | null;
   criteria?: (number | null)[]; resultDate?: string | null;
+  /** `true` = báo "-" (không có bài), `false` = gỡ dấu. Không phải điểm 0. */
+  noShow?: boolean;
 };
+
+/** Ô đã chốt "không dự thi" hoặc đang chờ Quản lý: người nhập điểm không sửa được nữa (phải qua Quản lý). */
+const lockedByNoShow = (cell: Cell) =>
+  cell.noShow?.state === 'khong-du-thi' || cell.noShow?.state === 'cho-ql-hieu-chinh';
 
 /**
  * Lưu điểm một kỹ năng. Khi lỗi, giữ nguyên giá trị người dùng vừa gõ để họ bấm lại,
@@ -44,21 +59,33 @@ export type SavePatch = {
 export function useSaveScore(attemptId: number, onSaved?: () => void) {
   const toast = useToast();
   const [saving, setSaving] = useState<string | null>(null);
+  /*
+   * TRẠNG THÁI LƯU CỦA TỪNG DÒNG (rule của bảng nhập điểm): mỗi dòng có một chỉ báo riêng — Đang lưu · Đã lưu ·
+   * Lưu lỗi + Thử lại — thay vì lưu cả bảng rồi báo một lỗi chung không nói lỗi ở dòng nào.
+   */
+  const [status, setStatus] = useState<SaveStatus>('idle');
+  const [lastError, setLastError] = useState<string | undefined>(undefined);
   const inflight = useRef(new Set<string>());
+  const failed = useRef<{ skill: string; patch: SavePatch } | null>(null);
 
   const save = async (skill: string, patch: SavePatch): Promise<boolean> => {
     if (inflight.current.has(skill)) return false;   // chặn gửi lặp cùng một ô
     inflight.current.add(skill);
     setSaving(skill);
+    setStatus('saving');
     try {
       await api.put(`/attempts/${attemptId}/scores/${skill}`, patch);
       invalidate('/attempts');
       invalidate('/overview');
       invalidate('/classes');
       invalidate('/students');
+      failed.current = null;
+      setStatus('saved'); setLastError(undefined);
       onSaved?.();
       return true;
     } catch (e: any) {
+      failed.current = { skill, patch };
+      setStatus('error'); setLastError(e.message);
       toast.push('error', `${skillLabel(skill)}: ${e.message}`);
       return false;
     } finally {
@@ -67,7 +94,9 @@ export function useSaveScore(attemptId: number, onSaved?: () => void) {
     }
   };
 
-  return { save, saving };
+  const retry = () => { if (failed.current) void save(failed.current.skill, failed.current.patch); };
+
+  return { save, saving, status, lastError, retry };
 }
 
 /** Ô nhập số câu đúng 0–40. Trống KHÁC 0: xoá ô là xoá điểm, không phải chấm 0. */
@@ -77,49 +106,69 @@ export function RawScoreInput({ cell, onSave, inputRef, onKeyDown }: {
   inputRef?: (el: HTMLInputElement | null) => void;
   onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
 }) {
-  const [draft, setDraft] = useState(cell.rawScore === null ? '' : String(cell.rawScore));
+  /* Bài đã báo "-" thì ô hiện đúng dấu '-' (không phải ô trống, không phải 0). */
+  const shown = () => (cell.rawScore !== null ? String(cell.rawScore) : cell.noShow ? '-' : '');
+  const [draft, setDraft] = useState(shown());
   const [dirty, setDirty] = useState(false);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    if (!dirty) setDraft(cell.rawScore === null ? '' : String(cell.rawScore));
-  }, [cell.rawScore, dirty]);
+    if (!dirty) setDraft(shown());
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `shown` chỉ đọc hai trường đã có trong danh sách
+  }, [cell.rawScore, cell.noShow?.state, dirty]);
 
   const commit = async () => {
     if (!dirty || busy) return;
     setBusy(true);
-    const value = draft.trim() === '' ? null : Number(draft);
-    const ok = await onSave({ rawScore: value });
+    const text = draft.trim();
+    /*
+     * '-' LÀ MỘT LỆNH, KHÔNG PHẢI MỘT SỐ (rule book §17.1): "học viên có lịch mà không làm bài". Ô trống vẫn
+     * chỉ là chưa nhập; xoá ô đang có dấu '-' là gỡ dấu, không phải chấm điểm.
+     */
+    const patch: SavePatch = text === '-' ? { noShow: true }
+      : text === '' && cell.noShow ? { noShow: false }
+      : { rawScore: text === '' ? null : Number(text) };
+    const ok = await onSave(patch);
     setBusy(false);
     if (ok) setDirty(false);       // lỗi thì giữ nguyên bản nháp để người dùng sửa và thử lại
   };
 
-  if (!cell.canEdit) {
+  if (!cell.canEdit || lockedByNoShow(cell)) {
     return (
-      <span className="tabular-nums text-slate-300" title="Bạn không được phân công kỹ năng này">
-        {cell.rawScore === null ? '—' : cell.rawScore}
-        <span className="text-slate-500 text-[11px] ml-1">({fmtBand(cell.band)})</span>
+      <span className="inline-flex flex-col items-start gap-0.5">
+        <span className="tabular-nums text-slate-300"
+          title={lockedByNoShow(cell) ? 'Đã chốt — cần Quản lý hiệu chỉnh' : 'Bạn không được phân công kỹ năng này'}>
+          {cell.rawScore === null ? (cell.noShow ? '-' : '—') : cell.rawScore}
+          {!cell.noShow && <span className="text-slate-500 text-[11px] ml-1">({fmtBand(cell.band)})</span>}
+        </span>
+        {cell.noShow && <span className="text-[10px] text-slate-400 leading-tight">{cell.noShow.text}</span>}
       </span>
     );
   }
 
   return (
-    <span className="inline-flex items-center gap-1.5">
-      <input
-        ref={inputRef}
-        className={`field w-16 text-center tabular-nums ${dirty ? 'border-amber-500/60' : ''}`}
-        inputMode="numeric"
-        value={draft}
-        disabled={busy}
-        aria-label={`${skillLabel(cell.skill)} — số câu đúng`}
-        onChange={(e) => { setDraft(e.target.value); setDirty(true); }}
-        onBlur={commit}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') { void commit(); }
-          onKeyDown?.(e);
-        }}
-      />
-      <span className="tabular-nums text-slate-400 text-xs w-8">{fmtBand(cell.band)}</span>
+    <span className="inline-flex flex-col items-start gap-0.5">
+      <span className="inline-flex items-center gap-1.5">
+        <input
+          ref={inputRef}
+          className={`field w-16 text-center tabular-nums ${dirty ? 'border-amber-500/60' : ''}`}
+          inputMode="numeric"
+          value={draft}
+          disabled={busy}
+          title={NO_SHOW_HINT}
+          aria-label={`${skillLabel(cell.skill)} — số câu đúng. ${NO_SHOW_HINT}`}
+          onChange={(e) => { setDraft(e.target.value); setDirty(true); }}
+          onBlur={commit}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') { void commit(); }
+            /* Esc HUỶ ô đang sửa: trả về giá trị đã lưu, không gửi gì lên máy chủ. */
+            if (e.key === 'Escape' && dirty) { e.preventDefault(); setDraft(shown()); setDirty(false); }
+            onKeyDown?.(e);
+          }}
+        />
+        <span className="tabular-nums text-slate-400 text-xs w-8">{cell.noShow ? '' : fmtBand(cell.band)}</span>
+      </span>
+      {cell.noShow && <span className="text-[10px] text-slate-400 leading-tight">{cell.noShow.text}</span>}
     </span>
   );
 }
@@ -127,18 +176,21 @@ export function RawScoreInput({ cell, onSave, inputRef, onKeyDown }: {
 /** Bốn tiêu chí mở trong khung riêng — bảng mặc định không bày 16 cột tiêu chí. */
 export function CriteriaButton({ cell, onSave }: { cell: Cell; onSave: (patch: SavePatch) => Promise<boolean> }) {
   const [open, setOpen] = useState(false);
+  const editable = cell.canEdit && !lockedByNoShow(cell);
   return (
-    <>
+    <span className="inline-flex flex-col items-start gap-0.5">
       <button
-        className={`btn btn-sm tabular-nums ${cell.canEdit ? '' : 'opacity-70 cursor-default'}`}
-        onClick={() => cell.canEdit && setOpen(true)}
-        title={cell.canEdit ? 'Mở bốn tiêu chí' : 'Bạn không được phân công kỹ năng này'}
+        className={`btn btn-sm tabular-nums ${editable ? '' : 'opacity-70 cursor-default'}`}
+        onClick={() => editable && setOpen(true)}
+        title={editable ? `Mở bốn tiêu chí. ${NO_SHOW_HINT}`
+          : lockedByNoShow(cell) ? 'Đã chốt — cần Quản lý hiệu chỉnh' : 'Bạn không được phân công kỹ năng này'}
       >
-        {fmtBand(cell.band)}
-        {cell.canEdit && <span className="text-slate-500 text-[10px]">sửa</span>}
+        {cell.noShow ? '-' : fmtBand(cell.band)}
+        {editable && <span className="text-slate-500 text-[10px]">sửa</span>}
       </button>
+      {cell.noShow && <span className="text-[10px] text-slate-400 leading-tight">{cell.noShow.text}</span>}
       {open && <CriteriaModal cell={cell} onSave={onSave} onClose={() => setOpen(false)} />}
-    </>
+    </span>
   );
 }
 
@@ -146,16 +198,31 @@ export function CriteriaModal({ cell, onSave, onClose }: {
   cell: Cell; onSave: (patch: SavePatch) => Promise<boolean>; onClose: () => void;
 }) {
   const set = criteriaSetFor(cell.skill) ?? 'writing';
-  const [vals, setVals] = useState<string[]>(cell.criteria.map((v) => (v === null ? '' : String(v))));
+  /* Bài đã báo "-" thì mở ra thấy '-' ở ô đầu — không phải bốn ô trống dễ nhầm với chưa nhập. */
+  const [vals, setVals] = useState<string[]>(
+    cell.noShow && cell.criteria.every((v) => v === null)
+      ? ['-', '', '', '']
+      : cell.criteria.map((v) => (v === null ? '' : String(v))),
+  );
   const [busy, setBusy] = useState(false);
 
-  const nums = vals.map((v) => (v.trim() === '' ? null : Number(v)));
+  /*
+   * MỘT DẤU '-' TRONG BỐN TIÊU CHÍ LÀ ĐỦ báo chưa có bài cho ĐÚNG BÀI NÀY (rule book §17.1): không ghi các tiêu
+   * chí thành 0, không xoá bài khác. Có '-' thì bỏ qua các ô số còn lại.
+   */
+  const dash = vals.some((v) => v.trim() === '-');
+  const nums = vals.map((v) => (v.trim() === '' || v.trim() === '-' ? null : Number(v)));
   const filled = nums.filter((v) => v !== null) as number[];
-  const preview = filled.length === 4 ? Math.round((filled.reduce((a, b) => a + b, 0) / 4) * 2 + 1e-9) / 2 : null;
+  const preview = !dash && filled.length === 4 ? Math.round((filled.reduce((a, b) => a + b, 0) / 4) * 2 + 1e-9) / 2 : null;
 
   const submit = async () => {
     setBusy(true);
-    const ok = await onSave({ criteria: nums });
+    const allEmpty = vals.every((v) => v.trim() === '');
+    /* Xoá sạch bốn ô của một bài đang có dấu '-' là GỠ dấu; xoá bốn ô của bài có điểm là xoá điểm như cũ. */
+    const patch: SavePatch = dash ? { noShow: true }
+      : allEmpty && cell.noShow ? { noShow: false }
+      : { criteria: nums };
+    const ok = await onSave(patch);
     setBusy(false);
     if (ok) onClose();
   };
@@ -175,16 +242,23 @@ export function CriteriaModal({ cell, onSave, onClose }: {
               className="field w-20 text-center tabular-nums"
               inputMode="decimal"
               value={vals[i] ?? ''}
+              title={NO_SHOW_HINT}
               onChange={(e) => setVals((v) => v.map((x, j) => (j === i ? e.target.value : x)))}
             />
           </label>
         ))}
         <div className="flex items-center justify-between border-t pt-3" style={{ borderColor: 'var(--line)' }}>
           <span className="text-sm text-slate-400">Band kỹ năng</span>
-          <strong className="tabular-nums text-lg">{fmtBand(preview)}</strong>
+          <strong className="tabular-nums text-lg">{dash ? '-' : fmtBand(preview)}</strong>
         </div>
+        {dash && (
+          <p className="text-xs text-slate-300 m-0">
+            Sẽ lưu là <strong>Không có bài</strong> cho đúng bài này. Sửa lại được đến hết Chủ nhật của tuần thi;
+            còn nguyên khi hết Chủ nhật thì thành <strong>Không dự thi</strong>.
+          </p>
+        )}
         <SectionNote>
-          Đủ bốn tiêu chí mới ra band. Để trống là chưa chấm, không phải điểm 0.
+          {NO_SHOW_HINT}. Đủ bốn tiêu chí mới ra band. Để trống là chưa chấm, không phải điểm 0.
           {(cell.skill === 'writing1' || cell.skill === 'writing2') &&
             ' Band Writing của học viên = (Task 1 + Task 2 × 2) / 3, tính khi có cả hai task.'}
         </SectionNote>
@@ -202,6 +276,11 @@ export function CriteriaModal({ cell, onSave, onClose }: {
 export function DeadlinePill({ cell }: { cell: Cell }) {
   if (!cell.required) return <Info pending>Ngoài phạm vi</Info>;
   if (cell.progress === 'cancelled') return <Info pending>Đã huỷ phần thi</Info>;
+  /*
+   * HAI MỐC KHÔNG THAY NHAU (rule book §17.1): "Hạn nhập điểm 23/09" là hạn cho bài CÓ thực hiện; còn bài GV đã
+   * báo "-" thì không nợ điểm mà có mốc chốt Chủ nhật — hai cái tên khác nhau, không dùng chung một chỗ.
+   */
+  if (cell.noShow) return <Info>{cell.noShow.text}</Info>;
   /* "Đã nhập" là TRẠNG THÁI CÔNG VIỆC, không phải điểm tốt — nên không tô xanh lá. */
   if (cell.band !== null) return <Status kind="done">Đã nhập</Status>;
   if (cell.progress === 'absent') return <Info pending>Đã vắng — chờ xếp lại</Info>;

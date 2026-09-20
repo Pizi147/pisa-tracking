@@ -8837,6 +8837,284 @@ check('PR-F · Drill-down: tài khoản NGOÀI phạm vi bị từ chối, khôn
     'Chỉ số đã khai báo nhưng chưa có hàm tập ID phải nói thẳng là chưa có, không trả số bịa');
 });
 
+// ==================================================================== PR-G (chặng 3)
+
+/*
+ * DẤU '-' VÀ CHỐT KHÔNG DỰ THI CUỐI CHỦ NHẬT — rule book §17.1.
+ *
+ * Chốt "kể cả không ai mở web" mà không có cron: kết quả là HÀM THUẦN theo (dấu '-', TUẦN CỦA CHÍNH
+ * BÀI, ngày nghiệp vụ), gọi ở đường đọc như `sweepExpiredMoves`. Chạy lúc nào cũng ra cùng kết quả và
+ * cùng ngày hiệu lực; gọi mười lần chỉ chốt một lần.
+ */
+const PRG_SUN = '2026-09-20';     // Chủ nhật cuối tuần W3 SEP 2026 (14–20/09)
+const PRG_MON = '2026-09-21';
+const prgWeek = periodOf('2026-09-14');
+const prgWeekEnd = (conn.prepare('SELECT week_end FROM report_periods WHERE id = ?').get(prgWeek) as any).week_end as string;
+/*
+ * LƯỢT DÙNG CHO PHÉP KIỂM. Bộ demo chỉ có năm lượt FT ở tuần W3 SEP của lớp này, và Speaking của vài lượt
+ * đã `absent` từ dữ liệu seed — nên chọn các ô CÒN SẠCH (chưa có dòng điểm, còn `scheduled`, đúng tuần W3)
+ * rồi phân vai: A, B chỉ có L/R/W sạch; C, D sạch cả bốn kỹ năng. Nhiều kỹ năng KHÁC NHAU của cùng một lượt
+ * được dùng cho nhiều phép kiểm vì chúng độc lập (mỗi kỹ năng có lịch và bộ đếm riêng).
+ */
+const prgSlot = (skills: string[]) => conn.prepare(
+  `SELECT a.id FROM assessment_attempts a
+    WHERE a.class_id = ? AND a.status != 'cancelled' AND a.kind = 'mock'
+      AND NOT EXISTS (SELECT 1 FROM assessment_scores s WHERE s.attempt_id = a.id)
+      AND (SELECT COUNT(*) FROM attempt_skills k WHERE k.attempt_id = a.id AND k.required = 1
+              AND k.skill IN (${skills.map(() => '?').join(',')})
+              AND k.planned_period_id = ? AND k.sit_status = 'scheduled') = ?
+    ORDER BY a.id`,
+).all(mbClass, ...skills, prgWeek, skills.length).map((r: any) => r.id as number);
+const prgLrw = prgSlot(['listening', 'reading', 'writing']);
+const prgA = prgLrw[0], prgB = prgLrw[1], prgE = prgLrw[2];
+/*
+ * Chỉ số theo VAI trong các phép kiểm bên dưới:
+ *   0 báo "-" rồi chốt (Listening của A) · 1 chốt chậm (Reading của A) · 2 ô trống (E)
+ *   3 sửa "-" thành điểm trước chốt (Reading của B) · 4 W2 có điểm, W1 "-" (Writing của B)
+ *   5 W1 và W2 cùng "-" (Writing của E) · 6 quyền và xác nhận C10 (Listening của E) · 7 từ chối C10 (Listening của B)
+ */
+const prgAttempts = [prgA, prgA, prgE, prgB, prgB, prgE, prgE, prgB];
+const prgCell = (attemptId: number, skill: string, today: string = TODAY, period: number = prgWeek) => {
+  const sheet = attempts.classScoreSheet(P.admin, mbClass, period, today) as any;
+  return sheet.rows.find((r: any) => r.attemptId === attemptId)?.cells.find((c: any) => c.skill === skill);
+};
+const prgSit = (attemptId: number, assessed: string) => (conn.prepare(
+  'SELECT sit_status, sit_at, sit_note, planned_period_id, absence_move_count FROM attempt_skills WHERE attempt_id = ? AND skill = ?',
+).get(attemptId, assessed) as any);
+/** BỘ ĐẾM VẮNG: số lần một kỹ năng của một đợt đã được CHỐT không dự thi. */
+const prgSettled = (attemptId: number, assessed: string) => (conn.prepare(
+  `SELECT COUNT(*) n FROM attempt_schedule_history WHERE attempt_id = ? AND action = 'skill_no_show_settled' AND field = ?`,
+).get(attemptId, assessed) as any).n as number;
+const prgWriting1 = loadPrincipal(teacherOfSkill('MB-FT 101', 'writing1'));
+const prgWriting2 = loadPrincipal(teacherOfSkill('MB-FT 101', 'writing2'));
+
+check('PR-G · Tiền đề: bộ demo có đủ lượt FT chưa chấm ở tuần W3 SEP để dựng các phép kiểm', () => {
+  assert(prgWeekEnd === PRG_SUN, `Cuối tuần phải là Chủ nhật ${PRG_SUN}, đang là ${prgWeekEnd}`);
+  assert(prgLrw.length >= 3, `Cần ba lượt còn sạch Listening/Reading/Writing ở W3 SEP; đang có ${prgLrw.length}`);
+});
+
+check('PR-G · Chốt là HÀM THUẦN theo tuần của bài: chạy lúc nào cũng ra cùng kết quả và cùng ngày hiệu lực', () => {
+  const st = (today: string, extra: Record<string, unknown> = {}) => domain.noShowStateOf({
+    marked: true, hasScore: false, sameWeek: true, weekEnd: PRG_SUN, today,
+    enteredAfterWeekEnd: false, lateRule: 'cho-ql-hieu-chinh', ...extra,
+  } as any);
+  const onSunday = st(PRG_SUN);
+  assert(onSunday.state === 'khong-co-bai' && onSunday.editableUntil === PRG_SUN && onSunday.effectiveOn === null,
+    `Đúng ngày Chủ nhật vẫn còn sửa được: ${JSON.stringify(onSunday)}`);
+  for (const today of [PRG_MON, '2026-09-24', '2026-10-15', '2027-01-03']) {
+    const v = st(today);
+    assert(v.state === 'khong-du-thi' && v.effectiveOn === PRG_SUN,
+      `Chạy ngày ${today}: phải chốt với ngày hiệu lực ${PRG_SUN}, đang ${JSON.stringify(v)}`);
+  }
+  assert(st(PRG_MON, { marked: false }).state === 'none', 'Ô trống KHÔNG tự thành vắng');
+  assert(st(PRG_MON, { hasScore: true }).state === 'none', 'Đã có điểm thì dấu "-" không còn hiệu lực');
+  assert(st(PRG_MON, { sameWeek: false }).state === 'none', 'Lịch đã dời sang tuần khác thì dấu "-" của tuần cũ hết nghĩa');
+  assert(st('2026-09-15').state === 'khong-co-bai', 'Chưa hết tuần thì còn là "không có bài"');
+});
+
+check('PR-G · Câu trạng thái đúng chữ của bộ chữ: gợi ý, không có bài, không dự thi, chờ quản lý', () => {
+  assert(domain.NO_SHOW_HINT === 'Nhập - nếu học viên không làm bài', `Gợi ý: "${domain.NO_SHOW_HINT}"`);
+  const early = domain.noShowStateOf({ marked: true, hasScore: false, sameWeek: true, weekEnd: PRG_SUN, today: '2026-09-14',
+    enteredAfterWeekEnd: false, lateRule: 'cho-ql-hieu-chinh' });
+  assert(domain.noShowText(early, 'W3 SEP 2026', '2026-09-14') === 'Không có bài · Có thể sửa đến hết Chủ nhật 20/09',
+    `Sau khi lưu: "${domain.noShowText(early, 'W3 SEP 2026', '2026-09-14')}"`);
+  const settled = domain.noShowStateOf({ marked: true, hasScore: false, sameWeek: true, weekEnd: PRG_SUN, today: PRG_MON,
+    enteredAfterWeekEnd: false, lateRule: 'cho-ql-hieu-chinh' });
+  assert(domain.noShowText(settled, 'W3 SEP 2026', PRG_MON) === 'Không dự thi · Tuần W3 SEP 2026',
+    `Sau chốt: "${domain.noShowText(settled, 'W3 SEP 2026', PRG_MON)}"`);
+  const late = domain.noShowStateOf({ marked: true, hasScore: false, sameWeek: true, weekEnd: PRG_SUN, today: '2026-09-28',
+    enteredAfterWeekEnd: true, lateRule: 'cho-ql-hieu-chinh' });
+  assert(late.state === 'cho-ql-hieu-chinh' && domain.noShowText(late, 'W3 SEP 2026', '2026-09-28') === 'Chờ quản lý hiệu chỉnh',
+    `Tuần đã qua: ${JSON.stringify(late)}`);
+  assert(domain.noShowText({ state: 'none', effectiveOn: null, editableUntil: null }, null, TODAY) === null, 'Không có dấu thì không có câu');
+});
+
+check('PR-G · Chín điểm luật chưa chốt (C01–C09) và C10 là HẰNG SỐ CÓ TÊN ở policy.ts, không rải if', () => {
+  const names = ['C01_HAN_XAC_MINH_SOS_GOM_PA', 'C02_GVCN_XU_LY_CASE_TRAI_MON', 'C03_HAN_KHI_NANG_GAP', 'C04_BAO_CAO_MOI_SAU_KHI_DONG',
+    'C05_SOS_SINH_PA_TRAO_DOI', 'C06_NHAP_BU_CASE_DANG_XU_LY', 'C07_DOT_FT_CHI_W1_HOAC_W2', 'C08_HAN_CHAM_NORMAL',
+    'C09_DE_NGHI_DOI_LICH_HET_HAN', 'C10_NHAP_DAU_TRU_TUAN_QUA_KHU'];
+  for (const n of names) assert(typeof (domain as any)[n] === 'string' && (domain as any)[n].length > 0, `Thiếu hằng số ${n}`);
+  assert(domain.C10_NHAP_DAU_TRU_TUAN_QUA_KHU === 'cho-ql-hieu-chinh',
+    'C10 mặc định phải là KHÔNG tự chốt ngay (LUAT_CHO_CHOT.md §3)');
+  assert(domain.C05_SOS_SINH_PA_TRAO_DOI === 'khong-bat-buoc', 'C05 đã chốt: SOS không bắt buộc sinh phương án trao đổi');
+});
+
+check('PR-G · Bài đã báo "-" không còn là bài cần chấm; ô trống thì vẫn là bài cần chấm', () => {
+  const cells = [
+    { skill: 'listening', required: true, scored: false, progress: 'due', mine: true, noShow: true },
+    { skill: 'reading', required: true, scored: false, progress: 'due', mine: true },
+  ] as any[];
+  const pending = domain.pendingSkillsOf(cells, 'mine');
+  assert(pending.length === 1 && pending[0] === 'reading', `Bài cần chấm phải chỉ còn Reading, đang [${pending.join(',')}]`);
+});
+
+check('PR-G · GV nhập "-" cho bài của mình: lưu là "Không có bài", KHÔNG phải điểm 0 và KHÔNG xoá gì khác', () => {
+  const id = prgAttempts[0];
+  attempts.saveScore(P.lrTeacher, id, 'listening', { noShow: true } as any);
+  const c = prgCell(id, 'listening');
+  assert(c.noShow?.state === 'khong-co-bai', `Ô Listening phải ở trạng thái khong-co-bai, đang ${JSON.stringify(c.noShow)}`);
+  assert(c.noShow.text === 'Không có bài · Có thể sửa đến hết Chủ nhật 20/09', `Câu trạng thái: "${c.noShow.text}"`);
+  assert(c.rawScore === null && c.band === null, `"-" không phải điểm 0: raw=${c.rawScore} band=${c.band}`);
+  assert(prgCell(id, 'reading').noShow?.state === undefined || prgCell(id, 'reading').noShow.state === 'none',
+    'Dấu "-" của Listening lây sang Reading');
+  attempts.saveScore(P.lrTeacher, id, 'listening', { noShow: true } as any);          // bấm lại / retry
+  assert(prgCell(id, 'listening').noShow.state === 'khong-co-bai', 'Lưu lại lần hai phải giữ nguyên trạng thái');
+  assert(prgSit(id, 'listening').sit_status === 'scheduled', 'Trước khi hết Chủ nhật KHÔNG được ghi vắng');
+});
+
+check('PR-G · Chưa hết Chủ nhật thì chưa chốt; hết Chủ nhật thì chốt KHÔNG DỰ THI, gọi mười lần chỉ chốt một lần', () => {
+  const id = prgAttempts[0];
+  assert(absence.settleNoShows(PRG_SUN) === 0, 'Đúng Chủ nhật chưa được chốt');
+  assert(prgSit(id, 'listening').sit_status === 'scheduled', 'Chưa hết Chủ nhật mà đã ghi vắng');
+  const first = absence.settleNoShows(PRG_MON);
+  assert(first >= 1, `Sáng thứ Hai phải chốt ít nhất một bài, đang ${first}`);
+  assert(prgSit(id, 'listening').sit_status === 'absent', 'Listening phải thành đã vắng sau chốt');
+  assert(prgSettled(id, 'listening') === 1, `Bộ đếm vắng phải là 1, đang ${prgSettled(id, 'listening')}`);
+  for (const d of [PRG_MON, PRG_MON, '2026-09-23', '2026-09-30', '2026-10-01', '2026-10-02', '2026-10-03', '2026-10-04', '2026-10-05', '2026-11-01']) {
+    assert(absence.settleNoShows(d) === 0, `Chạy lại ngày ${d} lại chốt thêm một lần`);
+  }
+  assert(prgSettled(id, 'listening') === 1, `Sau mười lần chạy bộ đếm vắng vẫn phải là 1, đang ${prgSettled(id, 'listening')}`);
+  const c = prgCell(id, 'listening', PRG_MON);
+  assert(c.noShow.state === 'khong-du-thi' && c.noShow.text === 'Không dự thi · Tuần W3 SEP 2026',
+    `Sau chốt: ${JSON.stringify(c.noShow)}`);
+  assert(String(prgSit(id, 'listening').sit_at).slice(0, 10) === PRG_SUN,
+    `Ngày hiệu lực phải là cuối Chủ nhật ${PRG_SUN}, đang ${prgSit(id, 'listening').sit_at}`);
+});
+
+check('PR-G · Chạy CHẬM vẫn ra cùng ngày hiệu lực: chốt ở đầu tháng sau vẫn ghi cuối Chủ nhật của tuần thi', () => {
+  const id = prgAttempts[1];
+  attempts.saveScore(P.lrTeacher, id, 'reading', { noShow: true } as any);
+  assert(absence.settleNoShows('2026-10-03') >= 1, 'Chạy ngày 03/10 phải chốt bài Reading');
+  assert(prgSit(id, 'reading').sit_status === 'absent', 'Reading phải thành đã vắng');
+  assert(String(prgSit(id, 'reading').sit_at).slice(0, 10) === PRG_SUN,
+    `Chạy chậm ba tuần vẫn phải ghi ngày hiệu lực ${PRG_SUN}, đang ${prgSit(id, 'reading').sit_at}`);
+});
+
+check('PR-G · Ô TRỐNG không tự thành vắng, dù tuần đã hết và tác vụ chạy lặp', () => {
+  const id = prgAttempts[2];
+  absence.settleNoShows('2026-10-10');
+  for (const s of ['listening', 'reading', 'writing']) {
+    assert(prgSit(id, s).sit_status === 'scheduled', `${s} bị ghi vắng dù chỉ là ô trống`);
+  }
+  assert(prgSettled(id, 'listening') === 0, 'Ô trống không được sinh bộ đếm vắng');
+});
+
+check('PR-G · Sửa "-" thành điểm hợp lệ TRƯỚC chốt thì không tính vắng; đã có điểm thì "-" không xoá âm thầm', () => {
+  const id = prgAttempts[3];
+  attempts.saveScore(P.lrTeacher, id, 'reading', { noShow: true } as any);
+  assert(prgCell(id, 'reading').noShow.state === 'khong-co-bai', 'Phải là không có bài');
+  attempts.saveScore(P.lrTeacher, id, 'reading', { rawScore: 30 });                    // đổi ý trước cuối tuần
+  const band = prgCell(id, 'reading').band;
+  assert(band !== null, 'Điểm hợp lệ phải được lưu');
+  const after = prgCell(id, 'reading').noShow;
+  assert(!after || after.state === 'none', `Dấu "-" phải hết hiệu lực khi đã có điểm: ${JSON.stringify(after)}`);
+  absence.settleNoShows(PRG_MON);
+  assert(prgSit(id, 'reading').sit_status !== 'absent', 'Đã sửa thành điểm trước chốt mà vẫn bị tính vắng');
+  assert(prgSettled(id, 'reading') === 0, 'Không có lần vắng nào được ghi');
+  /* Đã có điểm chính thức: "-" KHÔNG được xoá âm thầm. */
+  assertThrows(() => attempts.saveScore(P.lrTeacher, id, 'reading', { noShow: true } as any), /điểm chính thức|hiệu chỉnh/,
+    'Nhập "-" đè lên một điểm chính thức');
+  assert(prgCell(id, 'reading').band === band, 'Điểm chính thức bị mất');
+});
+
+check('PR-G · "-" ở W1 KHÔNG xoá W2 và không đếm hai lần: chỉ khi CẢ HAI bài của buổi Writing đều "-" mới là vắng, và đúng MỘT lần', () => {
+  const id = prgAttempts[4];
+  /* W2 đã có điểm; W1 báo "-" → buổi Writing có người làm, không thể coi là vắng. */
+  attempts.saveScore(prgWriting2, id, 'writing2', { criteria: [6, 6, 6, 6] });
+  attempts.saveScore(prgWriting1, id, 'writing1', { noShow: true } as any);
+  assert(prgCell(id, 'writing2').band === 6, 'W1 báo "-" đã xoá điểm W2');
+  absence.settleNoShows(PRG_MON);
+  assert(prgSit(id, 'writing').sit_status !== 'absent', 'Buổi Writing có W2 mà bị ghi vắng');
+
+  const id2 = prgAttempts[5];
+  attempts.saveScore(prgWriting1, id2, 'writing1', { noShow: true } as any);
+  absence.settleNoShows(PRG_MON);
+  assert(prgSit(id2, 'writing').sit_status !== 'absent', 'Mới W1 báo "-", W2 chưa nhập — chưa đủ để coi buổi Writing là vắng');
+  attempts.saveScore(prgWriting2, id2, 'writing2', { noShow: true } as any);
+  assert(absence.settleNoShows(PRG_MON) >= 1, 'Cả W1 và W2 đều "-" thì buổi Writing phải được chốt');
+  assert(prgSit(id2, 'writing').sit_status === 'absent', 'Buổi Writing phải thành đã vắng');
+  assert(prgSettled(id2, 'writing') === 1, `Hai ô "-" cùng một buổi chỉ được đếm MỘT lần vắng, đang ${prgSettled(id2, 'writing')}`);
+  absence.settleNoShows('2026-10-20');
+  assert(prgSettled(id2, 'writing') === 1, 'Chạy lại làm bộ đếm vắng tăng');
+});
+
+check('PR-G · Quyền: GV chỉ báo "-" cho bài mình được phân công; chỉ GVCN/Quản lý dời lần đầu, GVBM thì không', () => {
+  const id = prgAttempts[6];
+  assertThrows(() => attempts.saveScore(P.sTeacher, id, 'listening', { noShow: true } as any), /phân công|quyền/,
+    'GV Speaking báo "-" cho ô Listening');
+  /* Listening của lượt đầu đã được chốt vắng ở phép kiểm trước → GVCN dời lần đầu, GVBM thì không. */
+  const settledId = prgAttempts[0];
+  assertThrows(() => absence.requestAbsenceMove(P.sTeacher, settledId, ['listening']), /chủ nhiệm|Quản lý/,
+    'GVBM (không phải GVCN) tự dời lịch chỉ vì mình là người báo "-"');
+  const r = absence.requestAbsenceMove(P.lrTeacher, settledId, ['listening']) as any;
+  assert(r.outcomes[0].result === 'moved', `GVCN dời lần đầu phải được ngay, đang ${JSON.stringify(r.outcomes[0])}`);
+  const row = prgSit(settledId, 'listening');
+  assert(row.absence_move_count === 1 && row.sit_status === 'scheduled', `Sau dời: ${JSON.stringify(row)}`);
+  /* Dấu "-" của tuần cũ hết nghĩa ở tuần mới; chạy chốt lại không tạo thêm lần vắng nào. */
+  absence.settleNoShows('2026-10-25');
+  assert(prgSit(settledId, 'listening').sit_status === 'scheduled', 'Dấu "-" của tuần cũ bị tính lại ở tuần mới');
+  assert(prgSettled(settledId, 'listening') === 1, 'Bộ đếm vắng phải giữ nguyên là 1 qua lần dời');
+  assert(prgSit(settledId, 'listening').absence_move_count === 1, 'Chốt vắng không được reset bộ đếm dời');
+});
+
+check('PR-G · Sau chốt, GV không mở lại được: nhập điểm hay gỡ "-" đều phải qua sửa trạng thái thi', () => {
+  const id = prgAttempts[1];        // Reading đã chốt vắng ở phép kiểm trước
+  assertThrows(() => attempts.saveScore(P.lrTeacher, id, 'reading', { rawScore: 30 }), /vắng|trạng thái thi/,
+    'Nhập điểm vào bài đã chốt không dự thi');
+  assertThrows(() => attempts.saveScore(P.lrTeacher, id, 'reading', { noShow: false } as any), /vắng|trạng thái thi|chốt/,
+    'Gỡ dấu "-" của bài đã chốt không dự thi');
+});
+
+check('PR-G · Normal KHÔNG dùng dấu "-": vẫn phải đủ bốn môn, không có chốt vắng', () => {
+  const { attemptId } = normalWritingAttemptSkill();
+  assertThrows(() => attempts.saveScore(P.normalCoreTeacher, attemptId, 'listening', { noShow: true } as any), /Normal/,
+    'Lớp Normal nhập được dấu "-"');
+});
+
+check('PR-G · C10: nhập "-" cho tuần ĐÃ KẾT THÚC thì KHÔNG tự chốt ngay — chờ Quản lý hiệu chỉnh', () => {
+  const idConfirm = prgAttempts[6];
+  const idReject = prgAttempts[7];
+  const late = '2026-09-28';
+  attempts.saveScore(P.lrTeacher, idConfirm, 'listening', { noShow: true } as any, late);
+  attempts.saveScore(P.lrTeacher, idReject, 'listening', { noShow: true } as any, late);
+  assert(prgCell(idConfirm, 'listening', late).noShow.state === 'cho-ql-hieu-chinh',
+    `Phải chờ quản lý, đang ${JSON.stringify(prgCell(idConfirm, 'listening', late).noShow)}`);
+  absence.settleNoShows('2026-10-05');
+  assert(prgSit(idConfirm, 'listening').sit_status === 'scheduled', 'Tác vụ chốt tự ý chốt một dấu "-" đang chờ quản lý');
+  assertThrows(() => absence.resolveLateNoShow(P.lrTeacher, idConfirm, 'listening', 'confirm', late), /Quản lý/,
+    'GVCN tự hiệu chỉnh tuần đã kết thúc');
+  absence.resolveLateNoShow(P.mbManager, idConfirm, 'listening', 'confirm', late);
+  assert(prgSit(idConfirm, 'listening').sit_status === 'absent' && prgSettled(idConfirm, 'listening') === 1,
+    'Quản lý xác nhận thì phải chốt đúng một lần');
+  absence.resolveLateNoShow(P.mbManager, idReject, 'listening', 'reject', late);
+  const c = prgCell(idReject, 'listening', late);
+  assert(!c.noShow || c.noShow.state === 'none', `Quản lý từ chối thì dấu "-" phải gỡ: ${JSON.stringify(c.noShow)}`);
+  assert(prgSit(idReject, 'listening').sit_status === 'scheduled', 'Từ chối mà vẫn bị ghi vắng');
+});
+
+check('PR-G · Chốt xong là SÁNG THỨ HAI: GVCN vẫn dời lần đầu được (tuần kế tiếp đã bắt đầu), nhưng không dời sang tuần ĐÃ QUA', () => {
+  /*
+   * Phát hiện khi bấm thử ở trình duyệt thật: chốt xảy ra ngay khi hết Chủ nhật, nên lúc GVCN xử lý thì
+   * "tuần kế tiếp" LUÔN đã bắt đầu. Luật vắng cũ chuyển thẳng sang Quản lý khi tuần đích đã bắt đầu — vì
+   * thế "lần đầu GVCN dời" không bao giờ xảy ra được với bài không dự thi. Nay: lần đầu của một bài đã
+   * chốt "không dự thi" chỉ cần tuần đích CHƯA KẾT THÚC. Luật cho mọi trường hợp vắng khác giữ nguyên.
+   */
+  const settledWriting = prgAttempts[5];            // Writing của E đã chốt ở phép kiểm W1/W2
+  assert(prgSit(settledWriting, 'writing').sit_status === 'absent', 'Tiền đề: Writing của E phải đã chốt vắng');
+  const r = absence.requestAbsenceMove(P.lrTeacher, settledWriting, ['writing'], { today: PRG_MON }) as any;
+  assert(r.outcomes[0].result === 'moved',
+    `Sáng thứ Hai GVCN phải dời được lần đầu, đang ${JSON.stringify(r.outcomes[0])}`);
+  assert(prgSit(settledWriting, 'writing').absence_move_count === 1, 'Bộ đếm dời phải là 1');
+
+  /* Chốt bằng Quản lý xác nhận (C10) cũng đi tiếp vào luật này; nhưng xử lý quá muộn — tuần đích đã hết — thì chuyển Quản lý. */
+  const settledListening = prgAttempts[6];          // Listening của E, đã được Quản lý xác nhận ở phép kiểm C10
+  assert(prgSit(settledListening, 'listening').sit_status === 'absent', 'Tiền đề: Listening của E phải đã chốt vắng');
+  const late = absence.requestAbsenceMove(P.lrTeacher, settledListening, ['listening'], { today: '2026-10-05' }) as any;
+  assert(late.outcomes[0].result === 'escalated',
+    `Tuần đích đã kết thúc thì phải chuyển Quản lý, đang ${JSON.stringify(late.outcomes[0])}`);
+  assert(prgSit(settledListening, 'listening').absence_move_count === 0, 'Chuyển Quản lý thì bộ đếm dời chưa tăng');
+});
+
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`

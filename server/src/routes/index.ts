@@ -507,7 +507,22 @@ api.put('/attempts/:id/scores/:skill', requireAuth, wrap((req) => {
   return attemptSvc.saveScore(principalOf(req), pInt(req, 'id'), skill, {
     rawScore: b.rawScore, rawTotal: b.rawTotal,
     criteria: b.criteria, resultDate: b.resultDate, note: b.note,
+    /* Dấu '-' "không có bài" (PR-G) — chỉ nhận đúng true/false, không hiểu chuỗi lạ thành lệnh. */
+    noShow: b.noShow === true ? true : b.noShow === false ? false : undefined,
   });
+}));
+
+/**
+ * QUẢN LÝ HIỆU CHỈNH dấu '-' nhập cho tuần ĐÃ KẾT THÚC (C10): `{ decision: 'confirm' | 'reject' }`.
+ * Không tự chốt và không âm thầm mở lại tuần đã chốt — chỉ Quản lý có quyền xếp lịch làm được việc này.
+ */
+api.post('/attempts/:id/scores/:skill/no-show/resolve', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  const skill = String(req.params.skill);
+  if (!(ENTRY_SKILLS as readonly string[]).includes(skill)) throw badRequest('Kỹ năng không hợp lệ.');
+  const decision = req.body?.decision;
+  if (decision !== 'confirm' && decision !== 'reject') throw badRequest('Cần chọn xác nhận hoặc từ chối.');
+  return absenceSvc.resolveLateNoShow(principalOf(req), pInt(req, 'id'), skill, decision);
 }));
 
 api.get('/classes/:id/score-sheet', requireAuth, wrap((req) => {
