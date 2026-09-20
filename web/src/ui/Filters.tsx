@@ -1,10 +1,11 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useApi } from '../lib/useApi.ts';
 import { useSession } from '../lib/session.tsx';
 import { api } from '../lib/api.ts';
 import { useToast } from './Toast.tsx';
 import { addDaysStr } from '../lib/format.ts';
-import { MONTH_CODE, mondayOfDate, owningMonthOf, weekNumberInMonthOf } from '@shared/domain/index.ts';
+import { mondayOfDate, owningMonthOf, weekCodeOf } from '@shared/domain/index.ts';
 
 export type Period = { id: number; code: string; weekStart: string; weekEnd: string; range: string };
 export type Branch = { id: number; code: string; name: string };
@@ -56,12 +57,6 @@ function rangeOf(weekStart: string): string {
   return `${dm(weekStart)} – ${dm(addDaysStr(weekStart, 6))}`;
 }
 
-/** "W3 SEP 2026" — luôn có năm, vì nhãn này đứng một mình trong nút bấm. */
-function codeOf(weekStart: string): string {
-  const { year, month } = owningMonthOf(weekStart);
-  return `W${weekNumberInMonthOf(weekStart)} ${MONTH_CODE[month - 1]} ${year}`;
-}
-
 /**
  * Lưới lịch tháng, MỖI HÀNG LÀ MỘT TUẦN thứ Hai→Chủ nhật — chọn một ngày trong hàng nào thì
  * chọn cả tuần đó. Có ngày đệm của tháng liền kề để lưới luôn tròn tuần.
@@ -90,14 +85,26 @@ export function resolveWeek(weekStart: string): Promise<{ id: number }> {
 }
 
 /**
- * Chọn tuần: nút Trước · khoảng ngày (bấm mở popover) · nút Sau · Tuần này.
+ * Chọn tuần: nút Trước · trường tuần (bấm mở popover) · nút Sau · Tuần này.
  *
- * Bề mặt gọn — khoảng ngày là định danh chính, mã tuần chỉ là nhãn phụ. Popover cho gõ ngày
- * hoặc bấm lịch tháng; không còn dropdown liệt kê hàng chục dòng (sổ §13.8).
+ *   [ ‹ ]  [ 14/09 – 20/09          W3 SEP 2026 ]  [ › ]  [ Tuần này ]
+ *
+ * BỐ CỤC (HE_GIAO_DIEN §9, design plan §22.3) — lỗi trước đây là lỗi của component + khung chứa
+ * chứ không phải của một màn: nút Trước một hàng, trường tuần một hàng, Sau/Tuần này hàng dưới.
+ *   · ba phần `‹ trường ›` nằm trong MỘT nhóm flex KHÔNG BAO GIỜ TÁCH HÀNG; mũi tên `flex:none`,
+ *     trường tuần `flex:1` + `min-width:0` — thiếu `min-width:0` là nguyên nhân wrap trong ảnh.
+ *   · khung chứa quá hẹp thì chỉ `Tuần này` xuống hàng riêng, có chủ ý (nó ở ngoài nhóm).
+ *   · cao 40px, gap 8px. Bề rộng do KHUNG CHỨA quyết định, không còn `w-52` cố định của từng nơi gọi.
+ *   · trường luôn ghi tuần ĐANG CHỌN THẬT; chưa chọn (và không cho bỏ trống) thì neo tuần hiện tại.
+ *
+ * POPOVER: gõ ngày hoặc bấm lịch tháng (đổi tháng/năm), không dropdown hàng chục tuần (sổ §13.8).
+ * Vẽ qua PORTAL ra `document.body` với `position: fixed` — nên `Drawer`/modal (cắt nội dung bằng
+ * `overflow`) không cắt được nó. Mã tuần lấy từ `weekCodeOf` của `shared/domain/week.ts`, không có
+ * hàm tính tuần thứ hai ở đây.
  */
-export function WeekPicker({ periodId, onPeriod, className = 'w-52', label = 'Tuần', scope, clearable }: {
+export function WeekPicker({ periodId, onPeriod, label = 'Tuần', scope, clearable }: {
   periodId: number | null; onPeriod: (id: number | null) => void;
-  className?: string; label?: string | null;
+  label?: string | null;
   /** 'planning' mở cửa sổ tuần XA về tương lai — xếp lịch MT là việc của tương lai. */
   scope?: 'planning';
   /**
@@ -127,20 +134,68 @@ export function WeekPicker({ periodId, onPeriod, className = 'w-52', label = 'Tu
    *   clearable, periodId null        → người dùng ĐÃ CHỦ ĐỘNG để trống, phải hiện đúng
    *                                      "Chưa xác định", không được ngầm hiện tuần hiện tại.
    */
-  const shown = (periodId !== null || !clearable) ? (list.find((p) => p.isAnchor) ?? null) : null;
+  const anchored = (periodId !== null || !clearable) ? (list.find((p) => p.isAnchor) ?? null) : null;
+  /*
+   * Trường tuần LUÔN GHI MỘT TUẦN THẬT khi có thể: cửa sổ tuần chưa tải xong mà chưa chọn gì
+   * (không clearable) thì tính thẳng tuần hiện tại từ ngày nghiệp vụ — không để trống rồi chú
+   * thích bên dưới.
+   */
+  const shownStart = anchored?.weekStart ?? (periodId === null && !clearable && todayWeekStart ? todayWeekStart : null);
+  const shown = shownStart ? { weekStart: shownStart } : null;
 
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [calYear, setCalYear] = useState(() => owningMonthOf(shown?.weekStart ?? todayWeekStart).year);
   const [calMonth, setCalMonth] = useState(() => owningMonthOf(shown?.weekStart ?? todayWeekStart).month);
+  const [pos, setPos] = useState<{ top: number; left: number; width: number } | null>(null);
   const box = useRef<HTMLDivElement>(null);
+  const field = useRef<HTMLButtonElement>(null);
+  const pop = useRef<HTMLDivElement>(null);
+
+  /** Đặt popover bám dưới trường tuần, kẹp trong màn hình; hết chỗ phía dưới thì lật lên trên. */
+  const place = useCallback(() => {
+    const el = field.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    const width = Math.min(320, window.innerWidth - 16);
+    const left = Math.min(Math.max(8, r.left), window.innerWidth - width - 8);
+    const height = pop.current?.offsetHeight ?? 420;
+    const below = r.bottom + 4;
+    const top = below + height > window.innerHeight && r.top - height - 4 > 8 ? r.top - height - 4 : below;
+    setPos({ top, left, width });
+  }, []);
+
+  useLayoutEffect(() => { if (open) place(); }, [open, place, calMonth, calYear]);
 
   useEffect(() => {
     if (!open) return;
-    const away = (e: MouseEvent) => { if (box.current && !box.current.contains(e.target as Node)) setOpen(false); };
+    const away = (e: MouseEvent) => {
+      const t = e.target as Node;
+      if (box.current?.contains(t) || pop.current?.contains(t)) return;
+      setOpen(false);
+    };
+    /*
+     * ESC CHỈ ĐÓNG POPOVER, không đóng luôn `Drawer`/modal đang chứa nó: nghe ở pha bắt (capture)
+     * và chặn lan, nên listener bấm-Esc-đóng-ngăn-kéo ở pha nổi không nhận được sự kiện này.
+     */
+    const esc = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      e.stopPropagation();
+      setOpen(false);
+      field.current?.focus();
+    };
+    const reposition = () => place();
     document.addEventListener('mousedown', away);
-    return () => document.removeEventListener('mousedown', away);
-  }, [open]);
+    document.addEventListener('keydown', esc, true);
+    window.addEventListener('resize', reposition);
+    window.addEventListener('scroll', reposition, true);
+    return () => {
+      document.removeEventListener('mousedown', away);
+      document.removeEventListener('keydown', esc, true);
+      window.removeEventListener('resize', reposition);
+      window.removeEventListener('scroll', reposition, true);
+    };
+  }, [open, place]);
 
   // Mở popover thì lịch neo lại đúng tháng đang xem — không giữ tháng của lần mở trước.
   useEffect(() => {
@@ -181,93 +236,105 @@ export function WeekPicker({ periodId, onPeriod, className = 'w-52', label = 'Tu
   const recent = [0, -1, -2, -3].map((n) => addDaysStr(todayWeekStart, 7 * n));
 
   return (
-    <div className="block" ref={box}>
+    <div className="block min-w-0" ref={box}>
       {label && <span className="label">{label}</span>}
-      <div className="relative flex items-stretch gap-1 flex-wrap">
-        <button
-          type="button" className="btn btn-sm px-2" disabled={busy}
-          onClick={() => goAdjacent(-1)} aria-label="Tuần trước"
-          title={shown ? `Tuần trước · ${codeOf(addDaysStr(shown.weekStart, -7))}` : 'Tuần trước'}
-        >←</button>
-        <button
-          type="button" className={`field ${className} text-left flex items-center justify-between gap-1`}
-          onClick={() => setOpen((v) => !v)} disabled={busy}
-        >
-          {shown ? (
-            <>
-              <span className="text-slate-100">{rangeOf(shown.weekStart)}</span>
-              <span className="text-slate-500 text-xs shrink-0">{codeOf(shown.weekStart)}</span>
-            </>
-          ) : (
-            <span className="text-slate-500">{clearable ? 'Chưa xác định' : 'Đang tải…'}</span>
-          )}
-        </button>
-        <button
-          type="button" className="btn btn-sm px-2" disabled={busy}
-          onClick={() => goAdjacent(1)} aria-label="Tuần sau"
-          title={shown ? `Tuần sau · ${codeOf(addDaysStr(shown.weekStart, 7))}` : 'Tuần sau'}
-        >→</button>
-        <button type="button" className="btn btn-sm" disabled={busy} onClick={() => void pick(todayWeekStart)}>
+      <div className="flex flex-wrap items-stretch gap-2">
+        {/* NHÓM KHÔNG TÁCH HÀNG: mũi tên · trường tuần · mũi tên. */}
+        <div className="flex flex-1 basis-[17rem] min-w-0 items-stretch gap-2">
+          <button
+            type="button" className="btn flex-none h-10 px-3" disabled={busy}
+            onClick={() => goAdjacent(-1)} aria-label="Tuần trước"
+            title={shown ? `Tuần trước · ${weekCodeOf(addDaysStr(shown.weekStart, -7))}` : 'Tuần trước'}
+          >‹</button>
+          <button
+            ref={field} type="button"
+            className="field flex-1 min-w-0 h-10 text-left flex items-center justify-between gap-2"
+            aria-haspopup="dialog" aria-expanded={open}
+            onClick={() => setOpen((v) => !v)} disabled={busy}
+          >
+            {shown ? (
+              <>
+                <span className="text-slate-100 truncate">{rangeOf(shown.weekStart)}</span>
+                <span className="text-slate-500 text-xs shrink-0">{weekCodeOf(shown.weekStart)}</span>
+              </>
+            ) : (
+              <span className="text-slate-500">{clearable ? 'Chưa xác định' : 'Đang tải…'}</span>
+            )}
+          </button>
+          <button
+            type="button" className="btn flex-none h-10 px-3" disabled={busy}
+            onClick={() => goAdjacent(1)} aria-label="Tuần sau"
+            title={shown ? `Tuần sau · ${weekCodeOf(addDaysStr(shown.weekStart, 7))}` : 'Tuần sau'}
+          >›</button>
+        </div>
+        <button type="button" className="btn flex-none h-10" disabled={busy} onClick={() => void pick(todayWeekStart)}>
           Tuần này
         </button>
         {clearable && shown && (
-          <button type="button" className="btn btn-sm btn-ghost" onClick={() => onPeriod(null)}>Bỏ chọn</button>
-        )}
-
-        {open && (
-          <div
-            className="absolute z-30 top-full left-0 mt-1 w-80 surface-2 rounded-lg border shadow-xl p-3"
-            style={{ borderColor: 'var(--line-strong)' }}
-          >
-            <label className="block mb-2">
-              <span className="label">Gõ ngày</span>
-              <input
-                type="date" className="field"
-                onChange={(e) => { if (e.target.value) void pick(mondayOfDate(e.target.value)); }}
-              />
-            </label>
-
-            <div className="flex items-center justify-between mb-2">
-              <button type="button" className="btn btn-sm px-2" onClick={prevMonth} aria-label="Tháng trước">‹</button>
-              <span className="text-sm text-slate-200">Tháng {calMonth}/{calYear}</span>
-              <button type="button" className="btn btn-sm px-2" onClick={nextMonth} aria-label="Tháng sau">›</button>
-            </div>
-
-            <div className="grid grid-cols-7 gap-0.5 text-[11px] text-slate-500 mb-1">
-              {['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'].map((d) => <div key={d} className="text-center">{d}</div>)}
-            </div>
-            <div className="space-y-0.5">
-              {monthGrid(calYear, calMonth).map((row) => (
-                <div
-                  key={row[0]}
-                  className={`grid grid-cols-7 gap-0.5 rounded ${shown && row[0] === shown.weekStart ? 'bg-white/10' : ''}`}
-                >
-                  {row.map((d) => {
-                    const inMonth = d.slice(0, 4) === String(calYear) && d.slice(5, 7) === String(calMonth).padStart(2, '0');
-                    const isToday = d === today;
-                    return (
-                      <button
-                        key={d} type="button" disabled={busy}
-                        className={`text-center rounded py-0.5 hover:bg-white/10 ${inMonth ? 'text-slate-200' : 'text-slate-600'} ${isToday ? 'font-semibold underline' : ''}`}
-                        onClick={() => void pick(mondayOfDate(d))}
-                      >{Number(d.slice(8, 10))}</button>
-                    );
-                  })}
-                </div>
-              ))}
-            </div>
-
-            <div className="flex flex-wrap gap-1 mt-2 pt-2 border-t" style={{ borderColor: 'var(--line)' }}>
-              <span className="text-[11px] text-slate-500 w-full mb-0.5">Gần đây</span>
-              {recent.map((ws, i) => (
-                <button key={ws} type="button" className="btn btn-sm" disabled={busy} onClick={() => void pick(ws)}>
-                  {i === 0 ? 'Tuần này' : rangeOf(ws)}
-                </button>
-              ))}
-            </div>
-          </div>
+          <button type="button" className="btn btn-ghost flex-none h-10" onClick={() => onPeriod(null)}>Bỏ chọn</button>
         )}
       </div>
+
+      {open && createPortal(
+        <div
+          ref={pop} role="dialog" aria-label="Chọn tuần"
+          className="fixed z-[70] surface-2 rounded-lg border shadow-xl p-3"
+          style={{
+            borderColor: 'var(--line-strong)',
+            top: pos?.top ?? 0, left: pos?.left ?? 0, width: pos?.width ?? 320,
+            /* Chưa đo xong vị trí thì ẩn — không nhấp nháy ở góc trên trái. */
+            visibility: pos ? 'visible' : 'hidden',
+          }}
+        >
+          <label className="block mb-2">
+            <span className="label">Gõ ngày</span>
+            <input
+              type="date" className="field"
+              onChange={(e) => { if (e.target.value) void pick(mondayOfDate(e.target.value)); }}
+            />
+          </label>
+
+          <div className="flex items-center justify-between mb-2">
+            <button type="button" className="btn btn-sm px-2" onClick={prevMonth} aria-label="Tháng trước">‹</button>
+            <span className="text-sm text-slate-200">Tháng {calMonth}/{calYear}</span>
+            <button type="button" className="btn btn-sm px-2" onClick={nextMonth} aria-label="Tháng sau">›</button>
+          </div>
+
+          <div className="grid grid-cols-7 gap-0.5 text-[11px] text-slate-500 mb-1">
+            {['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'].map((d) => <div key={d} className="text-center">{d}</div>)}
+          </div>
+          <div className="space-y-0.5">
+            {monthGrid(calYear, calMonth).map((row) => (
+              <div
+                key={row[0]}
+                className={`grid grid-cols-7 gap-0.5 rounded ${shown && row[0] === shown.weekStart ? 'bg-white/10' : ''}`}
+              >
+                {row.map((d) => {
+                  const inMonth = d.slice(0, 4) === String(calYear) && d.slice(5, 7) === String(calMonth).padStart(2, '0');
+                  const isToday = d === today;
+                  return (
+                    <button
+                      key={d} type="button" disabled={busy}
+                      className={`text-center rounded py-0.5 hover:bg-white/10 ${inMonth ? 'text-slate-200' : 'text-slate-600'} ${isToday ? 'font-semibold underline' : ''}`}
+                      onClick={() => void pick(mondayOfDate(d))}
+                    >{Number(d.slice(8, 10))}</button>
+                  );
+                })}
+              </div>
+            ))}
+          </div>
+
+          <div className="flex flex-wrap gap-1 mt-2 pt-2 border-t" style={{ borderColor: 'var(--line)' }}>
+            <span className="text-[11px] text-slate-500 w-full mb-0.5">Gần đây</span>
+            {recent.map((ws, i) => (
+              <button key={ws} type="button" className="btn btn-sm" disabled={busy} onClick={() => void pick(ws)}>
+                {i === 0 ? 'Tuần này' : rangeOf(ws)}
+              </button>
+            ))}
+          </div>
+        </div>,
+        document.body,
+      )}
     </div>
   );
 }
@@ -309,7 +376,7 @@ export function WeekBranchFilter({ periodId, onPeriod, branchId, onBranch, child
 
   return (
     <div className="flex flex-wrap items-end gap-2">
-      <WeekPicker periodId={periodId} onPeriod={(id) => id && onPeriod(id)} className="w-52" />
+      <WeekPicker periodId={periodId} onPeriod={(id) => id && onPeriod(id)} />
       {showBranch && (
         <label className="block">
           <span className="label">Chi nhánh</span>

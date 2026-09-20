@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Empty, ErrorState, Level, Skeleton, Status } from '../../ui/ui.tsx';
+import { Empty, ErrorState, Level, SCORE_CHIP, SCORE_TEXT, Skeleton, Status, type ScoreTone } from '../../ui/ui.tsx';
 import { fmtBand, fmtDate, sosLabel, sosTone } from '../../lib/format.ts';
 import { api, invalidate } from '../../lib/api.ts';
 import { useSession } from '../../lib/session.tsx';
@@ -756,9 +756,8 @@ function gapText(gap: number): string {
   return gap < 0 ? `thiếu ${Math.abs(gap)}` : `vượt ${gap}`;
 }
 
-type ScoreToneFamily = 'rose' | 'sky' | 'emerald' | 'slate';
-
-function scoreToneFamily(row: Row): ScoreToneFamily {
+/* Bảng bốn màu điểm nằm ở MỘT chỗ duy nhất: `ui.tsx` (SCORE_CHIP / SCORE_TEXT). */
+function scoreToneFamily(row: Row): ScoreTone {
   if (row.band === null) return 'slate';
   if (row.ratio) {
     if (row.missed === null) return 'slate';
@@ -778,23 +777,13 @@ function scoreToneFamily(row: Row): ScoreToneFamily {
  * ở `Status`/`Alert` phía trên: viền + nền nhạt cùng họ màu + chữ đậm.
  */
 function scoreTone(row: Row): string {
-  return SCORE_CHIP_CLASS[scoreToneFamily(row)];
+  return SCORE_CHIP[scoreToneFamily(row)];
 }
 
 /** Chữ trơn cùng họ màu — dùng cho dòng phụ ngắn cạnh số điểm (không phải chip). */
 function scoreToneText(row: Row): string {
-  return SCORE_TEXT_CLASS[scoreToneFamily(row)];
+  return SCORE_TEXT[scoreToneFamily(row)];
 }
-
-const SCORE_CHIP_CLASS: Record<ScoreToneFamily, string> = {
-  rose: 'bg-rose-300/15 text-rose-200 border-rose-300/40',
-  sky: 'bg-sky-300/15 text-sky-200 border-sky-300/40',
-  emerald: 'bg-emerald-300/15 text-emerald-200 border-emerald-300/40',
-  slate: 'bg-slate-300/8 text-slate-400 border-slate-300/20',
-};
-const SCORE_TEXT_CLASS: Record<ScoreToneFamily, string> = {
-  rose: 'text-rose-300', sky: 'text-sky-300', emerald: 'text-emerald-300', slate: 'text-slate-500',
-};
 
 function outcomeTone(outcome: string | null): string {
   if (outcome === 'improved') return 'text-emerald-300';

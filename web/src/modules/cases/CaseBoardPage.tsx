@@ -224,7 +224,7 @@ export function CaseBoard({ embedded = false }: { embedded?: boolean } = {}) {
         </div>
         {can(PERMISSIONS.MEETING_EDIT) && mode === 'place' && (
           <div className="flex flex-wrap items-end gap-2">
-            <WeekPicker periodId={taskPeriod} onPeriod={setTaskPeriod} label="Tuần giao việc" className="w-44" />
+            <WeekPicker periodId={taskPeriod} onPeriod={setTaskPeriod} label="Tuần giao việc" />
             <ManagerTasks periodId={taskPeriod} />
           </div>
         )}

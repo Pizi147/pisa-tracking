@@ -81,7 +81,7 @@ export default function ScoreSheetPage() {
             {data && ` · Bạn được nhập: ${data.editableSkills.length ? data.editableSkills.map(skillShort).join(', ') : 'không kỹ năng nào'}`}
           </p>
         </div>
-        <WeekPicker periodId={periodId} onPeriod={onPeriod} label="Tuần" className="w-56" />
+        <WeekPicker periodId={periodId} onPeriod={onPeriod} label="Tuần" />
       </div>
 
       {loading && <Skeleton rows={8} />}

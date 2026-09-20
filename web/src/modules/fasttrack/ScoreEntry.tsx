@@ -2,8 +2,9 @@ import { useEffect, useRef, useState } from 'react';
 import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { Modal } from '../../ui/Drawer.tsx';
-import { Alert, Info, SectionNote, Status } from '../../ui/ui.tsx';
-import { fmtBand, fmtDate, skillLabel } from '../../lib/format.ts';
+import { Info, SectionNote, Status } from '../../ui/ui.tsx';
+import { Han } from '../../ui/Han.tsx';
+import { fmtBand, skillLabel } from '../../lib/format.ts';
 import { CRITERIA, CRITERIA_SHORT, criteriaSetFor, type EntrySkill } from '@shared/domain/index.ts';
 
 export type Cell = {
@@ -205,18 +206,18 @@ export function DeadlinePill({ cell }: { cell: Cell }) {
   if (cell.band !== null) return <Status kind="done">Đã nhập</Status>;
   if (cell.progress === 'absent') return <Info pending>Đã vắng — chờ xếp lại</Info>;
   if (!cell.deadline) return <Info pending>Chưa xếp tuần</Info>;
+  /*
+   * Giữ NGUYÊN NGHĨA, đổi ĐƯỜNG RENDER (PR-E Step 2): bốn nhánh chuỗi tự dựng ở đây ("Hạn
+   * riêng môn này" / "Hạn riêng cả đợt" / "Hạn" / "Quá hạn") nay đi qua `<Han>` — nên hạn nhập
+   * điểm nói rõ là hạn NHẬP ĐIỂM, quá hạn nói rõ bao nhiêu ngày, và cùng một câu ở mọi màn.
+   * Nguồn hạn (riêng môn / riêng cả đợt) chuyển thành ghi chú đứng sau, không mất thông tin.
+   */
   if (cell.progress === 'upcoming') {
-    return (
-      <Status kind="waiting">
-        Thi {cell.weekRange ?? cell.periodCode} · hạn {fmtDate(cell.deadline)}
-      </Status>
-    );
+    return <Han loai="nhap-diem" han={cell.deadline} tienTo={`Thi ${cell.weekRange ?? cell.periodCode ?? ''}`.trim()} />;
   }
-  const label = cell.deadlineSource === 'skill_override' ? 'Hạn riêng môn này'
-    : cell.deadlineSource === 'attempt_override' ? 'Hạn riêng cả đợt'
-    : 'Hạn';
-  return cell.overdue
-    ? <Alert>Quá hạn {fmtDate(cell.deadline)}</Alert>
-    : <Status kind="waiting">{label} {fmtDate(cell.deadline)}</Status>;
+  const ghiChu = cell.deadlineSource === 'skill_override' ? 'riêng môn này'
+    : cell.deadlineSource === 'attempt_override' ? 'riêng cả đợt'
+    : undefined;
+  return <Han loai="nhap-diem" han={cell.deadline} ghiChu={ghiChu} />;
 }
 

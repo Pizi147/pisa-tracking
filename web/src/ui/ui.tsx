@@ -20,6 +20,32 @@ export function Card({ title, action, children, className = '', bodyClass = 'p-4
 type Tone = 'ok' | 'warn' | 'danger' | 'info' | 'neutral' | 'muted';
 
 /**
+ * BỐN MÀU ĐIỂM — MỘT BẢNG DUY NHẤT (HE_GIAO_DIEN §2, chốt 17/09).
+ *
+ *   rose     dưới kỳ vọng     — điểm tăng mà vẫn dưới kỳ vọng VẪN ĐỎ
+ *   sky      bằng kỳ vọng
+ *   emerald  vượt kỳ vọng     — không dùng xanh lá cho bất kỳ nghĩa nào khác trên ô điểm
+ *   slate    thiếu dữ liệu    — khác điểm 0, khác ô trống
+ *
+ * Trước đây bảng này được chép ở `SkillBoard.tsx`, và mỗi component mới sẽ tự chép thêm một
+ * bản với sắc hơi khác. Nay `SkillBoard`, `KetQuaDot` và mọi ô điểm về sau đọc từ đây.
+ *
+ * CHIP CÓ NỀN thay vì chữ màu trơn: chữ màu trơn trên nền tối tương phản yếu (yêu cầu riêng của
+ * chủ sản phẩm). Viền + nền nhạt cùng họ màu + chữ đậm — cùng kiểu với `Status`/`Alert`.
+ */
+export type ScoreTone = 'rose' | 'sky' | 'emerald' | 'slate';
+export const SCORE_CHIP: Record<ScoreTone, string> = {
+  rose: 'bg-rose-300/15 text-rose-200 border-rose-300/40',
+  sky: 'bg-sky-300/15 text-sky-200 border-sky-300/40',
+  emerald: 'bg-emerald-300/15 text-emerald-200 border-emerald-300/40',
+  slate: 'bg-slate-300/8 text-slate-400 border-slate-300/20',
+};
+/** Chữ trơn cùng họ màu — cho dòng phụ ngắn cạnh số điểm (không phải chip). */
+export const SCORE_TEXT: Record<ScoreTone, string> = {
+  rose: 'text-rose-300', sky: 'text-sky-300', emerald: 'text-emerald-300', slate: 'text-slate-500',
+};
+
+/**
  * SÁU HỌ NHÃN, PHÂN BIỆT BẰNG HÌNH DẠNG TRƯỚC, MÀU SAU (mục 2.1).
  *
  * Trước vòng 5 gần như mọi thứ dùng chung một kiểu `Pill`: mức SOS của một đứa trẻ, việc
@@ -257,13 +283,23 @@ export function KpiTile({ label, value, tone = 'neutral', to, sub }: {
   return to ? <Link to={to} className="block h-full no-underline">{inner}</Link> : inner;
 }
 
-export function Field({ label, children, hint, required }: { label: string; children: ReactNode; hint?: string; required?: boolean }) {
+/**
+ * Một nhãn + một ô. Mặc định bọc bằng `<label>` để bấm vào chữ là vào ô.
+ *
+ * ĐIỀU KHIỂN GỒM NHIỀU NÚT (bộ chọn tuần) thì truyền `as="div"`: `<label>` bọc nhiều nút sẽ
+ * chuyển cú bấm vào chữ sang nút ĐẦU TIÊN — với bộ chọn tuần đó là "Tuần trước", nên bấm vào
+ * nhãn thì tuần nhảy lùi.
+ */
+export function Field({ label, children, hint, required, as = 'label' }: {
+  label: string; children: ReactNode; hint?: string; required?: boolean; as?: 'label' | 'div';
+}) {
+  const Wrap = as;
   return (
-    <label className="block">
+    <Wrap className="block">
       <span className="label">{label}{required && <span className="text-rose-300"> *</span>}</span>
       {children}
       {hint && <span className="block text-[11px] text-slate-500 mt-1">{hint}</span>}
-    </label>
+    </Wrap>
   );
 }
 

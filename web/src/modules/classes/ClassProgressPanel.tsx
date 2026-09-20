@@ -87,10 +87,10 @@ export function ClassProgressPanel({ classId, classCode, onClose, onDone }: {
             )}
           </div>
 
-          <Field label="Tuần khai giảng" required={isNormal}
+          <Field as="div" label="Tuần khai giảng" required={isNormal}
             hint="Tuần này là TUẦN HỌC THỨ 1 của lớp. Hai mốc kiểm tra đếm từ đây.">
             <WeekPicker periodId={startPeriodId} label={null} scope="planning"
-              onPeriod={(id) => { setTouched(true); setStartPeriodId(id); }} className="w-full" />
+              onPeriod={(id) => { setTouched(true); setStartPeriodId(id); }} />
           </Field>
 
           {isNormal ? (

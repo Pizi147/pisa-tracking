@@ -134,9 +134,10 @@ export function MockPlanPanel({ classId, branchId, onClose, onDone }: {
     >
       <div className="space-y-4">
         {/* ------------------------------------------------ 1. tuần chốt chung */}
-        <div className="grid gap-3 sm:grid-cols-2">
+        {/* Một cột: bộ chọn tuần chiếm hết bề rộng panel, không bị ép vào nửa lưới hai cột. */}
+        <div className="grid gap-3">
           <div>
-            <WeekPicker periodId={periodId} onPeriod={setPeriodId} className="w-full"
+            <WeekPicker periodId={periodId} onPeriod={setPeriodId}
               label="Tuần MT" scope="planning" />
             <p className="text-[11px] text-slate-500 mt-1">
               Các em xếp chung một tuần vẫn có thể ở những lượt MT khác nhau.

@@ -8353,6 +8353,150 @@ check('PR-D · CASE-06 không nới sang học thuật: case học thuật thi�
   );
 });
 
+// ==================================================================== PR-E (chặng 1)
+
+/*
+ * NỀN GIAO DIỆN DÙNG CHUNG — bốn lỗi lặp ở nhiều màn được đóng ở LUẬT, không ở từng màn:
+ * hạn không nói rõ hạn gì (F11) · badge đạt khi chưa đủ điểm (MT-P01) · phần trăm không có
+ * mẫu số (rule book §11) · ngày nghiệp vụ lẫn ngày ghi nhận (MT-P10).
+ *
+ * Các luật nằm ở `shared/domain/display.ts` — hàm thuần, kiểm được ở đây. Component React chỉ
+ * là lớp vẽ mỏng phía trên: nó không có luật riêng để sai khác đi.
+ */
+
+check('PR-E · <TyLe>: mẫu số 0 ghi "Chưa có dữ liệu", KHÔNG BAO GIỜ vẽ 0%', () => {
+  const v = domain.rateView(0, 0);
+  assert(v.kind === 'no-data', `N=0 phải là no-data, đang là ${v.kind}`);
+  assert(domain.rateText(0, 0) === 'Chưa có dữ liệu', `Đang ghi "${domain.rateText(0, 0)}"`);
+  assert(!/%/.test(domain.rateText(0, 0)), 'N=0 mà vẫn có dấu %');
+});
+
+check('PR-E · <TyLe>: n/N đứng trước, phần trăm trong ngoặc đứng sau', () => {
+  assert(domain.rateText(12, 18, 'PA có cải thiện') === '12/18 PA có cải thiện (67%)',
+    `Đang ghi "${domain.rateText(12, 18, 'PA có cải thiện')}"`);
+  assert(domain.rateText(10, 15) === '10/15 (67%)', `Đang ghi "${domain.rateText(10, 15)}"`);
+  const t = domain.rateText(12, 18, 'PA có cải thiện');
+  assert(t.indexOf('12/18') < t.indexOf('%'), 'Phần trăm không được đứng trước n/N');
+});
+
+check('PR-E · <TyLe>: mẫu dưới 5 gắn nhãn "mẫu nhỏ"; từ 5 trở lên thì không', () => {
+  assert(domain.rateText(1, 1) === '1/1 (100%) · mẫu nhỏ', `Đang ghi "${domain.rateText(1, 1)}"`);
+  assert(domain.rateText(3, 4) === '3/4 (75%) · mẫu nhỏ', `Đang ghi "${domain.rateText(3, 4)}"`);
+  assert(domain.rateText(4, 5) === '4/5 (80%)', `N=5 chưa phải mẫu nhỏ, đang ghi "${domain.rateText(4, 5)}"`);
+  assert(domain.rateView(1, 1).kind === 'value' && (domain.rateView(1, 1) as any).smallSample === true,
+    'rateView phải báo smallSample để giao diện gắn nhãn');
+});
+
+check('PR-E · <TyLe>: số vô lý (n > N, số âm, không nguyên) bị báo lỗi, không được vẽ thành phần trăm', () => {
+  for (const [n, N] of [[5, 3], [-1, 4], [1.5, 4], [1, NaN]] as const) {
+    assert(domain.rateView(n, N).kind === 'invalid', `${n}/${N} phải là invalid, đang là ${domain.rateView(n, N).kind}`);
+    assert(!/%/.test(domain.rateText(n, N)), `${n}/${N} vẫn vẽ ra phần trăm: "${domain.rateText(n, N)}"`);
+  }
+});
+
+check('PR-E · <KetQuaDot> (MT-P01): ép coDiem=1, yeuCau=4, dat=true → "Chưa đủ điểm", KHÔNG có badge đạt', () => {
+  const v = domain.attemptProgressView({ scored: 1, required: 4, passed: true, sos: 0 });
+  assert(v.overall === 'incomplete', `Overall phải là incomplete, đang là ${v.overall}`);
+  assert(v.overallText === 'Chưa đủ điểm', `Overall đang ghi "${v.overallText}"`);
+  assert(v.passBadge === false, 'Chưa đủ điểm mà vẫn có badge đạt — đúng lỗi MT-P01');
+  assert(v.tone !== 'info' && v.tone !== 'ok', `Chưa đủ điểm mà vẫn tô màu đạt (${v.tone})`);
+  for (const dat of [true, false, null]) {
+    const w = domain.attemptProgressView({ scored: 3, required: 4, passed: dat, sos: 0 });
+    assert(w.passBadge === false && w.overall === 'incomplete', `scored 3/4, passed=${dat}: vẫn có badge đạt`);
+  }
+});
+
+check('PR-E · <KetQuaDot>: năm nhánh câu chữ đúng bảng ở HE_GIAO_DIEN §5', () => {
+  const s = (scored: number, sos: number | null, passed: boolean | null = null) =>
+    domain.attemptProgressView({ scored, required: 4, passed, sos });
+  assert(s(0, null).text === 'Chưa có điểm · 0/4 kỹ năng', `Nhánh 1: "${s(0, null).text}"`);
+  assert(s(0, null).tone === 'muted', 'Nhánh 1 phải xám');
+  assert(s(2, 0).text === 'Các kỹ năng đã chấm đều đạt · còn thiếu 2', `Nhánh 2: "${s(2, 0).text}"`);
+  assert(s(2, 0).tone === 'muted', 'Nhánh 2 phải xám');
+  assert(s(2, 1).text === 'SOS 1 tạm thời · 2/4 kỹ năng có điểm', `Nhánh 3: "${s(2, 1).text}"`);
+  assert(s(2, 1).tone === 'danger' && /tạm thời/.test(s(2, 1).text), 'Nhánh 3 phải đỏ và giữ chữ "tạm thời"');
+  assert(s(4, 0, true).text === 'Đã đủ điểm · Đạt kỳ vọng', `Nhánh 4: "${s(4, 0, true).text}"`);
+  assert(s(4, 0, true).overall === 'passed' && s(4, 0, true).passBadge === true, 'Đủ điểm và đạt thì mới có badge đạt');
+  assert(s(4, 2, false).text === 'Đã đủ điểm · SOS 2', `Nhánh 5: "${s(4, 2, false).text}"`);
+  assert(s(4, 2, false).tone === 'danger' && s(4, 2, false).passBadge === false, 'Nhánh 5 phải đỏ, không badge đạt');
+});
+
+check('PR-E · <KetQuaDot>: đơn vị đếm là BỐN kỹ năng — "1/5 kỹ năng" bị chặn (MT-P02)', () => {
+  // W1/W2 là hai BÀI NHẬP của một kỹ năng Writing, không phải hai kỹ năng.
+  const v = domain.attemptProgressView({ scored: 1, required: 5, passed: null, sos: null });
+  assert(v.overall === 'invalid', `yeuCau=5 phải bị chặn, đang là ${v.overall}`);
+  assert(!/1\/5/.test(v.text), `Vẫn ghi ra "1/5": "${v.text}"`);
+  assert(domain.attemptProgressView({ scored: 5, required: 4, passed: true, sos: 0 }).overall === 'invalid',
+    'Số kỹ năng có điểm vượt số yêu cầu phải bị chặn');
+  assert(domain.attemptProgressView({ scored: 0, required: 0, passed: null, sos: null }).overall === 'invalid',
+    'Đợt không có kỹ năng bắt buộc nào không được vẽ thành "0/0 kỹ năng"');
+});
+
+check('PR-E · <KetQuaDot>: đủ điểm nhưng thiếu kỳ vọng thì không bịa ra đạt/chưa đạt', () => {
+  const v = domain.attemptProgressView({ scored: 4, required: 4, passed: null, sos: null });
+  assert(v.passBadge === false && v.overall === 'no-expectation', `Đang là ${v.overall}, badge ${v.passBadge}`);
+  assert(/Đã đủ điểm/.test(v.text), `Câu phải nói đã đủ điểm: "${v.text}"`);
+});
+
+check('PR-E · <Han>: sáu loại hạn có sáu nhãn khác nhau, đúng bảng HE_GIAO_DIEN §4', () => {
+  const t = (loai: any, han = '2026-09-23') => domain.deadlineView({ kind: loai, due: han, today: '2026-09-14' }).text;
+  assert(t('xac-minh-sos') === 'Xác minh nguyên nhân · hạn 23/09', `xac-minh-sos: "${t('xac-minh-sos')}"`);
+  assert(t('lap-pa') === 'Cần có phương án · hạn 23/09', `lap-pa: "${t('lap-pa')}"`);
+  assert(t('cap-nhat-pa') === 'Cập nhật kết quả · trước CN 23/09', `cap-nhat-pa: "${t('cap-nhat-pa')}"`);
+  assert(t('thuc-hien-y-thuc') === 'Thực hiện xong · hạn 23/09', `thuc-hien-y-thuc: "${t('thuc-hien-y-thuc')}"`);
+  assert(t('hoan-thanh-y-thuc') === 'Kết luận đợt · hạn 23/09', `hoan-thanh-y-thuc: "${t('hoan-thanh-y-thuc')}"`);
+  assert(t('nhap-diem') === 'Hạn nhập điểm 23/09', `nhap-diem: "${t('nhap-diem')}"`);
+  assert(t('du-kien-ket-thuc') === 'Dự kiến kết thúc 23/09', `du-kien-ket-thuc: "${t('du-kien-ket-thuc')}"`);
+  const all = ['xac-minh-sos', 'lap-pa', 'cap-nhat-pa', 'thuc-hien-y-thuc', 'hoan-thanh-y-thuc', 'nhap-diem', 'du-kien-ket-thuc'].map((k) => t(k));
+  assert(new Set(all).size === 7, 'Có hai loại hạn dùng chung một câu — chúng là sáu đồng hồ khác nhau');
+});
+
+check('PR-E · <Han>: quá hạn ghi rõ số ngày và đếm từ HẠN GỐC, không từ hạn đã dời', () => {
+  const v = domain.deadlineView({ kind: 'nhap-diem', due: '2026-09-23', today: '2026-09-25' });
+  assert(v.text === 'Hạn nhập điểm 23/09 · quá hạn 2 ngày' && v.tone === 'overdue' && v.daysOverdue === 2,
+    `Đang ghi "${v.text}" (${v.tone}, ${v.daysOverdue})`);
+  // Hạn đã dời sang 30/09 nhưng hạn gốc 23/09 đã qua 2 ngày: vẫn đếm từ 23/09.
+  const moved = domain.deadlineView({ kind: 'nhap-diem', due: '2026-09-30', originalDue: '2026-09-23', today: '2026-09-25' });
+  assert(moved.daysOverdue === 2, `Phải đếm từ hạn gốc (2 ngày), đang là ${moved.daysOverdue}`);
+  // Chưa quá hạn thì không tô quá hạn.
+  const ok = domain.deadlineView({ kind: 'nhap-diem', due: '2026-09-23', today: '2026-09-23' });
+  assert(ok.tone !== 'overdue' && ok.daysOverdue === null, 'Đúng ngày hạn chưa phải quá hạn');
+});
+
+check('PR-E · <Han>: có hẹn xử lý thì hiện CẢ HAI, không ghi đè hạn gốc', () => {
+  const v = domain.deadlineView({ kind: 'nhap-diem', due: '2026-09-23', reschedule: '2026-09-30', today: '2026-09-14' });
+  assert(v.text === 'Hạn nhập điểm 23/09 · Hẹn xử lý 30/09', `Đang ghi "${v.text}"`);
+});
+
+check('PR-E · <Han>: "Dự kiến kết thúc" KHÔNG phải hạn — không bao giờ quá hạn, không bao giờ đỏ (F11)', () => {
+  const v = domain.deadlineView({ kind: 'du-kien-ket-thuc', due: '2026-08-30', today: '2026-09-14' });
+  assert(v.tone === 'neutral' && v.daysOverdue === null, `Đang là ${v.tone}, quá hạn ${v.daysOverdue}`);
+  assert(!/quá hạn/.test(v.text), `Ngày dự kiến bị ghi là quá hạn: "${v.text}"`);
+});
+
+check('PR-E · <Han>: cập nhật phương án là mốc Chủ nhật — không có đơn vị "ngày"', () => {
+  const v = domain.deadlineView({ kind: 'cap-nhat-pa', due: '2026-09-06', today: '2026-09-14' });
+  assert(v.tone === 'overdue' && /quá hạn/.test(v.text), `Phải báo quá hạn: "${v.text}"`);
+  assert(!/\d+ ngày/.test(v.text), `cap-nhat-pa không được đếm số ngày: "${v.text}"`);
+});
+
+check('PR-E · <Han>: thiếu ngày hạn thì nói thẳng là chưa có hạn, không vẽ "Invalid Date"', () => {
+  const v = domain.deadlineView({ kind: 'nhap-diem', due: null, today: '2026-09-14' });
+  assert(/chưa có hạn/.test(v.text) && !/Invalid|NaN|undefined/.test(v.text), `Đang ghi "${v.text}"`);
+});
+
+check('PR-E · Ngày viết ngắn 14/09 trong cùng năm, có năm khi qua năm khác', () => {
+  assert(domain.shortDate('2026-09-14', '2026-09-20') === '14/09', domain.shortDate('2026-09-14', '2026-09-20'));
+  assert(domain.shortDate('2027-01-05', '2026-09-20') === '05/01/2027', domain.shortDate('2027-01-05', '2026-09-20'));
+});
+
+check('PR-E · Ngày nghiệp vụ khác ngày ghi nhận thì hiện CẢ HAI (MT-P10), cùng ngày thì chỉ một', () => {
+  assert(domain.businessDateText('2026-09-14', '2026-09-19T10:20:00Z', '2026-09-19') === 'Ngày nghiệp vụ 14/09 · Ghi nhận 19/09',
+    domain.businessDateText('2026-09-14', '2026-09-19T10:20:00Z', '2026-09-19'));
+  assert(domain.businessDateText('2026-09-14', '2026-09-14T03:00:00Z', '2026-09-14') === '14/09',
+    domain.businessDateText('2026-09-14', '2026-09-14T03:00:00Z', '2026-09-14'));
+});
+
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`

@@ -1495,8 +1495,8 @@ sổ §13.12 chốt *"GV trong lớp có thể báo vấn đề; chỉ QL/GVCN t
       cụm `ATTEMPT_VIEW`/`STUDENT_VIEW`: case học thuật dùng `'skill'`, case Ý thức dùng
       `'core'`. `ATTEMPT_VIEW` và `STUDENT_VIEW` **giữ nguyên `'any'`** — xem trong lớp mình là
       đúng, chỉ sửa mới cần siết. Thêm quyền `SOS_REPORT` riêng (rộng, như `ATTEMPT_VIEW` cũ)
-      cho đúng việc BÁO vấn đề, tách khỏi `SOS_EDIT` đã siết.
-- [ ] **Step 4: Nhập bù theo cùng luật.** `backfillCase` dùng đúng kiểm tra này, không đường riêng.
+      cho đúng việc BÁO vấn đề, tách khỏi `SOS_EDIT` đã siết. *(Đã làm, kèm nhánh thứ sáu: đếm sai đơn vị (`yeuCau` > 4, hoặc `coDiem` > `yeuCau`) bị chặn thành "Số liệu tiến độ không hợp lệ" thay vì vẽ ra. **Chưa nối vào màn thật nào** — chỗ dùng thật là PR-I Step 3.)*
+- [x] **Step 4: Nhập bù theo cùng luật.** `backfillCase` dùng đúng kiểm tra này, không đường riêng.
       **Chưa làm được — không phải bỏ sót mà vì chưa tới lượt:** hàm `backfillCase` là một
       phần của PR-C Task 3 ("Đã xong từ trước"), và Task 3 **chưa bắt đầu** tại thời điểm ghi
       dòng này. Khi viết Task 3, hàm đó phải gọi `sosEditCtx`/cùng luật `SOS_EDIT` như mọi nơi
@@ -1675,6 +1675,18 @@ Xem mục 7b để biết phần đã làm. Bốn việc sau **chưa làm**, kh�
 | "Đợt hoàn tất thì chỉ đọc" ở `setSkillWeek` | `assessment_attempts.status` không có giá trị riêng cho "hoàn tất" — trạng thái này đang được SUY ra (đủ điểm required), không phải một cột. Chặn nhầm có thể khoá luôn việc hiệu chỉnh hợp lệ | Xác định rõ "hoàn tất" nghĩa là gì ở tầng dữ liệu trước khi chặn — cần chủ sản phẩm xác nhận định nghĩa, không tự suy |
 | **Nút dời lịch một kỹ năng cho lớp Normal — chưa có ở BẤT KỲ đâu trên giao diện** | Quyền `schedule.move` đã mở đúng ở máy chủ (12 phép kiểm xác nhận), nhưng nút "Đổi tuần"/"Đã thi"/"Xác nhận vắng" chỉ tồn tại ở `MockDetailPage.tsx`, mà file đó tự điều hướng MỌI lượt Normal sang `RegularSheetPage.tsx` — nơi không có nút nào như vậy. Phát hiện lúc bấm thử tay, không phải lúc viết kế hoạch | Dựng UI dời lịch cho `RegularSheetPage.tsx` (hoặc một màn chi tiết riêng cho lượt Normal) — tái dùng `moveableSkills`/`canMoveSkillSchedule` đã có sẵn ở máy chủ, chỉ còn thiếu giao diện |
 
+### 12.7. Việc chặng 1 (PR-E) chưa làm hoặc để lại — 20/09/2026
+
+- **`<KetQuaDot>` và `<TyLe>` chưa có màn thật nào dùng.** Chúng có luật, có kiểm thử và có trang thử; nối vào màn là việc của PR-I
+  (Step 3) và PR-F (Step 5). Đừng ghi PR-E là "đã sửa MT-P01" — nó mới **đóng cửa lỗi ở component**, các màn cũ còn tự vẽ câu riêng.
+- **`useNgayNghiepVu()` chưa thay các chỗ khác** đang tự đọc `session.demoDate` hoặc `fmtDate`; MT-P10 (ngày nghiệp vụ ≠ ngày ghi nhận)
+  chưa hiện ở màn nào.
+- **Không có dữ liệu demo nào đang quá hạn nhập điểm**, nên dạng chữ "quá hạn n ngày" mới được kiểm bằng phép kiểm thuần, chưa nhìn
+  được trên màn thật.
+- **DS14 (skeleton đúng hình dáng bảng)** ghi ở mục 20 là "trong PR-E" nhưng mục 20 chưa được duyệt — không làm.
+- Ảnh chụp trước/sau và ảnh thang xám (nghiệm thu 15.3): công cụ chụp ảnh hết thời gian chờ nên **chưa có**; đã đo bằng cấu trúc
+  trang thay vì bằng mắt.
+
 ---
 
 ## 13. Lệnh kiểm bắt buộc
@@ -1744,6 +1756,7 @@ Nói **cái gì đổi trên màn hình**, bằng tiếng Việt, không tên h�
 | 19/09/2026 (đêm, hợp nhất) | Claude (session code PR-C) | `main` đã tiến lên (PR2b merge, #26) sau khi PR-C branch từ `f1e3591` — GitHub báo PR #27 có xung đột. Hợp nhất `origin/main` vào nhánh PR-C, giải xung đột ở bốn file (`plan.md`, `server/src/permissions.ts`, `server/src/seed/data.ts`, `server/src/tests/run.ts`) — toàn bộ là cộng dồn (cả hai nhánh cùng thêm quyền/nhãn/phép kiểm mới ở cuối danh sách, không nhánh nào sửa đè lên dòng của nhánh kia), không có xung đột nghiệp vụ thật. Giữ cả `schedule.move` (PR2b) lẫn `sos.report`/`sos.edit` (PR-C) trong `ROLE_PERMISSIONS`, giữ cả hai nhánh `explain()`, nối các phép kiểm SCH-01/T09/T13 (PR2b) vào sau các phép kiểm CASE-01/AUTH-01/nhập bù (PR-C) |
 | 20/09/2026 | Claude (session thiết kế) | Đọc `thiet-ke/PISA-Rulebook-2026-09-19.md` v1.1 và `thiet-ke/PISA-Design-Plan-after-PR28.md` v1.2, brainstorm bổ sung rồi viết thành việc làm được. Thêm **mục 15–19** (PR-E nền giao diện · PR-F hợp đồng số liệu · PR-G dấu '-' và chốt cuối Chủ nhật · PR-I hồ sơ Test gọn · PR-H biên tập), **mục 20** (kho ý tưởng thiết kế DS01–DS18 + ba ý tưởng đã loại), 13 dòng vào mục 3 và sáu dòng vào lộ trình mục 4. Đặt số mục mới ở **cuối file** thay vì chen vào giữa, để khỏi đánh số lại mục 12/13/14 và mọi tham chiếu nội dòng đang trỏ tới chúng. Tạo thư mục `thiet-ke/` bốn file: hệ giao diện, hợp đồng số liệu, từ điển + bộ chữ, chín điểm luật chưa chốt. **Chưa sửa một dòng mã sản phẩm nào.** Bản đầu chia năm PR thành nhiều nhánh song song; chủ sản phẩm đi vắng dài ngày nên **đổi sang một nhánh năm chặng** (mục 0.4 viết lại), thêm **mục 0.5** (năm file PR-D đang giữ) và **mục 21** (thứ tự merge + cách gỡ bốn loại xung đột, viết cho người không đọc code). Bốn chỗ quyết định đáng ghi lại: (1) chia chặng theo **file bị khoá**, không theo chủ đề — nhờ vậy ba chặng đầu chạy được ngay mà không chờ PR-D; (2) **PR-D merge trước, batch merge sau**, vì PR-D gỡ và xếp lại còn batch thêm lên trên — ngược thứ tự là biến việc của máy thành việc của người; (3) hàm chốt dấu '-' viết thành **hàm thuần theo tuần lịch của bài**, không theo thời điểm chạy, nên gọi ở đường đọc như `sweepExpiredMoves()` đã đủ đáp ứng "kể cả không ai mở web", không cần dựng cron; (4) bốn lỗi lặp ở nhiều màn (hạn không rõ loại, badge đạt khi chưa đủ điểm, % không mẫu số, tuần rớt hàng) đóng **ở component** để `tsc` chặn, không đóng bằng kỷ luật review |
 | 20/09/2026 | Claude (session batch, chặng 0 — PR-D) | **Không có nhánh PR-D nào trên `origin`** (nhánh cục bộ `claude/pr-d-implementation-fe6460` không có commit nào, chỉ đứng ở merge PR #28), nên theo mục 21.3 cách B, session batch làm luôn PR-D thành **chặng 0**, trên MỘT nhánh `worktree-batch-thiet-ke-sau-pr28`; mục 0.5 và bước hợp nhất PR-D ở mục 21.2 không còn áp dụng. Kế hoạch mục 11 sai/thiếu ở ba chỗ, đã sửa tại chỗ: (1) Step 7 nói "chỉ thêm nhánh Ý thức" nhưng máy chủ `closeCaseOutcome` bắt MỌI case chọn mức tiến bộ nên giao diện một mình không bỏ được — phải chạm máy chủ (Ý thức lưu trống); (2) Step 5 chỉ mô tả kết thúc phương án bằng một ngày, trong khi máy chủ chỉ cho kết thúc suông khi kết quả tốt — thiếu đường cho kết quả chưa tốt, đã thêm lối sang hộp thoại đầy đủ để không mất khả năng khi khối nhúng bị gỡ; (3) số dòng `SkillBoard.tsx:319/323`, `CasePanel.tsx:256/265` trong kế hoạch đã lệch so với file thật (PR-C đã đẩy các dòng đi). Cũng đính chính hai số trong mục 1.3: bộ kiểm thử đang là **360** phép kiểm trước chặng 0 (không phải 319), và **không có `npm run check`** trong `package.json` dù cả brief lẫn mục 13.1 nhắc — đã thêm script `check` chạy đúng chuỗi bốn lệnh ở 13.1. Thêm 7 phép kiểm PR-D (367/367). Bấm thử bằng trình duyệt thật: Quản trị, GVCN Trần Ngọc Hà, GVBM Phạm Thu Trang (Speaking), Quản lý Nguyễn Khánh Vy trên hồ sơ Lê Quang Huy; mở link sâu `/hoc-thuat/case/1`; không lỗi console. **Chưa bấm thử:** hồ sơ Đinh Ngọc Quyên (hai case song song cùng kỹ năng), khổ 375px, và ảnh chụp màn hình (công cụ chụp ảnh hết thời gian chờ — đã kiểm bằng cấu trúc trang và chữ trên màn, không phải bằng mắt) |
+| 20/09/2026 | Claude (session batch, chặng 1 — PR-E) | Kế hoạch mục 15 sai/thiếu ở bốn chỗ, đã sửa tại chỗ: (1) **thiếu `shared/domain/display.ts`** — kế hoạch đặt luật `<TyLe>`/`<KetQuaDot>` "ở tầng thuần" trong `run.ts` nhưng harness chỉ import được `shared/`, không dựng được React; nên luật phải ở một module thuần của `shared/`, component chỉ vẽ. (2) Step 6 nói bộ chọn tuần "rớt ba hàng vì thiếu `min-width:0`", đúng, nhưng còn một nguyên nhân thứ hai không có trong kế hoạch: `flex-wrap` bọc CẢ ba nút cùng trường, cộng bề rộng cố định `w-52` của từng nơi gọi — nên bỏ hẳn prop `className` thay vì chỉ thêm `min-width:0`. (3) Step 7 nói "bỏ dropdown hàng chục tuần" nhưng popover hiện có đã là lịch tháng rồi; việc thật sự sai là nó không đi qua portal nên bị ngăn kéo/modal cắt, và `Esc` đóng luôn cả ngăn kéo. (4) Step 8 chỉ nói "sửa CSS panel chứa" nhưng quét ra hai lỗi hành vi: `<label>` bọc nhiều nút chuyển cú bấm chữ sang nút "Tuần trước", và `MockPlanPanel` ép bộ chọn vào nửa panel. Thêm 16 phép kiểm PR-E (383 tổng). Bấm thử trình duyệt thật: trang thử `/dev/thanh-phan` (Quản lý), bảng chấm `/nhap-diem/3` (Quản lý và GVBM Speaking), bộ chọn trong ngăn kéo/hộp thoại/375px, panel Lộ trình. **Chưa làm/chưa thấy:** dạng "quá hạn" trên dữ liệu thật (demo không có), ảnh chụp và thang xám, GVCN ở chặng này, và chưa nối `<KetQuaDot>`/`<TyLe>` vào màn thật (mục 12.7) |
 
 ---
 
@@ -1762,10 +1775,12 @@ Nói **cái gì đổi trên màn hình**, bằng tiếng Việt, không tên h�
 
 | File | Trách nhiệm sau PR-E |
 |---|---|
-| `web/src/ui/Han.tsx` | **Mới.** `<Han loai={...} han={...} hanGoc? hen? />` — sáu loại hạn + `du-kien-ket-thuc` |
+| `shared/domain/display.ts` | **Mới (không có trong bản kế hoạch gốc).** Luật hiển thị dưới dạng hàm thuần: `deadlineView` · `attemptProgressView` · `rateView`/`rateText` · `businessDateText`. Ba component chỉ là lớp vẽ mỏng phía trên — luật nằm đây để kiểm được bằng bộ kiểm thử máy chủ (harness không dựng được React) |
+| `web/src/ui/Han.tsx` | **Mới.** `<Han loai={...} han={...} hanGoc? hen? tienTo? ghiChu? />` — sáu loại hạn + `du-kien-ket-thuc` |
 | `web/src/ui/KetQuaDot.tsx` | **Mới.** Một câu duy nhất cho tiến độ một đợt Test |
 | `web/src/ui/TyLe.tsx` | **Mới.** `n/N` trước, `%` sau; `N=0` → `Chưa có dữ liệu`; `N<5` → nhãn mẫu nhỏ |
 | `web/src/ui/ngayNghiepVu.ts` | **Mới.** `useNgayNghiepVu()` — một nguồn ngày nghiệp vụ cho UI |
+| `web/src/modules/dev/ThanhPhanDemo.tsx` | **Mới.** Trang thử `/dev/thanh-phan`, chỉ có khi chạy `npm run dev` |
 | `web/src/ui/Filters.tsx` | `WeekPicker` (`:98`): sửa bố cục một hàng + popover lịch |
 | `web/src/ui/ui.tsx` | Gom bảng tone về một chỗ; không thêm component mới ở đây |
 | `web/src/modules/fasttrack/ScoreEntry.tsx` | `DeadlinePill` (`:201`) gọi `<Han loai="nhap-diem">` thay vì tự dựng chuỗi |
@@ -1774,37 +1789,37 @@ Nói **cái gì đổi trên màn hình**, bằng tiếng Việt, không tên h�
 
 ### 15.2. Các bước
 
-- [ ] **Step 1: `<Han>`.** Sáu `loai` bắt buộc theo bảng `thiet-ke/HE_GIAO_DIEN.md` §4:
+- [x] **Step 1: `<Han>`.** Sáu `loai` bắt buộc theo bảng `thiet-ke/HE_GIAO_DIEN.md` §4:
       `xac-minh-sos` · `lap-pa` · `cap-nhat-pa` · `thuc-hien-y-thuc` · `hoan-thanh-y-thuc` ·
       `nhap-diem`, cộng `du-kien-ket-thuc` (**không phải hạn**, luôn trung tính, không bao giờ
       ghi "quá hạn"). `loai` không có giá trị mặc định — thiếu thì `tsc` phải báo lỗi.
-      Quá hạn đếm từ **hạn gốc**. Có hẹn xử lý thì hiện cả hai: `Hạn nhập điểm 23/09 · Hẹn xử lý 30/09`.
-- [ ] **Step 2: `DeadlinePill` dùng `<Han>`.** `ScoreEntry.tsx:201` đang tự dựng bốn nhánh chuỗi
+      Quá hạn đếm từ **hạn gốc**. Có hẹn xử lý thì hiện cả hai: `Hạn nhập điểm 23/09 · Hẹn xử lý 30/09`. *(Đã làm. `loai` thiếu → `TS2741` — đã thử tháo dòng bảo vệ để xem đúng thông báo lỗi.)*
+- [x] **Step 2: `DeadlinePill` dùng `<Han>`.** `ScoreEntry.tsx:201` đang tự dựng bốn nhánh chuỗi
       (`Hạn riêng môn này` / `Hạn riêng cả đợt` / `Hạn` / `Quá hạn`). Giữ nguyên **nghĩa**, đổi
-      **đường render**. Đây là chỗ duy nhất của PR-E chạm module fasttrack — đừng mở rộng.
-- [ ] **Step 3: `<KetQuaDot>`.** Năm nhánh ở `thiet-ke/HE_GIAO_DIEN.md` §5. Hai luật cứng:
+      **đường render**. Đây là chỗ duy nhất của PR-E chạm module fasttrack — đừng mở rộng. *(Đã làm: nguồn hạn riêng môn/cả đợt thành ghi chú đứng sau; ngày viết `23/09` thay vì `23/09/2026` theo HE_GIAO_DIEN §2.)*
+- [x] **Step 3: `<KetQuaDot>`.** Năm nhánh ở `thiet-ke/HE_GIAO_DIEN.md` §5. Hai luật cứng:
       (a) `coDiem < yeuCau` → Overall render chữ `Chưa đủ điểm`, **cấm** badge đạt (lỗi MT-P01);
       (b) đơn vị đếm là **bốn kỹ năng L/R/W/S** — W1/W2 là hai *bài nhập*, không bao giờ ghi
       `1/5` ở chỗ đang nói kỹ năng.
 - [ ] **Step 4: `<TyLe>`.** Thứ tự `n/N` rồi `(%)`. `N=0` → `Chưa có dữ liệu`, **không** render
-      `0%`. `N<5` → nhãn `mẫu nhỏ`. Component **không nhận** prop kiểu `xepHang`/`totNhat`.
-- [ ] **Step 5: `useNgayNghiepVu()`.** Một nguồn duy nhất cho UI, đọc cùng đồng hồ với
+      `0%`. `N<5` → nhãn `mẫu nhỏ`. Component **không nhận** prop kiểu `xepHang`/`totNhat`. *(Đã làm; có dòng `@ts-expect-error` ở trang thử để `tsc` gãy nếu ai thêm prop xếp hạng. Cũng **chưa nối vào màn thật** — PR-F Step 5 là chỗ dùng đầu tiên.)*
+- [x] **Step 5: `useNgayNghiepVu()`.** Một nguồn duy nhất cho UI, đọc cùng đồng hồ với
       `demoToday()` ở máy chủ. Nơi nào ngày nghiệp vụ khác ngày ghi nhận thật thì hiện cả hai:
-      `Ngày nghiệp vụ 14/09 · Ghi nhận 19/09`. **Không sửa timestamp thật.** (Lỗi MT-P10.)
-- [ ] **Step 6: Sửa bố cục `WeekPicker`.** Một hàng flex, gap 8px, cao 40–44px; mũi tên
+      `Ngày nghiệp vụ 14/09 · Ghi nhận 19/09`. **Không sửa timestamp thật.** (Lỗi MT-P10.) *(Mới dựng hook + hàm và dùng ở `<Han>` và bộ chọn tuần; **chưa quét các màn khác** đang tự đọc `session.demoDate` hoặc `fmtDate` — ghi vào backlog mục 12.7.)*
+- [x] **Step 6: Sửa bố cục `WeekPicker`.** Một hàng flex, gap 8px, cao 40–44px; mũi tên
       `flex:none`, trường tuần `flex:1` **`min-width:0`** — thiếu dòng này chính là nguyên nhân
       wrap trong ảnh. Panel ~600px: chỉ `Tuần này` xuống hàng. Trường tuần luôn ghi tuần **đang
-      chọn thật**, không để trống rồi chú thích dưới.
-- [ ] **Step 7: Popover lịch.** Bấm trường tuần mở popover: gõ ngày hoặc chọn tuần, đổi
+      chọn thật**, không để trống rồi chú thích dưới. *(Đã làm. Đo thật: panel 600px cả bốn phần một hàng; 300px thì `‹ trường ›` một hàng, chỉ `Tuần này` xuống; mọi nút cao 40px; 375px không tràn ngang. Bỏ prop `className` (bề rộng do khung chứa quyết định) — bỏ luôn ở kiểu dữ liệu để `tsc` liệt kê hết nơi gọi cho Step 8.)*
+- [x] **Step 7: Popover lịch.** Bấm trường tuần mở popover: gõ ngày hoặc chọn tuần, đổi
       tháng/năm. Bỏ dropdown hàng chục tuần. Render qua portal; kiểm z-index **trong `Drawer` và
-      trong modal** — hiện đang bị cắt.
-- [ ] **Step 8: Quét mọi nơi dùng bộ chọn tuần.** `CaseBoardPage` · `MeetingPage` ·
+      trong modal** — hiện đang bị cắt. *(Đã làm: portal ra `body`, `position: fixed`, `z-70` (ngăn kéo/modal là `z-50`), tự lật lên khi hết chỗ, kẹp trong màn hình. Đo thật trong ngăn kéo VÀ hộp thoại: nằm ngoài DOM của chúng, nằm trọn trong màn hình, ở trên cùng. `Esc` chỉ đóng lịch, không đóng luôn ngăn kéo/modal. Popover từ trước đã là lịch tháng, không phải dropdown nhiều tuần — phần "bỏ dropdown" của kế hoạch đã đúng sẵn.)*
+- [x] **Step 8: Quét mọi nơi dùng bộ chọn tuần.** `CaseBoardPage` · `MeetingPage` ·
       `TransitionPanel` · `ClassCreatePanel` · `ClassProgressPanel` · `StudentPlanPanel` ·
       `ScoreSheetPage` · `MockPlanPanel`. Sửa CSS của **panel chứa**, không chỉ của component.
-      **Trừ `CaseBoardPage.tsx`** — file này thuộc danh sách khoá ở mục 0.5, để sang chặng 4.
-- [ ] **Step 9: Trang demo component nội bộ.** Một route dev dựng đủ sáu trạng thái mỗi
+      **Trừ `CaseBoardPage.tsx`** — file này thuộc danh sách khoá ở mục 0.5, để sang chặng 4. *(`CaseBoardPage.tsx` không còn bị loại trừ: PR-D đã làm ở chặng 0 trên cùng nhánh. Có chín nơi gọi ở tám file; `MeetingPage` và `ScoreSheetPage` chỉ cần bỏ `className`. **Hai việc ngoài CSS phát hiện khi quét:** (1) `MockPlanPanel` để bộ chọn trong lưới hai cột chỉ có một ô nên bị ép nửa panel — đổi thành một cột; (2) bốn bộ chọn nằm trong `<Field>`/`<label>`: nhãn bọc nhiều nút thì bấm vào chữ sẽ bấm nút ĐẦU TIÊN, tức "Tuần trước" — `Field` nhận thêm `as="div"`. Kiểm thật ở panel Lộ trình: bấm chữ nhãn, tuần không nhảy.)*
+- [x] **Step 9: Trang demo component nội bộ.** Một route dev dựng đủ sáu trạng thái mỗi
       component: rỗng · một bản ghi · nhiều · tên dài · lỗi tải · không quyền. Không có trang này
-      thì nghiệm thu mục 15.3 không làm được.
+      thì nghiệm thu mục 15.3 không làm được. *(Đã làm: `/dev/thanh-phan`, mỗi component đủ sáu ô; hai ô lỗi tải/không quyền là của khối chứa nên hiện `ErrorState`/`Forbidden` chuẩn. Route gắn theo `import.meta.env.DEV` ngay chỗ `import()`.)*
 
 ### 15.3. Nghiệm thu PR-E
 
