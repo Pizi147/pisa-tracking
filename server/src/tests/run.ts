@@ -9115,6 +9115,87 @@ check('PR-G · Chốt xong là SÁNG THỨ HAI: GVCN vẫn dời lần đầu đ
   assert(prgSit(settledListening, 'listening').absence_move_count === 0, 'Chuyển Quản lý thì bộ đếm dời chưa tăng');
 });
 
+
+// ==================================================================== PR-I (chặng 4)
+
+/*
+ * HỒ SƠ TEST GỌN — phần LUẬT của PR-I (phần còn lại là giao diện). Ba điều máy chủ phải đúng để màn gọn không nói sai:
+ *   1. NGƯỜI CẬP NHẬT ≠ NGƯỜI NHẬP ĐIỂM (MT-P09): ô điểm trống không được mang tên ai đó "nhập".
+ *   2. Lịch sử thay đổi có CẢ điểm: ai sửa, trước → sau, kể cả xoá điểm và dấu '-'.
+ *   3. Có lịch và đúng quyền thì nhập được — KHÔNG cần bấm "Đã thi"; và đến ngày cũng không tự ghi "đã thi".
+ */
+const pri = (attemptId: number) => attempts.attemptDetail(P.admin, attemptId) as any;
+const priCell = (attemptId: number, skill: string) => pri(attemptId).cells.find((c: any) => c.skill === skill);
+
+check('PR-I · Ô điểm bị xoá trống KHÔNG còn "người nhập": tác giả một thao tác không phải bằng chứng đã có điểm', () => {
+  const id = prgAttempts[3];                                   // Reading của B đã có điểm 30 từ phép kiểm PR-G
+  const before = priCell(id, 'reading');
+  assert(before.rawScore === 30 && before.enteredByName, `Tiền đề: Reading của B phải có điểm và người nhập, đang ${JSON.stringify(before)}`);
+  attempts.saveScore(P.lrTeacher, id, 'reading', { rawScore: null });
+  const cleared = priCell(id, 'reading');
+  assert(cleared.rawScore === null && cleared.band === null, 'Xoá xong ô phải trống');
+  assert(cleared.enteredByName === null && cleared.enteredAt === null,
+    `Ô trống mà còn "Người nhập ${cleared.enteredByName}" — MT-P09: ${JSON.stringify([cleared.enteredByName, cleared.enteredAt])}`);
+  attempts.saveScore(P.lrTeacher, id, 'reading', { rawScore: 28 });
+  const again = priCell(id, 'reading');
+  assert(again.enteredByName && again.enteredAt, 'Nhập lại điểm thì phải có người nhập và lúc nhập');
+});
+
+check('PR-I · Bài chỉ báo "-" hoặc mới gõ dở một tiêu chí: "-" không có người nhập; dở dang thì vẫn giữ tác giả', () => {
+  const dash = priCell(prgAttempts[0], 'listening');
+  assert(dash.enteredByName === null && dash.enteredAt === null,
+    `Báo "-" không phải nhập điểm nên không có người nhập: ${JSON.stringify([dash.noShow?.state, dash.enteredByName])}`);
+  const id = prgAttempts[4];                                    // W1 của B: đang "-", chưa chốt vì tuần đã hết -> không dùng; dùng W2 đã có điểm
+  attempts.saveScore(prgWriting2, id, 'writing2', { criteria: [6, null, null, null] });
+  const partial = priCell(id, 'writing2');
+  assert(partial.band === null && partial.criteria[0] === 6, 'Tiền đề: mới có một tiêu chí, chưa ra band');
+  assert(partial.enteredByName, 'Đã có giá trị (dù dở dang) thì còn người nhập — chỉ ô HOÀN TOÀN trống mới hết tên');
+  attempts.saveScore(prgWriting2, id, 'writing2', { criteria: [null, null, null, null] });
+  assert(priCell(id, 'writing2').enteredByName === null, 'Xoá hết bốn tiêu chí thì hết tên người nhập');
+});
+
+check('PR-I · Lịch sử thay đổi có CẢ điểm: ai sửa, trước → sau, kể cả xoá điểm và dấu "-"', () => {
+  const history = pri(prgAttempts[3]).scoreHistory as any[];
+  assert(Array.isArray(history) && history.length >= 3, `Phải có lịch sử điểm của Reading (nhập, xoá, nhập lại), đang ${history?.length}`);
+  const reading = history.filter((h) => h.skill === 'reading');
+  const last = reading[0];
+  assert(last.actorName && /28/.test(last.after), `Dòng mới nhất: nhập 28, đang ${JSON.stringify(last)}`);
+  assert(/trống/i.test(last.before), `Trước khi nhập lại là ô trống, đang "${last.before}"`);
+  const cleared = reading.find((h) => /trống/i.test(h.after));
+  assert(cleared && /30/.test(cleared.before), `Phải có dòng xoá điểm 30 → trống, đang ${JSON.stringify(cleared)}`);
+  const dashHist = (pri(prgAttempts[0]).scoreHistory as any[]).find((h) => h.skill === 'listening');
+  assert(dashHist && /-/.test(dashHist.after), `Dấu "-" của Listening phải có trong lịch sử, đang ${JSON.stringify(dashHist)}`);
+  for (const h of history) assert(h.createdAt && h.skillLabel, 'Mỗi dòng phải có ngày và tên kỹ năng đọc được');
+});
+
+check('PR-I · Tiến độ một kỹ năng không đòi "xác nhận đã thi" trước khi chấm (MT-P03): đến lịch thì là "Chờ nhập điểm"', () => {
+  assert(domain.SKILL_PROGRESS_LABEL.due === 'Chờ nhập điểm', `due: "${domain.SKILL_PROGRESS_LABEL.due}"`);
+  for (const [k, v] of Object.entries(domain.SKILL_PROGRESS_LABEL)) {
+    assert(!/xác nhận đã thi/i.test(v as string), `Nhãn "${k}" vẫn đòi xác nhận đã thi: "${v}"`);
+  }
+  assert(domain.awaitingScore('due') && domain.awaitingScore('sat'), 'Đến lịch vẫn là đang nợ điểm');
+});
+
+check('PR-I · Nhập điểm KHÔNG cần bấm "Đã thi" (có điểm thì tự suy ra đã thi), và đến ngày cũng KHÔNG tự ghi "đã thi"', () => {
+  const row = conn.prepare(
+    `SELECT k.attempt_id id FROM attempt_skills k
+       JOIN assessment_attempts a ON a.id = k.attempt_id
+      WHERE a.class_id = ? AND a.kind = 'mock' AND a.status != 'cancelled' AND k.skill = 'listening'
+        AND k.required = 1 AND k.sit_status = 'scheduled' AND k.planned_period_id IS NOT NULL
+        AND NOT EXISTS (SELECT 1 FROM assessment_scores s WHERE s.attempt_id = a.id AND s.skill = 'listening')
+      ORDER BY k.attempt_id LIMIT 1`,
+  ).get(mbClass) as any;
+  assert(row, 'Tiền đề: cần một lượt còn Listening theo lịch và chưa có điểm');
+  const satBefore = (conn.prepare("SELECT COUNT(*) n FROM attempt_skills WHERE sit_status = 'sat'").get() as any).n;
+  attempts.classScoreSheet(P.admin, mbClass, prgWeek, '2026-11-30');                 // rất lâu sau ngày thi
+  absence.settleNoShows('2026-11-30');
+  const satAfter = (conn.prepare("SELECT COUNT(*) n FROM attempt_skills WHERE sit_status = 'sat'").get() as any).n;
+  assert(satAfter === satBefore, `Đến ngày (và quá ngày) không được tự ghi "đã thi": ${satBefore} -> ${satAfter}`);
+  assert(prgSit(row.id, 'listening').sit_status === 'scheduled', 'Ô chưa có điểm vẫn chỉ là "theo lịch"');
+  attempts.saveScore(P.lrTeacher, row.id, 'listening', { rawScore: 25 });
+  assert(prgSit(row.id, 'listening').sit_status === 'sat', 'Có điểm thì suy ra đã thi — không cần ai bấm "Đã thi"');
+});
+
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`

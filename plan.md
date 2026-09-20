@@ -134,7 +134,7 @@ Và chạy thật > đọc code.
 | Đường dẫn khi import | Bắt buộc có đuôi `.ts` / `.tsx`. Thiếu là gãy |
 | Sau khi sửa máy chủ | **Bắt buộc** `npm run build:server`. `npm run dev` KHÔNG tự dựng lại máy chủ |
 | Kiểm kiểu dữ liệu | `npx tsc -p tsconfig.build.json --noEmit` và `npx tsc -p tsconfig.web.json --noEmit` |
-| Chạy kiểm thử | `npm test` — hiện **409 phép kiểm** sau chặng 3 (đầu đợt batch là 360, sau chặng 0 là 367, sau chặng 2 là 393; con số 319 cũ đã lạc hậu), phải đạt hết. `npm run check` chạy cả chuỗi mục 13.1. Harness **không có bộ lọc**: nó chạy cả bộ, nên xác minh một phép kiểm mới bằng cách tìm tên nó trong kết quả |
+| Chạy kiểm thử | `npm test` — hiện **414 phép kiểm** sau chặng 4 (đầu đợt batch là 360, sau chặng 0 là 367, sau chặng 2 là 393, sau chặng 3 là 409; con số 319 cũ đã lạc hậu), phải đạt hết. `npm run check` chạy cả chuỗi mục 13.1. Harness **không có bộ lọc**: nó chạy cả bộ, nên xác minh một phép kiểm mới bằng cách tìm tên nó trong kết quả |
 | Ngày demo | **14/09/2026** cố định. Không lấy ngày thật của máy. Đọc qua `demoToday()` ở máy chủ, `session.demoDate` ở web |
 | Quy ước tuần | Thứ Hai → Chủ nhật; tuần thuộc tháng chứa ngày thứ Năm của nó |
 | Sao chép database | Phải chép **cả ba** file `.sqlite`, `.sqlite-wal`, `.sqlite-shm`. Chép mỗi `.sqlite` sẽ ra bản CŨ |
@@ -1709,6 +1709,17 @@ Xem mục 7b để biết phần đã làm. Bốn việc sau **chưa làm**, kh�
 - Hồ sơ Mock Test (`MockDetailPage`) dùng chung các ô đã sửa nên có dấu `-` nhưng **chưa bấm thử ở màn đó**; khổ 375px của bảng chấm cũng chưa xem.
 - C01–C09 mới là hằng số ghi lại quyết định (mục 17.3 Step 1), chưa nối vào nơi gọi.
 
+
+### 12.10. Việc chặng 4 (PR-I) chưa làm hoặc chưa kiểm — 20/09/2026
+
+- **Nghiệm thu "Phạm Bảo Ngọc chỉ có R=7.0" không dựng được nguyên văn:** dữ liệu demo hiện tại MT3 của Ngọc có L=6.5 và R=7.0. Đã thấy thật: xoá R thì đầu trang ghi `1/4` + `SOS 1 tạm thời` và Overall `Chưa đủ điểm` không badge đạt; "R đạt, Overall chưa đủ điểm, không badge" nằm ở phép kiểm `<KetQuaDot>` của chặng 1.
+- **Hộp thoại đổi lịch / hẹn xử lý / khôi phục / xử lý vắng / trả lời đề nghị được nối vào menu và nút chính mới nhưng chưa bấm qua từng hộp thoại ở chặng này** — chỉ thấy đúng nút chính đúng vai (GVCN: `Xử lý vắng`; Quản lý: `Trả lời đề nghị`). Nội dung các hộp thoại giữ nguyên, trừ tên.
+- **Không có nút "Ghi nhận vắng" nào được bấm thử.** Đường đi giữ nguyên nhưng nay ở menu.
+- **Hồ sơ Test của lớp Normal** không đi qua màn này (chặn cửa chuyển sang bảng điểm thường) — không ảnh hưởng, không bấm.
+- **Chưa xem khổ tablet.** Điện thoại 375px: không cuộn ngang cả trang, hàng tiêu đề ẩn, mỗi bài một thẻ.
+- Nhãn "Chờ nhập điểm" và "Hạn nhập điểm 23/09" đứng cạnh nhau ở cùng một dòng — hai câu đúng nhưng gần nhau; để lượt biên tập tiếng Việt (chặng 5).
+- Dữ liệu demo trên máy dev bị thay đổi khi bấm thử (điểm Writing Task 1 của Ngọc) — không nằm trong repo.
+
 ---
 
 ## 13. Lệnh kiểm bắt buộc
@@ -1781,6 +1792,7 @@ Nói **cái gì đổi trên màn hình**, bằng tiếng Việt, không tên h�
 | 20/09/2026 | Claude (session batch, chặng 1 — PR-E) | Kế hoạch mục 15 sai/thiếu ở bốn chỗ, đã sửa tại chỗ: (1) **thiếu `shared/domain/display.ts`** — kế hoạch đặt luật `<TyLe>`/`<KetQuaDot>` "ở tầng thuần" trong `run.ts` nhưng harness chỉ import được `shared/`, không dựng được React; nên luật phải ở một module thuần của `shared/`, component chỉ vẽ. (2) Step 6 nói bộ chọn tuần "rớt ba hàng vì thiếu `min-width:0`", đúng, nhưng còn một nguyên nhân thứ hai không có trong kế hoạch: `flex-wrap` bọc CẢ ba nút cùng trường, cộng bề rộng cố định `w-52` của từng nơi gọi — nên bỏ hẳn prop `className` thay vì chỉ thêm `min-width:0`. (3) Step 7 nói "bỏ dropdown hàng chục tuần" nhưng popover hiện có đã là lịch tháng rồi; việc thật sự sai là nó không đi qua portal nên bị ngăn kéo/modal cắt, và `Esc` đóng luôn cả ngăn kéo. (4) Step 8 chỉ nói "sửa CSS panel chứa" nhưng quét ra hai lỗi hành vi: `<label>` bọc nhiều nút chuyển cú bấm chữ sang nút "Tuần trước", và `MockPlanPanel` ép bộ chọn vào nửa panel. Thêm 16 phép kiểm PR-E (383 tổng). Bấm thử trình duyệt thật: trang thử `/dev/thanh-phan` (Quản lý), bảng chấm `/nhap-diem/3` (Quản lý và GVBM Speaking), bộ chọn trong ngăn kéo/hộp thoại/375px, panel Lộ trình. **Chưa làm/chưa thấy:** dạng "quá hạn" trên dữ liệu thật (demo không có), ảnh chụp và thang xám, GVCN ở chặng này, và chưa nối `<KetQuaDot>`/`<TyLe>` vào màn thật (mục 12.7) |
 | 20/09/2026 | Claude (session batch, chặng 2 — PR-F) | Kế hoạch mục 16 sai/thiếu ở sáu chỗ, đã sửa tại chỗ: (1) **thiếu hai lớp cho F03** — kế hoạch chỉ nói "hiện trạng theo nơi đang chăm sóc, lịch sử theo đơn vị tại thời điểm hỗ trợ" mà không nói dữ liệu ở đâu; nó nằm ở `enrollments.started_at/ended_at` (đã có sẵn), và phải thêm một nhóm "chưa xác định nguồn" cho phương án không có lần ghi danh bao phủ. (2) **F05 không chỉ là bỏ một hàng:** `undetermined` nằm ở CẢ bảng loại phương án LẪN bảng phân loại vấn đề, và bỏ nó đi thì mất chỗ báo có phương án chưa đánh giá — nên phải thêm liên kết "Cần bổ sung đánh giá" và hai route danh sách. (3) Step 6 nói "trả đúng tập ID" nhưng bỏ sót một lỗi cùng họ có sẵn trong `issueScopeOf`: chi nhánh ngoài quyền cho ra `[]` và `[]` bị hiểu thành "không lọc" — tức lộ toàn bộ học viên. (4) Step 7 nói "bốn ô số" ở Tổng quan nhưng **Tổng quan hiện không có ô số nào** (mã ghi rõ dải thẻ số đã bị bỏ ở bản trước), nên bốn ô phải dựng mới, và chỉ bốn chỉ số có hàm tập ID được dùng. (5) Kiểu `donVi` của đặc tả thiếu `nghia-vu`. (6) **Đối soát F10 (Step 8) — kết quả:** Tổng quan 29 HV, Thực trạng 28 HV (bộ dữ liệu của phép kiểm, sau khi các phép kiểm trước đó đã thêm và chuyển học viên; ở bộ demo mới nạp thì cả hai nơi cùng 20 HV / 33 case — số case của phép kiểm không được ghi lại). Chênh một em (Vũ Thu Uyên, id 39) đã kết thúc khoá mà case Reading còn `in_progress`: Tổng quan đếm theo case, Thực trạng đếm theo nơi đang học — **hai định nghĩa đều đúng, khác nhau**, nên đã đổi nhãn cho khác nhau thay vì ép một bên thắng. Còn một nguyên nhân thứ hai ở tập case (em chuyển FT→Normal, case `writing1`). Phép kiểm F10 khoá đúng hai điều: Thực trạng ⊂ Tổng quan, và mọi chênh lệch đều thuộc hai nguyên nhân đã biết — chênh lệch nào khác là lỗi mới. **Kiểm ngược (mutation):** dựng lại đồng thời bốn lỗi F01/F02/F03/F05 thì đúng bốn phép kiểm gãy, khôi phục thì xanh. Thêm 10 phép kiểm PR-F (393 tổng). Bấm thử trình duyệt thật: bốn ô ở Tổng quan (Quản trị và Quản lý Monbay), số ô = tiêu đề panel = số dòng ở cả bốn; 403/404/501 qua HTTP; bảng hiệu quả mới và liên kết "Cần bổ sung đánh giá" ở Writing 2; GVBM không thấy ô số. **Chưa làm/chưa thấy:** mục 12.8 (bốn chỉ số chưa có hàm, số trần còn lại, nhóm chưa xác định nguồn chưa hiện), bảng phân tích của hồ sơ LỚP (chỉ kiểm bằng `tsc`), ảnh chụp, khổ 375px của panel `<SoLieu>` |
 | 20/09/2026 | Claude (session batch, chặng 3 — PR-G) | Kế hoạch mục 17 sai/thiếu ở năm chỗ, đã sửa tại chỗ: (1) **không nói dấu `-` lưu ở đâu** — cần năm cột mới trên `assessment_scores` và một bước migration (chỉ thêm cột, không suy ngược dữ liệu cũ). (2) **Lỗ hổng Step 7 chỉ lộ khi bấm thử ở trình duyệt thật:** phép kiểm máy chủ chạy ở ngày demo 14/09 nên xanh, nhưng chốt luôn xảy ra ngay hết Chủ nhật, lúc đó "tuần kế tiếp" đã bắt đầu và luật vắng cũ chuyển thẳng Quản lý — lần dời đầu của GVCN không bao giờ xảy ra được. Đã sửa hẹp và thêm phép kiểm dời ở ngày 21/09. (3) Step 5 không nói buổi Writing chỉ có W1 `-` thì sao — quyết định: chỉ chốt khi cả W1 và W2 đều `-`. (4) Step 10 nói "lưu từng dòng" nhưng bảng đã lưu từng ô; cái thiếu là chỉ báo trạng thái RIÊNG TỪNG DÒNG — đã thêm. (5) Mục 17.1 gợi ý dùng khuôn `sweepExpiredMoves`; đã dùng, nhưng phải gọi thêm ở `saveScore` để ô đã hết Chủ nhật được nhìn đúng là `absent` ngay lần lưu sau. Thêm 16 phép kiểm PR-G (409 tổng): hàm thuần ở 14 ngày khác nhau, bộ chữ, C01–C10, mười lần chạy một lần chốt, chạy chậm vẫn ra ngày hiệu lực cũ, ô trống không tự vắng, sửa trước chốt, điểm chính thức không bị `-` xoá, W1/W2 (một lần đếm), quyền GVCN/GVBM, sau chốt không mở lại, Normal, C10 xác nhận/từ chối, dời sáng thứ Hai. **Kiểm ngược:** đổi `>` thành `>=` và bỏ điều kiện "đủ mọi ô" thì đúng hai phép kiểm gãy. Bấm thử trình duyệt thật bằng GVCN, GVBM (đổi ngày demo qua 21/09): gõ `-` + Enter, Esc, xoá ô, số vẫn nhập được, hai mốc cạnh nhau, khoá sau chốt, dời lần đầu. **Chưa làm/chưa thấy:** mục 12.9 (nút cho Quản lý xử lý C10, hai câu ngỏ §17.1, Mock Test và 375px chưa bấm, lần dời thứ hai qua đường chốt mới), ảnh chụp |
+| 20/09/2026 | Claude (session batch, chặng 4 — PR-I) | Mục 18 sai/thiếu ở bốn chỗ, đã sửa tại chỗ: (1) **Step 8 chẩn đoán sai chỗ** — coi MT-P09 là lỗi hiển thị, nhưng nguyên nhân là máy chủ ghi người nhập cả khi XOÁ điểm; đã sửa ở máy chủ bằng TDD (đỏ trước, xanh sau) và giữ luật "ô dở dang vẫn có người nhập". (2) **MT-P03 nằm ở bộ nhãn dùng chung** `SKILL_PROGRESS_LABEL`, không ở màn Test — Step 5 nói "bỏ nút" nhưng chữ `Chưa xác nhận đã thi` vẫn còn nguyên trên chip trạng thái; đã đổi nhãn (đổi cả các màn khác dùng nó) và thêm phép kiểm. (3) Step 9 đòi lịch sử "điểm" nhưng điểm không có bảng lịch sử riêng — đã dựng `scoreHistory` từ nhật ký, và không có lịch sử "kỳ vọng" vì hệ thống không lưu. (4) Mục 18 nói "sửa năm file PR-D đang giữ" — không còn nghĩa vì PR-D nằm trong nhánh (chặng 0). Việc chưa nói trong kế hoạch: bỏ khối case cũng kéo theo bỏ `sosCase` · `caseSteps` · `caseHistory` · `tasks` khỏi dữ liệu chi tiết lượt. Thêm 5 phép kiểm PR-I (414 tổng). Bấm thử trình duyệt thật (Quản lý, GVBM Speaking, GVCN): nhập W1 bằng bốn ô tại dòng, xoá và nhập lại Reading (hết/lại có "Nhập bởi"), lịch sử điểm hiện đủ, menu `Thêm` và `Chỉnh lịch` đúng quyền, hộp thoại huỷ, nút chính `Xử lý vắng` / `Trả lời đề nghị`, 375px không tràn ngang. **Chưa làm/chưa thấy:** mục 12.10 |
 
 ---
 
@@ -2023,29 +2035,29 @@ kết lịch sử vẫn nguyên ở hồ sơ học viên; một liên kết `H�
 
 ### 18.2. Các bước
 
-- [ ] **Step 1: Gỡ khối case khỏi `MockDetailPage.tsx`.** Bỏ hẳn, không thu gọn. Giữ route và
-      liên kết `Hồ sơ học viên`.
-- [ ] **Step 2: Gộp hai bảng thành một.** Hiện có `Lịch theo kỹ năng` và `Điểm theo kỹ năng` lặp
+- [x] **Step 1: Gỡ khối case khỏi `MockDetailPage.tsx`.** Bỏ hẳn, không thu gọn. Giữ route và
+      liên kết `Hồ sơ học viên`. *(Đã làm. Bỏ hẳn khối case, phương án, quy trình gợi ý, việc gắn với case và "Kết quả" — kể cả ở máy chủ: dữ liệu chi tiết lượt không còn `sosCase` · `caseSteps` · `caseHistory` · `tasks`. Còn liên kết `Hồ sơ học viên`. Route giữ nguyên.)*
+- [x] **Step 2: Gộp hai bảng thành một.** Hiện có `Lịch theo kỹ năng` và `Điểm theo kỹ năng` lặp
       kỹ năng/hạn/trạng thái. Một bảng làm việc duy nhất, năm cột: **Kỹ năng · Lịch kiểm tra ·
-      Điểm · Tình trạng và hạn · Thao tác**.
-- [ ] **Step 3: Thu gọn bốn thẻ kỹ năng + Overall.** Tiến độ đợt lên header qua `<KetQuaDot>`;
-      điểm từng môn nằm ở dòng tương ứng. Không lặp năm ô lớn ngay dưới cùng bộ điểm.
-- [ ] **Step 4: Mở tiêu chí ngay tại dòng.** W1/W2/S: bốn ô + `Lưu`/`Huỷ` tại dòng; đóng lại thấy
+      Điểm · Tình trạng và hạn · Thao tác**. *(Đã làm: `SkillWorkTable`, năm cột, một dòng mỗi bài nhập (L · R · W1 · W2 · S). Không còn chỗ nào lặp hạn hay trạng thái.)*
+- [x] **Step 3: Thu gọn bốn thẻ kỹ năng + Overall.** Tiến độ đợt lên header qua `<KetQuaDot>`;
+      điểm từng môn nằm ở dòng tương ứng. Không lặp năm ô lớn ngay dưới cùng bộ điểm. *(Đã làm: đầu trang có DUY NHẤT một chỗ đếm — `Đã có điểm 1/4 kỹ năng` + `<KetQuaDot>` + Kỳ vọng + Overall (cũng qua `<KetQuaDot phan="overall">`). Bỏ năm thẻ lớn; kết luận từng môn (Đạt/Dưới kỳ vọng) nằm ở dòng của môn. Câu tiêu đề `scheduleHeadline` không còn hiện ở màn này (máy chủ vẫn dựng cho danh sách) vì nó nói "Có điểm 1/4" bằng chữ khác `<KetQuaDot>`.)*
+- [x] **Step 4: Mở tiêu chí ngay tại dòng.** W1/W2/S: bốn ô + `Lưu`/`Huỷ` tại dòng; đóng lại thấy
       điểm và ngày cập nhật. Writing tổng là **một dòng phụ** dưới W1/W2, nói rõ là điểm tính từ
-      hai task — **không** có ô nhập Writing tổng thứ ba.
-- [ ] **Step 5: Bỏ nút `Đã thi` khỏi luồng chấm thường.** Có lịch và đúng quyền thì nhập được.
-      Vắng là ngoại lệ có xác minh riêng; **không** tự ghi đã thi thật chỉ vì đến ngày.
-- [ ] **Step 6: Một hành động chính mỗi dòng.** `Nhập/Sửa điểm` là nút chính. `Đổi lịch` · `Hẹn
+      hai task — **không** có ô nhập Writing tổng thứ ba. *(Đã làm: `InlineScoreEditor` — L/R một ô, W1/W2/S bốn ô + `Lưu`/`Huỷ` ngay tại dòng; Enter lưu, Esc huỷ, `-` là lệnh. Dùng CHUNG hàm dựng lệnh (`rawPatchFrom` · `criteriaPatchFrom`) với bảng chấm cả lớp và khung tiêu chí cũ nên hai nơi nhập không lệch luật. Writing (tổng) là dòng phụ chỉ đọc. Bấm thử: nhập 6 / 6.5 / 6 / 6 → xem trước Band 6.0 → Enter → dòng hiện `Band 6.0 · 6 · 6.5 · 6 · 6`.)*
+- [x] **Step 5: Bỏ nút `Đã thi` khỏi luồng chấm thường.** Có lịch và đúng quyền thì nhập được.
+      Vắng là ngoại lệ có xác minh riêng; **không** tự ghi đã thi thật chỉ vì đến ngày. *(Đã làm. Bỏ nút `Đã thi` và `Bỏ xác nhận`. Ghi nhận vắng còn là ngoại lệ trong menu dòng (`Ghi nhận vắng`, `Bỏ ghi nhận vắng`). **Phát hiện ngoài kế hoạch:** chữ `Chưa xác nhận đã thi` (MT-P03) nằm ở `SKILL_PROGRESS_LABEL` của `shared/domain/fasttrack.ts`, không ở màn này — đã đổi thành `Chờ nhập điểm` (và `Đã thi, chờ nhập điểm`) nên đổi ở MỌI màn dùng nhãn này. Máy chủ đã đúng từ trước: có điểm thì tự suy ra đã thi, đến ngày không tự ghi — thêm phép kiểm khoá lại.)*
+- [x] **Step 6: Một hành động chính mỗi dòng.** `Nhập/Sửa điểm` là nút chính. `Đổi lịch` · `Hẹn
       xử lý` · `Lịch sử` vào menu theo quyền. **`Huỷ lượt MT` rời khỏi đầu trang**, vào menu
-      ngoại lệ của QL, phải nói rõ huỷ phần nào và giữ phần đã có điểm.
-- [ ] **Step 7: Áp `<Han>` vào khối case ở `SkillBoard.tsx`.** Đây là chỗ F11 sai: `Dự kiến kết
+      ngoại lệ của QL, phải nói rõ huỷ phần nào và giữ phần đã có điểm. *(Đã làm. Mỗi dòng MỘT nút chính chọn theo việc đang chặn dòng: đề nghị dời đang chờ → `Trả lời đề nghị`; đã vắng → `Xử lý vắng`; phần thi huỷ / chưa xếp tuần → `Khôi phục và đặt tuần`; còn lại `Nhập điểm`/`Sửa điểm`. Menu `Thêm`: `Đổi lịch` · `Hẹn xử lý` (bộ chữ: đổi tuần thi = Đổi lịch, lùi ngày chấm = Hẹn xử lý) · vắng · phạm vi · `Lịch sử`. `Huỷ lượt MT` + `Đổi lịch cả đợt` + `Hẹn xử lý cả đợt` nằm ở menu `Chỉnh lịch` đầu trang, chỉ hiện đúng quyền; hộp thoại huỷ nói rõ huỷ phần chưa có điểm, giữ phần đã có điểm. **Lưu ý:** máy chủ vẫn huỷ CẢ LƯỢT — chữ "huỷ phần nào" chỉ mô tả đúng hành vi đó, chưa có huỷ từng phần.)*
+- [x] **Step 7: Áp `<Han>` vào khối case ở `SkillBoard.tsx`.** Đây là chỗ F11 sai: `Dự kiến kết
       thúc` của PA đang bị trình bày như hạn phải làm. Dùng `loai="du-kien-ket-thuc"` (trung
-      tính) cho ngày dự kiến và `loai="cap-nhat-pa"` cho nghĩa vụ cập nhật tuần.
-- [ ] **Step 8: Người cập nhật ≠ người nhập điểm.** Ô điểm trống mà vẫn hiện "Người nhập" là sai
-      (MT-P09). Tách hai khái niệm; không dùng tác giả thao tác làm bằng chứng đã có điểm.
-- [ ] **Step 9: Lịch sử thay đổi thu gọn cuối trang.** Đếm số thay đổi; mở ra thấy ai sửa
+      tính) cho ngày dự kiến và `loai="cap-nhat-pa"` cho nghĩa vụ cập nhật tuần. *(Đã làm ở `SkillBoard.tsx`: hạn xác minh SOS → `xac-minh-sos`; hạn làm của phương án → `thuc-hien-y-thuc`; **dự kiến xong → `du-kien-ket-thuc` (luôn trung tính, không còn tô đỏ / "quá hạn")**; nghĩa vụ báo kết quả hằng tuần → `cap-nhat-pa`. Đã thấy `Xác minh nguyên nhân · hạn 16/09` trên hồ sơ học viên thật; **chưa thấy dòng phương án có hạn** vì dữ liệu demo hiện không có.)*
+- [x] **Step 8: Người cập nhật ≠ người nhập điểm.** Ô điểm trống mà vẫn hiện "Người nhập" là sai
+      (MT-P09). Tách hai khái niệm; không dùng tác giả thao tác làm bằng chứng đã có điểm. *(Đã làm, bằng TDD — và kế hoạch chẩn đoán SAI chỗ: đây không chỉ là lỗi hiển thị. Máy chủ ghi `entered_by`/`entered_at` cả khi một thao tác XOÁ điểm, nên ô trống vẫn mang tên "người nhập". Nay ô hoàn toàn trống thì hết người nhập; ô dở dang (mới một tiêu chí) vẫn giữ. Ai sửa gì, lúc nào nằm ở lịch sử (Step 9).)*
+- [x] **Step 9: Lịch sử thay đổi thu gọn cuối trang.** Đếm số thay đổi; mở ra thấy ai sửa
       điểm/lịch/kỳ vọng/phạm vi, trước–sau, ngày và lý do. Không xếp log kỹ thuật ngang kết quả
-      học tập.
+      học tập. *(Đã làm: `scoreHistory` (đọc từ nhật ký `score.*`) + lịch/phạm vi trong MỘT dòng thời gian, thu gọn mặc định, đếm số thay đổi; trạng thái thi máy ghi bằng mã được đổi thành chữ. **Chưa làm:** lịch sử "kỳ vọng" — hệ thống không có bản ghi thay đổi kỳ vọng để hiện.)*
 
 ### 18.3. Nghiệm thu PR-I
 

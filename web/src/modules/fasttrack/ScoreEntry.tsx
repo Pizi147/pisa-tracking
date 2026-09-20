@@ -49,8 +49,37 @@ export type SavePatch = {
 };
 
 /** Ô đã chốt "không dự thi" hoặc đang chờ Quản lý: người nhập điểm không sửa được nữa (phải qua Quản lý). */
-const lockedByNoShow = (cell: Cell) =>
+export const lockedByNoShow = (cell: Cell) =>
   cell.noShow?.state === 'khong-du-thi' || cell.noShow?.state === 'cho-ql-hieu-chinh';
+
+/**
+ * Chữ người dùng gõ ở ô SỐ CÂU ĐÚNG → lệnh gửi máy chủ. '-' LÀ MỘT LỆNH, KHÔNG PHẢI MỘT SỐ (rule book §17.1): "học
+ * viên có lịch mà không làm bài". Ô trống vẫn chỉ là chưa nhập; xoá ô đang có dấu '-' là gỡ dấu, không phải chấm điểm.
+ * MỘT hàm cho mọi nơi nhập (bảng cả lớp, hồ sơ Test) — không có luật thứ hai.
+ */
+export function rawPatchFrom(text: string, cell: Cell): SavePatch {
+  const t = text.trim();
+  return t === '-' ? { noShow: true }
+    : t === '' && cell.noShow ? { noShow: false }
+    : { rawScore: t === '' ? null : Number(t) };
+}
+
+/**
+ * Bốn ô tiêu chí → lệnh gửi máy chủ + band xem trước. MỘT DẤU '-' TRONG BỐN Ô LÀ ĐỦ báo chưa có bài cho ĐÚNG BÀI NÀY:
+ * không ghi các tiêu chí thành 0, không xoá bài khác. Xoá sạch bốn ô của bài đang có dấu '-' là GỠ dấu; xoá bốn ô
+ * của bài có điểm là xoá điểm như cũ.
+ */
+export function criteriaPatchFrom(vals: string[], cell: Cell): { dash: boolean; preview: number | null; patch: SavePatch } {
+  const dash = vals.some((v) => v.trim() === '-');
+  const nums = vals.map((v) => (v.trim() === '' || v.trim() === '-' ? null : Number(v)));
+  const filled = nums.filter((v) => v !== null) as number[];
+  const preview = !dash && filled.length === 4 ? Math.round((filled.reduce((a, b) => a + b, 0) / 4) * 2 + 1e-9) / 2 : null;
+  const allEmpty = vals.every((v) => v.trim() === '');
+  const patch: SavePatch = dash ? { noShow: true }
+    : allEmpty && cell.noShow ? { noShow: false }
+    : { criteria: nums };
+  return { dash, preview, patch };
+}
 
 /**
  * Lưu điểm một kỹ năng. Khi lỗi, giữ nguyên giá trị người dùng vừa gõ để họ bấm lại,
@@ -120,15 +149,7 @@ export function RawScoreInput({ cell, onSave, inputRef, onKeyDown }: {
   const commit = async () => {
     if (!dirty || busy) return;
     setBusy(true);
-    const text = draft.trim();
-    /*
-     * '-' LÀ MỘT LỆNH, KHÔNG PHẢI MỘT SỐ (rule book §17.1): "học viên có lịch mà không làm bài". Ô trống vẫn
-     * chỉ là chưa nhập; xoá ô đang có dấu '-' là gỡ dấu, không phải chấm điểm.
-     */
-    const patch: SavePatch = text === '-' ? { noShow: true }
-      : text === '' && cell.noShow ? { noShow: false }
-      : { rawScore: text === '' ? null : Number(text) };
-    const ok = await onSave(patch);
+    const ok = await onSave(rawPatchFrom(draft, cell));
     setBusy(false);
     if (ok) setDirty(false);       // lỗi thì giữ nguyên bản nháp để người dùng sửa và thử lại
   };
@@ -206,22 +227,11 @@ export function CriteriaModal({ cell, onSave, onClose }: {
   );
   const [busy, setBusy] = useState(false);
 
-  /*
-   * MỘT DẤU '-' TRONG BỐN TIÊU CHÍ LÀ ĐỦ báo chưa có bài cho ĐÚNG BÀI NÀY (rule book §17.1): không ghi các tiêu
-   * chí thành 0, không xoá bài khác. Có '-' thì bỏ qua các ô số còn lại.
-   */
-  const dash = vals.some((v) => v.trim() === '-');
-  const nums = vals.map((v) => (v.trim() === '' || v.trim() === '-' ? null : Number(v)));
-  const filled = nums.filter((v) => v !== null) as number[];
-  const preview = !dash && filled.length === 4 ? Math.round((filled.reduce((a, b) => a + b, 0) / 4) * 2 + 1e-9) / 2 : null;
+  /* Có '-' thì bỏ qua các ô số còn lại (xem `criteriaPatchFrom`). */
+  const { dash, preview, patch } = criteriaPatchFrom(vals, cell);
 
   const submit = async () => {
     setBusy(true);
-    const allEmpty = vals.every((v) => v.trim() === '');
-    /* Xoá sạch bốn ô của một bài đang có dấu '-' là GỠ dấu; xoá bốn ô của bài có điểm là xoá điểm như cũ. */
-    const patch: SavePatch = dash ? { noShow: true }
-      : allEmpty && cell.noShow ? { noShow: false }
-      : { criteria: nums };
     const ok = await onSave(patch);
     setBusy(false);
     if (ok) onClose();
@@ -264,6 +274,74 @@ export function CriteriaModal({ cell, onSave, onClose }: {
         </SectionNote>
       </div>
     </Modal>
+  );
+}
+
+/**
+ * SỬA ĐIỂM NGAY TẠI DÒNG (PR-I Step 4): L/R một ô, W1/W2/S bốn ô tiêu chí, cùng `Lưu`/`Huỷ` ở đúng dòng đó — không mở
+ * khung riêng. `Enter` lưu, `Esc` huỷ. '-' là lệnh "không có bài" như ở bảng cả lớp; dựng lệnh bằng CÙNG hàm
+ * (`rawPatchFrom` · `criteriaPatchFrom`) nên hai nơi nhập không thể lệch luật.
+ */
+export function InlineScoreEditor({ cell, onSave, onClose }: {
+  cell: Cell; onSave: (patch: SavePatch) => Promise<boolean>; onClose: () => void;
+}) {
+  const isRaw = cell.skill === 'listening' || cell.skill === 'reading';
+  const set = criteriaSetFor(cell.skill) ?? 'writing';
+  const [vals, setVals] = useState<string[]>(() => (isRaw
+    ? [cell.rawScore !== null ? String(cell.rawScore) : cell.noShow ? '-' : '']
+    : cell.noShow && cell.criteria.every((v) => v === null)
+      ? ['-', '', '', '']
+      : cell.criteria.map((v) => (v === null ? '' : String(v)))));
+  const [busy, setBusy] = useState(false);
+  const built = isRaw
+    ? { dash: vals[0].trim() === '-', preview: null as number | null, patch: rawPatchFrom(vals[0], cell) }
+    : criteriaPatchFrom(vals, cell);
+
+  const submit = async () => {
+    if (busy) return;
+    setBusy(true);
+    const ok = await onSave(built.patch);
+    setBusy(false);
+    if (ok) onClose();              // lỗi thì giữ nguyên bản nháp để sửa và thử lại
+  };
+  const setAt = (i: number, value: string) => setVals((v) => v.map((x, j) => (j === i ? value : x)));
+
+  return (
+    <div className="space-y-1.5"
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') { e.preventDefault(); void submit(); }
+        if (e.key === 'Escape') { e.preventDefault(); onClose(); }
+      }}>
+      <div className="flex flex-wrap items-end gap-2">
+        {isRaw ? (
+          <label className="block">
+            <span className="block text-[11px] text-slate-500">Số câu đúng</span>
+            <input autoFocus className="field w-20 text-center tabular-nums" inputMode="numeric" value={vals[0]}
+              title={NO_SHOW_HINT} aria-label={`${skillLabel(cell.skill)} — số câu đúng. ${NO_SHOW_HINT}`}
+              onChange={(e) => setAt(0, e.target.value)} />
+          </label>
+        ) : CRITERIA[set].map((label, i) => (
+          <label key={i} className="block" title={label}>
+            <span className="block text-[11px] text-slate-500">{CRITERIA_SHORT[set][i]}</span>
+            <input autoFocus={i === 0} className="field w-14 text-center tabular-nums" inputMode="decimal"
+              value={vals[i] ?? ''} aria-label={`${skillLabel(cell.skill)} — ${label}. ${NO_SHOW_HINT}`}
+              onChange={(e) => setAt(i, e.target.value)} />
+          </label>
+        ))}
+        {!isRaw && (
+          <span className="pb-1.5 text-sm tabular-nums text-slate-300">Band {built.dash ? '-' : fmtBand(built.preview)}</span>
+        )}
+        <button type="button" className="btn btn-sm btn-primary" disabled={busy} onClick={() => void submit()}>
+          {busy ? 'Đang lưu…' : 'Lưu'}
+        </button>
+        <button type="button" className="btn btn-sm" disabled={busy} onClick={onClose}>Huỷ</button>
+      </div>
+      <p className="m-0 text-[11px] text-slate-500">
+        {built.dash
+          ? 'Sẽ lưu là Không có bài cho đúng bài này; sửa lại được đến hết Chủ nhật của tuần thi.'
+          : `${NO_SHOW_HINT}. Để trống là chưa chấm, không phải điểm 0.`} Enter để lưu · Esc để huỷ.
+      </p>
+    </div>
   );
 }
 

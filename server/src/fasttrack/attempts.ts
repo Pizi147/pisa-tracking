@@ -1,6 +1,6 @@
 import { db, tx } from '../db.ts';
 import {
-  ASSESSED_SKILLS, ASSESSED_SKILL_LABEL, C10_NHAP_DAU_TRU_TUAN_QUA_KHU, ENTRY_SKILLS, MOCK_FT_STUDY_WEEK, PERMISSIONS,
+  ASSESSED_SKILLS, ASSESSED_SKILL_LABEL, C10_NHAP_DAU_TRU_TUAN_QUA_KHU, ENTRY_SKILLS, ENTRY_SKILL_LABEL, MOCK_FT_STUDY_WEEK, PERMISSIONS,
   SIGNAL_WITHDRAW_SCORE_FIXED, awaitingScore, noShowStateOf, noShowText, pendingSkillsOf,
   type AssessedSkill, type EntrySkill, type NoShowState, type PendingCell, type SkillProgress, type WorkScope,
 } from '../../../shared/domain/index.ts';
@@ -698,6 +698,50 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
 
 // ---------------------------------------------------------------- chi tiết
 
+/** Một dòng chữ mô tả một ô điểm, để "trước → sau" trong lịch sử đọc được mà không cần biết bảng dữ liệu. */
+export function scoreSummaryText(row: Partial<ScoreRow> | null | undefined): string {
+  if (!row) return 'Chưa có';
+  const band = row.band !== null && row.band !== undefined ? ` · Band ${Number(row.band).toFixed(1)}` : '';
+  if (row.raw_score !== null && row.raw_score !== undefined) return `${row.raw_score} câu đúng${band}`;
+  const crit = [row.c1, row.c2, row.c3, row.c4];
+  if (crit.some((v) => v !== null && v !== undefined)) {
+    return `Tiêu chí ${crit.map((v) => (v === null || v === undefined ? '–' : v)).join(' / ')}${band}`;
+  }
+  if (row.no_show_period_id) return 'Báo "-" (không có bài)';
+  return 'Trống';
+}
+
+/**
+ * LỊCH SỬ ĐIỂM của một lượt: ai sửa, trước → sau, lúc nào (PR-I Step 9). Đọc từ nhật ký `score.*` — điểm không có
+ * bảng lịch sử riêng như lịch. Ô điểm chỉ giữ NGƯỜI NHẬP hiện tại; câu "ai đã sửa gì" nằm ở đây.
+ */
+export function scoreHistoryOf(attemptId: number) {
+  const rows = db()
+    .prepare(
+      `SELECT l.id, l.action, l.entity_label, l.before_json, l.after_json, l.created_at, u.full_name AS actor_name
+         FROM audit_logs l LEFT JOIN users u ON u.id = l.actor_user_id
+        WHERE l.entity_type = 'assessment_attempt' AND l.entity_id = ?
+          AND l.action IN ('score.edit', 'score.override', 'score.no_show', 'score.no_show_cleared')
+        ORDER BY l.id DESC`,
+    )
+    .all(attemptId) as any[];
+  return rows.map((l) => {
+    const before = l.before_json ? JSON.parse(l.before_json) : null;
+    const after = l.after_json ? JSON.parse(l.after_json) : null;
+    const afterText = l.action === 'score.no_show' ? 'Báo "-" (không có bài)'
+      : l.action === 'score.no_show_cleared' ? 'Gỡ dấu "-"'
+      : scoreSummaryText(after);
+    return {
+      id: l.id,
+      kind: l.action === 'score.override' ? 'override' : l.action === 'score.edit' ? 'edit' : 'no_show',
+      skill: l.entity_label as string,
+      skillLabel: ENTRY_SKILL_LABEL[l.entity_label as EntrySkill] ?? l.entity_label,
+      before: scoreSummaryText(before), after: afterText,
+      actorName: l.actor_name as string | null, createdAt: l.created_at as string,
+    };
+  });
+}
+
 export function attemptDetail(p: Principal, attemptId: number) {
   settleNoShows();
   const conn = db();
@@ -735,23 +779,6 @@ export function attemptDetail(p: Principal, attemptId: number) {
          LEFT JOIN users u ON u.id = h.actor_user_id WHERE h.attempt_id = ? ORDER BY h.id DESC`,
     )
     .all(attemptId) as any[];
-  const sos = conn
-    .prepare(
-      /* Một lượt có nhiều vấn đề; màn chi tiết lấy cái nặng nhất làm đại diện. */
-      `SELECT sc.*, hu.full_name AS head_name
-         FROM sos_cases sc
-         LEFT JOIN users hu ON hu.id = sc.head_confirmed_by WHERE sc.attempt_id = ?
-        ORDER BY COALESCE(sc.sos_level, 0) DESC, sc.id LIMIT 1`,
-    )
-    .get(attemptId) as any;
-  const caseHistory = sos
-    ? (conn
-        .prepare(
-          `SELECT h.*, u.full_name AS actor_name FROM sos_case_history h
-             LEFT JOIN users u ON u.id = h.actor_user_id WHERE h.case_id = ? ORDER BY h.id DESC LIMIT 40`,
-        )
-        .all(sos.id) as any[])
-    : [];
 
   return {
     id: a.id,
@@ -808,27 +835,12 @@ export function attemptDetail(p: Principal, attemptId: number) {
       id: h.id, action: h.action, field: h.field, oldValue: h.old_value, newValue: h.new_value,
       reason: h.reason, actorName: h.actor_name, createdAt: h.created_at,
     })),
-    sosCase: sos ?? null,
     /*
-     * HƯỚNG DẪN phối hợp cho mức này — GỢI Ý, không phải việc đã làm.
-     * Việc đã làm nằm ở `case_interventions` với người thực hiện và ngày thật; trộn hai
-     * thứ vào một danh sách chính là chỗ mô hình cũ làm người đọc hiểu sai.
+     * HỒ SƠ TEST KHÔNG CÒN KHỐI CASE (PR-I, rule book §17.5): vấn đề, phương án và việc gắn với case nằm ở hồ sơ
+     * học viên và bảng case — nên payload này không còn `sosCase` · `caseSteps` · `caseHistory` · `tasks`.
+     * Điểm sửa được ai, lúc nào thì có ở `scoreHistory`.
      */
-    caseSteps: (sos?.sos_level ?? result.sosLevel ?? 0) > 0
-      ? stepsFor(a.attempt_no, (sos?.sos_level ?? result.sosLevel) as any)
-      : [],
-    caseHistory: caseHistory.map((h) => ({
-      id: h.id, field: h.field, oldValue: h.old_value, newValue: h.new_value,
-      actorName: h.actor_name, createdAt: h.created_at,
-    })),
-    tasks: sos
-      ? (conn
-          .prepare(
-            `SELECT t.id, t.code, t.title, t.progress, t.due_date, u.full_name AS assignee_name
-               FROM tasks t LEFT JOIN users u ON u.id = t.assignee_user_id WHERE t.source_sos_case_id = ?`,
-          )
-          .all(sos.id) as any[])
-      : [],
+    scoreHistory: scoreHistoryOf(attemptId),
     viewer: {
       canPlanWeek: can(p, PERMISSIONS.PLAN_WEEK, { classId: a.class_id }),
       canCancel: can(p, PERMISSIONS.ATTEMPT_CANCEL, { classId: a.class_id }),
@@ -1293,13 +1305,21 @@ export function saveScore(
       throw e;
     }
 
+    /*
+     * NGƯỜI NHẬP CHỈ CÓ KHI Ô CÓ GIÁ TRỊ (MT-P09). Xoá điểm là một thao tác, nhưng KHÔNG phải một lần "nhập điểm":
+     * ô trống mà còn ghi "Người nhập: X" là dùng tác giả của thao tác làm bằng chứng rằng đã có điểm. Ai đã sửa
+     * gì, lúc nào vẫn nằm trong nhật ký (`score.edit`) — hiện ở "Lịch sử thay đổi" của hồ sơ Test.
+     */
+    const hasValue = raw !== null || crit.some((v) => v !== null);
+    const enteredBy = hasValue ? p.userId : null;
+    const enteredAt = hasValue ? nowIso() : null;
     if (existing) {
       conn
         .prepare(
           `UPDATE assessment_scores SET raw_score=?, raw_total=?, c1=?, c2=?, c3=?, c4=?, band=?,
                                         result_date=?, entered_by=?, entered_at=?, note=? WHERE id=?`,
         )
-        .run(raw, total, crit[0], crit[1], crit[2], crit[3], band, resultDate, p.userId, nowIso(),
+        .run(raw, total, crit[0], crit[1], crit[2], crit[3], band, resultDate, enteredBy, enteredAt,
              patch.note !== undefined ? patch.note : existing.note ?? null, existing.id);
     } else {
       conn
@@ -1309,7 +1329,7 @@ export function saveScore(
            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
         )
         .run(attemptId, skill, raw, total, crit[0], crit[1], crit[2], crit[3], band,
-             resultDate, p.userId, nowIso(), patch.note ?? null);
+             resultDate, enteredBy, enteredAt, patch.note ?? null);
     }
 
     /*

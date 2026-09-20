@@ -178,9 +178,12 @@ export const SKILL_PROGRESS_LABEL: Record<SkillProgress, string> = {
   skipped: 'Ngoài phạm vi',
   not_scheduled: 'Chưa xếp tuần',
   upcoming: 'Chưa đến lịch',
-  /** Tuần thi của CHÍNH kỹ năng này đã tới hoặc đã qua mà chưa ai xác nhận em đã thi. */
-  due: 'Chưa xác nhận đã thi',
-  sat: 'Đã thi, chờ chấm',
+  /**
+   * Tuần thi của CHÍNH kỹ năng này đã tới hoặc đã qua mà chưa có điểm. KHÔNG nói "chưa xác nhận đã thi" (MT-P03): có
+   * lịch và đúng quyền là nhập được, không có bước xác nhận bắt buộc trước khi chấm.
+   */
+  due: 'Chờ nhập điểm',
+  sat: 'Đã thi, chờ nhập điểm',
   absent: 'Đã xác nhận vắng',
   scored: 'Đã có điểm',
   reschedule_pending: 'Chờ duyệt dời',

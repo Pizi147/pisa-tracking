@@ -3,18 +3,18 @@ import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
-import { Card, Empty, ErrorState, ExamPlanText, Info as Tag, Level, Outcome, SectionNote, Skeleton, Status, Th} from '../../ui/ui.tsx';
+import { Card, Empty, ErrorState, ExamPlanText, Info as Tag, Outcome, SectionNote, Skeleton, Status } from '../../ui/ui.tsx';
 import type { ExamPlan } from '../../../../shared/domain/index.ts';
 import { ConfirmDialog, Modal } from '../../ui/Drawer.tsx';
+import { KetQuaDot } from '../../ui/KetQuaDot.tsx';
+import { Menu, type MenuItem } from '../../ui/Menu.tsx';
 import {
-  CriteriaButton, DeadlinePill, RawScoreInput, useSaveScore, type Cell,
+  DeadlinePill, InlineScoreEditor, lockedByNoShow, useSaveScore, type Cell, type SavePatch,
 } from './ScoreEntry.tsx';
 import {
-  attemptHref, attemptStatusLabel, attemptStatusTone, fmtBand, fmtDate, fmtDateTime,
-  progressLabel, progressTone, skillLabel, sosLabel, sosTone,
+  attemptHref, attemptStatusLabel, fmtBand, fmtDate, fmtDateTime, progressLabel, skillLabel,
 } from '../../lib/format.ts';
-import { CasePanel } from '../cases/CasePanel.tsx';
-import { ASSESSED_SKILLS, ASSESSED_SKILL_LABEL } from '@shared/domain/index.ts';
+import { ASSESSED_SKILL_LABEL } from '@shared/domain/index.ts';
 import { usePeriods } from '../../ui/Filters.tsx';
 
 type Detail = {
@@ -31,12 +31,14 @@ type Detail = {
   /** Lịch, phạm vi, trạng thái thi và hạn chấm của TỪNG kỹ năng. */
   skillSchedule: SkillRow[];
   splitWeeks: boolean;
-  scheduleHeadline: string;
   scoringMode: 'band' | 'ratio';
   deadlineOverride: { date: string; reason: string | null; at: string | null; by: string | null } | null;
   status: string; cancelReason: string | null; note: string | null;
   result: any; cells: Cell[]; skips: any[];
-  history: any[]; sosCase: any; caseSteps: any[]; caseHistory: any[]; tasks: any[];
+  /** Lịch và phạm vi. */
+  history: any[];
+  /** Điểm: ai sửa, trước → sau (PR-I). */
+  scoreHistory: ScoreHistoryRow[];
   viewer: {
     canPlanWeek: boolean; canCancel: boolean;
     canSkipSkill: boolean; canOverrideDeadline: boolean;
@@ -44,6 +46,11 @@ type Detail = {
     moveableSkills: string[];
     canEditSos: boolean; editableSkills: string[];
   };
+};
+
+type ScoreHistoryRow = {
+  id: number; kind: 'edit' | 'override' | 'no_show'; skill: string; skillLabel: string;
+  before: string; after: string; actorName: string | null; createdAt: string;
 };
 
 type SkillRow = {
@@ -59,6 +66,9 @@ type SkillRow = {
   /** Đề nghị dời do vắng đang chờ Quản lý trả lời (mục 10.6), nếu có. */
   pendingMove: { id: number; decideBy: string; toWeek: string | null; moveNo: number } | null;
 };
+
+/** Năm cột làm việc — một dòng mỗi bài nhập. Dưới `md` mỗi bài là một thẻ xếp dọc, không có cột. */
+const ROW_GRID = 'md:grid md:grid-cols-[6.5rem_9.5rem_minmax(14rem,1.2fr)_minmax(13rem,1fr)_11rem] md:gap-x-3';
 
 export default function MockDetailPage() {
   const { id } = useParams();
@@ -87,308 +97,191 @@ export default function MockDetailPage() {
   }
 
   const d = data;
-  const raw = d.cells.filter((c) => c.skill === 'listening' || c.skill === 'reading');
-  const crit = d.cells.filter((c) => c.skill !== 'listening' && c.skill !== 'reading');
+  const cancelled = d.status === 'cancelled';
+  /* Đủ điểm và có kỳ vọng thì mới kết luận đạt; còn lại là "chưa biết" — không phải "đạt". */
+  const passed: boolean | null = d.result.evaluable ? d.result.sosLevel === 0 : null;
+
+  const openHistory = () => {
+    setShowHistory(true);
+    requestAnimationFrame(() => document.getElementById('lich-su')?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+  };
+
+  /*
+   * NGOẠI LỆ CỦA QUẢN LÝ nằm trong MỘT menu, không phải ba nút ngang hàng với việc nhập điểm. "Huỷ lượt" không còn
+   * là nút đỏ ở đầu trang: nó nói rõ huỷ phần nào và phần đã có điểm thì giữ.
+   */
+  const headerItems: MenuItem[] = [
+    ...(d.viewer.canPlanWeek && !cancelled ? [{
+      label: 'Đổi lịch cả đợt', onClick: () => setWeekOpen(true),
+      hint: 'Xếp mọi môn còn dời được vào một tuần',
+    }] : []),
+    ...(d.viewer.canOverrideDeadline && !cancelled ? [{
+      label: d.deadlineOverride ? 'Sửa hẹp xử lý cả đợt' : 'Hẹn xử lý cả đợt', onClick: () => setDeadlineOpen(true),
+      hint: 'Một hạn riêng cho cả đợt',
+    }] : []),
+    ...(d.viewer.canCancel && d.status === 'planned' ? [{
+      label: `Huỷ lượt MT${d.attemptNo}`, danger: true, onClick: () => setCancelOpen(true),
+      hint: 'Huỷ phần thi chưa có điểm; phần đã có điểm giữ nguyên',
+    }] : []),
+    ...(d.viewer.canCancel && cancelled ? [{
+      label: `Mở lại lượt MT${d.attemptNo}`,
+      onClick: async () => {
+        await api.post(`/attempts/${d.id}/reopen`);
+        invalidate('/attempts'); reload(); toast.push('ok', 'Đã mở lại lượt MT');
+      },
+    }] : []),
+  ];
 
   return (
     <div className="page space-y-4">
+      {/* A. ĐẦU TRANG — hiểu đúng đợt trong vài giây. Đây là NƠI DUY NHẤT nói "đã có điểm mấy kỹ năng". */}
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
+        <div className="min-w-0">
           <button className="btn btn-sm btn-ghost mb-1" onClick={() => navigate(-1)}>← Quay lại</button>
           <h1 className="text-lg font-semibold text-slate-100">
             {d.student.name} <span className="text-slate-500 text-sm">· {d.student.code}</span>
+            <span className="text-slate-300 text-base font-medium"> · MT{d.attemptNo}</span>
           </h1>
           <p className="text-xs text-slate-500 mt-0.5">
-            MT{d.attemptNo} · Lớp lúc đánh giá: {d.classCode ?? '—'} · {d.branchName ?? '—'}
+            Lớp lúc đánh giá: {d.classCode ?? '—'} · {d.branchName ?? '—'}
             {d.cycle.route && ` · Lộ trình ${d.cycle.route}`}
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Link className="btn no-underline" to={`/hoc-vien/${d.student.id}`}>Hồ sơ học viên</Link>
           {d.classId && (
             <Link className="btn no-underline" to={`/nhap-diem/${d.classId}`}>Nhập điểm cả lớp</Link>
           )}
-          {d.viewer.canPlanWeek && d.status !== 'cancelled' && (
-            <button className="btn" onClick={() => setWeekOpen(true)}>Xếp cả đợt một tuần</button>
-          )}
-          {d.viewer.canCancel && d.status === 'planned' && (
-            <button className="btn btn-danger" onClick={() => setCancelOpen(true)}>Huỷ lượt MT</button>
-          )}
-          {d.viewer.canCancel && d.status === 'cancelled' && (
-            <button className="btn" onClick={async () => {
-              await api.post(`/attempts/${d.id}/reopen`);
-              invalidate('/attempts'); reload(); toast.push('ok', 'Đã mở lại lượt MT');
-            }}>Mở lại</button>
-          )}
+          <Menu label="Chỉnh lịch" items={headerItems} className="btn" />
         </div>
       </div>
 
-      {/* 1. Nhận diện, lịch và target */}
-      <Card title="Kế hoạch MT">
-        <p className="text-sm text-slate-200 mt-0 mb-3">{d.scheduleHeadline}</p>
-        <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 m-0">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+        <span className="text-sm text-slate-200 tabular-nums">
+          Đã có điểm {d.result.scoredRequired}/{d.result.required.length} kỹ năng
+        </span>
+        <KetQuaDot coDiem={d.result.scoredRequired} yeuCau={d.result.required.length} dat={passed}
+          sos={d.result.failedCount ?? null} />
+        <span className="text-sm text-slate-400">Kỳ vọng {fmtBand(d.result.expectation)}</span>
+        <span className="inline-flex items-center gap-1.5 text-sm text-slate-400">
+          Overall{d.result.overall !== null && <strong className="tabular-nums text-slate-100">{fmtBand(d.result.overall)}</strong>}
+          <KetQuaDot phan="overall" coDiem={d.result.scoredRequired} yeuCau={d.result.required.length} dat={passed}
+            sos={d.result.failedCount ?? null} />
+        </span>
+        {d.deadlineOverride && (
+          <Tag title={d.deadlineOverride.reason ?? undefined}>
+            Hẹn xử lý cả đợt {fmtDate(d.deadlineOverride.date)}{d.deadlineOverride.by ? ` · ${d.deadlineOverride.by}` : ''}
+          </Tag>
+        )}
+      </div>
+      {d.cancelReason && cancelled && <p className="text-xs text-rose-200 m-0">Đã huỷ: {d.cancelReason}</p>}
+
+      <details className="rounded-lg border px-3 py-2" style={{ borderColor: 'var(--line)' }}>
+        <summary className="cursor-pointer text-sm text-slate-300">Thông tin đợt</summary>
+        <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-2 lg:grid-cols-4 m-0 mt-3">
           <Info label="Trạng thái">
-            <Status kind={d.status === 'done' ? 'done' : d.status === 'cancelled' ? 'idle' : 'doing'}>
+            <Status kind={d.status === 'done' ? 'done' : cancelled ? 'idle' : 'doing'}>
               {attemptStatusLabel(d.status)}
             </Status>
           </Info>
-          <Info label="Tuần hoàn tất">
+          <Info label="Tuần dự kiến hoàn tất"
+            title="Tuần của môn thi muộn nhất, dùng để xếp đợt vào các bảng theo tuần. Không phải ngày thi và không phải ngày hoàn thành thật.">
             {d.period
               ? <>{d.period.code} <span className="text-slate-500 text-xs">({d.period.range})</span></>
               : <Tag pending>Chưa chốt tuần</Tag>}
           </Info>
-          <Info label="Dự kiến thi">
-            <ExamPlanText plan={d.cycle.examPlan} />
-          </Info>
-          <Info label="Target lúc đánh giá">{fmtBand(d.targetAtAttempt)}</Info>
-          <Info label="Kỳ vọng MT này">{fmtBand(d.result.expectation)}</Info>
+          <Info label="Thi thật dự kiến"><ExamPlanText plan={d.cycle.examPlan} /></Info>
+          <Info label="Mục tiêu lộ trình">{fmtBand(d.targetAtAttempt)}</Info>
+          {d.studyWeekHint && (
+            <Info label="Mốc gợi ý" title="Tuần học của chương trình và mã tuần lịch là hai khái niệm khác nhau.">
+              Tuần học FT {d.studyWeekHint}
+            </Info>
+          )}
         </dl>
-        {d.cancelReason && <p className="text-xs text-rose-200 mt-3">Đã huỷ: {d.cancelReason}</p>}
-        <div className="mt-3 flex flex-wrap items-center gap-2">
-          {d.deadlineOverride ? (
-            <Tag title={d.deadlineOverride.reason ?? undefined}>
-              Hạn riêng cả đợt {fmtDate(d.deadlineOverride.date)}{d.deadlineOverride.by ? ` · ${d.deadlineOverride.by}` : ''}
-            </Tag>
-          ) : (
-            <span className="text-xs text-slate-500">
-              Hạn chấm mặc định tính riêng cho từng môn: hết thứ Tư của tuần kế tiếp sau tuần thi môn đó.
-            </span>
-          )}
-          {d.viewer.canOverrideDeadline && (
-            <button className="btn btn-sm" onClick={() => setDeadlineOpen(true)}>
-              {d.deadlineOverride ? 'Sửa hạn riêng' : 'Đặt hạn riêng'}
-            </button>
-          )}
-        </div>
-        <SectionNote>
-          Tuần ở trên là <strong>tuần hoàn tất theo kế hoạch</strong> — tuần của môn thi muộn nhất,
-          dùng để xếp đợt này vào đúng một dòng trong các bảng theo tuần. Nó không phải ngày thi
-          và cũng không phải ngày đã hoàn thành thật.
-          {d.studyWeekHint && <>
-            {' '}Mốc gợi ý cho MT{d.attemptNo} là <strong>tuần học</strong> FT {d.studyWeekHint};
-            tuần học của chương trình và mã tuần lịch là hai khái niệm khác nhau.
-          </>}
-        </SectionNote>
-      </Card>
+      </details>
 
-      {/* 1b. Lịch thi từng kỹ năng — nơi đọc và sửa lịch thật */}
-      <SkillScheduleCard d={d} onDone={reload} />
+      {/* B. ĐIỂM VÀ LỊCH KIỂM TRA — MỘT bảng làm việc; nơi duy nhất của lịch, hạn, điểm và thao tác từng môn. */}
+      <SkillWorkTable d={d} save={save} onDone={reload} onOpenHistory={openHistory} />
 
-      {/* 2. Điểm từng kỹ năng */}
-      <Card title="Điểm theo kỹ năng"
-        action={<span className="text-xs text-slate-500">
-          Đã nhập {d.result.scoredRequired}/{d.result.required.length} kỹ năng bắt buộc
-          {d.result.skipped.length > 0 && ` · ${d.result.skipped.length} kỹ năng ngoài phạm vi`}
-        </span>}>
-        {d.cells.length === 0 ? (
-          <Empty title="Lớp này chưa cấu hình kỹ năng nào" />
-        ) : (
-          <div className="space-y-4">
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr>
-                    <Th hint="Năm ô của Fast Track: L · R · W1 · W2 · S. W1 và W2 chấm riêng từng task.">Kỹ năng</Th>
-                    <Th hint="Listening và Reading nhập số câu đúng; Writing và Speaking nhập điểm bốn tiêu chí.">Số câu đúng / tiêu chí</Th>
-                    <Th hint="Band quy đổi từ ô bên trái. Không gõ tay được — để hai người cùng chấm ra cùng một số.">Band</Th>
-                    <Th hint="Kỹ năng này đã nhập điểm chưa, và có nằm trong lượt này không.">Tiến độ</Th>
-                    <Th hint="Hạn chấm tính từ tuần thi của CHÍNH môn đó. Môn chưa đến lịch thì chưa nợ điểm.">Hạn nhập</Th>
-                    <Th hint="Ai nhập ô điểm này và nhập lúc nào — để tra lại khi có thắc mắc.">Người nhập</Th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {[...raw, ...crit].map((c) => (
-                    <tr key={c.skill} className={c.required ? '' : 'row-muted'}>
-                      <td className="td text-slate-200 whitespace-nowrap">{skillLabel(c.skill)}</td>
-                      <td className="td">
-                        {!c.required
-                          ? <span className="text-slate-500 text-xs">—</span>
-                          : c.skill === 'listening' || c.skill === 'reading'
-                            ? <RawScoreInput cell={c} onSave={(p) => save(c.skill, p)} />
-                            : <CriteriaButton cell={c} onSave={(p) => save(c.skill, p)} />}
-                      </td>
-                      <td className="td tabular-nums text-slate-100">{fmtBand(c.band)}</td>
-                      <td className="td">
-                        <Status kind={c.progress === 'scored' ? 'done'
-                          : c.progress === 'skipped' || c.progress === 'not_scheduled' ? 'idle'
-                          : c.progress === 'due' ? 'doing' : 'waiting'}>
-                          {progressLabel(c.progress)}
-                        </Status>
-                      </td>
-                      <td className="td"><DeadlinePill cell={c} /></td>
-                      <td className="td text-xs text-slate-500">
-                        {c.enteredByName ?? '—'}
-                        {c.enteredAt && <div>{fmtDateTime(c.enteredAt)}</div>}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5 border-t pt-4" style={{ borderColor: 'var(--line)' }}>
-              {ASSESSED_SKILLS.map((key) => {
-                const v = d.result.verdicts.find((x: any) => x.skill === key);
-                const skipped = d.result.skipped.includes(key);
-                return (
-                  <div key={key} className={`surface-2 rounded-lg p-3 ${skipped ? 'opacity-80' : ''}`}>
-                    <div className="text-[11px] uppercase tracking-wide text-slate-500 font-semibold">
-                      {ASSESSED_SKILL_LABEL[key]}
-                    </div>
-                    <div className="text-xl tabular-nums mt-1 text-slate-100">{fmtBand(v?.band)}</div>
-                    <div className="mt-1">
-                      {skipped
-                        ? <Tag pending>Ngoài phạm vi</Tag>
-                        : v?.passed === null
-                          ? <Tag pending>Chưa đủ điểm</Tag>
-                          : v?.passed
-                            ? <Outcome tone="ok" mark="✓">Đạt kỳ vọng</Outcome>
-                            : <Outcome tone="danger" mark="↓">Dưới kỳ vọng</Outcome>}
-                    </div>
-                    {/*
-                      * Phạm vi yêu cầu được sửa ở bảng "Lịch thi theo kỹ năng" phía trên, cùng
-                      * chỗ với tuần thi và hạn chấm. Trước đây nút này nằm ở đây, tách khỏi lịch,
-                      * nên người dùng đổi phạm vi mà không nhìn thấy lịch mình đang đổi.
-                      */}
-                  </div>
-                );
-              })}
-              <div className="surface-2 rounded-lg p-3 border border-sky-300/25">
-                <div className="text-[11px] uppercase tracking-wide text-slate-500 font-semibold">Overall</div>
-                <div className="text-xl tabular-nums mt-1 text-slate-100">{fmtBand(d.result.overall)}</div>
-                <div className="mt-1"><Level tone={sosTone(d.result.sosLevel)}>{sosLabel(d.result.sosLevel)}</Level></div>
-              </div>
-            </div>
-
-            {d.result.scopeDetail && (
-              <SectionNote>
-                {d.result.scopeDetail}. Kỹ năng <strong>không được yêu cầu</strong> ở lượt này không tính vào
-                mẫu số SOS và không bị coi là thiếu điểm — khác hẳn kỹ năng có yêu cầu mà chưa có điểm.
-                Vì lượt này không còn đủ bốn kỹ năng nên không có Overall IELTS.
-              </SectionNote>
-            )}
-            {!d.result.complete && (
-              <SectionNote>
-                Chưa chốt kết quả vì còn thiếu kỹ năng bắt buộc. Mỗi kỹ năng có tuần thi và hạn
-                chấm riêng — xem bảng lịch phía trên. Ô trống là chưa nhập, không phải điểm 0, và
-                cũng không có nghĩa là học viên đã vắng.
-              </SectionNote>
-            )}
-            {d.result.complete && !d.result.evaluable && (
-              <SectionNote>
-                Đã đủ điểm các kỹ năng bắt buộc nhưng lộ trình chưa có target, nên chưa tính được kỳ vọng và SOS.
-              </SectionNote>
-            )}
-          </div>
-        )}
-      </Card>
-
-      {/*
-        3–4. VẤN ĐỀ HỌC VỤ.
-        Hiện bất cứ khi nào bài này ĐANG CÓ một vấn đề — kể cả khi điểm sau đó đã sửa lên
-        thành đạt. Giấu nó đi thì mọi việc đã làm để hỗ trợ em cũng biến mất khỏi màn hình,
-        trong khi đó chính là phần đáng đọc nhất.
-      */}
-      {d.sosCase ? (
-        <Card title="Vấn đề - Case">
-          {d.result.evaluable && d.result.sosLevel === 0 && (
-            <p className="text-xs text-slate-400 mt-0 mb-3">
-              Điểm hiện tại đã đạt kỳ vọng ở mọi kỹ năng. Vấn đề này vẫn còn đây để tra lại đã
-              hỗ trợ những gì — người có quyền quyết định có kết thúc theo dõi hay không.
-            </p>
-          )}
-          <CasePanel caseId={d.sosCase.id} compact />
-          {d.caseSteps.length > 0 && <Playbook steps={d.caseSteps} />}
-          {d.tasks.length > 0 && (
-            <div className="border-t pt-3 mt-3" style={{ borderColor: 'var(--line)' }}>
-              <div className="label">Công việc gắn với vấn đề này</div>
-              <ul className="text-xs space-y-1 list-none p-0 m-0">
-                {d.tasks.map((t) => (
-                  <li key={t.id} className="text-slate-300">
-                    <Link className="link" to="/tien-trinh">{t.code}</Link> · {t.title}
-                    <span className="text-slate-500"> · {t.assignee_name ?? 'Chưa giao'} · hạn {fmtDate(t.due_date)}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-        </Card>
-      ) : d.result.evaluable && d.result.sosLevel === 0 ? (
-        <Card title="Kết quả"><Empty title={`Đạt kỳ vọng ở cả ${d.result.required.length} kỹ năng được đánh giá`}
-          hint="Không phát sinh vấn đề nào cần theo dõi." /></Card>
-      ) : null}
-
-      {/* 5. Lịch sử */}
-      <Card title="Lịch sử thay đổi"
-        action={<button className="btn btn-sm" onClick={() => setShowHistory((s) => !s)}>{showHistory ? 'Thu gọn' : 'Mở'}</button>}>
-        {!showHistory ? (
-          <SectionNote>{d.history.length} thay đổi lịch · {d.caseHistory.length} thay đổi xử lý.</SectionNote>
-        ) : (
-          <div className="grid gap-4 md:grid-cols-2">
-            <div>
-              <div className="label">Lịch và phạm vi</div>
-              <ul className="space-y-1.5 text-xs list-none p-0 m-0">
-                {d.history.map((h) => (
-                  <li key={h.id} className="text-slate-400">
-                    <span className="text-slate-200">{actionLabel(h.action)}</span>
-                    {h.oldValue && <> {h.oldValue} →</>} {h.newValue && <> {h.newValue}</>}
-                    {h.reason && <> · {h.reason}</>}
-                    <span className="text-slate-600"> · {h.actorName ?? '—'}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div>
-              <div className="label">Xử lý sau Mock</div>
-              {d.caseHistory.length === 0 ? <p className="text-xs text-slate-500">Chưa có thay đổi nào.</p> : (
-                <ul className="space-y-1.5 text-xs list-none p-0 m-0">
-                  {d.caseHistory.map((h) => (
-                    <li key={h.id} className="text-slate-400">
-                      <span className="text-slate-200">{fieldLabel(h.field)}</span>: {h.oldValue ?? '—'} → {h.newValue ?? '—'}
-                      <span className="text-slate-600"> · {h.actorName ?? '—'}</span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          </div>
-        )}
-      </Card>
+      {/* D. LỊCH SỬ THAY ĐỔI — thu gọn cuối trang. Hồ sơ Test không còn khối case (rule book §17.5). */}
+      <HistoryCard d={d} open={showHistory} onToggle={() => setShowHistory((s) => !s)} />
 
       <WeekModal open={weekOpen} onClose={() => setWeekOpen(false)} attemptId={d.id}
         currentPeriodId={d.period?.id ?? null} onDone={reload} />
       <DeadlineModal open={deadlineOpen} onClose={() => setDeadlineOpen(false)} detail={d} onDone={reload} />
-      <CancelDialog open={cancelOpen} onClose={() => setCancelOpen(false)} attemptId={d.id} onDone={reload} />
+      <CancelDialog open={cancelOpen} onClose={() => setCancelOpen(false)} attemptId={d.id}
+        attemptNo={d.attemptNo} scoredSkills={d.result.scoredRequired} onDone={reload} />
     </div>
   );
 }
 
-function Info({ label, children }: { label: string; children: React.ReactNode }) {
+function Info({ label, title, children }: { label: string; title?: string; children: React.ReactNode }) {
   return (
-    <div>
+    <div title={title}>
       <dt className="text-[11px] uppercase tracking-wide text-slate-500 font-semibold">{label}</dt>
       <dd className="text-sm text-slate-100 mt-1 m-0">{children}</dd>
     </div>
   );
 }
 
-// ---------------------------------------------------------------- lịch thi từng kỹ năng
+// ---------------------------------------------------------------- bảng làm việc
+
+/** Cột "Điểm": số câu đúng / band, bốn tiêu chí, hoặc dấu "-". KHÔNG nói "Người nhập" khi ô trống (MT-P09). */
+function ScoreValue({ c }: { c: Cell }) {
+  if (!c.required) return <span className="text-slate-500 text-xs">—</span>;
+  if (c.noShow) return <span className="tabular-nums text-slate-200" title="Không có bài">-</span>;
+  const isRaw = c.skill === 'listening' || c.skill === 'reading';
+  const filled = c.criteria.filter((v) => v !== null).length;
+  if (isRaw) {
+    return c.rawScore === null
+      ? <span className="text-slate-500 text-xs">—</span>
+      : <span className="tabular-nums text-slate-100">
+        {c.rawScore} câu đúng <span className="text-slate-400 text-xs">· Band {fmtBand(c.band)}</span>
+      </span>;
+  }
+  if (c.band !== null) {
+    return (
+      <span className="tabular-nums text-slate-100">
+        Band {fmtBand(c.band)}
+        <span className="text-slate-500 text-xs"> · {c.criteria.join(' · ')}</span>
+      </span>
+    );
+  }
+  return filled > 0
+    ? <span className="text-amber-200 text-xs">Chưa đủ tiêu chí ({filled}/4)</span>
+    : <span className="text-slate-500 text-xs">—</span>;
+}
+
+function Verdict({ v }: { v: any }) {
+  if (!v || v.band === null) return null;
+  return v.passed === null
+    ? null
+    : v.passed
+      ? <Outcome tone="ok" mark="✓">Đạt kỳ vọng</Outcome>
+      : <Outcome tone="danger" mark="↓">Dưới kỳ vọng</Outcome>;
+}
 
 /**
- * LỊCH THI THEO TỪNG KỸ NĂNG — bảng mà người xếp lịch thực sự làm việc trên đó.
+ * MỘT BẢNG THAY HAI (MT-P04): "Lịch theo kỹ năng" và "Điểm theo kỹ năng" từng lặp kỹ năng, hạn và trạng thái. Nay mỗi
+ * bài nhập (L · R · W1 · W2 · S) là MỘT dòng, năm cột: Kỹ năng · Lịch kiểm tra · Điểm · Tình trạng và hạn · Thao tác.
+ * Writing tổng là dòng phụ dưới W1/W2, chỉ để đọc — không có ô nhập Writing tổng thứ ba.
  *
- * Bốn cột trả lời bốn câu hỏi khác nhau, và cố tình KHÔNG gộp: thi tuần nào · đang ở đâu ·
- * hạn chấm ngày nào · làm gì tiếp. Đây là chỗ nhìn ra ngay chuyện R/L/W thi tuần này còn
- * Speaking tuần sau, và vì sao Speaking chưa bị đòi điểm trong khi R/L/W thì có.
+ * Mỗi dòng MỘT hành động chính (MT-P05). Chọn theo việc đang chặn dòng đó, không phải theo thứ tự nút:
+ * đề nghị dời đang chờ → `Trả lời đề nghị`; đã xác nhận vắng → `Xử lý vắng`; phần thi bị huỷ → `Khôi phục và đặt tuần`;
+ * còn lại → `Nhập điểm` / `Sửa điểm`. Mọi thứ khác (đổi lịch, hẹn xử lý, ghi nhận vắng, phạm vi, lịch sử) vào menu.
+ * Có lịch và đúng quyền thì nhập được — không có bước "Đã thi" (MT-P03): có điểm thì hệ thống tự suy ra đã thi.
  */
-function SkillScheduleCard({ d, onDone }: { d: Detail; onDone: () => void }) {
+function SkillWorkTable({ d, save, onDone, onOpenHistory }: {
+  d: Detail; save: (skill: string, patch: SavePatch) => Promise<boolean>; onDone: () => void; onOpenHistory: () => void;
+}) {
+  const [editing, setEditing] = useState<string | null>(null);
   const [weekFor, setWeekFor] = useState<SkillRow | null>(null);
   const [deadlineFor, setDeadlineFor] = useState<SkillRow | null>(null);
   const [moveFor, setMoveFor] = useState<SkillRow | null>(null);
   const [restoreFor, setRestoreFor] = useState<SkillRow | null>(null);
   const [decideFor, setDecideFor] = useState<SkillRow | null>(null);
   const toast = useToast();
-  const editable = d.status !== 'cancelled';
+  const cancelled = d.status === 'cancelled';
 
   const act = async (fn: () => Promise<unknown>, okMsg: string) => {
     try {
@@ -399,186 +292,289 @@ function SkillScheduleCard({ d, onDone }: { d: Detail; onDone: () => void }) {
     } catch (e: any) { toast.push('error', e.message); }
   };
 
+  const verdictOf = (skill: string) => d.result.verdicts.find((x: any) => x.skill === skill);
+  const order = ['listening', 'reading', 'writing1', 'writing2', 'speaking'];
+  const cells = [...d.cells].sort((a, b) => order.indexOf(a.skill) - order.indexOf(b.skill));
+
+  const renderRow = (c: Cell) => {
+    const r = d.skillSchedule.find((x) => x.skill === c.assessedSkill)!;
+    /* Writing có HAI dòng nhưng MỘT lịch: thao tác về lịch chỉ đặt ở dòng W1, dòng W2 chỉ nhập điểm. */
+    const ownsSchedule = c.skill !== 'writing2';
+    const moveable = d.viewer.moveableSkills.includes(r.skill);
+    const open = !cancelled && r.required;
+
+    const canScore = open && c.canEdit && !lockedByNoShow(c)
+      && r.sitStatus !== 'absent' && r.sitStatus !== 'cancelled' && r.progress !== 'cancelled';
+    const hasValue = c.rawScore !== null || c.band !== null || c.criteria.some((v) => v !== null) || !!c.noShow;
+
+    const needDecide = ownsSchedule && d.viewer.canPlanWeek && open && !!r.pendingMove;
+    const needAbsence = ownsSchedule && open && !r.scored && r.sitStatus === 'absent' && !r.pendingMove;
+    const needRestore = ownsSchedule && d.viewer.canPlanWeek && open
+      && (r.progress === 'cancelled' || (!r.periodCode && !r.scored));
+
+    let primary: { label: string; run: () => void } | null = null;
+    if (needDecide) primary = { label: 'Trả lời đề nghị', run: () => setDecideFor(r) };
+    else if (needAbsence) primary = { label: 'Xử lý vắng', run: () => setMoveFor(r) };
+    else if (needRestore) primary = { label: 'Khôi phục và đặt tuần', run: () => setRestoreFor(r) };
+    else if (canScore) primary = { label: hasValue ? 'Sửa điểm' : 'Nhập điểm', run: () => setEditing(c.skill) };
+
+    const items: MenuItem[] = [];
+    if (ownsSchedule) {
+      const unscored = open && !r.scored && r.progress !== 'cancelled';
+      if (moveable && unscored) items.push({ label: 'Đổi lịch', hint: 'Đổi tuần thi của riêng môn này', onClick: () => setWeekFor(r) });
+      if (moveable && unscored && r.periodCode && r.sitStatus !== 'absent') {
+        items.push({
+          label: 'Ghi nhận vắng', hint: 'Chỉ khi đã xác minh học viên không đi thi',
+          onClick: () => void act(
+            () => api.post(`/attempts/${d.id}/skills/${r.skill}/sit`, { status: 'absent', note: 'GVCN xác minh học viên vắng buổi này' }),
+            `Đã ghi nhận ${r.label}: học viên vắng`,
+          ),
+        });
+      }
+      if (moveable && unscored && r.sitStatus === 'absent') {
+        items.push({
+          label: 'Bỏ ghi nhận vắng', hint: 'Xác nhận vắng là nhầm',
+          onClick: () => void act(
+            () => api.post(`/attempts/${d.id}/skills/${r.skill}/sit`, { status: 'scheduled' }),
+            `Đã bỏ ghi nhận vắng cho ${r.label}`,
+          ),
+        });
+      }
+      if (d.viewer.canOverrideDeadline && open) {
+        items.push({ label: 'Hẹn xử lý', hint: 'Lùi ngày chấm của riêng môn này', onClick: () => setDeadlineFor(r) });
+      }
+      if (d.viewer.canSkipSkill && !cancelled && d.scoringMode === 'band') {
+        items.push({
+          label: r.required ? 'Bỏ khỏi phạm vi' : 'Đưa lại vào phạm vi', danger: r.required,
+          hint: r.required ? 'Quyết định chốt TRƯỚC khi thi' : undefined,
+          onClick: () => void act(
+            () => api.post(`/attempts/${d.id}/skills/${r.skill}/skip`, {
+              skipped: r.required,
+              reason: r.required ? 'Quản lý chốt trước: đợt này không yêu cầu kỹ năng đó' : undefined,
+            }),
+            r.required ? `${r.label} đã ra khỏi phạm vi yêu cầu` : `${r.label} đã trở lại phạm vi yêu cầu`,
+          ),
+        });
+      }
+      items.push({ label: 'Lịch sử', onClick: onOpenHistory });
+    }
+
+    const prog = c.progress === 'scored' ? 'scored' : r.progress;
+    const isEditing = editing === c.skill && canScore;
+
+    return (
+      <div key={c.skill}
+        className={`${ROW_GRID} grid gap-y-2 border-t px-2 py-3 ${r.required ? '' : 'row-muted'}`}
+        style={{ borderColor: 'var(--line)' }} role="row">
+        <div role="cell" className="text-slate-200 whitespace-nowrap">
+          <span className="font-medium">{skillLabel(c.skill)}</span>
+          {ownsSchedule && r.planSource === 'manual' && (
+            <span className="text-slate-500 text-[11px] block">đã xếp riêng</span>
+          )}
+        </div>
+
+        <div role="cell">
+          <Label>Lịch kiểm tra</Label>
+          {!r.required ? <span className="text-slate-500 text-xs">—</span>
+            : r.periodCode
+              ? <>{r.periodCode} <span className="text-slate-500 text-xs block sm:inline">({r.weekRange})</span></>
+              : <Tag pending>Chưa xếp tuần</Tag>}
+        </div>
+
+        <div role="cell">
+          <Label>Điểm</Label>
+          {isEditing
+            ? <InlineScoreEditor cell={c} onSave={(p) => save(c.skill, p)} onClose={() => setEditing(null)} />
+            : (
+              <div className="space-y-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <ScoreValue c={c} />
+                  {c.skill !== 'writing1' && c.skill !== 'writing2' && <Verdict v={verdictOf(c.assessedSkill)} />}
+                </div>
+                {/* Người NHẬP điểm — chỉ khi ô có giá trị. Ai cập nhật gì, lúc nào: xem Lịch sử thay đổi. */}
+                {c.enteredByName && (
+                  <div className="text-[11px] text-slate-500">
+                    Nhập bởi {c.enteredByName}{c.enteredAt && ` · ${fmtDateTime(c.enteredAt)}`}
+                  </div>
+                )}
+              </div>
+            )}
+        </div>
+
+        <div role="cell" className="space-y-1">
+          <Label>Tình trạng và hạn</Label>
+          {r.required && (
+            <Status kind={prog === 'scored' ? 'done'
+              : prog === 'skipped' || prog === 'cancelled' || prog === 'not_scheduled' ? 'idle'
+              : prog === 'due' || prog === 'sat' ? 'doing' : 'waiting'}>
+              {progressLabel(prog)}
+            </Status>
+          )}
+          {/* Đã có điểm thì chip trạng thái đã nói đủ; hạn chỉ còn nghĩa khi bài còn nợ. */}
+          {prog !== 'scored' && <div><DeadlinePill cell={c} /></div>}
+          {ownsSchedule && r.absenceMoveCount > 0 && (
+            <div className="text-[11px] text-amber-200">Đã dời do vắng {r.absenceMoveCount} lần</div>
+          )}
+          {/* ĐANG CHỜ AI, ĐẾN NGÀY NÀO: không nói hạn thì người xem không biết còn bao lâu nữa phần thi bị huỷ. */}
+          {ownsSchedule && r.pendingMove && (
+            <div className="text-[11px] text-amber-200">
+              Đề nghị dời sang {r.pendingMove.toWeek ?? 'tuần kế tiếp'} (lần {r.pendingMove.moveNo}) — Quản lý cần
+              trả lời trước {fmtDate(r.pendingMove.decideBy)}, quá hạn thì huỷ phần thi.
+            </div>
+          )}
+          {!r.required && r.scopeReason && <div className="text-[11px] text-slate-500">{r.scopeReason}</div>}
+          {r.sitNote && !c.noShow && <div className="text-[11px] text-slate-500">{r.sitNote}</div>}
+        </div>
+
+        <div role="cell" className="flex flex-wrap items-start gap-1.5 md:justify-end">
+          {primary && !isEditing && (
+            <button type="button" className="btn btn-sm btn-primary" onClick={primary.run}>{primary.label}</button>
+          )}
+          {!primary && !ownsSchedule && r.required && !canScore && r.sitStatus === 'absent' && (
+            <span className="text-[11px] text-slate-500">Xử lý ở dòng W1</span>
+          )}
+          {!primary && c.required && !c.canEdit && !cancelled && (
+            <span className="text-[11px] text-slate-500" title="Bạn không được phân công kỹ năng này">Chỉ xem</span>
+          )}
+          {ownsSchedule && <Menu label="Thêm" items={items} />}
+        </div>
+      </div>
+    );
+  };
+
+  const writing = verdictOf('writing');
+  const writingRow = (
+    <div key="writing-total" role="row"
+      className={`${ROW_GRID} grid gap-y-1 border-t border-dashed px-2 py-2 bg-white/[0.02]`}
+      style={{ borderColor: 'var(--line)' }}>
+      <div role="cell" className="text-xs text-slate-400 md:pl-3">Writing (tổng)</div>
+      <div role="cell" className="hidden md:block" />
+      <div role="cell" className="flex flex-wrap items-center gap-2 text-sm">
+        {writing?.band != null
+          ? <span className="tabular-nums text-slate-100">Band {fmtBand(writing.band)}</span>
+          : <span className="text-slate-500 text-xs">Chưa đủ hai task</span>}
+        <Verdict v={writing} />
+        <span className="text-[11px] text-slate-500">Tính từ hai task: (Task 1 + Task 2 × 2) / 3</span>
+      </div>
+      <div role="cell" className="hidden md:block" /><div role="cell" className="hidden md:block" />
+    </div>
+  );
+
   return (
-    <Card title="Lịch thi theo kỹ năng"
-      action={d.splitWeeks
-        ? <Tag>Đợt này thi ở nhiều tuần</Tag>
-        : <span className="text-xs text-slate-500">Cả đợt thi trong một tuần</span>}>
+    <Card title="Điểm và lịch kiểm tra"
+      action={d.splitWeeks ? <Tag>Đợt này thi ở nhiều tuần</Tag> : undefined}>
       {!d.completionWeek.valid && (
         <p className="text-xs text-amber-200 mt-0 mb-3">
           Chưa có kế hoạch hoàn tất hợp lệ: {d.completionWeek.blockingLabels.join(', ')} chưa có tuần thi
           hoặc đã bị huỷ phần thi. Đợt vẫn chưa đủ kết quả cho tới khi Quản lý xếp lại.
         </p>
       )}
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead>
-            <tr>
-              <Th hint="Bốn kỹ năng đánh giá. Writing là MỘT môn thi — W1 và W2 chấm riêng nhưng làm cùng buổi.">Kỹ năng</Th>
-              <Th hint="Tuần thi của CHÍNH kỹ năng này. Các kỹ năng trong một đợt có thể ở các tuần khác nhau.">Tuần thi</Th>
-              <Th hint="Đã đến lịch chưa, đã thi chưa, hay đã xác nhận vắng. Ô điểm trống không đủ để kết luận là vắng.">Tình trạng</Th>
-              <Th hint="Hạn chấm tính từ tuần thi của chính môn đó: hết thứ Tư tuần kế tiếp với Fast Track, hết Chủ nhật cùng tuần với lớp Normal.">Hạn chấm</Th>
-              <Th>Thao tác</Th>
-            </tr>
-          </thead>
-          <tbody>
-            {d.skillSchedule.map((r) => (
-              <tr key={r.skill} className={r.required ? '' : 'row-muted'}>
-                <td className="td text-slate-200 whitespace-nowrap">
-                  {r.label}
-                  {r.planSource === 'manual' && (
-                    <span className="text-slate-500 text-[11px] block">đã xếp riêng</span>
-                  )}
-                </td>
-                <td className="td whitespace-nowrap">
-                  {!r.required ? <span className="text-slate-500 text-xs">—</span>
-                    : r.periodCode
-                      ? <>{r.periodCode} <span className="text-slate-500 text-xs">({r.weekRange})</span></>
-                      : <Tag pending>Chưa xếp tuần</Tag>}
-                </td>
-                <td className="td">
-                  <Status kind={r.progress === 'scored' ? 'done'
-                    : r.progress === 'skipped' || r.progress === 'cancelled' || r.progress === 'not_scheduled' ? 'idle'
-                    : r.progress === 'due' || r.progress === 'sat' ? 'doing' : 'waiting'}>
-                    {progressLabel(r.progress)}
-                  </Status>
-                  {r.absenceMoveCount > 0 && (
-                    <div className="text-[11px] text-amber-200 mt-1">
-                      Đã dời do vắng {r.absenceMoveCount} lần
-                    </div>
-                  )}
-                  {/*
-                    ĐANG CHỜ AI, ĐẾN NGÀY NÀO. Một dòng "chờ duyệt dời" mà không nói hạn thì
-                    người xem không biết còn bao lâu nữa phần thi bị huỷ.
-                  */}
-                  {r.pendingMove && (
-                    <div className="text-[11px] text-amber-200 mt-1">
-                      Đề nghị dời sang {r.pendingMove.toWeek ?? 'tuần kế tiếp'} (lần {r.pendingMove.moveNo})
-                      — Quản lý cần trả lời trước {fmtDate(r.pendingMove.decideBy)}, quá hạn thì huỷ phần thi.
-                    </div>
-                  )}
-                  {!r.required && r.scopeReason && (
-                    <div className="text-[11px] text-slate-500 mt-1">{r.scopeReason}</div>
-                  )}
-                  {r.sitNote && <div className="text-[11px] text-slate-500 mt-1">{r.sitNote}</div>}
-                </td>
-                <td className="td whitespace-nowrap">
-                  {!r.required || r.progress === 'cancelled' ? <span className="text-slate-500 text-xs">—</span>
-                    /* Đã chấm rồi thì hạn không còn là việc phải làm, nhưng vẫn để đọc lại được. */
-                    : r.scored ? <span className="text-slate-500 text-xs">đã chấm · hạn {fmtDate(r.deadline)}</span>
-                    : r.progress === 'upcoming' ? <span className="text-slate-400 text-xs">Sau khi thi · {fmtDate(r.deadline)}</span>
-                    : r.overdue ? <span className="text-rose-200">Quá hạn {fmtDate(r.deadline)}</span>
-                    : r.deadline ? <span className="text-slate-300">{fmtDate(r.deadline)}</span>
-                    : <Tag pending>Chưa có hạn</Tag>}
-                  {r.deadlineSource === 'skill_override' && (
-                    <span className="text-[11px] text-slate-500 block">hạn riêng môn này</span>
-                  )}
-                </td>
-                <td className="td">
-                  <div className="flex flex-wrap gap-1.5">
-                    {d.viewer.moveableSkills.includes(r.skill) && editable && r.required && !r.scored && r.progress !== 'cancelled' && (
-                      <button className="btn btn-sm" onClick={() => setWeekFor(r)}>Đổi tuần</button>
-                    )}
-                    {d.viewer.moveableSkills.includes(r.skill) && editable && r.required && !r.scored
-                      && r.progress !== 'cancelled' && r.periodCode && (
-                      <>
-                        {r.sitStatus !== 'sat' && (
-                          <button className="btn btn-sm btn-ghost" onClick={() => act(
-                            () => api.post(`/attempts/${d.id}/skills/${r.skill}/sit`, { status: 'sat' }),
-                            `Đã ghi nhận ${r.label}: học viên đã thi`,
-                          )}>Đã thi</button>
-                        )}
-                        {r.sitStatus !== 'absent' && (
-                          <button className="btn btn-sm btn-ghost" onClick={() => act(
-                            () => api.post(`/attempts/${d.id}/skills/${r.skill}/sit`, {
-                              status: 'absent', note: 'GVCN xác minh học viên vắng buổi này',
-                            }),
-                            `Đã ghi nhận ${r.label}: học viên vắng`,
-                          )}>Xác nhận vắng</button>
-                        )}
-                        {r.sitStatus !== 'scheduled' && (
-                          <button className="btn btn-sm btn-ghost" onClick={() => act(
-                            () => api.post(`/attempts/${d.id}/skills/${r.skill}/sit`, { status: 'scheduled' }),
-                            `Đã bỏ xác nhận cho ${r.label}`,
-                          )}>Bỏ xác nhận</button>
-                        )}
-                      </>
-                    )}
-                    {/*
-                      XỬ LÝ VẮNG là một đường RIÊNG, không phải "đổi tuần" (mục 10.6): nó có
-                      bộ đếm, có người duyệt và có hạn trả lời. Chỉ hiện khi đã xác nhận vắng
-                      — ô điểm trống chưa đủ để kết luận em không đi thi.
-                    */}
-                    {editable && r.required && !r.scored && r.sitStatus === 'absent' && !r.pendingMove && (
-                      <button className="btn btn-sm btn-primary" onClick={() => setMoveFor(r)}>
-                        Xử lý vắng
-                      </button>
-                    )}
-                    {/* Chỉ Quản lý trả lời được — và trả lời TRƯỚC khi tuần mới bắt đầu. */}
-                    {d.viewer.canPlanWeek && editable && r.pendingMove && (
-                      <button className="btn btn-sm btn-primary" onClick={() => setDecideFor(r)}>
-                        Trả lời đề nghị
-                      </button>
-                    )}
-                    {d.viewer.canPlanWeek && editable && r.required
-                      && (r.progress === 'cancelled' || (!r.periodCode && !r.scored)) && (
-                      <button className="btn btn-sm btn-primary" onClick={() => setRestoreFor(r)}>
-                        Khôi phục và đặt tuần
-                      </button>
-                    )}
-                    {d.viewer.canOverrideDeadline && editable && r.required && (
-                      <button className="btn btn-sm btn-ghost" onClick={() => setDeadlineFor(r)}>Hạn riêng</button>
-                    )}
-                    {d.viewer.canSkipSkill && editable && d.scoringMode === 'band' && (
-                      <button className="btn btn-sm btn-ghost" onClick={() => act(
-                        () => api.post(`/attempts/${d.id}/skills/${r.skill}/skip`, {
-                          skipped: r.required,
-                          reason: r.required ? 'Quản lý chốt trước: đợt này không yêu cầu kỹ năng đó' : undefined,
-                        }),
-                        r.required ? `${r.label} đã ra khỏi phạm vi yêu cầu` : `${r.label} đã trở lại phạm vi yêu cầu`,
-                      )}>
-                        {r.required ? 'Bỏ khỏi phạm vi' : 'Đưa lại vào phạm vi'}
-                      </button>
-                    )}
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      <SectionNote>
-        Mỗi kỹ năng mang lịch và hạn chấm của riêng nó, nên dời Speaking chỉ đổi hạn Speaking —
-        các môn đã thi tuần trước giữ nguyên hạn cũ. Môn <strong>chưa đến lịch</strong> thì chưa
-        nợ điểm và không bao giờ bị tính quá hạn.
-        {d.scoringMode === 'ratio'
-          ? ' Lớp Normal luôn phải đủ bốn môn — không có thao tác miễn môn.'
-          : ' Bỏ một môn khỏi phạm vi là quyết định chốt TRƯỚC khi thi, không dùng để hợp thức hoá một đợt học viên đã vắng.'}
-      </SectionNote>
+      {d.cells.length === 0 ? (
+        <Empty title="Lớp này chưa cấu hình kỹ năng nào" />
+      ) : (
+        <div role="table" aria-label="Điểm và lịch kiểm tra theo kỹ năng">
+          <div role="row"
+            className={`${ROW_GRID} hidden px-2 pb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500`}>
+            <div role="columnheader">Kỹ năng</div>
+            <div role="columnheader">Lịch kiểm tra</div>
+            <div role="columnheader">Điểm</div>
+            <div role="columnheader">Tình trạng và hạn</div>
+            <div role="columnheader" className="text-right">Thao tác</div>
+          </div>
+          {cells.flatMap((c) => (c.skill === 'writing2' ? [renderRow(c), writingRow] : [renderRow(c)]))}
+        </div>
+      )}
+      {d.result.scopeDetail && (
+        <SectionNote>
+          {d.result.scopeDetail}. Kỹ năng ngoài phạm vi không tính vào mẫu số SOS và không bị coi là thiếu điểm; vì
+          không đủ bốn kỹ năng nên đợt này không có Overall.
+        </SectionNote>
+      )}
+      {d.result.complete && !d.result.evaluable && (
+        <SectionNote>Đã đủ điểm nhưng lộ trình chưa có mục tiêu, nên chưa tính được kỳ vọng và SOS.</SectionNote>
+      )}
 
-      <SkillWeekModal
-        open={!!weekFor} row={weekFor} attemptId={d.id}
-        onClose={() => setWeekFor(null)} onDone={onDone}
-      />
-      <SkillDeadlineModal
-        open={!!deadlineFor} row={deadlineFor} attemptId={d.id}
-        onClose={() => setDeadlineFor(null)} onDone={onDone}
-      />
-      <AbsenceMoveModal
-        open={!!moveFor} row={moveFor} detail={d}
-        onClose={() => setMoveFor(null)} onDone={onDone}
-      />
-      <RestoreModal
-        open={!!restoreFor} row={restoreFor} detail={d}
-        onClose={() => setRestoreFor(null)} onDone={onDone}
-      />
-      <DecideMoveModal
-        open={!!decideFor} row={decideFor} detail={d}
-        onClose={() => setDecideFor(null)} onDone={onDone}
-      />
+      <SkillWeekModal open={!!weekFor} row={weekFor} attemptId={d.id}
+        onClose={() => setWeekFor(null)} onDone={onDone} />
+      <SkillDeadlineModal open={!!deadlineFor} row={deadlineFor} attemptId={d.id}
+        onClose={() => setDeadlineFor(null)} onDone={onDone} />
+      <AbsenceMoveModal open={!!moveFor} row={moveFor} detail={d}
+        onClose={() => setMoveFor(null)} onDone={onDone} />
+      <RestoreModal open={!!restoreFor} row={restoreFor} detail={d}
+        onClose={() => setRestoreFor(null)} onDone={onDone} />
+      <DecideMoveModal open={!!decideFor} row={decideFor} detail={d}
+        onClose={() => setDecideFor(null)} onDone={onDone} />
     </Card>
   );
 }
+
+/** Nhãn cột chỉ hiện ở dạng thẻ (điện thoại); từ `md` trở lên đã có hàng tiêu đề. */
+function Label({ children }: { children: React.ReactNode }) {
+  return <span className="mb-0.5 block text-[11px] font-semibold uppercase tracking-wide text-slate-500 md:hidden">{children}</span>;
+}
+
+// ---------------------------------------------------------------- lịch sử thay đổi
+
+/**
+ * LỊCH SỬ GỌN CUỐI TRANG (PR-I Step 9): lịch, phạm vi VÀ điểm trong MỘT dòng thời gian — ai, khi nào, trước → sau,
+ * lý do. Thu gọn mặc định và chỉ đếm số thay đổi; không xếp log kỹ thuật ngang với kết quả học tập.
+ */
+function HistoryCard({ d, open, onToggle }: { d: Detail; open: boolean; onToggle: () => void }) {
+  const items = [
+    ...d.history.map((h) => ({
+      key: `s${h.id}`, at: String(h.createdAt ?? ''), who: h.actorName as string | null,
+      what: `${actionLabel(h.action)}${ASSESSED_SKILL_LABEL[h.field as keyof typeof ASSESSED_SKILL_LABEL] ? ` · ${ASSESSED_SKILL_LABEL[h.field as keyof typeof ASSESSED_SKILL_LABEL]}` : ''}`,
+      change: [h.oldValue && `${historyValue(h.oldValue)} →`, h.newValue && historyValue(h.newValue)].filter(Boolean).join(' ') || null,
+      reason: h.reason as string | null,
+    })),
+    ...d.scoreHistory.map((h) => ({
+      key: `c${h.id}`, at: h.createdAt, who: h.actorName,
+      what: `${h.kind === 'override' ? 'Hiệu chỉnh điểm' : h.kind === 'no_show' ? 'Dấu "-"' : 'Sửa điểm'} · ${h.skillLabel}`,
+      change: `${h.before} → ${h.after}`, reason: null as string | null,
+    })),
+  ].sort((a, b) => (a.at < b.at ? 1 : a.at > b.at ? -1 : 0));
+
+  return (
+    <div id="lich-su">
+      <Card title="Lịch sử thay đổi"
+        action={<button className="btn btn-sm" onClick={onToggle}>{open ? 'Thu gọn' : 'Mở'}</button>}>
+        {!open ? (
+          <SectionNote>{items.length} thay đổi về lịch, phạm vi và điểm.</SectionNote>
+        ) : items.length === 0 ? (
+          <p className="text-xs text-slate-500 m-0">Chưa có thay đổi nào.</p>
+        ) : (
+          <ul className="space-y-1.5 text-xs list-none p-0 m-0">
+            {items.map((h) => (
+              <li key={h.key} className="text-slate-400">
+                <span className="text-slate-600">{h.at ? fmtDateTime(h.at) : '—'} · </span>
+                <span className="text-slate-200">{h.what}</span>
+                {h.change && <> · {h.change}</>}
+                {h.reason && <> · {h.reason}</>}
+                <span className="text-slate-600"> · {h.who ?? '—'}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Card>
+    </div>
+  );
+}
+
+/** Trạng thái thi máy ghi bằng mã; người đọc lịch sử cần chữ. Giá trị khác (ngày, mã tuần) giữ nguyên. */
+const SIT_LABEL: Record<string, string> = { scheduled: 'Theo lịch', sat: 'Đã thi', absent: 'Vắng', cancelled: 'Đã huỷ phần thi' };
+const historyValue = (v: string) => SIT_LABEL[v] ?? v;
+
+const actionLabel = (a: string) =>
+  ({
+    created: 'Tạo kế hoạch', week_set: 'Đổi lịch', lrw_set: 'Chốt buổi chính',
+    speaking_set: 'Chốt buổi Speaking', cancelled: 'Huỷ lượt', reopened: 'Mở lại',
+    skill_skipped: 'Bỏ khỏi phạm vi', skill_restored: 'Đưa lại vào phạm vi',
+    deadline_set: 'Hẹn xử lý cả đợt', deadline_cleared: 'Bỏ hẹn xử lý cả đợt',
+    skill_week_set: 'Đổi lịch', skill_week_moved_absence: 'Dời do vắng',
+    skill_sit_status: 'Trạng thái thi', completion_week: 'Tuần dự kiến hoàn tất',
+    skill_deadline_set: 'Hẹn xử lý', skill_deadline_cleared: 'Bỏ hẹn xử lý',
+    skill_no_show_settled: 'Chốt không dự thi',
+  }[a] ?? a);
 
 /** Đổi TUẦN THI của đúng một kỹ năng. Cảnh báo về khoảng cách giữa các đợt cần xác nhận lại. */
 function SkillWeekModal({ open, row, attemptId, onClose, onDone }: {
@@ -611,7 +607,7 @@ function SkillWeekModal({ open, row, attemptId, onClose, onDone }: {
   };
 
   return (
-    <Modal open={open} onClose={close} title={`Tuần thi · ${row?.label ?? ''}`} width="max-w-md"
+    <Modal open={open} onClose={close} title={`Đổi lịch · ${row?.label ?? ''}`} width="max-w-md"
       footer={<>
         <button className="btn" onClick={close} disabled={busy}>Huỷ</button>
         <button className="btn btn-primary" disabled={busy || !periodId}
@@ -675,19 +671,19 @@ function SkillDeadlineModal({ open, row, attemptId, onClose, onDone }: {
       await api.post(`/attempts/${attemptId}/skills/${row.skill}/deadline`, { deadline: value, reason });
       invalidate('/attempts'); invalidate('/overview');
       onDone(); onClose(); setDate(''); setReason('');
-      toast.push('ok', value ? `Đã đặt hạn riêng cho ${row.label}` : `${row.label} quay lại hạn mặc định`);
+      toast.push('ok', value ? `Đã hẹn xử lý cho ${row.label}` : `${row.label} quay lại hạn mặc định`);
     } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
   };
 
   return (
-    <Modal open={open} onClose={onClose} title={`Hạn chấm · ${row?.label ?? ''}`} width="max-w-md"
+    <Modal open={open} onClose={onClose} title={`Hẹn xử lý · ${row?.label ?? ''}`} width="max-w-md"
       footer={<>
         <button className="btn" onClick={onClose} disabled={busy}>Đóng</button>
         {row?.deadlineSource === 'skill_override' && (
           <button className="btn" disabled={busy} onClick={() => submit(null)}>Dùng lại hạn mặc định</button>
         )}
         <button className="btn btn-primary" disabled={busy || !date} onClick={() => submit(date)}>
-          {busy ? 'Đang lưu…' : 'Lưu hạn riêng'}
+          {busy ? 'Đang lưu…' : 'Lưu hẹn xử lý'}
         </button>
       </>}>
       <div className="space-y-3">
@@ -695,7 +691,7 @@ function SkillDeadlineModal({ open, row, attemptId, onClose, onDone }: {
           Hạn đang áp dụng: {row?.deadline ? fmtDate(row.deadline) : 'chưa có'}.
         </p>
         <label className="block">
-          <span className="label">Hạn riêng cho kỹ năng này</span>
+          <span className="label">Hẹn xử lý cho kỹ năng này</span>
           <input type="date" className="field" value={date} onChange={(e) => setDate(e.target.value)} />
         </label>
         <label className="block">
@@ -704,42 +700,11 @@ function SkillDeadlineModal({ open, row, attemptId, onClose, onDone }: {
             placeholder="Ví dụ: giáo viên Writing nghỉ phép" />
         </label>
         <SectionNote>
-          Hạn riêng đặt ở đây chỉ áp cho kỹ năng này, không đụng tới các kỹ năng khác của đợt.
+          Hẹn xử lý đặt ở đây chỉ áp cho kỹ năng này, không đụng tới các kỹ năng khác của đợt.
           Hết ngày hạn mới tính quá hạn.
         </SectionNote>
       </div>
     </Modal>
-  );
-}
-
-// ---------------------------------------------------------------- vấn đề học vụ
-
-/**
- * HƯỚNG DẪN PHỐI HỢP theo lần MT × mức SOS, lấy từ quy trình của trung tâm.
- *
- * Đây là GỢI Ý, không phải việc đã làm. Trước đây hai thứ này nằm chung một chỗ: điền tên
- * vào ô hướng dẫn là case trông như đã xử lý xong, dù chưa ai làm gì. Nay việc đã làm nằm
- * ở phần trên — có người thực hiện, có ngày thật, có lần xem lại — còn đây chỉ nhắc nên
- * làm gì tiếp.
- */
-function Playbook({ steps }: { steps: any[] }) {
-  return (
-    <div className="border-t pt-3 mt-3" style={{ borderColor: 'var(--line)' }}>
-      <div className="label">Quy trình gợi ý cho mức này</div>
-      <ul className="mt-1 space-y-1 list-none p-0 m-0">
-        {steps.map((s: any) => (
-          <li key={s.key} className="text-xs text-slate-400">
-            <span className="text-slate-200">{s.label}</span>
-            {!s.required && <span className="text-slate-500"> (theo từng trường hợp)</span>}
-            {' — '}{s.detail}
-          </li>
-        ))}
-      </ul>
-      <SectionNote>
-        Hệ thống không tự cấp buổi học, không tự lùi lịch thi và không tự kết thúc theo dõi.
-        Trao đổi phụ huynh do CS thực hiện ngoài hệ thống — ghi lại tên người làm và ngày thật.
-      </SectionNote>
-    </div>
   );
 }
 
@@ -756,7 +721,7 @@ function WeekModal({ open, onClose, attemptId, currentPeriodId, onDone }: {
   const [busy, setBusy] = useState(false);
 
   return (
-    <Modal open={open} onClose={onClose} title="Xếp cả đợt vào một tuần" width="max-w-md"
+    <Modal open={open} onClose={onClose} title="Đổi lịch cả đợt" width="max-w-md"
       footer={<>
         <button className="btn" onClick={onClose} disabled={busy}>Huỷ</button>
         <button className="btn btn-primary" disabled={busy || !periodId || periodId === currentPeriodId} onClick={async () => {
@@ -786,7 +751,7 @@ function WeekModal({ open, onClose, attemptId, currentPeriodId, onDone }: {
         <SectionNote>
           Đây là lối tắt: nó xếp <strong>mọi kỹ năng còn dời được</strong> vào cùng một tuần.
           Kỹ năng đã thi hoặc đã có điểm giữ nguyên lịch thật của nó. Muốn tách R/L/W với Speaking
-          thì dùng nút "Đổi tuần" của từng kỹ năng ở bảng lịch.
+          thì dùng "Đổi lịch" ở dòng của từng kỹ năng.
           Đổi tuần cập nhật chính lượt MT này, không tạo lượt mới và không tăng số MT.
         </SectionNote>
       </div>
@@ -810,24 +775,24 @@ function DeadlineModal({ open, onClose, detail, onDone }: {
       await api.post(`/attempts/${detail.id}/deadline`, { deadline: value, reason });
       invalidate('/attempts'); invalidate('/overview');
       onDone(); onClose();
-      toast.push('ok', value ? 'Đã đặt hạn riêng' : 'Đã quay lại hạn mặc định');
+      toast.push('ok', value ? 'Đã hẹn xử lý cả đợt' : 'Đã quay lại hạn mặc định');
     } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
   };
 
   return (
-    <Modal open={open} onClose={onClose} title="Hạn nhập điểm" width="max-w-md"
+    <Modal open={open} onClose={onClose} title="Hẹn xử lý cả đợt" width="max-w-md"
       footer={<>
         <button className="btn" onClick={onClose} disabled={busy}>Đóng</button>
         {detail.deadlineOverride && (
           <button className="btn" disabled={busy} onClick={() => submit(null)}>Dùng lại hạn mặc định</button>
         )}
         <button className="btn btn-primary" disabled={busy || !date} onClick={() => submit(date)}>
-          {busy ? 'Đang lưu…' : 'Lưu hạn riêng'}
+          {busy ? 'Đang lưu…' : 'Lưu hẹn xử lý'}
         </button>
       </>}>
       <div className="space-y-3">
         <label className="block">
-          <span className="label">Hạn riêng</span>
+          <span className="label">Hẹn xử lý</span>
           <input type="date" className="field" value={date} onChange={(e) => setDate(e.target.value)} />
         </label>
         <label className="block">
@@ -838,25 +803,31 @@ function DeadlineModal({ open, onClose, detail, onDone }: {
         <SectionNote>
           Hạn mặc định tính riêng cho từng môn: hết thứ Tư của tuần kế tiếp sau tuần thi môn đó
           (lớp Normal là hết Chủ nhật của chính tuần thi). Hạn đặt ở đây áp cho CẢ ĐỢT; muốn đặt
-          cho một môn thôi thì dùng nút "Hạn riêng" của môn đó ở bảng lịch. Hết ngày hạn mới tính quá hạn.
+          cho một môn thôi thì dùng "Hẹn xử lý" ở dòng của môn đó. Hết ngày hạn mới tính quá hạn.
         </SectionNote>
       </div>
     </Modal>
   );
 }
 
-function CancelDialog({ open, onClose, attemptId, onDone }: {
-  open: boolean; onClose: () => void; attemptId: number; onDone: () => void;
+function CancelDialog({ open, onClose, attemptId, attemptNo, scoredSkills, onDone }: {
+  open: boolean; onClose: () => void; attemptId: number; attemptNo: number; scoredSkills: number; onDone: () => void;
 }) {
   const toast = useToast();
   const [reason, setReason] = useState('');
   const [busy, setBusy] = useState(false);
   return (
     <ConfirmDialog
-      open={open} onClose={onClose} danger busy={busy} title="Huỷ lượt Mock Test" confirmLabel="Huỷ lượt"
+      open={open} onClose={onClose} danger busy={busy} title={`Huỷ lượt MT${attemptNo}`} confirmLabel="Huỷ lượt"
       body={
         <div className="space-y-2">
-          <p>Huỷ vẫn giữ nguyên lịch sử và không đổi số MT. Lượt đã huỷ không tính vào “đã xong” hay “thiếu điểm”.</p>
+          <p>
+            Huỷ <strong>mọi phần thi chưa có điểm</strong> của MT{attemptNo}.{' '}
+            {scoredSkills > 0
+              ? `${scoredSkills} kỹ năng đã có điểm vẫn được giữ nguyên trong lịch sử.`
+              : 'Chưa kỹ năng nào có điểm.'}{' '}
+            Không đổi số MT; lượt đã huỷ không tính vào “đã xong” hay “thiếu điểm”.
+          </p>
           <input className="field" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Lý do huỷ (bắt buộc)" />
         </div>
       }
@@ -871,33 +842,6 @@ function CancelDialog({ open, onClose, attemptId, onDone }: {
     />
   );
 }
-
-const actionLabel = (a: string) =>
-  ({
-    created: 'Tạo kế hoạch', week_set: 'Đổi tuần', lrw_set: 'Chốt buổi chính',
-    speaking_set: 'Chốt buổi Speaking', cancelled: 'Huỷ lượt', reopened: 'Mở lại',
-    skill_skipped: 'Bỏ khỏi phạm vi', skill_restored: 'Đưa lại vào phạm vi',
-    deadline_set: 'Đặt hạn riêng cả đợt', deadline_cleared: 'Bỏ hạn riêng cả đợt',
-    skill_week_set: 'Đổi tuần thi', skill_week_moved_absence: 'Dời do vắng',
-    skill_sit_status: 'Trạng thái thi', completion_week: 'Tuần hoàn tất theo kế hoạch',
-    skill_deadline_set: 'Đặt hạn riêng cho môn', skill_deadline_cleared: 'Bỏ hạn riêng của môn',
-  }[a] ?? a);
-
-/*
- * Nhãn cho cột `field` của lịch sử vấn đề. Những tên cũ (trao đổi HS/PH, chính sách vận
- * hành…) GIỮ LẠI dù các cột đó đã bỏ: các dòng lịch sử ghi từ trước vẫn còn, và đọc lại
- * thấy "talk_parent_date" thì không ai hiểu.
- */
-const fieldLabel = (f: string) =>
-  ({
-    track: 'Đầu mục', topic: 'Kỹ năng',
-    sos_level: 'Mức SOS', status: 'Trạng thái', talk_student_person: 'Người trao đổi HS',
-    talk_student_date: 'Ngày trao đổi HS', talk_parent_person: 'Người trao đổi PH',
-    talk_parent_date: 'Ngày trao đổi PH', academic_support: 'Hỗ trợ học thuật',
-    academic_person: 'Người phụ trách học thuật', academic_start_date: 'Ngày bắt đầu hỗ trợ',
-    ops_policy: 'Chính sách vận hành', ops_date: 'Ngày áp dụng', meeting_kind: 'Meeting',
-    meeting_date: 'Ngày meeting', head_confirmed: 'Head xác nhận', note: 'Ghi chú',
-  }[f] ?? f);
 
 /**
  * XỬ LÝ VẮNG MỘT BUỔI THI (mục 10.6).

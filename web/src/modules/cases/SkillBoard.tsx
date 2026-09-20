@@ -4,6 +4,7 @@ import { fmtBand, fmtDate, sosLabel, sosTone } from '../../lib/format.ts';
 import { api, invalidate } from '../../lib/api.ts';
 import { useSession } from '../../lib/session.tsx';
 import { useToast } from '../../ui/Toast.tsx';
+import { Han } from '../../ui/Han.tsx';
 import { ActionDialog, OutcomeDialog, ResultDialog } from './CasePanel.tsx';
 import {
   OUTCOME_MARK, canEndWithOutcome, isContactKind, outcomeLabelFor, outcomesFor,
@@ -165,9 +166,9 @@ function SkillRow({ row, open, onToggle, onReport, onChanged }: {
                   row.signal.overdue ? 'text-rose-200' : 'text-amber-200'}`}>
                   Xác minh SOS
                 </span>
-                <span className="block text-[10px] text-slate-500">
-                  {row.signal.overdue ? '⚠ quá hạn ' : 'hạn '}{fmtDate(row.signal.verifyDue)}
-                  {row.signal.ownerName ? ` · ${row.signal.ownerName}` : ''}
+                <span className="mt-0.5 flex flex-wrap items-center gap-x-1.5 text-[10px] text-slate-500">
+                  <Han loai="xac-minh-sos" han={row.signal.verifyDue} />
+                  {row.signal.ownerName && <span>{row.signal.ownerName}</span>}
                 </span>
               </>
             ) : row.caseTitle ? (
@@ -325,11 +326,8 @@ function CaseCardView({ c, row, onChanged }: {
               {c.attempts.map((a) => (
                 <Chip key={a.attemptNo}>MT{a.attemptNo}{a.week ? ` · ${fmtDate(a.week)}` : ''}</Chip>
               ))}
-              {c.followUntil && c.status !== 'done' && (
-                <Chip tone={c.followOverdue ? 'danger' : undefined}>
-                  {c.followOverdue ? '⚠ quá hạn báo kết quả' : 'Báo kết quả trước'} {fmtDate(c.followUntil)}
-                </Chip>
-              )}
+              {/* NGHĨA VỤ CẬP NHẬT KẾT QUẢ hằng tuần — một đồng hồ riêng, không lẫn với "dự kiến kết thúc" (F11). */}
+              {c.followUntil && c.status !== 'done' && <Han loai="cap-nhat-pa" han={c.followUntil} />}
             </div>
           )}
 
@@ -501,24 +499,20 @@ function PlanRow({ p, track, canEdit, onChanged }: {
   );
 }
 
-/** Hạn LÀM và hạn DỰ KIẾN XONG — hai mốc, hai nhãn, không gộp. */
+/**
+ * HẠN LÀM và NGÀY DỰ KIẾN XONG — hai mốc, hai loại, không gộp (F11).
+ *
+ * "Dự kiến kết thúc" từng bị trình bày như một hạn phải làm — tô đỏ, đếm "quá hạn" — dù không ai trễ một ngày dự kiến.
+ * Nay đi qua `<Han>`: hạn làm là hạn thật; ngày dự kiến xong LUÔN trung tính.
+ */
 function PlanDue({ p }: { p: Plan }) {
   if (!p.actionDue && !p.followupDue) {
     return <span className="text-[11px] text-slate-600">chưa đặt hạn</span>;
   }
   return (
-    <span className="text-[11px] whitespace-nowrap">
-      {p.actionDue && (
-        <span className={p.actionOverdue ? 'text-rose-300' : 'text-slate-500'}>
-          {p.actionOverdue ? '⚠ quá hạn làm ' : 'hạn làm '}{fmtDate(p.actionDue)}
-        </span>
-      )}
-      {p.actionDue && p.followupDue && <span className="text-slate-600"> · </span>}
-      {p.followupDue && (
-        <span className={p.followupOverdue ? 'text-rose-300' : 'text-slate-500'}>
-          dự kiến xong {fmtDate(p.followupDue)}
-        </span>
-      )}
+    <span className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[11px]">
+      {p.actionDue && <Han loai="thuc-hien-y-thuc" han={p.actionDue} />}
+      {p.followupDue && <Han loai="du-kien-ket-thuc" han={p.followupDue} />}
     </span>
   );
 }
