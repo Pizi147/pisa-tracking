@@ -53,7 +53,7 @@ export const SCORE_TEXT: Record<ScoreTone, string> = {
  * cùng viền, cùng bo góc, cùng cỡ chữ, màu thì mỗi màn tự chọn. Mắt không tách được cái nào
  * ra cái nào, nên nhìn một dòng lớp chỉ thấy một đám nhãn màu.
  *
- *   <Level>   nền ĐẶC, bo tròn hẳn      — mức SOS, mức gấp: tình trạng của một đứa trẻ
+ *   <Level>   nền ĐẶC, bo tròn hẳn      — mức SOS, mức độ ưu tiên: tình trạng của một đứa trẻ
  *   <Status>  nền nhẹ + biểu tượng      — TRẠNG THÁI CÔNG VIỆC: đang làm · chờ · xong
  *   <Task>    viền vuông, gạch dọc trái — VIỆC PHẢI LÀM, bấm được
  *   <Alert>   dấu ⚠ + màu mạnh          — quá hạn, thiếu thông tin
@@ -83,7 +83,7 @@ const LEVEL_CLASS: Record<Tone, string> = {
 };
 
 /**
- * MỨC ĐỘ của một học viên — SOS 1/2/3, hay mức gấp do giáo viên nhận định.
+ * MỨC ĐỘ của một học viên — SOS 1/2/3, hay mức độ ưu tiên do giáo viên nhận định.
  * Nặng nhất về thị giác vì đây là tình trạng của một đứa trẻ, không phải một con số vận hành.
  */
 export function Level({ tone = 'neutral', children, title }: { tone?: Tone; children: ReactNode; title?: string }) {

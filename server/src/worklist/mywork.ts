@@ -192,7 +192,7 @@ function badge(g: WorkGroupKey, u: WorkUrgency): string | null {
 }
 
 /**
- * Hạn xử lý một vấn đề suy thẳng từ mức gấp: 7 · 5 · 3 ngày (owner chốt 10/09/2026).
+ * Hạn xử lý một vấn đề suy thẳng từ mức độ ưu tiên: 7 · 5 · 3 ngày (owner chốt 10/09/2026).
  * Dùng chung một bảng với hạn Quản lý trả lời đề xuất — hai con số nói cùng một chuyện.
  */
 

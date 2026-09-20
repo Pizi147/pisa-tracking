@@ -3141,7 +3141,7 @@ check('MỖI KỸ NĂNG CHỈ MỘT GIÁO VIÊN — xếp hai người vào mộ
   );
 });
 
-check('Dữ liệu mẫu có đủ bốn mức gấp, không phải một màu đỏ', () => {
+check('Dữ liệu mẫu có đủ bốn mức độ ưu tiên, không phải một màu đỏ', () => {
   const open = conn
     .prepare(
       `SELECT followup_due FROM case_interventions
@@ -3413,7 +3413,7 @@ check('Xác nhận đã trao đổi phải có ngày, và không nhận ngày �
     'Không lưu đúng trạng thái và ngày thực hiện');
 });
 
-console.log('\n22. Phương án tự sinh và hạn theo mức gấp');
+console.log('\n22. Phương án tự sinh và hạn theo mức độ ưu tiên');
 
 check('SOS 1-2 xếp tự học, SOS 3 xếp tutor, từ MT3 luôn là tutor', () => {
   const { autoSupportKind } = domain;

@@ -269,6 +269,8 @@ Thêm dòng mới ở cuối, có ngày. **Không xoá dòng cũ** — ghi "thay
 | 20/09/2026 | *(Thiết kế)* **Một chỉ số = một hàm trả về tập ID.** Số là `tap.length`; drill-down gọi lại đúng hàm đó với đúng quyền | Bên design · `thiet-ke/HOP_DONG_SO_LIEU.md` |
 | 20/09/2026 | *(Thiết kế)* Chín điểm luật chưa chốt **C01–C09** phải nằm thành hằng số có tên ở `shared/domain/policy.ts`, chú thích cả hai phương án. Không rải `if`, không viết migration dựa trên điểm chưa chốt | Bên design · `thiet-ke/LUAT_CHO_CHOT.md` |
 | 20/09/2026 | *(Thiết kế)* **Code một mạch trên MỘT nhánh, năm chặng** (mục 0.4). PR-D do một session khác giữ; năm file ở **mục 0.5** bị khoá cho tới khi PR-D được hợp nhất. **PR-D merge trước, nhánh batch merge sau** — lý do và cách gỡ xung đột ở mục 21 | Chủ sản phẩm 20/09 |
+| 20/09/2026 | Buổi Writing của Fast Track chỉ chốt "Không dự thi" khi **cả hai task W1 và W2 đều là `-`**; chỉ một task `-` mà task kia có điểm hoặc chưa nhập thì buổi đó không phải vắng | Chủ sản phẩm (chấp nhận đề xuất) |
+| 20/09/2026 | **`mức gấp` → `mức độ ưu tiên`**: SOS là tình trạng của học viên; mức độ ưu tiên là mức cấp bách của case. Đã đổi chữ ở mã và giao diện | Chủ sản phẩm |
 
 ---
 
@@ -1740,7 +1742,7 @@ Xem mục 7b để biết phần đã làm. Bốn việc sau **chưa làm**, kh�
 ### 12.11. Việc chặng 5 (PR-H) chưa làm hoặc chưa kiểm — 20/09/2026
 
 - **Chưa quét từng màn theo kiểu "một khái niệm một chữ":** mới áp các dòng bảng §2 và các chữ sai bắt được bằng grep. Còn lại: mọi `<Empty>` chưa được kiểm "thiếu gì + ai điền được + nút"; nhiều `SectionNote` giải thích mô hình dữ liệu còn nguyên; đại từ mơ hồ ("em này", "lượt đó") còn ở CHÚ THÍCH mã (không hiện trên giao diện) và một số chuỗi ít gặp chưa tìm ra bằng grep.
-- **Cần chủ sản phẩm/bên design chốt:** `mức gấp` (mức gấp của case — dữ liệu mẫu có bốn mức, luật hạn 7/5/3 ngày theo mức này) có giữ tên đó không, hay cũng đổi. Bảng §1 chỉ cấm dùng nó cho kết quả SOS.
+- ~~`mức gấp`~~ — **đã chốt 20/09/2026: đổi thành `mức độ ưu tiên`** (mục 3). Còn nhãn từng mức (ví dụ chữ "Gấp") và hạn 7/5/3 ngày giữ nguyên; chữ "Gấp" ở tên mức chưa đổi.
 - **`Chọn giáo viên` trong ô `Người phụ trách` chưa làm** (cần lọc theo giáo viên ở máy chủ).
 - **Chưa bấm thật:** hộp thoại thêm học viên hàng loạt (nút `Xem N dòng cần sửa`); form nhập bù (`Phương án đã áp dụng`, `+ Thêm phương án`); trạng thái rỗng của khối phương án; tooltip `Tuần dự kiến hoàn tất` ở bảng điểm Normal; bảng nhãn ở ba vai không được mở từng màn — chỉ mở: danh sách học viên (Quản lý, GVBM Hà), tổng quan lớp (GVBM Hà), ô `Người phụ trách` ở tổng quan (Quản lý), và hồ sơ Test ở chặng 4.
 - Nhãn `Chờ nhập điểm` đứng cạnh `Hạn nhập điểm 23/09` ở hồ sơ Test vẫn còn.

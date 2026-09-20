@@ -403,7 +403,7 @@ export function CaseBoard({ embedded = false }: { embedded?: boolean } = {}) {
                     <Th hint="Hạng mục của case, và nhận định nguyên nhân nếu đã có người dạy phân loại.">Kỹ năng · nguyên nhân</Th>
                     <Th hint="Case sinh từ kết quả một bài đánh giá, do giáo viên ghi nhận, hay do Quản lý giao.">Nguồn</Th>
                     <Th hint="Số phương án đã ghi cho case này, và phương án đang chạy.">Đã làm</Th>
-                    <Th hint="Ba trạng thái loại trừ nhau: chưa có phương án · đang xử lý · đã hoàn thành. Mức SOS và mức gấp đứng riêng.">Tình trạng</Th>
+                    <Th hint="Ba trạng thái loại trừ nhau: chưa có phương án · đang xử lý · đã hoàn thành. Mức SOS và mức độ ưu tiên đứng riêng.">Tình trạng</Th>
                   </tr>
                 </thead>
                 <tbody>

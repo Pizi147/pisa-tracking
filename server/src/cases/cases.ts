@@ -1721,8 +1721,8 @@ export function caseDetail(p: Principal, caseId: number) {
     /** Số kỹ năng dưới kỳ vọng của CẢ LƯỢT. NULL với vấn đề giáo viên báo — không phải SOS 0. */
     sosLevel: c.sos_level,
     /**
-     * Mức gấp. Vấn đề sinh từ điểm không ghi mức vào database (hai thang cố tình tách nhau);
-     * suy từ SOS lúc hiển thị. Từ vòng 5 mức gấp KHÔNG còn quyết định hạn — hạn là chu kỳ
+     * Mức độ ưu tiên. Vấn đề sinh từ điểm không ghi mức vào database (hai thang cố tình tách nhau);
+     * suy từ SOS lúc hiển thị. Từ vòng 5 mức độ ưu tiên KHÔNG còn quyết định hạn — hạn là chu kỳ
      * hai tuần (học thuật) hoặc một tuần (Ý thức/Khác), xem `cycleDeadline`.
      */
     urgency: c.urgency ?? (c.sos_level !== null ? urgencyFromSos(c.sos_level) : null),

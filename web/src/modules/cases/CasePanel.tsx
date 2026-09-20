@@ -141,7 +141,7 @@ export function CasePanel({ caseId, compact = false, hideHeader = false, onChang
           )}
           {/*
             KHÔNG CÓ BADGE "GẤP" Ở ĐÂY NỮA (mục 6.1).
-            Mức gấp là một con số được suy ra lúc case sinh, và nó không đổi theo việc thực
+            Mức độ ưu tiên là một con số được suy ra lúc case sinh, và nó không đổi theo việc thực
             tế đang chạy nhanh hay chậm. Đặt nó cạnh tên case thì mọi case SOS 3 đều đỏ rực
             ngay từ đầu, kể cả những case đang được xử lý đúng hạn — nên cái đỏ ấy mất nghĩa.
             Cái người đọc cần là QUÁ HẠN THẬT, và nó nằm ở đúng phương án đang trễ, bên dưới.
@@ -1061,7 +1061,7 @@ export function ActionDialog({ open, onClose, caseId, track, onDone }: {
         {alwaysNeedsApproval && (
           <SectionNote>
             Đây là một ĐỀ XUẤT nên Quản lý luôn phải trả lời — không cần tick thêm gì.
-            Hạn trả lời suy từ mức gấp của vấn đề: 7 ngày (bình thường) · 5 ngày (cần chú ý) ·
+            Hạn trả lời suy từ mức độ ưu tiên của vấn đề: 7 ngày (bình thường) · 5 ngày (cần chú ý) ·
             3 ngày (gấp).
           </SectionNote>
         )}

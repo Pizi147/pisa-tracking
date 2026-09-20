@@ -738,7 +738,7 @@ export function autoSupportKind(sosLevel: number, attemptNo: number): 'self_stud
 /**
  * Mức ưu tiên suy ra từ SOS. SUY LÚC HIỂN THỊ, không ghi vào case — xem Q11.
  *
- * Ba mức SOS ánh xạ MỘT–MỘT sang ba mức gấp, theo đúng bảng 3.1 của tài liệu chốt vòng 4:
+ * Ba mức SOS ánh xạ MỘT–MỘT sang ba mức độ ưu tiên, theo đúng bảng 3.1 của tài liệu chốt vòng 4:
  * SOS 1 → 7 ngày · SOS 2 → 5 ngày · SOS 3 → 3 ngày. Bản trước gộp SOS 1 và SOS 2 vào cùng
  * mức "cần chú ý", nên một em trượt đúng một kỹ năng bị thúc gấp như em trượt hai kỹ năng.
  */
@@ -768,7 +768,7 @@ export const APPROVAL_LABEL: Record<ApprovalState, string> = {
 /**
  * CHU KỲ XỬ LÝ: HAI TUẦN VỚI CASE HỌC THUẬT, MỘT TUẦN VỚI Ý THỨC/KHÁC.
  *
- * Owner chốt ở vòng 5, và luật này THAY THẾ hẳn luật cũ (hạn 3/5/7 ngày theo mức gấp,
+ * Owner chốt ở vòng 5, và luật này THAY THẾ hẳn luật cũ (hạn 3/5/7 ngày theo mức độ ưu tiên,
  * hạn theo mức SOS, hạn theo lượt MT kế tiếp).
  *
  * CASE HỌC THUẬT — chu kỳ hai tuần:
