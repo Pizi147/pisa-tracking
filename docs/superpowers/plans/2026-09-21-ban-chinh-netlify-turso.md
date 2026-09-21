@@ -10,7 +10,7 @@
 > | PR | Task | Nội dung | Model khuyến nghị |
 > |---|---|---|---|
 > | **PR-Z2a** | 0 → 6b | Hạ tầng: libsql, Turso, kho tệp, Netlify Function, tắt demo, **deploy nháp thật** | 🆕 22/09 **Fable 5.1 · High** (B: Sonnet 5 · High) — nâng từ Sonnet vì thử thật cho thấy lỗi chỉ lộ sau khi gói; rà soát ở session planning (Opus) |
-> | **PR-Z2b** | 7 → 9 | An toàn dữ liệu bản chính: khởi tạo, chi nhánh, sao lưu, tài liệu | Opus 5 · XHigh (B: Fable 5.1 · High) |
+> | **PR-Z2b** | 6c → 9 | An toàn dữ liệu bản chính: khởi tạo, chi nhánh, sao lưu, tài liệu | Opus 5 · XHigh (B: Fable 5.1 · High) |
 > | **PR-Z2c** | 10 → 11 | Deploy bản chính + đo tốc độ + rà soát độc lập | Opus 5 · XHigh (B: Fable 5.1 · High); **người rà ≠ người code** |
 
 > **SỬA 22/09/2026 SAU THỬ THẬT (session planning).** Một agent đã chạy thử Task 1–2 và **gói Function như Netlify
@@ -85,7 +85,7 @@ mạng tới Turso — đó là Task 3 (gate).
 | Phần | Làm | Điều kiện bắt đầu | Kết thúc bằng |
 |---|---|---|---|
 | **A · PR-Z2a** | Task 0 → Task 6b | `main` đã có PR-T và PR-K | Deploy **nháp** chạy thật trên Netlify với database Turso **thử** (Task 6b) → mở PR, không merge |
-| **B · PR-Z2b** | Task 7 → Task 9 | PR-Z2a **đã merge** | Mở PR, không merge |
+| **B · PR-Z2b** | Task 6c → Task 9 | PR-Z2a **đã merge** | Mở PR, không merge |
 | **C · PR-Z2c** | Task 10 → Task 11 | PR-Z2b **đã merge** | Bản chính chạy trên địa chỉ thật + rà soát độc lập → mở PR (nếu có mã đổi), không merge |
 
 - Mỗi phần: **một session mới**, một nhánh mới từ `main` mới nhất (`pr-z2a-ha-tang`, `pr-z2b-an-toan-du-lieu`,
@@ -1019,6 +1019,71 @@ và cho **số đo tốc độ thật** (Netlify ↔ Turso cùng vùng), thay ch
   | Có trang > 10 giây, **hoặc** Step 6 có dòng hỏng | 🛑 Dừng. Báo chủ sản phẩm + session thiết kế kèm Nhật ký |
 
 - [ ] **Step 9:** Commit `PR-Z2 (6b): đóng gói nhị phân Linux cho libsql`. Kết thúc Phần A (xem mục "Ba phần").
+
+---
+
+### Task 6c 🆕 22/09: Siết chốt seed theo địa chỉ ĐẦY ĐỦ + tên database thật  *(đầu Phần B — làm trước Task 7)*
+
+**Vì sao:** chủ sản phẩm đặt tên thật (22/09): database **thử** = `pisatracking-demo`, database **bản chính** =
+`pisatracking`. Tên bản chính **nằm trọn trong** tên bản thử. Chốt của Task 2 Step 6 cho seed chạy khi
+`DB_PATH.includes(PISA_CHO_PHEP_SEED_TURSO)` → ai đặt biến là `pisatracking` thì khớp **cả hai** → `npm run seed`
+(xoá sạch rồi dựng demo) chạy được vào **bản chính**. Phải so **nguyên tên máy chủ** của URL, không so "có chứa".
+
+**Files:** Modify `server/src/seed/run.ts`, `server/src/moiTruong.ts`, `server/src/tests/banChinh.tests.ts`,
+`TRIEN_KHAI.md`, file kế hoạch này (các chỗ còn ghi `pisa-thu-nghiem` / `pisa-ban-chinh` trong Phần B, C).
+
+**Interfaces:** Produces `tenMayChuDb(url: string): string` (trong `moiTruong.ts`) — trả hostname viết thường,
+ví dụ `libsql://pisatracking-demo-abc.turso.io` → `pisatracking-demo-abc.turso.io`; URL hỏng → `''`.
+Produces `choPhepSeedTurso(url: string, choPhep: string | undefined): boolean`.
+
+- [ ] **Step 1: Phép kiểm đỏ** — thêm vào `banChinh.tests.ts`:
+  ```ts
+  console.log('\nPR-Z2 · 1b. Chốt seed so NGUYÊN tên máy chủ (tên bản chính nằm trong tên bản thử)');
+  const { choPhepSeedTurso } = await import('../moiTruong.ts');
+  const THU = 'libsql://pisatracking-demo-abc.turso.io';
+  const CHINH = 'libsql://pisatracking-abc.turso.io';
+  check('PR-Z2 · Seed được vào DB thử khi biến cho phép là NGUYÊN tên máy chủ của nó', () => {
+    assert(choPhepSeedTurso(THU, 'pisatracking-demo-abc.turso.io') === true, 'phải cho phép');
+  });
+  check('PR-Z2 · Biến cho phép là một PHẦN tên ("pisatracking") → KHÔNG khớp DB nào, kể cả bản chính', () => {
+    assert(choPhepSeedTurso(CHINH, 'pisatracking') === false, 'bản chính không được seed');
+    assert(choPhepSeedTurso(THU, 'pisatracking') === false, 'một phần tên không đủ');
+  });
+  check('PR-Z2 · Biến cho phép là tên DB thử nhưng URL là bản chính → từ chối', () => {
+    assert(choPhepSeedTurso(CHINH, 'pisatracking-demo-abc.turso.io') === false, 'phải từ chối');
+  });
+  check('PR-Z2 · Không có biến cho phép → từ chối', () => {
+    assert(choPhepSeedTurso(THU, undefined) === false && choPhepSeedTurso(THU, '') === false, 'phải từ chối');
+  });
+  ```
+- [ ] **Step 2:** `npm test` → bốn phép **đỏ**. Ghi Nhật ký.
+- [ ] **Step 3:** Trong `server/src/moiTruong.ts`:
+  ```ts
+  /** Tên máy chủ của URL database (viết thường). Dùng để so NGUYÊN tên, không so "có chứa". */
+  export function tenMayChuDb(url: string): string {
+    try { return new URL(url.replace(/^libsql:/, 'https:')).hostname.toLowerCase(); } catch { return ''; }
+  }
+
+  /**
+   * Cho `npm run seed` (XOÁ SẠCH rồi dựng demo) chạy vào Turso? Chỉ khi biến cho phép là NGUYÊN tên máy chủ của
+   * database đang trỏ tới. Lý do (22/09): tên bản chính `pisatracking` nằm trọn trong tên bản thử
+   * `pisatracking-demo`, nên so "có chứa" sẽ để lọt bản chính.
+   */
+  export function choPhepSeedTurso(url: string, choPhep: string | undefined): boolean {
+    const ten = tenMayChuDb(url);
+    return !!ten && !!choPhep && ten === choPhep.trim().toLowerCase();
+  }
+  ```
+- [ ] **Step 4:** Trong `server/src/seed/run.ts` thay điều kiện `DB_PATH.includes(choPhep)` bằng
+      `choPhepSeedTurso(DB_PATH, process.env.PISA_CHO_PHEP_SEED_TURSO)`. Thông báo TỪ CHỐI thêm một dòng:
+      `Muốn seed database THỬ: đặt PISA_CHO_PHEP_SEED_TURSO bằng NGUYÊN tên máy chủ, ví dụ pisatracking-demo-xxx.turso.io`.
+      Phép kiểm chạy tiến trình con của Task 2 Step 6 phải vẫn xanh.
+- [ ] **Step 5: Tên thật trong tài liệu.** `TRIEN_KHAI.md` mục 2 và bảng tra mục 12: `pisa-thu-nghiem` → `pisatracking-demo`,
+      `pisa-ban-chinh` → `pisatracking` (cả ví dụ URL). Thêm một câu cảnh báo ở mục 2: *"Hai tên gần giống nhau —
+      khi dán URL, nhìn kỹ có chữ `-demo` hay không."* Trong file kế hoạch này, Phần B và C: đổi mọi `pisa-ban-chinh` →
+      `pisatracking`, `pisa-thu-nghiem` → `pisatracking-demo`. Chốt kiểm ở Task 10 Step 1 ("URL phải là bản chính")
+      đổi thành: `tenMayChuDb(URL)` **bắt đầu bằng `pisatracking-`** và **không** bắt đầu bằng `pisatracking-demo`.
+- [ ] **Step 6:** `npm run check` xanh (N + 4). Commit: `PR-Z2 (6c): chốt seed so nguyên tên máy chủ; tên database thật`.
 
 ---
 
