@@ -962,6 +962,80 @@ export async function runSosV3Tests(t: YThucTestKit) {
     assert(again.length === 0 && n("SELECT COUNT(*) n FROM audit_logs WHERE action = 'violation.delete'") === 1, 'Chạy lần hai không làm gì');
   });
 
+  // ================================================================== Gọi thẳng đường HTTP — máy chủ từ chối, không chỉ ẩn nút
+
+  const { createApp } = await import('../app.ts');
+  const { createSession } = await import('../auth.ts');
+  const server = createApp().listen(0);
+  const port = (server.address() as any).port as number;
+  const call = async (who: any | null, method: string, url: string, body?: unknown) => {
+    const headers: Record<string, string> = { 'content-type': 'application/json' };
+    if (who) headers.cookie = `pisa_demo_session=${createSession(who.userId)}`;
+    const res = await fetch(`http://127.0.0.1:${port}/api${url}`, { method, headers, body: body === undefined ? undefined : JSON.stringify(body) });
+    let json: any = null;
+    try { json = await res.json(); } catch { /* không có thân */ }
+    return { status: res.status, json };
+  };
+  const hf = freshSos('HTTP');
+  const hBranch = get('SELECT branch_id n FROM classes WHERE id = ?', CLASS).n;
+  const hViol = recordV(w1T, hf.st.id, { description: 'Vi phạm để thử xoá qua đường HTTP' });
+  const h = {
+    noAuth: await call(null, 'GET', `/students/${hf.st.id}/phoi-hop-sos`),
+    confirmOther: await call(w1T, 'POST', `/interventions/${hf.w2Plan.id}/confirm`, {}),
+    confirmOk: await call(w2T, 'POST', `/interventions/${hf.w2Plan.id}/confirm`, { description: 'Tự học · 1 tháng — viết 2 bài Task 2 mỗi tuần' }),
+    dismissBad: await call(P.mbManager, 'POST', `/cases/${hf.sp.id}/dismiss`, { reasonCode: 'bay-ba' }),
+    dismissOk: await call(P.mbManager, 'POST', `/cases/${hf.sp.id}/dismiss`, { reasonCode: 'single_incident' }),
+    listOutsider: await call(outsiderT, 'GET', `/students/${hf.st.id}/phoi-hop-sos`),
+    listGvcn: await call(gvcn, 'GET', `/students/${hf.st.id}/phoi-hop-sos`),
+    listClassGvbm: await call(w1T, 'GET', `/classes/${CLASS}/phoi-hop-sos`),
+    confirmCoordGvbm: await call(w1T, 'POST', `/phoi-hop-sos/${rowOf(hf.a.id, 'talk_student').id}/confirm`, { performedOn: TODAY }),
+    confirmCoordOk: await call(gvcn, 'POST', `/phoi-hop-sos/${rowOf(hf.a.id, 'talk_student').id}/confirm`, { performedOn: TODAY, note: 'Đã trao đổi' }),
+    removeCoordNoReason: await call(gvcn, 'POST', `/phoi-hop-sos/${rowOf(hf.a.id, 'talk_family').id}/remove`, {}),
+    removeCoordOk: await call(gvcn, 'POST', `/phoi-hop-sos/${rowOf(hf.a.id, 'talk_family').id}/remove`, { reasonCode: 'handled_otherwise' }),
+    addCoord: await call(gvcn, 'POST', `/attempts/${hf.a.id}/phoi-hop-sos`, { kind: 'cx_meeting_student' }),
+    addCoordGvbm: await call(w1T, 'POST', `/attempts/${hf.a.id}/phoi-hop-sos`, { kind: 'cx_meeting_family' }),
+    delPeer: await call(w2T, 'DELETE', `/violations/${hViol}`),
+    invalidate: await call(w1T, 'POST', `/violations/${hViol}/invalidate`, { reason: 'x' }),
+    delOwn: await call(w1T, 'DELETE', `/violations/${hViol}`),
+    metricMb: await call(P.mbManager, 'GET', `/metrics/phoi-hop-luot-sos?rows=1&branchId=${hBranch}`),
+    metricCp: await call(P.cpManager, 'GET', `/metrics/phoi-hop-luot-sos?branchId=${hBranch}`),
+    metricOld: await call(P.mbManager, 'GET', `/metrics/vi-pham-khong-hieu-luc?branchId=${hBranch}`),
+    metricCase: await call(P.mbManager, 'GET', `/metrics/case-cho-xac-dinh-nguyen-nhan?rows=1&branchId=${hBranch}`),
+  };
+  server.close();
+
+  check('PR-T · HTTP Case từ SOS: chưa đăng nhập → 401; GVBM kỹ năng khác xác nhận → 403; GVBM đúng kỹ năng xác nhận (kèm chỉnh) → 200 phương án đã chạy; Quản lý đóng `Không cần theo dõi` (lý do lạ → 400, hợp lệ → 200)', () => {
+    assert(h.noAuth.status === 401, `Chưa đăng nhập: ${h.noAuth.status}`);
+    assert(h.confirmOther.status === 403, `GVBM W1 xác nhận case W2 qua HTTP phải bị 403, được ${h.confirmOther.status}`);
+    assert(h.confirmOk.status === 200 && h.confirmOk.json?.interventions?.some((i: any) => i.id === hf.w2Plan.id && i.status === 'started' && i.confirmedAt && i.preset), `Xác nhận: ${h.confirmOk.status} ${JSON.stringify(h.confirmOk.json?.error)}`);
+    assert(h.dismissBad.status === 400 && /lý do/.test(h.dismissBad.json?.error ?? ''), `Lý do lạ: ${h.dismissBad.status} ${h.dismissBad.json?.error}`);
+    assert(h.dismissOk.status === 200 && h.dismissOk.json?.status === 'done' && h.dismissOk.json?.sos?.dismissed?.code === 'single_incident', `Đóng không cần theo dõi: ${h.dismissOk.status}`);
+  });
+
+  check('PR-T · HTTP Phối hợp SOS: đọc theo học viên/lớp (GVBM xem được, người ngoài lớp 403); GVBM thêm/xác nhận 403; GVCN xác nhận · bỏ (thiếu lý do → 400) · thêm việc → 200', () => {
+    assert(h.listOutsider.status === 403, `Người ngoài lớp: ${h.listOutsider.status}`);
+    assert(h.listGvcn.status === 200 && h.listGvcn.json?.canAct === true && h.listGvcn.json?.rows?.[0]?.actions?.length >= 3, `GVCN đọc: ${h.listGvcn.status}`);
+    assert(h.listClassGvbm.status === 200 && (h.listClassGvbm.json?.rows ?? []).some((r: any) => r.attemptId === hf.a.id), 'GVBM đọc được danh sách lớp');
+    assert(h.confirmCoordGvbm.status === 403 && h.addCoordGvbm.status === 403, `GVBM xác nhận/thêm: ${h.confirmCoordGvbm.status}/${h.addCoordGvbm.status}`);
+    assert(h.confirmCoordOk.status === 200 && h.confirmCoordOk.json?.status === 'done', `GVCN xác nhận: ${h.confirmCoordOk.status}`);
+    assert(h.removeCoordNoReason.status === 400 && h.removeCoordOk.status === 200 && h.removeCoordOk.json?.removeReasonCode === 'handled_otherwise', `Bỏ việc: ${h.removeCoordNoReason.status}/${h.removeCoordOk.status}`);
+    assert(h.addCoord.status === 200 && h.addCoord.json?.kind === 'cx_meeting_student' && h.addCoord.json?.preset === false, `Thêm việc: ${h.addCoord.status} ${h.addCoord.json?.error}`);
+  });
+
+  check('PR-T · HTTP Xoá vi phạm: đồng nghiệp xoá → 403; người ghi xoá → 200 `{ok, removedFromMeasures}`; đường `invalidate` cũ đã BỎ (404)', () => {
+    assert(h.delPeer.status === 403, `Đồng nghiệp xoá: ${h.delPeer.status}`);
+    assert(h.invalidate.status === 404, `Đường invalidate phải không còn: ${h.invalidate.status}`);
+    assert(h.delOwn.status === 200 && h.delOwn.json?.ok === true && h.delOwn.json?.removedFromMeasures === 0, `Người ghi xoá: ${h.delOwn.status} ${JSON.stringify(h.delOwn.json)}`);
+    assert(!get('SELECT id FROM violations WHERE id = ?', hViol), 'Vi phạm phải biến mất');
+  });
+
+  check('PR-T · HTTP Chỉ số mới: Quản lý MB xem `phoi-hop-luot-sos` (có dòng bấm được) và `case-cho-xac-dinh-nguyen-nhan`; Quản lý chi nhánh khác → 403; `vi-pham-khong-hieu-luc` → 404', () => {
+    assert(h.metricMb.status === 200 && h.metricMb.json?.n === h.metricMb.json?.ids?.length && h.metricMb.json?.rows?.length === h.metricMb.json?.n && h.metricMb.json?.n > 0, `Quản lý MB: ${h.metricMb.status}`);
+    assert(h.metricCp.status === 403, `Quản lý CP: ${h.metricCp.status}`);
+    assert(h.metricOld.status === 404, `Chỉ số đã bỏ: ${h.metricOld.status}`);
+    assert(h.metricCase.status === 200 && h.metricCase.json?.n === h.metricCase.json?.ids?.length, `case-cho-xac-dinh-nguyen-nhan: ${h.metricCase.status}`);
+  });
+
   void load;
   void t;
 }
