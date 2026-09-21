@@ -708,8 +708,8 @@ Lý do từng sửa đổi (đã tái hiện ở phép thử 21/09):
 
 **Interfaces:** Consumes `createApp()` (có sẵn, `server/src/app.ts`).
 
-- [ ] **Step 1:** `npm install serverless-http@4.0.0 --save-exact` (🆕 22/09: bản đã thử). Ghi số bản.
-- [ ] **Step 1b 🆕 22/09 — BẮT BUỘC: `db.ts` không được dựa vào `import.meta.url` hay tên `__dirname`.** Đã tái hiện:
+- [x] **Step 1:** `npm install serverless-http@4.0.0 --save-exact` (🆕 22/09: bản đã thử). Ghi số bản.
+- [x] **Step 1b 🆕 22/09 — BẮT BUỘC: `db.ts` không được dựa vào `import.meta.url` hay tên `__dirname`.** Đã tái hiện:
       Netlify gói hàm kiểu `export const handler` thành **CommonJS** → `import.meta.url` rỗng →
       `fileURLToPath(undefined)` ném lỗi **ngay lúc nạp** → mọi `/api/*` trả 502. Nếu Netlify gói ESM thì đoạn mở đầu nó
       chèn khai báo `let __dirname` → trùng với `const __dirname` của `db.ts` → SyntaxError. Trong `server/src/db.ts`, thay:
@@ -728,7 +728,7 @@ Lý do từng sửa đổi (đã tái hiện ở phép thử 21/09):
       và `findProjectRoot(__dirname)` → `findProjectRoot(THU_MUC_MA)`. Rồi quét:
       `grep -rn "__dirname\|import\.meta\.url" server/src --include=*.ts | grep -v tests` — mỗi kết quả còn lại: ghi Nhật ký,
       xét nó có chạy trên đường API không (seed/migrate/ops thì không sao). Chạy trên đường API → sửa theo cùng mẫu.
-- [ ] **Step 2: Đường dẫn Express nhìn thấy.** Trong `createApp()` của `server/src/app.ts`, dòng **đầu tiên** sau `express()`:
+- [x] **Step 2: Đường dẫn Express nhìn thấy.** Trong `createApp()` của `server/src/app.ts`, dòng **đầu tiên** sau `express()`:
   ```ts
   /* Trên Netlify, lời gọi /api/x được chuyển tới /.netlify/functions/api/x. Đưa về /api/x để mọi route giữ nguyên. */
   app.use((req, _res, next) => {
@@ -737,7 +737,7 @@ Lý do từng sửa đổi (đã tái hiện ở phép thử 21/09):
     next();
   });
   ```
-- [ ] **Step 3: Tạo `netlify/functions/api.ts`:**
+- [x] **Step 3: Tạo `netlify/functions/api.ts`:**
   ```ts
   /**
    * MÁY CHỦ BẢN CHÍNH trên Netlify — chính ứng dụng Express của máy dev (`createApp`), bọc thành một Function.
@@ -762,7 +762,7 @@ Lý do từng sửa đổi (đã tái hiện ở phép thử 21/09):
     return xuLy(event, context);
   };
   ```
-- [ ] **Step 4: Tạo `netlify.toml`:**
+- [x] **Step 4: Tạo `netlify.toml`:**
   ```toml
   [build]
     command = "npm run build"
@@ -802,7 +802,7 @@ Lý do từng sửa đổi (đã tái hiện ở phép thử 21/09):
   Netlify. Kiểm `package-lock.json` có mục `node_modules/@libsql/linux-x64-gnu` (npm thường ghi đủ gói tuỳ chọn cho mọi
   nền tảng). Không có → `npm install --save-optional @libsql/linux-x64-gnu@<cùng bản với libsql>` và ghi Nhật ký.
   Lỗi này chỉ lộ ra ở Task 10 (deploy thật) — nên kiểm ngay bây giờ.
-- [ ] **Step 5b 🆕 22/09 — Thử gói như Netlify, tự động, không cần mạng.** Lỗi Step 1b chỉ lộ ra khi mã đã được **gói**
+- [x] **Step 5b 🆕 22/09 — Thử gói như Netlify, tự động, không cần mạng.** Lỗi Step 1b chỉ lộ ra khi mã đã được **gói**
       và chạy **ở thư mục khác**; `npm run check` không bắt được. Dựng một lệnh thử lặp lại được:
       1. `npm install esbuild@0.28.2 --save-dev --save-exact`.
       2. Tạo `scripts/thu-goi-function.mjs`:
@@ -862,7 +862,7 @@ Lý do từng sửa đổi (đã tái hiện ở phép thử 21/09):
       Nếu `Module._resolveFilename` không nạp được libsql trên máy này, được phép đổi cách nạp (ví dụ chép thư mục
       `node_modules/libsql`, `node_modules/@libsql/win32-x64-msvc`, `node_modules/@neon-rs` vào `tam/node_modules`) —
       miễn là **bản gói vẫn chạy ở thư mục khác** và bước 4 vẫn hỏng/đạt như trên. Ghi cách đã dùng vào Nhật ký.
-- [ ] **Step 6:** `npm run check` xanh; `npm run thu-goi` ĐẠT; `npm run dev` vẫn chạy như cũ.
+- [x] **Step 6:** `npm run check` xanh; `npm run thu-goi` ĐẠT; `npm run dev` vẫn chạy như cũ.
       Commit: `PR-Z2 (5): máy chủ thành Netlify Function + lệnh thử gói`.
 
 ---
@@ -1306,3 +1306,4 @@ thử). Hỏi rõ từng thứ; **không** dùng database thử làm bản chín
 | 22/09 | 3 · Step 1 (tiếp) | Chủ sản phẩm xác nhận trong chat: **`pisatracking-demo` là database THỬ, được phép xoá sạch** → dùng chuỗi `pisatracking-demo` làm khoá an toàn thay cho `pisa-thu-nghiem` ở mọi lệnh (kiểm URL chứa chuỗi này trước khi chạy; `PISA_CHO_PHEP_SEED_TURSO=pisatracking-demo`). |
 | 22/09 | 4 · quyết định trước | **Mã thật vênh plan — đã hỏi chủ sản phẩm.** Plan đổi `addFile/openAttachment/removeAttachment` sang async, nhưng 7 phép kiểm cũ (6 phép `PR-N · N5` ở `run.ts` ~9310–9391 + 1 phép PR-J ở `yThuc.tests.ts` ~1157–1165) gọi chúng kiểu đồng bộ trong `check(...)` → sẽ đỏ. Plan vừa cấm sửa phép cũ vừa đòi N5 xanh. Chủ sản phẩm chọn: **chỉ đổi cách GỌI** (`check`→`checkAsync`, thêm `await`), giữ nguyên mọi điều kiện và câu chữ. Không tạo bộ hàm song song. |
 | 22/09 | 4 | **588/588** (= 586 + 2: phép 4 MB + phép kho tệp; không mất phép nào). `@netlify/blobs@11.1.0`. **ĐỎ trước (TDD):** build hỏng TS2307 `../platform/khoTep.ts` + TS2339 `duLieu` không có trên kiểu trả về cũ → viết mã → xanh. **7 phép cũ chuyển `check`→`await checkAsync` + `await`. Lý do: kế hoạch mâu thuẫn ở Task 4 Step 7 (đổi ba hàm tệp sang async nhưng cấm sửa phép cũ và đòi N5 xanh) — lỗi kế hoạch; chủ sản phẩm chọn trong chat và cho biết session planning chấp nhận 22/09.** Danh sách: `run.ts` — (1) `PR-N · N5 Tệp: lưu ngoài cơ sở dữ liệu…`, (2) `…Tên tệp có đường dẫn (../)…`, (3) `…Quyền xem tệp = quyền xem BẢN GHI CHỦ…`, (4) `…Quyền thêm/xoá = quyền SỬA bản ghi chủ…`, (5) `…Xoá tệp có AUDIT…`, (6) `…Phương án thừa hưởng quyền…`; `yThuc.tests.ts` — (7) `PR-J · J8 Kho tệp có nơi chủ cho vi phạm và biện pháp…`. Thêm `assertRejects(fn, match, msg)` cạnh `assertThrows` trong `run.ts`; mọi `assertThrows` bọc ba hàm tệp → `await assertRejects`. Không còn hàm async nào nằm trong `check(...)`. Dữ liệu vào, kỳ vọng, regex (kể cả `/10 ?MB|dung lượng|quá lớn/`), tên phép giữ nguyên. **Một ngoại lệ không tránh được (người rà xem giúp):** phép (1) và (2) đọc `opened.absPath`, trường mà plan bỏ khỏi kiểu trả về → thay bằng `prnAttAbsPath(id)` = thư mục tải lên + cột `url`; phép (1) giờ kiểm CẢ `opened.duLieu.equals(data)` LẪN nội dung file trên đĩa, phép (2) kiểm thêm file có thật trên đĩa — điều được kiểm không yếu đi. **Chứng minh không xanh giả:** tạm bỏ dòng kiểm dung lượng trong `addFile` → `npm test` = **587 đạt / 1 ĐỎ** đúng phép (1) ('Đã nhận tệp quá lớn — thao tác đáng lẽ phải bị từ chối nhưng lại thành công'); trả lại → **588/588**. **Kit:** `BanChinhTestKit` thêm `conn`, `admin` (=`P.admin`); `YThucTestKit` thêm `checkAsync` (truyền cả ở hai lời gọi sosV3 vì dùng chung kiểu). **Khác plan:** (a) `@netlify/blobs` 11.1.0 không nhận `Uint8Array` (TS2345) → truyền `new Uint8Array(duLieu).buffer` — cùng ý, chỉ đổi kiểu. (b) Chạm thêm `web/src/ui/BangChung.tsx` ('10 MB' → '4 MB', theo lệnh grep của Step 5). (c) Khoá chặn đường dẫn ngoài thư mục giờ nằm trong `khoTepODia` (Error thường thay vì `forbidden`) — chỉ xảy ra khi cột `url` bị sửa tay. (d) `package.json` của commit này có kèm dòng lệnh `thu-turso` của Task 3 (Task 3 còn đang chờ seed chạy xong trên Turso; `ops/thuTurso.ts` commit cùng Task 3). Step 5.5 grep: `fs.*` trong `platform/` + `yThuc/` chỉ còn ở `khoTep.ts`. |
+| 22/09 | 5 | **588/588**; `npm run build` (vite) xanh; máy chủ dev trong worktree chạy sạch (`/api/health` 200, `/.netlify/functions/api/health` 200). `serverless-http@4.0.0`, `esbuild@0.28.2` (dev; vite vẫn dùng esbuild 0.21.5 riêng của nó). **`npm run thu-goi` — chứng minh HAI CHIỀU (bằng bản script cuối):** BỎ Step 1b → **HỎNG**, exit 1: `TypeError [ERR_INVALID_ARG_TYPE]: The "path" argument must be of type string or an instance of URL. Received undefined at fileURLToPath` (sập ngay lúc nạp `api.cjs`); CÓ Step 1b → **ĐẠT** cả ba dòng (`/api/health` 200 · `/.netlify/functions/api/health` 200 · `/api/auth/info` 200, không có `_metadata`), exit 0. **Script khác plan ở 3 chỗ (plan cho phép đổi cách nạp):** (a) Node 24: `require.resolve` gọi ngược lại `Module._resolveFilename` đã vá → lặp vô hạn (RangeError) → gọi hàm GỐC với một module 'neo' đặt ở thư mục dự án; (b) Windows không cho xoá thư mục đang đứng (EPERM) → `chdir(repo)` trước khi dọn + bọc try; (c) script tự xoá `TURSO_*` khỏi môi trường của nó để không bao giờ chạm Turso. **Step 1b grep:** `__dirname|import.meta.url` ngoài tests chỉ còn đúng dòng `THU_MUC_MA` trong `db.ts`. **Tự quyết:** thêm `text/plain`, `text/csv` vào danh sách `binary` (plan bảo 'phải phủ mọi đuôi trong ATTACHMENT_MIME_BY_EXT' nhưng sót txt/csv — tệp không phải UTF-8 sẽ hỏng byte; JSON của API là `application/json` nên không dính). `package-lock.json` đã có `@libsql/linux-x64-gnu`. **Step 5 (`netlify dev`) CHƯA làm** — nó nối Turso qua biến của site, mà seed Task 3 Step 4 còn đang chạy; làm ngay sau đó. **Bất ngờ (đã truy nguyên nhân gốc, không phải lỗi):** công cụ xem trước chạy `npm run dev` ở thư mục main gốc chứ không phải worktree → hiện cảnh báo 'mô hình Ý thức cũ' vì file database ở main gốc có từ trước PR-J (`sos_cases.track` còn, chưa có bảng `violations`). Chủ sản phẩm nên chạy `npm run seed` ở thư mục gốc khi tiện. |

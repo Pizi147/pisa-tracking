@@ -13,6 +13,7 @@
     "build:server": "tsc -p tsconfig.build.json",
     "seed": "node scripts/check-node.mjs && npm run build:server && node dist-server/server/src/seed/run.js",
     "reset": "npm run seed",
+    "thu-goi": "node scripts/thu-goi-function.mjs",
     "thu-turso": "npm run build:server && node dist-server/server/src/ops/thuTurso.js",
     "build": "tsc -p tsconfig.web.json --noEmit && npm run build:server && vite build",
     "typecheck": "tsc -p tsconfig.web.json --noEmit && tsc -p tsconfig.build.json --noEmit",
@@ -30,6 +31,7 @@
     "react": "18.3.1",
     "react-dom": "18.3.1",
     "react-router-dom": "6.28.0",
+    "serverless-http": "4.0.0",
     "xlsx": "0.18.5"
   },
   "devDependencies": {
@@ -42,6 +44,7 @@
     "@vitejs/plugin-react": "4.3.4",
     "autoprefixer": "10.4.20",
     "concurrently": "9.1.2",
+    "esbuild": "0.28.2",
     "postcss": "8.4.49",
     "tailwindcss": "3.4.17",
     "typescript": "5.9.3",

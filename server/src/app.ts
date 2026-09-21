@@ -15,6 +15,13 @@ import { HttpError } from './util.ts';
 export function createApp() {
   const app = express();
 
+  /* Trên Netlify, lời gọi /api/x được chuyển tới /.netlify/functions/api/x. Đưa về /api/x để mọi route giữ nguyên. */
+  app.use((req, _res, next) => {
+    const tienTo = '/.netlify/functions/api';
+    if (req.url.startsWith(tienTo)) req.url = '/api' + req.url.slice(tienTo.length);
+    next();
+  });
+
   app.use(express.json({ limit: '12mb' }));
   app.use(cookieParser());
   app.use(attachPrincipal);

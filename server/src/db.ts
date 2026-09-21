@@ -24,7 +24,12 @@ import { cauHinhDb } from './moiTruong.ts';
  *   - `pluck().get()` và `pragma(x, { simple: true })` trả đối tượng thay vì giá trị — hiện mã không dùng, đừng bắt đầu dùng.
  */
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+/*
+ * Thư mục chứa file mã này. Trên Netlify, hàm được gói thành CommonJS nên `import.meta.url` RỖNG (đã tái hiện
+ * 22/09: sập ngay lúc nạp). Khi đó rơi về thư mục đang chạy — trên Netlify đường API không đọc file nào theo ROOT.
+ * KHÔNG đặt tên biến là `__dirname`: bản gói ESM của Netlify tự khai báo tên đó.
+ */
+const THU_MUC_MA = import.meta.url ? path.dirname(fileURLToPath(import.meta.url)) : process.cwd();
 
 /**
  * Tìm thư mục gốc dự án bằng cách đi ngược lên tới nơi có package.json.
@@ -43,7 +48,7 @@ function findProjectRoot(start: string): string {
   return process.cwd();
 }
 
-export const ROOT = findProjectRoot(__dirname);
+export const ROOT = findProjectRoot(THU_MUC_MA);
 const CAU_HINH = cauHinhDb(process.env, path.join(ROOT, 'data', 'pisa-demo.sqlite'));
 /** Đường dẫn file khi chạy cục bộ; khi chạy Turso là URL (chỉ để in log, KHÔNG in token). */
 export const DB_PATH = CAU_HINH.kieu === 'file' ? CAU_HINH.duongDan : CAU_HINH.url;
