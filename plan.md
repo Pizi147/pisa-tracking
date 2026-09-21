@@ -1866,6 +1866,17 @@ thuật hoặc để không phình phạm vi đêm nay, không phải quên:
 
 
 
+### 12.15. PR-Z2a (hạ tầng Netlify + Turso) thấy nhưng KHÔNG sửa — 22/09/2026
+
+Phần A chỉ đổi nơi chạy và nơi cất dữ liệu. Những điều dưới đây thấy trong lúc làm, cố ý để nguyên:
+
+| Việc | Vì sao chưa làm | Làm ở đâu khi quay lại |
+|---|---|---|
+| Màn đăng nhập bản chính không hiện khối "máy chủ chưa chạy" khi máy chủ sập | `WelcomePage.tsx` suy `serverDown` từ lỗi của `/demo/accounts`; bản chính không gọi đường đó nữa. Form đăng nhập vẫn báo lỗi khi bấm | Suy `serverDown` từ `/auth/info` — PR giao diện sau deploy |
+| Dựng bộ demo lên Turso **từ máy ở Việt Nam** rất chậm (~0,5 giây mỗi câu lệnh, toàn bộ seed là một giao dịch) | Đúng bản chất "mỗi câu một lượt mạng". Chỉ ảnh hưởng database THỬ; bản chính bắt đầu rỗng | Không cần làm. Nếu còn phải seed database thử nhiều lần: chạy seed ra file rồi `turso db create --from-file` |
+| Khoá chặn "đường dẫn tệp nằm ngoài thư mục tải lên" giờ ném lỗi thường (500) thay vì 403 | Khoá chuyển vào `khoTepODia` theo plan; chỉ xảy ra khi cột `attachments.url` bị sửa tay trong database | Không ưu tiên |
+| File database ở **thư mục main gốc** trên máy chủ sản phẩm còn ở mô hình trước PR-J (cảnh báo khi `npm run dev`) | Không thuộc mã; chỉ là dữ liệu cũ trên máy | Chủ sản phẩm chạy `npm run seed` ở thư mục gốc khi tiện |
+
 ### 13.1. Trước mỗi commit
 
 ```bash

@@ -49,5 +49,8 @@
     "tailwindcss": "3.4.17",
     "typescript": "5.9.3",
     "vite": "5.4.20"
+  },
+  "optionalDependencies": {
+    "@libsql/linux-x64-gnu": "0.5.29"
   }
 }
