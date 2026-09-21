@@ -6,6 +6,7 @@ import { Alert, Card, ErrorState, Info, SectionNote, Skeleton, Status, Task } fr
 import { Drawer } from '../../ui/Drawer.tsx';
 import { ClassRoster } from '../students/ClassRoster.tsx';
 import { ClassIssueBoard } from './ClassIssueBoard.tsx';
+import { ClassYThucCard } from '../yThuc/ClassYThucCard.tsx';
 import { QuickReport } from '../cases/QuickReport.tsx';
 import { IntakePanel } from '../students/IntakePanel.tsx';
 import { TeacherAssignDialog } from './TeacherAssignPanel.tsx';
@@ -208,16 +209,17 @@ export default function ClassOverviewPage() {
       */}
       <ClassIssueBoard classId={data.id} ratio={data.programme?.scoringMode === 'ratio'} />
 
-      {/*
-        Học viên lên TRƯỚC: đó là thứ người ta mở trang lớp để xem.
-
-        (Trước 21/09/2026 ở đây có nút chuyển sang dạng xem "Ý thức" đếm số đợt case. Mô hình đó đã
-        bỏ; tab Ý thức mới — ba khu vực Vi phạm chưa xử lý · Biện pháp đang chuẩn bị · Lịch sử — là
-        PR-K, dữ liệu đã có ở `GET /classes/:id/y-thuc`.)
-      */}
+      {/* Học viên lên TRƯỚC: đó là thứ người ta mở trang lớp để xem. */}
       <Card title="Học viên" bodyClass="p-3">
         <ClassRoster classId={data.id} onAddStudents={() => setIntake(true)} />
       </Card>
+
+      {/*
+        Ý THỨC & PHỐI HỢP (PR-K, SOS_VA_PHOI_HOP_V3.md §7.1–§7.2) — ngay sau danh sách học viên: GVCN
+        nhìn theo học sinh trước. Chưa đổi hồ sơ lớp thành bốn tab (việc của PR-Q sau deploy); đây là
+        một khối mở rộng tại chỗ như mọi khối khác của trang.
+      */}
+      <ClassYThucCard classId={data.id} />
 
       <Card title="Phân công giáo viên"
         action={data.viewer.canAssign

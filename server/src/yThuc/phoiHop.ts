@@ -180,6 +180,28 @@ export function coordinationOfClass(p: Principal, classId: number, opts: { inclu
   return { classId, rows: opts.includeDone ? all : pending, pendingCount: pending.length };
 }
 
+/**
+ * MỘT DÒNG TRONG VIỆC CẦN LÀM CỦA GVCN (đặc tả §7 mục "Việc cần làm", PR-K): mỗi lớp mình chủ nhiệm mà còn lượt Phối hợp SOS
+ * chưa hoàn thành. Cùng tinh thần P10 — không có hạn, không tô như quá hạn. Dùng lại `coordinationOfClass` nên số ở đây luôn
+ * khớp sub-tab `Phối hợp SOS` của chính lớp đó — không có đường đếm riêng.
+ */
+export function myCoordinationLines(p: Principal) {
+  const today = demoToday();
+  const classIds = [...new Set(p.assignments
+    .filter((a) => a.isCore && a.effectiveFrom <= today && (!a.effectiveTo || a.effectiveTo >= today))
+    .map((a) => a.classId))];
+  const lines: Array<{ classId: number; className: string; pendingCount: number; text: string }> = [];
+  for (const classId of classIds) {
+    const c = db().prepare('SELECT code FROM classes WHERE id = ?').get(classId) as any;
+    if (!c) continue;
+    const { pendingCount } = coordinationOfClass(p, classId);
+    if (pendingCount > 0) {
+      lines.push({ classId, className: c.code, pendingCount, text: `Lớp ${c.code} — ${pendingCount} lượt Phối hợp SOS cần xử lý` });
+    }
+  }
+  return lines;
+}
+
 /** Sub-tab `Phối hợp SOS` của HỒ SƠ HỌC VIÊN (§7.3): mọi lượt của em, mới nhất trước. */
 export function coordinationOfStudent(p: Principal, studentId: number) {
   const st = db().prepare('SELECT id FROM students WHERE id = ?').get(studentId) as any;

@@ -7,6 +7,7 @@ import { useToast } from '../../ui/Toast.tsx';
 import { Han } from '../../ui/Han.tsx';
 import { BangChung } from '../../ui/BangChung.tsx';
 import { ActionDialog, OutcomeDialog, ResultDialog } from './CasePanel.tsx';
+import { CauseDeterminationPanel, DismissCaseForm, PresetPlanActions } from '../yThuc/CaseSosControls.tsx';
 import {
   FOLLOWUP_OUTCOMES, OUTCOME_MARK, canEndWithOutcome, outcomeLabelFor,
 } from '@shared/domain/index.ts';
@@ -27,6 +28,8 @@ import {
 
 type Plan = {
   id: number; kind: string; kindLabel: string; name: string;
+  /** Phương án điền sẵn từ SOS (§3.2, PR-K) chưa ai xác nhận: hiện `Gợi ý tự động · chờ xác nhận` + Xác nhận/Sửa/Thay. */
+  preset: boolean; confirmedAt: string | null;
   performer: string | null; status: string; statusLabel: string;
   startedOn: string | null; completedOn: string | null;
   actionDue: string | null; actionOverdue: boolean;
@@ -43,6 +46,14 @@ type Plan = {
 };
 type CaseCard = {
   id: number; title: string; status: string;
+  /** Chủ đề gốc của case (§7.5, PR-K) — để mở đúng danh mục phân loại khi "Xác định nguyên nhân". */
+  topic: string | null;
+  /** Case tự tạo từ SOS còn chờ xác định nguyên nhân / xác nhận phương án điền sẵn (§3.2, §7.5, PR-K). */
+  sos: {
+    fromSos: boolean; hasCause: boolean; unconfirmedPlanId: number | null;
+    awaitingCause: boolean; dueOn: string | null;
+    dismissed: { code: string; label: string; text: string | null } | null;
+  };
   urgency: string | null; sosLevel: number | null;
   carriedOver: boolean; parallel: boolean;
   openedOn: string | null; touchedOn: string | null;
@@ -244,6 +255,8 @@ function CaseCardView({ c, row, onChanged }: {
   const [open, setOpen] = useState(c.status !== 'done');
   const [adding, setAdding] = useState(false);
   const [completing, setCompleting] = useState(false);
+  const [causeOpen, setCauseOpen] = useState(false);
+  const [dismissOpen, setDismissOpen] = useState(false);
   const skillLabel = row.label;
   const blocked = c.closeBlockers.length > 0;
 
@@ -269,6 +282,23 @@ function CaseCardView({ c, row, onChanged }: {
 
       {open && (
         <div className="px-3 pb-3 space-y-2.5">
+          {/* CASE TỪ SOS CHỜ XÁC ĐỊNH NGUYÊN NHÂN (§7.5, S04, PR-K) — hạn 3 ngày, chỉ hiện khi còn chờ. */}
+          {c.sos.awaitingCause && (
+            <div className="rounded-lg border px-2.5 py-2 space-y-1.5" style={{ borderColor: 'var(--warn)', background: 'rgba(240, 201, 135, 0.08)' }}>
+              <p className="text-xs text-amber-100 m-0">
+                Chờ GVBM xác định nguyên nhân{c.sos.dueOn && ` · hạn ${fmtDate(c.sos.dueOn)}`}
+              </p>
+              {c.canEdit && !causeOpen && !c.sos.hasCause && (
+                <button type="button" className="btn btn-sm btn-primary" onClick={() => setCauseOpen(true)}>
+                  Xác định nguyên nhân
+                </button>
+              )}
+              {causeOpen && (
+                <CauseDeterminationPanel caseId={c.id} topic={c.topic} currentCode={c.issueCode}
+                  onClose={() => setCauseOpen(false)} onDone={onChanged} />
+              )}
+            </div>
+          )}
           <p className="text-[11px] text-slate-500 m-0">
             {c.issueLabel ? <>Phân loại: {c.issueLabel}</> : <span className="text-amber-200/80">Chưa phân loại vấn đề</span>}
             {c.openedOn && <> · mở {fmtDate(c.openedOn)}</>}
@@ -339,7 +369,16 @@ function CaseCardView({ c, row, onChanged }: {
                     Hoàn thành case
                   </button>
                 )}
+                {/* `Không cần theo dõi` (S05, Q-V3-4) — chỉ case tự tạo từ SOS còn chờ xác định nguyên nhân. */}
+                {c.sos.awaitingCause && !dismissOpen && (
+                  <button type="button" className="btn btn-sm btn-ghost" onClick={() => setDismissOpen(true)}>
+                    Không cần theo dõi
+                  </button>
+                )}
               </div>
+            )}
+            {dismissOpen && (
+              <DismissCaseForm caseId={c.id} onClose={() => setDismissOpen(false)} onDone={onChanged} />
             )}
             {/* NÓI RÕ CÒN THIẾU GÌ ngay tại chỗ — một nút mờ không giải thích là nút bị coi là hỏng. */}
             {c.canEdit && c.status !== 'done' && blocked && (
@@ -410,12 +449,16 @@ function PlanRow({ p, canEdit, onChanged }: {
             {p.performer ?? 'chưa có người thực hiện'}
             {p.startedOn && <> · từ {fmtDate(p.startedOn)}</>}
             {p.completedOn && <> → {fmtDate(p.completedOn)}</>}
-            {running && !p.lastOutcomeLabel && <> · chưa có kết quả</>}
+            {p.preset && !p.confirmedAt ? (
+              <span className="text-amber-200/80"> · Gợi ý tự động · chờ xác nhận</span>
+            ) : running && !p.lastOutcomeLabel && <> · chưa có kết quả</>}
           </span>
         </div>
 
         <div className="flex flex-col items-end gap-1 text-right">
-          {p.pendingApproval ? (
+          {p.preset && !p.confirmedAt ? (
+            canEdit ? <PresetPlanActions interventionId={p.id} description={p.name} followupDue={p.followupDue} onDone={onChanged} /> : null
+          ) : p.pendingApproval ? (
             <>
               <span className="text-[11px] text-sky-300">Chờ Quản lý trả lời</span>
               {p.approvalDue && (

@@ -758,6 +758,11 @@ api.get('/y-thuc/my-warnings', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   return { rows: warningSvc.myWarningLines(principalOf(req)) };
 }));
+/** Một dòng trong Việc cần làm của GVCN: lớp mình chủ nhiệm còn lượt Phối hợp SOS chưa hoàn thành (PR-K). */
+api.get('/y-thuc/my-coordination', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return { rows: phoiHopSvc.myCoordinationLines(principalOf(req)) };
+}));
 
 /** Cảnh báo trùng mềm (V06) — form gọi trước khi ghi để hiện "Xem vi phạm đó" / "Vẫn ghi vi phạm mới". Không chặn gì. */
 api.get('/violations/similar', requireAuth, wrap((req) => {

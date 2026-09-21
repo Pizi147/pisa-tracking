@@ -2295,6 +2295,9 @@ function caseCardOf(caseId: number, c: any) {
       kindLabel: INTERVENTION_KIND_LABEL[iv.kind as InterventionKind] ?? iv.kind,
       /* Tên phương án là câu người dạy viết; thiếu thì lùi về tên loại, không để trống. */
       name: (iv.description ?? '').trim() || (INTERVENTION_KIND_LABEL[iv.kind as InterventionKind] ?? iv.kind),
+      /* Phương án điền sẵn từ SOS (§3.2, PR-K) chưa ai xác nhận: giao diện hiện `Gợi ý tự động · chờ xác nhận` + Xác nhận/Sửa/Thay. */
+      preset: iv.preset === 1,
+      confirmedAt: iv.confirmed_at ?? null,
       performer: iv.performer_user_name ?? iv.performer_name ?? null,
       status: iv.status as string,
       statusLabel: INTERVENTION_STATUS_LABEL[iv.status as keyof typeof INTERVENTION_STATUS_LABEL] ?? iv.status,
@@ -2348,9 +2351,13 @@ function caseCardOf(caseId: number, c: any) {
     .map((r) => ({ attemptNo: r.attempt_no as number, week: r.week_start ?? null }));
 
   return {
+    /* Chủ đề gốc của case (§7.5, PR-K) — để giao diện mở đúng danh mục phân loại (`issuesForTopic`) khi "Xác định nguyên nhân". */
+    topic: c.topic ?? null,
     issueCode: issue?.taxonomy_code ?? null,
     issueLabel: issue?.taxonomy_code ? issueLabel(issue.taxonomy_code) : null,
     summary: c.summary ?? null,
+    /* Case tự tạo từ SOS còn chờ GVBM xác định nguyên nhân / xác nhận phương án điền sẵn (§3.2, §7.5 — PR-K). */
+    sos: sosCaseState(caseId),
     plans,
     attempts,
     followUntil: c.follow_until ?? null,

@@ -13,9 +13,10 @@ import { fmtDate, sosLabel, sosTone } from '../../lib/format.ts';
 import {
   CASE_CATEGORY_LABEL, ENTRY_SKILL_LABEL,
   FT_CASE_CATEGORIES, ISSUE_TAXONOMY, NORMAL_CASE_CATEGORIES, PERMISSIONS,
-  REGULAR_SKILL_LABEL, issueLabel,
+  REGULAR_SKILL_LABEL, URGENCY_LABEL, issueLabel,
 } from '@shared/domain/index.ts';
 import { IssueAnalysis } from './IssueAnalysis.tsx';
+import { YThucAnalysisView } from '../yThuc/YThucAnalysisView.tsx';
 
 /**
  * HỌC THUẬT — nơi Quản lý nhìn thấy VẤN ĐỀ, không phải ba mươi chỉ số.
@@ -104,7 +105,8 @@ export function CaseBoard({ embedded = false }: { embedded?: boolean } = {}) {
    *   Phân tích   bốn bước của mục 15.1 — loại lớp → hạng mục → phân loại → bấm số ra case
    *   Danh sách   danh sách phẳng có bộ lọc, là nơi các đường dẫn từ Tổng quan đi tới
    */
-  const angle = params.get('goc') === 'danh-sach' || params.get('hang-doi') ? 'list' : 'analysis';
+  const gocParam = params.get('goc');
+  const angle = gocParam === 'danh-sach' || params.get('hang-doi') ? 'list' : gocParam === 'y-thuc' ? 'y-thuc' : 'analysis';
   const [taskPeriod, setTaskPeriod] = useState<number | null>(null);
   /*
    * BA TRẠNG THÁI LOẠI TRỪ NHAU, cộng lại đúng bằng tổng — đây là câu hỏi "bức tranh chung
@@ -215,6 +217,7 @@ export function CaseBoard({ embedded = false }: { embedded?: boolean } = {}) {
               <span className="w-px h-5 mx-1.5" style={{ background: 'var(--line)' }} />
               <Chip active={angle === 'analysis'} onClick={() => set('goc', '')}>Phân tích vấn đề</Chip>
               <Chip active={angle === 'list'} onClick={() => set('goc', 'danh-sach')}>Danh sách case</Chip>
+              <Chip active={angle === 'y-thuc'} onClick={() => set('goc', 'y-thuc')}>Ý thức & Phối hợp</Chip>
             </>
           )}
         </div>
@@ -247,6 +250,13 @@ export function CaseBoard({ embedded = false }: { embedded?: boolean } = {}) {
       {mode === 'place' && angle === 'analysis' && (
         <Card title="Phân tích vấn đề" bodyClass="p-3">
           <IssueAnalysis branchId={branchId ? Number(branchId) : null} />
+        </Card>
+      )}
+
+      {/* ───── Ý THỨC & PHỐI HỢP — §7.6, PR-K: không dashboard mới, một góc nhìn trong Phân tích đã có ───── */}
+      {mode === 'place' && angle === 'y-thuc' && (
+        <Card title="Ý thức & Phối hợp" bodyClass="p-3">
+          <YThucAnalysisView branchId={branchId ? Number(branchId) : null} />
         </Card>
       )}
 
@@ -448,7 +458,7 @@ export function CaseBoard({ embedded = false }: { embedded?: boolean } = {}) {
                         {r.urgency && r.urgency !== 'normal' && (
                           <div className="mt-0.5">
                             <Alert tone={r.urgency === 'urgent' ? 'danger' : 'warn'}>
-                              {r.urgency === 'urgent' ? 'Gấp' : 'Cần chú ý'}
+                              {URGENCY_LABEL[r.urgency as keyof typeof URGENCY_LABEL] ?? r.urgency}
                             </Alert>
                           </div>
                         )}

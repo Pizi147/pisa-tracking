@@ -12,6 +12,7 @@ import { MissingBadge } from './MissingBadge.tsx';
 import { StudentPlanPanel } from './StudentPlanPanel.tsx';
 import { StudentManagePanel } from './StudentManagePanel.tsx';
 import { QuickReport } from '../cases/QuickReport.tsx';
+import { StudentYThucSection } from '../yThuc/StudentYThucSection.tsx';
 import {
   attemptHref,
   attemptStatusLabel, fmtBand, fmtDate, skillLabel, sosLabel, sosTone, studentStatusLabel,
@@ -60,7 +61,7 @@ export default function StudentDetailPage() {
    */
   const [skillPick, setSkillPick] = useState<string | null>(null);
   /* Tầng 3 mặc định mở bảng điểm: đó là thứ người ta mở hồ sơ để xem nhiều nhất. */
-  const [tier3, setTier3] = useState<'scores' | 'journey'>('scores');
+  const [tier3, setTier3] = useState<'scores' | 'journey' | 'yThuc'>('scores');
   /** Hành trình: chỉ mốc xuyên chương trình, hay toàn bộ ghi nhận (mục 4.5). */
   const [allJourney, setAllJourney] = useState(false);
   /** Dải chọn lộ trình — chỉ bày khi người dùng hỏi tới, không chiếm chỗ mặc định. */
@@ -211,9 +212,17 @@ export default function StudentDetailPage() {
                 onClick={() => setTier3('scores')}>{cy.ratio ? 'Kết quả kiểm tra' : 'Mock Test'}</button>
               <button className={`btn btn-sm ${tier3 === 'journey' ? 'btn-primary' : 'btn-ghost'}`}
                 onClick={() => setTier3('journey')}>Hành trình học tập</button>
+              <button className={`btn btn-sm ${tier3 === 'yThuc' ? 'btn-primary' : 'btn-ghost'}`}
+                onClick={() => setTier3('yThuc')}>Ý thức & Phối hợp</button>
             </span>
           } bodyClass="p-0">
-            {tier3 === 'scores' ? (
+            {tier3 === 'yThuc' ? (
+              <div className="p-4">
+                <StudentYThucSection studentId={data.id} studentName={data.fullName}
+                  canRecordViolation={!!data.viewer.canRecordViolation}
+                  canManageDiscipline={!!data.viewer.canManageDiscipline} />
+              </div>
+            ) : tier3 === 'scores' ? (
               <>
                 {data.attempts.length === 0 ? (
                   <div className="p-4"><Empty title="Chưa có lượt đánh giá nào trong lộ trình này" /></div>
