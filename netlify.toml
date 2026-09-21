@@ -1,6 +1,6 @@
 [build]
-  # Máy build là Windows, Netlify chạy Linux: lấy phần nhị phân Linux của libsql trước khi gói (xem script).
-  command = "node scripts/lay-libsql-linux.mjs && npm run build"
+  # `npm run build` tự lấy phần nhị phân Linux của libsql trước (scripts/goi-libsql-linux.mjs) — máy build là Windows, Netlify chạy Linux.
+  command = "npm run build"
   publish = "dist/web"
 
 [build.environment]
