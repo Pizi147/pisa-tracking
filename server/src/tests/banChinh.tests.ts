@@ -160,4 +160,55 @@ export async function runBanChinhTests(t: BanChinhTestKit) {
     assert(s.status === 200 && s.setCookie, `Vào nhanh: ${s.status}`);
   });
   server.close();
+
+  console.log('\nPR-Z2 · 4. Chốt an toàn sau rà soát Phần A');
+  const { pathToFileURL } = await import('node:url');
+  const chayCon = (maLenh: string, env: Record<string, string>) => cp.spawnSync(process.execPath, ['--input-type=module', '-e', maLenh], {
+    env: { ...process.env, PISA_CHO_PHEP_SEED_TURSO: '', BAN_CHINH: '', ...env }, encoding: 'utf8', timeout: 60_000,
+  });
+  const TURSO_GIA = { TURSO_DATABASE_URL: 'libsql://khong-ton-tai.turso.io', TURSO_AUTH_TOKEN: 'x' };
+  const dbJs = pathToFileURL(pathMod.join(REPO, 'dist-server/server/src/db.js')).href;
+  const seedJs = pathMod.join(REPO, 'dist-server/server/src/seed/run.js');
+
+  check('PR-Z2 · Bộ phép kiểm này KHÔNG BAO GIỜ chạy trên Turso: run.ts gỡ biến Turso trước khi mở database (npm run check trong cửa sổ đang có token sẽ không xoá database thật)', () => {
+    assert(!process.env.TURSO_DATABASE_URL && !process.env.TURSO_AUTH_TOKEN, 'Biến Turso còn trong môi trường của bộ phép kiểm');
+    assert(!/^libsql:|^https?:/.test(String((db() as any).name ?? '')), `Bộ phép kiểm đang mở database từ xa: ${(db() as any).name}`);
+  });
+  check('PR-Z2 · recreateSchema() — hàm XOÁ MỌI BẢNG — tự từ chối khi database ở Turso, dù gọi từ đâu (không chỉ từ lệnh seed)', () => {
+    const r = chayCon(`const m = await import(${JSON.stringify(dbJs)}); m.recreateSchema();`, TURSO_GIA);
+    assert(r.status !== 0 && r.status !== null && /TỪ CHỐI/.test(r.stderr), `Mã thoát ${r.status}; stderr: ${String(r.stderr).slice(-300)}`);
+  });
+  check('PR-Z2 · Ngoại lệ seed phải khớp ĐÚNG TÊN MÁY CHỦ: giá trị chung chung (`turso.io`, `libsql`, một ký tự) không mở được khoá', () => {
+    for (const choPhep of ['turso.io', 'libsql', 'khong-ton-tai', 'o']) {
+      const r = cp.spawnSync(process.execPath, [seedJs], { env: { ...process.env, ...TURSO_GIA, BAN_CHINH: '', PISA_CHO_PHEP_SEED_TURSO: choPhep }, encoding: 'utf8', timeout: 60_000 });
+      assert(r.status !== 0 && r.status !== null && /TỪ CHỐI/.test(r.stderr), `PISA_CHO_PHEP_SEED_TURSO="${choPhep}" đã mở được khoá (mã thoát ${r.status})`);
+    }
+  });
+  check('PR-Z2 · BAN_CHINH=1 thì seed LUÔN bị từ chối, kể cả khi ngoại lệ khớp đúng tên máy chủ', () => {
+    const r = cp.spawnSync(process.execPath, [seedJs], { env: { ...process.env, ...TURSO_GIA, BAN_CHINH: '1', PISA_CHO_PHEP_SEED_TURSO: 'khong-ton-tai.turso.io' }, encoding: 'utf8', timeout: 60_000 });
+    assert(r.status !== 0 && r.status !== null && /TỪ CHỐI/.test(r.stderr), `Mã thoát ${r.status}; stderr: ${String(r.stderr).slice(-300)}`);
+  });
+  check('PR-Z2 · Một tham số `null` duy nhất vẫn được hiểu là NULL như better-sqlite3 (libsql gốc ném "failed to downcast any to object")', () => {
+    assert((db().prepare('SELECT ? AS x').get(null) as any).x === null, '.get(null)');
+    assert((db().prepare('SELECT ? AS x').all(null) as any[]).length === 1, '.all(null)');
+    assert([...db().prepare('SELECT ? AS x').iterate(null)].length === 1, '.iterate(null)');
+    db().exec('CREATE TEMP TABLE IF NOT EXISTS _z2_null (a)');
+    assert(db().prepare('INSERT INTO _z2_null (a) VALUES (?)').run(null).changes === 1, '.run(null)');
+    db().exec('DROP TABLE _z2_null');
+  });
+  await checkAsync('PR-Z2 · Xoá tệp sau giao dịch chạy nền nhưng CHỜ ĐƯỢC: máy chủ Netlify chờ `choViecNenKhoTep()` trước khi trả lời, nên tệp không bị bỏ lại trong kho', async () => {
+    const { choViecNenKhoTep } = await import('../platform/khoTep.ts');
+    const kho = new Map<string, Buffer>([['violation/a.pdf', Buffer.from('a')], ['violation/b.pdf', Buffer.from('b')]]);
+    datKhoTepChoKiemThu({
+      async ghi(k, d) { kho.set(k, d); },
+      async doc(k) { return kho.get(k) ?? null; },
+      async xoa(k) { await new Promise((r) => setTimeout(r, 20)); kho.delete(k); },
+    });
+    try {
+      attachmentsSvc.xoaTepSauGiaoDich(['violation/a.pdf', 'violation/b.pdf']);
+      assert(kho.size === 2, 'Kho chậm (như Netlify Blobs): ngay sau lời gọi đồng bộ, tệp CHƯA kịp xoá');
+      await choViecNenKhoTep();
+      assert(kho.size === 0, `Sau khi chờ việc nền, kho phải trống — còn ${kho.size}`);
+    } finally { datKhoTepChoKiemThu(null); }
+  });
 }

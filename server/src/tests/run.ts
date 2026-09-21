@@ -9,6 +9,11 @@ import { fileURLToPath } from 'node:url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '../../..');
 process.env.PISA_DB = path.join(ROOT, 'data', 'test.sqlite');
+/*
+ * PR-Z2: biến Turso THẮNG `PISA_DB` trong `cauHinhDb`. Bộ phép kiểm gọi `runSeed()` (xoá mọi bảng) — nên gỡ biến Turso TRƯỚC khi
+ * nạp `db.ts`, để `npm run check` trong một cửa sổ đang có token không bao giờ chạm database thật.
+ */
+for (const k of ['TURSO_DATABASE_URL', 'TURSO_AUTH_TOKEN', 'BAN_CHINH', 'PISA_CHO_PHEP_SEED_TURSO']) delete process.env[k];
 for (const suffix of ['', '-wal', '-shm']) {
   const p = process.env.PISA_DB + suffix;
   if (fs.existsSync(p)) fs.rmSync(p);

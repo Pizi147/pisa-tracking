@@ -2,17 +2,29 @@ import Database from 'libsql';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { cauHinhDb } from './moiTruong.ts';
+import { cauHinhDb, laBanChinh } from './moiTruong.ts';
 
 /*
  * libsql gắn thêm `_metadata: { duration }` vào MỖI dòng `.get()` trả về (better-sqlite3 thì không). Khoá này lọt
  * ra JSON của API và làm hỏng mọi phép so dòng. Vá một lần ở đây thay vì sửa 686 chỗ gọi.
  */
 {
-  const proto = Object.getPrototypeOf(new Database(':memory:').prepare('SELECT 1')) as { get: (...a: unknown[]) => unknown };
+  const tam = new Database(':memory:');
+  const proto = Object.getPrototypeOf(tam.prepare('SELECT 1')) as Record<'get' | 'all' | 'run' | 'iterate', (...a: unknown[]) => unknown>;
+  tam.close();
+  /*
+   * Cùng chỗ vá: libsql hiểu ĐÚNG MỘT tham số `null` (`.get(null)`) là "đối tượng tham số có tên" và ném
+   * "failed to downcast any to object"; better-sqlite3 thì gắn NULL. Mã có hàng trăm chỗ gọi một tham số, chỗ nào giá trị
+   * lỡ là null sẽ thành lỗi 500 — đưa về đúng hành vi cũ bằng cách bọc thành mảng tham số `[null]`.
+   */
+  const motNull = (args: unknown[]) => (args.length === 1 && args[0] === null ? [[null]] : args);
+  for (const ten of ['all', 'run', 'iterate'] as const) {
+    const goc = proto[ten];
+    proto[ten] = function (this: unknown, ...args: unknown[]) { return goc.apply(this, motNull(args)); };
+  }
   const getGoc = proto.get;
   proto.get = function (this: unknown, ...args: unknown[]) {
-    const row = getGoc.apply(this, args);
+    const row = getGoc.apply(this, motNull(args));
     if (row && typeof row === 'object' && '_metadata' in row) delete (row as Record<string, unknown>)._metadata;
     return row;
   };
@@ -94,7 +106,22 @@ export function isInitialised(): boolean {
  * đang chạy, tiến trình API vẫn giữ kết nối tới file cũ và sẽ phục vụ dữ liệu cũ.
  * Dựng lại tại chỗ giúp API thấy ngay dữ liệu mới mà không cần khởi động lại.
  */
+/**
+ * CHỐT CHẶN XOÁ SẠCH DATABASE Ở TURSO — nằm ngay trong hàm xoá, nên che MỌI nơi gọi (lệnh seed, bộ phép kiểm, mã sau này).
+ * Ngoại lệ duy nhất là database THỬ: `PISA_CHO_PHEP_SEED_TURSO` phải bằng ĐÚNG TÊN MÁY CHỦ trong URL (không phải một
+ * đoạn chữ — `turso.io` hay một ký tự sẽ khớp mọi database), và không bao giờ khi `BAN_CHINH=1`.
+ */
+export function tuChoiXoaSachNeuTuXa(): void {
+  if (CAU_HINH.kieu !== 'turso') return;
+  let tenMay = '';
+  try { tenMay = new URL(CAU_HINH.url).hostname; } catch { /* URL lạ → không khớp gì */ }
+  const choPhep = process.env.PISA_CHO_PHEP_SEED_TURSO?.trim();
+  if (!laBanChinh() && choPhep && tenMay && choPhep === tenMay) return;
+  throw new Error('TỪ CHỐI: đang trỏ tới Turso. Lệnh này XOÁ SẠCH database và chỉ dùng cho máy dev.');
+}
+
 export function recreateSchema() {
+  tuChoiXoaSachNeuTuXa();
   const conn = db();
   conn.pragma('foreign_keys = OFF');
   const tables = conn

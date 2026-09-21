@@ -26,7 +26,22 @@ thu('6. transaction() lỗi thì cuộn lại', () => {
   if (n !== 0) throw new Error('KHÔNG cuộn lại — dòng c vẫn còn'); return 'đã cuộn lại';
 });
 thu('7. SAVEPOINT trong transaction', () => { conn.transaction(() => { conn.exec('SAVEPOINT s1'); conn.prepare('INSERT INTO _thu (v) VALUES (?)').run('d'); conn.exec('ROLLBACK TO s1'); conn.exec('RELEASE s1'); })(); return 'ok'; });
-thu('8. inTransaction', () => String(conn.inTransaction));
+thu('8. inTransaction đúng ở cả hai phía (tx() của db.ts dựa vào nó để chọn SAVEPOINT)', () => {
+  let trong: boolean | null = null;
+  conn.transaction(() => { trong = conn.inTransaction; })();
+  if (trong !== true || conn.inTransaction !== false) throw new Error(`trong giao dịch = ${trong}, ngoài = ${conn.inTransaction}`);
+  return 'trong = true, ngoài = false';
+});
+thu('8b. foreign_keys còn BẬT ở câu lệnh sau (db() chỉ đặt một lần lúc mở kết nối)', () => {
+  const fk = conn.prepare('PRAGMA foreign_keys').all() as any[];
+  if (fk[0]?.foreign_keys !== 1) throw new Error(JSON.stringify(fk));
+  conn.exec('CREATE TABLE IF NOT EXISTS _thu_cha (id INTEGER PRIMARY KEY); CREATE TABLE IF NOT EXISTS _thu_con (id INTEGER PRIMARY KEY, cha INTEGER NOT NULL REFERENCES _thu_cha(id));');
+  let chan = false;
+  try { conn.prepare('INSERT INTO _thu_con (cha) VALUES (?)').run(999); } catch { chan = true; }
+  conn.exec('DROP TABLE _thu_con; DROP TABLE _thu_cha;');
+  if (!chan) throw new Error('Khoá ngoại KHÔNG được thực thi — chèn dòng con mồ côi vẫn thành công');
+  return 'khoá ngoại được thực thi';
+});
 thu('9. 100 INSERT trong một transaction', () => doMs(() => conn.transaction(() => { for (let i = 0; i < 100; i++) conn.prepare('INSERT INTO _thu (v) VALUES (?)').run('x'); })(), 1));
 thu('9b. .get() qua mạng có _metadata không (kết nối riêng, CHƯA qua vá của db.ts — chỉ để biết)', () => {
   const row = conn.prepare('SELECT 1 AS a').get() as Record<string, unknown>;

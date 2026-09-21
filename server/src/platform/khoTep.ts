@@ -54,3 +54,17 @@ export function khoTepHienTai(thuMucODia?: string): KhoTep {
   if (!khoODiaMacDinh) khoODiaMacDinh = khoTepODia(thuMucODia ?? path.resolve('data', 'uploads'));
   return khoODiaMacDinh;
 }
+
+/*
+ * VIỆC NỀN CỦA KHO TỆP. Xoá tệp sau giao dịch (`xoaTepSauGiaoDich`) không được `await` vì nơi gọi là hàm đồng bộ. Trên
+ * Netlify, tiến trình bị ĐÓNG BĂNG ngay khi trả lời xong — lời hứa chưa xong sẽ không bao giờ chạy, tệp nằm lại trong kho.
+ * Nên ghi các lời hứa vào đây, và `netlify/functions/api.ts` chờ hết trước khi trả lời. Máy dev (ổ đĩa) xoá xong tức thì.
+ */
+const viecNen = new Set<Promise<unknown>>();
+export function ghiNhanViecNenKhoTep(p: Promise<unknown>): void {
+  viecNen.add(p);
+  void p.finally(() => viecNen.delete(p));
+}
+export async function choViecNenKhoTep(): Promise<void> {
+  while (viecNen.size) await Promise.allSettled([...viecNen]);
+}

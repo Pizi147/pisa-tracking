@@ -7,7 +7,7 @@ import type { Principal } from '../permissions.ts';
 import { caseAccess } from '../cases/cases.ts';
 import { coordinationOwner, measureOwner, violationOwner } from '../yThuc/access.ts';
 import { writeAudit } from './audit.ts';
-import { khoTepHienTai } from './khoTep.ts';
+import { ghiNhanViecNenKhoTep, khoTepHienTai } from './khoTep.ts';
 
 /**
  * KHO TỆP VÀ LIÊN KẾT DÙNG CHUNG (thiet-ke/Y_THUC_VI_PHAM_VA_BIEN_PHAP.md §4.5, PR-N N5).
@@ -176,7 +176,8 @@ export async function addFile(p: Principal, input: {
       mimeType: ALLOWED_EXT[ext], sizeBytes: input.data.length,
     });
   } catch (e) {
-    await kho.xoa(khoa);     // không để tệp mồ côi khi ghi bảng lỗi
+    /* Không để tệp mồ côi khi ghi bảng lỗi; dọn lỗi thì thôi — lỗi GHI BẢNG mới là lỗi cần báo lên. */
+    try { await kho.xoa(khoa); } catch (e2) { console.error('[kho tệp] không xoá được', khoa, e2); }
     throw e;
   }
 }
@@ -211,7 +212,7 @@ export async function openAttachment(p: Principal, id: number): Promise<
 export function xoaTepSauGiaoDich(khoaTep: string[]): void {
   const kho = khoTepHienTai(uploadsDir());
   for (const k of khoaTep) {
-    kho.xoa(k).catch((e) => console.error('[kho tệp] không xoá được', k, e));
+    ghiNhanViecNenKhoTep(kho.xoa(k).catch((e) => console.error('[kho tệp] không xoá được', k, e)));
   }
 }
 
