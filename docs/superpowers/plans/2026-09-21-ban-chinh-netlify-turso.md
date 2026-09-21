@@ -457,7 +457,7 @@ Lý do từng sửa đổi (đã tái hiện ở phép thử 21/09):
 
 **Files:** Create `server/src/ops/thuTurso.ts`; Modify `package.json` (lệnh `thu-turso`).
 
-- [ ] **Step 1 🆕 22/09: Lấy URL + token database THỬ — KHÔNG hỏi chủ sản phẩm gửi token qua chat.** Chủ sản phẩm đã
+- [x] **Step 1 🆕 22/09: Lấy URL + token database THỬ — KHÔNG hỏi chủ sản phẩm gửi token qua chat.** Chủ sản phẩm đã
       tạo `pisa-thu-nghiem` (vùng Ohio) và đã đặt nó vào biến môi trường của site Netlify (`TRIEN_KHAI.md` mục 5).
       Netlify CLI trên máy này đã đăng nhập, và worktree có `.netlify/state.json` nên biết site. Chạy trong worktree:
   ```powershell
@@ -474,7 +474,7 @@ Lý do từng sửa đổi (đã tái hiện ở phép thử 21/09):
         Nếu `netlify env:get` trả kèm chữ thừa (dòng thông báo), lấy dòng cuối: `(netlify env:get TURSO_AUTH_TOKEN | Select-Object -Last 1)`.
       - **Không bao giờ** dán token vào Nhật ký, commit, PR hay câu trả lời. Nhật ký chỉ ghi URL (URL không phải bí mật).
       - Vùng Functions của site: xem `netlify status` hoặc bỏ qua — Task 6b đo tốc độ thật trên Netlify.
-- [ ] **Step 2: Viết `server/src/ops/thuTurso.ts`** — chạy độc lập, in bảng kết quả, **không** đụng bảng thật:
+- [x] **Step 2: Viết `server/src/ops/thuTurso.ts`** — chạy độc lập, in bảng kết quả, **không** đụng bảng thật:
   ```ts
   import Database from 'libsql';
   import { cauHinhDb } from '../moiTruong.ts';
@@ -506,7 +506,7 @@ Lý do từng sửa đổi (đã tái hiện ở phép thử 21/09):
   conn.close();
   ```
   `package.json`: `"thu-turso": "npm run build:server && node dist-server/server/src/ops/thuTurso.js"`.
-- [ ] **Step 3: Chạy** với database **thử**, nạp biến như Step 1. Dán nguyên bảng vào Nhật ký.
+- [x] **Step 3: Chạy** với database **thử**, nạp biến như Step 1. Dán nguyên bảng vào Nhật ký.
       🆕 22/09 thêm vào `thuTurso.ts` hai dòng thử (trước dòng `10. dọn`), vì hai điều này mới chỉ thử với file cục bộ:
   ```ts
   thu('9b. .get() qua mạng có _metadata không (Task 1 Step 3b phải vá được cả đường mạng)', () => {
@@ -523,16 +523,16 @@ Lý do từng sửa đổi (đã tái hiện ở phép thử 21/09):
   ```
       `9b` in ra có `_metadata` → bình thường (vá ở `db.ts`, còn script này mở kết nối riêng). Step 5 bên dưới mới là nơi
       kiểm thật: câu trả lời JSON của `/api/...` **không** được có chữ `_metadata` (tab Network → Response, Ctrl+F).
-- [ ] **Step 4: Thử nặng** — dựng bộ demo lên database **thử** (được phép vì là database thử; seed đang bị Task 2 chặn
+- [x] **Step 4: Thử nặng** — dựng bộ demo lên database **thử** (được phép vì là database thử; seed đang bị Task 2 chặn
       với Turso, nên chạy qua một lệnh riêng):
       `$env:PISA_CHO_PHEP_SEED_TURSO="pisa-thu-nghiem"; npm run seed` (ngoại lệ đã làm ở Task 2 Step 6), nạp hai biến
       Turso như Step 1 trong **cùng** lệnh.
       Ghi **thời gian** chạy vào Nhật ký.
-- [ ] **Step 5: Thử trang thật qua Turso:** chạy `npm run dev` với hai biến Turso của database thử, đăng nhập tài khoản
+- [x] **Step 5: Thử trang thật qua Turso:** chạy `npm run dev` với hai biến Turso của database thử, đăng nhập tài khoản
       demo Quản lý Monbay, **đo thời gian tải** (tab Network của trình duyệt, cột Time của lời gọi `/api/...` lớn nhất)
       cho: hồ sơ học viên Lê Quang Huy · bảng nhập điểm lớp MB-FT 101 · Tổng quan · Thực trạng · tab Ý thức & Phối hợp của
       MB-FT 101. Ghi bảng vào Nhật ký.
-- [ ] **Step 6: Quyết định — theo đúng bảng này:**
+- [x] **Step 6: Quyết định — theo đúng bảng này:** 🆕 22/09 — **ĐI TIẾP THEO QUYẾT ĐỊNH 22/09 của chủ sản phẩm + session planning (KHÔNG phải ô ✅ thường):** mục 2, 5, 6, 7 ĐẠT (13/13); số đo tốc độ từ Việt Nam vượt 10 giây nhưng **không phải số quyết định** — ngưỡng của bảng là ngưỡng TRÊN NETLIFY, đo ở Task 6b Step 7 (giữ nguyên: trung bình 3 lần sau > 10 giây ở bất kỳ trang nào → DỪNG; khởi động lạnh ghi riêng, không dùng để dừng). Bảng đo ở Nhật ký.
 
   | Kết quả | Làm gì |
   |---|---|
@@ -544,7 +544,7 @@ Lý do từng sửa đổi (đã tái hiện ở phép thử 21/09):
   Ghi lưu ý: máy chủ sản phẩm ở Việt Nam còn Turso ở Mỹ → số đo ở Step 5 **tệ hơn** thực tế trên Netlify (Function và
   Turso cùng vùng). Nếu Step 5 chậm, đo lại mục 1 để ước: *thời gian trên Netlify ≈ số câu hỏi DB × (độ trễ cùng vùng
   ~1–5 ms)*. Ghi ước lượng vào Nhật ký, **dựa vào số đo thật ở Task 10** để quyết định cuối cùng.
-- [ ] **Step 7:** Commit: `PR-Z2 (3): script thử Turso + kết quả gate`.
+- [x] **Step 7:** Commit: `PR-Z2 (3): script thử Turso + kết quả gate`.
 
 ---
 
@@ -1319,3 +1319,4 @@ thử). Hỏi rõ từng thứ; **không** dùng database thử làm bản chín
 | 22/09 | 6b · Step 1–3 (sửa theo 7 điều kiện của chủ sản phẩm, gửi trong chat) | Script đổi tên **`scripts/goi-libsql-linux.mjs`** (dòng Nhật ký trước còn ghi tên cũ `lay-…`). (1) `npm pack @libsql/linux-x64-gnu@0.5.29 --pack-destination <tmp> --json`, giải nén `package/` vào `node_modules/@libsql/linux-x64-gnu` (giải nén bằng Node thuần, không phụ thuộc lệnh `tar`); không đụng bản win32, không chạy npm install/uninstall. (2) **Kiểm toàn vẹn hai lần:** `integrity` do `npm pack --json` báo VÀ sha512 tự tính từ tệp đều phải bằng `package-lock.json` — **kết quả: khớp** (`sha512-y14V0v…82rkg==`). Thử cố ý: sửa lock thành `sha512-AAAA` → thoát **1**, in cả ba mã, **không** có thư mục nào được tạo; xoá mục khỏi lock → thoát **1** 'không có mã băm… dừng'. Đã trả `package-lock.json` nguyên vẹn (git không thấy thay đổi). (3) Chạy lần hai: 'đã có, bỏ qua', thoát 0. (4) Gắn vào `"build"` của `package.json` (bước đầu tiên); `netlify.toml` trở lại `command = "npm run build"`; `TRIEN_KHAI.md` mục 8.1 thêm đúng một câu 'lần build đầu cần mạng để tải thư viện cho Linux'. Sau khi script chạy: `npm run check` **597/597**, máy chủ dev `/api/health` 200 — bản Windows còn nguyên. (5) Chú thích đầu script: Amazon Linux x86_64 glibc → `linux-x64-gnu`. (6) **Cửa Step 3 làm lại với luồng mới — ĐẠT:** xoá thư mục Linux → `netlify build` → log có `[libsql-linux] Đã lấy…` → `tar -tf .netlify/functions/api.zip | findstr linux-x64-gnu` ra `…/@libsql/linux-x64-gnu/index.node`. (7) Đã đánh dấu 🆕 22/09 ở Task 6b Step 1 của plan. |
 | 22/09 | Rà soát Phần A (requesting → receiving-code-review) | Một agent độc lập rà toàn bộ diff `a8867f3..a3f2d74` theo 10 câu hỏi (vá `_metadata`, `THU_MUC_MA`, chặn `/demo`, kho tệp, token, `tx`, 7 phép cũ, script Linux, chốt seed, file ngoài phạm vi). Lưu ý plan Task 11: người rà cùng họ model với người code (Fable) → đề nghị session planning (Opus) rà thêm một lượt. **Kết luận của người rà: 'With fixes'. Sạch:** `_metadata` (remote và `:memory:` chung một prototype), gói CJS, chặn `/demo` (không lách được bằng hoa/thường, `/` cuối, `//`, mã hoá %, HEAD/OPTIONS, tiền tố Netlify; không còn nơi nào khác gọi `createSession` ngoài `/auth/login`), không có token trong diff, `tx` đúng, 7 phép cũ không yếu đi, script Linux kiểm băm TRƯỚC khi ghi. **Đã sửa (đều viết phép ĐỎ trước — 598 đạt/5 đỏ → 603/603):** **(Critical 1)** `npm test`/`npm run check` trong cửa sổ đang có biến Turso sẽ **XOÁ SẠCH database Turso** (biến Turso thắng `PISA_DB`; bộ phép kiểm gọi thẳng `runSeed()` nên né chốt ở `seed/run.ts`) → (a) `tests/run.ts` gỡ `TURSO_*`, `BAN_CHINH`, `PISA_CHO_PHEP_SEED_TURSO` trước khi nạp `db.ts`; (b) chốt chặn dời VÀO `recreateSchema()` (`tuChoiXoaSachNeuTuXa` trong `db.ts`) nên che mọi nơi gọi. Chứng minh: `TURSO_DATABASE_URL=<giả> TURSO_AUTH_TOKEN=x BAN_CHINH=1 npm test` → vẫn 603/603 trên file cục bộ. **(Important 2)** ngoại lệ seed khớp theo ĐOẠN CHỮ (`turso.io`, một ký tự… mở được mọi database) → giờ phải bằng **đúng tên máy chủ** của URL và không bao giờ khi `BAN_CHINH=1` — **đổi hợp đồng Task 2 Step 6/Task 3 Step 4**: `PISA_CHO_PHEP_SEED_TURSO` = tên máy chủ đầy đủ, không còn là `pisa-thu-nghiem`. **(Important 3)** bản chính 'mở toang' nếu thiếu/gõ sai `BAN_CHINH` trên Netlify → `netlify/functions/api.ts` tự đặt `BAN_CHINH=1` (file này chỉ chạy trên Netlify); `thu-goi` xác nhận `/api/auth/info` của bản gói không còn `demoAdmin`. **(Important 4)** xoá tệp sau giao dịch không được chờ → trên Lambda tiến trình đóng băng, tệp nằm lại Blobs → `khoTep.ts` thêm `ghiNhanViecNenKhoTep`/`choViecNenKhoTep`, handler chờ trước khi trả lời; `addFile` dọn lỗi không còn che lỗi ghi bảng. **(Important 5)** `.get(null)`/`.all(null)`/`.run(null)`/`.iterate(null)` ném lỗi ở libsql (better-sqlite3 gắn NULL; còn ~500 chỗ gọi một tham số) → vá cùng chỗ với `_metadata`: một `null` duy nhất → `[null]`. **(Important 6)** `thuTurso.ts` mục 8 chỉ in `inTransaction` ngoài giao dịch (không chứng minh gì) → giờ khẳng định `true` bên trong/`false` bên ngoài, thêm 8b: khoá ngoại thật sự được thực thi ở câu lệnh sau. Minor: đóng kết nối `:memory:` dùng để tìm prototype. **Không sửa, chuyển plan.md 12.15:** `migrate` chưa có chốt Turso (Phần B), log `DB_PATH`, Blobs nhất quán sau cùng, phiên không hết hạn (có từ trước). **Không đồng ý/không làm:** không có. |
 | 22/09 | 3 · Step 3–5 🛑 | URL: `libsql://pisatracking-demo-pizi147.aws-us-east-2.turso.io` (database THỬ, chủ sản phẩm xác nhận). **Step 3 — bảng `thu-turso` (chạy lại sau khi siết mục 8/8b theo rà soát), 13/13 ĐẠT:** 1. SELECT 1 = **567,8 ms/lần** · 2. exec nhiều câu = ok · 3. PRAGMA foreign_keys = `[{foreign_keys:1}]` · 4. lastInsertRowid = 1 · **5. transaction() thành công = ĐẠT (2)** · **6. transaction() lỗi thì cuộn lại = ĐẠT** · **7. SAVEPOINT trong transaction = ĐẠT** · 8. inTransaction: trong = true, ngoài = false · 8b. khoá ngoại được thực thi ở câu lệnh sau · 9. 100 INSERT trong một giao dịch = **46.144 ms** (~460 ms/câu) · 9b. `.get()` qua mạng có `_metadata` (kết nối riêng, chưa qua vá — đúng dự kiến) · 9c. BLOB = 'xin chao' · 10. dọn = ok. ⇒ **đường đồng bộ libsql chạy ĐÚNG qua mạng**. **Step 4 — seed bộ demo lên database thử: 2.291 giây (~38 phút)**, một giao dịch duy nhất, không lỗi (39 case, 34 vi phạm, 14 biện pháp…). **Step 5 — đo từ máy ở Việt Nam** (API của worktree chạy cổng 4078 nối Turso, gọi bằng curl kèm phiên Quản lý Monbay; không dùng trình duyệt vì cổng 4000/5173 đang do session khác — worktree `pr-k3…` — giữ, không đụng): `/students/3` (Lê Quang Huy) **88,9 s** · `/students/3/skill-board` **42,2 s** · `/classes/3/score-sheet` (MB-FT 101) **8,8 s** · `/overview` (Tổng quan) **47,2 s** · `/classes/3/overview` **21,9 s** · `/classes/3/y-thuc` **50,9 s** · `/my-work` (Việc cần làm) **87,6 s**. Mọi câu trả lời: 200, **không có chữ `_metadata`** (vá của db.ts có tác dụng cả trên đường mạng). **Ước lượng:** chia cho ~0,56 s/câu ⇒ số câu hỏi DB mỗi lời gọi: hồ sơ HV ≈ 158 · Việc cần làm ≈ 156 · Ý thức lớp ≈ 90 · Tổng quan ≈ 84 · bảng kỹ năng ≈ 75 · tổng quan lớp ≈ 39 · bảng điểm ≈ 16. Trên Netlify (Function và Turso cùng vùng Ohio, ~5–15 ms/câu) ⇒ ước **0,2–2,5 giây/trang**. **Step 6 — rơi vào ô 'Có trang > 10 giây → 🛑 Dừng' của bảng quyết định** (dù ghi chú ngay dưới bảng nói số đo từ Việt Nam tệ hơn thực tế và số quyết định là số đo trên Netlify). Mục 2, 5, 6, 7 đều ĐẠT. Dừng hỏi chủ sản phẩm. |
+| 22/09 | 3 · Step 6 — quyết định 22/09 | **Chủ sản phẩm + session planning (trả lời trong chat 22/09): ĐI TIẾP.** Cửa Task 3 phải chứng minh phần đúng/sai — đạt 13/13. **Bảng dưới là SỐ ĐO TỪ VIỆT NAM, KHÔNG PHẢI SỐ QUYẾT ĐỊNH** (số quyết định đo ở Task 6b Step 7 trên địa chỉ nháp). Trang → lời gọi API lớn nhất → số câu hỏi database (ước = thời gian ÷ 0,56 s) → thời gian từ VN → ước trên Netlify (5–15 ms/câu): **Hồ sơ học viên Lê Quang Huy** → `/students/3` → ~158 câu → 88,9 s → ~0,8–2,4 s · **Việc cần làm** → `/my-work` → ~156 câu → 87,6 s → ~0,8–2,3 s · **Tab Ý thức & Phối hợp lớp MB-FT 101** → `/classes/3/y-thuc` → ~90 câu → 50,9 s → ~0,5–1,4 s · **Tổng quan** → `/overview` → ~84 câu → 47,2 s → ~0,4–1,3 s · **Bảng kỹ năng (SkillBoard)** → `/students/3/skill-board` → ~75 câu → 42,2 s → ~0,4–1,1 s · **Tổng quan lớp MB-FT 101** → `/classes/3/overview` → ~39 câu → 21,9 s → ~0,2–0,6 s · **Bảng nhập điểm MB-FT 101** → `/classes/3/score-sheet` → ~16 câu → 8,8 s → ~0,1–0,2 s. (Đo bằng phiên Quản lý Monbay; Việc cần làm của một GVCN và trang Thực trạng sẽ đo trên địa chỉ nháp.) Không tối ưu truy vấn nào ở PR này. |
