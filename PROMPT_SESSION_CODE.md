@@ -225,7 +225,8 @@ KHI XONG, báo tôi bằng tiếng Việt cơ bản: link PR; địa chỉ bản
 ## PR-Z2b — An toàn dữ liệu bản chính  *(sau khi PR-Z2a đã merge)*
 
 **Model:** **Opus 5 · XHigh** · **B:** Fable 5.1 · High
-**Để sẵn:** ~1,5 giờ. Không cần bạn cung cấp gì — phần này chỉ làm trên máy, với database thử và file tạm.
+**Để sẵn:** ~2 giờ (thêm Task 6c–6e sau rà soát Opus 22/09). Không cần bạn cung cấp gì — phần này làm trên máy, với
+database thử và file tạm. Nó sẽ thử một lệnh Netlify bằng một biến vô hại (không đụng database).
 
 ```
 Bạn thực thi PHẦN B (PR-Z2b) của kế hoạch đưa PISA Progress lên làm BẢN CHÍNH trên Netlify + Turso.
@@ -233,7 +234,14 @@ Phần này viết các lệnh CHẠM DỮ LIỆU THẬT: khởi tạo database 
 Một lỗi ở đây có thể làm mất hoặc hỏng dữ liệu thật của trung tâm. Cẩn thận hơn tốc độ.
 
 KẾ HOẠCH: docs/superpowers/plans/2026-09-21-ban-chinh-netlify-turso.md
-Bạn CHỈ làm Task 6c → Task 9 (Phần B). PR-Z2a đã merge. Task 6c (mới 22/09) làm TRƯỚC: siết chốt seed vì tên bản chính "pisatracking" nằm trọn trong tên bản thử "pisatracking-demo".
+Bạn CHỈ làm Task 6c → 6d → 6e → 7 → 8 → 9 (Phần B). PR-Z2a đã merge.
+Ba task 🆕 22/09 làm TRƯỚC Task 7 — đều từ rà soát độc lập Opus của Phần A:
+  6c  chốt seed so NGUYÊN tên máy chủ + chặn cứng tên bản chính (tên bản chính "pisatracking" nằm trọn trong
+      tên bản thử "pisatracking-demo"). Phần A đã dời chốt vào recreateSchema — Step 4 của 6c đã được viết lại
+      cho khớp mã thật; KHÔNG thêm chốt thứ hai ở seed/run.ts.
+  6d  npm run migrate vào Turso phải có xác nhận, và KHÔNG tạo tài khoản admin/mật khẩu mặc định pisa2026.
+  6e  bản nháp luôn dùng database thử, chỉ bản chính thức dùng pisatracking; kho tệp theo database; xoá tệp sau
+      giao dịch ở deleteMeasure; viết lại TRIEN_KHAI mục 5-6-8 (biến môi trường theo loại deploy).
 Trước khi gõ lệnh: đọc HẾT file kế hoạch, và ĐỌC KỸ bảng "Nhật ký thực thi" — Phần A đã ghi ở đó những gì
 khác kế hoạch (thư viện, đường dẫn, tên cột...). Rồi đọc TRIEN_KHAI.md mục 7 và 10 (chủ sản phẩm sẽ làm
 đúng theo đó — lệnh và tên biến phải khớp từng chữ).
@@ -241,7 +249,7 @@ khác kế hoạch (thư viện, đường dẫn, tên cột...). Rồi đọc T
 CÁCH LÀM:
 - superpowers:executing-plans · nhánh pr-z2b-an-toan-du-lieu (superpowers:using-git-worktrees).
 - Tick từng bước trong file kế hoạch, ghi Nhật ký sau mỗi task. npm run check xanh → commit.
-- superpowers:test-driven-development BẮT BUỘC cho Task 7 và Task 8: viết phép kiểm, chạy thấy ĐỎ, ghi lại,
+- superpowers:test-driven-development BẮT BUỘC cho Task 6c, 6d, 6e, 7 và 8: viết phép kiểm, chạy thấy ĐỎ, ghi lại,
   rồi mới viết mã. Đặc biệt ba tính chất sau PHẢI có phép kiểm chứng minh:
     (a) init-ban-chinh TỪ CHỐI khi database đã có bất kỳ dữ liệu nào, và khi từ chối thì KHÔNG ghi gì cả;
     (b) init-ban-chinh không tạo bất cứ dữ liệu demo nào và không đặt ngày demo;
@@ -254,7 +262,8 @@ CÁCH LÀM:
   KHÔNG tự merge).
 
 BA ĐIỀU TUYỆT ĐỐI:
-1. KHÔNG chạy bất kỳ lệnh nào với database Turso bản chính. Kiểm bằng file tạm và database THỬ.
+1. KHÔNG chạy bất kỳ lệnh nào với database Turso bản chính. Kiểm bằng file tạm và database THỬ. KHÔNG đổi, xoá
+   hay đặt lại hai biến TURSO_* thật trên Netlify — Task 6e chỉ thử cú pháp bằng biến vô hại PISA_THU_NGU_CANH.
 2. KHÔNG ghi token, mật khẩu vào repo. Không xin mật khẩu quản trị của tôi.
 3. KHÔNG đổi luật nghiệp vụ, không làm task của Phần A hay Phần C.
 
