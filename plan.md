@@ -338,6 +338,10 @@ Thêm dòng mới ở cuối, có ngày. **Không xoá dòng cũ** — ghi "thay
 | 21/09/2026 (chiều, sau) | **PR-Z2 chia ba PR:** PR-Z2a hạ tầng (Task 0–6b, Sonnet 5 · High) · PR-Z2b an toàn dữ liệu (Task 7–9, Opus 5 · XHigh / B: Fable 5.1 · High) · PR-Z2c deploy + đo + rà soát độc lập (Task 10–11, Opus 5 · XHigh / B: Fable 5.1 · High; người rà khác người code) | Chủ sản phẩm |
 | 21/09/2026 (chiều, sau) | **Từ nay mọi kế hoạch/prompt gửi sang session khác phải ghi rõ model + effort khuyến nghị và phương án B** (bảng ở `PROMPT_SESSION_CODE.md` mục 0). Cách làm việc: Opus viết plan chi tiết → session khác code theo plan → quay lại planning rà soát | Chủ sản phẩm |
 | 21/09/2026 (tối) | *(Thiết kế)* Q-V3-1…Q-V3-9 ở `SOS_VA_PHOI_HOP_V3.md` §11 — đáng chú ý: **lớp Normal giữ mô hình tín hiệu cũ** (v3 chỉ nói Mock Test); SOS Event không có bảng mới; tab lớp luôn mở ở Theo học sinh; QL xem Ý thức & Phối hợp bằng **một góc nhìn** trong Phân tích hiện có | Bên design |
+| **21/09/2026 (đêm)** | **C08 đóng (21/09 đêm):** lớp Normal **có dùng** dấu `-`. **Giáo viên** ghi `-` khi em chưa làm bài của tuần (máy KHÔNG tự thêm); ghi `-` thì kỹ năng đó **tự dời sang tuần sau**. Hạn chấm Normal vẫn hết Chủ nhật tuần thi → việc `R14` ở mục 22.8 | Chủ sản phẩm |
+| 21/09/2026 (đêm) | **S16 chốt (21/09 đêm):** lộ trình học của em **kết thúc** (`learning_cycles` rời trạng thái `active`) mà còn case mở → máy **tự đóng** case, lý do hệ thống `Học viên kết thúc khoá`, ghi `audit_logs`, vẫn xem lại được trong lịch sử; case đóng kiểu này **không** tính vào thống kê hiệu quả | Chủ sản phẩm |
+| 21/09/2026 (đêm) | **S17 chốt (21/09 đêm):** em có case **Fast Track** đang mở mà chuyển sang lớp **Normal** → máy **tự đóng** case, lý do hệ thống `Chuyển sang lớp Normal`, ghi `audit_logs`, xem lại được trong lịch sử, **không** tính vào thống kê hiệu quả. Cùng kiểu với S16 | Chủ sản phẩm |
+| 21/09/2026 (đêm) | **R11 chốt (21/09 đêm):** đợt Test **hoàn tất** = mọi kỹ năng bắt buộc đã có điểm **hoặc** dấu `-` **và** đã hết Chủ nhật của tuần thi. Trước đó GV có quyền sửa bình thường; sau đó **chỉ Quản lý** sửa được, mỗi lần sửa ghi `audit_logs`. Khớp luật đã chốt "sau cuối tuần chỉ Quản lý sửa kết luận" | Chủ sản phẩm |
 | 20/09/2026 | **C01 và C08 chưa chốt hẳn:** C01 — chủ sản phẩm mô tả (3 ngày phải có PA; Học thuật cập nhật mỗi Chủ nhật + chốt cuối đợt; Ý thức hoàn thành hết PA trong 1 tuần) và hỏi lại "đúng không?"; C08 — hạn chấm Normal hết Chủ nhật tuần thi (đã đúng), còn "chưa có bài thì thêm - và dời sang tuần sau" chưa rõ ai thêm và Normal có dùng "-" không | Chủ sản phẩm · chờ trả lời |
 
 ---
@@ -1926,6 +1930,7 @@ Nói **cái gì đổi trên màn hình**, bằng tiếng Việt, không tên h�
 | 21/09/2026 (chiều, sau) | Claude (session thiết kế) | Chủ sản phẩm muốn **deploy thủ công từ thư mục máy**, chia PR-Z2 theo độ nhạy dữ liệu, và luôn được ghi rõ model/effort. Làm: (1) chia plan chi tiết thành **Phần A/B/C = PR-Z2a/b/c**; (2) thêm **Task 6b** — đóng gói nhị phân Linux của `libsql` (build trên Windows, Netlify chạy Linux) và **deploy nháp thật** với database thử ngay cuối Phần A, để có số đo tốc độ Netlify↔Turso thật **trước** khi chạm dữ liệu bản chính; (3) Task 10 đổi sang CLI (`deploy --build` nháp → xin phép → `--prod`), Task 11 yêu cầu người rà khác model người code; (4) **viết lại `TRIEN_KHAI.md` cho người không biết code**: mở PowerShell đúng thư mục, dán lệnh, chỗ nào thay `<...>`, từng nút bấm trên Turso/Netlify, bảng tra biến; (5) `PROMPT_SESSION_CODE.md`: bảng model + effort + phương án B cho mọi PR, ba prompt Z2a/Z2b/Z2c; (6) prompt bàn giao session planning mới: `PROMPT_BAN_GIAO_PLANNING.md` |
 | 21/09/2026 (đêm) | Claude (session PR-T) | **PR-T hoàn tất phần máy chủ (T1–T8).** Kế hoạch mục 23.1 sai/thiếu ở các chỗ ghi ngay dưới danh sách T1–T9 (DDL UNIQUE với NULL không chặn trùng; phương án điền sẵn phải theo mức SOS của cả lượt; luật chống nhân đôi mốc; phạm vi P03; S05 không khoá theo ngày; MT5+ không cần duyệt thêm; "Chủ nhật sau +30 ngày"). Viết lại 6 phép kiểm cũ của luật 6.2 (Mock FT nay tự tạo case) và ~25 phép kiểm "đánh dấu không chính xác" (nay xoá thẳng). Bộ phép kiểm 512 → 574. Chưa làm: chữ cứng `Cần chú ý` ở `CaseBoardPage.tsx:451` (giao diện, thuộc PR-K) |
 | 21/09/2026 (đêm) | Claude (session PR-T) | **Chủ sản phẩm chốt 2 chỗ mở của PR-T.** (1) MT5+ phương án `Khác` chỉ cần GVBM/Quản lý xác nhận — đúng ý. (2) Phương án A: hạn 3 ngày của S04 thành dòng **Việc cần làm** nhóm `cause` (GVBM phụ trách thấy ngay, Quản lý chỉ khi quá hạn, có tính vào tổng quá hạn). Bộ phép kiểm 579 → 580. PR-K K6 chỉ còn vẽ nhóm này |
+| 21/09/2026 (đêm, sau) | Claude (session planning) | **Chủ sản phẩm chốt bốn câu treo, cả bốn theo khuyến nghị:** C08 (GV ghi `-` ở Normal → dời tuần sau; việc mới R14), S16 và S17 (tự đóng case kèm lý do hệ thống), R11 (hoàn tất = đủ điểm/dấu `-` + hết Chủ nhật; sau đó chỉ Quản lý sửa). Ghi ở mục 3, 22.8, 22.9, `LUAT_CHO_CHOT.md` §6.4. |
 ---
 
 ## 15. PR-E — Nền giao diện dùng chung
@@ -2750,11 +2755,15 @@ Tình trạng từng dòng: `BAN_DO_OVERHAUL.md` mục 5 và mục 8.
       riêng cho "hoàn tất"; trạng thái này đang được **suy ra** từ đủ điểm required.
       **Định nghĩa rõ ở tầng dữ liệu trước khi chặn**, vì chặn nhầm khoá luôn việc hiệu chỉnh hợp lệ.
       Nếu chưa chắc thì **để ngỏ và ghi vào mục 12**, đừng đoán.
+      **R11 chốt (21/09 đêm):** đợt Test **hoàn tất** = mọi kỹ năng bắt buộc đã có điểm **hoặc** dấu `-` **và** đã hết Chủ nhật của tuần thi. Trước đó GV có quyền sửa bình thường; sau đó **chỉ Quản lý** sửa được, mỗi lần sửa ghi `audit_logs`. Khớp luật đã chốt "sau cuối tuần chỉ Quản lý sửa kết luận".
 - [ ] **R12. Nút dời lịch một kỹ năng cho lớp Normal** — hiện **không có ở bất kỳ đâu**.
       Quyền `schedule.move` đã mở đúng ở máy chủ (12 phép kiểm). Dựng UI ở
       `RegularSheetPage.tsx`, tái dùng `moveableSkills`/`canMoveSkillSchedule` đã có.
 - [ ] **R13. Bộ chọn tuần** — kiểm ở panel 600px, modal rộng và mobile (§22.8 điểm 3).
       Nút **không** rớt hàng ngẫu nhiên; popover **không** bị cắt bởi z-index.
+- [ ] **R14. Dấu `-` cho lớp Normal (C08).** **C08 đóng (21/09 đêm):** lớp Normal **có dùng** dấu `-`. **Giáo viên** ghi `-` khi em chưa làm bài của tuần (máy KHÔNG tự thêm); ghi `-` thì kỹ năng đó **tự dời sang tuần sau**. Hạn chấm Normal vẫn hết Chủ nhật tuần thi. Tái dùng luật dấu `-` của Fast Track (PR-G)
+      và `canMoveSkillSchedule` của R12; khác FT ở chỗ: Normal ghi `-` là **dời lịch**, không xác lập
+      "không dự thi". Phép kiểm máy chủ: ghi `-` → lịch kỹ năng sang tuần sau; không ghi gì → máy không tự thêm.
 
 ### Nghiệm thu PR-R
 1. Ba tab một nơi, tên đúng §18.4. 2. Bảng báo cáo đơn vị hiện ngay màn đầu desktop.
@@ -2808,10 +2817,11 @@ Tình trạng từng dòng: `BAN_DO_OVERHAUL.md` mục 5 và mục 8.
 - [ ] **S15.** Phép kiểm `PR-H` về `workScope` chỉ kiểm hàm thuần, **chưa kiểm** trường máy chủ trả về.
 - [ ] **S16.** Dữ liệu demo: **học viên đã kết thúc khoá mà case còn mở** (Vũ Thu Uyên, case 57).
       Là lý do duy nhất khiến Tổng quan đếm 29 mà Thực trạng đếm 28.
-      **Chưa có luật nào đóng hoặc giao lại case khi một em kết thúc lộ trình** — nếu vẫn chưa có
-      lời chốt thì **để nguyên và ghi vào mục 12**, đừng tự đóng case.
+      ~~Chưa có luật nào đóng hoặc giao lại case khi một em kết thúc lộ trình.~~
+      **S16 chốt (21/09 đêm):** lộ trình học của em **kết thúc** (`learning_cycles` rời trạng thái `active`) mà còn case mở → máy **tự đóng** case, lý do hệ thống `Học viên kết thúc khoá`, ghi `audit_logs`, vẫn xem lại được trong lịch sử; case đóng kiểu này **không** tính vào thống kê hiệu quả. Phép kiểm máy chủ + demo Vũ Thu Uyên hết lệch 29/28.
 - [ ] **S17.** Case Fast Track mở mà em chuyển sang Normal (ví dụ hạng mục `writing1`) biến khỏi
-      tab Normal của Phân tích, Tổng quan vẫn đếm. **Chưa quyết định hiện ở đâu** — hỏi, đừng đoán.
+      tab Normal của Phân tích, Tổng quan vẫn đếm. ~~Chưa quyết định hiện ở đâu.~~
+      **S17 chốt (21/09 đêm):** em có case **Fast Track** đang mở mà chuyển sang lớp **Normal** → máy **tự đóng** case, lý do hệ thống `Chuyển sang lớp Normal`, ghi `audit_logs`, xem lại được trong lịch sử, **không** tính vào thống kê hiệu quả. Cùng kiểu với S16. Phép kiểm máy chủ.
 
 ### Nghiệm thu PR-S
 1. Đóng SOS không lý do → bị từ chối. 2. Sửa nội dung phương án hai lần → đọc lại được cả hai

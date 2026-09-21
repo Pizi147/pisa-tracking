@@ -137,8 +137,10 @@ mục 18". Xoá hẳn là xoá mất dấu vết một quyết định có thậ
 |---|---|
 | **C08** | Hạn chấm Normal hết Chủ nhật tuần thi — **đã đúng**. Còn chưa rõ: *"chưa có bài thì thêm `-` và dời sang tuần sau"* — **ai** thêm dấu `-` (hệ thống tự thêm hay giáo viên), và Normal có **thật sự dùng** dấu `-` không (hiện Normal luôn đủ bốn môn, không có `-`). Chưa triển khai |
 
-Trên màn Normal, trong khi chờ, giữ câu trung tính `Hạn chấm theo quy định của lớp` theo luật ở
-mục 4 — không viết "chưa chốt", không hiện mã C.
+> **C08 đóng (21/09 đêm):** lớp Normal **có dùng** dấu `-`. **Giáo viên** ghi `-` khi em chưa làm bài của tuần (máy KHÔNG tự thêm); ghi `-` thì kỹ năng đó **tự dời sang tuần sau**. Hạn chấm Normal vẫn hết Chủ nhật tuần thi. Việc code: `plan.md` mục 22.8 `R14`. **Không còn điểm nào của file này chưa chốt.**
+
+~~Trên màn Normal, trong khi chờ, giữ câu trung tính `Hạn chấm theo quy định của lớp` theo luật ở
+mục 4 — không viết "chưa chốt", không hiện mã C.~~ *(hết hiệu lực khi R14 xong)*
 
 ### 6.5. Bảng tổng trạng thái sau 21/09/2026
 
