@@ -49,7 +49,7 @@ Nếu bạn nghĩ theo "cái tôi thấy trên màn hình" chứ không theo tê
 | `vong7/BRIEF_OVERHAUL_SAU_PR15.md` | Đề bài nghiệp vụ gốc |
 | *(bốn nhóm file bàn giao và tham chiếu cũ)* | **ĐÃ XOÁ 21/09/2026:** BAN\_GIAO (bốn file), PISA\_Design\_Master\_Reference, PRODUCT\_DEMO\_SPEC, thư mục vong4. Đã bị `thiet-ke/` thay hẳn. `plan.md` mục 1.2 đã cảnh báo chúng là "lịch sử, không phải luật" — giữ lại chỉ tạo rủi ro đọc phải luật cũ. Cần tra lại thì dùng `git log` |
 | `thiet-ke/PISA-Rulebook-2026-09-19.md` | **Luật sản phẩm** do chủ sản phẩm chốt. **Mục 18 (21/09) ưu tiên hơn mục 17**; mục 17 ưu tiên hơn mọi mô tả cũ mâu thuẫn |
-| `thiet-ke/SOS_VA_PHOI_HOP_V3.md` | **Mới nhất (tối 21/09).** SOS tự tạo case + điền sẵn phương án, Phối hợp SOS, xoá vi phạm, bố cục `Ý thức & Phối hợp`. Thắng `Y_THUC_VI_PHAM_VA_BIEN_PHAP.md` ở chỗ khác nhau |
+| `thiet-ke/SOS_VA_PHOI_HOP_V3.md` | **Mới nhất (tối 21/09).** SOS tự tạo case + điền sẵn phương án, Phối hợp SOS, xoá vi phạm, bố cục `Ý thức & Phối hợp`. Thắng `thiet-ke/Y_THUC_VI_PHAM_VA_BIEN_PHAP.md` ở chỗ khác nhau |
 | `TRIEN_KHAI.md` | Đưa bản chính lên Netlify + Turso (miễn phí), sao lưu, quay lại bản cũ |
 | `PROMPT_SESSION_CODE.md` | Prompt copy-dán cho session coding — **mục 0 là bảng model + effort cho từng PR** |
 | `PROMPT_BAN_GIAO_PLANNING.md` | Prompt bàn giao cho một session planning mới + tình trạng hiện tại |
