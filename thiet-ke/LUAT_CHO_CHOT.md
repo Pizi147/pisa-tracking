@@ -155,3 +155,14 @@ mục 4 — không viết "chưa chốt", không hiện mã C.
 | C09 | ✅ Đã chốt, khớp hành vi |
 | C10 | ✅ Đã chốt, đã nối dây |
 | Y01–Y04 | ✅ Đã chốt 21/09, chưa nối dây (chưa có mã Ý thức) |
+
+
+---
+
+## 7. Tối 21/09/2026 — rulebook v3
+
+| Mã | Trạng thái mới |
+|---|---|
+| **C05** | ⚰️ **Hết hiệu lực.** Thay bằng Phối hợp SOS điền sẵn (`SOS_VA_PHOI_HOP_V3.md` §5). Giữ hằng số `C05_*` kèm chú thích |
+| **Q-V3-1…9** | Quyết định thiết kế v3, xem `SOS_VA_PHOI_HOP_V3.md` §11. Q-V3-4 do chủ sản phẩm chốt |
+| **C08** | ⏳ Vẫn là điểm duy nhất chưa chốt |

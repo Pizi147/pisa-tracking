@@ -175,3 +175,12 @@ và lần này còn khó thấy hơn, vì hai phép đếm sẽ **khớp nhau tr
 lệch khi dữ liệu thật vào.
 
 Vì vậy bốn hàm này nằm ở **PR đầu tiên** của lộ trình, trước cả Ý thức. Xem `plan.md`.
+
+
+---
+
+## 7. Bản v3 — tối 21/09/2026
+
+Bỏ `vi-pham-khong-hieu-luc`. Thêm `phoi-hop-luot-sos` · `phoi-hop-dang-xu-ly` · `phoi-hop-hoan-thanh` ·
+`case-cho-xac-dinh-nguyen-nhan`. Định nghĩa: `SOS_VA_PHOI_HOP_V3.md` §8. Phương án điền sẵn **chưa xác nhận**
+không vào `pa-co-ket-qua`, `ty-le-co-cai-thien`, `dung-han-cap-nhat`.

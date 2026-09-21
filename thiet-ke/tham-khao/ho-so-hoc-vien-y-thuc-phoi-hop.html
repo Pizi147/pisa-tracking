@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PISA Progress — Hồ sơ học viên · Ý thức & Phối hợp</title>
+<style>
+:root{--bg:#0d1423;--top:#09111f;--s:#111b2d;--s2:#162238;--line:#293852;--text:#e8eef7;--muted:#8f9db4;--blue:#84baff;--bb:#173451;--green:#73d9a5;--gb:#15362a;--yellow:#e5c66a;--yb:#3a3219;--red:#ff9a9a;--rb:#3b2126}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,Segoe UI,Arial,sans-serif;font-size:13px}button,input,select{font:inherit}.top{height:48px;background:var(--top);border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 18px}.brand{font-weight:800}.brand span{color:var(--blue)}.muted{font-size:11px;color:var(--muted)}
+.wrap{max-width:1180px;margin:auto;padding:18px}.profile{background:var(--s);border:1px solid var(--line);border-radius:11px;padding:15px;display:flex;justify-content:space-between;gap:12px}.profile h1{margin:0 0 4px;font-size:20px}.tabs,.subtabs{display:flex;gap:4px;border-bottom:1px solid var(--line)}.tabs{margin-top:12px}.tab,.subtab{border:0;background:transparent;color:var(--muted);padding:10px 12px;font-weight:800;cursor:pointer;border-bottom:3px solid transparent}.tab.active,.subtab.active{color:var(--text);border-bottom-color:var(--blue);background:#111a2d}
+.workspace{margin-top:11px;background:var(--s);border:1px solid var(--line);border-radius:11px;overflow:hidden}.head{padding:12px 14px;display:flex;justify-content:space-between;align-items:center}.head h2{margin:0 0 3px;font-size:15px}.panel{display:none;padding:12px;background:var(--s2)}.panel.active{display:block}
+.btn{border:1px solid var(--line);background:#15223a;color:var(--text);border-radius:7px;padding:7px 10px;cursor:pointer;font-weight:700}.btn.primary{background:#82b9f6;color:#0c1726;border-color:#82b9f6}.btn.small{padding:5px 7px;font-size:11px}
+.badge{display:inline-flex;padding:4px 7px;border-radius:999px;font-size:10px;font-weight:800}.blue{background:var(--bb);color:var(--blue)}.green{background:var(--gb);color:var(--green)}.yellow{background:var(--yb);color:var(--yellow)}.red{background:var(--rb);color:var(--red)}
+.summary{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}.stat{background:#111b2e;border:1px solid var(--line);border-radius:8px;padding:8px 10px;min-width:125px}.stat b{display:block;font-size:16px;margin-top:2px}
+.controls{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:10px}.chips{display:flex;gap:5px;flex-wrap:wrap}.chip{border:1px solid var(--line);background:#142139;color:var(--muted);border-radius:999px;padding:6px 8px;font-size:10px;cursor:pointer}.chip.active{background:var(--bb);color:var(--blue)}
+.timeline{background:#111b2e;border:1px solid var(--line);border-radius:9px;padding:10px}.event{display:grid;grid-template-columns:72px 115px 1fr auto;gap:8px;padding:9px 0;border-top:1px solid #22314a;align-items:start}.event:first-child{border-top:0}.date{font-size:10px;color:var(--muted)}.etype{font-size:10px;font-weight:800}.title{font-size:11px;font-weight:800}.meta{font-size:10px;color:var(--muted);margin-top:2px}
+.sos{background:#111b2e;border:1px solid var(--line);border-radius:9px;margin-bottom:8px;overflow:hidden}.sos-head{display:grid;grid-template-columns:150px 1fr 130px;gap:10px;padding:11px;align-items:center;cursor:pointer}.sos-detail{display:none;border-top:1px solid var(--line);padding:9px}.sos-detail.show{display:block}.action{display:grid;grid-template-columns:1fr 130px;gap:10px;padding:8px 0;border-top:1px solid #22314a}.action:first-child{border-top:0}
+@media(max-width:750px){.profile{flex-direction:column}.event{grid-template-columns:65px 95px 1fr}.event>div:last-child{grid-column:3}.sos-head{grid-template-columns:1fr 1fr}.sos-head>div:last-child{grid-column:2}}
+</style></head>
+<body>
+<div class="top"><div class="brand">PISA <span>Progress</span></div><div class="muted">Hồ sơ học viên · UX reference</div></div>
+<div class="wrap">
+<div class="profile"><div><h1>Lê Quang Huy</h1><div class="muted">MB-FT 101 · Fast Track · GVCN Trần Ngọc Hà · Target 6.5</div></div><div><span class="badge yellow">Đang học</span></div></div>
+<div class="tabs"><button class="tab">Tổng quan</button><button class="tab">Học thuật</button><button class="tab active">Ý thức & Phối hợp</button><button class="tab">Hành trình</button></div>
+<div class="workspace">
+<div class="head"><div><h2>Ý thức & Phối hợp</h2><div class="muted">Lịch sử của riêng học viên này.</div></div><button class="btn primary">+ Ghi nhận vi phạm</button></div>
+<div class="subtabs"><button class="subtab active" data-p="viol">Vi phạm & xử lý</button><button class="subtab" data-p="sos">Phối hợp SOS <span class="badge blue">1</span></button></div>
+
+<section id="viol" class="panel active">
+<div class="summary">
+  <div class="stat"><span class="muted">Violation</span><b>5</b></div>
+  <div class="stat"><span class="muted">BTVN</span><b>3</b></div>
+  <div class="stat"><span class="muted">Chuyên cần</span><b>2</b></div>
+  <div class="stat"><span class="muted">BP đang chuẩn bị</span><b>1</b></div>
+</div>
+<div class="controls">
+  <div class="chips" id="cats"><button class="chip active" data-cat="all">Tất cả</button><button class="chip" data-cat="btvn">BTVN</button><button class="chip" data-cat="cc">Chuyên cần</button><button class="chip" data-cat="td">Thái độ</button><button class="chip" data-cat="kl">Kỷ luật</button></div>
+  <div class="chips"><button class="chip active">Tất cả thời gian</button><button class="chip">7 ngày</button><button class="chip">30 ngày</button></div>
+</div>
+<div class="timeline">
+  <div class="event" data-cat="btvn"><div class="date">18/09</div><div class="etype"><span class="badge blue">Violation</span></div><div><div class="title">Thiếu bài Reading</div><div class="meta">BTVN · GV An</div></div><button class="btn small">Sửa</button></div>
+  <div class="event" data-cat="all"><div class="date">18/09</div><div class="etype"><span class="badge yellow">Biện pháp</span></div><div><div class="title">Report cho gia đình</div><div class="meta">Đang chuẩn bị · gồm 3 Violation</div></div><button class="btn small primary">Mở</button></div>
+  <div class="event" data-cat="cc"><div class="date">17/09</div><div class="etype"><span class="badge red">Violation</span></div><div><div class="title">Đi học muộn 18 phút</div><div class="meta">Chuyên cần · GV Mai</div></div><button class="btn small">Sửa</button></div>
+  <div class="event" data-cat="btvn"><div class="date">15/09</div><div class="etype"><span class="badge blue">Violation</span></div><div><div class="title">Không nộp Writing homework</div><div class="meta">BTVN · GV Hà · ⚠ đã 6 ngày</div></div><button class="btn small">Sửa</button></div>
+  <div class="event" data-cat="all"><div class="date">12/09</div><div class="etype"><span class="badge green">Biện pháp</span></div><div><div class="title">GV meeting với HS</div><div class="meta">Đã thực hiện</div></div><button class="btn small">Xem</button></div>
+</div>
+</section>
+
+<section id="sos" class="panel">
+  <div class="sos">
+    <div class="sos-head" onclick="toggle('mt2')"><div><div class="title">MT2 · SOS2</div><div class="meta">Writing + Speaking</div></div><div><b>2/3 hành động hoàn thành</b><div class="meta">Academic support xem ở tab Học thuật</div></div><div><span class="badge yellow">Đang xử lý</span></div></div>
+    <div id="mt2" class="sos-detail">
+      <div class="action"><div><div class="title">Trao đổi ngắn với HS</div><div class="meta">15/09</div></div><span class="badge green">Đã xong</span></div>
+      <div class="action"><div><div class="title">Trao đổi với gia đình</div><div class="meta">16/09</div></div><span class="badge green">Đã xong</span></div>
+      <div class="action"><div><div class="title">GVCN meeting với HS</div><div class="meta">Cần xử lý</div></div><button class="btn small primary">Xác nhận</button></div>
+    </div>
+  </div>
+  <div class="sos">
+    <div class="sos-head" onclick="toggle('mt1')"><div><div class="title">MT1 · SOS1</div><div class="meta">Writing</div></div><div><b>2/2 hoàn thành</b><div class="meta">Đã phối hợp xong</div></div><div><span class="badge green">Hoàn thành</span></div></div>
+    <div id="mt1" class="sos-detail"><div class="action"><div><div class="title">Trao đổi ngắn với HS</div></div><span class="badge green">Đã xong</span></div><div class="action"><div><div class="title">Trao đổi với gia đình</div></div><span class="badge green">Đã xong</span></div></div>
+  </div>
+</section>
+</div>
+</div>
+<script>
+document.querySelectorAll('.subtab').forEach(b=>b.onclick=()=>{document.querySelectorAll('.subtab').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active'));b.classList.add('active');document.getElementById(b.dataset.p).classList.add('active')});
+document.querySelectorAll('#cats .chip').forEach(b=>b.onclick=()=>{document.querySelectorAll('#cats .chip').forEach(x=>x.classList.remove('active'));b.classList.add('active');let c=b.dataset.cat;document.querySelectorAll('.event').forEach(e=>e.style.display=(c==='all'||e.dataset.cat===c||e.dataset.cat==='all')?'grid':'none')});
+function toggle(id){document.getElementById(id).classList.toggle('show')}
+</script>
+</body></html>
