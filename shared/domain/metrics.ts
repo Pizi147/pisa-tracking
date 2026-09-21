@@ -25,7 +25,7 @@ export type ChiSo = {
   /** Câu hỏi mà con số trả lời, viết đủ chữ. */
   cauHoi: string;
   /** Đơn vị đếm. Ba đơn vị học viên · case · phương án KHÔNG BAO GIỜ cộng vào nhau. */
-  donVi: 'hoc-vien' | 'case' | 'phuong-an' | 'bai-thi' | 'tin-hieu' | 'dot-test' | 'nghia-vu' | 'vi-pham' | 'bien-phap';
+  donVi: 'hoc-vien' | 'case' | 'phuong-an' | 'bai-thi' | 'tin-hieu' | 'dot-test' | 'nghia-vu' | 'vi-pham' | 'bien-phap' | 'luot-sos';
   /** Mô tả MẪU SỐ (tập đủ điều kiện), viết đủ chữ. */
   tapDuDieuKien: string;
   thoiGian: 'hien-trang' | 'phat-sinh-trong-ky' | 'ket-qua-trong-ky';
@@ -188,6 +188,31 @@ export const METRICS: readonly ChiSo[] = [
     tapDuDieuKien: 'Biện pháp đã thực hiện trong kỳ, tách CHÍN loại. Ba Thư cảnh cáo lần 1, 2, 3 tách riêng — không gộp thành một dòng. Có thể lọc một loại bằng tham số kind.',
     thoiGian: 'ket-qua-trong-ky', khuTrung: 'COUNT DISTINCT measure_id theo loại', drilldown: '/metrics/bien-phap-theo-loai',
   },
+  /*
+   * PHỐI HỢP SOS (PR-T, rulebook v3, 21/09/2026 tối) — BA CHỈ SỐ, ĐƠN VỊ LƯỢT (một lượt Mock Test FT có SOS). Không cộng vào vi phạm, học viên hay
+   * biện pháp. Nằm ngoài mọi bảng hiệu quả (P10). Nguồn: thiet-ke/SOS_VA_PHOI_HOP_V3.md §8.
+   */
+  {
+    id: 'phoi-hop-luot-sos', ten: 'Lượt SOS',
+    cauHoi: 'Có bao nhiêu lượt Mock Test Fast Track có SOS (mức 1 trở lên)?',
+    donVi: 'luot-sos',
+    tapDuDieuKien: 'Lượt Mock Test Fast Track có `sos_level ≥ 1` (tính lại từ điểm: SOS hết thì lượt thôi là SOS Event) và có việc Phối hợp SOS. Lớp Normal không có. Theo tuần của lượt, lớp lúc đó.',
+    thoiGian: 'phat-sinh-trong-ky', khuTrung: 'COUNT DISTINCT attempt_id', drilldown: '/metrics/phoi-hop-luot-sos',
+  },
+  {
+    id: 'phoi-hop-dang-xu-ly', ten: 'Lượt phối hợp đang xử lý',
+    cauHoi: 'Có bao nhiêu lượt SOS còn ít nhất một việc phối hợp cần xử lý?',
+    donVi: 'luot-sos',
+    tapDuDieuKien: 'Trong các lượt SOS: lượt có ít nhất một việc Phối hợp SOS ở trạng thái cần xử lý. Không có hạn nên không có khái niệm "quá hạn".',
+    thoiGian: 'phat-sinh-trong-ky', khuTrung: 'COUNT DISTINCT attempt_id', drilldown: '/metrics/phoi-hop-dang-xu-ly',
+  },
+  {
+    id: 'phoi-hop-hoan-thanh', ten: 'Lượt phối hợp hoàn thành',
+    cauHoi: 'Có bao nhiêu lượt SOS mà mọi việc phối hợp đã xong hoặc đã bỏ?',
+    donVi: 'luot-sos',
+    tapDuDieuKien: 'Trong các lượt SOS: lượt có ít nhất một việc và mọi việc đều đã xong hoặc đã bỏ (kèm lý do). "Hoàn thành" là SUY RA, không lưu.',
+    thoiGian: 'phat-sinh-trong-ky', khuTrung: 'COUNT DISTINCT attempt_id', drilldown: '/metrics/phoi-hop-hoan-thanh',
+  },
 ];
 
 /**
@@ -197,7 +222,7 @@ export const METRICS: readonly ChiSo[] = [
 export const METRIC_UNIT_LABEL: Record<ChiSo['donVi'], string> = {
   'hoc-vien': 'học viên', case: 'case', 'phuong-an': 'phương án', 'bai-thi': 'bài thi',
   'tin-hieu': 'tín hiệu', 'dot-test': 'đợt Test', 'nghia-vu': 'nghĩa vụ',
-  'vi-pham': 'vi phạm', 'bien-phap': 'biện pháp',
+  'vi-pham': 'vi phạm', 'bien-phap': 'biện pháp', 'luot-sos': 'lượt',
 };
 
 /** Tra một chỉ số theo mã; mã lạ trả null (không đoán). */

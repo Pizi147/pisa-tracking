@@ -9,6 +9,7 @@ import { NOT_UNCONFIRMED_PRESET, awaitingCauseCaseIds } from '../cases/sosState.
 import { improvementRate, planOutcomes } from '../cases/effectiveness.ts';
 import { doPhuDanhGia, hvDuoiKyVongMon, hvSosHienTai } from './danhGia.ts';
 import { isYThucMetric, yThucMetric, YTHUC_METRIC_IDS } from '../yThuc/thongKe.ts';
+import { PHOI_HOP_METRIC_IDS, isPhoiHopMetric, phoiHopMetric } from '../yThuc/phoiHop.ts';
 
 /**
  * TẬP ID CỦA TỪNG CHỈ SỐ — nơi duy nhất sinh ra cả CON SỐ lẫn DANH SÁCH KHI BẤM VÀO (hợp đồng số liệu).
@@ -143,6 +144,15 @@ export function rowsFor(unit: ChiSo['donVi'], ids: number[]): MetricRow[] {
         const state = r.status === 'done' ? `đã thực hiện ${String(r.performed_on ?? '').slice(8, 10)}/${String(r.performed_on ?? '').slice(5, 7)}` : 'đang chuẩn bị';
         byId.set(r.id, { id: r.id, title: name, sub: [r.full_name, r.student_code, state].filter(Boolean).join(' · '), href: `/hoc-vien/${r.student_id}` });
       }
+    } else if (unit === 'luot-sos') {
+      /* Phối hợp SOS (PR-T): dòng lượt Mock có SOS mở hồ sơ học viên — sub-tab `Phối hợp SOS` là việc của PR-K. */
+      for (const r of conn.prepare(
+        `SELECT a.id, a.attempt_no, a.student_id, s.full_name, s.student_code, c.code AS class_code
+           FROM assessment_attempts a JOIN students s ON s.id = a.student_id LEFT JOIN classes c ON c.id = a.class_id
+          WHERE a.id IN (${ph})`,
+      ).all(...chunk) as any[]) {
+        byId.set(r.id, { id: r.id, title: `MT${r.attempt_no} · ${r.full_name}`, sub: [r.student_code, r.class_code].filter(Boolean).join(' · '), href: `/hoc-vien/${r.student_id}` });
+      }
     } else if (unit === 'tin-hieu') {
       for (const r of conn.prepare(
         `SELECT sg.id, sg.student_id, sg.skill, sg.verify_due, s.full_name, s.student_code
@@ -183,6 +193,7 @@ export const LISTED_METRICS: readonly string[] = [
   'case-thieu-pa', 'pa-can-cap-nhat', 'pa-cho-duyet', 'pa-co-ket-qua', 'ty-le-co-cai-thien',
   'dung-han-cap-nhat', 'do-phu-danh-gia',
   ...YTHUC_METRIC_IDS,
+  ...PHOI_HOP_METRIC_IDS,
 ];
 
 /** Kỹ năng ĐÁNH GIÁ mà `hv-duoi-ky-vong-mon` nhận. */
@@ -353,6 +364,13 @@ export function metricSet(
     const r = yThucMetric(p, id, { branchId: scope.branchId, from: f.from ?? null, to: f.to ?? null, kind: f.kind ?? null });
     if (r.none) return { ...done([]), empty: true, note: EMPTY_NOTE };
     return done(r.ids, r.byKind ? { byKind: r.byKind } : {});
+  }
+
+  /* Phối hợp SOS (PR-T): cùng phạm vi thống kê với Ý thức — chỉ Quản lý và Quản trị; GVBM/GVCN nhận tập rỗng có nhãn. Đơn vị: lượt. */
+  if (isPhoiHopMetric(id)) {
+    const r = phoiHopMetric(p, id, { branchId: scope.branchId, from: f.from ?? null, to: f.to ?? null });
+    if (r.none) return { ...done([]), empty: true, note: EMPTY_NOTE };
+    return done(r.ids);
   }
 
   const branchId = scope.branchId ?? undefined;

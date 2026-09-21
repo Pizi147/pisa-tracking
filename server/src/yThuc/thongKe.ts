@@ -37,7 +37,7 @@ export const isYThucMetric = (id: string): boolean => (YTHUC_METRIC_IDS as reado
  * Phạm vi xem THỐNG KÊ Ý THỨC: chỉ Quản lý (chi nhánh của họ) và Quản trị (tất cả) — GVBM và GVCN xem trong phạm vi lớp qua bảng
  * của lớp, không xem thống kê cả chi nhánh (đặc tả §6). Hỏi chi nhánh NGOÀI phạm vi thì TỪ CHỐI, không âm thầm trả tập rút gọn.
  */
-function statScope(p: Principal, branchId: number | null): { none: boolean; branchIds: number[] | null } {
+export function statScope(p: Principal, branchId: number | null): { none: boolean; branchIds: number[] | null } {
   const sc = scopeFor(p, PERMISSIONS.DISCIPLINE_STATS);
   if (sc.none) return { none: true, branchIds: [] };
   if (branchId) {
@@ -47,7 +47,7 @@ function statScope(p: Principal, branchId: number | null): { none: boolean; bran
   return { none: false, branchIds: sc.all ? null : sc.branchIds };
 }
 
-const branchSql = (col: string, branchIds: number[] | null): { sql: string; args: number[] } =>
+export const branchSql = (col: string, branchIds: number[] | null): { sql: string; args: number[] } =>
   branchIds === null ? { sql: '1 = 1', args: [] } : { sql: `${col} IN (${branchIds.map(() => '?').join(',') || 'NULL'})`, args: branchIds };
 
 /** Chi nhánh của lớp học viên ĐANG học — dùng cho chỉ số HIỆN TRẠNG (em chuyển chi nhánh thì hiện trạng sang nơi mới). */

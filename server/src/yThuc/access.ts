@@ -81,6 +81,19 @@ export function violationOwner(violationId: number) {
   };
 }
 
+/** Kho tệp: quyền của việc Phối hợp SOS làm chủ (PR-T). Xem = quyền xem học viên (GVBM xem được); thêm/gỡ = GVCN của lớp em đang học + Quản lý (P04). */
+export function coordinationOwner(actionId: number) {
+  const a = db().prepare('SELECT student_id FROM sos_coordination_actions WHERE id = ?').get(actionId) as any;
+  if (!a) throw notFound('Không tìm thấy việc phối hợp');
+  return {
+    requireView: (p: Principal) => requireViewStudent(p, a.student_id),
+    requireEdit: (p: Principal) => {
+      requireViewStudent(p, a.student_id);
+      requireManageDiscipline(p, a.student_id, 'Bạn không có quyền đính kèm hoặc gỡ bằng chứng của việc phối hợp này — chỉ giáo viên chủ nhiệm và Quản lý.');
+    },
+  };
+}
+
 /** Kho tệp: quyền của biện pháp làm chủ. Xem = quyền xem học viên; thêm/gỡ = quyền xử lý Ý thức (B10: vẫn bổ sung được khi đã thực hiện). */
 export function measureOwner(measureId: number) {
   const m = db().prepare('SELECT student_id FROM discipline_measures WHERE id = ?').get(measureId) as any;

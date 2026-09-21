@@ -6,7 +6,7 @@ import { badRequest, forbidden, notFound, nowIso } from '../util.ts';
 import { ATTACHMENT_EXTENSIONS, ATTACHMENT_MAX_BYTES, ATTACHMENT_MIME_BY_EXT } from '../../../shared/domain/index.ts';
 import type { Principal } from '../permissions.ts';
 import { caseAccess } from '../cases/cases.ts';
-import { measureOwner, violationOwner } from '../yThuc/access.ts';
+import { coordinationOwner, measureOwner, violationOwner } from '../yThuc/access.ts';
 import { writeAudit } from './audit.ts';
 
 /**
@@ -28,7 +28,7 @@ import { writeAudit } from './audit.ts';
  * phục vụ dạng tải về. Liên kết chỉ nhận http/https — không `javascript:`, `data:`, `file:`.
  */
 
-export const OWNER_TYPES = ['sos_case', 'case_intervention', 'violation', 'discipline_measure'] as const;
+export const OWNER_TYPES = ['sos_case', 'case_intervention', 'violation', 'discipline_measure', 'sos_coordination_action'] as const;
 export type AttachmentOwnerType = (typeof OWNER_TYPES)[number];
 
 /** Dung lượng và đuôi tệp được nhận nằm ở `shared/domain/attachments.ts` — giao diện đọc cùng danh sách. */
@@ -61,6 +61,7 @@ function ownerAccess(ownerType: string, ownerId: number): OwnerAccess {
   }
   if (ownerType === 'violation') return violationOwner(ownerId);
   if (ownerType === 'discipline_measure') return measureOwner(ownerId);
+  if (ownerType === 'sos_coordination_action') return coordinationOwner(ownerId);
   throw badRequest(`Loại bản ghi "${ownerType}" chưa hỗ trợ đính kèm.`);
 }
 

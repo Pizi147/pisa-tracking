@@ -7942,11 +7942,12 @@ const branchIdOf = (code: string) => (conn.prepare('SELECT id FROM branches WHER
 
 check('PR-F · Sổ chỉ số: đúng hai mươi chỉ số (PR-N thêm pa-cho-duyet; PR-J thêm tám chỉ số Ý thức), mỗi chỉ số đủ tám trường (thiếu một trường thì không được lên dashboard)', () => {
   const list = domain.METRICS as readonly any[];
-  assert(list.length === 21, `Phải có hai mươi mốt chỉ số (mười hai của PR-F/PR-N + tám của PR-J + case-cho-xac-dinh-nguyen-nhan của PR-T), đang có ${list.length}`);
+  assert(list.length === 24, `Phải có hai mươi bốn chỉ số (mười hai của PR-F/PR-N + tám của PR-J + bốn của PR-T: case-cho-xac-dinh-nguyen-nhan và ba phoi-hop-*), đang có ${list.length}`);
   const expected = ['hv-sos-hien-tai', 'hv-duoi-ky-vong-mon', 'hv-co-case-mo', 'case-mo', 'tin-hieu-cho-xac-minh', 'case-cho-xac-dinh-nguyen-nhan',
     'case-thieu-pa', 'pa-can-cap-nhat', 'pa-cho-duyet', 'pa-co-ket-qua', 'ty-le-co-cai-thien', 'dung-han-cap-nhat', 'do-phu-danh-gia',
     'vi-pham-tong', 'vi-pham-chua-xu-ly', 'vi-pham-khong-hieu-luc', 'hv-co-vi-pham', 'hv-can-xu-ly',
-    'bien-phap-da-thuc-hien', 'bien-phap-dang-chuan-bi', 'bien-phap-theo-loai'];
+    'bien-phap-da-thuc-hien', 'bien-phap-dang-chuan-bi', 'bien-phap-theo-loai',
+    'phoi-hop-luot-sos', 'phoi-hop-dang-xu-ly', 'phoi-hop-hoan-thanh'];
   for (const id of expected) assert(list.some((m) => m.id === id), `Thiếu chỉ số ${id}`);
   assert(new Set(list.map((m) => m.id)).size === list.length, 'Có hai chỉ số trùng mã');
   const fields = ['id', 'ten', 'cauHoi', 'donVi', 'tapDuDieuKien', 'thoiGian', 'khuTrung', 'drilldown'];
@@ -7954,7 +7955,7 @@ check('PR-F · Sổ chỉ số: đúng hai mươi chỉ số (PR-N thêm pa-cho-
     for (const f of fields) {
       assert(typeof m[f] === 'string' && m[f].trim().length > 0, `Chỉ số ${m.id} thiếu trường "${f}"`);
     }
-    assert(['hoc-vien', 'case', 'phuong-an', 'bai-thi', 'tin-hieu', 'dot-test', 'nghia-vu', 'vi-pham', 'bien-phap'].includes(m.donVi), `${m.id}: đơn vị lạ "${m.donVi}"`);
+    assert(['hoc-vien', 'case', 'phuong-an', 'bai-thi', 'tin-hieu', 'dot-test', 'nghia-vu', 'vi-pham', 'bien-phap', 'luot-sos'].includes(m.donVi), `${m.id}: đơn vị lạ "${m.donVi}"`);
     assert(['hien-trang', 'phat-sinh-trong-ky', 'ket-qua-trong-ky'].includes(m.thoiGian), `${m.id}: thời gian lạ "${m.thoiGian}"`);
   }
   assert(domain.metricById('hv-co-case-mo')?.ten === 'Học viên có case đang mở', 'metricById phải tra đúng chỉ số');

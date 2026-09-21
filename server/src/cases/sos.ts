@@ -14,6 +14,7 @@ import { failingEntrySkills, type AttemptResult, type EntryBands } from '../fast
 import { weekStartOf } from '../fasttrack/attempts.ts';
 import { scoringModeOf } from '../fasttrack/skillSchedule.ts';
 import { announceAutoCase, createPresetPlan, isFastTrackMock, resyncUnconfirmedPresets } from './sosAuto.ts';
+import { syncSosCoordination } from '../yThuc/phoiHop.ts';
 import { mondayOf } from '../platform/week.ts';
 
 /**
@@ -276,6 +277,12 @@ export function raiseSignalsForResult(p: Principal, attempt: any, result: Attemp
    * từ ngày này, để điểm nhập muộn không làm giáo viên quá hạn ngay lúc điểm vừa công bố.
    */
   const detectedAt = weekStartOf(attempt) ?? demoToday();
+
+  /*
+   * PHỐI HỢP SOS (rulebook v3, P01–P03) — CHỈ Mock Test FT. Đồng bộ TRƯỚC các lối thoát sớm bên dưới: SOS hết (mức 0) cũng phải tự bỏ những việc
+   * điền sẵn chưa làm (P03). Điểm sửa qua sửa lại thì việc theo mức SOS thật; việc đã xong không bao giờ bị xoá.
+   */
+  if (isFastTrackMock(attempt, scoringModeOf(attempt))) syncSosCoordination(attempt, result.sosLevel);
 
   /*
    * HẠNG MỤC ĐÃ ĐẠT LẦN NÀY: ghi mốc "đã đạt kỳ vọng" và hạ mức, nhưng KHÔNG tự đóng case.
