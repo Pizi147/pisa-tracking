@@ -10,3 +10,6 @@ data/uploads/
 dist-server/
 oldrepo-wt/
 data/*.bak
+
+# Netlify CLI (netlify link / deploy --build) — chứa mã site và bản build, không đưa lên git
+.netlify/
