@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useApi } from '../../lib/useApi.ts';
+import { LA_BAN_CHINH } from '../../lib/banChinh.ts';
 import { api } from '../../lib/api.ts';
 import { useSession } from '../../lib/session.tsx';
 import { Alert, Field, Info, SectionNote } from '../../ui/ui.tsx';
@@ -14,7 +15,8 @@ type Account = {
 };
 type AuthInfo = {
   emailSuffix: string;
-  demoAdmin: { email: string; password: string };
+  /** Bản chính không gửi khoá này (không lộ mật khẩu mặc định). */
+  demoAdmin?: { email: string; password: string };
   skills: string[];
 };
 
@@ -84,7 +86,7 @@ function SetupHelp({ serverDown, onRetry }: { serverDown: boolean; onRetry: () =
  * Cả ba đường cùng tạo một phiên như nhau, nên không có hai cơ chế đăng nhập song song.
  */
 export default function WelcomePage() {
-  const accounts = useApi<Account[]>('/demo/accounts');
+  const accounts = useApi<Account[]>(LA_BAN_CHINH ? null : '/demo/accounts');
   const info = useApi<AuthInfo>('/auth/info');
   const [mode, setMode] = useState<'login' | 'register' | 'demo'>('login');
 
@@ -98,9 +100,9 @@ export default function WelcomePage() {
           <div className="w-9 h-9 rounded-lg bg-sky-300/12 border border-sky-300/40 grid place-items-center text-sky-200 font-bold">P</div>
           <div>
             <h1 className="text-xl font-semibold text-slate-100">PISA Progress</h1>
-            <div className="text-xs text-slate-500">Hệ thống quản lý học vụ và vận hành — bản demo chạy local</div>
+            <div className="text-xs text-slate-500">{LA_BAN_CHINH ? 'Hệ thống quản lý học vụ và vận hành' : 'Hệ thống quản lý học vụ và vận hành — bản demo chạy local'}</div>
           </div>
-          <div className="ml-auto"><Alert tone="warn">Dữ liệu demo</Alert></div>
+          {!LA_BAN_CHINH && <div className="ml-auto"><Alert tone="warn">Dữ liệu demo</Alert></div>}
         </div>
 
         {noData ? (
@@ -110,12 +112,12 @@ export default function WelcomePage() {
             <div className="flex flex-wrap gap-1 mt-5 mb-4 border-b pb-2" style={{ borderColor: 'var(--line)' }}>
               <Tab active={mode === 'login'} onClick={() => setMode('login')}>Đăng nhập</Tab>
               <Tab active={mode === 'register'} onClick={() => setMode('register')}>Giáo viên đăng ký</Tab>
-              <Tab active={mode === 'demo'} onClick={() => setMode('demo')}>Vào nhanh bằng tài khoản demo</Tab>
+              {!LA_BAN_CHINH && <Tab active={mode === 'demo'} onClick={() => setMode('demo')}>Vào nhanh bằng tài khoản demo</Tab>}
             </div>
 
             {mode === 'login' && <LoginForm info={info.data ?? null} />}
             {mode === 'register' && <RegisterForm info={info.data ?? null} onDone={() => setMode('login')} />}
-            {mode === 'demo' && <DemoAccounts accounts={accounts.data ?? []} loading={accounts.loading} />}
+            {!LA_BAN_CHINH && mode === 'demo' && <DemoAccounts accounts={accounts.data ?? []} loading={accounts.loading} />}
           </>
         )}
       </div>
@@ -174,7 +176,7 @@ function LoginForm({ info }: { info: AuthInfo | null }) {
         MẬT KHẨU DEMO HIỆN RÕ. Đây là bản demo nội bộ chạy trên máy của chính owner; giấu nó
         đi chỉ tạo ra một câu hỏi phải nhắn tin mới trả lời được.
       */}
-      {info && (
+      {info?.demoAdmin && (
         <SectionNote>
           Tài khoản <strong>Quản trị hệ thống</strong> mặc định: <code className="text-sky-200">{info.demoAdmin.email}</code>{' '}
           · mật khẩu <code className="text-sky-200">{info.demoAdmin.password}</code>. Mọi tài khoản mẫu khác

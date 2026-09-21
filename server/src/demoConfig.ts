@@ -1,5 +1,6 @@
 import { db } from './db.ts';
 import { nowIso, todayInBusinessTz, isIsoDate } from './util.ts';
+import { laBanChinh } from './moiTruong.ts';
 
 /**
  * Đồng hồ demo: mọi phép tính hạn/tuần dùng ngày này thay cho ngày thật,
@@ -35,13 +36,16 @@ export function setConfig(key: string, value: string) {
     .run(key, value, nowIso());
 }
 
-/** Ngày nghiệp vụ đang dùng: ngày demo nếu đã đặt, nếu không thì hôm nay theo giờ VN. */
+/** Ngày nghiệp vụ đang dùng: ngày demo nếu đã đặt, nếu không thì hôm nay theo giờ VN. Bản chính: LUÔN là ngày thật. */
 export function demoToday(): string {
+  if (laBanChinh()) return todayInBusinessTz();
   const v = getConfig('demo_date');
   return isIsoDate(v) ? v : todayInBusinessTz();
 }
 
 export function scenarioMode(): ScenarioMode {
+  /* Bản chính không có kịch bản giả lập lỗi — và trả sớm để khỏi tốn một lượt mạng tới Turso mỗi lần gọi. */
+  if (laBanChinh()) return 'normal';
   const v = getConfig('scenario_mode');
   return (['normal', 'loading', 'empty', 'error', 'save_failure'].includes(v)
     ? v
