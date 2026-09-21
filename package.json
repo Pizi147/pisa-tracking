@@ -13,6 +13,7 @@
     "build:server": "tsc -p tsconfig.build.json",
     "seed": "node scripts/check-node.mjs && npm run build:server && node dist-server/server/src/seed/run.js",
     "reset": "npm run seed",
+    "thu-turso": "npm run build:server && node dist-server/server/src/ops/thuTurso.js",
     "build": "tsc -p tsconfig.web.json --noEmit && npm run build:server && vite build",
     "typecheck": "tsc -p tsconfig.web.json --noEmit && tsc -p tsconfig.build.json --noEmit",
     "test": "npm run build:server && node dist-server/server/src/tests/run.js",
@@ -21,6 +22,7 @@
     "migrate": "node scripts/check-node.mjs && npm run build:server && node dist-server/server/src/migrate/run.js"
   },
   "dependencies": {
+    "@netlify/blobs": "11.1.0",
     "cookie-parser": "1.4.7",
     "express": "4.21.2",
     "libsql": "0.5.29",

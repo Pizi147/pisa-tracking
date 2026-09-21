@@ -685,7 +685,7 @@ api.post('/attachments/file', requireAuth, (req, res, next) => {
   uploadOne(req, res, (err: unknown) => {
     if (!err) return next();
     const code = (err as { code?: string }).code;
-    next(code === 'LIMIT_FILE_SIZE' ? new HttpError(413, 'Tệp quá lớn: tối đa 10 MB.') : new HttpError(400, 'Không đọc được tệp tải lên.'));
+    next(code === 'LIMIT_FILE_SIZE' ? new HttpError(413, 'Tệp quá lớn: tối đa 4 MB.') : new HttpError(400, 'Không đọc được tệp tải lên.'));
   });
 }, wrap((req) => {
   maybeSimulateSaveFailure();
@@ -700,20 +700,20 @@ api.post('/attachments/file', requireAuth, (req, res, next) => {
 }));
 
 /** Tải về — kiểm quyền XEM bản ghi chủ trước, luôn dạng tải về (không bao giờ hiển thị nội dung tệp trong trang). */
-api.get('/attachments/:id/download', requireAuth, wrap((req, res) => {
-  const o = attachmentSvc.openAttachment(principalOf(req), pInt(req, 'id'));
+api.get('/attachments/:id/download', requireAuth, wrap(async (req, res) => {
+  const o = await attachmentSvc.openAttachment(principalOf(req), pInt(req, 'id'));
   if (o.kind === 'link') { res.redirect(o.url); return undefined; }
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('Content-Security-Policy', "default-src 'none'; sandbox");
   res.setHeader('Content-Type', o.mimeType);
   res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${encodeURIComponent(o.downloadName)}`);
-  res.sendFile(o.absPath);
+  res.send(o.duLieu);
   return undefined;
 }));
 
-api.delete('/attachments/:id', requireAuth, wrap((req) => {
+api.delete('/attachments/:id', requireAuth, wrap(async (req) => {
   maybeSimulateSaveFailure();
-  attachmentSvc.removeAttachment(principalOf(req), pInt(req, 'id'));
+  await attachmentSvc.removeAttachment(principalOf(req), pInt(req, 'id'));
   return { ok: true };
 }));
 

@@ -1,0 +1,56 @@
+/**
+ * KHO TỆP — nơi cất nội dung tệp bằng chứng. Bảng `attachments` giữ metadata + `url` (= khoá trong kho).
+ * Máy dev: ổ đĩa `data/uploads/` như trước. Bản chính: Netlify Blobs (Netlify Functions không có ổ đĩa giữ lâu).
+ */
+import fs from 'node:fs';
+import path from 'node:path';
+import { laBanChinh } from '../moiTruong.ts';
+
+export interface KhoTep {
+  ghi(khoa: string, duLieu: Buffer, mime: string): Promise<void>;
+  doc(khoa: string): Promise<Buffer | null>;
+  xoa(khoa: string): Promise<void>;
+}
+
+export function khoTepODia(thuMuc: string): KhoTep {
+  const duongDan = (khoa: string) => {
+    const abs = path.resolve(thuMuc, khoa);
+    if (!abs.startsWith(path.resolve(thuMuc) + path.sep)) throw new Error('Khoá tệp không hợp lệ.');
+    return abs;
+  };
+  return {
+    async ghi(khoa, duLieu) { const p = duongDan(khoa); fs.mkdirSync(path.dirname(p), { recursive: true }); fs.writeFileSync(p, duLieu); },
+    async doc(khoa) { const p = duongDan(khoa); return fs.existsSync(p) ? fs.readFileSync(p) : null; },
+    async xoa(khoa) { fs.rmSync(duongDan(khoa), { force: true }); },
+  };
+}
+
+export function khoTepNetlify(): KhoTep {
+  return {
+    async ghi(khoa, duLieu, mime) {
+      const { getStore } = await import('@netlify/blobs');
+      /* Kiểu của @netlify/blobs 11.1.0 chỉ nhận string | ArrayBuffer | Blob — đưa đúng một ArrayBuffer vừa khít nội dung. */
+      await getStore('bang-chung').set(khoa, new Uint8Array(duLieu).buffer, { metadata: { mime } });
+    },
+    async doc(khoa) {
+      const { getStore } = await import('@netlify/blobs');
+      const ab = await getStore('bang-chung').get(khoa, { type: 'arrayBuffer' });
+      return ab ? Buffer.from(ab) : null;
+    },
+    async xoa(khoa) {
+      const { getStore } = await import('@netlify/blobs');
+      await getStore('bang-chung').delete(khoa);
+    },
+  };
+}
+
+let khoKiemThu: KhoTep | null = null;
+export function datKhoTepChoKiemThu(k: KhoTep | null) { khoKiemThu = k; }
+
+let khoODiaMacDinh: KhoTep | null = null;
+export function khoTepHienTai(thuMucODia?: string): KhoTep {
+  if (khoKiemThu) return khoKiemThu;
+  if (laBanChinh()) return khoTepNetlify();
+  if (!khoODiaMacDinh) khoODiaMacDinh = khoTepODia(thuMucODia ?? path.resolve('data', 'uploads'));
+  return khoODiaMacDinh;
+}

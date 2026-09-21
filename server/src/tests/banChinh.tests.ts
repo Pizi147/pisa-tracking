@@ -4,10 +4,13 @@ export type BanChinhTestKit = {
   checkAsync: (name: string, fn: () => Promise<void>) => Promise<void>;
   assert: (cond: unknown, msg: string) => void;
   assertThrows: (fn: () => unknown, match: RegExp, msg: string) => void;
+  /** Kết nối database demo và principal Quản trị hệ thống — cho phép kiểm kho tệp (Task 4). */
+  conn: import('libsql').Database;
+  admin: import('../permissions.ts').Principal;
 };
 
 export async function runBanChinhTests(t: BanChinhTestKit) {
-  const { check, assert, assertThrows } = t;
+  const { check, checkAsync, assert, assertThrows } = t;
   console.log('\nPR-Z2 · 1. Cấu hình kết nối theo môi trường');
   const { cauHinhDb } = await import('../moiTruong.ts');
 
@@ -44,4 +47,32 @@ export async function runBanChinhTests(t: BanChinhTestKit) {
     assert(r.status !== 0 && r.status !== null, `Mã thoát phải khác 0, nhận ${r.status}`);
     assert(/TỪ CHỐI/.test(r.stderr), `stderr phải có chữ TỪ CHỐI, nhận: ${String(r.stderr).slice(-300)}`);
   });
+
+  console.log('\nPR-Z2 · 2. Kho tệp');
+  const { datKhoTepChoKiemThu } = await import('../platform/khoTep.ts');
+  const khoGia = new Map<string, Buffer>();
+  datKhoTepChoKiemThu({
+    async ghi(k, d) { khoGia.set(k, d); },
+    async doc(k) { return khoGia.get(k) ?? null; },
+    async xoa(k) { khoGia.delete(k); },
+  });
+  const { ATTACHMENT_MAX_BYTES } = await import('../../../shared/domain/attachments.ts');
+  check('PR-Z2 · Giới hạn tệp là 4 MB (Netlify Functions nhận tối đa ~6 MB mỗi lần gọi)', () => {
+    assert(ATTACHMENT_MAX_BYTES === 4 * 1024 * 1024, `Đang là ${ATTACHMENT_MAX_BYTES}`);
+  });
+  const attachmentsSvc = await import('../platform/attachments.ts');
+  await checkAsync('PR-Z2 · Tệp đi qua KHO (không ghi thẳng ổ đĩa): thêm → nằm trong kho dưới khoá `<loại>/<tên ngẫu nhiên>`; mở → đúng nội dung; xoá → kho mất tệp', async () => {
+    const c = t.conn.prepare('SELECT id FROM sos_cases ORDER BY id LIMIT 1').get() as { id: number } | undefined;
+    assert(c, 'Bộ demo phải có ít nhất một case học thuật');
+    const truoc = khoGia.size;
+    const row = await attachmentsSvc.addFile(t.admin, { ownerType: 'sos_case', ownerId: c!.id, fileName: 'z2.pdf', data: Buffer.from('xin chao') });
+    assert(khoGia.size === truoc + 1, 'Thêm tệp phải ghi đúng một mục vào kho');
+    const khoa = [...khoGia.keys()].pop()!;
+    assert(/^sos_case\/[0-9a-f-]{36}\.pdf$/.test(khoa), `Khoá trong kho sai dạng: ${khoa}`);
+    const o = await attachmentsSvc.openAttachment(t.admin, row.id);
+    assert(o.kind === 'file' && o.duLieu.toString() === 'xin chao', 'Mở tệp phải ra đúng nội dung đã lưu');
+    await attachmentsSvc.removeAttachment(t.admin, row.id);
+    assert(khoGia.size === truoc, 'Xoá dòng thì tệp trong kho cũng phải được xoá');
+  });
+  datKhoTepChoKiemThu(null);
 }

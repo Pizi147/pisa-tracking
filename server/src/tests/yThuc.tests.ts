@@ -12,6 +12,7 @@ import type { Principal } from '../permissions.ts';
 
 export type YThucTestKit = {
   check: (name: string, fn: () => void) => void;
+  checkAsync: (name: string, fn: () => Promise<void>) => Promise<void>;
   assert: (cond: unknown, msg: string) => void;
   assertThrows: (fn: () => unknown, match: RegExp, msg: string) => void;
   conn: any;
@@ -1142,7 +1143,7 @@ export async function runYThucTests(t: YThucTestKit) {
 
   console.log('\nPR-J · 10. Bằng chứng của vi phạm và biện pháp; ba khu vực của lớp (J8)');
 
-  check('PR-J · J8 Kho tệp có nơi chủ cho vi phạm và biện pháp: quyền xem = quyền xem học viên, quyền thêm/gỡ = quyền sửa bản ghi chủ (B10: biện pháp đã thực hiện vẫn bổ sung được)', () => {
+  await t.checkAsync('PR-J · J8 Kho tệp có nơi chủ cho vi phạm và biện pháp: quyền xem = quyền xem học viên, quyền thêm/gỡ = quyền sửa bản ghi chủ (B10: biện pháp đã thực hiện vẫn bổ sung được)', async () => {
     const st = makeStudent('J8 tệp');
     const [v] = violations(st.id, 1);
     /* Vi phạm: người ghi và GVCN thêm được; đồng nghiệp chỉ xem. */
@@ -1154,7 +1155,7 @@ export async function runYThucTests(t: YThucTestKit) {
     assertThrows(() => attachmentsSvc.listAttachments(P.cpManager, 'violation', v), /phạm vi|quyền/, 'Quản lý chi nhánh khác xem được bằng chứng');
     assert(attachmentsSvc.addLink(gvcn, { ownerType: 'violation', ownerId: v, url: 'https://example.com/gvcn', displayName: 'GVCN bổ sung' }).id > 0, 'GVCN thêm được');
     assert((viol.violationDetail(gvbm, v) as any).attachmentCount === 2, 'Chi tiết vi phạm đếm đúng tệp');
-    attachmentsSvc.removeAttachment(gvbm, own.id);
+    await attachmentsSvc.removeAttachment(gvbm, own.id);
     /* Biện pháp: GVBM đọc được, không thêm được; GVCN thêm được kể cả khi đã thực hiện. */
     const m = mk(gvcn, st.id, 'talk_short', [v]);
     assertThrows(() => attachmentsSvc.addLink(gvbm, { ownerType: 'discipline_measure', ownerId: m.id, url: 'https://example.com/y', displayName: 'y' }), /quyền/, 'GVBM thêm được bằng chứng cho biện pháp');
@@ -1162,7 +1163,7 @@ export async function runYThucTests(t: YThucTestKit) {
     assert((attachmentsSvc.listAttachments(gvbm, 'discipline_measure', m.id) as any[]).length === 1, 'GVBM đọc được bằng chứng của biện pháp');
     confirm(gvcn, m.id);
     assert(link(gvcn, m.id, 'Bổ sung sau khi thực hiện').id > 0, 'Biện pháp đã thực hiện vẫn bổ sung được bằng chứng');
-    attachmentsSvc.removeAttachment(gvcn, file.id);
+    await attachmentsSvc.removeAttachment(gvcn, file.id);
     assert(one("SELECT COUNT(*) n FROM audit_logs WHERE action = 'attachment.delete' AND entity_id = ?", file.id) === 1, 'Gỡ tệp của biện pháp có audit');
   });
 

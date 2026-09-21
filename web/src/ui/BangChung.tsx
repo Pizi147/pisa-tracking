@@ -55,12 +55,12 @@ export function BangChung({ ownerType, ownerId, canEdit, tieuDe = 'Bằng chứn
   const send = async (key: number, file: File) => {
     patchUpload(key, { state: 'uploading', message: undefined });
     const ext = file.name.includes('.') ? file.name.split('.').pop()!.toLowerCase() : '';
-    /* Báo lỗi SỚM ở máy người dùng cho hai lỗi chắc chắn — khỏi gửi 10 MB rồi mới bị từ chối. */
+    /* Báo lỗi SỚM ở máy người dùng cho hai lỗi chắc chắn — khỏi gửi cả tệp rồi mới bị từ chối. */
     if (!ATTACHMENT_EXTENSIONS.includes(ext)) {
       patchUpload(key, { state: 'error', message: `Không nhận loại tệp này. Chỉ nhận: ${ATTACHMENT_EXTENSIONS.join(', ')}.` });
       return;
     }
-    if (file.size > ATTACHMENT_MAX_BYTES) { patchUpload(key, { state: 'error', message: 'Tệp quá lớn: tối đa 10 MB.' }); return; }
+    if (file.size > ATTACHMENT_MAX_BYTES) { patchUpload(key, { state: 'error', message: 'Tệp quá lớn: tối đa 4 MB.' }); return; }
     try {
       const form = new FormData();
       form.append('ownerType', ownerType);

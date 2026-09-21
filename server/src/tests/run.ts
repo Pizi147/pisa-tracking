@@ -104,6 +104,16 @@ function assertThrows(fn: () => unknown, match: RegExp, msg: string) {
   assert(threw, `${msg} — thao tác đáng lẽ phải bị từ chối nhưng lại thành công`);
 }
 
+/** Như `assertThrows` nhưng cho hàm trả Promise (ba hàm tệp async từ PR-Z2). Không ném → fail; ném → thông báo phải khớp. */
+async function assertRejects(fn: () => Promise<unknown>, match: RegExp, msg: string) {
+  let threw = false;
+  try { await fn(); } catch (e: any) {
+    threw = true;
+    assert(match.test(e.message), `${msg} — thông báo lỗi không khớp: "${e.message}"`);
+  }
+  assert(threw, `${msg} — thao tác đáng lẽ phải bị từ chối nhưng lại thành công`);
+}
+
 const conn = db();
 const TODAY = demoToday();
 const classId = (code: string) => (conn.prepare('SELECT id FROM classes WHERE code = ?').get(code) as any).id;
@@ -189,7 +199,7 @@ console.log('\n0. Bộ demo vừa dựng có nhất quán không');
 /* PR-T (rulebook v3): tình huống demo §9 — phải soi TRƯỚC mọi phép kiểm khác, vì nhiều phép kiểm chọn học viên "sạch case" rồi ghi thêm vào chính những em đó. */
 {
   const { runSosV3DemoTests } = await import('./sosV3.tests.ts');
-  await runSosV3DemoTests({ check, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
+  await runSosV3DemoTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 }
 
 check('[12.1-16] Bộ demo nhất quán: không có sự kiện "đã xong" nào nằm ở tương lai', () => {
@@ -9307,49 +9317,55 @@ check('PR-N · N5 Liên kết: thêm được vào case; chỉ nhận http/https
   assert(noName.displayName === 'example.com', `Không có tên thì lấy tên miền làm tên hiển thị, đang "${noName.displayName}"`);
 });
 
-check('PR-N · N5 Tệp: lưu ngoài cơ sở dữ liệu, không lộ đường dẫn máy chủ, ghi kích thước; chỉ nhận đuôi an toàn và tối đa 10 MB', () => {
+/* PR-Z2: nơi tệp nằm trên đĩa (kho ổ đĩa của máy dev) = thư mục tải lên + cột `url` của dòng tệp. */
+const prnAttAbsPath = (id: number) => path.resolve(attachmentsSvc.uploadsDir(), (conn.prepare('SELECT url FROM attachments WHERE id = ?').get(id) as any).url as string);
+
+await checkAsync('PR-N · N5 Tệp: lưu ngoài cơ sở dữ liệu, không lộ đường dẫn máy chủ, ghi kích thước; chỉ nhận đuôi an toàn và tối đa 10 MB', async () => {
   const c = prnAttCase(authSubjectSkill, 'Tệp');
   const data = Buffer.from('nội dung bài viết của học viên');
-  const row = attachmentsSvc.addFile(P.mbManager, { ownerType: 'sos_case', ownerId: c.id, fileName: 'Bài viết tuần 3.pdf', mimeType: 'application/pdf', data }) as any;
+  const row = await attachmentsSvc.addFile(P.mbManager, { ownerType: 'sos_case', ownerId: c.id, fileName: 'Bài viết tuần 3.pdf', mimeType: 'application/pdf', data }) as any;
   assert(row.kind === 'file' && row.displayName === 'Bài viết tuần 3.pdf' && row.sizeBytes === data.length, `Dòng tệp sai: ${JSON.stringify(row)}`);
   assert(row.href === `/api/attachments/${row.id}/download`, 'Tệp phải tải qua đường có kiểm quyền, không phải đường dẫn thô');
   assert(!JSON.stringify(row).includes('uploads') && !('url' in row), 'Không được lộ đường dẫn lưu trên máy chủ');
-  const opened = attachmentsSvc.openAttachment(P.mbManager, row.id) as any;
-  assert(opened.kind === 'file' && fs.readFileSync(opened.absPath).equals(data), 'Tải về phải ra đúng nội dung đã lưu');
-  assert(path.resolve(opened.absPath).startsWith(path.resolve(attachmentsSvc.uploadsDir())), 'Tệp phải nằm trong thư mục tải lên');
+  const opened = await attachmentsSvc.openAttachment(P.mbManager, row.id) as any;
+  /* PR-Z2: đường tải trả NỘI DUNG (`duLieu`) thay vì `absPath`; vị trí trên đĩa tính từ cột `url` — cùng điều được kiểm. */
+  const absPath = prnAttAbsPath(row.id);
+  assert(opened.kind === 'file' && opened.duLieu.equals(data) && fs.readFileSync(absPath).equals(data), 'Tải về phải ra đúng nội dung đã lưu');
+  assert(path.resolve(absPath).startsWith(path.resolve(attachmentsSvc.uploadsDir())), 'Tệp phải nằm trong thư mục tải lên');
   for (const bad of ['virus.exe', 'trang.html', 'hinh.svg', 'run.sh', 'noext', '../../etc/passwd']) {
-    assertThrows(() => attachmentsSvc.addFile(P.mbManager, { ownerType: 'sos_case', ownerId: c.id, fileName: bad, data: Buffer.from('x') }), /loại tệp|đuôi|không nhận/i, `Đã nhận tệp "${bad}"`);
+    await assertRejects(() => attachmentsSvc.addFile(P.mbManager, { ownerType: 'sos_case', ownerId: c.id, fileName: bad, data: Buffer.from('x') }), /loại tệp|đuôi|không nhận/i, `Đã nhận tệp "${bad}"`);
   }
-  assertThrows(() => attachmentsSvc.addFile(P.mbManager, { ownerType: 'sos_case', ownerId: c.id, fileName: 'lon.pdf', data: Buffer.alloc(attachmentsSvc.MAX_FILE_BYTES + 1) }), /10 ?MB|dung lượng|quá lớn/i, 'Đã nhận tệp quá lớn');
-  assertThrows(() => attachmentsSvc.addFile(P.mbManager, { ownerType: 'sos_case', ownerId: c.id, fileName: 'rong.pdf', data: Buffer.alloc(0) }), /rỗng/i, 'Đã nhận tệp rỗng');
-  attachmentsSvc.removeAttachment(P.mbManager, row.id);
-  assert(!fs.existsSync(opened.absPath), 'Xoá dòng thì tệp trên đĩa cũng phải được xoá');
+  await assertRejects(() => attachmentsSvc.addFile(P.mbManager, { ownerType: 'sos_case', ownerId: c.id, fileName: 'lon.pdf', data: Buffer.alloc(attachmentsSvc.MAX_FILE_BYTES + 1) }), /10 ?MB|dung lượng|quá lớn/i, 'Đã nhận tệp quá lớn');
+  await assertRejects(() => attachmentsSvc.addFile(P.mbManager, { ownerType: 'sos_case', ownerId: c.id, fileName: 'rong.pdf', data: Buffer.alloc(0) }), /rỗng/i, 'Đã nhận tệp rỗng');
+  await attachmentsSvc.removeAttachment(P.mbManager, row.id);
+  assert(!fs.existsSync(absPath), 'Xoá dòng thì tệp trên đĩa cũng phải được xoá');
 });
 
-check('PR-N · N5 Tên tệp có đường dẫn (../) không bao giờ làm tệp rơi ra ngoài thư mục tải lên và không lộ vào tên hiển thị', () => {
+await checkAsync('PR-N · N5 Tên tệp có đường dẫn (../) không bao giờ làm tệp rơi ra ngoài thư mục tải lên và không lộ vào tên hiển thị', async () => {
   const c = prnAttCase(authSubjectSkill, 'Đường dẫn');
   for (const evil of ['../../x.pdf', '..\\..\\y.pdf', '/etc/z.pdf']) {
     let row: any = null;
-    try { row = attachmentsSvc.addFile(P.mbManager, { ownerType: 'sos_case', ownerId: c.id, fileName: evil, data: Buffer.from('x') }); } catch { /* bị từ chối cũng là kết quả an toàn */ }
+    try { row = await attachmentsSvc.addFile(P.mbManager, { ownerType: 'sos_case', ownerId: c.id, fileName: evil, data: Buffer.from('x') }); } catch { /* bị từ chối cũng là kết quả an toàn */ }
     if (!row) continue;
-    const opened = attachmentsSvc.openAttachment(P.mbManager, row.id) as any;
-    assert(path.resolve(opened.absPath).startsWith(path.resolve(attachmentsSvc.uploadsDir()) + path.sep), `Tệp "${evil}" nằm ngoài thư mục tải lên: ${opened.absPath}`);
+    const opened = await attachmentsSvc.openAttachment(P.mbManager, row.id) as any;
+    const absPath = prnAttAbsPath(row.id);
+    assert(opened.kind === 'file' && fs.existsSync(absPath) && path.resolve(absPath).startsWith(path.resolve(attachmentsSvc.uploadsDir()) + path.sep), `Tệp "${evil}" nằm ngoài thư mục tải lên: ${absPath}`);
     assert(!/[\\/]|\.\./.test(row.displayName), `Tên hiển thị còn dấu đường dẫn: "${row.displayName}"`);
   }
 });
 
-check('PR-N · N5 Quyền xem tệp = quyền xem BẢN GHI CHỦ: tài khoản ngoài phạm vi bị từ chối ở danh sách, ở đường tải và ở đường xoá', () => {
+await checkAsync('PR-N · N5 Quyền xem tệp = quyền xem BẢN GHI CHỦ: tài khoản ngoài phạm vi bị từ chối ở danh sách, ở đường tải và ở đường xoá', async () => {
   const c = prnAttCase(authSubjectSkill, 'Quyền Xem');
-  const row = attachmentsSvc.addFile(P.mbManager, { ownerType: 'sos_case', ownerId: c.id, fileName: 'a.pdf', data: Buffer.from('bí mật') }) as any;
+  const row = await attachmentsSvc.addFile(P.mbManager, { ownerType: 'sos_case', ownerId: c.id, fileName: 'a.pdf', data: Buffer.from('bí mật') }) as any;
   assert((attachmentsSvc.listAttachments(P.mbManager, 'sos_case', c.id) as any[]).length === 1, 'Quản lý MB phải xem được');
   assert((attachmentsSvc.listAttachments(P.subjectTeacher, 'sos_case', c.id) as any[]).length === 1, 'GV dạy lớp phải xem được');
   assertThrows(() => attachmentsSvc.listAttachments(P.cpManager, 'sos_case', c.id), /phạm vi|quyền/, 'Quản lý CP xem danh sách tệp của case MB');
-  assertThrows(() => attachmentsSvc.openAttachment(P.cpManager, row.id), /phạm vi|quyền/, 'Quản lý CP tải được tệp của case MB — đường tải bỏ qua kiểm quyền');
-  assertThrows(() => attachmentsSvc.removeAttachment(P.cpManager, row.id), /phạm vi|quyền/, 'Quản lý CP xoá được tệp của case MB');
-  attachmentsSvc.removeAttachment(P.mbManager, row.id);
+  await assertRejects(() => attachmentsSvc.openAttachment(P.cpManager, row.id), /phạm vi|quyền/, 'Quản lý CP tải được tệp của case MB — đường tải bỏ qua kiểm quyền');
+  await assertRejects(() => attachmentsSvc.removeAttachment(P.cpManager, row.id), /phạm vi|quyền/, 'Quản lý CP xoá được tệp của case MB');
+  await attachmentsSvc.removeAttachment(P.mbManager, row.id);
 });
 
-check('PR-N · N5 Quyền thêm/xoá = quyền SỬA bản ghi chủ (AUTH-01/C02): GV đúng môn thêm được, GV môn khác chỉ xem', () => {
+await checkAsync('PR-N · N5 Quyền thêm/xoá = quyền SỬA bản ghi chủ (AUTH-01/C02): GV đúng môn thêm được, GV môn khác chỉ xem', async () => {
   const own = prnAttCase(authSubjectSkill, 'Đúng Môn');
   const other = prnAttCase(authMismatchSkill, 'Trái Môn');
   const ok = attachmentsSvc.addLink(P.subjectTeacher, { ownerType: 'sos_case', ownerId: own.id, url: 'https://example.com/ok', displayName: 'Đúng môn' }) as any;
@@ -9357,26 +9373,26 @@ check('PR-N · N5 Quyền thêm/xoá = quyền SỬA bản ghi chủ (AUTH-01/C0
   assertThrows(() => attachmentsSvc.addLink(P.subjectTeacher, { ownerType: 'sos_case', ownerId: other.id, url: 'https://example.com/no', displayName: 'Trái môn' }), /quyền/, 'GV môn khác đính kèm vào case trái môn');
   const mgr = attachmentsSvc.addLink(P.mbManager, { ownerType: 'sos_case', ownerId: other.id, url: 'https://example.com/mgr', displayName: 'Quản lý' }) as any;
   assert((attachmentsSvc.listAttachments(P.subjectTeacher, 'sos_case', other.id) as any[]).some((a) => a.id === mgr.id), 'GV môn khác vẫn phải XEM được (xem không cần đúng môn)');
-  assertThrows(() => attachmentsSvc.removeAttachment(P.subjectTeacher, mgr.id), /quyền/, 'GV môn khác xoá được tệp của case trái môn');
-  attachmentsSvc.removeAttachment(P.subjectTeacher, ok.id);
+  await assertRejects(() => attachmentsSvc.removeAttachment(P.subjectTeacher, mgr.id), /quyền/, 'GV môn khác xoá được tệp của case trái môn');
+  await attachmentsSvc.removeAttachment(P.subjectTeacher, ok.id);
 });
 
-check('PR-N · N5 Xoá tệp có AUDIT (ai, xoá cái gì, của bản ghi nào) — không phải một dấu X im lặng; xoá hai lần không lỗi lặng', () => {
+await checkAsync('PR-N · N5 Xoá tệp có AUDIT (ai, xoá cái gì, của bản ghi nào) — không phải một dấu X im lặng; xoá hai lần không lỗi lặng', async () => {
   const c = prnAttCase(authSubjectSkill, 'Audit Xoá');
-  const row = attachmentsSvc.addFile(P.mbManager, { ownerType: 'sos_case', ownerId: c.id, fileName: 'bang-chung.pdf', data: Buffer.from('abc') }) as any;
+  const row = await attachmentsSvc.addFile(P.mbManager, { ownerType: 'sos_case', ownerId: c.id, fileName: 'bang-chung.pdf', data: Buffer.from('abc') }) as any;
   const before = (conn.prepare("SELECT COUNT(*) n FROM audit_logs WHERE action = 'attachment.delete'").get() as any).n;
-  attachmentsSvc.removeAttachment(P.mbManager, row.id);
+  await attachmentsSvc.removeAttachment(P.mbManager, row.id);
   const log = conn.prepare("SELECT * FROM audit_logs WHERE action = 'attachment.delete' ORDER BY id DESC LIMIT 1").get() as any;
   assert((conn.prepare("SELECT COUNT(*) n FROM audit_logs WHERE action = 'attachment.delete'").get() as any).n === before + 1, 'Phải thêm đúng một dòng audit');
   assert(log.actor_user_id === P.mbManager.userId && log.entity_label === 'bang-chung.pdf' && /sos_case/.test(String(log.before_json)) && String(log.before_json).includes(String(c.id)),
     `Audit thiếu người xoá, tên tệp hoặc bản ghi chủ: ${JSON.stringify(log)}`);
   assert((conn.prepare('SELECT COUNT(*) n FROM attachments WHERE id = ?').get(row.id) as any).n === 0, 'Dòng phải mất khỏi bảng');
-  assertThrows(() => attachmentsSvc.removeAttachment(P.mbManager, row.id), /Không tìm thấy/, 'Xoá tệp đã xoá phải báo không tìm thấy');
+  await assertRejects(() => attachmentsSvc.removeAttachment(P.mbManager, row.id), /Không tìm thấy/, 'Xoá tệp đã xoá phải báo không tìm thấy');
   const added = (conn.prepare("SELECT COUNT(*) n FROM audit_logs WHERE action = 'attachment.add'").get() as any).n;
   assert(added >= 1, 'Thêm tệp cũng phải để lại dấu vết');
 });
 
-check('PR-N · N5 Phương án thừa hưởng quyền của case chứa nó; vi phạm và biện pháp (đã có nơi chủ từ PR-J 21/09/2026) và loại lạ bị từ chối rõ ràng khi bản ghi chủ không có', () => {
+await checkAsync('PR-N · N5 Phương án thừa hưởng quyền của case chứa nó; vi phạm và biện pháp (đã có nơi chủ từ PR-J 21/09/2026) và loại lạ bị từ chối rõ ràng khi bản ghi chủ không có', async () => {
   const c = prnAttCase(authSubjectSkill, 'Phương Án');
   const iv = Number(conn.prepare(`INSERT INTO case_interventions (case_id, kind, description, status, created_at) VALUES (?, 'tutor', 'PRN phương án có bằng chứng', 'planned', ?)`).run(c.id, nowIsoPrn()).lastInsertRowid);
   const row = attachmentsSvc.addLink(P.mbManager, { ownerType: 'case_intervention', ownerId: iv, url: 'https://example.com/pa', displayName: 'Kế hoạch tutor' }) as any;
@@ -9388,24 +9404,24 @@ check('PR-N · N5 Phương án thừa hưởng quyền của case chứa nó; vi
     assertThrows(() => attachmentsSvc.listAttachments(P.admin, t, 999999), /Không tìm thấy/, `Loại "${t}" phải kiểm bản ghi chủ`);
   }
   assertThrows(() => attachmentsSvc.listAttachments(P.admin, 'khong_co', 1), /không hợp lệ|chưa hỗ trợ/, 'Loại lạ');
-  attachmentsSvc.removeAttachment(P.mbManager, row.id);
+  await attachmentsSvc.removeAttachment(P.mbManager, row.id);
 });
 
 // ==================================================================== PR-J (Ý thức: Vi phạm và Biện pháp xử lý)
 
 /* Phép kiểm của module thứ chín ở file riêng — xem đầu `yThuc.tests.ts`. */
 const { runYThucTests } = await import('./yThuc.tests.ts');
-await runYThucTests({ check, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
+await runYThucTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
 // ==================================================================== PR-T (rulebook v3: SOS tự tạo Case · Phối hợp SOS · xoá vi phạm)
 
 const { runSosV3Tests } = await import('./sosV3.tests.ts');
-await runSosV3Tests({ check, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
+await runSosV3Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
 // ==================================================================== PR-Z2 (bản chính trên Netlify + Turso)
 
 const { runBanChinhTests } = await import('./banChinh.tests.ts');
-await runBanChinhTests({ check, checkAsync, assert, assertThrows });
+await runBanChinhTests({ check, checkAsync, assert, assertThrows, conn, admin: P.admin });
 
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0

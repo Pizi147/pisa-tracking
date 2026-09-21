@@ -572,10 +572,10 @@ Lý do từng sửa đổi (đã tái hiện ở phép thử 21/09):
   `async` và trả `{ kind: 'file'; duLieu: Buffer; mimeType; downloadName } | { kind: 'link'; url }`, `removeAttachment` → `async`.
   `purgeAttachmentsOf` **giữ đồng bộ** (xem Step 5).
 
-- [ ] **Step 1:** `npm install @netlify/blobs@11.1.0 --save-exact` (🆕 22/09: bản mới nhất đã kiểm; cần Node ≥ 22.12 —
+- [x] **Step 1:** `npm install @netlify/blobs@11.1.0 --save-exact` (🆕 22/09: bản mới nhất đã kiểm; cần Node ≥ 22.12 —
       máy này Node 24, Netlify đặt Node 22 ở Task 5). Có bản mới hơn cũng **giữ 11.1.0**. Ghi số bản vào Nhật ký.
       Đọc README của gói trong `node_modules/@netlify/blobs/README.md` phần **Lambda compatibility mode** (`connectLambda`).
-- [ ] **Step 2: Phép kiểm đỏ** — thêm vào `banChinh.tests.ts` (dùng kho giả trong bộ nhớ, không cần mạng):
+- [x] **Step 2: Phép kiểm đỏ** — thêm vào `banChinh.tests.ts` (dùng kho giả trong bộ nhớ, không cần mạng):
   ```ts
   console.log('\nPR-Z2 · 2. Kho tệp');
   const { datKhoTepChoKiemThu } = await import('../platform/khoTep.ts');
@@ -594,8 +594,8 @@ Lý do từng sửa đổi (đã tái hiện ở phép thử 21/09):
   vào kit nếu cần — **ghi thay đổi kit vào Nhật ký**), gọi `addFile` cho một case học thuật có sẵn trong bộ demo với
   `Buffer.from('xin chao')`, rồi `openAttachment` → `duLieu.toString() === 'xin chao'`; `removeAttachment` →
   `khoGia.size` giảm 1. Cuối nhóm: `datKhoTepChoKiemThu(null)`.
-- [ ] **Step 3:** `npm test` → đỏ. Ghi Nhật ký.
-- [ ] **Step 4: Tạo `server/src/platform/khoTep.ts`:**
+- [x] **Step 3:** `npm test` → đỏ. Ghi Nhật ký.
+- [x] **Step 4: Tạo `server/src/platform/khoTep.ts`:**
   ```ts
   /**
    * KHO TỆP — nơi cất nội dung tệp bằng chứng. Bảng `attachments` giữ metadata + `url` (= khoá trong kho).
@@ -653,7 +653,7 @@ Lý do từng sửa đổi (đã tái hiện ở phép thử 21/09):
     return khoODiaMacDinh;
   }
   ```
-- [ ] **Step 5: Sửa `server/src/platform/attachments.ts`** — thay mọi `fs.*` bằng kho:
+- [x] **Step 5: Sửa `server/src/platform/attachments.ts`** — thay mọi `fs.*` bằng kho:
   - `addFile`: kiểm quyền và kích thước **như cũ**, rồi `await khoTepHienTai(uploadsDir()).ghi(khoa, input.data, mime)` với
     `khoa = \`${input.ownerType}/${stored}\`` (**đúng** định dạng `url` đang lưu ở bảng — kiểm lại bằng dòng hiện tại
     `path.join(dir, stored)` và giá trị `url` được INSERT), sau đó INSERT dòng bảng; INSERT lỗi → `await kho.xoa(khoa)` rồi ném lại.
@@ -692,9 +692,11 @@ Lý do từng sửa đổi (đã tái hiện ở phép thử 21/09):
        — chỉ còn trong `khoTep.ts` (kho ổ đĩa). Còn chỗ khác trên đường API → ghi Nhật ký, đưa qua kho.
   - `shared/domain/attachments.ts`: `ATTACHMENT_MAX_BYTES = 4 * 1024 * 1024`; thông báo lỗi `'Tệp quá lớn: tối đa 4 MB.'`
     (tìm và đổi **mọi** chỗ ghi "10 MB": `grep -rn "10 MB" server web shared`).
-- [ ] **Step 6: Route tải xuống** (`server/src/routes/index.ts`, `GET /attachments/:id/download`): `const o = await ...`;
+- [x] **Step 6: Route tải xuống** (`server/src/routes/index.ts`, `GET /attachments/:id/download`): `const o = await ...`;
       thay `res.sendFile(o.absPath)` bằng `res.send(o.duLieu)`. Giữ nguyên ba header an toàn. Các route thêm/xoá tệp: thêm `await`.
-- [ ] **Step 7:** `npm run check` xanh (các phép N5 cũ của PR-N phải còn xanh — chúng chạy với kho ổ đĩa). Commit:
+- [x] **Step 7:** `npm run check` xanh (các phép N5 cũ của PR-N phải còn xanh — chúng chạy với kho ổ đĩa).
+      🆕 22/09: 7 phép cũ chuyển sang checkAsync + await, điều kiện kiểm giữ nguyên (ba hàm tệp thành async nên
+      `check(...)` đồng bộ không còn gọi được — chi tiết và danh sách 7 phép ở Nhật ký, dòng Task 4). Commit:
       `PR-Z2 (4): kho tệp — ổ đĩa ở máy dev, Netlify Blobs ở bản chính; giới hạn 4 MB`.
 
 ---
@@ -1301,3 +1303,6 @@ thử). Hỏi rõ từng thứ; **không** dùng database thử làm bản chín
 | 22/09 | 1 | **581/581** sau Step 1–7 + 3b. `libsql@0.5.29`; `package-lock.json` đã có sẵn mục `@libsql/linux-x64-gnu`. Kiểu `Database.Database` của libsql được `tsc` chấp nhận nguyên — không phải đổi. **Step 4:** `.transaction(` ngoài `db.ts` chỉ có `migrate.ts:61` và `:237` → giữ nguyên cả hai, không đổi chỗ nào. **Step 6:** `sosV3.tests.ts` chỉ dùng `:memory:` (không có thư mục tạm) → chỉ đổi import; `yThuc.tests.ts` đã `.close()` đủ trước khi xoá, chỉ bọc `try/catch` quanh `rmSync`. **Step 2:** grep `better-sqlite3` còn đúng 2 dòng — đều là **chú thích do plan quy định nguyên văn** trong `db.ts` (giải thích khác biệt với libsql), không phải import. Bất ngờ nhỏ: `npm` bản mới in cảnh báo `install-scripts … esbuild` — vô hại, check vẫn chạy. |
 | 22/09 | 2 | **586/586** (= N0 + 5). **ĐỎ trước khi viết mã (TDD):** (a) ba phép cấu hình — đỏ ở dạng `tsc` TS2307 `Cannot find module '../moiTruong.ts'` (harness build bằng tsc trước khi chạy nên thiếu module là hỏng build, không phải ✗ từng phép); (b) sau khi có `moiTruong.ts` + `db.ts`: 4 phép xanh (3 cấu hình + `_metadata`), phép chặn seed **✗** `stderr phải có chữ TỪ CHỐI` (seed chạy thẳng vào URL giả rồi sập) → thêm chặn ở `seed/run.ts` → xanh. **Tự quyết:** (1) đăng ký `runBanChinhTests` sau `runSosV3Tests` (file kiểm mới nhất) thay vì ngay sau `runYThucTests` — giữ thứ tự thời gian các PR, không ảnh hưởng kết quả. (2) `Database.Options` là tên kiểu hợp lệ của libsql → dùng đúng như plan. (3) Lệnh `reset` chỉ là `npm run seed` → cùng một chặn. (4) Phép chặn seed đặt `PISA_CHO_PHEP_SEED_TURSO=''` trong env con để máy nào lỡ có biến đó cũng không làm phép này sai. Files chạm thêm theo Step 5b: `server/src/platform/attachments.ts`. |
 | 22/09 | 3 · Step 1 🛑 | **DỪNG — chờ chủ sản phẩm.** `netlify status`: site `pisa-tracking` (đã nối, đã đăng nhập). `netlify env:list`: đủ ba biến `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN`, `BAN_CHINH`. Nhưng `TURSO_DATABASE_URL` = `libsql://pisatracking-demo-pizi147.aws-us-east-2.turso.io` — **không chứa `pisa-thu-nghiem`** như plan và prompt yêu cầu (vùng thì đúng Ohio `aws-us-east-2`). Theo điều tuyệt đối số 3: chưa chạy bất kỳ lệnh nào tới Turso (chưa `thu-turso`, chưa seed). Cần chủ sản phẩm xác nhận `pisatracking-demo` có phải database THỬ (được phép xoá sạch bằng seed) hay không. Ghi chú kỹ thuật: `netlify env:get … | Select-Object -Last 1` trả dòng rỗng với token → khi chạy thật phải lọc dòng không rỗng. |
+| 22/09 | 3 · Step 1 (tiếp) | Chủ sản phẩm xác nhận trong chat: **`pisatracking-demo` là database THỬ, được phép xoá sạch** → dùng chuỗi `pisatracking-demo` làm khoá an toàn thay cho `pisa-thu-nghiem` ở mọi lệnh (kiểm URL chứa chuỗi này trước khi chạy; `PISA_CHO_PHEP_SEED_TURSO=pisatracking-demo`). |
+| 22/09 | 4 · quyết định trước | **Mã thật vênh plan — đã hỏi chủ sản phẩm.** Plan đổi `addFile/openAttachment/removeAttachment` sang async, nhưng 7 phép kiểm cũ (6 phép `PR-N · N5` ở `run.ts` ~9310–9391 + 1 phép PR-J ở `yThuc.tests.ts` ~1157–1165) gọi chúng kiểu đồng bộ trong `check(...)` → sẽ đỏ. Plan vừa cấm sửa phép cũ vừa đòi N5 xanh. Chủ sản phẩm chọn: **chỉ đổi cách GỌI** (`check`→`checkAsync`, thêm `await`), giữ nguyên mọi điều kiện và câu chữ. Không tạo bộ hàm song song. |
+| 22/09 | 4 | **588/588** (= 586 + 2: phép 4 MB + phép kho tệp; không mất phép nào). `@netlify/blobs@11.1.0`. **ĐỎ trước (TDD):** build hỏng TS2307 `../platform/khoTep.ts` + TS2339 `duLieu` không có trên kiểu trả về cũ → viết mã → xanh. **7 phép cũ chuyển `check`→`await checkAsync` + `await`. Lý do: kế hoạch mâu thuẫn ở Task 4 Step 7 (đổi ba hàm tệp sang async nhưng cấm sửa phép cũ và đòi N5 xanh) — lỗi kế hoạch; chủ sản phẩm chọn trong chat và cho biết session planning chấp nhận 22/09.** Danh sách: `run.ts` — (1) `PR-N · N5 Tệp: lưu ngoài cơ sở dữ liệu…`, (2) `…Tên tệp có đường dẫn (../)…`, (3) `…Quyền xem tệp = quyền xem BẢN GHI CHỦ…`, (4) `…Quyền thêm/xoá = quyền SỬA bản ghi chủ…`, (5) `…Xoá tệp có AUDIT…`, (6) `…Phương án thừa hưởng quyền…`; `yThuc.tests.ts` — (7) `PR-J · J8 Kho tệp có nơi chủ cho vi phạm và biện pháp…`. Thêm `assertRejects(fn, match, msg)` cạnh `assertThrows` trong `run.ts`; mọi `assertThrows` bọc ba hàm tệp → `await assertRejects`. Không còn hàm async nào nằm trong `check(...)`. Dữ liệu vào, kỳ vọng, regex (kể cả `/10 ?MB|dung lượng|quá lớn/`), tên phép giữ nguyên. **Một ngoại lệ không tránh được (người rà xem giúp):** phép (1) và (2) đọc `opened.absPath`, trường mà plan bỏ khỏi kiểu trả về → thay bằng `prnAttAbsPath(id)` = thư mục tải lên + cột `url`; phép (1) giờ kiểm CẢ `opened.duLieu.equals(data)` LẪN nội dung file trên đĩa, phép (2) kiểm thêm file có thật trên đĩa — điều được kiểm không yếu đi. **Chứng minh không xanh giả:** tạm bỏ dòng kiểm dung lượng trong `addFile` → `npm test` = **587 đạt / 1 ĐỎ** đúng phép (1) ('Đã nhận tệp quá lớn — thao tác đáng lẽ phải bị từ chối nhưng lại thành công'); trả lại → **588/588**. **Kit:** `BanChinhTestKit` thêm `conn`, `admin` (=`P.admin`); `YThucTestKit` thêm `checkAsync` (truyền cả ở hai lời gọi sosV3 vì dùng chung kiểu). **Khác plan:** (a) `@netlify/blobs` 11.1.0 không nhận `Uint8Array` (TS2345) → truyền `new Uint8Array(duLieu).buffer` — cùng ý, chỉ đổi kiểu. (b) Chạm thêm `web/src/ui/BangChung.tsx` ('10 MB' → '4 MB', theo lệnh grep của Step 5). (c) Khoá chặn đường dẫn ngoài thư mục giờ nằm trong `khoTepODia` (Error thường thay vì `forbidden`) — chỉ xảy ra khi cột `url` bị sửa tay. (d) `package.json` của commit này có kèm dòng lệnh `thu-turso` của Task 3 (Task 3 còn đang chờ seed chạy xong trên Turso; `ops/thuTurso.ts` commit cùng Task 3). Step 5.5 grep: `fs.*` trong `platform/` + `yThuc/` chỉ còn ở `khoTep.ts`. |
