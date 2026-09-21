@@ -965,3 +965,59 @@ export async function runSosV3Tests(t: YThucTestKit) {
   void load;
   void t;
 }
+
+/**
+ * BỘ DEMO v3 (T8) — soi vào CHÍNH dữ liệu seed, nên phải chạy NGAY SAU KHI DỰNG, trước mọi phép kiểm khác (các phép kiểm khác chọn học viên "sạch case"
+ * rồi ghi thêm dữ liệu vào đúng những em đó). `run.ts` gọi hàm này ở mục 0, cùng chỗ với các phép kiểm bộ demo khác.
+ */
+export async function runSosV3DemoTests(t: YThucTestKit) {
+  const { check, assert } = t;
+  const load = async (path: string): Promise<any> => import(path);
+  console.log('\nPR-T · 0. Bộ demo v3 — các tình huống §9 (soi vào chính dữ liệu demo) — T8');
+    const c0: any = t.conn;
+    const rows0 = (sql: string, ...a: unknown[]) => c0.prepare(sql).all(...a) as any[];
+    const demoStudent = (name: string): number => {
+      const r = rows0('SELECT id FROM students WHERE full_name = ?', name);
+      assert(r.length === 1, `Bộ demo phải có đúng một học viên tên "${name}", đang có ${r.length}`);
+      return r[0].id;
+    };
+    const sosState: any = await load('../cases/sosState.ts');
+    const KHOI = 'Đỗ Minh Khôi', LAN = 'Vũ Ngọc Lan', VY = 'Bùi Thảo Vy';
+    const coord0 = (sid: number) => rows0('SELECT x.*, a.attempt_no FROM sos_coordination_actions x JOIN assessment_attempts a ON a.id = x.attempt_id WHERE x.student_id = ? ORDER BY x.id', sid);
+    const cases0 = (sid: number) => rows0('SELECT * FROM sos_cases WHERE student_id = ? ORDER BY id', sid);
+
+  check('PR-T · T8 DEMO Khôi: MT2 SOS2 (W2 + Speaking) → hai case từ SOS; Speaking đã có nguyên nhân + phương án xác nhận, W2 còn CHỜ xác định nguyên nhân; Phối hợp 1/3 xong; cùng em có vi phạm Ý thức', () => {
+      const sid = demoStudent(KHOI);
+      const cs = cases0(sid);
+      assert(cs.map((c) => c.category).sort().join() === 'speaking,writing2' && cs.every((c) => c.origin_kind === 'mock' && sosState.sosCaseState(c.id).fromSos), 'Hai case tự tạo từ SOS');
+      const sp = cs.find((c) => c.category === 'speaking'), w2 = cs.find((c) => c.category === 'writing2');
+      assert(!sosState.sosCaseState(sp.id).awaitingCause && sosState.sosCaseState(sp.id).hasCause, 'Speaking đã có nguyên nhân + phương án đã xác nhận');
+      assert(sosState.sosCaseState(w2.id).awaitingCause && sosState.sosCaseState(w2.id).dueOn, 'W2 còn chờ xác định nguyên nhân, có hạn 3 ngày');
+      const co = coord0(sid);
+      assert(co.length === 3 && co.every((r) => r.attempt_no === 2) && co.filter((r) => r.status === 'done').length === 1 && co.filter((r) => r.status === 'pending').length === 2, `Phối hợp: ${co.map((r) => r.kind + ':' + r.status)}`);
+      assert(rows0('SELECT COUNT(*) n FROM violations WHERE student_id = ?', sid)[0].n >= 2, 'Cùng em có vi phạm Ý thức');
+    });
+
+  check('PR-T · T8 DEMO Lan: MT1 SOS3 → ba case (Tutor · đến MT2); case Speaking đã đóng `Không cần theo dõi · Tình huống đơn lẻ`; Phối hợp SOS3 (HS + gia đình + GVCN meeting) xong 2/3', () => {
+      const sid = demoStudent(LAN);
+      const cs = cases0(sid);
+      assert(cs.length === 3 && cs.every((c) => c.sos_level === 3), `Ba case SOS3: ${cs.map((c) => c.category + ':' + c.sos_level)}`);
+      const sp = cs.find((c) => c.category === 'speaking');
+      assert(sp.status === 'done' && sp.dismiss_reason_code === 'single_incident' && sp.outcome === null, 'Case Speaking đóng vì không cần theo dõi');
+      assert(sosState.sosCaseState(cs.find((c) => c.category === 'listening').id).awaitingCause, 'Case còn lại chờ xác định nguyên nhân');
+      assert(rows0("SELECT 1 FROM case_interventions WHERE case_id IN (SELECT id FROM sos_cases WHERE student_id = ?) AND preset = 1 AND description = 'Tutor · đến MT2'", sid).length === 3, 'Phương án điền sẵn Tutor · đến MT2 cho cả ba case');
+      const co = coord0(sid);
+      assert(co.map((r) => r.kind).join() === 'talk_student,talk_family,gvcn_meeting' && co.filter((r) => r.status === 'done').length === 2, `Phối hợp: ${co.map((r) => r.kind + ':' + r.status)}`);
+    });
+
+  check('PR-T · T8 DEMO Vy: MT3 SOS1 → một lượt Phối hợp ĐÃ HOÀN THÀNH (2/2); ba mức SOS khác nhau xuất hiện trong bộ demo; có cả lượt hoàn thành lẫn chưa hoàn thành', () => {
+      const sid = demoStudent(VY);
+      const co = coord0(sid);
+      assert(co.length === 2 && co.every((r) => r.status === 'done' && r.attempt_no === 3), `Phối hợp Vy: ${co.map((r) => r.kind + ':' + r.status)}`);
+      const levels = new Set<number>();
+      for (const n of [KHOI, LAN, VY]) for (const c of cases0(demoStudent(n))) levels.add(c.sos_level);
+      assert([1, 2, 3].every((l) => levels.has(l)), `Phải đủ ba mức SOS trong demo: ${[...levels]}`);
+      const all0 = rows0(`SELECT attempt_id, MAX(status = 'pending') pend FROM sos_coordination_actions GROUP BY attempt_id`);
+      assert(all0.some((r) => r.pend === 1) && all0.some((r) => r.pend === 0), 'Có lượt đang xử lý và lượt hoàn thành');
+    });
+}

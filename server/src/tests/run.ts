@@ -178,6 +178,12 @@ const mbClass = classId('MB-FT 101');
  */
 console.log('\n0. Bộ demo vừa dựng có nhất quán không');
 
+/* PR-T (rulebook v3): tình huống demo §9 — phải soi TRƯỚC mọi phép kiểm khác, vì nhiều phép kiểm chọn học viên "sạch case" rồi ghi thêm vào chính những em đó. */
+{
+  const { runSosV3DemoTests } = await import('./sosV3.tests.ts');
+  await runSosV3DemoTests({ check, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
+}
+
 check('[12.1-16] Bộ demo nhất quán: không có sự kiện "đã xong" nào nằm ở tương lai', () => {
   const t = demoToday();
   const bad: string[] = [];

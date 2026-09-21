@@ -13,6 +13,7 @@ import { BRANCHES, RETIRED_ROLES, ROLES, ROLE_PERMISSIONS } from './data.ts';
 import { CLASSES, DEMO_DATE, TEACHERS } from './journeys.ts';
 import { buildJourneys } from './build.ts';
 import { buildYThuc } from './yThucSeed.ts';
+import { buildSosV3Demo } from './sosV3Seed.ts';
 
 const NOW = nowIso();
 
@@ -262,6 +263,14 @@ export function runSeed() {
     setConfig('scenario_mode', 'normal');
     setConfig('seeded_at', NOW);
 
+    /*
+     * BỘ DEMO RULEBOOK v3 (PR-T T8) — DỰNG SAU KHI ĐÃ ĐẶT NGÀY DEMO: nó đi qua chính các hàm nghiệp vụ (nhập điểm → SOS tự tạo case + Phối hợp), mà mọi
+     * hạn/ngày trong đó đọc `demoToday()`. Chỉ cho máy dev; bản chính dùng dữ liệu rỗng.
+     */
+    const sosV3 = buildSosV3Demo({
+      conn, adminId, branchId, classId, userId, classBranch, nextStudentCode, studentIdByCode,
+    });
+
     return {
       'Chi nhánh': BRANCHES.length,
       'Lớp': CLASSES.length,
@@ -290,6 +299,8 @@ export function runSeed() {
       'Biện pháp xử lý': yThuc.measures,
       '— trong đó đã thực hiện': yThuc.done,
       '— trong đó đang chuẩn bị': yThuc.preparing,
+      '— trong đó demo rulebook v3 (SOS tự tạo case)': sosV3.cases,
+      'Việc Phối hợp SOS': (conn.prepare('SELECT COUNT(*) AS n FROM sos_coordination_actions').get() as any).n,
       'Phương án': (conn.prepare('SELECT COUNT(*) AS n FROM case_interventions').get() as any).n,
       'Lần cập nhật kết quả': (conn.prepare('SELECT COUNT(*) AS n FROM case_followups').get() as any).n,
       'Mốc case': (conn.prepare('SELECT COUNT(*) AS n FROM case_milestones').get() as any).n,
