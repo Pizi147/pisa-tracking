@@ -1,8 +1,14 @@
 # PISA Progress — Rule book: SOS, case, phương án và Test
 
-Phiên bản 1.1 · 19/09/2026 · Cập nhật theo chốt mới nhất của chủ sản phẩm.
+Phiên bản 1.2 · 21/09/2026 · Cập nhật theo chốt mới nhất của chủ sản phẩm.
 
-**Ưu tiên mục 17 khi triển khai:** dấu '-' còn đến hết Chủ nhật được xác lập là không dự thi, không còn bắt GVCN xác minh thường lệ; Ý thức chỉ gộp trong BA ngày đầu và hoàn thành bằng bằng chứng thực hiện, không đánh giá cải thiện; SOS không tự sinh PA trao đổi. Những đoạn lịch sử trái các chốt này hết hiệu lực. **Cập nhật 20/09/2026:** các điểm C01–C10 đã được chủ sản phẩm trả lời — xem mục 17.7 (C01 chờ xác nhận cách hiểu, C08 còn một nửa chưa rõ).
+> **ĐỌC MỤC 18 TRƯỚC.** Chốt ngày 21/09/2026 **bỏ hẳn mô hình Case Ý thức**, thay bằng
+> **Vi phạm** và **Biện pháp xử lý** quan hệ nhiều–nhiều. Mục 18 ưu tiên hơn mục 6, mục 17.2
+> và mọi đoạn nói về Case Ý thức, đợt Ý thức, cửa sổ gộp ba ngày, hạn 3/5/7 ngày của Ý thức.
+> Phần Học thuật chỉ sửa bốn điểm (mục 18.2), phần còn lại giữ nguyên.
+> Đặc tả đủ chi tiết để code: `thiet-ke/Y_THUC_VI_PHAM_VA_BIEN_PHAP.md`.
+
+**Ưu tiên mục 17 khi triển khai** *(trong phạm vi không trái mục 18)*: dấu '-' còn đến hết Chủ nhật được xác lập là không dự thi, không còn bắt GVCN xác minh thường lệ; Ý thức chỉ gộp trong BA ngày đầu và hoàn thành bằng bằng chứng thực hiện, không đánh giá cải thiện; SOS không tự sinh PA trao đổi. Những đoạn lịch sử trái các chốt này hết hiệu lực. **Cập nhật 20/09/2026:** các điểm C01–C10 đã được chủ sản phẩm trả lời — xem mục 17.7 (C01 chờ xác nhận cách hiểu, C08 còn một nửa chưa rõ).
 
 ## 1. Cách sử dụng và nguồn
 
@@ -400,3 +406,115 @@ Chủ sản phẩm đã trả lời. Mục này **thay thế** mọi chỗ ghi "
 | **C10** | Nhập "-" cho tuần đã kết thúc từ trước: **chốt ngay** | Đã áp |
 
 **Sau cuối tuần, chỉ Quản lý được sửa kết luận không dự thi.** Quyết định mới của Quản lý **ghi đè trực tiếp** quyết định trước và trở thành quyết định hiện hành; không phát sinh bước duyệt lại. Lịch sử thay đổi chỉ lưu ở mức nhật ký audit để truy vết, không hiển thị và không tham gia luồng việc.
+
+---
+
+## 18. Chốt ngày 21/09/2026 — Ý thức bỏ mô hình Case, ưu tiên hơn mọi mô tả cũ mâu thuẫn
+
+Nguồn: `thiet-ke/NGUON-Rule-Y-thuc-2026-09-21.md` do chủ sản phẩm gửi 21/09/2026.
+Diễn giải đủ chi tiết để code: `thiet-ke/Y_THUC_VI_PHAM_VA_BIEN_PHAP.md`.
+
+**Mục này ưu tiên hơn mục 6, mục 17.2 và mọi đoạn nói về Case Ý thức ở trên.** Không xoá dấu
+vết các đoạn cũ; chúng là lịch sử quyết định.
+
+### 18.1. Hai hệ tách hẳn
+
+| | Học thuật | Ý thức |
+|---|---|---|
+| Đơn vị theo dõi | Case | **Vi phạm** — mỗi sự việc một record độc lập |
+| Việc làm cho em | Phương án | **Biện pháp xử lý** |
+| Đo cải thiện | Có, năm mức, vào bảng hiệu quả | **Không.** Chỉ ghi nhận việc đã làm và bằng chứng |
+| Hạn cứng | 3/5 ngày có phương án; cập nhật mỗi Chủ nhật | **Không có.** Một cảnh báo mềm 5 ngày |
+| Quan hệ | 1 case → n phương án | **n vi phạm ↔ n biện pháp, nhiều–nhiều** |
+
+Bảng `sos_cases` từ nay là **bảng case học thuật**. Cột `track` và giá trị `behaviour` bị gỡ.
+
+### 18.2. Học thuật — bốn điểm sửa, phần còn lại giữ nguyên
+
+Đối chiếu từng dòng cho thấy phần Học thuật gần như đã đúng. Chỉ bốn việc:
+
+1. **Đóng SOS không tạo Case phải ghi rõ lý do** — hiện có đường `noted` nhưng chưa bắt buộc lý do.
+2. **Phương án phải giữ lịch sử điều chỉnh.** Hiện có chuỗi "thay thế" (`superseded_by`), nhưng
+   *sửa nội dung* phương án là ghi đè, mất bản cũ. Rule mới bắt buộc audit được: phương án ban
+   đầu là gì, đổi khi nào, vì sao đổi, hiện tại là gì.
+3. **Đổi tên mức:** `Cần chú ý` → **`Bình thường`** (5 ngày). `Gấp` giữ nguyên (3 ngày).
+   Đây là chữ trong nguồn 21/09; thay câu "bỏ Bình thường" ở mục 4.2.
+4. **Cập nhật tuần rút gọn** theo nguồn mục 8: kết quả hiện tại · tiến triển · vấn đề còn tồn ·
+   giữ nguyên / điều chỉnh / thay phương án · ghi chú. Không biến thành form dài.
+
+Giữ nguyên, đã đúng: SOS là tín hiệu không phải case · 3 ngày xác nhận nguyên nhân · GV tạo
+Case trực tiếp · một case sống suốt khoá cho mỗi kỹ năng · gắn tín hiệu mới vào case đang mở ·
+case mới khi vấn đề khác hoặc case cũ đã đóng mà tái diễn · chỉ đóng case khi vấn đề đã xử lý.
+
+### 18.3. Ý thức — luật mới
+
+- **Vi phạm:** mọi giáo viên dạy lớp đều ghi được. Bắt buộc học viên · ngày xảy ra · nhóm · mô tả.
+  Tùy chọn môn · tệp hoặc liên kết. Ghi vi phạm **không** sinh case, biện pháp, việc hay hạn nào.
+- **Năm nhóm (Y04):** Chuyên cần · BTVN · Thái độ / hành vi · Kỷ luật lớp học · Khác.
+  Bỏ `Tham gia trên lớp`; dữ liệu cũ đổi sang `Thái độ / hành vi`.
+- **Báo cáo của GV có thể sai.** Sửa được, và đánh dấu `Không còn hiệu lực` kèm **lý do bắt buộc**.
+  Không xoá vật lý. Vi phạm hết hiệu lực không vào bất kỳ thống kê nào, nhưng vẫn nằm trong lịch sử.
+- **Chín biện pháp xử lý**, thay tên cũ "Phương án kỷ luật", xếp nhẹ đến nặng để BÀY RA:
+  GV trao đổi ngắn với HS · GV meeting với HS · Report cho gia đình · Thư cảnh cáo lần 1 ·
+  CX / GĐCN meeting với HS / PH · Thư cảnh cáo lần 2 · Đình chỉ học · Thư cảnh cáo lần 3 · Khác.
+- **Không có thứ tự xử lý bắt buộc.** Đi thẳng tới biện pháp nặng là hợp lệ.
+- **Ngoại lệ cứng duy nhất:** Thư cảnh cáo phải đúng 1 → 2 → 3, kiểm ở **máy chủ**.
+  Phạm vi chuỗi là **một lộ trình học** (Y02); sang lộ trình mới thì reset về lần 1.
+- **Nhiều–nhiều:** một biện pháp gom nhiều vi phạm khác nhóm, khác môn, khác GV, khác ngày;
+  một nhóm vi phạm được xử lý bằng nhiều biện pháp.
+- **Hai trạng thái biện pháp:** `Đang chuẩn bị` (thêm hoặc bớt vi phạm, sửa mọi thứ, **không có
+  hạn**) và `Đã thực hiện` (chốt snapshot, khoá danh sách vi phạm).
+- **Xác nhận đã thực hiện** lưu tối thiểu: loại · ngày thực hiện thực tế · người thực hiện ·
+  ghi chú · danh sách vi phạm · tệp hoặc liên kết khi cần. **Không hỏi tiến bộ.**
+  Tệp hoặc liên kết **bắt buộc** với ba Thư cảnh cáo và Đình chỉ học.
+- **Ai xác nhận (Y01):** GVCN tự làm hết, kể cả biện pháp nặng. **Không có bước Quản lý duyệt.**
+  Quản lý nhận thông báo khi một Thư cảnh cáo hoặc Đình chỉ học được xác nhận.
+- **Cảnh báo 5 ngày:** nếu học viên còn vi phạm chưa gắn vào bất kỳ biện pháp nào, và cái cũ
+  nhất trong đó đã quá 5 ngày, cảnh báo GVCN. Chỉ để nhắc — không tự tạo gì, không tính quá hạn.
+- **Đếm theo hành động thật:** một Report gom ba vi phạm đếm là **một** report.
+- **Ý thức nằm hoàn toàn ngoài mọi bảng hiệu quả hỗ trợ.** Gia đình đã nhận report không chứng
+  minh em tiến bộ.
+- **Cảnh báo trùng mềm:** cùng học viên, cùng nhóm, cùng ngày thì nhắc trong form, cho xem bản
+  ghi đang có, **vẫn cho tạo mới**. Không tự gộp, không tự xoá.
+
+### 18.4. Các luật cũ hết hiệu lực trong bản này
+
+| Luật cũ | Thay bằng |
+|---|---|
+| Case Ý thức, đợt Ý thức | Vi phạm — record độc lập |
+| Cửa sổ gộp ba ngày (C03) | Không gộp theo ngày. Mỗi vi phạm một dòng |
+| Hạn hoàn thành case Ý thức 7 ngày | Không có hạn. Cảnh báo mềm 5 ngày |
+| Hạn thực hiện phương án Ý thức 3/5 ngày | Không có hạn |
+| Tái diễn lần 2/3, `episode_no` | Không còn đợt nên không còn lần thứ mấy |
+| Đợt đã đóng có báo cáo mới thì tạo đợt mới liên kết (C04) | Không còn đợt. Chỉ là một vi phạm mới |
+| Nâng mức ưu tiên khi có báo cáo bổ sung | Không còn case nên không còn mức ưu tiên |
+| Một case Ý thức thuộc đúng một phân loại | Một biện pháp gom nhiều nhóm khác nhau |
+| Ba loại liên hệ `talk_student / talk_parent / warning_letter` | Chín loại biện pháp xử lý |
+| Tín hiệu SOS cho Ý thức | SOS chỉ sinh từ Mock Test, chỉ Học thuật |
+| Tab "Đã xong từ trước" có nhánh Ý thức | Chỉ còn nhánh Học thuật |
+| Chỉ số "Tái diễn Ý thức" | Tám chỉ số mới, xem `HOP_DONG_SO_LIEU.md` |
+| Ý thức là cột thứ sáu của bảng phân tích theo kỹ năng | Góc nhìn riêng trong Phân tích |
+| `Cần chú ý` (mức case học thuật) | `Bình thường` |
+| Bốn nhóm ý thức gồm `Tham gia trên lớp` | Năm nhóm, bỏ `Tham gia trên lớp` |
+
+### 18.5. Nghiệm thu
+
+Bộ 24 mục ở `thiet-ke/Y_THUC_VI_PHAM_VA_BIEN_PHAP.md` mục 12 **thay** các kịch bản Ý thức ở
+mục 15 điểm 7–8 và mục 17.6 điểm 4–5 của sổ này.
+
+### 18.6. C01 — chủ sản phẩm đã tự trả lời bằng nguồn 21/09
+
+C01 hỏi: sau 3 ngày xác minh SOS, phương án đầu tiên có phải nằm trong cùng hạn đó không?
+
+Nguồn 21/09 mục 3.2 và mục 6 trả lời rõ: **hai mốc riêng.** SOS có 3 ngày để *xác nhận nguyên
+nhân*, và *không được hiểu rằng trong 3 ngày đó phải hoàn thành cả phương án*. Sau khi Case
+được tạo, phương án có hạn riêng 5 ngày (Bình thường) hoặc 3 ngày (Gấp), **tính từ ngày Case
+được tạo**.
+
+Vậy `C01_HAN_XAC_MINH_SOS_GOM_PA = 'hai-moc-rieng'` — đúng như mã đang chạy. **C01 đóng.**
+
+### 18.7. Còn đúng một điểm chưa chốt: C08
+
+Hạn chấm Normal hết Chủ nhật tuần thi — đã đúng. Còn chưa rõ: *"chưa có bài thì thêm - và dời
+sang tuần sau"* — ai thêm dấu `-` (hệ thống tự thêm hay giáo viên), và Normal có thật sự dùng
+dấu `-` không (hiện Normal luôn đủ bốn môn, không có `-`). **Chưa triển khai, chờ trả lời.**

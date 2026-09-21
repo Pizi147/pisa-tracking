@@ -1,8 +1,25 @@
 # PISA Progress — Kế hoạch giai đoạn sau PR18
 
-> **Dành cho session code:** đây là file kế hoạch **sống**. Đọc hết mục 0–4 trước khi gõ dòng
-> code đầu tiên, rồi làm **đúng một PR** theo mục tương ứng. Các bước dùng ô đánh dấu
-> (`- [ ]`); đánh dấu xong từng bước ngay trong file này.
+> # 🔴 ĐỌC MỤC 22 TRƯỚC — lộ trình đã đổi ngày 21/09/2026
+>
+> **Mục 4 (lộ trình PR1…PR-H) đã xong và KHÔNG còn là lộ trình đang chạy.** Lộ trình hiện hành
+> là **8 PR ở mục 22**, gọi là `PR-N · PR-J · PR-O · PR-K · PR-P · PR-Q · PR-R · PR-S`.
+>
+> Hai việc đã thay đổi bản chất kế hoạch:
+>
+> 1. **Chủ sản phẩm bỏ hẳn mô hình Case Ý thức** (21/09/2026). Thay bằng **Vi phạm** và
+>    **Biện pháp xử lý** quan hệ nhiều–nhiều. Luật: rule book **mục 18**. Đặc tả đủ để code:
+>    `thiet-ke/Y_THUC_VI_PHAM_VA_BIEN_PHAP.md`. **36 file đang dính chữ `behaviour` phải gỡ.**
+> 2. **Phát hiện một lỗ hổng của chính file này:** mục 4 chỉ chép design plan mục 18 vào **một**
+>    PR (PR-I — hồ sơ Test). **Bảy trang còn lại của mục 18 chưa bao giờ trở thành việc** —
+>    Tổng quan, Phân tích, Công việc, Học viên & Lớp, Hồ sơ lớp, Hồ sơ học viên, Kế hoạch Test.
+>    Cả điều hướng bốn khu vực (D01) cũng chưa làm: `App.tsx` vẫn ba mục, không có khu vực Test.
+>    Từ nay mọi yêu cầu của design plan phải có một dòng trong `thiet-ke/BAN_DO_OVERHAUL.md`
+>    với nhãn tình trạng và PR phụ trách.
+>
+> **Dành cho session code:** đây là file kế hoạch **sống**. Đọc hết mục 0–3 **và mục 22** trước
+> khi gõ dòng code đầu tiên, rồi làm **đúng một PR** theo mục tương ứng. Các bước dùng ô đánh
+> dấu (`- [ ]`); đánh dấu xong từng bước ngay trong file này.
 >
 > **Goal:** Hoàn thiện luồng Test — số liệu khớp danh sách, đường vào nhập điểm ngắn, lịch
 > Test theo từng kỹ năng, và chấm điểm không bắt xác nhận thừa.
@@ -122,6 +139,16 @@ thống. Không reset bộ demo. Không mở rộng phân quyền.
 lệch so với lượt trước" như một quyết định — trong khi sổ audit §13.4 (17/09) đã chốt ngược
 lại. File bàn giao chép lại **thứ đã code**, không phải **thứ đã chốt**, và vòng sau tin nó
 nên tưởng quyết định là sai.
+
+*(Các file `BAN_GIAO*.md` đã được **xoá ngày 21/09/2026** chính vì bài học này — xem mục 14.
+Bài học thì giữ: **đừng dùng một bản mô tả hiện trạng làm bằng chứng cho một quyết định.**)*
+
+**Và một cái bẫy thứ hai, sập ngày 21/09/2026:** file này từng chỉ chép design plan **mục 18
+vào một PR** (PR-I — hồ sơ Test), nên bảy trang còn lại của mục 18 **chưa bao giờ trở thành
+việc**. Đọc `plan.md` thì tưởng gần xong; đọc design plan thì thấy còn cả một overhaul chưa bắt
+đầu. **Một đặc tả không được chép thành việc thì nó không tồn tại đối với người code.** Từ nay
+mọi yêu cầu của design plan phải có một dòng trong `thiet-ke/BAN_DO_OVERHAUL.md` với nhãn tình
+trạng và PR phụ trách.
 
 Thứ tự tin cậy: **sổ audit mục 13–14 > brief vong7 > code đang chạy > file bàn giao.**
 Và chạy thật > đọc code.
@@ -275,6 +302,21 @@ Thêm dòng mới ở cuối, có ngày. **Không xoá dòng cũ** — ghi "thay
 | 20/09/2026 | **C03** *(thay câu hỏi cũ)*: bỏ luật siết hạn khi nâng mức. Chỉ Ý thức: báo cáo khác cùng phân loại trong **3 ngày đầu** của case cũ thì lồng vào, không thì ra case mới; hạn mặc định 1 tuần | Chủ sản phẩm · rule book 17.7 |
 | 20/09/2026 | **C04, C06, C07, C09 giữ như hiện tại:** đợt Ý thức đã đóng → đợt mới liên kết; tab "Đã xong từ trước" chỉ nhận case đã hoàn thành; Writing phải đủ W1 và W2 (thiếu thì báo quá hạn như thường); đề nghị dời lần hai không được Quản lý phản hồi hết tuần đó thì **huỷ** (GV tự trao đổi với QL ngoài website) | Chủ sản phẩm |
 | 20/09/2026 | **C10:** nhập "-" cho tuần đã kết thúc từ trước thì **chốt ngay**. Sau cuối tuần chỉ Quản lý sửa kết luận; quyết định mới ghi đè trực tiếp, không duyệt lại; audit log chỉ để truy vết | Chủ sản phẩm |
+| **21/09/2026** | **BỎ HẲN MÔ HÌNH CASE Ý THỨC.** Thay bằng **Vi phạm** (mỗi sự việc một record độc lập, mọi GV ghi được) và **Biện pháp xử lý** (9 loại, 2 trạng thái) quan hệ **nhiều–nhiều**. Không còn đợt, không còn cửa sổ gộp 3 ngày, không còn hạn 3/5/7 ngày của Ý thức, không còn tái diễn lần 2/3, không đo cải thiện. Chỉ một **cảnh báo mềm 5 ngày** | Chủ sản phẩm · `thiet-ke/NGUON-Rule-Y-thuc-2026-09-21.md` · rule book §18 |
+| 21/09/2026 | **Y01:** GVCN **tự xác nhận hết** mọi biện pháp, kể cả Thư cảnh cáo và Đình chỉ học. **Không có bước Quản lý duyệt.** Quản lý nhận thông báo khi Thư cảnh cáo hoặc Đình chỉ học được xác nhận | Chủ sản phẩm |
+| 21/09/2026 | **Y02:** chuỗi Thư cảnh cáo 1→2→3 đếm **theo lộ trình học** (`learning_cycles.id`). Sang lộ trình mới thì reset về lần 1. Đây là **rule cứng duy nhất về trình tự**, kiểm ở máy chủ | Chủ sản phẩm |
+| 21/09/2026 | **Y03:** ba khu vực Ý thức của GVCN đặt ở **tab `Ý thức` của hồ sơ LỚP**, cộng một tab `Ý thức` gọn ở hồ sơ học viên. **Không** thêm khu vực cấp chính thứ 5 | Chủ sản phẩm |
+| 21/09/2026 | **Y04:** **năm nhóm vi phạm** — Chuyên cần · BTVN · Thái độ / hành vi · Kỷ luật lớp học · Khác. **Bỏ `Tham gia trên lớp`**, dữ liệu cũ đổi sang `Thái độ / hành vi` | Chủ sản phẩm |
+| 21/09/2026 | **Hồ sơ lớp: 4 tab** `Học viên \| Ý thức \| Phân tích lớp \| Giáo viên`. `Lộ trình` và `Chuyển tiếp lớp` là **nút ở header**, không phải tab — chúng là hành động, không phải cách xem. *(Hoà giải ba đặc tả chồng nhau: design plan §18.6 ba tab, §22.2 menu trực tiếp, và tab Ý thức mới)* | Chủ sản phẩm |
+| 21/09/2026 | **Hoãn sau deploy bản chính:** design plan **§6 + góc nhìn `Giáo viên` của §18.3** (phân tích theo giáo viên). Là tính năng mới hoàn toàn, quy mô bằng 2 PR, cần D02 áp ở API/tìm kiếm/drill-down/xuất dữ liệu. Ghi lại ở `BAN_DO_OVERHAUL.md` §10 để không ai đề xuất lại như việc mới | Chủ sản phẩm |
+| 21/09/2026 | **Chưa đặt mốc deploy vào kế hoạch.** Làm xong 8 PR rồi bàn riêng — không tự suy điều kiện deploy | Chủ sản phẩm |
+| 21/09/2026 | **C01 đóng.** Nguồn 21/09 §3.2 viết thẳng "không được hiểu rằng trong 3 ngày đó bắt buộc phải hoàn thành cả phương án" → **hai mốc riêng**, đúng như mã đang chạy. `C03` và `C04` **hết hiệu lực** (là luật của mô hình Case Ý thức đã bỏ) — giữ hằng số kèm chú thích, không xoá dấu vết. **C08 là điểm duy nhất còn chưa chốt** | Rule book §18.6 · `LUAT_CHO_CHOT.md` §6 |
+| 21/09/2026 | *(Thiết kế)* Đổi tên mức case học thuật: **`Cần chú ý` → `Bình thường`** (5 ngày). `Gấp` giữ (3 ngày). Thay câu "bỏ Bình thường" ở rule book §4.2 | Bên design, theo chữ trong nguồn 21/09 |
+| 21/09/2026 | *(Thiết kế)* Ba tab Công việc dùng tên **§18.4**: `Hỗ trợ học viên / Vận hành / Báo cáo đơn vị`. Bỏ tên §7.1 (`Việc học viên / Việc vận hành / Tình hình đơn vị`) — hai mục cùng design plan gọi một thứ bằng hai chữ | Bên design · `TU_DIEN_VA_CHU.md` |
+| 21/09/2026 | *(Thiết kế)* Dựng **một bảng `attachments` dùng chung** cho case, phương án, vi phạm, biện pháp. Hiện **chưa có bảng nào lưu tệp hoặc liên kết** ở bất kỳ đâu; rule mới bắt buộc Thư cảnh cáo và Đình chỉ học phải có. Làm riêng bốn lần là bốn lần sai khác nhau. Đóng luôn CASE-04 | Bên design |
+| 21/09/2026 | *(Thiết kế)* **Ý thức là module thứ chín**, không nhét vào `cases/`. Lý do: `cases.ts` đã 3033 dòng | Bên design · `CODE_MAP.md` |
+| 21/09/2026 | *(Thiết kế)* Vi phạm **không có mức độ nặng/nhẹ** và **không có hạn riêng** — nguồn không có, và GVCN nhìn *số lần* + *số ngày* là đủ ra quyết định. Vi phạm **có ô Môn tùy chọn**, tự điền theo phân công | Bên design |
+| 21/09/2026 | *(Thiết kế)* Dữ liệu demo **reseed**, không migrate (nguồn §39 cho phép). Bộ demo phải dựng đủ **18 tình huống** ở `Y_THUC_VI_PHAM_VA_BIEN_PHAP.md` §10. `DEMO_SCENARIOS.md` và `DEMO_ASSUMPTIONS.md` viết lại thành **một file gọn** | Bên design |
 | 20/09/2026 | **C01 và C08 chưa chốt hẳn:** C01 — chủ sản phẩm mô tả (3 ngày phải có PA; Học thuật cập nhật mỗi Chủ nhật + chốt cuối đợt; Ý thức hoàn thành hết PA trong 1 tuần) và hỏi lại "đúng không?"; C08 — hạn chấm Normal hết Chủ nhật tuần thi (đã đúng), còn "chưa có bài thì thêm - và dời sang tuần sau" chưa rõ ai thêm và Normal có dùng "-" không | Chủ sản phẩm · chờ trả lời |
 
 ---
@@ -1852,6 +1894,7 @@ Nói **cái gì đổi trên màn hình**, bằng tiếng Việt, không tên h�
 | 20/09/2026 | Claude (session batch, chặng 5 — PR-H) | Mục 19 và bảng chữ có bốn điểm không khớp với mã, đã xử lý tại chỗ: (1) **Phép "grep chuỗi cũ → không còn kết quả" không chạy nguyên văn được với `mức gấp`:** bảng §1 cấm gọi SOS là "mức gấp", nhưng mức gấp của case là khái niệm thật đang dùng ở dữ liệu mẫu, luật hạn và giao diện; đã loại nó khỏi phép quét và ghi vào 12.11 để chốt. (2) **Bảng §2 thiếu dòng `Hoàn thành phương án`** — lẫn với `Hoàn thành case` ở bảng §1; bắt được nhờ đọc §1, không nhờ §2; đã đổi thành `Kết thúc phương án` ở `NEXT_STEP_LABEL` và thẻ case. (3) **`Bỏ qua N dòng lỗi` → `Xem N dòng cần sửa` là đổi hành vi**, không chỉ đổi chữ (bỏ nút bỏ-qua-hàng-loạt). (4) **Badge "Bạn cần chấm / Lớp còn" cần máy chủ nói phạm vi đang đếm** — thêm `workScope` vào tóm tắt từng lớp thay vì để giao diện đoán. Kế hoạch mục 19 Step 1, 4, 6 nói "toàn web/mỗi khối rỗng/chân trang" nhưng không nói cách kiểm; đã làm phần bảng chữ nêu tên và ghi phần còn lại ở 12.11. Thêm 2 phép kiểm PR-H (416 tổng): grep chữ cũ trên mã nguồn (kể cả chú thích) và badge/nhãn phạm vi. **Kiểm ngược:** trước khi sửa, phép grep báo đỏ 36 chỗ. Bấm thử: danh sách học viên ở Quản lý (`Lớp còn N bài chưa nhập điểm`) và GVBM (`Bạn cần chấm: N bài`), tổng quan lớp, ô `Người phụ trách`. **Chưa làm/chưa thấy:** mục 12.11 |
 | 20/09/2026 | Claude (session batch, rà soát độc lập) | Kế hoạch mục 17.4 ("sáu phép kiểm") chỉ kiểm hàm đếm thuần và bảng chấm; **không kiểm các đường đọc khác** nên "bài đã báo `-` không còn là bài cần chấm" chỉ đúng ở `pendingSkillsOf` — "việc của tôi" và đếm chi nhánh vẫn tính. Kế hoạch mục 16 Step 6 ("cùng bộ quyền") cũng chưa nói phạm vi theo LỚP của giáo viên khác phạm vi CHI NHÁNH. Đã sửa các lỗi ở 12.12; thêm 4 phép kiểm (420 tổng). |
 | 20/09/2026 | Claude (session batch, áp lời chốt C01–C10) | Kế hoạch mục 17 và bảng chín điểm coi C01–C09 là "chưa chốt, không nối dây"; khi chủ sản phẩm chốt, **tài liệu cũ (rule book §17.1, §17.2) vẫn ghi "C03 cần chọn" và "C09 giữ chờ mãi" trong khi mã làm ngược** — đã cập nhật rule book 17.7, `LUAT_CHO_CHOT.md`, `policy.ts` và mục 3. Ba điểm được nối dây (C02, C03, C10) kéo theo đổi dữ liệu mẫu (cửa sổ gộp) và bốn phép kiểm cũ; xem 12.13. Thêm 1 phép kiểm C02 (421 tổng), viết lại phép kiểm C10. |
+| **21/09/2026** | Claude (session thiết kế) | **Hai việc, không phải một.** (1) Chủ sản phẩm gửi rule mới **bỏ hẳn mô hình Case Ý thức**, thay bằng Vi phạm và Biện pháp xử lý quan hệ nhiều–nhiều. Đối chiếu từng dòng với mã: phần **Học thuật gần như đã đúng sẵn** (chỉ 4 điểm sửa — lý do đóng SOS, lịch sử điều chỉnh phương án, đổi tên mức, rút gọn cập nhật tuần), phần **Ý thức phải thay mô hình** và **36 file đang dính `behaviour`** phải gỡ. Phát hiện thêm: **hệ thống chưa có bảng nào lưu tệp hoặc liên kết** ở bất kỳ đâu, mà rule mới bắt buộc Thư cảnh cáo và Đình chỉ học phải có — nên dựng một bảng `attachments` dùng chung, đóng luôn CASE-04. Viết `thiet-ke/Y_THUC_VI_PHAM_VA_BIEN_PHAP.md` (DDL, luật có mã V01–V14/B01–B16/W01–W06, quyền, bảy màn có sơ đồ, tám chỉ số, 18 tình huống demo, 24 mục nghiệm thu), rule book **mục 18**, và bốn điểm chốt mới **Y01–Y04**. **C01 đóng** (nguồn 21/09 §3.2 tự trả lời: hai mốc riêng, đúng như mã đang chạy); **C03 và C04 hết hiệu lực** vì là luật của mô hình đã bỏ — giữ hằng số kèm chú thích, không xoá dấu vết. Còn **C08 là điểm duy nhất chưa chốt**. (2) **Phát hiện một lỗ hổng của chính file này:** mục 4 chỉ chép design plan **mục 18 vào một PR** (PR-I — hồ sơ Test), nên **bảy trang còn lại của mục 18 chưa bao giờ trở thành việc** — Tổng quan, Phân tích, Công việc, Học viên & Lớp, Hồ sơ lớp, Hồ sơ học viên, Kế hoạch Test; kể cả điều hướng bốn khu vực (D01) cũng chưa làm (`App.tsx` vẫn ba mục, không có khu vực Test). Đọc `plan.md` thì tưởng gần xong; đọc design plan thì thấy còn cả một overhaul chưa bắt đầu — **và không ai nối hai tài liệu lại.** Đã viết `thiet-ke/BAN_DO_OVERHAUL.md` làm tầng nối đó: mỗi yêu cầu → tình trạng mã nguồn đã kiểm → PR phụ trách, có bốn nhãn `Đã làm / Một phần / Chưa làm / Hết hiệu lực`. Trong lúc đối chiếu tìm ra **một chốt chặn không ai nói ra:** bốn hàm chỉ số đang trả `501` (`hv-duoi-ky-vong-mon`, `hv-sos-hien-tai`, `dung-han-cap-nhat`, `do-phu-danh-gia`) **chặn** Tổng quan mới và Phân tích theo giáo viên — nếu dựng màn trước, người code sẽ tự viết phép đếm thứ hai, và hai phép đếm sẽ **khớp nhau trên dữ liệu demo** rồi lệch khi dữ liệu thật vào; vì vậy chúng lên PR đầu tiên. Viết **mục 22** — lộ trình hiện hành **8 PR** (`PR-N · PR-J · PR-O · PR-K · PR-P · PR-Q · PR-R · PR-S`) chia bốn chặng, năm mốc chủ sản phẩm kiểm. Bốn xung đột giữa design plan và rule mới được đánh dấu `Hết hiệu lực` thay vì xoá. Ba đặc tả chồng nhau về Hồ sơ lớp (§18.6 ba tab · §22.2 menu trực tiếp · tab Ý thức mới) được hoà giải thành **4 tab + hai nút header**. Hoãn sau deploy: **§6 phân tích theo giáo viên**. **Chưa sửa một dòng mã sản phẩm nào.** |
 
 ---
 
@@ -2289,3 +2332,464 @@ mất sau khi đã commit.
 - **Không merge nhánh batch vào nhánh PR-D** để "cho nó có sẵn component mới". Làm vậy là đảo
   ngược thứ tự ở 21.1 và kéo toàn bộ xung đột về đúng session đang bận nhất.
 - **Không gộp năm chặng thành một commit.** Hỏng ở chặng 4 thì không lùi lại được.
+
+---
+
+# 22. LỘ TRÌNH HIỆN HÀNH — 8 PR, chốt 21/09/2026
+
+**Mục này thay mục 4.** Mục 4 là lộ trình của đợt trước (PR1 → PR-H), đã xong và merge ở PR 30.
+
+## 22.0. Đọc gì trước khi gõ dòng code đầu tiên
+
+Theo đúng thứ tự. Bỏ bước nào là làm lại bước đó.
+
+| # | File | Vì sao |
+|---|---|---|
+| 1 | `thiet-ke/NGUON-Rule-Y-thuc-2026-09-21.md` | Nguồn mới nhất của chủ sản phẩm. Bỏ hẳn mô hình Case Ý thức |
+| 2 | `thiet-ke/PISA-Rulebook-2026-09-19.md` **mục 18** | Luật. Mục 18 ưu tiên hơn mục 17, mục 17 ưu tiên hơn mọi mô tả cũ |
+| 3 | `thiet-ke/Y_THUC_VI_PHAM_VA_BIEN_PHAP.md` | Đặc tả tới mức DDL, luật có mã (V/B/W), bảy màn, 24 mục nghiệm thu |
+| 4 | `thiet-ke/BAN_DO_OVERHAUL.md` | Yêu cầu nào của design plan đã có, cái nào chưa, PR nào làm |
+| 5 | `thiet-ke/HE_GIAO_DIEN.md` · `HOP_DONG_SO_LIEU.md` · `TU_DIEN_VA_CHU.md` | Trước khi dựng màn, trước khi code một con số, trước khi viết một chữ |
+| 6 | `plan.md` mục 0–3 và **mục 12** (nợ cũ) | Quy tắc cập nhật, quyết định đã chốt, và việc còn nợ |
+
+**Ba thứ tuyệt đối không làm:**
+
+- Đừng đổi tên bảng `sos_cases`. Nó chạm hàng trăm câu truy vấn và không mang lại gì cho người dùng.
+- Đừng xoá hằng số `C03_*` và `C04_*` trong `policy.ts`. Ghi "hết hiệu lực 21/09/2026" kèm lý do.
+- Đừng viết phép đếm thứ hai cho một khái niệm đã có hàm chỉ số. Gọi hàm đó.
+
+## 22.1. Bản đồ 8 PR và lý do thứ tự
+
+```
+CHẶNG A — NỀN (2 PR · không đổi mặt ngoài)
+  PR-N  Nền số liệu + kho bằng chứng
+  PR-J  Ý thức — nền dữ liệu
+  ▶ chủ sản phẩm chỉ đọc báo cáo, không cần bấm
+
+CHẶNG B — Ý THỨC + KHUNG (2 PR)
+  PR-O  Điều hướng bốn khu vực
+  PR-K  Ý thức — giao diện đầy đủ
+  ▶ KIỂM 1: bấm thử bằng GVBM · GVCN · Quản lý
+
+CHẶNG C — OVERHAUL BẢY TRANG (3 PR)
+  PR-P  Tổng quan + Phân tích          ▶ KIỂM 2
+  PR-Q  Học viên & Lớp + Hồ sơ lớp + Hồ sơ HV + Hành trình   ▶ KIỂM 3
+  PR-R  Công việc + Kế hoạch Test + đường vào nhập điểm      ▶ KIỂM 4
+
+CHẶNG D — DỌN VÀ CHỐT (1 PR)
+  PR-S  Học thuật theo rule mới + biên tập chữ + nợ kỹ thuật ▶ KIỂM 5
+```
+
+**Ba lý do cho thứ tự này, đọc kỹ vì làm sai là làm lại:**
+
+1. **PR-N đứng đầu, trước cả Ý thức.** Bốn hàm chỉ số đang trả lỗi `501`
+   (`hv-duoi-ky-vong-mon`, `hv-sos-hien-tai`, `dung-han-cap-nhat`, `do-phu-danh-gia`) **chặn**
+   Tổng quan mới (§18.2) và Phân tích. Nếu dựng màn trước, người code sẽ tự viết phép đếm thứ
+   hai — đúng lỗi "badge ghi 28, bấm vào ra 0", và lần này khó thấy hơn vì hai phép đếm sẽ
+   **khớp nhau trên dữ liệu demo** rồi lệch khi dữ liệu thật vào. Bảng `attachments` cũng ở đây
+   vì Ý thức cần nó ngay.
+2. **PR-O (khung điều hướng) trước PR-P/Q/R.** Đổi điều hướng sau khi đã overhaul bảy trang là
+   sửa bảy trang hai lần.
+3. **Biên tập chữ ở PR cuối.** Nó chạm gần mọi file JSX; làm sớm là quét hai lần.
+
+**Không chạy song song hai session.** PR-J/PR-K và PR-P/PR-Q cùng sửa `StudentDetailPage.tsx`,
+`ClassOverviewPage.tsx`, `IssueAnalysis.tsx`. Hai nhánh cùng sửa ba file đó là xung đột chắc chắn.
+
+---
+
+## 22.2. PR-N — Nền số liệu và kho bằng chứng
+
+**Mục tiêu người dùng thấy:** chưa thấy gì mới. Đây là PR mở đường — nhưng nó đóng một lỗi P0
+đang làm số sai mà người xem không phát hiện được.
+
+### Bước
+
+- [ ] **N1. Bốn hàm chỉ số đang trả 501.** Viết hàm trả **tập ID** cho
+      `hv-sos-hien-tai`, `hv-duoi-ky-vong-mon`, `dung-han-cap-nhat`, `do-phu-danh-gia`.
+      Định nghĩa bắt buộc: `thiet-ke/HOP_DONG_SO_LIEU.md` mục 2. Khai đủ tám trường ở
+      `shared/domain/metrics.ts`. Mỗi hàm một phép kiểm so `số` với `danh sách`.
+- [ ] **N2. DATA-01 (P0).** `server/src/worklist/weekly.ts` lọc phạm vi ở tập đợt thi, nhưng
+      các phép đếm case/HV/chờ duyệt sau đó **chỉ** lọc `planned_period_id` → hai chi nhánh cùng
+      tuần cộng lẫn số của nhau. Sửa: dùng chính tập attempt ID đã được phép; danh sách khi bấm
+      số dùng **cùng tập đó**. Phép kiểm: hai chi nhánh cùng tuần, số của CN A không chứa CN B.
+- [ ] **N3. Đưa số trần qua hợp đồng số liệu.** `branchpulse.ts` (bảng "Việc cần lưu ý", sáu
+      cột), "Theo chi nhánh" và các cột bảng phân tích đang dùng bộ đếm riêng. Chúng khớp với
+      `<SoLieu>` **nhờ may**, không nhờ cấu trúc. Cho chúng gọi hàm chỉ số.
+- [ ] **N4. `GET /metrics/:id` không trả `ids`** khi không có `rows=1`.
+- [ ] **N5. Bảng `attachments` dùng chung.** DDL ở `Y_THUC_VI_PHAM_VA_BIEN_PHAP.md` §4.5.
+      `server/src/platform/attachments.ts`: thêm/xoá/liệt kê, `owner_type` ∈
+      `sos_case | case_intervention | violation | discipline_measure`. Ba luật bắt buộc:
+      (a) lỗi tải tệp **không làm mất nội dung đang nhập** — tải là request riêng;
+      (b) quyền xem tệp = quyền xem bản ghi chủ, không có đường tải nào bỏ qua kiểm quyền;
+      (c) xoá tệp có audit.
+- [ ] **N6. `web/src/ui/BangChung.tsx`** — khối "Bằng chứng" dùng chung: `+ Đính kèm tệp` /
+      `+ Thêm liên kết`, danh sách có tên hiển thị, người tải, ngày. Nối vào **case và phương án
+      học thuật** ngay trong PR này (đóng CASE-04 đang tồn ở mục 12.2).
+
+### Nghiệm thu PR-N
+
+1. Gọi `GET /metrics/hv-duoi-ky-vong-mon` trả số; bấm mở danh sách ra **đúng** tập tạo nên số đó.
+2. Hai chi nhánh cùng một tuần: số của mỗi bên **không** chứa học viên của bên kia.
+3. Bảng "Việc cần lưu ý" và `<SoLieu>` cùng một con số **vì gọi cùng hàm**, chứng minh bằng
+      cách đổi dữ liệu demo rồi thấy cả hai đổi theo.
+4. Tải một tệp vào case học thuật, ngắt mạng giữa lúc nhập mô tả → **mô tả còn nguyên**, lỗi
+      hiện tại dòng tệp.
+5. Người không có quyền xem case gọi thẳng đường tải tệp của case đó → bị từ chối.
+6. `npm run check` xanh; số phép kiểm chỉ tăng.
+
+---
+
+## 22.3. PR-J — Ý thức, nền dữ liệu
+
+**Mục tiêu:** mô hình mới chạy được ở máy chủ; mô hình Case Ý thức bị gỡ sạch. Chưa có màn nào.
+
+### Bước
+
+- [ ] **J1. Năm bảng.** `violations` · `discipline_measures` · `measure_violations` ·
+      `violation_history`. DDL nguyên văn ở `Y_THUC_VI_PHAM_VA_BIEN_PHAP.md` §4.
+      **Chép đúng, kể cả chú thích** — chú thích giải thích vì sao KHÔNG có cột nào.
+- [ ] **J2. `shared/domain/yThuc.ts`.** `VIOLATION_CATEGORIES` (5) · `MEASURE_KINDS` (9, xếp
+      nhẹ→nặng) · `MEASURE_KIND_LABEL` · `MEASURE_REQUIRED_FIELDS` (bảng §5.4) ·
+      `WARNING_CHAIN` · `CANH_BAO_NGAY = 5` · `Y01_*`, `Y02_*` theo luật `LUAT_CHO_CHOT.md` §1.
+- [ ] **J3. `server/src/yThuc/violations.ts`.** Ghi (V01–V08) · sửa (V09–V10) · đánh dấu không
+      chính xác (V11–V14) · cảnh báo trùng mềm V06 trả về bản ghi đang có, **không chặn**.
+- [ ] **J4. `server/src/yThuc/measures.ts`.** Tạo (B01–B05) · **chuỗi Thư cảnh cáo B06–B08 kiểm
+      ở máy chủ, phạm vi lộ trình** · sửa khi `preparing` (B09, B11) · khoá khi `done` (B10) ·
+      xoá (B12) · xác nhận (B13–B16) với ô bắt buộc theo loại.
+- [ ] **J5. Cảnh báo 5 ngày.** Một hàm duy nhất theo định nghĩa §5.5. Dùng lại ở cả ba nơi W05.
+- [ ] **J6. `server/src/yThuc/thongKe.ts`.** Tám chỉ số mới, mỗi cái một hàm trả tập ID
+      (`HOP_DONG_SO_LIEU.md` §5). Sửa định nghĩa ba chỉ số cũ thành "chỉ case học thuật".
+- [ ] **J7. Quyền.** Bảng §6 vào `server/src/permissions.ts`. **C02 không áp cho Ý thức** —
+      C02 là luật của case học thuật; vi phạm không thuộc kỹ năng nào.
+- [ ] **J8. Đường API.** `server/src/routes/index.ts`. Thông báo cho Quản lý khi một
+      `warning_1/2/3` hoặc `suspension` được xác nhận (Y01 — thông báo, **không** phải duyệt).
+- [ ] **J9. GỠ mô hình cũ.** Checklist 36 file ở `Y_THUC_VI_PHAM_VA_BIEN_PHAP.md` §9.1 và §9.2.
+      Làm theo đúng thứ tự: `shared/domain` → `server/src/cases` → `server/src/worklist` →
+      `seed`. Giữ hằng số `C03_*`/`C04_*` kèm chú thích "hết hiệu lực 21/09/2026".
+- [ ] **J10. Reseed demo.** 18 tình huống ở §10. Sửa `server/src/seed/students.ts` +
+      `journeys.ts` + `build.ts`. Viết lại `DEMO_SCENARIOS.md` và `DEMO_ASSUMPTIONS.md` thành
+      **một file gọn** `DEMO.md`; xoá hai file cũ.
+- [ ] **J11. Phép kiểm.** Ít nhất một phép kiểm cho mỗi mã luật V01–V14, B01–B16, W01–W06.
+
+### Bảy chỗ dễ sai nhất của PR-J
+
+1. **Gỡ cột `track` sót một nơi** → case học thuật hỏng. Grep `track` trong `server/src/cases/`
+   **và** `shared/domain/cases.ts` **và** `seed/`.
+2. **`CASE_CATEGORIES` từ 6 xuống 5.** Mọi bảng có cột thứ sáu phải bỏ cột đó, không để cột rỗng.
+3. **`CONTACT_KINDS`** (`talk_student`/`talk_parent`/`warning_letter`) là chỗ dễ sót nhất — nó
+   rải ở `cases.ts`, `effectiveness.ts`, `classBehaviourBoard`, `ClassBehaviourBoard.tsx`.
+4. **Chuỗi Thư cảnh cáo phải kiểm ở máy chủ**, không chỉ ẩn nút. Có phép kiểm gọi thẳng API.
+5. **`violation_count_at_confirm` là snapshot** — không đếm lại. Hủy một vi phạm sau đó **không**
+   đổi số này, nhưng **có** đổi thống kê vi phạm. Hai con số, hai câu hỏi.
+6. **Vi phạm `valid = 0` phải ra khỏi mọi thống kê** nhưng **ở lại** lịch sử học viên.
+7. **Cảnh báo 5 ngày dùng một hàm duy nhất.** Ba nơi hiển thị gọi cùng hàm đó.
+
+### Nghiệm thu PR-J
+
+Bộ 24 mục ở `Y_THUC_VI_PHAM_VA_BIEN_PHAP.md` §12, phần kiểm được ở tầng máy chủ:
+mục 5 · 6 · 7 · 10 · 11 · 12 · 13 · 14 · 15 · 16 · 17 · 19 · 22 · 23 · 24.
+Cộng thêm: `npm run check` xanh, `npm run seed` chạy lại được, và
+`grep -rn "behaviour" server/src shared` chỉ còn chú thích lịch sử **có ghi ngày**.
+
+---
+
+## 22.4. PR-O — Điều hướng bốn khu vực
+
+**Mục tiêu:** `Tổng quan / Học viên & Lớp / Test / Công việc` (D01, quyết định 20/09, chưa làm).
+**Chỉ dựng khung.** Nội dung từng trang giữ nguyên, đổi ở PR-P/Q/R.
+
+### Bước
+
+- [ ] **O1.** `web/src/App.tsx` → `NAV` thành bốn mục. Hiện tại ba mục và **không có khu vực Test**.
+- [ ] **O2.** Khu vực **Test** là điểm đến mới: hàng đợi chấm, lịch Test, Kế hoạch Test, hồ sơ đợt.
+      Gom các route Test đang rải rác (`/nhap-diem/:classId`, `/bang-diem-thuong/:classId`,
+      `/mock-test/:id`) về dưới khu vực này. Nhập điểm **luôn có lối trực tiếp** ở đây.
+- [ ] **O3.** Tổng quan có hai tab `Tổng quan | Phân tích`, **URL riêng** cho tab Phân tích để
+      đi thẳng được (§18.3). Chưa đổi nội dung Phân tích.
+- [ ] **O4.** Đổi nhãn `Học viên` → `Học viên & Lớp` (§18.5).
+- [ ] **O5. Redirect mọi link cũ.** Đã có tiền lệ tốt trong repo: `LegacySheetRedirect`,
+      `/hop-tuan → /tien-trinh`, `/mock-test → /hoc-vien`. Làm y hệt cho mọi đường bị đổi.
+      **Một link chết đắt hơn là chưa đổi điều hướng.**
+- [ ] **O6.** Hiển thị theo capability, không theo tên vai (§17.1). Phần không có quyền thì
+      **bỏ hẳn**, không để ô khoá lớn chiếm diện tích.
+
+### Nghiệm thu PR-O
+
+1. Bốn khu vực hiện đúng với Quản lý; GVBM không thấy mục không có quyền, và **không** thấy ô khoá.
+2. Mọi URL trong `git grep -n "to=\"/"` cũ còn mở được (trực tiếp hoặc qua redirect).
+3. Tab Phân tích mở được bằng URL trực tiếp, `Back` giữ ngữ cảnh.
+4. Khổ 375px: bốn mục không tràn, không cuộn ngang cả trang.
+
+---
+
+## 22.5. PR-K — Ý thức, giao diện đầy đủ
+
+**Mục tiêu:** GVBM ghi vi phạm trong 15 giây; GVCN gom vi phạm và xác nhận biện pháp trong một trang.
+
+Bố cục từng màn: `Y_THUC_VI_PHAM_VA_BIEN_PHAP.md` §7, có sơ đồ ASCII cho từng panel. **Dựng
+theo đúng sơ đồ đó**, kể cả thứ tự ô và vị trí nút.
+
+### Bước
+
+- [ ] **K1.** `web/src/modules/yThuc/ViolationForm.tsx` — panel Ghi vi phạm (§7.2).
+      Năm nhóm là **năm radio bày phẳng**, không dropdown. Cảnh báo trùng **trong form**.
+      Nút `Ghi vi phạm` đặt ở **dòng học viên trong bảng lớp**, không phải trong hồ sơ em.
+      Lưu xong: toast + `Hoàn tác` 10 giây, con trỏ về đúng dòng để ghi tiếp em khác.
+- [ ] **K2.** `ClassViolationBoard.tsx` — tab `Ý thức` của hồ sơ lớp, **ba khu vực** (§7.3).
+      Gom theo **học viên**, không theo ngày. Tuổi `⚠9n` cạnh từng dòng. Thanh `Đã chọn` dính
+      đáy khu vực 1. Khu 2 **luôn mở**, và nói trước "cần tệp gì".
+      **Xoá** `web/src/modules/classes/ClassBehaviourBoard.tsx`.
+- [ ] **K3.** `MeasureForm.tsx` — Tạo biện pháp (§7.4). Chín loại xếp nhẹ→nặng có chữ
+      `nhẹ ─ nặng`; **ba dòng Thư cảnh cáo bị khoá phải nói lý do ngay tại dòng**. Hai nút lưu:
+      `Lưu — Đang chuẩn bị` và `Xác nhận đã làm luôn →`.
+- [ ] **K4.** `MeasureConfirm.tsx` — Xác nhận đã thực hiện (§7.5). **Một form, ô bắt buộc đổi
+      theo loại.** Nút `Xác nhận` **mờ kèm câu nói thiếu gì**, không báo lỗi đỏ sau khi bấm.
+- [ ] **K5.** `ViolationPanel.tsx` (§7.7) và `MeasurePanel.tsx` (§7.8).
+      Vi phạm phải thấy **các biện pháp liên quan** (nguồn §32). Hộp `Đánh dấu không chính xác`
+      có lý do bắt buộc và câu cảnh báo V13.
+- [ ] **K6.** `StudentViolationTab.tsx` — tab `Ý thức` của hồ sơ học viên (§7.6).
+      **Một dòng thời gian trộn vi phạm và biện pháp** theo ngày. Vi phạm hết hiệu lực gạch
+      ngang, xám, **kèm lý do ngay bên dưới**.
+- [ ] **K7.** Góc nhìn `Ý thức` trong Phân tích (§7.9). Mọi số **bấm được**, ra đúng tập.
+      **Không** có cột tỷ lệ cải thiện, **không** có bảng hiệu quả.
+- [ ] **K8.** Một dòng nhắc trong Việc cần làm của GVCN (§7.10). **Xoá hai nhóm việc Ý thức cũ**
+      khỏi `GROUP_META` (`server/src/worklist/mywork.ts`).
+- [ ] **K9. GỠ giao diện cũ.** Checklist §9.3: công tắc `Học thuật / Ý thức` ở `QuickReport.tsx`;
+      cờ `behaviour` ở `CasePanel.tsx`; cột thứ sáu ở `SkillBoard.tsx` và `ClassIssueBoard.tsx`;
+      bộ lọc `track` ở `CaseBoardPage.tsx`; mốc Ý thức kiểu "đợt 2" ở `JourneyTimeline.tsx`.
+- [ ] **K10.** Hồ sơ học viên: cảnh báo vi phạm là **banner** phía trên, **không** thêm ô số thứ
+      năm (§18.7 chốt đúng bốn ô).
+- [ ] **K11.** Khổ 375px cho cả bảy màn.
+
+### Nghiệm thu PR-K
+
+Toàn bộ 24 mục ở §12, **bấm thử thật bằng ba vai**: GVBM (chỉ ghi được), GVCN (làm hết),
+Quản lý (làm hết + xem thống kê chi nhánh). Cộng thêm:
+`grep -ri "case ý thức\|behaviour" web/src` không còn kết quả nào ngoài chú thích có ghi ngày.
+
+**▶ KIỂM 1 — chủ sản phẩm bấm thử ở đây.**
+
+---
+
+## 22.6. PR-P — Tổng quan và Phân tích
+
+Yêu cầu: design plan §4 + §18.2 (Tổng quan) · §5 + §18.3 (Phân tích).
+Tình trạng từng dòng: `BAN_DO_OVERHAUL.md` mục 3 và mục 4.
+
+### Bước
+
+- [ ] **P1. Tổng quan, bốn ô số** có nhãn và mẫu số: `Học viên dưới kỳ vọng` ·
+      `Học viên có case đang mở` · `Chờ xác minh quá hạn` · `Phương án cần cập nhật`.
+      Dùng hàm chỉ số của PR-N. Bấm ô ra đúng tập.
+- [ ] **P2. Khối `Cần xử lý`** — 5–8 dòng thật, mỗi dòng: đối tượng + cần làm gì + người phụ
+      trách + hạn + **một** nút. Thứ tự ưu tiên §4.1: quá hạn xác minh/duyệt → thiếu chủ trách
+      nhiệm → thiếu PA → thiếu kết quả → lịch gần. **Không** thêm risk score tổng hợp.
+- [ ] **P3. Khối `Điểm đáng chú ý`** — tối đa ba nhận định **có số và link nguồn**. Không đoạn văn dài.
+- [ ] **P4. BỎ khỏi màn chính:** `<WorkList>` đầy đủ (chỉ giữ preview 5–8 việc + `Xem tất cả`)
+      và `<Highlights>` khổ lớn (rút thành `Lịch sắp tới` gọn, ba tab tuần, không hiện nhóm 0).
+- [ ] **P5. Bảng `Theo chi nhánh`** — tên cột dễ hiểu, số có đơn vị, hàng mở tới lớp.
+      Thay kiểu `13/4` bằng hai cột `13 case mở` và `4 chưa có PA`.
+      Nếu chỉ một chi nhánh thì ưu tiên bảng lớp, không bắt đọc một hàng CN thừa.
+- [ ] **P6. GV:** màn đầu là `Việc cần làm` + `Học viên cần hỗ trợ` trong phạm vi mình.
+      Không thấy bảng chi nhánh.
+- [ ] **P7. Phân tích — bốn góc nhìn** `Vấn đề học viên | Kết quả hỗ trợ | Theo tuần | Ý thức`.
+      **Chưa làm góc nhìn `Giáo viên`** — hoãn sau deploy, xem `BAN_DO_OVERHAUL.md` §10.
+- [ ] **P8. `Vấn đề học viên`:** ma trận hàng là vấn đề cụ thể, cột là CN hoặc lớp; ô là
+      `n HV / N HV thuộc phạm vi kỹ năng`. Bấm số mở panel `{n} học viên — {vấn đề}` có tên,
+      lớp, case, PA hiện tại, cập nhật gần nhất. **Không** dùng một panel case cho cả số HV lẫn số PA.
+- [ ] **P9. `Kết quả hỗ trợ`:** tiêu đề ngữ cảnh `Listening · {phân loại} · {kỳ}`; thanh tỷ lệ
+      nhỏ **trong ô**, không chart lớn. Nhóm `chưa xác định nguồn` (F03) hiện ra — đã có hàm
+      `planOutcomesUnattributed`, chưa màn nào gọi. Liên kết `Cần bổ sung đánh giá` **ngoài** bảng hiệu quả.
+- [ ] **P10. `Theo tuần`:** nhóm cột `Kết quả Test` và `Tình trạng xử lý hiện nay` phân cách nhẹ.
+      Cột ít dùng vào bộ chọn cột, không bắt kéo ngang mười mấy cột.
+- [ ] **P11. Bỏ** danh sách `Việc đã giao` ở cuối khu phân tích. Bỏ tên mơ hồ `Thực trạng`.
+      **Không** để hai bảng tổng hợp gần trùng nhau cùng hiện mặc định.
+- [ ] **P12. Nối `<KetQuaDot>` và `<TyLe>` vào màn thật.** Hai component này có luật, có phép
+      kiểm, có trang thử — **chưa màn nào dùng** (mục 12.7). Các màn cũ còn tự vẽ câu riêng.
+
+### Nghiệm thu PR-P
+1. Bốn ô số có số thật, bấm ra đúng tập. 2. Màn đầu desktop **không** còn hàng đợi đầy đủ và
+khối Sự kiện nổi bật lớn. 3. Ảnh desktop + 375px ở hai vai QL và GVBM. 4. Mọi phần trăm đi qua
+`<TyLe>`; `N=0` ghi `Chưa có dữ liệu`, `N<5` có nhãn mẫu nhỏ. 5. Dữ liệu rỗng / ít / nhiều đều đọc được.
+
+**▶ KIỂM 2.**
+
+---
+
+## 22.7. PR-Q — Học viên & Lớp, Hồ sơ lớp, Hồ sơ học viên, Hành trình
+
+Yêu cầu: §8.3 · §8.4 · §18.5 · §18.6 · §22.2 (lớp) và §8.1 · §8.2 · §18.7 (hồ sơ HV).
+Tình trạng từng dòng: `BAN_DO_OVERHAUL.md` mục 6 và mục 7.
+
+### Bước
+
+- [ ] **Q1. Danh sách lớp:** một ô tìm kiếm dùng được tên HV / mã HV / mã lớp. Lọc chi nhánh
+      dùng dropdown khi nhiều CN — **không** bày đồng thời dropdown và dải tab CN.
+      Hàng lớp chỉ 2–3 thông tin: bài cần chấm, case mở, mốc sắp tới.
+- [ ] **Q2.** Đổi badge `case SOS` thành nhãn **chính xác với tập đếm**. Case còn mở **không**
+      đồng nghĩa em hiện vẫn SOS.
+- [ ] **Q3.** Lớp mặc định thu gọn khi danh sách dài; tìm kiếm **tự mở** lớp chứa kết quả.
+- [ ] **Q4. Hồ sơ lớp — bốn tab** `Học viên | Ý thức | Phân tích lớp | Giáo viên` (chốt 21/09).
+      `Lộ trình` và `Chuyển tiếp lớp` là **nút ở header**, không phải tab.
+      **Bỏ màn trung gian `Thông tin lớp` chứa tiếp hai tab** (§22.2) — nhưng các trường
+      tên/mã/chương trình vẫn phải có nơi sửa hợp lý, **không bị mất vì gỡ tab**.
+- [ ] **Q5.** Tab `Giáo viên` dùng **chung** form Phân công (`TeacherAssignPanel.tsx`),
+      không hai bộ form. Ba luật phân công ở máy chủ **đã đúng** (`classes.ts:690–760`) —
+      **đừng viết lại**.
+- [ ] **Q6.** Ô `Chọn giáo viên` trong dropdown `Người phụ trách` — chưa làm (mục 12.11),
+      cần lọc theo giáo viên ở máy chủ. Dùng `PeoplePicker.tsx` đã có.
+- [ ] **Q7. Hồ sơ HV — bốn ô đầu** đổi thành `Kết quả Test gần nhất` · `Kỹ năng cần hỗ trợ` ·
+      `Case đang mở` · `Việc cần làm tiếp`. Ô Test dùng `<KetQuaDot>`; Normal ghi đủ/thiếu bao
+      nhiêu môn, **không bịa OVR**. Ô việc có **động từ và hạn**, không dùng một ngày cũ làm nội dung.
+- [ ] **Q8.** Mỗi phương án một khối ba phần: `Nội dung và người làm | Kết quả gần nhất và ngày |
+      Việc tiếp theo và hạn`. Mobile xếp dọc đúng thứ tự. PA đã xong thu gọn phía dưới;
+      **không** giấu PA đang chạy sau "và một việc nữa".
+- [ ] **Q9. Hành trình:** chọn `Toàn bộ / một kỹ năng / Ý thức`, mặc định 6–8 tuần và các case
+      đang mở. Thêm **thanh chặng gọn** (vào lớp → Test → hỗ trợ → chuyển tiếp).
+      Mốc đọc được bằng **tên và ngày**, không cần hover mới hiểu.
+      Đổi `Các mốc đã qua` → `Mốc học tập`. **Không** trộn nhật ký chỉnh sửa kỹ thuật vào hành trình.
+
+### Nghiệm thu PR-Q
+1. Bốn tab hồ sơ lớp đúng thứ tự; `Lộ trình`/`Chuyển tiếp` là nút header và vẫn mở được.
+2. Không còn màn trung gian `Thông tin lớp`, nhưng vẫn sửa được tên/mã/chương trình.
+3. Bốn ô hồ sơ HV đúng nhãn mới; ô Test dùng `<KetQuaDot>`.
+4. Khối case hai phương án song song + ghi chú dài + tên GV dài: không tràn, không cắt (§18.9).
+5. Ảnh desktop + 375px, ba vai. 6. `npm run check` xanh.
+
+**▶ KIỂM 3.**
+
+---
+
+## 22.8. PR-R — Công việc, Kế hoạch Test, đường vào nhập điểm
+
+Yêu cầu: §7 + §18.4 (Công việc) · §9 + §18.8 + §22.3 (Test).
+Tình trạng từng dòng: `BAN_DO_OVERHAUL.md` mục 5 và mục 8.
+
+### Bước
+
+- [ ] **R1. Ba tab một nơi:** `Hỗ trợ học viên / Vận hành / Báo cáo đơn vị` (tên §18.4 —
+      **không** dùng tên §7.1). Hiện `MgmtTasksPage` và `MeetingPage` là hai route riêng.
+- [ ] **R2. `Hỗ trợ học viên`:** bốn bộ lọc nhanh `Tất cả / Quá hạn / Đến hạn / Chờ duyệt`.
+      **Bỏ chuỗi hơn mười nút lọc ngang.** Loại việc và người phụ trách dùng dropdown có tìm kiếm.
+- [ ] **R3. `Vận hành`:** bảng năm cột `Công việc / Người phụ trách / Hạn hoàn thành / Trạng thái /
+      Cập nhật gần nhất`. **Bỏ ghi chú bị lặp** ở cả Trạng thái và Cập nhật.
+      Tên việc tối đa 2 dòng; ghi chú mới nhất 1–2 dòng, ngày cạnh ghi chú.
+      `Tạm ngưng` phải có **lý do + người cần hỗ trợ + ngày xem lại**, và **không** xoá quá hạn gốc.
+      Dời hạn **lưu ngày cũ và lý do**; độ trễ không reset bằng cách sửa deadline.
+      Việc con quá hạn hiện **tên việc con**, không chỉ badge.
+- [ ] **R4. `Báo cáo đơn vị` — đảo thứ tự:** tuần+kỳ+phạm vi → số đã nộp/còn thiếu → ma trận
+      đơn vị → cần quyết định trong họp. `Việc đã giao` và tồn học vụ xuống phần thu gọn.
+      **Bảng phải hiện ngay màn đầu desktop**, không cần cuộn qua hai danh sách.
+- [ ] **R5. Ba trạng thái tách bạch `Nháp / Đã nộp / Chưa báo cáo`** (D04). Lưu nháp cả tuần,
+      nộp theo cửa sổ cuối tuần. **Nháp không tính đã báo cáo.** Chỉ khoá nút `Nộp`, không khoá form.
+      Nút `Lưu nháp` và `Nộp báo cáo` **tách rõ**.
+- [ ] **R6. Liên kết báo cáo ↔ task thật (F06).** `meetingBoard` đang gợi ý theo "cùng nhóm +
+      cùng CN" và ẩn task thứ 7. Nếu giữ gợi ý thì phải gọi `Việc cùng nhóm`, **không**
+      `Việc xử lý báo cáo này`.
+- [ ] **R7. Quy ước URL cho "mở đúng đợt".** Chốt **một** tham số trên `StudentDetailPage`
+      (gợi ý `?attempt=<id>` hoặc `?focus=<attemptId>:<skill>`). Làm **trước** R8 — dựng lẻ tẻ
+      ở từng nơi gọi là sinh ra đúng kiểu hai định nghĩa một khái niệm.
+- [ ] **R8. Bốn đường vào nhập điểm** (mục 12.5): (a) badge lớp mở **lưới chấm** chứ không phải
+      hàng đợi lọc, và nút ở `ClassOverviewPage.tsx` mang `scope`; (b) nhãn MT2/MT3/Final ở
+      `ClassRoster.tsx` mở hồ sơ đúng đợt; (c) bốn ô số đầu hồ sơ HV **bấm được**
+      (`HeaderStats`/`Stat` đang là `<div>` tĩnh); (d) mốc Test trên `JourneyTimeline.tsx`
+      có `onClick`. Cộng thêm: `GET /notifications` JOIN thêm `studentId` theo `entity_type` —
+      **không đổi schema**, chỉ đổi câu SELECT.
+- [ ] **R9. Kế hoạch Test — panel mới** năm phần: `Lớp và học viên → Lượt Test và lịch hiện tại →
+      Lịch mới → Kiểm tra thay đổi → Lưu`. Bỏ bố cục `một tuần chung + bốn checkbox + dãy MT1–MT7`
+      làm đường thao tác mặc định; dãy lượt vào phần lịch sử thu gọn.
+      Hai hàng lịch nhanh **RLW** và **Speaking** tách riêng.
+      Cấu hình kỹ năng bắt buộc **tách khỏi** sửa lịch, để không bỏ môn nhầm khi chỉ dời tuần.
+- [ ] **R10. Ô đã có lịch mở chỉnh sửa** với tuần cũ → mới, **không** cho chọn rồi báo lỗi trùng.
+      Hiện panel chỉ gọi `bulkPlan` → `createAttempt` (luôn INSERT); sửa thật phải gọi
+      `setSkillWeek` cho từng kỹ năng, mở modal cùng kiểu `SkillWeekModal` đã có preview và quyền.
+- [ ] **R11. "Đợt hoàn tất thì chỉ đọc"** — `assessment_attempts.status` **không** có giá trị
+      riêng cho "hoàn tất"; trạng thái này đang được **suy ra** từ đủ điểm required.
+      **Định nghĩa rõ ở tầng dữ liệu trước khi chặn**, vì chặn nhầm khoá luôn việc hiệu chỉnh hợp lệ.
+      Nếu chưa chắc thì **để ngỏ và ghi vào mục 12**, đừng đoán.
+- [ ] **R12. Nút dời lịch một kỹ năng cho lớp Normal** — hiện **không có ở bất kỳ đâu**.
+      Quyền `schedule.move` đã mở đúng ở máy chủ (12 phép kiểm). Dựng UI ở
+      `RegularSheetPage.tsx`, tái dùng `moveableSkills`/`canMoveSkillSchedule` đã có.
+- [ ] **R13. Bộ chọn tuần** — kiểm ở panel 600px, modal rộng và mobile (§22.8 điểm 3).
+      Nút **không** rớt hàng ngẫu nhiên; popover **không** bị cắt bởi z-index.
+
+### Nghiệm thu PR-R
+1. Ba tab một nơi, tên đúng §18.4. 2. Bảng báo cáo đơn vị hiện ngay màn đầu desktop.
+3. Lưu nháp giữa tuần được, `Nộp` bị khoá ngoài cửa sổ, nháp **không** tính đã báo cáo.
+4. Cả bốn đường vào mở đúng đợt và đúng kỹ năng. 5. Bấm ô MT đã có lịch → sửa được, không lỗi trùng.
+6. Lớp Normal dời được lịch một kỹ năng. 7. Bộ chọn tuần ở ba khổ, không rớt hàng, không cắt popover.
+
+**▶ KIỂM 4.**
+
+---
+
+## 22.9. PR-S — Học thuật theo rule mới, biên tập chữ, nợ kỹ thuật
+
+### Bước — Học thuật (rule book §18.2)
+
+- [ ] **S1.** Đóng SOS không tạo Case: **bắt buộc ghi lý do** (`resolution_note`).
+- [ ] **S2. Lịch sử điều chỉnh phương án.** Hiện sửa nội dung phương án là **ghi đè, mất bản cũ**.
+      Rule mới bắt buộc audit được: phương án ban đầu là gì · đổi khi nào · **vì sao đổi** ·
+      hiện tại là gì. Chuỗi "thay thế" (`superseded_by`) đã có, giữ; thêm nhật ký sửa nội dung.
+- [ ] **S3.** Đổi tên mức: `Cần chú ý` → **`Bình thường`** (5 ngày). `Gấp` giữ (3 ngày).
+      Grep **mọi biến thể** kể cả test, seed và thông báo máy chủ.
+- [ ] **S4.** Cập nhật tuần rút gọn theo nguồn §8: kết quả hiện tại · tiến triển · vấn đề còn
+      tồn · giữ nguyên / điều chỉnh / thay phương án · ghi chú. Không biến thành form dài.
+- [ ] **S5.** Ô `Điểm chi tiết theo kỹ năng` của tab nhập bù — nối dây theo hình
+      `ComponentsField` (mục 12.2). `backfillCase` ở máy chủ **đã nhận sẵn** `metrics` và validate.
+- [ ] **S6.** Tab `Đã xong từ trước` **chỉ còn nhánh Học thuật** — nhánh Ý thức không còn lý do tồn tại.
+
+### Bước — biên tập chữ và trạng thái rỗng
+
+- [ ] **S7.** Quét **từng màn** theo "một khái niệm một chữ". Mục 12.11 ghi rõ chưa làm:
+      mọi `<Empty>` chưa được kiểm "**thiếu gì + ai điền được + nút nào**"; nhiều `SectionNote`
+      giải thích **mô hình dữ liệu** còn nguyên trên màn đọc.
+- [ ] **S8.** Bỏ dòng `Lớp là gốc…`, chân trang `badge chỉ xuất hiện…`, chân bảng
+      `năm cột số… đừng chia chung`. Đơn vị đặt ở **tên cột**; công thức vào tooltip `Cách tính`.
+- [ ] **S9.** Nhãn `Chờ nhập điểm` và `Hạn nhập điểm 23/09` đang đứng cạnh nhau ở cùng một dòng
+      hồ sơ Test — hai câu đúng nhưng gần nhau (mục 12.10).
+- [ ] **S10.** FT ghi `Lịch Mock Test được xếp riêng cho từng học viên`; Normal ghi
+      `Các mốc kiểm tra được tính từ tuần khai giảng`. Kiểm đúng ngữ cảnh, không đổi lẫn.
+
+### Bước — nợ kỹ thuật (mục 12.12)
+
+- [ ] **S11.** Chuỗi `sit_note` bắt đầu bằng "Không dự thi" đang bị dùng làm **cờ nhận biết**
+      (`fromNoShow`). Thay bằng **cột riêng**. Một chuỗi chữ làm cờ là một quả bom hẹn giờ:
+      lượt biên tập tiếng Việt sau sẽ vô tình gỡ nó.
+- [ ] **S12.** Đếm chi nhánh (`branchpulse`) loại ô có dấu `-` **một cách thô**, không xét cặp
+      W1/W2 như bảng chấm. Dùng cùng một hàm với bảng chấm.
+- [ ] **S13.** Báo lại `-` cho cùng một tuần sau khi Quản lý đã đảo kết luận chốt là
+      **không-làm-gì** (cờ đã chốt còn nguyên): dấu không hiện lại, cũng không chốt lại. Quyết định rõ.
+- [ ] **S14.** `resolveLateNoShow` xác nhận cho Writing mới chặn khi thiếu một task — **chưa có
+      phép kiểm riêng** cho nhánh đó.
+- [ ] **S15.** Phép kiểm `PR-H` về `workScope` chỉ kiểm hàm thuần, **chưa kiểm** trường máy chủ trả về.
+- [ ] **S16.** Dữ liệu demo: **học viên đã kết thúc khoá mà case còn mở** (Vũ Thu Uyên, case 57).
+      Là lý do duy nhất khiến Tổng quan đếm 29 mà Thực trạng đếm 28.
+      **Chưa có luật nào đóng hoặc giao lại case khi một em kết thúc lộ trình** — nếu vẫn chưa có
+      lời chốt thì **để nguyên và ghi vào mục 12**, đừng tự đóng case.
+- [ ] **S17.** Case Fast Track mở mà em chuyển sang Normal (ví dụ hạng mục `writing1`) biến khỏi
+      tab Normal của Phân tích, Tổng quan vẫn đếm. **Chưa quyết định hiện ở đâu** — hỏi, đừng đoán.
+
+### Nghiệm thu PR-S
+1. Đóng SOS không lý do → bị từ chối. 2. Sửa nội dung phương án hai lần → đọc lại được cả hai
+bản cũ và lý do đổi. 3. `grep -rn "Cần chú ý" .` không còn kết quả nào là nhãn mức case.
+4. Mở **từng** màn ở ba vai, mọi `<Empty>` nói đủ "thiếu gì + ai điền + nút nào".
+5. `grep -rn "sit_note" server/src` không còn chỗ nào dùng chuỗi chữ làm cờ.
+6. `npm run check` xanh; số phép kiểm chỉ tăng.
+
+**▶ KIỂM 5 — nghiệm thu toàn web.**
+
+---
+
+## 22.10. Việc hoãn — đã chốt 21/09, đừng đề xuất lại như việc mới
+
+| Khối | Vì sao hoãn | Đọc ở đâu |
+|---|---|---|
+| **Design plan §6 + góc nhìn `Giáo viên` của §18.3** — phân tích theo giáo viên | Tính năng mới hoàn toàn, quy mô bằng 2 PR. Cần D02 áp ở **API, tìm kiếm, drill-down và xuất dữ liệu** (không chỉ ẩn menu), và cần hai chỉ số `dung-han-cap-nhat` + `do-phu-danh-gia` mà PR-N mới tạo. Không chặn việc hằng ngày của GV | `BAN_DO_OVERHAUL.md` §10 |
+| **Design plan §11** kho ý tưởng mở rộng · **plan.md §20** kho ý tưởng thiết kế | Chưa duyệt. §20.1 đã ghi ba ý tưởng bị loại — đừng đề xuất lại | design plan §11 · plan.md §20 |
+| **C08** — Normal có dùng dấu `-` không, và ai thêm | Chủ sản phẩm chưa trả lời. Trên màn giữ câu trung tính `Hạn chấm theo quy định của lớp` | `LUAT_CHO_CHOT.md` §6.4 |
+
+## 22.11. Mốc deploy
+
+**Chưa đặt vào kế hoạch** (chốt 21/09/2026). Làm xong 8 PR rồi bàn riêng.
+Đừng tự suy điều kiện deploy từ việc một PR đã tick.

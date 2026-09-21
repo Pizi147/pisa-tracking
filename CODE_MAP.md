@@ -48,10 +48,12 @@ Nếu bạn nghĩ theo "cái tôi thấy trên màn hình" chứ không theo tê
 | `DEMO_SCENARIOS.md` | Mở hồ sơ nào để xem tình huống nào |
 | `DEMO_ASSUMPTIONS.md` | Bộ demo giả định những gì |
 | `vong7/BRIEF_OVERHAUL_SAU_PR15.md` | Đề bài nghiệp vụ gốc |
-| `BAN_GIAO.md` | Bàn giao hiện hành: đang ở đâu, làm gì tiếp |
-| `BAN_GIAO_*.md` (các file cũ) | **Lịch sử, không phải luật.** Xem cảnh báo ở `plan.md` mục 1.2 |
-| `thiet-ke/PISA-Rulebook-2026-09-19.md` | **Luật sản phẩm** do chủ sản phẩm chốt. Mục 17 ưu tiên hơn mọi mô tả cũ mâu thuẫn |
-| `thiet-ke/PISA-Design-Plan-after-PR28.md` | **Đặc tả thiết kế** sau PR28; mục 17–22 là bản mới nhất |
+| *(bốn nhóm file bàn giao và tham chiếu cũ)* | **ĐÃ XOÁ 21/09/2026:** BAN\_GIAO (bốn file), PISA\_Design\_Master\_Reference, PRODUCT\_DEMO\_SPEC, thư mục vong4. Đã bị `thiet-ke/` thay hẳn. `plan.md` mục 1.2 đã cảnh báo chúng là "lịch sử, không phải luật" — giữ lại chỉ tạo rủi ro đọc phải luật cũ. Cần tra lại thì dùng `git log` |
+| `thiet-ke/PISA-Rulebook-2026-09-19.md` | **Luật sản phẩm** do chủ sản phẩm chốt. **Mục 18 (21/09) ưu tiên hơn mục 17**; mục 17 ưu tiên hơn mọi mô tả cũ mâu thuẫn |
+| `thiet-ke/NGUON-Rule-Y-thuc-2026-09-21.md` | **Nguồn mới nhất** do chủ sản phẩm gửi 21/09/2026: bỏ hẳn mô hình Case Ý thức |
+| `thiet-ke/Y_THUC_VI_PHAM_VA_BIEN_PHAP.md` | **Đặc tả phần Ý thức mới** — Vi phạm và Biện pháp xử lý. Đọc trước khi chạm bất kỳ thứ gì có chữ `behaviour` |
+| `thiet-ke/BAN_DO_OVERHAUL.md` | **Yêu cầu nào của design plan đã có, cái nào chưa, PR nào làm.** Đọc trước khi tưởng "chỉ còn vài việc dọn" |
+| `thiet-ke/PISA-Design-Plan-after-PR28.md` | **Đặc tả thiết kế** sau PR28; mục 17–22 là bản mới nhất. Đọc kèm `thiet-ke/BAN_DO_OVERHAUL.md` để biết mục nào hết hiệu lực |
 | `thiet-ke/HE_GIAO_DIEN.md` | Trước khi dựng bất kỳ màn nào — token, component dùng chung, bốn trạng thái dữ liệu, mobile, bàn phím |
 | `thiet-ke/HOP_DONG_SO_LIEU.md` | Khi code một con số trên dashboard/báo cáo — chỉ số đó nghĩa là gì, bấm vào ra tập nào |
 | `thiet-ke/TU_DIEN_VA_CHU.md` | Khi viết hoặc sửa chữ tiếng Việt trên giao diện |
@@ -63,7 +65,12 @@ ba nơi.
 
 ---
 
-## Tám module
+## Chín module
+
+> **Module thứ chín — `Ý thức` — CHƯA TỒN TẠI trong mã**, nhưng đã có đặc tả đầy đủ ở
+> `thiet-ke/Y_THUC_VI_PHAM_VA_BIEN_PHAP.md`. Nó thay phần Ý thức đang nằm nhờ trong module
+> **Case**. Lý do tách: `server/src/cases/cases.ts` đã **3033 dòng**; nhồi thêm hai vòng đời
+> nữa vào đó là cách chắc chắn nhất để không ai sửa được nó nữa.
 
 | Module | Trả lời câu hỏi | Máy chủ | Giao diện |
 |---|---|---|---|
@@ -71,7 +78,8 @@ ba nơi.
 | **Lớp học** | Lớp nào, ai dạy, ai đang học, chuyển lớp thế nào | `server/src/classes/` | `web/src/modules/classes/` |
 | **Fast Track** | Tuần Mock Test, điểm band, mức SOS, dự kiến thi | `server/src/fasttrack/` | `web/src/modules/fasttrack/` |
 | **Normal** | FOU/BE/ELE, bốn môn L/R/W/S, điểm đạt/tổng điểm, chuyển tiếp lớp | `server/src/normal/` | `web/src/modules/normal/` |
-| **Case** | Vấn đề của em, phương án, phê duyệt, kết quả | `server/src/cases/` | `web/src/modules/cases/` |
+| **Case** | Vấn đề **học thuật** của em, phương án, phê duyệt, kết quả | `server/src/cases/` | `web/src/modules/cases/` |
+| **Ý thức** *(chưa có mã)* | Em vi phạm gì, đã xử lý bằng biện pháp nào, bằng chứng đâu | `server/src/yThuc/` | `web/src/modules/yThuc/` |
 | **Tổng quan và công việc** | Ai phải làm gì, cả chi nhánh đang thế nào | `server/src/worklist/` | `web/src/modules/worklist/` |
 | **Nền tảng** | Tài khoản, quyền, tuần, danh mục, nhật ký thay đổi | `server/src/platform/` | `web/src/modules/platform/` |
 | **Dùng chung** | Badge, nút, panel, bảng, chọn tuần | — | `web/src/ui/` |
@@ -171,6 +179,12 @@ loại dữ liệu mới** vào kịch bản thì thêm trường ở `journeys.
 | Bài nào mở màn nào (Mock Test hay bảng điểm Normal) | `server/src/fasttrack/attempts.ts` → `attemptHref` · `web/src/lib/format.ts` |
 
 ### Case
+
+> ⚠️ **HẾT HIỆU LỰC 21/09/2026 — mọi dòng dưới đây có chữ "Ý thức".** Rule book mục 18 bỏ hẳn
+> mô hình Case Ý thức. Trước khi sửa bất kỳ thứ gì có `behaviour`, `BEHAVIOUR_*`, `track`,
+> `CONTACT_KINDS`, `case_reports`, `episode_no`, `merge_until`, đọc
+> `thiet-ke/Y_THUC_VI_PHAM_VA_BIEN_PHAP.md` mục 9 — **checklist 36 file phải gỡ**.
+> Bảng `sos_cases` từ nay là bảng **case học thuật**.
 
 | Muốn sửa | Mở file |
 |---|---|
