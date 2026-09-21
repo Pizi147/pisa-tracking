@@ -432,6 +432,8 @@ function migrateCaseEngine(applied: string[], skipped: string[]) {
     migrateReportHistory(conn, applied);
     /* CUỐI CÙNG: sau khi mọi bước thời Case Ý thức ở trên đã chạy xong, chuyển dữ liệu của mô hình đó sang mô hình mới. */
     migrateLegacyDisciplineCases(conn, applied);
+    /* Sau cùng của các bước cấu trúc: rulebook v3 (PR-T) thêm cột/bảng trên những bảng mà các bước trên đã dựng đủ. */
+    migrateSosV3(conn, applied);
 
     /*
      * Case đã đóng theo hệ thống cũ mà không có hướng xử lý: ghi rõ là "đóng theo hệ thống
@@ -2763,6 +2765,58 @@ export function migrateLegacyDisciplineCases(conn: any, applied: string[]) {
   applied.push(
     `Chuyển mô hình Case Ý thức sang Vi phạm và Biện pháp xử lý: ${violationsMade} vi phạm và ${measuresMade} biện pháp được giữ lại từ ${removed} case Ý thức cũ (${attachmentsKept} tệp/liên kết bằng chứng đi theo)`
     + `, ${signalsGone} tín hiệu Ý thức cũ được gỡ; đã bỏ các cột track/episode_no/merge_until/urgency_raised_at và bảng case_reports`,
+  );
+}
+
+/**
+ * RULEBOOK v3 — SOS TỰ TẠO CASE, PHỐI HỢP SOS (PR-T, 21/09/2026 tối).
+ *
+ * Thêm, KHÔNG đổi và KHÔNG xoá gì: hai cột phương án điền sẵn/xác nhận, hai cột lý do đóng case, và bảng `sos_coordination_actions`.
+ * Mọi dòng cũ giữ nguyên: phương án cũ `preset = 0` (không phải điền sẵn, không cần xác nhận) nên không đổi hành vi. Chạy lặp không
+ * làm gì. DDL chép từ `schema.sql`.
+ */
+export function migrateSosV3(conn: any, applied: string[]) {
+  const hasTable = (t: string) => !!conn.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name = ?").get(t);
+  const cols = (t: string): string[] => (conn.prepare(`PRAGMA table_info(${t})`).all() as any[]).map((c: any) => c.name);
+  if (!hasTable('sos_cases') || !hasTable('case_interventions')) return;
+
+  const added: string[] = [];
+  const addCol = (table: string, col: string, decl: string) => {
+    if (!cols(table).includes(col)) { conn.exec(`ALTER TABLE ${table} ADD COLUMN ${col} ${decl}`); added.push(`${table}.${col}`); }
+  };
+  addCol('case_interventions', 'preset', 'INTEGER NOT NULL DEFAULT 0');
+  addCol('case_interventions', 'confirmed_by', 'INTEGER REFERENCES users(id)');
+  addCol('case_interventions', 'confirmed_at', 'TEXT');
+  addCol('sos_cases', 'dismiss_reason_code', 'TEXT');
+  addCol('sos_cases', 'dismiss_reason_text', 'TEXT');
+
+  let table = false;
+  if (!hasTable('sos_coordination_actions')) {
+    conn.exec(`
+      CREATE TABLE sos_coordination_actions (
+        id INTEGER PRIMARY KEY,
+        attempt_id INTEGER NOT NULL REFERENCES assessment_attempts(id),
+        student_id INTEGER NOT NULL REFERENCES students(id),
+        kind TEXT NOT NULL,
+        custom_name TEXT,
+        preset INTEGER NOT NULL DEFAULT 0,
+        status TEXT NOT NULL DEFAULT 'pending',
+        performed_on TEXT, performed_by INTEGER REFERENCES users(id), performer_name TEXT,
+        note TEXT,
+        remove_reason_code TEXT, remove_reason_text TEXT,
+        removed_by INTEGER REFERENCES users(id), removed_at TEXT,
+        created_at TEXT NOT NULL, updated_at TEXT
+      );
+      CREATE UNIQUE INDEX uq_sca_attempt_kind ON sos_coordination_actions(attempt_id, kind, COALESCE(custom_name, ''));
+      CREATE INDEX idx_sca_attempt ON sos_coordination_actions(attempt_id);
+      CREATE INDEX idx_sca_student ON sos_coordination_actions(student_id, status);
+    `);
+    table = true;
+  }
+  if (!added.length && !table) return;
+  applied.push(
+    `PR-T (rulebook v3): thêm ${added.length} cột (${added.join(', ') || 'không'}) cho phương án điền sẵn / lý do đóng case`
+      + `${table ? ' và bảng Phối hợp SOS (sos_coordination_actions)' : ''}. Dữ liệu cũ giữ nguyên; phương án cũ không bị coi là điền sẵn.`,
   );
 }
 

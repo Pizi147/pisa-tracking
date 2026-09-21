@@ -766,6 +766,12 @@ CREATE TABLE sos_cases (
   outcome TEXT,
   outcome_note TEXT,
   outcome_decision TEXT,
+  /*
+   * ĐÓNG VÌ `KHÔNG CẦN THEO DÕI` (S05, rulebook v3): GVBM đóng ngay một case tự tạo từ SOS kèm lý do chọn nhanh
+   * (special_circumstance | single_incident | other; chỉ `other` có chữ). Case đóng, giữ lịch sử, KHÔNG có `outcome`.
+   */
+  dismiss_reason_code TEXT,
+  dismiss_reason_text TEXT,
   outcome_by INTEGER REFERENCES users(id),
   outcome_at TEXT,
 
@@ -994,8 +1000,21 @@ CREATE TABLE case_interventions (
    * không thành công, đó là cả lý do phải thay. Nhưng cũng không để nó treo vô hạn, vì
    * case sẽ không bao giờ đủ điều kiện đóng.
    */
-  closed_reason TEXT,                 -- NULL | 'superseded' | 'done'
+  closed_reason TEXT,                 -- NULL | 'superseded' | 'done' | 'score_fixed' | 'dismissed'
   superseded_by INTEGER REFERENCES case_interventions(id),
+
+  /*
+   * PHƯƠNG ÁN ĐIỀN SẴN TỪ SOS (rulebook v3, PR-T — thiet-ke/SOS_VA_PHOI_HOP_V3.md §3.3).
+   *
+   * `preset = 1` là phương án hệ thống điền theo bảng MT × mức SOS khi Mock Test FT tự tạo case. Nó chỉ là GỢI Ý cho tới khi
+   * GVBM xác nhận (`confirmed_at` khác NULL). Phương án `preset = 1` mà `confirmed_at IS NULL`:
+   *   · KHÔNG vào thống kê hiệu quả (`cases/effectiveness.ts`),
+   *   · KHÔNG sinh nghĩa vụ cập nhật tuần (nên `action_due` để NULL cho tới khi xác nhận).
+   * Phương án tự tay ghi (đường thường) luôn `preset = 0` và không cần xác nhận.
+   */
+  preset INTEGER NOT NULL DEFAULT 0,
+  confirmed_by INTEGER REFERENCES users(id),
+  confirmed_at TEXT,
 
   migration_key TEXT UNIQUE,
   created_at TEXT NOT NULL,
@@ -1411,7 +1430,7 @@ CREATE TABLE demo_sessions (
  */
 CREATE TABLE attachments (
   id INTEGER PRIMARY KEY,
-  -- sos_case | case_intervention | violation | discipline_measure
+  -- sos_case | case_intervention | violation | discipline_measure | sos_coordination_action
   owner_type TEXT NOT NULL,
   owner_id INTEGER NOT NULL,
   -- file | link
@@ -1544,3 +1563,36 @@ CREATE TABLE violation_history (
   created_at TEXT NOT NULL
 );
 CREATE INDEX idx_vh_violation ON violation_history(violation_id);
+
+/*
+ * PHỐI HỢP SOS — MỘT VIỆC của GVCN sau một lượt Mock Test có SOS (rulebook v3, PR-T; thiet-ke/SOS_VA_PHOI_HOP_V3.md §5).
+ *
+ * KHÔNG phải vi phạm, KHÔNG phải biện pháp xử lý, KHÔNG phải phương án học thuật — ba luồng tách riêng, không chung bảng. Dùng chung
+ * component giao diện với Biện pháp (ghi chú, ngày, tệp, xác nhận) nhưng không chung dữ liệu.
+ *
+ * SOS Event KHÔNG có bảng: nó là chính lượt Mock Test (`assessment_attempts`) có `sos_level ≥ 1`; `attempt_id` là mỏ neo.
+ * Trạng thái "Hoàn thành" của một lượt là SUY RA (mọi việc `done` hoặc `removed`), không lưu.
+ *
+ * KHOÁ CHỐNG TRÙNG là chỉ mục duy nhất trên (lượt, loại, tên) — viết bằng COALESCE vì `UNIQUE (attempt_id, kind, custom_name)`
+ * của đặc tả KHÔNG chặn gì khi `custom_name` NULL (SQLite coi mỗi NULL là một giá trị riêng), tức là chạy lặp sẽ nhân đôi việc.
+ */
+CREATE TABLE sos_coordination_actions (
+  id INTEGER PRIMARY KEY,
+  attempt_id INTEGER NOT NULL REFERENCES assessment_attempts(id),   -- SOS Event
+  student_id INTEGER NOT NULL REFERENCES students(id),
+  -- talk_student | talk_family | gvcn_meeting | cx_meeting_student | cx_meeting_family | other
+  kind TEXT NOT NULL,
+  custom_name TEXT,                     -- bắt buộc khi kind = 'other'
+  preset INTEGER NOT NULL DEFAULT 0,    -- 1 = điền sẵn theo bảng §5.3
+  -- pending (cần xử lý) | done (đã xong) | removed (đã bỏ, có lý do)
+  status TEXT NOT NULL DEFAULT 'pending',
+  performed_on TEXT, performed_by INTEGER REFERENCES users(id), performer_name TEXT,
+  note TEXT,
+  -- not_needed | handled_otherwise | duplicate_measure | other | system_sos_changed
+  remove_reason_code TEXT, remove_reason_text TEXT,
+  removed_by INTEGER REFERENCES users(id), removed_at TEXT,
+  created_at TEXT NOT NULL, updated_at TEXT
+);
+CREATE UNIQUE INDEX uq_sca_attempt_kind ON sos_coordination_actions(attempt_id, kind, COALESCE(custom_name, ''));
+CREATE INDEX idx_sca_attempt ON sos_coordination_actions(attempt_id);
+CREATE INDEX idx_sca_student ON sos_coordination_actions(student_id, status);

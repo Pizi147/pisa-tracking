@@ -696,7 +696,7 @@ export function myWork(p: Principal, f: { branchId?: number | null } = {}) {
     if (!mayDecide) continue;
 
     /*
-     * HẠN PHẢI CÓ PHƯƠNG ÁN THEO MỨC ĐỘ (mục 8.3): Gấp 3 ngày, Cần chú ý 5 ngày, tính cả
+     * HẠN PHẢI CÓ PHƯƠNG ÁN THEO MỨC ĐỘ (mục 8.3): Gấp 3 ngày, Bình thường 5 ngày, tính cả
      * ngày đầu. Chỉ áp cho case học thuật.
      *
      * Trước vòng 7 hạn này bằng nguyên một chu kỳ hỗ trợ (hai tuần), nên một case Gấp nằm

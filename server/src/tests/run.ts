@@ -6077,13 +6077,13 @@ check('[6.3] Bốn trường bắt buộc: tên, mô tả, mức độ hai bậc
     /phân loại/, 'Mở được case không có phân loại vấn đề',
   );
 
-  /* "Bình thường" đã bỏ — gửi lên là bị từ chối, không phải âm thầm hạ xuống. */
+  /* Mã mức cũ `normal` đã bỏ — gửi lên là bị từ chối, không phải âm thầm hạ xuống. (Chữ "Bình thường" nay là NHÃN của mã `attention`, T7.) */
   assertThrows(
     () => cases.reportIssue(P.admin, {
       ...base, title: 'Reading đọc chậm', summary: 'Em đọc kỹ từng câu nên hết giờ.',
       primaryCode: 'student.reading.time', urgency: 'normal',
     }),
-    /hai bậc/, 'Vẫn nhận được mức "Bình thường"',
+    /hai bậc/, 'Vẫn nhận được mã mức cũ `normal`',
   );
 
   /* Chọn "Khác" thì mô tả phải nói rõ — nếu không thì "Khác" chính là "Chưa rõ" đổi tên. */
@@ -6095,13 +6095,13 @@ check('[6.3] Bốn trường bắt buộc: tên, mô tả, mức độ hai bậc
     /nói rõ vấn đề cụ thể/, 'Chọn "Khác" mà mô tả qua loa vẫn mở được case',
   );
 
-  /* Đủ bốn trường thì mở được, và mức mặc định là "Cần chú ý" chứ không phải không có mức. */
+  /* Đủ bốn trường thì mở được, và mức mặc định là "Bình thường" chứ không phải không có mức. */
   const ok = cases.reportIssue(P.admin, {
     ...base, title: 'Reading: hết giờ ở hai câu cuối',
     summary: 'Em đọc kỹ từng câu nên luôn hết giờ khi còn hai câu cuối của passage 3.',
     primaryCode: 'student.reading.time',
   }) as any;
-  assert(ok.urgency === 'attention', `Mức mặc định phải là "Cần chú ý", đang là ${ok.urgency}`);
+  assert(ok.urgency === 'attention', `Mức mặc định phải là "Bình thường", đang là ${ok.urgency}`);
   assert(ok.title === 'Reading: hết giờ ở hai câu cuối', 'Tên case bị máy viết lại');
 });
 
@@ -9399,6 +9399,11 @@ check('PR-N · N5 Phương án thừa hưởng quyền của case chứa nó; vi
 /* Phép kiểm của module thứ chín ở file riêng — xem đầu `yThuc.tests.ts`. */
 const { runYThucTests } = await import('./yThuc.tests.ts');
 await runYThucTests({ check, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
+
+// ==================================================================== PR-T (rulebook v3: SOS tự tạo Case · Phối hợp SOS · xoá vi phạm)
+
+const { runSosV3Tests } = await import('./sosV3.tests.ts');
+await runSosV3Tests({ check, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0

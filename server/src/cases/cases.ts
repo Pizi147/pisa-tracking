@@ -382,9 +382,9 @@ export function reportIssue(p: Principal, input: {
     throw badRequest('Hãy chọn kỹ năng: Listening, Reading, Writing Task 1, Writing Task 2 hay Speaking.');
   }
   if (!(ENTRY_SKILLS as readonly string[]).includes(topic)) throw badRequest(`Chủ đề không hợp lệ: ${topic}`);
-  /* Hai mức, không ba. "Bình thường" đã bỏ (mục 6.3); không chọn thì là "Cần chú ý". */
+  /* Hai mức, không ba: `attention` (hiện là "Bình thường" từ 21/09/2026 — chỉ đổi chữ, mã giữ nguyên) và `urgent` (Gấp). Không chọn thì là `attention`. */
   if (input.urgency && !(URGENCY_LEVELS as readonly string[]).includes(input.urgency)) {
-    throw badRequest('Mức độ chỉ còn hai bậc: Cần chú ý hoặc Gấp.');
+    throw badRequest('Mức độ chỉ còn hai bậc: Bình thường hoặc Gấp.');
   }
   const urgency = input.urgency ?? DEFAULT_URGENCY;
   const detectedAt = input.detectedAt ?? demoToday();

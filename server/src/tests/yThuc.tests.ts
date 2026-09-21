@@ -155,8 +155,8 @@ export async function runYThucTests(t: YThucTestKit) {
     for (const s of [AN, VAN, YEN]) assert(stat.includes(s), `hv-can-xu-ly thiếu em ${s}`);
   });
 
-  check('PR-J · DEMO #11 + #12 + #13 + #14 + #15 Case học thuật giữ nguyên: mức Cần chú ý và mức Gấp; SOS chỉ ghi nhận có LÝ DO; SOS gắn vào case đang mở; GV tạo case trực tiếp không có tín hiệu', () => {
-    assert(one(`SELECT COUNT(*) n FROM sos_cases WHERE urgency = 'attention' AND id <= ?`, t.seedMax.sos_cases).n > 0, '#11 Không có case học thuật mức Cần chú ý');
+  check('PR-J · DEMO #11 + #12 + #13 + #14 + #15 Case học thuật giữ nguyên: mức Bình thường và mức Gấp; SOS chỉ ghi nhận có LÝ DO; SOS gắn vào case đang mở; GV tạo case trực tiếp không có tín hiệu', () => {
+    assert(one(`SELECT COUNT(*) n FROM sos_cases WHERE urgency = 'attention' AND id <= ?`, t.seedMax.sos_cases).n > 0, '#11 Không có case học thuật mức Bình thường');
     assert(one(`SELECT COUNT(*) n FROM sos_cases WHERE urgency = 'urgent' AND origin_kind = 'teacher_report' AND id <= ?`, t.seedMax.sos_cases).n > 0, '#12 Không có case học thuật mức Gấp');
     const noted = rows(`SELECT resolution_note FROM case_signals WHERE status = 'noted'`);
     assert(noted.length > 0 && noted.every((s) => s.resolution_note && s.resolution_note.trim().length > 0), '#13 Mọi tín hiệu "ghi nhận, không tạo case" phải kèm lý do');
