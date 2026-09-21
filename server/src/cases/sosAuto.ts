@@ -1,16 +1,21 @@
-import { db } from '../db.ts';
+import { db, tx } from '../db.ts';
 import {
-  academicSupportFor, sosPlanEndDate,
-  type AcademicSupportPreset,
+  CASE_DISMISS_REASONS, CASE_DISMISS_REASON_LABEL, academicSupportFor, reasonNeedsText, sosPlanEndDate, weeklyUpdateDue,
+  type AcademicSupportPreset, type CaseDismissReason,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
-import { addDays, nowIso } from '../util.ts';
+import { addDays, badRequest, isIsoDate, notFound, nowIso } from '../util.ts';
+import type { Principal } from '../permissions.ts';
 import { addJourney, notify, writeAudit } from '../platform/audit.ts';
 import { suggestCaseOwner } from './owner.ts';
 import { examPlanOf } from '../fasttrack/cycles.ts';
+import { caseAccess, caseDetail, recordIntervention } from './cases.ts';
+import { UNCONFIRMED_PRESET, sosCaseState } from './sosState.ts';
+
+export { UNCONFIRMED_PRESET, NOT_UNCONFIRMED_PRESET } from './sosState.ts';
 
 /**
- * SOS TỰ TẠO CASE — PHẦN DỮ LIỆU (rulebook v3, PR-T; `thiet-ke/SOS_VA_PHOI_HOP_V3.md` mục 3–4).
+ * SOS TỰ TẠO CASE — PHẦN GHI DỮ LIỆU (rulebook v3, PR-T; `thiet-ke/SOS_VA_PHOI_HOP_V3.md` mục 3–4).
  *
  * Chỉ lượt Mock Test FAST TRACK mới đi qua đây (Q-V3-1). Lớp Normal giữ mô hình tín hiệu cũ — không case tự tạo, không phương án điền
  * sẵn, không Phối hợp SOS.
@@ -18,16 +23,11 @@ import { examPlanOf } from '../fasttrack/cycles.ts';
  * `cases/sos.ts` (nơi sở hữu `raiseSignalsForResult`) quyết định KHI NÀO tạo hay gắn case; file này lo phần "phương án điền sẵn":
  *   · dựng phương án theo bảng MT × mức SOS (`shared/domain/sos.ts`),
  *   · đồng bộ phương án CHƯA xác nhận khi mức SOS của lượt đổi,
- *   · xác nhận / thay / đóng case (S04–S07) — xem phần dưới.
+ *   · xác nhận / thay / đóng case (S04–S07) — phần dưới.
  *
- * PHƯƠNG ÁN ĐIỀN SẴN CHƯA XÁC NHẬN chỉ là gợi ý (Q-V3-3): không vào hiệu quả, không sinh nghĩa vụ cập nhật tuần. Hai lời hứa đó được giữ ở
- * MỘT chỗ — `UNCONFIRMED_PRESET` — để mọi truy vấn loại chúng bằng cùng một điều kiện thay vì mỗi nơi tự viết một kiểu.
+ * PHƯƠNG ÁN ĐIỀN SẴN CHƯA XÁC NHẬN chỉ là gợi ý (Q-V3-3): không vào hiệu quả, không sinh nghĩa vụ cập nhật tuần. Điều kiện SQL nhận diện nó
+ * nằm ở MỘT chỗ — `UNCONFIRMED_PRESET` trong `sosState.ts`.
  */
-
-/** Điều kiện SQL "phương án điền sẵn mà chưa ai xác nhận". `alias` là bí danh của `case_interventions` trong truy vấn. */
-export const UNCONFIRMED_PRESET = (alias = 'iv') => `(${alias}.preset = 1 AND ${alias}.confirmed_at IS NULL)`;
-/** Phủ định — dùng thẳng trong `WHERE`. */
-export const NOT_UNCONFIRMED_PRESET = (alias = 'iv') => `NOT ${UNCONFIRMED_PRESET(alias)}`;
 
 /**
  * Lượt này có phải Mock Test Fast Track không. Chỉ lượt Mock của lớp chấm theo band mới tự tạo case / phối hợp; Progress/Final Test của
@@ -144,4 +144,171 @@ export function announceAutoCase(input: {
       entityType: 'sos_case', entityId: input.caseId, dedupKey: `sos-case:${input.caseId}`,
     });
   }
+}
+
+// ---------------------------------------------------------------- xác nhận · thay · đóng (S04–S07)
+
+const EDIT_MESSAGE = 'Bạn chỉ xử lý được case của kỹ năng mình được phân công (hoặc là Quản lý trong phạm vi).';
+
+/** Phương án điền sẵn CHƯA xác nhận và còn xử lý được (chưa huỷ, chưa bị thay). Đã kiểm quyền theo ĐÚNG kỹ năng của case (C02). */
+function loadUnconfirmedPreset(p: Principal, interventionId: number, doing: string) {
+  const iv = db()
+    .prepare(
+      `SELECT iv.*, sc.status AS case_status FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id WHERE iv.id = ?`,
+    )
+    .get(interventionId) as any;
+  if (!iv) throw notFound('Không tìm thấy phương án.');
+  caseAccess(iv.case_id).requireEdit(p, EDIT_MESSAGE);
+  if (!iv.preset) throw badRequest(`Phương án này không phải phương án điền sẵn từ SOS — không cần ${doing}.`);
+  if (iv.confirmed_at) throw badRequest('Phương án này đã được xác nhận rồi.');
+  if (iv.status !== 'planned' || iv.case_status === 'done') {
+    throw badRequest('Phương án này đã bị huỷ hoặc case đã đóng — không còn xác nhận / thay được.');
+  }
+  return iv;
+}
+
+/**
+ * XÁC NHẬN PHƯƠNG ÁN ĐIỀN SẴN (S04) — kèm CHỈNH nếu muốn (sửa mô tả, ngày dự kiến kết thúc).
+ *
+ * Từ đây case đi ĐÚNG workflow học thuật thường (S07): phương án chạy (đang thực hiện), có hạn cập nhật Chủ nhật hằng tuần, có bằng chứng,
+ * điều chỉnh, đóng khi xong. Không có lớp "tiến trình SOS" riêng. Phương án ĐÃ xác nhận được coi là căn cứ độc lập khi sửa điểm (S08) —
+ * xem `caseHasIndependentBasis`.
+ *
+ * Quyền: GVBM ĐÚNG kỹ năng của case (C02) + Quản lý trong phạm vi. Người thực hiện giữ nguyên (GVBM đúng kỹ năng); người xác nhận ghi ở `confirmed_by`.
+ */
+export function confirmPresetPlan(p: Principal, interventionId: number, patch: { description?: string | null; followupDue?: string | null } = {}) {
+  const iv = loadUnconfirmedPreset(p, interventionId, 'xác nhận');
+  let description = iv.description as string;
+  if (patch.description !== undefined && patch.description !== null) {
+    description = patch.description.trim();
+    if (description.length < 8) throw badRequest('Mô tả ngắn phải nói rõ làm gì cho em — ít nhất 8 ký tự.');
+  }
+  let followupDue: string | null = iv.followup_due ?? null;
+  if (patch.followupDue !== undefined) {
+    if (patch.followupDue && !isIsoDate(patch.followupDue)) throw badRequest('Dự kiến kết thúc phương án không hợp lệ.');
+    followupDue = patch.followupDue || null;
+  }
+  const today = demoToday();
+  return tx(() => {
+    db()
+      .prepare(
+        `UPDATE case_interventions
+            SET description = ?, followup_due = ?, status = 'started', started_date = ?,
+                cycle_no = 1, cycle_started_on = ?, action_due = ?,
+                confirmed_by = ?, confirmed_at = ?, updated_at = ?
+          WHERE id = ?`,
+      )
+      .run(description, followupDue, today, today, weeklyUpdateDue(today), p.userId, nowIso(), nowIso(), interventionId);
+    db().prepare("UPDATE sos_cases SET status = 'in_progress', updated_at = ? WHERE id = ? AND status = 'open'").run(nowIso(), iv.case_id);
+    const c = db().prepare('SELECT student_id, cycle_id FROM sos_cases WHERE id = ?').get(iv.case_id) as any;
+    addJourney({
+      studentId: c.student_id, cycleId: c.cycle_id ?? null, eventType: 'intervention', eventDate: today,
+      title: `Xác nhận phương án: ${description.slice(0, 60)}`, detail: null,
+      refTable: 'case_interventions', refId: interventionId, createdBy: p.userId, dedupKey: `preset-confirm:${interventionId}`,
+    });
+    writeAudit({
+      actorUserId: p.userId, action: 'case.preset.confirm', entityType: 'case_intervention', entityId: interventionId,
+      entityLabel: `Case ${iv.case_id} · ${iv.kind}`, before: { description: iv.description, followupDue: iv.followup_due }, after: { description, followupDue },
+    });
+    return caseDetail(p, iv.case_id);
+  });
+}
+
+/**
+ * THAY PHƯƠNG ÁN ĐIỀN SẴN bằng một phương án khác (S06): phương án cũ khép lại `superseded` + phương án mới (đã xác nhận, đang thực hiện) ra
+ * đời trong MỘT giao dịch. Mới lỗi thì cũ nguyên vẹn — không bao giờ để case 0 phương án đang hoạt động.
+ *
+ * Phương án cũ CHƯA từng chạy nên khép bằng `cancelled` (không phải `completed`): nó không thành công cũng không thất bại, không vào hiệu quả.
+ */
+export function replacePresetPlan(p: Principal, interventionId: number, plan: {
+  kind: string; description?: string | null;
+  performerSelf?: boolean; performerUserId?: number | null; performerName?: string | null;
+  followupDue?: string | null; rescheduleTarget?: string | null;
+}) {
+  const iv = loadUnconfirmedPreset(p, interventionId, 'thay');
+  const today = demoToday();
+  return tx(() => {
+    recordIntervention(p, iv.case_id, {
+      kind: plan.kind, description: plan.description ?? null,
+      performerSelf: plan.performerSelf, performerUserId: plan.performerUserId ?? null, performerName: plan.performerName ?? null,
+      status: 'started', startedDate: today, followupDue: plan.followupDue ?? null, rescheduleTarget: plan.rescheduleTarget ?? null,
+    });
+    const created = (db().prepare('SELECT id FROM case_interventions WHERE case_id = ? ORDER BY id DESC LIMIT 1').get(iv.case_id) as any).id as number;
+    db().prepare('UPDATE case_interventions SET confirmed_by = ?, confirmed_at = ? WHERE id = ?').run(p.userId, nowIso(), created);
+    db()
+      .prepare(`UPDATE case_interventions SET status = 'cancelled', closed_reason = 'superseded', superseded_by = ?, updated_at = ? WHERE id = ?`)
+      .run(created, nowIso(), interventionId);
+    writeAudit({
+      actorUserId: p.userId, action: 'case.preset.replace', entityType: 'case_intervention', entityId: interventionId,
+      entityLabel: `Case ${iv.case_id}`, before: { kind: iv.kind, description: iv.description }, after: { newInterventionId: created, kind: plan.kind },
+    });
+    return caseDetail(p, iv.case_id);
+  });
+}
+
+/**
+ * `KHÔNG CẦN THEO DÕI` (S05, Q-V3-4): GVBM đóng NGAY một case tự tạo từ SOS kèm lý do chọn nhanh. Case đóng, giữ lịch sử; phương án điền sẵn
+ * HUỶ (không tính thất bại); không có `outcome` nên không vào bất kỳ thống kê hiệu quả nào.
+ *
+ * Chỉ áp cho case TỰ TẠO TỪ SOS còn chưa có việc thật: đã xác nhận phương án hoặc đã ghi việc/kết quả thì việc đã bắt đầu — kết thúc bằng
+ * `Chốt kết quả case` như mọi case thường. Không khoá theo ngày: "3 ngày" của S04 là HẠN để làm, không phải cửa sổ hết hạn thì mất quyền.
+ * Trượt lại ở MT sau thì SOS mở case mới NỐI vào case này (không mở lại).
+ */
+export function dismissSosCase(p: Principal, caseId: number, input: { reasonCode?: string | null; reasonText?: string | null }) {
+  const conn = db();
+  const c = conn.prepare('SELECT * FROM sos_cases WHERE id = ?').get(caseId) as any;
+  if (!c) throw notFound('Không tìm thấy case');
+  caseAccess(caseId).requireEdit(p, EDIT_MESSAGE);
+  if (c.status === 'done') throw badRequest('Case này đã đóng rồi.');
+  if (!sosCaseState(caseId).fromSos) {
+    throw badRequest('Chỉ đóng "Không cần theo dõi" được với case tự tạo từ SOS — case này không phải case tự tạo từ SOS.');
+  }
+  const code = String(input.reasonCode ?? '');
+  if (!(CASE_DISMISS_REASONS as readonly string[]).includes(code)) {
+    throw badRequest(`Hãy chọn một lý do: ${CASE_DISMISS_REASONS.map((r) => CASE_DISMISS_REASON_LABEL[r]).join(' · ')}.`);
+  }
+  const text = (input.reasonText ?? '').trim();
+  if (reasonNeedsText(code) && !text) throw badRequest('Chọn "Khác" thì phải ghi rõ lý do bằng chữ.');
+  const started = conn
+    .prepare(`SELECT COUNT(*) n FROM case_interventions iv WHERE iv.case_id = ? AND iv.status != 'cancelled' AND NOT ${UNCONFIRMED_PRESET('iv')}`)
+    .get(caseId) as any;
+  const followed = conn.prepare('SELECT COUNT(*) n FROM case_followups WHERE case_id = ?').get(caseId) as any;
+  if (started.n > 0 || followed.n > 0) {
+    throw badRequest('Case này đã có phương án được xác nhận hoặc đang chạy — hãy dùng "Chốt kết quả case" thay vì "Không cần theo dõi".');
+  }
+  const label = CASE_DISMISS_REASON_LABEL[code as CaseDismissReason];
+  const note = `Không cần theo dõi · ${label}${reasonNeedsText(code) ? ` — ${text}` : ''}`;
+  const today = demoToday();
+  return tx(() => {
+    const cancelled = conn
+      .prepare(
+        `UPDATE case_interventions SET status = 'cancelled', closed_reason = 'dismissed', updated_at = ?
+          WHERE case_id = ? AND ${UNCONFIRMED_PRESET('case_interventions')} AND status = 'planned'`,
+      )
+      .run(nowIso(), caseId).changes;
+    conn
+      .prepare(
+        `UPDATE sos_cases SET status = 'done', closed_at = ?, closed_by = ?, dismiss_reason_code = ?, dismiss_reason_text = ?,
+                disposition = COALESCE(disposition, 'no_action'), outcome_note = ?, updated_at = ? WHERE id = ?`,
+      )
+      .run(today, p.userId, code, reasonNeedsText(code) ? text : null, note, nowIso(), caseId);
+    conn
+      .prepare(`INSERT INTO sos_case_history (case_id, field, old_value, new_value, actor_user_id, created_at) VALUES (?, 'status', ?, 'done', ?, ?)`)
+      .run(caseId, c.status, p.userId, nowIso());
+    conn
+      .prepare(
+        `INSERT INTO case_milestones (case_id, kind, occurred_on, note, created_by, created_at, dedup_key) VALUES (?, 'closed', ?, ?, ?, ?, ?)
+         ON CONFLICT(dedup_key) DO NOTHING`,
+      )
+      .run(caseId, today, note, p.userId, nowIso(), `dismiss:${caseId}`);
+    addJourney({
+      studentId: c.student_id, cycleId: c.cycle_id ?? null, eventType: 'case_closed', eventDate: today,
+      title: 'Không cần theo dõi', detail: note, refTable: 'sos_cases', refId: caseId, createdBy: p.userId, dedupKey: `case_dismiss:${caseId}`,
+    });
+    writeAudit({
+      actorUserId: p.userId, action: 'case.dismiss', entityType: 'sos_case', entityId: caseId, entityLabel: note,
+      before: { status: c.status }, after: { status: 'done', reason: code, cancelledPlans: cancelled },
+    });
+    return caseDetail(p, caseId);
+  });
 }

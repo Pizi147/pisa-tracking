@@ -49,6 +49,7 @@ const mgmt = await import('../worklist/mgmttasks.ts');
 const skillSchedule = await import('../fasttrack/skillSchedule.ts');
 const absence = await import('../fasttrack/absence.ts');
 const signalsSvc = await import('../cases/signals.ts');
+const sosAutoSvc = await import('../cases/sosAuto.ts');
 const effectiveness = await import('../cases/effectiveness.ts');
 const { ratioResult: domainRatio } = await import('../../../shared/domain/index.ts');
 const { demoToday } = await import('../demoConfig.ts');
@@ -3804,7 +3805,12 @@ check('Case đã đóng mà MT sau trượt lại → MỞ CASE MỚI nối vào
     }),
     /chưa cập nhật kết quả cuối cùng/, 'Chốt được kết quả case khi còn phương án treo',
   );
-  for (const iv of open) cases.completeIntervention(mgr, iv.id, { doneOn: demoToday() });
+  /* v3: phương án điền sẵn của case tự tạo phải được XÁC NHẬN thì mới ghi "đã làm" được (Q-V3-3). */
+  for (const iv of open) {
+    const row = conn.prepare('SELECT preset, confirmed_at FROM case_interventions WHERE id = ?').get(iv.id) as any;
+    if (row.preset === 1 && !row.confirmed_at) sosAutoSvc.confirmPresetPlan(mgr, iv.id);
+    cases.completeIntervention(mgr, iv.id, { doneOn: demoToday() });
+  }
   cases.closeCaseOutcome(mgr, c.id, {
     outcome: 'much_better', note: 'Em đọc nhanh hơn hẳn', decision: 'end',
   });
@@ -7936,8 +7942,8 @@ const branchIdOf = (code: string) => (conn.prepare('SELECT id FROM branches WHER
 
 check('PR-F · Sổ chỉ số: đúng hai mươi chỉ số (PR-N thêm pa-cho-duyet; PR-J thêm tám chỉ số Ý thức), mỗi chỉ số đủ tám trường (thiếu một trường thì không được lên dashboard)', () => {
   const list = domain.METRICS as readonly any[];
-  assert(list.length === 20, `Phải có hai mươi chỉ số (mười hai của PR-F/PR-N + tám của PR-J), đang có ${list.length}`);
-  const expected = ['hv-sos-hien-tai', 'hv-duoi-ky-vong-mon', 'hv-co-case-mo', 'case-mo', 'tin-hieu-cho-xac-minh',
+  assert(list.length === 21, `Phải có hai mươi mốt chỉ số (mười hai của PR-F/PR-N + tám của PR-J + case-cho-xac-dinh-nguyen-nhan của PR-T), đang có ${list.length}`);
+  const expected = ['hv-sos-hien-tai', 'hv-duoi-ky-vong-mon', 'hv-co-case-mo', 'case-mo', 'tin-hieu-cho-xac-minh', 'case-cho-xac-dinh-nguyen-nhan',
     'case-thieu-pa', 'pa-can-cap-nhat', 'pa-cho-duyet', 'pa-co-ket-qua', 'ty-le-co-cai-thien', 'dung-han-cap-nhat', 'do-phu-danh-gia',
     'vi-pham-tong', 'vi-pham-chua-xu-ly', 'vi-pham-khong-hieu-luc', 'hv-co-vi-pham', 'hv-can-xu-ly',
     'bien-phap-da-thuc-hien', 'bien-phap-dang-chuan-bi', 'bien-phap-theo-loai'];

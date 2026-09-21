@@ -25,6 +25,7 @@ import { expectationFor } from '../fasttrack/scoring.ts';
 import { isRatioCycle } from '../normal/regular.ts';
 import { suggestCaseOwner } from './owner.ts';
 import { linkSignalToCase } from './signals.ts';
+import { sosCaseState } from './sosState.ts';
 
 /**
  * CASE HỌC VỤ — một vòng đời cho cả hai nguồn.
@@ -1008,6 +1009,9 @@ export function completeIntervention(p: Principal, interventionId: number, input
   require_(p, PERMISSIONS.SOS_EDIT, sosEditCtx(c),
     'Bạn không có quyền cập nhật phương án của case này.');
 
+  if (iv.preset === 1 && !iv.confirmed_at) {
+    throw badRequest('Phương án điền sẵn này chưa được xác nhận — hãy xác nhận (hoặc sửa / thay) trước khi ghi việc đã làm.');
+  }
   if (iv.approval_state === 'pending') {
     throw badRequest('Phương án này đang chờ Quản lý duyệt, chưa ghi là đã làm được.');
   }
@@ -1412,6 +1416,10 @@ export function caseDetail(p: Principal, caseId: number) {
           .get(iv.id, iv.cycle_no ?? 1),
       // NULL = không cần duyệt, khác hẳn 'pending' = đang chờ Quản lý trả lời.
       needsApproval: !!iv.needs_approval,
+      /** Phương án ĐIỀN SẴN từ SOS (rulebook v3): chưa xác nhận thì chỉ là gợi ý tự động, chờ Xác nhận · Sửa · Thay. */
+      preset: iv.preset === 1,
+      confirmedAt: (iv.confirmed_at ?? null) as string | null,
+      awaitingConfirmation: iv.preset === 1 && !iv.confirmed_at && iv.status === 'planned',
       approvalState: iv.approval_state as string | null,
       approvalDue: iv.approval_due as string | null,
       approvalNote: iv.approval_note as string | null,
@@ -1519,6 +1527,8 @@ export function caseDetail(p: Principal, caseId: number) {
     /* Ngày demo, để giao diện so hạn mà không phải hỏi thêm một lần nữa. */
     today: demoToday(),
     issues, interventions, followups,
+    /** Trạng thái case từ SOS (rulebook v3): chờ xác định nguyên nhân, hạn 3 ngày, lý do đóng `Không cần theo dõi`. */
+    sos: sosCaseState(caseId),
     history: history.map((h) => ({
       id: h.id, field: h.field, oldValue: h.old_value, newValue: h.new_value,
       actorName: h.actor_name, createdAt: h.created_at,
@@ -2547,6 +2557,9 @@ export function updateResult(p: Principal, interventionId: number, input: {
   require_(p, PERMISSIONS.SOS_EDIT, sosEditCtx(c),
     'Bạn không có quyền cập nhật kết quả của case này.');
 
+  if (iv.preset === 1 && !iv.confirmed_at) {
+    throw badRequest('Phương án điền sẵn này chưa được xác nhận — hãy xác nhận (hoặc sửa / thay) trước khi ghi kết quả.');
+  }
   if (iv.approval_state === 'pending') {
     throw badRequest('Phương án này đang chờ Quản lý duyệt — chu kỳ thực hiện chưa bắt đầu.');
   }

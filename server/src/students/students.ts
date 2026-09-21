@@ -4,6 +4,7 @@ import { demoToday } from '../demoConfig.ts';
 import { addDays, badRequest, isIsoDate, normalizeName, notFound, nowIso, padCode } from '../util.ts';
 import { can, classScopeSql, require_, scopeFor, type Principal } from '../permissions.ts';
 import { addJourney, writeAudit } from '../platform/audit.ts';
+import { NOT_UNCONFIRMED_PRESET } from '../cases/sosState.ts';
 import { entryBandsOf, scoresOf, skipsOf } from '../fasttrack/attempts.ts';
 import { evaluateAttempt } from '../fasttrack/scoring.ts';
 import { currentCycle, cyclesOf, examPlanOf } from '../fasttrack/cycles.ts';
@@ -129,9 +130,11 @@ export function handoverBrief(studentId: number) {
       `SELECT sc.id, sc.title, sc.category, sc.status,
               u.full_name AS owner_name,
               (SELECT COUNT(*) FROM case_interventions iv
-                WHERE iv.case_id = sc.id AND iv.status IN ('planned','started')) AS open_plans,
+                WHERE iv.case_id = sc.id AND iv.status IN ('planned','started')
+                  AND ${NOT_UNCONFIRMED_PRESET('iv')}) AS open_plans,
               (SELECT MIN(iv.action_due) FROM case_interventions iv
                 WHERE iv.case_id = sc.id AND iv.status IN ('planned','started')
+                  AND ${NOT_UNCONFIRMED_PRESET('iv')}
                   AND iv.action_due IS NOT NULL) AS next_due
          FROM sos_cases sc LEFT JOIN users u ON u.id = sc.owner_user_id
         WHERE sc.student_id = ? AND sc.status != 'done'

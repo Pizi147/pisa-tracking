@@ -5,6 +5,7 @@ import { scopeFor, type Principal } from '../permissions.ts';
 import { badRequest, forbidden, HttpError, notFound } from '../util.ts';
 import { listCases } from '../cases/cases.ts';
 import { listSignals } from '../cases/signals.ts';
+import { NOT_UNCONFIRMED_PRESET, awaitingCauseCaseIds } from '../cases/sosState.ts';
 import { improvementRate, planOutcomes } from '../cases/effectiveness.ts';
 import { doPhuDanhGia, hvDuoiKyVongMon, hvSosHienTai } from './danhGia.ts';
 import { isYThucMetric, yThucMetric, YTHUC_METRIC_IDS } from '../yThuc/thongKe.ts';
@@ -178,7 +179,7 @@ export function metricResponse(r: MetricResult, withRows: boolean) {
 
 /** Các chỉ số ĐÃ CÓ hàm tập ID. Chỉ số khác trong sổ chưa dùng được. */
 export const LISTED_METRICS: readonly string[] = [
-  'hv-sos-hien-tai', 'hv-duoi-ky-vong-mon', 'hv-co-case-mo', 'case-mo', 'tin-hieu-cho-xac-minh',
+  'hv-sos-hien-tai', 'hv-duoi-ky-vong-mon', 'hv-co-case-mo', 'case-mo', 'tin-hieu-cho-xac-minh', 'case-cho-xac-dinh-nguyen-nhan',
   'case-thieu-pa', 'pa-can-cap-nhat', 'pa-cho-duyet', 'pa-co-ket-qua', 'ty-le-co-cai-thien',
   'dung-han-cap-nhat', 'do-phu-danh-gia',
   ...YTHUC_METRIC_IDS,
@@ -225,6 +226,7 @@ function obligations(caseIds: number[], today: string, from: string | null, to: 
         `SELECT iv.id, iv.cycle_no AS cycle, iv.action_due AS due FROM case_interventions iv
           WHERE iv.case_id IN (${ph}) AND iv.status IN ${RUNNING}
             AND COALESCE(iv.approval_state, '') != 'pending'
+            AND ${NOT_UNCONFIRMED_PRESET('iv')}
             AND iv.action_due IS NOT NULL AND iv.action_due < ?
             AND NOT EXISTS (SELECT 1 FROM case_followups f WHERE f.intervention_id = iv.id AND f.cycle_no = iv.cycle_no)`,
       )
@@ -289,6 +291,7 @@ function overdueUpdatePlans(caseIds: number[], today: string): number[] {
           WHERE iv.case_id IN (${chunk.map(() => '?').join(',')})
             AND iv.status IN ${RUNNING}
             AND COALESCE(iv.approval_state, '') != 'pending'
+            AND ${NOT_UNCONFIRMED_PRESET('iv')}
             AND iv.action_due IS NOT NULL AND iv.action_due < ?
           ORDER BY iv.id`,
       )
@@ -369,6 +372,9 @@ export function metricSet(
       return done(openCases().filter((c: any) => c.state === 'no_plan').map((c: any) => c.id as number));
     case 'tin-hieu-cho-xac-minh':
       return done(listSignals(p, { branchId, status: 'open' }).rows.map((s) => s.id));
+    case 'case-cho-xac-dinh-nguyen-nhan':
+      /* Case TỪ SOS (rulebook v3) đang mở mà chưa có nguyên nhân HOẶC còn phương án điền sẵn chưa xác nhận — cùng định nghĩa với `caseDetail().sos`. */
+      return done(awaitingCauseCaseIds(openCases().map((c: any) => c.id as number)));
     case 'pa-can-cap-nhat':
       return done(overdueUpdatePlans(openCases().map((c: any) => c.id as number), today));
     case 'pa-cho-duyet':

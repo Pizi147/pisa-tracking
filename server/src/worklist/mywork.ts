@@ -13,6 +13,7 @@ import { attemptHref, listAttempts } from '../fasttrack/attempts.ts';
 import { classAlerts } from '../classes/schedule.ts';
 import { myMgmtTasks } from './mgmttasks.ts';
 import { listSignals } from '../cases/signals.ts';
+import { NOT_UNCONFIRMED_PRESET } from '../cases/sosState.ts';
 import { settleNoShows, sweepExpiredMoves } from '../fasttrack/absence.ts';
 
 /**
@@ -508,6 +509,7 @@ export function myWork(p: Principal, f: { branchId?: number | null } = {}) {
           AND iv.action_due IS NOT NULL AND iv.action_due <= ?
           AND sc.status != 'done'
           AND COALESCE(iv.approval_state, '') != 'pending'
+          AND ${NOT_UNCONFIRMED_PRESET('iv')}
           AND s.archived_at IS NULL`,
     )
     .all(today) as any[];
@@ -616,6 +618,7 @@ export function myWork(p: Principal, f: { branchId?: number | null } = {}) {
         WHERE iv.followup_due IS NOT NULL AND iv.followup_due <= ?
           AND iv.status != 'cancelled'
           AND COALESCE(iv.approval_state, '') != 'pending'
+          AND ${NOT_UNCONFIRMED_PRESET('iv')}
           AND sc.status != 'done'
           AND NOT EXISTS (SELECT 1 FROM case_followups fu WHERE fu.intervention_id = iv.id)`,
     )

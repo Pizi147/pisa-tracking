@@ -6,6 +6,7 @@ import {
 import { scopeFor, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
 import { listCases } from '../cases/cases.ts';
+import { NOT_UNCONFIRMED_PRESET } from '../cases/sosState.ts';
 import { standingFor } from '../students/standing.ts';
 
 /**
@@ -226,6 +227,7 @@ export function branchSummary(p: Principal, f: { branchId?: number | null } = {}
           AND iv.action_due IS NOT NULL AND iv.action_due < ?
           AND sc.status != 'done'
           AND COALESCE(iv.approval_state, '') != 'pending'
+          AND ${NOT_UNCONFIRMED_PRESET('iv')}
           AND s.archived_at IS NULL
         GROUP BY cl.id`,
     )
