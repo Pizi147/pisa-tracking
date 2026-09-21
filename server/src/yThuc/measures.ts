@@ -480,7 +480,8 @@ export function listMeasures(p: Principal, f: MeasureFilter): { rows: MeasureDet
   const args: unknown[] = [];
   if (f.studentId) { where.push('m.student_id = ?'); args.push(f.studentId); }
   if (f.classId) {
-    where.push('m.class_id = ?'); args.push(f.classId);
+    /* Biện pháp của học viên ĐANG HỌC ở lớp này, dù tạo ở lớp cũ — vấn đề Ý thức đi theo em (chủ sản phẩm chốt 21/09/2026). */
+    where.push("m.student_id IN (SELECT student_id FROM enrollments WHERE class_id = ? AND status = 'active')"); args.push(f.classId);
   }
   if (f.status) { where.push('m.status = ?'); args.push(f.status); }
   const rows = db()

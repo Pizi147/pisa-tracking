@@ -16,7 +16,7 @@ import { violationsByIds, type ViolationView } from './violations.ts';
  *   3. LỊCH SỬ XỬ LÝ — chỉ vài dòng gần nhất; lịch sử cần CÓ, không cần chiếm màn.
  *
  * Mọi thứ tính từ dữ liệu thật qua các hàm gốc (`warningsFor`, `listMeasures`, `violationsByIds`) — không có đường đếm riêng, nên bảng
- * này khớp cảnh báo 5 ngày và các chỉ số Ý thức. Vi phạm chỉ tính ở lớp GHI LÚC ĐÓ: em chuyển lớp không mang lịch sử cũ sang lớp mới.
+ * này khớp cảnh báo 5 ngày và các chỉ số Ý thức. Bảng tính theo HỌC VIÊN ĐANG HỌC ở lớp: vi phạm chưa xử lý và biện pháp đang chuẩn bị ghi ở lớp cũ đi theo em sang lớp mới (chủ sản phẩm chốt 21/09/2026).
  */
 
 export type ClassViolationBoard = {
@@ -50,7 +50,7 @@ export function classViolationBoard(p: Principal, classId: number, today = demoT
   const active = (db()
     .prepare(`SELECT DISTINCT student_id AS id FROM enrollments WHERE class_id = ? AND status = 'active' ORDER BY student_id`)
     .all(classId) as any[]).map((r) => r.id as number);
-  const warnings = warningsFor(active, today, { classId });
+  const warnings = warningsFor(active, today);
   const violations = new Map(violationsByIds([...warnings.values()].flatMap((w) => w.violationIds)).map((v) => [v.id, v]));
 
   const students = [...warnings.values()]

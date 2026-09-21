@@ -61,6 +61,7 @@ Ba điều dễ nhầm, đã chốt:
 
 - **Ngày trong đặc tả (18–20/09) không dùng được** vì sau ngày demo; bộ demo đặt các mốc tương ứng ở tuần 04–12/09.
 - **Số "6"** của Meeting/Thư cảnh cáo và số **"5"** của Report cùng đúng: Report không chứa vi phạm 08/09 vì nó xảy ra *sau* ngày Report thực hiện.
+- **Vấn đề Ý thức đi theo học viên sang lớp mới** (chủ sản phẩm chốt 21/09/2026): vi phạm chưa xử lý và biện pháp đang chuẩn bị ghi ở lớp cũ vẫn hiện ở tab lớp mới, cảnh báo giữ nguyên số ngày, GVCN lớp mới xử lý tiếp được.
 - **Điểm thấp không sinh vi phạm.** Trước đây điểm dưới kỳ vọng còn sinh một tín hiệu Ý thức/Khác cho GVCN; nay không còn — Ý thức chỉ do giáo viên ghi.
 
 ---

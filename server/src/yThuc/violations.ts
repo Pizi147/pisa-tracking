@@ -324,7 +324,7 @@ export function invalidateViolation(p: Principal, id: number, reason: string): V
 
 export type ViolationFilter = {
   studentId?: number | null;
-  /** Chỉ vi phạm GHI Ở LỚP NÀY — em chuyển lớp không mang lịch sử cũ sang lớp mới (đặc tả §4.1). */
+  /** Nhật ký vi phạm GHI Ở LỚP NÀY (cột `class_id` lúc ghi). Khác với bảng Ý thức của lớp, nơi vấn đề chưa xử lý đi theo học viên sang lớp mới. */
   classId?: number | null;
   state?: ViolationState | null;
   category?: string | null;

@@ -23,7 +23,6 @@ import { requireViewClass, requireViewStudent } from './access.ts';
 export type StudentWarning = {
   studentId: number;
   studentName: string;
-  classId: number | null;
   /** Số vi phạm trong tập cần xử lý. */
   count: number;
   oldestOn: string | null;
@@ -37,10 +36,10 @@ export type StudentWarning = {
 };
 
 /**
- * Hàm gốc. `classId` (tuỳ chọn) chỉ tính vi phạm GHI Ở LỚP ĐÓ — dùng cho tab Ý thức của lớp để em chuyển lớp không mang lịch sử
- * cũ sang lớp mới; bỏ trống thì tính mọi vi phạm của học viên (hồ sơ học viên, chỉ số toàn chi nhánh).
+ * Hàm gốc. Tính theo HỌC VIÊN, không theo lớp: vấn đề Ý thức ĐI THEO EM sang lớp mới (chủ sản phẩm chốt 21/09/2026) — vi phạm ghi
+ * ở lớp cũ mà chưa xử lý vẫn là việc của GVCN lớp mới. Tab lớp, dòng học viên, Việc cần làm, hồ sơ và chỉ số đều gọi hàm này.
  */
-export function warningsFor(studentIds: number[], today = demoToday(), opts: { classId?: number | null } = {}): Map<number, StudentWarning> {
+export function warningsFor(studentIds: number[], today = demoToday()): Map<number, StudentWarning> {
   const out = new Map<number, StudentWarning>();
   const names = new Map<number, string>();
   const dates = new Map<number, Array<{ id: number; on: string }>>();
@@ -48,17 +47,14 @@ export function warningsFor(studentIds: number[], today = demoToday(), opts: { c
     const chunk = studentIds.slice(i, i + 400);
     const ph = chunk.map(() => '?').join(',');
     for (const r of db().prepare(`SELECT id, full_name FROM students WHERE id IN (${ph})`).all(...chunk) as any[]) names.set(r.id, r.full_name);
-    const args: unknown[] = [...chunk];
-    let classSql = '';
-    if (opts.classId) { classSql = ' AND v.class_id = ?'; args.push(opts.classId); }
     for (const r of db()
       .prepare(
         `SELECT v.id, v.student_id, v.occurred_on FROM violations v
-          WHERE v.student_id IN (${ph}) AND v.valid = 1${classSql}
+          WHERE v.student_id IN (${ph}) AND v.valid = 1
             AND NOT EXISTS (SELECT 1 FROM measure_violations mv WHERE mv.violation_id = v.id)
           ORDER BY v.occurred_on, v.id`,
       )
-      .all(...args) as any[]) {
+      .all(...chunk) as any[]) {
       if (!dates.has(r.student_id)) dates.set(r.student_id, []);
       dates.get(r.student_id)!.push({ id: r.id, on: r.occurred_on });
     }
@@ -67,7 +63,7 @@ export function warningsFor(studentIds: number[], today = demoToday(), opts: { c
     const list = dates.get(studentId) ?? [];
     const w = violationWarning(list.map((x) => x.on), today);
     out.set(studentId, {
-      studentId, studentName: names.get(studentId) ?? '', classId: opts.classId ?? null,
+      studentId, studentName: names.get(studentId) ?? '',
       count: w.count, oldestOn: w.oldestOn, oldestAgeDays: w.oldestAgeDays, active: w.active, message: w.message,
       violationIds: list.map((x) => x.id),
     });
@@ -99,7 +95,7 @@ export function classWarning(p: Principal, classId: number, today = demoToday())
 }
 
 function classWarningOf(classId: number, today: string) {
-  const all = warningsFor(activeStudentsOf(classId), today, { classId });
+  const all = warningsFor(activeStudentsOf(classId), today);
   const students = [...all.values()].filter((w) => w.active).sort((a, b) => b.oldestAgeDays - a.oldestAgeDays || a.studentId - b.studentId);
   return { classId, activeCount: students.length, message: classSentence(students.length), students };
 }

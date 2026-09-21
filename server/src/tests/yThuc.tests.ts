@@ -1276,6 +1276,25 @@ export async function runYThucTests(t: YThucTestKit) {
     assertThrows(() => classViolationBoard(P.cpManager, cls.id), /phạm vi|quyền/, 'Quản lý chi nhánh khác đọc được bảng');
   });
 
+  check('PR-J · W05 (chủ sản phẩm chốt 21/09) Vấn đề Ý thức ĐI THEO HỌC VIÊN sang lớp mới: vi phạm chưa xử lý và biện pháp đang chuẩn bị hiện ở tab lớp mới, cảnh báo giữ nguyên số ngày', () => {
+    const st = makeStudent('mang sang lớp mới');
+    viol.recordViolation(gvbm, { studentId: st.id, category: 'homework', description: 'Không nộp bài Writing Task 2 tuần trước', occurredOn: addDays(TODAY, -8) } as any) as any;
+    const kept = viol.recordViolation(gvbm, { studentId: st.id, category: 'attendance', description: 'Nghỉ một buổi không xin phép', occurredOn: addDays(TODAY, -2) } as any) as any;
+    const prep = meas.createMeasure(gvcn, { studentId: st.id, kind: 'talk_short', violationIds: [kept.violation.id] });
+    /* Em chuyển sang lớp khác cùng chi nhánh: ghi danh cũ đóng, ghi danh mới mở. */
+    const newCls = t.classId('MB-FT 102');
+    conn.prepare("UPDATE enrollments SET status = 'transferred', ended_at = ? WHERE student_id = ? AND status = 'active'").run(TODAY, st.id);
+    conn.prepare("INSERT INTO enrollments (student_id, class_id, status, started_at, created_at) VALUES (?, ?, 'active', ?, ?)").run(st.id, newCls, TODAY, TODAY + 'T00:00:00.000Z');
+    const gvcnNew = loadPrincipal((conn.prepare("SELECT user_id AS id FROM teacher_assignments WHERE class_id = ? AND is_core = 1 AND status = 'active' LIMIT 1").get(newCls) as any).id);
+    const b = board.classViolationBoard(gvcnNew, newCls) as any;
+    const row = b.unhandled.students.find((s: any) => s.studentId === st.id);
+    assert(row && row.count === 1 && row.oldestAgeDays === 8 && row.warningActive, `Vi phạm cũ chưa xử lý phải hiện ở lớp mới với đủ 8 ngày: ${JSON.stringify(row)}`);
+    assert(b.preparing.some((m: any) => m.id === prep.id), 'Biện pháp đang chuẩn bị tạo ở lớp cũ phải hiện ở lớp mới — GVCN mới xử lý tiếp được');
+    const w = (warn.classWarning(gvcnNew, newCls) as any).students.find((s: any) => s.studentId === st.id);
+    assert(w && w.active && w.count === 1, 'Cảnh báo của lớp mới phải tính cả vi phạm ghi ở lớp cũ');
+    assert((meas.confirmMeasure(gvcnNew, prep.id, { performedOn: TODAY, performerName: 'GVCN mới', note: 'Trao đổi với em sau khi chuyển lớp.' } as any) as any).status === 'done', 'GVCN lớp mới xác nhận được biện pháp còn dở');
+  });
+
   // ================================================================== Gọi thẳng đường HTTP (nghiệm thu 5, 22)
 
   const { createApp } = await import('../app.ts');
