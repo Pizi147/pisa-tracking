@@ -141,6 +141,8 @@ Phiên bản 1.0 · 21/09/2026 · **Sổ tra cứu, không phải sổ giao vi�
 | Mốc Test trên hành trình bấm được | ❌ Chưa làm | Mốc chỉ có `title` tooltip, không có `onClick` (`plan.md` 12.5) | **PR-R** |
 | Bỏ ô điểm cho Ý thức/Khác, thay bằng nguồn báo cáo và tình trạng xử lý | ⚰️ Hết hiệu lực | Rule mới: Ý thức thành **tab riêng** với dòng thời gian vi phạm + biện pháp | **PR-K** |
 | Ý thức hiện `đợt xử lý/tái diễn`, `deadline`, `kết luận` | ⚰️ Hết hiệu lực | Không còn đợt, không còn deadline, không còn kết luận | **PR-K** |
+| **CASE-04** — đính kèm tệp / liên kết bằng chứng cho case và phương án học thuật | ✅ Đã làm | PR-N N5–N6. Một bảng `attachments` dùng chung, khối `BangChung` gắn ở thẻ case và lịch sử phương án. Quyền xem = quyền xem bản ghi chủ ở mọi đường (danh sách, tải, gỡ); thêm/gỡ = quyền sửa case (C02); thêm và gỡ có audit; lỗi tải tệp hiện ở dòng tệp, không mất mô tả đang gõ. 9/10 lần cố ý làm hỏng bị bắt, lần còn lại là lớp phòng thủ thừa (đã thêm phép khoá tính chất an toàn). Bấm thử ở ba vai (Quản trị, Quản lý, GV bộ môn) + màn 375px. **Đường multer/tải về không có phép kiểm HTTP** — chỉ kiểm bằng trình duyệt thật | — |
+| Đính kèm tệp/liên kết cho **vi phạm** và **biện pháp xử lý** (Thư cảnh cáo, Đình chỉ học bắt buộc có) | 🟡 Một phần | Kho và khối `BangChung` đã sẵn, hai loại chủ đã được khai tên nhưng **bị từ chối cho tới khi có bản ghi chủ** (có phép kiểm khoá). PR-J chỉ phải thêm dòng quyền chủ + gắn khối; không dựng kho thứ hai | **PR-J**, **PR-K** |
 
 ---
 

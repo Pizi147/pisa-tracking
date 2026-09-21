@@ -5,6 +5,7 @@ import { api, invalidate } from '../../lib/api.ts';
 import { useSession } from '../../lib/session.tsx';
 import { useToast } from '../../ui/Toast.tsx';
 import { Han } from '../../ui/Han.tsx';
+import { BangChung } from '../../ui/BangChung.tsx';
 import { ActionDialog, OutcomeDialog, ResultDialog } from './CasePanel.tsx';
 import {
   OUTCOME_MARK, canEndWithOutcome, isContactKind, outcomeLabelFor, outcomesFor,
@@ -312,6 +313,12 @@ function CaseCardView({ c, row, onChanged }: {
             </div>
           )}
 
+          {/*
+            BẰNG CHỨNG CỦA CASE (CASE-04, PR-N): tệp hoặc liên kết gắn với CHÍNH case này. Một khối riêng có trạng thái
+            riêng — lỗi tải tệp không đụng tới ô nào đang nhập ở thẻ này. Case Ý thức không có khối này (không còn case Ý thức).
+          */}
+          {!c.behaviour && <BangChung ownerType="sos_case" ownerId={c.id} canEdit={c.canEdit} tieuDe="Bằng chứng của case" />}
+
           {/* Kết luận của case đã hoàn thành — đọc lại được, không bị giấu. */}
           {c.status === 'done' && (c.outcomeLabel || c.outcomeNote) && (
             <p className="text-xs text-slate-300 m-0">
@@ -489,6 +496,12 @@ function PlanRow({ p, track, canEdit, onChanged }: {
             <li className="text-[11px] text-slate-500">Chưa có cập nhật nào cho phương án này.</li>
           )}
         </ol>
+      )}
+      {/* BẰNG CHỨNG CỦA PHƯƠNG ÁN (CASE-04): mở cùng lịch sử, chỉ tải danh sách khi người dùng mở dòng này. */}
+      {showHistory && (
+        <div className="mt-2 ml-[0.6rem] pl-3">
+          <BangChung ownerType="case_intervention" ownerId={p.id} canEdit={canEdit} tieuDe="Bằng chứng của phương án" />
+        </div>
       )}
 
       {editing && (

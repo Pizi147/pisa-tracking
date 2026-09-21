@@ -9823,6 +9823,127 @@ check('PR-N · N3 BA nơi đếm "thiếu phương án" (chỉ số · bảng ph
   assert(boardNoPlan === skillRow.noPlan, `Bảng theo loại vấn đề cộng lại ${boardNoPlan} thiếu phương án, bảng theo kỹ năng ghi ${skillRow.noPlan}`);
 });
 
+
+/*
+ * N5 — KHO TỆP VÀ LIÊN KẾT DÙNG CHUNG (bảng `attachments`, `platform/attachments.ts`). Ba luật bắt buộc của đặc tả §4.5:
+ *   (a) lỗi tải tệp KHÔNG làm mất nội dung đang nhập — tải là một request riêng (kiểm ở giao diện, xem plan.md);
+ *   (b) quyền xem tệp = quyền xem BẢN GHI CHỦ; không có đường tải nào bỏ qua kiểm quyền;
+ *   (c) xoá tệp có audit, không phải một dấu X im lặng.
+ * Hạ tầng dựng một lần cho bốn chỗ (case học thuật · phương án · vi phạm · biện pháp); PR-N nối hai chỗ đầu.
+ */
+const attachmentsSvc = await import('../platform/attachments.ts');
+const prnAttCase = (topic: string, name: string) => {
+  const st = prnMake(name);
+  return cases.reportIssue(P.admin, { studentId: st.id, cycleId: st.cycleId, track: 'academic', topic, parallel: true,
+    title: `PRN bằng chứng ${name}`, summary: 'Case dựng để kiểm kho tệp.', primaryCode: domain.issuesForTopic(topic)[0].code } as any) as any;
+};
+
+check('PR-N · N5 Bảng attachments có đúng cột và chỉ mục theo đặc tả §4.5', () => {
+  const cols = (conn.prepare('PRAGMA table_info(attachments)').all() as any[]).map((c) => c.name);
+  for (const c of ['id', 'owner_type', 'owner_id', 'kind', 'url', 'display_name', 'mime_type', 'size_bytes', 'uploaded_by', 'created_at']) {
+    assert(cols.includes(c), `Bảng attachments thiếu cột ${c}`);
+  }
+  const idx = (conn.prepare("SELECT name FROM sqlite_master WHERE type = 'index' AND tbl_name = 'attachments'").all() as any[]).map((r) => r.name);
+  assert(idx.includes('idx_attachment_owner'), 'Thiếu chỉ mục idx_attachment_owner(owner_type, owner_id)');
+});
+
+check('PR-N · N5 Liên kết: thêm được vào case; chỉ nhận http/https; phải có tên đọc được; người tải và ngày được giữ', () => {
+  const c = prnAttCase(authSubjectSkill, 'Liên Kết');
+  const row = attachmentsSvc.addLink(P.mbManager, { ownerType: 'sos_case', ownerId: c.id, url: 'https://drive.example.com/bai-lam.pdf', displayName: 'Bài làm tuần 3' }) as any;
+  assert(row.kind === 'link' && row.displayName === 'Bài làm tuần 3' && row.href === 'https://drive.example.com/bai-lam.pdf', `Dòng liên kết sai: ${JSON.stringify(row)}`);
+  assert(row.uploadedByName && row.createdAt, 'Phải giữ người tải và ngày tải');
+  const list = attachmentsSvc.listAttachments(P.mbManager, 'sos_case', c.id) as any[];
+  assert(list.length === 1 && list[0].id === row.id, 'Danh sách phải có đúng liên kết vừa thêm');
+  for (const bad of ['javascript:alert(1)', 'ftp://x.y/z', 'file:///etc/passwd', 'data:text/html,<b>x</b>', 'không phải url', '']) {
+    assertThrows(() => attachmentsSvc.addLink(P.mbManager, { ownerType: 'sos_case', ownerId: c.id, url: bad, displayName: 'x' }), /liên kết|http/i, `Đã nhận liên kết không hợp lệ "${bad}"`);
+  }
+  const noName = attachmentsSvc.addLink(P.mbManager, { ownerType: 'sos_case', ownerId: c.id, url: 'https://example.com/a/b' }) as any;
+  assert(noName.displayName === 'example.com', `Không có tên thì lấy tên miền làm tên hiển thị, đang "${noName.displayName}"`);
+});
+
+check('PR-N · N5 Tệp: lưu ngoài cơ sở dữ liệu, không lộ đường dẫn máy chủ, ghi kích thước; chỉ nhận đuôi an toàn và tối đa 10 MB', () => {
+  const c = prnAttCase(authSubjectSkill, 'Tệp');
+  const data = Buffer.from('nội dung bài viết của học viên');
+  const row = attachmentsSvc.addFile(P.mbManager, { ownerType: 'sos_case', ownerId: c.id, fileName: 'Bài viết tuần 3.pdf', mimeType: 'application/pdf', data }) as any;
+  assert(row.kind === 'file' && row.displayName === 'Bài viết tuần 3.pdf' && row.sizeBytes === data.length, `Dòng tệp sai: ${JSON.stringify(row)}`);
+  assert(row.href === `/api/attachments/${row.id}/download`, 'Tệp phải tải qua đường có kiểm quyền, không phải đường dẫn thô');
+  assert(!JSON.stringify(row).includes('uploads') && !('url' in row), 'Không được lộ đường dẫn lưu trên máy chủ');
+  const opened = attachmentsSvc.openAttachment(P.mbManager, row.id) as any;
+  assert(opened.kind === 'file' && fs.readFileSync(opened.absPath).equals(data), 'Tải về phải ra đúng nội dung đã lưu');
+  assert(path.resolve(opened.absPath).startsWith(path.resolve(attachmentsSvc.uploadsDir())), 'Tệp phải nằm trong thư mục tải lên');
+  for (const bad of ['virus.exe', 'trang.html', 'hinh.svg', 'run.sh', 'noext', '../../etc/passwd']) {
+    assertThrows(() => attachmentsSvc.addFile(P.mbManager, { ownerType: 'sos_case', ownerId: c.id, fileName: bad, data: Buffer.from('x') }), /loại tệp|đuôi|không nhận/i, `Đã nhận tệp "${bad}"`);
+  }
+  assertThrows(() => attachmentsSvc.addFile(P.mbManager, { ownerType: 'sos_case', ownerId: c.id, fileName: 'lon.pdf', data: Buffer.alloc(attachmentsSvc.MAX_FILE_BYTES + 1) }), /10 ?MB|dung lượng|quá lớn/i, 'Đã nhận tệp quá lớn');
+  assertThrows(() => attachmentsSvc.addFile(P.mbManager, { ownerType: 'sos_case', ownerId: c.id, fileName: 'rong.pdf', data: Buffer.alloc(0) }), /rỗng/i, 'Đã nhận tệp rỗng');
+  attachmentsSvc.removeAttachment(P.mbManager, row.id);
+  assert(!fs.existsSync(opened.absPath), 'Xoá dòng thì tệp trên đĩa cũng phải được xoá');
+});
+
+check('PR-N · N5 Tên tệp có đường dẫn (../) không bao giờ làm tệp rơi ra ngoài thư mục tải lên và không lộ vào tên hiển thị', () => {
+  const c = prnAttCase(authSubjectSkill, 'Đường dẫn');
+  for (const evil of ['../../x.pdf', '..\\..\\y.pdf', '/etc/z.pdf']) {
+    let row: any = null;
+    try { row = attachmentsSvc.addFile(P.mbManager, { ownerType: 'sos_case', ownerId: c.id, fileName: evil, data: Buffer.from('x') }); } catch { /* bị từ chối cũng là kết quả an toàn */ }
+    if (!row) continue;
+    const opened = attachmentsSvc.openAttachment(P.mbManager, row.id) as any;
+    assert(path.resolve(opened.absPath).startsWith(path.resolve(attachmentsSvc.uploadsDir()) + path.sep), `Tệp "${evil}" nằm ngoài thư mục tải lên: ${opened.absPath}`);
+    assert(!/[\\/]|\.\./.test(row.displayName), `Tên hiển thị còn dấu đường dẫn: "${row.displayName}"`);
+  }
+});
+
+check('PR-N · N5 Quyền xem tệp = quyền xem BẢN GHI CHỦ: tài khoản ngoài phạm vi bị từ chối ở danh sách, ở đường tải và ở đường xoá', () => {
+  const c = prnAttCase(authSubjectSkill, 'Quyền Xem');
+  const row = attachmentsSvc.addFile(P.mbManager, { ownerType: 'sos_case', ownerId: c.id, fileName: 'a.pdf', data: Buffer.from('bí mật') }) as any;
+  assert((attachmentsSvc.listAttachments(P.mbManager, 'sos_case', c.id) as any[]).length === 1, 'Quản lý MB phải xem được');
+  assert((attachmentsSvc.listAttachments(P.subjectTeacher, 'sos_case', c.id) as any[]).length === 1, 'GV dạy lớp phải xem được');
+  assertThrows(() => attachmentsSvc.listAttachments(P.cpManager, 'sos_case', c.id), /phạm vi|quyền/, 'Quản lý CP xem danh sách tệp của case MB');
+  assertThrows(() => attachmentsSvc.openAttachment(P.cpManager, row.id), /phạm vi|quyền/, 'Quản lý CP tải được tệp của case MB — đường tải bỏ qua kiểm quyền');
+  assertThrows(() => attachmentsSvc.removeAttachment(P.cpManager, row.id), /phạm vi|quyền/, 'Quản lý CP xoá được tệp của case MB');
+  attachmentsSvc.removeAttachment(P.mbManager, row.id);
+});
+
+check('PR-N · N5 Quyền thêm/xoá = quyền SỬA bản ghi chủ (AUTH-01/C02): GV đúng môn thêm được, GV môn khác chỉ xem', () => {
+  const own = prnAttCase(authSubjectSkill, 'Đúng Môn');
+  const other = prnAttCase(authMismatchSkill, 'Trái Môn');
+  const ok = attachmentsSvc.addLink(P.subjectTeacher, { ownerType: 'sos_case', ownerId: own.id, url: 'https://example.com/ok', displayName: 'Đúng môn' }) as any;
+  assert(ok.id, 'GV đúng môn phải đính kèm được vào case môn mình');
+  assertThrows(() => attachmentsSvc.addLink(P.subjectTeacher, { ownerType: 'sos_case', ownerId: other.id, url: 'https://example.com/no', displayName: 'Trái môn' }), /quyền/, 'GV môn khác đính kèm vào case trái môn');
+  const mgr = attachmentsSvc.addLink(P.mbManager, { ownerType: 'sos_case', ownerId: other.id, url: 'https://example.com/mgr', displayName: 'Quản lý' }) as any;
+  assert((attachmentsSvc.listAttachments(P.subjectTeacher, 'sos_case', other.id) as any[]).some((a) => a.id === mgr.id), 'GV môn khác vẫn phải XEM được (xem không cần đúng môn)');
+  assertThrows(() => attachmentsSvc.removeAttachment(P.subjectTeacher, mgr.id), /quyền/, 'GV môn khác xoá được tệp của case trái môn');
+  attachmentsSvc.removeAttachment(P.subjectTeacher, ok.id);
+});
+
+check('PR-N · N5 Xoá tệp có AUDIT (ai, xoá cái gì, của bản ghi nào) — không phải một dấu X im lặng; xoá hai lần không lỗi lặng', () => {
+  const c = prnAttCase(authSubjectSkill, 'Audit Xoá');
+  const row = attachmentsSvc.addFile(P.mbManager, { ownerType: 'sos_case', ownerId: c.id, fileName: 'bang-chung.pdf', data: Buffer.from('abc') }) as any;
+  const before = (conn.prepare("SELECT COUNT(*) n FROM audit_logs WHERE action = 'attachment.delete'").get() as any).n;
+  attachmentsSvc.removeAttachment(P.mbManager, row.id);
+  const log = conn.prepare("SELECT * FROM audit_logs WHERE action = 'attachment.delete' ORDER BY id DESC LIMIT 1").get() as any;
+  assert((conn.prepare("SELECT COUNT(*) n FROM audit_logs WHERE action = 'attachment.delete'").get() as any).n === before + 1, 'Phải thêm đúng một dòng audit');
+  assert(log.actor_user_id === P.mbManager.userId && log.entity_label === 'bang-chung.pdf' && /sos_case/.test(String(log.before_json)) && String(log.before_json).includes(String(c.id)),
+    `Audit thiếu người xoá, tên tệp hoặc bản ghi chủ: ${JSON.stringify(log)}`);
+  assert((conn.prepare('SELECT COUNT(*) n FROM attachments WHERE id = ?').get(row.id) as any).n === 0, 'Dòng phải mất khỏi bảng');
+  assertThrows(() => attachmentsSvc.removeAttachment(P.mbManager, row.id), /Không tìm thấy/, 'Xoá tệp đã xoá phải báo không tìm thấy');
+  const added = (conn.prepare("SELECT COUNT(*) n FROM audit_logs WHERE action = 'attachment.add'").get() as any).n;
+  assert(added >= 1, 'Thêm tệp cũng phải để lại dấu vết');
+});
+
+check('PR-N · N5 Phương án thừa hưởng quyền của case chứa nó; loại bản ghi chưa có nơi chủ (vi phạm, biện pháp) và loại lạ bị từ chối rõ ràng', () => {
+  const c = prnAttCase(authSubjectSkill, 'Phương Án');
+  const iv = Number(conn.prepare(`INSERT INTO case_interventions (case_id, kind, description, status, created_at) VALUES (?, 'tutor', 'PRN phương án có bằng chứng', 'planned', ?)`).run(c.id, nowIsoPrn()).lastInsertRowid);
+  const row = attachmentsSvc.addLink(P.mbManager, { ownerType: 'case_intervention', ownerId: iv, url: 'https://example.com/pa', displayName: 'Kế hoạch tutor' }) as any;
+  assert((attachmentsSvc.listAttachments(P.subjectTeacher, 'case_intervention', iv) as any[]).length === 1, 'GV dạy lớp xem được bằng chứng của phương án');
+  assertThrows(() => attachmentsSvc.listAttachments(P.cpManager, 'case_intervention', iv), /phạm vi|quyền/, 'Quản lý CP xem bằng chứng phương án của case MB');
+  assertThrows(() => attachmentsSvc.addLink(P.subjectTeacher, { ownerType: 'case_intervention', ownerId: 999999, url: 'https://example.com/x', displayName: 'x' }), /Không tìm thấy/, 'Phương án không tồn tại');
+  for (const t of ['violation', 'discipline_measure']) {
+    assertThrows(() => attachmentsSvc.listAttachments(P.admin, t, 1), /chưa hỗ trợ/, `Loại "${t}" chưa có nơi chủ mà lại được nhận`);
+  }
+  assertThrows(() => attachmentsSvc.listAttachments(P.admin, 'khong_co', 1), /không hợp lệ|chưa hỗ trợ/, 'Loại lạ');
+  attachmentsSvc.removeAttachment(P.mbManager, row.id);
+});
+
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`

@@ -277,6 +277,19 @@ function sosEditCtx(c: { class_id?: number | null; eff_student_id?: number | nul
   };
 }
 
+/**
+ * QUYỀN CỦA MỘT CASE, cho module khác hỏi (kho tệp) thay vì tự dựng lại ngữ cảnh quyền — đúng bài học AUTH-01: mỗi nơi
+ * tự viết `can(...)` một kiểu là cách sinh ra lỗi quyền. Xem = quyền xem case; sửa = `SOS_EDIT` theo đúng kỹ năng (C02).
+ */
+export function caseAccess(caseId: number) {
+  const c = loadCase(caseId);
+  return {
+    requireView: (p: Principal, message: string) =>
+      require_(p, PERMISSIONS.ATTEMPT_VIEW, { classId: c.class_id, studentId: c.eff_student_id }, message),
+    requireEdit: (p: Principal, message: string) => require_(p, PERMISSIONS.SOS_EDIT, sosEditCtx(c), message),
+  };
+}
+
 // ---------------------------------------------------------------- giáo viên báo vấn đề
 
 /**

@@ -1,4 +1,5 @@
 import { Router, type Request } from 'express';
+import multer from 'multer';
 import { db, isInitialised } from '../db.ts';
 import {
   BEHAVIOUR_TOPICS, BEHAVIOUR_TOPIC_LABEL, ENTRY_SKILLS, ENTRY_SKILL_LABEL, ISSUE_TAXONOMY,
@@ -10,6 +11,7 @@ import { HttpError, badRequest, forbidden, isIsoDate, notFound, toInt } from '..
 import { SESSION_COOKIE, createSession, destroySession, principalOf, requireAuth } from '../auth.ts';
 import { can, loadPrincipal, permissionSummary, require_, scopeFor } from '../permissions.ts';
 import { writeAudit } from '../platform/audit.ts';
+import * as attachmentSvc from '../platform/attachments.ts';
 import { maybeSimulateReadError, maybeSimulateSaveFailure, pInt, qInt, qStr, wrap } from './helpers.ts';
 
 /**
@@ -661,6 +663,62 @@ api.get('/classes/:id/issue-board/needs-evaluation', requireAuth, wrap((req) => 
   if (!category) throw badRequest('Chưa chọn kỹ năng để xem chi tiết.');
   const need = effectiveness.plansNeedingEvaluation({ classId: id, category, fromDate: qStr(req, 'from') ?? null });
   return { count: need.count, rows: rowsFor('phuong-an', need.ids) };
+}));
+
+/**
+ * KHO TỆP VÀ LIÊN KẾT DÙNG CHUNG (PR-N N5). Mọi đường đều đi qua `platform/attachments.ts`, nơi kiểm quyền của BẢN GHI CHỦ
+ * — không có đường nào phục vụ tệp như một đường dẫn tĩnh. Tải tệp là MỘT request riêng: form đang nhập không bị đụng tới,
+ * nên lỗi tải (mạng, quá dung lượng, sai loại) chỉ hiện ở dòng tệp và nội dung đang gõ còn nguyên.
+ */
+const uploadOne = multer({ storage: multer.memoryStorage(), limits: { fileSize: attachmentSvc.MAX_FILE_BYTES, files: 1, fields: 8 } }).single('file');
+
+api.get('/attachments', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return { rows: attachmentSvc.listAttachments(principalOf(req), qStr(req, 'ownerType') ?? '', qInt(req, 'ownerId') ?? 0) };
+}));
+
+api.post('/attachments/link', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return attachmentSvc.addLink(principalOf(req), {
+    ownerType: String(req.body?.ownerType ?? ''), ownerId: toInt(req.body?.ownerId) ?? 0,
+    url: String(req.body?.url ?? ''), displayName: req.body?.displayName ?? null,
+  });
+}));
+
+api.post('/attachments/file', requireAuth, (req, res, next) => {
+  uploadOne(req, res, (err: unknown) => {
+    if (!err) return next();
+    const code = (err as { code?: string }).code;
+    next(code === 'LIMIT_FILE_SIZE' ? new HttpError(413, 'Tệp quá lớn: tối đa 10 MB.') : new HttpError(400, 'Không đọc được tệp tải lên.'));
+  });
+}, wrap((req) => {
+  maybeSimulateSaveFailure();
+  const file = (req as Request & { file?: Express.Multer.File }).file;
+  if (!file) throw badRequest('Chưa chọn tệp.');
+  /* Tên tệp trình duyệt gửi có thể bị mã hoá latin1 — đọc lại đúng UTF-8 để giữ dấu tiếng Việt. */
+  const fileName = Buffer.from(file.originalname, 'latin1').toString('utf8');
+  return attachmentSvc.addFile(principalOf(req), {
+    ownerType: String(req.body?.ownerType ?? ''), ownerId: toInt(req.body?.ownerId) ?? 0,
+    fileName, data: file.buffer, displayName: req.body?.displayName || null,
+  });
+}));
+
+/** Tải về — kiểm quyền XEM bản ghi chủ trước, luôn dạng tải về (không bao giờ hiển thị nội dung tệp trong trang). */
+api.get('/attachments/:id/download', requireAuth, wrap((req, res) => {
+  const o = attachmentSvc.openAttachment(principalOf(req), pInt(req, 'id'));
+  if (o.kind === 'link') { res.redirect(o.url); return undefined; }
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('Content-Security-Policy', "default-src 'none'; sandbox");
+  res.setHeader('Content-Type', o.mimeType);
+  res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${encodeURIComponent(o.downloadName)}`);
+  res.sendFile(o.absPath);
+  return undefined;
+}));
+
+api.delete('/attachments/:id', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  attachmentSvc.removeAttachment(principalOf(req), pInt(req, 'id'));
+  return { ok: true };
 }));
 
 /**

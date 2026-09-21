@@ -6,6 +6,7 @@ import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { Alert, Card, Empty, ErrorState, Field, Info, Level, Outcome, SectionNote, Skeleton, Status } from '../../ui/ui.tsx';
 import { Modal } from '../../ui/Drawer.tsx';
+import { BangChung } from '../../ui/BangChung.tsx';
 import { CHUA_CO_PHUONG_AN, GOI_Y_THEM_PHUONG_AN } from '../../ui/chu.ts';
 import { caseStatusLabel, caseStatusTone, fmtBand, fmtDate, skillLabel, sosLabel, sosTone } from '../../lib/format.ts';
 import {
@@ -287,6 +288,11 @@ export function CasePanel({ caseId, compact = false, hideHeader = false, onChang
           </SectionNote>
         )}
       </section>
+
+      {/* BẰNG CHỨNG CỦA CASE (CASE-04, PR-N) — cùng khối với thẻ case ở hồ sơ học viên. */}
+      {data.track !== 'behaviour' && (
+        <BangChung ownerType="sos_case" ownerId={caseId} canEdit={data.viewer.canEdit} tieuDe="Bằng chứng của case" />
+      )}
 
       <OutcomeDialog open={outcome} onClose={() => setOutcome(false)} caseId={caseId}
         track={data.track ?? 'academic'} category={data.category} categoryLabel={data.categoryLabel}
