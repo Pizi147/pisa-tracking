@@ -1839,9 +1839,21 @@ Xem mục 3 và `shared/domain/policy.ts` (nay ghi rõ điểm nào đã nối d
 - **C09:** tài liệu từng ghi ngược lại mã; nay tài liệu khớp mã.
 - **C01 và C08 chưa nối dây** — chờ chủ sản phẩm xác nhận (mục 3, dòng cuối).
 
----
+### 12.14. PR-K (mục 23.3) chưa làm hoặc để lại — 21/09/2026 đêm
 
-## 13. Lệnh kiểm bắt buộc
+PR-K #42 chỉ làm đủ cho deploy đêm nay (K7 nói rõ "không kiểm ngược, không chụp ảnh" — mức
+kiểm nhẹ hơn mục 22, xem bảng ở mục 23.0). Năm việc dưới đây bị bỏ qua có chủ đích vì lý do kỹ
+thuật hoặc để không phình phạm vi đêm nay, không phải quên:
+
+| Việc | Vì sao chưa làm đêm nay | Làm ở đâu khi quay lại |
+|---|---|---|
+| Đính kèm tệp ngay lúc đang **ghi** vi phạm mới (`RecordViolationPanel.tsx`) | `BangChung` cần `ownerId` — vi phạm mới soạn trong form chưa có `id` (chưa `POST`). Phải lưu xong mới có bản ghi để đính kèm | Bất kỳ ai chạm lại `RecordViolationPanel`: lưu nháp trước (tạo vi phạm ngay khi mở form, giữ `idempotencyKey`) rồi mở `BangChung` ngay trong form — hoặc chấp nhận "chỉ đính kèm được sau khi lưu" là hành vi cuối cùng và bỏ dòng này khỏi backlog |
+| Nút `Ghi vi phạm` ở **từng dòng học viên** trong bảng lớp (`ClassRoster.tsx`) — đặc tả §7.4 và mục 22.5 K1 đều nói rõ vị trí này | Ưu tiên thời gian đêm nay: chỉ làm 2/3 vị trí đặc tả nêu (đầu tab Ý thức & Phối hợp của lớp, đầu tab của hồ sơ học viên) | **PR-Q (mục 22.7)** — PR-Q vốn đã sửa `ClassRoster.tsx`/hàng lớp (Q1) và dựng tab `Ý thức` của bốn tab hồ sơ lớp (Q4); thêm nút này cùng lúc, đỡ phải mở lại file lần hai |
+| Nút `Xem vi phạm đó` trong cảnh báo trùng mềm V06 (chỉ còn `Vẫn ghi vi phạm mới`) | Panel `Ghi vi phạm` đang nằm lồng trong Modal khác (mở từ lớp/hồ sơ HV) — mở thêm panel chi tiết vi phạm chồng lên cần một tầng điều hướng nữa, để lại cho gọn thời gian | Chưa gắn với PR nào; làm cùng lúc với việc dựng lại panel chi tiết Vi phạm (§7.7) nếu có |
+| Bảng "Vi phạm theo nhóm: Tổng · Chưa xử lý · Đang chuẩn bị · Đã xử lý" đúng 5 hàng nhóm của §7.6 | Máy chủ (`yThucMetric`) mới có `vi-pham-tong`/`vi-pham-chua-xu-ly` đếm theo TOÀN lớp/chi nhánh, chưa cắt theo từng nhóm (category), và không có chỉ số riêng cho "đang chuẩn bị"/"đã xử lý". K5 dùng tạm bốn chỉ số tổng thay bảng 5×4 | **PR-P (mục 22.6, P7–P9)** — PR-P vốn làm lại toàn bộ trang Phân tích (bốn góc nhìn, trong đó có "Ý thức"); thêm chỉ số cắt theo nhóm lúc đó, tránh viết `yThucMetric` hai lần |
+| Bộ lọc **lớp** ở góc nhìn Ý thức & Phối hợp của Quản lý (chỉ có chi nhánh + khoảng thời gian) | `yThucMetric`/`phoiHopMetric` chỉ nhận `branchId`/`from`/`to`, chưa nhận `classId` | Cùng **PR-P** như dòng trên — thêm tham số `classId` cho cả hai hàm chỉ số một lượt |
+
+
 
 ### 13.1. Trước mỗi commit
 
