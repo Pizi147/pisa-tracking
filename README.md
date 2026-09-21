@@ -131,10 +131,10 @@ Mỗi vai trò mở vào đúng việc thường làm nhất. Đây chỉ là l�
 > **ngày** khi tới gần tuần đó (`14/10`). Speaking có thể khác ngày nhưng vẫn là cùng một lượt MT.
 > Lịch **chỉ có ngày, không có giờ**.
 
-> **Chỉ có mười phút?** Mở [`BAN_GIAO_VONG6.md`](BAN_GIAO_VONG6.md) — trong đó có **sáu hồ sơ học viên
-> nên mở đầu tiên**, mỗi hồ sơ minh hoạ một tình huống khác nhau (đi qua ba chương trình · hỗ trợ có tác dụng ·
-> case tái diễn · đổi phương án giữa chừng · bàn giao khi chuyển lớp · kết quả thi thật).
-> `DEMO_SCENARIOS.md` đi chi tiết hơn: bấm vào đâu, đăng nhập bằng ai, và cần thấy gì.
+> **Chỉ có mười phút?** Mở [`DEMO_SCENARIOS.md`](DEMO_SCENARIOS.md) — **sáu hồ sơ học viên nên mở
+> đầu tiên**, mỗi hồ sơ minh hoạ một tình huống khác nhau (đi qua ba chương trình · hỗ trợ có tác
+> dụng · case tái diễn · đổi phương án giữa chừng · bàn giao khi chuyển lớp · kết quả thi thật),
+> kèm hướng dẫn bấm vào đâu, đăng nhập bằng ai, và cần thấy gì.
 
 Muốn đổi tài khoản bất cứ lúc nào: bấm nút **"Đổi tài khoản demo"** ở thanh trên cùng.
 
@@ -247,13 +247,20 @@ Hệ thống **không bao giờ** tự sinh lỗi ngẫu nhiên khi bạn dùng 
 
 Tài liệu liên quan:
 
-- **`BAN_GIAO_VONG6.md`** — **báo cáo bàn giao mới nhất**: đã sửa những logic nào, đã làm lại
-  khu vực nào, đã kiểm luồng nào, nên mở hồ sơ nào trước, còn hạn chế gì. **Đọc cái này trước tiên**
-- **`vong4/`** — bộ tài liệu bàn giao vòng 4. Bắt đầu ở `vong4/README.md`.
-  Chỗ nào mâu thuẫn với các tài liệu bên dưới thì `vong4/` thắng
-- `PISA_Design_Master_Reference.md` — sổ quyết định: trạng thái từng quyết định, cái gì đã chốt, cái gì còn chờ
-- `PRODUCT_DEMO_SPEC.md` — Product / Web Design: **A. Current MVP · B. Simplify–Remove · C. Future Design**
+- **`plan.md`** — **kế hoạch đang chạy. Đọc mục 22 trước** (lộ trình 8 PR, chốt 21/09/2026)
+- **`thiet-ke/`** — **nguồn luật và đặc tả hiện hành.** Bắt đầu ở `thiet-ke/README.md`.
+  Chỗ nào mâu thuẫn với tài liệu khác thì `thiet-ke/` thắng:
+  - `NGUON-Rule-Y-thuc-2026-09-21.md` — nguồn mới nhất của chủ sản phẩm
+  - `PISA-Rulebook-2026-09-19.md` — luật sản phẩm; **mục 18 là bản mới nhất**
+  - `Y_THUC_VI_PHAM_VA_BIEN_PHAP.md` — đặc tả Vi phạm và Biện pháp xử lý
+  - `BAN_DO_OVERHAUL.md` — yêu cầu nào của design plan đã có, cái nào chưa
+  - `PISA-Design-Plan-after-PR28.md` — đặc tả thiết kế; mục 17–22 là bản mới nhất
 - `DEMO_ASSUMPTIONS.md` — các câu đã chốt (Q1–Q15) và những điểm còn cần bạn xác nhận
+
+> **Đã xoá 21/09/2026:** `BAN_GIAO*.md` (bàn giao giữa các chat cũ),
+> `PISA_Design_Master_Reference.md` và `PRODUCT_DEMO_SPEC.md` (đã bị `thiet-ke/` thay hẳn),
+> `vong4/` (đã xong từ lâu). Chúng là **lịch sử, không phải luật**, và giữ lại chỉ tạo rủi ro
+> đọc phải luật cũ. Cần tra lại thì dùng `git log`.
 - `DEMO_SCENARIOS.md` — sáu hồ sơ nên mở đầu tiên, bảng kịch bản J01–J12, và bốn màn nên mở kèm
   mô tả cần thấy gì
 - `CODE_MAP.md` — bản đồ mã nguồn, dành cho người sẽ tiếp tục xây phần mềm

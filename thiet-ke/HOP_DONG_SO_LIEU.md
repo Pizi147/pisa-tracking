@@ -115,3 +115,63 @@ ngoài bảng).
 7. Gọi thẳng API drill-down bằng tài khoản ngoài phạm vi → bị từ chối, không trả tập rút gọn.
 8. Phạm vi rỗng → danh sách rỗng và số 0 có nhãn `Không có dữ liệu trong phạm vi`, không phải
    toàn hệ thống.
+
+---
+
+## 5. Chỉ số Ý thức — bổ sung 21/09/2026
+
+Mô hình Case Ý thức bị bỏ. Nguồn: `NGUON-Rule-Y-thuc-2026-09-21.md`; đặc tả:
+`Y_THUC_VI_PHAM_VA_BIEN_PHAP.md` mục 8. Tám chỉ số này tuân đúng bốn luật nền ở mục 1.
+
+| id | Tên | Đơn vị | Thời gian | Định nghĩa bắt buộc |
+|---|---|---|---|---|
+| `vi-pham-tong` | Vi phạm | vi phạm | phát sinh trong kỳ | `valid = 1`. Đếm theo `occurred_on` — **không** theo `reported_on`, vì GV nhớ ra muộn không làm sự việc xảy ra muộn |
+| `vi-pham-chua-xu-ly` | Vi phạm chưa xử lý | vi phạm | hiện trạng | `valid = 1` và **không** có dòng nào trong `measure_violations` |
+| `vi-pham-khong-hieu-luc` | Vi phạm không còn hiệu lực | vi phạm | phát sinh trong kỳ | `valid = 0`. Đứng **riêng**, không trừ vào `vi-pham-tong` trên cùng một hàng |
+| `hv-co-vi-pham` | Học viên có vi phạm | học viên | phát sinh trong kỳ | `COUNT DISTINCT student_id` trên vi phạm `valid = 1` |
+| `hv-can-xu-ly` | Học viên cần xử lý | học viên | hiện trạng | Có ít nhất một vi phạm chưa xử lý **và** cái cũ nhất quá 5 ngày. Định nghĩa đầy đủ ở đặc tả mục 5.5 |
+| `bien-phap-da-thuc-hien` | Biện pháp đã thực hiện | biện pháp | kết quả trong kỳ | `status = 'done'`, đếm theo `performed_on`. Một Report gom n vi phạm bằng **MỘT** |
+| `bien-phap-dang-chuan-bi` | Biện pháp đang chuẩn bị | biện pháp | hiện trạng | `status = 'preparing'`. Không có hạn nên **không có** khái niệm "quá hạn" |
+| `bien-phap-theo-loai` | Biện pháp theo loại | biện pháp | kết quả trong kỳ | Chín loại, tách riêng `warning_1/2/3`. **Không** gộp ba thư thành một dòng |
+
+### 5.1. Ba chỉ số cũ phải sửa định nghĩa
+
+| id | Sửa gì |
+|---|---|
+| `hv-co-case-mo` | Chỉ đếm case **học thuật**. Ý thức không còn case |
+| `case-mo` | Chỉ case học thuật |
+| `case-thieu-pa` | Chỉ case học thuật |
+
+### 5.2. Chỉ số hết hiệu lực
+
+| id | Vì sao |
+|---|---|
+| `Tái diễn Ý thức` *(design plan §10)* | Không còn "đợt" nên không còn "tái diễn lần thứ mấy" |
+
+### 5.3. Hai luật riêng của nhóm Ý thức
+
+1. **Ý thức nằm hoàn toàn ngoài mọi bảng hiệu quả hỗ trợ.** Không có đường nào đưa biện pháp vào
+   `pa-co-ket-qua` hay `ty-le-co-cai-thien`. Gia đình đã nhận report không chứng minh em tiến bộ;
+   bịa một chỉ số thành công cho một cuộc gọi là nói dối bằng số.
+2. **Ý thức không vào `dung-han-cap-nhat`.** Không có hạn nào để đúng hay trễ.
+
+---
+
+## 6. Bốn chỉ số đang trả lỗi 501 — chốt chặn của hai trang lớn nhất
+
+Ghi ở đây vì đây là thứ dễ bị bỏ qua nhất khi đọc bảng chỉ số: **bốn dòng dưới đây đã khai báo
+nhưng chưa có hàm tập ID.** Máy chủ trả `501`.
+
+| id | Chặn cái gì |
+|---|---|
+| `hv-duoi-ky-vong-mon` | Ô số thứ nhất của Tổng quan mới (design plan §18.2) |
+| `hv-sos-hien-tai` | Tổng quan §18.2 và Phân tích §18.3 |
+| `dung-han-cap-nhat` | Cột "cập nhật đúng hạn" của bảng Giáo viên (§6.2) |
+| `do-phu-danh-gia` | Cột "độ phủ đánh giá" — §6.3 bắt buộc có mẫu số và độ phủ |
+
+**Rủi ro cụ thể nếu dựng màn trước khi có hàm:** người code sẽ tự viết phép đếm thứ hai cho
+cùng một khái niệm. Đó đúng là lỗi "badge ghi 28, bấm vào ra 0" mà mục 1 luật 1 sinh ra để dập —
+và lần này còn khó thấy hơn, vì hai phép đếm sẽ **khớp nhau trên dữ liệu demo hiện tại** rồi
+lệch khi dữ liệu thật vào.
+
+Vì vậy bốn hàm này nằm ở **PR đầu tiên** của lộ trình, trước cả Ý thức. Xem `plan.md`.

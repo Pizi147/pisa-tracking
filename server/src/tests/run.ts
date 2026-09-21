@@ -3846,7 +3846,7 @@ check('GVCN nhận việc gặp học viên; việc gọi phụ huynh về Quả
 console.log('\n27. Vòng 4 — case sống suốt khoá');
 
 /*
- * Bốn bài kiểm này là ĐÚNG bốn tiêu chí "Xong khi" của phase 1 trong `vong4/02_KE_HOACH_PHASE.md`.
+ * Bốn bài kiểm này là ĐÚNG bốn tiêu chí "Xong khi" của phase 1 vòng 4 (tài liệu `vong4/` đã xoá 21/09/2026 — tra bằng git log nếu cần).
  * Viết thành kiểm tra chứ không chỉ thử tay, vì đây là phần dễ vỡ nhất khi sửa về sau.
  */
 

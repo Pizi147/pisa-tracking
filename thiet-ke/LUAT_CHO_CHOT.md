@@ -88,3 +88,70 @@ Nguồn chi tiết: rule book mục 17.7 · `shared/domain/policy.ts`.
 | C10 | Chốt ngay | Đã áp |
 
 Sau cuối tuần chỉ Quản lý sửa kết luận; quyết định mới ghi đè trực tiếp, không duyệt lại; audit log chỉ để truy vết.
+
+---
+
+## 6. Chốt ngày 21/09/2026 — bốn điểm Ý thức (Y01–Y04) và đóng C01
+
+Nguồn: `NGUON-Rule-Y-thuc-2026-09-21.md` + trả lời trực tiếp của chủ sản phẩm ngày 21/09/2026.
+Đặc tả: `Y_THUC_VI_PHAM_VA_BIEN_PHAP.md`. Luật: rule book mục 18.
+
+### 6.1. Bốn điểm mới, đã chốt hết
+
+| Mã | Câu hỏi | Đã chốt | Hằng số ở `shared/domain/yThuc.ts` |
+|---|---|---|---|
+| **Y01** | Ai xác nhận biện pháp nặng (Thư cảnh cáo 1/2/3, Đình chỉ học, CX/GĐCN meeting)? | **GVCN tự làm hết.** Không có bước Quản lý duyệt cho bất kỳ loại nào. Quản lý nhận thông báo khi Thư cảnh cáo hoặc Đình chỉ học được xác nhận | `Y01_AI_XAC_NHAN_BIEN_PHAP_NANG = 'gvcn-tu-lam'` |
+| **Y02** | Chuỗi Thư cảnh cáo 1→2→3 đếm trong phạm vi nào? | **Theo lộ trình học** (`learning_cycles.id`). Sang lộ trình mới thì reset về lần 1 | `Y02_PHAM_VI_CHUOI_THU_CANH_CAO = 'theo-lo-trinh'` |
+| **Y03** | Ba khu vực Ý thức của GVCN đặt ở đâu? | **Tab `Ý thức` trong hồ sơ LỚP** + tab `Ý thức` gọn trong hồ sơ học viên. **Không** thêm khu vực cấp chính thứ 5 | *(quyết định giao diện, không cần hằng số)* |
+| **Y04** | Mấy nhóm vi phạm? | **Năm nhóm:** Chuyên cần · BTVN · Thái độ / hành vi · Kỷ luật lớp học · Khác. Bỏ `Tham gia trên lớp`, dữ liệu cũ đổi sang `Thái độ / hành vi` | `VIOLATION_CATEGORIES` |
+
+Cả bốn đều **đã chốt**, không có phương án chờ. Vẫn khai thành hằng số có tên theo luật ở mục 1,
+để lần sau muốn đổi thì sửa một dòng chứ không đi tìm `if` rải rác.
+
+### 6.2. C01 đóng — nguồn 21/09 đã tự trả lời
+
+C01 hỏi: sau 3 ngày xác minh SOS, phương án đầu tiên có phải nằm trong cùng hạn đó không?
+
+Nguồn 21/09 mục 3.2 viết thẳng: *"Không được hiểu rằng trong 3 ngày đó bắt buộc phải hoàn thành
+cả phương án Academic Case."* Mục 6 tách rõ hai mốc: **SOS 3 ngày để xác nhận nguyên nhân** ·
+**Academic Case 3/5 ngày để có phương án, tính từ ngày Case được tạo**.
+
+Vậy `C01_HAN_XAC_MINH_SOS_GOM_PA = 'hai-moc-rieng'` — **đúng như mã đang chạy**. Không phải sửa gì.
+Đổi nhãn hằng số từ "CHƯA NỐI DÂY, chờ xác nhận" thành "ĐÃ CHỐT 21/09/2026, khớp hành vi đang chạy".
+
+### 6.3. C03 và C04 hết hiệu lực
+
+Hai điểm này là luật của mô hình Case Ý thức, mà mô hình đó đã bị bỏ.
+
+| Mã | Luật cũ | Trạng thái mới |
+|---|---|---|
+| **C03** | Cửa sổ gộp case Ý thức 3 ngày (ngày mở + 2) | **HẾT HIỆU LỰC 21/09/2026.** Không còn gộp theo ngày; mỗi vi phạm là một record độc lập |
+| **C04** | Đợt Ý thức đã đóng mà có báo cáo mới thì tạo đợt mới liên kết | **HẾT HIỆU LỰC 21/09/2026.** Không còn đợt; báo cáo mới chỉ là một vi phạm mới |
+
+**Giữ cả hai hằng số trong `policy.ts`** kèm chú thích "hết hiệu lực 21/09/2026, lý do: rule book
+mục 18". Xoá hẳn là xoá mất dấu vết một quyết định có thật — đúng thứ mục 1 luật 3 cấm.
+
+### 6.4. Còn đúng một điểm chưa chốt: C08
+
+| Mã | Còn chưa rõ |
+|---|---|
+| **C08** | Hạn chấm Normal hết Chủ nhật tuần thi — **đã đúng**. Còn chưa rõ: *"chưa có bài thì thêm `-` và dời sang tuần sau"* — **ai** thêm dấu `-` (hệ thống tự thêm hay giáo viên), và Normal có **thật sự dùng** dấu `-` không (hiện Normal luôn đủ bốn môn, không có `-`). Chưa triển khai |
+
+Trên màn Normal, trong khi chờ, giữ câu trung tính `Hạn chấm theo quy định của lớp` theo luật ở
+mục 4 — không viết "chưa chốt", không hiện mã C.
+
+### 6.5. Bảng tổng trạng thái sau 21/09/2026
+
+| Mã | Trạng thái |
+|---|---|
+| C01 | ✅ Đóng 21/09 — hai mốc riêng, khớp mã đang chạy |
+| C02 | ✅ Đã chốt, đã nối dây. **Chỉ áp cho case học thuật**, không áp cho Ý thức |
+| C03 | ⚰️ Hết hiệu lực 21/09 |
+| C04 | ⚰️ Hết hiệu lực 21/09 |
+| C05 | ✅ Đã chốt 19/09 |
+| C06 | ✅ Đã chốt. Tab "Đã xong từ trước" nay **chỉ còn nhánh Học thuật** |
+| C07 | ✅ Đã chốt, khớp hành vi |
+| C08 | ⏳ **Chưa chốt hẳn** — điểm duy nhất còn lại |
+| C09 | ✅ Đã chốt, khớp hành vi |
+| C10 | ✅ Đã chốt, đã nối dây |
+| Y01–Y04 | ✅ Đã chốt 21/09, chưa nối dây (chưa có mã Ý thức) |

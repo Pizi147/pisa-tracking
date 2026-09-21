@@ -14,7 +14,7 @@ Rule book mục 2. Vi phạm bảng này là lỗi nghiệp vụ, không phải 
 | Kết quả cảnh báo từ điểm một đợt Test | `SOS 1/2/3` | "mức gấp", "mức ưu tiên" |
 | Dữ liệu điểm cho thấy cần tìm nguyên nhân | `Tín hiệu cần xác minh` | "case", "vấn đề đã xác định" |
 | Vấn đề cụ thể của một em, đúng kỹ năng, có phân loại | `Case học thuật` | "SOS", "tín hiệu" |
-| Một đợt xử lý BTVN/chuyên cần/tham gia | `Case Ý thức` | "case học thuật", "SOS ý thức" |
+| ~~Một đợt xử lý BTVN/chuyên cần/tham gia~~ | ~~`Case Ý thức`~~ | **HẾT HIỆU LỰC 21/09/2026** — xem mục 6 |
 | Một hoạt động hỗ trợ có người làm và kết quả riêng | `Phương án` (PA) | "task", "việc được giao" |
 | Kết thúc một hoạt động | `Kết thúc phương án` | "hoàn thành case" |
 | Kết luận cả vấn đề | `Hoàn thành case` | "đóng phương án" |
@@ -121,3 +121,78 @@ Không vừa ghi toàn lớp vừa dẫn tới việc riêng (RB 17.4, design pl
 2. Trước khi đổi một chuỗi, `grep` toàn repo tìm **mọi biến thể** — kể cả trong test, seed và
    thông báo máy chủ.
 3. Nghiệm thu bằng cách mở từng màn ở ba vai, không bằng một lần tìm–thay.
+
+---
+
+## 6. Ý thức — từ vựng mới, chốt 21/09/2026
+
+Mô hình Case Ý thức bị bỏ. Nguồn: `NGUON-Rule-Y-thuc-2026-09-21.md`; đặc tả:
+`Y_THUC_VI_PHAM_VA_BIEN_PHAP.md`. **Vi phạm bảng này là lỗi nghiệp vụ, không phải lỗi biên tập.**
+
+| Khái niệm | Chữ dùng trên web | Tuyệt đối không viết |
+|---|---|---|
+| Một sự việc học viên vi phạm, do một GV ghi | `Vi phạm` | "case Ý thức", "đợt", "báo cáo Ý thức", "violation" |
+| Việc GVCN làm để xử lý một nhóm vi phạm | `Biện pháp xử lý` | "phương án kỷ luật", "phương án Ý thức", "phương án" |
+| Biện pháp đã tạo, chưa làm xong, còn sửa được | `Đang chuẩn bị` | "nháp", "chờ duyệt", "đang xử lý" |
+| Biện pháp đã làm xong, đã có bằng chứng | `Đã thực hiện` | "hoàn thành", "đóng", "done" |
+| Vi phạm chưa gắn vào biện pháp nào | `Chưa xử lý` | "mới", "đang mở" |
+| Vi phạm đang nằm trong một biện pháp Đang chuẩn bị | `Đang chuẩn bị xử lý` | "đang xử lý" |
+| Vi phạm nằm trong ít nhất một biện pháp Đã thực hiện | `Đã xử lý` | "đã đóng", "đã giải quyết" |
+| Vi phạm bị xác định là ghi sai | `Không còn hiệu lực` | "đã xóa", "hủy", "sai" |
+| Thao tác đánh dấu ghi sai | `Đánh dấu không chính xác` | "xóa vi phạm", "hủy ghi nhận" |
+| Nhắc GVCN có vi phạm để lâu | `Cần xử lý` | "quá hạn", "vi phạm trễ hạn" |
+
+**Bốn đơn vị đếm không bao giờ cộng vào nhau:** số vi phạm · số học viên có vi phạm ·
+số biện pháp · số lần một loại biện pháp.
+
+### 6.1. Năm nhóm vi phạm — đúng năm chữ này
+
+`Chuyên cần` · `BTVN` · `Thái độ / hành vi` · `Kỷ luật lớp học` · `Khác`
+
+Bỏ `Tham gia trên lớp` (Y04). Dữ liệu cũ đổi sang `Thái độ / hành vi`.
+
+### 6.2. Chín biện pháp — đúng chín chữ này, xếp nhẹ đến nặng
+
+1. `GV trao đổi ngắn với HS`
+2. `GV meeting với HS`
+3. `Report cho gia đình`
+4. `Thư cảnh cáo lần 1`
+5. `CX / GĐCN meeting với HS / PH`
+6. `Thư cảnh cáo lần 2`
+7. `Đình chỉ học`
+8. `Thư cảnh cáo lần 3`
+9. `Khác` — kèm ô tên biện pháp tự đặt
+
+Thứ tự này là thứ tự **BÀY RA**, không phải quy trình bắt buộc. Trên màn có chữ `nhẹ ─ nặng`
+ở hai đầu danh sách để người đọc biết mức tương đối.
+
+### 6.3. Mẫu câu trạng thái của Ý thức
+
+| Tình huống | Câu |
+|---|---|
+| Cảnh báo quá 5 ngày | `⚠ {n} vi phạm chưa được xử lý — vi phạm cũ nhất: {k} ngày trước` |
+| Cảnh báo ở đầu tab lớp | `⚠ {n} học viên có vi phạm chưa xử lý quá 5 ngày` |
+| Tuổi một vi phạm chưa xử lý | `⚠{k}n` đặt cuối dòng, không cần chữ "ngày" |
+| Tuổi một biện pháp đang chuẩn bị | `tạo {ngày} · {k} ngày` |
+| Thư cảnh cáo bị khoá | `chưa gửi Thư cảnh cáo lần {k-1}` — ghi ngay tại dòng bị khoá |
+| Thiếu tệp khi xác nhận | `Cần đính kèm tệp hoặc liên kết thư cảnh cáo` |
+| Chọn vi phạm của hai em | `Đã chọn {a} của {tên A} và {b} của {tên B} — một biện pháp chỉ xử lý một học viên` |
+| Cảnh báo trùng trong form | `Ngày {d} em này đã có {n} vi phạm nhóm {nhóm} do {GV} ghi.` |
+| Chưa đủ ký tự tìm người | `Nhập ít nhất 3 ký tự để tìm giáo viên` |
+| Vi phạm hết hiệu lực trong lịch sử | `{người} đánh dấu {ngày}: "{lý do}"` — dòng phụ dưới vi phạm bị gạch ngang |
+| Biện pháp có vi phạm bị hủy sau đó | `{k} trong {n} vi phạm của biện pháp này sau đó được xác định là không chính xác.` |
+| Lưu vi phạm xong | `Đã ghi vi phạm cho {tên}` + link `Hoàn tác` |
+| Xác nhận biện pháp xong | `Đã lưu. {tên}: {n} vi phạm chuyển sang Đã xử lý.` |
+| Trạng thái rỗng, khu vi phạm chưa xử lý | `Không còn vi phạm nào chưa xử lý.` |
+| Trạng thái rỗng, khu biện pháp đang chuẩn bị | `Chưa có biện pháp nào đang chuẩn bị.` |
+| Trạng thái rỗng, lịch sử | `Lớp này chưa có biện pháp xử lý nào.` |
+
+### 6.4. Mức case học thuật — đổi chữ
+
+| Hiện tại | Thay bằng |
+|---|---|
+| `Cần chú ý` *(mức thấp của case, hạn 5 ngày)* | `Bình thường` |
+| `Gấp` *(hạn 3 ngày)* | giữ nguyên |
+
+Lý do: nguồn 21/09 gọi là "Case Bình thường"; và `Cần chú ý` không cho thấy nó là mức **thấp
+hơn** `Gấp`. Câu "bỏ Bình thường" ở rule book mục 4.2 hết hiệu lực.
