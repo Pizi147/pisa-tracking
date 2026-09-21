@@ -2,10 +2,28 @@ import { db, isInitialised } from './db.ts';
 import { addDays, nowIso } from './util.ts';
 import { demoToday } from './demoConfig.ts';
 import crypto from 'node:crypto';
-import { PERMISSION_LABEL } from '../../shared/domain/index.ts';
+import { PERMISSION_LABEL, VIOLATION_SKILLS, legacyTopicToViolationCategory } from '../../shared/domain/index.ts';
 import { DEFAULT_ADMIN_EMAIL, DEFAULT_ADMIN_PASSWORD, EMAIL_SUFFIX } from './platform/accounts.ts';
 import { seedRoutes } from './platform/sysconfig.ts';
 import { ROLE_PERMISSIONS } from './seed/data.ts';
+
+/**
+ * Giá trị cũ của cột `track` cho case Ý thức. Mô hình Case Ý thức đã BỎ 21/09/2026 (rule book mục 18) — hằng số này chỉ để NÂNG CẤP
+ * database cũ; không mã nào ngoài file này còn nhắc tới nó.
+ */
+const LEGACY_TRACK = 'behaviour'; // bỏ mô hình Case Ý thức 21/09/2026
+
+/**
+ * Database còn ở THỜI CASE Ý THỨC (cột `sos_cases.track` còn đó) hoặc cổ hơn (chưa có bảng vi phạm) — chỉ loại database này mới cần
+ * các bước nâng cấp của thời đó. Database mới dựng từ `schema.sql` hoặc đã chuyển sang mô hình Vi phạm/Biện pháp thì bỏ qua hết:
+ * chạy lại chúng là dựng lại những cột và bảng của mô hình đã bỏ.
+ */
+function legacyEra(conn: any): boolean {
+  const has = (t: string) => !!conn.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name = ?").get(t);
+  if (!has('sos_cases')) return false;
+  if ((conn.prepare('PRAGMA table_info(sos_cases)').all() as any[]).some((c: any) => c.name === 'track')) return true;
+  return !has('violations');
+}
 
 /**
  * Nâng cấp database ĐANG CÓ lên schema mới, không xoá dữ liệu.
@@ -412,6 +430,8 @@ function migrateCaseEngine(applied: string[], skipped: string[]) {
     migrateMoveRequests(conn, applied);
     migrateEntryBands(conn, applied);
     migrateReportHistory(conn, applied);
+    /* CUỐI CÙNG: sau khi mọi bước thời Case Ý thức ở trên đã chạy xong, chuyển dữ liệu của mô hình đó sang mô hình mới. */
+    migrateLegacyDisciplineCases(conn, applied);
 
     /*
      * Case đã đóng theo hệ thống cũ mà không có hướng xử lý: ghi rõ là "đóng theo hệ thống
@@ -458,6 +478,7 @@ function migrateCaseEngine(applied: string[], skipped: string[]) {
  * Chạy lại lần hai không làm gì thêm.
  */
 function migrateSkillTopics(conn: any, applied: string[]) {
+  if (!legacyEra(conn)) return;
   const cols = (t: string) => (conn.prepare(`PRAGMA table_info(${t})`).all() as any[]).map((c) => c.name);
   if (cols('sos_cases').includes('topic')) return;
 
@@ -648,13 +669,13 @@ function migrateSkillTopics(conn: any, applied: string[]) {
    * Vấn đề giáo viên báo: lấy nhánh của chính mã phân loại chính họ đã chọn. Mã ý thức thì
    * sang đầu mục Ý thức, mã kỹ năng thì ở Học thuật.
    */
-  const behaviourMap: Record<string, string> = {
-    'student.behaviour.attendance': 'attendance',
-    'student.behaviour.homework': 'homework',
-    'student.behaviour.focus': 'participation',
-    'student.behaviour.selfstudy': 'other',
-    'student.behaviour.organisation': 'other',
-    'student.behaviour.other': 'other',
+  const legacyTopicOf: Record<string, string> = {
+    [`student.${LEGACY_TRACK}.attendance`]: 'attendance',
+    [`student.${LEGACY_TRACK}.homework`]: 'homework',
+    [`student.${LEGACY_TRACK}.focus`]: 'participation',
+    [`student.${LEGACY_TRACK}.selfstudy`]: 'other',
+    [`student.${LEGACY_TRACK}.organisation`]: 'other',
+    [`student.${LEGACY_TRACK}.other`]: 'other',
   };
   const reported = conn
     .prepare(
@@ -666,9 +687,9 @@ function migrateSkillTopics(conn: any, applied: string[]) {
   let tagged = 0;
   for (const r of reported) {
     if (!r.code) continue;
-    if (behaviourMap[r.code]) {
-      conn.prepare("UPDATE sos_cases SET track = 'behaviour', topic = ? WHERE id = ?")
-        .run(behaviourMap[r.code], r.id);
+    if (legacyTopicOf[r.code]) {
+      conn.prepare(`UPDATE sos_cases SET track = '${LEGACY_TRACK}', topic = ? WHERE id = ?`)
+        .run(legacyTopicOf[r.code], r.id);
       tagged++;
     } else {
       const branch = String(r.code).split('.')[1];
@@ -760,6 +781,7 @@ function migrateSkillTopics(conn: any, applied: string[]) {
  * hoặc bằng chính sự tồn tại của cột/bảng.
  */
 function migrateCaseLifecycle(conn: any, applied: string[]) {
+  if (!legacyEra(conn)) return;
   const cols = (t: string) => (conn.prepare(`PRAGMA table_info(${t})`).all() as any[]).map((c: any) => c.name);
   const has = (t: string) =>
     !!conn.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name = ?").get(t);
@@ -811,7 +833,7 @@ function migrateCaseLifecycle(conn: any, applied: string[]) {
   for (const r of conn
     .prepare('SELECT id, track, topic FROM sos_cases WHERE category IS NULL')
     .all() as any[]) {
-    const cat = r.track === 'behaviour' ? 'behaviour' : (REGULAR_TO_CATEGORY[r.topic] ?? null);
+    const cat = r.track === LEGACY_TRACK ? LEGACY_TRACK : (REGULAR_TO_CATEGORY[r.topic] ?? null);
     /*
      * Case cũ không gắn được kỹ năng (vòng 3 cố ý không đoán bừa khi một lượt trượt từ hai
      * kỹ năng trở lên) thì hạng mục để TRỐNG. Đoán bừa ở đây sẽ gộp nhầm hai case của hai
@@ -874,7 +896,7 @@ function migrateCaseLifecycle(conn: any, applied: string[]) {
         ORDER BY COALESCE(detected_at, substr(created_at, 1, 10)), id`,
     )
     .all() as any[]) {
-    if (r.track === 'behaviour' && r.origin_kind === 'mock') continue;
+    if (r.track === LEGACY_TRACK && r.origin_kind === 'mock') continue;
     /*
      * Ý THỨC/KHÁC LÀ ĐỢT, KHÔNG PHẢI MỘT CASE SỐNG SUỐT LỘ TRÌNH (mục 7.2).
      *
@@ -885,7 +907,7 @@ function migrateCaseLifecycle(conn: any, applied: string[]) {
      *
      * Nên khoá gộp nay có cả PHÂN LOẠI, và bên dưới còn một cửa chặn nữa theo cửa sổ bốn ngày.
      */
-    const key = r.track === 'behaviour'
+    const key = r.track === LEGACY_TRACK
       ? `bt:${r.student_id}:${r.cycle_id ?? 0}:${r.topic ?? 'other'}`
       : `a:${r.student_id}:${r.cycle_id ?? 0}:${r.category}`;
     const list = groups.get(key) ?? [];
@@ -929,7 +951,7 @@ function migrateCaseLifecycle(conn: any, applied: string[]) {
      * cáo rơi trong bốn ngày kể từ ngày mở đợt mới thuộc về đợt đó — đúng luật mà chính
      * sản phẩm đang chạy, nên bước nâng cấp không được nới rộng hơn.
      */
-    const mergeable = survivor.track === 'behaviour'
+    const mergeable = survivor.track === LEGACY_TRACK
       ? ordered.slice(1).filter((c) => {
         const from = survivor.detected_at ?? String(survivor.created_at).slice(0, 10);
         const on = c.detected_at ?? String(c.created_at).slice(0, 10);
@@ -995,7 +1017,7 @@ function migrateCaseLifecycle(conn: any, applied: string[]) {
         target = conn
           .prepare(
             `SELECT id FROM sos_cases
-              WHERE student_id = ? AND track = 'behaviour' AND parallel = 0
+              WHERE student_id = ? AND track = '${LEGACY_TRACK}' AND parallel = 0
                 AND COALESCE(cycle_id, 0) = ?
                 AND ${c.attempt_id && c.auto ? 'attempt_id = ?' : "origin_kind != 'mock'"}
               ORDER BY id LIMIT 1`,
@@ -1010,7 +1032,7 @@ function migrateCaseLifecycle(conn: any, applied: string[]) {
           .prepare(
             `INSERT INTO sos_cases (attempt_id, student_id, cycle_id, track, topic, category,
                                     origin_kind, detected_at, status, dedup_key, created_at)
-             VALUES (?,?,?, 'behaviour', 'other', 'behaviour', ?, ?, ?, ?, ?)`,
+             VALUES (?,?,?, '${LEGACY_TRACK}', 'other', '${LEGACY_TRACK}', ?, ?, ?, ?, ?)`,
           )
           .run(c.attempt_id, c.student_id, cycleId,
                c.auto && c.attempt_id ? 'mock' : 'teacher_report',
@@ -1054,7 +1076,7 @@ function migrateCaseLifecycle(conn: any, applied: string[]) {
     )
     .all() as any[]) {
     let key: string | null = null;
-    if (r.track === 'behaviour') {
+    if (r.track === LEGACY_TRACK) {
       key = r.origin_kind === 'mock'
         ? (r.attempt_id ? `bm:${r.attempt_id}` : null)
         : (r.student_id ? `bt:${r.student_id}:${r.cycle_id ?? 0}` : null);
@@ -1602,7 +1624,8 @@ function migrateNormalFourSkills(conn: any, applied: string[]) {
       let rekeyed = 0;
       let conflicts = 0;
       for (const c of conn
-        .prepare(`SELECT id, student_id, cycle_id, category, dedup_key FROM sos_cases WHERE track = 'academic'`)
+        /* Database đời Case Ý thức còn cột ``track``: case Ý thức không có khoá chống trùng nên không đụng tới. Đời mới thì mọi case đều là học thuật. */
+        .prepare(`SELECT id, student_id, cycle_id, category, dedup_key FROM sos_cases${cols('sos_cases').includes('track') ? " WHERE track = 'academic'" : ''}`)
         .all() as any[]) {
         const want = `a:${c.student_id}:${c.cycle_id ?? 0}:${c.category}`;
         if (c.dedup_key === want) continue;
@@ -1628,6 +1651,7 @@ function migrateNormalFourSkills(conn: any, applied: string[]) {
  * ngày bắt đầu mới, và cũng không để trống khiến mọi phương án cũ trông như chưa từng chạy.
  */
 function migrateCaseCycles(conn: any, applied: string[]) {
+  if (!legacyEra(conn)) return;
   const has = (t: string) =>
     !!conn.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name = ?").get(t);
   const cols = (t: string) => (conn.prepare(`PRAGMA table_info(${t})`).all() as any[]).map((c: any) => c.name);
@@ -2082,6 +2106,7 @@ function migrateSkillSchedule(conn: any, applied: string[]) {
  *     trạng thái đã xử lý, nên không có khoản nợ quá hạn nào được sinh về quá khứ.
  */
 function migrateSignals(conn: any, applied: string[]) {
+  if (!legacyEra(conn)) return;
   const has = (t: string) =>
     !!conn.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name = ?").get(t);
   if (!has('sos_cases') || !has('case_milestones')) return;
@@ -2151,8 +2176,8 @@ function migrateSignals(conn: any, applied: string[]) {
 
   let built = 0;
   for (const r of rows) {
-    const skill = r.track === 'behaviour' ? null : (r.topic ?? null);
-    const key = `mt:${r.attempt_id}:${skill ?? 'behaviour'}`;
+    const skill = r.track === LEGACY_TRACK ? null : (r.topic ?? null);
+    const key = `mt:${r.attempt_id}:${skill ?? LEGACY_TRACK}`;
     const seen = conn.prepare('SELECT id FROM case_signals WHERE dedup_key = ?').get(key);
     if (seen) continue;
     const on = r.on_date as string;
@@ -2333,6 +2358,7 @@ function migrateMoveRequests(conn: any, applied: string[]) {
 }
 
 function migratePlanForm(conn: any, applied: string[]) {
+  if (!legacyEra(conn)) return;
   const has = (t: string) =>
     !!conn.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name = ?").get(t);
   const cols = (t: string) => (conn.prepare(`PRAGMA table_info(${t})`).all() as any[]).map((c: any) => c.name);
@@ -2439,7 +2465,7 @@ function migrateAttachments(conn: any, applied: string[]) {
  * Ý THỨC MỚI — BỐN BẢNG VI PHẠM VÀ BIỆN PHÁP XỬ LÝ (PR-J, 21/09/2026).
  *
  * DDL này chép từ `schema.sql` (nguyên văn từ đặc tả §4.1–§4.4) và chạy lặp lại không lỗi. Mô hình cũ (case Ý thức) không
- * được chuyển đổi ở đây — xem `migrateLegacyBehaviourCases` cho những gì được giữ lại từ dữ liệu cũ.
+ * được chuyển đổi ở đây — xem `migrateLegacyDisciplineCases` cho những gì được giữ lại từ dữ liệu cũ.
  */
 const YTHUC_DDL = `
 CREATE TABLE IF NOT EXISTS violations (
@@ -2552,12 +2578,172 @@ CREATE TABLE IF NOT EXISTS violation_history (
 CREATE INDEX IF NOT EXISTS idx_vh_violation ON violation_history(violation_id);
 `;
 
-function migrateYThuc(conn: any, applied: string[]) {
+export function migrateYThuc(conn: any, applied: string[]) {
   const has = (t: string) => !!conn.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name = ?").get(t);
   const missing = ['violations', 'discipline_measures', 'measure_violations', 'violation_history'].filter((t) => !has(t));
   if (!missing.length) return;
   conn.exec(YTHUC_DDL);
   applied.push('Thêm bốn bảng Ý thức mới: vi phạm, biện pháp xử lý, bảng nối nhiều–nhiều và nhật ký sửa vi phạm.');
+}
+
+/**
+ * CHUYỂN DỮ LIỆU CASE Ý THỨC CŨ SANG VI PHẠM VÀ BIỆN PHÁP XỬ LÝ, rồi GỠ mô hình cũ khỏi database (PR-J J9, 21/09/2026).
+ *
+ * Nguồn 21/09 §39 cho phép reset/reseed demo, nên đây là MỘT ĐỀ XUẤT chuyển dữ liệu chứ không phải bắt buộc: bộ demo được dựng lại
+ * bằng `npm run seed`. Bộ chuyển đổi vẫn cần để database đang dùng (dev, hoặc đã có dữ liệu thật) không mất những gì giáo viên đã
+ * ghi. Chọn theo nguyên tắc "giữ SỰ THẬT, bỏ SUY DIỄN":
+ *
+ *   · MỖI BÁO CÁO của một case Ý thức → MỘT vi phạm (báo cáo là một sự việc có người ghi, có ngày). Nhóm `participation` (Tham gia
+ *     trên lớp) đổi sang `conduct` (Thái độ / hành vi) — Y04. Case do một đợt SOS tự sinh và không có báo cáo nào KHÔNG phải một
+ *     vi phạm (đó là việc "trao đổi sau SOS" do máy dựng) nên không sinh gì.
+ *   · MỖI PHƯƠNG ÁN đã làm hoặc còn dở của case đó → MỘT biện pháp gắn với MỌI vi phạm của case (quan hệ nhiều–nhiều):
+ *       talk_student → meeting_student · talk_parent → family_report · meeting_cx → meeting_cx.
+ *     `warning_letter` (thư cảnh cáo cũ không có "lần thứ mấy") → loại `other` tên "Thư cảnh cáo (dữ liệu cũ)", KHÔNG bịa lần 1/2/3
+ *     — bịa sẽ làm sai chuỗi cứng 1→2→3. Phương án đã huỷ thì bỏ.
+ *   · Rồi GỠ sạch case Ý thức cũ và mọi thứ chỉ có nghĩa với nó (kết quả, mốc, nguồn, tín hiệu, tệp), và các cột/bảng của mô hình:
+ *     `sos_cases.track`, `episode_no`, `merge_until`, `urgency_raised_at`, `case_signals.track`, `tasks.track`, bảng `case_reports`.
+ *
+ * Chạy lặp lại là no-op: chỉ làm khi cột `sos_cases.track` còn đó.
+ */
+export function migrateLegacyDisciplineCases(conn: any, applied: string[]) {
+  const tableCols = (t: string): string[] => (conn.prepare(`PRAGMA table_info(${t})`).all() as any[]).map((c: any) => c.name);
+  const hasTable = (t: string) => !!conn.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name = ?").get(t);
+  if (!hasTable('sos_cases') || !tableCols('sos_cases').includes('track')) return;
+  migrateYThuc(conn, applied);
+
+  const adminId = (conn.prepare('SELECT MIN(id) AS id FROM users').get() as any)?.id ?? 1;
+  const legacy = conn.prepare(`SELECT * FROM sos_cases WHERE track != 'academic' ORDER BY id`).all() as any[];
+  const legacyIds: number[] = legacy.map((c) => c.id);
+  const validSkills = new Set<string>(VIOLATION_SKILLS);
+  const classAt = (studentId: number, on: string): number | null => {
+    const r = conn
+      .prepare(`SELECT class_id FROM enrollments WHERE student_id = ? AND started_at <= ? ORDER BY started_at DESC, id DESC LIMIT 1`)
+      .get(studentId, on) as any
+      ?? conn.prepare(`SELECT class_id FROM enrollments WHERE student_id = ? ORDER BY id DESC LIMIT 1`).get(studentId) as any;
+    return r?.class_id ?? null;
+  };
+  const measureKindOf: Record<string, string | null> = { talk_student: 'meeting_student', talk_parent: 'family_report', meeting_cx: 'meeting_cx' };
+
+  let violationsMade = 0;
+  let measuresMade = 0;
+  const insertViolation = conn.prepare(
+    `INSERT INTO violations (student_id, cycle_id, class_id, category, skill, occurred_on, reported_on, reported_by, description, valid, created_at)
+     VALUES (?,?,?,?,?,?,?,?,?,1,?)`,
+  );
+  const insertMeasure = conn.prepare(
+    `INSERT INTO discipline_measures (student_id, cycle_id, class_id, kind, custom_name, status, owner_user_id, note, performed_on, performed_by,
+                                      performer_name, confirmed_by, confirmed_at, violation_count_at_confirm, created_at, created_by)
+     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+  );
+  const link = conn.prepare('INSERT OR IGNORE INTO measure_violations (measure_id, violation_id, added_by, added_at) VALUES (?,?,?,?)');
+
+  for (const c of legacy) {
+    if (!c.student_id) continue;
+    const reports = hasTable('case_reports')
+      ? (conn.prepare('SELECT * FROM case_reports WHERE case_id = ? ORDER BY reported_on, id').all(c.id) as any[])
+      : [];
+    const sources: Array<{ by: number | null; skill: string | null; reportedOn: string; occurredOn: string; text: string; at: string }> = reports.map((r) => ({
+      by: r.reported_by ?? null, skill: r.source_skill ?? null, reportedOn: r.reported_on,
+      occurredOn: r.observed_on || r.reported_on, text: String(r.summary ?? '').trim(), at: r.created_at,
+    }));
+    if (!sources.length && c.origin_kind !== 'mock') {
+      const on = c.detected_at ?? String(c.created_at).slice(0, 10);
+      sources.push({ by: c.reported_by ?? null, skill: null, reportedOn: on, occurredOn: on, text: String(c.summary ?? c.title ?? '').trim(), at: c.created_at });
+    }
+    if (!sources.length) continue;
+
+    const category = legacyTopicToViolationCategory(c.topic);
+    const violationIds: number[] = [];
+    for (const src of sources) {
+      const cls = classAt(c.student_id, src.occurredOn);
+      const skill = src.skill && validSkills.has(src.skill) ? src.skill : null;
+      const info = insertViolation.run(
+        c.student_id, c.cycle_id ?? null, cls, category, skill, src.occurredOn, src.reportedOn,
+        src.by ?? c.reported_by ?? adminId, src.text || 'Dữ liệu cũ: không có mô tả', src.at ?? nowIso(),
+      );
+      violationIds.push(Number(info.lastInsertRowid));
+      violationsMade += 1;
+    }
+
+    const ivs = conn.prepare(`SELECT * FROM case_interventions WHERE case_id = ? AND status != 'cancelled' ORDER BY id`).all(c.id) as any[];
+    for (const iv of ivs) {
+      const mapped = measureKindOf[iv.kind];
+      const kind = mapped ?? 'other';
+      const customName = kind !== 'other' ? null
+        : iv.kind === 'warning_letter' ? 'Thư cảnh cáo (dữ liệu cũ)'
+        : (String(iv.description ?? '').trim().slice(0, 60) || 'Biện pháp (dữ liệu cũ)');
+      const done = iv.status === 'completed';
+      const on = iv.completed_date ?? iv.started_date ?? iv.planned_date ?? String(iv.created_at).slice(0, 10);
+      const performerUser = iv.performer_user_id ?? null;
+      const performerName = performerUser
+        ? null
+        : (String(iv.performer_name ?? '').trim() || 'Không rõ (dữ liệu cũ)');
+      const cls = classAt(c.student_id, on);
+      const creator = iv.recorded_by ?? c.reported_by ?? adminId;
+      const info = insertMeasure.run(
+        c.student_id, c.cycle_id ?? null, cls, kind, customName, done ? 'done' : 'preparing', performerUser,
+        String(iv.description ?? '').trim() || null,
+        done ? on : null, done ? performerUser : null, done ? performerName : null,
+        done ? creator : null, done ? iv.updated_at ?? iv.created_at : null, done ? violationIds.length : null,
+        iv.created_at ?? nowIso(), creator,
+      );
+      const measureId = Number(info.lastInsertRowid);
+      for (const v of violationIds) link.run(measureId, v, creator, iv.created_at ?? nowIso());
+      measuresMade += 1;
+    }
+  }
+
+  /* ---- GỠ mô hình cũ, theo đúng thứ tự khoá ngoại ---- */
+  let removed = 0;
+  if (legacyIds.length) {
+    const inList = legacyIds.join(',');
+    const ivIds = (conn.prepare(`SELECT id FROM case_interventions WHERE case_id IN (${inList})`).all() as any[]).map((r) => r.id);
+    const ivList = ivIds.length ? ivIds.join(',') : 'NULL';
+    /* Từng câu một: một bảng thiếu (database cổ hơn) thì bỏ qua câu đó, không làm hỏng cả lần nâng cấp. */
+    const statements = [
+      `DELETE FROM case_followups WHERE case_id IN (${inList})`,
+      `DELETE FROM case_reports WHERE case_id IN (${inList})`,
+      `UPDATE case_interventions SET superseded_by = NULL WHERE superseded_by IN (${ivList})`,
+      `UPDATE task_students SET case_id = NULL, intervention_id = NULL WHERE case_id IN (${inList})`,
+      `DELETE FROM task_case_links WHERE case_id IN (${inList})`,
+      `UPDATE tasks SET source_sos_case_id = NULL WHERE source_sos_case_id IN (${inList})`,
+      `UPDATE case_signals SET case_id = NULL WHERE case_id IN (${inList})`,
+      `DELETE FROM case_interventions WHERE case_id IN (${inList})`,
+      `DELETE FROM case_issues WHERE case_id IN (${inList})`,
+      `DELETE FROM case_sources WHERE case_id IN (${inList})`,
+      `DELETE FROM case_milestones WHERE case_id IN (${inList})`,
+      `DELETE FROM sos_case_history WHERE case_id IN (${inList})`,
+      `DELETE FROM attachments WHERE owner_type = 'sos_case' AND owner_id IN (${inList})`,
+      `DELETE FROM attachments WHERE owner_type = 'case_intervention' AND owner_id IN (${ivList})`,
+      `DELETE FROM journey_events WHERE ref_table = 'sos_cases' AND ref_id IN (${inList})`,
+      `DELETE FROM notifications WHERE entity_type = 'sos_case' AND entity_id IN (${inList})`,
+      `UPDATE sos_cases SET previous_case_id = NULL WHERE previous_case_id IN (${inList})`,
+      `DELETE FROM sos_cases WHERE id IN (${inList})`,
+    ];
+    for (const sql of statements) {
+      try { conn.exec(sql); } catch (e: any) { if (!/no such (table|column)/i.test(String(e?.message))) throw e; }
+    }
+    removed = legacyIds.length;
+  }
+  const signalsGone = tableCols('case_signals').includes('track')
+    ? conn.prepare(`DELETE FROM case_signals WHERE track != 'academic'`).run().changes : 0;
+  if (tableCols('tasks').includes('track')) {
+    conn.prepare(`UPDATE tasks SET topic = NULL WHERE track IS NOT NULL AND track != 'academic'`).run();
+  }
+  for (const [table, col] of [
+    ['sos_cases', 'track'], ['sos_cases', 'episode_no'], ['sos_cases', 'merge_until'], ['sos_cases', 'urgency_raised_at'],
+    ['case_signals', 'track'], ['tasks', 'track'],
+  ] as const) {
+    if (!tableCols(table).includes(col)) continue;
+    try { conn.exec(`ALTER TABLE ${table} DROP COLUMN ${col}`); }
+    catch (e: any) { applied.push(`Chưa gỡ được cột ${table}.${col} (${String(e?.message ?? e)}) — không ảnh hưởng, mã mới không đọc nó`); }
+  }
+  conn.exec('DROP TABLE IF EXISTS case_reports');
+
+  applied.push(
+    `Chuyển mô hình Case Ý thức sang Vi phạm và Biện pháp xử lý: ${violationsMade} vi phạm và ${measuresMade} biện pháp được giữ lại từ ${removed} case Ý thức cũ`
+    + `, ${signalsGone} tín hiệu Ý thức cũ được gỡ; đã bỏ các cột track/episode_no/merge_until/urgency_raised_at và bảng case_reports`,
+  );
 }
 
 function migrateNoShowMarks(conn: any, applied: string[]) {
@@ -2584,6 +2770,7 @@ function migrateNoShowMarks(conn: any, applied: string[]) {
 }
 
 function migrateCaseForm(conn: any, applied: string[]) {
+  if (!legacyEra(conn)) return;
   const has = (t: string) =>
     !!conn.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name = ?").get(t);
   const cols = (t: string) => (conn.prepare(`PRAGMA table_info(${t})`).all() as any[]).map((c: any) => c.name);
@@ -2636,13 +2823,13 @@ function migrateCaseForm(conn: any, applied: string[]) {
     windows = conn
       .prepare(
         `UPDATE sos_cases SET merge_until = ?
-          WHERE track = 'behaviour' AND merge_until IS NULL AND detected_at IS NOT NULL`,
+          WHERE track = '${LEGACY_TRACK}' AND merge_until IS NULL AND detected_at IS NOT NULL`,
       )
       .run(null).changes;
     /* Đặt cửa sổ theo chính ngày mở của từng case — SQLite không có hàm ngày +3 tiện ở đây. */
     windows = 0;
     for (const c of conn
-      .prepare(`SELECT id, detected_at FROM sos_cases WHERE track = 'behaviour' AND merge_until IS NULL AND detected_at IS NOT NULL`)
+      .prepare(`SELECT id, detected_at FROM sos_cases WHERE track = '${LEGACY_TRACK}' AND merge_until IS NULL AND detected_at IS NOT NULL`)
       .all() as any[]) {
       conn.prepare('UPDATE sos_cases SET merge_until = ? WHERE id = ?')
         .run(addDaysIso(c.detected_at, 3), c.id);
@@ -2657,16 +2844,16 @@ function migrateCaseForm(conn: any, applied: string[]) {
   let numbered = 0;
   const groups = conn
     .prepare(
-      /* Đếm đợt theo PHÂN LOẠI (topic), không theo hạng mục chung `behaviour`. */
+      /* Đếm đợt theo PHÂN LOẠI (topic), không theo hạng mục chung của case Ý thức. */
       `SELECT student_id, topic FROM sos_cases
-        WHERE track = 'behaviour' AND topic IS NOT NULL
+        WHERE track = '${LEGACY_TRACK}' AND topic IS NOT NULL
         GROUP BY student_id, topic HAVING COUNT(*) > 1`,
     )
     .all() as any[];
   for (const g of groups) {
     const list = conn
       .prepare(
-        `SELECT id FROM sos_cases WHERE student_id = ? AND track = 'behaviour' AND topic = ?
+        `SELECT id FROM sos_cases WHERE student_id = ? AND track = '${LEGACY_TRACK}' AND topic = ?
           ORDER BY COALESCE(detected_at, created_at), id`,
       )
       .all(g.student_id, g.topic) as any[];

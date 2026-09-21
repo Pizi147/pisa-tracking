@@ -611,9 +611,7 @@ function PendingSignals({ signals, onVerify }: {
                   {sg.attemptNo && <span className="text-slate-500 text-xs"> · MT{sg.attemptNo}</span>}
                 </div>
                 <div className="text-xs text-slate-500 mt-0.5">
-                  {sg.track === 'behaviour'
-                    ? 'Em vừa có SOS — xem tình hình chung. Đây KHÔNG phải kết luận em thiếu ý thức.'
-                    : 'Hệ thống mới chỉ đọc được con số. Xem lại bài rồi quyết định.'}
+                  Hệ thống mới chỉ đọc được con số. Xem lại bài rồi quyết định.
                 </div>
                 <div className="text-xs mt-1">
                   {sg.overdue

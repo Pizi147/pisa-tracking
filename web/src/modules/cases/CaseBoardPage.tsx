@@ -11,7 +11,7 @@ import { ManagerTasks, ManagerTaskList } from '../worklist/ManagerTasks.tsx';
 import { WeekPicker } from '../../ui/Filters.tsx';
 import { fmtDate, sosLabel, sosTone } from '../../lib/format.ts';
 import {
-  BEHAVIOUR_TOPICS, BEHAVIOUR_TOPIC_LABEL, CASE_CATEGORY_LABEL, ENTRY_SKILL_LABEL,
+  CASE_CATEGORY_LABEL, ENTRY_SKILL_LABEL,
   FT_CASE_CATEGORIES, ISSUE_TAXONOMY, NORMAL_CASE_CATEGORIES, PERMISSIONS,
   REGULAR_SKILL_LABEL, issueLabel,
 } from '@shared/domain/index.ts';
@@ -31,11 +31,11 @@ import { IssueAnalysis } from './IssueAnalysis.tsx';
  * mới được xử lý tiếp.
  */
 type Facets = {
-  group: Record<string, number>; skill: Record<string, number>;
+  skill: Record<string, number>;
   issueBranch: Record<string, number>; branch: Record<string, number>;
   state: Record<string, number>;
   classKind: Record<string, number>;
-  groupNone: number; skillNone: number; total: number;
+  skillNone: number; total: number;
 };
 
 /** Bộ lọc loại lớp — thay cho bộ lọc "Đầu mục" đã bỏ (mục 10.1). */
@@ -76,13 +76,11 @@ export function CaseBoard({ embedded = false }: { embedded?: boolean } = {}) {
   /*
    * BỘ LỌC "ĐẦU MỤC" ĐÃ BỎ (mục 10.1), thay bằng LOẠI LỚP.
    *
-   * Học thuật / Ý thức là một phép chia gần như vô dụng khi lọc: chín phần mười case là Học
-   * thuật, nên chọn nó gần như không lọc gì. Normal và FT mới là phép chia người dùng thật
-   * sự nghĩ theo — hai loại lớp chấm khác nhau, có kỹ năng khác nhau, và thường do những
-   * người khác nhau phụ trách.
+   * Normal và FT là phép chia người dùng thật sự nghĩ theo — hai loại lớp chấm khác nhau, có
+   * kỹ năng khác nhau, và thường do những người khác nhau phụ trách. (Từ 21/09/2026 case chỉ còn
+   * là Học thuật — Ý thức đã chuyển sang Vi phạm và Biện pháp — nên không còn chia theo đầu mục.)
    */
   const classKind = params.get('loai-lop') ?? '';
-  const group = params.get('nhom') ?? '';
   const skill = params.get('ky-nang') ?? '';
   /*
    * HAI TRỤC, KHÔNG PHẢI MỘT DANH SÁCH TAB DÀI (mục 4.1 · 4.3).
@@ -138,7 +136,7 @@ export function CaseBoard({ embedded = false }: { embedded?: boolean } = {}) {
   };
   const clearFilters = () => {
     const next = new URLSearchParams(params);
-    for (const k of ['loai-lop', 'ky-nang', 'tinh-hinh', 'hang-doi', 'nhom']) next.delete(k);
+    for (const k of ['loai-lop', 'ky-nang', 'tinh-hinh', 'hang-doi']) next.delete(k);
     setParams(next, { replace: false });
   };
 
@@ -146,14 +144,13 @@ export function CaseBoard({ embedded = false }: { embedded?: boolean } = {}) {
   if (queue) qs.set('queue', queue);
   if (branchId) qs.set('branchId', branchId);
   if (classKind) qs.set('classKind', classKind);
-  if (group) qs.set('group', group);
   if (skill) qs.set('skill', skill);
   const suffix = qs.toString() ? `?${qs}` : '';
 
   const branches = useApi<any[]>('/ref/branches');
   const counts = useApi<any>(`/cases/queues${branchId ? `?branchId=${branchId}` : ''}`, [branchId]);
   const list = useApi<{ rows: any[]; scopeEmpty: boolean; facets: Facets }>(
-    `/cases${suffix}`, [queue, branchId, classKind, group, skill],
+    `/cases${suffix}`, [queue, branchId, classKind, skill],
   );
 
   /*
@@ -191,8 +188,7 @@ export function CaseBoard({ embedded = false }: { embedded?: boolean } = {}) {
   const stateCount = (k: string) => inScope.filter((r) => r.state === k).length;
 
   const topicLabel = (k: string) =>
-    BEHAVIOUR_TOPIC_LABEL[k as keyof typeof BEHAVIOUR_TOPIC_LABEL]
-    ?? ENTRY_SKILL_LABEL[k as keyof typeof ENTRY_SKILL_LABEL]
+    ENTRY_SKILL_LABEL[k as keyof typeof ENTRY_SKILL_LABEL]
     ?? REGULAR_SKILL_LABEL[k as keyof typeof REGULAR_SKILL_LABEL]
     ?? k;
 
@@ -313,8 +309,8 @@ export function CaseBoard({ embedded = false }: { embedded?: boolean } = {}) {
           </FilterRow>
           {/*
             BỘ KỸ NĂNG KHÁC NHAU GIỮA HAI LOẠI LỚP (mục 4.3):
-              Normal      Tổng hợp · L · R · W · S · Ý thức/Khác
-              Fast Track  Tổng hợp · L · R · S · W1 · W2 · Ý thức/Khác
+              Normal      Tổng hợp · L · R · W · S
+              Fast Track  Tổng hợp · L · R · S · W1 · W2
             Chưa chọn loại lớp thì chưa bày ô nào: bày cả hai bộ cùng lúc là bày ra những ô
             không tồn tại ở loại lớp người dùng đang nghĩ tới.
           */}
@@ -323,7 +319,7 @@ export function CaseBoard({ embedded = false }: { embedded?: boolean } = {}) {
               <Chip active={!skill} onClick={() => set('ky-nang', '')}>Tổng hợp</Chip>
               {(classKind === 'normal' ? NORMAL_CASE_CATEGORIES : FT_CASE_CATEGORIES).map((k) => (
                 <Chip key={k} active={skill === k} onClick={() => set('ky-nang', skill === k ? '' : k)}>
-                  {k === 'behaviour' ? 'Ý thức/Khác' : CASE_CATEGORY_LABEL[k]}
+                  {CASE_CATEGORY_LABEL[k]}
                   {f?.skill[k] !== undefined ? ` · ${f.skill[k]}` : ''}
                 </Chip>
               ))}
@@ -352,9 +348,7 @@ export function CaseBoard({ embedded = false }: { embedded?: boolean } = {}) {
               )}
               {skill && (
                 <Chip active onClick={() => set('ky-nang', '')}>
-                  {skill === 'none' ? 'Chưa xác định cụ thể'
-                    : skill === 'behaviour' ? 'Ý thức/Khác'
-                    : topicLabel(skill)} ✕
+                  {skill === 'none' ? 'Chưa xác định cụ thể' : topicLabel(skill)} ✕
                 </Chip>
               )}
               {state && <Chip active onClick={() => set('tinh-hinh', '')}>{STATE_LABEL[state]} ✕</Chip>}
@@ -375,7 +369,7 @@ export function CaseBoard({ embedded = false }: { embedded?: boolean } = {}) {
           */}
         <SectionNote>
           Mỗi học viên có nhiều nhất <strong>một case cho mỗi hạng mục</strong> — năm ô kỹ năng
-          L · R · W1 · W2 · S và một ô Ý thức. Case sống suốt khoá: lượt sau yếu lại thì mở lại
+          L · R · W1 · W2 · S. Case sống suốt khoá: lượt sau yếu lại thì mở lại
           chính nó, không mở thêm cái mới. Vấn đề về giáo viên và giáo trình không nằm ở đây —
           đó không phải vấn đề của học viên.
         </SectionNote>

@@ -144,10 +144,10 @@ export function rowsFor(unit: ChiSo['donVi'], ids: number[]): MetricRow[] {
       }
     } else if (unit === 'tin-hieu') {
       for (const r of conn.prepare(
-        `SELECT sg.id, sg.student_id, sg.skill, sg.track, sg.verify_due, s.full_name, s.student_code
+        `SELECT sg.id, sg.student_id, sg.skill, sg.verify_due, s.full_name, s.student_code
            FROM case_signals sg JOIN students s ON s.id = sg.student_id WHERE sg.id IN (${ph})`,
       ).all(...chunk) as any[]) {
-        byId.set(r.id, { id: r.id, title: `Tín hiệu cần xác minh · ${r.skill ?? r.track}`, sub: [r.full_name, r.student_code, `hạn ${String(r.verify_due).slice(8, 10)}/${String(r.verify_due).slice(5, 7)}`].filter(Boolean).join(' · '), href: `/hoc-vien/${r.student_id}` });
+        byId.set(r.id, { id: r.id, title: `Tín hiệu cần xác minh · ${r.skill ?? 'chưa rõ kỹ năng'}`, sub: [r.full_name, r.student_code, `hạn ${String(r.verify_due).slice(8, 10)}/${String(r.verify_due).slice(5, 7)}`].filter(Boolean).join(' · '), href: `/hoc-vien/${r.student_id}` });
       }
     }
   }
@@ -202,7 +202,7 @@ export const parseObligation = (id: number) => ({ interventionId: Math.floor(id 
  *   CHƯA LÀM     — phương án đang chạy, không chờ duyệt, hạn cập nhật của chu kỳ hiện tại đã qua mà chưa có dòng
  *                  theo dõi nào cho chu kỳ đó.
  * "Đã qua hạn" là hạn < ngày dữ liệu — cùng luật với `pa-can-cap-nhat`. Không tính phương án chờ duyệt (chưa được
- * chạy nên chưa có nghĩa vụ) và không tính case Ý thức / nhập bù (không có hạn cập nhật).
+ * chạy nên chưa có nghĩa vụ) và không tính case nhập bù (không có hạn cập nhật). Ý thức không còn case (21/09/2026).
  */
 function obligations(caseIds: number[], today: string, from: string | null, to: string | null) {
   const inPeriod = (due: string) => (!from || due >= from) && (!to || due <= to);
@@ -392,7 +392,7 @@ export function metricSet(
     case 'dung-han-cap-nhat': {
       /* Nghĩa vụ của MỌI case học thuật trong phạm vi — kể cả case đã đóng: nghĩa vụ đã đến hạn vẫn là chuyện đã xảy ra. */
       const caseIds = listCases(p, { branchId }).rows
-        .filter((c: any) => c.track !== 'behaviour' && c.originKind !== 'backfill')
+        .filter((c: any) => c.originKind !== 'backfill')
         .map((c: any) => c.id as number);
       const r = obligations(caseIds, today, f.from ?? null, f.to ?? null);
       return done(r.ids, { numeratorIds: r.numeratorIds });
@@ -400,7 +400,7 @@ export function metricSet(
     case 'pa-co-ket-qua': {
       const ids = new Set<number>();
       for (const s of effectivenessScopes(p, scope.branchId)) {
-        for (const r of planOutcomes(s)) if (r.track !== 'behaviour' && r.group !== 'undetermined') ids.add(r.id);
+        for (const r of planOutcomes(s)) if (r.group !== 'undetermined') ids.add(r.id);
       }
       return done([...ids]);
     }

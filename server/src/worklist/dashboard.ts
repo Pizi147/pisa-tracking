@@ -111,29 +111,13 @@ function supportMetrics(active: any[], inWeek: any[]) {
   const conn = db();
   const caseIds = active.map((m) => m.caseId).filter(Boolean);
   if (!caseIds.length) {
-    return { talkedStudent: 0, talkedParent: 0, academicStarted: 0, avgResultDays: null, avgInterventionDays: null };
+    return { academicStarted: 0, avgResultDays: null };
   }
   const ph = caseIds.map(() => '?').join(',');
-  const cases = conn.prepare(`SELECT * FROM sos_cases WHERE id IN (${ph}) AND sos_level > 0`).all(...caseIds) as any[];
   /*
-   * Từ vòng 4, hai việc trao đổi là PHƯƠNG ÁN của case Ý thức/Khác — không còn bảng riêng.
-   * Vẫn đếm theo LƯỢT chứ không theo case: một lượt trượt ba kỹ năng vẫn chỉ có một lần gọi
-   * phụ huynh, đếm theo case thì con số phồng lên gấp ba.
+   * (Trước 21/09/2026 ở đây còn đếm "đã trao đổi với học viên / phụ huynh" — hai phương án của case Ý thức/Khác sinh sau SOS. Case đó
+   * đã bỏ; việc trao đổi nay là biện pháp xử lý ở module Ý thức và không còn gắn với một đợt Test.)
    */
-  const attemptIds = [...new Set(cases.map((c) => c.attempt_id).filter(Boolean))];
-  const contactCount = (kind: string) => (attemptIds.length
-    ? (conn
-        .prepare(
-          `SELECT COUNT(DISTINCT sc.attempt_id) n
-             FROM case_interventions iv
-             JOIN sos_cases sc ON sc.id = iv.case_id
-            WHERE iv.kind = ? AND iv.status = 'completed'
-              AND sc.attempt_id IN (${attemptIds.map(() => '?').join(',')})`,
-        )
-        .get(kind, ...attemptIds) as any).n
-    : 0);
-  const talkedStudent = contactCount('talk_student');
-  const talkedParent = contactCount('talk_parent');
   const academicStarted = (conn
     .prepare(
       `SELECT COUNT(DISTINCT case_id) n FROM case_interventions
@@ -156,26 +140,6 @@ function supportMetrics(active: any[], inWeek: any[]) {
       }
     }
   }
-  /* Thời gian bắt đầu can thiệp = lần trao đổi đầu tiên − hết tuần MT của lượt. */
-  const interv: number[] = [];
-  for (const aid of attemptIds) {
-    const first = conn
-      .prepare(`SELECT rp.week_end AS d FROM assessment_attempts a
-                  JOIN report_periods rp ON rp.id = a.planned_period_id WHERE a.id = ?`)
-      .get(aid) as any;
-    const contact = conn
-      .prepare(
-        `SELECT MIN(iv.completed_date) AS d
-           FROM case_interventions iv
-           JOIN sos_cases sc ON sc.id = iv.case_id
-          WHERE sc.attempt_id = ? AND iv.kind IN ('talk_student','talk_parent')
-            AND iv.completed_date IS NOT NULL`,
-      )
-      .get(aid) as any;
-    if (first?.d && contact?.d) {
-      interv.push(Math.round((Date.parse(contact.d) - Date.parse(first.d)) / 86400000));
-    }
-  }
   const avg = (xs: number[]) => (xs.length ? Math.round((xs.reduce((a, b) => a + b, 0) / xs.length) * 10) / 10 : null);
-  return { talkedStudent, talkedParent, academicStarted, avgResultDays: avg(diffs), avgInterventionDays: avg(interv) };
+  return { academicStarted, avgResultDays: avg(diffs) };
 }

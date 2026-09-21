@@ -4,9 +4,8 @@ import { useToast } from '../../ui/Toast.tsx';
 import { Modal } from '../../ui/Drawer.tsx';
 import { Field, SectionNote } from '../../ui/ui.tsx';
 import {
-  BEHAVIOUR_TOPICS, BEHAVIOUR_TOPIC_LABEL, ENTRY_SKILLS, ENTRY_SKILL_LABEL,
-  THREAD_TRACKS, THREAD_TRACK_LABEL, URGENCY_LEVELS, URGENCY_LABEL, issuesForTopic, DEFAULT_URGENCY,
-  topicFromBehaviourCode, CASE_OUTCOMES, CASE_OUTCOME_LABEL,
+  ENTRY_SKILLS, ENTRY_SKILL_LABEL, URGENCY_LEVELS, URGENCY_LABEL, issuesForTopic, DEFAULT_URGENCY,
+  CASE_OUTCOMES, CASE_OUTCOME_LABEL,
 } from '@shared/domain/index.ts';
 
 /**
@@ -19,10 +18,12 @@ import {
  * tuỳ chọn — bắt điền đủ thì giáo viên bỏ qua, và một form không ai điền thì không có dữ
  * liệu nào cả.
  *
- * Nhưng đầu mục và chủ đề thì BẮT BUỘC: không có chúng, vấn đề rơi vào "chưa phân loại" và
- * biến mất khỏi mọi bảng tổng hợp theo kỹ năng — đúng thứ vòng 3 sinh ra để sửa. Đổi lại,
- * chọn chúng chỉ mất hai lần bấm và không cần suy nghĩ: em vướng kỹ năng nào, hay là chuyện
- * ý thức.
+ * Nhưng kỹ năng thì BẮT BUỘC: không có nó, vấn đề rơi vào "chưa phân loại" và biến mất khỏi
+ * mọi bảng tổng hợp theo kỹ năng — đúng thứ vòng 3 sinh ra để sửa. Đổi lại, chọn nó chỉ mất
+ * một lần bấm: em vướng kỹ năng nào.
+ *
+ * Từ 21/09/2026 form này CHỈ dành cho vấn đề học thuật. Chuyện ý thức (BTVN, chuyên cần, thái
+ * độ…) là Vi phạm — có form riêng ở phần Ý thức, không đi qua cửa case.
  */
 export function QuickReport({
   open, onClose, studentId, studentName, cycleId, onDone, signal, students, onPickStudent,
@@ -44,7 +45,7 @@ export function QuickReport({
    * chắc. Tên và mô tả thì không: máy chỉ đọc được con số, còn vấn đề thật là gì thì người
    * dạy mới biết, và đó chính là lý do bước xác minh này tồn tại.
    */
-  signal?: { id: number; track: string; skill: string | null; label: string } | null;
+  signal?: { id: number; skill: string | null; label: string } | null;
 }) {
   const toast = useToast();
   /*
@@ -56,7 +57,6 @@ export function QuickReport({
   const [title, setTitle] = useState('');
   const [summary, setSummary] = useState('');
   const [urgency, setUrgency] = useState<string>(DEFAULT_URGENCY);
-  const [track, setTrack] = useState<string>('academic');
   const [topic, setTopic] = useState('');
   const [primaryCode, setPrimaryCode] = useState('');
   const [detectedAt, setDetectedAt] = useState('');
@@ -85,25 +85,15 @@ export function QuickReport({
   /* Mở từ một tín hiệu: điền sẵn đầu mục và kỹ năng, để người dạy chỉ còn phải viết nhận định. */
   useEffect(() => {
     if (!open || !signal) return;
-    setTrack(signal.track);
     setTopic(signal.skill ?? '');
   }, [open, signal?.id]);
 
-  const topics: readonly string[] = track === 'behaviour' ? BEHAVIOUR_TOPICS : ENTRY_SKILLS;
-  const topicLabel = (k: string) => (track === 'behaviour'
-    ? BEHAVIOUR_TOPIC_LABEL[k as keyof typeof BEHAVIOUR_TOPIC_LABEL]
-    : ENTRY_SKILL_LABEL[k as keyof typeof ENTRY_SKILL_LABEL]) ?? k;
-  /*
-   * CASE-01 làm nốt: Ý thức chỉ có MỘT tầng phân loại — bốn nhóm chủ đề (BTVN/Chuyên cần/
-   * Tham gia/Khác) CHÍNH LÀ bốn mã phân loại, nên form không hỏi "Về việc gì" nữa. Bộ phân
-   * loại của Ý thức không phụ thuộc topic nào cụ thể (cả bốn nhóm dùng chung một bộ), nên
-   * lấy causes qua BẤT KỲ giá trị nào trong BEHAVIOUR_TOPICS — không cần chờ chọn topic.
-   */
-  const causes = track === 'behaviour' ? issuesForTopic(BEHAVIOUR_TOPICS[0])
-    : topic ? issuesForTopic(topic) : [];
+  const topics: readonly string[] = ENTRY_SKILLS;
+  const topicLabel = (k: string) => ENTRY_SKILL_LABEL[k as keyof typeof ENTRY_SKILL_LABEL] ?? k;
+  const causes = topic ? issuesForTopic(topic) : [];
 
   const reset = () => {
-    setSummary(''); setUrgency(DEFAULT_URGENCY); setTrack('academic'); setTopic('');
+    setSummary(''); setUrgency(DEFAULT_URGENCY); setTopic('');
     setTitle(''); setPrimaryCode(''); setDetectedAt(''); setMore(false); setDup(null);
     setMode('now'); setBfFrom(''); setBfTo('');
     setBfActions([{ description: '', performerName: '', fromDate: '', toDate: '' }]);
@@ -124,7 +114,7 @@ export function QuickReport({
     try {
       const res = await api.post<any>('/cases/report', {
         studentId, cycleId: cycleId ?? undefined, title: title.trim() || null, summary, urgency,
-        track, topic,
+        topic,
         primaryCode: primaryCode || undefined,
         detectedAt: detectedAt || undefined,
         idempotencyKey,
@@ -152,8 +142,7 @@ export function QuickReport({
       toast.push('error', 'Hãy mô tả cụ thể hơn: em sai ở đâu, sai như thế nào.'); return;
     }
     if (!topic) {
-      toast.push('error', track === 'behaviour'
-        ? 'Hãy chọn nhóm ý thức.' : 'Hãy chọn kỹ năng em đang vướng.');
+      toast.push('error', 'Hãy chọn kỹ năng em đang vướng.');
       return;
     }
     if (!primaryCode) { toast.push('error', 'Hãy chọn phân loại vấn đề.'); return; }
@@ -168,7 +157,7 @@ export function QuickReport({
     try {
       const res = await api.post<any>('/cases/backfill', {
         studentId, cycleId: cycleId ?? undefined,
-        track, topic, primaryCode: primaryCode || undefined,
+        topic, primaryCode: primaryCode || undefined,
         title: title.trim() || null, summary,
         fromDate: bfFrom, toDate: bfTo,
         actions: bfActions.map((a) => ({
@@ -194,7 +183,7 @@ export function QuickReport({
       toast.push('error', 'Hãy mô tả cụ thể hơn: khi đó em vướng gì.'); return;
     }
     if (!topic) {
-      toast.push('error', track === 'behaviour' ? 'Hãy chọn nhóm ý thức.' : 'Hãy chọn kỹ năng.');
+      toast.push('error', 'Hãy chọn kỹ năng.');
       return;
     }
     if (!primaryCode) { toast.push('error', 'Hãy chọn phân loại vấn đề.'); return; }
@@ -306,53 +295,34 @@ export function QuickReport({
         )}
 
         {/*
-          ĐẦU MỤC VÀ CHỦ ĐỀ LÀ BẮT BUỘC, nên để ngay đây chứ không giấu dưới "xem thêm":
-          một vấn đề không có chỗ cất sẽ không bao giờ hiện lên bảng tổng hợp theo kỹ năng.
+          KỸ NĂNG LÀ BẮT BUỘC, nên để ngay đây chứ không giấu dưới "xem thêm": một vấn đề không
+          có chỗ cất sẽ không bao giờ hiện lên bảng tổng hợp theo kỹ năng.
         */}
-        <Field label="Thuộc nhóm nào" required>
+        <Field label="Kỹ năng nào" required>
           <div className="flex gap-1 flex-wrap">
-            {THREAD_TRACKS.map((t) => (
-              <button key={t} type="button"
-                className={`btn btn-sm ${track === t ? 'btn-primary' : ''}`}
-                onClick={() => { setTrack(t); setTopic(''); setPrimaryCode(''); }}>
-                {THREAD_TRACK_LABEL[t]}
+            {topics.map((k) => (
+              <button key={k} type="button"
+                className={`btn btn-sm ${topic === k ? 'btn-primary' : ''}`}
+                onClick={() => { setTopic(k); setPrimaryCode(''); }}>
+                {topicLabel(k)}
               </button>
             ))}
           </div>
         </Field>
 
-        {/* Ý thức không còn hỏi "Về việc gì" — bốn nhóm chủ đề chính là bốn mã phân loại (CASE-01). */}
-        {track === 'academic' && (
-          <Field label="Kỹ năng nào" required>
-            <div className="flex gap-1 flex-wrap">
-              {topics.map((k) => (
-                <button key={k} type="button"
-                  className={`btn btn-sm ${topic === k ? 'btn-primary' : ''}`}
-                  onClick={() => { setTopic(k); setPrimaryCode(''); }}>
-                  {topicLabel(k)}
-                </button>
-              ))}
-            </div>
-          </Field>
-        )}
-
         {/*
           PHÂN LOẠI LÀ BẮT BUỘC, nên nó nằm NGAY ĐÂY, không giấu dưới "xem thêm" (mục 6.3).
           Trước đây nó là ô "Vì sao" không bắt buộc với lựa chọn mặc định "Chưa rõ" — và
           "Chưa rõ" chính là thứ làm mọi bảng tổng hợp nguyên nhân trở nên vô dụng.
-          Ý thức hiện ngay khi đã chọn nhóm (không chờ topic — chọn phân loại TỰ đặt topic).
         */}
-        {(track === 'behaviour' || topic) && (
+        {topic && (
           <Field label="Phân loại vấn đề" required
             hint="Căn cứ để sau này trả lời được: trung tâm mình hay vướng cái gì nhất.">
             <div className="flex gap-1 flex-wrap">
               {causes.map((i) => (
                 <button key={i.code} type="button" title={i.hint}
                   className={`btn btn-sm ${primaryCode === i.code ? 'btn-primary' : ''}`}
-                  onClick={() => {
-                    setPrimaryCode(i.code);
-                    if (track === 'behaviour') setTopic(topicFromBehaviourCode(i.code) ?? '');
-                  }}>
+                  onClick={() => setPrimaryCode(i.code)}>
                   {i.label}
                 </button>
               ))}
@@ -370,14 +340,13 @@ export function QuickReport({
           </Field>
         )}
 
-        {/* Ý thức KHÔNG có ô ngày nào ở tab "Đang gặp vấn đề" — ngày mở là gốc tính hạn/cửa sổ gộp, không cho lùi (CASE-01 Task 2). */}
-        {mode === 'now' && track === 'academic' && !more && (
+        {mode === 'now' && !more && (
           <button type="button" className="btn btn-sm btn-ghost" onClick={() => setMore(true)}>
             + Theo dõi từ ngày khác hôm nay
           </button>
         )}
 
-        {mode === 'now' && track === 'academic' && more && (
+        {mode === 'now' && more && (
           <Field label="Theo dõi từ ngày" hint="Bỏ trống thì lấy hôm nay.">
             <input type="date" className="field" value={detectedAt} onChange={(e) => setDetectedAt(e.target.value)} />
           </Field>
@@ -387,18 +356,11 @@ export function QuickReport({
           <SectionNote>
             Ghi nhận này KHÔNG tạo ra một bài đánh giá và cũng không có mức SOS — SOS là số kỹ
             năng dưới kỳ vọng ở một bài cụ thể, ở đây chưa có bài nào.
-            {track === 'behaviour' && (
-              <> Vấn đề <strong>Ý thức/Khác</strong> báo trong <strong>bốn ngày</strong> kể từ lúc
-              mở một đợt sẽ được gộp vào chính đợt đó, và làm nó được nâng lên <strong>Gấp</strong> —
-              hai người cùng thấy một chuyện trong bốn ngày là một tín hiệu mạnh hơn nhận định
-              của riêng ai. Từ ngày thứ năm trở đi là một đợt mới.</>
-            )}
           </SectionNote>
         )}
 
         {/*
-          TAB "ĐÃ XONG TỪ TRƯỚC" (mục 10.3) — chỗ DUY NHẤT được nhập ngày quá khứ, áp cho
-          CẢ HAI nhóm kể cả Ý thức. Không có ô "Mức độ": việc đã xong rồi thì không còn gì
+          TAB "ĐÃ XONG TỪ TRƯỚC" (mục 10.3) — chỗ DUY NHẤT được nhập ngày quá khứ, Không có ô "Mức độ": việc đã xong rồi thì không còn gì
           để mà gấp.
         */}
         {mode === 'backfill' && (

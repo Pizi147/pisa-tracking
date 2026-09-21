@@ -45,8 +45,7 @@ Nếu bạn nghĩ theo "cái tôi thấy trên màn hình" chứ không theo tê
 |---|---|
 | **`plan.md`** | **Kế hoạch đang chạy.** Đọc trước khi code. File sống, có quy tắc bắt buộc cập nhật ở mục 0.2 |
 | `CODE_MAP.md` | File này — muốn sửa chỗ nào thì mở file nào |
-| `DEMO_SCENARIOS.md` | Mở hồ sơ nào để xem tình huống nào |
-| `DEMO_ASSUMPTIONS.md` | Bộ demo giả định những gì |
+| `DEMO.md` | Mở hồ sơ nào để xem tình huống nào (mười tám tình huống Ý thức + kịch bản học thuật) và những điều đã chốt / còn treo |
 | `vong7/BRIEF_OVERHAUL_SAU_PR15.md` | Đề bài nghiệp vụ gốc |
 | *(bốn nhóm file bàn giao và tham chiếu cũ)* | **ĐÃ XOÁ 21/09/2026:** BAN\_GIAO (bốn file), PISA\_Design\_Master\_Reference, PRODUCT\_DEMO\_SPEC, thư mục vong4. Đã bị `thiet-ke/` thay hẳn. `plan.md` mục 1.2 đã cảnh báo chúng là "lịch sử, không phải luật" — giữ lại chỉ tạo rủi ro đọc phải luật cũ. Cần tra lại thì dùng `git log` |
 | `thiet-ke/PISA-Rulebook-2026-09-19.md` | **Luật sản phẩm** do chủ sản phẩm chốt. **Mục 18 (21/09) ưu tiên hơn mục 17**; mục 17 ưu tiên hơn mọi mô tả cũ mâu thuẫn |
@@ -67,10 +66,10 @@ ba nơi.
 
 ## Chín module
 
-> **Module thứ chín — `Ý thức` — CHƯA TỒN TẠI trong mã**, nhưng đã có đặc tả đầy đủ ở
-> `thiet-ke/Y_THUC_VI_PHAM_VA_BIEN_PHAP.md`. Nó thay phần Ý thức đang nằm nhờ trong module
-> **Case**. Lý do tách: `server/src/cases/cases.ts` đã **3033 dòng**; nhồi thêm hai vòng đời
-> nữa vào đó là cách chắc chắn nhất để không ai sửa được nó nữa.
+> **Module thứ chín — `Ý thức` — CÓ MÁY CHỦ TỪ PR-J (21/09/2026), giao diện là PR-K.** Đặc tả ở
+> `thiet-ke/Y_THUC_VI_PHAM_VA_BIEN_PHAP.md`. Nó thay hẳn phần Ý thức từng nằm nhờ trong module
+> **Case** (mô hình "Case Ý thức" đã gỡ). Lý do tách: `server/src/cases/cases.ts` đã **3033 dòng**;
+> nhồi thêm hai vòng đời nữa vào đó là cách chắc chắn nhất để không ai sửa được nó nữa.
 
 | Module | Trả lời câu hỏi | Máy chủ | Giao diện |
 |---|---|---|---|
@@ -79,12 +78,12 @@ ba nơi.
 | **Fast Track** | Tuần Mock Test, điểm band, mức SOS, dự kiến thi | `server/src/fasttrack/` | `web/src/modules/fasttrack/` |
 | **Normal** | FOU/BE/ELE, bốn môn L/R/W/S, điểm đạt/tổng điểm, chuyển tiếp lớp | `server/src/normal/` | `web/src/modules/normal/` |
 | **Case** | Vấn đề **học thuật** của em, phương án, phê duyệt, kết quả | `server/src/cases/` | `web/src/modules/cases/` |
-| **Ý thức** *(chưa có mã)* | Em vi phạm gì, đã xử lý bằng biện pháp nào, bằng chứng đâu | `server/src/yThuc/` | `web/src/modules/yThuc/` |
+| **Ý thức** *(máy chủ xong · giao diện ở PR-K)* | Em vi phạm gì, đã xử lý bằng biện pháp nào, bằng chứng đâu | `server/src/yThuc/` | `web/src/modules/yThuc/` *(chưa có)* |
 | **Tổng quan và công việc** | Ai phải làm gì, cả chi nhánh đang thế nào | `server/src/worklist/` | `web/src/modules/worklist/` |
 | **Nền tảng** | Tài khoản, quyền, tuần, danh mục, nhật ký thay đổi | `server/src/platform/` | `web/src/modules/platform/` |
 | **Dùng chung** | Badge, nút, panel, bảng, chọn tuần | — | `web/src/ui/` |
 
-Từ vựng nghiệp vụ (nhãn, hằng số, luật thuần) nằm ở `shared/domain/`, chia theo **đúng tám
+Từ vựng nghiệp vụ (nhãn, hằng số, luật thuần) nằm ở `shared/domain/`, chia theo **đúng chín
 module trên**. Cả máy chủ lẫn giao diện đọc chung một bộ, nên không có chuyện hai bên gọi
 cùng một thứ bằng hai cái tên.
 
@@ -136,7 +135,7 @@ loại dữ liệu mới** vào kịch bản thì thêm trường ở `journeys.
 | Phân công giáo viên, ba luật phân công | `server/src/classes/classes.ts` → `setClassTeachers` |
 | Tuần khai giảng, tuần Progress/Final Test | `web/src/modules/classes/ClassProgressPanel.tsx` · `server/src/classes/schedule.ts` |
 | Lớp đang ở tuần thứ mấy, sắp thi gì | `server/src/classes/schedule.ts` → `classProgress` |
-| Dạng xem **Ý thức** của lớp (số đợt, report gia đình, thư cảnh cáo) | `web/src/modules/classes/ClassBehaviourBoard.tsx` · `server/src/classes/classes.ts` → `classBehaviourBoard` |
+| Tab **Ý thức** của lớp — ba khu vực (Vi phạm chưa xử lý · Biện pháp đang chuẩn bị · Lịch sử) | dữ liệu `server/src/yThuc/board.ts` → `classViolationBoard` (`GET /classes/:id/y-thuc`); giao diện PR-K |
 | **Bảng phân tích vấn đề** của lớp (tab kỹ năng, năm con số mỗi hàng) | `web/src/modules/classes/ClassIssueBoard.tsx` · `server/src/cases/effectiveness.ts` → `classIssueBoard` |
 
 ### Fast Track
@@ -180,11 +179,11 @@ loại dữ liệu mới** vào kịch bản thì thêm trường ở `journeys.
 
 ### Case
 
-> ⚠️ **HẾT HIỆU LỰC 21/09/2026 — mọi dòng dưới đây có chữ "Ý thức".** Rule book mục 18 bỏ hẳn
-> mô hình Case Ý thức. Trước khi sửa bất kỳ thứ gì có `behaviour`, `BEHAVIOUR_*`, `track`,
-> `CONTACT_KINDS`, `case_reports`, `episode_no`, `merge_until`, đọc
-> `thiet-ke/Y_THUC_VI_PHAM_VA_BIEN_PHAP.md` mục 9 — **checklist 36 file phải gỡ**.
-> Bảng `sos_cases` từ nay là bảng **case học thuật**.
+> **Từ 21/09/2026 (PR-J) module này CHỈ có case học thuật.** Mô hình Case Ý thức đã gỡ khỏi mã: không còn
+> cột `track`, `episode_no`, `merge_until`, bảng `case_reports`, `CONTACT_KINDS`, `BEHAVIOUR_*`, bảng ý thức của
+> lớp. Ý thức là module riêng — xem mục "Ý thức" bên dưới. Bảng `sos_cases` là bảng **case học thuật**
+> (KHÔNG đổi tên, KHÔNG gộp vi phạm vào đây). Hằng số `C03_*`/`C04_*` ở `shared/domain/policy.ts` còn đó,
+> ghi "hết hiệu lực 21/09/2026".
 
 | Muốn sửa | Mở file |
 |---|---|
@@ -192,14 +191,14 @@ loại dữ liệu mới** vào kịch bản thì thêm trường ở `journeys.
 | Hạn xác minh tín hiệu (3 ngày, tính cả ngày đầu) | `shared/domain/cases.ts` → `signalVerifyDue` |
 | Thu hồi tín hiệu và case khi sửa điểm (mục 9.4) | `server/src/cases/signals.ts` → `withdrawSignalsNoLongerValid` · `caseHasIndependentBasis` |
 | Thẻ "Tín hiệu chờ xác minh" ở hồ sơ học viên | `web/src/modules/students/StudentDetailPage.tsx` → `PendingSignals` |
-| Sáu hạng mục case | `shared/domain/cases.ts` → `CASE_CATEGORIES` |
+| Năm hạng mục case | `shared/domain/cases.ts` → `CASE_CATEGORIES` |
 | Tên case tự sinh | `shared/domain/cases.ts` → `caseTitle` |
 | Bảng phân loại nguyên nhân | `shared/domain/cases.ts` → `ISSUE_TAXONOMY` |
 | Danh sách phương án, nhóm tự làm / cần duyệt | `shared/domain/cases.ts` → `INTERVENTION_KINDS` |
 | Luật sinh case sau mỗi đợt MT | `server/src/cases/sos.ts` |
 | Vòng đời case, phương án, phê duyệt, kết quả | `server/src/cases/cases.ts` |
 | Màn một case | `web/src/modules/cases/CasePanel.tsx` |
-| Bảng theo dõi sáu hạng mục ở hồ sơ | `web/src/modules/cases/SkillBoard.tsx` |
+| Bảng theo dõi năm hạng mục ở hồ sơ | `web/src/modules/cases/SkillBoard.tsx` |
 | Case của em ở hồ sơ — **nằm ngay dưới hàng kỹ năng**, không còn khối danh sách riêng | `web/src/modules/cases/SkillBoard.tsx` → `CaseCardView` |
 | Luật hạn chu kỳ hai tuần / một tuần | `shared/domain/cases.ts` → `cycleDeadline` |
 | Năm kết quả và năm bước tiếp theo | `shared/domain/cases.ts` → `FOLLOWUP_OUTCOMES`, `nextStepsFor` |
@@ -210,6 +209,23 @@ loại dữ liệu mới** vào kịch bản thì thêm trường ở `journeys.
 | **Phân tích vấn đề ở Thực trạng** — tab Normal/FT, hàng kỹ năng, bấm số ra case | `web/src/modules/cases/IssueAnalysis.tsx` · `server/src/cases/effectiveness.ts` → `issueSkillRows`, `issueBoard`, `issueBoardCases` |
 | **Làn thời gian phương án** ở tab Hành trình (thanh theo tuần, màu theo kết quả) | `web/src/modules/students/JourneyTimeline.tsx` → `PlanLane` · dữ liệu ở `server/src/cases/cases.ts` → `caseCardOf` |
 | Bảng "Vấn đề - Case" và bộ lọc | `web/src/modules/cases/CaseBoardPage.tsx` |
+
+### Ý thức
+
+| Muốn sửa | Mở file |
+|---|---|
+| Từ vựng: năm nhóm vi phạm, chín loại biện pháp, ô bắt buộc, chuỗi Thư cảnh cáo, `CANH_BAO_NGAY` | `shared/domain/yThuc.ts` |
+| Ghi · sửa · đánh dấu không chính xác một vi phạm (V01–V14) | `server/src/yThuc/violations.ts` |
+| Tạo · sửa · xác nhận · xóa biện pháp, chuỗi Thư cảnh cáo ở máy chủ (B01–B16) | `server/src/yThuc/measures.ts` |
+| **Cảnh báo 5 ngày** — MỘT hàm cho tab lớp, dòng học viên và Việc cần làm (W01–W06) | `server/src/yThuc/canhBao.ts` → `warningsFor` |
+| Tám chỉ số Ý thức, mỗi chỉ số một hàm trả tập ID | `server/src/yThuc/thongKe.ts` |
+| Ba khu vực của tab Ý thức trong lớp | `server/src/yThuc/board.ts` |
+| Ai được ghi / xử lý / xem thống kê | `server/src/yThuc/access.ts` · `server/src/permissions.ts` (`violation.record`, `discipline.manage`, `discipline.stats`) |
+| Bốn bảng và DDL | `server/src/schema.sql` (chép nguyên văn từ đặc tả §4) |
+| Nâng cấp database còn mô hình Case Ý thức | `server/src/migrate.ts` → `migrateLegacyDisciplineCases` |
+| Bằng chứng (tệp / liên kết) của biện pháp và vi phạm | `server/src/platform/attachments.ts` |
+| Dữ liệu demo Ý thức (mười tám tình huống) | `server/src/seed/yThucSeed.ts` |
+| Phép kiểm | `server/src/tests/yThuc.tests.ts` (kể cả phép gọi thẳng HTTP qua `server/src/app.ts`) |
 
 ### Tổng quan và công việc
 
@@ -313,9 +329,9 @@ Ba chỗ dễ hiểu nhầm:
 - Hạng mục ĐÃ CÓ case đang mở thì tín hiệu tự nối vào case đó (thêm một mốc, không mở case
   thứ hai). Chỉ khi chưa có case nào thì nó mới nằm chờ người xác minh.
 
-**`shared/domain/cases.ts`** — từ vựng của case: sáu hạng mục, năm kết quả, năm bước tiếp theo,
+**`shared/domain/cases.ts`** — từ vựng của case: năm hạng mục, năm kết quả, năm bước tiếp theo,
 và `cycleDeadline`. Từ vòng 5, HẠN của một chu kỳ tính ở ĐÚNG MỘT CHỖ này (Chủ nhật của tuần thứ
-hai với case học thuật, một tuần với Ý thức/Khác) — luật cũ suy hạn từ mức gấp `7 · 5 · 3 ngày`
+hai; Ý thức không còn hạn nào) — luật cũ suy hạn từ mức gấp `7 · 5 · 3 ngày`
 đã bị thay hẳn. Màn hình nào tự tính hạn lấy là màn hình sớm muộn nói một con số khác.
 
 **`server/src/cases/cases.ts` → `listCases`** — lọc theo lớp đi theo **lớp em ĐANG học**
@@ -331,7 +347,7 @@ chỗ kia là cách tạo ra "bảng nói 19 case, bấm vào ra danh sách rỗ
 2. Nếu có từ vựng riêng, thêm `shared/domain/<tên>.ts` và khai báo ở `shared/domain/index.ts`.
 3. Thêm đường dẫn API trong `server/src/routes/index.ts`.
 4. Thêm một mục kiểm thử trong `server/src/tests/run.ts`.
-5. Thêm một dòng vào bảng "Tám module" ở đầu file này.
+5. Thêm một dòng vào bảng "Chín module" ở đầu file này.
 
 ## Nguyên tắc giữ ranh giới
 
@@ -341,7 +357,8 @@ chỗ kia là cách tạo ra "bảng nói 19 case, bấm vào ra danh sách rỗ
   Cụ thể: Fast Track có W1/W2 và chấm theo band; Normal có một môn W và chấm theo điểm
   đạt/tổng điểm. Hai môn ĐÓ KHÔNG GỘP VÀO NHAU ở bất kỳ bảng nào. Mọi đường dẫn tới điểm đi
   qua `attemptHref` để mở đúng màn theo loại bài.
-- **Case học thuật và Ý thức/Khác** dùng chung phần lưu lịch sử, người phụ trách và ghi chú;
-  tách riêng quy tắc thời hạn và cách cập nhật kết quả.
+- **Case học thuật và Ý thức** là HAI module, hai vòng đời (từ 21/09/2026): case có phương án, duyệt, chu kỳ và
+  kết quả; Ý thức có vi phạm độc lập, biện pháp và cảnh báo — không hạn, không đợt, không duyệt. Đừng đưa
+  vi phạm vào `sos_cases` và đừng đưa hạn vào vi phạm.
 - **Hành trình học viên** tổng hợp từ dữ liệu nguồn, không giữ một bộ điểm hay trạng thái
   riêng — hai bộ số song song là hai bộ số sớm muộn lệch nhau.

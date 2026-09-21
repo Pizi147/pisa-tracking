@@ -2,8 +2,8 @@ import { Router, type Request } from 'express';
 import multer from 'multer';
 import { db, isInitialised } from '../db.ts';
 import {
-  BEHAVIOUR_TOPICS, BEHAVIOUR_TOPIC_LABEL, ENTRY_SKILLS, ENTRY_SKILL_LABEL, ISSUE_TAXONOMY,
-  PERMISSIONS, REGULAR_SKILLS, ROLE_LABEL, THREAD_TRACKS, THREAD_TRACK_LABEL, WORK_SCOPES,
+  ENTRY_SKILLS, ENTRY_SKILL_LABEL, ISSUE_TAXONOMY,
+  PERMISSIONS, REGULAR_SKILLS, ROLE_LABEL, WORK_SCOPES,
   type Role, type WorkScope,
 } from '../../../shared/domain/index.ts';
 import { demoToday, getConfig, scenarioMode, setConfig } from '../demoConfig.ts';
@@ -571,19 +571,9 @@ api.get('/classes/:id/roster', requireAuth, wrap((req) => {
 }));
 
 /*
- * HAI DẠNG XEM DANH SÁCH HỌC VIÊN CỦA MỘT LỚP (mục 13.3), và BẢNG PHÂN TÍCH VẤN ĐỀ (13.4).
- *
- * Tách đường riêng chứ không nhồi vào `/roster`: bảng Ý thức hỏi những câu khác hẳn — số đợt
- * case từng nhóm, số lần đã report gia đình, số thư cảnh cáo — và tải chúng cho mọi người
- * mở trang lớp là tính một đống thứ đa số lần không ai xem.
+ * BẢNG PHÂN TÍCH VẤN ĐỀ CỦA MỘT LỚP (mục 13.4). Đường cũ của Bảng Ý thức của lớp (đếm số đợt case) đã bỏ 21/09/2026:
+ * Ý thức nay là vi phạm và biện pháp xử lý, dữ liệu ba khu vực ở `GET /classes/:id/y-thuc`.
  */
-api.get('/classes/:id/behaviour', requireAuth, wrap((req) => {
-  maybeSimulateReadError();
-  return classSvc.classBehaviourBoard(principalOf(req), pInt(req, 'id'), {
-    allJourney: qStr(req, 'scope') === 'all',
-  });
-}));
-
 api.get('/classes/:id/issue-board', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   const p = principalOf(req);
@@ -1095,7 +1085,7 @@ api.get('/cases', requireAuth, wrap((req) => {
     branchId: toInt(req.query?.branchId), classId: toInt(req.query?.classId),
     studentId: toInt(req.query?.studentId),
     status: qStr(req, 'status'), origin: qStr(req, 'origin'),
-    group: qStr(req, 'group'), skill: qStr(req, 'skill'), queue: qStr(req, 'queue'),
+    skill: qStr(req, 'skill'), queue: qStr(req, 'queue'),
     classKind: qStr(req, 'classKind'),
     ownerUserId: toInt(req.query?.ownerUserId),
     noOwner: qStr(req, 'noOwner') === '1',
@@ -1240,15 +1230,9 @@ api.put('/cases/:id/owner', requireAuth, wrap((req) => {
 
 /** Bộ phân loại vấn đề để dựng ô chọn. Dữ liệu, không viết cứng trong giao diện. */
 api.get('/ref/issue-taxonomy', requireAuth, wrap(() => ({
-  /** Hai đầu mục và chủ đề của chúng — dựng ô chọn từ dữ liệu, không viết cứng trong giao diện. */
-  tracks: THREAD_TRACKS.map((t) => ({
-    key: t,
-    label: THREAD_TRACK_LABEL[t],
-    topics: t === 'behaviour'
-      ? BEHAVIOUR_TOPICS.map((k) => ({ key: k, label: BEHAVIOUR_TOPIC_LABEL[k] }))
-      : ENTRY_SKILLS.map((k) => ({ key: k, label: ENTRY_SKILL_LABEL[k] })),
-  })),
-  /** Phân loại NGUYÊN NHÂN, chỉ dùng cho Học thuật. W1 và W2 dùng chung bộ Writing. */
+  /** Chủ đề của case = kỹ năng nhập điểm — dựng ô chọn từ dữ liệu, không viết cứng trong giao diện. */
+  topics: ENTRY_SKILLS.map((k) => ({ key: k, label: ENTRY_SKILL_LABEL[k] })),
+  /** Phân loại NGUYÊN NHÂN. W1 và W2 dùng chung bộ Writing. */
   branches: ISSUE_TAXONOMY,
 })));
 

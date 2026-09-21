@@ -57,15 +57,16 @@ npm run seed
 ```
 
 Lệnh này tạo lại toàn bộ dữ liệu giả: **5 chi nhánh** (Monbay, Bãi Cháy, Cẩm Phả, Hải Dương, Uông Bí),
-**13 lớp** (11 đang chạy + 2 đã kết thúc), **21 tài khoản** (mỗi chi nhánh 1 Quản lý + 1 Admin văn phòng,
+**13 lớp** (11 đang chạy + 2 đã kết thúc), **16 tài khoản** (mỗi chi nhánh 1 Quản lý,
 10 giáo viên dùng chung cả trung tâm, cộng tài khoản Quản trị hệ thống), **41 học viên**,
-**115 lượt kiểm tra** với **369 ô điểm kỹ năng**, **52 case**, **80 phương án hỗ trợ**,
-**62 lần cập nhật kết quả** và **14 việc quản lý**, có lịch sử từ **12/2025**.
+**115 lượt kiểm tra** với **379 ô điểm kỹ năng**, **33 case**, **37 phương án hỗ trợ**,
+**18 lần cập nhật kết quả**, **35 vi phạm** và **14 biện pháp xử lý** (phần Ý thức), và **14 việc quản lý**,
+có lịch sử từ **12/2025**.
 
 Dữ liệu **không sinh ngẫu nhiên**: mỗi em có một hành trình được viết tay theo đúng chiều đời thật —
 ghi danh → chương trình → bài kiểm tra → vấn đề → phương án → cập nhật kết quả → chuyển tiếp.
 **Mỗi lớp là một tình huống**: lớp đang tuần Progress Test, lớp tuần Final Test, lớp đã hết chương trình,
-lớp thiếu GV bộ môn, lớp chưa có GVCN, lớp có bài quá hạn chấm. Bảng đầy đủ nằm ở `DEMO_SCENARIOS.md`.
+lớp thiếu GV bộ môn, lớp chưa có GVCN, lớp có bài quá hạn chấm. Bảng đầy đủ nằm ở `DEMO.md`.
 
 Màn hình sẽ in ra bảng tóm tắt số lượng bản ghi đã tạo.
 
@@ -131,14 +132,14 @@ Mỗi vai trò mở vào đúng việc thường làm nhất. Đây chỉ là l�
 > **ngày** khi tới gần tuần đó (`14/10`). Speaking có thể khác ngày nhưng vẫn là cùng một lượt MT.
 > Lịch **chỉ có ngày, không có giờ**.
 
-> **Chỉ có mười phút?** Mở [`DEMO_SCENARIOS.md`](DEMO_SCENARIOS.md) — **sáu hồ sơ học viên nên mở
+> **Chỉ có mười phút?** Mở [`DEMO.md`](DEMO.md) — **sáu hồ sơ học viên nên mở
 > đầu tiên**, mỗi hồ sơ minh hoạ một tình huống khác nhau (đi qua ba chương trình · hỗ trợ có tác
 > dụng · case tái diễn · đổi phương án giữa chừng · bàn giao khi chuyển lớp · kết quả thi thật),
 > kèm hướng dẫn bấm vào đâu, đăng nhập bằng ai, và cần thấy gì.
 
 Muốn đổi tài khoản bất cứ lúc nào: bấm nút **"Đổi tài khoản demo"** ở thanh trên cùng.
 
-Xem `DEMO_SCENARIOS.md` để biết nên bấm vào đâu và kỳ vọng thấy gì.
+Xem `DEMO.md` để biết nên bấm vào đâu và kỳ vọng thấy gì.
 
 ---
 
@@ -171,7 +172,7 @@ Bạn có thể chạy ngay cả khi ứng dụng đang chạy — giao diện s
 Bộ dữ liệu gốc: **13 lớp · 41 học viên · 10 giáo viên · 5 chi nhánh**, đủ bốn chương trình Foundation ·
 Beginner · Elementary · Fast Track, ngày demo cố định **14/09/2026**. Chạy lại nhiều lần cho ra
 đúng bộ cũ, không nhân đôi bản ghi nào. Danh sách từng tình huống và chỗ bấm để xem nằm ở
-[`DEMO_SCENARIOS.md`](DEMO_SCENARIOS.md).
+[`DEMO.md`](DEMO.md).
 
 > Chạy `npm run seed` là **mất hết** những gì bạn đã nhập tay. Muốn giữ lại thì copy tệp
 > `data/pisa-demo.sqlite` ra chỗ khác **trước khi** chạy.
@@ -243,7 +244,7 @@ Hệ thống **không bao giờ** tự sinh lỗi ngẫu nhiên khi bạn dùng 
   Máy chủ tự quyết định quyền của phiên đăng nhập; giao diện không thể tự khai báo quyền cho mình.
 - Chạy trên máy cá nhân, không triển khai online, không có database đám mây.
 - Các ngưỡng cảnh báo, bố cục màn hình và một số quy tắc là **giả định thử nghiệm** —
-  xem `DEMO_ASSUMPTIONS.md` để biết cái nào cần chốt trước khi làm thật.
+  xem phần B của `DEMO.md` để biết cái nào cần chốt trước khi làm thật.
 
 Tài liệu liên quan:
 
@@ -255,12 +256,11 @@ Tài liệu liên quan:
   - `Y_THUC_VI_PHAM_VA_BIEN_PHAP.md` — đặc tả Vi phạm và Biện pháp xử lý
   - `BAN_DO_OVERHAUL.md` — yêu cầu nào của design plan đã có, cái nào chưa
   - `PISA-Design-Plan-after-PR28.md` — đặc tả thiết kế; mục 17–22 là bản mới nhất
-- `DEMO_ASSUMPTIONS.md` — các câu đã chốt (Q1–Q15) và những điểm còn cần bạn xác nhận
 
 > **Đã xoá 21/09/2026:** `BAN_GIAO*.md` (bàn giao giữa các chat cũ),
 > `PISA_Design_Master_Reference.md` và `PRODUCT_DEMO_SPEC.md` (đã bị `thiet-ke/` thay hẳn),
 > `vong4/` (đã xong từ lâu). Chúng là **lịch sử, không phải luật**, và giữ lại chỉ tạo rủi ro
 > đọc phải luật cũ. Cần tra lại thì dùng `git log`.
-- `DEMO_SCENARIOS.md` — sáu hồ sơ nên mở đầu tiên, bảng kịch bản J01–J12, và bốn màn nên mở kèm
-  mô tả cần thấy gì
+- `DEMO.md` — **một tệp cho cả bản demo**: mười tám tình huống Ý thức, sáu hồ sơ nên mở đầu tiên, bảng kịch bản J01–J12,
+  bốn màn nên mở, và (phần B) những điều đã chốt cùng những điểm còn treo
 - `CODE_MAP.md` — bản đồ mã nguồn, dành cho người sẽ tiếp tục xây phần mềm

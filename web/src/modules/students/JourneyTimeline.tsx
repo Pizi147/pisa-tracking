@@ -198,7 +198,7 @@ function LaneView({ cases, progress, marks, dates, today, onOpenCase }: {
                 {c.plans.length === 0 ? (
                   <p className="text-[10px] text-amber-200/80 m-0">chưa có phương án nào</p>
                 ) : c.plans.map((p) => (
-                  <PlanLane key={p.id} p={p} behaviour={c.behaviour}
+                  <PlanLane key={p.id} p={p}
                     weeks={weeks} pct={pct} at={at} today={today} todayPct={todayPct} />
                 ))}
               </div>
@@ -345,8 +345,8 @@ function ScoreLane({ points, at, weeks, pct, todayPct, ratio }: {
 }
 
 /** Một làn phương án: thanh bo góc, mốc cập nhật có ngày, phần tương lai là nét đứt. */
-function PlanLane({ p, behaviour, weeks, pct, at, today, todayPct }: {
-  p: Plan; behaviour: boolean;
+function PlanLane({ p, weeks, pct, at, today, todayPct }: {
+  p: Plan;
   weeks: number[]; pct: (t: number) => number; at: (d: string) => number;
   today: string | null; todayPct: number | null;
 }) {
@@ -367,30 +367,7 @@ function PlanLane({ p, behaviour, weeks, pct, at, today, todayPct }: {
           style={{ left: `${todayPct}%`, background: 'var(--accent-strong)', opacity: .6 }} />
       )}
 
-      {/*
-        HÀNH ĐỘNG Ý THỨC LÀ MỘT MỐC, KHÔNG PHẢI MỘT KHOẢNG. Gọi cho gia đình là việc của một
-        buổi; vẽ nó thành một thanh dài ba tuần là nói sai chuyện đã xảy ra.
-      */}
-      {behaviour ? (
-        (p.completedOn ?? p.startedOn) && (() => {
-          /*
-           * MỘT MỐC CÓ TÊN VÀ NGÀY. Một cái ◆ trơ trọi không nói được ai làm gì hôm nào, nên
-           * nó chỉ là trang trí. Mốc nằm nửa phải thì chữ lùi sang trái để không tràn ra ngoài.
-           */
-          const on = (p.completedOn ?? p.startedOn)!;
-          const x = at(on);
-          const left = x > 55;
-          return (
-            <span className="absolute top-1/2 text-[10px] whitespace-nowrap leading-none"
-              style={{ left: `${x}%`, transform: `translate(${left ? '-100%' : '0'}, -50%)` }}
-              title={`${p.name} · ${p.kindLabel} · ${fmtDate(on)}`}>
-              {left && <><Marker name={p.name} on={on} /> </>}
-              <span style={{ color: 'var(--accent)' }}>◆</span>
-              {!left && <> <Marker name={p.name} on={on} /></>}
-            </span>
-          );
-        })()
-      ) : from && to ? (
+      {from && to ? (
         <>
           <span className="absolute top-1/2 -translate-y-1/2 rounded-full flex items-center overflow-hidden"
             style={{
@@ -508,19 +485,6 @@ function FeedView({ cases, progress, marks, onOpenCase }: {
       });
     }
     for (const p of c.plans) {
-      /* Việc Ý thức là MỘT buổi — một dòng duy nhất, không phải "bắt đầu" rồi "kết thúc". */
-      if (c.behaviour) {
-        const on = p.completedOn ?? p.startedOn;
-        if (on) {
-          events.push({
-            on, who: 'teacher', caseId: c.id,
-            title: p.name,
-            meta: `${c.skillLabel} · ${p.kindLabel}${p.performer ? ` · ${p.performer}` : ''}`,
-            tone: 'var(--accent)',
-          });
-        }
-        continue;
-      }
       if (p.startedOn) {
         events.push({
           on: p.startedOn, who: 'teacher', caseId: c.id,

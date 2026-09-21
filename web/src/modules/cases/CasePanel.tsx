@@ -10,12 +10,12 @@ import { BangChung } from '../../ui/BangChung.tsx';
 import { CHUA_CO_PHUONG_AN, GOI_Y_THEM_PHUONG_AN } from '../../ui/chu.ts';
 import { caseStatusLabel, caseStatusTone, fmtBand, fmtDate, skillLabel, sosLabel, sosTone } from '../../lib/format.ts';
 import {
-  CASE_CATEGORY_LABEL, CASE_OUTCOMES, CASE_OUTCOME_LABEL,
+  CASE_CATEGORY_LABEL, CASE_OUTCOMES, CASE_OUTCOME_LABEL, FOLLOWUP_OUTCOMES,
   INTERVENTION_KIND_LABEL, INTERVENTION_STATUS_LABEL,
   NEXT_STEP_HINT, NEXT_STEP_LABEL, OUTCOME_MARK, OUTCOME_TONE,
   RESCHEDULE_TARGETS, RESCHEDULE_TARGET_LABEL, RESULT_MODES, RESULT_MODE_LABEL,
   canEndWithOutcome, componentsAreCounts, componentsFor, interventionKindsFor,
-  isContactKind, isProposalKind, outcomeLabelFor, outcomesFor, stepsForMode,
+  isProposalKind, outcomeLabelFor, stepsForMode,
   type NextStep,
 } from '@shared/domain/index.ts';
 
@@ -33,8 +33,6 @@ import {
 
 type CaseDetail = {
   id: number; originKind: string;
-  /** `academic` hay `behaviour` — quyết định bộ kết quả và độ dài chu kỳ. */
-  track: string;
   /** Còn thiếu gì để hoàn thành case. Rỗng = đủ điều kiện đóng (mục 7.7 [5]). */
   closeBlockers: string[];
   student: { id: number; code: string; name: string; status: string } | null;
@@ -90,7 +88,6 @@ export function CasePanel({ caseId, compact = false, hideHeader = false, onChang
   const [resultFor, setResultFor] = useState<any | null>(null);
   const [respondTo, setRespondTo] = useState<any | null>(null);
   const [outcome, setOutcome] = useState(false);
-  const [completing, setCompleting] = useState<any | null>(null);
 
   if (error) return <ErrorState message={error.message} hint={error.hint} onRetry={reloadOnly} />;
   if (loading || !data) return <Skeleton rows={6} />;
@@ -114,7 +111,6 @@ export function CasePanel({ caseId, compact = false, hideHeader = false, onChang
    */
   const timeline = buildTimeline(data, {
     onRespond: setRespondTo,
-    onComplete: setCompleting,
     onResult: setResultFor,
   });
 
@@ -233,7 +229,7 @@ export function CasePanel({ caseId, compact = false, hideHeader = false, onChang
 
       {/* ══════════════════════════════════════════════════ bước tiếp theo */}
       <section className="rounded-lg border p-3" style={{ borderColor: 'var(--line)' }}>
-        {/* Case Ý thức đã hoàn thành KHÔNG có hướng xử lý (outcome rỗng) — vẫn là đã kết luận, không phải "đang xử lý". */}
+        {/* Case đã hoàn thành mà không còn hướng xử lý (outcome rỗng) — vẫn là đã kết luận, không phải "đang xử lý". */}
         {data.outcome || data.status === 'done' ? (
           <p className="text-sm text-slate-100 m-0">
             Đã kết luận{data.outcomeLabel && <>: <strong>{data.outcomeLabel}</strong></>}
@@ -290,19 +286,15 @@ export function CasePanel({ caseId, compact = false, hideHeader = false, onChang
       </section>
 
       {/* BẰNG CHỨNG CỦA CASE (CASE-04, PR-N) — cùng khối với thẻ case ở hồ sơ học viên. */}
-      {data.track !== 'behaviour' && (
-        <BangChung ownerType="sos_case" ownerId={caseId} canEdit={data.viewer.canEdit} tieuDe="Bằng chứng của case" />
-      )}
+      <BangChung ownerType="sos_case" ownerId={caseId} canEdit={data.viewer.canEdit} tieuDe="Bằng chứng của case" />
 
       <OutcomeDialog open={outcome} onClose={() => setOutcome(false)} caseId={caseId}
-        track={data.track ?? 'academic'} category={data.category} categoryLabel={data.categoryLabel}
+        category={data.category} categoryLabel={data.categoryLabel}
         ratio={!!data.ratio} onDone={reload} />
-      <CompleteDialog iv={completing} onClose={() => setCompleting(null)} onDone={reload} />
-      <ActionDialog open={addAction} onClose={() => setAddAction(false)} caseId={caseId}
-        track={data.track ?? 'academic'} onDone={reload} />
+      <ActionDialog open={addAction} onClose={() => setAddAction(false)} caseId={caseId} onDone={reload} />
       <ApprovalDialog open={respondTo !== null} onClose={() => setRespondTo(null)}
         intervention={respondTo} onDone={reload} />
-      <ResultDialog iv={resultFor} track={data.track ?? 'academic'}
+      <ResultDialog iv={resultFor}
         onClose={() => setResultFor(null)} onDone={reload} />
     </div>
   );
@@ -361,7 +353,6 @@ const MILESTONE_TITLE: Record<string, string> = {
  */
 type TimelineActions = {
   onRespond: (iv: any) => void;
-  onComplete: (iv: any) => void;
   /** "Cập nhật kết quả" — gộp ba nút cũ thành một (mục 7.9). */
   onResult: (iv: any) => void;
 };
@@ -440,7 +431,7 @@ function buildTimeline(data: any, act: TimelineActions): TimelineItem[] {
       badge: f.outcome
         ? (
           <Outcome tone={OUTCOME_TONE[f.outcome] ?? 'muted'} mark={OUTCOME_MARK[f.outcome]}>
-            {outcomeLabelFor(data.track ?? 'academic', f.outcome)}
+            {outcomeLabelFor(f.outcome)}
           </Outcome>
         )
         : null,
@@ -509,12 +500,6 @@ function InterventionBody({ iv, followups, data, act }: {
   const canEdit = data.viewer?.canEdit;
   const waiting = iv.approvalState === 'pending';
   const openStatus = iv.status === 'planned' || iv.status === 'started';
-  /*
-    Ý THỨC/KHÁC KHÉP LẠI BẰNG "ĐÃ XONG + NGÀY" (mục 9.2) — không bắt chấm thang kết quả.
-    Gia đình đã nhận report không có nghĩa là em đã tiến bộ; hỏi "tiến bộ đến đâu" sau một
-    cuộc gọi là mời người dùng bịa một kết luận học thuật cho một lần liên lạc.
-  */
-  const shortClose = isContactKind(iv.kind) || data.track === 'behaviour';
   return (
     <>
       {iv.description && <p className="text-sm text-slate-300 mt-1 mb-0">{iv.description}</p>}
@@ -558,7 +543,7 @@ function InterventionBody({ iv, followups, data, act }: {
                   {fmtDate(f.observedOn)}{f.cycleNo ? ` · chu kỳ ${f.cycleNo}` : ''}
                 </span>
                 <Outcome tone={OUTCOME_TONE[f.outcome] ?? 'muted'} mark={OUTCOME_MARK[f.outcome]}>
-                  {outcomeLabelFor(data.track ?? 'academic', f.outcome)}
+                  {outcomeLabelFor(f.outcome)}
                 </Outcome>
                 {f.late && <Alert tone="warn">cập nhật trễ</Alert>}
               </div>
@@ -587,17 +572,10 @@ function InterventionBody({ iv, followups, data, act }: {
         MỘT NÚT CHO MỘT VIỆC (mục 7.9). Trước vòng 5 chỗ này có ba nút — "Đánh dấu đã làm",
         "Ghi quan sát", "Hướng xử lý" — cho cùng một hành động, và người dùng phải nhớ thứ
         tự bấm. Nay gộp thành "Cập nhật kết quả": kết quả · ghi chú · bước tiếp theo.
-
-        Việc TRAO ĐỔI (gặp em, gọi phụ huynh) giữ nút ngắn riêng: nó không có kết quả
-        chuyên môn để ghi, chỉ cần xác nhận đã diễn ra.
+        (Trước 21/09/2026 việc trao đổi của case Ý thức có nút ngắn riêng — Ý thức không còn là case.)
       */}
       <div className="flex flex-wrap gap-2 mt-1.5">
-        {canEdit && openStatus && !waiting && shortClose && (
-          <button className="btn btn-sm" onClick={() => act.onComplete(iv)}>
-            {isContactKind(iv.kind) ? 'Xác nhận đã trao đổi' : 'Đánh dấu đã xong'}
-          </button>
-        )}
-        {canEdit && openStatus && !waiting && !shortClose && (
+        {canEdit && openStatus && !waiting && (
           <button className="btn btn-sm btn-primary" onClick={() => act.onResult(iv)}>Cập nhật kết quả</button>
         )}
         {waiting && data.viewer?.canApprove && (
@@ -610,77 +588,6 @@ function InterventionBody({ iv, followups, data, act }: {
         )}
       </div>
     </>
-  );
-}
-
-/**
- * ĐÁNH DẤU MỘT PHƯƠNG ÁN ĐÃ LÀM — mục 7.15.
- *
- * Phương án thuộc case Ý thức/Khác thường chỉ cần đúng hai thứ: đã hoàn thành và NGÀY THỰC
- * HIỆN. Ghi chú tuỳ chọn. Nên hộp thoại này cố tình ngắn — thêm ô là thêm một lý do để
- * người ta để đó mai làm.
- */
-function CompleteDialog({ iv, onClose, onDone }: {
-  iv: any | null; onClose: () => void; onDone: () => void;
-}) {
-  const { session } = useSession();
-  const toast = useToast();
-  const today = session?.demoDate ?? '';
-  const [doneOn, setDoneOn] = useState(today);
-  const [note, setNote] = useState('');
-  const [self, setSelf] = useState(true);
-  const [who, setWho] = useState('');
-  const [busy, setBusy] = useState(false);
-
-  const submit = async () => {
-    setBusy(true);
-    try {
-      await api.post(`/interventions/${iv.id}/complete`, {
-        doneOn, note, performerSelf: self, performerName: self ? null : (who.trim() || null),
-      });
-      invalidate('/cases'); invalidate('/my-work'); invalidate('/students');
-      toast.push('ok', 'Đã ghi nhận');
-      onDone(); onClose(); setNote(''); setWho('');
-    } catch (e: any) { toast.push('error', e?.message ?? 'Không lưu được'); }
-    finally { setBusy(false); }
-  };
-
-  return (
-    <Modal open={iv !== null} onClose={onClose}
-      title={iv ? (INTERVENTION_KIND_LABEL[iv.kind as keyof typeof INTERVENTION_KIND_LABEL] ?? iv.kind) : ''}
-      footer={
-        <>
-          <button className="btn" onClick={onClose}>Huỷ</button>
-          <button className="btn btn-primary" disabled={busy || !doneOn} onClick={submit}>Đã làm xong</button>
-        </>
-      }>
-      <div className="space-y-3">
-        <Field label="Ngày thực hiện" hint="Ngày việc đó THỰC SỰ diễn ra, không phải hôm nay nhập máy.">
-          <input type="date" className="field" value={doneOn} max={today}
-            onChange={(e) => setDoneOn(e.target.value)} />
-        </Field>
-        {/*
-          NGƯỜI GHI KHÁC NGƯỜI LÀM. Admin ghi hộ việc bộ phận CS gọi phụ huynh thì người làm
-          là CS — mặc định gán cho người đang gõ là ghi sai lịch sử.
-        */}
-        <Field label="Ai làm việc này?">
-          <div className="flex flex-wrap gap-2 items-center">
-            <button type="button" className={`btn btn-sm ${self ? 'btn-primary' : ''}`}
-              onClick={() => setSelf(true)}>Chính tôi</button>
-            <button type="button" className={`btn btn-sm ${!self ? 'btn-primary' : ''}`}
-              onClick={() => setSelf(false)}>Người khác</button>
-            {!self && (
-              <input className="field flex-1 min-w-[10rem]" value={who} placeholder="Ví dụ: Chị Hương (CS)"
-                onChange={(e) => setWho(e.target.value)} />
-            )}
-          </div>
-        </Field>
-        <Field label="Ghi chú" hint="Không bắt buộc.">
-          <textarea className="field" rows={2} value={note} onChange={(e) => setNote(e.target.value)}
-            placeholder="Ví dụ: PH nắm được tình hình, hứa nhắc em làm bài buổi tối." />
-        </Field>
-      </div>
-    </Modal>
   );
 }
 
@@ -703,13 +610,8 @@ function CompleteDialog({ iv, onClose, onDone }: {
  * Ghi chú từ nay BẮT BUỘC. Bốn cái nhãn "tiến bộ đến đâu" không nói được đã làm gì cho em
  * và vì sao dừng ở đây; ba tháng sau chính người viết cũng không đọc lại được.
  */
-export function OutcomeDialog({ open, onClose, caseId, track = 'academic', category, categoryLabel, ratio, onDone }: {
+export function OutcomeDialog({ open, onClose, caseId, category, categoryLabel, ratio, onDone }: {
   open: boolean; onClose: () => void; caseId: number;
-  /**
-   * `behaviour` (Ý thức/Khác): chỉ ghi chú + ngày. KHÔNG hỏi "tiến bộ đến đâu", KHÔNG có ô
-   * điểm (CASE-06, rule book §17.2) — gia đình đã nhận report không có nghĩa là em tiến bộ.
-   */
-  track?: string;
   category: string | null; categoryLabel: string | null;
   ratio: boolean;
   onDone: () => void;
@@ -717,25 +619,22 @@ export function OutcomeDialog({ open, onClose, caseId, track = 'academic', categ
   const { session } = useSession();
   const toast = useToast();
   const today = session?.demoDate ?? '';
-  const behaviour = track === 'behaviour';
   const [outcome, setOutcome] = useState<string>('improved');
   const [note, setNote] = useState('');
   const [closedOn, setClosedOn] = useState(today);
   const [metrics, setMetrics] = useState<Record<string, { score: string; total: string }>>({});
   const [busy, setBusy] = useState(false);
 
-  const components = behaviour ? [] : componentsFor(category, ratio ? 'ratio' : 'band');
+  const components = componentsFor(category, ratio ? 'ratio' : 'band');
   const counts = componentsAreCounts(category);
 
   const submit = async () => {
     setBusy(true);
     try {
-      await api.post(`/cases/${caseId}/outcome`, behaviour
-        ? { note, closedOn: closedOn || undefined }
-        : {
-          outcome, note, closedOn: closedOn || undefined,
-          metrics: componentsPayload(category, metrics, counts),
-        });
+      await api.post(`/cases/${caseId}/outcome`, {
+        outcome, note, closedOn: closedOn || undefined,
+        metrics: componentsPayload(category, metrics, counts),
+      });
       invalidate('/cases'); invalidate('/my-work'); invalidate('/students');
       toast.push('ok', 'Đã hoàn thành case');
       onDone(); onClose(); setNote(''); setMetrics({});
@@ -747,26 +646,22 @@ export function OutcomeDialog({ open, onClose, caseId, track = 'academic', categ
   return (
     <Modal open={open} onClose={onClose} title="Hoàn thành case">
       <div className="space-y-4">
-        {!behaviour && (
-          <div>
-            <p className="text-sm text-slate-300 m-0 mb-2">Sau cả đợt hỗ trợ, em tiến bộ đến đâu?</p>
-            <div className="flex flex-wrap gap-2">
-              {CASE_OUTCOMES.map((o) => (
-                <button key={o} type="button"
-                  className={`btn btn-sm ${outcome === o ? 'btn-primary' : ''}`}
-                  onClick={() => setOutcome(o)}>
-                  {CASE_OUTCOME_LABEL[o]}
-                </button>
-              ))}
-            </div>
+        <div>
+          <p className="text-sm text-slate-300 m-0 mb-2">Sau cả đợt hỗ trợ, em tiến bộ đến đâu?</p>
+          <div className="flex flex-wrap gap-2">
+            {CASE_OUTCOMES.map((o) => (
+              <button key={o} type="button"
+                className={`btn btn-sm ${outcome === o ? 'btn-primary' : ''}`}
+                onClick={() => setOutcome(o)}>
+                {CASE_OUTCOME_LABEL[o]}
+              </button>
+            ))}
           </div>
-        )}
+        </div>
 
         <Field label="Kết luận" hint="Bắt buộc — đã làm gì cho em, kết quả ra sao, vì sao dừng ở đây.">
           <textarea className="field" rows={3} value={note} onChange={(e) => setNote(e.target.value)}
-            placeholder={behaviour
-              ? 'Ví dụ: Đã gọi phụ huynh và trao đổi riêng với em. Em hứa nộp bài đúng hạn.'
-              : 'Ví dụ: Em đã nghe đều hơn, bắt được số và tên riêng. Còn vướng câu hỏi dạng matching.'} />
+            placeholder="Ví dụ: Em đã nghe đều hơn, bắt được số và tên riêng. Còn vướng câu hỏi dạng matching." />
         </Field>
 
         <Field label="Ngày hoàn thành" hint="Ngày thật đã kết luận. Không nhận ngày ở tương lai.">
@@ -794,9 +689,7 @@ export function OutcomeDialog({ open, onClose, caseId, track = 'academic', categ
           )}
         </div>
         <SectionNote>
-          {behaviour
-            ? 'Hoàn thành kết thúc đợt này. Nếu vấn đề tái diễn, đó là một đợt mới — kết luận cũ không bị viết lại.'
-            : 'Hoàn thành KHÔNG phải là xoá: MT sau em trượt lại hạng mục này thì chính case này mở lại, kèm một mốc tái phát — không sinh case mới.'}
+          Hoàn thành KHÔNG phải là xoá: MT sau em trượt lại hạng mục này thì chính case này mở lại, kèm một mốc tái phát — không sinh case mới.
         </SectionNote>
       </div>
     </Modal>
@@ -896,11 +789,11 @@ function componentsPayload(
  *   · "Hẹn xem lại" → **Dự kiến kết thúc phương án**. Đây là hạn HOÀN THÀNH, không phải một
  *     cái nhắc; bỏ trống thì lấy Chủ nhật tuần tiếp theo.
  */
-export function ActionDialog({ open, onClose, caseId, track, onDone }: {
-  open: boolean; onClose: () => void; caseId: number; track?: string | null; onDone: () => void;
+export function ActionDialog({ open, onClose, caseId, onDone }: {
+  open: boolean; onClose: () => void; caseId: number; onDone: () => void;
 }) {
   const toast = useToast();
-  const catalogue = interventionKindsFor(track);
+  const catalogue = interventionKindsFor();
   const [kind, setKind] = useState<string>(catalogue.selfServe[0]);
   const [description, setDescription] = useState('');
   /* Mặc định ĐANG THEO DÕI: phương án vừa lập thì đang chạy, không phải đã xong. */
@@ -918,7 +811,7 @@ export function ActionDialog({ open, onClose, caseId, track, onDone }: {
     if (!open) return;
     const all = [...catalogue.selfServe, ...catalogue.proposals] as string[];
     if (!all.includes(kind)) setKind(catalogue.selfServe[0]);
-  }, [open, track]);
+  }, [open]);
 
   /*
    * Chỉ ĐỀ XUẤT mới gửi duyệt được — việc đã làm rồi thì không còn gì để duyệt.
@@ -1177,8 +1070,8 @@ function ApprovalDialog({ open, onClose, intervention, onDone }: {
  * "Chưa đủ dữ liệu" chỉ ở được tab theo dõi: chưa có bài mới để nhìn thì đó là câu trả lời
  * trung thực, nhưng nó không phải một kết luận để khép việc lại.
  */
-export function ResultDialog({ iv, track, startMode = 'monitor', onClose, onDone }: {
-  iv: any | null; track: string;
+export function ResultDialog({ iv, startMode = 'monitor', onClose, onDone }: {
+  iv: any | null;
   /** Tab mở sẵn — dùng khi đi từ ô ghi nhanh sang đây vì kết quả chưa tốt phải chọn cách đi tiếp. */
   startMode?: 'monitor' | 'end';
   onClose: () => void; onDone: () => void;
@@ -1198,7 +1091,7 @@ export function ResultDialog({ iv, track, startMode = 'monitor', onClose, onDone
   const [newTarget, setNewTarget] = useState<string>('real_exam');
   const [busy, setBusy] = useState(false);
 
-  const outcomes = outcomesFor(track).filter((o) => mode !== 'end' || canEndWithOutcome(o));
+  const outcomes = FOLLOWUP_OUTCOMES.filter((o) => mode !== 'end' || canEndWithOutcome(o));
   const steps = outcome ? stepsForMode(mode, outcome) : [];
   const noteOk = note.trim().length >= 8;
   const ready = !!outcome && noteOk && (mode === 'monitor' || !!nextStep)
@@ -1274,7 +1167,7 @@ export function ResultDialog({ iv, track, startMode = 'monitor', onClose, onDone
                 <button key={o} type="button"
                   className={`btn btn-sm ${outcome === o ? 'btn-primary' : ''}`}
                   onClick={() => { setOutcome(o); setNextStep(''); }}>
-                  {OUTCOME_MARK[o] ?? ''} {outcomeLabelFor(track, o)}
+                  {OUTCOME_MARK[o] ?? ''} {outcomeLabelFor(o)}
                 </button>
               ))}
             </div>
@@ -1338,12 +1231,12 @@ export function ResultDialog({ iv, track, startMode = 'monitor', onClose, onDone
                     <select className="field w-full" value={newKind}
                       onChange={(e) => setNewKind(e.target.value)}>
                       <optgroup label="Bạn tự làm được">
-                        {interventionKindsFor(track).selfServe.map((k) => (
+                        {interventionKindsFor().selfServe.map((k) => (
                           <option key={k} value={k}>{INTERVENTION_KIND_LABEL[k] ?? k}</option>
                         ))}
                       </optgroup>
                       <optgroup label="Cần Quản lý duyệt">
-                        {interventionKindsFor(track).proposals.map((k) => (
+                        {interventionKindsFor().proposals.map((k) => (
                           <option key={k} value={k}>{INTERVENTION_KIND_LABEL[k] ?? k}</option>
                         ))}
                       </optgroup>

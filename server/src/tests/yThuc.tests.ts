@@ -19,11 +19,183 @@ export type YThucTestKit = {
   P: Record<string, Principal>;
   addDays: (date: string, n: number) => string;
   classId: (code: string) => number;
+  /** Id lớn nhất của từng bảng ngay sau khi dựng bộ demo — để phép kiểm soi dữ liệu demo không lẫn dữ liệu do chính các phép kiểm tạo ra. */
+  seedMax: Record<string, number>;
 };
 
 export async function runYThucTests(t: YThucTestKit) {
   const { check, assert } = t;
   const domain = await import('../../../shared/domain/index.ts');
+
+  {
+  // ================================================================== J10 — bộ demo: MƯỜI TÁM tình huống của đặc tả §10
+
+  console.log('\nPR-J · 0. Bộ demo Ý thức — đủ 18 tình huống của đặc tả §10 (soi vào chính dữ liệu demo, không phải luật)');
+
+  const { conn, TODAY } = t;
+  const { warningsFor } = await import('../yThuc/canhBao.ts');
+  const { yThucMetric } = await import('../yThuc/thongKe.ts');
+  const { measureKindAvailability } = await import('../yThuc/measures.ts');
+  const { loadPrincipal } = await import('../permissions.ts');
+  const VMAX = t.seedMax.violations, MMAX = t.seedMax.discipline_measures;
+  const rows = (sql: string, ...a: unknown[]) => conn.prepare(sql).all(...a) as any[];
+  const one = (sql: string, ...a: unknown[]) => conn.prepare(sql).get(...a) as any;
+  /** Học viên của bộ demo theo TÊN — phép kiểm hỏng ngay nếu tên trùng hoặc không có, thay vì soi nhầm em khác. */
+  const demoStudent = (name: string): number => {
+    const r = rows('SELECT id FROM students WHERE full_name = ?', name);
+    assert(r.length === 1, `Bộ demo phải có đúng một học viên tên "${name}", đang có ${r.length}`);
+    return r[0].id;
+  };
+  const AN = demoStudent('Nguyễn Minh An'), HA = demoStudent('Trần Thu Hà'), HUY = demoStudent('Lê Quang Huy'),
+    NGOC = demoStudent('Phạm Bảo Ngọc'), VAN = demoStudent('Đặng Thu Vân'), YEN = demoStudent('Ngô Hải Yến'),
+    KIEN = demoStudent('Trần Hải Kiên');
+  const seedViolations = (sid: number) => rows('SELECT * FROM violations WHERE student_id = ? AND id <= ? ORDER BY occurred_on, id', sid, VMAX);
+  const seedMeasures = (sid: number) => rows('SELECT * FROM discipline_measures WHERE student_id = ? AND id <= ? ORDER BY created_at, id', sid, MMAX);
+  const linksOf = (measureId: number) => rows('SELECT violation_id FROM measure_violations WHERE measure_id = ?', measureId).map((r) => r.violation_id as number);
+
+  check('PR-J · DEMO Bộ demo không có gì sau ngày demo; biện pháp đã thực hiện không chứa vi phạm xảy ra SAU ngày thực hiện; mọi liên kết trỏ đúng một học viên', () => {
+    assert(VMAX > 0 && MMAX > 0, 'Bộ demo chưa có vi phạm hoặc biện pháp nào');
+    const future = one(
+      `SELECT (SELECT COUNT(*) FROM violations WHERE occurred_on > ? OR reported_on > ? OR substr(created_at,1,10) > ?)
+            + (SELECT COUNT(*) FROM discipline_measures WHERE substr(created_at,1,10) > ? OR COALESCE(performed_on,'') > ?) AS n`, TODAY, TODAY, TODAY, TODAY, TODAY).n;
+    assert(future === 0, `${future} dòng Ý thức trong bộ demo nằm sau ngày demo ${TODAY}`);
+    const late = rows(
+      `SELECT dm.id FROM discipline_measures dm JOIN measure_violations mv ON mv.measure_id = dm.id JOIN violations v ON v.id = mv.violation_id
+        WHERE dm.status = 'done' AND v.occurred_on > dm.performed_on AND dm.id <= ?`, MMAX);
+    assert(late.length === 0, `Biện pháp ${late[0]?.id} đã thực hiện mà chứa vi phạm xảy ra sau ngày thực hiện`);
+    const cross = rows(
+      `SELECT dm.id FROM discipline_measures dm JOIN measure_violations mv ON mv.measure_id = dm.id JOIN violations v ON v.id = mv.violation_id
+        WHERE v.student_id != dm.student_id AND dm.id <= ?`, MMAX);
+    assert(cross.length === 0, 'Có biện pháp chứa vi phạm của học viên khác (B02)');
+  });
+
+  check('PR-J · DEMO #1 + #2 Vi phạm đúng là mặc định; đúng hai vi phạm bị đánh dấu không chính xác và mỗi cái có lý do; cái của cô Hà mang câu "em đã nộp, tôi bỏ sót"', () => {
+    const invalid = rows('SELECT * FROM violations WHERE valid = 0 AND id <= ?', VMAX);
+    assert(invalid.length === 2, `Đúng hai vi phạm không hiệu lực, đang có ${invalid.length}`);
+    for (const v of invalid) assert(v.invalid_reason && v.invalidated_by && v.invalidated_at, `Vi phạm ${v.id} không hiệu lực mà thiếu lý do/người/lúc (V11)`);
+    const g = invalid.find((v) => v.student_id === HA);
+    assert(g && /em đã nộp, tôi bỏ sót/i.test(g.invalid_reason), 'Vi phạm không chính xác của Trần Thu Hà phải mang lý do "Em đã nộp, tôi bỏ sót"');
+    assert(rows('SELECT id FROM violations WHERE valid = 1 AND id <= ?', VMAX).length > 20, 'Phần lớn vi phạm phải là vi phạm đúng');
+    const hist = rows(`SELECT * FROM violation_history WHERE violation_id = ? AND field = 'valid'`, g.id);
+    assert(hist.length === 1 && hist[0].reason === g.invalid_reason, 'Việc hủy phải có đúng một dòng lịch sử kèm lý do');
+  });
+
+  check('PR-J · DEMO #3 + #4 Nguyễn Minh An có vi phạm của bốn giáo viên khác nhau và ba nhóm khác nhau (BTVN · Chuyên cần · Thái độ)', () => {
+    const v = seedViolations(AN).filter((x) => x.valid === 1);
+    assert(new Set(v.map((x) => x.reported_by)).size >= 4, `Cần vi phạm của ít nhất 4 giáo viên, có ${new Set(v.map((x) => x.reported_by)).size}`);
+    const cats = new Set(v.map((x) => x.category));
+    for (const c of ['homework', 'attendance', 'conduct']) assert(cats.has(c), `Thiếu nhóm ${c}`);
+    /* Không có "đợt": bốn giáo viên báo cùng tuần vẫn là bốn dòng độc lập. */
+    assert(v.length >= 7, 'Các vi phạm phải là dòng riêng, không gộp');
+  });
+
+  check('PR-J · DEMO #5 Một Report gia đình gom ĐÚNG 5 vi phạm khác nhóm, khác môn, khác giáo viên, khác ngày (Lê Quang Huy)', () => {
+    const report = seedMeasures(HUY).find((m) => m.kind === 'family_report' && m.status === 'done');
+    assert(report, 'Lê Quang Huy phải có một Report cho gia đình đã thực hiện');
+    const ids = linksOf(report.id);
+    assert(ids.length === 5, `Report phải gom đúng 5 vi phạm, đang ${ids.length}`);
+    const vs = rows(`SELECT * FROM violations WHERE id IN (${ids.join(',')})`);
+    assert(new Set(vs.map((v) => v.category)).size >= 3, 'Năm vi phạm phải thuộc ít nhất ba nhóm');
+    assert(new Set(vs.map((v) => v.skill ?? '-')).size >= 3, 'Năm vi phạm phải thuộc ít nhất ba môn');
+    assert(new Set(vs.map((v) => v.reported_by)).size >= 3, 'Năm vi phạm phải do ít nhất ba giáo viên ghi');
+    assert(new Set(vs.map((v) => v.occurred_on)).size === 5, 'Năm vi phạm phải ở năm ngày khác nhau');
+    assert(report.violation_count_at_confirm === 5, `Ảnh chụp lúc xác nhận phải là 5, đang ${report.violation_count_at_confirm}`);
+  });
+
+  check('PR-J · DEMO #6 Sáu vi phạm của Lê Quang Huy đi vào cả ba biện pháp: Meeting với học viên, Report gia đình và Thư cảnh cáo lần 1', () => {
+    const ms = seedMeasures(HUY);
+    const meet = ms.find((m) => m.kind === 'meeting_student'), fam = ms.find((m) => m.kind === 'family_report'), w1 = ms.find((m) => m.kind === 'warning_1');
+    assert(meet && fam && w1, 'Thiếu một trong ba biện pháp');
+    const sixIds = linksOf(meet.id);
+    assert(sixIds.length === 6, `Meeting phải chứa 6 vi phạm, đang ${sixIds.length}`);
+    assert(sixIds.every((id) => linksOf(w1.id).includes(id)), 'Thư cảnh cáo lần 1 phải chứa cả sáu vi phạm đó');
+    assert(sixIds.filter((id) => linksOf(fam.id).includes(id)).length === 5, 'Report chứa năm trong sáu vi phạm đó');
+  });
+
+  check('PR-J · DEMO #7 Biện pháp Đang chuẩn bị được thêm vi phạm SAU khi tạo: liên kết có ngày muộn hơn ngày tạo và vi phạm mang dòng lịch sử (Nguyễn Minh An)', () => {
+    const m = seedMeasures(AN).find((x) => x.status === 'preparing' && x.kind === 'family_report');
+    assert(m, 'Nguyễn Minh An phải có một Report gia đình đang chuẩn bị');
+    const late = rows('SELECT * FROM measure_violations WHERE measure_id = ? AND substr(added_at,1,10) > substr(?,1,10)', m.id, m.created_at);
+    assert(late.length === 1, `Đúng một vi phạm được thêm sau lúc tạo, đang ${late.length}`);
+    assert(rows(`SELECT * FROM violation_history WHERE violation_id = ? AND field = 'measure' AND new_value = ?`, late[0].violation_id, String(m.id)).length === 1,
+      'Việc thêm vào biện pháp phải có dòng lịch sử ở vi phạm');
+    assert(m.confirmed_at === null && m.performed_on === null, 'Biện pháp đang chuẩn bị chưa được có ngày thực hiện hay người xác nhận');
+  });
+
+  check('PR-J · DEMO #8 Vi phạm bị bỏ khỏi biện pháp: có dòng lịch sử thêm rồi bỏ, và nó quay lại Chưa xử lý (Trần Thu Hà)', () => {
+    const back = seedViolations(HA).filter((v) => v.valid === 1 && !rows('SELECT 1 FROM measure_violations WHERE violation_id = ?', v.id).length)
+      .find((v) => rows(`SELECT * FROM violation_history WHERE violation_id = ? AND field = 'measure'`, v.id).length === 2);
+    assert(back, 'Trần Thu Hà phải có một vi phạm đã được thêm rồi bỏ khỏi biện pháp');
+    const h = rows(`SELECT * FROM violation_history WHERE violation_id = ? AND field = 'measure' ORDER BY id`, back.id);
+    assert(h[0].old_value === null && h[0].new_value && h[1].old_value === h[0].new_value && h[1].new_value === null, 'Dòng lịch sử phải là thêm (∅ → biện pháp) rồi bỏ (biện pháp → ∅)');
+    assert(yThucMetric(loadPrincipal(1), 'vi-pham-chua-xu-ly').ids.includes(back.id), 'Vi phạm đã bỏ khỏi biện pháp phải tính lại là Chưa xử lý');
+  });
+
+  check('PR-J · DEMO #9 Thư cảnh cáo 1 → 2 → 3 đúng thứ tự, ba ngày khác nhau, mỗi thư có tệp đính kèm (Phạm Bảo Ngọc)', () => {
+    const w = seedMeasures(NGOC).filter((m) => /^warning_[123]$/.test(m.kind) && m.status === 'done');
+    assert(w.map((m) => m.kind).join() === 'warning_1,warning_2,warning_3', `Ba thư đúng thứ tự, đang ${w.map((m) => m.kind).join()}`);
+    assert(new Set(w.map((m) => m.performed_on)).size === 3 && w[0].performed_on < w[1].performed_on && w[1].performed_on < w[2].performed_on, 'Ba thư phải ở ba ngày tăng dần');
+    for (const m of w) {
+      assert(one(`SELECT COUNT(*) n FROM attachments WHERE owner_type = 'discipline_measure' AND owner_id = ?`, m.id).n >= 1, `Thư ${m.kind} thiếu tệp đính kèm (B06)`);
+    }
+    assert(new Set(w.map((m) => m.cycle_id)).size === 1, 'Ba thư cùng một lộ trình');
+  });
+
+  check('PR-J · DEMO #10 Ít nhất ba em có cảnh báo quá 5 ngày, cái cũ nhất 6–9 ngày; đúng 5 ngày thì chưa cảnh báo; câu cảnh báo đúng số', () => {
+    const w = warningsFor([AN, HA, HUY, NGOC, VAN, YEN, KIEN], TODAY);
+    const active = [AN, VAN, YEN].filter((s) => w.get(s)?.active);
+    assert(active.length === 3, `Nguyễn Minh An, Đặng Thu Vân, Ngô Hải Yến phải đang có cảnh báo; có ${active.length}`);
+    assert(w.get(AN)!.oldestAgeDays === 9 && w.get(AN)!.count === 4 && w.get(AN)!.message === '⚠ 4 vi phạm chưa được xử lý — vi phạm cũ nhất: 9 ngày trước', `An: ${w.get(AN)!.message}`);
+    assert(w.get(VAN)!.oldestAgeDays === 8, `Vân phải 8 ngày, đang ${w.get(VAN)!.oldestAgeDays}`);
+    assert(w.get(YEN)!.oldestAgeDays === 6, `Yến phải 6 ngày, đang ${w.get(YEN)!.oldestAgeDays}`);
+    for (const s of [HA, KIEN]) assert(w.get(s)!.oldestAgeDays === 5 && !w.get(s)!.active, 'Vi phạm chưa xử lý đúng 5 ngày thì CHƯA cảnh báo (ngưỡng là quá 5 ngày)');
+    for (const s of [HUY, NGOC]) assert(!w.get(s)!.active, 'Em đã xử lý hết thì không cảnh báo');
+    /* Hàm chỉ số hv-can-xu-ly là CÙNG hàm cảnh báo. */
+    const stat = yThucMetric(loadPrincipal(1), 'hv-can-xu-ly').ids;
+    for (const s of [AN, VAN, YEN]) assert(stat.includes(s), `hv-can-xu-ly thiếu em ${s}`);
+  });
+
+  check('PR-J · DEMO #11 + #12 + #13 + #14 + #15 Case học thuật giữ nguyên: mức Cần chú ý và mức Gấp; SOS chỉ ghi nhận có LÝ DO; SOS gắn vào case đang mở; GV tạo case trực tiếp không có tín hiệu', () => {
+    assert(one(`SELECT COUNT(*) n FROM sos_cases WHERE urgency = 'attention' AND id <= ?`, t.seedMax.sos_cases).n > 0, '#11 Không có case học thuật mức Cần chú ý');
+    assert(one(`SELECT COUNT(*) n FROM sos_cases WHERE urgency = 'urgent' AND origin_kind = 'teacher_report' AND id <= ?`, t.seedMax.sos_cases).n > 0, '#12 Không có case học thuật mức Gấp');
+    const noted = rows(`SELECT resolution_note FROM case_signals WHERE status = 'noted'`);
+    assert(noted.length > 0 && noted.every((s) => s.resolution_note && s.resolution_note.trim().length > 0), '#13 Mọi tín hiệu "ghi nhận, không tạo case" phải kèm lý do');
+    const linked = rows(`SELECT sg.case_id, sc.status FROM case_signals sg JOIN sos_cases sc ON sc.id = sg.case_id WHERE sg.status = 'linked'`);
+    assert(linked.some((s) => s.status !== 'done'), '#14 Không có tín hiệu nào gắn vào case đang mở');
+    const direct = rows(`SELECT sc.id FROM sos_cases sc WHERE sc.origin_kind = 'teacher_report' AND sc.id <= ? AND NOT EXISTS (SELECT 1 FROM case_signals sg WHERE sg.case_id = sc.id)`, t.seedMax.sos_cases);
+    assert(direct.length > 0, '#15 Không có case học thuật do GV tạo trực tiếp (không qua tín hiệu)');
+  });
+
+  check('PR-J · DEMO #16 Vi phạm hết hiệu lực NẰM TRONG biện pháp đã thực hiện: biện pháp giữ nguyên, ảnh chụp KHÔNG đổi, thống kê loại nó ra (Lê Quang Huy)', () => {
+    const meet = seedMeasures(HUY).find((m) => m.kind === 'meeting_student');
+    const inside = linksOf(meet.id).map((id) => one('SELECT * FROM violations WHERE id = ?', id)).filter((v) => v.valid === 0);
+    assert(inside.length === 1 && meet.status === 'done', 'Phải có đúng một vi phạm không hiệu lực nằm trong biện pháp đã thực hiện');
+    assert(inside[0].invalidated_at.slice(0, 10) > meet.performed_on, 'Vi phạm bị hủy SAU khi biện pháp đã thực hiện');
+    assert(meet.violation_count_at_confirm === 6 && linksOf(meet.id).length === 6, 'Ảnh chụp vẫn là 6 dù một vi phạm đã bị hủy (V13)');
+    const admin = loadPrincipal(1);
+    assert(!yThucMetric(admin, 'vi-pham-tong').ids.includes(inside[0].id) && yThucMetric(admin, 'vi-pham-khong-hieu-luc').ids.includes(inside[0].id), 'Thống kê phải loại vi phạm đã hủy khỏi tổng và đưa nó sang chỉ số riêng');
+  });
+
+  check('PR-J · DEMO #17 Một vi phạm nằm trong HAI biện pháp ở HAI thời điểm khác nhau — nhiều–nhiều thật (Lê Quang Huy)', () => {
+    const shared = rows(
+      `SELECT mv.violation_id, COUNT(DISTINCT dm.id) n, COUNT(DISTINCT dm.performed_on) days FROM measure_violations mv JOIN discipline_measures dm ON dm.id = mv.measure_id
+        WHERE dm.student_id = ? AND dm.id <= ? GROUP BY mv.violation_id HAVING n >= 2 AND days >= 2`, HUY, MMAX);
+    assert(shared.length >= 1, 'Phải có vi phạm nằm trong ít nhất hai biện pháp thực hiện ở hai ngày khác nhau');
+    assert(shared.some((r) => r.n >= 2 && r.days >= 2 && one('SELECT COUNT(DISTINCT measure_id) n FROM measure_violations WHERE violation_id = ?', r.violation_id).n === r.n), 'Liên kết phải đọc được từ phía vi phạm');
+  });
+
+  check('PR-J · DEMO #18 Em chuyển lộ trình sau khi đã có Thư cảnh cáo lần 2: chuỗi reset — lần 1 chọn lại được, lần 2 khóa (Trần Hải Kiên)', () => {
+    const ms = seedMeasures(KIEN).filter((m) => /^warning_[123]$/.test(m.kind));
+    assert(ms.map((m) => m.kind).join() === 'warning_1,warning_2', `Kiên phải có thư 1 và 2 ở lộ trình cũ, đang ${ms.map((m) => m.kind).join()}`);
+    const cur = one(`SELECT id FROM learning_cycles WHERE student_id = ? AND status = 'active'`, KIEN).id;
+    assert(ms.every((m) => m.cycle_id !== cur), 'Hai thư phải thuộc lộ trình CŨ, không phải lộ trình đang học');
+    assert(one('SELECT status FROM learning_cycles WHERE id = ?', ms[0].cycle_id).status === 'completed', 'Lộ trình cũ đã khép');
+    const av = Object.fromEntries(measureKindAvailability(loadPrincipal(1), KIEN).map((k: any) => [k.kind, k]));
+    assert(av.warning_1.available, 'Sang lộ trình mới thì Thư cảnh cáo lần 1 chọn lại được');
+    assert(!av.warning_2.available && av.warning_2.reason, 'Lần 2 vẫn khóa kèm lý do tại dòng');
+    assert(!av.warning_3.available, 'Lần 3 vẫn khóa');
+  });
+  }
 
   console.log('\nPR-J · 1. Từ vựng thuần của Ý thức (shared/domain/yThuc.ts)');
 
@@ -1168,5 +1340,242 @@ export async function runYThucTests(t: YThucTestKit) {
     assert(statCp.status === 403, `Quản lý CP hỏi chi nhánh MB: ${statCp.status}`);
     assert(statGvbm.status === 200 && statGvbm.json?.n === 0 && statGvbm.json?.empty === true && statGvbm.json?.note === 'Không có dữ liệu trong phạm vi', `GVBM: ${JSON.stringify(statGvbm.json)}`);
     assert(statMb.status === 200 && statMb.json?.n === statMb.json?.ids?.length && statMb.json?.rows?.length === statMb.json?.n && statMb.json?.n > 0, 'Quản lý MB: số = độ dài tập = số dòng');
+  });
+
+  // ================================================================== J9 — gỡ mô hình Case Ý thức: nâng cấp database cũ
+
+  console.log('\nPR-J · 12. Gỡ mô hình Case Ý thức (J9) — nâng cấp database cũ');
+
+  const fsMod = await import('node:fs');
+  const pathMod = await import('node:path');
+  const { fileURLToPath } = await import('node:url');
+  const { default: SqliteDb } = await import('better-sqlite3');
+  const migrateMod = await import('../migrate.ts');
+  const REPO = pathMod.resolve(fileURLToPath(new URL('../../../../', import.meta.url)));
+  const LEGACY = 'behav' + 'iour'; // giá trị cũ của cột track — chỉ để dựng dữ liệu cũ trong phép kiểm
+
+  /** Dựng một database THỜI CASE Ý THỨC: schema hiện tại + các cột/bảng của mô hình đã bỏ + dữ liệu cũ. */
+  const legacyDatabase = () => {
+    const m = new SqliteDb(':memory:');
+    m.exec(fsMod.readFileSync(pathMod.join(REPO, 'server/src/schema.sql'), 'utf8'));
+    m.exec(`
+      ALTER TABLE sos_cases ADD COLUMN track TEXT NOT NULL DEFAULT 'academic';
+      ALTER TABLE sos_cases ADD COLUMN episode_no INTEGER NOT NULL DEFAULT 1;
+      ALTER TABLE sos_cases ADD COLUMN merge_until TEXT;
+      ALTER TABLE sos_cases ADD COLUMN urgency_raised_at TEXT;
+      ALTER TABLE case_signals ADD COLUMN track TEXT NOT NULL DEFAULT 'academic';
+      ALTER TABLE tasks ADD COLUMN track TEXT;
+      CREATE TABLE case_reports (
+        id INTEGER PRIMARY KEY, case_id INTEGER NOT NULL REFERENCES sos_cases(id), reported_by INTEGER REFERENCES users(id),
+        source_skill TEXT, source_attempt_id INTEGER, reported_on TEXT NOT NULL, observed_on TEXT, summary TEXT NOT NULL,
+        idempotency_key TEXT UNIQUE, created_at TEXT NOT NULL);
+      DROP TABLE measure_violations; DROP TABLE discipline_measures; DROP TABLE violation_history; DROP TABLE violations;
+    `);
+    const NOW = '2026-09-10T00:00:00.000Z';
+    const q = (sql: string, ...a: unknown[]) => Number(m.prepare(sql).run(...a).lastInsertRowid);
+    q(`INSERT INTO branches (code, name, created_at) VALUES ('MB', 'Monbay', ?)`, '2026-09-10T00:00:00.000Z');
+    for (const [i, n] of [[1, 'Quản trị'], [2, 'Cô Hà']] as const) {
+      q(`INSERT INTO users (id, code, full_name, email, title, password_hash, password_salt, status, created_at) VALUES (?,?,?,?,?,?,?,?,?)`, i, `NV${i}`, n, `u${i}@x.vn`, 'GV', 'h', 's', 'active', NOW);
+    }
+    q(`INSERT INTO classes (id, code, branch_id, kind, status, created_at) VALUES (1, 'MB-FT 1', 1, 'FT', 'active', ?)`, NOW);
+    for (const i of [1, 2]) {
+      q(`INSERT INTO students (id, student_code, full_name, normalized_name, branch_id, status, created_at) VALUES (?,?,?,?,1,'active',?)`, i, `PISA${i}`, `Em ${i}`, `em ${i}`, NOW);
+      q(`INSERT INTO enrollments (student_id, class_id, status, started_at, created_at) VALUES (?,1,'active','2026-08-01',?)`, i, NOW);
+      q(`INSERT INTO learning_cycles (id, student_id, seq, started_at, status, created_at) VALUES (?,?,1,'2026-08-01','active',?)`, i, i, NOW);
+    }
+    const legacyCase = (student: number, topic: string, origin: string, summary: string | null, track = LEGACY) =>
+      q(`INSERT INTO sos_cases (student_id, cycle_id, track, topic, category, origin_kind, detected_at, reported_by, summary, status, created_at)
+         VALUES (?,?,?,?,?,?, '2026-09-01', 2, ?, 'open', ?)`, student, student, track, topic, track === 'academic' ? 'reading' : LEGACY, origin, summary, NOW);
+    const A = legacyCase(1, 'participation', 'teacher_report', 'Nói chuyện riêng');
+    const B = legacyCase(2, 'other', 'mock', null);
+    const C = legacyCase(1, 'homework', 'teacher_report', 'Thiếu BTVN nhiều lần trong tháng');
+    const D = legacyCase(2, 'reading', 'teacher_report', 'Reading yếu phần True/False', 'academic');
+    const rep = (caseId: number, by: number, skill: string | null, on: string, obs: string | null, text: string) =>
+      q(`INSERT INTO case_reports (case_id, reported_by, source_skill, reported_on, observed_on, summary, created_at) VALUES (?,?,?,?,?,?,?)`, caseId, by, skill, on, obs, text, NOW);
+    rep(A, 2, 'writing1', '2026-09-01', '2026-08-30', 'Nói chuyện riêng trong giờ Writing');
+    rep(A, 1, null, '2026-09-03', null, 'Nói chuyện riêng trong giờ chủ nhiệm');
+    const iv = (caseId: number, kind: string, status: string, done: string | null, note: string) =>
+      q(`INSERT INTO case_interventions (case_id, kind, description, status, completed_date, performer_name, recorded_by, created_at) VALUES (?,?,?,?,?,?,?,?)`, caseId, kind, note, status, done, kind === 'talk_student' ? 'Cô Hà' : null, 2, NOW);
+    iv(A, 'talk_student', 'completed', '2026-09-02', 'Gặp em cuối buổi');
+    iv(A, 'talk_parent', 'completed', '2026-09-03', 'Gọi cho mẹ');
+    iv(A, 'warning_letter', 'completed', '2026-09-04', 'Gửi thư cảnh cáo');
+    iv(A, 'meeting_cx', 'planned', null, 'Hẹn CX gặp phụ huynh');
+    iv(A, 'talk_parent', 'cancelled', null, 'Đã huỷ');
+    const dIv = iv(D, 'tutor', 'started', null, 'Học tutor Reading');
+    q(`INSERT INTO case_signals (student_id, cycle_id, attempt_id, class_id, track, skill, category, detected_on, raised_on, verify_due, status, dedup_key, created_at)
+       VALUES (2, 2, NULL, 1, 'academic', 'reading', 'reading', '2026-09-01', '2026-09-01', '2026-09-03', 'pending', 'k1', ?)`, NOW);
+    q(`INSERT INTO case_signals (student_id, cycle_id, attempt_id, class_id, track, skill, category, detected_on, raised_on, verify_due, status, dedup_key, created_at)
+       VALUES (2, 2, NULL, 1, ?, NULL, ?, '2026-09-01', '2026-09-01', '2026-09-03', 'pending', 'k2', ?)`, LEGACY, LEGACY, NOW);
+    q(`INSERT INTO tasks (code, task_type, kind, class_id, track, topic, title, progress, created_at) VALUES ('CV1','in_period','teacher_task',1,?, 'homework','Giao việc nhắc BTVN','not_started',?)`, LEGACY, NOW);
+    return { m, ids: { A, B, C, D, dIv } };
+  };
+
+  check('PR-J · J9 Nâng cấp database cũ: báo cáo của case Ý thức thành vi phạm (Tham gia trên lớp → Thái độ / hành vi), việc trao đổi thành biện pháp, case cũ được gỡ sạch, case học thuật còn nguyên', () => {
+    const { m, ids: I } = legacyDatabase();
+    const applied: string[] = [];
+    migrateMod.migrateYThuc(m, applied);
+    migrateMod.migrateLegacyDisciplineCases(m, applied);
+    const all = (sql: string, ...a: unknown[]) => m.prepare(sql).all(...a) as any[];
+
+    const viols = all('SELECT * FROM violations ORDER BY id');
+    assert(viols.length === 3, `2 báo cáo + 1 case chưa có báo cáo nào = 3 vi phạm, có ${viols.length}`);
+    const fromA = viols.filter((v) => v.description.startsWith('Nói chuyện riêng'));
+    assert(fromA.length === 2 && fromA.every((v) => v.category === 'conduct' && v.valid === 1 && v.student_id === 1), 'Hai báo cáo của case A: nhóm participation → conduct');
+    assert(fromA.find((v) => v.description.includes('Writing')).skill === 'writing1' && fromA.find((v) => v.description.includes('Writing')).occurred_on === '2026-08-30',
+      'Môn và ngày xảy ra (observed_on) được giữ');
+    assert(fromA.find((v) => v.description.includes('chủ nhiệm')).skill === null && fromA.find((v) => v.description.includes('chủ nhiệm')).occurred_on === '2026-09-03', 'Không có observed_on thì lấy ngày báo');
+    const fromC = viols.find((v) => v.description.startsWith('Thiếu BTVN'));
+    assert(fromC && fromC.category === 'homework' && fromC.occurred_on === '2026-09-01', 'Case chưa có dòng báo cáo nào thì sinh một vi phạm từ chính mô tả của case');
+
+    const measures = all('SELECT * FROM discipline_measures WHERE student_id = 1 ORDER BY id');
+    assert(measures.length === 4, `4 biện pháp (đã huỷ thì bỏ), có ${measures.length}: ${measures.map((x) => x.kind).join()}`);
+    const byKind = Object.fromEntries(measures.map((x) => [x.custom_name === 'Thư cảnh cáo (dữ liệu cũ)' ? 'warning_old' : x.kind, x]));
+    assert(byKind.meeting_student.status === 'done' && byKind.meeting_student.performed_on === '2026-09-02' && byKind.meeting_student.performer_name === 'Cô Hà', 'talk_student → meeting_student đã thực hiện, giữ ngày và người');
+    assert(byKind.family_report.status === 'done' && byKind.family_report.performed_on === '2026-09-03' && byKind.family_report.violation_count_at_confirm === 2, 'talk_parent → family_report; ảnh chụp = 2 vi phạm');
+    assert(byKind.warning_old.kind === 'other' && byKind.warning_old.status === 'done', 'Thư cảnh cáo cũ không có lần thứ mấy → loại Khác, KHÔNG phá chuỗi 1→2→3');
+    assert(byKind.meeting_cx.status === 'preparing' && byKind.meeting_cx.performed_on === null, 'Việc chưa xong → đang chuẩn bị');
+    assert(all('SELECT * FROM discipline_measures WHERE kind IN (\'warning_1\',\'warning_2\',\'warning_3\')').length === 0, 'Không tự bịa Thư cảnh cáo lần 1/2/3');
+    for (const ms of measures) assert(all('SELECT * FROM measure_violations WHERE measure_id = ?', ms.id).length === 2, `Biện pháp ${ms.id} phải liên kết cả hai vi phạm của case`);
+    assert(all('SELECT * FROM measure_violations WHERE violation_id = ?', fromC.id).length === 0, 'Vi phạm của case C không có biện pháp → chưa xử lý');
+
+    assert(all('SELECT id FROM sos_cases WHERE id IN (?,?,?)', I.A, I.B, I.C).length === 0, 'Case Ý thức cũ phải được gỡ hết');
+    assert(all('SELECT id FROM sos_cases WHERE id = ?', I.D).length === 1 && all('SELECT id FROM case_interventions WHERE id = ?', I.dIv).length === 1, 'Case học thuật và phương án của nó còn nguyên');
+    assert(all('SELECT * FROM case_interventions WHERE case_id IN (?,?,?)', I.A, I.B, I.C).length === 0, 'Phương án của case Ý thức cũ đã chuyển thành biện pháp nên được gỡ');
+    assert(all('SELECT * FROM case_signals').length === 1 && all('SELECT skill FROM case_signals')[0].skill === 'reading', 'Tín hiệu Ý thức cũ gỡ, tín hiệu học thuật còn');
+    assert(all('SELECT topic FROM tasks WHERE code = \'CV1\'')[0].topic === null, 'Việc giao GV theo nhóm ý thức: bỏ chủ đề (không còn là kỹ năng)');
+
+    for (const [table, col] of [['sos_cases', 'track'], ['sos_cases', 'episode_no'], ['sos_cases', 'merge_until'], ['sos_cases', 'urgency_raised_at'], ['case_signals', 'track'], ['tasks', 'track']]) {
+      assert(!all(`PRAGMA table_info(${table})`).some((c) => c.name === col), `Cột ${table}.${col} phải được gỡ`);
+    }
+    assert(!all(`SELECT name FROM sqlite_master WHERE type='table' AND name = 'case_reports'`).length, 'Bảng case_reports phải được gỡ');
+    assert(applied.some((x) => /vi phạm/.test(x)), 'Phải báo đã chuyển bao nhiêu vi phạm và biện pháp');
+  });
+
+  check('PR-J · J9 Nâng cấp chạy lặp lại không đổi gì (idempotent), và không dựng lại cột/bảng của mô hình đã bỏ; database mới dựng từ schema.sql thì không phải làm gì', () => {
+    const { m } = legacyDatabase();
+    const applied: string[] = [];
+    migrateMod.migrateYThuc(m, applied);
+    migrateMod.migrateLegacyDisciplineCases(m, applied);
+    const snap = () => JSON.stringify(['violations', 'discipline_measures', 'measure_violations', 'sos_cases', 'case_interventions'].map((t) => (m.prepare(`SELECT COUNT(*) n FROM ${t}`).get() as any).n));
+    const before = snap();
+    const again: string[] = [];
+    migrateMod.migrateYThuc(m, again);
+    migrateMod.migrateLegacyDisciplineCases(m, again);
+    assert(again.length === 0 && snap() === before, `Chạy lần hai phải không đổi gì: ${again.join(' | ')}`);
+    /* Database mới dựng từ schema.sql: không có gì để nâng cấp. */
+    const fresh = new SqliteDb(':memory:');
+    fresh.exec(fsMod.readFileSync(pathMod.join(REPO, 'server/src/schema.sql'), 'utf8'));
+    const none: string[] = [];
+    migrateMod.migrateYThuc(fresh, none);
+    migrateMod.migrateLegacyDisciplineCases(fresh, none);
+    assert(none.length === 0, `Database mới không được có gì để nâng cấp: ${none.join(' | ')}`);
+  });
+
+  check('PR-J · J9 Chạy trọn `migrate()` trên database đã ở mô hình mới không dựng lại cột `track`, `episode_no`, `merge_until` hay bảng `case_reports` của mô hình đã bỏ', () => {
+    const before = migrateMod.migrate();
+    void before;
+    const cols = (tb: string) => (conn.prepare(`PRAGMA table_info(${tb})`).all() as any[]).map((c) => c.name as string);
+    for (const [tb, col] of [['sos_cases', 'track'], ['sos_cases', 'episode_no'], ['sos_cases', 'merge_until'], ['sos_cases', 'urgency_raised_at'], ['case_signals', 'track'], ['tasks', 'track']]) {
+      assert(!cols(tb).includes(col), `migrate() đã dựng lại cột ${tb}.${col}`);
+    }
+    assert(!conn.prepare(`SELECT name FROM sqlite_master WHERE type='table' AND name = 'case_reports'`).get(), 'migrate() đã dựng lại bảng case_reports');
+    const second = migrateMod.migrate();
+    assert(!second.applied.some((x) => /Ý thức|vi phạm|biện pháp/.test(x)), `Chạy lần hai không được áp lại bước Ý thức: ${second.applied.join(' | ')}`);
+  });
+  // ================================================================== J9 — mô hình cũ ĐÃ BIẾN MẤT khỏi mã, không chỉ khỏi giao diện
+
+  console.log('\nPR-J · 13. Mô hình Case Ý thức đã gỡ hẳn khỏi mã nguồn và tài liệu (J9, J11)');
+
+  const walk = (dir: string, out: string[] = []): string[] => {
+    for (const e of fsMod.readdirSync(dir, { withFileTypes: true })) {
+      const p = pathMod.join(dir, e.name);
+      if (e.isDirectory()) walk(p, out); else if (/\.(ts|tsx|sql)$/.test(e.name)) out.push(p);
+    }
+    return out;
+  };
+  const DATE = /\b\d{2}\/\d{2}\/\d{4}\b/;
+
+  check('PR-J · J9 Mã của mô hình cũ trong server/src và shared chỉ còn chú thích LỊCH SỬ CÓ GHI NGÀY; bảng `case_reports` chỉ còn nhắc ở bước nâng cấp', () => {
+    const files = [...walk(pathMod.join(REPO, 'server/src')), ...walk(pathMod.join(REPO, 'shared'))];
+    assert(files.length > 50, 'Quét được quá ít tệp — đường dẫn sai');
+    const bad: string[] = [];
+    for (const f of files) {
+      const rel = pathMod.relative(REPO, f).replace(/\\/g, '/');
+      const lines = fsMod.readFileSync(f, 'utf8').split(/\r?\n/);
+      lines.forEach((line, i) => {
+        if (line.includes(LEGACY)) {
+          const around = lines.slice(Math.max(0, i - 2), i + 3).join('\n');
+          if (!DATE.test(around)) bad.push(`${rel}:${i + 1}`);
+        }
+        if (/case_reports/.test(line) && !/^server\/src\/(migrate|tests\/)/.test(rel)) bad.push(`${rel}:${i + 1} (case_reports)`);
+      });
+    }
+    assert(bad.length === 0, `Còn dấu vết mô hình cũ không có ghi chú ngày: ${bad.slice(0, 8).join(' · ')}`);
+  });
+
+  const casesSvc = await import('../cases/cases.ts');
+  const classesSvcJ = await import('../classes/classes.ts');
+  const signalsJ = await import('../cases/signals.ts');
+  const regularJ = await import('../normal/regular.ts');
+
+  check('PR-J · J9 Không còn hằng số, hàm nào của mô hình cũ được xuất ra: nhóm ý thức, cửa sổ gộp, kết quả ý thức, bảng ý thức của lớp, chu kỳ theo đầu mục', () => {
+    for (const [name, mod] of [['shared/domain', domain], ['cases', casesSvc], ['classes', classesSvcJ], ['signals', signalsJ], ['normal', regularJ]] as const) {
+      const hit = Object.keys(mod).filter((k) => /behav/i.test(k));
+      assert(hit.length === 0, `${name} còn xuất ${hit.join(', ')}`);
+    }
+    const cyc = (domain as any).cycleDeadline as (d: string, extra?: unknown) => string;
+    assert(cyc.length === 1, `cycleDeadline nay chỉ có một tham số (không còn phân theo đầu mục), đang có ${cyc.length}`);
+    const cols = (tb: string) => (conn.prepare(`PRAGMA table_info(${tb})`).all() as any[]).map((c) => c.name as string);
+    assert(!cols('sos_cases').includes('track') && !cols('case_signals').includes('track'), 'Còn cột đầu mục ở case hoặc tín hiệu');
+  });
+
+  check('PR-J · J9 Máy chủ TỪ CHỐI báo case với chủ đề Ý thức cũ (BTVN · Chuyên cần · Tham gia) — Ý thức nay là vi phạm, không đi qua cửa case', () => {
+    const st = conn.prepare("SELECT s.id FROM students s JOIN enrollments e ON e.student_id = s.id AND e.status = 'active' WHERE e.class_id = ? LIMIT 1").get(t.classId('MB-FT 101')) as any;
+    const before = (conn.prepare('SELECT COUNT(*) n FROM sos_cases').get() as any).n;
+    for (const topic of ['homework', 'attendance', 'participation']) {
+      let threw = false;
+      try {
+        casesSvc.reportIssue(t.P.admin, {
+          studentId: st.id, topic, parallel: true, title: `Thử ${topic}`, summary: 'Báo case bằng chủ đề của Ý thức cũ, phải bị từ chối.',
+        } as any);
+      } catch { threw = true; }
+      assert(threw, `Báo case chủ đề "${topic}" vẫn được nhận`);
+    }
+    assert((conn.prepare('SELECT COUNT(*) n FROM sos_cases').get() as any).n === before, 'Báo bị từ chối mà vẫn để lại một case');
+  });
+
+  check('PR-J · J9 Hằng số C03 và C04 CÒN nguyên giá trị nhưng ghi rõ HẾT HIỆU LỰC 21/09/2026 kèm lý do — không xóa, không rải luật ở chỗ khác', () => {
+    const src = fsMod.readFileSync(pathMod.join(REPO, 'shared/domain/policy.ts'), 'utf8');
+    for (const name of ['C03_CUA_SO_GOP_CASE_Y_THUC_NGAY', 'C04_BAO_CAO_MOI_SAU_KHI_DONG']) {
+      const at = src.indexOf(`export const ${name}`);
+      assert(at > 0, `Đã xóa hằng số ${name}`);
+      const before = src.slice(Math.max(0, at - 900), at);
+      assert(/HẾT HIỆU LỰC 21\/09\/2026/.test(before) && /LÝ DO HẾT HIỆU LỰC/.test(before), `${name} phải có chú thích "HẾT HIỆU LỰC 21/09/2026" kèm lý do ngay phía trên`);
+    }
+    assert((domain as any).C03_CUA_SO_GOP_CASE_Y_THUC_NGAY === 3 && (domain as any).C04_BAO_CAO_MOI_SAU_KHI_DONG === 'doi-moi-lien-ket', 'Giá trị hằng số đã bị đổi');
+    /* C02 vẫn CÒN hiệu lực và KHÔNG áp cho Ý thức — kiểm ở phần quyền, ở đây chỉ chắn việc bị xóa nhầm. */
+    assert((domain as any).C02_GVCN_XU_LY_CASE_TRAI_MON === 'gvcn-dung-mon', 'C02 phải còn nguyên');
+  });
+
+  check('PR-J · J11 Bảng `sos_cases`, `case_interventions` còn nguyên (không đổi tên, không xóa); `violations` KHÔNG bị gộp vào `sos_cases`', () => {
+    for (const tb of ['sos_cases', 'case_interventions', 'violations', 'discipline_measures', 'measure_violations', 'violation_history', 'attachments']) {
+      assert(conn.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name = ?").get(tb), `Thiếu bảng ${tb}`);
+    }
+    const sosCols = (conn.prepare('PRAGMA table_info(sos_cases)').all() as any[]).map((c) => c.name as string);
+    assert(!sosCols.includes('valid') && !sosCols.includes('invalid_reason'), 'Cột của vi phạm bị nhét vào sos_cases');
+  });
+
+  check('PR-J · J11 Hai tệp DEMO_SCENARIOS.md và DEMO_ASSUMPTIONS.md đã thay bằng MỘT tệp DEMO.md; không tài liệu nào còn trỏ tới hai tệp cũ', () => {
+    assert(fsMod.existsSync(pathMod.join(REPO, 'DEMO.md')), 'Thiếu DEMO.md');
+    for (const old of ['DEMO_SCENARIOS.md', 'DEMO_ASSUMPTIONS.md']) assert(!fsMod.existsSync(pathMod.join(REPO, old)), `${old} vẫn còn`);
+    const docs = ['README.md', 'CODE_MAP.md', 'plan.md'];
+    for (const d of docs) {
+      const p = pathMod.join(REPO, d);
+      if (!fsMod.existsSync(p)) continue;
+      const txt = fsMod.readFileSync(p, 'utf8');
+      assert(!/DEMO_SCENARIOS|DEMO_ASSUMPTIONS/.test(txt), `${d} còn nhắc tới tệp demo cũ`);
+    }
+    const demo = fsMod.readFileSync(pathMod.join(REPO, 'DEMO.md'), 'utf8');
+    for (let i = 1; i <= 18; i++) assert(new RegExp(`(^|\\n)\\s*\\|\\s*${i}\\s*\\|`).test(demo), `DEMO.md thiếu dòng của tình huống ${i}`);
   });
 }

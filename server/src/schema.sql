@@ -715,36 +715,35 @@ CREATE TABLE sos_cases (
   cycle_id INTEGER REFERENCES learning_cycles(id),
 
   /*
-   * HAI ĐẦU MỤC, KHÔNG HƠN. Vấn đề về giáo viên và giáo trình KHÔNG còn ở đây — đó không
-   * phải vấn đề của học viên, và nay nằm ở Báo cáo tuần chi nhánh.
+   * BẢNG NÀY LÀ BẢNG CASE HỌC THUẬT (chốt 21/09/2026). Trước đó nó còn chứa case Ý thức và có cột `track`
+   * (academic | Ý thức) để phân biệt; mô hình Case Ý thức đã bỏ hẳn — Ý thức nay là `violations` và
+   * `discipline_measures` ở cuối file này, hai vòng đời khác hẳn nên KHÔNG gộp vào đây. Tên bảng giữ nguyên
+   * (`sos_cases`) vì nó chạm hàng trăm câu truy vấn và đổi tên không mang lại gì cho người dùng.
+   *
+   * Vấn đề về giáo viên và giáo trình cũng KHÔNG ở đây — đó không phải vấn đề của học viên, và nay nằm ở Báo cáo
+   * tuần chi nhánh.
    */
-  track TEXT NOT NULL DEFAULT 'academic',  -- academic | behaviour
-  -- Học thuật: listening | reading | writing1 | writing2 | speaking (NĂM ô, W1/W2 tách).
-  -- Ý thức:    attendance | homework | participation | other (nay chỉ là MÔ TẢ bên trong
-  --            case, không còn là đơn vị gộp — xem `category`).
+  -- Kỹ năng của case: listening | reading | writing1 | writing2 | speaking (NĂM ô, W1/W2 tách).
   topic TEXT,
 
   /*
    * HẠNG MỤC — ĐƠN VỊ GỘP CỦA MỘT CASE TỪ VÒNG 4.
    *
-   * Sáu giá trị: listening · reading · writing1 · writing2 · speaking · behaviour.
-   * Một case = MỘT HỌC VIÊN × MỘT HẠNG MỤC, sống suốt khoá học. Bốn nhóm ý thức gộp hết
-   * vào `behaviour`; kỹ năng của lớp Normal quy về đúng sáu ô này (Pronunciation → speaking,
-   * W → writing2) để mọi bảng tổng hợp dùng chung một bộ cột.
+   * Các giá trị: listening · reading · writing1 · writing2 · writing · speaking.
+   * Một case = MỘT HỌC VIÊN × MỘT HẠNG MỤC, sống suốt khoá học. Kỹ năng của lớp Normal quy về các ô này
+   * (Pronunciation → speaking) để mọi bảng tổng hợp dùng chung một bộ cột.
    */
   category TEXT,
 
   /*
    * KHOÁ CHỐNG TRÙNG — MỘT chỉ mục duy nhất thay cho bốn chỉ mục một phần.
    *
-   *   a:{học viên}:{lộ trình}:{hạng mục}   case học thuật chính, sống suốt khoá
-   *   bt:{học viên}:{lộ trình}             case Ý thức do giáo viên báo, cũng sống suốt khoá
-   *   bm:{lượt MT}                         case Ý thức tự sinh sau một đợt MT, chết theo lượt
+   *   a:{học viên}:{lộ trình}:{hạng mục}   case học thuật, sống suốt khoá
    *   NULL                                 case mở SONG SONG có chủ ý
    *
    * Để NULL thì không vướng chỉ mục duy nhất (SQLite coi mỗi NULL là một giá trị khác) —
    * đúng thứ cần cho case song song ở mục 7.13: hợp lệ, nhưng phải do người mở quyết định.
-   * Gói bốn quy tắc vào một chuỗi để tránh cái bẫy `ON CONFLICT` phải chép lại mệnh đề
+   * Gói các quy tắc vào một chuỗi để tránh cái bẫy `ON CONFLICT` phải chép lại mệnh đề
    * `WHERE` của chỉ mục một phần.
    */
   dedup_key TEXT,
@@ -802,16 +801,6 @@ CREATE TABLE sos_cases (
    * Case cũ CÒN MỞ thì không sinh case mới — chỉ thêm một mốc và một chu kỳ xử lý tiếp.
    */
   previous_case_id INTEGER REFERENCES sos_cases(id),
-
-  /*
-   * ĐỢT THỨ MẤY của cùng một phân loại (mục 7.2). Tăng theo ĐỢT, không theo mỗi báo cáo:
-   * một đợt có ba báo cáo vẫn là "lần 1". Giao diện đọc nó ra thành "Thiếu BTVN — lần 2".
-   */
-  episode_no INTEGER NOT NULL DEFAULT 1,
-  /* Ngày cuối còn gộp được báo cáo mới vào chính case này = ngày mở + 3. */
-  merge_until TEXT,
-  /* Lúc case bị nâng lên Gấp vì có báo cáo bổ sung — dùng để siết hạn phương án. */
-  urgency_raised_at TEXT,
 
   origin_kind TEXT NOT NULL DEFAULT 'mock',  -- mock | teacher_report | manager_task
   detected_at TEXT,                   -- ngày phát hiện vấn đề, khác ngày ghi vào hệ thống
@@ -921,8 +910,8 @@ CREATE INDEX idx_case_issue_case ON case_issues(case_id);
 CREATE TABLE case_interventions (
   id INTEGER PRIMARY KEY,
   case_id INTEGER NOT NULL REFERENCES sos_cases(id),
-  kind TEXT NOT NULL,                 -- talk_student | talk_parent | tutor | self_study |
-                                      -- teaching_adjust | meeting | ops_policy | other
+  kind TEXT NOT NULL,                 -- tutor | self_study | teaching_adjust | extra_homework |
+                                      -- extra_support | other_proposal | other (mã cũ: meeting_cx, reschedule_mt...)
   description TEXT,
 
   /*
@@ -1071,35 +1060,6 @@ CREATE INDEX idx_followup_case ON case_followups(case_id);
  * `role` phân biệt bằng chứng GỐC (thứ mở ra case) với bằng chứng bổ sung và bằng chứng
  * kiểm chứng sau hỗ trợ.
  */
-/*
- * BÁO CÁO THÀNH PHẦN CỦA MỘT ĐỢT CASE Ý THỨC/KHÁC (mục 7.2).
- *
- * Một case Ý thức/Khác là một ĐỢT, và một đợt chứa nhiều báo cáo của nhiều giáo viên trong
- * cùng một khoảng ngắn. Mỗi báo cáo giữ NGUYÊN của riêng nó: ai gửi, gửi lúc nào, thấy ở
- * môn nào, và mô tả bằng lời của chính người đó. Báo cáo sau KHÔNG ghi đè báo cáo trước —
- * đó là điều kiện để đọc lại một đợt và biết chuyện đã diễn ra như thế nào.
- *
- * `reported_on` là NGÀY GỬI CỦA HỆ THỐNG và là thứ duy nhất dùng để xét cửa sổ gộp. Ngày
- * người dùng khai ở ô "Theo dõi từ ngày" nằm ở `observed_on` và KHÔNG được dùng cho việc
- * này: nếu dùng, chỉ cần khai lùi ngày là đổi được cửa sổ gộp.
- */
-CREATE TABLE case_reports (
-  id INTEGER PRIMARY KEY,
-  case_id INTEGER NOT NULL REFERENCES sos_cases(id),
-  reported_by INTEGER REFERENCES users(id),
-  /* Môn giáo viên đang dạy khi thấy, hoặc để trống khi báo cáo không gắn với môn nào. */
-  source_skill TEXT,
-  /* Đợt đánh giá sinh ra tín hiệu, khi báo cáo này đến từ một mốc SOS. */
-  source_attempt_id INTEGER REFERENCES assessment_attempts(id),
-  reported_on TEXT NOT NULL,
-  observed_on TEXT,
-  summary TEXT NOT NULL,
-  /* Gửi lại cùng một request không được tạo báo cáo thứ hai (mục 7.2). */
-  idempotency_key TEXT UNIQUE,
-  created_at TEXT NOT NULL
-);
-CREATE INDEX idx_case_reports_case ON case_reports(case_id);
-
 CREATE TABLE case_sources (
   id INTEGER PRIMARY KEY,
   case_id INTEGER NOT NULL REFERENCES sos_cases(id),
@@ -1162,9 +1122,8 @@ CREATE TABLE case_signals (
   attempt_id INTEGER REFERENCES assessment_attempts(id),
   class_id INTEGER REFERENCES classes(id),
 
-  track TEXT NOT NULL,                -- academic | behaviour
-  /* Ô nhập điểm sinh ra tín hiệu: listening | reading | writing1 | writing2 | speaking.
-     Tín hiệu Ý thức/Khác không gắn với môn nào nên để trống. */
+  /* Ô nhập điểm sinh ra tín hiệu: listening | reading | writing1 | writing2 | speaking. Từ 21/09/2026 không còn
+     tín hiệu Ý thức/Khác — SOS chỉ sinh từ Mock Test và chỉ thuộc Học thuật. */
   skill TEXT,
   category TEXT,                      -- hạng mục GỢI Ý, người xác minh vẫn đổi được
 
@@ -1293,8 +1252,7 @@ CREATE TABLE tasks (
    */
   kind TEXT NOT NULL DEFAULT 'branch_ops',
   class_id INTEGER REFERENCES classes(id),
-  track TEXT,                         -- academic | behaviour, chỉ có ở teacher_task
-  topic TEXT,                         -- kỹ năng hoặc nhóm ý thức
+  topic TEXT,                         -- kỹ năng (chỉ có ở teacher_task)
   source_type TEXT,                   -- manual | unit_report | sos_case
   source_unit_report_id INTEGER REFERENCES unit_reports(id),
   source_sos_case_id INTEGER REFERENCES sos_cases(id),

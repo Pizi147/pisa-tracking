@@ -5,7 +5,6 @@ import { invalidate } from '../../lib/api.ts';
 import { Alert, Card, ErrorState, Info, SectionNote, Skeleton, Status, Task } from '../../ui/ui.tsx';
 import { Drawer } from '../../ui/Drawer.tsx';
 import { ClassRoster } from '../students/ClassRoster.tsx';
-import { ClassBehaviourBoard } from './ClassBehaviourBoard.tsx';
 import { ClassIssueBoard } from './ClassIssueBoard.tsx';
 import { QuickReport } from '../cases/QuickReport.tsx';
 import { IntakePanel } from '../students/IntakePanel.tsx';
@@ -75,7 +74,6 @@ export default function ClassOverviewPage() {
   const [reportFor, setReportFor] = useState<number>(0);
   const [infoOpen, setInfoOpen] = useState(false);
   /* HAI DẠNG XEM DANH SÁCH HỌC VIÊN (mục 13.3) — mặc định là Học thuật. */
-  const [view, setView] = useState<'academic' | 'behaviour'>('academic');
   const { data, loading, error, reload } = useApi<Overview>(classId ? `/classes/${classId}/overview` : null);
   /* Danh sách em trong lớp, để ô "+ Case" chọn được học viên ngay tại trang lớp. */
   const roster = useApi<any[]>(classId ? `/classes/${classId}/roster` : null, [classId]);
@@ -213,21 +211,12 @@ export default function ClassOverviewPage() {
       {/*
         Học viên lên TRƯỚC: đó là thứ người ta mở trang lớp để xem.
 
-        HAI DẠNG XEM (mục 13.3) dùng CHUNG một danh sách học viên, chỉ đổi cột: Học thuật hỏi
-        điểm và tiến độ từng môn, Ý thức hỏi số đợt BTVN/chuyên cần/tham gia và hai con số hành
-        động đã làm thật. Tách thành hai trang riêng là cách chắc chắn nhất để hai nơi dần đếm
-        khác nhau.
+        (Trước 21/09/2026 ở đây có nút chuyển sang dạng xem "Ý thức" đếm số đợt case. Mô hình đó đã
+        bỏ; tab Ý thức mới — ba khu vực Vi phạm chưa xử lý · Biện pháp đang chuẩn bị · Lịch sử — là
+        PR-K, dữ liệu đã có ở `GET /classes/:id/y-thuc`.)
       */}
-      <Card title="Học viên" bodyClass="p-3"
-        action={
-          <div className="flex gap-1">
-            <ViewTab active={view === 'academic'} onClick={() => setView('academic')}>Học thuật</ViewTab>
-            <ViewTab active={view === 'behaviour'} onClick={() => setView('behaviour')}>Ý thức</ViewTab>
-          </div>
-        }>
-        {view === 'academic'
-          ? <ClassRoster classId={data.id} onAddStudents={() => setIntake(true)} />
-          : <ClassBehaviourBoard classId={data.id} />}
+      <Card title="Học viên" bodyClass="p-3">
+        <ClassRoster classId={data.id} onAddStudents={() => setIntake(true)} />
       </Card>
 
       <Card title="Phân công giáo viên"
@@ -358,22 +347,6 @@ export default function ClassOverviewPage() {
         onDone={() => { setReportOpen(false); setReportFor(0); reload(); }}
       />
     </div>
-  );
-}
-
-/** Nút chuyển giữa hai dạng xem danh sách học viên — cùng kiểu tab với các trang khác. */
-function ViewTab({ active, onClick, children }: {
-  active: boolean; onClick: () => void; children: React.ReactNode;
-}) {
-  return (
-    <button type="button" onClick={onClick} aria-pressed={active}
-      className={`px-2.5 py-1 rounded-lg text-xs border transition-colors ${
-        active
-          ? 'bg-[color:var(--accent-soft)] text-[color:var(--accent-strong)] border-[color:var(--accent-line)]'
-          : 'text-slate-300 border-transparent hover:bg-white/5'
-      }`}>
-      {children}
-    </button>
   );
 }
 

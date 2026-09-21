@@ -27,7 +27,8 @@ export const STUDENTS: StudentSeed[] = [
     code: 'J01', name: 'Nguyễn Minh An', branch: 'MB', dob: '2008-04-11',
     story: 'Hành trình dài nhất: Foundation (12/2025) → Beginner → Fast Track. Lớp cũ, điểm cũ '
       + 'và một case Reading từ lớp Beginner vẫn còn mở, nên nó theo em sang lớp mới như một '
-      + 'việc bàn giao.',
+      + 'việc bàn giao. Ý thức: bảy vi phạm của bốn giáo viên, trong đó bốn cái chưa ai xử lý (cũ nhất 9 ngày → cảnh báo) '
+      + 'và một Report cho gia đình đang chuẩn bị, được gộp thêm vi phạm sau khi tạo (`yThucSeed.ts`).',
     enrollments: [
       { class: 'MB-FOU 03', from: '2025-12-01', to: '2026-01-25', status: 'completed' },
       { class: 'MB-BE 08', from: '2026-02-16', to: '2026-04-26', status: 'completed' },
@@ -240,7 +241,9 @@ export const STUDENTS: StudentSeed[] = [
       + 'trợ mà chưa xong; một case Reading đã khép lại có kết quả tốt; một case Writing 2 có '
       + 'phương án KHÔNG ăn thua rồi bị thay bằng phương án khác — kết quả thất bại cũ vẫn ở '
       + 'lại trong báo cáo; một case Speaking đã đóng rồi TÁI DIỄN nên có case mới nối vào case '
-      + 'cũ; và hai đợt Ý thức, một đợt đã report cho gia đình, một đợt đã gửi thư cảnh cáo.',
+      + 'cũ. Chuyện Ý thức của em nằm ở phần Vi phạm và Biện pháp (`yThucSeed.ts`): sáu vi phạm đi vào ba biện pháp, một vi '
+      + 'phạm nằm trong hai biện pháp ở hai thời điểm khác nhau, và một vi phạm đã bị đánh dấu không chính xác sau khi biện pháp '
+      + 'đã thực hiện.',
     enrollments: [{ class: 'MB-FT 101', from: '2026-06-01', status: 'active' }],
     cycles: [
       {
@@ -388,7 +391,8 @@ export const STUDENTS: StudentSeed[] = [
           },
           {
             topic: 'speaking', detectedAt: '2026-09-07', sosLevel: null,
-            originKind: 'teacher_report',
+            /* Đặc tả Ý thức §10 tình huống 12 — case học thuật mức Gấp. Từ 21/09/2026 không còn case Ý thức nào mang mức này, nên nó ở đây. */
+            originKind: 'teacher_report', urgency: 'urgent',
             primaryCode: 'student.speaking.lexical',
             linksPreviousOf: 'speaking',
             title: 'Speaking tái diễn: nói dài nhưng lặp từ',
@@ -397,53 +401,6 @@ export const STUDENTS: StudentSeed[] = [
             status: 'open', owner: 'T_TRANG', reportedBy: 'T_TRANG',
           },
 
-          /*
-           * HAI ĐỢT Ý THỨC — một đợt đã report cho gia đình, một đợt đã gửi thư cảnh cáo.
-           * Đây là dữ liệu để bảng "Ý thức" của lớp có số khác không ở cả hai cột hành động.
-           */
-          {
-            topic: 'homework', track: 'behaviour', originKind: 'teacher_report',
-            primaryCode: 'student.behaviour.homework',
-            title: 'Không nộp BTVN Listening ba buổi liền',
-            summary: 'Ba buổi Listening liên tiếp em không nộp bài về nhà, hỏi thì nói để quên.',
-            detectedAt: '2026-08-10', urgency: 'attention',
-            status: 'done', owner: 'T_HA', reportedBy: 'T_HA',
-            disposition: 'action', outcome: 'improved',
-            outcomeNote: 'Sau khi gọi cho gia đình, ba tuần liền em nộp đủ bài.',
-            closedOn: '2026-09-07', closedBy: 'T_HA',
-            reports: [{
-              on: '2026-08-12', by: 'T_TRANG', skill: 'speaking',
-              summary: 'Buổi Speaking hôm nay em cũng không chuẩn bị bài nói ở nhà.',
-            }],
-            plans: [
-              {
-                kind: 'talk_parent', description: 'Gọi cho mẹ em trao đổi về việc không nộp bài',
-                performer: 'T_HA', cycleStart: '2026-08-13', status: 'completed',
-                startedOn: '2026-08-13', completedOn: '2026-08-13',
-              },
-            ],
-          },
-          {
-            topic: 'attendance', track: 'behaviour', originKind: 'teacher_report',
-            primaryCode: 'student.behaviour.attendance',
-            parallel: true,
-            title: 'Nghỉ bốn buổi trong hai tuần',
-            summary: 'Hai tuần đầu tháng 9 em nghỉ bốn buổi, chỉ báo trước một buổi.',
-            detectedAt: '2026-09-01', urgency: 'urgent',
-            status: 'in_progress', owner: 'T_HA', reportedBy: 'T_HA',
-            plans: [
-              {
-                kind: 'talk_parent', description: 'Gọi cho gia đình về bốn buổi nghỉ trong hai tuần',
-                performer: 'T_HA', cycleStart: '2026-09-02', status: 'completed',
-                startedOn: '2026-09-02', completedOn: '2026-09-02',
-              },
-              {
-                kind: 'warning_letter', description: 'Gửi thư cảnh cáo về chuyên cần',
-                performer: 'T_HA', cycleStart: '2026-09-08', status: 'completed',
-                startedOn: '2026-09-08', completedOn: '2026-09-08',
-              },
-            ],
-          },
         ],
       },
     ],
@@ -859,8 +816,8 @@ export const STUDENTS: StudentSeed[] = [
 
   {
     code: 'J11', name: 'Đặng Thu Vân', branch: 'BC', dob: '2009-04-02',
-    story: 'Case Ý thức/Khác: trao đổi với học viên rồi với phụ huynh, có người nhập hộ khác người '
-      + 'thực hiện, và kết thúc với kết quả KHÔNG THAY ĐỔI kèm kết luận rõ ràng.',
+    story: 'Ý thức: ba vi phạm chuyên cần tháng 8 đã được xử lý bằng hai biện pháp (meeting với em, report cho gia đình), '
+      + 'rồi một vi phạm mới ngày 06/09 chưa ai xử lý — cảnh báo 8 ngày hiện ở tab Ý thức của lớp. Học thuật chưa có case.',
     enrollments: [{ class: 'BC-FT 205', from: '2026-06-08', status: 'active' }],
     cycles: [
       {
@@ -872,44 +829,6 @@ export const STUDENTS: StudentSeed[] = [
           { no: 1, kind: 'mock', week: '2026-07-13', status: 'done',
             bands: { listening: 5.5, reading: 5.5, writing1: 5.0, writing2: 5.5, speaking: 5.5 } },
           { no: 2, kind: 'mock', week: '2026-09-07', status: 'planned' },
-        ],
-        cases: [
-          {
-            topic: 'attendance', track: 'behaviour', originKind: 'teacher_report',
-            primaryCode: 'student.behaviour.attendance',
-            title: 'Nghỉ ba buổi liên tiếp không báo',
-            summary: 'Em nghỉ ba buổi tuần đầu tháng 8, không ai báo trước.',
-            detectedAt: '2026-08-10', urgency: 'attention',
-            status: 'done', owner: 'T_QUAN', reportedBy: 'T_QUAN',
-            disposition: 'action', outcome: 'unchanged',
-            outcomeNote: 'Em đi học đều hơn được hai tuần rồi lại nghỉ. Gia đình đang chuyển nhà, '
-              + 'đã thống nhất với phụ huynh là tạm chấp nhận và xem lại sau tháng 10.',
-            closedOn: '2026-09-07', closedBy: 'MGR_BC',
-            plans: [
-              {
-                kind: 'talk_student', description: 'Gặp em cuối buổi, hỏi lý do nghỉ',
-                performer: 'T_QUAN', cycleStart: '2026-08-10', status: 'completed',
-                startedOn: '2026-08-11', completedOn: '2026-08-11', followupDue: '2026-08-17',
-                closedReason: 'done',
-                followups: [{
-                  on: '2026-08-17', outcome: 'unchanged', nextStep: 'continue',
-                  note: 'Em nói nhà đang chuyển, đi lại xa. Tuần này vẫn nghỉ một buổi.',
-                }],
-              },
-              {
-                /* NGƯỜI NHẬP HỘ KHÁC NGƯỜI THỰC HIỆN: văn phòng gọi, giáo viên ghi lại. */
-                kind: 'talk_parent', description: 'Gọi phụ huynh trao đổi về lịch đi học',
-                performer: 'T_QUAN', recordedBy: 'MGR_BC',
-                cycleNo: 2, cycleStart: '2026-08-17', status: 'completed',
-                startedOn: '2026-08-19', completedOn: '2026-08-19', followupDue: '2026-09-07',
-                closedReason: 'done',
-                followups: [{
-                  on: '2026-09-07', outcome: 'unchanged', nextStep: 'complete',
-                  note: 'Đi đều hai tuần rồi lại nghỉ. Phụ huynh xin giữ nguyên lịch tới khi chuyển nhà xong.',
-                }],
-              },
-            ],
-          },
         ],
       },
     ],
@@ -1301,9 +1220,8 @@ export const STUDENTS: StudentSeed[] = [
 
   {
     code: 'S12', name: 'Ngô Hải Yến', branch: 'CP', dob: '2009-07-19',
-    story: 'Tiến bộ đều qua ba lượt MT, học thuật chưa từng có case. Nhưng chuyện BTVN thì có: '
-      + 'một ĐỢT mở 14/9 gộp thêm báo cáo 16/9 và được nâng lên Gấp, rồi một báo cáo 18/9 '
-      + 'nằm ngoài cửa sổ bốn ngày nên mở ĐỢT MỚI — đúng ví dụ ở mục 7.2.',
+    story: 'Tiến bộ đều qua ba lượt MT, học thuật chưa từng có case. Nhưng chuyện BTVN thì có: hai giáo viên khác nhau '
+      + '(cô Reading và cô Listening) cùng ghi vi phạm BTVN của em — hai dòng độc lập, không gộp, không có "đợt" nào.',
     enrollments: [{ class: 'CP-FT 110', from: '2026-04-13', status: 'active' }],
     cycles: [
       {
@@ -1319,74 +1237,6 @@ export const STUDENTS: StudentSeed[] = [
           { no: 3, kind: 'mock', week: '2026-08-17', status: 'done',
             bands: { listening: 6.5, reading: 7.0, writing1: 6.5, writing2: 6.5, speaking: 6.5 } },
           { no: 4, kind: 'mock', week: '2026-09-28', status: 'planned' },
-        ],
-        cases: [
-          {
-            /*
-             * ĐỢT 1 — mở 14/9, cửa sổ gộp tới hết 17/9.
-             *
-             * Cô Reading báo trước; hai ngày sau cô Listening báo cùng chuyện. Báo cáo thứ
-             * hai GỘP vào chính đợt này và làm nó được nâng lên GẤP: hai người khác nhau
-             * cùng thấy một chuyện trong bốn ngày là tín hiệu mạnh hơn nhận định của riêng ai.
-             *
-             * Mỗi báo cáo giữ nguyên người gửi, ngày gửi, môn và lời của chính người đó.
-             */
-            topic: 'homework', track: 'behaviour',
-            primaryCode: 'student.behaviour.homework',
-            detectedAt: '2026-09-14',
-            title: 'Thiếu BTVN nhiều buổi liền',
-            summary: 'Ba buổi Reading liên tiếp em không nộp bài về nhà, hỏi thì nói quên vở.',
-            reportedBy: 'T_NAM', owner: 'T_NAM',
-            urgency: 'attention',
-            status: 'in_progress',
-            reports: [
-              {
-                on: '2026-09-16', by: 'T_DUNG', skill: 'listening',
-                summary: 'Buổi Listening hôm nay em cũng không có bài. Em nói tối qua bận việc nhà.',
-              },
-            ],
-            plans: [
-              {
-                kind: 'talk_student', description: 'Gặp riêng em đầu giờ để hỏi rõ vì sao',
-                performer: 'T_NAM', cycleStart: '2026-09-14', status: 'started',
-                startedOn: '2026-09-15', followupDue: '2026-09-18',
-              },
-            ],
-          },
-          {
-            /*
-             * ĐỢT 2 — báo cáo ngày 18/9 nằm NGOÀI cửa sổ 14–17/9, nên nó mở một đợt mới nối
-             * vào đợt cũ. "Lần thứ mấy" đếm theo ĐỢT, không theo từng báo cáo: đợt 1 có hai
-             * báo cáo nhưng vẫn là lần 1.
-             *
-             * Ngày demo là 14/9 nên đợt này nằm ở TƯƠNG LAI — bộ dựng chặn dữ liệu tương lai,
-             * nên ở đây chỉ mô tả trong câu chuyện của em, không dựng thành bản ghi.
-             */
-            topic: 'participation', track: 'behaviour',
-            primaryCode: 'student.behaviour.participation',
-            detectedAt: '2026-08-24',
-            title: 'Ít tham gia phát biểu trên lớp',
-            summary: 'Em ngồi im cả buổi, gọi mới nói và chỉ trả lời một câu ngắn.',
-            reportedBy: 'T_DUNG', owner: 'T_NAM',
-            urgency: 'attention',
-            status: 'done',
-            disposition: 'monitor',
-            outcome: 'improved',
-            outcomeNote: 'Sau khi đổi chỗ ngồi và gọi phát biểu có chủ đích, em đã nói nhiều hơn.',
-            closedOn: '2026-09-07', closedBy: 'T_NAM',
-            plans: [
-              {
-                kind: 'teaching_adjust', description: 'Đổi chỗ ngồi và gọi phát biểu có chủ đích',
-                performer: 'T_DUNG', cycleStart: '2026-08-24', status: 'completed',
-                startedOn: '2026-08-25', completedOn: '2026-09-05', followupDue: '2026-08-31',
-                closedReason: 'done',
-                followups: [{
-                  on: '2026-09-05', outcome: 'improved', nextStep: 'complete',
-                  note: 'Em đã chủ động trả lời hai ba lượt mỗi buổi.',
-                }],
-              },
-            ],
-          },
         ],
       },
     ],
@@ -1627,15 +1477,15 @@ export const STUDENTS: StudentSeed[] = [
         tests: [],
         cases: [
           {
-            topic: 'participation', track: 'behaviour', originKind: 'teacher_report',
-            primaryCode: 'student.behaviour.participation',
+            topic: 'speaking', originKind: 'teacher_report',
+            primaryCode: 'student.speaking.fluency',
             title: 'Gần như không nói trong giờ Speaking',
             summary: 'Ba buổi liền em chỉ trả lời một câu rồi im.',
             detectedAt: '2026-08-05', urgency: 'attention',
             status: 'in_progress', owner: 'T_YEN', reportedBy: 'T_YEN',
             plans: [
               {
-                kind: 'talk_student', description: 'Gặp riêng em, tìm hiểu vì sao ngại nói',
+                kind: 'teaching_adjust', description: 'Gặp riêng em, tìm hiểu vì sao ngại nói',
                 performer: 'T_YEN', cycleStart: '2026-08-05', status: 'completed',
                 startedOn: '2026-08-06', completedOn: '2026-08-06', followupDue: '2026-08-31',
                 closedReason: 'done',
