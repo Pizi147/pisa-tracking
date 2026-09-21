@@ -1,115 +1,345 @@
-# Đưa bản chính lên mạng — Netlify + Turso (miễn phí)
+# Đưa bản chính lên mạng — hướng dẫn từng bước
 
-Viết 21/09/2026 cho chủ sản phẩm (không cần biết code). Kế hoạch kỹ thuật: `plan.md` mục 24 (PR-Z2).
+Viết 21/09/2026 cho chủ sản phẩm — **không cần biết code**. Làm đúng thứ tự, mỗi bước chỉ làm một việc.
+Kế hoạch kỹ thuật phía sau: `docs/superpowers/plans/2026-09-21-ban-chinh-netlify-turso.md`.
 
-> **Thay bản cũ** hướng dẫn "máy ở trung tâm + Tailscale" — bản chính nay chạy trên Netlify, **không cần máy
-> nào luôn bật**. Các lệnh `init-ban-chinh` · `sao-luu` và tên biến môi trường do PR-Z2 tạo ra; nếu PR-Z2 đổi
-> tên nào thì nó sửa luôn file này.
+> Các lệnh `init-ban-chinh`, `sao-luu`, `them-chi-nhanh` do các PR-Z2 tạo ra. **Chưa merge PR-Z2a/Z2b thì chưa chạy
+> được** — đừng lo nếu thử trước mà báo lỗi.
 
 ---
 
-## 1. Ba mảnh ghép
+## 0. Đọc trước — năm điều cơ bản
+
+### 0.1. Mở PowerShell **đúng thư mục dự án**
+
+1. Mở **File Explorer**, đi tới thư mục dự án:
+   `C:\Users\Admin\Downloads\Github\Pisa students tracking\pisa-tracking`
+2. Bấm vào **thanh địa chỉ** ở trên cùng (chỗ hiện đường dẫn), xoá hết, gõ `powershell`, bấm **Enter**.
+3. Một cửa sổ xanh/đen hiện ra, dòng cuối có chữ `...pisa-tracking>` — đúng thư mục rồi.
+
+### 0.2. Dán và chạy một lệnh
+
+- **Copy** lệnh trong khung xám ở file này → sang PowerShell **bấm chuột phải** (tự dán) → bấm **Enter**.
+- Chờ tới khi dòng cuối lại hiện `...pisa-tracking>` mới dán lệnh tiếp theo.
+- Chữ đỏ = có lỗi → **chụp màn hình gửi session thiết kế**, đừng thử lung tung.
+
+### 0.3. Chỗ nào phải tự thay
+
+Trong lệnh, phần nằm trong dấu `<...>` là **chỗ bạn thay bằng giá trị của mình**, và **xoá luôn cả dấu `<` `>`**.
+
+> Ví dụ: `netlify env:set BAN_CHINH <giá trị>` → gõ thành `netlify env:set BAN_CHINH 1`
+
+Những chỗ nằm trong dấu ngoặc kép `"..."` thì **giữ dấu ngoặc kép**, chỉ thay phần bên trong.
+
+### 0.4. Luôn cập nhật mã mới nhất trước khi làm gì
+
+Mỗi lần bắt đầu, chạy hai lệnh này (lấy bản mới nhất đã merge trên GitHub về máy):
+
+```powershell
+git checkout main
+git pull
+```
+
+Dòng cuối có chữ `Already up to date.` hoặc danh sách file thay đổi là được.
+
+### 0.5. Hai loại "mật khẩu máy" — giữ kín
+
+| Thứ | Là gì | Giữ ở đâu |
+|---|---|---|
+| **Token Turso** | Chìa khoá vào database | Một file ghi chú **trên máy bạn**, không gửi nhóm chat, không dán lên GitHub |
+| **Mật khẩu quản trị** | Mật khẩu bạn đăng nhập web | Trong đầu hoặc trình quản lý mật khẩu. **Không** đưa cho session Claude nào |
+
+Token của database **thử** thì được đưa cho session coding (nó cần để kiểm). Token của database **bản chính** thì
+**chỉ bạn** dùng.
+
+---
+
+## 1. Toàn cảnh — ba dịch vụ, và làm mục nào lúc nào
 
 | Mảnh | Dịch vụ | Chứa gì | Chi phí |
 |---|---|---|---|
-| Giao diện + máy chủ | **Netlify** | Các trang web và phần xử lý (chạy khi có người bấm) | Miễn phí |
-| Dữ liệu | **Turso** | Học viên, điểm, case, vi phạm… — cùng loại database với bản đang chạy | Miễn phí |
+| Giao diện + máy chủ | **Netlify** | Các trang web và phần xử lý (chỉ chạy khi có người bấm) | Miễn phí |
+| Dữ liệu | **Turso** | Học viên, điểm, case, vi phạm… | Miễn phí |
 | Tệp tải lên | **Netlify Blobs** | Ảnh, thư cảnh cáo, bằng chứng | Miễn phí, nằm sẵn trong Netlify |
 
-Mỗi lần merge PR vào `main` → Netlify **tự deploy** bản mới trong vài phút. Không cần làm gì thêm.
+**Bạn deploy thủ công** bằng một lệnh từ thư mục trên máy (mục 8). Merge PR trên GitHub **không** tự làm web thay đổi.
 
-> Hạn mức miễn phí của Netlify và Turso thay đổi theo thời gian — **xem lại trang giá lúc tạo tài khoản**.
-> Với 1–2 chi nhánh, ~300 học viên, ~40 tài khoản thì dư sức.
+> **Vì sao không kéo-thả thư mục lên Netlify?** Kéo-thả chỉ đưa lên các trang giao diện, **bỏ lại phần máy chủ** —
+> web sẽ hiện màn đăng nhập nhưng bấm gì cũng lỗi. Lệnh ở mục 8 đưa lên **cả hai**.
+
+| Khi nào | Làm mục nào | Ai nhắc bạn |
+|---|---|---|
+| Khi session **PR-Z2a** hỏi (lần 1) | Mục 2 — chỉ tạo database **thử** | Session Z2a |
+| Khi session **PR-Z2a** hỏi (lần 2) | Mục 3, 4, 5 | Session Z2a |
+| Khi session **PR-Z2c** hỏi | Mục 2 — tạo database **bản chính** · mục 6 · mục 7 | Session Z2c |
+| Session Z2c xin phép đưa lên chính thức | Mục 8.2 (hoặc để nó chạy) | Session Z2c |
+| Sau khi lên mạng | Mục 9 · mục 10 hằng tuần | — |
 
 ---
 
-## 2. Việc của bạn tối nay (làm trong lúc session Opus chạy Z0–Z5)
+## 2. Tạo database trên Turso
 
-### 2.1. Turso — tạo database
+Làm **hai lần**: lần đầu tên `pisa-thu-nghiem` (thử), lần sau tên `pisa-ban-chinh` (bản chính). Cách làm giống hệt.
 
-1. Vào <https://turso.tech> → đăng ký bằng **GitHub**.
-2. Tạo database tên `pisa-ban-chinh`. Chọn **vùng (location)** mà session coding báo ở bước Z0
-   (nó sẽ chọn vùng gần máy chủ Netlify nhất để trang tải nhanh).
-3. Mở database vừa tạo, lấy **hai thứ** và dán cho session coding (hoặc giữ để bước 2.2):
-   - **Database URL** — dạng `libsql://pisa-ban-chinh-<tên>.turso.io`
-   - **Token** — bấm *Create Token*, chọn quyền đọc + ghi, không hết hạn.
+1. Vào <https://app.turso.tech> → **Sign up / Log in** → chọn **Continue with GitHub** → cho phép.
+2. Lần đầu vào có thể phải đặt tên tổ chức (organization) — gõ `pisa` là được.
+3. Bấm nút **Create Database** (hoặc **New Database**).
+4. Ô **Name**: gõ `pisa-thu-nghiem` (lần sau: `pisa-ban-chinh`).
+5. Ô **Location / Region / Group**: chọn vùng **AWS US East (Ohio)** — thường ghi `aws-us-east-2` hoặc có chữ
+   **Ohio**. Không có Ohio thì chọn **US East (Virginia)** / `aws-us-east-1`.
+   *Lý do:* máy chủ Netlify mặc định đặt ở Ohio; database ở gần thì web nhanh hơn nhiều. **Hai database chọn cùng
+   một vùng.**
+6. Bấm **Create**. Chờ vài giây tới khi database hiện trong danh sách.
+7. Bấm vào tên database vừa tạo. Tìm và **copy hai thứ** vào một file ghi chú trên máy:
 
-> Token như mật khẩu database. **Không** dán vào GitHub, không gửi qua chat nhóm.
+   | Thứ | Trông như thế nào | Ở đâu trên trang |
+   |---|---|---|
+   | **URL** | `libsql://pisa-thu-nghiem-<tên-bạn>.turso.io` | Dòng có chữ **URL** hoặc **Database URL** ở đầu trang |
+   | **Token** | Một chuỗi rất dài, bắt đầu bằng `eyJ...` | Bấm **Create Token** (hoặc **Generate Token**) → quyền **Read & Write** (đọc và ghi) → thời hạn **Never** (không hết hạn) → **Create** → copy **ngay** (token chỉ hiện một lần) |
 
-### 2.2. Netlify — nối với GitHub
+8. Ghi rõ trong file ghi chú token nào của database nào, ví dụ:
+   ```text
+   THỬ   URL:   libsql://pisa-thu-nghiem-xxx.turso.io
+   THỬ   Token: eyJ...
+   CHÍNH URL:   libsql://pisa-ban-chinh-xxx.turso.io
+   CHÍNH Token: eyJ...
+   ```
 
-1. Vào <https://app.netlify.com> → *Add new site* → *Import an existing project* → **GitHub** → chọn repo
-   `Pizi147/pisa-tracking`, nhánh `main`. Cấu hình build để nguyên (đọc từ `netlify.toml`).
-2. *Site configuration → Environment variables* → thêm:
+---
 
-| Tên | Giá trị |
-|---|---|
-| `TURSO_DATABASE_URL` | URL ở bước 2.1 |
-| `TURSO_AUTH_TOKEN` | Token ở bước 2.1 |
-| `BAN_CHINH` | `1` |
+## 3. Cài và đăng nhập Netlify CLI (một lần duy nhất)
 
-3. *Site configuration → Change site name* → đặt tên dễ nhớ, ví dụ `pisa-progress` →
-   địa chỉ thành `https://pisa-progress.netlify.app`.
-4. Bấm *Deploy*. Chờ chữ **Published** xanh.
+"Netlify CLI" là công cụ gõ lệnh để gửi web từ máy bạn lên Netlify.
 
-### 2.3. Khởi tạo dữ liệu rỗng + tài khoản quản trị (một lần duy nhất)
+1. Nếu chưa có tài khoản: vào <https://app.netlify.com> → **Sign up** → **GitHub** hoặc **Email**.
+2. Mở PowerShell đúng thư mục (mục 0.1), chạy:
+   ```powershell
+   npm install -g netlify-cli
+   ```
+   Chờ 1–3 phút. Kiểm lại:
+   ```powershell
+   netlify --version
+   ```
+   Hiện ra một dòng có số phiên bản là được.
+3. Đăng nhập:
+   ```powershell
+   netlify login
+   ```
+   Trình duyệt tự mở trang Netlify → bấm **Authorize**. Quay lại PowerShell thấy chữ `You are now logged into your
+   Netlify account!` là xong.
 
-Chạy **trên máy của bạn**, trong thư mục dự án, PowerShell:
+---
 
-```bash
+## 4. Tạo site Netlify (một lần duy nhất)
+
+Vẫn trong PowerShell đúng thư mục:
+
+```powershell
+netlify sites:create --name pisa-progress
+```
+
+- Nếu nó hỏi chọn **team** → dùng mũi tên lên/xuống chọn team của bạn → **Enter**.
+- Nếu báo tên `pisa-progress` **đã có người dùng** → chạy lại lệnh với tên khác, ví dụ `pisa-progress-qn`.
+  **Ghi lại tên đã dùng** — gọi là `<tên-site>` ở các bước sau.
+
+Rồi nối thư mục này với site vừa tạo:
+
+```powershell
+netlify link --name <tên-site>
+```
+
+Thấy chữ `linked` hoặc `already linked` là được. Địa chỉ web của bạn sẽ là `https://<tên-site>.netlify.app`.
+
+> **Không** bấm nối site với GitHub trên trang Netlify — bạn đã chọn deploy thủ công.
+
+---
+
+## 5. Đặt biến môi trường cho site — dùng database **thử**
+
+"Biến môi trường" là mấy thông tin cài sẵn trên Netlify để web biết nối vào database nào. Chạy **ba lệnh**, thay
+`<...>` bằng URL và token của database **THỬ** (mục 2, bước 8):
+
+```powershell
+netlify env:set TURSO_DATABASE_URL "<URL database THỬ>"
+netlify env:set TURSO_AUTH_TOKEN "<Token database THỬ>"
+netlify env:set BAN_CHINH 1
+```
+
+Mỗi lệnh thấy chữ `Set environment variable` là được. Kiểm lại:
+
+```powershell
+netlify env:list
+```
+
+Phải thấy đủ ba tên `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN`, `BAN_CHINH`.
+
+Xong mục này → báo session Z2a: **"đã xong mục 3-4-5 với database thử"**.
+
+---
+
+## 6. Đổi sang database **bản chính** (khi session Z2c yêu cầu)
+
+Chạy **hai lệnh**, lần này dùng URL và token của database **CHÍNH**:
+
+```powershell
+netlify env:set TURSO_DATABASE_URL "<URL database CHÍNH>"
+netlify env:set TURSO_AUTH_TOKEN "<Token database CHÍNH>"
+```
+
+`BAN_CHINH` giữ nguyên `1`, không cần đặt lại. Từ giờ **mọi** bản deploy (kể cả bản nháp) đều dùng database chính.
+
+---
+
+## 7. Khởi tạo dữ liệu bản chính (một lần duy nhất, khi session Z2c yêu cầu)
+
+Bước này tạo trong database chính: các bảng, các vai trò và quyền, **chi nhánh thật**, và **một tài khoản quản trị**
+của bạn. Chạy trên máy bạn, PowerShell đúng thư mục, sau khi đã làm mục 0.4.
+
+**Bước 7.1 — chuẩn bị (chỉ cần làm một lần sau mỗi lần cập nhật mã):**
+
+```powershell
+npm install
+```
+
+**Bước 7.2 — điền năm giá trị.** Copy khối dưới vào Notepad, thay đủ năm chỗ `<...>`, rồi mới dán sang PowerShell:
+
+```powershell
+$env:TURSO_DATABASE_URL="<URL database CHÍNH>"
+$env:TURSO_AUTH_TOKEN="<Token database CHÍNH>"
+$env:ADMIN_EMAIL="<email quản trị của bạn>"
+$env:ADMIN_PASSWORD="<mật khẩu quản trị mới>"
+$env:CHI_NHANH="<danh sách chi nhánh>"
+npm run init-ban-chinh
+```
+
+| Chỗ thay | Điền gì | Ví dụ |
+|---|---|---|
+| `URL database CHÍNH` | URL ở mục 2 (dòng CHÍNH) | `libsql://pisa-ban-chinh-xxx.turso.io` |
+| `Token database CHÍNH` | Token ở mục 2 (dòng CHÍNH) | `eyJ...` |
+| `email quản trị của bạn` | Email bạn dùng đăng nhập web. **Phải có đuôi `.pisa@gmail.com`** | `dovutuanphong95.pisa@gmail.com` |
+| `mật khẩu quản trị mới` | Mật khẩu **mạnh, mới** — dài ít nhất 10 ký tự, có cả chữ và số. **Không** dùng `pisa2026` | `PisaQN-2026-an-toan` |
+| `danh sách chi nhánh` | Mỗi chi nhánh viết `MÃ=Tên`, cách nhau bằng dấu `;`. Mã viết liền, không dấu | `MB=Monbay;BC=Bãi Cháy` |
+
+**Kết quả đúng:** dòng cuối báo đã tạo tài khoản quản trị và liệt kê các chi nhánh. Lệnh này **tự từ chối** nếu
+database đã có dữ liệu — không bao giờ xoá dữ liệu thật, nên chạy nhầm lần hai cũng không sao.
+
+**Sau khi chạy xong:** đóng cửa sổ PowerShell đó (để mật khẩu và token không còn nằm trong cửa sổ).
+
+> **Tuyệt đối không chạy `npm run seed`** khi đang có biến Turso — lệnh đó dành cho máy dev và **xoá sạch database**.
+> Mã đã chặn việc này, nhưng đừng thử.
+
+**Thêm chi nhánh sau này** (hệ thống chưa có màn tạo chi nhánh):
+
+```powershell
+$env:TURSO_DATABASE_URL="<URL database CHÍNH>"
+$env:TURSO_AUTH_TOKEN="<Token database CHÍNH>"
+npm run them-chi-nhanh -- <MÃ> "<Tên chi nhánh>"
+```
+
+Ví dụ dòng cuối: `npm run them-chi-nhanh -- UB "Uông Bí"`.
+
+---
+
+## 8. Deploy — đưa bản mới lên mạng (mỗi lần có PR mới đã merge)
+
+**8.0 — luôn làm trước:**
+
+```powershell
+git checkout main
 git pull
 npm install
-$env:TURSO_DATABASE_URL="libsql://..."; $env:TURSO_AUTH_TOKEN="..."; $env:ADMIN_EMAIL="dovutuanphong95.pisa@gmail.com"; $env:ADMIN_PASSWORD="mat-khau-manh-cua-ban"; $env:CHI_NHANH="MB=Monbay;BC=Bãi Cháy"; npm run init-ban-chinh
 ```
 
-Lệnh này **từ chối chạy** nếu database đã có dữ liệu — không bao giờ xoá dữ liệu thật.
+**8.1 — gửi bản NHÁP (an toàn, không ảnh hưởng người đang dùng):**
 
-`CHI_NHANH` là danh sách chi nhánh thật, dạng `MÃ=Tên` cách nhau bằng dấu `;`. **Hệ thống chưa có màn tạo chi nhánh**,
-nên chi nhánh được tạo ở bước này. Sau này thêm chi nhánh:
-
-```bash
-$env:TURSO_DATABASE_URL="libsql://..."; $env:TURSO_AUTH_TOKEN="..."; npm run them-chi-nhanh -- UB "Uông Bí"
+```powershell
+netlify deploy --build
 ```
 
-> **Tuyệt đối không chạy `npm run seed` khi đang đặt biến Turso bản chính** — lệnh đó xoá sạch database. Mã đã chặn
-> việc này, nhưng đừng thử.
+Chờ 2–5 phút. Cuối cùng hiện dòng **`Website draft URL: https://<mã>--<tên-site>.netlify.app`**. Mở địa chỉ đó, đăng
+nhập, bấm thử vài trang. Bản nháp dùng **cùng database** với bản chính — dữ liệu bạn nhập ở đây là dữ liệu thật.
 
-### 2.4. Vào thử
+**8.2 — đưa lên CHÍNH THỨC** (chỉ khi bản nháp chạy tốt):
 
-Mở `https://pisa-progress.netlify.app` → đăng nhập bằng email/mật khẩu vừa đặt. Không còn nút
-"Vào nhanh bằng tài khoản demo" — đúng như vậy.
+```powershell
+netlify deploy --build --prod
+```
+
+Dòng cuối hiện **`Website URL: https://<tên-site>.netlify.app`** — giáo viên vào địa chỉ này sẽ thấy bản mới.
+
+**Quay lại bản cũ khi bản mới lỗi** (1 phút, không cần lệnh): vào <https://app.netlify.com> → chọn site → mục
+**Deploys** → bấm vào **bản deploy trước đó** (bản còn chạy tốt) → nút **Publish deploy**.
 
 ---
 
-## 3. Việc đầu tiên sau khi lên mạng
+## 9. Việc đầu tiên sau khi lên mạng
 
-1. Tạo **chi nhánh** → tạo tài khoản **Quản lý** và **Giáo viên** (hoặc để GV tự đăng ký rồi duyệt).
-   Email phải có đuôi `.pisa@gmail.com` theo luật hiện tại.
-2. Tạo **lớp** + phân công GVBM/GVCN → **thêm học viên** (dán từ Excel) → xếp lịch MT.
-3. Gửi địa chỉ web cho giáo viên.
+1. Mở `https://<tên-site>.netlify.app` → đăng nhập bằng email và mật khẩu ở mục 7.
+2. Kiểm: **không** có nút "Vào nhanh bằng tài khoản demo", ngày hiển thị là **hôm nay** — đúng như vậy.
+3. **Quản trị → Tài khoản:** tạo tài khoản **Quản lý** và **Giáo viên** (hoặc để GV tự đăng ký rồi duyệt). Email của
+   mọi người phải có đuôi `.pisa@gmail.com`. Chi nhánh đã có sẵn từ mục 7.
+4. Tạo **lớp** → phân công GVBM từng môn + GVCN → **thêm học viên** (dán từ Excel) → xếp lịch MT.
+5. Gửi địa chỉ web cho giáo viên.
 
-## 4. Sao lưu — mỗi tuần một lần (hoặc hằng ngày nếu muốn)
+---
 
-Turso tự giữ dữ liệu, nhưng vẫn nên có **bản sao của riêng mình**:
+## 10. Sao lưu — mỗi tuần một lần
 
-```bash
-$env:TURSO_DATABASE_URL="libsql://..."; $env:TURSO_AUTH_TOKEN="..."; $env:BACKUP_DIR="G:\My Drive\pisa-sao-luu"; npm run sao-luu
+Turso tự giữ dữ liệu, nhưng vẫn nên có **bản sao của riêng mình** trên Google Drive.
+
+1. Cài **Google Drive for desktop** (<https://www.google.com/drive/download/>) nếu chưa có. Trong ổ Drive (thường là
+   `G:`), tạo thư mục `pisa-sao-luu`.
+2. Mỗi tuần: mở PowerShell đúng thư mục, làm mục 0.4, rồi (copy vào Notepad, thay `<...>`, dán sang):
+
+```powershell
+$env:TURSO_DATABASE_URL="<URL database CHÍNH>"
+$env:TURSO_AUTH_TOKEN="<Token database CHÍNH>"
+$env:BACKUP_DIR="G:\My Drive\pisa-sao-luu"
+npm run sao-luu
 ```
 
-Tạo ra file `pisa-YYYY-MM-DD-HHmm.sqlite` trong thư mục Google Drive, giữ 14 bản gần nhất.
+Kết quả: một file `pisa-NĂM-THÁNG-NGÀY-GIỜPHÚT.sqlite` trong thư mục Drive. Máy tự giữ 14 bản mới nhất.
 
-Muốn sao lưu cả **tệp bằng chứng** (ảnh, thư cảnh cáo) thì thêm hai biến:
-`$env:NETLIFY_SITE_ID="..."` (Netlify → Site configuration → General → **Site ID**) và
-`$env:NETLIFY_AUTH_TOKEN="..."` (Netlify → User settings → Applications → **Personal access tokens**).
-Không có hai biến này thì chỉ sao lưu dữ liệu, không sao lưu tệp. Muốn tự động:
-*Task Scheduler → Create Basic Task → Weekly* chạy đúng lệnh trên.
+**Muốn sao lưu cả ảnh / thư cảnh cáo đã tải lên**, thêm hai dòng này **trước** dòng `npm run sao-luu`:
 
-## 5. Khi có sự cố
+```powershell
+$env:NETLIFY_SITE_ID="<Site ID>"
+$env:NETLIFY_AUTH_TOKEN="<Personal access token>"
+```
+
+| Chỗ thay | Lấy ở đâu |
+|---|---|
+| `Site ID` | <https://app.netlify.com> → chọn site → **Site configuration** → **General** → dòng **Site ID** → copy |
+| `Personal access token` | <https://app.netlify.com> → ảnh đại diện góc trên → **User settings** → **Applications** → **Personal access tokens** → **New access token** → đặt tên `sao-luu` → **Generate** → copy ngay |
+
+---
+
+## 11. Khi có sự cố
 
 | Triệu chứng | Làm gì |
 |---|---|
-| Web báo lỗi sau một lần cập nhật | Netlify → *Deploys* → chọn bản trước → **Publish deploy** (quay lại bản cũ trong 1 phút) |
+| Web báo lỗi sau một lần deploy | Quay lại bản cũ — cuối mục 8 |
+| Lệnh báo chữ đỏ | Chụp màn hình cả cửa sổ PowerShell → gửi session thiết kế |
+| `netlify` báo "not logged in" | Chạy lại `netlify login` (mục 3 bước 3) |
+| `netlify` báo "site not linked" | Chạy lại `netlify link --name <tên-site>` (mục 4) |
 | Trang tải chậm (> 3–5 giây) | Ghi lại trang nào, vai nào → gửi session thiết kế |
-| Tải tệp báo lỗi | Tệp tối đa **4 MB** — nén ảnh hoặc gửi link Google Drive thay tệp |
-| Lỡ tay làm hỏng dữ liệu | Gửi session thiết kế tên file sao lưu gần nhất — có lệnh đưa dữ liệu từ bản sao lưu về Turso |
-| Hết hạn mức miễn phí | Netlify/Turso gửi email báo trước. Chuyển sang gói trả phí là đổi gói, **không** phải chuyển dữ liệu |
+| Tải tệp báo lỗi | Tệp tối đa **4 MB** — nén ảnh, hoặc dán link Google Drive thay cho tệp |
+| Lỡ tay làm hỏng dữ liệu | **Đừng làm gì thêm.** Gửi session thiết kế tên file sao lưu gần nhất ở Drive |
+| Netlify / Turso gửi email "sắp hết hạn mức miễn phí" | Gửi session thiết kế. Nâng gói là đổi gói, **không** phải chuyển dữ liệu |
+
+---
+
+## 12. Bảng tra — mọi tên biến dùng trong file này
+
+| Tên | Đặt ở đâu | Giá trị | Mục |
+|---|---|---|---|
+| `TURSO_DATABASE_URL` | Netlify (lệnh `netlify env:set`) **và** PowerShell khi chạy lệnh init/sao lưu | URL database Turso | 5, 6, 7, 10 |
+| `TURSO_AUTH_TOKEN` | Như trên | Token database Turso | 5, 6, 7, 10 |
+| `BAN_CHINH` | Netlify | `1` | 5 |
+| `ADMIN_EMAIL` | PowerShell, chỉ khi chạy `init-ban-chinh` | Email quản trị, đuôi `.pisa@gmail.com` | 7 |
+| `ADMIN_PASSWORD` | PowerShell, chỉ khi chạy `init-ban-chinh` | Mật khẩu quản trị mới | 7 |
+| `CHI_NHANH` | PowerShell, chỉ khi chạy `init-ban-chinh` | `MÃ=Tên;MÃ=Tên` | 7 |
+| `BACKUP_DIR` | PowerShell, khi sao lưu | Thư mục Drive | 10 |
+| `NETLIFY_SITE_ID` | PowerShell, khi sao lưu (tuỳ chọn) | Site ID | 10 |
+| `NETLIFY_AUTH_TOKEN` | PowerShell, khi sao lưu (tuỳ chọn) | Personal access token | 10 |
+| `VITE_BAN_CHINH` | Đã có sẵn trong file `netlify.toml` — **bạn không cần đặt** | `1` | — |
