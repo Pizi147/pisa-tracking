@@ -22,7 +22,11 @@ import { suggestCaseOwner } from './owner.ts';
  * lo, trong khi chưa ai đụng vào. Bảng tổng hợp vì thế đếm được rất nhiều case và rất nhiều
  * phương án, mà không phản ánh một việc thật nào.
  *
- * Ba điều hàm trong file này KHÔNG bao giờ làm:
+ * RULEBOOK v3 (21/09/2026 tối) ĐỔI LUẬT NÀY CHO MOCK TEST FAST TRACK: điểm dưới kỳ vọng nay TỰ TẠO (hoặc tự gắn) case cho từng kỹ năng trượt và điền
+ * sẵn phương án chờ GVBM xác nhận — xem `cases/sos.ts` (`raiseSignalsForResult`) và `cases/sosAuto.ts`. Tín hiệu ở đó nối NGAY vào case (`linked`,
+ * hạn 3 ngày giữ nguyên) và là dây nối để thu hồi khi sửa điểm. Lớp NORMAL giữ nguyên mô hình mô tả dưới đây (Q-V3-1).
+ *
+ * Ba điều hàm trong file này KHÔNG bao giờ làm (với lớp Normal; với Mock FT thì việc tạo case nằm ở `sos.ts`, không ở đây):
  *
  *   · không đoán nguyên nhân — tên, mô tả và phân loại là việc của người dạy;
  *   · không tạo phương án — kể cả khi nhập từng môn, chấm lại hay chạy lại bộ demo;

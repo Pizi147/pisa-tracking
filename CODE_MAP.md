@@ -81,7 +81,7 @@ ba nơi.
 | **Fast Track** | Tuần Mock Test, điểm band, mức SOS, dự kiến thi | `server/src/fasttrack/` | `web/src/modules/fasttrack/` |
 | **Normal** | FOU/BE/ELE, bốn môn L/R/W/S, điểm đạt/tổng điểm, chuyển tiếp lớp | `server/src/normal/` | `web/src/modules/normal/` |
 | **Case** | Vấn đề **học thuật** của em, phương án, phê duyệt, kết quả | `server/src/cases/` | `web/src/modules/cases/` |
-| **Ý thức** *(máy chủ xong · giao diện ở PR-K)* | Em vi phạm gì, đã xử lý bằng biện pháp nào, bằng chứng đâu | `server/src/yThuc/` | `web/src/modules/yThuc/` *(chưa có)* |
+| **Ý thức** *(máy chủ xong · giao diện ở PR-K)* | Em vi phạm gì, đã xử lý bằng biện pháp nào, bằng chứng đâu; **Phối hợp SOS** của GVCN sau Mock có SOS (`yThuc/phoiHop.ts`, PR-T) | `server/src/yThuc/` | `web/src/modules/yThuc/` *(chưa có)* |
 | **Tổng quan và công việc** | Ai phải làm gì, cả chi nhánh đang thế nào | `server/src/worklist/` | `web/src/modules/worklist/` |
 | **Nền tảng** | Tài khoản, quyền, tuần, danh mục, nhật ký thay đổi | `server/src/platform/` | `web/src/modules/platform/` |
 | **Dùng chung** | Badge, nút, panel, bảng, chọn tuần | — | `web/src/ui/` |
