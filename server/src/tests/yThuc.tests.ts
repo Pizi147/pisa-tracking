@@ -447,6 +447,15 @@ export async function runYThucTests(t: YThucTestKit) {
     assert(one("SELECT COUNT(*) n FROM audit_logs WHERE action = 'violation.record' AND entity_id = ?", vid(a)) === 1, 'Thử lại không ghi audit thêm');
   });
 
+  check('PR-J · V07 (rà soát) Khoá gửi lại chỉ phát lại cho ĐÚNG người, ĐÚNG học viên — dùng khoá của bản ghi khác thì bị từ chối, không lộ vi phạm của em khác', () => {
+    const a = makeStudent('V07 khóa A'), b = makeStudent('V07 khóa B');
+    const first = record(gvbm, a.id, { idempotencyKey: 'pj-v07-scope' });
+    assertThrows(() => record(gvbm, b.id, { idempotencyKey: 'pj-v07-scope' }), /khoá|đã dùng/i, 'Cùng khoá cho học viên khác phải bị từ chối');
+    assertThrows(() => record(gvbm2, a.id, { idempotencyKey: 'pj-v07-scope' }), /khoá|đã dùng/i, 'Người khác dùng khoá của người ghi phải bị từ chối');
+    assert(one('SELECT COUNT(*) n FROM violations WHERE student_id = ?', b.id) === 0, 'Bị từ chối mà vẫn ghi vi phạm cho em B');
+    assert(vid(record(gvbm, a.id, { idempotencyKey: 'pj-v07-scope' })) === vid(first), 'Người ghi gửi lại đúng khoá cho đúng em vẫn phải nhận lại bản cũ');
+  });
+
   check('PR-J · V08 Ghi vi phạm KHÔNG sinh biện pháp, case, tín hiệu, việc hay thông báo — và không đặt hạn nào', () => {
     const st = makeStudent('V08');
     const count = () => ['discipline_measures', 'measure_violations', 'sos_cases', 'case_signals', 'tasks', 'notifications', 'case_interventions']
@@ -572,6 +581,15 @@ export async function runYThucTests(t: YThucTestKit) {
     assertThrows(() => meas.deleteMeasure(gvbm, m.id), /quyền|chủ nhiệm/, 'GVBM xóa được biện pháp');
     assertThrows(() => meas.confirmMeasure(gvbm, m.id, { performedOn: TODAY, performerName: 'x', note: 'nội dung' } as any), /quyền|chủ nhiệm/, 'GVBM xác nhận được biện pháp');
     assertThrows(() => meas.addViolations(gvbm, m.id, violations(st.id, 1)), /quyền|chủ nhiệm/, 'GVBM thêm vi phạm vào biện pháp');
+  });
+
+  check('PR-J · B01 (rà soát) Khoá gửi lại của biện pháp cũng chỉ phát lại đúng người, đúng học viên', () => {
+    const a = makeStudent('B01 khóa A'), b = makeStudent('B01 khóa B');
+    const va = record(gvbm, a.id), vb = record(gvbm, b.id);
+    const first = meas.createMeasure(gvcn, { studentId: a.id, kind: 'talk_short', violationIds: [vid(va)], idempotencyKey: 'pj-b01-scope' });
+    assertThrows(() => meas.createMeasure(gvcn, { studentId: b.id, kind: 'talk_short', violationIds: [vid(vb)], idempotencyKey: 'pj-b01-scope' }), /khoá|đã dùng/i, 'Cùng khoá cho học viên khác phải bị từ chối');
+    assertThrows(() => meas.createMeasure(P.mbManager, { studentId: a.id, kind: 'talk_short', violationIds: [vid(va)], idempotencyKey: 'pj-b01-scope' }), /khoá|đã dùng/i, 'Người khác dùng khoá phải bị từ chối');
+    assert(meas.createMeasure(gvcn, { studentId: a.id, kind: 'talk_short', violationIds: [vid(va)], idempotencyKey: 'pj-b01-scope' }).id === first.id, 'Đúng người, đúng em gửi lại thì nhận lại bản cũ');
   });
 
   check('PR-J · B02 Một biện pháp có ÍT NHẤT MỘT vi phạm và của ĐÚNG MỘT học viên; vi phạm đã hủy không gom được', () => {
@@ -1355,10 +1373,12 @@ export async function runYThucTests(t: YThucTestKit) {
   const LEGACY = 'behav' + 'iour'; // giá trị cũ của cột track — chỉ để dựng dữ liệu cũ trong phép kiểm
 
   /** Dựng một database THỜI CASE Ý THỨC: schema hiện tại + các cột/bảng của mô hình đã bỏ + dữ liệu cũ. */
-  const legacyDatabase = () => {
-    const m = new SqliteDb(':memory:');
-    m.exec(fsMod.readFileSync(pathMod.join(REPO, 'server/src/schema.sql'), 'utf8'));
-    m.exec(`
+  const legacyDatabase = (opts: { file?: string } = {}) => {
+    /* `file`: dựng trên schema THẬT của thời trước PR-J (tệp chụp ở `scripts/fixtures/`, ngoài server/src để lệnh quét mô hình cũ không bắt nó), không phải schema mới cộng ALTER. */
+    const m = new SqliteDb(opts.file ?? ':memory:');
+    if (opts.file) m.exec(fsMod.readFileSync(pathMod.join(REPO, 'scripts/fixtures/schema-truoc-pr-j.sql'), 'utf8'));
+    else m.exec(fsMod.readFileSync(pathMod.join(REPO, 'server/src/schema.sql'), 'utf8'));
+    if (!opts.file) m.exec(`
       ALTER TABLE sos_cases ADD COLUMN track TEXT NOT NULL DEFAULT 'academic';
       ALTER TABLE sos_cases ADD COLUMN episode_no INTEGER NOT NULL DEFAULT 1;
       ALTER TABLE sos_cases ADD COLUMN merge_until TEXT;
@@ -1398,7 +1418,13 @@ export async function runYThucTests(t: YThucTestKit) {
       q(`INSERT INTO case_interventions (case_id, kind, description, status, completed_date, performer_name, recorded_by, created_at) VALUES (?,?,?,?,?,?,?,?)`, caseId, kind, note, status, done, kind === 'talk_student' ? 'Cô Hà' : null, 2, NOW);
     iv(A, 'talk_student', 'completed', '2026-09-02', 'Gặp em cuối buổi');
     iv(A, 'talk_parent', 'completed', '2026-09-03', 'Gọi cho mẹ');
-    iv(A, 'warning_letter', 'completed', '2026-09-04', 'Gửi thư cảnh cáo');
+    const letter = iv(A, 'warning_letter', 'completed', '2026-09-04', 'Gửi thư cảnh cáo');
+    /* Tệp bằng chứng đã đính ở PR-N: thư cảnh cáo cũ có tệp, và cả case cũng có một liên kết. */
+    const att = (ownerType: string, ownerId: number, name: string) =>
+      q(`INSERT INTO attachments (owner_type, owner_id, kind, url, display_name, uploaded_by, created_at) VALUES (?,?,'link','https://drive.example/x',?,2,?)`, ownerType, ownerId, name, NOW);
+    att('case_intervention', letter, 'Thư cảnh cáo cũ.pdf');
+    att('sos_case', A, 'Biên bản của case.pdf');
+    att('sos_case', B, 'Của case không có vi phạm nào.pdf');
     iv(A, 'meeting_cx', 'planned', null, 'Hẹn CX gặp phụ huynh');
     iv(A, 'talk_parent', 'cancelled', null, 'Đã huỷ');
     const dIv = iv(D, 'tutor', 'started', null, 'Học tutor Reading');
@@ -1407,7 +1433,7 @@ export async function runYThucTests(t: YThucTestKit) {
     q(`INSERT INTO case_signals (student_id, cycle_id, attempt_id, class_id, track, skill, category, detected_on, raised_on, verify_due, status, dedup_key, created_at)
        VALUES (2, 2, NULL, 1, ?, NULL, ?, '2026-09-01', '2026-09-01', '2026-09-03', 'pending', 'k2', ?)`, LEGACY, LEGACY, NOW);
     q(`INSERT INTO tasks (code, task_type, kind, class_id, track, topic, title, progress, created_at) VALUES ('CV1','in_period','teacher_task',1,?, 'homework','Giao việc nhắc BTVN','not_started',?)`, LEGACY, NOW);
-    return { m, ids: { A, B, C, D, dIv } };
+    return { m, ids: { A, B, C, D, dIv, letter } };
   };
 
   check('PR-J · J9 Nâng cấp database cũ: báo cáo của case Ý thức thành vi phạm (Tham gia trên lớp → Thái độ / hành vi), việc trao đổi thành biện pháp, case cũ được gỡ sạch, case học thuật còn nguyên', () => {
@@ -1441,6 +1467,13 @@ export async function runYThucTests(t: YThucTestKit) {
     assert(all('SELECT id FROM sos_cases WHERE id IN (?,?,?)', I.A, I.B, I.C).length === 0, 'Case Ý thức cũ phải được gỡ hết');
     assert(all('SELECT id FROM sos_cases WHERE id = ?', I.D).length === 1 && all('SELECT id FROM case_interventions WHERE id = ?', I.dIv).length === 1, 'Case học thuật và phương án của nó còn nguyên');
     assert(all('SELECT * FROM case_interventions WHERE case_id IN (?,?,?)', I.A, I.B, I.C).length === 0, 'Phương án của case Ý thức cũ đã chuyển thành biện pháp nên được gỡ');
+    /* Tệp bằng chứng KHÔNG được mất theo: tệp của phương án đi theo biện pháp nó thành; tệp của case đi theo biện pháp đầu tiên của case. */
+    const letterMeasure = all("SELECT id FROM discipline_measures WHERE custom_name = 'Thư cảnh cáo (dữ liệu cũ)'")[0];
+    const firstMeasure = all('SELECT MIN(id) id FROM discipline_measures WHERE student_id = 1')[0];
+    const keep = all("SELECT owner_type, owner_id, display_name FROM attachments WHERE owner_type = 'discipline_measure' ORDER BY id");
+    assert(keep.some((a) => a.display_name === 'Thư cảnh cáo cũ.pdf' && a.owner_id === letterMeasure.id), 'Tệp của thư cảnh cáo cũ phải chuyển sang đúng biện pháp "Thư cảnh cáo (dữ liệu cũ)"');
+    assert(keep.some((a) => a.display_name === 'Biên bản của case.pdf' && a.owner_id === firstMeasure.id), 'Tệp của case cũ phải chuyển sang biện pháp đầu tiên của case');
+    assert(!all("SELECT * FROM attachments WHERE owner_type IN ('sos_case','case_intervention') AND owner_id IN (?,?,?,?)", I.A, I.B, I.C, I.letter).length, 'Không còn tệp nào trỏ vào case hoặc phương án đã gỡ');
     assert(all('SELECT * FROM case_signals').length === 1 && all('SELECT skill FROM case_signals')[0].skill === 'reading', 'Tín hiệu Ý thức cũ gỡ, tín hiệu học thuật còn');
     assert(all('SELECT topic FROM tasks WHERE code = \'CV1\'')[0].topic === null, 'Việc giao GV theo nhóm ý thức: bỏ chủ đề (không còn là kỹ năng)');
 
@@ -1482,6 +1515,35 @@ export async function runYThucTests(t: YThucTestKit) {
     const second = migrateMod.migrate();
     assert(!second.applied.some((x) => /Ý thức|vi phạm|biện pháp/.test(x)), `Chạy lần hai không được áp lại bước Ý thức: ${second.applied.join(' | ')}`);
   });
+
+  const osMod = await import('node:os');
+  const cp = await import('node:child_process');
+
+  check('PR-J · J9 Nâng cấp một database THẬT của thời trước PR-J (schema gốc + dữ liệu cũ) bằng chính lệnh `migrate`: có sao lưu, tệp bằng chứng đi theo, chạy lần hai không đổi gì', () => {
+    const dir = fsMod.mkdtempSync(pathMod.join(osMod.tmpdir(), 'pj-legacy-'));
+    const file = pathMod.join(dir, 'legacy.sqlite');
+    const { m } = legacyDatabase({ file });
+    m.pragma('journal_mode = DELETE');
+    m.close();
+    const run = () => cp.execFileSync(process.execPath, [pathMod.join(REPO, 'dist-server/server/src/migrate/run.js')], {
+      env: { ...process.env, PISA_DB: file }, encoding: 'utf8',
+    }) as string;
+    const first = run();
+    assert(/đã sao lưu sang/.test(first) && fsMod.existsSync(file + '.truoc-pr-j.bak'), 'Phải sao lưu database TRƯỚC khi xoá mô hình cũ');
+    assert(/Chuyển mô hình Case Ý thức/.test(first), `Lần một phải chuyển mô hình: ${first.slice(-400)}`);
+    const after = new SqliteDb(file, { readonly: true });
+    const n = (sql: string) => (after.prepare(sql).get() as any).n as number;
+    assert(n('SELECT COUNT(*) n FROM violations') === 3 && n('SELECT COUNT(*) n FROM discipline_measures') === 4, 'Phải ra 3 vi phạm và 4 biện pháp từ dữ liệu cũ');
+    assert(n("SELECT COUNT(*) n FROM attachments WHERE owner_type = 'discipline_measure'") === 2, 'Hai tệp bằng chứng phải đi theo biện pháp');
+    assert(!(after.prepare('PRAGMA table_info(sos_cases)').all() as any[]).some((c) => c.name === 'track'), 'Cột track phải được gỡ');
+    assert(n('SELECT COUNT(*) n FROM sos_cases') === 1, 'Chỉ còn lại case học thuật');
+    assert((after.pragma('foreign_key_check') as unknown[]).length === 0, 'Không được để lại khoá ngoại treo');
+    after.close();
+    const second = run();
+    assert(!/Chuyển mô hình|Thêm bốn bảng|sao lưu/.test(second), `Lần hai không được làm lại bước Ý thức: ${second.slice(-300)}`);
+    fsMod.rmSync(dir, { recursive: true, force: true });
+  });
+
   // ================================================================== J9 — mô hình cũ ĐÃ BIẾN MẤT khỏi mã, không chỉ khỏi giao diện
 
   console.log('\nPR-J · 13. Mô hình Case Ý thức đã gỡ hẳn khỏi mã nguồn và tài liệu (J9, J11)');

@@ -11,7 +11,7 @@ import { demoToday } from '../demoConfig.ts';
 import { writeAudit } from '../platform/audit.ts';
 import { currentCycle } from '../fasttrack/cycles.ts';
 import {
-  EDIT_VIOLATION_MESSAGE, activeClassOf, canEditViolation, requireRecordViolation, requireViewClass, requireViewStudent,
+  EDIT_VIOLATION_MESSAGE, KEY_TAKEN_MESSAGE, activeClassOf, canEditViolation, requireRecordViolation, requireViewClass, requireViewStudent,
 } from './access.ts';
 
 /**
@@ -194,8 +194,12 @@ export function recordViolation(p: Principal, input: {
   const key = input.idempotencyKey?.trim() || null;
   if (key) {
     /* V07: gửi lại cùng một request (bấm hai lần, thử lại sau lỗi mạng) không tạo dòng thứ hai và không ghi audit thêm. */
-    const seen = db().prepare('SELECT id FROM violations WHERE idempotency_key = ?').get(key) as any;
-    if (seen) return { violation: loadViolation(seen.id), similar: [] };
+    const seen = db().prepare('SELECT id, student_id, reported_by FROM violations WHERE idempotency_key = ?').get(key) as any;
+    if (seen) {
+      /* Chỉ PHÁT LẠI cho đúng người ghi và đúng học viên. Khoá của bản ghi khác mà trả về là lộ vi phạm của em ngoài phạm vi. */
+      if (seen.student_id !== input.studentId || seen.reported_by !== p.userId) throw badRequest(KEY_TAKEN_MESSAGE);
+      return { violation: loadViolation(seen.id), similar: [] };
+    }
   }
 
   const category = checkCategory(input.category);

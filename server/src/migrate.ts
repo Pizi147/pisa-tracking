@@ -2605,6 +2605,12 @@ export function migrateYThuc(conn: any, applied: string[]) {
  *
  * Chạy lặp lại là no-op: chỉ làm khi cột `sos_cases.track` còn đó.
  */
+/** Database này còn mô hình Case Ý thức cũ (cột `sos_cases.track`) — bước nâng cấp sắp XOÁ dữ liệu cũ, nên nơi gọi nên sao lưu trước. */
+export function hasLegacyDisciplineModel(conn: any): boolean {
+  const has = !!conn.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name = 'sos_cases'").get();
+  return has && (conn.prepare('PRAGMA table_info(sos_cases)').all() as any[]).some((c: any) => c.name === 'track');
+}
+
 export function migrateLegacyDisciplineCases(conn: any, applied: string[]) {
   const tableCols = (t: string): string[] => (conn.prepare(`PRAGMA table_info(${t})`).all() as any[]).map((c: any) => c.name);
   const hasTable = (t: string) => !!conn.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name = ?").get(t);
@@ -2636,6 +2642,11 @@ export function migrateLegacyDisciplineCases(conn: any, applied: string[]) {
      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
   );
   const link = conn.prepare('INSERT OR IGNORE INTO measure_violations (measure_id, violation_id, added_by, added_at) VALUES (?,?,?,?)');
+  /* Tệp bằng chứng (PR-N) KHÔNG được mất theo case cũ: chuyển chủ sang biện pháp / vi phạm thay thế. */
+  const moveAttachments = hasTable('attachments')
+    ? conn.prepare('UPDATE attachments SET owner_type = ?, owner_id = ? WHERE owner_type = ? AND owner_id = ?')
+    : null;
+  let attachmentsKept = 0;
 
   for (const c of legacy) {
     if (!c.student_id) continue;
@@ -2666,6 +2677,7 @@ export function migrateLegacyDisciplineCases(conn: any, applied: string[]) {
     }
 
     const ivs = conn.prepare(`SELECT * FROM case_interventions WHERE case_id = ? AND status != 'cancelled' ORDER BY id`).all(c.id) as any[];
+    let firstMeasureId: number | null = null;
     for (const iv of ivs) {
       const mapped = measureKindOf[iv.kind];
       const kind = mapped ?? 'other';
@@ -2690,6 +2702,14 @@ export function migrateLegacyDisciplineCases(conn: any, applied: string[]) {
       const measureId = Number(info.lastInsertRowid);
       for (const v of violationIds) link.run(measureId, v, creator, iv.created_at ?? nowIso());
       measuresMade += 1;
+      firstMeasureId ??= measureId;
+      if (moveAttachments) attachmentsKept += moveAttachments.run('discipline_measure', measureId, 'case_intervention', iv.id).changes;
+    }
+    /* Tệp của chính case: đi theo biện pháp đầu tiên; không có biện pháp nào thì theo vi phạm đầu tiên. */
+    if (moveAttachments) {
+      attachmentsKept += firstMeasureId
+        ? moveAttachments.run('discipline_measure', firstMeasureId, 'sos_case', c.id).changes
+        : moveAttachments.run('violation', violationIds[0], 'sos_case', c.id).changes;
     }
   }
 
@@ -2741,7 +2761,7 @@ export function migrateLegacyDisciplineCases(conn: any, applied: string[]) {
   conn.exec('DROP TABLE IF EXISTS case_reports');
 
   applied.push(
-    `Chuyển mô hình Case Ý thức sang Vi phạm và Biện pháp xử lý: ${violationsMade} vi phạm và ${measuresMade} biện pháp được giữ lại từ ${removed} case Ý thức cũ`
+    `Chuyển mô hình Case Ý thức sang Vi phạm và Biện pháp xử lý: ${violationsMade} vi phạm và ${measuresMade} biện pháp được giữ lại từ ${removed} case Ý thức cũ (${attachmentsKept} tệp/liên kết bằng chứng đi theo)`
     + `, ${signalsGone} tín hiệu Ý thức cũ được gỡ; đã bỏ các cột track/episode_no/merge_until/urgency_raised_at và bảng case_reports`,
   );
 }

@@ -61,6 +61,9 @@ export function canEditViolation(p: Principal, v: { student_id: number; reported
   return canManageDiscipline(p, v.student_id);
 }
 
+/** Khoá gửi lại (idempotency) đã gắn với bản ghi của người khác hoặc của học viên khác — không phát lại, để khỏi lộ dữ liệu ngoài phạm vi. */
+export const KEY_TAKEN_MESSAGE = 'Khoá gửi lại này đã được dùng cho một bản ghi khác — hãy tạo một lần gửi mới.';
+
 export const EDIT_VIOLATION_MESSAGE =
   'Bạn không có quyền sửa vi phạm này — chỉ người ghi (với vi phạm của chính mình), giáo viên chủ nhiệm của lớp '
   + 'hoặc Quản lý trong phạm vi mới sửa được.';

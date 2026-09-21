@@ -10,7 +10,7 @@ import { demoToday } from '../demoConfig.ts';
 import { notify, writeAudit } from '../platform/audit.ts';
 import { purgeAttachmentsOf } from '../platform/attachments.ts';
 import { currentCycle } from '../fasttrack/cycles.ts';
-import { activeClassOf, canManageDiscipline, requireManageDiscipline, requireViewClass, requireViewStudent } from './access.ts';
+import { KEY_TAKEN_MESSAGE, activeClassOf, canManageDiscipline, requireManageDiscipline, requireViewClass, requireViewStudent } from './access.ts';
 import { noteMeasureChange, violationsByIds, type ViolationView } from './violations.ts';
 
 /**
@@ -247,8 +247,11 @@ export function createMeasure(p: Principal, input: {
 
   const key = input.idempotencyKey?.trim() || null;
   if (key) {
-    const seen = db().prepare('SELECT id FROM discipline_measures WHERE idempotency_key = ?').get(key) as any;
-    if (seen) return buildDetail(p, loadRow(seen.id));
+    const seen = db().prepare('SELECT id, student_id, created_by FROM discipline_measures WHERE idempotency_key = ?').get(key) as any;
+    if (seen) {
+      if (seen.student_id !== input.studentId || seen.created_by !== p.userId) throw badRequest(KEY_TAKEN_MESSAGE);
+      return buildDetail(p, loadRow(seen.id));
+    }
   }
 
   const kind = checkKind(input.kind);
