@@ -8509,11 +8509,11 @@ check('PR-E · Ngày nghiệp vụ khác ngày ghi nhận thì hiện CẢ HAI (
 const metricsSvc = await import('../worklist/metrics.ts');
 const branchIdOf = (code: string) => (conn.prepare('SELECT id FROM branches WHERE code = ?').get(code) as any).id as number;
 
-check('PR-F · Sổ chỉ số: đúng mười một chỉ số, mỗi chỉ số đủ tám trường (thiếu một trường thì không được lên dashboard)', () => {
+check('PR-F · Sổ chỉ số: đúng mười hai chỉ số (PR-N thêm pa-cho-duyet), mỗi chỉ số đủ tám trường (thiếu một trường thì không được lên dashboard)', () => {
   const list = domain.METRICS as readonly any[];
-  assert(list.length === 11, `Phải có mười một chỉ số, đang có ${list.length}`);
+  assert(list.length === 12, `Phải có mười hai chỉ số (mười một của PR-F + pa-cho-duyet của PR-N), đang có ${list.length}`);
   const expected = ['hv-sos-hien-tai', 'hv-duoi-ky-vong-mon', 'hv-co-case-mo', 'case-mo', 'tin-hieu-cho-xac-minh',
-    'case-thieu-pa', 'pa-can-cap-nhat', 'pa-co-ket-qua', 'ty-le-co-cai-thien', 'dung-han-cap-nhat', 'do-phu-danh-gia'];
+    'case-thieu-pa', 'pa-can-cap-nhat', 'pa-cho-duyet', 'pa-co-ket-qua', 'ty-le-co-cai-thien', 'dung-han-cap-nhat', 'do-phu-danh-gia'];
   for (const id of expected) assert(list.some((m) => m.id === id), `Thiếu chỉ số ${id}`);
   assert(new Set(list.map((m) => m.id)).size === list.length, 'Có hai chỉ số trùng mã');
   const fields = ['id', 'ten', 'cauHoi', 'donVi', 'tapDuDieuKien', 'thoiGian', 'khuTrung', 'drilldown'];
@@ -8834,8 +8834,20 @@ check('PR-F · Drill-down: tài khoản NGOÀI phạm vi bị từ chối, khôn
     'Phạm vi rỗng phải trả rỗng, KHÔNG được hiểu thành toàn hệ thống');
   assert(none.note === 'Không có dữ liệu trong phạm vi', `Ghi chú đang là "${none.note}"`);
   assertThrows(() => metricsSvc.metricSet(P.admin, 'khong-co-chi-so', {}), /Không tìm thấy chỉ số/, 'Mã chỉ số lạ');
-  assertThrows(() => metricsSvc.metricSet(P.admin, 'dung-han-cap-nhat', {}), /chưa có danh sách/,
-    'Chỉ số đã khai báo nhưng chưa có hàm tập ID phải nói thẳng là chưa có, không trả số bịa');
+  /*
+   * PR-N đã viết nốt bốn hàm từng trả 501, nên KHÔNG còn chỉ số nào khai báo mà thiếu hàm: mọi chỉ số trong sổ đều phải
+   * trả một tập ID, và phạm vi rỗng trả rỗng ở TẤT CẢ (không chỉ ở một chỉ số như phép kiểm cũ). Cơ chế 501 vẫn còn cho
+   * chỉ số khai báo sau này, nhưng không còn chỉ số nào để kiểm nó.
+   */
+  for (const m of domain.METRICS as readonly any[]) {
+    const r = metricsSvc.metricSet(P.admin, m.id, {}) as any;
+    assert(Array.isArray(r.ids) && r.n === r.ids.length, `${m.id}: số phải là độ dài của tập ID`);
+    const empty = metricsSvc.metricSet(nobody, m.id, {}) as any;
+    assert(empty.n === 0 && empty.ids.length === 0 && empty.empty === true, `${m.id}: phạm vi rỗng phải trả rỗng`);
+  }
+  assert(metricsSvc.LISTED_METRICS.length === (domain.METRICS as readonly any[]).length
+    && (domain.METRICS as readonly any[]).every((m) => metricsSvc.LISTED_METRICS.includes(m.id)),
+  'Có chỉ số khai báo trong sổ mà chưa có hàm tập ID (hoặc ngược lại)');
 });
 
 // ==================================================================== PR-G (chặng 3)
@@ -9334,9 +9346,609 @@ check('C02 (đã chốt 20/09): GVCN xử lý case học thuật ĐÚNG môn mì
   assert(can(P.coreTeacher, PERMISSIONS.SOS_EDIT, { classId: mbClass }), 'Case Ý thức (không có kỹ năng) vẫn phải là của GVCN');
 });
 
+
+
+// ==================================================================== PR-N (nền số liệu và kho bằng chứng)
+
+/*
+ * BỐN CHỈ SỐ TỪNG TRẢ 501 (hv-sos-hien-tai · hv-duoi-ky-vong-mon · dung-han-cap-nhat · do-phu-danh-gia).
+ *
+ * Mỗi phép kiểm dưới đây so hàm tập ID với MỘT SỰ THẬT ĐỘC LẬP dựng bằng SQL + bộ máy chấm — không đi qua chính hàm
+ * đang kiểm — rồi dựng vài học viên riêng để ép đúng những chỗ dễ sai (đợt mới nhất chứ không MAX lịch sử, mẫu số,
+ * phạm vi). Đúng luật hợp đồng số liệu: số là `ids.length`, không có đường đếm riêng.
+ */
+const nowIsoPrn = () => new Date().toISOString();
+const prnClass = classId('MB-FT 101');
+const prnMake = (name: string, target = 7): { id: number; cycleId: number } => {
+  intake.commitIntake(P.admin, { classId: prnClass, rows: [{ fullName: name, target }], dateFormat: 'iso', idempotencyKey: 'prn-' + name });
+  const st = conn.prepare('SELECT id FROM students WHERE full_name = ?').get(name) as any;
+  const cy = conn.prepare("SELECT id FROM learning_cycles WHERE student_id = ? AND status = 'active'").get(st.id) as any;
+  assert(st && cy, `Không dựng được học viên thử "${name}"`);
+  return { id: st.id, cycleId: cy.id };
+};
+const prnRaw = (skill: 'listening' | 'reading', band: number): number => {
+  for (let r = 0; r <= 40; r += 1) if (scoring.bandFromRaw(skill, r) === band) return r;
+  throw new Error(`Không có số câu đúng cho band ${band}`);
+};
+const prnAttempt = (st: { id: number; cycleId: number }, weekStart: string) =>
+  (attempts.createAttempt(P.admin, { studentId: st.id, cycleId: st.cycleId, classId: prnClass, periodId: periodOf(weekStart) }) as any).id as number;
+const prnScore = (attemptId: number, skill: 'listening' | 'reading', band: number) =>
+  attempts.saveScore(P.admin, attemptId, skill, { rawScore: prnRaw(skill, band) });
+const prnFull = (attemptId: number, band: number) => {
+  prnScore(attemptId, 'listening', band); prnScore(attemptId, 'reading', band);
+  for (const k of ['writing1', 'writing2', 'speaking'] as const) attempts.saveScore(P.admin, attemptId, k, { criteria: [band, band, band, band] });
+};
+const prnIds = (who: any, id: string, f: Record<string, unknown> = {}) => (metricsSvc.metricSet(who, id, f as any) as any);
+
+/** SỰ THẬT ĐỘC LẬP: đợt mới nhất HỢP LỆ (không huỷ, đã có điểm) của từng em đang học, và SOS của nó — dựng bằng SQL. */
+const prnLatestValid = (branchCode: string | null) => {
+  const students = conn.prepare(
+    `SELECT DISTINCT s.id FROM students s
+       JOIN enrollments e ON e.student_id = s.id AND e.status = 'active'
+       JOIN classes c ON c.id = e.class_id JOIN branches b ON b.id = c.branch_id
+      WHERE s.archived_at IS NULL ${branchCode ? 'AND b.code = ?' : ''}`,
+  ).all(...(branchCode ? [branchCode] : [])) as any[];
+  const out = new Map<number, { attemptId: number; sos: number | null; complete: boolean }>();
+  for (const s of students) {
+    const a = conn.prepare(
+      `SELECT a.id, a.kind FROM assessment_attempts a LEFT JOIN report_periods pr ON pr.id = a.planned_period_id
+        WHERE a.student_id = ? AND a.status != 'cancelled'
+          AND EXISTS (SELECT 1 FROM assessment_scores x WHERE x.attempt_id = a.id AND (x.band IS NOT NULL OR x.raw_score IS NOT NULL))
+        ORDER BY COALESCE(pr.week_start, '') DESC, a.attempt_no DESC, a.id DESC LIMIT 1`,
+    ).get(s.id) as any;
+    if (!a) continue;
+    if (a.kind === 'mock') {
+      const r = (attempts.attemptDetail(P.admin, a.id) as any).result;
+      out.set(s.id, { attemptId: a.id, sos: r.sosLevel, complete: r.complete });
+    } else {
+      const r = regular.regularResultOf(a.id) as any;
+      out.set(s.id, { attemptId: a.id, sos: r.sosLevel, complete: r.complete });
+    }
+  }
+  return out;
+};
+
+check('PR-N · N1 hv-sos-hien-tai: theo ĐỢT MỚI NHẤT HỢP LỆ của từng em (không MAX toàn lịch sử); tạm thời và kết quả cuối tách riêng', () => {
+  /* A: MT1 trượt, MT2 (mới hơn) đạt → KHÔNG có SOS hiện tại. B: MT1 đạt, MT2 mới trượt Reading → có, và còn TẠM THỜI. */
+  const A = prnMake('PRN Cũ Trượt Mới Đạt'); const B = prnMake('PRN Cũ Đạt Mới Trượt');
+  const a1 = prnAttempt(A, '2026-07-27'); prnScore(a1, 'reading', 4.5);
+  const a2 = prnAttempt(A, '2026-08-24'); prnScore(a2, 'reading', 8.5);
+  const b1 = prnAttempt(B, '2026-07-27'); prnScore(b1, 'reading', 8.5);
+  const b2 = prnAttempt(B, '2026-08-24'); prnScore(b2, 'reading', 4.5);
+
+  const r = prnIds(P.admin, 'hv-sos-hien-tai');
+  assert(r.n === r.ids.length, 'Số phải là độ dài của tập ID');
+  assert(!r.ids.includes(A.id), 'A đã đạt ở đợt mới nhất mà vẫn bị đếm theo SOS của đợt cũ (MAX toàn lịch sử)');
+  assert(r.ids.includes(B.id), 'B trượt ở đợt mới nhất mà không được đếm');
+  const truth = prnLatestValid(null);
+  const expected = [...truth.entries()].filter(([, v]) => (v.sos ?? 0) > 0).map(([id]) => id).sort((x, y) => x - y);
+  assert(JSON.stringify([...r.ids].sort((x: number, y: number) => x - y)) === JSON.stringify(expected),
+    `Tập khác sự thật độc lập: hàm ${r.ids.length} em, sự thật ${expected.length} em`);
+  /* Tạm thời (mới chấm một phần) và kết quả cuối (đủ điểm) tách riêng, cộng lại đúng tập chung. */
+  const t = new Set<number>(r.splits.tamThoi), c = new Set<number>(r.splits.ketQuaCuoi);
+  assert(r.splits && [...t].every((x) => !c.has(x)), 'Tạm thời và kết quả cuối phải loại trừ nhau');
+  assert(t.size + c.size === r.ids.length, 'Tạm thời + kết quả cuối phải đúng bằng tập chung');
+  assert(t.has(B.id), 'B mới chấm Reading nên SOS của B phải là TẠM THỜI');
+  /* Phạm vi: Quản lý MB chỉ thấy em MB; Quản lý CP không thấy em MB. */
+  const mb = prnIds(P.mbManager, 'hv-sos-hien-tai'), cp = prnIds(P.cpManager, 'hv-sos-hien-tai');
+  assert(mb.ids.includes(B.id) && !cp.ids.includes(B.id), 'Phạm vi chi nhánh bị lẫn');
+  assert(mb.ids.every((id: number) => r.ids.includes(id)), 'Tập của Quản lý MB phải nằm trong tập của Quản trị');
+});
+
+check('PR-N · N1 hv-duoi-ky-vong-mon: so kỳ vọng của CHÍNH đợt đó; mẫu số là em ĐÁNH GIÁ ĐƯỢC môn đó', () => {
+  const C = prnMake('PRN Môn Mẫu Số');
+  const D = prnMake('PRN Chưa Chấm Reading');
+  const c1 = prnAttempt(C, '2026-08-03'); prnScore(c1, 'reading', 4.5); prnScore(c1, 'listening', 8.5);
+  const d1 = prnAttempt(D, '2026-08-03'); prnScore(d1, 'listening', 4.5);            // D chưa có Reading
+  const rd = prnIds(P.admin, 'hv-duoi-ky-vong-mon', { skill: 'reading' });
+  assert(rd.ids.includes(C.id), 'C dưới kỳ vọng Reading mà không được đếm');
+  assert(!rd.ids.includes(D.id), 'D chưa có điểm Reading mà bị đếm là dưới kỳ vọng — thiếu điểm KHÁC trượt');
+  assert(rd.denominatorIds.includes(C.id) && !rd.denominatorIds.includes(D.id),
+    'Mẫu số phải là em đánh giá được Reading: C có, D không');
+  assert(rd.ids.every((id: number) => rd.denominatorIds.includes(id)), 'Tập dưới kỳ vọng phải nằm trong mẫu số');
+  const ls = prnIds(P.admin, 'hv-duoi-ky-vong-mon', { skill: 'listening' });
+  assert(ls.ids.includes(D.id) && !ls.ids.includes(C.id), 'Listening: D trượt, C đạt');
+  /* Sự thật độc lập cho Reading: band < kỳ vọng của đợt mới nhất hợp lệ. */
+  const truth = prnLatestValid(null);
+  const under: number[] = [];
+  for (const [sid, v] of truth) {
+    const a = conn.prepare('SELECT * FROM assessment_attempts WHERE id = ?').get(v.attemptId) as any;
+    if (a.kind !== 'mock') continue;
+    const res = (attempts.attemptDetail(P.admin, a.id) as any).result;
+    const vd = res.verdicts.find((x: any) => x.skill === 'reading');
+    if (vd && vd.required && vd.band !== null && vd.passed === false) under.push(sid);
+  }
+  const fromFn = (rd.ids as number[]).filter((id) => {
+    const a = truth.get(id); if (!a) return false;
+    return (conn.prepare('SELECT kind FROM assessment_attempts WHERE id = ?').get(a.attemptId) as any).kind === 'mock';
+  });
+  assert(JSON.stringify(fromFn.sort((x, y) => x - y)) === JSON.stringify(under.sort((x, y) => x - y)),
+    `Reading FT: hàm ${fromFn.length} em, sự thật ${under.length} em`);
+  /* Không có môn → mọi môn: em dưới kỳ vọng ở BẤT KỲ môn nào; mỗi tập môn là tập con của nó. */
+  const anyR = prnIds(P.admin, 'hv-duoi-ky-vong-mon');
+  assert(rd.ids.every((id: number) => anyR.ids.includes(id)) && ls.ids.every((id: number) => anyR.ids.includes(id)),
+    'Tập "bất kỳ môn" phải chứa tập từng môn');
+  assertThrows(() => prnIds(P.admin, 'hv-duoi-ky-vong-mon', { skill: 'pronunciation' }), /Môn|môn/, 'Môn lạ phải bị từ chối, không trả tập rỗng');
+});
+
+check('PR-N · N1 do-phu-danh-gia: HV có dữ liệu đủ điều kiện / HV cần được đánh giá — KHÁC tỷ lệ đạt', () => {
+  const E = prnMake('PRN Đủ Điểm Trượt'), F = prnMake('PRN Chưa Chấm Gì'), G = prnMake('PRN Chưa Có Đợt'), H = prnMake('PRN Đợt Đã Huỷ');
+  const e1 = prnAttempt(E, '2026-08-03'); prnFull(e1, 4.5);                          // ĐỦ điểm nhưng TRƯỢT — vẫn có dữ liệu
+  prnAttempt(F, '2026-08-03');                                                       // đến lịch, chưa chấm gì
+  const h1 = prnAttempt(H, '2026-08-03'); attempts.cancelAttempt(P.admin, h1, 'Kiểm thử phép đếm');
+  const r = prnIds(P.admin, 'do-phu-danh-gia');
+  assert(r.numeratorIds.every((id: number) => r.ids.includes(id)), 'Tử số phải là tập con của mẫu số');
+  assert(r.ids.includes(E.id) && r.numeratorIds.includes(E.id), 'E đủ điểm (dù trượt) phải nằm ở cả mẫu số và tử số — độ phủ không phải tỷ lệ đạt');
+  assert(r.ids.includes(F.id) && !r.numeratorIds.includes(F.id), 'F đã đến lịch mà chưa có điểm: cần đánh giá, chưa có dữ liệu');
+  assert(!r.ids.includes(G.id), 'G chưa có đợt nào thì chưa "cần được đánh giá"');
+  assert(!r.ids.includes(H.id), 'H chỉ có đợt đã huỷ thì không cần đánh giá');
+  assert(r.n === r.ids.length, 'Số phải là độ dài của tập mẫu số');
+  /* Sự thật độc lập: em đang học có đợt không huỷ đã đến lịch; tử số = đợt gần nhất đủ điểm mọi kỹ năng bắt buộc. */
+  const today = demoToday();
+  const need = (conn.prepare(
+    `SELECT DISTINCT s.id FROM students s JOIN enrollments e ON e.student_id = s.id AND e.status = 'active'
+      WHERE s.archived_at IS NULL AND EXISTS (
+        SELECT 1 FROM assessment_attempts a JOIN report_periods pr ON pr.id = a.planned_period_id
+         WHERE a.student_id = s.id AND a.status != 'cancelled' AND pr.week_start <= ?)`,
+  ).all(today) as any[]).map((x) => x.id as number).sort((x, y) => x - y);
+  assert(JSON.stringify([...r.ids].sort((x: number, y: number) => x - y)) === JSON.stringify(need),
+    `Mẫu số: hàm ${r.ids.length} em, sự thật ${need.length} em`);
+});
+
+check('PR-N · N1 dung-han-cap-nhat: nghĩa vụ (phương án × chu kỳ) đúng hạn / nghĩa vụ đến hạn; KHÔNG đếm số lần bấm ghi chú', () => {
+  const I = prnMake('PRN Nghĩa Vụ Cập Nhật');
+  const mk = (topic: string, track = 'academic') => cases.reportIssue(P.admin, {
+    studentId: I.id, cycleId: I.cycleId, track, topic, parallel: true,
+    title: `PRN ${topic}`, summary: 'Case dựng để kiểm nghĩa vụ cập nhật.',
+    primaryCode: domain.issuesForTopic(topic)[0]?.code,
+  } as any) as any;
+  const today = demoToday();
+  const before = prnIds(P.admin, 'dung-han-cap-nhat');
+  const c1 = mk('reading');
+  const iv = (caseId: number, o: { status?: string; due: string | null; approval?: string | null; cycle?: number }) => Number(conn.prepare(
+    `INSERT INTO case_interventions (case_id, kind, description, status, action_due, approval_state, cycle_no, created_at)
+     VALUES (?, 'tutor', 'PRN phương án', ?, ?, ?, ?, ?)`,
+  ).run(caseId, o.status ?? 'started', o.due, o.approval ?? null, o.cycle ?? 1, nowIsoPrn()).lastInsertRowid);
+  const fu = (caseId: number, ivId: number, o: { cycle: number; due: string; observed: string; late: number }) => conn.prepare(
+    `INSERT INTO case_followups (case_id, intervention_id, observed_on, outcome, cycle_no, cycle_due, late, created_at)
+     VALUES (?, ?, ?, 'partial', ?, ?, ?, ?)`,
+  ).run(caseId, ivId, o.observed, o.cycle, o.due, o.late, nowIsoPrn());
+  const ontime = iv(c1.id, { due: '2026-09-20', cycle: 2 });                         // đã cập nhật đúng hạn ở chu kỳ 1, chu kỳ 2 chưa đến hạn
+  fu(c1.id, ontime, { cycle: 1, due: '2026-09-06', observed: '2026-09-05', late: 0 });
+  const lateIv = iv(c1.id, { due: '2026-09-20', cycle: 2 });                         // cập nhật TRỄ ở chu kỳ 1
+  fu(c1.id, lateIv, { cycle: 1, due: '2026-08-30', observed: '2026-09-03', late: 1 });
+  const missed = iv(c1.id, { due: '2026-09-06', cycle: 1 });                         // đến hạn 06/09, chưa ai cập nhật
+  const pending = iv(c1.id, { due: '2026-09-06', cycle: 1, approval: 'pending' });   // chờ duyệt: không có nghĩa vụ cập nhật
+  const future = iv(c1.id, { due: '2026-09-27', cycle: 1 });                         // chưa đến hạn
+  /* Một em bấm ghi chú ba lần trong cùng một chu kỳ vẫn chỉ là MỘT nghĩa vụ. */
+  fu(c1.id, ontime, { cycle: 1, due: '2026-09-06', observed: '2026-09-04', late: 0 });
+  fu(c1.id, ontime, { cycle: 1, due: '2026-09-06', observed: '2026-09-03', late: 0 });
+  /* Ý thức KHÔNG vào chỉ số này: không có hạn nào để đúng hay trễ. */
+  const beh = mk('homework', 'behaviour');
+  iv(beh.id, { due: '2026-09-06', cycle: 1 });
+
+  const r = prnIds(P.admin, 'dung-han-cap-nhat');
+  const code = (ivId: number, cycle: number) => ivId * 1000 + cycle;
+  const gained = (r.ids as number[]).filter((id) => !(before.ids as number[]).includes(id)).sort((x, y) => x - y);
+  assert(JSON.stringify(gained) === JSON.stringify([code(ontime, 1), code(lateIv, 1), code(missed, 1)].sort((x, y) => x - y)),
+    `Nghĩa vụ đến hạn phải đúng ba (đúng hạn, trễ, chưa làm); đang có [${gained.join(',')}]`);
+  assert(!r.ids.includes(code(pending, 1)) && !r.ids.includes(code(future, 1)), 'Chờ duyệt và chưa đến hạn không phải nghĩa vụ đến hạn');
+  const onTime = (r.numeratorIds as number[]).filter((id) => !(before.numeratorIds as number[]).includes(id));
+  assert(JSON.stringify(onTime) === JSON.stringify([code(ontime, 1)]), 'Chỉ nghĩa vụ hoàn thành ĐÚNG HẠN mới vào tử số (trễ và chưa làm thì không)');
+  assert(r.n === r.ids.length && r.numeratorIds.every((id: number) => r.ids.includes(id)), 'Số là độ dài tập; tử số ⊆ mẫu số');
+  assert(r.unit === 'nghia-vu', 'Đơn vị phải là nghĩa vụ, không phải phương án');
+  /* Phạm vi: Quản lý CP không thấy nghĩa vụ của em MB. */
+  const cp = prnIds(P.cpManager, 'dung-han-cap-nhat');
+  assert(!cp.ids.includes(code(missed, 1)), 'Nghĩa vụ của chi nhánh khác lọt vào phạm vi Quản lý CP');
+  assert(today >= '2026-09-14', 'Tiền đề ngày demo');
+});
+
+
+check('PR-N · N4 GET /metrics/:id: KHÔNG trả ids khi không xin rows=1 (tile chỉ cần số); có rows=1 thì ids, dòng và số vẫn CÙNG MỘT TẬP', () => {
+  for (const m of domain.METRICS as readonly any[]) {
+    const r = metricsSvc.metricSet(P.admin, m.id, {}) as any;
+    const lean = metricsSvc.metricResponse(r, false) as any;
+    assert(!('ids' in lean) && !('rows' in lean) && !('numeratorIds' in lean) && !('denominatorIds' in lean),
+      `${m.id}: đường lấy số không được kèm tập ID (phí băng thông với tập lớn)`);
+    assert(lean.n === r.ids.length, `${m.id}: n phải là độ dài của tập ID`);
+    const full = metricsSvc.metricResponse(r, true) as any;
+    assert(full.ids.length === lean.n && full.rows.length === lean.n, `${m.id}: rows=1 phải trả đúng ${lean.n} id và ${lean.n} dòng`);
+    assert(full.rows.every((row: any) => !String(row.title).startsWith('#')), `${m.id}: có dòng không tra được tên (title bắt đầu bằng #)`);
+    if (r.numeratorIds) assert(lean.numerator === r.numeratorIds.length, `${m.id}: numerator phải là độ dài tử số`);
+    if (r.denominatorIds) assert(lean.denominator === r.denominatorIds.length, `${m.id}: denominator phải là độ dài mẫu số`);
+    if (r.splits) assert(lean.splits.tamThoi === r.splits.tamThoi.length && lean.splits.ketQuaCuoi === r.splits.ketQuaCuoi.length, `${m.id}: splits phải là số phần tử`);
+  }
+});
+
+
+/*
+ * N3 — BẢNG "VIỆC CẦN LƯU Ý" ĐI QUA HỢP ĐỒNG SỐ LIỆU. Trước PR-N bảng tự đếm bằng bộ đếm riêng và chỉ khớp `<SoLieu>` "nhờ may".
+ * Trên dữ liệu demo lúc bắt đầu PR này đã LỆCH thật: bảng ghi 79 case / 28 học viên / 27 thiếu phương án / 6 "quá hạn cập nhật"
+ * còn sổ chỉ số ghi 81 / 29 / 28 / 31 — hai case rơi khỏi bảng vì lớp không còn hoạt động, và "quá hạn cập nhật" đếm CASE trong khi
+ * chỉ số đếm PHƯƠNG ÁN. Phép kiểm dưới đây khoá đúng những chỗ đó.
+ */
+const prnPulseCols = [
+  ['needSupport', 'hv-co-case-mo'], ['cases', 'case-mo'], ['noPlan', 'case-thieu-pa'],
+  ['overdueUpdate', 'pa-can-cap-nhat'], ['pendingApproval', 'pa-cho-duyet'],
+] as const;
+
+check('PR-N · N3 "Việc cần lưu ý": HÀNG TỔNG là chính tập ID của chỉ số — số và tập khớp từng cột, ở mọi vai và cả khi chọn chi nhánh', () => {
+  for (const [who, name] of [[P.admin, 'Quản trị'], [P.mbManager, 'Quản lý MB']] as any[]) {
+    for (const branchId of [null, branchIdOf('MB')]) {
+      const pl = pulse.branchPulse(who, { branchId }) as any;
+      for (const [col, metric] of prnPulseCols) {
+        const m = prnIds(who, metric, { branchId });
+        assert(pl.total[col] === m.n, `${name}${branchId ? ' · MB' : ''}: cột "${col}" ghi ${pl.total[col]} nhưng chỉ số ${metric} ghi ${m.n}`);
+        assert(JSON.stringify([...pl.total.ids[col]].sort((x: number, y: number) => x - y)) === JSON.stringify([...m.ids].sort((x: number, y: number) => x - y)),
+          `${name}: tập ID của cột "${col}" khác tập của chỉ số ${metric}`);
+      }
+    }
+  }
+});
+
+check('PR-N · N3 Mỗi hàng của bảng: số là độ dài tập ID; hàng con nằm trong hàng tổng; học viên KHÔNG cộng lẫn giữa các hàng (luật 4)', () => {
+  const pl = pulse.branchPulse(P.admin, {}) as any;
+  for (const r of pl.rows) {
+    for (const [col] of prnPulseCols) {
+      assert(r.metrics[col] === r.metrics.ids[col].length, `Hàng ${r.label}: "${col}" phải là độ dài tập ID`);
+      assert(r.metrics.ids[col].every((id: number) => pl.total.ids[col].includes(id)), `Hàng ${r.label}: "${col}" có ID ngoài hàng tổng`);
+    }
+  }
+  /* Dựng một em có case ở HAI chi nhánh: hàng tổng đếm em đó MỘT lần, còn cộng các hàng chi nhánh thì ra hai. */
+  const both = prnMake('PRN Hai Chi Nhánh');
+  const c1 = cases.reportIssue(P.admin, { studentId: both.id, cycleId: both.cycleId, track: 'academic', topic: 'reading', parallel: true,
+    title: 'PRN case MB', summary: 'Case ở chi nhánh hiện tại.', primaryCode: domain.issuesForTopic('reading')[0].code } as any) as any;
+  const c2 = cases.reportIssue(P.admin, { studentId: both.id, cycleId: both.cycleId, track: 'academic', topic: 'listening', parallel: true,
+    title: 'PRN case chi nhánh khác', summary: 'Case gắn vào lượt của chi nhánh khác.', primaryCode: domain.issuesForTopic('listening')[0].code } as any) as any;
+  const cpAttempt = conn.prepare(`SELECT a.id FROM assessment_attempts a JOIN classes c ON c.id = a.class_id JOIN branches b ON b.id = c.branch_id WHERE b.code = 'CP' LIMIT 1`).get() as any;
+  const oldAttempt = (conn.prepare('SELECT attempt_id FROM sos_cases WHERE id = ?').get(c2.id) as any).attempt_id;
+  /*
+   * Hai case của một em ĐÃ KẾT THÚC KHOÁ (không còn lớp hiện tại) rơi về nơi của lượt sinh ra chúng: case một gắn lượt của
+   * Monbay, case hai gắn lượt của Cẩm Phả. (Em còn đang học thì mọi case của em thuộc MỘT nơi — nơi đang chăm sóc.)
+   */
+  const mbAttempt = conn.prepare(`SELECT a.id FROM assessment_attempts a JOIN classes c ON c.id = a.class_id JOIN branches b ON b.id = c.branch_id WHERE b.code = 'MB' LIMIT 1`).get() as any;
+  const oldAttempt1 = (conn.prepare('SELECT attempt_id FROM sos_cases WHERE id = ?').get(c1.id) as any).attempt_id;
+  conn.prepare('UPDATE sos_cases SET attempt_id = ? WHERE id = ?').run(mbAttempt.id, c1.id);
+  conn.prepare('UPDATE sos_cases SET attempt_id = ? WHERE id = ?').run(cpAttempt.id, c2.id);
+  const enr = conn.prepare("SELECT id FROM enrollments WHERE student_id = ? AND status = 'active'").get(both.id) as any;
+  conn.prepare("UPDATE enrollments SET status = 'completed' WHERE id = ?").run(enr.id);
+  try {
+    const p2 = pulse.branchPulse(P.admin, {}) as any;
+    const total = prnIds(P.admin, 'hv-co-case-mo');
+    assert(p2.total.needSupport === total.n, 'Hàng tổng phải bằng chỉ số dù em có case ở hai nơi');
+    const inRows = p2.rows.filter((r: any) => r.metrics.ids.needSupport.includes(both.id)).length;
+    assert(inRows === 2, `Em có case ở hai chi nhánh phải hiện ở HAI hàng chi nhánh, đang ${inRows}`);
+    const sum = p2.rows.reduce((a: number, r: any) => a + r.metrics.needSupport, 0);
+    assert(sum === p2.total.needSupport + 1, `Cộng các hàng chi nhánh (${sum}) phải lớn hơn hàng tổng (${p2.total.needSupport}) đúng một em — đó là lý do KHÔNG được cộng số học viên`);
+  } finally {
+    conn.prepare('UPDATE sos_cases SET attempt_id = ? WHERE id = ?').run(oldAttempt, c2.id);
+    conn.prepare('UPDATE sos_cases SET attempt_id = ? WHERE id = ?').run(oldAttempt1, c1.id);
+    conn.prepare("UPDATE enrollments SET status = 'active' WHERE id = ?").run(enr.id);
+  }
+  assert(c1.id !== c2.id, 'Tiền đề: hai case khác nhau');
+});
+
+check('PR-N · N3 Đổi dữ liệu thì bảng và chỉ số CÙNG ĐỔI theo (vì gọi cùng hàm): thêm một case chưa có phương án, một phương án chờ duyệt', () => {
+  const st = prnMake('PRN Đổi Dữ Liệu');
+  const before = pulse.branchPulse(P.mbManager, {}) as any;
+  const b = Object.fromEntries(prnPulseCols.map(([col, metric]) => [col, prnIds(P.mbManager, metric).n]));
+  const c = cases.reportIssue(P.admin, { studentId: st.id, cycleId: st.cycleId, track: 'academic', topic: 'reading', parallel: true,
+    title: 'PRN đổi dữ liệu', summary: 'Case mới chưa có phương án.', primaryCode: domain.issuesForTopic('reading')[0].code } as any) as any;
+  const afterCase = pulse.branchPulse(P.mbManager, {}) as any;
+  assert(afterCase.total.cases === before.total.cases + 1 && prnIds(P.mbManager, 'case-mo').n === b.cases + 1, 'Thêm một case: bảng và chỉ số đều phải +1');
+  assert(afterCase.total.noPlan === before.total.noPlan + 1 && prnIds(P.mbManager, 'case-thieu-pa').n === b.noPlan + 1, 'Case chưa có phương án: thiếu phương án +1 ở cả hai');
+  assert(afterCase.total.needSupport === before.total.needSupport + 1, 'Em mới có case: HV cần hỗ trợ +1');
+  conn.prepare(`INSERT INTO case_interventions (case_id, kind, description, status, needs_approval, approval_state, approval_due, created_at)
+                VALUES (?, 'tutor', 'PRN chờ duyệt', 'planned', 1, 'pending', '2026-09-20', ?)`).run(c.id, nowIsoPrn());
+  const afterPlan = pulse.branchPulse(P.mbManager, {}) as any;
+  assert(afterPlan.total.pendingApproval === before.total.pendingApproval + 1 && prnIds(P.mbManager, 'pa-cho-duyet').n === b.pendingApproval + 1,
+    'Thêm một phương án chờ duyệt: cả bảng lẫn chỉ số phải +1');
+  /* Có phương án rồi thì case không còn "thiếu phương án" — cả hai cùng giảm. */
+  assert(afterPlan.total.noPlan === before.total.noPlan && prnIds(P.mbManager, 'case-thieu-pa').n === b.noPlan,
+    'Có phương án thì thiếu phương án phải trở về mức cũ ở cả hai');
+});
+
+check('PR-N · N3 "Quá hạn cập nhật" đếm PHƯƠNG ÁN (đúng đơn vị của chỉ số pa-can-cap-nhat), không đếm case', () => {
+  const st = prnMake('PRN Hai Phương Án Quá Hạn');
+  const c = cases.reportIssue(P.admin, { studentId: st.id, cycleId: st.cycleId, track: 'academic', topic: 'reading', parallel: true,
+    title: 'PRN quá hạn', summary: 'Một case, hai phương án cùng quá hạn cập nhật.', primaryCode: domain.issuesForTopic('reading')[0].code } as any) as any;
+  const before = (pulse.branchPulse(P.mbManager, {}) as any).total.overdueUpdate;
+  for (const d of ['PRN pa một', 'PRN pa hai']) {
+    conn.prepare(`INSERT INTO case_interventions (case_id, kind, description, status, action_due, cycle_no, created_at)
+                  VALUES (?, 'tutor', ?, 'started', '2026-09-06', 1, ?)`).run(c.id, d, nowIsoPrn());
+  }
+  const after = (pulse.branchPulse(P.mbManager, {}) as any).total.overdueUpdate;
+  assert(after === before + 2, `Hai phương án quá hạn của MỘT case phải làm cột tăng 2 (đơn vị là phương án), đang tăng ${after - before}`);
+  assert(after === prnIds(P.mbManager, 'pa-can-cap-nhat').n, 'Cột phải bằng chỉ số pa-can-cap-nhat');
+});
+
+check('PR-N · N3 Bảng theo giáo viên: số case/thiếu phương án/quá hạn/chờ duyệt của MỖI NGƯỜI là phần của cùng các tập ID chỉ số', () => {
+  const mb = branchIdOf('MB');
+  const pl = pulse.branchPulse(P.mbManager, { branchId: mb }) as any;
+  assert(pl.people.length > 0, 'Tiền đề: có ít nhất một giáo viên trong bảng');
+  const caseIds = new Set<number>(prnIds(P.mbManager, 'case-mo', { branchId: mb }).ids);
+  const noPlan = new Set<number>(prnIds(P.mbManager, 'case-thieu-pa', { branchId: mb }).ids);
+  const owner = new Map<number, number | null>((conn.prepare('SELECT id, owner_user_id FROM sos_cases').all() as any[]).map((r) => [r.id, r.owner_user_id]));
+  for (const person of pl.people) {
+    const mine = [...caseIds].filter((id) => owner.get(id) === person.id);
+    assert(person.cases === mine.length, `${person.name}: "Case phụ trách" ghi ${person.cases}, tập chỉ số case-mo của người này là ${mine.length}`);
+    assert(person.noPlan === mine.filter((id) => noPlan.has(id)).length, `${person.name}: "Thiếu phương án" không khớp chỉ số case-thieu-pa`);
+  }
+});
+
+
+/*
+ * N2 — BÁO CÁO THEO TUẦN. F01 (hai chi nhánh cùng tuần cộng lẫn số) đã được PR-F đóng ở chặng 2 và đã có phép kiểm; PR-N
+ * hoàn tất nốt hai phần còn lại của hợp đồng: (a) DANH SÁCH khi bấm một số của bảng tuần phải là CHÍNH tập ID tạo nên số đó,
+ * (b) tổng "HV có case" theo tháng / cả bảng phải đếm DUY NHẤT — trước đó giao diện cộng số học viên của từng tuần lại (luật 4).
+ */
+const prnWeeklyCols = ['attempts', 'onTarget', 'sos1', 'sos2', 'sos3', 'provisional', 'pending', 'cases', 'caseStudents', 'withSupport', 'untouched', 'pendingApproval'] as const;
+
+check('PR-N · N2 Bảng tuần: MỖI SỐ LÀ ĐỘ DÀI của tập ID mà danh sách khi bấm số trả về — mọi ô, mọi cột', () => {
+  for (const [who, name] of [[P.admin, 'Quản trị'], [P.mbManager, 'Quản lý MB']] as any[]) {
+    const r = weekly.weeklyRollup(who, {}) as any;
+    assert(r.rows.length > 0, 'Tiền đề: có tuần có dữ liệu');
+    for (const row of r.rows) {
+      for (const col of prnWeeklyCols) {
+        const d = weekly.weeklyDrill(who, {}, row.periodId, col) as any;
+        assert(d.ids.length === row[col], `${name} · ${row.code}: cột "${col}" ghi ${row[col]} nhưng danh sách khi bấm có ${d.ids.length} mục`);
+      }
+    }
+  }
+});
+
+check('PR-N · N2 Bảng tuần: dòng của danh sách tra được tên cho cả ba đơn vị (lượt Test · case · học viên)', () => {
+  const r = weekly.weeklyRollup(P.admin, {}) as any;
+  const row = r.rows.find((x: any) => x.attempts > 0 && x.cases > 0) ?? r.rows[0];
+  for (const col of ['attempts', 'cases', 'caseStudents', 'pendingApproval'] as const) {
+    const d = weekly.weeklyDrill(P.admin, {}, row.periodId, col) as any;
+    const rows = metricsSvc.rowsFor(d.unit, d.ids);
+    assert(rows.length === d.ids.length, `${col}: số dòng phải bằng số ID`);
+    assert(rows.every((x: any) => !String(x.title).startsWith('#') && x.href !== '#'), `${col}: có dòng không tra được tên hoặc đường dẫn`);
+  }
+});
+
+check('PR-N · N2 Bảng tuần: danh sách khi bấm số KHÔNG chứa bản ghi của chi nhánh khác (F01 ở tầng danh sách)', () => {
+  const mb = branchIdOf('MB');
+  const r = weekly.weeklyRollup(P.mbManager, {}) as any;
+  const branchOfCase = new Map<number, number>((conn.prepare(
+    `SELECT sc.id, c.branch_id FROM sos_cases sc JOIN assessment_attempts a ON a.id = sc.attempt_id JOIN classes c ON c.id = a.class_id`,
+  ).all() as any[]).map((x) => [x.id, x.branch_id]));
+  const branchOfAttempt = new Map<number, number>((conn.prepare(
+    'SELECT a.id, c.branch_id FROM assessment_attempts a JOIN classes c ON c.id = a.class_id',
+  ).all() as any[]).map((x) => [x.id, x.branch_id]));
+  for (const row of r.rows) {
+    for (const id of (weekly.weeklyDrill(P.mbManager, {}, row.periodId, 'cases') as any).ids) {
+      assert(branchOfCase.get(id) === mb, `Tuần ${row.code}: case ${id} của chi nhánh khác lọt vào danh sách Quản lý MB`);
+    }
+    for (const id of (weekly.weeklyDrill(P.mbManager, {}, row.periodId, 'attempts') as any).ids) {
+      assert(branchOfAttempt.get(id) === mb, `Tuần ${row.code}: lượt ${id} của chi nhánh khác lọt vào danh sách Quản lý MB`);
+    }
+  }
+});
+
+check('PR-N · N2 "HV có case" theo tháng và cả bảng đếm DUY NHẤT: một em có case ở hai tuần chỉ tính MỘT lần ở hàng tổng', () => {
+  const st = prnMake('PRN Hai Tuần Có Case');
+  const wk = (d: string) => prnAttempt(st, d);
+  const a1 = wk('2026-08-03'), a2 = wk('2026-08-10');
+  /* Chấm TRƯỚC rồi mới dựng case: chấm điểm có thể gắn lại case về lượt mới nhất. */
+  for (const a of [a1, a2]) prnScore(a, 'reading', 4.5);
+  for (const a of [a1, a2]) conn.prepare(
+    `INSERT INTO sos_cases (student_id, cycle_id, attempt_id, track, topic, category, status, sos_level, title, detected_at, created_at)
+     VALUES (?, ?, ?, 'academic', 'reading', 'reading', 'open', 1, 'PRN tuần', '2026-09-01', ?)`,
+  ).run(st.id, st.cycleId, a, nowIsoPrn());
+  const r = weekly.weeklyRollup(P.admin, { weeks: 26 }) as any;
+  const withEm = r.rows.filter((row: any) => (weekly.weeklyDrill(P.admin, { weeks: 26 }, row.periodId, 'caseStudents') as any).ids.includes(st.id));
+  assert(withEm.length === 2, `Tiền đề: em phải hiện ở hai tuần khác nhau, đang ${withEm.length}`);
+  const sum = r.rows.reduce((a: number, row: any) => a + row.caseStudents, 0);
+  assert(r.totals.caseStudents === (weekly.weeklyDrill(P.admin, { weeks: 26 }, null, 'caseStudents') as any).ids.length, 'Tổng cả bảng phải là độ dài tập ID duy nhất');
+  assert(r.totals.caseStudents < sum, `Cộng số học viên của từng tuần (${sum}) phải lớn hơn số học viên duy nhất (${r.totals.caseStudents}) khi một em ở hai tuần`);
+  /* Hàng tháng: cùng luật. Hai tuần 03/08 và 10/08 cùng tháng 8 nên em đó chỉ tính một lần ở tháng. */
+  const month = withEm[0].month;
+  const inMonth = r.rows.filter((row: any) => row.month === month).reduce((a: number, row: any) => a + row.caseStudents, 0);
+  assert(r.totals.byMonth[month] < inMonth, `Tháng ${month}: số duy nhất (${r.totals.byMonth[month]}) phải nhỏ hơn tổng cộng các tuần (${inMonth})`);
+});
+
+
+/*
+ * N3 (tiếp) — CÁC CỘT CỦA BẢNG PHÂN TÍCH THEO KỸ NĂNG. Cột "Thiếu phương án" của bảng này và chỉ số `case-thieu-pa` là MỘT khái
+ * niệm nhưng từng có HAI định nghĩa: bảng nói "không có phương án nào chưa huỷ", chỉ số nói "chưa có hướng xử lý VÀ chưa có tác
+ * động nào (kể cả đã huỷ)". Khớp trên dữ liệu demo vì chưa có case rơi vào khe giữa hai định nghĩa — lệch ngay khi có.
+ */
+check('PR-N · N3 Bảng phân tích theo kỹ năng: "Thiếu phương án" CÙNG MỘT ĐỊNH NGHĨA với chỉ số case-thieu-pa, và mỗi số có tập ID', () => {
+  const st = prnMake('PRN Khe Định Nghĩa');
+  const mk = (title: string) => cases.reportIssue(P.admin, { studentId: st.id, cycleId: st.cycleId, track: 'academic', topic: 'reading', parallel: true,
+    title, summary: 'Case dựng để kiểm định nghĩa thiếu phương án.', primaryCode: domain.issuesForTopic('reading')[0].code } as any) as any;
+  const monitorOnly = mk('PRN chỉ theo dõi');        // đã có hướng xử lý "chỉ theo dõi", cố ý không có phương án
+  const cancelledOnly = mk('PRN phương án đã huỷ');   // từng có phương án nhưng đã huỷ
+  const bare = mk('PRN trống');                      // chưa có gì
+  conn.prepare("UPDATE sos_cases SET disposition = 'monitor' WHERE id = ?").run(monitorOnly.id);
+  conn.prepare(`INSERT INTO case_interventions (case_id, kind, description, status, created_at) VALUES (?, 'tutor', 'PRN đã huỷ', 'cancelled', ?)`).run(cancelledOnly.id, nowIsoPrn());
+
+  const metric = new Set<number>(prnIds(P.admin, 'case-thieu-pa').ids);
+  const rows = effectiveness.issueSkillRows({ branchIds: null, ratio: false } as any) as any[];
+  const reading = rows.find((r) => r.code === 'reading');
+  assert(reading.ids && Array.isArray(reading.ids.noPlan), 'Mỗi hàng phải kèm tập ID của từng số (ids.noPlan)');
+  for (const c of [monitorOnly, cancelledOnly, bare]) {
+    assert(reading.ids.noPlan.includes(c.id) === metric.has(c.id),
+      `Case "${c.title}" (#${c.id}): bảng phân tích nói thiếu phương án = ${reading.ids.noPlan.includes(c.id)}, chỉ số nói ${metric.has(c.id)} — hai định nghĩa lệch nhau`);
+  }
+  assert(metric.has(bare.id) && !metric.has(monitorOnly.id) && !metric.has(cancelledOnly.id),
+    'Luật thống nhất: chỉ case CHƯA CÓ HƯỚNG XỬ LÝ và CHƯA CÓ TÁC ĐỘNG NÀO mới thiếu phương án');
+  /* Số là độ dài tập; và mọi tập của bảng phân tích nằm trong tập chỉ số tương ứng (bảng chỉ thu hẹp về em ĐANG HỌC). */
+  const open = new Set<number>(prnIds(P.admin, 'case-mo').ids);
+  for (const r of rows) {
+    assert(r.students === r.ids.students.length && r.openCases === r.ids.openCases.length && r.noPlan === r.ids.noPlan.length
+      && r.supporting === r.ids.supporting.length && r.unclassified === r.ids.unclassified.length, `Hàng ${r.code}: số phải là độ dài tập ID`);
+    assert(r.ids.openCases.every((id: number) => open.has(id)), `Hàng ${r.code}: có case ngoài tập case-mo`);
+    assert(r.ids.noPlan.every((id: number) => metric.has(id)), `Hàng ${r.code}: có case thiếu phương án ngoài tập case-thieu-pa`);
+    assert(r.ids.noPlan.every((id: number) => r.ids.openCases.includes(id)), `Hàng ${r.code}: thiếu phương án phải nằm trong case đang mở`);
+  }
+  /* Cộng theo kỹ năng: mỗi case chỉ thuộc MỘT hạng mục, nên tổng thiếu phương án của bảng FT+Normal = phần của chỉ số thuộc em đang học. */
+  const normal = effectiveness.issueSkillRows({ branchIds: null, ratio: true } as any) as any[];
+  const inTable = new Set<number>([...rows, ...normal].flatMap((r) => r.ids.noPlan));
+  const studying = new Set<number>((conn.prepare(`SELECT DISTINCT student_id FROM enrollments WHERE status = 'active'`).all() as any[]).map((x) => x.student_id));
+  const metricStudying = [...metric].filter((id) => studying.has((conn.prepare('SELECT student_id FROM sos_cases WHERE id = ?').get(id) as any).student_id));
+  const onlyMetric = metricStudying.filter((id) => !inTable.has(id));
+  assert(onlyMetric.length === 0, `Case thiếu phương án của em đang học mà không nằm ở hạng mục nào của bảng: [${onlyMetric.slice(0, 5).join(',')}]`);
+});
+
+
+check('PR-N · N3 BA nơi đếm "thiếu phương án" (chỉ số · bảng phân tích · bảng theo tuần · bảng theo loại vấn đề) cùng trả lời trên đúng các case ở khe định nghĩa', () => {
+  const st = prnMake('PRN Ba Nơi Đếm');
+  const at1 = prnAttempt(st, '2026-08-17'); prnScore(at1, 'reading', 4.5);
+  const mk = (title: string) => cases.reportIssue(P.admin, { studentId: st.id, cycleId: st.cycleId, track: 'academic', topic: 'reading', parallel: true,
+    title, summary: 'Case ở khe định nghĩa.', primaryCode: domain.issuesForTopic('reading')[0].code } as any) as any;
+  const monitorOnly = mk('PRN theo dõi'), cancelledOnly = mk('PRN đã huỷ'), bare = mk('PRN trống');
+  for (const c of [monitorOnly, cancelledOnly, bare]) conn.prepare('UPDATE sos_cases SET attempt_id = ?, sos_level = 1 WHERE id = ?').run(at1, c.id);
+  conn.prepare("UPDATE sos_cases SET disposition = 'monitor' WHERE id = ?").run(monitorOnly.id);
+  conn.prepare(`INSERT INTO case_interventions (case_id, kind, description, status, created_at) VALUES (?, 'tutor', 'PRN đã huỷ', 'cancelled', ?)`).run(cancelledOnly.id, nowIsoPrn());
+
+  const metric = new Set<number>(prnIds(P.admin, 'case-thieu-pa').ids);
+  const truth = [monitorOnly, cancelledOnly, bare].map((c) => [c.id, metric.has(c.id)] as const);
+  assert(metric.has(bare.id) && !metric.has(monitorOnly.id) && !metric.has(cancelledOnly.id), 'Tiền đề: chỉ case trống là thiếu phương án');
+
+  /* Bảng theo tuần: cột "Thiếu phương án" của tuần 17/08. */
+  const wk = weekly.weeklyRollup(P.admin, { weeks: 26 }) as any;
+  const periodId = periodOf('2026-08-17');
+  const untouched = new Set<number>((weekly.weeklyDrill(P.admin, { weeks: 26 }, periodId, 'untouched') as any).ids);
+  assert(wk.rows.some((r: any) => r.periodId === periodId), 'Tiền đề: tuần 17/08 phải có mặt trong bảng');
+  for (const [id, expected] of truth) assert(untouched.has(id) === expected, `Bảng theo tuần: case #${id} thiếu phương án = ${untouched.has(id)}, chỉ số nói ${expected}`);
+
+  /* Bảng theo loại vấn đề (issueBoard): tổng cột "thiếu phương án" của mọi hàng = cột của hàng kỹ năng, và cùng khe. */
+  const scope = { branchIds: null, ratio: false } as any;
+  const skillRow = (effectiveness.issueSkillRows(scope) as any[]).find((r) => r.code === 'reading');
+  const board = effectiveness.issueBoard(scope, 'reading') as any;
+  const boardNoPlan = board.rows.reduce((a: number, r: any) => a + r.noPlan, 0);
+  assert(boardNoPlan === skillRow.noPlan, `Bảng theo loại vấn đề cộng lại ${boardNoPlan} thiếu phương án, bảng theo kỹ năng ghi ${skillRow.noPlan}`);
+});
+
+
+/*
+ * N5 — KHO TỆP VÀ LIÊN KẾT DÙNG CHUNG (bảng `attachments`, `platform/attachments.ts`). Ba luật bắt buộc của đặc tả §4.5:
+ *   (a) lỗi tải tệp KHÔNG làm mất nội dung đang nhập — tải là một request riêng (kiểm ở giao diện, xem plan.md);
+ *   (b) quyền xem tệp = quyền xem BẢN GHI CHỦ; không có đường tải nào bỏ qua kiểm quyền;
+ *   (c) xoá tệp có audit, không phải một dấu X im lặng.
+ * Hạ tầng dựng một lần cho bốn chỗ (case học thuật · phương án · vi phạm · biện pháp); PR-N nối hai chỗ đầu.
+ */
+const attachmentsSvc = await import('../platform/attachments.ts');
+const prnAttCase = (topic: string, name: string) => {
+  const st = prnMake(name);
+  return cases.reportIssue(P.admin, { studentId: st.id, cycleId: st.cycleId, track: 'academic', topic, parallel: true,
+    title: `PRN bằng chứng ${name}`, summary: 'Case dựng để kiểm kho tệp.', primaryCode: domain.issuesForTopic(topic)[0].code } as any) as any;
+};
+
+check('PR-N · N5 Bảng attachments có đúng cột và chỉ mục theo đặc tả §4.5', () => {
+  const cols = (conn.prepare('PRAGMA table_info(attachments)').all() as any[]).map((c) => c.name);
+  for (const c of ['id', 'owner_type', 'owner_id', 'kind', 'url', 'display_name', 'mime_type', 'size_bytes', 'uploaded_by', 'created_at']) {
+    assert(cols.includes(c), `Bảng attachments thiếu cột ${c}`);
+  }
+  const idx = (conn.prepare("SELECT name FROM sqlite_master WHERE type = 'index' AND tbl_name = 'attachments'").all() as any[]).map((r) => r.name);
+  assert(idx.includes('idx_attachment_owner'), 'Thiếu chỉ mục idx_attachment_owner(owner_type, owner_id)');
+});
+
+check('PR-N · N5 Liên kết: thêm được vào case; chỉ nhận http/https; phải có tên đọc được; người tải và ngày được giữ', () => {
+  const c = prnAttCase(authSubjectSkill, 'Liên Kết');
+  const row = attachmentsSvc.addLink(P.mbManager, { ownerType: 'sos_case', ownerId: c.id, url: 'https://drive.example.com/bai-lam.pdf', displayName: 'Bài làm tuần 3' }) as any;
+  assert(row.kind === 'link' && row.displayName === 'Bài làm tuần 3' && row.href === 'https://drive.example.com/bai-lam.pdf', `Dòng liên kết sai: ${JSON.stringify(row)}`);
+  assert(row.uploadedByName && row.createdAt, 'Phải giữ người tải và ngày tải');
+  const list = attachmentsSvc.listAttachments(P.mbManager, 'sos_case', c.id) as any[];
+  assert(list.length === 1 && list[0].id === row.id, 'Danh sách phải có đúng liên kết vừa thêm');
+  for (const bad of ['javascript:alert(1)', 'ftp://x.y/z', 'file:///etc/passwd', 'data:text/html,<b>x</b>', 'không phải url', '']) {
+    assertThrows(() => attachmentsSvc.addLink(P.mbManager, { ownerType: 'sos_case', ownerId: c.id, url: bad, displayName: 'x' }), /liên kết|http/i, `Đã nhận liên kết không hợp lệ "${bad}"`);
+  }
+  const noName = attachmentsSvc.addLink(P.mbManager, { ownerType: 'sos_case', ownerId: c.id, url: 'https://example.com/a/b' }) as any;
+  assert(noName.displayName === 'example.com', `Không có tên thì lấy tên miền làm tên hiển thị, đang "${noName.displayName}"`);
+});
+
+check('PR-N · N5 Tệp: lưu ngoài cơ sở dữ liệu, không lộ đường dẫn máy chủ, ghi kích thước; chỉ nhận đuôi an toàn và tối đa 10 MB', () => {
+  const c = prnAttCase(authSubjectSkill, 'Tệp');
+  const data = Buffer.from('nội dung bài viết của học viên');
+  const row = attachmentsSvc.addFile(P.mbManager, { ownerType: 'sos_case', ownerId: c.id, fileName: 'Bài viết tuần 3.pdf', mimeType: 'application/pdf', data }) as any;
+  assert(row.kind === 'file' && row.displayName === 'Bài viết tuần 3.pdf' && row.sizeBytes === data.length, `Dòng tệp sai: ${JSON.stringify(row)}`);
+  assert(row.href === `/api/attachments/${row.id}/download`, 'Tệp phải tải qua đường có kiểm quyền, không phải đường dẫn thô');
+  assert(!JSON.stringify(row).includes('uploads') && !('url' in row), 'Không được lộ đường dẫn lưu trên máy chủ');
+  const opened = attachmentsSvc.openAttachment(P.mbManager, row.id) as any;
+  assert(opened.kind === 'file' && fs.readFileSync(opened.absPath).equals(data), 'Tải về phải ra đúng nội dung đã lưu');
+  assert(path.resolve(opened.absPath).startsWith(path.resolve(attachmentsSvc.uploadsDir())), 'Tệp phải nằm trong thư mục tải lên');
+  for (const bad of ['virus.exe', 'trang.html', 'hinh.svg', 'run.sh', 'noext', '../../etc/passwd']) {
+    assertThrows(() => attachmentsSvc.addFile(P.mbManager, { ownerType: 'sos_case', ownerId: c.id, fileName: bad, data: Buffer.from('x') }), /loại tệp|đuôi|không nhận/i, `Đã nhận tệp "${bad}"`);
+  }
+  assertThrows(() => attachmentsSvc.addFile(P.mbManager, { ownerType: 'sos_case', ownerId: c.id, fileName: 'lon.pdf', data: Buffer.alloc(attachmentsSvc.MAX_FILE_BYTES + 1) }), /10 ?MB|dung lượng|quá lớn/i, 'Đã nhận tệp quá lớn');
+  assertThrows(() => attachmentsSvc.addFile(P.mbManager, { ownerType: 'sos_case', ownerId: c.id, fileName: 'rong.pdf', data: Buffer.alloc(0) }), /rỗng/i, 'Đã nhận tệp rỗng');
+  attachmentsSvc.removeAttachment(P.mbManager, row.id);
+  assert(!fs.existsSync(opened.absPath), 'Xoá dòng thì tệp trên đĩa cũng phải được xoá');
+});
+
+check('PR-N · N5 Tên tệp có đường dẫn (../) không bao giờ làm tệp rơi ra ngoài thư mục tải lên và không lộ vào tên hiển thị', () => {
+  const c = prnAttCase(authSubjectSkill, 'Đường dẫn');
+  for (const evil of ['../../x.pdf', '..\\..\\y.pdf', '/etc/z.pdf']) {
+    let row: any = null;
+    try { row = attachmentsSvc.addFile(P.mbManager, { ownerType: 'sos_case', ownerId: c.id, fileName: evil, data: Buffer.from('x') }); } catch { /* bị từ chối cũng là kết quả an toàn */ }
+    if (!row) continue;
+    const opened = attachmentsSvc.openAttachment(P.mbManager, row.id) as any;
+    assert(path.resolve(opened.absPath).startsWith(path.resolve(attachmentsSvc.uploadsDir()) + path.sep), `Tệp "${evil}" nằm ngoài thư mục tải lên: ${opened.absPath}`);
+    assert(!/[\\/]|\.\./.test(row.displayName), `Tên hiển thị còn dấu đường dẫn: "${row.displayName}"`);
+  }
+});
+
+check('PR-N · N5 Quyền xem tệp = quyền xem BẢN GHI CHỦ: tài khoản ngoài phạm vi bị từ chối ở danh sách, ở đường tải và ở đường xoá', () => {
+  const c = prnAttCase(authSubjectSkill, 'Quyền Xem');
+  const row = attachmentsSvc.addFile(P.mbManager, { ownerType: 'sos_case', ownerId: c.id, fileName: 'a.pdf', data: Buffer.from('bí mật') }) as any;
+  assert((attachmentsSvc.listAttachments(P.mbManager, 'sos_case', c.id) as any[]).length === 1, 'Quản lý MB phải xem được');
+  assert((attachmentsSvc.listAttachments(P.subjectTeacher, 'sos_case', c.id) as any[]).length === 1, 'GV dạy lớp phải xem được');
+  assertThrows(() => attachmentsSvc.listAttachments(P.cpManager, 'sos_case', c.id), /phạm vi|quyền/, 'Quản lý CP xem danh sách tệp của case MB');
+  assertThrows(() => attachmentsSvc.openAttachment(P.cpManager, row.id), /phạm vi|quyền/, 'Quản lý CP tải được tệp của case MB — đường tải bỏ qua kiểm quyền');
+  assertThrows(() => attachmentsSvc.removeAttachment(P.cpManager, row.id), /phạm vi|quyền/, 'Quản lý CP xoá được tệp của case MB');
+  attachmentsSvc.removeAttachment(P.mbManager, row.id);
+});
+
+check('PR-N · N5 Quyền thêm/xoá = quyền SỬA bản ghi chủ (AUTH-01/C02): GV đúng môn thêm được, GV môn khác chỉ xem', () => {
+  const own = prnAttCase(authSubjectSkill, 'Đúng Môn');
+  const other = prnAttCase(authMismatchSkill, 'Trái Môn');
+  const ok = attachmentsSvc.addLink(P.subjectTeacher, { ownerType: 'sos_case', ownerId: own.id, url: 'https://example.com/ok', displayName: 'Đúng môn' }) as any;
+  assert(ok.id, 'GV đúng môn phải đính kèm được vào case môn mình');
+  assertThrows(() => attachmentsSvc.addLink(P.subjectTeacher, { ownerType: 'sos_case', ownerId: other.id, url: 'https://example.com/no', displayName: 'Trái môn' }), /quyền/, 'GV môn khác đính kèm vào case trái môn');
+  const mgr = attachmentsSvc.addLink(P.mbManager, { ownerType: 'sos_case', ownerId: other.id, url: 'https://example.com/mgr', displayName: 'Quản lý' }) as any;
+  assert((attachmentsSvc.listAttachments(P.subjectTeacher, 'sos_case', other.id) as any[]).some((a) => a.id === mgr.id), 'GV môn khác vẫn phải XEM được (xem không cần đúng môn)');
+  assertThrows(() => attachmentsSvc.removeAttachment(P.subjectTeacher, mgr.id), /quyền/, 'GV môn khác xoá được tệp của case trái môn');
+  attachmentsSvc.removeAttachment(P.subjectTeacher, ok.id);
+});
+
+check('PR-N · N5 Xoá tệp có AUDIT (ai, xoá cái gì, của bản ghi nào) — không phải một dấu X im lặng; xoá hai lần không lỗi lặng', () => {
+  const c = prnAttCase(authSubjectSkill, 'Audit Xoá');
+  const row = attachmentsSvc.addFile(P.mbManager, { ownerType: 'sos_case', ownerId: c.id, fileName: 'bang-chung.pdf', data: Buffer.from('abc') }) as any;
+  const before = (conn.prepare("SELECT COUNT(*) n FROM audit_logs WHERE action = 'attachment.delete'").get() as any).n;
+  attachmentsSvc.removeAttachment(P.mbManager, row.id);
+  const log = conn.prepare("SELECT * FROM audit_logs WHERE action = 'attachment.delete' ORDER BY id DESC LIMIT 1").get() as any;
+  assert((conn.prepare("SELECT COUNT(*) n FROM audit_logs WHERE action = 'attachment.delete'").get() as any).n === before + 1, 'Phải thêm đúng một dòng audit');
+  assert(log.actor_user_id === P.mbManager.userId && log.entity_label === 'bang-chung.pdf' && /sos_case/.test(String(log.before_json)) && String(log.before_json).includes(String(c.id)),
+    `Audit thiếu người xoá, tên tệp hoặc bản ghi chủ: ${JSON.stringify(log)}`);
+  assert((conn.prepare('SELECT COUNT(*) n FROM attachments WHERE id = ?').get(row.id) as any).n === 0, 'Dòng phải mất khỏi bảng');
+  assertThrows(() => attachmentsSvc.removeAttachment(P.mbManager, row.id), /Không tìm thấy/, 'Xoá tệp đã xoá phải báo không tìm thấy');
+  const added = (conn.prepare("SELECT COUNT(*) n FROM audit_logs WHERE action = 'attachment.add'").get() as any).n;
+  assert(added >= 1, 'Thêm tệp cũng phải để lại dấu vết');
+});
+
+check('PR-N · N5 Phương án thừa hưởng quyền của case chứa nó; loại bản ghi chưa có nơi chủ (vi phạm, biện pháp) và loại lạ bị từ chối rõ ràng', () => {
+  const c = prnAttCase(authSubjectSkill, 'Phương Án');
+  const iv = Number(conn.prepare(`INSERT INTO case_interventions (case_id, kind, description, status, created_at) VALUES (?, 'tutor', 'PRN phương án có bằng chứng', 'planned', ?)`).run(c.id, nowIsoPrn()).lastInsertRowid);
+  const row = attachmentsSvc.addLink(P.mbManager, { ownerType: 'case_intervention', ownerId: iv, url: 'https://example.com/pa', displayName: 'Kế hoạch tutor' }) as any;
+  assert((attachmentsSvc.listAttachments(P.subjectTeacher, 'case_intervention', iv) as any[]).length === 1, 'GV dạy lớp xem được bằng chứng của phương án');
+  assertThrows(() => attachmentsSvc.listAttachments(P.cpManager, 'case_intervention', iv), /phạm vi|quyền/, 'Quản lý CP xem bằng chứng phương án của case MB');
+  assertThrows(() => attachmentsSvc.addLink(P.subjectTeacher, { ownerType: 'case_intervention', ownerId: 999999, url: 'https://example.com/x', displayName: 'x' }), /Không tìm thấy/, 'Phương án không tồn tại');
+  for (const t of ['violation', 'discipline_measure']) {
+    assertThrows(() => attachmentsSvc.listAttachments(P.admin, t, 1), /chưa hỗ trợ/, `Loại "${t}" chưa có nơi chủ mà lại được nhận`);
+  }
+  assertThrows(() => attachmentsSvc.listAttachments(P.admin, 'khong_co', 1), /không hợp lệ|chưa hỗ trợ/, 'Loại lạ');
+  attachmentsSvc.removeAttachment(P.mbManager, row.id);
+});
+
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`
   : `${passed} đạt, ${failures.length} KHÔNG ĐẠT:\n` + failures.map((f) => '  - ' + f).join('\n'));
 console.log('='.repeat(60));
 process.exit(failures.length === 0 ? 0 : 1);
+
+

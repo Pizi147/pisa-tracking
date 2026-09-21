@@ -1,4 +1,5 @@
 import { Router, type Request } from 'express';
+import multer from 'multer';
 import { db, isInitialised } from '../db.ts';
 import {
   BEHAVIOUR_TOPICS, BEHAVIOUR_TOPIC_LABEL, ENTRY_SKILLS, ENTRY_SKILL_LABEL, ISSUE_TAXONOMY,
@@ -10,6 +11,7 @@ import { HttpError, badRequest, forbidden, isIsoDate, notFound, toInt } from '..
 import { SESSION_COOKIE, createSession, destroySession, principalOf, requireAuth } from '../auth.ts';
 import { can, loadPrincipal, permissionSummary, require_, scopeFor } from '../permissions.ts';
 import { writeAudit } from '../platform/audit.ts';
+import * as attachmentSvc from '../platform/attachments.ts';
 import { maybeSimulateReadError, maybeSimulateSaveFailure, pInt, qInt, qStr, wrap } from './helpers.ts';
 
 /**
@@ -46,8 +48,8 @@ import * as accountSvc from '../platform/accounts.ts';
 import * as sysconfigSvc from '../platform/sysconfig.ts';
 import * as mgmtSvc from '../worklist/mgmttasks.ts';
 import * as highlightSvc from '../worklist/highlights.ts';
-import { weeklyRollup } from '../worklist/weekly.ts';
-import { metricSet, rowsFor } from '../worklist/metrics.ts';
+import { weeklyDrill, weeklyRollup } from '../worklist/weekly.ts';
+import { metricResponse, metricSet, rowsFor } from '../worklist/metrics.ts';
 import { myWork } from '../worklist/mywork.ts';
 import * as caseSvc from '../cases/cases.ts';
 import * as caseSignalSvc from '../cases/signals.ts';
@@ -380,6 +382,23 @@ api.get('/weekly-rollup', requireAuth, wrap((req) => weeklyRollup(principalOf(re
   track: req.query?.track === 'normal' ? 'normal' : req.query?.track === 'ft' ? 'ft' : null,
 })));
 
+/**
+ * DANH SÁCH KHI BẤM MỘT SỐ CỦA BẢNG TUẦN — chính tập ID đã sinh ra số đó (cùng hàm, cùng quyền, cùng bộ lọc).
+ * `periodId` bỏ trống là cả bảng (hợp các tuần đang hiện, đếm duy nhất). `rows=1` kèm tên để vẽ danh sách.
+ */
+api.get('/weekly-rollup/ids', requireAuth, wrap((req) => {
+  const col = qStr(req, 'col');
+  if (!col) throw badRequest('Chưa chọn cột của bảng tuần.');
+  const d = weeklyDrill(principalOf(req), {
+    branchId: toInt(req.query?.branchId), weeks: toInt(req.query?.weeks) ?? undefined,
+    track: req.query?.track === 'normal' ? 'normal' : req.query?.track === 'ft' ? 'ft' : null,
+  }, toInt(req.query?.periodId), col);
+  return {
+    unit: d.unit, n: d.ids.length, empty: d.empty,
+    rows: qStr(req, 'rows') === '1' ? rowsFor(d.unit, d.ids) : undefined,
+  };
+}));
+
 /** Việc sinh ra từ dữ liệu — tự hết khi nguồn được xử lý, không có nút đóng giả. */
 api.get('/signals', requireAuth, wrap((req) => signalsFor(principalOf(req), {
   branchId: toInt(req.query?.branchId), periodId: toInt(req.query?.periodId),
@@ -647,6 +666,62 @@ api.get('/classes/:id/issue-board/needs-evaluation', requireAuth, wrap((req) => 
 }));
 
 /**
+ * KHO TỆP VÀ LIÊN KẾT DÙNG CHUNG (PR-N N5). Mọi đường đều đi qua `platform/attachments.ts`, nơi kiểm quyền của BẢN GHI CHỦ
+ * — không có đường nào phục vụ tệp như một đường dẫn tĩnh. Tải tệp là MỘT request riêng: form đang nhập không bị đụng tới,
+ * nên lỗi tải (mạng, quá dung lượng, sai loại) chỉ hiện ở dòng tệp và nội dung đang gõ còn nguyên.
+ */
+const uploadOne = multer({ storage: multer.memoryStorage(), limits: { fileSize: attachmentSvc.MAX_FILE_BYTES, files: 1, fields: 8 } }).single('file');
+
+api.get('/attachments', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return { rows: attachmentSvc.listAttachments(principalOf(req), qStr(req, 'ownerType') ?? '', qInt(req, 'ownerId') ?? 0) };
+}));
+
+api.post('/attachments/link', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return attachmentSvc.addLink(principalOf(req), {
+    ownerType: String(req.body?.ownerType ?? ''), ownerId: toInt(req.body?.ownerId) ?? 0,
+    url: String(req.body?.url ?? ''), displayName: req.body?.displayName ?? null,
+  });
+}));
+
+api.post('/attachments/file', requireAuth, (req, res, next) => {
+  uploadOne(req, res, (err: unknown) => {
+    if (!err) return next();
+    const code = (err as { code?: string }).code;
+    next(code === 'LIMIT_FILE_SIZE' ? new HttpError(413, 'Tệp quá lớn: tối đa 10 MB.') : new HttpError(400, 'Không đọc được tệp tải lên.'));
+  });
+}, wrap((req) => {
+  maybeSimulateSaveFailure();
+  const file = (req as Request & { file?: Express.Multer.File }).file;
+  if (!file) throw badRequest('Chưa chọn tệp.');
+  /* Tên tệp trình duyệt gửi có thể bị mã hoá latin1 — đọc lại đúng UTF-8 để giữ dấu tiếng Việt. */
+  const fileName = Buffer.from(file.originalname, 'latin1').toString('utf8');
+  return attachmentSvc.addFile(principalOf(req), {
+    ownerType: String(req.body?.ownerType ?? ''), ownerId: toInt(req.body?.ownerId) ?? 0,
+    fileName, data: file.buffer, displayName: req.body?.displayName || null,
+  });
+}));
+
+/** Tải về — kiểm quyền XEM bản ghi chủ trước, luôn dạng tải về (không bao giờ hiển thị nội dung tệp trong trang). */
+api.get('/attachments/:id/download', requireAuth, wrap((req, res) => {
+  const o = attachmentSvc.openAttachment(principalOf(req), pInt(req, 'id'));
+  if (o.kind === 'link') { res.redirect(o.url); return undefined; }
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('Content-Security-Policy', "default-src 'none'; sandbox");
+  res.setHeader('Content-Type', o.mimeType);
+  res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${encodeURIComponent(o.downloadName)}`);
+  res.sendFile(o.absPath);
+  return undefined;
+}));
+
+api.delete('/attachments/:id', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  attachmentSvc.removeAttachment(principalOf(req), pInt(req, 'id'));
+  return { ok: true };
+}));
+
+/**
  * DRILL-DOWN DÙNG CHUNG CỦA MỌI CON SỐ (hợp đồng số liệu, PR-F). MỘT route, mọi chỉ số: nhận `id` của
  * chỉ số trong sổ và phạm vi, gọi ĐÚNG hàm đã sinh ra con số, áp CÙNG bộ quyền. Số là độ dài của tập;
  * `?rows=1` thêm dòng để vẽ danh sách. Hỏi chi nhánh ngoài quyền thì bị từ chối (403) — không trả tập
@@ -654,12 +729,11 @@ api.get('/classes/:id/issue-board/needs-evaluation', requireAuth, wrap((req) => 
  */
 api.get('/metrics/:id', requireAuth, wrap((req) => {
   maybeSimulateReadError();
-  const r = metricSet(principalOf(req), String(req.params.id), { branchId: qInt(req, 'branchId') });
-  return {
-    id: r.id, unit: r.unit, n: r.n, numerator: r.numeratorIds ? r.numeratorIds.length : null,
-    empty: r.empty, note: r.note, today: r.today, ids: r.ids,
-    rows: qStr(req, 'rows') === '1' ? rowsFor(r.unit, r.ids) : undefined,
-  };
+  const r = metricSet(principalOf(req), String(req.params.id), {
+    branchId: qInt(req, 'branchId'), skill: qStr(req, 'skill') ?? null,
+    from: qStr(req, 'from') ?? null, to: qStr(req, 'to') ?? null,
+  });
+  return metricResponse(r, qStr(req, 'rows') === '1');
 }));
 
 api.get('/classes/:id/overview', requireAuth, wrap((req) => {

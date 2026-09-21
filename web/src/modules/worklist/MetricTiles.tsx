@@ -9,8 +9,8 @@ import { SoLieu } from '../../ui/SoLieu.tsx';
  * nhật. Con số và danh sách mở ra khi bấm là CÙNG MỘT tập ID (`/metrics/:id`), nên không có chuyện ô ghi
  * 7 mà bấm vào ra 5 dòng, và không thể lệch với con số ở màn khác dùng cùng chỉ số.
  *
- * "Học viên dưới kỳ vọng" (design plan) CHƯA có ở đây: hàm tập ID của `hv-sos-hien-tai` chưa viết, và
- * một ô số không kiểm chứng được thì tệ hơn không có ô nào (plan.md mục 12.8).
+ * "Học viên dưới kỳ vọng" (design plan) CHƯA có ở đây: hàm tập ID của `hv-duoi-ky-vong-mon` và `hv-sos-hien-tai`
+ * ĐÃ có từ PR-N; ô số này thuộc PR-P (Tổng quan mới).
  */
 const TILES = ['hv-co-case-mo', 'case-thieu-pa', 'tin-hieu-cho-xac-minh', 'pa-can-cap-nhat'] as const;
 

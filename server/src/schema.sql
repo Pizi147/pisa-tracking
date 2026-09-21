@@ -1442,3 +1442,27 @@ CREATE TABLE demo_sessions (
   created_at TEXT NOT NULL,
   last_seen_at TEXT
 );
+
+/*
+ * KHO TỆP VÀ LIÊN KẾT DÙNG CHUNG (PR-N N5, thiet-ke/Y_THUC_VI_PHAM_VA_BIEN_PHAP.md §4.5).
+ *
+ * Một bảng cho bốn chỗ cần bằng chứng — case học thuật, phương án, vi phạm, biện pháp xử lý — vì làm riêng bốn lần là
+ * bốn lần sai khác nhau. `kind = 'link'`: `url` là địa chỉ đầy đủ (chỉ http/https). `kind = 'file'`: `url` là đường dẫn
+ * TƯƠNG ĐỐI trong `data/uploads/` do máy chủ sinh (tên ngẫu nhiên, không phải tên người dùng) và KHÔNG BAO GIỜ được đưa ra
+ * ngoài — tệp chỉ tải qua đường có kiểm quyền của bản ghi chủ. Xoá là hành động có audit.
+ */
+CREATE TABLE attachments (
+  id INTEGER PRIMARY KEY,
+  -- sos_case | case_intervention | violation | discipline_measure
+  owner_type TEXT NOT NULL,
+  owner_id INTEGER NOT NULL,
+  -- file | link
+  kind TEXT NOT NULL,
+  url TEXT NOT NULL,
+  display_name TEXT NOT NULL,
+  mime_type TEXT,
+  size_bytes INTEGER,
+  uploaded_by INTEGER NOT NULL REFERENCES users(id),
+  created_at TEXT NOT NULL
+);
+CREATE INDEX idx_attachment_owner ON attachments(owner_type, owner_id);

@@ -95,7 +95,11 @@ export function WeeklyBoard({ branchId }: { branchId: number | null }) {
   if (branchId) qs.set('branchId', String(branchId));
   if (weeks !== 12) qs.set('weeks', String(weeks));
   if (track !== 'all') qs.set('track', track);
-  const { data, loading, error, reload } = useApi<{ rows: Row[]; scopeEmpty: boolean; today: string }>(
+  const { data, loading, error, reload } = useApi<{
+    rows: Row[]; scopeEmpty: boolean; today: string;
+    /** Học viên DUY NHẤT của cả bảng và của từng tháng — không cộng số học viên của từng tuần (luật 4). */
+    totals: { caseStudents: number; byMonth: Record<string, number> };
+  }>(
     `/weekly-rollup${qs.toString() ? `?${qs}` : ''}`, [branchId, weeks, track],
   );
   const COLS = colsFor(track);
@@ -188,11 +192,15 @@ export function WeeklyBoard({ branchId }: { branchId: number | null }) {
                           {MONTH_VI[g.month] ?? g.month}
                           <span className="text-[11px] font-normal text-slate-500 ml-1.5">{g.rows.length} tuần</span>
                         </td>
-                        {COLS.map((c) => (
-                          <td key={c.key} className="td text-right tabular-nums text-slate-200">
-                            {sumOf(g.rows, c.key) || <span className="text-slate-600">—</span>}
-                          </td>
-                        ))}
+                        {COLS.map((c) => {
+                          /* Học viên KHÔNG cộng theo tuần: một em có case ở hai tuần là một em ở hàng tháng. */
+                          const v = c.key === 'caseStudents' ? (data?.totals.byMonth[g.month] ?? 0) : sumOf(g.rows, c.key);
+                          return (
+                            <td key={c.key} className="td text-right tabular-nums text-slate-200">
+                              {v || <span className="text-slate-600">—</span>}
+                            </td>
+                          );
+                        })}
                       </tr>
                       {open && g.rows.map((r) => (
                         <tr key={r.periodId} className={`row-hover ${r.isCurrent ? 'bg-white/[0.03]' : ''}`}>
@@ -218,7 +226,7 @@ export function WeeklyBoard({ branchId }: { branchId: number | null }) {
                   </td>
                   {COLS.map((c) => (
                     <td key={c.key} className="td text-right tabular-nums text-slate-200 font-semibold">
-                      {sumOf(data.rows, c.key)}
+                      {c.key === 'caseStudents' ? data.totals.caseStudents : sumOf(data.rows, c.key)}
                     </td>
                   ))}
                 </tr>

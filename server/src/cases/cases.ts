@@ -4,7 +4,7 @@ import {
   INTERVENTION_STATUS_LABEL,
   FOLLOWUP_OUTCOMES, BEHAVIOUR_TOPICS, CASE_DECISIONS, CASE_OUTCOMES, ENTRY_SKILLS,
   ISSUE_ROLES, PERMISSIONS, THREAD_TRACKS, URGENCY_LEVELS, DEFAULT_URGENCY,
-  BEHAVIOUR_MERGE_WINDOW_DAYS, behaviourCaseDeadline, behaviourMergeUntil,
+  BEHAVIOUR_MERGE_WINDOW_DAYS, behaviourCaseDeadline, behaviourMergeUntil, isNoPlanCase,
   issuesForTopic, topicFromBehaviourCode,
   CASE_CATEGORY_SHORT, CASE_CATEGORIES, CASE_CATEGORY_LABEL, FOLLOWUP_OUTCOME_LABEL, ratioResult,
   caseCategoriesFor, componentsAreCounts, componentsFor, type CaseCategory,
@@ -274,6 +274,19 @@ function sosEditCtx(c: { class_id?: number | null; eff_student_id?: number | nul
   return {
     classId: c.class_id, studentId: c.eff_student_id,
     skill: c.track === 'academic' ? c.topic ?? undefined : undefined,
+  };
+}
+
+/**
+ * QUYỀN CỦA MỘT CASE, cho module khác hỏi (kho tệp) thay vì tự dựng lại ngữ cảnh quyền — đúng bài học AUTH-01: mỗi nơi
+ * tự viết `can(...)` một kiểu là cách sinh ra lỗi quyền. Xem = quyền xem case; sửa = `SOS_EDIT` theo đúng kỹ năng (C02).
+ */
+export function caseAccess(caseId: number) {
+  const c = loadCase(caseId);
+  return {
+    requireView: (p: Principal, message: string) =>
+      require_(p, PERMISSIONS.ATTEMPT_VIEW, { classId: c.class_id, studentId: c.eff_student_id }, message),
+    requireEdit: (p: Principal, message: string) => require_(p, PERMISSIONS.SOS_EDIT, sosEditCtx(c), message),
   };
 }
 
@@ -2035,7 +2048,7 @@ export function listCases(p: Principal, f: CaseFilters = {}) {
        * biết làm gì trước, ba trạng thái để biết bức tranh chung đang ở đâu.
        */
       state: (r.status === 'done' ? 'done'
-        : (!r.disposition && (r.intervention_count as number) === 0) ? 'no_plan'
+        : isNoPlanCase({ status: r.status, disposition: r.disposition, interventionCount: r.intervention_count as number }) ? 'no_plan'
         : 'working') as CaseState,
     }));
 

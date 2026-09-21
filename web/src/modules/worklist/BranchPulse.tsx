@@ -51,8 +51,8 @@ const CLASS_COLS: { key: keyof Metrics; label: string; hint: string; tone?: 'war
   { key: 'cases', label: 'Case', hint: 'Tổng số case đang mở — đơn vị khác cột bên trái.' },
   { key: 'noPlan', label: 'Thiếu phương án', tone: 'warn',
     hint: 'Case đã mở nhưng chưa ai ghi sẽ làm gì cho em.' },
-  { key: 'overdueUpdate', label: 'Quá hạn cập nhật case', tone: 'danger',
-    hint: 'Đã qua hẹn xem lại mà chưa ai cập nhật tình hình hoặc kết quả.' },
+  { key: 'overdueUpdate', label: 'Phương án cần cập nhật', tone: 'danger',
+    hint: 'Đếm PHƯƠNG ÁN đã qua hạn cập nhật kết quả tuần mà chưa ai cập nhật — một case có hai phương án quá hạn tính hai.' },
   { key: 'pendingApproval', label: 'Đề xuất chờ duyệt', tone: 'danger',
     hint: 'Phương án giáo viên đề xuất, đang chờ Quản lý trả lời.' },
 ];
@@ -62,7 +62,7 @@ const PEOPLE_COLS: { key: keyof PersonRow; label: string; hint: string }[] = [
   { key: 'mtOverdue', label: 'MT quá hạn nhập', hint: 'Trong số trên, phần đã qua hạn nhập điểm.' },
   { key: 'cases', label: 'Case phụ trách', hint: 'Case mà người này là NGƯỜI PHỤ TRÁCH chính — không phải mọi case của lớp họ dạy.' },
   { key: 'noPlan', label: 'Thiếu phương án', hint: 'Case chưa ai ghi sẽ làm gì.' },
-  { key: 'overdueUpdate', label: 'Quá hạn cập nhật case', hint: 'Đã qua hẹn xem lại mà chưa cập nhật.' },
+  { key: 'overdueUpdate', label: 'Phương án cần cập nhật', hint: 'Phương án của case người này phụ trách đã qua hạn cập nhật kết quả tuần.' },
   { key: 'pendingApproval', label: 'Đề xuất chờ duyệt', hint: 'Đề xuất của người này đang chờ trả lời.' },
 ];
 
@@ -181,7 +181,7 @@ export function BranchPulse({ branchId, activeGroup, onGroup }: {
           Việc cần lưu ý
           {!open && (
             <span className="text-xs font-normal text-slate-500">
-              {data.total.cases} case · {data.total.overdueUpdate} quá hạn cập nhật
+              {data.total.cases} case · {data.total.overdueUpdate} phương án cần cập nhật
             </span>
           )}
         </button>

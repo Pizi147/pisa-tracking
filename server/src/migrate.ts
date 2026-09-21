@@ -406,6 +406,7 @@ function migrateCaseEngine(applied: string[], skipped: string[]) {
     migrateSignals(conn, applied);
     migrateCaseForm(conn, applied);
     migrateNoShowMarks(conn, applied);
+    migrateAttachments(conn, applied);
     migratePlanForm(conn, applied);
     migrateMoveRequests(conn, applied);
     migrateEntryBands(conn, applied);
@@ -2409,6 +2410,30 @@ function migratePlanForm(conn: any, applied: string[]) {
  * Chỉ THÊM CỘT, không suy ra gì từ dữ liệu cũ: chưa có ô nào từng mang dấu '-' nên không có gì để điền,
  * và không có lần vắng nào được sinh ngược. Idempotent — chạy lại không làm gì.
  */
+/**
+ * KHO TỆP VÀ LIÊN KẾT (PR-N N5). Chỉ TẠO bảng mới nếu chưa có — không đụng dữ liệu cũ vì chưa từng có chỗ nào lưu tệp.
+ * Idempotent: chạy lại không làm gì.
+ */
+function migrateAttachments(conn: any, applied: string[]) {
+  if (conn.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name = 'attachments'").get()) return;
+  conn.exec(`
+    CREATE TABLE attachments (
+      id INTEGER PRIMARY KEY,
+      owner_type TEXT NOT NULL,
+      owner_id INTEGER NOT NULL,
+      kind TEXT NOT NULL,
+      url TEXT NOT NULL,
+      display_name TEXT NOT NULL,
+      mime_type TEXT,
+      size_bytes INTEGER,
+      uploaded_by INTEGER NOT NULL REFERENCES users(id),
+      created_at TEXT NOT NULL
+    );
+    CREATE INDEX idx_attachment_owner ON attachments(owner_type, owner_id);
+  `);
+  applied.push('Thêm kho tệp và liên kết dùng chung (bảng attachments) cho bằng chứng của case, phương án, vi phạm và biện pháp. Chưa có tệp nào cũ nên không có gì được điền.');
+}
+
 function migrateNoShowMarks(conn: any, applied: string[]) {
   const cols = (t: string) => (conn.prepare(`PRAGMA table_info(${t})`).all() as any[]).map((c: any) => c.name);
   if (!(conn.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name = 'assessment_scores'").get())) return;
