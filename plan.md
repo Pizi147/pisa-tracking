@@ -2916,7 +2916,7 @@ theo GV. Mục 22.4–22.9 giữ nguyên làm đặc tả cho lúc đó, chỉ b
 12. **Hạn 3 ngày của S04 chưa thành dòng "quá hạn" ở Việc cần làm** (chỉ có chỉ số `case-cho-xac-dinh-nguyen-nhan` và `caseDetail().sos.dueOn`). PR-K K6 dựng dòng nhắc trên hai thứ đó; nếu muốn có mức "quá hạn" thì cần thêm một mục vào `myWork` — quyết định của chủ sản phẩm.
 13. **Không điền ngược Phối hợp SOS cho dữ liệu cũ:** database đã có lượt SOS từ trước PR-T chỉ có việc phối hợp khi lượt đó được chấm lại; bản chính bắt đầu từ dữ liệu rỗng nên không ảnh hưởng.
 14. **Chưa làm (cố ý — thuộc PR-K, cấm sửa giao diện ở PR này):** nhãn mức `Cần chú ý` còn một chỗ chữ cứng trong giao diện: `web/src/modules/cases/CaseBoardPage.tsx:451`. Mọi chỗ khác đọc nhãn từ `URGENCY_LABEL` nên đã tự đổi.
-- [ ] **T9.** `npm run check` xanh. Cập nhật mục 14 + `BAN_DO_OVERHAUL.md`. Mở PR, **không tự merge**.
+- [x] **T9.** `npm run check` xanh (PR #39). Cập nhật mục 14 + `BAN_DO_OVERHAUL.md`. Mở PR, **không tự merge**.
 
 ## 23.2. PR-Z — Chuẩn bị bản chính — ⚰️ HẾT HIỆU LỰC, thay bằng PR-Z2 ở mục 24
 
