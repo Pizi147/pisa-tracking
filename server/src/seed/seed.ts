@@ -286,7 +286,7 @@ export function runSeed() {
        */
       'Case': (conn.prepare('SELECT COUNT(*) AS n FROM sos_cases').get() as any).n,
       'Vi phạm': yThuc.violations,
-      '— trong đó đã đánh dấu không chính xác': yThuc.invalid,
+      '— trong đó đã xoá (có dòng audit)': yThuc.deleted,
       'Biện pháp xử lý': yThuc.measures,
       '— trong đó đã thực hiện': yThuc.done,
       '— trong đó đang chuẩn bị': yThuc.preparing,

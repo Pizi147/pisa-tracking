@@ -89,7 +89,7 @@ export const METRICS: readonly ChiSo[] = [
     id: 'pa-can-cap-nhat', ten: 'Phương án cần cập nhật',
     cauHoi: 'Bao nhiêu phương án đang theo dõi mà đã quá hạn cập nhật kết quả tuần?',
     donVi: 'phuong-an',
-    tapDuDieuKien: 'Phương án đang theo dõi, không chờ duyệt, quá hạn cập nhật tuần. Khác "quá hạn làm" (F11).',
+    tapDuDieuKien: 'Phương án đang theo dõi, không chờ duyệt, không phải phương án điền sẵn chưa xác nhận, quá hạn cập nhật tuần. Khác "quá hạn làm" (F11).',
     thoiGian: 'hien-trang', khuTrung: 'COUNT DISTINCT intervention_id', drilldown: '/metrics/pa-can-cap-nhat',
   },
   {
@@ -117,7 +117,7 @@ export const METRICS: readonly ChiSo[] = [
     id: 'dung-han-cap-nhat', ten: 'Đúng hạn cập nhật',
     cauHoi: 'Bao nhiêu nghĩa vụ cập nhật được hoàn thành đúng hạn?',
     donVi: 'nghia-vu',
-    tapDuDieuKien: 'Mẫu số: nghĩa vụ cập nhật tuần (một phương án × một chu kỳ) của case học thuật đã QUA hạn — đã cập nhật hoặc chưa ai cập nhật; phương án chờ duyệt, case Ý thức và case nhập bù không có nghĩa vụ. Tử số: nghĩa vụ hoàn thành đúng hạn. Mặc định mọi nghĩa vụ đã qua hạn tới ngày dữ liệu; có thể giới hạn theo kỳ. KHÔNG đếm số lần bấm ghi chú.',
+    tapDuDieuKien: 'Mẫu số: nghĩa vụ cập nhật tuần (một phương án × một chu kỳ) của case học thuật đã QUA hạn — đã cập nhật hoặc chưa ai cập nhật; phương án chờ duyệt, phương án điền sẵn từ SOS chưa xác nhận, case Ý thức và case nhập bù không có nghĩa vụ. Tử số: nghĩa vụ hoàn thành đúng hạn. Mặc định mọi nghĩa vụ đã qua hạn tới ngày dữ liệu; có thể giới hạn theo kỳ. KHÔNG đếm số lần bấm ghi chú.',
     thoiGian: 'ket-qua-trong-ky', khuTrung: 'COUNT DISTINCT (phương án × chu kỳ)', drilldown: '/metrics/dung-han-cap-nhat',
   },
   {
@@ -134,30 +134,23 @@ export const METRICS: readonly ChiSo[] = [
    */
   {
     id: 'vi-pham-tong', ten: 'Vi phạm',
-    cauHoi: 'Có bao nhiêu vi phạm còn hiệu lực đã xảy ra trong kỳ?',
+    cauHoi: 'Có bao nhiêu vi phạm đã xảy ra trong kỳ?',
     donVi: 'vi-pham',
-    tapDuDieuKien: 'Vi phạm còn hiệu lực (không bị đánh dấu không chính xác). Đếm theo NGÀY XẢY RA, không theo ngày ghi nhận — GV nhớ ra muộn không làm sự việc xảy ra muộn. Thuộc lớp GHI LÚC ĐÓ.',
+    tapDuDieuKien: 'Mọi vi phạm đang có (vi phạm ghi sai đã bị xoá nên không còn trong tập). Đếm theo NGÀY XẢY RA, không theo ngày ghi nhận — GV nhớ ra muộn không làm sự việc xảy ra muộn. Thuộc lớp GHI LÚC ĐÓ.',
     thoiGian: 'phat-sinh-trong-ky', khuTrung: 'COUNT DISTINCT violation_id', drilldown: '/metrics/vi-pham-tong',
   },
   {
     id: 'vi-pham-chua-xu-ly', ten: 'Vi phạm chưa xử lý',
-    cauHoi: 'Hiện có bao nhiêu vi phạm còn hiệu lực mà chưa nằm trong biện pháp nào?',
+    cauHoi: 'Hiện có bao nhiêu vi phạm mà chưa nằm trong biện pháp nào?',
     donVi: 'vi-pham',
-    tapDuDieuKien: 'Vi phạm còn hiệu lực và KHÔNG có dòng nào trong bảng nối với biện pháp — kể cả biện pháp đang chuẩn bị (đã gom vào là GVCN đã bắt tay xử lý). Theo lớp học viên ĐANG học.',
+    tapDuDieuKien: 'Vi phạm KHÔNG có dòng nào trong bảng nối với biện pháp — kể cả biện pháp đang chuẩn bị (đã gom vào là GVCN đã bắt tay xử lý). Theo lớp học viên ĐANG học.',
     thoiGian: 'hien-trang', khuTrung: 'COUNT DISTINCT violation_id', drilldown: '/metrics/vi-pham-chua-xu-ly',
   },
   {
-    id: 'vi-pham-khong-hieu-luc', ten: 'Vi phạm không còn hiệu lực',
-    cauHoi: 'Có bao nhiêu vi phạm đã bị đánh dấu không chính xác trong kỳ?',
-    donVi: 'vi-pham',
-    tapDuDieuKien: 'Vi phạm đã đánh dấu không chính xác. Đứng RIÊNG: không trừ vào "Vi phạm" trên cùng một hàng. Đếm theo ngày xảy ra.',
-    thoiGian: 'phat-sinh-trong-ky', khuTrung: 'COUNT DISTINCT violation_id', drilldown: '/metrics/vi-pham-khong-hieu-luc',
-  },
-  {
     id: 'hv-co-vi-pham', ten: 'Học viên có vi phạm',
-    cauHoi: 'Có bao nhiêu học viên có ít nhất một vi phạm còn hiệu lực trong kỳ?',
+    cauHoi: 'Có bao nhiêu học viên có ít nhất một vi phạm trong kỳ?',
     donVi: 'hoc-vien',
-    tapDuDieuKien: 'Học viên có ít nhất một vi phạm còn hiệu lực xảy ra trong kỳ. Em có ba vi phạm vẫn là MỘT học viên; em chỉ có vi phạm đã hủy thì không tính.',
+    tapDuDieuKien: 'Học viên có ít nhất một vi phạm xảy ra trong kỳ. Em có ba vi phạm vẫn là MỘT học viên.',
     thoiGian: 'phat-sinh-trong-ky', khuTrung: 'COUNT DISTINCT student_id', drilldown: '/metrics/hv-co-vi-pham',
   },
   {

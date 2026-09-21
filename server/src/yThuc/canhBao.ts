@@ -50,7 +50,7 @@ export function warningsFor(studentIds: number[], today = demoToday()): Map<numb
     for (const r of db()
       .prepare(
         `SELECT v.id, v.student_id, v.occurred_on FROM violations v
-          WHERE v.student_id IN (${ph}) AND v.valid = 1
+          WHERE v.student_id IN (${ph})
             AND NOT EXISTS (SELECT 1 FROM measure_violations mv WHERE mv.violation_id = v.id)
           ORDER BY v.occurred_on, v.id`,
       )

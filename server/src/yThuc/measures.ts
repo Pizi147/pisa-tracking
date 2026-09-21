@@ -23,8 +23,9 @@ import { noteMeasureChange, violationsByIds, type ViolationView } from './violat
  *      lẫn lúc xác nhận, cả lúc đổi loại. Mọi loại khác đi thẳng được (B05).
  *   3. HAI TRẠNG THÁI, KHÔNG BA. `preparing` sửa mọi thứ, không có hạn nào; `done` khóa danh sách vi phạm. Không có cửa Quản lý
  *      duyệt (Y01) — Quản lý chỉ nhận THÔNG BÁO.
- *   4. `violation_count_at_confirm` LÀ ẢNH CHỤP, không đếm lại. Hủy một vi phạm sau đó KHÔNG đổi số này (biện pháp đã thực sự được
- *      làm với n vi phạm) nhưng THỐNG KÊ vi phạm loại nó ra — hai câu hỏi khác nhau, hai con số khác nhau (V13).
+ *   4. SỐ VI PHẠM CỦA MỘT BIỆN PHÁP LUÔN LÀ SỐ ĐANG GẮN (rulebook v3, V14′): xoá một vi phạm thì số này giảm theo, kể cả biện pháp đã thực hiện.
+ *      Biện pháp đã thực hiện mất hết vi phạm vẫn được giữ (việc đã làm thật) và hiện 0 vi phạm. Cột `violation_count_at_confirm` (ảnh chụp
+ *      của PR-J) NGỪNG DÙNG — không còn ghi, không còn đọc.
  */
 
 export type MeasureDetail = {
@@ -38,14 +39,10 @@ export type MeasureDetail = {
   performedOn: string | null; performedBy: number | null; performedByName: string | null; performerName: string | null;
   participants: string | null;
   confirmedBy: number | null; confirmedByName: string | null; confirmedAt: string | null;
-  /** ẢNH CHỤP số vi phạm lúc xác nhận. Không đếm lại. */
-  violationCountAtConfirm: number | null;
   createdAt: string; createdBy: number; createdByName: string | null; updatedAt: string | null;
   violations: ViolationView[];
-  /** Số vi phạm HIỆN đang bị đánh dấu không chính xác trong danh sách (V13). */
-  invalidViolationCount: number;
-  /** V13: dòng lưu ý khi có vi phạm của biện pháp đã thực hiện sau đó bị hủy; `null` nếu không có. */
-  invalidNote: string | null;
+  /** SỐ VI PHẠM ĐANG GẮN (V14′) — không phải ảnh chụp: xoá một vi phạm thì số này giảm, kể cả biện pháp đã thực hiện. */
+  violationCount: number;
   attachmentCount: number;
   /**
    * Câu nói TRƯỚC cần tệp gì khi biện pháp còn Đang chuẩn bị (đặc tả 7.3 điểm 6) — GVCN đi scan thư trước, không phải bấm
@@ -87,11 +84,9 @@ function violationIdsOf(measureId: number): number[] {
 
 function buildDetail(p: Principal, r: any): MeasureDetail {
   const violations = violationsByIds(violationIdsOf(r.id));
-  const invalidViolationCount = violations.filter((v) => !v.valid).length;
   const attachmentCount = attachmentCountOf(r.id);
   const spec = MEASURE_REQUIRED_FIELDS[r.kind as MeasureKind];
   const needsFile = r.status === 'preparing' && spec?.attachment === 'required' && attachmentCount < 1;
-  const total = r.violation_count_at_confirm ?? violations.length;
   return {
     id: r.id,
     studentId: r.student_id, studentName: r.student_name, studentCode: r.student_code,
@@ -103,12 +98,8 @@ function buildDetail(p: Principal, r: any): MeasureDetail {
     performedOn: r.performed_on ?? null, performedBy: r.performed_by ?? null, performedByName: r.performed_by_name ?? null,
     performerName: r.performer_name ?? null, participants: r.participants ?? null,
     confirmedBy: r.confirmed_by ?? null, confirmedByName: r.confirmed_by_name ?? null, confirmedAt: r.confirmed_at ?? null,
-    violationCountAtConfirm: r.violation_count_at_confirm ?? null,
     createdAt: r.created_at, createdBy: r.created_by, createdByName: r.created_by_name ?? null, updatedAt: r.updated_at ?? null,
-    violations, invalidViolationCount,
-    invalidNote: r.status === 'done' && invalidViolationCount > 0
-      ? `${invalidViolationCount} trong ${total} vi phạm của biện pháp này sau đó được xác định là không chính xác.`
-      : null,
+    violations, violationCount: violations.length,
     attachmentCount,
     evidenceHint: needsFile
       ? (r.kind === 'suspension' ? 'Cần đính kèm tệp hoặc liên kết quyết định đình chỉ học' : 'Cần đính kèm tệp hoặc liên kết thư cảnh cáo')
@@ -214,7 +205,7 @@ function defaultOwner(classId: number | null, creator: number): number {
   return r?.user_id ?? creator;
 }
 
-/** B02: ít nhất một vi phạm, của ĐÚNG MỘT học viên, còn hiệu lực. Trả về danh sách đã khử trùng. */
+/** B02: ít nhất một vi phạm, của ĐÚNG MỘT học viên. Trả về danh sách đã khử trùng. */
 function checkViolationSet(studentId: number, ids: unknown): number[] {
   const list = [...new Set((Array.isArray(ids) ? ids : []).map((x) => Number(x)).filter((x) => Number.isInteger(x) && x > 0))];
   if (!list.length) throw badRequest('Biện pháp phải có ít nhất một vi phạm.');
@@ -222,9 +213,6 @@ function checkViolationSet(studentId: number, ids: unknown): number[] {
   if (found.length !== list.length) throw notFound('Không tìm thấy một trong các vi phạm đã chọn');
   if (found.some((v) => v.studentId !== studentId)) {
     throw badRequest('Một biện pháp chỉ xử lý một học viên — không gom vi phạm của nhiều em vào cùng một biện pháp.');
-  }
-  if (found.some((v) => !v.valid)) {
-    throw badRequest('Có vi phạm đã không còn hiệu lực — không gom vào biện pháp được.');
   }
   return list;
 }
@@ -417,10 +405,6 @@ export function confirmMeasure(p: Principal, id: number, input: {
   if (problem) throw badRequest(problem.message);
 
   const violations = violationsByIds(violationIdsOf(id));
-  const invalid = violations.filter((v) => !v.valid).length;
-  if (invalid > 0) {
-    throw badRequest(`Biện pháp này còn chứa ${invalid} vi phạm không còn hiệu lực — hãy bỏ chúng ra trước khi xác nhận.`);
-  }
   if (!violations.length) throw badRequest('Biện pháp phải có ít nhất một vi phạm.');
 
   tx(() => {
@@ -428,11 +412,11 @@ export function confirmMeasure(p: Principal, id: number, input: {
       .prepare(
         `UPDATE discipline_measures
             SET status = 'done', note = ?, performed_on = ?, performed_by = ?, performer_name = ?, participants = ?,
-                confirmed_by = ?, confirmed_at = ?, violation_count_at_confirm = ?, updated_at = ?
+                confirmed_by = ?, confirmed_at = ?, updated_at = ?
           WHERE id = ?`,
       )
       .run(note || null, performedOn, performedBy, performerName, String(input.participants ?? '').trim() || null,
-           p.userId, nowIso(), violations.length, nowIso(), id);
+           p.userId, nowIso(), nowIso(), id);
     writeAudit({
       actorUserId: p.userId, action: 'measure.confirm', entityType: 'discipline_measure', entityId: id,
       entityLabel: `${row.student_code} · ${kindLabelOf(row.kind, row.custom_name)}`,

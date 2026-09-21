@@ -79,26 +79,24 @@ export const VIOLATION_SKILL_LABEL: Record<string, string> = {
 };
 
 /**
- * BỐN TRẠNG THÁI NGƯỜI DÙNG THẤY của một vi phạm — SUY RA, không lưu (đặc tả §4.1).
+ * BA TRẠNG THÁI NGƯỜI DÙNG THẤY của một vi phạm — SUY RA từ bảng nối `measure_violations`, không lưu (đặc tả §4.1).
  *
- * Ba cái đầu suy từ bảng nối `measure_violations`, cái thứ tư là cột `valid`. Lưu trạng thái xử lý ở chính vi phạm là cách
- * chắc chắn nhất để nó lệch với bảng nối.
+ * Trước rulebook v3 (21/09/2026 tối) còn trạng thái thứ tư `Không còn hiệu lực` (đánh dấu không chính xác). Nay ghi sai thì sửa hoặc XOÁ thẳng
+ * (V11′–V14′), nên chỉ còn ba. Lưu trạng thái xử lý ở chính vi phạm là cách chắc chắn nhất để nó lệch với bảng nối.
  */
-export const VIOLATION_STATES = ['unhandled', 'preparing', 'handled', 'invalid'] as const;
+export const VIOLATION_STATES = ['unhandled', 'preparing', 'handled'] as const;
 export type ViolationState = (typeof VIOLATION_STATES)[number];
 export const VIOLATION_STATE_LABEL: Record<ViolationState, string> = {
   unhandled: 'Chưa xử lý',
   preparing: 'Đang chuẩn bị xử lý',
   handled: 'Đã xử lý',
-  invalid: 'Không còn hiệu lực',
 };
 
 /**
- * Trạng thái hiển thị của một vi phạm. Thứ tự ưu tiên: không còn hiệu lực > đã xử lý (nằm ít nhất một biện pháp đã thực
- * hiện) > đang chuẩn bị xử lý > chưa xử lý. "Đã xử lý" KHÔNG có nghĩa là xoá hay ẩn khỏi lịch sử (nguồn mục 32).
+ * Trạng thái hiển thị của một vi phạm. Thứ tự ưu tiên: đã xử lý (nằm ít nhất một biện pháp đã thực hiện) > đang chuẩn bị xử lý > chưa xử lý.
+ * "Đã xử lý" KHÔNG có nghĩa là xoá hay ẩn khỏi lịch sử (nguồn mục 32).
  */
-export function violationState(v: { valid: boolean; inDone: boolean; inPreparing: boolean }): ViolationState {
-  if (!v.valid) return 'invalid';
+export function violationState(v: { inDone: boolean; inPreparing: boolean }): ViolationState {
   if (v.inDone) return 'handled';
   if (v.inPreparing) return 'preparing';
   return 'unhandled';

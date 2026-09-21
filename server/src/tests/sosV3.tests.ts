@@ -808,6 +808,160 @@ export async function runSosV3Tests(t: YThucTestKit) {
     assert(rows.length === M('phoi-hop-luot-sos').ids.length && rows.every((r) => r.title && r.href), 'Danh sách bấm số phải có dòng đủ tên + đường dẫn');
   });
 
+  // ================================================================== T6 — xoá vi phạm (V11′–V14′)
+
+  console.log('\nPR-T · 7. Xoá vi phạm thẳng — thay "đánh dấu không chính xác" (V11′–V14′) — T6');
+
+  const violSvc: any = await import('../yThuc/violations.ts');
+  const measSvc: any = await import('../yThuc/measures.ts');
+  const warnSvc: any = await import('../yThuc/canhBao.ts');
+  const thongKeSvc: any = await import('../yThuc/thongKe.ts');
+  const auditRows = (action: string, id?: number) => all('SELECT * FROM audit_logs WHERE action = ?' + (id ? ' AND entity_id = ?' : ''), ...(id ? [action, id] : [action]));
+  const recordV = (who: any, sid: number, extra: Record<string, unknown> = {}) => (violSvc.recordViolation(who, {
+    studentId: sid, category: 'homework', description: 'Không nộp bài Writing Task 2 buổi này', ...extra }) as any).violation.id as number;
+  /** Ghi `n` vi phạm khác ngày cho một học viên, trả về danh sách id. */
+  const recordMany = (sid: number, n: number) => Array.from({ length: n }, (_, i) => recordV(gvcn, sid, { occurredOn: addDays(TODAY, -(i + 1)), description: `Vi phạm thứ ${i + 1} dùng cho phép kiểm xoá` }));
+  const mkMeasure = (sid: number, kind: string, ids: number[]) => measSvc.createMeasure(gvcn, { studentId: sid, kind, violationIds: ids }) as any;
+  const doneMeasure = (sid: number, ids: number[]) => {
+    const m = mkMeasure(sid, 'family_report', ids);
+    return measSvc.confirmMeasure(gvcn, m.id, { performedOn: addDays(TODAY, 0), performedBy: gvcn.userId, note: 'Đã gửi report cho gia đình' }) as any;
+  };
+
+  check('PR-T · V11′ Ghi sai thì XOÁ thẳng: không lý do, không "đánh dấu không chính xác" (không còn hàm/route/trạng thái đó); dòng, dòng nối, lịch sử sửa và tệp gắn với nó biến mất', () => {
+    const st = makeStudent('V11p');
+    const [v, keep] = recordMany(st.id, 2);
+    violSvc.editViolation(gvcn, v, { description: 'Sửa một lần để có dòng lịch sử sửa' });
+    attachmentsSvc.addLink(gvcn, { ownerType: 'violation', ownerId: v, url: 'https://example.com/anh', displayName: 'Ảnh bài nộp' });
+    const m = mkMeasure(st.id, 'talk_short', [v, keep]);
+    assert(count('SELECT COUNT(*) n FROM violation_history WHERE violation_id = ?', v) >= 2, 'Tiền đề: có lịch sử sửa + lịch sử thêm vào biện pháp');
+    assert(typeof violSvc.deleteViolation === 'function' && !violSvc.invalidateViolation, 'Phải có deleteViolation và KHÔNG còn invalidateViolation');
+    violSvc.deleteViolation(gvcn, v);
+    assert(!get('SELECT id FROM violations WHERE id = ?', v), 'Dòng vi phạm còn đó');
+    assert(count('SELECT COUNT(*) n FROM measure_violations WHERE violation_id = ?', v) === 0, 'Dòng nối còn đó');
+    assert(count('SELECT COUNT(*) n FROM violation_history WHERE violation_id = ?', v) === 0, 'Lịch sử sửa còn đó');
+    assert(count("SELECT COUNT(*) n FROM attachments WHERE owner_type = 'violation' AND owner_id = ?", v) === 0, 'Tệp gắn với vi phạm còn đó');
+    assert(count('SELECT COUNT(*) n FROM measure_violations WHERE measure_id = ?', m.id) === 1, 'Biện pháp chỉ còn vi phạm kia');
+    assertThrows(() => violSvc.violationDetail(gvcn, v), /Không tìm thấy/, 'Đọc lại vi phạm đã xoá');
+    assertThrows(() => violSvc.deleteViolation(gvcn, v), /Không tìm thấy/, 'Xoá hai lần');
+    assert((violSvc.listViolations(gvcn, { studentId: st.id }) as any).rows.map((r: any) => r.id).join() === String(keep), 'Danh sách chỉ còn vi phạm kia');
+  });
+
+  check('PR-T · V13′ Xoá ghi ĐÚNG MỘT dòng `audit_logs` (ai · lúc nào · nội dung đã xoá · biện pháp bị gỡ) — chỉ để truy vết; có audit cho từng tệp bị xoá theo', () => {
+    const st = makeStudent('V13p'); const [v, other] = recordMany(st.id, 2);
+    attachmentsSvc.addLink(gvcn, { ownerType: 'violation', ownerId: v, url: 'https://example.com/bang-chung', displayName: 'Bằng chứng' });
+    const m = mkMeasure(st.id, 'talk_short', [v, other]);
+    violSvc.deleteViolation(gvcn, v);
+    const rows = auditRows('violation.delete', v);
+    assert(rows.length === 1 && rows[0].actor_user_id === gvcn.userId && rows[0].entity_type === 'violation' && rows[0].created_at, `Audit: ${JSON.stringify(rows)}`);
+    const before = JSON.parse(rows[0].before_json);
+    assert(before.description.startsWith('Vi phạm thứ 1') && before.category === 'homework' && before.occurredOn === addDays(TODAY, -1)
+      && before.reportedBy === gvcn.userId && JSON.stringify(before.measureIds) === JSON.stringify([m.id]) && before.studentId === st.id, `Nội dung đã xoá: ${rows[0].before_json}`);
+    assert(count("SELECT COUNT(*) n FROM audit_logs WHERE action = 'attachment.delete' AND before_json LIKE ?", '%"ownerId":' + v + '%') === 1, 'Tệp bị xoá theo phải có audit riêng');
+  });
+
+  check('PR-T · V10+V12′ Người xoá được: người ghi (của mình) · GVCN của lớp · Quản lý trong phạm vi · Quản trị; GVBM đồng nghiệp, giáo viên ngoài lớp, Quản lý chi nhánh khác thì KHÔNG — vi phạm còn nguyên', () => {
+    const st = makeStudent('V10p');
+    const byW1 = recordV(w1T, st.id, { description: 'Vi phạm do GV Writing 1 ghi' });
+    for (const [who, name] of [[w2T, 'GVBM đồng nghiệp'], [outsiderT, 'GV ngoài lớp'], [P.cpManager, 'Quản lý CP']] as const) {
+      assertThrows(() => violSvc.deleteViolation(who, byW1), /quyền|phạm vi|người ghi|chủ nhiệm/, `${name} xoá vi phạm`);
+    }
+    assert(get('SELECT id FROM violations WHERE id = ?', byW1), 'Bị từ chối thì vi phạm còn nguyên');
+    violSvc.deleteViolation(w1T, byW1);                                                    // người ghi xoá của mình
+    for (const who of [gvcn, P.mbManager, P.admin]) {
+      const v = recordV(w1T, st.id, { description: 'Vi phạm sẽ bị người có quyền xoá' });
+      violSvc.deleteViolation(who, v);
+      assert(!get('SELECT id FROM violations WHERE id = ?', v), 'GVCN / Quản lý / Quản trị xoá được');
+    }
+  });
+
+  check('PR-T · V12′ Xoá được ở mọi nơi — kể cả vi phạm đang nằm trong biện pháp ĐANG CHUẨN BỊ hay ĐÃ THỰC HIỆN; thao tác đi qua danh sách lớp, hồ sơ học viên (cùng hàm)', () => {
+    const st = makeStudent('V12p'); const ids = recordMany(st.id, 4);
+    const prep = mkMeasure(st.id, 'talk_short', [ids[0], ids[1]]);
+    const done = doneMeasure(st.id, [ids[2], ids[3]]);
+    violSvc.deleteViolation(gvcn, ids[0]); violSvc.deleteViolation(gvcn, ids[2]);
+    assert(count('SELECT COUNT(*) n FROM measure_violations WHERE measure_id = ?', prep.id) === 1 && count('SELECT COUNT(*) n FROM measure_violations WHERE measure_id = ?', done.id) === 1, 'Đã gỡ khỏi cả hai biện pháp');
+    assert(get('SELECT status FROM discipline_measures WHERE id = ?', done.id).status === 'done', 'Biện pháp đã thực hiện còn nguyên');
+  });
+
+  check('PR-T · V14′ (§10#9) Xoá vi phạm nằm trong Report gia đình ĐÃ THỰC HIỆN: Report còn (việc đã làm thật), số vi phạm của biện pháp là số ĐANG GẮN (giảm 1, không phải ảnh chụp), thống kê giảm 1, có dòng audit', () => {
+    const st = makeStudent('V14p'); const ids = recordMany(st.id, 5);
+    const report = doneMeasure(st.id, ids);
+    assert(report.violationCount === 5 && report.violations.length === 5 && !('violationCountAtConfirm' in report) && !('invalidNote' in report) && !('invalidViolationCount' in report),
+      `Trước khi xoá: ${JSON.stringify({ c: report.violationCount, keys: Object.keys(report).filter((k) => /invalid|AtConfirm/.test(k)) })}`);
+    const total = () => (metricsSvc.metricSet(P.mbManager, 'vi-pham-tong', { branchId: get('SELECT branch_id n FROM classes WHERE id = ?', CLASS).n }).ids as number[]);
+    assert(total().includes(ids[1]), 'Tiền đề: vi phạm nằm trong thống kê');
+    const before = total().length;
+    violSvc.deleteViolation(gvcn, ids[1]);
+    const after = measSvc.measureDetail(gvcn, report.id) as any;
+    assert(after.status === 'done' && after.performedOn === report.performedOn && after.violationCount === 4 && after.violations.length === 4, `Sau khi xoá: ${JSON.stringify({ s: after.status, c: after.violationCount })}`);
+    assert(total().length === before - 1 && !total().includes(ids[1]), 'Thống kê phải giảm đúng 1');
+    assert(auditRows('violation.delete', ids[1]).length === 1, 'Phải có dòng audit');
+    /* Xoá hết vi phạm của biện pháp đã thực hiện: biện pháp VẪN giữ (việc đã làm thật), hiện 0 vi phạm. */
+    for (const id of [ids[0], ids[2], ids[3], ids[4]]) violSvc.deleteViolation(gvcn, id);
+    const empty = measSvc.measureDetail(gvcn, report.id) as any;
+    assert(empty.status === 'done' && empty.violationCount === 0 && empty.violations.length === 0, `Report mất hết vi phạm phải còn với 0 vi phạm: ${JSON.stringify({ s: empty.status, c: empty.violationCount })}`);
+    const measured = metricsSvc.metricSet(P.mbManager, 'bien-phap-da-thuc-hien', { branchId: get('SELECT branch_id n FROM classes WHERE id = ?', CLASS).n }).ids as number[];
+    assert(measured.includes(report.id), 'Biện pháp đã thực hiện vẫn được thống kê');
+  });
+
+  check('PR-T · V13′ Mọi số liệu tự cập nhật sau khi xoá: cảnh báo 5 ngày đổi theo vi phạm cũ nhất còn lại; xoá hết thì hết cảnh báo; bảng ba khu vực của lớp không còn dòng đó', () => {
+    const st = makeStudent('V13q');
+    const old = recordV(gvcn, st.id, { occurredOn: addDays(TODAY, -10), description: 'Vi phạm cũ nhất, sẽ bị xoá đầu tiên' });
+    const newer = recordV(gvcn, st.id, { occurredOn: addDays(TODAY, -7), description: 'Vi phạm mới hơn, xoá sau' });
+    assert((warnSvc.studentWarning(gvcn, st.id) as any).oldestAgeDays === 10, 'Trước khi xoá');
+    violSvc.deleteViolation(gvcn, old);
+    const w = warnSvc.studentWarning(gvcn, st.id) as any;
+    assert(w.oldestAgeDays === 7 && w.count === 1 && w.active, `Cảnh báo phải theo vi phạm còn lại: ${JSON.stringify(w)}`);
+    violSvc.deleteViolation(gvcn, newer);
+    assert((warnSvc.studentWarning(gvcn, st.id) as any).count === 0 && !(warnSvc.studentWarning(gvcn, st.id) as any).active, 'Xoá hết thì hết cảnh báo');
+  });
+
+  check('PR-T · Trạng thái hiển thị của vi phạm còn BA: Chưa xử lý · Đang chuẩn bị xử lý · Đã xử lý; không còn `Không còn hiệu lực`, không còn cột/trường hiệu lực trong dữ liệu trả ra', () => {
+    assert(JSON.stringify(domain.VIOLATION_STATES) === JSON.stringify(['unhandled', 'preparing', 'handled']), `Trạng thái: ${domain.VIOLATION_STATES}`);
+    assert(JSON.stringify(domain.VIOLATION_STATE_LABEL) === JSON.stringify({ unhandled: 'Chưa xử lý', preparing: 'Đang chuẩn bị xử lý', handled: 'Đã xử lý' }), 'Nhãn ba trạng thái');
+    assert(domain.violationState({ inDone: true, inPreparing: true }) === 'handled' && domain.violationState({ inDone: false, inPreparing: true }) === 'preparing' && domain.violationState({ inDone: false, inPreparing: false }) === 'unhandled', 'Thứ tự ưu tiên');
+    const st = makeStudent('V14s'); const v = recordV(gvcn, st.id);
+    const view = (violSvc.listViolations(gvcn, { studentId: st.id }) as any).rows[0];
+    for (const k of ['valid', 'invalidReason', 'invalidatedBy', 'invalidatedByName', 'invalidatedAt']) assert(!(k in view), `Vi phạm còn trường "${k}" của mô hình cũ`);
+    assert(view.id === v && view.state === 'unhandled', 'Trạng thái suy ra');
+    assert(!(violSvc as any).invalidateViolation, 'Không còn hàm hủy');
+  });
+
+  check('PR-T · Chỉ số `vi-pham-khong-hieu-luc` đã BỎ khỏi sổ chỉ số và khỏi hàm thống kê Ý thức (không còn trạng thái đó); bảy chỉ số Ý thức còn lại', () => {
+    assert(domain.metricById('vi-pham-khong-hieu-luc') === null && !domain.METRICS.some((m: any) => m.id === 'vi-pham-khong-hieu-luc'), 'Sổ chỉ số vẫn còn');
+    const thongKe: any = thongKeSvc;
+    assert(!thongKe.YTHUC_METRIC_IDS.includes('vi-pham-khong-hieu-luc') && thongKe.YTHUC_METRIC_IDS.length === 7, `Ý thức: ${thongKe.YTHUC_METRIC_IDS}`);
+    assertThrows(() => metricsSvc.metricSet(P.mbManager, 'vi-pham-khong-hieu-luc', {}), /Không tìm thấy/, 'Hỏi chỉ số đã bỏ');
+  });
+
+  check('PR-T · V13′ Nâng cấp database cũ: dòng `valid = 0` được XOÁ (kèm dòng nối, lịch sử, tệp, và một dòng audit mỗi vi phạm); dòng hợp lệ và biện pháp giữ nguyên; chạy lặp không làm gì', () => {
+    const m = preTDatabase();
+    migrateMod.migrateSosV3(m, []);
+    const NOW = '2026-09-10T00:00:00.000Z';
+    const q = (sql: string, ...a: unknown[]) => Number(m.prepare(sql).run(...a).lastInsertRowid);
+    q(`INSERT INTO classes (id, code, branch_id, kind, status, created_at) VALUES (1, 'MB-FT 1', 1, 'FT', 'active', ?)`, NOW);
+    const viol = (valid: number, desc: string) => q(
+      `INSERT INTO violations (student_id, class_id, category, occurred_on, reported_on, reported_by, description, valid, invalid_reason, invalidated_by, invalidated_at, created_at)
+       VALUES (1, 1, 'homework', '2026-09-01', '2026-09-02', 1, ?, ?, ?, ?, ?, ?)`, desc, valid, valid ? null : 'Em đã nộp, tôi bỏ sót', valid ? null : 1, valid ? null : NOW, NOW);
+    const good = viol(1, 'Vi phạm còn hiệu lực giữ lại'), bad = viol(0, 'Vi phạm đã đánh dấu không chính xác');
+    const measure = q(`INSERT INTO discipline_measures (student_id, class_id, kind, status, performed_on, violation_count_at_confirm, created_at, created_by) VALUES (1,1,'family_report','done','2026-09-05',2,?,1)`, NOW);
+    for (const v of [good, bad]) q('INSERT INTO measure_violations (measure_id, violation_id, added_at) VALUES (?,?,?)', measure, v, NOW);
+    q(`INSERT INTO violation_history (violation_id, field, old_value, new_value, reason, actor_user_id, created_at) VALUES (?, 'valid', '1', '0', 'Em đã nộp, tôi bỏ sót', 1, ?)`, bad, NOW);
+    q(`INSERT INTO attachments (owner_type, owner_id, kind, url, display_name, uploaded_by, created_at) VALUES ('violation', ?, 'link', 'https://x.example', 'Bằng chứng cũ', 1, ?)`, bad, NOW);
+    const applied: string[] = [];
+    migrateMod.migrateDeleteInvalidViolations(m, applied);
+    const n = (sql: string, ...a: unknown[]) => (m.prepare(sql).get(...a) as any).n as number;
+    assert(n('SELECT COUNT(*) n FROM violations') === 1 && n('SELECT COUNT(*) n FROM violations WHERE id = ?', good) === 1, 'Chỉ còn vi phạm hợp lệ');
+    assert(n('SELECT COUNT(*) n FROM measure_violations WHERE violation_id = ?', bad) === 0 && n('SELECT COUNT(*) n FROM measure_violations WHERE measure_id = ?', measure) === 1, 'Dòng nối bị gỡ, biện pháp còn với 1 vi phạm');
+    assert(n('SELECT COUNT(*) n FROM violation_history WHERE violation_id = ?', bad) === 0 && n("SELECT COUNT(*) n FROM attachments WHERE owner_type = 'violation'") === 0, 'Lịch sử và tệp đi theo');
+    const audit = m.prepare("SELECT * FROM audit_logs WHERE action = 'violation.delete'").all() as any[];
+    assert(audit.length === 1 && audit[0].entity_id === bad && JSON.parse(audit[0].before_json).description.includes('không chính xác') && JSON.parse(audit[0].before_json).legacyInvalidReason === 'Em đã nộp, tôi bỏ sót', `Audit: ${JSON.stringify(audit)}`);
+    assert(applied.length === 1 && /1 vi phạm/.test(applied[0]), `Báo cáo nâng cấp: ${applied.join(' | ')}`);
+    const again: string[] = [];
+    migrateMod.migrateDeleteInvalidViolations(m, again);
+    assert(again.length === 0 && n("SELECT COUNT(*) n FROM audit_logs WHERE action = 'violation.delete'") === 1, 'Chạy lần hai không làm gì');
+  });
+
   void load;
   void t;
 }

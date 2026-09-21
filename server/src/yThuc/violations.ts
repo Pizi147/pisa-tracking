@@ -10,6 +10,7 @@ import { badRequest, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
 import { demoToday } from '../demoConfig.ts';
 import { writeAudit } from '../platform/audit.ts';
 import { currentCycle } from '../fasttrack/cycles.ts';
+import { purgeAttachmentsOf } from '../platform/attachments.ts';
 import {
   EDIT_VIOLATION_MESSAGE, KEY_TAKEN_MESSAGE, activeClassOf, canEditViolation, requireRecordViolation, requireViewClass, requireViewStudent,
 } from './access.ts';
@@ -20,9 +21,11 @@ import {
  * Vi phạm KHÔNG phải case: không đợt, không hạn, không mức độ, không người phụ trách. Ghi một vi phạm không sinh
  * biện pháp, case, tín hiệu, việc hay thông báo (V08) — nó chỉ xuất hiện trong hồ sơ học viên để GVCN theo dõi.
  *
- * TRẠNG THÁI XỬ LÝ KHÔNG ĐƯỢC LƯU Ở ĐÂY. Bốn trạng thái người dùng thấy (`Chưa xử lý` · `Đang chuẩn bị xử lý` · `Đã xử lý` ·
- * `Không còn hiệu lực`) là SUY RA: ba cái đầu từ bảng nối `measure_violations`, cái thứ tư từ cột `valid`. Lưu ở hai nơi
- * là lệch ở hai nơi.
+ * TRẠNG THÁI XỬ LÝ KHÔNG ĐƯỢC LƯU Ở ĐÂY. Ba trạng thái người dùng thấy (`Chưa xử lý` · `Đang chuẩn bị xử lý` · `Đã xử lý`) là SUY RA từ bảng nối
+ * `measure_violations`. Lưu ở hai nơi là lệch ở hai nơi.
+ *
+ * GHI SAI THÌ SỬA HOẶC XOÁ THẲNG (rulebook v3, V11′–V14′ — thay "đánh dấu không chính xác" của PR-J): không còn trạng thái `Không còn hiệu lực`.
+ * Các cột `valid`/`invalid_*` của bảng `violations` NGỪNG DÙNG (giữ trong schema để `migrate` an toàn; mọi dòng cũ `valid = 0` đã được xoá khi nâng cấp).
  */
 
 export type ViolationView = {
@@ -34,8 +37,6 @@ export type ViolationView = {
   occurredOn: string; reportedOn: string;
   reportedBy: number; reportedByName: string | null;
   description: string;
-  valid: boolean;
-  invalidReason: string | null; invalidatedBy: number | null; invalidatedByName: string | null; invalidatedAt: string | null;
   state: ViolationState; stateLabel: string;
   /** Số ngày từ ngày xảy ra tới hôm nay — chỉ có nghĩa với vi phạm chưa xử lý (W06). */
   ageDays: number;
@@ -46,7 +47,7 @@ export type ViolationView = {
 
 const SELECT = `
   SELECT v.*, s.full_name AS student_name, s.student_code, c.code AS class_code,
-         ru.full_name AS reported_by_name, iu.full_name AS invalidated_by_name,
+         ru.full_name AS reported_by_name,
          EXISTS (SELECT 1 FROM measure_violations mv JOIN discipline_measures m ON m.id = mv.measure_id
                   WHERE mv.violation_id = v.id AND m.status = 'done') AS in_done,
          EXISTS (SELECT 1 FROM measure_violations mv JOIN discipline_measures m ON m.id = mv.measure_id
@@ -54,11 +55,10 @@ const SELECT = `
     FROM violations v
     JOIN students s ON s.id = v.student_id
     LEFT JOIN classes c ON c.id = v.class_id
-    LEFT JOIN users ru ON ru.id = v.reported_by
-    LEFT JOIN users iu ON iu.id = v.invalidated_by`;
+    LEFT JOIN users ru ON ru.id = v.reported_by`;
 
 export function shapeViolation(r: any, today = demoToday()): ViolationView {
-  const state = violationState({ valid: r.valid === 1, inDone: !!r.in_done, inPreparing: !!r.in_preparing });
+  const state = violationState({ inDone: !!r.in_done, inPreparing: !!r.in_preparing });
   const ageDays = violationAgeDays(r.occurred_on, today);
   return {
     id: r.id,
@@ -69,9 +69,6 @@ export function shapeViolation(r: any, today = demoToday()): ViolationView {
     occurredOn: r.occurred_on, reportedOn: r.reported_on,
     reportedBy: r.reported_by, reportedByName: r.reported_by_name ?? null,
     description: r.description,
-    valid: r.valid === 1,
-    invalidReason: r.invalid_reason ?? null, invalidatedBy: r.invalidated_by ?? null,
-    invalidatedByName: r.invalidated_by_name ?? null, invalidatedAt: r.invalidated_at ?? null,
     state, stateLabel: VIOLATION_STATE_LABEL[state],
     ageDays, ageLabel: state === 'unhandled' ? violationAgeLabel(ageDays) : '',
     createdAt: r.created_at, updatedAt: r.updated_at ?? null,
@@ -162,7 +159,7 @@ export function defaultSkillFor(p: Principal, classId: number | null): string | 
 
 // ---------------------------------------------------------------- ghi (V01–V08)
 
-/** V06 — CẢNH BÁO TRÙNG MỀM: cùng học viên, cùng nhóm, cùng ngày xảy ra, vi phạm còn hiệu lực. Chỉ trả bản đang có; KHÔNG chặn, KHÔNG gộp. */
+/** V06 — CẢNH BÁO TRÙNG MỀM: cùng học viên, cùng nhóm, cùng ngày xảy ra. Chỉ trả bản đang có; KHÔNG chặn, KHÔNG gộp. */
 export function similarViolations(
   p: Principal,
   q: { studentId: number; category: string; occurredOn?: string | null; excludeId?: number | null },
@@ -171,7 +168,7 @@ export function similarViolations(
   requireViewStudent(p, q.studentId);
   const on = q.occurredOn || demoToday();
   return (db()
-    .prepare(`${SELECT} WHERE v.student_id = ? AND v.category = ? AND v.occurred_on = ? AND v.valid = 1 AND v.id != ? ORDER BY v.id`)
+    .prepare(`${SELECT} WHERE v.student_id = ? AND v.category = ? AND v.occurred_on = ? AND v.id != ? ORDER BY v.id`)
     .all(q.studentId, q.category, on, q.excludeId ?? 0) as any[]).map((r) => shapeViolation(r));
 }
 
@@ -216,8 +213,8 @@ export function recordViolation(p: Principal, input: {
     const info = db()
       .prepare(
         `INSERT INTO violations (student_id, cycle_id, class_id, category, skill, occurred_on, reported_on, reported_by,
-                                 description, valid, idempotency_key, created_at)
-         VALUES (?,?,?,?,?,?,?,?,?,1,?,?)`,
+                                 description, idempotency_key, created_at)
+         VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
       )
       .run(input.studentId, cycle?.id ?? null, classId, category, skill, occurredOn, today, p.userId, description, key, nowIso());
     const newId = Number(info.lastInsertRowid);
@@ -231,7 +228,7 @@ export function recordViolation(p: Principal, input: {
   return { violation: loadViolation(id), similar };
 }
 
-// ---------------------------------------------------------------- sửa và hủy ghi nhận (V09–V14)
+// ---------------------------------------------------------------- sửa và xoá (V09–V10, V11′–V14′)
 
 function addHistory(violationId: number, field: string, oldValue: string | null, newValue: string | null,
   actor: number | null, reason: string | null = null) {
@@ -261,7 +258,6 @@ export function editViolation(p: Principal, id: number, patch: {
   const row = loadRow(id);
   requireViewStudent(p, row.student_id);
   if (!canEditViolation(p, row)) throw forbidden(EDIT_VIOLATION_MESSAGE);
-  if (row.valid !== 1) throw badRequest('Vi phạm này đã không còn hiệu lực — không sửa được nữa, chỉ xem lại.');
 
   const category = patch.category === undefined ? (row.category as ViolationCategory) : checkCategory(patch.category);
   const description = patch.description === undefined && patch.category === undefined
@@ -293,31 +289,41 @@ export function editViolation(p: Principal, id: number, patch: {
 }
 
 /**
- * V11 — ĐÁNH DẤU KHÔNG CHÍNH XÁC. Lý do BẮT BUỘC; KHÔNG BAO GIỜ xóa vật lý (nguồn mục 15: báo cáo của GV có thể sai, nhưng
- * lịch sử phải còn). V12/V14: vi phạm `valid = 0` ra khỏi mọi thống kê và cảnh báo, nhưng vẫn nằm trong lịch sử của học viên.
- * V13: vi phạm đã nằm trong biện pháp `done` vẫn hủy được — biện pháp giữ nguyên số vi phạm lúc xác nhận, và KHÔNG gỡ khỏi
- * bảng nối, vì biện pháp đó đã thực sự được làm.
+ * V11′–V14′ — XOÁ THẲNG (rulebook v3, thay "đánh dấu không chính xác" của PR-J). Không lý do, không hộp thoại nhập chữ: giao diện chỉ hỏi một dòng
+ * `Xoá vi phạm này? Nó sẽ bị gỡ khỏi {n} biện pháp.`
+ *
+ *   V11′  không còn trạng thái `Không còn hiệu lực`.
+ *   V12′  xoá được ở mọi nơi — kể cả vi phạm đang nằm trong biện pháp ĐÃ THỰC HIỆN.
+ *   V13′  xoá dòng `violations`, các dòng `measure_violations`, lịch sử sửa và tệp gắn với nó; mọi số liệu tự cập nhật (không có gì lưu sẵn để lệch);
+ *         ghi MỘT dòng `audit_logs` (ai · lúc nào · nội dung đã xoá) — chỉ để truy vết, không hiện trên giao diện.
+ *   V14′  biện pháp ĐÃ THỰC HIỆN mất hết vi phạm do xoá vẫn được giữ (việc đã làm thật), hiện `0 vi phạm`: số của biện pháp luôn là số ĐANG GẮN.
+ *   V10   người xoá: người ghi (của mình) · GVCN của lớp · Quản lý trong phạm vi — cùng quyền với sửa.
+ *
+ * Trả về số biện pháp đã bị gỡ vi phạm (để giao diện nói "đã gỡ khỏi n biện pháp").
  */
-export function invalidateViolation(p: Principal, id: number, reason: string): ViolationView {
+export function deleteViolation(p: Principal, id: number): { ok: true; removedFromMeasures: number } {
   const row = loadRow(id);
   requireViewStudent(p, row.student_id);
   if (!canEditViolation(p, row)) throw forbidden(EDIT_VIOLATION_MESSAGE);
-  if (row.valid !== 1) throw badRequest('Vi phạm này đã không còn hiệu lực rồi.');
-  const why = String(reason ?? '').trim();
-  if (!why) throw badRequest('Cần ghi lý do đánh dấu không chính xác — ví dụ "em đã nộp, tôi bỏ sót".');
 
-  tx(() => {
-    db()
-      .prepare('UPDATE violations SET valid = 0, invalid_reason = ?, invalidated_by = ?, invalidated_at = ?, updated_at = ? WHERE id = ?')
-      .run(why, p.userId, nowIso(), nowIso(), id);
-    addHistory(id, 'valid', '1', '0', p.userId, why);
+  return tx(() => {
+    const measureIds = (db().prepare('SELECT measure_id FROM measure_violations WHERE violation_id = ? ORDER BY measure_id').all(id) as any[])
+      .map((r) => r.measure_id as number);
+    const files = purgeAttachmentsOf('violation', id, p.userId);
+    db().prepare('DELETE FROM measure_violations WHERE violation_id = ?').run(id);
+    db().prepare('DELETE FROM violation_history WHERE violation_id = ?').run(id);
+    db().prepare('DELETE FROM violations WHERE id = ?').run(id);
     writeAudit({
-      actorUserId: p.userId, action: 'violation.invalidate', entityType: 'violation', entityId: id,
+      actorUserId: p.userId, action: 'violation.delete', entityType: 'violation', entityId: id,
       entityLabel: `${row.student_code} · ${VIOLATION_CATEGORY_LABEL[row.category as ViolationCategory]}`,
-      before: { valid: true }, after: { valid: false, reason: why },
+      before: {
+        studentId: row.student_id, studentCode: row.student_code, classId: row.class_id ?? null, category: row.category, skill: row.skill ?? null,
+        occurredOn: row.occurred_on, reportedOn: row.reported_on, reportedBy: row.reported_by, description: row.description,
+        measureIds, attachments: files,
+      },
     });
+    return { ok: true as const, removedFromMeasures: measureIds.length };
   });
-  return loadViolation(id);
 }
 
 // ---------------------------------------------------------------- đọc
@@ -402,5 +408,5 @@ export function violationDetail(p: Principal, id: number): ViolationDetail {
   const attachmentCount = (db()
     .prepare("SELECT COUNT(*) n FROM attachments WHERE owner_type = 'violation' AND owner_id = ?")
     .get(id) as any).n as number;
-  return { ...v, attachmentCount, canEdit: canEditViolation(p, row) && row.valid === 1, measures, history };
+  return { ...v, attachmentCount, canEdit: canEditViolation(p, row), measures, history };
 }

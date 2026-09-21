@@ -14,6 +14,8 @@ import { writeAudit } from '../platform/audit.ts';
 import * as attachmentSvc from '../platform/attachments.ts';
 import * as violationSvc from '../yThuc/violations.ts';
 import * as measureSvc from '../yThuc/measures.ts';
+import * as phoiHopSvc from '../yThuc/phoiHop.ts';
+import * as sosAutoSvc from '../cases/sosAuto.ts';
 import * as warningSvc from '../yThuc/canhBao.ts';
 import { classViolationBoard } from '../yThuc/board.ts';
 import { maybeSimulateReadError, maybeSimulateSaveFailure, pInt, qInt, qStr, wrap } from './helpers.ts';
@@ -784,9 +786,10 @@ api.patch('/violations/:id', requireAuth, wrap((req) => {
     occurredOn: 'occurredOn' in b ? (b.occurredOn ?? null) : undefined,
   });
 }));
-api.post('/violations/:id/invalidate', requireAuth, wrap((req) => {
+/** XOÁ THẲNG (rulebook v3, V11′–V14′): không lý do, không "đánh dấu không chính xác". Trả số biện pháp đã bị gỡ vi phạm này. */
+api.delete('/violations/:id', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
-  return violationSvc.invalidateViolation(principalOf(req), pInt(req, 'id'), String(yThucBody(req).reason ?? ''));
+  return violationSvc.deleteViolation(principalOf(req), pInt(req, 'id'));
 }));
 
 api.post('/measures', requireAuth, wrap((req) => {
@@ -1154,6 +1157,56 @@ api.post('/cases/:id/interventions', requireAuth, wrap((req) => {
  * Quản lý trả lời một phương án đang chờ duyệt: duyệt / không duyệt / góp ý.
  * Góp ý KHÔNG kết thúc việc chờ — Quản lý vẫn nợ một câu trả lời.
  */
+/**
+ * CASE TỪ SOS (rulebook v3, PR-T): GVBM đúng kỹ năng hoặc Quản lý XÁC NHẬN · THAY phương án điền sẵn, hoặc đóng ngay `Không cần theo dõi` kèm lý do
+ * chọn nhanh. Quyền kiểm ở máy chủ theo ĐÚNG kỹ năng của case (C02).
+ */
+api.post('/interventions/:id/confirm', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  const b = (req.body ?? {}) as Record<string, any>;
+  return sosAutoSvc.confirmPresetPlan(principalOf(req), pInt(req, 'id'), {
+    description: 'description' in b ? (b.description ?? null) : undefined, followupDue: 'followupDue' in b ? (b.followupDue ?? null) : undefined,
+  });
+}));
+api.post('/interventions/:id/replace', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return sosAutoSvc.replacePresetPlan(principalOf(req), pInt(req, 'id'), (req.body ?? {}) as any);
+}));
+api.post('/cases/:id/dismiss', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return sosAutoSvc.dismissSosCase(principalOf(req), pInt(req, 'id'), (req.body ?? {}) as any);
+}));
+
+/**
+ * PHỐI HỢP SOS (rulebook v3, PR-T) — việc của GVCN sau một lượt Mock có SOS. Xem: mọi giáo viên dạy lớp; thêm / xác nhận / bỏ: GVCN của lớp em đang học và
+ * Quản lý (P04). Kiểm ở máy chủ.
+ */
+api.get('/classes/:id/phoi-hop-sos', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return phoiHopSvc.coordinationOfClass(principalOf(req), pInt(req, 'id'), { includeDone: qStr(req, 'includeDone') === '1' });
+}));
+api.get('/students/:id/phoi-hop-sos', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return phoiHopSvc.coordinationOfStudent(principalOf(req), pInt(req, 'id'));
+}));
+api.post('/attempts/:id/phoi-hop-sos', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  const b = (req.body ?? {}) as Record<string, any>;
+  return phoiHopSvc.addCoordination(principalOf(req), pInt(req, 'id'), { kind: b.kind, customName: b.customName ?? null });
+}));
+api.post('/phoi-hop-sos/:id/confirm', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  const b = (req.body ?? {}) as Record<string, any>;
+  return phoiHopSvc.confirmCoordination(principalOf(req), pInt(req, 'id'), {
+    performedOn: b.performedOn ?? null, note: b.note ?? null, performerName: b.performerName ?? null,
+  });
+}));
+api.post('/phoi-hop-sos/:id/remove', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  const b = (req.body ?? {}) as Record<string, any>;
+  return phoiHopSvc.removeCoordination(principalOf(req), pInt(req, 'id'), { reasonCode: b.reasonCode ?? null, reasonText: b.reasonText ?? null });
+}));
+
 api.post('/interventions/:id/respond', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return caseSvc.respondToPlan(principalOf(req), pInt(req, 'id'), req.body ?? {});

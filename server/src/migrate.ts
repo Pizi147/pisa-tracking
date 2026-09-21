@@ -2,6 +2,9 @@ import { db, isInitialised } from './db.ts';
 import { addDays, nowIso } from './util.ts';
 import { demoToday } from './demoConfig.ts';
 import crypto from 'node:crypto';
+import fs from 'node:fs';
+import path from 'node:path';
+import { uploadsDir } from './platform/attachments.ts';
 import { PERMISSION_LABEL, VIOLATION_SKILLS, legacyTopicToViolationCategory } from '../../shared/domain/index.ts';
 import { DEFAULT_ADMIN_EMAIL, DEFAULT_ADMIN_PASSWORD, EMAIL_SUFFIX } from './platform/accounts.ts';
 import { seedRoutes } from './platform/sysconfig.ts';
@@ -434,6 +437,7 @@ function migrateCaseEngine(applied: string[], skipped: string[]) {
     migrateLegacyDisciplineCases(conn, applied);
     /* Sau cùng của các bước cấu trúc: rulebook v3 (PR-T) thêm cột/bảng trên những bảng mà các bước trên đã dựng đủ. */
     migrateSosV3(conn, applied);
+    migrateDeleteInvalidViolations(conn, applied);
 
     /*
      * Case đã đóng theo hệ thống cũ mà không có hướng xử lý: ghi rõ là "đóng theo hệ thống
@@ -2817,6 +2821,48 @@ export function migrateSosV3(conn: any, applied: string[]) {
   applied.push(
     `PR-T (rulebook v3): thêm ${added.length} cột (${added.join(', ') || 'không'}) cho phương án điền sẵn / lý do đóng case`
       + `${table ? ' và bảng Phối hợp SOS (sos_coordination_actions)' : ''}. Dữ liệu cũ giữ nguyên; phương án cũ không bị coi là điền sẵn.`,
+  );
+}
+
+/**
+ * RULEBOOK v3, V13′ — VI PHẠM CŨ `valid = 0` ĐƯỢC XOÁ (PR-T). Trước đó "đánh dấu không chính xác" giữ dòng lại; nay ghi sai thì xoá thẳng, nên những dòng
+ * đã đánh dấu không còn chỗ đứng. Mỗi vi phạm bị xoá kèm: dòng nối với biện pháp, lịch sử sửa, tệp bằng chứng (dòng + tệp trên đĩa nếu có), và MỘT dòng
+ * `audit_logs` giữ nội dung đã xoá (kể cả lý do cũ) — chỉ để truy vết. Biện pháp đã thực hiện giữ nguyên, chỉ còn ít vi phạm hơn.
+ * Chạy lặp không làm gì (không còn dòng `valid = 0`). Cột `valid`/`invalid_*` giữ trong schema, ngừng dùng.
+ */
+export function migrateDeleteInvalidViolations(conn: any, applied: string[]) {
+  const hasTable = (t: string) => !!conn.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name = ?").get(t);
+  if (!hasTable('violations')) return;
+  if (!(conn.prepare('PRAGMA table_info(violations)').all() as any[]).some((c: any) => c.name === 'valid')) return;
+  const rows = conn.prepare('SELECT * FROM violations WHERE valid = 0 ORDER BY id').all() as any[];
+  if (!rows.length) return;
+  const now = nowIso();
+  for (const v of rows) {
+    const measureIds = (conn.prepare('SELECT measure_id FROM measure_violations WHERE violation_id = ? ORDER BY measure_id').all(v.id) as any[]).map((r) => r.measure_id);
+    const files = hasTable('attachments')
+      ? (conn.prepare("SELECT * FROM attachments WHERE owner_type = 'violation' AND owner_id = ?").all(v.id) as any[])
+      : [];
+    for (const f of files) {
+      if (f.kind === 'file') { try { fs.rmSync(path.resolve(uploadsDir(), f.url), { force: true }); } catch { /* tệp đã mất thì thôi */ } }
+    }
+    if (files.length) conn.prepare("DELETE FROM attachments WHERE owner_type = 'violation' AND owner_id = ?").run(v.id);
+    conn.prepare('DELETE FROM measure_violations WHERE violation_id = ?').run(v.id);
+    if (hasTable('violation_history')) conn.prepare('DELETE FROM violation_history WHERE violation_id = ?').run(v.id);
+    conn.prepare('DELETE FROM violations WHERE id = ?').run(v.id);
+    conn
+      .prepare('INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, entity_label, before_json, after_json, created_at) VALUES (?,?,?,?,?,?,?,?)')
+      .run(
+        null, 'violation.delete', 'violation', v.id, `Nâng cấp rulebook v3 · vi phạm ${v.id}`,
+        JSON.stringify({
+          studentId: v.student_id, classId: v.class_id ?? null, category: v.category, skill: v.skill ?? null, occurredOn: v.occurred_on,
+          reportedOn: v.reported_on, reportedBy: v.reported_by, description: v.description, measureIds, attachments: files.length,
+          legacyInvalidReason: v.invalid_reason ?? null,
+        }),
+        null, now,
+      );
+  }
+  applied.push(
+    `PR-T (rulebook v3): xoá ${rows.length} vi phạm cũ đã "đánh dấu không chính xác" (kèm dòng nối, lịch sử sửa, tệp; mỗi vi phạm một dòng audit). Biện pháp giữ nguyên.`,
   );
 }
 

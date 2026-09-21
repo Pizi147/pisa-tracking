@@ -69,19 +69,21 @@ export async function runYThucTests(t: YThucTestKit) {
     assert(cross.length === 0, 'Có biện pháp chứa vi phạm của học viên khác (B02)');
   });
 
-  check('PR-J · DEMO #1 + #2 Vi phạm đúng là mặc định; đúng hai vi phạm bị đánh dấu không chính xác và mỗi cái có lý do; cái của cô Hà mang câu "em đã nộp, tôi bỏ sót"', () => {
-    const invalid = rows('SELECT * FROM violations WHERE valid = 0 AND id <= ?', VMAX);
-    assert(invalid.length === 2, `Đúng hai vi phạm không hiệu lực, đang có ${invalid.length}`);
-    for (const v of invalid) assert(v.invalid_reason && v.invalidated_by && v.invalidated_at, `Vi phạm ${v.id} không hiệu lực mà thiếu lý do/người/lúc (V11)`);
-    const g = invalid.find((v) => v.student_id === HA);
-    assert(g && /em đã nộp, tôi bỏ sót/i.test(g.invalid_reason), 'Vi phạm không chính xác của Trần Thu Hà phải mang lý do "Em đã nộp, tôi bỏ sót"');
-    assert(rows('SELECT id FROM violations WHERE valid = 1 AND id <= ?', VMAX).length > 20, 'Phần lớn vi phạm phải là vi phạm đúng');
-    const hist = rows(`SELECT * FROM violation_history WHERE violation_id = ? AND field = 'valid'`, g.id);
-    assert(hist.length === 1 && hist[0].reason === g.invalid_reason, 'Việc hủy phải có đúng một dòng lịch sử kèm lý do');
+  check('PR-J · DEMO #1 + #2 (v3) Vi phạm là mặc định; đúng hai vi phạm đã bị XOÁ và mỗi cái còn đúng MỘT dòng audit giữ nội dung đã xoá; cái của cô Hà mang nội dung "Không nộp bài Reading"', () => {
+    const del = rows(`SELECT * FROM audit_logs WHERE action = 'violation.delete' AND entity_label LIKE 'Bộ demo · %'`);
+    assert(del.length === 2, `Đúng hai vi phạm đã xoá trong bộ demo, đang có ${del.length}`);
+    for (const a of del) {
+      const b = JSON.parse(a.before_json);
+      assert(a.actor_user_id && b.description && b.studentId && Array.isArray(b.measureIds), `Audit xoá thiếu người/nội dung: ${a.before_json}`);
+      assert(!rows('SELECT id FROM violations WHERE id = ?', a.entity_id).length && !rows('SELECT 1 FROM measure_violations WHERE violation_id = ?', a.entity_id).length, `Vi phạm ${a.entity_id} đã xoá mà còn dòng`);
+    }
+    const g = del.find((a) => JSON.parse(a.before_json).studentId === HA);
+    assert(g && /Không nộp bài Reading/.test(JSON.parse(g.before_json).description), 'Vi phạm đã xoá của Trần Thu Hà phải là "Không nộp bài Reading tuần này"');
+    assert(rows('SELECT id FROM violations WHERE id <= ?', VMAX).length > 20, 'Phần lớn vi phạm còn nguyên');
   });
 
   check('PR-J · DEMO #3 + #4 Nguyễn Minh An có vi phạm của bốn giáo viên khác nhau và ba nhóm khác nhau (BTVN · Chuyên cần · Thái độ)', () => {
-    const v = seedViolations(AN).filter((x) => x.valid === 1);
+    const v = seedViolations(AN);
     assert(new Set(v.map((x) => x.reported_by)).size >= 4, `Cần vi phạm của ít nhất 4 giáo viên, có ${new Set(v.map((x) => x.reported_by)).size}`);
     const cats = new Set(v.map((x) => x.category));
     for (const c of ['homework', 'attendance', 'conduct']) assert(cats.has(c), `Thiếu nhóm ${c}`);
@@ -99,7 +101,7 @@ export async function runYThucTests(t: YThucTestKit) {
     assert(new Set(vs.map((v) => v.skill ?? '-')).size >= 3, 'Năm vi phạm phải thuộc ít nhất ba môn');
     assert(new Set(vs.map((v) => v.reported_by)).size >= 3, 'Năm vi phạm phải do ít nhất ba giáo viên ghi');
     assert(new Set(vs.map((v) => v.occurred_on)).size === 5, 'Năm vi phạm phải ở năm ngày khác nhau');
-    assert(report.violation_count_at_confirm === 5, `Ảnh chụp lúc xác nhận phải là 5, đang ${report.violation_count_at_confirm}`);
+    assert(linksOf(report.id).length === 5, `Số vi phạm ĐANG GẮN của Report phải là 5, đang ${linksOf(report.id).length}`);
   });
 
   check('PR-J · DEMO #6 Sáu vi phạm của Lê Quang Huy đi vào cả ba biện pháp: Meeting với học viên, Report gia đình và Thư cảnh cáo lần 1', () => {
@@ -123,7 +125,7 @@ export async function runYThucTests(t: YThucTestKit) {
   });
 
   check('PR-J · DEMO #8 Vi phạm bị bỏ khỏi biện pháp: có dòng lịch sử thêm rồi bỏ, và nó quay lại Chưa xử lý (Trần Thu Hà)', () => {
-    const back = seedViolations(HA).filter((v) => v.valid === 1 && !rows('SELECT 1 FROM measure_violations WHERE violation_id = ?', v.id).length)
+    const back = seedViolations(HA).filter((v) => !rows('SELECT 1 FROM measure_violations WHERE violation_id = ?', v.id).length)
       .find((v) => rows(`SELECT * FROM violation_history WHERE violation_id = ? AND field = 'measure'`, v.id).length === 2);
     assert(back, 'Trần Thu Hà phải có một vi phạm đã được thêm rồi bỏ khỏi biện pháp');
     const h = rows(`SELECT * FROM violation_history WHERE violation_id = ? AND field = 'measure' ORDER BY id`, back.id);
@@ -166,14 +168,14 @@ export async function runYThucTests(t: YThucTestKit) {
     assert(direct.length > 0, '#15 Không có case học thuật do GV tạo trực tiếp (không qua tín hiệu)');
   });
 
-  check('PR-J · DEMO #16 Vi phạm hết hiệu lực NẰM TRONG biện pháp đã thực hiện: biện pháp giữ nguyên, ảnh chụp KHÔNG đổi, thống kê loại nó ra (Lê Quang Huy)', () => {
+  check('PR-J · DEMO #16 (v3) Vi phạm bị XOÁ sau khi các biện pháp đã thực hiện: biện pháp giữ nguyên với số vi phạm ĐANG GẮN, có một dòng audit ghi các biện pháp bị gỡ (Lê Quang Huy)', () => {
     const meet = seedMeasures(HUY).find((m) => m.kind === 'meeting_student');
-    const inside = linksOf(meet.id).map((id) => one('SELECT * FROM violations WHERE id = ?', id)).filter((v) => v.valid === 0);
-    assert(inside.length === 1 && meet.status === 'done', 'Phải có đúng một vi phạm không hiệu lực nằm trong biện pháp đã thực hiện');
-    assert(inside[0].invalidated_at.slice(0, 10) > meet.performed_on, 'Vi phạm bị hủy SAU khi biện pháp đã thực hiện');
-    assert(meet.violation_count_at_confirm === 6 && linksOf(meet.id).length === 6, 'Ảnh chụp vẫn là 6 dù một vi phạm đã bị hủy (V13)');
-    const admin = loadPrincipal(1);
-    assert(!yThucMetric(admin, 'vi-pham-tong').ids.includes(inside[0].id) && yThucMetric(admin, 'vi-pham-khong-hieu-luc').ids.includes(inside[0].id), 'Thống kê phải loại vi phạm đã hủy khỏi tổng và đưa nó sang chỉ số riêng');
+    const report = seedMeasures(HUY).find((m) => m.kind === 'family_report' && m.status === 'done');
+    const del = rows(`SELECT * FROM audit_logs WHERE action = 'violation.delete' AND before_json LIKE ?`, `%"studentId":${HUY},%`);
+    assert(del.length === 1 && meet.status === 'done', 'Phải có đúng một vi phạm của Huy đã bị xoá, nằm trong biện pháp đã thực hiện');
+    const b = JSON.parse(del[0].before_json);
+    assert(b.measureIds.includes(meet.id) && b.measureIds.includes(report.id) && del[0].created_at.slice(0, 10) > meet.performed_on, 'Vi phạm bị xoá SAU khi biện pháp đã thực hiện, và audit ghi các biện pháp bị gỡ');
+    assert(linksOf(meet.id).length === 6 && linksOf(report.id).length === 5, `Số vi phạm đang gắn: ${linksOf(meet.id).length} / ${linksOf(report.id).length}`);
   });
 
   check('PR-J · DEMO #17 Một vi phạm nằm trong HAI biện pháp ở HAI thời điểm khác nhau — nhiều–nhiều thật (Lê Quang Huy)', () => {
@@ -225,7 +227,7 @@ export async function runYThucTests(t: YThucTestKit) {
     assert(JSON.stringify(domain.MEASURE_STATUSES) === JSON.stringify(['preparing', 'done']), 'Chỉ có preparing và done (Y01: không có cửa duyệt)');
     assert(domain.MEASURE_STATUS_LABEL.preparing === 'Đang chuẩn bị' && domain.MEASURE_STATUS_LABEL.done === 'Đã thực hiện', 'Nhãn trạng thái biện pháp');
     assert(JSON.stringify(domain.VIOLATION_STATE_LABEL) === JSON.stringify({
-      unhandled: 'Chưa xử lý', preparing: 'Đang chuẩn bị xử lý', handled: 'Đã xử lý', invalid: 'Không còn hiệu lực',
+      unhandled: 'Chưa xử lý', preparing: 'Đang chuẩn bị xử lý', handled: 'Đã xử lý',
     }), `Nhãn trạng thái vi phạm sai: ${JSON.stringify(domain.VIOLATION_STATE_LABEL)}`);
   });
 
@@ -433,18 +435,21 @@ export async function runYThucTests(t: YThucTestKit) {
     assert(one('SELECT COUNT(*) n FROM violations WHERE student_id = ?', st.id) === 2, 'Không tự gộp, không tự xoá');
     assert((viol.similarViolations(gvbm, { studentId: st.id, category: 'conduct', occurredOn: TODAY }) as any[]).length === 0, 'Khác nhóm thì không trùng');
     assert((viol.similarViolations(gvbm, { studentId: st.id, category: 'homework', occurredOn: addDays(TODAY, -1) }) as any[]).length === 0, 'Khác ngày thì không trùng');
-    viol.invalidateViolation(P.mbManager, vid(first), 'Em đã nộp, tôi bỏ sót');
-    viol.invalidateViolation(P.mbManager, vid(second), 'Ghi nhầm em');
-    assert((viol.similarViolations(gvbm, { studentId: st.id, category: 'homework', occurredOn: TODAY }) as any[]).length === 0, 'Vi phạm đã hết hiệu lực không tính là trùng');
+    viol.deleteViolation(P.mbManager, vid(first));
+    viol.deleteViolation(P.mbManager, vid(second));
+    assert((viol.similarViolations(gvbm, { studentId: st.id, category: 'homework', occurredOn: TODAY }) as any[]).length === 0, 'Vi phạm đã xoá không tính là trùng');
   });
 
   check('PR-J · V07 Gửi lại cùng một request (idempotency_key) không tạo dòng thứ hai', () => {
     const st = makeStudent('V07');
     const a = record(gvbm, st.id, { idempotencyKey: 'pj-v07-key' });
+    /* Đếm audit TRƯỚC và SAU lần gửi lại: mã vi phạm có thể tái dùng sau khi một vi phạm cao nhất bị xoá (V13′) nên không đếm theo mã một mình. */
+    const auditOf = () => one("SELECT COUNT(*) n FROM audit_logs WHERE action = 'violation.record' AND entity_id = ?", vid(a));
+    const auditBefore = auditOf();
     const b = record(gvbm, st.id, { idempotencyKey: 'pj-v07-key' });
     assert(vid(a) === vid(b), 'Cùng khoá phải trả về cùng vi phạm');
     assert(one('SELECT COUNT(*) n FROM violations WHERE student_id = ?', st.id) === 1, 'Chỉ một dòng');
-    assert(one("SELECT COUNT(*) n FROM audit_logs WHERE action = 'violation.record' AND entity_id = ?", vid(a)) === 1, 'Thử lại không ghi audit thêm');
+    assert(auditOf() === auditBefore, 'Thử lại không ghi audit thêm');
   });
 
   check('PR-J · V07 (rà soát) Khoá gửi lại chỉ phát lại cho ĐÚNG người, ĐÚNG học viên — dùng khoá của bản ghi khác thì bị từ chối, không lộ vi phạm của em khác', () => {
@@ -466,7 +471,7 @@ export async function runYThucTests(t: YThucTestKit) {
     assert(count() === before, `Ghi vi phạm đã sinh dữ liệu ở nơi khác:\n  trước: ${before}\n  sau:   ${count()}`);
   });
 
-  console.log('\nPR-J · 4. Sửa và đánh dấu không chính xác (V09–V14)');
+  console.log('\nPR-J · 4. Sửa vi phạm (V09–V10) — phần xoá (V11′–V14′) do PR-T thay, xem sosV3.tests.ts');
 
   check('PR-J · V09 Sửa mô tả · nhóm · môn · ngày xảy ra; mỗi trường đổi ghi MỘT dòng lịch sử (cũ → mới); giữ luật V02–V05', () => {
     const st = makeStudent('V09');
@@ -490,11 +495,11 @@ export async function runYThucTests(t: YThucTestKit) {
     assert(again.id === v && again.description === 'Mô tả sửa lần ba, vẫn hợp lệ', 'Sửa phải trả về bản ghi mới');
   });
 
-  check('PR-J · V10 Ai sửa hoặc hủy được: người ghi (của mình) · GVCN của lớp · Quản lý trong phạm vi — GV khác không sửa được vi phạm đồng nghiệp', () => {
+  check('PR-J · V10 Ai sửa hoặc xoá được: người ghi (của mình) · GVCN của lớp · Quản lý trong phạm vi — GV khác không sửa được vi phạm đồng nghiệp', () => {
     const st = makeStudent('V10');
     const v = vid(record(gvbm, st.id, { description: 'Vi phạm do GV Writing 1 ghi' }));
     assertThrows(() => viol.editViolation(gvbm2, v, { description: 'GV Writing 2 sửa hộ đồng nghiệp' }), /không có quyền|người ghi|chủ nhiệm/, 'Đồng nghiệp sửa được vi phạm của người khác');
-    assertThrows(() => viol.invalidateViolation(gvbm2, v, 'Không thích'), /không có quyền|người ghi|chủ nhiệm/, 'Đồng nghiệp hủy được vi phạm của người khác');
+    assertThrows(() => viol.deleteViolation(gvbm2, v), /không có quyền|người ghi|chủ nhiệm/, 'Đồng nghiệp xoá được vi phạm của người khác');
     assertThrows(() => viol.editViolation(outsider, v, { description: 'Người ngoài lớp sửa' }), /phạm vi|quyền/, 'Giáo viên ngoài lớp sửa được');
     assertThrows(() => viol.editViolation(P.cpManager, v, { description: 'Quản lý chi nhánh khác sửa' }), /phạm vi|quyền/, 'Quản lý chi nhánh khác sửa được');
     viol.editViolation(gvbm, v, { description: 'Người ghi tự sửa lỗi của chính mình' });
@@ -502,45 +507,10 @@ export async function runYThucTests(t: YThucTestKit) {
     viol.editViolation(P.mbManager, v, { description: 'Quản lý trong phạm vi sửa vi phạm' });
     viol.editViolation(P.admin, v, { description: 'Quản trị hệ thống sửa vi phạm' });
     const other = vid(record(gvbm2, st.id, { description: 'Vi phạm do GV Writing 2 ghi' }));
-    viol.invalidateViolation(gvcn, other, 'GVCN xác minh: ghi nhầm em');
+    viol.deleteViolation(gvcn, other);
     const mine = vid(record(gvbm, st.id, { description: 'Vi phạm của mình ghi nhầm em', category: 'conduct' }));
-    viol.invalidateViolation(gvbm, mine, 'Tôi ghi nhầm — đây là em khác');
-    assert(one('SELECT COUNT(*) n FROM violations WHERE id IN (?, ?) AND valid = 0', other, mine) === 2, 'Cả hai phải đã bị đánh dấu không chính xác');
-  });
-
-  check('PR-J · V11 `Đánh dấu không chính xác` BẮT BUỘC có lý do, ghi người/ngày/lịch sử, KHÔNG xóa vật lý bao giờ', () => {
-    const st = makeStudent('V11');
-    const v = vid(record(gvbm, st.id, { description: 'Không nộp bài, nhưng em đã nộp' }));
-    assertThrows(() => viol.invalidateViolation(gvbm, v, ''), /lý do/, 'Không lý do');
-    assertThrows(() => viol.invalidateViolation(gvbm, v, '   '), /lý do/, 'Lý do toàn khoảng trắng');
-    assert(one('SELECT valid n FROM violations WHERE id = ?', v) === 1, 'Bị từ chối thì vi phạm phải còn hiệu lực');
-    viol.invalidateViolation(gvbm, v, 'Em đã nộp, tôi bỏ sót');
-    const row = conn.prepare('SELECT * FROM violations WHERE id = ?').get(v) as any;
-    assert(row && row.valid === 0 && row.invalid_reason === 'Em đã nộp, tôi bỏ sót' && row.invalidated_by === gvbm.userId && String(row.invalidated_at).startsWith(TODAY.slice(0, 4)),
-      `Dữ liệu hủy sai: ${JSON.stringify(row)}`);
-    const h = conn.prepare("SELECT * FROM violation_history WHERE violation_id = ? AND field = 'valid'").all(v) as any[];
-    assert(h.length === 1 && h[0].old_value === '1' && h[0].new_value === '0' && h[0].reason === 'Em đã nộp, tôi bỏ sót' && h[0].actor_user_id === gvbm.userId,
-      `Lịch sử hủy sai: ${JSON.stringify(h)}`);
-    assertThrows(() => viol.invalidateViolation(gvbm, v, 'Hủy lần hai'), /đã không còn hiệu lực/, 'Hủy hai lần');
-    assertThrows(() => viol.editViolation(gvbm, v, { description: 'Sửa vi phạm đã hủy rồi' }), /không còn hiệu lực/, 'Sửa vi phạm đã hủy');
-    assert(!(viol as any).deleteViolation, 'Không có đường xóa vi phạm');
-    assert(one("SELECT COUNT(*) n FROM audit_logs WHERE action = 'violation.invalidate' AND entity_id = ?", v) === 1, 'Hủy phải có audit');
-  });
-
-  check('PR-J · V14 Vi phạm hết hiệu lực VẪN hiện trong lịch sử của học viên: gạch ngang, kèm lý do, đúng trạng thái `Không còn hiệu lực`', () => {
-    const st = makeStudent('V14');
-    const good = vid(record(gvbm, st.id, { description: 'Vi phạm còn hiệu lực', occurredOn: addDays(TODAY, -2) }));
-    const bad = vid(record(gvbm, st.id, { description: 'Vi phạm sẽ bị hủy sau đó', occurredOn: addDays(TODAY, -1) }));
-    viol.invalidateViolation(gvcn, bad, 'Em đã nộp, tôi bỏ sót');
-    const list = (viol.listViolations(gvcn, { studentId: st.id }) as any).rows as any[];
-    assert(list.length === 2, `Lịch sử phải giữ cả hai dòng, có ${list.length}`);
-    const g = list.find((r) => r.id === good), b = list.find((r) => r.id === bad);
-    assert(g.state === 'unhandled' && g.stateLabel === 'Chưa xử lý', `Trạng thái dòng còn hiệu lực: ${g.state}`);
-    assert(b.state === 'invalid' && b.stateLabel === 'Không còn hiệu lực' && b.invalidReason === 'Em đã nộp, tôi bỏ sót' && b.valid === false && b.invalidatedByName,
-      `Dòng đã hủy phải mang lý do và người hủy: ${JSON.stringify(b)}`);
-    const detail = viol.violationDetail(gvbm, bad) as any;
-    assert(detail.history.some((h: any) => h.field === 'valid' && h.reason === 'Em đã nộp, tôi bỏ sót'), 'Chi tiết phải có dòng lịch sử hủy');
-    assertThrows(() => viol.listViolations(outsider, { studentId: st.id }), /phạm vi|quyền/, 'Người ngoài lớp xem được lịch sử');
+    viol.deleteViolation(gvbm, mine);
+    assert(one('SELECT COUNT(*) n FROM violations WHERE id IN (?, ?)', other, mine) === 0, 'Cả hai phải đã bị xoá');
   });
 
   // ================================================================== Biện pháp xử lý (B01–B16)
@@ -592,14 +562,14 @@ export async function runYThucTests(t: YThucTestKit) {
     assert(meas.createMeasure(gvcn, { studentId: a.id, kind: 'talk_short', violationIds: [vid(va)], idempotencyKey: 'pj-b01-scope' }).id === first.id, 'Đúng người, đúng em gửi lại thì nhận lại bản cũ');
   });
 
-  check('PR-J · B02 Một biện pháp có ÍT NHẤT MỘT vi phạm và của ĐÚNG MỘT học viên; vi phạm đã hủy không gom được', () => {
+  check('PR-J · B02 Một biện pháp có ÍT NHẤT MỘT vi phạm và của ĐÚNG MỘT học viên; vi phạm đã xoá không còn để gom', () => {
     const a = makeStudent('B02 A'), b = makeStudent('B02 B');
     const va = violations(a.id, 2), vb = violations(b.id, 1);
     assertThrows(() => mk(gvcn, a.id, 'talk_short', []), /ít nhất một vi phạm/, 'Biện pháp không có vi phạm nào');
     assertThrows(() => mk(gvcn, a.id, 'talk_short', [va[0], vb[0]]), /một học viên/, 'Gom vi phạm của hai em');
     assertThrows(() => mk(gvcn, a.id, 'talk_short', [999999]), /Không tìm thấy/, 'Vi phạm không tồn tại');
-    viol.invalidateViolation(gvcn, va[1], 'Ghi nhầm em');
-    assertThrows(() => mk(gvcn, a.id, 'talk_short', [va[1]]), /không còn hiệu lực/, 'Gom vi phạm đã hủy');
+    viol.deleteViolation(gvcn, va[1]);
+    assertThrows(() => mk(gvcn, a.id, 'talk_short', [va[1]]), /Không tìm thấy/, 'Gom vi phạm đã xoá');
     const m = mk(gvcn, a.id, 'talk_short', [va[0], va[0]]);
     assert(m.violations.length === 1, 'Trùng id trong danh sách thì chỉ tính một');
     const extra = violations(b.id, 1);
@@ -840,32 +810,19 @@ export async function runYThucTests(t: YThucTestKit) {
     assert(count() === before, `Xác nhận biện pháp đã mở vòng theo dõi:\n  trước: ${before}\n  sau:   ${count()}`);
   });
 
-  check('PR-J · B16 Report gia đình gom 5 vi phạm là MỘT biện pháp; số vi phạm lúc xác nhận là ẢNH CHỤP (5), hủy một vi phạm sau đó KHÔNG đổi số này (V13)', () => {
+  check('PR-J · B16 (v3) Report gia đình gom 5 vi phạm là MỘT biện pháp; số vi phạm của biện pháp là số ĐANG GẮN — xoá một vi phạm sau đó thì số giảm theo (V14′)', () => {
     const st = makeStudent('B16');
     const five = violations(st.id, 5);
     const m = mk(gvcn, st.id, 'family_report', five);
-    assert(m.violationCountAtConfirm === null, 'Chưa xác nhận thì chưa có ảnh chụp');
+    assert(m.violationCount === 5, 'Chưa xác nhận: đã hiện số đang gắn');
     const done = confirm(gvcn, m.id);
     assert(one('SELECT COUNT(*) n FROM discipline_measures WHERE student_id = ? AND status = ?', st.id, 'done') === 1, 'Một Report gom 5 vi phạm là MỘT biện pháp');
-    assert(done.violationCountAtConfirm === 5 && (conn.prepare('SELECT violation_count_at_confirm v FROM discipline_measures WHERE id = ?').get(m.id) as any).v === 5, 'Ảnh chụp phải là 5');
-    viol.invalidateViolation(gvcn, five[2], 'Em đã nộp, tôi bỏ sót');
-    assert(stateOf(five[2]) === 'invalid', 'Vi phạm đã bị hủy');
+    assert(done.violationCount === 5 && done.violations.length === 5, 'Số đang gắn phải là 5');
+    assert((conn.prepare('SELECT violation_count_at_confirm v FROM discipline_measures WHERE id = ?').get(m.id) as any).v === null, 'Cột ảnh chụp cũ không còn được ghi');
+    viol.deleteViolation(gvcn, five[2]);
     const after = meas.measureDetail(gvcn, m.id) as any;
-    assert(after.violationCountAtConfirm === 5, `Ảnh chụp KHÔNG được đổi khi một vi phạm bị hủy: ${after.violationCountAtConfirm}`);
-    assert(after.violations.length === 5 && after.invalidViolationCount === 1, 'Không gỡ khỏi bảng nối (V13): danh sách vẫn 5, trong đó 1 không chính xác');
-    assert(after.invalidNote === '1 trong 5 vi phạm của biện pháp này sau đó được xác định là không chính xác.', `Dòng lưu ý V13 sai: ${after.invalidNote}`);
-    assert(one("SELECT COUNT(*) n FROM measure_violations WHERE measure_id = ? AND violation_id = ?", m.id, five[2]) === 1, 'Dòng nối còn nguyên');
-    assert((meas.measureDetail(gvcn, confirm(gvcn, mk(gvcn, st.id, 'talk_short', [five[0]]).id).id) as any).invalidNote === null, 'Không có vi phạm hủy thì không có dòng lưu ý');
-  });
-
-  check('PR-J · B16 Xác nhận không được nếu biện pháp còn chứa vi phạm đã hủy — phải bỏ ra trước, để ảnh chụp đếm đúng những vi phạm thật', () => {
-    const st = makeStudent('B16 hủy trước');
-    const ids = violations(st.id, 3);
-    const m = mk(gvcn, st.id, 'family_report', ids);
-    viol.invalidateViolation(gvcn, ids[1], 'Ghi nhầm em');
-    assertThrows(() => confirm(gvcn, m.id), /không còn hiệu lực/, 'Xác nhận khi có vi phạm đã hủy');
-    meas.removeViolation(gvcn, m.id, ids[1]);
-    assert(confirm(gvcn, m.id).violationCountAtConfirm === 2, 'Sau khi bỏ vi phạm đã hủy, ảnh chụp đếm đúng 2');
+    assert(after.violationCount === 4 && after.violations.length === 4 && after.status === 'done', `Số đang gắn phải giảm: ${after.violationCount}`);
+    assert(one("SELECT COUNT(*) n FROM measure_violations WHERE measure_id = ? AND violation_id = ?", m.id, five[2]) === 0, 'Dòng nối đã gỡ');
   });
 
   check('PR-J · Y01 GVCN tự xác nhận MỌI loại, kể cả nặng — không có bước Quản lý duyệt; Quản lý nhận THÔNG BÁO khi Thư cảnh cáo hoặc Đình chỉ học được xác nhận', () => {
@@ -893,17 +850,6 @@ export async function runYThucTests(t: YThucTestKit) {
     const susQl = mk(P.mbManager, s2.id, 'suspension', v2); link(P.mbManager, susQl.id);
     confirm(P.mbManager, susQl.id);
     assert(!notified(susQl.id).includes(P.mbManager.userId) && notified(susQl.id).includes(P.admin.userId), 'Người xác nhận không tự nhận thông báo');
-  });
-
-  check('PR-J · V13 Hủy vi phạm đã nằm trong biện pháp Đã thực hiện: hủy được, biện pháp giữ nguyên; danh sách khóa vẫn khóa; thống kê vi phạm loại nó ra', () => {
-    const st = makeStudent('V13');
-    const ids = violations(st.id, 2);
-    const m = mk(gvcn, st.id, 'family_report', ids);
-    confirm(gvcn, m.id);
-    viol.invalidateViolation(gvcn, ids[0], 'Em đã nộp, tôi bỏ sót');
-    const d = viol.violationDetail(gvcn, ids[0]) as any;
-    assert(d.state === 'invalid' && d.measures.length === 1 && d.measures[0].status === 'done', 'Vi phạm đã hủy vẫn thấy biện pháp đã làm với nó');
-    assert((meas.measureDetail(gvcn, m.id) as any).status === 'done', 'Biện pháp giữ nguyên trạng thái');
   });
 
   // ================================================================== Cảnh báo 5 ngày (W01–W06)
@@ -978,15 +924,15 @@ export async function runYThucTests(t: YThucTestKit) {
     assert((warn.studentWarning(gvcn, s2.id) as any).active === false, 'Còn lại vi phạm 2 ngày tuổi: không cảnh báo');
   });
 
-  check('PR-J · W04 Vi phạm không còn hiệu lực KHÔNG BAO GIỜ vào tập cần xử lý (V12) — hủy cái cũ nhất thì cảnh báo đổi theo cái cũ nhất còn lại', () => {
+  check('PR-J · W04 (v3) Vi phạm đã xoá không còn trong tập cần xử lý — xoá cái cũ nhất thì cảnh báo đổi theo cái cũ nhất còn lại', () => {
     const s = withUnhandled('W04', [10, 4, 3]);
     assert((warn.studentWarning(gvcn, s.id) as any).oldestAgeDays === 10, 'Trước khi hủy');
-    viol.invalidateViolation(gvcn, s.ids[0], 'Em đã nộp, tôi bỏ sót');
+    viol.deleteViolation(gvcn, s.ids[0]);
     const w = warn.studentWarning(gvcn, s.id) as any;
-    assert(w.count === 2 && w.active === false && w.oldestAgeDays === 4, `Hủy vi phạm cũ nhất: còn 2, cũ nhất 4 ngày, hết cảnh báo: ${JSON.stringify(w)}`);
+    assert(w.count === 2 && w.active === false && w.oldestAgeDays === 4, `Xoá vi phạm cũ nhất: còn 2, cũ nhất 4 ngày, hết cảnh báo: ${JSON.stringify(w)}`);
     const only = withUnhandled('W04 chỉ một', [20]);
-    viol.invalidateViolation(gvcn, only.ids[0], 'Ghi nhầm em');
-    assert((warn.studentWarning(gvcn, only.id) as any).count === 0, 'Chỉ có một vi phạm và nó đã hủy: không còn gì cần xử lý');
+    viol.deleteViolation(gvcn, only.ids[0]);
+    assert((warn.studentWarning(gvcn, only.id) as any).count === 0, 'Chỉ có một vi phạm và nó đã xoá: không còn gì cần xử lý');
   });
 
   check('PR-J · W05 Cảnh báo hiện ở BA nơi — đầu tab Ý thức của lớp · dòng học viên trong danh sách lớp · Việc cần làm của GVCN — và cả ba gọi CÙNG MỘT hàm nên khớp nhau', () => {
@@ -1040,10 +986,10 @@ export async function runYThucTests(t: YThucTestKit) {
 
   console.log('\nPR-J · 9. Tám chỉ số Ý thức (J6) — mỗi chỉ số MỘT hàm trả tập ID');
 
-  check('PR-J · J6 Sổ chỉ số có đủ tám chỉ số Ý thức đúng đơn vị và loại thời gian; không còn "Tái diễn Ý thức"; ba đơn vị (vi phạm · học viên · biện pháp) khác nhau', () => {
+  check('PR-J · J6 Sổ chỉ số có đủ bảy chỉ số Ý thức (v3 bỏ `vi-pham-khong-hieu-luc`) đúng đơn vị và loại thời gian; không còn "Tái diễn Ý thức"; ba đơn vị (vi phạm · học viên · biện pháp) khác nhau', () => {
     const want: Record<string, [string, string]> = {
       'vi-pham-tong': ['vi-pham', 'phat-sinh-trong-ky'], 'vi-pham-chua-xu-ly': ['vi-pham', 'hien-trang'],
-      'vi-pham-khong-hieu-luc': ['vi-pham', 'phat-sinh-trong-ky'], 'hv-co-vi-pham': ['hoc-vien', 'phat-sinh-trong-ky'],
+      'hv-co-vi-pham': ['hoc-vien', 'phat-sinh-trong-ky'],
       'hv-can-xu-ly': ['hoc-vien', 'hien-trang'], 'bien-phap-da-thuc-hien': ['bien-phap', 'ket-qua-trong-ky'],
       'bien-phap-dang-chuan-bi': ['bien-phap', 'hien-trang'], 'bien-phap-theo-loai': ['bien-phap', 'ket-qua-trong-ky'],
     };
@@ -1058,61 +1004,49 @@ export async function runYThucTests(t: YThucTestKit) {
     assert(new Set(['vi-pham', 'hoc-vien', 'bien-phap'].map((u) => domain.METRIC_UNIT_LABEL[u as keyof typeof domain.METRIC_UNIT_LABEL])).size === 3, 'Ba đơn vị phải có nhãn riêng');
   });
 
-  check('PR-J · J6 `vi-pham-tong`: vi phạm còn hiệu lực, đếm theo NGÀY XẢY RA không theo ngày ghi nhận; vi phạm đã hủy đứng ngoài (V12)', () => {
+  check('PR-J · J6 `vi-pham-tong`: đếm theo NGÀY XẢY RA không theo ngày ghi nhận; vi phạm đã xoá không còn trong tập', () => {
     const st = makeStudent('J6 tổng');
     const old = vid(record(gvbm, st.id, { occurredOn: addDays(TODAY, -40), description: 'Vi phạm xảy ra từ 40 ngày trước, mới ghi hôm nay' }));
     const recent = vid(record(gvbm, st.id, { occurredOn: addDays(TODAY, -2), category: 'attendance', description: 'Vi phạm mới xảy ra hai ngày trước' }));
-    const bad = vid(record(gvbm, st.id, { occurredOn: addDays(TODAY, -1), category: 'conduct', description: 'Vi phạm sẽ bị hủy ngay sau đó' }));
-    viol.invalidateViolation(gvcn, bad, 'Ghi nhầm em');
+    const bad = vid(record(gvbm, st.id, { occurredOn: addDays(TODAY, -1), category: 'conduct', description: 'Vi phạm sẽ bị xoá ngay sau đó' }));
+    viol.deleteViolation(gvcn, bad);
     const week = ms(P.mbManager, 'vi-pham-tong', { branchId: mbId, from: addDays(TODAY, -7), to: TODAY });
-    assert(week.ids.includes(recent) && !week.ids.includes(old) && !week.ids.includes(bad), 'Kỳ 7 ngày: có vi phạm mới, KHÔNG có vi phạm 40 ngày trước dù ghi hôm nay, KHÔNG có vi phạm đã hủy');
+    assert(week.ids.includes(recent) && !week.ids.includes(old) && !week.ids.includes(bad), 'Kỳ 7 ngày: có vi phạm mới, KHÔNG có vi phạm 40 ngày trước dù ghi hôm nay, KHÔNG có vi phạm đã xoá');
     const all = ms(P.mbManager, 'vi-pham-tong', { branchId: mbId });
-    assert(all.ids.includes(old) && all.ids.includes(recent) && !all.ids.includes(bad), 'Không giới hạn kỳ: có cả hai, vẫn không có vi phạm đã hủy');
+    assert(all.ids.includes(old) && all.ids.includes(recent) && !all.ids.includes(bad), 'Không giới hạn kỳ: có cả hai, vẫn không có vi phạm đã xoá');
     assert(all.n === all.ids.length && all.unit === 'vi-pham', 'Số phải là độ dài của tập ID và có đơn vị vi phạm');
-    const truth = ids(`SELECT v.id FROM violations v JOIN classes c ON c.id = v.class_id WHERE c.branch_id = ? AND v.valid = 1 ORDER BY v.id`, mbId);
+    const truth = ids(`SELECT v.id FROM violations v JOIN classes c ON c.id = v.class_id WHERE c.branch_id = ? ORDER BY v.id`, mbId);
     assert(JSON.stringify([...all.ids].sort((a: number, b: number) => a - b)) === JSON.stringify(truth), 'Tập ID phải bằng sự thật độc lập dựng bằng SQL');
   });
 
-  check('PR-J · J6 `vi-pham-chua-xu-ly`: còn hiệu lực VÀ không nằm trong biện pháp nào (kể cả đang chuẩn bị); vi phạm đã hủy đứng ngoài', () => {
+  check('PR-J · J6 `vi-pham-chua-xu-ly`: không nằm trong biện pháp nào (kể cả đang chuẩn bị); vi phạm đã xoá không còn', () => {
     const st = makeStudent('J6 chưa xử lý');
     const [a, b, c, d] = violations(st.id, 4);
-    viol.invalidateViolation(gvcn, d, 'Ghi nhầm em');
+    viol.deleteViolation(gvcn, d);
     const before = ms(P.mbManager, 'vi-pham-chua-xu-ly', { branchId: mbId });
-    assert([a, b, c].every((x) => before.ids.includes(x)) && !before.ids.includes(d), 'Ba vi phạm còn hiệu lực chưa xử lý, vi phạm đã hủy thì không');
+    assert([a, b, c].every((x) => before.ids.includes(x)) && !before.ids.includes(d), 'Ba vi phạm chưa xử lý, vi phạm đã xoá thì không');
     const m = mk(gvcn, st.id, 'talk_short', [a, b]);
     const mid = ms(P.mbManager, 'vi-pham-chua-xu-ly', { branchId: mbId });
     assert(!mid.ids.includes(a) && !mid.ids.includes(b) && mid.ids.includes(c), 'Vào biện pháp đang chuẩn bị là ra khỏi tập chưa xử lý (W03)');
     meas.removeViolation(gvcn, m.id, b);
     assert(ms(P.mbManager, 'vi-pham-chua-xu-ly', { branchId: mbId }).ids.includes(b), 'Bỏ ra khỏi biện pháp thì quay lại');
-    const truth = ids(`SELECT v.id FROM violations v WHERE v.valid = 1 AND ${NOW_BRANCH} = ?
+    const truth = ids(`SELECT v.id FROM violations v WHERE ${NOW_BRANCH} = ?
                           AND NOT EXISTS (SELECT 1 FROM measure_violations mv WHERE mv.violation_id = v.id) ORDER BY v.id`, mbId);
     const now = ms(P.mbManager, 'vi-pham-chua-xu-ly', { branchId: mbId });
     assert(JSON.stringify([...now.ids].sort((x: number, y: number) => x - y)) === JSON.stringify(truth), 'Tập ID phải bằng sự thật độc lập');
     assert(now.n === now.ids.length, 'Số = độ dài tập');
   });
 
-  check('PR-J · J6 `vi-pham-khong-hieu-luc` đứng RIÊNG, không trừ vào `vi-pham-tong`; ba tập tổng · chưa xử lý · không hiệu lực không giao nhau khi so với tổng', () => {
-    const st = makeStudent('J6 hủy');
-    const [a, b] = violations(st.id, 2);
-    viol.invalidateViolation(gvcn, b, 'Em đã nộp, tôi bỏ sót');
-    const bad = ms(P.mbManager, 'vi-pham-khong-hieu-luc', { branchId: mbId });
-    const good = ms(P.mbManager, 'vi-pham-tong', { branchId: mbId });
-    assert(bad.ids.includes(b) && !bad.ids.includes(a), 'Chỉ vi phạm đã hủy nằm ở đây');
-    assert(!good.ids.some((x: number) => bad.ids.includes(x)), 'Hai tập không giao nhau: hủy không "trừ" vào tổng, nó đứng riêng');
-    const truth = ids(`SELECT v.id FROM violations v JOIN classes c ON c.id = v.class_id WHERE c.branch_id = ? AND v.valid = 0 ORDER BY v.id`, mbId);
-    assert(JSON.stringify([...bad.ids].sort((x: number, y: number) => x - y)) === JSON.stringify(truth), 'Tập ID phải bằng sự thật độc lập');
-  });
-
-  check('PR-J · J6 `hv-co-vi-pham`: đếm DUY NHẤT học viên có vi phạm còn hiệu lực — em có ba vi phạm vẫn là MỘT học viên; em chỉ có vi phạm đã hủy thì không', () => {
-    const many = makeStudent('J6 nhiều'), onlyBad = makeStudent('J6 chỉ hủy');
+  check('PR-J · J6 `hv-co-vi-pham`: đếm DUY NHẤT học viên có vi phạm — em có ba vi phạm vẫn là MỘT học viên; em chỉ có vi phạm đã xoá thì không', () => {
+    const many = makeStudent('J6 nhiều'), onlyBad = makeStudent('J6 chỉ xoá');
     violations(many.id, 3);
     const [x] = violations(onlyBad.id, 1);
-    viol.invalidateViolation(gvcn, x, 'Ghi nhầm em');
+    viol.deleteViolation(gvcn, x);
     const r = ms(P.mbManager, 'hv-co-vi-pham', { branchId: mbId });
     assert(r.ids.filter((id: number) => id === many.id).length === 1 && r.ids.includes(many.id), 'Em có ba vi phạm xuất hiện đúng một lần');
-    assert(!r.ids.includes(onlyBad.id), 'Em chỉ có vi phạm đã hủy không được đếm');
+    assert(!r.ids.includes(onlyBad.id), 'Em chỉ có vi phạm đã xoá không được đếm');
     assert(r.unit === 'hoc-vien' && r.n === r.ids.length && new Set(r.ids).size === r.ids.length, 'Đơn vị học viên, số = độ dài tập, không trùng');
-    const truth = ids(`SELECT DISTINCT v.student_id AS id FROM violations v JOIN classes c ON c.id = v.class_id WHERE c.branch_id = ? AND v.valid = 1 ORDER BY v.student_id`, mbId);
+    const truth = ids(`SELECT DISTINCT v.student_id AS id FROM violations v JOIN classes c ON c.id = v.class_id WHERE c.branch_id = ? ORDER BY v.student_id`, mbId);
     assert(JSON.stringify([...r.ids].sort((a: number, b: number) => a - b)) === JSON.stringify(truth), 'Tập ID phải bằng sự thật độc lập');
     const vp = ms(P.mbManager, 'vi-pham-tong', { branchId: mbId });
     assert(vp.n > r.n, 'Số vi phạm và số học viên là hai đơn vị khác nhau, không bằng nhau');
@@ -1124,7 +1058,7 @@ export async function runYThucTests(t: YThucTestKit) {
     const r = ms(P.mbManager, 'hv-can-xu-ly', { branchId: mbId });
     assert(r.ids.includes(late.id) && !r.ids.includes(young.id), 'Em có vi phạm cũ nhất 9 ngày thì cần xử lý, em chỉ có vi phạm 3 ngày thì chưa');
     const truth = ids(`SELECT s AS id FROM (SELECT v.student_id AS s, MIN(v.occurred_on) AS oldest FROM violations v
-        WHERE v.valid = 1 AND ${NOW_BRANCH} = ? AND NOT EXISTS (SELECT 1 FROM measure_violations mv WHERE mv.violation_id = v.id)
+        WHERE ${NOW_BRANCH} = ? AND NOT EXISTS (SELECT 1 FROM measure_violations mv WHERE mv.violation_id = v.id)
         GROUP BY v.student_id) WHERE julianday(?) - julianday(oldest) > 5 ORDER BY s`, mbId, TODAY);
     assert(JSON.stringify([...r.ids].sort((a: number, b: number) => a - b)) === JSON.stringify(truth), 'Tập ID phải bằng sự thật độc lập');
     for (const id of r.ids) assert((warn.studentWarning(P.mbManager, id) as any).active, `Học viên ${id} trong tập mà cảnh báo lại tắt — hai nơi đếm khác nhau`);

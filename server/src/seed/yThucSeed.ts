@@ -24,8 +24,11 @@ type VSeed = {
   text: string;
   /** Ngày hệ thống ghi nhận nếu khác ngày xảy ra (GV nhớ ra muộn). */
   reportedOn?: string;
-  /** Đã bị đánh dấu không chính xác. */
-  invalid?: { by: string; on: string; reason: string };
+  /**
+   * Đã bị XOÁ sau khi ghi (rulebook v3, V11′–V14′ — thay "đánh dấu không chính xác"): bộ dựng ghi vi phạm, gắn vào biện pháp, rồi xoá đúng như
+   * `deleteViolation` (dòng + dòng nối + lịch sử; một dòng `audit_logs`). Còn lại ở database: biện pháp với số vi phạm ĐANG GẮN.
+   */
+  deleted?: { by: string; on: string };
 };
 
 type MSeed = {
@@ -79,7 +82,7 @@ export const Y_THUC_SEEDS: StudentYThuc[] = [
     ],
   },
 
-  /* ============================================================ Trần Thu Hà — vi phạm bị hủy · vi phạm được thêm rồi bỏ khỏi biện pháp (tình huống 2, 8) */
+  /* ============================================================ Trần Thu Hà — vi phạm đã xoá · vi phạm được thêm rồi bỏ khỏi biện pháp (tình huống 2, 8) */
   {
     student: 'J02',
     violations: [
@@ -88,7 +91,7 @@ export const Y_THUC_SEEDS: StudentYThuc[] = [
       { key: 'g3', on: '2026-09-03', category: 'attendance', skill: null, by: 'T_HA', text: 'Nghỉ một buổi không xin phép' },
       {
         key: 'g4', on: '2026-09-10', category: 'homework', skill: 'reading', by: 'T_HA', text: 'Không nộp bài Reading tuần này',
-        invalid: { by: 'T_HA', on: '2026-09-11', reason: 'Em đã nộp, tôi bỏ sót' },
+        deleted: { by: 'T_HA', on: '2026-09-11' },
       },
       { key: 'g5', on: '2026-09-09', category: 'conduct', skill: 'speaking', by: 'T_TRANG', text: 'Dùng điện thoại trong giờ Speaking' },
       { key: 'g6', on: '2026-09-11', category: 'attendance', skill: null, by: 'T_HA', text: 'Đi muộn 15 phút buổi sáng' },
@@ -105,7 +108,7 @@ export const Y_THUC_SEEDS: StudentYThuc[] = [
   },
 
   /* ============================================================ Lê Quang Huy — nhóm sáu vi phạm vào ba biện pháp · Report gom năm · một vi phạm nằm trong hai biện pháp ·
-                                                                    vi phạm bị hủy SAU khi biện pháp đã thực hiện (tình huống 5, 6, 16, 17) */
+                                                                    vi phạm bị XOÁ SAU khi biện pháp đã thực hiện (tình huống 5, 6, 16, 17) */
   {
     student: 'J03',
     violations: [
@@ -115,9 +118,10 @@ export const Y_THUC_SEEDS: StudentYThuc[] = [
       { key: 'h4', on: '2026-09-01', category: 'attendance', skill: null, by: 'T_HA', text: 'Nghỉ bốn buổi trong hai tuần, chỉ báo trước một buổi' },
       {
         key: 'h5', on: '2026-09-03', category: 'conduct', skill: 'writing1', by: 'T_KHOA', text: 'Không hợp tác làm việc nhóm trong giờ Writing',
-        invalid: { by: 'T_KHOA', on: '2026-09-12', reason: 'Nhầm với bạn cùng tên, đã ghi lại cho đúng em' },
+        deleted: { by: 'T_KHOA', on: '2026-09-12' },   // ghi nhầm em (bạn cùng tên) — xoá sau khi các biện pháp đã thực hiện
       },
       { key: 'h6', on: '2026-09-08', category: 'classroom', skill: 'writing2', by: 'T_LINH', text: 'Ra ngoài giữa giờ không xin phép' },
+      { key: 'h7', on: '2026-09-04', category: 'classroom', skill: 'reading', by: 'T_KHOA', text: 'Rời chỗ đi lại trong giờ Reading, nhắc hai lần' },
     ],
     measures: [
       {
@@ -127,16 +131,16 @@ export const Y_THUC_SEEDS: StudentYThuc[] = [
       },
       {
         key: 'hm1', kind: 'meeting_student', createdOn: '2026-09-07', status: 'done', performedOn: '2026-09-09', performer: 'T_HA', owner: 'T_HA',
-        note: 'Gặp em sau giờ học: em nhận đã bỏ bài nhiều buổi, hứa nộp đủ từ tuần sau.', violations: ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'],
+        note: 'Gặp em sau giờ học: em nhận đã bỏ bài nhiều buổi, hứa nộp đủ từ tuần sau.', violations: ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'h7'],
       },
       {
         /* Một Report gom NĂM vi phạm khác nhóm, khác môn, khác GV, khác ngày (tình huống 5). */
         key: 'hm2', kind: 'family_report', createdOn: '2026-09-08', status: 'done', performedOn: '2026-09-10', performer: 'T_HA', owner: 'T_HA',
-        note: 'Gọi cho mẹ em, báo tình hình bỏ bài và nghỉ học. Gia đình nắm được và đồng ý phối hợp.', violations: ['h1', 'h2', 'h3', 'h4', 'h5'],
+        note: 'Gọi cho mẹ em, báo tình hình bỏ bài và nghỉ học. Gia đình nắm được và đồng ý phối hợp.', violations: ['h1', 'h2', 'h3', 'h4', 'h5', 'h7'],
       },
       {
         key: 'hm3', kind: 'warning_1', createdOn: '2026-09-09', status: 'done', performedOn: '2026-09-11', performer: 'T_HA', owner: 'T_HA',
-        note: 'Gửi thư cảnh cáo lần 1 về việc bỏ bài và nghỉ học không báo.', violations: ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'],
+        note: 'Gửi thư cảnh cáo lần 1 về việc bỏ bài và nghỉ học không báo.', violations: ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'h7'],
         evidence: [LINK('Thư cảnh cáo lần 1 — Lê Quang Huy.pdf')],
       },
     ],
@@ -258,17 +262,19 @@ export function buildYThuc(ctx: BuildCtx) {
   };
 
   const insertViolation = conn.prepare(
-    `INSERT INTO violations (student_id, cycle_id, class_id, category, skill, occurred_on, reported_on, reported_by, description,
-                             valid, invalid_reason, invalidated_by, invalidated_at, created_at, updated_at)
-     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+    `INSERT INTO violations (student_id, cycle_id, class_id, category, skill, occurred_on, reported_on, reported_by, description, created_at)
+     VALUES (?,?,?,?,?,?,?,?,?,?)`,
+  );
+  const insertAudit = conn.prepare(
+    `INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, entity_label, before_json, after_json, created_at) VALUES (?,?,?,?,?,?,?,?)`,
   );
   const insertHistory = conn.prepare(
     `INSERT INTO violation_history (violation_id, field, old_value, new_value, reason, actor_user_id, created_at) VALUES (?,?,?,?,?,?,?)`,
   );
   const insertMeasure = conn.prepare(
     `INSERT INTO discipline_measures (student_id, cycle_id, class_id, kind, custom_name, status, owner_user_id, note, performed_on, performed_by,
-                                      performer_name, participants, confirmed_by, confirmed_at, violation_count_at_confirm, created_at, created_by, updated_at)
-     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+                                      performer_name, participants, confirmed_by, confirmed_at, created_at, created_by, updated_at)
+     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
   );
   const link = conn.prepare('INSERT INTO measure_violations (measure_id, violation_id, added_by, added_at) VALUES (?,?,?,?)');
   const attach = conn.prepare(
@@ -276,7 +282,7 @@ export function buildYThuc(ctx: BuildCtx) {
      VALUES ('discipline_measure', ?, 'link', ?, ?, NULL, NULL, ?, ?)`,
   );
 
-  const counts = { violations: 0, invalid: 0, measures: 0, done: 0, preparing: 0, links: 0, attachments: 0 };
+  const counts = { violations: 0, deleted: 0, measures: 0, done: 0, preparing: 0, links: 0, attachments: 0 };
 
   for (const s of Y_THUC_SEEDS) {
     const sid = ctx.studentIdByCode?.get(s.student);
@@ -289,32 +295,25 @@ export function buildYThuc(ctx: BuildCtx) {
       const by = userOf(v.by);
       const info = insertViolation.run(
         sid, cycleAt(sid, v.on), classAt(sid, v.on), v.category, v.skill ?? null, notFuture(v.on, `vi phạm ${v.key}`), reportedOn, by, v.text,
-        v.invalid ? 0 : 1, v.invalid?.reason ?? null, v.invalid ? userOf(v.invalid.by) : null,
-        v.invalid ? stamp(notFuture(v.invalid.on, `hủy ${v.key}`), '10:00:00') : null,
-        stamp(reportedOn, '08:00:00'), v.invalid ? stamp(v.invalid.on, '10:00:00') : null,
+        stamp(reportedOn, '08:00:00'),
       );
       const id = Number(info.lastInsertRowid);
       vid.set(v.key, id);
       vOn.set(v.key, v.on);
       counts.violations += 1;
-      if (v.invalid) {
-        insertHistory.run(id, 'valid', '1', '0', v.invalid.reason, userOf(v.invalid.by), stamp(v.invalid.on, '10:00:00'));
-        counts.invalid += 1;
-      }
     }
 
     for (const m of s.measures ?? []) {
       const createdBy = userOf(m.createdBy ?? m.owner);
       const info0 = insertMeasure.run(
         sid, cycleAt(sid, m.createdOn), classAt(sid, m.createdOn), m.kind, m.customName ?? null, 'preparing', userOf(m.owner), m.note,
-        null, null, null, m.participants ?? null, null, null, null,
+        null, null, null, m.participants ?? null, null, null,
         stamp(notFuture(m.createdOn, `biện pháp ${m.key}`), '09:00:00'), createdBy, null,
       );
       const mid = Number(info0.lastInsertRowid);
       counts.measures += 1;
 
       const entries = m.violations.map((x) => (typeof x === 'string' ? { key: x, addedOn: m.createdOn } : x));
-      let atConfirm = 0;
       for (const e of entries) {
         const id = vid.get(e.key);
         if (!id) throw new Error(`Bộ demo Ý thức: biện pháp ${m.key} nhắc tới vi phạm không có: ${e.key}`);
@@ -325,7 +324,6 @@ export function buildYThuc(ctx: BuildCtx) {
         counts.links += 1;
         if (e.addedOn !== m.createdOn) insertHistory.run(id, 'measure', null, String(mid), null, createdBy, stamp(e.addedOn, '09:30:00'));
         else insertHistory.run(id, 'measure', null, String(mid), null, createdBy, stamp(m.createdOn, '09:00:00'));
-        if (m.status === 'done' && e.addedOn <= m.performedOn!) atConfirm += 1;
       }
       for (const d of m.dropped ?? []) {
         const id = vid.get(d.key);
@@ -337,9 +335,8 @@ export function buildYThuc(ctx: BuildCtx) {
       if (m.status === 'done') {
         const performer = userOf(m.performer!);
         conn.prepare(
-          `UPDATE discipline_measures SET status = 'done', performed_on = ?, performed_by = ?, confirmed_by = ?, confirmed_at = ?,
-                  violation_count_at_confirm = ?, updated_at = ? WHERE id = ?`,
-        ).run(notFuture(m.performedOn!, `thực hiện ${m.key}`), performer, createdBy, stamp(m.performedOn!, '17:00:00'), atConfirm, stamp(m.performedOn!, '17:00:00'), mid);
+          `UPDATE discipline_measures SET status = 'done', performed_on = ?, performed_by = ?, confirmed_by = ?, confirmed_at = ?, updated_at = ? WHERE id = ?`,
+        ).run(notFuture(m.performedOn!, `thực hiện ${m.key}`), performer, createdBy, stamp(m.performedOn!, '17:00:00'), stamp(m.performedOn!, '17:00:00'), mid);
         counts.done += 1;
       } else {
         counts.preparing += 1;
@@ -348,6 +345,26 @@ export function buildYThuc(ctx: BuildCtx) {
         attach.run(mid, ev.url, ev.name, m.performer ? userOf(m.performer) : createdBy, stamp(m.performedOn ?? m.createdOn, '16:30:00'));
         counts.attachments += 1;
       }
+    }
+
+    /*
+     * XOÁ SAU CÙNG (V13′): dựng đúng như `deleteViolation` — gỡ dòng nối và lịch sử, xoá dòng, ghi MỘT dòng audit giữ nội dung đã xoá. Xoá SAU các biện
+     * pháp để biện pháp đã thực hiện còn lại với số vi phạm ĐANG GẮN (tình huống 16).
+     */
+    for (const v of s.violations) {
+      if (!v.deleted) continue;
+      const id = vid.get(v.key)!;
+      const measureIds = (conn.prepare('SELECT measure_id FROM measure_violations WHERE violation_id = ? ORDER BY measure_id').all(id) as any[]).map((r) => r.measure_id);
+      const at = stamp(notFuture(v.deleted.on, `xoá ${v.key}`), '10:00:00');
+      conn.prepare('DELETE FROM measure_violations WHERE violation_id = ?').run(id);
+      conn.prepare('DELETE FROM violation_history WHERE violation_id = ?').run(id);
+      conn.prepare('DELETE FROM violations WHERE id = ?').run(id);
+      insertAudit.run(userOf(v.deleted.by), 'violation.delete', 'violation', id, `Bộ demo · ${v.key}`, JSON.stringify({
+        studentId: sid, category: v.category, skill: v.skill ?? null, occurredOn: v.on, reportedBy: userOf(v.by), description: v.text, measureIds,
+      }), null, at);
+      vid.delete(v.key);
+      counts.violations -= 1;
+      counts.deleted += 1;
     }
   }
   return counts;
