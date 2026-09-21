@@ -15,6 +15,8 @@ Cập nhật: 21/09/2026. Lộ trình: `plan.md` mục 22.
    (session này) để rà soát.
 4. **Làm đúng một PR mỗi lần.** Đừng gộp hai PR vào một session.
 
+**Đã xong:** PR-N (#32, merge 21/09/2026).
+
 **Thứ tự bắt buộc:** `PR-N → PR-J → PR-O → PR-K → PR-P → PR-Q → PR-R → PR-S`.
 Lý do thứ tự ở `plan.md` mục 22.1 — đọc trước khi định đổi.
 
@@ -24,6 +26,23 @@ Lý do thứ tự ở `plan.md` mục 22.1 — đọc trước khi định đổ
 
 ```
 Đọc plan.md mục 22 rồi làm PR-N (mục 22.2), chỉ PR-N.
+
+DÙNG SKILL SUPERPOWERS (bắt buộc, gọi bằng tool Skill trước khi làm bước tương ứng):
+- superpowers:using-git-worktrees — TRƯỚC KHI CODE: tạo nhánh/worktree riêng tên
+  pr-<chữ>-<mô tả>, không code trên main.
+- superpowers:executing-plans — đi theo đúng các bước đánh số của mục 22 tương ứng,
+  tick từng bước ngay khi xong.
+- superpowers:test-driven-development — mọi luật/lỗi: phép kiểm ĐỎ trước rồi mới sửa.
+- superpowers:systematic-debugging — gặp phép kiểm gãy hoặc hành vi lạ: tìm nguyên
+  nhân gốc trước, không vá mò.
+- superpowers:brainstorming — CHỈ khi kế hoạch sai/thiếu tới mức phải chọn giữa hai
+  cách làm khác nhau về nghiệp vụ. Khi đó DỪNG và hỏi tôi, không tự chọn.
+- superpowers:verification-before-completion — trước khi nói "xong": chạy
+  npm run check và bấm thử thật, dán bằng chứng.
+- superpowers:requesting-code-review — trước khi mở PR: cho một subagent rà diff
+  độc lập, sửa lỗi Critical/Important.
+- superpowers:finishing-a-development-branch — cuối cùng: commit, push, mở PR
+  (không draft), báo link. KHÔNG tự merge.
 
 Trước khi gõ dòng code đầu tiên, đọc đủ theo thứ tự ở plan.md mục 22.0:
 thiet-ke/NGUON-Rule-Y-thuc-2026-09-21.md, rule book mục 18,
@@ -59,6 +78,23 @@ Khi xong, báo cho tôi: đã làm gì, bằng chứng nào, và cái gì CHƯA 
 
 ```
 Đọc plan.md mục 22 rồi làm PR-J (mục 22.3), chỉ PR-J. PR-N phải xong trước.
+
+DÙNG SKILL SUPERPOWERS (bắt buộc, gọi bằng tool Skill trước khi làm bước tương ứng):
+- superpowers:using-git-worktrees — TRƯỚC KHI CODE: tạo nhánh/worktree riêng tên
+  pr-<chữ>-<mô tả>, không code trên main.
+- superpowers:executing-plans — đi theo đúng các bước đánh số của mục 22 tương ứng,
+  tick từng bước ngay khi xong.
+- superpowers:test-driven-development — mọi luật/lỗi: phép kiểm ĐỎ trước rồi mới sửa.
+- superpowers:systematic-debugging — gặp phép kiểm gãy hoặc hành vi lạ: tìm nguyên
+  nhân gốc trước, không vá mò.
+- superpowers:brainstorming — CHỈ khi kế hoạch sai/thiếu tới mức phải chọn giữa hai
+  cách làm khác nhau về nghiệp vụ. Khi đó DỪNG và hỏi tôi, không tự chọn.
+- superpowers:verification-before-completion — trước khi nói "xong": chạy
+  npm run check và bấm thử thật, dán bằng chứng.
+- superpowers:requesting-code-review — trước khi mở PR: cho một subagent rà diff
+  độc lập, sửa lỗi Critical/Important.
+- superpowers:finishing-a-development-branch — cuối cùng: commit, push, mở PR
+  (không draft), báo link. KHÔNG tự merge.
 
 Đọc bắt buộc, đủ và theo thứ tự:
 1. thiet-ke/NGUON-Rule-Y-thuc-2026-09-21.md  — nguồn của chủ sản phẩm
@@ -110,6 +146,23 @@ Khi xong, báo: đã làm gì, bằng chứng nào, cái gì CHƯA làm.
 ```
 Đọc plan.md mục 22 rồi làm PR-O (mục 22.4), chỉ PR-O.
 
+DÙNG SKILL SUPERPOWERS (bắt buộc, gọi bằng tool Skill trước khi làm bước tương ứng):
+- superpowers:using-git-worktrees — TRƯỚC KHI CODE: tạo nhánh/worktree riêng tên
+  pr-<chữ>-<mô tả>, không code trên main.
+- superpowers:executing-plans — đi theo đúng các bước đánh số của mục 22 tương ứng,
+  tick từng bước ngay khi xong.
+- superpowers:test-driven-development — mọi luật/lỗi: phép kiểm ĐỎ trước rồi mới sửa.
+- superpowers:systematic-debugging — gặp phép kiểm gãy hoặc hành vi lạ: tìm nguyên
+  nhân gốc trước, không vá mò.
+- superpowers:brainstorming — CHỈ khi kế hoạch sai/thiếu tới mức phải chọn giữa hai
+  cách làm khác nhau về nghiệp vụ. Khi đó DỪNG và hỏi tôi, không tự chọn.
+- superpowers:verification-before-completion — trước khi nói "xong": chạy
+  npm run check và bấm thử thật, dán bằng chứng.
+- superpowers:requesting-code-review — trước khi mở PR: cho một subagent rà diff
+  độc lập, sửa lỗi Critical/Important.
+- superpowers:finishing-a-development-branch — cuối cùng: commit, push, mở PR
+  (không draft), báo link. KHÔNG tự merge.
+
 Đây là PR nhỏ nhưng chạm App.tsx và mọi link. Mục tiêu: bốn khu vực cấp chính
 Tổng quan / Học viên & Lớp / Test / Công việc (quyết định D01 ngày 20/09, CHƯA
 LÀM — App.tsx hiện có ba mục và không có khu vực Test).
@@ -137,6 +190,23 @@ npm run check xanh. Cập nhật plan.md mục 14 + BAN_DO_OVERHAUL.md, cùng co
 
 ```
 Đọc plan.md mục 22 rồi làm PR-K (mục 22.5), chỉ PR-K. PR-J và PR-O phải xong trước.
+
+DÙNG SKILL SUPERPOWERS (bắt buộc, gọi bằng tool Skill trước khi làm bước tương ứng):
+- superpowers:using-git-worktrees — TRƯỚC KHI CODE: tạo nhánh/worktree riêng tên
+  pr-<chữ>-<mô tả>, không code trên main.
+- superpowers:executing-plans — đi theo đúng các bước đánh số của mục 22 tương ứng,
+  tick từng bước ngay khi xong.
+- superpowers:test-driven-development — mọi luật/lỗi: phép kiểm ĐỎ trước rồi mới sửa.
+- superpowers:systematic-debugging — gặp phép kiểm gãy hoặc hành vi lạ: tìm nguyên
+  nhân gốc trước, không vá mò.
+- superpowers:brainstorming — CHỈ khi kế hoạch sai/thiếu tới mức phải chọn giữa hai
+  cách làm khác nhau về nghiệp vụ. Khi đó DỪNG và hỏi tôi, không tự chọn.
+- superpowers:verification-before-completion — trước khi nói "xong": chạy
+  npm run check và bấm thử thật, dán bằng chứng.
+- superpowers:requesting-code-review — trước khi mở PR: cho một subagent rà diff
+  độc lập, sửa lỗi Critical/Important.
+- superpowers:finishing-a-development-branch — cuối cùng: commit, push, mở PR
+  (không draft), báo link. KHÔNG tự merge.
 
 Đọc bắt buộc:
 1. thiet-ke/Y_THUC_VI_PHAM_VA_BIEN_PHAP.md mục 7 — CÓ SƠ ĐỒ ASCII CHO TỪNG
@@ -186,6 +256,23 @@ Sau PR này chủ sản phẩm sẽ bấm thử, nên chụp ảnh desktop và 3
 ```
 Đọc plan.md mục 22 rồi làm PR-P (mục 22.6), chỉ PR-P.
 
+DÙNG SKILL SUPERPOWERS (bắt buộc, gọi bằng tool Skill trước khi làm bước tương ứng):
+- superpowers:using-git-worktrees — TRƯỚC KHI CODE: tạo nhánh/worktree riêng tên
+  pr-<chữ>-<mô tả>, không code trên main.
+- superpowers:executing-plans — đi theo đúng các bước đánh số của mục 22 tương ứng,
+  tick từng bước ngay khi xong.
+- superpowers:test-driven-development — mọi luật/lỗi: phép kiểm ĐỎ trước rồi mới sửa.
+- superpowers:systematic-debugging — gặp phép kiểm gãy hoặc hành vi lạ: tìm nguyên
+  nhân gốc trước, không vá mò.
+- superpowers:brainstorming — CHỈ khi kế hoạch sai/thiếu tới mức phải chọn giữa hai
+  cách làm khác nhau về nghiệp vụ. Khi đó DỪNG và hỏi tôi, không tự chọn.
+- superpowers:verification-before-completion — trước khi nói "xong": chạy
+  npm run check và bấm thử thật, dán bằng chứng.
+- superpowers:requesting-code-review — trước khi mở PR: cho một subagent rà diff
+  độc lập, sửa lỗi Critical/Important.
+- superpowers:finishing-a-development-branch — cuối cùng: commit, push, mở PR
+  (không draft), báo link. KHÔNG tự merge.
+
 Đọc bắt buộc:
 1. thiet-ke/BAN_DO_OVERHAUL.md mục 3 (Tổng quan) và mục 4 (Phân tích) — bảng
    này nói từng yêu cầu ĐÃ CÓ hay CHƯA, và cái nào HẾT HIỆU LỰC vì rule Ý thức
@@ -222,6 +309,23 @@ Sau PR này chủ sản phẩm bấm thử — chụp ảnh.
 
 ```
 Đọc plan.md mục 22 rồi làm PR-Q (mục 22.7), chỉ PR-Q.
+
+DÙNG SKILL SUPERPOWERS (bắt buộc, gọi bằng tool Skill trước khi làm bước tương ứng):
+- superpowers:using-git-worktrees — TRƯỚC KHI CODE: tạo nhánh/worktree riêng tên
+  pr-<chữ>-<mô tả>, không code trên main.
+- superpowers:executing-plans — đi theo đúng các bước đánh số của mục 22 tương ứng,
+  tick từng bước ngay khi xong.
+- superpowers:test-driven-development — mọi luật/lỗi: phép kiểm ĐỎ trước rồi mới sửa.
+- superpowers:systematic-debugging — gặp phép kiểm gãy hoặc hành vi lạ: tìm nguyên
+  nhân gốc trước, không vá mò.
+- superpowers:brainstorming — CHỈ khi kế hoạch sai/thiếu tới mức phải chọn giữa hai
+  cách làm khác nhau về nghiệp vụ. Khi đó DỪNG và hỏi tôi, không tự chọn.
+- superpowers:verification-before-completion — trước khi nói "xong": chạy
+  npm run check và bấm thử thật, dán bằng chứng.
+- superpowers:requesting-code-review — trước khi mở PR: cho một subagent rà diff
+  độc lập, sửa lỗi Critical/Important.
+- superpowers:finishing-a-development-branch — cuối cùng: commit, push, mở PR
+  (không draft), báo link. KHÔNG tự merge.
 
 Đọc bắt buộc:
 1. thiet-ke/BAN_DO_OVERHAUL.md mục 6 (lớp) và mục 7 (hồ sơ HV) — đọc TRƯỚC
@@ -261,6 +365,23 @@ Sau PR này chủ sản phẩm bấm thử — chụp ảnh.
 
 ```
 Đọc plan.md mục 22 rồi làm PR-R (mục 22.8), chỉ PR-R.
+
+DÙNG SKILL SUPERPOWERS (bắt buộc, gọi bằng tool Skill trước khi làm bước tương ứng):
+- superpowers:using-git-worktrees — TRƯỚC KHI CODE: tạo nhánh/worktree riêng tên
+  pr-<chữ>-<mô tả>, không code trên main.
+- superpowers:executing-plans — đi theo đúng các bước đánh số của mục 22 tương ứng,
+  tick từng bước ngay khi xong.
+- superpowers:test-driven-development — mọi luật/lỗi: phép kiểm ĐỎ trước rồi mới sửa.
+- superpowers:systematic-debugging — gặp phép kiểm gãy hoặc hành vi lạ: tìm nguyên
+  nhân gốc trước, không vá mò.
+- superpowers:brainstorming — CHỈ khi kế hoạch sai/thiếu tới mức phải chọn giữa hai
+  cách làm khác nhau về nghiệp vụ. Khi đó DỪNG và hỏi tôi, không tự chọn.
+- superpowers:verification-before-completion — trước khi nói "xong": chạy
+  npm run check và bấm thử thật, dán bằng chứng.
+- superpowers:requesting-code-review — trước khi mở PR: cho một subagent rà diff
+  độc lập, sửa lỗi Critical/Important.
+- superpowers:finishing-a-development-branch — cuối cùng: commit, push, mở PR
+  (không draft), báo link. KHÔNG tự merge.
 
 Đọc bắt buộc:
 1. thiet-ke/BAN_DO_OVERHAUL.md mục 5 (Công việc) và mục 8 (Test)
@@ -304,6 +425,23 @@ Sau PR này chủ sản phẩm bấm thử — chụp ảnh.
 
 ```
 Đọc plan.md mục 22 rồi làm PR-S (mục 22.9), chỉ PR-S. Đây là PR cuối.
+
+DÙNG SKILL SUPERPOWERS (bắt buộc, gọi bằng tool Skill trước khi làm bước tương ứng):
+- superpowers:using-git-worktrees — TRƯỚC KHI CODE: tạo nhánh/worktree riêng tên
+  pr-<chữ>-<mô tả>, không code trên main.
+- superpowers:executing-plans — đi theo đúng các bước đánh số của mục 22 tương ứng,
+  tick từng bước ngay khi xong.
+- superpowers:test-driven-development — mọi luật/lỗi: phép kiểm ĐỎ trước rồi mới sửa.
+- superpowers:systematic-debugging — gặp phép kiểm gãy hoặc hành vi lạ: tìm nguyên
+  nhân gốc trước, không vá mò.
+- superpowers:brainstorming — CHỈ khi kế hoạch sai/thiếu tới mức phải chọn giữa hai
+  cách làm khác nhau về nghiệp vụ. Khi đó DỪNG và hỏi tôi, không tự chọn.
+- superpowers:verification-before-completion — trước khi nói "xong": chạy
+  npm run check và bấm thử thật, dán bằng chứng.
+- superpowers:requesting-code-review — trước khi mở PR: cho một subagent rà diff
+  độc lập, sửa lỗi Critical/Important.
+- superpowers:finishing-a-development-branch — cuối cùng: commit, push, mở PR
+  (không draft), báo link. KHÔNG tự merge.
 
 Đọc bắt buộc:
 1. thiet-ke/PISA-Rulebook-2026-09-19.md mục 18.2 — bốn điểm sửa của Học thuật
