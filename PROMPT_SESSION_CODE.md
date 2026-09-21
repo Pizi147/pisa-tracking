@@ -20,7 +20,7 @@ chút trên giao diện — chọn mức **gần nhất**.
 | **PR-K** | Giao diện Ý thức & Phối hợp | Sonnet 5 · High | Fable 5.1 · High | Không | Làm giao diện theo bố cục đã khoá, chữ đã viết sẵn |
 | **PR-K2** | Sửa 4 lỗi sau rà soát PR-K (`plan.md` 23.3b) | Sonnet 5 · High | Fable 5.1 · Medium | Có — PR riêng | Nhỏ, chỉ giao diện, chạy song song với Z2a |
 | **PR-Z2a** | Hạ tầng Netlify + Turso (Task 0–6b) | **Fable 5.1 · High** *(đổi 22/09)* | Sonnet 5 · High | Không | Thử thật 22/09: lỗi nặng nhất chỉ lộ sau khi gói mã; có 2 cửa dừng + deploy nháp thật → cần phán đoán tốt. Người rà: session planning (Opus) |
-| **PR-Z2b** | An toàn dữ liệu bản chính (Task 7–9) | **Opus 5 · XHigh** | Fable 5.1 · High | — | Một quyết định sai ở đây có thể chạm **dữ liệu thật** → dùng model mạnh |
+| **PR-Z2b** | An toàn dữ liệu bản chính (Task 6c–9) | **Opus 5 · XHigh** | Fable 5.1 · High | — | Một quyết định sai ở đây có thể chạm **dữ liệu thật** → dùng model mạnh |
 | **PR-Z2c** | Deploy bản chính + đo tốc độ + rà soát (Task 10–11) | **Opus 5 · XHigh** | Fable 5.1 · High | — | Chạm dữ liệu thật + quyết định tối ưu trang chậm. **Người rà phải khác model đã code Z2a/Z2b** |
 | *Rà soát sau mỗi PR* | Dán vào session planning | Opus 5 · High | Opus 5 · XHigh (PR lớn) | — | Người rà khác người code |
 | PR-O *(sau deploy)* | Điều hướng 4 khu vực | Sonnet 5 · High | Fable 5.1 · Medium | Không | Phạm vi hẹp |
@@ -233,7 +233,7 @@ Phần này viết các lệnh CHẠM DỮ LIỆU THẬT: khởi tạo database 
 Một lỗi ở đây có thể làm mất hoặc hỏng dữ liệu thật của trung tâm. Cẩn thận hơn tốc độ.
 
 KẾ HOẠCH: docs/superpowers/plans/2026-09-21-ban-chinh-netlify-turso.md
-Bạn CHỈ làm Task 7 → Task 9 (Phần B). PR-Z2a đã merge.
+Bạn CHỈ làm Task 6c → Task 9 (Phần B). PR-Z2a đã merge. Task 6c (mới 22/09) làm TRƯỚC: siết chốt seed vì tên bản chính "pisatracking" nằm trọn trong tên bản thử "pisatracking-demo".
 Trước khi gõ lệnh: đọc HẾT file kế hoạch, và ĐỌC KỸ bảng "Nhật ký thực thi" — Phần A đã ghi ở đó những gì
 khác kế hoạch (thư viện, đường dẫn, tên cột...). Rồi đọc TRIEN_KHAI.md mục 7 và 10 (chủ sản phẩm sẽ làm
 đúng theo đó — lệnh và tên biến phải khớp từng chữ).
