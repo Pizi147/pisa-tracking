@@ -3,7 +3,7 @@
 **Model:** Opus 5 · XHigh · **B:** Opus 5 · High
 Mở session Claude Code mới **trong thư mục repo**, chọn model, dán **cả khối** dưới đây.
 
-Cập nhật: 21/09/2026 (chiều). Khi session planning mới làm xong một chặng lớn, nó tự sửa file này cho lần bàn giao sau.
+Cập nhật: 21/09/2026 (đêm). Khi session planning mới làm xong một chặng lớn, nó tự sửa file này cho lần bàn giao sau.
 
 ```
 Bạn là SESSION PLANNING của dự án PISA Progress (web quản lý học viên, SOS, case, Ý thức cho trung tâm
@@ -45,7 +45,7 @@ họ cần làm gì. Rồi chờ yêu cầu.
 
 ---
 
-## Tình trạng lúc bàn giao (21/09/2026 chiều)
+## Tình trạng lúc bàn giao (21/09/2026 đêm)
 
 ### Đã merge
 
@@ -58,18 +58,18 @@ họ cần làm gì. Rồi chờ yêu cầu.
 | #34 | **PR-J** — Ý thức: Vi phạm + Biện pháp xử lý, gỡ mô hình Case Ý thức (512 phép kiểm) |
 | #35 | Tài liệu: rulebook v3 (SOS tự tạo case, Phối hợp SOS, xoá vi phạm) + lộ trình |
 | #36, #37 | Tài liệu: bản chính Netlify + Turso, kế hoạch chi tiết PR-Z2 |
-| *(PR của bàn giao này)* | Chia PR-Z2 thành Z2a/b/c, deploy thủ công, `TRIEN_KHAI.md` cho người không biết code, bảng model |
+| #38 | Chia PR-Z2 thành Z2a/b/c, deploy thủ công, `TRIEN_KHAI.md` cho người không biết code, bảng model |
+| #39 | **PR-T** — máy chủ theo rulebook v3 (SOS tự tạo case + điền sẵn phương án, Phối hợp SOS, xoá vi phạm) |
 
 ### Tiếp theo, đúng thứ tự
 
 | # | PR | Kế hoạch | Model · B |
 |---|---|---|---|
-| 1 | **PR-T** — máy chủ theo rulebook v3 | `plan.md` 23.1 | Sonnet 5 · High · B: Fable 5.1 · High |
-| 2 | **PR-K** — giao diện Ý thức & Phối hợp | `plan.md` 23.3 | Sonnet 5 · High · B: Fable 5.1 · High |
-| 3 | **PR-Z2a** — hạ tầng (Task 0–6b) | plan chi tiết | Sonnet 5 · High · B: Fable 5.1 · High |
-| 4 | **PR-Z2b** — an toàn dữ liệu (Task 7–9) | plan chi tiết | Opus 5 · XHigh · B: Fable 5.1 · High |
-| 5 | **PR-Z2c** — deploy bản chính + rà soát (Task 10–11) | plan chi tiết | Opus 5 · XHigh · B: Fable 5.1 · High |
-| 6+ | Sau deploy: PR-O → PR-Q → PR-P → PR-R → PR-S | `plan.md` 22.4–22.9 | xem `PROMPT_SESSION_CODE.md` mục 0 |
+| 1 | **PR-K** *(đang chạy 21/09 đêm)* — giao diện Ý thức & Phối hợp | `plan.md` 23.3 | Sonnet 5 · High · B: Fable 5.1 · High |
+| 2 | **PR-Z2a** — hạ tầng (Task 0–6b) | plan chi tiết | Sonnet 5 · High · B: Fable 5.1 · High |
+| 3 | **PR-Z2b** — an toàn dữ liệu (Task 7–9) | plan chi tiết | Opus 5 · XHigh · B: Fable 5.1 · High |
+| 4 | **PR-Z2c** — deploy bản chính + rà soát (Task 10–11) | plan chi tiết | Opus 5 · XHigh · B: Fable 5.1 · High |
+| 5+ | Sau deploy: PR-O → PR-Q → PR-P → PR-R → PR-S | `plan.md` 22.4–22.9 | xem `PROMPT_SESSION_CODE.md` mục 0 |
 
 **Chủ sản phẩm chưa quyết giờ chạy bản chính** — định chạy khi có gói Claude Max. Không có hạn cứng.
 
@@ -87,14 +87,10 @@ họ cần làm gì. Rồi chờ yêu cầu.
   **rỗng + tài khoản thật**; chi nhánh tạo lúc khởi tạo (chưa có màn tạo chi nhánh).
 - **Hoãn sau deploy:** phân tích theo giáo viên (design plan §6).
 
-### Còn treo — cần chủ sản phẩm trả lời khi tới lúc
+### Còn treo
 
-| Việc | Ở đâu |
-|---|---|
-| **C08** — lớp Normal có dùng dấu `-` không, ai thêm | `thiet-ke/LUAT_CHO_CHOT.md` |
-| Học viên đã kết thúc khoá mà case còn mở — có tự đóng/giao lại không | `plan.md` 22.9 S16 |
-| Case Fast Track mở mà em chuyển sang Normal — hiện ở đâu | `plan.md` 22.9 S17 |
-| "Đợt Test hoàn tất thì chỉ đọc" — định nghĩa "hoàn tất" ở tầng dữ liệu | `plan.md` 22.8 R11 |
+Không còn. Bốn câu C08, S16, S17, R11 đã chốt 21/09 đêm (cả bốn theo khuyến nghị) — xem `plan.md` mục 3,
+việc R14 (22.8), S16/S17 (22.9).
 
 ### Bẫy đã gặp — đừng lặp lại
 

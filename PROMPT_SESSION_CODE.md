@@ -4,7 +4,7 @@ Copy **cả khối** trong khung của PR cần làm, dán vào một session Cl
 Cập nhật: 21/09/2026 (chiều). Lộ trình: `plan.md` mục 23–24 · plan chi tiết bản chính:
 `docs/superpowers/plans/2026-09-21-ban-chinh-netlify-turso.md`.
 
-**Đã xong:** PR-N (#32) · PR-J (#34).
+**Đã xong:** PR-N (#32) · PR-J (#34) · PR-T (#39).
 
 ---
 
@@ -109,6 +109,9 @@ Nguyên tắc: GVCN nhìn THEO HỌC SINH trước. Mở rộng tại chỗ, kh�
 Mọi ràng buộc nói trước khi bấm (nút mờ kèm câu thiếu gì), không báo lỗi đỏ sau khi bấm.
 Tận dụng StudentDetailPage, ClassOverviewPage, SkillBoard, IssueAnalysis, BangChung, SoLieu có sẵn.
 Chưa đổi hồ sơ lớp thành 4 tab (việc sau deploy) — chỉ thay tab Ý thức.
+PR-T đã để sẵn cho bạn (đọc ghi chú 12 và 14 dưới mục 23.1): dòng "case chờ xác định nguyên nhân"
+của GVBM đã có ở máy chủ (nhóm cause trong myWork) — chỉ VẼ ra, đừng viết lại luật; và một chữ cứng
+"Cần chú ý" còn sót ở CaseBoardPage.tsx phải đổi sang đọc URGENCY_LABEL (việc K6b).
 
 Báo xong bằng tiếng Việt cơ bản: link PR, vai nào đã bấm thử, cái gì CHƯA làm.
 ```
