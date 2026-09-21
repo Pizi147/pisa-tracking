@@ -4,7 +4,7 @@ Copy **cả khối** trong khung của PR cần làm, dán vào một session Cl
 Cập nhật: 21/09/2026 (chiều). Lộ trình: `plan.md` mục 23–24 · plan chi tiết bản chính:
 `docs/superpowers/plans/2026-09-21-ban-chinh-netlify-turso.md`.
 
-**Đã xong:** PR-N (#32) · PR-J (#34) · PR-T (#39).
+**Đã xong:** PR-N (#32) · PR-J (#34) · PR-T (#39) · PR-K (#42).
 
 ---
 
@@ -18,7 +18,8 @@ chút trên giao diện — chọn mức **gần nhất**.
 |---|---|---|---|---|---|
 | **PR-T** | Luật SOS v3 phía máy chủ | Sonnet 5 · High | Fable 5.1 · High | Không | Đặc tả rất chi tiết, có mã luật để viết phép kiểm. Dùng B nếu Sonnet kẹt ở phép kiểm luật quá 2 lần |
 | **PR-K** | Giao diện Ý thức & Phối hợp | Sonnet 5 · High | Fable 5.1 · High | Không | Làm giao diện theo bố cục đã khoá, chữ đã viết sẵn |
-| **PR-Z2a** | Hạ tầng Netlify + Turso (Task 0–6b) | Sonnet 5 · High | Fable 5.1 · High | — | Phần lớn là làm theo kế hoạch đã được thử trước (511/512 phép kiểm chạy được với thư viện mới) |
+| **PR-K2** | Sửa 4 lỗi sau rà soát PR-K (`plan.md` 23.3b) | Sonnet 5 · High | Fable 5.1 · Medium | Có — PR riêng | Nhỏ, chỉ giao diện, chạy song song với Z2a |
+| **PR-Z2a** | Hạ tầng Netlify + Turso (Task 0–6b) | **Fable 5.1 · High** *(đổi 22/09)* | Sonnet 5 · High | Không | Thử thật 22/09: lỗi nặng nhất chỉ lộ sau khi gói mã; có 2 cửa dừng + deploy nháp thật → cần phán đoán tốt. Người rà: session planning (Opus) |
 | **PR-Z2b** | An toàn dữ liệu bản chính (Task 7–9) | **Opus 5 · XHigh** | Fable 5.1 · High | — | Một quyết định sai ở đây có thể chạm **dữ liệu thật** → dùng model mạnh |
 | **PR-Z2c** | Deploy bản chính + đo tốc độ + rà soát (Task 10–11) | **Opus 5 · XHigh** | Fable 5.1 · High | — | Chạm dữ liệu thật + quyết định tối ưu trang chậm. **Người rà phải khác model đã code Z2a/Z2b** |
 | *Rà soát sau mỗi PR* | Dán vào session planning | Opus 5 · High | Opus 5 · XHigh (PR lớn) | — | Người rà khác người code |
@@ -37,15 +38,23 @@ chừng. Khi đó phần rà soát ở Task 11 phải làm ở session planning 
 ## 1. Thứ tự làm
 
 ```
-PR-T  → rà soát → merge
-PR-K  → rà soát → merge
-PR-Z2a → rà soát → merge        (sẽ dừng 2 lần hỏi bạn: database Turso THỬ; TRIEN_KHAI mục 3-4-5)
+PR-T  → rà soát → merge                       ✅ #39
+PR-K  → rà soát → merge                       ✅ #42
+PR-K2  ┐ chạy SONG SONG được (khác bộ file) → rà soát → merge (K2 trước nếu xong cùng lúc)
+PR-Z2a ┘ (không hỏi token — bạn đã làm TRIEN_KHAI mục 2-5; chỉ dừng nếu cửa 🛑 không đạt)
 PR-Z2b → rà soát → merge
 PR-Z2c → rà soát → merge        (sẽ dừng hỏi bạn: database Turso CHÍNH; TRIEN_KHAI mục 6-7; xin phép đưa lên chính thức)
 ```
 
-**Không chạy song song** hai PR nào ở trên — mỗi PR dựa vào PR trước đã merge.
+**Không chạy song song** hai PR nào ở trên — mỗi PR dựa vào PR trước đã merge. **Ngoại lệ duy nhất:** PR-K2 và PR-Z2a
+(khác bộ file, đã kiểm 22/09).
 Merge xong một PR thì **mở session mới** cho PR sau — đừng dán tiếp vào session cũ.
+
+**Có gộp Z2b + Z2c thành một mạch không? — Không (chốt 22/09).** Cùng model (Opus 5 · XHigh) thì được, nhưng **giữa hai
+phần bắt buộc có một lượt rà soát + merge.** Lý do: Z2b viết đúng những lệnh sẽ chạy lên database **chính** (khởi tạo, thêm
+chi nhánh, sao lưu); Z2c **chạy** chúng. Gộp liền một mạch = chạy mã chạm dữ liệu thật **trước khi** có người thứ hai đọc
+nó. Chỗ tiết kiệm được chỉ là một lần mở session (~5 phút); cái giá nếu lệnh khởi tạo sai là làm lại bản chính. Tách
+vẫn nhanh: Z2b nhỏ (~1 giờ), rà trong 15 phút.
 
 ---
 
@@ -118,11 +127,46 @@ Báo xong bằng tiếng Việt cơ bản: link PR, vai nào đã bấm thử, c
 
 ---
 
-## PR-Z2a — Hạ tầng bản chính  *(sau khi PR-T và PR-K đã merge)*
+## PR-K2 — Sửa sau rà soát PR-K  *(chạy song song được với PR-Z2a)*
 
-**Model:** Sonnet 5 · High · **B:** Fable 5.1 · High
-**Để sẵn:** ~2 giờ. Session sẽ **dừng hỏi bạn hai lần**: (1) URL + token database Turso **thử** (`TRIEN_KHAI.md` mục 2);
-(2) làm `TRIEN_KHAI.md` mục 3–4–5 để nó deploy bản nháp.
+**Model:** Sonnet 5 · High · **B:** Fable 5.1 · Medium · **Tách PR riêng:** có — khác bộ file với Z2a, nhỏ, rà nhanh.
+**Để sẵn:** ~1 giờ. Không dừng hỏi bạn, trừ khi phải sửa file của Z2a.
+
+```
+Làm PR-K2 ở plan.md mục 23.3b, chỉ PR-K2 (K2-1 → K2-7). PR-K (#42) đã merge.
+Đây là sửa sau rà soát: KHÔNG thêm tính năng ngoài danh sách, KHÔNG đổi luật nghiệp vụ.
+Việc ở K2-6 là GHI LẠI, không làm.
+
+Một session khác có thể đang làm PR-Z2a cùng lúc. KHÔNG sửa: server/src/db.ts, server/src/platform/attachments.ts,
+server/src/yThuc/violations.ts, server/src/routes/index.ts phần /demo và /auth/info, web/src/App.tsx,
+web/src/modules/platform/WelcomePage.tsx, package.json. Buộc phải sửa → dừng, ghi plan.md mục 14, hỏi tôi.
+
+Skill superpowers (gọi bằng tool Skill):
+- using-git-worktrees: nhánh pr-k2-sua-sau-ra-soat.
+- test-driven-development: CHỈ nếu K2-1 phải sửa máy chủ (phép kiểm "số = số dòng danh sách" đỏ trước).
+- systematic-debugging: khi gặp lỗi chưa rõ nguyên nhân.
+- verification-before-completion: npm run check xanh + bấm thử đúng các kịch bản ở K2-7, dán kết quả thật.
+- finishing-a-development-branch: commit, push, mở PR (không draft). KHÔNG tự merge.
+
+Đọc trước: plan.md mục 23.3b; thiet-ke/SOS_VA_PHOI_HOP_V3.md §7.1, §7.5, §7.6; thiet-ke/TU_DIEN_VA_CHU.md mục 6-7.
+Nguyên tắc: ràng buộc nói TRƯỚC khi bấm (nút mờ + câu thiếu gì), không báo lỗi đỏ sau khi bấm; mọi số bấm ra đúng
+danh sách; chữ lấy từ TU_DIEN_VA_CHU.md, không tự sáng tác.
+
+Báo xong bằng tiếng Việt cơ bản: link PR, số phép kiểm trước/sau, kịch bản nào đã bấm thử, cái gì chưa làm.
+```
+
+---
+
+## PR-Z2a — Hạ tầng bản chính  *(PR-T và PR-K đã merge)*
+
+**Model:** **Fable 5.1 · High** · **B:** Sonnet 5 · High
+**Vì sao không còn Sonnet:** ngày 22/09 session planning đã chạy thử thật và thấy lỗi quan trọng nhất chỉ lộ ra **sau khi
+Netlify gói mã** (máy chủ sập lúc nạp). Kế hoạch đã có sẵn cách sửa và lệnh tự kiểm, nhưng phần này có 2 cửa dừng, deploy
+nháp thật và đo tốc độ, nên cần model phán đoán tốt hơn. Người rà sau đó là session planning (Opus), khác model người code.
+**Tách thêm:** không — Task 0→6b là một khối hạ tầng, tách nữa thì PR giữa chừng không chạy được.
+**Để sẵn:** ~2–3 giờ. Bạn **đã làm xong** TRIEN_KHAI mục 2 (database thử), 3, 4, 5 nên session **không** hỏi token.
+Nó chỉ dừng hỏi nếu: Netlify CLI chưa đăng nhập, biến của site trỏ nhầm database, hoặc một cửa dừng 🛑 không đạt.
+**Máy phải bật và có mạng suốt lúc chạy** (nó deploy nháp từ máy bạn).
 
 ```
 Bạn thực thi PHẦN A (PR-Z2a) của kế hoạch đưa PISA Progress lên làm BẢN CHÍNH trên Netlify + Turso.
@@ -130,39 +174,50 @@ Dữ liệu thật của trung tâm sẽ nằm trên hạ tầng này. Chất l�
 
 KẾ HOẠCH: docs/superpowers/plans/2026-09-21-ban-chinh-netlify-turso.md
 Bạn CHỈ làm Task 0 → Task 6b (Phần A). KHÔNG làm Task 7 trở đi dù thấy tiện.
-Đọc HẾT file kế hoạch trước khi gõ lệnh đầu tiên — nhất là "Global Constraints", "Ba phần — ba PR",
-"Hướng dẫn riêng cho model thực thi". Rồi đọc plan.md mục 24 và TRIEN_KHAI.md.
+Đọc HẾT file kế hoạch trước khi gõ lệnh đầu tiên — bảng "SỬA 22/09/2026 SAU THỬ THẬT" ở đầu, "Global Constraints",
+"Ba phần — ba PR", "Hướng dẫn riêng cho model thực thi" (mục 8–10 mới), rồi plan.md mục 24 và TRIEN_KHAI.md.
+Chỗ nào ghi "🆕 22/09" là đã được chạy thử thật trên mã hiện tại — nó THẮNG chữ cũ bên cạnh.
+
+TÌNH TRẠNG LÚC BẮT ĐẦU (22/09):
+- main đã có PR-T (#39) và PR-K (#42). Có thể đã có thêm PR-K2 — không sao, N0 sẽ lớn hơn 581.
+- Chủ sản phẩm ĐÃ làm TRIEN_KHAI mục 2 (database THỬ pisa-thu-nghiem, vùng Ohio), 3 (Netlify CLI, đã đăng nhập),
+  4 (site đã tạo và nối — .netlify/state.json nằm trên main), 5 (ba biến trỏ database THỬ).
+  → Lấy URL/token bằng `netlify env:get` như Task 3 Step 1. KHÔNG xin token qua chat.
+- Một session khác có thể đang làm PR-K2 (web/src/modules/yThuc/*, SkillBoard.tsx, CaseSosControls.tsx). Đừng sửa
+  các file đó.
 
 CÁCH LÀM:
-- Gọi superpowers:executing-plans. Làm ĐÚNG thứ tự, tick từng bước (- [x]) ngay trong file kế hoạch.
-- Nhánh: pr-z2a-ha-tang (superpowers:using-git-worktrees ở Task 0).
-- Mỗi task kết thúc: npm run check xanh (số phép kiểm KHÔNG giảm) → một commit. Ghi số phép kiểm vào
-  bảng "Nhật ký thực thi" cuối file kế hoạch, cùng mọi điều bất ngờ và mọi chỗ bạn phải tự quyết.
+- Làm ĐÚNG thứ tự, tick từng bước (- [x]) ngay trong file kế hoạch. Mỗi task: npm run check xanh (số phép kiểm KHÔNG
+  giảm) → một commit. Ghi số phép kiểm + mọi điều bất ngờ + mọi chỗ phải tự quyết vào "Nhật ký thực thi" cuối file.
 - Trước mỗi commit tự rà diff: chỉ chạm đúng các file ở mục "Files" của task? Không có token/mật khẩu?
+- Task 5 có lệnh mới `npm run thu-goi` (gói máy chủ như Netlify rồi chạy ở thư mục khác). Nó phải HỎNG khi bỏ
+  Step 1b và ĐẠT khi có — chứng minh cả hai chiều, ghi Nhật ký. Đây là chốt chặn lỗi nặng nhất đã tìm thấy.
 
-SKILL SUPERPOWERS (gọi bằng tool Skill, đúng lúc):
-- using-git-worktrees (Task 0) · executing-plans (suốt quá trình)
-- test-driven-development: ở mọi bước ghi "Phép kiểm đỏ" — chạy thấy ĐỎ trước, ghi lại, rồi mới viết mã.
-- systematic-debugging: BẤT KỲ lúc nào npm run check đỏ mà chưa rõ vì sao. TUYỆT ĐỐI không sửa phép kiểm cũ cho xanh.
-- verification-before-completion: trước khi kết thúc Phần A.
+SKILL SUPERPOWERS (gọi bằng tool Skill, đúng lúc — bảng ở "Hướng dẫn riêng cho model thực thi" mục 10):
+- using-git-worktrees (Task 0, nhánh pr-z2a-ha-tang) · executing-plans (suốt quá trình)
+- test-driven-development: mọi bước "Phép kiểm đỏ" — chạy thấy ĐỎ trước, ghi lại, rồi mới viết mã.
+- systematic-debugging: BẤT KỲ lúc nào check đỏ, gói lỗi, hay địa chỉ nháp lỗi mà chưa rõ vì sao. KHÔNG sửa phép kiểm cũ cho xanh.
+- verification-before-completion: trước khi đánh dấu xong mỗi cửa dừng (Task 3, Task 6b) và trước khi mở PR.
+- requesting-code-review: sau Task 6b, cho một agent rà TOÀN BỘ diff Phần A đối chiếu kế hoạch (nhất là: vá _metadata,
+  THU_MUC_MA, chặn /demo, kho tệp, không token trong repo). Rồi receiving-code-review để xử lý góp ý có lý lẽ.
 - finishing-a-development-branch: mở PR (không draft). KHÔNG tự merge.
-Không cần: brainstorming, writing-plans, requesting-code-review (Phần C sẽ rà), kiểm ngược, chụp ảnh.
+Không cần: brainstorming, writing-plans, kiểm ngược, chụp ảnh.
 
-BỐN ĐIỀU TUYỆT ĐỐI:
-1. KHÔNG đổi kiểu gọi database sang async (không thêm await vào prepare/get/all/run). Kế hoạch đã thử: đổi thư
-   viện sang libsql là đủ. Gate Task 3 hoặc 6b không đạt → DỪNG, báo tôi. Không tự nghĩ đường khác.
-2. KHÔNG ghi token, mật khẩu, URL có token vào bất kỳ file nào trong repo, kể cả Nhật ký và chú thích.
-3. Chỉ dùng database Turso THỬ (pisa-thu-nghiem). Không bao giờ đụng database bản chính trong Phần A.
-4. KHÔNG đổi luật nghiệp vụ, KHÔNG dọn mã hay tối ưu ngoài task. Thấy gì đáng sửa → ghi plan.md mục 12.
+NĂM ĐIỀU TUYỆT ĐỐI:
+1. KHÔNG đổi kiểu gọi database sang async (không thêm await vào prepare/get/all/run). Gate Task 3 hoặc 6b không
+   đạt → DỪNG, báo tôi. Không tự nghĩ đường khác.
+2. KHÔNG ghi token, mật khẩu, URL có token vào bất kỳ file nào trong repo, Nhật ký, PR, hay câu trả lời.
+3. Chỉ dùng database Turso THỬ. URL lấy từ Netlify không chứa "pisa-thu-nghiem" → DỪNG NGAY, báo tôi.
+4. KHÔNG `netlify deploy --prod` trong Phần A. Chỉ deploy NHÁP (`netlify deploy --build`, không --prod).
+5. KHÔNG đổi luật nghiệp vụ, KHÔNG dọn mã hay tối ưu ngoài task. Thấy gì đáng sửa → ghi plan.md mục 12.
 
-KHI NÀO DỪNG HỎI TÔI:
-- Gate Task 3 và Task 6b: hỏi đúng nguyên văn kế hoạch ghi. Tôi không biết code — nói tôi làm mục nào của
-  TRIEN_KHAI.md, đừng giải thích kỹ thuật.
+KHI NÀO DỪNG HỎI TÔI (tôi không biết code — nói tôi bấm gì, mục nào của TRIEN_KHAI.md):
+- `netlify status` không ra tên site, hoặc thiếu biến môi trường → nói đúng mục TRIEN_KHAI cần làm lại.
+- Một cửa dừng 🛑 rơi vào ô "Dừng" của bảng quyết định trong kế hoạch.
 - Mã thật khác kế hoạch tới mức phải chọn giữa hai cách: dừng, ghi Nhật ký, hỏi. Đừng đoán.
-- Trước Task 0: main chưa có PR-T và PR-K → dừng, báo tôi.
 
-KHI XONG, báo tôi bằng tiếng Việt cơ bản: link PR; địa chỉ bản nháp đã chạy; bảng thời gian tải 5 trang;
-số phép kiểm trước/sau; việc còn lại; việc tôi cần làm tiếp.
+KHI XONG, báo tôi bằng tiếng Việt cơ bản: link PR; địa chỉ bản nháp đã chạy; 8 dòng kiểm trên địa chỉ nháp
+(đạt/hỏng); bảng thời gian tải 7 trang; số phép kiểm trước/sau; góp ý rà soát đã xử lý; việc tôi cần làm tiếp.
 ```
 
 ---
