@@ -10,7 +10,7 @@ Cập nhật: 21/09/2026 tối. Lộ trình: `plan.md` **mục 23** (đêm nay) 
 
 ```
 Bây giờ (Sonnet):     PR-T  →  merge  →  PR-K  →  merge
-Tối nay (Max, Opus):  PR-Z2  (bản chính trên Netlify + Turso — KHÔNG chạy song song với T/K)
+Sau PR-T, PR-K:       PR-Z2  (bản chính trên Netlify + Turso — Sonnet/Fable; KHÔNG chạy song song với T/K)
 Trong lúc Z2 chạy:    bạn tạo tài khoản Turso + Netlify theo TRIEN_KHAI.md mục 2
 ```
 
@@ -81,42 +81,54 @@ Báo xong: link PR, vai nào đã bấm thử, cái gì CHƯA làm.
 
 ---
 
-## PR-Z2 — Bản chính trên Netlify + Turso  *(tối nay, Opus, sau khi PR-T và PR-K đã merge)*
+## PR-Z2 — Bản chính trên Netlify + Turso  *(sau khi PR-T và PR-K đã merge · Sonnet hoặc Fable)*
+
+**Trước khi dán:** chọn mức suy nghĩ cao nhất model cho phép. Để sẵn 2–3 giờ, vì có hai lúc model sẽ **dừng lại hỏi
+bạn** (gate 🛑): lần 1 cần database Turso **thử**, lần 2 cần site Netlify + database **bản chính**.
 
 ```
-Làm PR-Z2 ở plan.md mục 24, chỉ PR-Z2. PR-T và PR-K đã merge vào main.
-Bản chính: Netlify (giao diện + Netlify Functions) + Turso (database libSQL) + Netlify Blobs (tệp).
-Dữ liệu bắt đầu RỖNG, không có dữ liệu nào phải chuyển.
+Bạn thực thi PR-Z2: đưa PISA Progress lên làm BẢN CHÍNH trên Netlify + Turso.
+Đây là bản chính, dữ liệu thật của trung tâm sẽ nằm ở đây. Chất lượng và an toàn quan trọng hơn tốc độ.
 
-Skill superpowers dùng (gọi bằng tool Skill):
-- using-git-worktrees: nhánh pr-z2-netlify-turso.
-- brainstorming — nhánh "spike": CHỈ cho bước Z0 (thử nhanh ≤45 phút: thư viện `libsql` gọi đồng bộ
-  có dùng được trong Netlify Function không; đo độ trễ Function → Turso). Kết quả ghi mục 14 rồi đi tiếp,
-  KHÔNG viết spec.
-- subagent-driven-development: CHỈ cho Z2 (đổi cách gọi DB) nếu Z0 chọn đường async — mỗi module một
-  subagent theo đúng thứ tự ở mục 24.2 Z2, npm test phải xanh sau MỖI module rồi mới sang module sau.
-- systematic-debugging: khi phép kiểm gãy sau khi đổi một module.
-- test-driven-development: CHỈ cho Z6 (init từ chối khi DB có dữ liệu) và Z7 (file sao lưu mở lại được).
-- verification-before-completion: BẮT BUỘC Z8 trên địa chỉ Netlify thật, kèm số đo thời gian 5 trang.
-- requesting-code-review: MỘT lượt cho tầng kết nối DB + giao dịch (tx) trước khi mở PR.
-- finishing-a-development-branch: commit, push, mở PR (không draft). KHÔNG tự merge.
-Không cần: writing-plans (mục 24 đã là plan), kiểm ngược, chụp ảnh.
+KẾ HOẠCH DUY NHẤT BẠN LÀM THEO:
+docs/superpowers/plans/2026-09-21-ban-chinh-netlify-turso.md
+Đọc HẾT file đó trước khi gõ dòng lệnh đầu tiên — đặc biệt hai mục "Global Constraints" và
+"Hướng dẫn riêng cho model thực thi". Rồi đọc plan.md mục 24 và TRIEN_KHAI.md.
 
-Đọc: plan.md mục 24 (đọc hết 24.0-24.3), TRIEN_KHAI.md (chủ sản phẩm sẽ làm theo — tên lệnh và biến
-môi trường phải KHỚP: npm run init-ban-chinh · npm run sao-luu · TURSO_DATABASE_URL · TURSO_AUTH_TOKEN ·
-ADMIN_EMAIL · ADMIN_PASSWORD · BACKUP_DIR · NODE_ENV; đổi tên nào thì sửa luôn TRIEN_KHAI.md).
+CÁCH LÀM:
+- Gọi skill superpowers:executing-plans và làm ĐÚNG thứ tự Task 0 → Task 11. Không nhảy, không gộp task.
+- Tick từng bước (- [x]) ngay trong file kế hoạch khi xong. Ghi vào bảng "Nhật ký thực thi" cuối file:
+  số phép kiểm sau mỗi task, kết quả gate, mọi điều bất ngờ, mọi chỗ bạn phải tự quyết.
+- Mỗi task kết thúc bằng: npm run check xanh (số phép kiểm KHÔNG được giảm) → một commit.
+- Trước mỗi commit tự rà diff: chỉ chạm đúng các file ghi ở mục "Files" của task? Không có token/mật khẩu?
+  Không đổi luật nghiệp vụ nào?
 
-Bốn điều tuyệt đối:
-1. Z2 chỉ đổi CÁCH GỌI database. Không đổi luật nghiệp vụ, không "tối ưu" truy vấn ở bước này.
-   Số phép kiểm sau Z2 phải bằng hoặc hơn trước Z2, tất cả xanh.
-2. Máy dev không đổi thói quen: npm run dev, npm run seed, npm test vẫn chạy như cũ (file cục bộ).
-3. init-ban-chinh KHÔNG BAO GIỜ xoá hay ghi đè dữ liệu đã có.
-4. Bản production không còn gì của demo (Vào nhanh, DemoBar, đổi ngày demo); demoToday() ra ngày thật.
+SKILL SUPERPOWERS (gọi bằng tool Skill, đúng lúc):
+- using-git-worktrees — Task 0.
+- executing-plans — suốt quá trình.
+- test-driven-development — ở mọi bước plan ghi "Phép kiểm đỏ": chạy thấy ĐỎ trước, ghi lại, rồi mới viết mã.
+- systematic-debugging — BẤT KỲ lúc nào npm run check đỏ mà chưa rõ vì sao. Tìm nguyên nhân gốc.
+  TUYỆT ĐỐI không sửa một phép kiểm cũ cho xanh.
+- requesting-code-review — Task 11 Step 1, đúng phạm vi plan ghi.
+- verification-before-completion — Task 11 Step 2, và trước MỌI câu "đã xong".
+- finishing-a-development-branch — Task 11 Step 3. KHÔNG tự merge.
 
-Khi cần Turso URL/token hoặc quyền Netlify để deploy thật (Z8): DỪNG và hỏi tôi, chỉ tôi cung cấp.
-Không ghi token vào file nào trong repo.
+BỐN ĐIỀU TUYỆT ĐỐI:
+1. KHÔNG đổi kiểu gọi database sang async (không thêm await vào prepare/get/all/run). Plan đã thử: đổi thư
+   viện sang libsql là đủ. Nếu gate Task 3 cho thấy không được → DỪNG, báo tôi. Không tự nghĩ đường khác.
+2. KHÔNG ghi token, mật khẩu, URL có token vào bất kỳ file nào trong repo, kể cả Nhật ký và chú thích.
+3. KHÔNG chạy lệnh nào xoá hay ghi đè database bản chính. Không bao giờ chạy npm run seed với biến Turso
+   bản chính. Mật khẩu quản trị: để TÔI tự gõ, đừng xin.
+4. KHÔNG đổi luật nghiệp vụ, KHÔNG dọn mã hay tối ưu ngoài task. Thấy gì đáng sửa → ghi plan.md mục 12.
 
-Báo xong: đường đã chọn ở Z0, số phép kiểm, kết quả Z8 từng bước, thời gian 5 trang, link PR, cái gì CHƯA làm.
+KHI NÀO DỪNG HỎI TÔI:
+- Hai gate 🛑 (Task 3, Task 10): hỏi đúng nguyên văn plan ghi, nói rõ cần để làm gì.
+- Gặp tình huống plan không nói tới, hoặc mã thật khác plan mô tả tới mức phải chọn giữa hai cách: dừng,
+  ghi Nhật ký, hỏi. Đừng đoán.
+- Trước Task 0: nếu main chưa có PR-T và PR-K → dừng, báo tôi.
+
+KHI XONG, báo tôi bằng tiếng Việt cơ bản (tôi không đọc code): link PR; bản chính đã sẵn sàng chưa; số phép kiểm
+trước/sau; bảng thời gian tải các trang; việc còn lại; ba việc tôi cần làm tiếp.
 ```
 
 ---

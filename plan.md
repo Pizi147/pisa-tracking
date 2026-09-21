@@ -1917,6 +1917,7 @@ Nói **cái gì đổi trên màn hình**, bằng tiếng Việt, không tên h�
 
 | 21/09/2026 (tối) | Claude (session thiết kế) | Rà PR-J (#34): đạt, 512 phép kiểm, không còn `behaviour`, tự vá đúng chỗ `migrate` sẽ vỡ trên DB cũ. Đọc rulebook v3 + hai prototype: v3 **đảo ba luật chốt sáng cùng ngày** (SOS tự tạo case + điền sẵn phương án; Phối hợp SOS; vi phạm sửa/xoá thẳng) — theo v3 vì là nguồn mới nhất. Viết `thiet-ke/SOS_VA_PHOI_HOP_V3.md` (luật S/P/V′, DDL `sos_coordination_actions`, hai bảng điền sẵn, bố cục Theo học sinh/Theo thời gian, 15 mục nghiệm thu, Q-V3-1…9), rule book **mục 19**, cập nhật từ điển/hợp đồng số liệu/luật chờ chốt. Chủ sản phẩm muốn **deploy bản chính đêm nay** (miễn phí, dữ liệu rỗng, phạm vi tối thiểu) → viết **mục 23**: ba PR `PR-T` ∥ `PR-Z` rồi `PR-K`; các PR overhaul còn lại sang sau deploy. Netlify **không dùng được** (không có ổ đĩa lâu dài cho SQLite) → `TRIEN_KHAI.md` hướng dẫn máy ở trung tâm + Tailscale Funnel (miễn phí, https cố định) và phương án Oracle Always Free. Viết lại `PROMPT_SESSION_CODE.md`: bớt skill và bớt kiểm ở giao diện, **giữ nguyên độ chặt** ở luật dữ liệu thật, khởi tạo DB rỗng, sao lưu |
 | 21/09/2026 (chiều) | Claude (session thiết kế) | Chủ sản phẩm hỏi lại về Netlify. Đính chính: vấn đề **không phải** "máy chủ phải chạy liên tục" (Netlify Functions chạy theo lượt gọi là đủ) mà là **chỗ cất dữ liệu** (file SQLite + tệp tải lên trên ổ đĩa). Kiểm mã: phiên đăng nhập lưu trong DB (chạy được), không có tác vụ chạy ngầm, tệp nhận qua `memoryStorage` (dễ chuyển), 1.035 chỗ gọi DB đồng bộ ở 51 file + 77 chỗ `tx(...)`, cú pháp riêng SQLite: 55 `lastInsertRowid` · 34 `PRAGMA` · 12 `INSERT OR …` · 5 `GROUP_CONCAT` · 2 `julianday`. Kết luận: **Turso** (không phải Supabase) + Netlify + Blobs. Viết **mục 24** (PR-Z2, có bước thử nhanh Z0 để tìm đường tắt không phải đổi sang async), viết lại `TRIEN_KHAI.md`, thay prompt PR-Z bằng PR-Z2 |
+| 21/09/2026 (chiều, tiếp) | Claude (session thiết kế) | Viết kế hoạch chi tiết PR-Z2 cho model thực thi Sonnet/Fable: `docs/superpowers/plans/2026-09-21-ban-chinh-netlify-turso.md`. Trước khi viết, **thử thật** thay `better-sqlite3` bằng `libsql` (bản tương thích, nối được Turso qua mạng) trên bản sao repo: 493/512 → sửa giao dịch lồng bằng savepoint → 511/512 → sửa `.run(null)` → lỗi còn lại chỉ là dọn thư mục tạm trên Windows. Kết luận: **giữ kiểu gọi đồng bộ**, không đổi 1.035 chỗ. Phát hiện: không có màn/API tạo chi nhánh (chỉ seed tạo) → `CHI_NHANH` + `them-chi-nhanh`. Quyết định thiết kế trong plan: `purgeAttachmentsOf` không xoá tệp trong kho (chạy trong giao dịch, xoá tệp không cuộn lại được); `seed` bị chặn khi trỏ tới Turso (trừ database thử có tên chỉ định); chế độ bản chính bật bằng `BAN_CHINH=1` / `VITE_BAN_CHINH=1` thay vì `NODE_ENV` |
 ---
 
 ## 15. PR-E — Nền giao diện dùng chung
@@ -2983,7 +2984,15 @@ async. Supabase vẫn là lựa chọn tốt nếu sau này cần đăng nhập 
 | Thời gian tối đa một lần gọi | Functions mặc định ~10 giây | Đo ở Z8; trang nào vượt thì gộp truy vấn |
 | Dữ liệu cũ | Bản chính **rỗng** — không có gì phải chuyển | Chỉ chạy `schema.sql` + dữ liệu nền |
 
-## 24.2. PR-Z2 — các bước
+## 24.2. PR-Z2 — các bước (tóm tắt)
+
+> **Kế hoạch chi tiết để thực thi: `docs/superpowers/plans/2026-09-21-ban-chinh-netlify-turso.md`** (12 task, có code,
+> phép kiểm, hai gate 🛑). Danh sách Z0–Z9 dưới đây chỉ là tóm tắt — **khi hai nơi khác nhau, file chi tiết thắng.**
+>
+> **Đã thử trước (21/09, session thiết kế):** thay `better-sqlite3` → `libsql` và chạy toàn bộ phép kiểm với file cục bộ:
+> **511/512 đạt** sau ba sửa nhỏ (giao dịch lồng → savepoint; một câu `.run(null)`; dọn thư mục tạm trên Windows).
+> → **Không phải đổi 1.035 chỗ gọi DB sang async.** Còn phải chứng minh đường mạng tới Turso (gate Task 3).
+> Phát hiện thêm: **không có màn nào tạo chi nhánh** → lệnh khởi tạo nhận `CHI_NHANH`, thêm `npm run them-chi-nhanh`.
 
 - [ ] **Z0. Thử nhanh (≤ 45 phút) — chọn đường.** (a) Thư viện `libsql` (bản tương thích `better-sqlite3`, gọi
       đồng bộ) có nối được Turso từ trong một Netlify Function không? Nếu **có** → không phải đổi 1.035 chỗ sang

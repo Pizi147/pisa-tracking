@@ -46,7 +46,7 @@ Mỗi lần merge PR vào `main` → Netlify **tự deploy** bản mới trong v
 |---|---|
 | `TURSO_DATABASE_URL` | URL ở bước 2.1 |
 | `TURSO_AUTH_TOKEN` | Token ở bước 2.1 |
-| `NODE_ENV` | `production` |
+| `BAN_CHINH` | `1` |
 
 3. *Site configuration → Change site name* → đặt tên dễ nhớ, ví dụ `pisa-progress` →
    địa chỉ thành `https://pisa-progress.netlify.app`.
@@ -59,10 +59,20 @@ Chạy **trên máy của bạn**, trong thư mục dự án, PowerShell:
 ```bash
 git pull
 npm install
-$env:TURSO_DATABASE_URL="libsql://..."; $env:TURSO_AUTH_TOKEN="..."; $env:ADMIN_EMAIL="dovutuanphong95.pisa@gmail.com"; $env:ADMIN_PASSWORD="mat-khau-manh-cua-ban"; npm run init-ban-chinh
+$env:TURSO_DATABASE_URL="libsql://..."; $env:TURSO_AUTH_TOKEN="..."; $env:ADMIN_EMAIL="dovutuanphong95.pisa@gmail.com"; $env:ADMIN_PASSWORD="mat-khau-manh-cua-ban"; $env:CHI_NHANH="MB=Monbay;BC=Bãi Cháy"; npm run init-ban-chinh
 ```
 
 Lệnh này **từ chối chạy** nếu database đã có dữ liệu — không bao giờ xoá dữ liệu thật.
+
+`CHI_NHANH` là danh sách chi nhánh thật, dạng `MÃ=Tên` cách nhau bằng dấu `;`. **Hệ thống chưa có màn tạo chi nhánh**,
+nên chi nhánh được tạo ở bước này. Sau này thêm chi nhánh:
+
+```bash
+$env:TURSO_DATABASE_URL="libsql://..."; $env:TURSO_AUTH_TOKEN="..."; npm run them-chi-nhanh -- UB "Uông Bí"
+```
+
+> **Tuyệt đối không chạy `npm run seed` khi đang đặt biến Turso bản chính** — lệnh đó xoá sạch database. Mã đã chặn
+> việc này, nhưng đừng thử.
 
 ### 2.4. Vào thử
 
@@ -86,7 +96,12 @@ Turso tự giữ dữ liệu, nhưng vẫn nên có **bản sao của riêng mì
 $env:TURSO_DATABASE_URL="libsql://..."; $env:TURSO_AUTH_TOKEN="..."; $env:BACKUP_DIR="G:\My Drive\pisa-sao-luu"; npm run sao-luu
 ```
 
-Tạo ra file `pisa-YYYY-MM-DD-HHmm.sqlite` trong thư mục Google Drive, giữ 14 bản gần nhất. Muốn tự động:
+Tạo ra file `pisa-YYYY-MM-DD-HHmm.sqlite` trong thư mục Google Drive, giữ 14 bản gần nhất.
+
+Muốn sao lưu cả **tệp bằng chứng** (ảnh, thư cảnh cáo) thì thêm hai biến:
+`$env:NETLIFY_SITE_ID="..."` (Netlify → Site configuration → General → **Site ID**) và
+`$env:NETLIFY_AUTH_TOKEN="..."` (Netlify → User settings → Applications → **Personal access tokens**).
+Không có hai biến này thì chỉ sao lưu dữ liệu, không sao lưu tệp. Muốn tự động:
 *Task Scheduler → Create Basic Task → Weekly* chạy đúng lệnh trên.
 
 ## 5. Khi có sự cố
