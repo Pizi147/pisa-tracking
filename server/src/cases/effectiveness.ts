@@ -1,6 +1,6 @@
 import { db } from '../db.ts';
 import {
-  BEHAVIOUR_TOPICS, CASE_CATEGORY_SHORT, INTERVENTION_KIND_LABEL,
+  CASE_CATEGORY_SHORT, INTERVENTION_KIND_LABEL,
   caseCategoriesFor, caseCategoryLabel, categoryOf, isNoPlanCase, issueBoardCategoriesFor, issueLabel,
   type InterventionKind,
 } from '../../../shared/domain/index.ts';
@@ -218,7 +218,7 @@ function queryPlans(sids: number[], scope: Scope) {
        */
       `SELECT iv.id, iv.kind, iv.status, iv.closed_reason, iv.completed_date,
               ${SUPPORT_DAY} AS day,
-              sc.id AS case_id, sc.student_id, sc.track, sc.category, sc.topic,
+              sc.id AS case_id, sc.student_id, sc.category, sc.topic,
               (SELECT fu.outcome FROM case_followups fu
                 WHERE fu.intervention_id = iv.id AND fu.outcome IS NOT NULL
                 ORDER BY fu.observed_on DESC, fu.id DESC LIMIT 1) AS final_outcome
@@ -238,8 +238,7 @@ function shapePlan(r: any) {
     caseId: r.case_id as number,
     studentId: r.student_id as number,
     kind: r.kind as string,
-    track: (r.track ?? 'academic') as string,
-    category: (r.category ?? categoryOf(r.track ?? 'academic', r.topic)) as string | null,
+    category: (r.category ?? categoryOf(r.topic)) as string | null,
     /* Bị thay thế VẪN TÍNH nếu có kết quả cuối — lý do dừng là chuyện khác. */
     supersededBy: r.closed_reason === 'superseded',
     outcome: r.final_outcome as string | null,
@@ -291,7 +290,7 @@ export function planOutcomesUnattributed(scope: Scope) {
  * đây là một việc cần người làm. Hiện thành một liên kết ngoài bảng, có danh sách ID riêng.
  */
 export function plansNeedingEvaluation(scope: Scope & { category?: string | null }) {
-  const all = planOutcomes(scope).filter((r) => r.track !== 'behaviour' && r.group === 'undetermined');
+  const all = planOutcomes(scope).filter((r) => r.group === 'undetermined');
   const rows = scope.category ? all.filter((r) => r.category === scope.category) : all;
   return { count: rows.length, ids: rows.map((r) => r.id) };
 }
@@ -305,7 +304,7 @@ export function plansNeedingEvaluation(scope: Scope & { category?: string | null
  */
 export function improvementRate(scope: Scope & { category?: string | null }) {
   const rows = planOutcomes(scope)
-    .filter((r) => r.track !== 'behaviour' && (!scope.category || r.category === scope.category));
+    .filter((r) => !scope.category || r.category === scope.category);
   const decided = rows.filter((r) => r.group !== 'undetermined');
   const improved = decided.filter((r) => r.group === 'success');
   return {
@@ -330,7 +329,7 @@ export function improvementRate(scope: Scope & { category?: string | null }) {
  * `improved` (có tiến bộ) và `partial` (tiến bộ một phần), tổng gọi là "Có cải thiện".
  */
 export function planEffectiveness(scope: Scope & { category?: string | null }) {
-  const all = planOutcomes(scope).filter((r) => r.track !== 'behaviour');
+  const all = planOutcomes(scope);
   const rows = scope.category ? all.filter((r) => r.category === scope.category) : all;
   const byKind = new Map<string, { improved: number; partial: number; failure: number }>();
   for (const r of rows) {
@@ -401,13 +400,13 @@ export function issueBoard(scope: Scope, category: string) {
 
   const cases = conn
     .prepare(
-      `SELECT sc.id, sc.student_id, sc.status, sc.track, sc.category, sc.topic, sc.disposition,
+      `SELECT sc.id, sc.student_id, sc.status, sc.category, sc.topic, sc.disposition,
               (SELECT COUNT(*) FROM case_interventions i WHERE i.case_id = sc.id) AS iv_all
          FROM sos_cases sc
         WHERE sc.student_id IN (${ph})`,
     )
     .all(...sids) as any[];
-  const mine = cases.filter((c) => (c.category ?? categoryOf(c.track ?? 'academic', c.topic)) === category);
+  const mine = cases.filter((c) => (c.category ?? categoryOf(c.topic)) === category);
   const caseIds = mine.map((c) => c.id);
 
   const issues = caseIds.length
@@ -521,7 +520,7 @@ export function issueSkillRows(scope: Scope) {
   const ph = sids.map(() => '?').join(',');
   const cases = conn
     .prepare(
-      `SELECT sc.id, sc.student_id, sc.status, sc.track, sc.category, sc.topic, sc.disposition,
+      `SELECT sc.id, sc.student_id, sc.status, sc.category, sc.topic, sc.disposition,
               (SELECT COUNT(*) FROM case_interventions iv WHERE iv.case_id = sc.id) AS plan_count,
               (SELECT COUNT(*) FROM case_interventions iv
                 WHERE iv.case_id = sc.id AND iv.status IN ('planned','started')) AS open_plans,
@@ -533,7 +532,7 @@ export function issueSkillRows(scope: Scope) {
     .all(...sids) as any[];
 
   return cats.map((cat) => {
-    const mine = cases.filter((c) => (c.category ?? categoryOf(c.track ?? 'academic', c.topic)) === cat);
+    const mine = cases.filter((c) => (c.category ?? categoryOf(c.topic)) === cat);
     const open = mine.filter((c) => c.status !== 'done');
     /*
      * MỖI SỐ LÀ ĐỘ DÀI CỦA MỘT TẬP ID (hợp đồng số liệu luật 1, PR-N): danh sách khi bấm số và con số cùng một tập, và
@@ -573,7 +572,7 @@ export function issueBoardCases(scope: Scope, category: string, code?: string | 
   const ph = sids.map(() => '?').join(',');
   const rows = conn
     .prepare(
-      `SELECT sc.id, sc.title, sc.status, sc.track, sc.category, sc.topic, sc.detected_at,
+      `SELECT sc.id, sc.title, sc.status, sc.category, sc.topic, sc.detected_at,
               sc.sos_level, s.full_name, s.student_code, s.id AS student_id,
               (SELECT ci.taxonomy_code FROM case_issues ci
                 WHERE ci.case_id = sc.id AND ci.role = 'primary' LIMIT 1) AS code,
@@ -590,7 +589,7 @@ export function issueBoardCases(scope: Scope, category: string, code?: string | 
 
   return {
     rows: rows
-      .filter((r) => (r.category ?? categoryOf(r.track ?? 'academic', r.topic)) === category)
+      .filter((r) => (r.category ?? categoryOf(r.topic)) === category)
       .filter((r) => !code || (code === '__unclassified__' ? !r.code : r.code === code))
       .map((r) => ({
         caseId: r.id, studentId: r.student_id, studentName: r.full_name,
@@ -606,9 +605,9 @@ export function issueBoardCases(scope: Scope, category: string, code?: string | 
 /**
  * Bộ tab của bảng phân tích: Normal L/R/W/S, Fast Track L/R/W1/W2/S (mục 13.4).
  *
- * Ý THỨC/KHÁC CỐ Ý KHÔNG CÓ TAB Ở ĐÂY. Bảng này báo cáo hiệu quả phương án bằng tỷ lệ thành
- * công, và nhóm ý thức không có thứ đó: gia đình đã nhận report không chứng minh em tiến bộ.
- * Nhóm ấy có chỗ riêng — dạng xem "Ý thức" ở mục 13.3, nơi đếm SỐ ĐỢT và SỐ LẦN ĐÃ LÀM.
+ * Ý THỨC NẰM NGOÀI BẢNG NÀY, và không có đường nào đưa nó vào (đặc tả Ý thức §8, hợp đồng số liệu §5.3): bảng báo cáo hiệu
+ * quả phương án bằng tỷ lệ thành công, mà gia đình đã nhận report không chứng minh em tiến bộ. Ý thức có góc nhìn riêng,
+ * đếm SỐ VI PHẠM và SỐ BIỆN PHÁP ĐÃ LÀM — xem `server/src/yThuc/thongKe.ts`.
  */
 export function issueBoardCategories(ratio: boolean) {
   return issueBoardCategoriesFor(ratio ? 'ratio' : 'ielts_band').map((c) => ({
@@ -616,4 +615,3 @@ export function issueBoardCategories(ratio: boolean) {
   }));
 }
 
-export { BEHAVIOUR_TOPICS };

@@ -2,7 +2,7 @@
  * TỪ VỰNG NGHIỆP VỤ DÙNG CHUNG cho API và giao diện.
  *
  * Trước đây tất cả nằm trong MỘT file 1200 dòng, nên câu hỏi "luật này ở đâu" không có câu
- * trả lời ngắn nào. Nay chia đúng theo tám module nghiệp vụ của hệ thống; file này chỉ gom
+ * trả lời ngắn nào. Nay chia đúng theo chín module nghiệp vụ của hệ thống; file này chỉ gom
  * lại để mọi chỗ vẫn `import { X } from '@shared/domain/index.ts'` như cũ.
  *
  *   skills     năm ô nhập của Fast Track, bốn môn của Normal
@@ -26,3 +26,4 @@ export * from './display.ts';
 export * from './metrics.ts';
 export * from './policy.ts';
 export * from './attachments.ts';
+export * from './yThuc.ts';

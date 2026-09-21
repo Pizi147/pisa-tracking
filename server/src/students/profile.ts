@@ -349,7 +349,7 @@ function progressOf(
       .prepare(
         `SELECT iv.id, iv.case_id, iv.kind, iv.description, iv.status, iv.approval_state,
                 iv.started_date, iv.cycle_started_on, iv.completed_date, iv.followup_due,
-                sc.category, sc.track, sc.topic, sc.status AS case_status,
+                sc.category, sc.topic, sc.status AS case_status,
                 (SELECT fu.outcome FROM case_followups fu
                   WHERE fu.intervention_id = iv.id AND fu.outcome IS NOT NULL
                   ORDER BY fu.observed_on DESC, fu.id DESC LIMIT 1) AS final_outcome
@@ -360,8 +360,8 @@ function progressOf(
       )
       .all(...caseIds) as any[];
     for (const r of rows) {
-      const cat = r.category ?? categoryOf(r.track ?? 'academic', r.topic);
-      if (!cat || cat === 'behaviour') continue;
+      const cat = r.category ?? categoryOf(r.topic);
+      if (!cat) continue;
       /* W1 và W2 của Fast Track cùng thuộc đường Writing khi vẽ, như điểm cô tự chấm. */
       const skill = cat === 'writing1' || cat === 'writing2' ? 'writing' : cat;
       const from = r.started_date ?? r.cycle_started_on ?? null;
@@ -402,15 +402,15 @@ function progressOf(
     const rows = conn
       .prepare(
         `SELECT fu.observed_on, fu.outcome, fu.case_id, fu.intervention_id,
-                sc.category, sc.track, sc.topic
+                sc.category, sc.topic
            FROM case_followups fu JOIN sos_cases sc ON sc.id = fu.case_id
           WHERE fu.case_id IN (${caseIds.map(() => '?').join(',')}) AND fu.outcome IS NOT NULL
           ORDER BY fu.observed_on`,
       )
       .all(...caseIds) as any[];
     for (const r of rows) {
-      const cat = r.category ?? categoryOf(r.track ?? 'academic', r.topic);
-      if (!cat || cat === 'behaviour') continue;
+      const cat = r.category ?? categoryOf(r.topic);
+      if (!cat) continue;
       const skill = cat === 'writing1' || cat === 'writing2' ? 'writing' : cat;
       const list = marks.get(skill) ?? [];
       list.push({

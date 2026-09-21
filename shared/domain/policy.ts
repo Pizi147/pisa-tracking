@@ -5,8 +5,10 @@
  * không có `if` rải rác. Không hiển thị mã C trên giao diện người dùng (LUAT_CHO_CHOT.md §4).
  *
  * TRẠNG THÁI CÀI ĐẶT (20/09/2026) — ghi rõ điểm nào ĐÃ NỐI DÂY, điểm nào chỉ ghi lại:
- *   · NỐI DÂY, mã đọc hằng số:  C02 (quyền máy chủ) · C03 (cửa sổ gộp case Ý thức) · C10 (chốt ngay).
- *   · GHI LẠI, KHỚP HÀNH VI ĐANG CHẠY: C04 · C06 · C07 · C09 (chủ sản phẩm chốt đúng như code đang làm).
+ *   · NỐI DÂY, mã đọc hằng số:  C02 (quyền máy chủ) · C10 (chốt ngay).
+ *   · HẾT HIỆU LỰC 21/09/2026: C03 · C04 — là luật của mô hình Case Ý thức, mô hình đó đã bỏ (rule book mục 18). Giữ hằng số
+ *     và ghi lý do, không xoá dấu vết một quyết định có thật.
+ *   · GHI LẠI, KHỚP HÀNH VI ĐANG CHẠY: C06 · C07 · C09 (chủ sản phẩm chốt đúng như code đang làm).
  *   · CHƯA CHỐT HẲN: C01 (chủ sản phẩm hỏi lại cách hiểu) · C08 (còn một nửa chưa rõ).
  */
 
@@ -30,16 +32,22 @@ export const C01_HAN_XAC_MINH_SOS_GOM_PA = 'hai-moc-rieng' as const;
 export const C02_GVCN_XU_LY_CASE_TRAI_MON = 'gvcn-dung-mon' as const;
 
 /**
- * C03 — ĐÃ CHỐT 20/09/2026 (thay câu hỏi cũ về hạn khi nâng mức), ĐÃ NỐI DÂY (`BEHAVIOUR_MERGE_WINDOW_DAYS`).
- * Chỉ với case Ý thức: nếu có báo cáo khác cùng phân loại trong 3 NGÀY ĐẦU tồn tại của case cũ (ngày mở + 2 ngày sau)
- * thì được lồng vào case đang có; không thì ra case mới. Hạn mặc định của case luôn là 1 tuần từ ngày mở — nâng mức
- * ưu tiên KHÔNG còn siết hạn phương án.
+ * C03 — HẾT HIỆU LỰC 21/09/2026. Đã chốt 20/09/2026, từng nối dây vào cửa sổ gộp báo cáo của case Ý thức.
+ * LÝ DO HẾT HIỆU LỰC: rule book mục 18 (`thiet-ke/LUAT_CHO_CHOT.md` mục 6.3) bỏ hẳn mô hình Case Ý thức. Mỗi vi phạm nay là một dòng
+ * độc lập, không còn đợt để gộp — nên không còn "cửa sổ ba ngày" nào để đặt. Không mã nào còn đọc hằng số này.
+ *
+ * Luật cũ: báo cáo khác cùng phân loại trong 3 NGÀY ĐẦU tồn tại của case cũ (ngày mở + 2 ngày sau) thì lồng vào case đang có;
+ * không thì ra case mới. Hạn mặc định của case là 1 tuần từ ngày mở; nâng mức ưu tiên không siết hạn phương án.
+ *
+ * GIỮ hằng số (không xoá) để dấu vết quyết định còn đó — xoá là xoá mất một quyết định có thật.
  */
 export const C03_CUA_SO_GOP_CASE_Y_THUC_NGAY = 3 as const;
 
 /**
- * C04 — ĐÃ CHỐT 20/09/2026: GIỮ như hiện tại.
- *   'doi-moi-lien-ket' : đợt Ý thức đã đóng mà có báo cáo mới thì tạo ĐỢT MỚI liên kết, không viết lại kết luận cũ.  ← đã chốt
+ * C04 — HẾT HIỆU LỰC 21/09/2026. Đã chốt 20/09/2026: giữ như hiện tại.
+ * LÝ DO HẾT HIỆU LỰC: cùng lý do với C03 — không còn "đợt Ý thức" nên không còn chuyện đợt đã đóng có báo cáo mới. Báo cáo mới
+ * chỉ là một vi phạm mới; không có gì để mở lại hay để liên kết.
+ *   'doi-moi-lien-ket' : đợt Ý thức đã đóng mà có báo cáo mới thì tạo ĐỢT MỚI liên kết, không viết lại kết luận cũ.  ← luật cũ
  *   'mo-lai'           : mở lại đợt cũ.
  */
 export const C04_BAO_CAO_MOI_SAU_KHI_DONG = 'doi-moi-lien-ket' as const;

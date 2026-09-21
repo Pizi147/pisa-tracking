@@ -2,18 +2,18 @@ import { db, tx } from '../db.ts';
 import {
   DISPOSITIONS, INTERVENTION_KINDS, INTERVENTION_KIND_LABEL, INTERVENTION_STATUSES,
   INTERVENTION_STATUS_LABEL,
-  FOLLOWUP_OUTCOMES, BEHAVIOUR_TOPICS, CASE_DECISIONS, CASE_OUTCOMES, ENTRY_SKILLS,
-  ISSUE_ROLES, PERMISSIONS, THREAD_TRACKS, URGENCY_LEVELS, DEFAULT_URGENCY,
-  BEHAVIOUR_MERGE_WINDOW_DAYS, behaviourCaseDeadline, behaviourMergeUntil, isNoPlanCase,
-  issuesForTopic, topicFromBehaviourCode,
+  FOLLOWUP_OUTCOMES, CASE_DECISIONS, CASE_OUTCOMES, ENTRY_SKILLS,
+  ISSUE_ROLES, PERMISSIONS, URGENCY_LEVELS, DEFAULT_URGENCY,
+  isNoPlanCase,
+  issuesForTopic,
   CASE_CATEGORY_SHORT, CASE_CATEGORIES, CASE_CATEGORY_LABEL, FOLLOWUP_OUTCOME_LABEL, ratioResult,
   caseCategoriesFor, componentsAreCounts, componentsFor, type CaseCategory,
   CASE_OUTCOME_LABEL, caseCategoryLabel, caseDedupKey, caseHeadline, caseTitle, categoryOf,
-  NEXT_STEP_LABEL, cycleDeadline, isProposalKind, outcomeLabelFor, outcomesFor,
+  NEXT_STEP_LABEL, cycleDeadline, isProposalKind, outcomeLabelFor,
   RESCHEDULE_TARGETS, RESCHEDULE_TARGET_LABEL, RESULT_MODES, RESULT_MODE_LABEL,
   canEndWithOutcome, planDueDate, planEndDefault, stepsForMode, weeklyUpdateDue,
   type NextStep, type RescheduleTarget,
-  issueBranchOf, issueLabel, threadTopicLabel, urgencyFromSos,
+  issueBranchOf, issueLabel, caseTopicLabel, urgencyFromSos,
   type CaseOutcome, type FollowUpOutcome, type InterventionKind,
 } from '../../../shared/domain/index.ts';
 import { addDays, badRequest, isIsoDate, notFound, nowIso } from '../util.ts';
@@ -49,7 +49,7 @@ import { linkSignalToCase } from './signals.ts';
  * giáo viên tự báo mà chưa lượt MT nào chạm thì không có tiền tố.
  */
 export function caseTitleOf(c: {
-  id: number; category?: string | null; track?: string | null; topic?: string | null;
+  id: number; category?: string | null; topic?: string | null;
   origin_kind?: string | null; sos_level?: number | null; title?: string | null;
 }): string {
   /*
@@ -67,11 +67,9 @@ export function caseTitleOf(c: {
     )
     .get(c.id) as any;
   return caseTitle({
-    category: c.category ?? categoryOf(c.track ?? 'academic', c.topic),
+    category: c.category ?? categoryOf(c.topic),
     latestAttemptNo: latest?.attempt_no ?? null,
     latestAttemptKind: latest?.kind ?? null,
-    originKind: c.origin_kind,
-    failedCount: c.sos_level ?? null,
   });
 }
 
@@ -109,10 +107,7 @@ export function milestonesOf(caseId: number) {
  * quyền kết luận.
  */
 export function closeCaseOutcome(p: Principal, caseId: number, input: {
-  /**
-   * Mức tiến bộ. BẮT BUỘC với case học thuật; case Ý thức/Khác KHÔNG có (CASE-06, rule book
-   * §17.2): ghi nhận việc đã làm và chứng cứ rồi hoàn thành đợt, không đo hiệu quả học thuật.
-   */
+  /** Mức tiến bộ — BẮT BUỘC (case học thuật). */
   outcome?: string | null; note?: string | null;
   /** Ngày hoàn thành thực tế. Bỏ trống thì lấy hôm nay; không nhận ngày tương lai. */
   closedOn?: string | null;
@@ -126,10 +121,8 @@ export function closeCaseOutcome(p: Principal, caseId: number, input: {
   if (!canCloseCase(p, c)) {
     throw badRequest('Chỉ giáo viên chủ nhiệm của lớp và Quản lý mới chốt được kết quả case.');
   }
-  const behaviour = (c.track ?? 'academic') === 'behaviour';
-  /* Ý thức bỏ trống thì lưu NULL — không bịa một mức tiến bộ chỉ để có cái điền vào. */
-  const outcome: string | null = behaviour && !input.outcome ? null : (input.outcome ?? '');
-  if (outcome !== null && !(CASE_OUTCOMES as readonly string[]).includes(outcome)) {
+  const outcome: string = input.outcome ?? '';
+  if (!(CASE_OUTCOMES as readonly string[]).includes(outcome)) {
     throw badRequest('Mức độ thành công không hợp lệ.');
   }
   if (input.decision && input.decision !== 'end') {
@@ -137,9 +130,8 @@ export function closeCaseOutcome(p: Principal, caseId: number, input: {
   }
   void CASE_DECISIONS;
   /*
-   * GHI CHÚ BẮT BUỘC KHI HOÀN THÀNH CASE (mục 9.2 cho Ý thức/Khác, và giữ chung cho cả hai
-   * loại). Bốn mức "thành công đến đâu" không nói được đã làm gì và vì sao kết thúc — mà đó
-   * chính là câu người đọc hồ sơ ba tháng sau cần.
+   * GHI CHÚ BẮT BUỘC KHI HOÀN THÀNH CASE (mục 9.2). Bốn mức "thành công đến đâu" không nói được đã làm gì và vì sao kết thúc —
+   * mà đó chính là câu người đọc hồ sơ ba tháng sau cần.
    */
   const closeNote = (input.note ?? '').trim();
   if (closeNote.length < 10) {
@@ -154,7 +146,7 @@ export function closeCaseOutcome(p: Principal, caseId: number, input: {
    * ĐÁNH GIÁ CHI TIẾT PHẢI ĐÚNG KỸ NĂNG CỦA CASE (mục 9.3) — không bắt chấm cả năm kỹ năng,
    * và cũng không cho ghi Reading vào một case Listening.
    */
-  if (metrics && c.category && c.category !== 'behaviour') {
+  if (metrics && c.category) {
     for (const m of metrics) {
       if (m.skill !== c.category) {
         throw badRequest('Phần đánh giá chi tiết chỉ ghi cho đúng kỹ năng của case này.');
@@ -195,7 +187,7 @@ export function closeCaseOutcome(p: Principal, caseId: number, input: {
          ON CONFLICT(dedup_key) DO NOTHING`,
       )
       .run(caseId, 'closed', closedOn,
-           [outcome ? CASE_OUTCOME_LABEL[outcome as CaseOutcome] : null, closeNote].filter(Boolean).join(' — '),
+           [CASE_OUTCOME_LABEL[outcome as CaseOutcome], closeNote].join(' — '),
            p.userId, nowIso(), `outcome:${caseId}:${closedOn}:end`);
 
     /* Đánh giá chi tiết lúc kết luận: lưu thành một dòng cập nhật gắn thẳng vào case. */
@@ -213,7 +205,7 @@ export function closeCaseOutcome(p: Principal, caseId: number, input: {
       studentId: c.eff_student_id, cycleId: c.eff_cycle_id,
       eventType: 'case_closed', eventDate: closedOn,
       /* Chốt 6/mục 10.3 Step 6: nhãn phân biệt mốc nhập bù với mốc ghi tại chỗ. */
-      title: `${c.origin_kind === 'backfill' ? '(nhập bù) ' : ''}Hoàn thành case${outcome ? `: ${CASE_OUTCOME_LABEL[outcome as CaseOutcome]}` : ' Ý thức'}`,
+      title: `${c.origin_kind === 'backfill' ? '(nhập bù) ' : ''}Hoàn thành case: ${CASE_OUTCOME_LABEL[outcome as CaseOutcome]}`,
       detail: closeNote,
       refTable: 'sos_cases', refId: caseId, createdBy: p.userId,
       dedupKey: `case_outcome:${caseId}:${closedOn}:end`,
@@ -265,15 +257,14 @@ function loadCase(caseId: number) {
 /**
  * NGỮ CẢNH QUYỀN CHO SOS_EDIT (AUTH-01) — MỘT chỗ dựng, dùng ở mọi nơi sửa/xử lý case.
  *
- * Học thuật truyền đúng kỹ năng (`c.topic`, ví dụ "listening") để `teacherAllows` so khớp
- * phân công GVBM. Ý thức KHÔNG có kỹ năng — để `skill` rỗng để chỉ GVCN qua được. Thiếu hàm
- * này thì mỗi nơi gọi `require_`/`can` tự viết một cách khác, và đó chính là kiểu lỗi sinh ra
- * AUTH-01 lần đầu.
+ * Truyền đúng kỹ năng của case (`c.topic`, ví dụ "listening") để `teacherAllows` so khớp phân công GVBM (C02). Thiếu hàm này thì
+ * mỗi nơi gọi `require_`/`can` tự viết một cách khác, và đó chính là kiểu lỗi sinh ra AUTH-01 lần đầu. Ý thức KHÔNG đi qua đây:
+ * quyền của nó ở `server/src/yThuc/access.ts` (C02 không áp cho Ý thức).
  */
-function sosEditCtx(c: { class_id?: number | null; eff_student_id?: number | null; track?: string | null; topic?: string | null }) {
+function sosEditCtx(c: { class_id?: number | null; eff_student_id?: number | null; topic?: string | null }) {
   return {
     classId: c.class_id, studentId: c.eff_student_id,
-    skill: c.track === 'academic' ? c.topic ?? undefined : undefined,
+    skill: c.topic ?? undefined,
   };
 }
 
@@ -300,57 +291,6 @@ export function caseAccess(caseId: number) {
  *
  * Chống trùng bằng `idempotency_key`: bấm hai lần hoặc thử lại sau lỗi mạng chỉ ra một case.
  */
-/**
- * GHI MỘT BÁO CÁO THÀNH PHẦN vào một đợt case Ý thức/Khác (mục 7.2).
- *
- * Trả về `false` khi báo cáo này đã có rồi — tức là cùng một request được gửi lại. Nơi gọi
- * dùng dấu đó để KHÔNG nâng mức và KHÔNG ghi thêm nhật ký: bấm lại vì mạng chập chờn không
- * được biến thành một lần tái phạm của học viên.
- */
-function addCaseReport(conn: any, r: {
-  caseId: number; reportedBy: number | null;
-  sourceSkill: string | null; sourceAttemptId?: number | null;
-  reportedOn: string; observedOn: string | null; summary: string;
-  idempotencyKey?: string | null;
-}): boolean {
-  if (r.idempotencyKey) {
-    const seen = conn.prepare('SELECT id FROM case_reports WHERE idempotency_key = ?').get(r.idempotencyKey);
-    if (seen) return false;
-  }
-  conn
-    .prepare(
-      `INSERT INTO case_reports (case_id, reported_by, source_skill, source_attempt_id,
-                                 reported_on, observed_on, summary, idempotency_key, created_at)
-       VALUES (?,?,?,?,?,?,?,?,?)`,
-    )
-    .run(r.caseId, r.reportedBy, r.sourceSkill, r.sourceAttemptId ?? null,
-         r.reportedOn, r.observedOn, r.summary, r.idempotencyKey ?? null, nowIso());
-  return true;
-}
-
-/**
- * CÓ BÁO CÁO BỔ SUNG TRONG CÙNG ĐỢT → NÂNG CASE LÊN **GẤP** (mục 7.2).
- *
- * Nâng kể cả khi người gửi chọn "Cần chú ý": hai người khác nhau cùng thấy một chuyện trong
- * bốn ngày là một tín hiệu mạnh hơn nhận định của riêng ai.
- *
- * Nâng mức KHÔNG đổi hạn nào (C03, chủ sản phẩm chốt 20/09/2026 — luật siết hạn "ngày nâng + 2" đã bỏ). Hạn của case
- * giữ nguyên theo ngày mở: nếu nó lùi theo báo cáo mới thì một case cứ có báo cáo là hạn lại lùi, và sẽ không bao giờ
- * tới hạn.
- */
-function raiseBehaviourUrgency(conn: any, actorUserId: number | null, c: any, today: string) {
-  if (c.urgency === 'urgent') return;
-  conn
-    .prepare(`UPDATE sos_cases SET urgency = 'urgent', urgency_raised_at = ?, updated_at = ? WHERE id = ?`)
-    .run(today, nowIso(), c.id);
-  conn
-    .prepare(
-      `INSERT INTO sos_case_history (case_id, field, old_value, new_value, actor_user_id, created_at)
-       VALUES (?, 'urgency', ?, 'urgent', ?, ?)`,
-    )
-    .run(c.id, c.urgency ?? null, actorUserId, nowIso());
-}
-
 export function reportIssue(p: Principal, input: {
   studentId: number;
   cycleId?: number | null;
@@ -359,9 +299,7 @@ export function reportIssue(p: Principal, input: {
   /** "Mô tả" — trước vòng 5 ô này tên là "Chuyện gì đang xảy ra". */
   summary: string;
   urgency?: string;
-  /** Học thuật hay Ý thức — hai đầu mục, không hơn. */
-  track?: string;
-  /** Học thuật: một trong năm ô L·R·W1·W2·S. Ý thức: một trong bốn nhóm. */
+  /** Một trong năm ô L·R·W1·W2·S. */
   topic?: string | null;
   primaryCode?: string | null;
   secondaryCodes?: string[];
@@ -396,10 +334,8 @@ export function reportIssue(p: Principal, input: {
    * Ba việc khác hẳn đường thường khi cờ này bật:
    *   · `origin_kind = 'backfill'` thay vì `'teacher_report'` — chốt 7, phân biệt được ghi
    *     tại chỗ với nhớ lại rồi điền.
-   *   · KHÔNG gộp vào đợt Ý thức đang mở (chốt 3) — một case tháng 7 không được lẫn vào đợt
-   *     tháng 9, dù ngày rơi trong cửa sổ gộp bốn ngày.
-   *   · KHÔNG có `merge_until`/`follow_until` (chốt 2) — case nhập bù không có hạn nào, vì
-   *     nó là chuyện đã xảy ra, không phải một nghĩa vụ đang chạy.
+   *   · KHÔNG có `follow_until` (chốt 2) — case nhập bù không có hạn nào, vì nó là chuyện đã xảy ra, không phải một nghĩa vụ
+   *     đang chạy.
    */
   backfill?: boolean;
 }) {
@@ -441,25 +377,11 @@ export function reportIssue(p: Principal, input: {
    * MỌI VẤN ĐỀ PHẢI CÓ CHỖ CẤT. Không có đầu mục và chủ đề thì nó rơi vào "chưa phân loại"
    * và biến mất khỏi mọi bảng tổng hợp theo kỹ năng — đúng thứ vòng 3 sinh ra để sửa.
    */
-  const track = (THREAD_TRACKS as readonly string[]).includes(input.track ?? '')
-    ? input.track! : 'academic';
-  const topics: readonly string[] = track === 'behaviour' ? BEHAVIOUR_TOPICS : ENTRY_SKILLS;
-  /*
-   * CASE-01 làm nốt: nhóm Ý thức chỉ có MỘT tầng phân loại — bốn nhóm chủ đề CHÍNH LÀ bốn mã
-   * phân loại. Form không còn hỏi "Về việc gì" cho nhóm Ý thức, nên suy `topic` thẳng từ
-   * `primaryCode` khi thiếu, bằng ĐÚNG MỘT hàm dùng chung với giao diện
-   * (`topicFromBehaviourCode`) — không để hai nơi tự suy theo hai cách.
-   */
-  let topic = (input.topic ?? '').trim() || null;
-  if (!topic && track === 'behaviour' && input.primaryCode) {
-    topic = topicFromBehaviourCode(input.primaryCode.trim());
-  }
+  const topic = (input.topic ?? '').trim() || null;
   if (!topic) {
-    throw badRequest(track === 'behaviour'
-      ? 'Hãy chọn nhóm ý thức: chuyên cần, BTVN, tham gia trên lớp hay khác.'
-      : 'Hãy chọn kỹ năng: Listening, Reading, Writing Task 1, Writing Task 2 hay Speaking.');
+    throw badRequest('Hãy chọn kỹ năng: Listening, Reading, Writing Task 1, Writing Task 2 hay Speaking.');
   }
-  if (!topics.includes(topic)) throw badRequest(`Chủ đề không hợp lệ: ${topic}`);
+  if (!(ENTRY_SKILLS as readonly string[]).includes(topic)) throw badRequest(`Chủ đề không hợp lệ: ${topic}`);
   /* Hai mức, không ba. "Bình thường" đã bỏ (mục 6.3); không chọn thì là "Cần chú ý". */
   if (input.urgency && !(URGENCY_LEVELS as readonly string[]).includes(input.urgency)) {
     throw badRequest('Mức độ chỉ còn hai bậc: Cần chú ý hoặc Gấp.');
@@ -467,17 +389,6 @@ export function reportIssue(p: Principal, input: {
   const urgency = input.urgency ?? DEFAULT_URGENCY;
   const detectedAt = input.detectedAt ?? demoToday();
   if (!isIsoDate(detectedAt)) throw badRequest('Ngày phát hiện không hợp lệ.');
-  /*
-   * Ý THỨC KHÔNG CÓ NGÀY QUÁ KHỨ (CASE-01 Task 2). Ngày mở là gốc tính CẢ BA thứ cùng lúc:
-   * hạn phương án, hạn hoàn thành case, và cửa sổ gộp đợt bốn ngày — cho chọn ngày quá khứ
-   * nghĩa là tạo được case sinh ra đã quá hạn, hoặc lùi ngày để lách luật gộp. Học thuật
-   * KHÔNG đụng: hạn ở đó chạy theo cơ chế khác (`weeklyUpdateDue`), và lệch ngày báo là
-   * chuyện có thật đã xảy ra trước khi hệ thống biết.
-   */
-  if (!input.backfill && track === 'behaviour' && input.detectedAt && detectedAt !== demoToday()) {
-    throw badRequest('Case Ý thức chỉ ghi nhận theo ngày hôm nay — không chọn được ngày khác.');
-  }
-
   const key = input.idempotencyKey?.trim() || null;
   if (key) {
     const seen = conn.prepare('SELECT id FROM sos_cases WHERE idempotency_key = ?').get(key) as any;
@@ -518,150 +429,10 @@ export function reportIssue(p: Principal, input: {
     throw badRequest('Chọn "Khác" thì mô tả phải nói rõ vấn đề cụ thể là gì.');
   }
 
-  const category = categoryOf(track, topic);
-
-  /*
-   * ========================= Ý THỨC/KHÁC: GỘP THEO ĐỢT, KHÔNG HỎI NGƯỜI DÙNG (mục 7.2)
-   *
-   * Học thuật và Ý thức/Khác gộp theo hai luật khác nhau, vì bản chất khác nhau:
-   *
-   *   Học thuật   một case SỐNG SUỐT KHOÁ cho mỗi hạng mục. "Reading yếu" là một vấn đề
-   *               kéo dài, và mỗi lần trượt lại là thêm một bằng chứng cho chính nó.
-   *   Ý thức/Khác một case là một ĐỢT NGẮN. "Tuần này em không làm bài tập" báo ba lần
-   *               trong bốn ngày là MỘT chuyện; tái diễn sau nửa tháng là chuyện khác.
-   *
-   * Nên ở đây KHÔNG hiện pop-up hỏi "ghi vào case đang có hay mở riêng": cửa sổ bốn ngày đã
-   * trả lời câu đó rồi, và hỏi lại chỉ mời người dùng trả lời sai.
-   *
-   * Cửa sổ xét bằng NGÀY GỬI CỦA HỆ THỐNG. Ô "Theo dõi từ ngày" người dùng khai không được
-   * dùng — nếu dùng thì chỉ cần khai lùi ngày là đổi được cửa sổ gộp.
-   */
-  if (track === 'behaviour') {
-    const today = demoToday();
-    /*
-     * NHẬP BÙ KHÔNG GỘP VÀO ĐỢT ĐANG MỞ (chốt 3, mục 10.4). Cửa sổ gộp bốn ngày dùng để gộp
-     * BÁO CÁO MỚI về cùng một chuyện đang diễn ra; một case nhớ lại từ tháng 7 không phải
-     * báo cáo mới, và gộp nó vào đợt tháng 9 đang mở là sai hẳn — nên bỏ qua hẳn bước tìm
-     * đợt đang mở khi đang nhập bù.
-     */
-    const openEpisode = input.backfill ? null : conn
-      .prepare(
-        /*
-         * GỘP THEO PHÂN LOẠI, KHÔNG THEO HẠNG MỤC (mục 7.3).
-         *
-         * Bốn nhóm ý thức đều nằm chung hạng mục `behaviour`, nên nếu gộp theo hạng mục thì
-         * "em thiếu BTVN" và "em ít phát biểu" chui vào cùng một case — hai chuyện khác nhau,
-         * hai cách xử lý khác nhau, và một phương án chung cho cả hai thì không giải quyết
-         * được cái nào.
-         */
-        `SELECT * FROM sos_cases
-          WHERE student_id = ? AND track = 'behaviour' AND topic = ?
-            AND status != 'done' AND merge_until IS NOT NULL AND merge_until >= ?
-          ORDER BY id DESC LIMIT 1`,
-      )
-      .get(input.studentId, topic, today) as any;
-
-    if (openEpisode) {
-      return tx(() => {
-        const added = addCaseReport(conn, {
-          caseId: openEpisode.id, reportedBy: p.userId,
-          sourceSkill: input.observation ?? null,
-          reportedOn: today, observedOn: detectedAt, summary, idempotencyKey: key,
-        });
-        /*
-         * GỬI LẠI CÙNG MỘT REQUEST không tạo báo cáo thứ hai và KHÔNG tự nâng mức (mục 7.2).
-         * Mạng chập chờn rồi bấm lại là chuyện thường; nó không được biến thành một lần tái
-         * phạm của học viên.
-         */
-        if (!added) return caseDetail(p, openEpisode.id);
-
-        raiseBehaviourUrgency(conn, p.userId, openEpisode, today);
-        addJourney({
-          studentId: input.studentId, cycleId: openEpisode.cycle_id ?? null,
-          eventType: 'case_opened', eventDate: today,
-          title: `Báo cáo bổ sung: ${caseCategoryLabel(category)}`, detail: summary,
-          refTable: 'sos_cases', refId: openEpisode.id, createdBy: p.userId,
-          dedupKey: `case_report:${openEpisode.id}:${key ?? summary.slice(0, 24)}`,
-        });
-        writeAudit({
-          actorUserId: p.userId, action: 'case.report.merged_episode', entityType: 'sos_case',
-          entityId: openEpisode.id, entityLabel: `${student.student_code} · ${caseCategoryLabel(category)}`,
-          after: { mergedInto: openEpisode.id, window: `${openEpisode.detected_at} → ${openEpisode.merge_until}` },
-        });
-        if (input.fromSignalId) linkSignalToCase(p, input.fromSignalId, openEpisode.id, summary);
-        return caseDetail(p, openEpisode.id);
-      });
-    }
-
-    /*
-     * NGOÀI CỬA SỔ → ĐỢT MỚI, kể cả khi một case cùng loại vẫn còn mở (mục 7.2).
-     * Liên kết hai đợt để đọc ra được là chuyện đang tiếp diễn, nhưng không gộp chúng: gộp
-     * thì case cũ không bao giờ đóng được và "lần thứ mấy" mất nghĩa.
-     */
-    const previous = conn
-      .prepare(
-        `SELECT id, episode_no FROM sos_cases
-          WHERE student_id = ? AND track = 'behaviour' AND topic = ?
-          ORDER BY id DESC LIMIT 1`,
-      )
-      .get(input.studentId, topic) as any;
-
-    return tx(() => {
-      const info = conn
-        .prepare(
-          `INSERT INTO sos_cases (student_id, cycle_id, track, topic, category, origin_kind,
-                                  detected_at, reported_by, title, summary, urgency, status,
-                                  idempotency_key, previous_case_id, episode_no, merge_until,
-                                  follow_until, owner_user_id, created_at)
-           VALUES (?,?, 'behaviour', ?,?, ?, ?,?,?,?,?, 'open', ?,?,?,?,?,?,?)`,
-        )
-        .run(input.studentId, cycle?.id ?? null, topic, category,
-             input.backfill ? 'backfill' : 'teacher_report',
-             detectedAt, p.userId, title, summary, urgency, key,
-             previous?.id ?? null, (previous?.episode_no ?? 0) + 1,
-             /* Chốt 2 (mục 10.4): nhập bù không có hạn nào — case đã xong từ lâu, không phải một nghĩa vụ đang chạy. */
-             input.backfill ? null : behaviourMergeUntil(today),
-             input.backfill ? null : behaviourCaseDeadline(today),
-             /*
-              * GVCN LÀ NGƯỜI ĐẢM BẢO CASE Ý THỨC ĐƯỢC XỬ LÝ (mục 7.1).
-              * Giáo viên bộ môn được BÁO, nhưng báo xong không mặc nhiên thành người phải
-              * gọi gia đình — nên người phụ trách mặc định là GVCN, không phải người báo.
-              */
-             suggestCaseOwner({ classId, track: 'behaviour', category }),
-             nowIso());
-      const caseId = Number(info.lastInsertRowid);
-      addIssues(caseId, p.userId, { ...input, topic, primaryCode });
-      addCaseReport(conn, {
-        caseId, reportedBy: p.userId, sourceSkill: input.observation ?? null,
-        reportedOn: today, observedOn: detectedAt, summary, idempotencyKey: key,
-      });
-      addJourney({
-        studentId: input.studentId, cycleId: cycle?.id ?? null,
-        eventType: 'case_opened', eventDate: detectedAt,
-        title: `${input.backfill ? '(nhập bù) ' : ''}Ý thức/Khác: ${caseCategoryLabel(category)}`, detail: summary,
-        refTable: 'sos_cases', refId: caseId, createdBy: p.userId,
-        dedupKey: `case_open:${caseId}`,
-      });
-      if (!input.backfill) {
-        notifyManagers(
-          { id: caseId, class_id: classId, eff_student_id: input.studentId }, 'report', summary, caseId, p.userId,
-        );
-      }
-      writeAudit({
-        actorUserId: p.userId, action: input.backfill ? 'case.backfill' : 'case.report',
-        entityType: 'sos_case', entityId: caseId,
-        entityLabel: `${student.student_code} · ${caseCategoryLabel(category)}`,
-        after: { urgency, episode: (previous?.episode_no ?? 0) + 1 },
-      });
-      if (input.fromSignalId) linkSignalToCase(p, input.fromSignalId, caseId, summary);
-      return caseDetail(p, caseId);
-    });
-  }
+  const category = categoryOf(topic);
 
   const dedupKey = caseDedupKey({
-    track, category, originKind: 'teacher_report',
-    studentId: input.studentId, cycleId: cycle?.id ?? null, attemptId: null,
-    parallel: input.parallel,
+    category, studentId: input.studentId, cycleId: cycle?.id ?? null, parallel: input.parallel,
   });
   const existing = dedupKey
     ? (conn.prepare(`SELECT * FROM sos_cases WHERE dedup_key = ? AND status != 'done'`).get(dedupKey) as any)
@@ -736,12 +507,12 @@ export function reportIssue(p: Principal, input: {
     }
     const info = conn
       .prepare(
-        `INSERT INTO sos_cases (attempt_id, student_id, cycle_id, track, topic, category, origin_kind,
+        `INSERT INTO sos_cases (attempt_id, student_id, cycle_id, topic, category, origin_kind,
                                 detected_at, reported_by, title, summary, urgency, sos_level, status,
                                 note, idempotency_key, dedup_key, parallel, owner_user_id, created_at)
-         VALUES (NULL, ?,?,?,?,?, ?, ?,?,?,?,?, NULL, 'open', ?,?,?,?,?,?)`,
+         VALUES (NULL, ?,?,?,?, ?, ?,?,?,?,?, NULL, 'open', ?,?,?,?,?,?)`,
       )
-      .run(input.studentId, cycle?.id ?? null, track, topic, category,
+      .run(input.studentId, cycle?.id ?? null, topic, category,
            input.backfill ? 'backfill' : 'teacher_report',
            detectedAt, p.userId, title, summary, urgency,
            null, key,
@@ -751,7 +522,7 @@ export function reportIssue(p: Principal, input: {
             * hộ mở case rất thường xuyên; gán họ làm người phụ trách là ghi sai trách nhiệm.
             * Ai báo thì lưu ở `reported_by`, còn đây là gợi ý theo phân công.
             */
-           input.ownerUserId ?? suggestCaseOwner({ classId, track, category }),
+           input.ownerUserId ?? suggestCaseOwner({ classId, category }),
            nowIso());
     const caseId = Number(info.lastInsertRowid);
 
@@ -789,7 +560,7 @@ export function reportIssue(p: Principal, input: {
 }
 
 /**
- * Phân loại NGUYÊN NHÂN bên trong một vấn đề. Chủ đề (kỹ năng / nhóm ý thức) nằm ở chính
+ * Phân loại NGUYÊN NHÂN bên trong một vấn đề. Chủ đề (kỹ năng) nằm ở chính
  * bản ghi vấn đề; ở đây chỉ nói VÌ SAO, và đó là nhận định của người dạy.
  *
  * "Hoàn cảnh kèm theo" đã bỏ (owner chốt 10/09/2026) — thay bằng ô Ghi chú của vấn đề.
@@ -1007,7 +778,7 @@ export function recordIntervention(p: Principal, caseId: number, input: {
      * thang. Quá hạn KHÔNG chặn gì cả; nó nổi lên màn của Quản lý để một đề xuất không nằm
      * im mãi, và thời gian chờ đó tính cho QUẢN LÝ chứ không phải cho giáo viên.
      */
-    const approvalDue = needsApproval ? cycleDeadline(today, c.track ?? 'academic') : null;
+    const approvalDue = needsApproval ? cycleDeadline(today) : null;
 
     /*
      * CHU KỲ ĐẦU TIÊN bắt đầu NGAY, trừ hai trường hợp:
@@ -1018,33 +789,23 @@ export function recordIntervention(p: Principal, caseId: number, input: {
      *     8.2), chứ không giả vờ phương án đã chạy từ hôm nay.
      */
     const cycleStart = needsApproval ? null : (input.startedDate ?? today);
-    const track = c.track ?? 'academic';
 
     /*
      * HAI MỐC KHÁC NHAU CỦA MỘT PHƯƠNG ÁN (mục 8.3) — trước đây gộp làm một nên không ai
      * phân biệt được "đã đến lúc báo tiến độ" với "đã đến hạn xong việc".
      *
-     *   · HẠN CẬP NHẬT (`action_due`): học thuật thì trước hết Chủ nhật hằng tuần; Ý thức/
-     *     Khác thì chính là hạn phải làm xong, 3 ngày nếu Gấp và 5 ngày nếu Cần chú ý, tính
-     *     từ lúc NHẬN CASE chứ không phải từ lúc mở form.
-     *   · NGÀY DỰ KIẾN KẾT THÚC (`followup_due`): người dùng chọn; học thuật bỏ trống thì
-     *     mặc định là Chủ nhật của tuần TIẾP THEO.
+     *   · HẠN CẬP NHẬT (`action_due`): trước hết CHỦ NHẬT hằng tuần.
+     *   · NGÀY DỰ KIẾN KẾT THÚC (`followup_due`): người dùng chọn; bỏ trống thì mặc định là
+     *     Chủ nhật của tuần TIẾP THEO.
      *
-     * Ý thức/Khác KHÔNG dùng mặc định Chủ nhật tuần tiếp theo — nó sẽ vượt hạn 3/5 ngày.
-     */
-    const receivedOn = c.detected_at ?? c.created_at?.slice(0, 10) ?? today;
-    const behaviourDue = planDueDate(receivedOn, c.urgency ?? urgencyFromSos(c.sos_level));
-    /*
      * CHỐT 1 + 2 (mục 10.4) CHO PHƯƠNG ÁN NHẬP BÙ: không hạn cập nhật, không hạn kết thúc.
      * Phương án bắt đầu từ một ngày quá khứ xa (ví dụ tháng 7) mà vẫn tính hạn kiểu bình
-     * thường thì `weeklyUpdateDue`/`behaviourDue` ra một hạn đã trôi qua từ lâu — chính là
-     * "sinh ~10 dòng quá hạn giả" mà chủ sản phẩm cảnh báo. Việc đã xong rồi thì không còn gì
-     * để mà tới hạn.
+     * thường thì `weeklyUpdateDue` ra một hạn đã trôi qua từ lâu — chính là "sinh ~10 dòng
+     * quá hạn giả" mà chủ sản phẩm cảnh báo. Việc đã xong rồi thì không còn gì để mà tới hạn.
      */
-    const updateDue = input.backfill ? null : (!cycleStart ? null
-      : track === 'behaviour' ? behaviourDue : weeklyUpdateDue(cycleStart));
+    const updateDue = input.backfill ? null : (!cycleStart ? null : weeklyUpdateDue(cycleStart));
     const planEnd = input.backfill ? null : (input.followupDue
-      ?? (!cycleStart ? null : track === 'behaviour' ? behaviourDue : planEndDefault(cycleStart)));
+      ?? (!cycleStart ? null : planEndDefault(cycleStart)));
     const cycleDue = updateDue;
 
     const info = conn
@@ -1147,7 +908,6 @@ export function respondToPlan(p: Principal, interventionId: number, input: {
     );
   }
 
-  const c0 = db().prepare('SELECT track FROM sos_cases WHERE id = ?').get(iv.case_id) as any;
   const note = (input.note ?? '').trim() || null;
   if (input.decision === 'declined' && !note) {
     throw badRequest('Không duyệt thì phải ghi lý do, để giáo viên biết nên làm gì tiếp.');
@@ -1168,7 +928,7 @@ export function respondToPlan(p: Principal, interventionId: number, input: {
        * số "quá hạn" sau đó chỉ ra một người sai.
        */
       const approvedOn = demoToday();
-      const startDue = input.decision === 'approved' ? cycleDeadline(approvedOn, c0.track ?? 'academic') : null;
+      const startDue = input.decision === 'approved' ? cycleDeadline(approvedOn) : null;
       conn
         .prepare(
           `UPDATE case_interventions
@@ -1315,7 +1075,7 @@ export function completeIntervention(p: Principal, interventionId: number, input
  */
 export function backfillCase(p: Principal, input: {
   studentId: number; cycleId?: number | null;
-  track: string; topic: string; primaryCode: string;
+  topic: string; primaryCode: string;
   title?: string | null; summary: string;
   fromDate: string; toDate: string;
   actions: { description: string; performerName?: string | null; fromDate: string; toDate: string }[];
@@ -1360,10 +1120,7 @@ export function backfillCase(p: Principal, input: {
     throw badRequest('Mức độ thành công không hợp lệ.');
   }
 
-  const category = categoryOf(
-    (THREAD_TRACKS as readonly string[]).includes(input.track) ? input.track : 'academic',
-    (input.topic ?? '').trim() || null,
-  );
+  const category = categoryOf((input.topic ?? '').trim() || null);
 
   /*
    * CHỐT 6 (mục 10.4): KHÔNG kích hoạt cảnh báo case trùng như đường thường (đường thường
@@ -1392,7 +1149,7 @@ export function backfillCase(p: Principal, input: {
   return tx(() => {
     const created = reportIssue(p, {
       studentId: input.studentId, cycleId: input.cycleId,
-      track: input.track, topic: input.topic, primaryCode: input.primaryCode,
+      topic: input.topic, primaryCode: input.primaryCode,
       title: input.title, summary: input.summary,
       detectedAt: input.fromDate,
       parallel: true,
@@ -1692,13 +1449,12 @@ export function caseDetail(p: Principal, caseId: number) {
     cycle,
     classId: c.class_id,
     attemptId: c.attempt_id, attemptNo: c.attempt_no ?? null,
-    /** Hai đầu mục và chủ đề — mọi vấn đề đều phải có chỗ cất. */
-    track: (c.track ?? 'academic') as string,
+    /** Chủ đề — kỹ năng của case; mọi vấn đề đều phải có chỗ cất. */
     topic: c.topic as string | null,
-    topicLabel: c.topic ? threadTopicLabel((c.track ?? 'academic') as any, c.topic) : null,
-    /** HẠNG MỤC — đơn vị của case từ vòng 4. Sáu ô, dùng chung cho lớp FT và lớp Normal. */
-    category: c.category ?? categoryOf(c.track ?? 'academic', c.topic),
-    categoryLabel: caseCategoryLabel(c.category ?? categoryOf(c.track ?? 'academic', c.topic)),
+    topicLabel: c.topic ? caseTopicLabel(c.topic) : null,
+    /** HẠNG MỤC — đơn vị của case từ vòng 4, dùng chung cho lớp FT và lớp Normal. */
+    category: c.category ?? categoryOf(c.topic),
+    categoryLabel: caseCategoryLabel(c.category ?? categoryOf(c.topic)),
     /** Tên case tự sinh theo mốc mới nhất, ví dụ "MT2 - Listening dưới kỳ vọng". */
     title: caseTitleOf(c),
     /*
@@ -1721,14 +1477,13 @@ export function caseDetail(p: Principal, caseId: number) {
     ratio: isRatioCycle(cycle ?? {}),
     /** Các hạng mục hợp lệ của lớp này — năm ô với FT, bốn ô với Normal. */
     categories: caseCategoriesFor(isRatioCycle(cycle ?? {}) ? 'ratio' : 'ielts_band')
-      .filter((k) => k !== 'behaviour')
       .map((k) => ({ code: k, label: caseCategoryLabel(k) })),
     /** Số kỹ năng dưới kỳ vọng của CẢ LƯỢT. NULL với vấn đề giáo viên báo — không phải SOS 0. */
     sosLevel: c.sos_level,
     /**
      * Mức độ ưu tiên. Vấn đề sinh từ điểm không ghi mức vào database (hai thang cố tình tách nhau);
      * suy từ SOS lúc hiển thị. Từ vòng 5 mức độ ưu tiên KHÔNG còn quyết định hạn — hạn là chu kỳ
-     * hai tuần (học thuật) hoặc một tuần (Ý thức/Khác), xem `cycleDeadline`.
+     * hai tuần, xem `cycleDeadline`.
      */
     urgency: c.urgency ?? (c.sos_level !== null ? urgencyFromSos(c.sos_level) : null),
     note: c.note,
@@ -1787,7 +1542,6 @@ export type CaseFilters = {
   studentId?: number | null;
   status?: string | null;
   origin?: string | null;
-  group?: string | null;
   skill?: string | null;
   /** Hàng đợi: new | active | due | review */
   queue?: string | null;
@@ -1837,7 +1591,7 @@ export type MappedCase = {
   title: string;
   category: string | null; categoryLabel: string | null;
   primaryCode: string | null; primaryLabel: string | null;
-  track: string; topic: string | null; topicLabel: string | null; issueBranch: string | null;
+  topic: string | null; topicLabel: string | null; issueBranch: string | null;
   classKind: 'ft' | 'normal';
   status: string; disposition: string | null;
   detectedAt: string; reporterName: string | null;
@@ -2002,21 +1756,17 @@ export function listCases(p: Principal, f: CaseFilters = {}) {
        * chắc chắn để người đọc tưởng đó là hai case.
        */
       title: (r.title ?? '').trim() || caseTitle({
-        category: r.category ?? categoryOf(r.track ?? 'academic', r.topic),
+        category: r.category ?? categoryOf(r.topic),
         latestAttemptNo: latestAttemptByCase.get(r.id) ?? r.attempt_no ?? null,
         latestAttemptKind: r.attempt_kind ?? null,
-        originKind: r.origin_kind,
-        failedCount: r.sos_level,
       }),
-      category: r.category ?? categoryOf(r.track ?? 'academic', r.topic),
-      categoryLabel: caseCategoryLabel(r.category ?? categoryOf(r.track ?? 'academic', r.topic)),
+      category: r.category ?? categoryOf(r.topic),
+      categoryLabel: caseCategoryLabel(r.category ?? categoryOf(r.topic)),
       primaryCode: r.primary_code,
       primaryLabel: r.primary_code ? issueLabel(r.primary_code) : null,
-      /** Hai đầu mục: Học thuật hay Ý thức. */
-      track: (r.track ?? 'academic') as string,
-      /** Chủ đề: một trong năm ô L·R·W1·W2·S, hoặc một trong bốn nhóm ý thức. */
+      /** Chủ đề: một trong năm ô L·R·W1·W2·S. */
       topic: r.topic as string | null,
-      topicLabel: r.topic ? threadTopicLabel((r.track ?? 'academic') as any, r.topic) : null,
+      topicLabel: r.topic ? caseTopicLabel(r.topic) : null,
       /** Nhánh phân loại nguyên nhân, khi đã có người dạy nhận định. */
       issueBranch: issueBranchOf(r.primary_code),
       status: r.status as string,
@@ -2077,12 +1827,10 @@ export function listCases(p: Principal, f: CaseFilters = {}) {
   const base = queued(all);
   let mapped = base;
   /*
-   * `group` nay là ĐẦU MỤC (Học thuật / Ý thức), `skill` là CHỦ ĐỀ (một trong năm ô kỹ năng
-   * hoặc một trong bốn nhóm ý thức). 'none' cho chủ đề = vấn đề cũ chưa gắn được kỹ năng —
-   * một lựa chọn thật, để các số cộng lại đúng bằng tổng.
+   * `skill` là CHỦ ĐỀ (một trong năm ô kỹ năng). 'none' cho chủ đề = vấn đề cũ chưa gắn được kỹ năng —
+   * một lựa chọn thật, để các số cộng lại đúng bằng tổng. (Bộ lọc "đầu mục" Học thuật/Ý thức đã bỏ 21/09/2026.)
    */
   if (f.classKind) mapped = mapped.filter((r) => r.classKind === f.classKind);
-  if (f.group) mapped = mapped.filter((r) => r.track === f.group);
   if (f.skill === 'none') mapped = mapped.filter((r) => !r.topic);
   else if (f.skill) mapped = mapped.filter((r) => r.topic === f.skill);
 
@@ -2104,10 +1852,8 @@ function facetsOf(all: MappedCase[], f: CaseFilters) {
    * chip — đúng kiểu lệch số owner nêu đích danh.
    */
   const base = f.classKind ? all.filter((r) => r.classKind === f.classKind) : all;
-  const byTrack = f.group ? base.filter((r) => r.track === f.group) : base;
   const matchTopic = (r: MappedCase) => (f.skill === 'none' ? !r.topic : r.topic === f.skill);
-  const byTopic = f.skill ? base.filter(matchTopic) : base;
-  const both = f.group ? byTopic.filter((r) => r.track === f.group) : byTopic;
+  const both = f.skill ? base.filter(matchTopic) : base;
 
   const tally = (list: MappedCase[], key: (r: MappedCase) => string | null) => {
     const m: Record<string, number> = {};
@@ -2116,10 +1862,8 @@ function facetsOf(all: MappedCase[], f: CaseFilters) {
   };
 
   return {
-    /** Hai đầu mục: đếm trên tập đã lọc theo chủ đề, chưa lọc theo đầu mục. */
-    group: tally(byTopic, (r) => r.track),
-    /** Chủ đề: đếm trên tập đã lọc theo đầu mục, chưa lọc theo chủ đề. */
-    skill: tally(byTrack, (r) => r.topic),
+    /** Chủ đề: đếm trên tập chưa lọc theo chủ đề. */
+    skill: tally(base, (r) => r.topic),
     /*
      * NGUYÊN NHÂN đã được người dạy nhận định. Trước đây đếm theo NHÁNH phân loại, nhưng
      * nhánh nay trùng với chính chủ đề (Listening → Listening), nên dòng đó chỉ lặp lại
@@ -2135,8 +1879,7 @@ function facetsOf(all: MappedCase[], f: CaseFilters) {
      * Vấn đề cũ CHƯA GẮN ĐƯỢC KỸ NĂNG đếm riêng, để các số cộng lại đúng bằng tổng. Bước
      * nâng cấp cố ý không đoán bừa kỹ năng cho những case trượt từ hai kỹ năng trở lên.
      */
-    groupNone: 0,
-    skillNone: byTrack.filter((r) => !r.topic).length,
+    skillNone: base.filter((r) => !r.topic).length,
     total: both.length,
   };
 }
@@ -2227,7 +1970,7 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
   };
   const byCategory = new Map<string, Point[]>();
   for (const r of scoreRows) {
-    const cat = categoryOf('academic', r.skill);
+    const cat = categoryOf(r.skill);
     if (!cat) continue;
     if (ratio && (r.raw_score === null || r.raw_total === null)) continue;
     if (!ratio && r.band === null) continue;
@@ -2317,7 +2060,7 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
      * thì lấy cái đã đóng gần nhất — "đã từng có vấn đề và đã xử lý xong" là một câu trả
      * lời khác hẳn "chưa từng có vấn đề", và người dạy cần phân biệt hai câu đó.
      */
-    const mine = caseRows.filter((c) => (c.category ?? categoryOf(c.track, c.topic)) === category);
+    const mine = caseRows.filter((c) => (c.category ?? categoryOf(c.topic)) === category);
     const primary = mine.find((c) => c.status !== 'done') ?? mine[0] ?? null;
 
     let interventions: any[] = [];
@@ -2364,7 +2107,7 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
       category,
       label: caseCategoryLabel(category),
       short: CASE_CATEGORY_SHORT[category],
-      /* Band MT gần nhất — hạng mục Ý thức/Khác không có điểm, để trống chứ không ghi 0. */
+      /* Band MT gần nhất — chưa có điểm thì để trống chứ không ghi 0. */
       band: latest?.band ?? null,
       bandAttemptNo: latest?.attemptNo ?? null,
       bandWeek: latest?.week ?? null,
@@ -2429,7 +2172,7 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
        * chưa ai xem bài, chưa ai đặt tên vấn đề — nên để riêng chứ không trộn vào `caseId`.
        */
       signal: (() => {
-        const sg = signalRows.find((x) => (x.category ?? categoryOf(x.track, x.skill)) === category);
+        const sg = signalRows.find((x) => (x.category ?? categoryOf(x.skill)) === category);
         if (!sg) return null;
         return {
           id: sg.id, skill: sg.skill, band: sg.band, expectation: sg.expectation,
@@ -2452,7 +2195,6 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
           id: c.id as number,
           title: caseTitleOf(c),
           status: c.status as string,
-          track: c.track as string,
           urgency: c.urgency ?? null,
           sosLevel: c.sos_level ?? null,
           carriedOver: !!c.carried_over,
@@ -2467,7 +2209,7 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
            */
           canEdit: can(p, PERMISSIONS.SOS_EDIT, {
             classId: enr?.class_id ?? null, studentId,
-            skill: c.track === 'academic' ? c.topic ?? undefined : undefined,
+            skill: c.topic ?? undefined,
           }),
           /*
            * HOÀN THÀNH CASE NGAY TRÊN THẺ (PR-D). Khối `CasePanel` nhúng bên dưới thẻ đã bị
@@ -2501,14 +2243,11 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
  * Gộp sẵn ở máy chủ vì giao diện cần cả mấy thứ này CÙNG LÚC cho từng case, và một em có thể
  * có năm case: để giao diện tự gọi từng case một là năm lần gọi cho một lần mở trang.
  *
- * NHÓM Ý THỨC/KHÁC KHÔNG CÓ THANG TIẾN BỘ HỌC THUẬT. Nó trả về BÁO CÁO NGUỒN — ai báo, ngày
- * nào, thấy gì — và các hành động đã làm. Gia đình đã nhận report không chứng minh em tiến bộ,
- * nên ép nhóm này vào thang "tiến bộ rõ / một phần" là bịa một kết luận chuyên môn.
+ * (Trước 21/09/2026 thẻ này còn trả "báo cáo nguồn" của case Ý thức; Ý thức nay là vi phạm và biện pháp xử lý ở một bảng riêng.)
  */
 function caseCardOf(caseId: number, c: any) {
   const conn = db();
   const today = demoToday();
-  const behaviour = (c.track ?? 'academic') === 'behaviour';
 
   const issue = conn
     .prepare(`SELECT taxonomy_code FROM case_issues WHERE case_id = ? AND role = 'primary' LIMIT 1`)
@@ -2555,7 +2294,7 @@ function caseCardOf(caseId: number, c: any) {
       approvalDue: pending ? iv.approval_due ?? null : null,
       lastOutcome: last?.outcome ?? null,
       lastOutcomeLabel: last?.outcome
-        ? outcomeLabelFor(c.track ?? 'academic', last.outcome) : null,
+        ? outcomeLabelFor(last.outcome) : null,
       lastOutcomeOn: last?.observed_on ?? null,
       lastNote: last?.note ?? null,
       /*
@@ -2570,7 +2309,7 @@ function caseCardOf(caseId: number, c: any) {
         .map((f) => ({
           on: f.observed_on as string,
           outcome: f.outcome as string,
-          label: outcomeLabelFor(c.track ?? 'academic', f.outcome),
+          label: outcomeLabelFor(f.outcome),
           by: f.observer ?? null,
           /* Mở lịch sử ngay tại dòng phương án (PR-D) thì phải đọc được câu người dạy viết. */
           note: (f.note as string | null) ?? null,
@@ -2580,26 +2319,6 @@ function caseCardOf(caseId: number, c: any) {
         .sort((a, b) => a.on.localeCompare(b.on)),
     };
   });
-
-  /*
-   * BÁO CÁO NGUỒN của nhóm Ý thức/Khác (mục 2). Một đợt gộp nhiều lần giáo viên báo, và
-   * chính các lần báo đó mới là bằng chứng — không phải một con điểm.
-   */
-  const reports = behaviour
-    ? (conn
-        .prepare(
-          `SELECT r.reported_on, r.source_skill, r.summary, u.full_name AS reporter
-             FROM case_reports r LEFT JOIN users u ON u.id = r.reported_by
-            WHERE r.case_id = ? ORDER BY r.reported_on, r.id`,
-        )
-        .all(caseId) as any[])
-      .map((r) => ({
-        on: r.reported_on as string,
-        by: r.reporter ?? null,
-        skill: r.source_skill ?? null,
-        summary: r.summary as string,
-      }))
-    : [];
 
   /* Lượt đánh giá mà case này đã đi qua — "MT2 · 17/08" ở chân thẻ. */
   const attempts = (conn
@@ -2617,9 +2336,7 @@ function caseCardOf(caseId: number, c: any) {
     issueCode: issue?.taxonomy_code ?? null,
     issueLabel: issue?.taxonomy_code ? issueLabel(issue.taxonomy_code) : null,
     summary: c.summary ?? null,
-    behaviour,
     plans,
-    reports,
     attempts,
     followUntil: c.follow_until ?? null,
     followOverdue: c.status !== 'done' && !!c.follow_until && c.follow_until < today,
@@ -2746,7 +2463,7 @@ export function normalizeMetrics(input: unknown): TeacherMetric[] | null {
   for (const raw of input) {
     const m = raw as any;
     const skill = String(m?.skill ?? '');
-    if (!(CASE_CATEGORIES as readonly string[]).includes(skill) || skill === 'behaviour') {
+    if (!(CASE_CATEGORIES as readonly string[]).includes(skill)) {
       throw badRequest('Điểm đánh giá phải gắn với một kỹ năng cụ thể.');
     }
     /*
@@ -2830,7 +2547,6 @@ export function updateResult(p: Principal, interventionId: number, input: {
   require_(p, PERMISSIONS.SOS_EDIT, sosEditCtx(c),
     'Bạn không có quyền cập nhật kết quả của case này.');
 
-  const track = c.track ?? 'academic';
   if (iv.approval_state === 'pending') {
     throw badRequest('Phương án này đang chờ Quản lý duyệt — chu kỳ thực hiện chưa bắt đầu.');
   }
@@ -2841,7 +2557,7 @@ export function updateResult(p: Principal, interventionId: number, input: {
 
   const mode = input.mode && (RESULT_MODES as readonly string[]).includes(input.mode)
     ? input.mode : 'monitor';
-  if (!(outcomesFor(track) as readonly string[]).includes(input.outcome)) {
+  if (!(FOLLOWUP_OUTCOMES as readonly string[]).includes(input.outcome)) {
     throw badRequest('Kết quả không hợp lệ với loại case này.');
   }
   /*
@@ -2871,7 +2587,7 @@ export function updateResult(p: Principal, interventionId: number, input: {
     const allowed = stepsForMode('end', input.outcome);
     if (!(allowed as readonly string[]).includes(nextStep)) {
       throw badRequest(
-        `Kết quả "${outcomeLabelFor(track, input.outcome)}" chỉ kết thúc được bằng: `
+        `Kết quả "${outcomeLabelFor(input.outcome)}" chỉ kết thúc được bằng: `
         + allowed.map((x) => NEXT_STEP_LABEL[x]).join(' · '),
       );
     }
@@ -2934,9 +2650,7 @@ export function updateResult(p: Principal, interventionId: number, input: {
        * NGÀY DỰ KIẾN KẾT THÚC giữ nguyên: theo dõi thêm một tuần không được âm thầm đẩy lùi
        * ngày mà cả case đang trông vào.
        */
-      const nextDue = track === 'behaviour'
-        ? (iv.action_due ?? cycleDeadline(observedOn, track))
-        : weeklyUpdateDue(addDays(observedOn, 1));
+      const nextDue = weeklyUpdateDue(addDays(observedOn, 1));
       conn
         .prepare(
           `UPDATE case_interventions
@@ -2986,7 +2700,7 @@ export function updateResult(p: Principal, interventionId: number, input: {
                   approval_due = ?, action_due = NULL, followup_due = NULL, updated_at = ?
             WHERE id = ?`,
         )
-        .run(cycleDeadline(observedOn, track), nowIso(), interventionId);
+        .run(cycleDeadline(observedOn), nowIso(), interventionId);
     }
 
     if (c.status === 'open') {
@@ -2997,7 +2711,7 @@ export function updateResult(p: Principal, interventionId: number, input: {
     addJourney({
       studentId: c.eff_student_id, cycleId: c.eff_cycle_id,
       eventType: 'followup', eventDate: observedOn,
-      title: `Kết quả sau hỗ trợ: ${outcomeLabelFor(track, input.outcome)}`,
+      title: `Kết quả sau hỗ trợ: ${outcomeLabelFor(input.outcome)}`,
       detail: [
         INTERVENTION_KIND_LABEL[iv.kind as InterventionKind] ?? iv.kind,
         NEXT_STEP_LABEL[nextStep as NextStep],

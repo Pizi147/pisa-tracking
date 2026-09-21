@@ -51,7 +51,7 @@ type CaseRow = {
  * Bốn bước, đúng thứ tự người ta nghĩ:
  *
  *   1. Normal hay Fast Track — hai loại lớp chấm khác nhau và có bộ môn khác nhau.
- *   2. Hạng mục nào đang nặng — một hàng cho mỗi môn, cộng Ý thức/Khác.
+ *   2. Hạng mục nào đang nặng — một hàng cho mỗi môn (Ý thức không còn hàng ở đây từ 21/09/2026).
  *   3. Trong hạng mục đó, vấn đề thuộc loại gì — và những gì đã làm có ăn thua không.
  *   4. Bấm một con số thì ra đúng những case tạo nên nó.
  *
@@ -300,10 +300,7 @@ export function IssueClassTable({ query, category, onOpenCases }: {
       {detail && (
         data.plans.length === 0 ? (
           <p className="text-xs text-slate-500 m-0">
-            {category === 'behaviour'
-              ? 'Nhóm Ý thức/Khác không có tỷ lệ tiến bộ: gia đình đã nhận report không chứng minh em đã khá hơn. '
-                + 'Nhóm này báo cáo số lần đã làm và số đợt tái diễn.'
-              : 'Chưa có phương án nào kết thúc ở hạng mục này, nên chưa nói được loại nào hiệu quả.'}
+            Chưa có phương án nào kết thúc ở hạng mục này, nên chưa nói được loại nào hiệu quả.
           </p>
         ) : (
           <div className="overflow-x-auto">

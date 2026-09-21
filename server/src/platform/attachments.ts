@@ -6,6 +6,7 @@ import { badRequest, forbidden, notFound, nowIso } from '../util.ts';
 import { ATTACHMENT_EXTENSIONS, ATTACHMENT_MAX_BYTES, ATTACHMENT_MIME_BY_EXT } from '../../../shared/domain/index.ts';
 import type { Principal } from '../permissions.ts';
 import { caseAccess } from '../cases/cases.ts';
+import { measureOwner, violationOwner } from '../yThuc/access.ts';
 import { writeAudit } from './audit.ts';
 
 /**
@@ -46,8 +47,8 @@ type OwnerAccess = { requireView: (p: Principal) => void; requireEdit: (p: Princ
 
 /**
  * QUYỀN CỦA TỪNG LOẠI BẢN GHI CHỦ — một nơi. Loại nào chưa có nơi chủ thì bị từ chối rõ ràng chứ không lặng lẽ
- * nhận một tệp không ai kiểm quyền được. Vi phạm và biện pháp xử lý (PR-J) thêm hai dòng ở đây khi hai bảng của chúng
- * tồn tại; quyền xem/sửa của chúng do chính module Ý thức quyết định.
+ * nhận một tệp không ai kiểm quyền được. Vi phạm và biện pháp xử lý (PR-J, 21/09/2026) đã có nơi chủ; quyền xem/sửa của
+ * chúng do chính module Ý thức quyết định (`server/src/yThuc/access.ts`).
  */
 function ownerAccess(ownerType: string, ownerId: number): OwnerAccess {
   if (!(OWNER_TYPES as readonly string[]).includes(ownerType)) throw badRequest(`Loại bản ghi "${ownerType}" không hợp lệ.`);
@@ -58,6 +59,8 @@ function ownerAccess(ownerType: string, ownerId: number): OwnerAccess {
     if (!iv) throw notFound('Không tìm thấy phương án');
     return caseOwner(iv.case_id);
   }
+  if (ownerType === 'violation') return violationOwner(ownerId);
+  if (ownerType === 'discipline_measure') return measureOwner(ownerId);
   throw badRequest(`Loại bản ghi "${ownerType}" chưa hỗ trợ đính kèm.`);
 }
 
@@ -194,6 +197,23 @@ export function openAttachment(p: Principal, id: number):
   if (!abs.startsWith(path.resolve(uploadsDir()) + path.sep)) throw forbidden('Đường dẫn tệp không hợp lệ.');
   if (!fs.existsSync(abs)) throw notFound('Tệp không còn trên máy chủ');
   return { kind: 'file', absPath: abs, downloadName: r.display_name, mimeType: r.mime_type ?? 'application/octet-stream' };
+}
+
+/**
+ * XOÁ MỌI TỆP CỦA MỘT BẢN GHI CHỦ khi chính bản ghi chủ bị xoá (ví dụ xoá biện pháp Đang chuẩn bị). Không kiểm quyền ở đây — nơi
+ * gọi đã kiểm quyền xoá bản ghi chủ; nhưng MỖI tệp vẫn có một dòng audit, vì xoá tệp không bao giờ được im lặng. Trả về số tệp.
+ */
+export function purgeAttachmentsOf(ownerType: AttachmentOwnerType, ownerId: number, actorUserId: number | null): number {
+  const rows = db().prepare('SELECT * FROM attachments WHERE owner_type = ? AND owner_id = ?').all(ownerType, ownerId) as any[];
+  for (const r of rows) {
+    db().prepare('DELETE FROM attachments WHERE id = ?').run(r.id);
+    if (r.kind === 'file') fs.rmSync(path.resolve(uploadsDir(), r.url), { force: true });
+    writeAudit({
+      actorUserId, action: 'attachment.delete', entityType: 'attachment', entityId: r.id, entityLabel: r.display_name,
+      before: { ownerType, ownerId, kind: r.kind, sizeBytes: r.size_bytes, uploadedBy: r.uploaded_by, reason: 'bản ghi chủ bị xoá' },
+    });
+  }
+  return rows.length;
 }
 
 export function removeAttachment(p: Principal, id: number): void {

@@ -7,8 +7,7 @@ import { Modal } from '../../ui/Drawer.tsx';
 import { Card, Empty, Field, SectionNote, Skeleton, Task } from '../../ui/ui.tsx';
 import { fmtDate } from '../../lib/format.ts';
 import {
-  BEHAVIOUR_TOPICS, BEHAVIOUR_TOPIC_LABEL, ENTRY_SKILLS, ENTRY_SKILL_LABEL,
-  THREAD_TRACKS, THREAD_TRACK_LABEL,
+  ENTRY_SKILLS, ENTRY_SKILL_LABEL,
 } from '@shared/domain/index.ts';
 
 /**
@@ -91,17 +90,14 @@ function TaskDialog({ open, onClose, periodId, onDone }: {
   const [note, setNote] = useState('');
   const [dueDate, setDueDate] = useState('');
   const [classId, setClassId] = useState('');
-  const [track, setTrack] = useState('academic');
   const [topic, setTopic] = useState('');
   const [busy, setBusy] = useState(false);
   const classes = useApi<{ rows: { id: number; code: string; studentCount: number }[] }>(
     open ? '/classes' : null, [open],
   );
 
-  const topics: readonly string[] = track === 'behaviour' ? BEHAVIOUR_TOPICS : ENTRY_SKILLS;
-  const topicLabel = (k: string) => (track === 'behaviour'
-    ? BEHAVIOUR_TOPIC_LABEL[k as keyof typeof BEHAVIOUR_TOPIC_LABEL]
-    : ENTRY_SKILL_LABEL[k as keyof typeof ENTRY_SKILL_LABEL]) ?? k;
+  const topics: readonly string[] = ENTRY_SKILLS;
+  const topicLabel = (k: string) => ENTRY_SKILL_LABEL[k as keyof typeof ENTRY_SKILL_LABEL] ?? k;
   const cls = classes.data?.rows.find((c) => String(c.id) === classId);
 
   const submit = async () => {
@@ -115,7 +111,6 @@ function TaskDialog({ open, onClose, periodId, onDone }: {
         kind, title, note: note.trim() || undefined, periodId: periodId ?? undefined,
         dueDate: dueDate || undefined,
         classId: kind === 'teacher_task' ? Number(classId) : undefined,
-        track: kind === 'teacher_task' ? track : undefined,
         topic: kind === 'teacher_task' ? topic : undefined,
       });
       invalidate('/tasks'); invalidate('/cases'); invalidate('/students'); invalidate('/my-work');
@@ -161,15 +156,7 @@ function TaskDialog({ open, onClose, periodId, onDone }: {
                 ))}
               </select>
             </Field>
-            <Field label="Thuộc nhóm nào" required>
-              <div className="flex gap-1 flex-wrap">
-                {THREAD_TRACKS.map((t) => (
-                  <button key={t} type="button" className={`btn btn-sm ${track === t ? 'btn-primary' : ''}`}
-                    onClick={() => { setTrack(t); setTopic(''); }}>{THREAD_TRACK_LABEL[t]}</button>
-                ))}
-              </div>
-            </Field>
-            <Field label={track === 'behaviour' ? 'Về việc gì' : 'Kỹ năng nào'} required>
+            <Field label="Kỹ năng nào" required>
               <div className="flex gap-1 flex-wrap">
                 {topics.map((k) => (
                   <button key={k} type="button" className={`btn btn-sm ${topic === k ? 'btn-primary' : ''}`}

@@ -101,6 +101,20 @@ export const PERMISSIONS = {
    */
   CLASS_EDIT: 'class.edit',
 
+  // --- Ý thức: vi phạm và biện pháp xử lý (PR-J, thiet-ke/Y_THUC_VI_PHAM_VA_BIEN_PHAP.md mục 6) ---
+  /**
+   * GHI VI PHẠM (V01) — MỌI giáo viên có phân công dạy lớp đó, kể cả trái môn: cô dạy Writing thấy em đi muộn thì ghi được nhóm
+   * Chuyên cần. C02 KHÔNG áp cho Ý thức: C02 là luật của case học thuật, vi phạm không thuộc kỹ năng nào.
+   */
+  VIOLATION_RECORD: 'violation.record',
+  /**
+   * XỬ LÝ Ý THỨC — sửa/hủy vi phạm của NGƯỜI KHÁC, và tạo · sửa · xác nhận · xóa biện pháp (V10, B01). Giáo viên chỉ có khi là
+   * GVCN của chính lớp đó; GVBM đọc được nhưng không tạo biện pháp. Không có cửa Quản lý duyệt (Y01).
+   */
+  DISCIPLINE_MANAGE: 'discipline.manage',
+  /** Xem thống kê Ý thức cả chi nhánh — chỉ Quản lý và Quản trị. GVBM và GVCN xem trong phạm vi lớp qua bảng của lớp. */
+  DISCIPLINE_STATS: 'discipline.stats',
+
   // --- Hồ sơ và vận hành ---
   STUDENT_VIEW: 'student.view',
   STUDENT_EDIT: 'student.edit',
@@ -127,6 +141,9 @@ export const PERMISSION_LABEL: Record<string, string> = {
   'case.approve': 'Duyệt phương án hỗ trợ',
   'class.assign': 'Phân công giáo viên vào lớp',
   'class.edit': 'Sửa tiến độ lớp (tuần bắt đầu, tuần kiểm tra)',
+  'violation.record': 'Ghi vi phạm của học viên trong lớp mình dạy',
+  'discipline.manage': 'Xử lý Ý thức: sửa vi phạm của người khác, tạo và xác nhận biện pháp xử lý',
+  'discipline.stats': 'Xem thống kê Ý thức cả chi nhánh',
   'student.view': 'Xem hồ sơ học viên',
   'student.edit': 'Sửa hồ sơ học viên',
   'meeting.view': 'Xem tiến trình công việc',

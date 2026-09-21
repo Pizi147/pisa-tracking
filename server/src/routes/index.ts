@@ -2,8 +2,8 @@ import { Router, type Request } from 'express';
 import multer from 'multer';
 import { db, isInitialised } from '../db.ts';
 import {
-  BEHAVIOUR_TOPICS, BEHAVIOUR_TOPIC_LABEL, ENTRY_SKILLS, ENTRY_SKILL_LABEL, ISSUE_TAXONOMY,
-  PERMISSIONS, REGULAR_SKILLS, ROLE_LABEL, THREAD_TRACKS, THREAD_TRACK_LABEL, WORK_SCOPES,
+  ENTRY_SKILLS, ENTRY_SKILL_LABEL, ISSUE_TAXONOMY,
+  PERMISSIONS, REGULAR_SKILLS, ROLE_LABEL, WORK_SCOPES,
   type Role, type WorkScope,
 } from '../../../shared/domain/index.ts';
 import { demoToday, getConfig, scenarioMode, setConfig } from '../demoConfig.ts';
@@ -12,6 +12,10 @@ import { SESSION_COOKIE, createSession, destroySession, principalOf, requireAuth
 import { can, loadPrincipal, permissionSummary, require_, scopeFor } from '../permissions.ts';
 import { writeAudit } from '../platform/audit.ts';
 import * as attachmentSvc from '../platform/attachments.ts';
+import * as violationSvc from '../yThuc/violations.ts';
+import * as measureSvc from '../yThuc/measures.ts';
+import * as warningSvc from '../yThuc/canhBao.ts';
+import { classViolationBoard } from '../yThuc/board.ts';
 import { maybeSimulateReadError, maybeSimulateSaveFailure, pInt, qInt, qStr, wrap } from './helpers.ts';
 
 /**
@@ -567,19 +571,9 @@ api.get('/classes/:id/roster', requireAuth, wrap((req) => {
 }));
 
 /*
- * HAI DẠNG XEM DANH SÁCH HỌC VIÊN CỦA MỘT LỚP (mục 13.3), và BẢNG PHÂN TÍCH VẤN ĐỀ (13.4).
- *
- * Tách đường riêng chứ không nhồi vào `/roster`: bảng Ý thức hỏi những câu khác hẳn — số đợt
- * case từng nhóm, số lần đã report gia đình, số thư cảnh cáo — và tải chúng cho mọi người
- * mở trang lớp là tính một đống thứ đa số lần không ai xem.
+ * BẢNG PHÂN TÍCH VẤN ĐỀ CỦA MỘT LỚP (mục 13.4). Đường cũ của Bảng Ý thức của lớp (đếm số đợt case) đã bỏ 21/09/2026:
+ * Ý thức nay là vi phạm và biện pháp xử lý, dữ liệu ba khu vực ở `GET /classes/:id/y-thuc`.
  */
-api.get('/classes/:id/behaviour', requireAuth, wrap((req) => {
-  maybeSimulateReadError();
-  return classSvc.classBehaviourBoard(principalOf(req), pInt(req, 'id'), {
-    allJourney: qStr(req, 'scope') === 'all',
-  });
-}));
-
 api.get('/classes/:id/issue-board', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   const p = principalOf(req);
@@ -722,6 +716,124 @@ api.delete('/attachments/:id', requireAuth, wrap((req) => {
 }));
 
 /**
+ * Ý THỨC — VI PHẠM VÀ BIỆN PHÁP XỬ LÝ (PR-J, 21/09/2026). Module thứ chín: mọi đường đi qua `server/src/yThuc/`, nơi kiểm quyền ở MÁY
+ * CHỦ (đặc tả mục 6) — giao diện chỉ ẩn nút cho gọn mắt. Không có đường nào tạo case Ý thức: mô hình đó đã bỏ.
+ */
+const yThucBody = (req: Request) => (req.body ?? {}) as Record<string, any>;
+
+api.get('/students/:id/violations', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return violationSvc.listViolations(principalOf(req), {
+    studentId: pInt(req, 'id'), state: (qStr(req, 'state') as any) ?? null, category: qStr(req, 'category') ?? null,
+    from: qStr(req, 'from') ?? null, to: qStr(req, 'to') ?? null,
+  });
+}));
+api.get('/students/:id/measures', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return measureSvc.listMeasures(principalOf(req), { studentId: pInt(req, 'id'), status: (qStr(req, 'status') as any) ?? null });
+}));
+/** Chín loại biện pháp kèm dòng nào khóa và VÌ SAO — để form nói lý do ngay tại dòng, không báo lỗi sau khi bấm. */
+api.get('/students/:id/measure-kinds', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return { rows: measureSvc.measureKindAvailability(principalOf(req), pInt(req, 'id')) };
+}));
+api.get('/students/:id/violation-warning', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return warningSvc.studentWarning(principalOf(req), pInt(req, 'id'));
+}));
+
+/** Ba khu vực Ý thức của lớp (Y03) — một request cho cả tab. */
+api.get('/classes/:id/y-thuc', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return classViolationBoard(principalOf(req), pInt(req, 'id'));
+}));
+api.get('/classes/:id/violation-warning', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return warningSvc.classWarning(principalOf(req), pInt(req, 'id'));
+}));
+/** Một dòng trong Việc cần làm của GVCN (đặc tả 7.10). */
+api.get('/y-thuc/my-warnings', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return { rows: warningSvc.myWarningLines(principalOf(req)) };
+}));
+
+/** Cảnh báo trùng mềm (V06) — form gọi trước khi ghi để hiện "Xem vi phạm đó" / "Vẫn ghi vi phạm mới". Không chặn gì. */
+api.get('/violations/similar', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return { rows: violationSvc.similarViolations(principalOf(req), {
+    studentId: qInt(req, 'studentId') ?? 0, category: qStr(req, 'category') ?? '', occurredOn: qStr(req, 'occurredOn') ?? null,
+  }) };
+}));
+api.post('/violations', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  const b = yThucBody(req);
+  return violationSvc.recordViolation(principalOf(req), {
+    studentId: toInt(b.studentId) ?? 0, category: b.category, description: b.description, occurredOn: b.occurredOn ?? null,
+    skill: 'skill' in b ? (b.skill ?? null) : undefined, idempotencyKey: b.idempotencyKey ?? null,
+  });
+}));
+api.get('/violations/:id', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return violationSvc.violationDetail(principalOf(req), pInt(req, 'id'));
+}));
+api.patch('/violations/:id', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  const b = yThucBody(req);
+  return violationSvc.editViolation(principalOf(req), pInt(req, 'id'), {
+    description: b.description, category: b.category, skill: 'skill' in b ? (b.skill ?? null) : undefined,
+    occurredOn: 'occurredOn' in b ? (b.occurredOn ?? null) : undefined,
+  });
+}));
+api.post('/violations/:id/invalidate', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return violationSvc.invalidateViolation(principalOf(req), pInt(req, 'id'), String(yThucBody(req).reason ?? ''));
+}));
+
+api.post('/measures', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  const b = yThucBody(req);
+  return measureSvc.createMeasure(principalOf(req), {
+    studentId: toInt(b.studentId) ?? 0, kind: b.kind, customName: b.customName ?? null,
+    violationIds: Array.isArray(b.violationIds) ? b.violationIds : [], ownerUserId: toInt(b.ownerUserId) ?? null,
+    note: b.note ?? null, idempotencyKey: b.idempotencyKey ?? null,
+  });
+}));
+api.get('/measures/:id', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return measureSvc.measureDetail(principalOf(req), pInt(req, 'id'));
+}));
+api.patch('/measures/:id', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  const b = yThucBody(req);
+  return measureSvc.updateMeasure(principalOf(req), pInt(req, 'id'), {
+    kind: b.kind, customName: 'customName' in b ? (b.customName ?? null) : undefined, note: 'note' in b ? (b.note ?? null) : undefined,
+    ownerUserId: 'ownerUserId' in b ? (toInt(b.ownerUserId) ?? null) : undefined,
+  });
+}));
+api.post('/measures/:id/violations', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  const b = yThucBody(req);
+  return measureSvc.addViolations(principalOf(req), pInt(req, 'id'), Array.isArray(b.violationIds) ? b.violationIds : []);
+}));
+api.delete('/measures/:id/violations/:violationId', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return measureSvc.removeViolation(principalOf(req), pInt(req, 'id'), pInt(req, 'violationId'));
+}));
+api.post('/measures/:id/confirm', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  const b = yThucBody(req);
+  return measureSvc.confirmMeasure(principalOf(req), pInt(req, 'id'), {
+    performedOn: b.performedOn ?? null, performedBy: toInt(b.performedBy) ?? null, performerName: b.performerName ?? null,
+    note: 'note' in b ? (b.note ?? '') : undefined, participants: b.participants ?? null,
+  });
+}));
+api.delete('/measures/:id', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  measureSvc.deleteMeasure(principalOf(req), pInt(req, 'id'));
+  return { ok: true };
+}));
+
+/**
  * DRILL-DOWN DÙNG CHUNG CỦA MỌI CON SỐ (hợp đồng số liệu, PR-F). MỘT route, mọi chỉ số: nhận `id` của
  * chỉ số trong sổ và phạm vi, gọi ĐÚNG hàm đã sinh ra con số, áp CÙNG bộ quyền. Số là độ dài của tập;
  * `?rows=1` thêm dòng để vẽ danh sách. Hỏi chi nhánh ngoài quyền thì bị từ chối (403) — không trả tập
@@ -731,7 +843,7 @@ api.get('/metrics/:id', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   const r = metricSet(principalOf(req), String(req.params.id), {
     branchId: qInt(req, 'branchId'), skill: qStr(req, 'skill') ?? null,
-    from: qStr(req, 'from') ?? null, to: qStr(req, 'to') ?? null,
+    from: qStr(req, 'from') ?? null, to: qStr(req, 'to') ?? null, kind: qStr(req, 'kind') ?? null,
   });
   return metricResponse(r, qStr(req, 'rows') === '1');
 }));
@@ -973,7 +1085,7 @@ api.get('/cases', requireAuth, wrap((req) => {
     branchId: toInt(req.query?.branchId), classId: toInt(req.query?.classId),
     studentId: toInt(req.query?.studentId),
     status: qStr(req, 'status'), origin: qStr(req, 'origin'),
-    group: qStr(req, 'group'), skill: qStr(req, 'skill'), queue: qStr(req, 'queue'),
+    skill: qStr(req, 'skill'), queue: qStr(req, 'queue'),
     classKind: qStr(req, 'classKind'),
     ownerUserId: toInt(req.query?.ownerUserId),
     noOwner: qStr(req, 'noOwner') === '1',
@@ -1118,15 +1230,9 @@ api.put('/cases/:id/owner', requireAuth, wrap((req) => {
 
 /** Bộ phân loại vấn đề để dựng ô chọn. Dữ liệu, không viết cứng trong giao diện. */
 api.get('/ref/issue-taxonomy', requireAuth, wrap(() => ({
-  /** Hai đầu mục và chủ đề của chúng — dựng ô chọn từ dữ liệu, không viết cứng trong giao diện. */
-  tracks: THREAD_TRACKS.map((t) => ({
-    key: t,
-    label: THREAD_TRACK_LABEL[t],
-    topics: t === 'behaviour'
-      ? BEHAVIOUR_TOPICS.map((k) => ({ key: k, label: BEHAVIOUR_TOPIC_LABEL[k] }))
-      : ENTRY_SKILLS.map((k) => ({ key: k, label: ENTRY_SKILL_LABEL[k] })),
-  })),
-  /** Phân loại NGUYÊN NHÂN, chỉ dùng cho Học thuật. W1 và W2 dùng chung bộ Writing. */
+  /** Chủ đề của case = kỹ năng nhập điểm — dựng ô chọn từ dữ liệu, không viết cứng trong giao diện. */
+  topics: ENTRY_SKILLS.map((k) => ({ key: k, label: ENTRY_SKILL_LABEL[k] })),
+  /** Phân loại NGUYÊN NHÂN. W1 và W2 dùng chung bộ Writing. */
   branches: ISSUE_TAXONOMY,
 })));
 

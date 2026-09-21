@@ -1,5 +1,5 @@
 import { db } from '../db.ts';
-import { PERMISSIONS, metricById, type ChiSo } from '../../../shared/domain/index.ts';
+import { MEASURE_KIND_LABEL, PERMISSIONS, VIOLATION_CATEGORY_LABEL, metricById, type ChiSo } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { scopeFor, type Principal } from '../permissions.ts';
 import { badRequest, forbidden, HttpError, notFound } from '../util.ts';
@@ -7,6 +7,7 @@ import { listCases } from '../cases/cases.ts';
 import { listSignals } from '../cases/signals.ts';
 import { improvementRate, planOutcomes } from '../cases/effectiveness.ts';
 import { doPhuDanhGia, hvDuoiKyVongMon, hvSosHienTai } from './danhGia.ts';
+import { isYThucMetric, yThucMetric, YTHUC_METRIC_IDS } from '../yThuc/thongKe.ts';
 
 /**
  * TẬP ID CỦA TỪNG CHỈ SỐ — nơi duy nhất sinh ra cả CON SỐ lẫn DANH SÁCH KHI BẤM VÀO (hợp đồng số liệu).
@@ -36,6 +37,8 @@ export type MetricResult = {
   denominatorIds?: number[];
   /** Chỉ số có hai phần loại trừ nhau, cộng lại đúng bằng `ids` (ví dụ SOS tạm thời / kết quả cuối). */
   splits?: { tamThoi: number[]; ketQuaCuoi: number[] };
+  /** Chỉ số chia theo loại (`bien-phap-theo-loai`): mỗi loại một tập; hợp của chúng đúng bằng `ids`. */
+  byKind?: Record<string, number[]>;
   /** Phạm vi rỗng — không có gì để đếm. KHÔNG được hiểu thành toàn hệ thống. */
   empty: boolean;
   note: string | null;
@@ -118,12 +121,33 @@ export function rowsFor(unit: ChiSo['donVi'], ids: number[]): MetricRow[] {
           sub: [r.full_name, r.student_code].filter(Boolean).join(' · '), href: `/hoc-thuat/case/${r.case_id}`,
         });
       }
+    } else if (unit === 'vi-pham') {
+      /* Ý thức (PR-J): dòng vi phạm mở hồ sơ học viên — tab Ý thức là việc của PR-K. */
+      for (const r of conn.prepare(
+        `SELECT v.id, v.student_id, v.category, v.skill, v.occurred_on, v.description, s.full_name, s.student_code
+           FROM violations v JOIN students s ON s.id = v.student_id WHERE v.id IN (${ph})`,
+      ).all(...chunk) as any[]) {
+        const cat = VIOLATION_CATEGORY_LABEL[r.category as keyof typeof VIOLATION_CATEGORY_LABEL] ?? r.category;
+        byId.set(r.id, {
+          id: r.id, title: `${cat} · ${String(r.occurred_on).slice(8, 10)}/${String(r.occurred_on).slice(5, 7)}`,
+          sub: [r.full_name, r.student_code, String(r.description).slice(0, 60)].filter(Boolean).join(' · '), href: `/hoc-vien/${r.student_id}`,
+        });
+      }
+    } else if (unit === 'bien-phap') {
+      for (const r of conn.prepare(
+        `SELECT m.id, m.student_id, m.kind, m.custom_name, m.status, m.performed_on, s.full_name, s.student_code
+           FROM discipline_measures m JOIN students s ON s.id = m.student_id WHERE m.id IN (${ph})`,
+      ).all(...chunk) as any[]) {
+        const name = r.kind === 'other' && r.custom_name ? r.custom_name : MEASURE_KIND_LABEL[r.kind as keyof typeof MEASURE_KIND_LABEL] ?? r.kind;
+        const state = r.status === 'done' ? `đã thực hiện ${String(r.performed_on ?? '').slice(8, 10)}/${String(r.performed_on ?? '').slice(5, 7)}` : 'đang chuẩn bị';
+        byId.set(r.id, { id: r.id, title: name, sub: [r.full_name, r.student_code, state].filter(Boolean).join(' · '), href: `/hoc-vien/${r.student_id}` });
+      }
     } else if (unit === 'tin-hieu') {
       for (const r of conn.prepare(
-        `SELECT sg.id, sg.student_id, sg.skill, sg.track, sg.verify_due, s.full_name, s.student_code
+        `SELECT sg.id, sg.student_id, sg.skill, sg.verify_due, s.full_name, s.student_code
            FROM case_signals sg JOIN students s ON s.id = sg.student_id WHERE sg.id IN (${ph})`,
       ).all(...chunk) as any[]) {
-        byId.set(r.id, { id: r.id, title: `Tín hiệu cần xác minh · ${r.skill ?? r.track}`, sub: [r.full_name, r.student_code, `hạn ${String(r.verify_due).slice(8, 10)}/${String(r.verify_due).slice(5, 7)}`].filter(Boolean).join(' · '), href: `/hoc-vien/${r.student_id}` });
+        byId.set(r.id, { id: r.id, title: `Tín hiệu cần xác minh · ${r.skill ?? 'chưa rõ kỹ năng'}`, sub: [r.full_name, r.student_code, `hạn ${String(r.verify_due).slice(8, 10)}/${String(r.verify_due).slice(5, 7)}`].filter(Boolean).join(' · '), href: `/hoc-vien/${r.student_id}` });
       }
     }
   }
@@ -142,11 +166,12 @@ export function metricResponse(r: MetricResult, withRows: boolean) {
     numerator: r.numeratorIds ? r.numeratorIds.length : null,
     denominator: r.denominatorIds ? r.denominatorIds.length : null,
     splits: r.splits ? { tamThoi: r.splits.tamThoi.length, ketQuaCuoi: r.splits.ketQuaCuoi.length } : null,
+    byKind: r.byKind ? Object.fromEntries(Object.entries(r.byKind).map(([k, v]) => [k, v.length])) : null,
     empty: r.empty, note: r.note, today: r.today,
   };
   if (!withRows) return lean;
   return {
-    ...lean, ids: r.ids, numeratorIds: r.numeratorIds, denominatorIds: r.denominatorIds, splitIds: r.splits,
+    ...lean, ids: r.ids, numeratorIds: r.numeratorIds, denominatorIds: r.denominatorIds, splitIds: r.splits, byKindIds: r.byKind,
     rows: rowsFor(r.unit, r.ids),
   };
 }
@@ -156,6 +181,7 @@ export const LISTED_METRICS: readonly string[] = [
   'hv-sos-hien-tai', 'hv-duoi-ky-vong-mon', 'hv-co-case-mo', 'case-mo', 'tin-hieu-cho-xac-minh',
   'case-thieu-pa', 'pa-can-cap-nhat', 'pa-cho-duyet', 'pa-co-ket-qua', 'ty-le-co-cai-thien',
   'dung-han-cap-nhat', 'do-phu-danh-gia',
+  ...YTHUC_METRIC_IDS,
 ];
 
 /** Kỹ năng ĐÁNH GIÁ mà `hv-duoi-ky-vong-mon` nhận. */
@@ -176,7 +202,7 @@ export const parseObligation = (id: number) => ({ interventionId: Math.floor(id 
  *   CHƯA LÀM     — phương án đang chạy, không chờ duyệt, hạn cập nhật của chu kỳ hiện tại đã qua mà chưa có dòng
  *                  theo dõi nào cho chu kỳ đó.
  * "Đã qua hạn" là hạn < ngày dữ liệu — cùng luật với `pa-can-cap-nhat`. Không tính phương án chờ duyệt (chưa được
- * chạy nên chưa có nghĩa vụ) và không tính case Ý thức / nhập bù (không có hạn cập nhật).
+ * chạy nên chưa có nghĩa vụ) và không tính case nhập bù (không có hạn cập nhật). Ý thức không còn case (21/09/2026).
  */
 function obligations(caseIds: number[], today: string, from: string | null, to: string | null) {
   const inPeriod = (due: string) => (!from || due >= from) && (!to || due <= to);
@@ -304,7 +330,7 @@ function effectivenessScopes(p: Principal, branchId: number | null): Array<{ bra
  */
 export function metricSet(
   p: Principal, id: string,
-  f: { branchId?: number | null; skill?: string | null; from?: string | null; to?: string | null } = {},
+  f: { branchId?: number | null; skill?: string | null; from?: string | null; to?: string | null; kind?: string | null } = {},
 ): MetricResult {
   const metric = metricById(id);
   if (!metric) throw notFound(`Không tìm thấy chỉ số "${id}".`);
@@ -318,6 +344,13 @@ export function metricSet(
     note: scope.empty ? EMPTY_NOTE : null, today, ...extra,
   });
   if (scope.empty) return done([]);
+
+  /* Ý thức (PR-J): phạm vi và hàm tập ID riêng — GVBM/GVCN không có quyền xem thống kê chi nhánh nên nhận tập rỗng có nhãn. */
+  if (isYThucMetric(id)) {
+    const r = yThucMetric(p, id, { branchId: scope.branchId, from: f.from ?? null, to: f.to ?? null, kind: f.kind ?? null });
+    if (r.none) return { ...done([]), empty: true, note: EMPTY_NOTE };
+    return done(r.ids, r.byKind ? { byKind: r.byKind } : {});
+  }
 
   const branchId = scope.branchId ?? undefined;
   const openCases = () => listCases(p, { branchId }).rows.filter((c: any) => c.state !== 'done');
@@ -359,7 +392,7 @@ export function metricSet(
     case 'dung-han-cap-nhat': {
       /* Nghĩa vụ của MỌI case học thuật trong phạm vi — kể cả case đã đóng: nghĩa vụ đã đến hạn vẫn là chuyện đã xảy ra. */
       const caseIds = listCases(p, { branchId }).rows
-        .filter((c: any) => c.track !== 'behaviour' && c.originKind !== 'backfill')
+        .filter((c: any) => c.originKind !== 'backfill')
         .map((c: any) => c.id as number);
       const r = obligations(caseIds, today, f.from ?? null, f.to ?? null);
       return done(r.ids, { numeratorIds: r.numeratorIds });
@@ -367,7 +400,7 @@ export function metricSet(
     case 'pa-co-ket-qua': {
       const ids = new Set<number>();
       for (const s of effectivenessScopes(p, scope.branchId)) {
-        for (const r of planOutcomes(s)) if (r.track !== 'behaviour' && r.group !== 'undetermined') ids.add(r.id);
+        for (const r of planOutcomes(s)) if (r.group !== 'undetermined') ids.add(r.id);
       }
       return done([...ids]);
     }

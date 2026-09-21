@@ -705,7 +705,8 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
       break;
     case 'missing_scores': mapped = mapped.filter((m) => m.status !== 'cancelled' && !m.complete && m.scoredRequired > 0); break;
     case 'overdue': mapped = mapped.filter((m) => m.overdueSkills > 0); break;
-    case 'sos_open': mapped = mapped.filter((m) => m.caseId && m.caseStatus !== 'done'); break;
+    /* CÙNG luật với huy hiệu ở bảng lớp: case có mức SOS > 0 và chưa xong. Case không mang mức SOS (giáo viên báo) không phải case SOS. */
+    case 'sos_open': mapped = mapped.filter((m) => m.caseId && m.caseStatus !== 'done' && (m.caseLevel ?? 0) > 0); break;
   }
   return { rows: mapped, scopeEmpty: false };
 }

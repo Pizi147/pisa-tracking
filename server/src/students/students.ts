@@ -126,7 +126,7 @@ export function handoverBrief(studentId: number) {
   const conn = db();
   const cases = conn
     .prepare(
-      `SELECT sc.id, sc.title, sc.category, sc.track, sc.status,
+      `SELECT sc.id, sc.title, sc.category, sc.status,
               u.full_name AS owner_name,
               (SELECT COUNT(*) FROM case_interventions iv
                 WHERE iv.case_id = sc.id AND iv.status IN ('planned','started')) AS open_plans,
@@ -140,7 +140,7 @@ export function handoverBrief(studentId: number) {
     .all(studentId) as any[];
   return {
     cases: cases.map((c) => ({
-      id: c.id, title: c.title, category: c.category, track: c.track,
+      id: c.id, title: c.title, category: c.category,
       ownerName: c.owner_name ?? null, openPlans: c.open_plans as number,
       nextDue: c.next_due as string | null,
     })),

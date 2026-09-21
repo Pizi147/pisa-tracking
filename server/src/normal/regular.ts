@@ -416,7 +416,7 @@ export function refreshRegularOutcome(p: Principal, attemptId: number) {
   if (r.sosLevel === null) return r;
 
   const failing = r.skills.filter((x) => x.outcome === 'fail').map((x) => x.skill);
-  const failingCats = new Set(failing.map((sk) => categoryOf('academic', sk)).filter(Boolean) as string[]);
+  const failingCats = new Set(failing.map((sk) => categoryOf(sk)).filter(Boolean) as string[]);
 
   /*
    * TÌM CASE THEO HỌC VIÊN, KHÔNG THEO LƯỢT THI.
@@ -432,14 +432,14 @@ export function refreshRegularOutcome(p: Principal, attemptId: number) {
     .prepare(
       `SELECT * FROM sos_cases
         WHERE student_id = ? AND COALESCE(cycle_id, 0) = ?
-          AND track = 'academic' AND status != 'done'`,
+          AND status != 'done'`,
     )
     .all(a.student_id, a.cycle_id ?? 0) as any[];
 
   // Ngày phát hiện = thứ Hai của TUẦN bài kiểm tra; không còn ngày làm bài riêng.
   const detectedAt = weekStartOf(a) ?? demoToday();
   for (const c of open) {
-    const cat = c.category ?? categoryOf('academic', c.topic);
+    const cat = c.category ?? categoryOf(c.topic);
     if (!cat) continue;
     const gone = !failingCats.has(cat);
     const level = gone || r.sosLevel === 0 ? 0 : r.sosLevel;
@@ -479,14 +479,14 @@ export function refreshRegularOutcome(p: Principal, attemptId: number) {
    */
   const conn2 = conn;
   for (const skill of failing) {
-    const category = categoryOf('academic', skill);
+    const category = categoryOf(skill);
     if (!category) continue;
-    const existing = open.find((c: any) => (c.category ?? categoryOf('academic', c.topic)) === category) ?? null;
+    const existing = open.find((c: any) => (c.category ?? categoryOf(c.topic)) === category) ?? null;
     const signal = raiseSignal({
       actorUserId: p.userId,
       studentId: a.student_id, cycleId: a.cycle_id ?? null,
       attemptId: a.id, classId: a.class_id ?? null,
-      track: 'academic', skill, category,
+      skill, category,
       sosLevel: r.sosLevel, detectedOn: detectedAt,
     });
     if (existing) {
@@ -515,21 +515,6 @@ export function refreshRegularOutcome(p: Principal, attemptId: number) {
     }
   }
 
-  /*
-   * Một tín hiệu Ý thức/Khác cho GVCN xem tình hình chung — KHÔNG kèm sẵn hai việc trao đổi.
-   *
-   * Trước đây lớp Normal cũng tự sinh một case Ý thức/Khác chứa sẵn "trao đổi với học viên"
-   * và "trao đổi với phụ huynh". Hai việc đó có thật và vẫn phải làm, nhưng chúng cần người
-   * thực hiện và ngày thật; dựng sẵn thì chúng nằm đó mãi ở trạng thái "đã lên kế hoạch" và
-   * không ai coi là của mình.
-   */
-  raiseSignal({
-    actorUserId: p.userId,
-    studentId: a.student_id, cycleId: a.cycle_id ?? null,
-    attemptId: a.id, classId: a.class_id ?? null,
-    track: 'behaviour', skill: null, category: 'behaviour',
-    sosLevel: r.sosLevel, detectedOn: detectedAt,
-  });
   return r;
 }
 

@@ -1,7 +1,25 @@
-import { DB_PATH, closeDb } from '../db.ts';
-import { migrate } from '../migrate.ts';
+import fs from 'node:fs';
+import { DB_PATH, closeDb, db } from '../db.ts';
+import { hasLegacyDisciplineModel, migrate } from '../migrate.ts';
 
 console.log(`[migrate] Nâng cấp dữ liệu đang có tại ${DB_PATH}`);
+
+/*
+ * SAO LƯU TRƯỚC KHI XOÁ MÔ HÌNH CASE Ý THỨC CŨ (PR-J, 21/09/2026).
+ * Bước nâng cấp chuyển báo cáo → vi phạm, việc trao đổi → biện pháp rồi GỠ case cũ cùng kết quả/mốc/tín hiệu của nó. Phần được
+ * giữ là "sự thật"; phần bị bỏ là suy diễn. Vẫn nên có đường lùi: chép nguyên tệp database sang bên cạnh, một lần, không ghi đè.
+ */
+if (fs.existsSync(DB_PATH) && hasLegacyDisciplineModel(db())) {
+  const backup = `${DB_PATH}.truoc-pr-j.bak`;
+  if (fs.existsSync(backup)) {
+    console.log(`[migrate] Đã có bản sao lưu ${backup} — giữ nguyên, không ghi đè.`);
+  } else {
+    db().pragma('wal_checkpoint(TRUNCATE)');
+    fs.copyFileSync(DB_PATH, backup);
+    console.log(`[migrate] Database còn mô hình Case Ý thức cũ — đã sao lưu sang ${backup} trước khi nâng cấp.`);
+  }
+}
+
 const { applied, skipped } = migrate();
 for (const a of applied) console.log(`  ✓ ${a}`);
 for (const s of skipped) console.log(`  · ${s}`);

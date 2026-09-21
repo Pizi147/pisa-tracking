@@ -48,6 +48,7 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
     'plan.week', 'schedule.move', 'attempt.cancel', 'attempt.skip_skill',
     'deadline.override', 'attempt.view', 'score.override', 'case.view', 'sos.report', 'sos.edit',
     'case.close', 'case.approve',
+    'violation.record', 'discipline.manage', 'discipline.stats',
     'class.assign', 'class.edit', 'student.view', 'student.edit',
     'meeting.view', 'meeting.edit', 'admin.config',
   ],
@@ -57,6 +58,7 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
     'deadline.override', 'attempt.view',
     // Quản lý đóng được case trong chi nhánh mình; GVCN đóng case lớp mình (kiểm theo phân công).
     'case.view', 'sos.report', 'sos.edit', 'case.close', 'case.approve', 'class.assign', 'class.edit',
+    'violation.record', 'discipline.manage', 'discipline.stats',
     'student.view', 'student.edit', 'meeting.view', 'meeting.edit',
   ],
   /*
@@ -69,8 +71,13 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
    * `sos.report` (báo vấn đề) rộng — bất kỳ môn nào trong lớp. `sos.edit` (sửa/xử lý case đã
    * có) hẹp hơn — `teacherAllows` siết đúng kỹ năng (Học thuật) hoặc GVCN (Ý thức), AUTH-01.
    */
+  /*
+   * Ý thức (PR-J): `violation.record` rộng như `sos.report` — mọi giáo viên dạy lớp đó đều ghi được vi phạm. `discipline.manage`
+   * bị `teacherAllows` siết xuống đúng GVCN của lớp. Giáo viên KHÔNG có `discipline.stats` — thống kê cả chi nhánh là của Quản lý.
+   */
   teacher: ['attempt.view', 'score.edit', 'estimate.edit', 'schedule.move',
-    'case.view', 'sos.report', 'sos.edit', 'student.view', 'student.edit'],
+    'case.view', 'sos.report', 'sos.edit', 'student.view', 'student.edit',
+    'violation.record', 'discipline.manage'],
 };
 
 /*

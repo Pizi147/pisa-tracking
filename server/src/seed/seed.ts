@@ -12,6 +12,7 @@ import { ensurePeriod, mondayOf, weekInfo } from '../platform/week.ts';
 import { BRANCHES, RETIRED_ROLES, ROLES, ROLE_PERMISSIONS } from './data.ts';
 import { CLASSES, DEMO_DATE, TEACHERS } from './journeys.ts';
 import { buildJourneys } from './build.ts';
+import { buildYThuc } from './yThucSeed.ts';
 
 const NOW = nowIso();
 
@@ -243,8 +244,13 @@ export function runSeed() {
       return padCode('PISA', row.next_value);
     };
 
+    const studentIdByCode = new Map<string, number>();
     const counts = buildJourneys({
-      conn, adminId, branchId, classId, userId, classBranch, nextStudentCode,
+      conn, adminId, branchId, classId, userId, classBranch, nextStudentCode, studentIdByCode,
+    });
+    /* Ý thức dựng SAU hành trình: cần học viên, lớp, ghi danh và lộ trình đã có. */
+    const yThuc = buildYThuc({
+      conn, adminId, branchId, classId, userId, classBranch, nextStudentCode, studentIdByCode,
     });
 
     // ---------------------------------------------------------------- công việc quản lý
@@ -275,10 +281,15 @@ export function runSeed() {
       /*
        * ĐẾM TỪ CHÍNH DATABASE, không cộng dồn trong lúc dựng.
        *
-       * Case Ý thức/Khác sinh tự động qua engine chứ không qua kịch bản, nên bộ đếm nội bộ
-       * không biết tới chúng — và một bản tóm tắt nói ít hơn sự thật thì tệ hơn là không có.
+       * Case sinh tự động qua engine chứ không qua kịch bản, nên bộ đếm nội bộ không biết tới
+       * chúng — và một bản tóm tắt nói ít hơn sự thật thì tệ hơn là không có.
        */
       'Case': (conn.prepare('SELECT COUNT(*) AS n FROM sos_cases').get() as any).n,
+      'Vi phạm': yThuc.violations,
+      '— trong đó đã đánh dấu không chính xác': yThuc.invalid,
+      'Biện pháp xử lý': yThuc.measures,
+      '— trong đó đã thực hiện': yThuc.done,
+      '— trong đó đang chuẩn bị': yThuc.preparing,
       'Phương án': (conn.prepare('SELECT COUNT(*) AS n FROM case_interventions').get() as any).n,
       'Lần cập nhật kết quả': (conn.prepare('SELECT COUNT(*) AS n FROM case_followups').get() as any).n,
       'Mốc case': (conn.prepare('SELECT COUNT(*) AS n FROM case_milestones').get() as any).n,

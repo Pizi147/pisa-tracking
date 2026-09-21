@@ -8,7 +8,7 @@ import { Han } from '../../ui/Han.tsx';
 import { BangChung } from '../../ui/BangChung.tsx';
 import { ActionDialog, OutcomeDialog, ResultDialog } from './CasePanel.tsx';
 import {
-  OUTCOME_MARK, canEndWithOutcome, isContactKind, outcomeLabelFor, outcomesFor,
+  FOLLOWUP_OUTCOMES, OUTCOME_MARK, canEndWithOutcome, outcomeLabelFor,
 } from '@shared/domain/index.ts';
 
 /**
@@ -42,17 +42,16 @@ type Plan = {
   }[];
 };
 type CaseCard = {
-  id: number; title: string; status: string; track: string;
+  id: number; title: string; status: string;
   urgency: string | null; sosLevel: number | null;
   carriedOver: boolean; parallel: boolean;
   openedOn: string | null; touchedOn: string | null;
   issueCode: string | null; issueLabel: string | null;
-  summary: string | null; behaviour: boolean;
+  summary: string | null;
   canEdit: boolean;
   /** Người xem chốt được case không, và còn gì đang chặn — thẻ tự nói, không phải mở khối thứ hai. */
   canClose: boolean; closeBlockers: string[];
   plans: Plan[];
-  reports: { on: string; by: string | null; skill: string | null; summary: string }[];
   attempts: { attemptNo: number; week: string | null }[];
   followUntil: string | null; followOverdue: boolean;
   outcomeLabel: string | null; outcomeNote: string | null; closedOn: string | null;
@@ -284,40 +283,22 @@ function CaseCardView({ c, row, onChanged }: {
           )}
           {c.summary && <p className="text-sm text-slate-300 m-0 leading-relaxed">{c.summary}</p>}
 
-          {/* NHÓM Ý THỨC/KHÁC: bằng chứng là BÁO CÁO NGUỒN, không phải một con điểm. */}
-          {c.behaviour && c.reports.length > 0 && (
-            <div className="rounded-lg border px-2.5 py-2" style={{ borderColor: 'var(--line)' }}>
-              <span className="block text-[10px] uppercase tracking-wide text-slate-500 mb-1">
-                Báo cáo nguồn · {c.reports.length} lần
-              </span>
-              <ul className="list-none p-0 m-0 space-y-1">
-                {c.reports.map((r, i) => (
-                  <li key={i} className="text-xs text-slate-300">
-                    <span className="text-slate-500 tabular-nums">{fmtDate(r.on)}</span>
-                    {r.by && <span className="text-slate-500"> · {r.by}</span>}
-                    <span className="block text-slate-400">{r.summary}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-
           {/* MỖI PHƯƠNG ÁN MỘT DÒNG — nhiều phương án song song thì nhiều dòng, mỗi dòng đóng/mở riêng. */}
           {c.plans.length === 0 ? (
             <p className="text-xs text-amber-200/90 m-0">Chưa có phương án nào — case này đang chờ người quyết.</p>
           ) : (
             <div className="rounded-lg border px-2.5 py-2" style={{ borderColor: 'var(--line)' }}>
               {c.plans.map((p) => (
-                <PlanRow key={p.id} p={p} track={c.track} canEdit={c.canEdit} onChanged={onChanged} />
+                <PlanRow key={p.id} p={p} canEdit={c.canEdit} onChanged={onChanged} />
               ))}
             </div>
           )}
 
           {/*
             BẰNG CHỨNG CỦA CASE (CASE-04, PR-N): tệp hoặc liên kết gắn với CHÍNH case này. Một khối riêng có trạng thái
-            riêng — lỗi tải tệp không đụng tới ô nào đang nhập ở thẻ này. Case Ý thức không có khối này (không còn case Ý thức).
+            riêng — lỗi tải tệp không đụng tới ô nào đang nhập ở thẻ này.
           */}
-          {!c.behaviour && <BangChung ownerType="sos_case" ownerId={c.id} canEdit={c.canEdit} tieuDe="Bằng chứng của case" />}
+          <BangChung ownerType="sos_case" ownerId={c.id} canEdit={c.canEdit} tieuDe="Bằng chứng của case" />
 
           {/* Kết luận của case đã hoàn thành — đọc lại được, không bị giấu. */}
           {c.status === 'done' && (c.outcomeLabel || c.outcomeNote) && (
@@ -378,9 +359,9 @@ function CaseCardView({ c, row, onChanged }: {
           </div>
 
           <ActionDialog open={adding} onClose={() => setAdding(false)} caseId={c.id}
-            track={c.track ?? 'academic'} onDone={() => onChanged?.()} />
+            onDone={() => onChanged?.()} />
           <OutcomeDialog open={completing} onClose={() => setCompleting(false)} caseId={c.id}
-            track={c.track ?? 'academic'} category={row.category} categoryLabel={row.label}
+            category={row.category} categoryLabel={row.label}
             ratio={row.ratio} onDone={() => onChanged?.()} />
         </div>
       )}
@@ -398,14 +379,12 @@ function CaseCardView({ c, row, onChanged }: {
  * Hạn LÀM và hạn DỰ KIẾN XONG vẫn là hai mốc khác nhau và vẫn có nhãn riêng — gộp thành
  * "hạn 30/08" thì người đọc không biết mình đang trễ việc gì.
  */
-function PlanRow({ p, track, canEdit, onChanged }: {
-  p: Plan; track: string; canEdit: boolean; onChanged?: () => void;
+function PlanRow({ p, canEdit, onChanged }: {
+  p: Plan; canEdit: boolean; onChanged?: () => void;
 }) {
   const [editing, setEditing] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const running = p.status === 'planned' || p.status === 'started';
-  /* Việc TRAO ĐỔI (gặp em, gọi phụ huynh) không có kết quả chuyên môn — chỉ xác nhận đã làm. */
-  const contact = isContactKind(p.kind);
   const historyId = `plan-${p.id}-history`;
   /* Mới nhất lên trên: người mở hỏi "giờ đang thế nào", không hỏi "tháng trước bắt đầu ra sao". */
   const updates = [...p.updates].reverse();
@@ -431,7 +410,7 @@ function PlanRow({ p, track, canEdit, onChanged }: {
             {p.performer ?? 'chưa có người thực hiện'}
             {p.startedOn && <> · từ {fmtDate(p.startedOn)}</>}
             {p.completedOn && <> → {fmtDate(p.completedOn)}</>}
-            {running && !contact && !p.lastOutcomeLabel && <> · chưa có kết quả</>}
+            {running && !p.lastOutcomeLabel && <> · chưa có kết quả</>}
           </span>
         </div>
 
@@ -452,15 +431,10 @@ function PlanRow({ p, track, canEdit, onChanged }: {
                   <span className="text-slate-500"> · {fmtDate(p.lastOutcomeOn)}</span>
                 </span>
               )}
-              {contact && !running && !p.lastOutcomeLabel && (
-                <span className="text-[11px] text-slate-400">
-                  {p.statusLabel}{p.completedOn ? ` · ${fmtDate(p.completedOn)}` : ''}
-                </span>
-              )}
               {running && <PlanDue p={p} />}
               {running && canEdit && !editing && (
                 <button type="button" className="btn btn-sm" onClick={() => setEditing(true)}>
-                  {contact ? 'Đánh dấu đã làm' : 'Ghi kết quả'}
+                  Ghi kết quả
                 </button>
               )}
             </>
@@ -505,7 +479,7 @@ function PlanRow({ p, track, canEdit, onChanged }: {
       )}
 
       {editing && (
-        <InlineResult p={p} track={track} contact={contact}
+        <InlineResult p={p}
           onClose={() => setEditing(false)} onDone={() => onChanged?.()} />
       )}
     </div>
@@ -546,8 +520,8 @@ function PlanDue({ p }: { p: Plan }) {
  * KHÔNG CÓ Ô ĐIỂM TỰ CHẤM (CASE-05): bốn kỹ năng L/R/W/S cho một case Listening là vô lý. Điểm
  * tự chấm đã lưu từ trước vẫn đọc được.
  */
-function InlineResult({ p, track, contact, onClose, onDone }: {
-  p: Plan; track: string; contact: boolean;
+function InlineResult({ p, onClose, onDone }: {
+  p: Plan;
   onClose: () => void; onDone: () => void;
 }) {
   const { session } = useSession();
@@ -562,12 +536,12 @@ function InlineResult({ p, track, contact, onClose, onDone }: {
   const [full, setFull] = useState(false);
 
   const ending = mode === 'end';
-  const outcomes = outcomesFor(track).filter((o) => !ending || canEndWithOutcome(o));
+  const outcomes = FOLLOWUP_OUTCOMES.filter((o) => !ending || canEndWithOutcome(o));
   /* Kết thúc suông chỉ dành cho kết quả tốt; kết quả chưa tốt phải nói đi tiếp thế nào. */
   const goodOutcome = outcome === 'improved' || outcome === 'partial';
   const mustContinue = ending && !!outcome && !goodOutcome;
   const noteOk = note.trim().length >= 8;
-  const ready = contact ? true : !!outcome && noteOk && !mustContinue;
+  const ready = !!outcome && noteOk && !mustContinue;
 
   const pickMode = (m: 'monitor' | 'end') => {
     setMode(m);
@@ -578,11 +552,7 @@ function InlineResult({ p, track, contact, onClose, onDone }: {
   const save = async () => {
     setBusy(true);
     try {
-      if (contact) {
-        await api.post(`/interventions/${p.id}/complete`, {
-          doneOn: on, note: note.trim() || null,
-        });
-      } else if (ending) {
+      if (ending) {
         await api.post(`/interventions/${p.id}/result`, {
           mode: 'end', outcome, note, observedOn: on, completedOn: endOn, nextStep: 'complete',
         });
@@ -593,9 +563,7 @@ function InlineResult({ p, track, contact, onClose, onDone }: {
       }
       invalidate('/cases'); invalidate('/my-work');
       invalidate('/students'); invalidate('/overview');
-      toast.push('ok', contact ? 'Đã ghi nhận'
-        : ending ? 'Đã kết thúc phương án'
-        : 'Đã ghi kết quả — phương án vẫn đang chạy');
+      toast.push('ok', ending ? 'Đã kết thúc phương án' : 'Đã ghi kết quả — phương án vẫn đang chạy');
       onDone(); onClose();
     } catch (e: any) {
       toast.push('error', e?.message ?? 'Không lưu được');
@@ -604,40 +572,32 @@ function InlineResult({ p, track, contact, onClose, onDone }: {
 
   return (
     <div className="rounded-lg mt-2 ml-5 p-2.5 space-y-2" style={{ background: 'var(--surface-1)' }}>
-      {!contact && (
-        <div className="flex flex-wrap gap-1.5" role="group" aria-label="Cách ghi">
-          <button type="button" aria-pressed={!ending}
-            className={`btn btn-sm ${!ending ? 'btn-primary' : ''}`} onClick={() => pickMode('monitor')}>
-            Ghi kết quả, tiếp tục theo dõi
-          </button>
-          <button type="button" aria-pressed={ending}
-            className={`btn btn-sm ${ending ? 'btn-primary' : ''}`} onClick={() => pickMode('end')}>
-            Kết thúc phương án
-          </button>
-        </div>
-      )}
+      <div className="flex flex-wrap gap-1.5" role="group" aria-label="Cách ghi">
+        <button type="button" aria-pressed={!ending}
+          className={`btn btn-sm ${!ending ? 'btn-primary' : ''}`} onClick={() => pickMode('monitor')}>
+          Ghi kết quả, tiếp tục theo dõi
+        </button>
+        <button type="button" aria-pressed={ending}
+          className={`btn btn-sm ${ending ? 'btn-primary' : ''}`} onClick={() => pickMode('end')}>
+          Kết thúc phương án
+        </button>
+      </div>
 
-      {!contact && (
-        <>
-          <span className="block text-[11px] text-slate-400">Chu kỳ vừa rồi em thế nào</span>
-          <div className="flex flex-wrap gap-1.5">
-            {outcomes.map((o) => (
-              <button key={o} type="button"
-                className={`btn btn-sm ${outcome === o ? 'btn-primary' : ''}`}
-                onClick={() => setOutcome(o)}>
-                {OUTCOME_MARK[o] ?? ''} {outcomeLabelFor(track, o)}
-              </button>
-            ))}
-          </div>
-        </>
-      )}
+      <span className="block text-[11px] text-slate-400">Chu kỳ vừa rồi em thế nào</span>
+      <div className="flex flex-wrap gap-1.5">
+        {outcomes.map((o) => (
+          <button key={o} type="button"
+            className={`btn btn-sm ${outcome === o ? 'btn-primary' : ''}`}
+            onClick={() => setOutcome(o)}>
+            {OUTCOME_MARK[o] ?? ''} {outcomeLabelFor(o)}
+          </button>
+        ))}
+      </div>
 
       <textarea className="field w-full" rows={2} value={note}
         onChange={(e) => setNote(e.target.value)}
-        placeholder={contact
-          ? 'Đã trao đổi những gì (không bắt buộc)'
-          : 'Tiến bộ ở đâu, còn kẹt chỗ nào, tuần tới làm gì'} />
-      {!contact && note.length > 0 && !noteOk && (
+        placeholder="Tiến bộ ở đâu, còn kẹt chỗ nào, tuần tới làm gì" />
+      {note.length > 0 && !noteOk && (
         <span className="block text-[11px] text-rose-300">
           Ghi chú phải nói rõ quan sát được gì — ít nhất 8 ký tự.
         </span>
@@ -655,7 +615,7 @@ function InlineResult({ p, track, contact, onClose, onDone }: {
       <div className="flex flex-wrap items-center justify-between gap-2">
         <span className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
           <label className="flex items-center gap-1.5 text-[11px] text-slate-400">
-            {contact ? 'Ngày làm' : 'Ngày ghi'}
+            Ngày ghi
             <input type="date" className="field" style={{ width: '9.5rem' }}
               value={on} max={today} onChange={(e) => setOn(e.target.value)} />
           </label>
@@ -671,22 +631,20 @@ function InlineResult({ p, track, contact, onClose, onDone }: {
           <button type="button" className="btn btn-sm" onClick={onClose} disabled={busy}>Huỷ</button>
           <button type="button" className="btn btn-sm btn-primary"
             disabled={busy || !ready || (ending && !endOn)} onClick={save}>
-            {busy ? 'Đang lưu…' : contact ? 'Lưu' : ending ? 'Kết thúc phương án' : 'Lưu, tiếp tục theo dõi'}
+            {busy ? 'Đang lưu…' : ending ? 'Kết thúc phương án' : 'Lưu, tiếp tục theo dõi'}
           </button>
         </span>
       </div>
 
-      {!contact && (
-        <p className="text-[11px] text-slate-500 m-0">
-          {ending
-            ? 'Phương án đóng lại. Case chỉ hoàn thành được khi mọi phương án đã khép.'
-            : <>Lưu xong phương án <strong>vẫn đang chạy</strong>; lần cập nhật sau đến hạn vào Chủ nhật kế tiếp.</>}
-        </p>
-      )}
+      <p className="text-[11px] text-slate-500 m-0">
+        {ending
+          ? 'Phương án đóng lại. Case chỉ hoàn thành được khi mọi phương án đã khép.'
+          : <>Lưu xong phương án <strong>vẫn đang chạy</strong>; lần cập nhật sau đến hạn vào Chủ nhật kế tiếp.</>}
+      </p>
 
       <ResultDialog
         iv={full ? { id: p.id, kind: p.kind, description: p.name, actionDue: p.actionDue, followupDue: p.followupDue } : null}
-        track={track} startMode="end"
+        startMode="end"
         onClose={() => setFull(false)}
         onDone={() => { onDone(); onClose(); }} />
     </div>
@@ -828,7 +786,7 @@ function Trend({ row }: { row: Row }) {
   if (!pts.length) {
     return (
       <span className="block text-[10px] text-slate-600">
-        {row.category === 'behaviour' ? 'không chấm điểm' : 'chưa có điểm'}
+        chưa có điểm
       </span>
     );
   }

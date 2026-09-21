@@ -73,7 +73,7 @@ Phiên bản 1.0 · 21/09/2026 · **Sổ tra cứu, không phải sổ giao vi�
 | Góc nhìn **`Giáo viên`** (§6 đầy đủ) | ❌ Chưa làm | Không có màn nào. Chốt 21/09: **hoãn sau deploy bản chính** — xem mục 10 | *hoãn* |
 | `Theo tuần`: bảng tháng, hàng tuần mở/thu, nhóm cột `Kết quả Test` và `Tình trạng xử lý hiện nay` | 🟡 Một phần | `WeeklyBoard.tsx` + `weekly.ts` có bảng tuần. **DATA-01 đã đóng từ PR-F; PR-N thêm** danh sách khi bấm số (`weeklyDrill`, `GET /weekly-rollup/ids`) và "HV có case" đếm duy nhất theo tháng/cả bảng (demo: 20, không phải 22). Thiếu: nhóm cột phân cách, chọn cột, nối ô vào panel | PR-P |
 | Không gọi cột trạng thái hiện tại là "tại cuối tuần trước" | ✅ Đã làm | Rule book §11 đã áp trong PR-H | — |
-| Cột kỹ năng gồm `Ý thức/Khác` | ⚰️ Hết hiệu lực | Rule mới 21/09: Ý thức không còn là vấn đề theo kỹ năng. Thành **góc nhìn riêng** | **PR-K** |
+| Cột kỹ năng gồm `Ý thức/Khác` | ⚰️ Hết hiệu lực — **đã gỡ khỏi mã (PR-J)** | Rule mới 21/09: Ý thức không còn là vấn đề theo kỹ năng. Thành **góc nhìn riêng** | **PR-J ✅** · thay bằng tab riêng ở **PR-K** |
 
 ---
 
@@ -94,7 +94,7 @@ Phiên bản 1.0 · 21/09/2026 · **Sổ tra cứu, không phải sổ giao vi�
 | Ba trạng thái tách bạch `Nháp / Đã nộp / Chưa báo cáo`; nháp không tính đã báo cáo (D04) | ❌ Chưa làm | Bảng `unit_reports` + `unit_report_history` đã có chỗ lưu, luồng nháp chưa dựng | **PR-R** |
 | `Chưa báo cáo` không được viết là `Ổn` | ✅ Đã làm | Đã đổi chữ trong PR-H, có ghi ở `TU_DIEN_VA_CHU.md` §3 | — |
 | Liên kết báo cáo ↔ task **thật** (F06) | ❌ Chưa làm | `meetingBoard` vẫn gợi ý theo "cùng nhóm + cùng CN", không phải quan hệ tường minh. Nếu giữ gợi ý thì phải gọi `Việc cùng nhóm` | **PR-R** |
-| Hai nhóm việc Ý thức trong hàng công việc | ⚰️ Hết hiệu lực | Rule mới: thay bằng **một dòng nhắc** `N học viên có vi phạm chưa xử lý quá 5 ngày` | **PR-K** |
+| Hai nhóm việc Ý thức trong hàng công việc | ⚰️ Hết hiệu lực — **hai nhóm đã xoá (PR-J)** | Rule mới: thay bằng **một dòng nhắc** `N học viên có vi phạm chưa xử lý quá 5 ngày` | **PR-J ✅** xoá · dòng nhắc mới ở **PR-K** (hàm `myWarningLines` đã có) |
 
 ---
 
@@ -109,7 +109,7 @@ Phiên bản 1.0 · 21/09/2026 · **Sổ tra cứu, không phải sổ giao vi�
 | Đổi badge `case SOS` thành nhãn chính xác với tập đếm | ❌ Chưa làm | Vẫn còn cách gọi cũ; case còn mở **không** đồng nghĩa em hiện vẫn SOS | **PR-Q** |
 | Bỏ dòng hướng dẫn `Lớp là gốc…` và chân trang `badge chỉ xuất hiện…` | 🟡 Một phần | Đã ghi vào `TU_DIEN_VA_CHU.md` §2 để bỏ; `plan.md` 12.11 nói chưa quét từng màn | **PR-S** |
 | Lớp mặc định thu gọn khi danh sách dài; tìm kiếm tự mở lớp chứa kết quả | ❌ Chưa làm | — | **PR-Q** |
-| **Hồ sơ lớp: 4 tab** `Học viên \| Ý thức \| Phân tích lớp \| Giáo viên` (chốt 21/09) | ❌ Chưa làm | `ClassOverviewPage.tsx` có **2 tab** `Học thuật \| Ý thức`, và đó là hai *dạng xem bảng học viên*, không phải 4 tab | **PR-Q** |
+| **Hồ sơ lớp: 4 tab** `Học viên \| Ý thức \| Phân tích lớp \| Giáo viên` (chốt 21/09) | ❌ Chưa làm | `ClassOverviewPage.tsx` **không còn tab nào** (PR-J xoá dạng xem "Ý thức" cũ cùng `ClassBehaviourBoard.tsx`; danh sách học viên đứng một mình); 4 tab chưa dựng | **PR-Q** |
 | `Lộ trình` và `Chuyển tiếp lớp` là **nút ở header**, không phải tab (chốt 21/09) | ❌ Chưa làm | Hiện là mục menu riêng. §22.2 đòi bỏ màn trung gian `Thông tin lớp` | **PR-Q** |
 | Danh sách HV là nội dung chính mặc định; phân tích lớp không chiếm màn đầu | 🟡 Một phần | Cần kiểm lại sau khi dựng 4 tab | **PR-Q** |
 | Tab Giáo viên dùng chung form Phân công, không hai bộ form | ❌ Chưa làm | `TeacherAssignPanel.tsx` tồn tại; chưa nối thành tab | **PR-Q** |
@@ -139,10 +139,10 @@ Phiên bản 1.0 · 21/09/2026 · **Sổ tra cứu, không phải sổ giao vi�
 | Thanh chặng gọn: vào lớp → Test → hỗ trợ → chuyển tiếp | ❌ Chưa làm | — | **PR-Q** |
 | `Các mốc đã qua` đổi thành `Mốc học tập` | 🟡 Một phần | Trong bảng chữ; chưa xác nhận đã áp | **PR-S** |
 | Mốc Test trên hành trình bấm được | ❌ Chưa làm | Mốc chỉ có `title` tooltip, không có `onClick` (`plan.md` 12.5) | **PR-R** |
-| Bỏ ô điểm cho Ý thức/Khác, thay bằng nguồn báo cáo và tình trạng xử lý | ⚰️ Hết hiệu lực | Rule mới: Ý thức thành **tab riêng** với dòng thời gian vi phạm + biện pháp | **PR-K** |
-| Ý thức hiện `đợt xử lý/tái diễn`, `deadline`, `kết luận` | ⚰️ Hết hiệu lực | Không còn đợt, không còn deadline, không còn kết luận | **PR-K** |
+| Bỏ ô điểm cho Ý thức/Khác, thay bằng nguồn báo cáo và tình trạng xử lý | ⚰️ Hết hiệu lực — **mã đã gỡ (PR-J)** | Rule mới: Ý thức thành **tab riêng** với dòng thời gian vi phạm + biện pháp | **PR-K** |
+| Ý thức hiện `đợt xử lý/tái diễn`, `deadline`, `kết luận` | ⚰️ Hết hiệu lực — **mã đã gỡ (PR-J)** | Không còn đợt, không còn deadline, không còn kết luận | **PR-K** |
 | **CASE-04** — đính kèm tệp / liên kết bằng chứng cho case và phương án học thuật | ✅ Đã làm | PR-N N5–N6. Một bảng `attachments` dùng chung, khối `BangChung` gắn ở thẻ case và lịch sử phương án. Quyền xem = quyền xem bản ghi chủ ở mọi đường (danh sách, tải, gỡ); thêm/gỡ = quyền sửa case (C02); thêm và gỡ có audit; lỗi tải tệp hiện ở dòng tệp, không mất mô tả đang gõ. 9/10 lần cố ý làm hỏng bị bắt, lần còn lại là lớp phòng thủ thừa (đã thêm phép khoá tính chất an toàn). Bấm thử ở ba vai (Quản trị, Quản lý, GV bộ môn) + màn 375px. **Đường multer/tải về không có phép kiểm HTTP** — chỉ kiểm bằng trình duyệt thật | — |
-| Đính kèm tệp/liên kết cho **vi phạm** và **biện pháp xử lý** (Thư cảnh cáo, Đình chỉ học bắt buộc có) | 🟡 Một phần | Kho và khối `BangChung` đã sẵn, hai loại chủ đã được khai tên nhưng **bị từ chối cho tới khi có bản ghi chủ** (có phép kiểm khoá). PR-J chỉ phải thêm dòng quyền chủ + gắn khối; không dựng kho thứ hai | **PR-J**, **PR-K** |
+| Đính kèm tệp/liên kết cho **vi phạm** và **biện pháp xử lý** (Thư cảnh cáo, Đình chỉ học bắt buộc có) | 🟡 Một phần | **Máy chủ ✅ PR-J:** hai loại chủ đã có nơi chủ (`yThuc/access.ts`); quyền xem = quyền xem học viên, thêm/gỡ = quyền sửa vi phạm (người ghi · GVCN · Quản lý) hoặc xử lý biện pháp (GVCN · Quản lý); biện pháp đã thực hiện vẫn bổ sung tệp được; thư cảnh cáo và đình chỉ học **không xác nhận được nếu thiếu tệp/liên kết** (máy chủ nói đúng câu, phép kiểm HTTP). **Còn thiếu:** gắn khối `BangChung` vào giao diện vi phạm/biện pháp | **PR-K** |
 
 ---
 
@@ -183,8 +183,12 @@ Phiên bản 1.0 · 21/09/2026 · **Sổ tra cứu, không phải sổ giao vi�
 | **DATA-01 (P0)** — `weekly.ts` lọc scope ở tập đợt thi, nhưng phép đếm case/HV sau đó chỉ lọc `planned_period_id` | ✅ Đã làm | **Đã đóng từ PR-F** (chặng 2, commit `012d9f8`, phép kiểm F01) — bảng này từng ghi nhầm "chưa làm". PR-N khoá thêm ở tầng danh sách: 2 phép kiểm (số = độ dài tập; danh sách của Quản lý MB không chứa bản ghi CP) | — |
 | `<KetQuaDot>` và `<TyLe>` được màn thật dùng | ❌ Chưa làm | Có luật, có phép kiểm, có trang thử — **chưa màn nào dùng**. Các màn cũ còn tự vẽ câu riêng | **PR-P**, **PR-Q** |
 | `GET /metrics/:id` không trả `ids` khi không xin `rows=1` | ✅ Đã làm | PR-N N4: `metricResponse`; phép kiểm chạy đủ 12 chỉ số, và cố ý làm hỏng (trả `ids` khi không xin) thì gãy | — |
-| Chỉ số `Tái diễn Ý thức` | ⚰️ Hết hiệu lực | Không còn đợt. Thay bằng **tám chỉ số mới** ở `Y_THUC_VI_PHAM_VA_BIEN_PHAP.md` §8 | **PR-J** |
-| Ba chỉ số `hv-co-case-mo`, `case-mo`, `case-thieu-pa` phải sửa định nghĩa thành "chỉ case học thuật" | ❌ Chưa làm | — | **PR-J** |
+| Chỉ số `Tái diễn Ý thức` | ⚰️ Hết hiệu lực | Không còn đợt. **Đã thay bằng tám chỉ số mới (PR-J)** — sổ nay có 20 chỉ số; mỗi chỉ số một hàm trả tập ID, phép kiểm so với SQL độc lập; bấm số ra đúng danh sách qua `GET /metrics/:id?rows=1` | **PR-J ✅** |
+| **Gỡ mô hình Case Ý thức** (checklist 36 file, §9.1–§9.3 của đặc tả) | ✅ Đã làm ở máy chủ và bộ demo; 🟡 giao diện chỉ gỡ phần bắt buộc | Không còn cột `track`/`episode_no`/`merge_until`, bảng `case_reports`, `CONTACT_KINDS`, `BEHAVIOUR_*`; `CASE_CATEGORIES` 6 → 5. Database cũ được nâng cấp (báo cáo → vi phạm, việc trao đổi → biện pháp; `warning_letter` cũ → loại Khác, **không** bịa Thư 1/2/3). Web: gỡ nhánh `behaviour` ở `QuickReport`, `CasePanel`, `SkillBoard`, `JourneyTimeline`, `CaseBoardPage`, `ManagerTasks`, `ClassOverviewPage`; xoá `ClassBehaviourBoard.tsx`. Phép kiểm quét mã: chữ `behaviour` chỉ còn một dòng có ghi ngày | **PR-J ✅** · rà bằng mắt ở **PR-K** (K9) |
+| Bộ demo Ý thức đủ 18 tình huống; hai tệp demo cũ thành một `DEMO.md` | ✅ Đã làm | `server/src/seed/yThucSeed.ts` + mười tám phép kiểm soi chính dữ liệu demo (phần "PR-J · 0"); bốn lần cố ý làm hỏng dữ liệu đều bị bắt | **PR-J ✅** |
+| Case học thuật mức **Gấp** trong bộ demo | ✅ Đã làm | Trước PR-J chỉ có case mức Gấp ở phía Ý thức; đã gán cho case Speaking tái diễn của Lê Quang Huy để tình huống 12 còn dựng được | **PR-J ✅** |
+| Danh sách `sos_open` khớp huy hiệu số case ở bảng lớp | ✅ Đã sửa | Lệch sẵn từ trước (danh sách không đòi mức SOS > 0), bị case Ý thức tự sinh che; lộ ra khi gỡ Ý thức | **PR-J ✅** |
+| Ba chỉ số `hv-co-case-mo`, `case-mo`, `case-thieu-pa` phải sửa định nghĩa thành "chỉ case học thuật" | ✅ Đã làm | Lời định nghĩa đã sửa và, sau khi PR-J gỡ Ý thức khỏi dữ liệu và mã (không còn cột `track`, không còn case Ý thức), **bộ lọc trong mã thật sự chỉ còn case học thuật**; phép kiểm "Ý thức nằm ngoài mọi bảng hiệu quả" khoá điều đó | **PR-J ✅** |
 
 ---
 

@@ -1,6 +1,6 @@
 import { db } from '../db.ts';
 import {
-  BEHAVIOUR_TOPICS, BEHAVIOUR_TOPIC_LABEL, CASE_CATEGORY_LABEL, CASE_CATEGORY_SHORT,
+  CASE_CATEGORY_LABEL, CASE_CATEGORY_SHORT,
   PERMISSIONS, SOS_LABEL,
 } from '../../../shared/domain/index.ts';
 import { scopeFor, type Principal } from '../permissions.ts';
@@ -27,7 +27,7 @@ export type SummaryColumn = {
   key: string;
   label: string;
   /** Nhóm cột, để bật/tắt theo cụm và để gộp tiêu đề. */
-  group: 'sos' | 'skill' | 'behaviour' | 'total';
+  group: 'sos' | 'skill' | 'total';
   hint?: string;
 };
 
@@ -62,7 +62,7 @@ export const SUMMARY_PRESETS = [
   },
   {
     key: 'skills', label: 'Theo kỹ năng',
-    columns: ['openCases', ...SUMMARY_SKILLS.map((s) => `skill_${s}`), 'behaviour'],
+    columns: ['openCases', ...SUMMARY_SKILLS.map((s) => `skill_${s}`)],
   },
   { key: 'all', label: 'Tất cả', columns: [] as string[] },
 ] as const;
@@ -70,7 +70,7 @@ export const SUMMARY_PRESETS = [
 /**
  * Thứ tự cột của bộ "Tất cả", đúng như owner liệt kê ở mục 10.6:
  *
- *   Chi nhánh/Lớp · Case · SOS 3 · SOS 2 · SOS 1 · L · R · W1 · W2 · W · S · Ý thức ·
+ *   Chi nhánh/Lớp · Case · SOS 3 · SOS 2 · SOS 1 · L · R · W1 · W2 · W · S ·
  *   Đang xử lý · Thiếu phương án · Quá hạn cập nhật · Chờ duyệt
  *
  * Sáu cột môn chứ không năm: W của lớp Normal đứng riêng, không gộp vào W2 của Fast Track.
@@ -99,10 +99,6 @@ export function summaryColumns(): SummaryColumn[] {
         ? `Case ${CASE_CATEGORY_LABEL[s]} — chỉ lớp Fast Track mới có hai bài Writing riêng`
         : `Case Học thuật ở ${CASE_CATEGORY_LABEL[s]} — tổng / chưa có phương án`,
     })),
-    {
-      key: 'behaviour', label: 'Ý thức', group: 'behaviour',
-      hint: BEHAVIOUR_TOPICS.map((t) => BEHAVIOUR_TOPIC_LABEL[t]).join(' · '),
-    },
     { key: 'working', label: 'Đang xử lý', group: 'total', hint: 'Case đã có phương án và đang theo dõi' },
     { key: 'noPlan', label: 'Thiếu phương án', group: 'total', hint: 'Case chưa ai ghi sẽ làm gì cho em' },
     { key: 'overdueReview', label: 'Cần cập nhật', group: 'total',
@@ -289,11 +285,6 @@ export function branchSummary(p: Principal, f: { branchId?: number | null } = {}
       sos3: { value: sosStudents(3), href: q('&hang-doi=review') },
       sos2: { value: sosStudents(2) },
       sos1: { value: sosStudents(1) },
-      behaviour: {
-        value: open.filter((c) => c.track === 'behaviour').length,
-        of: open.filter((c) => c.track === 'behaviour' && c.state === 'no_plan').length,
-        href: q('&nhom=behaviour'),
-      },
       reported: { value: open.filter((c) => c.originKind === 'teacher_report').length },
       openCases: {
         value: open.length,

@@ -1,10 +1,10 @@
 import { db } from '../db.ts';
 import {
-  ASSESSED_SKILL_LABEL, ATTEMPT_KIND_SHORT, CONTACT_KIND_SHORT, ENTRY_SKILL_LABEL,
+  ASSESSED_SKILL_LABEL, ATTEMPT_KIND_SHORT, ENTRY_SKILL_LABEL,
   INTERVENTION_KIND_LABEL, PERMISSIONS,
-  isContactKind, REGULAR_SKILL_LABEL, SOS_LABEL, URGENCY_LABEL, caseHeadline, cycleDeadline,
+  REGULAR_SKILL_LABEL, SOS_LABEL, URGENCY_LABEL, caseHeadline, cycleDeadline,
   planDueDate, urgencyFromSos,
-  type AssessedSkill, type AttemptKind, type ContactKind, type EntrySkill, type InterventionKind,
+  type AssessedSkill, type AttemptKind, type EntrySkill, type InterventionKind,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { diffDays } from '../util.ts';
@@ -255,10 +255,8 @@ export function myWork(p: Principal, f: { branchId?: number | null } = {}) {
       classId: sg.classId, classCode: sg.classCode,
       attemptId: sg.attemptId, attemptNo: sg.attemptNo, caseId: null,
       level: sg.sosLevel !== null ? { tone: sosTone(sg.sosLevel), text: SOS_LABEL[sg.sosLevel as 0 | 1 | 2 | 3] } : null,
-      reason: sg.track === 'behaviour'
-        ? `Em vừa có ${SOS_LABEL[(sg.sosLevel ?? 0) as 0 | 1 | 2 | 3]}. Xem tình hình chung của em và ghi nhận nhận định.`
-        : `${sg.label} dưới kỳ vọng${sg.band !== null ? ` (${sg.band} so với ${sg.expectation ?? '—'})` : ''}.`
-          + ' Xem lại bài rồi xác minh.',
+      reason: `${sg.label} dưới kỳ vọng${sg.band !== null ? ` (${sg.band} so với ${sg.expectation ?? '—'})` : ''}.`
+        + ' Xem lại bài rồi xác minh.',
       actionLabel: 'Mở case',
       overdueLabel: badge('verify', u),
       href: `/hoc-vien/${sg.studentId}`,
@@ -483,7 +481,7 @@ export function myWork(p: Principal, f: { branchId?: number | null } = {}) {
 
   // ------------------------------------- 2b. phương án đã lên kế hoạch mà tới hạn làm
   /*
-   * MỐC THỨ NHẤT trong hai mốc owner giữ: hạn LÀM XONG phương án, 3/5/7 ngày theo mức SOS.
+   * MỐC THỨ NHẤT trong hai mốc owner giữ: hạn LÀM XONG phương án.
    * (Mốc thứ hai là hạn BÁO KẾT QUẢ của cả case, nằm ở nhóm "Kết quả sau hỗ trợ".)
    *
    * Chỉ hiện việc ĐÃ TỚI HẠN hoặc quá hạn — bày ra từ ngày đầu thì danh sách lúc nào cũng
@@ -496,7 +494,7 @@ export function myWork(p: Principal, f: { branchId?: number | null } = {}) {
     .prepare(
       `SELECT iv.id, iv.case_id, iv.kind, iv.description, iv.action_due,
               iv.performer_user_id, iv.performer_name,
-              sc.track, sc.topic, sc.category, sc.attempt_id, sc.sos_level,
+              sc.topic, sc.category, sc.attempt_id, sc.sos_level,
               COALESCE(sc.student_id, a.student_id) AS eff_student_id,
               COALESCE(a.class_id, cur.class_id) AS eff_class_id,
               s.full_name, cl.code AS class_code, cl.branch_id, a.attempt_no
@@ -517,30 +515,15 @@ export function myWork(p: Principal, f: { branchId?: number | null } = {}) {
     if (f.branchId && iv.branch_id !== f.branchId) continue;
     if (!can(p, PERMISSIONS.SOS_EDIT, {
       classId: iv.eff_class_id, studentId: iv.eff_student_id,
-      skill: iv.track === 'academic' ? iv.topic ?? undefined : undefined,
+      skill: iv.topic ?? undefined,
     })) continue;
     /*
-     * AI THẤY VIỆC NÀY:
-     *   gặp học viên        → người ĐANG DẠY em
-     *   gọi phụ huynh       → Quản lý hoặc GVCN
-     *   phương án học thuật → người đang dạy em
-     * Quản lý thấy hết, vì họ là người đôn đốc khi có ai đó quên.
-     *
-     * Việc gọi phụ huynh trước PR15 thuộc Admin chi nhánh. Vai đó đã bỏ, và quyền sửa hồ sơ
-     * học viên nay chỉ nằm ở Quản lý và GVCN — đúng hai người được phép xử lý phương án
-     * Ý thức/Khác. Nên phép kiểm dưới đây không đổi câu chữ mà vẫn ra đúng người: GVBM
-     * không sửa được hồ sơ thì cũng không bị giao việc gọi phụ huynh.
+     * AI THẤY VIỆC NÀY: người ĐANG DẠY em. Quản lý thấy hết, vì họ là người đôn đốc khi có ai đó quên.
      */
     const isManager = can(p, PERMISSIONS.CASE_APPROVE, { classId: iv.eff_class_id, studentId: iv.eff_student_id });
-    if (!isManager) {
-      const mine = iv.kind === 'talk_parent'
-        ? can(p, PERMISSIONS.STUDENT_EDIT, { classId: iv.eff_class_id, studentId: iv.eff_student_id })
-        : teachesClass(p, iv.eff_class_id);
-      if (!mine) continue;
-    }
+    if (!isManager && !teachesClass(p, iv.eff_class_id)) continue;
     const u = urgencyOf(iv.action_due, today);
-    const what = CONTACT_KIND_SHORT[iv.kind as ContactKind]
-      ?? INTERVENTION_KIND_LABEL[iv.kind as keyof typeof INTERVENTION_KIND_LABEL]
+    const what = INTERVENTION_KIND_LABEL[iv.kind as keyof typeof INTERVENTION_KIND_LABEL]
       ?? iv.kind;
     items.push({
       key: `action:${iv.id}`, group: 'do_plan', urgency: u,
@@ -551,7 +534,7 @@ export function myWork(p: Principal, f: { branchId?: number | null } = {}) {
       contextLabel: iv.attempt_no ? `MT${iv.attempt_no}` : 'Case',
       count: null,
       reason: what + (u === 'overdue' ? ` — ${lateText(iv.action_due, today)}` : ''),
-      actionLabel: isContactKind(iv.kind) ? 'Xác nhận đã trao đổi' : 'Đánh dấu đã làm',
+      actionLabel: 'Đánh dấu đã làm',
       overdueLabel: badge('do_plan', u),
       href: iv.eff_student_id ? `/hoc-vien/${iv.eff_student_id}` : `/hoc-thuat/case/${iv.case_id}`,
       /*
@@ -617,7 +600,7 @@ export function myWork(p: Principal, f: { branchId?: number | null } = {}) {
     .prepare(
       `SELECT iv.id, iv.case_id, iv.kind, iv.description, iv.followup_due,
               COALESCE(iv.performer_user_id, iv.recorded_by) AS owner_id,
-              sc.track, sc.topic, sc.sos_level, sc.urgency, sc.summary, sc.origin_kind, sc.attempt_id,
+              sc.topic, sc.sos_level, sc.urgency, sc.summary, sc.origin_kind, sc.attempt_id,
               COALESCE(sc.student_id, a.student_id) AS eff_student_id,
               COALESCE(a.class_id, cur.class_id) AS eff_class_id,
               COALESCE(ac.branch_id, cc.branch_id) AS eff_branch_id,
@@ -648,7 +631,7 @@ export function myWork(p: Principal, f: { branchId?: number | null } = {}) {
     if (!mine && !asManager) continue;
     if (!can(p, PERMISSIONS.SOS_EDIT, {
       classId: iv.eff_class_id, studentId: iv.eff_student_id,
-      skill: iv.track === 'academic' ? iv.topic ?? undefined : undefined,
+      skill: iv.topic ?? undefined,
     })) continue;
     reviewedCases.add(iv.case_id);
     items.push({
@@ -700,7 +683,7 @@ export function myWork(p: Principal, f: { branchId?: number | null } = {}) {
     // Quyền GHI NHẬN xử lý, không phải quyền xem — việc chỉ hiện với người làm được.
     if (!can(p, PERMISSIONS.SOS_EDIT, {
       classId: c.eff_class_id, studentId: c.eff_student_id,
-      skill: c.track === 'academic' ? c.topic ?? undefined : undefined,
+      skill: c.topic ?? undefined,
     })) continue;
     /*
      * ĐỀ XUẤT PHƯƠNG ÁN là việc của người DẠY em, hoặc của Quản lý. Admin chi nhánh ghi hộ
@@ -714,7 +697,7 @@ export function myWork(p: Principal, f: { branchId?: number | null } = {}) {
 
     /*
      * HẠN PHẢI CÓ PHƯƠNG ÁN THEO MỨC ĐỘ (mục 8.3): Gấp 3 ngày, Cần chú ý 5 ngày, tính cả
-     * ngày đầu. Áp cho cả case học thuật lẫn Ý thức/Khác.
+     * ngày đầu. Chỉ áp cho case học thuật.
      *
      * Trước vòng 7 hạn này bằng nguyên một chu kỳ hỗ trợ (hai tuần), nên một case Gấp nằm
      * im mười ba ngày vẫn chưa bị coi là chậm. Nay mức độ quyết định hạn — và đó là lý do
@@ -775,7 +758,7 @@ export function myWork(p: Principal, f: { branchId?: number | null } = {}) {
    */
   const ownerless = conn
     .prepare(
-      `SELECT sc.id, sc.summary, sc.origin_kind, sc.sos_level, sc.urgency, sc.track,
+      `SELECT sc.id, sc.summary, sc.origin_kind, sc.sos_level, sc.urgency,
               sc.detected_at, sc.created_at, sc.attempt_id,
               COALESCE(sc.student_id, a.student_id) AS eff_student_id,
               COALESCE(a.class_id, cur.class_id) AS eff_class_id,

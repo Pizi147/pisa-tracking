@@ -1,6 +1,6 @@
 import { db, tx } from '../db.ts';
 import {
-  BEHAVIOUR_TOPIC_LABEL, BRANCH_REPORT_CATEGORIES, ENTRY_SKILL_LABEL, PERMISSIONS,
+  BRANCH_REPORT_CATEGORIES, ENTRY_SKILLS, ENTRY_SKILL_LABEL, PERMISSIONS,
   TASK_PROGRESS, TASK_PROGRESS_LABEL, TASK_TYPES,
   TUTOR_REPORT_CATEGORIES, UNIT_STATUSES, type DueState,
 } from '../../../shared/domain/index.ts';
@@ -325,12 +325,8 @@ export function listTasks(p: Principal, f: TaskFilters = {}) {
     id: t.id, code: t.code, title: t.title, taskType: t.task_type,
     kind: t.kind ?? 'branch_ops',
     classId: t.class_id ?? null, className: t.class_code ?? null,
-    track: t.track ?? null, topic: t.topic ?? null,
-    topicLabel: t.topic
-      ? (t.track === 'behaviour'
-          ? BEHAVIOUR_TOPIC_LABEL[t.topic as keyof typeof BEHAVIOUR_TOPIC_LABEL]
-          : ENTRY_SKILL_LABEL[t.topic as keyof typeof ENTRY_SKILL_LABEL]) ?? t.topic
-      : null,
+    topic: t.topic ?? null,
+    topicLabel: t.topic ? ENTRY_SKILL_LABEL[t.topic as keyof typeof ENTRY_SKILL_LABEL] ?? t.topic : null,
     studentCount: studentCounts.get(t.id) ?? 0,
     followers: followers.get(t.id) ?? [],
     unitId: t.reporting_unit_id, unitName: t.unit_name, branchId: t.branch_id,
@@ -379,11 +375,11 @@ export function listTasks(p: Principal, f: TaskFilters = {}) {
  */
 function fanOutToStudents(
   conn: ReturnType<typeof db>, taskId: number, actorId: number | null,
-  input: { classId?: number | null; studentIds?: unknown; track?: string; topic?: string; title: string },
+  input: { classId?: number | null; studentIds?: unknown; topic?: string; title: string },
 ) {
-  const track = input.track === 'behaviour' ? 'behaviour' : 'academic';
   const topic = (input.topic ?? '').trim();
-  if (!topic) throw badRequest('Việc giao giáo viên phải chọn kỹ năng hoặc nhóm ý thức.');
+  if (!topic) throw badRequest('Việc giao giáo viên phải chọn kỹ năng.');
+  if (!(ENTRY_SKILLS as readonly string[]).includes(topic)) throw badRequest('Kỹ năng không hợp lệ.');
 
   const ids = Array.isArray(input.studentIds) && input.studentIds.length
     ? input.studentIds.map(Number).filter((n) => Number.isFinite(n) && n > 0)
@@ -404,18 +400,18 @@ function fanOutToStudents(
     let c = conn
       .prepare(
         `SELECT id FROM sos_cases
-          WHERE student_id = ? AND topic = ? AND track = ? AND status != 'done'
+          WHERE student_id = ? AND topic = ? AND status != 'done'
           ORDER BY id DESC LIMIT 1`,
       )
-      .get(studentId, topic, track) as any;
+      .get(studentId, topic) as any;
     if (!c) {
       const info = conn
         .prepare(
-          `INSERT INTO sos_cases (attempt_id, student_id, cycle_id, track, topic, origin_kind,
+          `INSERT INTO sos_cases (attempt_id, student_id, cycle_id, topic, origin_kind,
                                   detected_at, reported_by, summary, urgency, sos_level, status, created_at)
-           VALUES (NULL, ?,?,?,?, 'manager_task', ?,?,?, 'normal', NULL, 'in_progress', ?)`,
+           VALUES (NULL, ?,?,?, 'manager_task', ?,?,?, 'normal', NULL, 'in_progress', ?)`,
         )
-        .run(studentId, cycle?.id ?? null, track, topic, today, actorId, input.title.trim(), nowIso());
+        .run(studentId, cycle?.id ?? null, topic, today, actorId, input.title.trim(), nowIso());
       c = { id: Number(info.lastInsertRowid) };
     }
     const iv = conn
@@ -458,14 +454,13 @@ export function createTask(p: Principal, input: any) {
     const code = padCode('CV', n + 1, 4);
     const info = conn
       .prepare(
-        `INSERT INTO tasks (code, period_id, task_type, kind, class_id, track, topic, title,
+        `INSERT INTO tasks (code, period_id, task_type, kind, class_id, topic, title,
                             reporting_unit_id, branch_id, assignee_user_id,
                             due_date, progress, note, source_type, source_unit_report_id, source_sos_case_id,
                             created_by, created_at)
-         VALUES (?,?,?,?,?,?,?,?,?,?,?,?, 'not_started', ?,?,?,?,?,?)`,
+         VALUES (?,?,?,?,?,?,?,?,?,?,?, 'not_started', ?,?,?,?,?,?)`,
       )
       .run(code, input.periodId ?? null, taskType, kind, input.classId ?? null,
-           kind === 'teacher_task' ? (input.track ?? 'academic') : null,
            kind === 'teacher_task' ? (input.topic ?? null) : null,
            input.title.trim(), input.unitId ?? null, branchId,
            input.assigneeUserId ?? null, input.dueDate ?? null, input.note ?? null,

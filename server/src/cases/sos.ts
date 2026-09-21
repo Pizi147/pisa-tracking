@@ -134,8 +134,7 @@ export function upsertCategoryCase(
 ): { id: number; kind: MilestoneKind } {
   const conn = db();
   const key = caseDedupKey({
-    track: 'academic', category, originKind: 'mock',
-    studentId: attempt.student_id, cycleId: attempt.cycle_id, attemptId: attempt.id,
+    category, studentId: attempt.student_id, cycleId: attempt.cycle_id,
   });
   const existing = key
     ? (conn.prepare('SELECT * FROM sos_cases WHERE dedup_key = ?').get(key) as any)
@@ -146,15 +145,15 @@ export function upsertCategoryCase(
   if (!existing) {
     const info = conn
       .prepare(
-        `INSERT INTO sos_cases (attempt_id, student_id, cycle_id, track, topic, category,
+        `INSERT INTO sos_cases (attempt_id, student_id, cycle_id, topic, category,
                                 origin_kind, detected_at, sos_level, status, dedup_key,
                                 follow_until, owner_user_id, created_at)
-         VALUES (?,?,?, 'academic', ?,?, 'mock', ?,?, 'open', ?,?,?,?)`,
+         VALUES (?,?,?, ?,?, 'mock', ?,?, 'open', ?,?,?,?)`,
       )
       .run(attempt.id, attempt.student_id, attempt.cycle_id, topic, category,
            detectedAt, sosLevel, key, followUntil,
            /* Gợi ý người phụ trách theo phân công; không tìm được thì để trống, không gán bừa. */
-           suggestCaseOwner({ classId: attempt.class_id ?? null, track: 'academic', category }),
+           suggestCaseOwner({ classId: attempt.class_id ?? null, category }),
            nowIso());
     return { id: Number(info.lastInsertRowid), kind: 'opened' };
   }
@@ -177,16 +176,16 @@ export function upsertCategoryCase(
       .run(nowIso(), existing.id);
     const info = conn
       .prepare(
-        `INSERT INTO sos_cases (attempt_id, student_id, cycle_id, track, topic, category,
+        `INSERT INTO sos_cases (attempt_id, student_id, cycle_id, topic, category,
                                 origin_kind, detected_at, sos_level, status, dedup_key,
                                 follow_until, previous_case_id, owner_user_id, created_at)
-         VALUES (?,?,?, 'academic', ?,?, 'mock', ?,?, 'open', ?,?,?,?,?)`,
+         VALUES (?,?,?, ?,?, 'mock', ?,?, 'open', ?,?,?,?,?)`,
       )
       .run(attempt.id, attempt.student_id, attempt.cycle_id, topic, category,
            detectedAt, sosLevel, key, followUntil, existing.id,
            /* Case tái phát thừa kế người phụ trách của case cũ nếu người đó còn dạy lớp. */
            existing.owner_user_id
-             ?? suggestCaseOwner({ classId: attempt.class_id ?? null, track: 'academic', category }),
+             ?? suggestCaseOwner({ classId: attempt.class_id ?? null, category }),
            nowIso());
     const id = Number(info.lastInsertRowid);
     /* Ghi vào CASE CŨ một mốc nói rõ chuyện chưa dừng ở đó — để đọc hồ sơ là ra một mạch. */
@@ -240,23 +239,22 @@ export function addMilestone(input: {
  * KẾT QUẢ MỘT ĐỢT ĐÁNH GIÁ SINH RA TÍN HIỆU — KHÔNG SINH CASE, KHÔNG SINH PHƯƠNG ÁN.
  *
  * Đây là thay đổi lớn nhất của vòng 7 trong luồng SOS (mục 6.2). Trước đây hàm này tự mở
- * case hoàn chỉnh cho từng môn trượt, tự mở một case Ý thức/Khác kèm hai việc trao đổi, và
- * tự sinh một phương án "xếp tự học" hoặc "học tutor". Tất cả đã bị bỏ.
+ * case hoàn chỉnh cho từng môn trượt, và tự sinh một phương án "xếp tự học" hoặc "học tutor".
+ * Tất cả đã bị bỏ. (SOS chỉ sinh từ Mock Test và chỉ thuộc Học thuật — từ 21/09/2026 không còn
+ * tín hiệu Ý thức/Khác nào.)
  *
  * Lý do bỏ, nói gọn: máy đọc được "band 5.5 < kỳ vọng 6.0", nhưng nó không biết VÌ SAO và
  * không xếp được tutor thay người. Những case và phương án tự sinh ấy làm bảng tổng hợp đầy
  * số mà không có một việc thật nào đứng sau.
  *
- * Nay hàm làm đúng ba việc:
+ * Nay hàm làm đúng hai việc:
  *
  *   1. Ghi mốc "đã đạt kỳ vọng" vào case đang mở của hạng mục lần này đã đạt, hạ mức về 0 —
  *      nhưng KHÔNG tự đóng case. Một lần đạt chưa chứng minh vấn đề đã hết.
  *   2. Với môn dưới kỳ vọng: nếu hạng mục ĐÃ CÓ case đang mở thì thêm một mốc vào chính case
  *      đó và gắn tín hiệu vào nó — "không mặc định thêm case/phương án mới". Nếu chưa có
  *      case nào thì ghi một TÍN HIỆU CHỜ XÁC MINH, giao cho giáo viên bộ môn, hạn ba ngày.
- *   3. Có SOS thì ghi thêm một tín hiệu Ý thức/Khác cho GVCN xem tình hình chung. Nó KHÔNG
- *      kết luận em thiếu ý thức, và GVCN được phép ghi nhận "đã xem, không có vấn đề".
- *
+
  * Case đã ĐÓNG mà trượt lại cũng chỉ ra tín hiệu: mở case mới nối vào case cũ là một quyết
  * định có chủ đích của người dạy, không phải phản xạ của máy.
  */
@@ -283,11 +281,11 @@ export function raiseSignalsForResult(p: Principal, attempt: any, result: Attemp
    * Một lần đạt chưa chứng minh vấn đề đã hết, và đóng hộ người ta thì mất luôn cơ hội ghi
    * lại phương án nào đã ăn thua. Người có thẩm quyền chốt kết quả, máy chỉ đưa tin.
    */
-  const failingCats = new Set(failing.map((sk) => categoryOf('academic', sk)).filter(Boolean) as string[]);
+  const failingCats = new Set(failing.map((sk) => categoryOf(sk)).filter(Boolean) as string[]);
   const openHere = conn
     .prepare(
       `SELECT * FROM sos_cases
-        WHERE student_id = ? AND COALESCE(cycle_id, 0) = ? AND track = 'academic' AND status != 'done'`,
+        WHERE student_id = ? AND COALESCE(cycle_id, 0) = ? AND status != 'done'`,
     )
     .all(attempt.student_id, attempt.cycle_id ?? 0) as any[];
   for (const c of openHere) {
@@ -313,7 +311,7 @@ export function raiseSignalsForResult(p: Principal, attempt: any, result: Attemp
 
   const raised: { skill: string; signalId: number; linkedCaseId: number | null }[] = [];
   for (const skill of failing) {
-    const category = categoryOf('academic', skill);
+    const category = categoryOf(skill);
     if (!category) continue;
     const band = entry[skill] ?? null;
 
@@ -326,7 +324,7 @@ export function raiseSignalsForResult(p: Principal, attempt: any, result: Attemp
       actorUserId: p.userId,
       studentId: attempt.student_id, cycleId: attempt.cycle_id ?? null,
       attemptId: attempt.id, classId: attempt.class_id ?? null,
-      track: 'academic', skill, category,
+      skill, category,
       band, expectation: result.expectation, sosLevel: result.sosLevel,
       detectedOn: detectedAt,
     });
@@ -362,19 +360,6 @@ export function raiseSignalsForResult(p: Principal, attempt: any, result: Attemp
     }
     raised.push({ skill, signalId: signal.id, linkedCaseId: open?.id ?? null });
   }
-
-  /*
-   * TÍN HIỆU Ý THỨC/KHÁC cho GVCN. Nó KHÔNG phải kết luận "em thiếu ý thức" và không kèm
-   * sẵn hai việc trao đổi như trước: trao đổi với em và với phụ huynh là những việc có thật,
-   * phải có người và ngày thật, nên chúng chỉ ra đời khi GVCN quyết định mở case.
-   */
-  raiseSignal({
-    actorUserId: p.userId,
-    studentId: attempt.student_id, cycleId: attempt.cycle_id ?? null,
-    attemptId: attempt.id, classId: attempt.class_id ?? null,
-    track: 'behaviour', skill: null, category: 'behaviour',
-    sosLevel: result.sosLevel, detectedOn: detectedAt,
-  });
 
   if (raised.length) {
     addJourney({

@@ -1,6 +1,6 @@
 import {
-  ATTEMPT_KIND_SHORT, PROGRAMME_TEMPLATES, behaviourMergeUntil, categoryOf, cycleDeadline, issuesForTopic,
-  planDueDate, planEndDefault, programmeOf, ratioResult, weeklyUpdateDue,
+  ATTEMPT_KIND_SHORT, PROGRAMME_TEMPLATES, categoryOf, cycleDeadline, issuesForTopic,
+  planEndDefault, programmeOf, ratioResult, weeklyUpdateDue,
   type AttemptKind,
 } from '../../../shared/domain/index.ts';
 import { addDays, normalizeName, nowIso, padCode } from '../util.ts';
@@ -55,6 +55,8 @@ export type BuildCtx = {
   /** Mã lớp → mã chi nhánh, để tra người của đúng nơi. */
   classBranch: Map<string, string>;
   nextStudentCode: () => string;
+  /** Mã kịch bản (J01, S12…) → id học viên, do `buildJourneys` điền — bộ dựng Ý thức (`yThucSeed.ts`) đọc lại. */
+  studentIdByCode?: Map<string, number>;
 };
 
 export type BuildCounts = {
@@ -99,6 +101,7 @@ export function buildJourneys(ctx: BuildCtx): BuildCounts {
     }
     const sid = Number(info.lastInsertRowid);
     counts.students += 1;
+    ctx.studentIdByCode?.set(s.code, sid);
 
     /* ---------------------------------------------------------------- 2. ghi danh */
     for (const e of s.enrollments) {
@@ -427,20 +430,6 @@ function insertAttempt(
 }
 
 /**
- * PHÂN CÔNG VÀ KHÉP LẠI case Ý thức/Khác mà engine vừa tự mở.
- *
- * Người phụ trách và người thực hiện lấy GVCN của lớp — đúng luật mục 2.3 (case Ý thức/Khác
- * thuộc về giáo viên chủ nhiệm). Đợt cách ngày demo hơn ba tuần thì hai việc trao đổi coi như
- * đã làm xong và case đã khép; đợt gần đây thì để nguyên là việc đang chờ.
- */
-/**
- * GVCN XEM TÍN HIỆU Ý THỨC/KHÁC RỒI QUYẾT ĐỊNH MỞ CASE — việc của NGƯỜI, không của máy.
- *
- * Hàm này dựng lại đúng thứ một GVCN làm sau khi thấy tín hiệu: đặt tên case, viết mô tả,
- * và lên hai việc trao đổi (với em, với phụ huynh). Bộ demo phải tự làm phần này vì engine
- * không còn làm hộ nữa — và đó chính là điều mục 6.2 muốn.
- */
-/**
  * TÍN HIỆU HỌC THUẬT CỦA MỘT ĐỢT, và ba kết cục có thật của chúng.
  *
  * Mọi môn dưới kỳ vọng đều sinh một tín hiệu — đó là luật (mục 6.2). Nhưng một tín hiệu
@@ -508,12 +497,12 @@ function academicSignals(
   const stale = addDays(detectedOn, 14) <= DEMO_DATE;
 
   for (const skill of failing) {
-    const category = categoryOf('academic', skill);
+    const category = categoryOf(skill);
     if (!category) continue;
     const signal = raiseSignal({
       actorUserId: ctx.adminId,
       studentId: sid, cycleId, attemptId, classId: a.class_id ?? null,
-      track: 'academic', skill, category,
+      skill, category,
       band: scores.find((r) => r.skill === skill)?.band ?? null,
       expectation, sosLevel: a.sos_level ?? null,
       detectedOn, raisedOn,
@@ -527,7 +516,7 @@ function academicSignals(
     const linked = conn
       .prepare(
         `SELECT id FROM sos_cases
-          WHERE student_id = ? AND COALESCE(cycle_id, 0) = ? AND track = 'academic'
+          WHERE student_id = ? AND COALESCE(cycle_id, 0) = ?
             AND category = ? ORDER BY id DESC LIMIT 1`,
       )
       .get(sid, cycleId, category) as any;
@@ -562,146 +551,12 @@ function weekStartOfRow(conn: any, a: any): string | null {
   return r?.week_start ?? null;
 }
 
-function behaviourCaseFromSignal(
-  ctx: BuildCtx, sid: number, attemptId: number, classCode: string, detectedAt: string,
-) {
-  const { conn } = ctx;
-  const signal = conn
-    .prepare(`SELECT * FROM case_signals WHERE student_id = ? AND attempt_id = ? AND track = 'behaviour'`)
-    .get(sid, attemptId) as any;
-  if (!signal || signal.status !== 'pending') return;
-
-  const attempt = conn.prepare('SELECT * FROM assessment_attempts WHERE id = ?').get(attemptId) as any;
-  const core = conn
-    .prepare(
-      `SELECT user_id FROM teacher_assignments
-        WHERE class_id = ? AND is_core = 1 AND status = 'active' LIMIT 1`,
-    )
-    .get(ctx.classId.get(classCode)) as any;
-  const owner = core?.user_id ?? ctx.adminId;
-
-  const info = conn
-    .prepare(
-      `INSERT INTO sos_cases (attempt_id, student_id, cycle_id, track, topic, category,
-                              origin_kind, title, summary, detected_at, sos_level, status,
-                              dedup_key, owner_user_id, reported_by, created_at)
-       VALUES (?,?,?, 'behaviour', 'other', 'behaviour', 'mock', ?,?,?,?, 'open', ?,?,?,?)`,
-    )
-    .run(attemptId, sid, attempt.cycle_id ?? null,
-         'Thông báo kết quả và phối hợp với gia đình',
-         'Em có kết quả dưới kỳ vọng ở đợt đánh giá này. GVCN trao đổi với em và với phụ huynh '
-         + 'để gia đình nắm tình hình và cùng phối hợp.',
-         detectedAt, signal.sos_level,
-         `behaviour:mock:${sid}:${attempt.cycle_id ?? 0}:${attemptId}`,
-         owner, owner, NOW);
-  const caseId = Number(info.lastInsertRowid);
-  /* Case này cũng phải có phân loại — nó là "Khác" của nhóm Ý thức, và nói thẳng như vậy. */
-  conn
-    .prepare(
-      `INSERT INTO case_issues (case_id, role, taxonomy_code, skill, created_by, created_at)
-       VALUES (?, 'primary', 'student.behaviour.other', 'other', ?, ?)`,
-    )
-    .run(caseId, owner, NOW);
-
-  conn
-    .prepare(
-      `UPDATE case_signals SET status = 'linked', case_id = ?, resolved_by = ?, resolved_at = ?,
-              resolution_note = ?, updated_at = ? WHERE id = ?`,
-    )
-    .run(caseId, owner, NOW,
-         'GVCN đã xem và quyết định mở case để trao đổi với em và phụ huynh.', NOW, signal.id);
-
-  /*
-   * HẠN PHƯƠNG ÁN Ý THỨC/KHÁC (mục 8.3): Gấp 3 ngày · Cần chú ý 5 ngày, tính từ lúc NHẬN
-   * CASE. Đây vừa là hạn phải có phương án, vừa là hạn phải làm xong nó — không dùng mặc
-   * định "Chủ nhật tuần tiếp theo" của học thuật, vì như thế là vượt hạn.
-   */
-  const due = planDueDate(detectedAt, signal.sos_level >= 3 ? 'urgent' : 'attention');
-  for (const kind of ['talk_student', 'talk_parent'] as const) {
-    conn
-      .prepare(
-        `INSERT INTO case_interventions (case_id, kind, description, status, action_due,
-                                         performer_user_id, recorded_by, migration_key, created_at)
-         VALUES (?,?,?, 'planned', ?,?,?,?,?)
-         ON CONFLICT(migration_key) DO NOTHING`,
-      )
-      .run(caseId, kind,
-           kind === 'talk_parent' ? 'Trao đổi với phụ huynh' : 'Trao đổi với học viên',
-           due, owner, owner, `behaviour:${attemptId}:${kind}`, NOW);
-  }
-}
-
-function finishBehaviourCase(
-  ctx: BuildCtx, sid: number, attemptId: number, classCode: string, detectedAt: string,
-) {
-  const { conn } = ctx;
-  const row = conn
-    .prepare(
-      `SELECT id FROM sos_cases
-        WHERE student_id = ? AND attempt_id = ? AND track = 'behaviour' AND origin_kind = 'mock'`,
-    )
-    .get(sid, attemptId) as any;
-  if (!row) return;
-
-  const core = conn
-    .prepare(
-      `SELECT user_id FROM teacher_assignments
-        WHERE class_id = ? AND is_core = 1 AND status = 'active' LIMIT 1`,
-    )
-    .get(ctx.classId.get(classCode)) as any;
-  const owner = core?.user_id ?? ctx.adminId;
-  conn.prepare('UPDATE sos_cases SET owner_user_id = ?, reported_by = ?, updated_at = ? WHERE id = ?')
-    .run(owner, owner, NOW, row.id);
-  conn
-    .prepare('UPDATE case_interventions SET performer_user_id = ?, recorded_by = ?, updated_at = ? WHERE case_id = ?')
-    .run(owner, owner, NOW, row.id);
-
-  /* Bốn tuần: đủ xa để hai việc trao đổi chắc chắn đã diễn ra. */
-  const stale = addDays(detectedAt, 28) <= DEMO_DATE;
-  if (!stale) return;
-
-  const doneOn = past(addDays(detectedAt, 3))!;
-  conn
-    .prepare(
-      `UPDATE case_interventions
-          SET status = 'completed', started_date = ?, completed_date = ?,
-              action_due = NULL, followup_due = NULL, closed_reason = 'done', updated_at = ?
-        WHERE case_id = ?`,
-    )
-    .run(doneOn, doneOn, NOW, row.id);
-  for (const iv of conn
-    .prepare('SELECT id, kind FROM case_interventions WHERE case_id = ? ORDER BY id')
-    .all(row.id) as any[]) {
-    conn
-      .prepare(
-        `INSERT INTO case_followups (case_id, intervention_id, observed_on, observer_user_id,
-                                     outcome, note, next_step, cycle_no, cycle_due, late, created_at)
-         VALUES (?,?,?,?,?,?,?,1,?,0,?)`,
-      )
-      .run(row.id, iv.id, doneOn, owner, 'improved',
-           iv.kind === 'talk_parent'
-             ? 'Đã gọi phụ huynh, gia đình nắm được tình hình và đồng ý phối hợp.'
-             : 'Đã gặp em, em hiểu vì sao cần tập trung vào kỹ năng đang yếu.',
-           'complete', cycleDeadline(detectedAt, 'behaviour'), NOW);
-  }
-  conn
-    .prepare(
-      `UPDATE sos_cases
-          SET status = 'done', disposition = 'monitor',
-              disposition_note = 'Đã trao đổi với em và phụ huynh sau đợt đánh giá này.',
-              outcome = 'improved', closed_by = ?, closed_at = ?, updated_at = ?
-        WHERE id = ?`,
-    )
-    .run(owner, doneOn, NOW, row.id);
-}
-
 function insertCase(
   ctx: BuildCtx, sid: number, cycleId: number, cy: CycleSeed, c: CaseSeed,
   attemptByNo: Map<number, number>, closedByTopic: Map<string, number>, counts: BuildCounts,
 ): number {
   const { conn } = ctx;
-  const track = c.track ?? 'academic';
-  const category = categoryOf(track, c.topic);
+  const category = categoryOf(c.topic);
   const attemptId = c.fromTest ? attemptByNo.get(c.fromTest) ?? null : null;
   const originKind = c.originKind ?? (attemptId ? 'mock' : 'teacher_report');
 
@@ -726,33 +581,22 @@ function insertCase(
     conn.prepare('UPDATE sos_cases SET dedup_key = NULL, updated_at = ? WHERE id = ?')
       .run(NOW, previousCaseId);
   }
-  /*
-   * CASE Ý THỨC/KHÁC KHÔNG DÙNG KHOÁ CHỐNG TRÙNG (mục 7.2).
-   *
-   * Nó là một ĐỢT NGẮN, và cùng một phân loại có thể có nhiều đợt nối nhau trong một khoá
-   * học. Cái quyết định gộp hay mở đợt mới là CỬA SỔ BỐN NGÀY, không phải một cái khoá —
-   * khoá chỉ chặn được đợt thứ hai ra đời, mà đợt thứ hai lại đúng là thứ phải có.
-   *
-   * Case học thuật thì ngược lại: một hạng mục đúng một case sống suốt khoá, nên có khoá.
-   */
-  const dedupKey = c.parallel || track === 'behaviour'
-    ? null
-    : `a:${sid}:${cycleId}:${category}`;
+  const dedupKey = c.parallel ? null : `a:${sid}:${cycleId}:${category}`;
 
   const ownerId = c.owner ? ctx.userId.get(c.owner) ?? null : null;
   const reporterId = c.reportedBy ? ctx.userId.get(c.reportedBy) ?? null : (ownerId ?? null);
 
   const info = conn
     .prepare(
-      `INSERT INTO sos_cases (attempt_id, student_id, cycle_id, track, topic, category,
+      `INSERT INTO sos_cases (attempt_id, student_id, cycle_id, topic, category,
                               dedup_key, parallel, previous_case_id, owner_user_id, title,
                               origin_kind, detected_at, reported_by, summary, urgency, sos_level,
                               status, disposition, disposition_note, outcome, outcome_note,
                               closed_by, closed_at, created_at)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
     )
     .run(
-      attemptId, sid, cycleId, track, c.topic, category,
+      attemptId, sid, cycleId, c.topic, category,
       dedupKey, c.parallel ? 1 : 0, previousCaseId, ownerId, c.title ?? null,
       originKind, c.detectedAt, reporterId, c.summary, c.urgency ?? 'attention',
       c.sosLevel ?? null,
@@ -783,46 +627,6 @@ function insertCase(
        VALUES (?, 'primary', ?, ?, ?, ?)`,
     )
     .run(caseId, c.primaryCode, c.topic, reporterId ?? ownerId ?? ctx.adminId, NOW);
-
-  /*
-   * CASE Ý THỨC/KHÁC LÀ MỘT ĐỢT (mục 7.2): có số đợt, có cửa sổ gộp ba ngày (C03), và có các
-   * báo cáo thành phần. Báo cáo đầu tiên chính là câu mô tả của case.
-   */
-  if (track === 'behaviour') {
-    /* Đếm đợt theo PHÂN LOẠI (BTVN / chuyên cần / tham gia), không theo hạng mục chung. */
-    const prior = (conn
-      .prepare(
-        `SELECT COUNT(*) n FROM sos_cases
-          WHERE student_id = ? AND track = 'behaviour' AND topic = ? AND id < ?`,
-      )
-      .get(sid, c.topic, caseId) as any).n;
-    const mergeUntil = behaviourMergeUntil(c.detectedAt);
-    conn.prepare('UPDATE sos_cases SET episode_no = ?, merge_until = ? WHERE id = ?')
-      .run(prior + 1, mergeUntil, caseId);
-
-    const addReport = (on: string, by: number | null, skill: string | null, text: string) =>
-      conn
-        .prepare(
-          `INSERT INTO case_reports (case_id, reported_by, source_skill, reported_on, observed_on,
-                                     summary, created_at)
-           VALUES (?,?,?,?,?,?,?)`,
-        )
-        .run(caseId, by, skill, on, c.detectedAt, text, NOW);
-    addReport(c.detectedAt, reporterId, null, c.summary);
-
-    for (const r of c.reports ?? []) {
-      if (r.on > mergeUntil || r.on < c.detectedAt) {
-        throw new Error(
-          `Kịch bản sai: báo cáo ngày ${r.on} nằm ngoài cửa sổ gộp ${c.detectedAt}–${mergeUntil} `
-          + 'của case Ý thức/Khác. Ngoài cửa sổ thì theo luật nó phải là một đợt khác.',
-        );
-      }
-      addReport(r.on, ctx.userId.get(r.by) ?? null, r.skill ?? null, r.summary);
-      /* Có báo cáo bổ sung trong cùng đợt thì case được NÂNG LÊN GẤP (mục 7.2). */
-      conn.prepare(`UPDATE sos_cases SET urgency = 'urgent', urgency_raised_at = ? WHERE id = ?`)
-        .run(r.on, caseId);
-    }
-  }
 
   /* Mốc MỞ, và mốc TÁI DIỄN ở mỗi lượt sau mà em vẫn yếu ở hạng mục này. */
   const milestone = (kind: string, aid: number | null, no: number | null, on: string) => {
@@ -857,48 +661,6 @@ function insertCase(
            `rec:${previousCaseId}:${caseId}`);
     counts.milestones += 1;
   }
-  /*
-   * TÍN HIỆU Ý THỨC/KHÁC SAU MỘT ĐỢT ĐÁNH GIÁ CÓ SOS — và nó CHỈ là một tín hiệu.
-   *
-   * Từ vòng 7 hệ thống không tự mở case Ý thức/Khác nữa (mục 6.2): em có SOS thì GVCN được
-   * báo để xem tình hình chung, còn có phải mở case hay không là nhận định của cô.
-   *
-   * Bộ demo vì thế phải bày ra CẢ HAI kết cục, vì cả hai đều có thật:
-   *
-   *   · Đợt ĐÃ XA (trên ba tuần): GVCN đã xem, đã quyết định mở case, đã trao đổi với em và
-   *     phụ huynh, và đã chốt. Đây là đường đi đầy đủ của một tín hiệu.
-   *   · Đợt GẦN ĐÂY: tín hiệu còn nằm chờ xác minh, hiện trong hàng việc của GVCN kèm hạn
-   *     ba ngày. Đó mới là thứ đáng đỏ trên màn hình.
-   */
-  if (track === 'academic' && attemptId && (c.sosLevel ?? 0) > 0) {
-    const attempt = conn.prepare('SELECT * FROM assessment_attempts WHERE id = ?').get(attemptId) as any;
-    raiseSignal({
-      actorUserId: ctx.adminId,
-      studentId: sid, cycleId: attempt.cycle_id ?? null,
-      attemptId, classId: attempt.class_id ?? null,
-      track: 'behaviour', skill: null, category: 'behaviour',
-      sosLevel: c.sosLevel as number,
-      detectedOn: c.detectedAt,
-      /* Tín hiệu được ghi nhận ngay khi có điểm — đó là mốc hạn ba ngày đếm từ đó. */
-      raisedOn: past(c.detectedAt) ?? c.detectedAt,
-    });
-    /*
-     * BA MỐC THỜI GIAN, BA TRẠNG THÁI KHÁC NHAU — và cả ba đều phải có trong bản demo:
-     *
-     *   trên 4 tuần   GVCN đã xem, đã mở case, đã trao đổi với em và phụ huynh, đã chốt
-     *   1–4 tuần      GVCN đã xem và đã mở case, nhưng hai việc trao đổi CÒN PHẢI LÀM
-     *   dưới 1 tuần   tín hiệu còn nằm chờ xác minh, chưa ai đụng tới
-     *
-     * Thiếu mốc giữa thì bản demo không còn việc trao đổi nào đang chờ, và người xem không
-     * kiểm chứng được ai nhận việc gặp em, ai nhận việc gọi phụ huynh, hạn là ngày nào.
-     */
-    if (addDays(c.detectedAt, 7) <= DEMO_DATE) {
-      behaviourCaseFromSignal(ctx, sid, attemptId, cy.classCode, c.detectedAt);
-      if (addDays(c.detectedAt, 28) <= DEMO_DATE) {
-        finishBehaviourCase(ctx, sid, attemptId, cy.classCode, c.detectedAt);
-      }
-    }
-  }
   for (const no of c.repeatsAt ?? []) {
     const aid = attemptByNo.get(no) ?? null;
     const t = cy.tests.find((x) => x.no === no);
@@ -932,13 +694,12 @@ function insertCase(
       ? p.approval.on : p.cycleStart;
     /*
      * HAI MỐC KHÁC NHAU (mục 8.3), không còn gộp làm một con số:
-     *   · HẠN CẬP NHẬT — học thuật: Chủ nhật gần nhất. Ý thức/Khác: 3/5 ngày từ lúc nhận case.
-     *   · DỰ KIẾN KẾT THÚC — học thuật: Chủ nhật tuần tiếp theo. Ý thức/Khác: cùng hạn trên.
+     *   · HẠN CẬP NHẬT — Chủ nhật gần nhất.
+     *   · DỰ KIẾN KẾT THÚC — Chủ nhật tuần tiếp theo.
      */
-    const behaviourDue = planDueDate(c.detectedAt ?? effectiveStart, c.urgency ?? 'attention');
-    const updateDue = track === 'behaviour' ? behaviourDue : weeklyUpdateDue(effectiveStart);
-    const planEnd = track === 'behaviour' ? behaviourDue : planEndDefault(effectiveStart);
-    const due = cycleDeadline(effectiveStart, track);
+    const updateDue = weeklyUpdateDue(effectiveStart);
+    const planEnd = planEndDefault(effectiveStart);
+    const due = cycleDeadline(effectiveStart);
     const pinfo = conn
       .prepare(
         `INSERT INTO case_interventions (case_id, kind, description, performer_user_id, recorded_by,

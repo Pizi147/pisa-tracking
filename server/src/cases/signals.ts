@@ -26,13 +26,13 @@ import { suggestCaseOwner } from './owner.ts';
  *
  *   · không đoán nguyên nhân — tên, mô tả và phân loại là việc của người dạy;
  *   · không tạo phương án — kể cả khi nhập từng môn, chấm lại hay chạy lại bộ demo;
- *   · không kết luận em thiếu ý thức từ một mức SOS.
+ *   · không kết luận em thiếu ý thức từ một mức SOS. (Tín hiệu Ý thức/Khác cho GVCN đã bỏ 21/09/2026.)
  */
 
 export type SignalRow = {
   id: number;
   student_id: number; cycle_id: number | null; attempt_id: number | null; class_id: number | null;
-  track: string; skill: string | null; category: string | null;
+  skill: string | null; category: string | null;
   band: number | null; expectation: number | null; sos_level: number | null;
   detected_on: string; raised_on: string; verify_due: string;
   owner_user_id: number | null;
@@ -44,7 +44,7 @@ export type SignalRow = {
 
 /** Khoá chống trùng: một đợt × một ô nhập điểm = ĐÚNG MỘT tín hiệu, mãi mãi. */
 export function signalKey(attemptId: number, skill: string | null): string {
-  return `mt:${attemptId}:${skill ?? 'behaviour'}`;
+  return `mt:${attemptId}:${skill ?? ''}`;
 }
 
 // ---------------------------------------------------------------- sinh tín hiệu
@@ -62,7 +62,6 @@ export function signalKey(attemptId: number, skill: string | null): string {
 export function raiseSignal(input: {
   actorUserId: number | null;
   studentId: number; cycleId: number | null; attemptId: number | null; classId: number | null;
-  track: 'academic' | 'behaviour';
   skill: string | null;
   category: CaseCategory | string | null;
   band?: number | null; expectation?: number | null; sosLevel?: number | null;
@@ -104,16 +103,16 @@ export function raiseSignal(input: {
 
   const raisedOn = input.raisedOn ?? demoToday();
   const owner = suggestCaseOwner({
-    classId: input.classId, track: input.track, category: (input.category as string) ?? null,
+    classId: input.classId, category: (input.category as string) ?? null,
   });
   const info = conn
     .prepare(
-      `INSERT INTO case_signals (student_id, cycle_id, attempt_id, class_id, track, skill, category,
+      `INSERT INTO case_signals (student_id, cycle_id, attempt_id, class_id, skill, category,
                                  band, expectation, sos_level, detected_on, raised_on, verify_due,
                                  owner_user_id, status, dedup_key, created_at)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?, 'pending', ?,?)`,
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?, 'pending', ?,?)`,
     )
-    .run(input.studentId, input.cycleId, input.attemptId, input.classId, input.track,
+    .run(input.studentId, input.cycleId, input.attemptId, input.classId,
          input.skill, input.category ?? null,
          input.band ?? null, input.expectation ?? null, input.sosLevel ?? null,
          input.detectedOn, raisedOn, signalVerifyDue(raisedOn), owner, key, nowIso());
@@ -137,13 +136,13 @@ export function raiseSignal(input: {
 }
 
 /**
- * Tên ngắn của tín hiệu: môn nào, hoặc "Ý thức/Khác".
+ * Tên ngắn của tín hiệu: môn nào.
  *
  * Hai bộ mã cùng tồn tại và đều đúng: Fast Track nhập theo năm ô (W1/W2 riêng), lớp Normal
  * chấm theo bốn môn (W là một). Tra cả hai bảng nhãn, không thì màn hình hiện ra mã thô.
  */
-export function labelOf(s: { track: string; skill: string | null }): string {
-  if (s.track === 'behaviour' || !s.skill) return 'Ý thức/Khác';
+export function labelOf(s: { skill: string | null }): string {
+  if (!s.skill) return 'Chưa rõ kỹ năng';
   return ENTRY_SKILL_LABEL[s.skill as EntrySkill]
     ?? REGULAR_SKILL_LABEL[s.skill as keyof typeof REGULAR_SKILL_LABEL]
     ?? s.skill;
@@ -166,7 +165,7 @@ export type SignalView = {
   studentId: number; studentName: string; studentCode: string;
   classId: number | null; classCode: string | null; branchId: number | null; branchName: string | null;
   attemptId: number | null; attemptNo: number | null; attemptKind: string | null;
-  track: string; skill: string | null; label: string; category: string | null;
+  skill: string | null; label: string; category: string | null;
   band: number | null; expectation: number | null; sosLevel: number | null;
   detectedOn: string; raisedOn: string; verifyDue: string;
   ownerUserId: number | null; ownerName: string | null;
@@ -199,7 +198,7 @@ function viewOf(p: Principal, r: any, today: string): SignalView {
     classId: r.class_id, classCode: r.class_code ?? null,
     branchId: r.branch_id ?? null, branchName: r.branch_name ?? null,
     attemptId: r.attempt_id, attemptNo: r.attempt_no ?? null, attemptKind: r.attempt_kind ?? null,
-    track: r.track, skill: r.skill, label: labelOf(r), category: r.category,
+    skill: r.skill, label: labelOf(r), category: r.category,
     band: r.band, expectation: r.expectation, sosLevel: r.sos_level,
     detectedOn: r.detected_on, raisedOn: r.raised_on, verifyDue: r.verify_due,
     ownerUserId: r.owner_user_id, ownerName: r.owner_name ?? null,
@@ -208,10 +207,10 @@ function viewOf(p: Principal, r: any, today: string): SignalView {
     resolutionNote: r.resolution_note, withdrawnReason: r.withdrawn_reason,
     overdue: r.status === 'pending' && r.verify_due < today,
     mine: r.owner_user_id === p.userId,
-    /* AUTH-01: tín hiệu Học thuật siết đúng kỹ năng; Ý thức (track !== 'academic') chỉ GVCN. */
+    /* AUTH-01 + C02: chỉ giáo viên đúng kỹ năng của tín hiệu (hoặc Quản lý trong phạm vi) xác minh được. */
     canResolve: can(p, PERMISSIONS.SOS_EDIT, {
       classId: r.class_id, studentId: r.student_id,
-      skill: r.track === 'academic' ? r.skill ?? undefined : undefined,
+      skill: r.skill ?? undefined,
     }),
   };
 }
@@ -290,7 +289,7 @@ export function linkSignalToCase(p: Principal, signalId: number, caseId: number,
   const sg = loadSignal(signalId);
   require_(p, PERMISSIONS.SOS_EDIT, {
     classId: sg.class_id, studentId: sg.student_id,
-    skill: sg.track === 'academic' ? sg.skill ?? undefined : undefined,
+    skill: sg.skill ?? undefined,
   }, 'Bạn chỉ xác minh được tín hiệu của học viên trong phạm vi mình phụ trách.');
   if (sg.status === 'withdrawn') throw badRequest('Tín hiệu này đã được thu hồi vì không còn căn cứ.');
 
@@ -334,7 +333,7 @@ export function linkSignalToCase(p: Principal, signalId: number, caseId: number,
    *
    * Việc nối này chỉ xảy ra khi NGƯỜI đã quyết định mở case — máy không tự làm.
    */
-  if (sg.category && sg.track === 'academic') {
+  if (sg.category) {
     const previous = conn
       .prepare(
         `SELECT id FROM sos_cases
@@ -370,7 +369,7 @@ export function assignSignal(p: Principal, signalId: number, userId: number | nu
   const sg = loadSignal(signalId);
   require_(p, PERMISSIONS.SOS_EDIT, {
     classId: sg.class_id, studentId: sg.student_id,
-    skill: sg.track === 'academic' ? sg.skill ?? undefined : undefined,
+    skill: sg.skill ?? undefined,
   }, 'Bạn không có quyền giao tín hiệu này cho người khác.');
   db().prepare('UPDATE case_signals SET owner_user_id = ?, updated_at = ? WHERE id = ?')
     .run(userId, nowIso(), signalId);
