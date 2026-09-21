@@ -663,6 +663,41 @@ export async function runSosV3Tests(t: YThucTestKit) {
     assert(board2.rows.some((r: any) => r.plans === 1 && r.running === 1), 'Đã xác nhận thì bảng vấn đề đếm nó là phương án đang theo dõi');
   });
 
+  check('PR-T · S04 Hạn 3 ngày thành DÒNG VIỆC: GVBM phụ trách thấy `Xác định nguyên nhân` ngay khi case ra đời (hạn = hết ngày thứ ba); Quản lý CHỈ thấy khi đã quá hạn; quá hạn có nhãn riêng; xong cả hai phần (nguyên nhân + xác nhận phương án) hoặc đóng case thì dòng biến mất', () => {
+    const f = freshSos('CAUSE');
+    const key = (id: number) => `cause:${id}`;
+    const item = (who: any, id: number) => mywork(who).find((i: any) => i.key === key(id));
+    const due = domain.signalVerifyDue(TODAY);
+    const mine = item(w2T, f.w2.id);
+    assert(mine && mine.group === 'cause' && mine.urgency === 'normal' && mine.due === due && mine.mine === true && mine.caseId === f.w2.id
+      && mine.actionLabel === 'Xác định nguyên nhân' && mine.statusLabel === 'Chờ xác định nguyên nhân' && mine.overdueLabel === null && mine.studentId === f.st.id,
+    `Dòng của GVBM: ${JSON.stringify(mine)}`);
+    assert(/nguyên nhân/.test(mine.reason) && /phương án/.test(mine.reason), `Lý do phải nói còn thiếu gì: ${mine.reason}`);
+    assert(!item(P.mbManager, f.w2.id) && !item(w1T, f.w2.id), 'Chưa quá hạn thì Quản lý không thấy; GVBM kỹ năng khác không thấy');
+    const groups = myworkSvc.myWork(w2T, {}).groups as any[];
+    assert(groups.some((g: any) => g.key === 'cause' && g.label === 'Xác định nguyên nhân' && g.items.some((i: any) => i.key === key(f.w2.id))), 'Phải có nhóm `cause` trong danh sách nhóm');
+    /* Quá hạn: hết ngày hạn mới tính (hạn = hôm qua). */
+    conn.prepare('UPDATE case_signals SET verify_due = ? WHERE case_id = ?').run(addDays(TODAY, -1), f.w2.id);
+    const late = item(w2T, f.w2.id), mgr = item(P.mbManager, f.w2.id);
+    assert(late.urgency === 'overdue' && late.overdueLabel === 'Quá hạn xác định nguyên nhân' && /quá hạn/.test(late.reason), `Quá hạn của GVBM: ${JSON.stringify(late)}`);
+    assert(mgr && mgr.urgency === 'overdue' && mgr.mine === false && /chưa/.test(mgr.reason), `Quản lý thấy khi quá hạn: ${JSON.stringify(mgr)}`);
+    assert(!item(P.cpManager, f.w2.id) && !item(w1T, f.w2.id), 'Quản lý chi nhánh khác và GVBM kỹ năng khác không thấy dù quá hạn');
+    assert(myworkSvc.myWork(w2T, {}).summary.overdue >= 1, 'Tính vào tổng số việc quá hạn');
+    /* Làm nửa vời: có nguyên nhân mà phương án còn gợi ý → dòng còn, lý do đổi. */
+    cases.setIssues(w2T, f.w2.id, { primaryCode: 'student.writing.task' });
+    assert(item(w2T, f.w2.id) && /Phương án/i.test(item(w2T, f.w2.id).reason) && !/Chưa chọn nguyên nhân/.test(item(w2T, f.w2.id).reason), `Chỉ còn thiếu phương án: ${item(w2T, f.w2.id)?.reason}`);
+    sosAuto.confirmPresetPlan(w2T, f.w2Plan.id);
+    assert(!item(w2T, f.w2.id) && !item(P.mbManager, f.w2.id), 'Đủ cả hai thì dòng biến mất, cả ở phía Quản lý');
+    /* Đóng `Không cần theo dõi` cũng làm dòng biến mất; case tạo tay không bao giờ có dòng này. */
+    conn.prepare('UPDATE case_signals SET verify_due = ? WHERE case_id = ?').run(addDays(TODAY, -1), f.sp.id);
+    assert(item(P.mbManager, f.sp.id), 'Case Speaking quá hạn thì Quản lý thấy trước khi đóng');
+    sosAuto.dismissSosCase(P.mbManager, f.sp.id, { reasonCode: 'single_incident' });
+    assert(!item(gvcn, f.sp.id) && !item(P.mbManager, f.sp.id), 'Case đã đóng không còn dòng');
+    const manual = cases.reportIssue(P.mbManager, { studentId: f.st.id, cycleId: f.st.cycleId, topic: 'reading', primaryCode: 'student.reading.logic',
+      title: 'Case tay cho việc cần làm', summary: 'Em hay mất tập trung ở phần này của bài, cần theo dõi thêm.' }) as any;
+    assert(!mywork(P.mbManager).some((i: any) => i.key === key(manual.id)) && !mywork(P.admin).some((i: any) => i.key === key(manual.id)), 'Case tạo tay không thuộc nhóm này');
+  });
+
   check('PR-T · Chỉ số `case-cho-xac-dinh-nguyen-nhan`: case từ SOS chưa có nguyên nhân HOẶC còn phương án điền sẵn chưa xác nhận; hết khi cả hai đã xong; case tạo tay và case đã đóng không thuộc tập', () => {
     const f = freshSos('IND');
     const bid = get('SELECT branch_id n FROM classes WHERE id = ?', CLASS).n;
