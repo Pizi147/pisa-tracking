@@ -12,6 +12,10 @@ import { SESSION_COOKIE, createSession, destroySession, principalOf, requireAuth
 import { can, loadPrincipal, permissionSummary, require_, scopeFor } from '../permissions.ts';
 import { writeAudit } from '../platform/audit.ts';
 import * as attachmentSvc from '../platform/attachments.ts';
+import * as violationSvc from '../yThuc/violations.ts';
+import * as measureSvc from '../yThuc/measures.ts';
+import * as warningSvc from '../yThuc/canhBao.ts';
+import { classViolationBoard } from '../yThuc/board.ts';
 import { maybeSimulateReadError, maybeSimulateSaveFailure, pInt, qInt, qStr, wrap } from './helpers.ts';
 
 /**
@@ -722,6 +726,124 @@ api.delete('/attachments/:id', requireAuth, wrap((req) => {
 }));
 
 /**
+ * Ý THỨC — VI PHẠM VÀ BIỆN PHÁP XỬ LÝ (PR-J, 21/09/2026). Module thứ chín: mọi đường đi qua `server/src/yThuc/`, nơi kiểm quyền ở MÁY
+ * CHỦ (đặc tả mục 6) — giao diện chỉ ẩn nút cho gọn mắt. Không có đường nào tạo case Ý thức: mô hình đó đã bỏ.
+ */
+const yThucBody = (req: Request) => (req.body ?? {}) as Record<string, any>;
+
+api.get('/students/:id/violations', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return violationSvc.listViolations(principalOf(req), {
+    studentId: pInt(req, 'id'), state: (qStr(req, 'state') as any) ?? null, category: qStr(req, 'category') ?? null,
+    from: qStr(req, 'from') ?? null, to: qStr(req, 'to') ?? null,
+  });
+}));
+api.get('/students/:id/measures', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return measureSvc.listMeasures(principalOf(req), { studentId: pInt(req, 'id'), status: (qStr(req, 'status') as any) ?? null });
+}));
+/** Chín loại biện pháp kèm dòng nào khóa và VÌ SAO — để form nói lý do ngay tại dòng, không báo lỗi sau khi bấm. */
+api.get('/students/:id/measure-kinds', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return { rows: measureSvc.measureKindAvailability(principalOf(req), pInt(req, 'id')) };
+}));
+api.get('/students/:id/violation-warning', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return warningSvc.studentWarning(principalOf(req), pInt(req, 'id'));
+}));
+
+/** Ba khu vực Ý thức của lớp (Y03) — một request cho cả tab. */
+api.get('/classes/:id/y-thuc', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return classViolationBoard(principalOf(req), pInt(req, 'id'));
+}));
+api.get('/classes/:id/violation-warning', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return warningSvc.classWarning(principalOf(req), pInt(req, 'id'));
+}));
+/** Một dòng trong Việc cần làm của GVCN (đặc tả 7.10). */
+api.get('/y-thuc/my-warnings', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return { rows: warningSvc.myWarningLines(principalOf(req)) };
+}));
+
+/** Cảnh báo trùng mềm (V06) — form gọi trước khi ghi để hiện "Xem vi phạm đó" / "Vẫn ghi vi phạm mới". Không chặn gì. */
+api.get('/violations/similar', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return { rows: violationSvc.similarViolations(principalOf(req), {
+    studentId: qInt(req, 'studentId') ?? 0, category: qStr(req, 'category') ?? '', occurredOn: qStr(req, 'occurredOn') ?? null,
+  }) };
+}));
+api.post('/violations', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  const b = yThucBody(req);
+  return violationSvc.recordViolation(principalOf(req), {
+    studentId: toInt(b.studentId) ?? 0, category: b.category, description: b.description, occurredOn: b.occurredOn ?? null,
+    skill: 'skill' in b ? (b.skill ?? null) : undefined, idempotencyKey: b.idempotencyKey ?? null,
+  });
+}));
+api.get('/violations/:id', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return violationSvc.violationDetail(principalOf(req), pInt(req, 'id'));
+}));
+api.patch('/violations/:id', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  const b = yThucBody(req);
+  return violationSvc.editViolation(principalOf(req), pInt(req, 'id'), {
+    description: b.description, category: b.category, skill: 'skill' in b ? (b.skill ?? null) : undefined,
+    occurredOn: 'occurredOn' in b ? (b.occurredOn ?? null) : undefined,
+  });
+}));
+api.post('/violations/:id/invalidate', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return violationSvc.invalidateViolation(principalOf(req), pInt(req, 'id'), String(yThucBody(req).reason ?? ''));
+}));
+
+api.post('/measures', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  const b = yThucBody(req);
+  return measureSvc.createMeasure(principalOf(req), {
+    studentId: toInt(b.studentId) ?? 0, kind: b.kind, customName: b.customName ?? null,
+    violationIds: Array.isArray(b.violationIds) ? b.violationIds : [], ownerUserId: toInt(b.ownerUserId) ?? null,
+    note: b.note ?? null, idempotencyKey: b.idempotencyKey ?? null,
+  });
+}));
+api.get('/measures/:id', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return measureSvc.measureDetail(principalOf(req), pInt(req, 'id'));
+}));
+api.patch('/measures/:id', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  const b = yThucBody(req);
+  return measureSvc.updateMeasure(principalOf(req), pInt(req, 'id'), {
+    kind: b.kind, customName: 'customName' in b ? (b.customName ?? null) : undefined, note: 'note' in b ? (b.note ?? null) : undefined,
+    ownerUserId: 'ownerUserId' in b ? (toInt(b.ownerUserId) ?? null) : undefined,
+  });
+}));
+api.post('/measures/:id/violations', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  const b = yThucBody(req);
+  return measureSvc.addViolations(principalOf(req), pInt(req, 'id'), Array.isArray(b.violationIds) ? b.violationIds : []);
+}));
+api.delete('/measures/:id/violations/:violationId', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return measureSvc.removeViolation(principalOf(req), pInt(req, 'id'), pInt(req, 'violationId'));
+}));
+api.post('/measures/:id/confirm', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  const b = yThucBody(req);
+  return measureSvc.confirmMeasure(principalOf(req), pInt(req, 'id'), {
+    performedOn: b.performedOn ?? null, performedBy: toInt(b.performedBy) ?? null, performerName: b.performerName ?? null,
+    note: 'note' in b ? (b.note ?? '') : undefined, participants: b.participants ?? null,
+  });
+}));
+api.delete('/measures/:id', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  measureSvc.deleteMeasure(principalOf(req), pInt(req, 'id'));
+  return { ok: true };
+}));
+
+/**
  * DRILL-DOWN DÙNG CHUNG CỦA MỌI CON SỐ (hợp đồng số liệu, PR-F). MỘT route, mọi chỉ số: nhận `id` của
  * chỉ số trong sổ và phạm vi, gọi ĐÚNG hàm đã sinh ra con số, áp CÙNG bộ quyền. Số là độ dài của tập;
  * `?rows=1` thêm dòng để vẽ danh sách. Hỏi chi nhánh ngoài quyền thì bị từ chối (403) — không trả tập
@@ -731,7 +853,7 @@ api.get('/metrics/:id', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   const r = metricSet(principalOf(req), String(req.params.id), {
     branchId: qInt(req, 'branchId'), skill: qStr(req, 'skill') ?? null,
-    from: qStr(req, 'from') ?? null, to: qStr(req, 'to') ?? null,
+    from: qStr(req, 'from') ?? null, to: qStr(req, 'to') ?? null, kind: qStr(req, 'kind') ?? null,
   });
   return metricResponse(r, qStr(req, 'rows') === '1');
 }));

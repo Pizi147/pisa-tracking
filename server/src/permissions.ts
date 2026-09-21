@@ -236,6 +236,17 @@ function teacherAllows(p: Principal, permission: string, ctx: Ctx): boolean {
       return ctx.skill ? hasAssignment(p, ctx, 'skill') : hasAssignment(p, ctx, 'core');
 
     /*
+     * Ý THỨC (PR-J, thiet-ke/Y_THUC_VI_PHAM_VA_BIEN_PHAP.md mục 6). C02 KHÔNG áp ở đây — vi phạm không thuộc kỹ năng nào.
+     *
+     *   Ghi vi phạm (V01)     mọi giáo viên có phân công dạy lớp đó, kể cả trái môn
+     *   Xử lý (V10, B01)      chỉ GVCN của lớp đó: sửa/hủy vi phạm của người khác, tạo · sửa · xác nhận · xóa biện pháp
+     */
+    case PERMISSIONS.VIOLATION_RECORD:
+      return ctx.anyScope === true || hasAssignment(p, ctx, 'any');
+    case PERMISSIONS.DISCIPLINE_MANAGE:
+      return ctx.anyScope === true || hasAssignment(p, ctx, 'core');
+
+    /*
      * SỬA HỒ SƠ HỌC VIÊN: CHỈ GVCN, và chỉ học viên của chính lớp mình chủ nhiệm.
      *
      * Trước PR15 việc này thuộc Admin chi nhánh. Vai đó đã bỏ, và người thật sự nắm tình
@@ -296,6 +307,10 @@ export function explain(p: Principal, permission: string, ctx: Ctx): string {
     }
     if (permission === PERMISSIONS.SCHEDULE_MOVE) {
       return 'Bạn chỉ dời được lịch lớp Normal mình phụ trách — Fast Track vẫn do Quản lý xếp.';
+    }
+    if (permission === PERMISSIONS.VIOLATION_RECORD) return 'Bạn chỉ ghi được vi phạm của học viên trong lớp mình được phân công.';
+    if (permission === PERMISSIONS.DISCIPLINE_MANAGE) {
+      return 'Chỉ giáo viên chủ nhiệm của lớp (hoặc Quản lý) mới xử lý được Ý thức; giáo viên bộ môn chỉ ghi và xem.';
     }
     return 'Bạn chỉ thao tác được trong lớp mình được phân công.';
   }

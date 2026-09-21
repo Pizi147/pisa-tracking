@@ -142,7 +142,7 @@ Phiên bản 1.0 · 21/09/2026 · **Sổ tra cứu, không phải sổ giao vi�
 | Bỏ ô điểm cho Ý thức/Khác, thay bằng nguồn báo cáo và tình trạng xử lý | ⚰️ Hết hiệu lực | Rule mới: Ý thức thành **tab riêng** với dòng thời gian vi phạm + biện pháp | **PR-K** |
 | Ý thức hiện `đợt xử lý/tái diễn`, `deadline`, `kết luận` | ⚰️ Hết hiệu lực | Không còn đợt, không còn deadline, không còn kết luận | **PR-K** |
 | **CASE-04** — đính kèm tệp / liên kết bằng chứng cho case và phương án học thuật | ✅ Đã làm | PR-N N5–N6. Một bảng `attachments` dùng chung, khối `BangChung` gắn ở thẻ case và lịch sử phương án. Quyền xem = quyền xem bản ghi chủ ở mọi đường (danh sách, tải, gỡ); thêm/gỡ = quyền sửa case (C02); thêm và gỡ có audit; lỗi tải tệp hiện ở dòng tệp, không mất mô tả đang gõ. 9/10 lần cố ý làm hỏng bị bắt, lần còn lại là lớp phòng thủ thừa (đã thêm phép khoá tính chất an toàn). Bấm thử ở ba vai (Quản trị, Quản lý, GV bộ môn) + màn 375px. **Đường multer/tải về không có phép kiểm HTTP** — chỉ kiểm bằng trình duyệt thật | — |
-| Đính kèm tệp/liên kết cho **vi phạm** và **biện pháp xử lý** (Thư cảnh cáo, Đình chỉ học bắt buộc có) | 🟡 Một phần | Kho và khối `BangChung` đã sẵn, hai loại chủ đã được khai tên nhưng **bị từ chối cho tới khi có bản ghi chủ** (có phép kiểm khoá). PR-J chỉ phải thêm dòng quyền chủ + gắn khối; không dựng kho thứ hai | **PR-J**, **PR-K** |
+| Đính kèm tệp/liên kết cho **vi phạm** và **biện pháp xử lý** (Thư cảnh cáo, Đình chỉ học bắt buộc có) | 🟡 Một phần | **Máy chủ ✅ PR-J:** hai loại chủ đã có nơi chủ (`yThuc/access.ts`); quyền xem = quyền xem học viên, thêm/gỡ = quyền sửa vi phạm (người ghi · GVCN · Quản lý) hoặc xử lý biện pháp (GVCN · Quản lý); biện pháp đã thực hiện vẫn bổ sung tệp được; thư cảnh cáo và đình chỉ học **không xác nhận được nếu thiếu tệp/liên kết** (máy chủ nói đúng câu, phép kiểm HTTP). **Còn thiếu:** gắn khối `BangChung` vào giao diện vi phạm/biện pháp | **PR-K** |
 
 ---
 
@@ -183,8 +183,8 @@ Phiên bản 1.0 · 21/09/2026 · **Sổ tra cứu, không phải sổ giao vi�
 | **DATA-01 (P0)** — `weekly.ts` lọc scope ở tập đợt thi, nhưng phép đếm case/HV sau đó chỉ lọc `planned_period_id` | ✅ Đã làm | **Đã đóng từ PR-F** (chặng 2, commit `012d9f8`, phép kiểm F01) — bảng này từng ghi nhầm "chưa làm". PR-N khoá thêm ở tầng danh sách: 2 phép kiểm (số = độ dài tập; danh sách của Quản lý MB không chứa bản ghi CP) | — |
 | `<KetQuaDot>` và `<TyLe>` được màn thật dùng | ❌ Chưa làm | Có luật, có phép kiểm, có trang thử — **chưa màn nào dùng**. Các màn cũ còn tự vẽ câu riêng | **PR-P**, **PR-Q** |
 | `GET /metrics/:id` không trả `ids` khi không xin `rows=1` | ✅ Đã làm | PR-N N4: `metricResponse`; phép kiểm chạy đủ 12 chỉ số, và cố ý làm hỏng (trả `ids` khi không xin) thì gãy | — |
-| Chỉ số `Tái diễn Ý thức` | ⚰️ Hết hiệu lực | Không còn đợt. Thay bằng **tám chỉ số mới** ở `Y_THUC_VI_PHAM_VA_BIEN_PHAP.md` §8 | **PR-J** |
-| Ba chỉ số `hv-co-case-mo`, `case-mo`, `case-thieu-pa` phải sửa định nghĩa thành "chỉ case học thuật" | ❌ Chưa làm | — | **PR-J** |
+| Chỉ số `Tái diễn Ý thức` | ⚰️ Hết hiệu lực | Không còn đợt. **Đã thay bằng tám chỉ số mới (PR-J)** — sổ nay có 20 chỉ số; mỗi chỉ số một hàm trả tập ID, phép kiểm so với SQL độc lập; bấm số ra đúng danh sách qua `GET /metrics/:id?rows=1` | **PR-J ✅** |
+| Ba chỉ số `hv-co-case-mo`, `case-mo`, `case-thieu-pa` phải sửa định nghĩa thành "chỉ case học thuật" | 🟡 Một phần | Lời định nghĩa ở sổ chỉ số đã sửa (PR-J). **Bộ lọc trong mã** chỉ thật sự "chỉ học thuật" khi case Ý thức bị gỡ khỏi dữ liệu và mã — việc đó ở các commit sau của PR-J | **PR-J** |
 
 ---
 

@@ -25,7 +25,7 @@ export type ChiSo = {
   /** Câu hỏi mà con số trả lời, viết đủ chữ. */
   cauHoi: string;
   /** Đơn vị đếm. Ba đơn vị học viên · case · phương án KHÔNG BAO GIỜ cộng vào nhau. */
-  donVi: 'hoc-vien' | 'case' | 'phuong-an' | 'bai-thi' | 'tin-hieu' | 'dot-test' | 'nghia-vu';
+  donVi: 'hoc-vien' | 'case' | 'phuong-an' | 'bai-thi' | 'tin-hieu' | 'dot-test' | 'nghia-vu' | 'vi-pham' | 'bien-phap';
   /** Mô tả MẪU SỐ (tập đủ điều kiện), viết đủ chữ. */
   tapDuDieuKien: string;
   thoiGian: 'hien-trang' | 'phat-sinh-trong-ky' | 'ket-qua-trong-ky';
@@ -54,14 +54,14 @@ export const METRICS: readonly ChiSo[] = [
     id: 'hv-co-case-mo', ten: 'Học viên có case đang mở',
     cauHoi: 'Bao nhiêu em đang có ít nhất một case chưa kết luận?',
     donVi: 'hoc-vien',
-    tapDuDieuKien: 'Học viên có ít nhất một case chưa kết luận trong phạm vi, kể cả em đã kết thúc khoá mà case chưa được kết luận. KHÔNG gộp case đã đóng (F02). Khác cột "HV đang gặp" ở bảng Thực trạng, vốn chỉ tính em đang học.',
+    tapDuDieuKien: 'Học viên có ít nhất một case HỌC THUẬT chưa kết luận trong phạm vi, kể cả em đã kết thúc khoá mà case chưa được kết luận. Ý thức không còn case (21/09/2026) nên không có mặt ở đây. KHÔNG gộp case đã đóng (F02). Khác cột "HV đang gặp" ở bảng Thực trạng, vốn chỉ tính em đang học.',
     thoiGian: 'hien-trang', khuTrung: 'COUNT DISTINCT student_id', drilldown: '/metrics/hv-co-case-mo',
   },
   {
     id: 'case-mo', ten: 'Case đang mở',
     cauHoi: 'Bao nhiêu case đang chờ kết luận?',
     donVi: 'case',
-    tapDuDieuKien: 'Case chưa kết luận trong phạm vi. Đếm case, không đếm học viên, không đếm tín hiệu SOS.',
+    tapDuDieuKien: 'Case HỌC THUẬT chưa kết luận trong phạm vi (Ý thức không còn case). Đếm case, không đếm học viên, không đếm tín hiệu SOS.',
     thoiGian: 'hien-trang', khuTrung: 'COUNT DISTINCT case_id', drilldown: '/metrics/case-mo',
   },
   {
@@ -75,7 +75,7 @@ export const METRICS: readonly ChiSo[] = [
     id: 'case-thieu-pa', ten: 'Case thiếu phương án',
     cauHoi: 'Bao nhiêu case đang mở mà chưa có phương án hợp lệ nào?',
     donVi: 'case',
-    tapDuDieuKien: 'Case đang mở, đủ điều kiện cần hỗ trợ, chưa có phương án hợp lệ. Case CHỜ DUYỆT tách riêng, không quy chậm cho giáo viên.',
+    tapDuDieuKien: 'Case HỌC THUẬT đang mở, đủ điều kiện cần hỗ trợ, chưa có phương án hợp lệ. Case CHỜ DUYỆT tách riêng, không quy chậm cho giáo viên.',
     thoiGian: 'hien-trang', khuTrung: 'COUNT DISTINCT case_id', drilldown: '/metrics/case-thieu-pa',
   },
   {
@@ -120,6 +120,67 @@ export const METRICS: readonly ChiSo[] = [
     tapDuDieuKien: 'Mẫu số: học viên đang học có ít nhất một đợt Test (không huỷ) đã đến lịch — kể cả chưa chấm. Tử số: em mà đợt đã đến lịch mới nhất đủ điểm mọi kỹ năng bắt buộc (dù đạt hay trượt). KHÁC tỷ lệ đạt.',
     thoiGian: 'hien-trang', khuTrung: 'COUNT DISTINCT student_id', drilldown: '/metrics/do-phu-danh-gia',
   },
+  /*
+   * Ý THỨC (PR-J, 21/09/2026) — TÁM CHỈ SỐ MỚI, thay "Tái diễn Ý thức" (không còn đợt nên không còn "lần thứ mấy").
+   * Nguồn: thiet-ke/HOP_DONG_SO_LIEU.md §5 và Y_THUC_VI_PHAM_VA_BIEN_PHAP.md §8. BA ĐƠN VỊ vi phạm · học viên · biện pháp
+   * không bao giờ cộng vào nhau. Ý thức nằm hoàn toàn ngoài mọi bảng hiệu quả hỗ trợ.
+   */
+  {
+    id: 'vi-pham-tong', ten: 'Vi phạm',
+    cauHoi: 'Có bao nhiêu vi phạm còn hiệu lực đã xảy ra trong kỳ?',
+    donVi: 'vi-pham',
+    tapDuDieuKien: 'Vi phạm còn hiệu lực (không bị đánh dấu không chính xác). Đếm theo NGÀY XẢY RA, không theo ngày ghi nhận — GV nhớ ra muộn không làm sự việc xảy ra muộn. Thuộc lớp GHI LÚC ĐÓ.',
+    thoiGian: 'phat-sinh-trong-ky', khuTrung: 'COUNT DISTINCT violation_id', drilldown: '/metrics/vi-pham-tong',
+  },
+  {
+    id: 'vi-pham-chua-xu-ly', ten: 'Vi phạm chưa xử lý',
+    cauHoi: 'Hiện có bao nhiêu vi phạm còn hiệu lực mà chưa nằm trong biện pháp nào?',
+    donVi: 'vi-pham',
+    tapDuDieuKien: 'Vi phạm còn hiệu lực và KHÔNG có dòng nào trong bảng nối với biện pháp — kể cả biện pháp đang chuẩn bị (đã gom vào là GVCN đã bắt tay xử lý). Theo lớp học viên ĐANG học.',
+    thoiGian: 'hien-trang', khuTrung: 'COUNT DISTINCT violation_id', drilldown: '/metrics/vi-pham-chua-xu-ly',
+  },
+  {
+    id: 'vi-pham-khong-hieu-luc', ten: 'Vi phạm không còn hiệu lực',
+    cauHoi: 'Có bao nhiêu vi phạm đã bị đánh dấu không chính xác trong kỳ?',
+    donVi: 'vi-pham',
+    tapDuDieuKien: 'Vi phạm đã đánh dấu không chính xác. Đứng RIÊNG: không trừ vào "Vi phạm" trên cùng một hàng. Đếm theo ngày xảy ra.',
+    thoiGian: 'phat-sinh-trong-ky', khuTrung: 'COUNT DISTINCT violation_id', drilldown: '/metrics/vi-pham-khong-hieu-luc',
+  },
+  {
+    id: 'hv-co-vi-pham', ten: 'Học viên có vi phạm',
+    cauHoi: 'Có bao nhiêu học viên có ít nhất một vi phạm còn hiệu lực trong kỳ?',
+    donVi: 'hoc-vien',
+    tapDuDieuKien: 'Học viên có ít nhất một vi phạm còn hiệu lực xảy ra trong kỳ. Em có ba vi phạm vẫn là MỘT học viên; em chỉ có vi phạm đã hủy thì không tính.',
+    thoiGian: 'phat-sinh-trong-ky', khuTrung: 'COUNT DISTINCT student_id', drilldown: '/metrics/hv-co-vi-pham',
+  },
+  {
+    id: 'hv-can-xu-ly', ten: 'Học viên cần xử lý',
+    cauHoi: 'Có bao nhiêu học viên đang có vi phạm để lâu chưa xử lý?',
+    donVi: 'hoc-vien',
+    tapDuDieuKien: 'Học viên đang học có ít nhất một vi phạm chưa xử lý VÀ cái cũ nhất đã quá 5 ngày. CÙNG hàm với cảnh báo 5 ngày ở tab Ý thức, dòng danh sách lớp và Việc cần làm của GVCN — không đếm riêng.',
+    thoiGian: 'hien-trang', khuTrung: 'COUNT DISTINCT student_id', drilldown: '/metrics/hv-can-xu-ly',
+  },
+  {
+    id: 'bien-phap-da-thuc-hien', ten: 'Biện pháp đã thực hiện',
+    cauHoi: 'Có bao nhiêu biện pháp xử lý đã được thực hiện trong kỳ?',
+    donVi: 'bien-phap',
+    tapDuDieuKien: 'Biện pháp đã thực hiện, đếm theo NGÀY THỰC HIỆN thực tế. Một Report gom n vi phạm là MỘT biện pháp, không phải n. Thuộc lớp của biện pháp.',
+    thoiGian: 'ket-qua-trong-ky', khuTrung: 'COUNT DISTINCT measure_id', drilldown: '/metrics/bien-phap-da-thuc-hien',
+  },
+  {
+    id: 'bien-phap-dang-chuan-bi', ten: 'Biện pháp đang chuẩn bị',
+    cauHoi: 'Hiện có bao nhiêu biện pháp đã tạo mà chưa thực hiện?',
+    donVi: 'bien-phap',
+    tapDuDieuKien: 'Biện pháp ở trạng thái đang chuẩn bị. Biện pháp không có hạn nên không có khái niệm "quá hạn".',
+    thoiGian: 'hien-trang', khuTrung: 'COUNT DISTINCT measure_id', drilldown: '/metrics/bien-phap-dang-chuan-bi',
+  },
+  {
+    id: 'bien-phap-theo-loai', ten: 'Biện pháp theo loại',
+    cauHoi: 'Trong kỳ đã thực hiện bao nhiêu biện pháp mỗi loại?',
+    donVi: 'bien-phap',
+    tapDuDieuKien: 'Biện pháp đã thực hiện trong kỳ, tách CHÍN loại. Ba Thư cảnh cáo lần 1, 2, 3 tách riêng — không gộp thành một dòng. Có thể lọc một loại bằng tham số kind.',
+    thoiGian: 'ket-qua-trong-ky', khuTrung: 'COUNT DISTINCT measure_id theo loại', drilldown: '/metrics/bien-phap-theo-loai',
+  },
 ];
 
 /**
@@ -129,6 +190,7 @@ export const METRICS: readonly ChiSo[] = [
 export const METRIC_UNIT_LABEL: Record<ChiSo['donVi'], string> = {
   'hoc-vien': 'học viên', case: 'case', 'phuong-an': 'phương án', 'bai-thi': 'bài thi',
   'tin-hieu': 'tín hiệu', 'dot-test': 'đợt Test', 'nghia-vu': 'nghĩa vụ',
+  'vi-pham': 'vi phạm', 'bien-phap': 'biện pháp',
 };
 
 /** Tra một chỉ số theo mã; mã lạ trả null (không đoán). */

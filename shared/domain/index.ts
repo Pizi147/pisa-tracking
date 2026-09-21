@@ -26,3 +26,4 @@ export * from './display.ts';
 export * from './metrics.ts';
 export * from './policy.ts';
 export * from './attachments.ts';
+export * from './yThuc.ts';

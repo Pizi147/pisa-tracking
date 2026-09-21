@@ -407,6 +407,7 @@ function migrateCaseEngine(applied: string[], skipped: string[]) {
     migrateCaseForm(conn, applied);
     migrateNoShowMarks(conn, applied);
     migrateAttachments(conn, applied);
+    migrateYThuc(conn, applied);
     migratePlanForm(conn, applied);
     migrateMoveRequests(conn, applied);
     migrateEntryBands(conn, applied);
@@ -2432,6 +2433,131 @@ function migrateAttachments(conn: any, applied: string[]) {
     CREATE INDEX idx_attachment_owner ON attachments(owner_type, owner_id);
   `);
   applied.push('Thêm kho tệp và liên kết dùng chung (bảng attachments) cho bằng chứng của case, phương án, vi phạm và biện pháp. Chưa có tệp nào cũ nên không có gì được điền.');
+}
+
+/**
+ * Ý THỨC MỚI — BỐN BẢNG VI PHẠM VÀ BIỆN PHÁP XỬ LÝ (PR-J, 21/09/2026).
+ *
+ * DDL này chép từ `schema.sql` (nguyên văn từ đặc tả §4.1–§4.4) và chạy lặp lại không lỗi. Mô hình cũ (case Ý thức) không
+ * được chuyển đổi ở đây — xem `migrateLegacyBehaviourCases` cho những gì được giữ lại từ dữ liệu cũ.
+ */
+const YTHUC_DDL = `
+CREATE TABLE IF NOT EXISTS violations (
+  id INTEGER PRIMARY KEY,
+  student_id INTEGER NOT NULL REFERENCES students(id),
+  -- Lộ trình lúc ghi. Dùng cho phạm vi chuỗi Thư cảnh cáo (Y02) và thống kê theo khoá.
+  cycle_id INTEGER REFERENCES learning_cycles(id),
+  -- Lớp em đang học lúc ghi. Giữ để chuyển lớp không mang lịch sử cũ sang lớp mới.
+  class_id INTEGER REFERENCES classes(id),
+
+  -- attendance | homework | conduct | classroom | other   (Y04 — NĂM nhóm)
+  category TEXT NOT NULL,
+  -- Môn GV đang dạy khi thấy. TÙY CHỌN: tự điền theo phân công, GV sửa được, bỏ trống được.
+  -- Cần để đọc ra được câu "thiếu BTVN Writing" trong ví dụ mục 22 của nguồn.
+  skill TEXT,
+
+  occurred_on TEXT NOT NULL,          -- ngày XẢY RA, do GV khai; mặc định hôm nay
+  reported_on TEXT NOT NULL,          -- ngày hệ thống ghi nhận; KHÁC occurred_on
+  reported_by INTEGER NOT NULL REFERENCES users(id),
+  description TEXT NOT NULL,          -- bắt buộc, tối thiểu 10 ký tự
+
+  -- TRẠNG THÁI HIỆU LỰC — chỉ HAI giá trị thật.
+  -- Bốn trạng thái người dùng thấy (Chưa xử lý / Đang chuẩn bị xử lý / Đã xử lý / Không còn
+  -- hiệu lực) là SUY RA, không lưu: ba cái đầu suy từ bảng nối, cái thứ tư là cột này.
+  -- Lưu trạng thái xử lý ở đây là cách chắc chắn nhất để nó lệch với bảng nối.
+  valid INTEGER NOT NULL DEFAULT 1,   -- 1 = còn hiệu lực | 0 = đã đánh dấu không chính xác
+  invalid_reason TEXT,                -- bắt buộc khi valid = 0
+  invalidated_by INTEGER REFERENCES users(id),
+  invalidated_at TEXT,
+
+  idempotency_key TEXT UNIQUE,        -- bấm hai lần hoặc thử lại sau lỗi mạng không tạo hai dòng
+  created_at TEXT NOT NULL,
+  updated_at TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_violation_student ON violations(student_id, occurred_on);
+CREATE INDEX IF NOT EXISTS idx_violation_class ON violations(class_id, occurred_on);
+CREATE INDEX IF NOT EXISTS idx_violation_valid ON violations(valid) WHERE valid = 1;
+
+CREATE TABLE IF NOT EXISTS discipline_measures (
+  id INTEGER PRIMARY KEY,
+  student_id INTEGER NOT NULL REFERENCES students(id),
+  cycle_id INTEGER REFERENCES learning_cycles(id),
+  class_id INTEGER REFERENCES classes(id),
+
+  -- CHÍN LOẠI, xếp nhẹ đến nặng để BÀY RA. Thứ tự KHÔNG phải workflow bắt buộc (nguồn mục 20).
+  --   talk_short | meeting_student | family_report | warning_1 |
+  --   meeting_cx | warning_2 | suspension | warning_3 | other
+  kind TEXT NOT NULL,
+  -- Chỉ dùng khi kind = 'other': tên biện pháp do GVCN tự đặt. Bắt buộc lúc đó.
+  custom_name TEXT,
+
+  -- HAI TRẠNG THÁI, KHÔNG BA.
+  --   preparing : còn sửa được — thêm hoặc bớt vi phạm, sửa ghi chú, đổi loại
+  --   done      : đã thực hiện — chốt snapshot, không sửa danh sách vi phạm nữa
+  -- KHÔNG có 'pending_approval': Y01 chốt GVCN tự làm hết, không có cửa duyệt.
+  status TEXT NOT NULL DEFAULT 'preparing',
+
+  owner_user_id INTEGER REFERENCES users(id),   -- người phụ trách, mặc định GVCN của lớp
+  note TEXT,                                    -- nội dung hoặc ghi chú, dùng cả hai trạng thái
+
+  -- Chỉ có khi status = 'done'. Bắt buộc lúc xác nhận.
+  performed_on TEXT,                            -- ngày THỰC HIỆN THỰC TẾ, có thể khác hôm nay
+  performed_by INTEGER REFERENCES users(id),    -- người thực hiện, khi có tài khoản
+  performer_name TEXT,                          -- hoặc ghi tên khi không có tài khoản
+  participants TEXT,                            -- người tham gia, dùng cho meeting_cx
+  confirmed_by INTEGER REFERENCES users(id),    -- ai bấm Xác nhận
+  confirmed_at TEXT,
+
+  -- SỐ VI PHẠM LÚC XÁC NHẬN — ảnh chụp, không đếm lại.
+  -- Nguồn mục 26: "giữ snapshot lịch sử". Nếu sau này một vi phạm trong nhóm bị đánh dấu không
+  -- chính xác thì số này KHÔNG đổi (biện pháp đó đã thực sự được làm với n vi phạm), nhưng
+  -- thống kê vi phạm thì loại nó ra. Hai câu hỏi khác nhau, hai con số khác nhau.
+  violation_count_at_confirm INTEGER,
+
+  idempotency_key TEXT UNIQUE,
+  created_at TEXT NOT NULL,
+  created_by INTEGER NOT NULL REFERENCES users(id),
+  updated_at TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_measure_student ON discipline_measures(student_id, status);
+CREATE INDEX IF NOT EXISTS idx_measure_class ON discipline_measures(class_id, status);
+CREATE INDEX IF NOT EXISTS idx_measure_preparing ON discipline_measures(status) WHERE status = 'preparing';
+
+-- MỘT vi phạm gắn NHIỀU biện pháp; MỘT biện pháp chứa NHIỀU vi phạm.
+-- Không cài one-to-one, không cài one-to-many, không nhét foreign key vào bảng nào cả.
+--
+-- Ví dụ thật phải chạy được: một nhóm 6 vi phạm cùng lúc đi vào 3 biện pháp
+-- (GV meeting + Report gia đình + Thư cảnh cáo lần 1), và một trong 6 vi phạm đó
+-- còn nằm trong một Report của tháng trước.
+CREATE TABLE IF NOT EXISTS measure_violations (
+  measure_id INTEGER NOT NULL REFERENCES discipline_measures(id),
+  violation_id INTEGER NOT NULL REFERENCES violations(id),
+  added_by INTEGER REFERENCES users(id),
+  added_at TEXT NOT NULL,
+  PRIMARY KEY (measure_id, violation_id)
+);
+CREATE INDEX IF NOT EXISTS idx_mv_violation ON measure_violations(violation_id);
+
+-- Nguồn mục 15: "giữ lịch sử thay đổi nếu phù hợp". Sửa mô tả, đổi nhóm, đổi ngày, hủy ghi nhận.
+CREATE TABLE IF NOT EXISTS violation_history (
+  id INTEGER PRIMARY KEY,
+  violation_id INTEGER NOT NULL REFERENCES violations(id),
+  field TEXT NOT NULL,           -- description | category | skill | occurred_on | valid
+  old_value TEXT,
+  new_value TEXT,
+  reason TEXT,                   -- bắt buộc khi field = 'valid'
+  actor_user_id INTEGER REFERENCES users(id),
+  created_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_vh_violation ON violation_history(violation_id);
+`;
+
+function migrateYThuc(conn: any, applied: string[]) {
+  const has = (t: string) => !!conn.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name = ?").get(t);
+  const missing = ['violations', 'discipline_measures', 'measure_violations', 'violation_history'].filter((t) => !has(t));
+  if (!missing.length) return;
+  conn.exec(YTHUC_DDL);
+  applied.push('Thêm bốn bảng Ý thức mới: vi phạm, biện pháp xử lý, bảng nối nhiều–nhiều và nhật ký sửa vi phạm.');
 }
 
 function migrateNoShowMarks(conn: any, applied: string[]) {

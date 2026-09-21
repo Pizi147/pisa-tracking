@@ -8509,11 +8509,13 @@ check('PR-E · Ngày nghiệp vụ khác ngày ghi nhận thì hiện CẢ HAI (
 const metricsSvc = await import('../worklist/metrics.ts');
 const branchIdOf = (code: string) => (conn.prepare('SELECT id FROM branches WHERE code = ?').get(code) as any).id as number;
 
-check('PR-F · Sổ chỉ số: đúng mười hai chỉ số (PR-N thêm pa-cho-duyet), mỗi chỉ số đủ tám trường (thiếu một trường thì không được lên dashboard)', () => {
+check('PR-F · Sổ chỉ số: đúng hai mươi chỉ số (PR-N thêm pa-cho-duyet; PR-J thêm tám chỉ số Ý thức), mỗi chỉ số đủ tám trường (thiếu một trường thì không được lên dashboard)', () => {
   const list = domain.METRICS as readonly any[];
-  assert(list.length === 12, `Phải có mười hai chỉ số (mười một của PR-F + pa-cho-duyet của PR-N), đang có ${list.length}`);
+  assert(list.length === 20, `Phải có hai mươi chỉ số (mười hai của PR-F/PR-N + tám của PR-J), đang có ${list.length}`);
   const expected = ['hv-sos-hien-tai', 'hv-duoi-ky-vong-mon', 'hv-co-case-mo', 'case-mo', 'tin-hieu-cho-xac-minh',
-    'case-thieu-pa', 'pa-can-cap-nhat', 'pa-cho-duyet', 'pa-co-ket-qua', 'ty-le-co-cai-thien', 'dung-han-cap-nhat', 'do-phu-danh-gia'];
+    'case-thieu-pa', 'pa-can-cap-nhat', 'pa-cho-duyet', 'pa-co-ket-qua', 'ty-le-co-cai-thien', 'dung-han-cap-nhat', 'do-phu-danh-gia',
+    'vi-pham-tong', 'vi-pham-chua-xu-ly', 'vi-pham-khong-hieu-luc', 'hv-co-vi-pham', 'hv-can-xu-ly',
+    'bien-phap-da-thuc-hien', 'bien-phap-dang-chuan-bi', 'bien-phap-theo-loai'];
   for (const id of expected) assert(list.some((m) => m.id === id), `Thiếu chỉ số ${id}`);
   assert(new Set(list.map((m) => m.id)).size === list.length, 'Có hai chỉ số trùng mã');
   const fields = ['id', 'ten', 'cauHoi', 'donVi', 'tapDuDieuKien', 'thoiGian', 'khuTrung', 'drilldown'];
@@ -8521,7 +8523,7 @@ check('PR-F · Sổ chỉ số: đúng mười hai chỉ số (PR-N thêm pa-cho
     for (const f of fields) {
       assert(typeof m[f] === 'string' && m[f].trim().length > 0, `Chỉ số ${m.id} thiếu trường "${f}"`);
     }
-    assert(['hoc-vien', 'case', 'phuong-an', 'bai-thi', 'tin-hieu', 'dot-test', 'nghia-vu'].includes(m.donVi), `${m.id}: đơn vị lạ "${m.donVi}"`);
+    assert(['hoc-vien', 'case', 'phuong-an', 'bai-thi', 'tin-hieu', 'dot-test', 'nghia-vu', 'vi-pham', 'bien-phap'].includes(m.donVi), `${m.id}: đơn vị lạ "${m.donVi}"`);
     assert(['hien-trang', 'phat-sinh-trong-ky', 'ket-qua-trong-ky'].includes(m.thoiGian), `${m.id}: thời gian lạ "${m.thoiGian}"`);
   }
   assert(domain.metricById('hv-co-case-mo')?.ten === 'Học viên có case đang mở', 'metricById phải tra đúng chỉ số');
@@ -9930,19 +9932,26 @@ check('PR-N · N5 Xoá tệp có AUDIT (ai, xoá cái gì, của bản ghi nào)
   assert(added >= 1, 'Thêm tệp cũng phải để lại dấu vết');
 });
 
-check('PR-N · N5 Phương án thừa hưởng quyền của case chứa nó; loại bản ghi chưa có nơi chủ (vi phạm, biện pháp) và loại lạ bị từ chối rõ ràng', () => {
+check('PR-N · N5 Phương án thừa hưởng quyền của case chứa nó; vi phạm và biện pháp (đã có nơi chủ từ PR-J 21/09/2026) và loại lạ bị từ chối rõ ràng khi bản ghi chủ không có', () => {
   const c = prnAttCase(authSubjectSkill, 'Phương Án');
   const iv = Number(conn.prepare(`INSERT INTO case_interventions (case_id, kind, description, status, created_at) VALUES (?, 'tutor', 'PRN phương án có bằng chứng', 'planned', ?)`).run(c.id, nowIsoPrn()).lastInsertRowid);
   const row = attachmentsSvc.addLink(P.mbManager, { ownerType: 'case_intervention', ownerId: iv, url: 'https://example.com/pa', displayName: 'Kế hoạch tutor' }) as any;
   assert((attachmentsSvc.listAttachments(P.subjectTeacher, 'case_intervention', iv) as any[]).length === 1, 'GV dạy lớp xem được bằng chứng của phương án');
   assertThrows(() => attachmentsSvc.listAttachments(P.cpManager, 'case_intervention', iv), /phạm vi|quyền/, 'Quản lý CP xem bằng chứng phương án của case MB');
   assertThrows(() => attachmentsSvc.addLink(P.subjectTeacher, { ownerType: 'case_intervention', ownerId: 999999, url: 'https://example.com/x', displayName: 'x' }), /Không tìm thấy/, 'Phương án không tồn tại');
+  /* PR-J: hai loại này đã có bản ghi chủ, nên id không tồn tại phải báo "không tìm thấy" (không còn "chưa hỗ trợ"). */
   for (const t of ['violation', 'discipline_measure']) {
-    assertThrows(() => attachmentsSvc.listAttachments(P.admin, t, 1), /chưa hỗ trợ/, `Loại "${t}" chưa có nơi chủ mà lại được nhận`);
+    assertThrows(() => attachmentsSvc.listAttachments(P.admin, t, 999999), /Không tìm thấy/, `Loại "${t}" phải kiểm bản ghi chủ`);
   }
   assertThrows(() => attachmentsSvc.listAttachments(P.admin, 'khong_co', 1), /không hợp lệ|chưa hỗ trợ/, 'Loại lạ');
   attachmentsSvc.removeAttachment(P.mbManager, row.id);
 });
+
+// ==================================================================== PR-J (Ý thức: Vi phạm và Biện pháp xử lý)
+
+/* Phép kiểm của module thứ chín ở file riêng — xem đầu `yThuc.tests.ts`. */
+const { runYThucTests } = await import('./yThuc.tests.ts');
+await runYThucTests({ check, assert, assertThrows, conn, TODAY, P, addDays, classId });
 
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
