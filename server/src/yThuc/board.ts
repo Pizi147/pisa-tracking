@@ -24,6 +24,8 @@ export type ClassViolationBoard = {
   classCode: string;
   /** Người xem có tạo và xác nhận được biện pháp không — GVBM đọc được ba khu vực nhưng KHÔNG thấy nút Tạo biện pháp. */
   canManage: boolean;
+  /** Người xem có ghi vi phạm được ở lớp này không (K2-5b) — cùng quyền `violation.record` mà route ghi vi phạm dùng. */
+  canRecord: boolean;
   /** Đầu tab: `⚠ 3 học viên có vi phạm chưa xử lý quá 5 ngày`. */
   warning: { activeCount: number; message: string };
   unhandled: {
@@ -67,6 +69,7 @@ export function classViolationBoard(p: Principal, classId: number, today = demoT
 
   return {
     classId, classCode: cls.code, canManage: can(p, PERMISSIONS.DISCIPLINE_MANAGE, { classId }),
+    canRecord: can(p, PERMISSIONS.VIOLATION_RECORD, { classId }),
     warning: {
       activeCount: activeWarnings,
       message: activeWarnings > 0 ? `⚠ ${activeWarnings} học viên có vi phạm chưa xử lý quá ${CANH_BAO_NGAY} ngày` : '',

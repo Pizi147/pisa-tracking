@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
-import { Alert } from '../../ui/ui.tsx';
+import { Status } from '../../ui/ui.tsx';
 
 type Line = { classId: number; className: string; text: string };
 
@@ -20,7 +20,7 @@ export function YThucReminders() {
     <div className="space-y-1.5">
       {lines.map((l, i) => (
         <Link key={`${l.classId}-${i}`} to={`/hoc-vien/lop/${l.classId}`} className="block no-underline">
-          <Alert tone="warn">{l.text}</Alert>
+          <Status kind="idle">{l.text}</Status>
         </Link>
       ))}
     </div>

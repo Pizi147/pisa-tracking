@@ -16,17 +16,18 @@ type ViolationView = {
   occurredOn: string; description: string; reportedBy: number; reportedByName: string | null; ageLabel: string;
 };
 type MeasureDetail = {
-  id: number; studentId: number; kindLabel: string; statusLabel: string; status: string;
+  id: number; studentId: number; studentName: string; kindLabel: string; statusLabel: string; status: string;
   violationCount: number; createdAt: string; performedOn: string | null;
 };
 type Board = {
-  classId: number; canManage: boolean;
+  classId: number; canManage: boolean; canRecord: boolean;
   warning: { activeCount: number; message: string };
   unhandled: {
     studentCount: number;
     students: Array<{ studentId: number; studentName: string; count: number; oldestAgeDays: number; warningActive: boolean; violations: ViolationView[] }>;
   };
   preparing: MeasureDetail[];
+  history: { total: number; latest: MeasureDetail[] };
 };
 
 /**
@@ -67,10 +68,22 @@ export function ClassYThucCard({ classId }: { classId: number }) {
   };
 
   const students = useMemo(() => {
-    const rows = (board.data?.unhandled.students ?? []).map((s) => ({
+    const fromUnhandled = (board.data?.unhandled.students ?? []).map((s) => ({
       ...s,
       violations: category ? s.violations.filter((v) => v.category === category) : s.violations,
-    })).filter((s) => s.violations.length > 0);
+    }));
+    const unhandledIds = new Set(fromUnhandled.map((s) => s.studentId));
+    const preparingIds = new Set((board.data?.preparing ?? []).map((m) => m.studentId));
+    /* Union với K2-2: em đã gom hết vi phạm vào một biện pháp Đang chuẩn bị thì hết vi phạm chưa xử lý,
+       nhưng vẫn phải còn ở tab lớp để GVCN Xác nhận được — không rơi khỏi danh sách. */
+    const seen = new Set<number>();
+    const fromPreparing = (board.data?.preparing ?? [])
+      .filter((m) => !unhandledIds.has(m.studentId) && !seen.has(m.studentId) && seen.add(m.studentId))
+      .map((m) => ({
+        studentId: m.studentId, studentName: m.studentName, count: 0, oldestAgeDays: 0, warningActive: false,
+        violations: [] as ViolationView[],
+      }));
+    const rows = [...fromUnhandled, ...fromPreparing].filter((s) => s.violations.length > 0 || preparingIds.has(s.studentId));
     return rows.sort((a, b) => (
       Number(b.warningActive) - Number(a.warningActive)
       || b.violations.length - a.violations.length
@@ -94,7 +107,7 @@ export function ClassYThucCard({ classId }: { classId: number }) {
 
   return (
     <Card title="Ý thức & Phối hợp"
-      action={<button className="btn btn-sm" onClick={() => setReportFor(0)}>+ Ghi vi phạm</button>}
+      action={d.canRecord ? <button className="btn btn-sm" onClick={() => setReportFor(0)}>+ Ghi vi phạm</button> : undefined}
       bodyClass="p-0">
       {d.warning.message && (
         <div className="px-4 pt-3"><Alert tone="warn">{d.warning.message.replace(/^⚠\s*/, '')}</Alert></div>
@@ -139,7 +152,7 @@ export function ClassYThucCard({ classId }: { classId: number }) {
                         <span className="text-slate-500 text-xs select-none" aria-hidden
                           style={{ transform: expanded.has(s.studentId) ? 'rotate(90deg)' : 'none', display: 'inline-block' }}>›</span>
                         <span className="text-sm text-slate-100">{s.studentName}</span>
-                        <span className="text-xs text-slate-400">{s.violations.length} vi phạm</span>
+                        <span className="text-xs text-slate-400">{violationBreakdown(s.violations)}</span>
                       </span>
                       <span className="flex items-center gap-2">
                         {s.warningActive && <Alert tone="warn">cũ nhất {s.oldestAgeDays} ngày</Alert>}
@@ -200,6 +213,12 @@ export function ClassYThucCard({ classId }: { classId: number }) {
                               ))}
                             </ul>
                           )}
+                          <p className="text-xs text-slate-500 m-0 mt-2">
+                            Gần đây: {(() => {
+                              const recent = (d.history.latest ?? []).filter((m) => m.studentId === s.studentId).slice(0, 3);
+                              return recent.length === 0 ? '—' : recent.map((m) => m.kindLabel).join(', ');
+                            })()}
+                          </p>
                           <Link className="link text-xs block mt-2" to={`/hoc-vien/${s.studentId}`}>Hồ sơ học viên →</Link>
                         </div>
                       </div>
@@ -270,4 +289,16 @@ export function ClassYThucCard({ classId }: { classId: number }) {
         measureId={confirmMeasureId} onDone={board.reload} />
     </Card>
   );
+}
+
+/**
+ * K2-5a — dòng học viên chia theo nhóm: `5 vi phạm · 3 BTVN · 2 Chuyên cần` (§7.1). Máy chủ chưa trả số
+ * theo nhóm nên đếm ở giao diện từ chính danh sách vi phạm đã tải — không thêm route.
+ */
+function violationBreakdown(violations: ViolationView[]): string {
+  const byGroup = VIOLATION_CATEGORIES.map((c) => ({
+    label: VIOLATION_CATEGORY_LABEL[c as ViolationCategory],
+    count: violations.filter((v) => v.category === c).length,
+  })).filter((g) => g.count > 0);
+  return [`${violations.length} vi phạm`, ...byGroup.map((g) => `${g.count} ${g.label}`)].join(' · ');
 }

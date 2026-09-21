@@ -37,6 +37,7 @@ export function YThucAnalysisView({ branchId }: { branchId: number | null }) {
   const caseChoXacDinh = useMetric('case-cho-xac-dinh-nguyen-nhan', branchId, from, to);
 
   const byKind = bienPhapTheoLoai.data?.byKind ?? {};
+  const period = { ...(from && { from }), ...(to && { to }) };
 
   return (
     <div className="space-y-4">
@@ -54,23 +55,23 @@ export function YThucAnalysisView({ branchId }: { branchId: number | null }) {
       <div>
         <h3 className="text-sm font-semibold text-slate-200 mt-0 mb-2">Vi phạm</h3>
         <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
-          <SoLieu id="vi-pham-tong" giaTri={viPhamTong.data?.n ?? 0} phamVi={{ branchId }} rong={viPhamTong.data?.empty} />
-          <SoLieu id="vi-pham-chua-xu-ly" giaTri={viPhamChuaXuLy.data?.n ?? 0} phamVi={{ branchId }} rong={viPhamChuaXuLy.data?.empty} />
-          <SoLieu id="hv-co-vi-pham" giaTri={hvCoViPham.data?.n ?? 0} phamVi={{ branchId }} rong={hvCoViPham.data?.empty} />
-          <SoLieu id="hv-can-xu-ly" giaTri={hvCanXuLy.data?.n ?? 0} phamVi={{ branchId }} rong={hvCanXuLy.data?.empty} />
+          <SoLieu id="vi-pham-tong" giaTri={viPhamTong.data?.n ?? 0} phamVi={{ branchId }} rong={viPhamTong.data?.empty} extra={period} />
+          <SoLieu id="vi-pham-chua-xu-ly" giaTri={viPhamChuaXuLy.data?.n ?? 0} phamVi={{ branchId }} rong={viPhamChuaXuLy.data?.empty} extra={period} />
+          <SoLieu id="hv-co-vi-pham" giaTri={hvCoViPham.data?.n ?? 0} phamVi={{ branchId }} rong={hvCoViPham.data?.empty} extra={period} />
+          <SoLieu id="hv-can-xu-ly" giaTri={hvCanXuLy.data?.n ?? 0} phamVi={{ branchId }} rong={hvCanXuLy.data?.empty} extra={period} />
         </div>
       </div>
 
       <div>
         <h3 className="text-sm font-semibold text-slate-200 mt-0 mb-2">Biện pháp đã thực hiện theo loại</h3>
         <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
-          <SoLieu id="bien-phap-da-thuc-hien" giaTri={bienPhapDaThucHien.data?.n ?? 0} phamVi={{ branchId }} rong={bienPhapDaThucHien.data?.empty} />
-          <SoLieu id="bien-phap-dang-chuan-bi" giaTri={bienPhapDangChuanBi.data?.n ?? 0} phamVi={{ branchId }} rong={bienPhapDangChuanBi.data?.empty} />
+          <SoLieu id="bien-phap-da-thuc-hien" giaTri={bienPhapDaThucHien.data?.n ?? 0} phamVi={{ branchId }} rong={bienPhapDaThucHien.data?.empty} extra={period} />
+          <SoLieu id="bien-phap-dang-chuan-bi" giaTri={bienPhapDangChuanBi.data?.n ?? 0} phamVi={{ branchId }} rong={bienPhapDangChuanBi.data?.empty} extra={period} />
           {MEASURE_KINDS.map((k) => (
             <div key={k}>
               <div className="text-[11px] text-slate-500 mb-1">{MEASURE_KIND_LABEL[k]}</div>
               <SoLieu id="bien-phap-theo-loai" giaTri={byKind[k] ?? 0} phamVi={{ branchId }} rong={bienPhapTheoLoai.data?.empty}
-                extra={{ kind: k }} />
+                extra={{ ...period, kind: k }} />
             </div>
           ))}
         </div>
@@ -80,10 +81,10 @@ export function YThucAnalysisView({ branchId }: { branchId: number | null }) {
       <div>
         <h3 className="text-sm font-semibold text-slate-200 mt-0 mb-2">Phối hợp SOS</h3>
         <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
-          <SoLieu id="phoi-hop-luot-sos" giaTri={phoiHopLuotSos.data?.n ?? 0} phamVi={{ branchId }} rong={phoiHopLuotSos.data?.empty} />
-          <SoLieu id="phoi-hop-dang-xu-ly" giaTri={phoiHopDangXuLy.data?.n ?? 0} phamVi={{ branchId }} rong={phoiHopDangXuLy.data?.empty} />
-          <SoLieu id="phoi-hop-hoan-thanh" giaTri={phoiHopHoanThanh.data?.n ?? 0} phamVi={{ branchId }} rong={phoiHopHoanThanh.data?.empty} />
-          <SoLieu id="case-cho-xac-dinh-nguyen-nhan" giaTri={caseChoXacDinh.data?.n ?? 0} phamVi={{ branchId }} rong={caseChoXacDinh.data?.empty} />
+          <SoLieu id="phoi-hop-luot-sos" giaTri={phoiHopLuotSos.data?.n ?? 0} phamVi={{ branchId }} rong={phoiHopLuotSos.data?.empty} extra={period} />
+          <SoLieu id="phoi-hop-dang-xu-ly" giaTri={phoiHopDangXuLy.data?.n ?? 0} phamVi={{ branchId }} rong={phoiHopDangXuLy.data?.empty} extra={period} />
+          <SoLieu id="phoi-hop-hoan-thanh" giaTri={phoiHopHoanThanh.data?.n ?? 0} phamVi={{ branchId }} rong={phoiHopHoanThanh.data?.empty} extra={period} />
+          <SoLieu id="case-cho-xac-dinh-nguyen-nhan" giaTri={caseChoXacDinh.data?.n ?? 0} phamVi={{ branchId }} rong={caseChoXacDinh.data?.empty} extra={period} />
         </div>
       </div>
       <SectionNote>Không có cột "tỷ lệ cải thiện" — Ý thức không đo tiến bộ, chỉ đếm việc đã ghi nhận và đã xử lý.</SectionNote>
