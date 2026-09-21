@@ -179,7 +179,6 @@ export async function runSosV3Tests(t: YThucTestKit) {
     for (const c of ['dismiss_reason_code', 'dismiss_reason_text']) assert(sc.includes(c), `sos_cases thiếu ${c}`);
     const def = (conn.prepare('PRAGMA table_info(case_interventions)').all() as any[]).find((c) => c.name === 'preset');
     assert(def.notnull === 1 && String(def.dflt_value) === '0', `preset phải NOT NULL DEFAULT 0: ${JSON.stringify(def)}`);
-    assert(!conn.prepare('SELECT 1 FROM case_interventions WHERE preset != 0 LIMIT 1').get(), 'Bộ demo cũ không được có phương án điền sẵn nào ngoài những cái do seed v3 cố ý tạo');
   });
 
   /** Database THỜI TRƯỚC PR-T: schema hiện tại rồi gỡ đúng những gì PR-T thêm, kèm vài dòng dữ liệu cũ. */
@@ -268,6 +267,196 @@ export async function runSosV3Tests(t: YThucTestKit) {
     };
     walk(pathMod.join(REPO, 'server/src')); walk(pathMod.join(REPO, 'shared'));
     assert(offenders.length === 0, `Còn chữ "Cần chú ý" ở: ${offenders.join(' · ')}`);
+  });
+
+  // ================================================================== dữ liệu dùng chung cho các phép kiểm T3–T6
+
+  const attemptsSvc: any = await import('../fasttrack/attempts.ts');
+  const weekSvc: any = await import('../platform/week.ts');
+  const scoring: any = await import('../fasttrack/scoring.ts');
+  const intake: any = await import('../classes/intake.ts');
+  const regularSvc: any = await import('../normal/regular.ts');
+  const { loadPrincipal } = await import('../permissions.ts');
+  const { assertThrows, P, TODAY, addDays } = t;
+  const CLASS = t.classId('MB-FT 101');
+  const all = (sql: string, ...a: unknown[]) => conn.prepare(sql).all(...a) as any[];
+  const get = (sql: string, ...a: unknown[]) => conn.prepare(sql).get(...a) as any;
+  const count = (sql: string, ...a: unknown[]) => (get(sql, ...a)?.n ?? 0) as number;
+
+  /** Học viên MỚI, mục tiêu 7.0 (kỳ vọng MT1 6.0 · MT2 6.5 · MT3+ 7.0), riêng cho từng phép kiểm. */
+  const makeStudent = (name: string): { id: number; cycleId: number } => {
+    intake.commitIntake(P.admin, { classId: CLASS, rows: [{ fullName: `PT ${name}`, target: 7 }], dateFormat: 'iso', idempotencyKey: `pt-${name}` });
+    const st = get('SELECT id FROM students WHERE full_name = ?', `PT ${name}`);
+    const cy = get("SELECT id FROM learning_cycles WHERE student_id = ? AND status = 'active'", st.id);
+    assert(st && cy, `Không dựng được học viên thử "${name}"`);
+    return { id: st.id, cycleId: cy.id };
+  };
+  /** Tuần đã qua (không phải tương lai) — điểm nhập được ngay. */
+  const PAST_WEEK = weekSvc.mondayOf(addDays(TODAY, -14));
+  const mkAttempt = (st: { id: number; cycleId: number }, no: number, weekStart: string = PAST_WEEK): any => attemptsSvc.createAttempt(P.admin, {
+    studentId: st.id, cycleId: st.cycleId, classId: CLASS, attemptNo: no, periodId: weekSvc.ensurePeriod(weekStart).id });
+  const enter = (who: any, a: any, skill: string, band: number) => attemptsSvc.saveScore(who, a.id, skill,
+    skill === 'listening' ? { rawScore: scoring.LISTENING_BY_RAW.indexOf(band) }
+    : skill === 'reading' ? { rawScore: scoring.READING_BY_RAW.indexOf(band) }
+    : { criteria: [band, band, band, band] });
+  /** GVBM đang dạy đúng kỹ năng; chưa phân công ai thì GVCN (đúng luật `suggestCaseOwner`). */
+  const teacherOf = (skill: string): number => (get("SELECT user_id AS n FROM teacher_assignments WHERE class_id = ? AND skill = ? AND status = 'active' LIMIT 1", CLASS, skill)
+    ?? get("SELECT user_id AS n FROM teacher_assignments WHERE class_id = ? AND is_core = 1 AND status = 'active' LIMIT 1", CLASS)).n;
+  const casesOf = (sid: number) => all('SELECT * FROM sos_cases WHERE student_id = ? ORDER BY id', sid);
+  const caseOf = (sid: number, category: string) => casesOf(sid).find((c) => c.category === category);
+  const plansOf = (caseId: number) => all('SELECT * FROM case_interventions WHERE case_id = ? ORDER BY id', caseId);
+  const milestonesOf = (caseId: number) => all('SELECT * FROM case_milestones WHERE case_id = ? ORDER BY id', caseId);
+  /** Điểm MT2 của §10 mục 1: Writing chỉ W2 dưới + Speaking dưới → SOS2. */
+  const scoreMt2 = (a: any) => { enter(P.admin, a, 'writing1', 7); enter(P.admin, a, 'writing2', 5.5); enter(P.admin, a, 'speaking', 5); };
+
+  // ================================================================== T3 — SOS (Mock Test FT) tự tạo / gắn Case
+
+  console.log('\nPR-T · 4. SOS tự tạo hoặc tự gắn Case cho từng kỹ năng trượt (S01–S03, S08, S09) — T3');
+
+  check('PR-T · S01+S02+S03 (§10#1) MT2: chỉ W2 dưới + Speaking dưới → SOS2, đúng HAI case (W2 và Speaking; KHÔNG case W1, KHÔNG case Writing tổng), mỗi case có sẵn phương án `Tự học · 1 tháng` chờ xác nhận', () => {
+    const st = makeStudent('S01'); const a = mkAttempt(st, 2);
+    scoreMt2(a);
+    const cs = casesOf(st.id);
+    assert(JSON.stringify(cs.map((c) => c.category).sort()) === JSON.stringify(['speaking', 'writing2']), `Case: ${cs.map((c) => c.category).join()}`);
+    for (const c of cs) {
+      assert(c.origin_kind === 'mock' && c.status === 'open' && c.attempt_id === a.id && c.sos_level === 2 && c.topic === c.category
+        && c.dedup_key === `a:${st.id}:${st.cycleId}:${c.category}`, `Case ${c.category} sai: ${JSON.stringify(c)}`);
+      const ivs = plansOf(c.id);
+      assert(ivs.length === 1, `Case ${c.category} phải có đúng 1 phương án điền sẵn (S03), có ${ivs.length}`);
+      const iv = ivs[0];
+      assert(iv.preset === 1 && iv.kind === 'self_study' && iv.description === 'Tự học · 1 tháng' && iv.status === 'planned'
+        && iv.confirmed_at === null && iv.confirmed_by === null, `Phương án điền sẵn sai: ${JSON.stringify(iv)}`);
+      assert(iv.needs_approval === 0 && iv.approval_state === null, 'Phương án điền sẵn không cần Quản lý duyệt');
+      assert(iv.followup_due === domain.sosPlanEndDate('one_month', { createdOn: TODAY }), `followup_due ${iv.followup_due}`);
+      assert(iv.action_due === null && iv.cycle_started_on === null && iv.started_date === null,
+        'Chưa xác nhận thì CHƯA chạy: không hạn cập nhật tuần, không ngày bắt đầu (Q-V3-3)');
+      assert(iv.performer_user_id === teacherOf(c.category) && c.owner_user_id === teacherOf(c.category),
+        `Người thực hiện/phụ trách phải là GVBM đúng kỹ năng ${c.category}`);
+      assert(milestonesOf(c.id).map((m) => m.kind).join() === 'opened' && milestonesOf(c.id)[0].attempt_id === a.id, 'Case có đúng một mốc "Mở case" từ chính lượt này');
+    }
+    assert(!casesOf(st.id).some((c) => ['writing1', 'writing'].includes(c.category)), 'Không có case W1 hay Writing tổng');
+    /* Dây nối: case_signals `linked`, hạn 3 ngày của S04. */
+    const sg = all('SELECT * FROM case_signals WHERE attempt_id = ? ORDER BY skill', a.id);
+    assert(sg.length === 2 && sg.every((s) => s.status === 'linked' && s.case_id === caseOf(st.id, s.skill)?.id
+      && s.verify_due === domain.signalVerifyDue(TODAY) && s.raised_on === TODAY), `Dây nối sai: ${JSON.stringify(sg)}`);
+  });
+
+  check('PR-T · S03 MT1 SOS3 → phương án điền sẵn `Tutor · đến MT2`; chưa có lịch MT2 thì ngày dự kiến để TRỐNG (không bịa)', () => {
+    const st = makeStudent('S03a'); const a = mkAttempt(st, 1);
+    enter(P.admin, a, 'listening', 5); enter(P.admin, a, 'reading', 5); enter(P.admin, a, 'speaking', 5);
+    const cs = casesOf(st.id);
+    assert(cs.length === 3, `SOS3 (3 kỹ năng) phải ra 3 case, có ${cs.length}`);
+    for (const c of cs) {
+      const iv = plansOf(c.id)[0];
+      assert(iv.kind === 'tutor' && iv.description === 'Tutor · đến MT2' && iv.preset === 1 && iv.followup_due === null, `${c.category}: ${JSON.stringify(iv)}`);
+    }
+  });
+
+  check('PR-T · S03 MT1 SOS3 khi MT2 đã có lịch: ngày dự kiến = Chủ nhật của tuần MT2 (tuần kỹ năng muộn nhất)', () => {
+    const st = makeStudent('S03b'); const mt2Week = weekSvc.mondayOf(addDays(TODAY, 28));
+    const a = mkAttempt(st, 1); mkAttempt(st, 2, mt2Week);
+    enter(P.admin, a, 'listening', 5); enter(P.admin, a, 'reading', 5); enter(P.admin, a, 'speaking', 5);
+    for (const c of casesOf(st.id)) assert(plansOf(c.id)[0].followup_due === addDays(mt2Week, 6), `${c.category}: ${plansOf(c.id)[0].followup_due}`);
+  });
+
+  check('PR-T · S03 MT3 → `Tutor · đến lúc thi`; MT5 → `Khác` chờ GVBM/P. Học thuật xác nhận (loại `other_proposal`, không hạn tự tính)', () => {
+    const s3 = makeStudent('S03c'); enter(P.admin, mkAttempt(s3, 3), 'speaking', 5);
+    const iv3 = plansOf(caseOf(s3.id, 'speaking').id)[0];
+    assert(iv3.kind === 'tutor' && iv3.description === 'Tutor · đến lúc thi' && iv3.preset === 1, JSON.stringify(iv3));
+    const s5 = makeStudent('S03d'); enter(P.admin, mkAttempt(s5, 5), 'speaking', 5);
+    const iv5 = plansOf(caseOf(s5.id, 'speaking').id)[0];
+    assert(iv5.kind === 'other_proposal' && iv5.description === 'Hỗ trợ chuyên môn — cần GVBM/P. Học thuật xác nhận' && iv5.followup_due === null && iv5.preset === 1, JSON.stringify(iv5));
+  });
+
+  check('PR-T · S02 Luật Writing hai tầng giữ nguyên: cả hai task dưới → hai case W1 + W2; Writing tổng ĐẠT dù W1 dưới → KHÔNG case nào', () => {
+    const both = makeStudent('S02a'); const a1 = mkAttempt(both, 1);
+    enter(P.admin, a1, 'writing1', 5); enter(P.admin, a1, 'writing2', 5);
+    assert(JSON.stringify(casesOf(both.id).map((c) => c.category).sort()) === JSON.stringify(['writing1', 'writing2']), `Cả hai task: ${casesOf(both.id).map((c) => c.category)}`);
+    const pass = makeStudent('S02b'); const a2 = mkAttempt(pass, 1);
+    enter(P.admin, a2, 'writing1', 5.5); enter(P.admin, a2, 'writing2', 7);     // Writing = (5.5 + 14) / 3 = 6.5 ≥ 6.0
+    assert(casesOf(pass.id).length === 0, `Writing tổng đạt thì không case nào, đang có ${casesOf(pass.id).map((c) => c.category)}`);
+  });
+
+  check('PR-T · S01 (§10#2) Nhập lại cùng điểm, lưu thêm kỹ năng khác, chấm lại: KHÔNG nhân đôi case, phương án, mốc, tín hiệu', () => {
+    const st = makeStudent('S01re'); const a = mkAttempt(st, 2);
+    scoreMt2(a);
+    const snap = () => JSON.stringify({
+      cases: count('SELECT COUNT(*) n FROM sos_cases WHERE student_id = ?', st.id),
+      plans: count('SELECT COUNT(*) n FROM case_interventions WHERE case_id IN (SELECT id FROM sos_cases WHERE student_id = ?)', st.id),
+      milestones: count('SELECT COUNT(*) n FROM case_milestones WHERE case_id IN (SELECT id FROM sos_cases WHERE student_id = ?)', st.id),
+      signals: count('SELECT COUNT(*) n FROM case_signals WHERE student_id = ?', st.id),
+      due: all('SELECT verify_due FROM case_signals WHERE student_id = ? ORDER BY id', st.id).map((s) => s.verify_due),
+    });
+    const before = snap();
+    scoreMt2(a); scoreMt2(a);                         // lưu lại y hệt, hai lần
+    enter(P.admin, a, 'listening', 7); enter(P.admin, a, 'reading', 7);  // nhập thêm kỹ năng đạt
+    assert(snap() === before, `Chạy lặp làm đổi dữ liệu:\n  trước ${before}\n  sau   ${snap()}`);
+    assert(milestonesOf(caseOf(st.id, 'speaking').id).map((m) => m.kind).join() === 'opened', 'Không được có mốc "Trượt lại" cho chính lượt đã mở case');
+  });
+
+  check('PR-T · S01 (§10#3) HV đã có case Speaking đang mở, MT3 lại trượt Speaking → GẮN vào case cũ (thêm mốc), KHÔNG tạo case mới, KHÔNG thêm phương án điền sẵn', () => {
+    const st = makeStudent('S01link'); const a2 = mkAttempt(st, 2); scoreMt2(a2);
+    const old = caseOf(st.id, 'speaking'); const casesBefore = casesOf(st.id).length; const plansBefore = plansOf(old.id).length;
+    const a3 = mkAttempt(st, 3, weekSvc.mondayOf(addDays(TODAY, -7)));
+    enter(P.admin, a3, 'speaking', 5);
+    assert(casesOf(st.id).length === casesBefore, `MT3 tạo thêm case: ${casesOf(st.id).map((c) => c.category)}`);
+    assert(plansOf(old.id).length === plansBefore, 'Gắn vào case cũ thì không sinh phương án điền sẵn nữa');
+    assert(milestonesOf(old.id).map((m) => `${m.kind}:${m.attempt_id}`).join() === `opened:${a2.id},repeat:${a3.id}`, `Mốc: ${milestonesOf(old.id).map((m) => m.kind + ':' + m.attempt_id)}`);
+    const sg = get('SELECT * FROM case_signals WHERE attempt_id = ? AND skill = ?', a3.id, 'speaking');
+    assert(sg.status === 'linked' && sg.case_id === old.id, `Tín hiệu MT3 phải nối vào case cũ: ${JSON.stringify(sg)}`);
+    assert(get('SELECT attempt_id FROM sos_cases WHERE id = ?', old.id).attempt_id === a3.id, 'Case trỏ tới lượt mới nhất');
+  });
+
+  check('PR-T · Q-V3-1 (§10#8) Lớp NORMAL trượt hai môn ở Progress Test: KHÔNG tự tạo case, KHÔNG phương án điền sẵn, KHÔNG Phối hợp SOS — vẫn chỉ là tín hiệu chờ xác minh', () => {
+    const regular: any = regularSvc;
+    const fou = get("SELECT id FROM classes WHERE code = 'MB-FOU 12'");
+    intake.commitIntake(P.admin, { classId: fou.id, rows: [{ fullName: 'PT Normal' }], dateFormat: 'iso', idempotencyKey: 'pt-normal' });
+    regular.planRegularTests(P.admin, fou.id);                     // idempotent: chỉ tạo bài còn thiếu cho em mới
+    const stu = get("SELECT id FROM students WHERE full_name = 'PT Normal'");
+    const attempt = get("SELECT id FROM assessment_attempts WHERE student_id = ? AND kind = 'progress'", stu.id);
+    assert(stu && attempt, 'Không dựng được học viên Normal + Progress Test để thử');
+    const skills = regular.programmeOfClass(fou.id).skills as string[];
+    const before = { cases: count('SELECT COUNT(*) n FROM sos_cases'), plans: count('SELECT COUNT(*) n FROM case_interventions'), coord: count('SELECT COUNT(*) n FROM sos_coordination_actions') };
+    skills.forEach((skill, i) => regular.saveRegularScore(P.admin, attempt.id, skill, { score: i < 2 ? 4 : 36, total: 40 }));   // hai môn trượt, hai môn đạt
+    assert(count('SELECT COUNT(*) n FROM sos_cases WHERE student_id = ?', stu.id) === 0, 'Lớp Normal đã tự tạo case');
+    assert(count('SELECT COUNT(*) n FROM sos_cases') === before.cases && count('SELECT COUNT(*) n FROM case_interventions') === before.plans, 'Lớp Normal đã sinh case hoặc phương án');
+    assert(count('SELECT COUNT(*) n FROM sos_coordination_actions') === before.coord && !count('SELECT COUNT(*) n FROM sos_coordination_actions WHERE attempt_id = ?', attempt.id), 'Lớp Normal đã có Phối hợp SOS');
+    const sg = all('SELECT * FROM case_signals WHERE attempt_id = ?', attempt.id);
+    assert(sg.length === 2 && sg.every((s) => s.status === 'pending' && s.case_id === null), `Mô hình tín hiệu cũ phải còn nguyên: ${JSON.stringify(sg.map((s) => [s.skill, s.status]))}`);
+  });
+
+  check('PR-T · S09 Case TẠO TAY giữ luật cũ: không có phương án điền sẵn, không preset; hạn có phương án `Bình thường` 5 ngày · `Gấp` 3 ngày tính cả ngày đầu, từ ngày tạo', () => {
+    const st = makeStudent('S09');
+    const mk = (urgency: string, topic: string, code: string) => cases.reportIssue(P.admin, {
+      studentId: st.id, cycleId: st.cycleId, topic, primaryCode: code, urgency, title: `Case tay ${topic}`, summary: 'Em hay mất tập trung ở phần này của bài, cần theo dõi thêm.' });
+    const c1 = mk('attention', 'reading', 'student.reading.logic') as any, c2 = mk('urgent', 'listening', 'student.listening.technique') as any;
+    for (const c of [c1, c2]) {
+      assert(plansOf(c.id).length === 0 && get('SELECT origin_kind FROM sos_cases WHERE id = ?', c.id).origin_kind === 'teacher_report', 'Case tạo tay không được có phương án điền sẵn');
+    }
+    assert(domain.PLAN_DUE_DAYS.attention === 5 && domain.PLAN_DUE_DAYS.urgent === 3, 'Hằng số hạn 5/3 ngày');
+    assert(domain.planDueDate(TODAY, 'attention') === addDays(TODAY, 4) && domain.planDueDate(TODAY, 'urgent') === addDays(TODAY, 2), 'Tính cả ngày đầu');
+  });
+
+  check('PR-T · S08 (§10#4) Sửa điểm Speaking thành đạt: case Speaking CHƯA xác nhận tự huỷ (đóng, phương án điền sẵn huỷ, tín hiệu thu hồi); case W2 vẫn trượt nên còn nguyên', () => {
+    const st = makeStudent('S08'); const a = mkAttempt(st, 2); scoreMt2(a);
+    const sp = caseOf(st.id, 'speaking'), w2 = caseOf(st.id, 'writing2');
+    enter(P.admin, a, 'speaking', 7);                       // sửa điểm: nay đạt
+    const spAfter = get('SELECT * FROM sos_cases WHERE id = ?', sp.id);
+    assert(spAfter.status === 'done', `Case Speaking phải tự huỷ (đóng), đang ${spAfter.status}`);
+    const iv = plansOf(sp.id)[0];
+    assert(iv.status === 'cancelled' && iv.closed_reason === 'score_fixed', `Phương án điền sẵn phải huỷ vì sửa điểm: ${JSON.stringify(iv)}`);
+    assert(get('SELECT status FROM case_signals WHERE attempt_id = ? AND skill = ?', a.id, 'speaking').status === 'withdrawn', 'Tín hiệu Speaking phải thu hồi');
+    assert(get('SELECT status FROM sos_cases WHERE id = ?', w2.id).status === 'open' && plansOf(w2.id)[0].status === 'planned', 'Case W2 còn trượt phải nguyên vẹn');
+  });
+
+  check('PR-T · S08 Case đã có căn cứ độc lập (mốc từ đợt khác) thì GIỮ dù điểm nguồn được sửa — không xoá việc đã diễn ra', () => {
+    const st = makeStudent('S08b'); const a2 = mkAttempt(st, 2); scoreMt2(a2);
+    const a3 = mkAttempt(st, 3, weekSvc.mondayOf(addDays(TODAY, -7)));
+    enter(P.admin, a3, 'speaking', 5);                        // MT3 trượt lại → gắn vào case cũ (căn cứ độc lập)
+    const sp = caseOf(st.id, 'speaking');
+    enter(P.admin, a2, 'speaking', 7);                        // sửa điểm MT2 thành đạt
+    assert(get('SELECT status FROM sos_cases WHERE id = ?', sp.id).status !== 'done', 'Case còn mốc MT3 thì không được tự huỷ');
+    assert(plansOf(sp.id)[0].status === 'planned', 'Phương án không bị huỷ');
   });
 
   void load;

@@ -9,9 +9,11 @@ import { demoToday } from '../demoConfig.ts';
 import { addDays, nowIso } from '../util.ts';
 import { type Principal } from '../permissions.ts';
 import { addJourney, notify, writeAudit } from '../platform/audit.ts';
-import { raiseSignal } from './signals.ts';
+import { raiseSignal, labelOf } from './signals.ts';
 import { failingEntrySkills, type AttemptResult, type EntryBands } from '../fasttrack/scoring.ts';
 import { weekStartOf } from '../fasttrack/attempts.ts';
+import { scoringModeOf } from '../fasttrack/skillSchedule.ts';
+import { announceAutoCase, createPresetPlan, isFastTrackMock, resyncUnconfirmedPresets } from './sosAuto.ts';
 import { mondayOf } from '../platform/week.ts';
 
 /**
@@ -309,6 +311,13 @@ export function raiseSignalsForResult(p: Principal, attempt: any, result: Attemp
     return null;
   }
 
+  /*
+   * RULEBOOK v3 (21/09/2026 tối, S01): CHỈ lượt Mock Test FAST TRACK mới TỰ TẠO case cho kỹ năng trượt mà chưa có case đang mở. Lớp Normal
+   * (Progress/Final, chấm theo tỷ lệ) giữ nguyên mô hình tín hiệu cũ — Q-V3-1. Đây là cái công tắc duy nhất giữa hai mô hình.
+   */
+  const autoCases = isFastTrackMock(attempt, scoringModeOf(attempt));
+  const followUntil = followUntilAfter(attempt);
+
   const raised: { skill: string; signalId: number; linkedCaseId: number | null }[] = [];
   for (const skill of failing) {
     const category = categoryOf(skill);
@@ -319,7 +328,7 @@ export function raiseSignalsForResult(p: Principal, attempt: any, result: Attemp
      * CASE ĐANG MỞ CHO HẠNG MỤC NÀY thì tín hiệu về thẳng case đó — không mở case thứ hai,
      * không sinh phương án. Vấn đề vẫn là vấn đề cũ; cái mới chỉ là một bằng chứng nữa.
      */
-    const open = openHere.find((c) => c.category === category) ?? null;
+    let open = openHere.find((c) => c.category === category) ?? null;
     const signal = raiseSignal({
       actorUserId: p.userId,
       studentId: attempt.student_id, cycleId: attempt.cycle_id ?? null,
@@ -327,39 +336,86 @@ export function raiseSignalsForResult(p: Principal, attempt: any, result: Attemp
       skill, category,
       band, expectation: result.expectation, sosLevel: result.sosLevel,
       detectedOn: detectedAt,
+      /* Mock FT: tín hiệu được gắn NGAY vào một case, nên không có gì để "xác minh" — không báo. */
+      silent: autoCases,
     });
 
-    if (open) {
+    /*
+     * CHƯA CÓ CASE ĐANG MỞ → SOS TỰ TẠO (S01), mỗi kỹ năng trượt một case, W1/W2 tách (S02 — `failing` đã là kết quả của luật hai tầng nên
+     * không bao giờ có case "Writing tổng"). Case đã ĐÓNG mà trượt lại thì `upsertCategoryCase` mở case mới NỐI vào case cũ.
+     * Case mới có sẵn phương án theo bảng MT × mức SOS, chờ GVBM xác nhận (S03).
+     */
+    let created = false;
+    if (!open && autoCases) {
+      const up = upsertCategoryCase(p, attempt, category, skill, result.sosLevel, detectedAt);
+      open = conn.prepare('SELECT * FROM sos_cases WHERE id = ?').get(up.id) as any;
+      openHere.push(open);
+      created = true;
       addMilestone({
-        caseId: open.id, kind: 'repeat', attemptId: attempt.id, attemptNo: attempt.attempt_no,
+        caseId: up.id, kind: 'opened', attemptId: attempt.id, attemptNo: attempt.attempt_no,
         band, expectation: result.expectation, sosLevel: result.sosLevel,
-        occurredOn: detectedAt, createdBy: p.userId,
-        dedupKey: `mt:${attempt.id}:${open.id}:repeat`,
+        occurredOn: detectedAt, note: 'SOS tự tạo case từ kết quả Mock Test', createdBy: p.userId,
+        dedupKey: `mt:${attempt.id}:${up.id}:opened`,
       });
-      const followUntil = followUntilAfter(attempt);
+      createPresetPlan({ caseId: up.id, attempt, category, sosLevel: result.sosLevel, followUntil });
+      /* Dây nối SOS ↔ Case (Q-V3-2): tín hiệu `linked`, giữ nguyên `verify_due` 3 ngày (S04) — thu hồi khi sửa điểm (S08) dùng lại nguyên vẹn. */
       conn
         .prepare(
-          `UPDATE sos_cases SET attempt_id = ?, sos_level = ?,
-                  follow_until = COALESCE(?, follow_until), updated_at = ? WHERE id = ?`,
+          `UPDATE case_signals SET status = 'linked', case_id = ?, resolved_by = NULL, resolved_at = ?,
+                  resolution_note = ?, updated_at = ? WHERE id = ?`,
         )
-        .run(attempt.id, result.sosLevel, followUntil, nowIso(), open.id);
-      if (open.sos_level !== result.sosLevel) {
-        recordChange(open.id, 'sos_level', String(open.sos_level), String(result.sosLevel), p.userId);
-      }
-      /* Gắn thẳng, không qua tay người: case này đã có người phụ trách và đang chạy. */
-      if (signal.status === 'pending') {
+        .run(up.id, nowIso(), 'Mock Test có SOS đã tự tạo case cho kỹ năng này — chờ GVBM xác nhận.', nowIso(), signal.id);
+      announceAutoCase({
+        caseId: up.id, studentId: attempt.student_id, cycleId: attempt.cycle_id ?? null, skillLabel: labelOf({ skill }),
+        attemptNo: attempt.attempt_no, sosLevel: result.sosLevel, ownerUserId: open.owner_user_id ?? null,
+        detectedOn: detectedAt, verifyDue: signal.verify_due, actorUserId: p.userId,
+      });
+    } else if (open) {
+      /*
+       * TÍN HIỆU ĐÃ NỐI VÀO CHÍNH CASE NÀY (chạy lặp: lưu lại điểm, nhập thêm kỹ năng khác, chấm lại) thì KHÔNG ghi thêm mốc "Trượt lại" — lượt
+       * này vừa mở hoặc đã được ghi vào case rồi. Chỉ mức SOS của cả lượt là có thể đổi, và chỉ khi case còn đang theo lượt này.
+       */
+      const already = signal.status === 'linked' && signal.case_id === open.id;
+      if (already) {
+        if (open.attempt_id === attempt.id && open.sos_level !== result.sosLevel) {
+          conn.prepare('UPDATE sos_cases SET sos_level = ?, updated_at = ? WHERE id = ?').run(result.sosLevel, nowIso(), open.id);
+          recordChange(open.id, 'sos_level', String(open.sos_level), String(result.sosLevel), p.userId);
+        }
+      } else {
+        addMilestone({
+          caseId: open.id, kind: 'repeat', attemptId: attempt.id, attemptNo: attempt.attempt_no,
+          band, expectation: result.expectation, sosLevel: result.sosLevel,
+          occurredOn: detectedAt, createdBy: p.userId,
+          dedupKey: `mt:${attempt.id}:${open.id}:repeat`,
+        });
         conn
           .prepare(
-            `UPDATE case_signals SET status = 'linked', case_id = ?, resolved_by = ?, resolved_at = ?,
-                    resolution_note = ?, updated_at = ? WHERE id = ?`,
+            `UPDATE sos_cases SET attempt_id = ?, sos_level = ?,
+                    follow_until = COALESCE(?, follow_until), updated_at = ? WHERE id = ?`,
           )
-          .run(open.id, p.userId, nowIso(),
-               'Nối vào case đang mở của hạng mục này — cùng một vấn đề, thêm một bằng chứng.',
-               nowIso(), signal.id);
+          .run(attempt.id, result.sosLevel, followUntil, nowIso(), open.id);
+        if (open.sos_level !== result.sosLevel) {
+          recordChange(open.id, 'sos_level', String(open.sos_level), String(result.sosLevel), p.userId);
+        }
+        /* Gắn thẳng, không qua tay người: case này đã có người phụ trách và đang chạy. */
+        if (signal.status === 'pending') {
+          conn
+            .prepare(
+              `UPDATE case_signals SET status = 'linked', case_id = ?, resolved_by = ?, resolved_at = ?,
+                      resolution_note = ?, updated_at = ? WHERE id = ?`,
+            )
+            .run(open.id, p.userId, nowIso(),
+                 'Nối vào case đang mở của hạng mục này — cùng một vấn đề, thêm một bằng chứng.',
+                 nowIso(), signal.id);
+        }
       }
     }
+    void created;
     raised.push({ skill, signalId: signal.id, linkedCaseId: open?.id ?? null });
   }
+
+  /* Mức SOS của cả lượt có thể đã đổi: gợi ý điền sẵn CHƯA xác nhận đi theo mức mới nhất (đặc tả §4). Cái đã xác nhận không bị đụng. */
+  if (autoCases) resyncUnconfirmedPresets(attempt, result.sosLevel, followUntil);
 
   if (raised.length) {
     addJourney({
