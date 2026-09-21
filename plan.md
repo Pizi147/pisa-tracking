@@ -1,6 +1,8 @@
 # PISA Progress — Kế hoạch giai đoạn sau PR18
 
-> # 🔴 ĐỌC MỤC 23 TRƯỚC — đêm 21/09/2026: bản chính + deploy (3 PR: PR-T · PR-Z · PR-K)
+> # 🔴 ĐỌC MỤC 23 VÀ 24 TRƯỚC — đêm 21/09/2026: PR-T → PR-K → PR-Z2 (bản chính trên Netlify + Turso)
+>
+> Mục 24 **thay PR-Z** của mục 23.2: bản chính chạy Netlify + Turso, không cần máy luôn bật.
 >
 > Rulebook v3 (tối 21/09) đảo ba luật: SOS **tự tạo case + điền sẵn phương án**, **Phối hợp SOS**, vi phạm
 > **sửa/xoá thẳng**. Đặc tả: `thiet-ke/SOS_VA_PHOI_HOP_V3.md`. Mục 22 giữ làm đặc tả cho các PR **sau deploy**.
@@ -329,6 +331,7 @@ Thêm dòng mới ở cuối, có ngày. **Không xoá dòng cũ** — ghi "thay
 | 21/09/2026 (tối) | Case tự tạo từ SOS được **đóng ngay "Không cần theo dõi"** kèm lý do chọn nhanh; không vào thống kê hiệu quả | Chủ sản phẩm (Q-V3-4) |
 | 21/09/2026 (tối) | **Deploy bản chính đêm nay**, dữ liệu **rỗng + tài khoản thật** (bỏ dữ liệu demo, bỏ "Vào nhanh", bỏ ngày giả). Quy mô: 1–2 chi nhánh, 200–300 HV, 30–40 GV/QL. **Chỉ dùng hạ tầng miễn phí.** Phạm vi tối thiểu: GV nhập được mọi thông tin HV (điểm, case, phương án, vi phạm, biện pháp, phối hợp SOS); QL xem được số liệu SOS, case, Ý thức. **Không cần** các tổ hợp công việc chi nhánh/toàn hệ thống | Chủ sản phẩm |
 | 21/09/2026 (tối) | **Lộ trình đổi:** mục 23 (3 PR đêm nay: `PR-T` · `PR-K` · `PR-Z`) thay thứ tự mục 22. `PR-O` · `PR-P` · `PR-Q` · `PR-R` và phần lớn `PR-S` chuyển sang **sau deploy** | Chủ sản phẩm · bên design |
+| **21/09/2026 (chiều)** | **Bản chính chạy Netlify + Turso + Netlify Blobs**, miễn phí, không máy nào phải luôn bật. Chọn Turso thay Supabase vì Turso cùng ngôn ngữ SQLite — Supabase (Postgres) phải dịch thêm ~1.000 câu truy vấn. Làm tối 21/09 bằng gói Max, **sau** PR-T và PR-K. Thay `PR-Z` và `TRIEN_KHAI.md` bản "máy luôn bật". Xem mục 24 | Chủ sản phẩm · bên design |
 | 21/09/2026 (tối) | *(Thiết kế)* Q-V3-1…Q-V3-9 ở `SOS_VA_PHOI_HOP_V3.md` §11 — đáng chú ý: **lớp Normal giữ mô hình tín hiệu cũ** (v3 chỉ nói Mock Test); SOS Event không có bảng mới; tab lớp luôn mở ở Theo học sinh; QL xem Ý thức & Phối hợp bằng **một góc nhìn** trong Phân tích hiện có | Bên design |
 | 20/09/2026 | **C01 và C08 chưa chốt hẳn:** C01 — chủ sản phẩm mô tả (3 ngày phải có PA; Học thuật cập nhật mỗi Chủ nhật + chốt cuối đợt; Ý thức hoàn thành hết PA trong 1 tuần) và hỏi lại "đúng không?"; C08 — hạn chấm Normal hết Chủ nhật tuần thi (đã đúng), còn "chưa có bài thì thêm - và dời sang tuần sau" chưa rõ ai thêm và Normal có dùng "-" không | Chủ sản phẩm · chờ trả lời |
 
@@ -1913,6 +1916,7 @@ Nói **cái gì đổi trên màn hình**, bằng tiếng Việt, không tên h�
 | 21/09/2026 | Claude (session PR-J, hoàn tất) | **Kế hoạch sai/thiếu — ghi tại chỗ.** (1) **J1** ghi "Năm bảng" nhưng chỉ có bốn (bảng thứ năm là `attachments` của PR-N). (2) Đặc tả không nói vi phạm bị bỏ khỏi biện pháp ghi `violation_history` bằng giá trị `field` nào — dùng `field = 'measure'` (cũ/mới là mã biện pháp), không sửa DDL. (3) Đặc tả không nói biện pháp chứa vi phạm đã hủy thì xác nhận thế nào — chọn: **không xác nhận được** cho tới khi bỏ vi phạm đó ra, để ảnh chụp đếm đúng vi phạm thật. (4) Repo chưa có phép kiểm HTTP — tách `server/src/app.ts` khỏi `index.ts`, đây là các phép kiểm HTTP đầu tiên. (5) **J9 chỉ nói "gỡ 36 file", không nói database ĐANG CÓ dữ liệu cũ:** sáu hàm nâng cấp cũ trong `migrate.ts` đọc `track`/'behaviour' vô điều kiện và hàm `migrateNormalFourSkills` lọc `WHERE track = 'academic'` — gỡ cột là `npm run migrate` vỡ trên mọi database sạch. Đã thêm bảo vệ "đời cũ" cho từng hàm, và một bước chuyển đổi cuối chuỗi: báo cáo → vi phạm, việc trao đổi → biện pháp (`talk_student` → GV meeting với HS, `talk_parent` → Report gia đình), **`warning_letter` cũ → loại Khác, không bịa thành Thư cảnh cáo lần 1/2/3** (bịa là phá chuỗi 1→2→3), phần suy đoán (tín hiệu Ý thức, hạn, đợt) bị bỏ; chạy lặp lại không đổi gì. (6) **§10 nói "giữ như hiện tại" cho tình huống 12 (case học thuật Gấp) nhưng bộ demo cũ chỉ có case mức Gấp ở phía Ý thức** — gỡ Ý thức là mất luôn nó; đã gán mức Gấp cho case Speaking tái diễn của Lê Quang Huy. Tình huống 11 "Bình thường": mức *Bình thường* đã bỏ từ trước, mức mặc định là *Cần chú ý* — ghi ở `DEMO.md`. (7) **§10 dùng ngày 18/09 và 20/09** — sau ngày demo cố định 14/09; bộ dựng nay từ chối mọi dòng sau ngày demo, các mốc dời về 04–12/09. Tên "cô Lan, cô Mai" không có trong bộ demo (mười giáo viên cố định) — dùng giáo viên thật của MB-FT 101. (8) **Huy hiệu số case ở bảng lớp và danh sách "case SOS chưa xong" lệch nhau sẵn từ trước** (danh sách không đòi mức SOS > 0, huy hiệu thì đòi) và bị che bởi các case Ý thức tự sinh; gỡ Ý thức làm nó lộ (CP-FT 110: 2 so với 3). Đã sửa danh sách cho cùng luật với huy hiệu, phép kiểm cũ giữ nguyên. (9) **K8/K9 ở mục 22.5 giả định chưa ai gỡ khỏi `mywork.ts` và giao diện** — phần lớn đã gỡ ở PR-J (buộc phải gỡ mới qua được `typecheck`); đã sửa hai dòng đó. **Làm:** bốn bảng + từ vựng `yThuc.ts` + quyền (`violation.record`, `discipline.manage`, `discipline.stats`; C02 KHÔNG áp) + `violations.ts` + `measures.ts` + cảnh báo 5 ngày (MỘT hàm cho ba nơi) + tám chỉ số + `board.ts` + đường API; gỡ mô hình Case Ý thức ở `shared/domain`, `server/src`, bộ demo và web (`ClassBehaviourBoard.tsx` xoá; `CASE_CATEGORIES` 6 → 5; `CONTACT_KINDS`, `BEHAVIOUR_*`, cột `track` ở `sos_cases`/`case_signals`/`tasks`, bảng `case_reports` — hết; `C03_*`/`C04_*` giữ, ghi "HẾT HIỆU LỰC 21/09/2026" kèm lý do); reseed đủ 18 tình huống; hai tệp demo cũ gộp thành `DEMO.md`; CODE_MAP.md thêm module thứ chín. **Phép kiểm:** 445 (main) → 512. Ở `run.ts` 35 phép cũ về Case Ý thức bị xoá (mô hình không còn), 11 phép đổi/thêm (chuyển sang học thuật, khẳng định sự biến mất, và bốn phép nhập bù học thuật khôi phục sau rà soát); `yThuc.tests.ts` có 91 phép (65 ở commit đầu + 4 nâng cấp database cũ, trong đó một phép chạy đúng lệnh `migrate` trên database mang schema THẬT của thời trước PR-J + 13 soi dữ liệu demo + 6 khẳng định mô hình cũ đã gỡ + 2 về khoá gửi lại + 1 về chuyển lớp); mọi mã V01–V14, B01–B16, W01–W06 đều có phép kiểm. **Kiểm ngược (mutation):** 57 lần cố ý làm hỏng luật (ở mô hình mới) — cả 57 bị bắt (hai lần đầu chỉ bị bắt bởi lỗi biên dịch, đã làm lại bằng biến thể đúng kiểu); bốn lần làm hỏng bộ demo (bỏ tệp của Thư 2, bỏ ngày thêm muộn, dời vi phạm cũ nhất, bỏ dòng "bỏ khỏi biện pháp") — cả bốn bị bắt bởi phần "PR-J · 0". **Rà soát độc lập (subagent, trước khi mở PR):** không có lỗi Critical; năm điểm Important — bốn đã sửa: (1) bước nâng cấp XOÁ tệp bằng chứng của case/phương án cũ → nay chuyển chủ sang biện pháp/vi phạm thay thế và `npm run migrate` tự sao lưu database (`.truoc-pr-j.bak`) trước khi xoá; (2) khoá gửi lại (idempotency) phát lại bản ghi của người khác/học viên khác → nay từ chối; (3) bốn phép kiểm nhập bù học thuật bị xoá nhầm cùng phép về Ý thức → khôi phục; (4) chưa có phép kiểm nâng cấp database thật → thêm, kèm bản chụp schema cũ ở `scripts/fixtures/`. **Điểm thứ (5) — chủ sản phẩm chốt 21/09/2026: vấn đề Ý thức ĐI THEO HỌC VIÊN sang lớp mới.** Cảnh báo 5 ngày tính theo học viên ở MỌI nơi (tab lớp, dòng học viên, Việc cần làm, hồ sơ, chỉ số `hv-can-xu-ly`), và bảng Ý thức của lớp lấy vi phạm chưa xử lý cùng biện pháp đang chuẩn bị của học viên ĐANG HỌC ở lớp, dù ghi ở lớp cũ (`warningsFor` bỏ tham số lớp; `listMeasures` theo lớp đi theo ghi danh hiện tại; phép kiểm W05 chuyển lớp). Chú thích DDL "chuyển lớp không mang lịch sử cũ" ở đặc tả §4.1 nay chỉ còn nghĩa là cột `class_id` ghi lớp lúc ghi. Máy chủ cũng cảnh báo khi khởi động nếu database còn mô hình cũ. Các mục Minor (hiệu năng `board.ts`, ngày xảy ra không kiểm với ngày thực hiện biện pháp, ...) chuyển sang PR-K. **Chưa làm:** giao diện Ý thức (PR-K); bấm thử bằng trình duyệt các màn Ý thức vì chưa có màn. |
 
 | 21/09/2026 (tối) | Claude (session thiết kế) | Rà PR-J (#34): đạt, 512 phép kiểm, không còn `behaviour`, tự vá đúng chỗ `migrate` sẽ vỡ trên DB cũ. Đọc rulebook v3 + hai prototype: v3 **đảo ba luật chốt sáng cùng ngày** (SOS tự tạo case + điền sẵn phương án; Phối hợp SOS; vi phạm sửa/xoá thẳng) — theo v3 vì là nguồn mới nhất. Viết `thiet-ke/SOS_VA_PHOI_HOP_V3.md` (luật S/P/V′, DDL `sos_coordination_actions`, hai bảng điền sẵn, bố cục Theo học sinh/Theo thời gian, 15 mục nghiệm thu, Q-V3-1…9), rule book **mục 19**, cập nhật từ điển/hợp đồng số liệu/luật chờ chốt. Chủ sản phẩm muốn **deploy bản chính đêm nay** (miễn phí, dữ liệu rỗng, phạm vi tối thiểu) → viết **mục 23**: ba PR `PR-T` ∥ `PR-Z` rồi `PR-K`; các PR overhaul còn lại sang sau deploy. Netlify **không dùng được** (không có ổ đĩa lâu dài cho SQLite) → `TRIEN_KHAI.md` hướng dẫn máy ở trung tâm + Tailscale Funnel (miễn phí, https cố định) và phương án Oracle Always Free. Viết lại `PROMPT_SESSION_CODE.md`: bớt skill và bớt kiểm ở giao diện, **giữ nguyên độ chặt** ở luật dữ liệu thật, khởi tạo DB rỗng, sao lưu |
+| 21/09/2026 (chiều) | Claude (session thiết kế) | Chủ sản phẩm hỏi lại về Netlify. Đính chính: vấn đề **không phải** "máy chủ phải chạy liên tục" (Netlify Functions chạy theo lượt gọi là đủ) mà là **chỗ cất dữ liệu** (file SQLite + tệp tải lên trên ổ đĩa). Kiểm mã: phiên đăng nhập lưu trong DB (chạy được), không có tác vụ chạy ngầm, tệp nhận qua `memoryStorage` (dễ chuyển), 1.035 chỗ gọi DB đồng bộ ở 51 file + 77 chỗ `tx(...)`, cú pháp riêng SQLite: 55 `lastInsertRowid` · 34 `PRAGMA` · 12 `INSERT OR …` · 5 `GROUP_CONCAT` · 2 `julianday`. Kết luận: **Turso** (không phải Supabase) + Netlify + Blobs. Viết **mục 24** (PR-Z2, có bước thử nhanh Z0 để tìm đường tắt không phải đổi sang async), viết lại `TRIEN_KHAI.md`, thay prompt PR-Z bằng PR-Z2 |
 ---
 
 ## 15. PR-E — Nền giao diện dùng chung
@@ -2889,7 +2893,7 @@ theo GV. Mục 22.4–22.9 giữ nguyên làm đặc tả cho lúc đó, chỉ b
 - [ ] **T8. Seed demo** thêm các tình huống v3 §9 (chỉ cho máy dev).
 - [ ] **T9.** `npm run check` xanh. Cập nhật mục 14 + `BAN_DO_OVERHAUL.md`. Mở PR, **không tự merge**.
 
-## 23.2. PR-Z — Chuẩn bị bản chính
+## 23.2. PR-Z — Chuẩn bị bản chính — ⚰️ HẾT HIỆU LỰC, thay bằng PR-Z2 ở mục 24
 
 Không đổi nghiệp vụ. Mục tiêu: một lệnh build, một lệnh chạy, DB rỗng có tài khoản quản trị, không lộ gì của
 bản demo. Chạy được trên **bất kỳ máy nào có Node 20** — hướng dẫn đưa lên mạng ở `TRIEN_KHAI.md`.
@@ -2943,3 +2947,88 @@ Form ghi vi phạm / tạo biện pháp / xác nhận giữ theo Y_THUC §7.2, �
 1. Làm theo `TRIEN_KHAI.md` để đưa bản chính lên mạng.
 2. Việc còn lại **sau deploy**, theo thứ tự `PR-O → PR-Q → PR-P → PR-R → PR-S` (Q trước P vì hồ sơ lớp/HV là
    chỗ GV dùng hằng ngày; Tổng quan/Phân tích mới là việc của QL, đợi được).
+
+---
+
+# 24. BẢN CHÍNH TRÊN NETLIFY + TURSO — thay `PR-Z` của mục 23.2
+
+**Chốt 21/09/2026 (chiều):** bản chính chạy trên **Netlify** (giao diện + Netlify Functions cho máy chủ) và
+**Turso** (database, cùng họ SQLite với bản đang chạy), tệp tải lên ở **Netlify Blobs**. Miễn phí, không cần
+máy nào luôn bật, `git push` là tự deploy. Làm **tối 21/09 với gói Max (Opus)**, sau khi `PR-T` và `PR-K` đã merge.
+
+`PR-Z` ở mục 23.2 **hết hiệu lực** (nó viết cho kiểu "một máy luôn bật"). Thay bằng `PR-Z2` dưới đây.
+
+## 24.0. Vì sao Turso, không phải Supabase
+
+| | Turso | Supabase |
+|---|---|---|
+| Loại database | libSQL — **cùng ngôn ngữ SQLite** với mã hiện tại | Postgres — ngôn ngữ khác |
+| `schema.sql` (~1.400 dòng) | Chạy **nguyên văn** | Phải dịch từng bảng (kiểu khoá tự tăng, chỉ mục một phần, kiểu ngày…) |
+| Chỗ dùng cú pháp riêng SQLite (đã đếm) | Không phải sửa | 55 `lastInsertRowid` · 34 `PRAGMA` · 8 `INSERT OR IGNORE` · 4 `INSERT OR REPLACE` · 5 `GROUP_CONCAT` · 2 `julianday` · mọi dấu `?` → `$1` |
+| Đổi cách gọi thành "hỏi rồi chờ" (async) | Có | Có |
+| Chạy phép kiểm ở máy dev | Dùng file cục bộ `file:data/...`, **cùng một đường code** | Phải dựng Postgres cục bộ hoặc gọi mạng khi test |
+
+Tức là Supabase = **cùng** khối việc async **cộng thêm** dịch SQL cho ~1.000 câu truy vấn. Turso chỉ có khối
+async. Supabase vẫn là lựa chọn tốt nếu sau này cần đăng nhập Google hay realtime — không cần bây giờ.
+
+## 24.1. Kiểm rủi ro đã làm (21/09)
+
+| Chỗ có thể vỡ trên Netlify | Kết quả kiểm mã | Việc cần làm |
+|---|---|---|
+| Phiên đăng nhập | Lưu ở bảng `demo_sessions` trong DB → **chạy được** | Không |
+| Tác vụ chạy ngầm | **Không có** `setInterval`/cron; chốt dấu `-` cuối tuần chạy lúc đọc | Không |
+| Tệp tải lên | `multer.memoryStorage()` rồi ghi ổ đĩa | Đổi nơi ghi sang Netlify Blobs; **hạ giới hạn 10 MB → 4 MB** vì Functions nhận tối đa ~6 MB mỗi lần gọi |
+| Gọi database | **1.035 chỗ / 51 file**, kiểu đồng bộ; **77** chỗ dùng `tx(...)` | Khối việc chính — Z2 |
+| Độ trễ | Mỗi câu hỏi DB thành một lượt đi mạng. Trang nào hỏi DB trong vòng lặp (N+1) sẽ chậm | Đặt Turso **cùng vùng** với Functions; đo 5 trang nặng nhất (Z8) |
+| Thời gian tối đa một lần gọi | Functions mặc định ~10 giây | Đo ở Z8; trang nào vượt thì gộp truy vấn |
+| Dữ liệu cũ | Bản chính **rỗng** — không có gì phải chuyển | Chỉ chạy `schema.sql` + dữ liệu nền |
+
+## 24.2. PR-Z2 — các bước
+
+- [ ] **Z0. Thử nhanh (≤ 45 phút) — chọn đường.** (a) Thư viện `libsql` (bản tương thích `better-sqlite3`, gọi
+      đồng bộ) có nối được Turso từ trong một Netlify Function không? Nếu **có** → không phải đổi 1.035 chỗ sang
+      async, Z2 chỉ còn đổi chỗ khởi tạo kết nối. (b) Nếu **không** → dùng `@libsql/client` (bản `/web` hoặc
+      `/http` trong Function để khỏi kéo mã native), đi Z2 đầy đủ. (c) Đo thời gian một câu `SELECT 1` từ
+      Function tới Turso ở vùng đã chọn. **Ghi kết quả + đường đã chọn vào mục 14 trước khi làm tiếp.**
+- [ ] **Z1. Một cửa kết nối.** `server/src/db.ts` đọc `TURSO_DATABASE_URL` + `TURSO_AUTH_TOKEN`; máy dev và
+      phép kiểm dùng `file:data/pisa-demo.sqlite` — **cùng một đường code**, không có nhánh riêng cho test.
+- [ ] **Z2. Đổi cách gọi DB** (chỉ khi Z0 chọn đường b). Làm **theo module**, mỗi module một lượt, chạy
+      `npm test` sau mỗi lượt: `platform` → `students` → `classes` → `fasttrack` → `normal` → `cases` →
+      `yThuc` → `worklist` → `routes` → `seed` → `migrate`. `tx(...)` → giao dịch ghi của libSQL
+      (`client.transaction('write')` hoặc `batch`). **Không** đổi luật nghiệp vụ nào; **không** gộp hay
+      "tối ưu" truy vấn ở bước này — chỉ đổi cách gọi. Mọi phép kiểm cũ phải xanh nguyên số lượng.
+- [ ] **Z3. Máy chủ thành Netlify Function.** Bọc `server/src/app.ts` (đã tách ở PR-J) bằng `serverless-http`
+      thành `netlify/functions/api.ts`. `netlify.toml`: lệnh build, thư mục `dist`, chuyển `/api/*` →
+      function, mọi đường khác → `index.html` (link sâu như `/hoc-vien/12` mở được).
+      `npm run dev` ở máy dev **không đổi**.
+- [ ] **Z4. Tệp tải lên → Netlify Blobs** (`@netlify/blobs`), máy dev vẫn ghi `data/uploads`. Giới hạn
+      **4 MB** ở `shared/domain/attachments.ts` (máy chủ và giao diện đọc chung). Luật quyền tải xuống giữ nguyên.
+- [ ] **Z5. Tắt mọi thứ của bản demo khi production** (như 23.2 Z3 cũ): route `/api/demo/*` trừ phần đăng nhập
+      thật cần, "Vào nhanh bằng tài khoản demo", `DemoBar`, `/dev/thanh-phan`; `demoToday()` ra ngày thật;
+      `scenario_mode` luôn `normal`; cookie `Secure` khi chạy https.
+- [ ] **Z6. `npm run init-ban-chinh`** — chạy **từ máy của chủ sản phẩm**, trỏ vào Turso qua biến môi trường:
+      tạo bảng từ `schema.sql` + dữ liệu nền (vai trò, quyền, chương trình, danh mục — tách khỏi `seed.ts`
+      thành hàm dùng chung) + **một** tài khoản quản trị từ `ADMIN_EMAIL`/`ADMIN_PASSWORD`.
+      **Từ chối chạy nếu DB đã có dữ liệu.** Có phép kiểm cho việc từ chối này.
+- [ ] **Z7. `npm run sao-luu`** — chạy từ máy chủ sản phẩm: tải toàn bộ DB Turso về một file
+      `pisa-YYYY-MM-DD-HHmm.sqlite` trong `BACKUP_DIR` (trỏ vào thư mục Google Drive được), giữ 14 bản.
+      File đó mở lại được bằng chính mã hiện tại (`file:`) — có phép kiểm.
+- [ ] **Z8. Deploy thật + kiểm trên địa chỉ thật** (phần quan trọng nhất): init → đăng nhập quản trị → tạo chi
+      nhánh → tài khoản GV/QL → lớp + phân công → thêm HV → xếp MT → nhập điểm có SOS → thấy case + phương án
+      điền sẵn + Phối hợp SOS → ghi vi phạm → tạo biện pháp → tải một tệp. Mọi màn chính mở được khi bảng
+      rỗng. **Đo thời gian tải** hồ sơ học viên, bảng chấm cả lớp, Tổng quan, Thực trạng, tab Ý thức & Phối
+      hợp của lớp: trang nào > 3 giây thì gộp truy vấn của **chính trang đó** (không tối ưu lan man).
+- [ ] **Z9.** Cập nhật `README.md` (máy dev vẫn như cũ + một mục "Bản chính"), `CODE_MAP.md`, mục 14.
+      Mở PR, **không tự merge**.
+
+## 24.3. Thứ tự tối nay
+
+```
+Bây giờ (Sonnet):   PR-T  →  PR-K                       ← như mục 23, không đổi
+Tối nay (Max/Opus): merge PR-T, PR-K  →  PR-Z2 (Z0 → Z9)
+Chủ sản phẩm:       tạo tài khoản Turso + Netlify (TRIEN_KHAI.md mục 2) trong lúc Z0–Z5 chạy
+                    → dán biến môi trường → Z8 kiểm trên địa chỉ thật → merge → gửi link cho GV
+```
+
+**Không** chạy PR-Z2 song song với PR-T/PR-K: Z2 đổi cách gọi DB ở **mọi** file máy chủ — chạy song song là
+xung đột chắc chắn.
