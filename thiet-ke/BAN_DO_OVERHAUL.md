@@ -14,6 +14,10 @@ Phiên bản 1.0 · 21/09/2026 · **Sổ tra cứu, không phải sổ giao vi�
 >
 > Cột "Tình trạng" chỉ được ghi khi **đã đọc mã nguồn hoặc đã bấm thử**, không suy từ tài liệu.
 
+> **Tối 21/09/2026:** lộ trình đổi sang `plan.md` mục 23 (deploy đêm nay: PR-T · PR-Z · PR-K). Mọi dòng
+> ghi `PR-O` · `PR-P` · `PR-Q` · `PR-R` · `PR-S` dưới đây = **sau deploy**. Ý thức theo bản v3
+> (`SOS_VA_PHOI_HOP_V3.md`): tab `Ý thức & Phối hợp`, xem theo học sinh, xoá vi phạm thẳng.
+
 ---
 
 ## 1. Cách đọc bảng

@@ -1,6 +1,13 @@
 # PISA Progress — Kế hoạch giai đoạn sau PR18
 
-> # 🔴 ĐỌC MỤC 22 TRƯỚC — lộ trình đã đổi ngày 21/09/2026
+> # 🔴 ĐỌC MỤC 23 TRƯỚC — đêm 21/09/2026: bản chính + deploy (3 PR: PR-T · PR-Z · PR-K)
+>
+> Rulebook v3 (tối 21/09) đảo ba luật: SOS **tự tạo case + điền sẵn phương án**, **Phối hợp SOS**, vi phạm
+> **sửa/xoá thẳng**. Đặc tả: `thiet-ke/SOS_VA_PHOI_HOP_V3.md`. Mục 22 giữ làm đặc tả cho các PR **sau deploy**.
+>
+> ---
+>
+> ## (lịch sử) ĐỌC MỤC 22 TRƯỚC — lộ trình đã đổi ngày 21/09/2026
 >
 > **Mục 4 (lộ trình PR1…PR-H) đã xong và KHÔNG còn là lộ trình đang chạy.** Lộ trình hiện hành
 > là **8 PR ở mục 22**, gọi là `PR-N · PR-J · PR-O · PR-K · PR-P · PR-Q · PR-R · PR-S`.
@@ -317,6 +324,12 @@ Thêm dòng mới ở cuối, có ngày. **Không xoá dòng cũ** — ghi "thay
 | 21/09/2026 | *(Thiết kế)* **Ý thức là module thứ chín**, không nhét vào `cases/`. Lý do: `cases.ts` đã 3033 dòng | Bên design · `CODE_MAP.md` |
 | 21/09/2026 | *(Thiết kế)* Vi phạm **không có mức độ nặng/nhẹ** và **không có hạn riêng** — nguồn không có, và GVCN nhìn *số lần* + *số ngày* là đủ ra quyết định. Vi phạm **có ô Môn tùy chọn**, tự điền theo phân công | Bên design |
 | 21/09/2026 | *(Thiết kế)* Dữ liệu demo **reseed**, không migrate (nguồn §39 cho phép). Bộ demo phải dựng đủ **18 tình huống** ở `Y_THUC_VI_PHAM_VA_BIEN_PHAP.md` §10. Hai tệp demo cũ viết lại thành **một file gọn** `DEMO.md` | Bên design |
+| **21/09/2026 (tối)** | **Rulebook v3 — `thiet-ke/NGUON-Rule-v3-YThuc-PhoiHop-2026-09-21.md`.** Đặc tả: `thiet-ke/SOS_VA_PHOI_HOP_V3.md`. Ba luật **đảo ngược** chốt sáng cùng ngày: (1) Mock Test có SOS **tự tạo/gắn Case** cho từng kỹ năng trượt (W1/W2 tách) và **tự điền sẵn phương án** (tự học 1 tháng / tutor…); GVBM có 3 ngày xác định nguyên nhân + xác nhận phương án — thay "SOS chỉ là tín hiệu" và rule book §3.4; (2) **Phối hợp SOS** — việc trao đổi HS/gia đình/meeting điền sẵn theo bảng MT×SOS, GVCN xác nhận hoặc bỏ kèm lý do chọn nhanh — thay C05; (3) vi phạm ghi sai thì **sửa hoặc xoá thẳng**, không còn "đánh dấu không chính xác" — thay V11–V14 | Chủ sản phẩm |
+| 21/09/2026 (tối) | Tab `Ý thức` → **`Ý thức & Phối hợp`**, hai sub-tab `Vi phạm & xử lý` · `Phối hợp SOS`. Hồ sơ lớp: vi phạm **mặc định Theo học sinh**, toggle **Theo thời gian**, bộ lọc nhóm áp cùng logic cho cả hai. Hồ sơ học viên giữ tab gọn, không toggle. *(Thay bố cục "ba khu vực xếp dọc" của `Y_THUC_VI_PHAM_VA_BIEN_PHAP.md` §7.3)* | Chủ sản phẩm · v3 §11–§16 |
+| 21/09/2026 (tối) | Case tự tạo từ SOS được **đóng ngay "Không cần theo dõi"** kèm lý do chọn nhanh; không vào thống kê hiệu quả | Chủ sản phẩm (Q-V3-4) |
+| 21/09/2026 (tối) | **Deploy bản chính đêm nay**, dữ liệu **rỗng + tài khoản thật** (bỏ dữ liệu demo, bỏ "Vào nhanh", bỏ ngày giả). Quy mô: 1–2 chi nhánh, 200–300 HV, 30–40 GV/QL. **Chỉ dùng hạ tầng miễn phí.** Phạm vi tối thiểu: GV nhập được mọi thông tin HV (điểm, case, phương án, vi phạm, biện pháp, phối hợp SOS); QL xem được số liệu SOS, case, Ý thức. **Không cần** các tổ hợp công việc chi nhánh/toàn hệ thống | Chủ sản phẩm |
+| 21/09/2026 (tối) | **Lộ trình đổi:** mục 23 (3 PR đêm nay: `PR-T` · `PR-K` · `PR-Z`) thay thứ tự mục 22. `PR-O` · `PR-P` · `PR-Q` · `PR-R` và phần lớn `PR-S` chuyển sang **sau deploy** | Chủ sản phẩm · bên design |
+| 21/09/2026 (tối) | *(Thiết kế)* Q-V3-1…Q-V3-9 ở `SOS_VA_PHOI_HOP_V3.md` §11 — đáng chú ý: **lớp Normal giữ mô hình tín hiệu cũ** (v3 chỉ nói Mock Test); SOS Event không có bảng mới; tab lớp luôn mở ở Theo học sinh; QL xem Ý thức & Phối hợp bằng **một góc nhìn** trong Phân tích hiện có | Bên design |
 | 20/09/2026 | **C01 và C08 chưa chốt hẳn:** C01 — chủ sản phẩm mô tả (3 ngày phải có PA; Học thuật cập nhật mỗi Chủ nhật + chốt cuối đợt; Ý thức hoàn thành hết PA trong 1 tuần) và hỏi lại "đúng không?"; C08 — hạn chấm Normal hết Chủ nhật tuần thi (đã đúng), còn "chưa có bài thì thêm - và dời sang tuần sau" chưa rõ ai thêm và Normal có dùng "-" không | Chủ sản phẩm · chờ trả lời |
 
 ---
@@ -1899,6 +1912,7 @@ Nói **cái gì đổi trên màn hình**, bằng tiếng Việt, không tên h�
 | 21/09/2026 | Claude (session PR-N, N5–N6) | Mục 22.2 thiếu/sai ở ba chỗ: (1) **N5 không nói gì về nơi lưu tệp, dung lượng, đuôi được nhận, đường tải** — đã chọn (thư mục `data/uploads` ngoài DB và ngoài git, tên do máy chủ sinh, 10 MB, danh sách đuôi an toàn không có HTML/SVG/tệp chạy được, một đường tải có kiểm quyền) và ghi ở N5. (2) **Hai trong bốn loại chủ (`violation`, `discipline_measure`) chưa có bảng** — kế hoạch nói bảng dùng chung cho cả bốn nhưng chỉ hai loại có nơi chủ; hai loại kia bị từ chối rõ ràng cho tới PR-J (có phép kiểm khoá), PR-J chỉ cần thêm dòng vào bảng quyền chủ. (3) **CASE-04 ghi ở 12.2 là "chưa làm" và nay đã đóng** — đã gạch. Quy ước chọn khi kế hoạch im lặng: quyền thêm/gỡ = quyền sửa case theo luật C02 (không tự nghĩ luật thứ hai). **Kiểm ngược:** 10 lần cố ý làm hỏng (bỏ kiểm quyền xem ở đường tải; bỏ kiểm quyền xem ở danh sách; bỏ kiểm quyền sửa ở đường gỡ; bỏ audit khi gỡ; bỏ audit khi thêm; nhận tệp .html; nhận liên kết `javascript:`; bỏ kiểm quyền sửa khi thêm liên kết; bỏ giới hạn 10 MB; cho tên tệp có `../`) — **chín bị bắt** ngay ở phép kiểm N5. Lần thứ mười (tên tệp có `../`) **không** làm phép kiểm nào gãy: xét lại thì đó là lớp phòng thủ thừa — tệp luôn lưu dưới tên uuid do máy chủ sinh nên `../` không thể đi đâu; nhưng chưa có phép kiểm nào khoá điều đó, nên đã thêm một phép khoá **tính chất an toàn** (tệp luôn ở trong thư mục tải lên, tên hiển thị không còn dấu đường dẫn), không khoá cách làm. Thêm 8 phép kiểm (445). Bấm thử trình duyệt thật (Quản trị, Quản lý Cẩm Phả, GV bộ môn ngoài phạm vi): thêm/gỡ tệp và liên kết ở case và phương án; tải về đúng nội dung; `save_failure` giữ nguyên mô tả đang gõ; GV ngoài phạm vi nhận 403; màn 375px không tràn ngang. **Chưa làm:** nối `BangChung` vào vi phạm/biện pháp (PR-J/K, chưa có bản ghi chủ); quét virus và xem trước tệp ngay trong trang (ngoài đặc tả); tệp đã gỡ khỏi DB do xoá cả case (chưa có đường xoá case nên chưa phát sinh — PR-J phải nhớ khi thêm) |
 | 21/09/2026 | Claude (session PR-J, hoàn tất) | **Kế hoạch sai/thiếu — ghi tại chỗ.** (1) **J1** ghi "Năm bảng" nhưng chỉ có bốn (bảng thứ năm là `attachments` của PR-N). (2) Đặc tả không nói vi phạm bị bỏ khỏi biện pháp ghi `violation_history` bằng giá trị `field` nào — dùng `field = 'measure'` (cũ/mới là mã biện pháp), không sửa DDL. (3) Đặc tả không nói biện pháp chứa vi phạm đã hủy thì xác nhận thế nào — chọn: **không xác nhận được** cho tới khi bỏ vi phạm đó ra, để ảnh chụp đếm đúng vi phạm thật. (4) Repo chưa có phép kiểm HTTP — tách `server/src/app.ts` khỏi `index.ts`, đây là các phép kiểm HTTP đầu tiên. (5) **J9 chỉ nói "gỡ 36 file", không nói database ĐANG CÓ dữ liệu cũ:** sáu hàm nâng cấp cũ trong `migrate.ts` đọc `track`/'behaviour' vô điều kiện và hàm `migrateNormalFourSkills` lọc `WHERE track = 'academic'` — gỡ cột là `npm run migrate` vỡ trên mọi database sạch. Đã thêm bảo vệ "đời cũ" cho từng hàm, và một bước chuyển đổi cuối chuỗi: báo cáo → vi phạm, việc trao đổi → biện pháp (`talk_student` → GV meeting với HS, `talk_parent` → Report gia đình), **`warning_letter` cũ → loại Khác, không bịa thành Thư cảnh cáo lần 1/2/3** (bịa là phá chuỗi 1→2→3), phần suy đoán (tín hiệu Ý thức, hạn, đợt) bị bỏ; chạy lặp lại không đổi gì. (6) **§10 nói "giữ như hiện tại" cho tình huống 12 (case học thuật Gấp) nhưng bộ demo cũ chỉ có case mức Gấp ở phía Ý thức** — gỡ Ý thức là mất luôn nó; đã gán mức Gấp cho case Speaking tái diễn của Lê Quang Huy. Tình huống 11 "Bình thường": mức *Bình thường* đã bỏ từ trước, mức mặc định là *Cần chú ý* — ghi ở `DEMO.md`. (7) **§10 dùng ngày 18/09 và 20/09** — sau ngày demo cố định 14/09; bộ dựng nay từ chối mọi dòng sau ngày demo, các mốc dời về 04–12/09. Tên "cô Lan, cô Mai" không có trong bộ demo (mười giáo viên cố định) — dùng giáo viên thật của MB-FT 101. (8) **Huy hiệu số case ở bảng lớp và danh sách "case SOS chưa xong" lệch nhau sẵn từ trước** (danh sách không đòi mức SOS > 0, huy hiệu thì đòi) và bị che bởi các case Ý thức tự sinh; gỡ Ý thức làm nó lộ (CP-FT 110: 2 so với 3). Đã sửa danh sách cho cùng luật với huy hiệu, phép kiểm cũ giữ nguyên. (9) **K8/K9 ở mục 22.5 giả định chưa ai gỡ khỏi `mywork.ts` và giao diện** — phần lớn đã gỡ ở PR-J (buộc phải gỡ mới qua được `typecheck`); đã sửa hai dòng đó. **Làm:** bốn bảng + từ vựng `yThuc.ts` + quyền (`violation.record`, `discipline.manage`, `discipline.stats`; C02 KHÔNG áp) + `violations.ts` + `measures.ts` + cảnh báo 5 ngày (MỘT hàm cho ba nơi) + tám chỉ số + `board.ts` + đường API; gỡ mô hình Case Ý thức ở `shared/domain`, `server/src`, bộ demo và web (`ClassBehaviourBoard.tsx` xoá; `CASE_CATEGORIES` 6 → 5; `CONTACT_KINDS`, `BEHAVIOUR_*`, cột `track` ở `sos_cases`/`case_signals`/`tasks`, bảng `case_reports` — hết; `C03_*`/`C04_*` giữ, ghi "HẾT HIỆU LỰC 21/09/2026" kèm lý do); reseed đủ 18 tình huống; hai tệp demo cũ gộp thành `DEMO.md`; CODE_MAP.md thêm module thứ chín. **Phép kiểm:** 445 (main) → 512. Ở `run.ts` 35 phép cũ về Case Ý thức bị xoá (mô hình không còn), 11 phép đổi/thêm (chuyển sang học thuật, khẳng định sự biến mất, và bốn phép nhập bù học thuật khôi phục sau rà soát); `yThuc.tests.ts` có 91 phép (65 ở commit đầu + 4 nâng cấp database cũ, trong đó một phép chạy đúng lệnh `migrate` trên database mang schema THẬT của thời trước PR-J + 13 soi dữ liệu demo + 6 khẳng định mô hình cũ đã gỡ + 2 về khoá gửi lại + 1 về chuyển lớp); mọi mã V01–V14, B01–B16, W01–W06 đều có phép kiểm. **Kiểm ngược (mutation):** 57 lần cố ý làm hỏng luật (ở mô hình mới) — cả 57 bị bắt (hai lần đầu chỉ bị bắt bởi lỗi biên dịch, đã làm lại bằng biến thể đúng kiểu); bốn lần làm hỏng bộ demo (bỏ tệp của Thư 2, bỏ ngày thêm muộn, dời vi phạm cũ nhất, bỏ dòng "bỏ khỏi biện pháp") — cả bốn bị bắt bởi phần "PR-J · 0". **Rà soát độc lập (subagent, trước khi mở PR):** không có lỗi Critical; năm điểm Important — bốn đã sửa: (1) bước nâng cấp XOÁ tệp bằng chứng của case/phương án cũ → nay chuyển chủ sang biện pháp/vi phạm thay thế và `npm run migrate` tự sao lưu database (`.truoc-pr-j.bak`) trước khi xoá; (2) khoá gửi lại (idempotency) phát lại bản ghi của người khác/học viên khác → nay từ chối; (3) bốn phép kiểm nhập bù học thuật bị xoá nhầm cùng phép về Ý thức → khôi phục; (4) chưa có phép kiểm nâng cấp database thật → thêm, kèm bản chụp schema cũ ở `scripts/fixtures/`. **Điểm thứ (5) — chủ sản phẩm chốt 21/09/2026: vấn đề Ý thức ĐI THEO HỌC VIÊN sang lớp mới.** Cảnh báo 5 ngày tính theo học viên ở MỌI nơi (tab lớp, dòng học viên, Việc cần làm, hồ sơ, chỉ số `hv-can-xu-ly`), và bảng Ý thức của lớp lấy vi phạm chưa xử lý cùng biện pháp đang chuẩn bị của học viên ĐANG HỌC ở lớp, dù ghi ở lớp cũ (`warningsFor` bỏ tham số lớp; `listMeasures` theo lớp đi theo ghi danh hiện tại; phép kiểm W05 chuyển lớp). Chú thích DDL "chuyển lớp không mang lịch sử cũ" ở đặc tả §4.1 nay chỉ còn nghĩa là cột `class_id` ghi lớp lúc ghi. Máy chủ cũng cảnh báo khi khởi động nếu database còn mô hình cũ. Các mục Minor (hiệu năng `board.ts`, ngày xảy ra không kiểm với ngày thực hiện biện pháp, ...) chuyển sang PR-K. **Chưa làm:** giao diện Ý thức (PR-K); bấm thử bằng trình duyệt các màn Ý thức vì chưa có màn. |
 
+| 21/09/2026 (tối) | Claude (session thiết kế) | Rà PR-J (#34): đạt, 512 phép kiểm, không còn `behaviour`, tự vá đúng chỗ `migrate` sẽ vỡ trên DB cũ. Đọc rulebook v3 + hai prototype: v3 **đảo ba luật chốt sáng cùng ngày** (SOS tự tạo case + điền sẵn phương án; Phối hợp SOS; vi phạm sửa/xoá thẳng) — theo v3 vì là nguồn mới nhất. Viết `thiet-ke/SOS_VA_PHOI_HOP_V3.md` (luật S/P/V′, DDL `sos_coordination_actions`, hai bảng điền sẵn, bố cục Theo học sinh/Theo thời gian, 15 mục nghiệm thu, Q-V3-1…9), rule book **mục 19**, cập nhật từ điển/hợp đồng số liệu/luật chờ chốt. Chủ sản phẩm muốn **deploy bản chính đêm nay** (miễn phí, dữ liệu rỗng, phạm vi tối thiểu) → viết **mục 23**: ba PR `PR-T` ∥ `PR-Z` rồi `PR-K`; các PR overhaul còn lại sang sau deploy. Netlify **không dùng được** (không có ổ đĩa lâu dài cho SQLite) → `TRIEN_KHAI.md` hướng dẫn máy ở trung tâm + Tailscale Funnel (miễn phí, https cố định) và phương án Oracle Always Free. Viết lại `PROMPT_SESSION_CODE.md`: bớt skill và bớt kiểm ở giao diện, **giữ nguyên độ chặt** ở luật dữ liệu thật, khởi tạo DB rỗng, sao lưu |
 ---
 
 ## 15. PR-E — Nền giao diện dùng chung
@@ -2809,3 +2823,123 @@ bản cũ và lý do đổi. 3. `grep -rn "Cần chú ý" .` không còn kết q
 
 **Chưa đặt vào kế hoạch** (chốt 21/09/2026). Làm xong 8 PR rồi bàn riêng.
 Đừng tự suy điều kiện deploy từ việc một PR đã tick.
+
+---
+
+# 23. LỘ TRÌNH ĐÊM 21/09/2026 — BẢN CHÍNH VÀ DEPLOY (thay thứ tự mục 22)
+
+**Mục này thay thứ tự mục 22.** Đã xong: `PR-N` (#32), `PR-J` (#34). Chủ sản phẩm muốn deploy bản chính
+**đêm nay**, dữ liệu rỗng, hạ tầng miễn phí, phạm vi tối thiểu: *GV nhập được mọi thông tin HV; QL xem được
+số liệu SOS, case, Ý thức.* Nguồn luật mới: `thiet-ke/SOS_VA_PHOI_HOP_V3.md` (rulebook v3).
+
+## 23.0. Ba PR đêm nay
+
+```
+PR-T  Máy chủ theo v3            ─┐  chạy SONG SONG được (không chung file,
+PR-Z  Chuẩn bị bản chính         ─┘  trừ package.json — gỡ xung đột bằng giữ cả hai dòng)
+PR-K  Giao diện Ý thức & Phối hợp + case từ SOS   ← sau PR-T
+      ▶ chủ sản phẩm bấm thử 10 phút → merge → deploy
+```
+
+**Sau deploy** (không làm đêm nay): `PR-O` điều hướng 4 khu vực · `PR-P` Tổng quan/Phân tích mới ·
+`PR-Q` Học viên & Lớp/Hồ sơ · `PR-R` Công việc/Kế hoạch Test · phần còn lại của `PR-S` · §6 phân tích
+theo GV. Mục 22.4–22.9 giữ nguyên làm đặc tả cho lúc đó, chỉ bỏ những gì mục 23 đã làm.
+
+**Mức kiểm tra đêm nay — cố ý nhẹ hơn mục 22, nhưng không bỏ phần có thể làm hỏng dữ liệu thật:**
+
+| Loại việc | Mức kiểm |
+|---|---|
+| Luật tạo/gắn case, preload, phối hợp SOS, xoá vi phạm, quyền | **Đầy đủ**: phép kiểm máy chủ cho từng mã luật (S/P/V′) |
+| Khởi tạo DB rỗng, tắt demo, sao lưu | **Đầy đủ**: chạy thật trên DB rỗng từ đầu |
+| Giao diện | Bấm thử **một lượt** mỗi vai (GVBM, GVCN, QL) + khổ 375px. Không chụp ảnh, không kiểm ngược |
+| Chữ, trạng thái rỗng, bố cục đẹp | Chỉ phần nằm trong màn mới làm. Phần còn lại → sau deploy |
+
+## 23.1. PR-T — Máy chủ theo rulebook v3
+
+Đặc tả: `thiet-ke/SOS_VA_PHOI_HOP_V3.md` mục 2–6, 8. Chỉ máy chủ + `shared/domain` + seed demo.
+
+- [ ] **T1. Bảng tra thuần** `shared/domain/sos.ts`: `DEFAULT_ACADEMIC_SUPPORT` (bảng §4, tra theo số MT +
+      mức SOS) và `DEFAULT_SOS_COORDINATION` (bảng §5.3), `COORDINATION_KINDS` (6), `COORDINATION_REMOVE_REASONS`
+      (4 + `system_sos_changed`), `CASE_DISMISS_REASONS` (3). Phép kiểm thuần: đủ 5 MT × 3 mức cho cả hai bảng;
+      MT3 SOS3 là dòng duy nhất có `cx_meeting_family`.
+- [ ] **T2. Schema + migrate:** bảng `sos_coordination_actions` (DDL §5.1); `case_interventions` thêm `preset`,
+      `confirmed_by`, `confirmed_at`; `sos_cases` thêm `dismiss_reason_code`, `dismiss_reason_text`;
+      `attachments.owner_type` nhận `sos_coordination_action`. `npm run migrate` chạy lặp không lỗi.
+- [ ] **T3. SOS tự tạo/gắn case (S01–S03, S08, S09).** Sửa `server/src/cases/signals.ts` (điểm vào hiện tại khi
+      có kết quả dưới kỳ vọng): **chỉ lượt Mock FT** — với mỗi kỹ năng trượt (luật Writing hai tầng giữ nguyên)
+      tìm case mở cùng HS + lộ trình + hạng mục → gắn (mốc `repeat`) hoặc tạo; ghi `case_signals` `linked` làm
+      dây nối, `verify_due` = hạn 3 ngày; case mới có phương án `preset = 1` theo `DEFAULT_ACADEMIC_SUPPORT`,
+      `followup_due` tính theo §4, người thực hiện = GVBM đúng kỹ năng. Lớp Normal **không đổi** (Q-V3-1).
+      Phép kiểm: nghiệm thu §10 mục 1, 2, 3, 4 (phần case), 8.
+- [ ] **T4. Xác nhận / thay / đóng case từ SOS (S04–S07).** Hàm + route: xác nhận phương án điền sẵn
+      (`confirmed_*`); thay = `superseded` + tạo mới trong **một** giao dịch, không bao giờ để case 0 phương án
+      đang hoạt động; `Không cần theo dõi` (lý do bắt buộc, `Khác` cần chữ) → đóng case, huỷ phương án điền sẵn.
+      Phương án điền sẵn chưa xác nhận **loại khỏi** `effectiveness.ts` và khỏi nghĩa vụ cập nhật tuần.
+      Quyền: GVBM đúng kỹ năng (C02) + QL. Thêm chỉ số `case-cho-xac-dinh-nguyen-nhan`.
+      Phép kiểm: §10 mục 5, 6.
+- [ ] **T5. Phối hợp SOS (P01–P10).** `server/src/yThuc/phoiHop.ts`: sinh việc điền sẵn khi lượt có SOS
+      (gọi từ cùng điểm với T3), đồng bộ khi mức SOS đổi (P02, P03), thêm / xác nhận / bỏ việc, danh sách theo
+      lớp và theo HS. Quyền: GVCN lớp em đang học + QL; GVBM chỉ đọc. Ba chỉ số `phoi-hop-*` (§8).
+      Phép kiểm: §10 mục 1 (phần phối hợp), 2, 4 (phần phối hợp), 7, 8 + quyền.
+- [ ] **T6. Xoá vi phạm (V11′–V14′).** Thay đường "đánh dấu không chính xác" bằng **xoá**: xoá dòng + dòng nối
+      + tệp, ghi `audit_logs`. Số vi phạm của biện pháp là số đang gắn. Migrate: dòng `valid = 0` cũ → xoá (có
+      audit). Gỡ chỉ số `vi-pham-khong-hieu-luc`. Phép kiểm: §10 mục 9 + quyền V10.
+- [ ] **T7. Đổi tên mức** `Cần chú ý` → `Bình thường` ở mọi chỗ (nhãn, seed, thông báo, phép kiểm). Mã
+      `attention` giữ nguyên, chỉ đổi chữ.
+- [ ] **T8. Seed demo** thêm các tình huống v3 §9 (chỉ cho máy dev).
+- [ ] **T9.** `npm run check` xanh. Cập nhật mục 14 + `BAN_DO_OVERHAUL.md`. Mở PR, **không tự merge**.
+
+## 23.2. PR-Z — Chuẩn bị bản chính
+
+Không đổi nghiệp vụ. Mục tiêu: một lệnh build, một lệnh chạy, DB rỗng có tài khoản quản trị, không lộ gì của
+bản demo. Chạy được trên **bất kỳ máy nào có Node 20** — hướng dẫn đưa lên mạng ở `TRIEN_KHAI.md`.
+
+- [ ] **Z1. Một cổng cho tất cả.** Khi `NODE_ENV=production`, Express phục vụ luôn thư mục build của Vite
+      (`dist/`) và trả `index.html` cho mọi đường không phải `/api` (để link sâu như `/hoc-vien/12` mở được).
+      Thêm `npm start` = chạy máy chủ đã build ở chế độ production.
+- [ ] **Z2. Cấu hình bằng biến môi trường:** `PORT`, `DATA_DIR` (chứa file SQLite **và** thư mục tải lên;
+      mặc định `./data` như hiện tại), `COOKIE_SECURE=1` khi chạy sau https. Không đổi hành vi máy dev.
+- [ ] **Z3. Tắt mọi thứ của bản demo khi production:** route `/api/demo/*` (trừ những gì màn đăng nhập thật
+      cần), khối "Vào nhanh bằng tài khoản demo", `DemoBar` (đổi ngày demo, chế độ kịch bản), trang
+      `/dev/thanh-phan`. `demoToday()` phải ra **ngày thật** (không đặt `demo_date`); `scenario_mode` luôn `normal`.
+- [ ] **Z4. `npm run init-ban-chinh`:** tạo DB **rỗng** từ `schema.sql` ở `DATA_DIR` + dữ liệu nền bắt buộc
+      (vai trò, quyền, chương trình, danh mục — tách phần này ra khỏi `seed.ts` thành một hàm dùng chung, để
+      seed demo và init bản chính dùng **cùng** một nguồn) + **một** tài khoản Quản trị hệ thống lấy email/mật
+      khẩu từ `ADMIN_EMAIL` / `ADMIN_PASSWORD`. **Từ chối chạy** nếu DB đã có dữ liệu (không bao giờ xoá dữ
+      liệu thật). Không tạo chi nhánh/lớp/HV giả.
+- [ ] **Z5. Kiểm DB rỗng từ đầu tới cuối** (phần quan trọng nhất của PR này): init → đăng nhập quản trị → tạo
+      chi nhánh → tạo tài khoản GV/QL → tạo lớp + phân công → thêm HV → xếp MT → nhập điểm → thấy tín hiệu/case.
+      Mọi màn chính mở được **không lỗi** khi bảng còn rỗng (trạng thái rỗng, không trang trắng).
+      Ghi các lỗi tìm được vào PR, sửa những lỗi chặn đường này.
+- [ ] **Z6. `npm run sao-luu`:** sao lưu an toàn khi đang chạy (API `backup` của better-sqlite3) ra
+      `BACKUP_DIR` (mặc định `DATA_DIR/sao-luu`) tên `pisa-YYYY-MM-DD-HHmm.sqlite` + nén thư mục tải lên; giữ 14
+      bản gần nhất. `BACKUP_DIR` riêng để trỏ được vào thư mục Google Drive — **không bao giờ** đặt file SQLite
+      đang chạy trong thư mục đồng bộ đám mây (dễ hỏng file).
+- [ ] **Z7.** `npm run check` xanh. Cập nhật `README.md` (mục chạy bản chính), mục 14. Mở PR, không tự merge.
+
+## 23.3. PR-K — Giao diện Ý thức & Phối hợp (bản v3)
+
+Đặc tả: `SOS_VA_PHOI_HOP_V3.md` mục 7 (**thắng** `Y_THUC_VI_PHAM_VA_BIEN_PHAP.md` §7 ở mọi chỗ khác nhau).
+Form ghi vi phạm / tạo biện pháp / xác nhận giữ theo Y_THUC §7.2, §7.4, §7.5. Chữ: `TU_DIEN_VA_CHU.md` mục 6.
+
+- [ ] **K1.** `web/src/modules/yThuc/`: form ghi vi phạm, tạo biện pháp, xác nhận (ô bắt buộc theo loại, nút mờ
+      kèm câu thiếu gì), sửa/xoá vi phạm (hộp xác nhận một dòng). Dùng `BangChung` cho tệp.
+- [ ] **K2. Hồ sơ lớp**: tab `Ý thức & Phối hợp` thay dạng xem Ý thức cũ; sub-tab `Vi phạm & xử lý` (Theo học
+      sinh mặc định, mở tại chỗ hai cột, Theo thời gian, bộ lọc nhóm chung) và `Phối hợp SOS` (§7.2). Nút
+      `Ghi vi phạm` ở dòng HS tab Học viên. *(Chưa đổi thành 4 tab — việc của PR-Q sau deploy; chỉ đổi tab Ý thức.)*
+- [ ] **K3. Hồ sơ học viên**: thêm tab `Ý thức & Phối hợp` cạnh hai tab hiện có (§7.3); banner cảnh báo 5 ngày
+      phía trên, không thêm ô số.
+- [ ] **K4. Case từ SOS trên bảng kỹ năng** (§7.5): trạng thái chờ xác định nguyên nhân, nhãn gợi ý tự động +
+      Xác nhận/Sửa/Thay, `Không cần theo dõi` với lý do chọn nhanh.
+- [ ] **K5. QL:** góc nhìn `Ý thức & Phối hợp` trong tab Phân tích/Thực trạng hiện có — ba bảng nhỏ §7.6, số bấm
+      được qua `<SoLieu>`.
+- [ ] **K6. Việc cần làm**: GVCN một dòng nhắc vi phạm quá 5 ngày + một dòng `{n} lượt Phối hợp SOS cần xử lý`;
+      GVBM một dòng `{n} case chờ xác định nguyên nhân`.
+- [ ] **K7.** Bấm thử một lượt ba vai + 375px theo §10 mục 5, 7, 9–15. `npm run check` xanh. Mục 14.
+      Mở PR, không tự merge.
+
+## 23.4. Sau khi merge ba PR
+
+1. Làm theo `TRIEN_KHAI.md` để đưa bản chính lên mạng.
+2. Việc còn lại **sau deploy**, theo thứ tự `PR-O → PR-Q → PR-P → PR-R → PR-S` (Q trước P vì hồ sơ lớp/HV là
+   chỗ GV dùng hằng ngày; Tổng quan/Phân tích mới là việc của QL, đợi được).

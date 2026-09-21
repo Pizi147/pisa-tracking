@@ -1,5 +1,10 @@
 # Ý thức — Vi phạm và Biện pháp xử lý
 
+> **⚠ BẢN v3 (tối 21/09/2026) THAY MỘT PHẦN FILE NÀY** — đọc `thiet-ke/SOS_VA_PHOI_HOP_V3.md` mục 1 trước.
+> Hết hiệu lực: V11–V14 (đánh dấu không chính xác → **sửa/xoá thẳng**), `violation_count_at_confirm`,
+> trạng thái `Không còn hiệu lực`, bố cục ba khu vực §7.3 (→ **Theo học sinh / Theo thời gian**), tên tab `Ý thức`
+> (→ **`Ý thức & Phối hợp`**). Phần còn lại giữ nguyên.
+
 Phiên bản 1.0 · 21/09/2026 · **Đặc tả thiết kế để triển khai.** Chưa phải mô tả web hiện tại.
 
 > **File này thay hẳn mô hình "Case Ý thức".** Nguồn: `thiet-ke/NGUON-Rule-Y-thuc-2026-09-21.md`

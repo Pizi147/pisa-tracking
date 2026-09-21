@@ -3,6 +3,9 @@
 Ngày tạo: 20/09/2026. Cập nhật: 21/09/2026. Chủ sở hữu: bên design.
 Trạng thái: **đặc tả để triển khai**, chưa phải mô tả web hiện tại.
 
+> **MỚI NHẤT (tối 21/09/2026):** `NGUON-Rule-v3-YThuc-PhoiHop-2026-09-21.md` (nguồn) → `SOS_VA_PHOI_HOP_V3.md`
+> (đặc tả, **thắng** `Y_THUC_VI_PHAM_VA_BIEN_PHAP.md` ở chỗ khác nhau). UX tham khảo: `tham-khao/*.html`.
+>
 > **MỚI 21/09/2026 — đọc ba file này trước mọi file khác:**
 >
 > | File | Vì sao đọc trước |

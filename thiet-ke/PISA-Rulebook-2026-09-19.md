@@ -2,7 +2,9 @@
 
 Phiên bản 1.2 · 21/09/2026 · Cập nhật theo chốt mới nhất của chủ sản phẩm.
 
-> **ĐỌC MỤC 18 TRƯỚC.** Chốt ngày 21/09/2026 **bỏ hẳn mô hình Case Ý thức**, thay bằng
+> **ĐỌC MỤC 19 RỒI MỤC 18.** Mục 19 (tối 21/09, rulebook v3) ưu tiên hơn mục 18.
+>
+> **Mục 18:** Chốt ngày 21/09/2026 **bỏ hẳn mô hình Case Ý thức**, thay bằng
 > **Vi phạm** và **Biện pháp xử lý** quan hệ nhiều–nhiều. Mục 18 ưu tiên hơn mục 6, mục 17.2
 > và mọi đoạn nói về Case Ý thức, đợt Ý thức, cửa sổ gộp ba ngày, hạn 3/5/7 ngày của Ý thức.
 > Phần Học thuật chỉ sửa bốn điểm (mục 18.2), phần còn lại giữ nguyên.
@@ -518,3 +520,20 @@ Vậy `C01_HAN_XAC_MINH_SOS_GOM_PA = 'hai-moc-rieng'` — đúng như mã đang 
 Hạn chấm Normal hết Chủ nhật tuần thi — đã đúng. Còn chưa rõ: *"chưa có bài thì thêm - và dời
 sang tuần sau"* — ai thêm dấu `-` (hệ thống tự thêm hay giáo viên), và Normal có thật sự dùng
 dấu `-` không (hiện Normal luôn đủ bốn môn, không có `-`). **Chưa triển khai, chờ trả lời.**
+
+
+---
+
+## 19. Chốt tối 21/09/2026 — rulebook v3: SOS tự tạo case, Phối hợp SOS, vi phạm sửa/xoá thẳng
+
+Nguồn: `thiet-ke/NGUON-Rule-v3-YThuc-PhoiHop-2026-09-21.md`. Đặc tả: `thiet-ke/SOS_VA_PHOI_HOP_V3.md`.
+**Ưu tiên hơn mục 18.** Không xoá dấu vết các mục cũ.
+
+| Luật cũ | Luật mới |
+|---|---|
+| §3.4, §18.2: SOS là tín hiệu; không tự tạo tutor/tự học chỉ vì có SOS | Mock Test FT có SOS **tự tạo/gắn Case** cho từng kỹ năng trượt (W1/W2 tách, SOS vẫn tính Writing là 1) và **điền sẵn phương án** theo bảng MT × SOS. GVBM có **3 ngày** xác định nguyên nhân + xác nhận/chỉnh phương án. Được đóng ngay `Không cần theo dõi` kèm lý do |
+| C05 / §17.3: SOS không tự sinh việc trao đổi | **Phối hợp SOS**: việc trao đổi HS/gia đình/meeting điền sẵn theo bảng MT × SOS; GVCN xác nhận hoặc bỏ kèm lý do chọn nhanh. Không phải vi phạm, không phải biện pháp, không phải case |
+| §18.3: vi phạm ghi sai → đánh dấu không còn hiệu lực, không xoá | **Sửa hoặc xoá thẳng**, kể cả khi đã nằm trong biện pháp đã thực hiện. Xoá thì gỡ khỏi biện pháp, số liệu tự cập nhật |
+| Tab `Ý thức` | **`Ý thức & Phối hợp`**, hai sub-tab `Vi phạm & xử lý` · `Phối hợp SOS`; hồ sơ lớp mặc định xem **theo học sinh** |
+| — | Case tạo tay giữ 5 ngày (**Bình thường**) / 3 ngày (Gấp) để có phương án |
+| — | Lớp Normal giữ mô hình tín hiệu (v3 chỉ nói Mock Test) |

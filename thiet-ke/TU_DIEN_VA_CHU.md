@@ -196,3 +196,25 @@ Thứ tự này là thứ tự **BÀY RA**, không phải quy trình bắt buộ
 
 Lý do: nguồn 21/09 gọi là "Case Bình thường"; và `Cần chú ý` không cho thấy nó là mức **thấp
 hơn** `Gấp`. Câu "bỏ Bình thường" ở rule book mục 4.2 hết hiệu lực.
+
+
+---
+
+## 7. Bản v3 — tối 21/09/2026
+
+| Hiện tại / cũ | Thay bằng |
+|---|---|
+| Tab `Ý thức` | `Ý thức & Phối hợp` · sub-tab `Vi phạm & xử lý` · `Phối hợp SOS` |
+| `Không còn hiệu lực` · `Đánh dấu không chính xác` | **Bỏ.** Chỉ còn `Sửa` · `Xoá` |
+| Toggle chế độ xem | `Theo học sinh` · `Theo thời gian` |
+| Xác nhận xoá | `Xoá vi phạm này? Nó sẽ bị gỡ khỏi {n} biện pháp.` |
+| Case từ SOS chờ | `Chờ GVBM xác định nguyên nhân · hạn {ngày}` |
+| Phương án điền sẵn | `Gợi ý tự động · chờ xác nhận` |
+| Đóng case từ SOS | `Không cần theo dõi` · lý do: `Học sinh có lý do đặc biệt` · `Tình huống đơn lẻ` · `Khác` |
+| Sáu việc phối hợp | `Trao đổi ngắn với HS` · `Trao đổi với gia đình` · `GVCN meeting với HS` · `CX / GĐCN meeting với HS` · `CX / GĐCN meeting với HS / PH` · `Khác` |
+| Trạng thái việc phối hợp | `Cần xử lý` · `Đã xong` · `Đã bỏ · {lý do}` |
+| Lý do bỏ việc | `Không cần trong trường hợp này` · `Đã xử lý theo cách khác` · `Trùng với Biện pháp khác` · `Khác` · *(hệ thống)* `Không còn phù hợp do sửa điểm` |
+| Tiến độ một lượt | `{a}/{b} hoàn thành` |
+| Mức case `Cần chú ý` | `Bình thường` |
+
+**Không** dùng `Report cho gia đình` cho Phối hợp SOS — chữ đó chỉ thuộc biện pháp xử lý vi phạm.
