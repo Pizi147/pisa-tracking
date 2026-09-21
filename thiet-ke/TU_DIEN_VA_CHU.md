@@ -186,6 +186,16 @@ Thứ tự này là thứ tự **BÀY RA**, không phải quy trình bắt buộ
 | Trạng thái rỗng, khu vi phạm chưa xử lý | `Không còn vi phạm nào chưa xử lý.` |
 | Trạng thái rỗng, khu biện pháp đang chuẩn bị | `Chưa có biện pháp nào đang chuẩn bị.` |
 | Trạng thái rỗng, lịch sử | `Lớp này chưa có biện pháp xử lý nào.` |
+| Trạng thái rỗng, mốc thời gian Ý thức của hồ sơ học viên | `Chưa có gì trong khoảng này` *(PR-K, chờ chủ sản phẩm duyệt)* |
+| Trạng thái rỗng, danh sách Phối hợp SOS | `Không có lượt Phối hợp SOS nào` *(PR-K, chờ chủ sản phẩm duyệt)* |
+| Xác định nguyên nhân xong | `Đã chọn nguyên nhân` *(PR-K, chờ chủ sản phẩm duyệt)* |
+| Đóng case "Không cần theo dõi" xong | `Case đã đóng — Không cần theo dõi` *(PR-K, chờ chủ sản phẩm duyệt)* |
+| Thay phương án xong | `Đã thay phương án` *(PR-K, chờ chủ sản phẩm duyệt)* |
+| Nút ẩn/hiện lượt Phối hợp SOS đã xong (sub-tab lớp) | `Chỉ hiện lượt chưa xong` / `Hiện cả lượt đã xong` *(PR-K, chờ chủ sản phẩm duyệt)* |
+| Xoá một vi phạm chưa nằm trong biện pháp nào | `Vi phạm này chưa nằm trong biện pháp nào.` *(PR-K, chờ chủ sản phẩm duyệt)* |
+| Xoá vi phạm xong | `Đã xoá vi phạm` *(PR-K, chờ chủ sản phẩm duyệt)* |
+| Ghi chú hai nút Lưu ở panel Tạo biện pháp xử lý | `Người phụ trách mặc định là giáo viên chủ nhiệm của lớp em đang học. "Lưu — Đang chuẩn bị" dùng cho việc cần vài ngày (Report, Thư cảnh cáo); "Xác nhận đã làm luôn" dùng cho việc vừa làm tại chỗ.` *(PR-K, chờ chủ sản phẩm duyệt)* |
+| Chủ đề case không có danh mục nguyên nhân để chọn | `Chủ đề này chưa có danh mục nguyên nhân để chọn.` *(PR-K2, chờ chủ sản phẩm duyệt)* |
 
 ### 6.4. Mức case học thuật — đổi chữ
 

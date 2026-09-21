@@ -299,6 +299,13 @@ function CaseCardView({ c, row, onChanged }: {
               )}
             </div>
           )}
+          {/* CASE ĐÓNG "KHÔNG CẦN THEO DÕI" (§3.2, S05, K2-4) — nói đúng chữ đặc tả, lý do lấy nhãn chọn nhanh
+              hoặc chữ tự gõ khi lý do là Khác. */}
+          {c.sos.dismissed && (
+            <p className="text-xs text-slate-300 m-0">
+              Không cần theo dõi · {c.sos.dismissed.text || c.sos.dismissed.label}
+            </p>
+          )}
           <p className="text-[11px] text-slate-500 m-0">
             {c.issueLabel ? <>Phân loại: {c.issueLabel}</> : <span className="text-amber-200/80">Chưa phân loại vấn đề</span>}
             {c.openedOn && <> · mở {fmtDate(c.openedOn)}</>}

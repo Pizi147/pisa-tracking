@@ -33,18 +33,24 @@ export function CauseDeterminationPanel({ caseId, topic, currentCode, onClose, o
 
   return (
     <div className="rounded-lg mt-1 p-2.5 space-y-2" style={{ background: 'var(--surface-1)' }}>
-      <div className="flex gap-1 flex-wrap">
-        {causes.map((i) => (
-          <button key={i.code} type="button" title={i.hint}
-            className={`btn btn-sm ${code === i.code ? 'btn-primary' : ''}`}
-            onClick={() => setCode(i.code)}>
-            {i.label}
-          </button>
-        ))}
-      </div>
+      {causes.length === 0 ? (
+        <p className="text-xs text-amber-200/90 m-0">Chủ đề này chưa có danh mục nguyên nhân để chọn.</p>
+      ) : (
+        <div className="flex gap-1 flex-wrap">
+          {causes.map((i) => (
+            <button key={i.code} type="button" title={i.hint}
+              className={`btn btn-sm ${code === i.code ? 'btn-primary' : ''}`}
+              onClick={() => setCode(i.code)}>
+              {i.label}
+            </button>
+          ))}
+        </div>
+      )}
       <div className="flex gap-1.5">
         <button type="button" className="btn btn-sm" onClick={onClose} disabled={busy}>Huỷ</button>
-        <button type="button" className="btn btn-sm btn-primary" disabled={busy || !code} onClick={save}>Lưu</button>
+        {causes.length > 0 && (
+          <button type="button" className="btn btn-sm btn-primary" disabled={busy || !code} onClick={save}>Lưu</button>
+        )}
       </div>
     </div>
   );
@@ -79,8 +85,11 @@ export function PresetPlanActions({ interventionId, description, followupDue, on
     } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
   };
 
+  /* K2-3: ràng buộc nói TRƯỚC khi bấm — nút mờ + câu thiếu gì, không báo lỗi đỏ sau khi bấm. */
+  const replaceMissing = desc.trim().length < 8 ? 'Mô tả phương án mới cần ít nhất 8 ký tự.' : null;
+
   const replace = async () => {
-    if (desc.trim().length < 8) { toast.push('error', 'Mô tả phương án mới cần ít nhất 8 ký tự.'); return; }
+    if (replaceMissing) return;
     setBusy(true);
     try {
       await api.post(`/interventions/${interventionId}/replace`, {
@@ -139,9 +148,10 @@ export function PresetPlanActions({ interventionId, description, followupDue, on
         Dự kiến kết thúc
         <input type="date" className="field" style={{ width: '9.5rem' }} value={due} onChange={(e) => setDue(e.target.value)} />
       </label>
+      {replaceMissing && <p className="text-xs text-amber-200/90 m-0">{replaceMissing}</p>}
       <div className="flex gap-1.5">
         <button type="button" className="btn btn-sm" onClick={() => setMode(null)} disabled={busy}>Huỷ</button>
-        <button type="button" className="btn btn-sm btn-primary" disabled={busy} onClick={replace}>Thay phương án</button>
+        <button type="button" className="btn btn-sm btn-primary" disabled={busy || !!replaceMissing} title={replaceMissing ?? undefined} onClick={replace}>Thay phương án</button>
       </div>
     </div>
   );
@@ -154,9 +164,13 @@ export function DismissCaseForm({ caseId, onClose, onDone }: { caseId: number; o
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
 
+  /* K2-3: ràng buộc nói TRƯỚC khi bấm — nút mờ + câu thiếu gì, không báo lỗi đỏ sau khi bấm. */
+  const missing = !reason ? 'Hãy chọn một lý do.'
+    : reasonNeedsText(reason) && !text.trim() ? 'Chọn "Khác" thì phải ghi rõ lý do.'
+    : null;
+
   const save = async () => {
-    if (!reason) { toast.push('error', 'Hãy chọn một lý do.'); return; }
-    if (reasonNeedsText(reason) && !text.trim()) { toast.push('error', 'Chọn "Khác" thì phải ghi rõ lý do.'); return; }
+    if (missing) return;
     setBusy(true);
     try {
       await api.post(`/cases/${caseId}/dismiss`, { reasonCode: reason, reasonText: text.trim() || undefined });
@@ -179,9 +193,10 @@ export function DismissCaseForm({ caseId, onClose, onDone }: { caseId: number; o
       {reasonNeedsText(reason) && (
         <input className="field" placeholder="Lý do" value={text} onChange={(e) => setText(e.target.value)} />
       )}
+      {missing && <p className="text-xs text-amber-200/90 m-0">{missing}</p>}
       <div className="flex gap-1.5">
         <button type="button" className="btn btn-sm" onClick={onClose} disabled={busy}>Huỷ</button>
-        <button type="button" className="btn btn-sm btn-danger" disabled={busy} onClick={save}>Không cần theo dõi</button>
+        <button type="button" className="btn btn-sm btn-danger" disabled={busy || !!missing} title={missing ?? undefined} onClick={save}>Không cần theo dõi</button>
       </div>
     </div>
   );

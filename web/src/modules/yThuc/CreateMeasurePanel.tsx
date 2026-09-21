@@ -43,10 +43,13 @@ export function CreateMeasurePanel({
   const availability = kinds.data?.rows ?? [];
   const isLocked = (k: string) => availability.find((r) => r.kind === k)?.available === false;
   const lockReason = (k: string) => availability.find((r) => r.kind === k)?.reason ?? null;
+  /* K2-3: ràng buộc nói TRƯỚC khi bấm — nút mờ + câu thiếu gì, không báo lỗi đỏ sau khi bấm. */
+  const missing = !list.length ? 'Cần ít nhất một vi phạm để tạo biện pháp.'
+    : kind === 'other' && !customName.trim() ? 'Loại "Khác" cần ghi tên biện pháp.'
+    : null;
 
   const create = async (confirmNow: boolean) => {
-    if (!list.length) { toast.push('error', 'Cần ít nhất một vi phạm để tạo biện pháp.'); return; }
-    if (kind === 'other' && !customName.trim()) { toast.push('error', 'Loại "Khác" cần ghi tên biện pháp.'); return; }
+    if (missing) return;
     setBusy(true);
     try {
       const m = await api.post<any>('/measures', {
@@ -69,8 +72,8 @@ export function CreateMeasurePanel({
       footer={
         <>
           <button className="btn" onClick={onClose}>Huỷ</button>
-          <button className="btn" disabled={busy} onClick={() => create(false)}>Lưu — Đang chuẩn bị</button>
-          <button className="btn btn-primary" disabled={busy} onClick={() => create(true)}>Xác nhận đã làm luôn →</button>
+          <button className="btn" disabled={busy || !!missing} title={missing ?? undefined} onClick={() => create(false)}>Lưu — Đang chuẩn bị</button>
+          <button className="btn btn-primary" disabled={busy || !!missing} title={missing ?? undefined} onClick={() => create(true)}>Xác nhận đã làm luôn →</button>
         </>
       }>
       <div className="space-y-3">
@@ -123,6 +126,8 @@ export function CreateMeasurePanel({
           Người phụ trách mặc định là giáo viên chủ nhiệm của lớp em đang học. `Lưu — Đang chuẩn bị` dùng cho
           việc cần vài ngày (Report, Thư cảnh cáo); `Xác nhận đã làm luôn` dùng cho việc vừa làm tại chỗ.
         </SectionNote>
+
+        {missing && <p className="text-xs text-amber-200/90 m-0">{missing}</p>}
       </div>
     </Modal>
   );

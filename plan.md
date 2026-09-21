@@ -1864,7 +1864,19 @@ thuật hoặc để không phình phạm vi đêm nay, không phải quên:
 | Bảng "Vi phạm theo nhóm: Tổng · Chưa xử lý · Đang chuẩn bị · Đã xử lý" đúng 5 hàng nhóm của §7.6 | Máy chủ (`yThucMetric`) mới có `vi-pham-tong`/`vi-pham-chua-xu-ly` đếm theo TOÀN lớp/chi nhánh, chưa cắt theo từng nhóm (category), và không có chỉ số riêng cho "đang chuẩn bị"/"đã xử lý". K5 dùng tạm bốn chỉ số tổng thay bảng 5×4 | **PR-P (mục 22.6, P7–P9)** — PR-P vốn làm lại toàn bộ trang Phân tích (bốn góc nhìn, trong đó có "Ý thức"); thêm chỉ số cắt theo nhóm lúc đó, tránh viết `yThucMetric` hai lần |
 | Bộ lọc **lớp** ở góc nhìn Ý thức & Phối hợp của Quản lý (chỉ có chi nhánh + khoảng thời gian) | `yThucMetric`/`phoiHopMetric` chỉ nhận `branchId`/`from`/`to`, chưa nhận `classId` | Cùng **PR-P** như dòng trên — thêm tham số `classId` cho cả hai hàm chỉ số một lượt |
 
+### 12.15. PR-K2 (mục 23.3b K2-6) chưa làm hoặc để lại — 22/09/2026
 
+Rà soát độc lập PR-K (22/09) phát hiện thêm sáu việc ngoài năm việc đã ghi ở mục 12.14 (ba dòng
+trùng với 12.14 nên không lặp lại ở đây). K2-6 nói rõ: **ghi lại, không làm ở PR-K2**.
+
+| Việc | Vì sao chưa làm ở PR-K2 | Làm ở đâu khi quay lại |
+|---|---|---|
+| Số Phối hợp SOS chia theo `SOS1`/`SOS2`/`SOS3` (§7.6 bảng 3) | `phoiHopMetric` đếm gộp mọi mức SOS trong một chỉ số, chưa cắt theo mức | **PR-P** — cùng lúc làm lại trang Phân tích, thêm tham số mức cho ba chỉ số `phoi-hop-*` |
+| Số `Phối hợp SOS {n}` trên nhãn sub-tab ở hồ sơ học viên (`StudentYThucSection.tsx`, đúng hình §7.3) | Sub-tab hiện chỉ có chữ `Phối hợp SOS`, chưa có số đếm như bên hồ sơ lớp (`ClassYThucCard.tsx` đã có) | Người chạm lại `StudentYThucSection.tsx`: thêm `coord.data?.rows.length` (hoặc số lượt chưa hoàn thành) vào nhãn nút, cùng khuôn với hồ sơ lớp — **PR-Q** |
+| Nút `[Mở]`/`[Xem]` cho biện pháp ở dòng thời gian hồ sơ học viên (§7.3) | Dòng thời gian (`StudentYThucSection.tsx` ~153–165) chỉ có nút `Xác nhận` cho biện pháp đang chuẩn bị; biện pháp đã thực hiện không có cách mở lại chi tiết từ dòng đó | **PR-Q** — cần một panel/route xem chi tiết một biện pháp đã thực hiện (lịch sử, bằng chứng), chưa có ở giao diện |
+| Toast `Hoàn tác` sau khi ghi vi phạm (Y_THUC §7.2) | `RecordViolationPanel.tsx` chỉ báo `Đã ghi vi phạm cho {tên}`, không có link hoàn tác; cần route huỷ vi phạm vừa tạo trong một khung thời gian ngắn | Chưa gắn PR — làm cùng lúc với việc dựng lại toast dùng chung nếu có, hoặc **PR-Q** |
+| Máy chủ tự lấy người đang đăng nhập làm `performedBy` khi để trống (`measures.ts` ~390, hàm `confirmMeasure`) | Hiện máy chủ đòi `performedBy` tường minh; PR-K vá tạm bằng cách giao diện tự gửi `session.user.id` khi ô trống (xem mục 14, log PR-K) — vá đúng nhưng không robust cho các đường gọi khác | Sửa `confirmMeasure`: `performedBy` để trống thì mặc định `p.userId`, cùng khuôn `performerSelf` của `case_interventions` — bất kỳ ai chạm lại `measures.ts` |
+| Lớp dùng để kiểm nút `Ghi vi phạm` ở `profile.ts` ~891 (`canRecordViolation`, biến `current`) có thể lệch với `activeClassOf` ở `access.ts` sau khi học viên chuyển lớp | Hai nơi tính "lớp em đang học" không cùng một nguồn — `current` là biến cục bộ của trang hồ sơ, `activeClassOf` truy vấn DB mới mỗi lần; chưa xác nhận có lệch thật trong dữ liệu hay chỉ là rủi ro lý thuyết | Bất kỳ ai chạm lại `profile.ts`: đổi `current?.class_id` trong `viewer.canReport`/`canRecordViolation`/`canClose` thành gọi `activeClassOf(studentId)` — MỘT nguồn duy nhất |
 
 ### 13.1. Trước mỗi commit
 
