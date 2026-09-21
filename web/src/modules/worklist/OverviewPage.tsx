@@ -9,6 +9,7 @@ import { BranchPulse } from './BranchPulse.tsx';
 import { Highlights } from './Highlights.tsx';
 import { MetricTiles } from './MetricTiles.tsx';
 import { WorkList, type WorkGroup, type WorkItem } from './WorkList.tsx';
+import { YThucReminders } from '../yThuc/YThucReminders.tsx';
 
 type Work = {
   summary: { total: number; overdue: number; today: number; approval: number; mine: number };
@@ -125,6 +126,9 @@ export default function OverviewPage() {
       {tab === 'work' && canSeeBoard && <MetricTiles branchId={branchId} />}
 
       {tab === 'work' && <Highlights branchId={branchId} />}
+
+      {/* Ý THỨC & PHỐI HỢP (§7.10, plan.md K6): nhắc mềm của GVCN, không phải WorkItem có hạn. */}
+      {tab === 'work' && <YThucReminders />}
 
       {/* Bảng tổng hợp của Quản lý. Bấm một con số trong bảng là LỌC danh sách bên dưới. */}
       {tab === 'work' && canSeeBoard && (

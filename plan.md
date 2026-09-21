@@ -1843,9 +1843,21 @@ Xem mục 3 và `shared/domain/policy.ts` (nay ghi rõ điểm nào đã nối d
 - **C09:** tài liệu từng ghi ngược lại mã; nay tài liệu khớp mã.
 - **C01 và C08 chưa nối dây** — chờ chủ sản phẩm xác nhận (mục 3, dòng cuối).
 
----
+### 12.14. PR-K (mục 23.3) chưa làm hoặc để lại — 21/09/2026 đêm
 
-## 13. Lệnh kiểm bắt buộc
+PR-K #42 chỉ làm đủ cho deploy đêm nay (K7 nói rõ "không kiểm ngược, không chụp ảnh" — mức
+kiểm nhẹ hơn mục 22, xem bảng ở mục 23.0). Năm việc dưới đây bị bỏ qua có chủ đích vì lý do kỹ
+thuật hoặc để không phình phạm vi đêm nay, không phải quên:
+
+| Việc | Vì sao chưa làm đêm nay | Làm ở đâu khi quay lại |
+|---|---|---|
+| Đính kèm tệp ngay lúc đang **ghi** vi phạm mới (`RecordViolationPanel.tsx`) | `BangChung` cần `ownerId` — vi phạm mới soạn trong form chưa có `id` (chưa `POST`). Phải lưu xong mới có bản ghi để đính kèm | Bất kỳ ai chạm lại `RecordViolationPanel`: lưu nháp trước (tạo vi phạm ngay khi mở form, giữ `idempotencyKey`) rồi mở `BangChung` ngay trong form — hoặc chấp nhận "chỉ đính kèm được sau khi lưu" là hành vi cuối cùng và bỏ dòng này khỏi backlog |
+| Nút `Ghi vi phạm` ở **từng dòng học viên** trong bảng lớp (`ClassRoster.tsx`) — đặc tả §7.4 và mục 22.5 K1 đều nói rõ vị trí này | Ưu tiên thời gian đêm nay: chỉ làm 2/3 vị trí đặc tả nêu (đầu tab Ý thức & Phối hợp của lớp, đầu tab của hồ sơ học viên) | **PR-Q (mục 22.7)** — PR-Q vốn đã sửa `ClassRoster.tsx`/hàng lớp (Q1) và dựng tab `Ý thức` của bốn tab hồ sơ lớp (Q4); thêm nút này cùng lúc, đỡ phải mở lại file lần hai |
+| Nút `Xem vi phạm đó` trong cảnh báo trùng mềm V06 (chỉ còn `Vẫn ghi vi phạm mới`) | Panel `Ghi vi phạm` đang nằm lồng trong Modal khác (mở từ lớp/hồ sơ HV) — mở thêm panel chi tiết vi phạm chồng lên cần một tầng điều hướng nữa, để lại cho gọn thời gian | Chưa gắn với PR nào; làm cùng lúc với việc dựng lại panel chi tiết Vi phạm (§7.7) nếu có |
+| Bảng "Vi phạm theo nhóm: Tổng · Chưa xử lý · Đang chuẩn bị · Đã xử lý" đúng 5 hàng nhóm của §7.6 | Máy chủ (`yThucMetric`) mới có `vi-pham-tong`/`vi-pham-chua-xu-ly` đếm theo TOÀN lớp/chi nhánh, chưa cắt theo từng nhóm (category), và không có chỉ số riêng cho "đang chuẩn bị"/"đã xử lý". K5 dùng tạm bốn chỉ số tổng thay bảng 5×4 | **PR-P (mục 22.6, P7–P9)** — PR-P vốn làm lại toàn bộ trang Phân tích (bốn góc nhìn, trong đó có "Ý thức"); thêm chỉ số cắt theo nhóm lúc đó, tránh viết `yThucMetric` hai lần |
+| Bộ lọc **lớp** ở góc nhìn Ý thức & Phối hợp của Quản lý (chỉ có chi nhánh + khoảng thời gian) | `yThucMetric`/`phoiHopMetric` chỉ nhận `branchId`/`from`/`to`, chưa nhận `classId` | Cùng **PR-P** như dòng trên — thêm tham số `classId` cho cả hai hàm chỉ số một lượt |
+
+
 
 ### 13.1. Trước mỗi commit
 
@@ -1930,6 +1942,7 @@ Nói **cái gì đổi trên màn hình**, bằng tiếng Việt, không tên h�
 | 21/09/2026 (chiều, sau) | Claude (session thiết kế) | Chủ sản phẩm muốn **deploy thủ công từ thư mục máy**, chia PR-Z2 theo độ nhạy dữ liệu, và luôn được ghi rõ model/effort. Làm: (1) chia plan chi tiết thành **Phần A/B/C = PR-Z2a/b/c**; (2) thêm **Task 6b** — đóng gói nhị phân Linux của `libsql` (build trên Windows, Netlify chạy Linux) và **deploy nháp thật** với database thử ngay cuối Phần A, để có số đo tốc độ Netlify↔Turso thật **trước** khi chạm dữ liệu bản chính; (3) Task 10 đổi sang CLI (`deploy --build` nháp → xin phép → `--prod`), Task 11 yêu cầu người rà khác model người code; (4) **viết lại `TRIEN_KHAI.md` cho người không biết code**: mở PowerShell đúng thư mục, dán lệnh, chỗ nào thay `<...>`, từng nút bấm trên Turso/Netlify, bảng tra biến; (5) `PROMPT_SESSION_CODE.md`: bảng model + effort + phương án B cho mọi PR, ba prompt Z2a/Z2b/Z2c; (6) prompt bàn giao session planning mới: `PROMPT_BAN_GIAO_PLANNING.md` |
 | 21/09/2026 (đêm) | Claude (session PR-T) | **PR-T hoàn tất phần máy chủ (T1–T8).** Kế hoạch mục 23.1 sai/thiếu ở các chỗ ghi ngay dưới danh sách T1–T9 (DDL UNIQUE với NULL không chặn trùng; phương án điền sẵn phải theo mức SOS của cả lượt; luật chống nhân đôi mốc; phạm vi P03; S05 không khoá theo ngày; MT5+ không cần duyệt thêm; "Chủ nhật sau +30 ngày"). Viết lại 6 phép kiểm cũ của luật 6.2 (Mock FT nay tự tạo case) và ~25 phép kiểm "đánh dấu không chính xác" (nay xoá thẳng). Bộ phép kiểm 512 → 574. Chưa làm: chữ cứng `Cần chú ý` ở `CaseBoardPage.tsx:451` (giao diện, thuộc PR-K) |
 | 21/09/2026 (đêm) | Claude (session PR-T) | **Chủ sản phẩm chốt 2 chỗ mở của PR-T.** (1) MT5+ phương án `Khác` chỉ cần GVBM/Quản lý xác nhận — đúng ý. (2) Phương án A: hạn 3 ngày của S04 thành dòng **Việc cần làm** nhóm `cause` (GVBM phụ trách thấy ngay, Quản lý chỉ khi quá hạn, có tính vào tổng quá hạn). Bộ phép kiểm 579 → 580. PR-K K6 chỉ còn vẽ nhóm này |
+| 21/09/2026 (đêm) | Claude (session PR-K) | **PR-K hoàn tất K1–K7, giao diện Ý thức & Phối hợp (nhánh `pr-k-giao-dien-y-thuc-v3`).** Máy chủ của PR-T đã đủ cho gần hết K1–K6 — phần lớn việc là GIAO DIỆN thuần trên các route đã có; chỉ thêm bốn chỗ máy chủ nhỏ, tận dụng hàm đã có: (1) `myCoordinationLines()` ở `phoiHop.ts` + route `GET /y-thuc/my-coordination` — một dòng Việc cần làm mới của GVCN, viết TDD (test trước, 581/581 xanh), cùng khuôn với `myWarningLines` đã có; (2) `caseCardOf()` (`cases.ts`) thêm `sos: sosCaseState(caseId)` + `topic` vào thẻ case và `preset`/`confirmedAt` vào từng phương án — dữ liệu này ĐÃ tính sẵn cho `caseDetail()` nhưng chưa từng chảy tới bảng kỹ năng (`skillSupportBoard`) mà `SkillBoard.tsx` đọc; (3) `profile.ts` thêm `viewer.canRecordViolation`/`canManageDiscipline` (bọc lại `can()`/`canManageDiscipline()` có sẵn) cho tab Ý thức của hồ sơ học viên biết ẩn nút; (4) K6b — `CaseBoardPage.tsx:451` đổi chữ cứng `Cần chú ý` sang đọc `URGENCY_LABEL` (PR-T để lại, chủ sản phẩm nhắc lại giữa chừng). Module mới `web/src/modules/yThuc/` (11 file): `RecordViolationPanel`/`CreateMeasurePanel`/`ConfirmMeasurePanel`/`DeleteViolationConfirm` (ba form + hộp xoá một dòng của §7.2/§7.4/§7.5, giữ nguyên chữ); `ClassYThucCard` (K2 — khối mới chèn vào `ClassOverviewPage` SAU danh sách học viên, KHÔNG phải bốn tab như bản vẽ SOS_VA_PHOI_HOP_V3.md §7.1 vì trang lớp hiện tại là các Card xếp dọc, không có tab bar; K2 tôn trọng đúng cấu trúc thật thay vì dựng lại trang); `PhoiHopSosSection` (dùng chung giữa lớp và học viên); `StudentYThucSection` (K3, tab thứ ba cạnh "Mock Test"/"Hành trình học tập"); `CaseSosControls` (K4, ba việc: `CauseDeterminationPanel` dùng lại `issuesForTopic` của form case cũ, `PresetPlanActions` ba nút Xác nhận/Sửa/Thay, `DismissCaseForm` — gắn vào `SkillBoard.tsx`); `YThucAnalysisView` (K5, Chip thứ ba "Ý thức & Phối hợp" cạnh "Phân tích vấn đề"/"Danh sách case" trong `CaseBoardPage.tsx`); `YThucReminders` (K6, hai dòng nhắc mềm của GVCN ở `OverviewPage.tsx` — dòng thứ ba, "case chờ xác định nguyên nhân" của GVBM, đã tự hiện qua `WorkList.tsx` vì nhóm `cause` đã hoàn chỉnh từ PR-T, không cần code thêm). Mở rộng hai component dùng chung: `BangChung` nhận thêm `ownerType: 'sos_coordination_action'`; `SoLieu` nhận thêm prop `extra` (tham số lọc như `kind`) để chín ô "Biện pháp theo loại" dùng chung một chỉ số mà bấm ra đúng danh sách của từng loại — không có prop này thì DrillDown sẽ trộn cả chín loại vào một danh sách. **Hai lỗi tự bắt được khi bấm thử tay, không lộ ra lúc đọc code:** (1) `ConfirmMeasurePanel` gọi `POST /measures/:id/confirm` bỏ trống `performedBy` khi để trống ô "Người thực hiện" — khác `case_interventions` (có `performerSelf` tự suy ra chính mình), `discipline_measures.confirmMeasure` đòi ID tường minh, máy chủ từ chối "Cần chọn hoặc ghi tên người thực hiện"; sửa bằng gửi `session.user.id` khi bỏ trống. (2) `ClassYThucCard`/`StudentYThucSection` khai `canManage: boolean` trong kiểu dữ liệu nhưng KHÔNG dùng nó ở đâu — ô tick, nút "Tạo biện pháp", nút "Xác nhận" hiện với mọi vai kể cả GVBM; máy chủ vẫn từ chối đúng nhưng giao diện không ẩn nút cho gọn mắt như mọi chỗ khác của app. Sửa: gộp `canManage` (từ máy chủ) và một hàm `canEditViolation(v)` tính ở giao diện (`canManage || v.reportedBy === session.user.id`, đúng V10) để ẩn/hiện ô tick, nút Tạo biện pháp, nút Xác nhận, và từng cặp Sửa/Xoá theo đúng người ghi. **Bấm thử trình duyệt thật cả bốn vai** (Quản trị hệ thống, GVCN Trần Ngọc Hà, GVBM Phạm Thu Trang, Quản lý Nguyễn Khánh Vy) trên dữ liệu seed: ghi vi phạm → tạo biện pháp → "Xác nhận đã làm luôn" → xác nhận đã thực hiện (một mạch, đúng theo §7.4); xoá vi phạm ra đúng câu "Nó sẽ bị gỡ khỏi N biện pháp"; Theo học sinh ↔ Theo thời gian cùng một tập vi phạm; Phối hợp SOS xác nhận/bỏ việc/thêm việc tại lớp; case từ SOS: xác định nguyên nhân → Xác nhận / Sửa / Thay đều đúng, "Không cần theo dõi" đóng case và hiện đúng câu kết luận (tái dùng khối `outcomeNote` có sẵn, không cần UI riêng); góc nhìn Ý thức & Phối hợp của Quản lý — bấm số "Thư cảnh cáo lần 1" ra đúng ba dòng, số theo đúng phạm vi chi nhánh khi đổi vai; GVBM xác nhận: không thấy ô tick/nút Tạo biện pháp/Xác nhận, nhưng vẫn Sửa/Xoá được đúng một dòng do chính mình ghi; khổ 375px hai cột "Vi phạm"/"Xử lý" xếp dọc, không tràn ngang. `npm run check`: 581/581, `tsc` sạch cả hai lệnh. **Chưa làm, ghi thẳng (mục 12.14 có bảng đầy đủ):** đính kèm tệp lúc đang ghi vi phạm (chỉ đính kèm được sau khi lưu, ở panel sửa/xác nhận — vi phạm chưa có `id` lúc soạn form); nút "Ghi vi phạm" ở từng dòng học viên tại tab Học viên/`ClassRoster.tsx` (đặc tả §7.4 có nhắc, ưu tiên thời gian nên chỉ làm nút ở đầu tab Ý thức & Phối hợp của lớp và của hồ sơ học viên — hai trong ba chỗ đặc tả nêu; **gắn vào PR-Q**); nút "Xem vi phạm đó" trong cảnh báo trùng mềm V06 (chỉ còn "Vẫn ghi vi phạm mới"); bảng "Vi phạm theo 5 nhóm × 4 trạng thái" đúng hình ASCII của §7.6 — máy chủ mới có tổng + chưa xử lý theo toàn lớp, chưa có chỉ số cắt theo từng nhóm nên K5 chỉ dùng đúng bốn chỉ số đã đăng ký (**gắn vào PR-P**); bộ lọc "lớp" ở góc nhìn Quản lý (máy chủ `yThucMetric`/`phoiHopMetric` chỉ nhận `branchId`+`from`/`to`, chưa nhận `classId`; **gắn vào PR-P**); chưa bấm thử ảnh hưởng của việc xoá vi phạm lên biện pháp đã thực hiện qua giao diện (đã có phép kiểm máy chủ V14′, chưa lặp lại bằng tay); chưa test kịch bản HS chưa xếp lớp (`activeClassOf` null). |
 | 21/09/2026 (đêm, sau) | Claude (session planning) | **Chủ sản phẩm chốt bốn câu treo, cả bốn theo khuyến nghị:** C08 (GV ghi `-` ở Normal → dời tuần sau; việc mới R14), S16 và S17 (tự đóng case kèm lý do hệ thống), R11 (hoàn tất = đủ điểm/dấu `-` + hết Chủ nhật; sau đó chỉ Quản lý sửa). Ghi ở mục 3, 22.8, 22.9, `LUAT_CHO_CHOT.md` §6.4. |
 ---
 
@@ -2962,21 +2975,29 @@ bản demo. Chạy được trên **bất kỳ máy nào có Node 20** — hư�
 Đặc tả: `SOS_VA_PHOI_HOP_V3.md` mục 7 (**thắng** `Y_THUC_VI_PHAM_VA_BIEN_PHAP.md` §7 ở mọi chỗ khác nhau).
 Form ghi vi phạm / tạo biện pháp / xác nhận giữ theo Y_THUC §7.2, §7.4, §7.5. Chữ: `TU_DIEN_VA_CHU.md` mục 6.
 
-- [ ] **K1.** `web/src/modules/yThuc/`: form ghi vi phạm, tạo biện pháp, xác nhận (ô bắt buộc theo loại, nút mờ
+- [x] **K1.** `web/src/modules/yThuc/`: form ghi vi phạm, tạo biện pháp, xác nhận (ô bắt buộc theo loại, nút mờ
       kèm câu thiếu gì), sửa/xoá vi phạm (hộp xác nhận một dòng). Dùng `BangChung` cho tệp.
-- [ ] **K2. Hồ sơ lớp**: tab `Ý thức & Phối hợp` thay dạng xem Ý thức cũ; sub-tab `Vi phạm & xử lý` (Theo học
+- [x] **K2. Hồ sơ lớp**: tab `Ý thức & Phối hợp` thay dạng xem Ý thức cũ; sub-tab `Vi phạm & xử lý` (Theo học
       sinh mặc định, mở tại chỗ hai cột, Theo thời gian, bộ lọc nhóm chung) và `Phối hợp SOS` (§7.2). Nút
-      `Ghi vi phạm` ở dòng HS tab Học viên. *(Chưa đổi thành 4 tab — việc của PR-Q sau deploy; chỉ đổi tab Ý thức.)*
-- [ ] **K3. Hồ sơ học viên**: thêm tab `Ý thức & Phối hợp` cạnh hai tab hiện có (§7.3); banner cảnh báo 5 ngày
+      `Ghi vi phạm` ở dòng HS tab Học viên. *(Chưa đổi thành 4 tab — việc của PR-Q sau deploy; chỉ đổi tab Ý thức.
+      Trang lớp hiện là các Card xếp dọc, không có tab bar — K2 chèn một Card mới sau danh sách học viên, đúng
+      cấu trúc thật; nút "Ghi vi phạm" ở dòng HS trong `ClassRoster.tsx` CHƯA làm, xem mục 14.)*
+- [x] **K3. Hồ sơ học viên**: thêm tab `Ý thức & Phối hợp` cạnh hai tab hiện có (§7.3); banner cảnh báo 5 ngày
       phía trên, không thêm ô số.
-- [ ] **K4. Case từ SOS trên bảng kỹ năng** (§7.5): trạng thái chờ xác định nguyên nhân, nhãn gợi ý tự động +
+- [x] **K4. Case từ SOS trên bảng kỹ năng** (§7.5): trạng thái chờ xác định nguyên nhân, nhãn gợi ý tự động +
       Xác nhận/Sửa/Thay, `Không cần theo dõi` với lý do chọn nhanh.
-- [ ] **K5. QL:** góc nhìn `Ý thức & Phối hợp` trong tab Phân tích/Thực trạng hiện có — ba bảng nhỏ §7.6, số bấm
-      được qua `<SoLieu>`.
-- [ ] **K6. Việc cần làm**: GVCN một dòng nhắc vi phạm quá 5 ngày + một dòng `{n} lượt Phối hợp SOS cần xử lý`;
-      GVBM một dòng `{n} case chờ xác định nguyên nhân`.
-- [ ] **K7.** Bấm thử một lượt ba vai + 375px theo §10 mục 5, 7, 9–15. `npm run check` xanh. Mục 14.
-      Mở PR, không tự merge.
+- [x] **K5. QL:** góc nhìn `Ý thức & Phối hợp` trong tab Phân tích/Thực trạng hiện có — ba bảng nhỏ §7.6, số bấm
+      được qua `<SoLieu>`. *(Bảng "vi phạm theo 5 nhóm × 4 trạng thái" đúng hình ASCII §7.6 chưa làm — máy chủ
+      chưa có chỉ số cắt theo từng nhóm; dùng bốn chỉ số tổng đã đăng ký thay thế, xem mục 14.)*
+- [x] **K6. Việc cần làm**: GVCN một dòng nhắc vi phạm quá 5 ngày + một dòng `{n} lượt Phối hợp SOS cần xử lý`;
+      GVBM một dòng `{n} case chờ xác định nguyên nhân` (nhóm `cause` trong `myWork` — **máy chủ đã có từ PR-T**,
+      K6 chỉ vẽ ra giao diện, không viết lại luật; dòng GVBM tự hiện qua `WorkList.tsx` có sẵn, không cần code
+      thêm). Thêm `myCoordinationLines()` (mới, viết TDD) cho dòng Phối hợp SOS.
+- [x] **K6b.** `web/src/modules/cases/CaseBoardPage.tsx` khoảng dòng 451 còn chữ cứng `Cần chú ý` → đổi đọc
+      `URGENCY_LABEL` để hiện đúng `Bình thường` (PR-T mục "Kết quả" điểm 14 để lại việc này cho PR-K).
+- [x] **K7.** Bấm thử một lượt ba vai + 375px theo §10 mục 5, 7, 9–15. `npm run check` xanh. Mục 14.
+      Mở PR, không tự merge. *(Bấm thử cả bốn vai — Quản trị, GVCN, GVBM, Quản lý — xem mục 14 để biết chi tiết
+      từng kịch bản.)*
 
 ## 23.4. Sau khi merge ba PR
 

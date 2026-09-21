@@ -18,6 +18,7 @@ import { standingFor, standingLine } from './standing.ts';
 import { missingForStudent, suggestedMockWeeks } from '../classes/schedule.ts';
 import { listSignals } from '../cases/signals.ts';
 import { ensurePeriod } from '../platform/week.ts';
+import { canManageDiscipline } from '../yThuc/access.ts';
 
 /**
  * HỒ SƠ HỌC VIÊN — phần trả lời câu hỏi "em này đang thế nào" trong khoảng ba mươi giây.
@@ -886,6 +887,9 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
       canPlanWeek: can(p, PERMISSIONS.PLAN_WEEK, { studentId }),
       canReport: can(p, PERMISSIONS.SOS_REPORT, { classId: current?.class_id ?? null, studentId }),
       canClose: canCloseCase(p, { class_id: current?.class_id ?? null, student_id: studentId }),
+      /* Ý thức & Phối hợp (PR-K): ghi vi phạm — mọi GV dạy lớp em đang học (V01, C02 không áp cho Ý thức); xử lý — GVCN của lớp + Quản lý. */
+      canRecordViolation: can(p, PERMISSIONS.VIOLATION_RECORD, { classId: current?.class_id ?? null, studentId }),
+      canManageDiscipline: canManageDiscipline(p, studentId),
     },
   };
 }

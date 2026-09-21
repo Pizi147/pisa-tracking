@@ -895,6 +895,21 @@ export async function runSosV3Tests(t: YThucTestKit) {
     assert(sv.length === 1 && sv[0].actions.length === 3, 'Theo học viên hiện đủ lượt đã xong');
   });
 
+  check('PR-K · Một dòng Phối hợp SOS trong Việc cần làm của GVCN (`myCoordinationLines`): số khớp `pendingCount` của `coordinationOfClass`, giảm đúng khi một lượt hoàn thành, giáo viên bộ môn không chủ nhiệm không có dòng của lớp đó', () => {
+    const f = freshSos('MYWORK-PH');
+    const code = get('SELECT code n FROM classes WHERE id = ?', CLASS).n;
+    const live = () => (phoiHop.coordinationOfClass(gvcn, CLASS) as any).pendingCount as number;
+    const mine = () => (phoiHop.myCoordinationLines(gvcn) as any[]).find((l: any) => l.classId === CLASS);
+    const before = live();
+    assert(mine()?.pendingCount === before && mine()?.text === `Lớp ${code} — ${before} lượt Phối hợp SOS cần xử lý`,
+      `Dòng trước khi xử lý: ${JSON.stringify(mine())} vs live ${before}`);
+    for (const r of coordOf(f.a.id)) phoiHop.confirmCoordination(gvcn, r.id, { performedOn: TODAY });
+    const after = live();
+    assert(after === before - 1, `Một lượt vừa xong hết việc: pendingCount phải giảm đúng 1: ${before} → ${after}`);
+    assert(mine()?.pendingCount === after, `Dòng Việc cần làm phải khớp số mới: ${JSON.stringify(mine())} vs live ${after}`);
+    assert(!(phoiHop.myCoordinationLines(w1T) as any[]).some((l: any) => l.classId === CLASS), 'Giáo viên bộ môn không chủ nhiệm lớp thì không có dòng nhắc của lớp đó');
+  });
+
   check('PR-T · Chỉ số Phối hợp §8: `phoi-hop-luot-sos` · `phoi-hop-dang-xu-ly` · `phoi-hop-hoan-thanh` (đơn vị: lượt) — số là độ dài tập ID, đúng quyền, chi nhánh khác bị từ chối', () => {
     const f = freshSos('MET'); const bid = get('SELECT branch_id n FROM classes WHERE id = ?', CLASS).n;
     const M = (id: string, who: any = P.mbManager) => metricsSvc.metricSet(who, id, { branchId: bid }) as any;

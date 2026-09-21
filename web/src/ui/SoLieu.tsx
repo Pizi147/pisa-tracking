@@ -32,21 +32,27 @@ type Drill = {
  * CẤM hiển thị một con số dashboard ngoài `<SoLieu>`: mã không có trong sổ thì KHÔNG vẽ số, để một
  * con số không có định nghĩa không lọt lên màn hình.
  */
-export function SoLieu({ id, giaTri, phamVi, rong, className = '' }: {
+export function SoLieu({ id, giaTri, phamVi, rong, className = '', extra }: {
   id: string;
   giaTri: number;
   phamVi?: { branchId?: number | null };
   /** Phạm vi rỗng: ghi `Không có dữ liệu trong phạm vi` thay vì một số 0 trơn. */
   rong?: boolean;
   className?: string;
+  /**
+   * Tham số lọc thêm cho MỘT LÁT của chỉ số (ví dụ một loại biện pháp cụ thể của `bien-phap-theo-loai`).
+   * Phải truyền Y HỆT tham số đã dùng để tính `giaTri` — nếu không số và danh sách khi bấm sẽ lệch nhau.
+   */
+  extra?: Record<string, string>;
 }) {
   const cs = metricById(id);
   const { homNay, ngan } = useNgayNghiepVu();
   const [open, setOpen] = useState(false);
   const [howTo, setHowTo] = useState(false);
   const branch = phamVi?.branchId ?? null;
-  const qs = `rows=1${branch ? `&branchId=${branch}` : ''}`;
-  const { data, loading, error, reload } = useApi<Drill>(open && cs ? `/metrics/${id}?${qs}` : null, [id, open, branch]);
+  const extraQs = extra ? Object.entries(extra).map(([k, v]) => `&${k}=${encodeURIComponent(v)}`).join('') : '';
+  const qs = `rows=1${branch ? `&branchId=${branch}` : ''}${extraQs}`;
+  const { data, loading, error, reload } = useApi<Drill>(open && cs ? `/metrics/${id}?${qs}` : null, [id, open, branch, extraQs]);
 
   if (!cs) {
     return <span className="text-xs text-rose-300">Chỉ số không có trong sổ: {id}</span>;
