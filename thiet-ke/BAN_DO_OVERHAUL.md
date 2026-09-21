@@ -43,12 +43,12 @@ Phiên bản 1.0 · 21/09/2026 · **Sổ tra cứu, không phải sổ giao vi�
 
 | Yêu cầu | Tình trạng | Bằng chứng / còn thiếu | PR |
 |---|---|---|---|
-| Bốn ô số: `Học viên dưới kỳ vọng` · `HV có case đang mở` · `Chờ xác minh quá hạn` · `Phương án cần cập nhật` | 🟡 Một phần | `MetricTiles.tsx` tồn tại, nhưng **ô "Học viên dưới kỳ vọng" không có** vì `hv-duoi-ky-vong-mon` trả lỗi 501 | **PR-N** rồi PR-P |
+| Bốn ô số: `Học viên dưới kỳ vọng` · `HV có case đang mở` · `Chờ xác minh quá hạn` · `Phương án cần cập nhật` | 🟡 Một phần | `MetricTiles.tsx` có ba trong bốn ô. Hàm tập ID của `hv-duoi-ky-vong-mon` và `hv-sos-hien-tai` **đã có** (PR-N, `danhGia.ts`, 4 phép kiểm + kiểm ngược); còn thiếu chính ô số ở giao diện | PR-P |
 | Khối `Cần xử lý` — 5–8 dòng, mỗi dòng có đối tượng + việc + người + hạn + một nút | ❌ Chưa làm | Không có khối nào tên vậy | **PR-P** |
 | Khối `Điểm đáng chú ý` — tối đa 3 nhận định có số và link nguồn | ❌ Chưa làm | Không có | **PR-P** |
 | **Bỏ** hàng đợi việc đầy đủ khỏi màn chính, chỉ giữ preview | ❌ Chưa làm | `OverviewPage.tsx` vẫn render `<WorkList>` đầy đủ kèm bộ lọc và phân trang | **PR-P** |
 | **Bỏ** khối `Sự kiện nổi bật` lớn khỏi màn đầu | ❌ Chưa làm | `OverviewPage.tsx` vẫn render `<Highlights>` ở vị trí cao | **PR-P** |
-| Bảng `Theo chi nhánh` mở tới lớp, tên cột dễ hiểu, số có đơn vị | 🟡 Một phần | `BranchPulse.tsx` + `branchpulse.ts` có bảng, nhưng số là **số trần** dùng bộ đếm riêng, chưa qua hợp đồng số liệu | **PR-N** rồi PR-P |
+| Bảng `Theo chi nhánh` mở tới lớp, tên cột dễ hiểu, số có đơn vị | 🟡 Một phần | **Phần số: ✅ PR-N.** `branchPulse` lấy năm tập ID từ `metricSet` (cùng hàm với `<SoLieu>`), hàng tổng là chính tập gốc, mỗi hàng kèm `ids`; bấm thử: bảng và ô số cùng 22/7/15, thêm một case thì cùng lên 23/8. Cột "quá hạn cập nhật" đổi sang đơn vị phương án. **Còn thiếu:** ô của bảng chưa mở panel `<SoLieu>`; bố cục, tên cột cuối cùng | PR-P |
 | `Lịch sắp tới` — ba tab tuần, mỗi sự kiện một dòng, không hiện nhóm 0 | 🟡 Một phần | `Highlights.tsx` có ba tuần nhưng chiếm diện tích lớn và chưa thu gọn khi ít sự kiện | **PR-P** |
 | Thay `13/4` bằng hai cột `13 case mở` và `4 chưa có PA` | ❌ Chưa làm | — | **PR-P** |
 | GV không thấy bảng chi nhánh; màn đầu là `Việc cần làm` + `Học viên cần hỗ trợ` | 🟡 Một phần | Đã lọc theo quyền, nhưng chưa có khối `Học viên cần hỗ trợ` riêng | **PR-P** |
@@ -71,7 +71,7 @@ Phiên bản 1.0 · 21/09/2026 · **Sổ tra cứu, không phải sổ giao vi�
 | Nhóm `chưa xác định nguồn` (F03) hiện ra ở giao diện | ❌ Chưa làm | `planOutcomesUnattributed` đã có hàm, **chưa màn nào gọi** (`plan.md` 12.8) | **PR-P** |
 | Liên kết `Cần bổ sung đánh giá` ngoài bảng hiệu quả | ❌ Chưa làm | — | **PR-P** |
 | Góc nhìn **`Giáo viên`** (§6 đầy đủ) | ❌ Chưa làm | Không có màn nào. Chốt 21/09: **hoãn sau deploy bản chính** — xem mục 10 | *hoãn* |
-| `Theo tuần`: bảng tháng, hàng tuần mở/thu, nhóm cột `Kết quả Test` và `Tình trạng xử lý hiện nay` | 🟡 Một phần | `WeeklyBoard.tsx` + `weekly.ts` có bảng tuần. Thiếu: nhóm cột phân cách, chọn cột, và **DATA-01 chưa sửa** | **PR-N** rồi PR-P |
+| `Theo tuần`: bảng tháng, hàng tuần mở/thu, nhóm cột `Kết quả Test` và `Tình trạng xử lý hiện nay` | 🟡 Một phần | `WeeklyBoard.tsx` + `weekly.ts` có bảng tuần. **DATA-01 đã đóng từ PR-F; PR-N thêm** danh sách khi bấm số (`weeklyDrill`, `GET /weekly-rollup/ids`) và "HV có case" đếm duy nhất theo tháng/cả bảng (demo: 20, không phải 22). Thiếu: nhóm cột phân cách, chọn cột, nối ô vào panel | PR-P |
 | Không gọi cột trạng thái hiện tại là "tại cuối tuần trước" | ✅ Đã làm | Rule book §11 đã áp trong PR-H | — |
 | Cột kỹ năng gồm `Ý thức/Khác` | ⚰️ Hết hiệu lực | Rule mới 21/09: Ý thức không còn là vấn đề theo kỹ năng. Thành **góc nhìn riêng** | **PR-K** |
 
@@ -176,11 +176,11 @@ Phiên bản 1.0 · 21/09/2026 · **Sổ tra cứu, không phải sổ giao vi�
 | Một chỉ số = một hàm trả về tập ID; số là `tap.length` | ✅ Đã làm | PR-F (chặng 2, commit `012d9f8`), `shared/domain/metrics.ts` | — |
 | Drill-down áp đúng quyền của số tổng | ✅ Đã làm | PR-F | — |
 | Phạm vi rỗng trả rỗng | ✅ Đã làm | PR-F sửa `issueScopeOf` + `studentsOf` (lỗi có sẵn, sửa nhân tiện) | — |
-| **Bốn chỉ số trả lỗi 501** — `hv-sos-hien-tai`, `hv-duoi-ky-vong-mon`, `dung-han-cap-nhat`, `do-phu-danh-gia` | ❌ Chưa làm | **Đây là chốt chặn.** Xem mục 11 | **PR-N** |
-| Mọi số trên Tổng quan đi qua `<SoLieu>` | 🟡 Một phần | Bảng `Việc cần lưu ý` (sáu cột), `Theo chi nhánh`, và các cột bảng phân tích vẫn là số trần dùng bộ đếm riêng. Hiện **khớp nhờ may**, không nhờ cấu trúc | **PR-N** |
-| **DATA-01 (P0)** — `weekly.ts` lọc scope ở tập đợt thi, nhưng phép đếm case/HV sau đó chỉ lọc `planned_period_id` | ❌ Chưa làm | Hai chi nhánh cùng tuần **cộng lẫn số của nhau**. Sai theo hướng người xem không phát hiện được | **PR-N** |
+| **Bốn chỉ số trả lỗi 501** — `hv-sos-hien-tai`, `hv-duoi-ky-vong-mon`, `dung-han-cap-nhat`, `do-phu-danh-gia` | ✅ Đã làm | PR-N. Cả bốn trả tập ID, số = độ dài tập, mỗi hàm một phép kiểm so với sự thật độc lập; 9 lần cố ý làm hỏng đều bị bắt. Sổ nay có 12 chỉ số (thêm `pa-cho-duyet`). Định nghĩa còn để ngỏ trong hợp đồng đã chọn và ghi ở `plan.md` 22.2 N1 | — |
+| Mọi số trên Tổng quan đi qua `<SoLieu>` | 🟡 Một phần | **Tập ID: ✅ PR-N** — `Việc cần lưu ý`, `Theo chi nhánh`, bảng phân tích theo kỹ năng và bảng tuần nay đều đếm bằng độ dài của một tập ID lấy từ cùng hàm với ô số (chúng từng LỆCH thật: 79/28/27/6 so với 81/29/28/31). "Thiếu phương án" còn MỘT định nghĩa (`isNoPlanCase`). **Còn thiếu:** các ô đó chưa được vẽ bằng `<SoLieu>` (chưa bấm ra panel) | PR-P |
+| **DATA-01 (P0)** — `weekly.ts` lọc scope ở tập đợt thi, nhưng phép đếm case/HV sau đó chỉ lọc `planned_period_id` | ✅ Đã làm | **Đã đóng từ PR-F** (chặng 2, commit `012d9f8`, phép kiểm F01) — bảng này từng ghi nhầm "chưa làm". PR-N khoá thêm ở tầng danh sách: 2 phép kiểm (số = độ dài tập; danh sách của Quản lý MB không chứa bản ghi CP) | — |
 | `<KetQuaDot>` và `<TyLe>` được màn thật dùng | ❌ Chưa làm | Có luật, có phép kiểm, có trang thử — **chưa màn nào dùng**. Các màn cũ còn tự vẽ câu riêng | **PR-P**, **PR-Q** |
-| `GET /metrics/:id` không trả `ids` khi không xin `rows=1` | ❌ Chưa làm | Với tập lớn là phí băng thông (`plan.md` 12.8) | **PR-N** |
+| `GET /metrics/:id` không trả `ids` khi không xin `rows=1` | ✅ Đã làm | PR-N N4: `metricResponse`; phép kiểm chạy đủ 12 chỉ số, và cố ý làm hỏng (trả `ids` khi không xin) thì gãy | — |
 | Chỉ số `Tái diễn Ý thức` | ⚰️ Hết hiệu lực | Không còn đợt. Thay bằng **tám chỉ số mới** ở `Y_THUC_VI_PHAM_VA_BIEN_PHAP.md` §8 | **PR-J** |
 | Ba chỉ số `hv-co-case-mo`, `case-mo`, `case-thieu-pa` phải sửa định nghĩa thành "chỉ case học thuật" | ❌ Chưa làm | — | **PR-J** |
 
@@ -216,7 +216,7 @@ Hai khối dưới đây **không** nằm trong 8 PR. Ghi lại để không ai 
 phép đếm thứ hai** cho cùng một khái niệm — đúng cái lỗi "badge ghi 28, bấm vào ra 0" mà PR-F
 vừa sinh ra để dập, và lần này còn khó thấy hơn vì hai số sẽ khớp nhau trên dữ liệu demo.
 
-Vì vậy **PR-N đứng đầu**, trước cả Ý thức.
+Vì vậy **PR-N đứng đầu**, trước cả Ý thức. **Cập nhật 21/09/2026: bốn hàm đã có (PR-N)** — chốt chặn này hết; người dựng Tổng quan mới ở PR-P phải GỌI chúng, không viết phép đếm thứ hai.
 
 ---
 

@@ -40,14 +40,14 @@ export const METRICS: readonly ChiSo[] = [
     id: 'hv-sos-hien-tai', ten: 'Học viên có SOS hiện tại',
     cauHoi: 'Bao nhiêu em đang có ít nhất một kỹ năng dưới kỳ vọng ở đợt Test mới nhất hợp lệ?',
     donVi: 'hoc-vien',
-    tapDuDieuKien: 'Học viên có đợt Test mới nhất hợp lệ; SOS tạm thời và kết quả cuối tách riêng. Không lấy MAX toàn lịch sử.',
+    tapDuDieuKien: 'Học viên ĐANG HỌC trong phạm vi, có đợt Test mới nhất hợp lệ (không huỷ, đã có điểm) mà SOS ≥ 1. SOS tạm thời (mới chấm một phần) và kết quả cuối (đủ điểm) tách riêng nhưng đều thuộc tập này. Không lấy MAX toàn lịch sử.',
     thoiGian: 'hien-trang', khuTrung: 'COUNT DISTINCT student_id', drilldown: '/metrics/hv-sos-hien-tai',
   },
   {
     id: 'hv-duoi-ky-vong-mon', ten: 'Học viên dưới kỳ vọng theo môn',
     cauHoi: 'Bao nhiêu em dưới kỳ vọng ở một môn cụ thể?',
     donVi: 'hoc-vien',
-    tapDuDieuKien: 'Học viên có thể đánh giá được môn đó. So với kỳ vọng CỦA CHÍNH ĐỢT ĐÓ, không phải target hiện tại.',
+    tapDuDieuKien: 'Mẫu số: học viên đang học mà đợt Test mới nhất hợp lệ ĐÁNH GIÁ ĐƯỢC môn đó (có điểm và có kỳ vọng). Tập đếm: những em trong đó dưới kỳ vọng CỦA CHÍNH ĐỢT ĐÓ, không phải target hiện tại. Không nêu môn thì tính "bất kỳ môn nào".',
     thoiGian: 'hien-trang', khuTrung: 'COUNT DISTINCT student_id theo môn', drilldown: '/metrics/hv-duoi-ky-vong-mon',
   },
   {
@@ -86,6 +86,13 @@ export const METRICS: readonly ChiSo[] = [
     thoiGian: 'hien-trang', khuTrung: 'COUNT DISTINCT intervention_id', drilldown: '/metrics/pa-can-cap-nhat',
   },
   {
+    id: 'pa-cho-duyet', ten: 'Phương án chờ duyệt',
+    cauHoi: 'Bao nhiêu phương án giáo viên đề xuất đang chờ Quản lý trả lời?',
+    donVi: 'phuong-an',
+    tapDuDieuKien: 'Phương án đang chờ duyệt ở case đang mở trong phạm vi. Đếm phương án — không đếm case, không đếm học viên.',
+    thoiGian: 'hien-trang', khuTrung: 'COUNT DISTINCT intervention_id', drilldown: '/metrics/pa-cho-duyet',
+  },
+  {
     id: 'pa-co-ket-qua', ten: 'Phương án có kết quả xác định',
     cauHoi: 'Bao nhiêu phương án đã kết thúc và có kết quả rõ ràng?',
     donVi: 'phuong-an',
@@ -103,14 +110,14 @@ export const METRICS: readonly ChiSo[] = [
     id: 'dung-han-cap-nhat', ten: 'Đúng hạn cập nhật',
     cauHoi: 'Bao nhiêu nghĩa vụ cập nhật được hoàn thành đúng hạn?',
     donVi: 'nghia-vu',
-    tapDuDieuKien: 'Nghĩa vụ hoàn thành đúng hạn / nghĩa vụ đến hạn trong kỳ. KHÔNG đếm số lần bấm ghi chú.',
+    tapDuDieuKien: 'Mẫu số: nghĩa vụ cập nhật tuần (một phương án × một chu kỳ) của case học thuật đã QUA hạn — đã cập nhật hoặc chưa ai cập nhật; phương án chờ duyệt, case Ý thức và case nhập bù không có nghĩa vụ. Tử số: nghĩa vụ hoàn thành đúng hạn. Mặc định mọi nghĩa vụ đã qua hạn tới ngày dữ liệu; có thể giới hạn theo kỳ. KHÔNG đếm số lần bấm ghi chú.',
     thoiGian: 'ket-qua-trong-ky', khuTrung: 'COUNT DISTINCT (phương án × chu kỳ)', drilldown: '/metrics/dung-han-cap-nhat',
   },
   {
     id: 'do-phu-danh-gia', ten: 'Độ phủ đánh giá',
     cauHoi: 'Bao nhiêu phần học viên cần đánh giá đã có dữ liệu đủ điều kiện?',
     donVi: 'hoc-vien',
-    tapDuDieuKien: 'Học viên có dữ liệu đủ điều kiện / học viên cần được đánh giá. KHÁC tỷ lệ đạt.',
+    tapDuDieuKien: 'Mẫu số: học viên đang học có ít nhất một đợt Test (không huỷ) đã đến lịch — kể cả chưa chấm. Tử số: em mà đợt đã đến lịch mới nhất đủ điểm mọi kỹ năng bắt buộc (dù đạt hay trượt). KHÁC tỷ lệ đạt.',
     thoiGian: 'hien-trang', khuTrung: 'COUNT DISTINCT student_id', drilldown: '/metrics/do-phu-danh-gia',
   },
 ];

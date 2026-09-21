@@ -4,7 +4,7 @@ import {
   INTERVENTION_STATUS_LABEL,
   FOLLOWUP_OUTCOMES, BEHAVIOUR_TOPICS, CASE_DECISIONS, CASE_OUTCOMES, ENTRY_SKILLS,
   ISSUE_ROLES, PERMISSIONS, THREAD_TRACKS, URGENCY_LEVELS, DEFAULT_URGENCY,
-  BEHAVIOUR_MERGE_WINDOW_DAYS, behaviourCaseDeadline, behaviourMergeUntil,
+  BEHAVIOUR_MERGE_WINDOW_DAYS, behaviourCaseDeadline, behaviourMergeUntil, isNoPlanCase,
   issuesForTopic, topicFromBehaviourCode,
   CASE_CATEGORY_SHORT, CASE_CATEGORIES, CASE_CATEGORY_LABEL, FOLLOWUP_OUTCOME_LABEL, ratioResult,
   caseCategoriesFor, componentsAreCounts, componentsFor, type CaseCategory,
@@ -2035,7 +2035,7 @@ export function listCases(p: Principal, f: CaseFilters = {}) {
        * biết làm gì trước, ba trạng thái để biết bức tranh chung đang ở đâu.
        */
       state: (r.status === 'done' ? 'done'
-        : (!r.disposition && (r.intervention_count as number) === 0) ? 'no_plan'
+        : isNoPlanCase({ status: r.status, disposition: r.disposition, interventionCount: r.intervention_count as number }) ? 'no_plan'
         : 'working') as CaseState,
     }));
 

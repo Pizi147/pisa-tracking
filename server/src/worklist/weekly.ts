@@ -2,10 +2,12 @@ import { db } from '../db.ts';
 import { PERMISSIONS } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { classScopeSql, require_, scopeFor, type Principal } from '../permissions.ts';
-import { addDays } from '../util.ts';
+import { addDays, badRequest } from '../util.ts';
 import { mondayOf, weekInfo } from '../platform/week.ts';
-import { loadBundle, resultOf } from '../fasttrack/attempts.ts';
-import { allProgrammes, evaluateRegular } from '../normal/regular.ts';
+import { loadBundle } from '../fasttrack/attempts.ts';
+import { allProgrammes } from '../normal/regular.ts';
+import { evaluateAttemptRow } from './danhGia.ts';
+import { isNoPlanCase } from '../../../shared/domain/index.ts';
 
 /**
  * TỔNG HỢP THEO TUẦN cho Quản lý — thay cho sheet "Tổng hợp theo tuần" của workbook cũ.
@@ -79,14 +81,38 @@ const MONTHS = [
   'JULY', 'AUGUST', 'SEPTEMBER', 'OCTOBER', 'NOVEMBER', 'DECEMBER',
 ];
 
-export function weeklyRollup(
+/**
+ * MỖI CỘT LÀ MỘT TẬP ID (hợp đồng số liệu, PR-N N2). Số của ô là `.size` của tập — không có đường đếm riêng — và danh sách
+ * khi bấm số (`weeklyDrill`) trả CHÍNH tập đó. Đơn vị từng cột:
+ *   lượt (attempt id)  attempts · onTarget · sos1 · sos2 · sos3 · provisional · pending
+ *   case (case id)     cases · withSupport · untouched
+ *   học viên           caseStudents
+ *   phương án          pendingApproval
+ */
+export const WEEKLY_COLS = [
+  'attempts', 'onTarget', 'sos1', 'sos2', 'sos3', 'provisional', 'pending',
+  'cases', 'caseStudents', 'withSupport', 'untouched', 'pendingApproval',
+] as const;
+export type WeeklyCol = (typeof WEEKLY_COLS)[number];
+export const WEEKLY_COL_UNIT: Record<WeeklyCol, 'dot-test' | 'case' | 'hoc-vien' | 'phuong-an'> = {
+  attempts: 'dot-test', onTarget: 'dot-test', sos1: 'dot-test', sos2: 'dot-test', sos3: 'dot-test',
+  provisional: 'dot-test', pending: 'dot-test', cases: 'case', withSupport: 'case', untouched: 'case',
+  caseStudents: 'hoc-vien', pendingApproval: 'phuong-an',
+};
+type WeeklySets = Record<WeeklyCol, Set<number>>;
+const emptySets = (): WeeklySets =>
+  Object.fromEntries(WEEKLY_COLS.map((c) => [c, new Set<number>()])) as unknown as WeeklySets;
+
+type WeeklyMeta = Omit<WeeklyRow, WeeklyCol>;
+
+function weeklySets(
   p: Principal,
-  f: { branchId?: number | null; weeks?: number; track?: 'normal' | 'ft' | null } = {},
-): { rows: WeeklyRow[]; scopeEmpty: boolean; today: string; track: 'normal' | 'ft' | null } {
+  f: { branchId?: number | null; weeks?: number; track?: 'normal' | 'ft' | null },
+): { periods: (WeeklyMeta & { sets: WeeklySets })[]; scopeEmpty: boolean; today: string; track: 'normal' | 'ft' | null } {
   require_(p, PERMISSIONS.ATTEMPT_VIEW, { anyScope: true }, 'Bạn không có quyền xem tổng hợp tuần.');
   const scope = scopeFor(p, PERMISSIONS.ATTEMPT_VIEW);
   const track = f.track ?? null;
-  if (scope.none) return { rows: [], scopeEmpty: true, today: demoToday(), track };
+  if (scope.none) return { periods: [], scopeEmpty: true, today: demoToday(), track };
 
   const conn = db();
   const today = demoToday();
@@ -123,20 +149,10 @@ export function weeklyRollup(
   /*
    * "Đạt kỳ vọng" KHÔNG đọc được từ bảng case: case chỉ tồn tại khi SOS ≥ 1, nên đếm theo
    * case thì cột này vĩnh viễn bằng 0. Phải tính lại kết quả của từng lượt, đúng bằng cùng
-   * bộ máy chấm mà các màn khác dùng — FT theo band, lớp thường theo tỷ lệ.
+   * bộ máy chấm mà các màn khác dùng — FT theo band, lớp thường theo tỷ lệ (`evaluateAttemptRow`).
    */
   const bundle = loadBundle(attempts.map((a) => a.id));
   const programmes = allProgrammes();
-  const resultOfAttempt = (a: any): { sosLevel: number | null; complete: boolean } => {
-    const scores = bundle.scores.get(a.id) ?? [];
-    const prog = a.programme_code ? programmes.get(a.programme_code) : null;
-    if (prog?.scoringMode === 'ratio') {
-      const r = evaluateRegular(prog.skills, scores);
-      return { sosLevel: r.sosLevel, complete: r.complete };
-    }
-    const r = resultOf(a, scores, bundle.skips.get(a.id) ?? []);
-    return { sosLevel: r.sosLevel, complete: r.complete };
-  };
 
   const scored = new Set<number>();
   if (attempts.length) {
@@ -153,8 +169,8 @@ export function weeklyRollup(
     }
   }
 
-  const byPeriod = new Map<number, WeeklyRow>();
-  const rowOf = (a: any): WeeklyRow => {
+  const byPeriod = new Map<number, WeeklyMeta & { sets: WeeklySets }>();
+  const rowOf = (a: any) => {
     let row = byPeriod.get(a.period_id);
     if (!row) {
       const info = weekInfo(a.week_start);
@@ -164,8 +180,7 @@ export function weeklyRollup(
         weekLabel: `Tuần ${info.weekNo}`,
         range: info.range, weekStart: a.week_start, weekEnd: a.week_end,
         isCurrent: a.week_start <= today && a.week_end >= today,
-        attempts: 0, onTarget: 0, sos1: 0, sos2: 0, sos3: 0, provisional: 0, pending: 0,
-        cases: 0, caseStudents: 0, withSupport: 0, untouched: 0, pendingApproval: 0,
+        sets: emptySets(),
       };
       byPeriod.set(a.period_id, row);
     }
@@ -175,22 +190,22 @@ export function weeklyRollup(
   for (const a of attempts) {
     const row = rowOf(a);
     if (!scored.has(a.id)) continue;          // chưa chấm gì thì chưa phải một lượt có kết quả
-    row.attempts += 1;
+    row.sets.attempts.add(a.id);
 
     /*
      * SÁU CỘT LOẠI TRỪ NHAU. Thứ tự xét quan trọng: kiểm tra ĐỦ ĐIỂM TRƯỚC, vì một lượt
      * chưa đủ điểm mà đã kết luận được thì là kết luận TẠM THỜI — không được rơi vào cột
      * "Đạt" hay cột SOS chắc chắn, và cũng không được đếm thêm lần nữa ở cột "chưa đủ điểm".
      */
-    const { sosLevel, complete } = resultOfAttempt(a);
+    const { sosLevel, complete } = evaluateAttemptRow(a, bundle, programmes);
     if (!complete) {
-      if (sosLevel === null) row.pending += 1;
-      else row.provisional += 1;
-    } else if (sosLevel === null) row.pending += 1;
-    else if (sosLevel === 0) row.onTarget += 1;
-    else if (sosLevel === 1) row.sos1 += 1;
-    else if (sosLevel === 2) row.sos2 += 1;
-    else row.sos3 += 1;
+      if (sosLevel === null) row.sets.pending.add(a.id);
+      else row.sets.provisional.add(a.id);
+    } else if (sosLevel === null) row.sets.pending.add(a.id);
+    else if (sosLevel === 0) row.sets.onTarget.add(a.id);
+    else if (sosLevel === 1) row.sets.sos1.add(a.id);
+    else if (sosLevel === 2) row.sets.sos2.add(a.id);
+    else row.sets.sos3.add(a.id);
   }
 
   /*
@@ -202,12 +217,10 @@ export function weeklyRollup(
    * người xem một chi nhánh không có cách nào phát hiện: con số cứ lớn hơn thực tế.
    *
    * Nay ba truy vấn lọc theo `a.id IN (các lượt được phép)`. Bộ lọc chi nhánh/track/quyền chỉ có
-   * MỘT nơi (câu truy vấn `attempts`), nên không thể có hai bộ lọc lệch nhau. Đếm học viên duy nhất
-   * làm trong mã, không phải `COUNT(DISTINCT)` theo từng lô, để một em nằm ở hai lô không bị đếm hai lần.
+   * MỘT nơi (câu truy vấn `attempts`), nên không thể có hai bộ lọc lệch nhau.
    */
   if (attempts.length) {
     const ids = attempts.map((a) => a.id);
-    const studentsByPeriod = new Map<number, Set<number>>();
     for (let i = 0; i < ids.length; i += 400) {
       const chunk = ids.slice(i, i + 400);
       const ph = chunk.map(() => '?').join(',');
@@ -218,12 +231,11 @@ export function weeklyRollup(
        */
       for (const r of conn
         .prepare(
-          `SELECT a.planned_period_id AS pid, sc.id AS case_id, sc.student_id, sc.status,
+          `SELECT a.planned_period_id AS pid, sc.id AS case_id, sc.student_id, sc.status, sc.disposition,
                   (SELECT MAX(COALESCE(i.completed_date, i.started_date))
                      FROM case_interventions i
                     WHERE i.case_id = sc.id AND i.status != 'cancelled') AS support_done,
-                  (SELECT COUNT(*) FROM case_interventions i2
-                    WHERE i2.case_id = sc.id AND i2.status != 'cancelled') AS iv_count
+                  (SELECT COUNT(*) FROM case_interventions i2 WHERE i2.case_id = sc.id) AS iv_count
              FROM sos_cases sc
              JOIN assessment_attempts a ON a.id = sc.attempt_id
             WHERE a.id IN (${ph})
@@ -232,14 +244,12 @@ export function weeklyRollup(
         .all(...chunk) as any[]) {
         const row = byPeriod.get(r.pid);
         if (!row) continue;
-        row.cases += 1;
-        if (r.support_done && r.support_done <= today) row.withSupport += 1;
-        else if (r.iv_count === 0 && r.status !== 'done') row.untouched += 1;
+        row.sets.cases.add(r.case_id);
+        if (r.support_done && r.support_done <= today) row.sets.withSupport.add(r.case_id);
+        /* "Thiếu phương án" — cùng `isNoPlanCase` với chỉ số `case-thieu-pa` (trước đây bảng này tự định nghĩa lại). */
+        else if (isNoPlanCase({ status: r.status, disposition: r.disposition, interventionCount: r.iv_count })) row.sets.untouched.add(r.case_id);
         /* Số HỌC VIÊN có case — một em ba case vẫn là một em. */
-        if (r.student_id) {
-          if (!studentsByPeriod.has(r.pid)) studentsByPeriod.set(r.pid, new Set());
-          studentsByPeriod.get(r.pid)!.add(r.student_id);
-        }
+        if (r.student_id) row.sets.caseStudents.add(r.student_id);
       }
 
       /*
@@ -248,21 +258,15 @@ export function weeklyRollup(
        */
       for (const r of conn
         .prepare(
-          `SELECT a.planned_period_id AS pid, COUNT(*) AS n
+          `SELECT a.planned_period_id AS pid, iv.id AS iv_id
              FROM case_interventions iv
              JOIN sos_cases sc ON sc.id = iv.case_id
              JOIN assessment_attempts a ON a.id = sc.attempt_id
-            WHERE iv.approval_state = 'pending' AND a.id IN (${ph})
-            GROUP BY a.planned_period_id`,
+            WHERE iv.approval_state = 'pending' AND a.id IN (${ph})`,
         )
         .all(...chunk) as any[]) {
-        const row = byPeriod.get(r.pid);
-        if (row) row.pendingApproval += r.n;
+        byPeriod.get(r.pid)?.sets.pendingApproval.add(r.iv_id);
       }
-    }
-    for (const [pid, set] of studentsByPeriod) {
-      const row = byPeriod.get(pid);
-      if (row) row.caseStudents = set.size;
     }
   }
 
@@ -273,8 +277,57 @@ export function weeklyRollup(
    * của nó toàn số 0, và một bảng đầy dòng 0 chính là thứ file Excel cũ làm mà không ai đọc.
    * Lượt chưa chấm đã có chỗ riêng ở danh sách việc cần làm.
    */
-  const rows = [...byPeriod.values()]
-    .filter((r) => r.attempts > 0 || r.cases > 0)
+  const periods = [...byPeriod.values()]
+    .filter((r) => r.sets.attempts.size > 0 || r.sets.cases.size > 0)
     .sort((a, b) => (a.weekStart < b.weekStart ? 1 : -1));
-  return { rows, scopeEmpty: false, today, track };
+  return { periods, scopeEmpty: false, today, track };
+}
+
+const union = (list: Set<number>[]) => new Set<number>(list.flatMap((x) => [...x]));
+
+export function weeklyRollup(
+  p: Principal,
+  f: { branchId?: number | null; weeks?: number; track?: 'normal' | 'ft' | null } = {},
+): {
+  rows: WeeklyRow[]; scopeEmpty: boolean; today: string; track: 'normal' | 'ft' | null;
+  /**
+   * HỌC VIÊN KHÔNG CỘNG THEO TUẦN (luật 4): một em có case ở hai tuần là MỘT em ở hàng tháng và hàng tổng. `caseStudents`
+   * ở đây là số DUY NHẤT của cả bảng và `byMonth` là số duy nhất của từng tháng — giao diện dùng hai số này, không tự cộng.
+   */
+  totals: { caseStudents: number; byMonth: Record<string, number> };
+} {
+  const r = weeklySets(p, f);
+  const rows = r.periods.map(({ sets, ...meta }) => ({
+    ...meta,
+    ...(Object.fromEntries(WEEKLY_COLS.map((c) => [c, sets[c].size])) as Record<WeeklyCol, number>),
+  })) as WeeklyRow[];
+  const months = new Map<string, Set<number>[]>();
+  for (const per of r.periods) {
+    if (!months.has(per.month)) months.set(per.month, []);
+    months.get(per.month)!.push(per.sets.caseStudents);
+  }
+  return {
+    rows, scopeEmpty: r.scopeEmpty, today: r.today, track: r.track,
+    totals: {
+      caseStudents: union(r.periods.map((x) => x.sets.caseStudents)).size,
+      byMonth: Object.fromEntries([...months].map(([m, list]) => [m, union(list).size])),
+    },
+  };
+}
+
+/**
+ * DANH SÁCH KHI BẤM MỘT SỐ CỦA BẢNG TUẦN — CHÍNH tập ID đã sinh ra số đó (cùng hàm `weeklySets`, cùng quyền, cùng bộ lọc).
+ * `periodId` rỗng nghĩa là cả bảng: hợp của mọi tuần đang hiện, đếm duy nhất.
+ */
+export function weeklyDrill(
+  p: Principal,
+  f: { branchId?: number | null; weeks?: number; track?: 'normal' | 'ft' | null },
+  periodId: number | null,
+  col: string,
+): { ids: number[]; unit: (typeof WEEKLY_COL_UNIT)[WeeklyCol]; empty: boolean } {
+  if (!(WEEKLY_COLS as readonly string[]).includes(col)) throw badRequest(`Cột "${col}" không có trong bảng tuần.`);
+  const c = col as WeeklyCol;
+  const r = weeklySets(p, f);
+  const picked = periodId === null ? r.periods : r.periods.filter((x) => x.periodId === periodId);
+  return { ids: [...union(picked.map((x) => x.sets[c]))].sort((x, y) => x - y), unit: WEEKLY_COL_UNIT[c], empty: r.scopeEmpty };
 }

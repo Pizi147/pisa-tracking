@@ -1,7 +1,7 @@
 import { db } from '../db.ts';
 import {
   BEHAVIOUR_TOPICS, CASE_CATEGORY_SHORT, INTERVENTION_KIND_LABEL,
-  caseCategoriesFor, caseCategoryLabel, categoryOf, issueBoardCategoriesFor, issueLabel,
+  caseCategoriesFor, caseCategoryLabel, categoryOf, isNoPlanCase, issueBoardCategoriesFor, issueLabel,
   type InterventionKind,
 } from '../../../shared/domain/index.ts';
 
@@ -401,7 +401,8 @@ export function issueBoard(scope: Scope, category: string) {
 
   const cases = conn
     .prepare(
-      `SELECT sc.id, sc.student_id, sc.status, sc.track, sc.category, sc.topic
+      `SELECT sc.id, sc.student_id, sc.status, sc.track, sc.category, sc.topic, sc.disposition,
+              (SELECT COUNT(*) FROM case_interventions i WHERE i.case_id = sc.id) AS iv_all
          FROM sos_cases sc
         WHERE sc.student_id IN (${ph})`,
     )
@@ -465,9 +466,9 @@ export function issueBoard(scope: Scope, category: string) {
       students: new Set(mine.filter((c) => ids.includes(c.id) && c.status !== 'done').map((c) => c.student_id)).size,
       /* Chỉ số LỊCH SỬ riêng: mọi em TỪNG có case ở phân loại này, kể cả case đã đóng. */
       studentsEver: new Set(mine.filter((c) => ids.includes(c.id)).map((c) => c.student_id)).size,
-      /* Case đang mở mà chưa ai đề ra phương án — đây là việc chặn, nên tách riêng. */
-      noPlan: mine.filter((c) => ids.includes(c.id) && c.status !== 'done'
-        && !ivs.some((i) => i.case_id === c.id)).length,
+      /* Case đang mở mà chưa ai đề ra phương án — đây là việc chặn, nên tách riêng. Cùng `isNoPlanCase` với chỉ số. */
+      noPlan: mine.filter((c) => ids.includes(c.id)
+        && isNoPlanCase({ status: c.status, disposition: c.disposition, interventionCount: c.iv_all })).length,
       plans: myIvs.length,
       running: myIvs.filter((i) => i.status === 'planned' || i.status === 'started').length,
       success: ended.filter((e) => e.group === 'success').length,
@@ -514,14 +515,14 @@ export function issueSkillRows(scope: Scope) {
     return cats.map((c) => ({
       code: c, label: caseCategoryLabel(c), short: CASE_CATEGORY_SHORT[c] ?? c,
       students: 0, openCases: 0, noPlan: 0, supporting: 0, unclassified: 0,
+      ids: { students: [] as number[], openCases: [] as number[], noPlan: [] as number[], supporting: [] as number[], unclassified: [] as number[] },
     }));
   }
   const ph = sids.map(() => '?').join(',');
   const cases = conn
     .prepare(
-      `SELECT sc.id, sc.student_id, sc.status, sc.track, sc.category, sc.topic,
-              (SELECT COUNT(*) FROM case_interventions iv
-                WHERE iv.case_id = sc.id AND iv.status != 'cancelled') AS plan_count,
+      `SELECT sc.id, sc.student_id, sc.status, sc.track, sc.category, sc.topic, sc.disposition,
+              (SELECT COUNT(*) FROM case_interventions iv WHERE iv.case_id = sc.id) AS plan_count,
               (SELECT COUNT(*) FROM case_interventions iv
                 WHERE iv.case_id = sc.id AND iv.status IN ('planned','started')) AS open_plans,
               (SELECT COUNT(*) FROM case_issues ci
@@ -534,18 +535,27 @@ export function issueSkillRows(scope: Scope) {
   return cats.map((cat) => {
     const mine = cases.filter((c) => (c.category ?? categoryOf(c.track ?? 'academic', c.topic)) === cat);
     const open = mine.filter((c) => c.status !== 'done');
-    return {
-      code: cat, label: caseCategoryLabel(cat), short: CASE_CATEGORY_SHORT[cat] ?? cat,
+    /*
+     * MỖI SỐ LÀ ĐỘ DÀI CỦA MỘT TẬP ID (hợp đồng số liệu luật 1, PR-N): danh sách khi bấm số và con số cùng một tập, và
+     * cả bảng lẫn chỉ số `case-thieu-pa` gọi CÙNG `isNoPlanCase` — không còn định nghĩa thứ hai của "thiếu phương án".
+     */
+    const ids = {
       /* ĐẾM DUY NHẤT — một em hai case cùng hạng mục vẫn là một em (mục 15.2). */
-      students: new Set(open.map((c) => c.student_id)).size,
-      openCases: open.length,
-      noPlan: open.filter((c) => c.plan_count === 0).length,
-      supporting: open.filter((c) => c.open_plans > 0).length,
+      students: [...new Set(open.map((c) => c.student_id as number))].sort((x, y) => x - y),
+      openCases: open.map((c) => c.id as number),
+      noPlan: open.filter((c) => isNoPlanCase({ status: c.status, disposition: c.disposition, interventionCount: c.plan_count })).map((c) => c.id as number),
+      supporting: open.filter((c) => c.open_plans > 0).map((c) => c.id as number),
       /*
        * TẬP CHƯA PHÂN LOẠI ĐƯỢC hiện thành một con số riêng (mục 15.1) — phần lớn là dữ
        * liệu cũ, và nó cần người xử lý chứ không phải bị gộp im lặng vào "Khác".
        */
-      unclassified: open.filter((c) => c.issue_count === 0).length,
+      unclassified: open.filter((c) => c.issue_count === 0).map((c) => c.id as number),
+    };
+    return {
+      code: cat, label: caseCategoryLabel(cat), short: CASE_CATEGORY_SHORT[cat] ?? cat,
+      students: ids.students.length, openCases: ids.openCases.length, noPlan: ids.noPlan.length,
+      supporting: ids.supporting.length, unclassified: ids.unclassified.length,
+      ids,
     };
   });
 }

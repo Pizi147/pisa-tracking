@@ -1,0 +1,187 @@
+import { db } from '../db.ts';
+import { PERMISSIONS } from '../../../shared/domain/index.ts';
+import { classScopeSql, scopeFor, type Principal } from '../permissions.ts';
+import { loadBundle, resultOf, type AttemptBundle } from '../fasttrack/attempts.ts';
+import { allProgrammes, evaluateRegular, type ProgrammeInfo } from '../normal/regular.ts';
+
+/**
+ * KẾT QUẢ TEST CỦA TỪNG HỌC VIÊN — nền của ba chỉ số hiện trạng (hv-sos-hien-tai · hv-duoi-ky-vong-mon ·
+ * do-phu-danh-gia). Hợp đồng số liệu luật 1: tầng này trả TẬP ID, không trả số.
+ *
+ * PHẠM VI THEO NƠI EM ĐANG HỌC, không theo lớp của từng lượt. Một em chuyển từ Cẩm Phả sang Monbay thuộc
+ * phạm vi Quản lý Monbay; đợt Test mới nhất của em có thể đã thi ở Cẩm Phả. Nếu lọc theo lớp của LƯỢT thì Quản
+ * lý Monbay chỉ thấy lượt cũ ở Monbay và kết luận sai về "đợt mới nhất" — chỉ số hiện trạng phải đọc đợt mới nhất
+ * THẬT của em. Người xem đã có quyền với em (em đang học ở lớp trong phạm vi) nên đọc kết quả của em là hợp lệ.
+ *
+ * HAI CÁCH CHỌN ĐỢT khác nhau, vì hai câu hỏi khác nhau:
+ *   ĐỢT MỚI NHẤT HỢP LỆ  — không huỷ và đã có ít nhất một kỹ năng có điểm. Dùng cho "em đang ở đâu về điểm".
+ *   ĐỢT MỚI NHẤT ĐÃ ĐẾN LỊCH — không huỷ và tuần kế hoạch đã bắt đầu, KỂ CẢ chưa chấm gì. Dùng cho "đã chấm
+ *   đủ chưa" (độ phủ) — một đợt đến lịch mà chưa ai chấm chính là thứ độ phủ phải nhìn thấy.
+ * "Mới nhất" xếp theo tuần kế hoạch giảm dần, rồi số MT, rồi id; không MAX toàn lịch sử.
+ */
+
+export type SkillEval = {
+  /** Có đủ căn cứ để nói đạt hay dưới kỳ vọng ở môn này (có điểm VÀ có kỳ vọng). */
+  evaluable: boolean;
+  /** Dưới kỳ vọng của CHÍNH đợt đó (không phải target hiện tại). */
+  under: boolean;
+};
+
+export type AttemptEval = {
+  attemptId: number;
+  studentId: number;
+  kind: string;
+  weekStart: string | null;
+  attemptNo: number;
+  /** Đủ điểm mọi kỹ năng bắt buộc. */
+  complete: boolean;
+  /** Số kỹ năng bắt buộc đã có điểm, và tổng số kỹ năng bắt buộc. */
+  scored: number;
+  required: number;
+  sosLevel: number | null;
+  /** Kết luận SOS còn TẠM THỜI (mới chấm một phần). */
+  provisional: boolean;
+  /** Theo kỹ năng ĐÁNH GIÁ: listening · reading · writing · speaking. */
+  skills: Record<string, SkillEval>;
+};
+
+/**
+ * Đánh giá MỘT lượt bằng đúng bộ máy chấm mà mọi màn khác dùng — FT theo band và kỳ vọng, lớp thường theo tỷ lệ.
+ * Dùng chung với báo cáo tuần, để "đợt này SOS mấy" chỉ có MỘT nơi trả lời.
+ */
+export function evaluateAttemptRow(
+  a: any, bundle: AttemptBundle, programmes: Map<string, ProgrammeInfo>,
+): Omit<AttemptEval, 'attemptId' | 'studentId' | 'kind' | 'weekStart' | 'attemptNo'> {
+  const scores = bundle.scores.get(a.id) ?? [];
+  const prog = a.programme_code ? programmes.get(a.programme_code) : null;
+  if (prog?.scoringMode === 'ratio') {
+    const r = evaluateRegular(prog.skills, scores);
+    const skills: Record<string, SkillEval> = {};
+    for (const s of r.skills) {
+      skills[s.skill] = { evaluable: s.outcome !== 'missing', under: s.outcome === 'fail' };
+    }
+    return { complete: r.complete, scored: r.scored, required: r.required, sosLevel: r.sosLevel, provisional: r.provisional, skills };
+  }
+  const r = resultOf(a, scores, bundle.skips.get(a.id) ?? []);
+  const skills: Record<string, SkillEval> = {};
+  for (const v of r.verdicts) {
+    skills[v.skill] = { evaluable: v.required && v.band !== null && v.passed !== null, under: v.passed === false };
+  }
+  return {
+    complete: r.complete, scored: r.scoredRequired, required: r.required.length,
+    sosLevel: r.sosLevel, provisional: r.provisional, skills,
+  };
+}
+
+/** Học viên ĐANG HỌC trong phạm vi của người xem (và chi nhánh được hỏi). Phạm vi rỗng trả rỗng. */
+export function studentsInScope(p: Principal, branchId: number | null): number[] {
+  const scope = scopeFor(p, PERMISSIONS.ATTEMPT_VIEW);
+  if (scope.none) return [];
+  const cs = classScopeSql(scope);
+  const where = [cs.sql, `e.status = 'active'`, 's.archived_at IS NULL'];
+  const params: unknown[] = [...cs.params];
+  if (branchId) { where.push('c.branch_id = ?'); params.push(branchId); }
+  return (db()
+    .prepare(
+      `SELECT DISTINCT s.id FROM enrollments e
+         JOIN students s ON s.id = e.student_id
+         JOIN classes c ON c.id = e.class_id
+        WHERE ${where.join(' AND ')} ORDER BY s.id`,
+    )
+    .all(...params) as any[]).map((r) => r.id as number);
+}
+
+/** Các đợt (không huỷ) của một nhóm học viên, đã xếp MỚI NHẤT TRƯỚC cho từng em. */
+function attemptsNewestFirst(studentIds: number[]): Map<number, any[]> {
+  const out = new Map<number, any[]>();
+  for (let i = 0; i < studentIds.length; i += 400) {
+    const chunk = studentIds.slice(i, i + 400);
+    for (const r of db()
+      .prepare(
+        `SELECT a.*, c.programme_code, pr.week_start AS period_start
+           FROM assessment_attempts a
+           LEFT JOIN classes c ON c.id = a.class_id
+           LEFT JOIN report_periods pr ON pr.id = a.planned_period_id
+          WHERE a.student_id IN (${chunk.map(() => '?').join(',')}) AND a.status != 'cancelled'`,
+      )
+      .all(...chunk) as any[]) {
+      if (!out.has(r.student_id)) out.set(r.student_id, []);
+      out.get(r.student_id)!.push(r);
+    }
+  }
+  for (const list of out.values()) {
+    list.sort((x, y) => (y.period_start ?? '').localeCompare(x.period_start ?? '')
+      || y.attempt_no - x.attempt_no || y.id - x.id);
+  }
+  return out;
+}
+
+/**
+ * ĐỢT MỚI NHẤT của mỗi em theo `pick`: 'valid' (đã có điểm) hoặc 'due' (đã đến lịch, kể cả chưa chấm).
+ * Em không có đợt nào thoả thì không có mục trong kết quả.
+ */
+export function latestAttempts(studentIds: number[], pick: 'valid' | 'due', today: string): Map<number, AttemptEval> {
+  const byStudent = attemptsNewestFirst(studentIds);
+  const all = [...byStudent.values()].flat();
+  const bundle = loadBundle(all.map((a) => a.id));
+  const programmes = allProgrammes();
+  const out = new Map<number, AttemptEval>();
+  for (const [sid, list] of byStudent) {
+    for (const a of list) {
+      if (pick === 'due' && !(a.period_start && a.period_start <= today)) continue;
+      const ev = evaluateAttemptRow(a, bundle, programmes);
+      if (pick === 'valid' && ev.scored === 0) continue;
+      out.set(sid, {
+        attemptId: a.id, studentId: sid, kind: a.kind, weekStart: a.period_start ?? null, attemptNo: a.attempt_no, ...ev,
+      });
+      break;
+    }
+  }
+  return out;
+}
+
+const sortIds = (ids: Iterable<number>) => [...ids].sort((x, y) => x - y);
+
+/**
+ * `hv-sos-hien-tai` — em có SOS ở ĐỢT MỚI NHẤT HỢP LỆ (không MAX toàn lịch sử). Tạm thời và kết quả cuối tách
+ * riêng nhưng đều là "SOS hiện tại": tập chung = hợp của hai tập.
+ */
+export function hvSosHienTai(p: Principal, branchId: number | null, today: string) {
+  const latest = latestAttempts(studentsInScope(p, branchId), 'valid', today);
+  const tamThoi: number[] = [], ketQuaCuoi: number[] = [];
+  for (const [sid, ev] of latest) {
+    if ((ev.sosLevel ?? 0) <= 0) continue;
+    (ev.provisional ? tamThoi : ketQuaCuoi).push(sid);
+  }
+  return { ids: sortIds([...tamThoi, ...ketQuaCuoi]), splits: { tamThoi: sortIds(tamThoi), ketQuaCuoi: sortIds(ketQuaCuoi) } };
+}
+
+/**
+ * `hv-duoi-ky-vong-mon` — em dưới kỳ vọng ở một môn (hoặc ở bất kỳ môn nào khi không nêu môn), so với kỳ vọng
+ * CỦA CHÍNH ĐỢT ĐÓ. Mẫu số là em ĐÁNH GIÁ ĐƯỢC môn đó — có điểm và có kỳ vọng; thiếu điểm KHÁC trượt.
+ */
+export function hvDuoiKyVongMon(p: Principal, branchId: number | null, today: string, skill: string | null) {
+  const latest = latestAttempts(studentsInScope(p, branchId), 'valid', today);
+  const under: number[] = [], evaluable: number[] = [];
+  for (const [sid, ev] of latest) {
+    const picked = skill ? [ev.skills[skill]].filter(Boolean) : Object.values(ev.skills);
+    if (picked.some((s) => s.evaluable)) evaluable.push(sid);
+    if (picked.some((s) => s.evaluable && s.under)) under.push(sid);
+  }
+  return { ids: sortIds(under), denominatorIds: sortIds(evaluable) };
+}
+
+/**
+ * `do-phu-danh-gia` — HV có dữ liệu đủ điều kiện / HV cần được đánh giá. KHÁC tỷ lệ đạt: em chấm đủ mà trượt vẫn
+ * là "có dữ liệu". Cần được đánh giá = em đang học có ít nhất một đợt (không huỷ) đã đến lịch; có dữ liệu = đợt
+ * đã đến lịch mới nhất của em đủ điểm mọi kỹ năng bắt buộc.
+ */
+export function doPhuDanhGia(p: Principal, branchId: number | null, today: string) {
+  const latest = latestAttempts(studentsInScope(p, branchId), 'due', today);
+  const need: number[] = [], covered: number[] = [];
+  for (const [sid, ev] of latest) {
+    need.push(sid);
+    if (ev.complete) covered.push(sid);
+  }
+  return { ids: sortIds(need), numeratorIds: sortIds(covered) };
+}

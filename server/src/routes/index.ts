@@ -46,8 +46,8 @@ import * as accountSvc from '../platform/accounts.ts';
 import * as sysconfigSvc from '../platform/sysconfig.ts';
 import * as mgmtSvc from '../worklist/mgmttasks.ts';
 import * as highlightSvc from '../worklist/highlights.ts';
-import { weeklyRollup } from '../worklist/weekly.ts';
-import { metricSet, rowsFor } from '../worklist/metrics.ts';
+import { weeklyDrill, weeklyRollup } from '../worklist/weekly.ts';
+import { metricResponse, metricSet, rowsFor } from '../worklist/metrics.ts';
 import { myWork } from '../worklist/mywork.ts';
 import * as caseSvc from '../cases/cases.ts';
 import * as caseSignalSvc from '../cases/signals.ts';
@@ -380,6 +380,23 @@ api.get('/weekly-rollup', requireAuth, wrap((req) => weeklyRollup(principalOf(re
   track: req.query?.track === 'normal' ? 'normal' : req.query?.track === 'ft' ? 'ft' : null,
 })));
 
+/**
+ * DANH SÁCH KHI BẤM MỘT SỐ CỦA BẢNG TUẦN — chính tập ID đã sinh ra số đó (cùng hàm, cùng quyền, cùng bộ lọc).
+ * `periodId` bỏ trống là cả bảng (hợp các tuần đang hiện, đếm duy nhất). `rows=1` kèm tên để vẽ danh sách.
+ */
+api.get('/weekly-rollup/ids', requireAuth, wrap((req) => {
+  const col = qStr(req, 'col');
+  if (!col) throw badRequest('Chưa chọn cột của bảng tuần.');
+  const d = weeklyDrill(principalOf(req), {
+    branchId: toInt(req.query?.branchId), weeks: toInt(req.query?.weeks) ?? undefined,
+    track: req.query?.track === 'normal' ? 'normal' : req.query?.track === 'ft' ? 'ft' : null,
+  }, toInt(req.query?.periodId), col);
+  return {
+    unit: d.unit, n: d.ids.length, empty: d.empty,
+    rows: qStr(req, 'rows') === '1' ? rowsFor(d.unit, d.ids) : undefined,
+  };
+}));
+
 /** Việc sinh ra từ dữ liệu — tự hết khi nguồn được xử lý, không có nút đóng giả. */
 api.get('/signals', requireAuth, wrap((req) => signalsFor(principalOf(req), {
   branchId: toInt(req.query?.branchId), periodId: toInt(req.query?.periodId),
@@ -654,12 +671,11 @@ api.get('/classes/:id/issue-board/needs-evaluation', requireAuth, wrap((req) => 
  */
 api.get('/metrics/:id', requireAuth, wrap((req) => {
   maybeSimulateReadError();
-  const r = metricSet(principalOf(req), String(req.params.id), { branchId: qInt(req, 'branchId') });
-  return {
-    id: r.id, unit: r.unit, n: r.n, numerator: r.numeratorIds ? r.numeratorIds.length : null,
-    empty: r.empty, note: r.note, today: r.today, ids: r.ids,
-    rows: qStr(req, 'rows') === '1' ? rowsFor(r.unit, r.ids) : undefined,
-  };
+  const r = metricSet(principalOf(req), String(req.params.id), {
+    branchId: qInt(req, 'branchId'), skill: qStr(req, 'skill') ?? null,
+    from: qStr(req, 'from') ?? null, to: qStr(req, 'to') ?? null,
+  });
+  return metricResponse(r, qStr(req, 'rows') === '1');
 }));
 
 api.get('/classes/:id/overview', requireAuth, wrap((req) => {

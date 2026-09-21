@@ -1104,3 +1104,15 @@ export const CASE_STATUS_LABEL: Record<CaseStatus, string> = {
 export const CASE_STATUS_TONE: Record<CaseStatus, 'danger' | 'warn' | 'ok'> = {
   open: 'danger', in_progress: 'warn', done: 'ok',
 };
+
+/**
+ * MỘT ĐỊNH NGHĨA DUY NHẤT CỦA "CASE THIẾU PHƯƠNG ÁN" (hợp đồng số liệu, PR-N).
+ *
+ * Case đang mở mà CHƯA CÓ HƯỚNG XỬ LÝ và CHƯA CÓ TÁC ĐỘNG NÀO (kể cả tác động đã huỷ). Case đã chọn hướng "chỉ theo dõi
+ * thêm" thì cố ý không có phương án — không phải một chỗ thiếu; case từng có phương án rồi huỷ đã có người bắt tay vào,
+ * nên cũng không nằm ở "chưa ai ghi sẽ làm gì". Chỉ số `case-thieu-pa`, cột "Thiếu phương án" của bảng "Việc cần lưu ý"
+ * và của bảng phân tích theo kỹ năng đều gọi hàm này — trước PR-N bảng phân tích tự định nghĩa lại và lệch ở hai khe trên.
+ */
+export function isNoPlanCase(c: { status: string; disposition?: string | null; interventionCount: number }): boolean {
+  return c.status !== 'done' && !c.disposition && c.interventionCount === 0;
+}
