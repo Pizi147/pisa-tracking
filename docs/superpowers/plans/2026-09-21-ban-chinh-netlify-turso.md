@@ -4,6 +4,15 @@
 > in order. Steps use checkbox (`- [ ]`) syntax — tick each one in THIS file as you finish it. Tasks marked 🛑 are
 > **gates**: stop, report to the owner, and wait for an explicit answer before continuing.
 
+> **CHIA BA PR (chốt 21/09/2026 chiều):** plan này thực thi thành **ba PR nối tiếp, ba session riêng**, merge theo
+> thứ tự. Mỗi session **chỉ làm phần của mình** — xem mục "Ba phần" ngay dưới Global Constraints.
+>
+> | PR | Task | Nội dung | Model khuyến nghị |
+> |---|---|---|---|
+> | **PR-Z2a** | 0 → 6b | Hạ tầng: libsql, Turso, kho tệp, Netlify Function, tắt demo, **deploy nháp thật** | Sonnet 5 · High |
+> | **PR-Z2b** | 7 → 9 | An toàn dữ liệu bản chính: khởi tạo, chi nhánh, sao lưu, tài liệu | Opus 5 · XHigh (B: Fable 5.1 · High) |
+> | **PR-Z2c** | 10 → 11 | Deploy bản chính + đo tốc độ + rà soát độc lập | Opus 5 · XHigh (B: Fable 5.1 · High); **người rà ≠ người code** |
+
 **Goal:** Đưa PISA Progress lên mạng làm **bản chính**: giao diện + máy chủ trên Netlify, dữ liệu trên Turso, tệp
 tải lên trên Netlify Blobs — database bắt đầu **rỗng**, chỉ có tài khoản quản trị và chi nhánh thật.
 
@@ -45,8 +54,27 @@ mạng tới Turso — đó là Task 3 (gate).
   `TURSO_DATABASE_URL` · `TURSO_AUTH_TOKEN` · `ADMIN_EMAIL` · `ADMIN_PASSWORD` · `CHI_NHANH` · `BACKUP_DIR` ·
   `BAN_CHINH` · `VITE_BAN_CHINH` · `NETLIFY_SITE_ID` · `NETLIFY_AUTH_TOKEN`.
   Đổi một tên → sửa `TRIEN_KHAI.md` trong **cùng commit**.
+- **Deploy chỉ bằng Netlify CLI từ thư mục trên máy** (`netlify deploy --build`), **không** nối site với GitHub
+  (chủ sản phẩm chốt 21/09: không muốn tự deploy khi merge). Kéo-thả thư mục lên Netlify **không** dùng được — cách đó
+  không mang theo Netlify Functions. Máy build là **Windows**, Netlify chạy **Linux** → gói nhị phân `libsql` cho Linux
+  phải được đóng gói **có chủ đích** (Task 6b).
 - **Giới hạn tệp tải lên bản chính: 4 MB** (Netlify Functions nhận tối đa ~6 MB mỗi lần gọi, tệp đi dưới dạng base64).
 - Chữ tiếng Việt trên giao diện theo `thiet-ke/TU_DIEN_VA_CHU.md`.
+
+## Ba phần — ba PR
+
+| Phần | Làm | Điều kiện bắt đầu | Kết thúc bằng |
+|---|---|---|---|
+| **A · PR-Z2a** | Task 0 → Task 6b | `main` đã có PR-T và PR-K | Deploy **nháp** chạy thật trên Netlify với database Turso **thử** (Task 6b) → mở PR, không merge |
+| **B · PR-Z2b** | Task 7 → Task 9 | PR-Z2a **đã merge** | Mở PR, không merge |
+| **C · PR-Z2c** | Task 10 → Task 11 | PR-Z2b **đã merge** | Bản chính chạy trên địa chỉ thật + rà soát độc lập → mở PR (nếu có mã đổi), không merge |
+
+- Mỗi phần: **một session mới**, một nhánh mới từ `main` mới nhất (`pr-z2a-ha-tang`, `pr-z2b-an-toan-du-lieu`,
+  `pr-z2c-deploy`), bắt đầu bằng Task 0 Step 1–2 (worktree + `npm run check`, ghi `N0` của phần đó).
+- Session của phần sau **đọc Nhật ký** cuối file này trước khi làm — phần trước ghi lại mọi điều bất ngờ ở đó.
+- Kết thúc phần A và B: gọi `superpowers:verification-before-completion` rồi `superpowers:finishing-a-development-branch`
+  (PR không draft, **không tự merge**), báo chủ sản phẩm bằng tiếng Việt cơ bản: link PR, số phép kiểm, việc còn lại.
+- **Không** làm task của phần khác dù thấy "tiện".
 
 ## Hướng dẫn riêng cho model thực thi (Sonnet / Fable)
 
@@ -326,7 +354,7 @@ Lý do từng sửa đổi (đã tái hiện ở phép thử 21/09):
 
 - [ ] **Step 1: Hỏi chủ sản phẩm** (đúng nguyên văn):
   > Cần một database Turso **để thử** (không phải bản chính): tạo database tên `pisa-thu-nghiem` theo `TRIEN_KHAI.md`
-  > mục 2.1, chọn vùng **AWS US East (Ohio) — `aws-us-east-2`** nếu có, rồi gửi tôi URL và token của database thử này.
+  > mục 2, chọn vùng **AWS US East (Ohio) — `aws-us-east-2`** nếu có, rồi gửi tôi URL và token của database thử này.
   > Đồng thời cho tôi biết vùng Functions của site Netlify (Netlify → Site configuration → Functions → Region) nếu đã tạo site.
 - [ ] **Step 2: Viết `server/src/ops/thuTurso.ts`** — chạy độc lập, in bảng kết quả, **không** đụng bảng thật:
   ```ts
@@ -645,6 +673,51 @@ Modify `web/src/App.tsx`, `web/src/modules/platform/WelcomePage.tsx`; Test `banC
 
 ---
 
+### Task 6b 🛑 GATE: Gói chạy được trên Linux + deploy nháp thật  *(cuối Phần A)*
+
+**Vì sao:** chủ sản phẩm deploy **thủ công từ máy Windows**. `libsql` có phần nhị phân riêng cho từng hệ điều hành; build
+trên Windows mà không làm gì thì gói gửi lên chỉ có bản Windows → Function chết trên Netlify. Task này chứng minh
+**toàn bộ hạ tầng** (Linux + Turso qua Netlify + Blobs + tắt demo) chạy thật **trước** khi đụng tới dữ liệu bản chính,
+và cho **số đo tốc độ thật** (Netlify ↔ Turso cùng vùng), thay cho số đo từ máy ở Việt Nam ở Task 3.
+
+**Files:** Modify `package.json`, `package-lock.json`, `netlify.toml`.
+
+- [ ] **Step 1: Gói nhị phân Linux.** Xem phiên bản cần:
+      `node -p "require('./node_modules/libsql/package.json').optionalDependencies"`.
+      Cài đúng phiên bản của mục `@libsql/linux-x64-gnu`:
+      `npm install --save-optional --force @libsql/linux-x64-gnu@<phiên bản đó>` (`--force` vì máy Windows không phải Linux).
+      Kiểm `node_modules/@libsql/linux-x64-gnu/` có file `.node`.
+- [ ] **Step 2:** `netlify.toml` → `external_node_modules = ["libsql", "@libsql/linux-x64-gnu"]`.
+- [ ] **Step 3: Kiểm gói trước khi gửi.** `netlify build` rồi liệt kê gói Function:
+      `tar -tf .netlify/functions/api.zip | findstr linux-x64-gnu` (PowerShell) — **phải** có dòng. Không có → 🛑 dừng,
+      ghi Nhật ký, không thử đường khác.
+- [ ] **Step 4: Hỏi chủ sản phẩm** (nguyên văn):
+      > Tôi cần deploy **nháp** (địa chỉ riêng, chưa phải bản chính) để kiểm hạ tầng. Bạn làm giúp theo `TRIEN_KHAI.md`
+      > mục 3 (cài và đăng nhập Netlify CLI), mục 4 (tạo site) và mục 5 với database **thử** `pisa-thu-nghiem`
+      > (không phải bản chính). Xong báo tôi một câu "đã xong mục 3-4-5 với database thử".
+- [ ] **Step 5: Deploy nháp.** Trong thư mục repo: `netlify deploy --build` (**không** có `--prod`). Ghi địa chỉ nháp
+      (dạng `https://<mã>--<tên-site>.netlify.app`) vào Nhật ký.
+- [ ] **Step 6: Kiểm trên địa chỉ nháp**, ghi từng dòng vào Nhật ký:
+  1. `<địa chỉ nháp>/api/health` → `{"ok":true,...}` (Function chạy trên Linux, nối được Turso).
+  2. Màn đăng nhập **không** có tab "Vào nhanh", **không** có thanh demo.
+  3. Đăng nhập bằng một tài khoản của bộ demo đã dựng lên database thử ở Task 3 Step 4 (email và mật khẩu demo trong
+     `README.md`).
+  4. Mở hồ sơ một học viên, tải lên một ảnh ~1 MB, tải xuống lại — mở được (Blobs chạy).
+  5. Mở một link sâu `<địa chỉ nháp>/hoc-vien/<id>` bằng tab mới — ra đúng trang, không 404.
+- [ ] **Step 7: Đo tốc độ thật** — năm trang như Task 3 Step 5, mỗi trang 3 lần **sau** lần tải đầu, ghi trung bình và
+      thời gian lần đầu (khởi động lạnh). Ghi bảng vào Nhật ký.
+- [ ] **Step 8: Quyết định:**
+
+  | Kết quả | Làm gì |
+  |---|---|
+  | Step 6 đủ 5 dòng đạt, mọi trang ≤ 3 giây | ✅ Kết thúc Phần A |
+  | Step 6 đạt, có trang 3–10 giây | ✅ Kết thúc Phần A, ghi các trang đó — Phần C xử lý (Task 10 Step 6) |
+  | Có trang > 10 giây, **hoặc** Step 6 có dòng hỏng | 🛑 Dừng. Báo chủ sản phẩm + session thiết kế kèm Nhật ký |
+
+- [ ] **Step 9:** Commit `PR-Z2 (6b): đóng gói nhị phân Linux cho libsql`. Kết thúc Phần A (xem mục "Ba phần").
+
+---
+
 ### Task 7: Dữ liệu nền dùng chung + `init-ban-chinh` + `them-chi-nhanh`
 
 **Vì sao cần:** hệ thống **không có màn nào tạo chi nhánh** — chi nhánh chỉ được tạo trong `seed.ts`. Database rỗng
@@ -811,12 +884,12 @@ không có chi nhánh thì không tạo được lớp. Nên lệnh khởi tạo
 
 **Files:** `TRIEN_KHAI.md`, `README.md`, `CODE_MAP.md`, `plan.md`.
 
-- [ ] **Step 1: `TRIEN_KHAI.md`** — rà **từng** lệnh và biến so với `package.json` và `moiTruong.ts`. Bảng biến môi trường
-      của Netlify ở mục 2.2 phải là: `TURSO_DATABASE_URL` · `TURSO_AUTH_TOKEN` · `BAN_CHINH` = `1`. (`VITE_BAN_CHINH` đã có
-      trong `netlify.toml`, người dùng không cần đặt.) Lệnh init ở mục 2.3 thêm `$env:CHI_NHANH="MB=Monbay;BC=Bãi Cháy"`.
-      Thêm mục nhỏ "Thêm chi nhánh sau này" với `npm run them-chi-nhanh -- MA "Tên"`. Mục sao lưu thêm hai biến tuỳ chọn
-      `NETLIFY_SITE_ID`, `NETLIFY_AUTH_TOKEN` và chỗ lấy chúng (Site configuration → General → Site ID; User settings →
-      Applications → Personal access tokens).
+- [ ] **Step 1: `TRIEN_KHAI.md`** — file này đã được session thiết kế **viết lại cho người không biết code** (21/09):
+      mục 0 cách mở PowerShell và dán lệnh, mục 2 Turso, mục 3–4 Netlify CLI, mục 5–6 biến môi trường, mục 7 khởi tạo,
+      mục 8 deploy thủ công, mục 10 sao lưu, mục 12 bảng tra biến. **Không viết lại văn phong.** Chỉ rà cho **khớp mã
+      thật**: mọi tên lệnh (`package.json`), mọi tên biến (`moiTruong.ts`, `runInit.ts`, `runSaoLuu.ts`), cú pháp
+      `npm run them-chi-nhanh -- MÃ "Tên"`, và câu mô tả "kết quả đúng" ở mục 7 phải khớp chữ `runInit.ts` in ra.
+      Chỗ nào lệch → sửa **tối thiểu** chỗ đó và ghi Nhật ký.
 - [ ] **Step 2: `README.md`** — một mục "Bản chính" ngắn trỏ tới `TRIEN_KHAI.md`; ghi rõ máy dev **không đổi**.
 - [ ] **Step 3: `CODE_MAP.md`** — thêm các file mới ở File Structure; chạy lệnh kiểm đường dẫn chết ở đầu file → rỗng.
 - [ ] **Step 4: `plan.md`** — tick mục 24.2 theo plan này; một dòng mục 14 (có gì bất ngờ, số phép kiểm `N0` → hiện tại).
@@ -826,15 +899,15 @@ không có chi nhánh thì không tạo được lớp. Nên lệnh khởi tạo
 
 ### Task 10 🛑 GATE: Deploy thật và kiểm trên địa chỉ thật
 
-**Cần chủ sản phẩm:** site Netlify đã nối repo (TRIEN_KHAI 2.2) và database Turso **bản chính** `pisa-ban-chinh` (khác
-database thử). Hỏi rõ từng thứ; **không** dùng database thử làm bản chính.
+**Cần chủ sản phẩm:** site Netlify đã tạo ở Task 6b và database Turso **bản chính** `pisa-ban-chinh` (khác database
+thử). Hỏi rõ từng thứ; **không** dùng database thử làm bản chính. Deploy **chỉ bằng Netlify CLI** từ thư mục repo.
 
-- [ ] **Step 1: Hỏi chủ sản phẩm:** (a) đã tạo `pisa-ban-chinh` cùng vùng với database thử chưa; (b) đã đặt ba biến
-      môi trường trên Netlify chưa; (c) danh sách chi nhánh thật `MA=Tên`; (d) email quản trị. **Mật khẩu quản trị để chủ
-      sản phẩm tự gõ** ở Step 3 — không xin, không ghi.
-- [ ] **Step 2: Deploy thử từ nhánh (chưa merge):** hướng dẫn chủ sản phẩm bật *Deploy Previews* hoặc chạy
-      `netlify deploy --build` (bản xem trước, không phải bản chính thức). Ghi địa chỉ bản xem trước vào Nhật ký.
-- [ ] **Step 3: Khởi tạo** — chủ sản phẩm tự chạy trên máy mình (TRIEN_KHAI 2.3) với database **bản chính**. Bạn chỉ
+- [ ] **Step 1: Hỏi chủ sản phẩm:** (a) đã tạo `pisa-ban-chinh` cùng vùng với database thử chưa; (b) đã **đổi** hai biến
+      Turso của site sang database bản chính theo `TRIEN_KHAI.md` mục 6 chưa (từ giờ mọi bản nháp cũng trỏ vào bản
+      chính); (c) danh sách chi nhánh thật `MA=Tên`; (d) email quản trị. **Mật khẩu quản trị để chủ sản phẩm tự gõ** ở
+      Step 3 — không xin, không ghi.
+- [ ] **Step 2: Deploy nháp** bằng `netlify deploy --build` (không `--prod`) từ `main` mới nhất. Ghi địa chỉ nháp.
+- [ ] **Step 3: Khởi tạo** — chủ sản phẩm tự chạy trên máy mình (`TRIEN_KHAI.md` mục 7) với database **bản chính**. Bạn chỉ
       hướng dẫn. Kết quả phải in `userId` và danh sách chi nhánh.
 - [ ] **Step 4: Luồng từ đầu tới cuối trên bản xem trước** — làm cùng chủ sản phẩm, tick từng dòng, ghi thời gian:
   1. Đăng nhập quản trị (không có tab "Vào nhanh", không có thanh demo, ngày hiển thị là **hôm nay**).
@@ -859,13 +932,17 @@ database thử). Hỏi rõ từng thứ; **không** dùng database thử làm b�
 - [ ] **Step 7: Dọn dữ liệu thử** — dữ liệu ở Step 4 là thử trên database **bản chính**. Hỏi chủ sản phẩm: giữ lại để GV
       xem mẫu, hay xoá. Muốn xoá: **không** có lệnh xoá tự động; hướng dẫn chủ sản phẩm tạo lại database `pisa-ban-chinh`
       trên Turso (xoá database và tạo lại cùng tên, cập nhật token trên Netlify nếu đổi) rồi chạy lại Step 3.
-- [ ] **Step 8:** Ghi toàn bộ kết quả vào Nhật ký. Commit các sửa đổi của Step 6: `PR-Z2 (10): gộp truy vấn các trang chậm`.
+- [ ] **Step 8: Đưa lên địa chỉ chính thức** — **hỏi chủ sản phẩm đồng ý trước**, rồi `netlify deploy --build --prod`.
+      Mở `https://<tên-site>.netlify.app` → đăng nhập được, dữ liệu Step 4 còn (hoặc rỗng nếu đã dọn ở Step 7).
+- [ ] **Step 9:** Ghi toàn bộ kết quả vào Nhật ký. Commit các sửa đổi của Step 6: `PR-Z2 (10): gộp truy vấn các trang chậm`.
 
 ---
 
 ### Task 11: Rà soát và mở PR
 
-- [ ] **Step 1:** Gọi `superpowers:requesting-code-review` — **một** lượt, phạm vi: `server/src/db.ts`,
+- [ ] **Step 1:** Gọi `superpowers:requesting-code-review` — **một** lượt. **Rà soát độc lập:** người rà phải là model
+      **khác** model đã code Phần A/B (ví dụ Phần A code bằng Sonnet thì rà bằng Opus hoặc Fable). Nếu session này cùng
+      model với người code thì ghi rõ vào Nhật ký và đề nghị chủ sản phẩm chạy thêm một lượt rà ở session thiết kế. Phạm vi: `server/src/db.ts`,
       `server/src/moiTruong.ts`, `server/src/platform/khoTep.ts`, `server/src/platform/attachments.ts`,
       `server/src/ops/*`, `netlify/functions/api.ts`, `netlify.toml`, và các chỗ gọi `tx`/`transaction` đã đổi ở Task 1 Step 4.
       Câu hỏi cho người rà: (1) có đường nào ghi vào database bản chính mà không qua kiểm quyền? (2) có chỗ nào để lộ token?

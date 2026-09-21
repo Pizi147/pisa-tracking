@@ -51,7 +51,9 @@ Nếu bạn nghĩ theo "cái tôi thấy trên màn hình" chứ không theo tê
 | `thiet-ke/PISA-Rulebook-2026-09-19.md` | **Luật sản phẩm** do chủ sản phẩm chốt. **Mục 18 (21/09) ưu tiên hơn mục 17**; mục 17 ưu tiên hơn mọi mô tả cũ mâu thuẫn |
 | `thiet-ke/SOS_VA_PHOI_HOP_V3.md` | **Mới nhất (tối 21/09).** SOS tự tạo case + điền sẵn phương án, Phối hợp SOS, xoá vi phạm, bố cục `Ý thức & Phối hợp`. Thắng `Y_THUC_VI_PHAM_VA_BIEN_PHAP.md` ở chỗ khác nhau |
 | `TRIEN_KHAI.md` | Đưa bản chính lên Netlify + Turso (miễn phí), sao lưu, quay lại bản cũ |
-| `PROMPT_SESSION_CODE.md` | Prompt copy-dán cho session coding |
+| `PROMPT_SESSION_CODE.md` | Prompt copy-dán cho session coding — **mục 0 là bảng model + effort cho từng PR** |
+| `PROMPT_BAN_GIAO_PLANNING.md` | Prompt bàn giao cho một session planning mới + tình trạng hiện tại |
+| `docs/superpowers/plans/2026-09-21-ban-chinh-netlify-turso.md` | Kế hoạch chi tiết bản chính, chia PR-Z2a/b/c |
 | `thiet-ke/NGUON-Rule-Y-thuc-2026-09-21.md` | **Nguồn mới nhất** do chủ sản phẩm gửi 21/09/2026: bỏ hẳn mô hình Case Ý thức |
 | `thiet-ke/Y_THUC_VI_PHAM_VA_BIEN_PHAP.md` | **Đặc tả phần Ý thức mới** — Vi phạm và Biện pháp xử lý. Đọc trước khi chạm bất kỳ thứ gì có chữ `behaviour` |
 | `thiet-ke/BAN_DO_OVERHAUL.md` | **Yêu cầu nào của design plan đã có, cái nào chưa, PR nào làm.** Đọc trước khi tưởng "chỉ còn vài việc dọn" |
