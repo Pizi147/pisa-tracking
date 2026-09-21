@@ -631,6 +631,7 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
               (SELECT COUNT(*) FROM case_interventions ci WHERE ci.case_id = sc.id AND ci.status != 'cancelled') AS iv_count,
               (SELECT MIN(followup_due) FROM case_interventions ci
                 WHERE ci.case_id = sc.id AND ci.status != 'cancelled' AND ci.followup_due IS NOT NULL
+                  AND NOT (ci.preset = 1 AND ci.confirmed_at IS NULL)
                   AND NOT EXISTS (SELECT 1 FROM case_followups f WHERE f.intervention_id = ci.id)) AS next_due,
               (SELECT ci.description FROM case_interventions ci WHERE ci.case_id = sc.id
                 ORDER BY COALESCE(ci.completed_date, ci.started_date, ci.created_at) DESC LIMIT 1) AS last_iv,

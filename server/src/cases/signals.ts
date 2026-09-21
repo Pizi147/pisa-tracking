@@ -22,7 +22,11 @@ import { suggestCaseOwner } from './owner.ts';
  * lo, trong khi chưa ai đụng vào. Bảng tổng hợp vì thế đếm được rất nhiều case và rất nhiều
  * phương án, mà không phản ánh một việc thật nào.
  *
- * Ba điều hàm trong file này KHÔNG bao giờ làm:
+ * RULEBOOK v3 (21/09/2026 tối) ĐỔI LUẬT NÀY CHO MOCK TEST FAST TRACK: điểm dưới kỳ vọng nay TỰ TẠO (hoặc tự gắn) case cho từng kỹ năng trượt và điền
+ * sẵn phương án chờ GVBM xác nhận — xem `cases/sos.ts` (`raiseSignalsForResult`) và `cases/sosAuto.ts`. Tín hiệu ở đó nối NGAY vào case (`linked`,
+ * hạn 3 ngày giữ nguyên) và là dây nối để thu hồi khi sửa điểm. Lớp NORMAL giữ nguyên mô hình mô tả dưới đây (Q-V3-1).
+ *
+ * Ba điều hàm trong file này KHÔNG bao giờ làm (với lớp Normal; với Mock FT thì việc tạo case nằm ở `sos.ts`, không ở đây):
  *
  *   · không đoán nguyên nhân — tên, mô tả và phân loại là việc của người dạy;
  *   · không tạo phương án — kể cả khi nhập từng môn, chấm lại hay chạy lại bộ demo;
@@ -68,6 +72,11 @@ export function raiseSignal(input: {
   detectedOn: string;
   /** Ngày ghi nhận. Mặc định là hôm nay — KHÔNG lùi về tuần thi đã qua. */
   raisedOn?: string;
+  /**
+   * Không gửi thông báo "Cần xác minh". Dùng khi tín hiệu sẽ được GẮN NGAY vào một case (rulebook v3: Mock Test FT tự tạo/gắn case) —
+   * lúc đó chẳng còn gì để "xác minh", và người phụ trách nhận một thông báo riêng nói đúng việc (case mới, chờ xác nhận phương án).
+   */
+  silent?: boolean;
 }): SignalRow {
   const conn = db();
   const key = input.attemptId ? signalKey(input.attemptId, input.skill) : null;
@@ -122,7 +131,7 @@ export function raiseSignal(input: {
    * BÁO ĐÚNG NGƯỜI PHẢI XÁC MINH, không báo cả lớp. Không có người phù hợp thì không báo
    * ai — và tín hiệu vẫn nằm trong hàng "chưa có người xác minh" để Quản lý phân công.
    */
-  if (owner) {
+  if (owner && !input.silent) {
     const st = conn.prepare('SELECT full_name, student_code FROM students WHERE id = ?').get(input.studentId) as any;
     notify({
       userId: owner, kind: 'sos',
@@ -458,6 +467,18 @@ export function caseHasIndependentBasis(caseId: number, excludeAttemptId: number
     .get(caseId) as any;
   if (work.n > 0) return true;
 
+  /*
+   * PHƯƠNG ÁN ĐIỀN SẴN ĐÃ ĐƯỢC XÁC NHẬN là quyết định của một người, dù nó còn ở trạng thái "đã lên kế hoạch" (rulebook v3, S08). Chưa xác nhận
+   * thì nó chỉ là gợi ý của máy — không phải căn cứ.
+   */
+  const confirmed = conn
+    .prepare(
+      `SELECT COUNT(*) n FROM case_interventions
+        WHERE case_id = ? AND preset = 1 AND confirmed_at IS NOT NULL AND status != 'cancelled'`,
+    )
+    .get(caseId) as any;
+  if (confirmed.n > 0) return true;
+
   const observed = conn
     .prepare('SELECT COUNT(*) n FROM case_followups WHERE case_id = ?')
     .get(caseId) as any;
@@ -494,7 +515,7 @@ export function retireCaseForCorrectedScore(p: Principal, caseId: number, label:
       .prepare(
         `UPDATE case_interventions
             SET status = 'cancelled', closed_reason = 'score_fixed', updated_at = ?
-          WHERE case_id = ? AND status = 'planned'`,
+          WHERE case_id = ? AND status = 'planned' AND NOT (preset = 1 AND confirmed_at IS NOT NULL)`,
       )
       .run(nowIso(), caseId).changes;
 

@@ -136,9 +136,11 @@ CREATE TABLE sos_coordination_actions (
   -- not_needed | handled_otherwise | duplicate_measure | other | system_sos_changed
   remove_reason_code TEXT, remove_reason_text TEXT,
   removed_by INTEGER REFERENCES users(id), removed_at TEXT,
-  created_at TEXT NOT NULL, updated_at TEXT,
-  UNIQUE (attempt_id, kind, custom_name)
+  created_at TEXT NOT NULL, updated_at TEXT
 );
+-- SỬA 21/09 (PR-T): `UNIQUE (attempt_id, kind, custom_name)` KHÔNG chặn gì khi custom_name NULL (SQLite coi mỗi NULL là một giá trị riêng),
+-- tức chạy lặp sẽ nhân đôi việc. Khoá đúng phải bọc COALESCE:
+CREATE UNIQUE INDEX uq_sca_attempt_kind ON sos_coordination_actions(attempt_id, kind, COALESCE(custom_name, ''));
 CREATE INDEX idx_sca_attempt ON sos_coordination_actions(attempt_id);
 CREATE INDEX idx_sca_student ON sos_coordination_actions(student_id, status);
 ```

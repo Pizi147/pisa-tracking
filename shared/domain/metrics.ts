@@ -25,7 +25,7 @@ export type ChiSo = {
   /** Câu hỏi mà con số trả lời, viết đủ chữ. */
   cauHoi: string;
   /** Đơn vị đếm. Ba đơn vị học viên · case · phương án KHÔNG BAO GIỜ cộng vào nhau. */
-  donVi: 'hoc-vien' | 'case' | 'phuong-an' | 'bai-thi' | 'tin-hieu' | 'dot-test' | 'nghia-vu' | 'vi-pham' | 'bien-phap';
+  donVi: 'hoc-vien' | 'case' | 'phuong-an' | 'bai-thi' | 'tin-hieu' | 'dot-test' | 'nghia-vu' | 'vi-pham' | 'bien-phap' | 'luot-sos';
   /** Mô tả MẪU SỐ (tập đủ điều kiện), viết đủ chữ. */
   tapDuDieuKien: string;
   thoiGian: 'hien-trang' | 'phat-sinh-trong-ky' | 'ket-qua-trong-ky';
@@ -72,6 +72,13 @@ export const METRICS: readonly ChiSo[] = [
     thoiGian: 'hien-trang', khuTrung: 'COUNT DISTINCT signal_id', drilldown: '/metrics/tin-hieu-cho-xac-minh',
   },
   {
+    id: 'case-cho-xac-dinh-nguyen-nhan', ten: 'Case chờ xác định nguyên nhân',
+    cauHoi: 'Bao nhiêu case SOS tự tạo đang chờ GVBM xác định nguyên nhân hoặc xác nhận phương án điền sẵn?',
+    donVi: 'case',
+    tapDuDieuKien: 'Case HỌC THUẬT do Mock Test Fast Track tự tạo, đang mở, mà chưa có nguyên nhân (phân loại vấn đề chính) HOẶC còn phương án điền sẵn chưa xác nhận (rulebook v3, đặc tả §3.2). Case tạo tay, case lớp Normal và case đã đóng (kể cả `Không cần theo dõi`) không thuộc tập.',
+    thoiGian: 'hien-trang', khuTrung: 'COUNT DISTINCT case_id', drilldown: '/metrics/case-cho-xac-dinh-nguyen-nhan',
+  },
+  {
     id: 'case-thieu-pa', ten: 'Case thiếu phương án',
     cauHoi: 'Bao nhiêu case đang mở mà chưa có phương án hợp lệ nào?',
     donVi: 'case',
@@ -82,7 +89,7 @@ export const METRICS: readonly ChiSo[] = [
     id: 'pa-can-cap-nhat', ten: 'Phương án cần cập nhật',
     cauHoi: 'Bao nhiêu phương án đang theo dõi mà đã quá hạn cập nhật kết quả tuần?',
     donVi: 'phuong-an',
-    tapDuDieuKien: 'Phương án đang theo dõi, không chờ duyệt, quá hạn cập nhật tuần. Khác "quá hạn làm" (F11).',
+    tapDuDieuKien: 'Phương án đang theo dõi, không chờ duyệt, không phải phương án điền sẵn chưa xác nhận, quá hạn cập nhật tuần. Khác "quá hạn làm" (F11).',
     thoiGian: 'hien-trang', khuTrung: 'COUNT DISTINCT intervention_id', drilldown: '/metrics/pa-can-cap-nhat',
   },
   {
@@ -110,7 +117,7 @@ export const METRICS: readonly ChiSo[] = [
     id: 'dung-han-cap-nhat', ten: 'Đúng hạn cập nhật',
     cauHoi: 'Bao nhiêu nghĩa vụ cập nhật được hoàn thành đúng hạn?',
     donVi: 'nghia-vu',
-    tapDuDieuKien: 'Mẫu số: nghĩa vụ cập nhật tuần (một phương án × một chu kỳ) của case học thuật đã QUA hạn — đã cập nhật hoặc chưa ai cập nhật; phương án chờ duyệt, case Ý thức và case nhập bù không có nghĩa vụ. Tử số: nghĩa vụ hoàn thành đúng hạn. Mặc định mọi nghĩa vụ đã qua hạn tới ngày dữ liệu; có thể giới hạn theo kỳ. KHÔNG đếm số lần bấm ghi chú.',
+    tapDuDieuKien: 'Mẫu số: nghĩa vụ cập nhật tuần (một phương án × một chu kỳ) của case học thuật đã QUA hạn — đã cập nhật hoặc chưa ai cập nhật; phương án chờ duyệt, phương án điền sẵn từ SOS chưa xác nhận, case Ý thức và case nhập bù không có nghĩa vụ. Tử số: nghĩa vụ hoàn thành đúng hạn. Mặc định mọi nghĩa vụ đã qua hạn tới ngày dữ liệu; có thể giới hạn theo kỳ. KHÔNG đếm số lần bấm ghi chú.',
     thoiGian: 'ket-qua-trong-ky', khuTrung: 'COUNT DISTINCT (phương án × chu kỳ)', drilldown: '/metrics/dung-han-cap-nhat',
   },
   {
@@ -127,30 +134,23 @@ export const METRICS: readonly ChiSo[] = [
    */
   {
     id: 'vi-pham-tong', ten: 'Vi phạm',
-    cauHoi: 'Có bao nhiêu vi phạm còn hiệu lực đã xảy ra trong kỳ?',
+    cauHoi: 'Có bao nhiêu vi phạm đã xảy ra trong kỳ?',
     donVi: 'vi-pham',
-    tapDuDieuKien: 'Vi phạm còn hiệu lực (không bị đánh dấu không chính xác). Đếm theo NGÀY XẢY RA, không theo ngày ghi nhận — GV nhớ ra muộn không làm sự việc xảy ra muộn. Thuộc lớp GHI LÚC ĐÓ.',
+    tapDuDieuKien: 'Mọi vi phạm đang có (vi phạm ghi sai đã bị xoá nên không còn trong tập). Đếm theo NGÀY XẢY RA, không theo ngày ghi nhận — GV nhớ ra muộn không làm sự việc xảy ra muộn. Thuộc lớp GHI LÚC ĐÓ.',
     thoiGian: 'phat-sinh-trong-ky', khuTrung: 'COUNT DISTINCT violation_id', drilldown: '/metrics/vi-pham-tong',
   },
   {
     id: 'vi-pham-chua-xu-ly', ten: 'Vi phạm chưa xử lý',
-    cauHoi: 'Hiện có bao nhiêu vi phạm còn hiệu lực mà chưa nằm trong biện pháp nào?',
+    cauHoi: 'Hiện có bao nhiêu vi phạm mà chưa nằm trong biện pháp nào?',
     donVi: 'vi-pham',
-    tapDuDieuKien: 'Vi phạm còn hiệu lực và KHÔNG có dòng nào trong bảng nối với biện pháp — kể cả biện pháp đang chuẩn bị (đã gom vào là GVCN đã bắt tay xử lý). Theo lớp học viên ĐANG học.',
+    tapDuDieuKien: 'Vi phạm KHÔNG có dòng nào trong bảng nối với biện pháp — kể cả biện pháp đang chuẩn bị (đã gom vào là GVCN đã bắt tay xử lý). Theo lớp học viên ĐANG học.',
     thoiGian: 'hien-trang', khuTrung: 'COUNT DISTINCT violation_id', drilldown: '/metrics/vi-pham-chua-xu-ly',
   },
   {
-    id: 'vi-pham-khong-hieu-luc', ten: 'Vi phạm không còn hiệu lực',
-    cauHoi: 'Có bao nhiêu vi phạm đã bị đánh dấu không chính xác trong kỳ?',
-    donVi: 'vi-pham',
-    tapDuDieuKien: 'Vi phạm đã đánh dấu không chính xác. Đứng RIÊNG: không trừ vào "Vi phạm" trên cùng một hàng. Đếm theo ngày xảy ra.',
-    thoiGian: 'phat-sinh-trong-ky', khuTrung: 'COUNT DISTINCT violation_id', drilldown: '/metrics/vi-pham-khong-hieu-luc',
-  },
-  {
     id: 'hv-co-vi-pham', ten: 'Học viên có vi phạm',
-    cauHoi: 'Có bao nhiêu học viên có ít nhất một vi phạm còn hiệu lực trong kỳ?',
+    cauHoi: 'Có bao nhiêu học viên có ít nhất một vi phạm trong kỳ?',
     donVi: 'hoc-vien',
-    tapDuDieuKien: 'Học viên có ít nhất một vi phạm còn hiệu lực xảy ra trong kỳ. Em có ba vi phạm vẫn là MỘT học viên; em chỉ có vi phạm đã hủy thì không tính.',
+    tapDuDieuKien: 'Học viên có ít nhất một vi phạm xảy ra trong kỳ. Em có ba vi phạm vẫn là MỘT học viên.',
     thoiGian: 'phat-sinh-trong-ky', khuTrung: 'COUNT DISTINCT student_id', drilldown: '/metrics/hv-co-vi-pham',
   },
   {
@@ -181,6 +181,31 @@ export const METRICS: readonly ChiSo[] = [
     tapDuDieuKien: 'Biện pháp đã thực hiện trong kỳ, tách CHÍN loại. Ba Thư cảnh cáo lần 1, 2, 3 tách riêng — không gộp thành một dòng. Có thể lọc một loại bằng tham số kind.',
     thoiGian: 'ket-qua-trong-ky', khuTrung: 'COUNT DISTINCT measure_id theo loại', drilldown: '/metrics/bien-phap-theo-loai',
   },
+  /*
+   * PHỐI HỢP SOS (PR-T, rulebook v3, 21/09/2026 tối) — BA CHỈ SỐ, ĐƠN VỊ LƯỢT (một lượt Mock Test FT có SOS). Không cộng vào vi phạm, học viên hay
+   * biện pháp. Nằm ngoài mọi bảng hiệu quả (P10). Nguồn: thiet-ke/SOS_VA_PHOI_HOP_V3.md §8.
+   */
+  {
+    id: 'phoi-hop-luot-sos', ten: 'Lượt SOS',
+    cauHoi: 'Có bao nhiêu lượt Mock Test Fast Track có SOS (mức 1 trở lên)?',
+    donVi: 'luot-sos',
+    tapDuDieuKien: 'Lượt Mock Test Fast Track có `sos_level ≥ 1` (tính lại từ điểm: SOS hết thì lượt thôi là SOS Event) và có việc Phối hợp SOS. Lớp Normal không có. Theo tuần của lượt, lớp lúc đó.',
+    thoiGian: 'phat-sinh-trong-ky', khuTrung: 'COUNT DISTINCT attempt_id', drilldown: '/metrics/phoi-hop-luot-sos',
+  },
+  {
+    id: 'phoi-hop-dang-xu-ly', ten: 'Lượt phối hợp đang xử lý',
+    cauHoi: 'Có bao nhiêu lượt SOS còn ít nhất một việc phối hợp cần xử lý?',
+    donVi: 'luot-sos',
+    tapDuDieuKien: 'Trong các lượt SOS: lượt có ít nhất một việc Phối hợp SOS ở trạng thái cần xử lý. Không có hạn nên không có khái niệm "quá hạn".',
+    thoiGian: 'phat-sinh-trong-ky', khuTrung: 'COUNT DISTINCT attempt_id', drilldown: '/metrics/phoi-hop-dang-xu-ly',
+  },
+  {
+    id: 'phoi-hop-hoan-thanh', ten: 'Lượt phối hợp hoàn thành',
+    cauHoi: 'Có bao nhiêu lượt SOS mà mọi việc phối hợp đã xong hoặc đã bỏ?',
+    donVi: 'luot-sos',
+    tapDuDieuKien: 'Trong các lượt SOS: lượt có ít nhất một việc và mọi việc đều đã xong hoặc đã bỏ (kèm lý do). "Hoàn thành" là SUY RA, không lưu.',
+    thoiGian: 'phat-sinh-trong-ky', khuTrung: 'COUNT DISTINCT attempt_id', drilldown: '/metrics/phoi-hop-hoan-thanh',
+  },
 ];
 
 /**
@@ -190,7 +215,7 @@ export const METRICS: readonly ChiSo[] = [
 export const METRIC_UNIT_LABEL: Record<ChiSo['donVi'], string> = {
   'hoc-vien': 'học viên', case: 'case', 'phuong-an': 'phương án', 'bai-thi': 'bài thi',
   'tin-hieu': 'tín hiệu', 'dot-test': 'đợt Test', 'nghia-vu': 'nghĩa vụ',
-  'vi-pham': 'vi phạm', 'bien-phap': 'biện pháp',
+  'vi-pham': 'vi phạm', 'bien-phap': 'biện pháp', 'luot-sos': 'lượt',
 };
 
 /** Tra một chỉ số theo mã; mã lạ trả null (không đoán). */

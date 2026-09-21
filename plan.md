@@ -1924,6 +1924,8 @@ Nói **cái gì đổi trên màn hình**, bằng tiếng Việt, không tên h�
 | 21/09/2026 (chiều) | Claude (session thiết kế) | Chủ sản phẩm hỏi lại về Netlify. Đính chính: vấn đề **không phải** "máy chủ phải chạy liên tục" (Netlify Functions chạy theo lượt gọi là đủ) mà là **chỗ cất dữ liệu** (file SQLite + tệp tải lên trên ổ đĩa). Kiểm mã: phiên đăng nhập lưu trong DB (chạy được), không có tác vụ chạy ngầm, tệp nhận qua `memoryStorage` (dễ chuyển), 1.035 chỗ gọi DB đồng bộ ở 51 file + 77 chỗ `tx(...)`, cú pháp riêng SQLite: 55 `lastInsertRowid` · 34 `PRAGMA` · 12 `INSERT OR …` · 5 `GROUP_CONCAT` · 2 `julianday`. Kết luận: **Turso** (không phải Supabase) + Netlify + Blobs. Viết **mục 24** (PR-Z2, có bước thử nhanh Z0 để tìm đường tắt không phải đổi sang async), viết lại `TRIEN_KHAI.md`, thay prompt PR-Z bằng PR-Z2 |
 | 21/09/2026 (chiều, tiếp) | Claude (session thiết kế) | Viết kế hoạch chi tiết PR-Z2 cho model thực thi Sonnet/Fable: `docs/superpowers/plans/2026-09-21-ban-chinh-netlify-turso.md`. Trước khi viết, **thử thật** thay `better-sqlite3` bằng `libsql` (bản tương thích, nối được Turso qua mạng) trên bản sao repo: 493/512 → sửa giao dịch lồng bằng savepoint → 511/512 → sửa `.run(null)` → lỗi còn lại chỉ là dọn thư mục tạm trên Windows. Kết luận: **giữ kiểu gọi đồng bộ**, không đổi 1.035 chỗ. Phát hiện: không có màn/API tạo chi nhánh (chỉ seed tạo) → `CHI_NHANH` + `them-chi-nhanh`. Quyết định thiết kế trong plan: `purgeAttachmentsOf` không xoá tệp trong kho (chạy trong giao dịch, xoá tệp không cuộn lại được); `seed` bị chặn khi trỏ tới Turso (trừ database thử có tên chỉ định); chế độ bản chính bật bằng `BAN_CHINH=1` / `VITE_BAN_CHINH=1` thay vì `NODE_ENV` |
 | 21/09/2026 (chiều, sau) | Claude (session thiết kế) | Chủ sản phẩm muốn **deploy thủ công từ thư mục máy**, chia PR-Z2 theo độ nhạy dữ liệu, và luôn được ghi rõ model/effort. Làm: (1) chia plan chi tiết thành **Phần A/B/C = PR-Z2a/b/c**; (2) thêm **Task 6b** — đóng gói nhị phân Linux của `libsql` (build trên Windows, Netlify chạy Linux) và **deploy nháp thật** với database thử ngay cuối Phần A, để có số đo tốc độ Netlify↔Turso thật **trước** khi chạm dữ liệu bản chính; (3) Task 10 đổi sang CLI (`deploy --build` nháp → xin phép → `--prod`), Task 11 yêu cầu người rà khác model người code; (4) **viết lại `TRIEN_KHAI.md` cho người không biết code**: mở PowerShell đúng thư mục, dán lệnh, chỗ nào thay `<...>`, từng nút bấm trên Turso/Netlify, bảng tra biến; (5) `PROMPT_SESSION_CODE.md`: bảng model + effort + phương án B cho mọi PR, ba prompt Z2a/Z2b/Z2c; (6) prompt bàn giao session planning mới: `PROMPT_BAN_GIAO_PLANNING.md` |
+| 21/09/2026 (đêm) | Claude (session PR-T) | **PR-T hoàn tất phần máy chủ (T1–T8).** Kế hoạch mục 23.1 sai/thiếu ở các chỗ ghi ngay dưới danh sách T1–T9 (DDL UNIQUE với NULL không chặn trùng; phương án điền sẵn phải theo mức SOS của cả lượt; luật chống nhân đôi mốc; phạm vi P03; S05 không khoá theo ngày; MT5+ không cần duyệt thêm; "Chủ nhật sau +30 ngày"). Viết lại 6 phép kiểm cũ của luật 6.2 (Mock FT nay tự tạo case) và ~25 phép kiểm "đánh dấu không chính xác" (nay xoá thẳng). Bộ phép kiểm 512 → 574. Chưa làm: chữ cứng `Cần chú ý` ở `CaseBoardPage.tsx:451` (giao diện, thuộc PR-K) |
+| 21/09/2026 (đêm) | Claude (session PR-T) | **Chủ sản phẩm chốt 2 chỗ mở của PR-T.** (1) MT5+ phương án `Khác` chỉ cần GVBM/Quản lý xác nhận — đúng ý. (2) Phương án A: hạn 3 ngày của S04 thành dòng **Việc cần làm** nhóm `cause` (GVBM phụ trách thấy ngay, Quản lý chỉ khi quá hạn, có tính vào tổng quá hạn). Bộ phép kiểm 579 → 580. PR-K K6 chỉ còn vẽ nhóm này |
 ---
 
 ## 15. PR-E — Nền giao diện dùng chung
@@ -2869,36 +2871,53 @@ theo GV. Mục 22.4–22.9 giữ nguyên làm đặc tả cho lúc đó, chỉ b
 
 Đặc tả: `thiet-ke/SOS_VA_PHOI_HOP_V3.md` mục 2–6, 8. Chỉ máy chủ + `shared/domain` + seed demo.
 
-- [ ] **T1. Bảng tra thuần** `shared/domain/sos.ts`: `DEFAULT_ACADEMIC_SUPPORT` (bảng §4, tra theo số MT +
+- [x] **T1. Bảng tra thuần** `shared/domain/sos.ts`: `DEFAULT_ACADEMIC_SUPPORT` (bảng §4, tra theo số MT +
       mức SOS) và `DEFAULT_SOS_COORDINATION` (bảng §5.3), `COORDINATION_KINDS` (6), `COORDINATION_REMOVE_REASONS`
       (4 + `system_sos_changed`), `CASE_DISMISS_REASONS` (3). Phép kiểm thuần: đủ 5 MT × 3 mức cho cả hai bảng;
       MT3 SOS3 là dòng duy nhất có `cx_meeting_family`.
-- [ ] **T2. Schema + migrate:** bảng `sos_coordination_actions` (DDL §5.1); `case_interventions` thêm `preset`,
+- [x] **T2. Schema + migrate:** bảng `sos_coordination_actions` (DDL §5.1); `case_interventions` thêm `preset`,
       `confirmed_by`, `confirmed_at`; `sos_cases` thêm `dismiss_reason_code`, `dismiss_reason_text`;
       `attachments.owner_type` nhận `sos_coordination_action`. `npm run migrate` chạy lặp không lỗi.
-- [ ] **T3. SOS tự tạo/gắn case (S01–S03, S08, S09).** Sửa `server/src/cases/signals.ts` (điểm vào hiện tại khi
+- [x] **T3. SOS tự tạo/gắn case (S01–S03, S08, S09).** Sửa `server/src/cases/signals.ts` (điểm vào hiện tại khi
       có kết quả dưới kỳ vọng): **chỉ lượt Mock FT** — với mỗi kỹ năng trượt (luật Writing hai tầng giữ nguyên)
       tìm case mở cùng HS + lộ trình + hạng mục → gắn (mốc `repeat`) hoặc tạo; ghi `case_signals` `linked` làm
       dây nối, `verify_due` = hạn 3 ngày; case mới có phương án `preset = 1` theo `DEFAULT_ACADEMIC_SUPPORT`,
       `followup_due` tính theo §4, người thực hiện = GVBM đúng kỹ năng. Lớp Normal **không đổi** (Q-V3-1).
       Phép kiểm: nghiệm thu §10 mục 1, 2, 3, 4 (phần case), 8.
-- [ ] **T4. Xác nhận / thay / đóng case từ SOS (S04–S07).** Hàm + route: xác nhận phương án điền sẵn
+- [x] **T4. Xác nhận / thay / đóng case từ SOS (S04–S07).** Hàm + route: xác nhận phương án điền sẵn
       (`confirmed_*`); thay = `superseded` + tạo mới trong **một** giao dịch, không bao giờ để case 0 phương án
       đang hoạt động; `Không cần theo dõi` (lý do bắt buộc, `Khác` cần chữ) → đóng case, huỷ phương án điền sẵn.
       Phương án điền sẵn chưa xác nhận **loại khỏi** `effectiveness.ts` và khỏi nghĩa vụ cập nhật tuần.
       Quyền: GVBM đúng kỹ năng (C02) + QL. Thêm chỉ số `case-cho-xac-dinh-nguyen-nhan`.
       Phép kiểm: §10 mục 5, 6.
-- [ ] **T5. Phối hợp SOS (P01–P10).** `server/src/yThuc/phoiHop.ts`: sinh việc điền sẵn khi lượt có SOS
+- [x] **T5. Phối hợp SOS (P01–P10).** `server/src/yThuc/phoiHop.ts`: sinh việc điền sẵn khi lượt có SOS
       (gọi từ cùng điểm với T3), đồng bộ khi mức SOS đổi (P02, P03), thêm / xác nhận / bỏ việc, danh sách theo
       lớp và theo HS. Quyền: GVCN lớp em đang học + QL; GVBM chỉ đọc. Ba chỉ số `phoi-hop-*` (§8).
       Phép kiểm: §10 mục 1 (phần phối hợp), 2, 4 (phần phối hợp), 7, 8 + quyền.
-- [ ] **T6. Xoá vi phạm (V11′–V14′).** Thay đường "đánh dấu không chính xác" bằng **xoá**: xoá dòng + dòng nối
+- [x] **T6. Xoá vi phạm (V11′–V14′).** Thay đường "đánh dấu không chính xác" bằng **xoá**: xoá dòng + dòng nối
       + tệp, ghi `audit_logs`. Số vi phạm của biện pháp là số đang gắn. Migrate: dòng `valid = 0` cũ → xoá (có
       audit). Gỡ chỉ số `vi-pham-khong-hieu-luc`. Phép kiểm: §10 mục 9 + quyền V10.
-- [ ] **T7. Đổi tên mức** `Cần chú ý` → `Bình thường` ở mọi chỗ (nhãn, seed, thông báo, phép kiểm). Mã
+- [x] **T7. Đổi tên mức** `Cần chú ý` → `Bình thường` ở mọi chỗ (nhãn, seed, thông báo, phép kiểm). Mã
       `attention` giữ nguyên, chỉ đổi chữ.
-- [ ] **T8. Seed demo** thêm các tình huống v3 §9 (chỉ cho máy dev).
-- [ ] **T9.** `npm run check` xanh. Cập nhật mục 14 + `BAN_DO_OVERHAUL.md`. Mở PR, **không tự merge**.
+- [x] **T8. Seed demo** thêm các tình huống v3 §9 (chỉ cho máy dev).
+
+**Kết quả PR-T (nhánh `pr-t-may-chu-v3`) — chỗ kế hoạch sai/thiếu và những điều đã QUYẾT theo đúng chữ của đặc tả (ghi tại chỗ, không phải hai cách để chọn):**
+
+1. **DDL §5.1 sai:** `UNIQUE (attempt_id, kind, custom_name)` KHÔNG chặn trùng khi `custom_name` NULL (SQLite coi mỗi NULL là giá trị riêng) → chạy lặp nhân đôi việc phối hợp. Đã thay bằng chỉ mục duy nhất `(attempt_id, kind, COALESCE(custom_name,''))`; có phép kiểm chặn trùng; đã sửa DDL trong `SOS_VA_PHOI_HOP_V3.md`.
+2. **T3 thiếu trường hợp "đang làm dở nhiều kỹ năng":** điểm nhập từng kỹ năng bởi từng GVBM nên case đầu ra đời khi lượt mới SOS1. Đặc tả §4 nói phương án theo **mức SOS của cả lượt** → phương án điền sẵn **chưa xác nhận** đi theo mức mới nhất của lượt đã mở nó (`resyncUnconfirmedPresets`); đã xác nhận thì không bao giờ bị đụng; case cũ được lượt sau *gắn* thêm mốc thì giữ phương án của nó.
+3. **T3 thiếu luật chống nhân đôi mốc:** lưu lại điểm làm case vừa tạo bị ghi thêm mốc "Trượt lại" cho chính lượt đã mở nó. Đã chặn (tín hiệu đã nối vào đúng case thì không ghi mốc thứ hai) — có phép kiểm.
+4. **P03 hẹp hơn chữ:** "việc `pending` không còn trong bảng mới tự bỏ" chỉ áp cho việc **điền sẵn** (`preset = 1`); việc GVCN tự thêm không bao giờ bị máy đụng. Việc bị **hệ thống** bỏ được **hồi lại** khi mức SOS lên lại (điểm sửa qua sửa lại); việc do **người** bỏ thì không bao giờ hồi.
+5. **S05:** "3 ngày" là **hạn làm**, không khoá theo ngày (quá 3 ngày vẫn bấm `Không cần theo dõi` được). Chỉ đóng được khi case **chưa có việc thật** (chưa xác nhận phương án, chưa ghi kết quả) và là case **tự tạo từ SOS**; ngược lại dùng `Chốt kết quả case` như thường.
+6. **MT5 trở lên:** phương án `Khác` dùng loại `other_proposal` (nhãn "Khác") + mô tả đúng chữ đặc tả; **xác nhận của GVBM/Quản lý là đủ** — không kéo thêm bước Quản lý duyệt (đặc tả không nói có).
+7. **"Chủ nhật đầu tiên sau (ngày tạo + 30 ngày)"** đọc đúng nghĩa đen: rơi đúng Chủ nhật thì sang Chủ nhật kế tiếp. "Đến lúc thi" chỉ lấy khi lộ trình đã chốt **tuần** thi (hết Chủ nhật tuần đó); mới biết tháng thì để trống.
+8. **Xoá vi phạm:** cột `valid`, `invalid_*`, `violation_count_at_confirm` **giữ trong schema, ngừng dùng** (đường an toàn cho `migrate`). `migrate` xoá dòng `valid = 0` cũ (kèm audit). Mã vi phạm có thể **tái dùng** sau khi xoá dòng cao nhất (SQLite không AUTOINCREMENT) — audit khác nhau ở `entity_label`/nội dung; phép kiểm không đếm audit theo mã một mình.
+9. **Đơn vị chỉ số mới `luot-sos` ("lượt")** cho ba chỉ số `phoi-hop-*`; sổ chỉ số nay có 23 chỉ số. `vi-pham-khong-hieu-luc` đã bỏ.
+10. **Rà soát độc lập (một lượt) tìm ra một lỗi thật, đã sửa + phép kiểm:** case tự tạo đã **đóng** (`Không cần theo dõi` hay chốt kết quả) bị **tạo lại** khi lưu điểm kỹ năng khác / chấm lại chính lượt đó (đảo quyết định của GVBM). Nay tín hiệu đã nối vào một case thì không bao giờ tạo case mới cho chính lượt đó; chỉ tạo lại khi tín hiệu được mở lại (thu hồi rồi trượt lại) hoặc ở lượt sau. Cũng sửa: xoá tệp bằng chứng **sau khi** giao dịch chốt (migrate + xoá vi phạm), không nhắc "xem lại" case đã đóng, ngày "1 tháng" không trôi theo ngày bấm lưu, `recordFollowUp` chặn phương án chưa xác nhận, lượt Mock đã huỷ không hiện ở Phối hợp, giới hạn độ dài chữ.
+11. **Biện pháp ĐANG CHUẨN BỊ mất hết vi phạm do xoá không bị xoá ngầm** (là bản nháp của GVCN): hiện `0 vi phạm`, không xác nhận được (luật B02 đã có). Đặc tả V14′ chỉ nói về biện pháp đã thực hiện.
+12. **Hạn 3 ngày của S04 nay có dòng việc riêng (chủ sản phẩm chốt 21/09 đêm, phương án A):** nhóm `cause` "Xác định nguyên nhân" trong `myWork` — GVBM phụ trách thấy ngay khi case ra đời, Quản lý CHỈ thấy khi đã quá hạn (nhãn "Quá hạn xác định nguyên nhân"), người khác không thấy; biến mất khi đủ nguyên nhân + phương án đã xác nhận hoặc case đóng. PR-K K6 chỉ còn vẽ nhóm này ra giao diện.
+13. **Không điền ngược Phối hợp SOS cho dữ liệu cũ:** database đã có lượt SOS từ trước PR-T chỉ có việc phối hợp khi lượt đó được chấm lại; bản chính bắt đầu từ dữ liệu rỗng nên không ảnh hưởng.
+14. **Chưa làm (cố ý — thuộc PR-K, cấm sửa giao diện ở PR này):** nhãn mức `Cần chú ý` còn một chỗ chữ cứng trong giao diện: `web/src/modules/cases/CaseBoardPage.tsx:451`. Mọi chỗ khác đọc nhãn từ `URGENCY_LABEL` nên đã tự đổi.
+- [x] **T9.** `npm run check` xanh (PR #39). Cập nhật mục 14 + `BAN_DO_OVERHAUL.md`. Mở PR, **không tự merge**.
 
 ## 23.2. PR-Z — Chuẩn bị bản chính — ⚰️ HẾT HIỆU LỰC, thay bằng PR-Z2 ở mục 24
 

@@ -438,7 +438,11 @@ export const DEFAULT_URGENCY: UrgencyLevel = 'attention';
  * Danh sách chọn thì chỉ lấy từ `URGENCY_LEVELS`.
  */
 export const URGENCY_LABEL: Record<string, string> = {
-  normal: 'Bình thường (mức cũ)', attention: 'Cần chú ý', urgent: 'Gấp',
+  /*
+   * ĐỔI TÊN 21/09/2026 (rulebook v3, T7): mức `attention` đổi tên hiển thị thành "Bình thường" (lịch sử tên cũ: xem plan.md mục 14). Chỉ đổi CHỮ:
+   * mã `attention` giữ nguyên. Mức cũ `normal` (đã chuyển sang `attention` khi nâng cấp) đọc ra cùng chữ, không ra mã thô.
+   */
+  normal: 'Bình thường', attention: 'Bình thường', urgent: 'Gấp',
 };
 export const URGENCY_TONE: Record<string, 'neutral' | 'warn' | 'danger'> = {
   normal: 'neutral', attention: 'warn', urgent: 'danger',

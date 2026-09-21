@@ -5,9 +5,11 @@ import { scopeFor, type Principal } from '../permissions.ts';
 import { badRequest, forbidden, HttpError, notFound } from '../util.ts';
 import { listCases } from '../cases/cases.ts';
 import { listSignals } from '../cases/signals.ts';
+import { NOT_UNCONFIRMED_PRESET, awaitingCauseCaseIds } from '../cases/sosState.ts';
 import { improvementRate, planOutcomes } from '../cases/effectiveness.ts';
 import { doPhuDanhGia, hvDuoiKyVongMon, hvSosHienTai } from './danhGia.ts';
 import { isYThucMetric, yThucMetric, YTHUC_METRIC_IDS } from '../yThuc/thongKe.ts';
+import { PHOI_HOP_METRIC_IDS, isPhoiHopMetric, phoiHopMetric } from '../yThuc/phoiHop.ts';
 
 /**
  * TẬP ID CỦA TỪNG CHỈ SỐ — nơi duy nhất sinh ra cả CON SỐ lẫn DANH SÁCH KHI BẤM VÀO (hợp đồng số liệu).
@@ -142,6 +144,15 @@ export function rowsFor(unit: ChiSo['donVi'], ids: number[]): MetricRow[] {
         const state = r.status === 'done' ? `đã thực hiện ${String(r.performed_on ?? '').slice(8, 10)}/${String(r.performed_on ?? '').slice(5, 7)}` : 'đang chuẩn bị';
         byId.set(r.id, { id: r.id, title: name, sub: [r.full_name, r.student_code, state].filter(Boolean).join(' · '), href: `/hoc-vien/${r.student_id}` });
       }
+    } else if (unit === 'luot-sos') {
+      /* Phối hợp SOS (PR-T): dòng lượt Mock có SOS mở hồ sơ học viên — sub-tab `Phối hợp SOS` là việc của PR-K. */
+      for (const r of conn.prepare(
+        `SELECT a.id, a.attempt_no, a.student_id, s.full_name, s.student_code, c.code AS class_code
+           FROM assessment_attempts a JOIN students s ON s.id = a.student_id LEFT JOIN classes c ON c.id = a.class_id
+          WHERE a.id IN (${ph})`,
+      ).all(...chunk) as any[]) {
+        byId.set(r.id, { id: r.id, title: `MT${r.attempt_no} · ${r.full_name}`, sub: [r.student_code, r.class_code].filter(Boolean).join(' · '), href: `/hoc-vien/${r.student_id}` });
+      }
     } else if (unit === 'tin-hieu') {
       for (const r of conn.prepare(
         `SELECT sg.id, sg.student_id, sg.skill, sg.verify_due, s.full_name, s.student_code
@@ -178,10 +189,11 @@ export function metricResponse(r: MetricResult, withRows: boolean) {
 
 /** Các chỉ số ĐÃ CÓ hàm tập ID. Chỉ số khác trong sổ chưa dùng được. */
 export const LISTED_METRICS: readonly string[] = [
-  'hv-sos-hien-tai', 'hv-duoi-ky-vong-mon', 'hv-co-case-mo', 'case-mo', 'tin-hieu-cho-xac-minh',
+  'hv-sos-hien-tai', 'hv-duoi-ky-vong-mon', 'hv-co-case-mo', 'case-mo', 'tin-hieu-cho-xac-minh', 'case-cho-xac-dinh-nguyen-nhan',
   'case-thieu-pa', 'pa-can-cap-nhat', 'pa-cho-duyet', 'pa-co-ket-qua', 'ty-le-co-cai-thien',
   'dung-han-cap-nhat', 'do-phu-danh-gia',
   ...YTHUC_METRIC_IDS,
+  ...PHOI_HOP_METRIC_IDS,
 ];
 
 /** Kỹ năng ĐÁNH GIÁ mà `hv-duoi-ky-vong-mon` nhận. */
@@ -225,6 +237,7 @@ function obligations(caseIds: number[], today: string, from: string | null, to: 
         `SELECT iv.id, iv.cycle_no AS cycle, iv.action_due AS due FROM case_interventions iv
           WHERE iv.case_id IN (${ph}) AND iv.status IN ${RUNNING}
             AND COALESCE(iv.approval_state, '') != 'pending'
+            AND ${NOT_UNCONFIRMED_PRESET('iv')}
             AND iv.action_due IS NOT NULL AND iv.action_due < ?
             AND NOT EXISTS (SELECT 1 FROM case_followups f WHERE f.intervention_id = iv.id AND f.cycle_no = iv.cycle_no)`,
       )
@@ -289,6 +302,7 @@ function overdueUpdatePlans(caseIds: number[], today: string): number[] {
           WHERE iv.case_id IN (${chunk.map(() => '?').join(',')})
             AND iv.status IN ${RUNNING}
             AND COALESCE(iv.approval_state, '') != 'pending'
+            AND ${NOT_UNCONFIRMED_PRESET('iv')}
             AND iv.action_due IS NOT NULL AND iv.action_due < ?
           ORDER BY iv.id`,
       )
@@ -352,6 +366,13 @@ export function metricSet(
     return done(r.ids, r.byKind ? { byKind: r.byKind } : {});
   }
 
+  /* Phối hợp SOS (PR-T): cùng phạm vi thống kê với Ý thức — chỉ Quản lý và Quản trị; GVBM/GVCN nhận tập rỗng có nhãn. Đơn vị: lượt. */
+  if (isPhoiHopMetric(id)) {
+    const r = phoiHopMetric(p, id, { branchId: scope.branchId, from: f.from ?? null, to: f.to ?? null });
+    if (r.none) return { ...done([]), empty: true, note: EMPTY_NOTE };
+    return done(r.ids);
+  }
+
   const branchId = scope.branchId ?? undefined;
   const openCases = () => listCases(p, { branchId }).rows.filter((c: any) => c.state !== 'done');
 
@@ -369,6 +390,9 @@ export function metricSet(
       return done(openCases().filter((c: any) => c.state === 'no_plan').map((c: any) => c.id as number));
     case 'tin-hieu-cho-xac-minh':
       return done(listSignals(p, { branchId, status: 'open' }).rows.map((s) => s.id));
+    case 'case-cho-xac-dinh-nguyen-nhan':
+      /* Case TỪ SOS (rulebook v3) đang mở mà chưa có nguyên nhân HOẶC còn phương án điền sẵn chưa xác nhận — cùng định nghĩa với `caseDetail().sos`. */
+      return done(awaitingCauseCaseIds(openCases().map((c: any) => c.id as number)));
     case 'pa-can-cap-nhat':
       return done(overdueUpdatePlans(openCases().map((c: any) => c.id as number), today));
     case 'pa-cho-duyet':

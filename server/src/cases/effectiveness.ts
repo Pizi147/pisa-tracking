@@ -1,4 +1,5 @@
 import { db } from '../db.ts';
+import { NOT_UNCONFIRMED_PRESET } from './sosState.ts';
 import {
   CASE_CATEGORY_SHORT, INTERVENTION_KIND_LABEL,
   caseCategoriesFor, caseCategoryLabel, categoryOf, isNoPlanCase, issueBoardCategoriesFor, issueLabel,
@@ -227,6 +228,7 @@ function queryPlans(sids: number[], scope: Scope) {
         WHERE sc.student_id IN (${ph})
           AND iv.status = 'completed'
           AND COALESCE(iv.approval_state, '') != 'pending'
+          AND ${NOT_UNCONFIRMED_PRESET('iv')}
           AND sc.origin_kind != 'backfill'${range}`,
     )
     .all(...params) as any[]);
@@ -424,7 +426,8 @@ export function issueBoard(scope: Scope, category: string) {
         .prepare(
           `SELECT iv.*, sc.id AS case_id FROM case_interventions iv
              JOIN sos_cases sc ON sc.id = iv.case_id
-            WHERE iv.case_id IN (${caseIds.map(() => '?').join(',')}) AND iv.status != 'cancelled'`,
+            WHERE iv.case_id IN (${caseIds.map(() => '?').join(',')}) AND iv.status != 'cancelled'
+              AND ${NOT_UNCONFIRMED_PRESET('iv')}`,
         )
         .all(...caseIds) as any[])
     : [];
@@ -523,7 +526,8 @@ export function issueSkillRows(scope: Scope) {
       `SELECT sc.id, sc.student_id, sc.status, sc.category, sc.topic, sc.disposition,
               (SELECT COUNT(*) FROM case_interventions iv WHERE iv.case_id = sc.id) AS plan_count,
               (SELECT COUNT(*) FROM case_interventions iv
-                WHERE iv.case_id = sc.id AND iv.status IN ('planned','started')) AS open_plans,
+                WHERE iv.case_id = sc.id AND iv.status IN ('planned','started')
+                  AND ${NOT_UNCONFIRMED_PRESET('iv')}) AS open_plans,
               (SELECT COUNT(*) FROM case_issues ci
                 WHERE ci.case_id = sc.id AND ci.role = 'primary') AS issue_count
          FROM sos_cases sc
@@ -580,7 +584,8 @@ export function issueBoardCases(scope: Scope, category: string, code?: string | 
                 WHERE e.student_id = sc.student_id AND e.status = 'active'
                 ORDER BY e.id DESC LIMIT 1) AS class_code,
               (SELECT COUNT(*) FROM case_interventions iv
-                WHERE iv.case_id = sc.id AND iv.status != 'cancelled') AS plan_count
+                WHERE iv.case_id = sc.id AND iv.status != 'cancelled'
+                  AND ${NOT_UNCONFIRMED_PRESET('iv')}) AS plan_count
          FROM sos_cases sc JOIN students s ON s.id = sc.student_id
         WHERE sc.student_id IN (${ph})
         ORDER BY sc.status = 'done', sc.detected_at DESC`,

@@ -102,6 +102,8 @@ Mã J01–J12 chỉ dùng trong tài liệu này, không hiện ra sản phẩm.
 
 ## 3. Điểm dưới kỳ vọng sinh TÍN HIỆU, không tự mở case
 
+> **Từ tối 21/09/2026 (rulebook v3) đoạn này chỉ còn đúng cho lớp NORMAL.** Mock Test Fast Track nay *tự tạo* case cho từng kỹ năng trượt — xem mục 9.
+
 Điểm chỉ sinh **tín hiệu**: *"môn này dưới kỳ vọng, ai đó phải xem"*. Giáo viên bộ môn xác minh môn mình. Máy chỉ đọc được
 con số chứ không biết **vì sao**, nên nó không tự mở case hay tự xếp phương án.
 
@@ -122,6 +124,18 @@ con số chứ không biết **vì sao**, nên nó không tự mở case hay t�
 Thử: bấm **"Đã xem, không mở case"** rồi để trống nhận định → không cho lưu.
 
 ---
+
+## 9. Rulebook v3 — SOS tự tạo case và Phối hợp SOS (chỉ máy dev)
+
+Ba học viên MỚI ở `MB-FT 101`, dựng bằng chính các hàm nghiệp vụ (`server/src/seed/sosV3Seed.ts`): nhập điểm Mock Test → máy tự tạo case, phương án điền sẵn và việc phối hợp; rồi GVBM/GVCN thao tác.
+
+| Học viên | Lượt | Bạn sẽ thấy |
+|---|---|---|
+| **Đỗ Minh Khôi** | MT2 · SOS2 (W2 + Speaking) | Hai case từ SOS. Speaking đã có nguyên nhân + phương án xác nhận; **W2 còn `chờ xác định nguyên nhân`**. Phối hợp SOS xong 1/3 (trao đổi với HS đã làm; gia đình và GVCN meeting còn cần xử lý). Có hai vi phạm Ý thức ở cùng em |
+| **Vũ Ngọc Lan** | MT1 · SOS3 (L + R + S) | Ba case, phương án `Tutor · đến MT2`. **Case Speaking đã đóng `Không cần theo dõi · Tình huống đơn lẻ`**. Phối hợp SOS3 xong 2/3 (còn GVCN meeting) |
+| **Bùi Thảo Vy** | MT3 · SOS1 (Speaking) | Một lượt Phối hợp **đã hoàn thành 2/2** — để thấy trạng thái "xong" |
+
+Ba mức SOS khác nhau (1 · 2 · 3) đều có mặt; có cả lượt đang xử lý lẫn đã hoàn thành. Bộ demo Ý thức (mục 1) nay dùng *xoá thẳng* thay cho "đánh dấu không chính xác": hai vi phạm đã xoá (Trần Thu Hà, Lê Quang Huy) chỉ còn dấu vết ở `audit_logs`.
 
 ## 4. Lịch thi tách theo từng kỹ năng
 
@@ -275,7 +289,7 @@ Chỉ ghi thứ **thực sự thay đổi cách phần mềm chạy**. Thứ t�
 
 ## B4. Khi có SOS, hệ thống sinh gì
 
-Chỉ **tín hiệu** (mục 3 ở trên). *Từ 21/09/2026* không còn tự sinh case Ý thức, không còn hai việc trao đổi tự sinh, không còn
+**Mock Test Fast Track (rulebook v3, 21/09/2026 tối):** mỗi kỹ năng trượt được *tự tạo hoặc tự gắn* một case, kèm phương án điền sẵn chờ GVBM xác nhận, và một lượt *Phối hợp SOS* cho GVCN — xem mục 9. **Lớp Normal:** chỉ **tín hiệu** (mục 3 ở trên). *Từ 21/09/2026* không còn tự sinh case Ý thức, không còn hai việc trao đổi tự sinh, không còn
 tự sinh phương án xếp tự học / tutor. Người xác minh quyết định.
 
 ## B5. Phương án, đề xuất và duyệt

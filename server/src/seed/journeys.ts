@@ -135,7 +135,7 @@ export type CaseSeed = {
   fromTest?: number;
   originKind?: 'mock' | 'teacher_report' | 'manager_task';
   sosLevel?: number | null;
-  /** Hai bậc, "Bình thường" đã bỏ (mục 6.3). Không khai thì là "Cần chú ý". */
+  /** Hai bậc: `attention` (hiện là "Bình thường") và `urgent` (Gấp). Không khai thì là `attention`. */
   urgency?: 'attention' | 'urgent';
   status: 'open' | 'in_progress' | 'done';
   /** Mã người phụ trách. Bỏ trống = CHƯA CÓ AI — và đó là một tình huống có thật. */

@@ -2,6 +2,9 @@ import { db, isInitialised } from './db.ts';
 import { addDays, nowIso } from './util.ts';
 import { demoToday } from './demoConfig.ts';
 import crypto from 'node:crypto';
+import fs from 'node:fs';
+import path from 'node:path';
+import { uploadsDir } from './platform/attachments.ts';
 import { PERMISSION_LABEL, VIOLATION_SKILLS, legacyTopicToViolationCategory } from '../../shared/domain/index.ts';
 import { DEFAULT_ADMIN_EMAIL, DEFAULT_ADMIN_PASSWORD, EMAIL_SUFFIX } from './platform/accounts.ts';
 import { seedRoutes } from './platform/sysconfig.ts';
@@ -432,6 +435,9 @@ function migrateCaseEngine(applied: string[], skipped: string[]) {
     migrateReportHistory(conn, applied);
     /* CUỐI CÙNG: sau khi mọi bước thời Case Ý thức ở trên đã chạy xong, chuyển dữ liệu của mô hình đó sang mô hình mới. */
     migrateLegacyDisciplineCases(conn, applied);
+    /* Sau cùng của các bước cấu trúc: rulebook v3 (PR-T) thêm cột/bảng trên những bảng mà các bước trên đã dựng đủ. */
+    migrateSosV3(conn, applied);
+    migrateDeleteInvalidViolations(conn, applied);
 
     /*
      * Case đã đóng theo hệ thống cũ mà không có hướng xử lý: ghi rõ là "đóng theo hệ thống
@@ -457,6 +463,8 @@ function migrateCaseEngine(applied: string[], skipped: string[]) {
       .run(nowIso(), nowIso());
   })();
   conn.pragma('foreign_keys = ON');
+  /* Giao dịch đã chốt → mới xoá tệp bằng chứng của những vi phạm bị xoá (PR-T). Lỗi giữa chừng thì tới đây không bao giờ chạy tới, tệp còn nguyên. */
+  flushDeferredFileRemovals();
 
   if (!applied.length) skipped.push('Mô hình case học vụ đã có sẵn, không cần nâng cấp.');
   return { applied, skipped };
@@ -2763,6 +2771,107 @@ export function migrateLegacyDisciplineCases(conn: any, applied: string[]) {
   applied.push(
     `Chuyển mô hình Case Ý thức sang Vi phạm và Biện pháp xử lý: ${violationsMade} vi phạm và ${measuresMade} biện pháp được giữ lại từ ${removed} case Ý thức cũ (${attachmentsKept} tệp/liên kết bằng chứng đi theo)`
     + `, ${signalsGone} tín hiệu Ý thức cũ được gỡ; đã bỏ các cột track/episode_no/merge_until/urgency_raised_at và bảng case_reports`,
+  );
+}
+
+/**
+ * RULEBOOK v3 — SOS TỰ TẠO CASE, PHỐI HỢP SOS (PR-T, 21/09/2026 tối).
+ *
+ * Thêm, KHÔNG đổi và KHÔNG xoá gì: hai cột phương án điền sẵn/xác nhận, hai cột lý do đóng case, và bảng `sos_coordination_actions`.
+ * Mọi dòng cũ giữ nguyên: phương án cũ `preset = 0` (không phải điền sẵn, không cần xác nhận) nên không đổi hành vi. Chạy lặp không
+ * làm gì. DDL chép từ `schema.sql`.
+ */
+export function migrateSosV3(conn: any, applied: string[]) {
+  const hasTable = (t: string) => !!conn.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name = ?").get(t);
+  const cols = (t: string): string[] => (conn.prepare(`PRAGMA table_info(${t})`).all() as any[]).map((c: any) => c.name);
+  if (!hasTable('sos_cases') || !hasTable('case_interventions')) return;
+
+  const added: string[] = [];
+  const addCol = (table: string, col: string, decl: string) => {
+    if (!cols(table).includes(col)) { conn.exec(`ALTER TABLE ${table} ADD COLUMN ${col} ${decl}`); added.push(`${table}.${col}`); }
+  };
+  addCol('case_interventions', 'preset', 'INTEGER NOT NULL DEFAULT 0');
+  addCol('case_interventions', 'confirmed_by', 'INTEGER REFERENCES users(id)');
+  addCol('case_interventions', 'confirmed_at', 'TEXT');
+  addCol('sos_cases', 'dismiss_reason_code', 'TEXT');
+  addCol('sos_cases', 'dismiss_reason_text', 'TEXT');
+
+  let table = false;
+  if (!hasTable('sos_coordination_actions')) {
+    conn.exec(`
+      CREATE TABLE sos_coordination_actions (
+        id INTEGER PRIMARY KEY,
+        attempt_id INTEGER NOT NULL REFERENCES assessment_attempts(id),
+        student_id INTEGER NOT NULL REFERENCES students(id),
+        kind TEXT NOT NULL,
+        custom_name TEXT,
+        preset INTEGER NOT NULL DEFAULT 0,
+        status TEXT NOT NULL DEFAULT 'pending',
+        performed_on TEXT, performed_by INTEGER REFERENCES users(id), performer_name TEXT,
+        note TEXT,
+        remove_reason_code TEXT, remove_reason_text TEXT,
+        removed_by INTEGER REFERENCES users(id), removed_at TEXT,
+        created_at TEXT NOT NULL, updated_at TEXT
+      );
+      CREATE UNIQUE INDEX uq_sca_attempt_kind ON sos_coordination_actions(attempt_id, kind, COALESCE(custom_name, ''));
+      CREATE INDEX idx_sca_attempt ON sos_coordination_actions(attempt_id);
+      CREATE INDEX idx_sca_student ON sos_coordination_actions(student_id, status);
+    `);
+    table = true;
+  }
+  if (!added.length && !table) return;
+  applied.push(
+    `PR-T (rulebook v3): thêm ${added.length} cột (${added.join(', ') || 'không'}) cho phương án điền sẵn / lý do đóng case`
+      + `${table ? ' và bảng Phối hợp SOS (sos_coordination_actions)' : ''}. Dữ liệu cũ giữ nguyên; phương án cũ không bị coi là điền sẵn.`,
+  );
+}
+
+/**
+ * RULEBOOK v3, V13′ — VI PHẠM CŨ `valid = 0` ĐƯỢC XOÁ (PR-T). Trước đó "đánh dấu không chính xác" giữ dòng lại; nay ghi sai thì xoá thẳng, nên những dòng
+ * đã đánh dấu không còn chỗ đứng. Mỗi vi phạm bị xoá kèm: dòng nối với biện pháp, lịch sử sửa, tệp bằng chứng (dòng + tệp trên đĩa nếu có), và MỘT dòng
+ * `audit_logs` giữ nội dung đã xoá (kể cả lý do cũ) — chỉ để truy vết. Biện pháp đã thực hiện giữ nguyên, chỉ còn ít vi phạm hơn.
+ * Chạy lặp không làm gì (không còn dòng `valid = 0`). Cột `valid`/`invalid_*` giữ trong schema, ngừng dùng.
+ */
+const deferredFileRemovals: string[] = [];
+/** Xoá tệp đã chờ (từ `migrateDeleteInvalidViolations`) — chỉ gọi SAU KHI giao dịch nâng cấp đã chốt. */
+export function flushDeferredFileRemovals(): number {
+  const n = deferredFileRemovals.length;
+  for (const f of deferredFileRemovals.splice(0)) { try { fs.rmSync(f, { force: true }); } catch { /* tệp đã mất thì thôi */ } }
+  return n;
+}
+
+export function migrateDeleteInvalidViolations(conn: any, applied: string[]) {
+  const hasTable = (t: string) => !!conn.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name = ?").get(t);
+  if (!hasTable('violations')) return;
+  if (!(conn.prepare('PRAGMA table_info(violations)').all() as any[]).some((c: any) => c.name === 'valid')) return;
+  const rows = conn.prepare('SELECT * FROM violations WHERE valid = 0 ORDER BY id').all() as any[];
+  if (!rows.length) return;
+  const now = nowIso();
+  for (const v of rows) {
+    const measureIds = (conn.prepare('SELECT measure_id FROM measure_violations WHERE violation_id = ? ORDER BY measure_id').all(v.id) as any[]).map((r) => r.measure_id);
+    const files = hasTable('attachments')
+      ? (conn.prepare("SELECT * FROM attachments WHERE owner_type = 'violation' AND owner_id = ?").all(v.id) as any[])
+      : [];
+    /* Tệp trên đĩa xoá SAU KHI cả bước nâng cấp chốt (`flushDeferredFileRemovals`): bước sau lỗi thì database lui, và tệp không được mất theo. */
+    for (const f of files) if (f.kind === 'file') deferredFileRemovals.push(path.resolve(uploadsDir(), f.url));
+    if (files.length) conn.prepare("DELETE FROM attachments WHERE owner_type = 'violation' AND owner_id = ?").run(v.id);
+    conn.prepare('DELETE FROM measure_violations WHERE violation_id = ?').run(v.id);
+    if (hasTable('violation_history')) conn.prepare('DELETE FROM violation_history WHERE violation_id = ?').run(v.id);
+    conn.prepare('DELETE FROM violations WHERE id = ?').run(v.id);
+    conn
+      .prepare('INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, entity_label, before_json, after_json, created_at) VALUES (?,?,?,?,?,?,?,?)')
+      .run(
+        null, 'violation.delete', 'violation', v.id, `Nâng cấp rulebook v3 · vi phạm ${v.id}`,
+        JSON.stringify({
+          studentId: v.student_id, classId: v.class_id ?? null, category: v.category, skill: v.skill ?? null, occurredOn: v.occurred_on,
+          reportedOn: v.reported_on, reportedBy: v.reported_by, description: v.description, measureIds, attachments: files.length,
+          legacyInvalidReason: v.invalid_reason ?? null,
+        }),
+        null, now,
+      );
+  }
+  applied.push(
+    `PR-T (rulebook v3): xoá ${rows.length} vi phạm cũ đã "đánh dấu không chính xác" (kèm dòng nối, lịch sử sửa, tệp; mỗi vi phạm một dòng audit). Biện pháp giữ nguyên.`,
   );
 }
 

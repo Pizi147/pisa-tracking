@@ -196,6 +196,26 @@ Phiên bản 1.0 · 21/09/2026 · **Sổ tra cứu, không phải sổ giao vi�
 
 ---
 
+## 9b. Rulebook v3 — máy chủ (PR-T, đêm 21/09/2026)
+
+Nguồn: `SOS_VA_PHOI_HOP_V3.md` · rule book mục 19 · `plan.md` mục 23.1. **Chỉ máy chủ + `shared/domain` + seed** — giao diện là PR-K.
+
+| Yêu cầu | Tình trạng | Bằng chứng / còn thiếu | PR |
+|---|---|---|---|
+| Bảng tra thuần: phương án điền sẵn (§4) và việc phối hợp (§5.3), 5 MT × 3 mức | ✅ Đã làm | `shared/domain/sos.ts`; phép kiểm "PR-T · T1" đủ 15 ô mỗi bảng, MT3 SOS3 là dòng duy nhất có `cx_meeting_family` | **PR-T ✅** |
+| Bảng `sos_coordination_actions`, cột `preset`/`confirmed_*`, `dismiss_reason_*`; `migrate` chạy lặp | ✅ Đã làm | `schema.sql` + `migrateSosV3`; DDL gốc của đặc tả sai (UNIQUE với NULL) đã sửa bằng chỉ mục `COALESCE` | **PR-T ✅** |
+| SOS (chỉ Mock FT) tự tạo / gắn case cho từng kỹ năng trượt, W1/W2 tách, có sẵn phương án (S01–S03, S08, S09) | ✅ Đã làm | `cases/sos.ts` + `cases/sosAuto.ts`; nghiệm thu §10 mục 1–4, 8; lớp Normal không đổi (có phép kiểm khoá) | **PR-T ✅** |
+| Xác nhận · sửa · thay · `Không cần theo dõi` (S04–S07); quyền đúng kỹ năng (C02) | ✅ Đã làm | `sosAuto.confirmPresetPlan / replacePresetPlan / dismissSosCase` + route `POST /interventions/:id/confirm|replace`, `POST /cases/:id/dismiss`; nghiệm thu §10 mục 5, 6 | **PR-T ✅** |
+| Phương án điền sẵn chưa xác nhận: ngoài hiệu quả, ngoài nghĩa vụ cập nhật tuần | ✅ Đã làm | MỘT điều kiện SQL (`sosState.UNCONFIRMED_PRESET`) dùng ở `effectiveness.ts`, `mywork.ts`, `metrics.ts`, `summary.ts`, `students.ts`; phép kiểm ép hạn về quá khứ để chứng minh | **PR-T ✅** |
+| Phối hợp SOS P01–P10, danh sách theo lớp / học viên, ba chỉ số `phoi-hop-*` | ✅ Đã làm | `yThuc/phoiHop.ts`; route `/classes/:id/phoi-hop-sos`, `/students/:id/phoi-hop-sos`, `/attempts/:id/phoi-hop-sos`, `/phoi-hop-sos/:id/confirm|remove` | **PR-T ✅** |
+| Chỉ số `case-cho-xac-dinh-nguyen-nhan` | ✅ Đã làm | `sosState.awaitingCauseCaseIds`; sổ nay 23 chỉ số | **PR-T ✅** |
+| Xoá vi phạm thay "đánh dấu không chính xác" (V11′–V14′) | ✅ Đã làm | `violations.deleteViolation`, `DELETE /violations/:id`; `migrateDeleteInvalidViolations`; số vi phạm của biện pháp là số đang gắn | **PR-T ✅** |
+| Đổi tên mức `Cần chú ý` → `Bình thường` | 🟡 Một phần | `URGENCY_LABEL` + thông báo lỗi + seed + phép kiểm đã đổi (mã `attention` giữ nguyên). **Còn một chữ cứng ở `web/src/modules/cases/CaseBoardPage.tsx:451`** — giao diện, chưa sửa vì PR-T cấm | **PR-K** |
+| Bộ demo v3 (§9): ba học viên đi qua chính hàm nghiệp vụ | ✅ Đã làm | `seed/sosV3Seed.ts` + phép kiểm "PR-T · 0"; Ý thức demo: vi phạm "không chính xác" → "đã xoá" (có audit) | **PR-T ✅** |
+| Giao diện Ý thức & Phối hợp, case từ SOS trên bảng kỹ năng, số liệu cho Quản lý | ❌ Chưa làm | Đặc tả §7 | **PR-K** |
+
+---
+
 ## 10. Việc hoãn sau deploy bản chính — chốt 21/09/2026
 
 Hai khối dưới đây **không** nằm trong 8 PR. Ghi lại để không ai đề xuất lại như việc mới.

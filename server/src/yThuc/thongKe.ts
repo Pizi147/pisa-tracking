@@ -15,19 +15,18 @@ import { warningsFor } from './canhBao.ts';
  *   BA ĐƠN VỊ KHÔNG BAO GIỜ CỘNG VÀO NHAU: vi phạm · học viên · biện pháp. Một Report gom năm vi phạm là MỘT biện pháp (B16) và
  *   là năm vi phạm — hai con số đúng, hai câu hỏi khác nhau.
  *
- *   VI PHẠM ĐÃ HỦY (`valid = 0`) ra khỏi MỌI thống kê (V12) trừ chính `vi-pham-khong-hieu-luc`, chỉ số đứng riêng để nhìn thấy
- *   chúng — không "trừ" vào tổng.
+ *   VI PHẠM BỊ XOÁ (rulebook v3, V11′–V14′) không còn tồn tại nên mọi số tự cập nhật; chỉ số `vi-pham-khong-hieu-luc` đã bỏ cùng trạng thái đó.
  *
  *   Ý THỨC NẰM HOÀN TOÀN NGOÀI MỌI BẢNG HIỆU QUẢ HỖ TRỢ: không hàm nào ở đây đọc `case_followups`, kết quả phương án hay
  *   `dung-han-cap-nhat`, và không hàm nào của bảng hiệu quả đọc bảng ở đây. Gia đình đã nhận report không chứng minh em tiến bộ.
  *
- * Thời gian: `vi-pham-tong` · `vi-pham-khong-hieu-luc` · `hv-co-vi-pham` đếm theo NGÀY XẢY RA (không theo ngày ghi nhận — GV nhớ ra
+ * Thời gian: `vi-pham-tong` · `hv-co-vi-pham` đếm theo NGÀY XẢY RA (không theo ngày ghi nhận — GV nhớ ra
  * muộn không làm sự việc xảy ra muộn) và theo lớp GHI LÚC ĐÓ; hai biện pháp đã thực hiện đếm theo NGÀY THỰC HIỆN. Các chỉ số
  * hiện trạng không nhận kỳ.
  */
 
 export const YTHUC_METRIC_IDS = [
-  'vi-pham-tong', 'vi-pham-chua-xu-ly', 'vi-pham-khong-hieu-luc', 'hv-co-vi-pham', 'hv-can-xu-ly',
+  'vi-pham-tong', 'vi-pham-chua-xu-ly', 'hv-co-vi-pham', 'hv-can-xu-ly',
   'bien-phap-da-thuc-hien', 'bien-phap-dang-chuan-bi', 'bien-phap-theo-loai',
 ] as const;
 
@@ -37,7 +36,7 @@ export const isYThucMetric = (id: string): boolean => (YTHUC_METRIC_IDS as reado
  * Phạm vi xem THỐNG KÊ Ý THỨC: chỉ Quản lý (chi nhánh của họ) và Quản trị (tất cả) — GVBM và GVCN xem trong phạm vi lớp qua bảng
  * của lớp, không xem thống kê cả chi nhánh (đặc tả §6). Hỏi chi nhánh NGOÀI phạm vi thì TỪ CHỐI, không âm thầm trả tập rút gọn.
  */
-function statScope(p: Principal, branchId: number | null): { none: boolean; branchIds: number[] | null } {
+export function statScope(p: Principal, branchId: number | null): { none: boolean; branchIds: number[] | null } {
   const sc = scopeFor(p, PERMISSIONS.DISCIPLINE_STATS);
   if (sc.none) return { none: true, branchIds: [] };
   if (branchId) {
@@ -47,7 +46,7 @@ function statScope(p: Principal, branchId: number | null): { none: boolean; bran
   return { none: false, branchIds: sc.all ? null : sc.branchIds };
 }
 
-const branchSql = (col: string, branchIds: number[] | null): { sql: string; args: number[] } =>
+export const branchSql = (col: string, branchIds: number[] | null): { sql: string; args: number[] } =>
   branchIds === null ? { sql: '1 = 1', args: [] } : { sql: `${col} IN (${branchIds.map(() => '?').join(',') || 'NULL'})`, args: branchIds };
 
 /** Chi nhánh của lớp học viên ĐANG học — dùng cho chỉ số HIỆN TRẠNG (em chuyển chi nhánh thì hiện trạng sang nơi mới). */
@@ -76,33 +75,31 @@ export function yThucMetric(
   });
 
   switch (id) {
-    case 'vi-pham-tong':
-    case 'vi-pham-khong-hieu-luc': {
+    case 'vi-pham-tong': {
       const b = branchSql('c.branch_id', scope.branchIds), t = period('v.occurred_on');
-      const valid = id === 'vi-pham-tong' ? 1 : 0;
       return { none: false, ids: all(
         `SELECT v.id FROM violations v LEFT JOIN classes c ON c.id = v.class_id
-          WHERE v.valid = ? AND ${b.sql}${t.sql} ORDER BY v.id`, valid, ...b.args, ...t.args) };
+          WHERE ${b.sql}${t.sql} ORDER BY v.id`, ...b.args, ...t.args) };
     }
     case 'vi-pham-chua-xu-ly': {
       const b = branchSql(NOW_BRANCH, scope.branchIds);
       return { none: false, ids: all(
         `SELECT v.id FROM violations v
-          WHERE v.valid = 1 AND ${b.sql}
+          WHERE ${b.sql}
             AND NOT EXISTS (SELECT 1 FROM measure_violations mv WHERE mv.violation_id = v.id) ORDER BY v.id`, ...b.args) };
     }
     case 'hv-co-vi-pham': {
       const b = branchSql('c.branch_id', scope.branchIds), t = period('v.occurred_on');
       return { none: false, ids: all(
         `SELECT DISTINCT v.student_id AS id FROM violations v LEFT JOIN classes c ON c.id = v.class_id
-          WHERE v.valid = 1 AND ${b.sql}${t.sql} ORDER BY v.student_id`, ...b.args, ...t.args) };
+          WHERE ${b.sql}${t.sql} ORDER BY v.student_id`, ...b.args, ...t.args) };
     }
     case 'hv-can-xu-ly': {
       /* Ứng viên: em đang học trong phạm vi có ít nhất một vi phạm chưa xử lý. Rồi hỏi CHÍNH hàm cảnh báo — không đếm riêng. */
       const b = branchSql(NOW_BRANCH, scope.branchIds);
       const candidates = all(
         `SELECT DISTINCT v.student_id AS id FROM violations v
-          WHERE v.valid = 1 AND ${b.sql}
+          WHERE ${b.sql}
             AND NOT EXISTS (SELECT 1 FROM measure_violations mv WHERE mv.violation_id = v.id) ORDER BY v.student_id`, ...b.args);
       const warned = warningsFor(candidates, today);
       return { none: false, ids: candidates.filter((s) => warned.get(s)?.active) };

@@ -2,7 +2,7 @@ import { db } from '../db.ts';
 import {
   ASSESSED_SKILL_LABEL, ATTEMPT_KIND_SHORT, ENTRY_SKILL_LABEL,
   INTERVENTION_KIND_LABEL, PERMISSIONS,
-  REGULAR_SKILL_LABEL, SOS_LABEL, URGENCY_LABEL, caseHeadline, cycleDeadline,
+  REGULAR_SKILL_LABEL, SOS_LABEL, URGENCY_LABEL, caseHeadline, caseTopicLabel, cycleDeadline,
   planDueDate, urgencyFromSos,
   type AssessedSkill, type AttemptKind, type EntrySkill, type InterventionKind,
 } from '../../../shared/domain/index.ts';
@@ -13,6 +13,7 @@ import { attemptHref, listAttempts } from '../fasttrack/attempts.ts';
 import { classAlerts } from '../classes/schedule.ts';
 import { myMgmtTasks } from './mgmttasks.ts';
 import { listSignals } from '../cases/signals.ts';
+import { NOT_UNCONFIRMED_PRESET, UNCONFIRMED_PRESET, awaitingCauseCaseIds } from '../cases/sosState.ts';
 import { settleNoShows, sweepExpiredMoves } from '../fasttrack/absence.ts';
 
 /**
@@ -93,7 +94,7 @@ export type WorkItem = {
  * chắn nhất để nó không bao giờ được làm.
  */
 export type WorkGroupKey =
-  | 'verify' | 'score' | 'no_plan' | 'result'
+  | 'verify' | 'cause' | 'score' | 'no_plan' | 'result'
   | 'decide' | 'decide_move'
   | 'do_plan' | 'no_owner' | 'placement' | 'missing_data' | 'mgmt';
 
@@ -117,6 +118,20 @@ const GROUP_META: Record<WorkGroupKey, { label: string; hint: string; overdue: s
       + 'rồi mở case với tên và mô tả cụ thể. Hạn ba ngày kể từ lúc tín hiệu được ghi nhận, '
       + 'tính cả ngày đầu.',
     overdue: 'Quá hạn xác minh',
+  },
+
+  /*
+   * XÁC ĐỊNH NGUYÊN NHÂN (rulebook v3, S04) — thay `verify` cho MOCK TEST FAST TRACK.
+   *
+   * Mock FT nay TỰ TẠO case cho kỹ năng trượt kèm phương án điền sẵn, nên không còn tín hiệu nào để "xác minh". Việc còn lại của GVBM đúng kỹ năng có
+   * đúng hạn ba ngày: chọn nguyên nhân + xác nhận (sửa / thay) phương án gợi ý, hoặc đóng `Không cần theo dõi`. Không có dòng này thì hạn đó vô hình:
+   * phương án gợi ý chưa xác nhận bị loại khỏi mọi thống kê và nghĩa vụ, nên một case bị lờ đi sẽ nằm im mãi mà số liệu trông như chưa có chuyện gì.
+   */
+  cause: {
+    label: 'Xác định nguyên nhân',
+    hint: 'Mock Test có SOS đã tự tạo case cho kỹ năng này. Bạn có ba ngày (tính cả ngày đầu) để chọn nguyên nhân và xác nhận, sửa hoặc thay phương án gợi ý — '
+      + 'hoặc đóng `Không cần theo dõi` nếu em không cần theo dõi. Quản lý chỉ thấy dòng này khi đã quá hạn.',
+    overdue: 'Quá hạn xác định nguyên nhân',
   },
 
   /*
@@ -508,6 +523,7 @@ export function myWork(p: Principal, f: { branchId?: number | null } = {}) {
           AND iv.action_due IS NOT NULL AND iv.action_due <= ?
           AND sc.status != 'done'
           AND COALESCE(iv.approval_state, '') != 'pending'
+          AND ${NOT_UNCONFIRMED_PRESET('iv')}
           AND s.archived_at IS NULL`,
     )
     .all(today) as any[];
@@ -616,6 +632,7 @@ export function myWork(p: Principal, f: { branchId?: number | null } = {}) {
         WHERE iv.followup_due IS NOT NULL AND iv.followup_due <= ?
           AND iv.status != 'cancelled'
           AND COALESCE(iv.approval_state, '') != 'pending'
+          AND ${NOT_UNCONFIRMED_PRESET('iv')}
           AND sc.status != 'done'
           AND NOT EXISTS (SELECT 1 FROM case_followups fu WHERE fu.intervention_id = iv.id)`,
     )
@@ -696,7 +713,7 @@ export function myWork(p: Principal, f: { branchId?: number | null } = {}) {
     if (!mayDecide) continue;
 
     /*
-     * HẠN PHẢI CÓ PHƯƠNG ÁN THEO MỨC ĐỘ (mục 8.3): Gấp 3 ngày, Cần chú ý 5 ngày, tính cả
+     * HẠN PHẢI CÓ PHƯƠNG ÁN THEO MỨC ĐỘ (mục 8.3): Gấp 3 ngày, Bình thường 5 ngày, tính cả
      * ngày đầu. Chỉ áp cho case học thuật.
      *
      * Trước vòng 7 hạn này bằng nguyên một chu kỳ hỗ trợ (hai tuần), nên một case Gấp nằm
@@ -728,6 +745,68 @@ export function myWork(p: Principal, f: { branchId?: number | null } = {}) {
       /* Chưa ai nhận — và đó chính là vấn đề, nên để trống chứ không gán bừa cho người xem. */
       ownerId: null, owner: null, mine: false,
       due: deadline, statusLabel: 'Chưa có phương án',
+    });
+  }
+
+  // ------------------------------------- 3b. case TỰ TẠO TỪ SOS còn chờ xác định nguyên nhân (S04)
+  /*
+   * MỘT DÒNG MỖI CASE. Hạn = hạn ba ngày của tín hiệu đã nối case (`verify_due`), hết ngày hạn mới tính quá hạn — cùng luật với mọi hạn khác.
+   *
+   * AI THẤY: người phụ trách case (GVBM đúng kỹ năng) thấy ngay từ đầu; Quản lý trong phạm vi CHỈ thấy khi đã quá hạn (cùng cách với "Cập nhật kết quả"),
+   * và người khác — kể cả GVBM kỹ năng khác — không thấy. Mọi trường hợp đều kiểm đúng quyền sửa case theo kỹ năng (C02).
+   */
+  const causeCandidates = conn
+    .prepare(
+      `SELECT sc.id, sc.topic, sc.summary, sc.origin_kind, sc.sos_level, sc.urgency, sc.owner_user_id, sc.attempt_id,
+              COALESCE(sc.student_id, a.student_id) AS eff_student_id,
+              COALESCE(a.class_id, cur.class_id) AS eff_class_id,
+              COALESCE(ac.branch_id, cc.branch_id) AS eff_branch_id,
+              COALESCE(ac.code, cc.code) AS class_code,
+              s.full_name, a.attempt_no,
+              (SELECT MIN(g.verify_due) FROM case_signals g WHERE g.case_id = sc.id AND g.status = 'linked') AS due,
+              EXISTS (SELECT 1 FROM case_issues ci WHERE ci.case_id = sc.id AND ci.role = 'primary') AS has_cause,
+              EXISTS (SELECT 1 FROM case_interventions un WHERE un.case_id = sc.id AND ${UNCONFIRMED_PRESET('un')} AND un.status = 'planned') AS has_unconfirmed
+         FROM sos_cases sc
+         LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
+         LEFT JOIN students s ON s.id = COALESCE(sc.student_id, a.student_id)
+         LEFT JOIN enrollments cur ON cur.student_id = s.id AND cur.status = 'active'
+         LEFT JOIN classes ac ON ac.id = a.class_id
+         LEFT JOIN classes cc ON cc.id = cur.class_id
+        WHERE sc.status != 'done' AND s.archived_at IS NULL
+          AND EXISTS (SELECT 1 FROM case_interventions pv WHERE pv.case_id = sc.id AND pv.preset = 1)`,
+    )
+    .all() as any[];
+  const waiting = new Set(awaitingCauseCaseIds(causeCandidates.map((c) => c.id as number)));
+  for (const c of causeCandidates) {
+    if (!waiting.has(c.id)) continue;
+    if (f.branchId && c.eff_branch_id !== f.branchId) continue;
+    if (!can(p, PERMISSIONS.SOS_EDIT, { classId: c.eff_class_id, studentId: c.eff_student_id, skill: c.topic ?? undefined })) continue;
+    const u = urgencyOf(c.due ?? null, today);
+    const mine = c.owner_user_id === p.userId;
+    const asManager = u === 'overdue' && can(p, PERMISSIONS.CASE_APPROVE, { classId: c.eff_class_id, studentId: c.eff_student_id });
+    if (!mine && !asManager) continue;
+    const missing = [
+      c.has_cause ? null : 'chưa chọn nguyên nhân',
+      c.has_unconfirmed ? 'phương án gợi ý chưa được xác nhận' : null,
+    ].filter(Boolean) as string[];
+    const skillLabel = c.topic ? caseTopicLabel(c.topic) : 'Kỹ năng';
+    items.push({
+      key: `cause:${c.id}`, group: 'cause', urgency: u,
+      studentId: c.eff_student_id, studentName: c.full_name ?? 'Học viên',
+      classId: c.eff_class_id ?? null, classCode: c.class_code ?? null,
+      attemptId: c.attempt_id ?? null, attemptNo: c.attempt_no ?? null,
+      caseId: c.id as number, level: levelOf(c),
+      contextLabel: c.attempt_no ? `MT${c.attempt_no}` : 'Case',
+      count: null,
+      reason: [
+        `${skillLabel} dưới kỳ vọng — ${missing.join(' và ')}`,
+        u === 'overdue' && c.due ? lateText(c.due, today) : null,
+        mine ? null : 'người phụ trách chưa làm',
+      ].filter(Boolean).join(' — '),
+      actionLabel: 'Xác định nguyên nhân', overdueLabel: badge('cause', u),
+      href: c.eff_student_id ? `/hoc-vien/${c.eff_student_id}` : `/hoc-thuat/case/${c.id}`,
+      ownerId: c.owner_user_id ?? null, owner: null, mine,
+      due: c.due ?? null, statusLabel: 'Chờ xác định nguyên nhân',
     });
   }
 
@@ -835,7 +914,7 @@ export function myWork(p: Principal, f: { branchId?: number | null } = {}) {
    * còn lại. "Cần xếp lớp tiếp" đứng ngay sau ba nhóm chính vì nó treo cả một lớp.
    */
   const order: WorkGroupKey[] = [
-    'verify', 'score', 'no_plan', 'result',
+    'verify', 'cause', 'score', 'no_plan', 'result',
     'decide', 'decide_move',
     'placement', 'do_plan', 'no_owner', 'mgmt', 'missing_data',
   ];
