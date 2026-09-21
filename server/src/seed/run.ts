@@ -1,5 +1,16 @@
-import { DB_PATH, closeDb } from '../db.ts';
+import { DB_PATH, closeDb, laDbTuXa } from '../db.ts';
 import { runSeed } from './seed.ts';
+
+/*
+ * `npm run seed` XOÁ SẠCH database — chỉ dành cho máy dev. Đang trỏ tới Turso thì từ chối.
+ * Ngoại lệ duy nhất: database THỬ, khi PISA_CHO_PHEP_SEED_TURSO có giá trị VÀ URL chứa đúng chuỗi đó
+ * (ví dụ `pisa-thu-nghiem`) — không bao giờ là bản chính.
+ */
+const choPhep = process.env.PISA_CHO_PHEP_SEED_TURSO;
+if (laDbTuXa() && !(choPhep && DB_PATH.includes(choPhep))) {
+  console.error('[seed] TỪ CHỐI: đang trỏ tới Turso. `npm run seed` XOÁ SẠCH database và chỉ dùng cho máy dev.');
+  process.exit(1);
+}
 
 const force = process.argv.includes('--force');
 console.log(`[seed] Đang tạo lại dữ liệu demo tại ${DB_PATH}${force ? ' (--force)' : ''}`);

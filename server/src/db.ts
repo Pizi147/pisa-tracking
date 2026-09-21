@@ -2,6 +2,7 @@ import Database from 'libsql';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { cauHinhDb } from './moiTruong.ts';
 
 /*
  * libsql gắn thêm `_metadata: { duration }` vào MỖI dòng `.get()` trả về (better-sqlite3 thì không). Khoá này lọt
@@ -43,16 +44,24 @@ function findProjectRoot(start: string): string {
 }
 
 export const ROOT = findProjectRoot(__dirname);
-export const DB_PATH = process.env.PISA_DB ?? path.join(ROOT, 'data', 'pisa-demo.sqlite');
+const CAU_HINH = cauHinhDb(process.env, path.join(ROOT, 'data', 'pisa-demo.sqlite'));
+/** Đường dẫn file khi chạy cục bộ; khi chạy Turso là URL (chỉ để in log, KHÔNG in token). */
+export const DB_PATH = CAU_HINH.kieu === 'file' ? CAU_HINH.duongDan : CAU_HINH.url;
 export const SCHEMA_PATH = path.join(ROOT, 'server', 'src', 'schema.sql');
+export function laDbTuXa(): boolean { return CAU_HINH.kieu === 'turso'; }
 
 let instance: Database.Database | null = null;
 
 export function db(): Database.Database {
   if (!instance) {
-    fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
-    instance = new Database(DB_PATH);
-    instance.pragma('journal_mode = WAL');
+    if (CAU_HINH.kieu === 'turso') {
+      /* Kiểu của libsql thiếu `authToken` (TS2353) dù thư viện có đọc nó lúc chạy — ép kiểu, đã thử 22/09. */
+      instance = new Database(CAU_HINH.url, { authToken: CAU_HINH.authToken } as Database.Options);
+    } else {
+      fs.mkdirSync(path.dirname(CAU_HINH.duongDan), { recursive: true });
+      instance = new Database(CAU_HINH.duongDan);
+      instance.pragma('journal_mode = WAL');   // WAL chỉ có nghĩa với file cục bộ
+    }
     instance.pragma('foreign_keys = ON');
   }
   return instance;
@@ -66,7 +75,7 @@ export function closeDb() {
 }
 
 export function isInitialised(): boolean {
-  if (!fs.existsSync(DB_PATH)) return false;
+  if (!laDbTuXa() && !fs.existsSync(DB_PATH)) return false;
   const row = db()
     .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='students'")
     .get();

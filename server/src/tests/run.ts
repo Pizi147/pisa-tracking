@@ -86,6 +86,14 @@ function check(name: string, fn: () => void) {
     console.log(`  ✗ ${name}\n      ${e.message}`);
   }
 }
+async function checkAsync(name: string, fn: () => Promise<void>) {
+  try { await fn(); passed++; console.log(`  ✓ ${name}`); }
+  catch (e: any) {
+    failures.push(`${name}: ${e.message}`);
+    console.log(`  ✗ ${name}
+      ${e.message}`);
+  }
+}
 function assert(cond: unknown, msg: string) { if (!cond) throw new Error(msg); }
 function assertThrows(fn: () => unknown, match: RegExp, msg: string) {
   let threw = false;
@@ -9393,6 +9401,11 @@ await runYThucTests({ check, assert, assertThrows, conn, TODAY, P, addDays, clas
 
 const { runSosV3Tests } = await import('./sosV3.tests.ts');
 await runSosV3Tests({ check, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
+
+// ==================================================================== PR-Z2 (bản chính trên Netlify + Turso)
+
+const { runBanChinhTests } = await import('./banChinh.tests.ts');
+await runBanChinhTests({ check, checkAsync, assert, assertThrows });
 
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0

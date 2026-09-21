@@ -308,7 +308,7 @@ Lý do từng sửa đổi (đã tái hiện ở phép thử 21/09):
 - Produces: `laDbTuXa(): boolean` — kết nối hiện tại là Turso.
 - Produces (test kit): `runBanChinhTests(t: { check, checkAsync, assert, assertThrows })`.
 
-- [ ] **Step 1: Đăng ký file kiểm thử mới.** Trong `server/src/tests/run.ts`, ngay dưới hàm `check`, thêm:
+- [x] **Step 1: Đăng ký file kiểm thử mới.** Trong `server/src/tests/run.ts`, ngay dưới hàm `check`, thêm:
   ```ts
   async function checkAsync(name: string, fn: () => Promise<void>) {
     try { await fn(); passed++; console.log(`  ✓ ${name}`); }
@@ -323,7 +323,7 @@ Lý do từng sửa đổi (đã tái hiện ở phép thử 21/09):
   const { runBanChinhTests } = await import('./banChinh.tests.ts');
   await runBanChinhTests({ check, checkAsync, assert, assertThrows });
   ```
-- [ ] **Step 2: Viết phép kiểm đỏ.** Tạo `server/src/tests/banChinh.tests.ts`:
+- [x] **Step 2: Viết phép kiểm đỏ.** Tạo `server/src/tests/banChinh.tests.ts`:
   ```ts
   /** PR-Z2 — bản chính trên Netlify + Turso. Plan: docs/superpowers/plans/2026-09-21-ban-chinh-netlify-turso.md */
   export type BanChinhTestKit = {
@@ -359,9 +359,9 @@ Lý do từng sửa đổi (đã tái hiện ở phép thử 21/09):
     });
   }
   ```
-- [ ] **Step 3:** `npm test` → ba phép cấu hình **đỏ** (chưa có `moiTruong.ts`); phép `_metadata` **xanh** (Task 1 đã vá).
+- [x] **Step 3:** `npm test` → ba phép cấu hình **đỏ** (chưa có `moiTruong.ts`); phép `_metadata` **xanh** (Task 1 đã vá).
       Ghi vào Nhật ký.
-- [ ] **Step 4: Tạo `server/src/moiTruong.ts`:**
+- [x] **Step 4: Tạo `server/src/moiTruong.ts`:**
   ```ts
   /**
    * MỘT NƠI ĐỌC BIẾN MÔI TRƯỜNG của bản chính. Nơi khác không đọc thẳng process.env cho các biến này.
@@ -387,7 +387,7 @@ Lý do từng sửa đổi (đã tái hiện ở phép thử 21/09):
     return { kieu: 'file', duongDan: env.PISA_DB || macDinh || path.resolve('data', 'pisa-demo.sqlite') };
   }
   ```
-- [ ] **Step 5: Dùng trong `server/src/db.ts`.** Giữ nguyên `ROOT`, `SCHEMA_PATH`. Thay phần mở kết nối:
+- [x] **Step 5: Dùng trong `server/src/db.ts`.** Giữ nguyên `ROOT`, `SCHEMA_PATH`. Thay phần mở kết nối:
   ```ts
   import { cauHinhDb } from './moiTruong.ts';
 
@@ -416,7 +416,7 @@ Lý do từng sửa đổi (đã tái hiện ở phép thử 21/09):
   Trong `isInitialised()`: khi `laDbTuXa()` thì **bỏ** bước `fs.existsSync(DB_PATH)`, chỉ hỏi `sqlite_master`.
   Nếu `Database.Options` không phải tên kiểu hợp lệ trong bản `libsql` đã cài, dùng
   `as unknown as ConstructorParameters<typeof Database>[1]` — ghi Nhật ký.
-- [ ] **Step 5b 🆕 22/09: Thư mục tệp không được bám theo `DB_PATH` khi dùng Turso.** Hiện
+- [x] **Step 5b 🆕 22/09: Thư mục tệp không được bám theo `DB_PATH` khi dùng Turso.** Hiện
       `uploadsDir()` (`server/src/platform/attachments.ts`, khoảng dòng 41) là `path.join(path.dirname(DB_PATH), 'uploads')`.
       Với Turso, `DB_PATH` là URL → thành `libsql:/uploads`, tải tệp lỗi ở Task 3 Step 5. Thay thân hàm:
   ```ts
@@ -429,7 +429,7 @@ Lý do từng sửa đổi (đã tái hiện ở phép thử 21/09):
   ```
       Import `laDbTuXa`, `ROOT` từ `../db.ts` (kiểm `ROOT` đã được export — có, ở `db.ts`). Files: thêm
       `server/src/platform/attachments.ts` vào danh sách của Task 2.
-- [ ] **Step 6: Chặn seed vào Turso.** Đầu `server/src/seed/run.ts`, trước mọi thứ:
+- [x] **Step 6: Chặn seed vào Turso.** Đầu `server/src/seed/run.ts`, trước mọi thứ:
   ```ts
   import { laDbTuXa } from '../db.ts';
   if (laDbTuXa()) {
@@ -446,7 +446,7 @@ Lý do từng sửa đổi (đã tái hiện ở phép thử 21/09):
   Làm y hệt cho lệnh `reset` nếu có điểm chạy riêng. Thêm phép kiểm: chạy `node dist-server/server/src/seed/run.js`
   bằng `child_process.spawnSync` với env `TURSO_DATABASE_URL=libsql://khong-ton-tai.turso.io`,
   `TURSO_AUTH_TOKEN=x` → mã thoát khác 0 và stderr chứa `TỪ CHỐI`.
-- [ ] **Step 7:** `npm run check` xanh, số phép = `N0 + 5` (ba phép cấu hình + phép `_metadata` + phép chặn seed).
+- [x] **Step 7:** `npm run check` xanh, số phép = `N0 + 5` (ba phép cấu hình + phép `_metadata` + phép chặn seed).
       Commit: `PR-Z2 (2): cấu hình kết nối theo môi trường, chặn seed vào Turso`.
 
 ---
@@ -1299,3 +1299,4 @@ thử). Hỏi rõ từng thứ; **không** dùng database thử làm bản chín
 | 22/09 | 0 | **Phần A (PR-Z2a), Fable 5.1.** `N0` = **581** (PR-K2 chưa merge). Node v24.20.0. Worktree `pr-z2a-ha-tang` từ `a8867f3`, có PR-T (#39), PR-K (#42), có `.netlify/state.json`. |
 | 22/09 | 0 · Step 4 | **File được đọc ngoài tests** (`readFileSync/existsSync/readdirSync`): `db.ts:17` (tìm `package.json` — có nhánh rơi về `process.cwd()`), `db.ts:49` (`isInitialised` — đường API `/api/health`; Task 2 bỏ khi Turso), `db.ts:76` (`schema.sql` — chỉ `recreateSchema`, tức lệnh seed), `migrate/run.ts:12,14` (lệnh migrate), `platform/attachments.ts:199` (Task 4 đưa qua kho tệp). → Không có file không-phải-.ts nào được đọc trên đường API ⇒ **không cần `included_files`**. **`INSERT INTO` của `seed.ts` (40 dòng đầu):** branches :28 · reporting_units :36,:39 · permissions :45 · roles :50,:66 (retired) · role_permissions :54 · users :100 · user_roles :108 · programmes :163 · programme_skills :166 · programme_checkpoints :169 · classes :199 · class_skills :212 · teacher_assignments :225 · student_code_seq :241 · unit_reports :356 · tasks :408 · task_updates :422. (Dùng ở Task 7 — Phần B.) |
 | 22/09 | 1 | **581/581** sau Step 1–7 + 3b. `libsql@0.5.29`; `package-lock.json` đã có sẵn mục `@libsql/linux-x64-gnu`. Kiểu `Database.Database` của libsql được `tsc` chấp nhận nguyên — không phải đổi. **Step 4:** `.transaction(` ngoài `db.ts` chỉ có `migrate.ts:61` và `:237` → giữ nguyên cả hai, không đổi chỗ nào. **Step 6:** `sosV3.tests.ts` chỉ dùng `:memory:` (không có thư mục tạm) → chỉ đổi import; `yThuc.tests.ts` đã `.close()` đủ trước khi xoá, chỉ bọc `try/catch` quanh `rmSync`. **Step 2:** grep `better-sqlite3` còn đúng 2 dòng — đều là **chú thích do plan quy định nguyên văn** trong `db.ts` (giải thích khác biệt với libsql), không phải import. Bất ngờ nhỏ: `npm` bản mới in cảnh báo `install-scripts … esbuild` — vô hại, check vẫn chạy. |
+| 22/09 | 2 | **586/586** (= N0 + 5). **ĐỎ trước khi viết mã (TDD):** (a) ba phép cấu hình — đỏ ở dạng `tsc` TS2307 `Cannot find module '../moiTruong.ts'` (harness build bằng tsc trước khi chạy nên thiếu module là hỏng build, không phải ✗ từng phép); (b) sau khi có `moiTruong.ts` + `db.ts`: 4 phép xanh (3 cấu hình + `_metadata`), phép chặn seed **✗** `stderr phải có chữ TỪ CHỐI` (seed chạy thẳng vào URL giả rồi sập) → thêm chặn ở `seed/run.ts` → xanh. **Tự quyết:** (1) đăng ký `runBanChinhTests` sau `runSosV3Tests` (file kiểm mới nhất) thay vì ngay sau `runYThucTests` — giữ thứ tự thời gian các PR, không ảnh hưởng kết quả. (2) `Database.Options` là tên kiểu hợp lệ của libsql → dùng đúng như plan. (3) Lệnh `reset` chỉ là `npm run seed` → cùng một chặn. (4) Phép chặn seed đặt `PISA_CHO_PHEP_SEED_TURSO=''` trong env con để máy nào lỡ có biến đó cũng không làm phép này sai. Files chạm thêm theo Step 5b: `server/src/platform/attachments.ts`. |

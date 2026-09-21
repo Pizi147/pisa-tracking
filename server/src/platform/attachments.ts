@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
-import { DB_PATH, db } from '../db.ts';
+import { DB_PATH, ROOT, db, laDbTuXa } from '../db.ts';
 import { badRequest, forbidden, notFound, nowIso } from '../util.ts';
 import { ATTACHMENT_EXTENSIONS, ATTACHMENT_MAX_BYTES, ATTACHMENT_MIME_BY_EXT } from '../../../shared/domain/index.ts';
 import type { Principal } from '../permissions.ts';
@@ -36,9 +36,11 @@ export const MAX_FILE_BYTES = ATTACHMENT_MAX_BYTES;
 const ALLOWED_EXT = ATTACHMENT_MIME_BY_EXT;
 export const ALLOWED_EXTENSIONS = ATTACHMENT_EXTENSIONS;
 
-/** Nơi lưu tệp: cạnh cơ sở dữ liệu (`data/uploads/`, đã nằm trong .gitignore). */
+/** Nơi lưu tệp trên ổ đĩa: cạnh file database (`data/uploads/`, đã nằm trong .gitignore). Database ở Turso thì
+ *  dùng `data/uploads/` của dự án — ổ đĩa chỉ dùng cho máy dev; bản chính cất tệp ở Netlify Blobs (Task 4). */
 export function uploadsDir(): string {
-  return process.env.PISA_UPLOADS ?? path.join(path.dirname(DB_PATH), 'uploads');
+  if (process.env.PISA_UPLOADS) return process.env.PISA_UPLOADS;
+  return laDbTuXa() ? path.join(ROOT, 'data', 'uploads') : path.join(path.dirname(DB_PATH), 'uploads');
 }
 
 // ---------------------------------------------------------------- nơi chủ và quyền
