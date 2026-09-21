@@ -9,9 +9,28 @@
 >
 > | PR | Task | Nội dung | Model khuyến nghị |
 > |---|---|---|---|
-> | **PR-Z2a** | 0 → 6b | Hạ tầng: libsql, Turso, kho tệp, Netlify Function, tắt demo, **deploy nháp thật** | Sonnet 5 · High |
+> | **PR-Z2a** | 0 → 6b | Hạ tầng: libsql, Turso, kho tệp, Netlify Function, tắt demo, **deploy nháp thật** | 🆕 22/09 **Fable 5.1 · High** (B: Sonnet 5 · High) — nâng từ Sonnet vì thử thật cho thấy lỗi chỉ lộ sau khi gói; rà soát ở session planning (Opus) |
 > | **PR-Z2b** | 7 → 9 | An toàn dữ liệu bản chính: khởi tạo, chi nhánh, sao lưu, tài liệu | Opus 5 · XHigh (B: Fable 5.1 · High) |
 > | **PR-Z2c** | 10 → 11 | Deploy bản chính + đo tốc độ + rà soát độc lập | Opus 5 · XHigh (B: Fable 5.1 · High); **người rà ≠ người code** |
+
+> **SỬA 22/09/2026 SAU THỬ THẬT (session planning).** Một agent đã chạy thử Task 1–2 và **gói Function như Netlify
+> gói** trên mã `main` sau PR-T + PR-K (581 phép kiểm). Kết quả: plan cũ sẽ ra một máy chủ **chết ngay khi Netlify nạp
+> nó** (`db.ts` dùng `import.meta.url` / `__dirname`), và Task 6 sót một đường **đăng nhập không cần mật khẩu**. Mọi
+> chỗ sửa được ghi **ngay tại task**, đánh dấu **🆕 22/09**. Tóm tắt:
+>
+> | Task | Plan cũ | Thực tế đã thử | Đã sửa trong plan |
+> |---|---|---|---|
+> | 1 | Ba sửa đổi là đủ | `libsql` gắn thêm khoá `_metadata` vào **mọi** dòng `.get()` → 1 phép kiểm đỏ + lọt ra mọi API | Step 3b: vá `Statement.prototype.get` |
+> | 1 | Chỉ `yThuc.tests.ts` import better-sqlite3 | Còn `sosV3.tests.ts:141`, `scripts/check-node.mjs` | Step 2 liệt kê đủ |
+> | 2 | `new Database(url, { authToken })` | `tsc` báo TS2353 (kiểu thiếu `authToken`, chạy thật thì có) | Ép kiểu `as Database.Options` |
+> | 2 | — | `uploadsDir()` = thư mục cạnh `DB_PATH` → thành `libsql:/uploads` khi dùng Turso | Step 5b |
+> | 4 | `purgeAttachmentsOf` 3 tham số | Có tham số thứ 4 `deferredFiles` (đường dẫn tuyệt đối); `violations.ts`, `migrate.ts` tự `fs.rmSync` | Step 5 viết lại |
+> | 5 | `connectLambda(event)` luôn gọi | Ném lỗi khi `event.blobs` không có | Chỉ gọi khi có |
+> | 5 | `binary` không có âm thanh/video | Tải xuống mp4 **hỏng** (13 byte → 19 byte) | Thêm `audio/*`, `video/*` |
+> | 5 | `NODE_VERSION = "20"` | `@netlify/blobs` 11.x cần Node ≥ 22.12; Node 20 hết hỗ trợ 04/2026 | `"22"` |
+> | 5 | Gói chạy được | **Netlify gói hàm kiểu cũ thành CJS → `import.meta.url` rỗng → sập lúc nạp**; nếu ESM thì trùng tên `__dirname` | **Step 1b mới** (đã thử: sau sửa cả hai kiểu gói đều chạy, tải lên/tải xuống PDF khớp từng byte) |
+> | 6 | Cho qua đúng một route `/demo` | Màn đăng nhập cần `GET` + `DELETE /demo/session`; **`POST /demo/session` đăng nhập bằng id bất kỳ không mật khẩu**; `/auth/info` trả mật khẩu mặc định | Step 3 viết lại + phép kiểm |
+> | 3, 6b | Hỏi chủ sản phẩm tạo DB thử, làm mục 3-4-5 | **Chủ sản phẩm đã làm xong 22/09** (DB thử ở Ohio; site đã tạo, đã nối, đã đặt 3 biến) | Lấy URL/token bằng `netlify env:get`, không hỏi lại |
 
 **Goal:** Đưa PISA Progress lên mạng làm **bản chính**: giao diện + máy chủ trên Netlify, dữ liệu trên Turso, tệp
 tải lên trên Netlify Blobs — database bắt đầu **rỗng**, chỉ có tài khoản quản trị và chi nhánh thật.
@@ -91,6 +110,19 @@ mạng tới Turso — đó là Task 3 (gate).
    `$env:TEN="giatri"; npm run ...`.
 7. **Các gate 🛑 (Task 3, Task 10) cần thông tin chỉ chủ sản phẩm có** (token Turso, quyền Netlify). Hỏi đúng thứ
    cần, nói rõ để làm gì. Không tự tạo tài khoản dịch vụ nào.
+8. 🆕 22/09 **Chỗ nào có nhãn "🆕 22/09" là sửa đổi sau khi đã chạy thử thật — nó THẮNG chữ cũ ngay cạnh nếu hai bên
+   khác nhau.** Chữ cũ còn giữ để thấy lý do.
+9. 🆕 22/09 **Token và mật khẩu:** không bao giờ in ra, dán vào Nhật ký, commit, PR hay câu trả lời. Chủ sản phẩm không
+   biết code — khi hỏi họ việc gì, nói theo "bấm vào đâu, thấy gì", kèm mục của `TRIEN_KHAI.md`.
+10. 🆕 22/09 **Skill theo từng loại việc:**
+    | Lúc | Skill |
+    |---|---|
+    | Bắt đầu | `superpowers:using-git-worktrees` → `superpowers:executing-plans` (đọc plan, theo task, dừng ở gate) |
+    | Task có phép kiểm (2, 4, 6, và phép `_metadata`) | `superpowers:test-driven-development`: viết phép đỏ → chạy thấy đỏ → sửa → xanh |
+    | Phép kiểm đỏ bất ngờ / lỗi lúc gói / lỗi trên Netlify | `superpowers:systematic-debugging` — tìm nguyên nhân gốc trước khi sửa |
+    | Trước khi nói "xong" một task hay một gate | `superpowers:verification-before-completion` — dán kết quả lệnh thật, không nói suông |
+    | Sau Task 6b, trước khi mở PR | `superpowers:requesting-code-review` (một agent rà diff cả Phần A theo plan này) → `superpowers:receiving-code-review` để xử lý góp ý |
+    | Cuối | `superpowers:finishing-a-development-branch` — PR không draft, **không tự merge** |
 
 ---
 
@@ -131,9 +163,12 @@ mạng tới Turso — đó là Task 3 (gate).
 
 **Files:** chỉ đọc.
 
-- [ ] **Step 1:** Gọi skill `superpowers:using-git-worktrees`, tạo nhánh `pr-z2-netlify-turso` từ `main` mới nhất.
-      Kiểm `git log --oneline -3` có commit merge của **PR-T và PR-K**. Chưa có → 🛑 dừng, báo chủ sản phẩm.
+- [ ] **Step 1:** Gọi skill `superpowers:using-git-worktrees`, tạo nhánh **`pr-z2a-ha-tang`** từ `main` mới nhất.
+      Kiểm `git log --oneline -15` có commit merge của **PR-T (#39) và PR-K (#42)**. Chưa có → 🛑 dừng, báo chủ sản phẩm.
+      🆕 22/09: kiểm worktree có file `.netlify/state.json` (được commit trên `main`, chứa mã site — **không** phải mật
+      khẩu, cố ý giữ để worktree biết site nào). Không có → 🛑 dừng, hỏi.
 - [ ] **Step 2:** `npm install` rồi `npm run check`. Ghi **số phép kiểm hiện tại** vào Nhật ký (gọi là `N0`).
+      🆕 22/09: bản thử đo được `N0 = 581` (có thể hơn nếu PR-K2 đã merge). Máy này chạy Node 24.
 - [ ] **Step 3:** Đọc: `plan.md` mục 24, `TRIEN_KHAI.md`, `server/src/db.ts`, `server/src/app.ts`,
       `server/src/platform/attachments.ts`, `server/src/seed/seed.ts` dòng 1–200.
 - [ ] **Step 4:** Chạy và **dán kết quả vào Nhật ký** (dùng ở Task 5 và 7):
@@ -148,7 +183,8 @@ mạng tới Turso — đó là Task 3 (gate).
 
 **Files:**
 - Modify: `package.json`, `server/src/db.ts`, `server/src/migrate.ts`, `server/src/tests/yThuc.tests.ts`, `server/src/app.ts`
-- Modify (chỉ nếu có): mọi file khác có chuỗi `better-sqlite3` (`grep -rln "better-sqlite3" server/src scripts`)
+- 🆕 22/09 Modify: `server/src/tests/sosV3.tests.ts` (dòng ~141), `scripts/check-node.mjs` (dòng ~37–50), `README.md` (dòng ~215–219)
+- Modify (chỉ nếu có): mọi file khác có chuỗi `better-sqlite3` (`grep -rln "better-sqlite3" server/src scripts README.md`)
 
 **Interfaces:**
 - Produces: `db()` trả kiểu `Database` của `libsql` (cùng API `prepare/get/all/run/exec/pragma/transaction/inTransaction/close`).
@@ -169,6 +205,20 @@ Lý do từng sửa đổi (đã tái hiện ở phép thử 21/09):
   - `import Database from 'better-sqlite3';` → `import Database from 'libsql';`
   - `import('better-sqlite3')` → `import('libsql')`
   - Kiểu `Database.Database` → giữ nguyên nếu `tsc` chấp nhận; nếu không, dùng `InstanceType<typeof Database>`.
+  - 🆕 22/09 `scripts/check-node.mjs`: đổi `import('better-sqlite3')` → `import('libsql')`, và thay hướng dẫn trong hộp
+    lỗi bằng đúng đoạn này (libsql tải sẵn nhị phân, không có bước biên dịch lúc cài):
+    ```js
+    box('Chưa cài được thư viện database', `  Thư viện SQLite (libsql) chưa sẵn sàng nên chưa chạy được.
+
+      Hãy chạy lệnh sau, rồi thử lại:
+
+          npm install
+
+      Chi tiết kỹ thuật: ${err instanceof Error ? err.message.split('\n')[0] : String(err)}`);
+    ```
+    Sửa chú thích ngay trên khối `try` cho khớp (bỏ câu "tệp bản địa được biên dịch lúc cài đặt").
+  - 🆕 22/09 `README.md`: chỗ nói về `better-sqlite3` (khoảng dòng 215–219) → nói `libsql`, bỏ lệnh `npm rebuild better-sqlite3`.
+  - Sau bước này: `grep -rn "better-sqlite3" server/src scripts README.md package.json` → **rỗng**.
 - [ ] **Step 3: `tx` gọi lồng được.** Trong `server/src/db.ts` thay hàm `tx` bằng:
   ```ts
   /*
@@ -195,13 +245,42 @@ Lý do từng sửa đổi (đã tái hiện ở phép thử 21/09):
     }
   }
   ```
+- [ ] **Step 3b 🆕 22/09: Bỏ khoá `_metadata` mà libsql gắn vào dòng.** `libsql@0.5.29` thêm một khoá đếm được
+      `_metadata: { duration }` vào **mỗi** dòng `Statement.get()` trả về (`.all()` và `.iterate()` thì không). Hậu quả
+      đã thấy: phép kiểm "PR-T · S05+S01 (rà soát) … KHÔNG mở lại / tạo case mới" đỏ (so dòng bằng JSON), và khoá này
+      **lọt ra mọi câu trả lời API** dựng từ `.get()` (686 chỗ gọi). Sửa **một chỗ** trong `server/src/db.ts`, ngay dưới các import:
+  ```ts
+  /*
+   * libsql gắn thêm `_metadata: { duration }` vào MỖI dòng `.get()` trả về (better-sqlite3 thì không). Khoá này lọt
+   * ra JSON của API và làm hỏng mọi phép so dòng. Vá một lần ở đây thay vì sửa 686 chỗ gọi.
+   */
+  {
+    const proto = Object.getPrototypeOf(new Database(':memory:').prepare('SELECT 1')) as { get: (...a: unknown[]) => unknown };
+    const getGoc = proto.get;
+    proto.get = function (this: unknown, ...args: unknown[]) {
+      const row = getGoc.apply(this, args);
+      if (row && typeof row === 'object' && '_metadata' in row) delete (row as Record<string, unknown>)._metadata;
+      return row;
+    };
+  }
+  ```
+      Nếu `tsc` không nhận `new Database(':memory:')` ở đây thì giữ nguyên ý, chỉ đổi kiểu; **không** đổi cách làm.
+      Thêm phép kiểm vào `banChinh.tests.ts` **ở Task 2** (file đó tạo ở Task 2): `db().prepare('SELECT 1 AS a').get()`
+      → `Object.keys(row)` đúng bằng `['a']`.
+      **Cảnh báo cho mọi mã sau này (ghi thành chú thích ngay dưới khối vá):** với libsql, **không** truyền **một**
+      `Buffer` làm tham số duy nhất (`.run(buf)`) — tiến trình Node chết hẳn (Rust panic). Luôn bọc: `.run(buf, x)` hoặc
+      tham số có tên. `pluck().get()` và `pragma(x, { simple: true })` trả đối tượng thay vì giá trị — hiện mã không dùng,
+      đừng bắt đầu dùng.
 - [ ] **Step 4: Các `conn.transaction(...)` gọi thẳng.** Chạy `grep -rn "\.transaction(" server/src --include=*.ts | grep -v tests`.
       Với mỗi chỗ **ngoài** `db.ts` có thể chạy khi đã ở trong một `tx(...)`: đổi thành `tx(() => { ... })`.
       Chỗ nào chắc chắn chạy độc lập (điểm vào của lệnh `migrate`) thì giữ. Ghi danh sách đã đổi vào Nhật ký.
+      🆕 22/09 đã thử: chỉ có `migrate.ts:61` và `:237`, cả hai chỉ chạy qua `migrate()` (không bao giờ trong `tx`) →
+      **giữ nguyên cả hai**. Grep ra chỗ khác thì mới xét.
 - [ ] **Step 5: `.run(null)`.** Trong `server/src/migrate.ts`, câu `UPDATE sos_cases SET merge_until = ? … .run(null)`
       → đổi SQL thành `SET merge_until = NULL` và gọi `.run()`. Rồi quét toàn bộ:
       `grep -rnE "\.(run|get|all|iterate)\(\s*(null|undefined)\s*\)" server/src --include=*.ts` — phải **rỗng**.
-- [ ] **Step 6: Phép kiểm J9 trên Windows.** Trong `server/src/tests/yThuc.tests.ts`, phép kiểm "Nâng cấp một database
+- [ ] **Step 6: Phép kiểm J9 trên Windows.** 🆕 22/09: áp **cả** cho `server/src/tests/sosV3.tests.ts` nếu nó cũng dựng
+      database trong thư mục tạm rồi xoá. Trong `server/src/tests/yThuc.tests.ts`, phép kiểm "Nâng cấp một database
       THẬT của thời trước PR-J": mọi kết nối mở tới file trong thư mục tạm phải được `.close()` **trước** lệnh xoá thư
       mục tạm (`fs.rmSync(...)`). Bọc xoá thư mục bằng `try { … } catch { /* Windows còn giữ file — bỏ qua dọn dẹp */ }`
       **chỉ** quanh lệnh xoá, không quanh phần kiểm.
@@ -211,6 +290,7 @@ Lý do từng sửa đổi (đã tái hiện ở phép thử 21/09):
   if (/SQLITE_CONSTRAINT|constraint failed/i.test(message) || (typeof code === 'string' && code.startsWith('SQLITE_CONSTRAINT'))) {
   ```
 - [ ] **Step 8:** `npm run check`. **Phải đủ `N0` phép, tất cả đạt.** Chưa đủ → systematic-debugging; không sửa phép kiểm cũ.
+      🆕 22/09: bản thử đạt 581/581 sau Step 1–7 + Step 3b. Đỏ đúng phép "S05+S01" → Step 3b chưa đúng.
 - [ ] **Step 9:** Commit: `PR-Z2 (1): đổi better-sqlite3 sang libsql, giao dịch lồng bằng savepoint`.
 
 ---
@@ -270,9 +350,17 @@ Lý do từng sửa đổi (đã tái hiện ở phép thử 21/09):
       assertThrows(() => cauHinhDb({ TURSO_DATABASE_URL: 'libsql://a.turso.io' }), /TURSO_AUTH_TOKEN/,
         'Thiếu token phải báo lỗi');
     });
+
+    /* 🆕 22/09 — canh vá ở Task 1 Step 3b: libsql gắn `_metadata` vào dòng `.get()`. */
+    const { db } = await import('../db.ts');
+    check('PR-Z2 · Dòng .get() chỉ có đúng các cột đã chọn (không lọt _metadata của libsql ra API)', () => {
+      const row = db().prepare('SELECT 1 AS a').get() as Record<string, unknown>;
+      assert(JSON.stringify(Object.keys(row)) === '["a"]', `Nhận các khoá ${JSON.stringify(Object.keys(row))}`);
+    });
   }
   ```
-- [ ] **Step 3:** `npm test` → ba phép mới **đỏ** (chưa có `moiTruong.ts`). Ghi vào Nhật ký.
+- [ ] **Step 3:** `npm test` → ba phép cấu hình **đỏ** (chưa có `moiTruong.ts`); phép `_metadata` **xanh** (Task 1 đã vá).
+      Ghi vào Nhật ký.
 - [ ] **Step 4: Tạo `server/src/moiTruong.ts`:**
   ```ts
   /**
@@ -313,7 +401,8 @@ Lý do từng sửa đổi (đã tái hiện ở phép thử 21/09):
   export function db() {
     if (!instance) {
       if (CAU_HINH.kieu === 'turso') {
-        instance = new Database(CAU_HINH.url, { authToken: CAU_HINH.authToken });
+        /* Kiểu của libsql thiếu `authToken` (TS2353) dù thư viện có đọc nó lúc chạy — ép kiểu, đã thử 22/09. */
+        instance = new Database(CAU_HINH.url, { authToken: CAU_HINH.authToken } as Database.Options);
       } else {
         fs.mkdirSync(path.dirname(CAU_HINH.duongDan), { recursive: true });
         instance = new Database(CAU_HINH.duongDan);
@@ -325,6 +414,21 @@ Lý do từng sửa đổi (đã tái hiện ở phép thử 21/09):
   }
   ```
   Trong `isInitialised()`: khi `laDbTuXa()` thì **bỏ** bước `fs.existsSync(DB_PATH)`, chỉ hỏi `sqlite_master`.
+  Nếu `Database.Options` không phải tên kiểu hợp lệ trong bản `libsql` đã cài, dùng
+  `as unknown as ConstructorParameters<typeof Database>[1]` — ghi Nhật ký.
+- [ ] **Step 5b 🆕 22/09: Thư mục tệp không được bám theo `DB_PATH` khi dùng Turso.** Hiện
+      `uploadsDir()` (`server/src/platform/attachments.ts`, khoảng dòng 41) là `path.join(path.dirname(DB_PATH), 'uploads')`.
+      Với Turso, `DB_PATH` là URL → thành `libsql:/uploads`, tải tệp lỗi ở Task 3 Step 5. Thay thân hàm:
+  ```ts
+  /** Nơi lưu tệp trên ổ đĩa: cạnh file database (`data/uploads/`, đã nằm trong .gitignore). Database ở Turso thì
+   *  dùng `data/uploads/` của dự án — ổ đĩa chỉ dùng cho máy dev; bản chính cất tệp ở Netlify Blobs (Task 4). */
+  export function uploadsDir(): string {
+    if (process.env.PISA_UPLOADS) return process.env.PISA_UPLOADS;
+    return laDbTuXa() ? path.join(ROOT, 'data', 'uploads') : path.join(path.dirname(DB_PATH), 'uploads');
+  }
+  ```
+      Import `laDbTuXa`, `ROOT` từ `../db.ts` (kiểm `ROOT` đã được export — có, ở `db.ts`). Files: thêm
+      `server/src/platform/attachments.ts` vào danh sách của Task 2.
 - [ ] **Step 6: Chặn seed vào Turso.** Đầu `server/src/seed/run.ts`, trước mọi thứ:
   ```ts
   import { laDbTuXa } from '../db.ts';
@@ -342,7 +446,8 @@ Lý do từng sửa đổi (đã tái hiện ở phép thử 21/09):
   Làm y hệt cho lệnh `reset` nếu có điểm chạy riêng. Thêm phép kiểm: chạy `node dist-server/server/src/seed/run.js`
   bằng `child_process.spawnSync` với env `TURSO_DATABASE_URL=libsql://khong-ton-tai.turso.io`,
   `TURSO_AUTH_TOKEN=x` → mã thoát khác 0 và stderr chứa `TỪ CHỐI`.
-- [ ] **Step 7:** `npm run check` xanh, số phép = `N0 + 4`. Commit: `PR-Z2 (2): cấu hình kết nối theo môi trường, chặn seed vào Turso`.
+- [ ] **Step 7:** `npm run check` xanh, số phép = `N0 + 5` (ba phép cấu hình + phép `_metadata` + phép chặn seed).
+      Commit: `PR-Z2 (2): cấu hình kết nối theo môi trường, chặn seed vào Turso`.
 
 ---
 
@@ -352,10 +457,23 @@ Lý do từng sửa đổi (đã tái hiện ở phép thử 21/09):
 
 **Files:** Create `server/src/ops/thuTurso.ts`; Modify `package.json` (lệnh `thu-turso`).
 
-- [ ] **Step 1: Hỏi chủ sản phẩm** (đúng nguyên văn):
-  > Cần một database Turso **để thử** (không phải bản chính): tạo database tên `pisa-thu-nghiem` theo `TRIEN_KHAI.md`
-  > mục 2, chọn vùng **AWS US East (Ohio) — `aws-us-east-2`** nếu có, rồi gửi tôi URL và token của database thử này.
-  > Đồng thời cho tôi biết vùng Functions của site Netlify (Netlify → Site configuration → Functions → Region) nếu đã tạo site.
+- [ ] **Step 1 🆕 22/09: Lấy URL + token database THỬ — KHÔNG hỏi chủ sản phẩm gửi token qua chat.** Chủ sản phẩm đã
+      tạo `pisa-thu-nghiem` (vùng Ohio) và đã đặt nó vào biến môi trường của site Netlify (`TRIEN_KHAI.md` mục 5).
+      Netlify CLI trên máy này đã đăng nhập, và worktree có `.netlify/state.json` nên biết site. Chạy trong worktree:
+  ```powershell
+  netlify status
+  netlify env:get TURSO_DATABASE_URL
+  ```
+      - `netlify status` phải in tên site; không in → 🛑 hỏi chủ sản phẩm chạy `netlify login` (mục 3 TRIEN_KHAI).
+      - URL in ra **phải chứa `pisa-thu-nghiem`**. Chứa `pisa-ban-chinh` hoặc chữ khác → 🛑 **dừng ngay**, báo chủ sản phẩm:
+        biến của site đang trỏ database bản chính, không được dùng cho thử nghiệm.
+      - Ở mỗi lệnh cần Turso, nạp hai biến **trong chính lệnh đó**, không in token ra màn hình, không ghi vào file:
+        ```powershell
+        $env:TURSO_DATABASE_URL = (netlify env:get TURSO_DATABASE_URL); $env:TURSO_AUTH_TOKEN = (netlify env:get TURSO_AUTH_TOKEN); npm run thu-turso
+        ```
+        Nếu `netlify env:get` trả kèm chữ thừa (dòng thông báo), lấy dòng cuối: `(netlify env:get TURSO_AUTH_TOKEN | Select-Object -Last 1)`.
+      - **Không bao giờ** dán token vào Nhật ký, commit, PR hay câu trả lời. Nhật ký chỉ ghi URL (URL không phải bí mật).
+      - Vùng Functions của site: xem `netlify status` hoặc bỏ qua — Task 6b đo tốc độ thật trên Netlify.
 - [ ] **Step 2: Viết `server/src/ops/thuTurso.ts`** — chạy độc lập, in bảng kết quả, **không** đụng bảng thật:
   ```ts
   import Database from 'libsql';
@@ -363,7 +481,7 @@ Lý do từng sửa đổi (đã tái hiện ở phép thử 21/09):
 
   const c = cauHinhDb();
   if (c.kieu !== 'turso') { console.error('Cần TURSO_DATABASE_URL + TURSO_AUTH_TOKEN'); process.exit(1); }
-  const conn = new Database(c.url, { authToken: c.authToken });
+  const conn = new Database(c.url, { authToken: c.authToken } as Database.Options);   // ép kiểu: xem Task 2 Step 5
   const ketQua: [string, string][] = [];
   const thu = (ten: string, fn: () => string) => {
     try { ketQua.push([ten, 'ĐẠT · ' + fn()]); } catch (e: any) { ketQua.push([ten, 'HỎNG · ' + e.message]); }
@@ -388,11 +506,27 @@ Lý do từng sửa đổi (đã tái hiện ở phép thử 21/09):
   conn.close();
   ```
   `package.json`: `"thu-turso": "npm run build:server && node dist-server/server/src/ops/thuTurso.js"`.
-- [ ] **Step 3: Chạy** với token của database **thử**: `$env:TURSO_DATABASE_URL="..."; $env:TURSO_AUTH_TOKEN="..."; npm run thu-turso`.
-      Dán nguyên bảng vào Nhật ký.
+- [ ] **Step 3: Chạy** với database **thử**, nạp biến như Step 1. Dán nguyên bảng vào Nhật ký.
+      🆕 22/09 thêm vào `thuTurso.ts` hai dòng thử (trước dòng `10. dọn`), vì hai điều này mới chỉ thử với file cục bộ:
+  ```ts
+  thu('9b. .get() qua mạng có _metadata không (Task 1 Step 3b phải vá được cả đường mạng)', () => {
+    const row = conn.prepare('SELECT 1 AS a').get() as Record<string, unknown>;
+    return JSON.stringify(Object.keys(row));   // ghi lại; thuTurso mở kết nối riêng nên CHƯA qua vá — chỉ để biết
+  });
+  thu('9c. Tệp nhị phân (BLOB) đi kèm tham số khác', () => {
+    conn.exec('CREATE TABLE IF NOT EXISTS _thu_b (id INTEGER PRIMARY KEY, b BLOB, v TEXT)');
+    conn.prepare('INSERT INTO _thu_b (b, v) VALUES (?, ?)').run(Buffer.from('xin chao'), 'x');
+    const r = conn.prepare('SELECT b FROM _thu_b').get() as any;
+    conn.exec('DROP TABLE _thu_b');
+    return Buffer.from(r.b).toString();
+  });
+  ```
+      `9b` in ra có `_metadata` → bình thường (vá ở `db.ts`, còn script này mở kết nối riêng). Step 5 bên dưới mới là nơi
+      kiểm thật: câu trả lời JSON của `/api/...` **không** được có chữ `_metadata` (tab Network → Response, Ctrl+F).
 - [ ] **Step 4: Thử nặng** — dựng bộ demo lên database **thử** (được phép vì là database thử; seed đang bị Task 2 chặn
       với Turso, nên chạy qua một lệnh riêng):
-      `$env:PISA_CHO_PHEP_SEED_TURSO="pisa-thu-nghiem"; npm run seed` (ngoại lệ đã làm ở Task 2 Step 6).
+      `$env:PISA_CHO_PHEP_SEED_TURSO="pisa-thu-nghiem"; npm run seed` (ngoại lệ đã làm ở Task 2 Step 6), nạp hai biến
+      Turso như Step 1 trong **cùng** lệnh.
       Ghi **thời gian** chạy vào Nhật ký.
 - [ ] **Step 5: Thử trang thật qua Turso:** chạy `npm run dev` với hai biến Turso của database thử, đăng nhập tài khoản
       demo Quản lý Monbay, **đo thời gian tải** (tab Network của trình duyệt, cột Time của lời gọi `/api/...` lớn nhất)
@@ -419,6 +553,7 @@ Lý do từng sửa đổi (đã tái hiện ở phép thử 21/09):
 **Files:**
 - Create: `server/src/platform/khoTep.ts`
 - Modify: `server/src/platform/attachments.ts`, `shared/domain/attachments.ts`, `server/src/routes/index.ts` (đường tải), `package.json`
+- 🆕 22/09 Modify: `server/src/yThuc/violations.ts` (xoá tệp sau giao dịch), `server/src/migrate.ts` (chỉ thêm chú thích)
 - Test: `server/src/tests/banChinh.tests.ts`
 
 **Interfaces:**
@@ -437,7 +572,8 @@ Lý do từng sửa đổi (đã tái hiện ở phép thử 21/09):
   `async` và trả `{ kind: 'file'; duLieu: Buffer; mimeType; downloadName } | { kind: 'link'; url }`, `removeAttachment` → `async`.
   `purgeAttachmentsOf` **giữ đồng bộ** (xem Step 5).
 
-- [ ] **Step 1:** `npm install @netlify/blobs@<bản mới nhất> --save-exact` (ghi số bản vào Nhật ký).
+- [ ] **Step 1:** `npm install @netlify/blobs@11.1.0 --save-exact` (🆕 22/09: bản mới nhất đã kiểm; cần Node ≥ 22.12 —
+      máy này Node 24, Netlify đặt Node 22 ở Task 5). Có bản mới hơn cũng **giữ 11.1.0**. Ghi số bản vào Nhật ký.
       Đọc README của gói trong `node_modules/@netlify/blobs/README.md` phần **Lambda compatibility mode** (`connectLambda`).
 - [ ] **Step 2: Phép kiểm đỏ** — thêm vào `banChinh.tests.ts` (dùng kho giả trong bộ nhớ, không cần mạng):
   ```ts
@@ -523,9 +659,37 @@ Lý do từng sửa đổi (đã tái hiện ở phép thử 21/09):
     `path.join(dir, stored)` và giá trị `url` được INSERT), sau đó INSERT dòng bảng; INSERT lỗi → `await kho.xoa(khoa)` rồi ném lại.
   - `openAttachment`: kiểm quyền như cũ; tệp → `const duLieu = await kho.doc(r.url)`; `null` → `notFound('Tệp không còn trên máy chủ')`.
   - `removeAttachment`: xoá dòng bảng + audit **trước**, rồi `await kho.xoa(r.url)` (xoá tệp lỗi → `console.error`, không ném).
-  - `purgeAttachmentsOf`: **giữ đồng bộ**, chỉ xoá dòng bảng + audit, **không** xoá tệp trong kho. Lý do: hàm này chạy
-    bên trong `tx(...)` (xoá vi phạm); xoá tệp là việc bất đồng bộ không cuộn lại được. Tệp mồ côi vô hại ở quy mô này.
-    Viết đúng lý do này thành chú thích tại hàm.
+  - 🆕 22/09 — **`purgeAttachmentsOf` (viết lại mục này; plan cũ sai chữ ký).** Hàm thật có **bốn** tham số:
+    `(ownerType, ownerId, actorUserId, deferredFiles?: string[])`; hiện nó `fs.rmSync` ngay, hoặc đẩy **đường dẫn tuyệt
+    đối** vào `deferredFiles` để nơi gọi xoá sau khi giao dịch chốt. Nơi gọi (đã kiểm 22/09):
+    `server/src/yThuc/measures.ts` ~365 (trong `tx`, **không** truyền `deferredFiles`) và `server/src/yThuc/violations.ts`
+    ~315 (trong `tx`, **có** truyền; sau `tx` tự `fs.rmSync` từng đường dẫn ở ~330). Làm đúng như sau:
+    1. Thêm vào `attachments.ts`:
+       ```ts
+       /**
+        * XOÁ TỆP TRONG KHO SAU KHI GIAO DỊCH ĐÃ CHỐT. Không chờ (không `await`) và không ném: nơi gọi là hàm đồng bộ chạy
+        * ngay sau `tx(...)`. Với kho ổ đĩa, lệnh xoá chạy xong ngay trong lượt gọi này (thân hàm async chạy đồng bộ tới
+        * lần `await` đầu tiên) — nên hành vi máy dev và các phép kiểm cũ giữ nguyên. Với Netlify Blobs, xoá lỗi thì còn
+        * một tệp mồ côi: vô hại ở quy mô này, dòng `attachments` đã xoá và đã có audit.
+        */
+       export function xoaTepSauGiaoDich(khoaTep: string[]): void {
+         const kho = khoTepHienTai(uploadsDir());
+         for (const k of khoaTep) {
+           kho.xoa(k).catch((e) => console.error('[kho tệp] không xoá được', k, e));
+         }
+       }
+       ```
+    2. Trong `purgeAttachmentsOf`: `deferredFiles` giờ chứa **khoá kho** (`r.url`), không còn đường dẫn tuyệt đối.
+       Thân vòng lặp: `if (r.kind === 'file') { if (deferredFiles) deferredFiles.push(r.url); else xoaTepSauGiaoDich([r.url]); }`.
+       Sửa chú thích của tham số cho khớp ("khoá tệp trong kho", không phải "đường dẫn trên đĩa").
+    3. Trong `violations.ts` `deleteViolation`: đổi tên `diskFiles` → `khoaTep`, và thay vòng
+       `for (const f of diskFiles) { try { fs.rmSync(...) } ... }` bằng **một** dòng `xoaTepSauGiaoDich(khoaTep);`.
+       Bỏ import `fs` nếu không còn dùng.
+    4. `migrate.ts` (`migrateDeleteInvalidViolations` + `flushDeferredFileRemovals`): **giữ nguyên** (đường dẫn ổ đĩa).
+       Lý do, viết thành chú thích tại `deferredFileRemovals`: lệnh nâng cấp chỉ gặp dòng `valid = 0` ở database có từ
+       trước rulebook v3 — tức database của máy dev; bản chính bắt đầu rỗng nên không bao giờ có dòng này.
+    5. `grep -rn "fs\.\(rmSync\|unlinkSync\|writeFileSync\|readFileSync\|existsSync\)" server/src/platform server/src/yThuc`
+       — chỉ còn trong `khoTep.ts` (kho ổ đĩa). Còn chỗ khác trên đường API → ghi Nhật ký, đưa qua kho.
   - `shared/domain/attachments.ts`: `ATTACHMENT_MAX_BYTES = 4 * 1024 * 1024`; thông báo lỗi `'Tệp quá lớn: tối đa 4 MB.'`
     (tìm và đổi **mọi** chỗ ghi "10 MB": `grep -rn "10 MB" server web shared`).
 - [ ] **Step 6: Route tải xuống** (`server/src/routes/index.ts`, `GET /attachments/:id/download`): `const o = await ...`;
@@ -537,11 +701,31 @@ Lý do từng sửa đổi (đã tái hiện ở phép thử 21/09):
 
 ### Task 5: Netlify Function + `netlify.toml`
 
-**Files:** Create `netlify/functions/api.ts`, `netlify.toml`; Modify `server/src/app.ts`, `package.json`.
+**Files:** Create `netlify/functions/api.ts`, `netlify.toml`, 🆕 `scripts/thu-goi-function.mjs`; Modify `server/src/app.ts`,
+🆕 `server/src/db.ts`, `package.json`.
 
 **Interfaces:** Consumes `createApp()` (có sẵn, `server/src/app.ts`).
 
-- [ ] **Step 1:** `npm install serverless-http@<bản mới nhất> --save-exact`. Ghi số bản.
+- [ ] **Step 1:** `npm install serverless-http@4.0.0 --save-exact` (🆕 22/09: bản đã thử). Ghi số bản.
+- [ ] **Step 1b 🆕 22/09 — BẮT BUỘC: `db.ts` không được dựa vào `import.meta.url` hay tên `__dirname`.** Đã tái hiện:
+      Netlify gói hàm kiểu `export const handler` thành **CommonJS** → `import.meta.url` rỗng →
+      `fileURLToPath(undefined)` ném lỗi **ngay lúc nạp** → mọi `/api/*` trả 502. Nếu Netlify gói ESM thì đoạn mở đầu nó
+      chèn khai báo `let __dirname` → trùng với `const __dirname` của `db.ts` → SyntaxError. Trong `server/src/db.ts`, thay:
+  ```ts
+  const __dirname = path.dirname(fileURLToPath(import.meta.url));
+  ```
+      bằng:
+  ```ts
+  /*
+   * Thư mục chứa file mã này. Trên Netlify, hàm được gói thành CommonJS nên `import.meta.url` RỖNG (đã tái hiện
+   * 22/09: sập ngay lúc nạp). Khi đó rơi về thư mục đang chạy — trên Netlify đường API không đọc file nào theo ROOT.
+   * KHÔNG đặt tên biến là `__dirname`: bản gói ESM của Netlify tự khai báo tên đó.
+   */
+  const THU_MUC_MA = import.meta.url ? path.dirname(fileURLToPath(import.meta.url)) : process.cwd();
+  ```
+      và `findProjectRoot(__dirname)` → `findProjectRoot(THU_MUC_MA)`. Rồi quét:
+      `grep -rn "__dirname\|import\.meta\.url" server/src --include=*.ts | grep -v tests` — mỗi kết quả còn lại: ghi Nhật ký,
+      xét nó có chạy trên đường API không (seed/migrate/ops thì không sao). Chạy trên đường API → sửa theo cùng mẫu.
 - [ ] **Step 2: Đường dẫn Express nhìn thấy.** Trong `createApp()` của `server/src/app.ts`, dòng **đầu tiên** sau `express()`:
   ```ts
   /* Trên Netlify, lời gọi /api/x được chuyển tới /.netlify/functions/api/x. Đưa về /api/x để mọi route giữ nguyên. */
@@ -562,13 +746,17 @@ Lý do từng sửa đổi (đã tái hiện ở phép thử 21/09):
   import { createApp } from '../../server/src/app.ts';
 
   const app = createApp();
+  /* Kiểu nội dung trả về dạng nhị phân. Thiếu một kiểu → tệp tải xuống bị hỏng (đã thấy 22/09: mp4 13 byte → 19 byte).
+     Phải phủ mọi đuôi trong ATTACHMENT_MIME_BY_EXT (shared/domain/attachments.ts). */
   const xuLy = serverless(app, {
-    binary: ['multipart/form-data', 'application/octet-stream', 'image/*', 'application/pdf',
-             'application/msword', 'application/vnd.*'],
+    binary: ['multipart/form-data', 'application/octet-stream', 'image/*', 'audio/*', 'video/*', 'application/pdf',
+             'application/msword', 'application/vnd.*', 'application/zip'],
   });
 
   export const handler = async (event: any, context: any) => {
-    connectLambda(event);           // cho @netlify/blobs biết site/đường vào kho trong chế độ Lambda
+    /* Cho @netlify/blobs biết site/đường vào kho (chế độ Lambda). Không có `event.blobs` (ví dụ chạy thử cục bộ) thì
+       connectLambda ném lỗi — nên chỉ gọi khi có. Đã kiểm với @netlify/blobs 11.1.0. */
+    if (event?.blobs) connectLambda(event);
     return xuLy(event, context);
   };
   ```
@@ -579,14 +767,13 @@ Lý do từng sửa đổi (đã tái hiện ở phép thử 21/09):
     publish = "dist/web"
 
   [build.environment]
-    NODE_VERSION = "20"
+    NODE_VERSION = "22"
     VITE_BAN_CHINH = "1"
 
   [functions]
     directory = "netlify/functions"
     node_bundler = "esbuild"
     external_node_modules = ["libsql"]
-    included_files = ["server/src/schema.sql"]
 
   [[redirects]]
     from = "/api/*"
@@ -598,8 +785,9 @@ Lý do từng sửa đổi (đã tái hiện ở phép thử 21/09):
     to = "/index.html"
     status = 200
   ```
-  Thêm vào `included_files` mọi file **không phải .ts** mà Task 0 Step 4 cho thấy được đọc lúc chạy **trong đường API**
-  (không tính seed/migrate). Ghi quyết định vào Nhật ký.
+  🆕 22/09: `NODE_VERSION = "22"` (không phải 20: `@netlify/blobs` 11.x cần Node ≥ 22.12, Node 20 hết hỗ trợ 04/2026).
+  **Không** cần `included_files`: bản thử đã chạy đường API mà không có `schema.sql` (file đó chỉ lệnh `seed` đọc). Nếu
+  Task 0 Step 4 cho thấy một file không phải .ts được đọc **trên đường API** thì mới thêm, ghi Nhật ký.
 - [ ] **Step 5: Thử cục bộ bằng Netlify CLI:**
   ```bash
   npm install -g netlify-cli
@@ -612,7 +800,68 @@ Lý do từng sửa đổi (đã tái hiện ở phép thử 21/09):
   Netlify. Kiểm `package-lock.json` có mục `node_modules/@libsql/linux-x64-gnu` (npm thường ghi đủ gói tuỳ chọn cho mọi
   nền tảng). Không có → `npm install --save-optional @libsql/linux-x64-gnu@<cùng bản với libsql>` và ghi Nhật ký.
   Lỗi này chỉ lộ ra ở Task 10 (deploy thật) — nên kiểm ngay bây giờ.
-- [ ] **Step 6:** `npm run check` xanh; `npm run dev` vẫn chạy như cũ. Commit: `PR-Z2 (5): máy chủ thành Netlify Function`.
+- [ ] **Step 5b 🆕 22/09 — Thử gói như Netlify, tự động, không cần mạng.** Lỗi Step 1b chỉ lộ ra khi mã đã được **gói**
+      và chạy **ở thư mục khác**; `npm run check` không bắt được. Dựng một lệnh thử lặp lại được:
+      1. `npm install esbuild@0.28.2 --save-dev --save-exact`.
+      2. Tạo `scripts/thu-goi-function.mjs`:
+  ```js
+  /**
+   * THỬ GÓI MÁY CHỦ NHƯ NETLIFY GÓI (CommonJS, libsql để ngoài) rồi gọi nó từ MỘT THƯ MỤC KHÁC — bắt các lỗi chỉ lộ
+   * ra sau khi gói (import.meta.url rỗng, đường dẫn theo ROOT, tệp thiếu). Không cần mạng, không đụng Turso.
+   * Chạy: npm run thu-goi   (dùng database máy dev: data/pisa-demo.sqlite — chạy `npm run seed` trước nếu chưa có)
+   */
+  import { build } from 'esbuild';
+  import fs from 'node:fs';
+  import os from 'node:os';
+  import path from 'node:path';
+  import { createRequire } from 'node:module';
+
+  const repo = process.cwd();
+  const tam = fs.mkdtempSync(path.join(os.tmpdir(), 'pisa-goi-'));
+  const out = path.join(tam, 'api.cjs');
+  await build({
+    entryPoints: [path.join(repo, 'netlify/functions/api.ts')],
+    bundle: true, platform: 'node', target: 'node22', format: 'cjs', outfile: out,
+    external: ['libsql', '@libsql/*'], logLevel: 'warning',
+  });
+  process.env.PISA_DB ??= path.join(repo, 'data', 'pisa-demo.sqlite');
+  process.chdir(tam);                                  // như /var/task: không có package.json của dự án
+  const require = createRequire(path.join(repo, 'package.json'));   // libsql vẫn nạp từ node_modules của dự án
+  const Module = require('node:module');
+  const goc = Module._resolveFilename;
+  Module._resolveFilename = function (req, ...rest) {
+    if (req === 'libsql' || req.startsWith('@libsql/')) return require.resolve(req);
+    return goc.call(this, req, ...rest);
+  };
+  const { handler } = require(out);
+
+  const goi = (p, method = 'GET') => handler({
+    httpMethod: method, path: p, headers: { host: 'thu.local' }, multiValueHeaders: {},
+    queryStringParameters: null, multiValueQueryStringParameters: null, body: null, isBase64Encoded: false,
+    requestContext: { identity: { sourceIp: '127.0.0.1' } },
+  }, {});
+
+  let hong = 0;
+  for (const p of ['/api/health', '/.netlify/functions/api/health', '/api/auth/info']) {
+    const r = await goi(p);
+    const ok = r.statusCode === 200 && !String(r.body).includes('_metadata');
+    if (!ok) hong++;
+    console.log(`${ok ? 'ĐẠT' : 'HỎNG'}  ${p}  → ${r.statusCode}  ${String(r.body).slice(0, 120)}`);
+  }
+  fs.rmSync(tam, { recursive: true, force: true });
+  if (hong) { console.error(`\n${hong} đường HỎNG — máy chủ gói xong không chạy được. Xem Task 5 Step 1b.`); process.exit(1); }
+  console.log('\nGói máy chủ như Netlify: chạy được.');
+  ```
+      3. `package.json`: `"thu-goi": "node scripts/thu-goi-function.mjs"`.
+      4. **Kiểm rằng lệnh này bắt được lỗi thật:** tạm hoàn tác Step 1b (`git stash` riêng file `db.ts`, hoặc sửa tay về
+         dòng cũ) → `npm run thu-goi` phải **HỎNG** (lỗi `fileURLToPath` / "must be of type string"). Trả Step 1b lại →
+         `npm run thu-goi` **ĐẠT** cả ba dòng. Ghi cả hai kết quả vào Nhật ký. Không hỏng được khi bỏ Step 1b → script
+         chưa mô phỏng đúng, 🛑 dừng, ghi Nhật ký, hỏi session planning.
+      Nếu `Module._resolveFilename` không nạp được libsql trên máy này, được phép đổi cách nạp (ví dụ chép thư mục
+      `node_modules/libsql`, `node_modules/@libsql/win32-x64-msvc`, `node_modules/@neon-rs` vào `tam/node_modules`) —
+      miễn là **bản gói vẫn chạy ở thư mục khác** và bước 4 vẫn hỏng/đạt như trên. Ghi cách đã dùng vào Nhật ký.
+- [ ] **Step 6:** `npm run check` xanh; `npm run thu-goi` ĐẠT; `npm run dev` vẫn chạy như cũ.
+      Commit: `PR-Z2 (5): máy chủ thành Netlify Function + lệnh thử gói`.
 
 ---
 
@@ -620,6 +869,7 @@ Lý do từng sửa đổi (đã tái hiện ở phép thử 21/09):
 
 **Files:** Modify `server/src/demoConfig.ts`, `server/src/routes/index.ts`; Create `web/src/lib/banChinh.ts`;
 Modify `web/src/App.tsx`, `web/src/modules/platform/WelcomePage.tsx`; Test `banChinh.tests.ts`.
+🆕 22/09: có thể thêm file khai kiểu `AuthInfo` (tìm `type AuthInfo` trong `web/src`).
 
 **Interfaces:** Consumes `laBanChinh()`. Produces `LA_BAN_CHINH: boolean` (web).
 
@@ -648,18 +898,51 @@ Modify `web/src/App.tsx`, `web/src/modules/platform/WelcomePage.tsx`; Test `banC
   `setConfig`/`getConfig` — nếu hai hàm này không được export thì export chúng, ghi Nhật ký). Bộ demo đang đặt
   `demo_date = 2026-09-14`, nên phép thứ nhất đỏ trước khi sửa. Thêm một phép kiểm HTTP theo **đúng khuôn phép kiểm HTTP có sẵn của PR-J** (tìm
   `createApp` trong `server/src/tests/`): với `BAN_CHINH=1`, `GET /api/demo/accounts` → 404.
+  🆕 22/09 — thêm các phép HTTP sau (cùng khuôn, cùng `BAN_CHINH=1`, nhớ `delete process.env.BAN_CHINH` trong `finally`):
+
+  | Gọi | Kỳ vọng | Vì sao |
+  |---|---|---|
+  | `POST /api/demo/session` với `{ userId: <id Quản trị trong bộ demo> }`, **không** cookie | **404**, không có `Set-Cookie` | Đường này đăng nhập bằng id **không cần mật khẩu** — trên mạng là cửa sau |
+  | `PUT /api/demo/config` (đã đăng nhập) | **404** | Đổi ngày giả / kịch bản lỗi |
+  | `GET /api/demo/config` | **404** | |
+  | `GET /api/demo/session` | **200** | Màn đăng nhập cần nó để biết đã đăng nhập chưa; ~10 màn dùng `demoDate` làm "hôm nay" |
+  | `DELETE /api/demo/session` | mã thành công hiện có | Nút Đăng xuất |
+  | `GET /api/auth/info` | 200, JSON **không** có khoá `demoAdmin` | Không lộ mật khẩu mặc định |
+  | `POST /api/demo/session` khi **không** có `BAN_CHINH` | như cũ (thành công) | Máy dev giữ "Vào nhanh" |
 - [ ] **Step 2:** `npm test` → đỏ.
 - [ ] **Step 3: Máy chủ.** `demoToday()`: `if (laBanChinh()) return todayInBusinessTz();` ở dòng đầu. `scenarioMode()`:
       `if (laBanChinh()) return 'normal';`. Trong `routes/index.ts`, một middleware đặt **trước** mọi route `/demo`:
+  🆕 22/09 — đã đọc mã thật: `web/src/lib/session.tsx` gọi `GET /demo/session` (biết phiên + `demoDate`), `POST
+  /demo/session` (**"Vào nhanh" — đăng nhập bằng id, KHÔNG mật khẩu**) và `DELETE /demo/session` (đăng xuất). Vì vậy
+  cho qua **đúng hai** đường GET và DELETE `/demo/session`, chặn mọi thứ khác:
   ```ts
+  /*
+   * BẢN CHÍNH: mọi đường /demo đều tắt, TRỪ hai đường mà đăng nhập thật cần:
+   *   GET    /demo/session  — biết đã đăng nhập chưa, và ngày nghiệp vụ (`demoDate` = ngày thật ở bản chính)
+   *   DELETE /demo/session  — đăng xuất
+   * POST /demo/session là "Vào nhanh": đăng nhập bằng id KHÔNG cần mật khẩu — trên mạng là cửa sau, phải 404.
+   */
   api.use('/demo', (req, res, next) => {
     if (!laBanChinh()) return next();
+    const choQua = req.path === '/session' && (req.method === 'GET' || req.method === 'DELETE');
+    if (choQua) return next();
     res.status(404).json({ error: 'Không tìm thấy endpoint.' });
   });
   ```
-  Nếu màn đăng nhập thật đang gọi một route dưới `/demo` (ví dụ `GET /demo/session` để biết đã đăng nhập chưa) — kiểm
-  bằng cách đọc `WelcomePage.tsx` và `web/src/lib/session.tsx` — thì **cho qua đúng route đó** và ghi vào Nhật ký.
+  Đặt middleware này **trước** dòng `api.get('/demo/accounts', ...)` (hiện ~dòng 68 `routes/index.ts`).
+  `GET /auth/info` (~dòng 1581): khi `laBanChinh()` thì **không** trả khoá `demoAdmin`:
+  ```ts
+  api.get('/auth/info', wrap(() => ({
+    emailSuffix: accountSvc.EMAIL_SUFFIX,
+    /* Bản chính: không bao giờ gửi mật khẩu mặc định ra ngoài. */
+    ...(laBanChinh() ? {} : { demoAdmin: { email: accountSvc.DEFAULT_ADMIN_EMAIL, password: accountSvc.DEFAULT_ADMIN_PASSWORD } }),
+    skills: [...new Set([...ENTRY_SKILLS, ...REGULAR_SKILLS])],
+  })));
+  ```
+  Kiểu `AuthInfo` ở web: `demoAdmin` thành **tuỳ chọn** (`demoAdmin?: {...}`).
   Cookie phiên (hai chỗ `res.cookie(SESSION_COOKIE, ...)`): thêm `secure: laBanChinh()`.
+  Nhanh hơn trên Turso (mỗi câu hỏi DB là một lượt mạng): `scenarioMode()` trả `'normal'` **trước khi** đọc DB khi
+  `laBanChinh()` — đã nằm trong Step 3 ở trên, kiểm lại nó đứng **dòng đầu** hàm.
 - [ ] **Step 4: Giao diện.** `web/src/lib/banChinh.ts`:
   ```ts
   /** Bản chính (Netlify) — đặt bởi netlify.toml. Máy dev và bản build thử không có biến này. */
@@ -668,6 +951,16 @@ Modify `web/src/App.tsx`, `web/src/modules/platform/WelcomePage.tsx`; Test `banC
   `App.tsx`: `{!LA_BAN_CHINH && <DemoBar />}`. `WelcomePage.tsx`: khi `LA_BAN_CHINH` thì **không** render tab
   "Vào nhanh bằng tài khoản demo" và **không** gọi `useApi('/demo/accounts')` (truyền `null`), không hiện dòng gợi ý mật
   khẩu mặc định `pisa2026` nếu có. Route `/dev/thanh-phan` đã tự tắt ở bản build (`import.meta.env.DEV`) — giữ nguyên.
+  🆕 22/09 — đủ các chỗ phải đổi ở `web/src/modules/platform/WelcomePage.tsx` (đã đọc mã thật):
+  - `const accounts = useApi<Account[]>(LA_BAN_CHINH ? null : '/demo/accounts');` — đã kiểm: với `null` thì `noData`
+    là `false`, nên khối hướng dẫn `npm run seed` (~dòng 50) **không** hiện và form đăng nhập **không** bị che.
+    Nếu `useApi` không nhận `null` thì xem cách các màn khác bỏ qua gọi API, làm theo, ghi Nhật ký.
+  - Dòng phụ đề `bản demo chạy local` (~dòng 101) → khi `LA_BAN_CHINH` hiện `Hệ thống quản lý học vụ và vận hành`.
+  - Nhãn `Dữ liệu demo` (~dòng 103) → **không** hiện khi `LA_BAN_CHINH`.
+  - Khối `SectionNote` mật khẩu mặc định (~dòng 177–184): điều kiện `{info && ...}` → `{info?.demoAdmin && ...}`
+    (máy chủ bản chính không gửi `demoAdmin` nên tự ẩn; giữ nguyên chữ).
+  - Tab/nút chọn chế độ `demo` trong `mode` state: không hiện khi `LA_BAN_CHINH`.
+  Kiểm cuối Step 5 thêm: `grep -rl "pisa2026\|bản demo chạy local" dist/web` → **rỗng** (mật khẩu chỉ nằm ở máy chủ).
 - [ ] **Step 5:** `npm run check` xanh. `$env:VITE_BAN_CHINH="1"; npm run build` rồi
       `grep -rl "Vào nhanh bằng tài khoản demo" dist/web` → **rỗng**. Commit: `PR-Z2 (6): bản chính tắt mọi thứ của demo`.
 
@@ -691,10 +984,10 @@ và cho **số đo tốc độ thật** (Netlify ↔ Turso cùng vùng), thay ch
 - [ ] **Step 3: Kiểm gói trước khi gửi.** `netlify build` rồi liệt kê gói Function:
       `tar -tf .netlify/functions/api.zip | findstr linux-x64-gnu` (PowerShell) — **phải** có dòng. Không có → 🛑 dừng,
       ghi Nhật ký, không thử đường khác.
-- [ ] **Step 4: Hỏi chủ sản phẩm** (nguyên văn):
-      > Tôi cần deploy **nháp** (địa chỉ riêng, chưa phải bản chính) để kiểm hạ tầng. Bạn làm giúp theo `TRIEN_KHAI.md`
-      > mục 3 (cài và đăng nhập Netlify CLI), mục 4 (tạo site) và mục 5 với database **thử** `pisa-thu-nghiem`
-      > (không phải bản chính). Xong báo tôi một câu "đã xong mục 3-4-5 với database thử".
+- [ ] **Step 4 🆕 22/09: Kiểm — KHÔNG hỏi lại.** Chủ sản phẩm đã làm `TRIEN_KHAI.md` mục 3-4-5 với database thử (22/09).
+      Chạy `netlify env:list` → phải thấy đủ `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN`, `BAN_CHINH`; và
+      `netlify env:get TURSO_DATABASE_URL` chứa `pisa-thu-nghiem`. Thiếu biến hoặc URL không phải database thử → 🛑 dừng,
+      báo chủ sản phẩm đúng biến nào thiếu/sai và mục nào của `TRIEN_KHAI.md` cần làm lại.
 - [ ] **Step 5: Deploy nháp.** Trong thư mục repo: `netlify deploy --build` (**không** có `--prod`). Ghi địa chỉ nháp
       (dạng `https://<mã>--<tên-site>.netlify.app`) vào Nhật ký.
 - [ ] **Step 6: Kiểm trên địa chỉ nháp**, ghi từng dòng vào Nhật ký:
@@ -704,13 +997,24 @@ và cho **số đo tốc độ thật** (Netlify ↔ Turso cùng vùng), thay ch
      `README.md`).
   4. Mở hồ sơ một học viên, tải lên một ảnh ~1 MB, tải xuống lại — mở được (Blobs chạy).
   5. Mở một link sâu `<địa chỉ nháp>/hoc-vien/<id>` bằng tab mới — ra đúng trang, không 404.
+  6. 🆕 22/09 — Cửa sau đã đóng: trong PowerShell
+     `Invoke-WebRequest -Method Post -Uri "<địa chỉ nháp>/api/demo/session" -ContentType "application/json" -Body '{"userId":1}' -SkipHttpErrorCheck`
+     (PowerShell 5.1 không có `-SkipHttpErrorCheck`: bọc `try { ... } catch { $_.Exception.Response.StatusCode }`) → **404**.
+  7. 🆕 22/09 — Tải lên và tải xuống lại một tệp **PDF** và một tệp **mp3 hoặc mp4** nhỏ → mở được, dung lượng khớp
+     (kiểm danh sách `binary` của Task 5).
+  8. 🆕 22/09 — Tab Network, mở câu trả lời của `/api/students` (hoặc lời gọi lớn nhất của hồ sơ học viên): Ctrl+F
+     `_metadata` → **không có**.
 - [ ] **Step 7: Đo tốc độ thật** — năm trang như Task 3 Step 5, mỗi trang 3 lần **sau** lần tải đầu, ghi trung bình và
       thời gian lần đầu (khởi động lạnh). Ghi bảng vào Nhật ký.
+      🆕 22/09 — đo thêm hai trang mà rà soát PR-K chỉ ra có nhiều câu hỏi DB mỗi thẻ (mỗi case thêm ~4 câu qua
+      `sosCaseState`; `myCoordinationLines` tính lại cả lớp cho từng lớp chủ nhiệm): **bảng kỹ năng (SkillBoard) của lớp
+      MB-FT 101** và **trang Việc cần làm của một GVCN**. Chỉ đo và ghi — **không** tối ưu ở PR này (Task 10 Step 6 của
+      Phần C xử lý theo số đo).
 - [ ] **Step 8: Quyết định:**
 
   | Kết quả | Làm gì |
   |---|---|
-  | Step 6 đủ 5 dòng đạt, mọi trang ≤ 3 giây | ✅ Kết thúc Phần A |
+  | Step 6 đủ 8 dòng đạt, mọi trang ≤ 3 giây | ✅ Kết thúc Phần A |
   | Step 6 đạt, có trang 3–10 giây | ✅ Kết thúc Phần A, ghi các trang đó — Phần C xử lý (Task 10 Step 6) |
   | Có trang > 10 giây, **hoặc** Step 6 có dòng hỏng | 🛑 Dừng. Báo chủ sản phẩm + session thiết kế kèm Nhật ký |
 
@@ -968,6 +1272,21 @@ thử). Hỏi rõ từng thứ; **không** dùng database thử làm bản chín
   Step 4), `included_files` (Task 5 Step 4), route `/demo` mà màn đăng nhập thật cần (Task 6 Step 3), tên cột `demo_config`
   (Task 7 Step 3), định dạng `url` tệp đang lưu (Task 4 Step 5). Mỗi chỗ đều bắt ghi Nhật ký.
 - **Rủi ro chưa loại được trước khi có token:** đường mạng của `libsql` (Task 3 là gate), tốc độ thật trên Netlify (Task 10).
+
+### Self-review 22/09/2026 (sau thử thật, session planning)
+
+- **Đã chạy thật trên mã sau PR-T + PR-K:** Task 1 + Step 3b → 581/581; Task 2 Step 4–5 + ép kiểu → 581/581; gói
+  Function kiểu CJS và ESM **sau** Step 1b của Task 5 → `/api/health`, đăng nhập, `/api/students`, tải lên nhiều phần,
+  tải xuống PDF khớp từng byte. Trước Step 1b: cả hai kiểu gói **sập lúc nạp** (đã tái hiện).
+- **Chưa thử được, gate giữ nguyên:** nhị phân Linux (Task 6b Step 3 là cửa cứng), đường mạng Turso (Task 3), đọc/ghi
+  Netlify Blobs thật (Task 6b Step 6 dòng 4, 7).
+- **Rủi ro biết trước, KHÔNG sửa ở Phần A** (ghi để Phần C và sau deploy khỏi phát hiện lại):
+  1. `server/src/fasttrack/skillSchedule.ts` ~91 có bộ nhớ đệm `modeByClass` ở cấp module, chỉ xoá trong **tiến trình**
+     nơi Quản trị sửa chương trình. Netlify có thể chạy nhiều bản hàm cùng lúc → bản khác còn giữ chế độ cũ tới khi
+     nguội. Ảnh hưởng: vài phút sau khi đổi chương trình học. Xử lý sau deploy (PR-S, nợ kỹ thuật).
+  2. Mỗi lời gọi API chạy một `UPDATE demo_sessions` (`server/src/platform/auth.ts` ~38) — thêm một lượt mạng Turso mỗi
+     lần bấm. Chỉ tối ưu nếu Task 10 đo thấy chậm.
+  3. Số câu hỏi DB mỗi thẻ case (`sosCaseState`) và `myCoordinationLines` — đo ở Task 6b Step 7, xử lý ở Task 10 Step 6.
 
 ---
 

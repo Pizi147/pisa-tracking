@@ -3,7 +3,7 @@
 **Model:** Opus 5 · XHigh · **B:** Opus 5 · High
 Mở session Claude Code mới **trong thư mục repo**, chọn model, dán **cả khối** dưới đây.
 
-Cập nhật: 21/09/2026 (đêm). Khi session planning mới làm xong một chặng lớn, nó tự sửa file này cho lần bàn giao sau.
+Cập nhật: 22/09/2026. Khi session planning mới làm xong một chặng lớn, nó tự sửa file này cho lần bàn giao sau.
 
 ```
 Bạn là SESSION PLANNING của dự án PISA Progress (web quản lý học viên, SOS, case, Ý thức cho trung tâm
@@ -45,7 +45,7 @@ họ cần làm gì. Rồi chờ yêu cầu.
 
 ---
 
-## Tình trạng lúc bàn giao (21/09/2026 đêm)
+## Tình trạng lúc bàn giao (22/09/2026)
 
 ### Đã merge
 
@@ -59,14 +59,16 @@ họ cần làm gì. Rồi chờ yêu cầu.
 | #35 | Tài liệu: rulebook v3 (SOS tự tạo case, Phối hợp SOS, xoá vi phạm) + lộ trình |
 | #36, #37 | Tài liệu: bản chính Netlify + Turso, kế hoạch chi tiết PR-Z2 |
 | #38 | Chia PR-Z2 thành Z2a/b/c, deploy thủ công, `TRIEN_KHAI.md` cho người không biết code, bảng model |
+| #40, #41 | Chốt 4 câu treo (C08, S16, S17, R11) · `.gitignore` bỏ qua `.netlify` |
 | #39 | **PR-T** — máy chủ theo rulebook v3 (SOS tự tạo case + điền sẵn phương án, Phối hợp SOS, xoá vi phạm) |
+| #42 | **PR-K** — giao diện Ý thức & Phối hợp (rà soát 22/09: không lỗi nghiêm trọng, 4 lỗi → PR-K2) |
 
 ### Tiếp theo, đúng thứ tự
 
 | # | PR | Kế hoạch | Model · B |
 |---|---|---|---|
-| 1 | **PR-K** *(đang chạy 21/09 đêm)* — giao diện Ý thức & Phối hợp | `plan.md` 23.3 | Sonnet 5 · High · B: Fable 5.1 · High |
-| 2 | **PR-Z2a** — hạ tầng (Task 0–6b) | plan chi tiết | Sonnet 5 · High · B: Fable 5.1 · High |
+| 1a | **PR-K2** — sửa 4 lỗi rà soát PR-K (song song với 1b) | `plan.md` 23.3b | Sonnet 5 · High · B: Fable 5.1 · Medium |
+| 1b | **PR-Z2a** — hạ tầng (Task 0–6b), kế hoạch đã **thử thật 22/09** | plan chi tiết | **Fable 5.1 · High** · B: Sonnet 5 · High |
 | 3 | **PR-Z2b** — an toàn dữ liệu (Task 7–9) | plan chi tiết | Opus 5 · XHigh · B: Fable 5.1 · High |
 | 4 | **PR-Z2c** — deploy bản chính + rà soát (Task 10–11) | plan chi tiết | Opus 5 · XHigh · B: Fable 5.1 · High |
 | 5+ | Sau deploy: PR-O → PR-Q → PR-P → PR-R → PR-S | `plan.md` 22.4–22.9 | xem `PROMPT_SESSION_CODE.md` mục 0 |
@@ -99,4 +101,7 @@ việc R14 (22.8), S16/S17 (22.9).
 3. Kéo-thả thư mục lên Netlify không mang theo Functions.
 4. Build trên Windows cho Netlify Linux: nhị phân `libsql` Linux phải đóng gói có chủ đích.
 5. Không có màn tạo chi nhánh — database rỗng cần chi nhánh từ lệnh khởi tạo.
-6. Lệnh bash dài chứa nhiều dấu nháy trên Windows hay hỏng — ghi kịch bản ra file trong scratchpad rồi chạy.
+6. Lệnh bash dài chứa nhiều dấu nháy trên Windows hay hỏng — ghi kịch bản ra file trong scratchpad (bằng công cụ Write) rồi chạy.
+7. Kế hoạch hạ tầng viết từ đọc mã **chưa đủ**: lỗi nặng nhất của Z2 (máy chủ sập lúc Netlify nạp) chỉ lộ ra khi **gói mã
+   và chạy ở thư mục khác**. Việc hạ tầng → cho agent chạy thử trong bản sao riêng trước khi giao session code.
+8. Chủ sản phẩm đã làm TRIEN_KHAI mục 2–5 (DB thử Ohio, site Netlify, 3 biến). Token lấy bằng `netlify env:get`, không xin qua chat.
