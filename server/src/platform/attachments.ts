@@ -204,11 +204,21 @@ export function openAttachment(p: Principal, id: number):
  * XOÁ MỌI TỆP CỦA MỘT BẢN GHI CHỦ khi chính bản ghi chủ bị xoá (ví dụ xoá biện pháp Đang chuẩn bị). Không kiểm quyền ở đây — nơi
  * gọi đã kiểm quyền xoá bản ghi chủ; nhưng MỖI tệp vẫn có một dòng audit, vì xoá tệp không bao giờ được im lặng. Trả về số tệp.
  */
-export function purgeAttachmentsOf(ownerType: AttachmentOwnerType, ownerId: number, actorUserId: number | null): number {
+export function purgeAttachmentsOf(
+  ownerType: AttachmentOwnerType, ownerId: number, actorUserId: number | null,
+  /**
+   * Có truyền mảng này thì KHÔNG xoá tệp trên đĩa ngay mà chỉ ghi đường dẫn vào đó — nơi gọi xoá SAU KHI giao dịch chốt. Xoá tệp trong giao dịch rồi giao dịch
+   * lui thì mất tệp mà dòng vẫn còn (không hoàn tác được trên đĩa).
+   */
+  deferredFiles?: string[],
+): number {
   const rows = db().prepare('SELECT * FROM attachments WHERE owner_type = ? AND owner_id = ?').all(ownerType, ownerId) as any[];
   for (const r of rows) {
     db().prepare('DELETE FROM attachments WHERE id = ?').run(r.id);
-    if (r.kind === 'file') fs.rmSync(path.resolve(uploadsDir(), r.url), { force: true });
+    if (r.kind === 'file') {
+      const abs = path.resolve(uploadsDir(), r.url);
+      if (deferredFiles) deferredFiles.push(abs); else fs.rmSync(abs, { force: true });
+    }
     writeAudit({
       actorUserId, action: 'attachment.delete', entityType: 'attachment', entityId: r.id, entityLabel: r.display_name,
       before: { ownerType, ownerId, kind: r.kind, sizeBytes: r.size_bytes, uploadedBy: r.uploaded_by, reason: 'bản ghi chủ bị xoá' },

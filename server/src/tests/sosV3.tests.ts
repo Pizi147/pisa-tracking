@@ -464,6 +464,10 @@ export async function runSosV3Tests(t: YThucTestKit) {
   console.log('\nPR-T · 5. Xác nhận · thay · đóng `Không cần theo dõi` case từ SOS (S04–S07) — T4');
 
   const sosAuto: any = await load('../cases/sosAuto.ts');
+  const phoiHop: any = await load('../yThuc/phoiHop.ts');
+  const gvcn = P.coreTeacher;      // chủ nhiệm MB-FT 101
+  const coordOf = (attemptId: number) => all('SELECT * FROM sos_coordination_actions WHERE attempt_id = ? ORDER BY id', attemptId);
+  const rowOf = (attemptId: number, kind: string) => coordOf(attemptId).find((r) => r.kind === kind);
   const effectivenessSvc: any = await import('../cases/effectiveness.ts');
   const myworkSvc: any = await import('../worklist/mywork.ts');
   const metricsSvc: any = await import('../worklist/metrics.ts');
@@ -552,6 +556,74 @@ export async function runSosV3Tests(t: YThucTestKit) {
     assert(again.length === 2 && again[1].previous_case_id === f.w2.id && again[1].status === 'open', `Case mới phải nối vào case cũ: ${JSON.stringify(again.map((x) => [x.id, x.status, x.previous_case_id]))}`);
   });
 
+  check('PR-T · S05+S01 (rà soát) Đã đóng `Không cần theo dõi` (hay đóng thường) thì lưu điểm kỹ năng KHÁC hoặc chấm lại CHÍNH lượt đó KHÔNG mở lại / tạo case mới — quyết định của GVBM không bị âm thầm đảo', () => {
+    const f = freshSos('S05re');
+    sosAuto.dismissSosCase(w2T, f.w2.id, { reasonCode: 'single_incident' });
+    const snap = () => JSON.stringify({
+      cases: casesOf(f.st.id).map((c) => [c.id, c.status]),
+      plans: count('SELECT COUNT(*) n FROM case_interventions WHERE case_id IN (SELECT id FROM sos_cases WHERE student_id = ?)', f.st.id),
+      sig: get('SELECT status, case_id FROM case_signals WHERE attempt_id = ? AND skill = ?', f.a.id, 'writing2'),
+      notes: count("SELECT COUNT(*) n FROM notifications WHERE entity_type = 'sos_case' AND entity_id IN (SELECT id FROM sos_cases WHERE student_id = ?)", f.st.id),
+    });
+    const before = snap();
+    enter(P.admin, f.a, 'listening', 7);                       // nhập thêm một kỹ năng ĐẠT của cùng lượt
+    scoreMt2(f.a);                                             // lưu lại y hệt
+    assert(snap() === before, `Case đã đóng bị mở lại / tạo mới:\n  trước ${before}\n  sau   ${snap()}`);
+    assert(casesOf(f.st.id).filter((c) => c.category === 'writing2').length === 1, 'Vẫn đúng MỘT case W2');
+    /* Đóng thường (Chốt kết quả) cũng vậy. */
+    const g = freshSos('S05re2');
+    const gp = g.w2Plan;
+    sosAuto.confirmPresetPlan(w2T, gp.id);
+    cases.completeIntervention(w2T, gp.id, { doneOn: TODAY, performerSelf: true });
+    cases.closeCaseOutcome(P.mbManager, g.w2.id, { outcome: 'improved', note: 'Em đã tiến bộ rõ ở Writing Task 2', decision: 'end' });
+    const before2 = JSON.stringify(casesOf(g.st.id).map((c) => [c.id, c.status]));
+    scoreMt2(g.a); enter(P.admin, g.a, 'reading', 7);
+    assert(JSON.stringify(casesOf(g.st.id).map((c) => [c.id, c.status])) === before2, 'Case đã chốt kết quả bị tạo lại khi chấm lại cùng lượt');
+  });
+
+  check('PR-T · (rà soát) Ngày dự kiến "1 tháng" của phương án điền sẵn KHÔNG trôi theo ngày bấm lưu: đồng bộ lại tính từ ngày case ra đời (ngày ghi nhận tín hiệu)', () => {
+    const st = makeStudent('DRIFT'); const a = mkAttempt(st, 2);
+    enter(P.admin, a, 'speaking', 5);                                   // SOS1 → Tự học · 1 tháng
+    const sp = caseOf(st.id, 'speaking');
+    const born = addDays(TODAY, -10);
+    conn.prepare('UPDATE case_signals SET raised_on = ? WHERE case_id = ?').run(born, sp.id);   // case "ra đời" 10 ngày trước
+    enter(P.admin, a, 'writing2', 5); enter(P.admin, a, 'writing1', 7);  // SOS2: cùng loại phương án → đồng bộ lại
+    const want = domain.sosPlanEndDate('one_month', { createdOn: born });
+    assert(plansOf(sp.id)[0].followup_due === want && want !== domain.sosPlanEndDate('one_month', { createdOn: TODAY }), `followup_due ${plansOf(sp.id)[0].followup_due} phải tính từ ${born} (${want})`);
+  });
+
+  check('PR-T · (rà soát) Phương án điền sẵn chưa xác nhận cũng không ghi được "theo dõi" (recordFollowUp) và không hiện quá hạn xem lại trong thẻ / chi tiết case', () => {
+    const f = freshSos('FOLLOW');
+    assertThrows(() => cases.recordFollowUp(w2T, f.w2.id, { interventionId: f.w2Plan.id, outcome: 'partial', note: 'Ghi thử cho phương án chưa xác nhận' }), /xác nhận/, 'Theo dõi phương án chưa xác nhận');
+    conn.prepare('UPDATE case_interventions SET followup_due = ? WHERE id = ?').run(addDays(TODAY, -5), f.w2Plan.id);
+    const d = cases.caseDetail(P.mbManager, f.w2.id) as any;
+    assert(d.interventions.find((i: any) => i.id === f.w2Plan.id).overdue === false, 'Chi tiết case: gợi ý chưa xác nhận không được báo quá hạn xem lại');
+    const board = (cases.skillSupportBoard(P.mbManager, f.st.id) as any);
+    const flat = JSON.stringify(board);
+    assert(!/"followupOverdue":true/.test(flat), 'Bảng kỹ năng: gợi ý chưa xác nhận không được báo quá hạn');
+  });
+
+  check('PR-T · (rà soát) Case đã ĐÓNG rồi sửa điểm nguồn: KHÔNG gửi thông báo "Xem lại case" (không còn gì để xem lại)', () => {
+    const f = freshSos('NOTE');
+    sosAuto.confirmPresetPlan(w2T, f.w2Plan.id);
+    cases.completeIntervention(w2T, f.w2Plan.id, { doneOn: TODAY, performerSelf: true });
+    cases.closeCaseOutcome(P.mbManager, f.w2.id, { outcome: 'improved', note: 'Em đã tiến bộ rõ ở Writing Task 2', decision: 'end' });
+    const reviews = () => count("SELECT COUNT(*) n FROM notifications WHERE dedup_key LIKE ?", `case_review:${f.w2.id}:%`);
+    enter(P.admin, f.a, 'writing2', 7);                                  // sửa điểm nguồn thành đạt
+    assert(reviews() === 0, 'Đã gửi thông báo xem lại cho một case đã đóng');
+  });
+
+  check('PR-T · (rà soát) Lượt Mock đã HUỶ: không thêm việc phối hợp; không hiện trong danh sách theo lớp / học viên (khớp chỉ số); chữ nhập vào quá dài bị từ chối', () => {
+    const f = freshSos('CANCEL');
+    assertThrows(() => phoiHop.confirmCoordination(gvcn, rowOf(f.a.id, 'talk_student').id, { performedOn: TODAY, note: 'x'.repeat(1001) }), /quá dài/, 'Ghi chú quá dài');
+    assertThrows(() => phoiHop.removeCoordination(gvcn, rowOf(f.a.id, 'talk_family').id, { reasonCode: 'other', reasonText: 'y'.repeat(301) }), /quá dài/, 'Lý do quá dài');
+    assertThrows(() => phoiHop.addCoordination(gvcn, f.a.id, { kind: 'other', customName: 'z'.repeat(101) }), /quá dài/, 'Tên việc quá dài');
+    attemptsSvc.cancelAttempt(P.mbManager, f.a.id, 'Huỷ lượt để thử phép kiểm');
+    assertThrows(() => phoiHop.addCoordination(gvcn, f.a.id, { kind: 'cx_meeting_student' }), /huỷ/, 'Thêm việc vào lượt đã huỷ');
+    assert(!(phoiHop.coordinationOfStudent(gvcn, f.st.id) as any).rows.some((r: any) => r.attemptId === f.a.id), 'Lượt đã huỷ không hiện theo học viên');
+    assert(!(phoiHop.coordinationOfClass(gvcn, CLASS, { includeDone: true }) as any).rows.some((r: any) => r.attemptId === f.a.id), 'Lượt đã huỷ không hiện theo lớp');
+  });
+
   check('PR-T · S05 Lý do: chỉ `Khác` cần chữ; mã lạ bị từ chối; không đóng được case đã có phương án ĐANG CHẠY (dùng đường chốt kết quả thường) hay case tạo tay (không phải case từ SOS)', () => {
     const f = freshSos('S05b');
     assertThrows(() => sosAuto.dismissSosCase(w2T, f.w2.id, { reasonCode: 'other' }), /ghi rõ|chữ/, '`Khác` mà không có chữ');
@@ -615,15 +687,11 @@ export async function runSosV3Tests(t: YThucTestKit) {
 
   console.log('\nPR-T · 6. Phối hợp SOS (P01–P10) — T5');
 
-  const phoiHop: any = await load('../yThuc/phoiHop.ts');
   const attachmentsSvc: any = await import('../platform/attachments.ts');
-  const gvcn = P.coreTeacher;      // chủ nhiệm MB-FT 101
   const outsiderT = loadPrincipal((get(
     `SELECT ur.user_id AS id FROM user_roles ur JOIN roles r ON r.id = ur.role_id
       WHERE r.key = 'teacher' AND ur.user_id NOT IN (SELECT user_id FROM teacher_assignments WHERE class_id = ? AND status = 'active')
       ORDER BY ur.user_id LIMIT 1`, CLASS) as any).id);
-  const coordOf = (attemptId: number) => all('SELECT * FROM sos_coordination_actions WHERE attempt_id = ? ORDER BY id', attemptId);
-  const rowOf = (attemptId: number, kind: string) => coordOf(attemptId).find((r) => r.kind === kind);
   const KINDS_SOS2 = 'talk_student,talk_family,gvcn_meeting';
 
   check('PR-T · P01 (§10#1) Lượt Mock FT có SOS lần đầu → việc phối hợp `preset = 1` theo bảng §5.3: MT2 SOS2 = HS + gia đình + GVCN meeting HS, đều `pending`, đúng học viên', () => {
@@ -881,6 +949,11 @@ export async function runSosV3Tests(t: YThucTestKit) {
     violSvc.deleteViolation(gvcn, ids[0]); violSvc.deleteViolation(gvcn, ids[2]);
     assert(count('SELECT COUNT(*) n FROM measure_violations WHERE measure_id = ?', prep.id) === 1 && count('SELECT COUNT(*) n FROM measure_violations WHERE measure_id = ?', done.id) === 1, 'Đã gỡ khỏi cả hai biện pháp');
     assert(get('SELECT status FROM discipline_measures WHERE id = ?', done.id).status === 'done', 'Biện pháp đã thực hiện còn nguyên');
+    /* Biện pháp ĐANG CHUẨN BỊ mất hết vi phạm: KHÔNG bị xoá ngầm (bản nháp của GVCN); hiện 0 vi phạm và KHÔNG xác nhận được cho tới khi có vi phạm. */
+    violSvc.deleteViolation(gvcn, ids[1]);
+    const empty = measSvc.measureDetail(gvcn, prep.id) as any;
+    assert(empty.status === 'preparing' && empty.violationCount === 0, `Biện pháp nháp mất hết vi phạm: ${JSON.stringify({ s: empty.status, c: empty.violationCount })}`);
+    assertThrows(() => measSvc.confirmMeasure(gvcn, prep.id, { performedOn: TODAY, performedBy: gvcn.userId, note: 'Xác nhận thử' }), /ít nhất một vi phạm/, 'Xác nhận biện pháp rỗng');
   });
 
   check('PR-T · V14′ (§10#9) Xoá vi phạm nằm trong Report gia đình ĐÃ THỰC HIỆN: Report còn (việc đã làm thật), số vi phạm của biện pháp là số ĐANG GẮN (giảm 1, không phải ảnh chụp), thống kê giảm 1, có dòng audit', () => {

@@ -25,7 +25,7 @@ import { expectationFor } from '../fasttrack/scoring.ts';
 import { isRatioCycle } from '../normal/regular.ts';
 import { suggestCaseOwner } from './owner.ts';
 import { linkSignalToCase } from './signals.ts';
-import { sosCaseState } from './sosState.ts';
+import { NOT_UNCONFIRMED_PRESET, sosCaseState } from './sosState.ts';
 
 /**
  * CASE HỌC VỤ — một vòng đời cho cả hai nguồn.
@@ -1198,8 +1198,11 @@ export function recordFollowUp(p: Principal, caseId: number, input: {
     throw badRequest('Kết quả quan sát không hợp lệ.');
   }
   if (input.interventionId) {
-    const iv = conn.prepare('SELECT case_id FROM case_interventions WHERE id = ?').get(input.interventionId) as any;
+    const iv = conn.prepare('SELECT case_id, preset, confirmed_at FROM case_interventions WHERE id = ?').get(input.interventionId) as any;
     if (!iv || iv.case_id !== caseId) throw badRequest('Tác động không thuộc case này.');
+    if (iv.preset === 1 && !iv.confirmed_at) {
+      throw badRequest('Phương án điền sẵn này chưa được xác nhận — hãy xác nhận (hoặc sửa / thay) trước khi ghi theo dõi.');
+    }
   }
   // Bằng chứng phải là bài của CHÍNH học viên đó — không gắn nhầm sang em khác.
   if (input.evidenceAttemptId) {
@@ -1411,6 +1414,7 @@ export function caseDetail(p: Principal, caseId: number) {
        * phải xem lại; điều kiện đó khiến gần như không việc nào bị coi là quá hạn.
        */
       overdue: !!iv.followup_due && iv.followup_due < demoToday() && iv.status !== 'cancelled'
+        && !(iv.preset === 1 && !iv.confirmed_at)         // gợi ý điền sẵn chưa xác nhận không có nghĩa vụ xem lại (Q-V3-3)
         && !conn
           .prepare('SELECT 1 FROM case_followups WHERE intervention_id = ? AND cycle_no = ?')
           .get(iv.id, iv.cycle_no ?? 1),
@@ -1663,7 +1667,8 @@ export function listCases(p: Principal, f: CaseFilters = {}) {
               ow.full_name AS owner_name,
               (SELECT COUNT(*) FROM case_interventions iv WHERE iv.case_id = sc.id) AS intervention_count,
               (SELECT MIN(iv.followup_due) FROM case_interventions iv
-                WHERE iv.case_id = sc.id AND iv.followup_due IS NOT NULL AND iv.status != 'completed') AS next_due,
+                WHERE iv.case_id = sc.id AND iv.followup_due IS NOT NULL AND iv.status != 'completed'
+                  AND ${NOT_UNCONFIRMED_PRESET('iv')}) AS next_due,
               (SELECT ci.taxonomy_code FROM case_issues ci
                 WHERE ci.case_id = sc.id AND ci.role = 'primary' LIMIT 1) AS primary_code
          FROM sos_cases sc
@@ -2299,7 +2304,7 @@ function caseCardOf(caseId: number, c: any) {
       actionDue: open ? iv.action_due ?? null : null,
       actionOverdue: !!(open && !pending && iv.action_due && iv.action_due < today),
       followupDue: open ? iv.followup_due ?? null : null,
-      followupOverdue: !!(open && iv.followup_due && iv.followup_due < today),
+      followupOverdue: !!(open && iv.followup_due && iv.followup_due < today && !(iv.preset === 1 && !iv.confirmed_at)),
       pendingApproval: pending,
       approvalDue: pending ? iv.approval_due ?? null : null,
       lastOutcome: last?.outcome ?? null,

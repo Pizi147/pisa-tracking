@@ -1474,10 +1474,9 @@ CREATE TABLE violations (
   reported_by INTEGER NOT NULL REFERENCES users(id),
   description TEXT NOT NULL,          -- bắt buộc, tối thiểu 10 ký tự
 
-  -- TRẠNG THÁI HIỆU LỰC — chỉ HAI giá trị thật.
-  -- Bốn trạng thái người dùng thấy (Chưa xử lý / Đang chuẩn bị xử lý / Đã xử lý / Không còn
-  -- hiệu lực) là SUY RA, không lưu: ba cái đầu suy từ bảng nối, cái thứ tư là cột này.
-  -- Lưu trạng thái xử lý ở đây là cách chắc chắn nhất để nó lệch với bảng nối.
+  -- NGỪNG DÙNG từ PR-T (rulebook v3, 21/09/2026 tối): ghi sai thì SỬA hoặc XOÁ thẳng, không còn "đánh dấu không chính xác".
+  -- Bốn cột `valid` / `invalid_*` giữ lại để `migrate` an toàn (nâng cấp xoá mọi dòng `valid = 0` cũ, kèm audit); mã KHÔNG đọc, KHÔNG ghi.
+  -- Ba trạng thái người dùng thấy (Chưa xử lý / Đang chuẩn bị xử lý / Đã xử lý) là SUY RA từ bảng nối, không lưu.
   valid INTEGER NOT NULL DEFAULT 1,   -- 1 = còn hiệu lực | 0 = đã đánh dấu không chính xác
   invalid_reason TEXT,                -- bắt buộc khi valid = 0
   invalidated_by INTEGER REFERENCES users(id),

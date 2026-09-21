@@ -352,12 +352,16 @@ export function raiseSignalsForResult(p: Principal, attempt: any, result: Attemp
      * không bao giờ có case "Writing tổng"). Case đã ĐÓNG mà trượt lại thì `upsertCategoryCase` mở case mới NỐI vào case cũ.
      * Case mới có sẵn phương án theo bảng MT × mức SOS, chờ GVBM xác nhận (S03).
      */
-    let created = false;
-    if (!open && autoCases) {
+    /*
+     * TÍN HIỆU ĐÃ NỐI VÀO MỘT CASE rồi (kể cả case đó nay đã ĐÓNG — `Không cần theo dõi`, hay chốt kết quả thường) thì KHÔNG tạo case mới cho chính
+     * lượt này: chạy lặp (lưu lại điểm, nhập kỹ năng khác, chấm lại) không được đảo quyết định của GVBM. Case chỉ được tạo lại khi tín hiệu được MỞ LẠI
+     * (bị thu hồi rồi trượt lại — `raiseSignal` xoá `case_id`), hoặc ở MỘT LƯỢT SAU (tín hiệu của lượt đó là dòng khác).
+     */
+    const alreadyLinked = signal.status === 'linked' && signal.case_id != null;
+    if (!open && autoCases && !alreadyLinked) {
       const up = upsertCategoryCase(p, attempt, category, skill, result.sosLevel, detectedAt);
       open = conn.prepare('SELECT * FROM sos_cases WHERE id = ?').get(up.id) as any;
       openHere.push(open);
-      created = true;
       addMilestone({
         caseId: up.id, kind: 'opened', attemptId: attempt.id, attemptNo: attempt.attempt_no,
         band, expectation: result.expectation, sosLevel: result.sosLevel,
@@ -417,7 +421,6 @@ export function raiseSignalsForResult(p: Principal, attempt: any, result: Attemp
         }
       }
     }
-    void created;
     raised.push({ skill, signalId: signal.id, linkedCaseId: open?.id ?? null });
   }
 

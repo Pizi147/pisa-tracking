@@ -53,11 +53,13 @@ export function presetFor(
   attempt: { attempt_no: number; cycle_id?: number | null },
   sosLevel: number | null | undefined,
   followUntil: string | null,
+  /** Ngày case ra đời (mặc định hôm nay). Đồng bộ lại về sau PHẢI truyền ngày gốc — không thì "1 tháng" trôi theo ngày bấm lưu. */
+  createdOn: string = demoToday(),
 ): (AcademicSupportPreset & { followupDue: string | null }) | null {
   const rule = academicSupportFor(attempt.attempt_no, sosLevel);
   if (!rule) return null;
   const followupDue = sosPlanEndDate(rule.span, {
-    createdOn: demoToday(), nextMtSunday: followUntil, examDate: examDateOf(attempt.cycle_id),
+    createdOn, nextMtSunday: followUntil, examDate: examDateOf(attempt.cycle_id),
   });
   return { ...rule, followupDue };
 }
@@ -101,17 +103,20 @@ export function resyncUnconfirmedPresets(
   sosLevel: number | null,
   followUntil: string | null,
 ) {
-  const p = presetFor(attempt, sosLevel, followUntil);
-  if (!p) return;
+  if (!presetFor(attempt, sosLevel, followUntil)) return;
   const rows = db()
     .prepare(
-      `SELECT iv.id, iv.kind, iv.description, iv.followup_due FROM case_interventions iv
+      `SELECT iv.id, iv.kind, iv.description, iv.followup_due,
+              (SELECT MIN(g.raised_on) FROM case_signals g WHERE g.case_id = sc.id) AS raised_on
+         FROM case_interventions iv
          JOIN sos_cases sc ON sc.id = iv.case_id
         WHERE ${UNCONFIRMED_PRESET('iv')} AND iv.status = 'planned' AND sc.status != 'done'
           AND EXISTS (SELECT 1 FROM case_milestones m WHERE m.case_id = sc.id AND m.kind = 'opened' AND m.attempt_id = ?)`,
     )
     .all(attempt.id) as any[];
   for (const iv of rows) {
+    /* Ngày gốc = ngày tín hiệu nối case được ghi nhận (= ngày case ra đời), để "1 tháng" đứng yên khi lưu lại điểm sau này. */
+    const p = presetFor(attempt, sosLevel, followUntil, iv.raised_on ?? demoToday())!;
     if (iv.kind === p.kind && iv.description === p.description && (iv.followup_due ?? null) === p.followupDue) continue;
     db()
       .prepare('UPDATE case_interventions SET kind = ?, description = ?, followup_due = ?, updated_at = ? WHERE id = ?')

@@ -1,3 +1,4 @@
+import fs from 'node:fs';
 import { db, tx } from '../db.ts';
 import {
   VIOLATION_CATEGORIES, VIOLATION_CATEGORY_LABEL, VIOLATION_DESCRIPTION_MIN, VIOLATION_OTHER_DESCRIPTION_MIN,
@@ -306,10 +307,12 @@ export function deleteViolation(p: Principal, id: number): { ok: true; removedFr
   requireViewStudent(p, row.student_id);
   if (!canEditViolation(p, row)) throw forbidden(EDIT_VIOLATION_MESSAGE);
 
-  return tx(() => {
+  /* Tệp trên đĩa chỉ xoá SAU KHI giao dịch chốt — giao dịch lui thì dòng còn mà tệp mất là không hoàn tác được. */
+  const diskFiles: string[] = [];
+  const result = tx(() => {
     const measureIds = (db().prepare('SELECT measure_id FROM measure_violations WHERE violation_id = ? ORDER BY measure_id').all(id) as any[])
       .map((r) => r.measure_id as number);
-    const files = purgeAttachmentsOf('violation', id, p.userId);
+    const files = purgeAttachmentsOf('violation', id, p.userId, diskFiles);
     db().prepare('DELETE FROM measure_violations WHERE violation_id = ?').run(id);
     db().prepare('DELETE FROM violation_history WHERE violation_id = ?').run(id);
     db().prepare('DELETE FROM violations WHERE id = ?').run(id);
@@ -324,6 +327,8 @@ export function deleteViolation(p: Principal, id: number): { ok: true; removedFr
     });
     return { ok: true as const, removedFromMeasures: measureIds.length };
   });
+  for (const f of diskFiles) { try { fs.rmSync(f, { force: true }); } catch { /* tệp đã mất thì thôi — dòng đã xoá */ } }
+  return result;
 }
 
 // ---------------------------------------------------------------- đọc

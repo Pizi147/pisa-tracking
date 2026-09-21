@@ -1147,9 +1147,10 @@ function reconcileCorrectedScores(p: Principal, attemptId: number, result: Attem
     if (caseHasIndependentBasis(item.caseId, attemptId)) {
       /* Giữ case, chỉ nhắc xem lại — người phụ trách quyết định có theo tiếp hay không. */
       const c = conn
-        .prepare('SELECT owner_user_id, student_id FROM sos_cases WHERE id = ?')
+        .prepare('SELECT owner_user_id, student_id, status FROM sos_cases WHERE id = ?')
         .get(item.caseId) as any;
-      if (c?.owner_user_id) {
+      /* Case đã ĐÓNG (không cần theo dõi / chốt kết quả) thì không còn gì để "xem lại" — không nhắc. */
+      if (c?.owner_user_id && c.status !== 'done') {
         const st = conn.prepare('SELECT full_name FROM students WHERE id = ?').get(c.student_id) as any;
         notify({
           userId: c.owner_user_id, kind: 'sos',

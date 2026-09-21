@@ -463,6 +463,8 @@ function migrateCaseEngine(applied: string[], skipped: string[]) {
       .run(nowIso(), nowIso());
   })();
   conn.pragma('foreign_keys = ON');
+  /* Giao dịch đã chốt → mới xoá tệp bằng chứng của những vi phạm bị xoá (PR-T). Lỗi giữa chừng thì tới đây không bao giờ chạy tới, tệp còn nguyên. */
+  flushDeferredFileRemovals();
 
   if (!applied.length) skipped.push('Mô hình case học vụ đã có sẵn, không cần nâng cấp.');
   return { applied, skipped };
@@ -2830,6 +2832,14 @@ export function migrateSosV3(conn: any, applied: string[]) {
  * `audit_logs` giữ nội dung đã xoá (kể cả lý do cũ) — chỉ để truy vết. Biện pháp đã thực hiện giữ nguyên, chỉ còn ít vi phạm hơn.
  * Chạy lặp không làm gì (không còn dòng `valid = 0`). Cột `valid`/`invalid_*` giữ trong schema, ngừng dùng.
  */
+const deferredFileRemovals: string[] = [];
+/** Xoá tệp đã chờ (từ `migrateDeleteInvalidViolations`) — chỉ gọi SAU KHI giao dịch nâng cấp đã chốt. */
+export function flushDeferredFileRemovals(): number {
+  const n = deferredFileRemovals.length;
+  for (const f of deferredFileRemovals.splice(0)) { try { fs.rmSync(f, { force: true }); } catch { /* tệp đã mất thì thôi */ } }
+  return n;
+}
+
 export function migrateDeleteInvalidViolations(conn: any, applied: string[]) {
   const hasTable = (t: string) => !!conn.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name = ?").get(t);
   if (!hasTable('violations')) return;
@@ -2842,9 +2852,8 @@ export function migrateDeleteInvalidViolations(conn: any, applied: string[]) {
     const files = hasTable('attachments')
       ? (conn.prepare("SELECT * FROM attachments WHERE owner_type = 'violation' AND owner_id = ?").all(v.id) as any[])
       : [];
-    for (const f of files) {
-      if (f.kind === 'file') { try { fs.rmSync(path.resolve(uploadsDir(), f.url), { force: true }); } catch { /* tệp đã mất thì thôi */ } }
-    }
+    /* Tệp trên đĩa xoá SAU KHI cả bước nâng cấp chốt (`flushDeferredFileRemovals`): bước sau lỗi thì database lui, và tệp không được mất theo. */
+    for (const f of files) if (f.kind === 'file') deferredFileRemovals.push(path.resolve(uploadsDir(), f.url));
     if (files.length) conn.prepare("DELETE FROM attachments WHERE owner_type = 'violation' AND owner_id = ?").run(v.id);
     conn.prepare('DELETE FROM measure_violations WHERE violation_id = ?').run(v.id);
     if (hasTable('violation_history')) conn.prepare('DELETE FROM violation_history WHERE violation_id = ?').run(v.id);

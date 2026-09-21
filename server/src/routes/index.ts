@@ -1154,10 +1154,6 @@ api.post('/cases/:id/interventions', requireAuth, wrap((req) => {
 }));
 
 /**
- * Quản lý trả lời một phương án đang chờ duyệt: duyệt / không duyệt / góp ý.
- * Góp ý KHÔNG kết thúc việc chờ — Quản lý vẫn nợ một câu trả lời.
- */
-/**
  * CASE TỪ SOS (rulebook v3, PR-T): GVBM đúng kỹ năng hoặc Quản lý XÁC NHẬN · THAY phương án điền sẵn, hoặc đóng ngay `Không cần theo dõi` kèm lý do
  * chọn nhanh. Quyền kiểm ở máy chủ theo ĐÚNG kỹ năng của case (C02).
  */
@@ -1207,6 +1203,10 @@ api.post('/phoi-hop-sos/:id/remove', requireAuth, wrap((req) => {
   return phoiHopSvc.removeCoordination(principalOf(req), pInt(req, 'id'), { reasonCode: b.reasonCode ?? null, reasonText: b.reasonText ?? null });
 }));
 
+/**
+ * Quản lý trả lời một phương án đang chờ duyệt: duyệt / không duyệt / góp ý.
+ * Góp ý KHÔNG kết thúc việc chờ — Quản lý vẫn nợ một câu trả lời.
+ */
 api.post('/interventions/:id/respond', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return caseSvc.respondToPlan(principalOf(req), pInt(req, 'id'), req.body ?? {});

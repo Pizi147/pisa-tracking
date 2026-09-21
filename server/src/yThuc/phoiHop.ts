@@ -25,6 +25,13 @@ import { canManageDiscipline, requireManageDiscipline, requireViewClass, require
  * Quyền (P04): xem = quyền xem học viên (GVBM xem được); thêm / xác nhận / bỏ = GVCN của lớp em ĐANG học + Quản lý trong phạm vi (`discipline.manage`).
  */
 
+/** Chữ do người dùng nhập: cắt khoảng trắng, và từ chối khi quá dài — không để một ô ghi chú thành kho chứa tuỳ ý. */
+function capText(value: string | null | undefined, max: number, label: string): string {
+  const text = (value ?? '').trim();
+  if (text.length > max) throw badRequest(`${label} quá dài (tối đa ${max} ký tự).`);
+  return text;
+}
+
 const ACT_MESSAGE = 'Chỉ giáo viên chủ nhiệm của lớp em đang học và Quản lý trong phạm vi mới xử lý được Phối hợp SOS — giáo viên bộ môn chỉ xem.';
 
 // ---------------------------------------------------------------- điền sẵn và đồng bộ theo mức SOS (P01–P03)
@@ -136,7 +143,7 @@ function turnsOf(p: Principal, rows: any[]): CoordinationTurn[] {
            JOIN students s ON s.id = a.student_id LEFT JOIN classes c ON c.id = a.class_id WHERE a.id = ?`,
       )
       .get(attemptId) as any;
-    if (!a) continue;
+    if (!a || a.status === 'cancelled') continue;     // lượt đã huỷ không còn là SOS Event (khớp với chỉ số)
     const skills = (conn
       .prepare(`SELECT DISTINCT skill FROM case_signals WHERE attempt_id = ? AND status != 'withdrawn' AND skill IS NOT NULL ORDER BY id`)
       .all(attemptId) as any[]).map((r) => r.skill as string);
@@ -202,11 +209,12 @@ export function addCoordination(p: Principal, attemptId: number, input: { kind?:
   const a = db().prepare('SELECT * FROM assessment_attempts WHERE id = ?').get(attemptId) as any;
   if (!a) throw notFound('Không tìm thấy lượt Mock Test');
   requireManageDiscipline(p, a.student_id, ACT_MESSAGE);
+  if (a.status === 'cancelled') throw badRequest('Lượt Mock Test này đã huỷ — không thêm việc phối hợp được.');
   const kind = String(input.kind ?? '');
   if (!(COORDINATION_KINDS as readonly string[]).includes(kind)) {
     throw badRequest(`Hãy chọn loại việc: ${COORDINATION_KINDS.map((k) => COORDINATION_KIND_LABEL[k]).join(' · ')}.`);
   }
-  const name = (input.customName ?? '').trim();
+  const name = capText(input.customName, 100, 'Tên việc');
   if (kind === 'other' && !name) throw badRequest('Việc loại "Khác" cần ghi tên việc.');
   if (kind !== 'other' && name) throw badRequest('Chỉ việc loại "Khác" mới có tên riêng.');
   if ((a.kind ?? 'mock') !== 'mock' || !(resultOf(a).sosLevel && resultOf(a).sosLevel! >= 1)) {
@@ -244,13 +252,14 @@ export function confirmCoordination(p: Principal, id: number, input: { performed
   if (!input.performedOn) throw badRequest('Cần chọn ngày thực hiện.');
   if (!isIsoDate(input.performedOn)) throw badRequest('Ngày thực hiện không hợp lệ.');
   if (input.performedOn > demoToday()) throw badRequest('Ngày thực hiện không được ở tương lai.');
-  const who = (input.performerName ?? '').trim();
+  const who = capText(input.performerName, 100, 'Tên người thực hiện');
+  const note = capText(input.note, 1000, 'Ghi chú');
   tx(() => {
     db()
       .prepare(
         `UPDATE sos_coordination_actions SET status = 'done', performed_on = ?, performed_by = ?, performer_name = ?, note = ?, updated_at = ? WHERE id = ?`,
       )
-      .run(input.performedOn, who ? null : p.userId, who || null, (input.note ?? '').trim() || null, nowIso(), id);
+      .run(input.performedOn, who ? null : p.userId, who || null, note || null, nowIso(), id);
     writeAudit({
       actorUserId: p.userId, action: 'sos_coordination.confirm', entityType: 'sos_coordination_action', entityId: id,
       entityLabel: `${r.kind}${r.custom_name ? ` · ${r.custom_name}` : ''}`, before: { status: r.status }, after: { status: 'done', performedOn: input.performedOn },
@@ -271,7 +280,7 @@ export function removeCoordination(p: Principal, id: number, input: { reasonCode
   if (!(COORDINATION_USER_REMOVE_REASONS as readonly string[]).includes(code)) {
     throw badRequest(`Hãy chọn một lý do: ${COORDINATION_USER_REMOVE_REASONS.map((c) => COORDINATION_REMOVE_REASON_LABEL[c]).join(' · ')}.`);
   }
-  const text = (input.reasonText ?? '').trim();
+  const text = capText(input.reasonText, 300, 'Lý do');
   if (reasonNeedsText(code) && !text) throw badRequest('Chọn "Khác" thì phải ghi rõ lý do bằng chữ.');
   tx(() => {
     db()
