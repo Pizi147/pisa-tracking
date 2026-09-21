@@ -163,15 +163,15 @@ mạng tới Turso — đó là Task 3 (gate).
 
 **Files:** chỉ đọc.
 
-- [ ] **Step 1:** Gọi skill `superpowers:using-git-worktrees`, tạo nhánh **`pr-z2a-ha-tang`** từ `main` mới nhất.
+- [x] **Step 1:** Gọi skill `superpowers:using-git-worktrees`, tạo nhánh **`pr-z2a-ha-tang`** từ `main` mới nhất.
       Kiểm `git log --oneline -15` có commit merge của **PR-T (#39) và PR-K (#42)**. Chưa có → 🛑 dừng, báo chủ sản phẩm.
       🆕 22/09: kiểm worktree có file `.netlify/state.json` (được commit trên `main`, chứa mã site — **không** phải mật
       khẩu, cố ý giữ để worktree biết site nào). Không có → 🛑 dừng, hỏi.
-- [ ] **Step 2:** `npm install` rồi `npm run check`. Ghi **số phép kiểm hiện tại** vào Nhật ký (gọi là `N0`).
+- [x] **Step 2:** `npm install` rồi `npm run check`. Ghi **số phép kiểm hiện tại** vào Nhật ký (gọi là `N0`).
       🆕 22/09: bản thử đo được `N0 = 581` (có thể hơn nếu PR-K2 đã merge). Máy này chạy Node 24.
-- [ ] **Step 3:** Đọc: `plan.md` mục 24, `TRIEN_KHAI.md`, `server/src/db.ts`, `server/src/app.ts`,
+- [x] **Step 3:** Đọc: `plan.md` mục 24, `TRIEN_KHAI.md`, `server/src/db.ts`, `server/src/app.ts`,
       `server/src/platform/attachments.ts`, `server/src/seed/seed.ts` dòng 1–200.
-- [ ] **Step 4:** Chạy và **dán kết quả vào Nhật ký** (dùng ở Task 5 và 7):
+- [x] **Step 4:** Chạy và **dán kết quả vào Nhật ký** (dùng ở Task 5 và 7):
       ```bash
       grep -rn "readFileSync\|existsSync\|readdirSync" server/src --include=*.ts | grep -v tests
       grep -rn "INSERT INTO" server/src/seed/seed.ts | head -40
@@ -196,12 +196,12 @@ Lý do từng sửa đổi (đã tái hiện ở phép thử 21/09):
 - `libsql` hiểu `.run(null)` (đúng **một** tham số `null`) là "đối tượng tham số có tên" → lỗi `failed to downcast
   any to object`.
 
-- [ ] **Step 1: Cài gói.**
+- [x] **Step 1: Cài gói.**
   ```bash
   npm install libsql@0.5.29 --save-exact
   npm uninstall better-sqlite3 @types/better-sqlite3
   ```
-- [ ] **Step 2: Đổi import.** Trong **mọi** file có `better-sqlite3`:
+- [x] **Step 2: Đổi import.** Trong **mọi** file có `better-sqlite3`:
   - `import Database from 'better-sqlite3';` → `import Database from 'libsql';`
   - `import('better-sqlite3')` → `import('libsql')`
   - Kiểu `Database.Database` → giữ nguyên nếu `tsc` chấp nhận; nếu không, dùng `InstanceType<typeof Database>`.
@@ -219,7 +219,7 @@ Lý do từng sửa đổi (đã tái hiện ở phép thử 21/09):
     Sửa chú thích ngay trên khối `try` cho khớp (bỏ câu "tệp bản địa được biên dịch lúc cài đặt").
   - 🆕 22/09 `README.md`: chỗ nói về `better-sqlite3` (khoảng dòng 215–219) → nói `libsql`, bỏ lệnh `npm rebuild better-sqlite3`.
   - Sau bước này: `grep -rn "better-sqlite3" server/src scripts README.md package.json` → **rỗng**.
-- [ ] **Step 3: `tx` gọi lồng được.** Trong `server/src/db.ts` thay hàm `tx` bằng:
+- [x] **Step 3: `tx` gọi lồng được.** Trong `server/src/db.ts` thay hàm `tx` bằng:
   ```ts
   /*
    * GIAO DỊCH LỒNG. `better-sqlite3` tự biến giao dịch lồng thành SAVEPOINT; `libsql` thì báo lỗi
@@ -245,7 +245,7 @@ Lý do từng sửa đổi (đã tái hiện ở phép thử 21/09):
     }
   }
   ```
-- [ ] **Step 3b 🆕 22/09: Bỏ khoá `_metadata` mà libsql gắn vào dòng.** `libsql@0.5.29` thêm một khoá đếm được
+- [x] **Step 3b 🆕 22/09: Bỏ khoá `_metadata` mà libsql gắn vào dòng.** `libsql@0.5.29` thêm một khoá đếm được
       `_metadata: { duration }` vào **mỗi** dòng `Statement.get()` trả về (`.all()` và `.iterate()` thì không). Hậu quả
       đã thấy: phép kiểm "PR-T · S05+S01 (rà soát) … KHÔNG mở lại / tạo case mới" đỏ (so dòng bằng JSON), và khoá này
       **lọt ra mọi câu trả lời API** dựng từ `.get()` (686 chỗ gọi). Sửa **một chỗ** trong `server/src/db.ts`, ngay dưới các import:
@@ -271,27 +271,27 @@ Lý do từng sửa đổi (đã tái hiện ở phép thử 21/09):
       `Buffer` làm tham số duy nhất (`.run(buf)`) — tiến trình Node chết hẳn (Rust panic). Luôn bọc: `.run(buf, x)` hoặc
       tham số có tên. `pluck().get()` và `pragma(x, { simple: true })` trả đối tượng thay vì giá trị — hiện mã không dùng,
       đừng bắt đầu dùng.
-- [ ] **Step 4: Các `conn.transaction(...)` gọi thẳng.** Chạy `grep -rn "\.transaction(" server/src --include=*.ts | grep -v tests`.
+- [x] **Step 4: Các `conn.transaction(...)` gọi thẳng.** Chạy `grep -rn "\.transaction(" server/src --include=*.ts | grep -v tests`.
       Với mỗi chỗ **ngoài** `db.ts` có thể chạy khi đã ở trong một `tx(...)`: đổi thành `tx(() => { ... })`.
       Chỗ nào chắc chắn chạy độc lập (điểm vào của lệnh `migrate`) thì giữ. Ghi danh sách đã đổi vào Nhật ký.
       🆕 22/09 đã thử: chỉ có `migrate.ts:61` và `:237`, cả hai chỉ chạy qua `migrate()` (không bao giờ trong `tx`) →
       **giữ nguyên cả hai**. Grep ra chỗ khác thì mới xét.
-- [ ] **Step 5: `.run(null)`.** Trong `server/src/migrate.ts`, câu `UPDATE sos_cases SET merge_until = ? … .run(null)`
+- [x] **Step 5: `.run(null)`.** Trong `server/src/migrate.ts`, câu `UPDATE sos_cases SET merge_until = ? … .run(null)`
       → đổi SQL thành `SET merge_until = NULL` và gọi `.run()`. Rồi quét toàn bộ:
       `grep -rnE "\.(run|get|all|iterate)\(\s*(null|undefined)\s*\)" server/src --include=*.ts` — phải **rỗng**.
-- [ ] **Step 6: Phép kiểm J9 trên Windows.** 🆕 22/09: áp **cả** cho `server/src/tests/sosV3.tests.ts` nếu nó cũng dựng
+- [x] **Step 6: Phép kiểm J9 trên Windows.** 🆕 22/09: áp **cả** cho `server/src/tests/sosV3.tests.ts` nếu nó cũng dựng
       database trong thư mục tạm rồi xoá. Trong `server/src/tests/yThuc.tests.ts`, phép kiểm "Nâng cấp một database
       THẬT của thời trước PR-J": mọi kết nối mở tới file trong thư mục tạm phải được `.close()` **trước** lệnh xoá thư
       mục tạm (`fs.rmSync(...)`). Bọc xoá thư mục bằng `try { … } catch { /* Windows còn giữ file — bỏ qua dọn dẹp */ }`
       **chỉ** quanh lệnh xoá, không quanh phần kiểm.
-- [ ] **Step 7: Lỗi ràng buộc.** Trong `server/src/app.ts`, điều kiện nhận lỗi trùng dữ liệu đổi thành:
+- [x] **Step 7: Lỗi ràng buộc.** Trong `server/src/app.ts`, điều kiện nhận lỗi trùng dữ liệu đổi thành:
   ```ts
   const code = (err as { code?: unknown })?.code;
   if (/SQLITE_CONSTRAINT|constraint failed/i.test(message) || (typeof code === 'string' && code.startsWith('SQLITE_CONSTRAINT'))) {
   ```
-- [ ] **Step 8:** `npm run check`. **Phải đủ `N0` phép, tất cả đạt.** Chưa đủ → systematic-debugging; không sửa phép kiểm cũ.
+- [x] **Step 8:** `npm run check`. **Phải đủ `N0` phép, tất cả đạt.** Chưa đủ → systematic-debugging; không sửa phép kiểm cũ.
       🆕 22/09: bản thử đạt 581/581 sau Step 1–7 + Step 3b. Đỏ đúng phép "S05+S01" → Step 3b chưa đúng.
-- [ ] **Step 9:** Commit: `PR-Z2 (1): đổi better-sqlite3 sang libsql, giao dịch lồng bằng savepoint`.
+- [x] **Step 9:** Commit: `PR-Z2 (1): đổi better-sqlite3 sang libsql, giao dịch lồng bằng savepoint`.
 
 ---
 
@@ -1296,4 +1296,6 @@ thử). Hỏi rõ từng thứ; **không** dùng database thử làm bản chín
 
 | Thời điểm | Task | Ghi chép |
 |---|---|---|
-| | 0 | `N0` = |
+| 22/09 | 0 | **Phần A (PR-Z2a), Fable 5.1.** `N0` = **581** (PR-K2 chưa merge). Node v24.20.0. Worktree `pr-z2a-ha-tang` từ `a8867f3`, có PR-T (#39), PR-K (#42), có `.netlify/state.json`. |
+| 22/09 | 0 · Step 4 | **File được đọc ngoài tests** (`readFileSync/existsSync/readdirSync`): `db.ts:17` (tìm `package.json` — có nhánh rơi về `process.cwd()`), `db.ts:49` (`isInitialised` — đường API `/api/health`; Task 2 bỏ khi Turso), `db.ts:76` (`schema.sql` — chỉ `recreateSchema`, tức lệnh seed), `migrate/run.ts:12,14` (lệnh migrate), `platform/attachments.ts:199` (Task 4 đưa qua kho tệp). → Không có file không-phải-.ts nào được đọc trên đường API ⇒ **không cần `included_files`**. **`INSERT INTO` của `seed.ts` (40 dòng đầu):** branches :28 · reporting_units :36,:39 · permissions :45 · roles :50,:66 (retired) · role_permissions :54 · users :100 · user_roles :108 · programmes :163 · programme_skills :166 · programme_checkpoints :169 · classes :199 · class_skills :212 · teacher_assignments :225 · student_code_seq :241 · unit_reports :356 · tasks :408 · task_updates :422. (Dùng ở Task 7 — Phần B.) |
+| 22/09 | 1 | **581/581** sau Step 1–7 + 3b. `libsql@0.5.29`; `package-lock.json` đã có sẵn mục `@libsql/linux-x64-gnu`. Kiểu `Database.Database` của libsql được `tsc` chấp nhận nguyên — không phải đổi. **Step 4:** `.transaction(` ngoài `db.ts` chỉ có `migrate.ts:61` và `:237` → giữ nguyên cả hai, không đổi chỗ nào. **Step 6:** `sosV3.tests.ts` chỉ dùng `:memory:` (không có thư mục tạm) → chỉ đổi import; `yThuc.tests.ts` đã `.close()` đủ trước khi xoá, chỉ bọc `try/catch` quanh `rmSync`. **Step 2:** grep `better-sqlite3` còn đúng 2 dòng — đều là **chú thích do plan quy định nguyên văn** trong `db.ts` (giải thích khác biệt với libsql), không phải import. Bất ngờ nhỏ: `npm` bản mới in cảnh báo `install-scripts … esbuild` — vô hại, check vẫn chạy. |

@@ -1320,7 +1320,7 @@ export async function runYThucTests(t: YThucTestKit) {
   const fsMod = await import('node:fs');
   const pathMod = await import('node:path');
   const { fileURLToPath } = await import('node:url');
-  const { default: SqliteDb } = await import('better-sqlite3');
+  const { default: SqliteDb } = await import('libsql');
   const migrateMod = await import('../migrate.ts');
   const REPO = pathMod.resolve(fileURLToPath(new URL('../../../../', import.meta.url)));
   const LEGACY = 'behav' + 'iour'; // giá trị cũ của cột track — chỉ để dựng dữ liệu cũ trong phép kiểm
@@ -1494,7 +1494,7 @@ export async function runYThucTests(t: YThucTestKit) {
     after.close();
     const second = run();
     assert(!/Chuyển mô hình|Thêm bốn bảng|sao lưu/.test(second), `Lần hai không được làm lại bước Ý thức: ${second.slice(-300)}`);
-    fsMod.rmSync(dir, { recursive: true, force: true });
+    try { fsMod.rmSync(dir, { recursive: true, force: true }); } catch { /* Windows còn giữ file — bỏ qua dọn dẹp */ }
   });
 
   // ================================================================== J9 — mô hình cũ ĐÃ BIẾN MẤT khỏi mã, không chỉ khỏi giao diện

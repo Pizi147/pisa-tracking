@@ -2951,10 +2951,10 @@ function migrateCaseForm(conn: any, applied: string[]) {
   if (cols('sos_cases').includes('merge_until')) {
     windows = conn
       .prepare(
-        `UPDATE sos_cases SET merge_until = ?
+        `UPDATE sos_cases SET merge_until = NULL
           WHERE track = '${LEGACY_TRACK}' AND merge_until IS NULL AND detected_at IS NOT NULL`,
       )
-      .run(null).changes;
+      .run().changes;
     /* Đặt cửa sổ theo chính ngày mở của từng case — SQLite không có hàm ngày +3 tiện ở đây. */
     windows = 0;
     for (const c of conn

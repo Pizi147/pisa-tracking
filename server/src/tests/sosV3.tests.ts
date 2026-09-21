@@ -138,7 +138,7 @@ export async function runSosV3Tests(t: YThucTestKit) {
   const fsMod = await import('node:fs');
   const pathMod = await import('node:path');
   const { fileURLToPath } = await import('node:url');
-  const { default: SqliteDb } = await import('better-sqlite3');
+  const { default: SqliteDb } = await import('libsql');
   const migrateMod: any = await import('../migrate.ts');
   const REPO = pathMod.resolve(fileURLToPath(new URL('../../../../', import.meta.url)));
   const SCHEMA = fsMod.readFileSync(pathMod.join(REPO, 'server/src/schema.sql'), 'utf8');

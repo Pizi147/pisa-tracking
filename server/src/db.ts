@@ -1,7 +1,27 @@
-import Database from 'better-sqlite3';
+import Database from 'libsql';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+
+/*
+ * libsql gắn thêm `_metadata: { duration }` vào MỖI dòng `.get()` trả về (better-sqlite3 thì không). Khoá này lọt
+ * ra JSON của API và làm hỏng mọi phép so dòng. Vá một lần ở đây thay vì sửa 686 chỗ gọi.
+ */
+{
+  const proto = Object.getPrototypeOf(new Database(':memory:').prepare('SELECT 1')) as { get: (...a: unknown[]) => unknown };
+  const getGoc = proto.get;
+  proto.get = function (this: unknown, ...args: unknown[]) {
+    const row = getGoc.apply(this, args);
+    if (row && typeof row === 'object' && '_metadata' in row) delete (row as Record<string, unknown>)._metadata;
+    return row;
+  };
+}
+/*
+ * CẢNH BÁO cho mọi mã sau này — với libsql:
+ *   - KHÔNG truyền MỘT `Buffer` làm tham số duy nhất (`.run(buf)`): tiến trình Node chết hẳn (Rust panic). Luôn bọc:
+ *     `.run(buf, x)` hoặc tham số có tên.
+ *   - `pluck().get()` và `pragma(x, { simple: true })` trả đối tượng thay vì giá trị — hiện mã không dùng, đừng bắt đầu dùng.
+ */
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -77,7 +97,27 @@ export function recreateSchema() {
   conn.pragma('foreign_keys = ON');
 }
 
+/*
+ * GIAO DỊCH LỒNG. `better-sqlite3` tự biến giao dịch lồng thành SAVEPOINT; `libsql` thì báo lỗi
+ * "cannot start a transaction within a transaction". Làm lại đúng hành vi cũ: vòng ngoài là giao dịch
+ * thật, vòng trong là savepoint — lỗi ở vòng trong chỉ cuộn lại phần của nó rồi ném tiếp lên.
+ */
+let savepointDepth = 0;
 /** Chạy fn trong một transaction; mọi mutation nhiều bảng phải đi qua đây. */
 export function tx<T>(fn: () => T): T {
-  return db().transaction(fn)();
+  const conn = db();
+  if (!conn.inTransaction) return conn.transaction(fn)();
+  const name = `sp_${++savepointDepth}`;
+  conn.exec(`SAVEPOINT ${name}`);
+  try {
+    const out = fn();
+    conn.exec(`RELEASE ${name}`);
+    return out;
+  } catch (e) {
+    conn.exec(`ROLLBACK TO ${name}`);
+    conn.exec(`RELEASE ${name}`);
+    throw e;
+  } finally {
+    savepointDepth--;
+  }
 }

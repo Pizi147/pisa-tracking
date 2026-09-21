@@ -36,7 +36,8 @@ export function createApp() {
       return;
     }
     const message = err instanceof Error ? err.message : 'Lỗi không xác định';
-    if (/SQLITE_CONSTRAINT/i.test(message)) {
+    const code = (err as { code?: unknown })?.code;
+    if (/SQLITE_CONSTRAINT|constraint failed/i.test(message) || (typeof code === 'string' && code.startsWith('SQLITE_CONSTRAINT'))) {
       res.status(409).json({ error: 'Dữ liệu bị trùng hoặc vi phạm ràng buộc.', details: { raw: message } });
       return;
     }
