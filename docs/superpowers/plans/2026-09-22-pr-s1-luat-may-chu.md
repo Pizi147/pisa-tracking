@@ -2471,7 +2471,7 @@ Run → Expected ✓ ngay (phép kiểm còn thiếu, hành vi đã có). ✗ �
 **Files:** `shared/domain/policy.ts:1-23`, `:55-60`, `:78-85` · `thiet-ke/LUAT_CHO_CHOT.md:3`, `:80`, `:86`, `:156`, `:170` · `plan.md` §22.9 (S11–S17),
 §22.10 (dòng C08), bảng nhật ký phiên · `CODE_MAP.md`
 
-- [ ] **Step 1: `policy.ts`.**
+- [x] **Step 1: `policy.ts`.**
   - Khối đầu file (dòng 7–12) thay bằng:
 
 ```ts
@@ -2494,18 +2494,18 @@ Run → Expected ✓ ngay (phép kiểm còn thiếu, hành vi đã có). ✗ �
  */
 ```
 
-- [ ] **Step 2: `LUAT_CHO_CHOT.md`.** Dòng 3 thêm một câu: *"**Cập nhật 22/09/2026 (PR-S1):** mọi điểm C01–C10 đã chốt; C08 đóng 21/09 đêm — xem §6.4 và §6.5."*
+- [x] **Step 2: `LUAT_CHO_CHOT.md`.** Dòng 3 thêm một câu: *"**Cập nhật 22/09/2026 (PR-S1):** mọi điểm C01–C10 đã chốt; C08 đóng 21/09 đêm — xem §6.4 và §6.5."*
   Bảng §5 dòng C01 cột "Trạng thái mã" → `Đóng 21/09 — hai mốc riêng (§6.2)`; dòng C08 → `Đóng 21/09 đêm — GV ghi "-", tự dời; phần "-" làm ở PR-Rc1 (R14)`.
   §6.5 dòng C08 → `| C08 | ✅ Đóng 21/09 đêm — lớp thường dùng "-" (GV ghi, tự dời). Mã: PR-Rc1 (R14) |`. §7 dòng C08 → `| **C08** | ✅ Đóng 21/09 đêm (xem §6.4) |`.
   Không xoá chữ cũ ở §1–§4 (luật file: giữ lịch sử câu hỏi).
-- [ ] **Step 3: `plan.md`.** §22.9: tick `[x]` S11, S12, S13, S14, S15, S16, S17, mỗi dòng thêm `*(PR-S1)*`; S16 ghi thêm "gắn vào `setStudentStatus('finished')`;
+- [x] **Step 3: `plan.md`.** §22.9: tick `[x]` S11, S12, S13, S14, S15, S16, S17, mỗi dòng thêm `*(PR-S1)*`; S16 ghi thêm "gắn vào `setStudentStatus('finished')`;
   `setOutcome`/`updateCycle` chỉ khi có cờ `dongCaseKhiKetThuc: true`; hoàn tất khoá không cờ (Lên lớp thường tiếp, PR-LT) giữ Case". §22.10 dòng C08: gạch `~~…~~` và ghi "đóng 21/09 đêm, việc R14 (PR-Rc1)". Thêm **một**
   dòng vào bảng nhật ký phiên (cuối bảng có dòng `Claude (session PR-Z2b …`): ngày, `Claude (session PR-S1, nhánh pr-s1-luat-may-chu, <model>)`, tóm tắt
   (việc đã làm, số phép kiểm 672 → N, quyết định Q1–Q13, việc chuyển cho PR khác: nút Lưu trữ + lựa chọn "em thôi học" (cờ dongCaseKhiKetThuc) → LT, dòng tín hiệu → Pa, luồng gọi S17 → LT, dấu "-" lớp
   thường → Rc1, nửa giao diện F07 → Form).
-- [ ] **Step 4: `CODE_MAP.md`.** Thêm một dòng cho `server/src/cases/systemClose.ts` (khối cases) và `server/src/worklist/scoreDebt.ts` (khối worklist),
+- [x] **Step 4: `CODE_MAP.md`.** Thêm một dòng cho `server/src/cases/systemClose.ts` (khối cases) và `server/src/worklist/scoreDebt.ts` (khối worklist),
   theo đúng định dạng dòng lân cận.
-- [ ] **Step 5: Commit.** `git commit -am "PR-S1 (19): tài liệu — policy.ts C01/C05/C08, LUAT_CHO_CHOT C08, plan.md S11–S17 + nhật ký, CODE_MAP"`
+- [x] **Step 5: Commit.** `git commit -am "PR-S1 (19): tài liệu — policy.ts C01/C05/C08, LUAT_CHO_CHOT C08, plan.md S11–S17 + nhật ký, CODE_MAP"`
 
 ---
 

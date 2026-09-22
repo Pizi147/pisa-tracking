@@ -4,21 +4,21 @@
  * Mỗi điểm là MỘT HẰNG SỐ CÓ TÊN, kèm chú thích nêu cả hai phương án và cái nào đang dùng. Nơi gọi chỉ ĐỌC hằng số,
  * không có `if` rải rác. Không hiển thị mã C trên giao diện người dùng (LUAT_CHO_CHOT.md §4).
  *
- * TRẠNG THÁI CÀI ĐẶT (20/09/2026) — ghi rõ điểm nào ĐÃ NỐI DÂY, điểm nào chỉ ghi lại:
- *   · NỐI DÂY, mã đọc hằng số:  C02 (quyền máy chủ) · C10 (chốt ngay).
- *   · HẾT HIỆU LỰC 21/09/2026: C03 · C04 — là luật của mô hình Case Ý thức, mô hình đó đã bỏ (rule book mục 18). Giữ hằng số
- *     và ghi lý do, không xoá dấu vết một quyết định có thật.
- *   · GHI LẠI, KHỚP HÀNH VI ĐANG CHẠY: C06 · C07 · C09 (chủ sản phẩm chốt đúng như code đang làm).
- *   · CHƯA CHỐT HẲN: C01 (chủ sản phẩm hỏi lại cách hiểu) · C08 (còn một nửa chưa rõ).
+ * TRẠNG THÁI (cập nhật PR-S1, 22/09/2026):
+ *   · NỐI DÂY, mã đọc hằng số:  C02 (quyền máy chủ; RB-6 áp thêm cho "hoàn thành Case") · C10 (chốt ngay).
+ *   · ĐÃ CHỐT, khớp hành vi đang chạy: C01 (21/09 — hai mốc riêng) · C06 · C07 · C09.
+ *   · HẾT HIỆU LỰC: C03 · C04 (21/09 — bỏ mô hình Case Ý thức) · C05 (21/09 tối — thay bằng Phối hợp SOS, rulebook v3).
+ *     Giữ hằng số và ghi lý do, không xoá dấu vết một quyết định có thật.
+ *   · C08: ĐÃ CHỐT 21/09 đêm (lớp thường dùng "-", GV ghi, tự dời tuần sau) — phần "dấu -" CHƯA NỐI DÂY, việc của PR-Rc1 (R14).
  */
 
 /**
- * C01 — CHỦ SẢN PHẨM ĐÃ TRẢ LỜI NHƯNG CÒN HỎI LẠI "đúng không?" (20/09/2026) — CHƯA NỐI DÂY.
+ * C01 — ĐÃ CHỐT 21/09/2026 (nguồn 21/09 §3.2 tự trả lời): hai mốc riêng, khớp mã đang chạy.
  * Cách hiểu của chủ sản phẩm: trong 3 ngày kể từ khi có SOS thì phải có phương án; có phương án rồi thì đi theo luật cũ —
  *   Học thuật: ghi kết quả vào mỗi Chủ nhật hằng tuần và chốt kết quả vào cuối đợt.
  *   Ý thức: hoàn thành hết phương án trong thời hạn mặc định của case là 1 tuần.
- *   'hai-moc-rieng' : hai mốc riêng như code hiện tại (hạn xác minh SOS, rồi hạn lập phương án).  ← code đang chạy
- *   'mot-han-chung' : MỘT hạn 3 ngày kể từ SOS, trong đó phải có phương án.  ← cách hiểu của chủ sản phẩm, chờ xác nhận
+ *   'hai-moc-rieng' : hai mốc riêng như code hiện tại (hạn xác minh SOS, rồi hạn lập phương án).  ← đã chốt
+ *   'mot-han-chung' : MỘT hạn 3 ngày kể từ SOS, trong đó phải có phương án.
  */
 export const C01_HAN_XAC_MINH_SOS_GOM_PA = 'hai-moc-rieng' as const;
 
@@ -53,7 +53,8 @@ export const C03_CUA_SO_GOP_CASE_Y_THUC_NGAY = 3 as const;
 export const C04_BAO_CAO_MOI_SAU_KHI_DONG = 'doi-moi-lien-ket' as const;
 
 /**
- * C05 — ĐÃ CHỐT 19/09/2026 (giữ để không ai khôi phục luật cũ).
+ * C05 — HẾT HIỆU LỰC 21/09/2026 tối: rulebook v3 thay bằng Phối hợp SOS điền sẵn (thiet-ke/SOS_VA_PHOI_HOP_V3.md §5). Giữ hằng số để lịch sử quyết định còn tra được.
+ * Trước đó: ĐÃ CHỐT 19/09/2026 (giữ để không ai khôi phục luật cũ).
  *   'khong-bat-buoc' : SOS KHÔNG bắt buộc sinh phương án trao đổi; GVCN tự quyết định và tự lập phương án.  ← đã chốt
  *   'bat-buoc'       : hai phương án trao đổi tự sinh — LUẬT CŨ, hết hiệu lực (rule book §17.5).
  */
@@ -76,10 +77,9 @@ export const C06_NHAP_BU_CASE_DANG_XU_LY = 'chi-da-hoan-thanh' as const;
 export const C07_DOT_FT_CHI_W1_HOAC_W2 = 'phai-du-hai-task' as const;
 
 /**
- * C08 — CHỐT MỘT NỬA 20/09/2026 — CHƯA NỐI DÂY.
- * Hạn chấm Normal: hết Chủ nhật của chính tuần thi — ĐÃ ĐÚNG với code hiện tại.
- * Còn CHƯA RÕ và CHƯA LÀM: "hết Chủ nhật tuần thi, nếu chưa có bài thì thêm '-', dời sang tuần sau" — ai thêm "-" (hệ
- * thống tự thêm hay giáo viên), và Normal có thật sự dùng dấu "-" không (hiện Normal luôn đủ bốn môn, không có "-").
+ * C08 — ĐÃ CHỐT 21/09/2026 đêm. Hạn chấm lớp thường: hết Chủ nhật của chính tuần thi (khớp mã). Lớp thường CÓ dùng dấu "-": GIÁO VIÊN
+ * ghi khi em chưa làm bài của tuần (máy không tự thêm); ghi "-" thì môn đó tự dời sang tuần sau.
+ * CHƯA NỐI DÂY phần dấu "-": máy chủ còn chặn "-" cho lớp thường (`attempts.ts` saveScore) — việc của PR-Rc1 (plan.md R14, đặc tả §3.5).
  *   'chu-nhat-tuan-thi'  : hết Chủ nhật của tuần thi.  ← đã chốt
  */
 export const C08_HAN_CHAM_NORMAL = 'chu-nhat-tuan-thi' as const;
