@@ -218,24 +218,24 @@ sửa thì 🛑 hỏi trước).
 
 **Files:** không sửa mã.
 
-- [ ] **Step 1: Worktree.** Từ `main` mới nhất (`git fetch origin && git log -1 origin/main` phải là merge PR #64):
+- [x] **Step 1: Worktree.** Từ `main` mới nhất (`git fetch origin && git log -1 origin/main` phải là merge PR #64):
   tạo worktree nhánh `pr-rc1-cham-diem` (skill `superpowers:using-git-worktrees`), ví dụ
   `.claude/worktrees/pr-rc1-cham-diem`. **Không checkout nhánh khác trong thư mục chính.** `npm ci` trong worktree nếu
   chưa có `node_modules`.
 
-- [ ] **Step 2: Kiểm không có biến Turso.**
+- [x] **Step 2: Kiểm không có biến Turso.**
 
 ```bash
 node -e "for (const k of ['TURSO_DATABASE_URL','TURSO_AUTH_TOKEN','BAN_CHINH','PISA_CHO_PHEP_MIGRATE_TURSO','PISA_CHO_PHEP_SEED_TURSO']) if (process.env[k]) { console.error('CÓ BIẾN', k); process.exit(1) } ; console.log('sạch')"
 ```
 Expected: `sạch`. Có biến thì đóng cửa sổ, mở cửa sổ mới.
 
-- [ ] **Step 3: Mốc phép kiểm.** Run: `npm test 2>&1 | tail -3`. Expected: `TẤT CẢ 779 KIỂM TRA ĐỀU ĐẠT` (hoặc số lớn
+- [x] **Step 3: Mốc phép kiểm.** Run: `npm test 2>&1 | tail -3`. Expected: `TẤT CẢ 779 KIỂM TRA ĐỀU ĐẠT` (hoặc số lớn
   hơn nếu `main` đã nhận PR khác). Ghi con số vào Nhật ký — gọi là **B**; mọi "Expected" bên dưới tính cộng dồn từ B.
 
-- [ ] **Step 4: Đọc Global Constraints và bảng Q1–Q22.** Thấy Q nào sai với đặc tả thì 🛑 hỏi trước khi code.
+- [x] **Step 4: Đọc Global Constraints và bảng Q1–Q22.** Thấy Q nào sai với đặc tả thì 🛑 hỏi trước khi code.
 
-- [ ] **Step 5: Xem hiện trạng để không sửa nhầm.** Mở đọc (không sửa):
+- [x] **Step 5: Xem hiện trạng để không sửa nhầm.** Mở đọc (không sửa):
   `web/src/modules/fasttrack/ScoreSheetPage.tsx`, `web/src/modules/normal/RegularSheetPage.tsx`,
   `server/src/fasttrack/attempts.ts` (`saveScore` ~1141, `classScoreSheet` ~1358, `listAttempts` ~487),
   `server/src/normal/regular.ts`, `server/src/fasttrack/skillSchedule.ts` (`setSkillWeek` ~525).
