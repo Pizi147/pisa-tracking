@@ -13,7 +13,7 @@ import type { StudentSeed } from './journeys.ts';
  * NGƯỠNG ĐỂ ĐỌC BẢNG NÀY:
  *   Fast Track  kỳ vọng = target − 1.0 (MT1) · − 0.5 (MT2) · 0 (MT3 trở đi).
  *               Band Writing = làm tròn nửa của (W1 + 2×W2) / 3.
- *   Normal      đạt khi điểm đạt / tổng điểm ≥ 60%.
+ *   Normal      đạt khi điểm đạt / tổng điểm ≥ 70%.
  *
  * Khoảng một nửa số em ổn định hoặc đã cải thiện. Chỉ một vài case quá hạn — một màn hình
  * đỏ rực thì không ai phân biệt được chỗ nào thật sự gấp.
@@ -590,7 +590,7 @@ export const STUDENTS: StudentSeed[] = [
 
   {
     code: 'S03', name: 'Hoàng Thanh Mai', branch: 'MB', dob: '2011-05-19',
-    story: 'Lớp Normal: Writing 10/20 = 50%, dưới ngưỡng 60% → một case môn W của lớp Normal. '
+    story: 'Lớp Normal: Writing 10/20 = 50%, dưới ngưỡng 70% → một tín hiệu môn W của lớp thường. '
       + 'Không dùng nhãn W2 của Fast Track cho môn này.',
     enrollments: [{ class: 'MB-FOU 12', from: '2026-07-27', status: 'active' }],
     cycles: [
@@ -1754,8 +1754,8 @@ export const STUDENTS: StudentSeed[] = [
   {
     code: 'S24', name: 'Vũ Thu Uyên', branch: 'MB', dob: '2009-12-08',
     status: 'finished', finishedAt: '2026-04-26',
-    story: 'ĐÃ KẾT THÚC HỌC. Hồ sơ vẫn tra lại được đầy đủ, và case còn dở của em KHÔNG bị âm '
-      + 'thầm đóng lại chỉ vì em nghỉ — đó là lịch sử, không phải một việc đã xong.',
+    story: 'ĐÃ KẾT THÚC HỌC. Hồ sơ vẫn tra lại được đầy đủ. Case còn dở của em được HỆ THỐNG tự đóng với lý do '
+      + '"Học viên kết thúc khoá" (S16) — xem lại được trong lịch sử, việc đóng không tính là kết quả hỗ trợ.',
     enrollments: [{ class: 'MB-BE 08', from: '2026-02-16', to: '2026-04-26', status: 'completed' }],
     cycles: [{
       seq: 1, route: null, target: null, classCode: 'MB-BE 08', status: 'completed',

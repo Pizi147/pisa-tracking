@@ -1,11 +1,11 @@
 import { db, tx } from '../db.ts';
 import {
-  ENTRY_SKILL_LABEL, PERMISSIONS, REGULAR_SKILL_LABEL, SIGNAL_STATUS_LABEL,
+  ENTRY_SKILL_LABEL, PERMISSIONS, REGULAR_SKILL_LABEL, SIGNAL_DISMISS_NOTE, SIGNAL_STATUS_LABEL,
   SIGNAL_WITHDRAW_SCORE_FIXED, signalVerifyDue,
   type CaseCategory, type EntrySkill, type SignalStatus,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
-import { badRequest, notFound, nowIso } from '../util.ts';
+import { badRequest, forbidden, notFound, nowIso } from '../util.ts';
 import { can, classScopeSql, require_, scopeFor, type Principal } from '../permissions.ts';
 import { notify, writeAudit } from '../platform/audit.ts';
 import { suggestCaseOwner } from './owner.ts';
@@ -186,21 +186,58 @@ export type SignalView = {
   /** Người đang xem có phải người phải xác minh tín hiệu này không. */
   mine: boolean;
   canResolve: boolean;
+  /** Lớp thường ('normal') giữ mô hình tín hiệu; Fast Track ('ft') tự tạo Case (Q-V3-1). */
+  kind: 'normal' | 'ft';
+  /** Lớp thường: số câu đúng / tổng số câu của ĐÚNG môn này — đọc thẳng từ ô điểm, sửa điểm thì số đổi theo. */
+  score: number | null;
+  total: number | null;
+  /** Nút trên dòng việc (§3.10). Rỗng khi người xem không xử lý được hoặc tín hiệu không còn chờ. */
+  actions: SignalAction[];
+  /** Điền sẵn form "Tạo Case" đúng môn (§3.10). `null` khi tín hiệu không còn chờ. */
+  caseDraft: { studentId: number; cycleId: number | null; topic: string | null; detectedAt: string; scoreText: string | null } | null;
 };
+
+/** Nút trên dòng việc tín hiệu (§3.10): "Tạo Case" · "Bỏ qua" (Bỏ qua chỉ lớp thường). */
+export type SignalAction = 'create_case' | 'dismiss';
 
 const SIGNAL_SELECT = `
   SELECT sg.*, s.full_name, s.student_code,
          c.code AS class_code, c.branch_id, b.name AS branch_name,
          a.attempt_no, a.kind AS attempt_kind,
-         u.full_name AS owner_name
+         u.full_name AS owner_name,
+         scr.raw_score AS score_value, scr.raw_total AS score_total,
+         COALESCE(pg.scoring_mode, pgc.scoring_mode) AS scoring_mode
     FROM case_signals sg
     JOIN students s ON s.id = sg.student_id
     LEFT JOIN classes c ON c.id = sg.class_id
     LEFT JOIN branches b ON b.id = c.branch_id
     LEFT JOIN assessment_attempts a ON a.id = sg.attempt_id
-    LEFT JOIN users u ON u.id = sg.owner_user_id`;
+    LEFT JOIN users u ON u.id = sg.owner_user_id
+    LEFT JOIN assessment_scores scr ON scr.attempt_id = sg.attempt_id AND scr.skill = sg.skill
+    LEFT JOIN programmes pg ON pg.code = c.programme_code
+    LEFT JOIN learning_cycles cy ON cy.id = sg.cycle_id
+    LEFT JOIN programmes pgc ON pgc.code = cy.programme_code`;
+
+/**
+ * AI XỬ LÝ ĐƯỢC MỘT TÍN HIỆU (Tạo Case · Bỏ qua).
+ *
+ * GV đúng môn hoặc Quản lý trong phạm vi (`SOS_EDIT` theo kỹ năng — C02). CỘNG người được giao tín hiệu: §3.10 nói không ai dạy
+ * môn đó thì tín hiệu về GVCN — giao việc cho ai thì người đó phải làm được (quyết định Q1 của plan PR-S1). Chỉ mở cho tín hiệu,
+ * KHÔNG mở cho Case: Case tạo ra vẫn theo C02.
+ */
+export function canResolveSignal(
+  p: Principal, sg: { class_id: number | null; student_id: number; skill: string | null; owner_user_id: number | null },
+): boolean {
+  if (can(p, PERMISSIONS.SOS_EDIT, { classId: sg.class_id, studentId: sg.student_id, skill: sg.skill ?? undefined })) return true;
+  return sg.owner_user_id === p.userId
+    && can(p, PERMISSIONS.SOS_REPORT, { classId: sg.class_id, studentId: sg.student_id });
+}
 
 function viewOf(p: Principal, r: any, today: string): SignalView {
+  const kind: 'normal' | 'ft' = r.scoring_mode === 'ratio' ? 'normal' : 'ft';
+  const canResolve = canResolveSignal(p, r);
+  const pending = r.status === 'pending';
+  const score = r.score_value ?? null, total = r.score_total ?? null;
   return {
     id: r.id,
     studentId: r.student_id, studentName: r.full_name, studentCode: r.student_code,
@@ -216,11 +253,14 @@ function viewOf(p: Principal, r: any, today: string): SignalView {
     resolutionNote: r.resolution_note, withdrawnReason: r.withdrawn_reason,
     overdue: r.status === 'pending' && r.verify_due < today,
     mine: r.owner_user_id === p.userId,
-    /* AUTH-01 + C02: chỉ giáo viên đúng kỹ năng của tín hiệu (hoặc Quản lý trong phạm vi) xác minh được. */
-    canResolve: can(p, PERMISSIONS.SOS_EDIT, {
-      classId: r.class_id, studentId: r.student_id,
-      skill: r.skill ?? undefined,
-    }),
+    /* AUTH-01 + C02: giáo viên đúng kỹ năng (hoặc Quản lý trong phạm vi) — cộng người được giao tín hiệu (Q1). */
+    canResolve,
+    kind, score, total,
+    actions: canResolve && pending ? (kind === 'normal' ? ['create_case', 'dismiss'] : ['create_case']) : [],
+    caseDraft: pending
+      ? { studentId: r.student_id, cycleId: r.cycle_id ?? null, topic: r.skill ?? null, detectedAt: r.detected_on,
+          scoreText: score !== null && total !== null ? `${score}/${total}` : null }
+      : null,
   };
 }
 
@@ -232,6 +272,8 @@ export type SignalFilters = {
   /** Chỉ tín hiệu người đang xem phải xác minh. */
   mine?: boolean;
   overdueOnly?: boolean;
+  /** Ngày nghiệp vụ để tính quá hạn — mặc định hôm nay. */
+  today?: string;
 };
 
 /**
@@ -255,7 +297,7 @@ export function listSignals(p: Principal, f: SignalFilters = {}) {
   if (f.studentId) { where.push('sg.student_id = ?'); params.push(f.studentId); }
   if (f.mine) { where.push('sg.owner_user_id = ?'); params.push(p.userId); }
 
-  const today = demoToday();
+  const today = f.today ?? demoToday();
   let rows = (conn
     .prepare(`${SIGNAL_SELECT} WHERE ${where.join(' AND ')} ORDER BY sg.verify_due, sg.id`)
     .all(...params) as any[])
@@ -272,6 +314,17 @@ export function listSignals(p: Principal, f: SignalFilters = {}) {
   };
 }
 
+/**
+ * TẬP ID CỦA Ô "CHỜ XÁC MINH QUÁ HẠN" (đặc tả §3.2, §3.10): tín hiệu LỚP THƯỜNG còn chờ mà hạn 3 ngày (tính cả ngày đầu) đã qua.
+ * Fast Track tự tạo Case nên không có tín hiệu chờ. Phạm vi và quyền đi qua `listSignals` — cùng hàm với danh sách tín hiệu.
+ */
+export function overdueNormalSignalIds(p: Principal, f: { branchId?: number | null; today?: string } = {}): number[] {
+  return listSignals(p, { branchId: f.branchId ?? null, status: 'open', today: f.today }).rows
+    .filter((s) => s.kind === 'normal' && s.overdue)
+    .map((s) => s.id)
+    .sort((a, b) => a - b);
+}
+
 export function signalDetail(p: Principal, id: number): SignalView {
   const r = db().prepare(`${SIGNAL_SELECT} WHERE sg.id = ?`).get(id) as any;
   if (!r) throw notFound('Không tìm thấy tín hiệu');
@@ -282,7 +335,7 @@ export function signalDetail(p: Principal, id: number): SignalView {
 
 // ---------------------------------------------------------------- xác minh
 
-function loadSignal(id: number): SignalRow {
+export function loadSignal(id: number): SignalRow {
   const r = db().prepare('SELECT * FROM case_signals WHERE id = ?').get(id) as SignalRow | undefined;
   if (!r) throw notFound('Không tìm thấy tín hiệu');
   return r;
@@ -296,10 +349,9 @@ function loadSignal(id: number): SignalRow {
  */
 export function linkSignalToCase(p: Principal, signalId: number, caseId: number, note?: string | null) {
   const sg = loadSignal(signalId);
-  require_(p, PERMISSIONS.SOS_EDIT, {
-    classId: sg.class_id, studentId: sg.student_id,
-    skill: sg.skill ?? undefined,
-  }, 'Bạn chỉ xác minh được tín hiệu của học viên trong phạm vi mình phụ trách.');
+  if (!canResolveSignal(p, sg)) {
+    throw forbidden('Bạn chỉ xác minh được tín hiệu giao cho mình hoặc của môn mình dạy, trong phạm vi mình phụ trách.');
+  }
   if (sg.status === 'withdrawn') throw badRequest('Tín hiệu này đã được thu hồi vì không còn căn cứ.');
 
   const conn = db();
@@ -321,6 +373,11 @@ export function linkSignalToCase(p: Principal, signalId: number, caseId: number,
     const attemptNo = (conn
       .prepare('SELECT attempt_no FROM assessment_attempts WHERE id = ?')
       .get(sg.attempt_id) as any)?.attempt_no ?? null;
+    /* Lớp thường: mốc mở mang số câu đúng / tổng của đúng môn đó (§3.10 "điền sẵn điểm"). FT không có raw_total → không thêm. */
+    const sc = sg.skill
+      ? conn.prepare('SELECT raw_score, raw_total FROM assessment_scores WHERE attempt_id = ? AND skill = ?').get(sg.attempt_id, sg.skill) as any
+      : null;
+    const scoreText = sc?.raw_score != null && sc?.raw_total != null ? ` (${labelOf(sg)} ${sc.raw_score}/${sc.raw_total})` : '';
     conn
       .prepare(
         `INSERT OR IGNORE INTO case_milestones
@@ -329,7 +386,7 @@ export function linkSignalToCase(p: Principal, signalId: number, caseId: number,
          VALUES (?, 'opened', ?,?,?,?,?,?,?,?,?,?)`,
       )
       .run(caseId, sg.attempt_id, attemptNo, sg.band, sg.expectation, sg.sos_level,
-           sg.detected_on, 'Tín hiệu từ kết quả đợt này đã được xác minh và mở thành case',
+           sg.detected_on, `Tín hiệu từ kết quả đợt này${scoreText} đã được xác minh và mở thành Case`,
            p.userId, nowIso(), `mt:${sg.attempt_id}:${caseId}:opened`);
   }
 
@@ -387,6 +444,51 @@ export function assignSignal(p: Principal, signalId: number, userId: number | nu
     before: { owner: sg.owner_user_id }, after: { owner: userId },
   });
   return { ok: true };
+}
+
+/** Tín hiệu này thuộc lớp thường không — theo lớp của tín hiệu, không có lớp thì theo khoá học. */
+function isRatioSignal(signalId: number): boolean {
+  const r = db()
+    .prepare(
+      `SELECT COALESCE(pg.scoring_mode, pgc.scoring_mode) AS m FROM case_signals sg
+         LEFT JOIN classes c ON c.id = sg.class_id LEFT JOIN programmes pg ON pg.code = c.programme_code
+         LEFT JOIN learning_cycles cy ON cy.id = sg.cycle_id LEFT JOIN programmes pgc ON pgc.code = cy.programme_code
+        WHERE sg.id = ?`,
+    )
+    .get(signalId) as any;
+  return r?.m === 'ratio';
+}
+
+/**
+ * BỎ QUA MỘT TÍN HIỆU LỚP THƯỜNG — đóng mà không tạo Case (S1, đặc tả §3.10, quyết định 4.4 + "lý do không bắt buộc" 22/09/2026).
+ *
+ * Một bấm là xong; ô lý do nhỏ, không bắt buộc. Đã bỏ qua mà bấm lại thì không làm gì (không ghi audit thứ hai). Lưu lại điểm vẫn
+ * trượt KHÔNG làm tín hiệu sống lại (`raiseSignal` chỉ mở lại tín hiệu `withdrawn`). Fast Track không đi đường này: FT đã tự tạo Case.
+ */
+export function dismissSignal(p: Principal, signalId: number, input: { reason?: string | null } = {}) {
+  const sg = loadSignal(signalId);
+  if (!canResolveSignal(p, sg)) {
+    throw forbidden('Bạn chỉ bỏ qua được tín hiệu giao cho mình hoặc của môn mình dạy.');
+  }
+  if (sg.status === 'noted') return { ok: true as const, unchanged: true as const };
+  if (sg.status === 'linked') throw badRequest('Tín hiệu này đã thành Case — không bỏ qua được nữa.');
+  if (sg.status === 'withdrawn') throw badRequest('Tín hiệu này đã được thu hồi vì không còn căn cứ.');
+  if (!isRatioSignal(signalId)) {
+    throw badRequest('Tín hiệu Fast Track đã tự tạo Case — đóng bằng "Không cần theo dõi" ở Case đó.');
+  }
+  const reason = String(input.reason ?? '').trim().slice(0, 500);
+  const note = reason ? `${SIGNAL_DISMISS_NOTE} — ${reason}` : SIGNAL_DISMISS_NOTE;
+  db()
+    .prepare(
+      `UPDATE case_signals SET status = 'noted', resolved_by = ?, resolved_at = ?, resolution_note = ?, updated_at = ?
+        WHERE id = ? AND status = 'pending'`,
+    )
+    .run(p.userId, nowIso(), note, nowIso(), signalId);
+  writeAudit({
+    actorUserId: p.userId, action: 'signal.dismissed', entityType: 'case_signal', entityId: signalId,
+    entityLabel: labelOf(sg), before: { status: sg.status }, after: { status: 'noted', reason: reason || null },
+  });
+  return { ok: true as const };
 }
 
 // ---------------------------------------------------------------- thu hồi khi sửa điểm
@@ -500,7 +602,7 @@ export function caseHasIndependentBasis(caseId: number, excludeAttemptId: number
  * Phương án bị huỷ ở đây không được tính là thành công hay thất bại — nó không có kết quả,
  * vì nó chưa từng chạy.
  */
-export function retireCaseForCorrectedScore(p: Principal, caseId: number, label: string) {
+export function retireCaseForCorrectedScore(p: Principal, caseId: number, label: string, passText = 'đạt kỳ vọng') {
   const conn = db();
   const c = conn.prepare('SELECT * FROM sos_cases WHERE id = ?').get(caseId) as any;
   if (!c || c.status === 'done') return { ok: false };
@@ -525,7 +627,7 @@ export function retireCaseForCorrectedScore(p: Principal, caseId: number, label:
                 outcome_note = ?, dedup_key = NULL, updated_at = ? WHERE id = ?`,
       )
       .run(demoToday(), p.userId,
-           `${SIGNAL_WITHDRAW_SCORE_FIXED} — điểm ${label} đã được sửa lại thành đạt kỳ vọng.`,
+           `${SIGNAL_WITHDRAW_SCORE_FIXED} — điểm ${label} đã được sửa lại thành ${passText}.`,
            nowIso(), caseId);
     conn
       .prepare(
@@ -540,4 +642,47 @@ export function retireCaseForCorrectedScore(p: Principal, caseId: number, label:
     });
     return { ok: true, cancelledPlans: cancelled };
   });
+}
+
+/**
+ * ĐỐI SOÁT NGƯỢC SAU KHI SỬA ĐIỂM (mục 9.4, RB-8) — MỘT hàm cho cả Fast Track và lớp thường.
+ *
+ * Những ô vừa được sửa thành ĐẠT: tín hiệu còn chờ bị thu hồi; Case chỉ sống nhờ con số vừa sửa thì rút khỏi danh sách đang xử lý
+ * (giữ lịch sử, huỷ phương án chưa ai làm); Case còn căn cứ độc lập thì GIỮ và nhắc người phụ trách. Không ghi mốc "đã tiến bộ":
+ * sửa một con số nhập sai không phải một lần thi thứ hai. `passText`: "đạt kỳ vọng" (FT) · "đạt" (lớp thường).
+ */
+export function reconcileCorrectedSignals(p: Principal, input: { attemptId: number; passingSkills: string[]; passText: string }) {
+  const conn = db();
+  if (!input.passingSkills.length) return;
+  const { withdrawn, casesToReview } = withdrawSignalsNoLongerValid({
+    actorUserId: p.userId, attemptId: input.attemptId, passingSkills: input.passingSkills,
+  });
+  for (const item of casesToReview) {
+    if (caseHasIndependentBasis(item.caseId, input.attemptId)) {
+      /* Giữ case, chỉ nhắc xem lại — người phụ trách quyết định có theo tiếp hay không. */
+      const c = conn.prepare('SELECT owner_user_id, student_id, status FROM sos_cases WHERE id = ?').get(item.caseId) as any;
+      /* Case đã ĐÓNG (không cần theo dõi / chốt kết quả) thì không còn gì để "xem lại" — không nhắc. */
+      if (c?.owner_user_id && c.status !== 'done') {
+        const st = conn.prepare('SELECT full_name FROM students WHERE id = ?').get(c.student_id) as any;
+        notify({
+          userId: c.owner_user_id, kind: 'sos',
+          title: `Xem lại case ${item.label} — ${st?.full_name ?? ''}`,
+          body: `Điểm nguồn đã được sửa thành ${input.passText}. Case vẫn còn căn cứ khác; xem có cần theo tiếp không.`,
+          entityType: 'sos_case', entityId: item.caseId,
+          dedupKey: `case_review:${item.caseId}:${input.attemptId}`,
+        });
+      }
+    } else {
+      retireCaseForCorrectedScore(p, item.caseId, item.label, input.passText);
+      conn.prepare(`UPDATE case_signals SET status = 'withdrawn', withdrawn_reason = ?, updated_at = ? WHERE id = ?`)
+        .run(SIGNAL_WITHDRAW_SCORE_FIXED, nowIso(), item.signalId);
+    }
+  }
+  if (withdrawn.length) {
+    writeAudit({
+      actorUserId: p.userId, action: 'signal.withdrawn_batch', entityType: 'assessment_attempt',
+      entityId: input.attemptId, entityLabel: `${withdrawn.length} tín hiệu`,
+      after: { reason: SIGNAL_WITHDRAW_SCORE_FIXED, skills: withdrawn.map((w) => w.skill) },
+    });
+  }
 }

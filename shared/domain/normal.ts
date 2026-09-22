@@ -189,6 +189,8 @@ export const SOS_LABEL: Record<SosLevel, string> = {
 export function caseHeadline(c: {
   summary?: string | null; originKind?: string | null;
   sosLevel?: number | null; attemptNo?: number | null;
+  /** Loại lượt: `mock` (FT) · `progress` / `final` (lớp thường). Bỏ trống thì đọc như FT (dữ liệu cũ). */
+  attemptKind?: string | null;
 }): string {
   const written = (c.summary ?? '').trim();
   /*
@@ -205,9 +207,14 @@ export function caseHeadline(c: {
    * dưới kỳ vọng. Hai thứ không loại trừ nhau: một cái là căn cứ, một cái là quan sát.
    */
   const level = c.sosLevel ?? null;
-  const where = c.attemptNo ? `MT${c.attemptNo}` : 'Bài đánh giá';
+  /* LỚP THƯỜNG (đặc tả §2, §6): tên bài "Giữa khoá / Cuối khoá", đếm theo MÔN, không "MT{n}", không "kỳ vọng". */
+  const ratio = !!c.attemptKind && c.attemptKind !== 'mock';
+  const where = ratio
+    ? (ATTEMPT_KIND_SHORT[c.attemptKind as AttemptKind] ?? 'Bài kiểm tra')
+    : c.attemptNo ? `MT${c.attemptNo}` : 'Bài đánh giá';
   const derived = level === null ? `${where}: chưa đủ căn cứ kết luận`
-    : level === 0 ? `${where}: đạt kỳ vọng ở mọi kỹ năng`
+    : level === 0 ? (ratio ? `${where}: đạt tất cả các môn` : `${where}: đạt kỳ vọng ở mọi kỹ năng`)
+    : ratio ? `${where}: ${level >= 3 ? 'từ 3' : level} môn chưa đạt`
     : `${where}: ${level} kỹ năng dưới kỳ vọng`;
   return written ? `${derived} — ${written}` : derived;
 }

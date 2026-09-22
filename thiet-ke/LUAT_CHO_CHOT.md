@@ -1,6 +1,6 @@
 # Chín điểm luật chưa chốt — C01…C09
 
-> **CẬP NHẬT 20/09/2026 — chủ sản phẩm đã trả lời.** Xem mục 5 ở cuối file: C02, C03, C04, C06, C07, C09, C10 đã chốt; C01 chờ xác nhận cách hiểu; C08 còn một nửa chưa rõ. Các mục bên dưới giữ nguyên làm lịch sử câu hỏi.
+> **CẬP NHẬT 20/09/2026 — chủ sản phẩm đã trả lời.** Xem mục 5 ở cuối file: C02, C03, C04, C06, C07, C09, C10 đã chốt; C01 chờ xác nhận cách hiểu; C08 còn một nửa chưa rõ. Các mục bên dưới giữ nguyên làm lịch sử câu hỏi. **Cập nhật 22/09/2026 (PR-S1):** mọi điểm C01–C10 đã chốt; C08 đóng 21/09 đêm — xem §6.4 và §6.5.
 
 Rule book mục 14. Chủ sản phẩm chưa trả lời. **Không tự chọn phương án thuận tiện nhất rồi
 chôn nó vào giữa một hàm.**
@@ -77,13 +77,13 @@ Nguồn chi tiết: rule book mục 17.7 · `shared/domain/policy.ts`.
 
 | Mã | Đã chốt | Trạng thái mã |
 |---|---|---|
-| C01 | 3 ngày SOS phải có PA; sau đó Học thuật ghi kết quả mỗi Chủ nhật + chốt cuối đợt, Ý thức hoàn thành hết PA trong hạn 1 tuần | **Chờ xác nhận** cách hiểu (chủ sản phẩm hỏi "đúng không?") |
+| C01 | 3 ngày SOS phải có PA; sau đó Học thuật ghi kết quả mỗi Chủ nhật + chốt cuối đợt, Ý thức hoàn thành hết PA trong hạn 1 tuần | Đóng 21/09 — hai mốc riêng (§6.2) |
 | C02 | GVCN không xử lý case học thuật trái môn | Đã áp (`permissions.ts`) |
 | C03 | Bỏ câu hỏi nâng mức; Ý thức gộp trong 3 ngày đầu, ngoài ra ra case mới; hạn mặc định 1 tuần | Đã áp (cửa sổ gộp 3 ngày; bỏ siết hạn khi nâng mức) |
 | C04 | Giữ: đợt mới liên kết | Khớp hành vi cũ |
 | C06 | Giữ | Khớp hành vi cũ |
 | C07 | Writing phải đủ W1 và W2; thiếu thì báo quá hạn như bình thường | Khớp hành vi cũ |
-| C08 | Hạn chấm Normal hết Chủ nhật tuần thi; chưa có bài thì thêm "-" và dời sang tuần sau | Hạn: khớp hành vi cũ. "Thêm - và dời": **chưa rõ, chưa làm** |
+| C08 | Hạn chấm Normal hết Chủ nhật tuần thi; chưa có bài thì thêm "-" và dời sang tuần sau | Đóng 21/09 đêm — GV ghi "-", tự dời; phần "-" làm ở PR-Rc1 (R14) |
 | C09 | Chờ QL hết tuần đó; không phản hồi thì huỷ | Khớp hành vi cũ |
 | C10 | Chốt ngay | Đã áp |
 
@@ -153,7 +153,7 @@ mục 4 — không viết "chưa chốt", không hiện mã C.~~ *(hết hiệu 
 | C05 | ✅ Đã chốt 19/09 |
 | C06 | ✅ Đã chốt. Tab "Đã xong từ trước" nay **chỉ còn nhánh Học thuật** |
 | C07 | ✅ Đã chốt, khớp hành vi |
-| C08 | ⏳ **Chưa chốt hẳn** — điểm duy nhất còn lại |
+| C08 | ✅ Đóng 21/09 đêm — lớp thường dùng "-" (GV ghi, tự dời). Mã: PR-Rc1 (R14) |
 | C09 | ✅ Đã chốt, khớp hành vi |
 | C10 | ✅ Đã chốt, đã nối dây |
 | Y01–Y04 | ✅ Đã chốt 21/09, chưa nối dây (chưa có mã Ý thức) |
@@ -167,4 +167,4 @@ mục 4 — không viết "chưa chốt", không hiện mã C.~~ *(hết hiệu 
 |---|---|
 | **C05** | ⚰️ **Hết hiệu lực.** Thay bằng Phối hợp SOS điền sẵn (`SOS_VA_PHOI_HOP_V3.md` §5). Giữ hằng số `C05_*` kèm chú thích |
 | **Q-V3-1…9** | Quyết định thiết kế v3, xem `SOS_VA_PHOI_HOP_V3.md` §11. Q-V3-4 do chủ sản phẩm chốt |
-| **C08** | ⏳ Vẫn là điểm duy nhất chưa chốt |
+| **C08** | ✅ Đóng 21/09 đêm (xem §6.4) |

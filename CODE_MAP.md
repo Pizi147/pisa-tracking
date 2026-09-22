@@ -197,6 +197,9 @@ loại dữ liệu mới** vào kịch bản thì thêm trường ở `server/sr
 | **Tín hiệu từ điểm** (điểm dưới kỳ vọng sinh gì) | `server/src/cases/signals.ts` |
 | Hạn xác minh tín hiệu (3 ngày, tính cả ngày đầu) | `shared/domain/cases.ts` → `signalVerifyDue` |
 | Thu hồi tín hiệu và case khi sửa điểm (mục 9.4) | `server/src/cases/signals.ts` → `withdrawSignalsNoLongerValid` · `caseHasIndependentBasis` |
+| Đối soát sau sửa điểm — MỘT hàm cho FT và lớp thường (RB-8) | `server/src/cases/signals.ts` → `reconcileCorrectedSignals` |
+| **Tạo Case · Bỏ qua** một tín hiệu lớp thường, ai xử lý được tín hiệu (S1) | `server/src/cases/signals.ts` → `dismissSignal`, `canResolveSignal` · Tạo Case: `server/src/cases/cases.ts` → `reportIssue` (`fromSignalId`) |
+| **Hệ thống tự đóng Case** — em kết thúc khoá (S16) / đổi chương trình (S17) | `server/src/cases/systemClose.ts` → `closeCasesBySystem`, `closeCasesOnProgrammeSwitch` |
 | Thẻ "Tín hiệu chờ xác minh" ở hồ sơ học viên | `web/src/modules/students/StudentDetailPage.tsx` → `PendingSignals` |
 | Năm hạng mục case | `shared/domain/cases.ts` → `CASE_CATEGORIES` |
 | Tên case tự sinh | `shared/domain/cases.ts` → `caseTitle` |
@@ -243,6 +246,7 @@ loại dữ liệu mới** vào kịch bản thì thêm trường ở `server/sr
 | Màn Tổng quan | `web/src/modules/worklist/OverviewPage.tsx` |
 | Khu "Việc cần làm" — bộ lọc, phân trang, năm ô của một dòng | `web/src/modules/worklist/WorkList.tsx` |
 | Bảng "Việc cần lưu ý" | `web/src/modules/worklist/BranchPulse.tsx` · `server/src/worklist/branchpulse.ts` |
+| **Ô điểm còn nợ** của bảng chi nhánh — đi qua đúng hàm của bảng chấm (S12, §6) | `server/src/worklist/scoreDebt.ts` → `scoreDebtCells` |
 | Bảng tổng hợp chi nhánh/lớp | `web/src/modules/worklist/SummaryTable.tsx` · `server/src/worklist/summary.ts` |
 | Bảng tổng hợp theo tuần | `web/src/modules/worklist/WeeklyBoard.tsx` · `server/src/worklist/weekly.ts` |
 | Quản lý giao việc cho giáo viên | `web/src/modules/worklist/ManagerTasks.tsx` · `server/src/worklist/meeting.ts` |

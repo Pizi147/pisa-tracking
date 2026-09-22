@@ -4,7 +4,7 @@ import { demoToday } from '../demoConfig.ts';
 import { can, scopeFor, type Principal } from '../permissions.ts';
 import { listCases } from '../cases/cases.ts';
 import { metricSet } from './metrics.ts';
-import { addDays } from '../util.ts';
+import { scoreDebtCells } from './scoreDebt.ts';
 
 /**
  * "VIỆC CẦN LƯU Ý" — bảng trả lời câu hỏi AI PHẢI LÀM GÌ (mục 9.2).
@@ -284,38 +284,16 @@ function peopleOf(
   for (const [id, set] of classesOf) people.get(id)!.classCount = set.size;
 
   /*
-   * MT CHƯA NHẬP và MT QUÁ HẠN NHẬP là HAI CỘT, không phải một.
-   *
-   * Gộp lại thì một giáo viên vừa được giao điểm hôm qua nhìn giống hệt một người nợ điểm
-   * từ ba tuần trước. Cột đầu là khối lượng, cột sau là nợ — chỉ cột sau mới đáng đi nhắc.
+   * MT CHƯA NHẬP và MT QUÁ HẠN NHẬP là HAI CỘT, không phải một. Cột đầu là khối lượng, cột sau là nợ.
+   * Tập ô nợ lấy từ `scoreDebtCells` — CÙNG luật với ô ở bảng chấm (lớp thường: số câu đúng + hạn Chủ nhật; FT: band, dấu "-"
+   * theo cặp W1/W2). Không còn câu SQL ước lượng riêng ở đây (S12, đặc tả §6).
    */
-  for (const r of conn
-    .prepare(
-      /*
-       * Một ô "còn nợ điểm" = một kỹ năng người này được phân công, ở một lượt MT mà TUẦN
-       * đã bắt đầu, mà chưa có band. Đếm theo phân công chứ không theo dòng điểm có sẵn:
-       * chưa ai gõ gì thì chưa có dòng nào, và đó chính là trường hợp phải đếm.
-       */
-      `SELECT ta.user_id, a.deadline_override, rp.week_end
-         FROM assessment_attempts a
-         JOIN classes cl ON cl.id = a.class_id
-         JOIN teacher_assignments ta ON ta.class_id = a.class_id AND ta.status = 'active'
-         JOIN report_periods rp ON rp.id = a.planned_period_id
-         LEFT JOIN assessment_scores s ON s.attempt_id = a.id AND s.skill = ta.skill
-        WHERE a.status != 'cancelled' AND ta.skill IS NOT NULL
-          AND rp.week_start <= ? AND s.band IS NULL
-          /* Ô đã báo "-" (PR-G) không còn nợ điểm. Ước lượng thô: không xét W1/W2 ghép đôi như bảng chấm. */
-          AND s.no_show_period_id IS NULL
-          AND NOT EXISTS (SELECT 1 FROM attempt_skill_skips k
-                           WHERE k.attempt_id = a.id AND k.skill = ta.skill) ${scopeSql}`,
-    )
-    .all(today, ...scopeArgs) as any[]) {
-    const row = people.get(r.user_id);
+  const debtScope = branchId ? [branchId] : branchIds;
+  for (const d of scoreDebtCells(p, today, debtScope)) {
+    const row = people.get(d.userId);
     if (!row) continue;
     row.mtPending += 1;
-    // Hạn mặc định là hết thứ Tư tuần kế tiếp = Chủ nhật của tuần MT + 3 ngày.
-    const due = r.deadline_override ?? (r.week_end ? addDays(r.week_end, 3) : null);
-    if (due && due < today) row.mtOverdue += 1;
+    if (d.overdue) row.mtOverdue += 1;
   }
 
   /*

@@ -9,8 +9,26 @@ export const STUDENT_STATUS_LABEL: Record<StudentStatus, string> = {
   active: 'Đang học', inactive: 'Tạm dừng', finished: 'Đã kết thúc',
 };
 
-/** Học viên kết thúc bao lâu thì đưa vào lưu trữ. Mốc chính xác còn chờ chốt — xem O08. */
-export const ARCHIVE_AFTER_DAYS = 14;
+/**
+ * LÝ DO CHUYỂN LỚP — chọn nhanh, BẮT BUỘC (RB-3, rule book §10, quyết định 4.16; đặc tả §3.9 mục 3).
+ * Lưu thành chữ vào `enrollments.end_reason` và hành trình. "Khác" phải ghi rõ.
+ */
+export const TRANSFER_REASONS = ['doi_chi_nhanh', 'doi_lich_hoc', 'xep_lai_trinh_do', 'khac'] as const;
+export type TransferReason = (typeof TRANSFER_REASONS)[number];
+export const TRANSFER_REASON_LABEL: Record<TransferReason, string> = {
+  doi_chi_nhanh: 'Đổi chi nhánh', doi_lich_hoc: 'Đổi lịch học', xep_lai_trinh_do: 'Xếp lại trình độ', khac: 'Khác',
+};
+/** Lựa chọn rõ ràng khi không có gì cần dặn người nhận lớp (rule book §10). */
+export const NO_HANDOVER_NOTE = 'Không có lưu ý';
+
+/** Chữ lý do từ mã + ghi chú. `null` khi mã không hợp lệ hoặc "Khác" mà không ghi gì. */
+export function transferReasonText(code: unknown, note?: unknown): string | null {
+  if (!(TRANSFER_REASONS as readonly string[]).includes(String(code))) return null;
+  const extra = String(note ?? '').trim();
+  if (code === 'khac' && !extra) return null;
+  const label = TRANSFER_REASON_LABEL[code as TransferReason];
+  return extra ? `${label} — ${extra}` : label;
+}
 
 // ---------------------------------------------------------------- Lộ trình học
 

@@ -312,6 +312,12 @@ export function noShowStateOf(i: {
 /** Gợi ý trong ô nhập điểm (rule book §17.1, TU_DIEN_VA_CHU §3). */
 export const NO_SHOW_HINT = 'Nhập - nếu học viên không làm bài';
 
+/**
+ * S13 (quyết định 4.5, 22/09/2026): ô đã chốt "không dự thi" rồi Quản lý đổi kết luận — dấu "-" báo lại cho CÙNG tuần không chốt
+ * lại và không hiện lại. Ô hiện đúng một dòng này để người nhập không tưởng máy bỏ sót thao tác của mình.
+ */
+export const NO_SHOW_OVERRIDDEN_NOTE = 'Quản lý đã đổi kết luận tuần này — dấu "-" không được tính lại.';
+
 /** Câu trạng thái của một ô có dấu '-'. `weekCode` là mã tuần đầy đủ, ví dụ `W3 SEP 2026`. */
 export function noShowText(v: NoShowView, weekCode: string | null, today: string): string | null {
   const day = (iso: string) => {

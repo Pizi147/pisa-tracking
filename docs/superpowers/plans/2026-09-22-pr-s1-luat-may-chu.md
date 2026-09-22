@@ -123,18 +123,18 @@ dòng là bình thường; **lệch nội dung** thì 🛑 hỏi.
 
 **Files:** không sửa mã.
 
-- [ ] **Step 1: Nhánh.** Nếu PR spec (nhánh `plan-lam-het-truoc-deploy`) đã merge: tách `pr-s1-luat-may-chu` từ `main`; chưa merge: tách
+- [x] **Step 1: Nhánh.** Nếu PR spec (nhánh `plan-lam-het-truoc-deploy`) đã merge: tách `pr-s1-luat-may-chu` từ `main`; chưa merge: tách
   từ `plan-lam-het-truoc-deploy`. Dùng worktree (skill `superpowers:using-git-worktrees`). Máy chủ dev trong worktree: `npm run dev`
   trong chính worktree (không dùng `preview_start`, nó chạy từ thư mục chính).
-- [ ] **Step 2: Kiểm môi trường không có biến Turso.**
+- [x] **Step 2: Kiểm môi trường không có biến Turso.**
 
 ```bash
 node -e "for (const k of ['TURSO_DATABASE_URL','TURSO_AUTH_TOKEN','BAN_CHINH','PISA_CHO_PHEP_MIGRATE_TURSO','PISA_CHO_PHEP_SEED_TURSO']) if (process.env[k]) { console.error('CÓ BIẾN', k); process.exit(1) } ; console.log('sạch')"
 ```
 Expected: `sạch`. Có biến → đóng cửa sổ, mở cửa sổ mới.
 
-- [ ] **Step 3: Mốc phép kiểm.** Run: `npm test 2>&1 | tail -3` — Expected: `TẤT CẢ 672 KIỂM TRA ĐỀU ĐẠT`. Ghi con số vào Nhật ký.
-- [ ] **Step 4:** Đọc Global Constraints + bảng Quyết định Q1–Q13 ở trên. Có Q nào bạn thấy sai với đặc tả → 🛑 hỏi trước khi code.
+- [x] **Step 3: Mốc phép kiểm.** Run: `npm test 2>&1 | tail -3` — Expected: `TẤT CẢ 672 KIỂM TRA ĐỀU ĐẠT`. Ghi con số vào Nhật ký.
+- [x] **Step 4:** Đọc Global Constraints + bảng Quyết định Q1–Q13 ở trên. Có Q nào bạn thấy sai với đặc tả → 🛑 hỏi trước khi code.
 
 ---
 
@@ -152,7 +152,7 @@ Expected: `sạch`. Có biến → đóng cửa sổ, mở cửa sổ mới.
   trong file test: `taoHocVien`, `themLuot`, `diem`, `tinHieu`, `caseTuTinHieu`, `pGvcnFou`, `pSpeakingFou`, `pWritingFou`, `mbBranch`,
   `teacherOf`, `load`, `REPO`, `NOW` — mọi task sau dùng lại.
 
-- [ ] **Step 1: Tạo file phép kiểm với harness và các phép kiểm migration (đỏ).**
+- [x] **Step 1: Tạo file phép kiểm với harness và các phép kiểm migration (đỏ).**
 
 `server/src/tests/luatMayChu.tests.ts`:
 
@@ -325,10 +325,10 @@ const { runLuatMayChuTests } = await import('./luatMayChu.tests.ts');
 await runLuatMayChuTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 ```
 
-- [ ] **Step 2: Chạy, thấy đỏ.** Run: `npm test 2>&1 | grep -E "PR-S1|KIỂM TRA|KHÔNG ĐẠT"` — Expected: ba phép `PR-S1 · Migrate` đầu **✗**
+- [x] **Step 2: Chạy, thấy đỏ.** Run: `npm test 2>&1 | grep -E "PR-S1|KIỂM TRA|KHÔNG ĐẠT"` — Expected: ba phép `PR-S1 · Migrate` đầu **✗**
   (thiếu cột / `migrateLuatMayChu is not a function`), phép "trọn chuỗi" và "Tiền đề" ✓.
 
-- [ ] **Step 3: Thêm cột vào `schema.sql`.**
+- [x] **Step 3: Thêm cột vào `schema.sql`.**
 
 Cuối bảng `sos_cases` (sau `updated_at TEXT`, dòng 844 — nhớ thêm dấu phẩy sau `updated_at TEXT`):
 
@@ -354,7 +354,7 @@ Trong `attempt_skills`, sau `absence_move_count …` (dòng 570), trước `crea
   absent_from_no_show INTEGER NOT NULL DEFAULT 0,
 ```
 
-- [ ] **Step 4: Viết `migrateLuatMayChu` ở cuối `server/src/migrate.ts`.**
+- [x] **Step 4: Viết `migrateLuatMayChu` ở cuối `server/src/migrate.ts`.**
 
 ```ts
 /**
@@ -400,8 +400,8 @@ Gọi trong `migrateCaseEngine`, ngay sau `migrateDeleteInvalidViolations(conn, 
     migrateLuatMayChu(conn, applied);
 ```
 
-- [ ] **Step 5: Chạy, thấy xanh.** Run: `npm test 2>&1 | grep -E "PR-S1|KIỂM TRA"` — Expected: 5 phép `PR-S1 ·` ✓, `TẤT CẢ 677 …`.
-- [ ] **Step 6: Commit.**
+- [x] **Step 5: Chạy, thấy xanh.** Run: `npm test 2>&1 | grep -E "PR-S1|KIỂM TRA"` — Expected: 5 phép `PR-S1 ·` ✓, `TẤT CẢ 677 …`.
+- [x] **Step 6: Commit.**
 
 ```bash
 git add server/src/schema.sql server/src/migrate.ts server/src/tests/luatMayChu.tests.ts server/src/tests/run.ts
@@ -421,7 +421,7 @@ git commit -m "PR-S1 (1): hai cột system_close_reason + absent_from_no_show, b
 - Consumes: cột `attempt_skills.absent_from_no_show` (Task 1).
 - Produces: `SkillRow.absent_from_no_show: number`.
 
-- [ ] **Step 1: Phép kiểm (đỏ).** Thêm vào `luatMayChu.tests.ts` (trên dòng đánh dấu cuối hàm):
+- [x] **Step 1: Phép kiểm (đỏ).** Thêm vào `luatMayChu.tests.ts` (trên dòng đánh dấu cuối hàm):
 
 ```ts
   // ================================================================== 2. S11
@@ -459,8 +459,8 @@ git commit -m "PR-S1 (1): hai cột system_close_reason + absent_from_no_show, b
   });
 ```
 
-- [ ] **Step 2: Chạy, thấy đỏ.** `npm test 2>&1 | grep -E "S11|KIỂM TRA"` — Expected: phép 1 ✗ (`escalated` hoặc `flag` undefined), phép 3 ✗.
-- [ ] **Step 3: Sửa mã.**
+- [x] **Step 2: Chạy, thấy đỏ.** `npm test 2>&1 | grep -E "S11|KIỂM TRA"` — Expected: phép 1 ✗ (`escalated` hoặc `flag` undefined), phép 3 ✗.
+- [x] **Step 3: Sửa mã.**
 
 `skillSchedule.ts` — `SkillRow` thêm sau `absence_move_count: number;`:
 
@@ -489,9 +489,9 @@ git commit -m "PR-S1 (1): hai cột system_close_reason + absent_from_no_show, b
  * `saveScore` gọi hàm này tức thì sau khi ghi dấu muộn. Đường "chờ Quản lý hiệu chỉnh" còn mã nhưng không dùng.
 ```
 
-- [ ] **Step 4: Chạy, thấy xanh.** `npm test 2>&1 | tail -3` — Expected: `TẤT CẢ 680 …`. Nếu phép kiểm cũ `PR-G · …` đỏ: đọc câu lỗi —
+- [x] **Step 4: Chạy, thấy xanh.** `npm test 2>&1 | tail -3` — Expected: `TẤT CẢ 680 …`. Nếu phép kiểm cũ `PR-G · …` đỏ: đọc câu lỗi —
   nó chỉ có thể đỏ nếu một đường đổi `sit_status` bị bỏ sót; sửa đường đó, không sửa phép kiểm cũ.
-- [ ] **Step 5: Commit.** `git commit -am "PR-S1 (2): S11 — cờ absent_from_no_show thay chuỗi sit_note; sửa chú thích C10 cũ"`
+- [x] **Step 5: Commit.** `git commit -am "PR-S1 (2): S11 — cờ absent_from_no_show thay chuỗi sit_note; sửa chú thích C10 cũ"`
 
 ---
 
@@ -508,7 +508,7 @@ git commit -m "PR-S1 (1): hai cột system_close_reason + absent_from_no_show, b
 Hành vi S13 **đã đúng** (báo lại cùng tuần là vô hại — `attempts.ts:1255`; ô đã chốt mà Quản lý sửa thì không sống lại —
 `attempts.ts:314-322`). Task này khoá hành vi bằng phép kiểm và thêm dòng giải thích (quyết định 4.5).
 
-- [ ] **Step 1: Phép kiểm (đỏ).**
+- [x] **Step 1: Phép kiểm (đỏ).**
 
 ```ts
   // ================================================================== 3. S13 · S14
@@ -553,9 +553,9 @@ Hành vi S13 **đã đúng** (báo lại cùng tuần là vô hại — `attempt
   });
 ```
 
-- [ ] **Step 2: Chạy.** Expected: S13 ✗ (`noShowNote` undefined, `NO_SHOW_OVERRIDDEN_NOTE` undefined); S14 ✓ ngay (hành vi đã có — đây là
+- [x] **Step 2: Chạy.** Expected: S13 ✗ (`noShowNote` undefined, `NO_SHOW_OVERRIDDEN_NOTE` undefined); S14 ✓ ngay (hành vi đã có — đây là
   phép kiểm còn thiếu). Nếu S14 ✗ → 🛑 báo: luật W1/W2 của `resolveLateNoShow` khác mô tả.
-- [ ] **Step 3: Sửa mã.**
+- [x] **Step 3: Sửa mã.**
 
 `shared/domain/fasttrack.ts` sau `NO_SHOW_HINT`:
 
@@ -581,8 +581,8 @@ Trong `skillCells`, ngay sau khối `if (row?.no_show_settled_at && ns.state !==
 ```
 và thêm `noShowNote,` vào object trả về, cạnh `noShow,`. Import `NO_SHOW_OVERRIDDEN_NOTE` ở khối import `shared/domain` đầu file.
 
-- [ ] **Step 4: Chạy, xanh.** `npm run typecheck` (web có thể khai báo lại kiểu ô — thêm trường tuỳ chọn nếu `tsc` báo) rồi `npm test 2>&1 | tail -3` — Expected `682`.
-- [ ] **Step 5: Commit.** `git commit -am "PR-S1 (3): S13 dòng giải thích khi Quản lý đã đổi kết luận '-'; S14 phép kiểm Writing của resolveLateNoShow"`
+- [x] **Step 4: Chạy, xanh.** `npm run typecheck` (web có thể khai báo lại kiểu ô — thêm trường tuỳ chọn nếu `tsc` báo) rồi `npm test 2>&1 | tail -3` — Expected `682`.
+- [x] **Step 5: Commit.** `git commit -am "PR-S1 (3): S13 dòng giải thích khi Quản lý đã đổi kết luận '-'; S14 phép kiểm Writing của resolveLateNoShow"`
 
 ---
 
@@ -601,7 +601,7 @@ và thêm `noShowNote,` vào object trả về, cạnh `noShow,`. Import `NO_SHO
 Lỗi hiện tại (`branchpulse.ts:293-319`): ô lớp thường không bao giờ có `band` → mọi môn lớp thường treo "chưa nhập" mãi; hạn tính kiểu FT
 (thứ Tư tuần sau) cho cả lớp thường (đúng ra: Chủ nhật tuần thi của môn đó); ô `-` loại thô không xét cặp W1/W2 (S12).
 
-- [ ] **Step 1: Phép kiểm (đỏ).**
+- [x] **Step 1: Phép kiểm (đỏ).**
 
 ```ts
   // ================================================================== 4. S12 + §6 branchpulse
@@ -647,8 +647,8 @@ Lỗi hiện tại (`branchpulse.ts:293-319`): ô lớp thường không bao gi�
   });
 ```
 
-- [ ] **Step 2: Chạy, đỏ.** Expected: cả ba ✗ (`Chưa có mô-đun ../worklist/scoreDebt.ts`, và `s.band IS NULL` còn trong nguồn).
-- [ ] **Step 3: Tạo `server/src/worklist/scoreDebt.ts`.**
+- [x] **Step 2: Chạy, đỏ.** Expected: cả ba ✗ (`Chưa có mô-đun ../worklist/scoreDebt.ts`, và `s.band IS NULL` còn trong nguồn).
+- [x] **Step 3: Tạo `server/src/worklist/scoreDebt.ts`.**
 
 ```ts
 import { db } from '../db.ts';
@@ -728,7 +728,7 @@ export function scoreDebtCells(p: Principal, today: string, branchIds: number[] 
 }
 ```
 
-- [ ] **Step 4: Thay vòng `mtPending` trong `peopleOf`** (`branchpulse.ts` từ chú thích "MT CHƯA NHẬP và MT QUÁ HẠN NHẬP" dòng 286 tới
+- [x] **Step 4: Thay vòng `mtPending` trong `peopleOf`** (`branchpulse.ts` từ chú thích "MT CHƯA NHẬP và MT QUÁ HẠN NHẬP" dòng 286 tới
   `if (due && due < today) row.mtOverdue += 1; }` dòng 318–319) bằng:
 
 ```ts
@@ -748,9 +748,9 @@ export function scoreDebtCells(p: Principal, today: string, branchIds: number[] 
 Thêm `import { scoreDebtCells } from './scoreDebt.ts';`. Nếu `addDays` và `scopeSql`/`scopeArgs` không còn chỗ dùng → xoá (tsc báo biến không dùng
 chỉ khi bật `noUnusedLocals`; vẫn xoá cho sạch nếu thật sự không dùng — `scopeSql` còn dùng ở câu lớp của từng người phía trên, **giữ**).
 
-- [ ] **Step 5: Chạy, xanh.** `npm test 2>&1 | tail -3` — Expected `685`. Phép kiểm cũ về `branchPulse`/"Việc cần lưu ý" đỏ → đọc: nếu nó khoá
+- [x] **Step 5: Chạy, xanh.** `npm test 2>&1 | tail -3` — Expected `685`. Phép kiểm cũ về `branchPulse`/"Việc cần lưu ý" đỏ → đọc: nếu nó khoá
   **đúng con số cũ** do luật sai sinh ra (ví dụ đếm môn lớp thường đã chấm là "chưa nhập"), sửa kỳ vọng và ghi lý do trong Nhật ký; nếu khác → 🛑.
-- [ ] **Step 6: Commit.** `git add server/src/worklist/scoreDebt.ts && git commit -am "PR-S1 (4): S12 + §6 — ô điểm còn nợ đi qua hàm bảng chấm (lớp thường theo số câu đúng, hạn Chủ nhật; W1/W2 theo cặp)"`
+- [x] **Step 6: Commit.** `git add server/src/worklist/scoreDebt.ts && git commit -am "PR-S1 (4): S12 + §6 — ô điểm còn nợ đi qua hàm bảng chấm (lớp thường theo số câu đúng, hạn Chủ nhật; W1/W2 theo cặp)"`
 
 ---
 
@@ -760,7 +760,7 @@ chỉ khi bật `noUnusedLocals`; vẫn xoá cho sạch nếu thật sự không
 - Modify: `server/src/worklist/signals.ts:70-104`
 - Test: `server/src/tests/luatMayChu.tests.ts`
 
-- [ ] **Step 1: Phép kiểm (đỏ).**
+- [x] **Step 1: Phép kiểm (đỏ).**
 
 ```ts
   // ================================================================== 5. §6 worklist/signals.ts
@@ -786,8 +786,8 @@ chỉ khi bật `noUnusedLocals`; vẫn xoá cho sạch nếu thật sự không
   });
 ```
 
-- [ ] **Step 2: Chạy, đỏ.** Expected: cả hai ✗.
-- [ ] **Step 3: Sửa SQL.** Khối 1 (`no_plan`, dòng 71–85): thêm `LEFT JOIN programmes pg ON pg.code = c.programme_code` sau `JOIN classes c …`
+- [x] **Step 2: Chạy, đỏ.** Expected: cả hai ✗.
+- [x] **Step 3: Sửa SQL.** Khối 1 (`no_plan`, dòng 71–85): thêm `LEFT JOIN programmes pg ON pg.code = c.programme_code` sau `JOIN classes c …`
   và điều kiện `AND COALESCE(pg.scoring_mode, '') != 'ratio'` sau `c.branch_id IN (${ph})`. Chú thích một dòng:
   `/* Lớp thường xếp lịch Test theo LỚP (planRegularTests), không theo từng em — không phải việc "chưa có tuần MT" của Quản lý. */`
 
@@ -818,7 +818,7 @@ Khối 2 (`missing_scores`, dòng 88–104) thay bằng:
   }
 ```
 
-- [ ] **Step 4: Chạy, xanh** (Expected `687`). **Step 5: Commit.** `git commit -am "PR-S1 (5): §6 — no_plan loại lớp thường, missing_scores lớp thường theo số câu đúng"`
+- [x] **Step 4: Chạy, xanh** (Expected `687`). **Step 5: Commit.** `git commit -am "PR-S1 (5): §6 — no_plan loại lớp thường, missing_scores lớp thường theo số câu đúng"`
 
 ---
 
@@ -841,7 +841,7 @@ Khối 2 (`missing_scores`, dòng 88–104) thay bằng:
 Hành vi "mỗi môn chưa đạt một tín hiệu, về GV môn đó, không ai dạy thì về GVCN" **đã có** (`regular.ts:481-491` gọi `raiseSignal` từng môn;
 `owner.ts` chọn GV đúng môn rồi GVCN). Task này khoá nó bằng phép kiểm, bổ sung dữ liệu dòng việc, và cho người được giao xử lý được (Q1).
 
-- [ ] **Step 1: Phép kiểm (đỏ).**
+- [x] **Step 1: Phép kiểm (đỏ).**
 
 ```ts
   // ================================================================== 6. S1 (a) tín hiệu từng môn
@@ -894,8 +894,8 @@ Hành vi "mỗi môn chưa đạt một tín hiệu, về GV môn đó, không a
   });
 ```
 
-- [ ] **Step 2: Chạy, đỏ.** Expected: phép 1 ✓ (hành vi đã có — khoá lại), phép 2 và 3 ✗.
-- [ ] **Step 3: Sửa `signals.ts`.**
+- [x] **Step 2: Chạy, đỏ.** Expected: phép 1 ✓ (hành vi đã có — khoá lại), phép 2 và 3 ✗.
+- [x] **Step 3: Sửa `signals.ts`.**
 
 Import: `import { badRequest, forbidden, notFound, nowIso } from '../util.ts';`
 
@@ -990,7 +990,7 @@ function viewOf(p: Principal, r: any, today: string): SignalView {
 ```
 (Giữ chữ "phạm vi": phép kiểm cũ `[6.2] Chỉ người trong phạm vi …` bắt `/phạm vi/` — nó bị chặn trước đó ở `reportIssue`, nhưng giữ cho chắc.)
 
-- [ ] **Step 4: Chạy, xanh** (Expected `690`). **Step 5: Commit.** `git commit -am "PR-S1 (6): S1 — tín hiệu lớp thường mang loại/điểm/nút/điền sẵn; người được giao xử lý được"`
+- [x] **Step 4: Chạy, xanh** (Expected `690`). **Step 5: Commit.** `git commit -am "PR-S1 (6): S1 — tín hiệu lớp thường mang loại/điểm/nút/điền sẵn; người được giao xử lý được"`
 
 ---
 
@@ -1007,7 +1007,7 @@ function viewOf(p: Principal, r: any, today: string): SignalView {
 - Produces: `export const SIGNAL_DISMISS_NOTE = 'Bỏ qua';`; `export function dismissSignal(p: Principal, signalId: number, input?: { reason?: string | null }): { ok: true; unchanged?: true }`;
   `POST /api/signals/pending/:id/dismiss` body `{ reason?: string }`.
 
-- [ ] **Step 1: Phép kiểm (đỏ).**
+- [x] **Step 1: Phép kiểm (đỏ).**
 
 ```ts
   // ================================================================== 7. S1 (b) Bỏ qua
@@ -1056,8 +1056,8 @@ function viewOf(p: Principal, r: any, today: string): SignalView {
   });
 ```
 
-- [ ] **Step 2: Chạy, đỏ.** Expected: ba phép ✗ (`dismissSignal is not a function`).
-- [ ] **Step 3: `shared/domain/cases.ts`.** Trong `SIGNAL_STATUS_LABEL` thay dòng `noted` và chú thích của nó:
+- [x] **Step 2: Chạy, đỏ.** Expected: ba phép ✗ (`dismissSignal is not a function`).
+- [x] **Step 3: `shared/domain/cases.ts`.** Trong `SIGNAL_STATUS_LABEL` thay dòng `noted` và chú thích của nó:
 
 ```ts
   /*
@@ -1074,7 +1074,7 @@ và sau `SIGNAL_WITHDRAW_SCORE_FIXED`:
 export const SIGNAL_DISMISS_NOTE = 'Bỏ qua';
 ```
 
-- [ ] **Step 4: `dismissSignal` trong `signals.ts`** (sau `assignSignal`; import thêm `SIGNAL_DISMISS_NOTE`):
+- [x] **Step 4: `dismissSignal` trong `signals.ts`** (sau `assignSignal`; import thêm `SIGNAL_DISMISS_NOTE`):
 
 ```ts
 /** Tín hiệu này thuộc lớp thường không — theo lớp của tín hiệu, không có lớp thì theo khoá học. */
@@ -1123,7 +1123,7 @@ export function dismissSignal(p: Principal, signalId: number, input: { reason?: 
 }
 ```
 
-- [ ] **Step 5: Route** (`routes/index.ts`, ngay sau khối `/signals/pending/:id/assign`):
+- [x] **Step 5: Route** (`routes/index.ts`, ngay sau khối `/signals/pending/:id/assign`):
 
 ```ts
 /** Bỏ qua một tín hiệu lớp thường — không tạo Case, lý do không bắt buộc (S1, đặc tả §3.10). */
@@ -1133,12 +1133,12 @@ api.post('/signals/pending/:id/dismiss', requireAuth, wrap((req) => {
 }));
 ```
 
-- [ ] **Step 6: Sửa phép kiểm cũ** `server/src/tests/run.ts:5979-5987` (khoá quyết định 16/09 "không có lối ra không mở Case", đã bị S1 22/09 thay).
+- [x] **Step 6: Sửa phép kiểm cũ** `server/src/tests/run.ts:5979-5987` (khoá quyết định 16/09 "không có lối ra không mở Case", đã bị S1 22/09 thay).
   Giữ `assert(!('noteSignal' in signalsSvc), …)` nhưng đổi câu chú thích phía trên thành: *"Quyết định 16/09 bỏ đường 'ghi nhận đã xem'. Ngày
   22/09 chủ sản phẩm mở lại MỘT lối ra có tên riêng — `dismissSignal` (Bỏ qua, chỉ lớp thường, S1). Tên cũ `noteSignal` vẫn không được quay lại."*
   và thêm ngay dưới: `assert('dismissSignal' in signalsSvc, 'S1: phải có đường Bỏ qua tín hiệu lớp thường');`
 
-- [ ] **Step 7: Chạy, xanh** (Expected `693`). **Step 8: Commit.** `git commit -am "PR-S1 (7): S1 — Bỏ qua tín hiệu lớp thường (lý do không bắt buộc, audit) + route"`
+- [x] **Step 7: Chạy, xanh** (Expected `693`). **Step 8: Commit.** `git commit -am "PR-S1 (7): S1 — Bỏ qua tín hiệu lớp thường (lý do không bắt buộc, audit) + route"`
 
 ---
 
@@ -1153,7 +1153,7 @@ api.post('/signals/pending/:id/dismiss', requireAuth, wrap((req) => {
 - Consumes: `loadSignal` (Task 6).
 - Produces: `reportIssue` với `fromSignalId` → Case có `category` = môn của tín hiệu, `cycle_id` = khoá của tín hiệu; `topic = 'writing'` hợp lệ khi khoá là lớp thường.
 
-- [ ] **Step 1: Phép kiểm (đỏ).**
+- [x] **Step 1: Phép kiểm (đỏ).**
 
 ```ts
   // ================================================================== 8. S1 (c) Tạo Case
@@ -1202,8 +1202,8 @@ api.post('/signals/pending/:id/dismiss', requireAuth, wrap((req) => {
   });
 ```
 
-- [ ] **Step 2: Chạy, đỏ.** Expected: phép 1 ✗ (mốc không có 10/40; có thể cả `cycle_id`), 2 ✗, 3 ✗ (`Chủ đề không hợp lệ: writing`), 4 ✗.
-- [ ] **Step 3: `reportIssue` (`cases.ts`).** Hiện tại khối kiểm `topic` (dòng 383–385) đứng **trước** khối chọn lộ trình (dòng 399–404). Đổi thứ tự
+- [x] **Step 2: Chạy, đỏ.** Expected: phép 1 ✗ (mốc không có 10/40; có thể cả `cycle_id`), 2 ✗, 3 ✗ (`Chủ đề không hợp lệ: writing`), 4 ✗.
+- [x] **Step 3: `reportIssue` (`cases.ts`).** Hiện tại khối kiểm `topic` (dòng 383–385) đứng **trước** khối chọn lộ trình (dòng 399–404). Đổi thứ tự
   và thêm kiểm tín hiệu — thay đoạn từ `const topic = …` (dòng 381) tới hết khối `if (input.cycleId && !cycle) throw …` (dòng 404) bằng:
 
 ```ts
@@ -1241,7 +1241,7 @@ Giữ nguyên các dòng giữa (mức độ, `detectedAt`, `idempotencyKey`) �
 > Lưu ý thứ tự: khối `idempotencyKey` (trả Case cũ khi gửi lại) đứng giữa hai khối trên trong mã hiện tại. Đặt khối `fromSignal` **sau** khối
 > `idempotencyKey`, để bấm gửi lại (tín hiệu đã `linked` từ lần đầu) vẫn trả Case cũ thay vì báo lỗi "đã được xử lý".
 
-- [ ] **Step 4: Mốc mở mang điểm** (`linkSignalToCase`, `signals.ts:320-334`). Trước câu `INSERT OR IGNORE INTO case_milestones … 'opened'`:
+- [x] **Step 4: Mốc mở mang điểm** (`linkSignalToCase`, `signals.ts:320-334`). Trước câu `INSERT OR IGNORE INTO case_milestones … 'opened'`:
 
 ```ts
     const sc = sg.skill
@@ -1251,9 +1251,9 @@ Giữ nguyên các dòng giữa (mức độ, `detectedAt`, `idempotencyKey`) �
 ```
 và đổi đối số `note` của câu INSERT thành `` `Tín hiệu từ kết quả đợt này${scoreText} đã được xác minh và mở thành Case` ``.
 
-- [ ] **Step 5: Chạy, xanh** (Expected `697`). Phép kiểm cũ `[6.2] …` ở `run.ts` ~5989 dùng tín hiệu demo bất kỳ: nếu nó chọn trúng tín hiệu có
+- [x] **Step 5: Chạy, xanh** (Expected `697`). Phép kiểm cũ `[6.2] …` ở `run.ts` ~5989 dùng tín hiệu demo bất kỳ: nếu nó chọn trúng tín hiệu có
   `skill` khác `topic` mà nó gửi thì giờ đỏ — nó gửi `topic: sg.skill` nên không. Nếu đỏ vì lý do khác → 🛑.
-- [ ] **Step 6: Commit.** `git commit -am "PR-S1 (8): S1 — Tạo Case từ tín hiệu đúng môn/đúng khoá, mốc mở mang điểm; Case Writing lớp thường (nửa máy chủ F07)"`
+- [x] **Step 6: Commit.** `git commit -am "PR-S1 (8): S1 — Tạo Case từ tín hiệu đúng môn/đúng khoá, mốc mở mang điểm; Case Writing lớp thường (nửa máy chủ F07)"`
 
 ---
 
@@ -1272,7 +1272,7 @@ và đổi đối số `note` của câu INSERT thành `` `Tín hiệu từ kế
   `export function overdueNormalSignalIds(p: Principal, f?: { branchId?: number | null; today?: string }): number[]`; chỉ số `tin-hieu-qua-han`.
   PR-Pa dùng `metricSet(p, 'tin-hieu-qua-han')` cho ô "Chờ xác minh quá hạn" và `WorkItem.signal` cho dòng việc.
 
-- [ ] **Step 1: Phép kiểm (đỏ).**
+- [x] **Step 1: Phép kiểm (đỏ).**
 
 ```ts
   // ================================================================== 9. S1 (d) dòng việc + chỉ số
@@ -1312,8 +1312,8 @@ và đổi đối số `note` của câu INSERT thành `` `Tín hiệu từ kế
   });
 ```
 
-- [ ] **Step 2: Chạy, đỏ.** Expected: hai phép ✗; phép cũ "Sổ chỉ số: đúng hai mươi ba…" vẫn ✓ (chưa thêm).
-- [ ] **Step 3: `overdueNormalSignalIds`** (`signals.ts`, sau `listSignals`):
+- [x] **Step 2: Chạy, đỏ.** Expected: hai phép ✗; phép cũ "Sổ chỉ số: đúng hai mươi ba…" vẫn ✓ (chưa thêm).
+- [x] **Step 3: `overdueNormalSignalIds`** (`signals.ts`, sau `listSignals`):
 
 ```ts
 /**
@@ -1328,7 +1328,7 @@ export function overdueNormalSignalIds(p: Principal, f: { branchId?: number | nu
 }
 ```
 
-- [ ] **Step 4: Chỉ số.** `shared/domain/metrics.ts` — thêm sau `tin-hieu-cho-xac-minh`:
+- [x] **Step 4: Chỉ số.** `shared/domain/metrics.ts` — thêm sau `tin-hieu-cho-xac-minh`:
 
 ```ts
   {
@@ -1349,7 +1349,7 @@ export function overdueNormalSignalIds(p: Principal, f: { branchId?: number | nu
 `server/src/tests/run.ts` (phép "Sổ chỉ số", dòng ~7972): `23` → `24` (cả câu thông báo: thêm "+ một của PR-S1: tin-hieu-qua-han") và thêm
 `'tin-hieu-qua-han'` vào mảng `expected` sau `'tin-hieu-cho-xac-minh'`.
 
-- [ ] **Step 5: Dòng `verify` ở `mywork.ts`.** `WorkItem` thêm (sau `count: number | null;`):
+- [x] **Step 5: Dòng `verify` ở `mywork.ts`.** `WorkItem` thêm (sau `count: number | null;`):
 
 ```ts
   /**
@@ -1375,8 +1375,8 @@ export function overdueNormalSignalIds(p: Principal, f: { branchId?: number | nu
       },
 ```
 
-- [ ] **Step 6: Chạy, xanh** (Expected `699`). `npm run typecheck` — web đọc `WorkItem` qua kiểu riêng thì trường tuỳ chọn không làm vỡ gì.
-- [ ] **Step 7: Commit.** `git commit -am "PR-S1 (9): S1 — dòng việc tín hiệu mang dữ liệu + chỉ số tin-hieu-qua-han (Chờ xác minh quá hạn)"`
+- [x] **Step 6: Chạy, xanh** (Expected `699`). `npm run typecheck` — web đọc `WorkItem` qua kiểu riêng thì trường tuỳ chọn không làm vỡ gì.
+- [x] **Step 7: Commit.** `git commit -am "PR-S1 (9): S1 — dòng việc tín hiệu mang dữ liệu + chỉ số tin-hieu-qua-han (Chờ xác minh quá hạn)"`
 
 ---
 
@@ -1398,7 +1398,7 @@ con số vừa sửa thì rút; Case có căn cứ độc lập thì giữ + nh�
 môn được sửa lên đạt mà các môn khác chưa có điểm, `sosLevel` là `null` và hàm **thoát sớm** (dòng 416) — nên lời gọi đối soát phải đứng
 **trước** lối thoát đó.
 
-- [ ] **Step 1: Phép kiểm (đỏ).**
+- [x] **Step 1: Phép kiểm (đỏ).**
 
 ```ts
   // ================================================================== 10. RB-8
@@ -1454,9 +1454,9 @@ môn được sửa lên đạt mà các môn khác chưa có điểm, `sosLevel
   });
 ```
 
-- [ ] **Step 2: Chạy, đỏ.** Expected: RB-8 phép 1–3 ✗; phép 4 ✓ (hành vi đã đúng — khoá lại). Nếu phép 4 ✗ → 🛑 (Case bị đóng hoặc
+- [x] **Step 2: Chạy, đỏ.** Expected: RB-8 phép 1–3 ✗; phép 4 ✓ (hành vi đã đúng — khoá lại). Nếu phép 4 ✗ → 🛑 (Case bị đóng hoặc
   không có mốc — đó là lỗi khác, báo trước khi sửa).
-- [ ] **Step 3: `signals.ts`.** `retireCaseForCorrectedScore(p: Principal, caseId: number, label: string, passText = 'đạt kỳ vọng')` và đổi câu
+- [x] **Step 3: `signals.ts`.** `retireCaseForCorrectedScore(p: Principal, caseId: number, label: string, passText = 'đạt kỳ vọng')` và đổi câu
   `outcome_note` thành `` `${SIGNAL_WITHDRAW_SCORE_FIXED} — điểm ${label} đã được sửa lại thành ${passText}.` ``. Thêm hàm chung (sau
   `retireCaseForCorrectedScore`), **chuyển nguyên** thân vòng `for (const item of casesToReview)` và khối audit từ `attempts.ts:1142-1180`:
 
@@ -1503,7 +1503,7 @@ export function reconcileCorrectedSignals(p: Principal, input: { attemptId: numb
 }
 ```
 
-- [ ] **Step 4: `attempts.ts`.** Thân `reconcileCorrectedScores` (dòng 1131–1181) còn lại:
+- [x] **Step 4: `attempts.ts`.** Thân `reconcileCorrectedScores` (dòng 1131–1181) còn lại:
 
 ```ts
 function reconcileCorrectedScores(p: Principal, attemptId: number, result: AttemptResult) {
@@ -1517,7 +1517,7 @@ function reconcileCorrectedScores(p: Principal, attemptId: number, result: Attem
 Dòng import 27: thay `caseHasIndependentBasis, retireCaseForCorrectedScore, withdrawSignalsNoLongerValid,` bằng `reconcileCorrectedSignals,`
 (xoá import nào `tsc` báo không còn dùng: `notify`, `SIGNAL_WITHDRAW_SCORE_FIXED`… — **chỉ** khi thật sự không còn chỗ dùng trong file).
 
-- [ ] **Step 5: `regular.ts`.** Import `reconcileCorrectedSignals` cạnh `raiseSignal` (dòng 3). Trong `refreshRegularOutcome`, ngay sau khối
+- [x] **Step 5: `regular.ts`.** Import `reconcileCorrectedSignals` cạnh `raiseSignal` (dòng 3). Trong `refreshRegularOutcome`, ngay sau khối
   `if (r.complete && a.status === 'planned') { … }` (dòng 411–414), **trước** `if (r.sosLevel === null) return r;`:
 
 ```ts
@@ -1530,8 +1530,8 @@ Dòng import 27: thay `caseHasIndependentBasis, retireCaseForCorrectedScore, wit
   });
 ```
 
-- [ ] **Step 6: Chạy, xanh** (Expected `703`). Phép kiểm cũ `[9.4] …` về FT phải còn ✓ (không đổi hành vi FT, chỉ dời chỗ).
-- [ ] **Step 7: Commit.** `git commit -am "PR-S1 (10): RB-8 — lớp thường đối soát sau sửa điểm bằng hàm chung với FT; khoá 'không đóng Case vô cớ'"`
+- [x] **Step 6: Chạy, xanh** (Expected `703`). Phép kiểm cũ `[9.4] …` về FT phải còn ✓ (không đổi hành vi FT, chỉ dời chỗ).
+- [x] **Step 7: Commit.** `git commit -am "PR-S1 (10): RB-8 — lớp thường đối soát sau sửa điểm bằng hàm chung với FT; khoá 'không đóng Case vô cớ'"`
 
 ---
 
@@ -1544,7 +1544,7 @@ Dòng import 27: thay `caseHasIndependentBasis, retireCaseForCorrectedScore, wit
 **Interfaces:**
 - Produces: `canCloseCase(p: Principal, c: { class_id?: number | null; student_id?: number | null; topic?: string | null }): boolean`.
 
-- [ ] **Step 1: Phép kiểm (đỏ).**
+- [x] **Step 1: Phép kiểm (đỏ).**
 
 ```ts
   // ================================================================== 11. RB-6
@@ -1571,8 +1571,8 @@ Dòng import 27: thay `caseHasIndependentBasis, retireCaseForCorrectedScore, wit
   });
 ```
 
-- [ ] **Step 2: Chạy, đỏ.** Expected ✗ ("GVCN hoàn thành được Case môn khác").
-- [ ] **Step 3: Sửa `canCloseCase`.**
+- [x] **Step 2: Chạy, đỏ.** Expected ✗ ("GVCN hoàn thành được Case môn khác").
+- [x] **Step 3: Sửa `canCloseCase`.**
 
 ```ts
 /**
@@ -1593,9 +1593,9 @@ export function canCloseCase(p: Principal, c: { class_id?: number | null; studen
 Hai câu lỗi (dòng 123 và 1258) đổi thành `'Chỉ Quản lý, hoặc GVCN dạy đúng môn của Case, mới hoàn thành được Case này.'` (giữ chữ "Quản lý"
 cho phép kiểm cũ `/chủ nhiệm|Quản lý/`). Dòng 2234: `canClose: canCloseCase(p, { class_id: enr?.class_id ?? null, student_id: studentId, topic: c.topic }),`.
 
-- [ ] **Step 4: Chạy, xanh** (Expected `704`). Phép cũ `run.ts:2584-2588` gọi không có `topic` → GVCN vẫn `true` (nhánh dữ liệu cũ) → ✓.
+- [x] **Step 4: Chạy, xanh** (Expected `704`). Phép cũ `run.ts:2584-2588` gọi không có `topic` → GVCN vẫn `true` (nhánh dữ liệu cũ) → ✓.
   `PR-D · Thẻ case…` (`run.ts:7720`) dùng Case Listening của GVCN T_HA (dạy L) → ✓. Đỏ khác → 🛑.
-- [ ] **Step 5: Commit.** `git commit -am "PR-S1 (11): RB-6 — GVCN chỉ hoàn thành Case đúng môn mình dạy (4.15)"`
+- [x] **Step 5: Commit.** `git commit -am "PR-S1 (11): RB-6 — GVCN chỉ hoàn thành Case đúng môn mình dạy (4.15)"`
 
 ---
 
@@ -1618,7 +1618,7 @@ cho phép kiểm cũ `/chủ nhiệm|Quản lý/`). Dòng 2234: `canClose: canCl
   - `export function closeCasesOnProgrammeSwitch(actorUserId: number | null, studentId: number, to: 'normal' | 'ft', on: string): { closedCaseIds: number[]; withdrawnSignalIds: number[] }`
   - Cờ `dongCaseKhiKetThuc?: boolean` trên `updateCycle(p, id, patch)` và `setOutcome(p, id, input)`: chỉ khi `true` mới đóng Case (S16). PR-LT truyền cờ khi em THÔI HỌC, KHÔNG truyền ở "Lên lớp thường tiếp".
 
-- [ ] **Step 1: Phép kiểm (đỏ).**
+- [x] **Step 1: Phép kiểm (đỏ).**
 
 ```ts
   // ================================================================== 12. S16 · S17
@@ -1731,8 +1731,8 @@ cho phép kiểm cũ `/chủ nhiệm|Quản lý/`). Dòng 2234: `canClose: canCl
   });
 ```
 
-- [ ] **Step 2: Chạy, đỏ.** Expected: phép "không cờ" ✓ (hành vi hiện tại đã giữ Case), bốn phép còn lại ✗ (thiếu mô-đun / Case vẫn mở).
-- [ ] **Step 3: Nhãn ở `shared/domain/cases.ts`** (sau `DISPOSITION_LABEL`):
+- [x] **Step 2: Chạy, đỏ.** Expected: phép "không cờ" ✓ (hành vi hiện tại đã giữ Case), bốn phép còn lại ✗ (thiếu mô-đun / Case vẫn mở).
+- [x] **Step 3: Nhãn ở `shared/domain/cases.ts`** (sau `DISPOSITION_LABEL`):
 
 ```ts
 /**
@@ -1750,7 +1750,7 @@ export const SYSTEM_CLOSE_REASON_LABEL: Record<SystemCloseReason, string> = {
 };
 ```
 
-- [ ] **Step 4: Tạo `server/src/cases/systemClose.ts`.**
+- [x] **Step 4: Tạo `server/src/cases/systemClose.ts`.**
 
 ```ts
 import { db, tx } from '../db.ts';
@@ -1894,7 +1894,7 @@ export function closeCasesOnProgrammeSwitch(actorUserId: number | null, studentI
 > Kiểm lại cột `journey_events.event_type 'case_closed'` và `case_milestones.dedup_key` có chỉ mục UNIQUE (câu `ON CONFLICT(dedup_key)` ở
 > `cases.ts:185-188` dùng y hệt — nên có). Nếu `addJourney` bắt `cycleId` khác kiểu → xem chữ ký ở `platform/audit.ts:27`.
 
-- [ ] **Step 5: `effectiveness.ts` — KHÔNG thêm bộ lọc (Q7 đã đổi ở planning review 22/09).** `queryPlans` chỉ lấy PA `status = 'completed'`;
+- [x] **Step 5: `effectiveness.ts` — KHÔNG thêm bộ lọc (Q7 đã đổi ở planning review 22/09).** `queryPlans` chỉ lấy PA `status = 'completed'`;
   PA bị hệ thống huỷ (`cancelled`, `system_closed`) tự nằm ngoài, PA đã xong có kết quả thật vẫn tính. Chỉ thêm một câu chú thích vào khối
   `/* CHỐT 5 … */` phía trên câu SQL (không đổi SQL):
 
@@ -1904,7 +1904,7 @@ export function closeCasesOnProgrammeSwitch(actorUserId: number | null, studentI
 ```
   Phép kiểm S16 ở Step 1 khoá cả hai chiều.
 
-- [ ] **Step 6: Gắn S16 — chỉ khi em THÔI HỌC (planning review 22/09, Q6).**
+- [x] **Step 6: Gắn S16 — chỉ khi em THÔI HỌC (planning review 22/09, Q6).**
 
 `cycles.ts` `updateCycle` — hoàn tất lộ trình KHÔNG tự đóng Case; chỉ đóng khi nơi gọi truyền cờ tường minh `dongCaseKhiKetThuc: true`
 (cờ đọc riêng, không phải cột — `map` bỏ qua khoá lạ nên không lọt vào câu UPDATE). Ngay sau `require_(...)` (dòng 138):
@@ -1968,9 +1968,9 @@ học (`finished`) thì Case còn mở được hệ thống tự đóng theo S1
     systemCloseLabel: c.system_close_reason ? SYSTEM_CLOSE_REASON_LABEL[c.system_close_reason as SystemCloseReason] ?? null : null,
 ```
 
-- [ ] **Step 7: Chạy, xanh** (Expected `709`). Phép kiểm cũ "Ba trạng thái học viên; lưu trữ chỉ ẩn…" (`run.ts:1159`) vẫn ✓ ở bước này (nó
+- [x] **Step 7: Chạy, xanh** (Expected `709`). Phép kiểm cũ "Ba trạng thái học viên; lưu trữ chỉ ẩn…" (`run.ts:1159`) vẫn ✓ ở bước này (nó
   không gọi `setStudentStatus`); Task 15 viết lại nó.
-- [ ] **Step 8: Commit.** `git add server/src/cases/systemClose.ts && git commit -am "PR-S1 (12): S16/S17 — một hàm đóng Case bởi hệ thống; thôi học tự đóng (setStudentStatus / cờ dongCaseKhiKetThuc)"`
+- [x] **Step 8: Commit.** `git add server/src/cases/systemClose.ts && git commit -am "PR-S1 (12): S16/S17 — một hàm đóng Case bởi hệ thống; thôi học tự đóng (setStudentStatus / cờ dongCaseKhiKetThuc)"`
 
 ---
 
@@ -1982,7 +1982,7 @@ học (`finished`) thì Case còn mở được hệ thống tự đóng theo S1
 - Modify: `server/src/tests/run.ts:8223-8235` (chú thích đối soát 29/28 — chỉ chú thích)
 - Test: `server/src/tests/luatMayChu.tests.ts`
 
-- [ ] **Step 1: Phép kiểm (đỏ).**
+- [x] **Step 1: Phép kiểm (đỏ).**
 
 ```ts
   // ================================================================== 13. Bộ demo
@@ -2008,8 +2008,8 @@ học (`finished`) thì Case còn mở được hệ thống tự đóng theo S1
   });
 ```
 
-- [ ] **Step 2: Chạy, đỏ.** Expected: cả hai ✗.
-- [ ] **Step 3: `seed.ts`** — sau lời gọi `buildJourneys({...})` (dòng 205–207):
+- [x] **Step 2: Chạy, đỏ.** Expected: cả hai ✗.
+- [x] **Step 3: `seed.ts`** — sau lời gọi `buildJourneys({...})` (dòng 205–207):
 
 ```ts
     /*
@@ -2033,9 +2033,9 @@ dòng 1757–1758 chuyện kể S24 thay bằng:
 `run.ts:8223-8235` — thêm một câu cuối vào khối chú thích: *"Từ PR-S1 (S16) bộ demo tự đóng Case của em đã kết thúc học, nên chênh lệch
 này về 0; hai điều kiện dưới vẫn giữ để bắt chênh lệch mới."* — **không** đổi assert.
 
-- [ ] **Step 4: Chạy, xanh** (Expected `711`). Phép kiểm ở mục 0 (soi bộ demo) đỏ → đọc: nếu nó khoá số Case mở của bộ demo có tính Case của Uyên
+- [x] **Step 4: Chạy, xanh** (Expected `711`). Phép kiểm ở mục 0 (soi bộ demo) đỏ → đọc: nếu nó khoá số Case mở của bộ demo có tính Case của Uyên
   → cập nhật kỳ vọng và ghi Nhật ký; khác → 🛑.
-- [ ] **Step 5: Commit.** `git commit -am "PR-S1 (13): bộ demo — S16 cho em đã kết thúc học (Vũ Thu Uyên), ngưỡng 70%"`
+- [x] **Step 5: Commit.** `git commit -am "PR-S1 (13): bộ demo — S16 cho em đã kết thúc học (Vũ Thu Uyên), ngưỡng 70%"`
 
 ---
 
@@ -2055,7 +2055,7 @@ này về 0; hai điều kiện dưới vẫn giữ để bắt chênh lệch m�
   API body `{ toClassId, effectiveDate?, reasonCode, reasonNote?, handoverNote?, noHandoverNote?, receiverUserId? }`.
 - `applyTransition` (Chuyển tiếp lớp, `transition.ts:211-217`) đã truyền lý do + ghi chú mặc định khác rỗng → **không đổi**. PR-LT làm lại màn đó.
 
-- [ ] **Step 1: Phép kiểm (đỏ).**
+- [x] **Step 1: Phép kiểm (đỏ).**
 
 ```ts
   // ================================================================== 14. RB-3
@@ -2092,8 +2092,8 @@ này về 0; hai điều kiện dưới vẫn giữ để bắt chênh lệch m�
   });
 ```
 
-- [ ] **Step 2: Chạy, đỏ.** Expected: ba phép ✗.
-- [ ] **Step 3: `shared/domain/students.ts`** (sau `STUDENT_STATUS_LABEL`):
+- [x] **Step 2: Chạy, đỏ.** Expected: ba phép ✗.
+- [x] **Step 3: `shared/domain/students.ts`** (sau `STUDENT_STATUS_LABEL`):
 
 ```ts
 /**
@@ -2118,7 +2118,7 @@ export function transferReasonText(code: unknown, note?: unknown): string | null
 }
 ```
 
-- [ ] **Step 4: `transferStudent`.** Chữ ký: `reason: string` (bỏ `?`), `handover?: { note?: string | null; noNote?: boolean; receiverUserId?: number | null }`.
+- [x] **Step 4: `transferStudent`.** Chữ ký: `reason: string` (bỏ `?`), `handover?: { note?: string | null; noNote?: boolean; receiverUserId?: number | null }`.
   Thay khối từ `const brief = handoverBrief(studentId);` tới hết `if (brief.cases.length > 0 && …) { throw … }` (dòng 170–176) bằng:
 
 ```ts
@@ -2141,7 +2141,7 @@ export function transferReasonText(code: unknown, note?: unknown): string | null
 ```
 Trong thân: `end_reason` dùng `why`; `addJourney` `detail: [why, handoverNote].join(' — ')`. Import `NO_HANDOVER_NOTE`.
 
-- [ ] **Step 5: Route** (`routes/index.ts:1349-1358`):
+- [x] **Step 5: Route** (`routes/index.ts:1349-1358`):
 
 ```ts
 api.post('/students/:id/transfer', requireAuth, wrap((req) => {
@@ -2161,7 +2161,7 @@ api.post('/students/:id/transfer', requireAuth, wrap((req) => {
 ```
 Import `transferReasonText` từ `shared/domain` ở đầu `routes/index.ts` (cạnh các import domain đang có — kiểm tên khối import).
 
-- [ ] **Step 6: Web `TransferForm`** (`StudentManagePanel.tsx`). Tối thiểu, dùng thành phần sẵn có (`Field`, `select.field`):
+- [x] **Step 6: Web `TransferForm`** (`StudentManagePanel.tsx`). Tối thiểu, dùng thành phần sẵn có (`Field`, `select.field`):
   - thay state `reason` bằng `reasonCode` (`''`) + `reasonNote` (`''`); thêm `noNote` (`false`);
   - `import { NO_HANDOVER_NOTE, TRANSFER_REASONS, TRANSFER_REASON_LABEL } from '@shared/domain/index.ts';`
   - thay `<Field label="Lý do">…</Field>` bằng:
@@ -2199,11 +2199,11 @@ Import `transferReasonText` từ `shared/domain` ở đầu `routes/index.ts` (c
     `{ toClassId, effectiveDate: date || undefined, reasonCode, reasonNote: reasonNote || undefined, handoverNote: handoverNote || undefined, noHandoverNote: noNote, receiverUserId: receiverUserId || undefined }`.
   - Không đổi gì khác (bố cục mới của màn chuyển lớp là PR-LT).
 
-- [ ] **Step 7: Chạy.** `npm run typecheck` rồi `npm test 2>&1 | tail -3` — Expected `714`. Phép cũ `run.ts:1150`, `:5320`, `:5330` truyền lý do chữ +
+- [x] **Step 7: Chạy.** `npm run typecheck` rồi `npm test 2>&1 | tail -3` — Expected `714`. Phép cũ `run.ts:1150`, `:5320`, `:5330` truyền lý do chữ +
   ghi chú → ✓.
-- [ ] **Step 8: Bấm thử** (vai Quản lý MB, `npm run dev` trong worktree): mở hồ sơ một HV → Chuyển lớp → bấm "Chuyển lớp" khi chưa chọn lý do → báo lỗi;
+- [x] **Step 8: Bấm thử** (vai Quản lý MB, `npm run dev` trong worktree): mở hồ sơ một HV → Chuyển lớp → bấm "Chuyển lớp" khi chưa chọn lý do → báo lỗi;
   chọn "Đổi lịch học", tích "Không có lưu ý" → chuyển được. Ghi kết quả vào Nhật ký. (Không chụp màn cho chủ sản phẩm — màn này PR-LT làm lại.)
-- [ ] **Step 9: Commit.** `git commit -am "PR-S1 (14): RB-3 — chuyển lớp bắt buộc lý do chọn nhanh + lưu ý bàn giao / 'Không có lưu ý'"`
+- [x] **Step 9: Commit.** `git commit -am "PR-S1 (14): RB-3 — chuyển lớp bắt buộc lý do chọn nhanh + lưu ý bàn giao / 'Không có lưu ý'"`
 
 ---
 
@@ -2220,7 +2220,7 @@ Import `transferReasonText` từ `shared/domain` ở đầu `routes/index.ts` (c
 - Produces: `archiveStudent(p: Principal, studentId: number)`, `unarchiveStudent(p: Principal, studentId: number)`;
   `POST /api/students/:id/archive`, `POST /api/students/:id/unarchive`. (Nút giao diện: PR-LT — thao tác trạng thái học viên, Q12.)
 
-- [ ] **Step 1: Phép kiểm (đỏ)** — thêm vào `luatMayChu.tests.ts`:
+- [x] **Step 1: Phép kiểm (đỏ)** — thêm vào `luatMayChu.tests.ts`:
 
 ```ts
   // ================================================================== 15. RB-9
@@ -2242,8 +2242,8 @@ Import `transferReasonText` từ `shared/domain` ở đầu `routes/index.ts` (c
   });
 ```
 
-- [ ] **Step 2: Chạy, đỏ.** Expected ✗.
-- [ ] **Step 3: Sửa mã.** Xoá `ARCHIVE_AFTER_DAYS` (và chú thích của nó) khỏi `shared/domain/students.ts`; bỏ khỏi import `students.ts:2`
+- [x] **Step 2: Chạy, đỏ.** Expected ✗.
+- [x] **Step 3: Sửa mã.** Xoá `ARCHIVE_AFTER_DAYS` (và chú thích của nó) khỏi `shared/domain/students.ts`; bỏ khỏi import `students.ts:2`
   (và `addDays` nếu không còn dùng). Thay `archiveDueStudents` (dòng 260–274) bằng:
 
 ```ts
@@ -2293,13 +2293,13 @@ api.post('/students/:id/unarchive', requireAuth, wrap((req) => {
 }));
 ```
 
-- [ ] **Step 4: Viết lại phép kiểm cũ** `run.ts:1159-1173` ("Ba trạng thái học viên; lưu trữ chỉ ẩn, không đóng việc còn dở"): thay
+- [x] **Step 4: Viết lại phép kiểm cũ** `run.ts:1159-1173` ("Ba trạng thái học viên; lưu trữ chỉ ẩn, không đóng việc còn dở"): thay
   `const n = students.archiveDueStudents(TODAY);` + `assert(n >= 1 && after.archived_at, …)` bằng
   `students.archiveStudent(P.mbManager, s.id);` + `assert(after.archived_at, 'Quản lý bấm lưu trữ thì học viên phải vào lưu trữ');`.
   Học viên `finished` đầu tiên của bộ demo có thể thuộc chi nhánh khác MB → chọn `P.admin` thay `P.mbManager` cho chắc. Giữ nguyên hai assert
   còn lại (không thành trạng thái thứ tư; số Case mở trước/sau lưu trữ bằng nhau — sau Task 13 cả hai là 0, vẫn đúng).
-- [ ] **Step 5: Chạy, xanh** (Expected `715`). `grep -rn "archiveDueStudents\|ARCHIVE_AFTER_DAYS" server shared web` — Expected: không còn.
-- [ ] **Step 6: Commit.** `git commit -am "PR-S1 (15): RB-9 — lưu trữ học viên chỉ khi Quản lý bấm; gỡ archiveDueStudents"`
+- [x] **Step 5: Chạy, xanh** (Expected `715`). `grep -rn "archiveDueStudents\|ARCHIVE_AFTER_DAYS" server shared web` — Expected: không còn.
+- [x] **Step 6: Commit.** `git commit -am "PR-S1 (15): RB-9 — lưu trữ học viên chỉ khi Quản lý bấm; gỡ archiveDueStudents"`
 
 ---
 
@@ -2315,7 +2315,7 @@ api.post('/students/:id/unarchive', requireAuth, wrap((req) => {
 **Interfaces:**
 - Produces: `caseHeadline(c: { summary?; originKind?; sosLevel?; attemptNo?; attemptKind?: string | null })`; `Standing.failed: number | null`.
 
-- [ ] **Step 1: Phép kiểm (đỏ).**
+- [x] **Step 1: Phép kiểm (đỏ).**
 
 ```ts
   // ================================================================== 16. §6 chữ lớp thường
@@ -2350,8 +2350,8 @@ api.post('/students/:id/unarchive', requireAuth, wrap((req) => {
   });
 ```
 
-- [ ] **Step 2: Chạy, đỏ.** Expected: hai phép ✗.
-- [ ] **Step 3: `caseHeadline`** — thêm `attemptKind?: string | null;` vào kiểu tham số và thay hai dòng `const where …` / `const derived …`:
+- [x] **Step 2: Chạy, đỏ.** Expected: hai phép ✗.
+- [x] **Step 3: `caseHeadline`** — thêm `attemptKind?: string | null;` vào kiểu tham số và thay hai dòng `const where …` / `const derived …`:
 
 ```ts
   const level = c.sosLevel ?? null;
@@ -2369,7 +2369,7 @@ Ba nơi gọi truyền `attemptKind`: `cases.ts:1503` → `attemptKind: c.attemp
 `loadCase`, dòng 244, cạnh `a.attempt_no`); `cases.ts:1762` → `attemptKind: r.attempt_kind ?? null` (câu đã có `a.kind AS attempt_kind`, dòng 1665);
 `profile.ts:662` → `attemptKind: c.attempt_kind ?? null` (thêm `a.kind AS attempt_kind` cạnh `a.attempt_no AS attempt_no`, dòng 650).
 
-- [ ] **Step 4: `standing.ts`.** `Standing` thêm sau `required: number;`:
+- [x] **Step 4: `standing.ts`.** `Standing` thêm sau `required: number;`:
   `/** Lớp thường: số môn chưa đạt của lượt đó (để nói "Đạt 3/4 môn"). FT: null. */ failed: number | null;`;
   `EMPTY` thêm `failed: null,`; nhánh `if (ratio) { … }` (dòng 198–204) thêm `s.failed = r.failedCount;`. `standingLine` thay bằng:
 
@@ -2402,8 +2402,8 @@ export function standingLine(s: Standing): string {
 }
 ```
 
-- [ ] **Step 5: Chạy, xanh** (Expected `717`). `npm run typecheck` (web có thể đọc `Standing` — trường mới không làm vỡ).
-- [ ] **Step 6: Commit.** `git commit -am "PR-S1 (16): §6 — caseHeadline và standingLine đúng chữ lớp thường"`
+- [x] **Step 5: Chạy, xanh** (Expected `717`). `npm run typecheck` (web có thể đọc `Standing` — trường mới không làm vỡ).
+- [x] **Step 6: Commit.** `git commit -am "PR-S1 (16): §6 — caseHeadline và standingLine đúng chữ lớp thường"`
 
 ---
 
@@ -2413,7 +2413,7 @@ export function standingLine(s: Standing): string {
 - Test: `server/src/tests/luatMayChu.tests.ts`
 - Modify: `server/src/tests/banChinh.tests.ts:44`, `:57`, `:99`, `:106`, `:399`, `:403-406`
 
-- [ ] **Step 1: S15.**
+- [x] **Step 1: S15.**
 
 ```ts
   // ================================================================== 17. S15
@@ -2432,7 +2432,7 @@ export function standingLine(s: Standing): string {
 ```
 Run → Expected ✓ ngay (phép kiểm còn thiếu, hành vi đã có). ✗ → 🛑.
 
-- [ ] **Step 2: AN-13 — `banChinh.tests.ts`.**
+- [x] **Step 2: AN-13 — `banChinh.tests.ts`.**
   - dòng 403–406 (phép "Bộ phép kiểm này KHÔNG BAO GIỜ chạy trên Turso"): `db().name` luôn `""` ở libsql 0.5.29 nên nửa điều kiện này không bao giờ đỏ.
     Thay assert thứ hai bằng:
 
@@ -2450,7 +2450,7 @@ Run → Expected ✓ ngay (phép kiểm còn thiếu, hành vi đã có). ✗ �
     `moTaDichDb` nhận dạng theo tên.
   - Kiểm `laDbTuXa` có được export từ `db.ts` (có — `migrate/run.ts` import nó).
 
-- [ ] **Step 3: Chạy, xanh** (Expected `718`). **Step 4: Commit.** `git commit -am "PR-S1 (17): S15 phép kiểm workScope; AN-13 sửa hai lỗi phép kiểm bản chính cũ"`
+- [x] **Step 3: Chạy, xanh** (Expected `718`). **Step 4: Commit.** `git commit -am "PR-S1 (17): S15 phép kiểm workScope; AN-13 sửa hai lỗi phép kiểm bản chính cũ"`
 
 ---
 
@@ -2460,9 +2460,9 @@ Run → Expected ✓ ngay (phép kiểm còn thiếu, hành vi đã có). ✗ �
 
 `action_due` của PA **học thuật** là hạn CẬP NHẬT tuần (`schema.sql:950-963`), không phải "thực hiện xong" của Ý thức.
 
-- [ ] **Step 1:** Đổi `<Han loai="thuc-hien-y-thuc" han={p.actionDue} />` thành `<Han loai="cap-nhat-pa" han={p.actionDue} />`.
-- [ ] **Step 2:** `npm run typecheck` — Expected sạch. Bấm thử hồ sơ một HV có Case đang chạy PA: nhãn đọc "Cập nhật kết quả · trước CN dd/mm".
-- [ ] **Step 3: Commit.** `git commit -am "PR-S1 (18): SkillBoard — hạn PA học thuật hiện là 'Cập nhật kết quả', không phải hạn Ý thức"`
+- [x] **Step 1:** Đổi `<Han loai="thuc-hien-y-thuc" han={p.actionDue} />` thành `<Han loai="cap-nhat-pa" han={p.actionDue} />`.
+- [x] **Step 2:** `npm run typecheck` — Expected sạch. Bấm thử hồ sơ một HV có Case đang chạy PA: nhãn đọc "Cập nhật kết quả · trước CN dd/mm".
+- [x] **Step 3: Commit.** `git commit -am "PR-S1 (18): SkillBoard — hạn PA học thuật hiện là 'Cập nhật kết quả', không phải hạn Ý thức"`
 
 ---
 
@@ -2471,7 +2471,7 @@ Run → Expected ✓ ngay (phép kiểm còn thiếu, hành vi đã có). ✗ �
 **Files:** `shared/domain/policy.ts:1-23`, `:55-60`, `:78-85` · `thiet-ke/LUAT_CHO_CHOT.md:3`, `:80`, `:86`, `:156`, `:170` · `plan.md` §22.9 (S11–S17),
 §22.10 (dòng C08), bảng nhật ký phiên · `CODE_MAP.md`
 
-- [ ] **Step 1: `policy.ts`.**
+- [x] **Step 1: `policy.ts`.**
   - Khối đầu file (dòng 7–12) thay bằng:
 
 ```ts
@@ -2494,25 +2494,25 @@ Run → Expected ✓ ngay (phép kiểm còn thiếu, hành vi đã có). ✗ �
  */
 ```
 
-- [ ] **Step 2: `LUAT_CHO_CHOT.md`.** Dòng 3 thêm một câu: *"**Cập nhật 22/09/2026 (PR-S1):** mọi điểm C01–C10 đã chốt; C08 đóng 21/09 đêm — xem §6.4 và §6.5."*
+- [x] **Step 2: `LUAT_CHO_CHOT.md`.** Dòng 3 thêm một câu: *"**Cập nhật 22/09/2026 (PR-S1):** mọi điểm C01–C10 đã chốt; C08 đóng 21/09 đêm — xem §6.4 và §6.5."*
   Bảng §5 dòng C01 cột "Trạng thái mã" → `Đóng 21/09 — hai mốc riêng (§6.2)`; dòng C08 → `Đóng 21/09 đêm — GV ghi "-", tự dời; phần "-" làm ở PR-Rc1 (R14)`.
   §6.5 dòng C08 → `| C08 | ✅ Đóng 21/09 đêm — lớp thường dùng "-" (GV ghi, tự dời). Mã: PR-Rc1 (R14) |`. §7 dòng C08 → `| **C08** | ✅ Đóng 21/09 đêm (xem §6.4) |`.
   Không xoá chữ cũ ở §1–§4 (luật file: giữ lịch sử câu hỏi).
-- [ ] **Step 3: `plan.md`.** §22.9: tick `[x]` S11, S12, S13, S14, S15, S16, S17, mỗi dòng thêm `*(PR-S1)*`; S16 ghi thêm "gắn vào `setStudentStatus('finished')`;
+- [x] **Step 3: `plan.md`.** §22.9: tick `[x]` S11, S12, S13, S14, S15, S16, S17, mỗi dòng thêm `*(PR-S1)*`; S16 ghi thêm "gắn vào `setStudentStatus('finished')`;
   `setOutcome`/`updateCycle` chỉ khi có cờ `dongCaseKhiKetThuc: true`; hoàn tất khoá không cờ (Lên lớp thường tiếp, PR-LT) giữ Case". §22.10 dòng C08: gạch `~~…~~` và ghi "đóng 21/09 đêm, việc R14 (PR-Rc1)". Thêm **một**
   dòng vào bảng nhật ký phiên (cuối bảng có dòng `Claude (session PR-Z2b …`): ngày, `Claude (session PR-S1, nhánh pr-s1-luat-may-chu, <model>)`, tóm tắt
   (việc đã làm, số phép kiểm 672 → N, quyết định Q1–Q13, việc chuyển cho PR khác: nút Lưu trữ + lựa chọn "em thôi học" (cờ dongCaseKhiKetThuc) → LT, dòng tín hiệu → Pa, luồng gọi S17 → LT, dấu "-" lớp
   thường → Rc1, nửa giao diện F07 → Form).
-- [ ] **Step 4: `CODE_MAP.md`.** Thêm một dòng cho `server/src/cases/systemClose.ts` (khối cases) và `server/src/worklist/scoreDebt.ts` (khối worklist),
+- [x] **Step 4: `CODE_MAP.md`.** Thêm một dòng cho `server/src/cases/systemClose.ts` (khối cases) và `server/src/worklist/scoreDebt.ts` (khối worklist),
   theo đúng định dạng dòng lân cận.
-- [ ] **Step 5: Commit.** `git commit -am "PR-S1 (19): tài liệu — policy.ts C01/C05/C08, LUAT_CHO_CHOT C08, plan.md S11–S17 + nhật ký, CODE_MAP"`
+- [x] **Step 5: Commit.** `git commit -am "PR-S1 (19): tài liệu — policy.ts C01/C05/C08, LUAT_CHO_CHOT C08, plan.md S11–S17 + nhật ký, CODE_MAP"`
 
 ---
 
 ### Task 20: Nghiệm thu, migrate lặp trên bản sao, rà soát, mở PR
 
-- [ ] **Step 1: Chuỗi kiểm đầy đủ.** Run: `npm run check` — Expected: build sạch, `TẤT CẢ ~718 KIỂM TRA ĐỀU ĐẠT`, typecheck sạch. Ghi số vào Nhật ký.
-- [ ] **Step 2: Migrate lặp trên BẢN SAO database dev** (không bao giờ trên file gốc, không bao giờ trên Turso). Bash:
+- [x] **Step 1: Chuỗi kiểm đầy đủ.** Run: `npm run check` — Expected: build sạch, `TẤT CẢ ~718 KIỂM TRA ĐỀU ĐẠT`, typecheck sạch. Ghi số vào Nhật ký.
+- [x] **Step 2: Migrate lặp trên BẢN SAO database dev** (không bao giờ trên file gốc, không bao giờ trên Turso). Bash:
 
 ```bash
 SCR="$(node -e "console.log(require('os').tmpdir())")/pr-s1-migrate"
@@ -2523,17 +2523,17 @@ PISA_DB="$SCR/ban-sao.sqlite" npm run migrate
 ```
 Expected: lần một có dòng `✓ PR-S1: thêm 2 cột …` (nếu database dev còn cũ) hoặc không có gì; lần hai **không** có dòng PR-S1.
 (`VACUUM INTO` vì libsql trên Windows giữ khoá file — bài học PR-Z2b.)
-- [ ] **Step 3: Bấm thử ba vai** (`npm run dev` trong worktree, đăng nhập tài khoản demo):
+- [x] **Step 3: Bấm thử ba vai** (`npm run dev` trong worktree, đăng nhập tài khoản demo):
   - GV Listening MB-FOU 12: `GET /api/signals/pending?mine=1` trả tín hiệu có `kind`, `score`, `total`, `actions`; `POST /api/signals/pending/:id/dismiss`
     (DevTools → fetch) → 200, tín hiệu biến khỏi danh sách chờ.
   - Quản lý MB: `GET /api/metrics/tin-hieu-qua-han` trả `n`; hồ sơ HV → Chuyển lớp: bắt chọn lý do.
   - GVCN MB-FT 101: thẻ Case Speaking của một HV lớp mình không còn nút "Hoàn thành case".
   Ghi kết quả (không cần ảnh — màn giao diện của các luật này làm ở PR-Pa/Qa/LT).
-- [ ] **Step 4: Rà soát code.** REQUIRED SUB-SKILL: `superpowers:requesting-code-review`. Người rà: **Fable 5.1** (khác model người code). Đưa cho người rà:
+- [x] **Step 4: Rà soát code.** REQUIRED SUB-SKILL: `superpowers:requesting-code-review`. Người rà: **Fable 5.1** (khác model người code). Đưa cho người rà:
   plan này, đặc tả §3.10/§5/§6/§7, bảng Quyết định Q1–Q13, `git diff main...HEAD`. Yêu cầu soi riêng: (a) mọi đường đổi `attempt_skills.sit_status` đều xử lý
   `absent_from_no_show`; (b) `closeCasesBySystem` không đóng nhầm Case khác chương trình / khác khoá; (c) `reportIssue` đổi thứ tự khối không làm hỏng gửi lại
   (`idempotencyKey`); (d) `scoreDebtCells` không chậm trên Turso (đếm số truy vấn cho một chi nhánh). Xử lý phản hồi theo `superpowers:receiving-code-review`.
-- [ ] **Step 5: PR.** `git push -u origin pr-s1-luat-may-chu`; `gh pr create` tiêu đề `PR-S1 · Luật máy chủ (S1, S11–S17, RB-3/6/8/9, AN-13, §6)`,
+- [x] **Step 5: PR.** `git push -u origin pr-s1-luat-may-chu`; `gh pr create` tiêu đề `PR-S1 · Luật máy chủ (S1, S11–S17, RB-3/6/8/9, AN-13, §6)`,
   thân: tóm tắt theo Task, bảng Q1–Q13, số phép kiểm 672 → N, "việc chuyển cho PR khác", dòng `🤖 Generated with [Claude Code](https://claude.com/claude-code)`.
   **Không tự merge.** Báo chủ sản phẩm bằng tiếng Việt đơn giản: làm gì, còn gì cho đợt sau.
 
@@ -2568,4 +2568,24 @@ một phép kiểm mục 0 khoá; hướng xử lý đã ghi ở Step 4.
 
 | Ngày | Task | Ghi chú (model người code · số phép kiểm · lệch plan · quyết định tại chỗ) |
 |---|---|---|
-| | | |
+| 22/09/2026 | 0 | Opus 5 · XHigh. Worktree `.claude/worktrees/pr-s1-luat-may-chu` tách từ `main` @ `66542bc` (PR #53 đã merge). Không có biến Turso. Mốc **672** ✓. |
+| 22/09/2026 | 1 | 677 ✓. Lệch plan (2): (a) chú thích cột `system_close_reason` trong `schema.sql` viết KHÔNG có dấu phẩy — SQLite `DROP COLUMN` cột cuối bảng cắt ngược tới dấu phẩy gần nhất, dấu phẩy trong chú thích làm vỡ câu CREATE (phép kiểm migrate dựng DB cũ bằng DROP COLUMN); (b) `migrateLuatMayChu` chỉ đánh cờ dữ liệu cũ NGAY LÚC thêm cột, không đọc lại chuỗi `sit_note` ở các lần chạy sau (tránh gắn nhầm cờ cho buổi vắng Quản lý xác nhận tay có ghi chú mở đầu "Không dự thi…"). |
+| 22/09/2026 | 2 | 680 ✓. Ngoài 5 chỗ plan ghi, đặt lại cờ 0 ở thêm hai đường đổi `sit_status` plan bỏ sót: `cancelPart` nhánh FT (→ `cancelled`) và `setSkillWeek` (`absent` → `scheduled`). `seed/build.ts` chỉ ghi vắng tay → cờ 0 mặc định là đúng. |
+| 22/09/2026 | 3 | 682 ✓. S14 xanh ngay như plan dự đoán (khoá hành vi có sẵn). |
+| 22/09/2026 | 4 | 685 ✓. Không phép kiểm cũ nào đỏ. `addDays` bỏ khỏi `branchpulse.ts` (hết chỗ dùng); `scopeSql` giữ. Nợ điểm giờ tính cho GV phân công ĐẦU TIÊN của (lớp, môn) — câu SQL cũ cộng cho mọi GV cùng môn. |
+| 22/09/2026 | 5 | 687 ✓ (đỏ trước khi sửa: no_plan 101→102, missing_scores 69→70). Nhãn việc "bài MT còn thiếu điểm" → "bài Test còn thiếu điểm" (theo plan). |
+| 22/09/2026 | 6 | 690 ✓ (phép 1 xanh sẵn — khoá hành vi; phép 2–3 đỏ trước khi sửa). |
+| 22/09/2026 | 7 | 693 ✓. Đổi luôn TÊN phép kiểm cũ `[6.2] Xác minh MỘT tín hiệu chỉ có MỘT lối ra: mở case` (tên cũ nói sai sau S1) — plan chỉ yêu cầu đổi chú thích + thêm assert. |
+| 22/09/2026 | 8 | 697 ✓ (bốn phép đỏ trước khi sửa). Khối `fromSignal` đặt SAU `idempotencyKey` như lưu ý của plan; thứ tự báo lỗi đổi nhẹ (mức độ/ngày được kiểm trước chủ đề). |
+| 22/09/2026 | 9 | 699 ✓. Phép kiểm "Sổ chỉ số" ở `run.ts:7972` khoá **23** (plan ghi đúng) → 24; tên phép kiểm cũ vẫn ghi "hai mươi" (có từ trước PR này) — không đổi tên. |
+| 22/09/2026 | 10 | 703 ✓ (RB-8 phép 1–3 đỏ trước khi sửa, phép 4 xanh sẵn như plan dự đoán). Hai phép cũ `[9.4]` (FT) vẫn ✓. `attempts.ts`: bỏ import `SIGNAL_WITHDRAW_SCORE_FIXED`; GIỮ `notify` (file còn `export { notify }`). |
+| 22/09/2026 | 11 | 704 ✓. Lệch plan: sửa thêm 4 câu chữ ở web (`CasePanel.tsx:260,282`, `SkillBoard.tsx:430,452`) — câu cũ "Chỉ giáo viên chủ nhiệm của lớp và Quản lý mới hoàn thành…" nói SAI luật mới khi GVCN xem Case môn khác; nay dùng đúng câu lỗi máy chủ. Chỉ đổi chữ, không đổi bố cục. |
+| 22/09/2026 | 12 | 709 ✓ (4 phép đỏ trước khi sửa, phép "không cờ" xanh sẵn). Sửa lỗi trong khung phép kiểm của plan: `load()` trả Proxy ném lỗi cả khi `await` hỏi `then` → `await load(...)` làm SẬP cả bộ thay vì chỉ đỏ phép kiểm; nay `then` trả `undefined`. File phép kiểm chuẩn hoá về LF. |
+| 22/09/2026 | 13 | 711 ✓. Lệch plan (2): (a) vòng S16 trong `seed.ts` đặt SAU `buildSosV3Demo` (cuối cùng) thay vì ngay sau `buildJourneys` — để không bước dựng Case nào sau đó để lại Case mở cho em đã kết thúc; (b) phép kiểm cũ `PR-F · Đối soát F10` (run.ts ~8207) có assert tiền đề `onlyOverview.length >= 1` ("bộ demo phải còn em đã kết thúc mà case còn mở") — plan chỉ dặn thêm chú thích, nhưng assert này mâu thuẫn trực tiếp với S16. Theo Step 4 ("khoá số Case mở của bộ demo có tính Case của Uyên → cập nhật kỳ vọng"): thay bằng assert chiều ngược — không em ĐÃ KẾT THÚC nào còn ở phần chênh. Hai điều kiện (1)(2) giữ nguyên. |
+| 22/09/2026 | 14 | 714 ✓ (phép 3 — còn Case mở không được chọn "Không có lưu ý" — xanh sẵn nhờ luật bàn giao cũ mục 6.4). Import `transferReasonText` ở `routes/index.ts` viết thành MỘT dòng import riêng (không sửa khối import đầu file — giảm xung đột với PR-O). Bấm thử (Step 8) làm gộp ở Task 20. |
+| 22/09/2026 | 15 | 715 ✓. `grep archiveDueStudents|ARCHIVE_AFTER_DAYS` chỉ còn một dòng chú thích giải thích việc gỡ (cố ý). `addDays` bỏ khỏi import `students.ts`. |
+| 22/09/2026 | 16 | 717 ✓. Plan liệt kê 3 nơi gọi `caseHeadline`; thực tế có **5** — thêm hai dòng việc ở `mywork.ts` ("Case thiếu PA" ~742, "Chưa có người phụ trách" ~874), cũng truyền `attemptKind` (thêm `a.kind AS attempt_kind` vào hai câu SELECT) để dòng việc lớp thường không còn ghi "MT1 … kỳ vọng". |
+| 22/09/2026 | 17 | **718** ✓. S15 xanh ngay (khoá hành vi). AN-13: ngoài các dòng plan ghi, đổi thêm hai chỗ đi cặp với `TURSO_GIA` — giá trị ngoại lệ `'khong-ton-tai.turso.io'` của phép "BAN_CHINH=1 … kể cả khi ngoại lệ khớp đúng tên máy chủ" → `.invalid` (không đổi thì phép kiểm đạt vì sai tên máy, không phải vì BAN_CHINH) và giá trị chung chung `'turso.io'` → `'invalid'` (tên phép kiểm đổi theo). |
+| 22/09/2026 | 18–19 | 718 ✓. Task 18: đổi `Han loai` — bấm thử làm gộp ở Task 20. Task 19: tài liệu đúng như plan; CODE_MAP thêm 4 dòng (systemClose, scoreDebt, dismissSignal/canResolveSignal, reconcileCorrectedSignals). |
+| 22/09/2026 | 20 (1–3) | `npm run check` sạch: build, **718/718**, typecheck. Migrate lặp trên BẢN SAO (`VACUUM INTO` từ database dev của thư mục chính, mở chỉ đọc — chưa có hai cột mới): lần 1 `✓ PR-S1: thêm 2 cột …; đánh cờ 0 buổi vắng`, lần 2 KHÔNG có dòng PR-S1 (dòng "3 case giữ khoá cũ…" in lại mỗi lần là của bước migrate cũ, không phải PR này). Bấm thử trên database dev RIÊNG của worktree, API cổng 4117 + Vite 5317 (cấu hình Vite tạm, đã xoá; không dùng 4000/5173): GV Listening MB-FOU 12 — `GET /signals/pending?mine=1` trả `kind: normal, score 12, total 40, actions [create_case, dismiss], caseDraft.scoreText "12/40"`; GV Speaking bỏ qua tín hiệu Listening → 403; GV Listening bỏ qua → 200, tín hiệu rời danh sách chờ, nhãn "Đã bỏ qua", lý do tiếng Việt lưu đúng. Quản lý MB — `GET /metrics/tin-hieu-qua-han` 200 (`n: 0`, không tín hiệu nào quá hạn ở ngày demo); form Chuyển lớp (Task 14 Step 8): không chọn lý do → "Chọn lý do chuyển lớp."; chọn "Đổi lịch học" mà không ghi/không tích → `Ghi lưu ý bàn giao, hoặc chọn "Không có lưu ý".`; tích "Không có lưu ý" → chuyển được, hành trình ghi "Đổi lịch học — Không có lưu ý". GVCN MB-FT 101 (Trần Ngọc Hà) — Case Speaking của HV lớp mình: `viewer.canClose = false` (Quản lý: `true`). Task 18 Step 2: thẻ Case Listening có PA đang chạy hiện "Cập nhật kết quả · trước CN 30/08 · quá hạn". Chụp màn hình trong khung trình duyệt bị hết giờ (cửa sổ bị che) — bằng chứng là chữ đọc từ trang. |
+| 22/09/2026 | 20 (4) | Rà soát: **Fable 5.1** (khác model người code Opus 5), kết luận "With fixes", 0 Critical. Đã sửa: (Important 1) `reportIssue` — Case từ tín hiệu LUÔN lấy khoá của tín hiệu; gửi kèm `cycleId` khác → từ chối (+1 phép kiểm, đỏ trước khi sửa); (Important 2) `scoreDebtCells` lọc trước bằng SQL các lượt đã chấm đủ bộ kỹ năng — tập cha an toàn, luật nợ vẫn ở `skillCells`/`regularSkillViews`; (Minor 3) bỏ `viewer.canClose` mức học viên ở `profile.ts` (vô nghĩa sau RB-6, web không đọc); (Minor 4) chú thích `closed_reason` thêm `system_closed`; (Minor 5) "Case" viết hoa ở hai dòng PR đã chạm. Không sửa, ghi `plan.md` §12.19: Minor 6 (hàm `ratioOfCycle` riêng — cố ý tránh vòng import), 7 (hiện `systemCloseLabel` → Pa/LT), 8 (import riêng — tránh xung đột PR-O), 9 (tín hiệu `withdrawn` của em đã kết thúc có thể sống lại), 10 (topic cũ). Trả lời (a)–(d) của người rà: (a) đủ mọi đường ghi `sit_status`; (b) không đóng nhầm chương trình/khoá; (c) gửi lại theo `idempotencyKey` an toàn; (d) ≈ 8 + 4·⌈n/400⌉ truy vấn, không N+1. `npm run check`: **719/719**, typecheck sạch. |
