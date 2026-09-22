@@ -101,11 +101,11 @@ Số dòng đo trên `main` @ `37786fd` (779 phép kiểm, gọi là **B = 779**
 
 ## Task 0 · Worktree, nhánh, mốc
 
-- [ ] `git fetch origin`; kiểm `git log origin/main --oneline | grep -i "PR-Pa"` đã có merge của Pa.
+- [x] `git fetch origin`; kiểm `git log origin/main --oneline | grep -i "PR-Pa"` đã có merge của Pa.
   **Chưa có** → vẫn làm Task 1–6 (không chạm `QuickReport.tsx`), rebase lên `origin/main` sau khi Pa merge rồi mới làm Task 7.
-- [ ] `git worktree add .claude/worktrees/pr-form-chon-nguoi -b pr-form-chon-nguoi origin/main`
-- [ ] Chép file kế hoạch này vào nhánh, `npm ci` nếu cần, `npm run check` → ghi mốc B (dự kiến 779 + phép kiểm của Pa/Qa/Rc1 đã merge).
-- [ ] Commit `PR-Form (0): kế hoạch + mốc {B} phép kiểm`.
+- [x] `git worktree add .claude/worktrees/pr-form-chon-nguoi -b pr-form-chon-nguoi origin/main`
+- [x] Chép file kế hoạch này vào nhánh, `npm ci` nếu cần, `npm run check` → ghi mốc B (dự kiến 779 + phép kiểm của Pa/Qa/Rc1 đã merge).
+- [x] Commit `PR-Form (0): kế hoạch + mốc {B} phép kiểm`.
 
 ## Task 1 · Luật thuần dùng chung (shared)
 
@@ -417,3 +417,9 @@ Kịch bản (mỗi kịch bản ≥ 1 ảnh `thiet-ke/anh/pr-form/NN-ten.png`):
 | Việc | Giao | Ghi chú |
 |---|---|---|
 | Ô "Người tiếp nhận" ở `StudentManagePanel.tsx:345` (panel chuyển lớp) gọi `/ref/people` → GVCN bị từ chối (403), ô rỗng | **PR-LT** (sau deploy) | LT nên dùng đường `/ref/nguoi` mới của PR-Form (nhóm `nhan_vien` hoặc `giao_vien` theo luật chuyển lớp) + ô `ChonNguoi`; PR-Form **không** chạm file này |
+
+## Nhật ký
+
+| Ngày | Task | Ghi chú (model người code · số phép kiểm · lệch plan · quyết định tại chỗ) |
+|---|---|---|
+| 23/09 | 0 | Sonnet 5 (session code). Worktree `.claude/worktrees/pr-form-chon-nguoi` từ `origin/main` 61ae2dd. PR-Pa **chưa merge** vào `origin/main` (chỉ mới kế hoạch #62; code Pa đang ở repo phụ `pisa-pr-pa` nhánh `pr-pa-tong-quan`, chưa vào `main`) → làm Task 1–6 trước, không chạm `QuickReport.tsx`; kiểm lại trước Task 7. `npm ci` xong, `npm run check` → **B = 779** đúng như dự kiến. |
