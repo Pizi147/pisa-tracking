@@ -257,7 +257,7 @@ export function CasePanel({ caseId, compact = false, hideHeader = false, onChang
                 className="btn btn-sm btn-primary"
                 disabled={(data.closeBlockers?.length ?? 0) > 0 || !data.viewer.canClose}
                 title={!data.viewer.canClose
-                  ? 'Chỉ giáo viên chủ nhiệm của lớp và Quản lý mới hoàn thành được case.'
+                  ? 'Chỉ Quản lý, hoặc GVCN dạy đúng môn của Case, mới hoàn thành được Case này.'
                   : undefined}
                 onClick={() => setOutcome(true)}>
                 Hoàn thành case
@@ -279,7 +279,7 @@ export function CasePanel({ caseId, compact = false, hideHeader = false, onChang
         )}
         {!data.viewer.canClose && data.status !== 'done' && (
           <SectionNote>
-            Chỉ giáo viên chủ nhiệm của lớp và Quản lý mới hoàn thành case được. Bạn vẫn cập
+            Chỉ Quản lý, hoặc GVCN dạy đúng môn của Case, mới hoàn thành được Case này. Bạn vẫn cập
             nhật được kết quả của từng phương án.
           </SectionNote>
         )}

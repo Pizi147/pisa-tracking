@@ -7,6 +7,7 @@ import {
   PERMISSIONS, REGULAR_SKILLS, ROLE_LABEL, WORK_SCOPES,
   type Role, type WorkScope,
 } from '../../../shared/domain/index.ts';
+import { transferReasonText } from '../../../shared/domain/index.ts';
 import { demoToday, getConfig, scenarioMode, setConfig } from '../demoConfig.ts';
 import { HttpError, badRequest, forbidden, isIsoDate, notFound, toInt } from '../util.ts';
 import { SESSION_COOKIE, createSession, destroySession, principalOf, requireAuth } from '../auth.ts';
@@ -1101,6 +1102,12 @@ api.post('/signals/pending/:id/assign', requireAuth, wrap((req) => {
   return caseSignalSvc.assignSignal(principalOf(req), pInt(req, 'id'), toInt(req.body?.userId));
 }));
 
+/** Bỏ qua một tín hiệu lớp thường — không tạo Case, lý do không bắt buộc (S1, đặc tả §3.10). */
+api.post('/signals/pending/:id/dismiss', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return caseSignalSvc.dismissSignal(principalOf(req), pInt(req, 'id'), { reason: req.body?.reason ?? null });
+}));
+
 api.get('/cases', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   return caseSvc.listCases(principalOf(req), {
@@ -1348,11 +1355,15 @@ api.patch('/students/:id', requireAuth, wrap((req) => {
 
 api.post('/students/:id/transfer', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
-  const { toClassId, effectiveDate, reason, handoverNote, receiverUserId } = req.body ?? {};
+  const { toClassId, effectiveDate, reasonCode, reasonNote, handoverNote, noHandoverNote, receiverUserId } = req.body ?? {};
   if (!toClassId) throw badRequest('Cần chọn lớp đích.');
+  /* RB-3: lý do chọn nhanh BẮT BUỘC; "Khác" phải ghi rõ. */
+  const reason = transferReasonText(reasonCode, reasonNote);
+  if (!reason) throw badRequest('Chọn lý do chuyển lớp (chọn "Khác" thì ghi rõ).');
   return studentSvc.transferStudent(principalOf(req), pInt(req, 'id'), Number(toClassId),
     effectiveDate ?? demoToday(), reason, {
       note: handoverNote ?? null,
+      noNote: noHandoverNote === true,
       receiverUserId: receiverUserId ? Number(receiverUserId) : null,
     });
 }));
@@ -1371,6 +1382,16 @@ api.post('/students/:id/status', requireAuth, wrap((req) => {
   if (!['active', 'inactive', 'finished'].includes(status)) throw badRequest('Trạng thái không hợp lệ.');
   return studentSvc.setStudentStatus(principalOf(req), pInt(req, 'id'), status,
     req.body?.date ?? demoToday(), req.body?.reason);
+}));
+
+/** RB-9: lưu trữ / bỏ lưu trữ — chỉ Quản lý, chỉ em đã kết thúc học. Không có tác vụ ngầm. */
+api.post('/students/:id/archive', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return studentSvc.archiveStudent(principalOf(req), pInt(req, 'id'));
+}));
+api.post('/students/:id/unarchive', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return studentSvc.unarchiveStudent(principalOf(req), pInt(req, 'id'));
 }));
 
 // ============================================================ Họp tuần

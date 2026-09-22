@@ -13,7 +13,7 @@ import { entryBandsOf, scoresOf, skipsOf } from '../fasttrack/attempts.ts';
 import { assessedBands, evaluateAttempt } from '../fasttrack/scoring.ts';
 import { evaluateRegular, isRatioCycle, programmeByCode, programmeCodeOfCycle, programmeOfClass } from '../normal/regular.ts';
 import { cycleById, cyclesOf, currentCycle, examPlanOf, targetRevisions } from '../fasttrack/cycles.ts';
-import { canCloseCase, parseMetrics, skillSupportBoard } from '../cases/cases.ts';
+import { parseMetrics, skillSupportBoard } from '../cases/cases.ts';
 import { standingFor, standingLine } from './standing.ts';
 import { missingForStudent, suggestedMockWeeks } from '../classes/schedule.ts';
 import { listSignals } from '../cases/signals.ts';
@@ -647,7 +647,7 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
                 ORDER BY COALESCE(ci.completed_date, ci.started_date, ci.created_at) DESC LIMIT 1) AS last_iv,
               (SELECT ip.taxonomy_code FROM case_issues ip
                 WHERE ip.case_id = sc.id AND ip.role = 'primary' LIMIT 1) AS primary_code,
-              a.attempt_no AS attempt_no
+              a.attempt_no AS attempt_no, a.kind AS attempt_kind
          FROM sos_cases sc
          LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
          LEFT JOIN learning_cycles cy ON cy.id = sc.cycle_id
@@ -661,6 +661,7 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
     originKind: c.origin_kind, detectedAt: c.detected_at, summary: c.summary,
     headline: caseHeadline({
       summary: c.summary, originKind: c.origin_kind, sosLevel: c.sos_level, attemptNo: c.attempt_no,
+      attemptKind: c.attempt_kind ?? null,
     }),
     attemptId: c.attempt_id, attemptNo: c.attempt_no,
     reporterName: c.reporter_name, disposition: c.disposition,
@@ -895,7 +896,7 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
       canEdit: can(p, PERMISSIONS.STUDENT_EDIT, { studentId }),
       canPlanWeek: can(p, PERMISSIONS.PLAN_WEEK, { studentId }),
       canReport: can(p, PERMISSIONS.SOS_REPORT, { classId: current?.class_id ?? null, studentId }),
-      canClose: canCloseCase(p, { class_id: current?.class_id ?? null, student_id: studentId }),
+      /* RB-6 (PR-S1): quyền hoàn thành Case tính theo MÔN của từng Case — xem `canClose` trên từng thẻ Case, không có cờ chung ở đây. */
       /* Ý thức & Phối hợp (PR-K): ghi vi phạm — mọi GV dạy lớp em đang học (V01, C02 không áp cho Ý thức); xử lý — GVCN của lớp + Quản lý. */
       canRecordViolation: can(p, PERMISSIONS.VIOLATION_RECORD, { classId: current?.class_id ?? null, studentId }),
       canManageDiscipline: canManageDiscipline(p, studentId),

@@ -8,7 +8,8 @@ import {
   issuesForTopic,
   CASE_CATEGORY_SHORT, CASE_CATEGORIES, CASE_CATEGORY_LABEL, FOLLOWUP_OUTCOME_LABEL, ratioResult,
   caseCategoriesFor, componentsAreCounts, componentsFor, type CaseCategory,
-  CASE_OUTCOME_LABEL, caseCategoryLabel, caseDedupKey, caseHeadline, caseTitle, categoryOf,
+  CASE_OUTCOME_LABEL, SYSTEM_CLOSE_REASON_LABEL, caseCategoryLabel, caseDedupKey, caseHeadline, caseTitle, categoryOf,
+  type SystemCloseReason,
   NEXT_STEP_LABEL, cycleDeadline, isProposalKind, outcomeLabelFor,
   RESCHEDULE_TARGETS, RESCHEDULE_TARGET_LABEL, RESULT_MODES, RESULT_MODE_LABEL,
   canEndWithOutcome, planDueDate, planEndDefault, stepsForMode, weeklyUpdateDue,
@@ -24,7 +25,7 @@ import { currentCycle } from '../fasttrack/cycles.ts';
 import { expectationFor } from '../fasttrack/scoring.ts';
 import { isRatioCycle } from '../normal/regular.ts';
 import { suggestCaseOwner } from './owner.ts';
-import { linkSignalToCase } from './signals.ts';
+import { linkSignalToCase, loadSignal } from './signals.ts';
 import { NOT_UNCONFIRMED_PRESET, sosCaseState } from './sosState.ts';
 
 /**
@@ -120,7 +121,7 @@ export function closeCaseOutcome(p: Principal, caseId: number, input: {
   const conn = db();
   const c = loadCase(caseId);
   if (!canCloseCase(p, c)) {
-    throw badRequest('Chỉ giáo viên chủ nhiệm của lớp và Quản lý mới chốt được kết quả case.');
+    throw badRequest('Chỉ Quản lý, hoặc GVCN dạy đúng môn của Case, mới hoàn thành được Case này.');
   }
   const outcome: string = input.outcome ?? '';
   if (!(CASE_OUTCOMES as readonly string[]).includes(outcome)) {
@@ -229,10 +230,19 @@ export function setFollowUntil(p: Principal, caseId: number, date: string | null
   return caseDetail(p, caseId);
 }
 
-export function canCloseCase(p: Principal, c: { class_id?: number | null; student_id?: number | null }): boolean {
+/**
+ * AI HOÀN THÀNH ĐƯỢC CASE — RB-6, quyết định 4.15 (22/09/2026), khớp C02.
+ *   · Quản lý / Quản trị trong phạm vi: được.
+ *   · GVCN của lớp: CHỈ Case đúng môn mình dạy. Case môn khác thì không, dù là lớp mình chủ nhiệm.
+ *   · GVBM không kiêm GVCN: không (giữ luật cũ — 4.15 chỉ hỏi về GVCN).
+ * Case không có môn (`topic` rỗng, dữ liệu cũ) thì GVCN vẫn được, để dữ liệu cũ không bị khoá.
+ */
+export function canCloseCase(p: Principal, c: { class_id?: number | null; student_id?: number | null; topic?: string | null }): boolean {
   if (can(p, PERMISSIONS.MEETING_EDIT, { branchId: null, anyScope: true })) return true;
-  if (c.class_id && isCoreTeacherOf(p, c.class_id)) return true;
-  return can(p, PERMISSIONS.CASE_CLOSE, { classId: c.class_id ?? null, studentId: c.student_id ?? null });
+  if (can(p, PERMISSIONS.CASE_CLOSE, { classId: c.class_id ?? null, studentId: c.student_id ?? null })) return true;
+  if (!c.class_id || !isCoreTeacherOf(p, c.class_id)) return false;
+  if (!c.topic) return true;
+  return can(p, PERMISSIONS.SOS_EDIT, { classId: c.class_id, studentId: c.student_id ?? undefined, skill: c.topic });
 }
 
 function loadCase(caseId: number) {
@@ -241,7 +251,7 @@ function loadCase(caseId: number) {
       `SELECT sc.*,
               COALESCE(sc.student_id, a.student_id) AS eff_student_id,
               COALESCE(sc.cycle_id, a.cycle_id) AS eff_cycle_id,
-              a.class_id AS attempt_class_id, a.attempt_no,
+              a.class_id AS attempt_class_id, a.attempt_no, a.kind AS attempt_kind,
               (SELECT e.class_id FROM enrollments e
                 WHERE e.student_id = COALESCE(sc.student_id, a.student_id) AND e.status = 'active'
                 ORDER BY e.id DESC LIMIT 1) AS current_class_id
@@ -374,15 +384,6 @@ export function reportIssue(p: Principal, input: {
     throw badRequest('Cần mô tả vấn đề cụ thể hơn: em sai ở đâu, sai như thế nào.');
   }
 
-  /*
-   * MỌI VẤN ĐỀ PHẢI CÓ CHỖ CẤT. Không có đầu mục và chủ đề thì nó rơi vào "chưa phân loại"
-   * và biến mất khỏi mọi bảng tổng hợp theo kỹ năng — đúng thứ vòng 3 sinh ra để sửa.
-   */
-  const topic = (input.topic ?? '').trim() || null;
-  if (!topic) {
-    throw badRequest('Chọn kỹ năng: Listening, Reading, Writing Task 1, Writing Task 2 hay Speaking.');
-  }
-  if (!(ENTRY_SKILLS as readonly string[]).includes(topic)) throw badRequest(`Chủ đề không hợp lệ: ${topic}`);
   /* Hai mức, không ba: `attention` (hiện là "Bình thường" từ 21/09/2026 — chỉ đổi chữ, mã giữ nguyên) và `urgent` (Gấp). Không chọn thì là `attention`. */
   if (input.urgency && !(URGENCY_LEVELS as readonly string[]).includes(input.urgency)) {
     throw badRequest('Mức độ chỉ còn hai bậc: Bình thường hoặc Gấp.');
@@ -396,12 +397,42 @@ export function reportIssue(p: Principal, input: {
     if (seen) return caseDetail(p, seen.id);
   }
 
-  // Lộ trình phải chọn rõ; không có thì lấy lộ trình đang mở, và ghi rõ nếu không có.
-  const cycle = input.cycleId
+  /*
+   * Tín hiệu mà Case này trả lời (§3.10 "Tạo Case: mở form Case MÔN ĐÓ"). Chỉ tín hiệu còn chờ mới mở Case được. Đứng SAU khối
+   * `idempotencyKey`: bấm gửi lại (tín hiệu đã `linked` từ lần đầu) phải trả Case cũ, không báo "đã được xử lý".
+   */
+  const fromSignal = input.fromSignalId ? loadSignal(input.fromSignalId) : null;
+  if (fromSignal && fromSignal.status !== 'pending') {
+    throw badRequest('Tín hiệu này đã được xử lý rồi (đã thành Case, đã bỏ qua hoặc đã thu hồi).');
+  }
+
+  /*
+   * Lộ trình: mở từ tín hiệu thì LUÔN là khoá của tín hiệu — gửi kèm khoá khác là lỗi, không phải lựa chọn (§3.10 "đúng khoá").
+   * Không từ tín hiệu: gửi rõ thì dùng; không thì lộ trình đang mở.
+   */
+  if (fromSignal?.cycle_id && input.cycleId && Number(input.cycleId) !== fromSignal.cycle_id) {
+    throw badRequest('Case tạo từ tín hiệu phải nằm đúng khoá của tín hiệu đó.');
+  }
+  const wantedCycleId = fromSignal?.cycle_id ?? input.cycleId ?? null;
+  const cycle = wantedCycleId
     ? (conn.prepare('SELECT * FROM learning_cycles WHERE id = ? AND student_id = ?')
-        .get(input.cycleId, input.studentId) as any)
+        .get(wantedCycleId, input.studentId) as any)
     : currentCycle(input.studentId);
-  if (input.cycleId && !cycle) throw badRequest('Lộ trình không thuộc học viên này.');
+  if (wantedCycleId && !cycle) throw badRequest('Lộ trình không thuộc học viên này.');
+
+  /*
+   * MỌI VẤN ĐỀ PHẢI CÓ CHỖ CẤT. Năm ô FT (L · R · W1 · W2 · S); lớp thường có thêm MỘT môn Writing (`writing`) — nửa máy chủ của F07,
+   * để tín hiệu Writing lớp thường "Tạo Case" được (plan PR-S1 Q5). FT không có Case "Writing chung".
+   */
+  const topic = (input.topic ?? '').trim() || null;
+  if (!topic) {
+    throw badRequest('Chọn kỹ năng: Listening, Reading, Writing Task 1, Writing Task 2 hay Speaking.');
+  }
+  const allowedTopics: readonly string[] = cycle && isRatioCycle(cycle) ? [...ENTRY_SKILLS, 'writing'] : ENTRY_SKILLS;
+  if (!allowedTopics.includes(topic)) throw badRequest(`Chủ đề không hợp lệ: ${topic}`);
+  if (fromSignal && categoryOf(topic) !== (fromSignal.category ?? categoryOf(fromSignal.skill))) {
+    throw badRequest('Case tạo từ tín hiệu phải đúng môn của tín hiệu đó.');
+  }
 
   /*
    * CẢNH BÁO CASE TRÙNG (mục 7.13).
@@ -1255,7 +1286,7 @@ export function setDisposition(p: Principal, caseId: number, input: {
 
   if (closing) {
     if (!canCloseCase(p, c)) {
-      throw badRequest('Chỉ giáo viên chủ nhiệm của lớp và Quản lý mới đóng được case.');
+      throw badRequest('Chỉ Quản lý, hoặc GVCN dạy đúng môn của Case, mới hoàn thành được Case này.');
     }
     const disposition = input.disposition ?? c.disposition;
     if (!disposition) {
@@ -1502,12 +1533,16 @@ export function caseDetail(p: Principal, caseId: number) {
     summary: c.summary,
     headline: caseHeadline({
       summary: c.summary, originKind: c.origin_kind, sosLevel: c.sos_level, attemptNo: c.attempt_no ?? null,
+      attemptKind: c.attempt_kind ?? null,
     }),
     detectedAt: c.detected_at,
     reportedBy: c.reported_by
       ? (conn.prepare('SELECT full_name FROM users WHERE id = ?').get(c.reported_by) as any)?.full_name ?? null
       : null,
     status: c.status,
+    /** S16/S17: Case do hệ thống tự đóng — mã và nhãn lý do. `null` khi người đóng hoặc chưa đóng. */
+    systemCloseReason: c.system_close_reason ?? null,
+    systemCloseLabel: c.system_close_reason ? SYSTEM_CLOSE_REASON_LABEL[c.system_close_reason as SystemCloseReason] ?? null : null,
     disposition: c.disposition,
     dispositionNote: c.disposition_note,
     closedAt: c.closed_at,
@@ -1761,6 +1796,7 @@ export function listCases(p: Principal, f: CaseFilters = {}) {
       summary: r.summary,
       headline: caseHeadline({
         summary: r.summary, originKind: r.origin_kind, sosLevel: r.sos_level, attemptNo: r.attempt_no,
+        attemptKind: r.attempt_kind ?? null,
       }),
       /*
        * TÊN NGƯỜI DÙNG TỰ ĐẶT LUÔN THẮNG (mục 7.3).
@@ -2231,7 +2267,7 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
            * gỡ, nên thẻ tự nói: người xem có chốt được không, và còn gì đang chặn. Lấy đúng
            * hai hàm mà nút "Hoàn thành case" ở trang riêng vẫn hỏi — không phép tính thứ hai.
            */
-          canClose: canCloseCase(p, { class_id: enr?.class_id ?? null, student_id: studentId }),
+          canClose: canCloseCase(p, { class_id: enr?.class_id ?? null, student_id: studentId, topic: c.topic }),
           closeBlockers: c.status === 'done' ? [] : closeBlockers(c.id),
           /* Đủ thứ để vẽ MỘT THẺ CASE mà không phải gọi thêm một đường nữa (mục 1 · 2). */
           ...caseCardOf(c.id, c),

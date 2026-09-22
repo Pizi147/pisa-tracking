@@ -14,6 +14,7 @@ import { CLASSES, DEMO_DATE, TEACHERS } from './journeys.ts';
 import { buildJourneys } from './build.ts';
 import { buildYThuc } from './yThucSeed.ts';
 import { buildSosV3Demo } from './sosV3Seed.ts';
+import { closeCasesBySystem } from '../cases/systemClose.ts';
 
 const NOW = nowIso();
 
@@ -226,6 +227,15 @@ export function runSeed() {
     const sosV3 = buildSosV3Demo({
       conn, adminId, branchId, classId, userId, classBranch, nextStudentCode, studentIdByCode,
     });
+
+    /*
+     * S16 (chốt 21/09 đêm): em đã KẾT THÚC học mà còn Case mở → hệ thống tự đóng "Học viên kết thúc khoá". Bộ demo dựng hành trình
+     * thẳng bằng SQL (không qua `setStudentStatus`), nên áp luật ở đây — nếu không bộ demo nói ngược luật (Tổng quan 29 / Thực trạng 28).
+     * Đặt SAU mọi bước dựng Case (kể cả bộ demo rulebook v3) để không bước nào để lại Case mở cho em đã kết thúc.
+     */
+    for (const s of conn.prepare(`SELECT id, finished_at FROM students WHERE status = 'finished'`).all() as any[]) {
+      closeCasesBySystem({ actorUserId: null, studentId: s.id, reason: 'course_ended', on: s.finished_at ?? DEMO_DATE });
+    }
 
     return {
       'Chi nhánh': BRANCHES.length,

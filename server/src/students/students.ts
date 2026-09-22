@@ -1,10 +1,13 @@
 import { db, tx } from '../db.ts';
-import { ARCHIVE_AFTER_DAYS, ENTRY_SKILLS, JOURNEY_GROUP, PERMISSIONS, STUDENT_STATUSES } from '../../../shared/domain/index.ts';
+import {
+  ENTRY_SKILLS, JOURNEY_GROUP, NO_HANDOVER_NOTE, PERMISSIONS, STUDENT_STATUSES,
+} from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
-import { addDays, badRequest, isIsoDate, normalizeName, notFound, nowIso, padCode } from '../util.ts';
+import { badRequest, isIsoDate, normalizeName, notFound, nowIso, padCode } from '../util.ts';
 import { can, classScopeSql, require_, scopeFor, type Principal } from '../permissions.ts';
 import { addJourney, writeAudit } from '../platform/audit.ts';
 import { NOT_UNCONFIRMED_PRESET } from '../cases/sosState.ts';
+import { closeCasesBySystem } from '../cases/systemClose.ts';
 import { entryBandsOf, scoresOf, skipsOf } from '../fasttrack/attempts.ts';
 import { evaluateAttempt } from '../fasttrack/scoring.ts';
 import { currentCycle, cyclesOf, examPlanOf } from '../fasttrack/cycles.ts';
@@ -151,9 +154,11 @@ export function handoverBrief(studentId: number) {
   };
 }
 
-export function transferStudent(p: Principal, studentId: number, toClassId: number, effectiveDate: string, reason?: string, handover?: {
+export function transferStudent(p: Principal, studentId: number, toClassId: number, effectiveDate: string, reason: string, handover?: {
   /** Ghi chú bàn giao — BẮT BUỘC khi em còn case chưa xong. */
   note?: string | null;
+  /** Chọn rõ "Không có lưu ý" (RB-3) — chỉ nhận khi em không còn case dở. */
+  noNote?: boolean;
   /** Người tiếp nhận: đổi người phụ trách của các case còn mở sang người này. */
   receiverUserId?: number | null;
 }) {
@@ -161,19 +166,22 @@ export function transferStudent(p: Principal, studentId: number, toClassId: numb
   require_(p, PERMISSIONS.STUDENT_EDIT, { classId: toClassId }, 'Lớp đích nằm ngoài phạm vi bạn được cấp quyền.');
   if (!isIsoDate(effectiveDate)) throw badRequest('Ngày hiệu lực không hợp lệ.');
 
+  const why = String(reason ?? '').trim();
+  if (!why) throw badRequest('Chọn lý do chuyển lớp.');
   /*
-   * CÒN CASE DỞ THÌ BẮT BUỘC BÀN GIAO (mục 6.4).
-   *
-   * Không phải một ô cho đủ thủ tục: giáo viên mới nhận em sẽ đọc đúng dòng này để biết em
-   * đang vướng gì. Em không còn case nào thì không hỏi — đừng bắt gõ cho có.
+   * LƯU Ý BÀN GIAO BẮT BUỘC, có lựa chọn "Không có lưu ý" (RB-3). Còn Case dở thì KHÔNG được chọn "Không có lưu ý": người nhận lớp
+   * đọc đúng dòng này để biết em đang vướng gì (mục 6.4) — plan PR-S1 Q10.
    */
   const brief = handoverBrief(studentId);
-  if (brief.cases.length > 0 && !(handover?.note ?? '').trim()) {
+  const typed = (handover?.note ?? '').trim();
+  if (brief.cases.length > 0 && !typed) {
     throw badRequest(
       `Em còn ${brief.cases.length} case chưa xong. Ghi thông tin bàn giao để người nhận lớp `
       + 'biết em đang vướng gì và đang làm dở đến đâu.',
     );
   }
+  if (!typed && !handover?.noNote) throw badRequest(`Ghi lưu ý bàn giao, hoặc chọn "${NO_HANDOVER_NOTE}".`);
+  const handoverNote = typed || NO_HANDOVER_NOTE;
   return tx(() => {
     const conn = db();
     const toClass = conn.prepare('SELECT * FROM classes WHERE id = ?').get(toClassId) as any;
@@ -184,7 +192,7 @@ export function transferStudent(p: Principal, studentId: number, toClassId: numb
     if (cur?.class_id === toClassId) throw badRequest('Học viên đã ở lớp này.');
     if (cur) {
       conn.prepare(`UPDATE enrollments SET status='transferred', ended_at=?, end_reason=? WHERE id=?`)
-        .run(effectiveDate, reason ?? 'Chuyển lớp', cur.id);
+        .run(effectiveDate, why, cur.id);
     }
     const info = conn
       .prepare(`INSERT INTO enrollments (student_id, class_id, status, started_at, created_at) VALUES (?,?, 'active', ?, ?)`)
@@ -213,7 +221,7 @@ export function transferStudent(p: Principal, studentId: number, toClassId: numb
     addJourney({
       studentId, eventType: 'transfer', eventDate: effectiveDate,
       title: `Chuyển sang lớp ${toClass.code}`,
-      detail: [reason, (handover?.note ?? '').trim() || null].filter(Boolean).join(' — ') || null,
+      detail: [why, handoverNote].join(' — '),
       createdBy: p.userId,
     });
     writeAudit({ actorUserId: p.userId, action: 'student.transfer', entityType: 'student', entityId: studentId,
@@ -224,8 +232,8 @@ export function transferStudent(p: Principal, studentId: number, toClassId: numb
 
 /**
  * Trạng thái học viên chỉ có ba: active đang học · inactive tạm dừng · finished dừng hẳn.
- * Lưu trữ (archive) là cách ẩn khỏi danh sách, KHÔNG phải trạng thái thứ tư, và không
- * tự đóng lịch hay case còn dở.
+ * Lưu trữ (archive) là cách ẩn khỏi danh sách, KHÔNG phải trạng thái thứ tư, và không đóng gì.
+ * Kết thúc học (`finished`) thì Case còn mở được hệ thống tự đóng theo S16.
  */
 export function setStudentStatus(
   p: Principal, studentId: number, status: 'active' | 'inactive' | 'finished', date: string, reason?: string,
@@ -245,6 +253,10 @@ export function setStudentStatus(
     const enrollmentStatus = status === 'active' ? 'active' : status === 'inactive' ? 'paused' : 'completed';
     conn.prepare(`UPDATE enrollments SET status = ? WHERE student_id = ? AND status IN ('active','paused')`)
       .run(enrollmentStatus, studentId);
+    /* S16: em KẾT THÚC học → Case còn mở của em hệ thống tự đóng "Học viên kết thúc khoá". Tạm dừng thì không. */
+    if (status === 'finished') {
+      closeCasesBySystem({ actorUserId: p.userId, studentId, reason: 'course_ended', on: date });
+    }
     addJourney({
       studentId, eventType: status === 'inactive' ? 'pause' : status === 'active' ? 'resume' : 'finish',
       eventDate: date,
@@ -258,19 +270,35 @@ export function setStudentStatus(
 }
 
 /**
- * Học viên đã kết thúc thì sau ARCHIVE_AFTER_DAYS ngày được đưa vào lưu trữ.
- * Chỉ ẩn khỏi danh sách mặc định, không xoá dữ liệu và không đóng việc còn dở.
- * Mốc chính xác và quyền khôi phục vẫn chờ quyết định — xem O08.
+ * LƯU TRỮ HỌC VIÊN — CHỈ KHI QUẢN LÝ BẤM (RB-9, quyết định 4.17 ngày 22/09/2026).
+ *
+ * Không có tác vụ ngầm "sau N ngày tự lưu trữ" (hàm `archiveDueStudents` cũ đã gỡ — nó chưa từng được gọi ở đâu ngoài phép kiểm).
+ * Lưu trữ chỉ ẩn khỏi danh sách mặc định: không đổi trạng thái, không xoá dữ liệu, không đóng việc còn dở. Chỉ em đã kết thúc học.
  */
-export function archiveDueStudents(today = demoToday()): number {
-  const cutoff = addDays(today, -ARCHIVE_AFTER_DAYS);
-  const info = db()
-    .prepare(
-      `UPDATE students SET archived_at = ?
-        WHERE status = 'finished' AND archived_at IS NULL AND finished_at IS NOT NULL AND finished_at <= ?`,
-    )
-    .run(today, cutoff);
-  return info.changes;
+export function archiveStudent(p: Principal, studentId: number) {
+  require_(p, PERMISSIONS.PLAN_WEEK, { studentId }, 'Chỉ Quản lý mới lưu trữ được học viên.');
+  const conn = db();
+  const s = conn.prepare('SELECT * FROM students WHERE id = ?').get(studentId) as any;
+  if (!s) throw notFound('Không tìm thấy học viên');
+  if (s.status !== 'finished') throw badRequest('Chỉ lưu trữ được học viên đã kết thúc học.');
+  if (s.archived_at) return s;
+  const on = demoToday();
+  conn.prepare('UPDATE students SET archived_at = ? WHERE id = ?').run(on, studentId);
+  writeAudit({ actorUserId: p.userId, action: 'student.archive', entityType: 'student', entityId: studentId,
+    entityLabel: s.student_code, before: { archivedAt: null }, after: { archivedAt: on } });
+  return conn.prepare('SELECT * FROM students WHERE id = ?').get(studentId);
+}
+
+export function unarchiveStudent(p: Principal, studentId: number) {
+  require_(p, PERMISSIONS.PLAN_WEEK, { studentId }, 'Chỉ Quản lý mới bỏ lưu trữ được học viên.');
+  const conn = db();
+  const s = conn.prepare('SELECT * FROM students WHERE id = ?').get(studentId) as any;
+  if (!s) throw notFound('Không tìm thấy học viên');
+  if (!s.archived_at) return s;
+  conn.prepare('UPDATE students SET archived_at = NULL WHERE id = ?').run(studentId);
+  writeAudit({ actorUserId: p.userId, action: 'student.unarchive', entityType: 'student', entityId: studentId,
+    entityLabel: s.student_code, before: { archivedAt: s.archived_at }, after: { archivedAt: null } });
+  return conn.prepare('SELECT * FROM students WHERE id = ?').get(studentId);
 }
 
 export function updateStudent(p: Principal, studentId: number, patch: any) {

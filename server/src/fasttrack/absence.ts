@@ -236,7 +236,7 @@ export function requestAbsenceMove(p: Principal, attemptId: number, skills: stri
        * ĐẦU của bài đã chốt, chỉ cần tuần đích CHƯA KẾT THÚC (còn thi được). Tuần đích đã qua hẳn thì vẫn
        * chuyển Quản lý, để xử lý muộn không âm thầm thành thêm tuần. Mọi trường hợp vắng khác giữ nguyên.
        */
-      const fromNoShow = String(row.sit_note ?? '').startsWith('Không dự thi');
+      const fromNoShow = row.absent_from_no_show === 1;
       const tooLate = moveNo === 1 && fromNoShow
         ? addDays(target.week_start, 6) < today
         : target.week_start <= today || decideBy < today;
@@ -329,7 +329,7 @@ function applyMove(
     .prepare(
       `UPDATE attempt_skills
           SET planned_period_id = ?, plan_source = 'manual', sit_status = 'scheduled',
-              sit_note = NULL, absence_move_count = ?, updated_at = ?
+              sit_note = NULL, absent_from_no_show = 0, absence_move_count = ?, updated_at = ?
         WHERE id = ?`,
     )
     .run(target.id, moveNo, nowIso(), row.id);
@@ -463,12 +463,12 @@ function cancelPart(
     conn
       .prepare(
         `UPDATE attempt_skills SET planned_period_id = NULL, plan_source = 'manual',
-                sit_status = 'scheduled', updated_at = ? WHERE id = ?`,
+                sit_status = 'scheduled', absent_from_no_show = 0, updated_at = ? WHERE id = ?`,
       )
       .run(nowIso(), row.id);
   } else {
     conn
-      .prepare(`UPDATE attempt_skills SET sit_status = 'cancelled', updated_at = ? WHERE id = ?`)
+      .prepare(`UPDATE attempt_skills SET sit_status = 'cancelled', absent_from_no_show = 0, updated_at = ? WHERE id = ?`)
       .run(nowIso(), row.id);
   }
   conn
@@ -532,7 +532,7 @@ export function restoreCancelledSkill(p: Principal, attemptId: number, skill: st
     const conn = db();
     conn
       .prepare(
-        `UPDATE attempt_skills SET sit_status = 'scheduled', planned_period_id = ?,
+        `UPDATE attempt_skills SET sit_status = 'scheduled', absent_from_no_show = 0, planned_period_id = ?,
                 plan_source = 'manual', updated_at = ? WHERE id = ?`,
       )
       .run(periodId, nowIso(), row.id);
@@ -601,8 +601,9 @@ function notifyPlanners(
  *     '-' — và chỉ tăng bộ đếm MỘT lần. W1 '-' mà W2 có điểm (hay chưa nhập) thì buổi đó không phải vắng.
  *   · KHÔNG ĐỤNG BÀI KHÁC. Không xoá điểm nào, không suy ô trống thành vắng.
  *
- * Chỉ áp cho Mock (Fast Track). Normal vẫn phải đủ bốn môn, không có chốt vắng. Dấu '-' nhập cho tuần ĐÃ
- * KẾT THÚC từ trước (C10) thì KHÔNG bị chốt ở đây mà chờ Quản lý hiệu chỉnh.
+ * Chỉ áp cho Mock (Fast Track). Normal vẫn phải đủ bốn môn, không có chốt vắng.
+ * Dấu '-' nhập cho tuần ĐÃ KẾT THÚC từ trước (C10, chốt 20/09/2026 "chốt ngay") cũng được chốt ở đây, ngay lần gọi kế tiếp —
+ * `saveScore` gọi hàm này tức thì sau khi ghi dấu muộn. Đường "chờ Quản lý hiệu chỉnh" còn mã nhưng không dùng.
  *
  * Trả về số buổi vừa được chốt (0 khi chạy lại).
  */
@@ -661,7 +662,7 @@ function settleGroup(
   const changed = conn
     .prepare(
       `UPDATE attempt_skills
-          SET sit_status = 'absent', sit_by = ?, sit_at = ?, sit_note = ?, updated_at = ?
+          SET sit_status = 'absent', absent_from_no_show = 1, sit_by = ?, sit_at = ?, sit_note = ?, updated_at = ?
         WHERE id = ? AND sit_status = 'scheduled'`,
     )
     .run(actor, effective, reason, nowIso(), schedId).changes;

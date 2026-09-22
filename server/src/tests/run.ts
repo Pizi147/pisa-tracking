@@ -1162,9 +1162,10 @@ check('Ba trạng thái học viên; lưu trữ chỉ ẩn, không đóng việc
   const openBefore = (conn.prepare(
     `SELECT COUNT(*) n FROM sos_cases sc JOIN assessment_attempts a ON a.id=sc.attempt_id
       WHERE a.student_id = ? AND sc.status != 'done'`).get(s.id) as any).n;
-  const n = students.archiveDueStudents(TODAY);
+  /* RB-9 (PR-S1): không còn tự lưu trữ sau N ngày — Quản lý bấm. `P.admin` vì em đầu tiên có thể thuộc chi nhánh khác MB. */
+  students.archiveStudent(P.admin, s.id);
   const after = conn.prepare('SELECT * FROM students WHERE id = ?').get(s.id) as any;
-  assert(n >= 1 && after.archived_at, 'Học viên kết thúc quá hai tuần phải vào lưu trữ');
+  assert(after.archived_at, 'Quản lý bấm lưu trữ thì học viên phải vào lưu trữ');
   assert(after.status === 'finished', 'Lưu trữ không được thành trạng thái thứ tư');
   const openAfter = (conn.prepare(
     `SELECT COUNT(*) n FROM sos_cases sc JOIN assessment_attempts a ON a.id=sc.attempt_id
@@ -5977,14 +5978,14 @@ check('[6.2] Tín hiệu hiện ở hồ sơ học viên và ở hàng việc c�
   }
 });
 
-check('[6.2] Xác minh MỘT tín hiệu chỉ có MỘT lối ra: mở case', () => {
+check('[6.2] Xác minh tín hiệu: đường "ghi nhận đã xem" cũ không quay lại; lối ra không mở Case duy nhất là Bỏ qua (S1)', () => {
   /*
-   * Chủ sản phẩm chốt 16/09/2026, ngược với câu "ghi nhận đã xem" của đề bài mục 6.2:
-   * xác minh nghĩa là MỞ CASE, không có đường nào khác. Nên không còn thao tác nào sinh ra
-   * trạng thái "đã xem, không thành case" — trạng thái đó chỉ còn trên dữ liệu có từ trước.
+   * Quyết định 16/09 bỏ đường "ghi nhận đã xem". Ngày 22/09 chủ sản phẩm mở lại MỘT lối ra có tên riêng — `dismissSignal`
+   * (Bỏ qua, chỉ lớp thường, S1). Tên cũ `noteSignal` vẫn không được quay lại.
    */
   assert(!('noteSignal' in signalsSvc),
     'Vẫn còn đường ghi nhận đã xem mà không mở case — chủ sản phẩm đã bỏ lối ra này');
+  assert('dismissSignal' in signalsSvc, 'S1: phải có đường Bỏ qua tín hiệu lớp thường');
 
   const sg = conn
     .prepare(`SELECT * FROM case_signals WHERE status = 'pending' LIMIT 1`)
@@ -7971,8 +7972,8 @@ const branchIdOf = (code: string) => (conn.prepare('SELECT id FROM branches WHER
 
 check('PR-F · Sổ chỉ số: đúng hai mươi chỉ số (PR-N thêm pa-cho-duyet; PR-J thêm tám chỉ số Ý thức), mỗi chỉ số đủ tám trường (thiếu một trường thì không được lên dashboard)', () => {
   const list = domain.METRICS as readonly any[];
-  assert(list.length === 23, `Phải có hai mươi ba chỉ số (mười hai của PR-F/PR-N + bảy của PR-J còn lại sau khi PR-T bỏ vi-pham-khong-hieu-luc + bốn của PR-T: case-cho-xac-dinh-nguyen-nhan và ba phoi-hop-*), đang có ${list.length}`);
-  const expected = ['hv-sos-hien-tai', 'hv-duoi-ky-vong-mon', 'hv-co-case-mo', 'case-mo', 'tin-hieu-cho-xac-minh', 'case-cho-xac-dinh-nguyen-nhan',
+  assert(list.length === 24, `Phải có hai mươi bốn chỉ số (mười hai của PR-F/PR-N + bảy của PR-J còn lại sau khi PR-T bỏ vi-pham-khong-hieu-luc + bốn của PR-T: case-cho-xac-dinh-nguyen-nhan và ba phoi-hop-* + một của PR-S1: tin-hieu-qua-han), đang có ${list.length}`);
+  const expected = ['hv-sos-hien-tai', 'hv-duoi-ky-vong-mon', 'hv-co-case-mo', 'case-mo', 'tin-hieu-cho-xac-minh', 'tin-hieu-qua-han', 'case-cho-xac-dinh-nguyen-nhan',
     'case-thieu-pa', 'pa-can-cap-nhat', 'pa-cho-duyet', 'pa-co-ket-qua', 'ty-le-co-cai-thien', 'dung-han-cap-nhat', 'do-phu-danh-gia',
     'vi-pham-tong', 'vi-pham-chua-xu-ly', 'hv-co-vi-pham', 'hv-can-xu-ly',
     'bien-phap-da-thuc-hien', 'bien-phap-dang-chuan-bi', 'bien-phap-theo-loai',
@@ -8232,6 +8233,8 @@ check('PR-F · Đối soát F10: "HV có case đang mở" ở Tổng quan và �
    * mà đòi đúng hai điều: (1) Thực trạng KHÔNG có em nào mà Tổng quan không có; (2) MỌI em chỉ có ở Tổng
    * quan đều là em không còn ghi danh hoạt động. Chênh lệch nào ngoài hai điều này là một lỗi mới. Và
    * vì định nghĩa khác nhau, hai màn PHẢI ghi hai nhãn khác nhau (kiểm ở phép kiểm kế tiếp).
+   * Từ PR-S1 (S16) bộ demo tự đóng Case của em đã kết thúc học, nên chênh lệch này về 0; hai điều kiện dưới
+   * vẫn giữ để bắt chênh lệch mới.
    */
   const onlyOverview = [...overview].filter((id) => !analysis.has(id));
   const onlyAnalysis = [...analysis].filter((id) => !overview.has(id));
@@ -8270,8 +8273,14 @@ check('PR-F · Đối soát F10: "HV có case đang mở" ở Tổng quan và �
   });
   assert(unexplainedCases.length === 0,
     `Có case mở của em VẪN đang học mà chỉ Tổng quan đếm: [${unexplainedCases.join(',')}] ${unexplainedCases.map(describeCase).join(' | ')}`);
-  assert(onlyOverview.length >= 1,
-    'Bộ demo mất em đã kết thúc khoá mà case còn mở — phép đối soát này không còn chứng minh được gì, cần dựng lại tiền đề');
+  /*
+   * Tiền đề cũ ("bộ demo phải còn em đã kết thúc khoá mà case còn mở") hết hiệu lực từ PR-S1: S16 tự đóng Case của em kết thúc học.
+   * Nay khoá chiều ngược lại — chênh lệch còn lại (nếu có) chỉ được là em TẠM DỪNG, không bao giờ là em đã kết thúc.
+   */
+  const finishedStillOpen = onlyOverview.filter((id) =>
+    (conn.prepare('SELECT status FROM students WHERE id = ?').get(id) as any)?.status === 'finished');
+  assert(finishedStillOpen.length === 0,
+    `Em đã kết thúc học vẫn còn Case mở: [${finishedStillOpen.join(',')}] — S16 phải tự đóng "Học viên kết thúc khoá"`);
 });
 
 check('PR-F · Đối soát F10 (nhãn): hai định nghĩa khác nhau thì hai màn KHÔNG dùng chung một nhãn', () => {
@@ -9426,6 +9435,11 @@ await runYThucTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, a
 
 const { runSosV3Tests } = await import('./sosV3.tests.ts');
 await runSosV3Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
+
+// ==================================================================== PR-S1 (luật máy chủ)
+
+const { runLuatMayChuTests } = await import('./luatMayChu.tests.ts');
+await runLuatMayChuTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
 // ==================================================================== PR-Z2 (bản chính trên Netlify + Turso)
 

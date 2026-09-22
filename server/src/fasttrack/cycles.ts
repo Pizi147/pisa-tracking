@@ -1,7 +1,9 @@
 import { db, tx } from '../db.ts';
 import {
-  BASELINE_SOURCES, CYCLE_OUTCOMES, CYCLE_OUTCOME_LABEL, PERMISSIONS, type ExamPlan, type Route,
+  BASELINE_SOURCES, CYCLE_OUTCOMES, CYCLE_OUTCOME_LABEL, CYCLE_STATUSES, PERMISSIONS, type ExamPlan, type Route,
 } from '../../../shared/domain/index.ts';
+import { demoToday } from '../demoConfig.ts';
+import { closeCasesBySystem } from '../cases/systemClose.ts';
 import { badRequest, isIsoDate, notFound, nowIso } from '../util.ts';
 import { require_, type Principal } from '../permissions.ts';
 import { addJourney, writeAudit } from '../platform/audit.ts';
@@ -125,6 +127,16 @@ export function updateCycle(p: Principal, cycleId: number, patch: any) {
   const c = cycleById(cycleId);
   if (!c) throw notFound('Không tìm thấy lộ trình');
   require_(p, PERMISSIONS.STUDENT_EDIT, { studentId: c.student_id });
+  if (patch.status !== undefined && !(CYCLE_STATUSES as readonly string[]).includes(String(patch.status))) {
+    throw badRequest('Trạng thái lộ trình không hợp lệ.');
+  }
+  /*
+   * S16 CHỈ khi nơi gọi nói rõ "em thôi học" (`dongCaseKhiKetThuc: true`). Luồng "Lên lớp thường tiếp" (PR-LT) hoàn tất khoá cũ mà
+   * KHÔNG truyền cờ — Case đi theo em sang khoá mới (§3.9). Không cờ = không đóng gì. Cờ đọc riêng, không phải cột: `map` bỏ qua
+   * khoá lạ nên nó không lọt vào câu UPDATE.
+   */
+  const closeOnEnd = patch.dongCaseKhiKetThuc === true
+    && c.status === 'active' && patch.status !== undefined && patch.status !== 'active';
   const map: Record<string, string> = {
     targetScore: 'target_score', route: 'route', note: 'note', status: 'status',
     /*
@@ -156,7 +168,15 @@ export function updateCycle(p: Principal, cycleId: number, patch: any) {
   }
   if (!sets.length) return c;
   params.push(cycleId);
-  db().prepare(`UPDATE learning_cycles SET ${sets.join(', ')} WHERE id = ?`).run(...params);
+  tx(() => {
+    db().prepare(`UPDATE learning_cycles SET ${sets.join(', ')} WHERE id = ?`).run(...params);
+    if (patch.status !== undefined && patch.status !== 'active' && c.status === 'active') {
+      db().prepare('UPDATE learning_cycles SET ended_at = COALESCE(ended_at, ?) WHERE id = ?').run(demoToday(), cycleId);
+    }
+    if (closeOnEnd) {
+      closeCasesBySystem({ actorUserId: p.userId, studentId: c.student_id, reason: 'course_ended', on: demoToday(), cycleIds: [cycleId] });
+    }
+  });
   const after = cycleById(cycleId);
   // Đổi tuần dự kiến thi là sự kiện đáng ghi vào hành trình học.
   if (patch.examPeriodId !== undefined && patch.examPeriodId !== c.exam_period_id) {
@@ -283,6 +303,8 @@ export function setOutcome(p: Principal, cycleId: number, input: {
   /** Mã cũ. Từ vòng 7 KHÔNG nhận nữa — xem ghi chú ở dưới (mục 5.1). */
   attemptId?: number | null;
   score?: number | null; note?: string | null;
+  /** S16: em THÔI HỌC sau khi kết luận lộ trình → hệ thống tự đóng Case còn mở của lộ trình này. Học tiếp thì không truyền. */
+  dongCaseKhiKetThuc?: boolean;
 }) {
   const c = cycleById(cycleId);
   if (!c) throw notFound('Không tìm thấy lộ trình');
@@ -322,6 +344,10 @@ export function setOutcome(p: Principal, cycleId: number, input: {
       detail: input.note ?? null, refTable: 'learning_cycles', refId: cycleId, createdBy: p.userId,
       dedupKey: `cycle-outcome:${cycleId}:${input.outcome}`,
     });
+  }
+  /* S16: "Kết luận lộ trình" mà em THÔI HỌC (nơi gọi truyền cờ) → Case còn mở của lộ trình này hệ thống tự đóng. Học tiếp thì không cờ. */
+  if (input.dongCaseKhiKetThuc === true) {
+    closeCasesBySystem({ actorUserId: p.userId, studentId: c.student_id, reason: 'course_ended', on: demoToday(), cycleIds: [cycleId] });
   }
   writeAudit({ actorUserId: p.userId, action: 'cycle.outcome', entityType: 'learning_cycle',
     entityId: cycleId, before: c, after: input });

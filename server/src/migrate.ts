@@ -438,6 +438,8 @@ function migrateCaseEngine(applied: string[], skipped: string[]) {
     /* Sau cùng của các bước cấu trúc: rulebook v3 (PR-T) thêm cột/bảng trên những bảng mà các bước trên đã dựng đủ. */
     migrateSosV3(conn, applied);
     migrateDeleteInvalidViolations(conn, applied);
+    /* PR-S1: hai cột của luật máy chủ (S16/S17, S11). */
+    migrateLuatMayChu(conn, applied);
 
     /*
      * Case đã đóng theo hệ thống cũ mà không có hướng xử lý: ghi rõ là "đóng theo hệ thống
@@ -3049,4 +3051,40 @@ function migrateCaseForm(conn: any, applied: string[]) {
         + 'Bước nâng cấp KHÔNG đoán hộ: người phụ trách chọn phân loại khi mở case lần tới.',
     );
   }
+}
+
+/**
+ * PR-S1 (luật máy chủ, 22/09/2026): hai cột mới.
+ *   · `sos_cases.system_close_reason` — Case máy tự đóng theo S16/S17 (xem `cases/systemClose.ts`).
+ *   · `attempt_skills.absent_from_no_show` — cờ "vắng do chốt dấu '-'" thay cho chuỗi `sit_note` (S11).
+ * Dòng vắng cũ đã chốt được đánh cờ theo đúng chuỗi mà mã cũ dùng để nhận biết — đó là nơi DUY NHẤT dữ liệu cũ ghi điều này.
+ * Chạy lặp không làm gì. Bản chính dựng từ `schema.sql` nên không đi qua bước này.
+ */
+export function migrateLuatMayChu(conn: any, applied: string[]) {
+  const hasTable = (t: string) => !!conn.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name = ?").get(t);
+  const cols = (t: string): string[] => (conn.prepare(`PRAGMA table_info(${t})`).all() as any[]).map((c: any) => c.name);
+  const added: string[] = [];
+  if (hasTable('sos_cases') && !cols('sos_cases').includes('system_close_reason')) {
+    conn.exec('ALTER TABLE sos_cases ADD COLUMN system_close_reason TEXT');
+    added.push('sos_cases.system_close_reason');
+  }
+  let flagged = 0;
+  /*
+   * Đánh cờ dữ liệu cũ CHỈ ngay lúc thêm cột. Sau đó cờ do mã ghi; chạy lại mà đọc chuỗi lần nữa thì một buổi vắng Quản lý xác
+   * nhận bằng tay, ghi chú tình cờ mở đầu "Không dự thi…", sẽ bị gắn nhầm cờ chốt dấu "-".
+   */
+  if (hasTable('attempt_skills') && !cols('attempt_skills').includes('absent_from_no_show')) {
+    conn.exec('ALTER TABLE attempt_skills ADD COLUMN absent_from_no_show INTEGER NOT NULL DEFAULT 0');
+    added.push('attempt_skills.absent_from_no_show');
+    flagged = conn
+      .prepare(
+        `UPDATE attempt_skills SET absent_from_no_show = 1
+          WHERE sit_status = 'absent' AND absent_from_no_show = 0 AND sit_note LIKE 'Không dự thi%'`,
+      )
+      .run().changes;
+  }
+  if (!added.length && !flagged) return;
+  applied.push(
+    `PR-S1: thêm ${added.length} cột (${added.join(', ') || 'không'}); đánh cờ ${flagged} buổi vắng do chốt dấu "-". Dữ liệu cũ giữ nguyên.`,
+  );
 }

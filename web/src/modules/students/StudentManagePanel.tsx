@@ -6,7 +6,7 @@ import { Drawer } from '../../ui/Drawer.tsx';
 import { Field, SectionNote } from '../../ui/ui.tsx';
 import { fmtBand, fmtDate } from '../../lib/format.ts';
 import {
-  CYCLE_OUTCOMES, CYCLE_OUTCOME_LABEL,
+  CYCLE_OUTCOMES, CYCLE_OUTCOME_LABEL, NO_HANDOVER_NOTE, TRANSFER_REASONS, TRANSFER_REASON_LABEL,
 } from '@shared/domain/index.ts';
 
 /**
@@ -345,8 +345,12 @@ function TransferForm({ studentId, currentClassId, onDone }: {
   const people = useApi<any[]>('/ref/people');
   const [toClassId, setToClassId] = useState<number | null>(null);
   const [date, setDate] = useState('');
-  const [reason, setReason] = useState('');
+  /* RB-3: lý do chọn nhanh, BẮT BUỘC; "Khác" phải ghi rõ. */
+  const [reasonCode, setReasonCode] = useState('');
+  const [reasonNote, setReasonNote] = useState('');
   const [handoverNote, setHandoverNote] = useState('');
+  /* RB-3: lưu ý bàn giao bắt buộc, hoặc chọn rõ "Không có lưu ý" (chỉ khi em không còn case dở). */
+  const [noNote, setNoNote] = useState(false);
   const [receiverUserId, setReceiver] = useState('');
   const [busy, setBusy] = useState(false);
 
@@ -355,11 +359,14 @@ function TransferForm({ studentId, currentClassId, onDone }: {
 
   const submit = async () => {
     if (!toClassId) { toast.push('error', 'Cần chọn lớp đích.'); return; }
+    if (!reasonCode) { toast.push('error', 'Chọn lý do chuyển lớp.'); return; }
     setBusy(true);
     try {
       await api.post(`/students/${studentId}/transfer`, {
-        toClassId, effectiveDate: date || undefined, reason,
+        toClassId, effectiveDate: date || undefined,
+        reasonCode, reasonNote: reasonNote || undefined,
         handoverNote: handoverNote || undefined,
+        noHandoverNote: noNote,
         receiverUserId: receiverUserId || undefined,
       });
       invalidate('/students'); invalidate('/attempts'); invalidate('/overview'); invalidate('/cases');
@@ -381,9 +388,29 @@ function TransferForm({ studentId, currentClassId, onDone }: {
       <Field label="Ngày hiệu lực">
         <input type="date" className="field" value={date} onChange={(e) => setDate(e.target.value)} />
       </Field>
-      <Field label="Lý do">
-        <input className="field" value={reason} onChange={(e) => setReason(e.target.value)} />
+      <Field label="Lý do" required>
+        <select className="field" value={reasonCode} onChange={(e) => setReasonCode(e.target.value)}>
+          <option value="">Chọn lý do…</option>
+          {TRANSFER_REASONS.map((r) => <option key={r} value={r}>{TRANSFER_REASON_LABEL[r]}</option>)}
+        </select>
       </Field>
+      {reasonCode === 'khac' && (
+        <Field label="Ghi rõ lý do" required>
+          <input className="field" value={reasonNote} onChange={(e) => setReasonNote(e.target.value)} />
+        </Field>
+      )}
+      {!needHandover && (
+        <div className="space-y-2">
+          <Field label="Lưu ý bàn giao" required={!noNote}>
+            <textarea className="field" rows={2} value={handoverNote} disabled={noNote}
+              onChange={(e) => setHandoverNote(e.target.value)} />
+          </Field>
+          <label className="flex items-center gap-2 text-sm text-slate-300">
+            <input type="checkbox" checked={noNote} onChange={(e) => setNoNote(e.target.checked)} />
+            {NO_HANDOVER_NOTE}
+          </label>
+        </div>
+      )}
 
       {/*
         THÔNG TIN BÀN GIAO — bắt buộc khi em còn case dở (mục 6.4).

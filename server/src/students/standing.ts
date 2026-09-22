@@ -55,6 +55,8 @@ export type Standing = {
   provisional: boolean;
   scored: number;
   required: number;
+  /** Lớp thường: số môn chưa đạt của lượt đó (để nói "Đạt 3/4 môn"). FT: null. */
+  failed: number | null;
 
   /** Lượt kế tiếp đã lên kế hoạch mà chưa có điểm — để nói "đang chờ kết quả MT3". */
   nextAttemptNo: number | null;
@@ -69,15 +71,24 @@ export type Standing = {
 
 /** Câu tóm tắt một dòng, dựng ở máy chủ để mọi màn nói y hệt nhau. */
 export function standingLine(s: Standing): string {
-  const head = s.sosLevel === null
-    ? (s.attemptId === null
-      ? 'Chưa có kết quả trong lộ trình này'
-      : `${s.attemptLabel}: chưa đủ điểm để kết luận`)
-    : s.sosLevel === 0
+  const ratio = s.mode === 'ratio';
+  const unit = ratio ? 'môn' : 'kỹ năng';
+  let head: string;
+  if (s.sosLevel === null) {
+    head = s.attemptId === null
+      ? (ratio ? 'Chưa có kết quả trong khoá này' : 'Chưa có kết quả trong lộ trình này')
+      : `${s.attemptLabel}: chưa đủ điểm để kết luận`;
+  } else if (ratio) {
+    /* Lớp thường (đặc tả §2): "Đạt 3/4 môn", không "đạt kỳ vọng". Mức SOS vẫn hiện vì hồ sơ cần nó (§3.10). */
+    head = `${s.attemptLabel}: Đạt ${s.scored - (s.failed ?? 0)}/${s.required} môn`;
+    if (s.sosLevel > 0) head += ` · ${SOS_LABEL[s.sosLevel as 1 | 2 | 3]}${s.provisional ? ' tạm thời' : ''}`;
+  } else {
+    head = s.sosLevel === 0
       ? `${s.attemptLabel} đạt kỳ vọng`
       : `${s.attemptLabel}: ${SOS_LABEL[s.sosLevel as 1 | 2 | 3]}${s.provisional ? ' tạm thời' : ''}`;
+  }
   const parts = [head];
-  if (s.provisional) parts.push(`mới có điểm ${s.scored}/${s.required} kỹ năng`);
+  if (s.provisional) parts.push(`mới có điểm ${s.scored}/${s.required} ${unit}`);
   if (s.openCases > 0) {
     parts.push(s.handoverCases > 0 && s.handoverCases === s.openCases
       ? `${s.handoverCases} case bàn giao`
@@ -89,7 +100,7 @@ export function standingLine(s: Standing): string {
 const EMPTY = (studentId: number, cycleId: number | null): Standing => ({
   studentId, cycleId, mode: null,
   attemptId: null, attemptNo: null, attemptKind: null, attemptLabel: null, periodCode: null,
-  sosLevel: null, provisional: false, scored: 0, required: 0,
+  sosLevel: null, provisional: false, scored: 0, required: 0, failed: null,
   nextAttemptNo: null, nextAttemptLabel: null, nextPeriodCode: null,
   openCases: 0, handoverCases: 0,
 });
@@ -209,6 +220,7 @@ export function standingFor(studentIds: number[]): Map<number, Standing> {
         s.provisional = r.provisional;
         s.scored = r.scored;
         s.required = r.required;
+        s.failed = r.failedCount;
       } else {
         const skips = bundle.skips.get(a.id) ?? [];
         const r = evaluateAttempt(

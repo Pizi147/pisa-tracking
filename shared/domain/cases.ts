@@ -472,6 +472,20 @@ export const DISPOSITION_LABEL: Record<Disposition, string> = {
 };
 
 /**
+ * HỆ THỐNG TỰ ĐÓNG CASE — S16 (em kết thúc khoá) và S17 (em đổi chương trình), chủ sản phẩm chốt 21/09/2026 đêm; §3.9 bảng luật lộ
+ * trình thêm chiều lớp thường → FT. Case đóng kiểu này KHÔNG có kết quả: việc đóng không phải một kết quả hỗ trợ, và PA bị huỷ vì nó
+ * không tính. PA đã xong có kết quả thật trước đó VẪN tính hiệu quả (planning review 22/09, Q7). Lịch sử giữ nguyên.
+ * Chữ "lớp thường" thay "Normal" theo đặc tả §2 (không viết "Normal" trên màn).
+ */
+export const SYSTEM_CLOSE_REASONS = ['course_ended', 'moved_to_normal', 'moved_to_ft'] as const;
+export type SystemCloseReason = (typeof SYSTEM_CLOSE_REASONS)[number];
+export const SYSTEM_CLOSE_REASON_LABEL: Record<SystemCloseReason, string> = {
+  course_ended: 'Học viên kết thúc khoá',
+  moved_to_normal: 'Chuyển sang lớp thường',
+  moved_to_ft: 'Chuyển sang Fast Track',
+};
+
+/**
  * HAI HỌ VIỆC, TÁCH BẠCH — và chính sự tách bạch đó bỏ được một câu hỏi cho giáo viên.
  *
  * PHƯƠNG ÁN HỖ TRỢ là việc giáo viên tự xoay được. ĐỀ XUẤT là việc phải có Quản lý trả
@@ -657,13 +671,11 @@ export const SIGNAL_STATUS_LABEL: Record<SignalStatus, string> = {
   pending: 'Chờ xác minh',
   linked: 'Đã thành case',
   /*
-   * TRẠNG THÁI CŨ, CHỈ CÒN ĐỂ ĐỌC LẠI LỊCH SỬ.
-   *
-   * Đề bài mục 6.2 từng cho phép ghi nhận đã xem một tín hiệu mà không mở case. Chủ sản phẩm chốt ngược lại (16/09/2026): xác minh
-   * một tín hiệu nghĩa là MỞ CASE. Nguồn 21/09/2026 lại cho phép ĐÓNG SOS KHÔNG TẠO CASE — nhưng bắt buộc ghi lý do (rule book
-   * mục 18.2 điểm 1); đường đó là `noted` kèm lý do, việc của PR-S.
+   * BỎ QUA (S1, chủ sản phẩm chốt 22/09/2026, đặc tả §3.10 + §5): tín hiệu lớp thường được đóng mà KHÔNG tạo Case, một bấm, lý do
+   * KHÔNG bắt buộc. `resolution_note` luôn có chữ (`SIGNAL_DISMISS_NOTE`, kèm lý do nếu có). Dòng `noted` cũ của bộ demo ("đã xem")
+   * đọc ra cùng nhãn — cùng nghĩa: đã có người xem và không mở Case.
    */
-  noted: 'Đã xem (dữ liệu cũ)',
+  noted: 'Đã bỏ qua',
   withdrawn: 'Đã thu hồi',
 };
 
@@ -688,6 +700,9 @@ export function signalVerifyDue(raisedOn: string): string {
 
 /** Lý do chuẩn khi một tín hiệu mất căn cứ vì điểm được sửa lại (mục 9.4). */
 export const SIGNAL_WITHDRAW_SCORE_FIXED = 'Không còn hợp lệ do sửa điểm';
+
+/** Chữ ghi vào `resolution_note` khi GV bấm "Bỏ qua" tín hiệu (S1). Có lý do thì thêm " — {lý do}". */
+export const SIGNAL_DISMISS_NOTE = 'Bỏ qua';
 
 /**
  * BẢNG HẠN CỦA MỤC 8.3 — mọi hạn theo ngày đều TÍNH CẢ NGÀY ĐẦU.
