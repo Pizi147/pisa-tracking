@@ -421,7 +421,7 @@ git commit -m "PR-S1 (1): hai cột system_close_reason + absent_from_no_show, b
 - Consumes: cột `attempt_skills.absent_from_no_show` (Task 1).
 - Produces: `SkillRow.absent_from_no_show: number`.
 
-- [ ] **Step 1: Phép kiểm (đỏ).** Thêm vào `luatMayChu.tests.ts` (trên dòng đánh dấu cuối hàm):
+- [x] **Step 1: Phép kiểm (đỏ).** Thêm vào `luatMayChu.tests.ts` (trên dòng đánh dấu cuối hàm):
 
 ```ts
   // ================================================================== 2. S11
@@ -459,8 +459,8 @@ git commit -m "PR-S1 (1): hai cột system_close_reason + absent_from_no_show, b
   });
 ```
 
-- [ ] **Step 2: Chạy, thấy đỏ.** `npm test 2>&1 | grep -E "S11|KIỂM TRA"` — Expected: phép 1 ✗ (`escalated` hoặc `flag` undefined), phép 3 ✗.
-- [ ] **Step 3: Sửa mã.**
+- [x] **Step 2: Chạy, thấy đỏ.** `npm test 2>&1 | grep -E "S11|KIỂM TRA"` — Expected: phép 1 ✗ (`escalated` hoặc `flag` undefined), phép 3 ✗.
+- [x] **Step 3: Sửa mã.**
 
 `skillSchedule.ts` — `SkillRow` thêm sau `absence_move_count: number;`:
 
@@ -489,9 +489,9 @@ git commit -m "PR-S1 (1): hai cột system_close_reason + absent_from_no_show, b
  * `saveScore` gọi hàm này tức thì sau khi ghi dấu muộn. Đường "chờ Quản lý hiệu chỉnh" còn mã nhưng không dùng.
 ```
 
-- [ ] **Step 4: Chạy, thấy xanh.** `npm test 2>&1 | tail -3` — Expected: `TẤT CẢ 680 …`. Nếu phép kiểm cũ `PR-G · …` đỏ: đọc câu lỗi —
+- [x] **Step 4: Chạy, thấy xanh.** `npm test 2>&1 | tail -3` — Expected: `TẤT CẢ 680 …`. Nếu phép kiểm cũ `PR-G · …` đỏ: đọc câu lỗi —
   nó chỉ có thể đỏ nếu một đường đổi `sit_status` bị bỏ sót; sửa đường đó, không sửa phép kiểm cũ.
-- [ ] **Step 5: Commit.** `git commit -am "PR-S1 (2): S11 — cờ absent_from_no_show thay chuỗi sit_note; sửa chú thích C10 cũ"`
+- [x] **Step 5: Commit.** `git commit -am "PR-S1 (2): S11 — cờ absent_from_no_show thay chuỗi sit_note; sửa chú thích C10 cũ"`
 
 ---
 

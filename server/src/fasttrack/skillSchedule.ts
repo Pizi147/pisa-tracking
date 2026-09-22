@@ -64,6 +64,8 @@ export type SkillRow = {
   deadline_override: string | null;
   deadline_override_reason: string | null;
   absence_move_count: number;
+  /** 1 = buổi vắng này sinh ra từ việc CHỐT dấu "-" (S11). Không đọc `sit_note` để biết điều này. */
+  absent_from_no_show: number;
   /** Ghép sẵn từ bảng tuần để không phải hỏi lại theo từng dòng. */
   week_start: string | null;
   week_end: string | null;
@@ -192,7 +194,7 @@ export function skillScheduleOf(
       id: 0, attempt_id: attempt.id, skill, required: 1, scope_reason: null,
       planned_period_id: attempt.planned_period_id ?? null, plan_source: 'auto',
       sit_status: 'scheduled', sit_note: null,
-      deadline_override: null, deadline_override_reason: null, absence_move_count: 0,
+      deadline_override: null, deadline_override_reason: null, absence_move_count: 0, absent_from_no_show: 0,
       week_start: attempt.period_start ?? null, week_end: attempt.period_end ?? null,
       period_code: attempt.period_code ?? null,
     };
@@ -587,7 +589,7 @@ export function setSkillWeek(p: Principal, attemptId: number, skill: string, per
       .prepare(
         `UPDATE attempt_skills SET planned_period_id = ?, plan_source = 'manual',
                 sit_status = CASE WHEN sit_status = 'absent' THEN 'scheduled' ELSE sit_status END,
-                updated_at = ?
+                absent_from_no_show = 0, updated_at = ?
           WHERE id = ?`,
       )
       .run(periodId, nowIso(), row.id);
@@ -694,7 +696,7 @@ export function setSitStatus(p: Principal, attemptId: number, skill: string, sta
 
   return tx(() => {
     db()
-      .prepare('UPDATE attempt_skills SET sit_status = ?, sit_by = ?, sit_at = ?, sit_note = ?, updated_at = ? WHERE id = ?')
+      .prepare('UPDATE attempt_skills SET sit_status = ?, sit_by = ?, sit_at = ?, sit_note = ?, absent_from_no_show = 0, updated_at = ? WHERE id = ?')
       .run(status, p.userId, nowIso(), note ?? null, nowIso(), row.id);
     logSchedule(attemptId, {
       action: 'skill_sit_status', field: skill, oldValue: row.sit_status, newValue: status,

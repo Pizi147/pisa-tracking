@@ -153,5 +153,39 @@ export async function runLuatMayChuTests(t: YThucTestKit) {
     assert(regular.isRatioClass(a.cid) && !regular.isRatioClass(b.cid), 'MB-FOU 12 phải là lớp thường, MB-FT 101 là FT');
   });
 
+  // ================================================================== 2. S11
+
+  console.log('\nPR-S1 · 2. S11 — "vắng do chốt dấu -" là CỘT RIÊNG, không phải chuỗi chữ');
+  const attempts: any = await import('../fasttrack/attempts.ts');
+  const absence: any = await import('../fasttrack/absence.ts');
+  const sit = (attemptId: number, skill: string) => conn.prepare(
+    'SELECT sit_status, sit_note, absent_from_no_show AS flag, absence_move_count FROM attempt_skills WHERE attempt_id = ? AND skill = ?',
+  ).get(attemptId, skill) as any;
+
+  check('S11 · Chốt dấu "-" đánh cờ; sửa chữ sit_note KHÔNG làm mất quyền dời lần đầu của GVCN (sáng thứ Ba sau khi chốt)', () => {
+    const hv = taoHocVien({ classCode: 'MB-FT 101', weekStart: '2026-09-14' });
+    attempts.saveScore(P.lrTeacher, hv.attemptId, 'listening', { noShow: true }, '2026-09-16');
+    absence.settleNoShows('2026-09-21');
+    assert(sit(hv.attemptId, 'listening').sit_status === 'absent' && sit(hv.attemptId, 'listening').flag === 1,
+      `Chốt xong phải absent + cờ 1: ${JSON.stringify(sit(hv.attemptId, 'listening'))}`);
+    /* Lượt biên tập chữ sau này đổi câu ghi chú — cờ không được phụ thuộc vào câu chữ. */
+    conn.prepare(`UPDATE attempt_skills SET sit_note = 'Ghi chú đã biên tập lại' WHERE attempt_id = ? AND skill = 'listening'`).run(hv.attemptId);
+    const r = absence.requestAbsenceMove(P.lrTeacher, hv.attemptId, ['listening'], { today: '2026-09-22' }) as any;
+    assert(r.outcomes[0].result === 'moved', `GVCN phải dời lần đầu được ngay, đang ${JSON.stringify(r.outcomes[0])}`);
+    assert(sit(hv.attemptId, 'listening').flag === 0, 'Dời xong thì cờ phải về 0');
+  });
+
+  check('S11 · Vắng do Quản lý/GVCN xác nhận bằng tay KHÔNG mang cờ chốt dấu "-"', () => {
+    const hv = taoHocVien({ classCode: 'MB-FT 101', weekStart: '2026-09-14' });
+    skillSchedule.setSitStatus(P.mbManager, hv.attemptId, 'speaking', 'absent', 'Quản lý xác nhận em vắng buổi Speaking');
+    assert(sit(hv.attemptId, 'speaking').sit_status === 'absent' && sit(hv.attemptId, 'speaking').flag === 0,
+      `Vắng tay phải cờ 0: ${JSON.stringify(sit(hv.attemptId, 'speaking'))}`);
+  });
+
+  check('S11 · Mã nguồn không còn dùng chuỗi sit_note làm cờ', () => {
+    const src = fsMod.readFileSync(pathMod.join(REPO, 'server/src/fasttrack/absence.ts'), 'utf8');
+    assert(!/sit_note[^\n]*startsWith/.test(src), 'absence.ts còn đọc sit_note.startsWith(...) làm cờ');
+  });
+
   // ---- các task sau thêm phép kiểm NGAY TRÊN dòng này ----
 }
