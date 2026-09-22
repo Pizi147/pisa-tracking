@@ -12,6 +12,11 @@
   node_bundler = "esbuild"
   external_node_modules = ["libsql", "@libsql/linux-x64-gnu"]
 
+# Chốt dấu "-" đầu thứ Hai kể cả khi không ai mở web (RB-1). Giờ UTC: 00:05 và 06:05 sáng thứ Hai giờ Việt Nam.
+# Đổi lịch thì sửa cả LICH_CHOT_VANG trong server/src/ops/chotVangDinhKy.ts.
+[functions."chot-vang"]
+  schedule = "5 17,23 * * 0"
+
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/api/:splat"

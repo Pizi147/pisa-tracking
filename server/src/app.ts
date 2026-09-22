@@ -1,10 +1,14 @@
+import crypto from 'node:crypto';
 import express from 'express';
 import cookieParser from 'cookie-parser';
 import type { NextFunction, Request, Response } from 'express';
-import { isInitialised } from './db.ts';
 import { attachPrincipal } from './auth.ts';
 import { api } from './routes/index.ts';
 import { HttpError } from './util.ts';
+import { taoSuKhoe } from './platform/suKhoe.ts';
+import { HAN_HAM_NETLIFY_MS, LOG_CHAM_MS, chayVoiHan } from './platform/hanGio.ts';
+import { donGiaoDichTreo } from './db.ts';
+import { laBanChinh } from './moiTruong.ts';
 
 /**
  * ỨNG DỤNG EXPRESS — tách khỏi `index.ts` (chỗ gọi `listen`) để phép kiểm dựng được ĐÚNG ứng dụng đang chạy trên một cổng tạm và
@@ -24,11 +28,10 @@ export function createApp() {
 
   app.use(express.json({ limit: '12mb' }));
   app.use(cookieParser());
+  app.use(demGio);
+  /* AN-4: đặt trước attachPrincipal — gọi health kèm cookie cũ cũng không tốn một lượt hỏi phiên. */
+  app.get('/api/health', taoSuKhoe());
   app.use(attachPrincipal);
-
-  app.get('/api/health', (_req, res) => {
-    res.json({ ok: true, seeded: isInitialised() });
-  });
 
   app.use('/api', api);
 
@@ -36,21 +39,63 @@ export function createApp() {
     res.status(404).json({ error: 'Không tìm thấy endpoint.' });
   });
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
-    if (err instanceof HttpError) {
-      res.status(err.status).json({ error: err.message, details: err.details ?? undefined });
-      return;
-    }
-    const message = err instanceof Error ? err.message : 'Lỗi không xác định';
-    const code = (err as { code?: unknown })?.code;
-    if (/SQLITE_CONSTRAINT|constraint failed/i.test(message) || (typeof code === 'string' && code.startsWith('SQLITE_CONSTRAINT'))) {
-      res.status(409).json({ error: 'Dữ liệu bị trùng hoặc vi phạm ràng buộc.', details: { raw: message } });
-      return;
-    }
-    console.error('[api]', err);
-    res.status(500).json({ error: 'Lỗi hệ thống: ' + message });
-  });
+  app.use(traLoiLoi);
 
   return app;
+}
+
+/**
+ * ĐẾM GIỜ MỖI LỜI GỌI (AN-5). Đặt SAU express.json/cookieParser: ngữ cảnh AsyncLocalStorage không đi qua sự kiện luồng của bộ đọc
+ * thân yêu cầu. Đường tải tệp (multer) có thể mất hạn — khi đó chỉ là không chặn (an toàn như trước PR này).
+ *   · Dọn giao dịch treo của lần gọi trước.
+ *   · Log `[cham]` mọi lời gọi ≥ LOG_CHAM_MS — PR-Z2c đọc để biết trang nào cần gộp truy vấn.
+ *   · Bản chính: gắn hạn HAN_HAM_NETLIFY_MS cho cả lời gọi.
+ */
+export function demGio(req: Request, res: Response, next: NextFunction): void {
+  const batDau = Date.now();
+  if (donGiaoDichTreo()) console.error('[api] đã cuộn lại một giao dịch bỏ dở từ lần gọi trước');
+  res.on('finish', () => {
+    const ms = Date.now() - batDau;
+    if (ms >= LOG_CHAM_MS) console.warn(`[cham] ${req.method} ${req.path} ${ms} ms`);
+  });
+  if (!laBanChinh()) { next(); return; }
+  chayVoiHan(batDau + HAN_HAM_NETLIFY_MS, next);
+}
+
+/**
+ * BỘ XỬ LÝ LỖI CUỐI (AN-3, PR-AN). Người dùng KHÔNG BAO GIỜ thấy câu SQL, tên bảng hay thông điệp nội bộ:
+ *   · HttpError       — câu có chủ đích của nghiệp vụ, trả nguyên như cũ.
+ *   · thân JSON hỏng  — 400 / quá lớn 413, câu tiếng Việt.
+ *   · vi phạm ràng buộc — 409 câu chung; chi tiết vào log.
+ *   · còn lại         — 500 "Có lỗi · mã {mã}" (THUAT_NGU g14-054). Cùng mã in vào log kèm lỗi gốc: người dùng báo mã, người sửa
+ *                       tìm đúng dòng (Netlify › Logs › Functions › api). Log KHÔNG in thân yêu cầu (có mật khẩu).
+ * Máy dev cũng vậy — lỗi gốc đọc ở cửa sổ lệnh đang chạy `npm run dev`.
+ */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function traLoiLoi(err: unknown, req: Request, res: Response, _next: NextFunction): void {
+  if (err instanceof HttpError) {
+    res.status(err.status).json({ error: err.message, details: err.details ?? undefined });
+    return;
+  }
+  const e = (err ?? {}) as { type?: unknown; code?: unknown };
+  if (e.type === 'entity.parse.failed') {
+    res.status(400).json({ error: 'Dữ liệu gửi lên không đọc được. Tải lại trang rồi thử lại.' });
+    return;
+  }
+  if (e.type === 'entity.too.large') {
+    res.status(413).json({ error: 'Dữ liệu gửi lên quá lớn.' });
+    return;
+  }
+  const message = err instanceof Error ? err.message : String(err);
+  if (/SQLITE_CONSTRAINT|constraint failed/i.test(message) || (typeof e.code === 'string' && e.code.startsWith('SQLITE_CONSTRAINT'))) {
+    console.warn('[api] 409', req.method, req.path, message);
+    res.status(409).json({ error: 'Dữ liệu bị trùng hoặc vi phạm ràng buộc.' });
+    return;
+  }
+  const ma = crypto.randomBytes(4).toString('hex');
+  console.error(`[api] mã ${ma}`, req.method, req.path, err);
+  res.status(500).json({
+    error: `Có lỗi · mã ${ma}. Thử lại sau ít phút; nếu vẫn lỗi, báo Quản trị hệ thống kèm mã này.`,
+    details: { ma },
+  });
 }

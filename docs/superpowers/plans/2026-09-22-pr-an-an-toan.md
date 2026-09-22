@@ -142,18 +142,18 @@ mở file xem lại — lệch vài dòng là bình thường; **lệch nội du
 
 **Files:** không sửa mã.
 
-- [ ] **Step 1: Nhánh.** Dùng `superpowers:using-git-worktrees`: `git fetch origin && git worktree add ../pisa-pr-an -b pr-an-an-toan origin/main`.
+- [x] **Step 1: Nhánh.** Dùng `superpowers:using-git-worktrees`: `git fetch origin && git worktree add ../pisa-pr-an -b pr-an-an-toan origin/main`.
   Mọi lệnh sau chạy trong worktree. Máy chủ dev trong worktree: `npm run dev` **trong chính worktree** (không dùng `preview_start` — nó
   chạy mã của thư mục chính).
-- [ ] **Step 2: Kiểm môi trường không có biến Turso.**
+- [x] **Step 2: Kiểm môi trường không có biến Turso.**
 
 ```bash
 node -e "for (const k of ['TURSO_DATABASE_URL','TURSO_AUTH_TOKEN','BAN_CHINH','PISA_CHO_PHEP_MIGRATE_TURSO','PISA_CHO_PHEP_SEED_TURSO']) if (process.env[k]) { console.error('CÓ BIẾN', k); process.exit(1) } ; console.log('sạch')"
 ```
 Expected: `sạch`. Có biến → đóng cửa sổ, mở cửa sổ mới.
 
-- [ ] **Step 3: Mốc.** `npm ci` rồi `npm test 2>&1 | tail -3` — Expected: `TẤT CẢ 672 KIỂM TRA ĐỀU ĐẠT`. Ghi số vào Nhật ký. Đỏ ngay từ đầu → 🛑.
-- [ ] **Step 4:** Đọc Global Constraints + bảng Q1–Q22 + bảng "Kiểm với mã thật". Q nào bạn thấy sai với đặc tả → 🛑 hỏi trước khi code.
+- [x] **Step 3: Mốc.** `npm ci` rồi `npm test 2>&1 | tail -3` — Expected: `TẤT CẢ 672 KIỂM TRA ĐỀU ĐẠT`. Ghi số vào Nhật ký. Đỏ ngay từ đầu → 🛑.
+- [x] **Step 4:** Đọc Global Constraints + bảng Q1–Q22 + bảng "Kiểm với mã thật". Q nào bạn thấy sai với đặc tả → 🛑 hỏi trước khi code.
 
 ---
 
@@ -170,7 +170,7 @@ Expected: `sạch`. Có biến → đóng cửa sổ, mở cửa sổ mới.
   `idx_auth_attempts_key (kind, key_hash, at)`; `export function migrateAuthAttempts(conn: any, applied: string[]): void`; trong file test:
   `load`, `REPO`, `batLog`, `demCauHoi`, `giaRes` — task sau dùng lại.
 
-- [ ] **Step 1: Tạo file phép kiểm (đỏ).** `server/src/tests/anToan.tests.ts`:
+- [x] **Step 1: Tạo file phép kiểm (đỏ).** `server/src/tests/anToan.tests.ts`:
 
 ```ts
 /**
@@ -277,9 +277,9 @@ const { runAnToanTests } = await import('./anToan.tests.ts');
 await runAnToanTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P });
 ```
 
-- [ ] **Step 2: Chạy, thấy đỏ.** `npm test 2>&1 | grep -E "AN-1|KIỂM TRA|KHÔNG ĐẠT"` — Expected: hai phép `AN-1 ·` **✗** (`no such table: auth_attempts`,
+- [x] **Step 2: Chạy, thấy đỏ.** `npm test 2>&1 | grep -E "AN-1|KIỂM TRA|KHÔNG ĐẠT"` — Expected: hai phép `AN-1 ·` **✗** (`no such table: auth_attempts`,
   `migrateAuthAttempts is not a function`).
-- [ ] **Step 3: `schema.sql`** — ngay sau khối `CREATE TABLE demo_sessions (...);` (~dòng 1421):
+- [x] **Step 3: `schema.sql`** — ngay sau khối `CREATE TABLE demo_sessions (...);` (~dòng 1421):
 
 ```sql
 /*
@@ -297,7 +297,7 @@ CREATE TABLE auth_attempts (
 CREATE INDEX idx_auth_attempts_key ON auth_attempts(kind, key_hash, at);
 ```
 
-- [ ] **Step 4: `migrate.ts`** — hàm mới ở **cuối file**:
+- [x] **Step 4: `migrate.ts`** — hàm mới ở **cuối file**:
 
 ```ts
 /**
@@ -326,8 +326,8 @@ Gọi trong `migrateCaseEngine`, ngay sau `migrateDeleteInvalidViolations(conn, 
 ```
 (Sau khi rebase lên PR-S1, dòng này nằm **sau** `migrateLuatMayChu(conn, applied);` — giữ cả hai.)
 
-- [ ] **Step 5: Chạy, xanh.** `npm test 2>&1 | grep -E "AN-1|KIỂM TRA"` — Expected: 2 phép `AN-1 ·` ✓, `TẤT CẢ 674 …`.
-- [ ] **Step 6: Commit.**
+- [x] **Step 5: Chạy, xanh.** `npm test 2>&1 | grep -E "AN-1|KIỂM TRA"` — Expected: 2 phép `AN-1 ·` ✓, `TẤT CẢ 674 …`.
+- [x] **Step 6: Commit.**
 
 ```bash
 git add server/src/schema.sql server/src/migrate.ts server/src/tests/anToan.tests.ts server/src/tests/run.ts
@@ -354,7 +354,7 @@ git commit -m "PR-AN (1): bảng auth_attempts + bước nâng cấp idempotent 
   - `export function xoaLanThu(loai: LoaiThu, giaTri: string): void`
   - `export function chanNeuBiKhoa(loai: LoaiThu, giaTri: string, cau: (phut: number) => string, bayGio?: number): void` (ném `HttpError(429, …)`)
 
-- [ ] **Step 1: Phép kiểm (đỏ)** — thêm trên dòng `// ---- các task sau …`:
+- [x] **Step 1: Phép kiểm (đỏ)** — thêm trên dòng `// ---- các task sau …`:
 
 ```ts
   // ================================================================== 2. Hàm giới hạn (AN-1)
@@ -399,8 +399,8 @@ git commit -m "PR-AN (1): bảng auth_attempts + bước nâng cấp idempotent 
 (Phép đầu dùng `t0 = Date.now()` chứ không một ngày cố định: `ghiLanThu` xoá dòng quá 24 giờ **tính theo `bayGio` truyền vào**, dùng
 ngày cố định trong quá khứ vẫn đúng, nhưng giờ thật an toàn hơn cho phép dọn ở phép thứ ba.)
 
-- [ ] **Step 2: Chạy, đỏ.** Expected: 3 phép `AN-1 ·` mới ✗ ("Chưa có mô-đun ../platform/gioiHanThu.ts").
-- [ ] **Step 3: Tạo `server/src/platform/gioiHanThu.ts`.**
+- [x] **Step 2: Chạy, đỏ.** Expected: 3 phép `AN-1 ·` mới ✗ ("Chưa có mô-đun ../platform/gioiHanThu.ts").
+- [x] **Step 3: Tạo `server/src/platform/gioiHanThu.ts`.**
 
 ```ts
 import crypto from 'node:crypto';
@@ -477,8 +477,8 @@ export function chanNeuBiKhoa(loai: LoaiThu, giaTri: string, cau: (phut: number)
 }
 ```
 
-- [ ] **Step 4: Chạy, xanh.** Expected `TẤT CẢ 677 …`.
-- [ ] **Step 5: Commit.** `git add server/src/platform/gioiHanThu.ts server/src/tests/anToan.tests.ts && git commit -m "PR-AN (2): mô-đun giới hạn số lần thử (đếm ở database, chỉ lưu mã băm)"`
+- [x] **Step 4: Chạy, xanh.** Expected `TẤT CẢ 677 …`.
+- [x] **Step 5: Commit.** `git add server/src/platform/gioiHanThu.ts server/src/tests/anToan.tests.ts && git commit -m "PR-AN (2): mô-đun giới hạn số lần thử (đếm ở database, chỉ lưu mã băm)"`
 
 ---
 
@@ -495,7 +495,7 @@ export function chanNeuBiKhoa(loai: LoaiThu, giaTri: string, cau: (phut: number)
 - Produces (trong file test): `may`, `goi(method, url, o)`, `taoTaiKhoan(ten)`, `dangNhap(tk, ip, sai?)` — Task 4, 5, 6 dùng lại.
   `may.close()` gọi ở **cuối file** (ngay trên khối dọn), không ở đây.
 
-- [ ] **Step 1: Phép kiểm (đỏ).**
+- [x] **Step 1: Phép kiểm (đỏ).**
 
 ```ts
   // ================================================================== 3. Đăng nhập / đăng ký qua HTTP (AN-1)
@@ -591,8 +591,8 @@ export function chanNeuBiKhoa(loai: LoaiThu, giaTri: string, cau: (phut: number)
 Và **ngay trên** khối dọn cuối file (`try { conn.prepare('DELETE FROM auth_attempts')…`), thêm một dòng: `may.close();`
 (các task sau thêm phép kiểm phía trên dòng `// ---- các task sau …`, vẫn nằm trước `may.close()`).
 
-- [ ] **Step 2: Chạy, đỏ.** Expected: 5 phép mới ✗ (lần 6 nhận 200/400 thay vì 429).
-- [ ] **Step 3: Sửa route.** Import (ngay dưới `import * as accountSvc …`, dòng 54):
+- [x] **Step 2: Chạy, đỏ.** Expected: 5 phép mới ✗ (lần 6 nhận 200/400 thay vì 429).
+- [x] **Step 3: Sửa route.** Import (ngay dưới `import * as accountSvc …`, dòng 54):
 
 ```ts
 import * as gioiHan from '../platform/gioiHanThu.ts';
@@ -643,9 +643,9 @@ api.post('/auth/register', wrap((req) => {
 ```
 (`HttpError` đã import ở dòng 11.)
 
-- [ ] **Step 4: Chạy, xanh.** Expected `TẤT CẢ 682 …`. Phép cũ `PR-Z2 · Bản chính: cookie phiên…` (`banChinh.tests.ts:350`) và
+- [x] **Step 4: Chạy, xanh.** Expected `TẤT CẢ 682 …`. Phép cũ `PR-Z2 · Bản chính: cookie phiên…` (`banChinh.tests.ts:350`) và
   `Đăng nhập đúng thì vào, sai email và sai mật khẩu nói CÙNG một câu` (`run.ts:4359`, gọi thẳng dịch vụ) vẫn ✓.
-- [ ] **Step 5: Commit.** `git commit -am "PR-AN (3): AN-1 giới hạn số lần thử đăng nhập và đăng ký"`
+- [x] **Step 5: Commit.** `git commit -am "PR-AN (3): AN-1 giới hạn số lần thử đăng nhập và đăng ký"`
 
 ---
 
@@ -662,7 +662,7 @@ thật và (b) thêm một lớp phòng thủ ở `resolveSession` (Q16).
 - Consumes: `goi`, `accounts` (Task 3); `createSession`, `resolveSession` (`auth.ts`).
 - Produces: `resolveSession(token)` trả `null` và xoá dòng phiên khi tài khoản có `approval_state != 'approved'` hoặc `status != 'active'`.
 
-- [ ] **Step 1: Phép kiểm.**
+- [x] **Step 1: Phép kiểm.**
 
 ```ts
   // ================================================================== 4. AN-6 — đăng ký phải QTHT duyệt
@@ -716,9 +716,9 @@ thật và (b) thêm một lớp phòng thủ ở `resolveSession` (Q16).
   });
 ```
 
-- [ ] **Step 2: Chạy.** Expected: hai phép HTTP **✓ ngay** (hành vi đã có — nếu ✗ thì 🛑, mã khác kiểm kê); phép phiên **✗**
+- [x] **Step 2: Chạy.** Expected: hai phép HTTP **✓ ngay** (hành vi đã có — nếu ✗ thì 🛑, mã khác kiểm kê); phép phiên **✗**
   ("Phiên của tài khoản chờ duyệt vẫn dùng được").
-- [ ] **Step 3: Sửa `resolveSession`** (`auth.ts:41-53`):
+- [x] **Step 3: Sửa `resolveSession`** (`auth.ts:41-53`):
 
 ```ts
 export function resolveSession(token: string | undefined): Principal | null {
@@ -747,10 +747,10 @@ export function resolveSession(token: string | undefined): Principal | null {
 ```
 Giữ nguyên khối chú thích `PHIEN_HET_HAN_SAU_NGAY` ở trên.
 
-- [ ] **Step 4: Chạy, xanh.** Expected `TẤT CẢ 685 …`. Phép cũ về phiên hết hạn (`banChinh.tests.ts:1110-1130`) và khôi phục (`:1040-1070`)
+- [x] **Step 4: Chạy, xanh.** Expected `TẤT CẢ 685 …`. Phép cũ về phiên hết hạn (`banChinh.tests.ts:1110-1130`) và khôi phục (`:1040-1070`)
   vẫn ✓ (tài khoản của bộ demo đều `approved`/`active`). Ghi Nhật ký: ở máy dev, "Vào nhanh" vào một tài khoản **chờ duyệt** nay bị
   đẩy ra ngay — đúng ý (dev không có tài khoản chờ duyệt trong bộ demo).
-- [ ] **Step 5: Commit.** `git commit -am "PR-AN (4): AN-6 phép kiểm HTTP luồng duyệt; phiên chỉ nhận tài khoản đã duyệt, đang hoạt động"`
+- [x] **Step 5: Commit.** `git commit -am "PR-AN (4): AN-6 phép kiểm HTTP luồng duyệt; phiên chỉ nhận tài khoản đã duyệt, đang hoạt động"`
 
 ---
 
@@ -765,7 +765,7 @@ Giữ nguyên khối chú thích `PHIEN_HET_HAN_SAU_NGAY` ở trên.
   500 → `{ error: 'Có lỗi · mã {ma}. …', details: { ma } }` (`ma` = 8 ký tự hex); 409 → `{ error: 'Dữ liệu bị trùng hoặc vi phạm ràng buộc.' }`;
   thân JSON hỏng → 400; quá lớn → 413; `HttpError` giữ nguyên như cũ.
 
-- [ ] **Step 1: Phép kiểm (đỏ).**
+- [x] **Step 1: Phép kiểm (đỏ).**
 
 ```ts
   // ================================================================== 5. AN-3 — câu lỗi không lộ nội bộ
@@ -808,8 +808,8 @@ Giữ nguyên khối chú thích `PHIEN_HET_HAN_SAU_NGAY` ở trên.
   });
 ```
 
-- [ ] **Step 2: Chạy, đỏ.** Expected: 3 phép đầu ✗ (`traLoiLoi is not a function`; JSON hỏng nhận 500), phép HttpError ✗ theo cùng lý do.
-- [ ] **Step 3: Sửa `app.ts`.** Thêm import đầu file: `import crypto from 'node:crypto';`. Thay khối `app.use((err: unknown, …) => {…})` (39-53) bằng
+- [x] **Step 2: Chạy, đỏ.** Expected: 3 phép đầu ✗ (`traLoiLoi is not a function`; JSON hỏng nhận 500), phép HttpError ✗ theo cùng lý do.
+- [x] **Step 3: Sửa `app.ts`.** Thêm import đầu file: `import crypto from 'node:crypto';`. Thay khối `app.use((err: unknown, …) => {…})` (39-53) bằng
   `app.use(traLoiLoi);` và thêm hàm export **bên ngoài** `createApp`:
 
 ```ts
@@ -852,8 +852,8 @@ export function traLoiLoi(err: unknown, req: Request, res: Response, _next: Next
 }
 ```
 
-- [ ] **Step 4: Chạy, xanh.** Expected `TẤT CẢ 689 …`. Soát: `grep -rn "Lỗi hệ thống: \|details.raw\|details?.raw" server/src web/src` → rỗng.
-- [ ] **Step 5: Commit.** `git commit -am "PR-AN (5): AN-3 lỗi 409/500 không lộ SQL; 500 có mã lỗi; JSON hỏng thành 400"`
+- [x] **Step 4: Chạy, xanh.** Expected `TẤT CẢ 689 …`. Soát: `grep -rn "Lỗi hệ thống: \|details.raw\|details?.raw" server/src web/src` → rỗng.
+- [x] **Step 5: Commit.** `git commit -am "PR-AN (5): AN-3 lỗi 409/500 không lộ SQL; 500 có mã lỗi; JSON hỏng thành 400"`
 
 ---
 
@@ -868,7 +868,7 @@ export function traLoiLoi(err: unknown, req: Request, res: Response, _next: Next
 - Produces: `export function taoSuKhoe(hoi?: () => boolean, bayGio?: () => number): (req: Request, res: Response) => void`;
   `export const HOI_LAI_SAU_MS = 30_000`. Hình trả lời giữ nguyên `{ ok: boolean, seeded: boolean }` (web AN-7 và `npm run thu-goi` dùng).
 
-- [ ] **Step 1: Phép kiểm (đỏ).**
+- [x] **Step 1: Phép kiểm (đỏ).**
 
 ```ts
   // ================================================================== 6. AN-4 — /api/health
@@ -910,8 +910,8 @@ export function traLoiLoi(err: unknown, req: Request, res: Response, _next: Next
   });
 ```
 
-- [ ] **Step 2: Chạy, đỏ.** Expected: phép 1 ✗ (hỏi 5 lần, thiếu `no-store`), phép 2 ✗ (chưa có mô-đun).
-- [ ] **Step 3: Tạo `server/src/platform/suKhoe.ts`.**
+- [x] **Step 2: Chạy, đỏ.** Expected: phép 1 ✗ (hỏi 5 lần, thiếu `no-store`), phép 2 ✗ (chưa có mô-đun).
+- [x] **Step 3: Tạo `server/src/platform/suKhoe.ts`.**
 
 ```ts
 import type { Request, Response } from 'express';
@@ -945,7 +945,7 @@ export function taoSuKhoe(hoi: () => boolean = isInitialised, bayGio: () => numb
 }
 ```
 
-- [ ] **Step 4: Sửa `app.ts`.** Import `import { taoSuKhoe } from './platform/suKhoe.ts';`. Xoá route health cũ (29-31); thêm **ngay sau**
+- [x] **Step 4: Sửa `app.ts`.** Import `import { taoSuKhoe } from './platform/suKhoe.ts';`. Xoá route health cũ (29-31); thêm **ngay sau**
   `app.use(cookieParser());` và **trước** `app.use(attachPrincipal);`:
 
 ```ts
@@ -954,8 +954,8 @@ export function taoSuKhoe(hoi: () => boolean = isInitialised, bayGio: () => numb
 ```
 (Mỗi `createApp()` một bộ nhớ riêng — phép kiểm dựng app mới là đếm từ đầu.) Bỏ import `isInitialised` khỏi `app.ts` nếu không còn dùng.
 
-- [ ] **Step 5: Chạy, xanh.** Expected `TẤT CẢ 691 …`. Chạy thêm `npm run thu-goi` — Expected: ba dòng `ĐẠT` như cũ (hình trả lời không đổi).
-- [ ] **Step 6: Commit.** `git add server/src/platform/suKhoe.ts && git commit -am "PR-AN (6): AN-4 /api/health nhớ kết quả, no-store, 503 khi database lỗi"`
+- [x] **Step 5: Chạy, xanh.** Expected `TẤT CẢ 691 …`. Chạy thêm `npm run thu-goi` — Expected: ba dòng `ĐẠT` như cũ (hình trả lời không đổi).
+- [x] **Step 6: Commit.** `git add server/src/platform/suKhoe.ts && git commit -am "PR-AN (6): AN-4 /api/health nhớ kết quả, no-store, 503 khi database lỗi"`
 
 ---
 
@@ -979,7 +979,7 @@ bản chính). Số đo trên Netlify (plan bản chính, Nhật ký 6b Step 7):
 - Produces (`db.ts`): `export function donGiaoDichTreo(): boolean`. (`app.ts`): `export function demGio(req, res, next): void`.
 - `hanGio.ts` **không** import `db.ts` (tránh vòng import: `db.ts` import `hanGio.ts`).
 
-- [ ] **Step 1: Phép kiểm (đỏ).**
+- [x] **Step 1: Phép kiểm (đỏ).**
 
 ```ts
   // ================================================================== 7. AN-5 — hạn 10 giây
@@ -1031,8 +1031,8 @@ bản chính). Số đo trên Netlify (plan bản chính, Nhật ký 6b Step 7):
   });
 ```
 
-- [ ] **Step 2: Chạy, đỏ.** Expected: 4 phép ✗ (thiếu mô-đun / `donGiaoDichTreo is not a function` / `demGio is not a function`).
-- [ ] **Step 3: Tạo `server/src/platform/hanGio.ts`.**
+- [x] **Step 2: Chạy, đỏ.** Expected: 4 phép ✗ (thiếu mô-đun / `donGiaoDichTreo is not a function` / `demGio is not a function`).
+- [x] **Step 3: Tạo `server/src/platform/hanGio.ts`.**
 
 ```ts
 import { AsyncLocalStorage } from 'node:async_hooks';
@@ -1069,7 +1069,7 @@ export function chanGiaoDichNeuSapHetGio(bayGio: number = Date.now()): void {
 }
 ```
 
-- [ ] **Step 4: Sửa `db.ts`.** Import `import { chanGiaoDichNeuSapHetGio } from './platform/hanGio.ts';`. Trong `tx`, thay dòng
+- [x] **Step 4: Sửa `db.ts`.** Import `import { chanGiaoDichNeuSapHetGio } from './platform/hanGio.ts';`. Trong `tx`, thay dòng
   `if (!conn.inTransaction) return conn.transaction(fn)();` bằng:
 
 ```ts
@@ -1094,7 +1094,7 @@ export function donGiaoDichTreo(): boolean {
 }
 ```
 
-- [ ] **Step 5: Sửa `app.ts`.** Import `import { HAN_HAM_NETLIFY_MS, LOG_CHAM_MS, chayVoiHan } from './platform/hanGio.ts';`,
+- [x] **Step 5: Sửa `app.ts`.** Import `import { HAN_HAM_NETLIFY_MS, LOG_CHAM_MS, chayVoiHan } from './platform/hanGio.ts';`,
   `import { donGiaoDichTreo } from './db.ts';`, `import { laBanChinh } from './moiTruong.ts';`. Hàm export bên ngoài `createApp`:
 
 ```ts
@@ -1119,8 +1119,8 @@ export function demGio(req: Request, res: Response, next: NextFunction): void {
 Trong `createApp`, thứ tự middleware thành: đổi đường Netlify → `express.json` → `cookieParser` → **`app.use(demGio)`** → route health (Task 6)
 → `attachPrincipal` → `api` → 404 → `traLoiLoi`. (Health đặt sau `demGio` cũng được — nó không mở giao dịch.)
 
-- [ ] **Step 6: Chạy, xanh.** Expected `TẤT CẢ 695 …`. Kiểm thêm: `npm run thu-goi` vẫn ĐẠT (đường gói Netlify có `demGio`).
-- [ ] **Step 7: Commit.** `git add server/src/platform/hanGio.ts && git commit -am "PR-AN (7): AN-5 không mở giao dịch khi sắp hết 10 giây, dọn giao dịch treo, log lời gọi chậm"`
+- [x] **Step 6: Chạy, xanh.** Expected `TẤT CẢ 695 …`. Kiểm thêm: `npm run thu-goi` vẫn ĐẠT (đường gói Netlify có `demGio`).
+- [x] **Step 7: Commit.** `git add server/src/platform/hanGio.ts && git commit -am "PR-AN (7): AN-5 không mở giao dịch khi sắp hết 10 giây, dọn giao dịch treo, log lời gọi chậm"`
 
 ---
 
@@ -1138,7 +1138,7 @@ Trong `createApp`, thứ tự middleware thành: đổi đường Netlify → `e
 - Produces: `export function demBangChungCase(caseIds: number[]): Map<number, number>`; `caseCardOf(caseId, c, soBangChung: Map<number, number>)`.
   Hình dữ liệu trả ra không đổi (`attachmentCount: number`); phép kiểm cũ `PR-HV · Q8` (`hoSoHocVien.tests.ts:236`) khoá tính đúng.
 
-- [ ] **Step 1: Phép kiểm (đỏ).**
+- [x] **Step 1: Phép kiểm (đỏ).**
 
 ```ts
   // ================================================================== 8. AN-8 — N+1 đếm bằng chứng
@@ -1162,8 +1162,8 @@ Trong `createApp`, thứ tự middleware thành: đổi đường Netlify → `e
   });
 ```
 
-- [ ] **Step 2: Chạy, đỏ.** Expected ✗ ("Đếm bằng chứng N câu cho N thẻ").
-- [ ] **Step 3: Sửa `cases.ts`.** Hàm mới ngay trên `function caseCardOf`:
+- [x] **Step 2: Chạy, đỏ.** Expected ✗ ("Đếm bằng chứng N câu cho N thẻ").
+- [x] **Step 3: Sửa `cases.ts`.** Hàm mới ngay trên `function caseCardOf`:
 
 ```ts
 /**
@@ -1199,8 +1199,8 @@ Khối `attachmentCount:` (2377-2379) →
 ```
 `grep -n "caseCardOf(" server/src/cases/cases.ts` → đúng 2 dòng (định nghĩa + một lời gọi). Có thêm lời gọi → 🛑.
 
-- [ ] **Step 4: Chạy, xanh.** Expected `TẤT CẢ 696 …`; `PR-HV · Q8 Thẻ case có số bằng chứng` vẫn ✓.
-- [ ] **Step 5: Commit.** `git commit -am "PR-AN (8): AN-8 bảng kỹ năng đếm bằng chứng một câu cho mọi thẻ Case"`
+- [x] **Step 4: Chạy, xanh.** Expected `TẤT CẢ 696 …`; `PR-HV · Q8 Thẻ case có số bằng chứng` vẫn ✓.
+- [x] **Step 5: Commit.** `git commit -am "PR-AN (8): AN-8 bảng kỹ năng đếm bằng chứng một câu cho mọi thẻ Case"`
 
 ---
 
@@ -1223,7 +1223,7 @@ PR-Z2c (Task 11 Step 3 ghi chú sang plan bản chính).
   `export function chotVangDinhKy(o?: { ngay?: string; chot?: (ngay: string) => number; daKhoiTao?: () => boolean }): KetQuaChotVang`.
   Hàm Netlify `chot-vang`: `export const handler = async () => ({ statusCode, body })`.
 
-- [ ] **Step 1: Phép kiểm (đỏ).**
+- [x] **Step 1: Phép kiểm (đỏ).**
 
 ```ts
   // ================================================================== 9. RB-1 — chốt "-" định kỳ
@@ -1261,8 +1261,8 @@ PR-Z2c (Task 11 Step 3 ghi chú sang plan bản chính).
   });
 ```
 
-- [ ] **Step 2: Chạy, đỏ.** Expected: 3 phép `RB-1 ·` ✗.
-- [ ] **Step 3: Tạo `server/src/ops/chotVangDinhKy.ts`.**
+- [x] **Step 2: Chạy, đỏ.** Expected: 3 phép `RB-1 ·` ✗.
+- [x] **Step 3: Tạo `server/src/ops/chotVangDinhKy.ts`.**
 
 ```ts
 import { isInitialised } from '../db.ts';
@@ -1294,7 +1294,7 @@ export function chotVangDinhKy(o: {
 }
 ```
 
-- [ ] **Step 4: Tạo `netlify/functions/chot-vang.ts`.**
+- [x] **Step 4: Tạo `netlify/functions/chot-vang.ts`.**
 
 ```ts
 /**
@@ -1318,7 +1318,7 @@ export const handler = async () => {
 };
 ```
 
-- [ ] **Step 5: `netlify.toml`** — thêm ngay sau khối `[functions]` (sau dòng `external_node_modules = …`):
+- [x] **Step 5: `netlify.toml`** — thêm ngay sau khối `[functions]` (sau dòng `external_node_modules = …`):
 
 ```toml
 # Chốt dấu "-" đầu thứ Hai kể cả khi không ai mở web (RB-1). Giờ UTC: 00:05 và 06:05 sáng thứ Hai giờ Việt Nam.
@@ -1327,8 +1327,8 @@ export const handler = async () => {
   schedule = "5 17,23 * * 0"
 ```
 
-- [ ] **Step 6: Chạy, xanh.** Expected `TẤT CẢ 699 …`.
-- [ ] **Step 7: Gói thử như Netlify.** Sửa `scripts/thu-goi-function.mjs`: sau khối kiểm ba đường của `api` (trước `process.chdir(repo)`),
+- [x] **Step 6: Chạy, xanh.** Expected `TẤT CẢ 699 …`.
+- [x] **Step 7: Gói thử như Netlify.** Sửa `scripts/thu-goi-function.mjs`: sau khối kiểm ba đường của `api` (trước `process.chdir(repo)`),
   thêm đoạn gói và gọi `chot-vang` trên **bản sao** database dev (không bao giờ chạm file gốc, không bao giờ chạm Turso — biến Turso đã bị
   xoá ở đầu script):
 
@@ -1361,7 +1361,7 @@ Chạy `npm run thu-goi` (cần `data/pisa-demo.sqlite` — chưa có thì `npm 
 `ĐẠT  chot-vang lần 1/2`, lần 2 có `"daChot":0`. Ghi số `daChot` lần 1 và `ms` vào Nhật ký. `data/pisa-demo.sqlite` gốc **không đổi**
 (`git status` sạch với thư mục `data/` — file này không nằm trong git; kiểm bằng thời điểm sửa file trước/sau).
 
-- [ ] **Step 8: Commit.**
+- [x] **Step 8: Commit.**
 
 ```bash
 git add server/src/ops/chotVangDinhKy.ts netlify/functions/chot-vang.ts netlify.toml scripts/thu-goi-function.mjs server/src/tests/anToan.tests.ts
@@ -1379,8 +1379,8 @@ git commit -m "PR-AN (9): RB-1 hàm định kỳ Netlify chốt dấu '-' 00:05 
 - Consumes: `GET /api/health` → `{ ok, seeded }` hoặc 503 (Task 6); `ApiError` (`web/src/lib/api.ts`).
 - Web không có bộ phép kiểm — nghiệm thu bằng `npm run typecheck` + KIỂM Task 12.
 
-- [ ] **Step 1: Import.** Dòng 4 `import { api } from '../../lib/api.ts';` → `import { ApiError, api } from '../../lib/api.ts';`
-- [ ] **Step 2: Hai hàm nhỏ** ngay trên `export default function WelcomePage()`:
+- [x] **Step 1: Import.** Dòng 4 `import { api } from '../../lib/api.ts';` → `import { ApiError, api } from '../../lib/api.ts';`
+- [x] **Step 2: Hai hàm nhỏ** ngay trên `export default function WelcomePage()`:
 
 ```tsx
 type SucKhoe = { ok: boolean; seeded: boolean };
@@ -1415,7 +1415,7 @@ function cauLoiDeDoc(x: unknown): string {
 }
 ```
 
-- [ ] **Step 3: `WelcomePage`.** Ngay dưới `const info = useApi<AuthInfo>('/auth/info');` thêm:
+- [x] **Step 3: `WelcomePage`.** Ngay dưới `const info = useApi<AuthInfo>('/auth/info');` thêm:
 
 ```tsx
   /* AN-7: bản chính hỏi /api/health (máy dev vẫn suy từ /demo/accounts như cũ). */
@@ -1433,11 +1433,11 @@ function cauLoiDeDoc(x: unknown): string {
 ```
 (phần còn lại giữ nguyên; nhớ không thừa/thiếu ngoặc — `typecheck` bắt.)
 
-- [ ] **Step 4: Hai chỗ `catch`.** `LoginForm` (dòng 154) và `RegisterForm` (dòng 214): `setErr(x.message)` → `setErr(cauLoiDeDoc(x))`;
+- [x] **Step 4: Hai chỗ `catch`.** `LoginForm` (dòng 154) và `RegisterForm` (dòng 214): `setErr(x.message)` → `setErr(cauLoiDeDoc(x))`;
   đổi `catch (x: any)` → `catch (x: unknown)`.
-- [ ] **Step 5:** `npm run typecheck` — Expected sạch. Soát chữ: `grep -n "Hãy\|npm run" web/src/modules/platform/WelcomePage.tsx` —
+- [x] **Step 5:** `npm run typecheck` — Expected sạch. Soát chữ: `grep -n "Hãy\|npm run" web/src/modules/platform/WelcomePage.tsx` —
   `npm run` chỉ còn trong `SetupHelp` (máy dev).
-- [ ] **Step 6: Commit.** `git commit -am "PR-AN (10): AN-7 màn đăng nhập bản chính hỏi /api/health, câu lỗi dễ đọc"`
+- [x] **Step 6: Commit.** `git commit -am "PR-AN (10): AN-7 màn đăng nhập bản chính hỏi /api/health, câu lỗi dễ đọc"`
 
 ---
 
@@ -1446,7 +1446,7 @@ function cauLoiDeDoc(x: unknown): string {
 **Files:** `TRIEN_KHAI.md` §11 (bảng ~dòng 452-461; mục mới sau 11.2) · `CODE_MAP.md` (khối bản chính ~dòng 283-292) ·
 `docs/superpowers/plans/2026-09-21-ban-chinh-netlify-turso.md` Task 10.
 
-- [ ] **Step 1: `TRIEN_KHAI.md` §11** — thêm ba dòng vào bảng "Triệu chứng | Làm gì" (tiếng Việt cơ bản, cho chủ sản phẩm):
+- [x] **Step 1: `TRIEN_KHAI.md` §11** — thêm ba dòng vào bảng "Triệu chứng | Làm gì" (tiếng Việt cơ bản, cho chủ sản phẩm):
 
 ```markdown
 | Web báo **"Có lỗi · mã …"** | Ghi lại mã (8 chữ/số) và việc đang làm → gửi session thiết kế. Mã giúp tìm đúng dòng trong nhật ký máy chủ |
@@ -1463,7 +1463,7 @@ Bạn **không cần làm gì**. Mỗi sáng thứ Hai lúc 00:05 và 06:05, má
 **chot-vang** — mỗi lần chạy có một dòng bắt đầu bằng `[chot-vang]`. Không thấy dòng nào sau một sáng thứ Hai → gửi session thiết kế.
 ```
 
-- [ ] **Step 2: `CODE_MAP.md`** — thêm vào bảng của khối bản chính (cạnh dòng `Phiên đăng nhập (cookie)…`), đúng định dạng hai cột:
+- [x] **Step 2: `CODE_MAP.md`** — thêm vào bảng của khối bản chính (cạnh dòng `Phiên đăng nhập (cookie)…`), đúng định dạng hai cột:
 
 ```markdown
 | Giới hạn số lần thử đăng nhập/đăng ký (AN-1), bảng `auth_attempts` | `server/src/platform/gioiHanThu.ts` · khối `/auth` trong `server/src/routes/index.ts` |
@@ -1474,7 +1474,7 @@ Bạn **không cần làm gì**. Mỗi sáng thứ Hai lúc 00:05 và 06:05, má
 ```
 Chạy lệnh kiểm đường chết ở đầu `CODE_MAP.md` — Expected: không có dòng `CHET:`.
 
-- [ ] **Step 3: Ghi chú cho PR-Z2c** — trong `docs/superpowers/plans/2026-09-21-ban-chinh-netlify-turso.md`, ngay dưới dòng Step 5 của
+- [x] **Step 3: Ghi chú cho PR-Z2c** — trong `docs/superpowers/plans/2026-09-21-ban-chinh-netlify-turso.md`, ngay dưới dòng Step 5 của
   Task 10 (`- [ ] **Step 5: Đo thời gian** …`), thêm một khối trích:
 
 ```markdown
@@ -1485,7 +1485,7 @@ Chạy lệnh kiểm đường chết ở đầu `CODE_MAP.md` — Expected: kh�
   > migrate. (4) Kiểm AN-1 trên địa chỉ chính thức: 6 lần đăng nhập sai một email thử → lần 6 báo "Đăng nhập sai quá nhiều lần".
 ```
 
-- [ ] **Step 4: Commit.** `git commit -am "PR-AN (11): TRIEN_KHAI §11 (mã lỗi, máy chủ bận, khoá đăng nhập, chốt '-' tự động), CODE_MAP, ghi chú Z2c"`
+- [x] **Step 4: Commit.** `git commit -am "PR-AN (11): TRIEN_KHAI §11 (mã lỗi, máy chủ bận, khoá đăng nhập, chốt '-' tự động), CODE_MAP, ghi chú Z2c"`
 
 ---
 
@@ -1493,25 +1493,25 @@ Chạy lệnh kiểm đường chết ở đầu `CODE_MAP.md` — Expected: kh�
 
 **Files:** không sửa mã. Ảnh (nếu chụp): `thiet-ke/anh/pr-an/`.
 
-- [ ] **Step 1: 🛑 Hỏi chủ sản phẩm trước khi bật máy.** Nhắn: "Cần dùng cổng 4000, 5173 và 5174 để bấm thử PR-AN. Anh/chị đang mở bản
+- [x] **Step 1: 🛑 Hỏi chủ sản phẩm trước khi bật máy.** Nhắn: "Cần dùng cổng 4000, 5173 và 5174 để bấm thử PR-AN. Anh/chị đang mở bản
   demo ở thư mục chính không? Nếu có, tắt giúp em." Chờ trả lời.
-- [ ] **Step 2:** Trong worktree: `npm run seed` rồi chạy nền `npm run dev` (**không** `preview_start`). Bấm bằng trình duyệt hoặc Playwright
+- [x] **Step 2:** Trong worktree: `npm run seed` rồi chạy nền `npm run dev` (**không** `preview_start`). Bấm bằng trình duyệt hoặc Playwright
   kênh Chrome (`npm i --no-save playwright`, `chromium.launch({ channel: 'chrome' })`; chạy script từ Git Bash với `MSYS_NO_PATHCONV=1`).
   Mở `http://localhost:5173` (chưa đăng nhập).
-- [ ] **Step 3: KIỂM — đăng nhập sai nhiều lần** (ghi ✓/✗ vào Nhật ký):
+- [x] **Step 3: KIỂM — đăng nhập sai nhiều lần** (ghi ✓/✗ vào Nhật ký):
   1. Tab **Đăng nhập**, email `dovutuanphong95.pisa@gmail.com`, mật khẩu sai → câu `Email hoặc mật khẩu không đúng.` Lặp tới lần 5.
   2. Lần 6 gõ **đúng** mật khẩu `pisa2026` → câu `Đăng nhập sai quá nhiều lần. Thử lại sau 15 phút.` (hoặc 14), **không** vào được.
   3. Email khác có thật (ví dụ một tài khoản giáo viên của bộ demo, mật khẩu `pisa2026`) → vào được (khoá theo email, IP chưa tới 30).
   4. Mở khoá để bấm tiếp: dừng dev, `npm run seed` (dựng lại database, bảng `auth_attempts` rỗng), bật lại `npm run dev`.
   5. Đăng nhập đúng một lần giữa chừng: 4 sai → 1 đúng → đăng xuất → 4 sai → đúng → vào được.
-- [ ] **Step 4: KIỂM — đăng ký:**
+- [x] **Step 4: KIỂM — đăng ký:**
   1. Tab **Giáo viên đăng ký**: điền đủ, email `thu.an.pisa@gmail.com`, chọn MB → màn **Đã gửi đăng ký**.
   2. Đăng nhập bằng email đó → câu có chữ **chờ Quản trị hệ thống duyệt**, không vào được.
   3. Đăng nhập Quản trị → màn Quản trị › tài khoản chờ duyệt thấy người này → Duyệt (vai Giáo viên, MB) → đăng xuất → đăng nhập bằng
      email đó → vào được.
   4. Gửi đăng ký hỏng (bỏ trống mật khẩu) liên tiếp 10 lần → lần 11 (điền đủ) báo `Đã gửi quá nhiều đăng ký trong một giờ…`.
      Dọn: dừng dev, `npm run seed`, bật lại.
-- [ ] **Step 5: KIỂM — lỗi hệ thống (AN-3):**
+- [x] **Step 5: KIỂM — lỗi hệ thống (AN-3):**
   1. Bash: `curl -s -X POST http://localhost:4000/api/auth/login -H 'content-type: application/json' -d '{hong'` → `400` và câu
      `Dữ liệu gửi lên không đọc được…`, không có chữ `Unexpected`/`JSON`.
   2. Tạo lỗi 500 thật trên **bản sao**: dừng dev; tạo bản sao `data/pisa-demo.sqlite` bằng `VACUUM INTO` ra thư mục tạm (như Task 13 Step 2),
@@ -1519,7 +1519,7 @@ Chạy lệnh kiểm đường chết ở đầu `CODE_MAP.md` — Expected: kh�
      **`Có lỗi · mã xxxxxxxx. Thử lại sau ít phút; nếu vẫn lỗi, báo Quản trị hệ thống kèm mã này.`** — **không** có chữ `no such table`,
      `SELECT`, `auth_attempts`. Cửa sổ lệnh có dòng `[api] mã xxxxxxxx … no such table: auth_attempts` **cùng mã**. Dừng, xoá bản sao,
      bật lại `npm run dev` thường.
-- [ ] **Step 6: KIỂM — màn đăng nhập bản chính (AN-7), cổng 5174:**
+- [x] **Step 6: KIỂM — màn đăng nhập bản chính (AN-7), cổng 5174:**
   1. Để API dev chạy. Cửa sổ khác trong worktree: `VITE_BAN_CHINH=1 npx vite --port 5174` → mở `http://localhost:5174` → form đăng nhập
      bình thường, **không** có tab "Vào nhanh", **không** có dòng mật khẩu mặc định.
   2. Dừng API (giữ vite 5174), tải lại trang → thẻ **"Chưa kết nối được hệ thống dữ liệu"** + nút **Thử lại**; **không** có hướng dẫn
@@ -1528,16 +1528,16 @@ Chạy lệnh kiểm đường chết ở đầu `CODE_MAP.md` — Expected: kh�
      (không in HTML, không in `Failed to fetch`).
   4. Database rỗng: dừng API; `PISA_DB="<thư mục tạm>/rong.sqlite" npm run dev:api` (file chưa có) → tải lại 5174 → thẻ
      **"Hệ thống chưa được khởi tạo"**. Dừng, xoá file tạm, bật lại `npm run dev`.
-- [ ] **Step 7: KIỂM — máy dev không đổi:** `http://localhost:5173` khi API tắt vẫn hiện hướng dẫn cũ (`Chưa kết nối được máy chủ dữ liệu`
+- [x] **Step 7: KIỂM — máy dev không đổi:** `http://localhost:5173` khi API tắt vẫn hiện hướng dẫn cũ (`Chưa kết nối được máy chủ dữ liệu`
   + các bước `npm run seed`) — đúng, chữ màn dev để PR-S3.
-- [ ] **Step 8: KIỂM — gói Netlify:** `npm run thu-goi` → 5 dòng `ĐẠT` (Task 9 Step 7).
-- [ ] **Step 9:** Tắt mọi máy chủ đã bật. `npm run check` xanh; ghi số (≥ 699) vào Nhật ký.
+- [x] **Step 8: KIỂM — gói Netlify:** `npm run thu-goi` → 5 dòng `ĐẠT` (Task 9 Step 7).
+- [x] **Step 9:** Tắt mọi máy chủ đã bật. `npm run check` xanh; ghi số (≥ 699) vào Nhật ký.
 
 ---
 
 ### Task 13: Rebase sau PR-O và PR-S1, migrate lặp trên bản sao, rà soát, mở PR
 
-- [ ] **Step 1: Chờ và rebase.** PR-O **và** PR-S1 phải đã merge vào `main` (kiểm `git log --oneline origin/main`). Chưa merge → 🛑 báo
+- [x] **Step 1: Chờ và rebase.** PR-O **và** PR-S1 phải đã merge vào `main` (kiểm `git log --oneline origin/main`). Chưa merge → 🛑 báo
   chủ sản phẩm "PR-AN xong, chờ O và S1", dừng. Đã merge: `git fetch && git rebase origin/main`. Gỡ xung đột:
   - `server/src/tests/run.ts` → **giữ cả hai/ba khối** (S1 `runLuatMayChuTests` trước PR-Z2; O `runKhungTests` và AN `runAnToanTests`
     sau PR-Z2, thứ tự giữa O và AN không quan trọng).
@@ -1549,7 +1549,7 @@ Chạy lệnh kiểm đường chết ở đầu `CODE_MAP.md` — Expected: kh�
   - `server/src/cases/cases.ts` → dòng `canClose:` theo S1 (có `topic: c.topic`) **và** dòng `...caseCardOf(c.id, c, soBangChung),` theo AN.
   - `CODE_MAP.md` → giữ mọi dòng mới của cả ba PR.
   Sau rebase: `npm run check` xanh. Số phép kiểm = (số của `origin/main` mới) + 27. Ghi cả hai số vào Nhật ký.
-- [ ] **Step 2: Migrate lặp trên BẢN SAO database dev** (không bao giờ file gốc, không bao giờ Turso). Bash:
+- [x] **Step 2: Migrate lặp trên BẢN SAO database dev** (không bao giờ file gốc, không bao giờ Turso). Bash:
 
 ```bash
 SCR="$(node -e "console.log(require('os').tmpdir())")/pr-an-migrate"
@@ -1561,7 +1561,7 @@ PISA_DB="$SCR/ban-sao.sqlite" npm run migrate
 ```
 Expected: lần một có dòng `✓ PR-AN: thêm bảng auth_attempts …` (dòng PR-S1 có hoặc không tuỳ bản sao); lần hai **không** có dòng PR-AN
 lẫn PR-S1. (`VACUUM INTO` vì libsql trên Windows giữ khoá file — bài học PR-Z2b. Bước `DROP` để chắc chắn bản sao giống database cũ.)
-- [ ] **Step 3: Rà soát code.** REQUIRED SUB-SKILL: `superpowers:requesting-code-review`. Người rà: **Fable 5.1** (khác model người code;
+- [x] **Step 3: Rà soát code.** REQUIRED SUB-SKILL: `superpowers:requesting-code-review`. Người rà: **Fable 5.1** (khác model người code;
   người code là Fable → người rà Opus 5 hoặc Sonnet 5). Đưa cho người rà: plan này, đặc tả §5 (4.6, 4.11) + §7 dòng AN, kiểm kê §1.9 +
   RB-1, bảng Q1–Q22, `git diff origin/main...HEAD`. Yêu cầu soi riêng:
   (a) có đường nào đăng nhập/đăng ký **không** qua `gioiHanThu` (grep `accountSvc.login(`, `accountSvc.register(`);
@@ -1571,13 +1571,13 @@ lẫn PR-S1. (`VACUUM INTO` vì libsql trên Windows giữ khoá file — bài h
   (e) `chot-vang` có thể chạy vào database **thử** không (bản nháp Netlify không chạy hàm định kỳ — xác nhận theo tài liệu Netlify);
   (f) `resolveSession` đổi có làm ai đang đăng nhập hợp lệ bị đẩy ra không.
   Xử lý phản hồi theo `superpowers:receiving-code-review`. Sửa xong: `npm run check` xanh.
-- [ ] **Step 4: PR.** `superpowers:finishing-a-development-branch` — `git push -u origin pr-an-an-toan` (sau rebase: `--force-with-lease`);
+- [x] **Step 4: PR.** `superpowers:finishing-a-development-branch` — `git push -u origin pr-an-an-toan` (sau rebase: `--force-with-lease`);
   `gh pr create` **không draft**, tiêu đề `PR-AN · An toàn trước người dùng thật (AN-1, 3, 4, 5, 6, 7, 8, RB-1)`. Thân PR: tóm tắt theo
   Task; bảng "Kiểm với mã thật" (AN-6 đã có, chỉ thêm phép kiểm); bảng Q1–Q22; **có migrate** (bảng `auth_attempts`, idempotent, đã chạy
   lặp trên bản sao); số phép kiểm trước → sau; kết quả KIỂM Task 12; "việc chuyển cho PR khác": đo `[cham]` và kiểm `chot-vang` thật →
   Z2c; các câu hỏi DB khác mỗi thẻ Case → Z2c Step 6; màn dev `SetupHelp` chữ cũ → S3. Dòng cuối:
   `🤖 Generated with [Claude Code](https://claude.com/claude-code)`. **Không tự merge.**
-- [ ] **Step 5: Báo chủ sản phẩm** (tiếng Việt cơ bản, không thuật ngữ): link PR; từ nay đăng nhập sai 5 lần phải chờ 15 phút; lỗi hệ thống
+- [x] **Step 5: Báo chủ sản phẩm** (tiếng Việt cơ bản, không thuật ngữ): link PR; từ nay đăng nhập sai 5 lần phải chờ 15 phút; lỗi hệ thống
   hiện một mã ngắn để báo lại; mỗi sáng thứ Hai máy tự chốt "-" dù không ai mở web; PR này cần merge **sau** PR-O và PR-S1.
 
 ---
@@ -1609,4 +1609,21 @@ song song trong cùng tiến trình sẽ thấy cờ; harness chạy tuần tự
 
 | Ngày | Task | Ghi chú (model người code · số phép kiểm · lệch plan · quyết định tại chỗ) |
 |---|---|---|
-| | | |
+| 22/09 | Task 0 | Opus 5 · worktree .claude/worktrees/pr-an-an-toan (nhánh pr-an-an-toan từ origin/main 79fd4e7) · sạch biến Turso · mốc **672** ✓ · Task 12 dùng cổng khác 4000/5173 theo lệnh người giao việc |
+| 22/09 | Task 1 | Opus 5 · 672 → 674 (2 phép `AN-1 ·` mới, đỏ rồi xanh) · lệch nhỏ: ở bước đỏ, phép đầu báo `Cột: ""` chứ không phải `no such table` (PRAGMA trên bảng chưa có trả rỗng, không ném) — không đổi gì · code chép nguyên văn từ plan |
+| 22/09 | Task 2 | Opus 5 · 674 → 677 (3 phép `AN-1 ·` mới, đỏ rồi xanh) · lệch nhỏ: ở bước đỏ cả bộ SẬP thay vì 3 ✗ — Proxy của `load` (Task 1) ném cả khi `await` hỏi `.then`; sửa `load` trả `undefined` cho `then` rồi mới đỏ đúng 3 ✗ · `gioiHanThu.ts` chép nguyên văn từ plan |
+| 22/09 | Task 3 | Opus 5 · 677 → 682 (5 phép `AN-1 ·` HTTP mới) · lệch nhỏ: ở bước đỏ chỉ 4 ✗ chứ không phải 5 — phép "đăng nhập đúng xoá đếm" tự đạt khi chưa có giới hạn (không có khoá thì lần đúng nào cũng vào); sau khi sửa route cả 5 ✓ · phép cũ cookie Secure (banChinh.tests) và "CÙNG một câu" (run.ts) vẫn ✓ · route chép nguyên văn từ plan |
+| 22/09 | Task 4 | Opus 5 · 682 → 685 (3 phép `AN-6 ·` mới) · đúng plan: hai phép HTTP ✓ ngay (luồng duyệt đã có), phép phiên ✗ "Phiên của tài khoản chờ duyệt vẫn dùng được" rồi ✓ sau khi sửa `resolveSession` (một câu JOIN users) · phép cũ phiên hết hạn / khôi phục (banChinh.tests) vẫn ✓ · ghi chú: ở máy dev, "Vào nhanh" vào một tài khoản **chờ duyệt** nay bị đẩy ra ngay — đúng ý (bộ demo không có tài khoản chờ duyệt) · code chép nguyên văn từ plan |
+| 22/09 | Task 5 | Opus 5 · 685 → 689 (4 phép `AN-3 ·` mới, cả 4 ✗ rồi ✓: 3 phép `traLoiLoi is not a function`, JSON hỏng nhận 500 kèm câu tiếng Anh) · `traLoiLoi` chép nguyên văn từ plan; import `Request/Response/NextFunction`, `HttpError` đã có sẵn · lệch nhỏ: grep soát không rỗng hẳn — còn 1 dòng là chính tên phép kiểm mới ("KHÔNG có details.raw"), không phải code; `web/src` không dùng `details.raw` · typecheck ✓ |
+| 22/09 | Task 6 | Opus 5 · 689 → 691 (2 phép `AN-4 ·` mới, cả 2 ✗ rồi ✓: phép HTTP `Cache-Control: null`, phép hàm "Chưa có mô-đun suKhoe.ts") · `suKhoe.ts` chép nguyên văn từ plan; health dời lên trước `attachPrincipal`, bỏ import `isInitialised` khỏi `app.ts` · `npm run thu-goi` ba dòng ĐẠT (worktree chưa có data/ nên chạy `npm run seed` trước — chỉ ghi data/pisa-demo.sqlite, không có biến Turso) |
+| 22/09 | Task 7 | Opus 5 · 691 → 695 (4 phép `AN-5 ·` mới, cả 4 ✗ rồi ✓: 2 phép "Chưa có mô-đun hanGio.ts", `donGiaoDichTreo is not a function`, `demGio is not a function`) · `hanGio.ts`, `tx()`/`donGiaoDichTreo` và `demGio` chép nguyên văn từ plan; `app.use(demGio)` ngay sau `cookieParser`, trước health · typecheck ✓ · `npm run thu-goi` ba dòng ĐẠT |
+| 22/09 | Task 8 | Opus 5 · 695 → 696 (1 phép `AN-8 ·` mới, ✗ "Đếm bằng chứng 18 câu cho 18 thẻ" rồi ✓) · `demBangChungCase` chép nguyên văn từ plan; `caseCardOf(` đúng 2 dòng (định nghĩa + một lời gọi); không chạm `canClose:` · phép cũ `PR-HV · Q8 Thẻ case có số bằng chứng` vẫn ✓ · typecheck ✓ |
+| 22/09 | Task 9 | Opus 5 · 696 → 699 (3 phép `RB-1 ·` mới, cả 3 ✗ rồi ✓: 2 phép "Chưa có mô-đun chotVangDinhKy.ts", phép toml "Lịch trong toml: undefined") · `chotVangDinhKy.ts`, `chot-vang.ts`, khối toml chép nguyên văn từ plan; không chạm `absence.ts` · typecheck ✓ · `npm run thu-goi` 3 dòng ĐẠT cũ + `chot-vang lần 1` **daChot 0, ms 23** (database dev đã chốt sẵn tới hôm nay), lần 2 daChot 0, ms 1 · chạy trên bản sao VACUUM INTO trong thư mục tạm; `data/pisa-demo.sqlite` giữ nguyên thời điểm sửa (20:53:46.399 trước và sau) · lệch nhỏ: sửa lỗi gõ `/\/g` bị mất một dấu gạch khi chép vào script (SyntaxError lần chạy đầu) |
+| 22/09 | Task 10 | Opus 5 · 699 → 699 (web không có bộ phép kiểm; `npm test` vẫn 699 ĐẠT) · `BanChinhChuaVaoDuoc`, `cauLoiDeDoc`, nhánh `banChinhHong` và hai `catch (x: unknown)` chép nguyên văn từ plan; `ApiError.details` kiểu `any` nên `x.details?.ma` typecheck được không cần ép kiểu · typecheck ✓ · grep: không còn "Hãy"; `npm run` chỉ còn 2 dòng trong `SetupHelp` (dòng 52, 60) · giữ CRLF của WelcomePage.tsx |
+| 22/09 | Task 11 | Opus 5 · 699 → 699 (chỉ tài liệu; `npm test` 699 ĐẠT, phép quét từ cấm không báo gì) · 3 dòng bảng §11, mục 11.3, 5 dòng CODE_MAP, khối 🆕 PR-AN dưới Task 10 Step 5 plan bản chính — chép nguyên văn từ plan · **thêm theo phán quyết người điều phối (rà soát Task 9):** mục (5) trong khối ghi chú Z2c — kiểm `chot-vang` nạp được libsql (khối `[functions]` chung + `[functions."chot-vang"]` chỉ thêm lịch) và chạy dưới 30 giây qua `ms` · lệnh kiểm đường chết CODE_MAP: không dòng `CHET:` mới do task này (7 dòng có sẵn từ HEAD 31c23aa — tên `.tsx` trần không kèm thư mục như `OSoNho.tsx`, dương tính giả của lệnh; để nguyên) · giữ nguyên kiểu xuống dòng (CRLF: TRIEN_KHAI, CODE_MAP, plan bản chính; LF: plan này) |
+| 22/09 | Sửa sau rà từng task | Opus 5 · 699 · (1) phép AN-5 lồng: hạn +3 000 ms, chờ bận 600 ms (dư 500 ms trước khi giao dịch ngoài kiểm) · (2) phép `donGiaoDichTreo` bọc try/finally ROLLBACK · (3) `cauLoiDeDoc` không in câu lỗi dạng HTML (404 Netlify) · (4) `banChinhHong` coi trả lời thiếu `ok === true` là chưa kết nối; `chuaKhoiTao` đòi `ok === true` |
+| 22/09 | Task 12 | Opus 5 · KIỂM: S1 bỏ qua theo lệnh người giao việc (không hỏi cổng) · S2 ✓ seed + API 4100 + web 5180, Playwright kênh Chrome · S3 ✓ 5 lần sai "Email hoặc mật khẩu không đúng." → lần 6 đúng mật khẩu "Đăng nhập sai quá nhiều lần. Thử lại sau 15 phút." không vào; GV ha.tran vào được; seed lại; 4 sai → đúng → thoát → 4 sai → đúng vào được · S4 ✓ đăng ký thu.an → "Đã gửi đăng ký"; đăng nhập "Tài khoản đang chờ Quản trị hệ thống duyệt…"; Quản trị › Duyệt (Giáo viên, MB) → vào được; 10 lần hỏng → lần 11 "Đã gửi quá nhiều đăng ký trong một giờ. Thử lại sau 60 phút." (lệch: nút Gửi khoá khi trống mật khẩu nên lần hỏng dùng mật khẩu 2 ký tự, máy chủ báo "Mật khẩu cần ít nhất 6 ký tự.") · S5 ✓ JSON hỏng 400 "Dữ liệu gửi lên không đọc được…"; bản sao DROP auth_attempts → "Có lỗi · mã a345ddca…", log `[api] mã a345ddca POST /api/auth/login SqliteError: no such table: auth_attempts` · S6 ✗ 6.1: 5181 không có "Vào nhanh" nhưng VẪN hiện dòng "Tài khoản Quản trị hệ thống mặc định … mật khẩu pisa2026" (API dev gửi `demoAdmin`, web chỉ ẩn khi máy chủ không gửi; gói Netlify `thu-goi` không gửi) · 6.2 ✓ 6.3 ✓ 6.4 ✓ · S7 ✓ · S8 ✓ 5 dòng ĐẠT · S9 ✓ tắt 4100/5180/5181 · cổng 4100/5180/5181 thay 4000/5173/5174 (lệnh người giao việc) · npm run check 699 |
+| 22/09 | Task 12 · phán quyết 6.1 | Session điều phối · 6.1 ✗ chỉ do cách dựng thử: web bản chính (5181) nối API **máy dev**, mà API dev luôn gửi `demoAdmin` → hiện dòng mật khẩu mặc định. Bản chính thật: API chạy BAN_CHINH nên `/auth/info` không có `demoAdmin` (`routes/index.ts:1621`, phép kiểm cũ `PR-Z2 · Bản chính: GET /auth/info không có khoá demoAdmin` ✓). Không sửa mã; tick Step 6 |
+| 22/09 | Task 13 · rebase | Opus 5 · main 730 (origin/main 526ffec) → nhánh 757 (+27 ✓) · rebase 17 commit lên 526ffec · xung đột chỉ ở commit (1): `run.ts` giữ cả khối PR-O `runKhungTests` rồi khối AN `runAnToanTests` (sau PR-Z2; S1 đã ở trước PR-Z2, không xung đột); `migrate.ts` giữ `migrateLuatMayChu` rồi `migrateAuthAttempts`, cả hai hàm ở cuối file (thêm tay `}` đóng hàm S1 và `/**` mở chú thích AN do hai bên chung dòng) · `schema.sql`, `routes/index.ts`, `cases.ts` (`canClose:` theo S1 có `topic: c.topic` + `...caseCardOf(c.id, c, soBangChung),`), `CODE_MAP.md`, plan tự gộp không xung đột · `npm run check` ✓ (757, typecheck ✓) · `npm run thu-goi` 5 dòng ĐẠT · migrate lặp trên bản sao VACUUM INTO (thư mục tạm, DROP auth_attempts): lần 1 có dòng PR-S1 (2 cột, đánh cờ 0) và PR-AN (thêm bảng auth_attempts); lần 2 không có dòng PR-AN lẫn PR-S1 (chỉ còn dòng cũ "3 case giữ khoá cũ…" lặp mỗi lần — có từ 58adcd7, không thuộc PR này) · `data/pisa-demo.sqlite` giữ nguyên thời điểm sửa · lệch nhỏ: lệnh `node -e` của plan mất dấu `\` khi chạy qua Bash → dùng script với `String.fromCharCode(92)` |
+| 22/09 | Task 13 · rà soát cuối | Fable 5.1 rà: sẵn sàng merge; 0 Critical · 1 Important (tài liệu: database THỬ và bản khôi phục cũ thiếu bảng auth_attempts → thêm bước chạy migrate) · 8 Minor không chặn · Opus 5 sửa tài liệu |
+| 22/09 | Task 13 · PR | Session điều phối (Opus 5) · rebase lần 2 lên main 7843875 (main chỉ thêm tài liệu) · npm run check **757** ✓ (main 730 + 27) · mở PR không draft, không tự merge |

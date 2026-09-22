@@ -459,6 +459,9 @@ $env:NETLIFY_AUTH_TOKEN='<Personal access token>'
 | Tải tệp báo lỗi | Tệp tối đa **4 MB** — nén ảnh, hoặc dán link Google Drive thay cho tệp |
 | Lỡ tay làm hỏng dữ liệu | **Đừng làm gì thêm.** Gửi session thiết kế tên file sao lưu gần nhất ở Drive. Lấy lại dữ liệu theo mục 11.2 **khi session hướng dẫn** |
 | Netlify / Turso gửi email "sắp hết hạn mức miễn phí" | Gửi session thiết kế. Nâng gói là đổi gói, **không** phải chuyển dữ liệu |
+| Web báo **"Có lỗi · mã …"** | Ghi lại mã (8 chữ/số) và việc đang làm → gửi session thiết kế. Mã giúp tìm đúng dòng trong nhật ký máy chủ |
+| Web báo **"Máy chủ đang bận, chưa lưu gì"** | Bấm lại sau ít phút — dữ liệu chưa bị đổi. Lặp lại nhiều lần ở cùng một trang → gửi session thiết kế tên trang |
+| Giáo viên báo **"Đăng nhập sai quá nhiều lần"** | Chờ tối đa 15 phút rồi thử lại (hệ thống tự mở). Quên mật khẩu thì Quản trị hệ thống đặt lại, nhưng vẫn phải chờ hết 15 phút |
 
 ### 11.1. Nâng cấp database bản chính khi có bản mới cần
 
@@ -525,7 +528,9 @@ npm run khoi-phuc
 `chưa xác nhận` = dòng `PISA_CHO_PHEP_KHOI_PHUC` gõ chưa đúng; `đã có dữ liệu`/`đã có bảng` = database đích không phải
 database mới. **Làm xong thì ĐÓNG cửa sổ PowerShell này.**
 
-**Bước 4 — cho bản chính thức dùng database mới:** làm lại mục 6 với URL và token của database **MỚI** (hai lệnh
+**Bước 4 — cho bản chính thức dùng database mới:** trước tiên làm mục 11.1 **một lần** trên database **MỚI** (URL, token,
+tên máy chủ của database MỚI): bản sao lưu cũ giữ cấu trúc cũ, có thể thiếu bảng mà bản mới cần; lệnh chỉ thêm phần còn
+thiếu, không thiếu gì thì báo `Không có gì để nâng cấp`. Sau đó làm lại mục 6 với URL và token của database **MỚI** (hai lệnh
 `--context production` và hai lệnh kiểm `env:get`), rồi `netlify deploy --build --prod` (mục 8.2) — biến mới chỉ có tác
 dụng sau lần deploy này. Mở web, đăng nhập quản trị, xem dữ liệu đúng như lúc sao lưu. **Sau khi khôi phục, mọi người
 đăng nhập lại** (bản sao lưu không mang theo mã đăng nhập) — báo trước cho giáo viên.
@@ -544,6 +549,12 @@ tệp"*.
 > 4. Đóng cửa sổ PowerShell, xoá database tạm như mục 7a bước 5. Bỏ qua bước 4–5 ở trên khi tập dượt.
 >
 > Báo lỗi ở bước nào → dừng, chụp màn hình gửi session Z2c, **chưa** làm mục 7.
+
+### 11.3. Chốt dấu "-" tự động mỗi sáng thứ Hai
+
+Bạn **không cần làm gì**. Mỗi sáng thứ Hai lúc 00:05 và 06:05, máy chủ tự chốt các bài còn dấu "-" của tuần trước thành
+"Không dự thi" — kể cả khi không ai mở web. Muốn xem nó có chạy không: trang Netlify của site › **Logs** › **Functions** ›
+**chot-vang** — mỗi lần chạy có một dòng bắt đầu bằng `[chot-vang]`. Không thấy dòng nào sau một sáng thứ Hai → gửi session thiết kế.
 
 ---
 

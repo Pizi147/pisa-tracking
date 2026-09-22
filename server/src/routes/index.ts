@@ -54,6 +54,7 @@ import {
 import * as planningSvc from '../fasttrack/planning.ts';
 import { signalsFor } from '../worklist/signals.ts';
 import * as accountSvc from '../platform/accounts.ts';
+import * as gioiHan from '../platform/gioiHanThu.ts';
 import * as sysconfigSvc from '../platform/sysconfig.ts';
 import * as mgmtSvc from '../worklist/mgmttasks.ts';
 import * as highlightSvc from '../worklist/highlights.ts';
@@ -1574,7 +1575,25 @@ api.get('/admin/overview', requireAuth, wrap((req) => {
  * mật khẩu. Hai đường cùng dẫn tới một `demo_sessions`, nên không có hai cơ chế phiên.
  */
 api.post('/auth/login', wrap((req, res) => {
-  const r = accountSvc.login(String(req.body?.email ?? ''), String(req.body?.password ?? ''));
+  /*
+   * AN-1 (PR-AN): khoá theo email VÀ theo IP, kiểm TRƯỚC khi so mật khẩu — đang khoá thì mật khẩu đúng cũng không vào.
+   * Chỉ lần sai mật khẩu/email (400) mới được đếm; tài khoản chờ duyệt/bị từ chối (403) là đúng mật khẩu, không đếm.
+   */
+  const email = accountSvc.normalizeEmail(String(req.body?.email ?? ''));
+  const ip = gioiHan.ipCua(req);
+  gioiHan.chanNeuBiKhoa('dang_nhap_email', email, gioiHan.cauKhoaDangNhap);
+  gioiHan.chanNeuBiKhoa('dang_nhap_ip', ip, gioiHan.cauKhoaDangNhap);
+  let r: accountSvc.LoginResult;
+  try {
+    r = accountSvc.login(email, String(req.body?.password ?? ''));
+  } catch (e) {
+    if (e instanceof HttpError && e.status === 400) {
+      gioiHan.ghiLanThu('dang_nhap_email', email);
+      gioiHan.ghiLanThu('dang_nhap_ip', ip);
+    }
+    throw e;
+  }
+  gioiHan.xoaLanThu('dang_nhap_email', email);
   if (req.sessionToken) destroySession(req.sessionToken);
   const token = createSession(r.userId);
   res.cookie(SESSION_COOKIE, token, { httpOnly: true, sameSite: 'lax', path: '/', secure: laBanChinh() });
@@ -1582,6 +1601,10 @@ api.post('/auth/login', wrap((req, res) => {
 }));
 
 api.post('/auth/register', wrap((req) => {
+  /* AN-1: mọi lần gửi đăng ký đều đếm theo IP (kể cả lần hỏng) — chặn tạo hàng loạt tài khoản chờ duyệt. */
+  const ip = gioiHan.ipCua(req);
+  gioiHan.chanNeuBiKhoa('dang_ky_ip', ip, gioiHan.cauKhoaDangKy);
+  gioiHan.ghiLanThu('dang_ky_ip', ip);
   const b = req.body ?? {};
   const r = accountSvc.register({
     email: String(b.email ?? ''), password: String(b.password ?? ''), fullName: String(b.fullName ?? ''),

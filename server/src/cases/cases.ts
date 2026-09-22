@@ -2058,6 +2058,8 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
         ORDER BY carried_over, (status = 'done'), parallel, id DESC`,
     )
     .all(cycle?.id ?? 0, studentId, cycle?.id ?? 0) as any[];
+  /* AN-8: số bằng chứng của MỌI Case trên bảng — một câu hỏi, không phải một câu cho mỗi thẻ. */
+  const soBangChung = demBangChungCase(caseRows.map((c) => c.id as number));
 
   /*
    * BỘ HẠNG MỤC THEO ĐÚNG CHƯƠNG TRÌNH EM ĐANG HỌC.
@@ -2270,7 +2272,7 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
           canClose: canCloseCase(p, { class_id: enr?.class_id ?? null, student_id: studentId, topic: c.topic }),
           closeBlockers: c.status === 'done' ? [] : closeBlockers(c.id),
           /* Đủ thứ để vẽ MỘT THẺ CASE mà không phải gọi thêm một đường nữa (mục 1 · 2). */
-          ...caseCardOf(c.id, c),
+          ...caseCardOf(c.id, c, soBangChung),
         }))
         .sort((a, b) => {
           const open = (x: typeof a) => (x.status === 'done' ? 1 : 0);
@@ -2286,6 +2288,24 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
 }
 
 /**
+ * SỐ BẰNG CHỨNG CỦA NHIỀU CASE MỘT LƯỢT (AN-8, PR-AN). Trước đây mỗi thẻ Case một câu `COUNT(*)` — một em năm Case là năm lượt
+ * mạng Turso chỉ để in "Bằng chứng (n)". Case không có dòng nào → không có trong bản đếm (đọc bằng `?? 0`).
+ */
+export function demBangChungCase(caseIds: number[]): Map<number, number> {
+  const ra = new Map<number, number>();
+  if (!caseIds.length) return ra;
+  const rows = db()
+    .prepare(
+      `SELECT owner_id AS id, COUNT(*) AS n FROM attachments
+        WHERE owner_type = 'sos_case' AND owner_id IN (SELECT value FROM json_each(?))
+        GROUP BY owner_id`,
+    )
+    .all(JSON.stringify(caseIds)) as any[];
+  for (const r of rows) ra.set(Number(r.id), Number(r.n));
+  return ra;
+}
+
+/**
  * MỘT THẺ CASE, ĐỦ ĐỂ ĐỌC MÀ KHÔNG PHẢI MỞ THÊM GÌ.
  *
  * Hồ sơ học viên bày case thành các khối gọn: phân loại, câu mô tả, rồi MỖI PHƯƠNG ÁN MỘT
@@ -2296,7 +2316,7 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
  *
  * (Trước 21/09/2026 thẻ này còn trả "báo cáo nguồn" của case Ý thức; Ý thức nay là vi phạm và biện pháp xử lý ở một bảng riêng.)
  */
-function caseCardOf(caseId: number, c: any) {
+function caseCardOf(caseId: number, c: any, soBangChung: Map<number, number>) {
   const conn = db();
   const today = demoToday();
 
@@ -2410,9 +2430,8 @@ function caseCardOf(caseId: number, c: any) {
       ? ((conn.prepare('SELECT full_name FROM users WHERE id = ?').get(c.reported_by) as any)?.full_name ?? null)
       : null,
     backfilledOn: c.origin_kind === 'backfill' && c.created_at ? String(c.created_at).slice(0, 10) : null,
-    /* Số bằng chứng của case (PR-HV) — để nhãn "Bằng chứng (n)" thu gọn mà không phải tải danh sách tệp. */
-    attachmentCount: (conn.prepare("SELECT COUNT(*) n FROM attachments WHERE owner_type = 'sos_case' AND owner_id = ?")
-      .get(caseId) as any).n as number,
+    /* Số bằng chứng của Case (PR-HV) — để nhãn "Bằng chứng (n)" thu gọn mà không phải tải danh sách tệp. Đếm sẵn cả bảng (AN-8). */
+    attachmentCount: soBangChung.get(caseId) ?? 0,
   };
 }
 

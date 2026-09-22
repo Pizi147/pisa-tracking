@@ -48,6 +48,29 @@ for (const p of ['/api/health', '/.netlify/functions/api/health', '/api/auth/inf
   if (!ok) hong++;
   console.log(`${ok ? 'ĐẠT' : 'HỎNG'}  ${p}  → ${r.statusCode}  ${String(r.body).slice(0, 120)}`);
 }
+/* RB-1 (PR-AN): hàm định kỳ chot-vang — gói y như Netlify rồi gọi trên BẢN SAO database dev (hàm này GHI: chốt dấu "-"). */
+const outCv = path.join(tam, 'chot-vang.cjs');
+await build({
+  entryPoints: [path.join(repo, 'netlify/functions/chot-vang.ts')],
+  bundle: true, platform: 'node', target: 'node22', format: 'cjs', outfile: outCv,
+  external: ['libsql', '@libsql/*'], logLevel: 'warning',
+});
+const banSao = path.join(tam, 'ban-sao-chot-vang.sqlite');
+{
+  const Db = require('libsql');
+  const goc = new Db(path.join(repo, 'data', 'pisa-demo.sqlite'));
+  goc.exec(`VACUUM INTO '${banSao.replace(/\\/g, '/').replace(/'/g, "''")}'`);
+  goc.close();
+}
+process.env.PISA_DB = banSao;              // bản gói chot-vang đọc biến này lúc nạp — đặt TRƯỚC require
+const { handler: chotVang } = require(outCv);
+for (const lan of [1, 2]) {
+  const r = await chotVang({}, {});
+  const kq = JSON.parse(r.body ?? '{}');
+  const ok = r.statusCode === 200 && typeof kq.daChot === 'number' && kq.boQua === null && (lan === 1 || kq.daChot === 0);
+  if (!ok) hong++;
+  console.log(`${ok ? 'ĐẠT' : 'HỎNG'}  chot-vang lần ${lan}  → ${r.statusCode}  ${String(r.body).slice(0, 120)}`);
+}
 process.chdir(repo);                                 // Windows không cho xoá thư mục đang đứng
 try { fs.rmSync(tam, { recursive: true, force: true }); } catch { /* Windows còn giữ file — bỏ qua dọn dẹp */ }
 if (hong) { console.error(`\n${hong} đường HỎNG — máy chủ gói xong không chạy được. Xem Task 5 Step 1b.`); process.exit(1); }

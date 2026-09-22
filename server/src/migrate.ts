@@ -440,6 +440,8 @@ function migrateCaseEngine(applied: string[], skipped: string[]) {
     migrateDeleteInvalidViolations(conn, applied);
     /* PR-S1: hai cột của luật máy chủ (S16/S17, S11). */
     migrateLuatMayChu(conn, applied);
+    /* PR-AN: bảng giới hạn số lần thử (AN-1). */
+    migrateAuthAttempts(conn, applied);
 
     /*
      * Case đã đóng theo hệ thống cũ mà không có hướng xử lý: ghi rõ là "đóng theo hệ thống
@@ -3087,4 +3089,20 @@ export function migrateLuatMayChu(conn: any, applied: string[]) {
   applied.push(
     `PR-S1: thêm ${added.length} cột (${added.join(', ') || 'không'}); đánh cờ ${flagged} buổi vắng do chốt dấu "-". Dữ liệu cũ giữ nguyên.`,
   );
+}
+
+/**
+ * PR-AN (AN-1, 22/09/2026): bảng đếm lần thử đăng nhập/đăng ký. Chỉ tạo khi chưa có — chạy lặp không làm gì. Không có dữ liệu cũ
+ * nào để chuyển. Bản chính dựng từ `schema.sql` nên không đi qua bước này. Câu tạo bảng phải GIỐNG `schema.sql` (phép kiểm so cột).
+ */
+export function migrateAuthAttempts(conn: any, applied: string[]) {
+  if (conn.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name = 'auth_attempts'").get()) return;
+  conn.exec(`CREATE TABLE auth_attempts (
+  id INTEGER PRIMARY KEY,
+  kind TEXT NOT NULL,
+  key_hash TEXT NOT NULL,
+  at TEXT NOT NULL
+);
+CREATE INDEX idx_auth_attempts_key ON auth_attempts(kind, key_hash, at);`);
+  applied.push('PR-AN: thêm bảng auth_attempts (giới hạn số lần thử đăng nhập/đăng ký). Dữ liệu cũ giữ nguyên.');
 }
