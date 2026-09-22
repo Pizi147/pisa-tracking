@@ -66,7 +66,7 @@ const SELECT = `
 
 function loadRow(id: number): any {
   const r = db().prepare(`${SELECT} WHERE m.id = ?`).get(id);
-  if (!r) throw notFound('Không tìm thấy biện pháp xử lý');
+  if (!r) throw notFound('Không tìm thấy phương án xử lý');
   return r;
 }
 
@@ -114,7 +114,7 @@ export function measureDetail(p: Principal, id: number): MeasureDetail {
   return buildDetail(p, r);
 }
 
-const MANAGE_MESSAGE = 'Chỉ giáo viên chủ nhiệm của lớp hoặc Quản lý trong phạm vi mới tạo và xử lý được biện pháp — giáo viên bộ môn chỉ đọc.';
+const MANAGE_MESSAGE = 'Chỉ giáo viên chủ nhiệm của lớp hoặc Quản lý trong phạm vi mới tạo và thực hiện được phương án xử lý — giáo viên bộ môn chỉ đọc.';
 
 // ---------------------------------------------------------------- chuỗi Thư cảnh cáo (B06–B08, Y02)
 
@@ -173,7 +173,7 @@ export function measureKindAvailability(p: Principal, studentId: number, opts: {
 
 function checkKind(kind: unknown): MeasureKind {
   if (typeof kind !== 'string' || !(MEASURE_KINDS as readonly string[]).includes(kind)) {
-    throw badRequest('Hãy chọn loại biện pháp xử lý trong danh sách.');
+    throw badRequest('Chọn loại phương án xử lý trong danh sách.');
   }
   return kind as MeasureKind;
 }
@@ -181,7 +181,7 @@ function checkKind(kind: unknown): MeasureKind {
 function checkCustomName(kind: MeasureKind, name: unknown): string | null {
   const text = String(name ?? '').trim();
   if (kind !== 'other') return null;
-  if (!text) throw badRequest('Loại "Khác" cần ghi tên biện pháp — GVCN tự đặt.');
+  if (!text) throw badRequest('Loại "Khác" cần ghi tên phương án xử lý — GVCN tự đặt.');
   return text.slice(0, 120);
 }
 
@@ -208,18 +208,18 @@ function defaultOwner(classId: number | null, creator: number): number {
 /** B02: ít nhất một vi phạm, của ĐÚNG MỘT học viên. Trả về danh sách đã khử trùng. */
 function checkViolationSet(studentId: number, ids: unknown): number[] {
   const list = [...new Set((Array.isArray(ids) ? ids : []).map((x) => Number(x)).filter((x) => Number.isInteger(x) && x > 0))];
-  if (!list.length) throw badRequest('Biện pháp phải có ít nhất một vi phạm.');
+  if (!list.length) throw badRequest('Phương án xử lý phải có ít nhất một vi phạm.');
   const found = violationsByIds(list);
   if (found.length !== list.length) throw notFound('Không tìm thấy một trong các vi phạm đã chọn');
   if (found.some((v) => v.studentId !== studentId)) {
-    throw badRequest('Một biện pháp chỉ xử lý một học viên — không gom vi phạm của nhiều em vào cùng một biện pháp.');
+    throw badRequest('Một phương án xử lý chỉ xử lý một học viên — không gom vi phạm của nhiều em vào cùng một phương án.');
   }
   return list;
 }
 
 function requirePreparing(row: any, what: string) {
   if (row.status !== 'preparing') {
-    throw badRequest(`Biện pháp này đã thực hiện — ${what} đã khóa. Chỉ bổ sung được ghi chú và tệp.`);
+    throw badRequest(`Phương án xử lý này đã thực hiện — ${what} đã khóa. Chỉ bổ sung được ghi chú và tệp.`);
   }
 }
 
@@ -299,8 +299,8 @@ export function removeViolation(p: Principal, id: number, violationId: number): 
   requireManageDiscipline(p, row.student_id, MANAGE_MESSAGE);
   requirePreparing(row, 'danh sách vi phạm');
   const inside = violationIdsOf(id);
-  if (!inside.includes(violationId)) throw badRequest('Vi phạm này không nằm trong biện pháp.');
-  if (inside.length === 1) throw badRequest('Biện pháp phải còn ít nhất một vi phạm — muốn bỏ hết thì xóa biện pháp.');
+  if (!inside.includes(violationId)) throw badRequest('Vi phạm này không nằm trong phương án xử lý.');
+  if (inside.length === 1) throw badRequest('Phương án xử lý phải còn ít nhất một vi phạm — muốn bỏ hết thì xóa phương án.');
   tx(() => {
     db().prepare('DELETE FROM measure_violations WHERE measure_id = ? AND violation_id = ?').run(id, violationId);
     noteMeasureChange(violationId, id, null, p.userId);
@@ -324,7 +324,7 @@ export function updateMeasure(p: Principal, id: number, patch: {
 
   if (row.status === 'done') {
     if (patch.kind !== undefined || patch.customName !== undefined || patch.ownerUserId !== undefined) {
-      throw badRequest('Biện pháp này đã thực hiện — loại và người phụ trách đã khóa. Chỉ bổ sung được ghi chú và tệp.');
+      throw badRequest('Phương án xử lý này đã thực hiện — loại và người phụ trách đã khóa. Chỉ bổ sung được ghi chú và tệp.');
     }
     if (patch.note !== undefined) {
       const note = String(patch.note ?? '').trim() || null;
@@ -357,7 +357,7 @@ export function updateMeasure(p: Principal, id: number, patch: {
 export function deleteMeasure(p: Principal, id: number): void {
   const row = loadRow(id);
   requireManageDiscipline(p, row.student_id, MANAGE_MESSAGE);
-  if (row.status !== 'preparing') throw badRequest('Biện pháp này đã thực hiện — không xóa được, vì đó là việc đã làm thật.');
+  if (row.status !== 'preparing') throw badRequest('Phương án xử lý này đã thực hiện — không xóa được, vì đó là việc đã làm thật.');
   const inside = violationIdsOf(id);
   /* Tệp trong kho chỉ xoá SAU KHI giao dịch chốt — giao dịch lui thì dòng còn mà tệp mất là không hoàn tác được. */
   const khoaTep: string[] = [];
@@ -386,7 +386,7 @@ export function confirmMeasure(p: Principal, id: number, input: {
 }): MeasureDetail {
   const row = loadRow(id);
   requireManageDiscipline(p, row.student_id, MANAGE_MESSAGE);
-  if (row.status !== 'preparing') throw badRequest('Biện pháp này đã thực hiện rồi.');
+  if (row.status !== 'preparing') throw badRequest('Phương án xử lý này đã thực hiện rồi.');
 
   const note = input.note === undefined ? (row.note ?? '') : String(input.note ?? '').trim();
   const performerName = String(input.performerName ?? '').trim() || null;
@@ -408,7 +408,7 @@ export function confirmMeasure(p: Principal, id: number, input: {
   if (problem) throw badRequest(problem.message);
 
   const violations = violationsByIds(violationIdsOf(id));
-  if (!violations.length) throw badRequest('Biện pháp phải có ít nhất một vi phạm.');
+  if (!violations.length) throw badRequest('Phương án xử lý phải có ít nhất một vi phạm.');
 
   tx(() => {
     db()
@@ -460,7 +460,7 @@ function notifyManagers(row: any, actorId: number) {
 export type MeasureFilter = { studentId?: number | null; classId?: number | null; status?: MeasureStatus | null };
 
 export function listMeasures(p: Principal, f: MeasureFilter): { rows: MeasureDetail[] } {
-  if (!f.studentId && !f.classId) throw badRequest('Cần chọn học viên hoặc lớp để xem danh sách biện pháp.');
+  if (!f.studentId && !f.classId) throw badRequest('Cần chọn học viên hoặc lớp để xem danh sách phương án xử lý.');
   if (f.studentId) requireViewStudent(p, f.studentId);
   else requireViewClass(p, f.classId!);
   const where: string[] = [];

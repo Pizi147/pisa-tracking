@@ -29,7 +29,7 @@ function kiemChiNhanh(ds: ChiNhanh[]): ChiNhanh[] {
     if (!/^[A-Z0-9]+$/.test(code)) {
       throw new Error(`Mã chi nhánh "${String(cn.code ?? '').trim()}" không hợp lệ — mã viết liền, không dấu, chỉ chữ và số (ví dụ MB).`);
     }
-    if (code === MA_TUTOR) throw new Error(`Mã ${MA_TUTOR} đã dành cho đơn vị "Tutor part-time" — hãy chọn mã khác.`);
+    if (code === MA_TUTOR) throw new Error(`Mã ${MA_TUTOR} đã dành cho đơn vị "Tutor part-time" — chọn mã khác.`);
     if (!name) throw new Error(`Chi nhánh ${code} thiếu tên.`);
     /* Dấu ^ và " là dấu vết thoát ký tự của npm/cmd trên Windows (đã gặp 22/09: "Uông Bí" thành "^Uông^ Bí^") — từ chối,
        không bao giờ lưu một tên hỏng. */
@@ -78,7 +78,7 @@ export function initBanChinh(conn: any, o: {
   const email = checkEmail(o.adminEmail);
   const matKhau = checkPassword(o.adminPassword);
   if (matKhau === DEFAULT_ADMIN_PASSWORD) {
-    throw new Error('Không dùng mật khẩu mặc định của bản demo cho bản chính — ai đã xem bản demo đều biết nó. Hãy chọn mật khẩu mới.');
+    throw new Error('Không dùng mật khẩu mặc định của bản demo cho bản chính — ai đã xem bản demo đều biết nó. Chọn mật khẩu mới.');
   }
   const chiNhanh = kiemChiNhanh(o.chiNhanh);
   const chuaCoBang = !conn.prepare(`SELECT 1 FROM sqlite_master WHERE type = 'table' AND ${KHONG_NOI_BO}`).get();

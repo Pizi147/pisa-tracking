@@ -10,14 +10,24 @@ import type { YThucTestKit } from './yThuc.tests.ts';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..', '..');
 // dist-server/server/src/tests → gốc repo. Kiểm lại bằng assert số file ở dưới; sai thì chỉnh số '..'.
 
+/** Đóng băng vì PR-Z2b chạy song song — Z2b đã gộp (Task 9), danh sách rỗng và giữ lại chỉ để nhắc lịch sử. */
+const CHO_Z2B: string[] = [];
 /**
- * File đóng băng vì PR-Z2b chạy song song — Task 9 XOÁ danh sách này (để mảng rỗng).
- * `server/src/ops/` cũng đóng băng (Global Constraints 🧊) dù plan gốc không liệt kê ở đây — `ops/initBanChinh.ts` có
- * hai chỗ "hãy" (🆕 22/09), làm ở Task 9 cùng ba file kia.
+ * Loại trừ VĨNH VIỄN: dữ liệu kể chuyện của bộ demo (`server/src/seed/*`), không phải chữ giao diện — TRỪ `seed.ts`
+ * (in bảng tổng kết ra màn hình lệnh) và `duLieuNen.ts` (dữ liệu nền của BẢN CHÍNH, PR-Z2b thêm) vẫn quét.
  */
-const CHO_Z2B = ['server/src/yThuc/measures.ts', 'server/src/migrate.ts', 'server/src/seed/', 'server/src/ops/'];
-/** Dòng được phép giữ chữ cũ (không phải chữ người dùng thấy). Mỗi mục: [đường dẫn, chuỗi con của dòng]. */
-const CHO_PHEP: Array<[string, string]> = [];
+const LOAI_TRU = (f: string) => f.startsWith('server/src/seed/') && f !== 'server/src/seed/seed.ts' && f !== 'server/src/seed/duLieuNen.ts';
+/**
+ * Dòng được phép giữ chữ cũ (không phải chữ người dùng thấy). Mỗi mục: [đường dẫn, chuỗi con của dòng].
+ * `migrate.ts`: chú thích SQL (`-- …`) nằm TRONG chuỗi DDL chép từ `schema.sql` — đổi không đem lại gì cho người dùng, có rủi ro
+ * với phép so schema (Task 9 Step 4).
+ */
+const CHO_PHEP: Array<[string, string]> = [
+  ['server/src/migrate.ts', "-- Chỉ dùng khi kind = 'other'"],
+  ['server/src/migrate.ts', '-- chính xác thì số này KHÔNG đổi'],
+  ['server/src/migrate.ts', '-- MỘT vi phạm gắn NHIỀU biện pháp'],
+  ['server/src/migrate.ts', '-- Ví dụ thật phải chạy được'],
+];
 
 function boChuThich(src: string): string {
   return src
@@ -42,7 +52,7 @@ export async function runHoSoHocVienTests(t: YThucTestKit) {
     });
     const files = ['web/src', 'shared', 'server/src'].flatMap((d) => walk(path.join(ROOT, d)))
       .map((f) => path.relative(ROOT, f).replace(/\\/g, '/'))
-      .filter((f) => !CHO_Z2B.some((z) => f.startsWith(z)));
+      .filter((f) => !CHO_Z2B.some((z) => f.startsWith(z)) && !LOAI_TRU(f));
     assert(files.length > 80, `Quét quá ít file (${files.length}) — sai ROOT?`);
     const hits: string[] = [];
     for (const f of files) {

@@ -613,8 +613,8 @@ export async function runYThucTests(t: YThucTestKit) {
     assert(mk(gvcn, st.id, 'family_report', ids).kind === 'family_report', 'Report gia đình ngay');
     assert(mk(gvcn, st.id, 'meeting_cx', ids).kind === 'meeting_cx', 'CX/GĐCN meeting ngay');
     assert(mk(gvcn, st.id, 'talk_short', ids).kind === 'talk_short', 'Trao đổi ngắn cũng được, sau biện pháp nặng');
-    assertThrows(() => mk(gvcn, st.id, 'severe', ids), /loại biện pháp/i, 'Loại lạ');
-    assertThrows(() => mk(gvcn, st.id, 'other', ids), /tên biện pháp/i, 'Loại Khác mà không có tên');
+    assertThrows(() => mk(gvcn, st.id, 'severe', ids), /loại phương án/i, 'Loại lạ');
+    assertThrows(() => mk(gvcn, st.id, 'other', ids), /tên phương án/i, 'Loại Khác mà không có tên');
     assert(mk(gvcn, st.id, 'other', ids, { customName: 'Họp riêng với ban giám hiệu' }).kindLabel === 'Họp riêng với ban giám hiệu', 'Loại Khác hiện tên do GVCN đặt');
   });
 
@@ -664,7 +664,7 @@ export async function runYThucTests(t: YThucTestKit) {
     assertThrows(() => meas.updateMeasure(gvcn, m.id, { kind: 'warning_3' }), /Thư cảnh cáo lần 2/, 'Đổi sang lần 3 khi chưa có lần 2');
     assert((meas.updateMeasure(gvcn, m.id, { kind: 'warning_1' }) as any).kind === 'warning_1', 'Đổi sang lần 1 thì được');
     assert((meas.updateMeasure(gvcn, m.id, { kind: 'other', customName: 'Thư nhắc nhở nội bộ' }) as any).kindLabel === 'Thư nhắc nhở nội bộ', 'Đổi sang Khác kèm tên');
-    assertThrows(() => meas.updateMeasure(gvcn, m.id, { kind: 'other', customName: '' }), /tên biện pháp/, 'Khác mà xóa tên');
+    assertThrows(() => meas.updateMeasure(gvcn, m.id, { kind: 'other', customName: '' }), /tên phương án/, 'Khác mà xóa tên');
   });
 
   check('PR-J · B12 Xóa biện pháp: chỉ khi Đang chuẩn bị, do GVCN · Quản lý · Quản trị; vi phạm quay về Chưa xử lý, tệp đi theo, có audit; Đã thực hiện không xóa được', () => {
