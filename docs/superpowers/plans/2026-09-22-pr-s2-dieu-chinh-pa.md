@@ -151,7 +151,7 @@ Expected: `sạch`. Có biến thì đóng cửa sổ, mở cửa sổ mới.
 - Produces: bảng `case_intervention_revisions` (cột ở Step 3); cột `case_followups.remaining_issue TEXT`, `case_followups.decision_note TEXT`;
   `export function migrateDieuChinhPa(conn: any, applied: string[]): void`; trong file test: `taoCase()`, `ivRow`, `revRows`, `lastFollow`, `NOW`, `REPO`.
 
-- [ ] **Step 1: Tạo file phép kiểm (đỏ).** `server/src/tests/dieuChinhPa.tests.ts`:
+- [x] **Step 1: Tạo file phép kiểm (đỏ).** `server/src/tests/dieuChinhPa.tests.ts`:
 
 ```ts
 /**
@@ -293,10 +293,10 @@ const { runDieuChinhPaTests } = await import('./dieuChinhPa.tests.ts');
 await runDieuChinhPaTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 ```
 
-- [ ] **Step 2: Chạy, thấy đỏ.** Run: `npm test 2>&1 | grep -E "PR-S2|KIỂM TRA|KHÔNG ĐẠT"`. Expected: ba phép `PR-S2 · Migrate` đầu **✗**
+- [x] **Step 2: Chạy, thấy đỏ.** Run: `npm test 2>&1 | grep -E "PR-S2|KIỂM TRA|KHÔNG ĐẠT"`. Expected: ba phép `PR-S2 · Migrate` đầu **✗**
   (thiếu bảng, hoặc `migrateDieuChinhPa is not a function`); phép "trọn chuỗi" ✓.
 
-- [ ] **Step 3: `schema.sql`.**
+- [x] **Step 3: `schema.sql`.**
 
 (a) Dòng ~1060, chú thích `next_step`: đổi `complete | monitor | continue | propose | ask_manager` thành
 `complete | monitor | continue | adjust | propose | ask_manager`, và thêm dòng chú thích ngay dưới:
@@ -360,7 +360,7 @@ CREATE INDEX idx_iv_revision_iv ON case_intervention_revisions(intervention_id, 
 CREATE INDEX idx_iv_revision_case ON case_intervention_revisions(case_id);
 ```
 
-- [ ] **Step 4: `migrate.ts`.** Gọi ngay sau `migrateLuatMayChu(conn, applied);` (~442):
+- [x] **Step 4: `migrate.ts`.** Gọi ngay sau `migrateLuatMayChu(conn, applied);` (~442):
 
 ```ts
     /* PR-S2: lịch sử điều chỉnh PA học thuật + hai cột cập nhật tuần rút gọn. */
@@ -419,9 +419,9 @@ export function migrateDieuChinhPa(conn: any, applied: string[]) {
 }
 ```
 
-- [ ] **Step 5: Chạy.** Run: `npm test 2>&1 | grep -E "PR-S2|KIỂM TRA|KHÔNG ĐẠT"`. Expected: bốn phép `PR-S2 · Migrate` ✓, tổng **B + 4**.
+- [x] **Step 5: Chạy.** Run: `npm test 2>&1 | grep -E "PR-S2|KIỂM TRA|KHÔNG ĐẠT"`. Expected: bốn phép `PR-S2 · Migrate` ✓, tổng **B + 4**.
   Nếu `preS2()` lỗi ở `DROP COLUMN` (câu CREATE bị cắt sai): kiểm lại chú thích hai cột cuối, không được có dấu phẩy.
-- [ ] **Step 6: Commit.**
+- [x] **Step 6: Commit.**
 
 ```bash
 git add server/src/schema.sql server/src/migrate.ts server/src/tests/dieuChinhPa.tests.ts server/src/tests/run.ts
@@ -2023,3 +2023,4 @@ làm mất lối "Thay bằng phương án khác hoặc nhờ Quản lý" cũ; f
 | Ngày | Task | Ghi chú (model người code · số phép kiểm · lệch plan · quyết định tại chỗ) |
 |---|---|---|
 | 22/09 | 0 | Opus 5 (session code + subagent Opus 5). Worktree `.claude/worktrees/pr-s2-dieu-chinh-pa` từ `origin/main` 46f5f90 (đã có PR-S1 #56 và PR-O #58). Không có biến Turso. **B = 730** (plan ghi 719: PR-O merge sau khi đo; đích cuối = 751). Q1–Q18 đọc xong, planning review đã duyệt, không thấy Q nào trái đặc tả. |
+| 22/09 | 1 | Opus 5 (subagent) · c616eff · **734** (B+4) ✓ · đỏ trước: 3 ✗ đúng dự kiến · rà Task (Opus 5): duyệt, 0 lỗi nặng; 3 ghi chú nhỏ để rà cuối (phép 'trọn chuỗi' không bắt được nếu xoá dòng gọi; so sánh chưa gồm khoá ngoại/cột chỉ mục; chỉ mục chỉ tạo cùng bảng) |
