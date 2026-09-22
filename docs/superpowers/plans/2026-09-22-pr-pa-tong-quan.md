@@ -2615,3 +2615,7 @@ export function HocVienCanHoTro() {
   (không tránh được — chấp nhận, vẫn là MỘT dòng phụ theo G-3). Cho chủ sản phẩm: dòng tín hiệu Fast Track chỉ có nút Tạo
   Case (`gvbm-tinhieu-ft-1440.png`). Không thử được trên seed: GV không phạm vi, GV không việc quá hạn, chi nhánh không GV.
   → Vòng sửa gộp F1/F2/F3/F6 ngay sau.
+- **Task 13 (sửa sau KIỂM):** commit `1ac74da` (13b: `coGv` theo chế độ bảng thay vì theo `cn`; nhắc Ý thức là chữ
+  xuống dòng được + chip "Nhắc" ngắn; ô 3 dòng phụ chỉ khi > 0; mọi hàng bảng cao 2.5rem, chip `leading-none`) rồi QA
+  chụp lại `5c82783` (13c): F1 ✓ ("0 tín hiệu · Không có mục nào"), F2 ✓ (QL tại `/` thấy nút, bảng GV 4 hàng), F3 ✓
+  (Cả Monbay / MB-FOU 12 / MB-FT 101 / MB-FT 102 đều 40.00px), F6 ✓ (`scrollWidth` 375). Không lỗi console/4xx.
