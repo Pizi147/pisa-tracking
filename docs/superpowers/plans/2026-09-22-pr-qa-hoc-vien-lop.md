@@ -3345,13 +3345,13 @@ git commit -m "PR-Qa (13): tab Phân tích lớp — kỹ năng × đợt, mở 
 **Files:**
 - Modify: `web/src/modules/students/IntakePanel.tsx:178, 211-216`
 
-- [ ] **Step 1:** dòng 178 `width="max-w-5xl"` → `width="max-w-[1440px]"`.
-- [ ] **Step 2:** dòng 211 `Tuần bắt đầu học — mặc định cho cả lô` → `Tuần bắt đầu học`.
-- [ ] **Step 3:** dòng 213-216 — ngày ISO `pv.defaultStartWeek` qua G-6: thêm `import { ngay } from '@shared/domain/index.ts';` và
+- [x] **Step 1:** dòng 178 `width="max-w-5xl"` → `width="max-w-[1440px]"`.
+- [x] **Step 2:** dòng 211 `Tuần bắt đầu học — mặc định cho cả lô` → `Tuần bắt đầu học`.
+- [x] **Step 3:** dòng 213-216 — ngày ISO `pv.defaultStartWeek` qua G-6: thêm `import { ngay } from '@shared/domain/index.ts';` và
   `import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';`, trong thân `const { homNay } = useNgayNghiepVu();`, rồi
   `` `Đang dùng tuần bắt đầu ${pv.defaultStartWeek}. …` `` → `` `Đang dùng tuần bắt đầu ${ngay(pv.defaultStartWeek, homNay)}. …` ``.
-- [ ] **Step 4:** `grep -n "cả lô" web/src/modules/students/IntakePanel.tsx` → không còn. `npm run typecheck` xanh.
-- [ ] **Step 5: Commit.**
+- [x] **Step 4:** `grep -n "cả lô" web/src/modules/students/IntakePanel.tsx` → không còn. `npm run typecheck` xanh.
+- [x] **Step 5: Commit.**
 
 ```bash
 git add web/src/modules/students/IntakePanel.tsx
