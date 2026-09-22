@@ -159,5 +159,126 @@ export async function runDieuChinhPaTests(t: YThucTestKit) {
       && !domain.decisionNeedsReason('end'), 'Chỉ Điều chỉnh và Thay bắt lý do');
   });
 
+  // ================================================================== 3. Ghi kết quả với quyết định
+
+  console.log('\nPR-S2 · 3. Ghi kết quả: Giữ nguyên · Điều chỉnh (có lịch sử) · Thay (có lý do) · vấn đề còn tồn');
+
+  const ADJ_OK = { decision: 'adjust', outcome: 'insufficient', note: 'Tuần này chưa có bài nghe mới để nhìn',
+    decisionNote: 'Em đi học thêm buổi tối nên đổi giờ', adjust: { description: 'Tự học Listening — nghe chép 15 phút buổi sáng' } };
+
+  check('PR-S2 · S4: Giữ nguyên lưu kết quả · tiến triển · vấn đề còn tồn · ghi chú; PA chạy tiếp sang đợt 2, không sinh lịch sử điều chỉnh', () => {
+    const { ivId } = taoCase();
+    cases.updateResult(P.lrTeacher, ivId, {
+      decision: 'keep', outcome: 'partial', note: 'Nghe số đã khá hơn, tên riêng còn sai',
+      remainingIssue: 'Còn sai chính tả tên riêng', decisionNote: 'Tuần sau thêm bài Section 2',
+    });
+    const f = lastFollow(ivId);
+    const iv = ivRow(ivId);
+    assert(f.next_step === 'continue' && f.outcome === 'partial', `Lần cập nhật sai: ${JSON.stringify(f)}`);
+    assert(f.remaining_issue === 'Còn sai chính tả tên riêng' && f.decision_note === 'Tuần sau thêm bài Section 2',
+      `Vấn đề còn tồn / ghi chú không lưu: ${JSON.stringify(f)}`);
+    assert(iv.status === 'started' && iv.cycle_no === 2, `PA phải chạy tiếp ở đợt 2: ${iv.status} / ${iv.cycle_no}`);
+    assert(revRows(ivId).length === 0, 'Giữ nguyên không được sinh dòng lịch sử điều chỉnh');
+  });
+
+  check('PR-S2 · S4: vấn đề còn tồn tối đa 300 ký tự; bỏ trống thì lưu NULL', () => {
+    const { ivId } = taoCase();
+    assertThrows(() => cases.updateResult(P.lrTeacher, ivId, {
+      decision: 'keep', outcome: 'partial', note: 'Nghe số đã khá hơn nhiều', remainingIssue: 'x'.repeat(301),
+    }), /300 ký tự/, 'Vấn đề còn tồn dài hơn 300 ký tự');
+    cases.updateResult(P.lrTeacher, ivId, { decision: 'keep', outcome: 'partial', note: 'Nghe số đã khá hơn nhiều', remainingIssue: '   ' });
+    assert(lastFollow(ivId).remaining_issue === null, 'Vấn đề còn tồn chỉ có khoảng trắng phải lưu NULL');
+  });
+
+  check('PR-S2 · S2: Điều chỉnh bắt buộc lý do, phải đổi ít nhất một thứ; mô tả ngắn hoặc ngày lùi về trước bị từ chối; từ chối thì không để lại gì', () => {
+    const { ivId } = taoCase();
+    assertThrows(() => cases.updateResult(P.lrTeacher, ivId, { ...ADJ_OK, decisionNote: '' }), /Lý do/, 'Điều chỉnh không có lý do');
+    assertThrows(() => cases.updateResult(P.lrTeacher, ivId, { ...ADJ_OK, adjust: {} }), /ít nhất một thứ/, 'Điều chỉnh mà không đổi gì');
+    assertThrows(() => cases.updateResult(P.lrTeacher, ivId, { ...ADJ_OK, adjust: { description: 'ngắn' } }), /ít nhất 8 ký tự/, 'Mô tả mới quá ngắn');
+    assertThrows(() => cases.updateResult(P.lrTeacher, ivId, { ...ADJ_OK, adjust: { followupDue: addDays(TODAY, -1) } }),
+      /sớm hơn ngày cập nhật/, 'Ngày dự kiến kết thúc lùi về trước ngày cập nhật');
+    assert(ivRow(ivId).cycle_no === 1 && !lastFollow(ivId) && revRows(ivId).length === 0, 'Lần bị từ chối không được để lại gì');
+  });
+
+  check('PR-S2 · S2: Điều chỉnh hai lần: đọc lại được cả hai bản cũ, ngày, người, lý do; PA vẫn là MỘT, loại không đổi', () => {
+    const { ivId, caseId } = taoCase();
+    cases.updateResult(P.lrTeacher, ivId, {
+      ...ADJ_OK, outcome: 'unchanged', note: 'Nghe chép chưa đều, em bỏ hai buổi',
+      adjust: { kind: 'tutor', description: 'Tự học Listening — nghe chép 15 phút buổi sáng' },
+    });
+    cases.updateResult(P.mbManager, ivId, {
+      decision: 'adjust', outcome: 'partial', note: 'Buổi sáng em làm đều hơn hẳn', decisionNote: 'Tăng thời lượng vì em theo kịp',
+      adjust: { description: 'Tự học Listening — nghe chép 25 phút buổi sáng', followupDue: addDays(TODAY, 21), performerName: 'Trợ giảng Mai' },
+    });
+    const iv = ivRow(ivId);
+    const revs = revRows(ivId);
+    assert(iv.kind === 'self_study', `Điều chỉnh không được đổi loại PA: ${iv.kind}`);
+    assert(iv.description === 'Tự học Listening — nghe chép 25 phút buổi sáng' && iv.performer_name === 'Trợ giảng Mai'
+      && iv.performer_user_id === null && iv.followup_due === addDays(TODAY, 21), `Bản hiện tại sai: ${JSON.stringify(iv)}`);
+    assert(revs.length === 2, `Phải có 2 dòng lịch sử, có ${revs.length}`);
+    assert(revs[0].old_description === 'Tự học Listening — nghe chép 15 phút mỗi ngày'
+      && revs[0].new_description === 'Tự học Listening — nghe chép 15 phút buổi sáng', `Bản 1 sai: ${JSON.stringify(revs[0])}`);
+    assert(revs[1].old_description === revs[0].new_description && revs[1].old_performer_user_id === P.lrTeacher.userId
+      && revs[1].new_performer_name === 'Trợ giảng Mai' && revs[1].new_performer_user_id === null, `Bản 2 sai: ${JSON.stringify(revs[1])}`);
+    assert(revs[0].reason === 'Em đi học thêm buổi tối nên đổi giờ' && revs[0].actor_user_id === P.lrTeacher.userId
+      && revs[1].actor_user_id === P.mbManager.userId, 'Lý do / người điều chỉnh sai');
+    assert(revs.every((r) => r.source === 'adjust' && r.effective_on === TODAY && r.followup_id && r.case_id === caseId),
+      `Nguồn / ngày / lần cập nhật / Case sai: ${JSON.stringify(revs)}`);
+    assert(iv.cycle_no === 3 && iv.status === 'started', `Mỗi lần điều chỉnh mở một đợt mới: ${iv.cycle_no} / ${iv.status}`);
+    const n = (conn.prepare('SELECT COUNT(*) n FROM case_interventions WHERE case_id = ?').get(caseId) as any).n;
+    assert(n === 1, `Điều chỉnh không được sinh PA mới: ${n}`);
+    assert(lastFollow(ivId).next_step === 'adjust', 'Lần cập nhật phải ghi bước "adjust"');
+  });
+
+  check('PR-S2 · S2: PA đã kết thúc hoặc đang chờ Quản lý duyệt thì không điều chỉnh được', () => {
+    const a = taoCase();
+    cases.updateResult(P.lrTeacher, a.ivId, { decision: 'end', outcome: 'improved', note: 'Em nghe số và tên riêng đúng hết' });
+    assertThrows(() => cases.updateResult(P.lrTeacher, a.ivId, ADJ_OK), /đã kết thúc/, 'Điều chỉnh PA đã kết thúc');
+    const b = taoCase();
+    cases.updateResult(P.lrTeacher, b.ivId, { decision: 'ask_manager', outcome: 'unchanged', note: 'Tự học không đủ, cần Quản lý xếp tutor' });
+    assertThrows(() => cases.updateResult(P.lrTeacher, b.ivId, ADJ_OK), /chờ Quản lý duyệt/, 'Điều chỉnh PA đang chờ duyệt');
+    assert(revRows(a.ivId).length === 0 && revRows(b.ivId).length === 0, 'Bị từ chối mà vẫn có dòng lịch sử');
+  });
+
+  check('PR-S2 · S2: GV khác môn không điều chỉnh được PA Listening (C02), cùng quyền với Ghi kết quả', () => {
+    const { ivId } = taoCase();
+    assertThrows(() => cases.updateResult(P.sTeacher, ivId, ADJ_OK), /không có quyền/, 'GV Speaking điều chỉnh PA Listening');
+    assert(revRows(ivId).length === 0, 'Bị từ chối mà vẫn có dòng lịch sử');
+  });
+
+  check('PR-S2 · S4: Chưa đủ dữ liệu không Kết thúc suông và không Xin hỗ trợ từ Quản lý được (Thay thì được, xem phép kiểm Task 7)', () => {
+    const { ivId } = taoCase();
+    assertThrows(() => cases.updateResult(P.lrTeacher, ivId, {
+      decision: 'end', outcome: 'insufficient', note: 'Chưa có bài nghe mới để nhìn',
+    }), /Giữ nguyên, Điều chỉnh hoặc Thay/, 'Kết thúc suông khi Chưa đủ dữ liệu');
+    assertThrows(() => cases.updateResult(P.lrTeacher, ivId, {
+      decision: 'ask_manager', outcome: 'insufficient', note: 'Chưa có bài nghe mới để nhìn',
+    }), /Giữ nguyên, Điều chỉnh hoặc Thay/, 'Xin hỗ trợ từ Quản lý khi Chưa đủ dữ liệu');
+    assert(ivRow(ivId).status === 'started' && !lastFollow(ivId), 'Bị từ chối mà PA đổi trạng thái hoặc có lần cập nhật');
+  });
+
+  check('PR-S2 · S4: Thay bắt lý do; thay xong PA cũ Được thay thế, nối sang PA mới, người thực hiện khai rõ', () => {
+    const { ivId, caseId } = taoCase();
+    const newPlan = { kind: 'tutor', description: 'Tutor Listening hai buổi mỗi tuần đến MT2', performerSelf: true };
+    assertThrows(() => cases.updateResult(P.lrTeacher, ivId, {
+      decision: 'replace', outcome: 'worse', note: 'Em sai nhiều hơn tuần trước', newPlan,
+    }), /Lý do/, 'Thay không có lý do');
+    cases.updateResult(P.lrTeacher, ivId, {
+      decision: 'replace', outcome: 'worse', note: 'Em sai nhiều hơn tuần trước',
+      decisionNote: 'Tự học không hiệu quả, chuyển sang tutor', newPlan,
+    });
+    const old = ivRow(ivId);
+    const moi = conn.prepare('SELECT * FROM case_interventions WHERE case_id = ? AND id != ?').get(caseId, ivId) as any;
+    assert(moi, 'Không có PA mới');
+    assert(old.status === 'completed' && old.closed_reason === 'superseded' && old.superseded_by === moi.id && old.completed_date === TODAY,
+      `PA cũ phải Được thay thế và nối sang PA mới: ${JSON.stringify(old)}`);
+    assert(moi.kind === 'tutor' && moi.performer_user_id === P.lrTeacher.userId && moi.status === 'started',
+      `PA mới sai (người thực hiện khai bằng performerSelf): ${JSON.stringify(moi)}`);
+    const f = lastFollow(ivId);
+    assert(f.next_step === 'propose' && f.outcome === 'worse' && f.decision_note === 'Tự học không hiệu quả, chuyển sang tutor',
+      `Lý do thay phải nằm ở lần cập nhật: ${JSON.stringify(f)}`);
+    assert(revRows(ivId).length === 0, 'Thay không ghi vào lịch sử điều chỉnh, nó là chuỗi Được thay thế');
+  });
+
   // ---- các task sau thêm phép kiểm NGAY TRÊN dòng này ----
 }
