@@ -1012,7 +1012,7 @@ CREATE TABLE case_interventions (
    * không thành công, đó là cả lý do phải thay. Nhưng cũng không để nó treo vô hạn, vì
    * case sẽ không bao giờ đủ điều kiện đóng.
    */
-  closed_reason TEXT,                 -- NULL | 'superseded' | 'done' | 'score_fixed' | 'dismissed'
+  closed_reason TEXT,                 -- NULL | 'superseded' | 'done' | 'score_fixed' | 'dismissed' | 'system_closed' (PR-S1)
   superseded_by INTEGER REFERENCES case_interventions(id),
 
   /*

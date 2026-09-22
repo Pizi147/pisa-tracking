@@ -281,7 +281,7 @@ export function myWork(p: Principal, f: { branchId?: number | null } = {}) {
         ? `${sg.label} chưa đạt${sg.score !== null && sg.total !== null ? ` (${sg.score}/${sg.total})` : ''}.`
         : `${sg.label} dưới kỳ vọng${sg.band !== null ? ` (${sg.band} so với ${sg.expectation ?? '—'})` : ''}.`
           + ' Xem lại bài rồi xác minh.',
-      actionLabel: sg.kind === 'normal' ? 'Tạo Case' : 'Mở case',
+      actionLabel: sg.kind === 'normal' ? 'Tạo Case' : 'Mở Case',
       signal: {
         id: sg.id, kind: sg.kind, skill: sg.skill, skillLabel: sg.label,
         score: sg.score, total: sg.total, deadline: sg.verifyDue, actions: sg.actions,

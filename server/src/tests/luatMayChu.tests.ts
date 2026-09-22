@@ -429,6 +429,26 @@ export async function runLuatMayChuTests(t: YThucTestKit) {
     }), /Chủ đề không hợp lệ/, 'Học viên FT tạo Case Writing chung');
   });
 
+  check('S1 · Tạo Case từ tín hiệu mà gửi kèm khoá KHÁC khoá của tín hiệu → từ chối (Case phải nằm đúng khoá của tín hiệu)', () => {
+    const hv = taoHocVien({ classCode: 'MB-FOU 12', weekStart: '2026-09-07' });
+    diem(hv.attemptId, 'listening', 10, 40);
+    const sg = tinHieu(hv.attemptId, 'listening');
+    const other = Number(conn.prepare(`INSERT INTO learning_cycles (student_id, seq, route, programme_code, started_at, status, created_at)
+      VALUES (?, 2, NULL, 'FOU', ?, 'completed', ?)`).run(hv.sid, '2026-05-04', NOW).lastInsertRowid);
+    assertThrows(() => cases.reportIssue(pGvcnFou, {
+      studentId: hv.sid, cycleId: other, topic: 'listening', fromSignalId: sg.id,
+      title: 'Case gửi sai khoá (PR-S1)', summary: 'Đã xem lại bài, em vướng đúng phần này của môn.',
+      primaryCode: domain.issuesForTopic('listening')[0].code,
+    }), /đúng khoá/, 'Case từ tín hiệu mà nằm ở khoá khác');
+    assert((conn.prepare('SELECT status FROM case_signals WHERE id = ?').get(sg.id) as any).status === 'pending', 'Tín hiệu phải còn chờ');
+    const ok = cases.reportIssue(pGvcnFou, {
+      studentId: hv.sid, cycleId: hv.cycleId, topic: 'listening', fromSignalId: sg.id,
+      title: 'Case gửi đúng khoá (PR-S1)', summary: 'Đã xem lại bài, em vướng đúng phần này của môn.',
+      primaryCode: domain.issuesForTopic('listening')[0].code,
+    }) as any;
+    assert((conn.prepare('SELECT cycle_id FROM sos_cases WHERE id = ?').get(ok.id) as any).cycle_id === hv.cycleId, 'Gửi đúng khoá thì vẫn tạo được');
+  });
+
   check('S1 · Tín hiệu đã Bỏ qua không mở Case được nữa', () => {
     const hv = taoHocVien({ classCode: 'MB-FOU 12', weekStart: '2026-09-07' });
     diem(hv.attemptId, 'reading', 10, 40);

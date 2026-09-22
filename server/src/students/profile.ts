@@ -13,7 +13,7 @@ import { entryBandsOf, scoresOf, skipsOf } from '../fasttrack/attempts.ts';
 import { assessedBands, evaluateAttempt } from '../fasttrack/scoring.ts';
 import { evaluateRegular, isRatioCycle, programmeByCode, programmeCodeOfCycle, programmeOfClass } from '../normal/regular.ts';
 import { cycleById, cyclesOf, currentCycle, examPlanOf, targetRevisions } from '../fasttrack/cycles.ts';
-import { canCloseCase, parseMetrics, skillSupportBoard } from '../cases/cases.ts';
+import { parseMetrics, skillSupportBoard } from '../cases/cases.ts';
 import { standingFor, standingLine } from './standing.ts';
 import { missingForStudent, suggestedMockWeeks } from '../classes/schedule.ts';
 import { listSignals } from '../cases/signals.ts';
@@ -896,7 +896,7 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
       canEdit: can(p, PERMISSIONS.STUDENT_EDIT, { studentId }),
       canPlanWeek: can(p, PERMISSIONS.PLAN_WEEK, { studentId }),
       canReport: can(p, PERMISSIONS.SOS_REPORT, { classId: current?.class_id ?? null, studentId }),
-      canClose: canCloseCase(p, { class_id: current?.class_id ?? null, student_id: studentId }),
+      /* RB-6 (PR-S1): quyền hoàn thành Case tính theo MÔN của từng Case — xem `canClose` trên từng thẻ Case, không có cờ chung ở đây. */
       /* Ý thức & Phối hợp (PR-K): ghi vi phạm — mọi GV dạy lớp em đang học (V01, C02 không áp cho Ý thức); xử lý — GVCN của lớp + Quản lý. */
       canRecordViolation: can(p, PERMISSIONS.VIOLATION_RECORD, { classId: current?.class_id ?? null, studentId }),
       canManageDiscipline: canManageDiscipline(p, studentId),

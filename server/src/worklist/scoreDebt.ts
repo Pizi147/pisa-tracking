@@ -37,7 +37,19 @@ export function scoreDebtCells(p: Principal, today: string, branchIds: number[] 
         WHERE ${where.join(' AND ')}
           AND (EXISTS (SELECT 1 FROM attempt_skills k JOIN report_periods r2 ON r2.id = k.planned_period_id
                         WHERE k.attempt_id = a.id AND r2.week_start <= ?)
-               OR (NOT EXISTS (SELECT 1 FROM attempt_skills k2 WHERE k2.attempt_id = a.id) AND rp.week_start <= ?))`,
+               OR (NOT EXISTS (SELECT 1 FROM attempt_skills k2 WHERE k2.attempt_id = a.id) AND rp.week_start <= ?))
+          /*
+           * LỌC TRƯỚC, CHỈ BỎ LƯỢT CHẮC CHẮN KHÔNG NỢ: mọi ô của bộ kỹ năng đã có điểm (lớp thường: số câu đúng ở L R W S; FT: band ở
+           * L R W1 W2 S). Không có dòng này thì mọi lượt đã chấm xong từ đầu khoá đều bị nạp lại mỗi lần mở bảng chi nhánh (Turso).
+           * Luật "còn nợ" vẫn nằm ở \`skillCells\`/\`regularSkillViews\` bên dưới — đây chỉ là tập cha an toàn.
+           */
+          AND (SELECT COUNT(*) FROM assessment_scores sx
+                WHERE sx.attempt_id = a.id
+                  AND CASE WHEN COALESCE(pg.scoring_mode, '') = 'ratio'
+                        THEN sx.raw_score IS NOT NULL AND sx.skill IN ('listening', 'reading', 'writing', 'speaking')
+                        ELSE sx.band IS NOT NULL AND sx.skill IN ('listening', 'reading', 'writing1', 'writing2', 'speaking')
+                      END)
+              < CASE WHEN COALESCE(pg.scoring_mode, '') = 'ratio' THEN 4 ELSE 5 END`,
     )
     .all(...args, today, today) as any[];
   if (!rows.length) return [];

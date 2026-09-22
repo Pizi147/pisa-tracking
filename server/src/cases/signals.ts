@@ -386,7 +386,7 @@ export function linkSignalToCase(p: Principal, signalId: number, caseId: number,
          VALUES (?, 'opened', ?,?,?,?,?,?,?,?,?,?)`,
       )
       .run(caseId, sg.attempt_id, attemptNo, sg.band, sg.expectation, sg.sos_level,
-           sg.detected_on, `Tín hiệu từ kết quả đợt này${scoreText} đã được xác minh và mở thành case`,
+           sg.detected_on, `Tín hiệu từ kết quả đợt này${scoreText} đã được xác minh và mở thành Case`,
            p.userId, nowIso(), `mt:${sg.attempt_id}:${caseId}:opened`);
   }
 

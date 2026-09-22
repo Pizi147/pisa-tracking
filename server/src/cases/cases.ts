@@ -406,8 +406,14 @@ export function reportIssue(p: Principal, input: {
     throw badRequest('Tín hiệu này đã được xử lý rồi (đã thành Case, đã bỏ qua hoặc đã thu hồi).');
   }
 
-  // Lộ trình: gửi rõ thì dùng; mở từ tín hiệu thì dùng ĐÚNG khoá của tín hiệu; không thì lộ trình đang mở.
-  const wantedCycleId = input.cycleId ?? fromSignal?.cycle_id ?? null;
+  /*
+   * Lộ trình: mở từ tín hiệu thì LUÔN là khoá của tín hiệu — gửi kèm khoá khác là lỗi, không phải lựa chọn (§3.10 "đúng khoá").
+   * Không từ tín hiệu: gửi rõ thì dùng; không thì lộ trình đang mở.
+   */
+  if (fromSignal?.cycle_id && input.cycleId && Number(input.cycleId) !== fromSignal.cycle_id) {
+    throw badRequest('Case tạo từ tín hiệu phải nằm đúng khoá của tín hiệu đó.');
+  }
+  const wantedCycleId = fromSignal?.cycle_id ?? input.cycleId ?? null;
   const cycle = wantedCycleId
     ? (conn.prepare('SELECT * FROM learning_cycles WHERE id = ? AND student_id = ?')
         .get(wantedCycleId, input.studentId) as any)
