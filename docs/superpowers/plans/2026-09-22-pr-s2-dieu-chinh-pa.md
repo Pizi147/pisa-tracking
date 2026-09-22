@@ -1355,7 +1355,7 @@ Trong `tx(() => { … })`, ngay **sau** câu `UPDATE case_interventions … WHER
 (2) **Ngăn Case** (mở từ Việc cần làm hoặc từ hồ sơ) › khối PA trong dòng thời gian › nút **Ghi kết quả**: form trong hộp thoại "Ghi kết quả".
 Không có lối vào nào khác (G-12).
 
-- [ ] **Step 1: Tạo `CapNhatTuan.tsx`.**
+- [x] **Step 1: Tạo `CapNhatTuan.tsx`.**
 
 ```tsx
 import { useState } from 'react';
@@ -1663,7 +1663,7 @@ export function LichSuDieuChinh({ revisions }: { revisions: BanDieuChinh[] }) {
 
 Ghi chú: bản **hiện tại** của mô tả là tên PA hiển thị ngay trên dòng PA, nên lịch sử chỉ ghi "Trước: …". Muốn xem chuỗi đủ thì đọc từ dưới lên.
 
-- [ ] **Step 2: `SkillBoard.tsx`.**
+- [x] **Step 2: `SkillBoard.tsx`.**
   - Dòng 9: `import { ActionDialog, OutcomeDialog } from './CasePanel.tsx';` và thêm
     `import { CapNhatTuanForm, LichSuDieuChinh, type BanDieuChinh } from './CapNhatTuan.tsx';`
   - Trong `KhoiPhuongAn`, khối `{editing && ( <InlineResult … /> )}` (~594–597) thay bằng:
@@ -1686,7 +1686,7 @@ Ghi chú: bản **hiện tại** của mô tả là tên PA hiển thị ngay tr
   - `LichSuDieuChinh` và kiểu `BanDieuChinh` chưa dùng ở bước này, Task 9 mới dùng. Dự án không bật `noUnusedLocals`, nên import chưa dùng
     không làm hỏng typecheck. Để nguyên.
 
-- [ ] **Step 3: `CasePanel.tsx`.** Thay toàn bộ hàm `ResultDialog` (~1073–1280) bằng:
+- [x] **Step 3: `CasePanel.tsx`.** Thay toàn bộ hàm `ResultDialog` (~1073–1280) bằng:
 
 ```tsx
 /**
@@ -1715,9 +1715,9 @@ export function ResultDialog({ iv, onClose, onDone }: {
   `canEndWithOutcome`, `stepsForMode`, `type NextStep`. Giữ `RESCHEDULE_TARGETS`, `RESCHEDULE_TARGET_LABEL`, `interventionKindsFor`, `FOLLOWUP_OUTCOMES`,
   `SectionNote`… **nếu** `ActionDialog`/`OutcomeDialog` còn dùng (grep từng tên trước khi xoá).
 
-- [ ] **Step 4: Kiểm kiểu và bộ phép kiểm.** Run: `npm run typecheck` rồi `npm test 2>&1 | tail -3`. Expected: typecheck sạch; **B + 21** ✓
+- [x] **Step 4: Kiểm kiểu và bộ phép kiểm.** Run: `npm run typecheck` rồi `npm test 2>&1 | tail -3`. Expected: typecheck sạch; **B + 21** ✓
   (phép quét chữ `PR-H` và `hoSoHocVien` vẫn xanh).
-- [ ] **Step 5: Commit.** `git add web/src/modules/cases/CapNhatTuan.tsx web/src/modules/cases/SkillBoard.tsx web/src/modules/cases/CasePanel.tsx` ·
+- [x] **Step 5: Commit.** `git add web/src/modules/cases/CapNhatTuan.tsx web/src/modules/cases/SkillBoard.tsx web/src/modules/cases/CasePanel.tsx` ·
   `git commit -m "PR-S2 (8): một form Ghi kết quả 5 mục (Giữ/Điều chỉnh/Thay/Kết thúc) cho hồ sơ học viên và ngăn Case"`
 
 ---
@@ -1740,7 +1740,7 @@ export function ResultDialog({ iv, onClose, onDone }: {
 - **Ngăn Case › khối PA**: dưới mô tả có một dòng `Thay cho: …` hoặc `Được thay bằng: …` (khi có); `<details>` thu gọn "Đã điều chỉnh {n} lần" chứa
   `LichSuDieuChinh`; mỗi khối cập nhật thêm `Còn tồn: …` và `Lý do/Ghi chú: …`. "chu kỳ {n}" → "Đợt {n}". Nút "Cập nhật kết quả" → **"Ghi kết quả"**.
 
-- [ ] **Step 1: Kiểu `Plan` ở `SkillBoard.tsx`.** Thêm vào type `Plan` (sau `lastNote`):
+- [x] **Step 1: Kiểu `Plan` ở `SkillBoard.tsx`.** Thêm vào type `Plan` (sau `lastNote`):
 
 ```ts
   /** PR-S2: khép lại vì sao (`superseded` = Được thay thế) và PA nào thay nó. */
@@ -1751,7 +1751,7 @@ export function ResultDialog({ iv, onClose, onDone }: {
 
   và trong phần tử `updates` thêm `decision: string | null; remainingIssue: string | null; decisionNote: string | null;`.
 
-- [ ] **Step 2: `KhoiPhuongAn` nhận danh sách PA của thẻ** để đọc tên PA thay/bị thay. Tìm chỗ gọi `<KhoiPhuongAn p={…} canEdit={…} onChanged={…} />`
+- [x] **Step 2: `KhoiPhuongAn` nhận danh sách PA của thẻ** để đọc tên PA thay/bị thay. Tìm chỗ gọi `<KhoiPhuongAn p={…} canEdit={…} onChanged={…} />`
   trong `TheCase` (grep `KhoiPhuongAn p=`), thêm prop `plans={c.plans}`. Chữ ký:
   `function KhoiPhuongAn({ p, plans, canEdit, onChanged }: { p: Plan; plans: Plan[]; canEdit: boolean; onChanged?: () => void; })`.
   Trong thân, trên `return`:
@@ -1761,7 +1761,7 @@ export function ResultDialog({ iv, onClose, onDone }: {
   const thayCho = plans.find((x) => x.supersededBy === p.id) ?? null;
 ```
 
-- [ ] **Step 3: Dòng phụ.** Trong `<span className="block text-[11px] text-slate-500 mt-0.5">` (dòng người thực hiện), sau `{p.completedOn && …}` thêm:
+- [x] **Step 3: Dòng phụ.** Trong `<span className="block text-[11px] text-slate-500 mt-0.5">` (dòng người thực hiện), sau `{p.completedOn && …}` thêm:
 
 ```tsx
               {p.closedReason === 'superseded'
@@ -1769,7 +1769,7 @@ export function ResultDialog({ iv, onClose, onDone }: {
                 : p.revisions.length > 0 && <> · điều chỉnh {p.revisions.length} lần</>}
 ```
 
-- [ ] **Step 4: Phần mở ▸.** Trong `<ol id={historyId} …>`:
+- [x] **Step 4: Phần mở ▸.** Trong `<ol id={historyId} …>`:
   - Dòng **đầu** (trước `{p.completedOn && !running && …}`):
 
 ```tsx
@@ -1798,7 +1798,7 @@ export function ResultDialog({ iv, onClose, onDone }: {
     `{thayCho && <li className="text-[11px] text-slate-500">Thay cho: {thayCho.name}</li>}`
   - Import `NEXT_STEP_LABEL` từ `@shared/domain/index.ts` (thêm vào khối import 11–13).
 
-- [ ] **Step 5: `CasePanel.tsx › InterventionBody`.** Trên `return (`:
+- [x] **Step 5: `CasePanel.tsx › InterventionBody`.** Trên `return (`:
 
 ```tsx
   const all: any[] = data.interventions ?? [];
@@ -1837,8 +1837,8 @@ export function ResultDialog({ iv, onClose, onDone }: {
 
   Nút `Cập nhật kết quả` (~584) → `Ghi kết quả`.
 
-- [ ] **Step 6: Kiểm.** Run: `npm run typecheck` rồi `npm test 2>&1 | tail -3`. Expected: sạch; **B + 21** ✓.
-- [ ] **Step 7: Commit.** `git add web/src/modules/cases/SkillBoard.tsx web/src/modules/cases/CasePanel.tsx` ·
+- [x] **Step 6: Kiểm.** Run: `npm run typecheck` rồi `npm test 2>&1 | tail -3`. Expected: sạch; **B + 21** ✓.
+- [x] **Step 7: Commit.** `git add web/src/modules/cases/SkillBoard.tsx web/src/modules/cases/CasePanel.tsx` ·
   `git commit -m "PR-S2 (9): hiện lịch sử điều chỉnh, chuỗi Được thay thế, vấn đề còn tồn và lý do (một dòng phụ, chi tiết trong ▸ và ngăn Case)"`
 
 ---
@@ -2030,3 +2030,5 @@ làm mất lối "Thay bằng phương án khác hoặc nhờ Quản lý" cũ; f
 | 22/09 | 5 | Opus 5 (subagent, một lượt với Task 6–7) · 84d3477 · **746** (B+16) ✓ · lệch plan: thêm MỘT dòng `.reverse()` trong chuỗi `updates` của thân `caseCardOf` (truy vấn `follows` xếp mới→cũ; hai lần cập nhật cùng ngày ra ngược, phép kiểm của plan không qua được). Người rà (Opus 5) duyệt: đúng, sửa luôn lỗi thứ tự cùng ngày ở ▸ SkillBoard; chỉ thêm dòng, không chạm vùng PR-AN |
 | 22/09 | 6 | Opus 5 (subagent) · 65613fd · **748** (B+18) ✓ · các phép PR-T xác nhận/thay gợi ý vẫn xanh · rà: duyệt; ghi chú nhỏ: lý do do người gõ lúc xác nhận chưa bắt tối thiểu 8 ký tự (plan không yêu cầu) |
 | 22/09 | 7 | Opus 5 (subagent) · 859105f · **751** (B+21) ✓ · cổng 🛑: hai phép khoá xanh ngay, phép thứ ba đỏ đúng ở dòng F05 → sửa đúng một dòng `effectiveness.ts` · F05 cũ vẫn xanh · rà: duyệt |
+| 22/09 | 8 | Opus 5 (subagent, một lượt với Task 9) · 116c675 · **751** ✓, kiểm kiểu sạch, vite build sạch · lệch nhỏ có lợi: bỏ hai chú thích cũ trên ResultDialog · rà (Opus 5): cần sửa 1 (form chưa báo trước lỗi "ngày dự kiến kết thúc sớm hơn ngày cập nhật") → vòng sửa 1 (bc55f75): thêm kiểm ngày đó + ngày cập nhật/ngày kết thúc không sau hôm nay + `title` cho nút Ghi kết quả (G-7) → rà lại: đạt |
+| 22/09 | 9 | Opus 5 (subagent) · c64c4bb · **751** ✓ · `plans={c.plans}` thêm ở CẢ HAI chỗ gọi KhoiPhuongAn · lệch nhỏ có lợi: PA giữa chuỗi A→B→C hiện đủ "Thay cho: A · Được thay bằng: C"; ▸ của PA bị thay không lặp dòng "kết thúc phương án" cùng ngày với "Được thay bằng"; `tabular-nums` · rà: đạt sau vòng sửa 1 |
