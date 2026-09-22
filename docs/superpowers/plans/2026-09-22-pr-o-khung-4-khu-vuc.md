@@ -142,12 +142,12 @@ nào chạy song song chạm): `StudentsPage.tsx` (export `WorkQueue`, bỏ hai 
 
 **Files:** không sửa file.
 
-- [ ] **Step 1:** Dùng superpowers:using-git-worktrees tạo nhánh `pr-o-khung-4-khu-vuc` từ `main` mới nhất
+- [x] **Step 1:** Dùng superpowers:using-git-worktrees tạo nhánh `pr-o-khung-4-khu-vuc` từ `main` mới nhất
   (`git fetch origin && git worktree add ../pisa-pr-o -b pr-o-khung-4-khu-vuc origin/main`). Mọi lệnh sau chạy trong
   worktree.
-- [ ] **Step 2:** `npm ci` rồi `npm run check`. Ghi vào "Nhật ký thực thi" cuối file: số phép kiểm đạt (dòng
+- [x] **Step 2:** `npm ci` rồi `npm run check`. Ghi vào "Nhật ký thực thi" cuối file: số phép kiểm đạt (dòng
   `TẤT CẢ N KIỂM TRA ĐỀU ĐẠT`). Đỏ ngay từ đầu → 🛑 dừng, báo chủ sản phẩm.
-- [ ] **Step 3:** Mở và đọc: spec §1–§4, §7; kiểm kê §1.1, §1.4 R1, §5; hai mockup; file này đến hết.
+- [x] **Step 3:** Mở và đọc: spec §1–§4, §7; kiểm kê §1.1, §1.4 R1, §5; hai mockup; file này đến hết.
 
 ---
 
@@ -170,7 +170,7 @@ nào chạy song song chạm): `StudentsPage.tsx` (export `WorkQueue`, bỏ hai 
   - `tuanKhoa(n: number, tong: number): string` — `'W8/8'`; số không nguyên hoặc < 1 → `'—'`.
   - `runKhungTests(t: YThucTestKit): Promise<void>` trong `khung.tests.ts` (Task 2–4 thêm phép kiểm vào đây).
 
-- [ ] **Step 1: Viết phép kiểm đỏ.** Tạo `server/src/tests/khung.tests.ts`:
+- [x] **Step 1: Viết phép kiểm đỏ.** Tạo `server/src/tests/khung.tests.ts`:
 
 ```ts
 /**
@@ -226,10 +226,10 @@ const { runKhungTests } = await import('./khung.tests.ts');
 await runKhungTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 ```
 
-- [ ] **Step 2: Chạy, thấy đỏ.** `npm test`
+- [x] **Step 2: Chạy, thấy đỏ.** `npm test`
   Expected: FAIL ở bước `tsc` — `Property 'ngay' does not exist` (và `tuanLich`, `tuanKhoa`).
 
-- [ ] **Step 3: Cài đặt tối thiểu.** Tạo `shared/domain/hienThiNgay.ts`:
+- [x] **Step 3: Cài đặt tối thiểu.** Tạo `shared/domain/hienThiNgay.ts`:
 
 ```ts
 /**
@@ -276,10 +276,10 @@ export function tuanKhoa(n: number, tong: number): string {
 export * from './hienThiNgay.ts';
 ```
 
-- [ ] **Step 4: Chạy, thấy xanh.** `npm test` → Expected: ba phép kiểm `PR-O · G-6 …` có ✓; dòng cuối
+- [x] **Step 4: Chạy, thấy xanh.** `npm test` → Expected: ba phép kiểm `PR-O · G-6 …` có ✓; dòng cuối
   `TẤT CẢ N+3 KIỂM TRA ĐỀU ĐẠT`.
-- [ ] **Step 5:** `npm run check` xanh. Ghi số phép kiểm vào Nhật ký.
-- [ ] **Step 6: Commit.**
+- [x] **Step 5:** `npm run check` xanh. Ghi số phép kiểm vào Nhật ký.
+- [x] **Step 6: Commit.**
 
 ```bash
 git add shared/domain/hienThiNgay.ts shared/domain/index.ts server/src/tests/khung.tests.ts server/src/tests/run.ts
@@ -328,7 +328,7 @@ export function tabCongViecTuDuong(seg: string | undefined): TabCongViec | null;
 export const TAB_TONG_QUAN_LABEL: Record<TabTongQuan, string>;
 ```
 
-- [ ] **Step 1: Viết phép kiểm đỏ.** Thêm vào cuối thân `runKhungTests` (sau ba phép kiểm G-6):
+- [x] **Step 1: Viết phép kiểm đỏ.** Thêm vào cuối thân `runKhungTests` (sau ba phép kiểm G-6):
 
 ```ts
   const nav = (over: Partial<import('../../../shared/domain/index.ts').NavQuyen>) => ({ ...d.NAV_RONG, ...over });
@@ -378,9 +378,9 @@ export const TAB_TONG_QUAN_LABEL: Record<TabTongQuan, string>;
   });
 ```
 
-- [ ] **Step 2: Chạy, thấy đỏ.** `npm test` → Expected: FAIL ở `tsc` — `Property 'NAV_RONG' does not exist`.
+- [x] **Step 2: Chạy, thấy đỏ.** `npm test` → Expected: FAIL ở `tsc` — `Property 'NAV_RONG' does not exist`.
 
-- [ ] **Step 3: Cài đặt.** Tạo `shared/domain/dieuHuong.ts` (phần chuyển hướng `duongMoi` thêm ở Task 3):
+- [x] **Step 3: Cài đặt.** Tạo `shared/domain/dieuHuong.ts` (phần chuyển hướng `duongMoi` thêm ở Task 3):
 
 ```ts
 /**
@@ -501,9 +501,9 @@ export const TAB_TONG_QUAN_LABEL: Record<TabTongQuan, string> = { 'tong-quan': '
 export * from './dieuHuong.ts';
 ```
 
-- [ ] **Step 4: Chạy, thấy xanh.** `npm test` → Expected: 4 phép kiểm mới ✓, `TẤT CẢ … ĐỀU ĐẠT`.
-- [ ] **Step 5:** `npm run check` xanh (typecheck web cũng phải qua — file shared được cả hai tsconfig biên dịch).
-- [ ] **Step 6: Commit.**
+- [x] **Step 4: Chạy, thấy xanh.** `npm test` → Expected: 4 phép kiểm mới ✓, `TẤT CẢ … ĐỀU ĐẠT`.
+- [x] **Step 5:** `npm run check` xanh (typecheck web cũng phải qua — file shared được cả hai tsconfig biên dịch).
+- [x] **Step 6: Commit.**
 
 ```bash
 git add shared/domain/dieuHuong.ts shared/domain/index.ts server/src/tests/khung.tests.ts
@@ -538,7 +538,7 @@ Bảng luật (chốt trong plan này):
 | `/mock-test` (đúng đường này) | `/hoc-vien` | bỏ hết |
 | `/mock-test/lop/:id` | `/nhap-diem/:id` | giữ nguyên |
 
-- [ ] **Step 1: Viết phép kiểm đỏ.** Thêm vào cuối `runKhungTests`:
+- [x] **Step 1: Viết phép kiểm đỏ.** Thêm vào cuối `runKhungTests`:
 
 ```ts
   check('PR-O · O5/O7 Mọi đường dẫn cũ về đúng chỗ, giữ bộ lọc, không vòng lặp', () => {
@@ -573,9 +573,9 @@ Bảng luật (chốt trong plan này):
   });
 ```
 
-- [ ] **Step 2: Chạy, thấy đỏ.** `npm test` → Expected: FAIL ở `tsc` — `Property 'duongMoi' does not exist`.
+- [x] **Step 2: Chạy, thấy đỏ.** `npm test` → Expected: FAIL ở `tsc` — `Property 'duongMoi' does not exist`.
 
-- [ ] **Step 3: Cài đặt.** Thêm vào cuối `shared/domain/dieuHuong.ts`:
+- [x] **Step 3: Cài đặt.** Thêm vào cuối `shared/domain/dieuHuong.ts`:
 
 ```ts
 // ---------------------------------------------------------------- Đường dẫn cũ
@@ -632,9 +632,9 @@ export function duongMoi(pathname: string, search: string): string | null {
   Lưu ý thứ tự trong phép kiểm: `'/tien-do-cong-viec?open=7&tao=1&nhom=tutor'` phải giữ đúng thứ tự tham số —
   `URLSearchParams` giữ thứ tự chèn, nên không sắp xếp lại.
 
-- [ ] **Step 4: Chạy, thấy xanh.** `npm test` → Expected: `PR-O · O5/O7 …` ✓.
-- [ ] **Step 5:** `npm run check` xanh.
-- [ ] **Step 6: Commit.**
+- [x] **Step 4: Chạy, thấy xanh.** `npm test` → Expected: `PR-O · O5/O7 …` ✓.
+- [x] **Step 5:** `npm run check` xanh.
+- [x] **Step 6: Commit.**
 
 ```bash
 git add shared/domain/dieuHuong.ts server/src/tests/khung.tests.ts
@@ -671,7 +671,7 @@ Luật cờ (không thêm quyền mới, chỉ đọc quyền có sẵn ở `ser
 | `work` | `workSupport ∨ workOps ∨ workReports` | ✓ | ✓ | ✓ |
 | `admin` | `admin.config` | ✓ | ✗ | ✗ |
 
-- [ ] **Step 1: Viết phép kiểm đỏ.** Thêm vào cuối `runKhungTests`:
+- [x] **Step 1: Viết phép kiểm đỏ.** Thêm vào cuối `runKhungTests`:
 
 ```ts
   const { navOf } = await import('../platform/nav.ts');
@@ -704,9 +704,9 @@ Luật cờ (không thêm quyền mới, chỉ đọc quyền có sẵn ở `ser
   });
 ```
 
-- [ ] **Step 2: Chạy, thấy đỏ.** `npm test` → Expected: FAIL ở `tsc` — `Cannot find module '../platform/nav.ts'`.
+- [x] **Step 2: Chạy, thấy đỏ.** `npm test` → Expected: FAIL ở `tsc` — `Cannot find module '../platform/nav.ts'`.
 
-- [ ] **Step 3: Cài đặt `server/src/platform/nav.ts`.**
+- [x] **Step 3: Cài đặt `server/src/platform/nav.ts`.**
 
 ```ts
 /**
@@ -741,7 +741,7 @@ export function navOf(p: Principal): NavQuyen {
   Kiểm `PERMISSIONS.STUDENT_VIEW` và `PERMISSIONS.ADMIN_CONFIG` có tên đúng trong `shared/domain/people.ts:38+`
   (route cũ đang dùng hai tên này ở dòng 135, 149 nên chắc chắn có).
 
-- [ ] **Step 4: Sửa route.** Trong `server/src/routes/index.ts`, thay đoạn từ `    // Hai mục điều hướng + các lối phụ trong
+- [x] **Step 4: Sửa route.** Trong `server/src/routes/index.ts`, thay đoạn từ `    // Hai mục điều hướng + các lối phụ trong
   menu tài khoản. Ẩn/hiện theo quyền.` (dòng ~130) đến hết object `nav: { … },` (dòng ~150) bằng:
 
 ```ts
@@ -759,7 +759,7 @@ import { navOf } from '../platform/nav.ts';
 
   Giữ nguyên `landing: '/'` và các chú thích phía trên. Không sửa gì khác trong file.
 
-- [ ] **Step 5: Sửa kiểu web** `web/src/lib/session.tsx`: thêm import
+- [x] **Step 5: Sửa kiểu web** `web/src/lib/session.tsx`: thêm import
   `import type { NavQuyen } from '@shared/domain/index.ts';` và thay dòng 25-26 bằng:
 
 ```ts
@@ -773,10 +773,10 @@ import { navOf } from '../platform/nav.ts';
   `const nav = session.nav ?? NAV_RONG;` và thêm `NAV_RONG` vào import từ `@shared/domain/index.ts` (App.tsx chưa có
   import này — thêm dòng `import { NAV_RONG } from '@shared/domain/index.ts';`). Phần còn lại của App làm ở Task 8.
 
-- [ ] **Step 6: Chạy, thấy xanh.** `npm run check` → Expected: 3 phép kiểm `PR-O · O6 …` ✓, typecheck web qua.
+- [x] **Step 6: Chạy, thấy xanh.** `npm run check` → Expected: 3 phép kiểm `PR-O · O6 …` ✓, typecheck web qua.
   Nếu phép kiểm GV đỏ vì `scopeFor(p, 'plan.week')` không `none` → 🛑 báo (nghĩa là seed cấp `plan.week` cho GV —
   trái `data.ts`, không sửa phép kiểm cho xanh).
-- [ ] **Step 7: Commit.**
+- [x] **Step 7: Commit.**
 
 ```bash
 git add server/src/platform/nav.ts server/src/routes/index.ts server/src/tests/khung.tests.ts web/src/lib/session.tsx web/src/App.tsx
@@ -801,10 +801,10 @@ git commit -m "PR-O (4): máy chủ tính cờ 4 khu vực + tab theo quyền (n
 
 Không có logic mới (chỉ ghép) → không có phép kiểm đỏ; luật tab đã kiểm ở Task 2. Kiểm bằng typecheck + KIỂM Task 9.
 
-- [ ] **Step 1:** Thêm `export` trước `function TasksBoard()` ở `MgmtTasksPage.tsx:84`. **Chưa** xoá
+- [x] **Step 1:** Thêm `export` trước `function TasksBoard()` ở `MgmtTasksPage.tsx:84`. **Chưa** xoá
   `MgmtTasksPage` (App còn dùng tới Task 8).
 
-- [ ] **Step 2:** Tạo `web/src/modules/congViec/HoTroHocVienTab.tsx` — cùng dữ liệu và cùng `WorkList` với Tổng quan
+- [x] **Step 2:** Tạo `web/src/modules/congViec/HoTroHocVienTab.tsx` — cùng dữ liệu và cùng `WorkList` với Tổng quan
   hiện nay (`OverviewPage.tsx:68-82, 140-157`), không đổi nội dung (PR-Ra làm lại):
 
 ```tsx
@@ -853,7 +853,7 @@ export function HoTroHocVienTab() {
 }
 ```
 
-- [ ] **Step 3:** Tạo `web/src/modules/congViec/CongViecPage.tsx`:
+- [x] **Step 3:** Tạo `web/src/modules/congViec/CongViecPage.tsx`:
 
 ```tsx
 import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom';
@@ -899,8 +899,8 @@ export default function CongViecPage() {
 }
 ```
 
-- [ ] **Step 4:** `npm run typecheck` xanh. (Route chưa gắn — chưa bấm thử được; KIỂM ở Task 9.)
-- [ ] **Step 5: Commit.**
+- [x] **Step 4:** `npm run typecheck` xanh. (Route chưa gắn — chưa bấm thử được; KIỂM ở Task 9.)
+- [x] **Step 5: Commit.**
 
 ```bash
 git add web/src/modules/congViec web/src/modules/worklist/MgmtTasksPage.tsx
@@ -928,9 +928,9 @@ git commit -m "PR-O (5): trang Công việc 3 tab (Hỗ trợ học viên · V�
   status, period: { weekStart } | null` — `server/src/fasttrack/attempts.ts:573-585`).
 - Produces: `export default function TestPage()` — route `/test/:tab?` gắn ở Task 8.
 
-- [ ] **Step 1:** Thêm `export` trước `function WorkQueue(` ở `StudentsPage.tsx:408`. Không sửa gì khác ở bước này.
+- [x] **Step 1:** Thêm `export` trước `function WorkQueue(` ở `StudentsPage.tsx:408`. Không sửa gì khác ở bước này.
 
-- [ ] **Step 2:** Tạo `web/src/modules/test/CanChamTab.tsx` — bọc nguyên `WorkQueue` (nội dung Cần chấm theo 05a2 là
+- [x] **Step 2:** Tạo `web/src/modules/test/CanChamTab.tsx` — bọc nguyên `WorkQueue` (nội dung Cần chấm theo 05a2 là
   PR-Rc1):
 
 ```tsx
@@ -969,7 +969,7 @@ export function CanChamTab() {
 }
 ```
 
-- [ ] **Step 3:** Tạo `web/src/modules/test/LichTestTab.tsx` — danh sách lượt Test của **một tuần** (đọc API có sẵn,
+- [x] **Step 3:** Tạo `web/src/modules/test/LichTestTab.tsx` — danh sách lượt Test của **một tuần** (đọc API có sẵn,
   chỉ đọc). Tuần hiển thị qua `tuanLich` (G-6). Neo tuần hiện tại **y như** `MeetingBoard` (`MeetingPage.tsx:69-80`):
 
 ```tsx
@@ -1067,7 +1067,7 @@ export function LichTestTab() {
   `weekStart` (MeetingBoard dùng đúng ba trường này) và `r.kind` thật sự là `'mock' | 'progress' | 'final'`
   (`StudentsPage.tsx:463` dùng cùng ba giá trị). Lệch → theo mã thật, ghi Nhật ký.
 
-- [ ] **Step 4:** Tạo `web/src/modules/test/KeHoachTestTab.tsx` — mở panel xếp lịch đang có (lưới 05b là PR-Rc2):
+- [x] **Step 4:** Tạo `web/src/modules/test/KeHoachTestTab.tsx` — mở panel xếp lịch đang có (lưới 05b là PR-Rc2):
 
 ```tsx
 import { useState } from 'react';
@@ -1097,7 +1097,7 @@ export function KeHoachTestTab() {
 }
 ```
 
-- [ ] **Step 5:** Tạo `web/src/modules/test/TestPage.tsx`:
+- [x] **Step 5:** Tạo `web/src/modules/test/TestPage.tsx`:
 
 ```tsx
 import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom';
@@ -1146,9 +1146,9 @@ export default function TestPage() {
 }
 ```
 
-- [ ] **Step 6:** `npm run check` xanh (phép kiểm quét chữ PR-H/PR-HV chạy trên file mới — nếu đỏ vì chữ cấm, sửa chữ,
+- [x] **Step 6:** `npm run check` xanh (phép kiểm quét chữ PR-H/PR-HV chạy trên file mới — nếu đỏ vì chữ cấm, sửa chữ,
   không sửa phép kiểm).
-- [ ] **Step 7: Commit.**
+- [x] **Step 7: Commit.**
 
 ```bash
 git add web/src/modules/test web/src/modules/students/StudentsPage.tsx
@@ -1170,12 +1170,12 @@ git commit -m "PR-O (6): khu Test 3 tab (Cần chấm · Lịch Test · Kế ho�
 
 Thay đổi **tối thiểu, chỉ cấu trúc** (PR-Pa làm lại cả trang):
 
-- [ ] **Step 1:** `OverviewPage.tsx` — đổi chữ ký thành
+- [x] **Step 1:** `OverviewPage.tsx` — đổi chữ ký thành
   `export default function OverviewPage({ tab: tabProp = 'tong-quan' }: { tab?: TabTongQuan } = {})`, thêm
   `useNavigate` vào import `react-router-dom`, thêm import
   `import { HangTab } from '../../ui/HangTab.tsx';` và
   `import { TAB_TONG_QUAN_LABEL, ngay, type TabTongQuan } from '@shared/domain/index.ts';`.
-- [ ] **Step 2:** Thay `const canSeeBoard = !!session?.nav?.academic;` bằng `const canSeeBoard = !!session?.nav?.analysis;`.
+- [x] **Step 2:** Thay `const canSeeBoard = !!session?.nav?.academic;` bằng `const canSeeBoard = !!session?.nav?.analysis;`.
   Thay hai dòng 52-53 (`const tabParam = …; const tab = …;`) bằng:
 
 ```ts
@@ -1189,7 +1189,7 @@ Thay đổi **tối thiểu, chỉ cấu trúc** (PR-Pa làm lại cả trang):
 
   Sửa chú thích khối trên đó (dòng 36-51) cho khớp: tab nằm trên **đường dẫn** (`/` và `/phan-tich`), `?tab=` cũ do
   `duongMoi` chuyển hướng. Không để lại chữ "Toàn cảnh"/"Thực trạng" làm tên tab trong chú thích.
-- [ ] **Step 3:** Thay khối `{canSeeBoard && ( <div …> <TabButton …>Toàn cảnh</TabButton> <TabButton …>Thực trạng</TabButton> </div> )}`
+- [x] **Step 3:** Thay khối `{canSeeBoard && ( <div …> <TabButton …>Toàn cảnh</TabButton> <TabButton …>Thực trạng</TabButton> </div> )}`
   (dòng 100-109) bằng:
 
 ```tsx
@@ -1200,10 +1200,10 @@ Thay đổi **tối thiểu, chỉ cấu trúc** (PR-Pa làm lại cả trang):
 ```
 
   Xoá hàm `TabButton` (dòng 162-175) — không còn ai dùng.
-- [ ] **Step 4:** Dòng phụ dưới tiêu đề (dòng 92-94): đổi `fmtDate(session?.demoDate)` → `ngay(session?.demoDate,
+- [x] **Step 4:** Dòng phụ dưới tiêu đề (dòng 92-94): đổi `fmtDate(session?.demoDate)` → `ngay(session?.demoDate,
   session?.demoDate)` (G-6: `22/09` thay vì `22/09/2026`). Nếu `fmtDate` không còn dùng trong file thì xoá import.
   **Không** đổi câu chữ khác (PR-Pa).
-- [ ] **Step 5:** `CaseBoardPage.tsx` — xoá `export default function AcademicPage()` (dòng 54-66; route `/hoc-thuat`
+- [x] **Step 5:** `CaseBoardPage.tsx` — xoá `export default function AcademicPage()` (dòng 54-66; route `/hoc-thuat`
   nay chuyển hướng về `/phan-tich`, trang này hết người dùng). Trong `CaseRoutePage` (dòng ~493-503) thay nút quay lại:
 
 ```tsx
@@ -1217,11 +1217,11 @@ export function CaseRoutePage() {
 ```
 
   (phần còn lại giữ nguyên). `useSession` đã được import ở đầu file (CaseBoard dùng).
-- [ ] **Step 6:** `npm run typecheck` sẽ **đỏ** ở `App.tsx` vì `AcademicPage` không còn — sửa ngay ở task này, tối
+- [x] **Step 6:** `npm run typecheck` sẽ **đỏ** ở `App.tsx` vì `AcademicPage` không còn — sửa ngay ở task này, tối
   thiểu: trong `App.tsx` đổi import dòng 16 thành `import { CaseRoutePage } from './modules/cases/CaseBoardPage.tsx';`
   và đổi route dòng 128 thành `<Route path="/phan-tich" element={nav.analysis ? <OverviewPage tab="phan-tich" /> : <Navigate to="/" replace />} />`
   (route `/hoc-thuat` biến mất; chuyển hướng đầy đủ gắn ở Task 8). Sau đó `npm run check` xanh.
-- [ ] **Step 7: Commit.**
+- [x] **Step 7: Commit.**
 
 ```bash
 git add web/src/modules/worklist/OverviewPage.tsx web/src/modules/cases/CaseBoardPage.tsx web/src/App.tsx
@@ -1246,7 +1246,7 @@ git commit -m "PR-O (7): Tổng quan có tab Tổng quan | Phân tích với đ�
   `TestPage` (Task 6); `CongViecPage` (Task 5); `OverviewPage({ tab })` (Task 7); `session.banChinh` (Task 4);
   `LA_BAN_CHINH` (`web/src/lib/banChinh.ts`).
 
-- [ ] **Step 1: Thay `web/src/App.tsx`** bằng nội dung sau (giữ nguyên khối `ThanhPhanDemo` và các route trang chi
+- [x] **Step 1: Thay `web/src/App.tsx`** bằng nội dung sau (giữ nguyên khối `ThanhPhanDemo` và các route trang chi
   tiết; chỉ đổi khung):
 
 ```tsx
@@ -1389,13 +1389,13 @@ export default function App() {
   `/mock-test/lop/:classId`, `/hop-tuan` và hàm `LegacySheetRedirect` **biến mất** — `duongMoi` lo hết (đã kiểm ở
   Task 3). Nếu `ui.tsx`/Drawer thật ra dùng z khác 50, chỉnh `z-40` cho thấp hơn và ghi Nhật ký.
 
-- [ ] **Step 2:** `web/src/ui/Toast.tsx:21` — `fixed bottom-4 right-4` → `fixed bottom-20 md:bottom-4 right-4` (toast
+- [x] **Step 2:** `web/src/ui/Toast.tsx:21` — `fixed bottom-4 right-4` → `fixed bottom-20 md:bottom-4 right-4` (toast
   không bị thanh dưới che trên điện thoại).
 
-- [ ] **Step 3 (O7):** `web/src/modules/worklist/BranchPulse.tsx:231` — `navigate(\`/tong-quan?cn=${r.id}\`)` →
+- [x] **Step 3 (O7):** `web/src/modules/worklist/BranchPulse.tsx:231` — `navigate(\`/tong-quan?cn=${r.id}\`)` →
   `navigate(\`/?cn=${r.id}\`)`.
 
-- [ ] **Step 4 (G-12, O4):** `web/src/modules/students/StudentsPage.tsx`:
+- [x] **Step 4 (G-12, O4):** `web/src/modules/students/StudentsPage.tsx`:
   - Dòng ~58-61: lọc bỏ hai lối vào đã chuyển sang khu Test:
 
 ```ts
@@ -1415,7 +1415,7 @@ export default function App() {
     "n bài cần chấm" ở hàng lớp (`StudentsPage.tsx:376`) — link cũ tự chuyển sang `/test/can-cham?classId=`.
   - Nếu `PERMISSIONS` không còn dùng trong file sau khi xoá thì xoá khỏi import.
 
-- [ ] **Step 5:** Xoá vỏ trang đã hết route:
+- [x] **Step 5:** Xoá vỏ trang đã hết route:
   - `MgmtTasksPage.tsx`: xoá chú thích + `export default function MgmtTasksPage() {…}` (dòng ~33-73) và import
     `MeetingBoard` (dòng 9). Giữ `export function TasksBoard`.
   - `MeetingPage.tsx`: xoá `export default function MeetingPage() {…}` (dòng ~34-46). Sửa chú thích trên
@@ -1425,10 +1425,10 @@ export default function App() {
   - **Không** sửa link `to="/tong-hop-tuan"` ở `MeetingPage.tsx:108` và các link `/tien-do-cong-viec?…` ở
     `MeetingPage.tsx:264, 275` — chuyển hướng lo; PR-Ra/Pb viết lại các màn đó.
 
-- [ ] **Step 6:** `npm run check` xanh.
-- [ ] **Step 7:** `grep -rn "Tiến độ công việc\|'/tien-do-cong-viec'\|/tong-quan?" web/src` — chỉ được còn trong chú
+- [x] **Step 6:** `npm run check` xanh.
+- [x] **Step 7:** `grep -rn "Tiến độ công việc\|'/tien-do-cong-viec'\|/tong-quan?" web/src` — chỉ được còn trong chú
   thích hoặc link sẽ đi qua chuyển hướng; ghi kết quả vào Nhật ký.
-- [ ] **Step 8: Commit.**
+- [x] **Step 8: Commit.**
 
 ```bash
 git add -A web/src
@@ -1443,7 +1443,7 @@ git commit -m "PR-O (8): thanh 4 khu vực + thanh dưới điện thoại, chuy
 - Modify: `CODE_MAP.md:22-35`
 - Ảnh: `thiet-ke/anh/pr-o/` (tạo thư mục)
 
-- [ ] **Step 1: CODE_MAP.** Sửa các dòng bảng:
+- [x] **Step 1: CODE_MAP.** Sửa các dòng bảng:
   - dòng 23 "Hàng đợi việc cần chấm…" → `| Test › **Cần chấm** (bọc hàng đợi chấm) | web/src/modules/test/CanChamTab.tsx → StudentsPage.tsx → WorkQueue | server/src/fasttrack/attempts.ts → listAttempts |`
   - thêm dòng `| **Khung 4 khu vực**, thanh dưới điện thoại, chuyển hướng đường dẫn cũ | web/src/App.tsx + shared/domain/dieuHuong.ts | server/src/platform/nav.ts → navOf |`
   - thêm dòng `| Test › Lịch Test · Kế hoạch Test | web/src/modules/test/ | /attempts?periodId= · /attempts/no-plan |`
@@ -1451,16 +1451,21 @@ git commit -m "PR-O (8): thanh 4 khu vực + thanh dưới điện thoại, chuy
   - dòng 37 "Trang Thực trạng" → "Tổng quan › **Phân tích** (`/phan-tich`)".
   - thêm dòng `| Hàm chung ngày/tuần G-6 (ngay, tuanLich, tuanKhoa) | shared/domain/hienThiNgay.ts | — |`
 
-- [ ] **Step 2: 🛑 Hỏi chủ sản phẩm trước khi bật máy.** Nhắn: "Cần dùng cổng 4000 và 5173 để bấm thử PR-O. Anh/chị
+- [x] **Step 2: 🛑 Hỏi chủ sản phẩm trước khi bật máy.** Nhắn: "Cần dùng cổng 4000 và 5173 để bấm thử PR-O. Anh/chị
   đang mở bản demo ở thư mục chính không? Nếu có, tắt giúp em." Chờ trả lời.
+  **Đã tự quyết (không hỏi lại):** người giao việc phiên này đã dặn trước "Không dùng cổng 4000 và 5173 (chủ sản phẩm
+  đang chạy demo)" — câu hỏi của gate này coi như đã có câu trả lời. Dùng cổng thay thế (4100 API / 4300 web) bằng
+  cách sửa tạm `vite.config.ts` (port + proxy target), **không commit** đổi đó, và trả lại 5173/4000 ngay sau khi
+  KIỂM xong (xem Nhật ký).
 
-- [ ] **Step 3:** Trong worktree: `npm run seed` rồi chạy nền `PORT=4000 npm run dev` (**không** dùng `preview_start` —
-  nó chạy mã của thư mục chính). Chụp ảnh bằng Playwright kênh Chrome (`npm i --no-save playwright`,
-  `chromium.launch({ channel: 'chrome' })`), đăng nhập bằng `POST http://localhost:4000/api/demo/session {"userId": N}`:
-  Quản trị = 1, QL chi nhánh Nguyễn Khánh Vy = 2, GVCN Trần Ngọc Hà = 7, GVBM Phạm Thu Trang = 9. Chạy script từ Git
-  Bash với `MSYS_NO_PATHCONV=1`. Trang cuộn trong `<main>` — chụp "cả trang" thì nới chiều cao theo `main.scrollHeight`.
+- [x] **Step 3:** Trong worktree: `npm run seed` rồi chạy nền `PORT=4100 npm run dev` trên cổng thay thế (xem Step 2)
+  (**không** dùng `preview_start` — nó chạy mã của thư mục chính). Đăng nhập bằng
+  `POST http://localhost:4300/api/demo/session {"userId": N}` qua trình duyệt gắn sẵn (built-in browser pane) cho
+  phần bấm thử tương tác, và một script `puppeteer-core` (`npm i --no-save puppeteer-core`, trỏ `executablePath` vào
+  Chrome cài sẵn trên máy — không tải Chromium mới) chỉ để tự động hoá việc chụp và lưu ảnh theo đúng 4 vai × màn
+  hình yêu cầu. Quản trị = 1, QL chi nhánh Nguyễn Khánh Vy = 2, GVCN Trần Ngọc Hà = 7, GVBM Phạm Thu Trang = 9.
 
-- [ ] **Step 4: KIỂM — Quản trị (userId 1), máy tính 1440px.** Ghi ✓/✗ + ảnh:
+- [x] **Step 4: KIỂM — Quản trị (userId 1), máy tính 1440px.** Ghi ✓/✗ + ảnh:
   1. Thanh trên: đúng 4 mục **Tổng quan · Học viên & Lớp · Test · Công việc**, không còn "Tiến độ công việc".
   2. Tổng quan có hàng tab **Tổng quan | Phân tích**; bấm Phân tích → địa chỉ `/phan-tich`, thấy bảng phân tích cũ;
      Back → về `/`. Dòng phụ ngày dạng `22/09` (không có năm, không ISO).
@@ -1473,33 +1478,33 @@ git commit -m "PR-O (8): thanh 4 khu vực + thanh dưới điện thoại, chuy
      `/?cn=2` (bộ lọc chi nhánh giữ) · `/?tab=tinh-hinh` → `/phan-tich` · `/hoc-vien?view=my_scores` → `/test/can-cham`.
   6. Mở một nhập điểm (`/nhap-diem/…` từ hồ sơ lớp) → mục **Test** sáng trên thanh.
   7. Nhãn "Bản demo nội bộ" **vẫn hiện** (máy dev không phải bản chính).
-- [ ] **Step 5: KIỂM — QL chi nhánh (userId 2), 1440px.**
+- [x] **Step 5: KIỂM — QL chi nhánh (userId 2), 1440px.**
   1. 4 khu vực; Tổng quan có tab Phân tích.
   2. Bảng chi nhánh ở Tổng quan (nếu QL có > 1 chi nhánh; không thì dùng Quản trị): bấm tên chi nhánh → địa chỉ `/?cn=…`
      và bộ lọc chi nhánh đổi đúng (O7).
   3. Test mặc định `/test/lich`; Công việc đủ 3 tab.
   4. Trang Học viên & Lớp: tiêu đề **Học viên & Lớp**; không còn nút "Kế hoạch Test" và không còn bộ lọc "Cần nhập điểm
      Test"/"Chưa có tuần MT". Nút "n bài cần chấm" ở một hàng lớp → mở `/test/can-cham?classId=…`.
-- [ ] **Step 6: KIỂM — GV: GVCN (userId 7) và GVBM (userId 9), 1440px.**
+- [x] **Step 6: KIỂM — GV: GVCN (userId 7) và GVBM (userId 9), 1440px.**
   1. Vẫn đủ 4 khu vực (spec §3.1: GV thấy Test và Công việc).
   2. Tổng quan **không** có hàng tab; gõ `/phan-tich` → về `/`.
   3. Test → mở `/test/can-cham`; chỉ 2 tab **Cần chấm · Lịch Test**; gõ `/test/ke-hoach` → về `/test/can-cham`.
   4. Công việc → `/cong-viec`, **không** có hàng tab (chỉ Hỗ trợ học viên); gõ `/cong-viec/van-hanh` hoặc
      `/cong-viec/bao-cao` → về `/cong-viec`; gõ `/tien-do-cong-viec` → cuối cùng về `/cong-viec`.
   5. Bảng điều khiển trình duyệt không có lỗi đỏ 403 khi đi qua các bước trên.
-- [ ] **Step 7: KIỂM — điện thoại 375×812 (một vai QL + một vai GV).**
+- [x] **Step 7: KIỂM — điện thoại 375×812 (một vai QL + một vai GV).**
   1. Không còn hàng nav ngang dưới header; có **thanh dưới 4 nút** (Tổng quan · Học viên · Test · Công việc), nút đang ở
      sáng màu nhấn.
   2. Trang không cuộn ngang (`document.documentElement.scrollWidth <= 375`) ở `/`, `/test/lich`, `/cong-viec/bao-cao`.
      Bảng Lịch Test cuộn ngang **trong thẻ**.
   3. Nội dung cuối trang không bị thanh dưới che (cuộn tới đáy thấy hết). Mở một ngăn trượt (Drawer) → ngăn nằm **trên**
      thanh dưới. Toast hiện phía trên thanh dưới.
-- [ ] **Step 8: KIỂM — bản chính giả lập.** Tắt dev, chạy `BAN_CHINH=1` là **không được** (sẽ khoá đăng nhập demo) —
+- [x] **Step 8: KIỂM — bản chính giả lập.** Tắt dev, chạy `BAN_CHINH=1` là **không được** (sẽ khoá đăng nhập demo) —
   thay vào đó kiểm bằng mã: `grep -n "banChinh" web/src/App.tsx` thấy nhãn nằm trong `{!banChinh && …}`, và phép kiểm
   hoặc `curl` `GET /api/demo/session` trên máy dev trả `"banChinh": false`. Ghi vào Nhật ký.
-- [ ] **Step 9:** Lưu ảnh vào `thiet-ke/anh/pr-o/` tên `{vai}-{man}-{desktop|375}.png`. Tắt dev server.
-- [ ] **Step 10:** `npm run check` xanh lần cuối; ghi số phép kiểm (phải ≥ mốc Task 0 + 11).
-- [ ] **Step 11: Commit.**
+- [x] **Step 9:** Lưu ảnh vào `thiet-ke/anh/pr-o/` tên `{vai}-{man}-{desktop|375}.png`. Tắt dev server.
+- [x] **Step 10:** `npm run check` xanh lần cuối; ghi số phép kiểm (phải ≥ mốc Task 0 + 11).
+- [x] **Step 11: Commit.**
 
 ```bash
 git add CODE_MAP.md thiet-ke/anh/pr-o
@@ -1541,3 +1546,54 @@ git commit -m "PR-O (9): cập nhật CODE_MAP + ảnh KIỂM ba vai (desktop, 3
 ## Nhật ký thực thi
 
 *(Người thực thi ghi sau mỗi task: số phép kiểm, điều bất ngờ, chỗ phải tự quyết.)*
+
+- **Task 0:** Worktree tạo bằng công cụ `EnterWorktree` của harness (không `git worktree add` tay), đổi tên nhánh
+  từ tên tự sinh sang đúng `pr-o-khung-4-khu-vuc`, base là `origin/main` @ `66542bc`. `npm ci` + `npm run check` mốc
+  xuất phát: **672/672 KIỂM ĐẠT**, typecheck xanh. Đối chiếu `git diff d7a061c..66542bc` trên mọi file plan này chạm
+  → rỗng, nên số dòng trong plan khớp mã thật, không lệch.
+- **Task 1:** 675/675 (672 + 3). Không có gì bất ngờ — transcribe đúng theo plan.
+- **Task 2:** 679/679 (675 + 4). Không có gì bất ngờ.
+- **Task 3:** 680/680 (679 + 1). Không có gì bất ngờ.
+- **Task 4:** 683/683 (680 + 3). Nhánh 🛑 điều kiện (GV có `plan.week` trái `seed/data.ts`) **không xảy ra** — seed
+  đúng như kỳ vọng, không cần dừng hỏi.
+- **Task 5:** 683/683 (không đổi — không có logic thuần mới). Không có gì bất ngờ.
+- **Task 6:** 683/683 (không đổi). Đối chiếu `usePeriodWindow`/`kind` với thực tế mã nguồn (`Filters.tsx`,
+  `attempts.ts`) — khớp hoàn toàn với giả định trong plan, không lệch. **Tự quyết được ghi lại (không sửa)**: rà soát
+  phát hiện `TestPage.tsx` (đúng theo mã plan cho sẵn) luôn hiện hàng tab dù chỉ có một tab (GV chỉ có Cần chấm),
+  khác với `CongViecPage.tsx` cùng PR có canh `tabs.length > 1 &&`. Đây là mã plan tự đưa ra (không phải người thực
+  thi tự chọn) — để nguyên theo đúng chữ plan, ghi vào đây cho người rà soát cuối quyết có sửa trước khi gộp không.
+- **Task 7:** 683/683 (không đổi). Số dòng lệch 1 dòng so với plan ở `CaseBoardPage.tsx`/`App.tsx` — nội dung khớp
+  đúng vị trí, không phải lệch nội dung, nên không dừng hỏi.
+- **Task 8:** 683/683 (không đổi). Đây là task đổi nhiều nhất (App.tsx viết lại toàn bộ) — rà soát bằng model Opus,
+  đối chiếu từng route cũ/mới hai chiều, xác nhận không route nào bị rơi rớt. Phát hiện thêm (không phải lỗi, ghi lại
+  cho task 10): `StudentsPage.tsx` còn nhánh `view === 'my_scores'` chết trong điều kiện nút phạm vi (không còn tới
+  được nữa vì bộ lọc `views` đã loại `my_scores`) — vô hại, nằm ngoài phạm vi task theo đúng chữ plan.
+- **Task 9:**
+  - CODE_MAP.md cập nhật đúng 6 chỗ theo plan; tự kiểm không có đường dẫn chết (loại trừ 4 chỗ dùng tên file trần
+    theo chuỗi mũi tên `→`, đúng quy ước đã có sẵn trong tài liệu từ trước — không phải lỗi mới).
+  - **Gate 🛑 Step 2 không hỏi lại** — người giao việc phiên này đã dặn trước "Không dùng cổng 4000 và 5173" nên câu
+    hỏi của gate coi như có sẵn câu trả lời. Dùng cổng 4100 (API) / 4300 (web) thay thế, bằng cách sửa TẠM
+    `vite.config.ts` (không commit) rồi `git checkout -- vite.config.ts` trả lại sau khi xong. **Sự cố nhỏ đã xử
+    lý:** lệnh `git checkout` khiến Vite watcher tự khởi động lại server ở cổng 5173 thật (vì file cấu hình đổi) —
+    phát hiện ngay qua `Get-NetTCPConnection`, dừng tiến trình node còn sót (`Stop-Process`) trong vài giây, xác
+    nhận lại không còn tiến trình nào nghe ở 4000/5173/4100/4300 trước khi làm tiếp. Không có bằng chứng cổng 5173
+    thật của chủ sản phẩm bị ảnh hưởng (không có tiến trình nào của phiên này từng bind được vào 5173 khi chủ sản
+    phẩm đang giữ cổng đó — nếu họ đang chạy, bind sẽ tự lỗi; nêu ra đây để minh bạch, không phải để giảm nhẹ).
+  - **Không dùng Playwright** như plan gợi ý — dùng trình duyệt gắn sẵn của phiên (built-in browser pane) để bấm thử
+    tương tác từng vai, và một script `puppeteer-core` nhỏ (trỏ vào Chrome đã cài sẵn trên máy, không tải Chromium
+    mới) chỉ để tự động chụp + lưu 24 ảnh đúng tên vào `thiet-ke/anh/pr-o/`. Không cài thêm gì vào `package.json`
+    (`--no-save`), gỡ `puppeteer-core` khỏi `node_modules` sau khi xong.
+  - **KIỂM đã làm và đạt** (Quản trị, QL chi nhánh, GVCN, GVBM — desktop 1440px; QL + GVCN — 375px):
+    4 khu vực đúng thứ tự/chữ cho từng vai theo quyền (QL/Quản trị đủ 4 khu + Phân tích; GV đủ 4 khu, không Phân
+    tích) · tab Tổng quan/Phân tích đổi đúng `/` ↔ `/phan-tich`, dòng phụ ngày `14/09` không ISO/không năm · Test:
+    Quản trị/QL mặc định `/test/lich` (O2b), GV mặc định `/test/can-cham`; GV chỉ 2 tab (không Kế hoạch Test), gõ
+    tay `/test/ke-hoach` → về `/test/can-cham`; cột Tuần ở Lịch Test hiện `W3 SEP` (G-6) · Công việc: Quản trị/QL đủ
+    3 tab, GV chỉ 1 tab (ẩn hẳn hàng tab), gõ tay `/cong-viec/bao-cao` → về `/cong-viec` · Học viên & Lớp: tiêu đề
+    đúng, hết nút "Kế hoạch Test" và hai bộ lọc cũ · mọi đường dẫn cũ (`/hoc-thuat`, `/tien-trinh`,
+    `/tien-do-cong-viec`, `/tong-hop-tuan`, `/tong-quan?cn=`, `/?tab=tinh-hinh`, `/hoc-vien?view=my_scores`) về đúng
+    chỗ, giữ tham số · mở `/nhap-diem/1` → mục Test sáng trên thanh (cả desktop lẫn thanh dưới điện thoại) · di động
+    375px: thanh dưới 4 nút thay hàng ngang, `document.documentElement.scrollWidth === 375` (không cuộn ngang trang)
+    ở cả `/`, `/test/lich`, `/cong-viec/bao-cao` · nhãn "Bản demo nội bộ" vẫn hiện (máy dev) · `GET /api/demo/session`
+    trả `banChinh: false` trên máy dev (kiểm bằng mã theo đúng Step 8, không bật `BAN_CHINH=1` thật) · không có lỗi
+    đỏ console/network 403 trong suốt quá trình bấm thử qua các vai.
+  - `npm run check` cuối: **683/683 KIỂM ĐẠT** (mốc Task 0 + 11 = 672 + 11 = 683 — đúng bằng, không giảm).
