@@ -8,7 +8,7 @@ Kế hoạch kỹ thuật phía sau: `docs/superpowers/plans/2026-09-21-ban-chin
 
 ---
 
-## 0. Đọc trước — năm điều cơ bản
+## 0. Đọc trước — sáu điều cơ bản
 
 ### 0.1. Mở PowerShell **đúng thư mục dự án**
 
@@ -29,7 +29,11 @@ Trong lệnh, phần nằm trong dấu `<...>` là **chỗ bạn thay bằng gi�
 
 > Ví dụ: `netlify env:set BAN_CHINH <giá trị>` → gõ thành `netlify env:set BAN_CHINH 1`
 
-Những chỗ nằm trong dấu ngoặc kép `"..."` thì **giữ dấu ngoặc kép**, chỉ thay phần bên trong.
+Những chỗ nằm trong dấu **nháy đơn** `'...'` thì **giữ dấu nháy đơn**, chỉ thay phần bên trong.
+
+> **Đừng đổi sang ngoặc kép `"..."`.** Trong ngoặc kép, PowerShell tự "ăn" ký tự `$` và dấu huyền `` ` `` cùng chữ theo
+> sau — mật khẩu `QuangNinh$2026abc` sẽ bị lưu thành `QuangNinh` (đã thử trên máy này). Nếu mật khẩu có dấu nháy đơn
+> `'` thì gõ nó **hai lần** `''`, hoặc chọn mật khẩu không có dấu `'`.
 
 ### 0.4. Luôn cập nhật mã mới nhất trước khi làm gì
 
@@ -51,6 +55,20 @@ Dòng cuối có chữ `Already up to date.` hoặc danh sách file thay đổi 
 
 Token của database **thử** thì được đưa cho session coding (nó cần để kiểm). Token của database **bản chính** thì
 **chỉ bạn** dùng.
+
+### 0.6. Trước khi dán token hoặc mật khẩu — tắt lưu lịch sử
+
+PowerShell trên máy này **ghi mọi dòng bạn đã dán vào một file lịch sử trên ổ đĩa** — kể cả token và mật khẩu — và file
+đó **vẫn còn sau khi đóng cửa sổ**. Vì vậy mọi khối lệnh có token/mật khẩu trong file này đều **bắt đầu bằng dòng**:
+
+```powershell
+Set-PSReadLineOption -HistorySaveStyle SaveNothing
+```
+
+Nó chỉ có tác dụng cho cửa sổ đang mở (mở cửa sổ mới là phải chạy lại) — nên cứ copy **cả khối**, đừng bỏ dòng đầu.
+
+> Đã từng dán token/mật khẩu trước khi có dòng này? Xoá file lịch sử cũ (chỉ mất danh sách lệnh đã gõ, không mất gì
+> khác): `Remove-Item (Get-PSReadLineOption).HistorySavePath`
 
 ---
 
@@ -163,8 +181,9 @@ Thấy chữ `linked` hoặc `already linked` là được. Địa chỉ web c�
 `<...>` bằng URL và token của database **THỬ** (mục 2, bước 8):
 
 ```powershell
-netlify env:set TURSO_DATABASE_URL "<URL database THỬ>"
-netlify env:set TURSO_AUTH_TOKEN "<Token database THỬ>"
+Set-PSReadLineOption -HistorySaveStyle SaveNothing
+netlify env:set TURSO_DATABASE_URL '<URL database THỬ>'
+netlify env:set TURSO_AUTH_TOKEN '<Token database THỬ>'
 netlify env:set BAN_CHINH 1
 ```
 
@@ -191,11 +210,12 @@ Bản **chính thức** (địa chỉ giáo viên dùng) nối database **CHÍNH
 Chạy **hai lệnh**, dùng URL và token của database **CHÍNH** — chú ý chữ `--context production` ở cuối, **không được bỏ**:
 
 ```powershell
-netlify env:set TURSO_DATABASE_URL "<URL database CHÍNH>" --context production
+Set-PSReadLineOption -HistorySaveStyle SaveNothing
+netlify env:set TURSO_DATABASE_URL '<URL database CHÍNH>' --context production
 ```
 
 ```powershell
-netlify env:set TURSO_AUTH_TOKEN "<Token database CHÍNH>" --context production
+netlify env:set TURSO_AUTH_TOKEN '<Token database CHÍNH>' --context production
 ```
 
 Mỗi lệnh thấy dòng `Set environment variable ... in the production branch` là được. (Dòng đó in lại cả giá trị vừa
@@ -234,11 +254,12 @@ npm install
 **Bước 7.2 — điền năm giá trị.** Copy khối dưới vào Notepad, thay đủ năm chỗ `<...>`, rồi mới dán sang PowerShell:
 
 ```powershell
-$env:TURSO_DATABASE_URL="<URL database CHÍNH>"
-$env:TURSO_AUTH_TOKEN="<Token database CHÍNH>"
-$env:ADMIN_EMAIL="<email quản trị của bạn>"
-$env:ADMIN_PASSWORD="<mật khẩu quản trị mới>"
-$env:CHI_NHANH="<danh sách chi nhánh>"
+Set-PSReadLineOption -HistorySaveStyle SaveNothing
+$env:TURSO_DATABASE_URL='<URL database CHÍNH>'
+$env:TURSO_AUTH_TOKEN='<Token database CHÍNH>'
+$env:ADMIN_EMAIL='<email quản trị của bạn>'
+$env:ADMIN_PASSWORD='<mật khẩu quản trị mới>'
+$env:CHI_NHANH='<danh sách chi nhánh>'
 npm run init-ban-chinh
 ```
 
@@ -254,6 +275,8 @@ Chờ vài phút (database ở Mỹ, mỗi lượt đi về mất nửa giây) �
 
 **Kết quả đúng:** dòng cuối có dạng
 `[init-ban-chinh] Xong. Đã tạo tài khoản quản trị <email của bạn> (userId 1) và 2 chi nhánh: MB (Monbay), BC (Bãi Cháy).`
+Dòng ngay trên nó: `Kiểm lại: mật khẩu quản trị dài N ký tự` — **đếm lại** mật khẩu bạn đã gõ; số lệch thì dừng, báo
+session Z2c ngay (mật khẩu đã bị lưu sai, đăng nhập sẽ không được).
 Lệnh này **tự từ chối** nếu database đã có dữ liệu — không bao giờ xoá dữ liệu thật, nên chạy nhầm lần hai cũng không
 sao: nó hiện chữ đỏ `TỪ CHỐI: Database đã có dữ liệu …` và không ghi gì cả.
 
@@ -265,8 +288,9 @@ sao: nó hiện chữ đỏ `TỪ CHỐI: Database đã có dữ liệu …` và
 **Thêm chi nhánh sau này** (hệ thống chưa có màn tạo chi nhánh):
 
 ```powershell
-$env:TURSO_DATABASE_URL="<URL database CHÍNH>"
-$env:TURSO_AUTH_TOKEN="<Token database CHÍNH>"
+Set-PSReadLineOption -HistorySaveStyle SaveNothing
+$env:TURSO_DATABASE_URL='<URL database CHÍNH>'
+$env:TURSO_AUTH_TOKEN='<Token database CHÍNH>'
 npm run them-chi-nhanh -- <MÃ> "<Tên chi nhánh>"
 ```
 
@@ -329,9 +353,10 @@ Turso tự giữ dữ liệu, nhưng vẫn nên có **bản sao của riêng mì
 2. Mỗi tuần: mở PowerShell đúng thư mục, làm mục 0.4, rồi (copy vào Notepad, thay `<...>`, dán sang):
 
 ```powershell
-$env:TURSO_DATABASE_URL="<URL database CHÍNH>"
-$env:TURSO_AUTH_TOKEN="<Token database CHÍNH>"
-$env:BACKUP_DIR="G:\My Drive\pisa-sao-luu"
+Set-PSReadLineOption -HistorySaveStyle SaveNothing
+$env:TURSO_DATABASE_URL='<URL database CHÍNH>'
+$env:TURSO_AUTH_TOKEN='<Token database CHÍNH>'
+$env:BACKUP_DIR='G:\My Drive\pisa-sao-luu'
 npm run sao-luu
 ```
 
@@ -346,8 +371,8 @@ Xong thì **đóng cửa sổ PowerShell** (để token không còn nằm trong 
 dòng này **trước** dòng `npm run sao-luu`:
 
 ```powershell
-$env:NETLIFY_SITE_ID="<Site ID>"
-$env:NETLIFY_AUTH_TOKEN="<Personal access token>"
+$env:NETLIFY_SITE_ID='<Site ID>'
+$env:NETLIFY_AUTH_TOKEN='<Personal access token>'
 ```
 
 | Chỗ thay | Lấy ở đâu |
@@ -379,9 +404,10 @@ Lệnh nâng cấp **giữ nguyên dữ liệu**, nhưng vẫn phải sao lưu t
 **Bước 1 — sao lưu trước** (như mục 10):
 
 ```powershell
-$env:TURSO_DATABASE_URL="<URL database CHÍNH>"
-$env:TURSO_AUTH_TOKEN="<Token database CHÍNH>"
-$env:BACKUP_DIR="G:\My Drive\pisa-sao-luu"
+Set-PSReadLineOption -HistorySaveStyle SaveNothing
+$env:TURSO_DATABASE_URL='<URL database CHÍNH>'
+$env:TURSO_AUTH_TOKEN='<Token database CHÍNH>'
+$env:BACKUP_DIR='G:\My Drive\pisa-sao-luu'
 npm run sao-luu
 ```
 
@@ -390,7 +416,7 @@ Chờ tới dòng `[sao-luu] Xong. Bản sao lưu: …`. Báo lỗi → **dừng
 **Bước 2 — xác nhận đúng database** (gõ tên máy chủ = URL database CHÍNH **bỏ chữ `libsql://` ở đầu**):
 
 ```powershell
-$env:PISA_CHO_PHEP_MIGRATE_TURSO="<URL database CHÍNH, bỏ libsql:// ở đầu>"
+$env:PISA_CHO_PHEP_MIGRATE_TURSO='<URL database CHÍNH, bỏ libsql:// ở đầu>'
 ```
 
 > Ví dụ: URL là `libsql://pisatracking-xxx.aws-us-east-2.turso.io` → gõ `pisatracking-xxx.aws-us-east-2.turso.io`.

@@ -32,11 +32,15 @@ try {
     adminEmail: process.env.ADMIN_EMAIL!, adminPassword: process.env.ADMIN_PASSWORD!, chiNhanh,
     now: new Date().toISOString(), schemaSql: fs.readFileSync(SCHEMA_PATH, 'utf8'),
   });
+  /* In ĐỘ DÀI (không in mật khẩu): PowerShell trong ngoặc kép nuốt `$…` — "QuangNinh$2026abc" thành "QuangNinh". Đây là
+     tài khoản quản trị duy nhất, lệnh không tạo lại được; độ dài lệch là thấy ngay. */
+  console.log(`[init-ban-chinh] Kiểm lại: mật khẩu quản trị dài ${process.env.ADMIN_PASSWORD!.length} ký tự — phải đúng bằng số ký tự bạn đã gõ.`);
   console.log(`[init-ban-chinh] Xong. Đã tạo tài khoản quản trị ${process.env.ADMIN_EMAIL!.trim().toLowerCase()} `
     + `(userId ${r.userId}) và ${r.branchIds.length} chi nhánh: ${dsChiNhanh}.`);
 } catch (e) {
   console.error(`[init-ban-chinh] TỪ CHỐI: ${(e as Error).message}`);
-  console.error('[init-ban-chinh] Không có gì được ghi (hoặc đã cuộn lại toàn bộ).');
+  console.error('[init-ban-chinh] Mọi thứ nằm trong một giao dịch: bị từ chối hoặc hỏng giữa chừng thì không có gì được ghi.');
+  console.error('[init-ban-chinh] Nếu lỗi trên là lỗi MẠNG: chạy lại đúng lệnh này — nó báo "đã có dữ liệu" nghĩa là lần trước đã ghi xong.');
   closeDb();
   process.exit(1);
 }

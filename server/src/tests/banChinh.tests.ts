@@ -562,6 +562,8 @@ export async function runBanChinhTests(t: BanChinhTestKit) {
       assert(r.status === 0, `Mã thoát ${r.status}: ${ra.slice(-400)}`);
       assert(/Sẽ khởi tạo database file:/.test(r.stdout) && /userId 1/.test(r.stdout) && /MB/.test(r.stdout) && /Bãi Cháy/.test(r.stdout), `Kết quả in ra: ${String(r.stdout).slice(-400)}`);
       assert(!ra.includes(TOKEN_GIA) && !ra.includes(MK), 'Lệnh in lộ token hoặc mật khẩu');
+      /* PowerShell trong ngoặc kép nuốt `$…` — "QuangNinh$2026abc" thành "QuangNinh" (đã thử 22/09). In độ dài để người gõ thấy ngay. */
+      assert(new RegExp(`mật khẩu quản trị dài ${MK.length} ký tự`).test(r.stdout), `Phải in độ dài mật khẩu đã lưu: ${String(r.stdout).slice(-300)}`);
       const c = new Database(f);
       try { assert(dem(c, 'users') === 1 && dem(c, 'branches') === 2, 'Database sau lệnh init phải có 1 người dùng, 2 chi nhánh'); } finally { c.close(); }
     } finally { try { fs.rmSync(dir, { recursive: true, force: true }); } catch { /* Windows */ } }
