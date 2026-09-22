@@ -2113,7 +2113,7 @@ export function BranchPulse({ branchId, ct }: { branchId: number | null; ct: Chu
 - Produces: `WorkItem.signal` ở kiểu web; `export function DongViec({ it, onOpen })`; `DongTinHieu({ it })`;
   `QuickReport` prop `signal` mở rộng `{ id; skill; label; kind?: 'normal' | 'ft'; scoreText?: string | null; contextLabel?: string | null }`.
 
-- [ ] **Step 1: `WorkList.tsx`.**
+- [x] **Step 1: `WorkList.tsx`.**
   - Kiểu `WorkItem` (dòng 7-20) thêm:
     `signal?: { id: number; kind: 'normal' | 'ft'; skill: string | null; skillLabel: string; score: number | null; total: number | null; deadline: string; actions: ('create_case' | 'dismiss')[] } | null;`
   - Tách thân `<li>` (dòng 169-214) thành component export (thẻ ngoài là `div`, không lồng `button` trong `button`):
@@ -2142,7 +2142,7 @@ export function DongViec({ it, onOpen }: { it: WorkItem; onOpen: (href: string) 
   (chép nguyên khối "Ô 1–2" từ dòng 176-194 cũ vào vị trí chú thích; giữ chú thích cũ về LỚP/BÀI.) Trong `WorkList`,
   `visible.map` thành `<li key={it.key}><DongViec it={it} onOpen={navigate} /></li>`. Bỏ import `fmtDate` nếu hết dùng;
   thêm `Han`, `useNgayNghiepVu`, `ngay`, `LOAI_HAN_CUA_VIEC`, `DongTinHieu`.
-- [ ] **Step 2: `DongTinHieu.tsx`:**
+- [x] **Step 2: `DongTinHieu.tsx`:**
 
 ```tsx
 import { useState } from 'react';
@@ -2195,7 +2195,7 @@ export function DongTinHieu({ it }: { it: WorkItem }) {
   );
 }
 ```
-- [ ] **Step 3: `QuickReport.tsx`.**
+- [x] **Step 3: `QuickReport.tsx`.**
   - Prop `signal` (dòng 48): `signal?: { id: number; skill: string | null; label: string; kind?: 'normal' | 'ft'; scoreText?: string | null; contextLabel?: string | null } | null;`
   - Dòng 91-92 thay bằng: kỹ năng khi mở từ tín hiệu là **đúng một** kỹ năng của tín hiệu (kể cả `writing` lớp thường):
 
@@ -2220,8 +2220,8 @@ export function DongTinHieu({ it }: { it: WorkItem }) {
 ```
   - `SectionNote` (dòng 355-360): điều kiện `mode === 'now' && !signal` (G-5; khi mở từ tín hiệu đã có bài và mức SOS).
   - **Không** tự điền tên/mô tả Case (Q16).
-- [ ] **Step 4:** `npm run check` xanh.
-- [ ] **Step 5: Commit.** `"PR-Pa (11): dòng tín hiệu SOS lớp thường — Tạo Case điền sẵn điểm, Bỏ qua một bấm; hạn qua Han"`
+- [x] **Step 4:** `npm run check` xanh.
+- [x] **Step 5: Commit.** `"PR-Pa (11): dòng tín hiệu SOS lớp thường — Tạo Case điền sẵn điểm, Bỏ qua một bấm; hạn qua Han"`
 
 ---
 
@@ -2583,3 +2583,11 @@ export function HocVienCanHoTro() {
   `q` đã tải bảng); `useApi` đổi đường dẫn khi đổi `ct` nên số cũ không lọt dưới nhãn mới; không Drawer chồng Drawer.
   Ghi chú nhỏ (gom sửa trước Task 13): BranchPulse chưa có ErrorState, footer "Bấm số…" hiện dưới bảng GV, URL `?&ct=`
   ở KhoiCanXuLy, a11y nút ▸ / radiogroup / aria-pressed. `YThucReminders.tsx` mồ côi — Task 12 quyết.
+- **Task 11:** commit `a8ba39d` (3 file). `npm run check` xanh (752), `vite build` xanh. Không lệch plan: `QuickReport` đã
+  có `idempotencyKey` theo lần mở; Toast có `'ok' | 'error' | 'info'` đúng như plan; `HoTroHocVienTab` không cần sửa vì
+  cùng đi qua `DongViec` (Q17). `writing` lớp thường không nằm trong `ENTRY_SKILLS` nhưng `issuesForTopic('writing')`
+  vẫn ra danh mục, nhãn lấy từ `REGULAR_SKILL_LABEL` — một nút kỹ năng duy nhất hoạt động. Rà (Opus 5): đạt; máy chủ
+  nhận `topic: 'writing'` khi chu kỳ chấm theo tỷ lệ; `invalidate` theo tiền tố nên dòng tự biến mất. **Lưu ý cho chủ sản
+  phẩm:** dòng tín hiệu **Fast Track** đang chờ (máy chủ S1 trả `actions: ['create_case']`) nay cũng hiện nút Tạo Case mở
+  form thay cho nhãn "Mở Case" cũ — tự quyết giữ theo máy chủ (nút do máy chủ quyết, Q17); nếu không muốn thì thêm điều
+  kiện `kind === 'normal'` là xong.
