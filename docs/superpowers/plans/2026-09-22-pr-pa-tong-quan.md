@@ -247,7 +247,7 @@ Expected: `sạch`.
   - `COT_BANG`, `type CotBang`, `COT_BANG_DON_VI: Record<CotBang, 'hoc-vien' | 'case'>`.
   - `runTongQuanTests(t: YThucTestKit): Promise<void>` trong `tongQuan.tests.ts` (các task sau thêm phép kiểm vào đây).
 
-- [ ] **Step 1: Viết phép kiểm đỏ.** Tạo `server/src/tests/tongQuan.tests.ts`:
+- [x] **Step 1: Viết phép kiểm đỏ.** Tạo `server/src/tests/tongQuan.tests.ts`:
 
 ```ts
 /**
@@ -348,9 +348,9 @@ const { runTongQuanTests } = await import('./tongQuan.tests.ts');
 await runTongQuanTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 ```
 
-- [ ] **Step 2: Chạy, thấy đỏ.** `npm test` — Expected: FAIL (`d.chuongTrinhTuThamSo is not a function` …, 4 phép ✗).
+- [x] **Step 2: Chạy, thấy đỏ.** `npm test` — Expected: FAIL (`d.chuongTrinhTuThamSo is not a function` …, 4 phép ✗).
 
-- [ ] **Step 3: Cài đặt.** Tạo `shared/domain/tongQuan.ts`:
+- [x] **Step 3: Cài đặt.** Tạo `shared/domain/tongQuan.ts`:
 
 ```ts
 /**
@@ -498,8 +498,8 @@ export const COT_BANG_DON_VI: Record<CotBang, 'hoc-vien' | 'case'> = {
 
   `shared/domain/index.ts` — thêm dòng cuối: `export * from './tongQuan.ts';`
 
-- [ ] **Step 4: Chạy, xanh.** `npm test` — Expected: 4 phép kiểm PR-Pa ✓, tổng = mốc + 4.
-- [ ] **Step 5: Commit.**
+- [x] **Step 4: Chạy, xanh.** `npm test` — Expected: 4 phép kiểm PR-Pa ✓, tổng = mốc + 4.
+- [x] **Step 5: Commit.**
 
 ```bash
 git add shared/domain/tongQuan.ts shared/domain/index.ts server/src/tests/tongQuan.tests.ts server/src/tests/run.ts
@@ -2527,3 +2527,7 @@ export function HocVienCanHoTro() {
   file plan này). Đọc spec §1–§5, §7 dòng Pa; Q1–Q25 không thấy trái đặc tả §3.2/§3.10. Quyết định nhỏ: Task 10 sẽ tạo hai
   file stub `ViecCuaToi.tsx` / `HocVienCanHoTro.tsx` (component trả `null`) để typecheck xanh, Task 12 viết thật. Ghi chú:
   `web/src/ui/OSoNho.tsx` (PR-HV) là ô nhãn+số không bấm được, khác `SoLieuO` — không trùng.
+- **Task 1:** commit `721c90f`. Đỏ đúng 4 phép (`is not a function`) → xanh **734**. Mã chép nguyên văn plan; bốn giá trị
+  `DeadlineKind` đều có trong `DEADLINE_KINDS`. Rà (Opus 5): đạt, không lỗi; ghi chú nhỏ để dành: giới hạn 8/3 là no-op khi
+  danh sách có đúng 8/3 mục (phép kiểm "tối đa 8" chưa thật sự kiểm), `mau` trùng tên (màu / mẫu số), thiếu assert
+  `thamSoCt` dấu `&`.
