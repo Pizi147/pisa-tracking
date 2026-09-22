@@ -5,7 +5,7 @@ import { useSession } from '../lib/session.tsx';
 import { api } from '../lib/api.ts';
 import { useToast } from './Toast.tsx';
 import { addDaysStr } from '../lib/format.ts';
-import { mondayOfDate, owningMonthOf, weekCodeOf } from '@shared/domain/index.ts';
+import { mondayOfDate, owningMonthOf, tuanLich } from '@shared/domain/index.ts';
 
 export type Period = { id: number; code: string; weekStart: string; weekEnd: string; range: string };
 export type Branch = { id: number; code: string; name: string };
@@ -99,7 +99,7 @@ export function resolveWeek(weekStart: string): Promise<{ id: number }> {
  *
  * POPOVER: gõ ngày hoặc bấm lịch tháng (đổi tháng/năm), không dropdown hàng chục tuần (sổ §13.8).
  * Vẽ qua PORTAL ra `document.body` với `position: fixed` — nên `Drawer`/modal (cắt nội dung bằng
- * `overflow`) không cắt được nó. Mã tuần lấy từ `weekCodeOf` của `shared/domain/week.ts`, không có
+ * `overflow`) không cắt được nó. Mã tuần HIỆN RA dạng `W3 SEP` qua `tuanLich` (G-6 — chỉ thêm năm khi khác năm), không có
  * hàm tính tuần thứ hai ở đây.
  */
 export function WeekPicker({ periodId, onPeriod, label = 'Tuần', scope, clearable }: {
@@ -244,7 +244,7 @@ export function WeekPicker({ periodId, onPeriod, label = 'Tuần', scope, cleara
           <button
             type="button" className="btn flex-none h-10 px-3" disabled={busy}
             onClick={() => goAdjacent(-1)} aria-label="Tuần trước"
-            title={shown ? `Tuần trước · ${weekCodeOf(addDaysStr(shown.weekStart, -7))}` : 'Tuần trước'}
+            title={shown ? `Tuần trước · ${tuanLich(addDaysStr(shown.weekStart, -7), today)}` : 'Tuần trước'}
           >‹</button>
           <button
             ref={field} type="button"
@@ -255,7 +255,7 @@ export function WeekPicker({ periodId, onPeriod, label = 'Tuần', scope, cleara
             {shown ? (
               <>
                 <span className="text-slate-100 truncate">{rangeOf(shown.weekStart)}</span>
-                <span className="text-slate-500 text-xs shrink-0">{weekCodeOf(shown.weekStart)}</span>
+                <span className="text-slate-500 text-xs shrink-0">{tuanLich(shown.weekStart, today)}</span>
               </>
             ) : (
               <span className="text-slate-500">{clearable ? 'Chưa xác định' : 'Đang tải…'}</span>
@@ -264,7 +264,7 @@ export function WeekPicker({ periodId, onPeriod, label = 'Tuần', scope, cleara
           <button
             type="button" className="btn flex-none h-10 px-3" disabled={busy}
             onClick={() => goAdjacent(1)} aria-label="Tuần sau"
-            title={shown ? `Tuần sau · ${weekCodeOf(addDaysStr(shown.weekStart, 7))}` : 'Tuần sau'}
+            title={shown ? `Tuần sau · ${tuanLich(addDaysStr(shown.weekStart, 7), today)}` : 'Tuần sau'}
           >›</button>
         </div>
         <button type="button" className="btn flex-none h-10" disabled={busy} onClick={() => void pick(todayWeekStart)}>
