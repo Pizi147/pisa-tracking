@@ -799,19 +799,21 @@ export const OUTCOME_MARK: Record<string, string> = {
  * bảng này tồn tại: một kết quả "Kém hơn" mà không ai phải làm gì tiếp là một kết quả sẽ
  * bị quên.
  */
-export const NEXT_STEPS = ['complete', 'monitor', 'continue', 'propose', 'ask_manager'] as const;
+export const NEXT_STEPS = ['complete', 'monitor', 'continue', 'adjust', 'propose', 'ask_manager'] as const;
 export type NextStep = (typeof NEXT_STEPS)[number];
 export const NEXT_STEP_LABEL: Record<NextStep, string> = {
   complete: 'Kết thúc phương án',
   monitor: 'Theo dõi thêm',
-  continue: 'Tiếp tục phương án cũ',
-  propose: 'Đề xuất phương án mới',
+  continue: 'Giữ nguyên',
+  adjust: 'Điều chỉnh',
+  propose: 'Thay phương án',
   ask_manager: 'Xin hỗ trợ từ Quản lý',
 };
 export const NEXT_STEP_HINT: Record<NextStep, string> = {
   complete: 'Khép lại phương án này. Case chỉ đóng được khi mọi phương án đã khép.',
   monitor: 'Ghi kết quả chu kỳ vừa rồi và mở một chu kỳ theo dõi mới.',
-  continue: 'Giữ nguyên phương án, mở chu kỳ mới để làm tiếp.',
+  continue: 'Giữ nguyên phương án, mở đợt mới để làm tiếp.',
+  adjust: 'Cùng phương án, sửa mô tả, người thực hiện hoặc ngày dự kiến kết thúc. Bản cũ giữ trong lịch sử.',
   propose: 'Khép phương án cũ với lý do "Được thay thế" và mở phương án mới.',
   ask_manager: 'Chuyển sang chờ Quản lý quyết định. Thời gian chờ tính cho Quản lý.',
 };
@@ -859,10 +861,11 @@ export function canEndWithOutcome(outcome: string): boolean {
 }
 
 /**
- * Các bước tiếp theo ở TAB KẾT THÚC. "Tiếp tục chính phương án này" không nằm ở đây — nhu
- * cầu đó thuộc tab theo dõi, và để nó ở cả hai chỗ là mời người dùng chọn nhầm.
+ * Các bước ở TAB KẾT THÚC. PR-S2 (Q2, planning review 22/09): "Chưa đủ dữ liệu" chỉ đi được bằng THAY (PA cũ Được thay thế, kết quả
+ * cuối không xác định nên không vào thống kê và không vào F05). Kết thúc suông và Xin hỗ trợ từ Quản lý với Chưa đủ dữ liệu vẫn không cho.
  */
 export function endStepsFor(outcome: string): NextStep[] {
+  if (!canEndWithOutcome(outcome)) return ['propose'];
   return GOOD_OUTCOMES.includes(outcome)
     ? ['complete', 'propose', 'ask_manager']
     : ['propose', 'ask_manager'];
@@ -870,8 +873,69 @@ export function endStepsFor(outcome: string): NextStep[] {
 
 /** Bước tiếp theo hợp lệ theo tab đang đứng. */
 export function stepsForMode(mode: string, outcome: string): NextStep[] {
-  return mode === 'end' ? endStepsFor(outcome) : ['continue'];
+  return mode === 'end' ? endStepsFor(outcome) : ['continue', 'adjust'];
 }
+
+/**
+ * QUYẾT ĐỊNH CỦA MỘT LẦN GHI KẾT QUẢ (PR-S2 · S4 · nguồn §8, rulebook §18.2 điểm 4).
+ *
+ * Giữ nguyên / Điều chỉnh / Thay là ba lựa chọn của nguồn; Kết thúc phương án giữ theo rulebook §5; Xin hỗ trợ từ Quản lý là
+ * đường cũ, hiện thành nút chữ phụ. Mỗi quyết định dịch về đúng MỘT cặp (mode, nextStep) đã có, nên mọi luật của
+ * `updateResult` vẫn kiểm như trước. Payload cũ `{ mode, nextStep }` vẫn nhận.
+ */
+export const PLAN_DECISIONS = ['keep', 'adjust', 'replace', 'end', 'ask_manager'] as const;
+export type PlanDecision = (typeof PLAN_DECISIONS)[number];
+/** Bốn nút chính, đúng thứ tự nguồn §8. `ask_manager` là nút chữ phụ. */
+export const PLAN_DECISION_CHIPS: readonly PlanDecision[] = ['keep', 'adjust', 'replace', 'end'];
+export const PLAN_DECISION_LABEL: Record<PlanDecision, string> = {
+  keep: 'Giữ nguyên',
+  adjust: 'Điều chỉnh',
+  replace: 'Thay phương án',
+  end: 'Kết thúc phương án',
+  ask_manager: 'Xin hỗ trợ từ Quản lý',
+};
+export const PLAN_DECISION_HINT: Record<PlanDecision, string> = {
+  keep: 'Phương án chạy tiếp như cũ. Lần cập nhật sau vào Chủ nhật kế tiếp.',
+  adjust: 'Cùng phương án, sửa mô tả, người thực hiện hoặc ngày dự kiến kết thúc. Bản cũ giữ trong lịch sử.',
+  replace: 'Khép phương án này (Được thay thế) và mở phương án mới. Đổi loại phương án thì chọn ở đây.',
+  end: 'Khép phương án này. Case chỉ hoàn thành được khi mọi phương án đã khép.',
+  ask_manager: 'Chuyển sang chờ Quản lý quyết định. Thời gian chờ tính cho Quản lý.',
+};
+
+export function decisionToStep(d: PlanDecision): { mode: ResultMode; nextStep: NextStep } {
+  switch (d) {
+    case 'keep': return { mode: 'monitor', nextStep: 'continue' };
+    case 'adjust': return { mode: 'monitor', nextStep: 'adjust' };
+    case 'replace': return { mode: 'end', nextStep: 'propose' };
+    case 'end': return { mode: 'end', nextStep: 'complete' };
+    case 'ask_manager': return { mode: 'end', nextStep: 'ask_manager' };
+  }
+}
+
+/** Quyết định hợp lệ theo kết quả. Suy từ `endStepsFor`, không viết luật lần hai. */
+export function decisionsFor(outcome: string): PlanDecision[] {
+  const out: PlanDecision[] = ['keep', 'adjust'];
+  const steps = endStepsFor(outcome);
+  if (steps.includes('propose')) out.push('replace');
+  if (steps.includes('complete')) out.push('end');
+  if (steps.includes('ask_manager')) out.push('ask_manager');
+  return out;
+}
+
+/** Vì sao một quyết định đang bị chặn với kết quả này (dùng cho `title` của nút mờ, G-7). `null` = được chọn. */
+export function decisionBlockedReason(outcome: string, d: PlanDecision): string | null {
+  if (decisionsFor(outcome).includes(d)) return null;
+  if (!canEndWithOutcome(outcome)) return '"Chưa đủ dữ liệu" thì chưa kết thúc phương án được. Chọn Giữ nguyên, Điều chỉnh hoặc Thay phương án.';
+  return 'Kết quả chưa tốt thì chưa khép suông được. Chọn Thay phương án hoặc Xin hỗ trợ từ Quản lý.';
+}
+
+/** Điều chỉnh và Thay bắt buộc ghi lý do (rulebook §18.2: "vì sao đổi"). */
+export function decisionNeedsReason(d: string): boolean {
+  return d === 'adjust' || d === 'replace';
+}
+
+/** Lý do mặc định khi GV sửa gợi ý tự động ngay lúc xác nhận mà không ghi lý do (PR-S2, Q7). */
+export const CONFIRM_EDIT_REASON = 'Chỉnh khi xác nhận gợi ý tự động';
 
 /** Nguồn của điểm xuất phát. Thiếu căn cứ thì để trống, KHÔNG lấy MT1 làm điểm đầu vào. */
 export const BASELINE_SOURCES = ['entrance', 'previous_cycle', 'external', 'manual'] as const;

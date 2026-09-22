@@ -123,5 +123,41 @@ export async function runDieuChinhPaTests(t: YThucTestKit) {
     assert(!second.applied.some((x: string) => /PR-S2/.test(x)), `Lần hai áp lại PR-S2: ${second.applied.join(' | ')}`);
   });
 
+  // ================================================================== 2. Luật quyết định (shared/domain)
+
+  console.log('\nPR-S2 · 2. Quyết định của lần Ghi kết quả: Giữ nguyên · Điều chỉnh · Thay phương án · Kết thúc phương án');
+
+  check('PR-S2 · S4: Chưa đủ dữ liệu được Giữ nguyên / Điều chỉnh / Thay nhưng không Kết thúc suông; kết quả tốt đủ năm lựa chọn; kết quả chưa tốt không Kết thúc suông', () => {
+    const f = (o: string) => domain.decisionsFor(o).join(',');
+    assert(f('insufficient') === 'keep,adjust,replace', `insufficient: ${f('insufficient')}`);
+    assert(domain.endStepsFor('insufficient').join(',') === 'propose', 'Chưa đủ dữ liệu ở tab kết thúc chỉ được Thay');
+    assert(!domain.canEndWithOutcome('insufficient'), 'canEndWithOutcome vẫn nghĩa là "kết thúc suông được không" — Chưa đủ dữ liệu thì không');
+    assert(f('improved') === 'keep,adjust,replace,end,ask_manager', `improved: ${f('improved')}`);
+    assert(f('partial') === 'keep,adjust,replace,end,ask_manager', `partial: ${f('partial')}`);
+    assert(f('unchanged') === 'keep,adjust,replace,ask_manager', `unchanged: ${f('unchanged')}`);
+    assert(f('worse') === 'keep,adjust,replace,ask_manager', `worse: ${f('worse')}`);
+    assert(domain.decisionBlockedReason('worse', 'end') && domain.decisionBlockedReason('worse', 'replace') === null,
+      'Kém hơn: Kết thúc phải bị chặn kèm lý do, Thay thì được');
+    assert(domain.decisionBlockedReason('insufficient', 'replace') === null, 'Chưa đủ dữ liệu: Thay phải được chọn (Q2)');
+    assert(/Chưa đủ dữ liệu/.test(domain.decisionBlockedReason('insufficient', 'end') ?? ''),
+      'Chưa đủ dữ liệu: câu chặn Kết thúc phải nói rõ vì sao');
+  });
+
+  check('PR-S2 · S4: mỗi quyết định dịch về đúng một bước cũ; nhãn đủ, không mở đầu bằng "Hãy"; nhãn lịch sử theo chữ mới', () => {
+    const m = (d: string) => { const r = domain.decisionToStep(d); return `${r.mode}/${r.nextStep}`; };
+    assert(m('keep') === 'monitor/continue' && m('adjust') === 'monitor/adjust' && m('replace') === 'end/propose'
+      && m('end') === 'end/complete' && m('ask_manager') === 'end/ask_manager', 'Bảng dịch quyết định → bước sai');
+    for (const d of domain.PLAN_DECISIONS) {
+      assert(domain.PLAN_DECISION_LABEL[d] && domain.PLAN_DECISION_HINT[d], `Quyết định ${d} thiếu nhãn hoặc lời giải thích`);
+      assert(!/^Hãy/.test(domain.PLAN_DECISION_HINT[d]), `Lời giải thích ${d} mở đầu bằng "Hãy"`);
+    }
+    assert(domain.PLAN_DECISION_CHIPS.join(',') === 'keep,adjust,replace,end', 'Bốn nút chính phải đúng thứ tự nguồn §8');
+    assert(domain.NEXT_STEP_LABEL.adjust === 'Điều chỉnh' && domain.NEXT_STEP_LABEL.continue === 'Giữ nguyên'
+      && domain.NEXT_STEP_LABEL.propose === 'Thay phương án', `Nhãn bước: ${JSON.stringify(domain.NEXT_STEP_LABEL)}`);
+    assert(domain.stepsForMode('monitor', 'unchanged').join(',') === 'continue,adjust', 'Theo dõi tiếp phải cho Giữ nguyên và Điều chỉnh');
+    assert(domain.decisionNeedsReason('adjust') && domain.decisionNeedsReason('replace') && !domain.decisionNeedsReason('keep')
+      && !domain.decisionNeedsReason('end'), 'Chỉ Điều chỉnh và Thay bắt lý do');
+  });
+
   // ---- các task sau thêm phép kiểm NGAY TRÊN dòng này ----
 }
