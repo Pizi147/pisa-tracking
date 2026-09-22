@@ -1664,17 +1664,17 @@ export function MotKyNang({ mode, data, onReload }: { /* … */ }) { /* … */ }
 
 ### Task 13: Nghiệm thu — kiểm đủ, KIỂM bấm thử, rà soát, rebase, mở PR
 
-- [ ] **Step 1: Chuỗi kiểm đầy đủ.** Run: `npm run check`. Expected: build sạch, `TẤT CẢ B+18 KIỂM TRA ĐỀU ĐẠT`
+- [x] **Step 1: Chuỗi kiểm đầy đủ.** Run: `npm run check`. Expected: build sạch, `TẤT CẢ B+18 KIỂM TRA ĐỀU ĐẠT`
   (≈ 797), typecheck sạch. Ghi số vào Nhật ký.
 
-- [ ] **Step 2: Không migrate — kiểm lại cho chắc.** Run:
+- [x] **Step 2: Không migrate — kiểm lại cho chắc.** Run:
 
 ```bash
 git diff main...HEAD --stat -- server/src/schema.sql server/src/migrate.ts
 ```
   Expected: **không có dòng nào**. Có dòng nào thì 🛑 dừng: PR này không được có migrate (Q18).
 
-- [ ] **Step 3: Chuẩn bị bấm thử** trên database **riêng** của worktree, cổng **4147 / 5347**:
+- [x] **Step 3: Chuẩn bị bấm thử** trên database **riêng** của worktree, cổng **4147 / 5347**:
 
 ```bash
 KIEM="$(node -e "console.log(require('os').tmpdir())")/pr-rc1-kiem.sqlite"
@@ -1690,7 +1690,7 @@ export default { ...base, server: { port: 5347, strictPort: true, proxy: { '/api
   `npx vite --config vite.kiem.config.ts`. Mở `http://localhost:5347` (Playwright kênh Chrome, theo bộ nhớ "Máy chủ
   dev trong worktree"; **không** dùng `preview_start` vì nó chạy từ thư mục chính). Tài khoản demo: `DEMO.md`.
 
-- [ ] **Step 4: KIỂM — bấm thử bốn vai, hai loại lớp, hai bề rộng.** Ghi kết quả từng ý vào Nhật ký; ảnh chụp lưu
+- [x] **Step 4: KIỂM — bấm thử bốn vai, hai loại lớp, hai bề rộng.** Ghi kết quả từng ý vào Nhật ký; ảnh chụp lưu
   **`thiet-ke/anh/pr-rc1/`** (đặt tên theo ý, ví dụ `04-luoi-lop-thuong-1440.png`).
 
   **A. GVBM đúng môn (GV Listening của MB-FT 101) — 1440px**
@@ -1738,7 +1738,7 @@ export default { ...base, server: { port: 5347, strictPort: true, proxy: { '/api
   Xong: dừng hai tiến trình, **xoá** `vite.kiem.config.ts`, xoá `$KIEM` nếu muốn. `git status` phải sạch (trừ ảnh
   trong `thiet-ke/anh/pr-rc1/` — nhớ `git add` chúng).
 
-- [ ] **Step 5: Rà soát code.** REQUIRED SUB-SKILL: `superpowers:requesting-code-review`. Người rà: **Fable 5.1** (nếu
+- [x] **Step 5: Rà soát code.** REQUIRED SUB-SKILL: `superpowers:requesting-code-review`. Người rà: **Fable 5.1** (nếu
   code bằng Fable thì **Opus 5**). Đưa cho người rà: plan này, đặc tả §1, §2, §3.5, §4, §6, §7 dòng Rc1, bảng Q1–Q22,
   `git diff main...HEAD`. Yêu cầu soi riêng:
   (a) dấu `-` lớp thường **không** đụng bộ đếm `absence_move_count` và **không** đi qua `settleNoShows`;
@@ -1751,7 +1751,7 @@ export default { ...base, server: { port: 5347, strictPort: true, proxy: { '/api
   (g) `lyDo` chỉ bị đòi khi ô **đã có** điểm — lần nhập đầu không bị chặn.
   Xử lý phản hồi theo `superpowers:receiving-code-review`; ghi kết luận vào Nhật ký.
 
-- [ ] **Step 6: Rebase lên `main` mới nhất.** PR-Rc1 không phụ thuộc Qa/Pa, merge trước hay sau đều được; ai merge
+- [x] **Step 6: Rebase lên `main` mới nhất.** PR-Rc1 không phụ thuộc Qa/Pa, merge trước hay sau đều được; ai merge
   trước thì người sau rebase.
 
 ```bash
@@ -1877,3 +1877,4 @@ git fetch origin && git rebase origin/main
 | 23/09 | 12 | Không thêm phép kiểm: **804**; typecheck sạch. `CODE_MAP.md`: bỏ `ScoreSheetPage.tsx`/`RegularSheetPage.tsx`, thêm `chamDiem.ts`, `cham/canCham.ts`, `web/src/modules/cham/*` + mục "Chấm điểm" (một lưới cho hai loại lớp, máy chủ trả `mode`); Cần chấm/Lịch Test trỏ sang `canChamList`/`lichTest`. `policy.ts` chỉ chú thích: C08 sang nhóm NỐI DÂY. `plan.md`: tick R13 (phần bấm thử để KIỂM Task 13); R8, R14 lẫn phần của PR khác → ghi chú, không tick; DS02 ghi đã làm ở cột "Nên làm khi nào" (bảng không có ô tick); R15/R16/RB-5 không có dòng trong `plan.md` → ghi ở dòng mục 14; thêm dòng 23/09 ở mục 3 (C08) và mục 14. Chủ sản phẩm Q19: thêm lối vào ô lớp → Cần chấm lọc theo lớp vào ô "Chấm điểm" của §4 đặc tả UX (§7 không có ô trạng thái → không sửa). Sửa dòng nhật ký Task 5: bỏ số hiệu quyết định, ghi bằng lời. |
 | 23/09 | 13 (rà toàn nhánh) | Fable 5.1 rà: không lỗi nghiêm trọng; (a)–(g) đạt; sửa 4 mục quan trọng + 5 mục nhỏ: `MockDetailPage` hiện tuần bằng `tuanLich` (cả tuần hoàn tất ở đầu trang và danh sách tuần trong các hộp đổi lịch — cùng lỗi G-6), bộ chọn đợt không cắt chữ; chip lọc lớp ở Cần chấm hiện theo `classId` trên đường dẫn (`#id` khi máy chủ không biết lớp); nhóm Quá hạn bỏ "· hạn …"; điện thoại gõ-rồi-xoá ở ô trống không ghi dòng chỉ có tổng; tooltip môn không có lịch; `title` cho cột Kỹ năng ở Lịch Test; bộ so sánh `localeCompare`; `plan.md` R12 chỉ sang `LuoiThuong.tsx`; mốc spec §4. Thêm một assert `absence_move_count` = 0 trong phép kiểm C08 — vẫn **804**. |
 | 23/09 | 13 (bấm thử) | 21/24 đạt lần đầu; sửa A2, A5, C10; bấm lại: **3/3 đạt**. (A2) `href` của Cần chấm LUÔN kèm `kn` = môn còn nợ đầu tiên theo thứ tự L·R·W·S (thêm assert vào phép Q11, bắt buộc seed có dòng nhiều môn); `ChamDiemPage` không có `kn` lẫn `hv` thì đặt con trỏ vào ô `data-trong` đầu tiên (ô trống mình sửa được) — lưới và màn một kỹ năng. (A5) `HistoryCard` lấy `lyDo` của `scoreHistory`, hiện `Lý do: …` một dòng (cắt + tooltip); lớp thường không có trang lịch sử riêng (`/mock-test/:id` của bài lớp thường tự chuyển sang `/bang-diem-thuong/…`) nên không có chỗ thứ hai phải sửa. (C10) `phanTram` viết dấu phẩy (`82,5%`, cả tooltip và hộp lý do), thêm `datPhanTram` → ô đã có điểm của lưới có một dòng phụ `Đạt · 82,5%` / `Chưa đạt · 67,5%` (đỏ) dưới hai số, `leading-none` để mọi dòng vẫn cao 56px; mockup 10b §2 không vẽ dòng này — theo mục 10 của bước bấm thử. Dòng phụ này và `Quá hạn dd/mm` không bao giờ cùng lúc (một bên cần có điểm, một bên cần chưa có). Điện thoại: câu đó nằm ở dòng phụ dưới tên em (thứ tự: dời → quá hạn → thi → kết quả → mã HV) để mọi dòng cao bằng nhau (61px). Vẫn **804**; typecheck + `npx vite build` sạch. |
+| 23/09 | 13 (rebase) | Rebase lên main @ 61ae2dd (kế hoạch deploy sớm, không xung đột). `npm run check` xanh: **804** (B=779, +25). Không migrate (diff schema.sql/migrate.ts rỗng). Không chạm 18 file của PR-Qa/PR-Pa, không chạm permissions.ts/skillSchedule.ts. Rà toàn nhánh bằng Fable 5.1 (khác model người code Opus 5.5). |
