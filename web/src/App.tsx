@@ -2,6 +2,7 @@ import { Suspense, lazy } from 'react';
 import { NavLink, Navigate, Route, Routes, useLocation, useParams, useSearchParams } from 'react-router-dom';
 import { useSession } from './lib/session.tsx';
 import { DemoBar } from './modules/platform/DemoBar.tsx';
+import { LA_BAN_CHINH } from './lib/banChinh.ts';
 import { Header } from './modules/platform/Header.tsx';
 import { Skeleton } from './ui/ui.tsx';
 import OverviewPage from './modules/worklist/OverviewPage.tsx';
@@ -87,7 +88,7 @@ export default function App() {
 
   return (
     <div className="h-full flex flex-col">
-      <DemoBar />
+      {!LA_BAN_CHINH && <DemoBar />}
       {/*
         Màn hẹp: xếp thành hai hàng — nhận diện + tài khoản ở trên, điều hướng cuộn ngang ở dưới.
         Ép cả ba khối vào một hàng ở 390px sẽ làm tràn ngang toàn trang.

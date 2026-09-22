@@ -2832,6 +2832,10 @@ export function migrateSosV3(conn: any, applied: string[]) {
  * `audit_logs` giữ nội dung đã xoá (kể cả lý do cũ) — chỉ để truy vết. Biện pháp đã thực hiện giữ nguyên, chỉ còn ít vi phạm hơn.
  * Chạy lặp không làm gì (không còn dòng `valid = 0`). Cột `valid`/`invalid_*` giữ trong schema, ngừng dùng.
  */
+/*
+ * PR-Z2: chỗ này CỐ Ý vẫn giữ đường dẫn Ổ ĐĨA, không đi qua kho tệp (`platform/khoTep.ts`). Lệnh nâng cấp chỉ gặp dòng
+ * `valid = 0` ở database có từ trước rulebook v3 — tức database của máy dev; bản chính bắt đầu rỗng nên không bao giờ có dòng này.
+ */
 const deferredFileRemovals: string[] = [];
 /** Xoá tệp đã chờ (từ `migrateDeleteInvalidViolations`) — chỉ gọi SAU KHI giao dịch nâng cấp đã chốt. */
 export function flushDeferredFileRemovals(): number {
@@ -2951,10 +2955,10 @@ function migrateCaseForm(conn: any, applied: string[]) {
   if (cols('sos_cases').includes('merge_until')) {
     windows = conn
       .prepare(
-        `UPDATE sos_cases SET merge_until = ?
+        `UPDATE sos_cases SET merge_until = NULL
           WHERE track = '${LEGACY_TRACK}' AND merge_until IS NULL AND detected_at IS NOT NULL`,
       )
-      .run(null).changes;
+      .run().changes;
     /* Đặt cửa sổ theo chính ngày mở của từng case — SQLite không có hàm ngày +3 tiện ở đây. */
     windows = 0;
     for (const c of conn

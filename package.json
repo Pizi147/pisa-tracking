@@ -13,7 +13,9 @@
     "build:server": "tsc -p tsconfig.build.json",
     "seed": "node scripts/check-node.mjs && npm run build:server && node dist-server/server/src/seed/run.js",
     "reset": "npm run seed",
-    "build": "tsc -p tsconfig.web.json --noEmit && npm run build:server && vite build",
+    "thu-goi": "node scripts/thu-goi-function.mjs",
+    "thu-turso": "npm run build:server && node dist-server/server/src/ops/thuTurso.js",
+    "build": "node scripts/goi-libsql-linux.mjs && tsc -p tsconfig.web.json --noEmit && npm run build:server && vite build",
     "typecheck": "tsc -p tsconfig.web.json --noEmit && tsc -p tsconfig.build.json --noEmit",
     "test": "npm run build:server && node dist-server/server/src/tests/run.js",
     "check": "npm run build:server && npm test && npm run typecheck",
@@ -21,17 +23,18 @@
     "migrate": "node scripts/check-node.mjs && npm run build:server && node dist-server/server/src/migrate/run.js"
   },
   "dependencies": {
-    "better-sqlite3": "12.11.1",
+    "@netlify/blobs": "11.1.0",
     "cookie-parser": "1.4.7",
     "express": "4.21.2",
+    "libsql": "0.5.29",
     "multer": "1.4.5-lts.1",
     "react": "18.3.1",
     "react-dom": "18.3.1",
     "react-router-dom": "6.28.0",
+    "serverless-http": "4.0.0",
     "xlsx": "0.18.5"
   },
   "devDependencies": {
-    "@types/better-sqlite3": "7.6.12",
     "@types/cookie-parser": "1.4.8",
     "@types/express": "4.17.21",
     "@types/multer": "1.4.12",
@@ -41,9 +44,13 @@
     "@vitejs/plugin-react": "4.3.4",
     "autoprefixer": "10.4.20",
     "concurrently": "9.1.2",
+    "esbuild": "0.28.2",
     "postcss": "8.4.49",
     "tailwindcss": "3.4.17",
     "typescript": "5.9.3",
     "vite": "5.4.20"
+  },
+  "optionalDependencies": {
+    "@libsql/linux-x64-gnu": "0.5.29"
   }
 }

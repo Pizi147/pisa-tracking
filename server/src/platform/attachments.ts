@@ -1,13 +1,13 @@
-import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
-import { DB_PATH, db } from '../db.ts';
-import { badRequest, forbidden, notFound, nowIso } from '../util.ts';
+import { DB_PATH, ROOT, db, laDbTuXa } from '../db.ts';
+import { badRequest, notFound, nowIso } from '../util.ts';
 import { ATTACHMENT_EXTENSIONS, ATTACHMENT_MAX_BYTES, ATTACHMENT_MIME_BY_EXT } from '../../../shared/domain/index.ts';
 import type { Principal } from '../permissions.ts';
 import { caseAccess } from '../cases/cases.ts';
 import { coordinationOwner, measureOwner, violationOwner } from '../yThuc/access.ts';
 import { writeAudit } from './audit.ts';
+import { ghiNhanViecNenKhoTep, khoTepHienTai } from './khoTep.ts';
 
 /**
  * KHO TỆP VÀ LIÊN KẾT DÙNG CHUNG (thiet-ke/Y_THUC_VI_PHAM_VA_BIEN_PHAP.md §4.5, PR-N N5).
@@ -24,7 +24,7 @@ import { writeAudit } from './audit.ts';
  *   (c) XOÁ TỆP CÓ AUDIT: ghi ai xoá, xoá cái gì, của bản ghi nào — không phải một dấu X im lặng.
  *
  * AN TOÀN TỆP: chỉ nhận một danh sách đuôi tệp cố định (không HTML/SVG/tập lệnh — thứ chạy được trong trình duyệt),
- * tối đa 10 MB, lưu dưới TÊN NGẪU NHIÊN (tên người dùng chỉ là nhãn hiển thị, không bao giờ thành đường dẫn), và luôn
+ * tối đa 4 MB, lưu dưới TÊN NGẪU NHIÊN (tên người dùng chỉ là nhãn hiển thị, không bao giờ thành đường dẫn), và luôn
  * phục vụ dạng tải về. Liên kết chỉ nhận http/https — không `javascript:`, `data:`, `file:`.
  */
 
@@ -36,9 +36,11 @@ export const MAX_FILE_BYTES = ATTACHMENT_MAX_BYTES;
 const ALLOWED_EXT = ATTACHMENT_MIME_BY_EXT;
 export const ALLOWED_EXTENSIONS = ATTACHMENT_EXTENSIONS;
 
-/** Nơi lưu tệp: cạnh cơ sở dữ liệu (`data/uploads/`, đã nằm trong .gitignore). */
+/** Nơi lưu tệp trên ổ đĩa: cạnh file database (`data/uploads/`, đã nằm trong .gitignore). Database ở Turso thì
+ *  dùng `data/uploads/` của dự án — ổ đĩa chỉ dùng cho máy dev; bản chính cất tệp ở Netlify Blobs (Task 4). */
 export function uploadsDir(): string {
-  return process.env.PISA_UPLOADS ?? path.join(path.dirname(DB_PATH), 'uploads');
+  if (process.env.PISA_UPLOADS) return process.env.PISA_UPLOADS;
+  return laDbTuXa() ? path.join(ROOT, 'data', 'uploads') : path.join(path.dirname(DB_PATH), 'uploads');
 }
 
 // ---------------------------------------------------------------- nơi chủ và quyền
@@ -151,9 +153,9 @@ export function addLink(p: Principal, input: { ownerType: string; ownerId: numbe
   return insert(p, input.ownerType, input.ownerId, { kind: 'link', url: u.toString(), displayName: name, mimeType: null, sizeBytes: null });
 }
 
-export function addFile(p: Principal, input: {
+export async function addFile(p: Principal, input: {
   ownerType: string; ownerId: number; fileName: string; data: Buffer; mimeType?: string | null; displayName?: string | null;
-}): AttachmentRow {
+}): Promise<AttachmentRow> {
   ownerAccess(input.ownerType, input.ownerId).requireEdit(p);
   const original = path.basename(String(input.fileName ?? '').replace(/\\/g, '/'));
   const ext = path.extname(original).slice(1).toLowerCase();
@@ -161,19 +163,21 @@ export function addFile(p: Principal, input: {
     throw badRequest(`Không nhận loại tệp này. Chỉ nhận: ${ALLOWED_EXTENSIONS.join(', ')}.`);
   }
   if (!input.data || input.data.length === 0) throw badRequest('Tệp rỗng — chưa có gì để lưu.');
-  if (input.data.length > MAX_FILE_BYTES) throw badRequest('Tệp quá lớn: tối đa 10 MB.');
-  const dir = path.join(uploadsDir(), input.ownerType);
-  fs.mkdirSync(dir, { recursive: true });
+  if (input.data.length > MAX_FILE_BYTES) throw badRequest('Tệp quá lớn: tối đa 4 MB.');
   const stored = `${crypto.randomUUID()}.${ext}`;
-  fs.writeFileSync(path.join(dir, stored), input.data);
+  /* Khoá trong kho = đúng giá trị cột `url` của dòng tệp. */
+  const khoa = `${input.ownerType}/${stored}`;
+  const kho = khoTepHienTai(uploadsDir());
+  await kho.ghi(khoa, input.data, ALLOWED_EXT[ext]);
   try {
     return insert(p, input.ownerType, input.ownerId, {
-      kind: 'file', url: `${input.ownerType}/${stored}`,
+      kind: 'file', url: khoa,
       displayName: cleanName(input.displayName ?? '') || cleanName(original),
       mimeType: ALLOWED_EXT[ext], sizeBytes: input.data.length,
     });
   } catch (e) {
-    fs.rmSync(path.join(dir, stored), { force: true });     // không để tệp mồ côi khi ghi bảng lỗi
+    /* Không để tệp mồ côi khi ghi bảng lỗi; dọn lỗi thì thôi — lỗi GHI BẢNG mới là lỗi cần báo lên. */
+    try { await kho.xoa(khoa); } catch (e2) { console.error('[kho tệp] không xoá được', khoa, e2); }
     throw e;
   }
 }
@@ -187,17 +191,29 @@ function load(id: number) {
 }
 
 /** Đường tải: KIỂM QUYỀN XEM bản ghi chủ trước khi trả bất cứ thứ gì. */
-export function openAttachment(p: Principal, id: number):
-  | { kind: 'file'; absPath: string; downloadName: string; mimeType: string }
-  | { kind: 'link'; url: string } {
+export async function openAttachment(p: Principal, id: number): Promise<
+  | { kind: 'file'; duLieu: Buffer; downloadName: string; mimeType: string }
+  | { kind: 'link'; url: string }> {
   const r = load(id);
   ownerAccess(r.owner_type, r.owner_id).requireView(p);
   if (r.kind === 'link') return { kind: 'link', url: r.url };
-  const abs = path.resolve(uploadsDir(), r.url);
-  /* Tên lưu do máy chủ sinh, nhưng vẫn khoá: đường dẫn phải nằm trong thư mục tải lên. */
-  if (!abs.startsWith(path.resolve(uploadsDir()) + path.sep)) throw forbidden('Đường dẫn tệp không hợp lệ.');
-  if (!fs.existsSync(abs)) throw notFound('Tệp không còn trên máy chủ');
-  return { kind: 'file', absPath: abs, downloadName: r.display_name, mimeType: r.mime_type ?? 'application/octet-stream' };
+  /* Tên lưu do máy chủ sinh; kho ổ đĩa vẫn tự khoá: khoá phải nằm trong thư mục tải lên (xem `khoTepODia`). */
+  const duLieu = await khoTepHienTai(uploadsDir()).doc(r.url);
+  if (!duLieu) throw notFound('Tệp không còn trên máy chủ');
+  return { kind: 'file', duLieu, downloadName: r.display_name, mimeType: r.mime_type ?? 'application/octet-stream' };
+}
+
+/**
+ * XOÁ TỆP TRONG KHO SAU KHI GIAO DỊCH ĐÃ CHỐT. Không chờ (không `await`) và không ném: nơi gọi là hàm đồng bộ chạy
+ * ngay sau `tx(...)`. Với kho ổ đĩa, lệnh xoá chạy xong ngay trong lượt gọi này (thân hàm async chạy đồng bộ tới
+ * lần `await` đầu tiên) — nên hành vi máy dev và các phép kiểm cũ giữ nguyên. Với Netlify Blobs, xoá lỗi thì còn
+ * một tệp mồ côi: vô hại ở quy mô này, dòng `attachments` đã xoá và đã có audit.
+ */
+export function xoaTepSauGiaoDich(khoaTep: string[]): void {
+  const kho = khoTepHienTai(uploadsDir());
+  for (const k of khoaTep) {
+    ghiNhanViecNenKhoTep(kho.xoa(k).catch((e) => console.error('[kho tệp] không xoá được', k, e)));
+  }
 }
 
 /**
@@ -207,18 +223,15 @@ export function openAttachment(p: Principal, id: number):
 export function purgeAttachmentsOf(
   ownerType: AttachmentOwnerType, ownerId: number, actorUserId: number | null,
   /**
-   * Có truyền mảng này thì KHÔNG xoá tệp trên đĩa ngay mà chỉ ghi đường dẫn vào đó — nơi gọi xoá SAU KHI giao dịch chốt. Xoá tệp trong giao dịch rồi giao dịch
-   * lui thì mất tệp mà dòng vẫn còn (không hoàn tác được trên đĩa).
+   * Có truyền mảng này thì KHÔNG xoá tệp trong kho ngay mà chỉ ghi KHOÁ TỆP TRONG KHO (cột `url`) vào đó — nơi gọi xoá SAU KHI giao dịch chốt. Xoá tệp trong giao dịch rồi giao dịch
+   * lui thì mất tệp mà dòng vẫn còn (không hoàn tác được trong kho).
    */
   deferredFiles?: string[],
 ): number {
   const rows = db().prepare('SELECT * FROM attachments WHERE owner_type = ? AND owner_id = ?').all(ownerType, ownerId) as any[];
   for (const r of rows) {
     db().prepare('DELETE FROM attachments WHERE id = ?').run(r.id);
-    if (r.kind === 'file') {
-      const abs = path.resolve(uploadsDir(), r.url);
-      if (deferredFiles) deferredFiles.push(abs); else fs.rmSync(abs, { force: true });
-    }
+    if (r.kind === 'file') { if (deferredFiles) deferredFiles.push(r.url); else xoaTepSauGiaoDich([r.url]); }
     writeAudit({
       actorUserId, action: 'attachment.delete', entityType: 'attachment', entityId: r.id, entityLabel: r.display_name,
       before: { ownerType, ownerId, kind: r.kind, sizeBytes: r.size_bytes, uploadedBy: r.uploaded_by, reason: 'bản ghi chủ bị xoá' },
@@ -227,13 +240,16 @@ export function purgeAttachmentsOf(
   return rows.length;
 }
 
-export function removeAttachment(p: Principal, id: number): void {
+export async function removeAttachment(p: Principal, id: number): Promise<void> {
   const r = load(id);
   ownerAccess(r.owner_type, r.owner_id).requireEdit(p);
   db().prepare('DELETE FROM attachments WHERE id = ?').run(id);
-  if (r.kind === 'file') fs.rmSync(path.resolve(uploadsDir(), r.url), { force: true });
   writeAudit({
     actorUserId: p.userId, action: 'attachment.delete', entityType: 'attachment', entityId: id, entityLabel: r.display_name,
     before: { ownerType: r.owner_type, ownerId: r.owner_id, kind: r.kind, sizeBytes: r.size_bytes, uploadedBy: r.uploaded_by },
   });
+  /* Dòng bảng + audit TRƯỚC, tệp trong kho SAU; xoá tệp lỗi thì chỉ còn một tệp mồ côi — không ném. */
+  if (r.kind === 'file') {
+    try { await khoTepHienTai(uploadsDir()).xoa(r.url); } catch (e) { console.error('[kho tệp] không xoá được', r.url, e); }
+  }
 }

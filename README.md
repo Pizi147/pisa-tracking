@@ -208,15 +208,13 @@ cửa sổ lệnh sẽ mở sẵn đúng chỗ. Gõ `dir` để kiểm tra: ph�
 `npm install` và `npm run seed`.
 
 **Khi cài đặt thấy dòng `npm warn install-scripts ... allowScripts`**
-→ Bản npm mới chặn bước cài đặt của một số gói vì lý do an toàn. Nếu sau đó chạy bị lỗi
-database, hãy chạy hai lệnh này rồi thử lại:
+→ Bản npm mới chặn bước cài đặt của một số gói vì lý do an toàn. Thư viện database (`libsql`)
+tải sẵn tệp chạy cho từng hệ điều hành nên không cần bước này. Nếu sau đó chạy bị lỗi database,
+hãy chạy lại lệnh này rồi thử:
 
 ```bash
-npm install-scripts approve better-sqlite3
 npm install
 ```
-
-Nếu máy bạn không nhận lệnh đầu tiên, dùng: `npm rebuild better-sqlite3`
 
 **Báo `EADDRINUSE` (cổng đang bị chiếm)**
 → Có một bản ứng dụng khác đang chạy. Đóng Terminal cũ, hoặc đổi cổng máy chủ:

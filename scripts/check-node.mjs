@@ -31,23 +31,17 @@ if (major > MAX_TESTED) {
   );
 }
 
-// Thư viện database cần một tệp bản địa được biên dịch lúc cài đặt. Một số phiên bản npm
-// chặn bước này vì lý do an toàn, khiến ứng dụng chết với thông báo rất khó hiểu.
+// Thư viện database (libsql) tải sẵn tệp bản địa cho từng hệ điều hành lúc `npm install`. Thiếu tệp đó
+// thì ứng dụng chết với thông báo rất khó hiểu — nên kiểm trước và nói rõ.
 try {
-  const { default: Database } = await import('better-sqlite3');
+  const { default: Database } = await import('libsql');
   new Database(':memory:').close();
 } catch (err) {
-  box('Chưa cài được thư viện database', `  Thư viện SQLite chưa sẵn sàng nên chưa chạy được.
-  Nguyên nhân thường gặp: npm đã chặn bước cài đặt của gói này.
+  box('Chưa cài được thư viện database', `  Thư viện SQLite (libsql) chưa sẵn sàng nên chưa chạy được.
 
-  Hãy chạy lần lượt hai lệnh sau, rồi thử lại:
+  Hãy chạy lệnh sau, rồi thử lại:
 
-      npm install-scripts approve better-sqlite3
       npm install
-
-  Nếu lệnh đầu báo không nhận ra, hãy chạy:
-
-      npm rebuild better-sqlite3
 
   Chi tiết kỹ thuật: ${err instanceof Error ? err.message.split('\n')[0] : String(err)}`);
   process.exit(1);

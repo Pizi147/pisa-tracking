@@ -1,0 +1,23 @@
+[build]
+  # `npm run build` tự lấy phần nhị phân Linux của libsql trước (scripts/goi-libsql-linux.mjs) — máy build là Windows, Netlify chạy Linux.
+  command = "npm run build"
+  publish = "dist/web"
+
+[build.environment]
+  NODE_VERSION = "22"
+  VITE_BAN_CHINH = "1"
+
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
+  external_node_modules = ["libsql", "@libsql/linux-x64-gnu"]
+
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/api/:splat"
+  status = 200
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

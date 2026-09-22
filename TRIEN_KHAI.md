@@ -256,7 +256,7 @@ npm install
 netlify deploy --build
 ```
 
-Chờ 2–5 phút. Cuối cùng hiện dòng **`Website draft URL: https://<mã>--<tên-site>.netlify.app`**. Mở địa chỉ đó, đăng
+Chờ 2–5 phút (lần build đầu cần mạng để tải thư viện cho Linux). Cuối cùng hiện dòng **`Website draft URL: https://<mã>--<tên-site>.netlify.app`**. Mở địa chỉ đó, đăng
 nhập, bấm thử vài trang. Bản nháp dùng **cùng database** với bản chính — dữ liệu bạn nhập ở đây là dữ liệu thật.
 
 **8.2 — đưa lên CHÍNH THỨC** (chỉ khi bản nháp chạy tốt):

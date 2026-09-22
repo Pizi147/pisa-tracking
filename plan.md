@@ -1884,6 +1884,21 @@ trùng với 12.14 nên không lặp lại ở đây). K2-6 nói rõ: **ghi lạ
 | Máy chủ tự lấy người đang đăng nhập làm `performedBy` khi để trống (`measures.ts` ~390, hàm `confirmMeasure`) | Hiện máy chủ đòi `performedBy` tường minh; PR-K vá tạm bằng cách giao diện tự gửi `session.user.id` khi ô trống (xem mục 14, log PR-K) — vá đúng nhưng không robust cho các đường gọi khác | Sửa `confirmMeasure`: `performedBy` để trống thì mặc định `p.userId`, cùng khuôn `performerSelf` của `case_interventions` — bất kỳ ai chạm lại `measures.ts` |
 | Lớp dùng để kiểm nút `Ghi vi phạm` ở `profile.ts` ~891 (`canRecordViolation`, biến `current`) có thể lệch với `activeClassOf` ở `access.ts` sau khi học viên chuyển lớp | Hai nơi tính "lớp em đang học" không cùng một nguồn — `current` là biến cục bộ của trang hồ sơ, `activeClassOf` truy vấn DB mới mỗi lần; chưa xác nhận có lệch thật trong dữ liệu hay chỉ là rủi ro lý thuyết | Bất kỳ ai chạm lại `profile.ts`: đổi `current?.class_id` trong `viewer.canReport`/`canRecordViolation`/`canClose` thành gọi `activeClassOf(studentId)` — MỘT nguồn duy nhất |
 
+### 12.16. PR-Z2a (hạ tầng Netlify + Turso) thấy nhưng KHÔNG sửa — 22/09/2026
+
+Phần A chỉ đổi nơi chạy và nơi cất dữ liệu. Những điều dưới đây thấy trong lúc làm, cố ý để nguyên:
+
+| Việc | Vì sao chưa làm | Làm ở đâu khi quay lại |
+|---|---|---|
+| Màn đăng nhập bản chính không hiện khối "máy chủ chưa chạy" khi máy chủ sập | `WelcomePage.tsx` suy `serverDown` từ lỗi của `/demo/accounts`; bản chính không gọi đường đó nữa. Form đăng nhập vẫn báo lỗi khi bấm | Suy `serverDown` từ `/auth/info` — PR giao diện sau deploy |
+| Dựng bộ demo lên Turso **từ máy ở Việt Nam** rất chậm (~0,5 giây mỗi câu lệnh, toàn bộ seed là một giao dịch) | Đúng bản chất "mỗi câu một lượt mạng". Chỉ ảnh hưởng database THỬ; bản chính bắt đầu rỗng | Không cần làm. Nếu còn phải seed database thử nhiều lần: chạy seed ra file rồi `turso db create --from-file` |
+| Khoá chặn "đường dẫn tệp nằm ngoài thư mục tải lên" giờ ném lỗi thường (500) thay vì 403 | Khoá chuyển vào `khoTepODia` theo plan; chỉ xảy ra khi cột `attachments.url` bị sửa tay trong database | Không ưu tiên |
+| **`npm run migrate` chưa có chốt chặn Turso** (rà soát Phần A) — chạy với biến Turso sẽ nâng cấp thẳng database thật và có thể tạo tài khoản quản trị mật khẩu mặc định | `migrate/run.ts` nằm ngoài phạm vi Phần A | **Phần B (PR-Z2b)**: từ chối khi `laDbTuXa()`, cùng kiểu `tuChoiXoaSachNeuTuXa` |
+| `DB_PATH` (giờ có thể là URL Turso) được in ở log seed/migrate — sẽ lộ token nếu ai đó nhét `?authToken=` vào URL | URL chuẩn của Turso không chứa token; TRIEN_KHAI tách token thành biến riêng | Phần B: cắt phần query trước khi in |
+| Netlify Blobs mặc định "nhất quán sau cùng": tải xuống NGAY sau khi tải lên có thể báo không thấy tệp trong vài chục giây | `connectLambda` 11.1.0 chưa bật được `consistency: strong` | Theo dõi ở Task 6b Step 6 / Task 10; nếu gặp thật thì xử lý ở Phần C |
+| Có sẵn từ trước, ngoài phạm vi: phiên đăng nhập không hết hạn; `/auth/register` mở cho mọi người (cần duyệt mới dùng được) | Không thuộc PR hạ tầng | Xem xét trước khi gửi link cho giáo viên |
+| File database ở **thư mục main gốc** trên máy chủ sản phẩm còn ở mô hình trước PR-J (cảnh báo khi `npm run dev`) | Không thuộc mã; chỉ là dữ liệu cũ trên máy | Chủ sản phẩm chạy `npm run seed` ở thư mục gốc khi tiện |
+
 ### 13.1. Trước mỗi commit
 
 ```bash

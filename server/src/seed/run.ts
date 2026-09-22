@@ -1,5 +1,14 @@
-import { DB_PATH, closeDb } from '../db.ts';
+import { DB_PATH, closeDb, tuChoiXoaSachNeuTuXa } from '../db.ts';
 import { runSeed } from './seed.ts';
+
+/*
+ * `npm run seed` XOÁ SẠCH database — chỉ dành cho máy dev. Đang trỏ tới Turso thì từ chối (luật ở `tuChoiXoaSachNeuTuXa`,
+ * cũng được `recreateSchema` tự gọi). Hỏi trước ở đây để lệnh dừng gọn với một dòng dễ đọc.
+ */
+try { tuChoiXoaSachNeuTuXa(); } catch (e) {
+  console.error('[seed] ' + (e as Error).message);
+  process.exit(1);
+}
 
 const force = process.argv.includes('--force');
 console.log(`[seed] Đang tạo lại dữ liệu demo tại ${DB_PATH}${force ? ' (--force)' : ''}`);

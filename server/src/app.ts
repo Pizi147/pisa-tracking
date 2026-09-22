@@ -15,6 +15,13 @@ import { HttpError } from './util.ts';
 export function createApp() {
   const app = express();
 
+  /* Trên Netlify, lời gọi /api/x được chuyển tới /.netlify/functions/api/x. Đưa về /api/x để mọi route giữ nguyên. */
+  app.use((req, _res, next) => {
+    const tienTo = '/.netlify/functions/api';
+    if (req.url.startsWith(tienTo)) req.url = '/api' + req.url.slice(tienTo.length);
+    next();
+  });
+
   app.use(express.json({ limit: '12mb' }));
   app.use(cookieParser());
   app.use(attachPrincipal);
@@ -36,7 +43,8 @@ export function createApp() {
       return;
     }
     const message = err instanceof Error ? err.message : 'Lỗi không xác định';
-    if (/SQLITE_CONSTRAINT/i.test(message)) {
+    const code = (err as { code?: unknown })?.code;
+    if (/SQLITE_CONSTRAINT|constraint failed/i.test(message) || (typeof code === 'string' && code.startsWith('SQLITE_CONSTRAINT'))) {
       res.status(409).json({ error: 'Dữ liệu bị trùng hoặc vi phạm ràng buộc.', details: { raw: message } });
       return;
     }

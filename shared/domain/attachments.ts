@@ -4,7 +4,7 @@
  *
  * Không có HTML, SVG, tập lệnh hay tệp chạy được: đó là thứ chạy trong trình duyệt của người tải về.
  */
-export const ATTACHMENT_MAX_BYTES = 10 * 1024 * 1024;
+export const ATTACHMENT_MAX_BYTES = 4 * 1024 * 1024;
 
 export const ATTACHMENT_MIME_BY_EXT: Record<string, string> = {
   pdf: 'application/pdf',

@@ -1,6 +1,7 @@
 import { Router, type Request } from 'express';
 import multer from 'multer';
 import { db, isInitialised } from '../db.ts';
+import { laBanChinh } from '../moiTruong.ts';
 import {
   ENTRY_SKILLS, ENTRY_SKILL_LABEL, ISSUE_TAXONOMY,
   PERMISSIONS, REGULAR_SKILLS, ROLE_LABEL, WORK_SCOPES,
@@ -64,6 +65,19 @@ import * as regularSvc from '../normal/regular.ts';
 export const api = Router();
 
 // ============================================================ Phiên demo
+
+/*
+ * BẢN CHÍNH: mọi đường /demo đều tắt, TRỪ hai đường mà đăng nhập thật cần:
+ *   GET    /demo/session  — biết đã đăng nhập chưa, và ngày nghiệp vụ (`demoDate` = ngày thật ở bản chính)
+ *   DELETE /demo/session  — đăng xuất
+ * POST /demo/session là "Vào nhanh": đăng nhập bằng id KHÔNG cần mật khẩu — trên mạng là cửa sau, phải 404.
+ */
+api.use('/demo', (req, res, next) => {
+  if (!laBanChinh()) return next();
+  const choQua = req.path === '/session' && (req.method === 'GET' || req.method === 'DELETE');
+  if (choQua) return next();
+  res.status(404).json({ error: 'Không tìm thấy endpoint.' });
+});
 
 api.get('/demo/accounts', wrap(() => {
   if (!isInitialised()) throw new HttpError(503, 'Chưa có dữ liệu demo trong máy.', { needsSeed: true });
@@ -144,7 +158,7 @@ api.post('/demo/session', wrap((req, res) => {
   if (!user) throw notFound('Tài khoản demo không tồn tại.');
   if (req.sessionToken) destroySession(req.sessionToken);
   const token = createSession(userId);
-  res.cookie(SESSION_COOKIE, token, { httpOnly: true, sameSite: 'lax', path: '/' });
+  res.cookie(SESSION_COOKIE, token, { httpOnly: true, sameSite: 'lax', path: '/', secure: laBanChinh() });
   return { ok: true, userId };
 }));
 
@@ -685,7 +699,7 @@ api.post('/attachments/file', requireAuth, (req, res, next) => {
   uploadOne(req, res, (err: unknown) => {
     if (!err) return next();
     const code = (err as { code?: string }).code;
-    next(code === 'LIMIT_FILE_SIZE' ? new HttpError(413, 'Tệp quá lớn: tối đa 10 MB.') : new HttpError(400, 'Không đọc được tệp tải lên.'));
+    next(code === 'LIMIT_FILE_SIZE' ? new HttpError(413, 'Tệp quá lớn: tối đa 4 MB.') : new HttpError(400, 'Không đọc được tệp tải lên.'));
   });
 }, wrap((req) => {
   maybeSimulateSaveFailure();
@@ -700,20 +714,20 @@ api.post('/attachments/file', requireAuth, (req, res, next) => {
 }));
 
 /** Tải về — kiểm quyền XEM bản ghi chủ trước, luôn dạng tải về (không bao giờ hiển thị nội dung tệp trong trang). */
-api.get('/attachments/:id/download', requireAuth, wrap((req, res) => {
-  const o = attachmentSvc.openAttachment(principalOf(req), pInt(req, 'id'));
+api.get('/attachments/:id/download', requireAuth, wrap(async (req, res) => {
+  const o = await attachmentSvc.openAttachment(principalOf(req), pInt(req, 'id'));
   if (o.kind === 'link') { res.redirect(o.url); return undefined; }
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('Content-Security-Policy', "default-src 'none'; sandbox");
   res.setHeader('Content-Type', o.mimeType);
   res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${encodeURIComponent(o.downloadName)}`);
-  res.sendFile(o.absPath);
+  res.send(o.duLieu);
   return undefined;
 }));
 
-api.delete('/attachments/:id', requireAuth, wrap((req) => {
+api.delete('/attachments/:id', requireAuth, wrap(async (req) => {
   maybeSimulateSaveFailure();
-  attachmentSvc.removeAttachment(principalOf(req), pInt(req, 'id'));
+  await attachmentSvc.removeAttachment(principalOf(req), pInt(req, 'id'));
   return { ok: true };
 }));
 
@@ -1557,7 +1571,7 @@ api.post('/auth/login', wrap((req, res) => {
   const r = accountSvc.login(String(req.body?.email ?? ''), String(req.body?.password ?? ''));
   if (req.sessionToken) destroySession(req.sessionToken);
   const token = createSession(r.userId);
-  res.cookie(SESSION_COOKIE, token, { httpOnly: true, sameSite: 'lax', path: '/' });
+  res.cookie(SESSION_COOKIE, token, { httpOnly: true, sameSite: 'lax', path: '/', secure: laBanChinh() });
   return { ok: true, userId: r.userId, fullName: r.fullName };
 }));
 
@@ -1580,7 +1594,8 @@ api.get('/auth/branches', wrap(() => {
 /** Thông tin cần cho màn đăng nhập: đuôi email bắt buộc và tài khoản mặc định của bản demo. */
 api.get('/auth/info', wrap(() => ({
   emailSuffix: accountSvc.EMAIL_SUFFIX,
-  demoAdmin: { email: accountSvc.DEFAULT_ADMIN_EMAIL, password: accountSvc.DEFAULT_ADMIN_PASSWORD },
+  /* Bản chính: không bao giờ gửi mật khẩu mặc định ra ngoài. */
+  ...(laBanChinh() ? {} : { demoAdmin: { email: accountSvc.DEFAULT_ADMIN_EMAIL, password: accountSvc.DEFAULT_ADMIN_PASSWORD } }),
   /* Gộp hai bộ kỹ năng và BỎ TRÙNG: Listening có ở cả hai, hiện hai lần là một lỗi nhìn thấy ngay. */
   skills: [...new Set([...ENTRY_SKILLS, ...REGULAR_SKILLS])],
 })));
