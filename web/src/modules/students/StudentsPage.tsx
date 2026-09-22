@@ -1,95 +1,56 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { useSession } from '../../lib/session.tsx';
 import { invalidate } from '../../lib/api.ts';
-import { Alert, Card, Empty, ErrorState, Info, Level, SectionNote, Skeleton, Status, Task, Th} from '../../ui/ui.tsx';
-import { attemptHref, caseStatusLabel, caseStatusTone, sosTone } from '../../lib/format.ts';
+import { Alert, Card, Empty, ErrorState, Level, SectionNote, Skeleton, Status, Task, Th } from '../../ui/ui.tsx';
+import { attemptHref, caseStatusLabel, sosTone } from '../../lib/format.ts';
 import type { Branch } from '../../ui/Filters.tsx';
+import { MenuDong, type MucMenu } from '../../ui/MenuDong.tsx';
 import { IntakePanel } from './IntakePanel.tsx';
 import { ClassCreatePanel } from '../classes/ClassCreatePanel.tsx';
-import { ClassRoster } from './ClassRoster.tsx';
-import { MissingBadge } from './MissingBadge.tsx';
+import { TenGiaoVien } from '../classes/TenGiaoVien.tsx';
+import { BangHocVienLop } from './BangHocVienLop.tsx';
 import {
-  PERMISSIONS, STUDENT_FILTERS, WORK_SCOPES, WORK_SCOPE_HINT, WORK_SCOPE_LABEL, needScoresText, skillShort,
-  type StudentFilterKey, type WorkScope,
+  LOC_HOC_VIEN, LOC_HOC_VIEN_NHAN, PERMISSIONS, PHAM_VI_NHAN, badgeLop, docThamSoLoc, lopMoSan, needScoresText, skillShort,
+  type BadgeLop, type LocHocVien, type PhamVi, type SapXep, type WorkScope,
 } from '@shared/domain/index.ts';
 
-export type ClassSummary = {
-  id: number; code: string; kind: string; route: string | null;
-  branchId: number; branchCode: string; branchName: string;
-  startDate: string | null;
-  studentCount: number; needScores: number; openCases: number;
-  /** `needScores` đang đếm của ai — badge nói đúng điều đó. */
-  workScope: WorkScope;
-  /** `ratio` = lớp Normal chấm theo điểm đạt/tổng điểm; `ielts_band` = lớp Fast Track. */
-  scoringMode: string | null;
-  programmeName: string | null;
-  /** Kỹ năng người đang xem dạy ở CHÍNH lớp này. */
-  mySkills: string[];
-  /** Người đang xem có phải GVCN của lớp này không. */
-  myCoreClass: boolean;
-  /** Một dòng tiến độ đọc được ngay: "BE · tuần 5/10 · Progress Test tuần này". */
-  progressLabel: string | null;
-  phase: string;
-  phaseLabel: string;
-  currentWeek: number | null;
-  totalWeeks: number | null;
-  /** Lớp đã hết chương trình và còn học viên → phải xếp lớp tiếp cho từng em. */
-  needsPlacement: boolean;
-  placementOptions: { code: string; name: string }[];
-  /** Gom mọi thứ lớp còn thiếu vào một badge. */
-  missing: { key: string; label: string; who: string }[];
-  missingSkills: string[];
+/** Một lớp của `GET /hoc-vien-lop` (server/src/classes/hocVienLop.ts → LopHocVienLop). */
+export type LopTrenTrang = {
+  id: number; code: string; programmeCode: string | null; programmeName: string | null; scoringMode: string | null;
+  branchId: number; branchName: string; studentCount: number; needScores: number; workScope: WorkScope;
+  phase: string; currentWeek: number | null; totalWeeks: number | null; needsPlacement: boolean;
+  missing: { key: string; label: string; who: string }[]; missingSkills: string[];
+  gvcn: { id: number; name: string } | null; soCaseMo: number; tuanKetThuc: string | null;
+  viewer: { coTheSuaHocVien: boolean; coTheBaoCase: boolean; coTheGhiViPham: boolean; coTheNhapDiem: boolean };
+};
+type TrangHocVienLop = {
+  rows: LopTrenTrang[]; scopeEmpty: boolean;
+  phamVi: { coThe: PhamVi[]; dangDung: PhamVi; chiNhanh: number | null };
+  dem: Record<LocHocVien, number>;
+  hocVien: { id: number; classId: number; loc: LocHocVien[] }[];
 };
 
-/*
- * TÁM BỘ LỌC, ĐỊNH NGHĨA Ở `shared/domain.ts`.
- *
- * Owner yêu cầu (mục 6): "cách gọi phải giống hệt nhau ở mọi trang". Nên danh sách nằm ở
- * một chỗ dùng chung, và trang này chỉ CHỌN RA những bộ lọc hợp với quyền người đang xem.
- * Trang nào tự viết lấy nhãn của mình là cách chắc chắn nhất để cùng một việc mang ba cái
- * tên khác nhau ở ba màn hình.
+/**
+ * HỌC VIÊN & LỚP (đặc tả §3.6, mockup 07b phương án A) — một trang, học viên nằm dưới lớp của mình.
+ * Điều khiển: một ô tìm · Phạm vi · chi nhánh (khi xem theo chi nhánh và có > 1) · Xếp · chip lọc có số đếm.
+ * Mọi trạng thái nằm trên URL: tải lại trang và nút Back giữ đúng chỗ đang đứng.
  */
-
 export default function StudentsPage() {
-  const { session, can, branchCount } = useSession();
+  const { can } = useSession();
   const [params, setParams] = useSearchParams();
-  /* Cần chấm và Kế hoạch Test nay ở khu Test (spec §4, G-12); đường dẫn cũ `?view=my_scores|no_plan` được chuyển hướng. */
-  const views = useMemo(
-    () => STUDENT_FILTERS.filter((f) => f.key !== 'my_scores' && f.key !== 'no_plan' && (!f.needs || can(f.needs))),
-    [can],
-  );
-  const rawView = (params.get('view') ?? 'classes') as StudentFilterKey;
-  const view: StudentFilterKey = views.some((v) => v.key === rawView) ? rawView : 'classes';
+  const doc = docThamSoLoc(params.get('view'));
   const q = params.get('q') ?? '';
   const branchId = params.get('branchId') ? Number(params.get('branchId')) : null;
-  /*
-   * PHẠM VI LƯU VÀO ĐƯỜNG DẪN, không vào state: tải lại trang và bấm Back phải giữ đúng
-   * chỗ người dùng đang đứng. Không có trên đường dẫn thì KHÔNG tự đặt — để máy chủ chọn
-   * mặc định theo vai, rồi hiện ra phạm vi nó đã chọn.
-   */
-  const rawScope = params.get('scope');
-  const scope: WorkScope | null = (WORK_SCOPES as readonly string[]).includes(rawScope ?? '')
-    ? (rawScope as WorkScope) : null;
-  /*
-   * Nhiều lớp mở cùng lúc và độc lập nhau: mở lớp thứ hai không được đóng lớp thứ nhất,
-   * vì việc thật là đặt hai lớp cạnh nhau mà so. Danh sách lớp đang mở nằm trên URL nên
-   * nút Back khôi phục đúng những lớp vừa mở, không chỉ lớp cuối cùng.
-   */
-  const openIds = useMemo(
-    () => new Set((params.get('open') ?? '').split(',').map(Number).filter((n) => Number.isFinite(n) && n > 0)),
-    [params],
-  );
-  const [intakeOpen, setIntakeOpen] = useState(false);
-  const [classCreate, setClassCreate] = useState(false);
-  const [intakeFor, setIntakeFor] = useState<ClassSummary | null>(null);
+  const phamViUrl = params.get('phamVi');
+  const sapXep: SapXep = params.get('sx') === 'chu-y' ? 'chu-y' : 'ten';
+  const chiLop = params.get('classId') ? Number(params.get('classId')) : null;
+  const openRaw = params.get('open');
   const [draftQ, setDraftQ] = useState(q);
+  const [them, setThem] = useState<{ id: number; code: string } | null | 'dong'>('dong');
+  const [taoLop, setTaoLop] = useState(false);
 
-  const branches = useApi<Branch[]>('/ref/branches');
-  const showBranch = (branches.data?.length ?? 0) > 1 && branchCount > 1;
-
-  // Đổi bộ lọc bằng cách sửa URL, nên nút Back của trình duyệt giữ đúng ngữ cảnh cũ.
   const setParam = useCallback((patch: Record<string, string | null>) => {
     const next = new URLSearchParams(params);
     for (const [k, v] of Object.entries(patch)) {
@@ -99,281 +60,191 @@ export default function StudentsPage() {
   }, [params, setParams]);
 
   useEffect(() => {
-    const t = setTimeout(() => { if (draftQ !== q) setParam({ q: draftQ || null }); }, 300);
+    const t = setTimeout(() => { if (draftQ !== q) setParam({ q: draftQ || null, open: null }); }, 300);
     return () => clearTimeout(t);
   }, [draftQ, q, setParam]);
 
   const qs = useMemo(() => {
     const s = new URLSearchParams();
-    if (branchId) s.set('branchId', String(branchId));
     if (q.trim()) s.set('q', q.trim());
-    if (scope) s.set('scope', scope);
-    return `/classes?${s.toString()}`;
-  }, [branchId, q, scope]);
-  const classes = useApi<{ rows: ClassSummary[]; scopeEmpty: boolean }>(view === 'classes' ? qs : null);
+    if (phamViUrl) s.set('phamVi', phamViUrl);
+    if (branchId) s.set('branchId', String(branchId));
+    return `/hoc-vien-lop?${s.toString()}`;
+  }, [q, phamViUrl, branchId]);
+  const trang = useApi<TrangHocVienLop>('chuyenDen' in doc ? null : qs);
+  const branches = useApi<Branch[]>('/ref/branches');
+  const data = trang.data;
+
+  const chips = LOC_HOC_VIEN.filter((k) => { const c = LOC_HOC_VIEN_NHAN[k].can; return !c || can(c); });
+  const loc: LocHocVien = 'loc' in doc && chips.includes(doc.loc) ? doc.loc : 'tat-ca';
+  const dangLoc = loc !== 'tat-ca' || !!q.trim();
+  const idsTheoLop = useMemo(() => {
+    const m = new Map<number, Set<number>>();
+    for (const h of data?.hocVien ?? []) {
+      if (!h.loc.includes(loc)) continue;
+      if (!m.has(h.classId)) m.set(h.classId, new Set());
+      m.get(h.classId)!.add(h.id);
+    }
+    return m;
+  }, [data, loc]);
+
+  if ('chuyenDen' in doc) return <Navigate to={`${doc.chuyenDen}${branchId ? `?branchId=${branchId}` : ''}`} replace />;
+
+  const lopHien = (data?.rows ?? []).filter((c) => (!chiLop || c.id === chiLop) && (!dangLoc || idsTheoLop.has(c.id)));
+  const openIds = lopMoSan({
+    thamSoOpen: openRaw === null ? null : openRaw === '-' ? []
+      : openRaw.split(',').map(Number).filter((n) => Number.isFinite(n) && n > 0),
+    lopHien: lopHien.map((c) => c.id),
+    dangLoc,
+  });
+  const doiMo = (id: number) => {
+    const s = new Set(openIds);
+    if (s.has(id)) s.delete(id); else s.add(id);
+    setParam({ open: s.size ? [...s].join(',') : '-' });
+  };
+  const lopDangLoc = chiLop ? (data?.rows ?? []).find((c) => c.id === chiLop) : null;
+  const pv = data?.phamVi;
 
   return (
-    <div className="page space-y-4">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-lg font-semibold text-slate-100">Học viên & Lớp</h1>
-        </div>
-        <div className="flex flex-wrap items-end gap-2">
-          <label className="block">
-            <span className="label">Tìm</span>
-            <input
-              className="field w-56"
-              placeholder="Mã lớp hoặc tên / mã học viên"
-              value={draftQ}
-              onChange={(e) => setDraftQ(e.target.value)}
-            />
-          </label>
-        </div>
+    <div className="page space-y-3">
+      <div className="flex flex-wrap items-center gap-2">
+        <h1 className="text-lg font-semibold text-slate-100 m-0">Học viên & Lớp</h1>
+        <div className="flex-1" />
+        {can(PERMISSIONS.STUDENT_EDIT) && <button type="button" className="btn btn-sm" onClick={() => setTaoLop(true)}>+ Lớp mới</button>}
+        {can(PERMISSIONS.STUDENT_EDIT) && (
+          <button type="button" className="btn btn-sm btn-primary" onClick={() => setThem(null)}>+ Học viên</button>
+        )}
       </div>
 
-      {/*
-        THANH TAB CHI NHÁNH (mục 8.2) thay cho ô select.
+      <div className="flex flex-wrap items-center gap-2">
+        <input className="field w-full sm:w-80" aria-label="Tìm" placeholder="🔍 Tìm tên, mã học viên hoặc mã lớp…"
+          value={draftQ} onChange={(e) => setDraftQ(e.target.value)} />
+        {pv && pv.coThe.length > 1 && (
+          <select className="field w-auto" aria-label="Phạm vi" value={pv.dangDung}
+            onChange={(e) => setParam({ phamVi: e.target.value, branchId: null, open: null })}>
+            {pv.coThe.map((v) => <option key={v} value={v}>Phạm vi: {PHAM_VI_NHAN[v]}</option>)}
+          </select>
+        )}
+        {pv?.dangDung === 'chi-nhanh' && (branches.data?.length ?? 0) > 1 && (
+          <select className="field w-auto" aria-label="Chi nhánh" value={pv.chiNhanh ?? ''}
+            onChange={(e) => setParam({ phamVi: 'chi-nhanh', branchId: e.target.value, open: null })}>
+            {(branches.data ?? []).map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
+          </select>
+        )}
+        <select className="field w-auto" aria-label="Cách xếp" value={sapXep}
+          onChange={(e) => setParam({ sx: e.target.value === 'chu-y' ? 'chu-y' : null })}>
+          <option value="ten">Xếp: Tên A→Z</option>
+          <option value="chu-y">Xếp: Cần chú ý trước</option>
+        </select>
+      </div>
 
-        Với người quản nhiều chi nhánh, chuyển chi nhánh là thao tác làm liên tục cả ngày. Ô
-        select bắt ba động tác (bấm mở, tìm dòng, bấm chọn) cho một việc đáng lẽ một động tác,
-        và không cho thấy mình đang có mấy chi nhánh. Thanh tab nói cả hai điều đó cùng lúc.
-      */}
-      {showBranch && (
-        <div className="flex flex-wrap items-center gap-1 border-b pb-2" style={{ borderColor: 'var(--line)' }}>
-          <BranchTab active={branchId === null} onClick={() => setParam({ branchId: null })}>Tất cả</BranchTab>
-          {(branches.data ?? []).map((b) => (
-            <BranchTab key={b.id} active={branchId === b.id} onClick={() => setParam({ branchId: String(b.id) })}>
-              {b.name}
-            </BranchTab>
-          ))}
-        </div>
-      )}
-
-      <div className="flex flex-wrap items-center gap-1">
-        {/*
-          ĐỔI BỘ LỌC KHÔNG ĐÓNG LẠI NHỮNG LỚP ĐANG MỞ (mục 8.1).
-
-          Bản trước xoá `open` mỗi lần bấm bộ lọc, nên mở ba lớp ra so sánh rồi lọc một cái
-          là mất sạch, phải mở lại từ đầu. Trạng thái thu gọn/mở rộng là thứ NGƯỜI DÙNG đã
-          sắp đặt; bộ lọc chỉ được đổi DANH SÁCH, không được đụng vào cách bày.
-        */}
-        {views.map((v) => (
-          <button
-            key={v.key}
-            title={v.hint}
-            className={`btn btn-sm ${view === v.key ? 'btn-primary' : ''}`}
-            onClick={() => setParam({ view: v.key === 'classes' ? null : v.key })}
-          >
-            {v.label}
+      <div className="flex gap-1.5 overflow-x-auto pb-1" role="group" aria-label="Lọc học viên">
+        {chips.map((k) => (
+          <button key={k} type="button" title={LOC_HOC_VIEN_NHAN[k].goiY} aria-pressed={loc === k}
+            onClick={() => setParam({ view: k === 'tat-ca' ? null : k, open: null })}
+            className={`inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-3 py-1 text-xs font-semibold cursor-pointer ${
+              loc === k
+                ? 'bg-[color:var(--accent-soft)] text-[color:var(--accent-strong)] border-[color:var(--accent-line)]'
+                : 'bg-transparent text-slate-400 border-slate-300/20 hover:bg-white/5'
+            }`}>
+            {LOC_HOC_VIEN_NHAN[k].nhan}<span className="tabular-nums text-slate-200">{data?.dem[k] ?? 0}</span>
           </button>
         ))}
-        {(view === 'classes' || view === 'my_scores') && (
-          <span className="flex flex-wrap gap-1 ml-2">
-            {WORK_SCOPES.map((s) => (
-              <button key={s} type="button"
-                className={`btn btn-sm ${scope === s ? 'btn-primary' : 'btn-ghost'}`}
-                title={WORK_SCOPE_HINT[s]}
-                onClick={() => setParam({ scope: s })}>
-                {WORK_SCOPE_LABEL[s]}
-              </button>
-            ))}
-          </span>
-        )}
-        <div className="flex-1" />
-        {can(PERMISSIONS.STUDENT_EDIT) && view === 'classes' && (
-          <button className="btn btn-sm" onClick={() => setClassCreate(true)}>Tạo lớp</button>
-        )}
-        {can(PERMISSIONS.STUDENT_EDIT) && view === 'classes' && (
-          <button className="btn btn-primary btn-sm" onClick={() => { setIntakeFor(null); setIntakeOpen(true); }}>
-            Thêm học viên
+        {chiLop && (
+          <button type="button" className="btn btn-sm shrink-0" title="Bỏ lọc lớp" onClick={() => setParam({ classId: null })}>
+            Lớp {lopDangLoc?.code ?? chiLop} ✕
           </button>
         )}
       </div>
 
-      {view === 'sos' && <WorkQueue view={view} branchId={branchId} q={q} scope={scope} />}
-      {/*
-        BA BỘ LỌC CASE (mục 6, số 3–5) dùng CHUNG một danh sách, chỉ đổi hàng đợi. Ba bảng
-        riêng cho ba câu hỏi rất giống nhau là ba chỗ để số liệu lệch nhau.
-      */}
-      {(view === 'case_working' || view === 'case_no_plan' || view === 'case_overdue') && (
-        <CaseQueue view={view} branchId={branchId} q={q} />
-      )}
+      {trang.error && <ErrorState message={trang.error.message} hint={trang.error.hint} onRetry={trang.reload} />}
+      {trang.loading && !data && <Skeleton rows={6} />}
+      {data && (lopHien.length === 0 ? (
+        <Card>
+          <Empty
+            title={data.scopeEmpty ? 'Bạn chưa được cấp phạm vi nào' : 'Không có lớp hay học viên nào khớp'}
+            hint={data.scopeEmpty
+              ? 'Tài khoản này chưa có vai trò kèm chi nhánh hoặc phân công lớp nào.'
+              : 'Bỏ bớt từ khoá, đổi chip lọc hoặc đổi phạm vi.'} />
+        </Card>
+      ) : (
+        <div className="space-y-2">
+          {lopHien.map((c) => (
+            <HopLop key={c.id} lop={c} mo={openIds.includes(c.id)} onDoiMo={() => doiMo(c.id)}
+              chiHien={dangLoc ? (idsTheoLop.get(c.id) ?? new Set()) : null} sapXep={sapXep}
+              onThemHocVien={() => setThem({ id: c.id, code: c.code })} onDoi={trang.reload} />
+          ))}
+        </div>
+      ))}
 
-      {view === 'classes' && (
-        <>
-          {classes.error && <ErrorState message={classes.error.message} hint={classes.error.hint} onRetry={classes.reload} />}
-          {classes.loading && <Skeleton rows={6} />}
-          {classes.data && (
-            <Card bodyClass="p-0">
-              {classes.data.rows.length === 0 ? (
-                <Empty
-                  title={classes.data.scopeEmpty ? 'Bạn chưa được cấp phạm vi nào' : 'Không tìm thấy lớp nào'}
-                  hint={classes.data.scopeEmpty
-                    ? 'Tài khoản này chưa có vai trò kèm chi nhánh hoặc phân công lớp nào.'
-                    : 'Thử bỏ bớt từ khoá, hoặc đổi chi nhánh.'}
-                />
-              ) : (
-                <ul className="divide-y list-none p-0 m-0" style={{ borderColor: 'var(--line)' }}>
-                  {classes.data.rows.map((c) => (
-                    <ClassRow
-                      key={c.id}
-                      cls={c}
-                      scope={scope}
-                      expanded={openIds.has(c.id)}
-                      studentQuery={q}
-                      onToggle={() => {
-                        const next = new Set(openIds);
-                        if (next.has(c.id)) next.delete(c.id); else next.add(c.id);
-                        setParam({ open: next.size ? [...next].join(',') : null });
-                      }}
-                      onAddStudents={() => { setIntakeFor(c); setIntakeOpen(true); }}
-                    />
-                  ))}
-                </ul>
-              )}
-            </Card>
-          )}
-        </>
+      {taoLop && (
+        <ClassCreatePanel onClose={() => setTaoLop(false)}
+          onDone={() => { invalidate('/classes'); invalidate('/hoc-vien-lop'); trang.reload(); }} />
       )}
-
-      {classCreate && (
-        <ClassCreatePanel
-          onClose={() => setClassCreate(false)}
-          onDone={() => { invalidate('/classes'); classes.reload(); }}
-        />
-      )}
-
-      {intakeOpen && (
-        <IntakePanel
-          defaultClass={intakeFor}
-          onClose={() => { setIntakeOpen(false); setIntakeFor(null); }}
-          onDone={() => { invalidate('/classes'); invalidate('/students'); classes.reload(); }}
-        />
+      {them !== 'dong' && (
+        <IntakePanel defaultClass={them} onClose={() => setThem('dong')}
+          onDone={() => { invalidate('/classes'); invalidate('/hoc-vien-lop'); invalidate('/students'); trang.reload(); }} />
       )}
     </div>
   );
 }
 
 /**
- * Một dòng lớp.
- *
- * Ba vùng bấm tách nhau rõ: tên lớp mở Class Overview, badge mở danh sách tương ứng,
- * chevron (và nền dòng) đóng/mở danh sách học viên ngay tại chỗ. Badge và tên lớp phải
- * chặn nổi bọt sự kiện, nếu không bấm badge sẽ đồng thời mở/đóng roster.
+ * HỘP LỚP (đặc tả §3.6): ▸ · mã (mở Hồ sơ lớp) · chương trình · n học viên · GVCN · tối đa 2 badge (+n) · ⋯.
+ * ⋯ của lớp: Hồ sơ lớp · Nhập điểm Test (Q11, Q6) · + Học viên — chỉ mục người xem làm được.
  */
-function ClassRow({ cls, scope, expanded, studentQuery, onToggle, onAddStudents }: {
-  cls: ClassSummary; scope: WorkScope | null; expanded: boolean; studentQuery: string;
-  onToggle: () => void; onAddStudents: () => void;
+function HopLop({ lop, mo, onDoiMo, chiHien, sapXep, onThemHocVien, onDoi }: {
+  lop: LopTrenTrang; mo: boolean; onDoiMo: () => void; chiHien: Set<number> | null; sapXep: SapXep;
+  onThemHocVien: () => void; onDoi: () => void;
 }) {
   const navigate = useNavigate();
-  const rowRef = useRef<HTMLDivElement>(null);
-  const go = (to: string) => (e: React.MouseEvent) => { e.stopPropagation(); navigate(to); };
+  const thuong = lop.scoringMode === 'ratio';
+  const b = badgeLop({
+    needsPlacement: lop.needsPlacement, studentCount: lop.studentCount, missingSkills: lop.missingSkills,
+    needScoresText: lop.needScores > 0 ? needScoresText(lop.workScope, lop.needScores) : null,
+    soCaseMo: lop.soCaseMo, phase: lop.phase,
+    missingCount: lop.missing.filter((m) => m.key !== 'teachers').length,
+  });
+  const denBadge = (x: BadgeLop): string | null =>
+    x.key === 'cham' ? `/test/can-cham?classId=${lop.id}`
+      : x.key === 'case' ? `/hoc-vien/lop/${lop.id}?che-do=can-ho-tro`
+      : x.key === 'het-khoa' ? `/hoc-vien/lop/${lop.id}`
+      : null;
+  const mucLop: MucMenu[] = [
+    { key: 'ho-so', nhan: 'Hồ sơ lớp', onChon: () => navigate(`/hoc-vien/lop/${lop.id}`) },
+    ...(lop.viewer.coTheNhapDiem
+      ? [{ key: 'nhap-diem', nhan: 'Nhập điểm Test', onChon: () => navigate(thuong ? `/bang-diem-thuong/${lop.id}` : `/nhap-diem/${lop.id}`) }]
+      : []),
+    ...(lop.viewer.coTheSuaHocVien ? [{ key: 'them', nhan: '+ Học viên', onChon: onThemHocVien }] : []),
+  ];
 
   return (
-    <li>
-      <div
-        ref={rowRef}
-        role="button"
-        tabIndex={0}
-        aria-expanded={expanded}
-        aria-label={`Lớp ${cls.code}, ${expanded ? 'đang mở' : 'đang đóng'} danh sách học viên`}
-        className="w-full text-left px-4 py-3 hover:bg-white/5 flex flex-wrap items-center gap-x-3 gap-y-2 cursor-pointer"
-        onClick={onToggle}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onToggle(); }
-        }}
-      >
-        <span className="shrink-0 text-slate-500 w-4 text-center" aria-hidden>{expanded ? '▾' : '▸'}</span>
-        <Link
-          to={`/hoc-vien/lop/${cls.id}`}
-          className="link font-medium shrink-0"
-          onClick={(e) => e.stopPropagation()}
-        >
-          {cls.code}
+    <section className="card overflow-hidden">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 px-3 py-2.5 sm:px-4 surface-2">
+        <button type="button" onClick={onDoiMo} aria-expanded={mo} title={mo ? 'Thu gọn' : 'Mở danh sách học viên'}
+          aria-label={`${mo ? 'Thu gọn' : 'Mở'} danh sách học viên lớp ${lop.code}`}
+          className="w-5 border-0 bg-transparent p-0 text-slate-400 cursor-pointer">{mo ? '▾' : '▸'}</button>
+        <Link to={`/hoc-vien/lop/${lop.id}`} className="font-semibold text-slate-100 underline decoration-dotted underline-offset-4">
+          {lop.code}
         </Link>
-        {/*
-          Dòng phụ này dài ("Monbay · FOU · tuần 8/8 · Final Test tuần này · 6 HV"), nên nó
-          KHÔNG được `shrink-0`: ở màn 360px một chuỗi không co được sẽ đẩy cả dòng lớp tràn
-          ra ngoài thẻ. Cho phép xuống dòng thay vì cho phép tràn.
-        */}
-        <span className="text-xs text-slate-500 min-w-0">
-          {cls.branchName}
-          {/*
-            TIẾN ĐỘ LỚP ngay trên thanh lớp (mục 7.6). Với lớp Normal đây là câu quan trọng
-            nhất của dòng này — "tuần 5/10" nói được nhiều hơn tên chương trình.
-          */}
-          {cls.progressLabel ? ` · ${cls.progressLabel}` : cls.route ? ` · ${cls.route}` : ''}
-          {' · '}{cls.studentCount} HV
+        <span className="min-w-0 text-xs text-slate-400">
+          {lop.programmeName ?? '—'} · {lop.studentCount} học viên
+          {lop.gvcn && <> · <abbr title="Giáo viên chủ nhiệm" className="no-underline">GVCN</abbr> <TenGiaoVien id={lop.gvcn.id} ten={lop.gvcn.name} /></>}
         </span>
-
-        {/*
-          BADGE CĂN PHẢI (mục 8.3). Tên lớp và tiến độ nằm sát mép trái, badge dồn về mép
-          phải, nên mắt quét dọc một cột badge thay vì nhặt chúng ở mỗi dòng một chỗ khác
-          nhau. Ở màn hẹp, `flex-wrap` cho badge tự xuống dòng chứ không đẩy tên lớp đi.
-        */}
-        <span className="flex flex-wrap items-center justify-end gap-1.5 flex-1 min-w-0">
-          {/*
-            * Giáo viên dạy nhiều lớp và ở mỗi lớp có thể ôm bộ kỹ năng khác nhau. Ghi thẳng
-            * ra đây để không phải mở từng lớp mới biết mình phụ trách gì ở đâu.
-            */}
-          {cls.mySkills.length > 0 && (
-            <Info title={`Bạn dạy ${cls.mySkills.map(skillShort).join(', ')} ở lớp này`}>
-              {cls.mySkills.map(skillShort).join(' ')}
-            </Info>
-          )}
-          {cls.myCoreClass && <Info title="Bạn là giáo viên chủ nhiệm lớp này">GVCN</Info>}
-
-          {/*
-            BA THÔNG BÁO CỦA LỚP NORMAL — owner yêu cầu 13/09/2026.
-
-            Sắp thi / đang thi / đã hết chương trình. Cái cuối là nặng nhất: lớp xong rồi thì
-            mọi em còn đang học PHẢI được xếp lớp tiếp, và việc đó không tự xảy ra.
-          */}
-          {cls.needsPlacement ? (
-            <Alert
-              title={`Lớp đã hết chương trình. ${cls.studentCount} học viên cần xếp lớp tiếp: `
-                + cls.placementOptions.map((o) => o.name).join(' hoặc ')}>
-              Hết chương trình · {cls.studentCount} em cần xếp lớp
-            </Alert>
-          ) : cls.phase === 'final_week' || cls.phase === 'progress_week' ? (
-            <Status kind="doing">{cls.phaseLabel}</Status>
-          ) : cls.phase === 'final_soon' || cls.phase === 'progress_soon' ? (
-            <Status kind="waiting">{cls.phaseLabel}</Status>
-          ) : null}
-
-          {/* Thiếu GV kỹ năng nào thì nói thẳng kỹ năng đó — "Thiếu GV R, L" (mục 7.7). */}
-          {cls.missingSkills.length > 0 && (
-            <Alert tone="warn" title="Admin CN hoặc Quản lý phân công giáo viên cho các kỹ năng này">
-              Thiếu GV {cls.missingSkills.map(skillShort).join(', ')}
-            </Alert>
-          )}
-          <MissingBadge items={cls.missing.filter((m) => m.key !== 'teachers')} />
-          {cls.needScores > 0 && (
-            <Task tone="warn" as="button"
-              title={`${WORK_SCOPE_HINT[scope ?? cls.workScope]} Bấm để mở đúng những bài tạo nên con số này.`}
-              onClick={go(`/hoc-vien?view=my_scores&classId=${cls.id}${scope ? `&scope=${scope}` : ''}`)}>
-              {needScoresText(scope ?? cls.workScope, cls.needScores)}
-            </Task>
-          )}
-          {cls.openCases > 0 && (
-            <Task tone="danger" as="button" title="Số case đang mở, không phải số học viên — một học viên có thể có nhiều case."
-              onClick={go(`/hoc-vien?view=sos&classId=${cls.id}`)}>
-              {cls.openCases} case SOS
-            </Task>
-          )}
-          {cls.needScores + cls.openCases === 0
-            && !cls.needsPlacement && !cls.missing.length && cls.phase === 'running' && (
-            <span className="text-xs text-slate-600">Không có việc cần chú ý</span>
-          )}
-        </span>
+        <span className="flex-1" />
+        {b.hien.map((x) => {
+          const den = denBadge(x);
+          return den
+            ? <Task key={x.key} tone={x.tone} as="button" onClick={(e) => { e.stopPropagation(); navigate(den); }}>{x.nhan}</Task>
+            : <Task key={x.key} tone={x.tone}>{x.nhan}</Task>;
+        })}
+        {b.an.length > 0 && (
+          <span className="text-[11px] text-slate-500" title={b.an.map((x) => x.nhan).join(' · ')}>+{b.an.length}</span>
+        )}
+        <MenuDong muc={mucLop} nhan="Thao tác với lớp" />
       </div>
-
-      {expanded && (
-        <div className="px-4 pb-4">
-          <ClassRoster classId={cls.id} studentQuery={studentQuery} onAddStudents={onAddStudents} />
-        </div>
-      )}
-    </li>
+      {mo && <BangHocVienLop lop={lop} chiHien={chiHien} sapXep={sapXep} onDoi={onDoi} />}
+    </section>
   );
 }
 
@@ -456,7 +327,7 @@ export function WorkQueue({ view, branchId, q, scope }: {
                   <td className="td text-xs">
                     {view === 'my_scores' && (
                       <div className="flex flex-col items-start gap-0.5">
-                        <span style={{ color: 'var(--accent)' }}>Nhập {r.pendingSkills.join(', ')}</span>
+                        <span style={{ color: 'var(--accent)' }}>Nhập {r.pendingSkills.map(skillShort).join(', ')}</span>
                         {/*
                           NÓI RÕ KHI QUẢN LÝ NHẬP HỘ (mục 3.3) — không đổi quyền, chỉ nói ra.
                           `myPendingSkills` KHÔNG đổi theo phạm vi đang xem, nên so nó với
@@ -469,7 +340,7 @@ export function WorkQueue({ view, branchId, q, scope }: {
                           <span className="text-[10px] text-slate-500">
                             {r.pendingSkills
                               .filter((sk: string) => !r.myPendingSkills.includes(sk))
-                              .map((sk: string) => `${sk}: ${r.pendingOwners?.[sk] ?? 'chưa phân công'}`)
+                              .map((sk: string) => `${skillShort(sk)}: ${r.pendingOwners?.[sk] ?? 'chưa phân công'}`)
                               .join(' · ')} — bạn không phụ trách bài này, nhập sẽ được ghi là sửa hộ
                           </span>
                         )}
@@ -505,98 +376,6 @@ export function WorkQueue({ view, branchId, q, scope }: {
           Danh sách này xét <strong>xuyên tuần</strong>, nên việc còn tồn từ tuần trước không biến mất khi đổi tuần ở nơi khác.
         </SectionNote>
       </div>
-    </Card>
-  );
-}
-
-function BranchTab({ active, onClick, children }: {
-  active: boolean; onClick: () => void; children: React.ReactNode;
-}) {
-  return (
-    <button type="button" onClick={onClick}
-      className={`px-3 py-1.5 rounded-lg text-sm border transition-colors ${
-        active
-          ? 'bg-[color:var(--accent-soft)] text-[color:var(--accent-strong)] border-[color:var(--accent-line)]'
-          : 'text-slate-300 border-transparent hover:bg-white/5'
-      }`}>
-      {children}
-    </button>
-  );
-}
-
-/**
- * HÀNG ĐỢI CASE — ba bộ lọc số 3, 4, 5 của mục 6.
- *
- * Cùng một danh sách case, chỉ khác hàng đợi, nên ba bộ lọc không thể cho ra ba con số đá
- * nhau. Mỗi dòng mở thẳng màn case của em đó: từ đây người dùng đi LÀM việc, không phải đi
- * đọc thêm một bảng nữa.
- */
-function CaseQueue({ view, branchId, q }: { view: string; branchId: number | null; q: string }) {
-  const navigate = useNavigate();
-  const queue = view === 'case_working' ? 'active' : view === 'case_no_plan' ? 'new' : 'due';
-  const meta = STUDENT_FILTERS.find((f) => f.key === view)!;
-  const qs = useMemo(() => {
-    const s = new URLSearchParams();
-    s.set('queue', queue);
-    if (branchId) s.set('branchId', String(branchId));
-    return `/cases?${s.toString()}`;
-  }, [queue, branchId]);
-  const { data, loading, error, reload } = useApi<{ rows: any[]; scopeEmpty?: boolean }>(qs);
-
-  if (error) return <ErrorState message={error.message} hint={error.hint} onRetry={reload} />;
-  if (loading) return <Skeleton rows={6} />;
-  if (!data) return null;
-
-  const needle = q.trim().toLowerCase();
-  const rows = needle
-    ? data.rows.filter((r) => `${r.studentName ?? ''} ${r.studentCode ?? ''} ${r.classCode ?? ''}`.toLowerCase().includes(needle))
-    : data.rows;
-
-  /* Tiêu đề thẻ chỉ hạ chữ cái đầu của nhãn — giữ "PA", "SOS", "MT", "Test" (PR-HV). */
-  return (
-    <Card bodyClass="p-0" title={<span>{rows.length} {meta.label.charAt(0).toLowerCase() + meta.label.slice(1)}</span>}>
-      <p className="px-4 pt-3 pb-1 text-xs text-slate-500 m-0">{meta.hint}</p>
-      {rows.length === 0 ? (
-        <Empty title="Không có case nào ở nhóm này" hint="Đổi bộ lọc hoặc bỏ từ khoá tìm để xem tiếp." />
-      ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr>
-                <th className="th">Học viên</th>
-                <th className="th">Lớp</th>
-                <Th hint="Mức SOS và trạng thái xử lý của case đang mở.">Case</Th>
-                <Th hint="Ngày đã hẹn cập nhật kết quả sau hỗ trợ. Qua ngày mà chưa cập nhật thì thành quá hạn.">Hạn xem lại</Th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((r) => (
-                <tr key={r.id} className="row-hover cursor-pointer"
-                  onClick={() => navigate(`/hoc-vien/${r.studentId}?case=${r.id}`)}>
-                  <td className="td">
-                    <div className="text-slate-100">{r.studentName}</div>
-                    <div className="text-[11px] text-slate-500">{r.studentCode}</div>
-                  </td>
-                  <td className="td text-slate-300 whitespace-nowrap">{r.classCode ?? '—'}</td>
-                  <td className="td">
-                    <span className="flex flex-wrap items-center gap-1">
-                      <Level tone={sosTone(r.sosLevel)}>{r.title}</Level>
-                      <Status kind={r.status === 'done' ? 'done' : r.status === 'open' ? 'idle' : 'doing'}>
-                        {caseStatusLabel(r.status)}
-                      </Status>
-                    </span>
-                  </td>
-                  <td className="td whitespace-nowrap text-xs">
-                    {r.nextDue
-                      ? <span className={r.dueOverdue ? 'text-rose-200' : 'text-slate-300'}>{r.nextDue}</span>
-                      : <span className="text-slate-600">Chỉ theo dõi, không hẹn</span>}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
     </Card>
   );
 }

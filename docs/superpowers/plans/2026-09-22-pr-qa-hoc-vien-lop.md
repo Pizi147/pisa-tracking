@@ -2079,7 +2079,7 @@ git commit -m "PR-Qa (9): menu ⋯ dùng chung, tên GV, nhãn cảnh báo Ý th
   `useThaoTacDongHocVien`, `nhapDiemCua` (Task 9).
 - URL: `q`, `phamVi`, `branchId`, `view` (chip; khoá cũ giữ), `sx=chu-y`, `open` (danh sách id, `-` = đóng hết), `classId` (chỉ một lớp).
 
-- [ ] **Step 1: `web/src/modules/students/BangHocVienLop.tsx`:**
+- [x] **Step 1: `web/src/modules/students/BangHocVienLop.tsx`:**
 
 ```tsx
 import { useMemo } from 'react';
@@ -2231,7 +2231,7 @@ export function BangHocVienLop({ lop, chiHien, sapXep, onDoi }: {
 }
 ```
 
-- [ ] **Step 2: `StudentsPage.tsx` — phần đầu file mới (thay dòng 1-378).** Import và trang:
+- [x] **Step 2: `StudentsPage.tsx` — phần đầu file mới (thay dòng 1-378).** Import và trang:
 
 ```tsx
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -2485,15 +2485,15 @@ function HopLop({ lop, mo, onDoiMo, chiHien, sapXep, onThemHocVien, onDoi }: {
 }
 ```
 
-- [ ] **Step 3: Chữ thô trong `WorkQueue`** (giữ nguyên hàm, chỉ hai chỗ):
+- [x] **Step 3: Chữ thô trong `WorkQueue`** (giữ nguyên hàm, chỉ hai chỗ):
   - dòng 459: `Nhập {r.pendingSkills.join(', ')}` → `Nhập {r.pendingSkills.map(skillShort).join(', ')}`
   - dòng 472: `.map((sk: string) => \`${sk}: ${r.pendingOwners?.[sk] ?? 'chưa phân công'}\`)` →
     `.map((sk: string) => \`${skillShort(sk)}: ${r.pendingOwners?.[sk] ?? 'chưa phân công'}\`)`
   - Xoá `BranchTab` (512-525) và `CaseQueue` (527-602). Chạy `grep -n "Info\|MissingBadge\|STUDENT_FILTERS\|WORK_SCOPE" web/src/modules/students/StudentsPage.tsx`
     — tên nào không còn dùng thì bỏ khỏi import.
-- [ ] **Step 4:** `npm run typecheck` xanh; `grep -n "case SOS\|Theo lớp\|Tạo lớp\|WORK_SCOPE_LABEL" web/src/modules/students/StudentsPage.tsx`
+- [x] **Step 4:** `npm run typecheck` xanh; `grep -n "case SOS\|Theo lớp\|Tạo lớp\|WORK_SCOPE_LABEL" web/src/modules/students/StudentsPage.tsx`
   → không còn.
-- [ ] **Step 5: Commit.**
+- [x] **Step 5: Commit.**
 
 ```bash
 git add web/src/modules/students/BangHocVienLop.tsx web/src/modules/students/StudentsPage.tsx
