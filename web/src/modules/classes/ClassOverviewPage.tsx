@@ -1,83 +1,43 @@
 import { useEffect, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { invalidate } from '../../lib/api.ts';
-import { Alert, Card, ErrorState, Info, SectionNote, Skeleton, Status, Task } from '../../ui/ui.tsx';
-import { Drawer } from '../../ui/Drawer.tsx';
-import { ClassRoster } from '../students/ClassRoster.tsx';
-import { ClassIssueBoard } from './ClassIssueBoard.tsx';
+import { useSession } from '../../lib/session.tsx';
+import { ErrorState, Skeleton } from '../../ui/ui.tsx';
+import { HangTab } from '../../ui/HangTab.tsx';
+import { usePeriods } from '../../ui/Filters.tsx';
 import { ClassYThucCard } from '../yThuc/ClassYThucCard.tsx';
 import { QuickReport } from '../cases/QuickReport.tsx';
 import { IntakePanel } from '../students/IntakePanel.tsx';
 import { TeacherAssignDialog } from './TeacherAssignPanel.tsx';
 import { ClassProgressPanel } from './ClassProgressPanel.tsx';
 import { TransitionPanel } from './TransitionPanel.tsx';
-import { MissingBadge } from '../students/MissingBadge.tsx';
-import { usePeriods } from '../../ui/Filters.tsx';
-import { fmtDate, skillLabel } from '../../lib/format.ts';
-import { needScoresText, skillShort, type WorkScope } from '@shared/domain/index.ts';
-import { useSession } from '../../lib/session.tsx';
-
-type Overview = {
-  id: number; code: string; kind: string; route: string | null;
-  isFastTrack: boolean; startDate: string | null; note: string | null;
-  branchId: number; branchCode: string; branchName: string;
-  summary: {
-    studentCount: number; needScores: number; openCases: number; workScope: WorkScope;
-    /* Lộ trình và những thứ còn thiếu — dùng chung một bộ với danh sách lớp. */
-    progressLabel: string | null; phase: string; phaseLabel: string;
-    currentWeek: number | null; totalWeeks: number | null;
-    needsPlacement: boolean; placementOptions: { code: string; name: string }[];
-    missing: { key: string; label: string; who: string }[];
-    missingSkills: string[];
-  } | null;
-  skills: { skill: string; sessionsPerWeek: number }[];
-  coreTeachers: { id: number; name: string }[];
-  skillTeachers: { skill: string; id: number; name: string }[];
-  programme: { code: string; name: string; weeks: number | null; scoringMode: string } | null;
-  viewer: {
-    canPlanWeek: boolean; canAddStudents: boolean; canAssign: boolean;
-    canEditProgress: boolean;
-    editableSkills: string[]; isCoreTeacher: boolean;
-  };
-};
+import { DauTrangLop, type HoSoLop, type ViecDauTrang } from './DauTrangLop.tsx';
+import { SuaThongTinLopPanel } from './SuaThongTinLopPanel.tsx';
+// TODO(Task 12): bỏ chú thích khi có TabHocVienLop.tsx.
+// import { TabHocVienLop } from './TabHocVienLop.tsx';
+// TODO(Task 13): bỏ chú thích khi có PhanTichLopTab.tsx.
+// import { PhanTichLopTab } from './PhanTichLopTab.tsx';
+import { TAB_HO_SO_LOP, TAB_HO_SO_LOP_NHAN, tabHoSoLop, type TabHoSoLop } from '@shared/domain/index.ts';
 
 /**
- * TRANG MỘT LỚP — làm lại ở vòng 4 (mục 8.6).
- *
- * Owner nói trang cũ "vừa rối mắt vừa sơ sài" và giao tự đề xuất. Ba thứ đã đổi, và lý do:
- *
- * 1. BỐN Ô SỐ TO thành MỘT DẢI VIỆC, và dải đó chỉ hiện thứ KHÁC KHÔNG. Bốn ô cũ chiếm
- *    nguyên một tầng màn hình để nói "0 · 0 · 0 · 0" ở phần lớn lớp đang chạy êm — tốn chỗ
- *    đúng bằng lúc có việc, nên mắt thôi nhìn chúng. Lớp không có việc gì thì nói đúng một
- *    câu như vậy.
- *
- * 2. PHÂN CÔNG thành BẢNG MỘT KỸ NĂNG MỘT DÒNG, và dòng thiếu người tô vàng ngay tại chỗ.
- *    Hai đám pill "GVCN" và "GVBM" của bản cũ không trả lời được câu hỏi hay gặp nhất —
- *    "ai dạy Writing lớp này?" — mà phải đọc hết cả đám mới tìm ra, hoặc không tìm ra vì
- *    kỹ năng đó đang trống.
- *
- * 3. DANH SÁCH HỌC VIÊN LÊN TRƯỚC phân công. Đó là thứ người ta mở trang lớp để xem; phân
- *    công là việc sửa vài tháng một lần.
+ * HỒ SƠ LỚP (đặc tả §3.7; mockup 06 menu dòng A, 06c §1, 10b) — đầu trang có sẵn các nút hành động, ba tab
+ * Học viên · Ý thức & Phối hợp · Phân tích lớp (bỏ tab Giáo viên: phân công ở ⋮ › Sửa phân công).
+ * Tab và chế độ xem nằm trên URL (`?tab=`, `?che-do=`). Một panel một lúc (G-8): `viec` giữ đúng MỘT việc đang mở.
  */
 export default function ClassOverviewPage() {
   const { classId } = useParams();
-  const navigate = useNavigate();
   const { session } = useSession();
+  const [params, setParams] = useSearchParams();
+  const tab = tabHoSoLop(params.get('tab'));
+  const cheDo: 'diem' | 'can-ho-tro' = params.get('che-do') === 'can-ho-tro' ? 'can-ho-tro' : 'diem';
   const periods = usePeriods();
   const [periodId, setPeriodId] = useState<number | null>(null);
-  const [intake, setIntake] = useState(false);
-  const [assign, setAssign] = useState(false);
-  const [progressOpen, setProgressOpen] = useState(false);
-  const [transitionOpen, setTransitionOpen] = useState(false);
-  const [manageOpen, setManageOpen] = useState(false);
-  const [reportOpen, setReportOpen] = useState(false);
-  const [reportFor, setReportFor] = useState<number>(0);
-  const [infoOpen, setInfoOpen] = useState(false);
-  /* HAI DẠNG XEM DANH SÁCH HỌC VIÊN (mục 13.3) — mặc định là Học thuật. */
-  const { data, loading, error, reload } = useApi<Overview>(classId ? `/classes/${classId}/overview` : null);
-  /* Danh sách em trong lớp, để ô "+ Case" chọn được học viên ngay tại trang lớp. */
-  const roster = useApi<any[]>(classId ? `/classes/${classId}/roster` : null, [classId]);
+  const [viec, setViec] = useState<ViecDauTrang | null>(null);
+  const [caseFor, setCaseFor] = useState(0);
+  const { data, loading, error, reload } = useApi<HoSoLop>(classId ? `/classes/${classId}/overview` : null);
+  /* Danh sách em cho ô chọn học viên của "+ Case" — chỉ nạp khi mở. */
+  const roster = useApi<any[]>(classId && viec === 'case' ? `/classes/${classId}/roster` : null, [classId, viec]);
 
   useEffect(() => {
     if (periodId === null && periods.data?.length && session) {
@@ -86,280 +46,56 @@ export default function ClassOverviewPage() {
     }
   }, [periods.data, periodId, session]);
 
+  const doiThamSo = (patch: Record<string, string | null>) => {
+    const next = new URLSearchParams(params);
+    for (const [k, v] of Object.entries(patch)) { if (v === null) next.delete(k); else next.set(k, v); }
+    setParams(next, { replace: true });
+  };
+
   if (error) return <ErrorState message={error.message} hint={error.hint} onRetry={reload} />;
   if (loading || !data) return <Skeleton rows={8} />;
 
-  const s = data.summary;
-  /* Chỉ những việc THỰC SỰ đang tồn mới được chiếm chỗ trên màn hình. */
-  const jobs = [
-    { n: s?.needScores ?? 0, text: needScoresText(s?.workScope ?? null, s?.needScores ?? 0), tone: 'warn' as const, view: 'my_scores' },
-    { n: s?.openCases ?? 0, text: `${s?.openCases ?? 0} case chưa xong`, tone: 'danger' as const, view: 'case_working' },
-  ].filter((j) => j.n > 0);
-
-  /* Một dòng cho mỗi kỹ năng của chương trình lớp — kể cả kỹ năng chưa có ai dạy. */
-  const teacherOf = (skill: string) => data.skillTeachers.find((t) => t.skill === skill) ?? null;
+  const thuong = data.programme?.scoringMode === 'ratio';
+  const dong = () => setViec(null);
+  const xong = () => { invalidate('/classes'); invalidate('/hoc-vien-lop'); reload(); };
 
   return (
     <div className="page space-y-4">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <button className="btn btn-sm btn-ghost mb-1" onClick={() => navigate(-1)}>← Quay lại</button>
-          <h1 className="text-lg font-semibold text-slate-100">{data.code}</h1>
-          <p className="text-xs text-slate-500 mt-0.5">
-            {data.branchName} · {data.programme?.name ?? data.kind}{data.route ? ` · ${data.route}` : ''}
-            {' · '}{s?.studentCount ?? 0} học viên
-            {data.startDate && ` · khai giảng ${fmtDate(data.startDate)}`}
-          </p>
-          {/*
-            TIẾN ĐỘ LỚP ngay dưới tên lớp — với lớp Normal đây là câu quan trọng nhất của
-            trang: đang ở tuần thứ mấy, sắp thi gì, hay đã hết chương trình.
+      <DauTrangLop data={data} periodId={periodId} onViec={setViec}
+        onCheDoCanHoTro={() => doiThamSo({ tab: null, 'che-do': 'can-ho-tro' })} />
 
-            Với lớp FT thì `progressLabel` chỉ là "Fast Track · LT1", đúng bằng chữ đã có ở
-            dòng ngay trên. Nên chỉ vẽ dòng này khi nó nói thêm được điều gì: lớp Normal có
-            tuần học, hoặc lớp đang thiếu thông tin gì đó.
-          */}
-          {(s?.totalWeeks || (s?.missing.length ?? 0) > 0) && (
-            <p className="mt-1.5 mb-0 flex flex-wrap items-center gap-1.5">
-              {!s?.totalWeeks ? null : s.needsPlacement ? (
-                <Alert>{s.progressLabel}</Alert>
-              ) : s.phase === 'final_week' || s.phase === 'progress_week' ? (
-                <Status kind="doing">{s.progressLabel}</Status>
-              ) : s.phase === 'final_soon' || s.phase === 'progress_soon' ? (
-                <Status kind="waiting">{s.progressLabel}</Status>
-              ) : (
-                <span className="text-xs text-slate-400">{s.progressLabel}</span>
-              )}
-              <MissingBadge items={(s?.missing ?? []).filter((m: any) => m.key !== 'teachers')} />
-            </p>
-          )}
-          {/* Nhắc ngay ở đầu trang: bạn phụ trách gì ở chính lớp này. */}
-          {(data.viewer.editableSkills.length > 0 || data.viewer.isCoreTeacher) && (
-            <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
-              <span className="text-[11px] text-slate-500">Bạn phụ trách:</span>
-              {data.viewer.editableSkills.map((k) => (
-                <Info key={k}>{skillShort(k)}</Info>
-              ))}
-              {data.viewer.isCoreTeacher && <Info>GVCN</Info>}
-            </div>
-          )}
-        </div>
-        {/*
-          NHẬP ĐIỂM PHẢI DỄ THẤY (mục 5.1). Đó là việc hằng ngày của giáo viên, nên nó giữ
-          nguyên chỗ và giữ nguyên hình dạng một cái nút.
+      <HangTab ariaLabel="Hồ sơ lớp" value={tab}
+        onChange={(k: TabHoSoLop) => doiThamSo({ tab: k === 'hoc-vien' ? null : k })}
+        tabs={TAB_HO_SO_LOP.map((k) => ({ key: k, label: TAB_HO_SO_LOP_NHAN[k], canhBao: k === 'y-thuc' && data.canhBaoYThuc > 0 }))} />
 
-          Ba việc quản trị — tiến độ lớp, phân công giáo viên, chuyển tiếp lên lớp sau — gom
-          vào "Quản lý lớp". Chúng mỗi khoá làm một lần, không đáng chiếm ba ô ngang hàng
-          với việc làm mỗi tuần.
-        */}
-        <div className="flex flex-wrap gap-2">
-          {/* "Nhập điểm test" — gọi đúng việc, vì lớp Normal làm Progress/Final chứ không làm MT. */}
-          <Link
-            className="btn btn-primary no-underline"
-            to={data.programme?.scoringMode === 'ratio'
-              ? `/bang-diem-thuong/${data.id}`
-              : `/nhap-diem/${data.id}${periodId ? `?periodId=${periodId}` : ''}`}
-          >
-            Nhập điểm test
-          </Link>
-          {/*
-            +CASE NGAY Ở TRANG LỚP (mục 13.1) — cùng một form với hồ sơ học viên, chỉ thêm ô
-            chọn em ở đầu. Dựng một form thứ hai cho trang lớp là cách chắc chắn nhất để hai
-            chỗ dần khác nhau về luật.
-          */}
-          <button className="btn" onClick={() => { setReportFor(0); setReportOpen(true); }}>+ Case</button>
-          {data.viewer.canAddStudents && (
-            <button className="btn" onClick={() => setIntake(true)}>Thêm học viên</button>
-          )}
-          {(data.viewer.canEditProgress || data.viewer.canAssign) && (
-            <button className="btn" title="Quản lý lớp" aria-label="Quản lý lớp"
-              onClick={() => setManageOpen(true)}>⋮</button>
-          )}
-        </div>
-      </div>
-
-      {/*
-        DẢI VIỆC: một dòng, chỉ hiện thứ khác không, mỗi cái bấm được và mở đúng danh sách
-        tạo nên con số đó. Lớp đang êm thì nói đúng một câu, không bày bốn số 0.
-      */}
-      <div className="flex flex-wrap items-center gap-2">
-        {jobs.length === 0 ? (
-          <span className="text-xs text-slate-500">Lớp này không có việc nào đang tồn.</span>
-        ) : jobs.map((j) => (
-          <Link key={j.view} className="no-underline" to={`/hoc-vien?view=${j.view}&classId=${data.id}&open=${data.id}`}>
-            <Task tone={j.tone}>{j.text}</Task>
-          </Link>
-        ))}
-        {/*
-          Lớp học hết chương trình là việc nặng nhất, và nó không tự xảy ra.
-          Bấm vào mở thẳng panel CHUYỂN TIẾP chứ không phải panel tiến độ: người bấm vào đây
-          đang muốn xếp lớp cho các em, không phải muốn sửa lại tuần khai giảng.
-        */}
-        {s?.needsPlacement && (
-          <Task tone="danger" as="button" onClick={() => setTransitionOpen(true)}>
-            {s.studentCount} học viên cần xếp lớp tiếp
-            {s.placementOptions.length ? ` · ${s.placementOptions.map((o) => o.code).join(' hoặc ')}` : ''}
-          </Task>
-        )}
-      </div>
-
-      {/*
-        BẢNG PHÂN TÍCH VẤN ĐỀ đặt NGAY SAU box lớp và MẶC ĐỊNH THU GỌN (mục 13.4) — nó trả lời
-        câu hỏi của người chủ nhiệm ngồi xem cả lớp, nhưng không được đẩy danh sách học viên
-        xuống dưới màn hình với những ai chỉ vào để tìm một em.
-      */}
-      <ClassIssueBoard classId={data.id} ratio={data.programme?.scoringMode === 'ratio'} />
-
-      {/* Học viên lên TRƯỚC: đó là thứ người ta mở trang lớp để xem. */}
-      <Card title="Học viên" bodyClass="p-3">
-        <ClassRoster classId={data.id} onAddStudents={() => setIntake(true)} />
-      </Card>
-
-      {/*
-        Ý THỨC & PHỐI HỢP (PR-K, SOS_VA_PHOI_HOP_V3.md §7.1–§7.2) — ngay sau danh sách học viên: GVCN
-        nhìn theo học sinh trước. Chưa đổi hồ sơ lớp thành bốn tab (việc của PR-Q sau deploy); đây là
-        một khối mở rộng tại chỗ như mọi khối khác của trang.
-      */}
-      <ClassYThucCard classId={data.id} />
-
-      <Card title="Phân công giáo viên"
-        action={data.viewer.canAssign
-          ? <button className="btn btn-sm" onClick={() => setAssign(true)}>Sửa phân công</button>
-          : undefined}>
-        <div className="surface-2 rounded-lg overflow-x-auto">
-          <table className="w-full text-sm">
-            <tbody>
-              <tr className="row-hover">
-                <td className="td w-44 text-slate-400 whitespace-nowrap">Chủ nhiệm</td>
-                <td className="td">
-                  {data.coreTeachers.length
-                    ? data.coreTeachers.map((t) => <Info key={t.id}>{t.name}</Info>)
-                    : <Alert tone="warn">Chưa có GVCN</Alert>}
-                </td>
-              </tr>
-              {/*
-                MỘT DÒNG MỖI KỸ NĂNG, kể cả kỹ năng chưa ai dạy. Chỗ trống phải NHÌN THẤY
-                ĐƯỢC: bản cũ chỉ liệt kê người đã phân công, nên kỹ năng thiếu giáo viên
-                lặng lẽ không xuất hiện ở đâu cả.
-              */}
-              {data.skills.map((x) => {
-                const t = teacherOf(x.skill);
-                return (
-                  <tr key={x.skill} className="row-hover">
-                    <td className="td w-44 text-slate-400 whitespace-nowrap">{skillLabel(x.skill)}</td>
-                    <td className="td">
-                      {t ? <span className="text-slate-100">{t.name}</span> : <Alert tone="warn">Chưa phân công</Alert>}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-        <SectionNote>
-          Mỗi kỹ năng đúng <strong>một giáo viên</strong>, và một giáo viên dạy được nhiều kỹ năng.
-          Lớp có đúng <strong>một GVCN</strong>, và GVCN phải dạy ít nhất một kỹ năng ở chính lớp này.
-          Kỹ năng của lớp đi theo chương trình ({data.programme?.name ?? data.kind}), không suy từ tên lớp.
-        </SectionNote>
-      </Card>
-
-      <TeacherAssignDialog open={assign} onClose={() => setAssign(false)}
-        classId={data.id} classCode={data.code} onDone={reload} />
-
-      {intake && (
-        <IntakePanel
-          defaultClass={{ id: data.id, code: data.code }}
-          onClose={() => setIntake(false)}
-          onDone={() => { invalidate('/classes'); reload(); }}
-        />
+      {/* TODO(Task 12): bỏ chú thích khi có TabHocVienLop.tsx.
+      {tab === 'hoc-vien' && (
+        <TabHocVienLop lop={data} cheDo={cheDo} onCheDo={(m) => doiThamSo({ 'che-do': m === 'diem' ? null : m })}
+          onDoi={xong} onThemHocVien={() => setViec('hoc-vien')} />
       )}
-
-      {/*
-        MENU QUẢN LÝ LỚP. Panel này chỉ để CHỌN việc; chọn xong nó tự đóng rồi panel của
-        việc đó mở ra, nên không bao giờ có hai lớp panel chồng nhau (mục 5.2).
       */}
-      <Drawer open={manageOpen} onClose={() => setManageOpen(false)} width="max-w-md"
-        title="Quản lý lớp" subtitle={`${data.code} · ${data.branchName}`}>
-        <div className="space-y-2">
-          {/*
-            THÔNG TIN LỚP gộp "Lộ trình" và "Phân công giáo viên" (mục 13.1). Hai mục cũ
-            đều trả lời cùng một câu — lớp này được cấu hình thế nào — nên tách ra chỉ bắt
-            người dùng đoán xem tuần khai giảng nằm ở mục nào.
-          */}
-          {(data.viewer.canEditProgress || data.viewer.canAssign) && (
-            <ManageItem label="Thông tin lớp"
-              hint="Tuần khai giảng, số tuần học, mốc Test, và phân công GVCN/GVBM."
-              onClick={() => { setManageOpen(false); setInfoOpen(true); }} />
-          )}
-          {/*
-            CHUYỂN TIẾP LÊN LỚP SAU CHỈ CÓ Ở LỚP NORMAL (mục 13.2).
-            Fast Track không có "lớp sau": em học theo lộ trình của riêng mình rồi đi thi.
-            Nhu cầu chuyển ngang hoặc đổi chi nhánh vẫn có, và nó nằm ở "Chuyển lớp" trong
-            hồ sơ từng em.
-          */}
-          {data.viewer.canEditProgress && data.programme?.scoringMode === 'ratio' && (
-            <ManageItem label="Chuyển tiếp lên lớp sau"
-              hint="Mở lớp tiếp theo và chuyển học viên sang. Lớp cũ giữ nguyên lịch sử."
-              onClick={() => { setManageOpen(false); setTransitionOpen(true); }} />
-          )}
-          {data.programme?.scoringMode !== 'ratio' && (
-            <SectionNote>
-              Lớp Fast Track không có “chuyển tiếp lên lớp sau” — em học theo lộ trình riêng rồi đi
-              thi. Chuyển ngang hoặc đổi chi nhánh thì làm ở <strong>Chuyển lớp</strong> trong hồ sơ
-              từng em.
-            </SectionNote>
-          )}
-        </div>
-      </Drawer>
+      {tab === 'y-thuc' && <ClassYThucCard classId={data.id} />}
+      {/* TODO(Task 13): bỏ chú thích khi có PhanTichLopTab.tsx.
+      {tab === 'phan-tich' && <PhanTichLopTab classId={data.id} />}
+      */}
 
-      <TransitionPanel classId={data.id} open={transitionOpen}
-        onClose={() => setTransitionOpen(false)} onDone={reload} />
-      {progressOpen && (
-        <ClassProgressPanel classId={data.id} classCode={data.code}
-          onClose={() => setProgressOpen(false)} onDone={reload} />
+      {viec === 'tien-do' && (
+        <ClassProgressPanel classId={data.id} classCode={data.code} tieuDe={thuong ? 'Lịch kiểm tra' : 'Lộ trình lớp'}
+          onClose={dong} onDone={xong} />
       )}
-
-      {/*
-        THÔNG TIN LỚP (mục 13.1) — một chỗ cho cả cấu hình lớp lẫn phân công, vì cả hai đều
-        trả lời cùng một câu: lớp này được dựng thế nào.
-      */}
-      <Drawer open={infoOpen} onClose={() => setInfoOpen(false)} width="max-w-md"
-        title="Thông tin lớp" subtitle={`${data.code} · ${data.branchName}`}>
-        <div className="space-y-2">
-          {data.viewer.canEditProgress && (
-            <ManageItem label="Lộ trình"
-              hint="Tuần khai giảng, số tuần học, tuần Progress Test và Final Test."
-              onClick={() => { setInfoOpen(false); setProgressOpen(true); }} />
-          )}
-          {data.viewer.canAssign && (
-            <ManageItem label="Phân công giáo viên"
-              hint="Chủ nhiệm và giáo viên từng kỹ năng của lớp này."
-              onClick={() => { setInfoOpen(false); setAssign(true); }} />
-          )}
-        </div>
-      </Drawer>
-
-      {/* Cùng form +Case với hồ sơ học viên, chỉ thêm ô chọn em ở đầu (mục 13.1). */}
-      <QuickReport
-        open={reportOpen} onClose={() => { setReportOpen(false); setReportFor(0); }}
-        studentId={reportFor}
-        students={(roster.data ?? []).map((r: any) => ({
-          id: r.id, name: r.fullName, code: r.studentCode ?? null,
-        }))}
-        onPickStudent={setReportFor}
-        onDone={() => { setReportOpen(false); setReportFor(0); reload(); }}
-      />
+      <TransitionPanel classId={data.id} open={viec === 'chuyen-tiep'} onClose={dong} onDone={xong} />
+      <TeacherAssignDialog open={viec === 'phan-cong'} onClose={dong} classId={data.id} classCode={data.code} onDone={xong} />
+      {viec === 'thong-tin' && (
+        <SuaThongTinLopPanel onClose={dong} onDone={xong}
+          lop={{ id: data.id, code: data.code, route: data.route, note: data.note,
+            programmeCode: data.programme?.code ?? null, soHocVien: data.summary?.studentCount ?? 0 }} />
+      )}
+      {viec === 'hoc-vien' && (
+        <IntakePanel defaultClass={{ id: data.id, code: data.code }} onClose={dong} onDone={xong} />
+      )}
+      <QuickReport open={viec === 'case'} onClose={() => { dong(); setCaseFor(0); }} studentId={caseFor}
+        students={(roster.data ?? []).filter((r: any) => !r.archived).map((r: any) => ({ id: r.id, name: r.fullName, code: r.studentCode ?? null }))}
+        onPickStudent={setCaseFor} onDone={() => { dong(); setCaseFor(0); xong(); }} />
     </div>
-  );
-}
-
-/** Một dòng trong menu Quản lý lớp — tên việc, một câu nói rõ nó làm gì. */
-function ManageItem({ label, hint, onClick }: { label: string; hint: string; onClick: () => void }) {
-  return (
-    <button type="button" onClick={onClick}
-      className="w-full text-left rounded-lg border px-3 py-2.5 bg-transparent hover:brightness-125"
-      style={{ borderColor: 'var(--line)' }}>
-      <span className="block text-sm text-slate-100">{label}</span>
-      <span className="block text-xs text-slate-500 mt-0.5">{hint}</span>
-    </button>
   );
 }

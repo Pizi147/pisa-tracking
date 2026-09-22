@@ -2520,7 +2520,7 @@ git commit -m "PR-Qa (10): trang Học viên & Lớp — hộp lớp, chip lọc
   `TabHocVienLop` (Task 12) và `PhanTichLopTab` (Task 13) được import ở đây — làm Task 11 tới Step 4 rồi tạm để hai dòng import đó và
   hai dòng dùng chúng thành chú thích cho `typecheck` xanh; Task 12/13 bỏ chú thích.
 
-- [ ] **Step 1: `web/src/modules/classes/DauTrangLop.tsx`:**
+- [x] **Step 1: `web/src/modules/classes/DauTrangLop.tsx`:**
 
 ```tsx
 import { useState } from 'react';
@@ -2679,7 +2679,7 @@ function DongGiaoVienBoMon({ nhom }: { nhom: NhomGiaoVien[] }) {
 }
 ```
 
-- [ ] **Step 2: `web/src/modules/classes/SuaThongTinLopPanel.tsx`:**
+- [x] **Step 2: `web/src/modules/classes/SuaThongTinLopPanel.tsx`:**
 
 ```tsx
 import { useState } from 'react';
@@ -2754,7 +2754,7 @@ export function SuaThongTinLopPanel({ lop, onClose, onDone }: {
 }
 ```
 
-- [ ] **Step 3: Viết lại `web/src/modules/classes/ClassOverviewPage.tsx`:**
+- [x] **Step 3: Viết lại `web/src/modules/classes/ClassOverviewPage.tsx`:**
 
 ```tsx
 import { useEffect, useState } from 'react';
@@ -2856,7 +2856,7 @@ export default function ClassOverviewPage() {
   Ghi chú: `soHocVien` lấy `studentCount` (đang học). Máy chủ kiểm lại cả HV đã rời lớp và bài Test (Task 8) — nếu còn thì trả lời lỗi
   rõ ràng qua toast. Link cũ `?view=…&classId=` vào hồ sơ lớp không còn; `?tab=giao-vien` về tab Học viên (`tabHoSoLop`).
 
-- [ ] **Step 4: `ClassProgressPanel.tsx`:**
+- [x] **Step 4: `ClassProgressPanel.tsx`:**
   - Chữ ký: thêm `tieuDe: string` vào props (dòng 36-37); `title="Lộ trình"` (dòng 73) → `title={tieuDe}`.
   - `import { fmtDate } from '../../lib/format.ts';` → `import { ngay, tuanLich } from '@shared/domain/index.ts';` và
     `import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';`; trong thân: `const { homNay } = useNgayNghiepVu();`.
@@ -2866,8 +2866,8 @@ export default function ClassOverviewPage() {
   - Hai `Status` (dòng ~112-123): `Progress Test: tuần {data.progressWeek} · {fmtDate(data.progressWeekStart)}` →
     `Giữa khoá: {tuanLich(data.progressWeekStart, homNay)} (tuần học {data.progressWeek})`; tương tự `Cuối khoá: …` cho final.
   - `grep -n "Progress\|Final\|Normal\|fmtDate" web/src/modules/classes/ClassProgressPanel.tsx` → không còn (chú thích cũng sửa theo).
-- [ ] **Step 5:** tạm chú thích hai import/khối `TabHocVienLop`, `PhanTichLopTab` nếu hai file chưa có; `npm run typecheck` xanh.
-- [ ] **Step 6: Commit.**
+- [x] **Step 5:** tạm chú thích hai import/khối `TabHocVienLop`, `PhanTichLopTab` nếu hai file chưa có; `npm run typecheck` xanh.
+- [x] **Step 6: Commit.**
 
 ```bash
 git add web/src/modules/classes/DauTrangLop.tsx web/src/modules/classes/SuaThongTinLopPanel.tsx web/src/modules/classes/ClassOverviewPage.tsx web/src/modules/classes/ClassProgressPanel.tsx
