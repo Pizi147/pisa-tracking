@@ -176,20 +176,47 @@ netlify env:list
 
 Phải thấy đủ ba tên `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN`, `BAN_CHINH`.
 
+Các biến này hiện áp cho **mọi** loại deploy (bản nháp lẫn bản chính thức); mục 6 sẽ tách riêng database cho bản
+chính thức.
+
 Xong mục này → báo session Z2a: **"đã xong mục 3-4-5 với database thử"**.
 
 ---
 
-## 6. Đổi sang database **bản chính** (khi session Z2c yêu cầu)
+## 6. Đặt database **bản chính** — CHỈ cho bản chính thức (khi session Z2c yêu cầu)
 
-Chạy **hai lệnh**, lần này dùng URL và token của database **CHÍNH**:
+Bản **chính thức** (địa chỉ giáo viên dùng) nối database **CHÍNH**. Mọi bản **nháp** vẫn nối database **THỬ** như mục
+5 — nên thử bản nháp không bao giờ đụng dữ liệu thật.
+
+Chạy **hai lệnh**, dùng URL và token của database **CHÍNH** — chú ý chữ `--context production` ở cuối, **không được bỏ**:
 
 ```powershell
-netlify env:set TURSO_DATABASE_URL "<URL database CHÍNH>"
-netlify env:set TURSO_AUTH_TOKEN "<Token database CHÍNH>"
+netlify env:set TURSO_DATABASE_URL "<URL database CHÍNH>" --context production
 ```
 
-`BAN_CHINH` giữ nguyên `1`, không cần đặt lại. Từ giờ **mọi** bản deploy (kể cả bản nháp) đều dùng database chính.
+```powershell
+netlify env:set TURSO_AUTH_TOKEN "<Token database CHÍNH>" --context production
+```
+
+Mỗi lệnh thấy dòng `Set environment variable ... in the production branch` là được. (Dòng đó in lại cả giá trị vừa
+đặt — xong mục này **đóng cửa sổ PowerShell** để token không còn nằm trên màn hình.)
+
+Rồi kiểm lại (hai lệnh này chỉ in **URL**, không in token):
+
+```powershell
+netlify env:get TURSO_DATABASE_URL --context production
+```
+
+```powershell
+netlify env:get TURSO_DATABASE_URL --context deploy-preview
+```
+
+| Lệnh | Phải in ra |
+|---|---|
+| `--context production` | `libsql://pisatracking-<...>` — **không** có chữ `-demo` |
+| `--context deploy-preview` | `libsql://pisatracking-demo-<...>` — **có** chữ `-demo` |
+
+Sai một trong hai → **dừng**, chụp màn hình gửi session Z2c. `BAN_CHINH` giữ nguyên `1` cho mọi deploy, không cần đặt lại.
 
 ---
 
@@ -260,7 +287,9 @@ netlify deploy --build
 ```
 
 Chờ 2–5 phút (lần build đầu cần mạng để tải thư viện cho Linux). Cuối cùng hiện dòng **`Website draft URL: https://<mã>--<tên-site>.netlify.app`**. Mở địa chỉ đó, đăng
-nhập, bấm thử vài trang. Bản nháp dùng **cùng database** với bản chính — dữ liệu bạn nhập ở đây là dữ liệu thật.
+nhập, bấm thử vài trang. Bản nháp luôn dùng database **thử** — thoải mái bấm thử; chỉ bản chính thức (`--prod`) mới có
+dữ liệu thật. Vì vậy ở bản nháp, đăng nhập bằng **tài khoản demo** (email và mật khẩu trong `README.md`), không phải
+tài khoản quản trị thật của bạn.
 
 **8.2 — đưa lên CHÍNH THỨC** (chỉ khi bản nháp chạy tốt):
 
@@ -368,16 +397,16 @@ npm run migrate
 
 ## 12. Bảng tra — mọi tên biến dùng trong file này
 
-| Tên | Đặt ở đâu | Giá trị | Mục |
-|---|---|---|---|
-| `TURSO_DATABASE_URL` | Netlify (lệnh `netlify env:set`) **và** PowerShell khi chạy lệnh init/sao lưu | URL database Turso | 5, 6, 7, 10 |
-| `TURSO_AUTH_TOKEN` | Như trên | Token database Turso | 5, 6, 7, 10 |
-| `BAN_CHINH` | Netlify | `1` | 5 |
-| `ADMIN_EMAIL` | PowerShell, chỉ khi chạy `init-ban-chinh` | Email quản trị, đuôi `.pisa@gmail.com` | 7 |
-| `ADMIN_PASSWORD` | PowerShell, chỉ khi chạy `init-ban-chinh` | Mật khẩu quản trị mới | 7 |
-| `CHI_NHANH` | PowerShell, chỉ khi chạy `init-ban-chinh` | `MÃ=Tên;MÃ=Tên` | 7 |
-| `BACKUP_DIR` | PowerShell, khi sao lưu | Thư mục Drive | 10 |
-| `NETLIFY_SITE_ID` | PowerShell, khi sao lưu (tuỳ chọn) | Site ID | 10 |
-| `NETLIFY_AUTH_TOKEN` | PowerShell, khi sao lưu (tuỳ chọn) | Personal access token | 10 |
-| `PISA_CHO_PHEP_MIGRATE_TURSO` | PowerShell, chỉ khi session code yêu cầu nâng cấp database | Tên máy chủ database (URL bỏ `libsql://`) | 11.1 |
-| `VITE_BAN_CHINH` | Đã có sẵn trong file `netlify.toml` — **bạn không cần đặt** | `1` | — |
+| Tên | Đặt ở đâu | Áp cho | Giá trị | Mục |
+|---|---|---|---|---|
+| `TURSO_DATABASE_URL` | Netlify (lệnh `netlify env:set`) **và** PowerShell khi chạy lệnh init/sao lưu | Netlify: **mọi deploy** = database thử (mục 5); **chỉ bản chính thức** (`--context production`) = database chính (mục 6) | URL database Turso | 5, 6, 7, 10 |
+| `TURSO_AUTH_TOKEN` | Như trên | Như trên | Token database Turso | 5, 6, 7, 10 |
+| `BAN_CHINH` | Netlify | Mọi deploy | `1` | 5 |
+| `ADMIN_EMAIL` | PowerShell, chỉ khi chạy `init-ban-chinh` | Chỉ cửa sổ PowerShell đó | Email quản trị, đuôi `.pisa@gmail.com` | 7 |
+| `ADMIN_PASSWORD` | PowerShell, chỉ khi chạy `init-ban-chinh` | Chỉ cửa sổ PowerShell đó | Mật khẩu quản trị mới | 7 |
+| `CHI_NHANH` | PowerShell, chỉ khi chạy `init-ban-chinh` | Chỉ cửa sổ PowerShell đó | `MÃ=Tên;MÃ=Tên` | 7 |
+| `BACKUP_DIR` | PowerShell, khi sao lưu | Chỉ cửa sổ PowerShell đó | Thư mục Drive | 10 |
+| `NETLIFY_SITE_ID` | PowerShell, khi sao lưu (tuỳ chọn) | Chỉ cửa sổ PowerShell đó | Site ID | 10 |
+| `NETLIFY_AUTH_TOKEN` | PowerShell, khi sao lưu (tuỳ chọn) | Chỉ cửa sổ PowerShell đó | Personal access token | 10 |
+| `PISA_CHO_PHEP_MIGRATE_TURSO` | PowerShell, chỉ khi session code yêu cầu nâng cấp database | Chỉ cửa sổ PowerShell đó | Tên máy chủ database (URL bỏ `libsql://`) | 11.1 |
+| `VITE_BAN_CHINH` | Đã có sẵn trong file `netlify.toml` — **bạn không cần đặt** | Mọi deploy | `1` | — |

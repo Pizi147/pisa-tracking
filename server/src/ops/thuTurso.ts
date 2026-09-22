@@ -4,10 +4,15 @@
  * Chạy: nạp TURSO_DATABASE_URL + TURSO_AUTH_TOKEN vào môi trường rồi `npm run thu-turso`.
  */
 import Database from 'libsql';
-import { cauHinhDb } from '../moiTruong.ts';
+import { cauHinhDb, laBanChinh, laTenDbBanChinh } from '../moiTruong.ts';
 
 const c = cauHinhDb();
 if (c.kieu !== 'turso') { console.error('Cần TURSO_DATABASE_URL + TURSO_AUTH_TOKEN'); process.exit(1); }
+/* Script này TẠO và XOÁ bảng `_thu*` — chỉ dành cho database THỬ. Hỏi trước khi mở kết nối. */
+if (laBanChinh() || laTenDbBanChinh(c.url)) {
+  console.error('[thu-turso] TỪ CHỐI: chỉ chạy với database THỬ (pisatracking-demo-…), không bao giờ với bản chính hay khi BAN_CHINH=1.');
+  process.exit(1);
+}
 const conn = new Database(c.url, { authToken: c.authToken } as Database.Options);   // ép kiểu: xem db.ts
 const ketQua: [string, string][] = [];
 const thu = (ten: string, fn: () => string) => {

@@ -180,6 +180,79 @@ export async function runBanChinhTests(t: BanChinhTestKit) {
   });
   datKhoTepChoKiemThu(null);
 
+  console.log('\nPR-Z2 · 2b. Bản nháp không bao giờ chạm dữ liệu thật: kho tệp theo database, xoá tệp sau giao dịch');
+  const khoTepMod = await import('../platform/khoTep.ts');
+  check('PR-Z2 · Kho tệp mang tên database: bản thử và bản chính dùng HAI kho khác nhau; máy dev dùng kho cục bộ', () => {
+    const thu = khoTepMod.tenKhoTep('libsql://pisatracking-demo-pizi147.aws-us-east-2.turso.io');
+    const chinh = khoTepMod.tenKhoTep('libsql://pisatracking-pizi147.aws-us-east-2.turso.io');
+    assert(thu === 'bang-chung-pisatracking-demo-pizi147', `Kho của database thử: ${thu}`);
+    assert(chinh === 'bang-chung-pisatracking-pizi147', `Kho của database chính: ${chinh}`);
+    assert(thu !== chinh, 'Hai database phải có hai kho tệp khác nhau');
+    assert(khoTepMod.tenKhoTep() === 'bang-chung-cuc-bo', `Không có Turso (bộ kiểm chạy file cục bộ) → kho cục bộ, nhận ${khoTepMod.tenKhoTep()}`);
+  });
+  await checkAsync('PR-Z2 · Netlify Blobs: tệp được ghi/đọc/xoá trong kho CỦA database đang nối (tenKhoTep), không vào kho chung "bang-chung" của cả site', async () => {
+    /* Máy chủ Blobs cục bộ có sẵn trong @netlify/blobs — đúng giao thức Netlify dùng, không cần mạng. */
+    const { BlobsServer } = await import('@netlify/blobs/server');
+    const { getStore, setEnvironmentContext } = await import('@netlify/blobs');
+    const dir = fs.mkdtempSync(pathMod.join(os.tmpdir(), 'z2-blobs-'));
+    const mayBlobs = new BlobsServer({ directory: dir, token: 'tok' });
+    const { port } = await mayBlobs.start();
+    setEnvironmentContext({ edgeURL: `http://localhost:${port}`, siteID: 'site-thu', token: 'tok' });
+    try {
+      const kho = khoTepMod.khoTepNetlify();
+      await kho.ghi('violation/z2.pdf', Buffer.from('xin chao'), 'application/pdf');
+      const dung = await getStore(khoTepMod.tenKhoTep()).list();
+      const chung = await getStore('bang-chung').list();
+      assert(dung.blobs.some((b) => b.key === 'violation/z2.pdf'), `Tệp không nằm trong kho ${khoTepMod.tenKhoTep()}`);
+      assert(chung.blobs.length === 0, 'Tệp lọt vào kho chung "bang-chung" (dùng chung mọi loại deploy)');
+      assert((await kho.doc('violation/z2.pdf'))?.toString() === 'xin chao', 'Đọc lại phải ra đúng nội dung');
+      await kho.xoa('violation/z2.pdf');
+      assert((await getStore(khoTepMod.tenKhoTep()).list()).blobs.length === 0, 'Xoá phải xoá trong đúng kho đó');
+    } finally {
+      delete process.env.NETLIFY_BLOBS_CONTEXT;
+      await mayBlobs.stop();
+      try { fs.rmSync(dir, { recursive: true, force: true }); } catch { /* Windows */ }
+    }
+  });
+  const measuresSvc = await import('../yThuc/measures.ts');
+  await checkAsync('PR-Z2 · Xoá biện pháp Đang chuẩn bị: tệp trong kho chỉ bị xoá SAU KHI giao dịch đã chốt (giao dịch lui thì dòng còn mà tệp mất là không hoàn tác được)', async () => {
+    const m = t.conn.prepare("SELECT id FROM discipline_measures WHERE status = 'preparing' ORDER BY id LIMIT 1").get() as { id: number } | undefined;
+    assert(m, 'Bộ demo phải có ít nhất một biện pháp Đang chuẩn bị');
+    const kho = new Map<string, Buffer>();
+    const trongGiaoDichLucXoa: boolean[] = [];
+    datKhoTepChoKiemThu({
+      async ghi(k, d) { kho.set(k, d); },
+      async doc(k) { return kho.get(k) ?? null; },
+      async xoa(k) { trongGiaoDichLucXoa.push(db().inTransaction); kho.delete(k); },
+    });
+    try {
+      await attachmentsSvc.addFile(t.admin, { ownerType: 'discipline_measure', ownerId: m!.id, fileName: 'z2.pdf', data: Buffer.from('bien phap') });
+      assert(kho.size === 1, 'Chuẩn bị: biện pháp phải có một tệp trong kho');
+      measuresSvc.deleteMeasure(t.admin, m!.id);
+      await khoTepMod.choViecNenKhoTep();
+      assert(trongGiaoDichLucXoa.length === 1, `Phải xoá đúng một tệp, đã gọi xoá ${trongGiaoDichLucXoa.length} lần`);
+      assert(trongGiaoDichLucXoa[0] === false, 'Tệp bị xoá khi giao dịch CHƯA chốt');
+      assert(kho.size === 0, 'Xoá biện pháp thì tệp của nó cũng phải rời kho');
+    } finally { datKhoTepChoKiemThu(null); }
+  });
+  check('PR-Z2 · `npm run thu-turso` (tạo/xoá bảng _thu) TỪ CHỐI database kiểu bản chính và khi BAN_CHINH=1 — dừng trước khi kết nối', () => {
+    const thuJs = pathMod.join(REPO, 'dist-server/server/src/ops/thuTurso.js');
+    for (const [url, banChinh] of [['libsql://pisatracking-khong-ton-tai.turso.io', ''], ['libsql://pisatracking-demo-khong-ton-tai.turso.io', '1']]) {
+      const r = cp.spawnSync(process.execPath, [thuJs], {
+        env: { ...process.env, TURSO_DATABASE_URL: url, TURSO_AUTH_TOKEN: 'x', BAN_CHINH: banChinh }, encoding: 'utf8', timeout: 60_000,
+      });
+      const ra = String(r.stdout) + String(r.stderr);
+      assert(r.status !== 0 && r.status !== null && /TỪ CHỐI/.test(r.stderr), `${url} BAN_CHINH="${banChinh}": mã thoát ${r.status}; ${ra.slice(-300)}`);
+      assert(!/Hrana|Host not found|HỎNG/i.test(ra), `Đã kết nối trước khi từ chối: ${ra.slice(-300)}`);
+    }
+  });
+  const { tx } = await import('../db.ts');
+  check('PR-Z2 · Giao dịch lồng: nếu chính lệnh ROLLBACK TO cũng hỏng thì vẫn ném LỖI GỐC (lỗi dọn dẹp không được che nguyên nhân)', () => {
+    /* Vòng ngoài là giao dịch thật, vòng trong là SAVEPOINT sp_1. Tự RELEASE sp_1 trước khi ném → ROLLBACK TO sp_1 hỏng. */
+    assertThrows(() => tx(() => tx(() => { db().exec('RELEASE sp_1'); throw new Error('lỗi gốc z2'); })), /lỗi gốc z2/, 'Phải thấy lỗi gốc');
+    assert(!db().inTransaction, 'Giao dịch ngoài phải đã kết thúc (cuộn lại)');
+  });
+
   console.log('\nPR-Z2 · 3. Bản chính không có gì của bản demo');
   const demoConfigMod = await import('../demoConfig.ts');
   const { demoToday, scenarioMode } = demoConfigMod;

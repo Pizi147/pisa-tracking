@@ -154,8 +154,8 @@ export function tx<T>(fn: () => T): T {
     conn.exec(`RELEASE ${name}`);
     return out;
   } catch (e) {
-    conn.exec(`ROLLBACK TO ${name}`);
-    conn.exec(`RELEASE ${name}`);
+    /* Cuộn lại hỏng (mạng Turso đứt, savepoint đã mất…) thì vẫn ném LỖI GỐC — vòng ngoài sẽ cuộn lại cả giao dịch. */
+    try { conn.exec(`ROLLBACK TO ${name}`); conn.exec(`RELEASE ${name}`); } catch { /* giữ lỗi gốc */ }
     throw e;
   } finally {
     savepointDepth--;
