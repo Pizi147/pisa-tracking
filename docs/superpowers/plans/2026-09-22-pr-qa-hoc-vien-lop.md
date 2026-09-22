@@ -199,21 +199,21 @@ lại — lệch vài dòng là bình thường; **lệch nội dung** thì 🛑
 
 **Files:** không sửa file.
 
-- [ ] **Step 1:** superpowers:using-git-worktrees — tạo nhánh `pr-qa-hoc-vien-lop` từ `origin/main` mới nhất
+- [x] **Step 1:** superpowers:using-git-worktrees — tạo nhánh `pr-qa-hoc-vien-lop` từ `origin/main` mới nhất
   (`git fetch origin && git worktree add ../pisa-pr-qa -b pr-qa-hoc-vien-lop origin/main`, hoặc công cụ `EnterWorktree` rồi đổi
   tên nhánh). **Không checkout nhánh khác trong thư mục chính** (session khác đang làm ở đó). Mọi lệnh sau chạy trong worktree.
-- [ ] **Step 2: Môi trường sạch biến Turso.**
+- [x] **Step 2: Môi trường sạch biến Turso.**
 
 ```bash
 node -e "for (const k of ['TURSO_DATABASE_URL','TURSO_AUTH_TOKEN','BAN_CHINH','PISA_CHO_PHEP_MIGRATE_TURSO','PISA_CHO_PHEP_SEED_TURSO']) if (process.env[k]) { console.error('CÓ BIẾN', k); process.exit(1) } ; console.log('sạch')"
 ```
 Expected: `sạch`.
 
-- [ ] **Step 3:** `npm ci` rồi `npm run check`. Ghi vào Nhật ký số phép kiểm (dòng `TẤT CẢ N KIỂM TRA ĐỀU ĐẠT`). Đỏ ngay từ đầu →
+- [x] **Step 3:** `npm ci` rồi `npm run check`. Ghi vào Nhật ký số phép kiểm (dòng `TẤT CẢ N KIỂM TRA ĐỀU ĐẠT`). Đỏ ngay từ đầu →
   🛑 dừng, báo chủ sản phẩm.
-- [ ] **Step 4:** `git diff 7843875..HEAD --stat -- web/src/modules/students web/src/modules/classes server/src/classes shared/domain server/src/students/standing.ts index.html web/src/App.tsx`
+- [x] **Step 4:** `git diff 7843875..HEAD --stat -- web/src/modules/students web/src/modules/classes server/src/classes shared/domain server/src/students/standing.ts index.html web/src/App.tsx`
   — có thay đổi (PR-AN/S2/Pa đã merge?) thì mở lại các file đó đối chiếu số dòng trước khi làm.
-- [ ] **Step 5:** Đọc: spec §1–§4, §6, §7 dòng Qa; kiểm kê §1.2, §1.6 (K2-6a, YT-8); sáu mockup; bảng Quyết định Q1–Q21 ở trên.
+- [x] **Step 5:** Đọc: spec §1–§4, §6, §7 dòng Qa; kiểm kê §1.2, §1.6 (K2-6a, YT-8); sáu mockup; bảng Quyết định Q1–Q21 ở trên.
   Thấy Q nào sai đặc tả → 🛑 hỏi trước khi code.
 
 ---
@@ -233,7 +233,7 @@ Expected: `sạch`.
 - `ngay`, `tuanLich`, `tuanKhoa`, `shortDate`, `deadlineView` **giữ nguyên chữ ký**.
 - `runHocVienLopTests(t: YThucTestKit): Promise<void>` — các task sau nối thêm `check(...)` vào CUỐI thân hàm này.
 
-- [ ] **Step 1: Tạo file phép kiểm (đỏ).** `server/src/tests/hocVienLop.tests.ts`:
+- [x] **Step 1: Tạo file phép kiểm (đỏ).** `server/src/tests/hocVienLop.tests.ts`:
 
 ```ts
 /**
@@ -316,10 +316,10 @@ const { runHocVienLopTests } = await import('./hocVienLop.tests.ts');
 await runHocVienLopTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 ```
 
-- [ ] **Step 2: Chạy, thấy đỏ.** `npm test 2>&1 | grep -E "PR-Qa|KIỂM TRA|KHÔNG ĐẠT"`
+- [x] **Step 2: Chạy, thấy đỏ.** `npm test 2>&1 | grep -E "PR-Qa|KIỂM TRA|KHÔNG ĐẠT"`
   Expected: hai phép kiểm `PR-Qa · G-6 …` ✗ (vd `'22/09' ≠ '23/09'`, `d.ngayTheoGioVN is not a function`).
 
-- [ ] **Step 3: Sửa `shared/domain/display.ts`.** Thay dòng 25 (`const validIso = …`) và hàm `shortDate` (dòng 27-36) bằng:
+- [x] **Step 3: Sửa `shared/domain/display.ts`.** Thay dòng 25 (`const validIso = …`) và hàm `shortDate` (dòng 27-36) bằng:
 
 ```ts
 /** Ngày theo lịch có thật không — `Date.parse` tự lăn 31/02 thành 03/03 nên không dùng được một mình. */
@@ -367,7 +367,7 @@ export function shortDate(iso: string | null | undefined, today: string): string
 
   `vietnamDateOf` (cuối file) **giữ nguyên** — `businessDateText` vẫn dùng.
 
-- [ ] **Step 4: Thay `shared/domain/hienThiNgay.ts`** (giữ nguyên chú thích đầu file dòng 1-10, thêm một câu vào cuối chú thích:
+- [x] **Step 4: Thay `shared/domain/hienThiNgay.ts`** (giữ nguyên chú thích đầu file dòng 1-10, thêm một câu vào cuối chú thích:
   ` * Chuỗi có giờ đổi sang giờ Việt Nam trước khi lấy ngày; ngày không tồn tại ra "—" (ngayTheoGioVN, display.ts).`):
 
 ```ts
@@ -398,7 +398,7 @@ export function tuanKhoa(n: number, tong: number): string {
 }
 ```
 
-- [ ] **Step 5: Sửa phép kiểm PR-O.** `server/src/tests/khung.tests.ts:16` — thay
+- [x] **Step 5: Sửa phép kiểm PR-O.** `server/src/tests/khung.tests.ts:16` — thay
 
 ```ts
     eq(d.ngay('2026-09-22T10:00:00Z', '2026-01-01'), '22/09', 'Có giờ vẫn chỉ lấy ngày');
@@ -408,10 +408,10 @@ export function tuanKhoa(n: number, tong: number): string {
     eq(d.ngay('2026-09-22T18:30:00Z', '2026-01-01'), '23/09', 'Có giờ (UTC) đổi sang giờ Việt Nam rồi mới lấy ngày');
 ```
 
-- [ ] **Step 6: Chạy, thấy xanh.** `npm test 2>&1 | tail -3` → `TẤT CẢ N+2 KIỂM TRA ĐỀU ĐẠT` (N = mốc Task 0). Phép kiểm cũ của
+- [x] **Step 6: Chạy, thấy xanh.** `npm test 2>&1 | tail -3` → `TẤT CẢ N+2 KIỂM TRA ĐỀU ĐẠT` (N = mốc Task 0). Phép kiểm cũ của
   `deadlineView`, `shortDate`, `businessDateText` (`run.ts` ~7900-7960) phải vẫn đạt.
-- [ ] **Step 7:** `npm run check` xanh. Ghi số vào Nhật ký.
-- [ ] **Step 8: Commit.**
+- [x] **Step 7:** `npm run check` xanh. Ghi số vào Nhật ký.
+- [x] **Step 8: Commit.**
 
 ```bash
 git add shared/domain/display.ts shared/domain/hienThiNgay.ts server/src/tests/khung.tests.ts server/src/tests/hocVienLop.tests.ts server/src/tests/run.ts
@@ -3501,4 +3501,18 @@ git commit -m "PR-Qa (16): ảnh KIỂM bốn vai, 1440px và 375px, lớp FT v�
 
 *(Người thực thi ghi sau mỗi task: model thật, số phép kiểm, điều bất ngờ, chỗ phải tự quyết.)*
 
-- **Task 0:**
+- **Task 0:** Model thật: Sonnet 5. Worktree tạo bằng `EnterWorktree` (native), nhánh tự sinh `worktree-pr-qa-hoc-vien-lop` được
+  đổi tên lại đúng `pr-qa-hoc-vien-lop` (`git branch -m`), base ref khớp `origin/main` @ `67e79c5` (đã có PR-AN #63, PR-S1, spec #60,
+  #61, #62 — sau mốc `7843875` của plan nhưng `git diff 7843875..HEAD --stat` trên các file PR-Qa sở hữu **không có gì** nên số dòng
+  trong plan vẫn đúng). Biến Turso: sạch. `npm ci` xong (325 packages). `npm run check`: **TẤT CẢ 757 KIỂM TRA ĐỀU ĐẠT**, typecheck
+  xanh — mốc N = 757. Xác nhận đủ 9 file spec/kiểm kê/mockup/thuật ngữ tồn tại. Không có Q nào lệch đặc tả ở bước đọc. Sẵn sàng
+  Task 1.
+
+- **Task 1:** Model thật: Sonnet 5. Tám bước làm theo đúng thứ tự, đúng code mẫu trong task brief (đã chép nguyên). Bước 2 (đỏ):
+  757 đạt, đúng 2 phép kiểm PR-Qa mới ✗ như dự tính. Sau khi sửa `display.ts` (`ngayTheoGioVN`, `shortDate`) và `hienThiNgay.ts`
+  (`ngay`, `tuanLich` đi qua `ngayTheoGioVN`) và cập nhật phép kiểm PR-O cũ ở `khung.tests.ts:15` — `npm test`:
+  **TẤT CẢ 759 KIỂM TRA ĐỀU ĐẠT** (N+2 = 759, đúng mốc). Phép kiểm cũ `deadlineView`/`shortDate`/`businessDateText` (`run.ts`
+  ~7900-7960) và PR-O `khung.tests.ts` vẫn xanh. `npm run check` xanh (build + test + typecheck), thoát mã 0. Điều bất ngờ duy
+  nhất: khối PR-AN đã được chèn vào giữa khối PR-O và dòng `console.log` cuối `run.ts` (không có ở lúc viết brief) — tự quyết đặt
+  khối `PR-Qa` ngay sau `await runKhungTests(...)` và trước khối PR-AN, giữ đúng ý "ngay sau khối PR-O" mà không chèn giữa PR-AN.
+  Không có Q nào lệch đặc tả. Sẵn sàng Task 2 (PR-Pa dùng `ngay`/`tuanLich`/`tuanKhoa`/`shortDate` không cần đổi gì thêm).
