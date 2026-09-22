@@ -65,14 +65,18 @@ export function DongViec({ it, onOpen }: { it: WorkItem; onOpen: (href: string) 
               <span className="text-[11px] text-slate-500 tabular-nums">{it.count} học viên</span>
             )}
             {it.level && <Level tone={it.level.tone}>{it.level.text}</Level>}
+            {/* ⚠ chỉ nghĩa là QUÁ HẠN (G-4): "Hạn hôm nay" là nhãn vàng không dấu. */}
             {it.overdueLabel && (
-              <Alert tone={it.urgency === 'overdue' ? 'danger' : 'warn'}>{it.overdueLabel}</Alert>
+              it.urgency === 'overdue'
+                ? <Alert tone="danger">{it.overdueLabel}</Alert>
+                : <Level tone="warn">{it.overdueLabel}</Level>
             )}
           </span>
           <span className="block text-xs text-slate-400 mt-0.5">{it.reason}</span>
           {/* Ô 3–5: người phụ trách · hạn · trạng thái — đứng thành một dòng phụ gọn. */}
           <span className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1.5 text-[11px] text-slate-500">
-            <span>{it.owner ?? 'Chưa có người phụ trách'}</span>
+            {/* Nhóm no_owner đã nói "Chưa có người phụ trách" ở ô trạng thái — không lặp lại (G-3). */}
+            {(it.owner || it.statusLabel !== 'Chưa có người phụ trách') && <span>{it.owner ?? 'Chưa có người phụ trách'}</span>}
             {loaiHan && it.due ? <Han loai={loaiHan} han={it.due} /> : <span>{it.due ? `Hạn ${ngay(it.due, homNay)}` : 'Chưa có hạn'}</span>}
             {/*
               TRẠNG THÁI và QUÁ HẠN là hai thông tin khác nhau (mục 7.7): quá hạn

@@ -55,7 +55,9 @@ export function BranchPulse({ branchId, ct }: { branchId: number | null; ct: Chu
   );
   const hangTong = (nhan: string) => (
     <tr className="bg-white/5" style={{ height: HANG }}>
-      <td className="td sticky-col whitespace-nowrap font-medium text-slate-100">{nhan}</td>
+      {/* Ô dính phải đục để che nội dung cuộn, nhưng cùng tông với hàng tổng (bg-white/5 trên --surface). */}
+      <td className="td sticky-col whitespace-nowrap font-medium text-slate-100"
+        style={{ background: 'color-mix(in srgb, var(--surface) 95%, white)' }}>{nhan}</td>
       {COT.map((c) => o({ khoa: 'tong', nhan }, c.key, data.tong[c.key]))}
     </tr>
   );
