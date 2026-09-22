@@ -28,7 +28,8 @@ Nếu bạn nghĩ theo "cái tôi thấy trên màn hình" chứ không theo tê
 | **Hồ sơ một học viên** (đầu hồ sơ, bốn ô số, hai tab dưới) | `web/src/modules/students/StudentDetailPage.tsx` | `server/src/students/profile.ts` |
 | Bảng kỹ năng trong hồ sơ · **ô điểm bốn màu** | `web/src/modules/cases/SkillBoard.tsx` → `ScoreCell` | `server/src/cases/cases.ts` → `skillSupportBoard` |
 | **Thẻ case** và từng khối phương án ba phần trong hồ sơ (PR-HV Q8) | `web/src/modules/cases/SkillBoard.tsx` → `TheCase` · `KhoiPhuongAn` | `server/src/cases/cases.ts` → `caseCardOf` |
-| **Ghi kết quả ngay trong dòng phương án** | `web/src/modules/cases/SkillBoard.tsx` → `InlineResult` | `POST /interventions/:id/result` |
+| **Ghi kết quả PA** (cập nhật tuần 5 mục; Giữ nguyên / Điều chỉnh / Thay / Kết thúc) | `web/src/modules/cases/CapNhatTuan.tsx` → `CapNhatTuanForm` | `server/src/cases/cases.ts` → `updateResult` |
+| **Lịch sử điều chỉnh PA** (bản cũ · khi nào · ai · vì sao) | `web/src/modules/cases/CapNhatTuan.tsx` → `LichSuDieuChinh` | `server/src/cases/planRevisions.ts` |
 | Tab **Hành trình học tập** — hai cách đọc | `web/src/modules/students/JourneyTimeline.tsx` | `server/src/students/profile.ts` + bảng kỹ năng |
 | Màn một lượt Test | `web/src/modules/fasttrack/MockDetailPage.tsx` | `server/src/fasttrack/attempts.ts` → `attemptDetail` |
 | **Bảng nhập điểm cả lớp** | `web/src/modules/fasttrack/ScoreSheetPage.tsx` | `server/src/fasttrack/attempts.ts` → `classScoreSheet` |
@@ -211,7 +212,7 @@ loại dữ liệu mới** vào kịch bản thì thêm trường ở `server/sr
 | Bảng theo dõi năm hạng mục ở hồ sơ | `web/src/modules/cases/SkillBoard.tsx` |
 | Case của em ở hồ sơ — **nằm ngay dưới hàng kỹ năng**, không còn khối danh sách riêng | `web/src/modules/cases/SkillBoard.tsx` → `TheCase` |
 | Luật hạn chu kỳ hai tuần / một tuần | `shared/domain/cases.ts` → `cycleDeadline` |
-| Năm kết quả và năm bước tiếp theo | `shared/domain/cases.ts` → `FOLLOWUP_OUTCOMES`, `nextStepsFor` |
+| Năm kết quả và sáu bước tiếp theo (PR-S2 thêm `adjust` = Điều chỉnh, lịch sử ở bảng `case_intervention_revisions`) | `shared/domain/cases.ts` → `FOLLOWUP_OUTCOMES`, `NEXT_STEPS`, `nextStepsFor` |
 | Luật hiển thị thuần của hồ sơ học viên: tab từ `?tab=`, ô Test gần nhất, quá hạn, tiến độ case `k/n PA có kết quả`, việc tiếp của một PA, đếm vi phạm theo nhóm (PR-HV) | `shared/domain/hoSoHocVien.ts` → `parseHoSoTab`, `ketQuaTestGanNhat`, `quaHan`, `tienDoCase`, `viecTiepPhuongAn`, `demTheoNhomViPham` |
 | Một chu kỳ khép lại (gộp ba nút cũ) | `server/src/cases/cases.ts` → `updateResult` |
 | Điều kiện được hoàn thành case | `server/src/cases/cases.ts` → `closeBlockers` |
@@ -368,7 +369,7 @@ Ba chỗ dễ hiểu nhầm:
 - Hạng mục ĐÃ CÓ case đang mở thì tín hiệu tự nối vào case đó (thêm một mốc, không mở case
   thứ hai). Chỉ khi chưa có case nào thì nó mới nằm chờ người xác minh.
 
-**`shared/domain/cases.ts`** — từ vựng của case: năm hạng mục, năm kết quả, năm bước tiếp theo,
+**`shared/domain/cases.ts`** — từ vựng của case: năm hạng mục, năm kết quả, sáu bước tiếp theo,
 và `cycleDeadline`. Từ vòng 5, HẠN của một chu kỳ tính ở ĐÚNG MỘT CHỖ này (Chủ nhật của tuần thứ
 hai; Ý thức không còn hạn nào) — luật cũ suy hạn từ mức gấp `7 · 5 · 3 ngày`
 đã bị thay hẳn. Màn hình nào tự tính hạn lấy là màn hình sớm muộn nói một con số khác.

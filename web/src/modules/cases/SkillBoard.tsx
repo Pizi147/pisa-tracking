@@ -1,15 +1,13 @@
 import { useState } from 'react';
 import { Empty, ErrorState, Level, SCORE_CHIP, SCORE_TEXT, Skeleton, Status, type ScoreTone } from '../../ui/ui.tsx';
 import { fmtBand, fmtDate, sosLabel, sosTone } from '../../lib/format.ts';
-import { api, invalidate } from '../../lib/api.ts';
-import { useSession } from '../../lib/session.tsx';
-import { useToast } from '../../ui/Toast.tsx';
 import { Han } from '../../ui/Han.tsx';
 import { BangChung } from '../../ui/BangChung.tsx';
-import { ActionDialog, OutcomeDialog, ResultDialog } from './CasePanel.tsx';
+import { ActionDialog, OutcomeDialog } from './CasePanel.tsx';
+import { CapNhatTuanForm, LichSuDieuChinh, type BanDieuChinh } from './CapNhatTuan.tsx';
 import { CauseDeterminationPanel, DismissCaseForm, PresetPlanActions } from '../yThuc/CaseSosControls.tsx';
 import {
-  FOLLOWUP_OUTCOMES, OUTCOME_MARK, canEndWithOutcome, dangChay, outcomeLabelFor, tienDoCase, viecTiepPhuongAn,
+  NEXT_STEP_LABEL, OUTCOME_MARK, dangChay, tienDoCase, viecTiepPhuongAn,
 } from '@shared/domain/index.ts';
 
 /**
@@ -37,11 +35,16 @@ type Plan = {
   pendingApproval: boolean; approvalDue: string | null;
   lastOutcome: string | null; lastOutcomeLabel: string | null;
   lastOutcomeOn: string | null; lastNote: string | null;
+  /** PR-S2: khép lại vì sao (`superseded` = Được thay thế) và PA nào thay nó. */
+  closedReason: string | null; supersededBy: number | null;
+  /** PR-S2 (S2): mỗi lần sửa nội dung PA, cũ trước mới sau. */
+  revisions: BanDieuChinh[];
   /** Mọi lần có người nhìn lại và ghi kết quả — dòng thời gian vẽ thành mốc CÓ NGÀY. */
   updates: {
     on: string; outcome: string; label: string; by: string | null;
     /** Câu người dạy viết, chu kỳ nào, và có trễ hạn không — để mở lịch sử ngay tại dòng phương án. */
     note: string | null; cycleNo: number | null; late: boolean;
+    decision: string | null; remainingIssue: string | null; decisionNote: string | null;
   }[];
 };
 type CaseCard = {
@@ -367,7 +370,7 @@ function TheCase({ c, row, onChanged }: {
                 </div>
               )}
               {chay.map((p) => (
-                <KhoiPhuongAn key={p.id} p={p} canEdit={c.canEdit} onChanged={onChanged} />
+                <KhoiPhuongAn key={p.id} p={p} plans={c.plans} canEdit={c.canEdit} onChanged={onChanged} />
               ))}
               {xong.length > 0 && (
                 <>
@@ -375,7 +378,7 @@ function TheCase({ c, row, onChanged }: {
                     {moXong ? '▾' : '▸'} {xong.length} PA đã xong
                   </button>
                   {moXong && xong.map((p) => (
-                    <KhoiPhuongAn key={p.id} p={p} canEdit={c.canEdit} onChanged={onChanged} />
+                    <KhoiPhuongAn key={p.id} p={p} plans={c.plans} canEdit={c.canEdit} onChanged={onChanged} />
                   ))}
                 </>
               )}
@@ -474,8 +477,8 @@ function TheCase({ c, row, onChanged }: {
  * Hạn LÀM và hạn DỰ KIẾN XONG vẫn là hai mốc khác nhau và vẫn có nhãn riêng (`<PlanDue>`, F11). Dấu ✓ của PA đã xong
  * màu xám — xanh lá chỉ dành cho kết quả học tập (`<Outcome>`).
  */
-function KhoiPhuongAn({ p, canEdit, onChanged }: {
-  p: Plan; canEdit: boolean; onChanged?: () => void;
+function KhoiPhuongAn({ p, plans, canEdit, onChanged }: {
+  p: Plan; plans: Plan[]; canEdit: boolean; onChanged?: () => void;
 }) {
   const [editing, setEditing] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
@@ -484,6 +487,14 @@ function KhoiPhuongAn({ p, canEdit, onChanged }: {
   /* Mới nhất lên trên: người mở hỏi "giờ đang thế nào", không hỏi "tháng trước bắt đầu ra sao". */
   const updates = [...p.updates].reverse();
   const v = viecTiepPhuongAn(p);
+  const thayBang = p.supersededBy ? plans.find((x) => x.id === p.supersededBy) ?? null : null;
+  const thayCho = plans.find((x) => x.supersededBy === p.id) ?? null;
+  const dongPhu = {
+    chinh: `${p.performer ?? 'chưa có người thực hiện'}${p.startedOn ? ` · từ ${fmtDate(p.startedOn)}` : ''}`
+      + `${p.completedOn ? ` → ${fmtDate(p.completedOn)}` : ''}`,
+    duoi: p.closedReason === 'superseded' ? 'được thay'
+      : p.revisions.length > 0 ? `điều chỉnh ${p.revisions.length} lần` : null,
+  };
 
   return (
     <div className="rounded-lg border px-2.5 py-2" style={{ borderColor: 'var(--line)' }}>
@@ -503,10 +514,13 @@ function KhoiPhuongAn({ p, canEdit, onChanged }: {
               </span>
               {p.name}
             </span>
-            <span className="block text-[11px] text-slate-500 mt-0.5">
-              {p.performer ?? 'chưa có người thực hiện'}
-              {p.startedOn && <> · từ {fmtDate(p.startedOn)}</>}
-              {p.completedOn && <> → {fmtDate(p.completedOn)}</>}
+            {/*
+              G-3: dòng phụ luôn MỘT dòng, kể cả 375px và lưới 3 cột ở 768px. Phần người · ngày cắt bằng "…" (di chuột xem đủ),
+              phần đuôi "được thay" / "điều chỉnh n lần" không bao giờ bị cắt.
+            */}
+            <span className="flex min-w-0 text-[11px] text-slate-500 mt-0.5" title={dongPhu.duoi ? `${dongPhu.chinh} · ${dongPhu.duoi}` : dongPhu.chinh}>
+              <span className="min-w-0 truncate">{dongPhu.chinh}</span>
+              {dongPhu.duoi && <span className="shrink-0 whitespace-nowrap">&nbsp;· {dongPhu.duoi}</span>}
             </span>
           </span>
         </div>
@@ -543,7 +557,10 @@ function KhoiPhuongAn({ p, canEdit, onChanged }: {
             <>
               <PlanDue p={p} />
               {canEdit && !editing && (
-                <button type="button" className="btn btn-sm" onClick={() => setEditing(true)}>Ghi kết quả</button>
+                <button type="button" className="btn btn-sm" onClick={() => setEditing(true)}
+                  title="Ghi kết quả tuần này: kết quả, tiến triển, và quyết định Giữ nguyên / Điều chỉnh / Thay / Kết thúc">
+                  Ghi kết quả
+                </button>
               )}
             </>
           ) : (
@@ -555,7 +572,14 @@ function KhoiPhuongAn({ p, canEdit, onChanged }: {
       {showHistory && (
         <ol id={historyId} className="list-none m-0 mt-2 pl-3 space-y-2 border-l"
           style={{ borderColor: 'var(--line)' }}>
-          {p.completedOn && !running && (
+          {thayBang && (
+            <li className="text-[11px] text-slate-400 tabular-nums">
+              {p.completedOn ? `${fmtDate(p.completedOn)} · ` : ''}Được thay bằng: {thayBang.name}
+            </li>
+          )}
+          {p.revisions.length > 0 && <li><LichSuDieuChinh revisions={p.revisions} /></li>}
+          {/* PA bị thay đã có dòng "Được thay bằng" cùng ngày ở trên, không nói lại "kết thúc phương án". */}
+          {p.completedOn && !running && !thayBang && (
             <li className="text-[11px] text-slate-400 tabular-nums">
               {fmtDate(p.completedOn)} · kết thúc phương án
             </li>
@@ -564,18 +588,27 @@ function KhoiPhuongAn({ p, canEdit, onChanged }: {
             <li key={`${u.on}-${i}`}>
               <span className="block text-[11px] text-slate-500 tabular-nums">
                 {fmtDate(u.on)}
-                {u.cycleNo ? ` · chu kỳ ${u.cycleNo}` : ''}
+                {u.cycleNo ? ` · Đợt ${u.cycleNo}` : ''}
                 {' · '}
                 <span className={outcomeTone(u.outcome)}>{OUTCOME_MARK[u.outcome] ?? ''} {u.label}</span>
                 {u.late && <span className="text-amber-300"> · ⚠ cập nhật trễ</span>}
                 {u.by && <span> · {u.by} ghi</span>}
+                {u.decision && NEXT_STEP_LABEL[u.decision as keyof typeof NEXT_STEP_LABEL] && <span> · → {NEXT_STEP_LABEL[u.decision as keyof typeof NEXT_STEP_LABEL]}</span>}
               </span>
               {u.note && <span className="block text-xs text-slate-300 mt-0.5 leading-relaxed break-words">“{u.note}”</span>}
+              {u.remainingIssue && <span className="block text-[11px] text-slate-400 mt-0.5">Còn tồn: {u.remainingIssue}</span>}
+              {/* Lý do của lần Điều chỉnh đã nằm trong bản điều chỉnh ở trên (kèm đổi gì), không nói lại lần hai. */}
+              {u.decisionNote && !(u.decision === 'adjust' && p.revisions.length > 0) && (
+                <span className="block text-[11px] text-slate-400 mt-0.5">
+                  {u.decision === 'adjust' || u.decision === 'propose' ? 'Lý do' : 'Ghi chú'}: {u.decisionNote}
+                </span>
+              )}
             </li>
           ))}
           {p.startedOn && (
             <li className="text-[11px] text-slate-500 tabular-nums">{fmtDate(p.startedOn)} · bắt đầu thực hiện</li>
           )}
+          {thayCho && <li className="text-[11px] text-slate-500">Thay cho: {thayCho.name}</li>}
           {updates.length === 0 && !p.startedOn && (
             <li className="text-[11px] text-slate-500">Chưa có cập nhật nào cho phương án này.</li>
           )}
@@ -589,8 +622,13 @@ function KhoiPhuongAn({ p, canEdit, onChanged }: {
       )}
 
       {editing && (
-        <InlineResult p={p}
-          onClose={() => setEditing(false)} onDone={() => onChanged?.()} />
+        <div className="mt-2">
+          <CapNhatTuanForm
+            pa={{ id: p.id, kind: p.kind, description: p.name, performer: p.performer,
+                  followupDue: p.followupDue, actionDue: p.actionDue }}
+            onCancel={() => setEditing(false)}
+            onSaved={() => { setEditing(false); onChanged?.(); }} />
+        </div>
       )}
     </div>
   );
@@ -611,153 +649,6 @@ function PlanDue({ p }: { p: Plan }) {
       {p.actionDue && <Han loai="cap-nhat-pa" han={p.actionDue} />}
       {p.followupDue && <Han loai="du-kien-ket-thuc" han={p.followupDue} />}
     </span>
-  );
-}
-
-/**
- * GHI KẾT QUẢ NGAY TRONG DÒNG PHƯƠNG ÁN — không ngăn kéo, không sang trang (PR-D Step 5).
- *
- * MỘT panel, HAI lựa chọn, MỘT nút chính đổi chữ theo lựa chọn — không phải hai nút cạnh nhau:
- *
- *   · Ghi kết quả, tiếp tục theo dõi — ghi một chu kỳ, phương án VẪN CHẠY.
- *   · Kết thúc phương án — thêm ngày kết thúc, phương án đóng lại.
- *
- * Luật của máy chủ giữ nguyên: chỉ kết quả TỐT (có tiến bộ / tiến bộ một phần) mới khép được
- * một phương án suông; "Chưa đủ dữ liệu" không khép được. Kết quả chưa tốt thì BẮT BUỘC đi
- * tiếp bằng phương án khác hoặc xin Quản lý — đường đó vẫn có, mở qua hộp thoại đầy đủ,
- * không bị mất chỉ vì khối nhúng cũ đã gỡ.
- *
- * KHÔNG CÓ Ô ĐIỂM TỰ CHẤM (CASE-05): bốn kỹ năng L/R/W/S cho một case Listening là vô lý. Điểm
- * tự chấm đã lưu từ trước vẫn đọc được.
- */
-function InlineResult({ p, onClose, onDone }: {
-  p: Plan;
-  onClose: () => void; onDone: () => void;
-}) {
-  const { session } = useSession();
-  const toast = useToast();
-  const today = session?.demoDate ?? '';
-  const [mode, setMode] = useState<'monitor' | 'end'>('monitor');
-  const [outcome, setOutcome] = useState('');
-  const [note, setNote] = useState('');
-  const [on, setOn] = useState(today);
-  const [endOn, setEndOn] = useState(today);
-  const [busy, setBusy] = useState(false);
-  const [full, setFull] = useState(false);
-
-  const ending = mode === 'end';
-  const outcomes = FOLLOWUP_OUTCOMES.filter((o) => !ending || canEndWithOutcome(o));
-  /* Kết thúc suông chỉ dành cho kết quả tốt; kết quả chưa tốt phải nói đi tiếp thế nào. */
-  const goodOutcome = outcome === 'improved' || outcome === 'partial';
-  const mustContinue = ending && !!outcome && !goodOutcome;
-  const noteOk = note.trim().length >= 8;
-  const ready = !!outcome && noteOk && !mustContinue;
-
-  const pickMode = (m: 'monitor' | 'end') => {
-    setMode(m);
-    /* "Chưa đủ dữ liệu" không kết thúc được phương án — bỏ chọn khi đổi sang kết thúc. */
-    if (m === 'end' && outcome && !canEndWithOutcome(outcome)) setOutcome('');
-  };
-
-  const save = async () => {
-    setBusy(true);
-    try {
-      if (ending) {
-        await api.post(`/interventions/${p.id}/result`, {
-          mode: 'end', outcome, note, observedOn: on, completedOn: endOn, nextStep: 'complete',
-        });
-      } else {
-        await api.post(`/interventions/${p.id}/result`, {
-          mode: 'monitor', outcome, note, observedOn: on,
-        });
-      }
-      invalidate('/cases'); invalidate('/my-work');
-      invalidate('/students'); invalidate('/overview');
-      toast.push('ok', ending ? 'Đã kết thúc phương án' : 'Đã ghi kết quả — phương án vẫn đang chạy');
-      onDone(); onClose();
-    } catch (e: any) {
-      toast.push('error', e?.message ?? 'Không lưu được');
-    } finally { setBusy(false); }
-  };
-
-  return (
-    <div className="rounded-lg mt-2 p-2.5 space-y-2" style={{ background: 'var(--surface-1)' }}>
-      <div className="flex flex-wrap gap-1.5" role="group" aria-label="Cách ghi">
-        <button type="button" aria-pressed={!ending}
-          className={`btn btn-sm ${!ending ? 'btn-primary' : ''}`} onClick={() => pickMode('monitor')}>
-          Ghi kết quả, tiếp tục theo dõi
-        </button>
-        <button type="button" aria-pressed={ending}
-          className={`btn btn-sm ${ending ? 'btn-primary' : ''}`} onClick={() => pickMode('end')}>
-          Kết thúc phương án
-        </button>
-      </div>
-
-      <span className="block text-[11px] text-slate-400">Chu kỳ vừa rồi em thế nào</span>
-      <div className="flex flex-wrap gap-1.5">
-        {outcomes.map((o) => (
-          <button key={o} type="button"
-            className={`btn btn-sm ${outcome === o ? 'btn-primary' : ''}`}
-            onClick={() => setOutcome(o)}>
-            {OUTCOME_MARK[o] ?? ''} {outcomeLabelFor(o)}
-          </button>
-        ))}
-      </div>
-
-      <textarea className="field w-full" rows={2} value={note}
-        onChange={(e) => setNote(e.target.value)}
-        placeholder="Tiến bộ ở đâu, còn kẹt chỗ nào, tuần tới làm gì" />
-      {note.length > 0 && !noteOk && (
-        <span className="block text-[11px] text-rose-300">
-          Ghi chú phải nói rõ quan sát được gì — ít nhất 8 ký tự.
-        </span>
-      )}
-
-      {mustContinue && (
-        <p className="text-[11px] text-amber-200/90 m-0">
-          Kết quả chưa tốt thì không khép lại suông được — phải nói rõ đi tiếp thế nào.{' '}
-          <button type="button" className="btn btn-sm ml-1" onClick={() => setFull(true)}>
-            Thay bằng phương án khác hoặc nhờ Quản lý
-          </button>
-        </p>
-      )}
-
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <span className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
-          <label className="flex items-center gap-1.5 text-[11px] text-slate-400">
-            Ngày ghi
-            <input type="date" className="field" style={{ width: '9.5rem' }}
-              value={on} max={today} onChange={(e) => setOn(e.target.value)} />
-          </label>
-          {ending && (
-            <label className="flex items-center gap-1.5 text-[11px] text-slate-400">
-              Ngày kết thúc
-              <input type="date" className="field" style={{ width: '9.5rem' }}
-                value={endOn} max={today} onChange={(e) => setEndOn(e.target.value)} />
-            </label>
-          )}
-        </span>
-        <span className="flex gap-1.5">
-          <button type="button" className="btn btn-sm" onClick={onClose} disabled={busy}>Huỷ</button>
-          <button type="button" className="btn btn-sm btn-primary"
-            disabled={busy || !ready || (ending && !endOn)} onClick={save}>
-            {busy ? 'Đang lưu…' : ending ? 'Kết thúc phương án' : 'Lưu, tiếp tục theo dõi'}
-          </button>
-        </span>
-      </div>
-
-      <p className="text-[11px] text-slate-500 m-0">
-        {ending
-          ? 'Phương án đóng lại. Case chỉ hoàn thành được khi mọi phương án đã khép.'
-          : <>Lưu xong phương án <strong>vẫn đang chạy</strong>; lần cập nhật sau đến hạn vào Chủ nhật kế tiếp.</>}
-      </p>
-
-      <ResultDialog
-        iv={full ? { id: p.id, kind: p.kind, description: p.name, actionDue: p.actionDue, followupDue: p.followupDue } : null}
-        startMode="end"
-        onClose={() => setFull(false)}
-        onDone={() => { onDone(); onClose(); }} />
-    </div>
   );
 }
 

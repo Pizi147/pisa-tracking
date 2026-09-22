@@ -27,6 +27,8 @@ import { isRatioCycle } from '../normal/regular.ts';
 import { suggestCaseOwner } from './owner.ts';
 import { linkSignalToCase, loadSignal } from './signals.ts';
 import { NOT_UNCONFIRMED_PRESET, sosCaseState } from './sosState.ts';
+import { PLAN_DECISIONS, decisionToStep, type PlanDecision } from '../../../shared/domain/index.ts';
+import { apDungDieuChinh, chuanHoaDieuChinh, lichSuDieuChinhCuaCase } from './planRevisions.ts';
 
 /**
  * CASE HỌC VỤ — một vòng đời cho cả hai nguồn.
@@ -1056,18 +1058,18 @@ export function completeIntervention(p: Principal, interventionId: number, input
      * là hai vai khác nhau: Admin ghi hộ việc CS gọi phụ huynh thì người làm là CS.
      */
     const performerUserId = input.performerSelf ? p.userId : (input.performerUserId ?? iv.performer_user_id);
+    /* PR-S2 (S2): ghi chú KHÔNG ghi đè mô tả PA nữa (trước đây là ghi đè mất dấu). Ghi chú nằm ở hành trình và audit bên dưới. */
     conn
       .prepare(
         `UPDATE case_interventions
             SET status = 'completed', completed_date = ?,
                 started_date = COALESCE(started_date, ?),
                 performer_user_id = ?, performer_name = COALESCE(?, performer_name),
-                description = COALESCE(NULLIF(?, ''), description),
                 updated_at = ?
           WHERE id = ?`,
       )
       .run(doneOn, doneOn, performerUserId ?? null, input.performerName ?? null,
-           input.note ?? '', nowIso(), interventionId);
+           nowIso(), interventionId);
 
     /*
      * Case còn ở "chưa ai làm gì" mà vừa có một việc xong thì nó đang được xử lý — đổi
@@ -1403,6 +1405,8 @@ export function caseDetail(p: Principal, caseId: number) {
       byName: i.by_name ?? null,
     }));
 
+  /* PR-S2 (S2): lịch sử điều chỉnh của mọi PA trong Case, một truy vấn. */
+  const revs = lichSuDieuChinhCuaCase(caseId);
   const interventions = (conn
     .prepare(
       `SELECT iv.*, u.full_name AS performer_account, r.full_name AS recorder_name,
@@ -1460,6 +1464,8 @@ export function caseDetail(p: Principal, caseId: number) {
       approvalNote: iv.approval_note as string | null,
       approvedBy: iv.approver_name ?? null,
       approvalAt: iv.approval_at as string | null,
+      /** PR-S2 (S2): mỗi lần sửa nội dung PA, cũ trước mới sau. Hàng chính luôn là bản hiện tại. */
+      revisions: revs.get(iv.id) ?? [],
     }));
 
   const followups = (conn
@@ -1476,6 +1482,9 @@ export function caseDetail(p: Principal, caseId: number) {
       cycleDue: f.cycle_due ?? null, late: !!f.late,
       /* Điểm cô tự chấm kèm lần cập nhật này — KHÔNG phải điểm chính thức. */
       metrics: parseMetrics(f.metrics),
+      /* PR-S2 (S4): vấn đề còn tồn, và lý do (Điều chỉnh/Thay) hoặc ghi chú của quyết định. */
+      remainingIssue: (f.remaining_issue ?? null) as string | null,
+      decisionNote: (f.decision_note ?? null) as string | null,
     }));
 
   const history = conn
@@ -2340,6 +2349,8 @@ function caseCardOf(caseId: number, c: any, soBangChung: Map<number, number>) {
         WHERE fu.case_id = ? ORDER BY fu.observed_on DESC, fu.id DESC`,
     )
     .all(caseId) as any[];
+  /* PR-S2 (S2): lịch sử điều chỉnh, một truy vấn cho cả Case (gộp nhiều Case: xem plan PR-S2 Q18). */
+  const revs = lichSuDieuChinhCuaCase(caseId);
 
   const plans = ivs.map((iv) => {
     const last = follows.find((f) => f.intervention_id === iv.id && f.outcome) ?? null;
@@ -2366,6 +2377,14 @@ function caseCardOf(caseId: number, c: any, soBangChung: Map<number, number>) {
       followupOverdue: !!(open && iv.followup_due && iv.followup_due < today && !(iv.preset === 1 && !iv.confirmed_at)),
       pendingApproval: pending,
       approvalDue: pending ? iv.approval_due ?? null : null,
+      /*
+       * PR-S2: KHÉP LẠI VÌ SAO và PA NÀO THAY NÓ. `superseded` = Được thay thế; `supersededBy` trỏ PA mới.
+       * Hành trình (PR-Qb) nối các khối PA theo đúng chuỗi này.
+       */
+      closedReason: (iv.closed_reason ?? null) as string | null,
+      supersededBy: (iv.superseded_by ?? null) as number | null,
+      /** PR-S2 (S2): mỗi lần sửa nội dung PA: bản cũ, bản mới, ngày, ai, vì sao. Cũ trước mới sau. */
+      revisions: revs.get(iv.id) ?? [],
       lastOutcome: last?.outcome ?? null,
       lastOutcomeLabel: last?.outcome
         ? outcomeLabelFor(last.outcome) : null,
@@ -2380,6 +2399,8 @@ function caseCardOf(caseId: number, c: any, soBangChung: Map<number, number>) {
        */
       updates: follows
         .filter((f) => f.intervention_id === iv.id && f.outcome)
+        /* PR-S2: `follows` xếp MỚI trước; lật bản sao lại để hai lần CÙNG NGÀY (vd. Điều chỉnh rồi Thay) vẫn đúng thứ tự ghi (sort dưới giữ thứ tự khi trùng ngày). */
+        .reverse()
         .map((f) => ({
           on: f.observed_on as string,
           outcome: f.outcome as string,
@@ -2389,6 +2410,10 @@ function caseCardOf(caseId: number, c: any, soBangChung: Map<number, number>) {
           note: (f.note as string | null) ?? null,
           cycleNo: (f.cycle_no as number | null) ?? null,
           late: !!f.late,
+          /* PR-S2 (S4): quyết định của lần đó (continue | adjust | propose | complete | ask_manager | monitor), vấn đề còn tồn, lý do/ghi chú. */
+          decision: (f.next_step as string | null) ?? null,
+          remainingIssue: (f.remaining_issue as string | null) ?? null,
+          decisionNote: (f.decision_note as string | null) ?? null,
         }))
         .sort((a, b) => a.on.localeCompare(b.on)),
     };
@@ -2614,7 +2639,23 @@ export function updateResult(p: Principal, interventionId: number, input: {
     kind: string; description?: string | null;
     performerUserId?: number | null; performerName?: string | null;
     rescheduleTarget?: string | null;
+    performerSelf?: boolean;
   } | null;
+  /**
+   * PR-S2 (S4): quyết định của lần cập nhật: keep | adjust | replace | end | ask_manager. Có thì thay cho cặp `mode`/`nextStep`
+   * (dịch bằng `decisionToStep`). Payload cũ không có `decision` giữ nguyên ý nghĩa.
+   */
+  decision?: string;
+  /** PR-S2 (S4): vấn đề còn tồn. Tuỳ chọn, tối đa 300 ký tự. */
+  remainingIssue?: string | null;
+  /** PR-S2: lý do (bắt buộc khi Điều chỉnh hoặc Thay) hoặc ghi chú (tuỳ chọn). */
+  decisionNote?: string | null;
+  /**
+   * PR-S2 (S2): nội dung mới khi Điều chỉnh. Trường không gửi = giữ nguyên. Không có `kind`: đổi loại là Thay.
+   * Với `decision: 'adjust'`, `performerSelf`/`performerUserId`/`performerName` ở cấp ngoài bị bỏ qua (người thực hiện của
+   * Điều chỉnh thắng), và `followup_due` không đổi thì giữ đúng như cũ.
+   */
+  adjust?: { description?: string | null; performerUserId?: number | null; performerName?: string | null; followupDue?: string | null } | null;
   /** Người thực hiện chu kỳ vừa rồi, nếu chưa ghi lúc lên kế hoạch. */
   performerSelf?: boolean; performerUserId?: number | null; performerName?: string | null;
   /** Điểm GIÁO VIÊN TỰ CHẤM kèm theo — không phải điểm chính thức. */
@@ -2638,8 +2679,17 @@ export function updateResult(p: Principal, interventionId: number, input: {
     throw badRequest('Phương án này đã kết thúc — không cập nhật thêm chu kỳ được.');
   }
 
-  const mode = input.mode && (RESULT_MODES as readonly string[]).includes(input.mode)
-    ? input.mode : 'monitor';
+  /*
+   * PR-S2 (S4): `decision` là cách gọi mới, dịch về ĐÚNG cặp `mode`/`nextStep` mà mọi luật bên dưới đã kiểm.
+   */
+  let modeIn = input.mode;
+  let stepIn = input.nextStep;
+  if (input.decision !== undefined) {
+    if (!(PLAN_DECISIONS as readonly string[]).includes(input.decision)) throw badRequest('Quyết định không hợp lệ.');
+    ({ mode: modeIn, nextStep: stepIn } = decisionToStep(input.decision as PlanDecision));
+  }
+  const mode = modeIn && (RESULT_MODES as readonly string[]).includes(modeIn)
+    ? modeIn : 'monitor';
   if (!(FOLLOWUP_OUTCOMES as readonly string[]).includes(input.outcome)) {
     throw badRequest('Kết quả không hợp lệ với loại case này.');
   }
@@ -2660,12 +2710,13 @@ export function updateResult(p: Principal, interventionId: number, input: {
    * TAB THEO DÕI không hỏi bước tiếp theo: ghi xong là lưu, phương án chạy tiếp một chu kỳ
    * mới. Đó là cả điểm của việc tách hai tab.
    */
-  let nextStep = mode === 'end' ? (input.nextStep ?? '') : 'continue';
+  let nextStep = mode === 'end' ? (stepIn ?? '') : (stepIn === 'adjust' ? 'adjust' : 'continue');
   let completedOn: string | null = null;
 
   if (mode === 'end') {
-    if (!canEndWithOutcome(input.outcome)) {
-      throw badRequest('"Chưa đủ dữ liệu" thì chưa kết thúc phương án được — chọn "Tiếp tục theo dõi".');
+    /* PR-S2 (Q2): Chưa đủ dữ liệu vẫn không Kết thúc suông, nhưng THAY được (`endStepsFor('insufficient')` = ['propose']). */
+    if (!canEndWithOutcome(input.outcome) && nextStep !== 'propose') {
+      throw badRequest('"Chưa đủ dữ liệu" thì chưa kết thúc phương án được, chọn Giữ nguyên, Điều chỉnh hoặc Thay phương án.');
     }
     const allowed = stepsForMode('end', input.outcome);
     if (!(allowed as readonly string[]).includes(nextStep)) {
@@ -2678,9 +2729,21 @@ export function updateResult(p: Principal, interventionId: number, input: {
     if (!isIsoDate(completedOn)) throw badRequest('Ngày hoàn thành không hợp lệ.');
     if (completedOn > demoToday()) throw badRequest('Không ghi được ngày hoàn thành ở tương lai.');
     if (nextStep === 'propose' && !input.newPlan?.kind) {
-      throw badRequest('Chọn "Đề xuất phương án mới" thì phải nói rõ phương án mới là gì.');
+      throw badRequest('Chọn "Thay phương án" thì phải nói rõ phương án mới là gì.');
     }
   }
+  /*
+   * PR-S2: VÌ SAO ĐỔI là điều luật bắt buộc audit (rulebook §18.2 điểm 2). Điều chỉnh và Thay phải có lý do.
+   * Kiểm SAU các lỗi của `mode === 'end'` để câu "phương án mới là gì" vẫn báo trước (phép kiểm [9.1]).
+   */
+  const decisionNote = String(input.decisionNote ?? '').trim() || null;
+  if ((nextStep === 'adjust' || nextStep === 'propose') && (decisionNote ?? '').length < 8) {
+    throw badRequest('Điều chỉnh hoặc thay phương án thì phải ghi Lý do, ít nhất 8 ký tự.');
+  }
+  const remainingIssue = String(input.remainingIssue ?? '').trim() || null;
+  if (remainingIssue && remainingIssue.length > 300) throw badRequest('Vấn đề còn tồn tối đa 300 ký tự.');
+  /* Điều chỉnh: chuẩn hoá TRƯỚC giao dịch; sai thì không ghi gì. */
+  const adjustPatch = nextStep === 'adjust' ? chuanHoaDieuChinh(iv, input.adjust, observedOn) : null;
   const metrics = normalizeMetrics(input.metrics);
   if (input.evidenceAttemptId) {
     const a = conn.prepare('SELECT student_id FROM assessment_attempts WHERE id = ?').get(input.evidenceAttemptId) as any;
@@ -2697,12 +2760,14 @@ export function updateResult(p: Principal, interventionId: number, input: {
       .prepare(
         `INSERT INTO case_followups (case_id, intervention_id, observed_on, observer_user_id,
                                      outcome, note, evidence_attempt_id,
-                                     next_step, cycle_no, cycle_due, late, metrics, created_at)
-         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+                                     next_step, cycle_no, cycle_due, late, metrics,
+                                     remaining_issue, decision_note, created_at)
+         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       )
       .run(iv.case_id, interventionId, observedOn, p.userId,
            input.outcome, note, input.evidenceAttemptId ?? null,
-           nextStep, cycleNo, cycleDue, late, metrics ? JSON.stringify(metrics) : null, nowIso());
+           nextStep, cycleNo, cycleDue, late, metrics ? JSON.stringify(metrics) : null,
+           remainingIssue, decisionNote, nowIso());
     const followupId = Number(fInfo.lastInsertRowid);
 
     const performerUserId = input.performerSelf ? p.userId : (input.performerUserId ?? iv.performer_user_id);
@@ -2721,7 +2786,7 @@ export function updateResult(p: Principal, interventionId: number, input: {
         )
         .run(completedOn, completedOn, performerUserId ?? null, input.performerName ?? null,
              nowIso(), interventionId);
-    } else if (nextStep === 'monitor' || nextStep === 'continue') {
+    } else if (nextStep === 'monitor' || nextStep === 'continue' || nextStep === 'adjust') {
       /*
        * MỞ CHU KỲ MỚI trên CHÍNH phương án này. Không tạo một phương án thứ hai giống hệt:
        * đó vẫn là cùng một việc, chỉ là làm tiếp thêm một vòng nữa.
@@ -2746,6 +2811,10 @@ export function updateResult(p: Principal, interventionId: number, input: {
         )
         .run(cycleNo + 1, observedOn, nextDue, planEndDefault(observedOn), observedOn,
              performerUserId ?? null, input.performerName ?? null, nowIso(), interventionId);
+      /* PR-S2 (S2): Điều chỉnh = cùng PA, đợt mới như Giữ nguyên, rồi đưa bản mới vào và ghi MỘT dòng lịch sử (bản cũ là `iv`). */
+      if (nextStep === 'adjust') {
+        apDungDieuChinh(iv, adjustPatch!, { followupId, actorUserId: p.userId, reason: decisionNote!, on: observedOn });
+      }
     } else if (nextStep === 'propose') {
       /*
        * PHƯƠNG ÁN CŨ ĐƯỢC THAY, KHÔNG PHẢI ĐÃ THÀNH CÔNG. Ghi rõ lý do "Được thay thế" và
@@ -2754,6 +2823,7 @@ export function updateResult(p: Principal, interventionId: number, input: {
       const detail = recordIntervention(p, iv.case_id, {
         kind: input.newPlan!.kind,
         description: input.newPlan!.description ?? null,
+        performerSelf: input.newPlan!.performerSelf ?? false,
         performerUserId: input.newPlan!.performerUserId ?? null,
         performerName: input.newPlan!.performerName ?? null,
         status: 'started', startedDate: observedOn,
@@ -2799,6 +2869,8 @@ export function updateResult(p: Principal, interventionId: number, input: {
         INTERVENTION_KIND_LABEL[iv.kind as InterventionKind] ?? iv.kind,
         NEXT_STEP_LABEL[nextStep as NextStep],
         note || null,
+        decisionNote ? `${nextStep === 'adjust' || nextStep === 'propose' ? 'Lý do' : 'Ghi chú'}: ${decisionNote}` : null,
+        remainingIssue ? `Còn tồn: ${remainingIssue}` : null,
       ].filter(Boolean).join(' · '),
       refTable: 'case_followups', refId: followupId, createdBy: p.userId,
       dedupKey: `followup:${followupId}`,
@@ -2807,7 +2879,7 @@ export function updateResult(p: Principal, interventionId: number, input: {
       actorUserId: p.userId, action: 'case.result.update',
       entityType: 'case_intervention', entityId: interventionId,
       entityLabel: iv.description ?? iv.kind,
-      after: { outcome: input.outcome, mode, nextStep, late: !!late, cycleNo },
+      after: { outcome: input.outcome, mode, nextStep, late: !!late, cycleNo, remainingIssue, decisionNote, adjust: adjustPatch },
     });
     return caseDetail(p, iv.case_id);
   });

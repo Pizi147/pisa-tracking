@@ -442,6 +442,8 @@ function migrateCaseEngine(applied: string[], skipped: string[]) {
     migrateLuatMayChu(conn, applied);
     /* PR-AN: bảng giới hạn số lần thử (AN-1). */
     migrateAuthAttempts(conn, applied);
+    /* PR-S2: lịch sử điều chỉnh PA học thuật + hai cột cập nhật tuần rút gọn. */
+    migrateDieuChinhPa(conn, applied);
 
     /*
      * Case đã đóng theo hệ thống cũ mà không có hướng xử lý: ghi rõ là "đóng theo hệ thống
@@ -3105,4 +3107,51 @@ export function migrateAuthAttempts(conn: any, applied: string[]) {
 );
 CREATE INDEX idx_auth_attempts_key ON auth_attempts(kind, key_hash, at);`);
   applied.push('PR-AN: thêm bảng auth_attempts (giới hạn số lần thử đăng nhập/đăng ký). Dữ liệu cũ giữ nguyên.');
+}
+
+/**
+ * PR-S2 (điều chỉnh PA học thuật, 22/09/2026): bảng `case_intervention_revisions` + cột `case_followups.remaining_issue`, `decision_note`.
+ * KHÔNG điền dữ liệu cũ: trước PR này sửa nội dung PA là ghi đè, bản cũ đã mất, không bịa lại.
+ * Chạy lặp không làm gì. Bản chính dựng từ `schema.sql` nên không đi qua bước này. Câu CREATE phải giống hệt `schema.sql`
+ * (phép kiểm `PR-S2 · Migrate` so từng cột và chỉ mục).
+ */
+export function migrateDieuChinhPa(conn: any, applied: string[]) {
+  const hasTable = (t: string) => !!conn.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name = ?").get(t);
+  const cols = (t: string): string[] => (conn.prepare(`PRAGMA table_info(${t})`).all() as any[]).map((c: any) => c.name);
+  if (!hasTable('case_interventions') || !hasTable('case_followups')) return;
+  const done: string[] = [];
+  if (!hasTable('case_intervention_revisions')) {
+    conn.exec(`
+      CREATE TABLE case_intervention_revisions (
+        id INTEGER PRIMARY KEY,
+        intervention_id INTEGER NOT NULL REFERENCES case_interventions(id),
+        case_id INTEGER NOT NULL REFERENCES sos_cases(id),
+        followup_id INTEGER REFERENCES case_followups(id),
+        source TEXT NOT NULL,
+        old_description TEXT,
+        new_description TEXT,
+        old_performer_user_id INTEGER REFERENCES users(id),
+        old_performer_name TEXT,
+        new_performer_user_id INTEGER REFERENCES users(id),
+        new_performer_name TEXT,
+        old_followup_due TEXT,
+        new_followup_due TEXT,
+        reason TEXT NOT NULL,
+        effective_on TEXT NOT NULL,
+        actor_user_id INTEGER REFERENCES users(id),
+        created_at TEXT NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_iv_revision_iv ON case_intervention_revisions(intervention_id, id);
+      CREATE INDEX IF NOT EXISTS idx_iv_revision_case ON case_intervention_revisions(case_id);
+    `);
+    done.push('bảng case_intervention_revisions');
+  }
+  for (const c of ['remaining_issue', 'decision_note']) {
+    if (!cols('case_followups').includes(c)) {
+      conn.exec(`ALTER TABLE case_followups ADD COLUMN ${c} TEXT`);
+      done.push(`case_followups.${c}`);
+    }
+  }
+  if (!done.length) return;
+  applied.push(`PR-S2: thêm ${done.join(', ')}. Dữ liệu cũ giữ nguyên.`);
 }

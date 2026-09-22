@@ -2521,7 +2521,7 @@ check('[9.1] Hai tab cập nhật kết quả: theo dõi tiếp thì không ph�
     () => cases.updateResult(P.coreTeacher, ivId, {
       mode: 'end', outcome: 'insufficient', nextStep: 'complete', note: 'Chưa có bài mới để nhìn',
     }),
-    /Tiếp tục theo dõi/, '"Chưa đủ dữ liệu" vẫn kết thúc được phương án',
+    /Giữ nguyên, Điều chỉnh hoặc Thay/, '"Chưa đủ dữ liệu" vẫn kết thúc được phương án',
   );
   assertThrows(
     () => cases.updateResult(P.coreTeacher, ivId, {
@@ -2552,9 +2552,10 @@ check('[9.1] Hai tab cập nhật kết quả: theo dõi tiếp thì không ph�
     `Hạn cập nhật mới phải là Chủ nhật kế tiếp, đang là ${iv2.actionDue}`);
   assert(iv2.actionDue > demoToday(), 'Vừa cập nhật xong đã báo quá hạn');
 
-  // "Đề xuất phương án mới" khép phương án cũ với lý do ĐƯỢC THAY THẾ, không phải đã thành công.
+  // "Thay phương án" khép phương án cũ với lý do ĐƯỢC THAY THẾ, không phải đã thành công.
   const replaced = cases.updateResult(P.coreTeacher, ivId, {
     mode: 'end', outcome: 'worse', nextStep: 'propose', note: 'Tự học không ăn thua với em này',
+    decisionNote: 'Tự học không ăn thua nên chuyển sang tutor',
     newPlan: { kind: 'tutor', description: 'Chuyển sang tutor hai buổi mỗi tuần', performerName: 'Tutor C' },
   }) as any;
   const old = replaced.interventions.find((i: any) => i.id === ivId);
@@ -8171,6 +8172,7 @@ check('PR-F · Tỷ lệ có cải thiện là 2/3, KHÔNG phải 2/4: chưa xá
   prfEnd(prfPlan(c.id, 'Ôn Reading tiến bộ một phần (rate)'), 'partial', '2026-09-11');
   prfEnd(prfPlan(c.id, 'Ôn Reading kém hơn (rate)'), 'worse', '2026-09-11', {
     nextStep: 'propose',
+    decisionNote: 'Kém hơn nên thay bằng ôn có bấm giờ (rate)',
     newPlan: { kind: 'self_study', description: 'Thay bằng ôn Reading có bấm giờ (rate)', performerName: 'GVCN' },
   });
   cases.recordIntervention(P.admin, c.id, {
@@ -9440,6 +9442,11 @@ await runSosV3Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, a
 
 const { runLuatMayChuTests } = await import('./luatMayChu.tests.ts');
 await runLuatMayChuTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
+
+// ==================================================================== PR-S2 (điều chỉnh PA học thuật · cập nhật tuần rút gọn)
+
+const { runDieuChinhPaTests } = await import('./dieuChinhPa.tests.ts');
+await runDieuChinhPaTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
 // ==================================================================== PR-Z2 (bản chính trên Netlify + Turso)
 

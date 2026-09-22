@@ -1057,7 +1057,8 @@ CREATE TABLE case_followups (
   evidence_attempt_id INTEGER REFERENCES assessment_attempts(id),
 
   /*
-   * BƯỚC TIẾP THEO người cập nhật đã chọn — complete | monitor | continue | propose | ask_manager.
+   * BƯỚC TIẾP THEO người cập nhật đã chọn — complete | monitor | continue | adjust | propose | ask_manager.
+   * PR-S2: `continue` = Giữ nguyên · `adjust` = Điều chỉnh (xem `case_intervention_revisions`) · `propose` = Thay phương án.
    *
    * Ghi lại vì đây là QUYẾT ĐỊNH, không phải trạng thái suy được. Ba tháng sau, "lần đó em
    * chưa tiến bộ và cô chọn tiếp tục phương án cũ" là một câu khác hẳn "lần đó em chưa tiến
@@ -1082,9 +1083,50 @@ CREATE TABLE case_followups (
    */
   metrics TEXT,
 
-  created_at TEXT NOT NULL
+  created_at TEXT NOT NULL,
+  /*
+   * CẬP NHẬT TUẦN RÚT GỌN (PR-S2 · S4 · nguồn §8). Cột note ở trên là phần Tiến triển.
+   * remaining_issue là vấn đề còn tồn (tuỳ chọn). decision_note là lý do khi Điều chỉnh hoặc Thay (bắt buộc)
+   * hoặc ghi chú khi Giữ nguyên hoặc Kết thúc (tuỳ chọn).
+   */
+  remaining_issue TEXT,
+  decision_note TEXT
 );
 CREATE INDEX idx_followup_case ON case_followups(case_id);
+
+/*
+ * LỊCH SỬ ĐIỀU CHỈNH PHƯƠNG ÁN HỌC THUẬT (PR-S2 · S2 · rulebook §18.2 điểm 2 · nguồn §7).
+ *
+ * Mỗi dòng là MỘT lần sửa nội dung một PA: bản cũ, bản mới, ngày, ai, vì sao. Sửa nội dung không còn ghi đè mất dấu.
+ * "Thay" KHÔNG ghi ở đây: thay là khép PA cũ (`closed_reason = 'superseded'`, `superseded_by`) rồi tạo PA mới;
+ * lý do thay nằm ở `case_followups.decision_note` của lần cập nhật đã thay.
+ *
+ *   source  adjust        Điều chỉnh trong một lần Ghi kết quả (có `followup_id`)
+ *           confirm_edit  Sửa gợi ý tự động từ SOS ngay lúc xác nhận (không có `followup_id`)
+ *
+ * Loại PA (`kind`) không đổi qua điều chỉnh. Đổi loại là Thay.
+ */
+CREATE TABLE case_intervention_revisions (
+  id INTEGER PRIMARY KEY,
+  intervention_id INTEGER NOT NULL REFERENCES case_interventions(id),
+  case_id INTEGER NOT NULL REFERENCES sos_cases(id),
+  followup_id INTEGER REFERENCES case_followups(id),
+  source TEXT NOT NULL,
+  old_description TEXT,
+  new_description TEXT,
+  old_performer_user_id INTEGER REFERENCES users(id),
+  old_performer_name TEXT,
+  new_performer_user_id INTEGER REFERENCES users(id),
+  new_performer_name TEXT,
+  old_followup_due TEXT,
+  new_followup_due TEXT,
+  reason TEXT NOT NULL,
+  effective_on TEXT NOT NULL,
+  actor_user_id INTEGER REFERENCES users(id),
+  created_at TEXT NOT NULL
+);
+CREATE INDEX idx_iv_revision_iv ON case_intervention_revisions(intervention_id, id);
+CREATE INDEX idx_iv_revision_case ON case_intervention_revisions(case_id);
 
 /*
  * BẰNG CHỨNG gắn với case. Một case có thể liên kết nhiều bài đánh giá và nhiều ghi nhận.

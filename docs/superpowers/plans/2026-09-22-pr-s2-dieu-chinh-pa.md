@@ -123,19 +123,19 @@ Nguồn luật: `plan.md` §22.9 (S2, S4, nghiệm thu mục 2) · `thiet-ke/PIS
 
 **Files:** không sửa mã.
 
-- [ ] **Step 1: Worktree.** Từ `main` mới nhất (`git fetch origin && git log -1 origin/main` phải chứa merge PR #56): tạo worktree nhánh `pr-s2-dieu-chinh-pa`
+- [x] **Step 1: Worktree.** Từ `main` mới nhất (`git fetch origin && git log -1 origin/main` phải chứa merge PR #56): tạo worktree nhánh `pr-s2-dieu-chinh-pa`
   (skill `superpowers:using-git-worktrees`), ví dụ `.claude/worktrees/pr-s2-dieu-chinh-pa`. **Không checkout nhánh khác trong thư mục chính.**
   Chạy `npm ci` trong worktree nếu chưa có `node_modules`.
-- [ ] **Step 2: Kiểm không có biến Turso.**
+- [x] **Step 2: Kiểm không có biến Turso.**
 
 ```bash
 node -e "for (const k of ['TURSO_DATABASE_URL','TURSO_AUTH_TOKEN','BAN_CHINH','PISA_CHO_PHEP_MIGRATE_TURSO','PISA_CHO_PHEP_SEED_TURSO']) if (process.env[k]) { console.error('CÓ BIẾN', k); process.exit(1) } ; console.log('sạch')"
 ```
 Expected: `sạch`. Có biến thì đóng cửa sổ, mở cửa sổ mới.
 
-- [ ] **Step 3: Mốc phép kiểm.** Run: `npm test 2>&1 | tail -3`. Expected: `TẤT CẢ 719 KIỂM TRA ĐỀU ĐẠT` (hoặc số lớn hơn nếu `main` đã có PR khác).
+- [x] **Step 3: Mốc phép kiểm.** Run: `npm test 2>&1 | tail -3`. Expected: `TẤT CẢ 719 KIỂM TRA ĐỀU ĐẠT` (hoặc số lớn hơn nếu `main` đã có PR khác).
   Ghi con số vào Nhật ký; mọi "Expected" bên dưới tính cộng dồn từ số này (gọi là **B**).
-- [ ] **Step 4:** Đọc Global Constraints và bảng Q1–Q18. Thấy Q nào sai với đặc tả thì 🛑 hỏi trước khi code.
+- [x] **Step 4:** Đọc Global Constraints và bảng Q1–Q18. Thấy Q nào sai với đặc tả thì 🛑 hỏi trước khi code.
 
 ---
 
@@ -151,7 +151,7 @@ Expected: `sạch`. Có biến thì đóng cửa sổ, mở cửa sổ mới.
 - Produces: bảng `case_intervention_revisions` (cột ở Step 3); cột `case_followups.remaining_issue TEXT`, `case_followups.decision_note TEXT`;
   `export function migrateDieuChinhPa(conn: any, applied: string[]): void`; trong file test: `taoCase()`, `ivRow`, `revRows`, `lastFollow`, `NOW`, `REPO`.
 
-- [ ] **Step 1: Tạo file phép kiểm (đỏ).** `server/src/tests/dieuChinhPa.tests.ts`:
+- [x] **Step 1: Tạo file phép kiểm (đỏ).** `server/src/tests/dieuChinhPa.tests.ts`:
 
 ```ts
 /**
@@ -293,10 +293,10 @@ const { runDieuChinhPaTests } = await import('./dieuChinhPa.tests.ts');
 await runDieuChinhPaTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 ```
 
-- [ ] **Step 2: Chạy, thấy đỏ.** Run: `npm test 2>&1 | grep -E "PR-S2|KIỂM TRA|KHÔNG ĐẠT"`. Expected: ba phép `PR-S2 · Migrate` đầu **✗**
+- [x] **Step 2: Chạy, thấy đỏ.** Run: `npm test 2>&1 | grep -E "PR-S2|KIỂM TRA|KHÔNG ĐẠT"`. Expected: ba phép `PR-S2 · Migrate` đầu **✗**
   (thiếu bảng, hoặc `migrateDieuChinhPa is not a function`); phép "trọn chuỗi" ✓.
 
-- [ ] **Step 3: `schema.sql`.**
+- [x] **Step 3: `schema.sql`.**
 
 (a) Dòng ~1060, chú thích `next_step`: đổi `complete | monitor | continue | propose | ask_manager` thành
 `complete | monitor | continue | adjust | propose | ask_manager`, và thêm dòng chú thích ngay dưới:
@@ -360,7 +360,7 @@ CREATE INDEX idx_iv_revision_iv ON case_intervention_revisions(intervention_id, 
 CREATE INDEX idx_iv_revision_case ON case_intervention_revisions(case_id);
 ```
 
-- [ ] **Step 4: `migrate.ts`.** Gọi ngay sau `migrateLuatMayChu(conn, applied);` (~442):
+- [x] **Step 4: `migrate.ts`.** Gọi ngay sau `migrateLuatMayChu(conn, applied);` (~442):
 
 ```ts
     /* PR-S2: lịch sử điều chỉnh PA học thuật + hai cột cập nhật tuần rút gọn. */
@@ -419,9 +419,9 @@ export function migrateDieuChinhPa(conn: any, applied: string[]) {
 }
 ```
 
-- [ ] **Step 5: Chạy.** Run: `npm test 2>&1 | grep -E "PR-S2|KIỂM TRA|KHÔNG ĐẠT"`. Expected: bốn phép `PR-S2 · Migrate` ✓, tổng **B + 4**.
+- [x] **Step 5: Chạy.** Run: `npm test 2>&1 | grep -E "PR-S2|KIỂM TRA|KHÔNG ĐẠT"`. Expected: bốn phép `PR-S2 · Migrate` ✓, tổng **B + 4**.
   Nếu `preS2()` lỗi ở `DROP COLUMN` (câu CREATE bị cắt sai): kiểm lại chú thích hai cột cuối, không được có dấu phẩy.
-- [ ] **Step 6: Commit.**
+- [x] **Step 6: Commit.**
 
 ```bash
 git add server/src/schema.sql server/src/migrate.ts server/src/tests/dieuChinhPa.tests.ts server/src/tests/run.ts
@@ -444,7 +444,7 @@ git commit -m "PR-S2 (1): bảng lịch sử điều chỉnh PA + hai cột cậ
   `decisionBlockedReason(outcome: string, d: PlanDecision): string | null` · `decisionNeedsReason(d: string): boolean` ·
   `CONFIRM_EDIT_REASON: string` · `NextStep` thêm `'adjust'`.
 
-- [ ] **Step 1: Phép kiểm (đỏ).** Thêm vào file test, ngay trên dòng `// ---- các task sau …`:
+- [x] **Step 1: Phép kiểm (đỏ).** Thêm vào file test, ngay trên dòng `// ---- các task sau …`:
 
 ```ts
   // ================================================================== 2. Luật quyết định (shared/domain)
@@ -484,9 +484,9 @@ git commit -m "PR-S2 (1): bảng lịch sử điều chỉnh PA + hai cột cậ
   });
 ```
 
-- [ ] **Step 2: Chạy, thấy đỏ.** Run: `npm test 2>&1 | grep -E "PR-S2 · S4|KHÔNG ĐẠT"`. Expected: hai phép mới ✗ (`decisionsFor is not a function`).
+- [x] **Step 2: Chạy, thấy đỏ.** Run: `npm test 2>&1 | grep -E "PR-S2 · S4|KHÔNG ĐẠT"`. Expected: hai phép mới ✗ (`decisionsFor is not a function`).
 
-- [ ] **Step 3: Sửa `shared/domain/cases.ts`.**
+- [x] **Step 3: Sửa `shared/domain/cases.ts`.**
 
 (a) Dòng 802: `export const NEXT_STEPS = ['complete', 'monitor', 'continue', 'adjust', 'propose', 'ask_manager'] as const;`
 
@@ -597,10 +597,10 @@ export function decisionNeedsReason(d: string): boolean {
 export const CONFIRM_EDIT_REASON = 'Chỉnh khi xác nhận gợi ý tự động';
 ```
 
-- [ ] **Step 4: Chạy.** Run: `npm test 2>&1 | grep -E "PR-S2|\[11\]|KIỂM TRA|KHÔNG ĐẠT"`. Expected: hai phép mới ✓; phép cũ `[11] Nhãn…` ✓ (nó lặp
+- [x] **Step 4: Chạy.** Run: `npm test 2>&1 | grep -E "PR-S2|\[11\]|KIỂM TRA|KHÔNG ĐẠT"`. Expected: hai phép mới ✓; phép cũ `[11] Nhãn…` ✓ (nó lặp
   `NEXT_STEPS` nên đòi `adjust` có đủ nhãn và lời giải thích). Tổng **B + 6**.
   Phép cũ `[9.1]` (~run.ts:2519) **có thể** chưa đỏ ở đây; nó đỏ ở Task 4 khi câu lỗi đổi.
-- [ ] **Step 5: Commit.** `git add shared/domain/cases.ts server/src/tests/dieuChinhPa.tests.ts` ·
+- [x] **Step 5: Commit.** `git add shared/domain/cases.ts server/src/tests/dieuChinhPa.tests.ts` ·
   `git commit -m "PR-S2 (2): luật quyết định Giữ nguyên / Điều chỉnh / Thay / Kết thúc dùng chung"`
 
 ---
@@ -623,7 +623,7 @@ export const CONFIRM_EDIT_REASON = 'Chỉnh khi xác nhận gợi ý tự độn
 
 Task này không có phép kiểm riêng. Hàm được kiểm qua `updateResult` ở Task 4 (đỏ trước, xanh sau).
 
-- [ ] **Step 1: Tạo file.**
+- [x] **Step 1: Tạo file.**
 
 ```ts
 import { db } from '../db.ts';
@@ -750,8 +750,8 @@ export function lichSuDieuChinhCuaCase(caseId: number): Map<number, BanDieuChinh
 }
 ```
 
-- [ ] **Step 2: Build.** Run: `npm run build:server`. Expected: không lỗi.
-- [ ] **Step 3: Commit.** `git add server/src/cases/planRevisions.ts` · `git commit -m "PR-S2 (3): mô-đun lịch sử điều chỉnh PA"`
+- [x] **Step 2: Build.** Run: `npm run build:server`. Expected: không lỗi.
+- [x] **Step 3: Commit.** `git add server/src/cases/planRevisions.ts` · `git commit -m "PR-S2 (3): mô-đun lịch sử điều chỉnh PA"`
 
 ---
 
@@ -770,7 +770,7 @@ export function lichSuDieuChinhCuaCase(caseId: number): Map<number, BanDieuChinh
   Ghi `case_followups.next_step = 'adjust'` cho Điều chỉnh. Chưa đủ dữ liệu + Thay được nhận (Q2). Câu lỗi mới: `"Chưa đủ dữ liệu" thì chưa kết thúc phương án được, chọn Giữ nguyên, Điều chỉnh hoặc Thay phương án.` ·
   `Điều chỉnh hoặc thay phương án thì phải ghi Lý do, ít nhất 8 ký tự.` · `Vấn đề còn tồn tối đa 300 ký tự.`
 
-- [ ] **Step 1: Phép kiểm (đỏ).** Thêm vào file test, ngay trên dòng `// ---- các task sau …`:
+- [x] **Step 1: Phép kiểm (đỏ).** Thêm vào file test, ngay trên dòng `// ---- các task sau …`:
 
 ```ts
   // ================================================================== 3. Ghi kết quả với quyết định
@@ -895,10 +895,10 @@ export function lichSuDieuChinhCuaCase(caseId: number): Map<number, BanDieuChinh
   });
 ```
 
-- [ ] **Step 2: Chạy, thấy đỏ.** Run: `npm test 2>&1 | grep -E "PR-S2 · S[24]|KHÔNG ĐẠT"`. Expected: tám phép mới ✗
+- [x] **Step 2: Chạy, thấy đỏ.** Run: `npm test 2>&1 | grep -E "PR-S2 · S[24]|KHÔNG ĐẠT"`. Expected: tám phép mới ✗
   (ví dụ Giữ nguyên: `remaining_issue` NULL; Điều chỉnh: không có lỗi "Lý do"; Thay: `Cần ghi ai là người thực hiện` hoặc không có lỗi "Lý do").
 
-- [ ] **Step 3: Sửa `cases.ts`.**
+- [x] **Step 3: Sửa `cases.ts`.**
 
 (a) Import, **một dòng riêng** ngay dưới dòng `import { NOT_UNCONFIRMED_PRESET, sosCaseState } from './sosState.ts';` (~27). Không sửa khối import lớn đầu file:
 
@@ -1016,15 +1016,15 @@ và trong kiểu `newPlan` thêm `performerSelf?: boolean;` (Q13).
 
 (k) `writeAudit` cuối hàm: `after: { outcome: input.outcome, mode, nextStep, late: !!late, cycleNo, remainingIssue, decisionNote, adjust: adjustPatch }`.
 
-- [ ] **Step 4: Chạy.** Run: `npm test 2>&1 | grep -E "PR-S2|\[9.1\]|PR-F|KIỂM TRA|KHÔNG ĐẠT"`. Expected: tám phép mới ✓. Ba phép cũ **có thể đỏ**:
+- [x] **Step 4: Chạy.** Run: `npm test 2>&1 | grep -E "PR-S2|\[9.1\]|PR-F|KIỂM TRA|KHÔNG ĐẠT"`. Expected: tám phép mới ✓. Ba phép cũ **có thể đỏ**:
   `[9.1] Hai tab cập nhật kết quả…` (câu lỗi đổi, và Thay thiếu lý do), và một phép `PR-F` ở ~8173 (Thay thiếu lý do). Sửa ở Step 5.
-- [ ] **Step 5: Sửa ba phép kiểm cũ bị luật mới thay** (`server/src/tests/run.ts`):
+- [x] **Step 5: Sửa ba phép kiểm cũ bị luật mới thay** (`server/src/tests/run.ts`):
   - ~2524: `/Tiếp tục theo dõi/` → `/Giữ nguyên, Điều chỉnh hoặc Thay/`.
   - ~2557 (`mode: 'end', outcome: 'worse', nextStep: 'propose', note: 'Tự học không ăn thua với em này',`): thêm
     `decisionNote: 'Tự học không ăn thua nên chuyển sang tutor',` ngay sau `note`. Đổi chú thích ~2555 "Đề xuất phương án mới" → "Thay phương án".
   - ~8173 (`nextStep: 'propose',` trong `prfEnd(… 'worse' …)`): thêm `decisionNote: 'Kém hơn nên thay bằng ôn có bấm giờ (rate)',`.
   Chạy lại: Expected: tất cả ✓, tổng **B + 14**.
-- [ ] **Step 6: Commit.**
+- [x] **Step 6: Commit.**
 
 ```bash
 git add server/src/cases/cases.ts server/src/tests/dieuChinhPa.tests.ts server/src/tests/run.ts
@@ -1047,7 +1047,7 @@ git commit -m "PR-S2 (4): Ghi kết quả nhận quyết định Giữ/Điều c
   - `skillSupportBoard(...).rows[r].cases[c].plans[k]` thêm `closedReason: string | null`, `supersededBy: number | null`, `revisions: BanDieuChinh[]`;
     `updates[u]` thêm `decision: string | null` (giá trị `next_step`), `remainingIssue: string | null`, `decisionNote: string | null`.
 
-- [ ] **Step 1: Phép kiểm (đỏ).**
+- [x] **Step 1: Phép kiểm (đỏ).**
 
 ```ts
   // ================================================================== 4. Đọc lịch sử
@@ -1099,9 +1099,9 @@ git commit -m "PR-S2 (4): Ghi kết quả nhận quyết định Giữ/Điều c
 
 Lưu ý: `old.updates` chỉ gồm lần cập nhật **có kết quả** (`f.outcome`). Cả hai lần ở đây đều có kết quả (kể cả `insufficient`), nên đủ 2.
 
-- [ ] **Step 2: Chạy, thấy đỏ.** Expected: hai phép mới ✗ (`iv.revisions` undefined).
+- [x] **Step 2: Chạy, thấy đỏ.** Expected: hai phép mới ✗ (`iv.revisions` undefined).
 
-- [ ] **Step 3: `caseDetail`.** Ngay **trên** `const interventions = (conn` (~1406):
+- [x] **Step 3: `caseDetail`.** Ngay **trên** `const interventions = (conn` (~1406):
 
 ```ts
   /* PR-S2 (S2): lịch sử điều chỉnh của mọi PA trong Case, một truy vấn. */
@@ -1123,7 +1123,7 @@ Trong `.map((f) => ({ … }))` của `followups` (~1471–1477), thêm sau `metr
       decisionNote: (f.decision_note ?? null) as string | null,
 ```
 
-- [ ] **Step 4: Thân `caseCardOf`.** **Không** sửa dòng khai báo hàm, **không** sửa khối `attachmentCount` (vùng PR-AN).
+- [x] **Step 4: Thân `caseCardOf`.** **Không** sửa dòng khai báo hàm, **không** sửa khối `attachmentCount` (vùng PR-AN).
   Ngay sau câu `const follows = conn … .all(caseId) as any[];` (~2323), thêm:
 
 ```ts
@@ -1153,8 +1153,8 @@ Trong `.map((f) => ({ … }))` của `updates` (~2362–2370), thêm sau `late: 
           decisionNote: (f.decision_note as string | null) ?? null,
 ```
 
-- [ ] **Step 5: Chạy.** Expected: hai phép mới ✓; phép cũ `PR-HV · Q8` (`hoSoHocVien.tests.ts`) vẫn ✓. Tổng **B + 16**.
-- [ ] **Step 6: Commit.** `git add server/src/cases/cases.ts server/src/tests/dieuChinhPa.tests.ts` ·
+- [x] **Step 5: Chạy.** Expected: hai phép mới ✓; phép cũ `PR-HV · Q8` (`hoSoHocVien.tests.ts`) vẫn ✓. Tổng **B + 16**.
+- [x] **Step 6: Commit.** `git add server/src/cases/cases.ts server/src/tests/dieuChinhPa.tests.ts` ·
   `git commit -m "PR-S2 (5): chi tiết Case và bảng kỹ năng trả lịch sử điều chỉnh, chuỗi Được thay thế, quyết định từng lần"`
 
 ---
@@ -1171,7 +1171,7 @@ Trong `.map((f) => ({ … }))` của `updates` (~2362–2370), thêm sau `late: 
 - Consumes: `ghiBanDieuChinh` (Task 3), `CONFIRM_EDIT_REASON` (Task 2).
 - Produces: `confirmPresetPlan(p, id, patch: { description?; followupDue?; reason?: string | null })`; route nhận `reason` trong body.
 
-- [ ] **Step 1: Phép kiểm (đỏ).**
+- [x] **Step 1: Phép kiểm (đỏ).**
 
 ```ts
   // ================================================================== 5. Gợi ý tự động và "Ghi đã làm"
@@ -1206,9 +1206,9 @@ Trong `.map((f) => ({ … }))` của `updates` (~2362–2370), thêm sau `late: 
   });
 ```
 
-- [ ] **Step 2: Chạy, thấy đỏ.** Expected: hai phép mới ✗.
+- [x] **Step 2: Chạy, thấy đỏ.** Expected: hai phép mới ✗.
 
-- [ ] **Step 3: `sosAuto.ts`.** Thêm import (một dòng riêng dưới các import có sẵn):
+- [x] **Step 3: `sosAuto.ts`.** Thêm import (một dòng riêng dưới các import có sẵn):
 
 ```ts
 import { ghiBanDieuChinh } from './planRevisions.ts';
@@ -1234,22 +1234,22 @@ Trong `tx(() => { … })`, ngay **sau** câu `UPDATE case_interventions … WHER
     }
 ```
 
-- [ ] **Step 4: Route.** `server/src/routes/index.ts`, khối `api.post('/interventions/:id/confirm', …)` (~1186–1192). Trong object truyền cho
+- [x] **Step 4: Route.** `server/src/routes/index.ts`, khối `api.post('/interventions/:id/confirm', …)` (~1186–1192). Trong object truyền cho
   `confirmPresetPlan`, thêm sau `followupDue: …`:
 
 ```ts
     reason: typeof b.reason === 'string' ? b.reason : undefined,
 ```
 
-- [ ] **Step 5: `completeIntervention`** (`cases.ts` ~1059–1068). Xoá dòng `description = COALESCE(NULLIF(?, ''), description),` trong câu UPDATE,
+- [x] **Step 5: `completeIntervention`** (`cases.ts` ~1059–1068). Xoá dòng `description = COALESCE(NULLIF(?, ''), description),` trong câu UPDATE,
   và xoá tham số `input.note ?? '',` tương ứng trong `.run(…)`. Thêm chú thích một dòng ngay trên `conn`:
 
 ```ts
     /* PR-S2 (S2): ghi chú KHÔNG ghi đè mô tả PA nữa (trước đây là ghi đè mất dấu). Ghi chú nằm ở hành trình và audit bên dưới. */
 ```
 
-- [ ] **Step 6: Chạy.** Expected: hai phép mới ✓; các phép `PR-T` (`sosV3.tests.ts`) về xác nhận và thay gợi ý vẫn ✓. Tổng **B + 18**.
-- [ ] **Step 7: Commit.** `git add server/src/cases/sosAuto.ts server/src/routes/index.ts server/src/cases/cases.ts server/src/tests/dieuChinhPa.tests.ts` ·
+- [x] **Step 6: Chạy.** Expected: hai phép mới ✓; các phép `PR-T` (`sosV3.tests.ts`) về xác nhận và thay gợi ý vẫn ✓. Tổng **B + 18**.
+- [x] **Step 7: Commit.** `git add server/src/cases/sosAuto.ts server/src/routes/index.ts server/src/cases/cases.ts server/src/tests/dieuChinhPa.tests.ts` ·
   `git commit -m "PR-S2 (6): sửa gợi ý lúc xác nhận ghi lịch sử; Ghi đã làm không ghi đè mô tả"`
 
 ---
@@ -1264,7 +1264,7 @@ Trong `tx(() => { … })`, ngay **sau** câu `UPDATE case_interventions … WHER
 - Consumes: `effectiveness.planOutcomes({ studentIds })` (mỗi phần tử `{ id, kind, outcome, group, supersededBy }`), `improvementRate({ studentIds })` → `{ n, N, … }`,
   `plansNeedingEvaluation({ studentIds })` → `{ count, ids }` (có sẵn).
 
-- [ ] **Step 1: Phép kiểm.** Hai phép đầu **dự kiến xanh ngay** (khoá hành vi, Q9); nếu đỏ thì 🛑: luật thống kê đã lệch, báo lại chứ không tự sửa. Phép thứ ba (Q2) đỏ trước khi sửa.
+- [x] **Step 1: Phép kiểm.** Hai phép đầu **dự kiến xanh ngay** (khoá hành vi, Q9); nếu đỏ thì 🛑: luật thống kê đã lệch, báo lại chứ không tự sửa. Phép thứ ba (Q2) đỏ trước khi sửa.
 
 ```ts
   // ================================================================== 6. Thống kê hiệu quả
@@ -1315,9 +1315,9 @@ Trong `tx(() => { … })`, ngay **sau** câu `UPDATE case_interventions … WHER
   });
 ```
 
-- [ ] **Step 2: Chạy.** Expected: hai phép đầu ✓ (khoá hành vi). Phép thứ ba **✗** ở dòng F05 (`need.count === 1`): `plansNeedingEvaluation` hiện đếm mọi PA
+- [x] **Step 2: Chạy.** Expected: hai phép đầu ✓ (khoá hành vi). Phép thứ ba **✗** ở dòng F05 (`need.count === 1`): `plansNeedingEvaluation` hiện đếm mọi PA
   không xác định, kể cả PA đã bị thay. (Nếu nó đỏ ở chỗ khác, ví dụ `rate.N`, thì 🛑 báo lại.)
-- [ ] **Step 3: Sửa `server/src/cases/effectiveness.ts` — đúng MỘT dòng** trong `plansNeedingEvaluation` (~297):
+- [x] **Step 3: Sửa `server/src/cases/effectiveness.ts` — đúng MỘT dòng** trong `plansNeedingEvaluation` (~297):
 
 ```ts
   /*
@@ -1328,8 +1328,8 @@ Trong `tx(() => { … })`, ngay **sau** câu `UPDATE case_interventions … WHER
 ```
 
   Không sửa gì khác trong file (ma trận §5.2: file này của Pb ở đợt 4).
-- [ ] **Step 4: Chạy.** Expected: ba phép ✓; các phép cũ `PR-F · F05` (run.ts, grep `F05`) vẫn ✓. Tổng **B + 21**.
-- [ ] **Step 5: Commit.** `git add server/src/cases/effectiveness.ts server/src/tests/dieuChinhPa.tests.ts` ·
+- [x] **Step 4: Chạy.** Expected: ba phép ✓; các phép cũ `PR-F · F05` (run.ts, grep `F05`) vẫn ✓. Tổng **B + 21**.
+- [x] **Step 5: Commit.** `git add server/src/cases/effectiveness.ts server/src/tests/dieuChinhPa.tests.ts` ·
   `git commit -m "PR-S2 (7): khoá luật thống kê khi Giữ / Điều chỉnh / Thay; PA bị thay khi chưa đủ dữ liệu không vào F05"`
 
 ---
@@ -1355,7 +1355,7 @@ Trong `tx(() => { … })`, ngay **sau** câu `UPDATE case_interventions … WHER
 (2) **Ngăn Case** (mở từ Việc cần làm hoặc từ hồ sơ) › khối PA trong dòng thời gian › nút **Ghi kết quả**: form trong hộp thoại "Ghi kết quả".
 Không có lối vào nào khác (G-12).
 
-- [ ] **Step 1: Tạo `CapNhatTuan.tsx`.**
+- [x] **Step 1: Tạo `CapNhatTuan.tsx`.**
 
 ```tsx
 import { useState } from 'react';
@@ -1663,7 +1663,7 @@ export function LichSuDieuChinh({ revisions }: { revisions: BanDieuChinh[] }) {
 
 Ghi chú: bản **hiện tại** của mô tả là tên PA hiển thị ngay trên dòng PA, nên lịch sử chỉ ghi "Trước: …". Muốn xem chuỗi đủ thì đọc từ dưới lên.
 
-- [ ] **Step 2: `SkillBoard.tsx`.**
+- [x] **Step 2: `SkillBoard.tsx`.**
   - Dòng 9: `import { ActionDialog, OutcomeDialog } from './CasePanel.tsx';` và thêm
     `import { CapNhatTuanForm, LichSuDieuChinh, type BanDieuChinh } from './CapNhatTuan.tsx';`
   - Trong `KhoiPhuongAn`, khối `{editing && ( <InlineResult … /> )}` (~594–597) thay bằng:
@@ -1686,7 +1686,7 @@ Ghi chú: bản **hiện tại** của mô tả là tên PA hiển thị ngay tr
   - `LichSuDieuChinh` và kiểu `BanDieuChinh` chưa dùng ở bước này, Task 9 mới dùng. Dự án không bật `noUnusedLocals`, nên import chưa dùng
     không làm hỏng typecheck. Để nguyên.
 
-- [ ] **Step 3: `CasePanel.tsx`.** Thay toàn bộ hàm `ResultDialog` (~1073–1280) bằng:
+- [x] **Step 3: `CasePanel.tsx`.** Thay toàn bộ hàm `ResultDialog` (~1073–1280) bằng:
 
 ```tsx
 /**
@@ -1715,9 +1715,9 @@ export function ResultDialog({ iv, onClose, onDone }: {
   `canEndWithOutcome`, `stepsForMode`, `type NextStep`. Giữ `RESCHEDULE_TARGETS`, `RESCHEDULE_TARGET_LABEL`, `interventionKindsFor`, `FOLLOWUP_OUTCOMES`,
   `SectionNote`… **nếu** `ActionDialog`/`OutcomeDialog` còn dùng (grep từng tên trước khi xoá).
 
-- [ ] **Step 4: Kiểm kiểu và bộ phép kiểm.** Run: `npm run typecheck` rồi `npm test 2>&1 | tail -3`. Expected: typecheck sạch; **B + 21** ✓
+- [x] **Step 4: Kiểm kiểu và bộ phép kiểm.** Run: `npm run typecheck` rồi `npm test 2>&1 | tail -3`. Expected: typecheck sạch; **B + 21** ✓
   (phép quét chữ `PR-H` và `hoSoHocVien` vẫn xanh).
-- [ ] **Step 5: Commit.** `git add web/src/modules/cases/CapNhatTuan.tsx web/src/modules/cases/SkillBoard.tsx web/src/modules/cases/CasePanel.tsx` ·
+- [x] **Step 5: Commit.** `git add web/src/modules/cases/CapNhatTuan.tsx web/src/modules/cases/SkillBoard.tsx web/src/modules/cases/CasePanel.tsx` ·
   `git commit -m "PR-S2 (8): một form Ghi kết quả 5 mục (Giữ/Điều chỉnh/Thay/Kết thúc) cho hồ sơ học viên và ngăn Case"`
 
 ---
@@ -1740,7 +1740,7 @@ export function ResultDialog({ iv, onClose, onDone }: {
 - **Ngăn Case › khối PA**: dưới mô tả có một dòng `Thay cho: …` hoặc `Được thay bằng: …` (khi có); `<details>` thu gọn "Đã điều chỉnh {n} lần" chứa
   `LichSuDieuChinh`; mỗi khối cập nhật thêm `Còn tồn: …` và `Lý do/Ghi chú: …`. "chu kỳ {n}" → "Đợt {n}". Nút "Cập nhật kết quả" → **"Ghi kết quả"**.
 
-- [ ] **Step 1: Kiểu `Plan` ở `SkillBoard.tsx`.** Thêm vào type `Plan` (sau `lastNote`):
+- [x] **Step 1: Kiểu `Plan` ở `SkillBoard.tsx`.** Thêm vào type `Plan` (sau `lastNote`):
 
 ```ts
   /** PR-S2: khép lại vì sao (`superseded` = Được thay thế) và PA nào thay nó. */
@@ -1751,7 +1751,7 @@ export function ResultDialog({ iv, onClose, onDone }: {
 
   và trong phần tử `updates` thêm `decision: string | null; remainingIssue: string | null; decisionNote: string | null;`.
 
-- [ ] **Step 2: `KhoiPhuongAn` nhận danh sách PA của thẻ** để đọc tên PA thay/bị thay. Tìm chỗ gọi `<KhoiPhuongAn p={…} canEdit={…} onChanged={…} />`
+- [x] **Step 2: `KhoiPhuongAn` nhận danh sách PA của thẻ** để đọc tên PA thay/bị thay. Tìm chỗ gọi `<KhoiPhuongAn p={…} canEdit={…} onChanged={…} />`
   trong `TheCase` (grep `KhoiPhuongAn p=`), thêm prop `plans={c.plans}`. Chữ ký:
   `function KhoiPhuongAn({ p, plans, canEdit, onChanged }: { p: Plan; plans: Plan[]; canEdit: boolean; onChanged?: () => void; })`.
   Trong thân, trên `return`:
@@ -1761,7 +1761,7 @@ export function ResultDialog({ iv, onClose, onDone }: {
   const thayCho = plans.find((x) => x.supersededBy === p.id) ?? null;
 ```
 
-- [ ] **Step 3: Dòng phụ.** Trong `<span className="block text-[11px] text-slate-500 mt-0.5">` (dòng người thực hiện), sau `{p.completedOn && …}` thêm:
+- [x] **Step 3: Dòng phụ.** Trong `<span className="block text-[11px] text-slate-500 mt-0.5">` (dòng người thực hiện), sau `{p.completedOn && …}` thêm:
 
 ```tsx
               {p.closedReason === 'superseded'
@@ -1769,7 +1769,7 @@ export function ResultDialog({ iv, onClose, onDone }: {
                 : p.revisions.length > 0 && <> · điều chỉnh {p.revisions.length} lần</>}
 ```
 
-- [ ] **Step 4: Phần mở ▸.** Trong `<ol id={historyId} …>`:
+- [x] **Step 4: Phần mở ▸.** Trong `<ol id={historyId} …>`:
   - Dòng **đầu** (trước `{p.completedOn && !running && …}`):
 
 ```tsx
@@ -1798,7 +1798,7 @@ export function ResultDialog({ iv, onClose, onDone }: {
     `{thayCho && <li className="text-[11px] text-slate-500">Thay cho: {thayCho.name}</li>}`
   - Import `NEXT_STEP_LABEL` từ `@shared/domain/index.ts` (thêm vào khối import 11–13).
 
-- [ ] **Step 5: `CasePanel.tsx › InterventionBody`.** Trên `return (`:
+- [x] **Step 5: `CasePanel.tsx › InterventionBody`.** Trên `return (`:
 
 ```tsx
   const all: any[] = data.interventions ?? [];
@@ -1837,8 +1837,8 @@ export function ResultDialog({ iv, onClose, onDone }: {
 
   Nút `Cập nhật kết quả` (~584) → `Ghi kết quả`.
 
-- [ ] **Step 6: Kiểm.** Run: `npm run typecheck` rồi `npm test 2>&1 | tail -3`. Expected: sạch; **B + 21** ✓.
-- [ ] **Step 7: Commit.** `git add web/src/modules/cases/SkillBoard.tsx web/src/modules/cases/CasePanel.tsx` ·
+- [x] **Step 6: Kiểm.** Run: `npm run typecheck` rồi `npm test 2>&1 | tail -3`. Expected: sạch; **B + 21** ✓.
+- [x] **Step 7: Commit.** `git add web/src/modules/cases/SkillBoard.tsx web/src/modules/cases/CasePanel.tsx` ·
   `git commit -m "PR-S2 (9): hiện lịch sử điều chỉnh, chuỗi Được thay thế, vấn đề còn tồn và lý do (một dòng phụ, chi tiết trong ▸ và ngăn Case)"`
 
 ---
@@ -1847,22 +1847,22 @@ export function ResultDialog({ iv, onClose, onDone }: {
 
 **Files:** `plan.md` (§22.9), `CODE_MAP.md`
 
-- [ ] **Step 1: `plan.md` §22.9** (~2892–2898): đổi `- [ ] **S2.**` → `- [x] **S2.** *(PR-S2)*` và `- [ ] **S4.**` → `- [x] **S4.** *(PR-S2)*`; thêm một dòng
+- [x] **Step 1: `plan.md` §22.9** (~2892–2898): đổi `- [ ] **S2.**` → `- [x] **S2.** *(PR-S2)*` và `- [ ] **S4.**` → `- [x] **S4.** *(PR-S2)*`; thêm một dòng
   dưới mỗi mục:
   - S2: `**PR-S2:** bảng \`case_intervention_revisions\` (bản cũ · bản mới · ngày · ai · lý do); Điều chỉnh = cùng PA, không đổi loại; Thay = chuỗi \`superseded_by\` có sẵn + lý do bắt buộc; sửa gợi ý lúc xác nhận cũng ghi lịch sử; \`completeIntervention\` thôi ghi đè mô tả. Nghiệm thu mục 2 khoá bằng phép kiểm "Điều chỉnh hai lần".`
   - S4: `**PR-S2:** form Ghi kết quả 5 mục (kết quả · tiến triển · vấn đề còn tồn · Giữ nguyên/Điều chỉnh/Thay phương án/Kết thúc phương án · ghi chú hoặc lý do), dùng chung ở hồ sơ học viên và ngăn Case (\`web/src/modules/cases/CapNhatTuan.tsx\`).`
-- [ ] **Step 2: `CODE_MAP.md`**: thêm hai dòng vào bảng gần dòng "Thẻ case" (~28):
+- [x] **Step 2: `CODE_MAP.md`**: thêm hai dòng vào bảng gần dòng "Thẻ case" (~28):
   - `| **Ghi kết quả PA** (cập nhật tuần 5 mục; Giữ nguyên / Điều chỉnh / Thay / Kết thúc) | \`web/src/modules/cases/CapNhatTuan.tsx\` → \`CapNhatTuanForm\` | \`server/src/cases/cases.ts\` → \`updateResult\` |`
   - `| **Lịch sử điều chỉnh PA** (bản cũ · khi nào · ai · vì sao) | \`web/src/modules/cases/CapNhatTuan.tsx\` → \`LichSuDieuChinh\` | \`server/src/cases/planRevisions.ts\` |`
-- [ ] **Step 3: Commit.** `git add plan.md CODE_MAP.md` · `git commit -m "PR-S2 (10): tài liệu plan.md §22.9 (S2, S4) và CODE_MAP"`
+- [x] **Step 3: Commit.** `git add plan.md CODE_MAP.md` · `git commit -m "PR-S2 (10): tài liệu plan.md §22.9 (S2, S4) và CODE_MAP"`
 
 ---
 
 ### Task 11: Nghiệm thu: kiểm đủ, migrate lặp trên bản sao, KIỂM bấm thử, rà soát, rebase, mở PR
 
-- [ ] **Step 1: Chuỗi kiểm đầy đủ.** Run: `npm run check`. Expected: build sạch, `TẤT CẢ B+21 KIỂM TRA ĐỀU ĐẠT` (~740), typecheck sạch. Ghi số vào Nhật ký.
+- [x] **Step 1: Chuỗi kiểm đầy đủ.** Run: `npm run check`. Expected: build sạch, `TẤT CẢ B+21 KIỂM TRA ĐỀU ĐẠT` (~740), typecheck sạch. Ghi số vào Nhật ký.
 
-- [ ] **Step 2: Migrate lặp trên BẢN SAO database dev** (không bao giờ trên file gốc, không bao giờ trên Turso). Bash, trong worktree:
+- [x] **Step 2: Migrate lặp trên BẢN SAO database dev** (không bao giờ trên file gốc, không bao giờ trên Turso). Bash, trong worktree:
 
 ```bash
 SCR="$(node -e "console.log(require('os').tmpdir())")/pr-s2-migrate"
@@ -1876,7 +1876,7 @@ PISA_DB="$SCR/ban-sao.sqlite" npm run migrate
   Expected: lần một có dòng `✓ PR-S2: thêm bảng case_intervention_revisions, case_followups.remaining_issue, case_followups.decision_note…`
   (nếu database dev còn cũ) hoặc không có gì; lần hai **không** có dòng PR-S2.
 
-- [ ] **Step 3: Chuẩn bị bấm thử** trên database **riêng** của worktree, **không** dùng cổng 4000 và 5173:
+- [x] **Step 3: Chuẩn bị bấm thử** trên database **riêng** của worktree, **không** dùng cổng 4000 và 5173:
 
 ```bash
 KIEM="$(node -e "console.log(require('os').tmpdir())")/pr-s2-kiem.sqlite"
@@ -1892,7 +1892,7 @@ export default { ...base, server: { port: 5327, strictPort: true, proxy: { '/api
   Mở `http://localhost:5327` (Playwright kênh Chrome, theo bộ nhớ "Máy chủ dev trong worktree"; **không** dùng `preview_start` vì nó chạy từ thư mục chính).
   Tài khoản demo: xem `DEMO.md`.
 
-- [ ] **Step 4: KIỂM, bấm thử ba vai.** Ghi kết quả từng ý vào Nhật ký (chữ đọc được từ trang là đủ; có ảnh chụp thì tốt hơn).
+- [x] **Step 4: KIỂM, bấm thử ba vai.** Ghi kết quả từng ý vào Nhật ký (chữ đọc được từ trang là đủ; có ảnh chụp thì tốt hơn).
   1. **GVBM Listening MB-FT 101** › Hồ sơ một học viên có Case Listening đang có PA chạy › thẻ Case › dòng PA › **Ghi kết quả**:
      - Form hiện đúng 5 mục theo thứ tự. Chưa chọn kết quả thì 4 nút quyết định mờ, rê chuột có `title` "Chọn kết quả trước.".
      - Chọn **Chưa đủ dữ liệu**: **Giữ nguyên**, **Điều chỉnh**, **Thay phương án** sáng; "Kết thúc phương án" mờ, rê chuột thấy câu chặn; không có nút "Xin hỗ trợ từ Quản lý".
@@ -1915,7 +1915,7 @@ export default { ...base, server: { port: 5327, strictPort: true, proxy: { '/api
   7. Màn 375px (G-11): form không tràn ngang; dòng phụ PA không xuống hai dòng.
   Xong: dừng hai tiến trình, **xoá** `vite.kiem.config.ts`, xoá file `$KIEM` nếu muốn. `git status` phải sạch.
 
-- [ ] **Step 5: Rà soát code.** REQUIRED SUB-SKILL: `superpowers:requesting-code-review`. Người rà: **Fable 5.1** (nếu code bằng Fable thì **Opus 5**).
+- [x] **Step 5: Rà soát code.** REQUIRED SUB-SKILL: `superpowers:requesting-code-review`. Người rà: **Fable 5.1** (nếu code bằng Fable thì **Opus 5**).
   Đưa cho người rà: plan này, đặc tả §1–§2, §7 dòng S2, bảng Q1–Q18, `git diff main...HEAD`. Yêu cầu soi riêng:
   (a) Điều chỉnh bị từ chối **không** để lại dòng nào (kiểm tra hàm chuẩn hoá chạy **trước** giao dịch);
   (b) bản "cũ" ghi vào lịch sử đúng là dòng **đọc trước khi sửa**, kể cả khi nhánh `continue` cũng ghi `performer_user_id`;
@@ -1925,7 +1925,7 @@ export default { ...base, server: { port: 5327, strictPort: true, proxy: { '/api
   (e) diff không chạm vùng PR-AN trong `caseCardOf` (dòng khai báo, `attachmentCount`) và không chạm file PR-O.
   Xử lý phản hồi theo `superpowers:receiving-code-review`; ghi kết luận vào Nhật ký.
 
-- [ ] **Step 6: Rebase lên `main` mới nhất.** PR-S2 **merge SAU PR-AN**. Kiểm: `gh pr list --state merged --search "PR-AN" --limit 5`.
+- [x] **Step 6: Rebase lên `main` mới nhất.** PR-S2 **merge SAU PR-AN**. Kiểm: `gh pr list --state merged --search "PR-AN" --limit 5`.
   - Nếu PR-AN **đã merge**: `git fetch origin && git rebase origin/main`. Gỡ xung đột bằng **giữ cả hai khối**:
     - `server/src/migrate.ts`: chỗ gọi, giữ **cả hai** dòng gọi (`migrateAuthAttempts(conn, applied);` của AN và `migrateDieuChinhPa(conn, applied);` của S2);
       cuối file giữ **cả hai** hàm.
@@ -1937,7 +1937,7 @@ export default { ...base, server: { port: 5327, strictPort: true, proxy: { '/api
   - Nếu PR-AN **chưa merge**: vẫn mở PR (Step 7), ghi rõ trong thân PR "**Chỉ merge sau PR-AN.** Khi AN merge: rebase, `npm run check`, migrate lặp trên bản sao".
     Khi AN merge thì làm đúng các bước ở gạch đầu dòng trên rồi push lại (`git push --force-with-lease`).
 
-- [ ] **Step 7: PR.** `git push -u origin pr-s2-dieu-chinh-pa`; `gh pr create` tiêu đề `PR-S2 · Điều chỉnh PA học thuật (S2 + S4)`, thân gồm: tóm tắt theo Task;
+- [x] **Step 7: PR.** `git push -u origin pr-s2-dieu-chinh-pa`; `gh pr create` tiêu đề `PR-S2 · Điều chỉnh PA học thuật (S2 + S4)`, thân gồm: tóm tắt theo Task;
   bảng Q1–Q18; số phép kiểm B → B+21; migrate (một bảng + hai cột, idempotent, đã chạy lặp trên bản sao); "Chuyển cho PR khác" (mục dưới);
   dòng "Chỉ merge sau PR-AN" nếu AN chưa merge; dòng cuối `🤖 Generated with [Claude Code](https://claude.com/claude-code)`.
   **Không tự merge.** Báo chủ sản phẩm bằng tiếng Việt đơn giản: GV giờ sửa được PA đang chạy mà vẫn giữ bản cũ; mỗi tuần ghi kết quả theo 5 mục và chọn
@@ -1957,7 +1957,10 @@ Dữ liệu đã có sẵn ở `GET /students/:id/skill-board` → `rows[].cases
 - **Điều chỉnh không phải khối mới:** `revisions[]` (`on`, `reason`, `by`, `before`, `after`) là **mốc nhỏ trên cùng một khối** (ví dụ vạch mảnh có tooltip
   "Điều chỉnh {dd/mm}: {lý do}"). Loại PA không đổi trong một khối.
 - **Mỗi lần cập nhật:** `updates[]` có `on`, `outcome`, `decision` (`continue` = Giữ nguyên, `adjust`, `propose` = Thay, `complete`, `ask_manager`, `monitor` cũ),
-  `remainingIssue`, `decisionNote`, `cycleNo`, `late`. Chỉ gồm lần **có kết quả**.
+  `remainingIssue`, `decisionNote`, `cycleNo`, `late`. Chỉ gồm lần **có kết quả**. *(Bổ sung khi code:)* `updates[]` xếp **cũ trước mới sau**, hai lần
+  cùng ngày xếp theo thứ tự ghi (id tăng dần); `revisions[]` cũng theo thứ tự ghi, kể cả khi "Ngày cập nhật" bị lùi.
+- *(Bổ sung khi code:)* Mỗi lần Điều chỉnh mở **một đợt mới** (Q3), nên hai lần điều chỉnh trong một ngày thành "Đợt 2", "Đợt 3". Hành trình nên vẽ
+  theo ngày, không theo số đợt.
 - PA gợi ý tự động bị thay **trước khi xác nhận** là `cancelled`, không có trong `plans` (đúng: nó chưa từng chạy).
 - Bấm khối PA mở ngăn Case và cuộn tới PA (§3.8): khối PA trong `CasePanel` đã có `revisions` và dòng "Thay cho / Được thay bằng".
 
@@ -1970,10 +1973,17 @@ Dữ liệu đã có sẵn ở `GET /students/:id/skill-board` → `rows[].cases
 - `CASE_OUTCOME_LABEL` (kết quả **cả Case**, `shared/domain/cases.ts:245-250`) vẫn là "Đã tốt hơn hẳn / Có tiến bộ / Chưa chuyển biến / Tệ hơn"; theo
   THUAT_NGU g8-128…131 phải về bộ chữ Tiến bộ rõ · … · Kém hơn. PR-S2 không chạm hộp thoại chốt Case.
 - `SectionNote` còn lại trong `CasePanel.tsx` (ví dụ ~280) theo G-5.
+- *(Bổ sung khi code, thấy lúc bấm thử:)* ngăn Case vẫn ghi "hẹn xem lại {ngày}" ngay dưới khối lịch sử ghi "Dự kiến kết thúc" — hai tên cho một mốc.
+  PA bị thay có dòng phụ "được thay" nhưng cột trạng thái vẫn "Đã kết thúc" (`shared/domain/hoSoHocVien.ts` ~92) — nên là "Được thay thế" (g6-090).
+  Câu "…chu kỳ thực hiện chưa bắt đầu…" (`CasePanel.tsx` ~609), `NEXT_STEP_HINT.monitor` và chú thích cũ quanh `NEXT_STEPS` còn chữ "chu kỳ".
+- *(Bổ sung khi code:)* form Ghi kết quả vẫn hiện nút chữ "Xin hỗ trợ từ Quản lý" với kết quả **tốt** (theo `endStepsFor` có sẵn). Cần chủ sản phẩm
+  xác nhận có giữ không.
 
 ### Chuyển cho PR-Z2c (deploy)
 - `caseCardOf` thêm **một** truy vấn mỗi Case (`lichSuDieuChinhCuaCase`). Đo trên Turso cùng lúc đo các trang chậm; nếu cần thì gộp theo danh sách Case như
   `demBangChungCase` của PR-AN.
+- *(Bổ sung khi code, người rà cuối nhấn mạnh:)* chi tiết Case và bảng kỹ năng **đọc** bảng `case_intervention_revisions` → phải chạy `npm run migrate`
+  lên Turso (hoặc dựng từ `schema.sql`) **trước hoặc cùng lúc** deploy mã này, nếu không hồ sơ học viên và ngăn Case sẽ lỗi khi đọc.
 
 ---
 
@@ -2022,4 +2032,16 @@ làm mất lối "Thay bằng phương án khác hoặc nhờ Quản lý" cũ; f
 
 | Ngày | Task | Ghi chú (model người code · số phép kiểm · lệch plan · quyết định tại chỗ) |
 |---|---|---|
-| | | |
+| 22/09 | 0 | Opus 5 (session code + subagent Opus 5). Worktree `.claude/worktrees/pr-s2-dieu-chinh-pa` từ `origin/main` 46f5f90 (đã có PR-S1 #56 và PR-O #58). Không có biến Turso. **B = 730** (plan ghi 719: PR-O merge sau khi đo; đích cuối = 751). Q1–Q18 đọc xong, planning review đã duyệt, không thấy Q nào trái đặc tả. |
+| 22/09 | 1 | Opus 5 (subagent) · c616eff · **734** (B+4) ✓ · đỏ trước: 3 ✗ đúng dự kiến · rà Task (Opus 5): duyệt, 0 lỗi nặng; 3 ghi chú nhỏ để rà cuối (phép 'trọn chuỗi' không bắt được nếu xoá dòng gọi; so sánh chưa gồm khoá ngoại/cột chỉ mục; chỉ mục chỉ tạo cùng bảng) |
+| 22/09 | 2 | Opus 5 (subagent) · e704c92 · **736** (B+6) ✓, kiểm kiểu sạch · đỏ trước: 2 ✗ (`decisionsFor is not a function`) · rà Task (Opus 5): duyệt; ghi chú nhỏ: câu lỗi cũ "Đề xuất phương án mới" ở updateResult → sửa ở Task 4; CODE_MAP "năm bước" → Task 10 |
+| 22/09 | 3 | Opus 5 (subagent, gộp một lượt với Task 4) · 7b9f86c · build sạch · rà chung với Task 4 |
+| 22/09 | 4 | Opus 5 (subagent) · 341516e · **744** (B+14) ✓, kiểm kiểu sạch · đỏ trước: 7/8 (phép quyền C02 xanh sẵn vì kiểm quyền chạy trước) · 3 phép cũ sửa như plan; phép "Ma trận tình huống vòng 5" đỏ theo [9.1] rồi tự xanh · thêm: câu lỗi "Đề xuất phương án mới" → "Thay phương án" (Q14) · rà (Opus 5): duyệt; ghi chú nhỏ để rà cuối: Điều chỉnh ghi đè `followup_due` mặc định khi PA chưa có ngày; lịch sử sắp theo `effective_on` có thể lệch khi lùi ngày |
+| 22/09 | 5 | Opus 5 (subagent, một lượt với Task 6–7) · 84d3477 · **746** (B+16) ✓ · lệch plan: thêm MỘT dòng `.reverse()` trong chuỗi `updates` của thân `caseCardOf` (truy vấn `follows` xếp mới→cũ; hai lần cập nhật cùng ngày ra ngược, phép kiểm của plan không qua được). Người rà (Opus 5) duyệt: đúng, sửa luôn lỗi thứ tự cùng ngày ở ▸ SkillBoard; chỉ thêm dòng, không chạm vùng PR-AN |
+| 22/09 | 6 | Opus 5 (subagent) · 65613fd · **748** (B+18) ✓ · các phép PR-T xác nhận/thay gợi ý vẫn xanh · rà: duyệt; ghi chú nhỏ: lý do do người gõ lúc xác nhận chưa bắt tối thiểu 8 ký tự (plan không yêu cầu) |
+| 22/09 | 7 | Opus 5 (subagent) · 859105f · **751** (B+21) ✓ · cổng 🛑: hai phép khoá xanh ngay, phép thứ ba đỏ đúng ở dòng F05 → sửa đúng một dòng `effectiveness.ts` · F05 cũ vẫn xanh · rà: duyệt |
+| 22/09 | 8 | Opus 5 (subagent, một lượt với Task 9) · 116c675 · **751** ✓, kiểm kiểu sạch, vite build sạch · lệch nhỏ có lợi: bỏ hai chú thích cũ trên ResultDialog · rà (Opus 5): cần sửa 1 (form chưa báo trước lỗi "ngày dự kiến kết thúc sớm hơn ngày cập nhật") → vòng sửa 1 (bc55f75): thêm kiểm ngày đó + ngày cập nhật/ngày kết thúc không sau hôm nay + `title` cho nút Ghi kết quả (G-7) → rà lại: đạt |
+| 22/09 | 9 | Opus 5 (subagent) · c64c4bb · **751** ✓ · `plans={c.plans}` thêm ở CẢ HAI chỗ gọi KhoiPhuongAn · lệch nhỏ có lợi: PA giữa chuỗi A→B→C hiện đủ "Thay cho: A · Được thay bằng: C"; ▸ của PA bị thay không lặp dòng "kết thúc phương án" cùng ngày với "Được thay bằng"; `tabular-nums` · rà: đạt sau vòng sửa 1 |
+| 22/09 | 10 | Opus 5 (subagent) · 59b4007 + d178eb8 · tick S2, S4 ở plan.md §22.9 (dấu `*(PR-S2)*` đặt sau tiêu đề in đậm như kiểu PR-S1); CODE_MAP thêm hai dòng · thêm (quyết định tại chỗ): CODE_MAP "năm bước" → "sáu bước" (có `adjust`), xoá dòng CODE_MAP trỏ tới `InlineResult` đã xoá · rà: duyệt |
+| 22/09 | 11 | Rebase lên main 67e79c5 (đã có PR-AN #61) làm TRƯỚC bước 1–5 để mọi kiểm chạy trên đúng bản sẽ merge; 1 xung đột (migrate.ts: giữ cả migrateAuthAttempts và migrateDieuChinhPa). **Bước 1:** `npm run check` sạch, **778** = 757 (main) + 21. **Bước 2:** migrate hai lần trên BẢN SAO database dev của thư mục chính (mở chỉ đọc, VACUUM INTO): lần 1 có dòng PR-S2 (bảng + 2 cột), lần 2 không có. **Bước 3–4 (bấm thử, Opus 5, API 4127 + Vite 5327, Playwright kênh Chrome):** ý 1–6 ĐẠT; ý 7 lỗi một phần (dòng phụ PA xuống 2 dòng ở 375/390/768px) + nhận xét giao diện (nút Lưu khuất trong hộp thoại 1366×768, "Lý do" lặp hai lần, hai vạch viền lồng nhau, nút Huỷ/Lưu nhảy chỗ). **Bước 5 (rà cuối: Fable 5.1):** merge được; 1 việc quan trọng (lịch sử xếp theo thứ tự ghi) + ghi chú deploy. **Một lượt sửa cuối** (84ba5bc, Opus 5) gộp rà cuối + bấm thử: `ORDER BY r.id` (+1 phép kiểm → **779**), `String(…)` cho lý do/còn tồn, lý do xác nhận ≤ 300 ký tự, `key`, tiêu đề hộp thoại có tên PA, dòng phụ PA luôn một dòng (đuôi không bị cắt), nút Lưu ghim ở chân hộp thoại, bỏ lặp "Lý do", một vạch viền, nhãn nút "Ghi kết quả" khi chưa chọn, nhãn ngày không gãy dòng; bấm thử lại đạt · rà lại (Opus 5): đạt; thêm 7d2f1a0 bo góc dưới hộp thoại + nút không nhích · mục "Chuyển cho PR khác" bổ sung (PR-Qb, PR-S3, PR-Z2c) |
+| 22/09 | 11 | **Bước 7:** đẩy nhánh, mở **PR #64** (không nháp), không tự merge. Mọi commit ghi Co-Authored-By Claude Opus 5. Chờ session planning rà. |
