@@ -380,28 +380,41 @@ function causeOverdue(caseIds: number[], today: string): number[] {
 }
 
 /**
- * Lượt có ô điểm QUÁ HẠN nhập, trong phạm vi. `scoreDebtCells` lọc theo chi nhánh; giáo viên (phạm vi theo LỚP) lọc thêm theo
- * lớp — không được đổi quyền theo lớp thành quyền cả chi nhánh.
+ * Lượt có ô điểm QUÁ HẠN nhập, trong phạm vi. `scoreDebtCells` chỉ lọc theo chi nhánh; ở đây áp đúng luật của `classScopeSql`:
+ * giữ ô khi lớp thuộc chi nhánh được cấp HOẶC là lớp mình dạy. Người vừa dạy lớp vừa có quyền chi nhánh không được nới thành
+ * cả chi nhánh của lớp mình chỉ dạy.
  */
 function overdueScoreAttempts(p: Principal, branchId: number | null, today: string): number[] {
   const sc = scopeFor(p, PERMISSIONS.ATTEMPT_VIEW);
   if (sc.none) return [];
+  const conn = db();
   let branches: number[] | null = null;
   if (branchId) branches = [branchId];
   else if (!sc.all) {
     const set = new Set<number>(sc.branchIds);
     if (sc.classIds.length) {
-      for (const r of db().prepare(`SELECT DISTINCT branch_id FROM classes WHERE id IN (${sc.classIds.map(() => '?').join(',')})`)
+      for (const r of conn.prepare(`SELECT DISTINCT branch_id FROM classes WHERE id IN (${sc.classIds.map(() => '?').join(',')})`)
         .all(...sc.classIds) as any[]) set.add(r.branch_id);
     }
     branches = [...set];
   }
-  const onlyClasses = !sc.all && !sc.branchIds.length ? new Set<number>(sc.classIds) : null;
+  const cells = scoreDebtCells(p, today, branches).filter((x) => x.overdue);
   const ids = new Set<number>();
-  for (const x of scoreDebtCells(p, today, branches)) {
-    if (!x.overdue) continue;
-    if (onlyClasses && !onlyClasses.has(x.classId)) continue;
-    ids.add(x.attemptId);
+  if (sc.all) {
+    for (const x of cells) ids.add(x.attemptId);
+  } else {
+    const branchOf = new Map<number, number>();
+    const classIds = [...new Set(cells.map((x) => x.classId))];
+    for (let i = 0; i < classIds.length; i += 400) {
+      const chunk = classIds.slice(i, i + 400);
+      for (const r of conn.prepare(`SELECT id, branch_id FROM classes WHERE id IN (${chunk.map(() => '?').join(',')})`).all(...chunk) as any[]) {
+        branchOf.set(r.id as number, r.branch_id as number);
+      }
+    }
+    const myBranches = new Set<number>(sc.branchIds), myClasses = new Set<number>(sc.classIds);
+    for (const x of cells) {
+      if (myClasses.has(x.classId) || myBranches.has(branchOf.get(x.classId) ?? -1)) ids.add(x.attemptId);
+    }
   }
   return [...ids].sort((a, b) => a - b);
 }

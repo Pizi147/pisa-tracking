@@ -58,7 +58,7 @@ export async function runTongQuanTests(t: YThucTestKit) {
     primaryCode: d.issuesForTopic(topic)[0].code,
   }) as any;
   const ids = (id: string, f: any = {}) => (metricsSvc.metricSet(P.admin, id, f).ids as number[]);
-  void loadPrincipal; void assertThrows;
+  void assertThrows;
 
   // ================================================================== 1. Luật thuần
   check('PR-Pa · Chương trình: đọc tham số ct; mặc định Cả hai; không có chữ "Normal" trên màn', () => {
@@ -217,9 +217,43 @@ export async function runTongQuanTests(t: YThucTestKit) {
     const gv = metricsSvc.metricSet(P.lrTeacher, 'bai-qua-han-nhap-diem', {}).ids as number[];
     const lopGv = new Set((conn.prepare(`SELECT class_id FROM teacher_assignments WHERE user_id = ? AND status = 'active'`)
       .all(P.lrTeacher.userId) as any[]).map((r) => r.class_id));
+    assert(gv.length > 0, 'GV Listening MB-FT 101 phải có ít nhất một lượt quá hạn nhập điểm trong bộ demo — nếu không, vòng kiểm bên dưới vô nghĩa');
     for (const a of gv) {
       const cl = (conn.prepare('SELECT class_id FROM assessment_attempts WHERE id = ?').get(a) as any).class_id;
       assert(lopGv.has(cl), `GV thấy lượt của lớp không dạy: ${a}`);
+    }
+  });
+
+  await checkAsync('PR-Pa · bai-qua-han-nhap-diem: người vừa dạy lớp ở MB vừa là Quản lý CP thấy (lớp mình dạy) ∪ (cả CP) — không nới thành cả MB', async () => {
+    const debt: any = await import('../worklist/scoreDebt.ts');
+    const fou12 = classId('MB-FOU 12');
+    /* Giáo viên MB KHÔNG dạy MB-FOU 12 (bộ demo: GV Listening MB-FT 102) — để lượt tạo ở MB-FOU 12 nằm trong chi nhánh mà ngoài lớp của người này. */
+    const gvRow = conn.prepare(
+      `SELECT DISTINCT ta.user_id FROM teacher_assignments ta JOIN classes c ON c.id = ta.class_id
+        WHERE ta.status = 'active' AND c.branch_id = ? AND ta.user_id NOT IN (SELECT user_id FROM teacher_assignments WHERE class_id = ?)
+        ORDER BY ta.user_id LIMIT 1`,
+    ).get(mbBranch, fou12) as any;
+    assert(gvRow, 'Bộ demo phải có một giáo viên MB không dạy MB-FOU 12 — nếu không, phép kiểm này không tách được "cả MB" khỏi "lớp mình dạy"');
+    const cp = (conn.prepare(`SELECT id FROM branches WHERE code = 'CP'`).get() as any).id as number;
+    const roleId = (conn.prepare(`SELECT id FROM roles WHERE key = 'manager'`).get() as any).id as number;
+    const grant = Number(conn.prepare(
+      `INSERT INTO user_roles (user_id, role_id, branch_id, status, created_at) VALUES (?,?,?, 'active', ?)`,
+    ).run(gvRow.user_id, roleId, cp, NOW).lastInsertRowid);
+    try {
+      const lai = loadPrincipal(gvRow.user_id);
+      const ngoaiLop = taoHocVien({ classCode: 'MB-FOU 12', weekStart: '2026-09-07' });
+      const cells = (debt.scoreDebtCells(P.admin, TODAY, null) as any[]).filter((x) => x.overdue);
+      assert(cells.some((x) => x.attemptId === ngoaiLop.attemptId), 'Lượt MB-FOU 12 tuần 07/09 phải có ô quá hạn ở ngày 14/09 — nếu không, phép kiểm không có gì để lọt');
+      const lopGv = new Set((conn.prepare(`SELECT class_id FROM teacher_assignments WHERE user_id = ? AND status = 'active'`)
+        .all(lai.userId) as any[]).map((r) => r.class_id as number));
+      const branchOf = (cid: number) => (conn.prepare('SELECT branch_id FROM classes WHERE id = ?').get(cid) as any).branch_id as number;
+      const want = [...new Set(cells.filter((x) => lopGv.has(x.classId) || branchOf(x.classId) === cp).map((x) => x.attemptId as number))]
+        .sort((a, b) => a - b);
+      const got = metricsSvc.metricSet(lai, 'bai-qua-han-nhap-diem', {}).ids as number[];
+      assert(!got.includes(ngoaiLop.attemptId), `Lọt lượt ${ngoaiLop.attemptId} của lớp MB mình không dạy — quyền lớp bị nới thành cả chi nhánh`);
+      eq(got, want, 'Phạm vi lai = (lớp mình dạy) ∪ (chi nhánh được cấp)');
+    } finally {
+      conn.prepare('DELETE FROM user_roles WHERE id = ?').run(grant);
     }
   });
 
