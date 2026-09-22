@@ -268,6 +268,8 @@ Commit `PR-Form (5): ChonNguoi — tìm người ≥ 3 ký tự, Tôi, Người 
 
 **Xong khi:** typecheck xanh; bấm thử ở Task 11. Commit `PR-Form (6): Bằng chứng nhận Ctrl+V, kéo thả, nhiều tệp; nút Xác nhận sáng sau khi tải thư (YT-5)`.
 
+- [x] Task 6 xong — `npm run check` xanh, 804 phép kiểm không đổi. Bấm thử để Task 11.
+
 ## Task 7 · Web: `QuickReport` — F07, lưu trước đính kèm sau (F-1), thẻ nhập bù (F-3), điểm chi tiết (S5)
 
 **Files:** `web/src/modules/cases/QuickReport.tsx`; tạo `web/src/modules/cases/ChiTietKyNang.tsx` (chuyển

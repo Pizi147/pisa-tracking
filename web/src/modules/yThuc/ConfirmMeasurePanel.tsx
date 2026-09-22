@@ -27,7 +27,7 @@ export function ConfirmMeasurePanel({ open, onClose, measureId, onDone }: {
   const toast = useToast();
   const { session } = useSession();
   const { homNay: today } = useNgayNghiepVu();
-  const { data } = useApi<MeasureDetail>(open && measureId ? `/measures/${measureId}` : null, [open, measureId]);
+  const { data, reload } = useApi<MeasureDetail>(open && measureId ? `/measures/${measureId}` : null, [open, measureId]);
   const [performedOn, setPerformedOn] = useState(today);
   const [performerName, setPerformerName] = useState('');
   const [note, setNote] = useState('');
@@ -97,7 +97,7 @@ export function ConfirmMeasurePanel({ open, onClose, measureId, onDone }: {
 
         <Field label={spec?.attachment === 'required' ? 'Tệp hoặc liên kết' : 'Tệp hoặc liên kết (tuỳ chọn)'}
           required={spec?.attachment === 'required'} as="div">
-          <BangChung ownerType="discipline_measure" ownerId={data.id} canEdit={data.canManage} tieuDe="" />
+          <BangChung ownerType="discipline_measure" ownerId={data.id} canEdit={data.canManage} tieuDe="" onChanged={reload} />
         </Field>
 
         <Field label={`${data.violations.length} vi phạm được xử lý bằng phương án này`} as="div">
