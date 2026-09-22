@@ -31,10 +31,23 @@ export function destroySession(token: string) {
   db().prepare('DELETE FROM demo_sessions WHERE token = ?').run(token);
 }
 
+/**
+ * PHIÊN ĐĂNG NHẬP HẾT HẠN sau từng này ngày KHÔNG DÙNG (session planning chốt 22/09/2026). Tính theo GIỜ THẬT
+ * (`last_seen_at` do `nowIso()` ghi), KHÔNG theo ngày demo — ngày demo có thể bị đặt lùi. Mỗi lần dùng phiên, mốc dùng cuối
+ * được dời về bây giờ, nên người dùng đều đặn không bao giờ bị đẩy ra.
+ */
+export const PHIEN_HET_HAN_SAU_NGAY = 30;
+
 export function resolveSession(token: string | undefined): Principal | null {
   if (!token) return null;
   const row = db().prepare('SELECT * FROM demo_sessions WHERE token = ?').get(token) as any;
   if (!row) return null;
+  /* Quá hạn → coi như chưa đăng nhập, và xoá luôn dòng phiên (mã đó không bao giờ dùng lại được). */
+  const lanDungCuoi = Date.parse(row.last_seen_at ?? row.created_at);
+  if (!(Date.now() - lanDungCuoi <= PHIEN_HET_HAN_SAU_NGAY * 86_400_000)) {
+    db().prepare('DELETE FROM demo_sessions WHERE token = ?').run(token);
+    return null;
+  }
   db().prepare('UPDATE demo_sessions SET last_seen_at = ? WHERE token = ?').run(nowIso(), token);
   return loadPrincipal(row.user_id);
 }
