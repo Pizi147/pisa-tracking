@@ -203,6 +203,7 @@ Quyền phải khớp giữa menu, máy chủ và việc đỏ.
 | Cách chạy | ~~2 session code song song~~ → **3 session song song, 7 đợt** (22/09 tối), xem giao diện sau mỗi đợt |
 | S1 | Bỏ qua tín hiệu: lý do không bắt buộc |
 | S2-a | Form Ghi kết quả PA học thuật **giữ** nút "Xin hỗ trợ từ Quản lý" cả khi kết quả tốt (chủ sản phẩm 23/09). PR-S3 không được bỏ |
+| **Deploy sớm (23/09, 01:30)** | Thay "làm hết rồi deploy". Ưu tiên giao diện + workflow **Mock Test, SOS, Học viên**, cộng phần cho QL theo dõi SOS/Case các chi nhánh. **Trước deploy:** Qa · Pa · Rc1 · Qb · Rc2 · Form · **Pb-gọn** (Tổng hợp Test + SOS, Vấn đề HV, giữ Danh sách Case) · Z2c. **Sau deploy** (deploy lại mỗi tối): Ra · GV · YT2 · LT · S3 · phần còn lại của Pb. Chữ lớp thường ở `SkillBoard.tsx` chuyển Qb → Form. **Quy trình nhanh:** session code không rà từng task bằng subagent, `npm run check` mỗi task, bấm thử một lần cuối PR; rà PR một lượt khác model, chỉ chặn lỗi nặng; không mở PR tài liệu riêng sau mỗi lần rà |
 
 **Session planning tự quyết (theo đề xuất ở kiểm kê §4):**
 - 4.1: 4 ô Tổng quan như §3.2.
@@ -279,6 +280,16 @@ Tên file, mã việc và ma trận chồng file lấy ở kiểm kê §5. Bổ 
 Đợt 6:  S3
 Đợt 7:  Z2c
 ```
+
+**Thay bằng lịch deploy sớm (23/09, 01:30, xem §5):**
+
+```
+Đang chạy:      Qa  ·  Pa  ·  Rc1
+Trước deploy:   Form (sau Pa) · Pb-gọn (sau Pa) · Qb (sau Qa) · Rc2 (sau Rc1)
+Deploy:         Z2c
+Sau deploy:     Ra · GV · YT2 · LT · S3 · phần còn lại của Pb
+```
+Kế hoạch: `docs/superpowers/plans/2026-09-23-pr-{form-chon-nguoi,pb-phan-tich-gon,qb-ho-so-hoc-vien,rc2-ke-hoach-test}.md`. Cả bốn không migrate.
 
 Lý do xếp (phụ thuộc + ma trận chồng file kiểm kê §5.2):
 - Đợt 2: Qa cần O; Pa cần O + S1 (dòng tín hiệu); S2 cần S1 (migrate). Ba PR không chung file.
