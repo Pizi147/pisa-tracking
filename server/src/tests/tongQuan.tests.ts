@@ -25,6 +25,7 @@ export async function runTongQuanTests(t: YThucTestKit) {
   const metricsSvc: any = await import('../worklist/metrics.ts');
   const tq: any = await import('../worklist/tongQuan.ts').catch(() => ({}));
   const bang: any = await import('../worklist/bangChiNhanh.ts').catch(() => ({}));
+  const mywork: any = await import('../worklist/mywork.ts');
   const NOW = new Date().toISOString();
   const mbBranch = (conn.prepare(`SELECT id FROM branches WHERE code = 'MB'`).get() as any).id as number;
   let soThuTu = 0;
@@ -367,5 +368,37 @@ export async function runTongQuanTests(t: YThucTestKit) {
     assert(ft.weeks.every((w: any) => !w.normal.progressClasses.length && !w.normal.finalClasses.length && !w.normal.endingClasses.length), 'FT lẫn lớp thường');
     const th = hl.highlights(P.admin, { program: 'thuong' });
     assert(th.weeks.every((w: any) => !w.ft.mockClasses.length && w.ft.examStudents === 0) && th.examMonthOnly.students === 0, 'Lớp thường lẫn FT');
+  });
+
+  // ================================================================== 8. Nợ S1 (2)
+  check('PR-Pa · Nợ S1: không ai dạy Speaking → tín hiệu về GVCN; GVCN thấy hai nút; Tạo Case thành công, gửi lại cùng khoá ra cùng Case; dòng biến mất', () => {
+    const cid = classId('MB-FOU 12');
+    const tam = (conn.prepare(`SELECT id FROM teacher_assignments WHERE class_id = ? AND skill = 'speaking' AND status = 'active'`)
+      .all(cid) as any[]).map((r) => r.id as number);
+    assert(tam.length > 0, 'Bộ demo phải có GV Speaking ở MB-FOU 12');
+    const ph = tam.map(() => '?').join(',');
+    conn.prepare(`UPDATE teacher_assignments SET status = 'ended' WHERE id IN (${ph})`).run(...tam);
+    try {
+      const gvcn = loadPrincipal(P.normalCoreTeacher.userId);
+      const hv = taoHocVien({ classCode: 'MB-FOU 12', weekStart: '2026-09-07' });
+      diem(hv.attemptId, 'speaking', 5, 25);
+      const sg = tinHieu(hv.attemptId, 'speaking');
+      assert(sg && sg.owner_user_id === gvcn.userId, `Tín hiệu Speaking phải về GVCN: ${sg?.owner_user_id}`);
+      const dong = (mywork.myWork(gvcn).items as any[]).find((i) => i.key === `verify:${sg.id}`);
+      assert(dong?.signal, 'GVCN không thấy dòng tín hiệu');
+      eq(dong.signal.actions, ['create_case', 'dismiss'], 'Hai nút');
+      const gui = () => cases.reportIssue(gvcn, {
+        studentId: hv.sid, topic: 'speaking', fromSignalId: sg.id, idempotencyKey: `pa-e2e-${sg.id}`,
+        title: 'Speaking — trả lời cụt, không mở rộng ý', summary: 'Part 2 nói dưới một phút, lặp từ nối; đã nghe lại bài thi.',
+        primaryCode: d.issuesForTopic('speaking')[0].code,
+      }) as any;
+      const c = gui();
+      eq(gui().id, c.id, 'Gửi lại cùng idempotencyKey phải ra cùng Case');
+      const sau = conn.prepare('SELECT status, case_id FROM case_signals WHERE id = ?').get(sg.id) as any;
+      eq([sau.status, sau.case_id], ['linked', c.id], 'Tín hiệu phải gắn vào Case');
+      assert(!(mywork.myWork(gvcn).items as any[]).some((i) => i.key === `verify:${sg.id}`), 'Dòng tín hiệu phải biến mất');
+    } finally {
+      conn.prepare(`UPDATE teacher_assignments SET status = 'active' WHERE id IN (${ph})`).run(...tam);
+    }
   });
 }
