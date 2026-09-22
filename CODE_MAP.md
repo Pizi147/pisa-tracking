@@ -128,8 +128,8 @@ loại dữ liệu mới** vào kịch bản thì thêm trường ở `server/sr
 | Panel "Quản lý học viên" (kế hoạch · đầu vào · mục tiêu · kết luận · chuyển lớp) | `web/src/modules/students/StudentManagePanel.tsx` |
 | Tab Hành trình học tập — **hai cách đọc**: "Điểm và can thiệp" · "Dòng sự kiện" | `web/src/modules/students/JourneyTimeline.tsx` · `server/src/students/profile.ts` → `progressOf` |
 | Dữ liệu hồ sơ | `server/src/students/profile.ts` |
-| Danh sách lớp và tám bộ lọc | `web/src/modules/students/StudentsPage.tsx` |
-| Tên và điều kiện của tám bộ lọc | `shared/domain/people.ts` → `STUDENT_FILTERS` |
+| Danh sách lớp, nhóm theo lớp, 6 chip lọc | `web/src/modules/students/StudentsPage.tsx` → `BangHocVienLop.tsx` |
+| Tên và điều kiện của 6 chip lọc | `shared/domain/hocVienLop.ts` → `LOC_HOC_VIEN` · `LOC_HOC_VIEN_NHAN` |
 | Thêm học viên, nhập Excel | `web/src/modules/students/IntakePanel.tsx` · `server/src/classes/intake.ts` |
 | Badge "Thiếu thông tin" (chỉ thiếu sót CẢN TRỞ chuyên môn) | `web/src/modules/students/MissingBadge.tsx` · `server/src/classes/schedule.ts` → `missingForStudent` |
 | Câu tình trạng đầu hồ sơ ("MT2 đạt kỳ vọng · còn 2 case…") | `server/src/students/standing.ts` |
@@ -140,7 +140,6 @@ loại dữ liệu mới** vào kịch bản thì thêm trường ở `server/sr
 
 | Muốn sửa | Mở file |
 |---|---|
-| Trang một lớp | `web/src/modules/classes/ClassOverviewPage.tsx` |
 | Tạo lớp | `web/src/modules/classes/ClassCreatePanel.tsx` · `server/src/classes/intake.ts` → `createClass` |
 | Phân công giáo viên, ba luật phân công | `server/src/classes/classes.ts` → `setClassTeachers` |
 | Tuần khai giảng, tuần Progress/Final Test | `web/src/modules/classes/ClassProgressPanel.tsx` · `server/src/classes/schedule.ts` |
