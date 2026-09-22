@@ -567,6 +567,11 @@ CREATE TABLE attempt_skills (
    * không làm tăng con số này.
    */
   absence_move_count INTEGER NOT NULL DEFAULT 0,
+  /*
+   * VẮNG NÀY SINH RA TỪ VIỆC CHỐT DẤU "-" (S11). Trước đây nhận biết bằng `sit_note` bắt đầu "Không dự thi" — một chuỗi chữ
+   * làm cờ, lượt biên tập chữ sau sẽ vô tình gỡ nó. 1 khi `settleGroup` chốt; mọi đường đổi `sit_status` khác đặt lại 0.
+   */
+  absent_from_no_show INTEGER NOT NULL DEFAULT 0,
 
   created_at TEXT NOT NULL,
   updated_at TEXT,
@@ -841,7 +846,14 @@ CREATE TABLE sos_cases (
   -- Chống trùng khi bấm hai lần hoặc thử lại sau lỗi mạng.
   idempotency_key TEXT UNIQUE,
   created_at TEXT NOT NULL,
-  updated_at TEXT
+  updated_at TEXT,
+  /*
+   * ĐÓNG BỞI HỆ THỐNG (PR-S1 · S16/S17 chốt 21/09 đêm). NULL = người đóng hoặc chưa đóng. Có giá trị = máy tự đóng vì em
+   * kết thúc khoá (`course_ended`) hoặc đổi chương trình (`moved_to_normal` · `moved_to_ft`). Case đóng kiểu này KHÔNG có
+   * `outcome` vì việc đóng không phải kết quả hỗ trợ; PA đã xong trước đó vẫn tính hiệu quả. Nhãn: `SYSTEM_CLOSE_REASON_LABEL`.
+   * Chú thích này cố ý KHÔNG có dấu phẩy: SQLite `DROP COLUMN` cột cuối bảng cắt ngược tới dấu phẩy gần nhất.
+   */
+  system_close_reason TEXT
 );
 /*
  * MỘT HỌC VIÊN × MỘT HẠNG MỤC = MỘT CASE.

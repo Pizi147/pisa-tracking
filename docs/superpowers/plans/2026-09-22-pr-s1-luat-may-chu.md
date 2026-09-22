@@ -123,18 +123,18 @@ dòng là bình thường; **lệch nội dung** thì 🛑 hỏi.
 
 **Files:** không sửa mã.
 
-- [ ] **Step 1: Nhánh.** Nếu PR spec (nhánh `plan-lam-het-truoc-deploy`) đã merge: tách `pr-s1-luat-may-chu` từ `main`; chưa merge: tách
+- [x] **Step 1: Nhánh.** Nếu PR spec (nhánh `plan-lam-het-truoc-deploy`) đã merge: tách `pr-s1-luat-may-chu` từ `main`; chưa merge: tách
   từ `plan-lam-het-truoc-deploy`. Dùng worktree (skill `superpowers:using-git-worktrees`). Máy chủ dev trong worktree: `npm run dev`
   trong chính worktree (không dùng `preview_start`, nó chạy từ thư mục chính).
-- [ ] **Step 2: Kiểm môi trường không có biến Turso.**
+- [x] **Step 2: Kiểm môi trường không có biến Turso.**
 
 ```bash
 node -e "for (const k of ['TURSO_DATABASE_URL','TURSO_AUTH_TOKEN','BAN_CHINH','PISA_CHO_PHEP_MIGRATE_TURSO','PISA_CHO_PHEP_SEED_TURSO']) if (process.env[k]) { console.error('CÓ BIẾN', k); process.exit(1) } ; console.log('sạch')"
 ```
 Expected: `sạch`. Có biến → đóng cửa sổ, mở cửa sổ mới.
 
-- [ ] **Step 3: Mốc phép kiểm.** Run: `npm test 2>&1 | tail -3` — Expected: `TẤT CẢ 672 KIỂM TRA ĐỀU ĐẠT`. Ghi con số vào Nhật ký.
-- [ ] **Step 4:** Đọc Global Constraints + bảng Quyết định Q1–Q13 ở trên. Có Q nào bạn thấy sai với đặc tả → 🛑 hỏi trước khi code.
+- [x] **Step 3: Mốc phép kiểm.** Run: `npm test 2>&1 | tail -3` — Expected: `TẤT CẢ 672 KIỂM TRA ĐỀU ĐẠT`. Ghi con số vào Nhật ký.
+- [x] **Step 4:** Đọc Global Constraints + bảng Quyết định Q1–Q13 ở trên. Có Q nào bạn thấy sai với đặc tả → 🛑 hỏi trước khi code.
 
 ---
 
@@ -152,7 +152,7 @@ Expected: `sạch`. Có biến → đóng cửa sổ, mở cửa sổ mới.
   trong file test: `taoHocVien`, `themLuot`, `diem`, `tinHieu`, `caseTuTinHieu`, `pGvcnFou`, `pSpeakingFou`, `pWritingFou`, `mbBranch`,
   `teacherOf`, `load`, `REPO`, `NOW` — mọi task sau dùng lại.
 
-- [ ] **Step 1: Tạo file phép kiểm với harness và các phép kiểm migration (đỏ).**
+- [x] **Step 1: Tạo file phép kiểm với harness và các phép kiểm migration (đỏ).**
 
 `server/src/tests/luatMayChu.tests.ts`:
 
@@ -325,10 +325,10 @@ const { runLuatMayChuTests } = await import('./luatMayChu.tests.ts');
 await runLuatMayChuTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 ```
 
-- [ ] **Step 2: Chạy, thấy đỏ.** Run: `npm test 2>&1 | grep -E "PR-S1|KIỂM TRA|KHÔNG ĐẠT"` — Expected: ba phép `PR-S1 · Migrate` đầu **✗**
+- [x] **Step 2: Chạy, thấy đỏ.** Run: `npm test 2>&1 | grep -E "PR-S1|KIỂM TRA|KHÔNG ĐẠT"` — Expected: ba phép `PR-S1 · Migrate` đầu **✗**
   (thiếu cột / `migrateLuatMayChu is not a function`), phép "trọn chuỗi" và "Tiền đề" ✓.
 
-- [ ] **Step 3: Thêm cột vào `schema.sql`.**
+- [x] **Step 3: Thêm cột vào `schema.sql`.**
 
 Cuối bảng `sos_cases` (sau `updated_at TEXT`, dòng 844 — nhớ thêm dấu phẩy sau `updated_at TEXT`):
 
@@ -354,7 +354,7 @@ Trong `attempt_skills`, sau `absence_move_count …` (dòng 570), trước `crea
   absent_from_no_show INTEGER NOT NULL DEFAULT 0,
 ```
 
-- [ ] **Step 4: Viết `migrateLuatMayChu` ở cuối `server/src/migrate.ts`.**
+- [x] **Step 4: Viết `migrateLuatMayChu` ở cuối `server/src/migrate.ts`.**
 
 ```ts
 /**
@@ -400,8 +400,8 @@ Gọi trong `migrateCaseEngine`, ngay sau `migrateDeleteInvalidViolations(conn, 
     migrateLuatMayChu(conn, applied);
 ```
 
-- [ ] **Step 5: Chạy, thấy xanh.** Run: `npm test 2>&1 | grep -E "PR-S1|KIỂM TRA"` — Expected: 5 phép `PR-S1 ·` ✓, `TẤT CẢ 677 …`.
-- [ ] **Step 6: Commit.**
+- [x] **Step 5: Chạy, thấy xanh.** Run: `npm test 2>&1 | grep -E "PR-S1|KIỂM TRA"` — Expected: 5 phép `PR-S1 ·` ✓, `TẤT CẢ 677 …`.
+- [x] **Step 6: Commit.**
 
 ```bash
 git add server/src/schema.sql server/src/migrate.ts server/src/tests/luatMayChu.tests.ts server/src/tests/run.ts
