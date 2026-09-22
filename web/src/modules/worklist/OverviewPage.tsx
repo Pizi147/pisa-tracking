@@ -1,35 +1,23 @@
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { useApi } from '../../lib/useApi.ts';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useSession } from '../../lib/session.tsx';
-import { Card, Empty, ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { BranchFilter } from '../../ui/Filters.tsx';
 import { CaseBoard } from '../cases/CaseBoardPage.tsx';
 import { BranchPulse } from './BranchPulse.tsx';
-import { Highlights } from './Highlights.tsx';
+import { LichSapToi } from './Highlights.tsx';
 import { MetricTiles } from './MetricTiles.tsx';
-import { WorkList, type WorkGroup, type WorkItem } from './WorkList.tsx';
-import { YThucReminders } from '../yThuc/YThucReminders.tsx';
+import { ChonChuongTrinh } from './ChonChuongTrinh.tsx';
+import { KhoiCanXuLy } from './KhoiCanXuLy.tsx';
+import { ViecCuaToi } from './ViecCuaToi.tsx';
+import { HocVienCanHoTro } from './HocVienCanHoTro.tsx';
 import { HangTab } from '../../ui/HangTab.tsx';
-import { TAB_TONG_QUAN_LABEL, ngay, type TabTongQuan } from '@shared/domain/index.ts';
+import { TAB_TONG_QUAN_LABEL, chuongTrinhTuThamSo, ngay, type ChuongTrinh, type TabTongQuan } from '@shared/domain/index.ts';
 
-type Work = {
-  summary: { total: number; overdue: number; today: number; approval: number; mine: number };
-  items: WorkItem[];
-  groups: WorkGroup[];
-  scopeEmpty: boolean;
-};
 /**
- * TỔNG QUAN — việc của CHÍNH người đang xem.
+ * TỔNG QUAN (§3.2): Quản lý — thanh ngữ cảnh, 4 ô, Cần xử lý cạnh Điểm đáng chú ý, Lịch sắp tới, bảng chi nhánh.
+ * Giáo viên — Việc cần làm của tôi, Học viên cần hỗ trợ.
  *
- * Màn cũ là bốn ô số theo tuần, và giáo viên với quản lý mở ra thấy y hệt nhau. Số tổng là
- * ngôn ngữ của báo cáo; người đi dạy cần biết "em nào đang cần mình", không cần biết cả chi
- * nhánh có bao nhiêu case.
- *
- * Nên ở đây mỗi dòng là MỘT HỌC VIÊN: tên em, một câu lý do, một nút bấm được. Việc nào
- * người xem không có quyền làm thì không xuất hiện — máy chủ lọc trước khi trả về.
- *
- * Chia nhóm theo loại việc để làm xong nhóm này rồi sang nhóm khác, nhưng việc GẤP tách
- * hẳn lên đầu bất kể thuộc nhóm nào.
+ * Số tổng là ngôn ngữ của báo cáo; người đi dạy cần biết "em nào đang cần mình", không cần biết cả chi nhánh có bao
+ * nhiêu Case. Nên hai vai thấy hai màn khác nhau, và mọi con số Quản lý thấy đều bấm ra đúng danh sách tạo nên nó.
  */
 export default function OverviewPage({ tab: tabProp = 'tong-quan' }: { tab?: TabTongQuan } = {}) {
   const { session } = useSession();
@@ -67,94 +55,61 @@ export default function OverviewPage({ tab: tabProp = 'tong-quan' }: { tab?: Tab
    * tham số `cn`. Đổi ở đâu thì cả trang đổi theo, và gửi đường dẫn cho người khác vẫn ra
    * đúng chi nhánh đó.
    */
-  /*
-   * LOẠI VIỆC ĐANG LỌC nằm trên địa chỉ trang, cùng chỗ với chi nhánh. Bấm một con số ở dải
-   * tóm tắt là đổi tham số này, nên gửi đường dẫn cho người khác vẫn ra đúng danh sách đó
-   * (mục 5.3 điểm 4).
-   */
-  const workGroup = params.get('viec');
-  const setWorkGroup = (g: string | null) => {
-    const next = new URLSearchParams(params);
-    if (g) next.set('viec', g); else next.delete('viec');
-    setParams(next, { replace: true });
-  };
   const branchId = params.get('cn') ? Number(params.get('cn')) : null;
   const setBranchId = (id: number | null) => {
     const next = new URLSearchParams(params);
     if (id) next.set('cn', String(id)); else next.delete('cn');
     setParams(next);
   };
-  const { data, loading, error, reload } = useApi<Work>(
-    `/my-work${branchId ? `?branchId=${branchId}` : ''}`, [branchId],
-  );
+  /* CHƯƠNG TRÌNH ĐANG CHỌN (`ct`) cũng nằm trên địa chỉ, cùng chỗ với `cn`; Cả hai = không có tham số. */
+  const ct = chuongTrinhTuThamSo(params.get('ct'));
+  const setCt = (v: ChuongTrinh) => {
+    const next = new URLSearchParams(params);
+    if (v === 'ca-hai') next.delete('ct'); else next.set('ct', v);
+    setParams(next, { replace: true });
+  };
+  const duLieuDen = `Dữ liệu đến ${ngay(session?.demoDate)}`;   // không truyền "hôm nay" → dd/mm/yyyy (mockup)
 
-  if (error) return <ErrorState message={error.message} hint={error.hint} onRetry={reload} />;
+  if (!canSeeBoard) {
+    /* GIÁO VIÊN (§3.2): Việc cần làm của tôi + Học viên cần hỗ trợ; lịch thu gọn ở cuối. */
+    const ten = (session?.user?.fullName ?? '').trim().split(/\s+/).pop() ?? '';
+    return (
+      <div className="page space-y-4">
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <h1 className="text-lg font-semibold text-slate-100 m-0">{ten ? `Chào ${ten}` : 'Tổng quan'}</h1>
+          <span className="text-xs text-slate-500">{duLieuDen}</span>
+        </div>
+        <div className="grid gap-3 lg:grid-cols-[1.25fr_1fr] items-start">
+          <ViecCuaToi />
+          <HocVienCanHoTro />
+        </div>
+        <LichSapToi branchId={null} ct="ca-hai" />
+      </div>
+    );
+  }
 
   return (
     <div className="page space-y-4">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-lg font-semibold text-slate-100 m-0">Tổng quan</h1>
-          <p className="text-xs text-slate-500 mt-0.5 mb-0">
-            {tab === 'board'
-              ? 'Học viên đang yếu ở đâu — cả case sinh từ điểm và case giáo viên báo.'
-              : `Việc của bạn, tính đến ${ngay(session?.demoDate, session?.demoDate)}.`}
-          </p>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-lg font-semibold text-slate-100 m-0">Tổng quan</h1>
+        <div className="flex flex-wrap items-center gap-2">
+          {tab === 'work' && <ChonChuongTrinh value={ct} onChange={setCt} />}
+          <BranchFilter branchId={branchId} onBranch={setBranchId} />
         </div>
-        <BranchFilter branchId={branchId} onBranch={setBranchId} />
       </div>
-
-      {canSeeBoard && (
+      <div className="flex flex-wrap items-end justify-between gap-2">
         <HangTab ariaLabel="Tổng quan" value={tabProp} onChange={goTab}
           tabs={(['tong-quan', 'phan-tich'] as const).map((k) => ({ key: k, label: TAB_TONG_QUAN_LABEL[k] }))} />
-      )}
-
+        <span className="text-xs text-slate-500 pb-1">{duLieuDen}</span>
+      </div>
       {tab === 'board' && <CaseBoard embedded />}
-
-      {/*
-        BỐN TẦNG, ĐÚNG THỨ TỰ (mục 3.1):
-          1. bộ chọn chi nhánh — nằm ở đầu trang, dùng chung cho cả hai tab;
-          2. sự kiện nổi bật — thu gọn sẵn, liếc là biết tuần này có gì;
-          3. MỘT bảng tổng hợp — chi nhánh/lớp đang tắc ở đâu;
-          4. MỘT khu Việc cần làm — thanh lọc + danh sách + Xem thêm.
-
-        Bản trước bày thêm một dải thẻ số lặp lại đúng những con số đã có trong thanh lọc
-        của danh sách, và một cột "Lớp của bạn" ở bên phải. Ba chỗ cùng nói một chuyện thì
-        người đọc phải tự đối chiếu xem chúng có khớp nhau không — và đó là việc của phần
-        mềm, không phải của người dùng. Danh sách lớp đã có nguyên một mục Học viên.
-      */}
-      {/* Bốn ô số — mỗi ô đi qua <SoLieu>: tự giải thích được và bấm ra đúng tập tạo nên nó. */}
-      {tab === 'work' && canSeeBoard && <MetricTiles branchId={branchId} />}
-
-      {tab === 'work' && <Highlights branchId={branchId} />}
-
-      {/* Ý THỨC & PHỐI HỢP (§7.10, plan.md K6): nhắc mềm của GVCN, không phải WorkItem có hạn. */}
-      {tab === 'work' && <YThucReminders />}
-
-      {/* Bảng tổng hợp của Quản lý. Bấm một con số trong bảng là LỌC danh sách bên dưới. */}
-      {tab === 'work' && canSeeBoard && (
-        <BranchPulse branchId={branchId} activeGroup={workGroup} onGroup={setWorkGroup} />
-      )}
-
-      {tab === 'work' && loading && <Skeleton rows={8} />}
-
-      {tab === 'work' && data && (data.scopeEmpty || data.summary.total === 0) && (
-        <Card>
-          <Empty
-            title={data.scopeEmpty ? 'Bạn chưa được cấp phạm vi nào' : 'Không có việc nào đang chờ bạn'}
-            hint={data.scopeEmpty ? undefined : 'Điểm đã nhập đủ, và những em đang theo dõi đều đã có người làm.'}
-            action={<Link className="btn no-underline" to="/hoc-vien">Mở danh sách lớp</Link>}
-          />
-        </Card>
-      )}
-
-      {tab === 'work' && data && data.summary.total > 0 && (
-        /*
-          `key` gắn với nhóm đang chọn: bấm một con số ở bảng tổng hợp là danh sách nhảy về
-          đúng bộ lọc đó, kể cả khi người dùng vừa tự đổi bộ lọc bằng tay.
-        */
-        <WorkList key={workGroup ?? 'all'} data={data}
-          defaultGroup={workGroup} onGroup={setWorkGroup} />
+      {tab === 'work' && (
+        <>
+          <MetricTiles branchId={branchId} ct={ct} />
+          <KhoiCanXuLy branchId={branchId} ct={ct} />
+          <LichSapToi branchId={branchId} ct={ct} />
+          <BranchPulse branchId={branchId} ct={ct} />
+        </>
       )}
     </div>
   );
