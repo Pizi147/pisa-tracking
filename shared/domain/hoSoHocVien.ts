@@ -43,6 +43,52 @@ export function demTheoNhomViPham(vs: readonly { category: string }[]): {
   };
 }
 
+// ====================================================================== thẻ case và khối phương án (Q8)
+
+/** Một phương án học thuật như thẻ case trả về (`Plan` ở `SkillBoard.tsx`) — chỉ các trường luật này cần. */
+export type PhuongAnTomTat = {
+  status: string; lastOutcome: string | null; preset: boolean; confirmedAt: string | null;
+  pendingApproval: boolean; approvalDue: string | null;
+  actionDue: string | null; actionOverdue: boolean; completedOn: string | null;
+};
+export const dangChay = (p: { status: string }) => p.status === 'planned' || p.status === 'started';
+
+/**
+ * Cột 2 đầu thẻ case: `{k}/{n} PA có kết quả` + việc gần nhất có hạn (`tiep`). Chỉ xét PA ĐANG CHẠY; case đã xong → không
+ * có việc tiếp. Thứ tự: PA gợi ý chưa xác nhận → PA chờ Quản lý → PA có hạn làm sớm nhất → nghĩa vụ cập nhật hằng tuần
+ * của case. Hạn DỰ KIẾN XONG (followupDue) KHÔNG phải hạn (F11) — không dùng.
+ */
+export function tienDoCase(plans: readonly PhuongAnTomTat[], c: { status: string; followUntil: string | null; followOverdue: boolean }): {
+  coKetQua: number; tong: number; text: string;
+  tiep: { text: string; due: string | null; overdue: boolean } | null;
+} {
+  const tong = plans.length;
+  const coKetQua = plans.filter((p) => p.lastOutcome !== null).length;
+  const text = tong === 0 ? 'Chưa có phương án' : `${coKetQua}/${tong} PA có kết quả`;
+  let tiep: { text: string; due: string | null; overdue: boolean } | null = null;
+  if (c.status !== 'done') {
+    const chay = plans.filter(dangChay);
+    const goiY = chay.find((p) => p.preset && !p.confirmedAt);
+    const choDuyet = chay.find((p) => p.pendingApproval);
+    const coHan = chay.filter((p) => p.actionDue).sort((a, b) => a.actionDue!.localeCompare(b.actionDue!))[0];
+    if (goiY) tiep = { text: 'PA gợi ý chờ xác nhận', due: null, overdue: false };
+    else if (choDuyet) tiep = { text: 'Chờ Quản lý trả lời', due: choDuyet.approvalDue, overdue: false };
+    else if (coHan) tiep = { text: 'PA tiếp', due: coHan.actionDue, overdue: coHan.actionOverdue };
+    else if (c.followUntil) tiep = { text: 'Cập nhật PA', due: c.followUntil, overdue: c.followOverdue };
+  }
+  return { coKetQua, tong, text, tiep };
+}
+
+/** Phần 3 ("Việc tiếp theo") của một khối phương án. */
+export function viecTiepPhuongAn(p: PhuongAnTomTat): {
+  loai: 'goi-y' | 'cho-duyet' | 'ghi-ket-qua' | 'da-xong'; text: string; due: string | null; overdue: boolean;
+} {
+  if (p.preset && !p.confirmedAt) return { loai: 'goi-y', text: 'Gợi ý tự động · chờ xác nhận', due: null, overdue: false };
+  if (p.pendingApproval) return { loai: 'cho-duyet', text: 'Chờ Quản lý trả lời', due: p.approvalDue, overdue: false };
+  if (dangChay(p)) return { loai: 'ghi-ket-qua', text: 'Ghi kết quả', due: p.actionDue, overdue: p.actionOverdue };
+  return { loai: 'da-xong', text: 'Đã kết thúc', due: p.completedOn, overdue: false };
+}
+
 // ====================================================================== ô "Việc cần làm tiếp" (Q7)
 
 /** Quá hạn = hạn ĐÃ QUA (trước hôm nay). Hạn đúng hôm nay thì chưa quá hạn; không có hạn thì không bao giờ quá hạn. */

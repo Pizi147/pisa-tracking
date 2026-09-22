@@ -140,4 +140,69 @@ export async function runHoSoHocVienTests(t: YThucTestKit) {
     const la = domain.demTheoNhomViPham([{ category: 'other' }, { category: 'khong-co' }]);
     assert(la.tong === 2 && la.nhom.length === 1 && la.nhom[0].category === 'other', `Mã lạ vẫn tính vào tổng nhưng không có nhóm: ${JSON.stringify(la)}`);
   });
+
+  // ================================================================== Task 6 — Q8 thẻ case, khối phương án
+
+  const PA = (o: Record<string, unknown>) => ({
+    status: 'started', lastOutcome: null, preset: false, confirmedAt: '2026-08-01T00:00:00Z', pendingApproval: false,
+    approvalDue: null, actionDue: null, actionOverdue: false, completedOn: null, ...o,
+  });
+  const CASE = { status: 'in_progress', followUntil: '2026-08-30', followOverdue: false };
+
+  check('PR-HV · Q8 Tiến độ case "k/n PA có kết quả" và việc tiếp theo', () => {
+    const f = domain.tienDoCase;
+    let r = f([PA({ lastOutcome: 'improved' }), PA({})], CASE);
+    assert(r.coKetQua === 1 && r.tong === 2 && r.text === '1/2 PA có kết quả', `(a) 2 PA, 1 có kết quả: ${JSON.stringify(r)}`);
+    r = f([], CASE);
+    assert(r.text === 'Chưa có phương án' && r.tiep && r.tiep.text === 'Cập nhật PA' && r.tiep.due === '2026-08-30' && r.tiep.overdue === false, `(b) 0 PA → tiep theo followUntil: ${JSON.stringify(r)}`);
+    r = f([PA({ actionDue: '2026-08-25' }), PA({ preset: true, confirmedAt: null })], CASE);
+    assert(r.tiep && r.tiep.text === 'PA gợi ý chờ xác nhận' && r.tiep.due === null, `(c) PA gợi ý chưa xác nhận thắng PA có hạn: ${JSON.stringify(r.tiep)}`);
+    r = f([PA({ actionDue: '2026-08-30' }), PA({ actionDue: '2026-08-25', actionOverdue: true })], CASE);
+    assert(r.tiep && r.tiep.text === 'PA tiếp' && r.tiep.due === '2026-08-25' && r.tiep.overdue === true, `(d) hai PA có hạn → lấy hạn sớm nhất + cờ quá hạn của PA đó: ${JSON.stringify(r.tiep)}`);
+    r = f([PA({ actionDue: null, followupDue: '2026-09-30' } as any)], CASE);
+    assert(r.tiep && r.tiep.text === 'Cập nhật PA' && r.tiep.due === '2026-08-30', `(e) chỉ có followupDue → KHÔNG lấy làm hạn, rơi về followUntil: ${JSON.stringify(r.tiep)}`);
+    r = f([PA({ lastOutcome: 'improved', status: 'completed', completedOn: '2026-08-20' })], { status: 'done', followUntil: null, followOverdue: false });
+    assert(r.tiep === null && r.text === '1/1 PA có kết quả', `(f) case done → tiep null: ${JSON.stringify(r)}`);
+    r = f([PA({ pendingApproval: true, approvalDue: '2026-09-01' })], CASE);
+    assert(r.tiep && r.tiep.text === 'Chờ Quản lý trả lời' && r.tiep.due === '2026-09-01' && r.tiep.overdue === false, `(g) PA chờ duyệt: ${JSON.stringify(r.tiep)}`);
+    r = f([PA({ status: 'completed', completedOn: '2026-08-20', actionDue: '2026-08-10', actionOverdue: true })], { status: 'in_progress', followUntil: null, followOverdue: false });
+    assert(r.tiep === null, `(h) PA đã xong không được tính là việc tiếp; không followUntil → null: ${JSON.stringify(r.tiep)}`);
+  });
+
+  check('PR-HV · Q8 Việc tiếp theo của một PA: bốn nhánh', () => {
+    const f = domain.viecTiepPhuongAn;
+    let v = f(PA({ preset: true, confirmedAt: null }));
+    assert(v.loai === 'goi-y' && v.text === 'Gợi ý tự động · chờ xác nhận' && v.due === null && v.overdue === false, `gợi ý: ${JSON.stringify(v)}`);
+    v = f(PA({ pendingApproval: true, approvalDue: '2026-09-01' }));
+    assert(v.loai === 'cho-duyet' && v.text === 'Chờ Quản lý trả lời' && v.due === '2026-09-01', `chờ duyệt: ${JSON.stringify(v)}`);
+    v = f(PA({ status: 'planned', actionDue: '2026-08-25', actionOverdue: true }));
+    assert(v.loai === 'ghi-ket-qua' && v.text === 'Ghi kết quả' && v.due === '2026-08-25' && v.overdue === true, `ghi kết quả: ${JSON.stringify(v)}`);
+    v = f(PA({ status: 'completed', completedOn: '2026-08-20' }));
+    assert(v.loai === 'da-xong' && v.text === 'Đã kết thúc' && v.due === '2026-08-20' && v.overdue === false, `đã xong: ${JSON.stringify(v)}`);
+    assert(domain.dangChay({ status: 'planned' }) && domain.dangChay({ status: 'started' }) && !domain.dangChay({ status: 'completed' }), 'dangChay: planned/started');
+  });
+
+  await t.checkAsync('PR-HV · Q8 Thẻ case có số bằng chứng (attachmentCount) khớp bảng attachments', async () => {
+    const cases: any = await import('../cases/cases.ts');
+    const max = t.seedMax.sos_cases ?? Number.MAX_SAFE_INTEGER;
+    const pair = t.conn.prepare('SELECT student_id, cycle_id FROM sos_cases WHERE id <= ? ORDER BY id LIMIT 1').get(max) as any;
+    assert(pair, 'Bộ demo phải có case');
+    const countOf = (id: number) => (t.conn.prepare("SELECT COUNT(*) n FROM attachments WHERE owner_type = 'sos_case' AND owner_id = ?").get(id) as any).n as number;
+    const boardCases = () => (cases.skillSupportBoard(t.P.admin, pair.student_id, pair.cycle_id) as any).rows.flatMap((r: any) => r.cases) as any[];
+    let list = boardCases();
+    assert(list.length > 0, 'Bảng kỹ năng phải có case');
+    for (const c of list) assert(typeof c.attachmentCount === 'number' && c.attachmentCount === countOf(c.id), `Case ${c.id}: attachmentCount ${c.attachmentCount} ≠ ${countOf(c.id)}`);
+    /* Không chỉ so 0 với 0: chèn MỘT liên kết cho case đầu, kiểm số tăng đúng 1, rồi xoá. */
+    const first = list[0];
+    const before = countOf(first.id);
+    const ins = t.conn.prepare(
+      "INSERT INTO attachments (owner_type, owner_id, kind, url, display_name, uploaded_by, created_at) VALUES ('sos_case', ?, 'link', 'https://example.com/pr-hv', 'PR-HV thử', ?, ?)",
+    ).run(first.id, t.P.admin.userId, new Date().toISOString());
+    try {
+      const again = boardCases().find((c: any) => c.id === first.id);
+      assert(again && again.attachmentCount === before + 1, `Sau khi thêm 1 liên kết: ${again?.attachmentCount} (mong ${before + 1})`);
+    } finally {
+      t.conn.prepare('DELETE FROM attachments WHERE id = ?').run(Number(ins.lastInsertRowid));
+    }
+  });
 }

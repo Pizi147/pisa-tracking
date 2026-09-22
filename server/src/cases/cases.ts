@@ -2374,6 +2374,9 @@ function caseCardOf(caseId: number, c: any) {
       ? ((conn.prepare('SELECT full_name FROM users WHERE id = ?').get(c.reported_by) as any)?.full_name ?? null)
       : null,
     backfilledOn: c.origin_kind === 'backfill' && c.created_at ? String(c.created_at).slice(0, 10) : null,
+    /* Số bằng chứng của case (PR-HV) — để nhãn "Bằng chứng (n)" thu gọn mà không phải tải danh sách tệp. */
+    attachmentCount: (conn.prepare("SELECT COUNT(*) n FROM attachments WHERE owner_type = 'sos_case' AND owner_id = ?")
+      .get(caseId) as any).n as number,
   };
 }
 

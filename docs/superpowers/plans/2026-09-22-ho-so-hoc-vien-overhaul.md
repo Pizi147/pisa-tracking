@@ -910,25 +910,25 @@ lệch vài dòng là bình thường, lệch nội dung thì 🛑 hỏi.
   `cho-duyet` / `Chờ Quản lý trả lời`, `due = approvalDue`; `dangChay` → `ghi-ket-qua` / `Ghi kết quả`, `due =
   actionDue`, `overdue = actionOverdue`; còn lại → `da-xong` / `Đã kết thúc`, `due = completedOn`.
 
-- [ ] **Step 1 (TDD, shared):** `PR-HV · Q8 Tiến độ case "k/n PA có kết quả" và việc tiếp theo` — (a) 2 PA, 1 có
+- [x] **Step 1 (TDD, shared):** `PR-HV · Q8 Tiến độ case "k/n PA có kết quả" và việc tiếp theo` — (a) 2 PA, 1 có
       `lastOutcome` → `'1/2 PA có kết quả'`; (b) 0 PA → `'Chưa có phương án'`, `tiep` theo `followUntil`; (c) PA gợi ý chưa
       xác nhận thắng PA có hạn; (d) hai PA đang chạy hạn 30/08 và 25/08 → `due '…-08-25'`; (e) PA chỉ có `followupDue`
       (không `actionDue`) → **không** lấy làm hạn; (f) case `done` → `tiep null`. `PR-HV · Q8 Việc tiếp theo của một PA` —
       bốn nhánh, mỗi nhánh một assert. Đỏ → viết → xanh.
-- [ ] **Step 2 (TDD, server):** `PR-HV · Q8 Thẻ case có số bằng chứng (attachmentCount) khớp bảng attachments` — lấy một
+- [x] **Step 2 (TDD, server):** `PR-HV · Q8 Thẻ case có số bằng chứng (attachmentCount) khớp bảng attachments` — lấy một
       học viên có case; đọc `cases.skillSupportBoard(P.admin, sid, cid).rows.flatMap(r => r.cases)`; mỗi case:
       `typeof c.attachmentCount === 'number'` và bằng `SELECT COUNT(*) n FROM attachments WHERE owner_type='sos_case' AND owner_id=?`.
       Để phép kiểm không chỉ so 0 với 0: nếu không case nào có tệp, chèn **một liên kết** bằng SQL vào `attachments` cho
       case đầu tiên (đọc cột bắt buộc trong `server/src/schema.sql`, bảng `attachments` — dùng `kind='link'`), kiểm số = 1,
       rồi `DELETE` dòng đó. Đỏ.
-- [ ] **Step 3: `caseCardOf`** — trong object trả về (sau `backfilledOn`), thêm:
+- [x] **Step 3: `caseCardOf`** — trong object trả về (sau `backfilledOn`), thêm:
   ```ts
   /* Số bằng chứng của case (PR-HV) — để nhãn "Bằng chứng (n)" thu gọn mà không phải tải danh sách tệp. */
   attachmentCount: (conn.prepare("SELECT COUNT(*) n FROM attachments WHERE owner_type = 'sos_case' AND owner_id = ?")
     .get(caseId) as any).n as number,
   ```
   (SQL tại chỗ — **không** import từ `platform/attachments.ts` để không dính file đóng băng.) Xanh.
-- [ ] **Step 4: `TheCase`** (thay `CaseCardView`, giữ **mọi** state và hộp thoại: `adding`, `completing`, `causeOpen`,
+- [x] **Step 4: `TheCase`** (thay `CaseCardView`, giữ **mọi** state và hộp thoại: `adding`, `completing`, `causeOpen`,
       `dismissOpen`, `ActionDialog`, `OutcomeDialog`, `CauseDeterminationPanel`, `DismissCaseForm`). Thêm state
       `moXong` (mặc định `c.status === 'done'`), `moBangChung` (mặc định `false`). `open` mặc định `c.status !== 'done'` (giữ).
   - **Đầu thẻ** — `<button type="button" aria-expanded={open} onClick={() => setOpen(!open)} className="w-full text-left appearance-none bg-transparent border-0 cursor-pointer">`
@@ -962,7 +962,7 @@ lệch vài dòng là bình thường, lệch nội dung thì 🛑 hỏi.
        `<span className="text-xs text-slate-400">Chưa hoàn thành: {c.closeBlockers.join(' · ')}</span>`. Dưới dãy nút:
        `DismissCaseForm` khi mở (giữ) và câu `!c.canClose` (giữ nguyên chữ dòng 401–402). **Bỏ** câu "Case đang xử lý,
        chưa kết luận." (dòng 361–363) — cột 3 đầu thẻ đã nói; ghi Nhật ký.
-- [ ] **Step 5: `KhoiPhuongAn`** (thay `PlanRow`, giữ state `editing`, `showHistory`, lịch sử dòng 495–523, `BangChung`
+- [x] **Step 5: `KhoiPhuongAn`** (thay `PlanRow`, giữ state `editing`, `showHistory`, lịch sử dòng 495–523, `BangChung`
       của phương án dòng 525–529, `InlineResult`). Khung: `<div className="rounded-lg border px-2.5 py-2" style={{ borderColor: 'var(--line)' }}>`
       chứa lưới `grid gap-x-3 gap-y-2 md:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_minmax(0,1fr)]`:
 
@@ -974,9 +974,9 @@ lệch vài dòng là bình thường, lệch nội dung thì 🛑 hỏi.
 
       Lịch sử (khi `showHistory`) và `InlineResult` (khi `editing`) vẽ **dưới lưới, rộng hết khối** (bỏ `ml-5` của
       `InlineResult` dòng 624 nếu làm lệch trên 375px — chỉnh lớp, không đổi logic). `outcomeTone` giữ.
-- [ ] **Step 6:** `SkillRow` dòng 233–235: gọi `<TheCase key={c.id} c={c} row={row} onChanged={onChanged} />`. Sửa chú
+- [x] **Step 6:** `SkillRow` dòng 233–235: gọi `<TheCase key={c.id} c={c} row={row} onChanged={onChanged} />`. Sửa chú
       thích đầu hai hàm (thay chú thích "MỘT THẺ CASE … PR-D" và "MỘT PHƯƠNG ÁN — MỘT DÒNG") cho đúng bố cục v3.
-- [ ] **Step 7:** `npm run check` xanh (số = trước + 3). Bấm thử (ba vai) trên: case có 2 PA song song + ghi chú dài +
+- [x] **Step 7:** `npm run check` xanh (số = trước + 3). Bấm thử (ba vai) trên: case có 2 PA song song + ghi chú dài +
       tên GV dài (màn 2 Task 0) — không tràn, không cắt ở desktop và 375px; `Ghi kết quả` → lưu → cột 2 cập nhật, tiến độ
       `k/n` tăng; PA đã xong thu gọn và mở được; case từ SOS chờ nguyên nhân (màn 3): khối vàng, `Xác định nguyên nhân`,
       PA `Gợi ý tự động · chờ xác nhận` với `Xác nhận/Sửa/Thay` ở cột 3, `Không cần theo dõi` ở chân; case đã hoàn thành
@@ -1281,3 +1281,4 @@ danh sách ảnh.)*
 | 22/09/2026 | 3 | Hai phép TDD đỏ (`ketQuaTestGanNhat` chưa có; `next.overdue` chưa có, câu cũ "đề xuất L đang chờ…") → xanh. **Kiểm ngược `<`→`<=` KHÔNG đỏ**: bộ demo không có việc nào có hạn đúng bằng ngày demo nên hai phép so cho cùng kết quả → tách luật thành hàm thuần `quaHan(due, today)` ở `hoSoHocVien.ts` (profile.ts dùng nó) + phép kiểm biên riêng (hạn = hôm nay → chưa quá hạn) — thêm 1 phép ngoài kế hoạch. Thêm mục (k) "không có tuần → chỉ MT2". `HeaderStats` bốn ô mới, `Stat` có `nho`/`sub: ReactNode`. **Lưu ý vận hành:** API dev chỉ build lúc `npm run dev` khởi động — sửa máy chủ phải khởi động lại mới thấy (ô 4 lúc đầu vẫn chữ cũ). Bấm thử: Huy (FT, GVCN) ô 1 `MT2 · W3 AUG 2026` + KetQuaDot `Đã đủ điểm · SOS 1`; ô 4 `Làm PA L` · `quá hạn 30/08/2026` đỏ. Đỗ Gia Bảo (id 8, MB-FOU 12, Quản lý): ô 1 `Giữa khoá · W3 AUG 2026`, **không** có chữ Overall; ô 4 `Không có`. 375px: 2 cột, ô 4 xuống dòng, không tràn. Số phép kiểm: **610** (+3). |
 | 22/09/2026 | 4 | `demTheoNhomViPham` TDD đỏ → xanh; thứ tự thật của `VIOLATION_CATEGORIES` là attendance (Chuyên cần) **trước** homework (BTVN) — phép kiểm viết theo hằng thật, không theo ví dụ của plan; mã nhóm lạ vẫn tính vào `tong`. `OSoNho`, `DongThoiGian` mới; `TurnRow` → `TheSos` (đầu thẻ 3 cột `div role=button`, thân thẻ lưới việc), `PhoiHopSosSection` prop `cot1` thay `showStudentName`; bỏ import `Level`/`sosTone` không dùng. **Huy không có lượt Phối hợp SOS nào** (như ảnh trước) → bấm thử trên Đỗ Minh Khôi (id 42, MT2 · SOS 2): mở/đóng bằng chuột và Enter ✓; link "Hỗ trợ học thuật xem ở tab Học thuật" → tab Học thuật, bỏ `?tab=`, thẻ không bị mở/đóng ✓ (lưu ý cho script kiểm: `getByRole('button', {name})` khớp cả đầu thẻ vì tên gồm chữ bên trong — phải chọn `button.link`); GVCN Xác nhận "Trao đổi với gia đình" → `Đã xong` 1 → 2 ✓ (đã ghi vào database worktree); lớp MB-FT 101: 2 thẻ, cột 1 tên HV, dòng phụ "Học thuật theo dõi ở bảng kỹ năng" ✓; 375px không cuộn ngang, cột 1 một hàng, cột 2+3 hàng dưới ✓; console không lỗi ✓. Số phép kiểm: **611**. |
 | 22/09/2026 | 5 | `StudentYThucSection` viết lại phần vẽ theo §4.3 (đầu khối + nút, `HangTab cap="con"` với số lượt chưa xong, ô số nhỏ, hai dãy lọc, `DongThoiGian` có cột tick, nút Sửa/Mở/Xem); `coord` tải luôn (A5); `RANGES` đổi thứ tự/chữ; lọc nhóm giữ dòng PA chứa vi phạm của nhóm (J7); `XemPhuongAnPanel` mới; `RecordViolationPanel.onDelete` → nút `Xoá vi phạm` trong form sửa. **Huy không có vi phạm chưa xử lý** nên bấm thử luồng tạo PA trên **Nguyễn Minh An** (id 1, 4 vi phạm chưa xử lý, có ⚠): GVCN lọc BTVN 9→4 dòng, 7 ngày 5 dòng; tick 2 → `Tạo phương án từ 2 vi phạm` → panel `Tạo phương án · Nguyễn Minh An` → chọn GV trao đổi ngắn → `Lưu — Đang chuẩn bị` → dòng `◷ Phương án` + ô `PA đang chuẩn bị` + nút `Mở` → `Xác nhận đã thực hiện` → dòng `✓ Phương án` + nút `Xem` → hộp chỉ đọc đủ Trạng thái/Ngày/Người/Nội dung/2 vi phạm/Tệp/Xác nhận bởi ✓; `Sửa` → `Xoá vi phạm` → hộp `Xoá vi phạm này?` (Huỷ) ✓. GVBM (Trang): không ô tick, không `Mở`, có `Xem`, còn `+ Ghi nhận vi phạm` ✓. Quản lý (Vy, trên Khôi vì Minh An đã hết vi phạm chưa xử lý sau hai lần chạy script): ô tick 2, Sửa, Tạo phương án từ 1 vi phạm ✓. Khôi: tab con `Phối hợp SOS 1` ✓. 375px không cuộn ngang, dòng thời gian 3 cột + nút xuống hàng ✓. Console không lỗi ✓. (Script đã tạo + xác nhận 2 PA "GV trao đổi ngắn với HS" cho Minh An trong database worktree.) Số phép kiểm: **611** (không đổi — task giao diện). |
+| 22/09/2026 | 6 | Ba phép TDD đỏ → xanh (`tienDoCase`, `viecTiepPhuongAn`, `dangChay`, `attachmentCount` — phép server dùng `checkAsync` + `await import` vì harness là ESM; chèn 1 liên kết `kind='link'` vào `attachments` rồi xoá). `caseCardOf` thêm `attachmentCount` (SQL tại chỗ). `CaseCardView`→`TheCase`, `PlanRow`→`KhoiPhuongAn`; `InlineResult` bỏ `ml-5`. Dấu ✓ của PA đã xong đổi từ `text-emerald-300` sang `text-slate-400` (luật ui.tsx: xanh lá chỉ cho `<Outcome>`). Bỏ câu "Case đang xử lý, chưa kết luận." (cột 3 đầu thẻ đã nói). Bấm thử: Quyên (id 21, admin) case 22 có 2 PA: đầu thẻ `1/2 PA có kết quả` + `Chờ Quản lý trả lời: hạn 14/09/2026`, hai khối 3 phần, ghi chú dài không cắt, `▸ Bằng chứng (0)` mở ra BangChung, chân thẻ `+ Thêm phương án · Hoàn thành case (mờ) · Chưa hoàn thành: …`; `Ghi kết quả` → lưu → phần 2 hiện ghi chú, tiến độ giữ 1/2 (PA đó đã có kết quả) ✓. Khôi (id 42) case 34 chờ nguyên nhân: khối vàng, cột 2 `PA gợi ý chờ xác nhận`, phần 3 `Gợi ý tự động · chờ xác nhận` ✓; GVCN Hà và GVBM Trang **không** thấy nút Xác định nguyên nhân/Không cần theo dõi/Xác nhận — **giống ảnh trước** (không dạy Writing Task 2); GVBM Writing Task 2 Cao Khánh Linh (id 10) thấy đủ Xác định nguyên nhân · Không cần theo dõi · Xác nhận/Sửa/Thay · + Thêm phương án · Hoàn thành case ✓. Huy: case Reading đã hoàn thành đóng mặc định, cột 3 `Đã hoàn thành`, mở ra thì khối PA đã xong mở sẵn (`moXong` mặc định = case done), bấm nút thu gọn ✓. 375px: ba phần xếp dọc, không cuộn ngang ✓. Console không lỗi ✓. (Script ghi thêm 1 kết quả "Tiến bộ một phần" cho PA của Quyên trong database worktree.) Số phép kiểm: **614** (+3). |
