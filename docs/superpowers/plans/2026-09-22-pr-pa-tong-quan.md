@@ -2625,3 +2625,12 @@ export function HocVienCanHoTro() {
   chỉ quá hạn mới ⚠, hạn hôm nay dùng nhãn vàng không biểu tượng; ô dính cột đầu của hàng tổng hở viền → cùng nền hàng;
   "Chưa có người phụ trách" lặp hai lần trên một dòng phụ của việc `no_owner`. **Tự quyết:** 4 đoạn hướng dẫn dưới ô nhập
   của form Tạo Case là hint có từ trước, thuộc PR-Form — không sửa ở đây.
+- **Task 14 — rà toàn nhánh (Opus 5, gói 40 commit / 50 file):** "Ready after the listed fixes". Không lỗi đúng/sai,
+  quyền hay hợp đồng số liệu: (a) mọi số đi qua `metricSet` và danh sách mở ra tính lại bằng cùng hàm; (b) bộ lọc chương
+  trình một chỗ, phủ đủ `ids`/tử/mẫu/`splits`/`byKind`; (c) GV bị 403 ở ba route Quản lý; (d) không chạm file của PR song
+  song; (e) không chuỗi cấm, không "Normal"; (f) Turso: GET Tổng quan nay có ghi (`settleNoShows`) + quét nặng — chuyển
+  Z2c. Phải sửa trước merge: bảng chi nhánh trả `branchId` đã giải để "Theo giáo viên" của QL một chi nhánh gọi đúng
+  chi nhánh (đường mới lộ ra sau 13b); siết hai phép kiểm Cần xử lý / Điểm đáng chú ý (assert không rỗng); dọn `void
+  assertThrows`, `c.kind` thừa, chú thích "bộ kiểm này phải chạy cuối". Người rà đồng ý mọi ruling; sửa lý do F4: dòng
+  phụ vượt ngân sách ~60 ký tự của G-3, PR-Ra rút gọn. Triage ghi chú nhỏ để dành: phần lớn DROP/DEFER (S3, Ra, Form,
+  Pb, Z2c) — chi tiết ở thân PR.
