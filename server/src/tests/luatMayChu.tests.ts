@@ -187,5 +187,46 @@ export async function runLuatMayChuTests(t: YThucTestKit) {
     assert(!/sit_note[^\n]*startsWith/.test(src), 'absence.ts còn đọc sit_note.startsWith(...) làm cờ');
   });
 
+  // ================================================================== 3. S13 · S14
+
+  console.log('\nPR-S1 · 3. S13 giữ quyết định Quản lý · S14 xác nhận "-" muộn của Writing');
+  const cellOf = (hv: HocVien, skill: string, today: string) =>
+    (attempts.classScoreSheet(P.admin, hv.cid, hv.periodId, today) as any).rows
+      .find((r: any) => r.attemptId === hv.attemptId)?.cells.find((c: any) => c.skill === skill);
+  const settledCount = (attemptId: number, assessed: string) => (conn.prepare(
+    `SELECT COUNT(*) n FROM attempt_schedule_history WHERE attempt_id = ? AND action = 'skill_no_show_settled' AND field = ?`,
+  ).get(attemptId, assessed) as any).n as number;
+
+  check('S13 · GV báo lại "-" cùng tuần sau khi Quản lý đã đổi kết luận: không chốt lại, dấu không hiện lại, ô có MỘT dòng giải thích', () => {
+    const hv = taoHocVien({ classCode: 'MB-FT 101', weekStart: '2026-09-14' });
+    attempts.saveScore(P.lrTeacher, hv.attemptId, 'listening', { noShow: true }, '2026-09-16');
+    absence.settleNoShows('2026-09-21');
+    assert(settledCount(hv.attemptId, 'listening') === 1, 'Tiền đề: phải chốt đúng một lần');
+    skillSchedule.setSitStatus(P.mbManager, hv.attemptId, 'listening', 'scheduled', 'Quản lý sửa: em có làm bài');
+    attempts.saveScore(P.lrTeacher, hv.attemptId, 'listening', { noShow: true }, '2026-09-22');
+    absence.settleNoShows('2026-09-23');
+    assert(sit(hv.attemptId, 'listening').sit_status === 'scheduled', 'Quyết định của Quản lý bị đè');
+    assert(settledCount(hv.attemptId, 'listening') === 1, 'Không được chốt lần hai');
+    const cell = cellOf(hv, 'listening', '2026-09-22');
+    assert(cell && cell.noShow === null, `Dấu "-" cũ không được sống lại: ${JSON.stringify(cell?.noShow)}`);
+    assert(cell.noShowNote === domain.NO_SHOW_OVERRIDDEN_NOTE, `Thiếu dòng giải thích: ${JSON.stringify(cell.noShowNote)}`);
+    const other = cellOf(hv, 'reading', '2026-09-22');
+    assert(other.noShowNote === null, 'Ô không có chuyện gì thì không có dòng giải thích');
+  });
+
+  check('S14 · resolveLateNoShow nhánh Writing: chỉ W1 "-" thì KHÔNG xác nhận được; từ chối thì gỡ dấu; giáo viên không tự hiệu chỉnh', () => {
+    const hv = taoHocVien({ classCode: 'MB-FT 101', weekStart: '2026-09-07' });       // tuần đã hết 13/09
+    attempts.saveScore(P.w1Teacher, hv.attemptId, 'writing1', { noShow: true }, '2026-09-15');
+    assert(sit(hv.attemptId, 'writing').sit_status === 'scheduled', 'W2 chưa "-" thì buổi Writing chưa phải vắng');
+    assertThrows(() => absence.resolveLateNoShow(P.mbManager, hv.attemptId, 'writing1', 'confirm', '2026-09-15'),
+      /mọi bài của buổi/, 'Xác nhận vắng Writing khi chỉ có W1 "-"');
+    assertThrows(() => absence.resolveLateNoShow(P.w1Teacher, hv.attemptId, 'writing1', 'reject', '2026-09-15'),
+      /Chỉ Quản lý/, 'GV tự hiệu chỉnh dấu "-" của tuần đã kết thúc');
+    const r = absence.resolveLateNoShow(P.mbManager, hv.attemptId, 'writing1', 'reject', '2026-09-15') as any;
+    assert(r.result === 'rejected', `Phải là rejected: ${JSON.stringify(r)}`);
+    const w1 = conn.prepare(`SELECT no_show_period_id FROM assessment_scores WHERE attempt_id = ? AND skill = 'writing1'`).get(hv.attemptId) as any;
+    assert(w1.no_show_period_id === null, 'Từ chối xong dấu "-" của W1 phải được gỡ');
+  });
+
   // ---- các task sau thêm phép kiểm NGAY TRÊN dòng này ----
 }

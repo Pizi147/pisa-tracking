@@ -1,7 +1,7 @@
 import { db, tx } from '../db.ts';
 import {
-  ASSESSED_SKILLS, ASSESSED_SKILL_LABEL, C10_NHAP_DAU_TRU_TUAN_QUA_KHU, ENTRY_SKILLS, ENTRY_SKILL_LABEL, MOCK_FT_STUDY_WEEK, PERMISSIONS,
-  SIGNAL_WITHDRAW_SCORE_FIXED, awaitingScore, noShowStateOf, noShowText, pendingSkillsOf,
+  ASSESSED_SKILLS, ASSESSED_SKILL_LABEL, C10_NHAP_DAU_TRU_TUAN_QUA_KHU, ENTRY_SKILLS, ENTRY_SKILL_LABEL, MOCK_FT_STUDY_WEEK, NO_SHOW_OVERRIDDEN_NOTE,
+  PERMISSIONS, SIGNAL_WITHDRAW_SCORE_FIXED, awaitingScore, noShowStateOf, noShowText, pendingSkillsOf,
   type AssessedSkill, type EntrySkill, type NoShowState, type PendingCell, type SkillProgress, type WorkScope,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -217,6 +217,8 @@ export type SkillCell = {
     effectiveOn: string | null;
     editableUntil: string | null;
   } | null;
+  /** S13: một dòng giải thích khi Quản lý đã đổi kết luận "không dự thi" của chính tuần này. `null` là bình thường. */
+  noShowNote: string | null;
 };
 
 /** Đưa ô điểm về đúng hình dạng mà luật đếm dùng chung cần. */
@@ -320,6 +322,8 @@ export function skillCells(
         ? { state: 'khong-du-thi', effectiveOn: view.weekEnd ? view.weekEnd.slice(0, 10) : null, editableUntil: null }
         : { state: 'none', effectiveOn: null, editableUntil: null };
     }
+    const noShowNote = row?.no_show_settled_at && row.no_show_period_id === view.periodId && view.sitStatus !== 'absent'
+      ? NO_SHOW_OVERRIDDEN_NOTE : null;
     const noShow = ns.state === 'none' ? null : {
       state: ns.state, text: noShowText(ns, view.periodCode, today) ?? '',
       effectiveOn: ns.effectiveOn, editableUntil: ns.editableUntil,
@@ -356,6 +360,7 @@ export function skillCells(
       weekRange: view.weekRange,
       sitStatus: view.sitStatus,
       noShow,
+      noShowNote,
     };
   });
 }

@@ -508,7 +508,7 @@ git commit -m "PR-S1 (1): hai cột system_close_reason + absent_from_no_show, b
 Hành vi S13 **đã đúng** (báo lại cùng tuần là vô hại — `attempts.ts:1255`; ô đã chốt mà Quản lý sửa thì không sống lại —
 `attempts.ts:314-322`). Task này khoá hành vi bằng phép kiểm và thêm dòng giải thích (quyết định 4.5).
 
-- [ ] **Step 1: Phép kiểm (đỏ).**
+- [x] **Step 1: Phép kiểm (đỏ).**
 
 ```ts
   // ================================================================== 3. S13 · S14
@@ -553,9 +553,9 @@ Hành vi S13 **đã đúng** (báo lại cùng tuần là vô hại — `attempt
   });
 ```
 
-- [ ] **Step 2: Chạy.** Expected: S13 ✗ (`noShowNote` undefined, `NO_SHOW_OVERRIDDEN_NOTE` undefined); S14 ✓ ngay (hành vi đã có — đây là
+- [x] **Step 2: Chạy.** Expected: S13 ✗ (`noShowNote` undefined, `NO_SHOW_OVERRIDDEN_NOTE` undefined); S14 ✓ ngay (hành vi đã có — đây là
   phép kiểm còn thiếu). Nếu S14 ✗ → 🛑 báo: luật W1/W2 của `resolveLateNoShow` khác mô tả.
-- [ ] **Step 3: Sửa mã.**
+- [x] **Step 3: Sửa mã.**
 
 `shared/domain/fasttrack.ts` sau `NO_SHOW_HINT`:
 
@@ -581,8 +581,8 @@ Trong `skillCells`, ngay sau khối `if (row?.no_show_settled_at && ns.state !==
 ```
 và thêm `noShowNote,` vào object trả về, cạnh `noShow,`. Import `NO_SHOW_OVERRIDDEN_NOTE` ở khối import `shared/domain` đầu file.
 
-- [ ] **Step 4: Chạy, xanh.** `npm run typecheck` (web có thể khai báo lại kiểu ô — thêm trường tuỳ chọn nếu `tsc` báo) rồi `npm test 2>&1 | tail -3` — Expected `682`.
-- [ ] **Step 5: Commit.** `git commit -am "PR-S1 (3): S13 dòng giải thích khi Quản lý đã đổi kết luận '-'; S14 phép kiểm Writing của resolveLateNoShow"`
+- [x] **Step 4: Chạy, xanh.** `npm run typecheck` (web có thể khai báo lại kiểu ô — thêm trường tuỳ chọn nếu `tsc` báo) rồi `npm test 2>&1 | tail -3` — Expected `682`.
+- [x] **Step 5: Commit.** `git commit -am "PR-S1 (3): S13 dòng giải thích khi Quản lý đã đổi kết luận '-'; S14 phép kiểm Writing của resolveLateNoShow"`
 
 ---
 
