@@ -1,7 +1,7 @@
 import { db, tx } from '../db.ts';
 import {
   ASSESSED_SKILLS, ASSESSED_SKILL_LABEL, C10_NHAP_DAU_TRU_TUAN_QUA_KHU, ENTRY_SKILLS, ENTRY_SKILL_LABEL, MOCK_FT_STUDY_WEEK, NO_SHOW_OVERRIDDEN_NOTE,
-  PERMISSIONS, SIGNAL_WITHDRAW_SCORE_FIXED, awaitingScore, noShowStateOf, noShowText, pendingSkillsOf,
+  PERMISSIONS, awaitingScore, noShowStateOf, noShowText, pendingSkillsOf,
   type AssessedSkill, type EntrySkill, type NoShowState, type PendingCell, type SkillProgress, type WorkScope,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -23,9 +23,7 @@ import {
 } from './skillSchedule.ts';
 import { canRequest as canRequestAbsence, flagLateNoShow, pendingMove, settleNoShows } from './absence.ts';
 import { raiseSignalsForResult, stepsFor } from '../cases/sos.ts';
-import {
-  caseHasIndependentBasis, retireCaseForCorrectedScore, withdrawSignalsNoLongerValid,
-} from '../cases/signals.ts';
+import { reconcileCorrectedSignals } from '../cases/signals.ts';
 import { currentCycle, cycleById, examPlanOf, nextAttemptNo } from './cycles.ts';
 import { allProgrammes, evaluateRegular, regularDeadline } from '../normal/regular.ts';
 
@@ -1133,56 +1131,11 @@ function refreshOutcome(p: Principal, attemptId: number) {
  *     người phụ trách xem lại xem có cần theo tiếp không. Không xoá việc đã diễn ra.
  */
 function reconcileCorrectedScores(p: Principal, attemptId: number, result: AttemptResult) {
-  const conn = db();
-  const rows = scoresOf(attemptId);
-  const entry = entryBandsOf(rows);
+  const entry = entryBandsOf(scoresOf(attemptId));
   const failing = new Set(failingEntrySkills(result.expectation, entry, result.skipped));
-
   /* Ô đã có điểm mà KHÔNG nằm trong danh sách dưới kỳ vọng = ô đang đạt. */
-  const passing = ENTRY_SKILLS.filter(
-    (k) => (entry[k] ?? null) !== null && !failing.has(k),
-  ) as string[];
-  if (!passing.length) return;
-
-  const { withdrawn, casesToReview } = withdrawSignalsNoLongerValid({
-    actorUserId: p.userId, attemptId, passingSkills: passing,
-  });
-
-  for (const item of casesToReview) {
-    if (caseHasIndependentBasis(item.caseId, attemptId)) {
-      /* Giữ case, chỉ nhắc xem lại — người phụ trách quyết định có theo tiếp hay không. */
-      const c = conn
-        .prepare('SELECT owner_user_id, student_id, status FROM sos_cases WHERE id = ?')
-        .get(item.caseId) as any;
-      /* Case đã ĐÓNG (không cần theo dõi / chốt kết quả) thì không còn gì để "xem lại" — không nhắc. */
-      if (c?.owner_user_id && c.status !== 'done') {
-        const st = conn.prepare('SELECT full_name FROM students WHERE id = ?').get(c.student_id) as any;
-        notify({
-          userId: c.owner_user_id, kind: 'sos',
-          title: `Xem lại case ${item.label} — ${st?.full_name ?? ''}`,
-          body: 'Điểm nguồn đã được sửa thành đạt kỳ vọng. Case vẫn còn căn cứ khác; '
-            + 'xem có cần theo tiếp không.',
-          entityType: 'sos_case', entityId: item.caseId,
-          dedupKey: `case_review:${item.caseId}:${attemptId}`,
-        });
-      }
-    } else {
-      retireCaseForCorrectedScore(p, item.caseId, item.label);
-      conn
-        .prepare(
-          `UPDATE case_signals SET status = 'withdrawn', withdrawn_reason = ?, updated_at = ? WHERE id = ?`,
-        )
-        .run(SIGNAL_WITHDRAW_SCORE_FIXED, nowIso(), item.signalId);
-    }
-  }
-
-  if (withdrawn.length) {
-    writeAudit({
-      actorUserId: p.userId, action: 'signal.withdrawn_batch', entityType: 'assessment_attempt',
-      entityId: attemptId, entityLabel: `${withdrawn.length} tín hiệu`,
-      after: { reason: SIGNAL_WITHDRAW_SCORE_FIXED, skills: withdrawn.map((w) => w.skill) },
-    });
-  }
+  const passing = ENTRY_SKILLS.filter((k) => (entry[k] ?? null) !== null && !failing.has(k)) as string[];
+  reconcileCorrectedSignals(p, { attemptId, passingSkills: passing, passText: 'đạt kỳ vọng' });
 }
 
 export function saveScore(

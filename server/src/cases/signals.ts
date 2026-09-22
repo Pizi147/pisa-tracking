@@ -602,7 +602,7 @@ export function caseHasIndependentBasis(caseId: number, excludeAttemptId: number
  * Phương án bị huỷ ở đây không được tính là thành công hay thất bại — nó không có kết quả,
  * vì nó chưa từng chạy.
  */
-export function retireCaseForCorrectedScore(p: Principal, caseId: number, label: string) {
+export function retireCaseForCorrectedScore(p: Principal, caseId: number, label: string, passText = 'đạt kỳ vọng') {
   const conn = db();
   const c = conn.prepare('SELECT * FROM sos_cases WHERE id = ?').get(caseId) as any;
   if (!c || c.status === 'done') return { ok: false };
@@ -627,7 +627,7 @@ export function retireCaseForCorrectedScore(p: Principal, caseId: number, label:
                 outcome_note = ?, dedup_key = NULL, updated_at = ? WHERE id = ?`,
       )
       .run(demoToday(), p.userId,
-           `${SIGNAL_WITHDRAW_SCORE_FIXED} — điểm ${label} đã được sửa lại thành đạt kỳ vọng.`,
+           `${SIGNAL_WITHDRAW_SCORE_FIXED} — điểm ${label} đã được sửa lại thành ${passText}.`,
            nowIso(), caseId);
     conn
       .prepare(
@@ -642,4 +642,47 @@ export function retireCaseForCorrectedScore(p: Principal, caseId: number, label:
     });
     return { ok: true, cancelledPlans: cancelled };
   });
+}
+
+/**
+ * ĐỐI SOÁT NGƯỢC SAU KHI SỬA ĐIỂM (mục 9.4, RB-8) — MỘT hàm cho cả Fast Track và lớp thường.
+ *
+ * Những ô vừa được sửa thành ĐẠT: tín hiệu còn chờ bị thu hồi; Case chỉ sống nhờ con số vừa sửa thì rút khỏi danh sách đang xử lý
+ * (giữ lịch sử, huỷ phương án chưa ai làm); Case còn căn cứ độc lập thì GIỮ và nhắc người phụ trách. Không ghi mốc "đã tiến bộ":
+ * sửa một con số nhập sai không phải một lần thi thứ hai. `passText`: "đạt kỳ vọng" (FT) · "đạt" (lớp thường).
+ */
+export function reconcileCorrectedSignals(p: Principal, input: { attemptId: number; passingSkills: string[]; passText: string }) {
+  const conn = db();
+  if (!input.passingSkills.length) return;
+  const { withdrawn, casesToReview } = withdrawSignalsNoLongerValid({
+    actorUserId: p.userId, attemptId: input.attemptId, passingSkills: input.passingSkills,
+  });
+  for (const item of casesToReview) {
+    if (caseHasIndependentBasis(item.caseId, input.attemptId)) {
+      /* Giữ case, chỉ nhắc xem lại — người phụ trách quyết định có theo tiếp hay không. */
+      const c = conn.prepare('SELECT owner_user_id, student_id, status FROM sos_cases WHERE id = ?').get(item.caseId) as any;
+      /* Case đã ĐÓNG (không cần theo dõi / chốt kết quả) thì không còn gì để "xem lại" — không nhắc. */
+      if (c?.owner_user_id && c.status !== 'done') {
+        const st = conn.prepare('SELECT full_name FROM students WHERE id = ?').get(c.student_id) as any;
+        notify({
+          userId: c.owner_user_id, kind: 'sos',
+          title: `Xem lại case ${item.label} — ${st?.full_name ?? ''}`,
+          body: `Điểm nguồn đã được sửa thành ${input.passText}. Case vẫn còn căn cứ khác; xem có cần theo tiếp không.`,
+          entityType: 'sos_case', entityId: item.caseId,
+          dedupKey: `case_review:${item.caseId}:${input.attemptId}`,
+        });
+      }
+    } else {
+      retireCaseForCorrectedScore(p, item.caseId, item.label, input.passText);
+      conn.prepare(`UPDATE case_signals SET status = 'withdrawn', withdrawn_reason = ?, updated_at = ? WHERE id = ?`)
+        .run(SIGNAL_WITHDRAW_SCORE_FIXED, nowIso(), item.signalId);
+    }
+  }
+  if (withdrawn.length) {
+    writeAudit({
+      actorUserId: p.userId, action: 'signal.withdrawn_batch', entityType: 'assessment_attempt',
+      entityId: input.attemptId, entityLabel: `${withdrawn.length} tín hiệu`,
+      after: { reason: SIGNAL_WITHDRAW_SCORE_FIXED, skills: withdrawn.map((w) => w.skill) },
+    });
+  }
 }

@@ -1398,7 +1398,7 @@ con số vừa sửa thì rút; Case có căn cứ độc lập thì giữ + nh�
 môn được sửa lên đạt mà các môn khác chưa có điểm, `sosLevel` là `null` và hàm **thoát sớm** (dòng 416) — nên lời gọi đối soát phải đứng
 **trước** lối thoát đó.
 
-- [ ] **Step 1: Phép kiểm (đỏ).**
+- [x] **Step 1: Phép kiểm (đỏ).**
 
 ```ts
   // ================================================================== 10. RB-8
@@ -1454,9 +1454,9 @@ môn được sửa lên đạt mà các môn khác chưa có điểm, `sosLevel
   });
 ```
 
-- [ ] **Step 2: Chạy, đỏ.** Expected: RB-8 phép 1–3 ✗; phép 4 ✓ (hành vi đã đúng — khoá lại). Nếu phép 4 ✗ → 🛑 (Case bị đóng hoặc
+- [x] **Step 2: Chạy, đỏ.** Expected: RB-8 phép 1–3 ✗; phép 4 ✓ (hành vi đã đúng — khoá lại). Nếu phép 4 ✗ → 🛑 (Case bị đóng hoặc
   không có mốc — đó là lỗi khác, báo trước khi sửa).
-- [ ] **Step 3: `signals.ts`.** `retireCaseForCorrectedScore(p: Principal, caseId: number, label: string, passText = 'đạt kỳ vọng')` và đổi câu
+- [x] **Step 3: `signals.ts`.** `retireCaseForCorrectedScore(p: Principal, caseId: number, label: string, passText = 'đạt kỳ vọng')` và đổi câu
   `outcome_note` thành `` `${SIGNAL_WITHDRAW_SCORE_FIXED} — điểm ${label} đã được sửa lại thành ${passText}.` ``. Thêm hàm chung (sau
   `retireCaseForCorrectedScore`), **chuyển nguyên** thân vòng `for (const item of casesToReview)` và khối audit từ `attempts.ts:1142-1180`:
 
@@ -1503,7 +1503,7 @@ export function reconcileCorrectedSignals(p: Principal, input: { attemptId: numb
 }
 ```
 
-- [ ] **Step 4: `attempts.ts`.** Thân `reconcileCorrectedScores` (dòng 1131–1181) còn lại:
+- [x] **Step 4: `attempts.ts`.** Thân `reconcileCorrectedScores` (dòng 1131–1181) còn lại:
 
 ```ts
 function reconcileCorrectedScores(p: Principal, attemptId: number, result: AttemptResult) {
@@ -1517,7 +1517,7 @@ function reconcileCorrectedScores(p: Principal, attemptId: number, result: Attem
 Dòng import 27: thay `caseHasIndependentBasis, retireCaseForCorrectedScore, withdrawSignalsNoLongerValid,` bằng `reconcileCorrectedSignals,`
 (xoá import nào `tsc` báo không còn dùng: `notify`, `SIGNAL_WITHDRAW_SCORE_FIXED`… — **chỉ** khi thật sự không còn chỗ dùng trong file).
 
-- [ ] **Step 5: `regular.ts`.** Import `reconcileCorrectedSignals` cạnh `raiseSignal` (dòng 3). Trong `refreshRegularOutcome`, ngay sau khối
+- [x] **Step 5: `regular.ts`.** Import `reconcileCorrectedSignals` cạnh `raiseSignal` (dòng 3). Trong `refreshRegularOutcome`, ngay sau khối
   `if (r.complete && a.status === 'planned') { … }` (dòng 411–414), **trước** `if (r.sosLevel === null) return r;`:
 
 ```ts
@@ -1530,8 +1530,8 @@ Dòng import 27: thay `caseHasIndependentBasis, retireCaseForCorrectedScore, wit
   });
 ```
 
-- [ ] **Step 6: Chạy, xanh** (Expected `703`). Phép kiểm cũ `[9.4] …` về FT phải còn ✓ (không đổi hành vi FT, chỉ dời chỗ).
-- [ ] **Step 7: Commit.** `git commit -am "PR-S1 (10): RB-8 — lớp thường đối soát sau sửa điểm bằng hàm chung với FT; khoá 'không đóng Case vô cớ'"`
+- [x] **Step 6: Chạy, xanh** (Expected `703`). Phép kiểm cũ `[9.4] …` về FT phải còn ✓ (không đổi hành vi FT, chỉ dời chỗ).
+- [x] **Step 7: Commit.** `git commit -am "PR-S1 (10): RB-8 — lớp thường đối soát sau sửa điểm bằng hàm chung với FT; khoá 'không đóng Case vô cớ'"`
 
 ---
 

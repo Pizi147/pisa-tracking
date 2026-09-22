@@ -467,5 +467,57 @@ export async function runLuatMayChuTests(t: YThucTestKit) {
     assert(domain.metricById('tin-hieu-qua-han')?.ten === 'Chờ xác minh quá hạn', 'Tên chỉ số phải đúng chữ ô Tổng quan (§3.2)');
   });
 
+  // ================================================================== 10. RB-8
+
+  console.log('\nPR-S1 · 10. RB-8 — sửa điểm nhập nhầm ở lớp thường: rút tín hiệu, rút Case không còn căn cứ, giữ Case có việc thật');
+
+  check('RB-8 · Lớp thường: sửa 10/40 thành 30/40 → tín hiệu đang chờ bị thu hồi "Không còn hợp lệ do sửa điểm"', () => {
+    const hv = taoHocVien({ classCode: 'MB-FOU 12', weekStart: '2026-09-07' });
+    diem(hv.attemptId, 'listening', 10, 40);
+    diem(hv.attemptId, 'listening', 30, 40);
+    const sg = tinHieu(hv.attemptId, 'listening');
+    assert(sg.status === 'withdrawn' && sg.withdrawn_reason === domain.SIGNAL_WITHDRAW_SCORE_FIXED, `Tín hiệu: ${JSON.stringify(sg)}`);
+  });
+
+  check('RB-8 · Lớp thường: Case mở từ tín hiệu, chưa có việc gì → sửa điểm thành đạt thì Case được rút (đóng, có lý do), lịch sử giữ', () => {
+    const hv = taoHocVien({ classCode: 'MB-FOU 12', weekStart: '2026-09-07' });
+    diem(hv.attemptId, 'listening', 10, 40);
+    const c = caseTuTinHieu(pGvcnFou, tinHieu(hv.attemptId, 'listening'));
+    diem(hv.attemptId, 'listening', 30, 40);
+    const row = conn.prepare('SELECT status, outcome, outcome_note FROM sos_cases WHERE id = ?').get(c.id) as any;
+    assert(row.status === 'done' && row.outcome === null && String(row.outcome_note).includes(domain.SIGNAL_WITHDRAW_SCORE_FIXED)
+      && /thành đạt\./.test(String(row.outcome_note)) && !/kỳ vọng/.test(String(row.outcome_note)),
+      `Case phải rút với chữ lớp thường: ${JSON.stringify(row)}`);
+  });
+
+  check('RB-8 · Lớp thường: Case đã có phương án đang chạy → sửa điểm KHÔNG đóng Case, chỉ nhắc người phụ trách xem lại', () => {
+    const hv = taoHocVien({ classCode: 'MB-FOU 12', weekStart: '2026-09-07' });
+    diem(hv.attemptId, 'listening', 10, 40);
+    const c = caseTuTinHieu(pGvcnFou, tinHieu(hv.attemptId, 'listening'));
+    cases.recordIntervention(pGvcnFou, c.id, {
+      kind: 'self_study', description: 'Nghe 30 phút mỗi ngày (PR-S1)', performerName: 'GVBM', status: 'started', startedDate: TODAY,
+    });
+    diem(hv.attemptId, 'listening', 30, 40);
+    const row = conn.prepare('SELECT status, owner_user_id FROM sos_cases WHERE id = ?').get(c.id) as any;
+    assert(row.status !== 'done', 'Case có việc thật không được tự đóng vì sửa điểm');
+    const n = (conn.prepare('SELECT COUNT(*) n FROM notifications WHERE dedup_key = ?').get(`case_review:${c.id}:${hv.attemptId}`) as any).n;
+    assert(n === 1, 'Người phụ trách phải được nhắc xem lại đúng một lần');
+  });
+
+  check('RB-8 · Không đóng Case vô cớ: Giữa khoá trượt → Case có việc; Cuối khoá đạt cả bốn môn → Case vẫn mở, hạ mức về 0, có mốc "đã đạt"', () => {
+    const hv = taoHocVien({ classCode: 'MB-FOU 12', weekStart: '2026-08-24' });
+    diem(hv.attemptId, 'listening', 10, 40);
+    const c = caseTuTinHieu(pGvcnFou, tinHieu(hv.attemptId, 'listening'));
+    cases.recordIntervention(pGvcnFou, c.id, {
+      kind: 'self_study', description: 'Nghe chép chính tả (PR-S1)', performerName: 'GVBM', status: 'started', startedDate: TODAY,
+    });
+    const fin = themLuot({ sid: hv.sid, cid: hv.cid, cycleId: hv.cycleId, weekStart: '2026-09-07', kind: 'final', no: 2 });
+    for (const k of ['listening', 'reading', 'writing', 'speaking']) diem(fin, k, 35, 40);
+    const row = conn.prepare('SELECT status, sos_level FROM sos_cases WHERE id = ?').get(c.id) as any;
+    assert(row.status !== 'done' && row.sos_level === 0, `Case phải còn mở, mức 0: ${JSON.stringify(row)}`);
+    const passed = (conn.prepare(`SELECT COUNT(*) n FROM case_milestones WHERE case_id = ? AND kind = 'passed' AND attempt_id = ?`).get(c.id, fin) as any).n;
+    assert(passed === 1, 'Thiếu mốc "đã đạt" của Cuối khoá');
+  });
+
   // ---- các task sau thêm phép kiểm NGAY TRÊN dòng này ----
 }

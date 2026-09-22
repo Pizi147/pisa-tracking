@@ -1,6 +1,6 @@
 import { db, tx } from '../db.ts';
 import { addMilestone, followUntilAfter } from '../cases/sos.ts';
-import { raiseSignal } from '../cases/signals.ts';
+import { raiseSignal, reconcileCorrectedSignals } from '../cases/signals.ts';
 import {
   ATTEMPT_KIND_LABEL, PERMISSIONS, RATIO_PASS_THRESHOLD, REGULAR_SKILL_LABEL,
   caseCategoriesFor, categoryOf, ratioResult, sosFromFailCount,
@@ -412,6 +412,13 @@ export function refreshRegularOutcome(p: Principal, attemptId: number) {
     conn.prepare(`UPDATE assessment_attempts SET status = 'done', updated_at = ? WHERE id = ?`)
       .run(nowIso(), attemptId);
   }
+  /*
+   * RB-8: môn vừa được sửa thành ĐẠT → rút tín hiệu và xử lý Case dựng trên con số sai — CÙNG hàm với Fast Track. Đặt TRƯỚC lối thoát
+   * `sosLevel === null`: sửa một môn lên đạt khi ba môn kia chưa có điểm thì chưa kết luận được mức, nhưng căn cứ của tín hiệu đã mất.
+   */
+  reconcileCorrectedSignals(p, {
+    attemptId, passingSkills: r.skills.filter((x) => x.outcome === 'pass').map((x) => x.skill), passText: 'đạt',
+  });
   // Nhưng CASE thì mở ngay khi kết luận được, không chờ đủ.
   if (r.sosLevel === null) return r;
 
