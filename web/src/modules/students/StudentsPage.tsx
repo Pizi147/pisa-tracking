@@ -405,7 +405,7 @@ function ClassRow({ cls, scope, expanded, studentQuery, onToggle, onAddStudents 
  * KHÔNG khoá theo tuần — việc nợ từ tuần trước không biến mất khi đổi tuần ở nơi khác
  * (bảng chấm, Kế hoạch Test). Cột "Nợ từ tuần" chỉ NÓI ra tuần của từng môn còn thiếu.
  */
-function WorkQueue({ view, branchId, q, scope }: {
+export function WorkQueue({ view, branchId, q, scope }: {
   view: string; branchId: number | null; q: string; scope: WorkScope | null;
 }) {
   const [params] = useSearchParams();
