@@ -299,6 +299,44 @@ export async function runAnToanTests(t: AnToanTestKit) {
     assert(res.code === 503 && res.body?.error === 'Chưa có dữ liệu demo trong máy.' && res.body?.details?.needsSeed === true, `Nhận ${res.code} ${JSON.stringify(res.body)}`);
   });
 
+  // ================================================================== 6. AN-4 — /api/health
+
+  console.log('\nPR-AN · 6. /api/health công khai nhưng rẻ và không lộ gì');
+
+  await checkAsync('AN-4 · /api/health trả đúng {ok, seeded} + no-store; 5 lần gọi liền chỉ hỏi database tối đa 1 lần', async () => {
+    const may2 = createApp().listen(0);
+    const cong2 = (may2.address() as any).port as number;
+    try {
+      const traLoi: any[] = [];
+      const n = await demCauHoi(/sqlite_master/, async () => {
+        for (let i = 0; i < 5; i++) {
+          const r = await fetch(`http://127.0.0.1:${cong2}/api/health`);
+          traLoi.push({ status: r.status, cc: r.headers.get('cache-control'), json: await r.json() });
+        }
+      });
+      assert(traLoi.every((x) => x.status === 200 && JSON.stringify(x.json) === '{"ok":true,"seeded":true}'), JSON.stringify(traLoi[0]));
+      assert(traLoi.every((x) => /no-store/.test(x.cc ?? '')), `Cache-Control: ${traLoi[0].cc}`);
+      assert(n <= 1, `Hỏi database ${n} lần cho 5 lần gọi`);
+    } finally { may2.close(); }
+  });
+
+
+  /* Hàm `taoSuKhoe` nhận `hoi`/`bayGio` giả nên phép dưới không cần database thật. */
+  const suKhoeMod = await load('../platform/suKhoe.ts');
+  check('AN-4 · Database lỗi → 503 {ok:false, seeded:false}, không kèm lỗi; chưa khởi tạo thì hỏi lại sau 30 giây, không phải mỗi lần', () => {
+    const hong = suKhoeMod.taoSuKhoe(() => { throw new Error('libsql: mất kết nối tới pisatracking-xxx.turso.io'); }, () => 0);
+    const r1 = giaRes();
+    const gocLoi = console.error; console.error = () => {};   // nuốt dòng log [health] của phép này
+    try { hong({} as any, r1); } finally { console.error = gocLoi; }
+    assert(r1.code === 503 && JSON.stringify(r1.body) === '{"ok":false,"seeded":false}', `Nhận ${r1.code} ${JSON.stringify(r1.body)}`);
+    let gio = 0; let soLanHoi = 0;
+    const chuaCo = suKhoeMod.taoSuKhoe(() => { soLanHoi += 1; return false; }, () => gio);
+    for (const g of [0, 1_000, 29_999]) { gio = g; chuaCo({} as any, giaRes()); }
+    assert(soLanHoi === 1, `Trong 30 giây hỏi ${soLanHoi} lần`);
+    gio = 30_000; const r2 = giaRes(); chuaCo({} as any, r2);
+    assert(soLanHoi === 2 && r2.body?.seeded === false, `Sau 30 giây: hỏi ${soLanHoi} lần, ${JSON.stringify(r2.body)}`);
+  });
+
   // ---- các task sau thêm phép kiểm NGAY TRÊN dòng này ----
 
   may.close();

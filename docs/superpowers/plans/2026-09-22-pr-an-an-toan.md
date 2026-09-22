@@ -868,7 +868,7 @@ export function traLoiLoi(err: unknown, req: Request, res: Response, _next: Next
 - Produces: `export function taoSuKhoe(hoi?: () => boolean, bayGio?: () => number): (req: Request, res: Response) => void`;
   `export const HOI_LAI_SAU_MS = 30_000`. Hình trả lời giữ nguyên `{ ok: boolean, seeded: boolean }` (web AN-7 và `npm run thu-goi` dùng).
 
-- [ ] **Step 1: Phép kiểm (đỏ).**
+- [x] **Step 1: Phép kiểm (đỏ).**
 
 ```ts
   // ================================================================== 6. AN-4 — /api/health
@@ -910,8 +910,8 @@ export function traLoiLoi(err: unknown, req: Request, res: Response, _next: Next
   });
 ```
 
-- [ ] **Step 2: Chạy, đỏ.** Expected: phép 1 ✗ (hỏi 5 lần, thiếu `no-store`), phép 2 ✗ (chưa có mô-đun).
-- [ ] **Step 3: Tạo `server/src/platform/suKhoe.ts`.**
+- [x] **Step 2: Chạy, đỏ.** Expected: phép 1 ✗ (hỏi 5 lần, thiếu `no-store`), phép 2 ✗ (chưa có mô-đun).
+- [x] **Step 3: Tạo `server/src/platform/suKhoe.ts`.**
 
 ```ts
 import type { Request, Response } from 'express';
@@ -945,7 +945,7 @@ export function taoSuKhoe(hoi: () => boolean = isInitialised, bayGio: () => numb
 }
 ```
 
-- [ ] **Step 4: Sửa `app.ts`.** Import `import { taoSuKhoe } from './platform/suKhoe.ts';`. Xoá route health cũ (29-31); thêm **ngay sau**
+- [x] **Step 4: Sửa `app.ts`.** Import `import { taoSuKhoe } from './platform/suKhoe.ts';`. Xoá route health cũ (29-31); thêm **ngay sau**
   `app.use(cookieParser());` và **trước** `app.use(attachPrincipal);`:
 
 ```ts
@@ -954,8 +954,8 @@ export function taoSuKhoe(hoi: () => boolean = isInitialised, bayGio: () => numb
 ```
 (Mỗi `createApp()` một bộ nhớ riêng — phép kiểm dựng app mới là đếm từ đầu.) Bỏ import `isInitialised` khỏi `app.ts` nếu không còn dùng.
 
-- [ ] **Step 5: Chạy, xanh.** Expected `TẤT CẢ 691 …`. Chạy thêm `npm run thu-goi` — Expected: ba dòng `ĐẠT` như cũ (hình trả lời không đổi).
-- [ ] **Step 6: Commit.** `git add server/src/platform/suKhoe.ts && git commit -am "PR-AN (6): AN-4 /api/health nhớ kết quả, no-store, 503 khi database lỗi"`
+- [x] **Step 5: Chạy, xanh.** Expected `TẤT CẢ 691 …`. Chạy thêm `npm run thu-goi` — Expected: ba dòng `ĐẠT` như cũ (hình trả lời không đổi).
+- [x] **Step 6: Commit.** `git add server/src/platform/suKhoe.ts && git commit -am "PR-AN (6): AN-4 /api/health nhớ kết quả, no-store, 503 khi database lỗi"`
 
 ---
 
@@ -1615,3 +1615,4 @@ song song trong cùng tiến trình sẽ thấy cờ; harness chạy tuần tự
 | 22/09 | Task 3 | Opus 5 · 677 → 682 (5 phép `AN-1 ·` HTTP mới) · lệch nhỏ: ở bước đỏ chỉ 4 ✗ chứ không phải 5 — phép "đăng nhập đúng xoá đếm" tự đạt khi chưa có giới hạn (không có khoá thì lần đúng nào cũng vào); sau khi sửa route cả 5 ✓ · phép cũ cookie Secure (banChinh.tests) và "CÙNG một câu" (run.ts) vẫn ✓ · route chép nguyên văn từ plan |
 | 22/09 | Task 4 | Opus 5 · 682 → 685 (3 phép `AN-6 ·` mới) · đúng plan: hai phép HTTP ✓ ngay (luồng duyệt đã có), phép phiên ✗ "Phiên của tài khoản chờ duyệt vẫn dùng được" rồi ✓ sau khi sửa `resolveSession` (một câu JOIN users) · phép cũ phiên hết hạn / khôi phục (banChinh.tests) vẫn ✓ · ghi chú: ở máy dev, "Vào nhanh" vào một tài khoản **chờ duyệt** nay bị đẩy ra ngay — đúng ý (bộ demo không có tài khoản chờ duyệt) · code chép nguyên văn từ plan |
 | 22/09 | Task 5 | Opus 5 · 685 → 689 (4 phép `AN-3 ·` mới, cả 4 ✗ rồi ✓: 3 phép `traLoiLoi is not a function`, JSON hỏng nhận 500 kèm câu tiếng Anh) · `traLoiLoi` chép nguyên văn từ plan; import `Request/Response/NextFunction`, `HttpError` đã có sẵn · lệch nhỏ: grep soát không rỗng hẳn — còn 1 dòng là chính tên phép kiểm mới ("KHÔNG có details.raw"), không phải code; `web/src` không dùng `details.raw` · typecheck ✓ |
+| 22/09 | Task 6 | Opus 5 · 689 → 691 (2 phép `AN-4 ·` mới, cả 2 ✗ rồi ✓: phép HTTP `Cache-Control: null`, phép hàm "Chưa có mô-đun suKhoe.ts") · `suKhoe.ts` chép nguyên văn từ plan; health dời lên trước `attachPrincipal`, bỏ import `isInitialised` khỏi `app.ts` · `npm run thu-goi` ba dòng ĐẠT (worktree chưa có data/ nên chạy `npm run seed` trước — chỉ ghi data/pisa-demo.sqlite, không có biến Turso) |

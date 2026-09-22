@@ -2,10 +2,10 @@ import crypto from 'node:crypto';
 import express from 'express';
 import cookieParser from 'cookie-parser';
 import type { NextFunction, Request, Response } from 'express';
-import { isInitialised } from './db.ts';
 import { attachPrincipal } from './auth.ts';
 import { api } from './routes/index.ts';
 import { HttpError } from './util.ts';
+import { taoSuKhoe } from './platform/suKhoe.ts';
 
 /**
  * ỨNG DỤNG EXPRESS — tách khỏi `index.ts` (chỗ gọi `listen`) để phép kiểm dựng được ĐÚNG ứng dụng đang chạy trên một cổng tạm và
@@ -25,11 +25,9 @@ export function createApp() {
 
   app.use(express.json({ limit: '12mb' }));
   app.use(cookieParser());
+  /* AN-4: đặt trước attachPrincipal — gọi health kèm cookie cũ cũng không tốn một lượt hỏi phiên. */
+  app.get('/api/health', taoSuKhoe());
   app.use(attachPrincipal);
-
-  app.get('/api/health', (_req, res) => {
-    res.json({ ok: true, seeded: isInitialised() });
-  });
 
   app.use('/api', api);
 
