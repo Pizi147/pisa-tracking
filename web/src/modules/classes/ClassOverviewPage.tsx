@@ -14,8 +14,7 @@ import { ClassProgressPanel } from './ClassProgressPanel.tsx';
 import { TransitionPanel } from './TransitionPanel.tsx';
 import { DauTrangLop, type HoSoLop, type ViecDauTrang } from './DauTrangLop.tsx';
 import { SuaThongTinLopPanel } from './SuaThongTinLopPanel.tsx';
-// TODO(Task 12): bỏ chú thích khi có TabHocVienLop.tsx.
-// import { TabHocVienLop } from './TabHocVienLop.tsx';
+import { TabHocVienLop } from './TabHocVienLop.tsx';
 // TODO(Task 13): bỏ chú thích khi có PhanTichLopTab.tsx.
 // import { PhanTichLopTab } from './PhanTichLopTab.tsx';
 import { TAB_HO_SO_LOP, TAB_HO_SO_LOP_NHAN, tabHoSoLop, type TabHoSoLop } from '@shared/domain/index.ts';
@@ -68,12 +67,10 @@ export default function ClassOverviewPage() {
         onChange={(k: TabHoSoLop) => doiThamSo({ tab: k === 'hoc-vien' ? null : k })}
         tabs={TAB_HO_SO_LOP.map((k) => ({ key: k, label: TAB_HO_SO_LOP_NHAN[k], canhBao: k === 'y-thuc' && data.canhBaoYThuc > 0 }))} />
 
-      {/* TODO(Task 12): bỏ chú thích khi có TabHocVienLop.tsx.
       {tab === 'hoc-vien' && (
         <TabHocVienLop lop={data} cheDo={cheDo} onCheDo={(m) => doiThamSo({ 'che-do': m === 'diem' ? null : m })}
           onDoi={xong} onThemHocVien={() => setViec('hoc-vien')} />
       )}
-      */}
       {tab === 'y-thuc' && <ClassYThucCard classId={data.id} />}
       {/* TODO(Task 13): bỏ chú thích khi có PhanTichLopTab.tsx.
       {tab === 'phan-tich' && <PhanTichLopTab classId={data.id} />}

@@ -454,4 +454,19 @@ export async function runHocVienLopTests(t: YThucTestKit) {
     const conKhop = conn.prepare('SELECT status, effective_to FROM teacher_assignments WHERE id = ?').get(idConKhop) as any;
     eq([conKhop?.status, conKhop?.effective_to], ['active', null], 'listening vẫn khớp chương trình mới nên giữ nguyên active');
   });
+
+  // ------------------------------------------------------------------ Task 12 · chữ trên màn lớp thường (§2, §6)
+
+  check('PR-Qa · §2/§6 chữ: bảng lớp thường không "MT", "kỳ vọng", "Progress/Final", "Normal"; không còn "case SOS" ở danh sách', () => {
+    const doc = (p: string) => fsMod.readFileSync(pathMod.join(REPO, p), 'utf8');
+    const thuong = doc('web/src/modules/classes/BangDiemLopThuong.tsx');
+    assert(!/MT\d|MT\$\{|kỳ vọng|Progress|Final|Normal/.test(thuong), 'BangDiemLopThuong.tsx có chữ FT/tiếng Anh');
+    assert(!/case SOS/.test(doc('web/src/modules/students/StudentsPage.tsx')), 'Q2: còn nhãn "case SOS"');
+    const roster = doc('web/src/modules/students/ClassRoster.tsx');
+    assert(!/Lớp Normal|isRatio|REGULAR_SKILL_LABEL/.test(roster), 'ClassRoster.tsx còn nhánh lớp thường');
+    assert(!/ENTRY_SKILL_SHORT\[k as EntrySkill\] \?\? k/.test(roster), 'Chữ thô `writing` (§6)');
+    for (const p of ['web/src/modules/classes/DauTrangLop.tsx', 'web/src/modules/classes/BangCanHoTro.tsx', 'web/src/modules/students/BangHocVienLop.tsx']) {
+      assert(!/SectionNote|\d{4}-\d{2}-\d{2}/.test(doc(p)), `${p}: khối chữ cho dev (G-5) / ngày ISO (G-6)`);
+    }
+  });
 }

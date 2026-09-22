@@ -2892,7 +2892,7 @@ git commit -m "PR-Qa (11): hồ sơ lớp — hàng nút đầu trang, GVCN, dò
   `ClassRoster({ classId, quyen, onDoi, onAddStudents? })` (chữ ký MỚI — chỉ `TabHocVienLop` gọi),
   `BangDiemLopThuong({ classId, quyen, onDoi })`, `BangCanHoTro({ classId, laLopThuong, quyen, onDoi })`.
 
-- [ ] **Step 1: Phép kiểm quét chữ (đỏ).** Nối vào cuối thân `runHocVienLopTests`:
+- [x] **Step 1: Phép kiểm quét chữ (đỏ).** Nối vào cuối thân `runHocVienLopTests`:
 
 ```ts
   // ------------------------------------------------------------------ Task 12 · chữ trên màn lớp thường (§2, §6)
@@ -2911,9 +2911,9 @@ git commit -m "PR-Qa (11): hồ sơ lớp — hàng nút đầu trang, GVCN, dò
   });
 ```
 
-- [ ] **Step 2:** `npm test` → ✗ (`ENOENT … BangDiemLopThuong.tsx`).
+- [x] **Step 2:** `npm test` → ✗ (`ENOENT … BangDiemLopThuong.tsx`).
 
-- [ ] **Step 3: `web/src/modules/classes/TabHocVienLop.tsx`:**
+- [x] **Step 3: `web/src/modules/classes/TabHocVienLop.tsx`:**
 
 ```tsx
 import { ClassRoster } from '../students/ClassRoster.tsx';
@@ -2958,7 +2958,7 @@ export function TabHocVienLop({ lop, cheDo, onCheDo, onDoi, onThemHocVien }: {
 }
 ```
 
-- [ ] **Step 4: `web/src/modules/classes/BangDiemLopThuong.tsx`:**
+- [x] **Step 4: `web/src/modules/classes/BangDiemLopThuong.tsx`:**
 
 ```tsx
 import { Link } from 'react-router-dom';
@@ -3065,7 +3065,7 @@ function ODiemThuong({ o, tuan, homNay }: { o: ODiem | null; tuan: string | null
 }
 ```
 
-- [ ] **Step 5: `web/src/modules/classes/BangCanHoTro.tsx`:**
+- [x] **Step 5: `web/src/modules/classes/BangCanHoTro.tsx`:**
 
 ```tsx
 import { useMemo } from 'react';
@@ -3165,7 +3165,7 @@ export function BangCanHoTro({ classId, laLopThuong, quyen, onDoi }: {
 }
 ```
 
-- [ ] **Step 6: `web/src/modules/students/ClassRoster.tsx` — chỉ còn FT.**
+- [x] **Step 6: `web/src/modules/students/ClassRoster.tsx` — chỉ còn FT.**
   - Import (dòng 1-10) thay bằng:
 
 ```tsx
@@ -3231,10 +3231,10 @@ export function ClassRoster({ classId, quyen, onDoi, onAddStudents }: {
   - Sau `</table></div>` (trước `</div>` ngoài cùng) thêm `{tt.panels}`.
   - `FollowCell` dòng 322: `pending.map((k) => ENTRY_SKILL_SHORT[k as EntrySkill] ?? k)` → `pending.map(skillShort)` (§6 chữ thô).
   - `KetLuan` giữ ("Đạt kỳ vọng" đúng cho FT). `export { Outcome };` giữ.
-- [ ] **Step 7:** bỏ chú thích hai dòng `TabHocVienLop` ở `ClassOverviewPage.tsx` (Task 11 Step 5). `npm run typecheck` xanh.
+- [x] **Step 7:** bỏ chú thích hai dòng `TabHocVienLop` ở `ClassOverviewPage.tsx` (Task 11 Step 5). `npm run typecheck` xanh.
   `grep -rn "ClassRoster" web/src` → chỉ `TabHocVienLop.tsx` gọi.
-- [ ] **Step 8:** `npm run check` xanh (N+29).
-- [ ] **Step 9: Commit.**
+- [x] **Step 8:** `npm run check` xanh (N+29).
+- [x] **Step 9: Commit.**
 
 ```bash
 git add web/src/modules/classes/TabHocVienLop.tsx web/src/modules/classes/BangDiemLopThuong.tsx web/src/modules/classes/BangCanHoTro.tsx web/src/modules/students/ClassRoster.tsx web/src/modules/classes/ClassOverviewPage.tsx server/src/tests/hocVienLop.tests.ts
