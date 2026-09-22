@@ -1052,7 +1052,7 @@ function overdueScoreAttempts(p: Principal, branchId: number | null, today: stri
     `DongHvCanHoTro = { studentId: number; ten: string; lop: string | null; huyHieu: { text: string; tone: 'info' | 'warn' | 'danger' } | null; phu: string }`.
   - Route `GET /tong-quan/quan-ly?branchId=&ct=` · `GET /tong-quan/hoc-vien-can-ho-tro`.
 
-- [ ] **Step 1: Phép kiểm (đỏ).** (thêm `const tq: any = await import('../worklist/tongQuan.ts').catch(() => ({}));` ở đầu hàm)
+- [x] **Step 1: Phép kiểm (đỏ).** (thêm `const tq: any = await import('../worklist/tongQuan.ts').catch(() => ({}));` ở đầu hàm)
 
 ```ts
   // ================================================================== 5. Cần xử lý · Điểm đáng chú ý · HV cần hỗ trợ
@@ -1107,8 +1107,8 @@ function overdueScoreAttempts(p: Principal, branchId: number | null, today: stri
   > Phép "Bảng chi nhánh … Quản lý một chi nhánh" giả định `P.mbManager` chỉ có chi nhánh MB; nếu phạm vi có > 1 chi nhánh
   > thì đổi kỳ vọng thành `cheDo === 'chi-nhanh'` khi không chọn và `'lop'` khi truyền `branchId: mbBranch`; ghi Nhật ký.
 
-- [ ] **Step 2: Chạy, đỏ.**
-- [ ] **Step 3: Tạo `server/src/worklist/tongQuan.ts`:**
+- [x] **Step 2: Chạy, đỏ.**
+- [x] **Step 3: Tạo `server/src/worklist/tongQuan.ts`:**
 
 ```ts
 import { db } from '../db.ts';
@@ -1239,7 +1239,7 @@ export function hocVienCanHoTro(p: Principal): { rows: DongHvCanHoTro[]; tong: n
   return { rows: out, tong: out.length };
 }
 ```
-- [ ] **Step 4: Route** — thêm khối mới ngay sau route `/highlights` (~1141):
+- [x] **Step 4: Route** — thêm khối mới ngay sau route `/highlights` (~1141):
 
 ```ts
 // ============================================================ Tổng quan (PR-Pa, đặc tả §3.2)
@@ -1260,7 +1260,7 @@ api.get('/tong-quan/hoc-vien-can-ho-tro', requireAuth, wrap((req) => {
 ```
   Import ở đầu file (cạnh `highlightSvc`): `import * as tongQuanSvc from '../worklist/tongQuan.ts';`.
 
-- [ ] **Step 5: Chạy, xanh** (mốc + 15). **Step 6: Commit** (thêm file mới vào `git add`):
+- [x] **Step 5: Chạy, xanh** (mốc + 15). **Step 6: Commit** (thêm file mới vào `git add`): ✓
   `"PR-Pa (5): máy chủ khối Cần xử lý, Điểm đáng chú ý, Học viên cần hỗ trợ — số lấy từ metricSet"`
 
 ---
@@ -2548,3 +2548,9 @@ export function HocVienCanHoTro() {
   rỗng) → sửa theo đúng luật OR của `classScopeSql` (lớp mình dạy HOẶC chi nhánh mình quản), thêm phép kiểm principal lai
   (GV MB không dạy MB-FOU 12 + quyền QL CP tạm) → **743**. Ghi nhận: `scoreDebtCells` gọi `settleNoShows` (ghi) và quét
   nặng — nay chạy mỗi lần mở Tổng quan (chuyển Z2c); tên phép kiểm `run.ts:7973` "hai mươi chỉ số" đã lệch 27 (plan bảo giữ).
+- **Task 5:** commit `0c010eb`. Đỏ (TS2307 rồi 4 ✗ `is not a function`) → xanh **747**. `P.w2Teacher` (user 10, Cao Khánh
+  Linh) đúng là không dạy MB-FOU 12 — dùng như plan. `P.mbManager` chỉ có chi nhánh MB (ghi cho Task 6). Ba tổ hợp Cần xử lý
+  đều có dòng (6/4/4). Rà (Opus 5): đạt; hướng `tu`/`mau` đúng cho cả ba luật (với `ty-le-co-cai-thien` và
+  `dung-han-cap-nhat`, `ids` là mẫu số). Ghi nhận: `DiemChuY.extra` không mang chi nhánh/chương trình — web phải gắn
+  `phamVi` khi mở (Task 10 đã dự tính); mỗi lần mở khối QL chạy ~6 lượt `listCases` + 4 lượt `latestAttempts` (chuyển Z2c);
+  bộ demo cho "0/14 lần cập nhật PA đúng hạn" — đúng luật, chỉ trông gắt.
