@@ -30,7 +30,6 @@ Nếu bạn nghĩ theo "cái tôi thấy trên màn hình" chứ không theo tê
 | **Thẻ case** và từng khối phương án ba phần trong hồ sơ (PR-HV Q8) | `web/src/modules/cases/SkillBoard.tsx` → `TheCase` · `KhoiPhuongAn` | `server/src/cases/cases.ts` → `caseCardOf` |
 | **Ghi kết quả PA** (cập nhật tuần 5 mục; Giữ nguyên / Điều chỉnh / Thay / Kết thúc) | `web/src/modules/cases/CapNhatTuan.tsx` → `CapNhatTuanForm` | `server/src/cases/cases.ts` → `updateResult` |
 | **Lịch sử điều chỉnh PA** (bản cũ · khi nào · ai · vì sao) | `web/src/modules/cases/CapNhatTuan.tsx` → `LichSuDieuChinh` | `server/src/cases/planRevisions.ts` |
-| **Ghi kết quả ngay trong dòng phương án** | `web/src/modules/cases/SkillBoard.tsx` → `InlineResult` | `POST /interventions/:id/result` |
 | Tab **Hành trình học tập** — hai cách đọc | `web/src/modules/students/JourneyTimeline.tsx` | `server/src/students/profile.ts` + bảng kỹ năng |
 | Màn một lượt Test | `web/src/modules/fasttrack/MockDetailPage.tsx` | `server/src/fasttrack/attempts.ts` → `attemptDetail` |
 | **Bảng nhập điểm cả lớp** | `web/src/modules/fasttrack/ScoreSheetPage.tsx` | `server/src/fasttrack/attempts.ts` → `classScoreSheet` |
