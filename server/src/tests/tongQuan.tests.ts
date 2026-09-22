@@ -11,6 +11,11 @@ export async function runTongQuanTests(t: YThucTestKit) {
   console.log('\nPR-Pa · Tổng quan');
   const eq = (got: unknown, want: unknown, m: string) =>
     assert(JSON.stringify(got) === JSON.stringify(want), `${m}: ${JSON.stringify(got)} ≠ ${JSON.stringify(want)}`);
+  const signals: any = await import('../cases/signals.ts');
+  const fsMod = await import('node:fs');
+  const pathMod = await import('node:path');
+  const { fileURLToPath } = await import('node:url');
+  const REPO = pathMod.resolve(fileURLToPath(new URL('../../../../', import.meta.url)));
 
   // ================================================================== 1. Luật thuần
   check('PR-Pa · Chương trình: đọc tham số ct; mặc định Cả hai; không có chữ "Normal" trên màn', () => {
@@ -82,5 +87,21 @@ export async function runTongQuanTests(t: YThucTestKit) {
       { loai: 'dung-han', metricId: 'dung-han-cap-nhat', tu: 19, mau: 20 },
     ], 'ca-hai');
     eq(it, [], 'Không ứng viên nào đủ điều kiện');
+  });
+
+  // ================================================================== 2. Nợ S1 (1)
+  check('PR-Pa · Nợ S1: overdueNormalSignalIds cùng tập với cách cũ (4 vai, có và không chọn chi nhánh) mà không gọi quyền từng tín hiệu', () => {
+    const mb = (conn.prepare(`SELECT id FROM branches WHERE code = 'MB'`).get() as any).id as number;
+    for (const who of [P.admin, P.mbManager, P.cpManager, P.normalCoreTeacher, P.lrTeacher]) {
+      for (const branchId of [null, mb]) {
+        const cu = (signals.listSignals(who, { status: 'open', branchId, today: TODAY }).rows as any[])
+          .filter((s) => s.kind === 'normal' && s.overdue).map((s) => s.id).sort((a: number, b: number) => a - b);
+        eq(signals.overdueNormalSignalIds(who, { branchId, today: TODAY }), cu, `Lệch tập (user ${who.userId}, cn ${branchId})`);
+      }
+    }
+    const src = fsMod.readFileSync(pathMod.join(REPO, 'server/src/cases/signals.ts'), 'utf8');
+    const body = src.slice(src.indexOf('export function overdueNormalSignalIds'), src.indexOf('export function signalDetail'));
+    assert(body.length > 0 && !/listSignals\(|\bcan\(|canResolveSignal\(/.test(body),
+      'overdueNormalSignalIds vẫn gọi quyền từng tín hiệu (listSignals / can) — trên Turso mất vài giây mỗi lần mở Tổng quan');
   });
 }
