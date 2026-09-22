@@ -286,4 +286,61 @@ export async function runHocVienLopTests(t: YThucTestKit) {
     eq([s.overall, s.expectation, s.belowSkills], [null, null, []], 'Lớp thường không có Overall/kỳ vọng');
     eq(d.ketQuaGanNhat(s), { chinh: 'Đạt 3/4 môn', thieu: null, dat: false, sos: 'SOS 1', phu: 'Giữa khoá · chưa đạt W 12/20' }, 'Chữ cột');
   });
+
+  // ------------------------------------------------------------------ Task 5 · GET /hoc-vien-lop
+
+  check('PR-Qa · Q3/Q12 Phạm vi theo vai: GV "Lớp tôi dạy", QL chi nhánh, Quản trị "Tất cả"; link cũ ?branchId= = một chi nhánh', () => {
+    const gv = hvl.danhSachHocVienLop(P.subjectTeacher, {});
+    assert(gv.phamVi.dangDung === 'toi' && !gv.phamVi.coThe.includes('tat-ca'), `GV: ${JSON.stringify(gv.phamVi)}`);
+    const cuaGv = new Set(P.subjectTeacher.assignments.map((a: any) => a.classId));
+    assert(gv.rows.length > 0 && gv.rows.every((r: any) => cuaGv.has(r.id)), 'GV chỉ thấy lớp mình dạy');
+    const ql = hvl.danhSachHocVienLop(P.mbManager, {});
+    assert(ql.phamVi.dangDung === (ql.phamVi.coThe.includes('toi') ? 'toi' : 'chi-nhanh'), `QL: ${JSON.stringify(ql.phamVi)}`);
+    const qlCn = hvl.danhSachHocVienLop(P.mbManager, { phamVi: 'chi-nhanh' });
+    assert(qlCn.rows.every((r: any) => r.branchId === MB), 'QL MB chỉ thấy lớp MB');
+    const qt = hvl.danhSachHocVienLop(P.admin, {});
+    assert(qt.phamVi.dangDung === 'tat-ca' && qt.phamVi.coThe.includes('chi-nhanh'), `Quản trị: ${JSON.stringify(qt.phamVi)}`);
+    const cu = hvl.danhSachHocVienLop(P.admin, { branchId: MB });
+    assert(cu.phamVi.dangDung === 'chi-nhanh' && cu.phamVi.chiNhanh === MB && cu.rows.every((r: any) => r.branchId === MB),
+      'Có branchId mà không ghi phạm vi = xem chi nhánh đó');
+    const la = hvl.danhSachHocVienLop(P.subjectTeacher, { phamVi: 'tat-ca' });
+    eq(la.phamVi.dangDung, 'toi', 'Phạm vi không có quyền thì về mặc định');
+  });
+
+  check('PR-Qa · Q4 số đếm chip = số học viên mang cờ đó; khớp hàng đợi Case và mức SOS của máy chủ', () => {
+    const r = hvl.danhSachHocVienLop(P.admin, {});
+    eq(r.dem['tat-ca'], r.hocVien.length, 'Tất cả');
+    for (const k of d.LOC_HOC_VIEN) eq(r.dem[k], r.hocVien.filter((h: any) => h.loc.includes(k)).length, `Chip ${k}`);
+    const ids = new Set(r.hocVien.map((h: any) => h.id));
+    const quaHan = new Set(casesMod.listCases(P.admin, { queue: 'due' }).rows.filter((c: any) => ids.has(c.studentId)).map((c: any) => c.studentId));
+    eq(r.dem.case_overdue, quaHan.size, 'Case quá hạn cập nhật = hàng đợi due');
+    const sos = [...standingMod.standingFor([...ids]).values()].filter((s: any) => (s.sosLevel ?? 0) > 0).length;
+    eq(r.dem.sos, sos, 'Đang SOS = standing');
+    assert(r.dem.sos > 0 && r.dem.thieu_tt >= 0, 'Bộ demo có em đang SOS');
+  });
+
+  check('PR-Qa · Q1/Q3 tìm theo tên học viên: chỉ em khớp; tìm theo mã lớp: cả lớp', () => {
+    const e = taoHocVien({ cid: LOP_FT, ft: true, ten: 'Qa Tim Kiem Duy Nhat' });
+    const r = hvl.danhSachHocVienLop(P.admin, { q: 'Tim Kiem Duy Nhat' });
+    assert(r.rows.some((x: any) => x.id === LOP_FT), 'Lớp chứa em phải hiện');
+    eq(r.hocVien.map((h: any) => h.id), [e.sid], 'Chỉ em khớp được đếm');
+    const c = hvl.danhSachHocVienLop(P.admin, { q: 'MB-FT QA1' });
+    const soEm = (conn.prepare(`SELECT COUNT(*) AS n FROM enrollments WHERE class_id = ? AND status = 'active'`).get(LOP_FT) as any).n;
+    assert(c.rows.length === 1 && c.hocVien.length === soEm, `Tìm mã lớp: ${c.rows.length} lớp, ${c.hocVien.length}/${soEm} em`);
+  });
+
+  check('PR-Qa · Q2/Q5 "n Case đang mở" của lớp = tổng cột Case của danh sách lớp; cờ nút theo quyền', () => {
+    const r = hvl.danhSachHocVienLop(P.admin, {});
+    for (const lop of r.rows.filter((x: any) => x.code === 'MB-FT 101' || x.code === 'MB-FOU 12')) {
+      const tong = classes.classRoster(P.admin, lop.id).filter((s: any) => !s.archived).reduce((n: number, s: any) => n + s.openCases, 0);
+      eq(lop.soCaseMo, tong, `${lop.code}: hộp lớp và danh sách`);
+      assert(lop.gvcn && lop.gvcn.name, `${lop.code} thiếu GVCN`);
+    }
+    const s = hvl.danhSachHocVienLop(P.sTeacher, {}).rows.find((x: any) => x.code === 'MB-FT 101');
+    assert(s && s.viewer.coTheGhiViPham && s.viewer.coTheNhapDiem && !s.viewer.coTheSuaHocVien, `GV Speaking: ${JSON.stringify(s?.viewer)}`);
+    const g = hvl.danhSachHocVienLop(P.coreTeacher, {}).rows.find((x: any) => x.code === 'MB-FT 101');
+    assert(g && g.viewer.coTheSuaHocVien, 'GVCN sửa được học viên lớp mình');
+    const fou = r.rows.find((x: any) => x.code === 'MB-FOU 12');
+    assert(fou && fou.tuanKetThuc && /^\d{4}-\d{2}-\d{2}$/.test(fou.tuanKetThuc), 'Lớp thường có tuần kết thúc khoá');
+  });
 }

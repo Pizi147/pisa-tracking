@@ -1096,7 +1096,7 @@ git commit -m "PR-Qa (4): Standing mang Overall, kỳ vọng của đợt, kỹ 
     viewer: { coTheSuaHocVien; coTheBaoCase; coTheGhiViPham; coTheNhapDiem } }`.
   - Route `GET /api/hoc-vien-lop?q=&phamVi=&branchId=`.
 
-- [ ] **Step 1: Phép kiểm đỏ.** Nối vào cuối thân `runHocVienLopTests`:
+- [x] **Step 1: Phép kiểm đỏ.** Nối vào cuối thân `runHocVienLopTests`:
 
 ```ts
   // ------------------------------------------------------------------ Task 5 · GET /hoc-vien-lop
@@ -1157,9 +1157,9 @@ git commit -m "PR-Qa (4): Standing mang Overall, kỳ vọng của đợt, kỹ 
   });
 ```
 
-- [ ] **Step 2:** `npm test` → bốn phép kiểm ✗ (`Chưa có mô-đun ../classes/hocVienLop.ts`).
+- [x] **Step 2:** `npm test` → bốn phép kiểm ✗ (`Chưa có mô-đun ../classes/hocVienLop.ts`).
 
-- [ ] **Step 3: Tạo `server/src/classes/dongHocVien.ts`:**
+- [x] **Step 3: Tạo `server/src/classes/dongHocVien.ts`:**
 
 ```ts
 /**
@@ -1213,7 +1213,7 @@ export function soCaseMoTheoLop(classIds: number[]): Map<number, number> {
 }
 ```
 
-- [ ] **Step 4: Tạo `server/src/classes/hocVienLop.ts`:**
+- [x] **Step 4: Tạo `server/src/classes/hocVienLop.ts`:**
 
 ```ts
 /**
@@ -1380,7 +1380,7 @@ export function danhSachHocVienLop(
   Nếu `tsc` báo `missingForStudent` nhận kiểu khác cho `cycle` → mở `schedule.ts:452` và truyền đúng tên trường như `classes.ts`
   đang truyền (dòng ~522-540); không đổi `schedule.ts`.
 
-- [ ] **Step 5: Route.** Import sau dòng 46 của `server/src/routes/index.ts`:
+- [x] **Step 5: Route.** Import sau dòng 46 của `server/src/routes/index.ts`:
 
 ```ts
 import * as hocVienLopSvc from '../classes/hocVienLop.ts';
@@ -1399,8 +1399,8 @@ api.get('/hoc-vien-lop', requireAuth, wrap((req) => {
 }));
 ```
 
-- [ ] **Step 6:** `npm run check` xanh (N+21). Ghi Nhật ký (và thời gian chạy phép kiểm nếu thấy chậm hẳn).
-- [ ] **Step 7: Commit.**
+- [x] **Step 6:** `npm run check` xanh (N+21). Ghi Nhật ký (và thời gian chạy phép kiểm nếu thấy chậm hẳn).
+- [x] **Step 7: Commit.**
 
 ```bash
 git add server/src/classes/dongHocVien.ts server/src/classes/hocVienLop.ts server/src/routes/index.ts server/src/tests/hocVienLop.tests.ts
