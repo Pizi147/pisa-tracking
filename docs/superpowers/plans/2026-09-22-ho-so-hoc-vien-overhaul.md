@@ -40,6 +40,19 @@ lệch vài dòng là bình thường, lệch nội dung thì 🛑 hỏi.
 
 ## Global Constraints
 
+- **🆕 22/09 (tối) — PR-Z2b đã xong (PR #49), có thể đã merge trước khi bạn bắt đầu.** Ở Task 0, chạy
+  `gh pr view 49 --json state -q .state`:
+  - **`MERGED`** → **bỏ đóng băng**: không dùng `CHO_Z2B` (để mảng rỗng ngay từ Task 1), làm luôn phần chữ của Task 9
+    trong Task 1 (đọc Task 9 Step 3–5 để biết chỗ nào), rồi đánh dấu Task 9 "đã gộp vào Task 1" trong Nhật ký.
+  - **`OPEN`** → làm đúng như kế hoạch (đóng băng tới Task 9).
+  - Dù trường hợp nào: PR-Z2b đã thêm/sửa các file sau — kiểm lại số dòng trước khi sửa, và **đưa chúng vào phạm vi
+    đổi chữ** (D3 "bỏ Hãy" áp cả câu báo lỗi của lệnh dòng lệnh, vì chủ sản phẩm đọc chúng khi chạy `TRIEN_KHAI.md`):
+    `server/src/platform/accounts.ts` (8 chỗ "Hãy" — Z2b sửa 2 dòng khác trong file này, gộp `main` cẩn thận),
+    `server/src/ops/initBanChinh.ts` dòng ~31 (`— hãy chọn mã khác.` → `— chọn mã khác.`) và ~80
+    (`Hãy chọn mật khẩu mới.` → `Chọn mật khẩu mới.`). `server/src/seed/duLieuNen.ts` (mới, dữ liệu nền dùng chung
+    cho seed và bản chính) **được quét** — hiện không có chữ cần đổi; đừng đưa nó vào danh sách loại trừ vĩnh viễn
+    `server/src/seed/` của Task 9 Step 3 (loại trừ đó chỉ dành cho chuyện kể của bộ demo).
+
 - **Không đổi luật nghiệp vụ.** Ai được làm gì, hạn, cách đếm, trạng thái — giữ nguyên. Mọi nút hiện nay ẩn/hiện
   theo quyền nào thì sau PR vẫn theo đúng quyền đó (`canEdit`, `canClose`, `canManageDiscipline`,
   `canRecordViolation`, `canAct`, `canManage`, `canRecord`). Thấy luật có vẻ sai → ghi `plan.md` mục 12, **không sửa**.
@@ -1088,7 +1101,8 @@ lệch vài dòng là bình thường, lệch nội dung thì 🛑 hỏi.
       ký. `npm run check` xanh (số ≥ trước + số phép Z2b thêm). Commit merge.
 - [ ] **Step 3 (TDD):** xoá hằng `CHO_Z2B` (để mảng rỗng) trong `hoSoHocVien.tests.ts`; thêm `'server/src/seed/'` vào một
       danh sách loại trừ **vĩnh viễn** có chú thích "dữ liệu kể chuyện của bộ demo, không phải chữ giao diện" — **trừ**
-      `server/src/seed/seed.ts` (vẫn quét). `npm test` → phép quét **đỏ**, liệt kê các chỗ dưới.
+      `server/src/seed/seed.ts` và `server/src/seed/duLieuNen.ts` (vẫn quét — 🆕 22/09: `duLieuNen.ts` do PR-Z2b thêm là
+      dữ liệu nền của **bản chính**, không phải chuyện kể demo). `npm test` → phép quét **đỏ**, liệt kê các chỗ dưới.
 - [ ] **Step 4: Đổi chữ** (tìm lại bằng `rg -n "[Bb]iện pháp|Hãy|hãy" server/src/yThuc/measures.ts server/src/migrate.ts server/src/seed/seed.ts` —
       Z2b có thể đã đẩy dòng):
 
