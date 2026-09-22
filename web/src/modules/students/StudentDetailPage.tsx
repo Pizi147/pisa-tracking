@@ -177,8 +177,8 @@ export default function StudentDetailPage() {
         </div>
       </div>
 
-      {/* BỐN Ô SỐ (Q7) — bốn câu hỏi, không phải một phép chia. Luôn hiện phía trên hàng tab. */}
-      {cy && <HeaderStats data={data} rows={skillRows} />}
+      {/* BỐN Ô SỐ (Q7) — bốn câu hỏi, không phải một phép chia. LUÔN hiện phía trên hàng tab, kể cả khi chưa có lộ trình (spec §4.1; chủ sản phẩm chốt 22/09 sau rà soát). */}
+      <HeaderStats data={data} rows={skillRows} />
 
       {/* Xác minh SOS: giữ chỗ cũ — dưới 4 ô số, trên hàng tab; tự ẩn khi không có tín hiệu. */}
       <PendingSignals signals={data.pendingSignals ?? []} onVerify={(sg) => setVerify(sg)} />

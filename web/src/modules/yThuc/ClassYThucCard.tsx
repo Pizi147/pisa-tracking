@@ -221,7 +221,7 @@ export function ClassYThucCard({ classId }: { classId: number }) {
                                   ? { checked: ticks.has(v.id), onChange: () => toggleTick(s.studentId, v.id), nhanDoc: `Chọn vi phạm ${fmtDate(v.occurredOn)}` }
                                   : null,
                                 tieuDe: v.description,
-                                dongPhu: [v.categoryLabel, v.skillLabel, v.reportedByName, v.ageLabel ? `⚠ đã ${v.ageDays} ngày` : null].filter(Boolean).join(' · '),
+                                dongPhu: [v.skillLabel, v.reportedByName, v.ageLabel ? `⚠ đã ${v.ageDays} ngày` : null].filter(Boolean).join(' · '),
                                 cuoi: <><Info>{v.categoryLabel}</Info>{suaBtn(v)}</>,
                               }))}
                               rong={<p className="text-xs text-slate-500 m-0">Không có vi phạm chưa xử lý ở nhóm này.</p>} />
@@ -283,7 +283,7 @@ export function ClassYThucCard({ classId }: { classId: number }) {
                 key: `v${v.id}`, ngay: v.occurredOn,
                 cot2: <span className="text-sm text-slate-200">{v.studentName}</span>,
                 tieuDe: v.description,
-                dongPhu: [v.categoryLabel, v.reportedByName].filter(Boolean).join(' · '),
+                dongPhu: v.reportedByName ?? undefined,
                 cuoi: <><Info>{v.categoryLabel}</Info>{suaBtn(v)}</>,
               }))}
               rong={<Empty title="Không còn vi phạm nào chưa xử lý." />} />

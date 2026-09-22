@@ -181,7 +181,7 @@ export const STUDENT_FILTERS: {
     hint: 'Học viên đang ở mức SOS 1, 2 hoặc 3 theo lượt MT gần nhất.' },
   { key: 'case_working', label: 'Case đang xử lý', needs: 'case.view',
     hint: 'Case đã có phương án và đang trong thời gian theo dõi.' },
-  { key: 'case_no_plan', label: 'Case thiếu phương án', needs: 'case.view',
+  { key: 'case_no_plan', label: 'Case thiếu PA học thuật', needs: 'case.view',
     hint: 'Case đã mở nhưng chưa ai ghi sẽ làm gì cho em.' },
   { key: 'case_overdue', label: 'Case quá hạn cập nhật', needs: 'case.view',
     hint: 'Đã qua hẹn xem lại mà chưa ai cập nhật kết quả sau hỗ trợ.' },

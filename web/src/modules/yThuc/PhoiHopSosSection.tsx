@@ -116,14 +116,16 @@ function ActionRow({ a, canAct, onChanged }: { a: CoordAction; canAct: boolean; 
   const [removing, setRemoving] = useState(false);
   const dongPhu = a.status === 'done'
     ? `${fmtDate(a.performedOn)}${a.performerName ? ` · ${a.performerName}` : ''}`
-    : a.status === 'removed' ? `Đã bỏ · ${a.removeReasonLabel ?? ''}` : 'Cần xử lý';
+    : a.status === 'removed' ? `Đã bỏ · ${a.removeReasonLabel ?? ''}`
+    /* Người không có quyền: cột phải đã là nhãn `Cần xử lý` — không lặp ở dòng phụ (rà soát 22/09). */
+    : canAct ? 'Cần xử lý' : '';
 
   return (
     <div className="border-t first:border-t-0" style={{ borderColor: 'var(--line)' }}>
       <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 py-2 items-start">
         <span className="min-w-0 break-words">
           <span className="block text-sm text-slate-200">{a.name}</span>
-          <span className="block text-[11px] text-slate-500 mt-0.5">{dongPhu}</span>
+          {dongPhu && <span className="block text-[11px] text-slate-500 mt-0.5">{dongPhu}</span>}
         </span>
         <span className="flex flex-wrap gap-1.5 justify-end">
           {a.status === 'done' ? <Status kind="done">Đã xong</Status>
