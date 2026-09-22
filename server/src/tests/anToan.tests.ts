@@ -121,8 +121,98 @@ export async function runAnToanTests(t: AnToanTestKit) {
     assert(!conn.prepare('SELECT 1 FROM auth_attempts WHERE at = ?').get(cu), 'Dòng 25 giờ trước vẫn còn');
   });
 
+  // ================================================================== 3. Đăng nhập / đăng ký qua HTTP (AN-1)
+
+  console.log('\nPR-AN · 3. Giới hạn số lần thử trên đường HTTP thật');
+  const accounts: any = await import('../platform/accounts.ts');
+  const { createApp } = await import('../app.ts');
+  const may = createApp().listen(0);
+  const cong = (may.address() as any).port as number;
+  /**
+   * Gọi đường HTTP thật. Có `ip` → bật BAN_CHINH trong lúc gọi và gửi header IP của Netlify, để mỗi phép kiểm có IP riêng
+   * (không khoá lẫn nhau). `tho` = thân gửi nguyên văn (kiểm JSON hỏng).
+   */
+  const goi = async (method: string, url: string, o: { body?: unknown; ip?: string; tho?: string; cookie?: string } = {}) => {
+    const headers: Record<string, string> = { 'content-type': 'application/json' };
+    if (o.ip) headers['x-nf-client-connection-ip'] = o.ip;
+    if (o.cookie) headers.cookie = o.cookie;
+    if (o.ip) process.env.BAN_CHINH = '1';
+    try {
+      const res = await fetch(`http://127.0.0.1:${cong}/api${url}`, {
+        method, headers, body: o.tho ?? (o.body === undefined ? undefined : JSON.stringify(o.body)),
+      });
+      let json: any = null;
+      try { json = await res.json(); } catch { /* không có thân JSON */ }
+      return { status: res.status, json, setCookie: res.headers.get('set-cookie'), cacheControl: res.headers.get('cache-control') };
+    } finally { if (o.ip) delete process.env.BAN_CHINH; }
+  };
+  const taoTaiKhoan = (ten: string) => {
+    const email = `${ten}${accounts.EMAIL_SUFFIX}`;
+    const password = 'matkhau-an1';
+    accounts.createAccount(P.admin, { email, password, fullName: `Thử ${ten}`, roles: [{ role: 'teacher', branches: ['MB'] }] });
+    return { email, password };
+  };
+  const dangNhap = (tk: { email: string; password: string }, ip: string, sai = false) =>
+    goi('POST', '/auth/login', { ip, body: { email: tk.email, password: sai ? 'sai-mat-khau' : tk.password } });
+
+  await checkAsync('AN-1 · 5 lần sai cùng email → lần 6 bị 429 KỂ CẢ mật khẩu đúng, không phát cookie; IP khác cũng bị (khoá theo email)', async () => {
+    const tk = taoTaiKhoan('an1.khoa');
+    for (let i = 0; i < 5; i++) {
+      const r = await dangNhap(tk, '203.0.113.11', true);
+      assert(r.status === 400, `Lần sai ${i + 1}: ${r.status}`);
+    }
+    const r6 = await dangNhap(tk, '203.0.113.11');
+    assert(r6.status === 429 && /quá nhiều lần/.test(r6.json?.error ?? '') && /\d+ phút/.test(r6.json?.error ?? ''), `Lần 6: ${r6.status} ${JSON.stringify(r6.json)}`);
+    assert(!r6.setCookie, 'Đang khoá mà vẫn phát cookie phiên');
+    const r7 = await dangNhap(tk, '203.0.113.12');
+    assert(r7.status === 429, `IP khác vẫn vào được: ${r7.status}`);
+  });
+
+  await checkAsync('AN-1 · Đăng nhập đúng xoá đếm của email: 4 sai → 1 đúng → 4 sai → vẫn vào được', async () => {
+    const tk = taoTaiKhoan('an1.xoa');
+    for (let i = 0; i < 4; i++) await dangNhap(tk, '203.0.113.13', true);
+    assert((await dangNhap(tk, '203.0.113.13')).status === 200, 'Lần đúng phải vào được');
+    for (let i = 0; i < 4; i++) await dangNhap(tk, '203.0.113.13', true);
+    const r = await dangNhap(tk, '203.0.113.13');
+    assert(r.status === 200 && r.setCookie, `Đếm cũ không được xoá: ${r.status}`);
+  });
+
+  await checkAsync('AN-1 · 30 lần sai từ một IP (mỗi lần một email) → IP đó bị khoá cả với tài khoản đúng; IP khác không bị', async () => {
+    const tk = taoTaiKhoan('an1.ip');
+    for (let i = 0; i < 30; i++) {
+      await goi('POST', '/auth/login', { ip: '203.0.113.21', body: { email: `an1.do${i}${accounts.EMAIL_SUFFIX}`, password: 'x' } });
+    }
+    const bi = await dangNhap(tk, '203.0.113.21');
+    assert(bi.status === 429, `IP đã dò 30 lần vẫn đăng nhập được: ${bi.status}`);
+    const khac = await dangNhap(tk, '203.0.113.22');
+    assert(khac.status === 200, `IP khác bị vạ lây: ${khac.status}`);
+  });
+
+  await checkAsync('AN-1 · Email KHÔNG tồn tại cũng bị khoá sau 5 lần, cùng câu báo như email có thật (không lộ email nào có thật)', async () => {
+    const la = { email: `an1.khongco${accounts.EMAIL_SUFFIX}`, password: 'x' };
+    for (let i = 0; i < 5; i++) await dangNhap(la, '203.0.113.23', true);
+    const r = await dangNhap(la, '203.0.113.23');
+    assert(r.status === 429, `Email lạ không bị khoá: ${r.status}`);
+    const boSo = (s: string) => String(s).replace(/\d+/g, 'N');
+    assert(boSo(r.json?.error) === boSo(gh.cauKhoaDangNhap(1)), `Câu khác câu của email có thật: ${r.json?.error}`);
+  });
+
+  await checkAsync('AN-1 · Đăng ký: 10 lần/giờ/IP (tính cả lần hỏng) → lần 11 bị 429 dù thân hợp lệ, không tạo tài khoản; IP khác vẫn đăng ký được', async () => {
+    for (let i = 0; i < 10; i++) {
+      const r = await goi('POST', '/auth/register', { ip: '203.0.113.31', body: { email: 'thieu' } });
+      assert(r.status === 400, `Đăng ký hỏng lần ${i + 1}: ${r.status}`);
+    }
+    const hopLe = { email: `an1.dangky${accounts.EMAIL_SUFFIX}`, password: 'matkhau123', fullName: 'AN1 Đăng Ký', branches: ['MB'] };
+    const r11 = await goi('POST', '/auth/register', { ip: '203.0.113.31', body: hopLe });
+    assert(r11.status === 429 && /quá nhiều đăng ký/.test(r11.json?.error ?? ''), `Lần 11: ${r11.status} ${JSON.stringify(r11.json)}`);
+    assert(!conn.prepare('SELECT 1 FROM users WHERE email = ?').get(hopLe.email), 'Bị khoá mà vẫn tạo tài khoản');
+    const khac = await goi('POST', '/auth/register', { ip: '203.0.113.32', body: hopLe });
+    assert(khac.status === 200 && khac.json?.pending === true, `IP khác: ${khac.status}`);
+  });
+
   // ---- các task sau thêm phép kiểm NGAY TRÊN dòng này ----
 
+  may.close();
   /* Dọn: không để lại lần thử nào cho file khác (bảng chưa có thì bỏ qua — chỉ xảy ra ở bước đỏ của Task 1). */
   try { conn.prepare('DELETE FROM auth_attempts').run(); } catch { /* bảng chưa có */ }
 }

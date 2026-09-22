@@ -495,7 +495,7 @@ export function chanNeuBiKhoa(loai: LoaiThu, giaTri: string, cau: (phut: number)
 - Produces (trong file test): `may`, `goi(method, url, o)`, `taoTaiKhoan(ten)`, `dangNhap(tk, ip, sai?)` — Task 4, 5, 6 dùng lại.
   `may.close()` gọi ở **cuối file** (ngay trên khối dọn), không ở đây.
 
-- [ ] **Step 1: Phép kiểm (đỏ).**
+- [x] **Step 1: Phép kiểm (đỏ).**
 
 ```ts
   // ================================================================== 3. Đăng nhập / đăng ký qua HTTP (AN-1)
@@ -591,8 +591,8 @@ export function chanNeuBiKhoa(loai: LoaiThu, giaTri: string, cau: (phut: number)
 Và **ngay trên** khối dọn cuối file (`try { conn.prepare('DELETE FROM auth_attempts')…`), thêm một dòng: `may.close();`
 (các task sau thêm phép kiểm phía trên dòng `// ---- các task sau …`, vẫn nằm trước `may.close()`).
 
-- [ ] **Step 2: Chạy, đỏ.** Expected: 5 phép mới ✗ (lần 6 nhận 200/400 thay vì 429).
-- [ ] **Step 3: Sửa route.** Import (ngay dưới `import * as accountSvc …`, dòng 54):
+- [x] **Step 2: Chạy, đỏ.** Expected: 5 phép mới ✗ (lần 6 nhận 200/400 thay vì 429).
+- [x] **Step 3: Sửa route.** Import (ngay dưới `import * as accountSvc …`, dòng 54):
 
 ```ts
 import * as gioiHan from '../platform/gioiHanThu.ts';
@@ -643,9 +643,9 @@ api.post('/auth/register', wrap((req) => {
 ```
 (`HttpError` đã import ở dòng 11.)
 
-- [ ] **Step 4: Chạy, xanh.** Expected `TẤT CẢ 682 …`. Phép cũ `PR-Z2 · Bản chính: cookie phiên…` (`banChinh.tests.ts:350`) và
+- [x] **Step 4: Chạy, xanh.** Expected `TẤT CẢ 682 …`. Phép cũ `PR-Z2 · Bản chính: cookie phiên…` (`banChinh.tests.ts:350`) và
   `Đăng nhập đúng thì vào, sai email và sai mật khẩu nói CÙNG một câu` (`run.ts:4359`, gọi thẳng dịch vụ) vẫn ✓.
-- [ ] **Step 5: Commit.** `git commit -am "PR-AN (3): AN-1 giới hạn số lần thử đăng nhập và đăng ký"`
+- [x] **Step 5: Commit.** `git commit -am "PR-AN (3): AN-1 giới hạn số lần thử đăng nhập và đăng ký"`
 
 ---
 
@@ -1612,3 +1612,4 @@ song song trong cùng tiến trình sẽ thấy cờ; harness chạy tuần tự
 | 22/09 | Task 0 | Opus 5 · worktree .claude/worktrees/pr-an-an-toan (nhánh pr-an-an-toan từ origin/main 79fd4e7) · sạch biến Turso · mốc **672** ✓ · Task 12 dùng cổng khác 4000/5173 theo lệnh người giao việc |
 | 22/09 | Task 1 | Opus 5 · 672 → 674 (2 phép `AN-1 ·` mới, đỏ rồi xanh) · lệch nhỏ: ở bước đỏ, phép đầu báo `Cột: ""` chứ không phải `no such table` (PRAGMA trên bảng chưa có trả rỗng, không ném) — không đổi gì · code chép nguyên văn từ plan |
 | 22/09 | Task 2 | Opus 5 · 674 → 677 (3 phép `AN-1 ·` mới, đỏ rồi xanh) · lệch nhỏ: ở bước đỏ cả bộ SẬP thay vì 3 ✗ — Proxy của `load` (Task 1) ném cả khi `await` hỏi `.then`; sửa `load` trả `undefined` cho `then` rồi mới đỏ đúng 3 ✗ · `gioiHanThu.ts` chép nguyên văn từ plan |
+| 22/09 | Task 3 | Opus 5 · 677 → 682 (5 phép `AN-1 ·` HTTP mới) · lệch nhỏ: ở bước đỏ chỉ 4 ✗ chứ không phải 5 — phép "đăng nhập đúng xoá đếm" tự đạt khi chưa có giới hạn (không có khoá thì lần đúng nào cũng vào); sau khi sửa route cả 5 ✓ · phép cũ cookie Secure (banChinh.tests) và "CÙNG một câu" (run.ts) vẫn ✓ · route chép nguyên văn từ plan |
