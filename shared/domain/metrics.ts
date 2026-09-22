@@ -72,6 +72,13 @@ export const METRICS: readonly ChiSo[] = [
     thoiGian: 'hien-trang', khuTrung: 'COUNT DISTINCT signal_id', drilldown: '/metrics/tin-hieu-cho-xac-minh',
   },
   {
+    id: 'tin-hieu-qua-han', ten: 'Chờ xác minh quá hạn',
+    cauHoi: 'Bao nhiêu tín hiệu SOS lớp thường đã quá 3 ngày mà chưa ai tạo Case hay bỏ qua?',
+    donVi: 'tin-hieu',
+    tapDuDieuKien: 'Tín hiệu của LỚP THƯỜNG còn chờ (chưa thành Case, chưa bỏ qua, chưa thu hồi) mà hạn xác minh 3 ngày, tính cả ngày đầu, đã qua. Fast Track tự tạo Case nên không có ở đây.',
+    thoiGian: 'hien-trang', khuTrung: 'COUNT DISTINCT signal_id', drilldown: '/metrics/tin-hieu-qua-han',
+  },
+  {
     id: 'case-cho-xac-dinh-nguyen-nhan', ten: 'Case chờ xác định nguyên nhân',
     cauHoi: 'Bao nhiêu case SOS tự tạo đang chờ GVBM xác định nguyên nhân hoặc xác nhận phương án điền sẵn?',
     donVi: 'case',

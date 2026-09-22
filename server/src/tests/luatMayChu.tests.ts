@@ -431,5 +431,41 @@ export async function runLuatMayChuTests(t: YThucTestKit) {
     assertThrows(() => caseTuTinHieu(pGvcnFou, sg), /đã được xử lý/, 'Mở Case từ tín hiệu đã bỏ qua');
   });
 
+  // ================================================================== 9. S1 (d) dòng việc + chỉ số
+
+  console.log('\nPR-S1 · 9. S1 — dòng việc tín hiệu có đủ dữ liệu; ô "Chờ xác minh quá hạn" = tín hiệu lớp thường quá 3 ngày');
+  const mywork: any = await import('../worklist/mywork.ts');
+  const metricsSvc: any = await import('../worklist/metrics.ts');
+
+  check('S1 · Việc cần làm của GV môn đó có MỘT dòng cho mỗi tín hiệu, kèm loại, môn, điểm, hạn, hai nút; GV khác không thấy', () => {
+    const hv = taoHocVien({ classCode: 'MB-FOU 12', weekStart: '2026-09-07' });
+    diem(hv.attemptId, 'listening', 12, 40);
+    diem(hv.attemptId, 'speaking', 6, 25);
+    const l = tinHieu(hv.attemptId, 'listening'), s = tinHieu(hv.attemptId, 'speaking');
+    const mine = (mywork.myWork(pGvcnFou) as any).items.find((i: any) => i.key === `verify:${l.id}`);
+    assert(mine && mine.signal, 'Thiếu dòng tín hiệu Listening ở Việc cần làm của GV Listening');
+    assert(mine.signal.kind === 'normal' && mine.signal.skill === 'listening' && mine.signal.score === 12 && mine.signal.total === 40
+      && mine.signal.deadline === l.verify_due && JSON.stringify(mine.signal.actions) === JSON.stringify(['create_case', 'dismiss']),
+      `Dữ liệu dòng: ${JSON.stringify(mine.signal)}`);
+    assert(/chưa đạt/.test(mine.reason) && !/kỳ vọng/.test(mine.reason) && mine.actionLabel === 'Tạo Case', `Chữ dòng: ${mine.reason} · ${mine.actionLabel}`);
+    assert(!(mywork.myWork(pGvcnFou) as any).items.some((i: any) => i.key === `verify:${s.id}`), 'GV Listening thấy tín hiệu Speaking');
+    assert((mywork.myWork(pSpeakingFou) as any).items.some((i: any) => i.key === `verify:${s.id}`), 'GV Speaking không thấy tín hiệu của mình');
+  });
+
+  check('S1 · Chỉ số tin-hieu-qua-han: tín hiệu lớp thường chờ quá 3 ngày có; chưa quá hạn thì không; đã bỏ qua thì không', () => {
+    const hv = taoHocVien({ classCode: 'MB-FOU 12', weekStart: '2026-09-07' });
+    diem(hv.attemptId, 'listening', 10, 40);
+    diem(hv.attemptId, 'reading', 10, 40);
+    diem(hv.attemptId, 'speaking', 5, 25);
+    const oldL = tinHieu(hv.attemptId, 'listening'), fresh = tinHieu(hv.attemptId, 'reading'), gone = tinHieu(hv.attemptId, 'speaking');
+    conn.prepare(`UPDATE case_signals SET raised_on = '2026-09-09', verify_due = '2026-09-11' WHERE id IN (?, ?)`).run(oldL.id, gone.id);
+    signals.dismissSignal(pSpeakingFou, gone.id, {});
+    const ids = (metricsSvc.metricSet(P.admin, 'tin-hieu-qua-han', {}) as any).ids as number[];
+    assert(ids.includes(oldL.id), 'Tín hiệu quá hạn phải có trong ô');
+    assert(!ids.includes(fresh.id), 'Tín hiệu còn trong hạn không được đếm');
+    assert(!ids.includes(gone.id), 'Tín hiệu đã bỏ qua không được đếm');
+    assert(domain.metricById('tin-hieu-qua-han')?.ten === 'Chờ xác minh quá hạn', 'Tên chỉ số phải đúng chữ ô Tổng quan (§3.2)');
+  });
+
   // ---- các task sau thêm phép kiểm NGAY TRÊN dòng này ----
 }

@@ -4,7 +4,7 @@ import { demoToday } from '../demoConfig.ts';
 import { scopeFor, type Principal } from '../permissions.ts';
 import { badRequest, forbidden, HttpError, notFound } from '../util.ts';
 import { listCases } from '../cases/cases.ts';
-import { listSignals } from '../cases/signals.ts';
+import { listSignals, overdueNormalSignalIds } from '../cases/signals.ts';
 import { NOT_UNCONFIRMED_PRESET, awaitingCauseCaseIds } from '../cases/sosState.ts';
 import { improvementRate, planOutcomes } from '../cases/effectiveness.ts';
 import { doPhuDanhGia, hvDuoiKyVongMon, hvSosHienTai } from './danhGia.ts';
@@ -189,8 +189,8 @@ export function metricResponse(r: MetricResult, withRows: boolean) {
 
 /** Các chỉ số ĐÃ CÓ hàm tập ID. Chỉ số khác trong sổ chưa dùng được. */
 export const LISTED_METRICS: readonly string[] = [
-  'hv-sos-hien-tai', 'hv-duoi-ky-vong-mon', 'hv-co-case-mo', 'case-mo', 'tin-hieu-cho-xac-minh', 'case-cho-xac-dinh-nguyen-nhan',
-  'case-thieu-pa', 'pa-can-cap-nhat', 'pa-cho-duyet', 'pa-co-ket-qua', 'ty-le-co-cai-thien',
+  'hv-sos-hien-tai', 'hv-duoi-ky-vong-mon', 'hv-co-case-mo', 'case-mo', 'tin-hieu-cho-xac-minh', 'tin-hieu-qua-han',
+  'case-cho-xac-dinh-nguyen-nhan', 'case-thieu-pa', 'pa-can-cap-nhat', 'pa-cho-duyet', 'pa-co-ket-qua', 'ty-le-co-cai-thien',
   'dung-han-cap-nhat', 'do-phu-danh-gia',
   ...YTHUC_METRIC_IDS,
   ...PHOI_HOP_METRIC_IDS,
@@ -390,6 +390,8 @@ export function metricSet(
       return done(openCases().filter((c: any) => c.state === 'no_plan').map((c: any) => c.id as number));
     case 'tin-hieu-cho-xac-minh':
       return done(listSignals(p, { branchId, status: 'open' }).rows.map((s) => s.id));
+    case 'tin-hieu-qua-han':
+      return done(overdueNormalSignalIds(p, { branchId: branchId ?? null, today }));
     case 'case-cho-xac-dinh-nguyen-nhan':
       /* Case TỪ SOS (rulebook v3) đang mở mà chưa có nguyên nhân HOẶC còn phương án điền sẵn chưa xác nhận — cùng định nghĩa với `caseDetail().sos`. */
       return done(awaitingCauseCaseIds(openCases().map((c: any) => c.id as number)));

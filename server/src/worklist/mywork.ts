@@ -12,7 +12,7 @@ import { can, scopeFor, teachesClass, type Principal } from '../permissions.ts';
 import { attemptHref, listAttempts } from '../fasttrack/attempts.ts';
 import { classAlerts } from '../classes/schedule.ts';
 import { myMgmtTasks } from './mgmttasks.ts';
-import { listSignals } from '../cases/signals.ts';
+import { listSignals, type SignalAction } from '../cases/signals.ts';
 import { NOT_UNCONFIRMED_PRESET, UNCONFIRMED_PRESET, awaitingCauseCaseIds } from '../cases/sosState.ts';
 import { settleNoShows, sweepExpiredMoves } from '../fasttrack/absence.ts';
 
@@ -83,6 +83,13 @@ export type WorkItem = {
    * khác nhau, nên số em đi kèm dòng chứ không biến thành sáu dòng riêng.
    */
   count: number | null;
+  /**
+   * DÒNG TÍN HIỆU SOS (đặc tả §3.10) — đủ để giao diện vẽ hai nút "Tạo Case · Bỏ qua" mà không phải gọi thêm. Chỉ dòng `verify` có.
+   */
+  signal?: {
+    id: number; kind: 'normal' | 'ft'; skill: string | null; skillLabel: string;
+    score: number | null; total: number | null; deadline: string; actions: SignalAction[];
+  } | null;
 };
 
 /**
@@ -270,9 +277,15 @@ export function myWork(p: Principal, f: { branchId?: number | null } = {}) {
       classId: sg.classId, classCode: sg.classCode,
       attemptId: sg.attemptId, attemptNo: sg.attemptNo, caseId: null,
       level: sg.sosLevel !== null ? { tone: sosTone(sg.sosLevel), text: SOS_LABEL[sg.sosLevel as 0 | 1 | 2 | 3] } : null,
-      reason: `${sg.label} dưới kỳ vọng${sg.band !== null ? ` (${sg.band} so với ${sg.expectation ?? '—'})` : ''}.`
-        + ' Xem lại bài rồi xác minh.',
-      actionLabel: 'Mở case',
+      reason: sg.kind === 'normal'
+        ? `${sg.label} chưa đạt${sg.score !== null && sg.total !== null ? ` (${sg.score}/${sg.total})` : ''}.`
+        : `${sg.label} dưới kỳ vọng${sg.band !== null ? ` (${sg.band} so với ${sg.expectation ?? '—'})` : ''}.`
+          + ' Xem lại bài rồi xác minh.',
+      actionLabel: sg.kind === 'normal' ? 'Tạo Case' : 'Mở case',
+      signal: {
+        id: sg.id, kind: sg.kind, skill: sg.skill, skillLabel: sg.label,
+        score: sg.score, total: sg.total, deadline: sg.verifyDue, actions: sg.actions,
+      },
       overdueLabel: badge('verify', u),
       href: `/hoc-vien/${sg.studentId}`,
       ownerId: sg.ownerUserId, owner: null, mine: true,

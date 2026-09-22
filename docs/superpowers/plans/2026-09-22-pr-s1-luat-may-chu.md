@@ -1272,7 +1272,7 @@ và đổi đối số `note` của câu INSERT thành `` `Tín hiệu từ kế
   `export function overdueNormalSignalIds(p: Principal, f?: { branchId?: number | null; today?: string }): number[]`; chỉ số `tin-hieu-qua-han`.
   PR-Pa dùng `metricSet(p, 'tin-hieu-qua-han')` cho ô "Chờ xác minh quá hạn" và `WorkItem.signal` cho dòng việc.
 
-- [ ] **Step 1: Phép kiểm (đỏ).**
+- [x] **Step 1: Phép kiểm (đỏ).**
 
 ```ts
   // ================================================================== 9. S1 (d) dòng việc + chỉ số
@@ -1312,8 +1312,8 @@ và đổi đối số `note` của câu INSERT thành `` `Tín hiệu từ kế
   });
 ```
 
-- [ ] **Step 2: Chạy, đỏ.** Expected: hai phép ✗; phép cũ "Sổ chỉ số: đúng hai mươi ba…" vẫn ✓ (chưa thêm).
-- [ ] **Step 3: `overdueNormalSignalIds`** (`signals.ts`, sau `listSignals`):
+- [x] **Step 2: Chạy, đỏ.** Expected: hai phép ✗; phép cũ "Sổ chỉ số: đúng hai mươi ba…" vẫn ✓ (chưa thêm).
+- [x] **Step 3: `overdueNormalSignalIds`** (`signals.ts`, sau `listSignals`):
 
 ```ts
 /**
@@ -1328,7 +1328,7 @@ export function overdueNormalSignalIds(p: Principal, f: { branchId?: number | nu
 }
 ```
 
-- [ ] **Step 4: Chỉ số.** `shared/domain/metrics.ts` — thêm sau `tin-hieu-cho-xac-minh`:
+- [x] **Step 4: Chỉ số.** `shared/domain/metrics.ts` — thêm sau `tin-hieu-cho-xac-minh`:
 
 ```ts
   {
@@ -1349,7 +1349,7 @@ export function overdueNormalSignalIds(p: Principal, f: { branchId?: number | nu
 `server/src/tests/run.ts` (phép "Sổ chỉ số", dòng ~7972): `23` → `24` (cả câu thông báo: thêm "+ một của PR-S1: tin-hieu-qua-han") và thêm
 `'tin-hieu-qua-han'` vào mảng `expected` sau `'tin-hieu-cho-xac-minh'`.
 
-- [ ] **Step 5: Dòng `verify` ở `mywork.ts`.** `WorkItem` thêm (sau `count: number | null;`):
+- [x] **Step 5: Dòng `verify` ở `mywork.ts`.** `WorkItem` thêm (sau `count: number | null;`):
 
 ```ts
   /**
@@ -1375,8 +1375,8 @@ export function overdueNormalSignalIds(p: Principal, f: { branchId?: number | nu
       },
 ```
 
-- [ ] **Step 6: Chạy, xanh** (Expected `699`). `npm run typecheck` — web đọc `WorkItem` qua kiểu riêng thì trường tuỳ chọn không làm vỡ gì.
-- [ ] **Step 7: Commit.** `git commit -am "PR-S1 (9): S1 — dòng việc tín hiệu mang dữ liệu + chỉ số tin-hieu-qua-han (Chờ xác minh quá hạn)"`
+- [x] **Step 6: Chạy, xanh** (Expected `699`). `npm run typecheck` — web đọc `WorkItem` qua kiểu riêng thì trường tuỳ chọn không làm vỡ gì.
+- [x] **Step 7: Commit.** `git commit -am "PR-S1 (9): S1 — dòng việc tín hiệu mang dữ liệu + chỉ số tin-hieu-qua-han (Chờ xác minh quá hạn)"`
 
 ---
 

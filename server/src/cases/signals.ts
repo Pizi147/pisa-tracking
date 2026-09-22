@@ -314,6 +314,17 @@ export function listSignals(p: Principal, f: SignalFilters = {}) {
   };
 }
 
+/**
+ * TẬP ID CỦA Ô "CHỜ XÁC MINH QUÁ HẠN" (đặc tả §3.2, §3.10): tín hiệu LỚP THƯỜNG còn chờ mà hạn 3 ngày (tính cả ngày đầu) đã qua.
+ * Fast Track tự tạo Case nên không có tín hiệu chờ. Phạm vi và quyền đi qua `listSignals` — cùng hàm với danh sách tín hiệu.
+ */
+export function overdueNormalSignalIds(p: Principal, f: { branchId?: number | null; today?: string } = {}): number[] {
+  return listSignals(p, { branchId: f.branchId ?? null, status: 'open', today: f.today }).rows
+    .filter((s) => s.kind === 'normal' && s.overdue)
+    .map((s) => s.id)
+    .sort((a, b) => a - b);
+}
+
 export function signalDetail(p: Principal, id: number): SignalView {
   const r = db().prepare(`${SIGNAL_SELECT} WHERE sg.id = ?`).get(id) as any;
   if (!r) throw notFound('Không tìm thấy tín hiệu');
