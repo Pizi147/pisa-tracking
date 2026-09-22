@@ -9441,6 +9441,11 @@ await runSosV3Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, a
 const { runLuatMayChuTests } = await import('./luatMayChu.tests.ts');
 await runLuatMayChuTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
+// ==================================================================== PR-S2 (điều chỉnh PA học thuật · cập nhật tuần rút gọn)
+
+const { runDieuChinhPaTests } = await import('./dieuChinhPa.tests.ts');
+await runDieuChinhPaTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
+
 // ==================================================================== PR-Z2 (bản chính trên Netlify + Turso)
 
 const { runBanChinhTests } = await import('./banChinh.tests.ts');
