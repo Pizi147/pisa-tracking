@@ -662,7 +662,7 @@ thật và (b) thêm một lớp phòng thủ ở `resolveSession` (Q16).
 - Consumes: `goi`, `accounts` (Task 3); `createSession`, `resolveSession` (`auth.ts`).
 - Produces: `resolveSession(token)` trả `null` và xoá dòng phiên khi tài khoản có `approval_state != 'approved'` hoặc `status != 'active'`.
 
-- [ ] **Step 1: Phép kiểm.**
+- [x] **Step 1: Phép kiểm.**
 
 ```ts
   // ================================================================== 4. AN-6 — đăng ký phải QTHT duyệt
@@ -716,9 +716,9 @@ thật và (b) thêm một lớp phòng thủ ở `resolveSession` (Q16).
   });
 ```
 
-- [ ] **Step 2: Chạy.** Expected: hai phép HTTP **✓ ngay** (hành vi đã có — nếu ✗ thì 🛑, mã khác kiểm kê); phép phiên **✗**
+- [x] **Step 2: Chạy.** Expected: hai phép HTTP **✓ ngay** (hành vi đã có — nếu ✗ thì 🛑, mã khác kiểm kê); phép phiên **✗**
   ("Phiên của tài khoản chờ duyệt vẫn dùng được").
-- [ ] **Step 3: Sửa `resolveSession`** (`auth.ts:41-53`):
+- [x] **Step 3: Sửa `resolveSession`** (`auth.ts:41-53`):
 
 ```ts
 export function resolveSession(token: string | undefined): Principal | null {
@@ -747,10 +747,10 @@ export function resolveSession(token: string | undefined): Principal | null {
 ```
 Giữ nguyên khối chú thích `PHIEN_HET_HAN_SAU_NGAY` ở trên.
 
-- [ ] **Step 4: Chạy, xanh.** Expected `TẤT CẢ 685 …`. Phép cũ về phiên hết hạn (`banChinh.tests.ts:1110-1130`) và khôi phục (`:1040-1070`)
+- [x] **Step 4: Chạy, xanh.** Expected `TẤT CẢ 685 …`. Phép cũ về phiên hết hạn (`banChinh.tests.ts:1110-1130`) và khôi phục (`:1040-1070`)
   vẫn ✓ (tài khoản của bộ demo đều `approved`/`active`). Ghi Nhật ký: ở máy dev, "Vào nhanh" vào một tài khoản **chờ duyệt** nay bị
   đẩy ra ngay — đúng ý (dev không có tài khoản chờ duyệt trong bộ demo).
-- [ ] **Step 5: Commit.** `git commit -am "PR-AN (4): AN-6 phép kiểm HTTP luồng duyệt; phiên chỉ nhận tài khoản đã duyệt, đang hoạt động"`
+- [x] **Step 5: Commit.** `git commit -am "PR-AN (4): AN-6 phép kiểm HTTP luồng duyệt; phiên chỉ nhận tài khoản đã duyệt, đang hoạt động"`
 
 ---
 
@@ -1613,3 +1613,4 @@ song song trong cùng tiến trình sẽ thấy cờ; harness chạy tuần tự
 | 22/09 | Task 1 | Opus 5 · 672 → 674 (2 phép `AN-1 ·` mới, đỏ rồi xanh) · lệch nhỏ: ở bước đỏ, phép đầu báo `Cột: ""` chứ không phải `no such table` (PRAGMA trên bảng chưa có trả rỗng, không ném) — không đổi gì · code chép nguyên văn từ plan |
 | 22/09 | Task 2 | Opus 5 · 674 → 677 (3 phép `AN-1 ·` mới, đỏ rồi xanh) · lệch nhỏ: ở bước đỏ cả bộ SẬP thay vì 3 ✗ — Proxy của `load` (Task 1) ném cả khi `await` hỏi `.then`; sửa `load` trả `undefined` cho `then` rồi mới đỏ đúng 3 ✗ · `gioiHanThu.ts` chép nguyên văn từ plan |
 | 22/09 | Task 3 | Opus 5 · 677 → 682 (5 phép `AN-1 ·` HTTP mới) · lệch nhỏ: ở bước đỏ chỉ 4 ✗ chứ không phải 5 — phép "đăng nhập đúng xoá đếm" tự đạt khi chưa có giới hạn (không có khoá thì lần đúng nào cũng vào); sau khi sửa route cả 5 ✓ · phép cũ cookie Secure (banChinh.tests) và "CÙNG một câu" (run.ts) vẫn ✓ · route chép nguyên văn từ plan |
+| 22/09 | Task 4 | Opus 5 · 682 → 685 (3 phép `AN-6 ·` mới) · đúng plan: hai phép HTTP ✓ ngay (luồng duyệt đã có), phép phiên ✗ "Phiên của tài khoản chờ duyệt vẫn dùng được" rồi ✓ sau khi sửa `resolveSession` (một câu JOIN users) · phép cũ phiên hết hạn / khôi phục (banChinh.tests) vẫn ✓ · ghi chú: ở máy dev, "Vào nhanh" vào một tài khoản **chờ duyệt** nay bị đẩy ra ngay — đúng ý (bộ demo không có tài khoản chờ duyệt) · code chép nguyên văn từ plan |

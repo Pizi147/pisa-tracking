@@ -210,6 +210,56 @@ export async function runAnToanTests(t: AnToanTestKit) {
     assert(khac.status === 200 && khac.json?.pending === true, `IP khác: ${khac.status}`);
   });
 
+  // ================================================================== 4. AN-6 — đăng ký phải QTHT duyệt
+
+  console.log('\nPR-AN · 4. Đăng ký tự do nhưng phải Quản trị hệ thống duyệt (4.11)');
+  const auth: any = await import('../auth.ts');
+
+  await checkAsync('AN-6 · Đăng ký qua HTTP: tài khoản ở trạng thái chờ duyệt, KHÔNG có vai nào; trường lạ (role, approval_state, status) bị bỏ qua', async () => {
+    const email = `an6.moi${accounts.EMAIL_SUFFIX}`;
+    const r = await goi('POST', '/auth/register', { ip: '203.0.113.41', body: {
+      email, password: 'matkhau123', fullName: 'AN6 Mới', branches: ['MB'],
+      role: 'system_admin', roles: [{ role: 'system_admin', branches: [] }], approval_state: 'approved', approvalState: 'approved', status: 'active',
+    } });
+    assert(r.status === 200 && r.json?.pending === true, `Đăng ký: ${r.status} ${JSON.stringify(r.json)}`);
+    const u = conn.prepare('SELECT id, approval_state FROM users WHERE email = ?').get(email) as any;
+    assert(u && u.approval_state === 'pending', `Trạng thái: ${u?.approval_state}`);
+    const vai = (conn.prepare("SELECT COUNT(*) n FROM user_roles WHERE user_id = ? AND status = 'active'").get(u.id) as any).n;
+    assert(vai === 0, `Chưa duyệt mà đã có ${vai} vai`);
+  });
+
+  await checkAsync('AN-6 · Chờ duyệt → đăng nhập 403 "chờ", không cookie; bị từ chối → 403 kèm lý do; QTHT duyệt rồi mới vào được', async () => {
+    const email = `an6.cho${accounts.EMAIL_SUFFIX}`;
+    const { userId } = accounts.register({ email, password: 'matkhau123', fullName: 'AN6 Chờ', branches: ['MB'] });
+    const cho = await goi('POST', '/auth/login', { ip: '203.0.113.42', body: { email, password: 'matkhau123' } });
+    assert(cho.status === 403 && /chờ/.test(cho.json?.error ?? '') && !cho.setCookie, `Chờ duyệt: ${cho.status} ${cho.setCookie}`);
+    const email2 = `an6.tuchoi${accounts.EMAIL_SUFFIX}`;
+    const r2 = accounts.register({ email: email2, password: 'matkhau123', fullName: 'AN6 Từ Chối', branches: ['MB'] });
+    accounts.decline(P.admin, r2.userId, 'Không phải giáo viên của trung tâm');
+    const tc = await goi('POST', '/auth/login', { ip: '203.0.113.42', body: { email: email2, password: 'matkhau123' } });
+    assert(tc.status === 403 && /Không phải giáo viên/.test(tc.json?.error ?? '') && !tc.setCookie, `Bị từ chối: ${tc.status}`);
+    accounts.approve(P.admin, userId, { role: 'teacher', branches: ['MB'] });
+    const vao = await goi('POST', '/auth/login', { ip: '203.0.113.42', body: { email, password: 'matkhau123' } });
+    assert(vao.status === 200 && vao.setCookie, `Đã duyệt mà không vào được: ${vao.status}`);
+  });
+
+  check('AN-6 · Phiên của tài khoản chờ duyệt / bị từ chối / không hoạt động không dùng được (và bị xoá); tài khoản đã duyệt thì dùng được', () => {
+    const mk = (ten: string) => accounts.register({ email: `${ten}${accounts.EMAIL_SUFFIX}`, password: 'matkhau123', fullName: ten, branches: ['MB'] }).userId as number;
+    const cho = mk('an6.phien.cho');
+    const tuChoi = mk('an6.phien.tuchoi');
+    accounts.decline(P.admin, tuChoi, 'Thử phiên');
+    const khoa = mk('an6.phien.khoa');
+    accounts.approve(P.admin, khoa, { role: 'teacher', branches: ['MB'] });
+    conn.prepare("UPDATE users SET status = 'locked' WHERE id = ?").run(khoa);
+    for (const [ten, id] of [['chờ duyệt', cho], ['bị từ chối', tuChoi], ['không hoạt động', khoa]] as const) {
+      const ma = auth.createSession(id);
+      assert(auth.resolveSession(ma) === null, `Phiên của tài khoản ${ten} vẫn dùng được`);
+      assert(!conn.prepare('SELECT 1 FROM demo_sessions WHERE token = ?').get(ma), `Phiên của tài khoản ${ten} không bị xoá`);
+    }
+    const ok = auth.resolveSession(auth.createSession(P.admin.userId));
+    assert(ok && ok.userId === P.admin.userId, 'Tài khoản đã duyệt phải dùng được phiên');
+  });
+
   // ---- các task sau thêm phép kiểm NGAY TRÊN dòng này ----
 
   may.close();

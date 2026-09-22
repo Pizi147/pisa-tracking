@@ -40,11 +40,21 @@ export const PHIEN_HET_HAN_SAU_NGAY = 30;
 
 export function resolveSession(token: string | undefined): Principal | null {
   if (!token) return null;
-  const row = db().prepare('SELECT * FROM demo_sessions WHERE token = ?').get(token) as any;
+  /*
+   * AN-6 (PR-AN, quyết định 4.11): phiên chỉ có hiệu lực cho tài khoản ĐÃ DUYỆT và đang hoạt động. Hôm nay chỉ đường đăng nhập
+   * phát phiên và nó đã từ chối tài khoản chờ duyệt — lớp này để một đường phát phiên thêm sau này không mở cửa cho họ.
+   * Một câu JOIN, không thêm lượt hỏi database.
+   */
+  const row = db()
+    .prepare(
+      `SELECT s.*, u.approval_state, u.status AS user_status FROM demo_sessions s
+         JOIN users u ON u.id = s.user_id WHERE s.token = ?`,
+    )
+    .get(token) as any;
   if (!row) return null;
-  /* Quá hạn → coi như chưa đăng nhập, và xoá luôn dòng phiên (mã đó không bao giờ dùng lại được). */
-  const lanDungCuoi = Date.parse(row.last_seen_at ?? row.created_at);
-  if (!(Date.now() - lanDungCuoi <= PHIEN_HET_HAN_SAU_NGAY * 86_400_000)) {
+  const hetHan = !(Date.now() - Date.parse(row.last_seen_at ?? row.created_at) <= PHIEN_HET_HAN_SAU_NGAY * 86_400_000);
+  /* Quá hạn, hoặc tài khoản không còn được vào → coi như chưa đăng nhập, và xoá luôn dòng phiên (mã đó không dùng lại được). */
+  if (hetHan || row.approval_state !== 'approved' || row.user_status !== 'active') {
     db().prepare('DELETE FROM demo_sessions WHERE token = ?').run(token);
     return null;
   }
