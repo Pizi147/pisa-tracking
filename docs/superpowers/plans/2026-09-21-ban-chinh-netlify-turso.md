@@ -1379,6 +1379,9 @@ không có chi nhánh thì không tạo được lớp. Nên lệnh khởi tạo
 **Cần chủ sản phẩm:** site Netlify đã tạo ở Task 6b và database Turso **bản chính** `pisa-ban-chinh` (khác database
 thử). Hỏi rõ từng thứ; **không** dùng database thử làm bản chính. Deploy **chỉ bằng Netlify CLI** từ thư mục repo.
 
+> **🆕 22/09 (tối) — ĐIỀU KIỆN BẮT ĐẦU PHẦN C:** `main` phải có **cả** PR-Z2b **và** PR-HV (hồ sơ học viên mới) — chủ sản phẩm chốt
+> giáo viên thấy giao diện mới từ ngày đầu. Thiếu PR-HV → 🛑 dừng, báo chủ sản phẩm.
+>
 > **🆕 22/09 — THỨ TỰ MỚI của Task 10** (vì Task 6e: bản nháp **luôn** dùng database thử, chỉ bản chính thức dùng
 > `pisatracking`). Không còn "thử luồng trên bản nháp nối database chính". Thay vào đó: đưa lên địa chỉ chính thức
 > **trước khi báo cho giáo viên** — lúc đó địa chỉ chính thức chính là nơi kiểm, chưa ai dùng. Chữ cũ của Step 1–3, 7, 8
