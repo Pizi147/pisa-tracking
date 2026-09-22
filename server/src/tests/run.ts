@@ -9462,6 +9462,11 @@ await runKhungTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, a
 const { runAnToanTests } = await import('./anToan.tests.ts');
 await runAnToanTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P });
 
+// ==================================================================== PR-Pa (Tổng quan)
+
+const { runTongQuanTests } = await import('./tongQuan.tests.ts');
+await runTongQuanTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
+
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`
