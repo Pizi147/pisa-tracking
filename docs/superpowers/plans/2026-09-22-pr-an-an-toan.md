@@ -1571,13 +1571,13 @@ lẫn PR-S1. (`VACUUM INTO` vì libsql trên Windows giữ khoá file — bài h
   (e) `chot-vang` có thể chạy vào database **thử** không (bản nháp Netlify không chạy hàm định kỳ — xác nhận theo tài liệu Netlify);
   (f) `resolveSession` đổi có làm ai đang đăng nhập hợp lệ bị đẩy ra không.
   Xử lý phản hồi theo `superpowers:receiving-code-review`. Sửa xong: `npm run check` xanh.
-- [ ] **Step 4: PR.** `superpowers:finishing-a-development-branch` — `git push -u origin pr-an-an-toan` (sau rebase: `--force-with-lease`);
+- [x] **Step 4: PR.** `superpowers:finishing-a-development-branch` — `git push -u origin pr-an-an-toan` (sau rebase: `--force-with-lease`);
   `gh pr create` **không draft**, tiêu đề `PR-AN · An toàn trước người dùng thật (AN-1, 3, 4, 5, 6, 7, 8, RB-1)`. Thân PR: tóm tắt theo
   Task; bảng "Kiểm với mã thật" (AN-6 đã có, chỉ thêm phép kiểm); bảng Q1–Q22; **có migrate** (bảng `auth_attempts`, idempotent, đã chạy
   lặp trên bản sao); số phép kiểm trước → sau; kết quả KIỂM Task 12; "việc chuyển cho PR khác": đo `[cham]` và kiểm `chot-vang` thật →
   Z2c; các câu hỏi DB khác mỗi thẻ Case → Z2c Step 6; màn dev `SetupHelp` chữ cũ → S3. Dòng cuối:
   `🤖 Generated with [Claude Code](https://claude.com/claude-code)`. **Không tự merge.**
-- [ ] **Step 5: Báo chủ sản phẩm** (tiếng Việt cơ bản, không thuật ngữ): link PR; từ nay đăng nhập sai 5 lần phải chờ 15 phút; lỗi hệ thống
+- [x] **Step 5: Báo chủ sản phẩm** (tiếng Việt cơ bản, không thuật ngữ): link PR; từ nay đăng nhập sai 5 lần phải chờ 15 phút; lỗi hệ thống
   hiện một mã ngắn để báo lại; mỗi sáng thứ Hai máy tự chốt "-" dù không ai mở web; PR này cần merge **sau** PR-O và PR-S1.
 
 ---
@@ -1626,3 +1626,4 @@ song song trong cùng tiến trình sẽ thấy cờ; harness chạy tuần tự
 | 22/09 | Task 12 · phán quyết 6.1 | Session điều phối · 6.1 ✗ chỉ do cách dựng thử: web bản chính (5181) nối API **máy dev**, mà API dev luôn gửi `demoAdmin` → hiện dòng mật khẩu mặc định. Bản chính thật: API chạy BAN_CHINH nên `/auth/info` không có `demoAdmin` (`routes/index.ts:1621`, phép kiểm cũ `PR-Z2 · Bản chính: GET /auth/info không có khoá demoAdmin` ✓). Không sửa mã; tick Step 6 |
 | 22/09 | Task 13 · rebase | Opus 5 · main 730 (origin/main 526ffec) → nhánh 757 (+27 ✓) · rebase 17 commit lên 526ffec · xung đột chỉ ở commit (1): `run.ts` giữ cả khối PR-O `runKhungTests` rồi khối AN `runAnToanTests` (sau PR-Z2; S1 đã ở trước PR-Z2, không xung đột); `migrate.ts` giữ `migrateLuatMayChu` rồi `migrateAuthAttempts`, cả hai hàm ở cuối file (thêm tay `}` đóng hàm S1 và `/**` mở chú thích AN do hai bên chung dòng) · `schema.sql`, `routes/index.ts`, `cases.ts` (`canClose:` theo S1 có `topic: c.topic` + `...caseCardOf(c.id, c, soBangChung),`), `CODE_MAP.md`, plan tự gộp không xung đột · `npm run check` ✓ (757, typecheck ✓) · `npm run thu-goi` 5 dòng ĐẠT · migrate lặp trên bản sao VACUUM INTO (thư mục tạm, DROP auth_attempts): lần 1 có dòng PR-S1 (2 cột, đánh cờ 0) và PR-AN (thêm bảng auth_attempts); lần 2 không có dòng PR-AN lẫn PR-S1 (chỉ còn dòng cũ "3 case giữ khoá cũ…" lặp mỗi lần — có từ 58adcd7, không thuộc PR này) · `data/pisa-demo.sqlite` giữ nguyên thời điểm sửa · lệch nhỏ: lệnh `node -e` của plan mất dấu `\` khi chạy qua Bash → dùng script với `String.fromCharCode(92)` |
 | 22/09 | Task 13 · rà soát cuối | Fable 5.1 rà: sẵn sàng merge; 0 Critical · 1 Important (tài liệu: database THỬ và bản khôi phục cũ thiếu bảng auth_attempts → thêm bước chạy migrate) · 8 Minor không chặn · Opus 5 sửa tài liệu |
+| 22/09 | Task 13 · PR | Session điều phối (Opus 5) · rebase lần 2 lên main 7843875 (main chỉ thêm tài liệu) · npm run check **757** ✓ (main 730 + 27) · mở PR không draft, không tự merge |
