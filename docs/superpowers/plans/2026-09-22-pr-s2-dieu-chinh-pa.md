@@ -123,19 +123,19 @@ Nguồn luật: `plan.md` §22.9 (S2, S4, nghiệm thu mục 2) · `thiet-ke/PIS
 
 **Files:** không sửa mã.
 
-- [ ] **Step 1: Worktree.** Từ `main` mới nhất (`git fetch origin && git log -1 origin/main` phải chứa merge PR #56): tạo worktree nhánh `pr-s2-dieu-chinh-pa`
+- [x] **Step 1: Worktree.** Từ `main` mới nhất (`git fetch origin && git log -1 origin/main` phải chứa merge PR #56): tạo worktree nhánh `pr-s2-dieu-chinh-pa`
   (skill `superpowers:using-git-worktrees`), ví dụ `.claude/worktrees/pr-s2-dieu-chinh-pa`. **Không checkout nhánh khác trong thư mục chính.**
   Chạy `npm ci` trong worktree nếu chưa có `node_modules`.
-- [ ] **Step 2: Kiểm không có biến Turso.**
+- [x] **Step 2: Kiểm không có biến Turso.**
 
 ```bash
 node -e "for (const k of ['TURSO_DATABASE_URL','TURSO_AUTH_TOKEN','BAN_CHINH','PISA_CHO_PHEP_MIGRATE_TURSO','PISA_CHO_PHEP_SEED_TURSO']) if (process.env[k]) { console.error('CÓ BIẾN', k); process.exit(1) } ; console.log('sạch')"
 ```
 Expected: `sạch`. Có biến thì đóng cửa sổ, mở cửa sổ mới.
 
-- [ ] **Step 3: Mốc phép kiểm.** Run: `npm test 2>&1 | tail -3`. Expected: `TẤT CẢ 719 KIỂM TRA ĐỀU ĐẠT` (hoặc số lớn hơn nếu `main` đã có PR khác).
+- [x] **Step 3: Mốc phép kiểm.** Run: `npm test 2>&1 | tail -3`. Expected: `TẤT CẢ 719 KIỂM TRA ĐỀU ĐẠT` (hoặc số lớn hơn nếu `main` đã có PR khác).
   Ghi con số vào Nhật ký; mọi "Expected" bên dưới tính cộng dồn từ số này (gọi là **B**).
-- [ ] **Step 4:** Đọc Global Constraints và bảng Q1–Q18. Thấy Q nào sai với đặc tả thì 🛑 hỏi trước khi code.
+- [x] **Step 4:** Đọc Global Constraints và bảng Q1–Q18. Thấy Q nào sai với đặc tả thì 🛑 hỏi trước khi code.
 
 ---
 
@@ -2022,4 +2022,4 @@ làm mất lối "Thay bằng phương án khác hoặc nhờ Quản lý" cũ; f
 
 | Ngày | Task | Ghi chú (model người code · số phép kiểm · lệch plan · quyết định tại chỗ) |
 |---|---|---|
-| | | |
+| 22/09 | 0 | Opus 5 (session code + subagent Opus 5). Worktree `.claude/worktrees/pr-s2-dieu-chinh-pa` từ `origin/main` 46f5f90 (đã có PR-S1 #56 và PR-O #58). Không có biến Turso. **B = 730** (plan ghi 719: PR-O merge sau khi đo; đích cuối = 751). Q1–Q18 đọc xong, planning review đã duyệt, không thấy Q nào trái đặc tả. |
