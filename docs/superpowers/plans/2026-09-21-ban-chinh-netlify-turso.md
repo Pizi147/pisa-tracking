@@ -999,7 +999,7 @@ và cho **số đo tốc độ thật** (Netlify ↔ Turso cùng vùng), thay ch
       báo chủ sản phẩm đúng biến nào thiếu/sai và mục nào của `TRIEN_KHAI.md` cần làm lại.
 - [x] **Step 5: Deploy nháp.** Trong thư mục repo: `netlify deploy --build` (**không** có `--prod`). Ghi địa chỉ nháp
       (dạng `https://<mã>--<tên-site>.netlify.app`) vào Nhật ký.
-- [ ] **Step 6: Kiểm trên địa chỉ nháp**, ghi từng dòng vào Nhật ký:
+- [x] **Step 6: Kiểm trên địa chỉ nháp**, ghi từng dòng vào Nhật ký:
   1. `<địa chỉ nháp>/api/health` → `{"ok":true,...}` (Function chạy trên Linux, nối được Turso).
   2. Màn đăng nhập **không** có tab "Vào nhanh", **không** có thanh demo.
   3. Đăng nhập bằng một tài khoản của bộ demo đã dựng lên database thử ở Task 3 Step 4 (email và mật khẩu demo trong
@@ -1013,13 +1013,13 @@ và cho **số đo tốc độ thật** (Netlify ↔ Turso cùng vùng), thay ch
      (kiểm danh sách `binary` của Task 5).
   8. 🆕 22/09 — Tab Network, mở câu trả lời của `/api/students` (hoặc lời gọi lớn nhất của hồ sơ học viên): Ctrl+F
      `_metadata` → **không có**.
-- [ ] **Step 7: Đo tốc độ thật** — năm trang như Task 3 Step 5, mỗi trang 3 lần **sau** lần tải đầu, ghi trung bình và
+- [x] **Step 7: Đo tốc độ thật** — năm trang như Task 3 Step 5, mỗi trang 3 lần **sau** lần tải đầu, ghi trung bình và
       thời gian lần đầu (khởi động lạnh). Ghi bảng vào Nhật ký.
       🆕 22/09 — đo thêm hai trang mà rà soát PR-K chỉ ra có nhiều câu hỏi DB mỗi thẻ (mỗi case thêm ~4 câu qua
       `sosCaseState`; `myCoordinationLines` tính lại cả lớp cho từng lớp chủ nhiệm): **bảng kỹ năng (SkillBoard) của lớp
       MB-FT 101** và **trang Việc cần làm của một GVCN**. Chỉ đo và ghi — **không** tối ưu ở PR này (Task 10 Step 6 của
       Phần C xử lý theo số đo).
-- [ ] **Step 8: Quyết định:**
+- [x] **Step 8: Quyết định:**
 
   | Kết quả | Làm gì |
   |---|---|
@@ -1027,7 +1027,7 @@ và cho **số đo tốc độ thật** (Netlify ↔ Turso cùng vùng), thay ch
   | Step 6 đạt, có trang 3–10 giây | ✅ Kết thúc Phần A, ghi các trang đó — Phần C xử lý (Task 10 Step 6) |
   | Có trang > 10 giây, **hoặc** Step 6 có dòng hỏng | 🛑 Dừng. Báo chủ sản phẩm + session thiết kế kèm Nhật ký |
 
-- [ ] **Step 9:** Commit `PR-Z2 (6b): đóng gói nhị phân Linux cho libsql`. Kết thúc Phần A (xem mục "Ba phần").
+- [x] **Step 9:** Commit `PR-Z2 (6b): đóng gói nhị phân Linux cho libsql`. Kết thúc Phần A (xem mục "Ba phần").
 
 ---
 
@@ -1506,3 +1506,4 @@ thử). Hỏi rõ từng thứ; **không** dùng database thử làm bản chín
 | 22/09 | 6b · Step 4–6 🛑 | **Step 4:** `netlify env:list` đủ `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN`, `BAN_CHINH`; URL là database thử `pisatracking-demo`. **Step 5:** `netlify deploy --build` (KHÔNG `--prod`) → **Deploy is live** — địa chỉ nháp: **https://6ab17af6bdd64b9c3f973e87--pisa-tracking.netlify.app** (build log: app.netlify.com/projects/pisa-tracking/deploys/6ab17af6bdd64b9c3f973e87). **Step 6 — DỪNG, chưa kiểm được dòng nào:** mọi địa chỉ của bản nháp (kể cả `/api/health`) trả **401 'Login Redirect'** sang `app.netlify.com/edge-access` — site đang bật bảo vệ truy cập cho bản deploy không-chính-thức (chỉ thành viên đã đăng nhập Netlify xem được). Đây là lớp kiểm soát truy cập của Netlify, không phải lỗi mã; không tìm cách lách. Cần chủ sản phẩm: mở địa chỉ nháp bằng trình duyệt đã đăng nhập Netlify, hoặc tự tắt bảo vệ bản nháp trong trang cấu hình site. |
 | 22/09 | 6b · Step 5–6 (làm lại sau khi chủ sản phẩm tắt bảo vệ bản nháp) | Chủ sản phẩm đổi **Deploy Preview visibility** → Public trên app.netlify.com; bản nháp cũ vẫn trả 401 lúc có lúc không (cấu hình lan chưa đều) → **deploy nháp lại**: **https://6ab1c9f4bfcbb391a7c5e1a5--pisa-tracking.netlify.app**. **Ghi nhận theo yêu cầu, không sửa:** manifest gói ghi runtime `nodejs24.x` dù `netlify.toml` ghi `NODE_VERSION = 22` — CLI lấy Node của máy build (v24.20.0); `@netlify/blobs` 11.x cần ≥ 22.12 nên vẫn hợp lệ. **8 dòng kiểm trên địa chỉ nháp — ĐỦ 8 ĐẠT:** (1) `/api/health` → `{ok:true,seeded:true}` 200 (Function trên Linux nối được Turso; libsql Linux nạp được) · (2) màn đăng nhập chỉ có 'Đăng nhập' + 'Giáo viên đăng ký', KHÔNG có 'Vào nhanh', KHÔNG có thanh demo, KHÔNG nhãn 'Dữ liệu demo', phụ đề 'Hệ thống quản lý học vụ và vận hành' (ảnh chụp) · (3) đăng nhập tài khoản demo Quản trị (mật khẩu mặc định của bộ demo, README) → 200 trong 1,36 s · (4) ảnh PNG **1.048.584 byte** tải lên 2,06 s → tải xuống 1,93 s, SHA-256 **khớp**, `Content-Type: image/png`, `Content-Disposition: attachment` → xoá 200 (Netlify Blobs chạy thật) · (5) link sâu `/hoc-vien/3` ở tab mới → 200, ra đúng hồ sơ Lê Quang Huy · (6) `POST /api/demo/session {userId:1}` → **404**, `GET /api/demo/accounts` → 404, `/api/auth/info` không có `demoAdmin`, `/api/demo/session` trả `demoDate` = 2026-09-22 (ngày thật) · (7) PDF 50.017 byte và **mp4 40.012 byte** (đầu tệp có byte 0x00): tải xuống khớp SHA-256, đúng `application/pdf` / `video/mp4` — danh sách `binary` đủ · (8) câu trả lời của `/api/students/3`, `/api/my-work`, `/api/overview`, `/api/classes/3/y-thuc`, score-sheet, skill-board, class overview: **không có chữ `_metadata`**. Ghi nhận nhỏ (plan.md 12.15): `<title>` của index.html vẫn là 'PISA Progress — Bản demo nội bộ' ở bản chính. |
 | 22/09 | 6b · Step 7 — SỐ QUYẾT ĐỊNH (đo trên địa chỉ nháp, Netlify Ohio ↔ Turso Ohio) | Trang → lời gọi API → số câu hỏi DB (ước từ Task 3) → **lần đầu** → **trung bình 3 lần sau** (ba lần): **Hồ sơ học viên Lê Quang Huy** → `/students/3` → ~158 → 2.009 ms → **1.601 ms** (1575/1541/1688) · **Bảng nhập điểm MB-FT 101** → `/classes/3/score-sheet` → ~16 → 545 → **517** (562/511/479) · **Tổng quan** → `/overview` → ~84 → 894 → **873** (889/809/920) · **Thực trạng (tổng quan lớp MB-FT 101)** → `/classes/3/overview` → ~39 → 704 → **661** (691/665/626) · **Ý thức & Phối hợp MB-FT 101** → `/classes/3/y-thuc` → ~90 → 719 → **757** (751/726/794) · **Bảng kỹ năng (SkillBoard) HV 3** → `/students/3/skill-board` → ~75 → 826 → **808** (810/770/845) · **Việc cần làm (Quản trị)** → `/my-work` → ~156 → 855 → **780** (797/761/783) · **Việc cần làm của GVCN Trần Ngọc Hà** → `/my-work` → (nhiều hơn: `myCoordinationLines` tính cả lớp) → 2.997 → **3.402 ms** (3146/3286/3775). Khởi động lạnh thật (`/api/health` lần đầu sau deploy): 1,58 s. Đo bằng `fetch` trong trang, `cache: no-store`, tính cả đường mạng VN→Ohio (~0,3 s mỗi lượt). ⇒ Suy ra Turso cùng vùng ≈ **5–10 ms/câu** (158 câu ≈ 1,3 s). **Step 8 — quyết định theo bảng:** không trang nào > 10 s; **một trang 3–10 s: Việc cần làm của GVCN (3,4 s)** → ✅ kết thúc Phần A, ghi lại cho Phần C (Task 10 Step 6). Không tối ưu gì ở PR này. |
+| 22/09 | 6b · kiểm nguội + gộp main | **Kiểm nguội (yêu cầu chủ sản phẩm 22/09):** để yên 11 phút (07:24 → 07:35) không gọi gì → `/api/health` 200 `{ok:true,seeded:true}` sau 2,15 s (khởi động lạnh) → đăng nhập 200 → `/api/students/3` 200 'Lê Quang Huy' 1,63 s → `/api/overview` 200 1,03 s. ⇒ kết nối Turso giữ ở cấp module vẫn dùng được sau khi hàm nguội/được dựng lại. **Gộp `origin/main` (7d6e931, đã có PR #44–#47) vào nhánh:** 3 file trùng (plan Z2, plan.md, yThuc.tests.ts) gộp tự động, giữ cả hai phía; mục của tôi trong plan.md đánh số lại thành **12.16** (main đã có 12.15 của PR-K2). Sau gộp: **`npm run check` = 605/605** (603 + 2 phép của PR-K3), typecheck xanh. Không làm Task 6c/6d/6e (Phần B). **Commit** trên nhánh: 19 (kể cả gộp). |
