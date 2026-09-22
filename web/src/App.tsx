@@ -14,7 +14,7 @@ import WeeklyRollupPage from './modules/worklist/WeeklyRollupPage.tsx';
 import StudentsPage from './modules/students/StudentsPage.tsx';
 import ClassOverviewPage from './modules/classes/ClassOverviewPage.tsx';
 import StudentDetailPage from './modules/students/StudentDetailPage.tsx';
-import AcademicPage, { CaseRoutePage } from './modules/cases/CaseBoardPage.tsx';
+import { CaseRoutePage } from './modules/cases/CaseBoardPage.tsx';
 import MeetingPage from './modules/worklist/MeetingPage.tsx';
 import MgmtTasksPage from './modules/worklist/MgmtTasksPage.tsx';
 import AdminPage from './modules/platform/AdminPage.tsx';
@@ -126,7 +126,7 @@ export default function App() {
             trang riêng để gửi đường dẫn được, và mở dạng ngăn kéo khi đang ở màn khác —
             cả hai đều là cùng một bản ghi.
           */}
-          <Route path="/hoc-thuat" element={<AcademicPage />} />
+          <Route path="/phan-tich" element={nav.analysis ? <OverviewPage tab="phan-tich" /> : <Navigate to="/" replace />} />
           <Route path="/hoc-thuat/case/:id" element={<CaseRoutePage />} />
           <Route path="/nhap-diem/:classId" element={<ScoreSheetPage />} />
           {/* Lớp Normal chấm theo điểm đạt/tổng điểm nên có bảng điểm riêng, không dùng bảng band IELTS. */}

@@ -1,15 +1,16 @@
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { useSession } from '../../lib/session.tsx';
 import { Card, Empty, ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { BranchFilter } from '../../ui/Filters.tsx';
-import { fmtDate } from '../../lib/format.ts';
 import { CaseBoard } from '../cases/CaseBoardPage.tsx';
 import { BranchPulse } from './BranchPulse.tsx';
 import { Highlights } from './Highlights.tsx';
 import { MetricTiles } from './MetricTiles.tsx';
 import { WorkList, type WorkGroup, type WorkItem } from './WorkList.tsx';
 import { YThucReminders } from '../yThuc/YThucReminders.tsx';
+import { HangTab } from '../../ui/HangTab.tsx';
+import { TAB_TONG_QUAN_LABEL, ngay, type TabTongQuan } from '@shared/domain/index.ts';
 
 type Work = {
   summary: { total: number; overdue: number; today: number; approval: number; mine: number };
@@ -30,27 +31,33 @@ type Work = {
  * Chia nhóm theo loại việc để làm xong nhóm này rồi sang nhóm khác, nhưng việc GẤP tách
  * hẳn lên đầu bất kể thuộc nhóm nào.
  */
-export default function OverviewPage() {
+export default function OverviewPage({ tab: tabProp = 'tong-quan' }: { tab?: TabTongQuan } = {}) {
   const { session } = useSession();
   const [params, setParams] = useSearchParams();
   /*
    * HAI CÂU HỎI KHÁC NHAU, KHÔNG PHẢI HAI MÀN HÌNH KHÁC NHAU.
-   *   Toàn cảnh công việc — tôi phải làm gì bây giờ?
-   *   Thực trạng         — cả chi nhánh đang thế nào?
+   *   Tổng quan — tôi phải làm gì bây giờ?
+   *   Phân tích — cả chi nhánh đang thế nào?
    * Quản lý cần cả hai, nhưng không cần cùng lúc; nhét chung một trang là cách chắc chắn
-   * nhất để việc của mình chìm trong số liệu của người khác. Tab nằm trên URL nên Back
-   * giữ đúng chỗ và gửi đường dẫn cho người khác vẫn ra đúng màn.
+   * nhất để việc của mình chìm trong số liệu của người khác. Tab nằm trên ĐƯỜNG DẪN
+   * (`/` và `/phan-tich`), không phải tham số `?tab=`, nên Back giữ đúng chỗ và gửi đường
+   * dẫn cho người khác vẫn ra đúng màn.
    */
-  const canSeeBoard = !!session?.nav?.academic;
+  const canSeeBoard = !!session?.nav?.analysis;
   /*
    * TAB "BÁO CÁO TUẦN" ĐÃ BỎ (mục 12) — owner nói "chưa cần thiết ở giai đoạn này".
    *
-   * Chức năng Quản lý giao việc cho giáo viên thì GIỮ, và chuyển sang tab Thực trạng: nó là
-   * việc làm hằng ngày, còn báo cáo tuần là một nghi thức họp. Địa chỉ cũ `?tab=bao-cao` đưa
-   * về Toàn cảnh công việc thay vì báo lỗi — đường dẫn cũ ai đó đã gửi cho nhau vẫn mở được.
+   * Chức năng Quản lý giao việc cho giáo viên thì GIỮ, và chuyển sang tab Phân tích: nó là
+   * việc làm hằng ngày, còn báo cáo tuần là một nghi thức họp. Địa chỉ cũ `?tab=tinh-hinh`
+   * do `duongMoi` chuyển hướng sang `/phan-tich` — đường dẫn cũ ai đó đã gửi cho nhau vẫn mở
+   * được.
    */
-  const tabParam = params.get('tab');
-  const tab = !canSeeBoard ? 'work' : tabParam === 'tinh-hinh' ? 'board' : 'work';
+  const tab = canSeeBoard && tabProp === 'phan-tich' ? 'board' : 'work';
+  const navigate = useNavigate();
+  const goTab = (k: TabTongQuan) => {
+    const cn = params.get('cn');
+    navigate(`${k === 'phan-tich' ? '/phan-tich' : '/'}${cn ? `?cn=${cn}` : ''}`);
+  };
   /*
    * CHI NHÁNH ĐANG CHỌN NẰM TRÊN ĐỊA CHỈ TRANG, KHÔNG NẰM TRONG BỘ NHỚ CỦA RIÊNG MÀN NÀY.
    *
@@ -91,21 +98,15 @@ export default function OverviewPage() {
           <p className="text-xs text-slate-500 mt-0.5 mb-0">
             {tab === 'board'
               ? 'Học viên đang yếu ở đâu — cả case sinh từ điểm và case giáo viên báo.'
-              : `Việc của bạn, tính đến ${fmtDate(session?.demoDate)}.`}
+              : `Việc của bạn, tính đến ${ngay(session?.demoDate, session?.demoDate)}.`}
           </p>
         </div>
         <BranchFilter branchId={branchId} onBranch={setBranchId} />
       </div>
 
       {canSeeBoard && (
-        <div className="flex flex-wrap gap-1 border-b pb-2" style={{ borderColor: 'var(--line)' }}>
-          <TabButton active={tab === 'work'} onClick={() => {
-            const next = new URLSearchParams(params); next.delete('tab'); setParams(next);
-          }}>Toàn cảnh</TabButton>
-          <TabButton active={tab === 'board'} onClick={() => {
-            const next = new URLSearchParams(params); next.set('tab', 'tinh-hinh'); setParams(next);
-          }}>Thực trạng</TabButton>
-        </div>
+        <HangTab ariaLabel="Tổng quan" value={tabProp} onChange={goTab}
+          tabs={(['tong-quan', 'phan-tich'] as const).map((k) => ({ key: k, label: TAB_TONG_QUAN_LABEL[k] }))} />
       )}
 
       {tab === 'board' && <CaseBoard embedded />}
@@ -156,20 +157,5 @@ export default function OverviewPage() {
           defaultGroup={workGroup} onGroup={setWorkGroup} />
       )}
     </div>
-  );
-}
-
-function TabButton({ active, onClick, children }: {
-  active: boolean; onClick: () => void; children: React.ReactNode;
-}) {
-  return (
-    <button type="button" onClick={onClick}
-      className={`px-3 py-1.5 rounded-lg text-sm border transition-colors ${
-        active
-          ? 'bg-[color:var(--accent-soft)] text-[color:var(--accent-strong)] border-[color:var(--accent-line)]'
-          : 'text-slate-300 border-transparent hover:bg-white/5'
-      }`}>
-      {children}
-    </button>
   );
 }
