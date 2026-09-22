@@ -657,5 +657,27 @@ export async function runLuatMayChuTests(t: YThucTestKit) {
     assert(st(nCase.id).status === 'done' && st(nCase.id).r === 'moved_to_ft', `Lớp thường → FT: ${JSON.stringify(st(nCase.id))}`);
   });
 
+  // ================================================================== 13. Bộ demo
+
+  console.log('\nPR-S1 · 13. Bộ demo theo luật mới');
+
+  check('S16 · Bộ demo: em đã kết thúc học (Vũ Thu Uyên) không còn Case mở — Case của em đóng "Học viên kết thúc khoá"', () => {
+    const rows = conn.prepare(
+      `SELECT sc.id, sc.status, sc.system_close_reason AS r FROM sos_cases sc
+         LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
+         JOIN students s ON s.id = COALESCE(sc.student_id, a.student_id)
+        WHERE s.status = 'finished' AND sc.id <= ?`,
+    ).all(t.seedMax.sos_cases) as any[];
+    assert(rows.length > 0, 'Bộ demo phải có em đã kết thúc học từng có Case');
+    assert(rows.every((x) => x.status === 'done'), `Còn Case mở của em đã kết thúc: ${JSON.stringify(rows.filter((x) => x.status !== 'done'))}`);
+    assert(rows.some((x) => x.r === 'course_ended'), 'Phải có Case đóng bởi hệ thống "Học viên kết thúc khoá"');
+  });
+
+  check('§6 · Bộ demo ghi ngưỡng lớp thường 70% (không còn 60%)', () => {
+    const src = fsMod.readFileSync(pathMod.join(REPO, 'server/src/seed/students.ts'), 'utf8');
+    assert(!/60\s*%/.test(src), 'seed/students.ts còn ghi 60%');
+    assert(/≥ 70%/.test(src), 'Thiếu dòng ngưỡng "≥ 70%" ở đầu file');
+  });
+
   // ---- các task sau thêm phép kiểm NGAY TRÊN dòng này ----
 }

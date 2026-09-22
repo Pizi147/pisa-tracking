@@ -1982,7 +1982,7 @@ học (`finished`) thì Case còn mở được hệ thống tự đóng theo S1
 - Modify: `server/src/tests/run.ts:8223-8235` (chú thích đối soát 29/28 — chỉ chú thích)
 - Test: `server/src/tests/luatMayChu.tests.ts`
 
-- [ ] **Step 1: Phép kiểm (đỏ).**
+- [x] **Step 1: Phép kiểm (đỏ).**
 
 ```ts
   // ================================================================== 13. Bộ demo
@@ -2008,8 +2008,8 @@ học (`finished`) thì Case còn mở được hệ thống tự đóng theo S1
   });
 ```
 
-- [ ] **Step 2: Chạy, đỏ.** Expected: cả hai ✗.
-- [ ] **Step 3: `seed.ts`** — sau lời gọi `buildJourneys({...})` (dòng 205–207):
+- [x] **Step 2: Chạy, đỏ.** Expected: cả hai ✗.
+- [x] **Step 3: `seed.ts`** — sau lời gọi `buildJourneys({...})` (dòng 205–207):
 
 ```ts
     /*
@@ -2033,9 +2033,9 @@ dòng 1757–1758 chuyện kể S24 thay bằng:
 `run.ts:8223-8235` — thêm một câu cuối vào khối chú thích: *"Từ PR-S1 (S16) bộ demo tự đóng Case của em đã kết thúc học, nên chênh lệch
 này về 0; hai điều kiện dưới vẫn giữ để bắt chênh lệch mới."* — **không** đổi assert.
 
-- [ ] **Step 4: Chạy, xanh** (Expected `711`). Phép kiểm ở mục 0 (soi bộ demo) đỏ → đọc: nếu nó khoá số Case mở của bộ demo có tính Case của Uyên
+- [x] **Step 4: Chạy, xanh** (Expected `711`). Phép kiểm ở mục 0 (soi bộ demo) đỏ → đọc: nếu nó khoá số Case mở của bộ demo có tính Case của Uyên
   → cập nhật kỳ vọng và ghi Nhật ký; khác → 🛑.
-- [ ] **Step 5: Commit.** `git commit -am "PR-S1 (13): bộ demo — S16 cho em đã kết thúc học (Vũ Thu Uyên), ngưỡng 70%"`
+- [x] **Step 5: Commit.** `git commit -am "PR-S1 (13): bộ demo — S16 cho em đã kết thúc học (Vũ Thu Uyên), ngưỡng 70%"`
 
 ---
 

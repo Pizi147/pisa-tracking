@@ -8232,6 +8232,8 @@ check('PR-F · Đối soát F10: "HV có case đang mở" ở Tổng quan và �
    * mà đòi đúng hai điều: (1) Thực trạng KHÔNG có em nào mà Tổng quan không có; (2) MỌI em chỉ có ở Tổng
    * quan đều là em không còn ghi danh hoạt động. Chênh lệch nào ngoài hai điều này là một lỗi mới. Và
    * vì định nghĩa khác nhau, hai màn PHẢI ghi hai nhãn khác nhau (kiểm ở phép kiểm kế tiếp).
+   * Từ PR-S1 (S16) bộ demo tự đóng Case của em đã kết thúc học, nên chênh lệch này về 0; hai điều kiện dưới
+   * vẫn giữ để bắt chênh lệch mới.
    */
   const onlyOverview = [...overview].filter((id) => !analysis.has(id));
   const onlyAnalysis = [...analysis].filter((id) => !overview.has(id));
@@ -8270,8 +8272,14 @@ check('PR-F · Đối soát F10: "HV có case đang mở" ở Tổng quan và �
   });
   assert(unexplainedCases.length === 0,
     `Có case mở của em VẪN đang học mà chỉ Tổng quan đếm: [${unexplainedCases.join(',')}] ${unexplainedCases.map(describeCase).join(' | ')}`);
-  assert(onlyOverview.length >= 1,
-    'Bộ demo mất em đã kết thúc khoá mà case còn mở — phép đối soát này không còn chứng minh được gì, cần dựng lại tiền đề');
+  /*
+   * Tiền đề cũ ("bộ demo phải còn em đã kết thúc khoá mà case còn mở") hết hiệu lực từ PR-S1: S16 tự đóng Case của em kết thúc học.
+   * Nay khoá chiều ngược lại — chênh lệch còn lại (nếu có) chỉ được là em TẠM DỪNG, không bao giờ là em đã kết thúc.
+   */
+  const finishedStillOpen = onlyOverview.filter((id) =>
+    (conn.prepare('SELECT status FROM students WHERE id = ?').get(id) as any)?.status === 'finished');
+  assert(finishedStillOpen.length === 0,
+    `Em đã kết thúc học vẫn còn Case mở: [${finishedStillOpen.join(',')}] — S16 phải tự đóng "Học viên kết thúc khoá"`);
 });
 
 check('PR-F · Đối soát F10 (nhãn): hai định nghĩa khác nhau thì hai màn KHÔNG dùng chung một nhãn', () => {
