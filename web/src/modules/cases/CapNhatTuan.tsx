@@ -274,13 +274,16 @@ export function CapNhatTuanForm({ pa, variant = 'inline', onCancel, onSaved }: {
         14px: hai dòng vừa đúng chiều cao nút (28px), nên nút không nhích khi câu dài ngắn khác nhau.
         Trong hộp thoại, hàng này ghim ở chân vùng cuộn: lề âm hai bên, lề dưới âm và `bottom` âm bù đúng khoảng đệm p-5 của
         `Modal`, nên nó luôn nằm sát đáy hộp thoại như một chân trang, nội dung cuộn chui dưới nó. Lề dưới đặt bằng `style` vì
-        `space-y-*` của khối cha ghi đè `margin-bottom` của lớp tiện ích.
+        `space-y-*` của khối cha ghi đè `margin-bottom` của lớp tiện ích. Hàng chạm tới mép thẻ nên bo hai góc dưới theo thẻ
+        (`.card` bo 0.75rem, trừ 1px viền = 11px), không thì góc dưới hộp thoại thành vuông.
+        Câu báo dài tới ba dòng (màn ~414–430px) thì hàng cao hơn nút: nhóm nút bám mép cố định chứ không căn giữa, nên không
+        nhích khi câu hiện ra hay mất đi. Form ở hồ sơ bám mép TRÊN (đầu hàng đứng yên); hộp thoại bám mép DƯỚI (hàng ghim ở đáy).
       */}
       <div className={`flex flex-wrap items-center justify-end gap-x-3 gap-y-1 ${
-        hopThoai ? 'sticky -bottom-5 z-10 -mx-5 px-5 py-3 border-t' : ''}`}
+        hopThoai ? 'sticky -bottom-5 z-10 -mx-5 px-5 py-3 border-t rounded-b-[11px]' : ''}`}
         style={hopThoai ? { background: 'var(--surface)', borderColor: 'var(--line)', marginBottom: '-1.25rem' } : undefined}>
         {missing && <span className="flex-1 basis-40 min-w-0 text-right text-[11px] leading-[14px] text-slate-500">{missing}</span>}
-        <span className="flex shrink-0 gap-1.5">
+        <span className={`flex shrink-0 gap-1.5 ${hopThoai ? 'self-end' : 'self-start'}`}>
           <button type="button" className="btn btn-sm" onClick={onCancel} disabled={busy}>Huỷ</button>
           <button type="button" className="btn btn-sm btn-primary" disabled={busy || !!missing}
             title={missing ?? undefined} onClick={save}>
