@@ -354,7 +354,7 @@ git commit -m "PR-AN (1): bảng auth_attempts + bước nâng cấp idempotent 
   - `export function xoaLanThu(loai: LoaiThu, giaTri: string): void`
   - `export function chanNeuBiKhoa(loai: LoaiThu, giaTri: string, cau: (phut: number) => string, bayGio?: number): void` (ném `HttpError(429, …)`)
 
-- [ ] **Step 1: Phép kiểm (đỏ)** — thêm trên dòng `// ---- các task sau …`:
+- [x] **Step 1: Phép kiểm (đỏ)** — thêm trên dòng `// ---- các task sau …`:
 
 ```ts
   // ================================================================== 2. Hàm giới hạn (AN-1)
@@ -399,8 +399,8 @@ git commit -m "PR-AN (1): bảng auth_attempts + bước nâng cấp idempotent 
 (Phép đầu dùng `t0 = Date.now()` chứ không một ngày cố định: `ghiLanThu` xoá dòng quá 24 giờ **tính theo `bayGio` truyền vào**, dùng
 ngày cố định trong quá khứ vẫn đúng, nhưng giờ thật an toàn hơn cho phép dọn ở phép thứ ba.)
 
-- [ ] **Step 2: Chạy, đỏ.** Expected: 3 phép `AN-1 ·` mới ✗ ("Chưa có mô-đun ../platform/gioiHanThu.ts").
-- [ ] **Step 3: Tạo `server/src/platform/gioiHanThu.ts`.**
+- [x] **Step 2: Chạy, đỏ.** Expected: 3 phép `AN-1 ·` mới ✗ ("Chưa có mô-đun ../platform/gioiHanThu.ts").
+- [x] **Step 3: Tạo `server/src/platform/gioiHanThu.ts`.**
 
 ```ts
 import crypto from 'node:crypto';
@@ -477,8 +477,8 @@ export function chanNeuBiKhoa(loai: LoaiThu, giaTri: string, cau: (phut: number)
 }
 ```
 
-- [ ] **Step 4: Chạy, xanh.** Expected `TẤT CẢ 677 …`.
-- [ ] **Step 5: Commit.** `git add server/src/platform/gioiHanThu.ts server/src/tests/anToan.tests.ts && git commit -m "PR-AN (2): mô-đun giới hạn số lần thử (đếm ở database, chỉ lưu mã băm)"`
+- [x] **Step 4: Chạy, xanh.** Expected `TẤT CẢ 677 …`.
+- [x] **Step 5: Commit.** `git add server/src/platform/gioiHanThu.ts server/src/tests/anToan.tests.ts && git commit -m "PR-AN (2): mô-đun giới hạn số lần thử (đếm ở database, chỉ lưu mã băm)"`
 
 ---
 
@@ -1611,3 +1611,4 @@ song song trong cùng tiến trình sẽ thấy cờ; harness chạy tuần tự
 |---|---|---|
 | 22/09 | Task 0 | Opus 5 · worktree .claude/worktrees/pr-an-an-toan (nhánh pr-an-an-toan từ origin/main 79fd4e7) · sạch biến Turso · mốc **672** ✓ · Task 12 dùng cổng khác 4000/5173 theo lệnh người giao việc |
 | 22/09 | Task 1 | Opus 5 · 672 → 674 (2 phép `AN-1 ·` mới, đỏ rồi xanh) · lệch nhỏ: ở bước đỏ, phép đầu báo `Cột: ""` chứ không phải `no such table` (PRAGMA trên bảng chưa có trả rỗng, không ném) — không đổi gì · code chép nguyên văn từ plan |
+| 22/09 | Task 2 | Opus 5 · 674 → 677 (3 phép `AN-1 ·` mới, đỏ rồi xanh) · lệch nhỏ: ở bước đỏ cả bộ SẬP thay vì 3 ✗ — Proxy của `load` (Task 1) ném cả khi `await` hỏi `.then`; sửa `load` trả `undefined` cho `then` rồi mới đỏ đúng 3 ✗ · `gioiHanThu.ts` chép nguyên văn từ plan |

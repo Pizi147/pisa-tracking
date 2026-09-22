@@ -25,9 +25,9 @@ export async function runAnToanTests(t: AnToanTestKit) {
   const { fileURLToPath } = await import('node:url');
   const { default: SqliteDb } = await import('libsql');
   const migrateMod: any = await import('../migrate.ts');
-  /** Mô-đun chưa có thì phép kiểm ĐỎ với câu nói rõ thiếu gì, không làm sập cả bộ (mẫu PR-S1). */
+  /** Mô-đun chưa có thì phép kiểm ĐỎ với câu nói rõ thiếu gì, không làm sập cả bộ (mẫu PR-S1). `then` trả undefined để `await load(…)` không coi Proxy là promise. */
   const load = async (p: string): Promise<any> => import(p).catch((e) =>
-    new Proxy({}, { get: (_x, k) => { throw new Error(`Chưa có mô-đun ${p} (${String(k)}) — ${e.message}`); } }));
+    new Proxy({}, { get: (_x, k) => { if (k === 'then') return undefined; throw new Error(`Chưa có mô-đun ${p} (${String(k)}) — ${e.message}`); } }));
   const REPO = pathMod.resolve(fileURLToPath(new URL('../../../../', import.meta.url)));
 
   /** Bắt console.error/warn trong lúc chạy fn — để kiểm log máy chủ mà không làm bẩn kết quả. */
@@ -81,6 +81,44 @@ export async function runAnToanTests(t: AnToanTestKit) {
       const cm = (c: any) => JSON.stringify((c.prepare('PRAGMA index_info(idx_auth_attempts_key)').all() as any[]).map((x) => x.name));
       assert(cm(mem) === cm(conn), `Chỉ mục khác schema.sql: ${cm(mem)} ≠ ${cm(conn)}`);
     } finally { mem.close(); }
+  });
+
+  // ================================================================== 2. Hàm giới hạn (AN-1)
+
+  console.log('\nPR-AN · 2. Giới hạn số lần thử — hàm thuần theo database');
+  const gh = await load('../platform/gioiHanThu.ts');
+
+  check('AN-1 · Đếm theo cửa sổ: lần sai cũ hơn 15 phút không tính; đủ 5 lần trong 15 phút thì khoá, báo đúng số phút còn lại; hết cửa sổ thì mở', () => {
+    const t0 = Date.now();
+    const phut = 60_000;
+    const e = 'an1-cua-so.pisa@gmail.com';
+    for (let i = 0; i < 5; i++) gh.ghiLanThu('dang_nhap_email', e, t0 - 20 * phut);
+    assert(gh.phutConKhoa('dang_nhap_email', e, t0) === null, 'Lần sai 20 phút trước vẫn bị tính');
+    for (let i = 0; i < 4; i++) gh.ghiLanThu('dang_nhap_email', e, t0 - 1 * phut);
+    assert(gh.phutConKhoa('dang_nhap_email', e, t0) === null, '4 lần sai đã bị khoá');
+    gh.ghiLanThu('dang_nhap_email', e, t0 - 1 * phut);
+    const con = gh.phutConKhoa('dang_nhap_email', e, t0);
+    assert(con === 14, `Phải còn 14 phút, nhận ${con}`);
+    assert(gh.phutConKhoa('dang_nhap_email', e, t0 + 15 * phut) === null, 'Hết 15 phút mà vẫn khoá');
+    assert(gh.phutConKhoa('dang_nhap_ip', e, t0) === null, 'Khoá loại này lan sang loại khác');
+    assertThrows(() => gh.chanNeuBiKhoa('dang_nhap_email', e, gh.cauKhoaDangNhap, t0), /quá nhiều lần.*14 phút/, 'Đang khoá mà không chặn');
+  });
+
+  check('AN-1 · Bảng chỉ giữ mã băm: không có email hay IP thô trong auth_attempts', () => {
+    gh.ghiLanThu('dang_nhap_email', 'an1-bam.pisa@gmail.com');
+    gh.ghiLanThu('dang_nhap_ip', '198.51.100.7');
+    const rows = conn.prepare('SELECT kind, key_hash FROM auth_attempts').all() as any[];
+    assert(rows.length > 0 && rows.every((r) => /^[0-9a-f]{64}$/.test(r.key_hash)), 'key_hash phải là sha256 dạng hex');
+    const tho = JSON.stringify(rows);
+    assert(!tho.includes('@') && !tho.includes('an1-bam') && !tho.includes('198.51.100.7'), 'Bảng có email/IP thô');
+    assert(gh.bam('a') === gh.bam('a') && gh.bam('a') !== gh.bam('b'), 'bam phải ổn định và phân biệt');
+  });
+
+  check('AN-1 · Dòng cũ hơn 24 giờ bị xoá mỗi khi ghi lần thử mới — bảng không phình', () => {
+    const cu = new Date(Date.now() - 25 * 3_600_000).toISOString();
+    conn.prepare('INSERT INTO auth_attempts (kind, key_hash, at) VALUES (?,?,?)').run('dang_ky_ip', 'f'.repeat(64), cu);
+    gh.ghiLanThu('dang_ky_ip', '198.51.100.8');
+    assert(!conn.prepare('SELECT 1 FROM auth_attempts WHERE at = ?').get(cu), 'Dòng 25 giờ trước vẫn còn');
   });
 
   // ---- các task sau thêm phép kiểm NGAY TRÊN dòng này ----
