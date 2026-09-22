@@ -1772,7 +1772,7 @@ function DanhSachNguon({ nguon, tieuDe, open, onClose }: { nguon: string; tieuDe
 - Produces: `ChonChuongTrinh({ value, onChange })`, `MetricTiles({ branchId, ct })`, `KhoiCanXuLy({ branchId, ct })`,
   `LichSapToi({ branchId, ct })` (export từ `Highlights.tsx`), `BranchPulse({ branchId, ct })`.
 
-- [ ] **Step 1: `ChonChuongTrinh.tsx`:**
+- [x] **Step 1: `ChonChuongTrinh.tsx`:**
 
 ```tsx
 import { CHUONG_TRINH, CHUONG_TRINH_LABEL, type ChuongTrinh } from '@shared/domain/index.ts';
@@ -1792,7 +1792,7 @@ export function ChonChuongTrinh({ value, onChange }: { value: ChuongTrinh; onCha
 }
 ```
 
-- [ ] **Step 2: `MetricTiles.tsx`** (viết lại, giữ chú thích đầu cập nhật đúng bốn ô):
+- [x] **Step 2: `MetricTiles.tsx`** (viết lại, giữ chú thích đầu cập nhật đúng bốn ô):
 
 ```tsx
 import { useApi } from '../../lib/useApi.ts';
@@ -1839,7 +1839,7 @@ export function MetricTiles({ branchId, ct }: { branchId: number | null; ct: Chu
 ```
   (Import `type ReactNode` thay cho `React.ReactNode` nếu tsconfig không có namespace `React` toàn cục.)
 
-- [ ] **Step 3: `KhoiCanXuLy.tsx`:**
+- [x] **Step 3: `KhoiCanXuLy.tsx`:**
 
 ```tsx
 import { useState } from 'react';
@@ -1912,7 +1912,7 @@ export function KhoiCanXuLy({ branchId, ct }: { branchId: number | null; ct: Chu
 }
 ```
 
-- [ ] **Step 4: `Highlights.tsx` → `LichSapToi`.** Giữ cấu trúc; sửa:
+- [x] **Step 4: `Highlights.tsx` → `LichSapToi`.** Giữ cấu trúc; sửa:
   - `export function Highlights({ branchId })` → `export function LichSapToi({ branchId, ct }: { branchId: number | null; ct: ChuongTrinh })`;
     URL `/highlights?${branchId ? `branchId=${branchId}` : ''}${thamSoCt(ct)}` (bỏ `&` đầu nếu không có chi nhánh).
   - Tiêu đề `Sự kiện nổi bật` → `Lịch sắp tới` (cả chỗ Skeleton). Dòng thu gọn: thay `tuần này: ${summaryLine(thisWeek)}` bằng
@@ -1924,7 +1924,7 @@ export function KhoiCanXuLy({ branchId, ct }: { branchId: number | null; ct: Chu
   - Cột: `Lớp Normal` → `Lớp thường`; `Bài kiểm tra giữa khoá` → `Giữa khoá`; `Bài kiểm tra cuối khoá` → `Cuối khoá`.
     Ẩn cột Lớp thường khi `ct === 'ft'`, ẩn cột Fast Track khi `ct === 'thuong'` (grid còn một cột).
   - Chú thích đầu file: "LỊCH SẮP TỚI (PR-Pa, §3.2; trước đây 'Sự kiện nổi bật')".
-- [ ] **Step 5: `BranchPulse.tsx`.** Giữ nguyên phần **Theo giáo viên** (`PersonRow`, `PEOPLE_COLS`, bảng người, đoạn
+- [x] **Step 5: `BranchPulse.tsx`.** Giữ nguyên phần **Theo giáo viên** (`PersonRow`, `PEOPLE_COLS`, bảng người, đoạn
   chú thích không xếp hạng) — chuyển nó vào function `BangTheoGiaoVien({ branchId })` trong cùng file, tự gọi
   `useApi<Pulse | null>('/branch-pulse?branchId=…')` và chỉ dùng `data.people`. Thay phần bảng lớp/chi nhánh bằng:
 
@@ -2032,7 +2032,7 @@ export function BranchPulse({ branchId, ct }: { branchId: number | null; ct: Chu
   Xoá `CLASS_COLS`, `COL_STUDENTS`, `COL_WORK`, `FragmentRows`, prop `activeGroup/onGroup` (hết người dùng). Cập nhật chú
   thích đầu file: bảng "Theo chi nhánh" (mockup 02 A); cột cũ "PA học thuật cần cập nhật / Đề xuất chờ duyệt" nay ở ô số
   và Cần xử lý.
-- [ ] **Step 6: `OverviewPage.tsx`.** Giữ: import, `canSeeBoard`, `goTab`, chú thích tab/`cn`. Bỏ: `useApi('/my-work')`,
+- [x] **Step 6: `OverviewPage.tsx`.** Giữ: import, `canSeeBoard`, `goTab`, chú thích tab/`cn`. Bỏ: `useApi('/my-work')`,
   `workGroup`/`setWorkGroup`, `WorkList`, `YThucReminders`, khối Empty. Thân mới:
 
 ```tsx
@@ -2094,9 +2094,9 @@ export function BranchPulse({ branchId, ct }: { branchId: number | null; ct: Chu
   component trả `null` ở task này rồi viết thật ở Task 12; chọn cách nào ghi Nhật ký), `chuongTrinhTuThamSo`,
   `type ChuongTrinh`. Chú thích đầu component cập nhật: "TỔNG QUAN (§3.2): Quản lý — thanh ngữ cảnh, 4 ô, Cần xử lý cạnh
   Điểm đáng chú ý, Lịch sắp tới, bảng chi nhánh. Giáo viên — Việc cần làm của tôi, Học viên cần hỗ trợ."
-- [ ] **Step 7:** `npm run check` xanh. `grep -rn "Normal\b" web/src/modules/worklist/*.tsx | grep -v "^\s*//\|\*"` — không
+- [x] **Step 7:** `npm run check` xanh. `grep -rn "Normal\b" web/src/modules/worklist/*.tsx | grep -v "^\s*//\|\*"` — không
   còn chữ "Normal" trên màn trong các file PR này chạm.
-- [ ] **Step 8: Commit.** `"PR-Pa (10): Tổng quan Quản lý — thanh ngữ cảnh, 4 ô, Cần xử lý + Điểm đáng chú ý, Lịch sắp tới, bảng chi nhánh mở xuống lớp"`
+- [x] **Step 8: Commit.** `"PR-Pa (10): Tổng quan Quản lý — thanh ngữ cảnh, 4 ô, Cần xử lý + Điểm đáng chú ý, Lịch sắp tới, bảng chi nhánh mở xuống lớp"`
 
 ---
 
@@ -2576,3 +2576,10 @@ export function HocVienCanHoTro() {
   `SoLieuO` chưa có người gọi cho tới Task 10 — kiểm giao diện dồn về Task 13. Rà (Opus 5): 1 quan trọng — `SoLieuO` vẽ
   số bấm được cho mã ngoài sổ (bấm không ra gì) → thêm guard như `SoLieu`; phân biệt `id`/`nguon` bằng `!== undefined`;
   aria-label có tên chỉ số (commit `2c196e0`). Rà lại: đạt.
+- **Task 10:** commit `9d831ac` (8 file). `npm run check` xanh (752), `vite build` xanh, không còn "Normal" trong file
+  PR chạm. Hai stub `ViecCuaToi.tsx` / `HocVienCanHoTro.tsx` trả `null` (Task 12 viết thật). Lệch nhỏ so với plan: giữ
+  `React.ReactNode` (repo đã dùng namespace toàn cục); ẩn cả ghi chú "Chưa xác định tuần" khi `ct=thuong`; kiểu `Pulse`
+  của bảng Theo giáo viên rút gọn còn `{ people }`. Rà (Opus 5): đạt — G-10 đúng theo cấu trúc (ô bảng dùng đúng chuỗi
+  `q` đã tải bảng); `useApi` đổi đường dẫn khi đổi `ct` nên số cũ không lọt dưới nhãn mới; không Drawer chồng Drawer.
+  Ghi chú nhỏ (gom sửa trước Task 13): BranchPulse chưa có ErrorState, footer "Bấm số…" hiện dưới bảng GV, URL `?&ct=`
+  ở KhoiCanXuLy, a11y nút ▸ / radiogroup / aria-pressed. `YThucReminders.tsx` mồ côi — Task 12 quyết.
