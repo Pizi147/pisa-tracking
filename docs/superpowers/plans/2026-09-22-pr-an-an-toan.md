@@ -1379,8 +1379,8 @@ git commit -m "PR-AN (9): RB-1 hàm định kỳ Netlify chốt dấu '-' 00:05 
 - Consumes: `GET /api/health` → `{ ok, seeded }` hoặc 503 (Task 6); `ApiError` (`web/src/lib/api.ts`).
 - Web không có bộ phép kiểm — nghiệm thu bằng `npm run typecheck` + KIỂM Task 12.
 
-- [ ] **Step 1: Import.** Dòng 4 `import { api } from '../../lib/api.ts';` → `import { ApiError, api } from '../../lib/api.ts';`
-- [ ] **Step 2: Hai hàm nhỏ** ngay trên `export default function WelcomePage()`:
+- [x] **Step 1: Import.** Dòng 4 `import { api } from '../../lib/api.ts';` → `import { ApiError, api } from '../../lib/api.ts';`
+- [x] **Step 2: Hai hàm nhỏ** ngay trên `export default function WelcomePage()`:
 
 ```tsx
 type SucKhoe = { ok: boolean; seeded: boolean };
@@ -1415,7 +1415,7 @@ function cauLoiDeDoc(x: unknown): string {
 }
 ```
 
-- [ ] **Step 3: `WelcomePage`.** Ngay dưới `const info = useApi<AuthInfo>('/auth/info');` thêm:
+- [x] **Step 3: `WelcomePage`.** Ngay dưới `const info = useApi<AuthInfo>('/auth/info');` thêm:
 
 ```tsx
   /* AN-7: bản chính hỏi /api/health (máy dev vẫn suy từ /demo/accounts như cũ). */
@@ -1433,11 +1433,11 @@ function cauLoiDeDoc(x: unknown): string {
 ```
 (phần còn lại giữ nguyên; nhớ không thừa/thiếu ngoặc — `typecheck` bắt.)
 
-- [ ] **Step 4: Hai chỗ `catch`.** `LoginForm` (dòng 154) và `RegisterForm` (dòng 214): `setErr(x.message)` → `setErr(cauLoiDeDoc(x))`;
+- [x] **Step 4: Hai chỗ `catch`.** `LoginForm` (dòng 154) và `RegisterForm` (dòng 214): `setErr(x.message)` → `setErr(cauLoiDeDoc(x))`;
   đổi `catch (x: any)` → `catch (x: unknown)`.
-- [ ] **Step 5:** `npm run typecheck` — Expected sạch. Soát chữ: `grep -n "Hãy\|npm run" web/src/modules/platform/WelcomePage.tsx` —
+- [x] **Step 5:** `npm run typecheck` — Expected sạch. Soát chữ: `grep -n "Hãy\|npm run" web/src/modules/platform/WelcomePage.tsx` —
   `npm run` chỉ còn trong `SetupHelp` (máy dev).
-- [ ] **Step 6: Commit.** `git commit -am "PR-AN (10): AN-7 màn đăng nhập bản chính hỏi /api/health, câu lỗi dễ đọc"`
+- [x] **Step 6: Commit.** `git commit -am "PR-AN (10): AN-7 màn đăng nhập bản chính hỏi /api/health, câu lỗi dễ đọc"`
 
 ---
 
@@ -1619,3 +1619,4 @@ song song trong cùng tiến trình sẽ thấy cờ; harness chạy tuần tự
 | 22/09 | Task 7 | Opus 5 · 691 → 695 (4 phép `AN-5 ·` mới, cả 4 ✗ rồi ✓: 2 phép "Chưa có mô-đun hanGio.ts", `donGiaoDichTreo is not a function`, `demGio is not a function`) · `hanGio.ts`, `tx()`/`donGiaoDichTreo` và `demGio` chép nguyên văn từ plan; `app.use(demGio)` ngay sau `cookieParser`, trước health · typecheck ✓ · `npm run thu-goi` ba dòng ĐẠT |
 | 22/09 | Task 8 | Opus 5 · 695 → 696 (1 phép `AN-8 ·` mới, ✗ "Đếm bằng chứng 18 câu cho 18 thẻ" rồi ✓) · `demBangChungCase` chép nguyên văn từ plan; `caseCardOf(` đúng 2 dòng (định nghĩa + một lời gọi); không chạm `canClose:` · phép cũ `PR-HV · Q8 Thẻ case có số bằng chứng` vẫn ✓ · typecheck ✓ |
 | 22/09 | Task 9 | Opus 5 · 696 → 699 (3 phép `RB-1 ·` mới, cả 3 ✗ rồi ✓: 2 phép "Chưa có mô-đun chotVangDinhKy.ts", phép toml "Lịch trong toml: undefined") · `chotVangDinhKy.ts`, `chot-vang.ts`, khối toml chép nguyên văn từ plan; không chạm `absence.ts` · typecheck ✓ · `npm run thu-goi` 3 dòng ĐẠT cũ + `chot-vang lần 1` **daChot 0, ms 23** (database dev đã chốt sẵn tới hôm nay), lần 2 daChot 0, ms 1 · chạy trên bản sao VACUUM INTO trong thư mục tạm; `data/pisa-demo.sqlite` giữ nguyên thời điểm sửa (20:53:46.399 trước và sau) · lệch nhỏ: sửa lỗi gõ `/\/g` bị mất một dấu gạch khi chép vào script (SyntaxError lần chạy đầu) |
+| 22/09 | Task 10 | Opus 5 · 699 → 699 (web không có bộ phép kiểm; `npm test` vẫn 699 ĐẠT) · `BanChinhChuaVaoDuoc`, `cauLoiDeDoc`, nhánh `banChinhHong` và hai `catch (x: unknown)` chép nguyên văn từ plan; `ApiError.details` kiểu `any` nên `x.details?.ma` typecheck được không cần ép kiểu · typecheck ✓ · grep: không còn "Hãy"; `npm run` chỉ còn 2 dòng trong `SetupHelp` (dòng 52, 60) · giữ CRLF của WelcomePage.tsx |

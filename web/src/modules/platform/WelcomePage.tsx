@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useApi } from '../../lib/useApi.ts';
 import { LA_BAN_CHINH } from '../../lib/banChinh.ts';
-import { api } from '../../lib/api.ts';
+import { ApiError, api } from '../../lib/api.ts';
 import { useSession } from '../../lib/session.tsx';
 import { Alert, Field, Info, SectionNote } from '../../ui/ui.tsx';
 import { skillLabel } from '../../lib/format.ts';
@@ -74,6 +74,37 @@ function SetupHelp({ serverDown, onRetry }: { serverDown: boolean; onRetry: () =
   );
 }
 
+type SucKhoe = { ok: boolean; seeded: boolean };
+
+/**
+ * BẢN CHÍNH KHÔNG VÀO ĐƯỢC (AN-7). Bản chính tắt `/demo/accounts`, nên không suy "máy chủ chưa chạy" từ đó được như máy dev —
+ * hỏi `/api/health`. Không có hướng dẫn gõ lệnh: người đọc là giáo viên, không phải người chạy máy.
+ */
+function BanChinhChuaVaoDuoc({ chuaKhoiTao, onRetry }: { chuaKhoiTao: boolean; onRetry: () => void }) {
+  return (
+    <div className="card p-5 border-amber-300/40">
+      <h2 className="text-base font-semibold text-amber-200">
+        {chuaKhoiTao ? 'Hệ thống chưa được khởi tạo' : 'Chưa kết nối được hệ thống dữ liệu'}
+      </h2>
+      <p className="text-sm text-slate-300 mt-2 leading-relaxed">
+        {chuaKhoiTao
+          ? 'Chưa có tài khoản nào để đăng nhập. Báo Quản trị hệ thống.'
+          : 'Hệ thống tạm thời không phản hồi. Thử lại sau ít phút; nếu vẫn không vào được, báo Quản trị hệ thống.'}
+      </p>
+      <button className="btn btn-primary mt-4" onClick={onRetry}>Thử lại</button>
+    </div>
+  );
+}
+
+/**
+ * Câu lỗi đọc được khi bấm Đăng nhập / Gửi đăng ký. Lỗi mạng hoặc ≥ 500 (trang lỗi của Netlify là HTML — không in ra) → một câu
+ * chung; câu "Có lỗi · mã …" của máy chủ (AN-3) thì giữ để người dùng báo được mã.
+ */
+function cauLoiDeDoc(x: unknown): string {
+  if (x instanceof ApiError && (x.status < 500 || x.details?.ma)) return x.message;
+  return 'Chưa kết nối được hệ thống dữ liệu. Thử lại sau ít phút.';
+}
+
 /**
  * MÀN VÀO HỆ THỐNG — ba đường, và chúng khác nhau thật chứ không phải ba cái tên.
  *
@@ -88,6 +119,9 @@ function SetupHelp({ serverDown, onRetry }: { serverDown: boolean; onRetry: () =
 export default function WelcomePage() {
   const accounts = useApi<Account[]>(LA_BAN_CHINH ? null : '/demo/accounts');
   const info = useApi<AuthInfo>('/auth/info');
+  /* AN-7: bản chính hỏi /api/health (máy dev vẫn suy từ /demo/accounts như cũ). */
+  const suKhoe = useApi<SucKhoe>(LA_BAN_CHINH ? '/health' : null);
+  const banChinhHong = LA_BAN_CHINH && (!!suKhoe.error || suKhoe.data?.seeded === false);
   const [mode, setMode] = useState<'login' | 'register' | 'demo'>('login');
 
   const serverDown = accounts.error?.status === 500 || accounts.error?.status === 502;
@@ -105,7 +139,11 @@ export default function WelcomePage() {
           {!LA_BAN_CHINH && <div className="ml-auto"><Alert tone="warn">Dữ liệu demo</Alert></div>}
         </div>
 
-        {noData ? (
+        {banChinhHong ? (
+          <div className="mt-4">
+            <BanChinhChuaVaoDuoc chuaKhoiTao={!suKhoe.error && suKhoe.data?.seeded === false} onRetry={suKhoe.reload} />
+          </div>
+        ) : noData ? (
           <div className="mt-4"><SetupHelp serverDown={!!serverDown} onRetry={accounts.reload} /></div>
         ) : (
           <>
@@ -151,7 +189,7 @@ function LoginForm({ info }: { info: AuthInfo | null }) {
     try {
       await api.post('/auth/login', { email, password });
       await reload();
-    } catch (x: any) { setErr(x.message); } finally { setBusy(false); }
+    } catch (x: unknown) { setErr(cauLoiDeDoc(x)); } finally { setBusy(false); }
   };
 
   return (
@@ -211,7 +249,7 @@ function RegisterForm({ info, onDone }: { info: AuthInfo | null; onDone: () => v
         ...form, branches: [...picked], skills: [...skills],
       });
       setDone(true);
-    } catch (x: any) { setErr(x.message); } finally { setBusy(false); }
+    } catch (x: unknown) { setErr(cauLoiDeDoc(x)); } finally { setBusy(false); }
   };
 
   if (done) {
