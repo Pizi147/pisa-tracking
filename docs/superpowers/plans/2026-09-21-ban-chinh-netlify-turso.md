@@ -1045,7 +1045,7 @@ và cho **số đo tốc độ thật** (Netlify ↔ Turso cùng vùng), thay ch
 ví dụ `libsql://pisatracking-demo-abc.turso.io` → `pisatracking-demo-abc.turso.io`; URL hỏng → `''`.
 Produces `choPhepSeedTurso(url: string, choPhep: string | undefined): boolean`.
 
-- [ ] **Step 1: Phép kiểm đỏ** — thêm vào `banChinh.tests.ts`:
+- [x] **Step 1: Phép kiểm đỏ** — thêm vào `banChinh.tests.ts`:
   ```ts
   console.log('\nPR-Z2 · 1b. Chốt seed so NGUYÊN tên máy chủ (tên bản chính nằm trong tên bản thử)');
   const { choPhepSeedTurso } = await import('../moiTruong.ts');
@@ -1065,8 +1065,8 @@ Produces `choPhepSeedTurso(url: string, choPhep: string | undefined): boolean`.
     assert(choPhepSeedTurso(THU, undefined) === false && choPhepSeedTurso(THU, '') === false, 'phải từ chối');
   });
   ```
-- [ ] **Step 2:** `npm test` → bốn phép **đỏ**. Ghi Nhật ký.
-- [ ] **Step 3:** Trong `server/src/moiTruong.ts`:
+- [x] **Step 2:** `npm test` → bốn phép **đỏ**. Ghi Nhật ký.
+- [x] **Step 3:** Trong `server/src/moiTruong.ts`:
   ```ts
   /** Tên máy chủ của URL database (viết thường). Dùng để so NGUYÊN tên, không so "có chứa". */
   export function tenMayChuDb(url: string): string {
@@ -1083,7 +1083,7 @@ Produces `choPhepSeedTurso(url: string, choPhep: string | undefined): boolean`.
     return !!ten && !!choPhep && ten === choPhep.trim().toLowerCase();
   }
   ```
-- [ ] **Step 4 (🆕 22/09 sau rà soát Opus — thay chữ cũ):** PR-Z2a **đã** dời chốt xoá sạch vào `recreateSchema()`
+- [x] **Step 4 (🆕 22/09 sau rà soát Opus — thay chữ cũ):** PR-Z2a **đã** dời chốt xoá sạch vào `recreateSchema()`
       (hàm `tuChoiXoaSachNeuTuXa` trong `server/src/db.ts`, ~dòng 115) và đã so **nguyên tên máy chủ**; `seed/run.ts`
       **không còn** `DB_PATH.includes(...)`. Vậy Step 4 là:
       1. `tuChoiXoaSachNeuTuXa` gọi `choPhepSeedTurso(DB_PATH, process.env.PISA_CHO_PHEP_SEED_TURSO)` thay cho phép so
@@ -1097,12 +1097,12 @@ Produces `choPhepSeedTurso(url: string, choPhep: string | undefined): boolean`.
          ví dụ pisatracking-demo-xxx.turso.io`.
       Phép kiểm tiến trình con của Task 2 Step 6 và phép "chạy bộ kiểm trong cửa sổ có biến Turso" của PR-Z2a phải
       vẫn xanh.
-- [ ] **Step 5: Tên thật trong tài liệu.** `TRIEN_KHAI.md` mục 2 và bảng tra mục 12: `pisa-thu-nghiem` → `pisatracking-demo`,
+- [x] **Step 5: Tên thật trong tài liệu.** `TRIEN_KHAI.md` mục 2 và bảng tra mục 12: `pisa-thu-nghiem` → `pisatracking-demo`,
       `pisa-ban-chinh` → `pisatracking` (cả ví dụ URL). Thêm một câu cảnh báo ở mục 2: *"Hai tên gần giống nhau —
       khi dán URL, nhìn kỹ có chữ `-demo` hay không."* Trong file kế hoạch này, Phần B và C: đổi mọi `pisa-ban-chinh` →
       `pisatracking`, `pisa-thu-nghiem` → `pisatracking-demo`. Chốt kiểm ở Task 10 Step 1 ("URL phải là bản chính")
       đổi thành: `tenMayChuDb(URL)` **bắt đầu bằng `pisatracking-`** và **không** bắt đầu bằng `pisatracking-demo`.
-- [ ] **Step 6:** `npm run check` xanh (N + 5). Commit: `PR-Z2 (6c): chốt seed so nguyên tên máy chủ; tên database thật`.
+- [x] **Step 6:** `npm run check` xanh (N + 5). Commit: `PR-Z2 (6c): chốt seed so nguyên tên máy chủ; tên database thật`.
 
 ---
 
@@ -1376,8 +1376,8 @@ không có chi nhánh thì không tạo được lớp. Nên lệnh khởi tạo
 
 ### Task 10 🛑 GATE: Deploy thật và kiểm trên địa chỉ thật
 
-**Cần chủ sản phẩm:** site Netlify đã tạo ở Task 6b và database Turso **bản chính** `pisa-ban-chinh` (khác database
-thử). Hỏi rõ từng thứ; **không** dùng database thử làm bản chính. Deploy **chỉ bằng Netlify CLI** từ thư mục repo.
+**Cần chủ sản phẩm:** site Netlify đã tạo ở Task 6b và database Turso **bản chính** `pisatracking` (khác database
+thử `pisatracking-demo`). Hỏi rõ từng thứ; **không** dùng database thử làm bản chính. Deploy **chỉ bằng Netlify CLI** từ thư mục repo.
 
 > **🆕 22/09 — THỨ TỰ MỚI của Task 10** (vì Task 6e: bản nháp **luôn** dùng database thử, chỉ bản chính thức dùng
 > `pisatracking`). Không còn "thử luồng trên bản nháp nối database chính". Thay vào đó: đưa lên địa chỉ chính thức
@@ -1387,7 +1387,9 @@ thử). Hỏi rõ từng thứ; **không** dùng database thử làm bản chín
 - [ ] **Step 1: Hỏi chủ sản phẩm:** (a) database bản chính `pisatracking` đã tạo cùng vùng Ohio với database thử chưa
       (chủ sản phẩm cho biết 22/09 là đã có tên này); (b) đã làm `TRIEN_KHAI.md` mục 6 **mới** (biến Turso **chỉ cho bản
       chính thức**) chưa — tự kiểm bằng hai lệnh `env:get` ở mục 6, dòng production phải là `pisatracking-<...>` không có
-      `-demo`, dòng deploy-preview phải là `pisatracking-demo-<...>`; (c) danh sách chi nhánh thật `MA=Tên`; (d) email
+      `-demo`, dòng deploy-preview phải là `pisatracking-demo-<...>` (🆕 6c: "URL là bản chính" = `tenMayChuDb(URL)`
+      **bắt đầu bằng `pisatracking-`** và **không** bắt đầu bằng `pisatracking-demo` — đúng luật `laTenDbBanChinh` trong
+      `server/src/moiTruong.ts`); (c) danh sách chi nhánh thật `MA=Tên`; (d) email
       quản trị. **Mật khẩu quản trị để chủ sản phẩm tự gõ** ở Step 3 — không xin, không ghi.
 - [ ] **Step 2: Deploy nháp** bằng `netlify deploy --build` (không `--prod`) từ `main` mới nhất. Kiểm nhanh như Task 6b
       Step 6 (health, không "Vào nhanh", cửa sau 404). **Chứng minh bản nháp đang ở database THỬ:** đăng nhập được bằng một
@@ -1507,3 +1509,5 @@ thử). Hỏi rõ từng thứ; **không** dùng database thử làm bản chín
 | 22/09 | 6b · Step 5–6 (làm lại sau khi chủ sản phẩm tắt bảo vệ bản nháp) | Chủ sản phẩm đổi **Deploy Preview visibility** → Public trên app.netlify.com; bản nháp cũ vẫn trả 401 lúc có lúc không (cấu hình lan chưa đều) → **deploy nháp lại**: **https://6ab1c9f4bfcbb391a7c5e1a5--pisa-tracking.netlify.app**. **Ghi nhận theo yêu cầu, không sửa:** manifest gói ghi runtime `nodejs24.x` dù `netlify.toml` ghi `NODE_VERSION = 22` — CLI lấy Node của máy build (v24.20.0); `@netlify/blobs` 11.x cần ≥ 22.12 nên vẫn hợp lệ. **8 dòng kiểm trên địa chỉ nháp — ĐỦ 8 ĐẠT:** (1) `/api/health` → `{ok:true,seeded:true}` 200 (Function trên Linux nối được Turso; libsql Linux nạp được) · (2) màn đăng nhập chỉ có 'Đăng nhập' + 'Giáo viên đăng ký', KHÔNG có 'Vào nhanh', KHÔNG có thanh demo, KHÔNG nhãn 'Dữ liệu demo', phụ đề 'Hệ thống quản lý học vụ và vận hành' (ảnh chụp) · (3) đăng nhập tài khoản demo Quản trị (mật khẩu mặc định của bộ demo, README) → 200 trong 1,36 s · (4) ảnh PNG **1.048.584 byte** tải lên 2,06 s → tải xuống 1,93 s, SHA-256 **khớp**, `Content-Type: image/png`, `Content-Disposition: attachment` → xoá 200 (Netlify Blobs chạy thật) · (5) link sâu `/hoc-vien/3` ở tab mới → 200, ra đúng hồ sơ Lê Quang Huy · (6) `POST /api/demo/session {userId:1}` → **404**, `GET /api/demo/accounts` → 404, `/api/auth/info` không có `demoAdmin`, `/api/demo/session` trả `demoDate` = 2026-09-22 (ngày thật) · (7) PDF 50.017 byte và **mp4 40.012 byte** (đầu tệp có byte 0x00): tải xuống khớp SHA-256, đúng `application/pdf` / `video/mp4` — danh sách `binary` đủ · (8) câu trả lời của `/api/students/3`, `/api/my-work`, `/api/overview`, `/api/classes/3/y-thuc`, score-sheet, skill-board, class overview: **không có chữ `_metadata`**. Ghi nhận nhỏ (plan.md 12.15): `<title>` của index.html vẫn là 'PISA Progress — Bản demo nội bộ' ở bản chính. |
 | 22/09 | 6b · Step 7 — SỐ QUYẾT ĐỊNH (đo trên địa chỉ nháp, Netlify Ohio ↔ Turso Ohio) | Trang → lời gọi API → số câu hỏi DB (ước từ Task 3) → **lần đầu** → **trung bình 3 lần sau** (ba lần): **Hồ sơ học viên Lê Quang Huy** → `/students/3` → ~158 → 2.009 ms → **1.601 ms** (1575/1541/1688) · **Bảng nhập điểm MB-FT 101** → `/classes/3/score-sheet` → ~16 → 545 → **517** (562/511/479) · **Tổng quan** → `/overview` → ~84 → 894 → **873** (889/809/920) · **Thực trạng (tổng quan lớp MB-FT 101)** → `/classes/3/overview` → ~39 → 704 → **661** (691/665/626) · **Ý thức & Phối hợp MB-FT 101** → `/classes/3/y-thuc` → ~90 → 719 → **757** (751/726/794) · **Bảng kỹ năng (SkillBoard) HV 3** → `/students/3/skill-board` → ~75 → 826 → **808** (810/770/845) · **Việc cần làm (Quản trị)** → `/my-work` → ~156 → 855 → **780** (797/761/783) · **Việc cần làm của GVCN Trần Ngọc Hà** → `/my-work` → (nhiều hơn: `myCoordinationLines` tính cả lớp) → 2.997 → **3.402 ms** (3146/3286/3775). Khởi động lạnh thật (`/api/health` lần đầu sau deploy): 1,58 s. Đo bằng `fetch` trong trang, `cache: no-store`, tính cả đường mạng VN→Ohio (~0,3 s mỗi lượt). ⇒ Suy ra Turso cùng vùng ≈ **5–10 ms/câu** (158 câu ≈ 1,3 s). **Step 8 — quyết định theo bảng:** không trang nào > 10 s; **một trang 3–10 s: Việc cần làm của GVCN (3,4 s)** → ✅ kết thúc Phần A, ghi lại cho Phần C (Task 10 Step 6). Không tối ưu gì ở PR này. |
 | 22/09 | 6b · kiểm nguội + gộp main | **Kiểm nguội (yêu cầu chủ sản phẩm 22/09):** để yên 11 phút (07:24 → 07:35) không gọi gì → `/api/health` 200 `{ok:true,seeded:true}` sau 2,15 s (khởi động lạnh) → đăng nhập 200 → `/api/students/3` 200 'Lê Quang Huy' 1,63 s → `/api/overview` 200 1,03 s. ⇒ kết nối Turso giữ ở cấp module vẫn dùng được sau khi hàm nguội/được dựng lại. **Gộp `origin/main` (7d6e931, đã có PR #44–#47) vào nhánh:** 3 file trùng (plan Z2, plan.md, yThuc.tests.ts) gộp tự động, giữ cả hai phía; mục của tôi trong plan.md đánh số lại thành **12.16** (main đã có 12.15 của PR-K2). Sau gộp: **`npm run check` = 605/605** (603 + 2 phép của PR-K3), typecheck xanh. Không làm Task 6c/6d/6e (Phần B). **Commit** trên nhánh: 19 (kể cả gộp). |
+| 22/09 | B · bắt đầu | **Phần B (PR-Z2b), Opus 5.** Worktree `.claude/worktrees/pr-z2b-an-toan-du-lieu`, nhánh `pr-z2b-an-toan-du-lieu` từ `main` `0f24805` (đã có PR #45, #47, #48). **`N0` của Phần B = 605/605.** Node v24.20.0. Cửa sổ làm việc không có biến `TURSO_*`/`BAN_CHINH`/`PISA_*`. **Rà kế hoạch với mã thật trước khi làm — ba điều kế hoạch không nói, tự quyết vì chỉ có một cách hợp lý (ghi lại để người rà xem):** (1) **`student_code_seq`** (bộ đếm mã học viên, bảng một dòng `id = 1`) chỉ được `seed.ts` tạo dòng; `classes/intake.ts:412` đọc `next_value ?? 1` rồi `UPDATE … WHERE id = 1` — không có dòng thì mọi học viên đều nhận mã `PISA0001` → học viên thứ hai hỏng vì `student_code` là UNIQUE (dán bảng 3 học viên ở Task 10 Step 4 sẽ lỗi). ⇒ `initBanChinh` tạo dòng `(1, 1)` (Task 7). Quét cả bộ seed: đây là bảng "nền" DUY NHẤT bị sót (kỳ báo cáo do `ensurePeriod` tạo khi cần; cấu hình có giá trị mặc định). (2) `libsql` mở được URL `file:<đường dẫn>` như file cục bộ → chạy thử được **lệnh thật** `init-ban-chinh` / `them-chi-nhanh` / `sao-luu` (đi đúng nhánh mã Turso) trên file tạm, không cần mạng, không đụng database nào. (3) Tên kho Netlify Blobs: tối đa 64 byte, không có `/` (đọc `@netlify/blobs` 11.1.0) — tên kho theo database (~36 ký tự) hợp lệ. |
+| 22/09 | 6c | **611/611** (= 605 + 6). **ĐỎ trước (TDD):** `tsc` báo TS2339 `choPhepSeedTurso` không có (vẫn xuất JS) → chạy thẳng `dist-server/.../tests/run.js`: **605 đạt / 6 ĐỎ** — 5 phép thuần `choPhepSeedTurso is not a function`, và phép tiến trình con: `seed/run.js` với `TURSO_DATABASE_URL=libsql://pisatracking-khong-ton-tai.turso.io` + `PISA_CHO_PHEP_SEED_TURSO` = đúng tên đó → chốt cũ **CHO QUA**, lệnh in `[seed] Đang tạo lại dữ liệu demo tại libsql://pisatracking-…` rồi mới sập ở `Hrana(Api("status=404 … Host not found"))` — tức chốt cũ để lọt một database kiểu bản chính nếu ai dán nhầm tên. Sau khi sửa: 611/611. **Khác plan (nhỏ):** (a) 6 phép thay vì 5 — thêm phép tiến trình con trên để chứng minh chốt THẬT (`tuChoiXoaSachNeuTuXa` trong `recreateSchema`) chặn tên bản chính và in dòng chỉ cách, không chỉ hàm thuần. (b) Luật "tên kiểu bản chính" tách thành hàm `laTenDbBanChinh(url)` trong `moiTruong.ts` (gọi ở đầu `choPhepSeedTurso`) — Task 6e (`thuTurso`) và Task 10 Step 1 dùng lại đúng luật này, không chép lại. (c) So tên giờ không phân biệt hoa/thường (`tenMayChuDb` viết thường). **Một chốt, một nơi:** `seed/run.ts` không đổi (vẫn chỉ gọi `tuChoiXoaSachNeuTuXa`). Hai phép cũ (seed từ chối Turso; ngoại lệ chung chung `turso.io`/`libsql`/… không mở khoá; `BAN_CHINH=1` luôn từ chối) vẫn xanh. **Tài liệu:** `TRIEN_KHAI.md` mục 2 (tên, câu cảnh báo `-demo`, ví dụ URL có vùng `aws-us-east-2` cho giống URL thật) và bảng ví dụ mục 7; mục 12 không có tên database nên không đổi. Plan: Task 10 (tên bản chính, luật kiểm URL). |

@@ -79,12 +79,15 @@ Token của database **thử** thì được đưa cho session coding (nó cần
 
 ## 2. Tạo database trên Turso
 
-Làm **hai lần**: lần đầu tên `pisa-thu-nghiem` (thử), lần sau tên `pisa-ban-chinh` (bản chính). Cách làm giống hệt.
+Làm **hai lần**: lần đầu tên `pisatracking-demo` (thử), lần sau tên `pisatracking` (bản chính). Cách làm giống hệt.
+
+> **Hai tên gần giống nhau — khi dán URL, nhìn kỹ có chữ `-demo` hay không.** Có `-demo` = database **thử**. Không có
+> `-demo` = database **bản chính** (dữ liệu thật).
 
 1. Vào <https://app.turso.tech> → **Sign up / Log in** → chọn **Continue with GitHub** → cho phép.
 2. Lần đầu vào có thể phải đặt tên tổ chức (organization) — gõ `pisa` là được.
 3. Bấm nút **Create Database** (hoặc **New Database**).
-4. Ô **Name**: gõ `pisa-thu-nghiem` (lần sau: `pisa-ban-chinh`).
+4. Ô **Name**: gõ `pisatracking-demo` (lần sau: `pisatracking`).
 5. Ô **Location / Region / Group**: chọn vùng **AWS US East (Ohio)** — thường ghi `aws-us-east-2` hoặc có chữ
    **Ohio**. Không có Ohio thì chọn **US East (Virginia)** / `aws-us-east-1`.
    *Lý do:* máy chủ Netlify mặc định đặt ở Ohio; database ở gần thì web nhanh hơn nhiều. **Hai database chọn cùng
@@ -94,14 +97,14 @@ Làm **hai lần**: lần đầu tên `pisa-thu-nghiem` (thử), lần sau tên 
 
    | Thứ | Trông như thế nào | Ở đâu trên trang |
    |---|---|---|
-   | **URL** | `libsql://pisa-thu-nghiem-<tên-bạn>.turso.io` | Dòng có chữ **URL** hoặc **Database URL** ở đầu trang |
+   | **URL** | `libsql://pisatracking-demo-<tên-bạn>.aws-us-east-2.turso.io` | Dòng có chữ **URL** hoặc **Database URL** ở đầu trang |
    | **Token** | Một chuỗi rất dài, bắt đầu bằng `eyJ...` | Bấm **Create Token** (hoặc **Generate Token**) → quyền **Read & Write** (đọc và ghi) → thời hạn **Never** (không hết hạn) → **Create** → copy **ngay** (token chỉ hiện một lần) |
 
 8. Ghi rõ trong file ghi chú token nào của database nào, ví dụ:
    ```text
-   THỬ   URL:   libsql://pisa-thu-nghiem-xxx.turso.io
+   THỬ   URL:   libsql://pisatracking-demo-xxx.aws-us-east-2.turso.io
    THỬ   Token: eyJ...
-   CHÍNH URL:   libsql://pisa-ban-chinh-xxx.turso.io
+   CHÍNH URL:   libsql://pisatracking-xxx.aws-us-east-2.turso.io
    CHÍNH Token: eyJ...
    ```
 
@@ -214,7 +217,7 @@ npm run init-ban-chinh
 
 | Chỗ thay | Điền gì | Ví dụ |
 |---|---|---|
-| `URL database CHÍNH` | URL ở mục 2 (dòng CHÍNH) | `libsql://pisa-ban-chinh-xxx.turso.io` |
+| `URL database CHÍNH` | URL ở mục 2 (dòng CHÍNH) — **không** có chữ `-demo` | `libsql://pisatracking-xxx.aws-us-east-2.turso.io` |
 | `Token database CHÍNH` | Token ở mục 2 (dòng CHÍNH) | `eyJ...` |
 | `email quản trị của bạn` | Email bạn dùng đăng nhập web. **Phải có đuôi `.pisa@gmail.com`** | `dovutuanphong95.pisa@gmail.com` |
 | `mật khẩu quản trị mới` | Mật khẩu **mạnh, mới** — dài ít nhất 10 ký tự, có cả chữ và số. **Không** dùng `pisa2026` | `PisaQN-2026-an-toan` |

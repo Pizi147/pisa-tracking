@@ -2,7 +2,7 @@ import Database from 'libsql';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { cauHinhDb, laBanChinh } from './moiTruong.ts';
+import { cauHinhDb, choPhepSeedTurso, laBanChinh } from './moiTruong.ts';
 
 /*
  * libsql gắn thêm `_metadata: { duration }` vào MỖI dòng `.get()` trả về (better-sqlite3 thì không). Khoá này lọt
@@ -109,15 +109,14 @@ export function isInitialised(): boolean {
 /**
  * CHỐT CHẶN XOÁ SẠCH DATABASE Ở TURSO — nằm ngay trong hàm xoá, nên che MỌI nơi gọi (lệnh seed, bộ phép kiểm, mã sau này).
  * Ngoại lệ duy nhất là database THỬ: `PISA_CHO_PHEP_SEED_TURSO` phải bằng ĐÚNG TÊN MÁY CHỦ trong URL (không phải một
- * đoạn chữ — `turso.io` hay một ký tự sẽ khớp mọi database), và không bao giờ khi `BAN_CHINH=1`.
+ * đoạn chữ — `turso.io` hay một ký tự sẽ khớp mọi database), không bao giờ khi `BAN_CHINH=1`, và không bao giờ với tên
+ * máy chủ kiểu bản chính (luật ở `choPhepSeedTurso`).
  */
 export function tuChoiXoaSachNeuTuXa(): void {
   if (CAU_HINH.kieu !== 'turso') return;
-  let tenMay = '';
-  try { tenMay = new URL(CAU_HINH.url).hostname; } catch { /* URL lạ → không khớp gì */ }
-  const choPhep = process.env.PISA_CHO_PHEP_SEED_TURSO?.trim();
-  if (!laBanChinh() && choPhep && tenMay && choPhep === tenMay) return;
-  throw new Error('TỪ CHỐI: đang trỏ tới Turso. Lệnh này XOÁ SẠCH database và chỉ dùng cho máy dev.');
+  if (!laBanChinh() && choPhepSeedTurso(CAU_HINH.url, process.env.PISA_CHO_PHEP_SEED_TURSO)) return;
+  throw new Error('TỪ CHỐI: đang trỏ tới Turso. Lệnh này XOÁ SẠCH database và chỉ dùng cho máy dev.\n'
+    + 'Muốn seed database THỬ: đặt PISA_CHO_PHEP_SEED_TURSO bằng NGUYÊN tên máy chủ, ví dụ pisatracking-demo-xxx.turso.io');
 }
 
 export function recreateSchema() {

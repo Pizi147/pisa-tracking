@@ -48,6 +48,37 @@ export async function runBanChinhTests(t: BanChinhTestKit) {
     assert(/TỪ CHỐI/.test(r.stderr), `stderr phải có chữ TỪ CHỐI, nhận: ${String(r.stderr).slice(-300)}`);
   });
 
+  console.log('\nPR-Z2 · 1b. Chốt seed so NGUYÊN tên máy chủ (tên bản chính nằm trong tên bản thử)');
+  const { choPhepSeedTurso } = await import('../moiTruong.ts');
+  const THU = 'libsql://pisatracking-demo-abc.turso.io';
+  const CHINH = 'libsql://pisatracking-abc.turso.io';
+  check('PR-Z2 · Seed được vào DB thử khi biến cho phép là NGUYÊN tên máy chủ của nó', () => {
+    assert(choPhepSeedTurso(THU, 'pisatracking-demo-abc.turso.io') === true, 'phải cho phép');
+  });
+  check('PR-Z2 · Biến cho phép là một PHẦN tên ("pisatracking") → KHÔNG khớp DB nào, kể cả bản chính', () => {
+    assert(choPhepSeedTurso(CHINH, 'pisatracking') === false, 'bản chính không được seed');
+    assert(choPhepSeedTurso(THU, 'pisatracking') === false, 'một phần tên không đủ');
+  });
+  check('PR-Z2 · Biến cho phép là tên DB thử nhưng URL là bản chính → từ chối', () => {
+    assert(choPhepSeedTurso(CHINH, 'pisatracking-demo-abc.turso.io') === false, 'phải từ chối');
+  });
+  check('PR-Z2 · Không có biến cho phép → từ chối', () => {
+    assert(choPhepSeedTurso(THU, undefined) === false && choPhepSeedTurso(THU, '') === false, 'phải từ chối');
+  });
+  check('PR-Z2 · Tên máy chủ kiểu BẢN CHÍNH (pisatracking-… không có -demo-) bị chặn cứng, kể cả khi biến cho phép dán đúng nguyên tên đó', () => {
+    assert(choPhepSeedTurso(CHINH, 'pisatracking-abc.turso.io') === false, 'dán nhầm tên bản chính vẫn không được xoá bản chính');
+  });
+  check('PR-Z2 · `npm run seed` vào tên máy chủ kiểu bản chính TỪ CHỐI dù biến cho phép khớp nguyên tên, và chỉ cách seed database THỬ', () => {
+    /* Máy chủ không tồn tại + token giả: nếu chốt hỏng thì lệnh cũng không xoá được gì của ai. */
+    const r = cp.spawnSync(process.execPath, [pathMod.join(REPO, 'dist-server/server/src/seed/run.js')], {
+      env: { ...process.env, TURSO_DATABASE_URL: 'libsql://pisatracking-khong-ton-tai.turso.io', TURSO_AUTH_TOKEN: 'x',
+        BAN_CHINH: '', PISA_CHO_PHEP_SEED_TURSO: 'pisatracking-khong-ton-tai.turso.io' },
+      encoding: 'utf8', timeout: 60_000,
+    });
+    assert(r.status !== 0 && r.status !== null && /TỪ CHỐI/.test(r.stderr), `Mã thoát ${r.status}; stderr: ${String(r.stderr).slice(-300)}`);
+    assert(/NGUYÊN tên máy chủ/.test(r.stderr) && /pisatracking-demo-/.test(r.stderr), `Thiếu dòng chỉ cách seed database THỬ: ${String(r.stderr).slice(-300)}`);
+  });
+
   console.log('\nPR-Z2 · 2. Kho tệp');
   const { datKhoTepChoKiemThu } = await import('../platform/khoTep.ts');
   const khoGia = new Map<string, Buffer>();
