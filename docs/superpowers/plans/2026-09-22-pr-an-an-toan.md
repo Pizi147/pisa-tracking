@@ -1223,7 +1223,7 @@ PR-Z2c (Task 11 Step 3 ghi chú sang plan bản chính).
   `export function chotVangDinhKy(o?: { ngay?: string; chot?: (ngay: string) => number; daKhoiTao?: () => boolean }): KetQuaChotVang`.
   Hàm Netlify `chot-vang`: `export const handler = async () => ({ statusCode, body })`.
 
-- [ ] **Step 1: Phép kiểm (đỏ).**
+- [x] **Step 1: Phép kiểm (đỏ).**
 
 ```ts
   // ================================================================== 9. RB-1 — chốt "-" định kỳ
@@ -1261,8 +1261,8 @@ PR-Z2c (Task 11 Step 3 ghi chú sang plan bản chính).
   });
 ```
 
-- [ ] **Step 2: Chạy, đỏ.** Expected: 3 phép `RB-1 ·` ✗.
-- [ ] **Step 3: Tạo `server/src/ops/chotVangDinhKy.ts`.**
+- [x] **Step 2: Chạy, đỏ.** Expected: 3 phép `RB-1 ·` ✗.
+- [x] **Step 3: Tạo `server/src/ops/chotVangDinhKy.ts`.**
 
 ```ts
 import { isInitialised } from '../db.ts';
@@ -1294,7 +1294,7 @@ export function chotVangDinhKy(o: {
 }
 ```
 
-- [ ] **Step 4: Tạo `netlify/functions/chot-vang.ts`.**
+- [x] **Step 4: Tạo `netlify/functions/chot-vang.ts`.**
 
 ```ts
 /**
@@ -1318,7 +1318,7 @@ export const handler = async () => {
 };
 ```
 
-- [ ] **Step 5: `netlify.toml`** — thêm ngay sau khối `[functions]` (sau dòng `external_node_modules = …`):
+- [x] **Step 5: `netlify.toml`** — thêm ngay sau khối `[functions]` (sau dòng `external_node_modules = …`):
 
 ```toml
 # Chốt dấu "-" đầu thứ Hai kể cả khi không ai mở web (RB-1). Giờ UTC: 00:05 và 06:05 sáng thứ Hai giờ Việt Nam.
@@ -1327,8 +1327,8 @@ export const handler = async () => {
   schedule = "5 17,23 * * 0"
 ```
 
-- [ ] **Step 6: Chạy, xanh.** Expected `TẤT CẢ 699 …`.
-- [ ] **Step 7: Gói thử như Netlify.** Sửa `scripts/thu-goi-function.mjs`: sau khối kiểm ba đường của `api` (trước `process.chdir(repo)`),
+- [x] **Step 6: Chạy, xanh.** Expected `TẤT CẢ 699 …`.
+- [x] **Step 7: Gói thử như Netlify.** Sửa `scripts/thu-goi-function.mjs`: sau khối kiểm ba đường của `api` (trước `process.chdir(repo)`),
   thêm đoạn gói và gọi `chot-vang` trên **bản sao** database dev (không bao giờ chạm file gốc, không bao giờ chạm Turso — biến Turso đã bị
   xoá ở đầu script):
 
@@ -1361,7 +1361,7 @@ Chạy `npm run thu-goi` (cần `data/pisa-demo.sqlite` — chưa có thì `npm 
 `ĐẠT  chot-vang lần 1/2`, lần 2 có `"daChot":0`. Ghi số `daChot` lần 1 và `ms` vào Nhật ký. `data/pisa-demo.sqlite` gốc **không đổi**
 (`git status` sạch với thư mục `data/` — file này không nằm trong git; kiểm bằng thời điểm sửa file trước/sau).
 
-- [ ] **Step 8: Commit.**
+- [x] **Step 8: Commit.**
 
 ```bash
 git add server/src/ops/chotVangDinhKy.ts netlify/functions/chot-vang.ts netlify.toml scripts/thu-goi-function.mjs server/src/tests/anToan.tests.ts
@@ -1618,3 +1618,4 @@ song song trong cùng tiến trình sẽ thấy cờ; harness chạy tuần tự
 | 22/09 | Task 6 | Opus 5 · 689 → 691 (2 phép `AN-4 ·` mới, cả 2 ✗ rồi ✓: phép HTTP `Cache-Control: null`, phép hàm "Chưa có mô-đun suKhoe.ts") · `suKhoe.ts` chép nguyên văn từ plan; health dời lên trước `attachPrincipal`, bỏ import `isInitialised` khỏi `app.ts` · `npm run thu-goi` ba dòng ĐẠT (worktree chưa có data/ nên chạy `npm run seed` trước — chỉ ghi data/pisa-demo.sqlite, không có biến Turso) |
 | 22/09 | Task 7 | Opus 5 · 691 → 695 (4 phép `AN-5 ·` mới, cả 4 ✗ rồi ✓: 2 phép "Chưa có mô-đun hanGio.ts", `donGiaoDichTreo is not a function`, `demGio is not a function`) · `hanGio.ts`, `tx()`/`donGiaoDichTreo` và `demGio` chép nguyên văn từ plan; `app.use(demGio)` ngay sau `cookieParser`, trước health · typecheck ✓ · `npm run thu-goi` ba dòng ĐẠT |
 | 22/09 | Task 8 | Opus 5 · 695 → 696 (1 phép `AN-8 ·` mới, ✗ "Đếm bằng chứng 18 câu cho 18 thẻ" rồi ✓) · `demBangChungCase` chép nguyên văn từ plan; `caseCardOf(` đúng 2 dòng (định nghĩa + một lời gọi); không chạm `canClose:` · phép cũ `PR-HV · Q8 Thẻ case có số bằng chứng` vẫn ✓ · typecheck ✓ |
+| 22/09 | Task 9 | Opus 5 · 696 → 699 (3 phép `RB-1 ·` mới, cả 3 ✗ rồi ✓: 2 phép "Chưa có mô-đun chotVangDinhKy.ts", phép toml "Lịch trong toml: undefined") · `chotVangDinhKy.ts`, `chot-vang.ts`, khối toml chép nguyên văn từ plan; không chạm `absence.ts` · typecheck ✓ · `npm run thu-goi` 3 dòng ĐẠT cũ + `chot-vang lần 1` **daChot 0, ms 23** (database dev đã chốt sẵn tới hôm nay), lần 2 daChot 0, ms 1 · chạy trên bản sao VACUUM INTO trong thư mục tạm; `data/pisa-demo.sqlite` giữ nguyên thời điểm sửa (20:53:46.399 trước và sau) · lệch nhỏ: sửa lỗi gõ `/\/g` bị mất một dấu gạch khi chép vào script (SyntaxError lần chạy đầu) |

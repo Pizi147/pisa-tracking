@@ -405,6 +405,40 @@ export async function runAnToanTests(t: AnToanTestKit) {
     assert(casesMod.demBangChungCase([]).size === 0, 'Danh sách rỗng phải trả bản đếm rỗng, không hỏi database');
   });
 
+  // ================================================================== 9. RB-1 — chốt "-" định kỳ
+
+  console.log('\nPR-AN · 9. Chốt "-" tự chạy đầu thứ Hai kể cả khi không ai mở web (4.6)');
+  const cv = await load('../ops/chotVangDinhKy.ts');
+  const utilMod: any = await import('../util.ts');
+
+  check('RB-1 · chotVangDinhKy gọi đúng settleNoShows(ngày); không truyền ngày thì dùng NGÀY THẬT giờ Việt Nam; database chưa khởi tạo thì bỏ qua, không gọi', () => {
+    let nhan: string | null = null;
+    const a = cv.chotVangDinhKy({ ngay: '2026-09-21', chot: (d: string) => { nhan = d; return 3; }, daKhoiTao: () => true });
+    assert(nhan === '2026-09-21' && a.daChot === 3 && a.boQua === null && a.ngay === '2026-09-21', JSON.stringify(a));
+    nhan = null;
+    cv.chotVangDinhKy({ chot: (d: string) => { nhan = d; return 0; }, daKhoiTao: () => true });
+    assert(nhan === utilMod.todayInBusinessTz(), `Ngày mặc định ${nhan}, ngày thật ${utilMod.todayInBusinessTz()}`);
+    let goi = 0;
+    const b = cv.chotVangDinhKy({ chot: () => { goi += 1; return 0; }, daKhoiTao: () => false });
+    assert(goi === 0 && b.boQua === 'chua-khoi-tao' && b.daChot === 0, JSON.stringify(b));
+  });
+
+  check('RB-1 · Chạy thật trên database: lần hai cùng ngày không chốt thêm gì (lịch chạy 2 lần mỗi sáng thứ Hai là vô hại)', () => {
+    const lan1 = cv.chotVangDinhKy({ ngay: TODAY });
+    const lan2 = cv.chotVangDinhKy({ ngay: TODAY });
+    assert(lan1.boQua === null && typeof lan1.daChot === 'number', JSON.stringify(lan1));
+    assert(lan2.daChot === 0, `Lần hai chốt thêm ${lan2.daChot}`);
+  });
+
+  check('RB-1 · netlify.toml hẹn hàm chot-vang đúng lịch 00:05 và 06:05 sáng thứ Hai giờ VN; hàm tự bật chế độ bản chính và chỉ gọi chotVangDinhKy', () => {
+    const toml = fsMod.readFileSync(pathMod.join(REPO, 'netlify.toml'), 'utf8');
+    const khoi = /\[functions\."chot-vang"\][^[]*schedule\s*=\s*"([^"]+)"/.exec(toml);
+    assert(khoi && khoi[1] === cv.LICH_CHOT_VANG && cv.LICH_CHOT_VANG === '5 17,23 * * 0', `Lịch trong toml: ${khoi?.[1]}`);
+    const ham = fsMod.readFileSync(pathMod.join(REPO, 'netlify/functions/chot-vang.ts'), 'utf8');
+    assert(/process\.env\.BAN_CHINH\s*=\s*'1'/.test(ham) && /chotVangDinhKy\(\)/.test(ham), 'Hàm chot-vang phải đặt BAN_CHINH=1 và gọi chotVangDinhKy()');
+    assert(!/settleNoShows/.test(ham), 'Hàm Netlify không gọi thẳng settleNoShows — đi qua chotVangDinhKy');
+  });
+
   // ---- các task sau thêm phép kiểm NGAY TRÊN dòng này ----
 
   may.close();
