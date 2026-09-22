@@ -6,16 +6,59 @@
 import type { YThucTestKit } from './yThuc.tests.ts';
 
 export async function runTongQuanTests(t: YThucTestKit) {
-  const { check, assert, assertThrows, conn, TODAY, P, classId } = t;
+  const { check, checkAsync, assert, assertThrows, conn, TODAY, P, classId } = t;
   const d: any = await import('../../../shared/domain/index.ts');
   console.log('\nPR-Pa · Tổng quan');
   const eq = (got: unknown, want: unknown, m: string) =>
     assert(JSON.stringify(got) === JSON.stringify(want), `${m}: ${JSON.stringify(got)} ≠ ${JSON.stringify(want)}`);
   const signals: any = await import('../cases/signals.ts');
+  const chuongTrinh: any = await import('../worklist/chuongTrinh.ts').catch(() => ({}));
   const fsMod = await import('node:fs');
   const pathMod = await import('node:path');
   const { fileURLToPath } = await import('node:url');
   const REPO = pathMod.resolve(fileURLToPath(new URL('../../../../', import.meta.url)));
+  const { loadPrincipal } = await import('../permissions.ts');
+  const week: any = await import('../platform/week.ts');
+  const skillSchedule: any = await import('../fasttrack/skillSchedule.ts');
+  const regular: any = await import('../normal/regular.ts');
+  const cases: any = await import('../cases/cases.ts');
+  const metricsSvc: any = await import('../worklist/metrics.ts');
+  const NOW = new Date().toISOString();
+  const mbBranch = (conn.prepare(`SELECT id FROM branches WHERE code = 'MB'`).get() as any).id as number;
+  let soThuTu = 0;
+  /** Học viên mới trong một lớp có sẵn của bộ demo, một lộ trình đang chạy, một lượt Test ở tuần `weekStart`. */
+  function taoHocVien(o: { classCode: 'MB-FOU 12' | 'MB-FT 101'; weekStart: string }) {
+    soThuTu += 1;
+    const tag = `PA-${soThuTu}`;
+    const cid = classId(o.classCode);
+    const ft = o.classCode === 'MB-FT 101';
+    const sid = Number(conn.prepare(
+      `INSERT INTO students (student_code, full_name, normalized_name, branch_id, status, created_at) VALUES (?,?,?,?, 'active', ?)`,
+    ).run(`PISA-${tag}`, `Học viên ${tag}`, `hoc vien ${tag.toLowerCase()}`, mbBranch, NOW).lastInsertRowid);
+    conn.prepare(`INSERT INTO enrollments (student_id, class_id, status, started_at, created_at) VALUES (?,?, 'active', '2026-07-27', ?)`)
+      .run(sid, cid, NOW);
+    const cycleId = Number(conn.prepare(
+      `INSERT INTO learning_cycles (student_id, seq, route, programme_code, started_at, status, created_at)
+       VALUES (?, 1, ?, ?, '2026-07-27', 'active', ?)`,
+    ).run(sid, ft ? 'LT1' : null, ft ? null : 'FOU', NOW).lastInsertRowid);
+    const periodId = week.ensurePeriod(o.weekStart).id;
+    const attemptId = Number(conn.prepare(
+      `INSERT INTO assessment_attempts (cycle_id, student_id, attempt_no, kind, class_id, planned_period_id, status, created_at)
+       VALUES (?,?,1,?,?,?, 'planned', ?)`,
+    ).run(cycleId, sid, ft ? 'mock' : 'progress', cid, periodId, NOW).lastInsertRowid);
+    skillSchedule.ensureSkillRows(attemptId);
+    return { sid, cid, cycleId, attemptId };
+  }
+  const diem = (attemptId: number, skill: string, score: number, total: number) =>
+    regular.saveRegularScore(P.admin, attemptId, skill, { score, total });
+  const tinHieu = (attemptId: number, skill: string) =>
+    conn.prepare('SELECT * FROM case_signals WHERE attempt_id = ? AND skill = ?').get(attemptId, skill) as any;
+  const moCase = (sid: number, topic: string) => cases.reportIssue(P.admin, {
+    studentId: sid, topic, title: `Case thử PR-Pa ${topic}`, summary: 'Em vướng đúng phần này của môn, đã xem lại bài.',
+    primaryCode: d.issuesForTopic(topic)[0].code,
+  }) as any;
+  const ids = (id: string, f: any = {}) => (metricsSvc.metricSet(P.admin, id, f).ids as number[]);
+  void loadPrincipal; void assertThrows; void tinHieu; void diem;
 
   // ================================================================== 1. Luật thuần
   check('PR-Pa · Chương trình: đọc tham số ct; mặc định Cả hai; không có chữ "Normal" trên màn', () => {
@@ -103,5 +146,43 @@ export async function runTongQuanTests(t: YThucTestKit) {
     const body = src.slice(src.indexOf('export function overdueNormalSignalIds'), src.indexOf('export function signalDetail'));
     assert(body.length > 0 && !/listSignals\(|\bcan\(|canResolveSignal\(/.test(body),
       'overdueNormalSignalIds vẫn gọi quyền từng tín hiệu (listSignals / can) — trên Turso mất vài giây mỗi lần mở Tổng quan');
+  });
+
+  // ================================================================== 3. Lọc chương trình
+  check('PR-Pa · Chương trình: cùng một chỉ số, Lớp thường chỉ có em lớp thường, Fast Track chỉ có em FT, cả hai tập nằm trong Cả hai', () => {
+    const thuong = taoHocVien({ classCode: 'MB-FOU 12', weekStart: '2026-09-07' });
+    const ft = taoHocVien({ classCode: 'MB-FT 101', weekStart: '2026-09-07' });
+    const cThuong = moCase(thuong.sid, 'listening');
+    const cFt = moCase(ft.sid, 'reading');
+    for (const [id, a, b] of [['hv-co-case-mo', thuong.sid, ft.sid], ['case-mo', cThuong.id, cFt.id]] as const) {
+      const all = ids(id), t = ids(id, { program: 'thuong' }), f = ids(id, { program: 'ft' });
+      assert(t.includes(a) && !t.includes(b), `${id}: Lớp thường sai`);
+      assert(f.includes(b) && !f.includes(a), `${id}: Fast Track sai`);
+      assert([...t, ...f].every((x) => all.includes(x)), `${id}: tập lọc lọt ngoài Cả hai`);
+      assert(!t.some((x) => f.includes(x)), `${id}: một phần tử ở cả hai chương trình`);
+    }
+    const r = metricsSvc.metricSet(P.admin, 'hv-duoi-ky-vong-mon', { program: 'thuong' });
+    const mau = (r.denominatorIds ?? []) as number[];
+    eq(chuongTrinh.locTheoChuongTrinh('hoc-vien', mau, 'thuong'), mau, 'Mẫu số cũng phải được lọc theo chương trình');
+    assert(r.n === r.ids.length && r.ids.every((x: number) => mau.includes(x)), 'n = độ dài tập; tập đếm ⊆ mẫu số');
+    eq(ids('tin-hieu-qua-han', { program: 'ft' }), [], 'Tín hiệu quá hạn chỉ có ở lớp thường');
+  });
+
+  check('PR-Pa · Chương trình: /metrics nhận tham số ct; Cả hai = không lọc', () => {
+    const src = fsMod.readFileSync(pathMod.join(REPO, 'server/src/routes/index.ts'), 'utf8');
+    const block = src.slice(src.indexOf("api.get('/metrics/:id'"), src.indexOf("api.get('/metrics/:id'") + 600);
+    assert(/program:\s*chuongTrinhTuThamSo\(qStr\(req, 'ct'\)\)/.test(block), 'Route /metrics/:id chưa đọc ct');
+    eq(ids('case-mo', { program: 'ca-hai' }), ids('case-mo'), 'Cả hai = không lọc');
+  });
+
+  check('PR-Pa · tachTheoLop: gom theo lớp, hai lớp nhiều nhất, còn lại "+k lớp"; một phần tử ghi đúng lớp', () => {
+    const a = taoHocVien({ classCode: 'MB-FOU 12', weekStart: '2026-09-07' });
+    const b = taoHocVien({ classCode: 'MB-FOU 12', weekStart: '2026-09-07' });
+    const c = taoHocVien({ classCode: 'MB-FT 101', weekStart: '2026-09-07' });
+    eq(chuongTrinh.tachTheoLop('hoc-vien', [a.sid, b.sid, c.sid]), 'MB-FOU 12 (2) · MB-FT 101 (1)', 'Hai lớp');
+    eq(chuongTrinh.tachTheoLop('hoc-vien', [c.sid]), 'MB-FT 101', 'Một em');
+    eq(chuongTrinh.tachTheoLop('hoc-vien', []), '', 'Rỗng');
+    const m = chuongTrinh.lopCuaTap('hoc-vien', [a.sid, c.sid]);
+    eq([m.get(a.sid).isFt, m.get(c.sid).isFt], [false, true], 'isFt theo lớp đang học');
   });
 }

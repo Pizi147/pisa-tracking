@@ -1,5 +1,5 @@
 import { db } from '../db.ts';
-import { MEASURE_KIND_LABEL, PERMISSIONS, VIOLATION_CATEGORY_LABEL, metricById, type ChiSo } from '../../../shared/domain/index.ts';
+import { MEASURE_KIND_LABEL, PERMISSIONS, VIOLATION_CATEGORY_LABEL, metricById, type ChiSo, type ChuongTrinh } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { scopeFor, type Principal } from '../permissions.ts';
 import { badRequest, forbidden, HttpError, notFound } from '../util.ts';
@@ -10,6 +10,7 @@ import { improvementRate, planOutcomes } from '../cases/effectiveness.ts';
 import { doPhuDanhGia, hvDuoiKyVongMon, hvSosHienTai } from './danhGia.ts';
 import { isYThucMetric, yThucMetric, YTHUC_METRIC_IDS } from '../yThuc/thongKe.ts';
 import { PHOI_HOP_METRIC_IDS, isPhoiHopMetric, phoiHopMetric } from '../yThuc/phoiHop.ts';
+import { locTheoChuongTrinh } from './chuongTrinh.ts';
 
 /**
  * TẬP ID CỦA TỪNG CHỈ SỐ — nơi duy nhất sinh ra cả CON SỐ lẫn DANH SÁCH KHI BẤM VÀO (hợp đồng số liệu).
@@ -340,9 +341,33 @@ function effectivenessScopes(p: Principal, branchId: number | null): Array<{ bra
 }
 
 /**
- * MỘT CHỈ SỐ → MỘT TẬP ID, đã áp quyền của người gọi. Đây là hàm DUY NHẤT mà cả ô số lẫn panel danh sách gọi.
+ * MỘT CHỈ SỐ → MỘT TẬP ID, đã áp quyền của người gọi — và, nếu có, CHƯƠNG TRÌNH đang chọn ở Tổng quan (P6b). Đây là hàm
+ * DUY NHẤT mà cả ô số lẫn panel danh sách gọi. Bộ lọc chương trình đặt ở ĐÂY, một lần, cho mọi chỉ số: lọc cả tập đếm lẫn
+ * tử số/mẫu số/tập chia, nên "9 / 38 đánh giá được" và danh sách khi bấm vẫn cùng một phạm vi.
  */
 export function metricSet(
+  p: Principal, id: string,
+  f: { branchId?: number | null; skill?: string | null; from?: string | null; to?: string | null; kind?: string | null; program?: ChuongTrinh | null } = {},
+): MetricResult {
+  const r = metricSetGoc(p, id, f);
+  const ct = f.program ?? 'ca-hai';
+  if (ct === 'ca-hai') return r;
+  const moi = [...new Set([...r.ids, ...(r.numeratorIds ?? []), ...(r.denominatorIds ?? [])])];
+  const giu = new Set(locTheoChuongTrinh(r.unit, moi, ct));
+  const loc = (xs?: number[]) => xs?.filter((x) => giu.has(x));
+  const ids = loc(r.ids)!;
+  return {
+    ...r, ids, n: ids.length,
+    numeratorIds: loc(r.numeratorIds), denominatorIds: loc(r.denominatorIds),
+    splits: r.splits ? { tamThoi: loc(r.splits.tamThoi)!, ketQuaCuoi: loc(r.splits.ketQuaCuoi)! } : undefined,
+    byKind: r.byKind ? Object.fromEntries(Object.entries(r.byKind).map(([k, v]) => [k, loc(v)!])) : undefined,
+  };
+}
+
+/**
+ * MỘT CHỈ SỐ → MỘT TẬP ID, đã áp quyền của người gọi. Đây là hàm DUY NHẤT mà cả ô số lẫn panel danh sách gọi.
+ */
+function metricSetGoc(
   p: Principal, id: string,
   f: { branchId?: number | null; skill?: string | null; from?: string | null; to?: string | null; kind?: string | null } = {},
 ): MetricResult {

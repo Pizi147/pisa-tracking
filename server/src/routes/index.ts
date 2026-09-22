@@ -4,7 +4,7 @@ import { db, isInitialised } from '../db.ts';
 import { laBanChinh } from '../moiTruong.ts';
 import {
   ENTRY_SKILLS, ENTRY_SKILL_LABEL, ISSUE_TAXONOMY,
-  PERMISSIONS, REGULAR_SKILLS, ROLE_LABEL, WORK_SCOPES,
+  PERMISSIONS, REGULAR_SKILLS, ROLE_LABEL, WORK_SCOPES, chuongTrinhTuThamSo,
   type Role, type WorkScope,
 } from '../../../shared/domain/index.ts';
 import { transferReasonText } from '../../../shared/domain/index.ts';
@@ -853,6 +853,7 @@ api.get('/metrics/:id', requireAuth, wrap((req) => {
   const r = metricSet(principalOf(req), String(req.params.id), {
     branchId: qInt(req, 'branchId'), skill: qStr(req, 'skill') ?? null,
     from: qStr(req, 'from') ?? null, to: qStr(req, 'to') ?? null, kind: qStr(req, 'kind') ?? null,
+    program: chuongTrinhTuThamSo(qStr(req, 'ct')),
   });
   return metricResponse(r, qStr(req, 'rows') === '1');
 }));
