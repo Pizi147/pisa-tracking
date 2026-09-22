@@ -7,7 +7,7 @@ import { ActionDialog, OutcomeDialog } from './CasePanel.tsx';
 import { CapNhatTuanForm, LichSuDieuChinh, type BanDieuChinh } from './CapNhatTuan.tsx';
 import { CauseDeterminationPanel, DismissCaseForm, PresetPlanActions } from '../yThuc/CaseSosControls.tsx';
 import {
-  OUTCOME_MARK, dangChay, tienDoCase, viecTiepPhuongAn,
+  NEXT_STEP_LABEL, OUTCOME_MARK, dangChay, tienDoCase, viecTiepPhuongAn,
 } from '@shared/domain/index.ts';
 
 /**
@@ -35,11 +35,16 @@ type Plan = {
   pendingApproval: boolean; approvalDue: string | null;
   lastOutcome: string | null; lastOutcomeLabel: string | null;
   lastOutcomeOn: string | null; lastNote: string | null;
+  /** PR-S2: khép lại vì sao (`superseded` = Được thay thế) và PA nào thay nó. */
+  closedReason: string | null; supersededBy: number | null;
+  /** PR-S2 (S2): mỗi lần sửa nội dung PA, cũ trước mới sau. */
+  revisions: BanDieuChinh[];
   /** Mọi lần có người nhìn lại và ghi kết quả — dòng thời gian vẽ thành mốc CÓ NGÀY. */
   updates: {
     on: string; outcome: string; label: string; by: string | null;
     /** Câu người dạy viết, chu kỳ nào, và có trễ hạn không — để mở lịch sử ngay tại dòng phương án. */
     note: string | null; cycleNo: number | null; late: boolean;
+    decision: string | null; remainingIssue: string | null; decisionNote: string | null;
   }[];
 };
 type CaseCard = {
@@ -365,7 +370,7 @@ function TheCase({ c, row, onChanged }: {
                 </div>
               )}
               {chay.map((p) => (
-                <KhoiPhuongAn key={p.id} p={p} canEdit={c.canEdit} onChanged={onChanged} />
+                <KhoiPhuongAn key={p.id} p={p} plans={c.plans} canEdit={c.canEdit} onChanged={onChanged} />
               ))}
               {xong.length > 0 && (
                 <>
@@ -373,7 +378,7 @@ function TheCase({ c, row, onChanged }: {
                     {moXong ? '▾' : '▸'} {xong.length} PA đã xong
                   </button>
                   {moXong && xong.map((p) => (
-                    <KhoiPhuongAn key={p.id} p={p} canEdit={c.canEdit} onChanged={onChanged} />
+                    <KhoiPhuongAn key={p.id} p={p} plans={c.plans} canEdit={c.canEdit} onChanged={onChanged} />
                   ))}
                 </>
               )}
@@ -472,8 +477,8 @@ function TheCase({ c, row, onChanged }: {
  * Hạn LÀM và hạn DỰ KIẾN XONG vẫn là hai mốc khác nhau và vẫn có nhãn riêng (`<PlanDue>`, F11). Dấu ✓ của PA đã xong
  * màu xám — xanh lá chỉ dành cho kết quả học tập (`<Outcome>`).
  */
-function KhoiPhuongAn({ p, canEdit, onChanged }: {
-  p: Plan; canEdit: boolean; onChanged?: () => void;
+function KhoiPhuongAn({ p, plans, canEdit, onChanged }: {
+  p: Plan; plans: Plan[]; canEdit: boolean; onChanged?: () => void;
 }) {
   const [editing, setEditing] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
@@ -482,6 +487,8 @@ function KhoiPhuongAn({ p, canEdit, onChanged }: {
   /* Mới nhất lên trên: người mở hỏi "giờ đang thế nào", không hỏi "tháng trước bắt đầu ra sao". */
   const updates = [...p.updates].reverse();
   const v = viecTiepPhuongAn(p);
+  const thayBang = p.supersededBy ? plans.find((x) => x.id === p.supersededBy) ?? null : null;
+  const thayCho = plans.find((x) => x.supersededBy === p.id) ?? null;
 
   return (
     <div className="rounded-lg border px-2.5 py-2" style={{ borderColor: 'var(--line)' }}>
@@ -505,6 +512,9 @@ function KhoiPhuongAn({ p, canEdit, onChanged }: {
               {p.performer ?? 'chưa có người thực hiện'}
               {p.startedOn && <> · từ {fmtDate(p.startedOn)}</>}
               {p.completedOn && <> → {fmtDate(p.completedOn)}</>}
+              {p.closedReason === 'superseded'
+                ? <> · được thay</>
+                : p.revisions.length > 0 && <> · điều chỉnh {p.revisions.length} lần</>}
             </span>
           </span>
         </div>
@@ -553,7 +563,14 @@ function KhoiPhuongAn({ p, canEdit, onChanged }: {
       {showHistory && (
         <ol id={historyId} className="list-none m-0 mt-2 pl-3 space-y-2 border-l"
           style={{ borderColor: 'var(--line)' }}>
-          {p.completedOn && !running && (
+          {thayBang && (
+            <li className="text-[11px] text-slate-400 tabular-nums">
+              {p.completedOn ? `${fmtDate(p.completedOn)} · ` : ''}Được thay bằng: {thayBang.name}
+            </li>
+          )}
+          {p.revisions.length > 0 && <li><LichSuDieuChinh revisions={p.revisions} /></li>}
+          {/* PA bị thay đã có dòng "Được thay bằng" cùng ngày ở trên, không nói lại "kết thúc phương án". */}
+          {p.completedOn && !running && !thayBang && (
             <li className="text-[11px] text-slate-400 tabular-nums">
               {fmtDate(p.completedOn)} · kết thúc phương án
             </li>
@@ -562,18 +579,26 @@ function KhoiPhuongAn({ p, canEdit, onChanged }: {
             <li key={`${u.on}-${i}`}>
               <span className="block text-[11px] text-slate-500 tabular-nums">
                 {fmtDate(u.on)}
-                {u.cycleNo ? ` · chu kỳ ${u.cycleNo}` : ''}
+                {u.cycleNo ? ` · Đợt ${u.cycleNo}` : ''}
                 {' · '}
                 <span className={outcomeTone(u.outcome)}>{OUTCOME_MARK[u.outcome] ?? ''} {u.label}</span>
                 {u.late && <span className="text-amber-300"> · ⚠ cập nhật trễ</span>}
                 {u.by && <span> · {u.by} ghi</span>}
+                {u.decision && NEXT_STEP_LABEL[u.decision as keyof typeof NEXT_STEP_LABEL] && <span> · → {NEXT_STEP_LABEL[u.decision as keyof typeof NEXT_STEP_LABEL]}</span>}
               </span>
               {u.note && <span className="block text-xs text-slate-300 mt-0.5 leading-relaxed break-words">“{u.note}”</span>}
+              {u.remainingIssue && <span className="block text-[11px] text-slate-400 mt-0.5">Còn tồn: {u.remainingIssue}</span>}
+              {u.decisionNote && (
+                <span className="block text-[11px] text-slate-400 mt-0.5">
+                  {u.decision === 'adjust' || u.decision === 'propose' ? 'Lý do' : 'Ghi chú'}: {u.decisionNote}
+                </span>
+              )}
             </li>
           ))}
           {p.startedOn && (
             <li className="text-[11px] text-slate-500 tabular-nums">{fmtDate(p.startedOn)} · bắt đầu thực hiện</li>
           )}
+          {thayCho && <li className="text-[11px] text-slate-500">Thay cho: {thayCho.name}</li>}
           {updates.length === 0 && !p.startedOn && (
             <li className="text-[11px] text-slate-500">Chưa có cập nhật nào cho phương án này.</li>
           )}

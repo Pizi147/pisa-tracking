@@ -500,9 +500,26 @@ function InterventionBody({ iv, followups, data, act }: {
   const canEdit = data.viewer?.canEdit;
   const waiting = iv.approvalState === 'pending';
   const openStatus = iv.status === 'planned' || iv.status === 'started';
+  const all: any[] = data.interventions ?? [];
+  const tenPA = (x: any) => x.description || INTERVENTION_KIND_LABEL[x.kind as keyof typeof INTERVENTION_KIND_LABEL] || x.kind;
+  const thayBang = iv.supersededBy ? all.find((x) => x.id === iv.supersededBy) ?? null : null;
+  const thayCho = all.find((x) => x.supersededBy === iv.id) ?? null;
+  const revisions: BanDieuChinh[] = iv.revisions ?? [];
   return (
     <>
       {iv.description && <p className="text-sm text-slate-300 mt-1 mb-0">{iv.description}</p>}
+      {(thayCho || thayBang) && (
+        <p className="text-[11px] text-slate-500 mt-0.5 mb-0">
+          {/* Một dòng. PA giữa chuỗi (A → B → C) có cả hai vế, nối bằng dấu chấm giữa. */}
+          {[thayCho && `Thay cho: ${tenPA(thayCho)}`, thayBang && `Được thay bằng: ${tenPA(thayBang)}`].filter(Boolean).join(' · ')}
+        </p>
+      )}
+      {revisions.length > 0 && (
+        <details className="mt-1">
+          <summary className="text-[11px] text-slate-400 cursor-pointer">Đã điều chỉnh {revisions.length} lần</summary>
+          <div className="mt-1"><LichSuDieuChinh revisions={revisions} /></div>
+        </details>
+      )}
       <p className="text-xs text-slate-500 mt-1 mb-0">
         {iv.performer ? `Người thực hiện: ${iv.performer}` : 'Chưa có người thực hiện'}
         {iv.byProxy && iv.recordedBy && ` · ${iv.recordedBy} nhập hộ`}
@@ -540,7 +557,7 @@ function InterventionBody({ iv, followups, data, act }: {
             <li key={f.id} className="pl-2.5 border-l" style={{ borderColor: 'var(--accent-line)' }}>
               <div className="flex flex-wrap items-center gap-1.5">
                 <span className="text-[11px] text-slate-500 tabular-nums">
-                  {fmtDate(f.observedOn)}{f.cycleNo ? ` · chu kỳ ${f.cycleNo}` : ''}
+                  {fmtDate(f.observedOn)}{f.cycleNo ? ` · Đợt ${f.cycleNo}` : ''}
                 </span>
                 <Outcome tone={OUTCOME_TONE[f.outcome] ?? 'muted'} mark={OUTCOME_MARK[f.outcome]}>
                   {outcomeLabelFor(f.outcome)}
@@ -556,6 +573,12 @@ function InterventionBody({ iv, followups, data, act }: {
               )}
               {/* CÂU CỦA NGƯỜI DẠY đứng riêng — đó là phần duy nhất máy không viết được. */}
               {f.note && <p className="text-xs text-slate-300 mt-1 mb-0 leading-relaxed">{f.note}</p>}
+              {f.remainingIssue && <p className="text-[11px] text-slate-400 mt-0.5 mb-0">Còn tồn: {f.remainingIssue}</p>}
+              {f.decisionNote && (
+                <p className="text-[11px] text-slate-400 mt-0.5 mb-0">
+                  {f.nextStep === 'adjust' || f.nextStep === 'propose' ? 'Lý do' : 'Ghi chú'}: {f.decisionNote}
+                </p>
+              )}
               {f.metrics?.length > 0 && (
                 <div className="flex flex-wrap gap-1 mt-1"><MetricPills metrics={f.metrics} /></div>
               )}
@@ -576,7 +599,7 @@ function InterventionBody({ iv, followups, data, act }: {
       */}
       <div className="flex flex-wrap gap-2 mt-1.5">
         {canEdit && openStatus && !waiting && (
-          <button className="btn btn-sm btn-primary" onClick={() => act.onResult(iv)}>Cập nhật kết quả</button>
+          <button className="btn btn-sm btn-primary" onClick={() => act.onResult(iv)}>Ghi kết quả</button>
         )}
         {waiting && data.viewer?.canApprove && (
           <button className="btn btn-sm" onClick={() => act.onRespond(iv)}>Trả lời đề xuất</button>
