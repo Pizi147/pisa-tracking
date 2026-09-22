@@ -1138,7 +1138,7 @@ Trong `createApp`, thứ tự middleware thành: đổi đường Netlify → `e
 - Produces: `export function demBangChungCase(caseIds: number[]): Map<number, number>`; `caseCardOf(caseId, c, soBangChung: Map<number, number>)`.
   Hình dữ liệu trả ra không đổi (`attachmentCount: number`); phép kiểm cũ `PR-HV · Q8` (`hoSoHocVien.tests.ts:236`) khoá tính đúng.
 
-- [ ] **Step 1: Phép kiểm (đỏ).**
+- [x] **Step 1: Phép kiểm (đỏ).**
 
 ```ts
   // ================================================================== 8. AN-8 — N+1 đếm bằng chứng
@@ -1162,8 +1162,8 @@ Trong `createApp`, thứ tự middleware thành: đổi đường Netlify → `e
   });
 ```
 
-- [ ] **Step 2: Chạy, đỏ.** Expected ✗ ("Đếm bằng chứng N câu cho N thẻ").
-- [ ] **Step 3: Sửa `cases.ts`.** Hàm mới ngay trên `function caseCardOf`:
+- [x] **Step 2: Chạy, đỏ.** Expected ✗ ("Đếm bằng chứng N câu cho N thẻ").
+- [x] **Step 3: Sửa `cases.ts`.** Hàm mới ngay trên `function caseCardOf`:
 
 ```ts
 /**
@@ -1199,8 +1199,8 @@ Khối `attachmentCount:` (2377-2379) →
 ```
 `grep -n "caseCardOf(" server/src/cases/cases.ts` → đúng 2 dòng (định nghĩa + một lời gọi). Có thêm lời gọi → 🛑.
 
-- [ ] **Step 4: Chạy, xanh.** Expected `TẤT CẢ 696 …`; `PR-HV · Q8 Thẻ case có số bằng chứng` vẫn ✓.
-- [ ] **Step 5: Commit.** `git commit -am "PR-AN (8): AN-8 bảng kỹ năng đếm bằng chứng một câu cho mọi thẻ Case"`
+- [x] **Step 4: Chạy, xanh.** Expected `TẤT CẢ 696 …`; `PR-HV · Q8 Thẻ case có số bằng chứng` vẫn ✓.
+- [x] **Step 5: Commit.** `git commit -am "PR-AN (8): AN-8 bảng kỹ năng đếm bằng chứng một câu cho mọi thẻ Case"`
 
 ---
 
@@ -1617,3 +1617,4 @@ song song trong cùng tiến trình sẽ thấy cờ; harness chạy tuần tự
 | 22/09 | Task 5 | Opus 5 · 685 → 689 (4 phép `AN-3 ·` mới, cả 4 ✗ rồi ✓: 3 phép `traLoiLoi is not a function`, JSON hỏng nhận 500 kèm câu tiếng Anh) · `traLoiLoi` chép nguyên văn từ plan; import `Request/Response/NextFunction`, `HttpError` đã có sẵn · lệch nhỏ: grep soát không rỗng hẳn — còn 1 dòng là chính tên phép kiểm mới ("KHÔNG có details.raw"), không phải code; `web/src` không dùng `details.raw` · typecheck ✓ |
 | 22/09 | Task 6 | Opus 5 · 689 → 691 (2 phép `AN-4 ·` mới, cả 2 ✗ rồi ✓: phép HTTP `Cache-Control: null`, phép hàm "Chưa có mô-đun suKhoe.ts") · `suKhoe.ts` chép nguyên văn từ plan; health dời lên trước `attachPrincipal`, bỏ import `isInitialised` khỏi `app.ts` · `npm run thu-goi` ba dòng ĐẠT (worktree chưa có data/ nên chạy `npm run seed` trước — chỉ ghi data/pisa-demo.sqlite, không có biến Turso) |
 | 22/09 | Task 7 | Opus 5 · 691 → 695 (4 phép `AN-5 ·` mới, cả 4 ✗ rồi ✓: 2 phép "Chưa có mô-đun hanGio.ts", `donGiaoDichTreo is not a function`, `demGio is not a function`) · `hanGio.ts`, `tx()`/`donGiaoDichTreo` và `demGio` chép nguyên văn từ plan; `app.use(demGio)` ngay sau `cookieParser`, trước health · typecheck ✓ · `npm run thu-goi` ba dòng ĐẠT |
+| 22/09 | Task 8 | Opus 5 · 695 → 696 (1 phép `AN-8 ·` mới, ✗ "Đếm bằng chứng 18 câu cho 18 thẻ" rồi ✓) · `demBangChungCase` chép nguyên văn từ plan; `caseCardOf(` đúng 2 dòng (định nghĩa + một lời gọi); không chạm `canClose:` · phép cũ `PR-HV · Q8 Thẻ case có số bằng chứng` vẫn ✓ · typecheck ✓ |

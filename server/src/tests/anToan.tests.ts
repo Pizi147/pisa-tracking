@@ -385,6 +385,26 @@ export async function runAnToanTests(t: AnToanTestKit) {
     assert(dev === null, `Máy dev có hạn: ${dev}`);
   });
 
+  // ================================================================== 8. AN-8 — N+1 đếm bằng chứng
+
+  console.log('\nPR-AN · 8. Bảng kỹ năng đếm bằng chứng một lần cho mọi thẻ Case');
+  const casesMod: any = await import('../cases/cases.ts');
+
+  await checkAsync('AN-8 · skillSupportBoard của một em có ≥ 2 Case: đúng MỘT câu hỏi bảng attachments; số trên từng thẻ vẫn đúng', async () => {
+    const cap = conn.prepare(
+      `SELECT student_id, cycle_id FROM sos_cases GROUP BY student_id, cycle_id HAVING COUNT(*) >= 2 ORDER BY student_id LIMIT 1`,
+    ).get() as any;
+    assert(cap, 'Bộ demo phải có một em có ít nhất hai Case');
+    let bang: any = null;
+    const n = await demCauHoi(/FROM attachments/, () => { bang = casesMod.skillSupportBoard(P.admin, cap.student_id, cap.cycle_id); });
+    const the = bang.rows.flatMap((r: any) => r.cases) as any[];
+    assert(the.length >= 2, `Bảng chỉ có ${the.length} thẻ`);
+    assert(n === 1, `Đếm bằng chứng ${n} câu cho ${the.length} thẻ`);
+    const dem = (id: number) => (conn.prepare("SELECT COUNT(*) n FROM attachments WHERE owner_type = 'sos_case' AND owner_id = ?").get(id) as any).n;
+    for (const c of the) assert(c.attachmentCount === dem(c.id), `Case ${c.id}: ${c.attachmentCount} ≠ ${dem(c.id)}`);
+    assert(casesMod.demBangChungCase([]).size === 0, 'Danh sách rỗng phải trả bản đếm rỗng, không hỏi database');
+  });
+
   // ---- các task sau thêm phép kiểm NGAY TRÊN dòng này ----
 
   may.close();
