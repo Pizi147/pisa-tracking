@@ -16,13 +16,21 @@ if (coTurso && !process.env.BACKUP_DIR?.trim()) {
   console.error('[sao-luu] Thiếu biến: BACKUP_DIR (thư mục lưu bản sao, ví dụ G:\\My Drive\\pisa-sao-luu) — xem TRIEN_KHAI.md mục 10. Chưa làm gì cả.');
   process.exit(1);
 }
+/* Có BACKUP_DIR mà không có Turso = lỡ quên hai biến Turso: lệnh sẽ sao lưu database MÁY DEV vào thư mục của bản chính. */
+if (!coTurso && process.env.BACKUP_DIR?.trim()) {
+  console.error('[sao-luu] TỪ CHỐI: có BACKUP_DIR nhưng thiếu TURSO_DATABASE_URL — lệnh sẽ sao lưu database MÁY DEV chứ không phải bản chính.');
+  console.error('[sao-luu] Đặt TURSO_DATABASE_URL + TURSO_AUTH_TOKEN của database cần sao lưu (TRIEN_KHAI.md mục 10). Chưa làm gì cả.');
+  process.exit(1);
+}
 
-const { DB_PATH, ROOT, closeDb, db } = await import('../db.ts');
-const { giuBanMoiNhat, saoLuuRaFile, saoLuuTep, tenBanSaoLuu } = await import('./saoLuu.ts');
+const { DB_PATH, ROOT, closeDb, db, laDbTuXa } = await import('../db.ts');
+const { giuBanMoiNhat, saoLuuRaFile, saoLuuTep, tenBanSaoLuu, tienToBanSaoLuu } = await import('./saoLuu.ts');
 const { tenKhoTep } = await import('../platform/khoTep.ts');
 
 const thuMuc = process.env.BACKUP_DIR?.trim() || path.join(ROOT, 'data', 'sao-luu');
-const ten = tenBanSaoLuu(new Date());
+/* Tên file mang tên database nguồn — bản sao lưu của database khác không lẫn vào, không đẩy nhau ra khỏi 14 bản. */
+const tienTo = tienToBanSaoLuu(laDbTuXa() ? DB_PATH : null);
+const ten = tenBanSaoLuu(new Date(), tienTo);
 const file = path.join(thuMuc, `${ten}.sqlite`);
 console.log(`[sao-luu] Nguồn: ${DB_PATH} (không in token) → ${file}`);
 console.log('[sao-luu] Chỉ ĐỌC nguồn. Các bảng được chép lần lượt — nên chạy lúc không ai đang nhập liệu. Database ở xa thì có thể mất vài phút.');
@@ -55,6 +63,6 @@ if (siteID && token) {
   console.log('[sao-luu] Chưa sao lưu tệp bằng chứng (thiếu NETLIFY_SITE_ID/NETLIFY_AUTH_TOKEN) — xem TRIEN_KHAI.md mục 10.');
 }
 
-const daXoa = giuBanMoiNhat(thuMuc, 14, `${ten}.sqlite`);
-if (daXoa.length) console.log(`[sao-luu] Giữ 14 bản mới nhất — đã xoá bản cũ: ${daXoa.join(', ')}`);
-console.log(`[sao-luu] Xong. Bản sao lưu: ${file}`);
+const daXoa = giuBanMoiNhat(thuMuc, 14, { tienTo, giuLai: `${ten}.sqlite` });
+if (daXoa.length) console.log(`[sao-luu] Giữ 14 bản mới nhất của database này — đã xoá bản cũ: ${daXoa.join(', ')}`);
+console.log(`[sao-luu] Xong. Bản sao lưu của database ${DB_PATH}: ${file}`);

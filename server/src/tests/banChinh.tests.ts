@@ -700,8 +700,22 @@ export async function runBanChinhTests(t: BanChinhTestKit) {
       assert(JSON.stringify(fs.readdirSync(dir)) === JSON.stringify(['pisa-2026-09-22-1000.sqlite']), `Còn sót file dở: ${JSON.stringify(fs.readdirSync(dir))}`);
     } finally { try { fs.rmSync(dir, { recursive: true, force: true }); } catch { /* Windows */ } }
   });
-  check('PR-Z2 · Tên bản sao lưu theo GIỜ VIỆT NAM: pisa-NĂM-THÁNG-NGÀY-GIỜPHÚT', () => {
-    assert(tenBanSaoLuu(new Date('2026-09-21T17:05:00Z')) === 'pisa-2026-09-22-0005', tenBanSaoLuu(new Date('2026-09-21T17:05:00Z')));
+  check('PR-Z2 · Tên bản sao lưu theo GIỜ VIỆT NAM và ghi rõ CỦA DATABASE NÀO: pisa-<tên máy chủ>-NĂM-THÁNG-NGÀY-GIỜPHÚT', () => {
+    const luc = new Date('2026-09-21T17:05:00Z');
+    assert(tenBanSaoLuu(luc) === 'pisa-2026-09-22-0005', tenBanSaoLuu(luc));
+    assert(tenBanSaoLuu(luc, 'pisatracking-pizi147') === 'pisa-pisatracking-pizi147-2026-09-22-0005', tenBanSaoLuu(luc, 'pisatracking-pizi147'));
+  });
+  check('PR-Z2 · Giữ 14 bản theo TỪNG database: bản của database khác (bản thử, máy dev) không đẩy bản của bản chính ra ngoài', () => {
+    const dir = fs.mkdtempSync(pathMod.join(os.tmpdir(), 'z2-keep-'));
+    try {
+      for (let i = 1; i <= 16; i++) fs.writeFileSync(pathMod.join(dir, `pisa-pisatracking-pizi147-2026-09-${String(i).padStart(2, '0')}-0000.sqlite`), 'x');
+      const khac = ['pisa-pisatracking-demo-pizi147-2026-09-30-0000.sqlite', 'pisa-cuc-bo-2026-09-30-0000.sqlite', 'pisa-2026-09-30-0000.sqlite'];
+      for (const f of khac) fs.writeFileSync(pathMod.join(dir, f), 'bản của database khác — mới hơn');
+      const xoa = giuBanMoiNhat(dir, 14, { tienTo: 'pisatracking-pizi147' });
+      assert(JSON.stringify(xoa) === JSON.stringify(['pisa-pisatracking-pizi147-2026-09-02-0000.sqlite', 'pisa-pisatracking-pizi147-2026-09-01-0000.sqlite']),
+        `Chỉ được xoá 2 bản cũ nhất CỦA bản chính: ${JSON.stringify(xoa)}`);
+      assert(khac.every((f) => fs.existsSync(pathMod.join(dir, f))), 'Đã xoá bản của database khác');
+    } finally { try { fs.rmSync(dir, { recursive: true, force: true }); } catch { /* Windows */ } }
   });
   check('PR-Z2 · Giữ đúng 14 bản mới nhất, xoá bản cũ hơn KÈM thư mục tệp của nó; không đụng file khác; không bao giờ xoá bản vừa tạo', () => {
     const dir = fs.mkdtempSync(pathMod.join(os.tmpdir(), 'z2-keep-'));
@@ -717,7 +731,7 @@ export async function runBanChinhTests(t: BanChinhTestKit) {
       assert(con.filter((f) => /^pisa-\d{4}-\d{2}-\d{2}-\d{4}\.sqlite$/.test(f)).length === 14, 'Phải còn 14 bản');
       assert(!con.includes('pisa-2026-09-01-0000-tep') && con.includes('pisa-2026-09-16-0000-tep'), 'Thư mục tệp đi theo bản của nó');
       assert(['ghi-chu.txt', 'pisa-khac.sqlite', 'pisa-2026-08-01-0000.sqlite.bak'].every((f) => con.includes(f)), 'Đã xoá file không phải bản sao lưu');
-      const giu = giuBanMoiNhat(dir, 1, 'pisa-2026-09-03-0000.sqlite');
+      const giu = giuBanMoiNhat(dir, 1, { giuLai: 'pisa-2026-09-03-0000.sqlite' });
       assert(fs.existsSync(pathMod.join(dir, 'pisa-2026-09-03-0000.sqlite')) && !giu.includes('pisa-2026-09-03-0000.sqlite'), 'Xoá mất bản vừa tạo');
     } finally { try { fs.rmSync(dir, { recursive: true, force: true }); } catch { /* Windows */ } }
   });
@@ -768,8 +782,10 @@ export async function runBanChinhTests(t: BanChinhTestKit) {
       assert(r.status === 0, `Mã ${r.status}: ${(r.stdout + r.stderr).slice(-400)}`);
       assert(!(r.stdout + r.stderr).includes(TOKEN_GIA), 'Lệnh in lộ token');
       assert(/Chưa sao lưu tệp bằng chứng/.test(r.stdout), 'Thiếu hai biến Netlify thì phải nhắc chưa sao lưu tệp');
+      assert(/Xong\. Bản sao lưu của database file:/.test(r.stdout), `Dòng Xong phải nói bản sao lưu của database nào: ${r.stdout.slice(-300)}`);
       const ra = fs.readdirSync(bk);
-      assert(ra.length === 1 && /^pisa-\d{4}-\d{2}-\d{2}-\d{4}\.sqlite$/.test(ra[0]), `Thư mục sao lưu: ${JSON.stringify(ra)}`);
+      /* URL file: không có tên máy chủ → tiền tố "cuc-bo", như kho tệp. */
+      assert(ra.length === 1 && /^pisa-cuc-bo-\d{4}-\d{2}-\d{2}-\d{4}\.sqlite$/.test(ra[0]), `Thư mục sao lưu: ${JSON.stringify(ra)}`);
       assert(bamFile(nguon) === bamNguon, 'Lệnh sao lưu đã làm thay đổi file nguồn');
       const a = new Database(nguon, { readonly: true }); const b = new Database(pathMod.join(bk, ra[0]), { readonly: true });
       try { soHaiDb(a, b, 'Lệnh sao-luu'); } finally { a.close(); b.close(); }
@@ -780,22 +796,32 @@ export async function runBanChinhTests(t: BanChinhTestKit) {
    * THẬT của Netlify (bỏ qua mọi biến ngữ cảnh — đã thử 22/09), tức phép kiểm sẽ ra mạng. Đường tải tệp được kiểm ở
    * `saoLuuTep` phía trên (máy chủ Blobs cục bộ, đúng kiểu siteID + token).
    */
-  await checkAsync('PR-Z2 · Lệnh sao-luu giữ đúng 14 bản mới nhất: xoá bản cũ nhất, giữ bản vừa tạo, không đụng file khác trong thư mục', async () => {
+  await checkAsync('PR-Z2 · Lệnh sao-luu giữ đúng 14 bản mới nhất CỦA database đó: xoá bản cũ nhất của nó, giữ bản vừa tạo, không đụng bản của database khác hay file khác', async () => {
     const dir = fs.mkdtempSync(pathMod.join(os.tmpdir(), 'z2-lenh-bk-'));
     try {
       const nguon = dungNguon(dir);
       const bk = pathMod.join(dir, 'sao-luu');
       fs.mkdirSync(bk);
-      for (let i = 1; i <= 14; i++) fs.writeFileSync(pathMod.join(bk, `pisa-2026-01-${String(i).padStart(2, '0')}-0000.sqlite`), 'cũ');
-      fs.writeFileSync(pathMod.join(bk, 'ghi-chu-cua-toi.txt'), 'giữ');
+      for (let i = 1; i <= 14; i++) fs.writeFileSync(pathMod.join(bk, `pisa-cuc-bo-2026-01-${String(i).padStart(2, '0')}-0000.sqlite`), 'cũ');
+      const giuNguyen = ['ghi-chu-cua-toi.txt', 'pisa-pisatracking-pizi147-2025-12-01-0000.sqlite', 'pisa-2025-12-01-0000.sqlite'];
+      for (const f of giuNguyen) fs.writeFileSync(pathMod.join(bk, f), 'giữ');
       const r = await chayLenhNen({ TURSO_DATABASE_URL: urlFile(nguon), TURSO_AUTH_TOKEN: TOKEN_GIA, BACKUP_DIR: bk });
       assert(r.status === 0, `Mã ${r.status}; stdout: ${r.stdout.slice(-300)}; stderr: ${r.stderr.slice(-500)}`);
       const con = fs.readdirSync(bk);
-      const moi = con.filter((f) => /^pisa-\d{4}-\d{2}-\d{2}-\d{4}\.sqlite$/.test(f) && !f.startsWith('pisa-2026-01-'));
-      assert(moi.length === 1, `Phải có đúng một bản mới: ${JSON.stringify(con)}`);
-      assert(con.filter((f) => f.endsWith('.sqlite')).length === 14 && !con.includes('pisa-2026-01-01-0000.sqlite') && con.includes('pisa-2026-01-02-0000.sqlite'),
+      const cuaNo = con.filter((f) => /^pisa-cuc-bo-\d{4}-\d{2}-\d{2}-\d{4}\.sqlite$/.test(f));
+      assert(cuaNo.filter((f) => !f.startsWith('pisa-cuc-bo-2026-01-')).length === 1, `Phải có đúng một bản mới: ${JSON.stringify(con)}`);
+      assert(cuaNo.length === 14 && !con.includes('pisa-cuc-bo-2026-01-01-0000.sqlite') && con.includes('pisa-cuc-bo-2026-01-02-0000.sqlite'),
         `Phải giữ đúng 14 bản (chỉ xoá bản cũ nhất): ${JSON.stringify(con)}`);
-      assert(con.includes('ghi-chu-cua-toi.txt') && /pisa-2026-01-01-0000\.sqlite/.test(r.stdout), 'Không được đụng file khác; phải báo đã xoá bản nào');
+      assert(giuNguyen.every((f) => con.includes(f)) && /pisa-cuc-bo-2026-01-01-0000\.sqlite/.test(r.stdout), 'Không được đụng file khác; phải báo đã xoá bản nào');
+    } finally { try { fs.rmSync(dir, { recursive: true, force: true }); } catch { /* Windows */ } }
+  });
+  await checkAsync('PR-Z2 · Lệnh sao-luu có BACKUP_DIR mà KHÔNG có biến Turso → TỪ CHỐI (không lặng lẽ sao lưu database máy dev vào thư mục bản chính)', async () => {
+    const dir = fs.mkdtempSync(pathMod.join(os.tmpdir(), 'z2-lenh-bk-'));
+    try {
+      const bk = pathMod.join(dir, 'sao-luu');
+      const r = await chayLenhNen({ BACKUP_DIR: bk });
+      assert(r.status === 1 && /TURSO_DATABASE_URL/.test(r.stderr), `Mã ${r.status}; ${r.stderr.slice(-300)}`);
+      assert(!fs.existsSync(bk), 'Từ chối thì không được tạo gì trong BACKUP_DIR');
     } finally { try { fs.rmSync(dir, { recursive: true, force: true }); } catch { /* Windows */ } }
   });
 }

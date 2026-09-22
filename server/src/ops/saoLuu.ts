@@ -13,9 +13,22 @@ import fs from 'node:fs';
 import path from 'node:path';
 import Database from 'libsql';
 import { khoTepODia } from '../platform/khoTep.ts';
+import { tenMayChuDb } from '../moiTruong.ts';
 
-/** Tên một bản sao lưu database. Chỉ file ĐÚNG dạng này mới có thể bị `giuBanMoiNhat` xoá. */
-const MAU_BAN = /^pisa-\d{4}-\d{2}-\d{2}-\d{4}\.sqlite$/;
+/**
+ * Tên một bản sao lưu: `pisa-<tiền tố database>-NĂM-THÁNG-NGÀY-GIỜPHÚT.sqlite` (tiền tố rỗng = dạng cũ không tên database).
+ * Chỉ file ĐÚNG dạng này, ĐÚNG tiền tố, mới có thể bị `giuBanMoiNhat` xoá — bản của database khác không bao giờ bị đụng.
+ */
+const mauBan = (tienTo: string) =>
+  new RegExp(`^pisa-${tienTo ? tienTo.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '-' : ''}\\d{4}-\\d{2}-\\d{2}-\\d{4}\\.sqlite$`);
+
+/**
+ * Tiền tố tên bản sao lưu = phần đầu tên máy chủ database (`pisatracking-pizi147`), không có thì `cuc-bo` (máy dev, URL
+ * `file:`). Để bản sao lưu nói rõ CỦA DATABASE NÀO, và luật 14 bản tính riêng từng database (rà soát 22/09).
+ */
+export function tienToBanSaoLuu(url: string | null): string {
+  return (url ? tenMayChuDb(url).split('.')[0] : '') || 'cuc-bo';
+}
 
 /** Giá trị đọc từ libsql → giá trị ghi được: cột BLOB đọc ra là ArrayBuffer, ghi vào phải là Buffer. */
 const giaTriGhi = (v: unknown) => (v instanceof ArrayBuffer ? Buffer.from(v) : v);
@@ -98,24 +111,28 @@ export function saoLuuRaFile(nguon: any, duongDan: string): { bang: number; dong
   }
 }
 
-/** Tên bản sao lưu theo giờ Việt Nam: `pisa-NĂM-THÁNG-NGÀY-GIỜPHÚT` (sắp theo tên = sắp theo thời gian). */
-export function tenBanSaoLuu(luc: Date = new Date()): string {
+/**
+ * Tên bản sao lưu theo giờ Việt Nam: `pisa-<tiền tố>-NĂM-THÁNG-NGÀY-GIỜPHÚT` (cùng tiền tố thì sắp theo tên = sắp theo
+ * thời gian). Không tiền tố → dạng cũ `pisa-NĂM-…`.
+ */
+export function tenBanSaoLuu(luc: Date = new Date(), tienTo = ''): string {
   const p = Object.fromEntries(new Intl.DateTimeFormat('en-GB', {
     timeZone: 'Asia/Ho_Chi_Minh', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
   }).formatToParts(luc).map((x) => [x.type, x.value]));
-  return `pisa-${p.year}-${p.month}-${p.day}-${p.hour}${p.minute}`;
+  return `pisa-${tienTo ? `${tienTo}-` : ''}${p.year}-${p.month}-${p.day}-${p.hour}${p.minute}`;
 }
 
 /**
- * Giữ `soBan` bản mới nhất, xoá bản cũ hơn cùng thư mục `…-tep` của đúng bản đó. Chỉ đụng file đúng dạng
- * `pisa-NĂM-THÁNG-NGÀY-GIỜPHÚT.sqlite`; không bao giờ xoá `giuLai` (bản vừa tạo). Trả danh sách đã xoá.
+ * Giữ `soBan` bản mới nhất CỦA MỘT database (`tienTo`), xoá bản cũ hơn cùng thư mục `…-tep` của đúng bản đó. Chỉ đụng
+ * file đúng dạng tên + đúng tiền tố; không bao giờ xoá `giuLai` (bản vừa tạo). Trả danh sách đã xoá.
  */
-export function giuBanMoiNhat(thuMuc: string, soBan: number, giuLai?: string): string[] {
+export function giuBanMoiNhat(thuMuc: string, soBan: number, o: { tienTo?: string; giuLai?: string } = {}): string[] {
   if (!fs.existsSync(thuMuc)) return [];
+  const mau = mauBan(o.tienTo ?? '');
   const ban = fs.readdirSync(thuMuc)
-    .filter((f) => MAU_BAN.test(f) && fs.statSync(path.join(thuMuc, f)).isFile())
+    .filter((f) => mau.test(f) && fs.statSync(path.join(thuMuc, f)).isFile())
     .sort().reverse();
-  const xoa = ban.slice(soBan).filter((f) => f !== giuLai);
+  const xoa = ban.slice(soBan).filter((f) => f !== o.giuLai);
   for (const f of xoa) {
     fs.rmSync(path.join(thuMuc, f), { force: true });
     const thuMucTep = path.join(thuMuc, f.replace(/\.sqlite$/, '-tep'));

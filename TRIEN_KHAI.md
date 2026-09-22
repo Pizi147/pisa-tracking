@@ -362,12 +362,14 @@ npm run sao-luu
 
 Chờ khoảng 2–3 phút. Nên chạy lúc không ai đang nhập liệu. Lệnh chỉ **đọc** database, không sửa gì.
 
-Kết quả: một file `pisa-NĂM-THÁNG-NGÀY-GIỜPHÚT.sqlite` trong thư mục Drive; dòng cuối
-`[sao-luu] Xong. Bản sao lưu: …`. Máy tự giữ 14 bản mới nhất (chỉ xoá bản sao lưu cũ của chính nó, không đụng file
-khác trong thư mục). Dòng `Chưa sao lưu tệp bằng chứng` là bình thường nếu bạn chưa thêm hai dòng ở dưới.
+Kết quả: một file mang **tên database** và ngày giờ, ví dụ `pisa-pisatracking-xxx-2026-09-28-2030.sqlite`, trong thư
+mục Drive; dòng cuối `[sao-luu] Xong. Bản sao lưu của database libsql://pisatracking-xxx…: …` — **nhìn kỹ đúng database
+CHÍNH** (không có chữ `-demo`). Máy tự giữ 14 bản mới nhất **của từng database** (chỉ xoá bản sao lưu cũ của chính
+database đó, không đụng bản của database khác hay file khác trong thư mục). Dòng `Chưa sao lưu tệp bằng chứng` là bình
+thường nếu bạn chưa thêm hai dòng ở dưới. Lệnh **từ chối** nếu có `BACKUP_DIR` mà quên hai dòng Turso.
 Xong thì **đóng cửa sổ PowerShell** (để token không còn nằm trong cửa sổ).
 
-**Muốn sao lưu cả ảnh / thư cảnh cáo đã tải lên** (vào thư mục `pisa-NĂM-THÁNG-NGÀY-GIỜPHÚT-tep` cạnh file), thêm hai
+**Muốn sao lưu cả ảnh / thư cảnh cáo đã tải lên** (vào thư mục cùng tên, thêm đuôi `-tep`, cạnh file), thêm hai
 dòng này **trước** dòng `npm run sao-luu`:
 
 ```powershell
