@@ -435,6 +435,35 @@ export function scheduleHeadline(input: {
 
 // ---------------------------------------------------------------- danh sách
 
+/**
+ * MỘT DÒNG CÒN VIỆC CHẤM theo phạm vi đang xem — luật của `need: 'my_scores'`. Xuất ra để Cần chấm (đọc cả dòng đã
+ * chấm xong để biết "Chấm tiếp") lọc bằng ĐÚNG luật này, không chép lại một bản thứ hai.
+ */
+export const conBaiCanCham = (m: { pendingSkills: string[]; status: string }): boolean =>
+  m.pendingSkills.length > 0 && m.status !== 'cancelled';
+
+/**
+ * TUẦN ĐẦU CỦA ĐỢT = tuần sớm nhất trong các môn được yêu cầu. KHÔNG dùng `period` cho việc này: cột
+ * `planned_period_id` là tuần kế hoạch HOÀN TẤT (tuần MUỘN NHẤT, mục 10.7), nên dời một môn sang tuần sau thì
+ * `period` đi theo môn đó — so với nó, các môn KHÔNG dời lại trông như "lệch tuần". Cần chấm so với tuần này để nói
+ * "lùi lịch từ … sang …" (Q15).
+ */
+function tuanDauOf(
+  ds: Array<{ required: boolean; weekStart: string | null; periodCode: string | null } | undefined>,
+): { code: string | null; weekStart: string } | null {
+  let dau: { code: string | null; weekStart: string } | null = null;
+  for (const x of ds) {
+    if (!x?.required || !x.weekStart) continue;
+    if (!dau || x.weekStart < dau.weekStart) dau = { code: x.periodCode, weekStart: x.weekStart };
+  }
+  return dau;
+}
+
+/** Số ô đã có điểm trong phạm vi đang xem (cùng tiêu chí "được yêu cầu" và "của tôi" với `pendingSkillsOf`). */
+function scoredInScopeOf(cells: PendingCell[], scope: WorkScope): number {
+  return cells.filter((c) => c.required && c.scored && (scope === 'mine' ? c.mine : true)).length;
+}
+
 export type AttemptFilters = {
   periodId?: number;
   branchId?: number;
@@ -610,6 +639,14 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
           .map((x) => ({ skill: x.skill, deadline: x.v!.deadline, weekCode: x.v!.periodCode })),
         /* Tập bài cần chấm THEO PHẠM VI ĐANG XEM — cùng hàm với badge ở danh sách lớp. */
         pendingSkills: pending,
+        /* Hạn và tuần của CHÍNH các môn còn nợ theo phạm vi đang xem — Cần chấm cần hạn của cả dòng, không chỉ phần của tôi. */
+        pendingDetail: pending.map((k) => ({
+          skill: k, deadline: views.get(k)?.deadline ?? null,
+          weekCode: views.get(k)?.periodCode ?? null, weekStart: views.get(k)?.weekStart ?? null,
+        })),
+        /* Số ô ĐÃ CÓ ĐIỂM trong cùng phạm vi — Cần chấm phân biệt "Chấm" với "Chấm tiếp". */
+        scoredInScope: scoredInScopeOf(pendingCells, workScope),
+        tuanDau: tuanDauOf(regularSkills.map((k) => views.get(k))),
         /* Ai phụ trách từng bài — danh sách của Quản lý là để ĐÔN ĐỐC, nên phải có tên. */
         pendingOwners: ownersOf(a.class_id, pending),
         /** Tuần thi của CHÍNH các môn còn nợ — để hàng đợi nói "nợ từ tuần nào". */
@@ -680,6 +717,13 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
         .map((c) => ({ skill: c.skill, deadline: c.deadline, weekCode: c.periodCode })),
       /* Tập bài cần chấm THEO PHẠM VI ĐANG XEM — cùng hàm với badge ở danh sách lớp. */
       pendingSkills: pending,
+      /* Hạn và tuần của CHÍNH các môn còn nợ theo phạm vi đang xem — cùng ý như nhánh lớp thường. */
+      pendingDetail: pending.map((k) => {
+        const c = cells.find((x) => x.skill === k);
+        return { skill: k, deadline: c?.deadline ?? null, weekCode: c?.periodCode ?? null, weekStart: c?.weekStart ?? null };
+      }),
+      scoredInScope: scoredInScopeOf(pendingInputOf(cells), workScope),
+      tuanDau: tuanDauOf(cells),
       /* Ai phụ trách từng bài — danh sách của Quản lý là để ĐÔN ĐỐC, nên phải có tên. */
       pendingOwners: ownersOf(a.class_id, pending),
       /** Tuần thi của CHÍNH các môn còn nợ — để hàng đợi nói "nợ từ tuần nào". */
@@ -704,7 +748,7 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
 
   switch (f.need) {
     case 'my_scores':
-      mapped = mapped.filter((m) => m.pendingSkills.length > 0 && m.status !== 'cancelled');
+      mapped = mapped.filter(conBaiCanCham);
       break;
     case 'missing_scores': mapped = mapped.filter((m) => m.status !== 'cancelled' && !m.complete && m.scoredRequired > 0); break;
     case 'overdue': mapped = mapped.filter((m) => m.overdueSkills > 0); break;

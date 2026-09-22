@@ -366,4 +366,93 @@ export async function runChamDiemTests(t: YThucTestKit) {
     const o: any = dauCua(ft, 'listening');
     assert(o.raw_score === 25 && o.note === 'Em làm bài đủ giờ', 'Fast Track: lưu lại cùng điểm và sửa ghi chú không bị chặn');
   });
+
+  // ---------------------------------------------------------------- Task 6: Cần chấm + Lịch Test (dữ liệu)
+  const TRANG_THAI = /^(Đã chấm xong|Chưa tới hạn|Còn \d+ bài|Quá hạn · còn \d+ bài)$/;
+
+  check('PR-Rc1 · Q11 Cần chấm: một dòng = một lớp + một đợt, đếm đúng số ô còn phải chấm', () => {
+    const r = cham.canChamList(P.mbManager, {}, TODAY);
+    assert(Array.isArray(r.nhom) && r.nhom.length === 3, 'Luôn đủ ba mục');
+    assert(r.nhom.map((x: any) => x.muc).join(',') === 'qua-han,tuan-nay,sap-toi', 'Đúng thứ tự');
+    const dong = r.nhom.flatMap((x: any) => x.dong);
+    assert(dong.every((d: any) => d.conBai > 0), 'Không có dòng nào "còn 0 bài"');
+    assert(new Set(dong.map((d: any) => d.key)).size === dong.length, 'Khoá dòng không trùng');
+    assert(dong.every((d: any) => d.href.startsWith('/nhap-diem/')), 'Bấm Chấm mở thẳng lưới');
+    const thuong = dong.find((d: any) => d.mode === 'ratio');
+    if (thuong) {
+      assert(!/MT/.test(thuong.dotLabel), `Lớp thường không gọi đợt là MT: ${thuong.dotLabel}`);
+      assert(['Giữa khoá', 'Cuối khoá'].includes(thuong.dotLabel), thuong.dotLabel);
+    }
+    /* Ruling 3: tiêu đề mục kèm hạn sớm nhất của mục. */
+    for (const n of r.nhom) {
+      const som = n.dong.map((d: any) => d.han).filter(Boolean).sort()[0] ?? null;
+      assert(n.han === som, `Mục ${n.muc}: hạn ${n.han} ≠ hạn sớm nhất ${som}`);
+    }
+    /* Q12: dòng FT mở lưới đúng tuần của đợt. */
+    for (const d of dong.filter((x: any) => x.mode === 'ielts_band')) {
+      assert(/[?&]periodId=\d+/.test(d.href), `Dòng FT phải mang periodId: ${d.href}`);
+    }
+    assert(r.tong === dong.reduce((n: number, d: any) => n + d.conBai, 0), 'Tổng = cộng các dòng');
+  });
+
+  check('PR-Rc1 · Q13 Cần chấm lọc theo lớp thì nói rõ đang lọc lớp nào', () => {
+    const cid = classId('MB-FT 101');
+    const r = cham.canChamList(P.mbManager, { classId: cid }, TODAY);
+    assert(r.lop && r.lop.id === cid && r.lop.code === 'MB-FT 101', 'Trả về lớp đang lọc để giao diện hiện chip');
+    assert(r.nhom.flatMap((x: any) => x.dong).every((d: any) => d.classId === cid), 'Chỉ còn lớp đó');
+    assert(cham.canChamList(P.mbManager, {}, TODAY).lop === null, 'Không lọc thì không có chip');
+  });
+
+  check('PR-Rc1 · Q14 Lịch Test nhóm theo lớp và lọc theo tuần của CHÍNH môn', () => {
+    const { attemptId } = taoBaiThuong('2026-09-14');
+    const tuan: any = conn.prepare('SELECT id FROM report_periods WHERE week_start = ?').get('2026-09-14');
+    const r = cham.lichTest(P.mbManager, tuan.id, null, TODAY);
+    const lop = r.lop.find((l: any) => l.classCode === 'MB-FOU 12');
+    assert(lop, 'Lớp có bài trong tuần phải xuất hiện');
+    assert(lop.dong.every((d: any) => d.soHv > 0), 'Mỗi dòng có số học viên');
+    const tatCa = r.lop.flatMap((l: any) => l.dong);
+    assert(tatCa.every((d: any) => TRANG_THAI.test(d.trangThai)), `Câu trạng thái lạ: ${tatCa.map((d: any) => d.trangThai).join(' | ')}`);
+    for (const l of r.lop.filter((x: any) => x.mode === 'ielts_band')) {
+      assert(l.dong.every((d: any) => d.href.includes(`periodId=${tuan.id}`)), 'Lớp FT mở lưới đúng tuần đang xem');
+    }
+    /* Dời Listening sang tuần sau rồi thì tuần 14/09 không còn Listening của em này, tuần 21/09 thì có. Ghi "-" dùng
+       Quản trị hệ thống (Ruling 1: Quản lý không ghi điểm). */
+    regular.reportRegularNoShow(P.admin, attemptId, 'listening', true, '2026-09-16');
+    const sau: any = conn.prepare('SELECT id FROM report_periods WHERE week_start = ?').get('2026-09-21');
+    const r2 = cham.lichTest(P.mbManager, sau.id, null, TODAY);
+    const lop2 = r2.lop.find((l: any) => l.classCode === 'MB-FOU 12');
+    assert(lop2 && lop2.dong.some((d: any) => d.kyNang.includes('listening')), 'Môn đã dời hiện ở tuần mới');
+    const r3 = cham.lichTest(P.mbManager, tuan.id, null, TODAY);
+    const nghe = (x: any) => x.lop.find((l: any) => l.classCode === 'MB-FOU 12')?.dong
+      .filter((d: any) => d.kyNang.includes('listening')).reduce((n: number, d: any) => n + d.soHv, 0) ?? 0;
+    assert(nghe(r3) === nghe(r) - 1, `Tuần cũ bớt đúng một em Listening: ${nghe(r)} → ${nghe(r3)}`);
+  });
+
+  check('PR-Rc1 · Q15 Cần chấm: môn lùi lịch nói rõ lùi của ai, từ tuần nào sang tuần nào; "Chấm tiếp" khi đã có ô chấm', () => {
+    /* Đợt ở TUẦN TRƯỚC của hôm nay: môn dời sang tuần sau rơi đúng vào tuần này, tức là đã tới lúc phải chấm. */
+    const tuanNay = d.mondayOfDate(TODAY);
+    const tuanTruoc = t.addDays(tuanNay, -7);
+    const { sid, cycleId } = taoBaiThuong(tuanTruoc);
+    /* Đợt riêng (số 7) cho em này để dòng Cần chấm của lớp + đợt chỉ có đúng một em — kết quả xác định. */
+    const aid = taoLuot(cycleId, sid, 7, 'progress', tuanTruoc);
+    const ten = (conn.prepare('SELECT full_name FROM students WHERE id = ?').get(sid) as any).full_name;
+    const dongCua = () => cham.canChamList(P.admin, { classId: LOP, scope: 'managed' }, TODAY)
+      .nhom.flatMap((x: any) => x.dong).find((d: any) => d.key === `${LOP}:progress:7`);
+    const truoc = dongCua();
+    assert(truoc && truoc.luiLich === null, 'Chưa dời gì thì không có dòng "lùi lịch"');
+    assert(truoc.daBatDau === false, 'Chưa ô nào có điểm thì là "Chấm", chưa phải "Chấm tiếp"');
+    regular.reportRegularNoShow(P.admin, aid, 'listening', true, TODAY);
+    const d1 = dongCua();
+    assert(d1 && d1.luiLich, 'Môn còn nợ ở tuần khác tuần của đợt thì phải có "lùi lịch"');
+    assert(d1.luiLich.kyNang === 'listening', `Đúng môn: ${d1.luiLich.kyNang}`);
+    assert(d1.luiLich.hv.length === 1 && d1.luiLich.hv[0] === ten, `Đúng tên em: ${d1.luiLich.hv.join(', ')}`);
+    assert(d1.luiLich.tuTuanStart === tuanTruoc && d1.luiLich.sangTuanStart === tuanNay,
+      `Từ ${tuanTruoc} sang ${tuanNay}: ${d1.luiLich.tuTuanStart} → ${d1.luiLich.sangTuanStart}`);
+    assert(d1.kyNang.includes('listening'), 'Môn lùi vẫn là việc phải chấm của dòng');
+    assert(d1.luiLich.tuTuan && d1.luiLich.sangTuan && d1.luiLich.tuTuan !== d1.luiLich.sangTuan, 'Có mã hai tuần');
+    regular.saveRegularScore(P.admin, aid, 'reading', { score: 30, total: 40 });
+    const d2 = dongCua();
+    assert(d2.daBatDau === true, 'Đã có một ô chấm thì là "Chấm tiếp"');
+    assert(d2.conBai === d1.conBai - 1, `Bớt đúng một bài: ${d1.conBai} → ${d2.conBai}`);
+  });
 }

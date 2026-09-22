@@ -569,6 +569,21 @@ api.get('/classes/:classId/cham', requireAuth, wrap((req) => {
   });
 }));
 
+/** Cần chấm — mockup 05a2 phương án A: ba mục Quá hạn / Tuần này / Sắp tới, mỗi dòng một lớp + một đợt. */
+api.get('/cham/can-cham', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return chamSvc.canChamList(principalOf(req), {
+    branchId: qInt(req, 'branchId'), classId: qInt(req, 'classId'), scope: qScope(req),
+  });
+}));
+
+/** Lịch Test — các lượt Test của một tuần, nhóm theo lớp. Không truyền tuần thì lấy tuần hiện tại. */
+api.get('/cham/lich-test', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  const periodId = qInt(req, 'periodId') ?? ensurePeriod(demoToday()).id;
+  return chamSvc.lichTest(principalOf(req), periodId, qInt(req, 'branchId'));
+}));
+
 // ============================================================ Lớp (Học viên lấy lớp làm gốc)
 
 api.get('/classes', requireAuth, wrap((req) => {

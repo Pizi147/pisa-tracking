@@ -1128,7 +1128,7 @@ git commit -m "PR-Rc1 (5): RB-5 — duong hieu chinh diem co ly do cho giao vien
   - `lichTest(p, periodId: number, branchId?: number | null, today?)` →
     `{ scopeEmpty: boolean; lop: Array<{ classId: number; classCode: string; mode; branchName: string; dong: Array<{ key; dotLabel; kyNang: string[]; kyNangLabel; soHv: number; conBai: number; trangThai: string; href: string }> }> }`
 
-- [ ] **Step 1: Phép kiểm (đỏ).**
+- [x] **Step 1: Phép kiểm (đỏ).**
 
 ```ts
   check('PR-Rc1 · Q11 Cần chấm: một dòng = một lớp + một đợt, đếm đúng số ô còn phải chấm', () => {
@@ -1173,7 +1173,7 @@ git commit -m "PR-Rc1 (5): RB-5 — duong hieu chinh diem co ly do cho giao vien
   });
 ```
 
-- [ ] **Step 2: `listAttempts` trả `pendingDetail`.** Ở nhánh **lớp thường**, ngay sau `pendingSkills: pending,` thêm:
+- [x] **Step 2: `listAttempts` trả `pendingDetail`.** Ở nhánh **lớp thường**, ngay sau `pendingSkills: pending,` thêm:
 
 ```ts
         /* Hạn của CHÍNH các môn còn nợ theo phạm vi đang xem — Cần chấm cần hạn của cả dòng, không chỉ phần của tôi. */
@@ -1190,7 +1190,7 @@ git commit -m "PR-Rc1 (5): RB-5 — duong hieu chinh diem co ly do cho giao vien
       }),
 ```
 
-- [ ] **Step 3: `canChamList` và `lichTest`.** Thêm vào `server/src/cham/canCham.ts`:
+- [x] **Step 3: `canChamList` và `lichTest`.** Thêm vào `server/src/cham/canCham.ts`:
 
 ```ts
 export type DongCanCham = {
@@ -1350,7 +1350,7 @@ export function lichTest(p: Principal, periodId: number, branchId?: number | nul
   `allProgrammes` (từ `../normal/regular.ts`), `weekInfo` (từ `../platform/week.ts`), và từ `shared/domain/index.ts`:
   `ATTEMPT_KIND_LABEL`, `SKILL_SHORT`, `nhomCanCham`, `trangThaiChamLabel`, `type AttemptKind`, `type WorkScope`.
 
-- [ ] **Step 4: Hai endpoint.** Thêm vào **cùng khối** với endpoint ở Task 3:
+- [x] **Step 4: Hai endpoint.** Thêm vào **cùng khối** với endpoint ở Task 3:
 
 ```ts
 /** Cần chấm — mockup 05a2 phương án A: ba mục Quá hạn / Tuần này / Sắp tới, mỗi dòng một lớp + một đợt. */
@@ -1369,9 +1369,9 @@ api.get('/cham/lich-test', requireAuth, wrap((req) => {
 }));
 ```
 
-- [ ] **Step 5: Chạy.** Run: `npm test 2>&1 | tail -5`. Expected: `TẤT CẢ B+18 KIỂM TRA ĐỀU ĐẠT`.
+- [x] **Step 5: Chạy.** Run: `npm test 2>&1 | tail -5`. Expected: `TẤT CẢ B+18 KIỂM TRA ĐỀU ĐẠT`.
 
-- [ ] **Step 6: Commit.**
+- [x] **Step 6: Commit.**
 
 ```bash
 git add server/src/cham/canCham.ts server/src/fasttrack/attempts.ts server/src/routes/index.ts server/src/tests/chamDiem.tests.ts
@@ -1868,3 +1868,4 @@ git fetch origin && git rebase origin/main
 | 23/09 | 3 | Đỏ: 791 đạt, 1 hỏng ("thao tác đáng lẽ phải bị từ chối nhưng lại thành công" — tạo canCham + endpoint trước, chặn sau). Xanh: **792**. Lệch kế hoạch: (a) regex phép kiểm `/lớp thường/` thêm cờ `i` — câu lỗi chép nguyên văn bắt đầu bằng "Lớp thường"; (b) canCham.ts bỏ import `badRequest` không dùng; (c) endpoint truyền `qInt(...) ?? null`, `qStr(...) ?? null` (helper trả `undefined`). Nơi gọi `classScoreSheet` cũ (run.ts ×3, luatMayChu.tests.ts) đều là lớp FT — không vỡ. Web: `ScoreSheetPage` (`/nhap-diem/:id`) giờ báo lỗi rõ khi mở lớp thường thay vì hiện nhầm lưới MT, tới khi Task 7–8 chuyển sang endpoint chung. typecheck sạch. |
 | 23/09 | 4 | Đỏ: 792 đạt, 1 hỏng (`dong.cases` chưa có). Xanh: **793**. Lệch kế hoạch: (a) Ruling 1 — bốn lần nhập điểm dùng `P.admin` (Quản lý không nhập điểm), đọc bảng vẫn `P.mbManager`; (b) môn trượt chỉ sinh TÍN HIỆU, không tự sinh Case → phép kiểm tạo Case Listening thật từ tín hiệu (`reportIssue` của GVCN, `fromSignalId`) và assert Case đó là hạng mục listening; (c) `attempt_id + 99999` vỡ khoá ngoại → trỏ sang một lượt Cuối khoá THẬT của cùng khoá (`taoLuot`); (d) phần tử `cases` thêm `skill` (môn trượt của dòng ứng với hạng mục) cho khớp Interfaces; Case trong dòng xếp theo luật Case đại diện mục 4.3 (`skillSupportBoard`): đang mở trước, id mới trước. **Sửa vòng 1:** bản đầu xếp `ORDER BY id` tăng dần → Case cũ đã xong che Case đang mở cùng môn; thêm 1 phép kiểm (Case done + Case mở cùng môn) → **794**. typecheck sạch. |
 | 23/09 | 5 | Đỏ: 794 đạt, 3 hỏng ("thao tác đáng lẽ phải bị từ chối nhưng lại thành công"). Xanh: **797** (794 + 2 phép của kế hoạch + 1 phép thêm). Lệch kế hoạch: (a) Ruling 1 — mọi lần ghi điểm trong phép kiểm dùng `P.admin` thay `P.mbManager`; (b) Ruling 8 — chỉ đòi lý do khi lần ghi ĐỔI hoặc XOÁ giá trị chính thức, ở cả FT lẫn lớp thường; FT so trong `tx` trên giá trị SẼ lưu (`raw_score`, c1–c4, `band`) sau khi tính band, trước mọi câu ghi (chặn thì cuộn lại sạch) thay vì đọc nhẹ trước `tx`; lớp thường so cả điểm lẫn tổng câu (đổi tổng là đổi tỉ lệ đạt); lưu lại đúng số cũ / chỉ sửa ghi chú không đòi lý do → phép thêm "Ghi lại đúng con số cũ…" (cả hai đường); (c) Ruling 3 — lượt FT chọn bằng `luotFtGhiDuoc()` (chưa huỷ, L+R trong phạm vi, không vắng/huỷ phần thi), phép kiểm tự xoá ô trước khi ghi; phép thứ hai thêm vế lớp thường "xoá điểm cũng phải có lý do". **Phép kiểm cũ phải kèm `lyDo` (không nới luật):** run.ts ×11 — "Nhập điểm KHÔNG kèm quyền sửa lịch" (W1), "Chỉ quản trị hệ thống nhập bù được" (W2), "[6.2→v3] Mock Test FT…" (W1, W2 thấp → đạt), "[9.4] Case chỉ sống nhờ…" (Speaking), "Gửi null xoá điểm về trống" (L → null), "Sửa điểm làm đổi mức SOS thì GIỮ case" (lớp thường), "Sửa điểm lên thành đạt thì HẠ MỨC" (L), "Lớp Normal: chấm lại một bài CŨ", "PR-I · Ô điểm bị xoá trống" (R → null), "PR-I · Bài chỉ báo -…" (W2 → một tiêu chí); sosV3.tests.ts hàm `enter` và luatMayChu.tests.ts hàm `diem` (dùng cho cả nhập lần đầu lẫn sửa) luôn kèm lý do — sửa 9 phép PR-T/S1/RB-8 hỏng dây chuyền. Web chưa gửi `lyDo` (Task 7 thêm hộp thoại): `ScoreEntry.tsx:106` (PUT `/attempts/:id/scores/:skill`, dùng ở MockDetailPage + ScoreSheetPage) và `RegularSheetPage.tsx:340` (PUT `/regular/attempts/:id/scores/:skill`) — đến Task 7, sửa ô đã có điểm trên web sẽ nhận lỗi 400 "Sửa điểm đã nhập thì phải ghi lý do.". typecheck sạch. |
+| 23/09 | 6 | Đỏ: 797 đạt, 4 hỏng (`cham.canChamList is not a function`, `cham.lichTest is not a function`). Xanh: **801** (797 + 3 phép kế hoạch + 1 phép Q15). Lệch kế hoạch: (a) Ruling 1 — ghi "-" trong Q14 dùng `P.admin`; (b) Ruling 9/Q15 — `tuanKhac` thay bằng `luiLich { kyNang, hv, tuTuan, sangTuan, tuTuanStart, sangTuanStart }`; so với TUẦN ĐẦU của đợt (`tuanDau` = tuần sớm nhất của các môn bắt buộc, trường mới của `listAttempts`), KHÔNG so với `period`: `planned_period_id` là tuần HOÀN TẤT (muộn nhất, mục 10.7) nên dời một môn thì `period` đi theo môn đó — so với nó thì các môn không dời bị báo nhầm; (c) Ruling 4 — `daBatDau` từ trường mới `scoredInScope` của `listAttempts` (ô đã chấm trong phạm vi); canChamList đọc `listAttempts` KHÔNG `need` rồi lọc bằng `conBaiCanCham` (luật `my_scores` xuất ra, switch cũ dùng chung) để thấy cả em đã chấm xong; (d) Ruling 3 — mỗi mục có `han` (hạn sớm nhất); (e) Ruling 7 — href FT kèm `periodId` (Cần chấm: tuần của đợt; Lịch Test: tuần đang xem), `kn` khi một môn; (f) `dotLabel` lớp thường dùng `ATTEMPT_KIND_SHORT` ("Giữa khoá") — `ATTEMPT_KIND_LABEL` ra "Bài kiểm tra giữa khoá", trái phép kiểm của chính kế hoạch; (g) Ruling 5 — lichTest bỏ `|| true`: `chuaToiHan` = tuần xem sau tuần hôm nay, `quaHan` = còn bài và hạn (riêng môn → riêng đợt → mặc định theo tuần môn) đã qua; ô đã báo "-" ở chính tuần đó và ô vắng/huỷ không tính còn bài; Writing FT xong khi W1 và W2 cùng có band; (h) `pendingDetail` thêm `weekStart`; kỹ năng trong dòng xếp L·R·W·S. typecheck sạch. |
