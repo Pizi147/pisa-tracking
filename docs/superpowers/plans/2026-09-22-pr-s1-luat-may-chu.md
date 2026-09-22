@@ -2460,9 +2460,9 @@ Run → Expected ✓ ngay (phép kiểm còn thiếu, hành vi đã có). ✗ �
 
 `action_due` của PA **học thuật** là hạn CẬP NHẬT tuần (`schema.sql:950-963`), không phải "thực hiện xong" của Ý thức.
 
-- [ ] **Step 1:** Đổi `<Han loai="thuc-hien-y-thuc" han={p.actionDue} />` thành `<Han loai="cap-nhat-pa" han={p.actionDue} />`.
+- [x] **Step 1:** Đổi `<Han loai="thuc-hien-y-thuc" han={p.actionDue} />` thành `<Han loai="cap-nhat-pa" han={p.actionDue} />`.
 - [ ] **Step 2:** `npm run typecheck` — Expected sạch. Bấm thử hồ sơ một HV có Case đang chạy PA: nhãn đọc "Cập nhật kết quả · trước CN dd/mm".
-- [ ] **Step 3: Commit.** `git commit -am "PR-S1 (18): SkillBoard — hạn PA học thuật hiện là 'Cập nhật kết quả', không phải hạn Ý thức"`
+- [x] **Step 3: Commit.** `git commit -am "PR-S1 (18): SkillBoard — hạn PA học thuật hiện là 'Cập nhật kết quả', không phải hạn Ý thức"`
 
 ---
 

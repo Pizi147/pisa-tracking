@@ -608,7 +608,7 @@ function PlanDue({ p }: { p: Plan }) {
   }
   return (
     <span className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[11px]">
-      {p.actionDue && <Han loai="thuc-hien-y-thuc" han={p.actionDue} />}
+      {p.actionDue && <Han loai="cap-nhat-pa" han={p.actionDue} />}
       {p.followupDue && <Han loai="du-kien-ket-thuc" han={p.followupDue} />}
     </span>
   );
