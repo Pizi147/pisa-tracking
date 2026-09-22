@@ -1,5 +1,8 @@
 import { db } from '../db.ts';
 import { badRequest, isIsoDate, nowIso } from '../util.ts';
+import type { Principal } from '../permissions.ts';
+import { chuanHoaNguoiThucHien } from './nguoiThucHien.ts';
+import { planEndDefault } from '../../../shared/domain/index.ts';
 
 /**
  * LỊCH SỬ ĐIỀU CHỈNH PHƯƠNG ÁN HỌC THUẬT (PR-S2 · S2 · rulebook §18.2 điểm 2, nguồn §7).
@@ -16,7 +19,9 @@ export type DieuChinhPA = {
   description: string | null; performerUserId: number | null; performerName: string | null; followupDue: string | null;
 };
 export type DieuChinhVao = {
-  description?: string | null; performerUserId?: number | null; performerName?: string | null; followupDue?: string | null;
+  description?: string | null;
+  performerSelf?: boolean; performerUserId?: number | null; performerName?: string | null;
+  followupDue?: string | null;
 };
 export type MatPA = { description: string | null; performer: string | null; followupDue: string | null };
 export type BanDieuChinh = {
@@ -27,7 +32,7 @@ export type BanDieuChinh = {
  * Chuẩn hoá nội dung mới của một lần Điều chỉnh. Trường KHÔNG gửi (hoặc rỗng) = giữ nguyên bản hiện tại.
  * Ném lỗi khi mô tả quá ngắn, ngày sai, người không tồn tại, hoặc KHÔNG ĐỔI GÌ (không đổi gì thì là Giữ nguyên).
  */
-export function chuanHoaDieuChinh(iv: any, input: DieuChinhVao | null | undefined, observedOn: string): DieuChinhPA {
+export function chuanHoaDieuChinh(p: Principal, iv: any, input: DieuChinhVao | null | undefined, observedOn: string): DieuChinhPA {
   const a = input ?? {};
   const oldDesc = String(iv.description ?? '').trim();
   let description = oldDesc;
@@ -35,17 +40,20 @@ export function chuanHoaDieuChinh(iv: any, input: DieuChinhVao | null | undefine
     description = a.description.trim();
     if (description.length < 8) throw badRequest('Mô tả ngắn phải nói rõ làm gì cho em, ít nhất 8 ký tự.');
   }
-  let performerUserId: number | null = iv.performer_user_id ?? null;
-  let performerName: string | null = iv.performer_name ?? null;
-  if (a.performerUserId) {
-    if (!db().prepare('SELECT 1 FROM users WHERE id = ?').get(a.performerUserId)) throw badRequest('Không tìm thấy người thực hiện.');
-    performerUserId = Number(a.performerUserId);
-    performerName = null;
-  } else if (typeof a.performerName === 'string' && a.performerName.trim()) {
-    performerUserId = null;
-    performerName = a.performerName.trim();
-  }
-  let followupDue: string | null = iv.followup_due ?? null;
+  /* Người thực hiện đi qua luật chung (PR-Form F-2) — không gửi gì thì giữ đúng người cũ (`batBuoc: false`). */
+  const nguoiMoi = a.performerSelf || a.performerUserId != null || (a.performerName ?? '').trim()
+    ? chuanHoaNguoiThucHien(p, a, { nhom: 'giao_vien', batBuoc: false })
+    : null;
+  const performerUserId = nguoiMoi ? nguoiMoi.userId : (iv.performer_user_id ?? null);
+  const performerName = nguoiMoi ? nguoiMoi.name : (iv.performer_name ?? null);
+  /*
+   * NỢ S2 (Q10): PA có `followup_due = NULL` (chưa từng có ngày) mà Điều chỉnh không đụng tới ngày thì vẫn phải có một
+   * ngày mặc định THẬT — đúng như Giữ nguyên đã làm (`cases.ts` dòng ~2802-2811, `COALESCE(followup_due, planEndDefault)`).
+   * Mặc định này KHÔNG tính là "có đổi" (so `same` bên dưới so với `nenNgay`, không so với `iv.followup_due` thô);
+   * nhưng dòng lịch sử (`ghiBanDieuChinh`, nhận `iv` GỐC) vẫn ghi đúng sự thật `old_followup_due IS NULL → new {ngày}`.
+   */
+  const nenNgay = iv.followup_due ?? planEndDefault(observedOn);
+  let followupDue: string | null = nenNgay;
   if (a.followupDue) {
     if (!isIsoDate(a.followupDue)) throw badRequest('Ngày dự kiến kết thúc không hợp lệ.');
     if (a.followupDue < observedOn) throw badRequest('Ngày dự kiến kết thúc mới không được sớm hơn ngày cập nhật.');
@@ -54,7 +62,7 @@ export function chuanHoaDieuChinh(iv: any, input: DieuChinhVao | null | undefine
   const same = description === oldDesc
     && performerUserId === (iv.performer_user_id ?? null)
     && performerName === (iv.performer_name ?? null)
-    && followupDue === (iv.followup_due ?? null);
+    && followupDue === nenNgay;
   if (same) {
     throw badRequest('Điều chỉnh thì phải đổi ít nhất một thứ: mô tả, người thực hiện hoặc ngày dự kiến kết thúc. Không đổi gì thì chọn Giữ nguyên.');
   }

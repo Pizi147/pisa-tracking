@@ -192,6 +192,8 @@ Commit `PR-Form (2): GET /ref/nguoi — tìm người không dấu, ≥ 3 ký t�
 
 Commit `PR-Form (3): người thực hiện PA học thuật lưu ID, kiểm một chỗ; Điều chỉnh giữ ngày mặc định`.
 
+- [x] Task 3 xong — `npm run check` xanh, **798 = 791 + 7**.
+
 ## Task 4 · Máy chủ: chủ đề Case theo chương trình (F07), SkillBoard lớp thường, Ý thức (K2-6d, YT-4)
 
 **Files:** `cases.ts`, `measures.ts`, `violations.ts`, `routes/index.ts`, `tests/yThuc.tests.ts:767`.

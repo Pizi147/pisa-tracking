@@ -9,7 +9,7 @@
 import type { YThucTestKit } from './yThuc.tests.ts';
 
 export async function runFormTests(t: YThucTestKit) {
-  const { check, assert, conn, P } = t;
+  const { check, assert, assertThrows, conn, P, TODAY } = t;
   const domain: any = await import('../../../shared/domain/index.ts');
 
   // ================================================================== 1. Luật thuần chọn người, bằng chứng, chủ đề Case
@@ -155,6 +155,212 @@ export async function runFormTests(t: YThucTestKit) {
       assert(rows.every((r: any) => r.cungLop === true), `mọi dòng gợi ý trước khi gõ phải cungLop=true: ${JSON.stringify(rows)}`);
       const names = rows.map((r: any) => r.name);
       assert(names.includes('Trần Ngọc Hà'), `GVCN MB-FOU 12 phải nằm trong gợi ý: ${JSON.stringify(names)}`);
+    });
+  }
+
+  // ================================================================== 3. Máy chủ: người thực hiện lưu ID (F-2) + ngày Điều chỉnh (nợ S2)
+
+  console.log('\nPR-Form · 3. Người thực hiện PA học thuật lưu ID, kiểm một chỗ; Điều chỉnh giữ ngày mặc định');
+
+  {
+    const cases: any = await import('../cases/cases.ts');
+    const ivRow = (id: number) => conn.prepare('SELECT * FROM case_interventions WHERE id = ?').get(id) as any;
+    const revRows = (id: number) =>
+      conn.prepare('SELECT * FROM case_intervention_revisions WHERE intervention_id = ? ORDER BY id').all(id) as any[];
+
+    let soThuTu = 0;
+    /** Case Listening mới ở MB-FT 101, mở bởi GV Listening — riêng cho từng phép kiểm. */
+    function taoCase(): { caseId: number } {
+      soThuTu += 1;
+      const c = cases.reportIssue(P.lrTeacher, {
+        studentId: makeFtStudent(`F3-${soThuTu}`), topic: 'listening',
+        title: `PR-Form thử người thực hiện (${soThuTu})`,
+        summary: 'Case dùng riêng cho phép kiểm PR-Form Task 3, không đụng dữ liệu demo.',
+        primaryCode: domain.issuesForTopic('listening')[0].code,
+        idempotencyKey: `pr-form-t3-${soThuTu}`,
+      }) as any;
+      return { caseId: c.id as number };
+    }
+    /** Học viên mới ở MB-FT 101 — tách khỏi bộ demo và khỏi các phép kiểm khác trong file này. */
+    function makeFtStudent(tag: string): number {
+      const cid = t.classId('MB-FT 101');
+      const NOW = new Date().toISOString();
+      const mbBranch = (conn.prepare(`SELECT id FROM branches WHERE code = 'MB'`).get() as any).id as number;
+      const sid = Number(conn.prepare(
+        `INSERT INTO students (student_code, full_name, normalized_name, branch_id, status, created_at) VALUES (?,?,?,?, 'active', ?)`,
+      ).run(`PISA-FORM-${tag}`, `Học viên ${tag}`, `hoc vien ${tag.toLowerCase()}`, mbBranch, NOW).lastInsertRowid);
+      conn.prepare(`INSERT INTO enrollments (student_id, class_id, status, started_at, created_at) VALUES (?,?, 'active', '2026-07-27', ?)`)
+        .run(sid, cid, NOW);
+      conn.prepare(
+        `INSERT INTO learning_cycles (student_id, seq, route, started_at, status, created_at) VALUES (?, 1, 'LT1', '2026-07-27', 'active', ?)`,
+      ).run(sid, NOW);
+      return sid;
+    }
+
+    check('PR-Form · recordIntervention: performerUserId của QL thuần → 400; GV bị khoá → 400; id không tồn tại → 400', () => {
+      const { caseId: c1 } = taoCase();
+      assertThrows(
+        () => cases.recordIntervention(P.lrTeacher, c1, {
+          kind: 'self_study', description: 'Tự học Listening mỗi ngày', performerUserId: P.mbManager.userId,
+          status: 'started', startedDate: TODAY,
+        }),
+        /giáo viên đang làm việc/,
+        'QL thuần không phải giáo viên — phải 400',
+      );
+
+      const { caseId: c2 } = taoCase();
+      const lockedId = P.w2Teacher.userId;
+      try {
+        conn.prepare(`UPDATE users SET status = 'inactive' WHERE id = ?`).run(lockedId);
+        assertThrows(
+          () => cases.recordIntervention(P.lrTeacher, c2, {
+            kind: 'self_study', description: 'Tự học Listening mỗi ngày', performerUserId: lockedId,
+            status: 'started', startedDate: TODAY,
+          }),
+          /giáo viên đang làm việc/,
+          'GV đang khoá — phải 400',
+        );
+      } finally {
+        conn.prepare(`UPDATE users SET status = 'active' WHERE id = ?`).run(lockedId);
+      }
+
+      const { caseId: c3 } = taoCase();
+      assertThrows(
+        () => cases.recordIntervention(P.lrTeacher, c3, {
+          kind: 'self_study', description: 'Tự học Listening mỗi ngày', performerUserId: 9_999_999,
+          status: 'started', startedDate: TODAY,
+        }),
+        /giáo viên đang làm việc/,
+        'id không tồn tại — phải 400',
+      );
+    });
+
+    check('PR-Form · performerUserId (GV) + performerName cùng lúc → chỉ lưu performer_user_id, performer_name NULL', () => {
+      const { caseId } = taoCase();
+      const d = cases.recordIntervention(P.lrTeacher, caseId, {
+        kind: 'self_study', description: 'Tự học Listening mỗi ngày',
+        performerUserId: P.w1Teacher.userId, performerName: 'Tên tự do bị bỏ qua',
+        status: 'started', startedDate: TODAY,
+      }) as any;
+      const iv = d.interventions.find((i: any) => i.kind === 'self_study');
+      const row = ivRow(iv.id);
+      assert(row.performer_user_id === P.w1Teacher.userId, `performer_user_id đúng: ${row.performer_user_id}`);
+      assert(row.performer_name === null, `performer_name phải NULL: ${row.performer_name}`);
+    });
+
+    check('PR-Form · performerName người ngoài → performer_user_id IS NULL, tên đúng', () => {
+      const { caseId } = taoCase();
+      const d = cases.recordIntervention(P.lrTeacher, caseId, {
+        kind: 'tutor', description: 'Học tutor ngoài trung tâm', performerName: 'Tutor ngoài Minh',
+        status: 'started', startedDate: TODAY,
+      }) as any;
+      const iv = d.interventions.find((i: any) => i.kind === 'tutor');
+      const row = ivRow(iv.id);
+      assert(row.performer_user_id === null, `performer_user_id phải NULL: ${row.performer_user_id}`);
+      assert(row.performer_name === 'Tutor ngoài Minh', `tên đúng: ${row.performer_name}`);
+    });
+
+    check('PR-Form · Nhập bù: performerUserId · performerSelf · tên ngoài → ba PA đúng; dòng không có ai → 400 câu cũ', () => {
+      const studentId = makeFtStudent(`F3-BF-${++soThuTu}`);
+      const closed = cases.backfillCase(P.lrTeacher, {
+        studentId, topic: 'listening', primaryCode: domain.issuesForTopic('listening')[0].code,
+        title: 'Nhập bù thử người thực hiện', summary: 'Case nhập bù dùng cho phép kiểm PR-Form.',
+        fromDate: '2026-08-01', toDate: '2026-08-10',
+        actions: [
+          { description: 'Buổi 1 — GV bộ môn kèm riêng', performerUserId: P.w1Teacher.userId, fromDate: '2026-08-01', toDate: '2026-08-03' },
+          { description: 'Buổi 2 — chính tôi kèm', performerSelf: true, fromDate: '2026-08-04', toDate: '2026-08-06' },
+          { description: 'Buổi 3 — tutor ngoài', performerName: 'Tutor ngoài Lan', fromDate: '2026-08-07', toDate: '2026-08-10' },
+        ],
+        outcome: 'improved', note: 'Ba buổi hỗ trợ khác người, ghi lại đủ ba dòng.',
+      }) as any;
+      const ivs = (conn.prepare('SELECT * FROM case_interventions WHERE case_id = ? ORDER BY id').all(closed.id) as any[]);
+      assert(ivs.length === 3, `phải có ba PA: ${ivs.length}`);
+      assert(ivs[0].performer_user_id === P.w1Teacher.userId && ivs[0].performer_name === null, 'dòng 1 lưu ID');
+      assert(ivs[1].performer_user_id === P.lrTeacher.userId && ivs[1].performer_name === null, 'dòng 2 (Tôi) lưu ID người ghi');
+      assert(ivs[2].performer_user_id === null && ivs[2].performer_name === 'Tutor ngoài Lan', 'dòng 3 lưu tên ngoài');
+
+      assertThrows(
+        () => cases.backfillCase(P.lrTeacher, {
+          studentId: makeFtStudent(`F3-BF-${++soThuTu}`), topic: 'listening', primaryCode: domain.issuesForTopic('listening')[0].code,
+          title: 'Nhập bù thiếu người', summary: 'Một dòng không ghi ai làm.',
+          fromDate: '2026-08-01', toDate: '2026-08-05',
+          actions: [{ description: 'Buổi không ai nhận làm', fromDate: '2026-08-01', toDate: '2026-08-05' }],
+          outcome: 'improved', note: 'Phải bị từ chối vì thiếu người thực hiện.',
+        }),
+        /Cần ghi ai là người thực hiện/,
+        'dòng không có ai → 400 câu cũ',
+      );
+    });
+
+    check('PR-Form · Nợ S2: Điều chỉnh chỉ đổi mô tả trên PA followup_due NULL → nhận planEndDefault, lịch sử NULL → ngày đó', () => {
+      const { caseId } = taoCase();
+      const d = cases.recordIntervention(P.lrTeacher, caseId, {
+        kind: 'self_study', description: 'Tự học Listening mỗi ngày', performerSelf: true,
+        status: 'started', startedDate: TODAY,
+      }) as any;
+      const iv = d.interventions.find((i: any) => i.kind === 'self_study');
+      conn.prepare(`UPDATE case_interventions SET followup_due = NULL WHERE id = ?`).run(iv.id);
+      assert(ivRow(iv.id).followup_due === null, 'phải đặt NULL được bằng SQL trực tiếp trước khi thử');
+
+      const expected = domain.planEndDefault(TODAY);
+      cases.updateResult(P.lrTeacher, iv.id, {
+        decision: 'adjust', decisionNote: 'Đổi cách diễn đạt mô tả, không đổi gì khác',
+        outcome: 'partial', note: 'Đang có tiến bộ, tiếp tục theo dõi thêm.',
+        adjust: { description: 'Tự học Listening — nghe chép mỗi tối 20 phút' },
+      });
+      const after = ivRow(iv.id);
+      assert(after.followup_due === expected, `followup_due phải = planEndDefault: ${after.followup_due} vs ${expected}`);
+      const revs = revRows(iv.id);
+      const last = revs[revs.length - 1];
+      assert(last.old_followup_due === null, `lịch sử old phải NULL: ${last.old_followup_due}`);
+      assert(last.new_followup_due === expected, `lịch sử new phải đúng ngày mặc định: ${last.new_followup_due}`);
+    });
+
+    check('PR-Form · Cùng PA followup_due NULL, adjust: {} (không đổi gì) → vẫn 400', () => {
+      const { caseId } = taoCase();
+      const d = cases.recordIntervention(P.lrTeacher, caseId, {
+        kind: 'self_study', description: 'Tự học Listening mỗi ngày', performerSelf: true,
+        status: 'started', startedDate: TODAY,
+      }) as any;
+      const iv = d.interventions.find((i: any) => i.kind === 'self_study');
+      conn.prepare(`UPDATE case_interventions SET followup_due = NULL WHERE id = ?`).run(iv.id);
+      assertThrows(
+        () => cases.updateResult(P.lrTeacher, iv.id, {
+          decision: 'adjust', decisionNote: 'Không đổi gì cả, chỉ đang thử',
+          outcome: 'partial', note: 'Đang có tiến bộ, tiếp tục theo dõi thêm.',
+          adjust: {},
+        }),
+        /Điều chỉnh thì phải đổi ít nhất một thứ/,
+        'không đổi gì (kể cả ngày mặc định) vẫn phải bị từ chối',
+      );
+    });
+
+    check('PR-Form · adjust.performerUserId là QL thuần → 400; là GV → lịch sử new_performer_user_id đúng', () => {
+      const { caseId } = taoCase();
+      const d = cases.recordIntervention(P.lrTeacher, caseId, {
+        kind: 'self_study', description: 'Tự học Listening mỗi ngày', performerSelf: true,
+        status: 'started', startedDate: TODAY,
+      }) as any;
+      const iv = d.interventions.find((i: any) => i.kind === 'self_study');
+
+      assertThrows(
+        () => cases.updateResult(P.lrTeacher, iv.id, {
+          decision: 'adjust', decisionNote: 'Đổi người thực hiện sang Quản lý — phải bị từ chối',
+          outcome: 'partial', note: 'Đang có tiến bộ, tiếp tục theo dõi thêm.',
+          adjust: { performerUserId: P.mbManager.userId },
+        }),
+        /giáo viên đang làm việc/,
+        'QL thuần không được nhận làm PA học thuật',
+      );
+
+      cases.updateResult(P.lrTeacher, iv.id, {
+        decision: 'adjust', decisionNote: 'Đổi người thực hiện sang GV Writing 1',
+        outcome: 'partial', note: 'Đang có tiến bộ, tiếp tục theo dõi thêm.',
+        adjust: { performerUserId: P.w1Teacher.userId },
+      });
+      const revs = revRows(iv.id);
+      const last = revs[revs.length - 1];
+      assert(last.new_performer_user_id === P.w1Teacher.userId, `lịch sử đúng người mới: ${last.new_performer_user_id}`);
     });
   }
 }
