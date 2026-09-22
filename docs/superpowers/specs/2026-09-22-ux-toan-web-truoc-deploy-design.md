@@ -253,7 +253,7 @@ Tên file, mã việc và ma trận chồng file lấy ở kiểm kê §5. Bổ 
 | **S1** · Luật máy chủ | S1 (tín hiệu từng môn: Tạo Case / Bỏ qua), S11–S17, RB-3, RB-6 (4.15), RB-8, RB-9, AN-13, các lỗi §6 gắn S1 | Opus 5 · XHigh (B: Fable 5.1 · High) | Fable 5.1 |
 | **Qa** · Học viên & Lớp + Hồ sơ lớp | §3.6, §3.7, Q1–Q5, Q10–Q13, K2-6a, YT-8 | Fable 5.1 · High (B: Sonnet 5 · High) | Opus 5 |
 | **AN** · An toàn | AN-1, 3, 4, 5, 6 (4.11), 7, 8, RB-1 (Scheduled Function) | Opus 5 · High (B: Fable 5.1 · High) | Fable 5.1 |
-| **Pa** · Tổng quan | §3.2, P1–P6c, giao diện dòng tín hiệu SOS lớp thường ở Việc cần làm (§3.10; máy chủ làm ở S1) | Fable 5.1 · High (B: Opus 5 · High) | Opus 5 |
+| **Pa** · Tổng quan | §3.2, P1–P6c, giao diện dòng tín hiệu SOS lớp thường ở Việc cần làm (§3.10; máy chủ làm ở S1: dữ liệu ở `WorkItem.signal`, ô "Chờ xác minh quá hạn" = `metricSet(p, 'tin-hieu-qua-han')`, form Tạo Case gửi `idempotencyKey`) · **Nợ sau rà S1 (#56):** (1) `overdueNormalSignalIds` (`cases/signals.ts`) gọi `can()` 1–2 lần mỗi tín hiệu → trên Turso vài giây mỗi lần mở Tổng quan; đọc thẳng SQL trong phạm vi hoặc nhớ tạm chi nhánh theo lớp/HV trong một lượt; (2) thêm phép kiểm đầu–cuối: GVCN nhận tín hiệu Speaking bấm Tạo Case thành công | Fable 5.1 · High (B: Opus 5 · High) | Opus 5 |
 | **S2** · Điều chỉnh PA học thuật | S2 + S4 | Opus 5 · XHigh (B: Fable 5.1 · High) | Fable 5.1 |
 | **Qb** · Hồ sơ HV | §3.8 (Hành trình theo giai đoạn, không gồm Lịch sử lớp), Q9, R7, R8, AN-9, AN-10, chữ lớp thường §6 | Fable 5.1 · High (B: Sonnet 5 · High) | Opus 5 |
 | **YT2** · Ý thức phần thiếu | §3.11, YT-1…14, K2-6b…f | Sonnet 5 · High (B: Opus 5 · High) | Opus 5 |
@@ -263,7 +263,7 @@ Tên file, mã việc và ma trận chồng file lấy ở kiểm kê §5. Bổ 
 | **GV** · Hồ sơ GV + Theo giáo viên | §3.12, §3.3 Theo giáo viên | Fable 5.1 · High (B: Opus 5 · High) | Opus 5 |
 | **Rc2** · Kế hoạch Test | §3.5 Kế hoạch Test (FT + lớp thường), R9–R12, R14 phần lịch, T9 (`standing.ts:222` dùng `target_at_attempt`), T15 chặn trùng | Opus 5 · XHigh (B: Fable 5.1 · High) | Fable 5.1 |
 | **Form** · Chọn người + bằng chứng | §3.13, F-1, F-2, F-3, S5, F07, YT-9 nếu còn | Opus 5 · High (B: Fable 5.1 · High) | Fable 5.1 |
-| **LT** · Lên lớp, chuyển lớp | §3.9 toàn bộ, nút Tạm dừng/Kết thúc/Lưu trữ HV (máy chủ lưu trữ làm ở S1) (gồm việc nhắc "Chưa có lộ trình tiếp theo") + Lịch sử lớp ở §3.8 | Opus 5 · XHigh (B: Fable 5.1 · High) | Fable 5.1 |
+| **LT** · Lên lớp, chuyển lớp | §3.9 toàn bộ, nút Tạm dừng/Kết thúc/Lưu trữ HV (máy chủ lưu trữ làm ở S1) (gồm việc nhắc "Chưa có lộ trình tiếp theo") + Lịch sử lớp ở §3.8 · **Bắt buộc nối từ S1 (#56):** mọi luồng lớp thường → FT gọi `closeCasesOnProgrammeSwitch` (không gọi thì luật S17 không bao giờ chạy); lựa chọn "Dừng học" truyền cờ `dongCaseKhiKetThuc: true` (S16); hiện `systemCloseLabel` trên Case do hệ thống đóng; nút Lưu trữ / Bỏ lưu trữ gọi `/students/:id/archive`, `/unarchive` | Opus 5 · XHigh (B: Fable 5.1 · High) | Fable 5.1 |
 | **S3** · Chữ cuối | quét THUAT_NGU_DA_CHOT toàn web, S7, S9, RB-2, RB-4, DS14, DS16, DOC-1…6 | Fable 5.1 · High (B: Sonnet 5 · High) | Opus 5 |
 | **Z2c** · Deploy | theo `docs/superpowers/plans/2026-09-21-ban-chinh-netlify-turso.md` Task 10–11 | Opus 5 · XHigh (B: Fable 5.1 · High) | Fable 5.1 |
 
