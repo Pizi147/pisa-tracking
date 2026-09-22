@@ -3256,7 +3256,7 @@ git commit -m "PR-Qa (12): tab Học viên — Điểm (FT, lớp thường Gi�
 - Consumes: `GET /classes/:id/phan-tich-lop` (Task 7), `IssueTable({ classId, category })`, `Th`.
 - Tab Ý thức & Phối hợp: `ClassYThucCard` **giữ nguyên** (chỉ đặt vào tab — YT2 đợt 3 sửa nội dung).
 
-- [ ] **Step 1: `web/src/modules/classes/PhanTichLopTab.tsx`:**
+- [x] **Step 1: `web/src/modules/classes/PhanTichLopTab.tsx`:**
 
 ```tsx
 import { Fragment, useState } from 'react';
@@ -3329,9 +3329,9 @@ export function PhanTichLopTab({ classId }: { classId: number }) {
   );
 }
 ```
-- [ ] **Step 2:** sửa `ClassIssueBoard.tsx` như mục Files; `grep -rn "ClassIssueBoard\b" web/src` → không còn chỗ gọi vỏ cũ.
-- [ ] **Step 3:** `npm run typecheck` xanh.
-- [ ] **Step 4: Commit.**
+- [x] **Step 2:** sửa `ClassIssueBoard.tsx` như mục Files; `grep -rn "ClassIssueBoard\b" web/src` → không còn chỗ gọi vỏ cũ.
+- [x] **Step 3:** `npm run typecheck` xanh.
+- [x] **Step 4: Commit.**
 
 ```bash
 git add web/src/modules/classes/PhanTichLopTab.tsx web/src/modules/classes/ClassIssueBoard.tsx web/src/modules/classes/ClassOverviewPage.tsx

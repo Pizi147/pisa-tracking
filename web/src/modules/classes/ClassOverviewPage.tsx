@@ -15,8 +15,7 @@ import { TransitionPanel } from './TransitionPanel.tsx';
 import { DauTrangLop, type HoSoLop, type ViecDauTrang } from './DauTrangLop.tsx';
 import { SuaThongTinLopPanel } from './SuaThongTinLopPanel.tsx';
 import { TabHocVienLop } from './TabHocVienLop.tsx';
-// TODO(Task 13): bỏ chú thích khi có PhanTichLopTab.tsx.
-// import { PhanTichLopTab } from './PhanTichLopTab.tsx';
+import { PhanTichLopTab } from './PhanTichLopTab.tsx';
 import { TAB_HO_SO_LOP, TAB_HO_SO_LOP_NHAN, tabHoSoLop, type TabHoSoLop } from '@shared/domain/index.ts';
 
 /**
@@ -72,9 +71,7 @@ export default function ClassOverviewPage() {
           onDoi={xong} onThemHocVien={() => setViec('hoc-vien')} />
       )}
       {tab === 'y-thuc' && <ClassYThucCard classId={data.id} />}
-      {/* TODO(Task 13): bỏ chú thích khi có PhanTichLopTab.tsx.
       {tab === 'phan-tich' && <PhanTichLopTab classId={data.id} />}
-      */}
 
       {viec === 'tien-do' && (
         <ClassProgressPanel classId={data.id} classCode={data.code} tieuDe={thuong ? 'Lịch kiểm tra' : 'Lộ trình lớp'}
