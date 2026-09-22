@@ -120,7 +120,7 @@ export function closeCaseOutcome(p: Principal, caseId: number, input: {
   const conn = db();
   const c = loadCase(caseId);
   if (!canCloseCase(p, c)) {
-    throw badRequest('Chỉ giáo viên chủ nhiệm của lớp và Quản lý mới chốt được kết quả case.');
+    throw badRequest('Chỉ Quản lý, hoặc GVCN dạy đúng môn của Case, mới hoàn thành được Case này.');
   }
   const outcome: string = input.outcome ?? '';
   if (!(CASE_OUTCOMES as readonly string[]).includes(outcome)) {
@@ -229,10 +229,19 @@ export function setFollowUntil(p: Principal, caseId: number, date: string | null
   return caseDetail(p, caseId);
 }
 
-export function canCloseCase(p: Principal, c: { class_id?: number | null; student_id?: number | null }): boolean {
+/**
+ * AI HOÀN THÀNH ĐƯỢC CASE — RB-6, quyết định 4.15 (22/09/2026), khớp C02.
+ *   · Quản lý / Quản trị trong phạm vi: được.
+ *   · GVCN của lớp: CHỈ Case đúng môn mình dạy. Case môn khác thì không, dù là lớp mình chủ nhiệm.
+ *   · GVBM không kiêm GVCN: không (giữ luật cũ — 4.15 chỉ hỏi về GVCN).
+ * Case không có môn (`topic` rỗng, dữ liệu cũ) thì GVCN vẫn được, để dữ liệu cũ không bị khoá.
+ */
+export function canCloseCase(p: Principal, c: { class_id?: number | null; student_id?: number | null; topic?: string | null }): boolean {
   if (can(p, PERMISSIONS.MEETING_EDIT, { branchId: null, anyScope: true })) return true;
-  if (c.class_id && isCoreTeacherOf(p, c.class_id)) return true;
-  return can(p, PERMISSIONS.CASE_CLOSE, { classId: c.class_id ?? null, studentId: c.student_id ?? null });
+  if (can(p, PERMISSIONS.CASE_CLOSE, { classId: c.class_id ?? null, studentId: c.student_id ?? null })) return true;
+  if (!c.class_id || !isCoreTeacherOf(p, c.class_id)) return false;
+  if (!c.topic) return true;
+  return can(p, PERMISSIONS.SOS_EDIT, { classId: c.class_id, studentId: c.student_id ?? undefined, skill: c.topic });
 }
 
 function loadCase(caseId: number) {
@@ -1270,7 +1279,7 @@ export function setDisposition(p: Principal, caseId: number, input: {
 
   if (closing) {
     if (!canCloseCase(p, c)) {
-      throw badRequest('Chỉ giáo viên chủ nhiệm của lớp và Quản lý mới đóng được case.');
+      throw badRequest('Chỉ Quản lý, hoặc GVCN dạy đúng môn của Case, mới hoàn thành được Case này.');
     }
     const disposition = input.disposition ?? c.disposition;
     if (!disposition) {
@@ -2246,7 +2255,7 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
            * gỡ, nên thẻ tự nói: người xem có chốt được không, và còn gì đang chặn. Lấy đúng
            * hai hàm mà nút "Hoàn thành case" ở trang riêng vẫn hỏi — không phép tính thứ hai.
            */
-          canClose: canCloseCase(p, { class_id: enr?.class_id ?? null, student_id: studentId }),
+          canClose: canCloseCase(p, { class_id: enr?.class_id ?? null, student_id: studentId, topic: c.topic }),
           closeBlockers: c.status === 'done' ? [] : closeBlockers(c.id),
           /* Đủ thứ để vẽ MỘT THẺ CASE mà không phải gọi thêm một đường nữa (mục 1 · 2). */
           ...caseCardOf(c.id, c),

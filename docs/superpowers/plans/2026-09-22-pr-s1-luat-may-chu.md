@@ -1544,7 +1544,7 @@ Dòng import 27: thay `caseHasIndependentBasis, retireCaseForCorrectedScore, wit
 **Interfaces:**
 - Produces: `canCloseCase(p: Principal, c: { class_id?: number | null; student_id?: number | null; topic?: string | null }): boolean`.
 
-- [ ] **Step 1: Phép kiểm (đỏ).**
+- [x] **Step 1: Phép kiểm (đỏ).**
 
 ```ts
   // ================================================================== 11. RB-6
@@ -1571,8 +1571,8 @@ Dòng import 27: thay `caseHasIndependentBasis, retireCaseForCorrectedScore, wit
   });
 ```
 
-- [ ] **Step 2: Chạy, đỏ.** Expected ✗ ("GVCN hoàn thành được Case môn khác").
-- [ ] **Step 3: Sửa `canCloseCase`.**
+- [x] **Step 2: Chạy, đỏ.** Expected ✗ ("GVCN hoàn thành được Case môn khác").
+- [x] **Step 3: Sửa `canCloseCase`.**
 
 ```ts
 /**
@@ -1593,9 +1593,9 @@ export function canCloseCase(p: Principal, c: { class_id?: number | null; studen
 Hai câu lỗi (dòng 123 và 1258) đổi thành `'Chỉ Quản lý, hoặc GVCN dạy đúng môn của Case, mới hoàn thành được Case này.'` (giữ chữ "Quản lý"
 cho phép kiểm cũ `/chủ nhiệm|Quản lý/`). Dòng 2234: `canClose: canCloseCase(p, { class_id: enr?.class_id ?? null, student_id: studentId, topic: c.topic }),`.
 
-- [ ] **Step 4: Chạy, xanh** (Expected `704`). Phép cũ `run.ts:2584-2588` gọi không có `topic` → GVCN vẫn `true` (nhánh dữ liệu cũ) → ✓.
+- [x] **Step 4: Chạy, xanh** (Expected `704`). Phép cũ `run.ts:2584-2588` gọi không có `topic` → GVCN vẫn `true` (nhánh dữ liệu cũ) → ✓.
   `PR-D · Thẻ case…` (`run.ts:7720`) dùng Case Listening của GVCN T_HA (dạy L) → ✓. Đỏ khác → 🛑.
-- [ ] **Step 5: Commit.** `git commit -am "PR-S1 (11): RB-6 — GVCN chỉ hoàn thành Case đúng môn mình dạy (4.15)"`
+- [x] **Step 5: Commit.** `git commit -am "PR-S1 (11): RB-6 — GVCN chỉ hoàn thành Case đúng môn mình dạy (4.15)"`
 
 ---
 

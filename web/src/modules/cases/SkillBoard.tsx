@@ -427,7 +427,7 @@ function TheCase({ c, row, onChanged }: {
                   <button type="button" className="btn btn-sm btn-primary"
                     disabled={blocked || !c.canClose}
                     title={!c.canClose
-                      ? 'Chỉ giáo viên chủ nhiệm của lớp và Quản lý mới hoàn thành được case.'
+                      ? 'Chỉ Quản lý, hoặc GVCN dạy đúng môn của Case, mới hoàn thành được Case này.'
                       : undefined}
                     onClick={() => setCompleting(true)}>
                     Hoàn thành case
@@ -449,7 +449,7 @@ function TheCase({ c, row, onChanged }: {
             )}
             {c.canEdit && c.status !== 'done' && !c.canClose && (
               <p className="text-xs text-slate-500 m-0">
-                Chỉ giáo viên chủ nhiệm của lớp và Quản lý mới hoàn thành case được. Bạn vẫn cập
+                Chỉ Quản lý, hoặc GVCN dạy đúng môn của Case, mới hoàn thành được Case này. Bạn vẫn cập
                 nhật được kết quả của từng phương án.
               </p>
             )}
