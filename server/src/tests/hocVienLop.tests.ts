@@ -379,4 +379,36 @@ export async function runHocVienLopTests(t: YThucTestKit) {
     eq(classes.classOverview(P.admin, ft).soCaseMo, tong, 'Số Case đang mở = tổng cột Case');
     eq(g.canhBaoYThuc, warn.classWarning(P.coreTeacher, ft).activeCount, 'Cảnh báo tab Ý thức');
   });
+
+  // ------------------------------------------------------------------ Task 7 · Phân tích lớp
+
+  check('PR-Qa · §3.7 Phân tích lớp FT: 5 kỹ năng × MT1…MT5, ô = số HV đạt kỳ vọng của đợt / số HV có điểm', () => {
+    const cid = taoLop('MB-FT QA3', 'FT');
+    const a = taoHocVien({ cid, ft: true, target: 6.5 });
+    const b = taoHocVien({ cid, ft: true, target: 6.5 });
+    bandFT(themLuot({ ...a, cid, no: 2, kind: 'mock', weekStart: '2026-09-07' }), { listening: 5.0, reading: 6.0 });
+    bandFT(themLuot({ ...b, cid, no: 2, kind: 'mock', weekStart: '2026-09-07' }), { listening: 6.5, reading: 5.5 });
+    const r = ptl.phanTichLop(P.admin, cid);
+    eq([r.loai, r.dong.map((x: any) => x.nhan).join(' '), r.cot.map((x: any) => x.nhan).join(' ')],
+      ['ft', 'L R W1 W2 S', 'MT1 MT2 MT3 MT4 MT5'], 'Khung');
+    eq(r.o['listening|mt2'], { dat: 1, tong: 2 }, 'L MT2 (kỳ vọng 6.0)');
+    eq(r.o['reading|mt2'], { dat: 1, tong: 2 }, 'R MT2');
+    eq(r.o['listening|mt1'] ?? null, null, 'Đợt chưa có điểm');
+    eq(r.soHocVien, 2, 'Sĩ số');
+    assertThrows(() => ptl.phanTichLop(P.subjectTeacher, cid), /phạm vi/, 'GV không dạy lớp này');
+  });
+
+  check('PR-Qa · §3.7 Phân tích lớp thường: 4 môn × Giữa khoá / Cuối khoá, ô = n/N HV đạt (từ 70%)', () => {
+    const cid = taoLop('MB-FOU QA3', 'FOU');
+    const a = taoHocVien({ cid, ft: false });
+    const b = taoHocVien({ cid, ft: false });
+    diemThuong(themLuot({ ...a, cid, no: 1, kind: 'progress', weekStart: '2026-09-07' }), { writing: [12, 20], listening: [30, 40] });
+    diemThuong(themLuot({ ...b, cid, no: 1, kind: 'progress', weekStart: '2026-09-07' }), { writing: [15, 20] });
+    const r = ptl.phanTichLop(P.admin, cid);
+    eq([r.loai, r.dong.map((x: any) => x.nhan).join(' '), r.cot.map((x: any) => x.nhan).join(' ')],
+      ['thuong', 'L R W S', 'Giữa khoá Cuối khoá'], 'Khung');
+    eq(r.o['writing|progress'], { dat: 1, tong: 2 }, 'W Giữa khoá');
+    eq(r.o['listening|progress'], { dat: 1, tong: 1 }, 'L Giữa khoá');
+    assert(!/MT\d|kỳ vọng|Progress|Final/.test(JSON.stringify(r)), 'Chữ FT lọt vào lớp thường');
+  });
 }

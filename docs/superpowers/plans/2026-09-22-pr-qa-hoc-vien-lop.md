@@ -1541,7 +1541,7 @@ git commit -m "PR-Qa (6): dòng học viên có cảnh báo Ý thức (YT-8), Vi
   o: Record<\`${dong}|${cot}\`, { dat: number; tong: number }>; soHocVien: number }`. FT: dòng `L R W1 W2 S`, cột `mt1…mt5` (thêm nếu
   có MT6+). Lớp thường: dòng `L R W S`, cột `progress` "Giữa khoá", `final` "Cuối khoá".
 
-- [ ] **Step 1: Phép kiểm đỏ.**
+- [x] **Step 1: Phép kiểm đỏ.**
 
 ```ts
   // ------------------------------------------------------------------ Task 7 · Phân tích lớp
@@ -1577,9 +1577,9 @@ git commit -m "PR-Qa (6): dòng học viên có cảnh báo Ý thức (YT-8), Vi
   });
 ```
 
-- [ ] **Step 2:** `npm test` → hai phép kiểm ✗ (`Chưa có mô-đun ../classes/phanTichLop.ts`).
+- [x] **Step 2:** `npm test` → hai phép kiểm ✗ (`Chưa có mô-đun ../classes/phanTichLop.ts`).
 
-- [ ] **Step 3: Tạo `server/src/classes/phanTichLop.ts`:**
+- [x] **Step 3: Tạo `server/src/classes/phanTichLop.ts`:**
 
 ```ts
 /**
@@ -1670,7 +1670,7 @@ export function phanTichLop(p: Principal, classId: number): PhanTichLop {
 }
 ```
 
-- [ ] **Step 4: Route.** Import cạnh dòng Task 5: `import * as phanTichLopSvc from '../classes/phanTichLop.ts';`. Trong khối PR-Qa:
+- [x] **Step 4: Route.** Import cạnh dòng Task 5: `import * as phanTichLopSvc from '../classes/phanTichLop.ts';`. Trong khối PR-Qa:
 
 ```ts
 /** Tab Phân tích lớp: kỹ năng × đợt, mỗi ô "số HV đạt / số HV có điểm" (đặc tả §3.7). */
@@ -1679,8 +1679,8 @@ api.get('/classes/:id/phan-tich-lop', requireAuth, wrap((req) => {
   return phanTichLopSvc.phanTichLop(principalOf(req), pInt(req, 'id'));
 }));
 ```
-- [ ] **Step 5:** `npm run check` xanh (N+26).
-- [ ] **Step 6: Commit.**
+- [x] **Step 5:** `npm run check` xanh (N+26).
+- [x] **Step 6: Commit.**
 
 ```bash
 git add server/src/classes/phanTichLop.ts server/src/routes/index.ts server/src/tests/hocVienLop.tests.ts

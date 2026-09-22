@@ -45,6 +45,7 @@ import * as scheduleSvc from '../classes/schedule.ts';
 import * as intakeSvc from '../classes/intake.ts';
 import * as transitionSvc from '../classes/transition.ts';
 import * as hocVienLopSvc from '../classes/hocVienLop.ts';
+import * as phanTichLopSvc from '../classes/phanTichLop.ts';
 import * as studentSvc from '../students/students.ts';
 import * as meetingSvc from '../worklist/meeting.ts';
 import * as dashboardSvc from '../worklist/dashboard.ts';
@@ -888,6 +889,12 @@ api.get('/hoc-vien-lop', requireAuth, wrap((req) => {
   return hocVienLopSvc.danhSachHocVienLop(principalOf(req), {
     branchId: qInt(req, 'branchId') ?? null, q: qStr(req, 'q') ?? null, phamVi: qStr(req, 'phamVi') ?? null,
   });
+}));
+
+/** Tab Phân tích lớp: kỹ năng × đợt, mỗi ô "số HV đạt / số HV có điểm" (đặc tả §3.7). */
+api.get('/classes/:id/phan-tich-lop', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return phanTichLopSvc.phanTichLop(principalOf(req), pInt(req, 'id'));
 }));
 
 // ============================================================ Thêm học viên hàng loạt
