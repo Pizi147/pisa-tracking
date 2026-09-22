@@ -40,6 +40,14 @@ export const tenSql = (s: string) => `"${s.replace(/"/g, '""')}"`;
  */
 export const KHONG_NOI_BO = "name NOT LIKE 'sqlite\\_%' ESCAPE '\\'";
 
+/**
+ * BẢNG KHÔNG CHÉP DÒNG (chủ sản phẩm chốt 22/09): `demo_sessions` giữ MÃ ĐĂNG NHẬP còn hiệu lực — ai có một file sao lưu là
+ * đăng nhập được như người đang đăng nhập, kể cả quản trị. Sao lưu và khôi phục giữ CẤU TRÚC bảng nhưng không chép dòng
+ * nào: khôi phục xong mọi người đăng nhập lại. Đây là bảng DUY NHẤT chứa mã đăng nhập (không có mã đặt lại mật khẩu — ứng
+ * dụng không có luồng quên mật khẩu). Tính chất (c): mọi bảng đúng số dòng như nguồn, TRỪ bảng này luôn rỗng có chủ đích.
+ */
+export const BANG_KHONG_CHEP_DONG: ReadonlySet<string> = new Set(['demo_sessions']);
+
 export type DoiTuongDb = { type: string; name: string; sql: string };
 /** Bảng (theo thứ tự tạo) và phần còn lại (chỉ mục, view, trigger — tạo SAU khi có dữ liệu). Chỉ đọc. */
 export function docCauTruc(nguon: any): { bang: DoiTuongDb[]; conLai: DoiTuongDb[] } {
@@ -105,7 +113,8 @@ export function saoLuu(nguon: any, dich: any): { bang: number; dong: number } {
     for (const b of bang) dich.exec(b.sql);
     let dong = 0;
     for (const b of bang) {
-      const d = docBang(nguon, b.name);
+      /* Bảng mã đăng nhập: không đọc, không chép dòng nào — bản sao chỉ giữ cấu trúc. */
+      const d = BANG_KHONG_CHEP_DONG.has(b.name) ? { cot: [], dong: [] } : docBang(nguon, b.name);
       if (d.dong.length) dich.transaction(() => chenDong(dich, b.name, d.cot, d.dong))();
       const daChep = demDong(dich, b.name);
       if (daChep !== d.dong.length) throw new Error(`Bảng ${b.name}: đọc ${d.dong.length} dòng nhưng bản sao có ${daChep}.`);

@@ -670,30 +670,41 @@ export async function runBanChinhTests(t: BanChinhTestKit) {
   const cauTrucDb = (conn: InstanceType<typeof Database>) => JSON.stringify(
     conn.prepare("SELECT type, name, tbl_name, sql FROM sqlite_master WHERE name NOT LIKE 'sqlite_%' ORDER BY type, name").all());
   /** Mọi bảng của `a` có trong `b` với ĐÚNG số dòng và đúng nội dung; cấu trúc (bảng, chỉ mục) giống hệt. */
+  /** Bảng phiên đăng nhập: bản sao lưu/khôi phục luôn RỖNG CÓ CHỦ ĐÍCH (chủ sản phẩm chốt 22/09 — không chép mã đăng nhập). */
+  const BANG_PHIEN = 'demo_sessions';
+  /**
+   * TÍNH CHẤT (c), sửa 22/09: cấu trúc giống hệt; mọi bảng đúng số dòng và đúng từng dòng như nguồn, TRỪ bảng phiên đăng
+   * nhập luôn rỗng có chủ đích.
+   */
   const soHaiDb = (a: InstanceType<typeof Database>, b: InstanceType<typeof Database>, nhan: string) => {
     assert(cauTrucDb(a) === cauTrucDb(b), `${nhan}: cấu trúc (bảng/chỉ mục) khác nguồn`);
     for (const bg of cacBang(a)) {
+      if (bg === BANG_PHIEN) { assert(dem(b, bg) === 0, `${nhan} · bảng ${bg} phải RỖNG (không chép mã đăng nhập), có ${dem(b, bg)} dòng`); continue; }
       assert(dem(a, bg) === dem(b, bg), `${nhan} · bảng ${bg}: nguồn ${dem(a, bg)} dòng, bản sao ${dem(b, bg)} dòng`);
       assert(noiDungBang(a, bg) === noiDungBang(b, bg), `${nhan} · bảng ${bg}: cùng số dòng nhưng nội dung khác`);
     }
   };
+  const { createSession: taoPhien } = await import('../auth.ts');
 
-  check('PR-Z2 · saoLuu chép database kiểm thử ra file mới: file ĐÓNG rồi MỞ LẠI được, toàn vẹn, mọi bảng đúng số dòng và đúng từng dòng; nguồn KHÔNG bị ghi câu nào', () => {
+  check('PR-Z2 · saoLuu chép database kiểm thử ra file mới: file ĐÓNG rồi MỞ LẠI được, toàn vẹn, mọi bảng đúng số dòng và đúng từng dòng (TRỪ bảng phiên đăng nhập, luôn rỗng có chủ đích); nguồn KHÔNG bị ghi câu nào', () => {
     const dir = fs.mkdtempSync(pathMod.join(os.tmpdir(), 'z2-bk-'));
     const f = pathMod.join(dir, 'bk.sqlite');
     try {
       const nguon = db();
+      taoPhien(t.admin.userId);                       // nguồn chắc chắn có ít nhất một phiên đăng nhập
+      assert(dem(nguon, BANG_PHIEN) >= 1, 'Nguồn phải có phiên đăng nhập để phép này có nghĩa');
       const ghiTruoc = soLanGhi(nguon);
       const dich = new Database(f);
       const r = saoLuu(nguon, dich);
       dich.close();
       assert(soLanGhi(nguon) === ghiTruoc, `saoLuu đã GHI vào nguồn (total_changes ${ghiTruoc} → ${soLanGhi(nguon)})`);
       assert(r.bang === cacBang(nguon).length, `Chép ${r.bang}/${cacBang(nguon).length} bảng`);
-      assert(r.dong === cacBang(nguon).reduce((s, b) => s + dem(nguon, b), 0), `Số dòng báo cáo ${r.dong} không khớp nguồn`);
+      assert(r.dong === cacBang(nguon).filter((b) => b !== BANG_PHIEN).reduce((s, b) => s + dem(nguon, b), 0), `Số dòng báo cáo ${r.dong} không khớp nguồn`);
       const moLai = new Database(f);
       try {
         assert((moLai.prepare('PRAGMA integrity_check').get() as any).integrity_check === 'ok', 'integrity_check của bản sao không ok');
         soHaiDb(nguon, moLai, 'Bản sao');
+        assert(cacBang(moLai).includes(BANG_PHIEN) && dem(moLai, BANG_PHIEN) === 0, 'Bảng phiên phải CÓ trong bản sao (giữ cấu trúc) và rỗng');
         assert(dem(moLai, 'users') > 0 && dem(moLai, 'students') > 0, 'Bản sao của bộ demo phải có người dùng và học viên');
       } finally { moLai.close(); }
     } finally { try { fs.rmSync(dir, { recursive: true, force: true }); } catch { /* Windows */ } }
@@ -1025,6 +1036,40 @@ export async function runBanChinhTests(t: BanChinhTestKit) {
     } finally { nguon.close(); dongLai(o); }
   });
 
+  check('PR-Z2 · Khôi phục từ bản sao lưu (kể cả bản kiểu cũ còn chứa phiên): mã phiên cũ KHÔNG đăng nhập được; đăng nhập lại bằng mật khẩu thì được', () => {
+    const dir = fs.mkdtempSync(pathMod.join(os.tmpdir(), 'z2-kp-phien-'));
+    try {
+      /* Một tài khoản còn mật khẩu mặc định của bộ demo, và một phiên đăng nhập đang sống của nó. */
+      const u = (db().prepare('SELECT id, email, password_hash h, password_salt s FROM users WHERE email IS NOT NULL ORDER BY id').all() as any[])
+        .find((x) => x.h === cryptoMod.scryptSync(DEFAULT_ADMIN_PASSWORD_DEMO, x.s, 64).toString('hex'));
+      assert(u, 'Bộ demo phải còn một tài khoản dùng mật khẩu mặc định');
+      const maCu = taoPhien(u.id);
+      const banMoi = pathMod.join(dir, 'pisa-cuc-bo-2026-09-22-1300.sqlite');
+      saoLuuRaFile(db(), banMoi);
+      /* Bản sao lưu KIỂU CŨ (trước 22/09) còn nguyên bảng phiên: chép thẳng cả file bằng VACUUM INTO (chỉ đọc nguồn). */
+      const banCu = pathMod.join(dir, 'ban-cu-con-phien.sqlite');
+      db().exec(`VACUUM INTO '${banCu.replace(/'/g, "''")}'`);
+      const authJs = pathToFileURL(pathMod.join(REPO, 'dist-server/server/src/auth.js')).href;
+      const accJs2 = pathToFileURL(pathMod.join(REPO, 'dist-server/server/src/platform/accounts.js')).href;
+      for (const [ten, bk] of [['bản sao lưu mới', banMoi], ['bản sao lưu kiểu cũ còn phiên', banCu]] as const) {
+        const nguon = new Database(bk, { readonly: true });
+        const f = pathMod.join(dir, `khoi-phuc-${ten.length}.sqlite`);
+        const dich = new Database(f);
+        try { khoiPhuc(nguon, dich); } finally { nguon.close(); dich.close(); }
+        const r = chayCon(`const a = await import(${JSON.stringify(authJs)}); const acc = await import(${JSON.stringify(accJs2)});`
+          + ` const cu = a.resolveSession(${JSON.stringify(maCu)});`
+          + ` const dn = acc.login(${JSON.stringify(u.email)}, ${JSON.stringify(DEFAULT_ADMIN_PASSWORD_DEMO)});`
+          + ` const moi = a.resolveSession(a.createSession(dn.userId));`
+          + ` console.log(JSON.stringify({ cuVaoDuoc: !!cu, moiVaoDuoc: !!moi }));`,
+        { PISA_DB: f, TURSO_DATABASE_URL: '', TURSO_AUTH_TOKEN: '' });
+        assert(r.status === 0, `${ten}: ${String(r.stderr).slice(-300)}`);
+        const o = JSON.parse(String(r.stdout).trim().split('\n').pop()!);
+        assert(o.cuVaoDuoc === false, `${ten}: mã phiên cũ vẫn đăng nhập được sau khi khôi phục`);
+        assert(o.moiVaoDuoc === true, `${ten}: đăng nhập lại bằng mật khẩu không được`);
+      }
+    } finally { try { fs.rmSync(dir, { recursive: true, force: true }); } catch { /* Windows */ } }
+  });
+
   const khoiPhucJs = pathMod.join(REPO, 'dist-server/server/src/ops/runKhoiPhuc.js');
   check('PR-Z2 · Lệnh khoi-phuc: thiếu biến / xác nhận sai → TỪ CHỐI, không tạo gì; đúng → in Đích + số dòng, KHÔNG in token; chạy lần hai → TỪ CHỐI, file giữ nguyên từng byte', () => {
     const dir = fs.mkdtempSync(pathMod.join(os.tmpdir(), 'z2-kp-'));
@@ -1054,5 +1099,33 @@ export async function runBanChinhTests(t: BanChinhTestKit) {
       assert(lai.status === 1 && /TỪ CHỐI/.test(lai.stderr) && /đã có/.test(lai.stderr), `Lần hai: ${lai.status} ${String(lai.stderr).slice(-200)}`);
       assert(bamFile(dich) === bam, 'Chạy lần hai đã thay đổi database đích');
     } finally { try { fs.rmSync(dir, { recursive: true, force: true }); } catch { /* Windows */ } }
+  });
+
+  console.log('\nPR-Z2 · 8. Phiên đăng nhập hết hạn sau 30 ngày không dùng (tính theo GIỜ THẬT, không theo ngày demo)');
+  await checkAsync('PR-Z2 · Phiên dùng lần cuối 31 ngày trước → 401 và dòng phiên bị xoá; 29 ngày trước → vẫn vào được và mốc dùng cuối được cập nhật', async () => {
+    const authMod = await import('../auth.ts') as any;
+    assert(authMod.PHIEN_HET_HAN_SAU_NGAY === 30, `Hằng số hết hạn phải là 30 ngày, đang là ${authMod.PHIEN_HET_HAN_SAU_NGAY}`);
+    /* Bộ kiểm đặt ngày demo 14/09 (lệch ngày thật) — mã tính theo ngày demo sẽ cho phiên 31 ngày "thật" vẫn còn hạn. */
+    const truocNgay = (n: number) => new Date(Date.now() - n * 86_400_000).toISOString();
+    const taoPhienCu = (n: number) => {
+      const ma = cryptoMod.randomBytes(24).toString('hex');
+      t.conn.prepare('INSERT INTO demo_sessions (token, user_id, created_at, last_seen_at) VALUES (?,?,?,?)')
+        .run(ma, t.admin.userId, truocNgay(n + 5), truocNgay(n));
+      return ma;
+    };
+    const may = createApp().listen(0);
+    const cong = (may.address() as any).port as number;
+    const goiVoi = (ma: string) => fetch(`http://127.0.0.1:${cong}/api/overview`, { headers: { cookie: `pisa_demo_session=${ma}` } });
+    try {
+      const cu = taoPhienCu(31);
+      const r31 = await goiVoi(cu);
+      assert(r31.status === 401, `Phiên 31 ngày không dùng vẫn vào được: ${r31.status}`);
+      assert(!t.conn.prepare('SELECT 1 FROM demo_sessions WHERE token = ?').get(cu), 'Phiên hết hạn phải bị xoá khỏi bảng');
+      const moi = taoPhienCu(29);
+      const r29 = await goiVoi(moi);
+      assert(r29.status === 200, `Phiên 29 ngày phải còn vào được: ${r29.status}`);
+      const lanCuoi = (t.conn.prepare('SELECT last_seen_at FROM demo_sessions WHERE token = ?').get(moi) as any)?.last_seen_at as string;
+      assert(Math.abs(Date.now() - Date.parse(lanCuoi)) < 60_000, `Mốc dùng cuối phải được cập nhật về bây giờ, đang là ${lanCuoi}`);
+    } finally { may.close(); }
   });
 }

@@ -47,7 +47,9 @@ console.log('[khoi-phuc] Mọi thứ trong MỘT giao dịch — database ở xa
 const nguon = new Database(file, { readonly: true });
 try {
   const r = khoiPhuc(nguon, db(), { moiLan: 100 });
-  console.log(`[khoi-phuc] Đã kiểm lại: mọi bảng đúng số dòng như file sao lưu, không có vi phạm khoá ngoại mới.`);
+  console.log('[khoi-phuc] Đã kiểm lại: mọi bảng đúng số dòng như file sao lưu (trừ bảng phiên đăng nhập — cố ý để trống),'
+    + ' không có vi phạm khoá ngoại mới.');
+  console.log('[khoi-phuc] Mã đăng nhập cũ không được khôi phục: sau khi khôi phục, mọi người đăng nhập lại.');
   console.log('[khoi-phuc] Tiếp theo: đổi biến của bản chính thức sang database này (TRIEN_KHAI mục 6) rồi deploy --prod.');
   console.log('[khoi-phuc] Tệp bằng chứng (ảnh, thư) KHÔNG được chép tự động — xem TRIEN_KHAI mục 11.2.');
   console.log(`[khoi-phuc] Xong. Đã khôi phục ${r.bang} bảng, ${r.dong} dòng vào ${DB_PATH}.`);

@@ -12,7 +12,7 @@
  * bằng `PRAGMA foreign_key_check` trước khi chốt: bản khôi phục có thêm vi phạm nào so với bản sao lưu là cuộn lại.
  */
 import { bangCoDuLieu } from './initBanChinh.ts';
-import { KHONG_NOI_BO, chenDong, demDong, docBang, docCauTruc, tenSql } from './saoLuu.ts';
+import { BANG_KHONG_CHEP_DONG, KHONG_NOI_BO, chenDong, demDong, docBang, docCauTruc, tenSql } from './saoLuu.ts';
 
 /**
  * Thứ tự chép: bảng cha trước bảng con theo khoá ngoại. Bỏ qua tự tham chiếu; gặp vòng khoá ngoại thì lấy bảng đầu tiên còn
@@ -60,7 +60,8 @@ export function khoiPhuc(nguon: any, dich: any, o: { moiLan?: number } = {}): { 
       for (const b of bang) dich.exec(b.sql);
       let dong = 0;
       for (const ten of thuTu) {
-        const d = docBang(nguon, ten);
+        /* Bảng mã đăng nhập: không bao giờ khôi phục dòng nào, kể cả từ bản sao lưu kiểu cũ còn chứa phiên. */
+        const d = BANG_KHONG_CHEP_DONG.has(ten) ? { cot: [], dong: [] } : docBang(nguon, ten);
         chenDong(dich, ten, d.cot, d.dong, o.moiLan ?? 100);
         const daGhi = demDong(dich, ten);
         if (daGhi !== d.dong.length) throw new Error(`Bảng ${ten}: bản sao lưu có ${d.dong.length} dòng nhưng đã ghi ${daGhi}.`);

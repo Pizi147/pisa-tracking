@@ -22,7 +22,7 @@ chút trên giao diện — chọn mức **gần nhất**.
 | **PR-Z2a** | Hạ tầng Netlify + Turso (Task 0–6b) | **Fable 5.1 · High** *(đổi 22/09)* | Sonnet 5 · High | Không | Thử thật 22/09: lỗi nặng nhất chỉ lộ sau khi gói mã; có 2 cửa dừng + deploy nháp thật → cần phán đoán tốt. Người rà: session planning (Opus) |
 | **PR-HV** | Hồ sơ học viên + Ý thức & Phối hợp theo prototype v3, đổi "biện pháp" → "phương án", bỏ "Hãy" | **Fable 5.1 · High** | Opus 5 · High | Không | Giao diện lớn, thành phần dùng chung hai trang; đổi chữ phải vào cùng lúc. Song song Z2b; Z2c đợi PR này |
 | **PR-Z2b** | An toàn dữ liệu bản chính (Task 6c–9) | **Opus 5 · XHigh** | Fable 5.1 · High | — | Một quyết định sai ở đây có thể chạm **dữ liệu thật** → dùng model mạnh |
-| **PR-Z2c** | Deploy bản chính + đo tốc độ + rà soát (Task 10–11) | **Opus 5 · XHigh** | Fable 5.1 · High | — | Chạm dữ liệu thật + quyết định tối ưu trang chậm. **Người rà phải khác model đã code Z2a/Z2b** |
+| **PR-Z2c** | Deploy bản chính + đo tốc độ + rà soát (Task 10–11) | **Opus 5 · XHigh** | Fable 5.1 · High | — | Chạm dữ liệu thật + quyết định tối ưu trang chậm. **Người rà: Fable 5.1** (khác Opus đã code Z2b — session planning cho agent Fable rà) |
 | *Rà soát sau mỗi PR* | Dán vào session planning | Opus 5 · High | Opus 5 · XHigh (PR lớn) | — | Người rà khác người code |
 | PR-O *(sau deploy)* | Điều hướng 4 khu vực | Sonnet 5 · High | Fable 5.1 · Medium | Không | Phạm vi hẹp |
 | PR-Q *(sau deploy)* | Học viên & Lớp · hồ sơ lớp/HV | Sonnet 5 · High | Fable 5.1 · High | Không | Giao diện rộng nhưng đặc tả đã có |
@@ -329,10 +329,11 @@ trước/sau; câu trả lời cho "có đường nào ghi đè dữ liệu khô
 
 ## PR-Z2c — Deploy bản chính + rà soát độc lập  *(sau khi PR-Z2b VÀ PR-HV đã merge)*
 
-**Model:** **Opus 5 · XHigh** · **B:** Fable 5.1 · High
-**Quan trọng:** chọn model **khác** model đã code PR-Z2a/Z2b (ví dụ Z2a dùng Sonnet, Z2b dùng Opus → Z2c dùng Fable;
-hoặc Z2a Sonnet, Z2b Fable → Z2c Opus). Nếu không đổi được, cứ chạy, nhưng sau đó dán **prompt rà soát** ở cuối file
-này vào session planning.
+**Model người CODE Phần C:** **Opus 5 · XHigh** · **B:** Fable 5.1 · High
+**Người RÀ (🆕 22/09, chốt):** Phần B (PR-Z2b, PR-Z2b2) do **Opus** code → người rà **PHẢI khác Opus** → **người rà là
+Fable 5.1**: session planning cho một agent **Fable** rà toàn bộ PR-Z2a + PR-Z2b + PR-Z2b2 + PR-Z2c. Session code (Opus)
+vẫn tự chạy `requesting-code-review` ở Task 11, nhưng lượt đó **không thay được** lượt rà Fable.
+**Điều kiện bắt đầu:** `main` đã có PR-Z2b (#49), PR-Z2b2 **và PR MÃ của PR-HV** — PR #50 chỉ là kế hoạch PR-HV, không tính.
 **Để sẵn:** ~1,5–2 giờ **ngồi cùng máy**. Session sẽ dừng hỏi bạn: tạo database **chính** (`TRIEN_KHAI.md` mục 2),
 đổi biến (mục 6), chạy khởi tạo (mục 7), rồi cùng bấm thử 12 bước, và **xin phép** trước khi đưa lên chính thức.
 
@@ -342,7 +343,7 @@ thật, đo tốc độ, và rà soát độc lập toàn bộ PR-Z2a + PR-Z2b.
 Sau phần này giáo viên thật sẽ dùng web. Cẩn thận hơn tốc độ.
 
 KẾ HOẠCH: docs/superpowers/plans/2026-09-21-ban-chinh-netlify-turso.md
-Bạn CHỈ làm Task 10 → Task 11 (Phần C). PR-Z2a và PR-Z2b đã merge.
+Bạn CHỈ làm Task 10 → Task 11 (Phần C). PR-Z2a, PR-Z2b (#49) và PR-Z2b2 (phiên đăng nhập) đã merge; PR MÃ của PR-HV cũng phải đã merge (PR #50 chỉ là kế hoạch).
 Đọc HẾT file kế hoạch và TOÀN BỘ bảng "Nhật ký thực thi" (Phần A và B đã ghi mọi điều khác kế hoạch).
 Đọc TRIEN_KHAI.md — tôi (chủ sản phẩm, không biết code) sẽ làm đúng theo file đó.
 
@@ -356,7 +357,11 @@ CÁCH LÀM:
 - TRƯỚC `--prod`: hỏi tôi đồng ý bằng một câu rõ ràng.
 - Task 10 Step 6 (trang chậm): chỉ gộp truy vấn của ĐÚNG trang > 3 giây, không đổi kết quả trả về;
   superpowers:test-driven-development không bắt buộc ở đây nhưng npm run check phải xanh sau mỗi trang.
-- Task 11: superpowers:requesting-code-review — RÀ ĐỘC LẬP toàn bộ thay đổi của PR-Z2a và PR-Z2b
+- Tập dượt TRƯỚC khi khởi tạo bản chính — cả hai BẮT BUỘC: Task 10 Step 2a (TRIEN_KHAI mục 7a, khởi tạo trên database
+  tạm) và Step 2b (tập dượt khôi phục qua mạng, cuối TRIEN_KHAI mục 11.2). Hỏng ở bước nào → dừng, báo tôi.
+- Task 11: superpowers:requesting-code-review — RÀ ĐỘC LẬP toàn bộ thay đổi của PR-Z2a, PR-Z2b và PR-Z2b2
+  (bạn là Opus, cùng model người code Phần B → ghi rõ vào Nhật ký; lượt rà chính thức do agent Fable 5.1 của session
+  planning làm)
   (git log để tìm hai PR đó), trả lời bốn câu hỏi trong kế hoạch. Nếu bạn là CÙNG model đã code Z2a hoặc Z2b,
   ghi rõ vào Nhật ký. Sửa mọi lỗi Critical/Important (TDD cho mỗi lỗi sửa).
 - superpowers:verification-before-completion trước MỌI câu "đã xong".

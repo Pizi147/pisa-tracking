@@ -287,6 +287,8 @@ Hướng dẫn cho chủ sản phẩm: `TRIEN_KHAI.md`. Kế hoạch: `docs/supe
 | `npm run khoi-phuc` — chép một bản sao lưu vào database rỗng | `server/src/ops/khoiPhuc.ts` (luật) · `server/src/ops/runKhoiPhuc.ts` (điểm chạy) |
 | `npm run thu-turso` — thử đường mạng tới database THỬ | `server/src/ops/thuTurso.ts` |
 | `npm run migrate` vào Turso (xác nhận, bỏ tài khoản mặc định) | `server/src/migrate/run.ts` · `server/src/migrate.ts` → `migrateAccounts` |
+| Phiên đăng nhập (cookie), **hết hạn sau 30 ngày không dùng** (`PHIEN_HET_HAN_SAU_NGAY`) | `server/src/auth.ts` |
+| Bảng không chép dòng khi sao lưu/khôi phục (`demo_sessions` — mã đăng nhập) | `server/src/ops/saoLuu.ts` → `BANG_KHONG_CHEP_DONG` |
 | Phép kiểm của bản chính | `server/src/tests/banChinh.tests.ts` |
 
 ### Dùng chung
