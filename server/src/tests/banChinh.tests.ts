@@ -349,6 +349,35 @@ export async function runBanChinhTests(t: BanChinhTestKit) {
   });
   server.close();
 
+  console.log('\nPR-Z2 · 3b. Máy chủ nối Turso thì LUÔN ở chế độ bản chính (kể cả `npm run dev` trong cửa sổ còn biến Turso)');
+  const moiTruongMod = await import('../moiTruong.ts');
+  check('PR-Z2 · laBanChinh() đúng khi có BAN_CHINH=1 HOẶC có TURSO_DATABASE_URL; cờ tường minh coCoBanChinh() chỉ theo BAN_CHINH', () => {
+    const { laBanChinh, coCoBanChinh } = moiTruongMod;
+    assert(laBanChinh({ TURSO_DATABASE_URL: 'libsql://x.invalid' }) === true, 'Có URL Turso mà không coi là bản chính');
+    assert(laBanChinh({ BAN_CHINH: '1' }) === true && laBanChinh({}) === false && laBanChinh({ TURSO_DATABASE_URL: '  ' }) === false, 'Máy dev phải giữ nguyên');
+    assert(coCoBanChinh({ TURSO_DATABASE_URL: 'libsql://x.invalid' }) === false && coCoBanChinh({ BAN_CHINH: '1' }) === true, 'coCoBanChinh chỉ xem BAN_CHINH');
+  });
+  await checkAsync('PR-Z2 · `npm run dev` với biến Turso, KHÔNG có BAN_CHINH: POST /api/demo/session (đăng nhập không mật khẩu) → 404, /auth/info không lộ demoAdmin', async () => {
+    const may = createApp().listen(0);
+    const cong = (may.address() as any).port as number;
+    process.env.TURSO_DATABASE_URL = 'libsql://khong-ton-tai.invalid';   // chỉ đổi CHẾ ĐỘ; kết nối của tiến trình đã mở sẵn tới file kiểm thử
+    try {
+      const s = await fetch(`http://127.0.0.1:${cong}/api/demo/session`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ userId: t.admin.userId }) });
+      assert(s.status === 404 && !s.headers.get('set-cookie'), `Cửa sau còn mở khi có biến Turso: ${s.status}`);
+      const info = await (await fetch(`http://127.0.0.1:${cong}/api/auth/info`)).json() as any;
+      assert(!('demoAdmin' in info), 'Lộ mật khẩu mặc định khi có biến Turso');
+    } finally { delete process.env.TURSO_DATABASE_URL; may.close(); }
+  });
+  check('PR-Z2 · Chốt seed vẫn cho seed database THỬ (đúng nguyên tên máy chủ, không có BAN_CHINH) — đổi nghĩa laBanChinh không được khoá luôn đường này', () => {
+    /* Máy chủ .invalid không bao giờ tồn tại: chốt cho qua thì lệnh chỉ hỏng ở bước kết nối, không xoá được gì của ai. */
+    const r = cp.spawnSync(process.execPath, [pathMod.join(REPO, 'dist-server/server/src/seed/run.js')], {
+      env: { ...process.env, TURSO_DATABASE_URL: 'libsql://pisatracking-demo-khong-ton-tai.invalid', TURSO_AUTH_TOKEN: 'x',
+        BAN_CHINH: '', PISA_CHO_PHEP_SEED_TURSO: 'pisatracking-demo-khong-ton-tai.invalid' },
+      encoding: 'utf8', timeout: 60_000,
+    });
+    assert(!/TỪ CHỐI/.test(String(r.stderr)) && /Đang tạo lại dữ liệu demo/.test(String(r.stdout)), `Chốt đã chặn cả database thử: ${String(r.stderr).slice(-300)}`);
+  });
+
   console.log('\nPR-Z2 · 4. Chốt an toàn sau rà soát Phần A');
   const { pathToFileURL } = await import('node:url');
   const chayCon = (maLenh: string, env: Record<string, string>) => cp.spawnSync(process.execPath, ['--input-type=module', '-e', maLenh], {

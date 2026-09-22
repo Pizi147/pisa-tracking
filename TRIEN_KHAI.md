@@ -280,7 +280,8 @@ session Z2c ngay (mật khẩu đã bị lưu sai, đăng nhập sẽ không đ�
 Lệnh này **tự từ chối** nếu database đã có dữ liệu — không bao giờ xoá dữ liệu thật, nên chạy nhầm lần hai cũng không
 sao: nó hiện chữ đỏ `TỪ CHỐI: Database đã có dữ liệu …` và không ghi gì cả.
 
-**Sau khi chạy xong:** đóng cửa sổ PowerShell đó (để mật khẩu và token không còn nằm trong cửa sổ).
+**Làm xong thì ĐÓNG cửa sổ PowerShell này.** Cửa sổ còn biến Turso của database CHÍNH: lệnh nào chạy tiếp trong đó —
+kể cả `npm run dev` — đều chạm dữ liệu thật. Đóng đi thì mật khẩu và token cũng không còn trong cửa sổ.
 
 > **Tuyệt đối không chạy `npm run seed`** khi đang có biến Turso — lệnh đó dành cho máy dev và **xoá sạch database**.
 > Mã đã chặn việc này, nhưng đừng thử.
@@ -291,11 +292,12 @@ sao: nó hiện chữ đỏ `TỪ CHỐI: Database đã có dữ liệu …` và
 Set-PSReadLineOption -HistorySaveStyle SaveNothing
 $env:TURSO_DATABASE_URL='<URL database CHÍNH>'
 $env:TURSO_AUTH_TOKEN='<Token database CHÍNH>'
-npm run them-chi-nhanh -- <MÃ> "<Tên chi nhánh>"
+npm run them-chi-nhanh -- <MÃ> '<Tên chi nhánh>'
 ```
 
-Ví dụ dòng cuối: `npm run them-chi-nhanh -- UB "Uông Bí"`. Kết quả đúng:
+Ví dụ dòng cuối: `npm run them-chi-nhanh -- UB 'Uông Bí'`. Kết quả đúng:
 `[them-chi-nhanh] Xong. Đã thêm chi nhánh UB (Uông Bí), id <số>.` Mã đã có → chữ đỏ `TỪ CHỐI`, không thêm, không sửa gì.
+**Làm xong thì ĐÓNG cửa sổ PowerShell này.**
 
 ---
 
@@ -367,7 +369,8 @@ mục Drive; dòng cuối `[sao-luu] Xong. Bản sao lưu của database libsql:
 CHÍNH** (không có chữ `-demo`). Máy tự giữ 14 bản mới nhất **của từng database** (chỉ xoá bản sao lưu cũ của chính
 database đó, không đụng bản của database khác hay file khác trong thư mục). Dòng `Chưa sao lưu tệp bằng chứng` là bình
 thường nếu bạn chưa thêm hai dòng ở dưới. Lệnh **từ chối** nếu có `BACKUP_DIR` mà quên hai dòng Turso.
-Xong thì **đóng cửa sổ PowerShell** (để token không còn nằm trong cửa sổ).
+**Làm xong thì ĐÓNG cửa sổ PowerShell này** (cửa sổ còn biến Turso của database chính; đóng đi thì token cũng không
+còn trong cửa sổ).
 
 **Muốn sao lưu cả ảnh / thư cảnh cáo đã tải lên** (vào thư mục cùng tên, thêm đuôi `-tep`, cạnh file), thêm hai
 dòng này **trước** dòng `npm run sao-luu`:
@@ -430,7 +433,7 @@ npm run migrate
 ```
 
 **Kết quả đúng:** có dòng `Turso: bỏ qua tài khoản/mật khẩu mặc định của bản demo` và dòng cuối `Hoàn tất` hoặc
-`Không có gì để nâng cấp`. Lệnh báo `TỪ CHỐI` → bước 2 gõ chưa đúng tên. Xong thì **đóng cửa sổ PowerShell**.
+`Không có gì để nâng cấp`. Lệnh báo `TỪ CHỐI` → bước 2 gõ chưa đúng tên. **Làm xong thì ĐÓNG cửa sổ PowerShell này.**
 
 ---
 

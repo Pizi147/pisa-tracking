@@ -4,8 +4,19 @@
  */
 import path from 'node:path';
 
-export function laBanChinh(env: NodeJS.ProcessEnv = process.env): boolean {
+/** Cờ `BAN_CHINH=1` được đặt TƯỜNG MINH (trên Netlify, `netlify/functions/api.ts` tự đặt). */
+export function coCoBanChinh(env: NodeJS.ProcessEnv = process.env): boolean {
   return env.BAN_CHINH === '1';
+}
+
+/**
+ * CHẾ ĐỘ BẢN CHÍNH: có cờ, HOẶC đang nối Turso. Máy chủ nối Turso (ví dụ `npm run dev` trong cửa sổ PowerShell còn biến
+ * Turso của TRIEN_KHAI mục 7/10) KHÔNG BAO GIỜ được mở các đường của bản demo — đăng nhập không mật khẩu, đổi ngày giả,
+ * lộ mật khẩu mặc định — trên dữ liệu thật (rà soát 22/09). Các chốt cần phân biệt database thử với bản chính khi CÓ
+ * Turso (seed, thu-turso) thì dùng `coCoBanChinh`, không dùng hàm này.
+ */
+export function laBanChinh(env: NodeJS.ProcessEnv = process.env): boolean {
+  return coCoBanChinh(env) || !!env.TURSO_DATABASE_URL?.trim();
 }
 
 export type CauHinhDb =

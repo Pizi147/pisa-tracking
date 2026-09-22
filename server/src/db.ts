@@ -2,7 +2,7 @@ import Database from 'libsql';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { cauHinhDb, choPhepSeedTurso, laBanChinh } from './moiTruong.ts';
+import { cauHinhDb, choPhepSeedTurso, coCoBanChinh } from './moiTruong.ts';
 
 /*
  * libsql gắn thêm `_metadata: { duration }` vào MỖI dòng `.get()` trả về (better-sqlite3 thì không). Khoá này lọt
@@ -117,7 +117,8 @@ export function isInitialised(): boolean {
  */
 export function tuChoiXoaSachNeuTuXa(): void {
   if (CAU_HINH.kieu !== 'turso') return;
-  if (!laBanChinh() && choPhepSeedTurso(CAU_HINH.url, process.env.PISA_CHO_PHEP_SEED_TURSO)) return;
+  /* Cờ TƯỜNG MINH, không phải laBanChinh(): có Turso thì laBanChinh() luôn đúng — dùng nó ở đây là khoá luôn database thử. */
+  if (!coCoBanChinh() && choPhepSeedTurso(CAU_HINH.url, process.env.PISA_CHO_PHEP_SEED_TURSO)) return;
   throw new Error('TỪ CHỐI: đang trỏ tới Turso. Lệnh này XOÁ SẠCH database và chỉ dùng cho máy dev.\n'
     + 'Muốn seed database THỬ: đặt PISA_CHO_PHEP_SEED_TURSO bằng NGUYÊN tên máy chủ, ví dụ pisatracking-demo-xxx.turso.io');
 }
