@@ -9462,6 +9462,11 @@ await runKhungTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, a
 const { runAnToanTests } = await import('./anToan.tests.ts');
 await runAnToanTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P });
 
+// ==================================================================== PR-Rc1 (Cần chấm · Lịch Test · lưới chấm)
+
+const { runChamDiemTests } = await import('./chamDiem.tests.ts');
+await runChamDiemTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
+
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`

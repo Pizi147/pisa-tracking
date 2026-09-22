@@ -262,7 +262,7 @@ Expected: `sạch`. Có biến thì đóng cửa sổ, mở cửa sổ mới.
   - `trangThaiChamLabel(i: { conBai: number; tong: number; quaHan: boolean; chuaToiHan: boolean }): string`
   - `LY_DO_TOI_THIEU = 5`; `kiemLyDo(s: string | null | undefined): string | null` (trả câu lỗi, `null` = hợp lệ)
 
-- [ ] **Step 1: Viết file phép kiểm (đỏ).** Tạo `server/src/tests/chamDiem.tests.ts`:
+- [x] **Step 1: Viết file phép kiểm (đỏ).** Tạo `server/src/tests/chamDiem.tests.ts`:
 
 ```ts
 /**
@@ -349,7 +349,7 @@ export async function runChamDiemTests(t: YThucTestKit) {
 }
 ```
 
-- [ ] **Step 2: Nối vào harness.** Cuối `server/src/tests/run.ts`, **ngay trước** khối `console.log('\n' + '='.repeat(60))`,
+- [x] **Step 2: Nối vào harness.** Cuối `server/src/tests/run.ts`, **ngay trước** khối `console.log('\n' + '='.repeat(60))`,
   sau khối PR-AN:
 
 ```ts
@@ -359,10 +359,10 @@ const { runChamDiemTests } = await import('./chamDiem.tests.ts');
 await runChamDiemTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 ```
 
-- [ ] **Step 3: Chạy cho đỏ.** Run: `npm test 2>&1 | tail -20`. Expected: hỏng ở khối `PR-Rc1` với lỗi kiểu
+- [x] **Step 3: Chạy cho đỏ.** Run: `npm test 2>&1 | tail -20`. Expected: hỏng ở khối `PR-Rc1` với lỗi kiểu
   `d.mucCanCham is not a function`.
 
-- [ ] **Step 4: Viết `shared/domain/chamDiem.ts`.**
+- [x] **Step 4: Viết `shared/domain/chamDiem.ts`.**
 
 ```ts
 /**
@@ -478,15 +478,15 @@ export function kiemLyDo(s: string | null | undefined): string | null {
 }
 ```
 
-- [ ] **Step 5: Thêm dòng xuất.** `shared/domain/index.ts`, ngay sau `export * from './dieuHuong.ts';`:
+- [x] **Step 5: Thêm dòng xuất.** `shared/domain/index.ts`, ngay sau `export * from './dieuHuong.ts';`:
 
 ```ts
 export * from './chamDiem.ts';
 ```
 
-- [ ] **Step 6: Chạy lại.** Run: `npm test 2>&1 | tail -5`. Expected: `TẤT CẢ B+7 KIỂM TRA ĐỀU ĐẠT`.
+- [x] **Step 6: Chạy lại.** Run: `npm test 2>&1 | tail -5`. Expected: `TẤT CẢ B+7 KIỂM TRA ĐỀU ĐẠT`.
 
-- [ ] **Step 7: Commit.**
+- [x] **Step 7: Commit.**
 
 ```bash
 git add shared/domain/chamDiem.ts shared/domain/index.ts server/src/tests/chamDiem.tests.ts server/src/tests/run.ts
@@ -1861,4 +1861,4 @@ git fetch origin && git rebase origin/main
 
 | Ngày | Task | Ghi chú |
 |---|---|---|
-| | | |
+| 23/09 | 1 | Đỏ: 779 đạt, 7 hỏng (`d.mucCanCham is not a function`…). Xanh: 786 (B=779 + 7). Chép đúng mã kế hoạch, không lệch; móc run.ts đặt sau khối PR-AN, trước khối in tổng kết. `npm run typecheck` sạch. |
