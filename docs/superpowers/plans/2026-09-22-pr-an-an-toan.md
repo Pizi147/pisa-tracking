@@ -142,18 +142,18 @@ mở file xem lại — lệch vài dòng là bình thường; **lệch nội du
 
 **Files:** không sửa mã.
 
-- [ ] **Step 1: Nhánh.** Dùng `superpowers:using-git-worktrees`: `git fetch origin && git worktree add ../pisa-pr-an -b pr-an-an-toan origin/main`.
+- [x] **Step 1: Nhánh.** Dùng `superpowers:using-git-worktrees`: `git fetch origin && git worktree add ../pisa-pr-an -b pr-an-an-toan origin/main`.
   Mọi lệnh sau chạy trong worktree. Máy chủ dev trong worktree: `npm run dev` **trong chính worktree** (không dùng `preview_start` — nó
   chạy mã của thư mục chính).
-- [ ] **Step 2: Kiểm môi trường không có biến Turso.**
+- [x] **Step 2: Kiểm môi trường không có biến Turso.**
 
 ```bash
 node -e "for (const k of ['TURSO_DATABASE_URL','TURSO_AUTH_TOKEN','BAN_CHINH','PISA_CHO_PHEP_MIGRATE_TURSO','PISA_CHO_PHEP_SEED_TURSO']) if (process.env[k]) { console.error('CÓ BIẾN', k); process.exit(1) } ; console.log('sạch')"
 ```
 Expected: `sạch`. Có biến → đóng cửa sổ, mở cửa sổ mới.
 
-- [ ] **Step 3: Mốc.** `npm ci` rồi `npm test 2>&1 | tail -3` — Expected: `TẤT CẢ 672 KIỂM TRA ĐỀU ĐẠT`. Ghi số vào Nhật ký. Đỏ ngay từ đầu → 🛑.
-- [ ] **Step 4:** Đọc Global Constraints + bảng Q1–Q22 + bảng "Kiểm với mã thật". Q nào bạn thấy sai với đặc tả → 🛑 hỏi trước khi code.
+- [x] **Step 3: Mốc.** `npm ci` rồi `npm test 2>&1 | tail -3` — Expected: `TẤT CẢ 672 KIỂM TRA ĐỀU ĐẠT`. Ghi số vào Nhật ký. Đỏ ngay từ đầu → 🛑.
+- [x] **Step 4:** Đọc Global Constraints + bảng Q1–Q22 + bảng "Kiểm với mã thật". Q nào bạn thấy sai với đặc tả → 🛑 hỏi trước khi code.
 
 ---
 
