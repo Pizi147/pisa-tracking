@@ -8467,7 +8467,7 @@ check('PR-G · Chưa hết Chủ nhật thì chưa chốt; hết Chủ nhật th
   }
   assert(prgSettled(id, 'listening') === 1, `Sau mười lần chạy bộ đếm vắng vẫn phải là 1, đang ${prgSettled(id, 'listening')}`);
   const c = prgCell(id, 'listening', PRG_MON);
-  assert(c.noShow.state === 'khong-du-thi' && c.noShow.text === 'Không dự thi · Tuần W3 SEP 2026',
+  assert(c.noShow.state === 'khong-du-thi' && c.noShow.text === 'Không dự thi · Tuần W3 SEP',
     `Sau chốt: ${JSON.stringify(c.noShow)}`);
   assert(String(prgSit(id, 'listening').sit_at).slice(0, 10) === PRG_SUN,
     `Ngày hiệu lực phải là cuối Chủ nhật ${PRG_SUN}, đang ${prgSit(id, 'listening').sit_at}`);

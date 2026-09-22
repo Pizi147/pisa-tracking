@@ -9,11 +9,11 @@ import { useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
-import { Empty, Outcome } from '../../ui/ui.tsx';
+import { Empty, Outcome, Status } from '../../ui/ui.tsx';
 import type { SaveStatus } from '../../ui/SaveState.tsx';
 import { ODiemThuong, type SaveOpts } from '../fasttrack/ScoreEntry.tsx';
 import { caseStatusLabel, skillLabel, skillShort, sosLabel } from '../../lib/format.ts';
-import { ATTEMPT_KIND_SHORT, ketQuaThuong, tuanLich, type AttemptKind } from '@shared/domain/index.ts';
+import { ATTEMPT_KIND_SHORT, ketQuaThuong, ngay, tuanLich, type AttemptKind } from '@shared/domain/index.ts';
 import { DauLuu } from './LuoiFT.tsx';
 
 type SkillResult = {
@@ -132,7 +132,7 @@ function tongPhoBien(rows: Row[], k: string): number | null {
 /* Độ rộng cột cố định (G-2) — màn hẹp hơn thì cuộn ngang trong thẻ (G-11). */
 const COT_HV = 220;
 const COT_MON = 136;
-const COT_KQ = 250;
+const COT_KQ = 290;
 
 /**
  * Lưu một ô của lưới lớp thường cho MỘT dòng — cùng dáng `useSaveScore` của FT: trạng thái lưu riêng từng dòng,
@@ -211,7 +211,8 @@ export function LuoiThuong({ data, onReload, kn = null, hv = null }: {
       toast.push(r.created > 0 ? 'ok' : 'info',
         r.created > 0 ? `Đã tạo ${r.created} bài kiểm tra cho ${r.students} học viên.`
                       : 'Mọi học viên đều đã có đủ bài kiểm tra.');
-      invalidate('/regular'); invalidate('/classes'); onReload();
+      /* `invalidate('/classes')` tự tải lại lưới (đường `/classes/:id/cham`) — không gọi `onReload`, vì đó là tín hiệu "vừa lưu điểm". */
+      invalidate('/regular'); invalidate('/classes');
     } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
   };
   const nutTao = data.canPlan && (
@@ -329,6 +330,21 @@ function DongThuong({ row, rowIndex, sheet, active, tongCot, dien, onReload, reg
         const diem = kq?.score ?? null;
         const trong = canEdit && diem === null && s?.progress !== 'upcoming'
           && s?.progress !== 'cancelled' && s?.progress !== 'absent';
+        /*
+         * MÔN VẮNG / ĐÃ HUỶ PHẦN THI mà chưa có điểm: không phải một ô trống chờ nhập — hiện đúng trạng thái, không có ô
+         * nhập (việc tiếp theo là xếp lại lịch, không phải chấm). Đã có điểm thì vẫn là ô điểm như thường.
+         */
+        const dung = diem === null && (s?.progress === 'absent' || s?.progress === 'cancelled');
+        if (dung) {
+          const chu = s!.progress === 'absent' ? 'Đã vắng · chờ xếp lại' : 'Đã huỷ phần thi';
+          return (
+            <td key={k} className="td py-1.5 text-center" data-kn={k}>
+              <span className="text-[10px] text-slate-500 leading-tight" title={`${sheet.skillLabels[k] ?? skillLabel(k)}: ${chu}`}>{chu}</span>
+            </td>
+          );
+        }
+        /* Quá hạn chấm của CHÍNH môn này (hạn riêng từng môn, mục 10.5) — một dòng nhỏ dưới ô, ngày dạng dd/mm. */
+        const quaHan = diem === null && s?.overdue && s.deadline ? `Quá hạn ${ngay(s.deadline, homNay)}` : null;
         return (
           <td key={k} className="td py-1.5 text-center" data-kn={k} data-trong={trong ? '1' : undefined}>
             <ODiemThuong
@@ -353,6 +369,10 @@ function DongThuong({ row, rowIndex, sheet, active, tongCot, dien, onReload, reg
                 if (e.key === 'ArrowUp') { e.preventDefault(); onMove(rowIndex, ci, -1); }
               }}
             />
+            {quaHan && (
+              <div className="text-[10px] text-slate-500 leading-tight mt-0.5"
+                title={`${sheet.skillLabels[k] ?? skillLabel(k)}: hạn chấm ${ngay(s!.deadline, homNay)} đã qua`}>{quaHan}</div>
+            )}
           </td>
         );
       })}
@@ -365,8 +385,11 @@ function DongThuong({ row, rowIndex, sheet, active, tongCot, dien, onReload, reg
 
 /**
  * CỘT KẾT QUẢ: một dòng chính từ `ketQuaThuong` (Q9 — "Đạt 2/2 môn đã chấm", thiếu điểm KHÁC chưa đạt) và TỐI ĐA MỘT
- * dòng phụ (G-3), chọn theo thứ tự hữu ích: môn đang mang "-" mà chưa có điểm ("L dời sang W4 SEP", Ruling 5) → môn
- * còn thiếu → Case của dòng. Điểm từng môn đã nằm ở ô bên trái nên không nhắc lại ở đây; chi tiết nằm ở tooltip.
+ * dòng phụ (G-3): môn đang mang "-" mà chưa có điểm ("L dời sang W4 SEP", Ruling 5), nếu không thì môn còn thiếu.
+ *
+ * CASE KHÔNG TRANH CHỖ DÒNG PHỤ (Task 4, spec §6 dòng 4): một em trượt L có Case trong khi W, S còn ở tuần sau là tình
+ * huống thường gặp — nếu Case đứng cuối hàng ưu tiên thì nó biến mất đúng lúc cần thấy. Nên Case là một nhãn trạng thái
+ * nhỏ đứng CẠNH dòng chính ("Case L"), màu theo Case đại diện (đang mở trước — `cases[0]`), tooltip ghi đủ từng Case.
  */
 function KetQua({ row, sheet }: { row: Row; sheet: ThuongSheet }) {
   const r = row.result;
@@ -383,27 +406,50 @@ function KetQua({ row, sheet }: { row: Row; sheet: ThuongSheet }) {
     doi.set(t, [...(doi.get(t) ?? []), skillShort(s.skill)]);
   }
   const doiDau = [...doi.entries()][0];
-  const c = row.cases[0] ?? null;
-  const phu: { chu: string; tone: string } | null = doiDau
-    ? { chu: `${doiDau[1].join(', ')} dời sang ${doiDau[0]}`, tone: 'text-slate-400' }
+  const phu: { chu: string; tone: string; title: string } | null = doiDau
+    ? {
+      chu: `${doiDau[1].join(', ')} dời sang ${doiDau[0]}`, tone: 'text-slate-400',
+      title: `${doiDau[1].map((k) => skillLabel(r.skills.find((s) => skillShort(s.skill) === k)?.skill ?? k)).join(', ')}: em không làm bài, môn đã dời sang ${doiDau[0]}.`,
+    }
     : kq.phu
-      ? { chu: `${kq.phu}${row.overdue ? ' · quá hạn' : ''}`, tone: row.overdue ? 'text-rose-300' : 'text-slate-500' }
-      : c
-        ? { chu: `Case ${skillShort(c.skill)} · ${caseStatusLabel(c.status)}`, tone: 'text-slate-500' }
-        : null;
+      ? {
+        chu: `${kq.phu}${row.overdue ? ' · quá hạn' : ''}`, tone: row.overdue ? 'text-rose-300' : 'text-slate-500',
+        title: `${kq.phu}${row.overdue ? ' — có môn đã quá hạn chấm' : ''}`,
+      }
+      : null;
 
   const chiTiet = r.skills.map((s) => `${skillShort(s.skill)} ${s.score === null ? '—' : `${s.score}/${s.total ?? '?'}`}`).join(' · ');
   const chinh = r.scored === 0
     ? <span className="text-xs text-slate-500">{kq.chinh}</span>
     : (
       <Outcome tone={truot ? 'danger' : 'ok'} title={chiTiet}>
-        {kq.chinh}{truot && r.sosLevel ? ` · ${sosLabel(r.sosLevel)}` : ''}
+        {kq.chinh}
+        {truot && r.sosLevel ? (
+          <span title={`${sosLabel(r.sosLevel)} — mức cần hỗ trợ theo số môn chưa đạt (${r.failedCount} môn)`}>
+            {` · ${sosLabel(r.sosLevel)}`}
+          </span>
+        ) : null}
       </Outcome>
     );
+
+  /* Nhãn Case: một nhãn cho cả dòng, liệt kê môn; tooltip "Case Listening · Đang xử lý" cho từng Case. */
+  const cases = row.cases;
+  const dauCase = cases[0] ?? null;
+  const nhanCase = dauCase && (
+    <Status
+      kind={dauCase.status === 'done' ? 'done' : dauCase.status === 'open' ? 'idle' : 'doing'}
+      title={cases.map((c) => `Case ${skillLabel(c.skill)} · ${caseStatusLabel(c.status)}`).join('\n')}>
+      Case {sheet.programme.skills.filter((k) => cases.some((c) => c.skill === k)).map(skillShort).join(', ')}
+    </Status>
+  );
+
   return (
     <div className="flex flex-col items-start gap-0.5 min-w-0">
-      {chinh}
-      {phu && <span className={`text-[10px] leading-tight truncate max-w-full ${phu.tone}`} title={phu.chu}>{phu.chu}</span>}
+      <div className="flex items-center gap-1.5 min-w-0">
+        {chinh}
+        {nhanCase}
+      </div>
+      {phu && <span className={`text-[10px] leading-tight truncate max-w-full ${phu.tone}`} title={phu.title}>{phu.chu}</span>}
     </div>
   );
 }

@@ -1,7 +1,7 @@
 import { db, tx } from '../db.ts';
 import {
   ASSESSED_SKILLS, ASSESSED_SKILL_LABEL, C10_NHAP_DAU_TRU_TUAN_QUA_KHU, ENTRY_SKILLS, ENTRY_SKILL_LABEL, MOCK_FT_STUDY_WEEK, NO_SHOW_OVERRIDDEN_NOTE,
-  PERMISSIONS, awaitingScore, kiemLyDo, noShowStateOf, noShowText, pendingSkillsOf,
+  PERMISSIONS, awaitingScore, kiemLyDo, noShowStateOf, noShowText, pendingSkillsOf, tuanLich,
   type AssessedSkill, type EntrySkill, type NoShowState, type PendingCell, type SkillProgress, type WorkScope,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -210,7 +210,7 @@ export type SkillCell = {
    */
   noShow: {
     state: Exclude<NoShowState, 'none'>;
-    /** Câu hiển thị: "Không có bài · Có thể sửa đến hết Chủ nhật 20/09", "Không dự thi · Tuần W3 SEP 2026", … */
+    /** Câu hiển thị: "Không có bài · Có thể sửa đến hết Chủ nhật 20/09", "Không dự thi · Tuần W3 SEP" (năm chỉ hiện khi khác năm), … */
     text: string;
     effectiveOn: string | null;
     editableUntil: string | null;
@@ -323,7 +323,8 @@ export function skillCells(
     const noShowNote = row?.no_show_settled_at && row.no_show_period_id === view.periodId && view.sitStatus !== 'absent'
       ? NO_SHOW_OVERRIDDEN_NOTE : null;
     const noShow = ns.state === 'none' ? null : {
-      state: ns.state, text: noShowText(ns, view.periodCode, today) ?? '',
+      /* Tuần viết bằng `tuanLich` (G-6): "W3 SEP", chỉ kèm năm khi khác năm hôm nay — không in mã tuần có năm. */
+      state: ns.state, text: noShowText(ns, view.weekStart ? tuanLich(view.weekStart, today) : view.periodCode, today) ?? '',
       effectiveOn: ns.effectiveOn, editableUntil: ns.editableUntil,
     };
 
