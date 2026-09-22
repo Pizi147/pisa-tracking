@@ -979,7 +979,7 @@ bản chính). Số đo trên Netlify (plan bản chính, Nhật ký 6b Step 7):
 - Produces (`db.ts`): `export function donGiaoDichTreo(): boolean`. (`app.ts`): `export function demGio(req, res, next): void`.
 - `hanGio.ts` **không** import `db.ts` (tránh vòng import: `db.ts` import `hanGio.ts`).
 
-- [ ] **Step 1: Phép kiểm (đỏ).**
+- [x] **Step 1: Phép kiểm (đỏ).**
 
 ```ts
   // ================================================================== 7. AN-5 — hạn 10 giây
@@ -1031,8 +1031,8 @@ bản chính). Số đo trên Netlify (plan bản chính, Nhật ký 6b Step 7):
   });
 ```
 
-- [ ] **Step 2: Chạy, đỏ.** Expected: 4 phép ✗ (thiếu mô-đun / `donGiaoDichTreo is not a function` / `demGio is not a function`).
-- [ ] **Step 3: Tạo `server/src/platform/hanGio.ts`.**
+- [x] **Step 2: Chạy, đỏ.** Expected: 4 phép ✗ (thiếu mô-đun / `donGiaoDichTreo is not a function` / `demGio is not a function`).
+- [x] **Step 3: Tạo `server/src/platform/hanGio.ts`.**
 
 ```ts
 import { AsyncLocalStorage } from 'node:async_hooks';
@@ -1069,7 +1069,7 @@ export function chanGiaoDichNeuSapHetGio(bayGio: number = Date.now()): void {
 }
 ```
 
-- [ ] **Step 4: Sửa `db.ts`.** Import `import { chanGiaoDichNeuSapHetGio } from './platform/hanGio.ts';`. Trong `tx`, thay dòng
+- [x] **Step 4: Sửa `db.ts`.** Import `import { chanGiaoDichNeuSapHetGio } from './platform/hanGio.ts';`. Trong `tx`, thay dòng
   `if (!conn.inTransaction) return conn.transaction(fn)();` bằng:
 
 ```ts
@@ -1094,7 +1094,7 @@ export function donGiaoDichTreo(): boolean {
 }
 ```
 
-- [ ] **Step 5: Sửa `app.ts`.** Import `import { HAN_HAM_NETLIFY_MS, LOG_CHAM_MS, chayVoiHan } from './platform/hanGio.ts';`,
+- [x] **Step 5: Sửa `app.ts`.** Import `import { HAN_HAM_NETLIFY_MS, LOG_CHAM_MS, chayVoiHan } from './platform/hanGio.ts';`,
   `import { donGiaoDichTreo } from './db.ts';`, `import { laBanChinh } from './moiTruong.ts';`. Hàm export bên ngoài `createApp`:
 
 ```ts
@@ -1119,8 +1119,8 @@ export function demGio(req: Request, res: Response, next: NextFunction): void {
 Trong `createApp`, thứ tự middleware thành: đổi đường Netlify → `express.json` → `cookieParser` → **`app.use(demGio)`** → route health (Task 6)
 → `attachPrincipal` → `api` → 404 → `traLoiLoi`. (Health đặt sau `demGio` cũng được — nó không mở giao dịch.)
 
-- [ ] **Step 6: Chạy, xanh.** Expected `TẤT CẢ 695 …`. Kiểm thêm: `npm run thu-goi` vẫn ĐẠT (đường gói Netlify có `demGio`).
-- [ ] **Step 7: Commit.** `git add server/src/platform/hanGio.ts && git commit -am "PR-AN (7): AN-5 không mở giao dịch khi sắp hết 10 giây, dọn giao dịch treo, log lời gọi chậm"`
+- [x] **Step 6: Chạy, xanh.** Expected `TẤT CẢ 695 …`. Kiểm thêm: `npm run thu-goi` vẫn ĐẠT (đường gói Netlify có `demGio`).
+- [x] **Step 7: Commit.** `git add server/src/platform/hanGio.ts && git commit -am "PR-AN (7): AN-5 không mở giao dịch khi sắp hết 10 giây, dọn giao dịch treo, log lời gọi chậm"`
 
 ---
 
@@ -1616,3 +1616,4 @@ song song trong cùng tiến trình sẽ thấy cờ; harness chạy tuần tự
 | 22/09 | Task 4 | Opus 5 · 682 → 685 (3 phép `AN-6 ·` mới) · đúng plan: hai phép HTTP ✓ ngay (luồng duyệt đã có), phép phiên ✗ "Phiên của tài khoản chờ duyệt vẫn dùng được" rồi ✓ sau khi sửa `resolveSession` (một câu JOIN users) · phép cũ phiên hết hạn / khôi phục (banChinh.tests) vẫn ✓ · ghi chú: ở máy dev, "Vào nhanh" vào một tài khoản **chờ duyệt** nay bị đẩy ra ngay — đúng ý (bộ demo không có tài khoản chờ duyệt) · code chép nguyên văn từ plan |
 | 22/09 | Task 5 | Opus 5 · 685 → 689 (4 phép `AN-3 ·` mới, cả 4 ✗ rồi ✓: 3 phép `traLoiLoi is not a function`, JSON hỏng nhận 500 kèm câu tiếng Anh) · `traLoiLoi` chép nguyên văn từ plan; import `Request/Response/NextFunction`, `HttpError` đã có sẵn · lệch nhỏ: grep soát không rỗng hẳn — còn 1 dòng là chính tên phép kiểm mới ("KHÔNG có details.raw"), không phải code; `web/src` không dùng `details.raw` · typecheck ✓ |
 | 22/09 | Task 6 | Opus 5 · 689 → 691 (2 phép `AN-4 ·` mới, cả 2 ✗ rồi ✓: phép HTTP `Cache-Control: null`, phép hàm "Chưa có mô-đun suKhoe.ts") · `suKhoe.ts` chép nguyên văn từ plan; health dời lên trước `attachPrincipal`, bỏ import `isInitialised` khỏi `app.ts` · `npm run thu-goi` ba dòng ĐẠT (worktree chưa có data/ nên chạy `npm run seed` trước — chỉ ghi data/pisa-demo.sqlite, không có biến Turso) |
+| 22/09 | Task 7 | Opus 5 · 691 → 695 (4 phép `AN-5 ·` mới, cả 4 ✗ rồi ✓: 2 phép "Chưa có mô-đun hanGio.ts", `donGiaoDichTreo is not a function`, `demGio is not a function`) · `hanGio.ts`, `tx()`/`donGiaoDichTreo` và `demGio` chép nguyên văn từ plan; `app.use(demGio)` ngay sau `cookieParser`, trước health · typecheck ✓ · `npm run thu-goi` ba dòng ĐẠT |

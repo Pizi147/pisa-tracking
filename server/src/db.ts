@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { cauHinhDb, choPhepSeedTurso, coCoBanChinh } from './moiTruong.ts';
+import { chanGiaoDichNeuSapHetGio } from './platform/hanGio.ts';
 
 /*
  * libsql gắn thêm `_metadata: { duration }` vào MỖI dòng `.get()` trả về (better-sqlite3 thì không). Khoá này lọt
@@ -150,7 +151,11 @@ let savepointDepth = 0;
 /** Chạy fn trong một transaction; mọi mutation nhiều bảng phải đi qua đây. */
 export function tx<T>(fn: () => T): T {
   const conn = db();
-  if (!conn.inTransaction) return conn.transaction(fn)();
+  if (!conn.inTransaction) {
+    /* AN-5: giao dịch NGOÀI chỉ mở khi lời gọi còn đủ giờ; savepoint bên trong một giao dịch đã mở thì không hỏi lại. */
+    chanGiaoDichNeuSapHetGio();
+    return conn.transaction(fn)();
+  }
   const name = `sp_${++savepointDepth}`;
   conn.exec(`SAVEPOINT ${name}`);
   try {
@@ -164,4 +169,15 @@ export function tx<T>(fn: () => T): T {
   } finally {
     savepointDepth--;
   }
+}
+
+/**
+ * AN-5: đầu mỗi lời gọi API, nếu kết nối còn một giao dịch bỏ dở (lần gọi trước trên cùng bản hàm bị cắt) thì cuộn lại. Không mở
+ * kết nối mới nếu chưa có (`instance` rỗng → không có gì để dọn, không tốn lượt mạng). Trả true khi đã dọn.
+ */
+export function donGiaoDichTreo(): boolean {
+  if (!instance || !instance.inTransaction) return false;
+  try { instance.exec('ROLLBACK'); } catch { /* kết nối đã hỏng — giao dịch cũng mất theo */ }
+  savepointDepth = 0;
+  return true;
 }

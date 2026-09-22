@@ -6,6 +6,9 @@ import { attachPrincipal } from './auth.ts';
 import { api } from './routes/index.ts';
 import { HttpError } from './util.ts';
 import { taoSuKhoe } from './platform/suKhoe.ts';
+import { HAN_HAM_NETLIFY_MS, LOG_CHAM_MS, chayVoiHan } from './platform/hanGio.ts';
+import { donGiaoDichTreo } from './db.ts';
+import { laBanChinh } from './moiTruong.ts';
 
 /**
  * ỨNG DỤNG EXPRESS — tách khỏi `index.ts` (chỗ gọi `listen`) để phép kiểm dựng được ĐÚNG ứng dụng đang chạy trên một cổng tạm và
@@ -25,6 +28,7 @@ export function createApp() {
 
   app.use(express.json({ limit: '12mb' }));
   app.use(cookieParser());
+  app.use(demGio);
   /* AN-4: đặt trước attachPrincipal — gọi health kèm cookie cũ cũng không tốn một lượt hỏi phiên. */
   app.get('/api/health', taoSuKhoe());
   app.use(attachPrincipal);
@@ -38,6 +42,24 @@ export function createApp() {
   app.use(traLoiLoi);
 
   return app;
+}
+
+/**
+ * ĐẾM GIỜ MỖI LỜI GỌI (AN-5). Đặt SAU express.json/cookieParser: ngữ cảnh AsyncLocalStorage không đi qua sự kiện luồng của bộ đọc
+ * thân yêu cầu. Đường tải tệp (multer) có thể mất hạn — khi đó chỉ là không chặn (an toàn như trước PR này).
+ *   · Dọn giao dịch treo của lần gọi trước.
+ *   · Log `[cham]` mọi lời gọi ≥ LOG_CHAM_MS — PR-Z2c đọc để biết trang nào cần gộp truy vấn.
+ *   · Bản chính: gắn hạn HAN_HAM_NETLIFY_MS cho cả lời gọi.
+ */
+export function demGio(req: Request, res: Response, next: NextFunction): void {
+  const batDau = Date.now();
+  if (donGiaoDichTreo()) console.error('[api] đã cuộn lại một giao dịch bỏ dở từ lần gọi trước');
+  res.on('finish', () => {
+    const ms = Date.now() - batDau;
+    if (ms >= LOG_CHAM_MS) console.warn(`[cham] ${req.method} ${req.path} ${ms} ms`);
+  });
+  if (!laBanChinh()) { next(); return; }
+  chayVoiHan(batDau + HAN_HAM_NETLIFY_MS, next);
 }
 
 /**

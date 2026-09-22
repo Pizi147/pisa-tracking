@@ -337,6 +337,54 @@ export async function runAnToanTests(t: AnToanTestKit) {
     assert(soLanHoi === 2 && r2.body?.seeded === false, `Sau 30 giây: hỏi ${soLanHoi} lần, ${JSON.stringify(r2.body)}`);
   });
 
+  // ================================================================== 7. AN-5 — hạn 10 giây
+
+  console.log('\nPR-AN · 7. Không mở giao dịch Turso khi hàm Netlify sắp hết 10 giây');
+  const hg = await load('../platform/hanGio.ts');
+  const dbMod: any = await import('../db.ts');
+  const coKhoa = (k: string) => !!conn.prepare('SELECT 1 FROM demo_config WHERE key = ?').get(k);
+  const ghiThu = (k: string) => conn.prepare('INSERT INTO demo_config (key, value, updated_at) VALUES (?,?,?)').run(k, 'x', new Date().toISOString());
+
+  check('AN-5 · Còn < 2,5 giây: tx() từ chối mở giao dịch (503 "chưa lưu gì"), không ghi gì; còn nhiều giờ thì chạy bình thường', () => {
+    assertThrows(() => hg.chayVoiHan(Date.now() + 1_000, () => dbMod.tx(() => ghiThu('an5_sap_het'))), /bận.*chưa lưu gì/, 'Sắp hết giờ mà vẫn mở giao dịch');
+    assert(!coKhoa('an5_sap_het'), 'Bị từ chối mà vẫn ghi');
+    hg.chayVoiHan(Date.now() + 60_000, () => dbMod.tx(() => ghiThu('an5_con_gio')));
+    assert(coKhoa('an5_con_gio'), 'Còn giờ mà không ghi được');
+    conn.prepare("DELETE FROM demo_config WHERE key LIKE 'an5_%'").run();
+  });
+
+  check('AN-5 · Ngoài một lời gọi có hạn (máy dev, lệnh, phép kiểm): không chặn gì; giao dịch LỒNG không bị hỏi lại', () => {
+    assert(hg.conLaiMs() === null, 'Ngoài lời gọi mà có hạn');
+    dbMod.tx(() => ghiThu('an5_ngoai'));
+    assert(coKhoa('an5_ngoai'), 'Máy dev bị chặn');
+    /* Giao dịch ngoài mở lúc còn giờ; giao dịch trong (savepoint) chạy dù đồng hồ đã qua ngưỡng — cắt giữa chừng mới là điều cần tránh. */
+    hg.chayVoiHan(Date.now() + 2_600, () => dbMod.tx(() => {
+      const cho = Date.now() + 200; while (Date.now() < cho) { /* đẩy đồng hồ qua ngưỡng 2,5 giây trong lúc giao dịch ngoài đang mở */ }
+      dbMod.tx(() => ghiThu('an5_long'));
+    }));
+    assert(coKhoa('an5_long'), 'Savepoint trong giao dịch đã mở bị chặn');
+    conn.prepare("DELETE FROM demo_config WHERE key LIKE 'an5_%'").run();
+  });
+
+  check('AN-5 · donGiaoDichTreo(): còn giao dịch bỏ dở trên kết nối thì cuộn lại, trả true; không có thì trả false', () => {
+    conn.exec('BEGIN');
+    ghiThu('an5_treo');
+    assert(dbMod.donGiaoDichTreo() === true && !conn.inTransaction, 'Không dọn được giao dịch treo');
+    assert(!coKhoa('an5_treo'), 'Dòng của giao dịch treo vẫn còn');
+    assert(dbMod.donGiaoDichTreo() === false, 'Không có gì mà vẫn báo dọn');
+  });
+
+  check('AN-5 · demGio: bản chính gắn hạn 10 giây cho cả lời gọi; máy dev không gắn', () => {
+    let trongHan: number | null = null;
+    process.env.BAN_CHINH = '1';
+    try { appMod.demGio({ method: 'GET', path: '/api/x' } as any, giaRes(), () => { trongHan = hg.conLaiMs(); }); }
+    finally { delete process.env.BAN_CHINH; }
+    assert(trongHan !== null && trongHan > 9_000 && trongHan <= 10_000, `Bản chính: còn ${trongHan} ms`);
+    let dev: number | null = 0;
+    appMod.demGio({ method: 'GET', path: '/api/x' } as any, giaRes(), () => { dev = hg.conLaiMs(); });
+    assert(dev === null, `Máy dev có hạn: ${dev}`);
+  });
+
   // ---- các task sau thêm phép kiểm NGAY TRÊN dòng này ----
 
   may.close();
