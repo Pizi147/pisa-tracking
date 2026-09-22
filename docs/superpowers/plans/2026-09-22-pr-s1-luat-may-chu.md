@@ -2055,7 +2055,7 @@ này về 0; hai điều kiện dưới vẫn giữ để bắt chênh lệch m�
   API body `{ toClassId, effectiveDate?, reasonCode, reasonNote?, handoverNote?, noHandoverNote?, receiverUserId? }`.
 - `applyTransition` (Chuyển tiếp lớp, `transition.ts:211-217`) đã truyền lý do + ghi chú mặc định khác rỗng → **không đổi**. PR-LT làm lại màn đó.
 
-- [ ] **Step 1: Phép kiểm (đỏ).**
+- [x] **Step 1: Phép kiểm (đỏ).**
 
 ```ts
   // ================================================================== 14. RB-3
@@ -2092,8 +2092,8 @@ này về 0; hai điều kiện dưới vẫn giữ để bắt chênh lệch m�
   });
 ```
 
-- [ ] **Step 2: Chạy, đỏ.** Expected: ba phép ✗.
-- [ ] **Step 3: `shared/domain/students.ts`** (sau `STUDENT_STATUS_LABEL`):
+- [x] **Step 2: Chạy, đỏ.** Expected: ba phép ✗.
+- [x] **Step 3: `shared/domain/students.ts`** (sau `STUDENT_STATUS_LABEL`):
 
 ```ts
 /**
@@ -2118,7 +2118,7 @@ export function transferReasonText(code: unknown, note?: unknown): string | null
 }
 ```
 
-- [ ] **Step 4: `transferStudent`.** Chữ ký: `reason: string` (bỏ `?`), `handover?: { note?: string | null; noNote?: boolean; receiverUserId?: number | null }`.
+- [x] **Step 4: `transferStudent`.** Chữ ký: `reason: string` (bỏ `?`), `handover?: { note?: string | null; noNote?: boolean; receiverUserId?: number | null }`.
   Thay khối từ `const brief = handoverBrief(studentId);` tới hết `if (brief.cases.length > 0 && …) { throw … }` (dòng 170–176) bằng:
 
 ```ts
@@ -2141,7 +2141,7 @@ export function transferReasonText(code: unknown, note?: unknown): string | null
 ```
 Trong thân: `end_reason` dùng `why`; `addJourney` `detail: [why, handoverNote].join(' — ')`. Import `NO_HANDOVER_NOTE`.
 
-- [ ] **Step 5: Route** (`routes/index.ts:1349-1358`):
+- [x] **Step 5: Route** (`routes/index.ts:1349-1358`):
 
 ```ts
 api.post('/students/:id/transfer', requireAuth, wrap((req) => {
@@ -2161,7 +2161,7 @@ api.post('/students/:id/transfer', requireAuth, wrap((req) => {
 ```
 Import `transferReasonText` từ `shared/domain` ở đầu `routes/index.ts` (cạnh các import domain đang có — kiểm tên khối import).
 
-- [ ] **Step 6: Web `TransferForm`** (`StudentManagePanel.tsx`). Tối thiểu, dùng thành phần sẵn có (`Field`, `select.field`):
+- [x] **Step 6: Web `TransferForm`** (`StudentManagePanel.tsx`). Tối thiểu, dùng thành phần sẵn có (`Field`, `select.field`):
   - thay state `reason` bằng `reasonCode` (`''`) + `reasonNote` (`''`); thêm `noNote` (`false`);
   - `import { NO_HANDOVER_NOTE, TRANSFER_REASONS, TRANSFER_REASON_LABEL } from '@shared/domain/index.ts';`
   - thay `<Field label="Lý do">…</Field>` bằng:
@@ -2199,11 +2199,11 @@ Import `transferReasonText` từ `shared/domain` ở đầu `routes/index.ts` (c
     `{ toClassId, effectiveDate: date || undefined, reasonCode, reasonNote: reasonNote || undefined, handoverNote: handoverNote || undefined, noHandoverNote: noNote, receiverUserId: receiverUserId || undefined }`.
   - Không đổi gì khác (bố cục mới của màn chuyển lớp là PR-LT).
 
-- [ ] **Step 7: Chạy.** `npm run typecheck` rồi `npm test 2>&1 | tail -3` — Expected `714`. Phép cũ `run.ts:1150`, `:5320`, `:5330` truyền lý do chữ +
+- [x] **Step 7: Chạy.** `npm run typecheck` rồi `npm test 2>&1 | tail -3` — Expected `714`. Phép cũ `run.ts:1150`, `:5320`, `:5330` truyền lý do chữ +
   ghi chú → ✓.
 - [ ] **Step 8: Bấm thử** (vai Quản lý MB, `npm run dev` trong worktree): mở hồ sơ một HV → Chuyển lớp → bấm "Chuyển lớp" khi chưa chọn lý do → báo lỗi;
   chọn "Đổi lịch học", tích "Không có lưu ý" → chuyển được. Ghi kết quả vào Nhật ký. (Không chụp màn cho chủ sản phẩm — màn này PR-LT làm lại.)
-- [ ] **Step 9: Commit.** `git commit -am "PR-S1 (14): RB-3 — chuyển lớp bắt buộc lý do chọn nhanh + lưu ý bàn giao / 'Không có lưu ý'"`
+- [x] **Step 9: Commit.** `git commit -am "PR-S1 (14): RB-3 — chuyển lớp bắt buộc lý do chọn nhanh + lưu ý bàn giao / 'Không có lưu ý'"`
 
 ---
 

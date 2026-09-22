@@ -7,6 +7,7 @@ import {
   PERMISSIONS, REGULAR_SKILLS, ROLE_LABEL, WORK_SCOPES,
   type Role, type WorkScope,
 } from '../../../shared/domain/index.ts';
+import { transferReasonText } from '../../../shared/domain/index.ts';
 import { demoToday, getConfig, scenarioMode, setConfig } from '../demoConfig.ts';
 import { HttpError, badRequest, forbidden, isIsoDate, notFound, toInt } from '../util.ts';
 import { SESSION_COOKIE, createSession, destroySession, principalOf, requireAuth } from '../auth.ts';
@@ -1354,11 +1355,15 @@ api.patch('/students/:id', requireAuth, wrap((req) => {
 
 api.post('/students/:id/transfer', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
-  const { toClassId, effectiveDate, reason, handoverNote, receiverUserId } = req.body ?? {};
+  const { toClassId, effectiveDate, reasonCode, reasonNote, handoverNote, noHandoverNote, receiverUserId } = req.body ?? {};
   if (!toClassId) throw badRequest('Cần chọn lớp đích.');
+  /* RB-3: lý do chọn nhanh BẮT BUỘC; "Khác" phải ghi rõ. */
+  const reason = transferReasonText(reasonCode, reasonNote);
+  if (!reason) throw badRequest('Chọn lý do chuyển lớp (chọn "Khác" thì ghi rõ).');
   return studentSvc.transferStudent(principalOf(req), pInt(req, 'id'), Number(toClassId),
     effectiveDate ?? demoToday(), reason, {
       note: handoverNote ?? null,
+      noNote: noHandoverNote === true,
       receiverUserId: receiverUserId ? Number(receiverUserId) : null,
     });
 }));

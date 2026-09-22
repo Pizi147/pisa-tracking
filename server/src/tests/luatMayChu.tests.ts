@@ -679,5 +679,38 @@ export async function runLuatMayChuTests(t: YThucTestKit) {
     assert(/≥ 70%/.test(src), 'Thiếu dòng ngưỡng "≥ 70%" ở đầu file');
   });
 
+  // ================================================================== 14. RB-3
+
+  console.log('\nPR-S1 · 14. RB-3 — chuyển lớp: lý do bắt buộc (chọn nhanh), lưu ý bàn giao bắt buộc hoặc "Không có lưu ý"');
+  const studentsSvc: any = await import('../students/students.ts');
+  const targetClass = classId('MB-FT 102');
+
+  check('RB-3 · transferReasonText: bốn lựa chọn đúng chữ; "Khác" phải ghi rõ; mã lạ bị từ chối', () => {
+    assert(domain.transferReasonText('doi_lich_hoc') === 'Đổi lịch học', domain.transferReasonText('doi_lich_hoc'));
+    assert(domain.transferReasonText('xep_lai_trinh_do', 'Lên lớp cao hơn') === 'Xếp lại trình độ — Lên lớp cao hơn', 'Kèm ghi chú');
+    assert(domain.transferReasonText('khac') === null && domain.transferReasonText('khac', '  ') === null, '"Khác" không ghi gì phải bị từ chối');
+    assert(domain.transferReasonText('khac', 'Gia đình chuyển nhà') === 'Khác — Gia đình chuyển nhà', 'Khác có ghi chú');
+    assert(domain.transferReasonText('bua') === null && domain.transferReasonText(undefined) === null, 'Mã lạ');
+    assert(domain.NO_HANDOVER_NOTE === 'Không có lưu ý', 'Chữ lựa chọn');
+  });
+
+  check('RB-3 · Không lý do → từ chối; không lưu ý và không chọn "Không có lưu ý" → từ chối; chọn "Không có lưu ý" → chuyển được, hành trình ghi rõ', () => {
+    const hv = taoHocVien({ classCode: 'MB-FOU 12', weekStart: '2026-09-07' });
+    assertThrows(() => studentsSvc.transferStudent(P.mbManager, hv.sid, targetClass, TODAY, '  '), /lý do/, 'Chuyển lớp không lý do');
+    assertThrows(() => studentsSvc.transferStudent(P.mbManager, hv.sid, targetClass, TODAY, 'Đổi lịch học', {}),
+      /Không có lưu ý/, 'Chuyển lớp không lưu ý bàn giao');
+    studentsSvc.transferStudent(P.mbManager, hv.sid, targetClass, TODAY, 'Đổi lịch học', { noNote: true });
+    const j = conn.prepare(`SELECT detail FROM journey_events WHERE student_id = ? AND event_type = 'transfer' ORDER BY id DESC LIMIT 1`).get(hv.sid) as any;
+    assert(j && String(j.detail).includes('Đổi lịch học') && String(j.detail).includes('Không có lưu ý'), `Hành trình: ${j?.detail}`);
+  });
+
+  check('RB-3 · Em còn Case mở thì KHÔNG được chọn "Không có lưu ý" — phải ghi bàn giao (Q10)', () => {
+    const hv = taoHocVien({ classCode: 'MB-FOU 12', weekStart: '2026-09-07' });
+    diem(hv.attemptId, 'listening', 10, 40);
+    caseTuTinHieu(pGvcnFou, tinHieu(hv.attemptId, 'listening'));
+    assertThrows(() => studentsSvc.transferStudent(P.mbManager, hv.sid, targetClass, TODAY, 'Đổi lịch học', { noNote: true }),
+      /bàn giao/, 'Còn Case mở mà chọn "Không có lưu ý"');
+  });
+
   // ---- các task sau thêm phép kiểm NGAY TRÊN dòng này ----
 }

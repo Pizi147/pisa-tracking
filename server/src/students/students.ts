@@ -1,5 +1,7 @@
 import { db, tx } from '../db.ts';
-import { ARCHIVE_AFTER_DAYS, ENTRY_SKILLS, JOURNEY_GROUP, PERMISSIONS, STUDENT_STATUSES } from '../../../shared/domain/index.ts';
+import {
+  ARCHIVE_AFTER_DAYS, ENTRY_SKILLS, JOURNEY_GROUP, NO_HANDOVER_NOTE, PERMISSIONS, STUDENT_STATUSES,
+} from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addDays, badRequest, isIsoDate, normalizeName, notFound, nowIso, padCode } from '../util.ts';
 import { can, classScopeSql, require_, scopeFor, type Principal } from '../permissions.ts';
@@ -152,9 +154,11 @@ export function handoverBrief(studentId: number) {
   };
 }
 
-export function transferStudent(p: Principal, studentId: number, toClassId: number, effectiveDate: string, reason?: string, handover?: {
+export function transferStudent(p: Principal, studentId: number, toClassId: number, effectiveDate: string, reason: string, handover?: {
   /** Ghi chú bàn giao — BẮT BUỘC khi em còn case chưa xong. */
   note?: string | null;
+  /** Chọn rõ "Không có lưu ý" (RB-3) — chỉ nhận khi em không còn case dở. */
+  noNote?: boolean;
   /** Người tiếp nhận: đổi người phụ trách của các case còn mở sang người này. */
   receiverUserId?: number | null;
 }) {
@@ -162,19 +166,22 @@ export function transferStudent(p: Principal, studentId: number, toClassId: numb
   require_(p, PERMISSIONS.STUDENT_EDIT, { classId: toClassId }, 'Lớp đích nằm ngoài phạm vi bạn được cấp quyền.');
   if (!isIsoDate(effectiveDate)) throw badRequest('Ngày hiệu lực không hợp lệ.');
 
+  const why = String(reason ?? '').trim();
+  if (!why) throw badRequest('Chọn lý do chuyển lớp.');
   /*
-   * CÒN CASE DỞ THÌ BẮT BUỘC BÀN GIAO (mục 6.4).
-   *
-   * Không phải một ô cho đủ thủ tục: giáo viên mới nhận em sẽ đọc đúng dòng này để biết em
-   * đang vướng gì. Em không còn case nào thì không hỏi — đừng bắt gõ cho có.
+   * LƯU Ý BÀN GIAO BẮT BUỘC, có lựa chọn "Không có lưu ý" (RB-3). Còn Case dở thì KHÔNG được chọn "Không có lưu ý": người nhận lớp
+   * đọc đúng dòng này để biết em đang vướng gì (mục 6.4) — plan PR-S1 Q10.
    */
   const brief = handoverBrief(studentId);
-  if (brief.cases.length > 0 && !(handover?.note ?? '').trim()) {
+  const typed = (handover?.note ?? '').trim();
+  if (brief.cases.length > 0 && !typed) {
     throw badRequest(
       `Em còn ${brief.cases.length} case chưa xong. Ghi thông tin bàn giao để người nhận lớp `
       + 'biết em đang vướng gì và đang làm dở đến đâu.',
     );
   }
+  if (!typed && !handover?.noNote) throw badRequest(`Ghi lưu ý bàn giao, hoặc chọn "${NO_HANDOVER_NOTE}".`);
+  const handoverNote = typed || NO_HANDOVER_NOTE;
   return tx(() => {
     const conn = db();
     const toClass = conn.prepare('SELECT * FROM classes WHERE id = ?').get(toClassId) as any;
@@ -185,7 +192,7 @@ export function transferStudent(p: Principal, studentId: number, toClassId: numb
     if (cur?.class_id === toClassId) throw badRequest('Học viên đã ở lớp này.');
     if (cur) {
       conn.prepare(`UPDATE enrollments SET status='transferred', ended_at=?, end_reason=? WHERE id=?`)
-        .run(effectiveDate, reason ?? 'Chuyển lớp', cur.id);
+        .run(effectiveDate, why, cur.id);
     }
     const info = conn
       .prepare(`INSERT INTO enrollments (student_id, class_id, status, started_at, created_at) VALUES (?,?, 'active', ?, ?)`)
@@ -214,7 +221,7 @@ export function transferStudent(p: Principal, studentId: number, toClassId: numb
     addJourney({
       studentId, eventType: 'transfer', eventDate: effectiveDate,
       title: `Chuyển sang lớp ${toClass.code}`,
-      detail: [reason, (handover?.note ?? '').trim() || null].filter(Boolean).join(' — ') || null,
+      detail: [why, handoverNote].join(' — '),
       createdBy: p.userId,
     });
     writeAudit({ actorUserId: p.userId, action: 'student.transfer', entityType: 'student', entityId: studentId,
