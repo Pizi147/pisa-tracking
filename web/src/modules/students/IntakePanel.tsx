@@ -294,8 +294,11 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
                             className={`field ${c.width} ${issue && !isWarning(issue.message) ? 'border-rose-300/60' : ''}`}
                             value={String((r as any)[c.key] ?? '')}
                             disabled={skipped}
-                            /* Ô tuần bỏ trống thì hiện tuần mặc định của cả lô, để không ai phải đoán. */
-                            placeholder={c.key === 'startWeek' ? (pv?.defaultStartWeek ?? '') : undefined}
+                            /* Ô tuần bỏ trống thì hiện tuần mặc định của cả lô, để không ai phải đoán.
+                               G-6: không hiện ISO — ngay() đổi "2026-07-27" thành "27/07/2026". */
+                            placeholder={c.key === 'startWeek'
+                              ? (pv?.defaultStartWeek ? ngay(pv.defaultStartWeek, homNay) : '')
+                              : undefined}
                             aria-label={`${c.label} dòng ${i + 1}`}
                             onChange={(e) => setCell(i, c.key, e.target.value)}
                           />
