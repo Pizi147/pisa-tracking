@@ -284,6 +284,7 @@ Hướng dẫn cho chủ sản phẩm: `TRIEN_KHAI.md`. Kế hoạch: `docs/supe
 | Dữ liệu nền dùng chung cho bộ demo và bản chính (quyền, vai trò, lộ trình, chương trình) | `server/src/seed/duLieuNen.ts` → `napDuLieuNen` |
 | `npm run init-ban-chinh` — khởi tạo database rỗng; `npm run them-chi-nhanh` | `server/src/ops/initBanChinh.ts` (luật) · `server/src/ops/runInit.ts` · `server/src/ops/themChiNhanh.ts` (điểm chạy) |
 | `npm run sao-luu` — chép database + tải kho tệp, giữ 14 bản | `server/src/ops/saoLuu.ts` (luật) · `server/src/ops/runSaoLuu.ts` (điểm chạy) |
+| `npm run khoi-phuc` — chép một bản sao lưu vào database rỗng | `server/src/ops/khoiPhuc.ts` (luật) · `server/src/ops/runKhoiPhuc.ts` (điểm chạy) |
 | `npm run thu-turso` — thử đường mạng tới database THỬ | `server/src/ops/thuTurso.ts` |
 | `npm run migrate` vào Turso (xác nhận, bỏ tài khoản mặc định) | `server/src/migrate/run.ts` · `server/src/migrate.ts` → `migrateAccounts` |
 | Phép kiểm của bản chính | `server/src/tests/banChinh.tests.ts` |

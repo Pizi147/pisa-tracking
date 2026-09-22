@@ -272,13 +272,14 @@ tạo database, đặt biến môi trường, khởi tạo, deploy, sao lưu —
 biết code. Kế hoạch kỹ thuật: `docs/superpowers/plans/2026-09-21-ban-chinh-netlify-turso.md`.
 
 **Máy dev không đổi gì:** `npm run dev`, `npm run seed`, `npm test`, `npm run check`, `npm run migrate` vẫn chạy như trên
-với file `data/pisa-demo.sqlite`. Ba lệnh chỉ dùng cho bản chính:
+với file `data/pisa-demo.sqlite`. Bốn lệnh chỉ dùng cho bản chính:
 
 | Lệnh | Tác dụng |
 |---|---|
 | `npm run init-ban-chinh` | Khởi tạo database bản chính **rỗng** (bảng, vai trò, chi nhánh, một tài khoản quản trị). Database đã có dữ liệu → từ chối, không ghi gì |
 | `npm run them-chi-nhanh -- MÃ "Tên"` | Thêm một chi nhánh. Mã đã có → từ chối |
-| `npm run sao-luu` | Chép toàn bộ database (và tệp bằng chứng) ra một file `.sqlite`; giữ 14 bản. Chỉ đọc database |
+| `npm run sao-luu` | Chép toàn bộ database (và tệp bằng chứng) ra một file `.sqlite` mang tên database; giữ 14 bản mỗi database. Chỉ đọc database |
+| `npm run khoi-phuc` | Chép một file sao lưu vào một database **mới, hoàn toàn trống** (`TRIEN_KHAI.md` mục 11.2). Đích đã có dữ liệu → từ chối |
 
 `npm run seed` **từ chối** chạy khi đang trỏ tới Turso (nó xoá sạch database); `npm run migrate` vào Turso cần xác nhận
 (`TRIEN_KHAI.md` mục 11.1).

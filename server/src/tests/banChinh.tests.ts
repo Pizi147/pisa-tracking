@@ -84,8 +84,8 @@ export async function runBanChinhTests(t: BanChinhTestKit) {
   check('PR-Z2 · `npm run seed` vào tên máy chủ kiểu bản chính TỪ CHỐI dù biến cho phép khớp nguyên tên, và chỉ cách seed database THỬ', () => {
     /* Máy chủ không tồn tại + token giả: nếu chốt hỏng thì lệnh cũng không xoá được gì của ai. */
     const r = cp.spawnSync(process.execPath, [pathMod.join(REPO, 'dist-server/server/src/seed/run.js')], {
-      env: { ...process.env, TURSO_DATABASE_URL: 'libsql://pisatracking-khong-ton-tai.turso.io', TURSO_AUTH_TOKEN: 'x',
-        BAN_CHINH: '', PISA_CHO_PHEP_SEED_TURSO: 'pisatracking-khong-ton-tai.turso.io' },
+      env: { ...process.env, TURSO_DATABASE_URL: 'libsql://pisatracking-khong-ton-tai.invalid', TURSO_AUTH_TOKEN: 'x',
+        BAN_CHINH: '', PISA_CHO_PHEP_SEED_TURSO: 'pisatracking-khong-ton-tai.invalid' },
       encoding: 'utf8', timeout: 60_000,
     });
     assert(r.status !== 0 && r.status !== null && /TỪ CHỐI/.test(r.stderr), `Mã thoát ${r.status}; stderr: ${String(r.stderr).slice(-300)}`);
@@ -121,7 +121,7 @@ export async function runBanChinhTests(t: BanChinhTestKit) {
   check('PR-Z2 · `npm run migrate` TỪ CHỐI khi trỏ tới Turso mà chưa xác nhận đúng nguyên tên — dừng TRƯỚC khi kết nối, nhắc sao lưu', () => {
     for (const xacNhan of ['', 'pisatracking', 'turso.io']) {
       const r = cp.spawnSync(process.execPath, [migrateRunJs], {
-        env: { ...process.env, TURSO_DATABASE_URL: 'libsql://khong-ton-tai.turso.io', TURSO_AUTH_TOKEN: 'x', PISA_CHO_PHEP_MIGRATE_TURSO: xacNhan },
+        env: { ...process.env, TURSO_DATABASE_URL: 'libsql://khong-ton-tai.invalid', TURSO_AUTH_TOKEN: 'x', PISA_CHO_PHEP_MIGRATE_TURSO: xacNhan },
         encoding: 'utf8', timeout: 60_000,
       });
       assert(r.status !== 0 && r.status !== null && /TỪ CHỐI/.test(r.stderr),
@@ -261,7 +261,7 @@ export async function runBanChinhTests(t: BanChinhTestKit) {
   });
   check('PR-Z2 · `npm run thu-turso` (tạo/xoá bảng _thu) TỪ CHỐI database kiểu bản chính và khi BAN_CHINH=1 — dừng trước khi kết nối', () => {
     const thuJs = pathMod.join(REPO, 'dist-server/server/src/ops/thuTurso.js');
-    for (const [url, banChinh] of [['libsql://pisatracking-khong-ton-tai.turso.io', ''], ['libsql://pisatracking-demo-khong-ton-tai.turso.io', '1']]) {
+    for (const [url, banChinh] of [['libsql://pisatracking-khong-ton-tai.invalid', ''], ['libsql://pisatracking-demo-khong-ton-tai.invalid', '1']]) {
       const r = cp.spawnSync(process.execPath, [thuJs], {
         env: { ...process.env, TURSO_DATABASE_URL: url, TURSO_AUTH_TOKEN: 'x', BAN_CHINH: banChinh }, encoding: 'utf8', timeout: 60_000,
       });
