@@ -1,0 +1,50 @@
+<style>
+  .pp{--bg:#0d1423;--s:#111b2d;--line:#293852;--tx:#e8eef7;--mu:#8f9db4;--yl:#e5c66a;--yb:#3a3219;--rd:#ff9a9a;--gr:#73d9a5;
+      background:var(--bg);color:var(--tx);font:12px Inter,Segoe UI,Arial,sans-serif;border-radius:8px;overflow:hidden;border:1px solid var(--line);font-variant-numeric:tabular-nums}
+  .pp .w{padding:12px}
+  .pp table{width:100%;border-collapse:collapse;table-layout:fixed}
+  .pp th{color:#6f819e;font-size:10px;padding:5px 12px;font-weight:700;text-transform:uppercase;text-align:left;border-bottom:1px solid var(--line)}
+  .pp td{padding:0 12px;height:44px;border-bottom:1px solid #22314a;vertical-align:middle}
+  .pp .nm{font-weight:700}
+  .pp .sc{font-size:14px;font-weight:800}.pp .gap{font-size:11px;font-weight:800;margin-left:5px}
+  .pp .neg{color:var(--rd)}.pp .ok{color:var(--gr)}.pp .sub{display:block;font-size:10px;color:#6f819e;margin-top:1px}
+  .pp .n{display:inline-block;padding:1px 6px;border-radius:999px;font-size:10px;font-weight:800;background:var(--yb);color:var(--yl);margin-left:6px}
+  .pp .sk{display:inline-block;min-width:34px;text-align:center;border-radius:5px;padding:1px 3px;font-size:10px;font-weight:700;margin-right:3px;background:#1b2c47;color:#c9d4e6}
+  .pp .sk.b{background:#3b2126;color:#ff9a9a}
+</style>
+
+<h2>7c · Cột "Kết quả gần nhất" — ghi rõ điểm và khoảng thiếu</h2>
+<p class="subtitle">"Thiếu" tính theo <b>kỳ vọng của chính đợt đó</b> (MT1 thấp hơn mục tiêu 1.0, MT2 thấp hơn 0.5, từ MT3 bằng mục tiêu). Chọn A, B hoặc C.</p>
+
+<div class="options">
+ <div class="option" data-choice="a" onclick="toggleSelect(this)"><div class="letter">A</div><div class="content">
+  <h3>Điểm Overall + khoảng thiếu, dòng dưới là đợt và kỹ năng hụt (khuyến nghị)</h3>
+  <p>Nhìn số to là biết em đang ở đâu, số đỏ là thiếu bao nhiêu; dòng nhỏ nói đợt nào, kỹ năng nào kéo xuống.</p>
+  <div class="pp" style="margin-top:8px"><div class="w"><table><colgroup><col style="width:30%"><col style="width:40%"><col style="width:30%"></colgroup>
+   <tr><th>Học viên</th><th>Kết quả gần nhất</th><th>Mục tiêu</th></tr>
+   <tr><td class="nm">Lê Quang Huy</td><td><span class="sc">6.0</span><span class="gap neg">thiếu 0.5</span><span class="n">SOS 1</span><span class="sub">MT2 · kỳ vọng 6.5 · hụt Listening (5.5)</span></td><td>6.5</td></tr>
+   <tr><td class="nm">Nguyễn Minh An</td><td><span class="sc">6.0</span><span class="gap ok">đạt kỳ vọng</span><span class="sub">MT2 · kỳ vọng 6.0</span></td><td>6.5</td></tr>
+   <tr><td class="nm">Đỗ Minh Khôi</td><td><span class="sc" style="color:#8f9db4">—</span><span class="n">SOS 2 · tạm thời</span><span class="sub">MT2 · mới có 2/4 kỹ năng · hụt W2 (5.5), S (6.0)</span></td><td>7.0</td></tr>
+  </table></div></div>
+ </div></div>
+
+ <div class="option" data-choice="b" onclick="toggleSelect(this)"><div class="letter">B</div><div class="content">
+  <h3>Điểm từng kỹ năng dạng ô nhỏ, ô đỏ là kỹ năng hụt</h3>
+  <p>Thấy ngay từng kỹ năng, nhưng cột rộng hơn và nhiều số hơn.</p>
+  <div class="pp" style="margin-top:8px"><div class="w"><table><colgroup><col style="width:28%"><col style="width:52%"><col style="width:20%"></colgroup>
+   <tr><th>Học viên</th><th>Kết quả gần nhất (MT2 · kỳ vọng)</th><th>Mục tiêu</th></tr>
+   <tr><td class="nm">Lê Quang Huy</td><td><span class="sk b">L 5.5</span><span class="sk">R 6.0</span><span class="sk">W 6.0</span><span class="sk">S 6.0</span> <b>6.0</b> <span class="gap neg">thiếu 0.5</span></td><td>6.5</td></tr>
+   <tr><td class="nm">Nguyễn Minh An</td><td><span class="sk">L 6.0</span><span class="sk">R 6.0</span><span class="sk">W 5.5</span><span class="sk">S 6.0</span> <b>6.0</b> <span class="gap ok">đạt</span></td><td>6.5</td></tr>
+  </table></div></div>
+ </div></div>
+
+ <div class="option" data-choice="c" onclick="toggleSelect(this)"><div class="letter">C</div><div class="content">
+  <h3>Chỉ một dòng: "6.0 / kỳ vọng 6.5"</h3>
+  <p>Gọn nhất, nhưng không biết kỹ năng nào kéo xuống.</p>
+  <div class="pp" style="margin-top:8px"><div class="w"><table><colgroup><col style="width:30%"><col style="width:40%"><col style="width:30%"></colgroup>
+   <tr><th>Học viên</th><th>Kết quả gần nhất</th><th>Mục tiêu</th></tr>
+   <tr><td class="nm">Lê Quang Huy</td><td><b>6.0</b> <span class="sub" style="display:inline">/ kỳ vọng 6.5 · MT2</span><span class="gap neg">−0.5</span></td><td>6.5</td></tr>
+  </table></div></div>
+ </div></div>
+</div>
+<p class="subtitle" style="margin-top:10px">Lớp Normal: ghi "Đạt 3/4 môn" thay cho Overall (Normal không có Overall IELTS), môn chưa đạt ghi ở dòng nhỏ.</p>

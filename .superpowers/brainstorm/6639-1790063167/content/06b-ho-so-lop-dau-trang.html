@@ -1,0 +1,44 @@
+<style>
+  .pp{--bg:#0d1423;--s:#111b2d;--line:#293852;--tx:#e8eef7;--mu:#8f9db4;--bl:#84baff;--bb:#173451;--yl:#e5c66a;--yb:#3a3219;--rd:#ff9a9a;--rb:#3b2126;
+      background:var(--bg);color:var(--tx);font:12px Inter,Segoe UI,Arial,sans-serif;border-radius:8px;overflow:visible;border:1px solid var(--line)}
+  .pp .w{padding:12px}.pp .mu{color:var(--mu);font-size:11px}.pp .sp{flex:1}
+  .pp .hero{background:var(--s);border:1px solid var(--line);border-radius:10px;padding:12px;display:flex;align-items:flex-start;gap:8px;margin-bottom:10px;position:relative}
+  .pp h4{margin:0 0 3px;font-size:17px}
+  .pp .btn{border:1px solid var(--line);border-radius:7px;padding:5px 10px;font-weight:700;font-size:11px;white-space:nowrap}.pp .btn.p{background:#82b9f6;color:#0c1726;border-color:#82b9f6}
+  .pp .more{display:inline-block;width:26px;height:26px;line-height:24px;text-align:center;border:1px solid #84baff;border-radius:7px;color:#84baff}
+  .pp .menu{position:absolute;right:12px;top:44px;background:#121d31;border:1px solid var(--line);border-radius:8px;padding:4px;width:190px;z-index:3}
+  .pp .menu div{padding:7px 9px;border-radius:5px;text-align:left}.pp .menu div:first-child{background:#173451}
+  .pp .gv{display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:7px}
+  .pp .gv span b{color:var(--mu);font-weight:600;margin-right:4px}.pp .gv a{color:var(--tx);text-decoration:underline dotted #5c6f8f;text-underline-offset:3px}
+  .pp .n{display:inline-block;padding:2px 7px;border-radius:999px;font-size:10px;font-weight:800}
+  .pp .r{background:var(--rb);color:var(--rd)}.pp .y{background:var(--yb);color:var(--yl)}
+  .pp .tabs{display:flex;gap:4px;border-bottom:1px solid var(--line)}
+  .pp .tab{padding:7px 12px;color:var(--mu);font-weight:800;border-bottom:3px solid transparent}.pp .tab.on{color:var(--tx);border-color:var(--bl)}
+</style>
+
+<h2>6b · Hồ sơ lớp — đầu trang (bản sửa)</h2>
+<p class="subtitle">Bỏ tab Giáo viên → dòng giáo viên nằm ngay dưới thông tin lớp, tên bấm được (sau này mở hồ sơ giáo viên). Hai nhãn việc chuyển xuống dòng dưới cùng. Nút chung "Nhập điểm Test". Sửa phân công và sửa thông tin lớp nằm trong ⋮ (đang mở để bạn xem).</p>
+
+<div class="pp"><div class="w">
+ <div class="hero">
+  <div>
+   <div class="mu">Hồ sơ lớp</div>
+   <h4>MB-FT 101 · Fast Track</h4>
+   <div class="mu">Monbay · LT1 · 8 học viên · khai giảng 01/06/2026</div>
+   <div class="gv">
+    <span><b>GVCN</b><a>Trần Ngọc Hà</a></span>
+    <span><b>Listening</b><a>Trần Ngọc Hà</a></span>
+    <span><b>Reading</b><a>Trần Ngọc Hà</a></span>
+    <span><b>Writing Task 1</b><a>Lê Minh Khoa</a></span>
+    <span><b>Writing Task 2</b><a>Cao Khánh Linh</a></span>
+    <span><b>Speaking</b><a>Phạm Thu Trang</a></span>
+   </div>
+   <div style="display:flex;gap:6px;margin-top:9px"><span class="n y">12 bài chưa nhập điểm</span><span class="n r">6 case đang mở</span></div>
+  </div>
+  <div class="sp"></div>
+  <span class="btn">Lộ trình lớp</span><span class="btn">Chuyển tiếp lớp</span><span class="btn">+ Case</span><span class="btn">+ Học viên</span><span class="btn p">Nhập điểm Test</span><span class="more">⋮</span>
+  <div class="menu"><div>Sửa phân công giáo viên</div><div>Sửa thông tin lớp (tên, mã, chương trình)</div></div>
+ </div>
+ <div class="tabs"><div class="tab on">Học viên</div><div class="tab">Ý thức &amp; Phối hợp <span class="n y">3</span></div><div class="tab">Phân tích lớp</div></div>
+</div></div>
+<p class="subtitle" style="margin-top:8px">"Nhập điểm Test" mở lưới chấm của đợt đang diễn ra (lớp Normal: bài kiểm tra đang diễn ra). Không có đợt nào đang mở → nút mờ kèm câu "Chưa có đợt Test nào đang mở".</p>

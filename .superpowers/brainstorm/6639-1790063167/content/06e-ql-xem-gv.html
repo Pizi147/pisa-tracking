@@ -1,0 +1,54 @@
+<style>
+  .pp{--bg:#0d1423;--s:#111b2d;--line:#293852;--tx:#e8eef7;--mu:#8f9db4;--bl:#84baff;--bb:#173451;--gr:#73d9a5;--gb:#15362a;--yl:#e5c66a;--yb:#3a3219;--rd:#ff9a9a;--rb:#3b2126;
+      background:var(--bg);color:var(--tx);font:12px Inter,Segoe UI,Arial,sans-serif;border-radius:8px;overflow:hidden;border:1px solid var(--line);font-variant-numeric:tabular-nums}
+  .pp .w{padding:12px}.pp .mu{color:var(--mu);font-size:11px}.pp .sp{flex:1}
+  .pp table{width:100%;border-collapse:collapse;table-layout:fixed}
+  .pp th{color:#c9d4e6;font-size:11px;padding:7px 8px;font-weight:700;text-align:left;border-bottom:1px solid var(--line);vertical-align:bottom}
+  .pp th small{display:block;color:#6f819e;font-weight:400;font-size:10px;margin-top:2px}
+  .pp td{padding:0 8px;height:44px;border-bottom:1px solid #22314a;vertical-align:middle}
+  .pp .big{font-size:14px;font-weight:800}.pp .of{color:#6f819e;font-size:10px;margin-left:3px}
+  .pp .lk{color:#e8eef7;text-decoration:underline dotted #5c6f8f;text-underline-offset:3px;font-weight:700}
+  .pp .res{display:inline-flex;height:7px;width:70px;border-radius:4px;overflow:hidden;background:#22314a;vertical-align:middle;margin-left:6px}
+  .pp .res i{display:block;height:100%}.pp .c1{background:#73d9a5}.pp .c3{background:#ff9a9a}
+  .pp .card{background:var(--s);border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:8px}
+  .pp .line{display:grid;grid-template-columns:18px 1fr;gap:6px;padding:3px 0;color:#c9d4e6}
+  .pp .y{color:#e5c66a}.pp .g{color:#73d9a5}.pp .r{color:#ff9a9a}
+  .pp .sub td{background:#0f1828;font-size:11px;height:34px}
+</style>
+
+<h2>6e · Quản lý xem các giáo viên — viết lại bằng lời thường</h2>
+<p class="subtitle">Mỗi giáo viên trả lời 4 câu: dạy bao nhiêu em · bao nhiêu em chưa đạt ở môn mình dạy · vấn đề nhiều em mắc nhất · phương án giáo viên làm có hiệu quả không (+ có cập nhật đúng hạn không). Chọn A hoặc B.</p>
+
+<div class="options">
+ <div class="option" data-choice="a" onclick="toggleSelect(this)"><div class="letter">A</div><div class="content">
+  <h3>Bảng, mỗi cột một câu hỏi rõ nghĩa</h3>
+  <p>Tiêu đề cột là câu hỏi, dòng nhỏ dưới tiêu đề nói số đó đếm gì. Mỗi ô một con số chính; mẫu số viết nhỏ bên cạnh. Bấm ▸ tách theo từng kỹ năng.</p>
+  <div class="pp" style="margin-top:8px"><div class="w">
+   <table><colgroup><col style="width:17%"><col style="width:12%"><col style="width:17%"><col style="width:22%"><col style="width:18%"><col style="width:14%"></colgroup>
+    <tr><th>Giáo viên</th><th>Đang dạy<small>số học viên</small></th><th>Chưa đạt ở môn mình dạy<small>trong số em đã có điểm</small></th><th>Vấn đề nhiều em mắc nhất<small>và số em mắc</small></th><th>Phương án có hiệu quả<small>trong số phương án đã có kết quả</small></th><th>Cập nhật đúng hạn<small>số lần đúng hạn / phải cập nhật</small></th></tr>
+    <tr><td>▸ <span class="lk">Cao Khánh Linh</span></td><td><span class="big">17</span></td><td><span class="big y">8</span><span class="of">/ 15 em</span></td><td>Writing Task 2 · Tổ chức bài <span class="of">5 em</span></td><td><span class="big">4</span><span class="of">/ 9</span><span class="res"><i class="c1" style="width:44%"></i><i class="c3" style="width:56%"></i></span></td><td><span class="big">6</span><span class="of">/ 9</span></td></tr>
+    <tr><td>▾ <span class="lk">Trần Ngọc Hà</span></td><td><span class="big">29</span></td><td><span class="big y">7</span><span class="of">/ 26 em</span></td><td>Listening · Tư duy làm bài <span class="of">4 em</span></td><td><span class="big">8</span><span class="of">/ 12</span><span class="res"><i class="c1" style="width:67%"></i><i class="c3" style="width:33%"></i></span></td><td><span class="big">18</span><span class="of">/ 21</span></td></tr>
+    <tr class="sub"><td style="padding-left:26px">Listening</td><td>20</td><td>5 <span class="of">/ 18 em</span></td><td>Tư duy làm bài <span class="of">4 em</span></td><td>6 <span class="of">/ 8</span></td><td>12 <span class="of">/ 14</span></td></tr>
+    <tr class="sub"><td style="padding-left:26px">Reading</td><td>17</td><td>2 <span class="of">/ 15 em</span></td><td>Quản lý thời gian <span class="of">1 em</span></td><td>2 <span class="of">/ 4 · ít mẫu</span></td><td>6 <span class="of">/ 7</span></td></tr>
+    <tr><td>▸ <span class="lk">Phạm Thu Trang</span></td><td><span class="big">27</span></td><td><span class="big y">5</span><span class="of">/ 25 em</span></td><td>Speaking · Từ vựng <span class="of">3 em</span></td><td><span class="big">3</span><span class="of">/ 4</span><span class="res"><i class="c1" style="width:75%"></i><i class="c3" style="width:25%"></i></span></td><td><span class="big">9</span><span class="of">/ 10</span></td></tr>
+   </table></div></div>
+ </div></div>
+
+ <div class="option" data-choice="b" onclick="toggleSelect(this)"><div class="letter">B</div><div class="content">
+  <h3>Mỗi giáo viên một thẻ, viết thành câu</h3>
+  <p>Không có cột — mỗi thẻ là 4 câu ngắn, đọc như báo cáo. Dễ hiểu nhất cho người mới, nhưng khó so giữa các giáo viên hơn bảng.</p>
+  <div class="pp" style="margin-top:8px"><div class="w" style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+   <div class="card"><div style="display:flex"><span class="lk">Trần Ngọc Hà</span><span class="sp"></span><span class="mu">Listening, Reading · 3 lớp</span></div>
+    <div class="line"><span>👥</span><span>Đang dạy <b>29</b> học viên</span></div>
+    <div class="line"><span class="y">●</span><span><b class="y">7</b> trong 26 em đã có điểm <b>chưa đạt</b> môn cô dạy</span></div>
+    <div class="line"><span>🔎</span><span>Nhiều em mắc nhất: <b>Listening · Tư duy làm bài</b> (4 em)</span></div>
+    <div class="line"><span class="g">●</span><span>Phương án có hiệu quả <b class="g">8/12</b> · cập nhật đúng hạn 18/21</span></div></div>
+   <div class="card"><div style="display:flex"><span class="lk">Cao Khánh Linh</span><span class="sp"></span><span class="mu">Writing Task 2 · 2 lớp</span></div>
+    <div class="line"><span>👥</span><span>Đang dạy <b>17</b> học viên</span></div>
+    <div class="line"><span class="y">●</span><span><b class="y">8</b> trong 15 em đã có điểm <b>chưa đạt</b> môn cô dạy</span></div>
+    <div class="line"><span>🔎</span><span>Nhiều em mắc nhất: <b>Tổ chức bài</b> (5 em)</span></div>
+    <div class="line"><span class="r">●</span><span>Phương án có hiệu quả <b class="r">4/9</b> · cập nhật đúng hạn 6/9</span></div></div>
+  </div></div>
+ </div></div>
+</div>
+<p class="subtitle" style="margin-top:10px">Dù chọn cách nào: không xếp hạng, không điểm tổng; bấm tên → hồ sơ giáo viên; bấm số → đúng danh sách em / phương án đó.</p>

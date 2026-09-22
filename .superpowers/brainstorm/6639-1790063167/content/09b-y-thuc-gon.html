@@ -1,0 +1,58 @@
+<style>
+  .pp{--bg:#0d1423;--s:#111b2d;--line:#293852;--tx:#e8eef7;--mu:#8f9db4;--bl:#84baff;--bb:#173451;--gr:#73d9a5;--gb:#15362a;--yl:#e5c66a;--yb:#3a3219;--rd:#ff9a9a;--rb:#3b2126;
+      background:var(--bg);color:var(--tx);font:12px Inter,Segoe UI,Arial,sans-serif;border-radius:8px;overflow:hidden;border:1px solid var(--line);font-variant-numeric:tabular-nums}
+  .pp .w{padding:12px}.pp .mu{color:var(--mu);font-size:11px}.pp .sp{flex:1}
+  .pp .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start}
+  .pp .panel{background:#121d31;border:1px solid var(--line);border-radius:10px;padding:12px}
+  .pp .ph{display:flex;align-items:center;gap:6px;margin-bottom:10px}.pp .ph b{font-size:13px}
+  .pp .fl{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+  .pp .n{display:inline-block;padding:2px 7px;border-radius:999px;font-size:10.5px;font-weight:700;white-space:nowrap;border:1px solid transparent}
+  .pp .on{background:var(--bb);color:var(--bl)}.pp .off{border-color:#2c3d5a;color:#8f9db4}.pp .y{background:var(--yb);color:var(--yl)}
+  .pp .inp{border:1px solid var(--line);border-radius:8px;padding:8px 9px;color:#c9d4e6;background:#0e1829;position:relative}
+  .pp .inp .clip{position:absolute;right:8px;bottom:6px;color:#6f819e}
+  .pp .meta{font-size:11px;color:#8f9db4}.pp .meta a{color:#84baff}
+  .pp .btn{border:1px solid var(--line);border-radius:7px;padding:5px 11px;font-weight:700;font-size:11px;white-space:nowrap}.pp .btn.p{background:#82b9f6;color:#0c1726;border-color:#82b9f6}
+  .pp .link{color:#ff9a9a;font-size:11px}
+  .pp .vchip{display:inline-flex;align-items:center;gap:5px;border:1px solid #2c3d5a;border-radius:7px;padding:3px 7px;font-size:11px;background:#0f1828}
+  .pp .vchip .x{color:#6f819e}
+  .pp .dup{font-size:11px;color:#e5c66a;margin-top:6px}.pp .dup a{color:#84baff;text-decoration:underline}
+  .pp .row{display:grid;grid-template-columns:16px 46px 1fr auto;gap:8px;align-items:center;padding:7px 10px;border-top:1px solid #22314a}
+  .pp .row.open{background:#132039}
+  .pp .exp{padding:6px 10px 9px 80px;background:#132039;font-size:11px;color:#9fb0c9;display:flex;gap:14px;flex-wrap:wrap}
+  .pp .exp a{color:#84baff}
+  .pp .card{background:var(--s);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+</style>
+
+<h2>9b · Ý thức — bản gọn</h2>
+<p class="subtitle">Chỉ 2 khung trượt + một dòng mở tại chỗ. Tự điền những gì đã biết (học viên, ngày, môn), danh sách dài thay bằng nhãn nhỏ + "+ Thêm". Góp ý thẳng.</p>
+
+<div class="pp"><div class="w">
+ <div class="grid2">
+  <div class="panel">
+   <div class="ph"><b>Ghi nhận vi phạm</b><span class="sp"></span><span class="mu">✕</span></div>
+   <div class="meta">Nguyễn Minh An · hôm nay 14/09 · Reading <a>· đổi</a></div>
+   <div class="fl" style="margin:10px 0 8px"><span class="n on">BTVN</span><span class="n off">Chuyên cần</span><span class="n off">Thái độ</span><span class="n off">Kỷ luật</span><span class="n off">Khác</span></div>
+   <div class="inp" style="min-height:52px">Không nộp bài Reading…<span class="clip">📎</span></div>
+   <div class="dup">Đã có 1 vi phạm BTVN ngày 07/09 chưa xử lý · <a>xem</a></div>
+   <div class="fl" style="margin-top:10px"><span class="sp"></span><span class="btn p">Lưu</span></div>
+   <div class="mu" style="margin-top:8px">Mở từ hồ sơ học viên → tên em có sẵn. Ngày mặc định hôm nay, môn tự điền theo môn bạn dạy; bấm "đổi" nếu cần. 📎 trong ô mô tả để đính kèm. Lưu xong có "Hoàn tác" 10 giây.</div>
+  </div>
+
+  <div class="panel">
+   <div class="ph"><b>Report cho gia đình ▾</b><span class="n y">Đang chuẩn bị</span><span class="sp"></span><span class="mu">✕</span></div>
+   <div class="meta">Nguyễn Minh An · phụ trách <a>Trần Ngọc Hà ▾</a></div>
+   <div class="inp" style="min-height:44px;margin-top:10px">Gọi phụ huynh về việc thiếu BTVN 2 tuần, thống nhất lịch kiểm tra bài ở nhà.</div>
+   <div class="fl" style="margin-top:10px"><span class="vchip">05/09 · BTVN <span class="x">✕</span></span><span class="vchip">07/09 · BTVN <span class="x">✕</span></span><span class="vchip">08/09 · Chuyên cần <span class="x">✕</span></span><span class="vchip" style="border-style:dashed;color:#84baff">+ Thêm vi phạm</span></div>
+   <div class="fl" style="margin-top:12px"><span class="link">Xoá</span><span class="sp"></span><span class="btn">Lưu</span><span class="btn p">Đã thực hiện →</span></div>
+   <div class="mu" style="margin-top:8px">Tên loại phương án ở tiêu đề bấm để đổi. Vi phạm là nhãn nhỏ, ✕ để gỡ; "+ Thêm vi phạm" mở danh sách vi phạm khác của em (gồm cả vi phạm đã xử lý).</div>
+  </div>
+ </div>
+
+ <h3 style="margin:16px 0 8px">Bấm một dòng vi phạm → mở ngay tại chỗ, một dòng thông tin</h3>
+ <div class="card">
+  <div class="row"><span>☐</span><span class="mu">05/09</span><span>Không nộp bài Writing Task 1</span><span class="n on">BTVN</span></div>
+  <div class="row open"><span>☐</span><span class="mu">07/09</span><span><b>Không nộp bài Reading, nói quên vở</b></span><span class="n on">BTVN</span></div>
+  <div class="exp"><span>📎 1 tệp</span><span>Trong: <a>Report cho gia đình</a> (đang chuẩn bị)</span><span>Đã sửa 2 lần <a>▸</a></span><span class="sp"></span><a>Sửa</a><span style="color:#ff9a9a">Xoá</span></div>
+  <div class="row"><span>☐</span><span class="mu">08/09</span><span>Đi muộn 20 phút buổi Speaking</span><span class="n off">Chuyên cần</span></div>
+ </div>
+</div></div>

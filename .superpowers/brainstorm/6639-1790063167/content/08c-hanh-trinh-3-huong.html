@@ -1,0 +1,87 @@
+<style>
+  .pp{--bg:#0d1423;--s:#111b2d;--line:#293852;--tx:#e8eef7;--mu:#8f9db4;--bl:#84baff;--bb:#173451;--gr:#73d9a5;--gb:#15362a;--yl:#e5c66a;--yb:#3a3219;--rd:#ff9a9a;--rb:#3b2126;
+      background:var(--bg);color:var(--tx);font:12px Inter,Segoe UI,Arial,sans-serif;border-radius:8px;overflow:hidden;border:1px solid var(--line);font-variant-numeric:tabular-nums}
+  .pp .w{padding:12px}.pp .mu{color:var(--mu);font-size:11px}.pp .sp{flex:1}
+  .pp .n{display:inline-block;padding:1px 6px;border-radius:999px;font-size:10px;font-weight:800;white-space:nowrap}
+  .pp .y{background:var(--yb);color:var(--yl)}.pp .r{background:var(--rb);color:var(--rd)}.pp .g{background:var(--gb);color:var(--gr)}.pp .bl{background:var(--bb);color:var(--bl)}.pp .gy{background:#1d2a40;color:#b7c2d6}
+  /* A */
+  .pp .grid{display:grid;grid-template-columns:110px repeat(3,1fr);gap:6px}
+  .pp .hd{color:#6f819e;font-size:10px;font-weight:700;text-transform:uppercase;padding:0 4px 2px}
+  .pp .sk{font-weight:800;display:flex;align-items:center;padding-left:4px}
+  .pp .cell{background:var(--s);border:1px solid var(--line);border-radius:8px;padding:7px 9px;min-height:54px}
+  .pp .cell.bad{border-color:#5a2e35;background:#1a1620}
+  .pp .cell.next{border-style:dashed;background:transparent}
+  .pp .sc{font-size:15px;font-weight:800}.pp .gap{font-size:10px;font-weight:800;margin-left:4px}
+  .pp .neg{color:var(--rd)}.pp .ok{color:var(--gr)}
+  .pp .ev{display:block;font-size:10px;color:#9fb0c9;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .pp .ev i{font-style:normal;margin-right:3px}
+  /* B */
+  .pp .ch{border:1px solid var(--line);border-radius:10px;background:var(--s);margin-bottom:8px;overflow:hidden}
+  .pp .chh{display:grid;grid-template-columns:110px 1fr auto;gap:10px;align-items:center;padding:9px 12px;background:#132039}
+  .pp .pills{display:flex;gap:5px;flex-wrap:wrap}
+  .pp .pill{border-radius:6px;padding:2px 7px;font-size:11px;font-weight:700;background:#1b2c47;color:#c9d4e6}.pp .pill.bad{background:#3b2126;color:#ff9a9a}
+  .pp .it{display:grid;grid-template-columns:52px 1fr auto;gap:10px;padding:7px 12px;border-top:1px solid #22314a;align-items:center}
+  /* C */
+  .pp .cards{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+  .pp .kc{background:var(--s);border:1px solid var(--line);border-radius:10px;padding:10px}
+  .pp .kc.bad{border-color:#5a2e35}
+  .pp .chain{display:flex;align-items:center;gap:4px;margin:6px 0;font-weight:800}
+  .pp .chain span{padding:2px 6px;border-radius:6px;background:#1b2c47;font-size:12px}.pp .chain .b{background:#3b2126;color:#ff9a9a}.pp .chain .q{background:transparent;border:1px dashed #3a5178;color:#6f819e}
+  .pp .ar{color:#5c6f8f;font-size:10px}
+  .pp .row{font-size:10px;color:#9fb0c9;margin-top:4px}
+</style>
+
+<h2>8c · Hành trình — 3 hướng không dùng biểu đồ</h2>
+<p class="subtitle">Cùng dữ liệu của Lê Quang Huy. Cả ba đều gộp điểm với các mốc (case, phương án) — chỉ khác cách xếp. Chọn A, B hoặc C.</p>
+
+<div class="options">
+ <div class="option" data-choice="a" onclick="toggleSelect(this)"><div class="letter">A</div><div class="content">
+  <h3>Bảng "sổ học bạ": kỹ năng × đợt Test (khuyến nghị)</h3>
+  <p>Hàng = 5 kỹ năng, cột = các đợt. Mỗi ô là một thẻ nhỏ: điểm + thiếu bao nhiêu, bên dưới là việc đã xảy ra sau đợt đó (case mở, phương án và kết quả). Đọc ngang = một kỹ năng đi qua các đợt; đọc dọc = cả em ở một đợt. Bấm ô → mở chi tiết.</p>
+  <div class="pp" style="margin-top:8px"><div class="w">
+   <div class="grid">
+    <div></div><div class="hd">MT1 · 06/07 · Overall 5.5</div><div class="hd">MT2 · 17/08 · Overall 6.0</div><div class="hd">MT3 · tuần này</div>
+    <div class="sk">Listening</div>
+     <div class="cell bad"><span class="sc">5.0</span><span class="gap neg">thiếu 0.5</span><span class="ev"><i>⬤</i>Mở case: mất điểm Section 3</span><span class="ev"><i style="color:#73d9a5">◐</i>Nghe chép chính tả · một phần</span></div>
+     <div class="cell bad"><span class="sc">5.5</span><span class="gap neg">thiếu 0.5</span><span class="ev"><i style="color:#ff9a9a">!</i>Tutor mỗi tuần · quá hạn cập nhật</span></div>
+     <div class="cell next"><span class="mu">chưa có điểm</span><span class="ev">kỳ vọng 6.5</span></div>
+    <div class="sk">Reading</div>
+     <div class="cell"><span class="sc">5.5</span><span class="gap ok">đạt</span></div>
+     <div class="cell"><span class="sc">6.0</span><span class="gap ok">đạt</span><span class="ev"><i style="color:#73d9a5">✓</i>Case hết giờ đọc · đã xong</span></div>
+     <div class="cell next"><span class="mu">chưa có điểm</span></div>
+    <div class="sk">Writing T1</div>
+     <div class="cell"><span class="sc">5.5</span><span class="gap ok">đạt</span></div><div class="cell"><span class="sc">6.0</span><span class="gap ok">đạt</span></div><div class="cell next"><span class="mu">chưa có điểm</span></div>
+    <div class="sk">Writing T2</div>
+     <div class="cell"><span class="sc">5.5</span><span class="gap ok">đạt</span></div><div class="cell"><span class="sc">6.0</span><span class="gap ok">đạt</span><span class="ev"><i>⬤</i>Case: thân bài chồng ý · đang xử lý</span></div><div class="cell next"><span class="mu">chưa có điểm</span></div>
+    <div class="sk">Speaking</div>
+     <div class="cell"><span class="sc">6.0</span><span class="gap ok">đạt</span></div><div class="cell"><span class="sc">6.0</span><span class="gap ok">đạt</span><span class="ev"><i>⬤</i>Case: lặp từ · chưa có phương án</span></div><div class="cell next"><span class="mu">chưa có điểm</span></div>
+   </div>
+   <div class="mu" style="margin-top:8px">Ô viền đỏ = dưới kỳ vọng · ô nét đứt = đợt sắp tới. Mỗi ô tối đa 2 dòng việc; nhiều hơn thì "+1 việc". Điện thoại: chỉ hiện cột đợt mới nhất, vuốt ngang xem đợt trước.</div>
+  </div></div>
+ </div></div>
+
+ <div class="option" data-choice="b" onclick="toggleSelect(this)"><div class="letter">B</div><div class="content">
+  <h3>Từng "chặng" giữa hai đợt Test, mới nhất ở trên</h3>
+  <p>Mỗi đợt Test mở đầu một chặng: điểm 5 kỹ năng dạng nhãn nhỏ, bên dưới là những gì đã làm trong chặng đó cho tới đợt kế tiếp. Đọc như nhật ký, hợp để kể lại với phụ huynh.</p>
+  <div class="pp" style="margin-top:8px"><div class="w">
+   <div class="ch"><div class="chh"><b>MT2 · 17/08</b><div class="pills"><span class="pill bad">L 5.5</span><span class="pill">R 6.0</span><span class="pill">W1 6.0</span><span class="pill">W2 6.0</span><span class="pill">S 6.0</span></div><span><b>6.0</b> <span class="gap neg">thiếu 0.5</span></span></div>
+    <div class="it"><span class="mu">26/08</span><span>Listening · bắt đầu <b>Tutor mỗi tuần</b></span><span class="n r">quá hạn cập nhật</span></div>
+    <div class="it"><span class="mu">24/08</span><span>Listening · <b>Nghe chép chính tả</b> kết thúc</span><span class="n g">tiến bộ một phần</span></div>
+    <div class="it"><span class="mu">20/08</span><span>Speaking · mở case <b>lặp từ</b></span><span class="n y">chưa có phương án</span></div></div>
+   <div class="ch"><div class="chh"><b>MT1 · 06/07</b><div class="pills"><span class="pill bad">L 5.0</span><span class="pill">R 5.5</span><span class="pill">W1 5.5</span><span class="pill">W2 5.5</span><span class="pill">S 6.0</span></div><span><b>5.5</b> <span class="gap ok">đạt kỳ vọng</span></span></div>
+    <div class="it"><span class="mu">12/07</span><span>Listening · mở case <b>mất điểm Section 3</b></span><span class="n bl">đang xử lý</span></div></div>
+  </div></div>
+ </div></div>
+
+ <div class="option" data-choice="c" onclick="toggleSelect(this)"><div class="letter">C</div><div class="content">
+  <h3>5 thẻ kỹ năng, mỗi thẻ là chuỗi điểm + việc đang làm</h3>
+  <p>Gọn nhất: mỗi kỹ năng một thẻ, chuỗi "5.0 → 5.5 → ?" cho thấy đi lên hay xuống, dưới là case và phương án hiện tại. Bấm thẻ → mở lịch sử đầy đủ của kỹ năng đó.</p>
+  <div class="pp" style="margin-top:8px"><div class="w"><div class="cards">
+   <div class="kc bad"><b>Listening</b><div class="chain"><span class="b">5.0</span><span class="ar">→</span><span class="b">5.5</span><span class="ar">→</span><span class="q">?</span></div><div class="row">Case đang xử lý</div><div class="row">Tutor mỗi tuần · <span style="color:#ff9a9a">quá hạn</span></div></div>
+   <div class="kc"><b>Reading</b><div class="chain"><span>5.5</span><span class="ar">→</span><span>6.0</span><span class="ar">→</span><span class="q">?</span></div><div class="row">Case đã xong ✓</div></div>
+   <div class="kc"><b>Writing T1</b><div class="chain"><span>5.5</span><span class="ar">→</span><span>6.0</span><span class="ar">→</span><span class="q">?</span></div><div class="row">Không có case</div></div>
+   <div class="kc"><b>Writing T2</b><div class="chain"><span>5.5</span><span class="ar">→</span><span>6.0</span><span class="ar">→</span><span class="q">?</span></div><div class="row">Case đang xử lý</div></div>
+   <div class="kc"><b>Speaking</b><div class="chain"><span>6.0</span><span class="ar">→</span><span>6.0</span><span class="ar">→</span><span class="q">?</span></div><div class="row"><span style="color:#e5c66a">Case chưa có phương án</span></div></div>
+  </div></div></div>
+ </div></div>
+</div>

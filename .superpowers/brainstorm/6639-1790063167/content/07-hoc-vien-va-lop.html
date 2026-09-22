@@ -1,0 +1,53 @@
+<style>
+  .pp{--bg:#0d1423;--s:#111b2d;--line:#293852;--tx:#e8eef7;--mu:#8f9db4;--bl:#84baff;--bb:#173451;--gr:#73d9a5;--gb:#15362a;--yl:#e5c66a;--yb:#3a3219;--rd:#ff9a9a;--rb:#3b2126;
+      background:var(--bg);color:var(--tx);font:12px Inter,Segoe UI,Arial,sans-serif;border-radius:8px;overflow:hidden;border:1px solid var(--line);font-variant-numeric:tabular-nums}
+  .pp .w{padding:12px}.pp .mu{color:var(--mu);font-size:11px}.pp .sp{flex:1}
+  .pp h4{margin:0 0 6px;font-size:15px}
+  .pp .tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:10px}
+  .pp .tab{padding:7px 12px;color:var(--mu);font-weight:800;border-bottom:3px solid transparent}.pp .tab.on{color:var(--tx);border-color:var(--bl)}
+  .pp .fl{display:flex;gap:6px;align-items:center;margin-bottom:8px;flex-wrap:wrap}
+  .pp .inp{border:1px solid var(--line);border-radius:7px;padding:6px 10px;color:var(--mu);width:260px}
+  .pp .sel{border:1px solid var(--line);border-radius:7px;padding:5px 9px}
+  .pp .chip{border:1px solid var(--line);border-radius:999px;padding:4px 9px;color:var(--mu);font-weight:700;white-space:nowrap}.pp .chip.on{background:var(--bb);color:var(--bl)}
+  .pp .chip b{color:#c9d4e6;margin-left:3px}
+  .pp .n{display:inline-block;padding:1px 6px;border-radius:999px;font-size:10px;font-weight:800;white-space:nowrap}
+  .pp .y{background:var(--yb);color:var(--yl)}.pp .r{background:var(--rb);color:var(--rd)}.pp .gy{background:#1d2a40;color:#b7c2d6}.pp .bl{background:var(--bb);color:var(--bl)}
+  .pp table{width:100%;border-collapse:collapse;table-layout:fixed}
+  .pp th{color:var(--mu);font-size:10px;padding:6px 8px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;text-align:left;border-bottom:1px solid var(--line)}
+  .pp td{padding:0 8px;height:42px;border-bottom:1px solid #22314a;vertical-align:middle}
+  .pp .nm{font-weight:700;color:#e8eef7;text-decoration:underline dotted #5c6f8f;text-underline-offset:3px}
+  .pp .sub{display:block;font-size:10px;color:#6f819e}
+  .pp .num{text-align:right}
+  .pp .cls{border:1px solid var(--line);border-radius:9px;background:var(--s);margin-bottom:6px;overflow:hidden}
+  .pp .ch{display:grid;grid-template-columns:18px 170px 1fr 120px 150px 30px;gap:10px;align-items:center;padding:9px 12px}
+  .pp .more{display:inline-block;width:22px;height:22px;line-height:20px;text-align:center;border:1px solid var(--line);border-radius:6px;color:var(--mu)}
+</style>
+
+<h2>7 · Khu vực Học viên &amp; Lớp</h2>
+<p class="subtitle">Hai tab: <b>Học viên</b> (danh sách phẳng, lọc nhanh) và <b>Lớp</b> (danh sách lớp gọn). Một ô tìm cho cả tên, mã học viên, mã lớp. "Cần nhập điểm Test" và "Chưa có tuần MT" chuyển sang khu vực Test (đã duyệt). Bỏ cặp nút "Tôi / Tất cả" — thay bằng ô "Phạm vi". Một bản — góp ý thẳng.</p>
+
+<h3>Tab Học viên</h3>
+<div class="pp"><div class="w">
+ <h4>Học viên &amp; Lớp</h4>
+ <div class="tabs"><div class="tab on">Học viên</div><div class="tab">Lớp</div></div>
+ <div class="fl"><span class="inp">🔍 Tìm tên, mã học viên hoặc mã lớp…</span><span class="sel">Chi nhánh: Monbay ▾</span><span class="sel">Phạm vi: Lớp tôi dạy ▾</span><span class="sp"></span><span class="sel">⤓ Xuất Excel</span></div>
+ <div class="fl"><span class="chip on">Tất cả<b>38</b></span><span class="chip">Đang SOS<b>9</b></span><span class="chip">Có case đang xử lý<b>14</b></span><span class="chip">Case thiếu PA học thuật<b>2</b></span><span class="chip">Case quá hạn cập nhật<b>3</b></span><span class="chip">Thiếu thông tin<b>4</b></span></div>
+ <table><colgroup><col style="width:24%"><col style="width:14%"><col style="width:17%"><col style="width:13%"><col style="width:10%"><col style="width:17%"><col style="width:5%"></colgroup>
+  <tr><th>Học viên</th><th>Lớp</th><th>Kết quả gần nhất</th><th>Mục tiêu · thi</th><th class="num">Case</th><th>Việc tiếp theo</th><th></th></tr>
+  <tr><td><span class="nm">Đỗ Minh Khôi</span> <span class="n y" style="font-size:9px">⚠ 2</span><span class="sub">PISA-000042</span></td><td>MB-FT 101</td><td><span class="n y">SOS 2 · tạm thời</span><span class="sub">MT2 · 2/4 kỹ năng</span></td><td>7.0<span class="sub">chưa có ngày thi</span></td><td class="num">2</td><td class="mu">Xác định nguyên nhân W2 · hạn 16/09</td><td><span class="more">⋯</span></td></tr>
+  <tr><td><span class="nm">Lê Quang Huy</span><span class="sub">PISA-000003</span></td><td>MB-FT 101</td><td><span class="n y">SOS 1</span><span class="sub">MT2</span></td><td>6.5<span class="sub">FEB 2027</span></td><td class="num">3</td><td class="mu" style="color:#ff9a9a">Làm PA Listening · quá hạn</td><td><span class="more">⋯</span></td></tr>
+  <tr><td><span class="nm">Nguyễn Minh An</span><span class="sub">PISA-000001</span></td><td>MB-FT 101</td><td><span class="n gy">Đạt kỳ vọng</span><span class="sub">MT2</span></td><td>6.5<span class="sub">W2 FEB 2027</span></td><td class="num">1</td><td class="mu">—</td><td><span class="more">⋯</span></td></tr>
+  <tr><td><span class="nm">Hoàng Gia Bảo</span><span class="sub">PISA-000017</span></td><td>MB-N 204</td><td><span class="n gy">Chưa có kết quả</span><span class="sub">lớp Normal</span></td><td>—<span class="sub">chưa có mục tiêu</span></td><td class="num">0</td><td class="mu">Nhập điểm giữa khoá</td><td><span class="more">⋯</span></td></tr>
+ </table>
+ <div class="mu" style="margin-top:6px">Phạm vi ▾ = Lớp tôi dạy · Chi nhánh của tôi · Tất cả (theo quyền). Số trên nút lọc luôn bằng số dòng khi bấm. ⋯ = Hồ sơ · + Ghi nhận vi phạm · + Case.</div>
+</div></div>
+
+<h3 style="margin-top:22px">Tab Lớp — mỗi lớp một dòng gọn, bấm ▸ xem nhanh học viên</h3>
+<div class="pp"><div class="w">
+ <div class="tabs"><div class="tab">Học viên</div><div class="tab on">Lớp</div></div>
+ <div class="fl"><span class="inp">🔍 Tìm mã lớp…</span><span class="sel">Chi nhánh: Monbay ▾</span><span class="sel">Chương trình: Tất cả ▾</span><span class="sel">Đang học ▾</span><span class="sp"></span><span class="sel">+ Lớp mới</span></div>
+ <div class="cls"><div class="ch"><span>▸</span><span><b class="nm">MB-FT 101</b><span class="sub">Fast Track · LT1</span></span><span class="mu">8 học viên · GVCN Trần Ngọc Hà · khai giảng 01/06/2026</span><span><span class="n y">12 bài chưa chấm</span></span><span><span class="n r">6 case đang mở</span></span><span class="more">⋯</span></div></div>
+ <div class="cls"><div class="ch"><span>▸</span><span><b class="nm">MB-FT 102</b><span class="sub">Fast Track · LT2</span></span><span class="mu">9 học viên · GVCN Hoàng Quang Dũng · khai giảng 15/07/2026</span><span></span><span><span class="n bl">2 case đang mở</span></span><span class="more">⋯</span></div></div>
+ <div class="cls"><div class="ch"><span>▸</span><span><b class="nm">MB-N 204</b><span class="sub">Normal</span></span><span class="mu">12 học viên · GVCN Cao Khánh Linh · khai giảng 04/08/2026</span><span><span class="n r">4 bài quá hạn chấm</span></span><span></span><span class="more">⋯</span></div></div>
+ <div class="mu" style="margin-top:6px">Mỗi lớp tối đa 2 nhãn việc (bài chưa chấm · case đang mở) — hết nhãn khi không còn việc. Bấm mã lớp → hồ sơ lớp. Bấm ▸ → xem nhanh tên học viên và kết luận, không rời trang. Tìm kiếm tự mở lớp chứa kết quả.</div>
+</div></div>
