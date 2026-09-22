@@ -528,7 +528,9 @@ npm run khoi-phuc
 `chưa xác nhận` = dòng `PISA_CHO_PHEP_KHOI_PHUC` gõ chưa đúng; `đã có dữ liệu`/`đã có bảng` = database đích không phải
 database mới. **Làm xong thì ĐÓNG cửa sổ PowerShell này.**
 
-**Bước 4 — cho bản chính thức dùng database mới:** làm lại mục 6 với URL và token của database **MỚI** (hai lệnh
+**Bước 4 — cho bản chính thức dùng database mới:** trước tiên làm mục 11.1 **một lần** trên database **MỚI** (URL, token,
+tên máy chủ của database MỚI): bản sao lưu cũ giữ cấu trúc cũ, có thể thiếu bảng mà bản mới cần; lệnh chỉ thêm phần còn
+thiếu, không thiếu gì thì báo `Không có gì để nâng cấp`. Sau đó làm lại mục 6 với URL và token của database **MỚI** (hai lệnh
 `--context production` và hai lệnh kiểm `env:get`), rồi `netlify deploy --build --prod` (mục 8.2) — biến mới chỉ có tác
 dụng sau lần deploy này. Mở web, đăng nhập quản trị, xem dữ liệu đúng như lúc sao lưu. **Sau khi khôi phục, mọi người
 đăng nhập lại** (bản sao lưu không mang theo mã đăng nhập) — báo trước cho giáo viên.
