@@ -228,5 +228,47 @@ export async function runLuatMayChuTests(t: YThucTestKit) {
     assert(w1.no_show_period_id === null, 'Từ chối xong dấu "-" của W1 phải được gỡ');
   });
 
+  // ================================================================== 4. S12 + §6 branchpulse
+
+  console.log('\nPR-S1 · 4. Ô điểm còn nợ (bảng chi nhánh) — cùng luật với bảng chấm: lớp thường theo số câu đúng và Chủ nhật; W1/W2 theo cặp');
+  const scoreDebt = await load('../worklist/scoreDebt.ts');
+  const no = (today: string, attemptId: number) =>
+    (scoreDebt.scoreDebtCells(P.admin, today, [mbBranch]) as any[]).filter((d) => d.attemptId === attemptId);
+
+  check('§6 · Lớp thường: môn đã có số câu đúng không còn nợ; môn chưa có nợ và QUÁ HẠN từ thứ Hai sau tuần thi (không phải thứ Tư kiểu FT)', () => {
+    const hv = taoHocVien({ classCode: 'MB-FOU 12', weekStart: '2026-09-07' });
+    diem(hv.attemptId, 'reading', 30, 40);
+    const cells = no(TODAY, hv.attemptId);
+    assert(!cells.some((d) => d.skill === 'reading'), `Reading đã có 30/40 mà vẫn bị tính nợ: ${JSON.stringify(cells)}`);
+    const l = cells.find((d) => d.skill === 'listening');
+    assert(l && l.userId === teacherOf('MB-FOU 12', 'listening') && l.overdue === true,
+      `Listening chưa nhập phải nợ, đúng GV, quá hạn hôm thứ Hai 14/09: ${JSON.stringify(l)}`);
+    const sunday = no('2026-09-13', hv.attemptId).find((d) => d.skill === 'listening');
+    assert(sunday && sunday.overdue === false, `Chủ nhật 13/09 vẫn trong hạn: ${JSON.stringify(sunday)}`);
+    for (const k of ['listening', 'writing', 'speaking']) diem(hv.attemptId, k, 30, 40);
+    assert(no(TODAY, hv.attemptId).length === 0, 'Đủ bốn môn mà vẫn còn ô nợ');
+  });
+
+  check('S12 · FT: chỉ W1 "-" thì W1 vẫn là nợ sau Chủ nhật (buổi Writing chưa phải vắng); trước Chủ nhật W1 "-" không nợ; W1 + W2 cùng "-" → chốt vắng, không ô nào nợ', () => {
+    const hv = taoHocVien({ classCode: 'MB-FT 101', weekStart: '2026-09-14' });
+    attempts.saveScore(P.w1Teacher, hv.attemptId, 'writing1', { noShow: true }, '2026-09-16');
+    const mid = no('2026-09-16', hv.attemptId);
+    assert(!mid.some((d) => d.skill === 'writing1'), 'Trong tuần, W1 đã báo "không có bài" thì không nợ');
+    assert(mid.some((d) => d.skill === 'writing2' && d.userId === teacherOf('MB-FT 101', 'writing2')), 'W2 chưa nhập vẫn nợ, đúng GV W2');
+    assert(no('2026-09-21', hv.attemptId).some((d) => d.skill === 'writing1'),
+      'Sau Chủ nhật, W1 "-" mà W2 không "-" thì W1 vẫn là nợ — đúng như ô ở bảng chấm');
+    attempts.saveScore(P.w2Teacher, hv.attemptId, 'writing2', { noShow: true }, '2026-09-18');
+    const after = no('2026-09-21', hv.attemptId);
+    assert(!after.some((d) => d.skill === 'writing1' || d.skill === 'writing2'), `W1 + W2 cùng "-" đã chốt vắng mà vẫn nợ: ${JSON.stringify(after)}`);
+  });
+
+  const pulse: any = await import('../worklist/branchpulse.ts');     // `check` không nhận hàm async — nạp ở ngoài
+  check('§6 · Bảng chi nhánh vẫn dựng được và cột nợ điểm của GV đọc từ scoreDebtCells', () => {
+    const r = pulse.branchPulse(P.mbManager, { branchId: mbBranch }) as any;
+    assert(r && Array.isArray(r.people), 'branchPulse phải trả danh sách người');
+    const src = fsMod.readFileSync(pathMod.join(REPO, 'server/src/worklist/branchpulse.ts'), 'utf8');
+    assert(src.includes('scoreDebtCells') && !/s\.band IS NULL/.test(src), 'branchpulse.ts còn đếm nợ điểm bằng band IS NULL');
+  });
+
   // ---- các task sau thêm phép kiểm NGAY TRÊN dòng này ----
 }

@@ -601,7 +601,7 @@ và thêm `noShowNote,` vào object trả về, cạnh `noShow,`. Import `NO_SHO
 Lỗi hiện tại (`branchpulse.ts:293-319`): ô lớp thường không bao giờ có `band` → mọi môn lớp thường treo "chưa nhập" mãi; hạn tính kiểu FT
 (thứ Tư tuần sau) cho cả lớp thường (đúng ra: Chủ nhật tuần thi của môn đó); ô `-` loại thô không xét cặp W1/W2 (S12).
 
-- [ ] **Step 1: Phép kiểm (đỏ).**
+- [x] **Step 1: Phép kiểm (đỏ).**
 
 ```ts
   // ================================================================== 4. S12 + §6 branchpulse
@@ -647,8 +647,8 @@ Lỗi hiện tại (`branchpulse.ts:293-319`): ô lớp thường không bao gi�
   });
 ```
 
-- [ ] **Step 2: Chạy, đỏ.** Expected: cả ba ✗ (`Chưa có mô-đun ../worklist/scoreDebt.ts`, và `s.band IS NULL` còn trong nguồn).
-- [ ] **Step 3: Tạo `server/src/worklist/scoreDebt.ts`.**
+- [x] **Step 2: Chạy, đỏ.** Expected: cả ba ✗ (`Chưa có mô-đun ../worklist/scoreDebt.ts`, và `s.band IS NULL` còn trong nguồn).
+- [x] **Step 3: Tạo `server/src/worklist/scoreDebt.ts`.**
 
 ```ts
 import { db } from '../db.ts';
@@ -728,7 +728,7 @@ export function scoreDebtCells(p: Principal, today: string, branchIds: number[] 
 }
 ```
 
-- [ ] **Step 4: Thay vòng `mtPending` trong `peopleOf`** (`branchpulse.ts` từ chú thích "MT CHƯA NHẬP và MT QUÁ HẠN NHẬP" dòng 286 tới
+- [x] **Step 4: Thay vòng `mtPending` trong `peopleOf`** (`branchpulse.ts` từ chú thích "MT CHƯA NHẬP và MT QUÁ HẠN NHẬP" dòng 286 tới
   `if (due && due < today) row.mtOverdue += 1; }` dòng 318–319) bằng:
 
 ```ts
@@ -748,9 +748,9 @@ export function scoreDebtCells(p: Principal, today: string, branchIds: number[] 
 Thêm `import { scoreDebtCells } from './scoreDebt.ts';`. Nếu `addDays` và `scopeSql`/`scopeArgs` không còn chỗ dùng → xoá (tsc báo biến không dùng
 chỉ khi bật `noUnusedLocals`; vẫn xoá cho sạch nếu thật sự không dùng — `scopeSql` còn dùng ở câu lớp của từng người phía trên, **giữ**).
 
-- [ ] **Step 5: Chạy, xanh.** `npm test 2>&1 | tail -3` — Expected `685`. Phép kiểm cũ về `branchPulse`/"Việc cần lưu ý" đỏ → đọc: nếu nó khoá
+- [x] **Step 5: Chạy, xanh.** `npm test 2>&1 | tail -3` — Expected `685`. Phép kiểm cũ về `branchPulse`/"Việc cần lưu ý" đỏ → đọc: nếu nó khoá
   **đúng con số cũ** do luật sai sinh ra (ví dụ đếm môn lớp thường đã chấm là "chưa nhập"), sửa kỳ vọng và ghi lý do trong Nhật ký; nếu khác → 🛑.
-- [ ] **Step 6: Commit.** `git add server/src/worklist/scoreDebt.ts && git commit -am "PR-S1 (4): S12 + §6 — ô điểm còn nợ đi qua hàm bảng chấm (lớp thường theo số câu đúng, hạn Chủ nhật; W1/W2 theo cặp)"`
+- [x] **Step 6: Commit.** `git add server/src/worklist/scoreDebt.ts && git commit -am "PR-S1 (4): S12 + §6 — ô điểm còn nợ đi qua hàm bảng chấm (lớp thường theo số câu đúng, hạn Chủ nhật; W1/W2 theo cặp)"`
 
 ---
 
