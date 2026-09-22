@@ -81,7 +81,7 @@ export default function MgmtTasksPage() {
  * Tutor. Việc nào không thuộc bốn nhóm này thì hoặc là một case của học viên, hoặc là chuyện
  * ngoài phạm vi phần mềm — thêm nhóm thứ năm là bước đầu biến nó thành một hệ quản trị.
  */
-function TasksBoard() {
+export function TasksBoard() {
   const [params, setParams] = useSearchParams();
   const branchId = params.get('cn') ? Number(params.get('cn')) : null;
   const [group, setGroup] = useState('');
