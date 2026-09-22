@@ -623,7 +623,7 @@ export const CONFIRM_EDIT_REASON = 'Chỉnh khi xác nhận gợi ý tự độn
 
 Task này không có phép kiểm riêng. Hàm được kiểm qua `updateResult` ở Task 4 (đỏ trước, xanh sau).
 
-- [ ] **Step 1: Tạo file.**
+- [x] **Step 1: Tạo file.**
 
 ```ts
 import { db } from '../db.ts';
@@ -750,8 +750,8 @@ export function lichSuDieuChinhCuaCase(caseId: number): Map<number, BanDieuChinh
 }
 ```
 
-- [ ] **Step 2: Build.** Run: `npm run build:server`. Expected: không lỗi.
-- [ ] **Step 3: Commit.** `git add server/src/cases/planRevisions.ts` · `git commit -m "PR-S2 (3): mô-đun lịch sử điều chỉnh PA"`
+- [x] **Step 2: Build.** Run: `npm run build:server`. Expected: không lỗi.
+- [x] **Step 3: Commit.** `git add server/src/cases/planRevisions.ts` · `git commit -m "PR-S2 (3): mô-đun lịch sử điều chỉnh PA"`
 
 ---
 
@@ -770,7 +770,7 @@ export function lichSuDieuChinhCuaCase(caseId: number): Map<number, BanDieuChinh
   Ghi `case_followups.next_step = 'adjust'` cho Điều chỉnh. Chưa đủ dữ liệu + Thay được nhận (Q2). Câu lỗi mới: `"Chưa đủ dữ liệu" thì chưa kết thúc phương án được, chọn Giữ nguyên, Điều chỉnh hoặc Thay phương án.` ·
   `Điều chỉnh hoặc thay phương án thì phải ghi Lý do, ít nhất 8 ký tự.` · `Vấn đề còn tồn tối đa 300 ký tự.`
 
-- [ ] **Step 1: Phép kiểm (đỏ).** Thêm vào file test, ngay trên dòng `// ---- các task sau …`:
+- [x] **Step 1: Phép kiểm (đỏ).** Thêm vào file test, ngay trên dòng `// ---- các task sau …`:
 
 ```ts
   // ================================================================== 3. Ghi kết quả với quyết định
@@ -895,10 +895,10 @@ export function lichSuDieuChinhCuaCase(caseId: number): Map<number, BanDieuChinh
   });
 ```
 
-- [ ] **Step 2: Chạy, thấy đỏ.** Run: `npm test 2>&1 | grep -E "PR-S2 · S[24]|KHÔNG ĐẠT"`. Expected: tám phép mới ✗
+- [x] **Step 2: Chạy, thấy đỏ.** Run: `npm test 2>&1 | grep -E "PR-S2 · S[24]|KHÔNG ĐẠT"`. Expected: tám phép mới ✗
   (ví dụ Giữ nguyên: `remaining_issue` NULL; Điều chỉnh: không có lỗi "Lý do"; Thay: `Cần ghi ai là người thực hiện` hoặc không có lỗi "Lý do").
 
-- [ ] **Step 3: Sửa `cases.ts`.**
+- [x] **Step 3: Sửa `cases.ts`.**
 
 (a) Import, **một dòng riêng** ngay dưới dòng `import { NOT_UNCONFIRMED_PRESET, sosCaseState } from './sosState.ts';` (~27). Không sửa khối import lớn đầu file:
 
@@ -1016,15 +1016,15 @@ và trong kiểu `newPlan` thêm `performerSelf?: boolean;` (Q13).
 
 (k) `writeAudit` cuối hàm: `after: { outcome: input.outcome, mode, nextStep, late: !!late, cycleNo, remainingIssue, decisionNote, adjust: adjustPatch }`.
 
-- [ ] **Step 4: Chạy.** Run: `npm test 2>&1 | grep -E "PR-S2|\[9.1\]|PR-F|KIỂM TRA|KHÔNG ĐẠT"`. Expected: tám phép mới ✓. Ba phép cũ **có thể đỏ**:
+- [x] **Step 4: Chạy.** Run: `npm test 2>&1 | grep -E "PR-S2|\[9.1\]|PR-F|KIỂM TRA|KHÔNG ĐẠT"`. Expected: tám phép mới ✓. Ba phép cũ **có thể đỏ**:
   `[9.1] Hai tab cập nhật kết quả…` (câu lỗi đổi, và Thay thiếu lý do), và một phép `PR-F` ở ~8173 (Thay thiếu lý do). Sửa ở Step 5.
-- [ ] **Step 5: Sửa ba phép kiểm cũ bị luật mới thay** (`server/src/tests/run.ts`):
+- [x] **Step 5: Sửa ba phép kiểm cũ bị luật mới thay** (`server/src/tests/run.ts`):
   - ~2524: `/Tiếp tục theo dõi/` → `/Giữ nguyên, Điều chỉnh hoặc Thay/`.
   - ~2557 (`mode: 'end', outcome: 'worse', nextStep: 'propose', note: 'Tự học không ăn thua với em này',`): thêm
     `decisionNote: 'Tự học không ăn thua nên chuyển sang tutor',` ngay sau `note`. Đổi chú thích ~2555 "Đề xuất phương án mới" → "Thay phương án".
   - ~8173 (`nextStep: 'propose',` trong `prfEnd(… 'worse' …)`): thêm `decisionNote: 'Kém hơn nên thay bằng ôn có bấm giờ (rate)',`.
   Chạy lại: Expected: tất cả ✓, tổng **B + 14**.
-- [ ] **Step 6: Commit.**
+- [x] **Step 6: Commit.**
 
 ```bash
 git add server/src/cases/cases.ts server/src/tests/dieuChinhPa.tests.ts server/src/tests/run.ts
@@ -2025,3 +2025,5 @@ làm mất lối "Thay bằng phương án khác hoặc nhờ Quản lý" cũ; f
 | 22/09 | 0 | Opus 5 (session code + subagent Opus 5). Worktree `.claude/worktrees/pr-s2-dieu-chinh-pa` từ `origin/main` 46f5f90 (đã có PR-S1 #56 và PR-O #58). Không có biến Turso. **B = 730** (plan ghi 719: PR-O merge sau khi đo; đích cuối = 751). Q1–Q18 đọc xong, planning review đã duyệt, không thấy Q nào trái đặc tả. |
 | 22/09 | 1 | Opus 5 (subagent) · c616eff · **734** (B+4) ✓ · đỏ trước: 3 ✗ đúng dự kiến · rà Task (Opus 5): duyệt, 0 lỗi nặng; 3 ghi chú nhỏ để rà cuối (phép 'trọn chuỗi' không bắt được nếu xoá dòng gọi; so sánh chưa gồm khoá ngoại/cột chỉ mục; chỉ mục chỉ tạo cùng bảng) |
 | 22/09 | 2 | Opus 5 (subagent) · e704c92 · **736** (B+6) ✓, kiểm kiểu sạch · đỏ trước: 2 ✗ (`decisionsFor is not a function`) · rà Task (Opus 5): duyệt; ghi chú nhỏ: câu lỗi cũ "Đề xuất phương án mới" ở updateResult → sửa ở Task 4; CODE_MAP "năm bước" → Task 10 |
+| 22/09 | 3 | Opus 5 (subagent, gộp một lượt với Task 4) · 7b9f86c · build sạch · rà chung với Task 4 |
+| 22/09 | 4 | Opus 5 (subagent) · 341516e · **744** (B+14) ✓, kiểm kiểu sạch · đỏ trước: 7/8 (phép quyền C02 xanh sẵn vì kiểm quyền chạy trước) · 3 phép cũ sửa như plan; phép "Ma trận tình huống vòng 5" đỏ theo [9.1] rồi tự xanh · thêm: câu lỗi "Đề xuất phương án mới" → "Thay phương án" (Q14) · rà (Opus 5): duyệt; ghi chú nhỏ để rà cuối: Điều chỉnh ghi đè `followup_due` mặc định khi PA chưa có ngày; lịch sử sắp theo `effective_on` có thể lệch khi lùi ngày |
