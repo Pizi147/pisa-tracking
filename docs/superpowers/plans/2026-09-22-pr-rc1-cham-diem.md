@@ -785,7 +785,7 @@ git commit -m "PR-Rc1 (2): C08 — lop thuong ghi dau '-' thi mon do tu doi sang
 - Produces: `chamSheet(p, classId, opts: { periodId?: number | null; kind?: string | null }, today?: string)` trả
   `{ mode: 'ielts_band' | 'ratio'; classId; classCode; branchName; canPlanWeek; ft?: <kết quả classScoreSheet>; thuong?: <kết quả regularSheet> }`.
 
-- [ ] **Step 1: Phép kiểm (đỏ).**
+- [x] **Step 1: Phép kiểm (đỏ).**
 
 ```ts
   check('PR-Rc1 · §6 Lưới FT KHÔNG mở được cho lớp thường; endpoint chung trả đúng loại lưới', () => {
@@ -803,7 +803,7 @@ git commit -m "PR-Rc1 (2): C08 — lop thuong ghi dau '-' thi mon do tu doi sang
   });
 ```
 
-- [ ] **Step 2: Chặn ở `classScoreSheet`.** Ngay sau `require_(p, PERMISSIONS.ATTEMPT_VIEW, …)` trong
+- [x] **Step 2: Chặn ở `classScoreSheet`.** Ngay sau `require_(p, PERMISSIONS.ATTEMPT_VIEW, …)` trong
   `classScoreSheet`:
 
 ```ts
@@ -819,7 +819,7 @@ git commit -m "PR-Rc1 (2): C08 — lop thuong ghi dau '-' thi mon do tu doi sang
   Import `isRatioClass` từ `../normal/regular.ts` (attempts.ts đã import từ đó `allProgrammes`, `evaluateRegular` —
   thêm vào cùng dòng; nếu phát sinh vòng import thì dùng `programmeOfClass(...)?.scoringMode === 'ratio'` tại chỗ).
 
-- [ ] **Step 3: Viết `server/src/cham/canCham.ts` (phần `chamSheet`).**
+- [x] **Step 3: Viết `server/src/cham/canCham.ts` (phần `chamSheet`).**
 
 ```ts
 /**
@@ -861,7 +861,7 @@ export function chamSheet(
 }
 ```
 
-- [ ] **Step 4: Endpoint.** `server/src/routes/index.ts`, **ngay sau** khối `api.get('/classes/:id/score-sheet', …)`:
+- [x] **Step 4: Endpoint.** `server/src/routes/index.ts`, **ngay sau** khối `api.get('/classes/:id/score-sheet', …)`:
 
 ```ts
 /**
@@ -877,9 +877,9 @@ api.get('/classes/:classId/cham', requireAuth, wrap((req) => {
 ```
   Thêm `import * as chamSvc from '../cham/canCham.ts';` vào khối import đầu file (cạnh `regularSvc`).
 
-- [ ] **Step 5: Chạy.** Run: `npm test 2>&1 | tail -5`. Expected: `TẤT CẢ B+12 KIỂM TRA ĐỀU ĐẠT`.
+- [x] **Step 5: Chạy.** Run: `npm test 2>&1 | tail -5`. Expected: `TẤT CẢ B+12 KIỂM TRA ĐỀU ĐẠT`.
 
-- [ ] **Step 6: Commit.**
+- [x] **Step 6: Commit.**
 
 ```bash
 git add server/src/cham/canCham.ts server/src/fasttrack/attempts.ts server/src/routes/index.ts server/src/tests/chamDiem.tests.ts
@@ -1865,3 +1865,4 @@ git fetch origin && git rebase origin/main
 | 23/09 | Gate Q | Rà Q1–Q22 với đặc tả + mockup: Q15, Q19 lệch → hỏi chủ sản phẩm. **Q15:** dòng phụ Cần chấm `{Kỹ năng} · lùi lịch của {tên HV}` (1 em) / `{Kỹ năng} · lùi lịch · {n} HV`, tooltip `Lùi lịch từ {tuần đợt} sang {tuần môn}` (thay chữ "bài dời"). **Q19:** Rc1 thêm dòng vào §4 đặc tả. Tự quyết theo mockup: tên mục Cần chấm kèm hạn + số; đầu lưới lớp thường ghi tuần từng môn; cột Kết quả ghi `{K} dời sang {tuần}`. **Quyền:** Quản lý không nhập điểm (run.ts "Chỉ quản trị hệ thống nhập bù được") → mọi phép kiểm/KIỂM "Quản lý nhập/ghi -" đổi sang Quản trị hệ thống; không nới quyền. |
 | 23/09 | 1 | Đỏ: 779 đạt, 7 hỏng (`d.mucCanCham is not a function`…). Xanh: 786 (B=779 + 7). Chép đúng mã kế hoạch, không lệch; móc run.ts đặt sau khối PR-AN, trước khối in tổng kết. `npm run typecheck` sạch. |
 | 23/09 | 2 | Đỏ: 786 đạt, 5 hỏng (`reportRegularNoShow is not a function`, câu chặn cũ còn). Xanh: **791** (786 + 5; kế hoạch ghi 4 phép, thêm 1). Lệch kế hoạch: (a) Ruling 1 — phép quyền dùng Quản trị hệ thống ghi được + Quản lý bị chặn; (b) Ruling 2 — môn lấy từ `teacher_assignments` của GVBM, assert có môn và có môn không dạy (không bỏ qua im lặng); (c) thêm phép "dời bị chặn (vượt đợt kế tiếp) thì không còn dấu -": ghi dấu + dời chung một `tx` (kiểm đột biến: bỏ `tx` thì phép này đỏ); (d) Ruling 6 — ô môn của `regularSheet` thêm `noShow`, `movedFrom`, `canEdit`; (e) chặn gỡ dấu khi ô đã có điểm ở tuần mới (`hasScore` của setSkillWeek chỉ nhìn band nên không tự chặn); (f) run.ts phép PR-G "Normal KHÔNG dùng dấu" đổi tên + regex `/Normal/` → `/lớp thường/` theo câu chỉ đường mới (số phép không đổi). typecheck sạch. |
+| 23/09 | 3 | Đỏ: 791 đạt, 1 hỏng ("thao tác đáng lẽ phải bị từ chối nhưng lại thành công" — tạo canCham + endpoint trước, chặn sau). Xanh: **792**. Lệch kế hoạch: (a) regex phép kiểm `/lớp thường/` thêm cờ `i` — câu lỗi chép nguyên văn bắt đầu bằng "Lớp thường"; (b) canCham.ts bỏ import `badRequest` không dùng; (c) endpoint truyền `qInt(...) ?? null`, `qStr(...) ?? null` (helper trả `undefined`). Nơi gọi `classScoreSheet` cũ (run.ts ×3, luatMayChu.tests.ts) đều là lớp FT — không vỡ. Web: `ScoreSheetPage` (`/nhap-diem/:id`) giờ báo lỗi rõ khi mở lớp thường thay vì hiện nhầm lưới MT, tới khi Task 7–8 chuyển sang endpoint chung. typecheck sạch. |

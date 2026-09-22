@@ -84,6 +84,7 @@ export async function runChamDiemTests(t: YThucTestKit) {
   const regular: any = await import('../normal/regular.ts');
   const skillSched: any = await import('../fasttrack/skillSchedule.ts');
   const attempts: any = await import('../fasttrack/attempts.ts');
+  const cham: any = await import('../cham/canCham.ts');
   const NOW = new Date().toISOString();
   const LOP = classId('MB-FOU 12');
   const BON_MON = ['listening', 'reading', 'writing', 'speaking'];
@@ -208,5 +209,17 @@ export async function runChamDiemTests(t: YThucTestKit) {
 
   check('PR-Rc1 · §6 Máy chủ KHÔNG còn câu "Lớp Normal không dùng dấu"', () => {
     assert(!/không dùng dấu/.test(String(attempts.saveScore)), 'Câu chặn cũ phải biến mất khỏi saveScore');
+  });
+
+  check('PR-Rc1 · §6 Lưới FT KHÔNG mở được cho lớp thường; endpoint chung trả đúng loại lưới', () => {
+    const lopThuong = classId('MB-FOU 12');
+    const lopFT = classId('MB-FT 101');
+    assertThrows(() => attempts.classScoreSheet(P.mbManager, lopThuong, null), /lớp thường/i,
+      'Bảng điểm Mock Test không nhận lớp thường');
+    const a = cham.chamSheet(P.mbManager, lopThuong, {});
+    assert(a.mode === 'ratio' && a.thuong && !a.ft, `Lớp thường phải ra lưới lớp thường: ${a.mode}`);
+    assert(!JSON.stringify(a.thuong.rows).includes('"MT'), 'Không có chữ MT nào trong dữ liệu lớp thường');
+    const b = cham.chamSheet(P.mbManager, lopFT, {});
+    assert(b.mode === 'ielts_band' && b.ft && !b.thuong, `Lớp FT phải ra lưới Mock Test: ${b.mode}`);
   });
 }

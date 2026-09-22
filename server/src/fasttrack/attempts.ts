@@ -25,7 +25,7 @@ import { canRequest as canRequestAbsence, flagLateNoShow, pendingMove, settleNoS
 import { raiseSignalsForResult, stepsFor } from '../cases/sos.ts';
 import { reconcileCorrectedSignals } from '../cases/signals.ts';
 import { currentCycle, cycleById, examPlanOf, nextAttemptNo } from './cycles.ts';
-import { allProgrammes, evaluateRegular, regularDeadline } from '../normal/regular.ts';
+import { allProgrammes, evaluateRegular, isRatioClass, regularDeadline } from '../normal/regular.ts';
 
 export type ScoreRow = {
   id: number; skill: EntrySkill;
@@ -1366,6 +1366,14 @@ export function classScoreSheet(
     .get(classId) as any;
   if (!cls) throw notFound('Không tìm thấy lớp');
   require_(p, PERMISSIONS.ATTEMPT_VIEW, { classId }, 'Lớp này nằm ngoài phạm vi bạn được xem.');
+  /*
+   * BẢNG NÀY LÀ BẢNG MOCK TEST. Lớp thường có bảng riêng (`regularSheet`): chấm theo số câu đúng/tổng số câu, bài tên
+   * "Giữa khoá"/"Cuối khoá". Mở nhầm bảng là đọc sai cả kết quả — bảng này gọi mọi lượt là "MT{n}" và chấm theo band.
+   * Chặn ở MÁY CHỦ chứ không chỉ ở giao diện: gõ thẳng đường dẫn vẫn phải ra đúng bảng.
+   */
+  if (isRatioClass(classId)) {
+    throw badRequest('Lớp thường dùng bảng điểm riêng (số câu đúng / tổng số câu), không dùng bảng điểm Mock Test.');
+  }
   const period = periodId ? (conn.prepare('SELECT * FROM report_periods WHERE id = ?').get(periodId) as any) : null;
 
   const params: unknown[] = [classId];
