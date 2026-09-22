@@ -18,7 +18,7 @@ import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
  * Không hỏi mức độ, không hỏi hạn, không hỏi ai xử lý, không hỏi biện pháp (V08) — ghi vi phạm không sinh gì khác.
  */
 export function RecordViolationPanel({
-  open, onClose, studentId, studentName, onDone, students, onPickStudent, violation,
+  open, onClose, studentId, studentName, onDone, students, onPickStudent, violation, onDelete,
 }: {
   open: boolean; onClose: () => void;
   studentId: number; studentName?: string;
@@ -30,6 +30,8 @@ export function RecordViolationPanel({
   violation?: {
     id: number; category: string; skill: string | null; occurredOn: string; description: string;
   } | null;
+  /** Xoá vi phạm đang SỬA (PR-HV, spec §4.3: xoá nằm trong form sửa) — nơi gọi mở hộp xác nhận một dòng. Chỉ hiện khi đang sửa. */
+  onDelete?: (violationId: number) => void;
 }) {
   const toast = useToast();
   const { homNay: today } = useNgayNghiepVu();
@@ -95,6 +97,9 @@ export function RecordViolationPanel({
       title={editing ? 'Sửa vi phạm' : `Ghi nhận vi phạm${studentName ? ` · ${studentName}` : ''}`}
       footer={
         <>
+          {editing && violation && onDelete && (
+            <button className="btn btn-ghost text-rose-200 mr-auto" onClick={() => { onClose(); onDelete(violation.id); }}>Xoá vi phạm</button>
+          )}
           <button className="btn" onClick={onClose}>Huỷ</button>
           <button className="btn btn-primary" disabled={busy || !!missing} title={missing ?? undefined} onClick={submit}>
             {editing ? 'Lưu' : 'Ghi vi phạm'}

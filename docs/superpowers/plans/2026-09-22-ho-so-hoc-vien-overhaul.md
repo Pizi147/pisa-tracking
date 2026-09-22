@@ -799,10 +799,10 @@ lệch vài dòng là bình thường, lệch nội dung thì 🛑 hỏi.
   onDelete?: (violationId: number) => void;   // chỉ hiện nút khi đang SỬA
   ```
 
-- [ ] **Step 1: `RecordViolationPanel`** — trong `footer` (dòng 96–102), khi `editing && violation && onDelete`: thêm
+- [x] **Step 1: `RecordViolationPanel`** — trong `footer` (dòng 96–102), khi `editing && violation && onDelete`: thêm
       bên trái `<button className="btn btn-ghost text-rose-200 mr-auto" onClick={() => { onClose(); onDelete(violation.id); }}>Xoá vi phạm</button>`.
       Hộp xác nhận một dòng (`DeleteViolationConfirm`) giữ nguyên, nơi gọi mở nó (spec §4.3: "xoá nằm trong form sửa").
-- [ ] **Step 2: `XemPhuongAnPanel.tsx`** — `useApi<any>(measureId ? `/measures/${measureId}` : null, [measureId])`;
+- [x] **Step 2: `XemPhuongAnPanel.tsx`** — `useApi<any>(measureId ? `/measures/${measureId}` : null, [measureId])`;
       `Modal` (`../../ui/Drawer.tsx`) `open={measureId !== null}` tiêu đề `` `${d.kindLabel} · ${d.studentName}` ``, footer
       một nút `Đóng`. Thân (dùng `Field` của `ui.tsx`, `as="div"`, chữ `text-sm text-slate-200`):
       `Trạng thái` = `statusLabel` · `Ngày thực hiện` = `fmtDate(performedOn)` · `Người thực hiện` =
@@ -811,7 +811,7 @@ lệch vài dòng là bình thường, lệch nội dung thì 🛑 hỏi.
       `fmtDate(occurredOn) · categoryLabel · description` · `Tệp hoặc liên kết` = `<BangChung ownerType="discipline_measure" ownerId={d.id} canEdit={d.canManage} tieuDe="" />`
       (B10: đã thực hiện vẫn bổ sung được tệp — quyền do máy chủ kiểm) · dòng cuối `text-[11px] text-slate-500`:
       `` `Xác nhận bởi ${confirmedByName} · ${fmtDate(confirmedAt)}` `` nếu có. Đang tải: `<Skeleton rows={4} />`.
-- [ ] **Step 3: `StudentYThucSection` — dữ liệu.** Giữ `warn`, `violations`, `measures`, quyền `canEditViolation`,
+- [x] **Step 3: `StudentYThucSection` — dữ liệu.** Giữ `warn`, `violations`, `measures`, quyền `canEditViolation`,
       `ticked`, các state panel. Đổi:
   - `coord` tải **luôn** (bỏ điều kiện `sub === 'coordination'`) để có số trên nhãn tab con (A5):
     `useApi<{ rows: CoordTurn[]; pendingCount: number }>(`/students/${studentId}/phoi-hop-sos`, [studentId])`.
@@ -821,7 +821,7 @@ lệch vài dòng là bình thường, lệch nội dung thì 🛑 hỏi.
   - Lọc nhóm cho dòng **phương án**: hiện khi `!category || m.violations.some((v) => v.category === category)` (trước
     đây mọi phương án bị ẩn khi chọn một nhóm — nay phương án chứa vi phạm của nhóm đó vẫn hiện; ghi Nhật ký).
     Kiểu `MeasureDetail` cục bộ (dòng 18–21) thêm `violations: { category: string }[]`.
-- [ ] **Step 4: `StudentYThucSection` — bố cục** (thay toàn bộ JSX trả về, dòng 92–199):
+- [x] **Step 4: `StudentYThucSection` — bố cục** (thay toàn bộ JSX trả về, dòng 92–199):
   ```
   ┌ đầu khối ─────────────────────────────────────────────── [+ Ghi nhận vi phạm] ┐   (nút: canRecordViolation, btn btn-primary btn-sm)
   │ h2 "Ý thức & Phối hợp" (text-base font-semibold) · p "Lịch sử của riêng học viên này." (text-xs text-slate-500) │
@@ -862,7 +862,7 @@ lệch vài dòng là bình thường, lệch nội dung thì 🛑 hỏi.
   ✎/🗑 cũ; `RecordViolationPanel` (sửa) nhận `onDelete={(id) => setDeleteId(id)}`. Xoá `summary` chuỗi cũ (dòng
   62–75). Thêm `<XemPhuongAnPanel measureId={xemId} onClose={() => setXemId(null)} />` cạnh các panel.
   Sửa chú thích đầu hàm (dòng 29–32) theo bố cục v3 (ô số nhỏ thay câu một dòng — A3).
-- [ ] **Step 5:** `npm run check` xanh. Bấm thử (vai GVCN Trần Ngọc Hà, hồ sơ Lê Quang Huy): lọc nhóm + thời gian; tick 2
+- [x] **Step 5:** `npm run check` xanh. Bấm thử (vai GVCN Trần Ngọc Hà, hồ sơ Lê Quang Huy): lọc nhóm + thời gian; tick 2
       vi phạm → nút `Tạo phương án từ 2 vi phạm` hiện → tạo (Lưu — Đang chuẩn bị) → dòng `Phương án` vàng + `Mở` → bấm
       `Mở` → xác nhận → dòng thành xám ✓ + `Xem` → bấm `Xem` thấy chi tiết chỉ đọc; `Sửa` một vi phạm → `Xoá vi phạm` →
       hộp xác nhận một dòng. Vai GVBM: không có ô tick, không có `Mở`, có `Xem`; nút `+ Ghi nhận vi phạm` còn nếu GVBM dạy
@@ -1280,3 +1280,4 @@ danh sách ảnh.)*
 | 22/09/2026 | 2 | `parseHoSoTab` TDD đỏ → xanh. `HangTab.tsx` mới; `StudentDetailPage` bỏ `tier3`, ba tab đọc từ `?tab=` (replace), `warn` tải ở trang cho dấu ⚠ (A5). Sửa lỗi phụ J8: không có lộ trình vẫn mở được tab Ý thức/Hành trình. Bấm thử (Playwright, GVCN, 1280 + 375): `?tab=` ba giá trị + giá trị lạ về Học thuật ✓; bấm tab đổi địa chỉ, `history.length` không tăng (replace) ✓; scrollWidth = khổ (không cuộn ngang) ✓; console không lỗi ✓; ⚠ hiện ở em có cảnh báo 5 ngày (Nguyễn Minh An), không hiện ở Huy ✓. Số phép kiểm: **607**. |
 | 22/09/2026 | 3 | Hai phép TDD đỏ (`ketQuaTestGanNhat` chưa có; `next.overdue` chưa có, câu cũ "đề xuất L đang chờ…") → xanh. **Kiểm ngược `<`→`<=` KHÔNG đỏ**: bộ demo không có việc nào có hạn đúng bằng ngày demo nên hai phép so cho cùng kết quả → tách luật thành hàm thuần `quaHan(due, today)` ở `hoSoHocVien.ts` (profile.ts dùng nó) + phép kiểm biên riêng (hạn = hôm nay → chưa quá hạn) — thêm 1 phép ngoài kế hoạch. Thêm mục (k) "không có tuần → chỉ MT2". `HeaderStats` bốn ô mới, `Stat` có `nho`/`sub: ReactNode`. **Lưu ý vận hành:** API dev chỉ build lúc `npm run dev` khởi động — sửa máy chủ phải khởi động lại mới thấy (ô 4 lúc đầu vẫn chữ cũ). Bấm thử: Huy (FT, GVCN) ô 1 `MT2 · W3 AUG 2026` + KetQuaDot `Đã đủ điểm · SOS 1`; ô 4 `Làm PA L` · `quá hạn 30/08/2026` đỏ. Đỗ Gia Bảo (id 8, MB-FOU 12, Quản lý): ô 1 `Giữa khoá · W3 AUG 2026`, **không** có chữ Overall; ô 4 `Không có`. 375px: 2 cột, ô 4 xuống dòng, không tràn. Số phép kiểm: **610** (+3). |
 | 22/09/2026 | 4 | `demTheoNhomViPham` TDD đỏ → xanh; thứ tự thật của `VIOLATION_CATEGORIES` là attendance (Chuyên cần) **trước** homework (BTVN) — phép kiểm viết theo hằng thật, không theo ví dụ của plan; mã nhóm lạ vẫn tính vào `tong`. `OSoNho`, `DongThoiGian` mới; `TurnRow` → `TheSos` (đầu thẻ 3 cột `div role=button`, thân thẻ lưới việc), `PhoiHopSosSection` prop `cot1` thay `showStudentName`; bỏ import `Level`/`sosTone` không dùng. **Huy không có lượt Phối hợp SOS nào** (như ảnh trước) → bấm thử trên Đỗ Minh Khôi (id 42, MT2 · SOS 2): mở/đóng bằng chuột và Enter ✓; link "Hỗ trợ học thuật xem ở tab Học thuật" → tab Học thuật, bỏ `?tab=`, thẻ không bị mở/đóng ✓ (lưu ý cho script kiểm: `getByRole('button', {name})` khớp cả đầu thẻ vì tên gồm chữ bên trong — phải chọn `button.link`); GVCN Xác nhận "Trao đổi với gia đình" → `Đã xong` 1 → 2 ✓ (đã ghi vào database worktree); lớp MB-FT 101: 2 thẻ, cột 1 tên HV, dòng phụ "Học thuật theo dõi ở bảng kỹ năng" ✓; 375px không cuộn ngang, cột 1 một hàng, cột 2+3 hàng dưới ✓; console không lỗi ✓. Số phép kiểm: **611**. |
+| 22/09/2026 | 5 | `StudentYThucSection` viết lại phần vẽ theo §4.3 (đầu khối + nút, `HangTab cap="con"` với số lượt chưa xong, ô số nhỏ, hai dãy lọc, `DongThoiGian` có cột tick, nút Sửa/Mở/Xem); `coord` tải luôn (A5); `RANGES` đổi thứ tự/chữ; lọc nhóm giữ dòng PA chứa vi phạm của nhóm (J7); `XemPhuongAnPanel` mới; `RecordViolationPanel.onDelete` → nút `Xoá vi phạm` trong form sửa. **Huy không có vi phạm chưa xử lý** nên bấm thử luồng tạo PA trên **Nguyễn Minh An** (id 1, 4 vi phạm chưa xử lý, có ⚠): GVCN lọc BTVN 9→4 dòng, 7 ngày 5 dòng; tick 2 → `Tạo phương án từ 2 vi phạm` → panel `Tạo phương án · Nguyễn Minh An` → chọn GV trao đổi ngắn → `Lưu — Đang chuẩn bị` → dòng `◷ Phương án` + ô `PA đang chuẩn bị` + nút `Mở` → `Xác nhận đã thực hiện` → dòng `✓ Phương án` + nút `Xem` → hộp chỉ đọc đủ Trạng thái/Ngày/Người/Nội dung/2 vi phạm/Tệp/Xác nhận bởi ✓; `Sửa` → `Xoá vi phạm` → hộp `Xoá vi phạm này?` (Huỷ) ✓. GVBM (Trang): không ô tick, không `Mở`, có `Xem`, còn `+ Ghi nhận vi phạm` ✓. Quản lý (Vy, trên Khôi vì Minh An đã hết vi phạm chưa xử lý sau hai lần chạy script): ô tick 2, Sửa, Tạo phương án từ 1 vi phạm ✓. Khôi: tab con `Phối hợp SOS 1` ✓. 375px không cuộn ngang, dòng thời gian 3 cột + nút xuống hàng ✓. Console không lỗi ✓. (Script đã tạo + xác nhận 2 PA "GV trao đổi ngắn với HS" cho Minh An trong database worktree.) Số phép kiểm: **611** (không đổi — task giao diện). |
