@@ -33,6 +33,8 @@ export type TrangHocVienLop = {
   phamVi: { coThe: PhamVi[]; dangDung: PhamVi; chiNhanh: number | null };
   dem: Record<LocHocVien, number>;
   hocVien: { id: number; classId: number; loc: LocHocVien[] }[];
+  /** Người xem có tạo được lớp MỚI ở chi nhánh nào không — không gắn với lớp đã tồn tại nào (điểm a rà soát cuối). */
+  coTheTaoLop: boolean;
 };
 
 const demRong = (): Record<LocHocVien, number> =>
@@ -49,15 +51,22 @@ export function danhSachHocVienLop(
     dayLop: phanCong.length > 0, capChiNhanh: scope.branchIds.length > 0,
     toanHeThong: scope.all, soChiNhanh: scope.branchIds.length,
   });
+  /* Chi nhánh người xem CÓ THỂ THẤY — dùng lại cho cả "chọn chi nhánh đang xem" (dưới) lẫn "+ Lớp mới" (điểm a rà soát cuối). */
+  const duocXemChiNhanh = scope.all
+    ? (conn.prepare(`SELECT id FROM branches WHERE status = 'active' ORDER BY id`).all() as any[]).map((r) => r.id as number)
+    : scope.branchIds;
+  /*
+   * "+ LỚP MỚI" đầu trang (điểm a rà soát cuối): không gắn với lớp đã tồn tại nào, nên không thể dùng cờ
+   * `viewer.coTheSuaHocVien` của một lớp cụ thể — kiểm riêng `STUDENT_EDIT` theo TỪNG chi nhánh người xem thấy được.
+   * Với GVCN/GVBM (`ctx.branchId` không đủ, `teacherAllows` đòi `ctx.classId` cho STUDENT_EDIT), luôn `false`.
+   */
+  const coTheTaoLop = duocXemChiNhanh.some((b) => can(p, PERMISSIONS.STUDENT_EDIT, { branchId: b }));
   /* Link cũ `/hoc-vien?branchId=` (bảng chi nhánh, báo cáo tuần) không ghi phạm vi → coi là xem MỘT chi nhánh. */
   const muon = f.phamVi ?? (f.branchId && coThe.includes('chi-nhanh') ? 'chi-nhanh' : null);
   const dangDung: PhamVi = (coThe as string[]).includes(muon ?? '') ? (muon as PhamVi) : phamViMacDinh(coThe);
   let chiNhanh: number | null = null;
   if (dangDung === 'chi-nhanh') {
-    const duocXem = scope.all
-      ? (conn.prepare(`SELECT id FROM branches WHERE status = 'active' ORDER BY id`).all() as any[]).map((r) => r.id as number)
-      : scope.branchIds;
-    chiNhanh = f.branchId && duocXem.includes(f.branchId) ? f.branchId : duocXem[0] ?? null;
+    chiNhanh = f.branchId && duocXemChiNhanh.includes(f.branchId) ? f.branchId : duocXemChiNhanh[0] ?? null;
   }
   const phamVi = { coThe, dangDung, chiNhanh };
 
@@ -67,10 +76,10 @@ export function danhSachHocVienLop(
     /* Phạm vi quyết luôn badge chấm bài: "Lớp tôi dạy" đếm phần mình phải chấm (Q12 — thay cặp nút Tôi / Tất cả). */
     scope: dangDung === 'toi' ? 'mine' : 'managed',
   });
-  if (base.scopeEmpty) return { rows: [], scopeEmpty: true, phamVi, dem: demRong(), hocVien: [] };
+  if (base.scopeEmpty) return { rows: [], scopeEmpty: true, phamVi, dem: demRong(), hocVien: [], coTheTaoLop };
   const lopToi = new Set(phanCong.map((a) => a.classId));
   const lops = dangDung === 'toi' ? base.rows.filter((r) => lopToi.has(r.id)) : base.rows;
-  if (!lops.length) return { rows: [], scopeEmpty: false, phamVi, dem: demRong(), hocVien: [] };
+  if (!lops.length) return { rows: [], scopeEmpty: false, phamVi, dem: demRong(), hocVien: [], coTheTaoLop };
 
   const ids = lops.map((r) => r.id);
   const ph = ids.map(() => '?').join(',');
@@ -81,7 +90,7 @@ export function danhSachHocVienLop(
       WHERE ta.class_id IN (${ph}) AND ta.is_core = 1 AND ta.status = 'active' ORDER BY ta.id`,
   ).all(...ids) as any[]) if (!gvcn.has(r.class_id)) gvcn.set(r.class_id, { id: r.id, name: r.full_name });
 
-  const soCase = soCaseMoTheoLop(ids);
+  const soCase = soCaseMoTheoLop(p, ids);
   const tienDo = classProgressMany(ids);
 
   /*
@@ -170,5 +179,5 @@ export function danhSachHocVienLop(
     return { id: h.id as number, classId: h.class_id as number, loc };
   });
 
-  return { rows, scopeEmpty: false, phamVi, dem, hocVien };
+  return { rows, scopeEmpty: false, phamVi, dem, hocVien, coTheTaoLop };
 }

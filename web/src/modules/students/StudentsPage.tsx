@@ -12,7 +12,7 @@ import { ClassCreatePanel } from '../classes/ClassCreatePanel.tsx';
 import { TenGiaoVien } from '../classes/TenGiaoVien.tsx';
 import { BangHocVienLop } from './BangHocVienLop.tsx';
 import {
-  LOC_HOC_VIEN, LOC_HOC_VIEN_NHAN, PERMISSIONS, PHAM_VI_NHAN, badgeLop, docThamSoLoc, lopMoSan, needScoresText, skillShort,
+  LOC_HOC_VIEN, LOC_HOC_VIEN_NHAN, PHAM_VI_NHAN, badgeLop, docThamSoLoc, lopMoSan, needScoresText, skillShort,
   type BadgeLop, type LocHocVien, type PhamVi, type SapXep, type WorkScope,
 } from '@shared/domain/index.ts';
 
@@ -30,6 +30,8 @@ type TrangHocVienLop = {
   phamVi: { coThe: PhamVi[]; dangDung: PhamVi; chiNhanh: number | null };
   dem: Record<LocHocVien, number>;
   hocVien: { id: number; classId: number; loc: LocHocVien[] }[];
+  /** Người xem có tạo được lớp MỚI ở chi nhánh nào không — không gắn với lớp đã tồn tại nào (điểm a rà soát cuối). */
+  coTheTaoLop: boolean;
 };
 
 /**
@@ -110,8 +112,14 @@ export default function StudentsPage() {
       <div className="flex flex-wrap items-center gap-2">
         <h1 className="text-lg font-semibold text-slate-100 m-0">Học viên & Lớp</h1>
         <div className="flex-1" />
-        {can(PERMISSIONS.STUDENT_EDIT) && <button type="button" className="btn btn-sm" onClick={() => setTaoLop(true)}>+ Lớp mới</button>}
-        {can(PERMISSIONS.STUDENT_EDIT) && (
+        {/*
+          * "+ Lớp mới"/"+ Học viên" (điểm a rà soát cuối): KHÔNG dùng `can()` phía client — hàm đó chỉ kiểm vai có quyền
+          * `student.edit` theo danh sách tĩnh, không có ngữ cảnh branchId/classId, nên GVCN/GVBM luôn thấy nút dù bấm vào
+          * chắc chắn ra 403 (`hasAssignment` đòi `ctx.classId`/`ctx.branchId` cụ thể). Dùng đúng cờ máy chủ đã tính theo
+          * TỪNG lớp/chi nhánh thay vào đó.
+          */}
+        {data?.coTheTaoLop && <button type="button" className="btn btn-sm" onClick={() => setTaoLop(true)}>+ Lớp mới</button>}
+        {(data?.rows ?? []).some((r) => r.viewer.coTheSuaHocVien) && (
           <button type="button" className="btn btn-sm btn-primary" onClick={() => setThem(null)}>+ Học viên</button>
         )}
       </div>

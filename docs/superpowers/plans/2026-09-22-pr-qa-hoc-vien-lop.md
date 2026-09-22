@@ -3558,3 +3558,27 @@ playwright, `git status` sạch trước khi commit.
   nhất: khối PR-AN đã được chèn vào giữa khối PR-O và dòng `console.log` cuối `run.ts` (không có ở lúc viết brief) — tự quyết đặt
   khối `PR-Qa` ngay sau `await runKhungTests(...)` và trước khối PR-AN, giữ đúng ý "ngay sau khối PR-O" mà không chèn giữa PR-AN.
   Không có Q nào lệch đặc tả. Sẵn sàng Task 2 (PR-Pa dùng `ngay`/`tuanLich`/`tuanKhoa`/`shortDate` không cần đổi gì thêm).
+
+- **Task 17 (fix sau rà soát cuối):** Model thật: Sonnet 5. Vòng sửa 2 lỗi Important do rà soát TOÀN NHÁNH cuối cùng (model
+  Opus) tìm ra, TRƯỚC khi mở PR — không phải một task mới, phạm vi đúng 2 finding, không mở rộng. Báo cáo đầy đủ:
+  `.superpowers/sdd/2026-09-22-pr-qa-hoc-vien-lop/task-17-fix-report.md`.
+  - **Điểm a (nút đầu trang ra 403):** `can(PERMISSIONS.STUDENT_EDIT)` phía client (không ngữ cảnh branchId/classId) khiến nút
+    "+ Lớp mới"/"+ Học viên" luôn hiện dù GVCN/GVBM bấm vào chắc chắn 403 (`hasAssignment` đòi `ctx.classId` cụ thể). Sửa:
+    "+ Học viên" đổi sang `(data?.rows ?? []).some((r) => r.viewer.coTheSuaHocVien)` (cờ đã có sẵn theo từng lớp, thuần web);
+    "+ Lớp mới" thêm cờ mới `coTheTaoLop` từ máy chủ (`server/src/classes/hocVienLop.ts` — kiểm `STUDENT_EDIT` theo TỪNG chi
+    nhánh người xem thấy được), web đổi sang `data?.coTheTaoLop`, bỏ hẳn `can(PERMISSIONS.STUDENT_EDIT)` và import
+    `PERMISSIONS` khỏi `StudentsPage.tsx`.
+  - **Điểm b (Q5/G-10, badge "n Case đang mở" không khớp "Cần hỗ trợ"):** `soCaseMoTheoLop` (`dongHocVien.ts`) đổi từ đếm SQL
+    thô (không lọc quyền) sang tính dựa trên `listCases(p, {})` (một lời gọi, cùng nguồn mà "Cần hỗ trợ" dùng), gom lại theo
+    lớp ĐANG HỌC hiện tại của từng em; thêm `p` vào chữ ký, cập nhật 2 nơi gọi (`hocVienLop.ts`, `classes.ts:610`).
+  - **Nợ để lại (KHÔNG sửa, ngoài phạm vi PR-Qa):** nguyên nhân gốc ở `server/src/cases/cases.ts:1789` — bộ lọc quyền của
+    `listCases` dùng `eff_class_id = COALESCE(a.class_id, cur.class_id)` (lớp LÚC ĐÁNH GIÁ trước), trong khi WHERE lọc theo
+    `classId` của CHÍNH hàm đó (dòng 1688) lại đúng dùng `COALESCE(cur.class_id, a.class_id)` (lớp HIỆN TẠI trước) — hai công
+    thức khác thứ tự COALESCE trong cùng một hàm. `cases.ts` thuộc PR-S2/PR-AN, nằm trong bảng ranh giới file cấm sửa của
+    PR-Qa — đã ghi chi tiết và đề nghị hướng sửa vào báo cáo Task 17 để route sang người sở hữu file đó.
+  - **Test mới:** 2 phép kiểm ở `hocVienLop.tests.ts` (điểm a: `coTheTaoLop` đúng `true`/`false` theo 4 vai; điểm b: tái hiện
+    kịch bản em chuyển lớp A→B, Case gắn bài Test cũ ở A, GV chỉ dạy B — badge và "Cần hỗ trợ" phải khớp nhau, cả hai `= 0`).
+    2 phép kiểm CŨ của Task 5/Task 6 (so `soCaseMo` với tổng cột Case của `classRoster`) vẫn xanh, KHÔNG phải chỉnh gì — vì cả
+    hai đều dùng `P.admin`, và `can()` của Quản trị hệ thống luôn `true` bất kể ngữ cảnh nên việc đổi nguồn đếm không đổi kết
+    quả với vai này. `npm run check`: **TẤT CẢ 811 KIỂM TRA ĐỀU ĐẠT** (809 + 2 mới), `typecheck` xanh. Không đụng `cases.ts`
+    hay file cấm nào khác trong bảng ranh giới.

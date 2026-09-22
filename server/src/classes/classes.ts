@@ -607,7 +607,7 @@ export function classOverview(p: Principal, classId: number) {
     coreTeachers: assignments.filter((a) => a.is_core === 1).map((a) => ({ id: a.user_id, name: a.full_name })),
     skillTeachers: assignments.filter((a) => a.skill).map((a) => ({ skill: a.skill, id: a.user_id, name: a.full_name })),
     /** "n Case đang mở" ở đầu hồ sơ lớp — cùng tập với cột Case của tab Học viên (Q5). */
-    soCaseMo: soCaseMoTheoLop([classId]).get(classId) ?? 0,
+    soCaseMo: soCaseMoTheoLop(p, [classId]).get(classId) ?? 0,
     /** Số học viên có vi phạm chưa xử lý quá 5 ngày — dấu ⚠ trên tab Ý thức & Phối hợp (Q15). */
     canhBaoYThuc: can(p, PERMISSIONS.STUDENT_VIEW, { classId }) ? classWarning(p, classId).activeCount : 0,
     viewer: {

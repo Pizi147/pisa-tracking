@@ -469,4 +469,52 @@ export async function runHocVienLopTests(t: YThucTestKit) {
       assert(!/SectionNote|\d{4}-\d{2}-\d{2}/.test(doc(p)), `${p}: khối chữ cho dev (G-5) / ngày ISO (G-6)`);
     }
   });
+
+  // ------------------------------------------------------------------ Task 17 (fix sau rà soát cuối) · điểm a
+
+  check('PR-Qa · điểm a rà soát cuối: coTheTaoLop chỉ true khi thật sự tạo được lớp (không phải nút bấm ra 403)', () => {
+    eq(hvl.danhSachHocVienLop(P.admin, {}).coTheTaoLop, true, 'Quản trị hệ thống — grant branchId null phủ mọi chi nhánh');
+    eq(hvl.danhSachHocVienLop(P.mbManager, {}).coTheTaoLop, true, 'QL chi nhánh MB');
+    eq(hvl.danhSachHocVienLop(P.coreTeacher, {}).coTheTaoLop, false, 'GVCN không tạo được lớp mới (hasAssignment đòi ctx.classId)');
+    eq(hvl.danhSachHocVienLop(P.subjectTeacher, {}).coTheTaoLop, false, 'GV bộ môn cũng vậy');
+  });
+
+  // ------------------------------------------------------------------ Task 17 (fix sau rà soát cuối) · điểm b (Q5/G-10)
+
+  check('PR-Qa · điểm b rà soát cuối (Q5/G-10): badge "n Case đang mở" khớp ĐÚNG danh sách listCases mà người xem thấy được', () => {
+    /*
+     * Tái hiện đúng kịch bản phát hiện: một Case gắn với bài Test ở LỚP A (lúc đánh giá), rồi em chuyển
+     * sang LỚP B (lớp đang học). Một GV chỉ dạy lớp B không có phân công ở lớp A, nên `listCases()` (lọc
+     * quyền theo lớp LÚC ĐÁNH GIÁ — nợ để lại của cases.ts, xem task-17-fix-report.md) sẽ KHÔNG trả case
+     * này cho GV đó, dù em nay đã học lớp B. TRƯỚC khi sửa, badge (đếm thô trên sos_cases, không lọc quyền)
+     * vẫn đếm case này cho lớp B — lệch với "Cần hỗ trợ" (0). SAU khi sửa, cả hai phải khớp nhau (0 = 0).
+     */
+    const lopA = taoLop('MB-FT QA17A', 'FT');
+    const lopB = taoLop('MB-FT QA17B', 'FT');
+    const hv = taoHocVien({ cid: lopA, ft: true, target: 6.5 });
+    const at = themLuot({ ...hv, cid: lopA, no: 2, kind: 'mock', weekStart: '2026-09-07' });
+    conn.prepare(
+      `INSERT INTO sos_cases (student_id, cycle_id, attempt_id, topic, category, origin_kind, status, sos_level, title, detected_at, created_at)
+       VALUES (?, ?, ?, 'listening', 'listening', 'teacher_report', 'open', 1, 'PR-Qa T17 case', ?, ?)`,
+    ).run(hv.sid, hv.cycleId, at, TODAY, NOW);
+    // Em chuyển sang lớp B — lớp lúc đánh giá (attempt) vẫn là A, nhưng lớp ĐANG HỌC nay đã là B.
+    conn.prepare(`UPDATE enrollments SET class_id = ? WHERE student_id = ? AND status = 'active'`).run(lopB, hv.sid);
+
+    // Một GV mới, chỉ có phân công (teacher_assignments) ở lớp B — không hề dạy lớp A.
+    const teacherRoleId = (conn.prepare(`SELECT id FROM roles WHERE key = 'teacher'`).get() as any).id;
+    const uid = Number(conn.prepare(
+      `INSERT INTO users (code, full_name, title, status, created_at) VALUES ('QA17-GV', 'GV QA17 Chỉ Dạy Lớp B', 'GV', 'active', ?)`,
+    ).run(NOW).lastInsertRowid);
+    conn.prepare(`INSERT INTO user_roles (user_id, role_id, branch_id, status, created_at) VALUES (?, ?, ?, 'active', ?)`)
+      .run(uid, teacherRoleId, MB, NOW);
+    conn.prepare(
+      `INSERT INTO teacher_assignments (user_id, class_id, is_core, effective_from, status, created_at) VALUES (?, ?, 1, '2026-08-03', 'active', ?)`,
+    ).run(uid, lopB, NOW);
+    const gv = loadPrincipal(uid);
+
+    const dsGvThay = casesMod.listCases(gv, { classId: lopB }).rows.filter((c: any) => c.status !== 'done').length;
+    const badge = hvl.danhSachHocVienLop(gv, {}).rows.find((r: any) => r.id === lopB)?.soCaseMo;
+    eq(badge, dsGvThay, 'Badge lớp B phải khớp ĐÚNG danh sách "Cần hỗ trợ" mà GV lớp B thấy được — không đếm dư');
+    eq(dsGvThay, 0, 'Nợ để lại (ngoài phạm vi PR-Qa): case vẫn "vô hình" với GV lớp B vì cases.ts lọc quyền theo lớp lúc đánh giá (A)');
+  });
 }
