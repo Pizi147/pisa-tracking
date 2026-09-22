@@ -841,7 +841,7 @@ Khối 2 (`missing_scores`, dòng 88–104) thay bằng:
 Hành vi "mỗi môn chưa đạt một tín hiệu, về GV môn đó, không ai dạy thì về GVCN" **đã có** (`regular.ts:481-491` gọi `raiseSignal` từng môn;
 `owner.ts` chọn GV đúng môn rồi GVCN). Task này khoá nó bằng phép kiểm, bổ sung dữ liệu dòng việc, và cho người được giao xử lý được (Q1).
 
-- [ ] **Step 1: Phép kiểm (đỏ).**
+- [x] **Step 1: Phép kiểm (đỏ).**
 
 ```ts
   // ================================================================== 6. S1 (a) tín hiệu từng môn
@@ -894,8 +894,8 @@ Hành vi "mỗi môn chưa đạt một tín hiệu, về GV môn đó, không a
   });
 ```
 
-- [ ] **Step 2: Chạy, đỏ.** Expected: phép 1 ✓ (hành vi đã có — khoá lại), phép 2 và 3 ✗.
-- [ ] **Step 3: Sửa `signals.ts`.**
+- [x] **Step 2: Chạy, đỏ.** Expected: phép 1 ✓ (hành vi đã có — khoá lại), phép 2 và 3 ✗.
+- [x] **Step 3: Sửa `signals.ts`.**
 
 Import: `import { badRequest, forbidden, notFound, nowIso } from '../util.ts';`
 
@@ -990,7 +990,7 @@ function viewOf(p: Principal, r: any, today: string): SignalView {
 ```
 (Giữ chữ "phạm vi": phép kiểm cũ `[6.2] Chỉ người trong phạm vi …` bắt `/phạm vi/` — nó bị chặn trước đó ở `reportIssue`, nhưng giữ cho chắc.)
 
-- [ ] **Step 4: Chạy, xanh** (Expected `690`). **Step 5: Commit.** `git commit -am "PR-S1 (6): S1 — tín hiệu lớp thường mang loại/điểm/nút/điền sẵn; người được giao xử lý được"`
+- [x] **Step 4: Chạy, xanh** (Expected `690`). **Step 5: Commit.** `git commit -am "PR-S1 (6): S1 — tín hiệu lớp thường mang loại/điểm/nút/điền sẵn; người được giao xử lý được"`
 
 ---
 

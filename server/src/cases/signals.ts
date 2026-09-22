@@ -5,7 +5,7 @@ import {
   type CaseCategory, type EntrySkill, type SignalStatus,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
-import { badRequest, notFound, nowIso } from '../util.ts';
+import { badRequest, forbidden, notFound, nowIso } from '../util.ts';
 import { can, classScopeSql, require_, scopeFor, type Principal } from '../permissions.ts';
 import { notify, writeAudit } from '../platform/audit.ts';
 import { suggestCaseOwner } from './owner.ts';
@@ -186,21 +186,58 @@ export type SignalView = {
   /** Người đang xem có phải người phải xác minh tín hiệu này không. */
   mine: boolean;
   canResolve: boolean;
+  /** Lớp thường ('normal') giữ mô hình tín hiệu; Fast Track ('ft') tự tạo Case (Q-V3-1). */
+  kind: 'normal' | 'ft';
+  /** Lớp thường: số câu đúng / tổng số câu của ĐÚNG môn này — đọc thẳng từ ô điểm, sửa điểm thì số đổi theo. */
+  score: number | null;
+  total: number | null;
+  /** Nút trên dòng việc (§3.10). Rỗng khi người xem không xử lý được hoặc tín hiệu không còn chờ. */
+  actions: SignalAction[];
+  /** Điền sẵn form "Tạo Case" đúng môn (§3.10). `null` khi tín hiệu không còn chờ. */
+  caseDraft: { studentId: number; cycleId: number | null; topic: string | null; detectedAt: string; scoreText: string | null } | null;
 };
+
+/** Nút trên dòng việc tín hiệu (§3.10): "Tạo Case" · "Bỏ qua" (Bỏ qua chỉ lớp thường). */
+export type SignalAction = 'create_case' | 'dismiss';
 
 const SIGNAL_SELECT = `
   SELECT sg.*, s.full_name, s.student_code,
          c.code AS class_code, c.branch_id, b.name AS branch_name,
          a.attempt_no, a.kind AS attempt_kind,
-         u.full_name AS owner_name
+         u.full_name AS owner_name,
+         scr.raw_score AS score_value, scr.raw_total AS score_total,
+         COALESCE(pg.scoring_mode, pgc.scoring_mode) AS scoring_mode
     FROM case_signals sg
     JOIN students s ON s.id = sg.student_id
     LEFT JOIN classes c ON c.id = sg.class_id
     LEFT JOIN branches b ON b.id = c.branch_id
     LEFT JOIN assessment_attempts a ON a.id = sg.attempt_id
-    LEFT JOIN users u ON u.id = sg.owner_user_id`;
+    LEFT JOIN users u ON u.id = sg.owner_user_id
+    LEFT JOIN assessment_scores scr ON scr.attempt_id = sg.attempt_id AND scr.skill = sg.skill
+    LEFT JOIN programmes pg ON pg.code = c.programme_code
+    LEFT JOIN learning_cycles cy ON cy.id = sg.cycle_id
+    LEFT JOIN programmes pgc ON pgc.code = cy.programme_code`;
+
+/**
+ * AI XỬ LÝ ĐƯỢC MỘT TÍN HIỆU (Tạo Case · Bỏ qua).
+ *
+ * GV đúng môn hoặc Quản lý trong phạm vi (`SOS_EDIT` theo kỹ năng — C02). CỘNG người được giao tín hiệu: §3.10 nói không ai dạy
+ * môn đó thì tín hiệu về GVCN — giao việc cho ai thì người đó phải làm được (quyết định Q1 của plan PR-S1). Chỉ mở cho tín hiệu,
+ * KHÔNG mở cho Case: Case tạo ra vẫn theo C02.
+ */
+export function canResolveSignal(
+  p: Principal, sg: { class_id: number | null; student_id: number; skill: string | null; owner_user_id: number | null },
+): boolean {
+  if (can(p, PERMISSIONS.SOS_EDIT, { classId: sg.class_id, studentId: sg.student_id, skill: sg.skill ?? undefined })) return true;
+  return sg.owner_user_id === p.userId
+    && can(p, PERMISSIONS.SOS_REPORT, { classId: sg.class_id, studentId: sg.student_id });
+}
 
 function viewOf(p: Principal, r: any, today: string): SignalView {
+  const kind: 'normal' | 'ft' = r.scoring_mode === 'ratio' ? 'normal' : 'ft';
+  const canResolve = canResolveSignal(p, r);
+  const pending = r.status === 'pending';
+  const score = r.score_value ?? null, total = r.score_total ?? null;
   return {
     id: r.id,
     studentId: r.student_id, studentName: r.full_name, studentCode: r.student_code,
@@ -216,11 +253,14 @@ function viewOf(p: Principal, r: any, today: string): SignalView {
     resolutionNote: r.resolution_note, withdrawnReason: r.withdrawn_reason,
     overdue: r.status === 'pending' && r.verify_due < today,
     mine: r.owner_user_id === p.userId,
-    /* AUTH-01 + C02: chỉ giáo viên đúng kỹ năng của tín hiệu (hoặc Quản lý trong phạm vi) xác minh được. */
-    canResolve: can(p, PERMISSIONS.SOS_EDIT, {
-      classId: r.class_id, studentId: r.student_id,
-      skill: r.skill ?? undefined,
-    }),
+    /* AUTH-01 + C02: giáo viên đúng kỹ năng (hoặc Quản lý trong phạm vi) — cộng người được giao tín hiệu (Q1). */
+    canResolve,
+    kind, score, total,
+    actions: canResolve && pending ? (kind === 'normal' ? ['create_case', 'dismiss'] : ['create_case']) : [],
+    caseDraft: pending
+      ? { studentId: r.student_id, cycleId: r.cycle_id ?? null, topic: r.skill ?? null, detectedAt: r.detected_on,
+          scoreText: score !== null && total !== null ? `${score}/${total}` : null }
+      : null,
   };
 }
 
@@ -232,6 +272,8 @@ export type SignalFilters = {
   /** Chỉ tín hiệu người đang xem phải xác minh. */
   mine?: boolean;
   overdueOnly?: boolean;
+  /** Ngày nghiệp vụ để tính quá hạn — mặc định hôm nay. */
+  today?: string;
 };
 
 /**
@@ -255,7 +297,7 @@ export function listSignals(p: Principal, f: SignalFilters = {}) {
   if (f.studentId) { where.push('sg.student_id = ?'); params.push(f.studentId); }
   if (f.mine) { where.push('sg.owner_user_id = ?'); params.push(p.userId); }
 
-  const today = demoToday();
+  const today = f.today ?? demoToday();
   let rows = (conn
     .prepare(`${SIGNAL_SELECT} WHERE ${where.join(' AND ')} ORDER BY sg.verify_due, sg.id`)
     .all(...params) as any[])
@@ -282,7 +324,7 @@ export function signalDetail(p: Principal, id: number): SignalView {
 
 // ---------------------------------------------------------------- xác minh
 
-function loadSignal(id: number): SignalRow {
+export function loadSignal(id: number): SignalRow {
   const r = db().prepare('SELECT * FROM case_signals WHERE id = ?').get(id) as SignalRow | undefined;
   if (!r) throw notFound('Không tìm thấy tín hiệu');
   return r;
@@ -296,10 +338,9 @@ function loadSignal(id: number): SignalRow {
  */
 export function linkSignalToCase(p: Principal, signalId: number, caseId: number, note?: string | null) {
   const sg = loadSignal(signalId);
-  require_(p, PERMISSIONS.SOS_EDIT, {
-    classId: sg.class_id, studentId: sg.student_id,
-    skill: sg.skill ?? undefined,
-  }, 'Bạn chỉ xác minh được tín hiệu của học viên trong phạm vi mình phụ trách.');
+  if (!canResolveSignal(p, sg)) {
+    throw forbidden('Bạn chỉ xác minh được tín hiệu giao cho mình hoặc của môn mình dạy, trong phạm vi mình phụ trách.');
+  }
   if (sg.status === 'withdrawn') throw badRequest('Tín hiệu này đã được thu hồi vì không còn căn cứ.');
 
   const conn = db();

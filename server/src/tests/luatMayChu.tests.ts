@@ -292,5 +292,54 @@ export async function runLuatMayChuTests(t: YThucTestKit) {
     assert(countOf('missing_scores') === base, `Đủ bốn môn mà vẫn "thiếu điểm": ${base} → ${countOf('missing_scores')}`);
   });
 
+  // ================================================================== 6. S1 (a) tín hiệu từng môn
+
+  console.log('\nPR-S1 · 6. S1 — tín hiệu lớp thường: mỗi môn chưa đạt MỘT tín hiệu, về GV môn đó (không ai dạy thì GVCN)');
+  const signals: any = await import('../cases/signals.ts');
+
+  check('S1 · Hai môn chưa đạt → hai tín hiệu riêng, mỗi cái về đúng GV dạy môn đó; không tự tạo Case', () => {
+    const hv = taoHocVien({ classCode: 'MB-FOU 12', weekStart: '2026-09-07' });
+    diem(hv.attemptId, 'listening', 10, 40);
+    diem(hv.attemptId, 'speaking', 5, 25);
+    const l = tinHieu(hv.attemptId, 'listening'), s = tinHieu(hv.attemptId, 'speaking');
+    assert(l && s && l.id !== s.id, 'Phải có hai tín hiệu riêng');
+    assert(l.owner_user_id === teacherOf('MB-FOU 12', 'listening') && s.owner_user_id === teacherOf('MB-FOU 12', 'speaking'),
+      `Sai người: L→${l.owner_user_id}, S→${s.owner_user_id}`);
+    assert(l.status === 'pending' && s.status === 'pending', 'Lớp thường không tự tạo Case (Q-V3-1)');
+    const n = (conn.prepare('SELECT COUNT(*) n FROM sos_cases WHERE student_id = ?').get(hv.sid) as any).n;
+    assert(n === 0, `Lớp thường không được tự tạo Case, đang có ${n}`);
+  });
+
+  check('S1 · Tín hiệu lớp thường mang đủ dữ liệu cho dòng việc: loại, môn, số câu đúng/tổng, hạn, hai nút cho đúng người', () => {
+    const hv = taoHocVien({ classCode: 'MB-FOU 12', weekStart: '2026-09-07' });
+    diem(hv.attemptId, 'listening', 20, 40);
+    const sg = tinHieu(hv.attemptId, 'listening');
+    const v = signals.signalDetail(pGvcnFou, sg.id) as any;
+    assert(v.kind === 'normal' && v.skill === 'listening' && v.score === 20 && v.total === 40 && v.verifyDue === sg.verify_due,
+      `Thiếu dữ liệu: ${JSON.stringify({ kind: v.kind, skill: v.skill, score: v.score, total: v.total, due: v.verifyDue })}`);
+    assert(JSON.stringify(v.actions) === JSON.stringify(['create_case', 'dismiss']), `GV môn đó phải có hai nút: ${JSON.stringify(v.actions)}`);
+    assert(v.caseDraft && v.caseDraft.topic === 'listening' && v.caseDraft.cycleId === hv.cycleId && v.caseDraft.scoreText === '20/40',
+      `Điền sẵn form Case sai: ${JSON.stringify(v.caseDraft)}`);
+    const other = signals.signalDetail(pSpeakingFou, sg.id) as any;
+    assert(other.actions.length === 0 && other.canResolve === false, 'GV môn khác không được có nút xử lý');
+  });
+
+  check('S1 · Không ai dạy môn đó → tín hiệu về GVCN, và GVCN xử lý được tín hiệu đó dù không dạy môn đó (Q1)', () => {
+    const cid = classId('MB-FOU 12');
+    const ids = (conn.prepare(`SELECT id FROM teacher_assignments WHERE class_id = ? AND skill = 'speaking' AND status = 'active'`).all(cid) as any[]).map((r) => r.id);
+    conn.prepare(`UPDATE teacher_assignments SET status = 'inactive' WHERE id IN (${ids.join(',')})`).run();
+    try {
+      const hv = taoHocVien({ classCode: 'MB-FOU 12', weekStart: '2026-09-07' });
+      diem(hv.attemptId, 'speaking', 5, 25);
+      const sg = tinHieu(hv.attemptId, 'speaking');
+      const core = (conn.prepare(`SELECT user_id FROM teacher_assignments WHERE class_id = ? AND is_core = 1 AND status = 'active' LIMIT 1`).get(cid) as any).user_id;
+      assert(sg.owner_user_id === core, `Phải về GVCN (${core}), đang về ${sg.owner_user_id}`);
+      const v = signals.signalDetail(pGvcnFou, sg.id) as any;
+      assert(v.canResolve === true && v.actions.includes('create_case'), 'GVCN được giao mà không xử lý được');
+    } finally {
+      conn.prepare(`UPDATE teacher_assignments SET status = 'active' WHERE id IN (${ids.join(',')})`).run();
+    }
+  });
+
   // ---- các task sau thêm phép kiểm NGAY TRÊN dòng này ----
 }
