@@ -1,6 +1,7 @@
 import { Suspense, lazy } from 'react';
 import { NavLink, Navigate, Route, Routes, useLocation, useParams, useSearchParams } from 'react-router-dom';
 import { useSession } from './lib/session.tsx';
+import { NAV_RONG } from '@shared/domain/index.ts';
 import { DemoBar } from './modules/platform/DemoBar.tsx';
 import { LA_BAN_CHINH } from './lib/banChinh.ts';
 import { Header } from './modules/platform/Header.tsx';
@@ -83,7 +84,7 @@ export default function App() {
   if (loading) return <div className="p-8 max-w-4xl mx-auto"><Skeleton rows={8} /></div>;
   if (!session?.authenticated) return <WelcomePage />;
 
-  const nav = session.nav ?? { overview: true, mocks: false, students: false, meeting: false, academic: false, mgmtTasks: false, admin: false };
+  const nav = session.nav ?? NAV_RONG;
   const items = NAV.filter((n) => nav[n.key]);
 
   return (

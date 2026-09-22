@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api, invalidateAll } from './api.ts';
+import type { NavQuyen } from '@shared/domain/index.ts';
 
 export type Grant = {
   id: number; role: string; roleName: string;
@@ -21,8 +22,10 @@ export type Session = {
   needsSeed?: boolean;
   /** Trang mở đầu theo vai trò — chỉ đổi điểm vào, không đổi quyền. */
   landing?: string;
-  /** Bốn mục điều hướng + một lối phụ, do API quyết định theo quyền đã cấu hình. */
-  nav?: { overview: boolean; mocks: boolean; students: boolean; meeting: boolean; academic: boolean; mgmtTasks: boolean; admin: boolean };
+  /** Bốn khu vực + tab con, do API quyết định theo quyền đã cấu hình (server/src/platform/nav.ts). */
+  nav?: NavQuyen;
+  /** Máy chủ đang chạy bản chính (`laBanChinh()`): ẩn nhãn "Bản demo nội bộ". */
+  banChinh?: boolean;
 };
 
 type Ctx = {

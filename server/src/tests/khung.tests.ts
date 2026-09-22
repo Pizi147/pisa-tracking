@@ -116,4 +116,33 @@ export async function runKhungTests(t: YThucTestKit) {
       }
     }
   });
+
+  const { navOf } = await import('../platform/nav.ts');
+  const tabs = (n: any) => `${d.khuVucHienThi(n).map((k) => k.key)}|${d.tabTestHienThi(n)}|${d.tabCongViecHienThi(n)}|${n.analysis}|${n.admin}`;
+
+  check('PR-O · O6 Quản trị và QL chi nhánh: đủ 4 khu, đủ tab, có Phân tích', () => {
+    for (const [ten, p] of [['Quản trị', t.P.admin], ['QL MB', t.P.mbManager]] as const) {
+      const n = navOf(p);
+      assert(d.khuVucHienThi(n).length === 4, `${ten}: ${tabs(n)}`);
+      assert(d.tabTestHienThi(n).join(',') === 'can-cham,lich,ke-hoach', `${ten} tab Test: ${tabs(n)}`);
+      assert(d.tabCongViecHienThi(n).join(',') === 'ho-tro,van-hanh,bao-cao', `${ten} tab Công việc: ${tabs(n)}`);
+      assert(n.analysis && n.academic, `${ten} phải thấy Phân tích`);
+    }
+    assert(navOf(t.P.admin).admin && !navOf(t.P.mbManager).admin, 'Chỉ Quản trị thấy màn Quản trị');
+  });
+
+  check('PR-O · O6/R1 GV (GVCN, GVBM): 4 khu; Test chỉ Cần chấm + Lịch Test; Công việc chỉ Hỗ trợ học viên; không Phân tích', () => {
+    for (const [ten, p] of [['GVCN', t.P.coreTeacher], ['GVBM', t.P.subjectTeacher], ['GVCN lớp thường', t.P.normalCoreTeacher]] as const) {
+      const n = navOf(p);
+      assert(tabs(n) === 'tong-quan,hoc-vien,test,cong-viec|can-cham,lich|ho-tro|false|false', `${ten}: ${tabs(n)}`);
+      assert(d.tabTestMacDinh(n) === 'can-cham', `${ten} mở Test vào ${d.tabTestMacDinh(n)}`);
+      assert(!n.mgmtTasks && !n.meeting, `${ten} không được thấy Vận hành / Báo cáo đơn vị`);
+    }
+  });
+
+  check('PR-O · O6 Cờ cũ giữ đúng nghĩa (mã chưa chuyển vẫn chạy)', () => {
+    const n = navOf(t.P.mbManager);
+    assert(n.mocks === n.test && n.academic === n.analysis && n.meeting === n.workReports && n.mgmtTasks === n.workOps,
+      `Cờ cũ lệch cờ mới: ${JSON.stringify(n)}`);
+  });
 }
