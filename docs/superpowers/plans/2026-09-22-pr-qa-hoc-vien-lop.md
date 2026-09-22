@@ -3366,16 +3366,16 @@ git commit -m "PR-Qa (14): Thêm học viên hàng loạt rộng 1440px, bỏ ch
 - Modify: `docs/superpowers/specs/2026-09-22-ux-toan-web-truoc-deploy-design.md` §4 (dòng 189, 191)
 - Modify: `CODE_MAP.md`
 
-- [ ] **Step 1: §4 dòng "Chấm điểm"** (dòng 189) — cột "Nằm ở" thêm ` · ⋯ hộp lớp ở Học viên & Lớp` (Q6, G-12):
-  `| Chấm điểm | Test › Cần chấm → lưới · nút Nhập điểm Test ở Hồ sơ lớp · ⋯ dòng HV · ⋯ hộp lớp ở Học viên & Lớp | GV môn đó, QL |`
-- [ ] **Step 2: §4 dòng "Hồ sơ GV"** (dòng 191) — thêm vào cuối cột "Nằm ở": ` (tên chỉ thành link khi PR-GV bật \`CO_TRANG_HO_SO_GIAO_VIEN\`)`.
-- [ ] **Step 3: CODE_MAP.md** — tìm các dòng về Học viên / lớp (`grep -n "StudentsPage\|ClassOverviewPage\|ClassRoster" CODE_MAP.md`),
+- [x] **Step 1: §4 dòng "Chấm điểm"** (dòng 189) — cột "Nằm ở" thêm ` · ⋯ hộp lớp ở Học viên & Lớp` (Q6, G-12):
+  `| Chấm điểm | Test › Cần chấm → lưới · nút Nhập điểm Test ở Hồ sơ lớp · ⋯ dòng HV · ⋯ hộp lớp ở Học viên & Lớp | GV môn đó, QL |` — đã có sẵn từ Q11 (thêm 22/09), không cần sửa.
+- [x] **Step 2: §4 dòng "Hồ sơ GV"** (dòng 191) — thêm vào cuối cột "Nằm ở": ` (tên chỉ thành link khi PR-GV bật \`CO_TRANG_HO_SO_GIAO_VIEN\`)`.
+- [x] **Step 3: CODE_MAP.md** — tìm các dòng về Học viên / lớp (`grep -n "StudentsPage\|ClassOverviewPage\|ClassRoster" CODE_MAP.md`),
   sửa/thêm để trỏ đúng:
   - `| **Học viên & Lớp** (một trang, nhóm theo lớp, chip lọc, Phạm vi) | web/src/modules/students/StudentsPage.tsx → BangHocVienLop.tsx | GET /hoc-vien-lop → server/src/classes/hocVienLop.ts |`
   - `| **Hồ sơ lớp** (đầu trang, 3 tab, ⋮) | web/src/modules/classes/ClassOverviewPage.tsx → DauTrangLop · TabHocVienLop · PhanTichLopTab | /classes/:id/overview · /roster · /phan-tich-lop · PATCH /thong-tin |`
   - `| Menu ⋯ dòng học viên (Hồ sơ · + Ghi nhận vi phạm · + Case · Nhập điểm) | web/src/modules/classes/thaoTacDongHocVien.tsx + shared/domain/hocVienLop.ts (mucMenuDongHocVien) | — |`
   - `| Luật hiển thị Học viên & Lớp (kết quả gần nhất, khoá, badge lớp, việc tiếp theo) | shared/domain/hocVienLop.ts | server/src/classes/dongHocVien.ts |`
-- [ ] **Step 4: Commit.**
+- [x] **Step 4: Commit.**
 
 ```bash
 git add docs/superpowers/specs/2026-09-22-ux-toan-web-truoc-deploy-design.md CODE_MAP.md

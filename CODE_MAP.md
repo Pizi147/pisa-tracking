@@ -20,11 +20,13 @@ Nếu bạn nghĩ theo "cái tôi thấy trên màn hình" chứ không theo tê
 
 | Trên màn hình | File chính | Dữ liệu từ |
 |---|---|---|
-| Danh sách lớp, các bộ lọc, badge "n bài cần chấm" | `web/src/modules/students/StudentsPage.tsx` | `server/src/classes/classes.ts` → `listClassSummaries` |
+| **Học viên & Lớp** (một trang, nhóm theo lớp, chip lọc, Phạm vi) | `web/src/modules/students/StudentsPage.tsx` → `BangHocVienLop.tsx` | `GET /hoc-vien-lop` → `server/src/classes/hocVienLop.ts` |
 | Test › **Cần chấm** (bọc hàng đợi chấm) | `web/src/modules/test/CanChamTab.tsx` → `StudentsPage.tsx` → `WorkQueue` | `server/src/fasttrack/attempts.ts` → `listAttempts` |
 | **Khung 4 khu vực**, thanh dưới điện thoại, chuyển hướng đường dẫn cũ | `web/src/App.tsx` + `shared/domain/dieuHuong.ts` | `server/src/platform/nav.ts` → `navOf` |
 | Test › Lịch Test · Kế hoạch Test | `web/src/modules/test/` | `/attempts?periodId=` · `/attempts/no-plan` |
-| Trang một lớp | `web/src/modules/classes/ClassOverviewPage.tsx` | `server/src/classes/classes.ts` |
+| **Hồ sơ lớp** (đầu trang, 3 tab, ⋮) | `web/src/modules/classes/ClassOverviewPage.tsx` → `DauTrangLop` · `TabHocVienLop` · `PhanTichLopTab` | `/classes/:id/overview` · `/roster` · `/phan-tich-lop` · `PATCH /thong-tin` |
+| Menu ⋯ dòng học viên (Hồ sơ · + Ghi nhận vi phạm · + Case · Nhập điểm) | `web/src/modules/classes/thaoTacDongHocVien.tsx` + `shared/domain/hocVienLop.ts` (`mucMenuDongHocVien`) | — |
+| Luật hiển thị Học viên & Lớp (kết quả gần nhất, khoá, badge lớp, việc tiếp theo) | `shared/domain/hocVienLop.ts` | `server/src/classes/dongHocVien.ts` |
 | **Hồ sơ một học viên** (đầu hồ sơ, bốn ô số, hai tab dưới) | `web/src/modules/students/StudentDetailPage.tsx` | `server/src/students/profile.ts` |
 | Bảng kỹ năng trong hồ sơ · **ô điểm bốn màu** | `web/src/modules/cases/SkillBoard.tsx` → `ScoreCell` | `server/src/cases/cases.ts` → `skillSupportBoard` |
 | **Thẻ case** và từng khối phương án ba phần trong hồ sơ (PR-HV Q8) | `web/src/modules/cases/SkillBoard.tsx` → `TheCase` · `KhoiPhuongAn` | `server/src/cases/cases.ts` → `caseCardOf` |
