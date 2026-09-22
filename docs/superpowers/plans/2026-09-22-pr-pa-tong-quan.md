@@ -890,7 +890,7 @@ export function metricSet(
 - Produces: chỉ số `case-xac-dinh-nguyen-nhan-qua-han` (case), `bai-qua-han-nhap-diem` (bai-thi),
   `case-chua-co-nguoi-phu-trach` (case) — dùng được qua `metricSet` và `/metrics/:id`.
 
-- [ ] **Step 1: Phép kiểm (đỏ).**
+- [x] **Step 1: Phép kiểm (đỏ).**
 
 ```ts
   // ================================================================== 4. Ba chỉ số mới
@@ -940,8 +940,8 @@ export function metricSet(
 ```
   > `check` nhận hàm đồng bộ; phép nào có `await` dùng `await checkAsync(...)`.
 
-- [ ] **Step 2: Chạy, đỏ** (`Không tìm thấy chỉ số` / 501; chữ thô).
-- [ ] **Step 3: Sổ chỉ số.** `shared/domain/metrics.ts`, thêm ngay sau khối `tin-hieu-qua-han`:
+- [x] **Step 2: Chạy, đỏ** (`Không tìm thấy chỉ số` / 501; chữ thô).
+- [x] **Step 3: Sổ chỉ số.** `shared/domain/metrics.ts`, thêm ngay sau khối `tin-hieu-qua-han`:
 
 ```ts
   /* Ba chỉ số của khối Cần xử lý (PR-Pa, đặc tả §3.2) — mỗi dòng của khối là một chỉ số, để bấm vào ra đúng tập. */
@@ -968,7 +968,7 @@ export function metricSet(
   },
 ```
 
-- [ ] **Step 4: Hàm tập ID** (`server/src/worklist/metrics.ts`):
+- [x] **Step 4: Hàm tập ID** (`server/src/worklist/metrics.ts`):
   - `LISTED_METRICS`: thêm `'case-xac-dinh-nguyen-nhan-qua-han', 'bai-qua-han-nhap-diem', 'case-chua-co-nguoi-phu-trach',` sau `'tin-hieu-qua-han',`.
   - import: `import { scoreDebtCells } from './scoreDebt.ts';` · `labelOf` thêm vào import từ `'../cases/signals.ts'`.
   - Thêm hai trợ giúp trên `metricSetGoc`:
@@ -1027,12 +1027,12 @@ function overdueScoreAttempts(p: Principal, branchId: number | null, today: stri
   - `rowsFor`: dòng 92 `} else if (unit === 'dot-test') {` → `} else if (unit === 'dot-test' || unit === 'bai-thi') {`.
     Dòng tín hiệu (~158): `title: \`Tín hiệu cần xác minh · ${r.skill ?? 'chưa rõ kỹ năng'}\`` →
     `title: \`Tín hiệu cần xác minh · ${labelOf(r)}\``.
-- [ ] **Step 5: Phép kiểm sổ chỉ số cũ** (`run.ts` ~7973-7978): đổi `list.length === 24` → `=== 27`; câu thông báo
+- [x] **Step 5: Phép kiểm sổ chỉ số cũ** (`run.ts` ~7973-7978): đổi `list.length === 24` → `=== 27`; câu thông báo
   "Phải có hai mươi bốn chỉ số (…)" → "Phải có hai mươi bảy chỉ số (… + một của PR-S1: tin-hieu-qua-han + ba của PR-Pa:
   case-xac-dinh-nguyen-nhan-qua-han, bai-qua-han-nhap-diem, case-chua-co-nguoi-phu-trach)"; thêm ba mã vào mảng
   `expected` sau `'tin-hieu-qua-han',`. Tên phép kiểm giữ nguyên. Nếu có phép kiểm khác đếm `LISTED_METRICS` → sửa tương
   tự, ghi Nhật ký.
-- [ ] **Step 6: Chạy, xanh** (mốc + 11). **Step 7: Commit.** `git commit -am "PR-Pa (4): ba chỉ số của khối Cần xử lý; rowsFor bài thi; chữ môn ở dòng tín hiệu"`
+- [x] **Step 6: Chạy, xanh** (mốc + 11). **Step 7: Commit.** ✓ `git commit -am "PR-Pa (4): ba chỉ số của khối Cần xử lý; rowsFor bài thi; chữ môn ở dòng tín hiệu"`
 
 ---
 
@@ -2542,3 +2542,9 @@ export function HocVienCanHoTro() {
   Ghi nhận (giữ theo Q2, không đổi luật): vi phạm / PA xử lý gán chương trình theo lớp HV đang học chứ không theo `class_id`
   ghi lúc vi phạm; Case theo lớp của lượt Test (cùng `classKind`) chứ không theo `homeClassId` mà bảng chi nhánh dùng —
   hai chỗ này ghi vào "Chuyển cho PR khác". `tongQuan.tests.ts` tạo dữ liệu thật nên phải luôn là bộ chạy cuối.
+- **Task 4:** commit `8b6173e` + `5d07a60` (vòng sửa 1). Đỏ 5 phép đúng dự kiến → xanh **742**. Chỉ `run.ts:7975` đếm sổ
+  (24 → 27); phép `run.ts:8320` so `LISTED_METRICS` với sổ theo kiểu tương đối nên tự phủ ba chỉ số mới. Rà (Opus 5): 1 quan
+  trọng — `overdueScoreAttempts` nới phạm vi cho người vừa dạy lớp vừa có quyền chi nhánh (bỏ lọc lớp khi `branchIds` khác
+  rỗng) → sửa theo đúng luật OR của `classScopeSql` (lớp mình dạy HOẶC chi nhánh mình quản), thêm phép kiểm principal lai
+  (GV MB không dạy MB-FOU 12 + quyền QL CP tạm) → **743**. Ghi nhận: `scoreDebtCells` gọi `settleNoShows` (ghi) và quét
+  nặng — nay chạy mỗi lần mở Tổng quan (chuyển Z2c); tên phép kiểm `run.ts:7973` "hai mươi chỉ số" đã lệch 27 (plan bảo giữ).
