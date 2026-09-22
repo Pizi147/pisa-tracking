@@ -2573,4 +2573,6 @@ export function HocVienCanHoTro() {
 - **Task 9:** commit `28e6b62`. Session bị ngắt giữa chừng (đã tạo `SoLieuO.tsx`, chưa sửa `SoLieu.tsx`) → nối lại
   cùng subagent làm nốt. `SoLieuO.tsx` chép nguyên văn; `SoLieu.tsx` chỉ khác plan ở hai chỗ `/* giữ nguyên */` (chép từ
   file cũ) và giữ JSDoc đầu file. `npm run check` xanh (752 + typecheck). Prop mới (`nhan`/`phu`/`tone`/`chuongTrinh`) và
-  `SoLieuO` chưa có người gọi cho tới Task 10 — kiểm giao diện dồn về Task 13.
+  `SoLieuO` chưa có người gọi cho tới Task 10 — kiểm giao diện dồn về Task 13. Rà (Opus 5): 1 quan trọng — `SoLieuO` vẽ
+  số bấm được cho mã ngoài sổ (bấm không ra gì) → thêm guard như `SoLieu`; phân biệt `id`/`nguon` bằng `!== undefined`;
+  aria-label có tên chỉ số (commit `2c196e0`). Rà lại: đạt.
