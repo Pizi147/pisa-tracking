@@ -295,6 +295,11 @@ Hướng dẫn cho chủ sản phẩm: `TRIEN_KHAI.md`. Kế hoạch: `docs/supe
 | `npm run thu-turso` — thử đường mạng tới database THỬ | `server/src/ops/thuTurso.ts` |
 | `npm run migrate` vào Turso (xác nhận, bỏ tài khoản mặc định) | `server/src/migrate/run.ts` · `server/src/migrate.ts` → `migrateAccounts` |
 | Phiên đăng nhập (cookie), **hết hạn sau 30 ngày không dùng** (`PHIEN_HET_HAN_SAU_NGAY`) | `server/src/auth.ts` |
+| Giới hạn số lần thử đăng nhập/đăng ký (AN-1), bảng `auth_attempts` | `server/src/platform/gioiHanThu.ts` · khối `/auth` trong `server/src/routes/index.ts` |
+| Câu lỗi 409/500 trả người dùng, mã lỗi trong log (AN-3) | `server/src/app.ts` → `traLoiLoi` |
+| `/api/health` công khai, nhớ kết quả (AN-4) | `server/src/platform/suKhoe.ts` |
+| Hạn 10 giây của hàm Netlify: không mở giao dịch khi sắp hết giờ, log `[cham]` (AN-5) | `server/src/platform/hanGio.ts` · `server/src/db.ts` → `tx`, `donGiaoDichTreo` · `server/src/app.ts` → `demGio` |
+| Hàm định kỳ chốt "-" 00:05 + 06:05 sáng thứ Hai (RB-1) | `netlify/functions/chot-vang.ts` → `server/src/ops/chotVangDinhKy.ts` · lịch ở `netlify.toml` |
 | Bảng không chép dòng khi sao lưu/khôi phục (`demo_sessions` — mã đăng nhập) | `server/src/ops/saoLuu.ts` → `BANG_KHONG_CHEP_DONG` |
 | Phép kiểm của bản chính | `server/src/tests/banChinh.tests.ts` |
 

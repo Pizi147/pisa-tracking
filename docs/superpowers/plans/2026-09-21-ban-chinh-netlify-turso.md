@@ -1444,6 +1444,13 @@ thử `pisatracking-demo`). Hỏi rõ từng thứ; **không** dùng database th
 - [ ] **Step 5: Đo thời gian** (tab Network, lời gọi `/api` lớn nhất của trang, lấy trung bình 3 lần tải, **sau** lần tải
       đầu tiên để bỏ thời gian khởi động lạnh) cho: hồ sơ học viên · bảng nhập điểm lớp · Tổng quan · Thực trạng · tab
       Ý thức & Phối hợp của lớp. Ghi cả thời gian **lần tải đầu** (khởi động lạnh).
+  > **🆕 22/09 (PR-AN):** (1) Sau Step 3b: Netlify › Logs › Functions phải có **hai** hàm `api` và `chot-vang`; `chot-vang` hiện
+  > lịch chạy kế tiếp (00:05 hoặc 06:05 sáng thứ Hai giờ VN). Sáng thứ Hai đầu tiên sau khi lên: log `chot-vang` có dòng
+  > `[chot-vang] {"ngay":…,"daChot":…,"boQua":null,…}` — ghi vào Nhật ký. (2) Khi đo Step 5: tìm dòng `[cham]` trong log `api`
+  > (mọi lời gọi ≥ 3 giây) — đưa vào bảng đo và Step 6. (3) Bản chính dựng từ `schema.sql` nên đã có bảng `auth_attempts`, không cần
+  > migrate. (4) Kiểm AN-1 trên địa chỉ chính thức: 6 lần đăng nhập sai một email thử → lần 6 báo "Đăng nhập sai quá nhiều lần".
+  > (5) Kiểm hàm `chot-vang` nạp được libsql (khối `[functions]` chung áp cho mọi hàm, khối `[functions."chot-vang"]` chỉ thêm lịch)
+  > và chạy xong dưới 30 giây — xem `ms` trong dòng `[chot-vang]`.
 - [ ] **Step 6: Trang chậm.** Trang nào > 3 giây (sau khởi động lạnh): mở mã đường API của **chính trang đó**, tìm truy
       vấn trong vòng lặp (`for` … `prepare(...).get(...)`), gộp thành một truy vấn `WHERE id IN (...)` **mà không đổi kết
       quả trả về**. Chạy `npm run check` sau mỗi trang. Không đụng trang ≤ 3 giây. Trang nào vẫn > 3 giây sau khi gộp →

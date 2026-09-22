@@ -1446,7 +1446,7 @@ function cauLoiDeDoc(x: unknown): string {
 **Files:** `TRIEN_KHAI.md` §11 (bảng ~dòng 452-461; mục mới sau 11.2) · `CODE_MAP.md` (khối bản chính ~dòng 283-292) ·
 `docs/superpowers/plans/2026-09-21-ban-chinh-netlify-turso.md` Task 10.
 
-- [ ] **Step 1: `TRIEN_KHAI.md` §11** — thêm ba dòng vào bảng "Triệu chứng | Làm gì" (tiếng Việt cơ bản, cho chủ sản phẩm):
+- [x] **Step 1: `TRIEN_KHAI.md` §11** — thêm ba dòng vào bảng "Triệu chứng | Làm gì" (tiếng Việt cơ bản, cho chủ sản phẩm):
 
 ```markdown
 | Web báo **"Có lỗi · mã …"** | Ghi lại mã (8 chữ/số) và việc đang làm → gửi session thiết kế. Mã giúp tìm đúng dòng trong nhật ký máy chủ |
@@ -1463,7 +1463,7 @@ Bạn **không cần làm gì**. Mỗi sáng thứ Hai lúc 00:05 và 06:05, má
 **chot-vang** — mỗi lần chạy có một dòng bắt đầu bằng `[chot-vang]`. Không thấy dòng nào sau một sáng thứ Hai → gửi session thiết kế.
 ```
 
-- [ ] **Step 2: `CODE_MAP.md`** — thêm vào bảng của khối bản chính (cạnh dòng `Phiên đăng nhập (cookie)…`), đúng định dạng hai cột:
+- [x] **Step 2: `CODE_MAP.md`** — thêm vào bảng của khối bản chính (cạnh dòng `Phiên đăng nhập (cookie)…`), đúng định dạng hai cột:
 
 ```markdown
 | Giới hạn số lần thử đăng nhập/đăng ký (AN-1), bảng `auth_attempts` | `server/src/platform/gioiHanThu.ts` · khối `/auth` trong `server/src/routes/index.ts` |
@@ -1474,7 +1474,7 @@ Bạn **không cần làm gì**. Mỗi sáng thứ Hai lúc 00:05 và 06:05, má
 ```
 Chạy lệnh kiểm đường chết ở đầu `CODE_MAP.md` — Expected: không có dòng `CHET:`.
 
-- [ ] **Step 3: Ghi chú cho PR-Z2c** — trong `docs/superpowers/plans/2026-09-21-ban-chinh-netlify-turso.md`, ngay dưới dòng Step 5 của
+- [x] **Step 3: Ghi chú cho PR-Z2c** — trong `docs/superpowers/plans/2026-09-21-ban-chinh-netlify-turso.md`, ngay dưới dòng Step 5 của
   Task 10 (`- [ ] **Step 5: Đo thời gian** …`), thêm một khối trích:
 
 ```markdown
@@ -1485,7 +1485,7 @@ Chạy lệnh kiểm đường chết ở đầu `CODE_MAP.md` — Expected: kh�
   > migrate. (4) Kiểm AN-1 trên địa chỉ chính thức: 6 lần đăng nhập sai một email thử → lần 6 báo "Đăng nhập sai quá nhiều lần".
 ```
 
-- [ ] **Step 4: Commit.** `git commit -am "PR-AN (11): TRIEN_KHAI §11 (mã lỗi, máy chủ bận, khoá đăng nhập, chốt '-' tự động), CODE_MAP, ghi chú Z2c"`
+- [x] **Step 4: Commit.** `git commit -am "PR-AN (11): TRIEN_KHAI §11 (mã lỗi, máy chủ bận, khoá đăng nhập, chốt '-' tự động), CODE_MAP, ghi chú Z2c"`
 
 ---
 
@@ -1620,3 +1620,4 @@ song song trong cùng tiến trình sẽ thấy cờ; harness chạy tuần tự
 | 22/09 | Task 8 | Opus 5 · 695 → 696 (1 phép `AN-8 ·` mới, ✗ "Đếm bằng chứng 18 câu cho 18 thẻ" rồi ✓) · `demBangChungCase` chép nguyên văn từ plan; `caseCardOf(` đúng 2 dòng (định nghĩa + một lời gọi); không chạm `canClose:` · phép cũ `PR-HV · Q8 Thẻ case có số bằng chứng` vẫn ✓ · typecheck ✓ |
 | 22/09 | Task 9 | Opus 5 · 696 → 699 (3 phép `RB-1 ·` mới, cả 3 ✗ rồi ✓: 2 phép "Chưa có mô-đun chotVangDinhKy.ts", phép toml "Lịch trong toml: undefined") · `chotVangDinhKy.ts`, `chot-vang.ts`, khối toml chép nguyên văn từ plan; không chạm `absence.ts` · typecheck ✓ · `npm run thu-goi` 3 dòng ĐẠT cũ + `chot-vang lần 1` **daChot 0, ms 23** (database dev đã chốt sẵn tới hôm nay), lần 2 daChot 0, ms 1 · chạy trên bản sao VACUUM INTO trong thư mục tạm; `data/pisa-demo.sqlite` giữ nguyên thời điểm sửa (20:53:46.399 trước và sau) · lệch nhỏ: sửa lỗi gõ `/\/g` bị mất một dấu gạch khi chép vào script (SyntaxError lần chạy đầu) |
 | 22/09 | Task 10 | Opus 5 · 699 → 699 (web không có bộ phép kiểm; `npm test` vẫn 699 ĐẠT) · `BanChinhChuaVaoDuoc`, `cauLoiDeDoc`, nhánh `banChinhHong` và hai `catch (x: unknown)` chép nguyên văn từ plan; `ApiError.details` kiểu `any` nên `x.details?.ma` typecheck được không cần ép kiểu · typecheck ✓ · grep: không còn "Hãy"; `npm run` chỉ còn 2 dòng trong `SetupHelp` (dòng 52, 60) · giữ CRLF của WelcomePage.tsx |
+| 22/09 | Task 11 | Opus 5 · 699 → 699 (chỉ tài liệu; `npm test` 699 ĐẠT, phép quét từ cấm không báo gì) · 3 dòng bảng §11, mục 11.3, 5 dòng CODE_MAP, khối 🆕 PR-AN dưới Task 10 Step 5 plan bản chính — chép nguyên văn từ plan · **thêm theo phán quyết người điều phối (rà soát Task 9):** mục (5) trong khối ghi chú Z2c — kiểm `chot-vang` nạp được libsql (khối `[functions]` chung + `[functions."chot-vang"]` chỉ thêm lịch) và chạy dưới 30 giây qua `ms` · lệnh kiểm đường chết CODE_MAP: không dòng `CHET:` mới do task này (7 dòng có sẵn từ HEAD 31c23aa — tên `.tsx` trần không kèm thư mục như `OSoNho.tsx`, dương tính giả của lệnh; để nguyên) · giữ nguyên kiểu xuống dòng (CRLF: TRIEN_KHAI, CODE_MAP, plan bản chính; LF: plan này) |
