@@ -1423,7 +1423,7 @@ git commit -m "PR-Qa (5): GET /hoc-vien-lop — phạm vi, chip lọc có số �
 - Produces (`GET /classes/:id/overview`): `soCaseMo: number`, `canhBaoYThuc: number`,
   `viewer.canReportCase`, `viewer.canRecordViolation`, `viewer.canEnterScores`.
 
-- [ ] **Step 1: Phép kiểm đỏ.**
+- [x] **Step 1: Phép kiểm đỏ.**
 
 ```ts
   // ------------------------------------------------------------------ Task 6 · dòng học viên, hồ sơ lớp
@@ -1462,9 +1462,9 @@ git commit -m "PR-Qa (5): GET /hoc-vien-lop — phạm vi, chip lọc có số �
     eq(g.canhBaoYThuc, warn.classWarning(P.coreTeacher, ft).activeCount, 'Cảnh báo tab Ý thức');
   });
 ```
-- [ ] **Step 2:** `npm test` → ba phép kiểm ✗.
+- [x] **Step 2:** `npm test` → ba phép kiểm ✗.
 
-- [ ] **Step 3: Sửa `classes.ts`.**
+- [x] **Step 3: Sửa `classes.ts`.**
   - Import: thêm `viecTiepTheoCua` vào khối import `shared/domain/index.ts` (dòng 2-5); thêm hai dòng sau dòng 17:
 
 ```ts
@@ -1518,8 +1518,8 @@ import { classWarning } from '../yThuc/canhBao.ts';
       canEnterScores: editableSkills(p, classId, classSkills).length > 0,
 ```
 
-- [ ] **Step 4:** `npm run check` xanh (N+24).
-- [ ] **Step 5: Commit.**
+- [x] **Step 4:** `npm run check` xanh (N+24).
+- [x] **Step 5: Commit.**
 
 ```bash
 git add server/src/classes/classes.ts server/src/tests/hocVienLop.tests.ts

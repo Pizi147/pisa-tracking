@@ -343,4 +343,40 @@ export async function runHocVienLopTests(t: YThucTestKit) {
     const fou = r.rows.find((x: any) => x.code === 'MB-FOU 12');
     assert(fou && fou.tuanKetThuc && /^\d{4}-\d{2}-\d{2}$/.test(fou.tuanKetThuc), 'Lớp thường có tuần kết thúc khoá');
   });
+
+  // ------------------------------------------------------------------ Task 6 · dòng học viên, hồ sơ lớp
+
+  check('PR-Qa · YT-8 nhãn cảnh báo 5 ngày ở dòng học viên — cùng dữ liệu với tab Ý thức của lớp', () => {
+    const ft = classId('MB-FT 101');
+    const e = taoHocVien({ cid: ft, ft: true, target: 6.5 });
+    violations.recordViolation(P.coreTeacher, {
+      studentId: e.sid, category: 'homework', description: 'Không làm bài tập về nhà (phép kiểm PR-Qa)', occurredOn: addDays(TODAY, -7),
+    });
+    const roster = classes.classRoster(P.coreTeacher, ft);
+    const row = roster.find((s: any) => s.id === e.sid);
+    assert(row?.canhBaoYThuc?.count === 1 && row.canhBaoYThuc.oldestAgeDays === 7, `Nhãn: ${JSON.stringify(row?.canhBaoYThuc)}`);
+    eq(roster.filter((s: any) => s.canhBaoYThuc).length, warn.classWarning(P.coreTeacher, ft).activeCount, 'Khớp tab Ý thức');
+  });
+
+  check('PR-Qa · Q13 Việc tiếp theo ở dòng học viên: nhập điểm quá hạn (đỏ) lên đầu; lớp thường mang tuần thi từng môn', () => {
+    const b = taoHocVien({ cid: LOP_THUONG, ft: false });
+    const at = themLuot({ ...b, cid: LOP_THUONG, no: 1, kind: 'progress', weekStart: '2026-09-07' });
+    diemThuong(at, { listening: [30, 40], reading: [32, 40], speaking: [8, 10] });
+    const row = classes.classRoster(P.admin, LOP_THUONG).find((s: any) => s.id === b.sid);
+    eq(row.viecTiepTheo[0], { nhan: 'Nhập điểm W · Giữa khoá', tone: 'danger' }, 'Writing tuần 07/09 chưa có điểm, hạn CN 13/09 đã qua');
+    const t = row.timeline.find((x: any) => x.kind === 'progress');
+    eq(t.tuanMon.writing, '2026-09-07', 'Tuần thi của môn Writing');
+    assert(row.viecTiepTheo.every((v: any) => !/MT\d|kỳ vọng/.test(v.nhan)), 'Chữ FT lọt vào lớp thường');
+  });
+
+  check('PR-Qa · Q4/K2-6a hồ sơ lớp: cờ nút theo quyền, số Case đang mở, cảnh báo Ý thức của tab', () => {
+    const ft = classId('MB-FT 101');
+    const g = classes.classOverview(P.coreTeacher, ft);
+    assert(g.viewer.canRecordViolation && g.viewer.canReportCase && g.viewer.canEnterScores, `GVCN: ${JSON.stringify(g.viewer)}`);
+    const s = classes.classOverview(P.sTeacher, ft);
+    assert(s.viewer.canRecordViolation && !s.viewer.canEditProgress && !s.viewer.canAssign, `GV Speaking: ${JSON.stringify(s.viewer)}`);
+    const tong = classes.classRoster(P.admin, ft).filter((x: any) => !x.archived).reduce((n: number, x: any) => n + x.openCases, 0);
+    eq(classes.classOverview(P.admin, ft).soCaseMo, tong, 'Số Case đang mở = tổng cột Case');
+    eq(g.canhBaoYThuc, warn.classWarning(P.coreTeacher, ft).activeCount, 'Cảnh báo tab Ý thức');
+  });
 }
