@@ -647,7 +647,7 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
                 ORDER BY COALESCE(ci.completed_date, ci.started_date, ci.created_at) DESC LIMIT 1) AS last_iv,
               (SELECT ip.taxonomy_code FROM case_issues ip
                 WHERE ip.case_id = sc.id AND ip.role = 'primary' LIMIT 1) AS primary_code,
-              a.attempt_no AS attempt_no
+              a.attempt_no AS attempt_no, a.kind AS attempt_kind
          FROM sos_cases sc
          LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
          LEFT JOIN learning_cycles cy ON cy.id = sc.cycle_id
@@ -661,6 +661,7 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
     originKind: c.origin_kind, detectedAt: c.detected_at, summary: c.summary,
     headline: caseHeadline({
       summary: c.summary, originKind: c.origin_kind, sosLevel: c.sos_level, attemptNo: c.attempt_no,
+      attemptKind: c.attempt_kind ?? null,
     }),
     attemptId: c.attempt_id, attemptNo: c.attempt_no,
     reporterName: c.reporter_name, disposition: c.disposition,

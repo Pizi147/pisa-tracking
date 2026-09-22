@@ -692,7 +692,7 @@ export function myWork(p: Principal, f: { branchId?: number | null } = {}) {
               COALESCE(a.class_id, cur.class_id) AS eff_class_id,
               COALESCE(ac.branch_id, cc.branch_id) AS eff_branch_id,
               COALESCE(ac.code, cc.code) AS class_code,
-              s.full_name, a.attempt_no,
+              s.full_name, a.attempt_no, a.kind AS attempt_kind,
               (SELECT COUNT(*) FROM case_interventions iv
                 WHERE iv.case_id = sc.id AND iv.status != 'cancelled') AS iv_count
          FROM sos_cases sc
@@ -741,6 +741,7 @@ export function myWork(p: Principal, f: { branchId?: number | null } = {}) {
     const u: WorkUrgency = deadline !== null && today > deadline ? 'overdue' : 'normal';
     const head = caseHeadline({
       summary: c.summary, originKind: c.origin_kind, sosLevel: c.sos_level, attemptNo: c.attempt_no,
+      attemptKind: c.attempt_kind ?? null,
     });
     items.push({
       key: `support:${c.id}`, group: 'no_plan', urgency: u,
@@ -856,7 +857,7 @@ export function myWork(p: Principal, f: { branchId?: number | null } = {}) {
               COALESCE(a.class_id, cur.class_id) AS eff_class_id,
               COALESCE(ac.branch_id, cc.branch_id) AS eff_branch_id,
               COALESCE(ac.code, cc.code) AS class_code,
-              s.full_name, a.attempt_no
+              s.full_name, a.attempt_no, a.kind AS attempt_kind
          FROM sos_cases sc
          LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
          LEFT JOIN students s ON s.id = COALESCE(sc.student_id, a.student_id)
@@ -873,6 +874,7 @@ export function myWork(p: Principal, f: { branchId?: number | null } = {}) {
         && !teachesClass(p, c.eff_class_id)) continue;
     const head = caseHeadline({
       summary: c.summary, originKind: c.origin_kind, sosLevel: c.sos_level, attemptNo: c.attempt_no,
+      attemptKind: c.attempt_kind ?? null,
     });
     items.push({
       key: `owner:${c.id}`, group: 'no_owner', urgency: 'normal',

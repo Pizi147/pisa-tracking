@@ -2315,7 +2315,7 @@ api.post('/students/:id/unarchive', requireAuth, wrap((req) => {
 **Interfaces:**
 - Produces: `caseHeadline(c: { summary?; originKind?; sosLevel?; attemptNo?; attemptKind?: string | null })`; `Standing.failed: number | null`.
 
-- [ ] **Step 1: Phép kiểm (đỏ).**
+- [x] **Step 1: Phép kiểm (đỏ).**
 
 ```ts
   // ================================================================== 16. §6 chữ lớp thường
@@ -2350,8 +2350,8 @@ api.post('/students/:id/unarchive', requireAuth, wrap((req) => {
   });
 ```
 
-- [ ] **Step 2: Chạy, đỏ.** Expected: hai phép ✗.
-- [ ] **Step 3: `caseHeadline`** — thêm `attemptKind?: string | null;` vào kiểu tham số và thay hai dòng `const where …` / `const derived …`:
+- [x] **Step 2: Chạy, đỏ.** Expected: hai phép ✗.
+- [x] **Step 3: `caseHeadline`** — thêm `attemptKind?: string | null;` vào kiểu tham số và thay hai dòng `const where …` / `const derived …`:
 
 ```ts
   const level = c.sosLevel ?? null;
@@ -2369,7 +2369,7 @@ Ba nơi gọi truyền `attemptKind`: `cases.ts:1503` → `attemptKind: c.attemp
 `loadCase`, dòng 244, cạnh `a.attempt_no`); `cases.ts:1762` → `attemptKind: r.attempt_kind ?? null` (câu đã có `a.kind AS attempt_kind`, dòng 1665);
 `profile.ts:662` → `attemptKind: c.attempt_kind ?? null` (thêm `a.kind AS attempt_kind` cạnh `a.attempt_no AS attempt_no`, dòng 650).
 
-- [ ] **Step 4: `standing.ts`.** `Standing` thêm sau `required: number;`:
+- [x] **Step 4: `standing.ts`.** `Standing` thêm sau `required: number;`:
   `/** Lớp thường: số môn chưa đạt của lượt đó (để nói "Đạt 3/4 môn"). FT: null. */ failed: number | null;`;
   `EMPTY` thêm `failed: null,`; nhánh `if (ratio) { … }` (dòng 198–204) thêm `s.failed = r.failedCount;`. `standingLine` thay bằng:
 
@@ -2402,8 +2402,8 @@ export function standingLine(s: Standing): string {
 }
 ```
 
-- [ ] **Step 5: Chạy, xanh** (Expected `717`). `npm run typecheck` (web có thể đọc `Standing` — trường mới không làm vỡ).
-- [ ] **Step 6: Commit.** `git commit -am "PR-S1 (16): §6 — caseHeadline và standingLine đúng chữ lớp thường"`
+- [x] **Step 5: Chạy, xanh** (Expected `717`). `npm run typecheck` (web có thể đọc `Standing` — trường mới không làm vỡ).
+- [x] **Step 6: Commit.** `git commit -am "PR-S1 (16): §6 — caseHeadline và standingLine đúng chữ lớp thường"`
 
 ---
 

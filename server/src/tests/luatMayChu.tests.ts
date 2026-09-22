@@ -730,5 +730,36 @@ export async function runLuatMayChuTests(t: YThucTestKit) {
     assert((conn.prepare('SELECT archived_at FROM students WHERE id = ?').get(hv.sid) as any).archived_at === null, 'Bỏ lưu trữ không có tác dụng');
   });
 
+  // ================================================================== 16. §6 chữ lớp thường
+
+  console.log('\nPR-S1 · 16. §6 — chữ lớp thường ở máy chủ: "Giữa khoá / Cuối khoá", "môn", "Đạt 3/4 môn"; FT giữ nguyên');
+  const standing: any = await import('../students/standing.ts');
+
+  check('§6 · caseHeadline lớp thường không ghi "MT{n}" và "kỳ vọng"; FT giữ nguyên', () => {
+    const h = (x: any) => domain.caseHeadline({ originKind: 'mock', ...x });
+    assert(h({ sosLevel: 2, attemptNo: 1, attemptKind: 'progress' }) === 'Giữa khoá: 2 môn chưa đạt', h({ sosLevel: 2, attemptNo: 1, attemptKind: 'progress' }));
+    assert(h({ sosLevel: 0, attemptNo: 2, attemptKind: 'final' }) === 'Cuối khoá: đạt tất cả các môn', h({ sosLevel: 0, attemptNo: 2, attemptKind: 'final' }));
+    assert(h({ sosLevel: 3, attemptNo: 2, attemptKind: 'final' }) === 'Cuối khoá: từ 3 môn chưa đạt', 'SOS 3 = từ 3 môn');
+    assert(h({ sosLevel: 1, attemptNo: 2, attemptKind: 'mock' }) === 'MT2: 1 kỹ năng dưới kỳ vọng', 'FT phải giữ nguyên');
+    assert(h({ sosLevel: 1, attemptNo: 2 }) === 'MT2: 1 kỹ năng dưới kỳ vọng', 'Không truyền attemptKind thì như FT (tương thích)');
+  });
+
+  check('§6 · standingLine lớp thường: "Đạt n/4 môn", "khoá này", "môn"; FT giữ "đạt kỳ vọng", "lộ trình này"', () => {
+    const base = {
+      studentId: 1, cycleId: 1, mode: 'ratio', attemptId: 5, attemptNo: 1, attemptKind: 'progress', attemptLabel: 'Giữa khoá',
+      periodCode: null, sosLevel: 0, provisional: false, scored: 4, required: 4, failed: 0,
+      nextAttemptNo: null, nextAttemptLabel: null, nextPeriodCode: null, openCases: 0, handoverCases: 0,
+    };
+    const line = (x: any) => standing.standingLine({ ...base, ...x });
+    assert(line({}) === 'Giữa khoá: Đạt 4/4 môn', line({}));
+    assert(line({ sosLevel: 1, failed: 1 }) === 'Giữa khoá: Đạt 3/4 môn · SOS 1', line({ sosLevel: 1, failed: 1 }));
+    assert(line({ sosLevel: 2, failed: 2, provisional: true, scored: 3 }) === 'Giữa khoá: Đạt 1/4 môn · SOS 2 tạm thời · mới có điểm 3/4 môn',
+      line({ sosLevel: 2, failed: 2, provisional: true, scored: 3 }));
+    assert(line({ attemptId: null, sosLevel: null, scored: 0 }) === 'Chưa có kết quả trong khoá này', line({ attemptId: null, sosLevel: null, scored: 0 }));
+    const ft = { mode: 'ielts_band', attemptLabel: 'MT2', failed: null };
+    assert(line({ ...ft }) === 'MT2 đạt kỳ vọng', line({ ...ft }));
+    assert(line({ ...ft, attemptId: null, sosLevel: null }) === 'Chưa có kết quả trong lộ trình này', 'FT giữ "lộ trình này"');
+  });
+
   // ---- các task sau thêm phép kiểm NGAY TRÊN dòng này ----
 }

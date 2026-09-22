@@ -251,7 +251,7 @@ function loadCase(caseId: number) {
       `SELECT sc.*,
               COALESCE(sc.student_id, a.student_id) AS eff_student_id,
               COALESCE(sc.cycle_id, a.cycle_id) AS eff_cycle_id,
-              a.class_id AS attempt_class_id, a.attempt_no,
+              a.class_id AS attempt_class_id, a.attempt_no, a.kind AS attempt_kind,
               (SELECT e.class_id FROM enrollments e
                 WHERE e.student_id = COALESCE(sc.student_id, a.student_id) AND e.status = 'active'
                 ORDER BY e.id DESC LIMIT 1) AS current_class_id
@@ -1527,6 +1527,7 @@ export function caseDetail(p: Principal, caseId: number) {
     summary: c.summary,
     headline: caseHeadline({
       summary: c.summary, originKind: c.origin_kind, sosLevel: c.sos_level, attemptNo: c.attempt_no ?? null,
+      attemptKind: c.attempt_kind ?? null,
     }),
     detectedAt: c.detected_at,
     reportedBy: c.reported_by
@@ -1789,6 +1790,7 @@ export function listCases(p: Principal, f: CaseFilters = {}) {
       summary: r.summary,
       headline: caseHeadline({
         summary: r.summary, originKind: r.origin_kind, sosLevel: r.sos_level, attemptNo: r.attempt_no,
+        attemptKind: r.attempt_kind ?? null,
       }),
       /*
        * TÊN NGƯỜI DÙNG TỰ ĐẶT LUÔN THẮNG (mục 7.3).
