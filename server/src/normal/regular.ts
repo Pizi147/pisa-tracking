@@ -756,10 +756,11 @@ export function regularSheet(p: Principal, classId: number, kind?: string) {
   const noShowPeriodIds = [...new Set([...byAttempt.values()].flat()
     .map((r: any) => r.no_show_period_id).filter((x: any) => x))] as number[];
   const periodCode = new Map<number, string>();
+  const periodStart = new Map<number, string>();
   if (noShowPeriodIds.length) {
     for (const r of conn
-      .prepare(`SELECT id, code FROM report_periods WHERE id IN (${noShowPeriodIds.map(() => '?').join(',')})`)
-      .all(...noShowPeriodIds) as any[]) periodCode.set(r.id, r.code);
+      .prepare(`SELECT id, code, week_start FROM report_periods WHERE id IN (${noShowPeriodIds.map(() => '?').join(',')})`)
+      .all(...noShowPeriodIds) as any[]) { periodCode.set(r.id, r.code); periodStart.set(r.id, r.week_start); }
   }
 
   return {
@@ -804,11 +805,15 @@ export function regularSheet(p: Principal, classId: number, kind?: string) {
             skill: k,
             label: REGULAR_SKILL_LABEL[k as keyof typeof REGULAR_SKILL_LABEL] ?? k,
             periodCode: v.periodCode, weekRange: v.weekRange,
+            /** Thứ Hai của tuần thi môn này — lưới viết tuần bằng `tuanLich` (G-6), không hiện mã tuần có năm. */
+            weekStart: v.weekStart,
             deadline: v.deadline, progress: v.progress, sitStatus: v.sitStatus,
             overdue: !scored && v.overdue,
             /** C08: ô mang dấu "-" — môn đã tự dời khỏi tuần `movedFrom`. Dấu "-" không phải điểm 0. */
             noShow: !!row?.no_show_period_id,
             movedFrom: row?.no_show_period_id ? periodCode.get(row.no_show_period_id) ?? null : null,
+            /** Thứ Hai của tuần `movedFrom` — để lưới viết "trả lịch về W3 SEP" bằng `tuanLich`. */
+            movedFromStart: row?.no_show_period_id ? periodStart.get(row.no_show_period_id) ?? null : null,
             /** Người đang xem có nhập được điểm / ghi được "-" ở ô này không (phân công hoặc nhập bù). */
             canEdit: canEditSkill.get(k) ?? false,
           };

@@ -1394,11 +1394,11 @@ git commit -m "PR-Rc1 (6): du lieu Can cham + Lich Test"
 - Produces: `ChamDiemPage` (default export) · `LuoiFT({ data, onReload, kn, hv })` · `LuoiThuong({ data, onReload, kn, hv })` ·
   `ODiemThuong`, `SuaDiemCoLyDo` (export từ `ScoreEntry.tsx`).
 
-- [ ] **Step 1: Dời lưới FT.** Tạo `web/src/modules/cham/LuoiFT.tsx` = phần bảng của `ScoreSheetPage.tsx` hiện tại
+- [x] **Step 1: Dời lưới FT.** Tạo `web/src/modules/cham/LuoiFT.tsx` = phần bảng của `ScoreSheetPage.tsx` hiện tại
   (`SheetRow`, `DeadlineSummary`, điều hướng bàn phím, `Th` các cột), nhận `data` (chính là `cham.ft`) qua props thay
   vì tự gọi API. **Bỏ** khối `<SectionNote>` cuối trang (G-5) — nội dung chuyển vào ⓘ ở Task 7 Step 4.
 
-- [ ] **Step 2: Dời lưới lớp thường.** Tạo `web/src/modules/cham/LuoiThuong.tsx` từ `RegularSheetPage.tsx`, với năm
+- [x] **Step 2: Dời lưới lớp thường.** Tạo `web/src/modules/cham/LuoiThuong.tsx` từ `RegularSheetPage.tsx`, với năm
   thay đổi:
 
 ```tsx
@@ -1418,7 +1418,7 @@ git commit -m "PR-Rc1 (6): du lieu Can cham + Lich Test"
      môn dưới ngưỡng, xem `evaluateRegular`). Nội dung đúng chuyển vào ⓘ ở Step 4.
   5. Bảng dùng `table-layout: fixed` + `colgroup` và `tabular-nums` (G-2); bọc trong `overflow-x-auto` (G-11).
 
-- [ ] **Step 3: Ô điểm lớp thường + hộp lý do + đếm ngược.** Thêm vào `web/src/modules/fasttrack/ScoreEntry.tsx`:
+- [x] **Step 3: Ô điểm lớp thường + hộp lý do + đếm ngược.** Thêm vào `web/src/modules/fasttrack/ScoreEntry.tsx`:
 
 ```tsx
 /**
@@ -1450,7 +1450,7 @@ export function SuaDiemCoLyDo({ tieuDe, moTaCu, children, onLuu, onDong }: {
   `{demNguocSuaDau(cell.noShow?.editableUntil ?? null, demoDate)}` — chữ xám `text-[10px] text-slate-400`,
   **không tô đỏ** (DS02, Q17). Ô **đã có điểm** đổi nút sửa sang `SuaDiemCoLyDo`.
 
-- [ ] **Step 4: Khung chung + ⓘ.** Tạo `web/src/modules/cham/ChamDiemPage.tsx`:
+- [x] **Step 4: Khung chung + ⓘ.** Tạo `web/src/modules/cham/ChamDiemPage.tsx`:
 
 ```tsx
 /**
@@ -1474,7 +1474,7 @@ export default function ChamDiemPage() { /* … */ }
   - Lớp Fast Track: *"Gõ `-` khi em có lịch mà không làm bài; sửa lại được đến hết Chủ nhật của tuần thi, còn nguyên
     thì thành Không dự thi."*
 
-- [ ] **Step 5: Đổi route.** `web/src/App.tsx`:
+- [x] **Step 5: Đổi route.** `web/src/App.tsx`:
 
 ```tsx
 import ChamDiemPage from './modules/cham/ChamDiemPage.tsx';
@@ -1485,13 +1485,13 @@ import ChamDiemPage from './modules/cham/ChamDiemPage.tsx';
 ```
   Xoá hai dòng import cũ và hai file cũ.
 
-- [ ] **Step 6: Cuộn tới em đầu tiên chưa có điểm.** `ChamDiemPage` đọc `?kn=` (kỹ năng) và cuộn tới ô trống đầu tiên
+- [x] **Step 6: Cuộn tới em đầu tiên chưa có điểm.** `ChamDiemPage` đọc `?kn=` (kỹ năng) và cuộn tới ô trống đầu tiên
   của cột đó sau khi dữ liệu tải xong (`requestAnimationFrame` + `scrollIntoView({ block: 'center' })`), rồi `focus()`.
 
-- [ ] **Step 7: Kiểm bằng mắt + typecheck.** Run: `npm run typecheck && npm run build:web 2>&1 | tail -5`.
+- [x] **Step 7: Kiểm bằng mắt + typecheck.** Run: `npm run typecheck && npm run build:web 2>&1 | tail -5`.
   Expected: sạch. Bấm thử để ở Task 13 (không chạy máy chủ ở bước này cũng được).
 
-- [ ] **Step 8: Commit.**
+- [x] **Step 8: Commit.**
 
 ```bash
 git add web/src/modules/cham web/src/modules/fasttrack/ScoreEntry.tsx web/src/App.tsx
@@ -1869,3 +1869,4 @@ git fetch origin && git rebase origin/main
 | 23/09 | 4 | Đỏ: 792 đạt, 1 hỏng (`dong.cases` chưa có). Xanh: **793**. Lệch kế hoạch: (a) Ruling 1 — bốn lần nhập điểm dùng `P.admin` (Quản lý không nhập điểm), đọc bảng vẫn `P.mbManager`; (b) môn trượt chỉ sinh TÍN HIỆU, không tự sinh Case → phép kiểm tạo Case Listening thật từ tín hiệu (`reportIssue` của GVCN, `fromSignalId`) và assert Case đó là hạng mục listening; (c) `attempt_id + 99999` vỡ khoá ngoại → trỏ sang một lượt Cuối khoá THẬT của cùng khoá (`taoLuot`); (d) phần tử `cases` thêm `skill` (môn trượt của dòng ứng với hạng mục) cho khớp Interfaces; Case trong dòng xếp theo luật Case đại diện mục 4.3 (`skillSupportBoard`): đang mở trước, id mới trước. **Sửa vòng 1:** bản đầu xếp `ORDER BY id` tăng dần → Case cũ đã xong che Case đang mở cùng môn; thêm 1 phép kiểm (Case done + Case mở cùng môn) → **794**. typecheck sạch. |
 | 23/09 | 5 | Đỏ: 794 đạt, 3 hỏng ("thao tác đáng lẽ phải bị từ chối nhưng lại thành công"). Xanh: **797** (794 + 2 phép của kế hoạch + 1 phép thêm). Lệch kế hoạch: (a) Ruling 1 — mọi lần ghi điểm trong phép kiểm dùng `P.admin` thay `P.mbManager`; (b) Ruling 8 — chỉ đòi lý do khi lần ghi ĐỔI hoặc XOÁ giá trị chính thức, ở cả FT lẫn lớp thường; FT so trong `tx` trên giá trị SẼ lưu (`raw_score`, c1–c4, `band`) sau khi tính band, trước mọi câu ghi (chặn thì cuộn lại sạch) thay vì đọc nhẹ trước `tx`; lớp thường so cả điểm lẫn tổng câu (đổi tổng là đổi tỉ lệ đạt); lưu lại đúng số cũ / chỉ sửa ghi chú không đòi lý do → phép thêm "Ghi lại đúng con số cũ…" (cả hai đường); (c) Ruling 3 — lượt FT chọn bằng `luotFtGhiDuoc()` (chưa huỷ, L+R trong phạm vi, không vắng/huỷ phần thi), phép kiểm tự xoá ô trước khi ghi; phép thứ hai thêm vế lớp thường "xoá điểm cũng phải có lý do". **Phép kiểm cũ phải kèm `lyDo` (không nới luật):** run.ts ×11 — "Nhập điểm KHÔNG kèm quyền sửa lịch" (W1), "Chỉ quản trị hệ thống nhập bù được" (W2), "[6.2→v3] Mock Test FT…" (W1, W2 thấp → đạt), "[9.4] Case chỉ sống nhờ…" (Speaking), "Gửi null xoá điểm về trống" (L → null), "Sửa điểm làm đổi mức SOS thì GIỮ case" (lớp thường), "Sửa điểm lên thành đạt thì HẠ MỨC" (L), "Lớp Normal: chấm lại một bài CŨ", "PR-I · Ô điểm bị xoá trống" (R → null), "PR-I · Bài chỉ báo -…" (W2 → một tiêu chí); sosV3.tests.ts hàm `enter` và luatMayChu.tests.ts hàm `diem` (dùng cho cả nhập lần đầu lẫn sửa) luôn kèm lý do — sửa 9 phép PR-T/S1/RB-8 hỏng dây chuyền. Web chưa gửi `lyDo` (Task 7 thêm hộp thoại): `ScoreEntry.tsx:106` (PUT `/attempts/:id/scores/:skill`, dùng ở MockDetailPage + ScoreSheetPage) và `RegularSheetPage.tsx:340` (PUT `/regular/attempts/:id/scores/:skill`) — đến Task 7, sửa ô đã có điểm trên web sẽ nhận lỗi 400 "Sửa điểm đã nhập thì phải ghi lý do.". typecheck sạch. |
 | 23/09 | 6 | Đỏ: 797 đạt, 4 hỏng (`cham.canChamList is not a function`, `cham.lichTest is not a function`). Xanh: **801** (797 + 3 phép kế hoạch + 1 phép Q15). Lệch kế hoạch: (a) Ruling 1 — ghi "-" trong Q14 dùng `P.admin`; (b) Ruling 9/Q15 — `tuanKhac` thay bằng `luiLich { kyNang, hv, tuTuan, sangTuan, tuTuanStart, sangTuanStart }`; so với TUẦN ĐẦU của đợt (`tuanDau` = tuần sớm nhất của các môn bắt buộc, trường mới của `listAttempts`), KHÔNG so với `period`: `planned_period_id` là tuần HOÀN TẤT (muộn nhất, mục 10.7) nên dời một môn thì `period` đi theo môn đó — so với nó thì các môn không dời bị báo nhầm; (c) Ruling 4 — `daBatDau` từ trường mới `scoredInScope` của `listAttempts` (ô đã chấm trong phạm vi); canChamList đọc `listAttempts` KHÔNG `need` rồi lọc bằng `conBaiCanCham` (luật `my_scores` xuất ra, switch cũ dùng chung) để thấy cả em đã chấm xong; (d) Ruling 3 — mỗi mục có `han` (hạn sớm nhất); (e) Ruling 7 — href FT kèm `periodId` (Cần chấm: tuần của đợt; Lịch Test: tuần đang xem), `kn` khi một môn; (f) `dotLabel` lớp thường dùng `ATTEMPT_KIND_SHORT` ("Giữa khoá") — `ATTEMPT_KIND_LABEL` ra "Bài kiểm tra giữa khoá", trái phép kiểm của chính kế hoạch; (g) Ruling 5 — lichTest bỏ `|| true`: `chuaToiHan` = tuần xem sau tuần hôm nay, `quaHan` = còn bài và hạn (riêng môn → riêng đợt → mặc định theo tuần môn) đã qua; ô đã báo "-" ở chính tuần đó và ô vắng/huỷ không tính còn bài; Writing FT xong khi W1 và W2 cùng có band; (h) `pendingDetail` thêm `weekStart`; kỹ năng trong dòng xếp L·R·W·S. typecheck sạch. **Sửa vòng 1:** (1) "lùi lịch" CHỈ dựa bằng chứng dời thật — `pendingDetail[].moved` = dấu "-" lớp thường (`no_show_period_id` khác tuần hiện tại, cùng luật `movedFrom`) hoặc dời do vắng (`absence_move_count > 0`, tuần cũ đọc `skill_week_moved_absence` mới nhất của lịch sử đợt); bỏ luật "tuần sau tuần đầu" và bỏ `tuanDau` (tách tuần theo kế hoạch bị báo nhầm); (2) `periodId` của dòng FT = tuần của ô còn nợ có hạn sớm nhất (ô đặt `han`), không phải tuần hoàn tất của em đầu tiên; (3) Lịch Test chỉ đếm lượt `scheduled`/`sat` (em vắng/huỷ không vào `soHv`, dòng không còn ai thì không hiện); (4) phép kiểm: Q11 bắt buộc có dòng lớp thường; thêm "tách tuần theo kế hoạch không phải lùi lịch", "GVBM chỉ thấy môn mình", "Lịch Test: tuần chưa tới + em vắng" (kiểm đột biến: bỏ lọc `scheduled`/`sat` thì phép này đỏ) → **804**. typecheck sạch. |
+| 23/09 | 7 | Không thêm phép kiểm: **804** (giữ nguyên). Máy chủ thêm tối thiểu `weekStart` + `movedFromStart` vào từng môn của `regularSheet` (đầu lưới và dòng "dời sang" viết bằng `tuanLich`, không hiện mã tuần có năm) — thêm assert vào phép C08 sẵn có. Lệch kế hoạch: (a) lưới lớp thường một lần chỉ hiện MỘT bài (Giữa khoá/Cuối khoá, `?kind=` hoặc bài có môn nợ gấp nhất), bỏ cột Bài/Tuần cũ vì trùng tiêu đề và đầu lưới; (b) nút ↓ chỉ điền bản nháp ô còn trống tổng, lưu khi rời cặp ô; (c) ô FT có "-" chỉ giữ MỘT dòng phụ: đếm ngược DS02 thay câu dài (câu dài vào tooltip); (d) `InlineScoreEditor` (hồ sơ Test) thêm ô lý do khi sửa ô đã có điểm — nếu không trang đó dính 400 RB-5; (e) ⓘ hiện câu chung + đúng phần của loại lớp đang mở; (f) không có script `build:web` → kiểm bằng `npx vite build` ra thư mục tạm. typecheck + build sạch. |

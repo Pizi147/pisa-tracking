@@ -157,6 +157,9 @@ export async function runChamDiemTests(t: YThucTestKit) {
     const dong = sheet.rows.find((x: any) => x.attemptId === attemptId);
     const o = dong.skillSchedule.find((x: any) => x.skill === k);
     assert(o.noShow === true && o.movedFrom === maTuanCu, `Ô ${k}: noShow=${o.noShow}, movedFrom=${o.movedFrom} ≠ ${maTuanCu}`);
+    /* Task 7: lưới viết tuần bằng `tuanLich`, nên ô mang thứ Hai của tuần thi hiện tại và của tuần đã dời khỏi. */
+    assert(o.weekStart === '2026-09-21' && o.movedFromStart === '2026-09-14',
+      `Ô ${k}: weekStart=${o.weekStart}, movedFromStart=${o.movedFromStart}`);
     assert(o.canEdit === true, 'GVBM sửa được ô môn mình');
     const oKhac = dong.skillSchedule.find((x: any) => x.skill === khac);
     assert(oKhac.noShow === false && oKhac.movedFrom === null, 'Môn không ghi dấu thì không có noShow/movedFrom');
