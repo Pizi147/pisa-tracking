@@ -7,16 +7,17 @@
  */
 import { db } from '../db.ts';
 import {
-  LOC_HOC_VIEN, PERMISSIONS, phamViCoThe, phamViMacDinh, type LocHocVien, type PhamVi,
+  ENTRY_SKILLS, LOC_HOC_VIEN, PERMISSIONS, phamViCoThe, phamViMacDinh, type LocHocVien, type PhamVi,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addDays } from '../util.ts';
-import { can, scopeFor, type Principal } from '../permissions.ts';
+import { can, editableSkills, scopeFor, type Principal } from '../permissions.ts';
 import { listClassSummaries, type ClassSummary } from './classes.ts';
 import { classProgressMany, missingForStudent } from './schedule.ts';
 import { standingFor } from '../students/standing.ts';
 import { listCases } from '../cases/cases.ts';
 import { soCaseMoTheoLop } from './dongHocVien.ts';
+import { allProgrammes } from '../normal/regular.ts';
 
 export type LopHocVienLop = ClassSummary & {
   gvcn: { id: number; name: string } | null;
@@ -83,6 +84,19 @@ export function danhSachHocVienLop(
   const soCase = soCaseMoTheoLop(ids);
   const tienDo = classProgressMany(ids);
 
+  /*
+   * KỸ NĂNG SỬA ĐƯỢC của từng lớp, đọc MỘT LẦN cho cả lô — cùng khuôn `classes.ts` dùng để dựng `mySkills`/`editableByClass`
+   * (mục "Lớp FT và lớp thường có bộ kỹ năng khác nhau"). `editableSkills` tự gọi `can(p, SCORE_EDIT, {classId, skill})`
+   * cho từng môn, kèm đường sửa hộ `SCORE_OVERRIDE` — nên "có nhập điểm được không" ở đây khớp đúng công thức
+   * `viewer.canEnterScores` của `classOverview` (Task 6), không tự chế một logic quyền song song đọc thẳng `phanCong`.
+   */
+  const programmes = allProgrammes();
+  const skillsByClass = new Map<number, string[]>();
+  for (const r of lops) {
+    const prog = r.programmeCode ? programmes.get(r.programmeCode) ?? null : null;
+    skillsByClass.set(r.id, prog?.skills ?? [...ENTRY_SKILLS]);
+  }
+
   const rows: LopHocVienLop[] = lops.map((r) => {
     const pr = tienDo.get(r.id);
     return {
@@ -94,7 +108,7 @@ export function danhSachHocVienLop(
         coTheSuaHocVien: can(p, PERMISSIONS.STUDENT_EDIT, { classId: r.id }),
         coTheBaoCase: can(p, PERMISSIONS.SOS_REPORT, { classId: r.id }),
         coTheGhiViPham: can(p, PERMISSIONS.VIOLATION_RECORD, { classId: r.id }),
-        coTheNhapDiem: can(p, PERMISSIONS.SCORE_OVERRIDE, { classId: r.id }) || phanCong.some((a) => a.classId === r.id && !!a.skill),
+        coTheNhapDiem: editableSkills(p, r.id, skillsByClass.get(r.id) ?? [...ENTRY_SKILLS]).length > 0,
       },
     };
   });
