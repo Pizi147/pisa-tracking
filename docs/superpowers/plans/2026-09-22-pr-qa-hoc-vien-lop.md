@@ -3506,12 +3506,12 @@ playwright, `git status` sạch trước khi commit.
 
 ### Task 17: Rà soát, rebase main mới nhất, mở PR (không tự merge)
 
-- [ ] **Step 1:** superpowers:requesting-code-review — người rà **Opus 5** (khác model người code) rà `git diff origin/main...HEAD`,
+- [x] **Step 1:** superpowers:requesting-code-review — người rà **Opus 5** (khác model người code) rà `git diff origin/main...HEAD`,
   nhấn vào: (a) nút/mục menu nào hiện ra mà máy chủ từ chối (403) hoặc bấm không làm gì; (b) số chip / số "Case đang mở" có khớp
   danh sách mở ra; (c) chữ lớp thường (không MT, kỳ vọng, Progress/Final, Normal) và G-6 (không ISO); (d) có chạm file của PR-AN /
   PR-S2 / PR-Pa (bảng ranh giới) không; (e) `ngay`/`tuanLich`/`shortDate` giữ chữ ký; (f) hiệu năng `GET /hoc-vien-lop` (không truy vấn
   theo từng em). Xử lý theo superpowers:receiving-code-review; ghi Nhật ký.
-- [ ] **Step 2: Rebase main mới nhất.** `git fetch origin && git rebase origin/main`. Xung đột dự kiến và cách gỡ:
+- [x] **Step 2: Rebase main mới nhất.** `git fetch origin && git rebase origin/main`. Xung đột dự kiến và cách gỡ:
   - `server/src/tests/run.ts` (khối cuối) → giữ **mọi** khối (PR-AN/S2/Pa) và khối PR-Qa, khối PR-Qa đứng cuối trước dòng in tổng kết.
   - `server/src/routes/index.ts` → giữ mọi import và mọi khối route của cả hai bên.
   - `shared/domain/index.ts` → giữ mọi dòng `export *`.
@@ -3582,3 +3582,22 @@ playwright, `git status` sạch trước khi commit.
     hai đều dùng `P.admin`, và `can()` của Quản trị hệ thống luôn `true` bất kể ngữ cảnh nên việc đổi nguồn đếm không đổi kết
     quả với vai này. `npm run check`: **TẤT CẢ 811 KIỂM TRA ĐỀU ĐẠT** (809 + 2 mới), `typecheck` xanh. Không đụng `cases.ts`
     hay file cấm nào khác trong bảng ranh giới.
+
+- **Task 2–16 (tóm tắt):** Model thật: Sonnet 5 cho toàn bộ 16 task implementer + reviewer theo từng task (dùng skill
+  superpowers:subagent-driven-development, mỗi task một implementer subagent + một task reviewer riêng, đúng quy trình).
+  Lịch sử thi hành đầy đủ từng task (commit SHA, kết quả review, fix round nếu có) nằm ở ledger SDD:
+  `.superpowers/sdd/2026-09-22-pr-qa-hoc-vien-lop/progress.md` — bao gồm 2 fix round trong quá trình code (Task 5: cờ
+  `coTheNhapDiem` đổi sang `editableSkills()`/`can()` thật thay vì đọc thẳng phân công; Task 8: bổ sung phép kiểm cho
+  nhánh kết thúc phân công GV khi đổi chương trình) và 1 fix round tài liệu (Task 15: dọn dòng cũ/trùng CODE_MAP.md).
+  Mọi task đều qua review Approved trước khi sang task kế tiếp; số phép kiểm tăng dần từ 757 (Task 0) lên 809 sau Task 16.
+
+- **Task 17 Step 1 (rà soát toàn nhánh cuối cùng):** Model rà: **Opus 5** (khác Sonnet 5 của người code, đúng chốt ở đầu
+  plan). Phạm vi: `61ae2dd..8dabfcd` (20 commit, sau khi rebase lên `origin/main` mới nhất — main đã có PR-S2 merge).
+  Kết quả lần 1: "gộp được, nhưng phải sửa trước" — 2 Important (đã sửa, xem mục "Task 17 (fix sau rà soát cuối)" phía
+  trên), không Critical. Sáu điểm (a)-(f) bắt buộc: (a) ban đầu có lỗi (đã sửa), (b) ban đầu có lỗi (đã sửa), (c)/(d)/(e)/
+  (f) đạt ngay từ đầu. Sau 1 fix round, re-review (Opus, tự chạy lại `npm run check` xác nhận 811/811): **All findings
+  addressed**. Các Minor (9 mục ở lần rà đầu + 2 mục mới sau fix) và vấn đề của chính kế hoạch (Q5 không nói rõ nguồn dữ
+  liệu "Cần hỗ trợ") đã park theo ruling, không chặn PR — xem chi tiết trong `.superpowers/sdd/.../progress.md`.
+  Ghi chú của người rà cuối: mục Nhật ký thực thi này trước khi bổ sung chỉ có Task 0/1/16/17 — các task 2-15 đã được
+  code/review đầy đủ (xem ledger SDD) nhưng không phải task nào cũng tự chép lại vào file plan này; đã bổ sung tóm tắt ở
+  trên để người đọc plan không phải mở file ledger riêng mới biết đã có review.
