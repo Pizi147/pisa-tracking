@@ -601,4 +601,188 @@ export async function runBanChinhTests(t: BanChinhTestKit) {
     const lenh = String(JSON.parse(fs.readFileSync(pathMod.join(REPO, 'package.json'), 'utf8')).scripts['them-chi-nhanh'] ?? '');
     assert(/^node /.test(lenh) && /themChiNhanh\.js$/.test(lenh), `package.json "them-chi-nhanh" = ${lenh}`);
   });
+
+  console.log('\nPR-Z2 · 6. Sao lưu (sao-luu) — nguồn chỉ được ĐỌC; bản sao mở lại được, đúng từng dòng');
+  const { saoLuu, giuBanMoiNhat, tenBanSaoLuu, saoLuuRaFile, saoLuuTep } = await import('../ops/saoLuu.ts');
+  const DEFAULT_ADMIN_PASSWORD_DEMO = (await import('../platform/accounts.ts')).DEFAULT_ADMIN_PASSWORD;
+  /** Nội dung một bảng, không phụ thuộc thứ tự dòng; BLOB (libsql trả ArrayBuffer) đổi ra hex để so được. */
+  const noiDungBang = (conn: InstanceType<typeof Database>, b: string) => JSON.stringify(
+    (conn.prepare(`SELECT * FROM "${b}"`).all() as any[])
+      .map((r) => JSON.stringify(Object.entries(r).filter(([k]) => k !== '_metadata')
+        .map(([k, v]) => [k, v instanceof ArrayBuffer ? 'hex:' + Buffer.from(v).toString('hex') : v])))
+      .sort());
+  const cauTrucDb = (conn: InstanceType<typeof Database>) => JSON.stringify(
+    conn.prepare("SELECT type, name, tbl_name, sql FROM sqlite_master WHERE name NOT LIKE 'sqlite_%' ORDER BY type, name").all());
+  /** Mọi bảng của `a` có trong `b` với ĐÚNG số dòng và đúng nội dung; cấu trúc (bảng, chỉ mục) giống hệt. */
+  const soHaiDb = (a: InstanceType<typeof Database>, b: InstanceType<typeof Database>, nhan: string) => {
+    assert(cauTrucDb(a) === cauTrucDb(b), `${nhan}: cấu trúc (bảng/chỉ mục) khác nguồn`);
+    for (const bg of cacBang(a)) {
+      assert(dem(a, bg) === dem(b, bg), `${nhan} · bảng ${bg}: nguồn ${dem(a, bg)} dòng, bản sao ${dem(b, bg)} dòng`);
+      assert(noiDungBang(a, bg) === noiDungBang(b, bg), `${nhan} · bảng ${bg}: cùng số dòng nhưng nội dung khác`);
+    }
+  };
+
+  check('PR-Z2 · saoLuu chép database kiểm thử ra file mới: file ĐÓNG rồi MỞ LẠI được, toàn vẹn, mọi bảng đúng số dòng và đúng từng dòng; nguồn KHÔNG bị ghi câu nào', () => {
+    const dir = fs.mkdtempSync(pathMod.join(os.tmpdir(), 'z2-bk-'));
+    const f = pathMod.join(dir, 'bk.sqlite');
+    try {
+      const nguon = db();
+      const ghiTruoc = soLanGhi(nguon);
+      const dich = new Database(f);
+      const r = saoLuu(nguon, dich);
+      dich.close();
+      assert(soLanGhi(nguon) === ghiTruoc, `saoLuu đã GHI vào nguồn (total_changes ${ghiTruoc} → ${soLanGhi(nguon)})`);
+      assert(r.bang === cacBang(nguon).length, `Chép ${r.bang}/${cacBang(nguon).length} bảng`);
+      assert(r.dong === cacBang(nguon).reduce((s, b) => s + dem(nguon, b), 0), `Số dòng báo cáo ${r.dong} không khớp nguồn`);
+      const moLai = new Database(f);
+      try {
+        assert((moLai.prepare('PRAGMA integrity_check').get() as any).integrity_check === 'ok', 'integrity_check của bản sao không ok');
+        soHaiDb(nguon, moLai, 'Bản sao');
+        assert(dem(moLai, 'users') > 0 && dem(moLai, 'students') > 0, 'Bản sao của bộ demo phải có người dùng và học viên');
+      } finally { moLai.close(); }
+    } finally { try { fs.rmSync(dir, { recursive: true, force: true }); } catch { /* Windows */ } }
+  });
+  check('PR-Z2 · Bản sao lưu dùng được bằng CHÍNH mã hiện tại: tiến trình mở nó làm database (PISA_DB) thấy đủ học viên và đăng nhập được', () => {
+    const dir = fs.mkdtempSync(pathMod.join(os.tmpdir(), 'z2-bk-'));
+    const f = pathMod.join(dir, 'bk.sqlite');
+    try {
+      const dich = new Database(f);
+      saoLuu(db(), dich);
+      dich.close();
+      /* Một tài khoản chắc chắn còn mật khẩu mặc định của bộ demo (phép khác có thể đã đổi mật khẩu vài người). */
+      const tk = (db().prepare('SELECT email, password_hash h, password_salt s FROM users WHERE email IS NOT NULL ORDER BY id').all() as any[])
+        .find((u) => u.h === cryptoMod.scryptSync(DEFAULT_ADMIN_PASSWORD_DEMO, u.s, 64).toString('hex'))?.email as string;
+      assert(tk, 'Bộ demo phải còn một tài khoản dùng mật khẩu mặc định');
+      const accJs = (pathToFileURL(pathMod.join(REPO, 'dist-server/server/src/platform/accounts.js'))).href;
+      const r = chayCon(`const d = await import(${JSON.stringify(dbJs)}); const a = await import(${JSON.stringify(accJs)});`
+        + ` console.log(JSON.stringify({ khoiTao: d.isInitialised(), hv: d.db().prepare('SELECT COUNT(*) n FROM students').get().n,`
+        + ` dangNhap: a.login(${JSON.stringify(tk)}, ${JSON.stringify(DEFAULT_ADMIN_PASSWORD_DEMO)}).userId }));`,
+      { PISA_DB: f, TURSO_DATABASE_URL: '', TURSO_AUTH_TOKEN: '' });
+      assert(r.status === 0, `Mở bản sao bằng mã hiện tại lỗi: ${String(r.stderr).slice(-300)}`);
+      const o = JSON.parse(String(r.stdout).trim().split('\n').pop()!);
+      assert(o.khoiTao === true && o.hv === dem(db(), 'students') && o.dangNhap > 0, `Nhận ${JSON.stringify(o)}`);
+    } finally { try { fs.rmSync(dir, { recursive: true, force: true }); } catch { /* Windows */ } }
+  });
+  check('PR-Z2 · saoLuu TỪ CHỐI chép vào một database đích không rỗng — không bao giờ ghi đè', () => {
+    const o = moDbTam();
+    try {
+      o.conn.exec("CREATE TABLE cu (a TEXT); INSERT INTO cu VALUES ('bản cũ')");
+      const truoc = anhChup(o.conn);
+      assertThrows(() => saoLuu(db(), o.conn), /không rỗng/, 'Đích có dữ liệu phải bị từ chối');
+      assert(anhChup(o.conn) === truoc, 'Đích đã bị thay đổi');
+    } finally { dongLai(o); }
+  });
+  check('PR-Z2 · saoLuuRaFile: file đích ĐÃ CÓ (cùng phút) → TỪ CHỐI, file cũ giữ nguyên từng byte; hỏng giữa chừng không để lại file dở', () => {
+    const dir = fs.mkdtempSync(pathMod.join(os.tmpdir(), 'z2-bk-'));
+    try {
+      const f = pathMod.join(dir, 'pisa-2026-09-22-1000.sqlite');
+      fs.writeFileSync(f, 'bản sao lưu cũ — không được ghi đè');
+      const bam = bamFile(f);
+      assertThrows(() => saoLuuRaFile(db(), f), /Đã có file/, 'Tên đã có phải từ chối');
+      assert(bamFile(f) === bam, 'File sao lưu cũ đã bị ghi đè');
+      const f2 = pathMod.join(dir, 'pisa-2026-09-22-1001.sqlite');
+      const nguonHong = new Database(':memory:');
+      nguonHong.exec("CREATE TABLE users (id INTEGER PRIMARY KEY)");        // không có người dùng → kiểm sau khi chép phải hỏng
+      try { assertThrows(() => saoLuuRaFile(nguonHong, f2), /người dùng/, 'Bản sao không có người dùng phải bị coi là hỏng'); } finally { nguonHong.close(); }
+      assert(JSON.stringify(fs.readdirSync(dir)) === JSON.stringify(['pisa-2026-09-22-1000.sqlite']), `Còn sót file dở: ${JSON.stringify(fs.readdirSync(dir))}`);
+    } finally { try { fs.rmSync(dir, { recursive: true, force: true }); } catch { /* Windows */ } }
+  });
+  check('PR-Z2 · Tên bản sao lưu theo GIỜ VIỆT NAM: pisa-NĂM-THÁNG-NGÀY-GIỜPHÚT', () => {
+    assert(tenBanSaoLuu(new Date('2026-09-21T17:05:00Z')) === 'pisa-2026-09-22-0005', tenBanSaoLuu(new Date('2026-09-21T17:05:00Z')));
+  });
+  check('PR-Z2 · Giữ đúng 14 bản mới nhất, xoá bản cũ hơn KÈM thư mục tệp của nó; không đụng file khác; không bao giờ xoá bản vừa tạo', () => {
+    const dir = fs.mkdtempSync(pathMod.join(os.tmpdir(), 'z2-keep-'));
+    try {
+      for (let i = 1; i <= 16; i++) fs.writeFileSync(pathMod.join(dir, `pisa-2026-09-${String(i).padStart(2, '0')}-0000.sqlite`), 'x');
+      fs.mkdirSync(pathMod.join(dir, 'pisa-2026-09-01-0000-tep', 'violation'), { recursive: true });
+      fs.writeFileSync(pathMod.join(dir, 'pisa-2026-09-01-0000-tep', 'violation', 'a.pdf'), 'a');
+      fs.mkdirSync(pathMod.join(dir, 'pisa-2026-09-16-0000-tep'));
+      for (const khac of ['ghi-chu.txt', 'pisa-khac.sqlite', 'pisa-2026-08-01-0000.sqlite.bak']) fs.writeFileSync(pathMod.join(dir, khac), 'giữ');
+      const xoa = giuBanMoiNhat(dir, 14);
+      assert(xoa.length === 2 && xoa.every((f) => /09-0[12]-/.test(f)), JSON.stringify(xoa));
+      const con = fs.readdirSync(dir);
+      assert(con.filter((f) => /^pisa-\d{4}-\d{2}-\d{2}-\d{4}\.sqlite$/.test(f)).length === 14, 'Phải còn 14 bản');
+      assert(!con.includes('pisa-2026-09-01-0000-tep') && con.includes('pisa-2026-09-16-0000-tep'), 'Thư mục tệp đi theo bản của nó');
+      assert(['ghi-chu.txt', 'pisa-khac.sqlite', 'pisa-2026-08-01-0000.sqlite.bak'].every((f) => con.includes(f)), 'Đã xoá file không phải bản sao lưu');
+      const giu = giuBanMoiNhat(dir, 1, 'pisa-2026-09-03-0000.sqlite');
+      assert(fs.existsSync(pathMod.join(dir, 'pisa-2026-09-03-0000.sqlite')) && !giu.includes('pisa-2026-09-03-0000.sqlite'), 'Xoá mất bản vừa tạo');
+    } finally { try { fs.rmSync(dir, { recursive: true, force: true }); } catch { /* Windows */ } }
+  });
+  await checkAsync('PR-Z2 · saoLuuTep tải MỌI tệp của kho Blobs (kiểu siteID + token, như lệnh sao lưu) ra thư mục, đúng từng byte, giữ đường dẫn khoá', async () => {
+    const { BlobsServer } = await import('@netlify/blobs/server');
+    const { getStore } = await import('@netlify/blobs');
+    const dir = fs.mkdtempSync(pathMod.join(os.tmpdir(), 'z2-bk-tep-'));
+    const mayBlobs = new BlobsServer({ directory: pathMod.join(dir, 'may'), token: 'tok' });
+    const { port } = await mayBlobs.start();
+    try {
+      const kho = getStore({ name: 'bang-chung-thu', siteID: 'site-thu', token: 'tok', apiURL: `http://localhost:${port}` });
+      const tep: [string, Buffer][] = [['violation/a.pdf', Buffer.from([0, 1, 2, 255])], ['sos_case/b.png', Buffer.from('anh')], ['discipline_measure/c.mp4', Buffer.alloc(3000, 7)]];
+      for (const [k, d] of tep) await kho.set(k, new Uint8Array(d).buffer);
+      const r = await saoLuuTep(kho, pathMod.join(dir, 'ra'));
+      assert(r.tep === 3 && r.byte === 4 + 3 + 3000, `Báo ${JSON.stringify(r)}`);
+      for (const [k, d] of tep) assert(fs.readFileSync(pathMod.join(dir, 'ra', ...k.split('/'))).equals(d), `Tệp ${k} sai nội dung`);
+    } finally {
+      await mayBlobs.stop();
+      try { fs.rmSync(dir, { recursive: true, force: true }); } catch { /* Windows */ }
+    }
+  });
+
+  /* LỆNH THẬT `npm run sao-luu` (tiến trình con, URL file: = nhánh Turso, không mạng). Chạy KHÔNG đồng bộ để máy chủ Blobs cục bộ trong tiến trình này còn trả lời được. */
+  const saoLuuJs = pathMod.join(REPO, 'dist-server/server/src/ops/runSaoLuu.js');
+  const chayLenhNen = (env: Record<string, string>) => new Promise<{ status: number | null; stdout: string; stderr: string }>((xong) => {
+    const con = cp.spawn(process.execPath, [saoLuuJs], {
+      env: { ...process.env, TURSO_DATABASE_URL: '', TURSO_AUTH_TOKEN: '', BACKUP_DIR: '', NETLIFY_SITE_ID: '', NETLIFY_AUTH_TOKEN: '', NETLIFY_BLOBS_CONTEXT: '', BAN_CHINH: '', ...env },
+    });
+    let stdout = '', stderr = '';
+    con.stdout.on('data', (d) => { stdout += d; }); con.stderr.on('data', (d) => { stderr += d; });
+    con.on('close', (status) => xong({ status, stdout, stderr }));
+  });
+  const dungNguon = (dir: string) => {
+    const f = pathMod.join(dir, 'nguon.sqlite');
+    const c = new Database(f);
+    try { initBanChinh(c, O); } finally { c.close(); }
+    return f;
+  };
+  await checkAsync('PR-Z2 · Lệnh sao-luu từ "Turso": thiếu BACKUP_DIR → từ chối; có → đúng một file pisa-…sqlite mở lại được, đúng số dòng; nguồn giữ nguyên TỪNG BYTE; không in token', async () => {
+    const dir = fs.mkdtempSync(pathMod.join(os.tmpdir(), 'z2-lenh-bk-'));
+    try {
+      const nguon = dungNguon(dir);
+      const bamNguon = bamFile(nguon);
+      const thieu = await chayLenhNen({ TURSO_DATABASE_URL: urlFile(nguon), TURSO_AUTH_TOKEN: TOKEN_GIA });
+      assert(thieu.status === 1 && /BACKUP_DIR/.test(thieu.stderr), `Thiếu BACKUP_DIR: mã ${thieu.status}; ${thieu.stderr.slice(-200)}`);
+      const bk = pathMod.join(dir, 'sao-luu');
+      const r = await chayLenhNen({ TURSO_DATABASE_URL: urlFile(nguon), TURSO_AUTH_TOKEN: TOKEN_GIA, BACKUP_DIR: bk });
+      assert(r.status === 0, `Mã ${r.status}: ${(r.stdout + r.stderr).slice(-400)}`);
+      assert(!(r.stdout + r.stderr).includes(TOKEN_GIA), 'Lệnh in lộ token');
+      assert(/Chưa sao lưu tệp bằng chứng/.test(r.stdout), 'Thiếu hai biến Netlify thì phải nhắc chưa sao lưu tệp');
+      const ra = fs.readdirSync(bk);
+      assert(ra.length === 1 && /^pisa-\d{4}-\d{2}-\d{2}-\d{4}\.sqlite$/.test(ra[0]), `Thư mục sao lưu: ${JSON.stringify(ra)}`);
+      assert(bamFile(nguon) === bamNguon, 'Lệnh sao lưu đã làm thay đổi file nguồn');
+      const a = new Database(nguon, { readonly: true }); const b = new Database(pathMod.join(bk, ra[0]), { readonly: true });
+      try { soHaiDb(a, b, 'Lệnh sao-luu'); } finally { a.close(); b.close(); }
+    } finally { try { fs.rmSync(dir, { recursive: true, force: true }); } catch { /* Windows */ } }
+  });
+  /*
+   * KHÔNG đặt NETLIFY_SITE_ID/NETLIFY_AUTH_TOKEN cho lệnh thật trong phép kiểm: có hai biến đó thì @netlify/blobs luôn gọi API
+   * THẬT của Netlify (bỏ qua mọi biến ngữ cảnh — đã thử 22/09), tức phép kiểm sẽ ra mạng. Đường tải tệp được kiểm ở
+   * `saoLuuTep` phía trên (máy chủ Blobs cục bộ, đúng kiểu siteID + token).
+   */
+  await checkAsync('PR-Z2 · Lệnh sao-luu giữ đúng 14 bản mới nhất: xoá bản cũ nhất, giữ bản vừa tạo, không đụng file khác trong thư mục', async () => {
+    const dir = fs.mkdtempSync(pathMod.join(os.tmpdir(), 'z2-lenh-bk-'));
+    try {
+      const nguon = dungNguon(dir);
+      const bk = pathMod.join(dir, 'sao-luu');
+      fs.mkdirSync(bk);
+      for (let i = 1; i <= 14; i++) fs.writeFileSync(pathMod.join(bk, `pisa-2026-01-${String(i).padStart(2, '0')}-0000.sqlite`), 'cũ');
+      fs.writeFileSync(pathMod.join(bk, 'ghi-chu-cua-toi.txt'), 'giữ');
+      const r = await chayLenhNen({ TURSO_DATABASE_URL: urlFile(nguon), TURSO_AUTH_TOKEN: TOKEN_GIA, BACKUP_DIR: bk });
+      assert(r.status === 0, `Mã ${r.status}; stdout: ${r.stdout.slice(-300)}; stderr: ${r.stderr.slice(-500)}`);
+      const con = fs.readdirSync(bk);
+      const moi = con.filter((f) => /^pisa-\d{4}-\d{2}-\d{2}-\d{4}\.sqlite$/.test(f) && !f.startsWith('pisa-2026-01-'));
+      assert(moi.length === 1, `Phải có đúng một bản mới: ${JSON.stringify(con)}`);
+      assert(con.filter((f) => f.endsWith('.sqlite')).length === 14 && !con.includes('pisa-2026-01-01-0000.sqlite') && con.includes('pisa-2026-01-02-0000.sqlite'),
+        `Phải giữ đúng 14 bản (chỉ xoá bản cũ nhất): ${JSON.stringify(con)}`);
+      assert(con.includes('ghi-chu-cua-toi.txt') && /pisa-2026-01-01-0000\.sqlite/.test(r.stdout), 'Không được đụng file khác; phải báo đã xoá bản nào');
+    } finally { try { fs.rmSync(dir, { recursive: true, force: true }); } catch { /* Windows */ } }
+  });
 }
