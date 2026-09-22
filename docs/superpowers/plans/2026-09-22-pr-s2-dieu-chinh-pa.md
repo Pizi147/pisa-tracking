@@ -444,7 +444,7 @@ git commit -m "PR-S2 (1): bảng lịch sử điều chỉnh PA + hai cột cậ
   `decisionBlockedReason(outcome: string, d: PlanDecision): string | null` · `decisionNeedsReason(d: string): boolean` ·
   `CONFIRM_EDIT_REASON: string` · `NextStep` thêm `'adjust'`.
 
-- [ ] **Step 1: Phép kiểm (đỏ).** Thêm vào file test, ngay trên dòng `// ---- các task sau …`:
+- [x] **Step 1: Phép kiểm (đỏ).** Thêm vào file test, ngay trên dòng `// ---- các task sau …`:
 
 ```ts
   // ================================================================== 2. Luật quyết định (shared/domain)
@@ -484,9 +484,9 @@ git commit -m "PR-S2 (1): bảng lịch sử điều chỉnh PA + hai cột cậ
   });
 ```
 
-- [ ] **Step 2: Chạy, thấy đỏ.** Run: `npm test 2>&1 | grep -E "PR-S2 · S4|KHÔNG ĐẠT"`. Expected: hai phép mới ✗ (`decisionsFor is not a function`).
+- [x] **Step 2: Chạy, thấy đỏ.** Run: `npm test 2>&1 | grep -E "PR-S2 · S4|KHÔNG ĐẠT"`. Expected: hai phép mới ✗ (`decisionsFor is not a function`).
 
-- [ ] **Step 3: Sửa `shared/domain/cases.ts`.**
+- [x] **Step 3: Sửa `shared/domain/cases.ts`.**
 
 (a) Dòng 802: `export const NEXT_STEPS = ['complete', 'monitor', 'continue', 'adjust', 'propose', 'ask_manager'] as const;`
 
@@ -597,10 +597,10 @@ export function decisionNeedsReason(d: string): boolean {
 export const CONFIRM_EDIT_REASON = 'Chỉnh khi xác nhận gợi ý tự động';
 ```
 
-- [ ] **Step 4: Chạy.** Run: `npm test 2>&1 | grep -E "PR-S2|\[11\]|KIỂM TRA|KHÔNG ĐẠT"`. Expected: hai phép mới ✓; phép cũ `[11] Nhãn…` ✓ (nó lặp
+- [x] **Step 4: Chạy.** Run: `npm test 2>&1 | grep -E "PR-S2|\[11\]|KIỂM TRA|KHÔNG ĐẠT"`. Expected: hai phép mới ✓; phép cũ `[11] Nhãn…` ✓ (nó lặp
   `NEXT_STEPS` nên đòi `adjust` có đủ nhãn và lời giải thích). Tổng **B + 6**.
   Phép cũ `[9.1]` (~run.ts:2519) **có thể** chưa đỏ ở đây; nó đỏ ở Task 4 khi câu lỗi đổi.
-- [ ] **Step 5: Commit.** `git add shared/domain/cases.ts server/src/tests/dieuChinhPa.tests.ts` ·
+- [x] **Step 5: Commit.** `git add shared/domain/cases.ts server/src/tests/dieuChinhPa.tests.ts` ·
   `git commit -m "PR-S2 (2): luật quyết định Giữ nguyên / Điều chỉnh / Thay / Kết thúc dùng chung"`
 
 ---
@@ -2024,3 +2024,4 @@ làm mất lối "Thay bằng phương án khác hoặc nhờ Quản lý" cũ; f
 |---|---|---|
 | 22/09 | 0 | Opus 5 (session code + subagent Opus 5). Worktree `.claude/worktrees/pr-s2-dieu-chinh-pa` từ `origin/main` 46f5f90 (đã có PR-S1 #56 và PR-O #58). Không có biến Turso. **B = 730** (plan ghi 719: PR-O merge sau khi đo; đích cuối = 751). Q1–Q18 đọc xong, planning review đã duyệt, không thấy Q nào trái đặc tả. |
 | 22/09 | 1 | Opus 5 (subagent) · c616eff · **734** (B+4) ✓ · đỏ trước: 3 ✗ đúng dự kiến · rà Task (Opus 5): duyệt, 0 lỗi nặng; 3 ghi chú nhỏ để rà cuối (phép 'trọn chuỗi' không bắt được nếu xoá dòng gọi; so sánh chưa gồm khoá ngoại/cột chỉ mục; chỉ mục chỉ tạo cùng bảng) |
+| 22/09 | 2 | Opus 5 (subagent) · e704c92 · **736** (B+6) ✓, kiểm kiểu sạch · đỏ trước: 2 ✗ (`decisionsFor is not a function`) · rà Task (Opus 5): duyệt; ghi chú nhỏ: câu lỗi cũ "Đề xuất phương án mới" ở updateResult → sửa ở Task 4; CODE_MAP "năm bước" → Task 10 |
