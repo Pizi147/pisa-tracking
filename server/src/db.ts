@@ -2,7 +2,7 @@ import Database from 'libsql';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { cauHinhDb, laBanChinh } from './moiTruong.ts';
+import { cauHinhDb, choPhepSeedTurso, coCoBanChinh } from './moiTruong.ts';
 
 /*
  * libsql gắn thêm `_metadata: { duration }` vào MỖI dòng `.get()` trả về (better-sqlite3 thì không). Khoá này lọt
@@ -62,8 +62,11 @@ function findProjectRoot(start: string): string {
 
 export const ROOT = findProjectRoot(THU_MUC_MA);
 const CAU_HINH = cauHinhDb(process.env, path.join(ROOT, 'data', 'pisa-demo.sqlite'));
-/** Đường dẫn file khi chạy cục bộ; khi chạy Turso là URL (chỉ để in log, KHÔNG in token). */
-export const DB_PATH = CAU_HINH.kieu === 'file' ? CAU_HINH.duongDan : CAU_HINH.url;
+/**
+ * Đường dẫn file khi chạy cục bộ; khi chạy Turso là URL (chỉ để in log, KHÔNG in token). Bỏ phần `?…`/`#…`: "chuỗi kết
+ * nối" Turso có thể kèm `?authToken=…` — mọi lệnh đều in DB_PATH. Kết nối vẫn dùng URL gốc (`CAU_HINH.url`).
+ */
+export const DB_PATH = CAU_HINH.kieu === 'file' ? CAU_HINH.duongDan : CAU_HINH.url.split(/[?#]/)[0];
 export const SCHEMA_PATH = path.join(ROOT, 'server', 'src', 'schema.sql');
 export function laDbTuXa(): boolean { return CAU_HINH.kieu === 'turso'; }
 
@@ -109,15 +112,15 @@ export function isInitialised(): boolean {
 /**
  * CHỐT CHẶN XOÁ SẠCH DATABASE Ở TURSO — nằm ngay trong hàm xoá, nên che MỌI nơi gọi (lệnh seed, bộ phép kiểm, mã sau này).
  * Ngoại lệ duy nhất là database THỬ: `PISA_CHO_PHEP_SEED_TURSO` phải bằng ĐÚNG TÊN MÁY CHỦ trong URL (không phải một
- * đoạn chữ — `turso.io` hay một ký tự sẽ khớp mọi database), và không bao giờ khi `BAN_CHINH=1`.
+ * đoạn chữ — `turso.io` hay một ký tự sẽ khớp mọi database), không bao giờ khi `BAN_CHINH=1`, và không bao giờ với tên
+ * máy chủ kiểu bản chính (luật ở `choPhepSeedTurso`).
  */
 export function tuChoiXoaSachNeuTuXa(): void {
   if (CAU_HINH.kieu !== 'turso') return;
-  let tenMay = '';
-  try { tenMay = new URL(CAU_HINH.url).hostname; } catch { /* URL lạ → không khớp gì */ }
-  const choPhep = process.env.PISA_CHO_PHEP_SEED_TURSO?.trim();
-  if (!laBanChinh() && choPhep && tenMay && choPhep === tenMay) return;
-  throw new Error('TỪ CHỐI: đang trỏ tới Turso. Lệnh này XOÁ SẠCH database và chỉ dùng cho máy dev.');
+  /* Cờ TƯỜNG MINH, không phải laBanChinh(): có Turso thì laBanChinh() luôn đúng — dùng nó ở đây là khoá luôn database thử. */
+  if (!coCoBanChinh() && choPhepSeedTurso(CAU_HINH.url, process.env.PISA_CHO_PHEP_SEED_TURSO)) return;
+  throw new Error('TỪ CHỐI: đang trỏ tới Turso. Lệnh này XOÁ SẠCH database và chỉ dùng cho máy dev.\n'
+    + 'Muốn seed database THỬ: đặt PISA_CHO_PHEP_SEED_TURSO bằng NGUYÊN tên máy chủ, ví dụ pisatracking-demo-xxx.turso.io');
 }
 
 export function recreateSchema() {
@@ -155,8 +158,8 @@ export function tx<T>(fn: () => T): T {
     conn.exec(`RELEASE ${name}`);
     return out;
   } catch (e) {
-    conn.exec(`ROLLBACK TO ${name}`);
-    conn.exec(`RELEASE ${name}`);
+    /* Cuộn lại hỏng (mạng Turso đứt, savepoint đã mất…) thì vẫn ném LỖI GỐC — vòng ngoài sẽ cuộn lại cả giao dịch. */
+    try { conn.exec(`ROLLBACK TO ${name}`); conn.exec(`RELEASE ${name}`); } catch { /* giữ lỗi gốc */ }
     throw e;
   } finally {
     savepointDepth--;

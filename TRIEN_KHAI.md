@@ -8,7 +8,7 @@ Kế hoạch kỹ thuật phía sau: `docs/superpowers/plans/2026-09-21-ban-chin
 
 ---
 
-## 0. Đọc trước — năm điều cơ bản
+## 0. Đọc trước — sáu điều cơ bản
 
 ### 0.1. Mở PowerShell **đúng thư mục dự án**
 
@@ -29,7 +29,12 @@ Trong lệnh, phần nằm trong dấu `<...>` là **chỗ bạn thay bằng gi�
 
 > Ví dụ: `netlify env:set BAN_CHINH <giá trị>` → gõ thành `netlify env:set BAN_CHINH 1`
 
-Những chỗ nằm trong dấu ngoặc kép `"..."` thì **giữ dấu ngoặc kép**, chỉ thay phần bên trong.
+Những chỗ nằm trong dấu **nháy đơn** `'...'` thì **giữ dấu nháy đơn**, chỉ thay phần bên trong. **Luôn dùng ngoặc đơn;
+nếu giá trị có dấu `'` thì gõ nó hai lần `''`.**
+
+> **Đừng đổi sang ngoặc kép `"..."`.** Trong ngoặc kép, PowerShell tự "ăn" ký tự `$` và dấu huyền `` ` `` cùng chữ theo
+> sau — mật khẩu `QuangNinh$2026abc` sẽ bị lưu thành `QuangNinh` (đã thử trên máy này). Nếu mật khẩu có dấu nháy đơn
+> `'` thì gõ nó **hai lần** `''`, hoặc chọn mật khẩu không có dấu `'`.
 
 ### 0.4. Luôn cập nhật mã mới nhất trước khi làm gì
 
@@ -52,6 +57,20 @@ Dòng cuối có chữ `Already up to date.` hoặc danh sách file thay đổi 
 Token của database **thử** thì được đưa cho session coding (nó cần để kiểm). Token của database **bản chính** thì
 **chỉ bạn** dùng.
 
+### 0.6. Trước khi dán token hoặc mật khẩu — tắt lưu lịch sử
+
+PowerShell trên máy này **ghi mọi dòng bạn đã dán vào một file lịch sử trên ổ đĩa** — kể cả token và mật khẩu — và file
+đó **vẫn còn sau khi đóng cửa sổ**. Vì vậy mọi khối lệnh có token/mật khẩu trong file này đều **bắt đầu bằng dòng**:
+
+```powershell
+Set-PSReadLineOption -HistorySaveStyle SaveNothing
+```
+
+Nó chỉ có tác dụng cho cửa sổ đang mở (mở cửa sổ mới là phải chạy lại) — nên cứ copy **cả khối**, đừng bỏ dòng đầu.
+
+> Đã từng dán token/mật khẩu trước khi có dòng này? Xoá file lịch sử cũ (chỉ mất danh sách lệnh đã gõ, không mất gì
+> khác): `Remove-Item (Get-PSReadLineOption).HistorySavePath`
+
 ---
 
 ## 1. Toàn cảnh — ba dịch vụ, và làm mục nào lúc nào
@@ -71,20 +90,24 @@ Token của database **thử** thì được đưa cho session coding (nó cần
 |---|---|---|
 | Khi session **PR-Z2a** hỏi (lần 1) | Mục 2 — chỉ tạo database **thử** | Session Z2a |
 | Khi session **PR-Z2a** hỏi (lần 2) | Mục 3, 4, 5 | Session Z2a |
-| Khi session **PR-Z2c** hỏi | Mục 2 — tạo database **bản chính** · mục 6 · mục 7 | Session Z2c |
+| Khi session **PR-Z2c** hỏi | Mục 2 — tạo database **bản chính** · mục 6 · **mục 7a + tập dượt khôi phục ở cuối mục 11.2 (trước)** · mục 7 | Session Z2c |
 | Session Z2c xin phép đưa lên chính thức | Mục 8.2 (hoặc để nó chạy) | Session Z2c |
 | Sau khi lên mạng | Mục 9 · mục 10 hằng tuần | — |
+| Dữ liệu bị hỏng / mất, cần lấy lại từ bản sao lưu | Mục 11.2 — **chỉ khi session code hướng dẫn** | Session code |
 
 ---
 
 ## 2. Tạo database trên Turso
 
-Làm **hai lần**: lần đầu tên `pisa-thu-nghiem` (thử), lần sau tên `pisa-ban-chinh` (bản chính). Cách làm giống hệt.
+Làm **hai lần**: lần đầu tên `pisatracking-demo` (thử), lần sau tên `pisatracking` (bản chính). Cách làm giống hệt.
+
+> **Hai tên gần giống nhau — khi dán URL, nhìn kỹ có chữ `-demo` hay không.** Có `-demo` = database **thử**. Không có
+> `-demo` = database **bản chính** (dữ liệu thật).
 
 1. Vào <https://app.turso.tech> → **Sign up / Log in** → chọn **Continue with GitHub** → cho phép.
 2. Lần đầu vào có thể phải đặt tên tổ chức (organization) — gõ `pisa` là được.
 3. Bấm nút **Create Database** (hoặc **New Database**).
-4. Ô **Name**: gõ `pisa-thu-nghiem` (lần sau: `pisa-ban-chinh`).
+4. Ô **Name**: gõ `pisatracking-demo` (lần sau: `pisatracking`).
 5. Ô **Location / Region / Group**: chọn vùng **AWS US East (Ohio)** — thường ghi `aws-us-east-2` hoặc có chữ
    **Ohio**. Không có Ohio thì chọn **US East (Virginia)** / `aws-us-east-1`.
    *Lý do:* máy chủ Netlify mặc định đặt ở Ohio; database ở gần thì web nhanh hơn nhiều. **Hai database chọn cùng
@@ -94,14 +117,14 @@ Làm **hai lần**: lần đầu tên `pisa-thu-nghiem` (thử), lần sau tên 
 
    | Thứ | Trông như thế nào | Ở đâu trên trang |
    |---|---|---|
-   | **URL** | `libsql://pisa-thu-nghiem-<tên-bạn>.turso.io` | Dòng có chữ **URL** hoặc **Database URL** ở đầu trang |
+   | **URL** | `libsql://pisatracking-demo-<tên-bạn>.aws-us-east-2.turso.io` | Dòng có chữ **URL** hoặc **Database URL** ở đầu trang |
    | **Token** | Một chuỗi rất dài, bắt đầu bằng `eyJ...` | Bấm **Create Token** (hoặc **Generate Token**) → quyền **Read & Write** (đọc và ghi) → thời hạn **Never** (không hết hạn) → **Create** → copy **ngay** (token chỉ hiện một lần) |
 
 8. Ghi rõ trong file ghi chú token nào của database nào, ví dụ:
    ```text
-   THỬ   URL:   libsql://pisa-thu-nghiem-xxx.turso.io
+   THỬ   URL:   libsql://pisatracking-demo-xxx.aws-us-east-2.turso.io
    THỬ   Token: eyJ...
-   CHÍNH URL:   libsql://pisa-ban-chinh-xxx.turso.io
+   CHÍNH URL:   libsql://pisatracking-xxx.aws-us-east-2.turso.io
    CHÍNH Token: eyJ...
    ```
 
@@ -160,8 +183,9 @@ Thấy chữ `linked` hoặc `already linked` là được. Địa chỉ web c�
 `<...>` bằng URL và token của database **THỬ** (mục 2, bước 8):
 
 ```powershell
-netlify env:set TURSO_DATABASE_URL "<URL database THỬ>"
-netlify env:set TURSO_AUTH_TOKEN "<Token database THỬ>"
+Set-PSReadLineOption -HistorySaveStyle SaveNothing
+netlify env:set TURSO_DATABASE_URL '<URL database THỬ>'
+netlify env:set TURSO_AUTH_TOKEN '<Token database THỬ>'
 netlify env:set BAN_CHINH 1
 ```
 
@@ -173,20 +197,48 @@ netlify env:list
 
 Phải thấy đủ ba tên `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN`, `BAN_CHINH`.
 
+Các biến này hiện áp cho **mọi** loại deploy (bản nháp lẫn bản chính thức); mục 6 sẽ tách riêng database cho bản
+chính thức.
+
 Xong mục này → báo session Z2a: **"đã xong mục 3-4-5 với database thử"**.
 
 ---
 
-## 6. Đổi sang database **bản chính** (khi session Z2c yêu cầu)
+## 6. Đặt database **bản chính** — CHỈ cho bản chính thức (khi session Z2c yêu cầu)
 
-Chạy **hai lệnh**, lần này dùng URL và token của database **CHÍNH**:
+Bản **chính thức** (địa chỉ giáo viên dùng) nối database **CHÍNH**. Mọi bản **nháp** vẫn nối database **THỬ** như mục
+5 — nên thử bản nháp không bao giờ đụng dữ liệu thật.
+
+Chạy **hai lệnh**, dùng URL và token của database **CHÍNH** — chú ý chữ `--context production` ở cuối, **không được bỏ**:
 
 ```powershell
-netlify env:set TURSO_DATABASE_URL "<URL database CHÍNH>"
-netlify env:set TURSO_AUTH_TOKEN "<Token database CHÍNH>"
+Set-PSReadLineOption -HistorySaveStyle SaveNothing
+netlify env:set TURSO_DATABASE_URL '<URL database CHÍNH>' --context production
 ```
 
-`BAN_CHINH` giữ nguyên `1`, không cần đặt lại. Từ giờ **mọi** bản deploy (kể cả bản nháp) đều dùng database chính.
+```powershell
+netlify env:set TURSO_AUTH_TOKEN '<Token database CHÍNH>' --context production
+```
+
+Mỗi lệnh thấy dòng `Set environment variable ... in the production branch` là được. (Dòng đó in lại cả giá trị vừa
+đặt — xong mục này **đóng cửa sổ PowerShell** để token không còn nằm trên màn hình.)
+
+Rồi kiểm lại (hai lệnh này chỉ in **URL**, không in token):
+
+```powershell
+netlify env:get TURSO_DATABASE_URL --context production
+```
+
+```powershell
+netlify env:get TURSO_DATABASE_URL --context deploy-preview
+```
+
+| Lệnh | Phải in ra |
+|---|---|
+| `--context production` | `libsql://pisatracking-<...>` — **không** có chữ `-demo` |
+| `--context deploy-preview` | `libsql://pisatracking-demo-<...>` — **có** chữ `-demo` |
+
+Sai một trong hai → **dừng**, chụp màn hình gửi session Z2c. `BAN_CHINH` giữ nguyên `1` cho mọi deploy, không cần đặt lại.
 
 ---
 
@@ -204,26 +256,38 @@ npm install
 **Bước 7.2 — điền năm giá trị.** Copy khối dưới vào Notepad, thay đủ năm chỗ `<...>`, rồi mới dán sang PowerShell:
 
 ```powershell
-$env:TURSO_DATABASE_URL="<URL database CHÍNH>"
-$env:TURSO_AUTH_TOKEN="<Token database CHÍNH>"
-$env:ADMIN_EMAIL="<email quản trị của bạn>"
-$env:ADMIN_PASSWORD="<mật khẩu quản trị mới>"
-$env:CHI_NHANH="<danh sách chi nhánh>"
+Set-PSReadLineOption -HistorySaveStyle SaveNothing
+$env:TURSO_DATABASE_URL='<URL database CHÍNH>'
+$env:TURSO_AUTH_TOKEN='<Token database CHÍNH>'
+$env:ADMIN_EMAIL='<email quản trị của bạn>'
+$env:ADMIN_PASSWORD='<mật khẩu quản trị mới>'
+$env:CHI_NHANH='<danh sách chi nhánh>'
 npm run init-ban-chinh
 ```
 
 | Chỗ thay | Điền gì | Ví dụ |
 |---|---|---|
-| `URL database CHÍNH` | URL ở mục 2 (dòng CHÍNH) | `libsql://pisa-ban-chinh-xxx.turso.io` |
+| `URL database CHÍNH` | URL ở mục 2 (dòng CHÍNH) — **không** có chữ `-demo` | `libsql://pisatracking-xxx.aws-us-east-2.turso.io` |
 | `Token database CHÍNH` | Token ở mục 2 (dòng CHÍNH) | `eyJ...` |
 | `email quản trị của bạn` | Email bạn dùng đăng nhập web. **Phải có đuôi `.pisa@gmail.com`** | `dovutuanphong95.pisa@gmail.com` |
-| `mật khẩu quản trị mới` | Mật khẩu **mạnh, mới** — dài ít nhất 10 ký tự, có cả chữ và số. **Không** dùng `pisa2026` | `PisaQN-2026-an-toan` |
-| `danh sách chi nhánh` | Mỗi chi nhánh viết `MÃ=Tên`, cách nhau bằng dấu `;`. Mã viết liền, không dấu | `MB=Monbay;BC=Bãi Cháy` |
+| `mật khẩu quản trị mới` | Mật khẩu **mạnh, mới** — dài ít nhất 10 ký tự, có cả chữ và số. **Không** dùng `pisa2026` (lệnh sẽ từ chối) | `PisaQN-2026-an-toan` |
+| `danh sách chi nhánh` | Mỗi chi nhánh viết `MÃ=Tên`, cách nhau bằng dấu `;`. Mã viết liền, không dấu. Không dùng mã `TUTOR` (đã dành cho Tutor part-time) | `MB=Monbay;BC=Bãi Cháy` |
 
-**Kết quả đúng:** dòng cuối báo đã tạo tài khoản quản trị và liệt kê các chi nhánh. Lệnh này **tự từ chối** nếu
-database đã có dữ liệu — không bao giờ xoá dữ liệu thật, nên chạy nhầm lần hai cũng không sao.
+Dòng đầu tiên lệnh in ra cho biết **đích**: `Đích: database BẢN CHÍNH — dữ liệu thật (pisatracking-…)`. Thấy chữ
+`THỬ` hay `KHÔNG RÕ` mà bạn đang định khởi tạo bản chính → bấm **Ctrl+C** ngay (mọi thứ nằm trong một giao dịch chưa
+chốt, dừng giữa chừng là không có gì được ghi) rồi kiểm lại URL.
 
-**Sau khi chạy xong:** đóng cửa sổ PowerShell đó (để mật khẩu và token không còn nằm trong cửa sổ).
+Chờ vài phút (database ở Mỹ, mỗi lượt đi về mất nửa giây) — **đừng đóng cửa sổ** giữa chừng.
+
+**Kết quả đúng:** dòng cuối có dạng
+`[init-ban-chinh] Xong. Đã tạo tài khoản quản trị <email của bạn> (userId 1) và 2 chi nhánh: MB (Monbay), BC (Bãi Cháy).`
+Dòng ngay trên nó: `Kiểm lại: mật khẩu quản trị dài N ký tự` — **đếm lại** mật khẩu bạn đã gõ; số lệch thì dừng, báo
+session Z2c ngay (mật khẩu đã bị lưu sai, đăng nhập sẽ không được).
+Lệnh này **tự từ chối** nếu database đã có dữ liệu — không bao giờ xoá dữ liệu thật, nên chạy nhầm lần hai cũng không
+sao: nó hiện chữ đỏ `TỪ CHỐI: Database đã có dữ liệu …` và không ghi gì cả.
+
+**Làm xong thì ĐÓNG cửa sổ PowerShell này.** Cửa sổ còn biến Turso của database CHÍNH: lệnh nào chạy tiếp trong đó —
+kể cả `npm run dev` — đều chạm dữ liệu thật. Đóng đi thì mật khẩu và token cũng không còn trong cửa sổ.
 
 > **Tuyệt đối không chạy `npm run seed`** khi đang có biến Turso — lệnh đó dành cho máy dev và **xoá sạch database**.
 > Mã đã chặn việc này, nhưng đừng thử.
@@ -231,12 +295,61 @@ database đã có dữ liệu — không bao giờ xoá dữ liệu thật, nên
 **Thêm chi nhánh sau này** (hệ thống chưa có màn tạo chi nhánh):
 
 ```powershell
-$env:TURSO_DATABASE_URL="<URL database CHÍNH>"
-$env:TURSO_AUTH_TOKEN="<Token database CHÍNH>"
-npm run them-chi-nhanh -- <MÃ> "<Tên chi nhánh>"
+Set-PSReadLineOption -HistorySaveStyle SaveNothing
+$env:TURSO_DATABASE_URL='<URL database CHÍNH>'
+$env:TURSO_AUTH_TOKEN='<Token database CHÍNH>'
+npm run them-chi-nhanh -- <MÃ> '<Tên chi nhánh>'
 ```
 
-Ví dụ dòng cuối: `npm run them-chi-nhanh -- UB "Uông Bí"`.
+Ví dụ dòng cuối: `npm run them-chi-nhanh -- UB 'Uông Bí'`. Kết quả đúng:
+`[them-chi-nhanh] Xong. Đã thêm chi nhánh UB (Uông Bí), id <số>.` Mã đã có → chữ đỏ `TỪ CHỐI`, không thêm, không sửa gì.
+**Làm xong thì ĐÓNG cửa sổ PowerShell này.**
+
+---
+
+## 7a. Tập dượt khởi tạo — làm TRƯỚC mục 7, trên một database TẠM
+
+Lệnh ở mục 7 chưa từng chạy trên một database Turso rỗng thật (vài trăm câu lệnh trong một giao dịch, qua mạng). Tập
+dượt một lần trên database **tạm** để chắc nó chạy, biết nó mất bao lâu, và thử đăng nhập — rồi xoá database tạm.
+Làm khi session Z2c yêu cầu, sau mục 0.4.
+
+**Bước 1 — tạo database tạm trên Turso.** Làm như mục 2 bước 3–7, nhưng ô **Name** gõ `pisatracking-demo-thu-init`
+(phải bắt đầu bằng `pisatracking-demo-`). Cùng vùng Ohio. Copy URL và token của nó vào file ghi chú, ghi rõ `TẠM`.
+
+**Bước 2 — khởi tạo database tạm.** Mở PowerShell đúng thư mục (mục 0.1), copy khối dưới vào Notepad, thay `<...>`:
+
+```powershell
+Set-PSReadLineOption -HistorySaveStyle SaveNothing
+$env:TURSO_DATABASE_URL='<URL database TẠM>'
+$env:TURSO_AUTH_TOKEN='<Token database TẠM>'
+$env:ADMIN_EMAIL='<email quản trị của bạn>'
+$env:ADMIN_PASSWORD='<một mật khẩu TẬP DƯỢT — khác mật khẩu thật>'
+$env:CHI_NHANH='<danh sách chi nhánh, như mục 7>'
+npm run init-ban-chinh
+```
+
+**Kết quả đúng:** dòng đầu `Đích: database THỬ (pisatracking-demo-thu-init-…)`, dòng cuối `[init-ban-chinh] Xong. …`.
+**Ghi lại lệnh chạy mất mấy phút.** Báo lỗi → dừng, chụp màn hình gửi session Z2c, **không** làm mục 7.
+
+**Bước 3 — thử đăng nhập** bằng cách chạy web **trên máy bạn**, nối vào database tạm. Vẫn **trong cửa sổ đó**, chạy:
+
+```powershell
+$env:VITE_BAN_CHINH='1'
+npm run dev
+```
+
+Chờ tới khi thấy dòng có `http://localhost:5173`. Mở trình duyệt — **dùng Chrome hoặc Edge** (Safari không nhận phiên
+an toàn ở localhost, sẽ không đăng nhập được) — vào <http://localhost:5173> → đăng nhập bằng email ở
+bước 2 và **mật khẩu tập dượt**. Phải vào được trang chính (chưa có dữ liệu), **không** có tab "Vào nhanh", ngày là
+**hôm nay**. Trang tải chậm vài giây là bình thường (database ở Mỹ). Nếu có cửa sổ khác đang chạy `npm run dev` thì tắt
+nó trước. Xong: quay lại PowerShell bấm **Ctrl+C** (hỏi `Terminate batch job (Y/N)?` thì gõ `Y`, Enter).
+
+**Bước 4 — Làm xong thì ĐÓNG cửa sổ PowerShell này.**
+
+**Bước 5 — xoá database tạm** trên <https://app.turso.tech>: bấm vào `pisatracking-demo-thu-init` → **Settings** (hoặc
+nút `⋯`) → **Delete** → gõ tên để xác nhận. Nhìn kỹ đúng tên có `-thu-init` rồi mới xoá.
+
+**Bước 6 —** báo session Z2c: *"tập dượt xong: init mất … phút, đăng nhập được"*. Rồi mới làm mục 7 với database CHÍNH.
 
 ---
 
@@ -257,7 +370,12 @@ netlify deploy --build
 ```
 
 Chờ 2–5 phút (lần build đầu cần mạng để tải thư viện cho Linux). Cuối cùng hiện dòng **`Website draft URL: https://<mã>--<tên-site>.netlify.app`**. Mở địa chỉ đó, đăng
-nhập, bấm thử vài trang. Bản nháp dùng **cùng database** với bản chính — dữ liệu bạn nhập ở đây là dữ liệu thật.
+nhập, bấm thử vài trang. Bản nháp luôn dùng database **thử** — thoải mái bấm thử; chỉ bản chính thức (`--prod`) mới có
+dữ liệu thật. Vì vậy ở bản nháp, đăng nhập bằng **tài khoản demo** (email và mật khẩu trong `README.md`), không phải
+tài khoản quản trị thật của bạn.
+
+> **Đăng nhập tài khoản demo trên bản nháp THẤT BẠI → DỪNG**, đừng thử tài khoản quản trị thật (bản nháp có thể đang
+> nối nhầm database chính). Chụp màn hình gửi session code.
 
 **8.2 — đưa lên CHÍNH THỨC** (chỉ khi bản nháp chạy tốt):
 
@@ -279,7 +397,7 @@ Dòng cuối hiện **`Website URL: https://<tên-site>.netlify.app`** — giáo
 3. **Quản trị → Tài khoản:** tạo tài khoản **Quản lý** và **Giáo viên** (hoặc để GV tự đăng ký rồi duyệt). Email của
    mọi người phải có đuôi `.pisa@gmail.com`. Chi nhánh đã có sẵn từ mục 7.
 4. Tạo **lớp** → phân công GVBM từng môn + GVCN → **thêm học viên** (dán từ Excel) → xếp lịch MT.
-5. Gửi địa chỉ web cho giáo viên.
+5. Gửi địa chỉ web cho giáo viên. Dặn thêm: **30 ngày không mở web thì phải đăng nhập lại** (phiên đăng nhập tự hết hạn).
 
 ---
 
@@ -292,19 +410,34 @@ Turso tự giữ dữ liệu, nhưng vẫn nên có **bản sao của riêng mì
 2. Mỗi tuần: mở PowerShell đúng thư mục, làm mục 0.4, rồi (copy vào Notepad, thay `<...>`, dán sang):
 
 ```powershell
-$env:TURSO_DATABASE_URL="<URL database CHÍNH>"
-$env:TURSO_AUTH_TOKEN="<Token database CHÍNH>"
-$env:BACKUP_DIR="G:\My Drive\pisa-sao-luu"
+Set-PSReadLineOption -HistorySaveStyle SaveNothing
+$env:TURSO_DATABASE_URL='<URL database CHÍNH>'
+$env:TURSO_AUTH_TOKEN='<Token database CHÍNH>'
+$env:BACKUP_DIR='G:\My Drive\pisa-sao-luu'
 npm run sao-luu
 ```
 
-Kết quả: một file `pisa-NĂM-THÁNG-NGÀY-GIỜPHÚT.sqlite` trong thư mục Drive. Máy tự giữ 14 bản mới nhất.
+Chờ khoảng 2–3 phút. Nên chạy lúc không ai đang nhập liệu. Lệnh chỉ **đọc** database, không sửa gì.
 
-**Muốn sao lưu cả ảnh / thư cảnh cáo đã tải lên**, thêm hai dòng này **trước** dòng `npm run sao-luu`:
+Kết quả: một file mang **tên database** và ngày giờ, ví dụ `pisa-pisatracking-xxx-2026-09-28-2030.sqlite`, trong thư
+mục Drive; dòng cuối `[sao-luu] Xong. Bản sao lưu của database libsql://pisatracking-xxx…: …` — **nhìn kỹ đúng database
+CHÍNH** (không có chữ `-demo`). Máy tự giữ 14 bản mới nhất **của từng database** (chỉ xoá bản sao lưu cũ của chính
+database đó, không đụng bản của database khác hay file khác trong thư mục). Dòng `Chưa sao lưu tệp bằng chứng` là bình
+thường nếu bạn chưa thêm hai dòng ở dưới. Lệnh **từ chối** nếu có `BACKUP_DIR` mà quên hai dòng Turso.
+**Làm xong thì ĐÓNG cửa sổ PowerShell này** (cửa sổ còn biến Turso của database chính; đóng đi thì token cũng không
+còn trong cửa sổ).
+
+- Bản sao lưu **không chứa mã đăng nhập** của ai (bảng phiên đăng nhập luôn trống có chủ đích) — lỡ để lộ một file sao
+  lưu thì người khác cũng không đăng nhập được bằng nó. Vẫn nên giữ file kín: trong đó có dữ liệu học viên.
+- File sao lưu **kiểu tên cũ** (`pisa-NĂM-THÁNG-NGÀY-GIỜPHÚT.sqlite`, không có tên database — chỉ có nếu bạn đã chạy
+  lệnh trước 22/09/2026) **không được tự dọn**. Muốn thì xoá tay, vô hại.
+
+**Muốn sao lưu cả ảnh / thư cảnh cáo đã tải lên** (vào thư mục cùng tên, thêm đuôi `-tep`, cạnh file), thêm hai
+dòng này **trước** dòng `npm run sao-luu`:
 
 ```powershell
-$env:NETLIFY_SITE_ID="<Site ID>"
-$env:NETLIFY_AUTH_TOKEN="<Personal access token>"
+$env:NETLIFY_SITE_ID='<Site ID>'
+$env:NETLIFY_AUTH_TOKEN='<Personal access token>'
 ```
 
 | Chỗ thay | Lấy ở đâu |
@@ -324,22 +457,110 @@ $env:NETLIFY_AUTH_TOKEN="<Personal access token>"
 | `netlify` báo "site not linked" | Chạy lại `netlify link --name <tên-site>` (mục 4) |
 | Trang tải chậm (> 3–5 giây) | Ghi lại trang nào, vai nào → gửi session thiết kế |
 | Tải tệp báo lỗi | Tệp tối đa **4 MB** — nén ảnh, hoặc dán link Google Drive thay cho tệp |
-| Lỡ tay làm hỏng dữ liệu | **Đừng làm gì thêm.** Gửi session thiết kế tên file sao lưu gần nhất ở Drive |
+| Lỡ tay làm hỏng dữ liệu | **Đừng làm gì thêm.** Gửi session thiết kế tên file sao lưu gần nhất ở Drive. Lấy lại dữ liệu theo mục 11.2 **khi session hướng dẫn** |
 | Netlify / Turso gửi email "sắp hết hạn mức miễn phí" | Gửi session thiết kế. Nâng gói là đổi gói, **không** phải chuyển dữ liệu |
+
+### 11.1. Nâng cấp database bản chính khi có bản mới cần
+
+**Chỉ làm khi session code yêu cầu** (nó sẽ nói rõ "bản này cần chạy migrate"). Bình thường deploy **không** cần bước này.
+Lệnh nâng cấp **giữ nguyên dữ liệu**, nhưng vẫn phải sao lưu trước. Mở PowerShell đúng thư mục, làm mục 0.4, rồi làm
+đúng ba bước (copy vào Notepad, thay `<...>`, dán sang):
+
+**Bước 1 — sao lưu trước** (như mục 10):
+
+```powershell
+Set-PSReadLineOption -HistorySaveStyle SaveNothing
+$env:TURSO_DATABASE_URL='<URL database CHÍNH>'
+$env:TURSO_AUTH_TOKEN='<Token database CHÍNH>'
+$env:BACKUP_DIR='G:\My Drive\pisa-sao-luu'
+npm run sao-luu
+```
+
+Chờ tới dòng `[sao-luu] Xong. Bản sao lưu: …`. Báo lỗi → **dừng**, không làm bước 2.
+
+**Bước 2 — xác nhận đúng database** (gõ tên máy chủ = URL database CHÍNH **bỏ chữ `libsql://` ở đầu**):
+
+```powershell
+$env:PISA_CHO_PHEP_MIGRATE_TURSO='<URL database CHÍNH, bỏ libsql:// ở đầu>'
+```
+
+> Ví dụ: URL là `libsql://pisatracking-xxx.aws-us-east-2.turso.io` → gõ `pisatracking-xxx.aws-us-east-2.turso.io`.
+
+**Bước 3 — nâng cấp:**
+
+```powershell
+npm run migrate
+```
+
+**Kết quả đúng:** có dòng `Turso: bỏ qua tài khoản/mật khẩu mặc định của bản demo` và dòng cuối `Hoàn tất` hoặc
+`Không có gì để nâng cấp`. Lệnh báo `TỪ CHỐI` → bước 2 gõ chưa đúng tên. **Làm xong thì ĐÓNG cửa sổ PowerShell này.**
+
+### 11.2. Khôi phục từ bản sao lưu
+
+**Chỉ làm khi session code hướng dẫn** (dữ liệu bản chính bị hỏng hoặc mất). Lệnh `npm run khoi-phuc` chép một file
+sao lưu (mục 10) vào một database **MỚI, hoàn toàn trống** — nó **từ chối** ghi vào database đã có dữ liệu, nên không bao
+giờ đè lên gì. Database cũ (bị hỏng) được **giữ nguyên**, đừng xoá vội.
+
+**Bước 1 — chọn file sao lưu.** Trong thư mục Drive `pisa-sao-luu`, chọn file của database **CHÍNH** (tên có
+`pisatracking-` mà **không** có `-demo`), thường là file mới nhất **trước** lúc dữ liệu bị hỏng. Chép lại đường dẫn đầy
+đủ của nó, ví dụ `G:\My Drive\pisa-sao-luu\pisa-pisatracking-xxx-2026-09-28-2030.sqlite`.
+
+**Bước 2 — tạo database MỚI trên Turso** như mục 2 bước 3–7, ô **Name** gõ `pisatracking-kp` rồi ngày hôm nay, ví dụ
+`pisatracking-kp0928` (phải bắt đầu bằng `pisatracking-`, **không** có `-demo`). Copy URL và token của nó.
+
+**Bước 3 — khôi phục.** Mở PowerShell đúng thư mục, làm mục 0.4, copy khối dưới vào Notepad, thay `<...>`:
+
+```powershell
+Set-PSReadLineOption -HistorySaveStyle SaveNothing
+$env:FILE_SAO_LUU='<đường dẫn file sao lưu ở bước 1>'
+$env:TURSO_DATABASE_URL='<URL database MỚI>'
+$env:TURSO_AUTH_TOKEN='<Token database MỚI>'
+$env:PISA_CHO_PHEP_KHOI_PHUC='<URL database MỚI, bỏ libsql:// ở đầu>'
+npm run khoi-phuc
+```
+
+**Kết quả đúng:** dòng đầu `Đích: database BẢN CHÍNH — dữ liệu thật (pisatracking-kp…)`; dòng cuối
+`[khoi-phuc] Xong. Đã khôi phục <số> bảng, <số> dòng vào …`. Có thể mất nhiều phút — **đừng đóng cửa sổ** giữa chừng
+(mọi thứ trong một giao dịch: bị ngắt thì database mới vẫn trống, chạy lại được). Báo `TỪ CHỐI` → đọc dòng lý do:
+`chưa xác nhận` = dòng `PISA_CHO_PHEP_KHOI_PHUC` gõ chưa đúng; `đã có dữ liệu`/`đã có bảng` = database đích không phải
+database mới. **Làm xong thì ĐÓNG cửa sổ PowerShell này.**
+
+**Bước 4 — cho bản chính thức dùng database mới:** làm lại mục 6 với URL và token của database **MỚI** (hai lệnh
+`--context production` và hai lệnh kiểm `env:get`), rồi `netlify deploy --build --prod` (mục 8.2) — biến mới chỉ có tác
+dụng sau lần deploy này. Mở web, đăng nhập quản trị, xem dữ liệu đúng như lúc sao lưu. **Sau khi khôi phục, mọi người
+đăng nhập lại** (bản sao lưu không mang theo mã đăng nhập) — báo trước cho giáo viên.
+
+**Bước 5 — tệp bằng chứng (ảnh, thư cảnh cáo): KHÔNG tự chép — việc tay, làm cùng session code.** Kho tệp trên Netlify
+đi theo tên database: database mới thì kho tệp mới, đang trống. Tệp cũ **không mất** — vẫn nằm ở kho của database cũ,
+và có bản chép trong thư mục `…-tep` cạnh file sao lưu (nếu bạn đã sao lưu kèm tệp). Trong lúc chờ chép, các dòng bằng
+chứng vẫn hiện nhưng bấm tải tệp sẽ báo không còn tệp. Báo session code: *"đã khôi phục sang database mới, cần chép kho
+tệp"*.
+
+> **Tập dượt khôi phục — BẮT BUỘC một lần, TRƯỚC khi khởi tạo bản chính (mục 7), khi session Z2c yêu cầu:**
+> 1. Sao lưu database **THỬ** như mục 10, nhưng hai dòng Turso là URL và token của database **THỬ**.
+> 2. Tạo database tạm tên `pisatracking-demo-thu-kp` (mục 2 bước 3–7).
+> 3. Làm bước 3 ở trên với file vừa sao lưu và database tạm — dòng đầu phải là `Đích: database THỬ`, dòng cuối
+>    `Xong. Đã khôi phục …`. **Ghi lại mất mấy phút.**
+> 4. Đóng cửa sổ PowerShell, xoá database tạm như mục 7a bước 5. Bỏ qua bước 4–5 ở trên khi tập dượt.
+>
+> Báo lỗi ở bước nào → dừng, chụp màn hình gửi session Z2c, **chưa** làm mục 7.
 
 ---
 
 ## 12. Bảng tra — mọi tên biến dùng trong file này
 
-| Tên | Đặt ở đâu | Giá trị | Mục |
-|---|---|---|---|
-| `TURSO_DATABASE_URL` | Netlify (lệnh `netlify env:set`) **và** PowerShell khi chạy lệnh init/sao lưu | URL database Turso | 5, 6, 7, 10 |
-| `TURSO_AUTH_TOKEN` | Như trên | Token database Turso | 5, 6, 7, 10 |
-| `BAN_CHINH` | Netlify | `1` | 5 |
-| `ADMIN_EMAIL` | PowerShell, chỉ khi chạy `init-ban-chinh` | Email quản trị, đuôi `.pisa@gmail.com` | 7 |
-| `ADMIN_PASSWORD` | PowerShell, chỉ khi chạy `init-ban-chinh` | Mật khẩu quản trị mới | 7 |
-| `CHI_NHANH` | PowerShell, chỉ khi chạy `init-ban-chinh` | `MÃ=Tên;MÃ=Tên` | 7 |
-| `BACKUP_DIR` | PowerShell, khi sao lưu | Thư mục Drive | 10 |
-| `NETLIFY_SITE_ID` | PowerShell, khi sao lưu (tuỳ chọn) | Site ID | 10 |
-| `NETLIFY_AUTH_TOKEN` | PowerShell, khi sao lưu (tuỳ chọn) | Personal access token | 10 |
-| `VITE_BAN_CHINH` | Đã có sẵn trong file `netlify.toml` — **bạn không cần đặt** | `1` | — |
+| Tên | Đặt ở đâu | Áp cho | Giá trị | Mục |
+|---|---|---|---|---|
+| `TURSO_DATABASE_URL` | Netlify (lệnh `netlify env:set`) **và** PowerShell khi chạy lệnh init/sao lưu | Netlify: **mọi deploy** = database thử (mục 5); **chỉ bản chính thức** (`--context production`) = database chính (mục 6) | URL database Turso | 5, 6, 7, 10 |
+| `TURSO_AUTH_TOKEN` | Như trên | Như trên | Token database Turso | 5, 6, 7, 10 |
+| `BAN_CHINH` | Netlify | Mọi deploy | `1` | 5 |
+| `ADMIN_EMAIL` | PowerShell, chỉ khi chạy `init-ban-chinh` | Chỉ cửa sổ PowerShell đó | Email quản trị, đuôi `.pisa@gmail.com` | 7 |
+| `ADMIN_PASSWORD` | PowerShell, chỉ khi chạy `init-ban-chinh` | Chỉ cửa sổ PowerShell đó | Mật khẩu quản trị mới | 7 |
+| `CHI_NHANH` | PowerShell, chỉ khi chạy `init-ban-chinh` | Chỉ cửa sổ PowerShell đó | `MÃ=Tên;MÃ=Tên` | 7 |
+| `BACKUP_DIR` | PowerShell, khi sao lưu | Chỉ cửa sổ PowerShell đó | Thư mục Drive | 10 |
+| `NETLIFY_SITE_ID` | PowerShell, khi sao lưu (tuỳ chọn) | Chỉ cửa sổ PowerShell đó | Site ID | 10 |
+| `NETLIFY_AUTH_TOKEN` | PowerShell, khi sao lưu (tuỳ chọn) | Chỉ cửa sổ PowerShell đó | Personal access token | 10 |
+| `PISA_CHO_PHEP_MIGRATE_TURSO` | PowerShell, chỉ khi session code yêu cầu nâng cấp database | Chỉ cửa sổ PowerShell đó | Tên máy chủ database (URL bỏ `libsql://`) | 11.1 |
+| `FILE_SAO_LUU` | PowerShell, chỉ khi khôi phục | Chỉ cửa sổ PowerShell đó | Đường dẫn file sao lưu `.sqlite` | 11.2 |
+| `PISA_CHO_PHEP_KHOI_PHUC` | PowerShell, chỉ khi khôi phục | Chỉ cửa sổ PowerShell đó | Tên máy chủ database ĐÍCH (URL bỏ `libsql://`) | 11.2 |
+| `VITE_BAN_CHINH` | Đã có sẵn trong file `netlify.toml` — **bạn không cần đặt**; chỉ tự đặt khi tập dượt trên máy (mục 7a) | Mọi deploy | `1` | 7a |

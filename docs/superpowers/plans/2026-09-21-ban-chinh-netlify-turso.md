@@ -11,7 +11,7 @@
 > |---|---|---|---|
 > | **PR-Z2a** | 0 → 6b | Hạ tầng: libsql, Turso, kho tệp, Netlify Function, tắt demo, **deploy nháp thật** | 🆕 22/09 **Fable 5.1 · High** (B: Sonnet 5 · High) — nâng từ Sonnet vì thử thật cho thấy lỗi chỉ lộ sau khi gói; rà soát ở session planning (Opus) |
 > | **PR-Z2b** | 6c → 9 (có 6c, 6d, 6e mới 22/09) | An toàn dữ liệu bản chính: khởi tạo, chi nhánh, sao lưu, tài liệu | Opus 5 · XHigh (B: Fable 5.1 · High) |
-> | **PR-Z2c** | 10 → 11 | Deploy bản chính + đo tốc độ + rà soát độc lập | Opus 5 · XHigh (B: Fable 5.1 · High); **người rà ≠ người code** |
+> | **PR-Z2c** | 10 → 11 | Deploy bản chính + đo tốc độ + rà soát độc lập | Người code: **Opus 5 · XHigh** (B: Fable 5.1 · High). 🆕 22/09: **người rà PHẢI khác model người code Phần B (Opus) → người rà là Fable 5.1** — session planning cho agent Fable rà |
 
 > **SỬA 22/09/2026 SAU THỬ THẬT (session planning).** Một agent đã chạy thử Task 1–2 và **gói Function như Netlify
 > gói** trên mã `main` sau PR-T + PR-K (581 phép kiểm). Kết quả: plan cũ sẽ ra một máy chủ **chết ngay khi Netlify nạp
@@ -142,6 +142,8 @@ mạng tới Turso — đó là Task 3 (gate).
 | `server/src/ops/themChiNhanh.ts` | **Tạo** | `npm run them-chi-nhanh` |
 | `server/src/ops/saoLuu.ts` | **Tạo** | Chép toàn bộ DB (Turso hoặc file) ra một file `.sqlite` |
 | `server/src/ops/runSaoLuu.ts` | **Tạo** | Điểm chạy `npm run sao-luu` |
+| `server/src/ops/khoiPhuc.ts` | **Tạo** 🆕 PR-Z2b rà soát | Khôi phục một file sao lưu vào database RỖNG (thứ tự khoá ngoại, một giao dịch, kiểm số dòng) |
+| `server/src/ops/runKhoiPhuc.ts` | **Tạo** 🆕 PR-Z2b rà soát | Điểm chạy `npm run khoi-phuc` |
 | `server/src/ops/thuTurso.ts` | **Tạo** | Script gate Task 3 (đo, thử giao dịch) — giữ lại để chẩn đoán sau này |
 | `server/src/routes/index.ts` | Sửa | Chặn `/demo/*` khi bản chính; cookie `secure`; đường tải tệp dùng buffer |
 | `server/src/demoConfig.ts` | Sửa | `demoToday()` / `scenarioMode()` bỏ qua cấu hình demo khi bản chính |
@@ -1045,7 +1047,7 @@ và cho **số đo tốc độ thật** (Netlify ↔ Turso cùng vùng), thay ch
 ví dụ `libsql://pisatracking-demo-abc.turso.io` → `pisatracking-demo-abc.turso.io`; URL hỏng → `''`.
 Produces `choPhepSeedTurso(url: string, choPhep: string | undefined): boolean`.
 
-- [ ] **Step 1: Phép kiểm đỏ** — thêm vào `banChinh.tests.ts`:
+- [x] **Step 1: Phép kiểm đỏ** — thêm vào `banChinh.tests.ts`:
   ```ts
   console.log('\nPR-Z2 · 1b. Chốt seed so NGUYÊN tên máy chủ (tên bản chính nằm trong tên bản thử)');
   const { choPhepSeedTurso } = await import('../moiTruong.ts');
@@ -1065,8 +1067,8 @@ Produces `choPhepSeedTurso(url: string, choPhep: string | undefined): boolean`.
     assert(choPhepSeedTurso(THU, undefined) === false && choPhepSeedTurso(THU, '') === false, 'phải từ chối');
   });
   ```
-- [ ] **Step 2:** `npm test` → bốn phép **đỏ**. Ghi Nhật ký.
-- [ ] **Step 3:** Trong `server/src/moiTruong.ts`:
+- [x] **Step 2:** `npm test` → bốn phép **đỏ**. Ghi Nhật ký.
+- [x] **Step 3:** Trong `server/src/moiTruong.ts`:
   ```ts
   /** Tên máy chủ của URL database (viết thường). Dùng để so NGUYÊN tên, không so "có chứa". */
   export function tenMayChuDb(url: string): string {
@@ -1083,7 +1085,7 @@ Produces `choPhepSeedTurso(url: string, choPhep: string | undefined): boolean`.
     return !!ten && !!choPhep && ten === choPhep.trim().toLowerCase();
   }
   ```
-- [ ] **Step 4 (🆕 22/09 sau rà soát Opus — thay chữ cũ):** PR-Z2a **đã** dời chốt xoá sạch vào `recreateSchema()`
+- [x] **Step 4 (🆕 22/09 sau rà soát Opus — thay chữ cũ):** PR-Z2a **đã** dời chốt xoá sạch vào `recreateSchema()`
       (hàm `tuChoiXoaSachNeuTuXa` trong `server/src/db.ts`, ~dòng 115) và đã so **nguyên tên máy chủ**; `seed/run.ts`
       **không còn** `DB_PATH.includes(...)`. Vậy Step 4 là:
       1. `tuChoiXoaSachNeuTuXa` gọi `choPhepSeedTurso(DB_PATH, process.env.PISA_CHO_PHEP_SEED_TURSO)` thay cho phép so
@@ -1097,12 +1099,12 @@ Produces `choPhepSeedTurso(url: string, choPhep: string | undefined): boolean`.
          ví dụ pisatracking-demo-xxx.turso.io`.
       Phép kiểm tiến trình con của Task 2 Step 6 và phép "chạy bộ kiểm trong cửa sổ có biến Turso" của PR-Z2a phải
       vẫn xanh.
-- [ ] **Step 5: Tên thật trong tài liệu.** `TRIEN_KHAI.md` mục 2 và bảng tra mục 12: `pisa-thu-nghiem` → `pisatracking-demo`,
+- [x] **Step 5: Tên thật trong tài liệu.** `TRIEN_KHAI.md` mục 2 và bảng tra mục 12: `pisa-thu-nghiem` → `pisatracking-demo`,
       `pisa-ban-chinh` → `pisatracking` (cả ví dụ URL). Thêm một câu cảnh báo ở mục 2: *"Hai tên gần giống nhau —
       khi dán URL, nhìn kỹ có chữ `-demo` hay không."* Trong file kế hoạch này, Phần B và C: đổi mọi `pisa-ban-chinh` →
       `pisatracking`, `pisa-thu-nghiem` → `pisatracking-demo`. Chốt kiểm ở Task 10 Step 1 ("URL phải là bản chính")
       đổi thành: `tenMayChuDb(URL)` **bắt đầu bằng `pisatracking-`** và **không** bắt đầu bằng `pisatracking-demo`.
-- [ ] **Step 6:** `npm run check` xanh (N + 5). Commit: `PR-Z2 (6c): chốt seed so nguyên tên máy chủ; tên database thật`.
+- [x] **Step 6:** `npm run check` xanh (N + 5). Commit: `PR-Z2 (6c): chốt seed so nguyên tên máy chủ; tên database thật`.
 
 ---
 
@@ -1119,7 +1121,7 @@ deploy vẫn phải nâng cấp schema bản chính bằng `migrate` — nên **
 **Interfaces:** Consumes `laDbTuXa()`, `tenMayChuDb()` (Task 6c). Produces `choPhepMigrateTurso(url, choPhep): boolean`
 — cùng luật "nguyên tên máy chủ" như seed, **không** có chặn tên bản chính (migrate phải chạy được trên bản chính).
 
-- [ ] **Step 1: Phép kiểm đỏ** (`banChinh.tests.ts`, khuôn thuần + một phép chạy tiến trình con như Task 2 Step 6):
+- [x] **Step 1: Phép kiểm đỏ** (`banChinh.tests.ts`, khuôn thuần + một phép chạy tiến trình con như Task 2 Step 6):
   1. `choPhepMigrateTurso('libsql://pisatracking-abc.turso.io', 'pisatracking-abc.turso.io') === true`;
      với `'pisatracking'` → `false`; không biến → `false`.
   2. Tiến trình con `node dist-server/server/src/migrate/run.js` với `TURSO_DATABASE_URL=libsql://khong-ton-tai.turso.io`,
@@ -1128,15 +1130,15 @@ deploy vẫn phải nâng cấp schema bản chính bằng `migrate` — nên **
   3. Hàm tạo quản trị mặc định / gán mật khẩu mặc định (tìm đúng tên hàm ở `migrate.ts` ~1210–1235): gọi trên một
      database `:memory:` khi `laDbTuXa()` được giả là `true` (hoặc truyền cờ vào hàm — chọn cách ít đụng nhất, ghi Nhật
      ký) → **không** tạo `admin`, **không** gán `pisa2026` cho ai; trên file cục bộ → hành vi cũ giữ nguyên.
-- [ ] **Step 2:** `npm test` → đỏ. Ghi Nhật ký.
-- [ ] **Step 3:** `migrate/run.ts`: đầu tệp, khi `laDbTuXa()` mà `!choPhepMigrateTurso(DB_PATH, process.env.PISA_CHO_PHEP_MIGRATE_TURSO)`
+- [x] **Step 2:** `npm test` → đỏ. Ghi Nhật ký.
+- [x] **Step 3:** `migrate/run.ts`: đầu tệp, khi `laDbTuXa()` mà `!choPhepMigrateTurso(DB_PATH, process.env.PISA_CHO_PHEP_MIGRATE_TURSO)`
       → in `[migrate] TỪ CHỐI: đang trỏ tới Turso. Muốn nâng cấp database này: SAO LƯU trước (npm run sao-luu), rồi đặt
       PISA_CHO_PHEP_MIGRATE_TURSO bằng NGUYÊN tên máy chủ của nó.` và `process.exit(1)`.
-- [ ] **Step 4:** `migrate.ts`: khi `laDbTuXa()` → **bỏ qua** tạo quản trị mặc định và gán mật khẩu mặc định, in một dòng
+- [x] **Step 4:** `migrate.ts`: khi `laDbTuXa()` → **bỏ qua** tạo quản trị mặc định và gán mật khẩu mặc định, in một dòng
       `[migrate] Turso: bỏ qua tài khoản/mật khẩu mặc định của bản demo.` Không đổi phần nâng cấp schema.
-- [ ] **Step 5:** `TRIEN_KHAI.md` mục 11: thêm mục nhỏ "Nâng cấp database bản chính khi có bản mới cần" — ba lệnh PowerShell
+- [x] **Step 5:** `TRIEN_KHAI.md` mục 11: thêm mục nhỏ "Nâng cấp database bản chính khi có bản mới cần" — ba lệnh PowerShell
       (sao lưu → đặt biến xác nhận → `npm run migrate`), nói rõ **chỉ làm khi session code yêu cầu**.
-- [ ] **Step 6:** `npm run check` xanh. Commit: `PR-Z2 (6d): migrate vào Turso cần xác nhận, bỏ tài khoản mặc định`.
+- [x] **Step 6:** `npm run check` xanh. Commit: `PR-Z2 (6d): migrate vào Turso cần xác nhận, bỏ tài khoản mặc định`.
 
 ---
 
@@ -1155,22 +1157,22 @@ database `pisatracking`; mọi bản nháp → database thử `pisatracking-demo
 ví dụ `bang-chung-pisatracking-demo-pizi147`; không có Turso (máy dev) → `'bang-chung-cuc-bo'`. Task 8 (sao lưu tệp) dùng
 đúng hàm này.
 
-- [ ] **Step 1: Phép kiểm đỏ:**
+- [x] **Step 1: Phép kiểm đỏ:**
   - `tenKhoTep()` với `TURSO_DATABASE_URL=libsql://pisatracking-demo-pizi147.aws-us-east-2.turso.io` → `bang-chung-pisatracking-demo-pizi147`;
     với `libsql://pisatracking-pizi147.aws-us-east-2.turso.io` → `bang-chung-pisatracking-pizi147`; **hai tên khác nhau**.
     (Đặt/xoá biến môi trường trong `try/finally`; nếu `DB_PATH` được tính một lần lúc nạp module thì cho `tenKhoTep`
     nhận `url` làm tham số tuỳ chọn để kiểm — ghi Nhật ký.)
   - `deleteMeasure` (xoá biện pháp Đang chuẩn bị có tệp) bằng kho giả ghi lại thứ tự gọi: lệnh xoá tệp chỉ xảy ra **sau**
     khi giao dịch đã chốt (ví dụ kho giả kiểm `db().inTransaction === false` lúc bị gọi `xoa`).
-- [ ] **Step 2:** `npm test` → đỏ.
-- [ ] **Step 3:** `khoTep.ts`: `khoTepNetlify()` dùng `getStore(tenKhoTep())` thay `'bang-chung'` (cả ghi, đọc, xoá).
+- [x] **Step 2:** `npm test` → đỏ.
+- [x] **Step 3:** `khoTep.ts`: `khoTepNetlify()` dùng `getStore(tenKhoTep())` thay `'bang-chung'` (cả ghi, đọc, xoá).
       **Chưa có dữ liệu thật nên đổi tên kho không mất gì** — tệp thử trên kho cũ `bang-chung` bỏ lại, vô hại.
-- [ ] **Step 4 (Important 6):** `server/src/yThuc/measures.ts` ~365: `deleteMeasure` truyền mảng `khoaTep` vào
+- [x] **Step 4 (Important 6):** `server/src/yThuc/measures.ts` ~365: `deleteMeasure` truyền mảng `khoaTep` vào
       `purgeAttachmentsOf(...)` rồi gọi `xoaTepSauGiaoDich(khoaTep)` **sau** `tx(...)` — đúng mẫu đã làm ở `violations.ts`.
-- [ ] **Step 5 (Minor):** `server/src/ops/thuTurso.ts`: từ chối chạy khi `laBanChinh()` hoặc khi tên máy chủ bắt đầu
+- [x] **Step 5 (Minor):** `server/src/ops/thuTurso.ts`: từ chối chạy khi `laBanChinh()` hoặc khi tên máy chủ bắt đầu
       bằng `pisatracking-` mà không bắt đầu bằng `pisatracking-demo-` (script tạo/xoá bảng `_thu*`). `server/src/db.ts`
       ~155: nếu `ROLLBACK TO` ném lỗi thì vẫn ném **lỗi gốc** (bọc `try { ROLLBACK TO; RELEASE } catch { /* giữ lỗi gốc */ }`).
-- [ ] **Step 6: Biến môi trường theo loại deploy — viết lại `TRIEN_KHAI.md` mục 5, 6, 8** (hợp đồng với chủ sản phẩm,
+- [x] **Step 6: Biến môi trường theo loại deploy — viết lại `TRIEN_KHAI.md` mục 5, 6, 8** (hợp đồng với chủ sản phẩm,
       viết cho người không biết code, mỗi lệnh một khối PowerShell):
   - Mục 5 (đã làm với database thử — **không** bắt làm lại): thêm một câu "các biến này hiện áp cho mọi loại deploy; mục 6
     sẽ tách riêng cho bản chính thức."
@@ -1191,7 +1193,7 @@ ví dụ `bang-chung-pisatracking-demo-pizi147`; không có Turso (máy dev) →
   - Mục 8: bỏ câu "bản nháp dùng database bản chính"; thay bằng "bản nháp luôn dùng database **thử** — thoải mái bấm
     thử; chỉ bản chính thức (`--prod`) mới có dữ liệu thật".
   - Bảng tra mục 12: thêm cột "Áp cho" (mọi deploy / chỉ bản chính thức).
-- [ ] **Step 7:** `npm run check` xanh. Commit: `PR-Z2 (6e): bản nháp dùng database thử, kho tệp theo database, xoá tệp sau giao dịch`.
+- [x] **Step 7:** `npm run check` xanh. Commit: `PR-Z2 (6e): bản nháp dùng database thử, kho tệp theo database, xoá tệp sau giao dịch`.
 
 ---
 
@@ -1212,13 +1214,13 @@ không có chi nhánh thì không tạo được lớp. Nên lệnh khởi tạo
 - Produces: `initBanChinh(conn, o: { adminEmail: string; adminPassword: string; chiNhanh: {code; name}[]; now: string; schemaSql: string }): { userId: number; branchIds: number[] }`.
 - Produces: `themChiNhanh(conn, cn: { code; name }, now: string): number`.
 
-- [ ] **Step 1: Tách dữ liệu nền.** Tạo `server/src/seed/duLieuNen.ts` bằng cách **chuyển nguyên văn** (cắt–dán, không
+- [x] **Step 1: Tách dữ liệu nền.** Tạo `server/src/seed/duLieuNen.ts` bằng cách **chuyển nguyên văn** (cắt–dán, không
       viết lại) các khối trong `runSeed()`: "vai trò & quyền" (kể cả `RETIRED_ROLES`), `seedRoutes(conn)`, "chương trình
       học". `runSeed()` gọi `const { roleId, permId } = napDuLieuNen(conn, NOW);` tại đúng vị trí cũ. Khối "tổ chức"
       (chi nhánh, reporting_units) **ở lại** `seed.ts`.
-- [ ] **Step 2:** `npm run check` → **phải xanh, không đổi số phép** (đây là bước chuyển chỗ thuần tuý; phép kiểm đếm
+- [x] **Step 2:** `npm run check` → **phải xanh, không đổi số phép** (đây là bước chuyển chỗ thuần tuý; phép kiểm đếm
       vai trò/quyền của bộ demo sẽ bắt nếu chuyển thiếu). Commit riêng: `PR-Z2 (7a): tách dữ liệu nền dùng chung`.
-- [ ] **Step 3: Phép kiểm đỏ** (thêm vào `banChinh.tests.ts`) — chạy trên **file tạm riêng**, không đụng DB demo:
+- [x] **Step 3: Phép kiểm đỏ** (thêm vào `banChinh.tests.ts`) — chạy trên **file tạm riêng**, không đụng DB demo:
   ```ts
   console.log('\nPR-Z2 · 4. Khởi tạo bản chính');
   const fs = await import('node:fs'); const os = await import('node:os'); const path = await import('node:path');
@@ -1276,8 +1278,8 @@ không có chi nhánh thì không tạo được lớp. Nên lệnh khởi tạo
   ```
   Nếu `demo_config` không có cột `key`/`value` như trên → đọc `schema.sql` và sửa **phép kiểm** cho khớp tên cột thật
   (không sửa schema). Ghi vào Nhật ký.
-- [ ] **Step 4:** `npm test` → đỏ.
-- [ ] **Step 5: Viết `server/src/ops/initBanChinh.ts`.** Bắt buộc theo thứ tự:
+- [x] **Step 4:** `npm test` → đỏ.
+- [x] **Step 5: Viết `server/src/ops/initBanChinh.ts`.** Bắt buộc theo thứ tự:
   1. **Kiểm rỗng trước khi làm bất cứ gì:** nếu có bảng `users` và `SELECT COUNT(*) FROM users` > 0, **hoặc** có bất kỳ
      bảng nào khác ngoài `sqlite_%` đang có dòng → `throw new Error('Database đã có dữ liệu — init-ban-chinh chỉ chạy trên database rỗng. Không làm gì cả.')`.
   2. `checkEmail(adminEmail)` và `checkPassword(adminPassword)` từ `accounts.ts` (dùng đúng luật hiện có).
@@ -1289,14 +1291,14 @@ không có chi nhánh thì không tạo được lớp. Nên lệnh khởi tạo
   `docDanhSachChiNhanh`: tách theo `;`, mỗi phần `MA=Tên`, `trim`, mã viết hoa, không cho rỗng, không cho mã trùng
   (thông báo có chữ `trùng`); chuỗi rỗng → lỗi có chữ `CHI_NHANH`.
   `themChiNhanh`: kiểm mã chưa tồn tại, INSERT `branches` + `reporting_units` giống bước 3.
-- [ ] **Step 6: Điểm chạy.** `server/src/ops/runInit.ts`: bắt buộc có `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN`,
+- [x] **Step 6: Điểm chạy.** `server/src/ops/runInit.ts`: bắt buộc có `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN`,
       `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `CHI_NHANH` (thiếu cái nào → in tên cái thiếu, thoát mã 1); in
       `Sẽ khởi tạo database <URL> (không in token) với các chi nhánh: ...`; gọi `initBanChinh(db(), {..., schemaSql:
       fs.readFileSync(SCHEMA_PATH,'utf8'), now: new Date().toISOString()})`; in kết quả. `themChiNhanh.ts`: đọc hai tham số
       dòng lệnh `MA "Tên"`. `package.json`:
       `"init-ban-chinh": "npm run build:server && node dist-server/server/src/ops/runInit.js"`,
       `"them-chi-nhanh": "npm run build:server && node dist-server/server/src/ops/themChiNhanh.js"`.
-- [ ] **Step 7:** `npm run check` xanh. Commit: `PR-Z2 (7b): init-ban-chinh và them-chi-nhanh`.
+- [x] **Step 7:** `npm run check` xanh. Commit: `PR-Z2 (7b): init-ban-chinh và them-chi-nhanh`.
 
 ---
 
@@ -1304,12 +1306,17 @@ không có chi nhánh thì không tạo được lớp. Nên lệnh khởi tạo
 
 **Files:** Create `server/src/ops/saoLuu.ts`, `server/src/ops/runSaoLuu.ts`; Modify `package.json`; Test `banChinh.tests.ts`.
 
+> **🆕 22/09 — TÍNH CHẤT (c) SỬA (chủ sản phẩm chốt: BỎ mã đăng nhập khỏi bản sao lưu):** file sao lưu mở lại được, và
+> **mọi bảng đúng số dòng và đúng từng dòng như nguồn, TRỪ bảng phiên đăng nhập (`demo_sessions`) luôn rỗng có chủ
+> đích** (cấu trúc bảng vẫn giữ). Khôi phục cũng không bao giờ chép dòng phiên → khôi phục xong mọi người đăng nhập lại.
+> Làm ở PR-Z2b2 (`BANG_KHONG_CHEP_DONG` trong `saoLuu.ts`); phiên còn hết hạn sau 30 ngày không dùng (`auth.ts`).
+
 **Interfaces:**
 - Produces: `saoLuu(nguon, dich): { bang: number; dong: number }` — chép **mọi** bảng (cấu trúc + dữ liệu) của `nguon`
   sang kết nối `dich` đang rỗng.
 - Produces: `giuBanMoiNhat(thuMuc: string, soBan: number): string[]` — xoá bản cũ, trả danh sách đã xoá.
 
-- [ ] **Step 1: Phép kiểm đỏ:**
+- [x] **Step 1: Phép kiểm đỏ:**
   ```ts
   console.log('\nPR-Z2 · 5. Sao lưu');
   const { saoLuu, giuBanMoiNhat } = await import('../ops/saoLuu.ts');
@@ -1338,21 +1345,23 @@ không có chi nhánh thì không tạo được lớp. Nên lệnh khởi tạo
     } finally { try { fs.rmSync(dir, { recursive: true, force: true }); } catch { /* Windows */ } }
   });
   ```
-- [ ] **Step 2:** `npm test` → đỏ.
-- [ ] **Step 3: `saoLuu.ts`.** Đọc `SELECT type, name, sql FROM sqlite_master WHERE sql IS NOT NULL AND name NOT LIKE
+- [x] **Step 2:** `npm test` → đỏ.
+- [x] **Step 3: `saoLuu.ts`.** Đọc `SELECT type, name, sql FROM sqlite_master WHERE sql IS NOT NULL AND name NOT LIKE
       'sqlite_%'`; ở `dich`: `PRAGMA foreign_keys = OFF`, tạo **bảng** trước (theo `sql`), chép dữ liệu từng bảng
       (`SELECT *` từ nguồn, `INSERT INTO "b" (cột...) VALUES (?...)` trong **một** giao dịch mỗi bảng), rồi tạo **chỉ mục**
       và **view/trigger** nếu có. Chỉ đọc ở nguồn — không một câu ghi nào vào `nguon`.
       `giuBanMoiNhat`: liệt kê `pisa-*.sqlite`, sắp xếp theo tên giảm dần (tên có ngày giờ nên sắp theo tên = theo thời gian), xoá từ bản thứ `soBan+1`.
-- [ ] **Step 4: `runSaoLuu.ts`.** Nguồn = `db()` (Turso nếu có biến, không thì file dev). `BACKUP_DIR` bắt buộc khi nguồn
+- [x] **Step 4: `runSaoLuu.ts`.** Nguồn = `db()` (Turso nếu có biến, không thì file dev). `BACKUP_DIR` bắt buộc khi nguồn
       là Turso; mặc định `data/sao-luu` khi chạy file dev. Tên file `pisa-YYYY-MM-DD-HHmm.sqlite` theo giờ Việt Nam.
       Sau khi chép: mở lại file vừa tạo, `SELECT COUNT(*) FROM users` phải > 0, không thì xoá file và báo lỗi.
+      🆕 22/09 (Task 6e): kho tệp giờ theo database — dùng `getStore({ name: tenKhoTep(), siteID, token })` (hàm của
+      `server/src/platform/khoTep.ts`), **không** còn tên cố định `bang-chung`.
       **Tệp bằng chứng (Netlify Blobs):** nếu có `NETLIFY_SITE_ID` + `NETLIFY_AUTH_TOKEN` thì tải toàn bộ kho `bang-chung`
       (`getStore({ name: 'bang-chung', siteID, token })`, `list()` rồi `get(key, { type: 'arrayBuffer' })`) vào thư mục
       `pisa-YYYY-MM-DD-HHmm-tep/` cạnh file; không có hai biến đó → in dòng nhắc "Chưa sao lưu tệp bằng chứng (thiếu
       NETLIFY_SITE_ID/NETLIFY_AUTH_TOKEN)" và vẫn thành công. Gọi `giuBanMoiNhat(BACKUP_DIR, 14)` cho **cả** file lẫn thư mục tệp.
       `package.json`: `"sao-luu": "npm run build:server && node dist-server/server/src/ops/runSaoLuu.js"`.
-- [ ] **Step 5:** `npm run check` xanh. Chạy thật `npm run sao-luu` trên máy dev → có file trong `data/sao-luu`. Commit:
+- [x] **Step 5:** `npm run check` xanh. Chạy thật `npm run sao-luu` trên máy dev → có file trong `data/sao-luu`. Commit:
       `PR-Z2 (8): sao lưu database và tệp bằng chứng`.
 
 ---
@@ -1361,26 +1370,30 @@ không có chi nhánh thì không tạo được lớp. Nên lệnh khởi tạo
 
 **Files:** `TRIEN_KHAI.md`, `README.md`, `CODE_MAP.md`, `plan.md`.
 
-- [ ] **Step 1: `TRIEN_KHAI.md`** — file này đã được session thiết kế **viết lại cho người không biết code** (21/09):
+- [x] **Step 1: `TRIEN_KHAI.md`** — file này đã được session thiết kế **viết lại cho người không biết code** (21/09):
       mục 0 cách mở PowerShell và dán lệnh, mục 2 Turso, mục 3–4 Netlify CLI, mục 5–6 biến môi trường, mục 7 khởi tạo,
       mục 8 deploy thủ công, mục 10 sao lưu, mục 12 bảng tra biến. **Không viết lại văn phong.** Chỉ rà cho **khớp mã
       thật**: mọi tên lệnh (`package.json`), mọi tên biến (`moiTruong.ts`, `runInit.ts`, `runSaoLuu.ts`), cú pháp
       `npm run them-chi-nhanh -- MÃ "Tên"`, và câu mô tả "kết quả đúng" ở mục 7 phải khớp chữ `runInit.ts` in ra.
       Chỗ nào lệch → sửa **tối thiểu** chỗ đó và ghi Nhật ký.
-- [ ] **Step 2: `README.md`** — một mục "Bản chính" ngắn trỏ tới `TRIEN_KHAI.md`; ghi rõ máy dev **không đổi**.
-- [ ] **Step 3: `CODE_MAP.md`** — thêm các file mới ở File Structure; chạy lệnh kiểm đường dẫn chết ở đầu file → rỗng.
-- [ ] **Step 4: `plan.md`** — tick mục 24.2 theo plan này; một dòng mục 14 (có gì bất ngờ, số phép kiểm `N0` → hiện tại).
-- [ ] **Step 5:** Commit: `PR-Z2 (9): tài liệu khớp mã`.
+- [x] **Step 2: `README.md`** — một mục "Bản chính" ngắn trỏ tới `TRIEN_KHAI.md`; ghi rõ máy dev **không đổi**.
+- [x] **Step 3: `CODE_MAP.md`** — thêm các file mới ở File Structure; chạy lệnh kiểm đường dẫn chết ở đầu file → rỗng.
+- [x] **Step 4: `plan.md`** — tick mục 24.2 theo plan này; một dòng mục 14 (có gì bất ngờ, số phép kiểm `N0` → hiện tại).
+- [x] **Step 5:** Commit: `PR-Z2 (9): tài liệu khớp mã`.
 
 ---
 
 ### Task 10 🛑 GATE: Deploy thật và kiểm trên địa chỉ thật
 
-**Cần chủ sản phẩm:** site Netlify đã tạo ở Task 6b và database Turso **bản chính** `pisa-ban-chinh` (khác database
-thử). Hỏi rõ từng thứ; **không** dùng database thử làm bản chính. Deploy **chỉ bằng Netlify CLI** từ thư mục repo.
+**Cần chủ sản phẩm:** site Netlify đã tạo ở Task 6b và database Turso **bản chính** `pisatracking` (khác database
+thử `pisatracking-demo`). Hỏi rõ từng thứ; **không** dùng database thử làm bản chính. Deploy **chỉ bằng Netlify CLI** từ thư mục repo.
 
 > **🆕 22/09 (tối) — ĐIỀU KIỆN BẮT ĐẦU PHẦN C:** `main` phải có **cả** PR-Z2b **và** PR-HV (hồ sơ học viên mới) — chủ sản phẩm chốt
 > giáo viên thấy giao diện mới từ ngày đầu. Thiếu PR-HV → 🛑 dừng, báo chủ sản phẩm.
+> *(Kiểm lại 22/09 sau khi gộp `main` — vẫn đúng. `main` lúc đó có PR-Z2b (#49) và **PR-Z2b2** (phiên đăng nhập, PR tiếp
+> theo #49), còn PR #50 chỉ là **kế hoạch** PR-HV (`plan-ho-so-hoc-vien-overhaul`), **chưa phải** mã PR-HV. "Có PR-HV" nghĩa
+> là PR MÃ của hồ sơ học viên đã merge — PR #50 không tính. Kiểm bằng `git log --oneline main` có commit merge của PR mã
+> PR-HV; không chắc → hỏi chủ sản phẩm.)*
 >
 > **🆕 22/09 — THỨ TỰ MỚI của Task 10** (vì Task 6e: bản nháp **luôn** dùng database thử, chỉ bản chính thức dùng
 > `pisatracking`). Không còn "thử luồng trên bản nháp nối database chính". Thay vào đó: đưa lên địa chỉ chính thức
@@ -1390,11 +1403,25 @@ thử). Hỏi rõ từng thứ; **không** dùng database thử làm bản chín
 - [ ] **Step 1: Hỏi chủ sản phẩm:** (a) database bản chính `pisatracking` đã tạo cùng vùng Ohio với database thử chưa
       (chủ sản phẩm cho biết 22/09 là đã có tên này); (b) đã làm `TRIEN_KHAI.md` mục 6 **mới** (biến Turso **chỉ cho bản
       chính thức**) chưa — tự kiểm bằng hai lệnh `env:get` ở mục 6, dòng production phải là `pisatracking-<...>` không có
-      `-demo`, dòng deploy-preview phải là `pisatracking-demo-<...>`; (c) danh sách chi nhánh thật `MA=Tên`; (d) email
+      `-demo`, dòng deploy-preview phải là `pisatracking-demo-<...>` (🆕 6c: "URL là bản chính" = `tenMayChuDb(URL)`
+      **bắt đầu bằng `pisatracking-`** và **không** bắt đầu bằng `pisatracking-demo` — đúng luật `laTenDbBanChinh` trong
+      `server/src/moiTruong.ts`); (c) danh sách chi nhánh thật `MA=Tên`; (d) email
       quản trị. **Mật khẩu quản trị để chủ sản phẩm tự gõ** ở Step 3 — không xin, không ghi.
 - [ ] **Step 2: Deploy nháp** bằng `netlify deploy --build` (không `--prod`) từ `main` mới nhất. Kiểm nhanh như Task 6b
       Step 6 (health, không "Vào nhanh", cửa sau 404). **Chứng minh bản nháp đang ở database THỬ:** đăng nhập được bằng một
       tài khoản của bộ demo (chỉ database thử có). Không đăng nhập được → biến môi trường chưa tách đúng → 🛑 dừng.
+- [ ] **Step 2a 🆕 22/09 (rà soát PR #49): Tập dượt khởi tạo trên database TẠM — TRƯỚC Step 3.** `init-ban-chinh` mới chạy
+      trên file và qua URL `file:`; chưa từng chạy trên một database Turso RỖNG thật (~60 câu tạo bảng + vài trăm INSERT
+      trong một giao dịch qua mạng). Chủ sản phẩm làm đúng `TRIEN_KHAI.md` **mục 7a**: tạo database tạm tên bắt đầu bằng
+      `pisatracking-demo-` (ví dụ `pisatracking-demo-thu-init`) → `npm run init-ban-chinh` lên đó (dòng đầu phải là `Đích:
+      database THỬ`) → ghi thời gian chạy → trong cùng cửa sổ `$env:VITE_BAN_CHINH='1'; npm run dev` → đăng nhập bằng mật
+      khẩu tập dượt ở <http://localhost:5173> → đóng cửa sổ → xoá database tạm. Hỏng ở bước nào → 🛑 dừng, không làm Step 3.
+      (Đã thử ở PR-Z2b trên file tạm qua URL `file:`: đăng nhập 200, cookie `Secure`, phiên đúng ngày thật, `/demo/*` 404.)
+- [ ] **Step 2b 🆕 22/09 — BẮT BUỘC (rà soát lần 2 của Fable): Tập dượt khôi phục qua mạng, TRƯỚC Step 3** —
+      `TRIEN_KHAI.md` cuối mục 11.2, ô "Tập dượt khôi phục — BẮT BUỘC": sao lưu database THỬ (mục 10, trỏ tới database thử)
+      rồi `npm run khoi-phuc` vào database tạm `pisatracking-demo-thu-kp` (dòng đầu `Đích: database THỬ`), xem dòng `Xong`,
+      ghi thời gian, xoá database tạm. `khoi-phuc` mới chạy trên file và URL `file:` — chứng minh đường khôi phục qua mạng
+      trước khi có dữ liệu thật cần tới nó. Hỏng → 🛑 dừng, không làm Step 3.
 - [ ] **Step 3: Khởi tạo** — chủ sản phẩm tự chạy trên máy mình (`TRIEN_KHAI.md` mục 7) với database **bản chính**. Bạn chỉ
       hướng dẫn. Kết quả phải in `userId` và danh sách chi nhánh.
 - [ ] **Step 3b 🆕: Đưa lên địa chỉ chính thức (chưa báo giáo viên)** — **hỏi chủ sản phẩm đồng ý trước**, nói rõ: "địa chỉ
@@ -1440,7 +1467,10 @@ thử). Hỏi rõ từng thứ; **không** dùng database thử làm bản chín
 
 - [ ] **Step 1:** Gọi `superpowers:requesting-code-review` — **một** lượt. **Rà soát độc lập:** người rà phải là model
       **khác** model đã code Phần A/B (ví dụ Phần A code bằng Sonnet thì rà bằng Opus hoặc Fable). Nếu session này cùng
-      model với người code thì ghi rõ vào Nhật ký và đề nghị chủ sản phẩm chạy thêm một lượt rà ở session thiết kế. Phạm vi: `server/src/db.ts`,
+      model với người code thì ghi rõ vào Nhật ký và đề nghị chủ sản phẩm chạy thêm một lượt rà ở session thiết kế.
+      🆕 22/09 — **ghi rõ:** người code Phần C là **Opus 5 · XHigh** (B: Fable 5.1 · High). Phần B (PR-Z2b, PR-Z2b2) do
+      **Opus** code → người rà **PHẢI** khác Opus → **người rà là Fable 5.1**: session planning cho một agent Fable rà. Lượt
+      `requesting-code-review` của chính session Opus vẫn làm, nhưng **không thay được** lượt rà Fable. Phạm vi: `server/src/db.ts`,
       `server/src/moiTruong.ts`, `server/src/platform/khoTep.ts`, `server/src/platform/attachments.ts`,
       `server/src/ops/*`, `netlify/functions/api.ts`, `netlify.toml`, và các chỗ gọi `tx`/`transaction` đã đổi ở Task 1 Step 4.
       Câu hỏi cho người rà: (1) có đường nào ghi vào database bản chính mà không qua kiểm quyền? (2) có chỗ nào để lộ token?
@@ -1510,3 +1540,14 @@ thử). Hỏi rõ từng thứ; **không** dùng database thử làm bản chín
 | 22/09 | 6b · Step 5–6 (làm lại sau khi chủ sản phẩm tắt bảo vệ bản nháp) | Chủ sản phẩm đổi **Deploy Preview visibility** → Public trên app.netlify.com; bản nháp cũ vẫn trả 401 lúc có lúc không (cấu hình lan chưa đều) → **deploy nháp lại**: **https://6ab1c9f4bfcbb391a7c5e1a5--pisa-tracking.netlify.app**. **Ghi nhận theo yêu cầu, không sửa:** manifest gói ghi runtime `nodejs24.x` dù `netlify.toml` ghi `NODE_VERSION = 22` — CLI lấy Node của máy build (v24.20.0); `@netlify/blobs` 11.x cần ≥ 22.12 nên vẫn hợp lệ. **8 dòng kiểm trên địa chỉ nháp — ĐỦ 8 ĐẠT:** (1) `/api/health` → `{ok:true,seeded:true}` 200 (Function trên Linux nối được Turso; libsql Linux nạp được) · (2) màn đăng nhập chỉ có 'Đăng nhập' + 'Giáo viên đăng ký', KHÔNG có 'Vào nhanh', KHÔNG có thanh demo, KHÔNG nhãn 'Dữ liệu demo', phụ đề 'Hệ thống quản lý học vụ và vận hành' (ảnh chụp) · (3) đăng nhập tài khoản demo Quản trị (mật khẩu mặc định của bộ demo, README) → 200 trong 1,36 s · (4) ảnh PNG **1.048.584 byte** tải lên 2,06 s → tải xuống 1,93 s, SHA-256 **khớp**, `Content-Type: image/png`, `Content-Disposition: attachment` → xoá 200 (Netlify Blobs chạy thật) · (5) link sâu `/hoc-vien/3` ở tab mới → 200, ra đúng hồ sơ Lê Quang Huy · (6) `POST /api/demo/session {userId:1}` → **404**, `GET /api/demo/accounts` → 404, `/api/auth/info` không có `demoAdmin`, `/api/demo/session` trả `demoDate` = 2026-09-22 (ngày thật) · (7) PDF 50.017 byte và **mp4 40.012 byte** (đầu tệp có byte 0x00): tải xuống khớp SHA-256, đúng `application/pdf` / `video/mp4` — danh sách `binary` đủ · (8) câu trả lời của `/api/students/3`, `/api/my-work`, `/api/overview`, `/api/classes/3/y-thuc`, score-sheet, skill-board, class overview: **không có chữ `_metadata`**. Ghi nhận nhỏ (plan.md 12.15): `<title>` của index.html vẫn là 'PISA Progress — Bản demo nội bộ' ở bản chính. |
 | 22/09 | 6b · Step 7 — SỐ QUYẾT ĐỊNH (đo trên địa chỉ nháp, Netlify Ohio ↔ Turso Ohio) | Trang → lời gọi API → số câu hỏi DB (ước từ Task 3) → **lần đầu** → **trung bình 3 lần sau** (ba lần): **Hồ sơ học viên Lê Quang Huy** → `/students/3` → ~158 → 2.009 ms → **1.601 ms** (1575/1541/1688) · **Bảng nhập điểm MB-FT 101** → `/classes/3/score-sheet` → ~16 → 545 → **517** (562/511/479) · **Tổng quan** → `/overview` → ~84 → 894 → **873** (889/809/920) · **Thực trạng (tổng quan lớp MB-FT 101)** → `/classes/3/overview` → ~39 → 704 → **661** (691/665/626) · **Ý thức & Phối hợp MB-FT 101** → `/classes/3/y-thuc` → ~90 → 719 → **757** (751/726/794) · **Bảng kỹ năng (SkillBoard) HV 3** → `/students/3/skill-board` → ~75 → 826 → **808** (810/770/845) · **Việc cần làm (Quản trị)** → `/my-work` → ~156 → 855 → **780** (797/761/783) · **Việc cần làm của GVCN Trần Ngọc Hà** → `/my-work` → (nhiều hơn: `myCoordinationLines` tính cả lớp) → 2.997 → **3.402 ms** (3146/3286/3775). Khởi động lạnh thật (`/api/health` lần đầu sau deploy): 1,58 s. Đo bằng `fetch` trong trang, `cache: no-store`, tính cả đường mạng VN→Ohio (~0,3 s mỗi lượt). ⇒ Suy ra Turso cùng vùng ≈ **5–10 ms/câu** (158 câu ≈ 1,3 s). **Step 8 — quyết định theo bảng:** không trang nào > 10 s; **một trang 3–10 s: Việc cần làm của GVCN (3,4 s)** → ✅ kết thúc Phần A, ghi lại cho Phần C (Task 10 Step 6). Không tối ưu gì ở PR này. |
 | 22/09 | 6b · kiểm nguội + gộp main | **Kiểm nguội (yêu cầu chủ sản phẩm 22/09):** để yên 11 phút (07:24 → 07:35) không gọi gì → `/api/health` 200 `{ok:true,seeded:true}` sau 2,15 s (khởi động lạnh) → đăng nhập 200 → `/api/students/3` 200 'Lê Quang Huy' 1,63 s → `/api/overview` 200 1,03 s. ⇒ kết nối Turso giữ ở cấp module vẫn dùng được sau khi hàm nguội/được dựng lại. **Gộp `origin/main` (7d6e931, đã có PR #44–#47) vào nhánh:** 3 file trùng (plan Z2, plan.md, yThuc.tests.ts) gộp tự động, giữ cả hai phía; mục của tôi trong plan.md đánh số lại thành **12.16** (main đã có 12.15 của PR-K2). Sau gộp: **`npm run check` = 605/605** (603 + 2 phép của PR-K3), typecheck xanh. Không làm Task 6c/6d/6e (Phần B). **Commit** trên nhánh: 19 (kể cả gộp). |
+| 22/09 | B · bắt đầu | **Phần B (PR-Z2b), Opus 5.** Worktree `.claude/worktrees/pr-z2b-an-toan-du-lieu`, nhánh `pr-z2b-an-toan-du-lieu` từ `main` `0f24805` (đã có PR #45, #47, #48). **`N0` của Phần B = 605/605.** Node v24.20.0. Cửa sổ làm việc không có biến `TURSO_*`/`BAN_CHINH`/`PISA_*`. **Rà kế hoạch với mã thật trước khi làm — ba điều kế hoạch không nói, tự quyết vì chỉ có một cách hợp lý (ghi lại để người rà xem):** (1) **`student_code_seq`** (bộ đếm mã học viên, bảng một dòng `id = 1`) chỉ được `seed.ts` tạo dòng; `classes/intake.ts:412` đọc `next_value ?? 1` rồi `UPDATE … WHERE id = 1` — không có dòng thì mọi học viên đều nhận mã `PISA0001` → học viên thứ hai hỏng vì `student_code` là UNIQUE (dán bảng 3 học viên ở Task 10 Step 4 sẽ lỗi). ⇒ `initBanChinh` tạo dòng `(1, 1)` (Task 7). Quét cả bộ seed: đây là bảng "nền" DUY NHẤT bị sót (kỳ báo cáo do `ensurePeriod` tạo khi cần; cấu hình có giá trị mặc định). (2) `libsql` mở được URL `file:<đường dẫn>` như file cục bộ → chạy thử được **lệnh thật** `init-ban-chinh` / `them-chi-nhanh` / `sao-luu` (đi đúng nhánh mã Turso) trên file tạm, không cần mạng, không đụng database nào. (3) Tên kho Netlify Blobs: tối đa 64 byte, không có `/` (đọc `@netlify/blobs` 11.1.0) — tên kho theo database (~36 ký tự) hợp lệ. |
+| 22/09 | 6c | **611/611** (= 605 + 6). **ĐỎ trước (TDD):** `tsc` báo TS2339 `choPhepSeedTurso` không có (vẫn xuất JS) → chạy thẳng `dist-server/.../tests/run.js`: **605 đạt / 6 ĐỎ** — 5 phép thuần `choPhepSeedTurso is not a function`, và phép tiến trình con: `seed/run.js` với `TURSO_DATABASE_URL=libsql://pisatracking-khong-ton-tai.turso.io` + `PISA_CHO_PHEP_SEED_TURSO` = đúng tên đó → chốt cũ **CHO QUA**, lệnh in `[seed] Đang tạo lại dữ liệu demo tại libsql://pisatracking-…` rồi mới sập ở `Hrana(Api("status=404 … Host not found"))` — tức chốt cũ để lọt một database kiểu bản chính nếu ai dán nhầm tên. Sau khi sửa: 611/611. **Khác plan (nhỏ):** (a) 6 phép thay vì 5 — thêm phép tiến trình con trên để chứng minh chốt THẬT (`tuChoiXoaSachNeuTuXa` trong `recreateSchema`) chặn tên bản chính và in dòng chỉ cách, không chỉ hàm thuần. (b) Luật "tên kiểu bản chính" tách thành hàm `laTenDbBanChinh(url)` trong `moiTruong.ts` (gọi ở đầu `choPhepSeedTurso`) — Task 6e (`thuTurso`) và Task 10 Step 1 dùng lại đúng luật này, không chép lại. (c) So tên giờ không phân biệt hoa/thường (`tenMayChuDb` viết thường). **Một chốt, một nơi:** `seed/run.ts` không đổi (vẫn chỉ gọi `tuChoiXoaSachNeuTuXa`). Hai phép cũ (seed từ chối Turso; ngoại lệ chung chung `turso.io`/`libsql`/… không mở khoá; `BAN_CHINH=1` luôn từ chối) vẫn xanh. **Tài liệu:** `TRIEN_KHAI.md` mục 2 (tên, câu cảnh báo `-demo`, ví dụ URL có vùng `aws-us-east-2` cho giống URL thật) và bảng ví dụ mục 7; mục 12 không có tên database nên không đổi. Plan: Task 10 (tên bản chính, luật kiểm URL). |
+| 22/09 | 6d | **614/614** (= 611 + 3). **ĐỎ trước (TDD):** 611 đạt / **3 ĐỎ** đúng lý do — (1) `choPhepMigrateTurso is not a function`; (2) `migrate/run.js` với URL Turso giả, không có biến xác nhận → **không từ chối**, in `Nâng cấp dữ liệu đang có tại libsql://…` rồi sập ở lỗi mạng Hrana; (3) **tái hiện đúng cửa sau:** `migrate()` trên một database "ở Turso" có 1 tài khoản chưa mật khẩu → sau khi chạy **có tài khoản quản trị mặc định, số người 1 → 2** (mật khẩu `pisa2026`). Sau khi sửa: 614/614. **Cách kiểm (chọn cách ít đụng nhất — KHÔNG đổi chữ ký hàm nào):** phép (3) gọi `migrate()` THẬT trong tiến trình con với `TURSO_DATABASE_URL=file:<file tạm>` — libsql mở như file cục bộ, còn `laDbTuXa()` = true nên đi đúng nhánh Turso, không cần mạng. Kèm **đối chứng** trên đúng database đó chạy như máy dev (`PISA_DB`) → vẫn tạo quản trị + đặt mật khẩu như cũ: chứng minh database thử thật sự đi qua bước tài khoản (không xanh giả). **Mã:** `moiTruong.ts` thêm `choPhepMigrateTurso` (nguyên tên máy chủ, không chặn tên bản chính). `migrate/run.ts`: chốt ở ĐẦU tệp, trước dòng in `Nâng cấp…` và trước mọi lời gọi `db()` (phép (2) kiểm cả việc stderr không có `Hrana`). `migrate.ts` `migrateAccounts`: khi `laDbTuXa()` → in `[migrate] Turso: bỏ qua tài khoản/mật khẩu mặc định của bản demo.` và bỏ **cả vòng** "đặt email + mật khẩu cho tài khoản cũ" lẫn "tạo quản trị mặc định"; phần tạo bảng/cột/lộ trình phía trên giữ nguyên (nâng cấp schema không đổi). Chốt ở `migrate/run.ts` (như plan), không trong `migrate()`: `migrate()` chỉ được gọi từ lệnh này; còn phần nguy hiểm (tài khoản mặc định) thì chặn NGAY TRONG hàm nên che mọi nơi gọi. **Ghi nhận, không sửa:** `migrate()` còn ghi vài mốc vào bảng `demo_config` (`migrated_at`, `normal_pass_threshold`…) — đó là mốc nâng cấp, không phải ngày demo hay dữ liệu demo. **`TRIEN_KHAI.md`:** mục 11.1 mới (ba bước: sao lưu → `PISA_CHO_PHEP_MIGRATE_TURSO` = URL bỏ `libsql://` → `npm run migrate`, chỉ khi session code yêu cầu); bảng mục 12 thêm biến `PISA_CHO_PHEP_MIGRATE_TURSO`. |
+| 22/09 | 6e | **619/619** (= 614 + 5). **ĐỎ trước (TDD), hai lượt:** lượt 1 → 614 đạt / **5 ĐỎ**: (1)(2) `tenKhoTep is not a function`; (3) xoá biện pháp: `Tệp bị xoá khi giao dịch CHƯA chốt` (kho giả ghi lại `db().inTransaction` lúc bị gọi xoá = true); (4) `thu-turso` với `libsql://pisatracking-khong-ton-tai.turso.io` **đã kết nối** (mã thoát 0, bảng kết quả toàn `HỎNG · Hrana … Host not found`) — tức script tạo/xoá bảng chạy được vào tên kiểu bản chính; (5) giao dịch lồng: `no such savepoint: sp_1` **che mất lỗi gốc**. Lượt 2 (chỉ thêm `tenKhoTep`, chưa đổi `khoTepNetlify`) → phép Blobs đỏ đúng lý do `Tệp không nằm trong kho bang-chung-cuc-bo` (tệp lọt vào kho chung) — chứng minh phép kiểm bắt được đúng dây nối. Sau khi sửa: 619/619; `npm run thu-goi` ĐẠT 3/3 (gói Function vẫn chạy dù `khoTep.ts` giờ import `db.ts`). **Cách kiểm Blobs không cần mạng:** `BlobsServer` có sẵn trong `@netlify/blobs/server` + `setEnvironmentContext({ edgeURL, siteID, token })` — đúng giao thức Function dùng trên Netlify; đã thử trước bằng script nháp: kiểu `edgeURL` và kiểu `apiURL + siteID + token` (kiểu lệnh sao lưu sẽ dùng) đều ghi/đọc/liệt kê được. **Mã:** `tenKhoTep(url = database đang nối)` = `bang-chung-<phần đầu tên máy chủ>` (cắt 64 byte — giới hạn của Netlify), không Turso → `bang-chung-cuc-bo`; không truyền `url` thì lấy `DB_PATH` khi `laDbTuXa()` (nên `khoTep.ts` import `db.ts`; không vòng import vì `db.ts` chỉ import `moiTruong.ts`). `khoTepNetlify` dùng `getStore(tenKhoTep())` cho cả ghi/đọc/xoá. `deleteMeasure` gom `khoaTep` qua `purgeAttachmentsOf(…, khoaTep)` rồi `xoaTepSauGiaoDich(khoaTep)` SAU `tx` — đúng mẫu `violations.ts`. `thuTurso.ts` từ chối (trước khi mở kết nối) khi `laBanChinh()` hoặc `laTenDbBanChinh(url)` (luật của 6c). `db.ts` `tx`: `ROLLBACK TO` + `RELEASE` bọc `try/catch`, luôn ném lỗi gốc; vòng ngoài vẫn cuộn lại cả giao dịch (phép 5 kiểm `inTransaction` = false sau đó). **Step 6 — thử cú pháp trên site thật bằng biến VÔ HẠI, không đụng biến Turso:** Netlify CLI **27.8.0**. (a) Đọc (chỉ đọc) bản deploy nháp của Phần A `6ab1c9f4…` qua `netlify api getDeploy` → `context: "deploy-preview"` ⇒ bản nháp tạo bằng `netlify deploy --build` đọc biến ngữ cảnh **deploy-preview** (khớp giả định của mục 6). (b) Mô phỏng đúng tình huống thật: `env:set PISA_THU_NGU_CANH chung` (mọi ngữ cảnh, như biến Turso hiện nay) → `env:set PISA_THU_NGU_CANH rieng --context production` → `env:get … --context production` = **rieng**; `deploy-preview` = **chung**; `branch-deploy` = chung; `dev` = chung. (c) `env:unset PISA_THU_NGU_CANH` → gỡ ở mọi ngữ cảnh (production và deploy-preview đều báo 'No value set'); `env:list` (chỉ in TÊN) còn đúng `BAN_CHINH`, `TURSO_AUTH_TOKEN`, `TURSO_DATABASE_URL` (+ `NODE_VERSION`, `VITE_BAN_CHINH` của `netlify.toml`). ⇒ Cú pháp của plan đúng nguyên văn, không phải sửa. Ghi nhận: `env:set` **in lại cả giá trị** ('Set environment variable X=… in the production branch') → `TRIEN_KHAI.md` mục 6 nhắc đóng cửa sổ sau khi dán token. **`TRIEN_KHAI.md`:** mục 5 thêm câu 'áp cho mọi loại deploy; mục 6 tách riêng'; mục 6 viết lại (hai lệnh `--context production`, mỗi lệnh một khối, hai lệnh `env:get` kiểm URL, bảng 'phải in ra'); mục 8.1 'bản nháp luôn dùng database thử… đăng nhập bằng tài khoản demo'; mục 12 thêm cột **Áp cho**. Plan Task 8 Step 4: ghi chú dùng `tenKhoTep()`. |
+| 22/09 | 7 · Step 1–2 (7a) | **619 → 619, không đổi số phép** (chuyển chỗ thuần tuý). **Cách chuyển:** một script cắt đúng các dòng `seed.ts` 42–69 (vai trò & quyền, kể cả `RETIRED_ROLES`), 155–159 (`seedRoutes(conn)` + chú thích), 161–172 (chương trình học) sang `server/src/seed/duLieuNen.ts` — chỉ bớt 2 dấu cách thụt lề và đổi đúng **một** chữ `NOW` → `now` (tham số của `napDuLieuNen(conn, now)`). `git diff` các dòng bị xoá so với thân hàm mới: khác đúng 1 chữ đó + dòng trống. `runSeed()` gọi `const { roleId } = napDuLieuNen(conn, NOW);` tại chỗ khối "vai trò & quyền" cũ (`permId` chỉ dùng trong khối nên không cần lấy ra); khối "tổ chức" ở lại `seed.ts`. Bỏ các import đã chuyển đi (`PERMISSION_LABEL`, `seedRoutes`, `ROLES`, `RETIRED_ROLES`, `ROLE_PERMISSIONS`); `PROGRAMME_TEMPLATES` còn dùng ở khối lớp nên giữ. **Hệ quả thứ tự:** lộ trình và chương trình giờ nạp TRƯỚC người dùng (trước đây sau) — mỗi bảng có dãy id riêng nên không id nào đổi. **Chứng minh mạnh hơn đếm phép:** dựng bộ demo bằng bản biên dịch CŨ (còn trong `dist-server/` trước khi build lại) vào file tạm A, build mã mới, dựng vào file tạm B, so từng bảng từng dòng theo rowid (bỏ qua dấu thời gian lúc chạy — kể cả dấu thời gian nằm trong chuỗi JSON của `audit_logs` — và muối/băm mật khẩu ngẫu nhiên): **cấu trúc giống hệt, mọi bảng giống hệt (2.412 dòng)**. Lượt so đầu (chưa chuẩn hoá dấu thời gian lồng trong JSON) đã báo khác ở `audit_logs` → phép so đủ nhạy. |
+| 22/09 | 7 · Step 3–7 (7b) | **632/632** (= 619 + 13). **ĐỎ trước (TDD):** build hỏng TS2307 (chưa có module) → để thấy TỪNG phép đỏ, tạm đặt module mà ba hàm chỉ ném `CHƯA VIẾT` (chưa phải mã) → 619 đạt / **11 ĐỎ** đúng lý do (hàm chưa viết; lệnh `runInit.js`/`themChiNhanh.js` chưa có). Khi đỏ, siết một kỳ vọng lỏng của plan: mật khẩu yếu `/.+/` → `/ít nhất 6 ký tự/` (đúng câu của `accounts.ts`). Viết mã → **629/1 ĐỎ: `routes` bản chính 2 dòng, bộ demo 3** — truy nguyên nhân: bộ demo mới dựng có đúng 2 lộ trình (`LT1`, `LT2`), phép cũ `run.ts:4489` thêm `LT9` vào database kiểm thử → lỗi ở **phép kiểm mới của tôi** (so với database đã bị phép khác sửa), sửa phép đó: so với `napDuLieuNen` chạy trên file tạm mới tinh, từng dòng (bỏ `created_at`) → 630/630. **Ba tính chất có phép kiểm chứng minh:** (a) **từ chối + không ghi gì** — 4 tình huống (chạy nhầm lần hai · chỉ MỘT dòng ở `demo_config` · chỉ một bảng lạ ngoài schema có một dòng · chỉ một người dùng): ảnh chụp TOÀN BỘ database (cấu trúc + mọi dòng mọi bảng) trước/sau bằng nhau, `total_changes()` không đổi, không treo giao dịch; ở mức **lệnh thật**: chạy nhầm lần hai → `TỪ CHỐI … đã có dữ liệu`, **SHA-256 file database không đổi**; (b) **không dữ liệu demo, không ngày demo** — ngoài 12 bảng nền (permissions, roles, role_permissions, routes, programmes, programme_skills, programme_checkpoints, branches, reporting_units, users, user_roles, student_code_seq) MỌI bảng rỗng, `demo_config` rỗng hẳn (không `demo_date`, không kịch bản, không `seeded_at`), đủ số bảng như schema, đúng 1 người dùng `system_admin` (`branch_id` NULL), băm scrypt khớp mật khẩu đã cho và KHÔNG khớp `pisa2026`; dữ liệu nền giống hệt bộ demo từng dòng. Thêm: một giao dịch — schema lỗi ở câu cuối → không còn bảng nào. **Lệnh thật chạy bằng tiến trình con qua URL `file:`** (đi nhánh Turso, không mạng): thiếu biến → in đúng tên biến, không tạo file; chạy đúng → in `Sẽ khởi tạo database …`, `userId 1`, chi nhánh; **không in token, không in mật khẩu**; không có biến Turso → từ chối. **Khác plan / tự quyết (ghi để người rà xem):** (1) **`student_code_seq` (1, 1)** — xem dòng 'B · bắt đầu'. Đối chứng thật: database init xong, xoá dòng này, dán 2 học viên → `UNIQUE constraint failed: students.student_code`; có dòng → `PISA-000001`, `PISA-000002`. (2) Từ chối mật khẩu mặc định `pisa2026` ở `initBanChinh` (TRIEN_KHAI mục 7 đã dặn không dùng; không đổi luật mật khẩu của `accounts.ts`). (3) Mã chi nhánh: viết hoa, chỉ A–Z/0–9 (TRIEN_KHAI: 'viết liền, không dấu'), cấm `TUTOR` (trùng mã đơn vị Tutor — `reporting_units.code` UNIQUE), cấm tên có `^` hoặc `"`. (4) Tên hiển thị của quản trị: `Quản trị hệ thống` (plan không có biến tên; đổi được trong màn Tài khoản). (5) Kiểm rỗng hỏi `users` trước (database đang dùng thì dừng ở câu hỏi đầu — mỗi câu qua mạng ~0,5 s từ VN). (6) `themChiNhanh` (hàm thuần) nằm trong `initBanChinh.ts`; `ops/themChiNhanh.ts` chỉ là điểm chạy lệnh. Đơn vị báo cáo của chi nhánh thêm sau có `seq` = lớn nhất + 1 (đứng sau Tutor — không sửa dòng Tutor đã có). (7) `runInit.ts`/`themChiNhanh.ts` kiểm biến TRƯỚC, rồi mới `await import` mã dự án (`db.ts` đọc cấu hình lúc nạp; URL có mà thiếu token sẽ ném lỗi khó đọc). **LỖI THẬT tìm được khi chạy lệnh đúng như TRIEN_KHAI trong Windows PowerShell 5.1 (systematic-debugging):** `npm run them-chi-nhanh -- UB "Uông Bí"` lưu tên **`^Uông^ Bí^`** vào database. Thử trong thư mục nháp, in nguyên văn argv: script bắt đầu bằng `node` hoặc `echo` → tham số nguyên vẹn; script bắt đầu bằng **`npm`** (tệp `npm.cmd`) → `["UB","^Uông^ Bí^"]` ⇒ nguyên nhân gốc: npm 11.19 trên Windows **thoát kép** tham số khi lệnh ĐẦU của script là tệp `.cmd`, nhưng gắn tham số vào lệnh CUỐI (`node`). Sửa tận gốc: `"them-chi-nhanh": "node node_modules/typescript/bin/tsc -p tsconfig.build.json && node dist-server/server/src/ops/themChiNhanh.js"` (cùng lệnh biên dịch với `build:server`, chỉ gọi thẳng bằng node) — cú pháp trong TRIEN_KHAI giữ nguyên. Phòng thủ thêm: tên có `^`/`"` bị từ chối. Hai phép kiểm (tên có `^`/`"`; lệnh `them-chi-nhanh` phải bắt đầu bằng `node`) — ĐỎ trước, xanh sau. `init-ban-chinh`/`sao-luu` không nhận tham số dòng lệnh (chỉ biến môi trường) nên không dính. **Chạy lại trong PowerShell sau khi sửa (file tạm):** `init-ban-chinh` → `Xong. Đã tạo tài khoản quản trị quantri.pisa@gmail.com (userId 1) và 2 chi nhánh: MB (Monbay), BC (Bãi Cháy).`; chạy nhầm lần hai → `TỪ CHỐI … (bảng users)`, `Get-FileHash` không đổi; `them-chi-nhanh -- UB "Uông Bí"` và không có `--` → lưu đúng `Uông Bí`, `Hải Dương`; mã đã có → `TỪ CHỐI`, file không đổi. Lưu ý cho TRIEN_KHAI: PowerShell 5.1 hiện dòng `TỪ CHỐI` bằng chữ đỏ kèm `NativeCommandError` — là cách PowerShell hiện stderr, đúng nghĩa 'bị từ chối'. **`package.json`:** `init-ban-chinh`, `them-chi-nhanh`. `accounts.ts`: export `hashPassword`. |
+| 22/09 | 8 | **641/641** (= 632 + 9). **ĐỎ trước (TDD):** module tạm (hàm ném `CHƯA VIẾT`) → 632 đạt / **9 ĐỎ** đúng lý do. **Tính chất (c) có phép kiểm chứng minh:** `saoLuu` chép database kiểm thử ra file → **đóng, mở lại bằng kết nối mới**: `integrity_check = ok`, cấu trúc (bảng + chỉ mục) giống hệt, **mọi bảng đúng số dòng VÀ đúng nội dung từng dòng**; nguồn không bị ghi câu nào (`total_changes()` của kết nối nguồn không đổi). Thêm: một tiến trình con mở bản sao làm database (`PISA_DB`) bằng chính mã hiện tại → `isInitialised`, đủ học viên, **đăng nhập được**. Lệnh thật (tiến trình con, URL `file:`): thiếu `BACKUP_DIR` → từ chối; có → đúng một file `pisa-NĂM-THÁNG-NGÀY-GIỜPHÚT.sqlite`, mở lại đúng từng dòng, **SHA-256 file nguồn không đổi**, không in token; giữ 14 bản (xoá đúng bản cũ nhất, không đụng file khác). **Chốt chống ghi đè/xoá nhầm (tự thêm, plan không nói):** file đích đã có → từ chối, file cũ giữ nguyên từng byte; database đích không rỗng → từ chối; `giuBanMoiNhat` chỉ xoá file ĐÚNG dạng `pisa-\d{4}-\d{2}-\d{2}-\d{4}.sqlite` (+ thư mục `…-tep` của đúng bản đó), không bao giờ xoá bản vừa tạo (tham số thứ ba tuỳ chọn `giuLai` — thêm vào interface của plan, không đổi hai tham số cũ). Hàm mới ngoài plan (để kiểm được từng phần): `tenBanSaoLuu(ngày)` (giờ Việt Nam, `hourCycle h23`), `saoLuuRaFile(nguon, duongDan)`, `saoLuuTep(kho, thuMuc)`. **Hai lỗi thật khi chạy, truy nguyên nhân gốc (systematic-debugging):** (1) **Windows: libsql không nhả file sau `close()` nếu đã `prepare`** — thử tối thiểu: chỉ `exec` rồi close → xoá được; có `prepare` (kể cả readonly, kể cả sau `gc`) → `EPERM`. Cách cũ (ghi file tạm rồi đổi tên/xoá) vì vậy không dọn được file dở. **Sửa tận gốc cách ghi:** dựng + kiểm bản sao TRONG BỘ NHỚ → ghi ra đĩa bằng `VACUUM INTO` (SQLite tự từ chối khi file đã có: 'output file already exists' — lớp chống ghi đè thứ hai) → mở lại file qua `ATTACH`, kiểm lại toàn vẹn + so số dòng từng bảng, `DETACH` (đã thử: sau DETACH xoá được file). Hỏng trước khi ghi → không có file; hỏng sau → chỉ xoá đúng file vừa ghi. (2) **`getStore({ name, siteID, token })` của `@netlify/blobs` 11.1.0 BỎ QUA biến ngữ cảnh `NETLIFY_BLOBS_CONTEXT`** (đọc mã: có siteID + token thì `contextOverride` chỉ gồm hai thứ đó) và luôn gọi **API thật** `https://api.netlify.com`. Hệ quả tốt: lệnh sao lưu của bản chính không thể bị một biến lạ chuyển hướng. Hệ quả cho phép kiểm: phép 'lệnh sao-luu tải kho tệp' bản đầu của tôi (đặt NETLIFY_SITE_ID/TOKEN giả + ngữ cảnh trỏ máy chủ cục bộ) **đã gửi 3 yêu cầu ra `api.netlify.com` với site giả `site-thu` + token giả `tok-netlify`** trong các lượt chạy đỏ (bị trả 400; không có thông tin thật nào). Đã bỏ: phép lệnh thật KHÔNG đặt biến Netlify nữa (ghi chú trong tệp kiểm); đường tải tệp được kiểm bằng `saoLuuTep` trên `BlobsServer` cục bộ, đúng kiểu `siteID + token + apiURL`. Không thêm 'công tắc chỉ để kiểm' vào mã sản phẩm. **Chạy thật:** (a) máy dev (`npm run seed` rồi `npm run sao-luu` trong PowerShell, không biến Turso) → `data/sao-luu/pisa-2026-09-22-1049.sqlite`, 58 bảng, 2.412 dòng. (b) **Qua mạng, database THỬ** `pisatracking-demo-pizi147` (URL + token nạp bằng `netlify env:get` ngay trong lệnh, tự kiểm tiền tố `libsql://pisatracking-demo-` trước khi chạy, không in token): `sao-luu` → **58 bảng, 2.426 dòng, 120 giây**, tự kiểm đạt; `init-ban-chinh` → **TỪ CHỐI (bảng users)**, 8 giây; `them-chi-nhanh -- MB "Monbay"` → **TỪ CHỐI (đã có)**, 8 giây; sao lưu lần hai sau hai lệnh bị từ chối → **hai bản sao giống nhau từng byte (cùng SHA-256)** ⇒ từ chối thì không ghi gì, chứng minh trên database thật. Không chạy lệnh nào có thể ghi vào database thử. **Ghi nhận, không sửa:** các bảng được chép lần lượt, không trong một giao dịch đọc (giao dịch dài trên Turso có thể chặn người đang ghi) → nên chạy lúc không ai nhập liệu (lệnh in dòng nhắc). **File ngoài danh sách của Task 8:** `.gitignore` thêm `data/sao-luu/` (mẫu `data/*.sqlite` không phủ thư mục con — bản sao database có thể lỡ bị commit; đã kiểm `git check-ignore`). |
+| 22/09 | 9 (+ 9a) | **642/642.** **9a (mã, TDD):** `plan.md` 12.16 đã giao cho Phần B việc "cắt phần query của `DB_PATH` trước khi in" (không có trong kế hoạch chi tiết). Mọi lệnh mới đều in `DB_PATH` → làm: ĐỎ trước (tiến trình con nạp `db.js` với `TURSO_DATABASE_URL=libsql://…?authToken=BI-MAT…` → in ra nguyên token), sửa `DB_PATH` bỏ `?…`/`#…` (kết nối vẫn dùng URL gốc) → xanh; rà mọi nơi dùng `DB_PATH` (chốt seed/migrate/kho tệp so theo tên máy chủ — không đổi). **`TRIEN_KHAI.md` (sửa tối thiểu, giữ văn phong):** mục 7 — câu "kết quả đúng" chép đúng dòng `runInit.ts` in ra (`[init-ban-chinh] Xong. Đã tạo tài khoản quản trị … (userId 1) và 2 chi nhánh: …`), chạy nhầm lần hai hiện `TỪ CHỐI`, chờ vài phút; bảng: mật khẩu `pisa2026` bị từ chối, không dùng mã `TUTOR`; kết quả `them-chi-nhanh`. Mục 10 — thời gian ~2–3 phút, chỉ đọc database, dòng cuối, thư mục `…-tep`, dòng 'Chưa sao lưu tệp bằng chứng' là bình thường, đóng cửa sổ. Mục 11.1 — chờ đúng dòng `[sao-luu] Xong.`. **Kiểm máy móc hợp đồng:** mọi `npm run X` trong TRIEN_KHAI (`init-ban-chinh`, `seed`, `them-chi-nhanh`, `sao-luu`, `migrate`) có trong `package.json`; mọi tên biến (11 tên) đều được mã đọc tới. **`README.md`:** mục 11 'Bản chính trên mạng' (trỏ TRIEN_KHAI, máy dev không đổi, bảng ba lệnh). **`CODE_MAP.md`:** mục 'Bản chính (Netlify + Turso, PR-Z2)' — mọi file của File Structure (cả Phần A, vì Task 9 là của Phần B); lệnh kiểm đường dẫn chết → **rỗng** (4 tên ngắn có sẵn từ trước — `students.ts`, `journeys.ts`, `build.ts`, `yThuc/phoiHop.ts` — viết thành đường dẫn đầy đủ). **`plan.md`:** 24.2 tick Z0–Z7, Z9 (Z2 không cần — đường a; Z8 là Phần C) + dòng tình trạng; 12.16 đánh dấu 2 việc đã làm; **12.17 mới** (việc Phần B thấy mà không sửa); mục 14 một dòng. |
+| 22/09 | B · tự rà trước khi kết thúc | **Câu hỏi bắt buộc: "Có đường nào ghi đè / xoá dữ liệu đã có không?" — Trả lời: KHÔNG.** Đã liệt kê bằng grep MỌI câu lệnh ghi/xoá trong `ops/initBanChinh.ts`, `ops/runInit.ts`, `ops/themChiNhanh.ts`, `ops/saoLuu.ts`, `ops/runSaoLuu.ts`, `seed/duLieuNen.ts`, và đọc `schema.sql`. **(1) `init-ban-chinh`:** chỉ có `CREATE` (khi chưa có bảng nào) và `INSERT` — **không có một câu `UPDATE`, `DELETE`, `DROP`, `REPLACE` hay `ALTER` nào**, kể cả trong `schema.sql` và `napDuLieuNen`/`seedRoutes`. Và nó chỉ chạy tới đó sau khi đã kiểm KHÔNG bảng nào có dù một dòng (kiểm trước cả email/mật khẩu). Mọi thứ trong một giao dịch. Kể cả trường hợp lý thuyết có người ghi vào database đúng trong vài giây giữa lúc kiểm và lúc ghi: vì chỉ có INSERT, không dòng nào có sẵn bị sửa hay xoá — tệ nhất là INSERT đụng khoá UNIQUE (`roles.key`, `branches.code`, `users.email`, `student_code_seq.id`…) → lỗi → cuộn lại toàn bộ. Bằng chứng: 4 tình huống 'đã có dữ liệu' → ảnh chụp toàn database + `total_changes()` không đổi; lệnh thật chạy lần hai → SHA-256 file không đổi; trên database THỬ thật → hai bản sao lưu trước/sau giống từng byte. **(2) `them-chi-nhanh`:** chỉ hai `INSERT` (chi nhánh + đơn vị báo cáo), sau khi kiểm mã chưa có ở cả `branches` lẫn `reporting_units`; `code` là UNIQUE nên không thể ghi đè; không có `UPDATE`/`DELETE`. Mã đã có → từ chối, file giữ nguyên từng byte (phép kiểm + PowerShell `Get-FileHash`). **(3) `sao-luu`:** tới nguồn chỉ có `SELECT`, `PRAGMA table_info` và đọc `sqlite_master` (phép kiểm: `total_changes()` của nguồn không đổi; lệnh thật: SHA-256 nguồn không đổi). Ghi: vào một database MỚI trong bộ nhớ, rồi ra một file MỚI bằng `VACUUM INTO` — file đã có thì từ chối hai lớp (kiểm trước + SQLite tự từ chối 'output file already exists'). Xoá chỉ có hai chỗ, đều KHÔNG phải dữ liệu của database: (a) đúng file vừa ghi ở chính lần chạy này nếu mở lại kiểm thấy hỏng (`daGhi` chỉ bật sau khi `VACUUM INTO` thành công, tức file trước đó chưa có); (b) **luật giữ 14 bản** (theo thiết kế, TRIEN_KHAI mục 10 ghi rõ): chỉ file đúng dạng `pisa-NĂM-THÁNG-NGÀY-GIỜPHÚT.sqlite` trong `BACKUP_DIR` ngoài 14 bản mới nhất theo tên, kèm thư mục `…-tep` của đúng bản đó; không bao giờ xoá bản vừa tạo; file khác trong thư mục không bị đụng (phép kiểm). Thư mục `…-tep` đã có → từ chối, không ghi đè. **Lưu ý trung thực (không phải ghi đè dữ liệu):** (i) nếu đồng hồ máy từng bị đặt sai sang tương lai rồi sửa lại, các bản mang tên 'tương lai' sẽ được coi là mới nhất và luật 14 bản sẽ xoá dần bản thật cũ hơn chúng (bản vừa tạo vẫn luôn được giữ) — máy Windows đồng bộ giờ tự động nên rất khó xảy ra; (ii) chạy trên máy dev: `db()` đặt `journal_mode = WAL` cho file dev (đã là WAL thì không làm gì), và nếu file dev chưa có thì tạo một file rỗng rồi báo lỗi 'không có người dùng' — không mất dữ liệu nào. |
+| 22/09 | B · sau rà soát (PR #49) | **642 → 660/660.** Hai nguồn góp ý: (1) agent rà soát của session này (requesting-code-review, **cùng họ model Opus với người code** — Task 11 vẫn cần người rà khác model): *không Critical, không đường nào ghi đè/xoá dòng đã có*; 3 Important + 12 Minor; (2) **chủ sản phẩm gửi trong chat** kết quả rà soát độc lập Fable của session planning: 4 việc + 3 việc nhỏ, và 2 việc "không cần làm". Mọi mã đều ĐỎ trước. **Đã làm:** **[CSP-1] máy chủ nối Turso luôn ở chế độ bản chính** — `laBanChinh()` = `BAN_CHINH=1` HOẶC có `TURSO_DATABASE_URL`; đỏ: có biến Turso mà `POST /api/demo/session` trả **200** → 404. Cái bẫy đã tái hiện: đổi `laBanChinh()` xong thì chốt seed khoá luôn database thử (phép canh đỏ `[seed] TỪ CHỐI` với `pisatracking-demo-….invalid` + đúng nguyên tên) → chốt seed và `thu-turso` dùng cờ tường minh `coCoBanChinh()`. Các chỗ khác dùng `laBanChinh()` (ngày thật, chặn `/demo`, cookie `Secure`, ẩn `demoAdmin`, kho Blobs) đúng ý. TRIEN_KHAI 7/10/11.1: "Làm xong thì ĐÓNG cửa sổ PowerShell này." **[CSP-2] Task 10 Step 2a + TRIEN_KHAI mục 7a "Tập dượt khởi tạo"** (database tạm `pisatracking-demo-thu-init` → init → `VITE_BAN_CHINH='1'; npm run dev` → đăng nhập → đóng cửa sổ → xoá database tạm) + Step 2b tập dượt khôi phục. Phát hiện khi viết: giao diện bản dev + máy chủ chế độ bản chính → màn đăng nhập hiện khối "chưa có dữ liệu mẫu" thay form (nên 7a đặt `VITE_BAN_CHINH`). Đã thử luồng đăng nhập của 7a bằng máy chủ thật trên database init qua URL `file:` (có biến Turso): đăng nhập 200, cookie `Secure`, phiên đúng ngày 2026-09-22, `/demo/*` 404, `/overview` 200, mật khẩu `pisa2026` 400. **[CSP-3] ngoặc đơn** — xác nhận trên chính máy này: `$env:X="QuangNinh$2026abc"` → `QuangNinh`. Mọi `$env:…=`/`netlify env:set` sang `'…'`; mục 0.3 "Luôn dùng ngoặc đơn; nếu giá trị có dấu ' thì gõ nó hai lần ''"; `init-ban-chinh` in độ dài mật khẩu đã lưu. Thêm (rà soát của tôi): máy này có **PSReadLine 2.0.0** — lưu MỌI dòng đã dán (kể cả token, mật khẩu) vào file lịch sử → mục 0.6 + dòng đầu mọi khối có bí mật `Set-PSReadLineOption -HistorySaveStyle SaveNothing`. **[CSP-4] `npm run khoi-phuc`** (`ops/khoiPhuc.ts`, `ops/runKhoiPhuc.ts`): đích phải hoàn toàn trống (đúng `bangCoDuLieu` của init + không có bảng nào), bản sao lưu toàn vẹn + có người dùng, xác nhận `PISA_CHO_PHEP_KHOI_PHUC` = nguyên tên máy chủ đích (hỏi trước khi kết nối, không in tên mong đợi), file nguồn qua `FILE_SAO_LUU` (biến môi trường — tránh lỗi thoát ký tự của npm với đường dẫn có khoảng trắng). Một giao dịch: tạo bảng → chép theo thứ tự khoá ngoại (cha trước con) → chỉ mục/trigger → kiểm số dòng từng bảng + `foreign_key_check` → mới chốt. Khoá ngoại TẮT trong lúc chép vì dữ liệu thật có **5 bảng tự tham chiếu** (users, classes, sos_cases, case_interventions, tasks — dòng trỏ tới dòng tạo sau), rồi kiểm lại trước khi chốt (dữ liệu thật: 0 vi phạm). Chèn theo lô (100 dòng/câu) cho đường mạng. 6 phép: sao lưu → khôi phục đúng từng dòng (lô 3 để thử phần dư), đích có dữ liệu/có bảng → từ chối và ảnh chụp + `total_changes` không đổi, file không phải bản sao lưu → từ chối, hỏng ở bước cuối (chỉ mục UNIQUE trùng) → đích không còn bảng nào, lệnh thật qua URL `file:` (thiếu biến/xác nhận sai → không tạo file; chạy lần hai → SHA-256 không đổi). **Chạy thật trong PowerShell** với bản sao lưu THẬT của database thử → file tạm: chưa xác nhận → từ chối, không tạo đích; đúng → **58 bảng, 2.426 dòng, 5 giây**; lần hai → TỪ CHỐI, `Get-FileHash` không đổi; so với file sao lưu: cấu trúc và mọi dòng giống hệt, 0 vi phạm khoá ngoại. **Chưa khôi phục vào Turso thật** (không có database Turso rỗng; không tự tạo dịch vụ) → Task 10 Step 2b. TRIEN_KHAI **mục 11.2** + bảng mục 12 (`FILE_SAO_LUU`, `PISA_CHO_PHEP_KHOI_PHUC`); tệp Blobs ghi rõ là việc tay. **[CSP-5] sao lưu đọc trong một giao dịch** (BEGIN … COMMIT; phép Proxy ghi `inTransaction` lúc đọc từng bảng: đỏ `[false,false]` → xanh). **Chạy thật qua mạng với database THỬ: 58 bảng, 2.426 dòng, 100 giây — giống TỪNG BYTE bản sao lưu lúc 10:53 (SHA-256 `1ceb1cfc…`).** **[CSP-6]** TRIEN_KHAI 8.1: "đăng nhập tài khoản demo trên bản nháp THẤT BẠI → DỪNG". **[CSP-7]** `init-ban-chinh` (và `them-chi-nhanh`, `khoi-phuc`) in dòng đầu `Đích: database BẢN CHÍNH — dữ liệu thật (…)` / `THỬ` / `KHÔNG RÕ` (`moTaDichDb`). **Từ agent rà soát của tôi:** bản sao lưu mang tên database `pisa-<tên máy chủ>-…` và giữ 14 bản THEO TỪNG database (đỏ: có `BACKUP_DIR` mà thiếu Turso → lặng lẽ sao lưu database kiểm thử vào thư mục đó → giờ TỪ CHỐI); `safeIntegers` (đỏ: `9007199254740993` → `…992`, `5` → `5.0` REAL); lọc bảng nội bộ bằng `ESCAPE` (đỏ: bảng `sqliteish` bị bỏ sót khi sao lưu và khi init kiểm rỗng); ghi qua file tạm `…dang-ghi` + `COPYFILE_EXCL` (file dở không bao giờ mang tên bản sao lưu); dọn bản cũ bị `EPERM` → cảnh báo, vẫn "Xong" (đỏ: lệnh sập SAU khi bản mới đã tốt); URL thiếu `libsql://` → từ chối (libsql lặng lẽ tạo FILE cục bộ); câu báo lỗi của init khi lỗi mạng; phép kiểm của Phần B đổi máy chủ giả sang `.invalid`. **Không làm (theo chủ sản phẩm):** kiểm "bảng có nhưng rỗng" kiểu cũ; sao lưu trước migrate khi database ở xa — ghi `plan.md` 12.17. **Ghi, không sửa:** tải lại toàn bộ kho tệp mỗi lần; kho tệp khi khôi phục sang database mới; `db().name` của phép cũ; phép cũ Phần A còn `*.turso.io`; `npm run dev` với biến Turso thì tải tệp lên lỗi (cố ý). **CHỜ chủ sản phẩm quyết:** bản sao lưu chứa mã phiên đăng nhập còn hiệu lực (`demo_sessions.token`) — xem `plan.md` 12.17. Các câu trả lời "có đường nào ghi đè/xoá dữ liệu đã có không" ở dòng trên vẫn là **KHÔNG**; lệnh mới `khoi-phuc` cũng chỉ `CREATE` + `INSERT` vào database hoàn toàn trống, không có `UPDATE`/`DELETE`/`DROP`. |
+| 22/09 | B2 · PR-Z2b2 (sau khi #49 merge) | **Nhánh mới `pr-z2b2-phien-dang-nhap` từ `main` `10975c1`** (PR #49 merge 05:17Z — commit cuối `41dd48b` nằm trong `main`; `main` thêm PR #50 = chỉ KẾ HOẠCH PR-HV). **660 → 662/662.** Chủ sản phẩm (chat): **BỎ mã đăng nhập khỏi bản sao lưu** + session planning quyết **hết hạn 30 ngày**. **Tên bảng đã loại khỏi sao lưu: `demo_sessions`** — quét `schema.sql`: đây là bảng DUY NHẤT có mã đăng nhập (cột `token`); ứng dụng không có luồng quên mật khẩu nên không có bảng mã đặt lại mật khẩu. **ĐỎ trước (TDD) — 657 đạt / 5 ĐỎ đúng lý do:** (1) phép (c) "Số dòng báo cáo 8507 không khớp nguồn" (bản sao chép cả phiên); (2) khôi phục: `demo_sessions phải RỖNG, có 51 dòng`; (3) **khôi phục xong mã phiên cũ vẫn đăng nhập được**; (4) lệnh `khoi-phuc`: 52 dòng phiên; (5) `PHIEN_HET_HAN_SAU_NGAY` chưa có. **Mã:** `saoLuu.ts` `BANG_KHONG_CHEP_DONG = {demo_sessions}` — sao lưu giữ cấu trúc bảng, không đọc/không chép dòng; `khoiPhuc.ts` cũng không chép dòng bảng này, **kể cả từ bản sao lưu kiểu cũ còn phiên** (phép kiểm dựng bản kiểu cũ bằng `VACUUM INTO` từ database kiểm thử — có phiên — rồi khôi phục: mã cũ vẫn bị từ chối). `auth.ts` `PHIEN_HET_HAN_SAU_NGAY = 30` (một chỗ, có chú thích): `resolveSession` — lần dùng cuối (`last_seen_at`, thiếu thì `created_at`) cũ hơn 30 ngày theo **giờ thật** → trả `null` (401) và xoá dòng phiên; còn hạn → dời `last_seen_at` về bây giờ như cũ. Cột `last_seen_at` có sẵn trong `schema.sql` từ đầu (migrate chưa từng đụng `demo_sessions`) → **không cần migrate**, không đổi luật đăng nhập nào khác. Phép hết hạn chạy qua HTTP (`/api/overview` với cookie): 31 ngày → 401 + dòng bị xoá; 29 ngày → 200 + mốc cập nhật (< 60 giây). Bộ kiểm đặt ngày demo 14/09 (lệch ngày thật 8 ngày) — mã tính theo ngày demo sẽ để phiên 31 ngày "thật" còn hạn, phép sẽ đỏ. **Tính chất (c) sửa** ở phép kiểm (`soHaiDb`: bảng phiên phải RỖNG, các bảng khác đúng số dòng và đúng từng dòng) và ở kế hoạch (ô 🆕 đầu Task 8). **Kế hoạch Phần C (rà soát lần 2 của Fable):** (a) Task 10 Step 2b → BẮT BUỘC trước Step 3; (b) TRIEN_KHAI 7a: dùng Chrome/Edge (Safari không nhận phiên an toàn ở localhost); (c) file sao lưu tên kiểu cũ không tự dọn — TRIEN_KHAI 10 + `plan.md` 12.17; (d) Task 11 + bảng đầu kế hoạch + `PROMPT_SESSION_CODE.md` mục PR-Z2c: người code Opus 5 · XHigh (B: Fable 5.1 · High), người rà PHẢI là Fable 5.1 (session planning cho agent Fable rà), lượt rà của session Opus không thay được; (e) điều kiện Phần C kiểm lại sau khi gộp `main`: vẫn đúng — nhưng `main` mới có PR #50 (KẾ HOẠCH PR-HV), chưa có PR MÃ PR-HV → ghi rõ trong Task 10 và prompt: #50 không tính. Thêm TRIEN_KHAI 9 (30 ngày không mở web thì đăng nhập lại), 10 (bản sao lưu không chứa mã đăng nhập), 11.2 ("sau khi khôi phục, mọi người đăng nhập lại"; tập dượt khôi phục thành bắt buộc, từng bước). |

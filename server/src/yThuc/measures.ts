@@ -8,7 +8,7 @@ import type { Principal } from '../permissions.ts';
 import { badRequest, isIsoDate, notFound, nowIso } from '../util.ts';
 import { demoToday } from '../demoConfig.ts';
 import { notify, writeAudit } from '../platform/audit.ts';
-import { purgeAttachmentsOf } from '../platform/attachments.ts';
+import { purgeAttachmentsOf, xoaTepSauGiaoDich } from '../platform/attachments.ts';
 import { currentCycle } from '../fasttrack/cycles.ts';
 import { KEY_TAKEN_MESSAGE, activeClassOf, canManageDiscipline, requireManageDiscipline, requireViewClass, requireViewStudent } from './access.ts';
 import { noteMeasureChange, violationsByIds, type ViolationView } from './violations.ts';
@@ -359,15 +359,18 @@ export function deleteMeasure(p: Principal, id: number): void {
   requireManageDiscipline(p, row.student_id, MANAGE_MESSAGE);
   if (row.status !== 'preparing') throw badRequest('Biện pháp này đã thực hiện — không xóa được, vì đó là việc đã làm thật.');
   const inside = violationIdsOf(id);
+  /* Tệp trong kho chỉ xoá SAU KHI giao dịch chốt — giao dịch lui thì dòng còn mà tệp mất là không hoàn tác được. */
+  const khoaTep: string[] = [];
   tx(() => {
     for (const v of inside) noteMeasureChange(v, id, null, p.userId);
     db().prepare('DELETE FROM measure_violations WHERE measure_id = ?').run(id);
-    const files = purgeAttachmentsOf('discipline_measure', id, p.userId);
+    const files = purgeAttachmentsOf('discipline_measure', id, p.userId, khoaTep);
     db().prepare('DELETE FROM discipline_measures WHERE id = ?').run(id);
     writeAudit({ actorUserId: p.userId, action: 'measure.delete', entityType: 'discipline_measure', entityId: id,
       entityLabel: `${row.student_code} · ${kindLabelOf(row.kind, row.custom_name)}`,
       before: { kind: row.kind, status: row.status, violations: inside, attachments: files } });
   });
+  xoaTepSauGiaoDich(khoaTep);
 }
 
 // ---------------------------------------------------------------- xác nhận đã thực hiện (B13–B16, Y01)
