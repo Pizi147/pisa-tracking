@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { api, invalidate } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
-import { useSession } from '../../lib/session.tsx';
 import { useToast } from '../../ui/Toast.tsx';
 import { Modal } from '../../ui/Drawer.tsx';
 import { Field } from '../../ui/ui.tsx';
@@ -10,6 +9,7 @@ import {
   VIOLATION_SKILLS, VIOLATION_SKILL_LABEL, type ViolationCategory,
 } from '@shared/domain/index.ts';
 import { fmtDate } from '../../lib/format.ts';
+import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 
 /**
  * PANEL `GHI VI PHẠM` (Y_THUC §7.2, giữ nguyên theo plan.md K1/§7.4) — GVBM/GVCN/QL ghi một sự việc, 15 giây.
@@ -32,8 +32,7 @@ export function RecordViolationPanel({
   } | null;
 }) {
   const toast = useToast();
-  const { session } = useSession();
-  const today = session?.demoDate ?? new Date().toISOString().slice(0, 10);
+  const { homNay: today } = useNgayNghiepVu();
   const editing = !!violation;
   const [category, setCategory] = useState<string>('homework');
   const [skill, setSkill] = useState<string>('');
@@ -66,13 +65,13 @@ export function RecordViolationPanel({
   const dup = !editing && !forceNew ? (similar.data?.rows ?? [])[0] : null;
 
   const minLen = category === 'other' ? VIOLATION_OTHER_DESCRIPTION_MIN : VIOLATION_DESCRIPTION_MIN;
+  /* K2-3: ràng buộc nói TRƯỚC khi bấm — nút mờ + câu thiếu gì, không báo lỗi đỏ sau khi bấm. */
+  const missing = !studentId ? 'Hãy chọn học viên.'
+    : description.trim().length < minLen ? `Mô tả cần ít nhất ${minLen} ký tự — nói rõ em đã làm gì, ở buổi nào.`
+    : null;
 
   const submit = async () => {
-    if (!studentId) { toast.push('error', 'Hãy chọn học viên.'); return; }
-    if (description.trim().length < minLen) {
-      toast.push('error', `Mô tả cần ít nhất ${minLen} ký tự — nói rõ em đã làm gì, ở buổi nào.`);
-      return;
-    }
+    if (missing) return;
     setBusy(true);
     try {
       if (editing && violation) {
@@ -97,7 +96,7 @@ export function RecordViolationPanel({
       footer={
         <>
           <button className="btn" onClick={onClose}>Huỷ</button>
-          <button className="btn btn-primary" disabled={busy || !studentId} onClick={submit}>
+          <button className="btn btn-primary" disabled={busy || !!missing} title={missing ?? undefined} onClick={submit}>
             {editing ? 'Lưu' : 'Ghi vi phạm'}
           </button>
         </>
@@ -160,6 +159,8 @@ export function RecordViolationPanel({
             </div>
           </div>
         )}
+
+        {missing && <p className="text-xs text-amber-200/90 m-0">{missing}</p>}
       </div>
     </Modal>
   );

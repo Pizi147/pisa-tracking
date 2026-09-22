@@ -8,6 +8,7 @@ import { Field } from '../../ui/ui.tsx';
 import { BangChung } from '../../ui/BangChung.tsx';
 import { MEASURE_REQUIRED_FIELDS, measureMissing, type MeasureKind } from '@shared/domain/index.ts';
 import { fmtDate } from '../../lib/format.ts';
+import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 
 type MeasureDetail = {
   id: number; studentName: string; kind: string; kindLabel: string; customName: string | null;
@@ -25,7 +26,7 @@ export function ConfirmMeasurePanel({ open, onClose, measureId, onDone }: {
 }) {
   const toast = useToast();
   const { session } = useSession();
-  const today = session?.demoDate ?? new Date().toISOString().slice(0, 10);
+  const { homNay: today } = useNgayNghiepVu();
   const { data } = useApi<MeasureDetail>(open && measureId ? `/measures/${measureId}` : null, [open, measureId]);
   const [performedOn, setPerformedOn] = useState(today);
   const [performerName, setPerformerName] = useState('');

@@ -1230,6 +1230,49 @@ export async function runYThucTests(t: YThucTestKit) {
     assert((meas.confirmMeasure(gvcnNew, prep.id, { performedOn: TODAY, performerName: 'GVCN mới', note: 'Trao đổi với em sau khi chuyển lớp.' } as any) as any).status === 'done', 'GVCN lớp mới xác nhận được biện pháp còn dở');
   });
 
+  // ================================================================== PR-K3: rà soát sau PR-K2 (§7.1 "Gần đây" theo học viên, canRecord)
+
+  console.log('\nPR-K3 · 14. Rà soát PR-K2: "Gần đây" theo từng học viên, canRecord của bảng ba khu vực (K3-1, K3-5)');
+
+  const permsMod = await import('../permissions.ts');
+
+  check('PR-K3 · K3-1 (§7.1) Bảng ba khu vực trả recentByStudent: tối đa 3 biện pháp MỚI NHẤT của TỪNG học viên, không phải của cả lớp', () => {
+    const cls = makeClassForWarnings('MB-FT PK31');
+    const who = loadPrincipal(cls.gvcn);
+    const a = makeStudent('K31 A', cls.id);
+    const b = makeStudent('K31 B', cls.id);
+    /* A: một biện pháp cũ đã thực hiện. */
+    const va = vid(record(who, a.id, { occurredOn: addDays(TODAY, -20), description: 'Vi phạm cũ của A dùng để tạo biện pháp thử' }));
+    confirm(who, mk(who, a.id, 'talk_short', [va]).id, { performedOn: addDays(TODAY, -19) });
+    /* B: bốn biện pháp, đều MỚI hơn biện pháp của A. */
+    for (let i = 0; i < 4; i += 1) {
+      const vb = vid(record(who, b.id, { occurredOn: addDays(TODAY, -10 - i), description: `Vi phạm thứ ${i + 1} của B dùng để tạo biện pháp thử` }));
+      confirm(who, mk(who, b.id, 'talk_short', [vb]).id, { performedOn: addDays(TODAY, -i) });
+    }
+    const bd = board.classViolationBoard(who, cls.id) as any;
+    assert(Array.isArray(bd.recentByStudent[a.id]) && bd.recentByStudent[a.id].length === 1,
+      `recentByStudent[A] phải có đúng 1 phần tử: ${JSON.stringify(bd.recentByStudent[a.id])}`);
+    assert(Array.isArray(bd.recentByStudent[b.id]) && bd.recentByStudent[b.id].length === 3,
+      `recentByStudent[B] phải có đúng 3 phần tử (giới hạn tối đa), có ${bd.recentByStudent[b.id]?.length}`);
+    assert(bd.recentByStudent[b.id][0].performedOn >= bd.recentByStudent[b.id][2].performedOn, 'Mới nhất đứng trước trong recentByStudent[B]');
+    assert(bd.history.latest.length === 3 && bd.history.total === 5, 'history cũ (của cả lớp) vẫn giữ nguyên hành vi cũ, không bị đụng');
+  });
+
+  check('PR-K3 · K3-5 canRecord của bảng ba khu vực: GVBM dạy lớp trái môn → true; giáo viên không dạy lớp thì máy chủ từ chối cả quyền ghi vi phạm (không riêng gì bảng); Quản lý cùng chi nhánh → true, chi nhánh khác thì không đọc được bảng', () => {
+    const cls = makeClassForWarnings('MB-FT PK35');
+    conn.prepare(`INSERT INTO teacher_assignments (class_id, user_id, skill, is_core, status, effective_from, created_at) VALUES (?, ?, 'writing1', 0, 'active', '2026-01-01', ?)`)
+      .run(cls.id, gvbm.userId, new Date().toISOString());
+    const bdGvbm = board.classViolationBoard(loadPrincipal(gvbm.userId), cls.id) as any;
+    assert(bdGvbm.canRecord === true, 'GVBM dạy lớp (trái môn, chỉ Writing 1) vẫn ghi vi phạm được — Ý thức không theo C02');
+    assert(permsMod.can(loadPrincipal(gvbm.userId), domain.PERMISSIONS.VIOLATION_RECORD, { classId: cls.id }) === true, 'Khớp đúng quyền violation.record mà máy chủ dùng để tính canRecord');
+    /* gvbm2 không có phân công nào ở lớp mới này (chỉ dạy lớp CLASS = MB-FT 101) — không đọc được bảng, đồng nghĩa không ghi vi phạm được ở lớp này. */
+    assertThrows(() => board.classViolationBoard(gvbm2, cls.id), /phạm vi|quyền/, 'Giáo viên không dạy lớp vẫn đọc được bảng (và do đó vẫn có canRecord)');
+    assert(permsMod.can(gvbm2, domain.PERMISSIONS.VIOLATION_RECORD, { classId: cls.id }) === false, 'Giáo viên không dạy lớp không có quyền violation.record ở lớp đó');
+    const bdMb = board.classViolationBoard(P.mbManager, cls.id) as any;
+    assert(bdMb.canRecord === true, 'Quản lý trong phạm vi ghi vi phạm được (đúng quyền violation.record hiện có)');
+    assertThrows(() => board.classViolationBoard(P.cpManager, cls.id), /phạm vi|quyền/, 'Quản lý chi nhánh khác đọc được bảng');
+  });
+
   // ================================================================== Gọi thẳng đường HTTP (nghiệm thu 5, 22)
 
   const { createApp } = await import('../app.ts');

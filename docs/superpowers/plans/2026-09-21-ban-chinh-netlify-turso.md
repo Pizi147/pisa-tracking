@@ -10,7 +10,7 @@
 > | PR | Task | Nội dung | Model khuyến nghị |
 > |---|---|---|---|
 > | **PR-Z2a** | 0 → 6b | Hạ tầng: libsql, Turso, kho tệp, Netlify Function, tắt demo, **deploy nháp thật** | 🆕 22/09 **Fable 5.1 · High** (B: Sonnet 5 · High) — nâng từ Sonnet vì thử thật cho thấy lỗi chỉ lộ sau khi gói; rà soát ở session planning (Opus) |
-> | **PR-Z2b** | 7 → 9 | An toàn dữ liệu bản chính: khởi tạo, chi nhánh, sao lưu, tài liệu | Opus 5 · XHigh (B: Fable 5.1 · High) |
+> | **PR-Z2b** | 6c → 9 (có 6c, 6d, 6e mới 22/09) | An toàn dữ liệu bản chính: khởi tạo, chi nhánh, sao lưu, tài liệu | Opus 5 · XHigh (B: Fable 5.1 · High) |
 > | **PR-Z2c** | 10 → 11 | Deploy bản chính + đo tốc độ + rà soát độc lập | Opus 5 · XHigh (B: Fable 5.1 · High); **người rà ≠ người code** |
 
 > **SỬA 22/09/2026 SAU THỬ THẬT (session planning).** Một agent đã chạy thử Task 1–2 và **gói Function như Netlify
@@ -85,7 +85,7 @@ mạng tới Turso — đó là Task 3 (gate).
 | Phần | Làm | Điều kiện bắt đầu | Kết thúc bằng |
 |---|---|---|---|
 | **A · PR-Z2a** | Task 0 → Task 6b | `main` đã có PR-T và PR-K | Deploy **nháp** chạy thật trên Netlify với database Turso **thử** (Task 6b) → mở PR, không merge |
-| **B · PR-Z2b** | Task 7 → Task 9 | PR-Z2a **đã merge** | Mở PR, không merge |
+| **B · PR-Z2b** | Task 6c → 6d → 6e → 7 → 9 | PR-Z2a **đã merge** | Mở PR, không merge |
 | **C · PR-Z2c** | Task 10 → Task 11 | PR-Z2b **đã merge** | Bản chính chạy trên địa chỉ thật + rà soát độc lập → mở PR (nếu có mã đổi), không merge |
 
 - Mỗi phần: **một session mới**, một nhánh mới từ `main` mới nhất (`pr-z2a-ha-tang`, `pr-z2b-an-toan-du-lieu`,
@@ -1031,6 +1031,170 @@ và cho **số đo tốc độ thật** (Netlify ↔ Turso cùng vùng), thay ch
 
 ---
 
+### Task 6c 🆕 22/09: Siết chốt seed theo địa chỉ ĐẦY ĐỦ + tên database thật  *(đầu Phần B — làm trước Task 7)*
+
+**Vì sao:** chủ sản phẩm đặt tên thật (22/09): database **thử** = `pisatracking-demo`, database **bản chính** =
+`pisatracking`. Tên bản chính **nằm trọn trong** tên bản thử. Chốt của Task 2 Step 6 cho seed chạy khi
+`DB_PATH.includes(PISA_CHO_PHEP_SEED_TURSO)` → ai đặt biến là `pisatracking` thì khớp **cả hai** → `npm run seed`
+(xoá sạch rồi dựng demo) chạy được vào **bản chính**. Phải so **nguyên tên máy chủ** của URL, không so "có chứa".
+
+**Files:** Modify `server/src/seed/run.ts`, `server/src/moiTruong.ts`, `server/src/tests/banChinh.tests.ts`,
+`TRIEN_KHAI.md`, file kế hoạch này (các chỗ còn ghi `pisa-thu-nghiem` / `pisa-ban-chinh` trong Phần B, C).
+
+**Interfaces:** Produces `tenMayChuDb(url: string): string` (trong `moiTruong.ts`) — trả hostname viết thường,
+ví dụ `libsql://pisatracking-demo-abc.turso.io` → `pisatracking-demo-abc.turso.io`; URL hỏng → `''`.
+Produces `choPhepSeedTurso(url: string, choPhep: string | undefined): boolean`.
+
+- [ ] **Step 1: Phép kiểm đỏ** — thêm vào `banChinh.tests.ts`:
+  ```ts
+  console.log('\nPR-Z2 · 1b. Chốt seed so NGUYÊN tên máy chủ (tên bản chính nằm trong tên bản thử)');
+  const { choPhepSeedTurso } = await import('../moiTruong.ts');
+  const THU = 'libsql://pisatracking-demo-abc.turso.io';
+  const CHINH = 'libsql://pisatracking-abc.turso.io';
+  check('PR-Z2 · Seed được vào DB thử khi biến cho phép là NGUYÊN tên máy chủ của nó', () => {
+    assert(choPhepSeedTurso(THU, 'pisatracking-demo-abc.turso.io') === true, 'phải cho phép');
+  });
+  check('PR-Z2 · Biến cho phép là một PHẦN tên ("pisatracking") → KHÔNG khớp DB nào, kể cả bản chính', () => {
+    assert(choPhepSeedTurso(CHINH, 'pisatracking') === false, 'bản chính không được seed');
+    assert(choPhepSeedTurso(THU, 'pisatracking') === false, 'một phần tên không đủ');
+  });
+  check('PR-Z2 · Biến cho phép là tên DB thử nhưng URL là bản chính → từ chối', () => {
+    assert(choPhepSeedTurso(CHINH, 'pisatracking-demo-abc.turso.io') === false, 'phải từ chối');
+  });
+  check('PR-Z2 · Không có biến cho phép → từ chối', () => {
+    assert(choPhepSeedTurso(THU, undefined) === false && choPhepSeedTurso(THU, '') === false, 'phải từ chối');
+  });
+  ```
+- [ ] **Step 2:** `npm test` → bốn phép **đỏ**. Ghi Nhật ký.
+- [ ] **Step 3:** Trong `server/src/moiTruong.ts`:
+  ```ts
+  /** Tên máy chủ của URL database (viết thường). Dùng để so NGUYÊN tên, không so "có chứa". */
+  export function tenMayChuDb(url: string): string {
+    try { return new URL(url.replace(/^libsql:/, 'https:')).hostname.toLowerCase(); } catch { return ''; }
+  }
+
+  /**
+   * Cho `npm run seed` (XOÁ SẠCH rồi dựng demo) chạy vào Turso? Chỉ khi biến cho phép là NGUYÊN tên máy chủ của
+   * database đang trỏ tới. Lý do (22/09): tên bản chính `pisatracking` nằm trọn trong tên bản thử
+   * `pisatracking-demo`, nên so "có chứa" sẽ để lọt bản chính.
+   */
+  export function choPhepSeedTurso(url: string, choPhep: string | undefined): boolean {
+    const ten = tenMayChuDb(url);
+    return !!ten && !!choPhep && ten === choPhep.trim().toLowerCase();
+  }
+  ```
+- [ ] **Step 4 (🆕 22/09 sau rà soát Opus — thay chữ cũ):** PR-Z2a **đã** dời chốt xoá sạch vào `recreateSchema()`
+      (hàm `tuChoiXoaSachNeuTuXa` trong `server/src/db.ts`, ~dòng 115) và đã so **nguyên tên máy chủ**; `seed/run.ts`
+      **không còn** `DB_PATH.includes(...)`. Vậy Step 4 là:
+      1. `tuChoiXoaSachNeuTuXa` gọi `choPhepSeedTurso(DB_PATH, process.env.PISA_CHO_PHEP_SEED_TURSO)` thay cho phép so
+         hiện có (giữ nguyên điều kiện `!laBanChinh()` đang có). **Không** thêm một phép kiểm thứ hai, khác kiểu, ở
+         `seed/run.ts` — một chốt, một nơi.
+      2. **Chặn cứng tên bản chính**, đặt trong `choPhepSeedTurso` **trước** phép so: tên máy chủ (viết thường) bắt đầu
+         bằng `pisatracking-` mà **không** bắt đầu bằng `pisatracking-demo-` → luôn `false`, bất kể biến cho phép. Lý do:
+         nếu ai dán nhầm tên máy chủ bản chính vào `PISA_CHO_PHEP_SEED_TURSO` thì vẫn không xoá được bản chính.
+         Thêm phép kiểm: `choPhepSeedTurso(CHINH, 'pisatracking-abc.turso.io') === false`.
+      3. Thông báo TỪ CHỐI thêm dòng: `Muốn seed database THỬ: đặt PISA_CHO_PHEP_SEED_TURSO bằng NGUYÊN tên máy chủ,
+         ví dụ pisatracking-demo-xxx.turso.io`.
+      Phép kiểm tiến trình con của Task 2 Step 6 và phép "chạy bộ kiểm trong cửa sổ có biến Turso" của PR-Z2a phải
+      vẫn xanh.
+- [ ] **Step 5: Tên thật trong tài liệu.** `TRIEN_KHAI.md` mục 2 và bảng tra mục 12: `pisa-thu-nghiem` → `pisatracking-demo`,
+      `pisa-ban-chinh` → `pisatracking` (cả ví dụ URL). Thêm một câu cảnh báo ở mục 2: *"Hai tên gần giống nhau —
+      khi dán URL, nhìn kỹ có chữ `-demo` hay không."* Trong file kế hoạch này, Phần B và C: đổi mọi `pisa-ban-chinh` →
+      `pisatracking`, `pisa-thu-nghiem` → `pisatracking-demo`. Chốt kiểm ở Task 10 Step 1 ("URL phải là bản chính")
+      đổi thành: `tenMayChuDb(URL)` **bắt đầu bằng `pisatracking-`** và **không** bắt đầu bằng `pisatracking-demo`.
+- [ ] **Step 6:** `npm run check` xanh (N + 5). Commit: `PR-Z2 (6c): chốt seed so nguyên tên máy chủ; tên database thật`.
+
+---
+
+### Task 6d 🆕 22/09: `npm run migrate` an toàn khi trỏ tới Turso
+
+**Vì sao (rà soát Opus 22/09, Important 2):** `server/src/migrate.ts` (~dòng 1210–1235) chạy được vào Turso mà không có
+chốt nào, và trên database chưa có quản trị mặc định thì **tạo tài khoản `admin` với mật khẩu ai cũng biết `pisa2026`**,
+đồng thời **gán mật khẩu mặc định cho mọi người dùng chưa có mật khẩu**. Trên bản chính đó là một cửa sau. Nhưng sau
+deploy vẫn phải nâng cấp schema bản chính bằng `migrate` — nên **không** chặn hẳn, mà bắt xác nhận + bỏ phần demo.
+
+**Files:** Modify `server/src/migrate.ts`, `server/src/migrate/run.ts`, `server/src/moiTruong.ts`,
+`server/src/tests/banChinh.tests.ts`, `TRIEN_KHAI.md` (mục 11 "Khi có sự cố" — thêm cách nâng cấp).
+
+**Interfaces:** Consumes `laDbTuXa()`, `tenMayChuDb()` (Task 6c). Produces `choPhepMigrateTurso(url, choPhep): boolean`
+— cùng luật "nguyên tên máy chủ" như seed, **không** có chặn tên bản chính (migrate phải chạy được trên bản chính).
+
+- [ ] **Step 1: Phép kiểm đỏ** (`banChinh.tests.ts`, khuôn thuần + một phép chạy tiến trình con như Task 2 Step 6):
+  1. `choPhepMigrateTurso('libsql://pisatracking-abc.turso.io', 'pisatracking-abc.turso.io') === true`;
+     với `'pisatracking'` → `false`; không biến → `false`.
+  2. Tiến trình con `node dist-server/server/src/migrate/run.js` với `TURSO_DATABASE_URL=libsql://khong-ton-tai.turso.io`,
+     `TURSO_AUTH_TOKEN=x`, **không** có `PISA_CHO_PHEP_MIGRATE_TURSO` → mã thoát khác 0, stderr có `TỪ CHỐI`, và
+     **không** có dòng nào cho thấy đã kết nối.
+  3. Hàm tạo quản trị mặc định / gán mật khẩu mặc định (tìm đúng tên hàm ở `migrate.ts` ~1210–1235): gọi trên một
+     database `:memory:` khi `laDbTuXa()` được giả là `true` (hoặc truyền cờ vào hàm — chọn cách ít đụng nhất, ghi Nhật
+     ký) → **không** tạo `admin`, **không** gán `pisa2026` cho ai; trên file cục bộ → hành vi cũ giữ nguyên.
+- [ ] **Step 2:** `npm test` → đỏ. Ghi Nhật ký.
+- [ ] **Step 3:** `migrate/run.ts`: đầu tệp, khi `laDbTuXa()` mà `!choPhepMigrateTurso(DB_PATH, process.env.PISA_CHO_PHEP_MIGRATE_TURSO)`
+      → in `[migrate] TỪ CHỐI: đang trỏ tới Turso. Muốn nâng cấp database này: SAO LƯU trước (npm run sao-luu), rồi đặt
+      PISA_CHO_PHEP_MIGRATE_TURSO bằng NGUYÊN tên máy chủ của nó.` và `process.exit(1)`.
+- [ ] **Step 4:** `migrate.ts`: khi `laDbTuXa()` → **bỏ qua** tạo quản trị mặc định và gán mật khẩu mặc định, in một dòng
+      `[migrate] Turso: bỏ qua tài khoản/mật khẩu mặc định của bản demo.` Không đổi phần nâng cấp schema.
+- [ ] **Step 5:** `TRIEN_KHAI.md` mục 11: thêm mục nhỏ "Nâng cấp database bản chính khi có bản mới cần" — ba lệnh PowerShell
+      (sao lưu → đặt biến xác nhận → `npm run migrate`), nói rõ **chỉ làm khi session code yêu cầu**.
+- [ ] **Step 6:** `npm run check` xanh. Commit: `PR-Z2 (6d): migrate vào Turso cần xác nhận, bỏ tài khoản mặc định`.
+
+---
+
+### Task 6e 🆕 22/09: Bản nháp KHÔNG BAO GIỜ chạm dữ liệu thật
+
+**Vì sao (rà soát Opus 22/09, Important 5 — session planning đã quyết):** hiện ba biến Turso đặt cho **mọi** loại deploy,
+và kho tệp `getStore('bang-chung')` dùng chung cả site. Sau Task 10, mọi `netlify deploy --build` (bản nháp, từ bất kỳ
+nhánh hay thư mục đang sửa dở) sẽ chạy mã chưa kiểm **trên dữ liệu thật**. Quyết định: **bản chính thức (production) →
+database `pisatracking`; mọi bản nháp → database thử `pisatracking-demo`**; kho tệp đi theo database.
+
+**Files:** Modify `server/src/platform/khoTep.ts`, `server/src/yThuc/measures.ts`, `server/src/ops/thuTurso.ts`,
+`server/src/db.ts`, `server/src/tests/banChinh.tests.ts`, `TRIEN_KHAI.md` (mục 5, 6, 8), `server/src/ops/saoLuu.ts` nếu Task 8
+đã tạo (nếu chưa: ghi chú cho Task 8 dùng cùng tên kho).
+
+**Interfaces:** Produces `tenKhoTep(): string` trong `khoTep.ts` — `'bang-chung-' + <phần đầu tên máy chủ database>`,
+ví dụ `bang-chung-pisatracking-demo-pizi147`; không có Turso (máy dev) → `'bang-chung-cuc-bo'`. Task 8 (sao lưu tệp) dùng
+đúng hàm này.
+
+- [ ] **Step 1: Phép kiểm đỏ:**
+  - `tenKhoTep()` với `TURSO_DATABASE_URL=libsql://pisatracking-demo-pizi147.aws-us-east-2.turso.io` → `bang-chung-pisatracking-demo-pizi147`;
+    với `libsql://pisatracking-pizi147.aws-us-east-2.turso.io` → `bang-chung-pisatracking-pizi147`; **hai tên khác nhau**.
+    (Đặt/xoá biến môi trường trong `try/finally`; nếu `DB_PATH` được tính một lần lúc nạp module thì cho `tenKhoTep`
+    nhận `url` làm tham số tuỳ chọn để kiểm — ghi Nhật ký.)
+  - `deleteMeasure` (xoá biện pháp Đang chuẩn bị có tệp) bằng kho giả ghi lại thứ tự gọi: lệnh xoá tệp chỉ xảy ra **sau**
+    khi giao dịch đã chốt (ví dụ kho giả kiểm `db().inTransaction === false` lúc bị gọi `xoa`).
+- [ ] **Step 2:** `npm test` → đỏ.
+- [ ] **Step 3:** `khoTep.ts`: `khoTepNetlify()` dùng `getStore(tenKhoTep())` thay `'bang-chung'` (cả ghi, đọc, xoá).
+      **Chưa có dữ liệu thật nên đổi tên kho không mất gì** — tệp thử trên kho cũ `bang-chung` bỏ lại, vô hại.
+- [ ] **Step 4 (Important 6):** `server/src/yThuc/measures.ts` ~365: `deleteMeasure` truyền mảng `khoaTep` vào
+      `purgeAttachmentsOf(...)` rồi gọi `xoaTepSauGiaoDich(khoaTep)` **sau** `tx(...)` — đúng mẫu đã làm ở `violations.ts`.
+- [ ] **Step 5 (Minor):** `server/src/ops/thuTurso.ts`: từ chối chạy khi `laBanChinh()` hoặc khi tên máy chủ bắt đầu
+      bằng `pisatracking-` mà không bắt đầu bằng `pisatracking-demo-` (script tạo/xoá bảng `_thu*`). `server/src/db.ts`
+      ~155: nếu `ROLLBACK TO` ném lỗi thì vẫn ném **lỗi gốc** (bọc `try { ROLLBACK TO; RELEASE } catch { /* giữ lỗi gốc */ }`).
+- [ ] **Step 6: Biến môi trường theo loại deploy — viết lại `TRIEN_KHAI.md` mục 5, 6, 8** (hợp đồng với chủ sản phẩm,
+      viết cho người không biết code, mỗi lệnh một khối PowerShell):
+  - Mục 5 (đã làm với database thử — **không** bắt làm lại): thêm một câu "các biến này hiện áp cho mọi loại deploy; mục 6
+    sẽ tách riêng cho bản chính thức."
+  - Mục 6 viết lại: đặt database **bản chính** **chỉ cho bản chính thức**:
+    ```powershell
+    netlify env:set TURSO_DATABASE_URL "<URL database CHÍNH>" --context production
+    netlify env:set TURSO_AUTH_TOKEN "<Token database CHÍNH>" --context production
+    ```
+    rồi kiểm (chỉ in URL, **không** in token):
+    ```powershell
+    netlify env:get TURSO_DATABASE_URL --context production
+    netlify env:get TURSO_DATABASE_URL --context deploy-preview
+    ```
+    Dòng đầu phải là `pisatracking-<...>` (không có `-demo`), dòng sau phải là `pisatracking-demo-<...>`. Sai → dừng, báo
+    session. **Session thực thi Task 6e phải tự thử hai lệnh `env:set --context production` + hai lệnh `env:get` này
+    bằng một biến vô hại** (ví dụ `PISA_THU_NGU_CANH`, rồi `netlify env:unset PISA_THU_NGU_CANH`) để chắc cú pháp đúng với
+    bản Netlify CLI đang cài — **không** đụng hai biến Turso thật; cú pháp khác thì sửa `TRIEN_KHAI.md` theo cú pháp đúng.
+  - Mục 8: bỏ câu "bản nháp dùng database bản chính"; thay bằng "bản nháp luôn dùng database **thử** — thoải mái bấm
+    thử; chỉ bản chính thức (`--prod`) mới có dữ liệu thật".
+  - Bảng tra mục 12: thêm cột "Áp cho" (mọi deploy / chỉ bản chính thức).
+- [ ] **Step 7:** `npm run check` xanh. Commit: `PR-Z2 (6e): bản nháp dùng database thử, kho tệp theo database, xoá tệp sau giao dịch`.
+
+---
+
 ### Task 7: Dữ liệu nền dùng chung + `init-ban-chinh` + `them-chi-nhanh`
 
 **Vì sao cần:** hệ thống **không có màn nào tạo chi nhánh** — chi nhánh chỉ được tạo trong `seed.ts`. Database rỗng
@@ -1215,14 +1379,26 @@ không có chi nhánh thì không tạo được lớp. Nên lệnh khởi tạo
 **Cần chủ sản phẩm:** site Netlify đã tạo ở Task 6b và database Turso **bản chính** `pisa-ban-chinh` (khác database
 thử). Hỏi rõ từng thứ; **không** dùng database thử làm bản chính. Deploy **chỉ bằng Netlify CLI** từ thư mục repo.
 
-- [ ] **Step 1: Hỏi chủ sản phẩm:** (a) đã tạo `pisa-ban-chinh` cùng vùng với database thử chưa; (b) đã **đổi** hai biến
-      Turso của site sang database bản chính theo `TRIEN_KHAI.md` mục 6 chưa (từ giờ mọi bản nháp cũng trỏ vào bản
-      chính); (c) danh sách chi nhánh thật `MA=Tên`; (d) email quản trị. **Mật khẩu quản trị để chủ sản phẩm tự gõ** ở
-      Step 3 — không xin, không ghi.
-- [ ] **Step 2: Deploy nháp** bằng `netlify deploy --build` (không `--prod`) từ `main` mới nhất. Ghi địa chỉ nháp.
+> **🆕 22/09 — THỨ TỰ MỚI của Task 10** (vì Task 6e: bản nháp **luôn** dùng database thử, chỉ bản chính thức dùng
+> `pisatracking`). Không còn "thử luồng trên bản nháp nối database chính". Thay vào đó: đưa lên địa chỉ chính thức
+> **trước khi báo cho giáo viên** — lúc đó địa chỉ chính thức chính là nơi kiểm, chưa ai dùng. Chữ cũ của Step 1–3, 7, 8
+> được thay như dưới đây.
+
+- [ ] **Step 1: Hỏi chủ sản phẩm:** (a) database bản chính `pisatracking` đã tạo cùng vùng Ohio với database thử chưa
+      (chủ sản phẩm cho biết 22/09 là đã có tên này); (b) đã làm `TRIEN_KHAI.md` mục 6 **mới** (biến Turso **chỉ cho bản
+      chính thức**) chưa — tự kiểm bằng hai lệnh `env:get` ở mục 6, dòng production phải là `pisatracking-<...>` không có
+      `-demo`, dòng deploy-preview phải là `pisatracking-demo-<...>`; (c) danh sách chi nhánh thật `MA=Tên`; (d) email
+      quản trị. **Mật khẩu quản trị để chủ sản phẩm tự gõ** ở Step 3 — không xin, không ghi.
+- [ ] **Step 2: Deploy nháp** bằng `netlify deploy --build` (không `--prod`) từ `main` mới nhất. Kiểm nhanh như Task 6b
+      Step 6 (health, không "Vào nhanh", cửa sau 404). **Chứng minh bản nháp đang ở database THỬ:** đăng nhập được bằng một
+      tài khoản của bộ demo (chỉ database thử có). Không đăng nhập được → biến môi trường chưa tách đúng → 🛑 dừng.
 - [ ] **Step 3: Khởi tạo** — chủ sản phẩm tự chạy trên máy mình (`TRIEN_KHAI.md` mục 7) với database **bản chính**. Bạn chỉ
       hướng dẫn. Kết quả phải in `userId` và danh sách chi nhánh.
-- [ ] **Step 4: Luồng từ đầu tới cuối trên bản xem trước** — làm cùng chủ sản phẩm, tick từng dòng, ghi thời gian:
+- [ ] **Step 3b 🆕: Đưa lên địa chỉ chính thức (chưa báo giáo viên)** — **hỏi chủ sản phẩm đồng ý trước**, nói rõ: "địa chỉ
+      chính thức sẽ có web nhưng chưa ai biết; ta kiểm ở đó trước khi báo giáo viên". Rồi `netlify deploy --build --prod`.
+      Mở `https://<tên-site>.netlify.app` → đăng nhập bằng tài khoản demo **phải thất bại** (database chính không có tài
+      khoản demo) và đăng nhập quản trị vừa khởi tạo **phải thành công**. Sai một trong hai → 🛑 dừng.
+- [ ] **Step 4: Luồng từ đầu tới cuối trên ĐỊA CHỈ CHÍNH THỨC** — làm cùng chủ sản phẩm, tick từng dòng, ghi thời gian:
   1. Đăng nhập quản trị (không có tab "Vào nhanh", không có thanh demo, ngày hiển thị là **hôm nay**).
   2. Tạo tài khoản 1 Quản lý + 2 Giáo viên (một người là GVCN), đúng chi nhánh.
   3. Tạo lớp Fast Track, phân công GVBM từng môn + GVCN.
@@ -1243,10 +1419,16 @@ thử). Hỏi rõ từng thứ; **không** dùng database thử làm bản chín
       quả trả về**. Chạy `npm run check` sau mỗi trang. Không đụng trang ≤ 3 giây. Trang nào vẫn > 3 giây sau khi gộp →
       ghi vào `plan.md` mục 12, không cố thêm.
 - [ ] **Step 7: Dọn dữ liệu thử** — dữ liệu ở Step 4 là thử trên database **bản chính**. Hỏi chủ sản phẩm: giữ lại để GV
-      xem mẫu, hay xoá. Muốn xoá: **không** có lệnh xoá tự động; hướng dẫn chủ sản phẩm tạo lại database `pisa-ban-chinh`
-      trên Turso (xoá database và tạo lại cùng tên, cập nhật token trên Netlify nếu đổi) rồi chạy lại Step 3.
-- [ ] **Step 8: Đưa lên địa chỉ chính thức** — **hỏi chủ sản phẩm đồng ý trước**, rồi `netlify deploy --build --prod`.
-      Mở `https://<tên-site>.netlify.app` → đăng nhập được, dữ liệu Step 4 còn (hoặc rỗng nếu đã dọn ở Step 7).
+      xem mẫu, hay xoá. Muốn xoá: **không** có lệnh xoá tự động; hướng dẫn chủ sản phẩm tạo lại database `pisatracking`
+      trên Turso (xoá database và tạo lại cùng tên, cập nhật token **bản chính thức** trên Netlify theo mục 6 nếu đổi) rồi
+      chạy lại Step 3. Tệp thử trên kho `bang-chung-pisatracking-...` bỏ lại, vô hại.
+- [ ] **Step 8 🆕: Khoá lại và báo sẵn sàng.** (a) Nhắc chủ sản phẩm **bật lại bảo vệ truy cập cho bản nháp** trên Netlify
+      (Site configuration → Access & security → Visitor access — mục cho bản deploy không chính thức), vì đã tắt ở
+      Task 6b để kiểm. (b) Nếu đã sửa mã ở Step 6: deploy lại `netlify deploy --build --prod`. (c) Mở địa chỉ chính thức
+      lần cuối → đăng nhập quản trị được, dữ liệu đúng như sau Step 7. Chỉ sau bước này mới nói "sẵn sàng báo giáo viên".
+- [ ] **Step 8b 🆕: Kết nối nguội.** Để web yên **hơn 10 phút**, rồi mở lại một trang có dữ liệu → phải chạy bình thường
+      (kết nối Turso được giữ ở cấp module trong `db.ts`; chưa ai kiểm nó sống sót sau khi luồng mạng hết hạn). Lỗi →
+      systematic-debugging, sửa `db.ts` cho mở lại kết nối khi lỗi mạng, kèm phép kiểm.
 - [ ] **Step 9:** Ghi toàn bộ kết quả vào Nhật ký. Commit các sửa đổi của Step 6: `PR-Z2 (10): gộp truy vấn các trang chậm`.
 
 ---

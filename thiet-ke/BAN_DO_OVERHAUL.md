@@ -212,7 +212,18 @@ Nguồn: `SOS_VA_PHOI_HOP_V3.md` · rule book mục 19 · `plan.md` mục 23.1. 
 | Xoá vi phạm thay "đánh dấu không chính xác" (V11′–V14′) | ✅ Đã làm | `violations.deleteViolation`, `DELETE /violations/:id`; `migrateDeleteInvalidViolations`; số vi phạm của biện pháp là số đang gắn | **PR-T ✅** |
 | Đổi tên mức `Cần chú ý` → `Bình thường` | 🟡 Một phần | `URGENCY_LABEL` + thông báo lỗi + seed + phép kiểm đã đổi (mã `attention` giữ nguyên). **Còn một chữ cứng ở `web/src/modules/cases/CaseBoardPage.tsx:451`** — giao diện, chưa sửa vì PR-T cấm | **PR-K** |
 | Bộ demo v3 (§9): ba học viên đi qua chính hàm nghiệp vụ | ✅ Đã làm | `seed/sosV3Seed.ts` + phép kiểm "PR-T · 0"; Ý thức demo: vi phạm "không chính xác" → "đã xoá" (có audit) | **PR-T ✅** |
-| Giao diện Ý thức & Phối hợp, case từ SOS trên bảng kỹ năng, số liệu cho Quản lý | ❌ Chưa làm | Đặc tả §7 | **PR-K** |
+| Giao diện Ý thức & Phối hợp, case từ SOS trên bảng kỹ năng, số liệu cho Quản lý | ✅ Đã làm (PR-K), sửa sau rà soát ở PR-K2 | Đặc tả §7 | **PR-K ✅** · **PR-K2** |
+
+## 9c. Ý thức & Phối hợp — để lại sau rà soát PR-K2 (22/09/2026, `plan.md` 12.15)
+
+| Yêu cầu | Tình trạng | Bằng chứng / còn thiếu | PR |
+|---|---|---|---|
+| Số Phối hợp SOS chia theo `SOS1`/`SOS2`/`SOS3` (§7.6 bảng 3) | ❌ Chưa làm | `phoiHopMetric` đếm gộp mọi mức, chưa cắt theo mức | **PR-P** |
+| Số `Phối hợp SOS {n}` trên nhãn sub-tab ở hồ sơ học viên (§7.3) | ❌ Chưa làm | `StudentYThucSection.tsx` — nhãn sub-tab chưa có số, khác hồ sơ lớp (đã có) | **PR-Q** |
+| Nút `[Mở]`/`[Xem]` biện pháp đã thực hiện ở dòng thời gian học viên (§7.3) | ❌ Chưa làm | `StudentYThucSection.tsx` — chỉ có `Xác nhận` cho biện pháp đang chuẩn bị | **PR-Q** |
+| Toast `Hoàn tác` sau khi ghi vi phạm (Y_THUC §7.2) | ❌ Chưa làm | `RecordViolationPanel.tsx` không có link hoàn tác | chưa gắn PR |
+| Máy chủ tự lấy người đang đăng nhập làm `performedBy` khi để trống | 🟡 Một phần | Giao diện vá tạm bằng gửi `session.user.id`; `measures.confirmMeasure` (`measures.ts` ~390) chưa tự mặc định | chưa gắn PR |
+| Lớp dùng kiểm `canRecordViolation` ở `profile.ts` ~891 có thể lệch `activeClassOf` sau khi HV chuyển lớp | 🟡 Một phần | Hai nguồn "lớp đang học" khác nhau (`current` cục bộ vs `activeClassOf` truy vấn mới) | chưa gắn PR |
 
 ---
 

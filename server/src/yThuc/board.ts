@@ -24,6 +24,8 @@ export type ClassViolationBoard = {
   classCode: string;
   /** Người xem có tạo và xác nhận được biện pháp không — GVBM đọc được ba khu vực nhưng KHÔNG thấy nút Tạo biện pháp. */
   canManage: boolean;
+  /** Người xem có ghi vi phạm được ở lớp này không (K2-5b) — cùng quyền `violation.record` mà route ghi vi phạm dùng. */
+  canRecord: boolean;
   /** Đầu tab: `⚠ 3 học viên có vi phạm chưa xử lý quá 5 ngày`. */
   warning: { activeCount: number; message: string };
   unhandled: {
@@ -38,6 +40,8 @@ export type ClassViolationBoard = {
   };
   preparing: MeasureDetail[];
   history: { total: number; latest: MeasureDetail[] };
+  /** §7.1 "Gần đây": tối đa 3 biện pháp mới nhất CỦA TỪNG HỌC VIÊN (không phải của cả lớp như `history.latest`) — dựng từ `done` đã tải, không thêm truy vấn. */
+  recentByStudent: Record<number, MeasureDetail[]>;
 };
 
 const HISTORY_LATEST = 3;
@@ -65,8 +69,17 @@ export function classViolationBoard(p: Principal, classId: number, today = demoT
   const preparing = listMeasures(p, { classId, status: 'preparing' }).rows;
   const done = listMeasures(p, { classId, status: 'done' }).rows;
 
+  /* `done` đã sắp mới nhất trước (ORDER BY performed_on DESC trong listMeasures) — nên với mỗi học viên,
+     3 phần tử đầu tiên gặp trong vòng lặp chính là 3 biện pháp mới nhất của riêng em đó. */
+  const recentByStudent: Record<number, MeasureDetail[]> = {};
+  for (const m of done) {
+    const arr = recentByStudent[m.studentId] ?? (recentByStudent[m.studentId] = []);
+    if (arr.length < HISTORY_LATEST) arr.push(m);
+  }
+
   return {
     classId, classCode: cls.code, canManage: can(p, PERMISSIONS.DISCIPLINE_MANAGE, { classId }),
+    canRecord: can(p, PERMISSIONS.VIOLATION_RECORD, { classId }),
     warning: {
       activeCount: activeWarnings,
       message: activeWarnings > 0 ? `⚠ ${activeWarnings} học viên có vi phạm chưa xử lý quá ${CANH_BAO_NGAY} ngày` : '',
@@ -76,5 +89,6 @@ export function classViolationBoard(p: Principal, classId: number, today = demoT
     },
     preparing,
     history: { total: done.length, latest: done.slice(0, HISTORY_LATEST) },
+    recentByStudent,
   };
 }

@@ -9,6 +9,7 @@ import { CreateMeasurePanel } from './CreateMeasurePanel.tsx';
 import { ConfirmMeasurePanel } from './ConfirmMeasurePanel.tsx';
 import { DeleteViolationConfirm } from './DeleteViolationConfirm.tsx';
 import { PhoiHopSosSection, type CoordTurn } from './PhoiHopSosSection.tsx';
+import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 
 type ViolationView = {
   id: number; category: string; categoryLabel: string; skill: string | null; skillLabel: string | null;
@@ -47,7 +48,7 @@ export function StudentYThucSection({ studentId, studentName, canRecordViolation
   const [measureOpen, setMeasureOpen] = useState(false);
   const [confirmMeasureId, setConfirmMeasureId] = useState<number | null>(null);
   const { session } = useSession();
-  const today = session?.demoDate ?? new Date().toISOString().slice(0, 10);
+  const { homNay: today } = useNgayNghiepVu();
   /* V10: sửa/xoá được — người ghi (của mình) · GVCN của lớp · Quản lý trong phạm vi. Máy chủ vẫn kiểm lại; đây chỉ để ẩn nút cho gọn mắt. */
   const canEditViolation = (v: ViolationView) => canManageDiscipline || v.reportedBy === session?.user?.id;
 
