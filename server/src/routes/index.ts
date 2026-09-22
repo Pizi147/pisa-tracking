@@ -13,6 +13,7 @@ import { HttpError, badRequest, forbidden, isIsoDate, notFound, toInt } from '..
 import { SESSION_COOKIE, createSession, destroySession, principalOf, requireAuth } from '../auth.ts';
 import { can, loadPrincipal, permissionSummary, require_, scopeFor } from '../permissions.ts';
 import { writeAudit } from '../platform/audit.ts';
+import { navOf } from '../platform/nav.ts';
 import * as attachmentSvc from '../platform/attachments.ts';
 import * as violationSvc from '../yThuc/violations.ts';
 import * as measureSvc from '../yThuc/measures.ts';
@@ -129,26 +130,10 @@ api.get('/demo/session', wrap((req) => {
      * đang cần hỗ trợ, Admin chi nhánh thấy lịch cần cập nhật.
      */
     landing: '/',
-    // Hai mục điều hướng + các lối phụ trong menu tài khoản. Ẩn/hiện theo quyền.
-    nav: {
-      overview: true,
-      mocks: !scopeFor(p, PERMISSIONS.ATTEMPT_VIEW).none,
-      students: !scopeFor(p, PERMISSIONS.STUDENT_VIEW).none,
-      meeting: !scopeFor(p, PERMISSIONS.MEETING_VIEW).none,
-      /*
-       * Tab "Tình hình chung" của Quản lý: nhìn toàn bộ vấn đề trong phạm vi mình quản.
-       * Cờ riêng chứ không dùng chung với `meeting` — hai màn khác nhau, và sau này ai
-       * được xem cái nào có thể tách ra mà không phải sửa giao diện.
-       */
-      academic: !scopeFor(p, PERMISSIONS.MEETING_VIEW).none,
-      /*
-       * TIẾN ĐỘ CÔNG VIỆC — toàn bộ tab chỉ dành cho Quản trị hệ thống và Quản lý chi nhánh
-       * (mục 8.3). Giáo viên vẫn nhận và cập nhật được việc con giao cho mình, nhưng qua
-       * Toàn cảnh và đường dẫn trực tiếp, không qua tab quản lý.
-       */
-      mgmtTasks: mgmtSvc.canSeeBoard(p),
-      admin: can(p, PERMISSIONS.ADMIN_CONFIG, { anyScope: true }),
-    },
+    // Bốn khu vực + tab con, ẩn/hiện theo quyền (PR-O, server/src/platform/nav.ts).
+    nav: navOf(p),
+    /* Giao diện ẩn nhãn "Bản demo nội bộ" trên bản chính — cùng cờ máy chủ dùng để khoá các đường của bản demo. */
+    banChinh: laBanChinh(),
   };
 }));
 

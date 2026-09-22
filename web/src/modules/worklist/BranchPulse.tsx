@@ -228,7 +228,7 @@ export function BranchPulse({ branchId, activeGroup, onGroup }: {
                   <tr key={r.id} className="row-hover">
                     <td className="td sticky-col whitespace-nowrap">
                       <button type="button" className="link appearance-none bg-transparent border-0 p-0 cursor-pointer"
-                        onClick={() => navigate(`/tong-quan?cn=${r.id}`)}>{r.label}</button>
+                        onClick={() => navigate(`/?cn=${r.id}`)}>{r.label}</button>
                     </td>
                     {metricCells(r.metrics, { id: r.id })}
                   </tr>

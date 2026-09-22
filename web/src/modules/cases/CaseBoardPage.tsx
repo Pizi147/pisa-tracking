@@ -51,20 +51,6 @@ const STATE_LABEL: Record<string, string> = {
   done: 'Đã xong',
 };
 
-export default function AcademicPage() {
-  return (
-    <div className="page space-y-4">
-      <div>
-        <h1 className="text-lg font-semibold text-slate-100 m-0">Thực trạng</h1>
-        <p className="text-xs text-slate-500 mt-1 mb-0">
-          Học viên đang yếu ở đâu — cả case sinh từ điểm và case giáo viên báo.
-        </p>
-      </div>
-      <CaseBoard />
-    </div>
-  );
-}
-
 /**
  * Bảng vấn đề, dùng CHUNG cho trang riêng và cho tab "Tình hình chung" của Tổng quan.
  * Một bản cài đặt, một cách đọc số — không có chuyện hai màn hình đếm lệch nhau.
@@ -493,9 +479,11 @@ export function CaseBoard({ embedded = false }: { embedded?: boolean } = {}) {
 /** Trang riêng của một vấn đề — chia sẻ đường dẫn được, mở từ đâu cũng về đúng bản ghi này. */
 export function CaseRoutePage() {
   const { id } = useParams();
+  const { session } = useSession();
+  const coPhanTich = !!session?.nav?.analysis;
   return (
     <div className="max-w-[900px] space-y-3">
-      <Link className="btn btn-sm btn-ghost" to="/hoc-thuat">← Học thuật</Link>
+      <Link className="btn btn-sm btn-ghost" to={coPhanTich ? '/phan-tich' : '/'}>← {coPhanTich ? 'Phân tích' : 'Tổng quan'}</Link>
       <Card title="Vấn đề - Case">
         <CasePanel caseId={Number(id)} />
       </Card>

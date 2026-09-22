@@ -6,7 +6,6 @@ import { useToast } from '../../ui/Toast.tsx';
 import { Alert, Card, Empty, ErrorState, Field, Forbidden, Info, SectionNote, Skeleton, Status, Th } from '../../ui/ui.tsx';
 import { Drawer, Modal } from '../../ui/Drawer.tsx';
 import { BranchFilter } from '../../ui/Filters.tsx';
-import { MeetingBoard } from './MeetingPage.tsx';
 import { fmtDate } from '../../lib/format.ts';
 import {
   TASK_GROUPS, TASK_GROUP_LABEL, TASK_PROGRESS, TASK_PROGRESS_LABEL,
@@ -31,47 +30,6 @@ const KIND: Record<string, 'doing' | 'waiting' | 'done' | 'idle'> = {
 };
 
 /**
- * TIẾN ĐỘ CÔNG VIỆC — hai cách nhìn, MỘT trang.
- *
- * "Công việc" là danh sách việc quản lý đang làm; "Tình hình đơn vị" là báo cáo tuần của
- * các đơn vị. Hai câu hỏi khác nhau nhưng cùng một cuộc họp, nên chúng đứng cạnh nhau thay
- * vì nằm ở hai mục menu mà người ta phải nhớ đường đi.
- *
- * Tab thứ hai KHÔNG dựng lại màn hình: nó render đúng `MeetingBoard` mà `/tien-trinh` đang
- * dùng. Một bản cài đặt, một cách đọc số. Đường dẫn `/tien-trinh` giữ nguyên để liên kết cũ
- * không gãy.
- */
-export default function MgmtTasksPage() {
-  const [params, setParams] = useSearchParams();
-  const tab = params.get('tab') === 'don-vi' ? 'don-vi' : 'cong-viec';
-  const goTab = (t: 'cong-viec' | 'don-vi') => {
-    const next = new URLSearchParams(params);
-    if (t === 'don-vi') next.set('tab', 'don-vi'); else next.delete('tab');
-    setParams(next);
-  };
-
-  return (
-    <div className="page space-y-4">
-      <div>
-        <h1 className="text-lg font-semibold text-slate-100 m-0">Tiến độ công việc</h1>
-        <p className="text-xs text-slate-500 mt-0.5 mb-0">
-          Việc quản lý đang làm, và tình hình các đơn vị trong tuần.
-        </p>
-      </div>
-
-      <div className="flex flex-wrap gap-1">
-        <button className={`btn btn-sm ${tab === 'cong-viec' ? 'btn-primary' : 'btn-ghost'}`}
-          onClick={() => goTab('cong-viec')}>Công việc</button>
-        <button className={`btn btn-sm ${tab === 'don-vi' ? 'btn-primary' : 'btn-ghost'}`}
-          onClick={() => goTab('don-vi')}>Tình hình đơn vị</button>
-      </div>
-
-      {tab === 'cong-viec' ? <TasksBoard /> : <MeetingBoard />}
-    </div>
-  );
-}
-
-/**
  * TIẾN ĐỘ CÔNG VIỆC — MỘT bảng, không phải bốn bảng mở cùng lúc (mục 8.2).
  *
  * Đây là công việc quản lý vận hành, không phải case của học viên: không có tầng "phương án
@@ -81,7 +39,7 @@ export default function MgmtTasksPage() {
  * Tutor. Việc nào không thuộc bốn nhóm này thì hoặc là một case của học viên, hoặc là chuyện
  * ngoài phạm vi phần mềm — thêm nhóm thứ năm là bước đầu biến nó thành một hệ quản trị.
  */
-function TasksBoard() {
+export function TasksBoard() {
   const [params, setParams] = useSearchParams();
   const branchId = params.get('cn') ? Number(params.get('cn')) : null;
   const [group, setGroup] = useState('');

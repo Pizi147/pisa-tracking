@@ -9446,6 +9446,11 @@ await runLuatMayChuTests({ check, checkAsync, assert, assertThrows, conn, TODAY,
 const { runBanChinhTests } = await import('./banChinh.tests.ts');
 await runBanChinhTests({ check, checkAsync, assert, assertThrows, conn, admin: P.admin });
 
+// ==================================================================== PR-O (khung 4 khu vực + hàm ngày/tuần G-6)
+
+const { runKhungTests } = await import('./khung.tests.ts');
+await runKhungTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
+
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`

@@ -21,7 +21,9 @@ Nếu bạn nghĩ theo "cái tôi thấy trên màn hình" chứ không theo tê
 | Trên màn hình | File chính | Dữ liệu từ |
 |---|---|---|
 | Danh sách lớp, các bộ lọc, badge "n bài cần chấm" | `web/src/modules/students/StudentsPage.tsx` | `server/src/classes/classes.ts` → `listClassSummaries` |
-| Hàng đợi việc cần chấm, nút **Việc của tôi / Trong phạm vi quản lý** | `web/src/modules/students/StudentsPage.tsx` → `WorkQueue` | `server/src/fasttrack/attempts.ts` → `listAttempts` |
+| Test › **Cần chấm** (bọc hàng đợi chấm) | `web/src/modules/test/CanChamTab.tsx` → `StudentsPage.tsx` → `WorkQueue` | `server/src/fasttrack/attempts.ts` → `listAttempts` |
+| **Khung 4 khu vực**, thanh dưới điện thoại, chuyển hướng đường dẫn cũ | `web/src/App.tsx` + `shared/domain/dieuHuong.ts` | `server/src/platform/nav.ts` → `navOf` |
+| Test › Lịch Test · Kế hoạch Test | `web/src/modules/test/` | `/attempts?periodId=` · `/attempts/no-plan` |
 | Trang một lớp | `web/src/modules/classes/ClassOverviewPage.tsx` | `server/src/classes/classes.ts` |
 | **Hồ sơ một học viên** (đầu hồ sơ, bốn ô số, hai tab dưới) | `web/src/modules/students/StudentDetailPage.tsx` | `server/src/students/profile.ts` |
 | Bảng kỹ năng trong hồ sơ · **ô điểm bốn màu** | `web/src/modules/cases/SkillBoard.tsx` → `ScoreCell` | `server/src/cases/cases.ts` → `skillSupportBoard` |
@@ -31,10 +33,10 @@ Nếu bạn nghĩ theo "cái tôi thấy trên màn hình" chứ không theo tê
 | Màn một lượt Test | `web/src/modules/fasttrack/MockDetailPage.tsx` | `server/src/fasttrack/attempts.ts` → `attemptDetail` |
 | **Bảng nhập điểm cả lớp** | `web/src/modules/fasttrack/ScoreSheetPage.tsx` | `server/src/fasttrack/attempts.ts` → `classScoreSheet` |
 | Bảng nhập điểm lớp Normal | `web/src/modules/normal/RegularSheetPage.tsx` | `server/src/normal/regular.ts` |
-| **Tiến độ công việc** — tab Công việc | `web/src/modules/worklist/MgmtTasksPage.tsx` → `TasksBoard` | `server/src/worklist/mgmttasks.ts` |
-| **Tiến độ công việc** — tab Tình hình đơn vị | `web/src/modules/worklist/MeetingPage.tsx` → `MeetingBoard` | `server/src/worklist/meeting.ts` |
+| **Công việc** › Hỗ trợ học viên · Vận hành · Báo cáo đơn vị | `web/src/modules/congViec/CongViecPage.tsx` (bọc `WorkList` · `TasksBoard` · `MeetingBoard`) | `mywork.ts` · `mgmttasks.ts` · `meeting.ts` |
 | Màn Tổng quan | `web/src/modules/worklist/OverviewPage.tsx` | `server/src/worklist/mywork.ts` |
-| Trang **Thực trạng** — phân tích vấn đề | `web/src/modules/cases/IssueAnalysis.tsx` | `server/src/cases/effectiveness.ts` |
+| Tổng quan › **Phân tích** (`/phan-tich`) — phân tích vấn đề | `web/src/modules/cases/IssueAnalysis.tsx` | `server/src/cases/effectiveness.ts` |
+| Hàm chung ngày/tuần G-6 (`ngay`, `tuanLich`, `tuanKhoa`) | `shared/domain/hienThiNgay.ts` | — |
 | Form **+ Case** | `web/src/modules/cases/QuickReport.tsx` | `server/src/cases/cases.ts` → `reportIssue` |
 | Màn một case đầy đủ | `web/src/modules/cases/CasePanel.tsx` | `server/src/cases/cases.ts` → `caseDetail` |
 | Trang đăng nhập và vào nhanh bằng tài khoản demo | `web/src/modules/platform/WelcomePage.tsx` | `server/src/platform/accounts.ts` |
