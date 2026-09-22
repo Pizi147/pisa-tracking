@@ -66,7 +66,7 @@ function colsFor(track: Track): { key: keyof Row; label: string; hint: string; t
         + 'nên cộng các tuần lại vẫn là số case duy nhất.' },
     { key: 'withSupport', label: 'Đang xử lý',
       hint: 'Case đã có ít nhất một việc hỗ trợ thực sự diễn ra. Là TÌNH TRẠNG HIỆN TẠI.' },
-    { key: 'untouched', label: 'Thiếu phương án', tone: 'danger',
+    { key: 'untouched', label: 'Thiếu PA học thuật', tone: 'danger',
       hint: 'Case chưa ai ghi sẽ làm gì. Là TÌNH TRẠNG HIỆN TẠI.' },
   ];
 }

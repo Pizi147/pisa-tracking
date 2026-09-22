@@ -138,7 +138,7 @@ export const PERMISSION_LABEL: Record<string, string> = {
   'sos.report': 'Báo vấn đề mới',
   'sos.edit': 'Sửa và xử lý case học vụ (đúng kỹ năng hoặc GVCN)',
   'case.close': 'Đóng case học vụ',
-  'case.approve': 'Duyệt phương án hỗ trợ',
+  'case.approve': 'Duyệt phương án học thuật',
   'class.assign': 'Phân công giáo viên vào lớp',
   'class.edit': 'Sửa tiến độ lớp (tuần bắt đầu, tuần kiểm tra)',
   'violation.record': 'Ghi vi phạm của học viên trong lớp mình dạy',

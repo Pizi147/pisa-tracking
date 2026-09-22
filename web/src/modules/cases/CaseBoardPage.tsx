@@ -46,7 +46,7 @@ const CLASS_KINDS = [
 ] as const;
 
 const STATE_LABEL: Record<string, string> = {
-  no_plan: 'Chưa có phương án hỗ trợ',
+  no_plan: 'Chưa có PA học thuật',
   working: 'Đang xử lý',
   done: 'Đã xong',
 };

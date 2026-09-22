@@ -968,9 +968,9 @@ export function respondToPlan(p: Principal, interventionId: number, input: {
     if (iv.recorded_by && iv.recorded_by !== p.userId) {
       notify({
         userId: iv.recorded_by, kind: 'approval',
-        title: input.decision === 'approved' ? 'Phương án của bạn đã được duyệt'
-          : input.decision === 'declined' ? 'Phương án của bạn không được duyệt'
-          : 'Quản lý góp ý về phương án của bạn',
+        title: input.decision === 'approved' ? 'PA học thuật của bạn đã được duyệt'
+          : input.decision === 'declined' ? 'PA học thuật của bạn không được duyệt'
+          : 'Quản lý góp ý về PA học thuật của bạn',
         body: note ?? iv.description ?? null,
         entityType: 'sos_case', entityId: iv.case_id,
         dedupKey: `plan-reply:${interventionId}:${input.decision}`,
@@ -1587,7 +1587,7 @@ export type CaseFilters = {
 /** Ba trạng thái loại trừ nhau dùng cho màn tổng hợp của Quản lý. */
 export type CaseState = 'no_plan' | 'working' | 'done';
 export const CASE_STATE_LABEL: Record<CaseState, string> = {
-  no_plan: 'Chưa có phương án hỗ trợ',
+  no_plan: 'Chưa có PA học thuật',
   working: 'Đang xử lý',
   done: 'Đã xong',
 };

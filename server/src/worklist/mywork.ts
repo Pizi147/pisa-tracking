@@ -129,7 +129,7 @@ const GROUP_META: Record<WorkGroupKey, { label: string; hint: string; overdue: s
    */
   cause: {
     label: 'Xác định nguyên nhân',
-    hint: 'Mock Test có SOS đã tự tạo case cho kỹ năng này. Bạn có ba ngày (tính cả ngày đầu) để chọn nguyên nhân và xác nhận, sửa hoặc thay phương án gợi ý — '
+    hint: 'Mock Test có SOS đã tự tạo case cho kỹ năng này. Bạn có ba ngày (tính cả ngày đầu) để chọn nguyên nhân và xác nhận, sửa hoặc thay PA học thuật gợi ý — '
       + 'hoặc đóng `Không cần theo dõi` nếu em không cần theo dõi. Quản lý chỉ thấy dòng này khi đã quá hạn.',
     overdue: 'Quá hạn xác định nguyên nhân',
   },
@@ -156,9 +156,9 @@ const GROUP_META: Record<WorkGroupKey, { label: string; hint: string; overdue: s
     overdue: 'Quá hạn nhập điểm',
   },
   no_plan: {
-    label: 'Thiếu phương án',
+    label: 'Thiếu PA học thuật',
     hint: 'Vấn đề đã mở nhưng chưa ai ghi sẽ làm gì cho em.',
-    overdue: 'Quá hạn đề xuất phương án',
+    overdue: 'Quá hạn đề xuất PA học thuật',
   },
   result: {
     label: 'Cập nhật kết quả',
@@ -169,14 +169,14 @@ const GROUP_META: Record<WorkGroupKey, { label: string; hint: string; overdue: s
   /* ------------------------------------------------------- việc chỉ Quản lý làm được */
   decide: {
     label: 'Chờ tôi xử lý',
-    hint: 'Đề xuất phương án cần bạn duyệt, và những case giáo viên đã xin ý kiến Quản lý. Chừng nào chưa có câu trả lời thì bên kia không đi tiếp được.',
+    hint: 'Đề xuất PA học thuật cần bạn duyệt, và những case giáo viên đã xin ý kiến Quản lý. Chừng nào chưa có câu trả lời thì bên kia không đi tiếp được.',
     overdue: 'Quá hạn trả lời',
   },
 
   /* --------------------------------------------- những nghĩa vụ khác, vẫn phải thấy được */
   do_plan: {
-    label: 'Làm phương án đã hẹn',
-    hint: 'Phương án đã lên kế hoạch và tới ngày phải làm. Làm xong thì đánh dấu đã hoàn thành kèm ngày thực hiện.',
+    label: 'Làm PA học thuật đã hẹn',
+    hint: 'PA học thuật đã lên kế hoạch và tới ngày phải làm. Làm xong thì đánh dấu đã hoàn thành kèm ngày thực hiện.',
     overdue: 'Quá hạn làm',
   },
   no_owner: {
@@ -408,7 +408,7 @@ export function myWork(p: Principal, f: { branchId?: number | null } = {}) {
     if (f.branchId && iv.eff_branch_id !== f.branchId) continue;
     if (!can(p, PERMISSIONS.CASE_APPROVE, { classId: iv.eff_class_id, studentId: iv.eff_student_id })) continue;
     const u = urgencyOf(iv.approval_due, today);
-    const what = (iv.description ?? '').trim() || INTERVENTION_KIND_LABEL[iv.kind as InterventionKind] || 'phương án hỗ trợ';
+    const what = (iv.description ?? '').trim() || INTERVENTION_KIND_LABEL[iv.kind as InterventionKind] || 'PA học thuật';
     items.push({
       key: `approval:${iv.id}`, group: 'decide', urgency: u,
       studentId: iv.eff_student_id, studentName: iv.full_name ?? 'Học viên',
@@ -429,7 +429,7 @@ export function myWork(p: Principal, f: { branchId?: number | null } = {}) {
           : (iv.proposer_name ? `${iv.proposer_name} đề xuất: ${what}` : `Đề xuất: ${what}`),
         u === 'overdue' && iv.approval_due ? lateText(iv.approval_due, today) : null,
       ].filter(Boolean).join(' — '),
-      actionLabel: iv.asked_manager ? 'Trả lời giáo viên' : 'Duyệt phương án',
+      actionLabel: iv.asked_manager ? 'Trả lời giáo viên' : 'Duyệt PA học thuật',
       overdueLabel: badge('decide', u),
       href: iv.eff_student_id ? `/hoc-vien/${iv.eff_student_id}` : `/hoc-thuat/case/${iv.case_id}`,
       /* Việc này là của QUẢN LÝ đang xem, dù người đề xuất là giáo viên khác. */
@@ -736,15 +736,15 @@ export function myWork(p: Principal, f: { branchId?: number | null } = {}) {
       attemptId: c.attempt_id ?? null, attemptNo: c.attempt_no ?? null,
       caseId: c.id as number, level: levelOf(c),
       reason: u === 'overdue'
-        ? `${head} — chưa có phương án hỗ trợ ${days} ngày`
-        : `${head} — chưa có phương án hỗ trợ`,
+        ? `${head} — chưa có PA học thuật ${days} ngày`
+        : `${head} — chưa có PA học thuật`,
       contextLabel: c.attempt_no ? `MT${c.attempt_no}` : 'Case',
       count: null,
-      actionLabel: 'Đề xuất phương án', overdueLabel: badge('no_plan', u),
+      actionLabel: 'Đề xuất PA học thuật', overdueLabel: badge('no_plan', u),
       href: c.eff_student_id ? `/hoc-vien/${c.eff_student_id}` : `/hoc-thuat/case/${c.id}`,
       /* Chưa ai nhận — và đó chính là vấn đề, nên để trống chứ không gán bừa cho người xem. */
       ownerId: null, owner: null, mine: false,
-      due: deadline, statusLabel: 'Chưa có phương án',
+      due: deadline, statusLabel: 'Chưa có PA học thuật',
     });
   }
 
@@ -787,7 +787,7 @@ export function myWork(p: Principal, f: { branchId?: number | null } = {}) {
     if (!mine && !asManager) continue;
     const missing = [
       c.has_cause ? null : 'chưa chọn nguyên nhân',
-      c.has_unconfirmed ? 'phương án gợi ý chưa được xác nhận' : null,
+      c.has_unconfirmed ? 'PA học thuật gợi ý chưa được xác nhận' : null,
     ].filter(Boolean) as string[];
     const skillLabel = c.topic ? caseTopicLabel(c.topic) : 'Kỹ năng';
     items.push({

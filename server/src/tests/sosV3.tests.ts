@@ -672,7 +672,7 @@ export async function runSosV3Tests(t: YThucTestKit) {
     assert(mine && mine.group === 'cause' && mine.urgency === 'normal' && mine.due === due && mine.mine === true && mine.caseId === f.w2.id
       && mine.actionLabel === 'Xác định nguyên nhân' && mine.statusLabel === 'Chờ xác định nguyên nhân' && mine.overdueLabel === null && mine.studentId === f.st.id,
     `Dòng của GVBM: ${JSON.stringify(mine)}`);
-    assert(/nguyên nhân/.test(mine.reason) && /phương án/.test(mine.reason), `Lý do phải nói còn thiếu gì: ${mine.reason}`);
+    assert(/nguyên nhân/.test(mine.reason) && /PA học thuật/.test(mine.reason), `Lý do phải nói còn thiếu gì: ${mine.reason}`);
     assert(!item(P.mbManager, f.w2.id) && !item(w1T, f.w2.id), 'Chưa quá hạn thì Quản lý không thấy; GVBM kỹ năng khác không thấy');
     const groups = myworkSvc.myWork(w2T, {}).groups as any[];
     assert(groups.some((g: any) => g.key === 'cause' && g.label === 'Xác định nguyên nhân' && g.items.some((i: any) => i.key === key(f.w2.id))), 'Phải có nhóm `cause` trong danh sách nhóm');
@@ -685,7 +685,7 @@ export async function runSosV3Tests(t: YThucTestKit) {
     assert(myworkSvc.myWork(w2T, {}).summary.overdue >= 1, 'Tính vào tổng số việc quá hạn');
     /* Làm nửa vời: có nguyên nhân mà phương án còn gợi ý → dòng còn, lý do đổi. */
     cases.setIssues(w2T, f.w2.id, { primaryCode: 'student.writing.task' });
-    assert(item(w2T, f.w2.id) && /Phương án/i.test(item(w2T, f.w2.id).reason) && !/Chưa chọn nguyên nhân/.test(item(w2T, f.w2.id).reason), `Chỉ còn thiếu phương án: ${item(w2T, f.w2.id)?.reason}`);
+    assert(item(w2T, f.w2.id) && /PA học thuật/i.test(item(w2T, f.w2.id).reason) && !/Chưa chọn nguyên nhân/.test(item(w2T, f.w2.id).reason), `Chỉ còn thiếu phương án: ${item(w2T, f.w2.id)?.reason}`);
     sosAuto.confirmPresetPlan(w2T, f.w2Plan.id);
     assert(!item(w2T, f.w2.id) && !item(P.mbManager, f.w2.id), 'Đủ cả hai thì dòng biến mất, cả ở phía Quản lý');
     /* Đóng `Không cần theo dõi` cũng làm dòng biến mất; case tạo tay không bao giờ có dòng này. */

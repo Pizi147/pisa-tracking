@@ -79,28 +79,28 @@ export const METRICS: readonly ChiSo[] = [
     thoiGian: 'hien-trang', khuTrung: 'COUNT DISTINCT case_id', drilldown: '/metrics/case-cho-xac-dinh-nguyen-nhan',
   },
   {
-    id: 'case-thieu-pa', ten: 'Case thiếu phương án',
+    id: 'case-thieu-pa', ten: 'Case thiếu PA học thuật',
     cauHoi: 'Bao nhiêu case đang mở mà chưa có phương án hợp lệ nào?',
     donVi: 'case',
     tapDuDieuKien: 'Case HỌC THUẬT đang mở, đủ điều kiện cần hỗ trợ, chưa có phương án hợp lệ. Case CHỜ DUYỆT tách riêng, không quy chậm cho giáo viên.',
     thoiGian: 'hien-trang', khuTrung: 'COUNT DISTINCT case_id', drilldown: '/metrics/case-thieu-pa',
   },
   {
-    id: 'pa-can-cap-nhat', ten: 'Phương án cần cập nhật',
+    id: 'pa-can-cap-nhat', ten: 'PA học thuật cần cập nhật',
     cauHoi: 'Bao nhiêu phương án đang theo dõi mà đã quá hạn cập nhật kết quả tuần?',
     donVi: 'phuong-an',
     tapDuDieuKien: 'Phương án đang theo dõi, không chờ duyệt, không phải phương án điền sẵn chưa xác nhận, quá hạn cập nhật tuần. Khác "quá hạn làm" (F11).',
     thoiGian: 'hien-trang', khuTrung: 'COUNT DISTINCT intervention_id', drilldown: '/metrics/pa-can-cap-nhat',
   },
   {
-    id: 'pa-cho-duyet', ten: 'Phương án chờ duyệt',
+    id: 'pa-cho-duyet', ten: 'PA học thuật chờ duyệt',
     cauHoi: 'Bao nhiêu phương án giáo viên đề xuất đang chờ Quản lý trả lời?',
     donVi: 'phuong-an',
     tapDuDieuKien: 'Phương án đang chờ duyệt ở case đang mở trong phạm vi. Đếm phương án — không đếm case, không đếm học viên.',
     thoiGian: 'hien-trang', khuTrung: 'COUNT DISTINCT intervention_id', drilldown: '/metrics/pa-cho-duyet',
   },
   {
-    id: 'pa-co-ket-qua', ten: 'Phương án có kết quả xác định',
+    id: 'pa-co-ket-qua', ten: 'PA học thuật có kết quả xác định',
     cauHoi: 'Bao nhiêu phương án đã kết thúc và có kết quả rõ ràng?',
     donVi: 'phuong-an',
     tapDuDieuKien: 'Phương án đã kết thúc, kết quả thuộc {có tiến bộ, một phần, không tiến bộ, kém hơn}. Một phương án MỘT dòng cuối. Loại case nhập bù.',
@@ -213,7 +213,7 @@ export const METRICS: readonly ChiSo[] = [
  * tuyệt đối không cộng vào nhau, nên mỗi con số PHẢI đi kèm đơn vị của nó.
  */
 export const METRIC_UNIT_LABEL: Record<ChiSo['donVi'], string> = {
-  'hoc-vien': 'học viên', case: 'case', 'phuong-an': 'phương án', 'bai-thi': 'bài thi',
+  'hoc-vien': 'học viên', case: 'case', 'phuong-an': 'PA học thuật', 'bai-thi': 'bài thi',
   'tin-hieu': 'tín hiệu', 'dot-test': 'đợt Test', 'nghia-vu': 'nghĩa vụ',
   'vi-pham': 'vi phạm', 'bien-phap': 'phương án xử lý', 'luot-sos': 'lượt',
 };
