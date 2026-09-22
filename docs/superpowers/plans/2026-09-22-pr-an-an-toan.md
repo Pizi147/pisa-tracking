@@ -1493,25 +1493,25 @@ Chạy lệnh kiểm đường chết ở đầu `CODE_MAP.md` — Expected: kh�
 
 **Files:** không sửa mã. Ảnh (nếu chụp): `thiet-ke/anh/pr-an/`.
 
-- [ ] **Step 1: 🛑 Hỏi chủ sản phẩm trước khi bật máy.** Nhắn: "Cần dùng cổng 4000, 5173 và 5174 để bấm thử PR-AN. Anh/chị đang mở bản
+- [x] **Step 1: 🛑 Hỏi chủ sản phẩm trước khi bật máy.** Nhắn: "Cần dùng cổng 4000, 5173 và 5174 để bấm thử PR-AN. Anh/chị đang mở bản
   demo ở thư mục chính không? Nếu có, tắt giúp em." Chờ trả lời.
-- [ ] **Step 2:** Trong worktree: `npm run seed` rồi chạy nền `npm run dev` (**không** `preview_start`). Bấm bằng trình duyệt hoặc Playwright
+- [x] **Step 2:** Trong worktree: `npm run seed` rồi chạy nền `npm run dev` (**không** `preview_start`). Bấm bằng trình duyệt hoặc Playwright
   kênh Chrome (`npm i --no-save playwright`, `chromium.launch({ channel: 'chrome' })`; chạy script từ Git Bash với `MSYS_NO_PATHCONV=1`).
   Mở `http://localhost:5173` (chưa đăng nhập).
-- [ ] **Step 3: KIỂM — đăng nhập sai nhiều lần** (ghi ✓/✗ vào Nhật ký):
+- [x] **Step 3: KIỂM — đăng nhập sai nhiều lần** (ghi ✓/✗ vào Nhật ký):
   1. Tab **Đăng nhập**, email `dovutuanphong95.pisa@gmail.com`, mật khẩu sai → câu `Email hoặc mật khẩu không đúng.` Lặp tới lần 5.
   2. Lần 6 gõ **đúng** mật khẩu `pisa2026` → câu `Đăng nhập sai quá nhiều lần. Thử lại sau 15 phút.` (hoặc 14), **không** vào được.
   3. Email khác có thật (ví dụ một tài khoản giáo viên của bộ demo, mật khẩu `pisa2026`) → vào được (khoá theo email, IP chưa tới 30).
   4. Mở khoá để bấm tiếp: dừng dev, `npm run seed` (dựng lại database, bảng `auth_attempts` rỗng), bật lại `npm run dev`.
   5. Đăng nhập đúng một lần giữa chừng: 4 sai → 1 đúng → đăng xuất → 4 sai → đúng → vào được.
-- [ ] **Step 4: KIỂM — đăng ký:**
+- [x] **Step 4: KIỂM — đăng ký:**
   1. Tab **Giáo viên đăng ký**: điền đủ, email `thu.an.pisa@gmail.com`, chọn MB → màn **Đã gửi đăng ký**.
   2. Đăng nhập bằng email đó → câu có chữ **chờ Quản trị hệ thống duyệt**, không vào được.
   3. Đăng nhập Quản trị → màn Quản trị › tài khoản chờ duyệt thấy người này → Duyệt (vai Giáo viên, MB) → đăng xuất → đăng nhập bằng
      email đó → vào được.
   4. Gửi đăng ký hỏng (bỏ trống mật khẩu) liên tiếp 10 lần → lần 11 (điền đủ) báo `Đã gửi quá nhiều đăng ký trong một giờ…`.
      Dọn: dừng dev, `npm run seed`, bật lại.
-- [ ] **Step 5: KIỂM — lỗi hệ thống (AN-3):**
+- [x] **Step 5: KIỂM — lỗi hệ thống (AN-3):**
   1. Bash: `curl -s -X POST http://localhost:4000/api/auth/login -H 'content-type: application/json' -d '{hong'` → `400` và câu
      `Dữ liệu gửi lên không đọc được…`, không có chữ `Unexpected`/`JSON`.
   2. Tạo lỗi 500 thật trên **bản sao**: dừng dev; tạo bản sao `data/pisa-demo.sqlite` bằng `VACUUM INTO` ra thư mục tạm (như Task 13 Step 2),
@@ -1528,10 +1528,10 @@ Chạy lệnh kiểm đường chết ở đầu `CODE_MAP.md` — Expected: kh�
      (không in HTML, không in `Failed to fetch`).
   4. Database rỗng: dừng API; `PISA_DB="<thư mục tạm>/rong.sqlite" npm run dev:api` (file chưa có) → tải lại 5174 → thẻ
      **"Hệ thống chưa được khởi tạo"**. Dừng, xoá file tạm, bật lại `npm run dev`.
-- [ ] **Step 7: KIỂM — máy dev không đổi:** `http://localhost:5173` khi API tắt vẫn hiện hướng dẫn cũ (`Chưa kết nối được máy chủ dữ liệu`
+- [x] **Step 7: KIỂM — máy dev không đổi:** `http://localhost:5173` khi API tắt vẫn hiện hướng dẫn cũ (`Chưa kết nối được máy chủ dữ liệu`
   + các bước `npm run seed`) — đúng, chữ màn dev để PR-S3.
-- [ ] **Step 8: KIỂM — gói Netlify:** `npm run thu-goi` → 5 dòng `ĐẠT` (Task 9 Step 7).
-- [ ] **Step 9:** Tắt mọi máy chủ đã bật. `npm run check` xanh; ghi số (≥ 699) vào Nhật ký.
+- [x] **Step 8: KIỂM — gói Netlify:** `npm run thu-goi` → 5 dòng `ĐẠT` (Task 9 Step 7).
+- [x] **Step 9:** Tắt mọi máy chủ đã bật. `npm run check` xanh; ghi số (≥ 699) vào Nhật ký.
 
 ---
 
@@ -1622,3 +1622,4 @@ song song trong cùng tiến trình sẽ thấy cờ; harness chạy tuần tự
 | 22/09 | Task 10 | Opus 5 · 699 → 699 (web không có bộ phép kiểm; `npm test` vẫn 699 ĐẠT) · `BanChinhChuaVaoDuoc`, `cauLoiDeDoc`, nhánh `banChinhHong` và hai `catch (x: unknown)` chép nguyên văn từ plan; `ApiError.details` kiểu `any` nên `x.details?.ma` typecheck được không cần ép kiểu · typecheck ✓ · grep: không còn "Hãy"; `npm run` chỉ còn 2 dòng trong `SetupHelp` (dòng 52, 60) · giữ CRLF của WelcomePage.tsx |
 | 22/09 | Task 11 | Opus 5 · 699 → 699 (chỉ tài liệu; `npm test` 699 ĐẠT, phép quét từ cấm không báo gì) · 3 dòng bảng §11, mục 11.3, 5 dòng CODE_MAP, khối 🆕 PR-AN dưới Task 10 Step 5 plan bản chính — chép nguyên văn từ plan · **thêm theo phán quyết người điều phối (rà soát Task 9):** mục (5) trong khối ghi chú Z2c — kiểm `chot-vang` nạp được libsql (khối `[functions]` chung + `[functions."chot-vang"]` chỉ thêm lịch) và chạy dưới 30 giây qua `ms` · lệnh kiểm đường chết CODE_MAP: không dòng `CHET:` mới do task này (7 dòng có sẵn từ HEAD 31c23aa — tên `.tsx` trần không kèm thư mục như `OSoNho.tsx`, dương tính giả của lệnh; để nguyên) · giữ nguyên kiểu xuống dòng (CRLF: TRIEN_KHAI, CODE_MAP, plan bản chính; LF: plan này) |
 | 22/09 | Sửa sau rà từng task | Opus 5 · 699 · (1) phép AN-5 lồng: hạn +3 000 ms, chờ bận 600 ms (dư 500 ms trước khi giao dịch ngoài kiểm) · (2) phép `donGiaoDichTreo` bọc try/finally ROLLBACK · (3) `cauLoiDeDoc` không in câu lỗi dạng HTML (404 Netlify) · (4) `banChinhHong` coi trả lời thiếu `ok === true` là chưa kết nối; `chuaKhoiTao` đòi `ok === true` |
+| 22/09 | Task 12 | Opus 5 · KIỂM: S1 bỏ qua theo lệnh người giao việc (không hỏi cổng) · S2 ✓ seed + API 4100 + web 5180, Playwright kênh Chrome · S3 ✓ 5 lần sai "Email hoặc mật khẩu không đúng." → lần 6 đúng mật khẩu "Đăng nhập sai quá nhiều lần. Thử lại sau 15 phút." không vào; GV ha.tran vào được; seed lại; 4 sai → đúng → thoát → 4 sai → đúng vào được · S4 ✓ đăng ký thu.an → "Đã gửi đăng ký"; đăng nhập "Tài khoản đang chờ Quản trị hệ thống duyệt…"; Quản trị › Duyệt (Giáo viên, MB) → vào được; 10 lần hỏng → lần 11 "Đã gửi quá nhiều đăng ký trong một giờ. Thử lại sau 60 phút." (lệch: nút Gửi khoá khi trống mật khẩu nên lần hỏng dùng mật khẩu 2 ký tự, máy chủ báo "Mật khẩu cần ít nhất 6 ký tự.") · S5 ✓ JSON hỏng 400 "Dữ liệu gửi lên không đọc được…"; bản sao DROP auth_attempts → "Có lỗi · mã a345ddca…", log `[api] mã a345ddca POST /api/auth/login SqliteError: no such table: auth_attempts` · S6 ✗ 6.1: 5181 không có "Vào nhanh" nhưng VẪN hiện dòng "Tài khoản Quản trị hệ thống mặc định … mật khẩu pisa2026" (API dev gửi `demoAdmin`, web chỉ ẩn khi máy chủ không gửi; gói Netlify `thu-goi` không gửi) · 6.2 ✓ 6.3 ✓ 6.4 ✓ · S7 ✓ · S8 ✓ 5 dòng ĐẠT · S9 ✓ tắt 4100/5180/5181 · cổng 4100/5180/5181 thay 4000/5173/5174 (lệnh người giao việc) · npm run check 699 |
