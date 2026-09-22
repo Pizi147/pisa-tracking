@@ -1503,7 +1503,7 @@ api.get('/tong-quan/chi-nhanh/o', requireAuth, wrap((req) => {
 - Modify: `server/src/routes/index.ts` (`/highlights` ~1138-1141 thêm `program`)
 - Test: `server/src/tests/tongQuan.tests.ts`
 
-- [ ] **Step 1: Phép kiểm (đỏ).**
+- [x] **Step 1: Phép kiểm (đỏ).**
 
 ```ts
   // ================================================================== 7. Lịch sắp tới
@@ -1515,14 +1515,14 @@ api.get('/tong-quan/chi-nhanh/o', requireAuth, wrap((req) => {
     assert(th.weeks.every((w: any) => !w.ft.mockClasses.length && w.ft.examStudents === 0) && th.examMonthOnly.students === 0, 'Lớp thường lẫn FT');
   });
 ```
-- [ ] **Step 2: Chạy, đỏ.**
-- [ ] **Step 3:** `highlights.ts`: `visibleClasses(p, branchId)` thêm tham số `program: ChuongTrinh = 'ca-hai'` và điều kiện
+- [x] **Step 2: Chạy, đỏ.**
+- [x] **Step 3:** `highlights.ts`: `visibleClasses(p, branchId)` thêm tham số `program: ChuongTrinh = 'ca-hai'` và điều kiện
   `if (program !== 'ca-hai') { where.push('c.is_fast_track = ?'); args.push(program === 'ft' ? 1 : 0); }`; SELECT thêm
   `c.is_fast_track`. `highlights(p, f: { branchId?: number | null; program?: ChuongTrinh | null } = {})` truyền
   `f.program ?? 'ca-hai'`. Trong vòng lớp thường (dòng ~116-117) đổi `if (c.kind === 'ft') continue;` thành
   `if (c.is_fast_track) continue;` (một định nghĩa chương trình — Q2; ghi Nhật ký nếu số mốc lớp thường ở demo đổi).
   Route `/highlights`: truyền `program: chuongTrinhTuThamSo(qStr(req, 'ct'))`.
-- [ ] **Step 4: Chạy, xanh** (mốc + 19). **Step 5: Commit.** `"PR-Pa (7): Lịch sắp tới lọc theo chương trình"`
+- [x] **Step 4: Chạy, xanh** (mốc + 19). **Step 5: Commit.** `"PR-Pa (7): Lịch sắp tới lọc theo chương trình"`
 
 ---
 
@@ -1531,7 +1531,7 @@ api.get('/tong-quan/chi-nhanh/o', requireAuth, wrap((req) => {
 **Files:**
 - Test: `server/src/tests/tongQuan.tests.ts`
 
-- [ ] **Step 1: Phép kiểm.** Thêm ở đầu hàm (cạnh các `await import` khác): `const mywork: any = await import('../worklist/mywork.ts');`
+- [x] **Step 1: Phép kiểm.** Thêm ở đầu hàm (cạnh các `await import` khác): `const mywork: any = await import('../worklist/mywork.ts');`
 
 ```ts
   // ================================================================== 8. Nợ S1 (2)
@@ -1566,9 +1566,9 @@ api.get('/tong-quan/chi-nhanh/o', requireAuth, wrap((req) => {
     }
   });
 ```
-- [ ] **Step 2: Chạy.** Kỳ vọng **xanh** ngay (máy chủ S1 đã làm). Nếu **đỏ** vì `reportIssue` / quyền từ chối GVCN →
+- [x] **Step 2: Chạy.** Kỳ vọng **xanh** ngay (máy chủ S1 đã làm). Nếu **đỏ** vì `reportIssue` / quyền từ chối GVCN →
   🛑 **dừng**: sửa nằm ở `cases.ts` (file PR-S2/AN đang sửa) — báo chủ sản phẩm kèm câu lỗi; không tự sửa `cases.ts`.
-- [ ] **Step 3: Commit.** `"PR-Pa (8): nợ S1 — phép kiểm GVCN nhận tín hiệu Speaking tạo Case thành công"`
+- [x] **Step 3: Commit.** `"PR-Pa (8): nợ S1 — phép kiểm GVCN nhận tín hiệu Speaking tạo Case thành công"`
 
 ---
 
@@ -2562,3 +2562,11 @@ export function HocVienCanHoTro() {
   nằm trong danh sách lớp của bảng (em chuyển chương trình / lớp đóng) chỉ có ở hàng tổng, nên hàng `cn:X` có thể nhỏ
   hơn tổng khi chọn chính X. **Tự quyết: không sửa trong PR** — thêm hàng "Chưa xếp lớp" là đổi hình dạng bảng; ghi chú
   thích trong file và nêu ở thân PR để session planning quyết. Bộ demo không có trường hợp nào của A/B.
+- **Task 7:** commit `ae71240`. Đỏ 1 ✗ ("FT lẫn lớp thường") → xanh **751**. Đổi `c.kind === 'ft'` → `c.is_fast_track`
+  KHÔNG đổi số mốc demo (đo trước/sau giống hệt): seed ghi `kind = 'FT'` viết hoa nên điều kiện cũ chưa từng khớp — lớp FT
+  chỉ thoát vòng lớp thường nhờ không có mốc; điều kiện mới mới là thật. Rà (Opus 5): đạt; ghi chú `c.kind` còn trong SELECT
+  nhưng hết người dùng.
+- **Task 8:** commit `9d2e3d1`. Phép kiểm đầu–cuối **xanh ngay** (máy chủ S1 đúng): tạm ngừng phân công Speaking MB-FOU 12
+  → tín hiệu về GVCN → `myWork` có dòng với `['create_case','dismiss']` → `reportIssue(fromSignalId, idempotencyKey)`
+  thành công, gửi lại cùng khoá ra cùng Case, tín hiệu `linked`, dòng biến mất → khôi phục phân công. Cửa 🛑 không xảy ra,
+  không chạm `cases.ts`/`signals.ts`. Tổng **752**.
