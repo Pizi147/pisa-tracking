@@ -1884,7 +1884,7 @@ trùng với 12.14 nên không lặp lại ở đây). K2-6 nói rõ: **ghi lạ
 | Máy chủ tự lấy người đang đăng nhập làm `performedBy` khi để trống (`measures.ts` ~390, hàm `confirmMeasure`) | Hiện máy chủ đòi `performedBy` tường minh; PR-K vá tạm bằng cách giao diện tự gửi `session.user.id` khi ô trống (xem mục 14, log PR-K) — vá đúng nhưng không robust cho các đường gọi khác | Sửa `confirmMeasure`: `performedBy` để trống thì mặc định `p.userId`, cùng khuôn `performerSelf` của `case_interventions` — bất kỳ ai chạm lại `measures.ts` |
 | Lớp dùng để kiểm nút `Ghi vi phạm` ở `profile.ts` ~891 (`canRecordViolation`, biến `current`) có thể lệch với `activeClassOf` ở `access.ts` sau khi học viên chuyển lớp | Hai nơi tính "lớp em đang học" không cùng một nguồn — `current` là biến cục bộ của trang hồ sơ, `activeClassOf` truy vấn DB mới mỗi lần; chưa xác nhận có lệch thật trong dữ liệu hay chỉ là rủi ro lý thuyết | Bất kỳ ai chạm lại `profile.ts`: đổi `current?.class_id` trong `viewer.canReport`/`canRecordViolation`/`canClose` thành gọi `activeClassOf(studentId)` — MỘT nguồn duy nhất |
 
-### 12.15. PR-Z2a (hạ tầng Netlify + Turso) thấy nhưng KHÔNG sửa — 22/09/2026
+### 12.16. PR-Z2a (hạ tầng Netlify + Turso) thấy nhưng KHÔNG sửa — 22/09/2026
 
 Phần A chỉ đổi nơi chạy và nơi cất dữ liệu. Những điều dưới đây thấy trong lúc làm, cố ý để nguyên:
 
