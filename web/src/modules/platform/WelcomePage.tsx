@@ -101,7 +101,7 @@ function BanChinhChuaVaoDuoc({ chuaKhoiTao, onRetry }: { chuaKhoiTao: boolean; o
  * Netlify — không in ra) → một câu chung; câu "Có lỗi · mã …" của máy chủ (AN-3) thì giữ để người dùng báo được mã.
  */
 function cauLoiDeDoc(x: unknown): string {
-  if (x instanceof ApiError && !/^s*</.test(x.message) && (x.status < 500 || x.details?.ma)) return x.message;
+  if (x instanceof ApiError && !/^\s*</.test(x.message) && (x.status < 500 || x.details?.ma)) return x.message;
   return 'Chưa kết nối được hệ thống dữ liệu. Thử lại sau ít phút.';
 }
 
