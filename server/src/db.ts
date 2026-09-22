@@ -62,8 +62,11 @@ function findProjectRoot(start: string): string {
 
 export const ROOT = findProjectRoot(THU_MUC_MA);
 const CAU_HINH = cauHinhDb(process.env, path.join(ROOT, 'data', 'pisa-demo.sqlite'));
-/** Đường dẫn file khi chạy cục bộ; khi chạy Turso là URL (chỉ để in log, KHÔNG in token). */
-export const DB_PATH = CAU_HINH.kieu === 'file' ? CAU_HINH.duongDan : CAU_HINH.url;
+/**
+ * Đường dẫn file khi chạy cục bộ; khi chạy Turso là URL (chỉ để in log, KHÔNG in token). Bỏ phần `?…`/`#…`: "chuỗi kết
+ * nối" Turso có thể kèm `?authToken=…` — mọi lệnh đều in DB_PATH. Kết nối vẫn dùng URL gốc (`CAU_HINH.url`).
+ */
+export const DB_PATH = CAU_HINH.kieu === 'file' ? CAU_HINH.duongDan : CAU_HINH.url.split(/[?#]/)[0];
 export const SCHEMA_PATH = path.join(ROOT, 'server', 'src', 'schema.sql');
 export function laDbTuXa(): boolean { return CAU_HINH.kieu === 'turso'; }
 

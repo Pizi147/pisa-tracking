@@ -79,6 +79,17 @@ export async function runBanChinhTests(t: BanChinhTestKit) {
     assert(/NGUYÊN tên máy chủ/.test(r.stderr) && /pisatracking-demo-/.test(r.stderr), `Thiếu dòng chỉ cách seed database THỬ: ${String(r.stderr).slice(-300)}`);
   });
 
+  const dbJsUrl = (await import('node:url')).pathToFileURL(pathMod.join(REPO, 'dist-server/server/src/db.js')).href;
+  check('PR-Z2 · URL Turso dán kèm ?authToken=… (kiểu "chuỗi kết nối" của Turso): DB_PATH — thứ mọi lệnh in ra — KHÔNG chứa token', () => {
+    /* Chỉ nạp db.ts và in DB_PATH — không mở kết nối nào. */
+    const r = cp.spawnSync(process.execPath, ['--input-type=module', '-e', `const m = await import(${JSON.stringify(dbJsUrl)}); console.log(m.DB_PATH);`], {
+      env: { ...process.env, TURSO_DATABASE_URL: 'libsql://khong-ton-tai.turso.io?authToken=BI-MAT-KHONG-DUOC-IN', TURSO_AUTH_TOKEN: 'x' },
+      encoding: 'utf8', timeout: 60_000,
+    });
+    assert(r.status === 0, `Lỗi: ${String(r.stderr).slice(-300)}`);
+    assert(!String(r.stdout).includes('BI-MAT') && /^libsql:\/\/khong-ton-tai\.turso\.io\s*$/.test(String(r.stdout)), `DB_PATH in ra: ${String(r.stdout).trim()}`);
+  });
+
   console.log('\nPR-Z2 · 1c. `npm run migrate` vào Turso: phải xác nhận, và không tạo tài khoản/mật khẩu mặc định của bản demo');
   const fs = await import('node:fs');
   const os = await import('node:os');
