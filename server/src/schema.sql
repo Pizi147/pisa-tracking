@@ -1433,6 +1433,20 @@ CREATE TABLE demo_sessions (
 );
 
 /*
+ * GIỚI HẠN SỐ LẦN THỬ (PR-AN, AN-1, 22/09/2026): đăng nhập sai và gửi đăng ký. Bộ nhớ trong hàm Netlify không bền giữa các lần
+ * gọi (và mỗi bản hàm chạy song song có bộ nhớ riêng) nên đếm ở database. `kind`: dang_nhap_email | dang_nhap_ip | dang_ky_ip.
+ * `key_hash` = sha256 của email đã chuẩn hoá hoặc địa chỉ IP — KHÔNG lưu email/IP thô. Dòng quá 24 giờ bị xoá mỗi khi ghi lần
+ * thử mới (`platform/gioiHanThu.ts`).
+ */
+CREATE TABLE auth_attempts (
+  id INTEGER PRIMARY KEY,
+  kind TEXT NOT NULL,
+  key_hash TEXT NOT NULL,
+  at TEXT NOT NULL
+);
+CREATE INDEX idx_auth_attempts_key ON auth_attempts(kind, key_hash, at);
+
+/*
  * KHO TỆP VÀ LIÊN KẾT DÙNG CHUNG (PR-N N5, thiet-ke/Y_THUC_VI_PHAM_VA_BIEN_PHAP.md §4.5).
  *
  * Một bảng cho bốn chỗ cần bằng chứng — case học thuật, phương án, vi phạm, biện pháp xử lý — vì làm riêng bốn lần là

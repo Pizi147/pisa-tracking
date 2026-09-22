@@ -170,7 +170,7 @@ Expected: `sạch`. Có biến → đóng cửa sổ, mở cửa sổ mới.
   `idx_auth_attempts_key (kind, key_hash, at)`; `export function migrateAuthAttempts(conn: any, applied: string[]): void`; trong file test:
   `load`, `REPO`, `batLog`, `demCauHoi`, `giaRes` — task sau dùng lại.
 
-- [ ] **Step 1: Tạo file phép kiểm (đỏ).** `server/src/tests/anToan.tests.ts`:
+- [x] **Step 1: Tạo file phép kiểm (đỏ).** `server/src/tests/anToan.tests.ts`:
 
 ```ts
 /**
@@ -277,9 +277,9 @@ const { runAnToanTests } = await import('./anToan.tests.ts');
 await runAnToanTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P });
 ```
 
-- [ ] **Step 2: Chạy, thấy đỏ.** `npm test 2>&1 | grep -E "AN-1|KIỂM TRA|KHÔNG ĐẠT"` — Expected: hai phép `AN-1 ·` **✗** (`no such table: auth_attempts`,
+- [x] **Step 2: Chạy, thấy đỏ.** `npm test 2>&1 | grep -E "AN-1|KIỂM TRA|KHÔNG ĐẠT"` — Expected: hai phép `AN-1 ·` **✗** (`no such table: auth_attempts`,
   `migrateAuthAttempts is not a function`).
-- [ ] **Step 3: `schema.sql`** — ngay sau khối `CREATE TABLE demo_sessions (...);` (~dòng 1421):
+- [x] **Step 3: `schema.sql`** — ngay sau khối `CREATE TABLE demo_sessions (...);` (~dòng 1421):
 
 ```sql
 /*
@@ -297,7 +297,7 @@ CREATE TABLE auth_attempts (
 CREATE INDEX idx_auth_attempts_key ON auth_attempts(kind, key_hash, at);
 ```
 
-- [ ] **Step 4: `migrate.ts`** — hàm mới ở **cuối file**:
+- [x] **Step 4: `migrate.ts`** — hàm mới ở **cuối file**:
 
 ```ts
 /**
@@ -326,8 +326,8 @@ Gọi trong `migrateCaseEngine`, ngay sau `migrateDeleteInvalidViolations(conn, 
 ```
 (Sau khi rebase lên PR-S1, dòng này nằm **sau** `migrateLuatMayChu(conn, applied);` — giữ cả hai.)
 
-- [ ] **Step 5: Chạy, xanh.** `npm test 2>&1 | grep -E "AN-1|KIỂM TRA"` — Expected: 2 phép `AN-1 ·` ✓, `TẤT CẢ 674 …`.
-- [ ] **Step 6: Commit.**
+- [x] **Step 5: Chạy, xanh.** `npm test 2>&1 | grep -E "AN-1|KIỂM TRA"` — Expected: 2 phép `AN-1 ·` ✓, `TẤT CẢ 674 …`.
+- [x] **Step 6: Commit.**
 
 ```bash
 git add server/src/schema.sql server/src/migrate.ts server/src/tests/anToan.tests.ts server/src/tests/run.ts
@@ -1609,4 +1609,4 @@ song song trong cùng tiến trình sẽ thấy cờ; harness chạy tuần tự
 
 | Ngày | Task | Ghi chú (model người code · số phép kiểm · lệch plan · quyết định tại chỗ) |
 |---|---|---|
-| | | |
+| 22/09 | Task 1 | Opus 5 · 672 → 674 (2 phép `AN-1 ·` mới, đỏ rồi xanh) · lệch nhỏ: ở bước đỏ, phép đầu báo `Cột: ""` chứ không phải `no such table` (PRAGMA trên bảng chưa có trả rỗng, không ném) — không đổi gì · code chép nguyên văn từ plan |
