@@ -8557,10 +8557,11 @@ check('PR-G · Sau chốt, GV không mở lại được: nhập điểm hay g�
     'Gỡ dấu "-" của bài đã chốt không dự thi');
 });
 
-check('PR-G · Normal KHÔNG dùng dấu "-": vẫn phải đủ bốn môn, không có chốt vắng', () => {
+/* PR-Rc1 C08: lớp thường nay CÓ dấu "-" (môn đó dời sang tuần sau) nhưng đi cửa `reportRegularNoShow` — cửa chốt vắng của FT vẫn đóng. */
+check('PR-G · Normal không đi cửa dấu "-" của FT: không có chốt vắng, chỉ đường sang bảng điểm lớp thường', () => {
   const { attemptId } = normalWritingAttemptSkill();
-  assertThrows(() => attempts.saveScore(P.normalCoreTeacher, attemptId, 'listening', { noShow: true } as any), /Normal/,
-    'Lớp Normal nhập được dấu "-"');
+  assertThrows(() => attempts.saveScore(P.normalCoreTeacher, attemptId, 'listening', { noShow: true } as any), /lớp thường/,
+    'Lớp Normal ghi được dấu "-" qua cửa chốt vắng của FT');
 });
 
 check('PR-G · C10 (đã chốt 20/09): nhập "-" cho tuần ĐÃ KẾT THÚC thì CHỐT NGAY; chỉ Quản lý sửa được, và sửa là ghi đè trực tiếp', () => {

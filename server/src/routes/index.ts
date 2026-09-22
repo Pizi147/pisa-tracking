@@ -931,10 +931,14 @@ api.post('/regular/classes/:classId/plan', requireAuth, wrap((req) => {
   return regularSvc.planRegularTests(principalOf(req), pInt(req, 'classId'));
 }));
 
-/** Nhập điểm một môn: cả điểm đạt và tổng điểm, không tự điền tổng. */
+/** Nhập điểm một môn (cả điểm đạt và tổng), hoặc ghi/gỡ dấu "-" (C08 — môn đó tự dời sang tuần sau). */
 api.put('/regular/attempts/:id/scores/:skill', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
-  return regularSvc.saveRegularScore(principalOf(req), pInt(req, 'id'), req.params.skill, req.body ?? {});
+  const b = req.body ?? {};
+  return regularSvc.saveRegularScore(principalOf(req), pInt(req, 'id'), req.params.skill, {
+    score: b.score, total: b.total, note: b.note, lyDo: b.lyDo,
+    noShow: b.noShow === true ? true : b.noShow === false ? false : undefined,
+  });
 }));
 
 /** Danh sách chương trình học đang dùng. */

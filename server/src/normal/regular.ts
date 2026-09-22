@@ -3,7 +3,7 @@ import { addMilestone, followUntilAfter } from '../cases/sos.ts';
 import { raiseSignal, reconcileCorrectedSignals } from '../cases/signals.ts';
 import {
   ATTEMPT_KIND_LABEL, PERMISSIONS, RATIO_PASS_THRESHOLD, REGULAR_SKILL_LABEL,
-  caseCategoriesFor, categoryOf, ratioResult, sosFromFailCount,
+  caseCategoriesFor, categoryOf, ratioResult, sosFromFailCount, tuanKeTiep,
   type AttemptKind, type CaseCategory, type RatioOutcome, type SosLevel,
 } from '../../../shared/domain/index.ts';
 import { addDays, badRequest, isIsoDate, notFound, nowIso } from '../util.ts';
@@ -12,7 +12,7 @@ import { demoToday } from '../demoConfig.ts';
 import { addJourney, writeAudit } from '../platform/audit.ts';
 import { ensurePeriod, mondayOf } from '../platform/week.ts';
 import { regularSkillViews, weekStartOf } from '../fasttrack/attempts.ts';
-import { ensureSkillRows, loadSkillRows } from '../fasttrack/skillSchedule.ts';
+import { ensureSkillRows, loadSkillRows, setSkillWeek } from '../fasttrack/skillSchedule.ts';
 
 /**
  * LỚP THƯỜNG (Foundation / Beginner / Elementary).
@@ -328,7 +328,7 @@ export function planRegularTests(p: Principal, classId: number) {
  */
 export function saveRegularScore(
   p: Principal, attemptId: number, skill: string,
-  patch: { score?: number | null; total?: number | null; note?: string | null },
+  patch: { score?: number | null; total?: number | null; note?: string | null; noShow?: boolean; lyDo?: string | null },
 ) {
   const conn = db();
   const a = conn.prepare('SELECT * FROM assessment_attempts WHERE id = ?').get(attemptId) as any;
@@ -339,6 +339,13 @@ export function saveRegularScore(
   if (!prog || prog.scoringMode !== 'ratio') throw badRequest('Lượt này không thuộc lớp thường.');
   if (!prog.skills.includes(skill)) {
     throw badRequest(`Chương trình ${prog.code} không có kỹ năng "${skill}".`);
+  }
+  /* Dấu "-" đi đường riêng vì nó KHÔNG phải một điểm: nó là một lần dời lịch (C08). */
+  if (patch.noShow !== undefined) {
+    if (patch.score !== undefined || patch.total !== undefined) {
+      throw badRequest('Một lần gửi chỉ làm một việc: nhập điểm, hoặc ghi/gỡ dấu "-".');
+    }
+    return reportRegularNoShow(p, attemptId, skill, patch.noShow === true);
   }
   /*
    * Cùng hai đường vào như lớp FT: giáo viên nhập kỹ năng MÌNH ĐƯỢC PHÂN CÔNG, còn Admin
@@ -393,6 +400,116 @@ export function saveRegularScore(
 
     refreshRegularOutcome(p, attemptId);
     return { score: after, result: regularResultOf(attemptId) };
+  });
+}
+
+/**
+ * C08 — LỚP THƯỜNG GHI DẤU "-": em không làm bài của tuần này, môn đó TỰ DỜI SANG TUẦN SAU.
+ *
+ * Khác hẳn dấu "-" của Fast Track (rule book §17.1): ở FT dấu "-" là một lời khai còn sửa được đến hết Chủ nhật, rồi
+ * mới chốt thành "không dự thi". Lớp thường không có khái niệm huỷ nghĩa vụ Test — bốn môn vẫn phải đủ — nên dấu "-"
+ * ở đây chỉ có đúng một hệ quả: DỜI LỊCH. Vì thế nó dời ngay, và gỡ dấu là trả lịch về chỗ cũ.
+ *
+ * KHÔNG dựng đường dời lịch thứ hai: dùng `setSkillWeek` như mọi lần đổi tuần khác, nên các luật chống chồng đợt,
+ * nhật ký lịch và tuần hoàn tất đều tự áp. Bộ đếm `absence_move_count` (đếm những lần em VẮNG ở Fast Track) không
+ * được đụng tới.
+ *
+ * GHI DẤU VÀ DỜI LỊCH LÀ MỘT GIAO DỊCH: `setSkillWeek` chặn (vượt đợt kế tiếp, đang có đề nghị dời chờ duyệt…) thì
+ * dòng dấu vừa ghi cũng cuộn lại theo — không bao giờ còn một dấu "-" mà lịch không dời.
+ *
+ * `today` giữ trong chữ ký cho cùng dáng với `saveScore` của FT: dời sang tuần sau tính từ TUẦN THI của môn, không
+ * tính từ hôm nay, nên hiện chưa dùng tới.
+ */
+export function reportRegularNoShow(
+  p: Principal, attemptId: number, skill: string, bat: boolean, _today: string = demoToday(),
+): { moved: boolean; tuanCu: string | null; tuanMoi: string | null; result: RegularResult } {
+  const conn = db();
+  const a = conn.prepare('SELECT * FROM assessment_attempts WHERE id = ?').get(attemptId) as any;
+  if (!a) throw notFound('Không tìm thấy lượt đánh giá');
+  if (a.status === 'cancelled') throw badRequest('Lượt này đã huỷ, không ghi dấu "-" được.');
+
+  const prog = a.class_id ? programmeOfClass(a.class_id) : null;
+  if (!prog || prog.scoringMode !== 'ratio') throw badRequest('Lượt này không thuộc lớp thường.');
+  if (!prog.skills.includes(skill)) throw badRequest(`Chương trình ${prog.code} không có kỹ năng "${skill}".`);
+
+  /* Ghi dấu là việc của NGƯỜI CHẤM môn đó (hoặc người nhập bù) — cùng cửa với nhập điểm. */
+  const path = scoreEditPath(p, a.class_id, skill);
+  if (!path) {
+    require_(p, PERMISSIONS.SCORE_EDIT, { classId: a.class_id, studentId: a.student_id, skill },
+      'Bạn chỉ ghi được dấu "-" cho kỹ năng mình được phân công.');
+  }
+
+  return tx(() => {
+    const row = ensureSkillRows(attemptId).find((r) => r.skill === skill);
+    if (!row) throw badRequest(`Bài này chưa có dòng lịch cho ${skill}.`);
+    if (!row.required) throw badRequest(`Kỹ năng ${skill} không nằm trong phạm vi yêu cầu của bài này.`);
+
+    const existing = conn.prepare('SELECT * FROM assessment_scores WHERE attempt_id = ? AND skill = ?')
+      .get(attemptId, skill) as any;
+    /*
+     * Ô ĐÃ CÓ ĐIỂM thì dấu "-" không ghi mà cũng không gỡ được: ghi là xoá điểm bằng cửa sau, còn gỡ là kéo một bài
+     * ĐÃ LÀM ở tuần mới về tuần cũ. Cả hai đều là sửa lịch sử — việc của hiệu chỉnh có lý do.
+     */
+    if (existing && existing.raw_score !== null && existing.raw_score !== undefined) {
+      throw badRequest(bat
+        ? 'Ô này đã có điểm — dấu "-" không xoá được điểm. Muốn sửa, dùng hiệu chỉnh điểm có ghi lý do.'
+        : 'Ô này đã có điểm ở tuần mới — không gỡ dấu "-" được nữa. Muốn sửa, dùng hiệu chỉnh điểm có ghi lý do.');
+    }
+    const tuanCua = (id: number | null) =>
+      (id ? (conn.prepare('SELECT code, week_start FROM report_periods WHERE id = ?').get(id) as any) : null);
+
+    if (bat) {
+      if (!row.planned_period_id || !row.week_start) {
+        throw badRequest(`${skill} chưa có tuần thi nên chưa ghi dấu "-" được.`);
+      }
+      /* Đã ghi dấu và đã dời rồi thì không làm gì thêm — gọi lại là vô hại, không dời lần hai. */
+      if (existing?.no_show_period_id && existing.no_show_period_id !== row.planned_period_id) {
+        return { moved: false, tuanCu: tuanCua(existing.no_show_period_id)?.code ?? null,
+          tuanMoi: row.period_code, result: regularResultOf(attemptId) };
+      }
+      const cu = { id: row.planned_period_id, code: row.period_code, weekStart: row.week_start };
+      const moi = ensurePeriod(tuanKeTiep(cu.weekStart));
+      if (existing) {
+        conn.prepare(
+          `UPDATE assessment_scores SET no_show_period_id = ?, no_show_by = ?, no_show_at = ?, no_show_late = 0 WHERE id = ?`,
+        ).run(cu.id, p.userId, nowIso(), existing.id);
+      } else {
+        /* Cố ý KHÔNG ghi entered_by: người báo "không có bài" chưa nhập điểm nào. */
+        conn.prepare(
+          `INSERT INTO assessment_scores (attempt_id, skill, no_show_period_id, no_show_by, no_show_at, no_show_late)
+           VALUES (?,?,?,?,?,0)`,
+        ).run(attemptId, skill, cu.id, p.userId, nowIso());
+      }
+      /* Dời bằng ĐÚNG hàm dời lịch chung — `force` chỉ vượt được cảnh báo, không bao giờ vượt được chặn. */
+      setSkillWeek(p, attemptId, skill, moi.id, {
+        reason: `Báo "-": em không làm bài tuần ${cu.code ?? '?'} — môn này dời sang tuần sau (C08).`,
+        force: true,
+      });
+      writeAudit({
+        actorUserId: p.userId, action: 'regular.no_show', entityType: 'assessment_attempt', entityId: attemptId,
+        entityLabel: skill, before: { week: cu.code }, after: { week: moi.code, noShow: true },
+      });
+      return { moved: true, tuanCu: cu.code ?? null, tuanMoi: moi.code, result: regularResultOf(attemptId) };
+    }
+
+    /* Gỡ dấu: trả môn về đúng tuần đã lưu trong chính dòng điểm. */
+    if (!existing?.no_show_period_id) {
+      return { moved: false, tuanCu: null, tuanMoi: row.period_code, result: regularResultOf(attemptId) };
+    }
+    const ve = tuanCua(existing.no_show_period_id);
+    if (existing.no_show_period_id !== row.planned_period_id) {
+      setSkillWeek(p, attemptId, skill, existing.no_show_period_id, {
+        reason: 'Gỡ dấu "-": trả lịch về tuần cũ.', force: true,
+      });
+    }
+    conn.prepare(
+      `UPDATE assessment_scores SET no_show_period_id = NULL, no_show_by = NULL, no_show_at = NULL WHERE id = ?`,
+    ).run(existing.id);
+    writeAudit({
+      actorUserId: p.userId, action: 'regular.no_show_cleared', entityType: 'assessment_attempt', entityId: attemptId,
+      entityLabel: skill, before: { week: row.period_code }, after: { week: ve?.code ?? null, noShow: false },
+    });
+    return { moved: true, tuanCu: row.period_code, tuanMoi: ve?.code ?? null, result: regularResultOf(attemptId) };
   });
 }
 
@@ -587,8 +704,19 @@ export function regularSheet(p: Principal, classId: number, kind?: string) {
   }
 
   const editable = editableSkills(p, classId, prog.skills);
+  /* Quyền sửa ô tính MỘT lần cho mỗi môn — cùng cửa với `saveRegularScore`, không hỏi lại theo từng dòng. */
+  const canEditSkill = new Map(prog.skills.map((k) => [k, scoreEditPath(p, classId, k) !== null]));
   /* Lịch và hạn chấm RIÊNG từng môn — một bài có thể trải hai ba tuần (mục 10.1). */
   const skillRows = loadSkillRows(attempts.map((a) => a.id));
+  /* Mã tuần mà dấu "-" đã dời môn đi (C08) — đọc gộp một lần cho cả bảng. */
+  const noShowPeriodIds = [...new Set([...byAttempt.values()].flat()
+    .map((r: any) => r.no_show_period_id).filter((x: any) => x))] as number[];
+  const periodCode = new Map<number, string>();
+  if (noShowPeriodIds.length) {
+    for (const r of conn
+      .prepare(`SELECT id, code FROM report_periods WHERE id IN (${noShowPeriodIds.map(() => '?').join(',')})`)
+      .all(...noShowPeriodIds) as any[]) periodCode.set(r.id, r.code);
+  }
 
   return {
     class: { id: cls.id, code: cls.code, branchName: cls.branch_name, startDate: cls.start_date },
@@ -632,6 +760,11 @@ export function regularSheet(p: Principal, classId: number, kind?: string) {
             periodCode: v.periodCode, weekRange: v.weekRange,
             deadline: v.deadline, progress: v.progress, sitStatus: v.sitStatus,
             overdue: !scored && v.overdue,
+            /** C08: ô mang dấu "-" — môn đã tự dời khỏi tuần `movedFrom`. Dấu "-" không phải điểm 0. */
+            noShow: !!row?.no_show_period_id,
+            movedFrom: row?.no_show_period_id ? periodCode.get(row.no_show_period_id) ?? null : null,
+            /** Người đang xem có nhập được điểm / ghi được "-" ở ô này không (phân công hoặc nhập bù). */
+            canEdit: canEditSkill.get(k) ?? false,
           };
         }),
         // Quá hạn khi có ÍT NHẤT MỘT môn đã tới hạn mà chưa chấm — không xét theo cả bài.

@@ -509,7 +509,7 @@ git commit -m "PR-Rc1 (1): luật thuần của việc chấm điểm + khung ph
 - Produces: `export function reportRegularNoShow(p: Principal, attemptId: number, skill: string, bat: boolean, today?: string):
   { moved: boolean; tuanCu: string | null; tuanMoi: string | null; result: RegularResult }`.
 
-- [ ] **Step 1: Phép kiểm (đỏ).** Thêm vào cuối `runChamDiemTests` trong `server/src/tests/chamDiem.tests.ts`:
+- [x] **Step 1: Phép kiểm (đỏ).** Thêm vào cuối `runChamDiemTests` trong `server/src/tests/chamDiem.tests.ts`:
 
 ```ts
   // ---------------------------------------------------------------- C08: dấu "-" của lớp thường
@@ -605,9 +605,9 @@ git commit -m "PR-Rc1 (1): luật thuần của việc chấm điểm + khung ph
 > import khác — viết như trên chỉ để nêu rõ ý phép kiểm. Đặt `const attempts: any = await import('../fasttrack/attempts.ts');`
 > cạnh `const regular` ở Step 1 rồi dùng lại.)*
 
-- [ ] **Step 2: Chạy cho đỏ.** Run: `npm test 2>&1 | tail -20`. Expected: `regular.reportRegularNoShow is not a function`.
+- [x] **Step 2: Chạy cho đỏ.** Run: `npm test 2>&1 | tail -20`. Expected: `regular.reportRegularNoShow is not a function`.
 
-- [ ] **Step 3: Viết `reportRegularNoShow`.** Trong `server/src/normal/regular.ts`, ngay sau `saveRegularScore`:
+- [x] **Step 3: Viết `reportRegularNoShow`.** Trong `server/src/normal/regular.ts`, ngay sau `saveRegularScore`:
 
 ```ts
 /**
@@ -719,7 +719,7 @@ import { ensureSkillRows, loadSkillRows, setSkillWeek } from '../fasttrack/skill
 import { tuanKeTiep } from '../../../shared/domain/index.ts';   // gộp vào khối import shared đang có
 ```
 
-- [ ] **Step 4: `saveRegularScore` nhận `noShow`.** Ở đầu thân `saveRegularScore` (sau khi kiểm `prog`/`skill`, trước
+- [x] **Step 4: `saveRegularScore` nhận `noShow`.** Ở đầu thân `saveRegularScore` (sau khi kiểm `prog`/`skill`, trước
   khối quyền), thêm:
 
 ```ts
@@ -735,7 +735,7 @@ import { tuanKeTiep } from '../../../shared/domain/index.ts';   // gộp vào kh
   và mở rộng kiểu `patch`: `{ score?: number | null; total?: number | null; note?: string | null; noShow?: boolean; lyDo?: string | null }`.
   *(Trường `lyDo` dùng ở Task 5 — khai báo luôn để không sửa chữ ký hai lần.)*
 
-- [ ] **Step 5: Bỏ câu chặn ở `attempts.ts`.** Thay khối `attempts.ts:1148-1153`:
+- [x] **Step 5: Bỏ câu chặn ở `attempts.ts`.** Thay khối `attempts.ts:1148-1153`:
 
 ```ts
   /*
@@ -748,7 +748,7 @@ import { tuanKeTiep } from '../../../shared/domain/index.ts';   // gộp vào kh
   }
 ```
 
-- [ ] **Step 6: Endpoint nhận `noShow`.** `server/src/routes/index.ts`, khối `/regular/attempts/:id/scores/:skill`:
+- [x] **Step 6: Endpoint nhận `noShow`.** `server/src/routes/index.ts`, khối `/regular/attempts/:id/scores/:skill`:
 
 ```ts
 /** Nhập điểm một môn (cả điểm đạt và tổng), hoặc ghi/gỡ dấu "-" (C08 — môn đó tự dời sang tuần sau). */
@@ -762,9 +762,9 @@ api.put('/regular/attempts/:id/scores/:skill', requireAuth, wrap((req) => {
 }));
 ```
 
-- [ ] **Step 7: Chạy.** Run: `npm test 2>&1 | tail -5`. Expected: `TẤT CẢ B+11 KIỂM TRA ĐỀU ĐẠT`.
+- [x] **Step 7: Chạy.** Run: `npm test 2>&1 | tail -5`. Expected: `TẤT CẢ B+11 KIỂM TRA ĐỀU ĐẠT`.
 
-- [ ] **Step 8: Commit.**
+- [x] **Step 8: Commit.**
 
 ```bash
 git add server/src/normal/regular.ts server/src/fasttrack/attempts.ts server/src/routes/index.ts server/src/tests/chamDiem.tests.ts
@@ -1864,3 +1864,4 @@ git fetch origin && git rebase origin/main
 | 23/09 | 0 | Worktree `.claude/worktrees/pr-rc1-cham-diem` từ main @ 236920d; không có biến Turso; **B = 779**. Session code Opus 5.5, subagent Opus (không Haiku). |
 | 23/09 | Gate Q | Rà Q1–Q22 với đặc tả + mockup: Q15, Q19 lệch → hỏi chủ sản phẩm. **Q15:** dòng phụ Cần chấm `{Kỹ năng} · lùi lịch của {tên HV}` (1 em) / `{Kỹ năng} · lùi lịch · {n} HV`, tooltip `Lùi lịch từ {tuần đợt} sang {tuần môn}` (thay chữ "bài dời"). **Q19:** Rc1 thêm dòng vào §4 đặc tả. Tự quyết theo mockup: tên mục Cần chấm kèm hạn + số; đầu lưới lớp thường ghi tuần từng môn; cột Kết quả ghi `{K} dời sang {tuần}`. **Quyền:** Quản lý không nhập điểm (run.ts "Chỉ quản trị hệ thống nhập bù được") → mọi phép kiểm/KIỂM "Quản lý nhập/ghi -" đổi sang Quản trị hệ thống; không nới quyền. |
 | 23/09 | 1 | Đỏ: 779 đạt, 7 hỏng (`d.mucCanCham is not a function`…). Xanh: 786 (B=779 + 7). Chép đúng mã kế hoạch, không lệch; móc run.ts đặt sau khối PR-AN, trước khối in tổng kết. `npm run typecheck` sạch. |
+| 23/09 | 2 | Đỏ: 786 đạt, 5 hỏng (`reportRegularNoShow is not a function`, câu chặn cũ còn). Xanh: **791** (786 + 5; kế hoạch ghi 4 phép, thêm 1). Lệch kế hoạch: (a) Ruling 1 — phép quyền dùng Quản trị hệ thống ghi được + Quản lý bị chặn; (b) Ruling 2 — môn lấy từ `teacher_assignments` của GVBM, assert có môn và có môn không dạy (không bỏ qua im lặng); (c) thêm phép "dời bị chặn (vượt đợt kế tiếp) thì không còn dấu -": ghi dấu + dời chung một `tx` (kiểm đột biến: bỏ `tx` thì phép này đỏ); (d) Ruling 6 — ô môn của `regularSheet` thêm `noShow`, `movedFrom`, `canEdit`; (e) chặn gỡ dấu khi ô đã có điểm ở tuần mới (`hasScore` của setSkillWeek chỉ nhìn band nên không tự chặn); (f) run.ts phép PR-G "Normal KHÔNG dùng dấu" đổi tên + regex `/Normal/` → `/lớp thường/` theo câu chỉ đường mới (số phép không đổi). typecheck sạch. |

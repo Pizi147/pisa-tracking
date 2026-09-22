@@ -79,4 +79,134 @@ export async function runChamDiemTests(t: YThucTestKit) {
     eq(d.trangThaiChamLabel({ conBai: 3, tong: 8, quaHan: true, chuaToiHan: false }), 'Quá hạn · còn 3 bài', 'Quá hạn');
     eq(d.trangThaiChamLabel({ conBai: 8, tong: 8, quaHan: false, chuaToiHan: true }), 'Chưa tới hạn', 'Chưa tới tuần thi');
   });
+
+  // ---------------------------------------------------------------- C08: dấu "-" của lớp thường
+  const regular: any = await import('../normal/regular.ts');
+  const skillSched: any = await import('../fasttrack/skillSchedule.ts');
+  const attempts: any = await import('../fasttrack/attempts.ts');
+  const NOW = new Date().toISOString();
+  const LOP = classId('MB-FOU 12');
+  const BON_MON = ['listening', 'reading', 'writing', 'speaking'];
+
+  /** Những môn GVBM (không kiêm GVCN) thật sự được phân công ở MB-FOU 12 — không gõ cứng tên môn. */
+  const monCuaGv = (conn.prepare(
+    `SELECT skill FROM teacher_assignments WHERE class_id = ? AND user_id = ? AND status = 'active' AND skill IS NOT NULL`,
+  ).all(LOP, P.normalSubjectTeacher.userId) as any[]).map((x) => x.skill as string).filter((k) => BON_MON.includes(k));
+
+  /** Một học viên mới ở MB-FOU 12 (lớp thường) + một bài Giữa khoá đã xếp tuần, bốn môn cùng tuần. */
+  let stt = 0;
+  function taoBaiThuong(weekStart: string): { sid: number; cycleId: number; attemptId: number } {
+    stt += 1;
+    const tag = `RC1-${stt}`;
+    const branch = (conn.prepare('SELECT branch_id AS b FROM classes WHERE id = ?').get(LOP) as any).b;
+    const sid = Number(conn.prepare(
+      `INSERT INTO students (student_code, full_name, normalized_name, branch_id, status, created_at) VALUES (?,?,?,?, 'active', ?)`,
+    ).run(`PISA-${tag}`, `Học viên ${tag}`, `hoc vien ${tag.toLowerCase()}`, branch, NOW).lastInsertRowid);
+    conn.prepare(`INSERT INTO enrollments (student_id, class_id, status, started_at, created_at) VALUES (?,?, 'active', '2026-07-27', ?)`)
+      .run(sid, LOP, NOW);
+    const cycleId = Number(conn.prepare(
+      `INSERT INTO learning_cycles (student_id, seq, route, programme_code, started_at, status, created_at)
+       VALUES (?, 1, NULL, 'FOU', '2026-07-27', 'active', ?)`,
+    ).run(sid, NOW).lastInsertRowid);
+    const attemptId = taoLuot(cycleId, sid, 1, 'progress', weekStart);
+    return { sid, cycleId, attemptId };
+  }
+  /** Một lượt của khoá lớp thường ở tuần `weekStart`, đủ bốn dòng lịch môn. */
+  function taoLuot(cycleId: number, sid: number, no: number, kind: string, weekStart: string): number {
+    const week: any = conn.prepare('SELECT id FROM report_periods WHERE week_start = ?').get(weekStart)
+      ?? { id: Number(conn.prepare(
+        `INSERT INTO report_periods (code, week_start, week_end, created_at) VALUES (?,?,?,?)`,
+      ).run(`T-${weekStart}`, weekStart, new Date(Date.parse(`${weekStart}T00:00:00Z`) + 6 * 86400000).toISOString().slice(0, 10), NOW).lastInsertRowid) };
+    const attemptId = Number(conn.prepare(
+      `INSERT INTO assessment_attempts (cycle_id, student_id, attempt_no, kind, class_id, planned_period_id, status, created_at)
+       VALUES (?,?,?,?,?,?, 'planned', ?)`,
+    ).run(cycleId, sid, no, kind, LOP, week.id, NOW).lastInsertRowid);
+    skillSched.ensureSkillRows(attemptId);
+    return attemptId;
+  }
+  const tuanCuaMon = (rows: any[], k: string) => rows.find((r: any) => r.skill === k)?.week_start ?? null;
+  const dauCua = (attemptId: number, k: string): any =>
+    conn.prepare('SELECT * FROM assessment_scores WHERE attempt_id = ? AND skill = ?').get(attemptId, k);
+
+  check('PR-Rc1 · C08 Lớp thường ghi "-": môn đó tự dời sang tuần sau, các môn khác không đổi', () => {
+    assert(monCuaGv.length > 0, 'Seed: GVBM của MB-FOU 12 phải được phân công ít nhất một môn');
+    const k = monCuaGv[0];
+    const khac = BON_MON.find((x) => x !== k)!;
+    const { attemptId } = taoBaiThuong('2026-09-14');
+    const truoc = skillSched.loadSkillRows([attemptId]).get(attemptId);
+    assert(tuanCuaMon(truoc, k) === '2026-09-14', 'Bắt đầu ở tuần 14/09');
+    const maTuanCu = truoc.find((r: any) => r.skill === k).period_code;
+
+    const r = regular.reportRegularNoShow(P.normalSubjectTeacher, attemptId, k, true, '2026-09-16');
+    assert(r.moved, 'Phải dời');
+    const sau = skillSched.loadSkillRows([attemptId]).get(attemptId);
+    assert(tuanCuaMon(sau, k) === '2026-09-21', `${k} sang tuần sau: ${tuanCuaMon(sau, k)}`);
+    assert(tuanCuaMon(sau, khac) === '2026-09-14', `${khac} giữ nguyên tuần — "-" chỉ dời đúng môn đó`);
+    const sc = dauCua(attemptId, k);
+    assert(sc && sc.no_show_period_id, 'Có ghi dấu "-" kèm tuần cũ');
+    assert(sc.raw_score === null, 'Dấu "-" KHÔNG phải điểm 0');
+    /* Chạy lại không dời thêm lần nữa. */
+    const lai = regular.reportRegularNoShow(P.normalSubjectTeacher, attemptId, k, true, '2026-09-16');
+    assert(!lai.moved, 'Báo lại cùng một dấu là vô hại');
+    assert(tuanCuaMon(skillSched.loadSkillRows([attemptId]).get(attemptId), k) === '2026-09-21', 'Không dời hai lần');
+
+    /* Bảng điểm lớp thường mang sẵn dữ liệu cho ô lưới (Task 7): dấu "-", tuần đã dời khỏi, quyền sửa của người xem. */
+    const sheet = regular.regularSheet(P.normalSubjectTeacher, LOP);
+    const dong = sheet.rows.find((x: any) => x.attemptId === attemptId);
+    const o = dong.skillSchedule.find((x: any) => x.skill === k);
+    assert(o.noShow === true && o.movedFrom === maTuanCu, `Ô ${k}: noShow=${o.noShow}, movedFrom=${o.movedFrom} ≠ ${maTuanCu}`);
+    assert(o.canEdit === true, 'GVBM sửa được ô môn mình');
+    const oKhac = dong.skillSchedule.find((x: any) => x.skill === khac);
+    assert(oKhac.noShow === false && oKhac.movedFrom === null, 'Môn không ghi dấu thì không có noShow/movedFrom');
+    const khongDay = BON_MON.find((x) => !monCuaGv.includes(x));
+    assert(khongDay, 'Seed: cần một môn GVBM không dạy để đối chứng canEdit');
+    assert(dong.skillSchedule.find((x: any) => x.skill === khongDay).canEdit === false, 'Môn không dạy thì canEdit = false');
+  });
+
+  check('PR-Rc1 · Q3 Gỡ dấu "-" trả môn về đúng tuần cũ; Q5 ô đã có điểm thì không nhận dấu', () => {
+    assert(monCuaGv.length > 0, 'Seed: GVBM của MB-FOU 12 phải được phân công ít nhất một môn');
+    const k = monCuaGv[0];
+    const { attemptId } = taoBaiThuong('2026-09-14');
+    regular.reportRegularNoShow(P.normalSubjectTeacher, attemptId, k, true, '2026-09-16');
+    const g = regular.reportRegularNoShow(P.normalSubjectTeacher, attemptId, k, false, '2026-09-16');
+    assert(g.moved, 'Gỡ dấu cũng là một lần đổi lịch');
+    const rows = skillSched.loadSkillRows([attemptId]).get(attemptId);
+    assert(tuanCuaMon(rows, k) === '2026-09-14', 'Về đúng tuần cũ');
+    const sc = dauCua(attemptId, k);
+    assert(!sc || !sc.no_show_period_id, 'Dấu đã được xoá');
+
+    regular.saveRegularScore(P.normalSubjectTeacher, attemptId, k, { score: 30, total: 40 });
+    assertThrows(() => regular.reportRegularNoShow(P.normalSubjectTeacher, attemptId, k, true, '2026-09-16'),
+      /đã có điểm|lý do/, 'Ô đã có điểm thì phải đi đường hiệu chỉnh có lý do');
+  });
+
+  check('PR-Rc1 · C08 Dời bị chặn (vượt đợt kế tiếp) thì KHÔNG để lại dấu "-" — ghi dấu và dời là một giao dịch', () => {
+    assert(monCuaGv.length > 0, 'Seed: GVBM của MB-FOU 12 phải được phân công ít nhất một môn');
+    const k = monCuaGv[0];
+    const { sid, cycleId, attemptId } = taoBaiThuong('2026-09-14');
+    /* Đợt 2 của cùng khoá cũng ở tuần 14/09: dời đợt 1 sang 21/09 là vượt qua đợt kế tiếp → setSkillWeek chặn. */
+    taoLuot(cycleId, sid, 2, 'final', '2026-09-14');
+    assertThrows(() => regular.reportRegularNoShow(P.normalSubjectTeacher, attemptId, k, true, '2026-09-16'),
+      /vượt qua đợt kế tiếp/, 'Dời lịch bị chặn thì cả lần ghi dấu phải thất bại');
+    const sc = dauCua(attemptId, k);
+    assert(!sc || !sc.no_show_period_id, 'Không còn dòng dấu "-" mồ côi sau khi dời thất bại');
+    assert(tuanCuaMon(skillSched.loadSkillRows([attemptId]).get(attemptId), k) === '2026-09-14', 'Lịch giữ nguyên');
+  });
+
+  check('PR-Rc1 · C08 Quyền: GVBM môn khác không ghi được "-"; Quản trị hệ thống ghi được; Quản lý bị chặn', () => {
+    const { attemptId } = taoBaiThuong('2026-09-14');
+    const khong = BON_MON.find((k) => !monCuaGv.includes(k));
+    assert(khong, `Seed: GVBM của MB-FOU 12 dạy cả bốn môn (${monCuaGv.join(', ')}) — không còn môn nào để đối chứng`);
+    assertThrows(() => regular.reportRegularNoShow(P.normalSubjectTeacher, attemptId, khong, true, '2026-09-16'),
+      /phân công|quyền/, 'Môn không dạy thì không ghi được');
+    assert(!dauCua(attemptId, khong!)?.no_show_period_id, 'Bị chặn thì không có dấu nào được ghi');
+    assertThrows(() => regular.reportRegularNoShow(P.mbManager, attemptId, 'speaking', true, '2026-09-16'),
+      /phân công|quyền/, 'Quản lý không có đường nhập bù điểm nên cũng không ghi được "-"');
+    const r = regular.reportRegularNoShow(P.admin, attemptId, 'speaking', true, '2026-09-16');
+    assert(r.moved, 'Quản trị hệ thống ghi được (đường nhập bù score.override) và dời được lịch');
+  });
+
+  check('PR-Rc1 · §6 Máy chủ KHÔNG còn câu "Lớp Normal không dùng dấu"', () => {
+    assert(!/không dùng dấu/.test(String(attempts.saveScore)), 'Câu chặn cũ phải biến mất khỏi saveScore');
+  });
 }

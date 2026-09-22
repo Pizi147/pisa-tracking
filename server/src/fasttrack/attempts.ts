@@ -1146,11 +1146,12 @@ export function saveScore(
   if (!(ENTRY_SKILLS as readonly string[]).includes(skill)) throw badRequest('Kỹ năng không hợp lệ.');
   if (a.status === 'cancelled') throw badRequest('Lượt này đã huỷ, không nhập điểm được.');
   /*
-   * CHỐT VẮNG CHỈ ÁP CHO MOCK (rule book §17.1). Lớp Normal vẫn phải đủ bốn môn, không có huỷ nghĩa vụ
-   * Test — đừng mang giới hạn FT sang Normal — nên dấu '-' không tồn tại ở đó.
+   * DẤU "-" CỦA LỚP THƯỜNG ĐI CỬA KHÁC (C08, chốt 21/09/2026 đêm). Ở lớp thường, "-" không phải lời khai chờ chốt
+   * Chủ nhật như Fast Track mà là một lần DỜI LỊCH: môn đó sang tuần sau ngay. Luật ấy nằm ở `normal/regular.ts`
+   * (`reportRegularNoShow`), cùng chỗ với bảng điểm lớp thường — nên ở đây chỉ chỉ đường, không dựng luật thứ hai.
    */
   if (patch.noShow !== undefined && scoringModeOf(a) === 'ratio') {
-    throw badRequest('Lớp Normal không dùng dấu "-": bài chưa có thì để trống, và vẫn phải đủ bốn môn.');
+    throw badRequest('Bài của lớp thường ghi dấu "-" ở bảng điểm lớp thường — ở đó môn được ghi "-" tự dời sang tuần sau.');
   }
 
   const path = a.class_id ? scoreEditPath(p, a.class_id, skill) : null;
