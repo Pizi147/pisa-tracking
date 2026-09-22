@@ -2619,3 +2619,9 @@ export function HocVienCanHoTro() {
   xuống dòng được + chip "Nhắc" ngắn; ô 3 dòng phụ chỉ khi > 0; mọi hàng bảng cao 2.5rem, chip `leading-none`) rồi QA
   chụp lại `5c82783` (13c): F1 ✓ ("0 tín hiệu · Không có mục nào"), F2 ✓ (QL tại `/` thấy nút, bảng GV 4 hàng), F3 ✓
   (Cả Monbay / MB-FOU 12 / MB-FT 101 / MB-FT 102 đều 40.00px), F6 ✓ (`scrollWidth` 375). Không lỗi console/4xx.
+- **Task 13 (rà — Opus 5):** CODE_MAP đúng, hygiene sạch. Báo cáo QA bị bắt lỗi: 9 dòng ✗ trong log được báo ✓ mà không
+  ghi lý do (đa số là script so chữ sai — đã bổ sung bảng "✗ trong log → vì sao ✓"), hai ảnh dẫn chứng chụp sau khi script
+  đã bấm (Xem thêm / mở nhóm Ý thức). Ba lỗi giao diện QA bỏ sót, sửa ở `44dce40` (13d): ⚠ hiện ở "Hạn hôm nay" (G-4) →
+  chỉ quá hạn mới ⚠, hạn hôm nay dùng nhãn vàng không biểu tượng; ô dính cột đầu của hàng tổng hở viền → cùng nền hàng;
+  "Chưa có người phụ trách" lặp hai lần trên một dòng phụ của việc `no_owner`. **Tự quyết:** 4 đoạn hướng dẫn dưới ô nhập
+  của form Tạo Case là hint có từ trước, thuộc PR-Form — không sửa ở đây.
