@@ -1282,7 +1282,7 @@ api.get('/tong-quan/hoc-vien-can-ho-tro', requireAuth, wrap((req) => {
   - Khoá ô: `'tong'` · `'cn:{id}'` · `'lop:{id}'`.
   - Route `GET /tong-quan/chi-nhanh?branchId=&ct=` · `GET /tong-quan/chi-nhanh/o?cot=&khoa=&branchId=&ct=`.
 
-- [ ] **Step 1: Phép kiểm (đỏ).** (`const bang: any = await import('../worklist/bangChiNhanh.ts').catch(() => ({}));` ở đầu hàm)
+- [x] **Step 1: Phép kiểm (đỏ).** (`const bang: any = await import('../worklist/bangChiNhanh.ts').catch(() => ({}));` ở đầu hàm)
 
 ```ts
   // ================================================================== 6. Bảng Theo chi nhánh
@@ -1322,8 +1322,8 @@ api.get('/tong-quan/hoc-vien-can-ho-tro', requireAuth, wrap((req) => {
   });
 ```
 
-- [ ] **Step 2: Chạy, đỏ.**
-- [ ] **Step 3: Tạo `server/src/worklist/bangChiNhanh.ts`:**
+- [x] **Step 2: Chạy, đỏ.**
+- [x] **Step 3: Tạo `server/src/worklist/bangChiNhanh.ts`:**
 
 ```ts
 import { db } from '../db.ts';
@@ -1471,7 +1471,7 @@ export function oBangChiNhanh(p: Principal, f: { branchId?: number | null; ct: C
 ```
   `type MetricRow` đã export ở `metrics.ts:56`.
 
-- [ ] **Step 4: Route** — thêm vào khối Tổng quan (Task 5):
+- [x] **Step 4: Route** — thêm vào khối Tổng quan (Task 5):
 
 ```ts
 /** Bảng Theo chi nhánh → lớp. Chỉ số của từng ô; danh sách ô ở route dưới. */
@@ -1491,8 +1491,8 @@ api.get('/tong-quan/chi-nhanh/o', requireAuth, wrap((req) => {
 ```
   Import: `import * as bangSvc from '../worklist/bangChiNhanh.ts';`.
 
-- [ ] **Step 5: Chạy, xanh** (mốc + 18). Nếu phép "mọi ô" chậm (> 20 s cả bộ) → không sao, ghi thời gian vào Nhật ký cho PR-Z2c.
-- [ ] **Step 6: Commit.** `"PR-Pa (6): máy chủ bảng Theo chi nhánh mở xuống lớp; mỗi ô mở đúng danh sách"`
+- [x] **Step 5: Chạy, xanh** (mốc + 18). Nếu phép "mọi ô" chậm (> 20 s cả bộ) → không sao, ghi thời gian vào Nhật ký cho PR-Z2c.
+- [x] **Step 6: Commit.** `"PR-Pa (6): máy chủ bảng Theo chi nhánh mở xuống lớp; mỗi ô mở đúng danh sách"`
 
 ---
 
@@ -2554,3 +2554,11 @@ export function HocVienCanHoTro() {
   `dung-han-cap-nhat`, `ids` là mẫu số). Ghi nhận: `DiemChuY.extra` không mang chi nhánh/chương trình — web phải gắn
   `phamVi` khi mở (Task 10 đã dự tính); mỗi lần mở khối QL chạy ~6 lượt `listCases` + 4 lượt `latestAttempts` (chuyển Z2c);
   bộ demo cho "0/14 lần cập nhật PA đúng hạn" — đúng luật, chỉ trông gắt.
+- **Task 6:** commit `c439650` + `b3c57e3` (vòng sửa 1). Đỏ 3 ✗ → xanh **750**; bộ kiểm chậm thêm ~8 s (52 → 60 s) vì phép
+  "bấm mọi ô" tính lại bảng cho từng ô (ghi cho Z2c). Rà (Opus 5): hai lỗ hổng ở TẦNG KẾ HOẠCH — (A) hàng tổng cột Học
+  viên là hợp các hàng (lớp đang hoạt động) còn năm cột kia là tập gốc của chỉ số (dân số `studentsInScope`, không lọc
+  trạng thái lớp) → cột con có thể lớn hơn Học viên. **Tự quyết:** hàng tổng Học viên = dân số của chỉ số
+  (`studentsInScope` lọc chương trình), thêm assert các cột HV của hàng tổng ⊆ Học viên. (B) Case mà lớp đang học không
+  nằm trong danh sách lớp của bảng (em chuyển chương trình / lớp đóng) chỉ có ở hàng tổng, nên hàng `cn:X` có thể nhỏ
+  hơn tổng khi chọn chính X. **Tự quyết: không sửa trong PR** — thêm hàng "Chưa xếp lớp" là đổi hình dạng bảng; ghi chú
+  thích trong file và nêu ở thân PR để session planning quyết. Bộ demo không có trường hợp nào của A/B.
