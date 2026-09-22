@@ -518,7 +518,7 @@ git commit -m "PR-Pa (1): luật thuần Tổng quan — chương trình, 4 nhó
 - Consumes: `scopeFor`, `classScopeSql` (`permissions.ts`), `demoToday`.
 - Produces: `overdueNormalSignalIds(p, f)` — chữ ký **giữ nguyên**, kết quả **giống hệt** cách cũ.
 
-- [ ] **Step 1: Phép kiểm (đỏ).** Thêm vào `runTongQuanTests` (cuối hàm). Khai báo trợ giúp ngay đầu hàm, sau dòng `eq`:
+- [x] **Step 1: Phép kiểm (đỏ).** Thêm vào `runTongQuanTests` (cuối hàm). Khai báo trợ giúp ngay đầu hàm, sau dòng `eq`:
 
 ```ts
   const signals: any = await import('../cases/signals.ts');
@@ -548,8 +548,8 @@ git commit -m "PR-Pa (1): luật thuần Tổng quan — chương trình, 4 nhó
 
   Ghi chú cho người làm: phép so tập có thể xanh ngay (hàm cũ đúng); phần kiểm nguồn phải **đỏ**.
 
-- [ ] **Step 2: Chạy, đỏ** ở câu "vẫn gọi quyền từng tín hiệu".
-- [ ] **Step 3: Cài đặt.** Thay nguyên hàm `overdueNormalSignalIds` (`signals.ts:317-326`, cả khối chú thích) bằng:
+- [x] **Step 2: Chạy, đỏ** ở câu "vẫn gọi quyền từng tín hiệu".
+- [x] **Step 3: Cài đặt.** Thay nguyên hàm `overdueNormalSignalIds` (`signals.ts:317-326`, cả khối chú thích) bằng:
 
 ```ts
 /**
@@ -583,8 +583,8 @@ export function overdueNormalSignalIds(p: Principal, f: { branchId?: number | nu
 ```
   `scopeFor`, `classScopeSql`, `demoToday`, `db`, `PERMISSIONS` đã import sẵn ở đầu `signals.ts` — kiểm lại.
 
-- [ ] **Step 4: Chạy, xanh.** Phép kiểm cũ `S1 · Chỉ số tin-hieu-qua-han…` (`luatMayChu.tests.ts`) vẫn ✓. Đỏ → 🛑.
-- [ ] **Step 5: Commit.** `git commit -am "PR-Pa (2): nợ S1 — Chờ xác minh quá hạn đọc thẳng SQL trong phạm vi, bỏ quyền từng tín hiệu"`
+- [x] **Step 4: Chạy, xanh.** Phép kiểm cũ `S1 · Chỉ số tin-hieu-qua-han…` (`luatMayChu.tests.ts`) vẫn ✓. Đỏ → 🛑.
+- [x] **Step 5: Commit.** `git commit -am "PR-Pa (2): nợ S1 — Chờ xác minh quá hạn đọc thẳng SQL trong phạm vi, bỏ quyền từng tín hiệu"`
 
 ---
 
@@ -2531,3 +2531,7 @@ export function HocVienCanHoTro() {
   `DeadlineKind` đều có trong `DEADLINE_KINDS`. Rà (Opus 5): đạt, không lỗi; ghi chú nhỏ để dành: giới hạn 8/3 là no-op khi
   danh sách có đúng 8/3 mục (phép kiểm "tối đa 8" chưa thật sự kiểm), `mau` trùng tên (màu / mẫu số), thiếu assert
   `thamSoCt` dấu `&`.
+- **Task 2:** commit `22c27f4`. Đỏ đúng chỗ quét nguồn (phần so tập xanh sẵn vì hàm cũ đúng) → xanh **735**; phép cũ
+  `S1 · Chỉ số tin-hieu-qua-han…` vẫn ✓. `REPO` đi lên 4 cấp là đúng vì harness chạy từ `dist-server/`. Rà (Opus 5): đạt;
+  chứng minh tập giống hệt (bốn LEFT JOIN bỏ đi đều theo khoá duy nhất, không lọc không nhân dòng). Ghi chú nhỏ để dành:
+  phép so tập chưa assert tập admin > 0; `JOIN students s` trông thừa nhưng giữ để ngang hàng `SIGNAL_SELECT`.
