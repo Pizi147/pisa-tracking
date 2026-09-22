@@ -246,7 +246,7 @@ export function setBaseline(p: Principal, cycleId: number, input: {
   }
 
   if (!(BASELINE_SOURCES as readonly string[]).includes(input.source ?? '')) {
-    throw badRequest('Hãy chọn nguồn của điểm xuất phát.');
+    throw badRequest('Chọn nguồn của điểm xuất phát.');
   }
   let score = input.score ?? null;
   let attemptId = input.attemptId ?? null;
@@ -258,7 +258,7 @@ export function setBaseline(p: Principal, cycleId: number, input: {
     if (!a || a.student_id !== c.student_id) throw badRequest('Bài đánh giá không thuộc học viên này.');
   } else {
     if (score === null || score === undefined || score === ('' as any)) {
-      throw badRequest('Hãy nhập điểm xuất phát hoặc chọn một bài đánh giá làm căn cứ.');
+      throw badRequest('Nhập điểm xuất phát hoặc chọn một bài đánh giá làm căn cứ.');
     }
     score = Number(score);
     if (!Number.isFinite(score) || score < 0 || score > 9) throw badRequest('Điểm xuất phát phải nằm trong khoảng 0–9.');
@@ -361,7 +361,7 @@ export function reviseTarget(p: Principal, cycleId: number, input: {
   const effectiveFrom = input.effectiveFrom ?? nowIso().slice(0, 10);
   if (!isIsoDate(effectiveFrom)) throw badRequest('Ngày hiệu lực không hợp lệ.');
   const reason = (input.reason ?? '').trim();
-  if (!reason) throw badRequest('Hãy ghi lý do đổi mục tiêu.');
+  if (!reason) throw badRequest('Ghi lý do đổi mục tiêu.');
 
   return tx(() => {
     const conn = db();

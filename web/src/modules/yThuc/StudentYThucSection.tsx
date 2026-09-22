@@ -68,17 +68,17 @@ export function StudentYThucSection({ studentId, studentName, canRecordViolation
       const n = byCat.get(c) ?? 0;
       if (n > 0) bits.push(`${n} ${VIOLATION_CATEGORY_LABEL[c as ViolationCategory]}`);
     }
-    if (preparing > 0) bits.push(`${preparing} BP đang chuẩn bị`);
+    if (preparing > 0) bits.push(`${preparing} PA đang chuẩn bị`);
     const lastWarning = ['warning_3', 'warning_2', 'warning_1'].find((k) => mRows.some((m) => m.kind === k && m.status === 'done'));
     if (lastWarning) bits.push(`Thư cảnh cáo: lần ${lastWarning.slice(-1)}`);
     return bits.join(' · ');
   }, [vRows, mRows]);
 
   const timeline = useMemo(() => {
-    type Row = { key: string; date: string; kind: 'VP' | 'BP'; v?: ViolationView; m?: MeasureDetail };
+    type Row = { key: string; date: string; kind: 'vp' | 'pa'; v?: ViolationView; m?: MeasureDetail };
     const rows: Row[] = [
-      ...vRows.map((v): Row => ({ key: `v${v.id}`, date: v.occurredOn, kind: 'VP', v })),
-      ...mRows.map((m): Row => ({ key: `m${m.id}`, date: m.performedOn ?? m.createdAt.slice(0, 10), kind: 'BP', m })),
+      ...vRows.map((v): Row => ({ key: `v${v.id}`, date: v.occurredOn, kind: 'vp', v })),
+      ...mRows.map((m): Row => ({ key: `m${m.id}`, date: m.performedOn ?? m.createdAt.slice(0, 10), kind: 'pa', m })),
     ];
     return rows
       .filter((r) => !category || (r.v && r.v.category === category))
@@ -100,7 +100,7 @@ export function StudentYThucSection({ studentId, studentName, canRecordViolation
             Phối hợp SOS
           </button>
         </div>
-        {canRecordViolation && <button className="btn btn-sm" onClick={() => setReportOpen(true)}>+ Ghi vi phạm</button>}
+        {canRecordViolation && <button className="btn btn-sm" onClick={() => setReportOpen(true)}>+ Ghi nhận vi phạm</button>}
       </div>
 
       {sub === 'violations' ? (
@@ -130,7 +130,7 @@ export function StudentYThucSection({ studentId, studentName, canRecordViolation
             <ul className="list-none p-0 m-0 space-y-1">
               {timeline.map((r) => (
                 <li key={r.key} className="flex items-start gap-2 text-sm py-1 border-b last:border-b-0" style={{ borderColor: 'var(--line)' }}>
-                  {r.kind === 'VP' && r.v ? (
+                  {r.kind === 'vp' && r.v ? (
                     <>
                       {canManageDiscipline && r.v.state === 'unhandled' ? (
                         <input type="checkbox" className="mt-1" checked={ticked.has(r.v.id)}
@@ -155,7 +155,7 @@ export function StudentYThucSection({ studentId, studentName, canRecordViolation
                       <span className="w-4 shrink-0" />
                       <span className="min-w-0 flex-1">
                         <span className="text-slate-500 tabular-nums">{fmtDate(r.date)}</span>
-                        {' '}<span className="text-slate-400">[BP]</span>{' '}
+                        {' '}<span className="text-slate-400">[PA]</span>{' '}
                         {r.m.kindLabel} · {r.m.violationCount} vi phạm · {r.m.statusLabel}
                       </span>
                       {r.m.status === 'preparing' && canManageDiscipline && (
@@ -170,7 +170,7 @@ export function StudentYThucSection({ studentId, studentName, canRecordViolation
 
           {canManageDiscipline && (
             <button className="btn btn-sm" disabled={ticked.size === 0} onClick={() => setMeasureOpen(true)}>
-              Tạo biện pháp từ {ticked.size} vi phạm đã chọn
+              Tạo phương án từ {ticked.size} vi phạm
             </button>
           )}
         </>

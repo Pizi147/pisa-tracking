@@ -142,7 +142,7 @@ export const PERMISSION_LABEL: Record<string, string> = {
   'class.assign': 'Phân công giáo viên vào lớp',
   'class.edit': 'Sửa tiến độ lớp (tuần bắt đầu, tuần kiểm tra)',
   'violation.record': 'Ghi vi phạm của học viên trong lớp mình dạy',
-  'discipline.manage': 'Xử lý Ý thức: sửa vi phạm của người khác, tạo và xác nhận biện pháp xử lý',
+  'discipline.manage': 'Xử lý Ý thức: sửa vi phạm của người khác, tạo và xác nhận phương án xử lý',
   'discipline.stats': 'Xem thống kê Ý thức cả chi nhánh',
   'student.view': 'Xem hồ sơ học viên',
   'student.edit': 'Sửa hồ sơ học viên',

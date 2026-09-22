@@ -145,7 +145,7 @@ export function announceAutoCase(input: {
     notify({
       userId: input.ownerUserId, kind: 'sos',
       title: `Case mới từ SOS: ${input.skillLabel} — ${st?.full_name ?? ''}`,
-      body: `Hãy xác định nguyên nhân và xác nhận phương án. Hạn ${input.verifyDue}.`,
+      body: `Xác định nguyên nhân và xác nhận PA học thuật. Hạn ${input.verifyDue}.`,
       entityType: 'sos_case', entityId: input.caseId, dedupKey: `sos-case:${input.caseId}`,
     });
   }
@@ -270,7 +270,7 @@ export function dismissSosCase(p: Principal, caseId: number, input: { reasonCode
   }
   const code = String(input.reasonCode ?? '');
   if (!(CASE_DISMISS_REASONS as readonly string[]).includes(code)) {
-    throw badRequest(`Hãy chọn một lý do: ${CASE_DISMISS_REASONS.map((r) => CASE_DISMISS_REASON_LABEL[r]).join(' · ')}.`);
+    throw badRequest(`Chọn một lý do: ${CASE_DISMISS_REASONS.map((r) => CASE_DISMISS_REASON_LABEL[r]).join(' · ')}.`);
   }
   const text = (input.reasonText ?? '').trim();
   if (reasonNeedsText(code) && !text) throw badRequest('Chọn "Khác" thì phải ghi rõ lý do bằng chữ.');
@@ -279,7 +279,7 @@ export function dismissSosCase(p: Principal, caseId: number, input: { reasonCode
     .get(caseId) as any;
   const followed = conn.prepare('SELECT COUNT(*) n FROM case_followups WHERE case_id = ?').get(caseId) as any;
   if (started.n > 0 || followed.n > 0) {
-    throw badRequest('Case này đã có phương án được xác nhận hoặc đang chạy — hãy dùng "Chốt kết quả case" thay vì "Không cần theo dõi".');
+    throw badRequest('Case này đã có phương án được xác nhận hoặc đang chạy — dùng "Chốt kết quả case" thay vì "Không cần theo dõi".');
   }
   const label = CASE_DISMISS_REASON_LABEL[code as CaseDismissReason];
   const note = `Không cần theo dõi · ${label}${reasonNeedsText(code) ? ` — ${text}` : ''}`;

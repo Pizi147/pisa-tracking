@@ -40,7 +40,7 @@ export function saveRoute(p: Principal, input: {
   const code = String(input.code ?? '').trim().toUpperCase();
   if (!/^[A-Z0-9-]{2,12}$/.test(code)) throw badRequest('Mã lộ trình dùng chữ in hoa, số và gạch ngang, 2–12 ký tự.');
   const name = String(input.name ?? '').trim();
-  if (!name) throw badRequest('Hãy đặt tên cho lộ trình.');
+  if (!name) throw badRequest('Đặt tên cho lộ trình.');
   const status = input.status === 'inactive' ? 'inactive' : 'active';
 
   const had = conn.prepare('SELECT * FROM routes WHERE code = ?').get(code) as any;
@@ -101,7 +101,7 @@ export function saveProgramme(p: Principal, input: {
   const code = String(input.code ?? '').trim().toUpperCase();
   if (!/^[A-Z0-9-]{2,12}$/.test(code)) throw badRequest('Mã loại lớp dùng chữ in hoa, số và gạch ngang, 2–12 ký tự.');
   const name = String(input.name ?? '').trim();
-  if (!name) throw badRequest('Hãy đặt tên cho loại lớp.');
+  if (!name) throw badRequest('Đặt tên cho loại lớp.');
 
   const had = conn.prepare('SELECT * FROM programmes WHERE code = ?').get(code) as any;
   const builtin = Object.prototype.hasOwnProperty.call(PROGRAMME_TEMPLATES, code);

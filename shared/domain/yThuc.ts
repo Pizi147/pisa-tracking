@@ -185,8 +185,8 @@ export function measureMissing(kind: MeasureKind, f: {
   performer?: boolean;
 }): string | null {
   const spec = MEASURE_REQUIRED_FIELDS[kind];
-  if (!spec) return 'Loại biện pháp không hợp lệ';
-  if (spec.customName === 'required' && !(f.customName ?? '').trim()) return 'Cần ghi tên biện pháp';
+  if (!spec) return 'Loại phương án xử lý không hợp lệ';
+  if (spec.customName === 'required' && !(f.customName ?? '').trim()) return 'Cần ghi tên phương án xử lý';
   if (!f.performedOn) return 'Cần chọn ngày thực hiện';
   if (f.performer === false) return 'Cần chọn hoặc ghi tên người thực hiện';
   if (!(f.content ?? '').trim()) return 'Cần ghi nội dung hoặc ghi chú';

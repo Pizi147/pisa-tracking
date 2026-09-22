@@ -58,8 +58,8 @@ export function ClassCreatePanel({ onClose, onDone }: {
   const code = `${prefix}${body}`;
 
   const save = async () => {
-    if (!branchId) { toast.push('error', 'Hãy chọn chi nhánh.'); return; }
-    if (!body) { toast.push('error', 'Hãy đặt tên lớp.'); return; }
+    if (!branchId) { toast.push('error', 'Chọn chi nhánh.'); return; }
+    if (!body) { toast.push('error', 'Đặt tên lớp.'); return; }
     setBusy(true);
     try {
       const r = await api.post<{ id: number }>('/classes', {

@@ -113,7 +113,7 @@ export function yThucMetric(
     case 'bien-phap-da-thuc-hien':
     case 'bien-phap-theo-loai': {
       if (id === 'bien-phap-theo-loai' && f.kind && !(MEASURE_KINDS as readonly string[]).includes(f.kind)) {
-        throw badRequest('Loại biện pháp không hợp lệ.');
+        throw badRequest('Loại phương án xử lý không hợp lệ.');
       }
       const b = branchSql('c.branch_id', scope.branchIds), t = period('m.performed_on');
       const rows = db()

@@ -108,7 +108,7 @@ function loadStudent(studentId: number): any {
 
 function checkCategory(category: unknown): ViolationCategory {
   if (typeof category !== 'string' || !(VIOLATION_CATEGORIES as readonly string[]).includes(category)) {
-    throw badRequest(`Hãy chọn nhóm vi phạm: ${VIOLATION_CATEGORIES.map((c) => VIOLATION_CATEGORY_LABEL[c]).join(' · ')}.`);
+    throw badRequest(`Chọn nhóm vi phạm: ${VIOLATION_CATEGORIES.map((c) => VIOLATION_CATEGORY_LABEL[c]).join(' · ')}.`);
   }
   return category as ViolationCategory;
 }

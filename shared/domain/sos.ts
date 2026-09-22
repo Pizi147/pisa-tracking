@@ -119,7 +119,7 @@ export type CoordinationRemoveReason = (typeof COORDINATION_REMOVE_REASONS)[numb
 export const COORDINATION_REMOVE_REASON_LABEL: Record<CoordinationRemoveReason, string> = {
   not_needed: 'Không cần trong trường hợp này',
   handled_otherwise: 'Đã xử lý theo cách khác',
-  duplicate_measure: 'Trùng với Biện pháp khác',
+  duplicate_measure: 'Trùng với phương án xử lý khác',
   other: 'Khác',
   system_sos_changed: 'Điểm được sửa — mức SOS không còn cần việc này',
 };

@@ -30,6 +30,6 @@ export function DeleteViolationConfirm({ violationId, onClose, onDone }: {
   return (
     <ConfirmDialog open={violationId !== null} onClose={onClose} onConfirm={confirm} busy={busy} danger
       title="Xoá vi phạm này?"
-      body={n > 0 ? `Nó sẽ bị gỡ khỏi ${n} biện pháp.` : 'Vi phạm này chưa nằm trong biện pháp nào.'} />
+      body={n > 0 ? `Nó sẽ bị gỡ khỏi ${n} phương án.` : 'Vi phạm này chưa nằm trong phương án nào.'} />
   );
 }

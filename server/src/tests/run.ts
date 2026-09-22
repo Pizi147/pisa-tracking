@@ -6078,7 +6078,7 @@ check('[6.3] Bốn trường bắt buộc: tên, mô tả, mức độ hai bậc
   } as any;
 
   assertThrows(() => cases.reportIssue(P.admin, { ...base, summary: 'Em đọc chậm lắm luôn ấy' }),
-    /đặt tên/, 'Mở được case không tên');
+    /[Đđ]ặt tên/, 'Mở được case không tên');
   assertThrows(() => cases.reportIssue(P.admin, { ...base, title: 'Reading chậm', summary: 'Chậm' }),
     /cụ thể hơn/, 'Mở được case với mô tả một chữ');
   assertThrows(
@@ -9411,6 +9411,10 @@ await checkAsync('PR-N · N5 Phương án thừa hưởng quyền của case ch�
   assertThrows(() => attachmentsSvc.listAttachments(P.admin, 'khong_co', 1), /không hợp lệ|chưa hỗ trợ/, 'Loại lạ');
   await attachmentsSvc.removeAttachment(P.mbManager, row.id);
 });
+
+// ==================================================================== PR-HV (hồ sơ học viên + Ý thức v3)
+const { runHoSoHocVienTests } = await import('./hoSoHocVien.tests.ts');
+await runHoSoHocVienTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
 // ==================================================================== PR-J (Ý thức: Vi phạm và Biện pháp xử lý)
 

@@ -823,7 +823,7 @@ export function ActionDialog({ open, onClose, caseId, onDone }: {
 
   const submit = async () => {
     if (description.trim().length < 8) {
-      toast.push('error', 'Hãy mô tả ngắn phương án — một câu đủ để người khác hiểu sẽ làm gì.');
+      toast.push('error', 'Mô tả ngắn phương án — một câu đủ để người khác hiểu sẽ làm gì.');
       return;
     }
     if (status === 'completed' && !completedDate) {

@@ -21,7 +21,7 @@ export function CauseDeterminationPanel({ caseId, topic, currentCode, onClose, o
   const causes = topic ? issuesForTopic(topic) : [];
 
   const save = async () => {
-    if (!code) { toast.push('error', 'Hãy chọn phân loại vấn đề.'); return; }
+    if (!code) { toast.push('error', 'Chọn phân loại vấn đề.'); return; }
     setBusy(true);
     try {
       await api.put(`/cases/${caseId}/issues`, { primaryCode: code });
@@ -165,7 +165,7 @@ export function DismissCaseForm({ caseId, onClose, onDone }: { caseId: number; o
   const [busy, setBusy] = useState(false);
 
   /* K2-3: ràng buộc nói TRƯỚC khi bấm — nút mờ + câu thiếu gì, không báo lỗi đỏ sau khi bấm. */
-  const missing = !reason ? 'Hãy chọn một lý do.'
+  const missing = !reason ? 'Chọn một lý do.'
     : reasonNeedsText(reason) && !text.trim() ? 'Chọn "Khác" thì phải ghi rõ lý do.'
     : null;
 

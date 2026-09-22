@@ -137,15 +137,15 @@ export function QuickReport({
      * BỐN TRƯỜNG BẮT BUỘC (mục 6.3). Kiểm ngay ở đây chứ không chỉ chờ máy chủ báo lỗi:
      * người dùng đang gõ dở, nói cho họ biết thiếu gì trước khi bấm rẻ hơn nhiều.
      */
-    if (title.trim().length < 6) { toast.push('error', 'Hãy đặt tên cho case.'); return; }
+    if (title.trim().length < 6) { toast.push('error', 'Đặt tên cho case.'); return; }
     if (summary.trim().length < 15) {
-      toast.push('error', 'Hãy mô tả cụ thể hơn: em sai ở đâu, sai như thế nào.'); return;
+      toast.push('error', 'Mô tả cụ thể hơn: em sai ở đâu, sai như thế nào.'); return;
     }
     if (!topic) {
-      toast.push('error', 'Hãy chọn kỹ năng em đang vướng.');
+      toast.push('error', 'Chọn kỹ năng em đang vướng.');
       return;
     }
-    if (!primaryCode) { toast.push('error', 'Hãy chọn phân loại vấn đề.'); return; }
+    if (!primaryCode) { toast.push('error', 'Chọn phân loại vấn đề.'); return; }
     if (primaryCode.endsWith('.other') && summary.trim().length < 30) {
       toast.push('error', 'Chọn "Khác" thì mô tả phải nói rõ vấn đề cụ thể là gì.'); return;
     }
@@ -178,19 +178,19 @@ export function QuickReport({
   };
 
   const submitBackfill = async () => {
-    if (title.trim().length < 6) { toast.push('error', 'Hãy đặt tên cho case.'); return; }
+    if (title.trim().length < 6) { toast.push('error', 'Đặt tên cho case.'); return; }
     if (summary.trim().length < 15) {
-      toast.push('error', 'Hãy mô tả cụ thể hơn: khi đó em vướng gì.'); return;
+      toast.push('error', 'Mô tả cụ thể hơn: khi đó em vướng gì.'); return;
     }
     if (!topic) {
-      toast.push('error', 'Hãy chọn kỹ năng.');
+      toast.push('error', 'Chọn kỹ năng.');
       return;
     }
-    if (!primaryCode) { toast.push('error', 'Hãy chọn phân loại vấn đề.'); return; }
+    if (!primaryCode) { toast.push('error', 'Chọn phân loại vấn đề.'); return; }
     if (primaryCode.endsWith('.other') && summary.trim().length < 30) {
       toast.push('error', 'Chọn "Khác" thì mô tả phải nói rõ vấn đề cụ thể là gì.'); return;
     }
-    if (!bfFrom || !bfTo) { toast.push('error', 'Hãy ghi từ ngày nào đến ngày nào.'); return; }
+    if (!bfFrom || !bfTo) { toast.push('error', 'Ghi từ ngày nào đến ngày nào.'); return; }
     if (bfFrom > bfTo) { toast.push('error', 'Ngày bắt đầu phải trước ngày kết thúc.'); return; }
     const rows = bfActions.filter((a) => a.description.trim() || a.performerName.trim());
     if (!rows.length) { toast.push('error', 'Ghi ít nhất một dòng "đã làm gì".'); return; }
@@ -200,8 +200,8 @@ export function QuickReport({
       if (!a.fromDate || !a.toDate) { toast.push('error', 'Mỗi dòng "đã làm gì" phải có từ ngày → đến ngày.'); return; }
       if (a.fromDate > a.toDate) { toast.push('error', 'Một dòng "đã làm gì" có ngày bắt đầu sau ngày kết thúc.'); return; }
     }
-    if (!bfOutcome) { toast.push('error', 'Hãy chọn kết quả cuối.'); return; }
-    if (bfNote.trim().length < 10) { toast.push('error', 'Hãy ghi chú kết luận — ít nhất 10 ký tự.'); return; }
+    if (!bfOutcome) { toast.push('error', 'Chọn kết quả cuối.'); return; }
+    if (bfNote.trim().length < 10) { toast.push('error', 'Ghi chú kết luận — ít nhất 10 ký tự.'); return; }
     setBfActions(rows);
     await sendBackfill();
   };

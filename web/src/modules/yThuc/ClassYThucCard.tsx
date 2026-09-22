@@ -123,7 +123,7 @@ export function ClassYThucCard({ classId }: { classId: number }) {
 
   return (
     <Card title="Ý thức & Phối hợp"
-      action={d.canRecord ? <button className="btn btn-sm" onClick={() => setReportFor(0)}>+ Ghi vi phạm</button> : undefined}
+      action={d.canRecord ? <button className="btn btn-sm" onClick={() => setReportFor(0)}>+ Ghi nhận vi phạm</button> : undefined}
       bodyClass="p-0">
       {d.warning.message && (
         <div className="px-4 pt-3"><Alert tone="warn">{d.warning.message.replace(/^⚠\s*/, '')}</Alert></div>
@@ -174,7 +174,7 @@ export function ClassYThucCard({ classId }: { classId: number }) {
                         {s.warningActive && <Alert tone="warn">cũ nhất {s.oldestAgeDays} ngày</Alert>}
                         {(d.preparing.filter((m) => m.studentId === s.studentId).length > 0) && (
                           <span className="text-xs text-slate-400">
-                            {d.preparing.filter((m) => m.studentId === s.studentId).length} BP đang chuẩn bị
+                            {d.preparing.filter((m) => m.studentId === s.studentId).length} PA đang chuẩn bị
                           </span>
                         )}
                       </span>
@@ -208,7 +208,7 @@ export function ClassYThucCard({ classId }: { classId: number }) {
                             {d.canManage && (
                               <button type="button" className="btn btn-sm mt-2" disabled={tickOf(s.studentId).size === 0}
                                 onClick={() => setMeasureFor({ studentId: s.studentId, studentName: s.studentName })}>
-                                Tạo biện pháp từ {tickOf(s.studentId).size} vi phạm đã chọn
+                                Tạo phương án từ {tickOf(s.studentId).size} vi phạm
                               </button>
                             )}
                           </div>
@@ -216,7 +216,7 @@ export function ClassYThucCard({ classId }: { classId: number }) {
                         <div className="rounded-lg border p-2.5" style={{ borderColor: 'var(--line)' }}>
                           <p className="text-[11px] text-slate-500 m-0 mb-1.5 uppercase tracking-wide">Xử lý</p>
                           {d.preparing.filter((m) => m.studentId === s.studentId).length === 0 ? (
-                            <p className="text-xs text-slate-500 m-0">Chưa có biện pháp đang chuẩn bị</p>
+                            <p className="text-xs text-slate-500 m-0">Chưa có phương án đang chuẩn bị</p>
                           ) : (
                             <ul className="list-none p-0 m-0 space-y-1">
                               {d.preparing.filter((m) => m.studentId === s.studentId).map((m) => (

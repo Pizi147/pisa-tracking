@@ -195,14 +195,14 @@ lệch vài dòng là bình thường, lệch nội dung thì 🛑 hỏi.
 
 **Files:** chỉ đọc; tạo thư mục `thiet-ke/anh/pr-hv/`.
 
-- [ ] **Step 1:** Gọi `superpowers:using-git-worktrees`, tạo nhánh **`pr-hv-ho-so-hoc-vien`** từ `main` mới nhất
+- [x] **Step 1:** Gọi `superpowers:using-git-worktrees`, tạo nhánh **`pr-hv-ho-so-hoc-vien`** từ `main` mới nhất
       (`git fetch origin` trước). Kiểm worktree **có** ba file: `docs/superpowers/specs/2026-09-22-ho-so-hoc-vien-overhaul-design.md`,
       `thiet-ke/tham-khao/ho-so-hoc-vien-v3.html`, `thiet-ke/tham-khao/ho-so-lop-v3.html` (và chính plan này).
       Thiếu → 🛑 dừng, báo session planning: "spec/prototype chưa được đưa lên `main`".
-- [ ] **Step 2:** `npm install` rồi `npm run check`. Ghi `N0` (số phép kiểm) vào Nhật ký. (Sau PR-Z2a: 597; có thể hơn.)
-- [ ] **Step 3:** Ghi vào Nhật ký: `git log origin/main --oneline -5` và PR-Z2b đã merge chưa (`gh pr list --state merged --search "Z2b"`
+- [x] **Step 2:** `npm install` rồi `npm run check`. Ghi `N0` (số phép kiểm) vào Nhật ký. (Sau PR-Z2a: 597; có thể hơn.)
+- [x] **Step 3:** Ghi vào Nhật ký: `git log origin/main --oneline -5` và PR-Z2b đã merge chưa (`gh pr list --state merged --search "Z2b"`
       hoặc hỏi). Chưa merge là **bình thường** — Task 9 sẽ chờ.
-- [ ] **Step 4:** Đọc hết spec; mở hai prototype bằng trình duyệt (file tĩnh, không cần máy chủ); đọc
+- [x] **Step 4:** Đọc hết spec; mở hai prototype bằng trình duyệt (file tĩnh, không cần máy chủ); đọc
       `StudentDetailPage.tsx`, `SkillBoard.tsx`, `StudentYThucSection.tsx`, `ClassYThucCard.tsx`, `PhoiHopSosSection.tsx`,
       `ui.tsx` (dòng 1–240), `KetQuaDot.tsx`.
 - [ ] **Step 5: 🛑 Hỏi chủ sản phẩm trước khi bật máy chủ dev** (câu mẫu: "Tôi cần chạy bản demo trên máy để chụp ảnh
@@ -236,7 +236,7 @@ lệch vài dòng là bình thường, lệch nội dung thì 🛑 hỏi.
   (kiểu `YThucTestKit` import từ `./yThuc.tests.ts`, như `sosV3.tests.ts` đang làm).
 - Produces: hằng `CHO_Z2B` trong file kiểm thử — danh sách file đóng băng được **tạm** loại khỏi phép quét, Task 9 xoá.
 
-- [ ] **Step 1: `TU_DIEN_VA_CHU.md`.**
+- [x] **Step 1: `TU_DIEN_VA_CHU.md`.**
   - Dòng 18 (bảng §1): cột "Chữ dùng trên web" thành `` `Phương án` (PA) — hỗ trợ học thuật; ở màn trộn: `PA học thuật` ``.
   - Dòng 135 (bảng §6): thay cả dòng bằng
     `| Việc GVCN làm để xử lý một nhóm vi phạm | `Phương án` (PA) trong tab Ý thức & Phối hợp · `PA xử lý` ở màn trộn · `phương án xử lý` trong câu báo từ máy chủ | "biện pháp", "BP", "phương án kỷ luật" |`
@@ -251,10 +251,10 @@ lệch vài dòng là bình thường, lệch nội dung thì 🛑 hỏi.
     `PA tiếp: hạn {ngày}`, `{a}/{b} việc hoàn thành`, `Hỗ trợ học thuật xem ở tab Học thuật`, `Học thuật theo dõi ở bảng
     kỹ năng`, `▸ {n} PA đã xong`, `▸ Bằng chứng ({n})`, `Chưa hoàn thành: …`, `Mở phương án`, `Tạo phương án`,
     `Không có cảnh báo`, `⚠ cũ nhất {k} ngày`, `⚠ đã {k} ngày`, `Lịch sử của riêng học viên này.`, `Tất cả thời gian`).
-- [ ] **Step 2: Khung `shared/domain/hoSoHocVien.ts`** — chỉ chú thích đầu file (vai trò: "luật hiển thị thuần của
+- [x] **Step 2: Khung `shared/domain/hoSoHocVien.ts`** — chỉ chú thích đầu file (vai trò: "luật hiển thị thuần của
       hồ sơ học viên PR-HV, giao diện chỉ vẽ") + `export {};` tạm; thêm `export * from './hoSoHocVien.ts';` vào cuối
       `shared/domain/index.ts`.
-- [ ] **Step 3: Phép quét chữ (TDD — viết trước, thấy đỏ).** Tạo `server/src/tests/hoSoHocVien.tests.ts`:
+- [x] **Step 3: Phép quét chữ (TDD — viết trước, thấy đỏ).** Tạo `server/src/tests/hoSoHocVien.tests.ts`:
   ```ts
   /**
    * PHÉP KIỂM PR-HV — hồ sơ học viên 3 tab + Ý thức & Phối hợp theo prototype v3 (spec 2026-09-22).
@@ -320,7 +320,7 @@ lệch vài dòng là bình thường, lệch nội dung thì 🛑 hỏi.
   `npm test` → phép này **đỏ** và liệt kê đúng các chỗ ở bảng 1A–1D. Dán số chỗ vào Nhật ký. Nếu nó báo chỗ **không**
   có trong bảng → sửa theo cùng luật và ghi Nhật ký; nếu báo một **tên trong mã** (không phải chữ hiển thị) → thêm vào
   `CHO_PHEP` kèm lý do, ghi Nhật ký.
-- [ ] **Step 4: Bảng 1A — web, D1 "biện pháp"/"BP" + A2.**
+- [x] **Step 4: Bảng 1A — web, D1 "biện pháp"/"BP" + A2.**
 
   | File:dòng | Cũ | Mới |
   |---|---|---|
@@ -343,7 +343,7 @@ lệch vài dòng là bình thường, lệch nội dung thì 🛑 hỏi.
   | `web/src/modules/yThuc/YThucAnalysisView.tsx:66` | `Biện pháp đã thực hiện theo loại` | `Phương án xử lý đã thực hiện theo loại` (màn trộn) |
   | `web/src/modules/yThuc/RecordViolationPanel.tsx:95` | `` `Ghi vi phạm${…}` `` | `` `Ghi nhận vi phạm${…}` `` (cùng chữ với nút mở nó; nút gửi `Ghi vi phạm` dòng 100 **giữ**) |
 
-- [ ] **Step 5: Bảng 1B — web, D3 "Hãy".** Bỏ `Hãy ` và viết hoa chữ kế tiếp:
+- [x] **Step 5: Bảng 1B — web, D3 "Hãy".** Bỏ `Hãy ` và viết hoa chữ kế tiếp:
 
   | File:dòng | Mới |
   |---|---|
@@ -365,7 +365,7 @@ lệch vài dòng là bình thường, lệch nội dung thì 🛑 hỏi.
   | `web/src/modules/yThuc/RecordViolationPanel.tsx:69` | `Chọn học viên.` |
   | `web/src/modules/platform/WelcomePage.tsx:55` | `… Nếu hiện chữ đỏ, chụp màn hình lại.` |
 
-- [ ] **Step 6: Bảng 1C — shared/domain.** (Mã chỉ số, khoá, tên hằng **không đổi**.)
+- [x] **Step 6: Bảng 1C — shared/domain.** (Mã chỉ số, khoá, tên hằng **không đổi**.)
 
   | File:dòng | Cũ → Mới |
   |---|---|
@@ -383,7 +383,7 @@ lệch vài dòng là bình thường, lệch nội dung thì 🛑 hỏi.
   | `shared/domain/people.ts:145` | `…tạo và xác nhận biện pháp xử lý` → `…tạo và xác nhận phương án xử lý` |
   | `shared/domain/sos.ts:122` | `'Trùng với Biện pháp khác'` → `'Trùng với phương án xử lý khác'` |
 
-- [ ] **Step 7: Bảng 1D — máy chủ KHÔNG đóng băng + script.** D1 ở câu báo máy chủ: `phương án xử lý`. D3: bỏ "Hãy".
+- [x] **Step 7: Bảng 1D — máy chủ KHÔNG đóng băng + script.** D1 ở câu báo máy chủ: `phương án xử lý`. D3: bỏ "Hãy".
 
   | File:dòng | Mới |
   |---|---|
@@ -434,7 +434,7 @@ lệch vài dòng là bình thường, lệch nội dung thì 🛑 hỏi.
 
   **KHÔNG đụng ở task này** (đóng băng, Task 9): `server/src/migrate.ts:46` (Hãy), `server/src/yThuc/measures.ts:176`
   (Hãy + biện pháp) và mọi "biện pháp" khác trong `measures.ts`, `migrate.ts`, `seed/*`.
-- [ ] **Step 8: Bảng 1E — phép kiểm khẳng định câu chữ (đổi hợp lệ vì D1).**
+- [x] **Step 8: Bảng 1E — phép kiểm khẳng định câu chữ (đổi hợp lệ vì D1).**
 
   | File:dòng | Cũ → Mới |
   |---|---|
@@ -445,7 +445,7 @@ lệch vài dòng là bình thường, lệch nội dung thì 🛑 hỏi.
   là **regex/so sánh trên thông báo lỗi** của một câu vừa đổi ở bảng 1C/1D → sửa theo chữ mới, ghi Nhật ký. (Đã soát
   22/09: ngoài hai dòng trên, các dòng `/loại biện pháp/i` 616, `/tên biện pháp/i` 617, `/tên biện pháp/` 667 bám
   `measures.ts` — **để Task 9**.)
-- [ ] **Step 9:** `npm run check` → xanh, phép quét PR-HV **xanh**. Số phép kiểm = `N0 + 1`. Commit:
+- [x] **Step 9:** `npm run check` → xanh, phép quét PR-HV **xanh**. Số phép kiểm = `N0 + 1`. Commit:
       `PR-HV (1): bộ chữ — "biện pháp" thành "phương án", bỏ "Hãy", phép quét chữ`.
 
 ---
@@ -1274,4 +1274,5 @@ danh sách ảnh.)*
 
 | Thời điểm | Task | Ghi chép |
 |---|---|---|
-| | 0 | `N0` = … · PR-Z2b đã merge? … · ảnh trước: … |
+| 22/09/2026 | 0 | Người code: **Fable 5.1** (model khuyến nghị). Worktree `.claude/worktrees/pr-hv-ho-so-hoc-vien`, nhánh `pr-hv-ho-so-hoc-vien` từ `main` @ `714739e` (đủ spec, hai prototype, plan). `N0` = **605** (npm run check xanh). `git log origin/main -5`: 714739e Merge #50 plan PR-HV · 9c12bc5 · b53c5d5 · 0f24805 Merge #48 (Z2a) · 8b3b476. PR-Z2b (#49) **OPEN** (`gh pr view 49`) → làm đúng kế hoạch, đóng băng tới Task 9. Step 5–6 (máy chủ dev, ảnh TRƯỚC) **hoãn**: chủ sản phẩm yêu cầu hỏi trước khi bật cổng 4000/5173; làm Task 1 trước (không cần máy chủ), ảnh TRƯỚC sẽ chụp từ commit gốc `714739e` (checkout tách rời tạm) khi được phép. |
+| 22/09/2026 | 1 | Phép quét (TDD) đỏ **97 chỗ** — trùng đúng bảng 1A–1D, không có tên-trong-mã nào cần `CHO_PHEP` (mảng rỗng). `CHO_Z2B` thêm `server/src/ops/` (đóng băng theo Global Constraints; `ops/initBanChinh.ts` có 2 chỗ "hãy" — Task 9). `accounts.ts` (Z2b sửa 2 dòng khác) đã đổi 8 chỗ "Hãy". Phép kiểm cũ bám câu chữ D3: `run.ts` [6.3] `/đặt tên/` → `/[Đđ]ặt tên/` (câu "Hãy đặt tên cho case" nay viết hoa Đ) — ngoài hai dòng bảng 1E. `TU_DIEN_VA_CHU.md`: luật D1 §1/§6, luật D3 §4, thêm §8 bảng chữ PR-HV. Số phép kiểm: **606** (= N0 + 1). |

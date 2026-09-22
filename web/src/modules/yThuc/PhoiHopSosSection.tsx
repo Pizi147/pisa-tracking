@@ -159,7 +159,7 @@ function RemoveCoordinationForm({ actionId, onClose, onChanged }: {
   const [busy, setBusy] = useState(false);
 
   /* K2-3: ràng buộc nói TRƯỚC khi bấm — nút mờ + câu thiếu gì, không báo lỗi đỏ sau khi bấm. */
-  const missing = !reason ? 'Hãy chọn một lý do.'
+  const missing = !reason ? 'Chọn một lý do.'
     : reason === 'other' && !text.trim() ? 'Chọn "Khác" thì phải ghi rõ lý do.'
     : null;
 
@@ -205,7 +205,7 @@ function AddCoordinationForm({ attemptId, existing, onClose, onChanged }: {
   const [busy, setBusy] = useState(false);
 
   /* K2-3: ràng buộc nói TRƯỚC khi bấm — nút mờ + câu thiếu gì, không báo lỗi đỏ sau khi bấm. */
-  const missing = !kind ? 'Hãy chọn loại việc.'
+  const missing = !kind ? 'Chọn loại việc.'
     : kind === 'other' && !customName.trim() ? 'Việc loại "Khác" cần ghi tên việc.'
     : null;
 

@@ -250,7 +250,7 @@ export async function runYThucTests(t: YThucTestKit) {
     }
     assert(/tệp hoặc liên kết/.test(need('suspension') ?? ''), 'Đình chỉ học bắt buộc tệp hoặc liên kết');
     assert(need('suspension', { attachments: 2 }) === null, 'Đình chỉ có tệp thì đủ');
-    assert(need('other') === 'Cần ghi tên biện pháp', 'Loại Khác phải có tên');
+    assert(need('other') === 'Cần ghi tên phương án xử lý', 'Loại Khác phải có tên');
     assert(need('other', { customName: 'Gặp riêng cả nhà' }) === null, 'Loại Khác có tên thì đủ');
     assert(need('talk_short', { performedOn: null }) === 'Cần chọn ngày thực hiện', `Thiếu ngày: ${need('talk_short', { performedOn: null })}`);
     assert(need('talk_short', { content: '  ' }) === 'Cần ghi nội dung hoặc ghi chú', `Thiếu nội dung: ${need('talk_short', { content: '  ' })}`);

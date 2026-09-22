@@ -537,7 +537,7 @@ export function regularSheet(p: Principal, classId: number, kind?: string) {
 
   const prog = programmeOfClass(classId);
   if (!prog || prog.scoringMode !== 'ratio') {
-    throw badRequest('Lớp này không phải lớp thường. Hãy dùng bảng điểm Mock Test.');
+    throw badRequest('Lớp này không phải lớp thường. Dùng bảng điểm Mock Test.');
   }
 
   const params: unknown[] = [classId];

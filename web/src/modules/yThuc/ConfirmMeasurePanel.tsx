@@ -100,7 +100,7 @@ export function ConfirmMeasurePanel({ open, onClose, measureId, onDone }: {
           <BangChung ownerType="discipline_measure" ownerId={data.id} canEdit={data.canManage} tieuDe="" />
         </Field>
 
-        <Field label={`${data.violations.length} vi phạm được xử lý bằng biện pháp này`} as="div">
+        <Field label={`${data.violations.length} vi phạm được xử lý bằng phương án này`} as="div">
           <p className="text-xs text-slate-400 m-0">
             {data.violations.map((v) => `${fmtDate(v.occurredOn)} ${v.categoryLabel}`).join(' · ')}
           </p>

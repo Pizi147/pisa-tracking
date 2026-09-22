@@ -95,7 +95,7 @@ export async function runSosV3Tests(t: YThucTestKit) {
     assert(JSON.stringify(domain.COORDINATION_REMOVE_REASONS) === JSON.stringify(['not_needed', 'handled_otherwise', 'duplicate_measure', 'other', 'system_sos_changed']), 'Năm mã lý do');
     assert(domain.COORDINATION_REMOVE_REASON_LABEL.not_needed === 'Không cần trong trường hợp này'
       && domain.COORDINATION_REMOVE_REASON_LABEL.handled_otherwise === 'Đã xử lý theo cách khác'
-      && domain.COORDINATION_REMOVE_REASON_LABEL.duplicate_measure === 'Trùng với Biện pháp khác'
+      && domain.COORDINATION_REMOVE_REASON_LABEL.duplicate_measure === 'Trùng với phương án xử lý khác'
       && domain.COORDINATION_REMOVE_REASON_LABEL.other === 'Khác', 'Nhãn bốn lý do sai');
     for (const c of domain.COORDINATION_REMOVE_REASONS) assert(domain.COORDINATION_REMOVE_REASON_LABEL[c], `Thiếu nhãn ${c}`);
     assert(JSON.stringify(domain.CASE_DISMISS_REASONS) === JSON.stringify(['special_circumstance', 'single_incident', 'other']), `Ba lý do đóng case sai: ${domain.CASE_DISMISS_REASONS}`);

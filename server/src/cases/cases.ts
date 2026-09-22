@@ -366,7 +366,7 @@ export function reportIssue(p: Principal, input: {
    */
   const title = (input.title ?? '').trim();
   if (title.length < 6) {
-    throw badRequest('Hãy đặt tên cho case — một câu ngắn nói đúng vấn đề, ví dụ '
+    throw badRequest('Đặt tên cho case — một câu ngắn nói đúng vấn đề, ví dụ '
       + '"Reading: chưa xử lý được dạng True/False/Not Given".');
   }
   const summary = (input.summary ?? '').trim();
@@ -380,7 +380,7 @@ export function reportIssue(p: Principal, input: {
    */
   const topic = (input.topic ?? '').trim() || null;
   if (!topic) {
-    throw badRequest('Hãy chọn kỹ năng: Listening, Reading, Writing Task 1, Writing Task 2 hay Speaking.');
+    throw badRequest('Chọn kỹ năng: Listening, Reading, Writing Task 1, Writing Task 2 hay Speaking.');
   }
   if (!(ENTRY_SKILLS as readonly string[]).includes(topic)) throw badRequest(`Chủ đề không hợp lệ: ${topic}`);
   /* Hai mức, không ba: `attention` (hiện là "Bình thường" từ 21/09/2026 — chỉ đổi chữ, mã giữ nguyên) và `urgent` (Gấp). Không chọn thì là `attention`. */
@@ -422,7 +422,7 @@ export function reportIssue(p: Principal, input: {
    */
   const allowed = issuesForTopic(topic).map((i) => i.code);
   const primaryCode = (input.primaryCode ?? '').trim();
-  if (!primaryCode) throw badRequest('Hãy chọn phân loại vấn đề — đây là căn cứ để tổng hợp về sau.');
+  if (!primaryCode) throw badRequest('Chọn phân loại vấn đề — đây là căn cứ để tổng hợp về sau.');
   if (!allowed.includes(primaryCode)) {
     throw badRequest(`Phân loại "${primaryCode}" không thuộc bộ phân loại của ${topic}.`);
   }
@@ -913,7 +913,7 @@ export function respondToPlan(p: Principal, interventionId: number, input: {
   if (input.decision === 'declined' && !note) {
     throw badRequest('Không duyệt thì phải ghi lý do, để giáo viên biết nên làm gì tiếp.');
   }
-  if (input.decision === 'comment' && !note) throw badRequest('Hãy viết góp ý.');
+  if (input.decision === 'comment' && !note) throw badRequest('Viết góp ý.');
 
   return tx(() => {
     if (input.decision === 'comment') {
@@ -1010,7 +1010,7 @@ export function completeIntervention(p: Principal, interventionId: number, input
     'Bạn không có quyền cập nhật phương án của case này.');
 
   if (iv.preset === 1 && !iv.confirmed_at) {
-    throw badRequest('Phương án điền sẵn này chưa được xác nhận — hãy xác nhận (hoặc sửa / thay) trước khi ghi việc đã làm.');
+    throw badRequest('Phương án điền sẵn này chưa được xác nhận — xác nhận (hoặc sửa / thay) trước khi ghi việc đã làm.');
   }
   if (iv.approval_state === 'pending') {
     throw badRequest('Phương án này đang chờ Quản lý duyệt, chưa ghi là đã làm được.');
@@ -1201,7 +1201,7 @@ export function recordFollowUp(p: Principal, caseId: number, input: {
     const iv = conn.prepare('SELECT case_id, preset, confirmed_at FROM case_interventions WHERE id = ?').get(input.interventionId) as any;
     if (!iv || iv.case_id !== caseId) throw badRequest('Tác động không thuộc case này.');
     if (iv.preset === 1 && !iv.confirmed_at) {
-      throw badRequest('Phương án điền sẵn này chưa được xác nhận — hãy xác nhận (hoặc sửa / thay) trước khi ghi theo dõi.');
+      throw badRequest('Phương án điền sẵn này chưa được xác nhận — xác nhận (hoặc sửa / thay) trước khi ghi theo dõi.');
     }
   }
   // Bằng chứng phải là bài của CHÍNH học viên đó — không gắn nhầm sang em khác.
@@ -2570,7 +2570,7 @@ export function updateResult(p: Principal, interventionId: number, input: {
     'Bạn không có quyền cập nhật kết quả của case này.');
 
   if (iv.preset === 1 && !iv.confirmed_at) {
-    throw badRequest('Phương án điền sẵn này chưa được xác nhận — hãy xác nhận (hoặc sửa / thay) trước khi ghi kết quả.');
+    throw badRequest('Phương án điền sẵn này chưa được xác nhận — xác nhận (hoặc sửa / thay) trước khi ghi kết quả.');
   }
   if (iv.approval_state === 'pending') {
     throw badRequest('Phương án này đang chờ Quản lý duyệt — chu kỳ thực hiện chưa bắt đầu.');
