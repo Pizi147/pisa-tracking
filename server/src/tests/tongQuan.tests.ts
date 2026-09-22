@@ -2,6 +2,7 @@
  * PHÉP KIỂM PR-Pa — Tổng quan (đặc tả 2026-09-22-ux-toan-web-truoc-deploy-design §3.2, §3.10, §7 dòng Pa).
  * Harness do `run.ts` sở hữu và truyền vào — file này không tự mở database. Học viên dùng ở đây do CHÍNH file này tạo
  * (`taoHocVien`), không sửa học viên của bộ demo. Ngày demo cố định: TODAY = 2026-09-14 (thứ Hai).
+ * Bộ này TẠO học viên / Case THẬT trong database dùng chung của harness, nên PHẢI là khối cuối cùng nối vào `run.ts`.
  */
 import type { YThucTestKit } from './yThuc.tests.ts';
 
@@ -61,7 +62,6 @@ export async function runTongQuanTests(t: YThucTestKit) {
     primaryCode: d.issuesForTopic(topic)[0].code,
   }) as any;
   const ids = (id: string, f: any = {}) => (metricsSvc.metricSet(P.admin, id, f).ids as number[]);
-  void assertThrows;
 
   // ================================================================== 1. Luật thuần
   check('PR-Pa · Chương trình: đọc tham số ct; mặc định Cả hai; không có chữ "Normal" trên màn', () => {
@@ -275,6 +275,7 @@ export async function runTongQuanTests(t: YThucTestKit) {
     const mb = mbBranch;
     for (const [who, f] of [[P.admin, { ct: 'ca-hai' }], [P.mbManager, { branchId: mb, ct: 'thuong' }], [P.mbManager, { ct: 'ft' }]] as const) {
       const r = tq.tongQuanQuanLy(who, f);
+      if (who === P.admin && f.ct === 'ca-hai') assert(r.canXuLy.length > 0, 'Cần xử lý (admin, Cả hai) phải có dòng — nếu rỗng thì vòng kiểm bên dưới vô nghĩa');
       assert(r.canXuLy.length <= 8, 'Quá 8 dòng');
       const thuTu = d.CAN_XU_LY.map((x: any) => x.metricId);
       let truoc = -1;
@@ -291,6 +292,7 @@ export async function runTongQuanTests(t: YThucTestKit) {
 
   check('PR-Pa · Điểm đáng chú ý: ≤ 3; mỗi link mở đúng số dòng đã ghi', () => {
     const r = tq.tongQuanQuanLy(P.admin, { ct: 'ca-hai' });
+    assert(r.diemDangChuY.length > 0, 'Điểm đáng chú ý (admin) phải có điểm');
     assert(r.diemDangChuY.length <= 3, 'Quá 3 điểm');
     for (const x of r.diemDangChuY) {
       const set = metricsSvc.metricSet(P.admin, x.metricId, { ...(x.extra ?? {}), program: 'ca-hai' });
@@ -351,8 +353,10 @@ export async function runTongQuanTests(t: YThucTestKit) {
   check('PR-Pa · Bảng chi nhánh: Quản trị không chọn chi nhánh → hàng chi nhánh mở xuống lớp; Quản lý một chi nhánh → bảng lớp luôn', () => {
     const a = bang.bangChiNhanh(P.admin, { ct: 'ca-hai' });
     assert(a.cheDo === 'chi-nhanh' && a.hang.every((h: any) => h.loai === 'chi-nhanh' && Array.isArray(h.lop)), 'Quản trị');
+    eq(a.branchId, null, 'Quản trị không chọn: branchId null');
     const m = bang.bangChiNhanh(P.mbManager, { ct: 'ca-hai' });
     assert(m.cheDo === 'lop' && m.hang.every((h: any) => h.loai === 'lop') && m.tenChiNhanh === 'Monbay', `Quản lý MB: ${m.cheDo}`);
+    eq(m.branchId, mbBranch, 'QL một chi nhánh: bảng trả branchId đã giải');
   });
 
   check('PR-Pa · Bảng chi nhánh: Lớp thường không có hàng lớp FT; giáo viên bị từ chối', () => {

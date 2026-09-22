@@ -118,15 +118,18 @@ function tinh(p: Principal, f: { branchId?: number | null; ct: ChuongTrinh }) {
     });
   }
   const tenChiNhanh = branchId ? (lop[0]?.branch_name ?? (conn.prepare('SELECT name FROM branches WHERE id = ?').get(branchId) as any)?.name ?? null) : null;
-  return { cheDo, hang, tongTap, tenChiNhanh };
+  return { cheDo, hang, tongTap, tenChiNhanh, branchId };
 }
 
-export function bangChiNhanh(p: Principal, f: { branchId?: number | null; ct: ChuongTrinh }) {
+/** `branchId` là chi nhánh ĐÃ GIẢI (đã chọn, hoặc QL một chi nhánh được server tự khoanh) — web dùng nó cho bảng Theo giáo viên. */
+export function bangChiNhanh(p: Principal, f: { branchId?: number | null; ct: ChuongTrinh }): {
+  cheDo: 'chi-nhanh' | 'lop'; hang: HangBang[]; tong: Record<CotBang, OBang>; tenChiNhanh: string | null; branchId: number | null;
+} {
   const r = tinh(p, f);
   const gon = (h: any): HangBang => ({
     khoa: h.khoa, id: h.id, loai: h.loai, nhan: h.nhan, laFt: h.laFt, o: soCua(h.tap), lop: h.lop?.map(gon),
   });
-  return { cheDo: r.cheDo, hang: r.hang.map(gon), tong: soCua(r.tongTap), tenChiNhanh: r.tenChiNhanh };
+  return { cheDo: r.cheDo, hang: r.hang.map(gon), tong: soCua(r.tongTap), tenChiNhanh: r.tenChiNhanh, branchId: r.branchId };
 }
 
 /** Danh sách của MỘT ô — tính lại bằng chính `tinh`, nên danh sách luôn đúng bằng con số (G-10). */

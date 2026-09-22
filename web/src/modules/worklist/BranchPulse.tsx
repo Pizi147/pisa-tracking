@@ -21,7 +21,7 @@ import { thamSoCt, type ChuongTrinh, type CotBang } from '@shared/domain/index.t
 
 type OBang = { n: number; mau?: number };
 type Hang = { khoa: string; id: number; loai: 'chi-nhanh' | 'lop'; nhan: string; laFt: boolean | null; o: Record<CotBang, OBang>; lop?: Hang[] };
-type Bang = { cheDo: 'chi-nhanh' | 'lop'; hang: Hang[]; tong: Record<CotBang, OBang>; tenChiNhanh: string | null };
+type Bang = { cheDo: 'chi-nhanh' | 'lop'; hang: Hang[]; tong: Record<CotBang, OBang>; tenChiNhanh: string | null; branchId: number | null };
 
 const COT: { key: CotBang; nhan: (ct: ChuongTrinh) => string; goiY: string }[] = [
   { key: 'hocVien', nhan: () => 'Học viên', goiY: 'Học viên đang học, không tính em đã kết thúc.' },
@@ -76,7 +76,7 @@ export function BranchPulse({ branchId, ct }: { branchId: number | null; ct: Chu
         </div>
       ) : undefined}
       bodyClass="p-0">
-      {coGv && view === 'gv' ? <BangTheoGiaoVien branchId={branchId} /> : (
+      {coGv && view === 'gv' ? <BangTheoGiaoVien branchId={data.branchId ?? branchId} /> : (
         <>
         <div className="table-scroll">
           <table className="w-full text-sm" style={{ tableLayout: 'fixed', minWidth: '44rem' }}>

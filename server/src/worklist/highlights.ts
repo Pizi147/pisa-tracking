@@ -73,7 +73,7 @@ function visibleClasses(p: Principal, branchId: number | null, program: ChuongTr
     args.push(...scope.branchIds);
   }
   return conn
-    .prepare(`SELECT c.id, c.code, c.kind, c.is_fast_track, c.branch_id FROM classes c WHERE ${where.join(' AND ')}`)
+    .prepare(`SELECT c.id, c.code, c.is_fast_track, c.branch_id FROM classes c WHERE ${where.join(' AND ')}`)
     .all(...args) as any[];
 }
 
