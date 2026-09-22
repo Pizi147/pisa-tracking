@@ -90,7 +90,7 @@ Nó chỉ có tác dụng cho cửa sổ đang mở (mở cửa sổ mới là p
 |---|---|---|
 | Khi session **PR-Z2a** hỏi (lần 1) | Mục 2 — chỉ tạo database **thử** | Session Z2a |
 | Khi session **PR-Z2a** hỏi (lần 2) | Mục 3, 4, 5 | Session Z2a |
-| Khi session **PR-Z2c** hỏi | Mục 2 — tạo database **bản chính** · mục 6 · **mục 7a (tập dượt, trước)** · mục 7 | Session Z2c |
+| Khi session **PR-Z2c** hỏi | Mục 2 — tạo database **bản chính** · mục 6 · **mục 7a + tập dượt khôi phục ở cuối mục 11.2 (trước)** · mục 7 | Session Z2c |
 | Session Z2c xin phép đưa lên chính thức | Mục 8.2 (hoặc để nó chạy) | Session Z2c |
 | Sau khi lên mạng | Mục 9 · mục 10 hằng tuần | — |
 | Dữ liệu bị hỏng / mất, cần lấy lại từ bản sao lưu | Mục 11.2 — **chỉ khi session code hướng dẫn** | Session code |
@@ -338,7 +338,8 @@ $env:VITE_BAN_CHINH='1'
 npm run dev
 ```
 
-Chờ tới khi thấy dòng có `http://localhost:5173`. Mở trình duyệt vào <http://localhost:5173> → đăng nhập bằng email ở
+Chờ tới khi thấy dòng có `http://localhost:5173`. Mở trình duyệt — **dùng Chrome hoặc Edge** (Safari không nhận phiên
+an toàn ở localhost, sẽ không đăng nhập được) — vào <http://localhost:5173> → đăng nhập bằng email ở
 bước 2 và **mật khẩu tập dượt**. Phải vào được trang chính (chưa có dữ liệu), **không** có tab "Vào nhanh", ngày là
 **hôm nay**. Trang tải chậm vài giây là bình thường (database ở Mỹ). Nếu có cửa sổ khác đang chạy `npm run dev` thì tắt
 nó trước. Xong: quay lại PowerShell bấm **Ctrl+C** (hỏi `Terminate batch job (Y/N)?` thì gõ `Y`, Enter).
@@ -396,7 +397,7 @@ Dòng cuối hiện **`Website URL: https://<tên-site>.netlify.app`** — giáo
 3. **Quản trị → Tài khoản:** tạo tài khoản **Quản lý** và **Giáo viên** (hoặc để GV tự đăng ký rồi duyệt). Email của
    mọi người phải có đuôi `.pisa@gmail.com`. Chi nhánh đã có sẵn từ mục 7.
 4. Tạo **lớp** → phân công GVBM từng môn + GVCN → **thêm học viên** (dán từ Excel) → xếp lịch MT.
-5. Gửi địa chỉ web cho giáo viên.
+5. Gửi địa chỉ web cho giáo viên. Dặn thêm: **30 ngày không mở web thì phải đăng nhập lại** (phiên đăng nhập tự hết hạn).
 
 ---
 
@@ -425,6 +426,11 @@ database đó, không đụng bản của database khác hay file khác trong th
 thường nếu bạn chưa thêm hai dòng ở dưới. Lệnh **từ chối** nếu có `BACKUP_DIR` mà quên hai dòng Turso.
 **Làm xong thì ĐÓNG cửa sổ PowerShell này** (cửa sổ còn biến Turso của database chính; đóng đi thì token cũng không
 còn trong cửa sổ).
+
+- Bản sao lưu **không chứa mã đăng nhập** của ai (bảng phiên đăng nhập luôn trống có chủ đích) — lỡ để lộ một file sao
+  lưu thì người khác cũng không đăng nhập được bằng nó. Vẫn nên giữ file kín: trong đó có dữ liệu học viên.
+- File sao lưu **kiểu tên cũ** (`pisa-NĂM-THÁNG-NGÀY-GIỜPHÚT.sqlite`, không có tên database — chỉ có nếu bạn đã chạy
+  lệnh trước 22/09/2026) **không được tự dọn**. Muốn thì xoá tay, vô hại.
 
 **Muốn sao lưu cả ảnh / thư cảnh cáo đã tải lên** (vào thư mục cùng tên, thêm đuôi `-tep`, cạnh file), thêm hai
 dòng này **trước** dòng `npm run sao-luu`:
@@ -521,7 +527,8 @@ database mới. **Làm xong thì ĐÓNG cửa sổ PowerShell này.**
 
 **Bước 4 — cho bản chính thức dùng database mới:** làm lại mục 6 với URL và token của database **MỚI** (hai lệnh
 `--context production` và hai lệnh kiểm `env:get`), rồi `netlify deploy --build --prod` (mục 8.2) — biến mới chỉ có tác
-dụng sau lần deploy này. Mở web, đăng nhập quản trị, xem dữ liệu đúng như lúc sao lưu.
+dụng sau lần deploy này. Mở web, đăng nhập quản trị, xem dữ liệu đúng như lúc sao lưu. **Sau khi khôi phục, mọi người
+đăng nhập lại** (bản sao lưu không mang theo mã đăng nhập) — báo trước cho giáo viên.
 
 **Bước 5 — tệp bằng chứng (ảnh, thư cảnh cáo): KHÔNG tự chép — việc tay, làm cùng session code.** Kho tệp trên Netlify
 đi theo tên database: database mới thì kho tệp mới, đang trống. Tệp cũ **không mất** — vẫn nằm ở kho của database cũ,
@@ -529,9 +536,14 @@ và có bản chép trong thư mục `…-tep` cạnh file sao lưu (nếu bạn
 chứng vẫn hiện nhưng bấm tải tệp sẽ báo không còn tệp. Báo session code: *"đã khôi phục sang database mới, cần chép kho
 tệp"*.
 
-> **Nên tập dượt một lần** khi mọi thứ đang ổn: khôi phục bản sao lưu của database **THỬ** vào một database tạm tên
-> `pisatracking-demo-thu-kp` (bước 2–3, dòng đầu sẽ là `Đích: database THỬ`), xem dòng `Xong`, rồi xoá database tạm
-> như mục 7a bước 5. Bỏ qua bước 4–5 khi tập dượt.
+> **Tập dượt khôi phục — BẮT BUỘC một lần, TRƯỚC khi khởi tạo bản chính (mục 7), khi session Z2c yêu cầu:**
+> 1. Sao lưu database **THỬ** như mục 10, nhưng hai dòng Turso là URL và token của database **THỬ**.
+> 2. Tạo database tạm tên `pisatracking-demo-thu-kp` (mục 2 bước 3–7).
+> 3. Làm bước 3 ở trên với file vừa sao lưu và database tạm — dòng đầu phải là `Đích: database THỬ`, dòng cuối
+>    `Xong. Đã khôi phục …`. **Ghi lại mất mấy phút.**
+> 4. Đóng cửa sổ PowerShell, xoá database tạm như mục 7a bước 5. Bỏ qua bước 4–5 ở trên khi tập dượt.
+>
+> Báo lỗi ở bước nào → dừng, chụp màn hình gửi session Z2c, **chưa** làm mục 7.
 
 ---
 
