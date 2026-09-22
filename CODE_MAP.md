@@ -83,10 +83,10 @@ ba nơi.
 | **Fast Track** | Tuần Mock Test, điểm band, mức SOS, dự kiến thi | `server/src/fasttrack/` | `web/src/modules/fasttrack/` |
 | **Normal** | FOU/BE/ELE, bốn môn L/R/W/S, điểm đạt/tổng điểm, chuyển tiếp lớp | `server/src/normal/` | `web/src/modules/normal/` |
 | **Case** | Vấn đề **học thuật** của em, phương án, phê duyệt, kết quả | `server/src/cases/` | `web/src/modules/cases/` |
-| **Ý thức** *(máy chủ xong · giao diện ở PR-K)* | Em vi phạm gì, đã xử lý bằng biện pháp nào, bằng chứng đâu; **Phối hợp SOS** của GVCN sau Mock có SOS (`server/src/yThuc/phoiHop.ts`, PR-T) | `server/src/yThuc/` | `web/src/modules/yThuc/` *(chưa có)* |
+| **Ý thức** | Em vi phạm gì, đã xử lý bằng phương án xử lý nào, bằng chứng đâu; **Phối hợp SOS** của GVCN sau Mock có SOS (`server/src/yThuc/phoiHop.ts`, PR-T) | `server/src/yThuc/` | `web/src/modules/yThuc/` — tab Ý thức & Phối hợp của hồ sơ học viên (`StudentYThucSection.tsx`) và hồ sơ lớp (`ClassYThucCard.tsx`); thẻ lượt Phối hợp `TheSos` (trong `PhoiHopSosSection.tsx`); hộp chỉ đọc một phương án `XemPhuongAnPanel.tsx` |
 | **Tổng quan và công việc** | Ai phải làm gì, cả chi nhánh đang thế nào | `server/src/worklist/` | `web/src/modules/worklist/` |
 | **Nền tảng** | Tài khoản, quyền, tuần, danh mục, nhật ký thay đổi | `server/src/platform/` | `web/src/modules/platform/` |
-| **Dùng chung** | Badge, nút, panel, bảng, chọn tuần | — | `web/src/ui/` |
+| **Dùng chung** | Badge, nút, panel, bảng, chọn tuần; hàng tab gạch chân `HangTab.tsx`, ô số nhỏ `OSoNho.tsx`, dòng thời gian lưới `DongThoiGian.tsx` (PR-HV) | — | `web/src/ui/` |
 
 Từ vựng nghiệp vụ (nhãn, hằng số, luật thuần) nằm ở `shared/domain/`, chia theo **đúng chín
 module trên**. Cả máy chủ lẫn giao diện đọc chung một bộ, nên không có chuyện hai bên gọi
@@ -207,6 +207,7 @@ loại dữ liệu mới** vào kịch bản thì thêm trường ở `server/sr
 | Case của em ở hồ sơ — **nằm ngay dưới hàng kỹ năng**, không còn khối danh sách riêng | `web/src/modules/cases/SkillBoard.tsx` → `CaseCardView` |
 | Luật hạn chu kỳ hai tuần / một tuần | `shared/domain/cases.ts` → `cycleDeadline` |
 | Năm kết quả và năm bước tiếp theo | `shared/domain/cases.ts` → `FOLLOWUP_OUTCOMES`, `nextStepsFor` |
+| Luật hiển thị thuần của hồ sơ học viên: tab từ `?tab=`, ô Test gần nhất, quá hạn, tiến độ case `k/n PA có kết quả`, việc tiếp của một PA, đếm vi phạm theo nhóm (PR-HV) | `shared/domain/hoSoHocVien.ts` → `parseHoSoTab`, `ketQuaTestGanNhat`, `quaHan`, `tienDoCase`, `viecTiepPhuongAn`, `demTheoNhomViPham` |
 | Một chu kỳ khép lại (gộp ba nút cũ) | `server/src/cases/cases.ts` → `updateResult` |
 | Điều kiện được hoàn thành case | `server/src/cases/cases.ts` → `closeBlockers` |
 | Điểm giáo viên tự chấm | `server/src/cases/cases.ts` → `normalizeMetrics`, `parseMetrics` |
