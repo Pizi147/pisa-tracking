@@ -1,14 +1,13 @@
 import { useState } from 'react';
 import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
-import { Empty, Skeleton, Status } from '../../ui/ui.tsx';
+import { Empty, Info, Skeleton, Status } from '../../ui/ui.tsx';
 import { BangChung } from '../../ui/BangChung.tsx';
 import {
   COORDINATION_KINDS, COORDINATION_KIND_LABEL, COORDINATION_USER_REMOVE_REASONS, COORDINATION_REMOVE_REASON_LABEL,
   type CoordinationKind,
 } from '@shared/domain/index.ts';
-import { fmtDate, sosLabel, sosTone } from '../../lib/format.ts';
-import { Level } from '../../ui/ui.tsx';
+import { fmtDate, sosLabel } from '../../lib/format.ts';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 
 type CoordAction = {
@@ -25,89 +24,121 @@ export type CoordTurn = {
 };
 
 /**
- * DANH SÁCH `Phối hợp SOS` (§7.2/§7.3) — dùng chung cho tab lớp (nhiều học viên) và tab hồ sơ học viên
- * (một em, ẩn tên). Mỗi lượt gấp lại mặc định trừ khi `defaultOpenAttemptId` khớp.
+ * DANH SÁCH `Phối hợp SOS` (§7.2/§7.3, prototype v3 — PR-HV) — dùng chung cho tab lớp (`cot1="hocVien"`: cột 1 là tên
+ * học viên) và tab hồ sơ học viên (`cot1="luot"`: cột 1 là `MT2 · SOS 2`). Mỗi lượt một thẻ `TheSos`.
  */
-export function PhoiHopSosSection({ turns, loading, showStudentName = true, onChanged }: {
-  turns: CoordTurn[] | null; loading?: boolean; showStudentName?: boolean; onChanged?: () => void;
+export function PhoiHopSosSection({ turns, loading, cot1 = 'hocVien', onGoAcademic, onChanged }: {
+  turns: CoordTurn[] | null; loading?: boolean;
+  cot1?: 'luot' | 'hocVien';
+  onGoAcademic?: () => void; onChanged?: () => void;
 }) {
   if (loading || !turns) return <Skeleton rows={3} />;
   if (!turns.length) return <Empty title="Không có lượt Phối hợp SOS nào" />;
   return (
-    <ul className="list-none p-0 m-0 space-y-2">
+    <div className="space-y-2">
       {turns.map((t) => (
-        <TurnRow key={t.attemptId} t={t} showStudentName={showStudentName} onChanged={onChanged} />
+        <TheSos key={t.attemptId} t={t} cot1={cot1} onGoAcademic={onGoAcademic} onChanged={onChanged} />
       ))}
-    </ul>
+    </div>
   );
 }
 
-function TurnRow({ t, showStudentName, onChanged }: { t: CoordTurn; showStudentName: boolean; onChanged?: () => void }) {
+/**
+ * MỘT LƯỢT SOS — MỘT THẺ (prototype v3): đầu thẻ 3 cột bấm mở/đóng (`MT2 · SOS 2` + kỹ năng · `2/3 việc hoàn thành`
+ * + dòng phụ · nhãn trạng thái); thân thẻ là danh sách việc. Thẻ chưa xong mở sẵn, thẻ xong đóng.
+ *
+ * Đầu thẻ là `div role="button"` chứ không phải `<button>`: cột 2 có một nút link bên trong (đổi sang tab Học thuật),
+ * nút lồng trong nút là HTML sai. Nút link gọi `stopPropagation` để không làm thẻ mở/đóng.
+ */
+export function TheSos({ t, cot1 = 'luot', onGoAcademic, onChanged }: {
+  t: CoordTurn;
+  /** 'luot' (hồ sơ HV): cột 1 = `MT2 · SOS 2` + kỹ năng. 'hocVien' (hồ sơ lớp): cột 1 = tên HV + `MT2 · SOS 2 · kỹ năng`. */
+  cot1?: 'luot' | 'hocVien';
+  onGoAcademic?: () => void;
+  onChanged?: () => void;
+}) {
   const [open, setOpen] = useState(!t.summary.complete);
   const [adding, setAdding] = useState(false);
+  const mtSos = `MT${t.attemptNo}${t.sosLevel !== null ? ` · ${sosLabel(t.sosLevel)}` : ''}`;
+  const kyNang = t.skillLabels.length > 0 ? t.skillLabels.join(' + ') : '—';
 
   return (
-    <li className="rounded-lg border" style={{ borderColor: 'var(--line)', background: 'var(--surface-2)' }}>
-      <button type="button" onClick={() => setOpen((v) => !v)}
-        className="w-full text-left appearance-none bg-transparent border-0 px-3 py-2.5 cursor-pointer flex flex-wrap items-center justify-between gap-2">
-        <span className="flex flex-wrap items-center gap-2 min-w-0">
-          <span className="text-slate-500 text-xs select-none" aria-hidden
-            style={{ transform: open ? 'rotate(90deg)' : 'none', display: 'inline-block' }}>›</span>
-          <span className="text-sm text-slate-100">
-            {showStudentName && `${t.studentName} · `}MT{t.attemptNo}
-            {t.classCode && showStudentName ? ` · ${t.classCode}` : ''}
-            {t.sosLevel !== null && <> · <Level tone={sosTone(t.sosLevel)}>{sosLabel(t.sosLevel)}</Level></>}
-            {t.skillLabels.length > 0 && <span className="text-slate-400"> · {t.skillLabels.join(' + ')}</span>}
+    <div className="rounded-lg border" style={{ borderColor: 'var(--line)', background: 'var(--surface-2)' }}>
+      <div role="button" tabIndex={0} aria-expanded={open}
+        onClick={() => setOpen((v) => !v)}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpen((v) => !v); } }}
+        className="grid gap-x-3 gap-y-1 items-center px-3 py-2.5 cursor-pointer row-hover grid-cols-2 md:grid-cols-[minmax(0,13rem)_minmax(0,1fr)_auto]">
+        <div className="col-span-2 md:col-span-1 min-w-0">
+          <span className="block text-sm font-semibold text-slate-100">{cot1 === 'luot' ? mtSos : t.studentName}</span>
+          <span className="block text-[11px] text-slate-500">
+            {cot1 === 'luot' ? kyNang : `${mtSos}${t.skillLabels.length > 0 ? ` · ${t.skillLabels.join(' + ')}` : ''}`}
           </span>
-        </span>
-        <Status kind={t.summary.complete ? 'done' : 'doing'}>{t.summary.label} hoàn thành</Status>
-      </button>
+        </div>
+        <div className="min-w-0">
+          <span className="block text-sm font-semibold text-slate-100">{t.summary.label} việc hoàn thành</span>
+          {cot1 === 'luot' ? (
+            onGoAcademic ? (
+              <button type="button" className="link text-[11px] appearance-none bg-transparent border-0 p-0 cursor-pointer text-left"
+                onClick={(e) => { e.stopPropagation(); onGoAcademic(); }}>
+                Hỗ trợ học thuật xem ở tab Học thuật
+              </button>
+            ) : <span className="block text-[11px] text-slate-500">Hỗ trợ học thuật xem ở tab Học thuật</span>
+          ) : <span className="block text-[11px] text-slate-500">Học thuật theo dõi ở bảng kỹ năng</span>}
+        </div>
+        <div className="justify-self-end">
+          {t.summary.complete ? <Status kind="done">Hoàn thành</Status> : <Status kind="doing">Đang xử lý</Status>}
+        </div>
+      </div>
 
       {open && (
-        <div className="px-3 pb-3 space-y-2">
-          <p className="text-[11px] text-slate-500 m-0">Hỗ trợ học thuật xem ở bảng kỹ năng.</p>
-          <ul className="list-none p-0 m-0 space-y-1.5">
-            {t.actions.map((a) => (
-              <ActionRow key={a.id} a={a} canAct={t.canAct} onChanged={onChanged} />
-            ))}
-          </ul>
+        <div className="border-t px-3 pb-3" style={{ borderColor: 'var(--line)' }}>
+          {t.actions.map((a) => (
+            <ActionRow key={a.id} a={a} canAct={t.canAct} onChanged={onChanged} />
+          ))}
           {t.canAct && !adding && (
-            <button type="button" className="btn btn-sm" onClick={() => setAdding(true)}>+ Thêm việc</button>
+            <button type="button" className="btn btn-sm mt-2" onClick={() => setAdding(true)}>+ Thêm việc</button>
           )}
           {adding && (
-            <AddCoordinationForm attemptId={t.attemptId} existing={t.actions.map((a) => a.kind)}
-              onClose={() => setAdding(false)} onChanged={onChanged} />
+            <div className="mt-2">
+              <AddCoordinationForm attemptId={t.attemptId} existing={t.actions.map((a) => a.kind)}
+                onClose={() => setAdding(false)} onChanged={onChanged} />
+            </div>
           )}
         </div>
       )}
-    </li>
+    </div>
   );
 }
 
+/** Một việc phối hợp — một dòng lưới `tên + dòng phụ · trạng thái/nút`; form Xác nhận/Bỏ mở ngay dưới, rộng hết thẻ. */
 function ActionRow({ a, canAct, onChanged }: { a: CoordAction; canAct: boolean; onChanged?: () => void }) {
   const [confirming, setConfirming] = useState(false);
   const [removing, setRemoving] = useState(false);
+  const dongPhu = a.status === 'done'
+    ? `${fmtDate(a.performedOn)}${a.performerName ? ` · ${a.performerName}` : ''}`
+    : a.status === 'removed' ? `Đã bỏ · ${a.removeReasonLabel ?? ''}` : 'Cần xử lý';
 
   return (
-    <li className="rounded-md border px-2.5 py-2" style={{ borderColor: 'var(--line)' }}>
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <span className="text-sm text-slate-200">{a.name}</span>
-        {a.status === 'done' ? (
-          <span className="text-xs text-slate-400">{fmtDate(a.performedOn)} · Đã xong{a.performerName ? ` · ${a.performerName}` : ''}</span>
-        ) : a.status === 'removed' ? (
-          <span className="text-xs text-slate-500">Đã bỏ · {a.removeReasonLabel}</span>
-        ) : canAct ? (
-          <span className="flex gap-1.5">
-            <button type="button" className="btn btn-sm" onClick={() => setConfirming(!confirming)}>Xác nhận</button>
-            <button type="button" className="btn btn-sm btn-ghost" onClick={() => setRemoving(!removing)}>Bỏ ▾</button>
-          </span>
-        ) : (
-          <span className="text-xs text-amber-200/80">Cần xử lý</span>
-        )}
+    <div className="border-t first:border-t-0" style={{ borderColor: 'var(--line)' }}>
+      <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 py-2 items-start">
+        <span className="min-w-0 break-words">
+          <span className="block text-sm text-slate-200">{a.name}</span>
+          <span className="block text-[11px] text-slate-500 mt-0.5">{dongPhu}</span>
+        </span>
+        <span className="flex flex-wrap gap-1.5 justify-end">
+          {a.status === 'done' ? <Status kind="done">Đã xong</Status>
+            : a.status === 'removed' ? <Info>Đã bỏ</Info>
+            : canAct ? (
+              <>
+                <button type="button" className="btn btn-sm btn-primary" onClick={() => setConfirming(!confirming)}>Xác nhận</button>
+                <button type="button" className="btn btn-sm btn-ghost" onClick={() => setRemoving(!removing)}>Bỏ ▾</button>
+              </>
+            ) : <Status kind="waiting">Cần xử lý</Status>}
+        </span>
       </div>
       {confirming && <ConfirmCoordinationForm actionId={a.id} onClose={() => setConfirming(false)} onChanged={onChanged} />}
       {removing && <RemoveCoordinationForm actionId={a.id} onClose={() => setRemoving(false)} onChanged={onChanged} />}
-    </li>
+    </div>
   );
 }
 

@@ -123,4 +123,21 @@ export async function runHoSoHocVienTests(t: YThucTestKit) {
     }
     assert(coNext > 0, 'Phải có ít nhất một học viên có việc cần làm tiếp');
   });
+
+  // ================================================================== Task 4 — thành phần dùng chung
+
+  check('PR-HV · A3 Đếm vi phạm theo nhóm: đúng thứ tự năm nhóm, bỏ nhóm 0', () => {
+    const r = domain.demTheoNhomViPham([{ category: 'attendance' }, { category: 'homework' }, { category: 'homework' }]);
+    assert(r.tong === 3, `tong phải 3: ${JSON.stringify(r)}`);
+    /* Thứ tự theo VIOLATION_CATEGORIES thật: attendance (Chuyên cần) đứng trước homework (BTVN). */
+    assert(JSON.stringify(r.nhom) === JSON.stringify([
+      { category: 'attendance', label: domain.VIOLATION_CATEGORY_LABEL.attendance, n: 1 },
+      { category: 'homework', label: domain.VIOLATION_CATEGORY_LABEL.homework, n: 2 },
+    ]), `nhóm phải theo thứ tự VIOLATION_CATEGORIES và bỏ nhóm 0: ${JSON.stringify(r.nhom)}`);
+    assert(r.nhom[0].label === 'Chuyên cần' && r.nhom[1].label === 'BTVN', 'Nhãn lấy từ VIOLATION_CATEGORY_LABEL');
+    const rong = domain.demTheoNhomViPham([]);
+    assert(rong.tong === 0 && rong.nhom.length === 0, 'Rỗng → {tong: 0, nhom: []}');
+    const la = domain.demTheoNhomViPham([{ category: 'other' }, { category: 'khong-co' }]);
+    assert(la.tong === 2 && la.nhom.length === 1 && la.nhom[0].category === 'other', `Mã lạ vẫn tính vào tổng nhưng không có nhóm: ${JSON.stringify(la)}`);
+  });
 }

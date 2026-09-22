@@ -10,6 +10,7 @@
  *   tiến độ case, việc tiếp của PA    → `tienDoCase`, `viecTiepPhuongAn` (Task 6)
  */
 import { ATTEMPT_SKILL_UNITS } from './display.ts';
+import { VIOLATION_CATEGORIES, VIOLATION_CATEGORY_LABEL, type ViolationCategory } from './yThuc.ts';
 
 // ====================================================================== ba tab (D2, A6)
 
@@ -21,6 +22,25 @@ export const HO_SO_TAB_LABEL: Record<HoSoTab, string> = {
 /** Giá trị lạ, rỗng hay thiếu → 'hoc-thuat' (tab mặc định). Không nhớ bằng localStorage (A6). */
 export function parseHoSoTab(v: string | null | undefined): HoSoTab {
   return (HO_SO_TABS as readonly string[]).includes(v ?? '') ? (v as HoSoTab) : 'hoc-thuat';
+}
+
+// ====================================================================== ô số nhỏ của tab Ý thức (A3)
+
+/**
+ * Đếm vi phạm theo nhóm, ĐÚNG thứ tự `VIOLATION_CATEGORIES`, bỏ nhóm có 0 (A3). `tong` đếm mọi dòng — kể cả mã nhóm lạ
+ * (dữ liệu cũ) — để ô "Vi phạm" không ít hơn số dòng người dùng thấy.
+ */
+export function demTheoNhomViPham(vs: readonly { category: string }[]): {
+  tong: number; nhom: { category: string; label: string; n: number }[];
+} {
+  const dem = new Map<string, number>();
+  for (const v of vs) dem.set(v.category, (dem.get(v.category) ?? 0) + 1);
+  return {
+    tong: vs.length,
+    nhom: VIOLATION_CATEGORIES
+      .map((c) => ({ category: c, label: VIOLATION_CATEGORY_LABEL[c as ViolationCategory], n: dem.get(c) ?? 0 }))
+      .filter((g) => g.n > 0),
+  };
 }
 
 // ====================================================================== ô "Việc cần làm tiếp" (Q7)

@@ -700,11 +700,11 @@ lệch vài dòng là bình thường, lệch nội dung thì 🛑 hỏi.
   }): JSX.Element;
   ```
 
-- [ ] **Step 1 (TDD):** phép kiểm `PR-HV · A3 Đếm vi phạm theo nhóm: đúng thứ tự năm nhóm, bỏ nhóm 0` — đầu vào
+- [x] **Step 1 (TDD):** phép kiểm `PR-HV · A3 Đếm vi phạm theo nhóm: đúng thứ tự năm nhóm, bỏ nhóm 0` — đầu vào
       `[{category:'attendance'},{category:'homework'},{category:'homework'}]` → `tong 3`, `nhom` = BTVN 2 rồi Chuyên cần 1
       **theo thứ tự `VIOLATION_CATEGORIES`** (đọc hằng này, đừng đoán mã nhóm — nếu mã khác `homework/attendance` thì dùng
       mã thật), nhãn lấy từ `VIOLATION_CATEGORY_LABEL`; rỗng → `{tong:0, nhom:[]}`. Đỏ → viết → xanh.
-- [ ] **Step 2: `OSoNho.tsx`** —
+- [x] **Step 2: `OSoNho.tsx`** —
   ```tsx
   export function OSoNho({ nhan, so, tone }: { nhan: string; so: number | string; tone?: 'warn' | 'danger' }) {
     const mau = tone === 'danger' ? 'text-rose-200' : tone === 'warn' ? 'text-amber-200' : 'text-slate-100';
@@ -717,7 +717,7 @@ lệch vài dòng là bình thường, lệch nội dung thì 🛑 hỏi.
   }
   ```
   Nơi dùng bọc bằng `<div className="flex flex-wrap gap-2">`.
-- [ ] **Step 3: `DongThoiGian.tsx`.** Khung (lớp Tailwind **viết đủ, tĩnh**):
+- [x] **Step 3: `DongThoiGian.tsx`.** Khung (lớp Tailwind **viết đủ, tĩnh**):
   ```tsx
   const LUOI = {
     'day-du': {
@@ -742,7 +742,7 @@ lệch vài dòng là bình thường, lệch nội dung thì 🛑 hỏi.
   cuối `<span className={`flex flex-wrap gap-1.5 md:justify-end ${CUOI[bien][k]}`}>{cuoi}</span>`.
   Khung ngoài: `<ul className="list-none m-0 px-3 rounded-lg border" style={{ borderColor: 'var(--line)', background: 'var(--surface-2)' }}>`.
   `muc` rỗng → trả `rong`. Mô tả dài, tên GV dài: **không** `truncate` — `break-words` để xuống dòng.
-- [ ] **Step 4: `TheSos`** — đổi tên `TurnRow` (dòng 45–85) thành `export function TheSos`, giữ `ActionRow`, ba form con
+- [x] **Step 4: `TheSos`** — đổi tên `TurnRow` (dòng 45–85) thành `export function TheSos`, giữ `ActionRow`, ba form con
       và mọi quyền (`t.canAct`). Đầu thẻ:
   ```tsx
   <div role="button" tabIndex={0} aria-expanded={open}
@@ -773,10 +773,10 @@ lệch vài dòng là bình thường, lệch nội dung thì 🛑 hỏi.
   `removed` → `<Info>Đã bỏ</Info>` · `pending && canAct` → `Xác nhận` (`btn btn-sm btn-primary`) + `Bỏ ▾` (`btn btn-sm btn-ghost`) ·
   `pending && !canAct` → `<Status kind="waiting">Cần xử lý</Status>`. Form Xác nhận/Bỏ mở ngay dưới dòng, rộng hết thẻ.
   Giữ `+ Thêm việc` (canAct) ở cuối thân thẻ. Bỏ dòng "Hỗ trợ học thuật xem ở bảng kỹ năng." cũ (dòng 68) — nay ở cột 2.
-- [ ] **Step 5:** `PhoiHopSosSection` map `turns` → `<TheSos key t cot1 onGoAcademic onChanged />` trong
+- [x] **Step 5:** `PhoiHopSosSection` map `turns` → `<TheSos key t cot1 onGoAcademic onChanged />` trong
       `<div className="space-y-2">`; bỏ prop `showStudentName`. Sửa hai nơi gọi: `StudentYThucSection.tsx:178`
       `showStudentName={false}` → `cot1="luot" onGoAcademic={onGoAcademic}`; `ClassYThucCard.tsx:285` → `cot1="hocVien"`.
-- [ ] **Step 6:** `npm run check` xanh. Bấm thử `Phối hợp SOS` ở hồ sơ Huy và lớp MB-FT 101: mở/đóng bằng chuột và
+- [x] **Step 6:** `npm run check` xanh. Bấm thử `Phối hợp SOS` ở hồ sơ Huy và lớp MB-FT 101: mở/đóng bằng chuột và
       phím Enter; bấm link đổi sang tab Học thuật **không** làm thẻ mở/đóng; `Xác nhận` một việc (GVCN) chạy như cũ. 375px:
       cột 1 một hàng, cột 2 + 3 hàng dưới. Commit: `PR-HV (4): thành phần dùng chung OSoNho, DongThoiGian, TheSos`.
 
@@ -1279,3 +1279,4 @@ danh sách ảnh.)*
 | 22/09/2026 | 0 (tiếp) | Chủ sản phẩm cho phép bật máy chủ dev (hai cổng đang rảnh). **Phát hiện:** `preview_start` (cấu hình `dev` trong `.claude/launch.json`) khởi động Vite/API từ **thư mục chính**, không phải worktree (API đọc database của thư mục chính; Vite trả mã của `main`) → tắt, bật lại bằng `npm run dev` chạy nền **trong worktree** (database riêng `data/pisa-demo.sqlite` của worktree, seed 04:49). Ảnh TRƯỚC chụp bằng Playwright (cài tạm `--no-save`, kênh Chrome có sẵn; script ở scratchpad, không vào repo) ở commit gốc `714739e` — 30 tệp `thiet-ke/anh/pr-hv/truoc-*.png`: `ho-so-huy` (gvcn/gvbm/ql) · `case-2pa` (admin — em Đinh Ngọc Quyên id 21, case 22 Writing Task 2 có 2 PA đang chạy, thuộc lớp CP-FT 110 nên GVCN Hà không xem được) · `case-sos-cho` (gvcn/gvbm — Đỗ Minh Khôi id 42, case 34) · `y-thuc-huy` + `-vi-pham` (gvcn/gvbm) · `lop-101` + `-theo-hs` (mở Nguyễn Minh An — Huy không có vi phạm chưa xử lý nên không nằm trong khối lớp) + `-theo-tg` (gvcn) · `phan-tich-ql` (ql) · `viec-can-lam` (ql/gvcn); mỗi tệp hai khổ desktop/375. Commit `c13fc7d`. |
 | 22/09/2026 | 2 | `parseHoSoTab` TDD đỏ → xanh. `HangTab.tsx` mới; `StudentDetailPage` bỏ `tier3`, ba tab đọc từ `?tab=` (replace), `warn` tải ở trang cho dấu ⚠ (A5). Sửa lỗi phụ J8: không có lộ trình vẫn mở được tab Ý thức/Hành trình. Bấm thử (Playwright, GVCN, 1280 + 375): `?tab=` ba giá trị + giá trị lạ về Học thuật ✓; bấm tab đổi địa chỉ, `history.length` không tăng (replace) ✓; scrollWidth = khổ (không cuộn ngang) ✓; console không lỗi ✓; ⚠ hiện ở em có cảnh báo 5 ngày (Nguyễn Minh An), không hiện ở Huy ✓. Số phép kiểm: **607**. |
 | 22/09/2026 | 3 | Hai phép TDD đỏ (`ketQuaTestGanNhat` chưa có; `next.overdue` chưa có, câu cũ "đề xuất L đang chờ…") → xanh. **Kiểm ngược `<`→`<=` KHÔNG đỏ**: bộ demo không có việc nào có hạn đúng bằng ngày demo nên hai phép so cho cùng kết quả → tách luật thành hàm thuần `quaHan(due, today)` ở `hoSoHocVien.ts` (profile.ts dùng nó) + phép kiểm biên riêng (hạn = hôm nay → chưa quá hạn) — thêm 1 phép ngoài kế hoạch. Thêm mục (k) "không có tuần → chỉ MT2". `HeaderStats` bốn ô mới, `Stat` có `nho`/`sub: ReactNode`. **Lưu ý vận hành:** API dev chỉ build lúc `npm run dev` khởi động — sửa máy chủ phải khởi động lại mới thấy (ô 4 lúc đầu vẫn chữ cũ). Bấm thử: Huy (FT, GVCN) ô 1 `MT2 · W3 AUG 2026` + KetQuaDot `Đã đủ điểm · SOS 1`; ô 4 `Làm PA L` · `quá hạn 30/08/2026` đỏ. Đỗ Gia Bảo (id 8, MB-FOU 12, Quản lý): ô 1 `Giữa khoá · W3 AUG 2026`, **không** có chữ Overall; ô 4 `Không có`. 375px: 2 cột, ô 4 xuống dòng, không tràn. Số phép kiểm: **610** (+3). |
+| 22/09/2026 | 4 | `demTheoNhomViPham` TDD đỏ → xanh; thứ tự thật của `VIOLATION_CATEGORIES` là attendance (Chuyên cần) **trước** homework (BTVN) — phép kiểm viết theo hằng thật, không theo ví dụ của plan; mã nhóm lạ vẫn tính vào `tong`. `OSoNho`, `DongThoiGian` mới; `TurnRow` → `TheSos` (đầu thẻ 3 cột `div role=button`, thân thẻ lưới việc), `PhoiHopSosSection` prop `cot1` thay `showStudentName`; bỏ import `Level`/`sosTone` không dùng. **Huy không có lượt Phối hợp SOS nào** (như ảnh trước) → bấm thử trên Đỗ Minh Khôi (id 42, MT2 · SOS 2): mở/đóng bằng chuột và Enter ✓; link "Hỗ trợ học thuật xem ở tab Học thuật" → tab Học thuật, bỏ `?tab=`, thẻ không bị mở/đóng ✓ (lưu ý cho script kiểm: `getByRole('button', {name})` khớp cả đầu thẻ vì tên gồm chữ bên trong — phải chọn `button.link`); GVCN Xác nhận "Trao đổi với gia đình" → `Đã xong` 1 → 2 ✓ (đã ghi vào database worktree); lớp MB-FT 101: 2 thẻ, cột 1 tên HV, dòng phụ "Học thuật theo dõi ở bảng kỹ năng" ✓; 375px không cuộn ngang, cột 1 một hàng, cột 2+3 hàng dưới ✓; console không lỗi ✓. Số phép kiểm: **611**. |

@@ -177,8 +177,8 @@ export function StudentYThucSection({ studentId, studentName, canRecordViolation
           )}
         </>
       ) : (
-        <PhoiHopSosSection turns={coord.data?.rows ?? null} loading={coord.loading} showStudentName={false}
-          onChanged={() => coord.reload()} />
+        <PhoiHopSosSection turns={coord.data?.rows ?? null} loading={coord.loading} cot1="luot"
+          onGoAcademic={onGoAcademic} onChanged={() => coord.reload()} />
       )}
 
       <RecordViolationPanel open={reportOpen} onClose={() => setReportOpen(false)}

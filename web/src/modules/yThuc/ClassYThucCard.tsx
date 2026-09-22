@@ -282,7 +282,7 @@ export function ClassYThucCard({ classId }: { classId: number }) {
               {includeDone ? 'Chỉ hiện lượt chưa xong' : 'Hiện cả lượt đã xong'}
             </button>
           </div>
-          <PhoiHopSosSection turns={coord.data?.rows ?? null} loading={coord.loading} onChanged={() => { coord.reload(); }} />
+          <PhoiHopSosSection turns={coord.data?.rows ?? null} loading={coord.loading} cot1="hocVien" onChanged={() => { coord.reload(); }} />
         </div>
       )}
 
