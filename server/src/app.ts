@@ -1,3 +1,4 @@
+import crypto from 'node:crypto';
 import express from 'express';
 import cookieParser from 'cookie-parser';
 import type { NextFunction, Request, Response } from 'express';
@@ -36,21 +37,45 @@ export function createApp() {
     res.status(404).json({ error: 'Không tìm thấy endpoint.' });
   });
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
-    if (err instanceof HttpError) {
-      res.status(err.status).json({ error: err.message, details: err.details ?? undefined });
-      return;
-    }
-    const message = err instanceof Error ? err.message : 'Lỗi không xác định';
-    const code = (err as { code?: unknown })?.code;
-    if (/SQLITE_CONSTRAINT|constraint failed/i.test(message) || (typeof code === 'string' && code.startsWith('SQLITE_CONSTRAINT'))) {
-      res.status(409).json({ error: 'Dữ liệu bị trùng hoặc vi phạm ràng buộc.', details: { raw: message } });
-      return;
-    }
-    console.error('[api]', err);
-    res.status(500).json({ error: 'Lỗi hệ thống: ' + message });
-  });
+  app.use(traLoiLoi);
 
   return app;
+}
+
+/**
+ * BỘ XỬ LÝ LỖI CUỐI (AN-3, PR-AN). Người dùng KHÔNG BAO GIỜ thấy câu SQL, tên bảng hay thông điệp nội bộ:
+ *   · HttpError       — câu có chủ đích của nghiệp vụ, trả nguyên như cũ.
+ *   · thân JSON hỏng  — 400 / quá lớn 413, câu tiếng Việt.
+ *   · vi phạm ràng buộc — 409 câu chung; chi tiết vào log.
+ *   · còn lại         — 500 "Có lỗi · mã {mã}" (THUAT_NGU g14-054). Cùng mã in vào log kèm lỗi gốc: người dùng báo mã, người sửa
+ *                       tìm đúng dòng (Netlify › Logs › Functions › api). Log KHÔNG in thân yêu cầu (có mật khẩu).
+ * Máy dev cũng vậy — lỗi gốc đọc ở cửa sổ lệnh đang chạy `npm run dev`.
+ */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function traLoiLoi(err: unknown, req: Request, res: Response, _next: NextFunction): void {
+  if (err instanceof HttpError) {
+    res.status(err.status).json({ error: err.message, details: err.details ?? undefined });
+    return;
+  }
+  const e = (err ?? {}) as { type?: unknown; code?: unknown };
+  if (e.type === 'entity.parse.failed') {
+    res.status(400).json({ error: 'Dữ liệu gửi lên không đọc được. Tải lại trang rồi thử lại.' });
+    return;
+  }
+  if (e.type === 'entity.too.large') {
+    res.status(413).json({ error: 'Dữ liệu gửi lên quá lớn.' });
+    return;
+  }
+  const message = err instanceof Error ? err.message : String(err);
+  if (/SQLITE_CONSTRAINT|constraint failed/i.test(message) || (typeof e.code === 'string' && e.code.startsWith('SQLITE_CONSTRAINT'))) {
+    console.warn('[api] 409', req.method, req.path, message);
+    res.status(409).json({ error: 'Dữ liệu bị trùng hoặc vi phạm ràng buộc.' });
+    return;
+  }
+  const ma = crypto.randomBytes(4).toString('hex');
+  console.error(`[api] mã ${ma}`, req.method, req.path, err);
+  res.status(500).json({
+    error: `Có lỗi · mã ${ma}. Thử lại sau ít phút; nếu vẫn lỗi, báo Quản trị hệ thống kèm mã này.`,
+    details: { ma },
+  });
 }

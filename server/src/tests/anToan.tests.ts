@@ -260,6 +260,45 @@ export async function runAnToanTests(t: AnToanTestKit) {
     assert(ok && ok.userId === P.admin.userId, 'Tài khoản đã duyệt phải dùng được phiên');
   });
 
+  // ================================================================== 5. AN-3 — câu lỗi không lộ nội bộ
+
+  console.log('\nPR-AN · 5. Lỗi 409/500 không lộ câu SQL hay thông điệp nội bộ');
+  const appMod: any = await import('../app.ts');
+  const reqGia = { method: 'POST', path: '/api/thu-loi' } as any;
+
+  await checkAsync('AN-3 · 409 (vi phạm ràng buộc): câu chung, KHÔNG có details.raw hay câu SQL; chi tiết chỉ ở log máy chủ', async () => {
+    const loi = Object.assign(new Error('UNIQUE constraint failed: users.email (INSERT INTO users (code, email) VALUES …)'), { code: 'SQLITE_CONSTRAINT_UNIQUE' });
+    const res = giaRes();
+    const { log } = await batLog(() => appMod.traLoiLoi(loi, reqGia, res, () => {}));
+    assert(res.code === 409 && res.body?.error === 'Dữ liệu bị trùng hoặc vi phạm ràng buộc.', `Nhận ${res.code} ${JSON.stringify(res.body)}`);
+    const tho = JSON.stringify(res.body);
+    assert(!/raw|UNIQUE|INSERT|users\.email/.test(tho), `Câu trả lời còn lộ: ${tho}`);
+    assert(/UNIQUE constraint failed/.test(log), 'Log máy chủ phải giữ chi tiết để người sửa đọc');
+  });
+
+  await checkAsync('AN-3 · 500: câu "Có lỗi · mã …" không lộ thông điệp gốc; cùng mã đó có trong log máy chủ kèm chi tiết', async () => {
+    const res = giaRes();
+    const { log } = await batLog(() => appMod.traLoiLoi(new Error('no such table: bang_bi_mat (SELECT * FROM bang_bi_mat)'), reqGia, res, () => {}));
+    const ma = res.body?.details?.ma as string;
+    assert(res.code === 500 && /^[0-9a-f]{8}$/.test(ma ?? ''), `Nhận ${res.code} ${JSON.stringify(res.body)}`);
+    assert(res.body.error.startsWith(`Có lỗi · mã ${ma}.`) && !/Hãy/.test(res.body.error), `Câu: ${res.body.error}`);
+    assert(!/bang_bi_mat|SELECT|no such table/.test(JSON.stringify(res.body)), 'Câu trả lời lộ thông điệp gốc');
+    assert(log.includes(ma) && /bang_bi_mat/.test(log), `Log phải có mã ${ma} và chi tiết: ${log}`);
+  });
+
+  await checkAsync('AN-3 · Thân JSON hỏng → 400 câu tiếng Việt (không phải 500 kèm câu tiếng Anh của thư viện)', async () => {
+    const r = await goi('POST', '/auth/login', { tho: '{hong' });
+    assert(r.status === 400 && /không đọc được/.test(r.json?.error ?? ''), `Nhận ${r.status} ${JSON.stringify(r.json)}`);
+    assert(!/Unexpected|JSON|token/i.test(r.json?.error ?? ''), `Còn câu của thư viện: ${r.json?.error}`);
+  });
+
+  const { HttpError: LoiHttp } = await import('../util.ts');
+  check('AN-3 · HttpError giữ nguyên câu và details như cũ (không đổi hành vi các lỗi có chủ đích)', () => {
+    const res = giaRes();
+    appMod.traLoiLoi(new LoiHttp(503, 'Chưa có dữ liệu demo trong máy.', { needsSeed: true }), reqGia, res, () => {});
+    assert(res.code === 503 && res.body?.error === 'Chưa có dữ liệu demo trong máy.' && res.body?.details?.needsSeed === true, `Nhận ${res.code} ${JSON.stringify(res.body)}`);
+  });
+
   // ---- các task sau thêm phép kiểm NGAY TRÊN dòng này ----
 
   may.close();

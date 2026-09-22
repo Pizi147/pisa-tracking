@@ -765,7 +765,7 @@ Giữ nguyên khối chú thích `PHIEN_HET_HAN_SAU_NGAY` ở trên.
   500 → `{ error: 'Có lỗi · mã {ma}. …', details: { ma } }` (`ma` = 8 ký tự hex); 409 → `{ error: 'Dữ liệu bị trùng hoặc vi phạm ràng buộc.' }`;
   thân JSON hỏng → 400; quá lớn → 413; `HttpError` giữ nguyên như cũ.
 
-- [ ] **Step 1: Phép kiểm (đỏ).**
+- [x] **Step 1: Phép kiểm (đỏ).**
 
 ```ts
   // ================================================================== 5. AN-3 — câu lỗi không lộ nội bộ
@@ -808,8 +808,8 @@ Giữ nguyên khối chú thích `PHIEN_HET_HAN_SAU_NGAY` ở trên.
   });
 ```
 
-- [ ] **Step 2: Chạy, đỏ.** Expected: 3 phép đầu ✗ (`traLoiLoi is not a function`; JSON hỏng nhận 500), phép HttpError ✗ theo cùng lý do.
-- [ ] **Step 3: Sửa `app.ts`.** Thêm import đầu file: `import crypto from 'node:crypto';`. Thay khối `app.use((err: unknown, …) => {…})` (39-53) bằng
+- [x] **Step 2: Chạy, đỏ.** Expected: 3 phép đầu ✗ (`traLoiLoi is not a function`; JSON hỏng nhận 500), phép HttpError ✗ theo cùng lý do.
+- [x] **Step 3: Sửa `app.ts`.** Thêm import đầu file: `import crypto from 'node:crypto';`. Thay khối `app.use((err: unknown, …) => {…})` (39-53) bằng
   `app.use(traLoiLoi);` và thêm hàm export **bên ngoài** `createApp`:
 
 ```ts
@@ -852,8 +852,8 @@ export function traLoiLoi(err: unknown, req: Request, res: Response, _next: Next
 }
 ```
 
-- [ ] **Step 4: Chạy, xanh.** Expected `TẤT CẢ 689 …`. Soát: `grep -rn "Lỗi hệ thống: \|details.raw\|details?.raw" server/src web/src` → rỗng.
-- [ ] **Step 5: Commit.** `git commit -am "PR-AN (5): AN-3 lỗi 409/500 không lộ SQL; 500 có mã lỗi; JSON hỏng thành 400"`
+- [x] **Step 4: Chạy, xanh.** Expected `TẤT CẢ 689 …`. Soát: `grep -rn "Lỗi hệ thống: \|details.raw\|details?.raw" server/src web/src` → rỗng.
+- [x] **Step 5: Commit.** `git commit -am "PR-AN (5): AN-3 lỗi 409/500 không lộ SQL; 500 có mã lỗi; JSON hỏng thành 400"`
 
 ---
 
@@ -1614,3 +1614,4 @@ song song trong cùng tiến trình sẽ thấy cờ; harness chạy tuần tự
 | 22/09 | Task 2 | Opus 5 · 674 → 677 (3 phép `AN-1 ·` mới, đỏ rồi xanh) · lệch nhỏ: ở bước đỏ cả bộ SẬP thay vì 3 ✗ — Proxy của `load` (Task 1) ném cả khi `await` hỏi `.then`; sửa `load` trả `undefined` cho `then` rồi mới đỏ đúng 3 ✗ · `gioiHanThu.ts` chép nguyên văn từ plan |
 | 22/09 | Task 3 | Opus 5 · 677 → 682 (5 phép `AN-1 ·` HTTP mới) · lệch nhỏ: ở bước đỏ chỉ 4 ✗ chứ không phải 5 — phép "đăng nhập đúng xoá đếm" tự đạt khi chưa có giới hạn (không có khoá thì lần đúng nào cũng vào); sau khi sửa route cả 5 ✓ · phép cũ cookie Secure (banChinh.tests) và "CÙNG một câu" (run.ts) vẫn ✓ · route chép nguyên văn từ plan |
 | 22/09 | Task 4 | Opus 5 · 682 → 685 (3 phép `AN-6 ·` mới) · đúng plan: hai phép HTTP ✓ ngay (luồng duyệt đã có), phép phiên ✗ "Phiên của tài khoản chờ duyệt vẫn dùng được" rồi ✓ sau khi sửa `resolveSession` (một câu JOIN users) · phép cũ phiên hết hạn / khôi phục (banChinh.tests) vẫn ✓ · ghi chú: ở máy dev, "Vào nhanh" vào một tài khoản **chờ duyệt** nay bị đẩy ra ngay — đúng ý (bộ demo không có tài khoản chờ duyệt) · code chép nguyên văn từ plan |
+| 22/09 | Task 5 | Opus 5 · 685 → 689 (4 phép `AN-3 ·` mới, cả 4 ✗ rồi ✓: 3 phép `traLoiLoi is not a function`, JSON hỏng nhận 500 kèm câu tiếng Anh) · `traLoiLoi` chép nguyên văn từ plan; import `Request/Response/NextFunction`, `HttpError` đã có sẵn · lệch nhỏ: grep soát không rỗng hẳn — còn 1 dòng là chính tên phép kiểm mới ("KHÔNG có details.raw"), không phải code; `web/src` không dùng `details.raw` · typecheck ✓ |
