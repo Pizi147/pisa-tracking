@@ -267,4 +267,10 @@ câu báo máy chủ `phương án xử lý`) và D3 (bỏ "Hãy") đã ghi ở 
 | Màn trộn — phía học thuật (Task 8) | `Thiếu PA học thuật` · `PA học thuật cần cập nhật` · `PA học thuật chờ duyệt` · `PA học thuật có kết quả xác định` · `Case thiếu PA học thuật` · `Chưa có PA học thuật` · `Đề xuất PA học thuật` · `Duyệt PA học thuật` · `Làm PA học thuật đã hẹn` · `Loại PA học thuật` · `{n} PA học thuật` · quyền `Duyệt phương án học thuật` |
 | Màn trộn — phía Ý thức | `Phương án xử lý đã thực hiện theo loại` · tên chỉ số `Phương án xử lý đã thực hiện` · `Phương án xử lý đang chuẩn bị` · `Phương án xử lý theo loại` · đơn vị `phương án xử lý` |
 | Thông báo chuông từ SOS | `Xác định nguyên nhân và xác nhận PA học thuật. Hạn {ngày}.` |
-| Hồ sơ không có lộ trình | tab Học thuật: `Học viên chưa có lộ trình nào` (giữ); tab Ý thức và Hành trình vẫn mở được (J8) |
+| Hồ sơ không có lộ trình | tab Học thuật: `Học viên chưa có lộ trình nào` (giữ); tab Ý thức và Hành trình vẫn mở được (J8); bốn ô số vẫn hiện |
+| Ô Việc cần làm tiếp — hai việc thêm (chủ sản phẩm 22/09) | `Xác định nguyên nhân {kỹ năng}` (đứng trước mọi việc khác, hạn = hạn xác định nguyên nhân) · `Xác nhận PA gợi ý {kỹ năng}`; mọi câu dùng **tên đầy đủ** kỹ năng (`Làm PA Writing Task 2`), ô Kỹ năng cần hỗ trợ cũng vậy |
+| Ô Kết quả Test gần nhất | dấu ⚠ chỉ khi đợt còn thiếu điểm; đủ điểm mà có SOS: màu đỏ + ● (không ⚠ đi với "Đã đủ điểm") |
+| Bảng Học viên của lớp — dòng dưới tên (chủ sản phẩm 22/09) | một nhãn nhỏ: `SOS {n} · tạm thời` (vàng) · `SOS {n}` (vàng) · `Đạt kỳ vọng` (xám; `· tạm thời` khi mới có một phần điểm) · `Chưa có kết quả` (xám) · `Đã kết thúc` (xám) |
+| Bảng Học viên của lớp — thiếu thông tin | `⚠ {n}` (rê chuột/bấm thấy danh sách); các màn khác giữ `Thiếu {n} thông tin` |
+| Bảng Học viên của lớp — cột Theo dõi, dòng phụ | `{n} case` · `{n} case bàn giao` (bỏ "quá hạn nhập điểm" — màu đỏ của nhãn việc đã nói; bỏ nhãn "Cần bàn giao" riêng) |
+| Nhãn dòng thời gian Ý thức | `Vi phạm` = nhãn trơn xanh dương, không biểu tượng ▶ (quá 5 ngày: `⚠ Vi phạm` đỏ) |

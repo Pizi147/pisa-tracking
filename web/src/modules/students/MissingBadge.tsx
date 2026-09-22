@@ -11,9 +11,11 @@ import { Alert } from '../../ui/ui.tsx';
  * Bấm vào mới bung ra danh sách. Đây KHÔNG phải việc trong hàng đợi công việc — không có
  * hạn, không ai bị thúc — nên nó không được chiếm chỗ như một việc phải làm.
  */
-export function MissingBadge({ items, className = '' }: {
+export function MissingBadge({ items, className = '', gon = false }: {
   items: { key: string; label: string; who: string }[] | null | undefined;
   className?: string;
+  /** Dạng gọn cho bảng lớp (PR-HV, chủ sản phẩm 22/09): chỉ `⚠ {n}`; rê chuột thấy danh sách, bấm mở popover như thường. */
+  gon?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   if (!items?.length) return null;
@@ -27,7 +29,7 @@ export function MissingBadge({ items, className = '' }: {
         title={items.map((i) => i.label).join(' · ')}
         onClick={(e) => { e.stopPropagation(); e.preventDefault(); setOpen((v) => !v); }}
       >
-        <Alert tone="warn">Thiếu {items.length} thông tin</Alert>
+        <Alert tone="warn">{gon ? items.length : `Thiếu ${items.length} thông tin`}</Alert>
       </button>
 
       {open && (

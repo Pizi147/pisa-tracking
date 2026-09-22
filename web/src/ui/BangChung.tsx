@@ -28,12 +28,15 @@ const ACCEPT = ATTACHMENT_EXTENSIONS.map((e) => `.${e}`).join(',');
  *   2. Quyền xem tệp là quyền xem bản ghi chủ — máy chủ kiểm ở mọi đường; nút ở đây chỉ ẩn cho gọn mắt.
  *   3. Gỡ tệp là hành động có xác nhận và có audit, không phải một dấu X im lặng.
  */
-export function BangChung({ ownerType, ownerId, canEdit, tieuDe = 'Bằng chứng' }: {
+export function BangChung({ ownerType, ownerId, canEdit, tieuDe = 'Bằng chứng', onChanged }: {
   ownerType: 'sos_case' | 'case_intervention' | 'violation' | 'discipline_measure' | 'sos_coordination_action';
   ownerId: number;
   /** Được thêm/gỡ không (máy chủ vẫn kiểm lại). */
   canEdit: boolean;
+  /** Rỗng = KHÔNG vẽ dòng tiêu đề (nơi cha đã có nhãn "Bằng chứng (n)" — PR-HV). */
   tieuDe?: string;
+  /** Gọi sau khi thêm/gỡ thành công — nơi cha cập nhật số đếm của mình (PR-HV). */
+  onChanged?: () => void;
 }) {
   const { data, loading, error, reload } = useApi<{ rows: Row[] }>(
     `/attachments?ownerType=${ownerType}&ownerId=${ownerId}`, [ownerType, ownerId],
@@ -69,6 +72,7 @@ export function BangChung({ ownerType, ownerId, canEdit, tieuDe = 'Bằng chứn
       await api.upload('/attachments/file', form);
       setUploads((list) => list.filter((u) => u.key !== key));
       invalidate('/attachments');
+      onChanged?.();
     } catch (e) {
       patchUpload(key, { state: 'error', message: e instanceof ApiError ? e.message : 'Không tải được tệp — kiểm tra kết nối rồi thử lại.' });
     }
@@ -89,6 +93,7 @@ export function BangChung({ ownerType, ownerId, canEdit, tieuDe = 'Bằng chứn
       await api.post('/attachments/link', { ownerType, ownerId, url: url.trim(), displayName: name.trim() || null });
       setUrl(''); setName(''); setLinkOpen(false);
       invalidate('/attachments');
+      onChanged?.();
     } catch (e) {
       setLinkError(e instanceof ApiError ? e.message : 'Không lưu được liên kết — thử lại.');
     } finally { setLinkBusy(false); }
@@ -96,7 +101,7 @@ export function BangChung({ ownerType, ownerId, canEdit, tieuDe = 'Bằng chứn
 
   const remove = async (id: number) => {
     setRowError(null);
-    try { await api.del(`/attachments/${id}`); setConfirmId(null); invalidate('/attachments'); }
+    try { await api.del(`/attachments/${id}`); setConfirmId(null); invalidate('/attachments'); onChanged?.(); }
     catch (e) { setRowError({ id, message: e instanceof ApiError ? e.message : 'Không gỡ được — thử lại.' }); }
   };
 
@@ -105,14 +110,16 @@ export function BangChung({ ownerType, ownerId, canEdit, tieuDe = 'Bằng chứn
   return (
     <div className="rounded-lg border px-2.5 py-2" style={{ borderColor: 'var(--line)' }} data-bang-chung={`${ownerType}:${ownerId}`}>
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <span className="text-[10px] uppercase tracking-wide text-slate-500">
-          {tieuDe}{rows.length > 0 && <> · {rows.length}</>}
-        </span>
+        {tieuDe ? (
+          <span className="text-[10px] uppercase tracking-wide text-slate-500">
+            {tieuDe}{rows.length > 0 && <> · {rows.length}</>}
+          </span>
+        ) : <span />}
         {canEdit && (
           <span className="flex flex-wrap items-center gap-1.5">
             <button type="button" className="btn btn-sm btn-ghost" onClick={() => fileRef.current?.click()}>+ Đính kèm tệp</button>
             <button type="button" className="btn btn-sm btn-ghost" onClick={() => setLinkOpen((o) => !o)} aria-expanded={linkOpen}>+ Thêm liên kết</button>
-            <input ref={fileRef} type="file" accept={ACCEPT} className="hidden" aria-label={`${tieuDe} — chọn tệp`}
+            <input ref={fileRef} type="file" accept={ACCEPT} className="hidden" aria-label={`${tieuDe || 'Bằng chứng'} — chọn tệp`}
               onChange={(e) => pick(e.target.files)} />
           </span>
         )}

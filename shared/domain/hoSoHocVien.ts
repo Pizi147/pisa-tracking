@@ -55,8 +55,9 @@ export const dangChay = (p: { status: string }) => p.status === 'planned' || p.s
 
 /**
  * Cột 2 đầu thẻ case: `{k}/{n} PA có kết quả` + việc gần nhất có hạn (`tiep`). Chỉ xét PA ĐANG CHẠY; case đã xong → không
- * có việc tiếp. Thứ tự: PA gợi ý chưa xác nhận → PA chờ Quản lý → PA có hạn làm sớm nhất → nghĩa vụ cập nhật hằng tuần
- * của case. Hạn DỰ KIẾN XONG (followupDue) KHÔNG phải hạn (F11) — không dùng.
+ * có việc tiếp. Thứ tự: PA đang chạy ĐÃ QUÁ HẠN (sớm nhất) → PA gợi ý chưa xác nhận → PA chờ Quản lý → PA có hạn làm sớm
+ * nhất → nghĩa vụ cập nhật hằng tuần của case (chủ sản phẩm chốt 22/09: việc đã trễ nói trước việc đang chờ người khác).
+ * Hạn DỰ KIẾN XONG (followupDue) KHÔNG phải hạn (F11) — không dùng.
  */
 export function tienDoCase(plans: readonly PhuongAnTomTat[], c: { status: string; followUntil: string | null; followOverdue: boolean }): {
   coKetQua: number; tong: number; text: string;
@@ -71,7 +72,9 @@ export function tienDoCase(plans: readonly PhuongAnTomTat[], c: { status: string
     const goiY = chay.find((p) => p.preset && !p.confirmedAt);
     const choDuyet = chay.find((p) => p.pendingApproval);
     const coHan = chay.filter((p) => p.actionDue).sort((a, b) => a.actionDue!.localeCompare(b.actionDue!))[0];
-    if (goiY) tiep = { text: 'PA gợi ý chờ xác nhận', due: null, overdue: false };
+    const quaHanRoi = chay.filter((p) => p.actionDue && p.actionOverdue).sort((a, b) => a.actionDue!.localeCompare(b.actionDue!))[0];
+    if (quaHanRoi) tiep = { text: 'PA tiếp', due: quaHanRoi.actionDue, overdue: true };
+    else if (goiY) tiep = { text: 'PA gợi ý chờ xác nhận', due: null, overdue: false };
     else if (choDuyet) tiep = { text: 'Chờ Quản lý trả lời', due: choDuyet.approvalDue, overdue: false };
     else if (coHan) tiep = { text: 'PA tiếp', due: coHan.actionDue, overdue: coHan.actionOverdue };
     else if (c.followUntil) tiep = { text: 'Cập nhật PA', due: c.followUntil, overdue: c.followOverdue };

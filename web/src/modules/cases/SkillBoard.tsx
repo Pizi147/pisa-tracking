@@ -361,9 +361,11 @@ function TheCase({ c, row, onChanged }: {
             <p className="text-xs text-amber-200/90 m-0">Chưa có phương án nào — case này đang chờ người quyết.</p>
           ) : (
             <div className="space-y-1.5">
-              <div className="hidden md:grid md:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_minmax(0,1fr)] gap-x-3 px-2.5 text-[10px] uppercase tracking-wide text-slate-500">
-                <span>Phương án</span><span>Kết quả gần nhất</span><span>Việc tiếp theo</span>
-              </div>
+              {chay.length > 0 && (
+                <div className="hidden md:grid md:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_minmax(0,1fr)] gap-x-3 px-2.5 text-[10px] uppercase tracking-wide text-slate-500">
+                  <span>Phương án</span><span>Kết quả gần nhất</span><span>Việc tiếp theo</span>
+                </div>
+              )}
               {chay.map((p) => (
                 <KhoiPhuongAn key={p.id} p={p} canEdit={c.canEdit} onChanged={onChanged} />
               ))}
@@ -390,7 +392,7 @@ function TheCase({ c, row, onChanged }: {
             </button>
             {moBangChung && (
               <div className="mt-1.5">
-                <BangChung ownerType="sos_case" ownerId={c.id} canEdit={c.canEdit} tieuDe="" />
+                <BangChung ownerType="sos_case" ownerId={c.id} canEdit={c.canEdit} tieuDe="" onChanged={onChanged} />
               </div>
             )}
           </div>
@@ -545,7 +547,7 @@ function KhoiPhuongAn({ p, canEdit, onChanged }: {
               )}
             </>
           ) : (
-            <span className="text-xs text-slate-500">{v.text} · {fmtDate(v.due)}</span>
+            <span className="text-xs text-slate-500">{v.text}{v.due ? ` · ${fmtDate(v.due)}` : ''}</span>
           )}
         </div>
       </div>

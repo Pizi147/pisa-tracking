@@ -26,6 +26,11 @@ type MeasureDetail = {
   violations: { category: string }[];
 };
 
+/** Nhãn "Vi phạm" trơn có màu — không dùng `Status` (có biểu tượng ▶ của "đang làm", chủ sản phẩm bỏ 22/09). */
+const NHAN_VI_PHAM = (
+  <span className="inline-flex items-center rounded-md border px-2 py-0.5 text-[11px] font-medium whitespace-nowrap bg-sky-300/10 text-sky-200 border-sky-300/30">Vi phạm</span>
+);
+
 const RANGES = [
   { key: 'all', label: 'Tất cả thời gian' },
   { key: '7', label: '7 ngày' },
@@ -99,7 +104,7 @@ export function StudentYThucSection({ studentId, studentName, canRecordViolation
         chon: canManageDiscipline && v.state === 'unhandled'
           ? { checked: ticked.has(v.id), onChange: () => toggle(v.id), nhanDoc: `Chọn vi phạm ${fmtDate(v.occurredOn)}` }
           : null,
-        cot2: v.ageLabel ? <Alert tone="danger">Vi phạm</Alert> : <Status kind="doing">Vi phạm</Status>,
+        cot2: v.ageLabel ? <Alert tone="danger">Vi phạm</Alert> : NHAN_VI_PHAM,
         tieuDe: v.description,
         dongPhu: [v.categoryLabel, v.skillLabel, v.reportedByName, v.state !== 'unhandled' ? v.stateLabel : null,
           v.ageLabel ? `⚠ đã ${v.ageDays} ngày` : null].filter(Boolean).join(' · '),

@@ -388,7 +388,7 @@ function HeaderStats({ data, rows }: { data: any; rows: SkillBoardRow[] | null }
         value={String(below.length)}
         tone={below.length ? 'danger' : scored.length ? 'ok' : undefined}
         sub={below.length
-          ? below.map((r) => r.short ?? r.label).join(' · ')
+          ? below.map((r) => r.label).join(' · ')
           : scored.length ? 'mọi môn đạt kỳ vọng' : 'chưa có điểm nào'} />
 
       <Stat label="Case đang mở"

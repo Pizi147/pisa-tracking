@@ -1902,6 +1902,16 @@ Phần A chỉ đổi nơi chạy và nơi cất dữ liệu. Những điều d�
 | Có sẵn từ trước, ngoài phạm vi: phiên đăng nhập không hết hạn; `/auth/register` mở cho mọi người (cần duyệt mới dùng được) | Không thuộc PR hạ tầng | Xem xét trước khi gửi link cho giáo viên |
 | File database ở **thư mục main gốc** trên máy chủ sản phẩm còn ở mô hình trước PR-J (cảnh báo khi `npm run dev`) | Không thuộc mã; chỉ là dữ liệu cũ trên máy | Chủ sản phẩm chạy `npm run seed` ở thư mục gốc khi tiện |
 
+### 12.18. PR-HV (hồ sơ học viên v3) thấy nhưng KHÔNG sửa — 22/09/2026
+
+Ghi theo yêu cầu chủ sản phẩm sau rà soát PR #52 (làm sau, không làm ở PR-HV):
+
+| Việc | Ở đâu | Làm khi nào |
+|---|---|---|
+| Thẻ case đếm bằng chứng bằng một `SELECT COUNT(*)` **mỗi thẻ** (`caseCardOf`, `attachmentCount`) — gộp thành một truy vấn theo lô qua `countAttachments()` của `platform/attachments.ts` | `server/src/cases/cases.ts` ~2380 | Khi tối ưu số truy vấn cho Turso (mạng, mỗi truy vấn một vòng đi về) |
+| Hồ sơ học viên gọi `/students/:id/violation-warning` **hai lần** (dấu ⚠ trên tab ở `StudentDetailPage` và banner trong `StudentYThucSection`) — nâng `warn` lên trang, truyền xuống | `web/src/modules/students/StudentDetailPage.tsx`, `web/src/modules/yThuc/StudentYThucSection.tsx` | Cùng lúc với tối ưu Turso |
+| Ở 375px, bảng Mock Test (`IeltsAttempts`) và bảng Học viên của lớp (`ClassRoster`) cuộn ngang **trong thẻ** (`overflow-x-auto` của chính bảng — không đẩy trang); nhãn `dự kiến dd/mm` của `JourneyTimeline` lòi 23px khỏi `main` | `StudentDetailPage.tsx`, `ClassRoster.tsx`, `JourneyTimeline.tsx` | Lỗi có sẵn từ trước PR-HV — PR-Q (Q9 Hành trình) hoặc một PR bố cục mobile riêng |
+
 ### 12.17. PR-Z2b (an toàn dữ liệu bản chính) thấy nhưng KHÔNG sửa — 22/09/2026
 
 | Việc | Vì sao chưa làm | Làm ở đâu khi quay lại |

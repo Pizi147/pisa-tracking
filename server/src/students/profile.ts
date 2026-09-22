@@ -458,8 +458,17 @@ function headlineOf(p: Principal, studentId: number, cycleId: number | null) {
   /* DỰ PHÒNG (PR-HV, sửa sau rà soát 22/09): việc cập nhật hằng tuần CHƯA quá hạn CHỈ dùng khi không có việc nào khác —
      nếu đưa vào `cands`, ứng viên có hạn sẽ thắng ứng viên không hạn ở `cands.sort` và chen trước "Xác minh SOS"/"Đề ra PA". */
   const duPhong: Next[] = [];
-  const sk = (r: any) => r.short ?? r.label;
+  /* Mục 3 (chủ sản phẩm 22/09): TÊN ĐẦY ĐỦ kỹ năng ("Writing Task 2"), không viết tắt "W2". */
+  const sk = (r: any) => r.label;
+  /* Mục 1 (chủ sản phẩm 22/09): case từ SOS CHỜ XÁC ĐỊNH NGUYÊN NHÂN là việc chặn đầu chuỗi — xếp TRƯỚC mọi ứng viên khác
+     (hạn = hạn xác định nguyên nhân); PA gợi ý chưa xác nhận là một việc thường. Chỉ hiển thị — luật ở cases.ts không đổi. */
+  const xacDinh: Next[] = [];
   for (const r of rows) {
+    for (const c of r.cases) {
+      if (c.status === 'done') continue;
+      if (c.sos?.awaitingCause) xacDinh.push({ text: `Xác định nguyên nhân ${sk(r)}`, due: c.sos.dueOn ?? null, rank: 0 });
+      else if (c.sos?.unconfirmedPlanId) cands.push({ text: `Xác nhận PA gợi ý ${sk(r)}`, due: null, rank: 1 });
+    }
     if (r.signal) cands.push({ text: `Xác minh SOS ${sk(r)}`, due: r.signal.verifyDue ?? null, rank: 0 });
     if (r.state === 'no_plan') cands.push({ text: `Đề ra PA cho ${sk(r)}`, due: null, rank: 1 });
     if (r.overdueActionDue) cands.push({ text: `Làm PA ${sk(r)}`, due: r.overdueActionDue, rank: 1 });
@@ -481,7 +490,8 @@ function headlineOf(p: Principal, studentId: number, cycleId: number | null) {
   });
 
   duPhong.sort((a, b) => (a.due! < b.due! ? -1 : 1));
-  const chon = cands[0] ?? duPhong[0] ?? null;
+  xacDinh.sort((a, b) => (a.due ?? '9999') < (b.due ?? '9999') ? -1 : 1);
+  const chon = xacDinh[0] ?? cands[0] ?? duPhong[0] ?? null;
   return {
     below, signals, openCases: open,
     next: chon ? { text: chon.text, due: chon.due, overdue: quaHan(chon.due, today) } : null,
