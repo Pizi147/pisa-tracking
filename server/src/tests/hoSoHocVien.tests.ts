@@ -54,4 +54,18 @@ export async function runHoSoHocVienTests(t: YThucTestKit) {
     }
     assert(hits.length === 0, `Còn ${hits.length} chỗ:\n    ${hits.join('\n    ')}`);
   });
+
+  // ================================================================== Task 2 — khung 3 tab, ?tab=
+
+  const domain: any = await import('../../../shared/domain/index.ts');
+
+  check('PR-HV · A6 ?tab= đọc đúng ba giá trị, mọi giá trị khác về Học thuật', () => {
+    assert(JSON.stringify(domain.HO_SO_TABS) === JSON.stringify(['hoc-thuat', 'y-thuc', 'hanh-trinh']), 'Ba tab đúng thứ tự');
+    assert(domain.HO_SO_TAB_LABEL['hoc-thuat'] === 'Học thuật' && domain.HO_SO_TAB_LABEL['y-thuc'] === 'Ý thức & Phối hợp'
+      && domain.HO_SO_TAB_LABEL['hanh-trinh'] === 'Hành trình', 'Nhãn ba tab');
+    for (const k of ['y-thuc', 'hanh-trinh', 'hoc-thuat']) assert(domain.parseHoSoTab(k) === k, `Giá trị hợp lệ ${k} phải giữ nguyên`);
+    for (const v of [null, undefined, '', 'Y-THUC', 'tong-quan', ' y-thuc']) {
+      assert(domain.parseHoSoTab(v) === 'hoc-thuat', `Giá trị lạ ${JSON.stringify(v)} phải về hoc-thuat, được ${domain.parseHoSoTab(v)}`);
+    }
+  });
 }

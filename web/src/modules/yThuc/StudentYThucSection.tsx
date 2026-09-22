@@ -30,8 +30,10 @@ const RANGES = [
  * TAB `Ý THỨC & PHỐI HỢP` CỦA HỒ SƠ HỌC VIÊN (§7.3, plan.md K3) — thêm cạnh hai tab hiện có, không dựng
  * lại hồ sơ. Không toggle Theo HS (đã là một em); tóm tắt là MỘT dòng chữ, không thẻ số.
  */
-export function StudentYThucSection({ studentId, studentName, canRecordViolation, canManageDiscipline }: {
+export function StudentYThucSection({ studentId, studentName, canRecordViolation, canManageDiscipline, onGoAcademic }: {
   studentId: number; studentName: string; canRecordViolation: boolean; canManageDiscipline: boolean;
+  /** Đổi sang tab Học thuật của hồ sơ (link trong thẻ Phối hợp SOS, Task 4–5). */
+  onGoAcademic?: () => void;
 }) {
   const warn = useApi<{ message: string }>(`/students/${studentId}/violation-warning`, [studentId]);
   const violations = useApi<{ rows: ViolationView[] }>(`/students/${studentId}/violations`, [studentId]);

@@ -205,10 +205,10 @@ lệch vài dòng là bình thường, lệch nội dung thì 🛑 hỏi.
 - [x] **Step 4:** Đọc hết spec; mở hai prototype bằng trình duyệt (file tĩnh, không cần máy chủ); đọc
       `StudentDetailPage.tsx`, `SkillBoard.tsx`, `StudentYThucSection.tsx`, `ClassYThucCard.tsx`, `PhoiHopSosSection.tsx`,
       `ui.tsx` (dòng 1–240), `KetQuaDot.tsx`.
-- [ ] **Step 5: 🛑 Hỏi chủ sản phẩm trước khi bật máy chủ dev** (câu mẫu: "Tôi cần chạy bản demo trên máy để chụp ảnh
+- [x] **Step 5: 🛑 Hỏi chủ sản phẩm trước khi bật máy chủ dev** (câu mẫu: "Tôi cần chạy bản demo trên máy để chụp ảnh
       trước khi sửa. Anh/chị có đang mở bản demo không? Nếu có, xin tắt cửa sổ đó giúp tôi khoảng 30 phút."). Được phép thì:
       trong worktree `npm run seed`, rồi `preview_start` với cấu hình `dev` (`.claude/launch.json`).
-- [ ] **Step 6: Ảnh TRƯỚC** — lưu `thiet-ke/anh/pr-hv/truoc-<màn>-<vai>-<khổ>.png`, khổ `desktop` (1280 rộng) và `375`.
+- [x] **Step 6: Ảnh TRƯỚC** — lưu `thiet-ke/anh/pr-hv/truoc-<màn>-<vai>-<khổ>.png`, khổ `desktop` (1280 rộng) và `375`.
       Đổi vai ở thanh **Công cụ demo**. Tên học viên/giáo viên lấy từ bộ demo: GVCN **Trần Ngọc Hà**, GVBM **Phạm Thu
       Trang** (Speaking), Quản lý **Nguyễn Khánh Vy**. Sáu màn (spec §7):
       1. Hồ sơ **Lê Quang Huy** (`/hoc-vien/<id>` — tìm ở ô tìm kiếm đầu trang) — cả trang, cả ba khối tab hiện có.
@@ -481,11 +481,11 @@ lệch vài dòng là bình thường, lệch nội dung thì 🛑 hỏi.
   ```
 - Produces: `StudentYThucSection` nhận thêm `onGoAcademic?: () => void` (Task 4–5 dùng).
 
-- [ ] **Step 1 (TDD):** Thêm vào `hoSoHocVien.tests.ts`:
+- [x] **Step 1 (TDD):** Thêm vào `hoSoHocVien.tests.ts`:
   `check('PR-HV · A6 ?tab= đọc đúng ba giá trị, mọi giá trị khác về Học thuật', …)` — `parseHoSoTab('y-thuc') === 'y-thuc'`,
   `'hanh-trinh'`, `'hoc-thuat'`; `null`, `undefined`, `''`, `'Y-THUC'`, `'tong-quan'` → `'hoc-thuat'`. Dùng
   `const domain: any = await import('../../../shared/domain/index.ts');` như `sosV3.tests.ts`. Chạy → đỏ. Viết hàm → xanh.
-- [ ] **Step 2: `HangTab.tsx`.** Một `div role="tablist" aria-label={ariaLabel}` có
+- [x] **Step 2: `HangTab.tsx`.** Một `div role="tablist" aria-label={ariaLabel}` có
       `className="flex gap-1 overflow-x-auto border-b"` `style={{ borderColor: 'var(--line)' }}`; mỗi tab là
       `<button type="button" role="tab" aria-selected={active} onClick={() => onChange(t.key)}>` với lớp
       `whitespace-nowrap px-3 py-2 -mb-px border-b-2 font-semibold` + (`cap === 'con' ? 'text-xs' : 'text-sm'`) +
@@ -493,7 +493,7 @@ lệch vài dòng là bình thường, lệch nội dung thì 🛑 hỏi.
       Trong nhãn: `{t.label}`; `t.canhBao` → `<span className="ml-1 text-amber-300" aria-label="có cảnh báo">⚠</span>`;
       `t.so` > 0 → `<span className="ml-1.5 rounded-full px-1.5 text-[10px] tabular-nums bg-sky-300/15 text-sky-200">{t.so}</span>`.
       Không có số / số 0 → không vẽ gì.
-- [ ] **Step 3: `StudentDetailPage.tsx` — state và địa chỉ.**
+- [x] **Step 3: `StudentDetailPage.tsx` — state và địa chỉ.**
   - Xoá `tier3` (dòng 64). Thêm:
     ```ts
     const tab = parseHoSoTab(params.get('tab'));
@@ -507,7 +507,7 @@ lệch vài dòng là bình thường, lệch nội dung thì 🛑 hỏi.
     ```
     (hooks đặt **trước** các `return` sớm ở dòng 84–85.)
   - Import `parseHoSoTab, HO_SO_TAB_LABEL, type HoSoTab` từ `@shared/domain/index.ts`; `HangTab` từ `../../ui/HangTab.tsx`.
-- [ ] **Step 4: Bố cục mới** (thay dòng 169–306; giữ nguyên đầu trang 108–167 và các hộp thoại 308–343):
+- [x] **Step 4: Bố cục mới** (thay dòng 169–306; giữ nguyên đầu trang 108–167 và các hộp thoại 308–343):
   ```tsx
   {cy && <HeaderStats data={data} cy={cy} rows={skillRows} />}
 
@@ -552,7 +552,7 @@ lệch vài dòng là bình thường, lệch nội dung thì 🛑 hỏi.
   Ý thức và Hành trình vẫn mở được khi `!cy`; chỉ tab Học thuật hiện `Empty`. Ghi điều này vào Nhật ký (sửa lỗi phụ,
   không đổi luật). Card `Tiến độ và hỗ trợ…` giữ tiêu đề cũ. Xoá chú thích "TẦNG 3" (dòng 199–208) và sửa chú thích
   đầu file (dòng 30–35) cho đúng bố cục mới (đầu trang · 4 ô số · 3 tab).
-- [ ] **Step 5:** `npm run check` xanh. Bật máy chủ dev (đã được phép ở Task 0; nếu đã tắt thì hỏi lại) — mở
+- [x] **Step 5:** `npm run check` xanh. Bật máy chủ dev (đã được phép ở Task 0; nếu đã tắt thì hỏi lại) — mở
       `/hoc-vien/<Huy>`, `…?tab=y-thuc`, `…?tab=hanh-trinh`, `…?tab=abc` (→ Học thuật), bấm qua lại tab: địa chỉ đổi,
       nút Quay lại của trình duyệt **không** phải bấm nhiều lần (replace). 375px: hàng tab không đẩy trang cuộn ngang.
       Commit: `PR-HV (2): hồ sơ học viên 3 tab, nhớ tab qua ?tab=`.
@@ -1276,3 +1276,5 @@ danh sách ảnh.)*
 |---|---|---|
 | 22/09/2026 | 0 | Người code: **Fable 5.1** (model khuyến nghị). Worktree `.claude/worktrees/pr-hv-ho-so-hoc-vien`, nhánh `pr-hv-ho-so-hoc-vien` từ `main` @ `714739e` (đủ spec, hai prototype, plan). `N0` = **605** (npm run check xanh). `git log origin/main -5`: 714739e Merge #50 plan PR-HV · 9c12bc5 · b53c5d5 · 0f24805 Merge #48 (Z2a) · 8b3b476. PR-Z2b (#49) **OPEN** (`gh pr view 49`) → làm đúng kế hoạch, đóng băng tới Task 9. Step 5–6 (máy chủ dev, ảnh TRƯỚC) **hoãn**: chủ sản phẩm yêu cầu hỏi trước khi bật cổng 4000/5173; làm Task 1 trước (không cần máy chủ), ảnh TRƯỚC sẽ chụp từ commit gốc `714739e` (checkout tách rời tạm) khi được phép. |
 | 22/09/2026 | 1 | Phép quét (TDD) đỏ **97 chỗ** — trùng đúng bảng 1A–1D, không có tên-trong-mã nào cần `CHO_PHEP` (mảng rỗng). `CHO_Z2B` thêm `server/src/ops/` (đóng băng theo Global Constraints; `ops/initBanChinh.ts` có 2 chỗ "hãy" — Task 9). `accounts.ts` (Z2b sửa 2 dòng khác) đã đổi 8 chỗ "Hãy". Phép kiểm cũ bám câu chữ D3: `run.ts` [6.3] `/đặt tên/` → `/[Đđ]ặt tên/` (câu "Hãy đặt tên cho case" nay viết hoa Đ) — ngoài hai dòng bảng 1E. `TU_DIEN_VA_CHU.md`: luật D1 §1/§6, luật D3 §4, thêm §8 bảng chữ PR-HV. Số phép kiểm: **606** (= N0 + 1). |
+| 22/09/2026 | 0 (tiếp) | Chủ sản phẩm cho phép bật máy chủ dev (hai cổng đang rảnh). **Phát hiện:** `preview_start` (cấu hình `dev` trong `.claude/launch.json`) khởi động Vite/API từ **thư mục chính**, không phải worktree (API đọc database của thư mục chính; Vite trả mã của `main`) → tắt, bật lại bằng `npm run dev` chạy nền **trong worktree** (database riêng `data/pisa-demo.sqlite` của worktree, seed 04:49). Ảnh TRƯỚC chụp bằng Playwright (cài tạm `--no-save`, kênh Chrome có sẵn; script ở scratchpad, không vào repo) ở commit gốc `714739e` — 30 tệp `thiet-ke/anh/pr-hv/truoc-*.png`: `ho-so-huy` (gvcn/gvbm/ql) · `case-2pa` (admin — em Đinh Ngọc Quyên id 21, case 22 Writing Task 2 có 2 PA đang chạy, thuộc lớp CP-FT 110 nên GVCN Hà không xem được) · `case-sos-cho` (gvcn/gvbm — Đỗ Minh Khôi id 42, case 34) · `y-thuc-huy` + `-vi-pham` (gvcn/gvbm) · `lop-101` + `-theo-hs` (mở Nguyễn Minh An — Huy không có vi phạm chưa xử lý nên không nằm trong khối lớp) + `-theo-tg` (gvcn) · `phan-tich-ql` (ql) · `viec-can-lam` (ql/gvcn); mỗi tệp hai khổ desktop/375. Commit `c13fc7d`. |
+| 22/09/2026 | 2 | `parseHoSoTab` TDD đỏ → xanh. `HangTab.tsx` mới; `StudentDetailPage` bỏ `tier3`, ba tab đọc từ `?tab=` (replace), `warn` tải ở trang cho dấu ⚠ (A5). Sửa lỗi phụ J8: không có lộ trình vẫn mở được tab Ý thức/Hành trình. Bấm thử (Playwright, GVCN, 1280 + 375): `?tab=` ba giá trị + giá trị lạ về Học thuật ✓; bấm tab đổi địa chỉ, `history.length` không tăng (replace) ✓; scrollWidth = khổ (không cuộn ngang) ✓; console không lỗi ✓; ⚠ hiện ở em có cảnh báo 5 ngày (Nguyễn Minh An), không hiện ở Huy ✓. Số phép kiểm: **607**. |

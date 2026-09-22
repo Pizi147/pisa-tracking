@@ -17,7 +17,8 @@ import {
   attemptHref,
   attemptStatusLabel, fmtBand, fmtDate, skillLabel, sosLabel, sosTone, studentStatusLabel,
 } from '../../lib/format.ts';
-import { JOURNEY_EVENT_LABEL } from '@shared/domain/index.ts';
+import { HO_SO_TAB_LABEL, JOURNEY_EVENT_LABEL, parseHoSoTab, type HoSoTab } from '@shared/domain/index.ts';
+import { HangTab } from '../../ui/HangTab.tsx';
 
 type Profile = any;
 
@@ -27,11 +28,13 @@ type Profile = any;
  * Trang này phải trả lời được trong khoảng ba mươi giây: em bắt đầu ở đâu, đang ở đâu,
  * đích ở đâu, có đang theo kịp không, đang vướng gì, ai đã làm gì, và bước tiếp theo là gì.
  *
- * BA TẦNG, theo đúng thứ tự người ta muốn biết (owner duyệt 13/09/2026):
+ * BỐ CỤC (chủ sản phẩm chốt 22/09/2026, spec PR-HV — thay ba tầng của bản 13/09):
  *
- *   Tầng 1  EM NÀY LÀ AI            thẻ tên dính trên đầu khi cuộn
- *   Tầng 2  YẾU CHỖ NÀO, ĐÃ LÀM GÌ  bảng sáu hạng mục — trái tim của trang
- *   Tầng 3  SỐ LIỆU THÔ            hai thẻ: điểm qua các lượt · nhật ký
+ *   Đầu trang    EM NÀY LÀ AI          tên, lớp, GVCN, mục tiêu; nút Lộ trình · + Case · ⋮
+ *   Bốn ô số     LIẾC MỘT CÁI          Kết quả Test gần nhất · Kỹ năng cần hỗ trợ · Case đang mở · Việc cần làm tiếp
+ *   Ba tab       Học thuật (mặc định: bảng kỹ năng + case, rồi Mock Test) · Ý thức & Phối hợp · Hành trình
+ *
+ * Tab nằm NGAY DƯỚI đầu trang, không dồn xuống cuối; tab nhớ qua địa chỉ `?tab=`.
  *
  * Bản trước là BẢY cái hộp xếp chồng, trong đó ba hộp — "Đang cần chú ý", "Đường đi từng kỹ
  * năng" và bảng "Vấn đề học vụ" — nói cùng một chuyện bằng ba cách khác nhau, nên đọc hết
@@ -60,8 +63,6 @@ export default function StudentDetailPage() {
    * Bấm "Reading" ở bảng trên là khối dưới chỉ còn case Reading; bấm lại thì bỏ lọc.
    */
   const [skillPick, setSkillPick] = useState<string | null>(null);
-  /* Tầng 3 mặc định mở bảng điểm: đó là thứ người ta mở hồ sơ để xem nhiều nhất. */
-  const [tier3, setTier3] = useState<'scores' | 'journey' | 'yThuc'>('scores');
   /** Hành trình: chỉ mốc xuyên chương trình, hay toàn bộ ghi nhận (mục 4.5). */
   const [allJourney, setAllJourney] = useState(false);
   /** Dải chọn lộ trình — chỉ bày khi người dùng hỏi tới, không chiếm chỗ mặc định. */
@@ -80,6 +81,15 @@ export default function StudentDetailPage() {
     [id, boardCycleId],
   );
   const skillRows = board.data?.rows ?? null;
+  /* Tab đang xem đọc từ địa chỉ (A6); đổi tab là `replace` để nút Quay lại của trình duyệt không phải bấm nhiều lần. */
+  const tab = parseHoSoTab(params.get('tab'));
+  const setTab = (t: HoSoTab) => {
+    const next = new URLSearchParams(params);          // giữ nguyên 'lo-trinh'
+    if (t === 'hoc-thuat') next.delete('tab'); else next.set('tab', t);
+    setParams(next, { replace: true });
+  };
+  /* A5: dấu ⚠ trên tab Ý thức. Cùng đường với khối bên trong — useApi tự tải lại khi '/students' bị vô hiệu. */
+  const warn = useApi<{ message: string }>(id ? `/students/${id}/violation-warning` : null, [id]);
 
   if (error) return <ErrorState message={error.message} hint={error.hint} onRetry={reload} />;
   if (loading || !data) return <Skeleton rows={10} />;
@@ -166,17 +176,28 @@ export default function StudentDetailPage() {
         </div>
       </div>
 
-      {/* BỐN Ô SỐ — bốn câu hỏi, không phải một phép chia. */}
+      {/* BỐN Ô SỐ (Q7) — bốn câu hỏi, không phải một phép chia. Luôn hiện phía trên hàng tab. */}
       {cy && <HeaderStats data={data} cy={cy} rows={skillRows} />}
 
-      {!cy ? (
+      {/* Xác minh SOS: giữ chỗ cũ — dưới 4 ô số, trên hàng tab; tự ẩn khi không có tín hiệu. */}
+      <PendingSignals signals={data.pendingSignals ?? []} onVerify={(sg) => setVerify(sg)} />
+
+      {/*
+        BA TAB NGAY DƯỚI ĐẦU TRANG (D2, spec 2026-09-22): Học thuật (mặc định) · Ý thức & Phối hợp · Hành trình.
+        Tab nhớ qua địa chỉ `?tab=` (A6) để Việc cần làm / hồ sơ lớp mở thẳng đúng tab — không nhớ bằng localStorage.
+        Không có lộ trình thì chỉ tab Học thuật trống; tab Ý thức và Hành trình vẫn mở được (J8).
+      */}
+      <HangTab ariaLabel="Nội dung hồ sơ học viên" value={tab} onChange={setTab}
+        tabs={[
+          { key: 'hoc-thuat', label: HO_SO_TAB_LABEL['hoc-thuat'] },
+          { key: 'y-thuc', label: HO_SO_TAB_LABEL['y-thuc'], canhBao: !!warn.data?.message },
+          { key: 'hanh-trinh', label: HO_SO_TAB_LABEL['hanh-trinh'] },
+        ]} />
+
+      {tab === 'hoc-thuat' && (!cy ? (
         <Empty title="Học viên chưa có lộ trình nào" hint="Mở lộ trình để bắt đầu theo dõi mục tiêu và các mốc đánh giá." />
       ) : (
         <>
-          {/* ══════════════════════════════════════ B — TIẾN ĐỘ HIỆN TẠI */}
-          {/* ══════════════════════════════ B0 — TÍN HIỆU CHỜ XÁC MINH */}
-          <PendingSignals signals={data.pendingSignals ?? []} onVerify={(sg) => setVerify(sg)} />
-
           {/*
             KHỐI CHÍNH CỦA HỒ SƠ (mục 4.2). Bấm một hàng thì nội dung mở ra NGAY DƯỚI hàng
             đó — biểu đồ của chính kỹ năng ấy, các case đang mở, lịch sử đã kết thúc.
@@ -196,113 +217,99 @@ export default function StudentDetailPage() {
               onChanged={() => { board.reload(); reload(); }} />
           </Card>
 
-          {/* ══════════════════════════════ TẦNG 3 — KẾT QUẢ VÀ HÀNH TRÌNH */}
           {/*
-            Hai tab chứ không phải hai khối xếp chồng: bảng kết quả và hành trình đều dài,
-            và hiếm khi ai cần đọc cả hai cùng lúc. Ai chỉ cần liếc nhanh thì dừng ở tầng
-            1–2 và không phải cuộn thêm dòng nào.
-
-            TÊN TAB GỌI ĐÚNG THEO CHƯƠNG TRÌNH (mục 7.11): lớp Fast Track là "Mock Test",
+            TÊN KHỐI GỌI ĐÚNG THEO CHƯƠNG TRÌNH (mục 7.11): lớp Fast Track là "Mock Test",
             lớp Normal là "Kết quả kiểm tra". Cụm "Điểm qua các lượt" đã bỏ — nó không phải
             tiếng Việt ai dùng, và nó đúng với cả hai loại lớp nên chẳng nói được gì.
           */}
-          <Card title={
-            <span className="flex flex-wrap gap-1">
-              <button className={`btn btn-sm ${tier3 === 'scores' ? 'btn-primary' : 'btn-ghost'}`}
-                onClick={() => setTier3('scores')}>{cy.ratio ? 'Kết quả kiểm tra' : 'Mock Test'}</button>
-              <button className={`btn btn-sm ${tier3 === 'journey' ? 'btn-primary' : 'btn-ghost'}`}
-                onClick={() => setTier3('journey')}>Hành trình học tập</button>
-              <button className={`btn btn-sm ${tier3 === 'yThuc' ? 'btn-primary' : 'btn-ghost'}`}
-                onClick={() => setTier3('yThuc')}>Ý thức & Phối hợp</button>
-            </span>
-          } bodyClass="p-0">
-            {tier3 === 'yThuc' ? (
-              <div className="p-4">
-                <StudentYThucSection studentId={data.id} studentName={data.fullName}
-                  canRecordViolation={!!data.viewer.canRecordViolation}
-                  canManageDiscipline={!!data.viewer.canManageDiscipline} />
-              </div>
-            ) : tier3 === 'scores' ? (
-              <>
-                {data.attempts.length === 0 ? (
-                  <div className="p-4"><Empty title="Chưa có lượt đánh giá nào trong lộ trình này" /></div>
-                ) : cy.ratio ? <RatioAttempts attempts={data.attempts} onOpen={(a) => navigate(attemptHref(a))} />
-                  : <IeltsAttempts attempts={data.attempts} onOpen={(a) => navigate(attemptHref(a))} />}
-                <div className="p-3">
-                  <SectionNote>
-                    Lớp ghi ở đây là lớp TẠI LÚC ĐÁNH GIÁ — chuyển lớp không viết lại lịch sử này.
-                    Số MT đánh lại từ 1 khi sang lộ trình mới, học tiếp trong cùng lộ trình thì tăng tiếp.
-                  </SectionNote>
-                  {cy.targetRevisions.length > 0 && (
-                    <p className="text-xs text-slate-500 mt-2 mb-0">
-                      Mục tiêu đã đổi {cy.targetRevisions.length} lần — lần gần nhất {fmtDate(cy.targetRevisions[0].effectiveFrom)}:
-                      {' '}{fmtBand(cy.targetRevisions[0].oldTarget)} → {fmtBand(cy.targetRevisions[0].newTarget)}
-                      {cy.targetRevisions[0].reason && ` (${cy.targetRevisions[0].reason})`}.
-                      {' '}Các lượt đã chốt vẫn giữ kỳ vọng tính theo mục tiêu lúc đó.
-                    </p>
-                  )}
-                  {cy.outcome && (
-                    <p className="text-sm text-slate-200 mt-2 mb-0">
-                      Kết luận lộ trình: <strong>{cy.outcome.label}</strong>
-                      {cy.outcome.score !== null && ` · ${fmtBand(cy.outcome.score)}`}
-                      {cy.outcome.note && <span className="text-slate-400"> — {cy.outcome.note}</span>}
-                    </p>
-                  )}
-                  {!cy.baseline && !cy.ratio && (
-                    <SectionNote>
-                      Chưa ghi điểm đầu vào nên chưa tính được đã tiến bộ bao nhiêu. Hệ thống KHÔNG lấy
-                      MT1 làm điểm đầu vào — hai thứ đó khác nhau.
-                    </SectionNote>
-                  )}
-                </div>
-              </>
-            ) : (
-              <div className="p-4 space-y-4">
-                {/*
-                  DÒNG THỜI GIAN NGANG, KHÔNG LẶP LẠI BIỂU ĐỒ ĐIỂM.
-
-                  Bản trước vẽ thêm một biểu đồ điểm ở đây, đúng cái biểu đồ đã có trong từng
-                  hàng kỹ năng ở khối trên. Hai hình giống nhau trên một trang thì người đọc
-                  phải so xem chúng có khác gì không — mất công mà không thêm thông tin.
-
-                  Ở đây câu hỏi khác: CẢ HÀNH TRÌNH đã diễn ra theo trình tự nào. Nên nó là
-                  một dòng thời gian theo tuần, mỗi case một nhóm, mỗi phương án một làn.
-                */}
-                <JourneyTimeline rows={skillRows} progress={data.progress ?? null}
-                  onOpenCase={setOpenCase} />
-
-                <div>
-                  {/*
-                    MỐC XUYÊN CHƯƠNG TRÌNH (mục 4.5): vào học, vào lớp, chuyển chương trình,
-                    đổi target hay kế hoạch thi, bàn giao case, kết quả thi thật, kết luận lộ
-                    trình. Mọi cập nhật phương án đã nằm trong hàng kỹ năng ở khối trên —
-                    kể lại lần nữa ở đây chỉ làm cả hai chỗ cùng dài ra mà không rõ hơn.
-                  */}
-                  <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
-                    <h3 className="text-sm font-semibold text-slate-200 m-0">
-                      {allJourney ? 'Toàn bộ ghi nhận' : 'Các mốc đã qua'}
-                    </h3>
-                    <button className="btn btn-sm btn-ghost" onClick={() => setAllJourney(!allJourney)}>
-                      {allJourney ? 'Chỉ xem mốc chính' : 'Mở toàn hành trình'}
-                    </button>
-                  </div>
-                  {(() => {
-                    const eps = allJourney ? (data.allEpisodes ?? data.episodes) : data.episodes;
-                    return eps.length === 0 ? <Empty title="Chưa có sự kiện nào" /> : (
-                      <ol className="space-y-3 list-none p-0 m-0">
-                        {eps.map((ep: any) => <Episode key={ep.key} ep={ep} onOpenCase={setOpenCase} />)}
-                      </ol>
-                    );
-                  })()}
-                  <SectionNote>
-                    Phần này là hành trình của CẢ em, không riêng lộ trình đang xem: lớp cũ, lộ
-                    trình cũ và case đã bàn giao đều tra lại được ở đây.
-                  </SectionNote>
-                </div>
-              </div>
-            )}
+          <Card title={cy.ratio ? 'Kết quả kiểm tra' : 'Mock Test'} bodyClass="p-0">
+            {data.attempts.length === 0 ? (
+              <div className="p-4"><Empty title="Chưa có lượt đánh giá nào trong lộ trình này" /></div>
+            ) : cy.ratio ? <RatioAttempts attempts={data.attempts} onOpen={(a) => navigate(attemptHref(a))} />
+              : <IeltsAttempts attempts={data.attempts} onOpen={(a) => navigate(attemptHref(a))} />}
+            <div className="p-3">
+              <SectionNote>
+                Lớp ghi ở đây là lớp TẠI LÚC ĐÁNH GIÁ — chuyển lớp không viết lại lịch sử này.
+                Số MT đánh lại từ 1 khi sang lộ trình mới, học tiếp trong cùng lộ trình thì tăng tiếp.
+              </SectionNote>
+              {cy.targetRevisions.length > 0 && (
+                <p className="text-xs text-slate-500 mt-2 mb-0">
+                  Mục tiêu đã đổi {cy.targetRevisions.length} lần — lần gần nhất {fmtDate(cy.targetRevisions[0].effectiveFrom)}:
+                  {' '}{fmtBand(cy.targetRevisions[0].oldTarget)} → {fmtBand(cy.targetRevisions[0].newTarget)}
+                  {cy.targetRevisions[0].reason && ` (${cy.targetRevisions[0].reason})`}.
+                  {' '}Các lượt đã chốt vẫn giữ kỳ vọng tính theo mục tiêu lúc đó.
+                </p>
+              )}
+              {cy.outcome && (
+                <p className="text-sm text-slate-200 mt-2 mb-0">
+                  Kết luận lộ trình: <strong>{cy.outcome.label}</strong>
+                  {cy.outcome.score !== null && ` · ${fmtBand(cy.outcome.score)}`}
+                  {cy.outcome.note && <span className="text-slate-400"> — {cy.outcome.note}</span>}
+                </p>
+              )}
+              {!cy.baseline && !cy.ratio && (
+                <SectionNote>
+                  Chưa ghi điểm đầu vào nên chưa tính được đã tiến bộ bao nhiêu. Hệ thống KHÔNG lấy
+                  MT1 làm điểm đầu vào — hai thứ đó khác nhau.
+                </SectionNote>
+              )}
+            </div>
           </Card>
         </>
+      ))}
+
+      {tab === 'y-thuc' && (
+        <Card bodyClass="p-4">
+          <StudentYThucSection studentId={data.id} studentName={data.fullName}
+            canRecordViolation={!!data.viewer.canRecordViolation}
+            canManageDiscipline={!!data.viewer.canManageDiscipline}
+            onGoAcademic={() => setTab('hoc-thuat')} />
+        </Card>
+      )}
+
+      {tab === 'hanh-trinh' && (
+        <Card title="Hành trình học tập" bodyClass="p-4 space-y-4">
+          {/*
+            DÒNG THỜI GIAN NGANG, KHÔNG LẶP LẠI BIỂU ĐỒ ĐIỂM.
+
+            Bản trước vẽ thêm một biểu đồ điểm ở đây, đúng cái biểu đồ đã có trong từng
+            hàng kỹ năng ở khối trên. Hai hình giống nhau trên một trang thì người đọc
+            phải so xem chúng có khác gì không — mất công mà không thêm thông tin.
+
+            Ở đây câu hỏi khác: CẢ HÀNH TRÌNH đã diễn ra theo trình tự nào. Nên nó là
+            một dòng thời gian theo tuần, mỗi case một nhóm, mỗi phương án một làn.
+          */}
+          {cy && <JourneyTimeline rows={skillRows} progress={data.progress ?? null} onOpenCase={setOpenCase} />}
+
+          <div>
+            {/*
+              MỐC XUYÊN CHƯƠNG TRÌNH (mục 4.5): vào học, vào lớp, chuyển chương trình,
+              đổi target hay kế hoạch thi, bàn giao case, kết quả thi thật, kết luận lộ
+              trình. Mọi cập nhật phương án đã nằm trong hàng kỹ năng ở khối trên —
+              kể lại lần nữa ở đây chỉ làm cả hai chỗ cùng dài ra mà không rõ hơn.
+            */}
+            <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+              <h3 className="text-sm font-semibold text-slate-200 m-0">
+                {allJourney ? 'Toàn bộ ghi nhận' : 'Các mốc đã qua'}
+              </h3>
+              <button className="btn btn-sm btn-ghost" onClick={() => setAllJourney(!allJourney)}>
+                {allJourney ? 'Chỉ xem mốc chính' : 'Mở toàn hành trình'}
+              </button>
+            </div>
+            {(() => {
+              const eps = allJourney ? (data.allEpisodes ?? data.episodes) : data.episodes;
+              return eps.length === 0 ? <Empty title="Chưa có sự kiện nào" /> : (
+                <ol className="space-y-3 list-none p-0 m-0">
+                  {eps.map((ep: any) => <Episode key={ep.key} ep={ep} onOpenCase={setOpenCase} />)}
+                </ol>
+              );
+            })()}
+            <SectionNote>
+              Phần này là hành trình của CẢ em, không riêng lộ trình đang xem: lớp cũ, lộ
+              trình cũ và case đã bàn giao đều tra lại được ở đây.
+            </SectionNote>
+          </div>
+        </Card>
       )}
 
       {/* ============================================== hộp thoại */}
