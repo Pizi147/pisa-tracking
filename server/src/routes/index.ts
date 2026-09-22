@@ -1141,7 +1141,7 @@ api.get('/branch-pulse', requireAuth, wrap((req) => {
  */
 api.get('/highlights', requireAuth, wrap((req) => {
   maybeSimulateReadError();
-  return highlightSvc.highlights(principalOf(req), { branchId: qInt(req, 'branchId') });
+  return highlightSvc.highlights(principalOf(req), { branchId: qInt(req, 'branchId'), program: chuongTrinhTuThamSo(qStr(req, 'ct')) });
 }));
 
 // ============================================================ Tổng quan (PR-Pa, đặc tả §3.2)

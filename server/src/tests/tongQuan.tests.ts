@@ -359,4 +359,13 @@ export async function runTongQuanTests(t: YThucTestKit) {
     assert(b.hang.length > 0 && b.hang.every((h: any) => h.laFt === false), 'Lọt lớp FT vào Lớp thường');
     assertThrows(() => bang.bangChiNhanh(P.normalCoreTeacher, { ct: 'ca-hai' }), /Quản lý/, 'GV mở bảng chi nhánh');
   });
+
+  // ================================================================== 7. Lịch sắp tới
+  await checkAsync('PR-Pa · Lịch sắp tới: Fast Track không có mốc lớp thường; Lớp thường không có MT/dự kiến thi', async () => {
+    const hl: any = await import('../worklist/highlights.ts');
+    const ft = hl.highlights(P.admin, { program: 'ft' });
+    assert(ft.weeks.every((w: any) => !w.normal.progressClasses.length && !w.normal.finalClasses.length && !w.normal.endingClasses.length), 'FT lẫn lớp thường');
+    const th = hl.highlights(P.admin, { program: 'thuong' });
+    assert(th.weeks.every((w: any) => !w.ft.mockClasses.length && w.ft.examStudents === 0) && th.examMonthOnly.students === 0, 'Lớp thường lẫn FT');
+  });
 }
