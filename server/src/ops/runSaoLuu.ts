@@ -67,6 +67,10 @@ if (siteID && token) {
   console.log('[sao-luu] Chưa sao lưu tệp bằng chứng (thiếu NETLIFY_SITE_ID/NETLIFY_AUTH_TOKEN) — xem TRIEN_KHAI.md mục 10.');
 }
 
-const daXoa = giuBanMoiNhat(thuMuc, 14, { tienTo, giuLai: `${ten}.sqlite` });
+const daXoa = giuBanMoiNhat(thuMuc, 14, {
+  tienTo, giuLai: `${ten}.sqlite`,
+  /* Dọn bản cũ hỏng không làm hỏng bản mới: báo, rồi vẫn "Xong" — lần chạy sau sẽ dọn tiếp. */
+  khiLoi: (f, e) => console.error(`[sao-luu] Cảnh báo: chưa xoá được bản cũ ${f} (${e.message}). Bản sao lưu mới vẫn tốt; lần sau sẽ dọn tiếp.`),
+});
 if (daXoa.length) console.log(`[sao-luu] Giữ 14 bản mới nhất của database này — đã xoá bản cũ: ${daXoa.join(', ')}`);
 console.log(`[sao-luu] Xong. Bản sao lưu của database ${DB_PATH}: ${file}`);

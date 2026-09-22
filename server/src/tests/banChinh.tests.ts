@@ -719,6 +719,47 @@ export async function runBanChinhTests(t: BanChinhTestKit) {
       assert(o.khoiTao === true && o.hv === dem(db(), 'students') && o.dangNhap > 0, `Nhận ${JSON.stringify(o)}`);
     } finally { try { fs.rmSync(dir, { recursive: true, force: true }); } catch { /* Windows */ } }
   });
+  check('PR-Z2 · saoLuu đọc nguồn TRONG MỘT GIAO DỊCH ĐỌC (mọi bảng cùng một thời điểm) và kết thúc giao dịch đó', () => {
+    const o = moDbTam();
+    try {
+      o.conn.exec("CREATE TABLE users (id INTEGER PRIMARY KEY); INSERT INTO users VALUES (1); CREATE TABLE b (x); INSERT INTO b VALUES ('a')");
+      const trongGiaoDich: boolean[] = [];
+      const nguon = new Proxy(o.conn, {
+        get(dich, khoa) {
+          if (khoa === 'prepare') {
+            return (sql: string) => { if (/^SELECT \* FROM/.test(sql)) trongGiaoDich.push(dich.inTransaction); return dich.prepare(sql); };
+          }
+          const v = (dich as any)[khoa];
+          return typeof v === 'function' ? v.bind(dich) : v;
+        },
+      });
+      const boNho = new Database(':memory:');
+      try { saoLuu(nguon, boNho); } finally { boNho.close(); }
+      assert(trongGiaoDich.length === 2 && trongGiaoDich.every(Boolean), `Đọc bảng ngoài giao dịch: ${JSON.stringify(trongGiaoDich)}`);
+      assert(!o.conn.inTransaction, 'Giao dịch đọc của nguồn còn treo sau khi sao lưu');
+    } finally { dongLai(o); }
+  });
+  check('PR-Z2 · saoLuu giữ nguyên số nguyên lớn (> 2^53, gần -2^63) và kiểu INTEGER ở cột không khai kiểu', () => {
+    const o = moDbTam();
+    const boNho = new Database(':memory:');
+    try {
+      o.conn.exec('CREATE TABLE so (id INTEGER PRIMARY KEY, a INTEGER, b); INSERT INTO so (a, b) VALUES (9007199254740993, 5), (-9223372036854775807, 9007199254740993)');
+      saoLuu(o.conn, boNho);
+      const doc = (c: InstanceType<typeof Database>) => JSON.stringify(c.prepare('SELECT CAST(a AS TEXT) a, typeof(a) ta, CAST(b AS TEXT) b, typeof(b) tb FROM so ORDER BY id').all()
+        .map(({ _metadata: _bo, ...r }: any) => r));
+      assert(doc(boNho) === doc(o.conn), `Nguồn ${doc(o.conn)} · bản sao ${doc(boNho)}`);
+    } finally { boNho.close(); dongLai(o); }
+  });
+  check('PR-Z2 · Bảng tên bắt đầu bằng "sqlite" (không phải bảng nội bộ sqlite_…) vẫn được sao lưu và vẫn chặn init-ban-chinh', () => {
+    const o = moDbTam();
+    const boNho = new Database(':memory:');
+    try {
+      o.conn.exec("CREATE TABLE sqliteish (a TEXT); INSERT INTO sqliteish VALUES ('dữ liệu thật')");
+      saoLuu(o.conn, boNho);
+      assert(!!boNho.prepare("SELECT 1 FROM sqlite_master WHERE name = 'sqliteish'").get(), 'Bảng sqliteish bị bỏ sót khi sao lưu');
+      assertThrows(() => initBanChinh(o.conn, O), /đã có dữ liệu/, 'init-ban-chinh bỏ qua dữ liệu trong bảng sqliteish');
+    } finally { boNho.close(); dongLai(o); }
+  });
   check('PR-Z2 · saoLuu TỪ CHỐI chép vào một database đích không rỗng — không bao giờ ghi đè', () => {
     const o = moDbTam();
     try {
@@ -741,6 +782,18 @@ export async function runBanChinhTests(t: BanChinhTestKit) {
       nguonHong.exec("CREATE TABLE users (id INTEGER PRIMARY KEY)");        // không có người dùng → kiểm sau khi chép phải hỏng
       try { assertThrows(() => saoLuuRaFile(nguonHong, f2), /người dùng/, 'Bản sao không có người dùng phải bị coi là hỏng'); } finally { nguonHong.close(); }
       assert(JSON.stringify(fs.readdirSync(dir)) === JSON.stringify(['pisa-2026-09-22-1000.sqlite']), `Còn sót file dở: ${JSON.stringify(fs.readdirSync(dir))}`);
+    } finally { try { fs.rmSync(dir, { recursive: true, force: true }); } catch { /* Windows */ } }
+  });
+  check('PR-Z2 · saoLuuRaFile ghi qua file TẠM (tên không bao giờ bị coi là bản sao lưu): xong thì chỉ còn file thật; file tạm của lần trước còn đó → TỪ CHỐI, không đụng nó', () => {
+    const dir = fs.mkdtempSync(pathMod.join(os.tmpdir(), 'z2-bk-'));
+    try {
+      const f = pathMod.join(dir, 'pisa-cuc-bo-2026-09-22-1000.sqlite');
+      saoLuuRaFile(db(), f);
+      assert(JSON.stringify(fs.readdirSync(dir)) === JSON.stringify(['pisa-cuc-bo-2026-09-22-1000.sqlite']), `Còn file thừa: ${JSON.stringify(fs.readdirSync(dir))}`);
+      const f2 = pathMod.join(dir, 'pisa-cuc-bo-2026-09-22-1001.sqlite');
+      fs.writeFileSync(`${f2}.dang-ghi`, 'dở của lần trước');
+      assertThrows(() => saoLuuRaFile(db(), f2), /dang-ghi/, 'File tạm còn đó phải từ chối');
+      assert(!fs.existsSync(f2) && fs.readFileSync(`${f2}.dang-ghi`, 'utf8') === 'dở của lần trước', 'Không được tạo file thật hay đụng file tạm cũ');
     } finally { try { fs.rmSync(dir, { recursive: true, force: true }); } catch { /* Windows */ } }
   });
   check('PR-Z2 · Tên bản sao lưu theo GIỜ VIỆT NAM và ghi rõ CỦA DATABASE NÀO: pisa-<tên máy chủ>-NĂM-THÁNG-NGÀY-GIỜPHÚT', () => {
@@ -857,6 +910,25 @@ export async function runBanChinhTests(t: BanChinhTestKit) {
         `Phải giữ đúng 14 bản (chỉ xoá bản cũ nhất): ${JSON.stringify(con)}`);
       assert(giuNguyen.every((f) => con.includes(f)) && /pisa-cuc-bo-2026-01-01-0000\.sqlite/.test(r.stdout), 'Không được đụng file khác; phải báo đã xoá bản nào');
     } finally { try { fs.rmSync(dir, { recursive: true, force: true }); } catch { /* Windows */ } }
+  });
+  await checkAsync('PR-Z2 · Lệnh sao-luu: dọn bản cũ hỏng (file đang bị giữ, Drive đang đồng bộ) KHÔNG làm hỏng bản sao lưu vừa tạo — báo cảnh báo, vẫn "Xong"', async () => {
+    const dir = fs.mkdtempSync(pathMod.join(os.tmpdir(), 'z2-lenh-bk-'));
+    const nguon = dungNguon(dir);
+    const bk = pathMod.join(dir, 'sao-luu');
+    fs.mkdirSync(bk);
+    for (let i = 1; i <= 14; i++) saoLuuRaFile(db(), pathMod.join(bk, `pisa-cuc-bo-2026-01-${String(i).padStart(2, '0')}-0000.sqlite`));
+    /* Giữ bản cũ nhất: trên Windows, libsql đã prepare thì không nhả file → tiến trình khác xoá nó sẽ bị EPERM/EBUSY. */
+    const giu = new Database(pathMod.join(bk, 'pisa-cuc-bo-2026-01-01-0000.sqlite'));
+    giu.prepare('SELECT COUNT(*) n FROM users').get();
+    try {
+      const r = await chayLenhNen({ TURSO_DATABASE_URL: urlFile(nguon), TURSO_AUTH_TOKEN: TOKEN_GIA, BACKUP_DIR: bk });
+      assert(r.status === 0 && /\[sao-luu\] Xong\./.test(r.stdout), `Mã ${r.status}; stdout: ${r.stdout.slice(-300)}; stderr: ${r.stderr.slice(-400)}`);
+      const moi = fs.readdirSync(bk).filter((f) => /^pisa-cuc-bo-\d{4}/.test(f) && !f.startsWith('pisa-cuc-bo-2026-01-'));
+      assert(moi.length === 1, `Bản mới phải còn nguyên: ${JSON.stringify(fs.readdirSync(bk))}`);
+    } finally {
+      giu.close();
+      try { fs.rmSync(dir, { recursive: true, force: true }); } catch { /* Windows */ }
+    }
   });
   await checkAsync('PR-Z2 · Lệnh sao-luu có BACKUP_DIR mà KHÔNG có biến Turso → TỪ CHỐI (không lặng lẽ sao lưu database máy dev vào thư mục bản chính)', async () => {
     const dir = fs.mkdtempSync(pathMod.join(os.tmpdir(), 'z2-lenh-bk-'));

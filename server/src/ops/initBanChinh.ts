@@ -12,6 +12,7 @@
  */
 import { DEFAULT_ADMIN_PASSWORD, checkEmail, checkPassword, hashPassword } from '../platform/accounts.ts';
 import { napDuLieuNen } from '../seed/duLieuNen.ts';
+import { KHONG_NOI_BO } from './saoLuu.ts';
 
 export type ChiNhanh = { code: string; name: string };
 
@@ -54,10 +55,10 @@ export function docDanhSachChiNhanh(s: string): ChiNhanh[] {
 
 /**
  * Bảng đầu tiên tìm thấy có ít nhất một dòng (rỗng = database trống). Hỏi `users` trước: database đang dùng thì dừng ngay ở
- * câu hỏi đầu — qua mạng Turso mỗi câu hỏi là một lượt đi về. Chỉ ĐỌC.
+ * câu hỏi đầu — qua mạng Turso mỗi câu hỏi là một lượt đi về. Chỉ ĐỌC. Lệnh khôi phục (`khoiPhuc.ts`) dùng đúng chốt này.
  */
-function bangCoDuLieu(conn: any): string | null {
-  const bang = (conn.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'").all() as { name: string }[])
+export function bangCoDuLieu(conn: any): string | null {
+  const bang = (conn.prepare(`SELECT name FROM sqlite_master WHERE type = 'table' AND ${KHONG_NOI_BO}`).all() as { name: string }[])
     .map((b) => b.name)
     .sort((a, b) => Number(b === 'users') - Number(a === 'users'));
   for (const b of bang) {
@@ -80,7 +81,7 @@ export function initBanChinh(conn: any, o: {
     throw new Error('Không dùng mật khẩu mặc định của bản demo cho bản chính — ai đã xem bản demo đều biết nó. Hãy chọn mật khẩu mới.');
   }
   const chiNhanh = kiemChiNhanh(o.chiNhanh);
-  const chuaCoBang = !conn.prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'").get();
+  const chuaCoBang = !conn.prepare(`SELECT 1 FROM sqlite_master WHERE type = 'table' AND ${KHONG_NOI_BO}`).get();
 
   /* 3. Một giao dịch. Cột và giá trị giống hệt khối "tổ chức" của seed.ts. */
   return conn.transaction(() => {

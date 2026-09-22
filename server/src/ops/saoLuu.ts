@@ -32,35 +32,88 @@ export function tienToBanSaoLuu(url: string | null): string {
 
 /** Giá trị đọc từ libsql → giá trị ghi được: cột BLOB đọc ra là ArrayBuffer, ghi vào phải là Buffer. */
 const giaTriGhi = (v: unknown) => (v instanceof ArrayBuffer ? Buffer.from(v) : v);
-const tenSql = (s: string) => `"${s.replace(/"/g, '""')}"`;
+export const tenSql = (s: string) => `"${s.replace(/"/g, '""')}"`;
+
+/**
+ * Lọc bỏ ĐÚNG các đối tượng nội bộ `sqlite_…`. Trong LIKE, `_` khớp MỌI ký tự — `NOT LIKE 'sqlite_%'` bỏ sót luôn bảng
+ * `sqliteish` của người dùng (rà soát 22/09) — nên phải ESCAPE.
+ */
+export const KHONG_NOI_BO = "name NOT LIKE 'sqlite\\_%' ESCAPE '\\'";
+
+export type DoiTuongDb = { type: string; name: string; sql: string };
+/** Bảng (theo thứ tự tạo) và phần còn lại (chỉ mục, view, trigger — tạo SAU khi có dữ liệu). Chỉ đọc. */
+export function docCauTruc(nguon: any): { bang: DoiTuongDb[]; conLai: DoiTuongDb[] } {
+  const doiTuong = nguon.prepare(`SELECT type, name, sql FROM sqlite_master WHERE sql IS NOT NULL AND ${KHONG_NOI_BO} ORDER BY rowid`)
+    .all() as DoiTuongDb[];
+  return { bang: doiTuong.filter((o) => o.type === 'table'), conLai: doiTuong.filter((o) => o.type !== 'table') };
+}
+
+/**
+ * Đọc MỌI dòng một bảng. `safeIntegers`: số nguyên đọc ra là BigInt — không thì số > 2^53 bị làm tròn và số nguyên ở cột
+ * không khai kiểu thành REAL (rà soát 22/09, đã tái hiện). Chỉ đọc.
+ */
+export function docBang(nguon: any, ten: string): { cot: string[]; dong: Record<string, unknown>[] } {
+  const cot = (nguon.prepare(`PRAGMA table_info(${tenSql(ten)})`).all() as { name: string }[]).map((c) => c.name);
+  const dong = nguon.prepare(`SELECT * FROM ${tenSql(ten)}`).safeIntegers(true).all() as Record<string, unknown>[];
+  return { cot, dong };
+}
+
+/**
+ * Chèn các dòng vào `dich`, `moiLan` dòng một câu INSERT (qua mạng Turso mỗi câu là một lượt đi về — gộp lô cho nhanh).
+ * Luôn truyền MẢNG tham số: libsql chết hẳn nếu một Buffer là tham số duy nhất (db.ts).
+ */
+export function chenDong(dich: any, ten: string, cot: string[], dong: Record<string, unknown>[], moiLan = 1): void {
+  if (!dong.length) return;
+  const k = Math.max(1, Math.min(moiLan, Math.floor(30000 / Math.max(1, cot.length))));
+  const cau = (so: number) => `INSERT INTO ${tenSql(ten)} (${cot.map(tenSql).join(', ')}) VALUES `
+    + Array.from({ length: so }, () => `(${cot.map(() => '?').join(', ')})`).join(', ');
+  const thamSo = (ds: Record<string, unknown>[]) => ds.flatMap((r) => cot.map((c) => giaTriGhi(r[c])));
+  const chenDu = dich.prepare(cau(k));
+  let i = 0;
+  for (; i + k <= dong.length; i += k) chenDu.run(thamSo(dong.slice(i, i + k)));
+  if (i < dong.length) dich.prepare(cau(dong.length - i)).run(thamSo(dong.slice(i)));
+}
+
+export const demDong = (c: any, ten: string, schema = 'main') =>
+  Number((c.prepare(`SELECT COUNT(*) AS n FROM ${schema}.${tenSql(ten)}`).get() as { n: number | bigint }).n);
+
+/**
+ * Đọc nguồn TRONG MỘT GIAO DỊCH ĐỌC: mọi bảng cùng một thời điểm (không lệch nhau nếu có người ghi giữa chừng). Chỉ có
+ * BEGIN … COMMIT quanh các câu SELECT — không một câu ghi nào. Nguồn đã ở trong giao dịch thì dùng luôn giao dịch đó.
+ */
+export function trongGiaoDichDoc<T>(nguon: any, fn: () => T): T {
+  if (nguon.inTransaction) return fn();
+  nguon.exec('BEGIN');
+  try {
+    const out = fn();
+    nguon.exec('COMMIT');
+    return out;
+  } catch (e) {
+    try { nguon.exec('ROLLBACK'); } catch { /* giữ lỗi gốc */ }
+    throw e;
+  }
+}
 
 /** Chép mọi bảng (cấu trúc + dữ liệu) rồi mọi chỉ mục/view/trigger của `nguon` sang `dich` đang RỖNG. */
 export function saoLuu(nguon: any, dich: any): { bang: number; dong: number } {
-  if (dich.prepare("SELECT 1 FROM sqlite_master WHERE name NOT LIKE 'sqlite_%' LIMIT 1").get()) {
+  if (dich.prepare(`SELECT 1 FROM sqlite_master WHERE ${KHONG_NOI_BO} LIMIT 1`).get()) {
     throw new Error('Database đích không rỗng — sao lưu chỉ ghi vào một file MỚI, không bao giờ ghi đè.');
   }
-  const doiTuong = nguon.prepare(
-    "SELECT type, name, sql FROM sqlite_master WHERE sql IS NOT NULL AND name NOT LIKE 'sqlite_%' ORDER BY rowid",
-  ).all() as { type: string; name: string; sql: string }[];
-  const bang = doiTuong.filter((o) => o.type === 'table');
-
-  dich.pragma('foreign_keys = OFF');
-  for (const b of bang) dich.exec(b.sql);
-  let dong = 0;
-  for (const b of bang) {
-    const cot = (nguon.prepare(`PRAGMA table_info(${tenSql(b.name)})`).all() as { name: string }[]).map((c) => c.name);
-    const cacDong = nguon.prepare(`SELECT * FROM ${tenSql(b.name)}`).all() as Record<string, unknown>[];
-    if (cacDong.length) {
-      /* Luôn truyền MẢNG tham số: libsql chết hẳn nếu một Buffer là tham số duy nhất (db.ts). */
-      const chen = dich.prepare(`INSERT INTO ${tenSql(b.name)} (${cot.map(tenSql).join(', ')}) VALUES (${cot.map(() => '?').join(', ')})`);
-      dich.transaction(() => { for (const r of cacDong) chen.run(cot.map((c) => giaTriGhi(r[c]))); })();
+  return trongGiaoDichDoc(nguon, () => {
+    const { bang, conLai } = docCauTruc(nguon);
+    dich.pragma('foreign_keys = OFF');
+    for (const b of bang) dich.exec(b.sql);
+    let dong = 0;
+    for (const b of bang) {
+      const d = docBang(nguon, b.name);
+      if (d.dong.length) dich.transaction(() => chenDong(dich, b.name, d.cot, d.dong))();
+      const daChep = demDong(dich, b.name);
+      if (daChep !== d.dong.length) throw new Error(`Bảng ${b.name}: đọc ${d.dong.length} dòng nhưng bản sao có ${daChep}.`);
+      dong += d.dong.length;
     }
-    const daChep = (dich.prepare(`SELECT COUNT(*) AS n FROM ${tenSql(b.name)}`).get() as { n: number }).n;
-    if (daChep !== cacDong.length) throw new Error(`Bảng ${b.name}: đọc ${cacDong.length} dòng nhưng bản sao có ${daChep}.`);
-    dong += cacDong.length;
-  }
-  for (const o of doiTuong.filter((x) => x.type !== 'table')) dich.exec(o.sql);
-  return { bang: bang.length, dong };
+    for (const o of conLai) dich.exec(o.sql);
+    return { bang: bang.length, dong };
+  });
 }
 
 /** Kiểm một bản sao (schema `ten` của kết nối `c`): toàn vẹn, có người dùng; có `soSanh` thì mọi bảng cùng số dòng với nó. */
@@ -71,9 +124,9 @@ function kiemBanSao(c: any, ten: string, soSanh?: string): void {
   const soNguoi = coUsers ? (c.prepare(`SELECT COUNT(*) AS n FROM ${ten}.users`).get() as { n: number }).n : 0;
   if (!(soNguoi > 0)) throw new Error('Bản sao không có người dùng nào — coi là hỏng, không giữ.');
   if (!soSanh) return;
-  for (const { name } of c.prepare(`SELECT name FROM ${soSanh}.sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'`).all() as { name: string }[]) {
-    const a = (c.prepare(`SELECT COUNT(*) AS n FROM ${soSanh}.${tenSql(name)}`).get() as { n: number }).n;
-    const b = (c.prepare(`SELECT COUNT(*) AS n FROM ${ten}.${tenSql(name)}`).get() as { n: number }).n;
+  for (const { name } of c.prepare(`SELECT name FROM ${soSanh}.sqlite_master WHERE type = 'table' AND ${KHONG_NOI_BO}`).all() as { name: string }[]) {
+    const a = demDong(c, name, soSanh);
+    const b = demDong(c, name, ten);
     if (a !== b) throw new Error(`File sao lưu, bảng ${name}: có ${b} dòng, đúng ra ${a}.`);
   }
 }
@@ -81,30 +134,48 @@ function kiemBanSao(c: any, ten: string, soSanh?: string): void {
 /**
  * Sao lưu ra ĐÚNG file `duongDan` (chưa có).
  *  1. Chép vào một database TRONG BỘ NHỚ và kiểm ở đó (toàn vẹn, có người dùng, mỗi bảng đủ dòng) — chưa đụng ổ đĩa.
- *  2. Ghi ra đĩa bằng `VACUUM INTO`: SQLite tự từ chối nếu file đã có (lớp chống ghi đè thứ hai) và đóng file ngay.
- *  3. MỞ LẠI file vừa ghi (ATTACH trên chính kết nối bộ nhớ) và kiểm lần nữa, so từng bảng; xong DETACH.
+ *  2. Ghi ra một file TẠM `<tên>.dang-ghi` bằng `VACUUM INTO` (SQLite tự từ chối nếu file đã có). Tên tạm không bao giờ
+ *     khớp dạng tên bản sao lưu — ghi hỏng giữa chừng (Drive đầy…) thì file dở không bao giờ bị coi là một bản sao lưu.
+ *  3. MỞ LẠI file tạm (ATTACH trên chính kết nối bộ nhớ), kiểm lần nữa, so từng bảng; xong DETACH.
+ *  4. Chép file tạm sang tên thật với cờ "không ghi đè" (COPYFILE_EXCL), so dung lượng, xoá file tạm.
  * Vì sao không ghi thẳng ra file rồi đổi tên: trên Windows, libsql đã `prepare` câu lệnh thì `close()` chưa nhả file
- * (đã thử 22/09: xoá/đổi tên → EPERM), nên không dọn được file dở. DETACH thì nhả ngay.
- * Hỏng ở bước 1 → không có file nào; hỏng ở bước 3 → chỉ xoá đúng file vừa ghi ở bước 2.
+ * (đã thử 22/09: xoá/đổi tên → EPERM), còn DETACH thì nhả ngay; và `rename` trên Windows GHI ĐÈ file cùng tên.
+ * Hỏng ở bất kỳ bước nào → chỉ xoá file tạm của chính lần này, và file thật chỉ khi chính lần này đã tạo ra nó.
  */
 export function saoLuuRaFile(nguon: any, duongDan: string): { bang: number; dong: number } {
+  const tam = `${duongDan}.dang-ghi`;
   if (fs.existsSync(duongDan)) {
     throw new Error(`Đã có file ${path.basename(duongDan)} — không ghi đè bản sao lưu nào. Chờ một phút rồi chạy lại.`);
   }
+  if (fs.existsSync(tam)) {
+    throw new Error(`Đã có file dở ${path.basename(tam)} (một lần sao lưu trước bị ngắt?) — xoá tay file đó rồi chạy lại.`);
+  }
   fs.mkdirSync(path.dirname(duongDan), { recursive: true });
-  const chuoiFile = `'${duongDan.replace(/'/g, "''")}'`;
+  const chuoiTam = `'${tam.replace(/'/g, "''")}'`;
   const boNho = new Database(':memory:');
-  let daGhi = false;
+  let daTaoTam = false;
+  let daTaoFile = false;
   try {
     const ketQua = saoLuu(nguon, boNho);
     kiemBanSao(boNho, 'main');
-    boNho.exec(`VACUUM INTO ${chuoiFile}`);
-    daGhi = true;
-    boNho.exec(`ATTACH ${chuoiFile} AS kiem`);
+    try { boNho.exec(`VACUUM INTO ${chuoiTam}`); daTaoTam = true; } catch (e) {
+      /* 'already exists' = có ai tạo file tạm đúng lúc này — không phải của mình, không đụng. Lỗi khác = file dở của mình. */
+      if (!/already exists/i.test((e as Error).message)) daTaoTam = true;
+      throw e;
+    }
+    boNho.exec(`ATTACH ${chuoiTam} AS kiem`);
     try { kiemBanSao(boNho, 'kiem', 'main'); } finally { boNho.exec('DETACH kiem'); }
+    daTaoFile = true;
+    try { fs.copyFileSync(tam, duongDan, fs.constants.COPYFILE_EXCL); } catch (e) {
+      if ((e as NodeJS.ErrnoException).code === 'EEXIST') daTaoFile = false;   // file thật đã có từ trước — không phải của mình
+      throw e;
+    }
+    if (fs.statSync(duongDan).size !== fs.statSync(tam).size) throw new Error('Chép ra file thật bị thiếu byte.');
+    fs.rmSync(tam, { force: true });
     return ketQua;
   } catch (e) {
-    if (daGhi) { try { fs.rmSync(duongDan, { force: true }); } catch { /* không xoá được — lỗi bên dưới nói rõ */ } }
+    if (daTaoTam) { try { fs.rmSync(tam, { force: true }); } catch { /* lỗi gốc bên dưới */ } }
+    if (daTaoFile) { try { fs.rmSync(duongDan, { force: true }); } catch { /* lỗi gốc bên dưới */ } }
     throw e;
   } finally {
     boNho.close();
@@ -125,20 +196,33 @@ export function tenBanSaoLuu(luc: Date = new Date(), tienTo = ''): string {
 /**
  * Giữ `soBan` bản mới nhất CỦA MỘT database (`tienTo`), xoá bản cũ hơn cùng thư mục `…-tep` của đúng bản đó. Chỉ đụng
  * file đúng dạng tên + đúng tiền tố; không bao giờ xoá `giuLai` (bản vừa tạo). Trả danh sách đã xoá.
+ * Một bản không xoá được (file đang bị giữ, Drive đang đồng bộ) thì bỏ qua bản đó, báo qua `khiLoi` — không có `khiLoi`
+ * thì ném lỗi sau khi đã thử hết.
  */
-export function giuBanMoiNhat(thuMuc: string, soBan: number, o: { tienTo?: string; giuLai?: string } = {}): string[] {
+export function giuBanMoiNhat(
+  thuMuc: string, soBan: number,
+  o: { tienTo?: string; giuLai?: string; khiLoi?: (ten: string, loi: Error) => void } = {},
+): string[] {
   if (!fs.existsSync(thuMuc)) return [];
   const mau = mauBan(o.tienTo ?? '');
   const ban = fs.readdirSync(thuMuc)
     .filter((f) => mau.test(f) && fs.statSync(path.join(thuMuc, f)).isFile())
     .sort().reverse();
-  const xoa = ban.slice(soBan).filter((f) => f !== o.giuLai);
-  for (const f of xoa) {
-    fs.rmSync(path.join(thuMuc, f), { force: true });
-    const thuMucTep = path.join(thuMuc, f.replace(/\.sqlite$/, '-tep'));
-    if (fs.existsSync(thuMucTep)) fs.rmSync(thuMucTep, { recursive: true, force: true });
+  const daXoa: string[] = [];
+  const loi: [string, Error][] = [];
+  for (const f of ban.slice(soBan).filter((x) => x !== o.giuLai)) {
+    try {
+      fs.rmSync(path.join(thuMuc, f), { force: true });
+      daXoa.push(f);
+      const thuMucTep = path.join(thuMuc, f.replace(/\.sqlite$/, '-tep'));
+      if (fs.existsSync(thuMucTep)) fs.rmSync(thuMucTep, { recursive: true, force: true });
+    } catch (e) {
+      loi.push([f, e as Error]);
+    }
   }
-  return xoa;
+  if (loi.length && !o.khiLoi) throw new Error(`Không xoá được: ${loi.map(([f, e]) => `${f} (${e.message})`).join('; ')}`);
+  for (const [f, e] of loi) o.khiLoi?.(f, e);
+  return daXoa;
 }
 
 /** Kho Blobs tối thiểu cần cho sao lưu (đúng hai hàm của `@netlify/blobs` Store). */
