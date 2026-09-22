@@ -53,8 +53,35 @@ export type ThuongSheet = {
   today: string;
 };
 
-const lichCua = (r: Row, k: string) => r.skillSchedule.find((x) => x.skill === k);
-const ketQuaCua = (r: Row, k: string) => r.result.skills.find((x) => x.skill === k);
+export const lichCua = (r: Row, k: string) => r.skillSchedule.find((x) => x.skill === k);
+export const ketQuaCua = (r: Row, k: string) => r.result.skills.find((x) => x.skill === k);
+
+/**
+ * MỘT Ô CỦA DÒNG — dữ liệu cho `ODiemThuong`, dùng chung cho lưới và màn điện thoại (MotKyNang) để hai nơi không lệch.
+ * `trong` = ô còn phải nhập của người đang xem (cuộn tới em đầu tiên chưa có điểm, Q12). `dung` = môn vắng / đã huỷ phần
+ * thi mà chưa có điểm: không có ô nhập, chỉ hiện `chuDung`.
+ */
+export function oThuong(r: Row, k: string, homNay: string) {
+  const s = lichCua(r, k);
+  const kq = ketQuaCua(r, k);
+  const canEdit = s?.canEdit ?? false;
+  const diem = kq?.score ?? null;
+  const trong = canEdit && diem === null && s?.progress !== 'upcoming'
+    && s?.progress !== 'cancelled' && s?.progress !== 'absent';
+  const dung = diem === null && (s?.progress === 'absent' || s?.progress === 'cancelled');
+  const chuDung = !dung ? null : s!.progress === 'absent' ? 'Đã vắng · chờ xếp lại' : 'Đã huỷ phần thi';
+  /* Quá hạn chấm của CHÍNH môn này (hạn riêng từng môn, mục 10.5), ngày dạng dd/mm. */
+  const quaHan = diem === null && s?.overdue && s.deadline ? `Quá hạn ${ngay(s.deadline, homNay)}` : null;
+  const cell = {
+    diem, tong: kq?.total ?? null,
+    dau: !!s?.noShow,
+    tuanDoiTu: s?.noShow ? (s.movedFromStart ? tuanLich(s.movedFromStart, homNay) : 'tuần cũ') : null,
+    tuanHienTai: s?.weekStart ? tuanLich(s.weekStart, homNay) : null,
+    chuaToiTuan: s?.progress === 'upcoming',
+    tiLe: kq?.ratio ?? null, ketQua: kq?.outcome,
+  };
+  return { s, kq, canEdit, trong, dung, chuDung, quaHan, cell };
+}
 
 /** Các bài (Giữa khoá / Cuối khoá) đang có trên lưới, đúng thứ tự mốc của chương trình. */
 export function kindsThuong(data: ThuongSheet | null | undefined): { kind: string; label: string }[] {
@@ -120,7 +147,7 @@ export function tuanThiTheoMon(data: ThuongSheet | null | undefined, homNay: str
 }
 
 /** Tổng hay gặp nhất của một cột — giá trị ban đầu của ô "tổng" đầu cột (không phải tổng cố định, Q8). */
-function tongPhoBien(rows: Row[], k: string): number | null {
+export function tongPhoBien(rows: Row[], k: string): number | null {
   const dem = new Map<number, number>();
   for (const r of rows) {
     const t = ketQuaCua(r, k)?.total;
@@ -138,7 +165,7 @@ const COT_KQ = 290;
  * Lưu một ô của lưới lớp thường cho MỘT dòng — cùng dáng `useSaveScore` của FT: trạng thái lưu riêng từng dòng,
  * chặn gửi lặp cùng một ô, lỗi thì giữ bản nháp. `nem` = ném lỗi cho hộp lý do hiện câu lỗi tại ô.
  */
-function useLuuThuong(attemptId: number, onReload: () => void) {
+export function useLuuThuong(attemptId: number, onReload: () => void) {
   const toast = useToast();
   const [status, setStatus] = useState<SaveStatus>('idle');
   const [lastError, setLastError] = useState<string | undefined>(undefined);
@@ -324,38 +351,22 @@ function DongThuong({ row, rowIndex, sheet, active, tongCot, dien, onReload, reg
         </div>
       </td>
       {sheet.programme.skills.map((k, ci) => {
-        const s = lichCua(row, k);
-        const kq = ketQuaCua(row, k);
-        const canEdit = s?.canEdit ?? false;
-        const diem = kq?.score ?? null;
-        const trong = canEdit && diem === null && s?.progress !== 'upcoming'
-          && s?.progress !== 'cancelled' && s?.progress !== 'absent';
+        const { s, canEdit, trong, dung, chuDung, quaHan, cell } = oThuong(row, k, homNay);
         /*
          * MÔN VẮNG / ĐÃ HUỶ PHẦN THI mà chưa có điểm: không phải một ô trống chờ nhập — hiện đúng trạng thái, không có ô
          * nhập (việc tiếp theo là xếp lại lịch, không phải chấm). Đã có điểm thì vẫn là ô điểm như thường.
          */
-        const dung = diem === null && (s?.progress === 'absent' || s?.progress === 'cancelled');
         if (dung) {
-          const chu = s!.progress === 'absent' ? 'Đã vắng · chờ xếp lại' : 'Đã huỷ phần thi';
           return (
             <td key={k} className="td py-1.5 text-center" data-kn={k}>
-              <span className="text-[10px] text-slate-500 leading-tight" title={`${sheet.skillLabels[k] ?? skillLabel(k)}: ${chu}`}>{chu}</span>
+              <span className="text-[10px] text-slate-500 leading-tight" title={`${sheet.skillLabels[k] ?? skillLabel(k)}: ${chuDung}`}>{chuDung}</span>
             </td>
           );
         }
-        /* Quá hạn chấm của CHÍNH môn này (hạn riêng từng môn, mục 10.5) — một dòng nhỏ dưới ô, ngày dạng dd/mm. */
-        const quaHan = diem === null && s?.overdue && s.deadline ? `Quá hạn ${ngay(s.deadline, homNay)}` : null;
         return (
           <td key={k} className="td py-1.5 text-center" data-kn={k} data-trong={trong ? '1' : undefined}>
             <ODiemThuong
-              cell={{
-                diem, tong: kq?.total ?? null,
-                dau: !!s?.noShow,
-                tuanDoiTu: s?.noShow ? (s.movedFromStart ? tuanLich(s.movedFromStart, homNay) : 'tuần cũ') : null,
-                tuanHienTai: s?.weekStart ? tuanLich(s.weekStart, homNay) : null,
-                chuaToiTuan: s?.progress === 'upcoming',
-                tiLe: kq?.ratio ?? null, ketQua: kq?.outcome,
-              }}
+              cell={cell}
               tongCot={tongCot(k)}
               canEdit={canEdit}
               dienTong={dien[k] ?? null}

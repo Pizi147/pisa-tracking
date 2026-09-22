@@ -30,7 +30,7 @@ export const khopKn = (skill: string, kn: string | null | undefined) =>
   !!kn && (skill === kn || (kn === 'writing' && skill.startsWith('writing')));
 
 /** Ô CÒN PHẢI NHẬP của người đang xem — dùng để cuộn tới em đầu tiên chưa có điểm (Q12). */
-const oTrongFt = (c: Cell) => c.required && c.canEdit && c.band === null && !c.noShow
+export const oTrongFt = (c: Cell) => c.required && c.canEdit && c.band === null && !c.noShow
   && c.progress !== 'cancelled' && c.progress !== 'absent';
 
 /** Hạn nhập điểm sớm nhất còn nợ trên cả lưới — cho `<Han>` ở đầu trang (mockup 05a §2). */

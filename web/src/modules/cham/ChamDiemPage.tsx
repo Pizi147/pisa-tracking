@@ -10,6 +10,7 @@ import { LuoiFT, hanSomNhatFt, tenDotFt, type FtSheet } from './LuoiFT.tsx';
 import {
   LuoiThuong, hanSomNhatThuong, kindMacDinh, kindsThuong, tuanThiTheoMon, type ThuongSheet,
 } from './LuoiThuong.tsx';
+import { MotKyNang } from './MotKyNang.tsx';
 
 /** Trả lời của `GET /classes/:classId/cham` (`chamSheet` ở server/src/cham/canCham.ts). */
 type Cham = {
@@ -20,12 +21,30 @@ type Cham = {
 };
 
 /**
+ * MÀN HẸP (Q16): < 768px — cùng ngưỡng `md` của Tailwind, cho cả lớp FT và lớp thường. Theo dõi `change` của
+ * `matchMedia` nên xoay ngang điện thoại hay kéo hẹp cửa sổ là đổi chế độ ngay.
+ */
+const MAN_HEP = '(max-width: 767px)';
+function useManHinhHep() {
+  const [hep, setHep] = useState(() => typeof window !== 'undefined' && window.matchMedia(MAN_HEP).matches);
+  useEffect(() => {
+    const m = window.matchMedia(MAN_HEP);
+    const doi = () => setHep(m.matches);
+    doi();
+    m.addEventListener('change', doi);
+    return () => m.removeEventListener('change', doi);
+  }, []);
+  return hep;
+}
+
+/**
  * LƯỚI CHẤM — MỘT TRANG CHO CẢ LỚP FAST TRACK VÀ LỚP THƯỜNG (spec §3.5, mockup 05a §2).
  *
  * Trang này KHÔNG tự đoán loại lớp: máy chủ trả `mode` ở `/classes/:id/cham` và trang chọn lưới theo đó. Nhờ vậy mở
  * `/nhap-diem/:id` của một lớp thường không còn ra lưới Mock Test (đặc tả §6) — và ngược lại.
  *
- * Màn hẹp (< 768px) chuyển sang chế độ MỘT KỸ NĂNG MỘT LÚC (Task 10) — đúng cách giáo viên chấm thật.
+ * Màn hẹp (< 768px) chuyển sang chế độ MỘT KỸ NĂNG MỘT LÚC (`MotKyNang`) — đúng cách giáo viên chấm thật. Nút chữ nhỏ
+ * "Xem dạng bảng" vẫn mở được lưới trên điện thoại (cuộn ngang TRONG THẺ, G-11); "Chấm từng kỹ năng" để quay lại.
  *
  * Đường dẫn mang ngữ cảnh (Q12): `?periodId=` (tuần của lưới FT), `?kind=` (Giữa khoá / Cuối khoá của lớp thường),
  * `?kn=` (kỹ năng — cuộn tới và đặt con trỏ vào em đầu tiên chưa có điểm của cột đó), `?hv=` (một học viên).
@@ -35,6 +54,8 @@ export default function ChamDiemPage() {
   const [params, setParams] = useSearchParams();
   const current = useCurrentPeriod();
   const { homNay } = useNgayNghiepVu();
+  const hep = useManHinhHep();
+  const [xemBang, setXemBang] = useState(false);
 
   const periodParam = params.get('periodId') ? Number(params.get('periodId')) : null;
   const kindParam = params.get('kind');
@@ -81,13 +102,14 @@ export default function ChamDiemPage() {
       daCuon.current = khoaCuon;
       const root = khung.current;
       if (!root) return;
-      const hang = hv !== null ? `tr[data-hv="${hv}"] ` : '';
+      /* Không gắn tên thẻ: cùng bộ chọn cho lưới (tr/td) và màn điện thoại (li/div). */
+      const hang = hv !== null ? `[data-hv="${hv}"] ` : '';
       const tim = (chon: string) => root.querySelector<HTMLElement>(chon);
       const o = kn
-        ? tim(`${hang}td[data-kn="${kn}"][data-trong]`)
-          ?? (kn === 'writing' ? tim(`${hang}td[data-kn^="writing"][data-trong]`) : null)
-          ?? (hang ? tim(`td[data-kn="${kn}"][data-trong]`) : null)
-        : tim(`tr[data-hv="${hv}"]`);
+        ? tim(`${hang}[data-kn="${kn}"][data-trong]`)
+          ?? (kn === 'writing' ? tim(`${hang}[data-kn^="writing"][data-trong]`) : null)
+          ?? (hang ? tim(`[data-kn="${kn}"][data-trong]`) : null)
+        : tim(`[data-hv="${hv}"]`);
       if (!o) return;
       o.scrollIntoView({ block: 'center', inline: 'nearest' });
       const f = o.querySelector<HTMLElement>('input:not([readonly]):not([disabled]), button:not([disabled]), input');
@@ -105,6 +127,7 @@ export default function ChamDiemPage() {
   const han = laFt ? hanSomNhatFt(data.ft) : hanSomNhatThuong(thuong);
   const tuanMon = laFt ? null : tuanThiTheoMon(thuong, homNay || data.today);
   const nhapDuoc = (laFt ? data.ft?.editableSkills : data.thuong?.editableSkills) ?? [];
+  const tungKyNang = hep && !xemBang;
 
   return (
     <div className="page space-y-4">
@@ -127,7 +150,7 @@ export default function ChamDiemPage() {
             )}
           </p>
         </div>
-        <div className="flex flex-wrap items-end gap-3">
+        <div className="flex flex-wrap items-end gap-3 min-w-0 max-w-full">
           {laFt && (
             <div className="w-[26rem] max-w-full">
               <WeekPicker periodId={periodId} onPeriod={(id) => datThamSo('periodId', id ? String(id) : null)} label="Tuần" />
@@ -151,15 +174,22 @@ export default function ChamDiemPage() {
         </div>
       </div>
 
-      {/*
-        CHỖ NỐI CHO TASK 10 (Q16): màn hẹp (< 768px) sẽ render `<MotKyNang mode={data.mode} data={…} onReload={onReload} />`
-        thay cho lưới ngay tại đây, qua hook `useManHinhHep()` đặt trong file này, kèm nút chữ nhỏ "Xem dạng bảng". Hiện
-        chưa có: màn hẹp vẫn thấy lưới, cuộn ngang TRONG THẺ (G-11).
-      */}
+      {/* Q16 — màn hẹp: một kỹ năng một lúc; nút chữ nhỏ đổi qua lại với lưới (lưới cuộn ngang trong thẻ, G-11). */}
       <div ref={khung}>
+        {hep && (
+          <div className="flex justify-end">
+            <button type="button" className="min-h-[44px] px-1 text-xs text-slate-500 hover:text-slate-200"
+              onClick={() => setXemBang((v) => !v)}
+              title={xemBang ? 'Quay lại chấm từng kỹ năng, mỗi em một ô to' : 'Mở lưới đủ các cột; lưới cuộn ngang trong thẻ'}>
+              {xemBang ? 'Chấm từng kỹ năng' : 'Xem dạng bảng'}
+            </button>
+          </div>
+        )}
         <Card bodyClass="p-0">
-          {laFt && data.ft && <LuoiFT data={data.ft} onReload={onReload} kn={kn} hv={hv} />}
-          {!laFt && thuong && <LuoiThuong data={thuong} onReload={onReload} kn={kn} hv={hv} />}
+          {tungKyNang && laFt && data.ft && <MotKyNang mode="ielts_band" data={data.ft} onReload={onReload} kn={kn} hv={hv} />}
+          {tungKyNang && !laFt && thuong && <MotKyNang mode="ratio" data={thuong} onReload={onReload} kn={kn} hv={hv} />}
+          {!tungKyNang && laFt && data.ft && <LuoiFT data={data.ft} onReload={onReload} kn={kn} hv={hv} />}
+          {!tungKyNang && !laFt && thuong && <LuoiThuong data={thuong} onReload={onReload} kn={kn} hv={hv} />}
         </Card>
       </div>
     </div>

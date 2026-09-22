@@ -162,12 +162,16 @@ function DongDau({ cell }: { cell: Cell }) {
   );
 }
 
-/** Ô nhập số câu đúng 0–40. Trống KHÁC 0: xoá ô là xoá điểm, không phải chấm 0. */
-export function RawScoreInput({ cell, onSave, inputRef, onKeyDown }: {
+/**
+ * Ô nhập số câu đúng 0–40. Trống KHÁC 0: xoá ô là xoá điểm, không phải chấm 0.
+ * `lon` = cỡ điện thoại (ô rộng 60px, cao 44px — chấm một kỹ năng một lúc); luật lưu, "-" và lý do y hệt.
+ */
+export function RawScoreInput({ cell, onSave, inputRef, onKeyDown, lon = false }: {
   cell: Cell;
   onSave: (patch: SavePatch, opts?: SaveOpts) => Promise<boolean>;
   inputRef?: (el: HTMLInputElement | null) => void;
   onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
+  lon?: boolean;
 }) {
   /* Bài đã báo "-" thì ô hiện đúng dấu '-' (không phải ô trống, không phải 0). */
   const shown = () => (cell.rawScore !== null ? String(cell.rawScore) : cell.noShow ? '-' : '');
@@ -215,7 +219,7 @@ export function RawScoreInput({ cell, onSave, inputRef, onKeyDown }: {
       <span className="inline-flex items-center gap-1.5">
         <input
           ref={inputRef}
-          className={`field w-16 text-center tabular-nums ${dirty ? 'border-amber-500/60' : ''}`}
+          className={`field ${lon ? 'w-[60px] h-11 text-base font-semibold' : 'w-16'} text-center tabular-nums ${dirty ? 'border-amber-500/60' : ''}`}
           inputMode="numeric"
           value={draft}
           disabled={busy}
@@ -258,11 +262,12 @@ export function RawScoreInput({ cell, onSave, inputRef, onKeyDown }: {
   );
 }
 
-/** Bốn tiêu chí mở trong khung riêng — bảng mặc định không bày 16 cột tiêu chí. */
-export function CriteriaButton({ cell, onSave, buttonRef }: {
+/** Bốn tiêu chí mở trong khung riêng — bảng mặc định không bày 16 cột tiêu chí. `lon` = nút cỡ điện thoại (cao 44px). */
+export function CriteriaButton({ cell, onSave, buttonRef, lon = false }: {
   cell: Cell;
   onSave: (patch: SavePatch, opts?: SaveOpts) => Promise<boolean>;
   buttonRef?: (el: HTMLButtonElement | null) => void;
+  lon?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const editable = cell.canEdit && !lockedByNoShow(cell);
@@ -272,7 +277,7 @@ export function CriteriaButton({ cell, onSave, buttonRef }: {
     <span className="inline-flex flex-col items-start gap-0.5">
       <button
         ref={buttonRef}
-        className={`btn btn-sm tabular-nums ${editable ? '' : 'opacity-70 cursor-default'}`}
+        className={`btn ${lon ? 'min-h-[44px] min-w-[60px] justify-center text-base font-semibold' : 'btn-sm'} tabular-nums ${editable ? '' : 'opacity-70 cursor-default'}`}
         onClick={() => editable && setOpen(true)}
         title={editable ? (hieuChinh ? 'Sửa bốn tiêu chí — đã có điểm nên phải ghi lý do.' : `Mở bốn tiêu chí. ${NO_SHOW_HINT}`)
           : lockedByNoShow(cell) ? 'Đã chốt — cần Quản lý hiệu chỉnh' : 'Bạn không được phân công kỹ năng này'}
@@ -640,9 +645,13 @@ const SO_NGUYEN = /^\d+$/;
  *
  * Các trường thêm của `cell` (không bắt buộc): `dau` (ô đang mang dấu "-", mặc định suy từ `tuanDoiTu`), `chuaToiTuan`
  * (chưa tới tuần thi — ô chỉ đọc hiện tuần thi thay cho "—"), `tiLe`/`ketQua` (để tô và ghi tooltip đạt/chưa đạt).
+ *
+ * `lon` = cỡ điện thoại (hai ô cao 44px). `tongLaySan` = ô tổng CÒN TRỐNG hiện sẵn `tongCot` (chưa phải bản nháp: không
+ * gõ gì thì không gửi gì; gõ số câu đúng thì lưu kèm tổng đó) — màn điện thoại không có ô tổng đầu cột + nút ↓.
  */
 export function ODiemThuong({
   cell, tongCot, canEdit, onSave, onDau, inputRef, onKeyDown, dienTong = null, tenMon = 'Môn', tenHv,
+  lon = false, tongLaySan = false,
 }: {
   cell: {
     diem: number | null; tong: number | null; tuanDoiTu: string | null; tuanHienTai: string | null;
@@ -657,11 +666,14 @@ export function ODiemThuong({
   dienTong?: { gt: number; lan: number } | null;
   tenMon?: string;
   tenHv?: string;
+  lon?: boolean;
+  tongLaySan?: boolean;
 }) {
   const dau = cell.dau ?? cell.tuanDoiTu !== null;
   const coDiem = cell.diem !== null;
   const diemDaLuu = () => (coDiem ? String(cell.diem) : dau ? '-' : '');
-  const tongDaLuu = () => (cell.tong === null ? '' : String(cell.tong));
+  const tongDaLuu = () => (cell.tong !== null ? String(cell.tong)
+    : tongLaySan && !coDiem && tongCot !== null ? String(tongCot) : '');
   const [diem, setDiem] = useState(diemDaLuu());
   const [tong, setTong] = useState(tongDaLuu());
   const [dirty, setDirty] = useState(false);
@@ -675,7 +687,7 @@ export function ODiemThuong({
   useEffect(() => {
     if (!dirty) { setDiem(diemDaLuu()); setTong(tongDaLuu()); }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- hai hàm chỉ đọc ba trường đã có trong danh sách
-  }, [cell.diem, cell.tong, dau, dirty]);
+  }, [cell.diem, cell.tong, dau, dirty, tongLaySan ? tongCot : null]);
 
   /* Lệnh ↓ của đầu cột — KHÔNG đè ô đã có tổng (Q7), kể cả tổng đang gõ dở. */
   useEffect(() => {
@@ -738,7 +750,9 @@ export function ODiemThuong({
     onKeyDown?.(e);
   };
 
-  const oSo = 'field w-11 px-1 py-1 text-center tabular-nums text-[13px]';
+  const oSo = lon
+    ? 'field w-[52px] h-11 px-1 text-center tabular-nums text-base'
+    : 'field w-11 px-1 py-1 text-center tabular-nums text-[13px]';
 
   /* ---- Chỉ đọc: môn không được phân công. */
   if (!canEdit) {

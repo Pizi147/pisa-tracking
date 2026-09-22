@@ -1583,7 +1583,7 @@ import { mondayOfDate, owningMonthOf, tuanLich } from '@shared/domain/index.ts';
 - Create: `web/src/modules/cham/MotKyNang.tsx`
 - Modify: `web/src/modules/cham/ChamDiemPage.tsx`
 
-- [ ] **Step 1: Viết `MotKyNang`.**
+- [x] **Step 1: Viết `MotKyNang`.**
 
 ```tsx
 /**
@@ -1601,14 +1601,14 @@ export function MotKyNang({ mode, data, onReload }: { /* … */ }) { /* … */ }
   - Gõ `-` hoạt động y hệt trên máy tính.
   - `inputMode="numeric"`, ô cao ≥ 44px, nút và chip cao ≥ 44px.
 
-- [ ] **Step 2: Nối vào `ChamDiemPage`.** Dùng `window.matchMedia('(max-width: 767px)')` trong một hook nhỏ
+- [x] **Step 2: Nối vào `ChamDiemPage`.** Dùng `window.matchMedia('(max-width: 767px)')` trong một hook nhỏ
   `useManHinhHep()` (đặt ngay trong `ChamDiemPage.tsx`, có `addEventListener('change')` và dọn dẹp). Màn hẹp → render
   `<MotKyNang>`; màn rộng → lưới. Có nút chữ nhỏ "Xem dạng bảng" để vẫn mở được lưới trên điện thoại (cuộn ngang
   **trong thẻ**, G-11).
 
-- [ ] **Step 3: Chạy.** Run: `npm run typecheck && npm run build:web 2>&1 | tail -3`. Expected: sạch.
+- [x] **Step 3: Chạy.** Run: `npm run typecheck && npm run build:web 2>&1 | tail -3`. Expected: sạch.
 
-- [ ] **Step 4: Commit.** `git commit -m "PR-Rc1 (10): cham tren dien thoai — mot ky nang mot luc"`
+- [x] **Step 4: Commit.** `git commit -m "PR-Rc1 (10): cham tren dien thoai — mot ky nang mot luc"`
 
 ---
 
@@ -1872,3 +1872,4 @@ git fetch origin && git rebase origin/main
 | 23/09 | 7 | Không thêm phép kiểm: **804** (giữ nguyên). Máy chủ thêm tối thiểu `weekStart` + `movedFromStart` vào từng môn của `regularSheet` (đầu lưới và dòng "dời sang" viết bằng `tuanLich`, không hiện mã tuần có năm) — thêm assert vào phép C08 sẵn có. Lệch kế hoạch: (a) lưới lớp thường một lần chỉ hiện MỘT bài (Giữa khoá/Cuối khoá, `?kind=` hoặc bài có môn nợ gấp nhất), bỏ cột Bài/Tuần cũ vì trùng tiêu đề và đầu lưới; (b) nút ↓ chỉ điền bản nháp ô còn trống tổng, lưu khi rời cặp ô; (c) ô FT có "-" chỉ giữ MỘT dòng phụ: đếm ngược DS02 thay câu dài (câu dài vào tooltip); (d) `InlineScoreEditor` (hồ sơ Test) thêm ô lý do khi sửa ô đã có điểm — nếu không trang đó dính 400 RB-5; (e) ⓘ hiện câu chung + đúng phần của loại lớp đang mở; (f) không có script `build:web` → kiểm bằng `npx vite build` ra thư mục tạm. typecheck + build sạch. **Sửa vòng 1:** Case ra khỏi hàng ưu tiên dòng phụ → nhãn `Case L` cạnh dòng chính (tooltip từng Case); ô môn vắng/huỷ phần thi hiện chữ trạng thái thay ô nhập, môn quá hạn có dòng `Quá hạn dd/mm`; câu "Không dự thi · Tuần …" bỏ năm tại nguồn (`attempts.ts` truyền `tuanLich(weekStart)` cho `noShowText`, sửa 1 assert run.ts PR-G); tooltip SOS/Case; "Đã lưu" chỉ sau khi lưu điểm. Vẫn 804. |
 | 23/09 | 8 | Không thêm phép kiểm: **804**. Viết lại `CanChamTab` trên `GET /cham/can-cham` (bỏ `WorkQueue`). Lệch kế hoạch: (a) Q15 chủ sản phẩm chốt — dòng phụ `{Kỹ năng} · lùi lịch của {tên}` / `· lùi lịch · {n} HV`, tooltip `Lùi lịch từ {tuần} sang {tuần}` (bỏ `từ …` khi thiếu; nhiều em thì tooltip thêm tên; dòng nhiều môn thì tooltip thêm `Còn nợ: …`), không dùng chữ "bài dời"; (b) Ruling 3 — tên mục `Tuần này · hạn Thứ Tư 16/09 · 4` (tên thứ đầy đủ đặt tại chỗ vì `hienThiNgay.ts` thuộc PR-Qa; `ngay` cho ngày), dòng không còn nhãn hạn; (c) ≥ sm: bốn cột thẳng hàng (lớp·đợt 13rem · dòng phụ · `còn n bài` 6.5rem canh phải · nút 6.5rem); 375px: tên + dòng phụ ở trên, `còn n bài` + nút cao 44px ở dưới, không cuộn ngang; (d) tooltip: viết tắt L R W1 W2 S → tên đầy đủ, MT → Mock Test, `còn n bài` → số HV; (e) phạm vi rỗng hiện `Bạn chưa được cấp phạm vi nào`. Thử tay API 4147 / Vite 5347 (database tạm): chip ✕ chỉ bỏ `classId` (còn `?scope=mine`), `Chấm`/`Chấm tiếp` đúng `daBatDau`. typecheck + `npx vite build` sạch. |
 | 23/09 | 9 | Không thêm phép kiểm: **804**. Viết lại `LichTestTab` trên `GET /cham/lich-test`: mỗi lớp một thẻ `{mã lớp} · {chi nhánh}`, bảng `Đợt · Kỹ năng · Số HV · Trạng thái chấm` (`colgroup` + `table-layout: fixed`, số canh phải `tabular-nums`, bảng tối thiểu 500px cuộn ngang trong thẻ), bấm dòng → `href`. Lệch kế hoạch: (a) cột Kỹ năng ghi tên đầy đủ (Listening…) thay vì viết tắt — đủ chỗ, khỏi tooltip; (b) trên các thẻ có dòng `Tuần W3 SEP · {n} lớp` (`tuanLich(weekStart, demoDate)`); (c) `Đã chấm xong` có ✓ nhỏ cùng màu chữ phụ, `Quá hạn · …` chữ đỏ, không nền; (d) phạm vi rỗng hiện `Bạn chưa được cấp phạm vi nào`. R13: `Filters.tsx` chỉ đổi phần HIỂN THỊ (trường tuần + hai tooltip mũi tên) sang `tuanLich(ws, today)`; `weekCodeOf` bỏ khỏi import vì file không còn dùng. Thử tay 4147/5347: `W3 SEP`, tooltip `Tuần trước · W2 SEP`, tuần trống ra đúng câu rỗng, 375px không cuộn ngang trang. **R13 còn phần bấm thử ở Task 13** (600px · trong ngăn/hộp thoại · 375px). typecheck + `npx vite build` sạch. |
+| 23/09 | 10 | Không thêm phép kiểm: **804**. `MotKyNang.tsx` mới: hàng chip `L 3/5` (tooltip tên đầy đủ; kỹ năng mình dạy đứng trước, kỹ năng khác viền đứt, ô chỉ đọc), mỗi em một dòng: tên + MỘT dòng phụ (FT `KV 6.5`; lớp thường `Đã dời sang …` / `Quá hạn dd/mm` / `Thi …` / mã HV) + một ô to. Dùng lại nguyên ô của lưới (`RawScoreInput`, `CriteriaButton`, `ODiemThuong`) + `useSaveScore` / `useLuuThuong` — không có luật lưu, "-", lý do thứ hai. Lệch kế hoạch: (a) ba ô thêm prop `lon` (60×44px / 52×44px); `ODiemThuong` thêm `tongLaySan` — ô tổng còn trống hiện sẵn tổng của cột mà không thành bản nháp; màn điện thoại có ô `Tổng số câu của đề` (lấy sẵn tổng hay gặp nhất) thay ô tổng + ↓ đầu cột; (b) `LuoiThuong` tách `oThuong()` (dữ liệu một ô) dùng chung lưới + điện thoại, xuất `useLuuThuong`, `lichCua`, `ketQuaCua`, `tongPhoBien`; `LuoiFT` xuất `oTrongFt`; (c) bộ chọn cuộn/đặt con trỏ `?kn=`/`?hv=` của `ChamDiemPage` bỏ tên thẻ (`[data-kn]` thay `td[data-kn]`) để chạy cho cả hai dạng; (d) sửa thêm: khối bộ chọn tuần đầu trang tràn 57px ở 375px (trang cuộn ngang) → `min-w-0 max-w-full`; (e) nút "Xem dạng bảng" ↔ "Chấm từng kỹ năng"; lớp thường ở dạng điện thoại không có nút "Tạo bài kiểm tra theo chương trình" (vẫn có ở dạng bảng). Thử tay 4147/5347 ở 375px: chip một hàng, ô 60×44 `numeric`, lưu + ✓, "-" FT ra `Còn 6 ngày để sửa`, "-" lớp thường dời + toast, sửa ô đã có điểm mở hộp lý do, dạng bảng cuộn trong thẻ, trang không cuộn ngang. typecheck + `npx vite build` sạch. |
