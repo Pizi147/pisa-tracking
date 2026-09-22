@@ -2201,7 +2201,7 @@ Import `transferReasonText` từ `shared/domain` ở đầu `routes/index.ts` (c
 
 - [x] **Step 7: Chạy.** `npm run typecheck` rồi `npm test 2>&1 | tail -3` — Expected `714`. Phép cũ `run.ts:1150`, `:5320`, `:5330` truyền lý do chữ +
   ghi chú → ✓.
-- [ ] **Step 8: Bấm thử** (vai Quản lý MB, `npm run dev` trong worktree): mở hồ sơ một HV → Chuyển lớp → bấm "Chuyển lớp" khi chưa chọn lý do → báo lỗi;
+- [x] **Step 8: Bấm thử** (vai Quản lý MB, `npm run dev` trong worktree): mở hồ sơ một HV → Chuyển lớp → bấm "Chuyển lớp" khi chưa chọn lý do → báo lỗi;
   chọn "Đổi lịch học", tích "Không có lưu ý" → chuyển được. Ghi kết quả vào Nhật ký. (Không chụp màn cho chủ sản phẩm — màn này PR-LT làm lại.)
 - [x] **Step 9: Commit.** `git commit -am "PR-S1 (14): RB-3 — chuyển lớp bắt buộc lý do chọn nhanh + lưu ý bàn giao / 'Không có lưu ý'"`
 
@@ -2461,7 +2461,7 @@ Run → Expected ✓ ngay (phép kiểm còn thiếu, hành vi đã có). ✗ �
 `action_due` của PA **học thuật** là hạn CẬP NHẬT tuần (`schema.sql:950-963`), không phải "thực hiện xong" của Ý thức.
 
 - [x] **Step 1:** Đổi `<Han loai="thuc-hien-y-thuc" han={p.actionDue} />` thành `<Han loai="cap-nhat-pa" han={p.actionDue} />`.
-- [ ] **Step 2:** `npm run typecheck` — Expected sạch. Bấm thử hồ sơ một HV có Case đang chạy PA: nhãn đọc "Cập nhật kết quả · trước CN dd/mm".
+- [x] **Step 2:** `npm run typecheck` — Expected sạch. Bấm thử hồ sơ một HV có Case đang chạy PA: nhãn đọc "Cập nhật kết quả · trước CN dd/mm".
 - [x] **Step 3: Commit.** `git commit -am "PR-S1 (18): SkillBoard — hạn PA học thuật hiện là 'Cập nhật kết quả', không phải hạn Ý thức"`
 
 ---
@@ -2511,8 +2511,8 @@ Run → Expected ✓ ngay (phép kiểm còn thiếu, hành vi đã có). ✗ �
 
 ### Task 20: Nghiệm thu, migrate lặp trên bản sao, rà soát, mở PR
 
-- [ ] **Step 1: Chuỗi kiểm đầy đủ.** Run: `npm run check` — Expected: build sạch, `TẤT CẢ ~718 KIỂM TRA ĐỀU ĐẠT`, typecheck sạch. Ghi số vào Nhật ký.
-- [ ] **Step 2: Migrate lặp trên BẢN SAO database dev** (không bao giờ trên file gốc, không bao giờ trên Turso). Bash:
+- [x] **Step 1: Chuỗi kiểm đầy đủ.** Run: `npm run check` — Expected: build sạch, `TẤT CẢ ~718 KIỂM TRA ĐỀU ĐẠT`, typecheck sạch. Ghi số vào Nhật ký.
+- [x] **Step 2: Migrate lặp trên BẢN SAO database dev** (không bao giờ trên file gốc, không bao giờ trên Turso). Bash:
 
 ```bash
 SCR="$(node -e "console.log(require('os').tmpdir())")/pr-s1-migrate"
@@ -2523,7 +2523,7 @@ PISA_DB="$SCR/ban-sao.sqlite" npm run migrate
 ```
 Expected: lần một có dòng `✓ PR-S1: thêm 2 cột …` (nếu database dev còn cũ) hoặc không có gì; lần hai **không** có dòng PR-S1.
 (`VACUUM INTO` vì libsql trên Windows giữ khoá file — bài học PR-Z2b.)
-- [ ] **Step 3: Bấm thử ba vai** (`npm run dev` trong worktree, đăng nhập tài khoản demo):
+- [x] **Step 3: Bấm thử ba vai** (`npm run dev` trong worktree, đăng nhập tài khoản demo):
   - GV Listening MB-FOU 12: `GET /api/signals/pending?mine=1` trả tín hiệu có `kind`, `score`, `total`, `actions`; `POST /api/signals/pending/:id/dismiss`
     (DevTools → fetch) → 200, tín hiệu biến khỏi danh sách chờ.
   - Quản lý MB: `GET /api/metrics/tin-hieu-qua-han` trả `n`; hồ sơ HV → Chuyển lớp: bắt chọn lý do.
@@ -2568,4 +2568,23 @@ một phép kiểm mục 0 khoá; hướng xử lý đã ghi ở Step 4.
 
 | Ngày | Task | Ghi chú (model người code · số phép kiểm · lệch plan · quyết định tại chỗ) |
 |---|---|---|
-| | | |
+| 22/09/2026 | 0 | Opus 5 · XHigh. Worktree `.claude/worktrees/pr-s1-luat-may-chu` tách từ `main` @ `66542bc` (PR #53 đã merge). Không có biến Turso. Mốc **672** ✓. |
+| 22/09/2026 | 1 | 677 ✓. Lệch plan (2): (a) chú thích cột `system_close_reason` trong `schema.sql` viết KHÔNG có dấu phẩy — SQLite `DROP COLUMN` cột cuối bảng cắt ngược tới dấu phẩy gần nhất, dấu phẩy trong chú thích làm vỡ câu CREATE (phép kiểm migrate dựng DB cũ bằng DROP COLUMN); (b) `migrateLuatMayChu` chỉ đánh cờ dữ liệu cũ NGAY LÚC thêm cột, không đọc lại chuỗi `sit_note` ở các lần chạy sau (tránh gắn nhầm cờ cho buổi vắng Quản lý xác nhận tay có ghi chú mở đầu "Không dự thi…"). |
+| 22/09/2026 | 2 | 680 ✓. Ngoài 5 chỗ plan ghi, đặt lại cờ 0 ở thêm hai đường đổi `sit_status` plan bỏ sót: `cancelPart` nhánh FT (→ `cancelled`) và `setSkillWeek` (`absent` → `scheduled`). `seed/build.ts` chỉ ghi vắng tay → cờ 0 mặc định là đúng. |
+| 22/09/2026 | 3 | 682 ✓. S14 xanh ngay như plan dự đoán (khoá hành vi có sẵn). |
+| 22/09/2026 | 4 | 685 ✓. Không phép kiểm cũ nào đỏ. `addDays` bỏ khỏi `branchpulse.ts` (hết chỗ dùng); `scopeSql` giữ. Nợ điểm giờ tính cho GV phân công ĐẦU TIÊN của (lớp, môn) — câu SQL cũ cộng cho mọi GV cùng môn. |
+| 22/09/2026 | 5 | 687 ✓ (đỏ trước khi sửa: no_plan 101→102, missing_scores 69→70). Nhãn việc "bài MT còn thiếu điểm" → "bài Test còn thiếu điểm" (theo plan). |
+| 22/09/2026 | 6 | 690 ✓ (phép 1 xanh sẵn — khoá hành vi; phép 2–3 đỏ trước khi sửa). |
+| 22/09/2026 | 7 | 693 ✓. Đổi luôn TÊN phép kiểm cũ `[6.2] Xác minh MỘT tín hiệu chỉ có MỘT lối ra: mở case` (tên cũ nói sai sau S1) — plan chỉ yêu cầu đổi chú thích + thêm assert. |
+| 22/09/2026 | 8 | 697 ✓ (bốn phép đỏ trước khi sửa). Khối `fromSignal` đặt SAU `idempotencyKey` như lưu ý của plan; thứ tự báo lỗi đổi nhẹ (mức độ/ngày được kiểm trước chủ đề). |
+| 22/09/2026 | 9 | 699 ✓. Phép kiểm "Sổ chỉ số" ở `run.ts:7972` khoá **23** (plan ghi đúng) → 24; tên phép kiểm cũ vẫn ghi "hai mươi" (có từ trước PR này) — không đổi tên. |
+| 22/09/2026 | 10 | 703 ✓ (RB-8 phép 1–3 đỏ trước khi sửa, phép 4 xanh sẵn như plan dự đoán). Hai phép cũ `[9.4]` (FT) vẫn ✓. `attempts.ts`: bỏ import `SIGNAL_WITHDRAW_SCORE_FIXED`; GIỮ `notify` (file còn `export { notify }`). |
+| 22/09/2026 | 11 | 704 ✓. Lệch plan: sửa thêm 4 câu chữ ở web (`CasePanel.tsx:260,282`, `SkillBoard.tsx:430,452`) — câu cũ "Chỉ giáo viên chủ nhiệm của lớp và Quản lý mới hoàn thành…" nói SAI luật mới khi GVCN xem Case môn khác; nay dùng đúng câu lỗi máy chủ. Chỉ đổi chữ, không đổi bố cục. |
+| 22/09/2026 | 12 | 709 ✓ (4 phép đỏ trước khi sửa, phép "không cờ" xanh sẵn). Sửa lỗi trong khung phép kiểm của plan: `load()` trả Proxy ném lỗi cả khi `await` hỏi `then` → `await load(...)` làm SẬP cả bộ thay vì chỉ đỏ phép kiểm; nay `then` trả `undefined`. File phép kiểm chuẩn hoá về LF. |
+| 22/09/2026 | 13 | 711 ✓. Lệch plan (2): (a) vòng S16 trong `seed.ts` đặt SAU `buildSosV3Demo` (cuối cùng) thay vì ngay sau `buildJourneys` — để không bước dựng Case nào sau đó để lại Case mở cho em đã kết thúc; (b) phép kiểm cũ `PR-F · Đối soát F10` (run.ts ~8207) có assert tiền đề `onlyOverview.length >= 1` ("bộ demo phải còn em đã kết thúc mà case còn mở") — plan chỉ dặn thêm chú thích, nhưng assert này mâu thuẫn trực tiếp với S16. Theo Step 4 ("khoá số Case mở của bộ demo có tính Case của Uyên → cập nhật kỳ vọng"): thay bằng assert chiều ngược — không em ĐÃ KẾT THÚC nào còn ở phần chênh. Hai điều kiện (1)(2) giữ nguyên. |
+| 22/09/2026 | 14 | 714 ✓ (phép 3 — còn Case mở không được chọn "Không có lưu ý" — xanh sẵn nhờ luật bàn giao cũ mục 6.4). Import `transferReasonText` ở `routes/index.ts` viết thành MỘT dòng import riêng (không sửa khối import đầu file — giảm xung đột với PR-O). Bấm thử (Step 8) làm gộp ở Task 20. |
+| 22/09/2026 | 15 | 715 ✓. `grep archiveDueStudents|ARCHIVE_AFTER_DAYS` chỉ còn một dòng chú thích giải thích việc gỡ (cố ý). `addDays` bỏ khỏi import `students.ts`. |
+| 22/09/2026 | 16 | 717 ✓. Plan liệt kê 3 nơi gọi `caseHeadline`; thực tế có **5** — thêm hai dòng việc ở `mywork.ts` ("Case thiếu PA" ~742, "Chưa có người phụ trách" ~874), cũng truyền `attemptKind` (thêm `a.kind AS attempt_kind` vào hai câu SELECT) để dòng việc lớp thường không còn ghi "MT1 … kỳ vọng". |
+| 22/09/2026 | 17 | **718** ✓. S15 xanh ngay (khoá hành vi). AN-13: ngoài các dòng plan ghi, đổi thêm hai chỗ đi cặp với `TURSO_GIA` — giá trị ngoại lệ `'khong-ton-tai.turso.io'` của phép "BAN_CHINH=1 … kể cả khi ngoại lệ khớp đúng tên máy chủ" → `.invalid` (không đổi thì phép kiểm đạt vì sai tên máy, không phải vì BAN_CHINH) và giá trị chung chung `'turso.io'` → `'invalid'` (tên phép kiểm đổi theo). |
+| 22/09/2026 | 18–19 | 718 ✓. Task 18: đổi `Han loai` — bấm thử làm gộp ở Task 20. Task 19: tài liệu đúng như plan; CODE_MAP thêm 4 dòng (systemClose, scoreDebt, dismissSignal/canResolveSignal, reconcileCorrectedSignals). |
+| 22/09/2026 | 20 (1–3) | `npm run check` sạch: build, **718/718**, typecheck. Migrate lặp trên BẢN SAO (`VACUUM INTO` từ database dev của thư mục chính, mở chỉ đọc — chưa có hai cột mới): lần 1 `✓ PR-S1: thêm 2 cột …; đánh cờ 0 buổi vắng`, lần 2 KHÔNG có dòng PR-S1 (dòng "3 case giữ khoá cũ…" in lại mỗi lần là của bước migrate cũ, không phải PR này). Bấm thử trên database dev RIÊNG của worktree, API cổng 4117 + Vite 5317 (cấu hình Vite tạm, đã xoá; không dùng 4000/5173): GV Listening MB-FOU 12 — `GET /signals/pending?mine=1` trả `kind: normal, score 12, total 40, actions [create_case, dismiss], caseDraft.scoreText "12/40"`; GV Speaking bỏ qua tín hiệu Listening → 403; GV Listening bỏ qua → 200, tín hiệu rời danh sách chờ, nhãn "Đã bỏ qua", lý do tiếng Việt lưu đúng. Quản lý MB — `GET /metrics/tin-hieu-qua-han` 200 (`n: 0`, không tín hiệu nào quá hạn ở ngày demo); form Chuyển lớp (Task 14 Step 8): không chọn lý do → "Chọn lý do chuyển lớp."; chọn "Đổi lịch học" mà không ghi/không tích → `Ghi lưu ý bàn giao, hoặc chọn "Không có lưu ý".`; tích "Không có lưu ý" → chuyển được, hành trình ghi "Đổi lịch học — Không có lưu ý". GVCN MB-FT 101 (Trần Ngọc Hà) — Case Speaking của HV lớp mình: `viewer.canClose = false` (Quản lý: `true`). Task 18 Step 2: thẻ Case Listening có PA đang chạy hiện "Cập nhật kết quả · trước CN 30/08 · quá hạn". Chụp màn hình trong khung trình duyệt bị hết giờ (cửa sổ bị che) — bằng chứng là chữ đọc từ trang. |
