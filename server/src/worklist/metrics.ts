@@ -365,7 +365,8 @@ export function metricSet(
 }
 
 /**
- * MỘT CHỈ SỐ → MỘT TẬP ID, đã áp quyền của người gọi. Đây là hàm DUY NHẤT mà cả ô số lẫn panel danh sách gọi.
+ * LÕI CHƯA LỌC CHƯƠNG TRÌNH của `metricSet`: một chỉ số → một tập ID đã áp quyền của người gọi. Chỉ `metricSet` gọi hàm này;
+ * mọi nơi khác đi qua `metricSet` để bộ lọc chương trình chỉ có một chỗ.
  */
 function metricSetGoc(
   p: Principal, id: string,

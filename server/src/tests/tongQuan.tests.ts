@@ -163,6 +163,7 @@ export async function runTongQuanTests(t: YThucTestKit) {
     }
     const r = metricsSvc.metricSet(P.admin, 'hv-duoi-ky-vong-mon', { program: 'thuong' });
     const mau = (r.denominatorIds ?? []) as number[];
+    assert(mau.length > 0, 'Mẫu số của hv-duoi-ky-vong-mon (Lớp thường) phải có em — nếu rỗng thì phép kiểm bên dưới vô nghĩa');
     eq(chuongTrinh.locTheoChuongTrinh('hoc-vien', mau, 'thuong'), mau, 'Mẫu số cũng phải được lọc theo chương trình');
     assert(r.n === r.ids.length && r.ids.every((x: number) => mau.includes(x)), 'n = độ dài tập; tập đếm ⊆ mẫu số');
     eq(ids('tin-hieu-qua-han', { program: 'ft' }), [], 'Tín hiệu quá hạn chỉ có ở lớp thường');
@@ -180,6 +181,7 @@ export async function runTongQuanTests(t: YThucTestKit) {
     const b = taoHocVien({ classCode: 'MB-FOU 12', weekStart: '2026-09-07' });
     const c = taoHocVien({ classCode: 'MB-FT 101', weekStart: '2026-09-07' });
     eq(chuongTrinh.tachTheoLop('hoc-vien', [a.sid, b.sid, c.sid]), 'MB-FOU 12 (2) · MB-FT 101 (1)', 'Hai lớp');
+    eq(chuongTrinh.tachTheoLop('hoc-vien', [a.sid, b.sid, c.sid], 1), 'MB-FOU 12 (2) · +1 lớp', 'Quá toiDa thì "+k lớp"');
     eq(chuongTrinh.tachTheoLop('hoc-vien', [c.sid]), 'MB-FT 101', 'Một em');
     eq(chuongTrinh.tachTheoLop('hoc-vien', []), '', 'Rỗng');
     const m = chuongTrinh.lopCuaTap('hoc-vien', [a.sid, c.sid]);
