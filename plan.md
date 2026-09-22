@@ -2873,6 +2873,7 @@ Tình trạng từng dòng: `BAN_DO_OVERHAUL.md` mục 5 và mục 8.
 - [ ] **R12. Nút dời lịch một kỹ năng cho lớp Normal** — hiện **không có ở bất kỳ đâu**.
       Quyền `schedule.move` đã mở đúng ở máy chủ (12 phép kiểm). Dựng UI ở
       `RegularSheetPage.tsx`, tái dùng `moveableSkills`/`canMoveSkillSchedule` đã có.
+      *(23/09, PR-Rc1: `RegularSheetPage.tsx` đã xoá; lưới lớp thường nay ở `web/src/modules/cham/LuoiThuong.tsx` — dựng nút ở đó.)*
 - [x] **R13. Bộ chọn tuần** — kiểm ở panel 600px, modal rộng và mobile (§22.8 điểm 3).
       Nút **không** rớt hàng ngẫu nhiên; popover **không** bị cắt bởi z-index.
       *(23/09, PR-Rc1: mã tuần trong bộ chọn theo G-6 — `W3 SEP`, không kèm năm; bấm thử ba khổ ở bước KIỂM cuối PR-Rc1.)*

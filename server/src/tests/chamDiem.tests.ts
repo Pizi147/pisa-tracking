@@ -151,6 +151,10 @@ export async function runChamDiemTests(t: YThucTestKit) {
     const lai = regular.reportRegularNoShow(P.normalSubjectTeacher, attemptId, k, true, '2026-09-16');
     assert(!lai.moved, 'Báo lại cùng một dấu là vô hại');
     assert(tuanCuaMon(skillSched.loadSkillRows([attemptId]).get(attemptId), k) === '2026-09-21', 'Không dời hai lần');
+    /* RB-5: "-" của lớp thường là dời lịch, KHÔNG phải một lần dời do vắng — bộ đếm dời vắng giữ nguyên 0. */
+    const demDoi = (conn.prepare('SELECT absence_move_count AS n FROM attempt_skills WHERE attempt_id = ? AND skill = ?')
+      .get(attemptId, k) as any)?.n;
+    assert(demDoi === 0, `absence_move_count của ${k} phải giữ 0 sau "-": ${demDoi}`);
 
     /* Bảng điểm lớp thường mang sẵn dữ liệu cho ô lưới (Task 7): dấu "-", tuần đã dời khỏi, quyền sửa của người xem. */
     const sheet = regular.regularSheet(P.normalSubjectTeacher, LOP);

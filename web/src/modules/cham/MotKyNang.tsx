@@ -252,7 +252,7 @@ function DongThuongMot({ row, k, sheet, tongCot, active, onReload, inputRef, onK
       luu={<DauLuu status={status} error={lastError} onRetry={retry} />}>
       <div className="shrink-0 flex justify-end" data-kn={k} data-trong={trong ? '1' : undefined}>
         {dung || !s ? (
-          <span className="text-[11px] text-slate-500" title={chuDung ? `${tenMon}: ${chuDung}` : KHONG_PHAN_CONG}>
+          <span className="text-[11px] text-slate-500" title={`${tenMon}: ${chuDung ?? 'không có lịch'}`}>
             {chuDung ?? '—'}
           </span>
         ) : (

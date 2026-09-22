@@ -207,7 +207,7 @@ export function canChamList(
 
     const chiTiet: ChiTiet[] = a.pendingDetail ?? [];
     /* Ô còn nợ có hạn SỚM NHẤT: nó đặt hạn của dòng, và tuần của nó là tuần lưới FT phải mở. */
-    const som = [...chiTiet].sort((x, y) => (x.deadline ?? '9999') < (y.deadline ?? '9999') ? -1 : 1)[0] ?? null;
+    const som = [...chiTiet].sort((x, y) => (x.deadline ?? '9999').localeCompare(y.deadline ?? '9999'))[0] ?? null;
     const han = som?.deadline ?? null;
     let cu = gom.get(key);
     if (!cu) {

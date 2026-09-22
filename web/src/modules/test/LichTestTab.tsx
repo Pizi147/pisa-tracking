@@ -110,7 +110,7 @@ export function LichTestTab() {
                             {d.dotLabel}
                           </Link>
                         </td>
-                        <td className="td truncate text-slate-300">{d.kyNang.map(skillLabel).join(', ')}</td>
+                        <td className="td truncate text-slate-300" title={d.kyNang.map(skillLabel).join(', ')}>{d.kyNang.map(skillLabel).join(', ')}</td>
                         <td className="td text-right tabular-nums text-slate-300">{d.soHv}</td>
                         <td className={`td whitespace-nowrap tabular-nums ${mauTrangThai(d.trangThai)}`}>
                           {d.trangThai === 'Đã chấm xong' && <span className="mr-1 text-[11px]" aria-hidden>✓</span>}

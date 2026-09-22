@@ -96,11 +96,12 @@ export function CanChamTab() {
         <BranchFilter branchId={branchId} onBranch={(id) => set('branchId', id ? String(id) : null)} />
       </div>
 
-      {/* Q13: đang lọc ngầm theo lớp (đi vào từ dòng lớp) thì phải NÓI ra, và bỏ được bằng một cú bấm. */}
-      {data?.lop && (
+      {/* Q13: đang lọc ngầm theo lớp (đi vào từ dòng lớp) thì phải NÓI ra, và bỏ được bằng một cú bấm.
+          Hiện theo tham số trên đường dẫn, không chờ máy chủ: mã lớp sai/cũ vẫn phải có ✕ để thoát. */}
+      {classId !== null && (
         <span className="inline-flex items-center gap-1 rounded-full border pl-2.5 pr-0.5 py-0.5 text-xs text-slate-300"
           style={{ borderColor: 'var(--line-strong)' }}>
-          Đang lọc: lớp {data.lop.code}
+          Đang lọc: lớp {data?.lop?.code ?? `#${classId}`}
           <button type="button" className="btn btn-ghost btn-sm px-1.5 py-0" title="Bỏ lọc theo lớp"
             aria-label="Bỏ lọc theo lớp" onClick={() => set('classId', null)}>✕</button>
         </span>
@@ -123,7 +124,8 @@ export function CanChamTab() {
             <section key={n.muc} aria-label={n.nhan}>
               <h2 className={`m-0 mb-1.5 text-xs font-semibold tabular-nums ${MAU_MUC[n.muc]}`}>
                 <span className="uppercase tracking-wide">{n.nhan}</span>
-                {n.han && <> · hạn {thuCua(n.han)} {ngay(n.han, homNay)}</>}
+                {/* Quá hạn gộp nhiều hạn đã qua — một "hạn …" ở đầu nhóm sẽ sai với phần lớn các dòng. */}
+                {n.muc !== 'qua-han' && n.han && <> · hạn {thuCua(n.han)} {ngay(n.han, homNay)}</>}
                 {' · '}{n.dong.length}
               </h2>
               {n.dong.length > 0 && (

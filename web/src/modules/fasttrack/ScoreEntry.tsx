@@ -725,6 +725,11 @@ export function ODiemThuong({
       return gui(() => onDau(true));
     }
     if (d === '' && dau) { setCanhBao(null); return gui(() => onDau(false)); }
+    /* Trên điện thoại ô tổng đã điền sẵn tổng của cột mà không "bẩn"; gõ rồi xoá số câu đúng ở ô trống
+       thì không được thành một dòng chỉ có tổng (và người nhập) cho bài chưa chấm. Lưới máy tính giữ ↓. */
+    if (d === '' && !dau && cell.diem === null && tongLaySan && cell.tong === null) {
+      setCanhBao(null); setDirty(false); return;
+    }
     if (d !== '' && !SO_NGUYEN.test(d)) {
       setCanhBao({ o: 'diem', cau: 'Số câu đúng là số nguyên, hoặc "-" nếu em không làm bài.' }); return;
     }

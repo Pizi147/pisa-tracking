@@ -207,7 +207,7 @@ export default function MockDetailPage() {
           <Info label="Tuần dự kiến hoàn tất"
             title={TOOLTIP_TUAN_HOAN_TAT}>
             {d.period
-              ? <>{d.period.code} <span className="text-slate-500 text-xs">({d.period.range})</span></>
+              ? <>{tuanLich(d.period.weekStart, homNay)} <span className="text-slate-500 text-xs">({d.period.range})</span></>
               : <Tag pending>Chưa chốt tuần</Tag>}
           </Info>
           <Info label="Thi thật dự kiến"><ExamPlanText plan={d.cycle.examPlan} /></Info>
@@ -252,7 +252,7 @@ function ChonDot({ hienTai, ds, homNay, onChon }: {
     return `${ten} · ${tuan}${r.status === 'cancelled' ? ` · ${attemptStatusLabel(r.status)}` : ''}`;
   };
   return (
-    <select className="field w-44" value={hienTai} aria-label="Chọn đợt khác của học viên này"
+    <select className="field w-auto max-w-full min-w-44" value={hienTai} aria-label="Chọn đợt khác của học viên này"
       title="Mở đợt khác của cùng học viên"
       onChange={(e) => { const r = xep.find((x) => x.id === Number(e.target.value)); if (r && r.id !== hienTai) onChon(r); }}>
       {xep.map((r) => <option key={r.id} value={r.id}>{nhan(r)}</option>)}
@@ -326,6 +326,7 @@ function SkillWorkTable({ d, save, onDone, onOpenHistory }: {
   const [restoreFor, setRestoreFor] = useState<SkillRow | null>(null);
   const [decideFor, setDecideFor] = useState<SkillRow | null>(null);
   const toast = useToast();
+  const { homNay } = useNgayNghiepVu();
   const cancelled = d.status === 'cancelled';
 
   const act = async (fn: () => Promise<unknown>, okMsg: string) => {
@@ -422,7 +423,7 @@ function SkillWorkTable({ d, save, onDone, onOpenHistory }: {
           <Label>Lịch kiểm tra</Label>
           {!r.required ? <span className="text-slate-500 text-xs">—</span>
             : r.periodCode
-              ? <>{r.periodCode} <span className="text-slate-500 text-xs block sm:inline">({r.weekRange})</span></>
+              ? <>{tuanLich(r.weekStart, homNay)} <span className="text-slate-500 text-xs block sm:inline">({r.weekRange})</span></>
               : <Tag pending>Chưa xếp tuần</Tag>}
         </div>
 
@@ -627,6 +628,7 @@ function SkillWeekModal({ open, row, attemptId, onClose, onDone }: {
 }) {
   const toast = useToast();
   const periods = usePeriods();
+  const { homNay } = useNgayNghiepVu();
   const [periodId, setPeriodId] = useState<number | null>(null);
   const [reason, setReason] = useState('');
   const [busy, setBusy] = useState(false);
@@ -662,7 +664,7 @@ function SkillWeekModal({ open, row, attemptId, onClose, onDone }: {
       </>}>
       <div className="space-y-3">
         <p className="text-xs text-slate-400 m-0">
-          Đang thi {row?.periodCode ? `${row.periodCode} (${row.weekRange})` : 'chưa xếp tuần'}.
+          Đang thi {row?.periodCode ? `${tuanLich(row.weekStart, homNay)} (${row.weekRange})` : 'chưa xếp tuần'}.
           Chỉ kỹ năng này đổi lịch; các kỹ năng khác của đợt giữ nguyên tuần và hạn chấm.
         </p>
         <label className="block">
@@ -670,7 +672,7 @@ function SkillWeekModal({ open, row, attemptId, onClose, onDone }: {
           <select className="field" value={periodId ?? ''}
             onChange={(e) => { setPeriodId(Number(e.target.value) || null); setWarning(null); }}>
             <option value="">Chọn tuần…</option>
-            {(periods.data ?? []).map((p) => <option key={p.id} value={p.id}>{p.code} · {p.range}</option>)}
+            {(periods.data ?? []).map((p) => <option key={p.id} value={p.id}>{tuanLich(p.weekStart, homNay)} · {p.range}</option>)}
           </select>
         </label>
         {/* PREVIEW "tuần cũ → tuần mới" TRƯỚC KHI LƯU — sổ §D/T07: thấy rõ đang đổi gì, không đoán. */}
@@ -678,7 +680,7 @@ function SkillWeekModal({ open, row, attemptId, onClose, onDone }: {
           const next = (periods.data ?? []).find((p) => p.id === periodId);
           return next ? (
             <p className="text-sm text-slate-200 m-0">
-              {row?.periodCode ?? 'chưa có tuần'} <strong>→</strong> {next.code} · {next.range}
+              {row?.periodCode ? tuanLich(row.weekStart, homNay) : 'chưa có tuần'} <strong>→</strong> {tuanLich(next.weekStart, homNay)} · {next.range}
             </p>
           ) : null;
         })()}
@@ -761,6 +763,7 @@ function WeekModal({ open, onClose, attemptId, currentPeriodId, onDone }: {
 }) {
   const toast = useToast();
   const periods = usePeriods();
+  const { homNay } = useNgayNghiepVu();
   const [periodId, setPeriodId] = useState<number | null>(currentPeriodId);
   const [reason, setReason] = useState('');
   const [busy, setBusy] = useState(false);
@@ -786,7 +789,7 @@ function WeekModal({ open, onClose, attemptId, currentPeriodId, onDone }: {
           <span className="label">Tuần mới</span>
           <select className="field" value={periodId ?? ''} onChange={(e) => setPeriodId(Number(e.target.value) || null)}>
             <option value="">Chọn tuần…</option>
-            {(periods.data ?? []).map((p) => <option key={p.id} value={p.id}>{p.code} · {p.range}</option>)}
+            {(periods.data ?? []).map((p) => <option key={p.id} value={p.id}>{tuanLich(p.weekStart, homNay)} · {p.range}</option>)}
           </select>
         </label>
         <label className="block">
@@ -902,6 +905,7 @@ function AbsenceMoveModal({ open, row, detail, onClose, onDone }: {
   open: boolean; row: SkillRow | null; detail: Detail; onClose: () => void; onDone: () => void;
 }) {
   const toast = useToast();
+  const { homNay } = useNgayNghiepVu();
   const [picked, setPicked] = useState<string[]>([]);
   const [reason, setReason] = useState('');
   const [busy, setBusy] = useState(false);
@@ -953,7 +957,7 @@ function AbsenceMoveModal({ open, row, detail, onClose, onDone }: {
       ) : (
         <div className="space-y-3">
           <p className="text-xs text-slate-400 m-0">
-            {row?.label} đang xếp {row?.periodCode} ({row?.weekRange}), đã xác nhận vắng.
+            {row?.label} đang xếp {tuanLich(row?.weekStart, homNay)} ({row?.weekRange}), đã xác nhận vắng.
             {(row?.absenceMoveCount ?? 0) > 0 && ` Môn này đã dời do vắng ${row?.absenceMoveCount} lần.`}
           </p>
 
@@ -967,7 +971,7 @@ function AbsenceMoveModal({ open, row, detail, onClose, onDone }: {
                       onChange={(e) => setPicked(
                         e.target.checked ? [...picked, r.skill] : picked.filter((x) => x !== r.skill),
                       )} />
-                    <span>{r.label} <span className="text-slate-500 text-xs">({r.periodCode})</span></span>
+                    <span>{r.label} <span className="text-slate-500 text-xs">({tuanLich(r.weekStart, homNay)})</span></span>
                   </label>
                 ))}
               </div>
@@ -1016,6 +1020,7 @@ function RestoreModal({ open, row, detail, onClose, onDone }: {
 }) {
   const toast = useToast();
   const periods = usePeriods();
+  const { homNay } = useNgayNghiepVu();
   const [periodId, setPeriodId] = useState<number | null>(null);
   const [reason, setReason] = useState('');
   const [busy, setBusy] = useState(false);
@@ -1053,7 +1058,7 @@ function RestoreModal({ open, row, detail, onClose, onDone }: {
           <select className="field" value={periodId ?? ''}
             onChange={(e) => setPeriodId(Number(e.target.value) || null)}>
             <option value="">Chọn tuần…</option>
-            {(periods.data ?? []).map((p) => <option key={p.id} value={p.id}>{p.code} · {p.range}</option>)}
+            {(periods.data ?? []).map((p) => <option key={p.id} value={p.id}>{tuanLich(p.weekStart, homNay)} · {p.range}</option>)}
           </select>
         </label>
         <label className="block">
@@ -1086,6 +1091,7 @@ function DecideMoveModal({ open, row, detail, onClose, onDone }: {
 }) {
   const toast = useToast();
   const periods = usePeriods();
+  const { homNay } = useNgayNghiepVu();
   const [note, setNote] = useState('');
   const [periodId, setPeriodId] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
@@ -1132,7 +1138,7 @@ function DecideMoveModal({ open, row, detail, onClose, onDone }: {
           <select className="field" value={periodId ?? ''}
             onChange={(e) => setPeriodId(Number(e.target.value) || null)}>
             <option value="">Giữ tuần GVCN đề nghị</option>
-            {(periods.data ?? []).map((p) => <option key={p.id} value={p.id}>{p.code} · {p.range}</option>)}
+            {(periods.data ?? []).map((p) => <option key={p.id} value={p.id}>{tuanLich(p.weekStart, homNay)} · {p.range}</option>)}
           </select>
           <span className="block text-[11px] text-slate-500 mt-1">
             Chỉ cần khi tuần được đề nghị đã bắt đầu — lúc đó phải chọn một tuần chưa tới.
