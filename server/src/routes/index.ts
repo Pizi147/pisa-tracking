@@ -1101,6 +1101,12 @@ api.post('/signals/pending/:id/assign', requireAuth, wrap((req) => {
   return caseSignalSvc.assignSignal(principalOf(req), pInt(req, 'id'), toInt(req.body?.userId));
 }));
 
+/** Bỏ qua một tín hiệu lớp thường — không tạo Case, lý do không bắt buộc (S1, đặc tả §3.10). */
+api.post('/signals/pending/:id/dismiss', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return caseSignalSvc.dismissSignal(principalOf(req), pInt(req, 'id'), { reason: req.body?.reason ?? null });
+}));
+
 api.get('/cases', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   return caseSvc.listCases(principalOf(req), {

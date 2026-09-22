@@ -1007,7 +1007,7 @@ function viewOf(p: Principal, r: any, today: string): SignalView {
 - Produces: `export const SIGNAL_DISMISS_NOTE = 'Bỏ qua';`; `export function dismissSignal(p: Principal, signalId: number, input?: { reason?: string | null }): { ok: true; unchanged?: true }`;
   `POST /api/signals/pending/:id/dismiss` body `{ reason?: string }`.
 
-- [ ] **Step 1: Phép kiểm (đỏ).**
+- [x] **Step 1: Phép kiểm (đỏ).**
 
 ```ts
   // ================================================================== 7. S1 (b) Bỏ qua
@@ -1056,8 +1056,8 @@ function viewOf(p: Principal, r: any, today: string): SignalView {
   });
 ```
 
-- [ ] **Step 2: Chạy, đỏ.** Expected: ba phép ✗ (`dismissSignal is not a function`).
-- [ ] **Step 3: `shared/domain/cases.ts`.** Trong `SIGNAL_STATUS_LABEL` thay dòng `noted` và chú thích của nó:
+- [x] **Step 2: Chạy, đỏ.** Expected: ba phép ✗ (`dismissSignal is not a function`).
+- [x] **Step 3: `shared/domain/cases.ts`.** Trong `SIGNAL_STATUS_LABEL` thay dòng `noted` và chú thích của nó:
 
 ```ts
   /*
@@ -1074,7 +1074,7 @@ và sau `SIGNAL_WITHDRAW_SCORE_FIXED`:
 export const SIGNAL_DISMISS_NOTE = 'Bỏ qua';
 ```
 
-- [ ] **Step 4: `dismissSignal` trong `signals.ts`** (sau `assignSignal`; import thêm `SIGNAL_DISMISS_NOTE`):
+- [x] **Step 4: `dismissSignal` trong `signals.ts`** (sau `assignSignal`; import thêm `SIGNAL_DISMISS_NOTE`):
 
 ```ts
 /** Tín hiệu này thuộc lớp thường không — theo lớp của tín hiệu, không có lớp thì theo khoá học. */
@@ -1123,7 +1123,7 @@ export function dismissSignal(p: Principal, signalId: number, input: { reason?: 
 }
 ```
 
-- [ ] **Step 5: Route** (`routes/index.ts`, ngay sau khối `/signals/pending/:id/assign`):
+- [x] **Step 5: Route** (`routes/index.ts`, ngay sau khối `/signals/pending/:id/assign`):
 
 ```ts
 /** Bỏ qua một tín hiệu lớp thường — không tạo Case, lý do không bắt buộc (S1, đặc tả §3.10). */
@@ -1133,12 +1133,12 @@ api.post('/signals/pending/:id/dismiss', requireAuth, wrap((req) => {
 }));
 ```
 
-- [ ] **Step 6: Sửa phép kiểm cũ** `server/src/tests/run.ts:5979-5987` (khoá quyết định 16/09 "không có lối ra không mở Case", đã bị S1 22/09 thay).
+- [x] **Step 6: Sửa phép kiểm cũ** `server/src/tests/run.ts:5979-5987` (khoá quyết định 16/09 "không có lối ra không mở Case", đã bị S1 22/09 thay).
   Giữ `assert(!('noteSignal' in signalsSvc), …)` nhưng đổi câu chú thích phía trên thành: *"Quyết định 16/09 bỏ đường 'ghi nhận đã xem'. Ngày
   22/09 chủ sản phẩm mở lại MỘT lối ra có tên riêng — `dismissSignal` (Bỏ qua, chỉ lớp thường, S1). Tên cũ `noteSignal` vẫn không được quay lại."*
   và thêm ngay dưới: `assert('dismissSignal' in signalsSvc, 'S1: phải có đường Bỏ qua tín hiệu lớp thường');`
 
-- [ ] **Step 7: Chạy, xanh** (Expected `693`). **Step 8: Commit.** `git commit -am "PR-S1 (7): S1 — Bỏ qua tín hiệu lớp thường (lý do không bắt buộc, audit) + route"`
+- [x] **Step 7: Chạy, xanh** (Expected `693`). **Step 8: Commit.** `git commit -am "PR-S1 (7): S1 — Bỏ qua tín hiệu lớp thường (lý do không bắt buộc, audit) + route"`
 
 ---
 

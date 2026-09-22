@@ -341,5 +341,50 @@ export async function runLuatMayChuTests(t: YThucTestKit) {
     }
   });
 
+  // ================================================================== 7. S1 (b) Bỏ qua
+
+  console.log('\nPR-S1 · 7. S1 — Bỏ qua tín hiệu lớp thường: một bấm, lý do không bắt buộc, có audit');
+  const auditN = (action: string, id: number) =>
+    (conn.prepare('SELECT COUNT(*) n FROM audit_logs WHERE action = ? AND entity_id = ?').get(action, id) as any).n as number;
+
+  check('S1 · Bỏ qua không lý do: tín hiệu thành "Đã bỏ qua", không có Case, có audit; bấm lần hai không đổi gì', () => {
+    const hv = taoHocVien({ classCode: 'MB-FOU 12', weekStart: '2026-09-07' });
+    diem(hv.attemptId, 'listening', 10, 40);
+    const sg = tinHieu(hv.attemptId, 'listening');
+    signals.dismissSignal(pGvcnFou, sg.id, {});
+    const after = conn.prepare('SELECT * FROM case_signals WHERE id = ?').get(sg.id) as any;
+    assert(after.status === 'noted' && after.resolution_note === domain.SIGNAL_DISMISS_NOTE && after.case_id === null && after.resolved_by === pGvcnFou.userId,
+      `Sai: ${JSON.stringify(after)}`);
+    assert(domain.SIGNAL_STATUS_LABEL.noted === 'Đã bỏ qua', `Nhãn: ${domain.SIGNAL_STATUS_LABEL.noted}`);
+    assert(auditN('signal.dismissed', sg.id) === 1, 'Thiếu audit');
+    const again = signals.dismissSignal(pGvcnFou, sg.id, {}) as any;
+    assert(again.unchanged === true && auditN('signal.dismissed', sg.id) === 1, 'Bấm lần hai không được ghi thêm');
+    diem(hv.attemptId, 'listening', 11, 40);                            // lưu lại điểm vẫn trượt
+    assert((conn.prepare('SELECT status FROM case_signals WHERE id = ?').get(sg.id) as any).status === 'noted', 'Lưu lại điểm làm sống lại tín hiệu đã bỏ qua');
+  });
+
+  check('S1 · Bỏ qua có lý do: lý do được giữ; GV môn khác không bỏ qua được; tín hiệu đã thành Case thì không bỏ qua được', () => {
+    const hv = taoHocVien({ classCode: 'MB-FOU 12', weekStart: '2026-09-07' });
+    diem(hv.attemptId, 'listening', 10, 40);
+    diem(hv.attemptId, 'reading', 10, 40);
+    const l = tinHieu(hv.attemptId, 'listening'), r = tinHieu(hv.attemptId, 'reading');
+    assertThrows(() => signals.dismissSignal(pSpeakingFou, l.id, {}), /giao cho mình|môn mình dạy/, 'GV Speaking bỏ qua tín hiệu Listening');
+    signals.dismissSignal(pGvcnFou, l.id, { reason: '  Em ốm hôm thi  ' });
+    assert((conn.prepare('SELECT resolution_note FROM case_signals WHERE id = ?').get(l.id) as any).resolution_note === 'Bỏ qua — Em ốm hôm thi',
+      'Lý do phải được giữ (đã cắt khoảng trắng)');
+    caseTuTinHieu(pGvcnFou, r);
+    assertThrows(() => signals.dismissSignal(pGvcnFou, r.id, {}), /đã thành Case/, 'Bỏ qua một tín hiệu đã thành Case');
+  });
+
+  check('S1 · Tín hiệu Fast Track không có nút Bỏ qua (FT tự tạo Case — đóng bằng "Không cần theo dõi")', () => {
+    const hv = taoHocVien({ classCode: 'MB-FT 101', weekStart: '2026-09-07' });
+    const sg = signals.raiseSignal({
+      actorUserId: P.admin.userId, studentId: hv.sid, cycleId: hv.cycleId, attemptId: hv.attemptId, classId: hv.cid,
+      skill: 'reading', category: 'reading', detectedOn: '2026-09-07', silent: true,
+    }) as any;
+    assertThrows(() => signals.dismissSignal(P.mbManager, sg.id, {}), /Fast Track/, 'Bỏ qua tín hiệu FT');
+    assert(!(signals.signalDetail(P.mbManager, sg.id) as any).actions.includes('dismiss'), 'Tín hiệu FT không được có nút Bỏ qua');
+  });
+
   // ---- các task sau thêm phép kiểm NGAY TRÊN dòng này ----
 }

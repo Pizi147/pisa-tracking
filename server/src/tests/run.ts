@@ -5977,14 +5977,14 @@ check('[6.2] Tín hiệu hiện ở hồ sơ học viên và ở hàng việc c�
   }
 });
 
-check('[6.2] Xác minh MỘT tín hiệu chỉ có MỘT lối ra: mở case', () => {
+check('[6.2] Xác minh tín hiệu: đường "ghi nhận đã xem" cũ không quay lại; lối ra không mở Case duy nhất là Bỏ qua (S1)', () => {
   /*
-   * Chủ sản phẩm chốt 16/09/2026, ngược với câu "ghi nhận đã xem" của đề bài mục 6.2:
-   * xác minh nghĩa là MỞ CASE, không có đường nào khác. Nên không còn thao tác nào sinh ra
-   * trạng thái "đã xem, không thành case" — trạng thái đó chỉ còn trên dữ liệu có từ trước.
+   * Quyết định 16/09 bỏ đường "ghi nhận đã xem". Ngày 22/09 chủ sản phẩm mở lại MỘT lối ra có tên riêng — `dismissSignal`
+   * (Bỏ qua, chỉ lớp thường, S1). Tên cũ `noteSignal` vẫn không được quay lại.
    */
   assert(!('noteSignal' in signalsSvc),
     'Vẫn còn đường ghi nhận đã xem mà không mở case — chủ sản phẩm đã bỏ lối ra này');
+  assert('dismissSignal' in signalsSvc, 'S1: phải có đường Bỏ qua tín hiệu lớp thường');
 
   const sg = conn
     .prepare(`SELECT * FROM case_signals WHERE status = 'pending' LIMIT 1`)

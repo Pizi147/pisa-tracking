@@ -657,13 +657,11 @@ export const SIGNAL_STATUS_LABEL: Record<SignalStatus, string> = {
   pending: 'Chờ xác minh',
   linked: 'Đã thành case',
   /*
-   * TRẠNG THÁI CŨ, CHỈ CÒN ĐỂ ĐỌC LẠI LỊCH SỬ.
-   *
-   * Đề bài mục 6.2 từng cho phép ghi nhận đã xem một tín hiệu mà không mở case. Chủ sản phẩm chốt ngược lại (16/09/2026): xác minh
-   * một tín hiệu nghĩa là MỞ CASE. Nguồn 21/09/2026 lại cho phép ĐÓNG SOS KHÔNG TẠO CASE — nhưng bắt buộc ghi lý do (rule book
-   * mục 18.2 điểm 1); đường đó là `noted` kèm lý do, việc của PR-S.
+   * BỎ QUA (S1, chủ sản phẩm chốt 22/09/2026, đặc tả §3.10 + §5): tín hiệu lớp thường được đóng mà KHÔNG tạo Case, một bấm, lý do
+   * KHÔNG bắt buộc. `resolution_note` luôn có chữ (`SIGNAL_DISMISS_NOTE`, kèm lý do nếu có). Dòng `noted` cũ của bộ demo ("đã xem")
+   * đọc ra cùng nhãn — cùng nghĩa: đã có người xem và không mở Case.
    */
-  noted: 'Đã xem (dữ liệu cũ)',
+  noted: 'Đã bỏ qua',
   withdrawn: 'Đã thu hồi',
 };
 
@@ -688,6 +686,9 @@ export function signalVerifyDue(raisedOn: string): string {
 
 /** Lý do chuẩn khi một tín hiệu mất căn cứ vì điểm được sửa lại (mục 9.4). */
 export const SIGNAL_WITHDRAW_SCORE_FIXED = 'Không còn hợp lệ do sửa điểm';
+
+/** Chữ ghi vào `resolution_note` khi GV bấm "Bỏ qua" tín hiệu (S1). Có lý do thì thêm " — {lý do}". */
+export const SIGNAL_DISMISS_NOTE = 'Bỏ qua';
 
 /**
  * BẢNG HẠN CỦA MỤC 8.3 — mọi hạn theo ngày đều TÍNH CẢ NGÀY ĐẦU.

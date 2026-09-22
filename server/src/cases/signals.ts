@@ -1,6 +1,6 @@
 import { db, tx } from '../db.ts';
 import {
-  ENTRY_SKILL_LABEL, PERMISSIONS, REGULAR_SKILL_LABEL, SIGNAL_STATUS_LABEL,
+  ENTRY_SKILL_LABEL, PERMISSIONS, REGULAR_SKILL_LABEL, SIGNAL_DISMISS_NOTE, SIGNAL_STATUS_LABEL,
   SIGNAL_WITHDRAW_SCORE_FIXED, signalVerifyDue,
   type CaseCategory, type EntrySkill, type SignalStatus,
 } from '../../../shared/domain/index.ts';
@@ -428,6 +428,51 @@ export function assignSignal(p: Principal, signalId: number, userId: number | nu
     before: { owner: sg.owner_user_id }, after: { owner: userId },
   });
   return { ok: true };
+}
+
+/** Tín hiệu này thuộc lớp thường không — theo lớp của tín hiệu, không có lớp thì theo khoá học. */
+function isRatioSignal(signalId: number): boolean {
+  const r = db()
+    .prepare(
+      `SELECT COALESCE(pg.scoring_mode, pgc.scoring_mode) AS m FROM case_signals sg
+         LEFT JOIN classes c ON c.id = sg.class_id LEFT JOIN programmes pg ON pg.code = c.programme_code
+         LEFT JOIN learning_cycles cy ON cy.id = sg.cycle_id LEFT JOIN programmes pgc ON pgc.code = cy.programme_code
+        WHERE sg.id = ?`,
+    )
+    .get(signalId) as any;
+  return r?.m === 'ratio';
+}
+
+/**
+ * BỎ QUA MỘT TÍN HIỆU LỚP THƯỜNG — đóng mà không tạo Case (S1, đặc tả §3.10, quyết định 4.4 + "lý do không bắt buộc" 22/09/2026).
+ *
+ * Một bấm là xong; ô lý do nhỏ, không bắt buộc. Đã bỏ qua mà bấm lại thì không làm gì (không ghi audit thứ hai). Lưu lại điểm vẫn
+ * trượt KHÔNG làm tín hiệu sống lại (`raiseSignal` chỉ mở lại tín hiệu `withdrawn`). Fast Track không đi đường này: FT đã tự tạo Case.
+ */
+export function dismissSignal(p: Principal, signalId: number, input: { reason?: string | null } = {}) {
+  const sg = loadSignal(signalId);
+  if (!canResolveSignal(p, sg)) {
+    throw forbidden('Bạn chỉ bỏ qua được tín hiệu giao cho mình hoặc của môn mình dạy.');
+  }
+  if (sg.status === 'noted') return { ok: true as const, unchanged: true as const };
+  if (sg.status === 'linked') throw badRequest('Tín hiệu này đã thành Case — không bỏ qua được nữa.');
+  if (sg.status === 'withdrawn') throw badRequest('Tín hiệu này đã được thu hồi vì không còn căn cứ.');
+  if (!isRatioSignal(signalId)) {
+    throw badRequest('Tín hiệu Fast Track đã tự tạo Case — đóng bằng "Không cần theo dõi" ở Case đó.');
+  }
+  const reason = String(input.reason ?? '').trim().slice(0, 500);
+  const note = reason ? `${SIGNAL_DISMISS_NOTE} — ${reason}` : SIGNAL_DISMISS_NOTE;
+  db()
+    .prepare(
+      `UPDATE case_signals SET status = 'noted', resolved_by = ?, resolved_at = ?, resolution_note = ?, updated_at = ?
+        WHERE id = ? AND status = 'pending'`,
+    )
+    .run(p.userId, nowIso(), note, nowIso(), signalId);
+  writeAudit({
+    actorUserId: p.userId, action: 'signal.dismissed', entityType: 'case_signal', entityId: signalId,
+    entityLabel: labelOf(sg), before: { status: sg.status }, after: { status: 'noted', reason: reason || null },
+  });
+  return { ok: true as const };
 }
 
 // ---------------------------------------------------------------- thu hồi khi sửa điểm
