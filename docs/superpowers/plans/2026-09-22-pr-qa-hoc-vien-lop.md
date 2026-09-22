@@ -3388,7 +3388,7 @@ git commit -m "PR-Qa (15): bảng định vị §4 (Nhập điểm ở ⋯ hộp
 
 **Files:** ảnh `thiet-ke/anh/pr-qa/` (tạo thư mục). Không sửa mã (thấy lỗi → sửa ở task tương ứng, commit riêng, ghi Nhật ký).
 
-- [ ] **Step 1: Bật máy dev trong worktree, cổng 4137 / 5337** (không dùng `preview_start` — nó chạy mã của thư mục chính; không
+- [x] **Step 1: Bật máy dev trong worktree, cổng 4137 / 5337** (không dùng `preview_start` — nó chạy mã của thư mục chính; không
   dùng 4000/5173):
   1. `npm run seed` (database riêng của worktree).
   2. Nền: `PORT=4137 node dist-server/server/src/index.js` (sau `npm run build:server`).
@@ -3401,9 +3401,9 @@ git commit -m "PR-Qa (15): bảng định vị §4 (Nhập điểm ở ⋯ hộp
   5. Chụp ảnh: `npm i --no-save playwright` + `chromium.launch({ channel: 'chrome' })` (Chrome có sẵn, không tải trình duyệt), chạy
      script từ Git Bash với `MSYS_NO_PATHCONV=1`. Trang cuộn trong `<main>` → chụp cả trang = nới chiều cao khung theo `main.scrollHeight`.
      Tên ảnh `{vai}-{man}-{ft|thuong}-{1440|375}.png` (vai: `qt`, `ql`, `gvcn`, `gvbm`).
-- [ ] **Step 2: Chuẩn bị một dữ liệu cho YT-8.** Là GVCN (7), vào hồ sơ lớp MB-FT 101 › Ý thức & Phối hợp › + Ghi nhận vi phạm cho một
+- [x] **Step 2: Chuẩn bị một dữ liệu cho YT-8.** Là GVCN (7), vào hồ sơ lớp MB-FT 101 › Ý thức & Phối hợp › + Ghi nhận vi phạm cho một
   em, ngày cách đây 7 ngày. (DB của worktree, không phải bản chính.)
-- [ ] **Step 3: KIỂM — Quản trị (1), 1440px.** Ghi ✓/✗ + ảnh:
+- [x] **Step 3: KIỂM — Quản trị (1), 1440px.** Ghi ✓/✗ + ảnh:
   1. Tab trình duyệt ghi **PISA Progress** (`document.title`).
   2. `/hoc-vien`: tiêu đề **Học viên & Lớp**; ô tìm; **Phạm vi: Tất cả** mặc định, có "Chi nhánh"; chọn Chi nhánh → hiện ô chọn chi
      nhánh (nếu > 1); **Xếp: Tên A→Z**; 6 chip có số; **không còn** cặp nút Tôi / Tất cả, dải tab chi nhánh, nút "Theo lớp".
@@ -3433,16 +3433,16 @@ git commit -m "PR-Qa (15): bảng định vị §4 (Nhập điểm ở ⋯ hộp
   14. ⋮ › Sửa thông tin lớp: đổi mã MB-FOU 12 → "MB-FOU 12A" → lưu → đầu trang đổi; đổi lại "MB-FOU 12". Ô Chương trình bị khoá kèm câu
       giải thích (lớp có học viên). Gõ mã "FOU 12" → toast lỗi "Mã lớp phải bắt đầu bằng "MB-"…".
   15. + Học viên mở ngăn thêm hàng loạt rộng gần hết 1440px; nhãn "Tuần bắt đầu học" (không "mặc định cho cả lô").
-- [ ] **Step 4: KIỂM — QL chi nhánh (2), 1440px.** Phạm vi mặc định Chi nhánh (hoặc Lớp tôi dạy nếu QL có dạy); chỉ lớp MB; hộp lớp
+- [x] **Step 4: KIỂM — QL chi nhánh (2), 1440px.** Phạm vi mặc định Chi nhánh (hoặc Lớp tôi dạy nếu QL có dạy); chỉ lớp MB; hộp lớp
   ⋯ đủ 3 mục; hồ sơ lớp đủ nút như Quản trị; ⋮ đủ hai mục; Sửa phân công mở `TeacherAssignDialog` cũ và lưu được.
-- [ ] **Step 5: KIỂM — GVCN Trần Ngọc Hà (7), 1440px.** Phạm vi mặc định **Lớp tôi dạy**, chỉ lớp mình dạy; "Việc tiếp theo" có
+- [x] **Step 5: KIỂM — GVCN Trần Ngọc Hà (7), 1440px.** Phạm vi mặc định **Lớp tôi dạy**, chỉ lớp mình dạy; "Việc tiếp theo" có
   "Nhập điểm L, R · MT…" (việc CỦA MÌNH); hồ sơ lớp: **+ Case · + Học viên · Nhập điểm Test**, không có Lộ trình lớp / Lịch kiểm tra,
   Chuyển tiếp lớp, ⋮ (nếu GVCN không có `class.edit`/`class.assign`); menu ⋯ dòng có + Ghi nhận vi phạm; bảng điều khiển trình duyệt
   không có lỗi 403 đỏ.
-- [ ] **Step 6: KIỂM — GVBM Phạm Thu Trang (9), 1440px.** Chỉ lớp mình dạy; ô Phạm vi ẩn nếu chỉ một lựa chọn; hồ sơ lớp **không**
+- [x] **Step 6: KIỂM — GVBM Phạm Thu Trang (9), 1440px.** Chỉ lớp mình dạy; ô Phạm vi ẩn nếu chỉ một lựa chọn; hồ sơ lớp **không**
   có + Học viên, Lộ trình lớp, ⋮; có + Case (nếu có quyền báo Case), Nhập điểm Test; menu ⋯ dòng: Hồ sơ · + Ghi nhận vi phạm · + Case ·
   Nhập điểm (chỉ khi em còn bài Speaking chờ chấm); tên đồng nghiệp ở dòng GV bộ môn là chữ thường.
-- [ ] **Step 7: KIỂM — điện thoại 375×812** (Quản trị, QL, GVCN, GVBM — ít nhất `/hoc-vien`, hồ sơ lớp FT tab Học viên, hồ sơ lớp
+- [x] **Step 7: KIỂM — điện thoại 375×812** (Quản trị, QL, GVCN, GVBM — ít nhất `/hoc-vien`, hồ sơ lớp FT tab Học viên, hồ sơ lớp
   thường tab Học viên, tab Phân tích lớp):
   1. `document.documentElement.scrollWidth <= 375` ở mọi màn trên; bảng cuộn ngang **trong thẻ** (G-11).
   2. Hộp lớp xuống dòng gọn, badge không đè tên; chip cuộn ngang trong hàng của nó.
@@ -3450,15 +3450,57 @@ git commit -m "PR-Qa (15): bảng định vị §4 (Nhập điểm ở ⋯ hộp
   4. Menu ⋯ ở dòng cuối cùng mở **lên trên**, nằm **trên** thanh dưới 4 nút; menu thông báo/tài khoản ở đầu trang phủ lên thanh dưới
      (thanh dưới z-30). Ngăn trượt (+ Case) phủ thanh dưới; toast hiện trên thanh dưới.
   5. Hàng nút đầu hồ sơ lớp xuống dòng, không tràn; tab cuộn ngang trong hàng tab.
-- [ ] **Step 8:** Lưu ảnh vào `thiet-ke/anh/pr-qa/`. Tắt API/Vite, xoá `vite.qa.config.ts`, gỡ playwright khỏi `node_modules`
+- [x] **Step 8:** Lưu ảnh vào `thiet-ke/anh/pr-qa/`. Tắt API/Vite, xoá `vite.qa.config.ts`, gỡ playwright khỏi `node_modules`
   (`npm prune`), kiểm `git status` không còn file tạm. Xác nhận không còn tiến trình nghe 4137/5337.
-- [ ] **Step 9:** `npm run check` xanh lần cuối; số phép kiểm ≥ mốc Task 0 + 29. Ghi Nhật ký (✓/✗ từng mục, lỗi đã sửa ở commit nào).
-- [ ] **Step 10: Commit.**
+- [x] **Step 9:** `npm run check` xanh lần cuối; số phép kiểm ≥ mốc Task 0 + 29. Ghi Nhật ký (✓/✗ từng mục, lỗi đã sửa ở commit nào).
+- [x] **Step 10: Commit.**
 
 ```bash
 git add thiet-ke/anh/pr-qa
 git commit -m "PR-Qa (16): ảnh KIỂM bốn vai, 1440px và 375px, lớp FT và lớp thường"
 ```
+
+**Nhật ký thực thi (Task 16, KIỂM bấm thử):**
+
+Máy dev bật đúng cổng 4137 (API)/5337 (Vite) trong worktree, không đụng bản chính. Đăng nhập bằng
+`POST /api/demo/session` cho 4 vai (1, 2, 7, 9). Chụp 15 ảnh 1440px/375px vào `thiet-ke/anh/pr-qa/` bằng Playwright
+Chrome tạm thời (gỡ sau khi xong). Kiểm bằng cả ảnh và `get_page_text`/`read_page`/DOM (regex chữ cấm G-6) qua trình
+duyệt gắn sẵn.
+
+- Step 3 (Quản trị, 15 mục): ✓ tất cả. Chi tiết đáng chú ý: mục 3.5/3.12/3.13 quét regex `\d{4}-\d{2}-\d{2}|Progress|Final|Normal|kỳ vọng`
+  trên `MB-FOU 12` và panel Lịch kiểm tra — sạch. Mục 3.9 xác nhận `<abbr title="Listening · Reading">` đúng khi rê chuột "L · R";
+  ⋮ đúng "Sửa phân công · Sửa thông tin lớp"; bấm "11 Case đang mở" chuyển đúng sang chế độ Cần hỗ trợ. Mục 3.11 (Phân tích lớp):
+  bấm dòng mở đúng bảng vấn đề; ⓘ trong đặc tả (Q14) hiện dưới dạng thuộc tính `title` thường (không có glyph ⓘ riêng) — cùng quy ước
+  với TOÀN BỘ 15 task trước (không có icon ⓘ riêng ở bất kỳ đâu trong `web/src`), nên không coi là lỗi riêng của task này, chỉ ghi
+  nhận để Task 17 cân nhắc. Mục 3.14: đổi mã lớp MB-FOU 12 → 12A → lưu → đổi lại; toast lỗi đúng câu khi gõ "FOU 12" thiếu tiền tố "MB-".
+  **Mục 3.15 phát hiện LỖI THẬT** (xem bên dưới) — đã sửa.
+- Step 4 (QL chi nhánh Nguyễn Khánh Vy): ✓. Riêng "Nhập điểm Test" KHÔNG hiện ở hồ sơ lớp cho QL (khác mô tả brief "đủ nút như
+  Quản trị") — đã tra `server/src/permissions.ts` + `server/src/tests/run.ts:699-701`: đây là hành vi ĐÚNG THEO THIẾT KẾ đã có phép
+  kiểm tường minh ("Quản lý không có đường nhập bù điểm", chỉ Quản trị hệ thống mới nhập bù được) — không phải lỗi, không sửa. ⋮ đủ
+  "Sửa phân công · Sửa thông tin lớp"; mở `TeacherAssignDialog`, đổi rồi Lưu → toast "Đã lưu phân công".
+- Step 5 (GVCN Trần Ngọc Hà): ✓. Mặc định chỉ 2 lớp mình dạy (MB-FOU 12, MB-FT 101), không có ô Phạm vi/Chi nhánh. Hồ sơ lớp chỉ
+  "+ Case · + Học viên · Nhập điểm Test", không ⋮. "Việc tiếp theo" đúng việc của mình (Nhập điểm L, R). Console không có lỗi 403.
+- Step 6 (GVBM Phạm Thu Trang): ✓. Hồ sơ lớp chỉ "+ Case · Nhập điểm Test", không + Học viên/Lộ trình lớp/⋮. Menu ⋯ dòng học viên còn
+  bài Speaking chờ chấm có thêm "Nhập điểm MT…"; dòng không còn bài chỉ có "Hồ sơ · + Ghi nhận vi phạm · + Case". Tên đồng nghiệp ở
+  dòng GV bộ môn là chữ thường, không phải link.
+- Step 7 (375×812, 4 vai): ✓. `scrollWidth` luôn 375 ở mọi màn đã kiểm; bảng cuộn ngang trong thẻ; dòng GV bộ môn gọn 2 nhóm + "+k",
+  bấm "+k" ra đủ danh sách; menu ⋯ dòng cuối mở lên trên, trên thanh dưới 4 nút; ngăn "+ Case" phủ kín thanh dưới; hàng nút đầu hồ sơ
+  lớp xuống dòng gọn, tab cuộn ngang trong hàng tab.
+
+**Lỗi thật phát hiện và đã sửa (commit riêng):**
+
+1. `web/src/modules/students/IntakePanel.tsx` (thuộc Task 14) — ô "Tuần bắt đầu" của từng dòng trong ngăn + Học viên hàng loạt hiện
+   placeholder theo **ISO thô** (`2026-07-27`) thay vì định dạng G-6 (`27/07`), vi phạm "Ngày không bao giờ hiện dạng ISO". Nguyên
+   nhân: dùng thẳng `pv.defaultStartWeek` (chuỗi ISO từ máy chủ) làm `placeholder` thay vì qua hàm `ngay()` như dòng gợi ý ngay phía
+   trên đã làm đúng. Sửa: bọc qua `ngay(pv.defaultStartWeek, homNay)`. Đã xác nhận lại trên trình duyệt: placeholder đổi thành "27/07".
+   Commit: xem SHA bên dưới, message `PR-Qa (16): sửa lỗi phát hiện khi KIỂM — ...`.
+
+**Không tìm thấy lỗi nào khác cần sửa.** Mọi mục ✗ ban đầu (QL thiếu "Nhập điểm Test") sau khi tra code + test hiện có đều xác
+định là hành vi đúng theo thiết kế, không phải lỗi.
+
+`npm run check`: **787/787 kiểm tra đạt**, `typecheck` xanh (không đổi so với mốc trước Task 16 vì đây là task KIỂM, không thêm bớt
+phép kiểm). Đã dọn sạch: tắt cả 2 tiến trình dev (API 4137, Vite 5337), xoá `vite.qa.config.ts` và `scripts-tmp-qa/`, `npm prune` gỡ
+playwright, `git status` sạch trước khi commit.
 
 ---
 
