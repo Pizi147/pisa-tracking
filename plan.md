@@ -2889,13 +2889,15 @@ Tình trạng từng dòng: `BAN_DO_OVERHAUL.md` mục 5 và mục 8.
 ### Bước — Học thuật (rule book §18.2)
 
 - [ ] **S1.** Đóng SOS không tạo Case: **bắt buộc ghi lý do** (`resolution_note`).
-- [ ] **S2. Lịch sử điều chỉnh phương án.** Hiện sửa nội dung phương án là **ghi đè, mất bản cũ**.
+- [x] **S2. Lịch sử điều chỉnh phương án.** *(PR-S2)* Hiện sửa nội dung phương án là **ghi đè, mất bản cũ**.
       Rule mới bắt buộc audit được: phương án ban đầu là gì · đổi khi nào · **vì sao đổi** ·
       hiện tại là gì. Chuỗi "thay thế" (`superseded_by`) đã có, giữ; thêm nhật ký sửa nội dung.
+      **PR-S2:** bảng `case_intervention_revisions` (bản cũ · bản mới · ngày · ai · lý do); Điều chỉnh = cùng PA, không đổi loại; Thay = chuỗi `superseded_by` có sẵn + lý do bắt buộc; sửa gợi ý lúc xác nhận cũng ghi lịch sử; `completeIntervention` thôi ghi đè mô tả. Nghiệm thu mục 2 khoá bằng phép kiểm "Điều chỉnh hai lần".
 - [ ] **S3.** Đổi tên mức: `Cần chú ý` → **`Bình thường`** (5 ngày). `Gấp` giữ (3 ngày).
       Grep **mọi biến thể** kể cả test, seed và thông báo máy chủ.
-- [ ] **S4.** Cập nhật tuần rút gọn theo nguồn §8: kết quả hiện tại · tiến triển · vấn đề còn
+- [x] **S4.** *(PR-S2)* Cập nhật tuần rút gọn theo nguồn §8: kết quả hiện tại · tiến triển · vấn đề còn
       tồn · giữ nguyên / điều chỉnh / thay phương án · ghi chú. Không biến thành form dài.
+      **PR-S2:** form Ghi kết quả 5 mục (kết quả · tiến triển · vấn đề còn tồn · Giữ nguyên/Điều chỉnh/Thay phương án/Kết thúc phương án · ghi chú hoặc lý do), dùng chung ở hồ sơ học viên và ngăn Case (`web/src/modules/cases/CapNhatTuan.tsx`).
 - [ ] **S5.** Ô `Điểm chi tiết theo kỹ năng` của tab nhập bù — nối dây theo hình
       `ComponentsField` (mục 12.2). `backfillCase` ở máy chủ **đã nhận sẵn** `metrics` và validate.
 - [ ] **S6.** Tab `Đã xong từ trước` **chỉ còn nhánh Học thuật** — nhánh Ý thức không còn lý do tồn tại.
