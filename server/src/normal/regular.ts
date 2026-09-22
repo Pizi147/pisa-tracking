@@ -705,7 +705,7 @@ export function regularSheet(p: Principal, classId: number, kind?: string) {
   const studentIds = [...new Set(attempts.map((a) => a.student_id as number))];
   const caseRows = studentIds.length
     ? (conn
-        .prepare(`SELECT * FROM sos_cases WHERE student_id IN (${studentIds.map(() => '?').join(',')}) ORDER BY id`)
+        .prepare(`SELECT * FROM sos_cases WHERE student_id IN (${studentIds.map(() => '?').join(',')})`)
         .all(...studentIds) as any[])
     : [];
   const casesOf = (studentId: number, cycleId: number | null, failing: string[]) => {
@@ -719,6 +719,13 @@ export function regularSheet(p: Principal, classId: number, kind?: string) {
       .filter((c) => c.student_id === studentId
         && (c.cycle_id ?? 0) === (cycleId ?? 0)
         && skillOfCat.has(c.category ?? categoryOf(c.topic) ?? ''))
+      /*
+       * THỨ TỰ = LUẬT CASE ĐẠI DIỆN của hạng mục (mục 4.3, `skillSupportBoard` ở cases/cases.ts: `mine.find(c => c.status
+       * !== 'done') ?? mine[0]`): đang mở trước, mới nhất trước; không còn cái nào mở thì cái đã đóng gần nhất. "Mới nhất"
+       * ở đây theo id (bảng này không đọc lịch sử xử lý từng Case). Xếp theo id tăng dần thì `cases[0]` là Case CŨ NHẤT —
+       * một Case nhập bù đã đóng sẽ che mất Case đang mở cùng môn.
+       */
+      .sort((x, y) => Number(x.status === 'done') - Number(y.status === 'done') || y.id - x.id)
       .map((c) => {
         const category = (c.category ?? categoryOf(c.topic)) as string;
         return {

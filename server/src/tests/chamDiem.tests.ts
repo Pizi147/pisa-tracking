@@ -262,4 +262,31 @@ export async function runChamDiemTests(t: YThucTestKit) {
     assert(dong.cases[0].category === 'listening' && dong.cases[0].skill === 'listening', 'Case gắn đúng môn trượt');
     assert(dong.caseStatus !== null, 'Trường cũ vẫn có giá trị để nơi gọi cũ không vỡ');
   });
+
+  check('PR-Rc1 · §6 Nhiều Case cùng môn: dòng hiện Case ĐANG MỞ trước, không phải Case cũ đã xong (mục 4.3)', () => {
+    const { cycleId, attemptId } = taoBaiThuong('2026-09-14');
+    const a: any = conn.prepare('SELECT * FROM assessment_attempts WHERE id = ?').get(attemptId);
+    for (const [k, s] of [['listening', 10], ['reading', 35], ['writing', 16], ['speaking', 8]] as const) {
+      regular.saveRegularScore(P.admin, attemptId, k, { score: s, total: k === 'writing' ? 20 : k === 'speaking' ? 10 : 40 });
+    }
+    const sg: any = conn.prepare(`SELECT * FROM case_signals WHERE attempt_id = ? AND skill = 'listening'`).get(attemptId);
+    assert(sg && sg.status === 'pending', 'Môn trượt phải sinh tín hiệu đang chờ');
+    const baoCase = (extra: Record<string, unknown>) => casesSvc.reportIssue(P.normalCoreTeacher, {
+      studentId: a.student_id, topic: 'listening', title: 'Listening dưới ngưỡng (PR-Rc1)',
+      summary: 'Đã xem lại bài, em vướng đúng phần nghe này của môn.',
+      primaryCode: d.issuesForTopic('listening')[0].code, ...extra,
+    }) as any;
+    /* Case CŨ của môn này đã xong (như Case nhập bù — đóng ngay lúc tạo), rồi một Case MỚI đang mở cùng môn, cùng khoá. */
+    const cu = baoCase({ fromSignalId: sg.id });
+    conn.prepare(`UPDATE sos_cases SET status = 'done' WHERE id = ?`).run(cu.id);
+    const moi = baoCase({ cycleId });
+    assert(moi.id > cu.id, 'Case mới có id lớn hơn');
+    const moiRow: any = conn.prepare('SELECT status FROM sos_cases WHERE id = ?').get(moi.id);
+    assert(moiRow.status !== 'done', 'Case mới đang mở');
+    const dong = regular.regularSheet(P.mbManager, classId('MB-FOU 12')).rows.find((r: any) => r.attemptId === attemptId);
+    assert(dong.cases.length === 2, `Dòng thấy cả hai Case của môn: ${dong.cases.length}`);
+    assert(dong.cases[0].id === moi.id && dong.cases[0].status !== 'done',
+      `Case đầu tiên phải là Case đang mở: #${dong.cases[0].id} (${dong.cases[0].status})`);
+    assert(dong.caseId === moi.id && dong.caseStatus === moiRow.status, `Trường cũ lấy Case đang mở: ${dong.caseStatus}`);
+  });
 }
