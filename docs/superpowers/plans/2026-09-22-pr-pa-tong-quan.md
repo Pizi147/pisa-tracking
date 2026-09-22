@@ -2478,7 +2478,7 @@ export function HocVienCanHoTro() {
   - `shared/domain/index.ts` → giữ mọi dòng `export *`.
   Sau rebase: `npm ci` (nếu `package-lock.json` đổi) + `npm run check` xanh. Đỏ vì thay đổi của PR khác (ví dụ PR-Qa sửa
   `ngay`) → sửa phía PR-Pa nếu là dùng sai; nếu là luật mới của PR khác → 🛑 hỏi.
-- [ ] **Step 3:** superpowers:finishing-a-development-branch — `git push -u origin pr-pa-tong-quan`, mở PR **không draft**,
+- [x] **Step 3:** superpowers:finishing-a-development-branch — `git push -u origin pr-pa-tong-quan`, mở PR **không draft**,
   tiêu đề `PR-Pa · Tổng quan`, thân PR: việc đã làm theo mã (§3.2, P1–P6, P6b, P6c, §3.10 dòng tín hiệu, nợ S1 ×2), bảng
   Q1–Q25 rút gọn, mục Mâu thuẫn, "Chuyển cho PR khác", số phép kiểm trước → sau, ảnh KIỂM (link thư mục), "Không có migrate".
   Cuối thân PR: `🤖 Generated with [Claude Code](https://claude.com/claude-code)`. **Không tự merge.**
@@ -2638,4 +2638,6 @@ export function HocVienCanHoTro() {
   nhánh gọi đúng chi nhánh; assert không rỗng cho Cần xử lý / Điểm đáng chú ý; dọn `void`, `c.kind`, chú thích "phải chạy
   cuối"); rà lại có phạm vi: đạt. Rebase lên `origin/main` @ `61ae2dd` (đã có PR-S2 #64 + PR-AN): xung đột duy nhất ở
   `server/src/tests/run.ts` — giữ cả khối PR-S2, PR-AN và đặt khối PR-Pa CUỐI CÙNG (bộ này tạo dữ liệu thật). Không đổi
-  `package-lock.json` nên không cần `npm ci`. `npm run check` sau rebase: **TẤT CẢ 801 KIỂM TRA ĐỀU ĐẠT** (779 của main + 22).
+  `package-lock.json` nên không cần `npm ci`. `npm run check` sau rebase: **TẤT CẢ 801 KIỂM TRA ĐỀU ĐẠT** (779 của main + 22). `vite build` xanh.
+  Đẩy nhánh, mở **PR #68** (không draft, không tự merge) — https://github.com/Pizi147/pisa-tracking/pull/68. Chờ session
+  planning rà.
