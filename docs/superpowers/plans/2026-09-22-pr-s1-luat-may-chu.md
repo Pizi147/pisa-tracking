@@ -760,7 +760,7 @@ chỉ khi bật `noUnusedLocals`; vẫn xoá cho sạch nếu thật sự không
 - Modify: `server/src/worklist/signals.ts:70-104`
 - Test: `server/src/tests/luatMayChu.tests.ts`
 
-- [ ] **Step 1: Phép kiểm (đỏ).**
+- [x] **Step 1: Phép kiểm (đỏ).**
 
 ```ts
   // ================================================================== 5. §6 worklist/signals.ts
@@ -786,8 +786,8 @@ chỉ khi bật `noUnusedLocals`; vẫn xoá cho sạch nếu thật sự không
   });
 ```
 
-- [ ] **Step 2: Chạy, đỏ.** Expected: cả hai ✗.
-- [ ] **Step 3: Sửa SQL.** Khối 1 (`no_plan`, dòng 71–85): thêm `LEFT JOIN programmes pg ON pg.code = c.programme_code` sau `JOIN classes c …`
+- [x] **Step 2: Chạy, đỏ.** Expected: cả hai ✗.
+- [x] **Step 3: Sửa SQL.** Khối 1 (`no_plan`, dòng 71–85): thêm `LEFT JOIN programmes pg ON pg.code = c.programme_code` sau `JOIN classes c …`
   và điều kiện `AND COALESCE(pg.scoring_mode, '') != 'ratio'` sau `c.branch_id IN (${ph})`. Chú thích một dòng:
   `/* Lớp thường xếp lịch Test theo LỚP (planRegularTests), không theo từng em — không phải việc "chưa có tuần MT" của Quản lý. */`
 
@@ -818,7 +818,7 @@ Khối 2 (`missing_scores`, dòng 88–104) thay bằng:
   }
 ```
 
-- [ ] **Step 4: Chạy, xanh** (Expected `687`). **Step 5: Commit.** `git commit -am "PR-S1 (5): §6 — no_plan loại lớp thường, missing_scores lớp thường theo số câu đúng"`
+- [x] **Step 4: Chạy, xanh** (Expected `687`). **Step 5: Commit.** `git commit -am "PR-S1 (5): §6 — no_plan loại lớp thường, missing_scores lớp thường theo số câu đúng"`
 
 ---
 

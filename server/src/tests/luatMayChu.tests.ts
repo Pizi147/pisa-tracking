@@ -270,5 +270,27 @@ export async function runLuatMayChuTests(t: YThucTestKit) {
     assert(src.includes('scoreDebtCells') && !/s\.band IS NULL/.test(src), 'branchpulse.ts còn đếm nợ điểm bằng band IS NULL');
   });
 
+  // ================================================================== 5. §6 worklist/signals.ts
+
+  console.log('\nPR-S1 · 5. Việc sinh từ dữ liệu: lớp thường không bị đếm "chưa có tuần MT" và "còn thiếu điểm" oan');
+  const wsignals: any = await import('../worklist/signals.ts');
+  const countOf = (kind: string) =>
+    ((wsignals.signalsFor(P.admin, { branchId: mbBranch }) as any[]).find((x) => x.kind === kind)?.count ?? 0) as number;
+
+  check('§6 · Học viên lớp thường không có lượt "planned" KHÔNG bị đếm "chưa có tuần MT" (lớp thường xếp lịch theo lớp)', () => {
+    const before = countOf('no_plan');
+    const hv = taoHocVien({ classCode: 'MB-FOU 12', weekStart: '2026-09-07' });
+    conn.prepare(`UPDATE assessment_attempts SET status = 'done' WHERE id = ?`).run(hv.attemptId);
+    assert(countOf('no_plan') === before, `Em lớp thường bị đếm vào "chưa có tuần MT": ${before} → ${countOf('no_plan')}`);
+  });
+
+  check('§6 · Lượt lớp thường đủ bốn môn (số câu đúng) KHÔNG còn "thiếu điểm"; thiếu một môn thì có', () => {
+    const base = countOf('missing_scores');
+    const hv = taoHocVien({ classCode: 'MB-FOU 12', weekStart: '2026-09-07' });
+    assert(countOf('missing_scores') === base + 1, 'Lượt chưa có điểm nào phải được đếm thiếu điểm');
+    for (const k of ['listening', 'reading', 'writing', 'speaking']) diem(hv.attemptId, k, 30, 40);
+    assert(countOf('missing_scores') === base, `Đủ bốn môn mà vẫn "thiếu điểm": ${base} → ${countOf('missing_scores')}`);
+  });
+
   // ---- các task sau thêm phép kiểm NGAY TRÊN dòng này ----
 }

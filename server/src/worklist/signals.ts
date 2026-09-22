@@ -68,13 +68,16 @@ export function signalsFor(p: Principal, f: { branchId?: number | null; periodId
   };
 
   // 1. Chưa có tuần MT — việc của QUẢN LÝ, không phải Admin chi nhánh.
+  /* Lớp thường xếp lịch Test theo LỚP (planRegularTests), không theo từng em — không phải việc "chưa có tuần MT" của Quản lý. */
   for (const r of conn
     .prepare(
       `SELECT c.branch_id, COUNT(*) AS n FROM students s
          JOIN enrollments e ON e.student_id = s.id AND e.status='active'
          JOIN classes c ON c.id = e.class_id
+         LEFT JOIN programmes pg ON pg.code = c.programme_code
          JOIN learning_cycles cy ON cy.student_id = s.id AND cy.status='active'
         WHERE s.status='active' AND s.archived_at IS NULL AND c.branch_id IN (${ph})
+          AND COALESCE(pg.scoring_mode, '') != 'ratio'
           AND NOT EXISTS (SELECT 1 FROM assessment_attempts a
                            WHERE a.cycle_id = cy.id AND a.status='planned')
         GROUP BY c.branch_id`,
@@ -84,22 +87,26 @@ export function signalsFor(p: Principal, f: { branchId?: number | null; periodId
          'manager', 'info', `/hoc-vien?view=no_plan&branchId=${r.branch_id}`);
   }
 
-  // 2. Thiếu điểm — tự hết khi giáo viên nhập đủ, không có nút đóng giả.
+  // 2. Thiếu điểm — tự hết khi giáo viên nhập đủ. Lớp thường "có điểm" = có SỐ CÂU ĐÚNG (không bao giờ có band); FT giữ nguyên luật cũ.
   for (const r of conn
     .prepare(
       `SELECT c.branch_id, COUNT(*) AS n FROM assessment_attempts a
          JOIN classes c ON c.id = a.class_id
+         LEFT JOIN programmes pg ON pg.code = c.programme_code
          JOIN students s ON s.id = a.student_id
          JOIN report_periods rp ON rp.id = a.planned_period_id
         WHERE a.status != 'cancelled' AND s.archived_at IS NULL AND c.branch_id IN (${ph})
           AND a.planned_period_id IS NOT NULL AND rp.week_start <= ?
-          AND (SELECT COUNT(*) FROM assessment_scores sc
-                WHERE sc.attempt_id = a.id AND sc.band IS NOT NULL) <
-              (4 - (SELECT COUNT(*) FROM attempt_skill_skips k WHERE k.attempt_id = a.id))
+          AND CASE WHEN COALESCE(pg.scoring_mode, '') = 'ratio'
+                THEN (SELECT COUNT(*) FROM assessment_scores sc WHERE sc.attempt_id = a.id AND sc.raw_score IS NOT NULL)
+                     < (SELECT COUNT(*) FROM programme_skills ps WHERE ps.programme_code = c.programme_code)
+                ELSE (SELECT COUNT(*) FROM assessment_scores sc WHERE sc.attempt_id = a.id AND sc.band IS NOT NULL)
+                     < (4 - (SELECT COUNT(*) FROM attempt_skill_skips k WHERE k.attempt_id = a.id))
+              END
         GROUP BY c.branch_id`,
     )
     .all(...ids, today) as any[]) {
-    push('missing_scores', r.branch_id, r.n, `${r.n} bài MT còn thiếu điểm`,
+    push('missing_scores', r.branch_id, r.n, `${r.n} bài Test còn thiếu điểm`,
          'teacher', 'warn', `/hoc-vien?view=missing_scores&branchId=${r.branch_id}`);
   }
 
