@@ -36,7 +36,7 @@ const COT: { key: CotBang; nhan: (ct: ChuongTrinh) => string; goiY: string }[] =
 export function BranchPulse({ branchId, ct }: { branchId: number | null; ct: ChuongTrinh }) {
   const navigate = useNavigate();
   const q = `${branchId ? `branchId=${branchId}` : ''}${thamSoCt(ct)}`.replace(/^&/, '');
-  const { data, loading, error, reload } = useApi<Bang>(`/tong-quan/chi-nhanh?${q}`, [branchId, ct]);
+  const { data, loading, error, reload } = useApi<Bang>(q ? `/tong-quan/chi-nhanh?${q}` : '/tong-quan/chi-nhanh', [branchId, ct]);
   const [mo, setMo] = useState<Set<string>>(new Set());
   const [view, setView] = useState<'lop' | 'gv'>('lop');
   const tieuDeTam = branchId ? 'Theo lớp' : 'Theo chi nhánh';   // tiêu đề trung tính khi chưa có dữ liệu, tránh nhấp nháy
@@ -73,6 +73,7 @@ export function BranchPulse({ branchId, ct }: { branchId: number | null; ct: Chu
       ) : undefined}
       bodyClass="p-0">
       {coGv && view === 'gv' ? <BangTheoGiaoVien branchId={branchId} /> : (
+        <>
         <div className="table-scroll">
           <table className="w-full text-sm" style={{ tableLayout: 'fixed', minWidth: '44rem' }}>
             <colgroup><col style={{ width: '26%' }} />{COT.map((c) => <col key={c.key} style={{ width: `${(74 / COT.length).toFixed(1)}%` }} />)}</colgroup>
@@ -112,10 +113,11 @@ export function BranchPulse({ branchId, ct }: { branchId: number | null; ct: Chu
               {data.cheDo === 'chi-nhanh' && hangTong('Tất cả chi nhánh')}
             </tbody>
           </table>
-          <p className="m-0 px-4 py-2 text-[11px] text-slate-500 border-t" style={{ borderColor: 'var(--line)' }}>
-            {data.cheDo === 'chi-nhanh' ? 'Bấm ▸ để mở ra từng lớp · bấm số để xem danh sách' : 'Bấm số để xem danh sách'}
-          </p>
         </div>
+        <p className="m-0 px-4 py-2 text-[11px] text-slate-500 border-t" style={{ borderColor: 'var(--line)' }}>
+          {data.cheDo === 'chi-nhanh' ? 'Bấm ▸ để mở ra từng lớp · bấm số để xem danh sách' : 'Bấm số để xem danh sách'}
+        </p>
+        </>
       )}
     </Card>
   );
@@ -141,11 +143,12 @@ const PEOPLE_COLS: { key: keyof PersonRow; label: string; hint: string }[] = [
 
 /** Bảng theo giáo viên: tự gọi `/branch-pulse`, chỉ dùng `people`. Số ở đây không bấm (giữ nguyên tới PR-GV). */
 function BangTheoGiaoVien({ branchId }: { branchId: number | null }) {
-  const { data, loading } = useApi<Pulse | null>(
+  const { data, loading, error, reload } = useApi<Pulse | null>(
     `/branch-pulse${branchId ? `?branchId=${branchId}` : ''}`, [branchId],
   );
   const [pSort, setPSort] = useState<{ col: keyof PersonRow; dir: 'asc' | 'desc' } | null>(null);
 
+  if (error) return <ErrorState message={error.message} hint={error.hint} onRetry={reload} />;
   if (loading) return <div className="p-4"><Skeleton rows={3} /></div>;
   if (!data) return null;
   if (data.people.length === 0) return <Empty title="Chưa có giáo viên nào trong chi nhánh này" />;

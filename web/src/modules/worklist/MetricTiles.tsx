@@ -11,7 +11,8 @@ import { thamSoCt, type ChuongTrinh } from '@shared/domain/index.ts';
 type Lean = { n: number; denominator: number | null; empty: boolean };
 const qs = (branchId: number | null, ct: ChuongTrinh) => `${branchId ? `branchId=${branchId}` : ''}${thamSoCt(ct)}`.replace(/^&/, '');
 function useSo(id: string, branchId: number | null, ct: ChuongTrinh) {
-  return useApi<Lean>(`/metrics/${id}?${qs(branchId, ct)}`, [id, branchId, ct]);
+  const q = qs(branchId, ct);
+  return useApi<Lean>(q ? `/metrics/${id}?${q}` : `/metrics/${id}`, [id, branchId, ct]);
 }
 function O({ id, branchId, ct, nhan, phu, tone }: {
   id: string; branchId: number | null; ct: ChuongTrinh; nhan: string; tone?: 'danger' | 'warn';
