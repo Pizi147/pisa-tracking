@@ -25,7 +25,7 @@ Mockup là HTML tĩnh nền tối. Chúng quy định **bố cục, thứ tự, 
 | G-3 | Không dồn chữ: tối đa **một** dòng phụ dưới dòng chính, dòng phụ ≤ ~60 ký tự. Thông tin thêm đưa vào ⓘ hoặc panel. |
 | G-4 | ⚠ chỉ nghĩa là **quá hạn**. Các trạng thái khác dùng badge chữ. |
 | G-5 | Bỏ mọi khối chữ giải thích cho dev (`SectionNote` giải thích mô hình). Luật cần thiết đưa vào popover ⓘ cạnh tiêu đề. |
-| G-6 | Ngày không bao giờ hiện dạng ISO. Ngày: `dd/mm` (cùng năm) hoặc `dd/mm/yyyy`. **Tuần lịch: `W{n} {THÁNG}`** (vd `W3 SEP`, `W1 OCT`, tháng viết tắt tiếng Anh in hoa). **Tuần học trong khoá: `W{n}/{tổng}`** (vd `W8/8`). Không dùng "T5", "tuần 5", "Tuần 36". Dùng một hàm chung (xem §5, PR-O). |
+| G-6 | Ngày không bao giờ hiện dạng ISO. Ngày: `dd/mm` (cùng năm) hoặc `dd/mm/yyyy`. **Tuần lịch: `W{n} {THÁNG}`** (vd `W3 SEP`, `W1 OCT`, tháng viết tắt tiếng Anh in hoa). **Tuần học trong khoá: `W{n}/{tổng}`** (vd `W8/8`). Không dùng "T5", "tuần 5", "Tuần 36". Dùng một hàm chung (tạo ở PR-O, §7). |
 | G-7 | Viết tắt được giữ (GVCN, GVBM, PA, SOS, FT, KV, OVR, L R W1 W2 S) luôn có tooltip bản đầy đủ. Icon ⋮ ⋯ ⓘ ▸ ✓ luôn có tooltip. |
 | G-8 | Panel không chồng panel. Mở việc khác từ một panel thì đóng panel cũ rồi mở panel mới. |
 | G-9 | Mọi ô dán bằng chứng nhận: **Ctrl+V dán ảnh chụp màn hình**, kéo thả, chọn tệp, dán liên kết. |
