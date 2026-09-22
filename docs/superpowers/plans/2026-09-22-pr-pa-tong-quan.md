@@ -208,19 +208,19 @@ file xem lại — lệch vài dòng là bình thường; **lệch nội dung** 
 
 **Files:** không sửa mã.
 
-- [ ] **Step 1:** Dùng superpowers:using-git-worktrees: `git fetch origin && git worktree add ../pisa-pr-pa -b pr-pa-tong-quan origin/main`.
+- [x] **Step 1:** Dùng superpowers:using-git-worktrees: `git fetch origin && git worktree add ../pisa-pr-pa -b pr-pa-tong-quan origin/main`.
   Mọi lệnh sau chạy trong worktree. **Không** checkout nhánh khác trong thư mục chính (session khác đang dùng).
-- [ ] **Step 2: Kiểm môi trường không có biến Turso.**
+- [x] **Step 2: Kiểm môi trường không có biến Turso.**
 
 ```bash
 node -e "for (const k of ['TURSO_DATABASE_URL','TURSO_AUTH_TOKEN','BAN_CHINH','PISA_CHO_PHEP_MIGRATE_TURSO','PISA_CHO_PHEP_SEED_TURSO']) if (process.env[k]) { console.error('CÓ BIẾN', k); process.exit(1) } ; console.log('sạch')"
 ```
 Expected: `sạch`.
 
-- [ ] **Step 3:** `npm ci` rồi `npm run check`. Ghi vào Nhật ký số ở dòng `TẤT CẢ N KIỂM TRA ĐỀU ĐẠT`. Đỏ ngay từ đầu → 🛑.
-- [ ] **Step 4:** `git diff 7843875..HEAD --stat -- web/src/modules/worklist server/src/worklist server/src/cases/signals.ts web/src/ui/SoLieu.tsx web/src/modules/cases/QuickReport.tsx shared/domain/metrics.ts server/src/routes/index.ts`
+- [x] **Step 3:** `npm ci` rồi `npm run check`. Ghi vào Nhật ký số ở dòng `TẤT CẢ N KIỂM TRA ĐỀU ĐẠT`. Đỏ ngay từ đầu → 🛑.
+- [x] **Step 4:** `git diff 7843875..HEAD --stat -- web/src/modules/worklist server/src/worklist server/src/cases/signals.ts web/src/ui/SoLieu.tsx web/src/modules/cases/QuickReport.tsx shared/domain/metrics.ts server/src/routes/index.ts`
   — có thay đổi (ví dụ PR-AN đã merge) thì mở file xem lại số dòng; lệch nội dung ở chỗ plan sửa → 🛑.
-- [ ] **Step 5:** Đọc: spec §1–§4, §7 dòng Pa; kiểm kê §1.3; bốn mockup; Global Constraints + bảng Q1–Q25 ở trên. Có Q nào
+- [x] **Step 5:** Đọc: spec §1–§4, §7 dòng Pa; kiểm kê §1.3; bốn mockup; Global Constraints + bảng Q1–Q25 ở trên. Có Q nào
   bạn thấy sai với đặc tả → 🛑 hỏi trước khi code.
 
 ---
@@ -2521,4 +2521,9 @@ export function HocVienCanHoTro() {
 
 *(Người thực thi ghi sau mỗi task: số phép kiểm, điều bất ngờ, chỗ phải tự quyết, model thật đang chạy.)*
 
-- **Task 0:**
+- **Task 0:** (22/09/2026, session Fable 5.1 · High; subagent cài đặt = Fable 5.1, người rà từng task và cuối = Opus 5)
+  worktree `../pisa-pr-pa` nhánh `pr-pa-tong-quan` từ `origin/main` @ `a0937ef`. Env sạch (không biến Turso). `npm ci` +
+  `npm run check` xanh: **mốc 730 phép kiểm**. `git diff 7843875..HEAD` trên các file plan chạm: không có thay đổi (chỉ thêm
+  file plan này). Đọc spec §1–§5, §7 dòng Pa; Q1–Q25 không thấy trái đặc tả §3.2/§3.10. Quyết định nhỏ: Task 10 sẽ tạo hai
+  file stub `ViecCuaToi.tsx` / `HocVienCanHoTro.tsx` (component trả `null`) để typecheck xanh, Task 12 viết thật. Ghi chú:
+  `web/src/ui/OSoNho.tsx` (PR-HV) là ô nhãn+số không bấm được, khác `SoLieuO` — không trùng.
