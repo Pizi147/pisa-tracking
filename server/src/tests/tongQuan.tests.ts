@@ -24,6 +24,7 @@ export async function runTongQuanTests(t: YThucTestKit) {
   const cases: any = await import('../cases/cases.ts');
   const metricsSvc: any = await import('../worklist/metrics.ts');
   const tq: any = await import('../worklist/tongQuan.ts').catch(() => ({}));
+  const bang: any = await import('../worklist/bangChiNhanh.ts').catch(() => ({}));
   const NOW = new Date().toISOString();
   const mbBranch = (conn.prepare(`SELECT id FROM branches WHERE code = 'MB'`).get() as any).id as number;
   let soThuTu = 0;
@@ -313,5 +314,41 @@ export async function runTongQuanTests(t: YThucTestKit) {
     assert(!tq.hocVienCanHoTro(P.w2Teacher /* GV W2 MB-FT 101, không dạy MB-FOU 12 */).rows.some((x: any) => x.studentId === co.sid), 'GV lớp khác thấy em');
     const sos = r.rows.filter((x: any) => x.huyHieu && /^SOS/.test(x.huyHieu.text)).map((x: any) => Number(x.huyHieu.text[4]));
     assert(sos.every((v: number, i: number) => i === 0 || sos[i - 1] >= v), 'Phải xếp mức SOS giảm dần');
+  });
+
+  // ================================================================== 6. Bảng Theo chi nhánh
+  const moiO = (who: any, f: any, cb: (khoa: string, cot: string, o: any) => void) => {
+    const b = bang.bangChiNhanh(who, f);
+    for (const cot of d.COT_BANG) cb('tong', cot, b.tong[cot]);
+    for (const h of b.hang) {
+      for (const cot of d.COT_BANG) cb(h.khoa, cot, h.o[cot]);
+      for (const l of h.lop ?? []) for (const cot of d.COT_BANG) cb(l.khoa, cot, l.o[cot]);
+    }
+    return b;
+  };
+
+  check('PR-Pa · Bảng chi nhánh: bấm MỌI ô ra đúng số dòng đã ghi (G-10); hàng tổng là tập gốc của chỉ số', () => {
+    moiO(P.admin, { ct: 'ca-hai' }, (khoa, cot, o) => {
+      const r = bang.oBangChiNhanh(P.admin, { ct: 'ca-hai', cot, khoa });
+      eq(r.rows.length, o.n, `Ô ${khoa}/${cot}`);
+    });
+    const t = bang.oBangChiNhanh(P.admin, { ct: 'ca-hai', cot: 'caseMo', khoa: 'tong' });
+    eq(t.rows.map((x: any) => x.id).sort((a: number, b: number) => a - b), ids('case-mo').slice().sort((a, b) => a - b), 'Tổng Case mở = case-mo');
+    const dd = bang.bangChiNhanh(P.admin, { ct: 'ca-hai' }).tong.duDuLieu;
+    const phu = metricsSvc.metricSet(P.admin, 'do-phu-danh-gia', {});
+    eq([dd.n, dd.mau], [phu.numeratorIds.length, phu.n], 'Đủ dữ liệu = tử số / mẫu số của do-phu-danh-gia');
+  });
+
+  check('PR-Pa · Bảng chi nhánh: Quản trị không chọn chi nhánh → hàng chi nhánh mở xuống lớp; Quản lý một chi nhánh → bảng lớp luôn', () => {
+    const a = bang.bangChiNhanh(P.admin, { ct: 'ca-hai' });
+    assert(a.cheDo === 'chi-nhanh' && a.hang.every((h: any) => h.loai === 'chi-nhanh' && Array.isArray(h.lop)), 'Quản trị');
+    const m = bang.bangChiNhanh(P.mbManager, { ct: 'ca-hai' });
+    assert(m.cheDo === 'lop' && m.hang.every((h: any) => h.loai === 'lop') && m.tenChiNhanh === 'Monbay', `Quản lý MB: ${m.cheDo}`);
+  });
+
+  check('PR-Pa · Bảng chi nhánh: Lớp thường không có hàng lớp FT; giáo viên bị từ chối', () => {
+    const b = bang.bangChiNhanh(P.admin, { branchId: mbBranch, ct: 'thuong' });
+    assert(b.hang.length > 0 && b.hang.every((h: any) => h.laFt === false), 'Lọt lớp FT vào Lớp thường');
+    assertThrows(() => bang.bangChiNhanh(P.normalCoreTeacher, { ct: 'ca-hai' }), /Quản lý/, 'GV mở bảng chi nhánh');
   });
 }

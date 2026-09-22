@@ -59,6 +59,7 @@ import * as sysconfigSvc from '../platform/sysconfig.ts';
 import * as mgmtSvc from '../worklist/mgmttasks.ts';
 import * as highlightSvc from '../worklist/highlights.ts';
 import * as tongQuanSvc from '../worklist/tongQuan.ts';
+import * as bangSvc from '../worklist/bangChiNhanh.ts';
 import { weeklyDrill, weeklyRollup } from '../worklist/weekly.ts';
 import { metricResponse, metricSet, rowsFor } from '../worklist/metrics.ts';
 import { myWork } from '../worklist/mywork.ts';
@@ -1157,6 +1158,21 @@ api.get('/tong-quan/quan-ly', requireAuth, wrap((req) => {
 api.get('/tong-quan/hoc-vien-can-ho-tro', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   return tongQuanSvc.hocVienCanHoTro(principalOf(req));
+}));
+
+/** Bảng Theo chi nhánh → lớp. Chỉ số của từng ô; danh sách ô ở route dưới. */
+api.get('/tong-quan/chi-nhanh', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return bangSvc.bangChiNhanh(principalOf(req), { branchId: qInt(req, 'branchId') ?? null, ct: chuongTrinhTuThamSo(qStr(req, 'ct')) });
+}));
+
+/** Danh sách đúng những bản ghi tạo nên MỘT ô của bảng (G-10). */
+api.get('/tong-quan/chi-nhanh/o', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return bangSvc.oBangChiNhanh(principalOf(req), {
+    branchId: qInt(req, 'branchId') ?? null, ct: chuongTrinhTuThamSo(qStr(req, 'ct')),
+    cot: qStr(req, 'cot') ?? '', khoa: qStr(req, 'khoa') ?? '',
+  });
 }));
 
 /** Lựa chọn hiển thị riêng của từng người — bộ cột đang xem, chi nhánh xem lần cuối… */
