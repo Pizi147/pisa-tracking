@@ -1861,4 +1861,6 @@ git fetch origin && git rebase origin/main
 
 | Ngày | Task | Ghi chú |
 |---|---|---|
+| 23/09 | 0 | Worktree `.claude/worktrees/pr-rc1-cham-diem` từ main @ 236920d; không có biến Turso; **B = 779**. Session code Opus 5.5, subagent Opus (không Haiku). |
+| 23/09 | Gate Q | Rà Q1–Q22 với đặc tả + mockup: Q15, Q19 lệch → hỏi chủ sản phẩm. **Q15:** dòng phụ Cần chấm `{Kỹ năng} · lùi lịch của {tên HV}` (1 em) / `{Kỹ năng} · lùi lịch · {n} HV`, tooltip `Lùi lịch từ {tuần đợt} sang {tuần môn}` (thay chữ "bài dời"). **Q19:** Rc1 thêm dòng vào §4 đặc tả. Tự quyết theo mockup: tên mục Cần chấm kèm hạn + số; đầu lưới lớp thường ghi tuần từng môn; cột Kết quả ghi `{K} dời sang {tuần}`. **Quyền:** Quản lý không nhập điểm (run.ts "Chỉ quản trị hệ thống nhập bù được") → mọi phép kiểm/KIỂM "Quản lý nhập/ghi -" đổi sang Quản trị hệ thống; không nới quyền. |
 | 23/09 | 1 | Đỏ: 779 đạt, 7 hỏng (`d.mucCanCham is not a function`…). Xanh: 786 (B=779 + 7). Chép đúng mã kế hoạch, không lệch; móc run.ts đặt sau khối PR-AN, trước khối in tổng kết. `npm run typecheck` sạch. |
