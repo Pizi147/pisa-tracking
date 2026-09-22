@@ -939,4 +939,120 @@ export async function runBanChinhTests(t: BanChinhTestKit) {
       assert(!fs.existsSync(bk), 'Từ chối thì không được tạo gì trong BACKUP_DIR');
     } finally { try { fs.rmSync(dir, { recursive: true, force: true }); } catch { /* Windows */ } }
   });
+
+  console.log('\nPR-Z2 · 7. Khôi phục (khoi-phuc) — chỉ ghi vào database RỖNG; đúng từng dòng như bản sao lưu');
+  const { khoiPhuc, thuTuKhoaNgoai } = await import('../ops/khoiPhuc.ts');
+  const { docCauTruc } = await import('../ops/saoLuu.ts');
+  /** Một bản sao lưu THẬT của database kiểm thử (bộ demo đầy đủ + mọi thứ các phép trên đã ghi), mở chỉ-đọc. */
+  const dungBanSaoLuu = (dir: string) => {
+    const f = pathMod.join(dir, 'pisa-cuc-bo-2026-09-22-1200.sqlite');
+    saoLuuRaFile(db(), f);
+    return f;
+  };
+  check('PR-Z2 · thuTuKhoaNgoai: bảng cha luôn đứng trước bảng con (users trước user_roles, students trước enrollments, classes trước teacher_assignments); đủ mọi bảng', () => {
+    const { bang } = docCauTruc(db());
+    const thuTu = thuTuKhoaNgoai(db(), bang.map((b) => b.name));
+    const vt = (b: string) => thuTu.indexOf(b);
+    assert(thuTu.length === bang.length && new Set(thuTu).size === thuTu.length, 'Thiếu hoặc lặp bảng');
+    for (const [cha, con] of [['users', 'user_roles'], ['students', 'enrollments'], ['classes', 'teacher_assignments'], ['branches', 'classes']]) {
+      assert(vt(cha) >= 0 && vt(con) >= 0 && vt(cha) < vt(con), `${cha} phải đứng trước ${con}: ${vt(cha)} / ${vt(con)}`);
+    }
+  });
+  check('PR-Z2 · Sao lưu → khôi phục vào database RỖNG: mọi bảng đúng số dòng VÀ đúng từng dòng; chỉ mục đủ; không vi phạm khoá ngoại; file sao lưu không bị ghi', () => {
+    const dir = fs.mkdtempSync(pathMod.join(os.tmpdir(), 'z2-kp-'));
+    try {
+      const f = dungBanSaoLuu(dir);
+      const bamBk = bamFile(f);
+      const bk = new Database(f, { readonly: true });
+      const dich = new Database(pathMod.join(dir, 'dich.sqlite'));
+      try {
+        const r = khoiPhuc(bk, dich, { moiLan: 3 });   // lô nhỏ, lẻ — kiểm cả phần dư của mỗi bảng
+        assert(r.bang === cacBang(bk).length && r.dong === cacBang(bk).reduce((s, b) => s + dem(bk, b), 0), `Báo ${JSON.stringify(r)}`);
+        soHaiDb(bk, dich, 'Khôi phục');
+        assert(dich.prepare('PRAGMA foreign_key_check').all().length === 0, 'Bản khôi phục có vi phạm khoá ngoại');
+        assert(dem(dich, 'users') > 0 && dem(dich, 'students') > 0, 'Phải có người dùng và học viên');
+      } finally { bk.close(); dich.close(); }
+      assert(bamFile(f) === bamBk, 'Khôi phục đã ghi vào file sao lưu');
+    } finally { try { fs.rmSync(dir, { recursive: true, force: true }); } catch { /* Windows */ } }
+  });
+  check('PR-Z2 · Khôi phục TỪ CHỐI khi đích đã có dữ liệu (một dòng bất kỳ) hoặc đã có bảng (kể cả rỗng) — và khi từ chối thì KHÔNG ghi gì', () => {
+    const dir = fs.mkdtempSync(pathMod.join(os.tmpdir(), 'z2-kp-'));
+    try {
+      const bk = new Database(dungBanSaoLuu(dir), { readonly: true });
+      try {
+        for (const [ten, dung, loi] of [
+          ['đích có một dòng dữ liệu', (c: InstanceType<typeof Database>) => c.exec("CREATE TABLE ghi_chu (a); INSERT INTO ghi_chu VALUES ('thật')"), /đã có dữ liệu/],
+          ['đích có một bảng rỗng', (c: InstanceType<typeof Database>) => c.exec('CREATE TABLE users (id INTEGER PRIMARY KEY)'), /đã có bảng/],
+        ] as const) {
+          const o = moDbTam();
+          try {
+            dung(o.conn);
+            const truoc = anhChup(o.conn); const ghiTruoc = soLanGhi(o.conn);
+            assertThrows(() => khoiPhuc(bk, o.conn), loi, `${ten}: phải từ chối`);
+            assert(anhChup(o.conn) === truoc && soLanGhi(o.conn) === ghiTruoc && !o.conn.inTransaction, `${ten}: đích đã bị thay đổi`);
+          } finally { dongLai(o); }
+        }
+      } finally { bk.close(); }
+    } finally { try { fs.rmSync(dir, { recursive: true, force: true }); } catch { /* Windows */ } }
+  });
+  check('PR-Z2 · Khôi phục TỪ CHỐI file không phải bản sao lưu dùng được (không có người dùng) — đích vẫn trống trơn', () => {
+    const o = moDbTam();
+    const hong = new Database(':memory:');
+    try {
+      hong.exec('CREATE TABLE users (id INTEGER PRIMARY KEY)');
+      assertThrows(() => khoiPhuc(hong, o.conn), /người dùng/, 'Bản sao lưu rỗng phải bị từ chối');
+      assert(cacBang(o.conn).length === 0 && soLanGhi(o.conn) === 0, 'Đích đã bị ghi');
+    } finally { hong.close(); dongLai(o); }
+  });
+  check('PR-Z2 · Khôi phục là MỘT giao dịch: hỏng giữa chừng thì đích không còn bảng hay dòng nào', () => {
+    const o = moDbTam();
+    const nguon = new Database(':memory:');
+    try {
+      /* Chỉ mục được tạo SAU khi chép dữ liệu. Chen thêm một chỉ mục UNIQUE trên cột có giá trị trùng → khôi phục hỏng ở
+         bước CUỐI, khi mọi bảng và mọi dòng đã được ghi — đích phải không còn gì. */
+      nguon.exec("CREATE TABLE users (id INTEGER PRIMARY KEY, email TEXT); INSERT INTO users (email) VALUES ('a'), ('a'); CREATE TABLE khac (x); INSERT INTO khac VALUES (1)");
+      const hongGiua = new Proxy(nguon, {
+        get(dich, khoa) {
+          if (khoa === 'prepare') return (sql: string) => (/sqlite_master/.test(sql)
+            ? { all: () => [...dich.prepare(sql).all() as any[], { type: 'index', name: 'hong', sql: 'CREATE UNIQUE INDEX hong ON users (email)' }], get: (...a: any[]) => dich.prepare(sql).get(...a) }
+            : dich.prepare(sql));
+          const v = (dich as any)[khoa];
+          return typeof v === 'function' ? v.bind(dich) : v;
+        },
+      });
+      assertThrows(() => khoiPhuc(hongGiua, o.conn), /UNIQUE/i, 'Chỉ mục trùng ở bước cuối phải làm hỏng khôi phục');
+      assert(cacBang(o.conn).length === 0 && !o.conn.inTransaction, `Còn sót trên đích: ${cacBang(o.conn).join(', ')}`);
+    } finally { nguon.close(); dongLai(o); }
+  });
+
+  const khoiPhucJs = pathMod.join(REPO, 'dist-server/server/src/ops/runKhoiPhuc.js');
+  check('PR-Z2 · Lệnh khoi-phuc: thiếu biến / xác nhận sai → TỪ CHỐI, không tạo gì; đúng → in Đích + số dòng, KHÔNG in token; chạy lần hai → TỪ CHỐI, file giữ nguyên từng byte', () => {
+    const dir = fs.mkdtempSync(pathMod.join(os.tmpdir(), 'z2-kp-'));
+    try {
+      const bk = dungBanSaoLuu(dir);
+      const dich = pathMod.join(dir, 'dich-moi.sqlite');
+      const env = { TURSO_DATABASE_URL: urlFile(dich), TURSO_AUTH_TOKEN: TOKEN_GIA, FILE_SAO_LUU: bk };
+      const chay = (e: Record<string, string>) => cp.spawnSync(process.execPath, [khoiPhucJs], {
+        env: { ...process.env, TURSO_DATABASE_URL: '', TURSO_AUTH_TOKEN: '', FILE_SAO_LUU: '', PISA_CHO_PHEP_KHOI_PHUC: '', BAN_CHINH: '', ...e },
+        encoding: 'utf8', timeout: 120_000,
+      });
+      const thieu = chay({ TURSO_DATABASE_URL: urlFile(dich), TURSO_AUTH_TOKEN: TOKEN_GIA });
+      assert(thieu.status === 1 && /FILE_SAO_LUU/.test(thieu.stderr) && !fs.existsSync(dich), `Thiếu file: ${thieu.status} ${String(thieu.stderr).slice(-200)}`);
+      for (const xacNhan of ['', 'dich', 'turso.io']) {
+        const r = chay({ ...env, PISA_CHO_PHEP_KHOI_PHUC: xacNhan });
+        assert(r.status === 1 && /TỪ CHỐI/.test(r.stderr) && /PISA_CHO_PHEP_KHOI_PHUC/.test(r.stderr), `Xác nhận "${xacNhan}": ${r.status} ${String(r.stderr).slice(-200)}`);
+        assert(!fs.existsSync(dich), `Xác nhận "${xacNhan}" sai mà đã tạo database đích`);
+      }
+      const r = chay({ ...env, PISA_CHO_PHEP_KHOI_PHUC: 'dich-moi.sqlite' });
+      const ra = String(r.stdout) + String(r.stderr);
+      assert(r.status === 0 && /Đích: /.test(r.stdout) && /Xong\. Đã khôi phục \d+ bảng, \d+ dòng/.test(r.stdout), `Mã ${r.status}: ${ra.slice(-400)}`);
+      assert(!ra.includes(TOKEN_GIA), 'Lệnh in lộ token');
+      const a = new Database(bk, { readonly: true }); const b = new Database(dich, { readonly: true });
+      try { soHaiDb(a, b, 'Lệnh khoi-phuc'); } finally { a.close(); b.close(); }
+      const bam = bamFile(dich);
+      const lai = chay({ ...env, PISA_CHO_PHEP_KHOI_PHUC: 'dich-moi.sqlite' });
+      assert(lai.status === 1 && /TỪ CHỐI/.test(lai.stderr) && /đã có/.test(lai.stderr), `Lần hai: ${lai.status} ${String(lai.stderr).slice(-200)}`);
+      assert(bamFile(dich) === bam, 'Chạy lần hai đã thay đổi database đích');
+    } finally { try { fs.rmSync(dir, { recursive: true, force: true }); } catch { /* Windows */ } }
+  });
 }
