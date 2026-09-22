@@ -1162,9 +1162,10 @@ check('Ba trạng thái học viên; lưu trữ chỉ ẩn, không đóng việc
   const openBefore = (conn.prepare(
     `SELECT COUNT(*) n FROM sos_cases sc JOIN assessment_attempts a ON a.id=sc.attempt_id
       WHERE a.student_id = ? AND sc.status != 'done'`).get(s.id) as any).n;
-  const n = students.archiveDueStudents(TODAY);
+  /* RB-9 (PR-S1): không còn tự lưu trữ sau N ngày — Quản lý bấm. `P.admin` vì em đầu tiên có thể thuộc chi nhánh khác MB. */
+  students.archiveStudent(P.admin, s.id);
   const after = conn.prepare('SELECT * FROM students WHERE id = ?').get(s.id) as any;
-  assert(n >= 1 && after.archived_at, 'Học viên kết thúc quá hai tuần phải vào lưu trữ');
+  assert(after.archived_at, 'Quản lý bấm lưu trữ thì học viên phải vào lưu trữ');
   assert(after.status === 'finished', 'Lưu trữ không được thành trạng thái thứ tư');
   const openAfter = (conn.prepare(
     `SELECT COUNT(*) n FROM sos_cases sc JOIN assessment_attempts a ON a.id=sc.attempt_id

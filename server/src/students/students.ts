@@ -1,9 +1,9 @@
 import { db, tx } from '../db.ts';
 import {
-  ARCHIVE_AFTER_DAYS, ENTRY_SKILLS, JOURNEY_GROUP, NO_HANDOVER_NOTE, PERMISSIONS, STUDENT_STATUSES,
+  ENTRY_SKILLS, JOURNEY_GROUP, NO_HANDOVER_NOTE, PERMISSIONS, STUDENT_STATUSES,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
-import { addDays, badRequest, isIsoDate, normalizeName, notFound, nowIso, padCode } from '../util.ts';
+import { badRequest, isIsoDate, normalizeName, notFound, nowIso, padCode } from '../util.ts';
 import { can, classScopeSql, require_, scopeFor, type Principal } from '../permissions.ts';
 import { addJourney, writeAudit } from '../platform/audit.ts';
 import { NOT_UNCONFIRMED_PRESET } from '../cases/sosState.ts';
@@ -270,19 +270,35 @@ export function setStudentStatus(
 }
 
 /**
- * Học viên đã kết thúc thì sau ARCHIVE_AFTER_DAYS ngày được đưa vào lưu trữ.
- * Chỉ ẩn khỏi danh sách mặc định, không xoá dữ liệu và không đóng việc còn dở.
- * Mốc chính xác và quyền khôi phục vẫn chờ quyết định — xem O08.
+ * LƯU TRỮ HỌC VIÊN — CHỈ KHI QUẢN LÝ BẤM (RB-9, quyết định 4.17 ngày 22/09/2026).
+ *
+ * Không có tác vụ ngầm "sau N ngày tự lưu trữ" (hàm `archiveDueStudents` cũ đã gỡ — nó chưa từng được gọi ở đâu ngoài phép kiểm).
+ * Lưu trữ chỉ ẩn khỏi danh sách mặc định: không đổi trạng thái, không xoá dữ liệu, không đóng việc còn dở. Chỉ em đã kết thúc học.
  */
-export function archiveDueStudents(today = demoToday()): number {
-  const cutoff = addDays(today, -ARCHIVE_AFTER_DAYS);
-  const info = db()
-    .prepare(
-      `UPDATE students SET archived_at = ?
-        WHERE status = 'finished' AND archived_at IS NULL AND finished_at IS NOT NULL AND finished_at <= ?`,
-    )
-    .run(today, cutoff);
-  return info.changes;
+export function archiveStudent(p: Principal, studentId: number) {
+  require_(p, PERMISSIONS.PLAN_WEEK, { studentId }, 'Chỉ Quản lý mới lưu trữ được học viên.');
+  const conn = db();
+  const s = conn.prepare('SELECT * FROM students WHERE id = ?').get(studentId) as any;
+  if (!s) throw notFound('Không tìm thấy học viên');
+  if (s.status !== 'finished') throw badRequest('Chỉ lưu trữ được học viên đã kết thúc học.');
+  if (s.archived_at) return s;
+  const on = demoToday();
+  conn.prepare('UPDATE students SET archived_at = ? WHERE id = ?').run(on, studentId);
+  writeAudit({ actorUserId: p.userId, action: 'student.archive', entityType: 'student', entityId: studentId,
+    entityLabel: s.student_code, before: { archivedAt: null }, after: { archivedAt: on } });
+  return conn.prepare('SELECT * FROM students WHERE id = ?').get(studentId);
+}
+
+export function unarchiveStudent(p: Principal, studentId: number) {
+  require_(p, PERMISSIONS.PLAN_WEEK, { studentId }, 'Chỉ Quản lý mới bỏ lưu trữ được học viên.');
+  const conn = db();
+  const s = conn.prepare('SELECT * FROM students WHERE id = ?').get(studentId) as any;
+  if (!s) throw notFound('Không tìm thấy học viên');
+  if (!s.archived_at) return s;
+  conn.prepare('UPDATE students SET archived_at = NULL WHERE id = ?').run(studentId);
+  writeAudit({ actorUserId: p.userId, action: 'student.unarchive', entityType: 'student', entityId: studentId,
+    entityLabel: s.student_code, before: { archivedAt: s.archived_at }, after: { archivedAt: null } });
+  return conn.prepare('SELECT * FROM students WHERE id = ?').get(studentId);
 }
 
 export function updateStudent(p: Principal, studentId: number, patch: any) {

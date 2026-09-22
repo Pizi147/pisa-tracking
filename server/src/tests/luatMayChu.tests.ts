@@ -712,5 +712,23 @@ export async function runLuatMayChuTests(t: YThucTestKit) {
       /bàn giao/, 'Còn Case mở mà chọn "Không có lưu ý"');
   });
 
+  // ================================================================== 15. RB-9
+
+  console.log('\nPR-S1 · 15. RB-9 — lưu trữ học viên chỉ khi Quản lý bấm, không có tác vụ ngầm');
+
+  check('RB-9 · Không còn hàm tự lưu trữ sau N ngày; Quản lý lưu trữ / bỏ lưu trữ được em đã kết thúc, có audit; GV không được; em đang học không lưu trữ được', () => {
+    assert(!('archiveDueStudents' in studentsSvc) && domain.ARCHIVE_AFTER_DAYS === undefined, 'Còn đường tự lưu trữ sau N ngày');
+    const hv = taoHocVien({ classCode: 'MB-FOU 12', weekStart: '2026-09-07' });
+    assertThrows(() => studentsSvc.archiveStudent(P.mbManager, hv.sid), /đã kết thúc/, 'Lưu trữ em đang học');
+    studentsSvc.setStudentStatus(P.mbManager, hv.sid, 'finished', TODAY, 'Kết thúc');
+    assertThrows(() => studentsSvc.archiveStudent(pGvcnFou, hv.sid), /Quản lý/, 'GVCN lưu trữ học viên');
+    studentsSvc.archiveStudent(P.mbManager, hv.sid);
+    const s = conn.prepare('SELECT status, archived_at FROM students WHERE id = ?').get(hv.sid) as any;
+    assert(s.archived_at && s.status === 'finished', `Lưu trữ phải chỉ ẩn, không đổi trạng thái: ${JSON.stringify(s)}`);
+    assert(auditN('student.archive', hv.sid) === 1, 'Thiếu audit lưu trữ');
+    studentsSvc.unarchiveStudent(P.mbManager, hv.sid);
+    assert((conn.prepare('SELECT archived_at FROM students WHERE id = ?').get(hv.sid) as any).archived_at === null, 'Bỏ lưu trữ không có tác dụng');
+  });
+
   // ---- các task sau thêm phép kiểm NGAY TRÊN dòng này ----
 }

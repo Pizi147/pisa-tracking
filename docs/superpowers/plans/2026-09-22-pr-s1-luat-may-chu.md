@@ -2220,7 +2220,7 @@ Import `transferReasonText` từ `shared/domain` ở đầu `routes/index.ts` (c
 - Produces: `archiveStudent(p: Principal, studentId: number)`, `unarchiveStudent(p: Principal, studentId: number)`;
   `POST /api/students/:id/archive`, `POST /api/students/:id/unarchive`. (Nút giao diện: PR-LT — thao tác trạng thái học viên, Q12.)
 
-- [ ] **Step 1: Phép kiểm (đỏ)** — thêm vào `luatMayChu.tests.ts`:
+- [x] **Step 1: Phép kiểm (đỏ)** — thêm vào `luatMayChu.tests.ts`:
 
 ```ts
   // ================================================================== 15. RB-9
@@ -2242,8 +2242,8 @@ Import `transferReasonText` từ `shared/domain` ở đầu `routes/index.ts` (c
   });
 ```
 
-- [ ] **Step 2: Chạy, đỏ.** Expected ✗.
-- [ ] **Step 3: Sửa mã.** Xoá `ARCHIVE_AFTER_DAYS` (và chú thích của nó) khỏi `shared/domain/students.ts`; bỏ khỏi import `students.ts:2`
+- [x] **Step 2: Chạy, đỏ.** Expected ✗.
+- [x] **Step 3: Sửa mã.** Xoá `ARCHIVE_AFTER_DAYS` (và chú thích của nó) khỏi `shared/domain/students.ts`; bỏ khỏi import `students.ts:2`
   (và `addDays` nếu không còn dùng). Thay `archiveDueStudents` (dòng 260–274) bằng:
 
 ```ts
@@ -2293,13 +2293,13 @@ api.post('/students/:id/unarchive', requireAuth, wrap((req) => {
 }));
 ```
 
-- [ ] **Step 4: Viết lại phép kiểm cũ** `run.ts:1159-1173` ("Ba trạng thái học viên; lưu trữ chỉ ẩn, không đóng việc còn dở"): thay
+- [x] **Step 4: Viết lại phép kiểm cũ** `run.ts:1159-1173` ("Ba trạng thái học viên; lưu trữ chỉ ẩn, không đóng việc còn dở"): thay
   `const n = students.archiveDueStudents(TODAY);` + `assert(n >= 1 && after.archived_at, …)` bằng
   `students.archiveStudent(P.mbManager, s.id);` + `assert(after.archived_at, 'Quản lý bấm lưu trữ thì học viên phải vào lưu trữ');`.
   Học viên `finished` đầu tiên của bộ demo có thể thuộc chi nhánh khác MB → chọn `P.admin` thay `P.mbManager` cho chắc. Giữ nguyên hai assert
   còn lại (không thành trạng thái thứ tư; số Case mở trước/sau lưu trữ bằng nhau — sau Task 13 cả hai là 0, vẫn đúng).
-- [ ] **Step 5: Chạy, xanh** (Expected `715`). `grep -rn "archiveDueStudents\|ARCHIVE_AFTER_DAYS" server shared web` — Expected: không còn.
-- [ ] **Step 6: Commit.** `git commit -am "PR-S1 (15): RB-9 — lưu trữ học viên chỉ khi Quản lý bấm; gỡ archiveDueStudents"`
+- [x] **Step 5: Chạy, xanh** (Expected `715`). `grep -rn "archiveDueStudents\|ARCHIVE_AFTER_DAYS" server shared web` — Expected: không còn.
+- [x] **Step 6: Commit.** `git commit -am "PR-S1 (15): RB-9 — lưu trữ học viên chỉ khi Quản lý bấm; gỡ archiveDueStudents"`
 
 ---
 

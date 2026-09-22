@@ -30,9 +30,6 @@ export function transferReasonText(code: unknown, note?: unknown): string | null
   return extra ? `${label} — ${extra}` : label;
 }
 
-/** Học viên kết thúc bao lâu thì đưa vào lưu trữ. Mốc chính xác còn chờ chốt — xem O08. */
-export const ARCHIVE_AFTER_DAYS = 14;
-
 // ---------------------------------------------------------------- Lộ trình học
 
 /**

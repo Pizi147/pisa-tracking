@@ -1384,6 +1384,16 @@ api.post('/students/:id/status', requireAuth, wrap((req) => {
     req.body?.date ?? demoToday(), req.body?.reason);
 }));
 
+/** RB-9: lưu trữ / bỏ lưu trữ — chỉ Quản lý, chỉ em đã kết thúc học. Không có tác vụ ngầm. */
+api.post('/students/:id/archive', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return studentSvc.archiveStudent(principalOf(req), pInt(req, 'id'));
+}));
+api.post('/students/:id/unarchive', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return studentSvc.unarchiveStudent(principalOf(req), pInt(req, 'id'));
+}));
+
 // ============================================================ Họp tuần
 
 api.get('/meeting/board', requireAuth, wrap((req) => {
