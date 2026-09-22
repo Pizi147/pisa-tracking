@@ -54,7 +54,7 @@ export async function runBanChinhTests(t: BanChinhTestKit) {
   check('PR-Z2 · `npm run seed` TỪ CHỐI khi đang trỏ tới Turso (lệnh này xoá sạch database — chỉ dành cho máy dev)', () => {
     /* URL không tồn tại: nếu lệnh KHÔNG từ chối thì nó cũng không xoá được gì của ai. */
     const r = cp.spawnSync(process.execPath, [pathMod.join(REPO, 'dist-server/server/src/seed/run.js')], {
-      env: { ...process.env, TURSO_DATABASE_URL: 'libsql://khong-ton-tai.turso.io', TURSO_AUTH_TOKEN: 'x', PISA_CHO_PHEP_SEED_TURSO: '' },
+      env: { ...process.env, TURSO_DATABASE_URL: 'libsql://khong-ton-tai.invalid', TURSO_AUTH_TOKEN: 'x', PISA_CHO_PHEP_SEED_TURSO: '' },
       encoding: 'utf8', timeout: 60_000,
     });
     assert(r.status !== 0 && r.status !== null, `Mã thoát phải khác 0, nhận ${r.status}`);
@@ -96,11 +96,11 @@ export async function runBanChinhTests(t: BanChinhTestKit) {
   check('PR-Z2 · URL Turso dán kèm ?authToken=… (kiểu "chuỗi kết nối" của Turso): DB_PATH — thứ mọi lệnh in ra — KHÔNG chứa token', () => {
     /* Chỉ nạp db.ts và in DB_PATH — không mở kết nối nào. */
     const r = cp.spawnSync(process.execPath, ['--input-type=module', '-e', `const m = await import(${JSON.stringify(dbJsUrl)}); console.log(m.DB_PATH);`], {
-      env: { ...process.env, TURSO_DATABASE_URL: 'libsql://khong-ton-tai.turso.io?authToken=BI-MAT-KHONG-DUOC-IN', TURSO_AUTH_TOKEN: 'x' },
+      env: { ...process.env, TURSO_DATABASE_URL: 'libsql://khong-ton-tai.invalid?authToken=BI-MAT-KHONG-DUOC-IN', TURSO_AUTH_TOKEN: 'x' },
       encoding: 'utf8', timeout: 60_000,
     });
     assert(r.status === 0, `Lỗi: ${String(r.stderr).slice(-300)}`);
-    assert(!String(r.stdout).includes('BI-MAT') && /^libsql:\/\/khong-ton-tai\.turso\.io\s*$/.test(String(r.stdout)), `DB_PATH in ra: ${String(r.stdout).trim()}`);
+    assert(!String(r.stdout).includes('BI-MAT') && /^libsql:\/\/khong-ton-tai\.invalid\s*$/.test(String(r.stdout)), `DB_PATH in ra: ${String(r.stdout).trim()}`);
   });
 
   console.log('\nPR-Z2 · 1c. `npm run migrate` vào Turso: phải xác nhận, và không tạo tài khoản/mật khẩu mặc định của bản demo');
@@ -393,29 +393,32 @@ export async function runBanChinhTests(t: BanChinhTestKit) {
 
   console.log('\nPR-Z2 · 4. Chốt an toàn sau rà soát Phần A');
   const { pathToFileURL } = await import('node:url');
+  const { DB_PATH, laDbTuXa } = await import('../db.ts');
   const chayCon = (maLenh: string, env: Record<string, string>) => cp.spawnSync(process.execPath, ['--input-type=module', '-e', maLenh], {
     env: { ...process.env, PISA_CHO_PHEP_SEED_TURSO: '', BAN_CHINH: '', ...env }, encoding: 'utf8', timeout: 60_000,
   });
-  const TURSO_GIA = { TURSO_DATABASE_URL: 'libsql://khong-ton-tai.turso.io', TURSO_AUTH_TOKEN: 'x' };
+  /* AN-13: tên miền `.invalid` không bao giờ phân giải — một chốt hỏng cũng không ra mạng thật. */
+  const TURSO_GIA = { TURSO_DATABASE_URL: 'libsql://khong-ton-tai.invalid', TURSO_AUTH_TOKEN: 'x' };
   const dbJs = pathToFileURL(pathMod.join(REPO, 'dist-server/server/src/db.js')).href;
   const seedJs = pathMod.join(REPO, 'dist-server/server/src/seed/run.js');
 
   check('PR-Z2 · Bộ phép kiểm này KHÔNG BAO GIỜ chạy trên Turso: run.ts gỡ biến Turso trước khi mở database (npm run check trong cửa sổ đang có token sẽ không xoá database thật)', () => {
     assert(!process.env.TURSO_DATABASE_URL && !process.env.TURSO_AUTH_TOKEN, 'Biến Turso còn trong môi trường của bộ phép kiểm');
-    assert(!/^libsql:|^https?:/.test(String((db() as any).name ?? '')), `Bộ phép kiểm đang mở database từ xa: ${(db() as any).name}`);
+    /* AN-13: `db().name` luôn "" ở libsql 0.5.29 nên câu cũ không bao giờ đỏ — đọc cấu hình kết nối thật. */
+    assert(!laDbTuXa() && !/^libsql:|^https?:|^wss?:/.test(DB_PATH), `Bộ phép kiểm đang mở database từ xa: ${DB_PATH}`);
   });
   check('PR-Z2 · recreateSchema() — hàm XOÁ MỌI BẢNG — tự từ chối khi database ở Turso, dù gọi từ đâu (không chỉ từ lệnh seed)', () => {
     const r = chayCon(`const m = await import(${JSON.stringify(dbJs)}); m.recreateSchema();`, TURSO_GIA);
     assert(r.status !== 0 && r.status !== null && /TỪ CHỐI/.test(r.stderr), `Mã thoát ${r.status}; stderr: ${String(r.stderr).slice(-300)}`);
   });
-  check('PR-Z2 · Ngoại lệ seed phải khớp ĐÚNG TÊN MÁY CHỦ: giá trị chung chung (`turso.io`, `libsql`, một ký tự) không mở được khoá', () => {
-    for (const choPhep of ['turso.io', 'libsql', 'khong-ton-tai', 'o']) {
+  check('PR-Z2 · Ngoại lệ seed phải khớp ĐÚNG TÊN MÁY CHỦ: giá trị chung chung (đuôi tên miền `invalid`, `libsql`, một ký tự) không mở được khoá', () => {
+    for (const choPhep of ['invalid', 'libsql', 'khong-ton-tai', 'o']) {
       const r = cp.spawnSync(process.execPath, [seedJs], { env: { ...process.env, ...TURSO_GIA, BAN_CHINH: '', PISA_CHO_PHEP_SEED_TURSO: choPhep }, encoding: 'utf8', timeout: 60_000 });
       assert(r.status !== 0 && r.status !== null && /TỪ CHỐI/.test(r.stderr), `PISA_CHO_PHEP_SEED_TURSO="${choPhep}" đã mở được khoá (mã thoát ${r.status})`);
     }
   });
   check('PR-Z2 · BAN_CHINH=1 thì seed LUÔN bị từ chối, kể cả khi ngoại lệ khớp đúng tên máy chủ', () => {
-    const r = cp.spawnSync(process.execPath, [seedJs], { env: { ...process.env, ...TURSO_GIA, BAN_CHINH: '1', PISA_CHO_PHEP_SEED_TURSO: 'khong-ton-tai.turso.io' }, encoding: 'utf8', timeout: 60_000 });
+    const r = cp.spawnSync(process.execPath, [seedJs], { env: { ...process.env, ...TURSO_GIA, BAN_CHINH: '1', PISA_CHO_PHEP_SEED_TURSO: 'khong-ton-tai.invalid' }, encoding: 'utf8', timeout: 60_000 });
     assert(r.status !== 0 && r.status !== null && /TỪ CHỐI/.test(r.stderr), `Mã thoát ${r.status}; stderr: ${String(r.stderr).slice(-300)}`);
   });
   check('PR-Z2 · Một tham số `null` duy nhất vẫn được hiểu là NULL như better-sqlite3 (libsql gốc ném "failed to downcast any to object")', () => {

@@ -2413,7 +2413,7 @@ export function standingLine(s: Standing): string {
 - Test: `server/src/tests/luatMayChu.tests.ts`
 - Modify: `server/src/tests/banChinh.tests.ts:44`, `:57`, `:99`, `:106`, `:399`, `:403-406`
 
-- [ ] **Step 1: S15.**
+- [x] **Step 1: S15.**
 
 ```ts
   // ================================================================== 17. S15
@@ -2432,7 +2432,7 @@ export function standingLine(s: Standing): string {
 ```
 Run → Expected ✓ ngay (phép kiểm còn thiếu, hành vi đã có). ✗ → 🛑.
 
-- [ ] **Step 2: AN-13 — `banChinh.tests.ts`.**
+- [x] **Step 2: AN-13 — `banChinh.tests.ts`.**
   - dòng 403–406 (phép "Bộ phép kiểm này KHÔNG BAO GIỜ chạy trên Turso"): `db().name` luôn `""` ở libsql 0.5.29 nên nửa điều kiện này không bao giờ đỏ.
     Thay assert thứ hai bằng:
 
@@ -2450,7 +2450,7 @@ Run → Expected ✓ ngay (phép kiểm còn thiếu, hành vi đã có). ✗ �
     `moTaDichDb` nhận dạng theo tên.
   - Kiểm `laDbTuXa` có được export từ `db.ts` (có — `migrate/run.ts` import nó).
 
-- [ ] **Step 3: Chạy, xanh** (Expected `718`). **Step 4: Commit.** `git commit -am "PR-S1 (17): S15 phép kiểm workScope; AN-13 sửa hai lỗi phép kiểm bản chính cũ"`
+- [x] **Step 3: Chạy, xanh** (Expected `718`). **Step 4: Commit.** `git commit -am "PR-S1 (17): S15 phép kiểm workScope; AN-13 sửa hai lỗi phép kiểm bản chính cũ"`
 
 ---
 

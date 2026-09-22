@@ -761,5 +761,19 @@ export async function runLuatMayChuTests(t: YThucTestKit) {
     assert(line({ ...ft, attemptId: null, sosLevel: null }) === 'Chưa có kết quả trong lộ trình này', 'FT giữ "lộ trình này"');
   });
 
+  // ================================================================== 17. S15
+
+  console.log('\nPR-S1 · 17. S15 — trường workScope máy chủ trả về');
+  const classesSvc: any = await import('../classes/classes.ts');
+
+  check('S15 · listClassSummaries: GV có phân công → "mine"; Quản lý → "managed"; truyền phạm vi thì theo phạm vi truyền', () => {
+    const gv = (classesSvc.listClassSummaries(P.lrTeacher) as any).rows as any[];
+    assert(gv.length > 0 && gv.every((r) => r.workScope === 'mine'), `GV: ${JSON.stringify(gv.map((r) => r.workScope))}`);
+    const ql = (classesSvc.listClassSummaries(P.mbManager) as any).rows as any[];
+    assert(ql.length > 0 && ql.every((r) => r.workScope === 'managed'), `Quản lý: ${JSON.stringify(ql.map((r) => r.workScope))}`);
+    const ep = (classesSvc.listClassSummaries(P.lrTeacher, { scope: 'managed' }) as any).rows as any[];
+    assert(ep.every((r) => r.workScope === 'managed'), 'Truyền phạm vi "managed" mà máy chủ vẫn trả "mine"');
+  });
+
   // ---- các task sau thêm phép kiểm NGAY TRÊN dòng này ----
 }
