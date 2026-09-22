@@ -23,6 +23,7 @@ export async function runTongQuanTests(t: YThucTestKit) {
   const regular: any = await import('../normal/regular.ts');
   const cases: any = await import('../cases/cases.ts');
   const metricsSvc: any = await import('../worklist/metrics.ts');
+  const tq: any = await import('../worklist/tongQuan.ts').catch(() => ({}));
   const NOW = new Date().toISOString();
   const mbBranch = (conn.prepare(`SELECT id FROM branches WHERE code = 'MB'`).get() as any).id as number;
   let soThuTu = 0;
@@ -265,5 +266,52 @@ export async function runTongQuanTests(t: YThucTestKit) {
     assert(/Listening/.test(row.title) && !/listening/.test(row.title), `Chữ thô: ${row.title}`);
     const bai = metricsSvc.rowsFor('bai-thi', [hv.attemptId])[0];
     assert(bai.href !== '#' && /Giữa khoá|Bài/.test(bai.title), `Bài thi không có dòng: ${JSON.stringify(bai)}`);
+  });
+
+  // ================================================================== 5. Cần xử lý · Điểm đáng chú ý · HV cần hỗ trợ
+  check('PR-Pa · Cần xử lý: mỗi dòng có số = độ dài tập của đúng chỉ số đó (cùng chi nhánh, cùng chương trình); đúng thứ tự; ≤ 8', () => {
+    const mb = mbBranch;
+    for (const [who, f] of [[P.admin, { ct: 'ca-hai' }], [P.mbManager, { branchId: mb, ct: 'thuong' }], [P.mbManager, { ct: 'ft' }]] as const) {
+      const r = tq.tongQuanQuanLy(who, f);
+      assert(r.canXuLy.length <= 8, 'Quá 8 dòng');
+      const thuTu = d.CAN_XU_LY.map((x: any) => x.metricId);
+      let truoc = -1;
+      for (const dong of r.canXuLy) {
+        const n = metricsSvc.metricSet(who, dong.metricId, { branchId: (f as any).branchId ?? null, program: f.ct }).n;
+        eq(dong.n, n, `Số dòng ${dong.metricId}`);
+        assert(dong.n > 0, 'Dòng 0 phải bị bỏ');
+        assert(thuTu.indexOf(dong.metricId) > truoc, 'Sai thứ tự');
+        truoc = thuTu.indexOf(dong.metricId);
+        assert(typeof dong.phu === 'string' && dong.phu.length <= 60, `Dòng phụ quá 60 ký tự: ${dong.phu}`);
+      }
+    }
+  });
+
+  check('PR-Pa · Điểm đáng chú ý: ≤ 3; mỗi link mở đúng số dòng đã ghi', () => {
+    const r = tq.tongQuanQuanLy(P.admin, { ct: 'ca-hai' });
+    assert(r.diemDangChuY.length <= 3, 'Quá 3 điểm');
+    for (const x of r.diemDangChuY) {
+      const set = metricsSvc.metricSet(P.admin, x.metricId, { ...(x.extra ?? {}), program: 'ca-hai' });
+      eq(x.soDanhSach, set.ids.length, `Link ${x.loai} ghi ${x.soDanhSach} mà danh sách có ${set.ids.length}`);
+    }
+  });
+
+  check('PR-Pa · Khối Quản lý: giáo viên bị từ chối (403), không trả tập rút gọn', () => {
+    assertThrows(() => tq.tongQuanQuanLy(P.normalCoreTeacher, { ct: 'ca-hai' }), /Quản lý/, 'GVCN mở khối Quản lý');
+  });
+
+  check('PR-Pa · Học viên cần hỗ trợ: em có SOS ở lớp tôi dạy có mặt kèm nhãn SOS; em không có gì thì không; GV lớp khác không thấy', () => {
+    const co = taoHocVien({ classCode: 'MB-FOU 12', weekStart: '2026-09-07' });
+    for (const [s, sc, tt] of [['listening', 10, 40], ['reading', 10, 40], ['writing', 5, 20], ['speaking', 20, 25]] as const) diem(co.attemptId, s, sc, tt);
+    const khong = taoHocVien({ classCode: 'MB-FOU 12', weekStart: '2026-09-07' });
+    for (const [s, sc, tt] of [['listening', 35, 40], ['reading', 35, 40], ['writing', 18, 20], ['speaking', 22, 25]] as const) diem(khong.attemptId, s, sc, tt);
+    const r = tq.hocVienCanHoTro(P.normalCoreTeacher);
+    const dong = r.rows.find((x: any) => x.studentId === co.sid);
+    assert(dong && /^SOS [123]/.test(dong.huyHieu?.text ?? ''), `Thiếu em có SOS hoặc thiếu nhãn: ${JSON.stringify(dong)}`);
+    assert(!r.rows.some((x: any) => x.studentId === khong.sid), 'Em đạt hết không phải "cần hỗ trợ"');
+    eq(r.tong, r.rows.length, 'tong = số dòng');
+    assert(!tq.hocVienCanHoTro(P.w2Teacher /* GV W2 MB-FT 101, không dạy MB-FOU 12 */).rows.some((x: any) => x.studentId === co.sid), 'GV lớp khác thấy em');
+    const sos = r.rows.filter((x: any) => x.huyHieu && /^SOS/.test(x.huyHieu.text)).map((x: any) => Number(x.huyHieu.text[4]));
+    assert(sos.every((v: number, i: number) => i === 0 || sos[i - 1] >= v), 'Phải xếp mức SOS giảm dần');
   });
 }
