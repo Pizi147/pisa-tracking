@@ -958,7 +958,7 @@ git commit -m "PR-Qa (3): luật thuần Học viên & Lớp + hồ sơ lớp (c
 - Test helpers (các task sau dùng): `taoLop(code, kind)`, `taoHocVien({ cid, ft, target?, ten? })`, `themLuot({ sid, cid, cycleId, no, kind, weekStart })`,
   `bandFT(attemptId, bands)`, `diemThuong(attemptId, diem)`, hằng `MB` (id chi nhánh MB).
 
-- [ ] **Step 1: Helper + phép kiểm đỏ.** Nối vào cuối thân `runHocVienLopTests`:
+- [x] **Step 1: Helper + phép kiểm đỏ.** Nối vào cuối thân `runHocVienLopTests`:
 
 ```ts
   // ------------------------------------------------------------------ helper dữ liệu riêng của PR-Qa
@@ -1031,9 +1031,9 @@ git commit -m "PR-Qa (3): luật thuần Học viên & Lớp + hồ sơ lớp (c
   });
 ```
 
-- [ ] **Step 2:** `npm test` → hai phép kiểm ✗ (`s.expectation` là `undefined`).
+- [x] **Step 2:** `npm test` → hai phép kiểm ✗ (`s.expectation` là `undefined`).
 
-- [ ] **Step 3: Sửa `server/src/students/standing.ts`.**
+- [x] **Step 3: Sửa `server/src/students/standing.ts`.**
   - Trong `export type Standing` (sau dòng 59 `failed: number | null;`) thêm:
 
 ```ts
@@ -1064,8 +1064,8 @@ git commit -m "PR-Qa (3): luật thuần Học viên & Lớp + hồ sơ lớp (c
           .map((v) => ({ skill: v.skill, band: v.band as number }));
 ```
 
-- [ ] **Step 4:** `npm run check` xanh (N+17). Không phép kiểm cũ nào đỏ (trường chỉ thêm).
-- [ ] **Step 5: Commit.**
+- [x] **Step 4:** `npm run check` xanh (N+17). Không phép kiểm cũ nào đỏ (trường chỉ thêm).
+- [x] **Step 5: Commit.**
 
 ```bash
 git add server/src/students/standing.ts server/src/tests/hocVienLop.tests.ts

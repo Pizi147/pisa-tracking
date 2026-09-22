@@ -217,4 +217,73 @@ export async function runHocVienLopTests(t: YThucTestKit) {
     eq(d.maHocVienNgan('PISA-QA-3'), '000003', 'Đệm đủ 6 số');
     eq(d.catDongPhu('x'.repeat(70)).length, 60, 'G-3');
   });
+
+  // ------------------------------------------------------------------ helper dữ liệu riêng của PR-Qa
+
+  const NOW = new Date().toISOString();
+  const MB = (conn.prepare(`SELECT id FROM branches WHERE code = 'MB'`).get() as any).id as number;
+  let soThuTu = 0;
+  const taoLop = (code: string, kind: 'FT' | 'FOU'): number =>
+    (intake.createClass(P.admin, { code, branchId: MB, kind, isFastTrack: kind === 'FT', startDate: '2026-08-03' }) as any).id as number;
+  function taoHocVien(o: { cid: number; ft: boolean; target?: number; ten?: string }): { sid: number; cycleId: number } {
+    soThuTu += 1;
+    const tag = `QA-${soThuTu}`;
+    const ten = o.ten ?? `Hoc vien ${tag}`;
+    const sid = Number(conn.prepare(
+      `INSERT INTO students (student_code, full_name, normalized_name, branch_id, status, created_at) VALUES (?,?,?,?, 'active', ?)`,
+    ).run(`PISA-${tag}`, ten, ten.toLowerCase(), MB, NOW).lastInsertRowid);
+    conn.prepare(`INSERT INTO enrollments (student_id, class_id, status, started_at, created_at) VALUES (?,?, 'active', '2026-08-03', ?)`)
+      .run(sid, o.cid, NOW);
+    const cycleId = Number(conn.prepare(
+      `INSERT INTO learning_cycles (student_id, seq, route, programme_code, target_score, started_at, status, created_at)
+       VALUES (?, 1, ?, ?, ?, '2026-08-03', 'active', ?)`,
+    ).run(sid, o.ft ? 'LT1' : null, o.ft ? null : 'FOU', o.target ?? null, NOW).lastInsertRowid);
+    return { sid, cycleId };
+  }
+  function themLuot(o: { sid: number; cid: number; cycleId: number; no: number; kind: 'mock' | 'progress' | 'final'; weekStart: string }): number {
+    const periodId = week.ensurePeriod(o.weekStart).id;
+    const id = Number(conn.prepare(
+      `INSERT INTO assessment_attempts (cycle_id, student_id, attempt_no, kind, class_id, planned_period_id, status, created_at)
+       VALUES (?,?,?,?,?,?, 'planned', ?)`,
+    ).run(o.cycleId, o.sid, o.no, o.kind, o.cid, periodId, NOW).lastInsertRowid);
+    skillSchedule.ensureSkillRows(id);
+    return id;
+  }
+  const bandFT = (attemptId: number, bands: Record<string, number>) => {
+    for (const [k, b] of Object.entries(bands)) {
+      conn.prepare(`INSERT INTO assessment_scores (attempt_id, skill, band, entered_by, entered_at) VALUES (?,?,?,?,?)`)
+        .run(attemptId, k, b, P.admin.userId, NOW);
+    }
+  };
+  const diemThuong = (attemptId: number, diem: Record<string, [number, number]>) => {
+    for (const [k, [s, tong]] of Object.entries(diem)) {
+      conn.prepare(`INSERT INTO assessment_scores (attempt_id, skill, raw_score, raw_total, entered_by, entered_at) VALUES (?,?,?,?,?,?)`)
+        .run(attemptId, k, s, tong, P.admin.userId, NOW);
+    }
+  };
+  const LOP_FT = taoLop('MB-FT QA1', 'FT');
+  const LOP_THUONG = taoLop('MB-FOU QA1', 'FOU');
+
+  // ------------------------------------------------------------------ Task 4 · Standing
+
+  check('PR-Qa · §3.6 FT: standingFor trả Overall, kỳ vọng CỦA ĐỢT ĐÓ và kỹ năng dưới kỳ vọng', () => {
+    const a = taoHocVien({ cid: LOP_FT, ft: true, target: 6.5 });
+    const at = themLuot({ ...a, cid: LOP_FT, no: 2, kind: 'mock', weekStart: '2026-09-07' });
+    bandFT(at, { listening: 5.0, reading: 6.0, writing1: 6.0, writing2: 6.0, speaking: 6.0 });
+    const s = standingMod.standingFor([a.sid]).get(a.sid);
+    eq([s.expectation, s.overall], [6, 6], 'MT2: kỳ vọng 6.5 − 0.5; Overall (5+6+6+6)/4 = 5.75 → 6.0');
+    eq(s.belowSkills, [{ skill: 'listening', band: 5 }], 'Chỉ L dưới kỳ vọng');
+    eq(s.failedSkills, [], 'FT không có môn đúng/tổng');
+    eq(d.ketQuaGanNhat(s), { chinh: '6.0', thieu: null, dat: false, sos: 'SOS 1', phu: 'MT2 · kỳ vọng 6.0 · Thiếu L 5.0' }, 'Chữ cột');
+  });
+
+  check('PR-Qa · §3.6 lớp thường: standingFor trả môn chưa đạt kèm đúng/tổng', () => {
+    const b = taoHocVien({ cid: LOP_THUONG, ft: false });
+    const at = themLuot({ ...b, cid: LOP_THUONG, no: 1, kind: 'progress', weekStart: '2026-09-07' });
+    diemThuong(at, { listening: [30, 40], reading: [32, 40], writing: [12, 20], speaking: [8, 10] });
+    const s = standingMod.standingFor([b.sid]).get(b.sid);
+    eq(s.failedSkills, [{ skill: 'writing', score: 12, total: 20 }], 'W 12/20 = 60% < 70%');
+    eq([s.overall, s.expectation, s.belowSkills], [null, null, []], 'Lớp thường không có Overall/kỳ vọng');
+    eq(d.ketQuaGanNhat(s), { chinh: 'Đạt 3/4 môn', thieu: null, dat: false, sos: 'SOS 1', phu: 'Giữa khoá · chưa đạt W 12/20' }, 'Chữ cột');
+  });
 }
