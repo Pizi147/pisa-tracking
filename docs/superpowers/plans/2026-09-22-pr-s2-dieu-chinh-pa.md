@@ -1847,14 +1847,14 @@ export function ResultDialog({ iv, onClose, onDone }: {
 
 **Files:** `plan.md` (§22.9), `CODE_MAP.md`
 
-- [ ] **Step 1: `plan.md` §22.9** (~2892–2898): đổi `- [ ] **S2.**` → `- [x] **S2.** *(PR-S2)*` và `- [ ] **S4.**` → `- [x] **S4.** *(PR-S2)*`; thêm một dòng
+- [x] **Step 1: `plan.md` §22.9** (~2892–2898): đổi `- [ ] **S2.**` → `- [x] **S2.** *(PR-S2)*` và `- [ ] **S4.**` → `- [x] **S4.** *(PR-S2)*`; thêm một dòng
   dưới mỗi mục:
   - S2: `**PR-S2:** bảng \`case_intervention_revisions\` (bản cũ · bản mới · ngày · ai · lý do); Điều chỉnh = cùng PA, không đổi loại; Thay = chuỗi \`superseded_by\` có sẵn + lý do bắt buộc; sửa gợi ý lúc xác nhận cũng ghi lịch sử; \`completeIntervention\` thôi ghi đè mô tả. Nghiệm thu mục 2 khoá bằng phép kiểm "Điều chỉnh hai lần".`
   - S4: `**PR-S2:** form Ghi kết quả 5 mục (kết quả · tiến triển · vấn đề còn tồn · Giữ nguyên/Điều chỉnh/Thay phương án/Kết thúc phương án · ghi chú hoặc lý do), dùng chung ở hồ sơ học viên và ngăn Case (\`web/src/modules/cases/CapNhatTuan.tsx\`).`
-- [ ] **Step 2: `CODE_MAP.md`**: thêm hai dòng vào bảng gần dòng "Thẻ case" (~28):
+- [x] **Step 2: `CODE_MAP.md`**: thêm hai dòng vào bảng gần dòng "Thẻ case" (~28):
   - `| **Ghi kết quả PA** (cập nhật tuần 5 mục; Giữ nguyên / Điều chỉnh / Thay / Kết thúc) | \`web/src/modules/cases/CapNhatTuan.tsx\` → \`CapNhatTuanForm\` | \`server/src/cases/cases.ts\` → \`updateResult\` |`
   - `| **Lịch sử điều chỉnh PA** (bản cũ · khi nào · ai · vì sao) | \`web/src/modules/cases/CapNhatTuan.tsx\` → \`LichSuDieuChinh\` | \`server/src/cases/planRevisions.ts\` |`
-- [ ] **Step 3: Commit.** `git add plan.md CODE_MAP.md` · `git commit -m "PR-S2 (10): tài liệu plan.md §22.9 (S2, S4) và CODE_MAP"`
+- [x] **Step 3: Commit.** `git add plan.md CODE_MAP.md` · `git commit -m "PR-S2 (10): tài liệu plan.md §22.9 (S2, S4) và CODE_MAP"`
 
 ---
 
@@ -2032,3 +2032,4 @@ làm mất lối "Thay bằng phương án khác hoặc nhờ Quản lý" cũ; f
 | 22/09 | 7 | Opus 5 (subagent) · 859105f · **751** (B+21) ✓ · cổng 🛑: hai phép khoá xanh ngay, phép thứ ba đỏ đúng ở dòng F05 → sửa đúng một dòng `effectiveness.ts` · F05 cũ vẫn xanh · rà: duyệt |
 | 22/09 | 8 | Opus 5 (subagent, một lượt với Task 9) · 116c675 · **751** ✓, kiểm kiểu sạch, vite build sạch · lệch nhỏ có lợi: bỏ hai chú thích cũ trên ResultDialog · rà (Opus 5): cần sửa 1 (form chưa báo trước lỗi "ngày dự kiến kết thúc sớm hơn ngày cập nhật") → vòng sửa 1 (bc55f75): thêm kiểm ngày đó + ngày cập nhật/ngày kết thúc không sau hôm nay + `title` cho nút Ghi kết quả (G-7) → rà lại: đạt |
 | 22/09 | 9 | Opus 5 (subagent) · c64c4bb · **751** ✓ · `plans={c.plans}` thêm ở CẢ HAI chỗ gọi KhoiPhuongAn · lệch nhỏ có lợi: PA giữa chuỗi A→B→C hiện đủ "Thay cho: A · Được thay bằng: C"; ▸ của PA bị thay không lặp dòng "kết thúc phương án" cùng ngày với "Được thay bằng"; `tabular-nums` · rà: đạt sau vòng sửa 1 |
+| 22/09 | 10 | Opus 5 (subagent) · 59b4007 + d178eb8 · tick S2, S4 ở plan.md §22.9 (dấu `*(PR-S2)*` đặt sau tiêu đề in đậm như kiểu PR-S1); CODE_MAP thêm hai dòng · thêm (quyết định tại chỗ): CODE_MAP "năm bước" → "sáu bước" (có `adjust`), xoá dòng CODE_MAP trỏ tới `InlineResult` đã xoá · rà: duyệt |
