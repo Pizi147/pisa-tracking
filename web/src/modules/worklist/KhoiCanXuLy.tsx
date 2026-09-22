@@ -14,7 +14,8 @@ type Data = { canXuLy: (DongCanXuLyGoc & { phu: string })[]; diemDangChuY: DiemC
 const CHAM: Record<'do' | 'vang' | 'xanh', string> = { do: 'bg-rose-300', vang: 'bg-amber-300', xanh: 'bg-sky-300' };
 
 export function KhoiCanXuLy({ branchId, ct }: { branchId: number | null; ct: ChuongTrinh }) {
-  const url = `/tong-quan/quan-ly?${branchId ? `branchId=${branchId}` : ''}${thamSoCt(ct)}`;
+  const q = `${branchId ? `branchId=${branchId}` : ''}${thamSoCt(ct)}`.replace(/^&/, '');
+  const url = q ? `/tong-quan/quan-ly?${q}` : '/tong-quan/quan-ly';
   const { data, loading, error, reload } = useApi<Data>(url, [branchId, ct]);
   const [mo, setMo] = useState<{ id: string; n: number; extra?: Record<string, string> } | null>(null);
   const phamVi = { branchId, chuongTrinh: ct };

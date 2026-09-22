@@ -1,7 +1,7 @@
 import { Fragment, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
-import { Card, Skeleton, Th } from '../../ui/ui.tsx';
+import { Card, Empty, ErrorState, Skeleton, Th } from '../../ui/ui.tsx';
 import { SoLieuO } from '../../ui/SoLieuO.tsx';
 import { thamSoCt, type ChuongTrinh, type CotBang } from '@shared/domain/index.ts';
 
@@ -36,10 +36,12 @@ const COT: { key: CotBang; nhan: (ct: ChuongTrinh) => string; goiY: string }[] =
 export function BranchPulse({ branchId, ct }: { branchId: number | null; ct: ChuongTrinh }) {
   const navigate = useNavigate();
   const q = `${branchId ? `branchId=${branchId}` : ''}${thamSoCt(ct)}`.replace(/^&/, '');
-  const { data, loading } = useApi<Bang>(`/tong-quan/chi-nhanh?${q}`, [branchId, ct]);
+  const { data, loading, error, reload } = useApi<Bang>(`/tong-quan/chi-nhanh?${q}`, [branchId, ct]);
   const [mo, setMo] = useState<Set<string>>(new Set());
   const [view, setView] = useState<'lop' | 'gv'>('lop');
-  if (loading) return <Card title="Theo chi nhánh"><Skeleton rows={3} /></Card>;
+  const tieuDeTam = branchId ? 'Theo lớp' : 'Theo chi nhánh';   // tiêu đề trung tính khi chưa có dữ liệu, tránh nhấp nháy
+  if (error) return <Card title={tieuDeTam}><ErrorState message={error.message} hint={error.hint} onRetry={reload} /></Card>;
+  if (loading) return <Card title={tieuDeTam}><Skeleton rows={3} /></Card>;
   if (!data) return null;
   const coGv = data.cheDo === 'lop' && branchId !== null;       // Q10 — giữ tạm tới PR-GV
   const o = (h: { khoa: string; nhan: string }, c: CotBang, x: OBang) => (
@@ -65,15 +67,15 @@ export function BranchPulse({ branchId, ct }: { branchId: number | null; ct: Chu
     <Card title={data.cheDo === 'lop' ? `Theo lớp${data.tenChiNhanh ? ` · ${data.tenChiNhanh}` : ''}` : 'Theo chi nhánh'}
       action={coGv ? (
         <div className="flex gap-1">
-          <button className={`btn btn-sm ${view === 'lop' ? 'btn-primary' : ''}`} onClick={() => setView('lop')}>Theo lớp</button>
-          <button className={`btn btn-sm ${view === 'gv' ? 'btn-primary' : ''}`} onClick={() => setView('gv')}>Theo giáo viên</button>
+          <button type="button" aria-pressed={view === 'lop'} className={`btn btn-sm ${view === 'lop' ? 'btn-primary' : ''}`} onClick={() => setView('lop')}>Theo lớp</button>
+          <button type="button" aria-pressed={view === 'gv'} className={`btn btn-sm ${view === 'gv' ? 'btn-primary' : ''}`} onClick={() => setView('gv')}>Theo giáo viên</button>
         </div>
       ) : undefined}
       bodyClass="p-0">
       {coGv && view === 'gv' ? <BangTheoGiaoVien branchId={branchId} /> : (
         <div className="table-scroll">
           <table className="w-full text-sm" style={{ tableLayout: 'fixed', minWidth: '44rem' }}>
-            <colgroup><col style={{ width: '26%' }} />{COT.map((c) => <col key={c.key} style={{ width: `${74 / COT.length}%` }} />)}</colgroup>
+            <colgroup><col style={{ width: '26%' }} />{COT.map((c) => <col key={c.key} style={{ width: `${(74 / COT.length).toFixed(1)}%` }} />)}</colgroup>
             <thead><tr>
               <Th className="sticky-col">{data.cheDo === 'lop' ? 'Lớp' : 'Chi nhánh'}</Th>
               {COT.map((c) => <Th key={c.key} align="right" hint={c.goiY}>{c.nhan(ct)}</Th>)}
@@ -87,6 +89,7 @@ export function BranchPulse({ branchId, ct }: { branchId: number | null; ct: Chu
                       {h.loai === 'chi-nhanh' ? (
                         <span className="flex items-center gap-1.5 whitespace-nowrap">
                           <button type="button" aria-expanded={mo.has(h.khoa)} title="Mở xuống từng lớp"
+                            aria-label={`${mo.has(h.khoa) ? 'Thu gọn' : 'Mở xuống lớp của'} ${h.nhan}`}
                             className="appearance-none bg-transparent border-0 p-0 cursor-pointer text-slate-500"
                             onClick={() => setMo((s) => { const n = new Set(s); n.has(h.khoa) ? n.delete(h.khoa) : n.add(h.khoa); return n; })}>
                             {mo.has(h.khoa) ? '▾' : '▸'}
@@ -109,11 +112,11 @@ export function BranchPulse({ branchId, ct }: { branchId: number | null; ct: Chu
               {data.cheDo === 'chi-nhanh' && hangTong('Tất cả chi nhánh')}
             </tbody>
           </table>
+          <p className="m-0 px-4 py-2 text-[11px] text-slate-500 border-t" style={{ borderColor: 'var(--line)' }}>
+            {data.cheDo === 'chi-nhanh' ? 'Bấm ▸ để mở ra từng lớp · bấm số để xem danh sách' : 'Bấm số để xem danh sách'}
+          </p>
         </div>
       )}
-      <p className="m-0 px-4 py-2 text-[11px] text-slate-500 border-t" style={{ borderColor: 'var(--line)' }}>
-        {data.cheDo === 'chi-nhanh' ? 'Bấm ▸ để mở ra từng lớp · bấm số để xem danh sách' : 'Bấm số để xem danh sách'}
-      </p>
     </Card>
   );
 }
@@ -145,6 +148,7 @@ function BangTheoGiaoVien({ branchId }: { branchId: number | null }) {
 
   if (loading) return <div className="p-4"><Skeleton rows={3} /></div>;
   if (!data) return null;
+  if (data.people.length === 0) return <Empty title="Chưa có giáo viên nào trong chi nhánh này" />;
 
   const num = (n: number) => (
     <span className={`tabular-nums ${n === 0 ? 'text-slate-600' : 'text-slate-100'}`}>{n}</span>

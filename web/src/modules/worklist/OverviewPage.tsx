@@ -68,7 +68,8 @@ export default function OverviewPage({ tab: tabProp = 'tong-quan' }: { tab?: Tab
     if (v === 'ca-hai') next.delete('ct'); else next.set('ct', v);
     setParams(next, { replace: true });
   };
-  const duLieuDen = `Dữ liệu đến ${ngay(session?.demoDate)}`;   // không truyền "hôm nay" → dd/mm/yyyy (mockup)
+  // Chỉ hiện khi có mốc dữ liệu; không truyền "hôm nay" → dd/mm/yyyy (mockup)
+  const duLieuDen = session?.demoDate ? `Dữ liệu đến ${ngay(session.demoDate)}` : null;
 
   if (!canSeeBoard) {
     /* GIÁO VIÊN (§3.2): Việc cần làm của tôi + Học viên cần hỗ trợ; lịch thu gọn ở cuối. */
@@ -77,7 +78,7 @@ export default function OverviewPage({ tab: tabProp = 'tong-quan' }: { tab?: Tab
       <div className="page space-y-4">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
           <h1 className="text-lg font-semibold text-slate-100 m-0">{ten ? `Chào ${ten}` : 'Tổng quan'}</h1>
-          <span className="text-xs text-slate-500">{duLieuDen}</span>
+          {duLieuDen && <span className="text-xs text-slate-500">{duLieuDen}</span>}
         </div>
         <div className="grid gap-3 lg:grid-cols-[1.25fr_1fr] items-start">
           <ViecCuaToi />
@@ -100,7 +101,7 @@ export default function OverviewPage({ tab: tabProp = 'tong-quan' }: { tab?: Tab
       <div className="flex flex-wrap items-end justify-between gap-2">
         <HangTab ariaLabel="Tổng quan" value={tabProp} onChange={goTab}
           tabs={(['tong-quan', 'phan-tich'] as const).map((k) => ({ key: k, label: TAB_TONG_QUAN_LABEL[k] }))} />
-        <span className="text-xs text-slate-500 pb-1">{duLieuDen}</span>
+        {duLieuDen && <span className="text-xs text-slate-500 pb-1">{duLieuDen}</span>}
       </div>
       {tab === 'board' && <CaseBoard embedded />}
       {tab === 'work' && (
