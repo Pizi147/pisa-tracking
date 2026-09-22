@@ -77,10 +77,14 @@ export function CapNhatTuanForm({ pa, onCancel, onSaved }: {
   const missing =
     !outcome ? 'Chọn kết quả hiện tại.'
     : progress.trim().length < 8 ? 'Tiến triển cần ít nhất 8 ký tự.'
+    /* `max`/`min` của ô ngày không chặn ngày gõ tay, nên kiểm lại ở đây (máy chủ cũng kiểm). */
+    : on && today && on > today ? 'Ngày cập nhật không được sau hôm nay.'
     : !decision ? 'Chọn quyết định.'
     : decision === 'adjust' && !adjustChanged ? 'Điều chỉnh thì phải đổi ít nhất một thứ. Không đổi gì thì chọn Giữ nguyên.'
     : decision === 'adjust' && descChanged && desc.trim().length < 8 ? 'Mô tả cần ít nhất 8 ký tự.'
+    : decision === 'adjust' && dueChanged && !!on && due < on ? 'Ngày dự kiến kết thúc không được sớm hơn Ngày cập nhật.'
     : decision === 'replace' && newDesc.trim().length < 8 ? 'Mô tả phương án mới cần ít nhất 8 ký tự.'
+    : decision === 'end' && endOn && today && endOn > today ? 'Ngày kết thúc không được sau hôm nay.'
     : needReason && reason.trim().length < 8 ? 'Lý do cần ít nhất 8 ký tự.'
     : null;
 
@@ -157,25 +161,28 @@ export function CapNhatTuanForm({ pa, onCancel, onSaved }: {
 
       <div>
         {nhan('4. Quyết định')}
-        <div className="flex flex-wrap gap-1.5" role="group" aria-label="Quyết định">
-          {PLAN_DECISION_CHIPS.map((d) => {
-            const blocked = outcome ? decisionBlockedReason(outcome, d) : 'Chọn kết quả trước.';
-            return (
-              <button key={d} type="button" aria-pressed={decision === d} disabled={!!blocked}
-                title={blocked ?? PLAN_DECISION_HINT[d]}
-                className={`btn btn-sm ${decision === d ? 'btn-primary' : ''}`} onClick={() => setDecision(d)}>
-                {PLAN_DECISION_LABEL[d]}
-              </button>
-            );
-          })}
+        {/* Một nhóm cho cả bốn nút và nút chữ phụ "Xin hỗ trợ từ Quản lý": trình đọc màn hình đọc chung một câu hỏi. */}
+        <div role="group" aria-label="Quyết định">
+          <div className="flex flex-wrap gap-1.5">
+            {PLAN_DECISION_CHIPS.map((d) => {
+              const blocked = outcome ? decisionBlockedReason(outcome, d) : 'Chọn kết quả trước.';
+              return (
+                <button key={d} type="button" aria-pressed={decision === d} disabled={!!blocked}
+                  title={blocked ?? PLAN_DECISION_HINT[d]}
+                  className={`btn btn-sm ${decision === d ? 'btn-primary' : ''}`} onClick={() => setDecision(d)}>
+                  {PLAN_DECISION_LABEL[d]}
+                </button>
+              );
+            })}
+          </div>
+          {allowed.includes('ask_manager') && (
+            <button type="button" aria-pressed={decision === 'ask_manager'} title={PLAN_DECISION_HINT.ask_manager}
+              className={`btn btn-sm mt-1.5 ${decision === 'ask_manager' ? 'btn-primary' : 'btn-ghost'}`}
+              onClick={() => setDecision('ask_manager')}>
+              {PLAN_DECISION_LABEL.ask_manager}
+            </button>
+          )}
         </div>
-        {allowed.includes('ask_manager') && (
-          <button type="button" aria-pressed={decision === 'ask_manager'} title={PLAN_DECISION_HINT.ask_manager}
-            className={`btn btn-sm mt-1.5 ${decision === 'ask_manager' ? 'btn-primary' : 'btn-ghost'}`}
-            onClick={() => setDecision('ask_manager')}>
-            {PLAN_DECISION_LABEL.ask_manager}
-          </button>
-        )}
       </div>
 
       {decision === 'adjust' && (

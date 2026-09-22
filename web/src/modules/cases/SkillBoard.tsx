@@ -551,7 +551,10 @@ function KhoiPhuongAn({ p, plans, canEdit, onChanged }: {
             <>
               <PlanDue p={p} />
               {canEdit && !editing && (
-                <button type="button" className="btn btn-sm" onClick={() => setEditing(true)}>Ghi kết quả</button>
+                <button type="button" className="btn btn-sm" onClick={() => setEditing(true)}
+                  title="Ghi kết quả tuần này: kết quả, tiến triển, và quyết định Giữ nguyên / Điều chỉnh / Thay / Kết thúc">
+                  Ghi kết quả
+                </button>
               )}
             </>
           ) : (

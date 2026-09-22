@@ -599,7 +599,10 @@ function InterventionBody({ iv, followups, data, act }: {
       */}
       <div className="flex flex-wrap gap-2 mt-1.5">
         {canEdit && openStatus && !waiting && (
-          <button className="btn btn-sm btn-primary" onClick={() => act.onResult(iv)}>Ghi kết quả</button>
+          <button className="btn btn-sm btn-primary" onClick={() => act.onResult(iv)}
+            title="Ghi kết quả tuần này: kết quả, tiến triển, và quyết định Giữ nguyên / Điều chỉnh / Thay / Kết thúc">
+            Ghi kết quả
+          </button>
         )}
         {waiting && data.viewer?.canApprove && (
           <button className="btn btn-sm" onClick={() => act.onRespond(iv)}>Trả lời đề xuất</button>
