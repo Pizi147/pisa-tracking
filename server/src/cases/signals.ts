@@ -362,6 +362,11 @@ export function linkSignalToCase(p: Principal, signalId: number, caseId: number,
     const attemptNo = (conn
       .prepare('SELECT attempt_no FROM assessment_attempts WHERE id = ?')
       .get(sg.attempt_id) as any)?.attempt_no ?? null;
+    /* Lớp thường: mốc mở mang số câu đúng / tổng của đúng môn đó (§3.10 "điền sẵn điểm"). FT không có raw_total → không thêm. */
+    const sc = sg.skill
+      ? conn.prepare('SELECT raw_score, raw_total FROM assessment_scores WHERE attempt_id = ? AND skill = ?').get(sg.attempt_id, sg.skill) as any
+      : null;
+    const scoreText = sc?.raw_score != null && sc?.raw_total != null ? ` (${labelOf(sg)} ${sc.raw_score}/${sc.raw_total})` : '';
     conn
       .prepare(
         `INSERT OR IGNORE INTO case_milestones
@@ -370,7 +375,7 @@ export function linkSignalToCase(p: Principal, signalId: number, caseId: number,
          VALUES (?, 'opened', ?,?,?,?,?,?,?,?,?,?)`,
       )
       .run(caseId, sg.attempt_id, attemptNo, sg.band, sg.expectation, sg.sos_level,
-           sg.detected_on, 'Tín hiệu từ kết quả đợt này đã được xác minh và mở thành case',
+           sg.detected_on, `Tín hiệu từ kết quả đợt này${scoreText} đã được xác minh và mở thành case`,
            p.userId, nowIso(), `mt:${sg.attempt_id}:${caseId}:opened`);
   }
 

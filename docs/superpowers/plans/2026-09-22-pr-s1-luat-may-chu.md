@@ -1153,7 +1153,7 @@ api.post('/signals/pending/:id/dismiss', requireAuth, wrap((req) => {
 - Consumes: `loadSignal` (Task 6).
 - Produces: `reportIssue` với `fromSignalId` → Case có `category` = môn của tín hiệu, `cycle_id` = khoá của tín hiệu; `topic = 'writing'` hợp lệ khi khoá là lớp thường.
 
-- [ ] **Step 1: Phép kiểm (đỏ).**
+- [x] **Step 1: Phép kiểm (đỏ).**
 
 ```ts
   // ================================================================== 8. S1 (c) Tạo Case
@@ -1202,8 +1202,8 @@ api.post('/signals/pending/:id/dismiss', requireAuth, wrap((req) => {
   });
 ```
 
-- [ ] **Step 2: Chạy, đỏ.** Expected: phép 1 ✗ (mốc không có 10/40; có thể cả `cycle_id`), 2 ✗, 3 ✗ (`Chủ đề không hợp lệ: writing`), 4 ✗.
-- [ ] **Step 3: `reportIssue` (`cases.ts`).** Hiện tại khối kiểm `topic` (dòng 383–385) đứng **trước** khối chọn lộ trình (dòng 399–404). Đổi thứ tự
+- [x] **Step 2: Chạy, đỏ.** Expected: phép 1 ✗ (mốc không có 10/40; có thể cả `cycle_id`), 2 ✗, 3 ✗ (`Chủ đề không hợp lệ: writing`), 4 ✗.
+- [x] **Step 3: `reportIssue` (`cases.ts`).** Hiện tại khối kiểm `topic` (dòng 383–385) đứng **trước** khối chọn lộ trình (dòng 399–404). Đổi thứ tự
   và thêm kiểm tín hiệu — thay đoạn từ `const topic = …` (dòng 381) tới hết khối `if (input.cycleId && !cycle) throw …` (dòng 404) bằng:
 
 ```ts
@@ -1241,7 +1241,7 @@ Giữ nguyên các dòng giữa (mức độ, `detectedAt`, `idempotencyKey`) �
 > Lưu ý thứ tự: khối `idempotencyKey` (trả Case cũ khi gửi lại) đứng giữa hai khối trên trong mã hiện tại. Đặt khối `fromSignal` **sau** khối
 > `idempotencyKey`, để bấm gửi lại (tín hiệu đã `linked` từ lần đầu) vẫn trả Case cũ thay vì báo lỗi "đã được xử lý".
 
-- [ ] **Step 4: Mốc mở mang điểm** (`linkSignalToCase`, `signals.ts:320-334`). Trước câu `INSERT OR IGNORE INTO case_milestones … 'opened'`:
+- [x] **Step 4: Mốc mở mang điểm** (`linkSignalToCase`, `signals.ts:320-334`). Trước câu `INSERT OR IGNORE INTO case_milestones … 'opened'`:
 
 ```ts
     const sc = sg.skill
@@ -1251,9 +1251,9 @@ Giữ nguyên các dòng giữa (mức độ, `detectedAt`, `idempotencyKey`) �
 ```
 và đổi đối số `note` của câu INSERT thành `` `Tín hiệu từ kết quả đợt này${scoreText} đã được xác minh và mở thành Case` ``.
 
-- [ ] **Step 5: Chạy, xanh** (Expected `697`). Phép kiểm cũ `[6.2] …` ở `run.ts` ~5989 dùng tín hiệu demo bất kỳ: nếu nó chọn trúng tín hiệu có
+- [x] **Step 5: Chạy, xanh** (Expected `697`). Phép kiểm cũ `[6.2] …` ở `run.ts` ~5989 dùng tín hiệu demo bất kỳ: nếu nó chọn trúng tín hiệu có
   `skill` khác `topic` mà nó gửi thì giờ đỏ — nó gửi `topic: sg.skill` nên không. Nếu đỏ vì lý do khác → 🛑.
-- [ ] **Step 6: Commit.** `git commit -am "PR-S1 (8): S1 — Tạo Case từ tín hiệu đúng môn/đúng khoá, mốc mở mang điểm; Case Writing lớp thường (nửa máy chủ F07)"`
+- [x] **Step 6: Commit.** `git commit -am "PR-S1 (8): S1 — Tạo Case từ tín hiệu đúng môn/đúng khoá, mốc mở mang điểm; Case Writing lớp thường (nửa máy chủ F07)"`
 
 ---
 

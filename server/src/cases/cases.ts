@@ -24,7 +24,7 @@ import { currentCycle } from '../fasttrack/cycles.ts';
 import { expectationFor } from '../fasttrack/scoring.ts';
 import { isRatioCycle } from '../normal/regular.ts';
 import { suggestCaseOwner } from './owner.ts';
-import { linkSignalToCase } from './signals.ts';
+import { linkSignalToCase, loadSignal } from './signals.ts';
 import { NOT_UNCONFIRMED_PRESET, sosCaseState } from './sosState.ts';
 
 /**
@@ -374,15 +374,6 @@ export function reportIssue(p: Principal, input: {
     throw badRequest('Cần mô tả vấn đề cụ thể hơn: em sai ở đâu, sai như thế nào.');
   }
 
-  /*
-   * MỌI VẤN ĐỀ PHẢI CÓ CHỖ CẤT. Không có đầu mục và chủ đề thì nó rơi vào "chưa phân loại"
-   * và biến mất khỏi mọi bảng tổng hợp theo kỹ năng — đúng thứ vòng 3 sinh ra để sửa.
-   */
-  const topic = (input.topic ?? '').trim() || null;
-  if (!topic) {
-    throw badRequest('Chọn kỹ năng: Listening, Reading, Writing Task 1, Writing Task 2 hay Speaking.');
-  }
-  if (!(ENTRY_SKILLS as readonly string[]).includes(topic)) throw badRequest(`Chủ đề không hợp lệ: ${topic}`);
   /* Hai mức, không ba: `attention` (hiện là "Bình thường" từ 21/09/2026 — chỉ đổi chữ, mã giữ nguyên) và `urgent` (Gấp). Không chọn thì là `attention`. */
   if (input.urgency && !(URGENCY_LEVELS as readonly string[]).includes(input.urgency)) {
     throw badRequest('Mức độ chỉ còn hai bậc: Bình thường hoặc Gấp.');
@@ -396,12 +387,36 @@ export function reportIssue(p: Principal, input: {
     if (seen) return caseDetail(p, seen.id);
   }
 
-  // Lộ trình phải chọn rõ; không có thì lấy lộ trình đang mở, và ghi rõ nếu không có.
-  const cycle = input.cycleId
+  /*
+   * Tín hiệu mà Case này trả lời (§3.10 "Tạo Case: mở form Case MÔN ĐÓ"). Chỉ tín hiệu còn chờ mới mở Case được. Đứng SAU khối
+   * `idempotencyKey`: bấm gửi lại (tín hiệu đã `linked` từ lần đầu) phải trả Case cũ, không báo "đã được xử lý".
+   */
+  const fromSignal = input.fromSignalId ? loadSignal(input.fromSignalId) : null;
+  if (fromSignal && fromSignal.status !== 'pending') {
+    throw badRequest('Tín hiệu này đã được xử lý rồi (đã thành Case, đã bỏ qua hoặc đã thu hồi).');
+  }
+
+  // Lộ trình: gửi rõ thì dùng; mở từ tín hiệu thì dùng ĐÚNG khoá của tín hiệu; không thì lộ trình đang mở.
+  const wantedCycleId = input.cycleId ?? fromSignal?.cycle_id ?? null;
+  const cycle = wantedCycleId
     ? (conn.prepare('SELECT * FROM learning_cycles WHERE id = ? AND student_id = ?')
-        .get(input.cycleId, input.studentId) as any)
+        .get(wantedCycleId, input.studentId) as any)
     : currentCycle(input.studentId);
-  if (input.cycleId && !cycle) throw badRequest('Lộ trình không thuộc học viên này.');
+  if (wantedCycleId && !cycle) throw badRequest('Lộ trình không thuộc học viên này.');
+
+  /*
+   * MỌI VẤN ĐỀ PHẢI CÓ CHỖ CẤT. Năm ô FT (L · R · W1 · W2 · S); lớp thường có thêm MỘT môn Writing (`writing`) — nửa máy chủ của F07,
+   * để tín hiệu Writing lớp thường "Tạo Case" được (plan PR-S1 Q5). FT không có Case "Writing chung".
+   */
+  const topic = (input.topic ?? '').trim() || null;
+  if (!topic) {
+    throw badRequest('Chọn kỹ năng: Listening, Reading, Writing Task 1, Writing Task 2 hay Speaking.');
+  }
+  const allowedTopics: readonly string[] = cycle && isRatioCycle(cycle) ? [...ENTRY_SKILLS, 'writing'] : ENTRY_SKILLS;
+  if (!allowedTopics.includes(topic)) throw badRequest(`Chủ đề không hợp lệ: ${topic}`);
+  if (fromSignal && categoryOf(topic) !== (fromSignal.category ?? categoryOf(fromSignal.skill))) {
+    throw badRequest('Case tạo từ tín hiệu phải đúng môn của tín hiệu đó.');
+  }
 
   /*
    * CẢNH BÁO CASE TRÙNG (mục 7.13).

@@ -386,5 +386,50 @@ export async function runLuatMayChuTests(t: YThucTestKit) {
     assert(!(signals.signalDetail(P.mbManager, sg.id) as any).actions.includes('dismiss'), 'Tín hiệu FT không được có nút Bỏ qua');
   });
 
+  // ================================================================== 8. S1 (c) Tạo Case
+
+  console.log('\nPR-S1 · 8. S1 — Tạo Case từ tín hiệu: đúng môn, đúng khoá, mốc mở mang điểm; Writing lớp thường');
+
+  check('S1 · Tạo Case từ tín hiệu Listening: Case môn Listening của đúng khoá đó, tín hiệu "Đã thành Case", mốc mở ghi 10/40', () => {
+    const hv = taoHocVien({ classCode: 'MB-FOU 12', weekStart: '2026-09-07' });
+    diem(hv.attemptId, 'listening', 10, 40);
+    const sg = tinHieu(hv.attemptId, 'listening');
+    const c = caseTuTinHieu(pGvcnFou, sg);
+    const row = conn.prepare('SELECT category, cycle_id FROM sos_cases WHERE id = ?').get(c.id) as any;
+    assert(row.category === 'listening' && row.cycle_id === hv.cycleId, `Case sai môn/khoá: ${JSON.stringify(row)}`);
+    const after = conn.prepare('SELECT status, case_id FROM case_signals WHERE id = ?').get(sg.id) as any;
+    assert(after.status === 'linked' && after.case_id === c.id, `Tín hiệu chưa gắn: ${JSON.stringify(after)}`);
+    const m = conn.prepare(`SELECT note FROM case_milestones WHERE case_id = ? AND kind = 'opened'`).get(c.id) as any;
+    assert(m && String(m.note).includes('10/40'), `Mốc mở phải mang điểm: ${m?.note}`);
+  });
+
+  check('S1 · Tạo Case sai môn với tín hiệu bị từ chối (tín hiệu Listening không mở Case Reading)', () => {
+    const hv = taoHocVien({ classCode: 'MB-FOU 12', weekStart: '2026-09-07' });
+    diem(hv.attemptId, 'listening', 10, 40);
+    assertThrows(() => caseTuTinHieu(pGvcnFou, tinHieu(hv.attemptId, 'listening'), 'reading'), /đúng môn/, 'Case Reading từ tín hiệu Listening');
+  });
+
+  check('S1 · Tín hiệu Writing lớp thường tạo được Case Writing (một môn W); học viên FT không có Case "writing"', () => {
+    const hv = taoHocVien({ classCode: 'MB-FOU 12', weekStart: '2026-09-07' });
+    diem(hv.attemptId, 'writing', 5, 20);
+    const sg = tinHieu(hv.attemptId, 'writing');
+    assert(sg.owner_user_id === pWritingFou.userId, 'Tín hiệu Writing phải về GV Writing');
+    const c = caseTuTinHieu(pWritingFou, sg);
+    assert((conn.prepare('SELECT category FROM sos_cases WHERE id = ?').get(c.id) as any).category === 'writing', 'Case phải là môn W');
+    const ft = taoHocVien({ classCode: 'MB-FT 101', weekStart: '2026-09-07' });
+    assertThrows(() => cases.reportIssue(P.mbManager, {
+      studentId: ft.sid, topic: 'writing', title: 'Writing chung của FT', summary: 'FT phải tách W1 và W2, không có Writing chung.',
+      primaryCode: domain.issuesForTopic('writing')[0].code,
+    }), /Chủ đề không hợp lệ/, 'Học viên FT tạo Case Writing chung');
+  });
+
+  check('S1 · Tín hiệu đã Bỏ qua không mở Case được nữa', () => {
+    const hv = taoHocVien({ classCode: 'MB-FOU 12', weekStart: '2026-09-07' });
+    diem(hv.attemptId, 'reading', 10, 40);
+    const sg = tinHieu(hv.attemptId, 'reading');
+    signals.dismissSignal(pGvcnFou, sg.id, {});
+    assertThrows(() => caseTuTinHieu(pGvcnFou, sg), /đã được xử lý/, 'Mở Case từ tín hiệu đã bỏ qua');
+  });
+
   // ---- các task sau thêm phép kiểm NGAY TRÊN dòng này ----
 }
