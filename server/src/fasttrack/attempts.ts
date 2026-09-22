@@ -443,20 +443,24 @@ export const conBaiCanCham = (m: { pendingSkills: string[]; status: string }): b
   m.pendingSkills.length > 0 && m.status !== 'cancelled';
 
 /**
- * TUẦN ĐẦU CỦA ĐỢT = tuần sớm nhất trong các môn được yêu cầu. KHÔNG dùng `period` cho việc này: cột
- * `planned_period_id` là tuần kế hoạch HOÀN TẤT (tuần MUỘN NHẤT, mục 10.7), nên dời một môn sang tuần sau thì
- * `period` đi theo môn đó — so với nó, các môn KHÔNG dời lại trông như "lệch tuần". Cần chấm so với tuần này để nói
- * "lùi lịch từ … sang …" (Q15).
+ * BẰNG CHỨNG MỘT MÔN ĐÃ BỊ DỜI LỊCH (Q15 "lùi lịch") — chỉ hai nguồn có thật, KHÔNG suy từ thứ tự tuần: lịch tách
+ * tuần theo kế hoạch (lớp thường trải bốn môn qua hai tuần, FT xếp Speaking tuần sau) không phải là dời.
+ *
+ *   `no_show`  dấu "-" của lớp thường: `no_show_period_id` còn đó và KHÁC tuần hiện tại của môn — cùng luật với
+ *              `movedFrom` của `regularSheet`. Tuần cũ chính là `no_show_period_id`.
+ *   `absence`  dời do vắng (`absence_move_count > 0`, chỉ `applyMove` tăng nó). Tuần cũ đọc ở lịch sử lịch đợt.
+ *
+ * Xếp riêng tuần bằng `setSkillWeek` thì KHÔNG tính: kế hoạch tách tuần cũng đi đường đó.
  */
-function tuanDauOf(
-  ds: Array<{ required: boolean; weekStart: string | null; periodCode: string | null } | undefined>,
-): { code: string | null; weekStart: string } | null {
-  let dau: { code: string | null; weekStart: string } | null = null;
-  for (const x of ds) {
-    if (!x?.required || !x.weekStart) continue;
-    if (!dau || x.weekStart < dau.weekStart) dau = { code: x.periodCode, weekStart: x.weekStart };
+export type MonDoiLich = { by: 'no_show' | 'absence'; fromPeriodId: number | null };
+
+function monDoiLich(
+  score: { no_show_period_id?: number | null } | undefined, currentPeriodId: number | null, absenceMoves: number,
+): MonDoiLich | null {
+  if (score?.no_show_period_id && score.no_show_period_id !== currentPeriodId) {
+    return { by: 'no_show', fromPeriodId: score.no_show_period_id };
   }
-  return dau;
+  return absenceMoves > 0 ? { by: 'absence', fromPeriodId: null } : null;
 }
 
 /** Số ô đã có điểm trong phạm vi đang xem (cùng tiêu chí "được yêu cầu" và "của tôi" với `pendingSkillsOf`). */
@@ -640,13 +644,16 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
         /* Tập bài cần chấm THEO PHẠM VI ĐANG XEM — cùng hàm với badge ở danh sách lớp. */
         pendingSkills: pending,
         /* Hạn và tuần của CHÍNH các môn còn nợ theo phạm vi đang xem — Cần chấm cần hạn của cả dòng, không chỉ phần của tôi. */
-        pendingDetail: pending.map((k) => ({
-          skill: k, deadline: views.get(k)?.deadline ?? null,
-          weekCode: views.get(k)?.periodCode ?? null, weekStart: views.get(k)?.weekStart ?? null,
-        })),
+        pendingDetail: pending.map((k) => {
+          const v = views.get(k);
+          return {
+            skill: k, deadline: v?.deadline ?? null, periodId: v?.periodId ?? null,
+            weekCode: v?.periodCode ?? null, weekStart: v?.weekStart ?? null,
+            moved: monDoiLich(scores.find((x) => x.skill === k), v?.periodId ?? null, v?.absenceMoveCount ?? 0),
+          };
+        }),
         /* Số ô ĐÃ CÓ ĐIỂM trong cùng phạm vi — Cần chấm phân biệt "Chấm" với "Chấm tiếp". */
         scoredInScope: scoredInScopeOf(pendingCells, workScope),
-        tuanDau: tuanDauOf(regularSkills.map((k) => views.get(k))),
         /* Ai phụ trách từng bài — danh sách của Quản lý là để ĐÔN ĐỐC, nên phải có tên. */
         pendingOwners: ownersOf(a.class_id, pending),
         /** Tuần thi của CHÍNH các môn còn nợ — để hàng đợi nói "nợ từ tuần nào". */
@@ -720,10 +727,14 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
       /* Hạn và tuần của CHÍNH các môn còn nợ theo phạm vi đang xem — cùng ý như nhánh lớp thường. */
       pendingDetail: pending.map((k) => {
         const c = cells.find((x) => x.skill === k);
-        return { skill: k, deadline: c?.deadline ?? null, weekCode: c?.periodCode ?? null, weekStart: c?.weekStart ?? null };
+        const lich = bundle.skillRows.get(a.id)?.find((r) => r.skill === c?.assessedSkill);
+        return {
+          skill: k, deadline: c?.deadline ?? null, periodId: c?.periodId ?? null,
+          weekCode: c?.periodCode ?? null, weekStart: c?.weekStart ?? null,
+          moved: monDoiLich(scores.find((x) => x.skill === k), c?.periodId ?? null, lich?.absence_move_count ?? 0),
+        };
       }),
       scoredInScope: scoredInScopeOf(pendingInputOf(cells), workScope),
-      tuanDau: tuanDauOf(cells),
       /* Ai phụ trách từng bài — danh sách của Quản lý là để ĐÔN ĐỐC, nên phải có tên. */
       pendingOwners: ownersOf(a.class_id, pending),
       /** Tuần thi của CHÍNH các môn còn nợ — để hàng đợi nói "nợ từ tuần nào". */

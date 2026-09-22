@@ -17,7 +17,8 @@ import {
   ATTEMPT_KIND_SHORT, PERMISSIONS, SKILL_SHORT, nhomCanCham, trangThaiChamLabel,
   type AttemptKind, type MucCanCham, type WorkScope,
 } from '../../../shared/domain/index.ts';
-import { classScoreSheet, conBaiCanCham, listAttempts } from '../fasttrack/attempts.ts';
+import { classScoreSheet, conBaiCanCham, listAttempts, type MonDoiLich } from '../fasttrack/attempts.ts';
+import { assessedSkillOf } from '../fasttrack/scoring.ts';
 import { allProgrammes, isRatioClass, regularSheet } from '../normal/regular.ts';
 import { isOverdue, skillScoreDeadline, weekInfo } from '../platform/week.ts';
 
@@ -45,9 +46,10 @@ export function chamSheet(
 type CheDo = 'ielts_band' | 'ratio';
 
 /**
- * MÔN CÒN NỢ ĐÃ LÙI SANG TUẦN KHÁC tuần của đợt (Q15 — chủ sản phẩm chốt chữ "lùi lịch"). Giao diện ghi
+ * MÔN CÒN NỢ ĐÃ BỊ DỜI LỊCH THẬT — dấu "-" của lớp thường hoặc dời do vắng (`MonDoiLich` ở attempts.ts); lịch tách
+ * tuần theo kế hoạch KHÔNG tính (Q15 — chủ sản phẩm chốt chữ "lùi lịch"). `tuTuan` là tuần môn đó rời đi. Giao diện ghi
  * `{Kỹ năng} · lùi lịch của {tên}` khi một em, `{Kỹ năng} · lùi lịch · {n} HV` khi nhiều em; tooltip "Lùi lịch từ
- * {tuần đợt} sang {tuần môn}". Mã tuần giữ nguyên dạng dữ liệu; ngày thứ Hai (`…Start`) để giao diện gọi `tuanLich`
+ * {tuTuan} sang {sangTuan}". Mã tuần giữ nguyên dạng dữ liệu; ngày thứ Hai (`…Start`) để giao diện gọi `tuanLich`
  * — không bao giờ hiện mã có năm lên màn hình (G-6).
  */
 export type LuiLich = {
@@ -96,6 +98,74 @@ const kyNangLabelOf = (mode: CheDo, kyNang: string[]) =>
 const hanSomNhat = (ds: Array<string | null | undefined>): string | null =>
   ds.filter((x): x is string => !!x).sort()[0] ?? null;
 
+/** Chia lô cho câu `IN (...)` — SQLite giới hạn số tham số của một câu lệnh. */
+function theoLo<T>(ids: T[], hoi: (lo: T[], ph: string) => void) {
+  for (let i = 0; i < ids.length; i += 400) {
+    const lo = ids.slice(i, i + 400);
+    hoi(lo, lo.map(() => '?').join(','));
+  }
+}
+
+/**
+ * Dựng dòng phụ "lùi lịch" cho từng dòng Cần chấm từ các ô có bằng chứng dời. Một dòng chỉ có MỘT dòng phụ: môn lùi
+ * gặp đầu tiên; `hv` là mọi em của dòng có CHÍNH môn đó bị dời (Q15).
+ *
+ * Tuần cũ: dấu "-" mang sẵn id tuần cũ; dời do vắng thì đọc dòng `skill_week_moved_absence` MỚI NHẤT của lịch sử đợt
+ * (`old_value` là mã tuần). Hai câu đọc gộp cho cả danh sách, không hỏi theo từng dòng.
+ */
+function dungLuiLich(
+  doi: Array<{
+    key: string; skill: string; hv: string; attemptId: number; moved: MonDoiLich;
+    sangTuan: string | null; sangTuanStart: string | null;
+  }>,
+): Map<string, LuiLich> {
+  const out = new Map<string, LuiLich>();
+  if (!doi.length) return out;
+  const conn = db();
+  const tuan = new Map<number, { code: string; weekStart: string }>();
+  const theoMa = new Map<string, string>();
+  const vang = new Map<string, string>();   // `${attemptId}:${kỹ năng đánh giá}` → mã tuần cũ
+
+  theoLo([...new Set(doi.map((x) => x.moved.fromPeriodId).filter((x): x is number => !!x))], (lo, ph) => {
+    for (const r of conn.prepare(`SELECT id, code, week_start FROM report_periods WHERE id IN (${ph})`).all(...lo) as any[]) {
+      tuan.set(r.id, { code: r.code, weekStart: r.week_start });
+    }
+  });
+  theoLo([...new Set(doi.filter((x) => x.moved.by === 'absence').map((x) => x.attemptId))], (lo, ph) => {
+    for (const r of conn.prepare(
+      `SELECT attempt_id, field, old_value FROM attempt_schedule_history
+        WHERE action = 'skill_week_moved_absence' AND attempt_id IN (${ph}) ORDER BY id`,
+    ).all(...lo) as any[]) vang.set(`${r.attempt_id}:${r.field}`, r.old_value);
+  });
+  theoLo([...new Set(vang.values())].filter(Boolean), (lo, ph) => {
+    for (const r of conn.prepare(`SELECT code, week_start FROM report_periods WHERE code IN (${ph})`).all(...lo) as any[]) {
+      theoMa.set(r.code, r.week_start);
+    }
+  });
+
+  for (const x of doi) {
+    const cu = out.get(x.key);
+    if (cu) {
+      if (cu.kyNang === x.skill && !cu.hv.includes(x.hv)) cu.hv.push(x.hv);
+      continue;
+    }
+    let tuTuan: string | null = null;
+    let tuTuanStart: string | null = null;
+    if (x.moved.fromPeriodId) {
+      const t = tuan.get(x.moved.fromPeriodId);
+      tuTuan = t?.code ?? null; tuTuanStart = t?.weekStart ?? null;
+    } else {
+      /* W1/W2 của FT dời theo lịch của môn Writing. */
+      const maCu = vang.get(`${x.attemptId}:${assessedSkillOf(x.skill)}`) ?? null;
+      tuTuan = maCu; tuTuanStart = maCu ? theoMa.get(maCu) ?? null : null;
+    }
+    out.set(x.key, {
+      kyNang: x.skill, hv: [x.hv], tuTuan, sangTuan: x.sangTuan, tuTuanStart, sangTuanStart: x.sangTuanStart,
+    });
+  }
+  return out;
+}
+
 /**
  * "TÔI CÒN PHẢI CHẤM NHỮNG GÌ" — gom theo LỚP + ĐỢT (mockup 05a2 phương án A).
  *
@@ -117,10 +187,18 @@ export function canChamList(
     return cheDo.get(classId)!;
   };
 
-  type ChiTiet = { skill: string; deadline: string | null; weekCode: string | null; weekStart: string | null };
-  type Gom = DongCanCham & { _hs: Set<number>; _lui: Map<string, LuiLich>; _periodId: number | null };
+  type ChiTiet = {
+    skill: string; deadline: string | null; periodId: number | null; weekCode: string | null; weekStart: string | null;
+    moved: MonDoiLich | null;
+  };
+  type Gom = DongCanCham & { _hs: Set<number>; _periodId: number | null };
+  type Doi = {
+    key: string; skill: string; hv: string; attemptId: number; moved: MonDoiLich;
+    sangTuan: string | null; sangTuanStart: string | null;
+  };
   const gom = new Map<string, Gom>();
   const batDau = new Set<string>();
+  const doi: Doi[] = [];
   for (const a of rows as any[]) {
     if (!a.classId || a.status === 'cancelled') continue;
     const key = `${a.classId}:${a.kind}:${a.attemptNo ?? 0}`;
@@ -128,43 +206,42 @@ export function canChamList(
     if (!conBaiCanCham(a)) continue;
 
     const chiTiet: ChiTiet[] = a.pendingDetail ?? [];
-    const han = hanSomNhat(chiTiet.map((x) => x.deadline));
+    /* Ô còn nợ có hạn SỚM NHẤT: nó đặt hạn của dòng, và tuần của nó là tuần lưới FT phải mở. */
+    const som = [...chiTiet].sort((x, y) => (x.deadline ?? '9999') < (y.deadline ?? '9999') ? -1 : 1)[0] ?? null;
+    const han = som?.deadline ?? null;
     let cu = gom.get(key);
     if (!cu) {
       cu = {
         key, classId: a.classId, classCode: a.classCode ?? '—', mode: cheDoOf(a.classId),
         kind: a.kind, attemptNo: a.attemptNo ?? null, dotLabel: dotLabelOf(a.kind, a.attemptNo ?? null),
-        kyNang: [], kyNangLabel: '', conBai: 0, soHv: 0, han: null, luiLich: null, daBatDau: false, href: '',
-        _hs: new Set(), _lui: new Map(), _periodId: a.period?.id ?? null,
+        kyNang: [], kyNangLabel: '', conBai: 0, soHv: 0, han, luiLich: null, daBatDau: false, href: '',
+        _hs: new Set(), _periodId: som?.periodId ?? null,
       };
       gom.set(key, cu);
+    } else if (han && (!cu.han || han < cu.han)) {
+      cu.han = han;
+      cu._periodId = som?.periodId ?? cu._periodId;
     }
     for (const k of a.pendingSkills as string[]) if (!cu.kyNang.includes(k)) cu.kyNang.push(k);
     cu.conBai += a.pendingSkills.length;
     cu._hs.add(a.studentId);
-    if (han && (!cu.han || han < cu.han)) cu.han = han;
-    /*
-     * Lùi lịch = môn còn nợ đang ở tuần SAU tuần đầu của đợt. So với `tuanDau`, không so với `period`: `period` là
-     * tuần HOÀN TẤT (muộn nhất), dời một môn thì nó đi theo môn đó (xem `tuanDauOf` ở attempts.ts).
-     */
-    const tuanDot: { code: string | null; weekStart: string } | null = a.tuanDau ?? null;
+    /* Lùi lịch CHỈ khi có bằng chứng dời thật (`moved` — dấu "-" hoặc dời do vắng), không suy từ thứ tự tuần. */
     for (const x of chiTiet) {
-      if (!tuanDot || !x.weekStart || x.weekStart <= tuanDot.weekStart) continue;
-      const l: LuiLich = cu._lui.get(x.skill) ?? {
-        kyNang: x.skill, hv: [], tuTuan: tuanDot.code, sangTuan: x.weekCode,
-        tuTuanStart: tuanDot.weekStart, sangTuanStart: x.weekStart,
-      };
-      if (!l.hv.includes(a.studentName)) l.hv.push(a.studentName);
-      cu._lui.set(x.skill, l);
+      if (!x.moved) continue;
+      doi.push({
+        key, skill: x.skill, hv: a.studentName, attemptId: a.id, moved: x.moved,
+        sangTuan: x.weekCode, sangTuanStart: x.weekStart,
+      });
     }
   }
+  const luiLichOf = dungLuiLich(doi);
 
   const dong: DongCanCham[] = [...gom.values()].map((d) => {
-    const { _hs, _lui, _periodId, ...rest } = d;
+    const { _hs, _periodId, ...rest } = d;
     rest.kyNang = [...d.kyNang].sort(theoThuTu);
     const qs = new URLSearchParams();
     if (d.kind !== 'mock') qs.set('kind', d.kind);
-    /* Q12: FT mở lưới đúng tuần của đợt; một môn thì mở thẳng môn đó. */
+    /* Q12: FT mở lưới đúng tuần của ô còn nợ gấp nhất; một môn thì mở thẳng môn đó. */
     if (d.mode === 'ielts_band' && _periodId) qs.set('periodId', String(_periodId));
     if (rest.kyNang.length === 1) qs.set('kn', rest.kyNang[0]);
     const q = qs.toString();
@@ -172,8 +249,7 @@ export function canChamList(
       ...rest,
       soHv: _hs.size,
       kyNangLabel: kyNangLabelOf(d.mode, rest.kyNang),
-      /* Một dòng chỉ có một dòng phụ "lùi lịch" — lấy môn lùi gặp đầu tiên (Q15). */
-      luiLich: _lui.values().next().value ?? null,
+      luiLich: luiLichOf.get(d.key) ?? null,
       daBatDau: batDau.has(d.key),
       href: `/nhap-diem/${d.classId}${q ? `?${q}` : ''}`,
     };
@@ -213,8 +289,8 @@ const THU_TU_MON =
  * theo tuần của đợt làm biến mất đúng những bài đang phải chấm trong tuần đang xem — cùng lý do đã ghi ở
  * `classScoreSheet`. Lớp thường ghi "-" thì môn dời hẳn sang tuần sau nên tự rời tuần cũ.
  *
- * Một ô còn phải chấm = chưa có điểm, chưa báo "-" ở CHÍNH tuần này, và chưa vắng/huỷ. Writing của FT có hai ô
- * (W1, W2): xong khi cả hai có band.
+ * Chỉ tính lượt còn ngồi thi (`scheduled`/`sat`) — cả vào số em lẫn số bài. Một ô còn phải chấm = chưa có điểm và
+ * chưa báo "-" ở CHÍNH tuần này. Writing của FT có hai ô (W1, W2): xong khi cả hai có band.
  */
 export function lichTest(
   p: Principal, periodId: number, branchId?: number | null, today: string = demoToday(),
@@ -258,6 +334,8 @@ export function lichTest(
   type DongTam = Omit<DongLichTest, 'trangThai'> & { quaHan: boolean };
   const byClass = new Map<number, Omit<LopLichTest, 'dong'> & { dong: Map<string, DongTam> }>();
   for (const r of rows) {
+    /* Chỉ đếm lượt còn ngồi thi (chưa vắng, chưa huỷ phần thi): em vắng không làm dòng thành "Đã chấm xong". */
+    if (r.sit_status !== 'scheduled' && r.sit_status !== 'sat') continue;
     const mode: CheDo = modes.get(r.programme_code)?.scoringMode === 'ratio' ? 'ratio' : 'ielts_band';
     if (!byClass.has(r.class_id)) {
       byClass.set(r.class_id, {
@@ -282,8 +360,7 @@ export function lichTest(
     }
     d.soHv += 1;
     const daCham = mode === 'ielts_band' && r.skill === 'writing' ? r.cham_viet >= 2 : r.cham_don > 0;
-    const conNo = !daCham && !r.dau_tru && (r.sit_status === 'scheduled' || r.sit_status === 'sat');
-    if (conNo) {
+    if (!daCham && !r.dau_tru) {
       d.conBai += 1;
       /* Hạn theo đúng thứ tự của `viewSkill`: hạn riêng của môn → hạn riêng của đợt → hạn mặc định theo tuần môn. */
       const han = r.han_mon ?? r.han_dot ?? skillScoreDeadline(mode === 'ratio' ? 'ratio' : 'band', tuan.week_start);

@@ -378,10 +378,11 @@ export async function runChamDiemTests(t: YThucTestKit) {
     assert(dong.every((d: any) => d.conBai > 0), 'Không có dòng nào "còn 0 bài"');
     assert(new Set(dong.map((d: any) => d.key)).size === dong.length, 'Khoá dòng không trùng');
     assert(dong.every((d: any) => d.href.startsWith('/nhap-diem/')), 'Bấm Chấm mở thẳng lưới');
-    const thuong = dong.find((d: any) => d.mode === 'ratio');
-    if (thuong) {
-      assert(!/MT/.test(thuong.dotLabel), `Lớp thường không gọi đợt là MT: ${thuong.dotLabel}`);
-      assert(['Giữa khoá', 'Cuối khoá'].includes(thuong.dotLabel), thuong.dotLabel);
+    const thuong = dong.filter((d: any) => d.mode === 'ratio');
+    assert(thuong.length > 0, 'Seed: phải có ít nhất một dòng lớp thường để kiểm tên đợt');
+    for (const x of thuong) {
+      assert(!/MT/.test(x.dotLabel), `Lớp thường không gọi đợt là MT: ${x.dotLabel}`);
+      assert(['Giữa khoá', 'Cuối khoá'].includes(x.dotLabel), x.dotLabel);
     }
     /* Ruling 3: tiêu đề mục kèm hạn sớm nhất của mục. */
     for (const n of r.nhom) {
@@ -454,5 +455,47 @@ export async function runChamDiemTests(t: YThucTestKit) {
     const d2 = dongCua();
     assert(d2.daBatDau === true, 'Đã có một ô chấm thì là "Chấm tiếp"');
     assert(d2.conBai === d1.conBai - 1, `Bớt đúng một bài: ${d1.conBai} → ${d2.conBai}`);
+  });
+
+  check('PR-Rc1 · Q15 Lịch tách tuần theo KẾ HOẠCH không phải "lùi lịch"; chỉ dấu "-" (hay dời do vắng) mới là lùi', () => {
+    const tuanNay = d.mondayOfDate(TODAY);
+    const tuanTruoc = t.addDays(tuanNay, -7);
+    const { sid, cycleId } = taoBaiThuong(tuanTruoc);
+    const aid = taoLuot(cycleId, sid, 8, 'progress', tuanTruoc);
+    const tuanNayId = (conn.prepare('SELECT id FROM report_periods WHERE week_start = ?').get(tuanNay) as any)?.id;
+    assert(tuanNayId, 'Tuần hiện tại phải có trong bảng tuần');
+    /* Xếp riêng Speaking sang tuần này bằng đường xếp lịch thường — đúng như một kế hoạch tách tuần. */
+    skillSched.setSkillWeek(P.admin, aid, 'speaking', tuanNayId, { reason: 'Kế hoạch tách tuần', force: true });
+    const dongCua = () => cham.canChamList(P.admin, { classId: LOP, scope: 'managed' }, TODAY)
+      .nhom.flatMap((x: any) => x.dong).find((x: any) => x.key === `${LOP}:progress:8`);
+    const a1 = dongCua();
+    assert(a1 && a1.kyNang.includes('speaking'), 'Speaking ở tuần này vẫn là việc phải chấm');
+    assert(a1.luiLich === null, `Tách tuần theo kế hoạch KHÔNG phải lùi lịch: ${JSON.stringify(a1.luiLich)}`);
+    regular.reportRegularNoShow(P.admin, aid, 'listening', true, TODAY);
+    const a2 = dongCua();
+    assert(a2.luiLich && a2.luiLich.kyNang === 'listening', `Dấu "-" thì là lùi lịch: ${JSON.stringify(a2.luiLich)}`);
+    assert(a2.luiLich.tuTuanStart === tuanTruoc && a2.luiLich.sangTuanStart === tuanNay, 'Tuần cũ = tuần ghi dấu "-"');
+  });
+
+  check('PR-Rc1 · Q11 Cần chấm của GVBM (phạm vi mặc định) chỉ có môn của chính mình', () => {
+    const r = cham.canChamList(P.normalSubjectTeacher, { classId: LOP }, TODAY);
+    const dong = r.nhom.flatMap((x: any) => x.dong);
+    assert(dong.length > 0, 'GVBM còn bài phải chấm ở MB-FOU 12');
+    const la = dong.flatMap((x: any) => x.kyNang).filter((k: string) => !monCuaGv.includes(k));
+    assert(la.length === 0, `Có môn không phải của GVBM (${monCuaGv.join(', ')}): ${la.join(', ')}`);
+  });
+
+  check('PR-Rc1 · Q14 Lịch Test: tuần chưa tới là "Chưa tới hạn"; em vắng không được đếm vào dòng', () => {
+    const tuanXa = t.addDays(d.mondayOfDate(TODAY), 9 * 7);
+    const { attemptId } = taoBaiThuong(tuanXa);
+    const pid = (conn.prepare('SELECT id FROM report_periods WHERE week_start = ?').get(tuanXa) as any).id;
+    const lopOf = () => cham.lichTest(P.mbManager, pid, null, TODAY).lop.find((l: any) => l.classCode === 'MB-FOU 12');
+    const l1 = lopOf();
+    assert(l1 && l1.dong.length > 0, 'Bài ở tuần sau phải hiện ở Lịch Test của tuần đó');
+    assert(l1.dong.every((x: any) => x.trangThai === 'Chưa tới hạn'), l1.dong.map((x: any) => x.trangThai).join(' | '));
+    const truoc = l1.dong.find((x: any) => x.kyNang.includes('reading')).soHv;
+    conn.prepare(`UPDATE attempt_skills SET sit_status = 'absent' WHERE attempt_id = ? AND skill = 'reading'`).run(attemptId);
+    const sau = lopOf()?.dong.find((x: any) => x.kyNang.includes('reading'))?.soHv ?? 0;
+    assert(sau === truoc - 1, `Em vắng Reading rời khỏi số em của dòng: ${truoc} → ${sau}`);
   });
 }
