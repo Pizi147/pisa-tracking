@@ -2236,7 +2236,7 @@ export function DongTinHieu({ it }: { it: WorkItem }) {
   (Task 1); `DongViec` (Task 11).
 - Produces: `ViecCuaToi()`, `HocVienCanHoTro()`, `useNhacYThuc(): { classId: number; className: string; text: string }[]`.
 
-- [ ] **Step 1: `YThucReminders.tsx`** — tách hook, component giữ nguyên hành vi:
+- [x] **Step 1: `YThucReminders.tsx`** — tách hook, component giữ nguyên hành vi:
 
 ```tsx
 export type NhacYThuc = { classId: number; className: string; text: string };
@@ -2252,7 +2252,7 @@ export function YThucReminders() {
   /* …phần vẽ giữ nguyên… */
 }
 ```
-- [ ] **Step 2: `ViecCuaToi.tsx`:**
+- [x] **Step 2: `ViecCuaToi.tsx`:**
 
 ```tsx
 import { useMemo, useState } from 'react';
@@ -2337,7 +2337,7 @@ export function ViecCuaToi() {
   );
 }
 ```
-- [ ] **Step 3: `HocVienCanHoTro.tsx`:**
+- [x] **Step 3: `HocVienCanHoTro.tsx`:**
 
 ```tsx
 import { useState } from 'react';
@@ -2386,8 +2386,8 @@ export function HocVienCanHoTro() {
 }
 ```
   > G-10: số `· {tong}` ở tiêu đề = số dòng của chính khối (bấm "Xem thêm" ra đủ); không phải số dashboard mở nơi khác.
-- [ ] **Step 4:** Nối import GV vào `OverviewPage.tsx` (nếu Task 10 để tạm). `npm run check` xanh.
-- [ ] **Step 5: Commit.** `"PR-Pa (12): Tổng quan giáo viên — Việc cần làm của tôi gom 4 nhóm, Học viên cần hỗ trợ"`
+- [x] **Step 4:** Nối import GV vào `OverviewPage.tsx` (nếu Task 10 để tạm). `npm run check` xanh.
+- [x] **Step 5: Commit.** `"PR-Pa (12): Tổng quan giáo viên — Việc cần làm của tôi gom 4 nhóm, Học viên cần hỗ trợ"`
 
 ---
 
@@ -2591,3 +2591,9 @@ export function HocVienCanHoTro() {
   phẩm:** dòng tín hiệu **Fast Track** đang chờ (máy chủ S1 trả `actions: ['create_case']`) nay cũng hiện nút Tạo Case mở
   form thay cho nhãn "Mở Case" cũ — tự quyết giữ theo máy chủ (nút do máy chủ quyết, Q17); nếu không muốn thì thêm điều
   kiện `kind === 'normal'` là xong.
+- **Task 12:** commit `905c5f1` (3 file; `OverviewPage.tsx` không cần sửa vì Task 10 đã nối import). `npm run check`
+  xanh (752), `vite build` xanh. `YThucReminders` giữ component (hết người dùng — PR-S3 dọn), thêm hook `useNhacYThuc`.
+  Lưu ý: `gomNhomViec` bỏ nhóm `n = 0` nên GV có thể thấy ít hơn 4 tiêu đề nhóm (đúng luật Task 1). Rà (Opus 5): 1
+  NGHIÊM TRỌNG — plan chép `gomNhomViec(data.items, …)` nhưng `/my-work` khi GV không có phạm vi trả về không có `items`
+  → sập cả trang GV thay vì "Bạn chưa được cấp phạm vi nào". Sửa `data.items ?? []`, dùng `summary.total` cho trạng thái
+  trống, tooltip nhãn SOS/Ý thức (G-7), ẩn "· 0" ở tiêu đề khối rỗng, `aria-controls` (commit `4f57569`). Rà lại: đạt.
