@@ -15,6 +15,8 @@
     "reset": "npm run seed",
     "thu-goi": "node scripts/thu-goi-function.mjs",
     "thu-turso": "npm run build:server && node dist-server/server/src/ops/thuTurso.js",
+    "init-ban-chinh": "npm run build:server && node dist-server/server/src/ops/runInit.js",
+    "them-chi-nhanh": "node node_modules/typescript/bin/tsc -p tsconfig.build.json && node dist-server/server/src/ops/themChiNhanh.js",
     "build": "node scripts/goi-libsql-linux.mjs && tsc -p tsconfig.web.json --noEmit && npm run build:server && vite build",
     "typecheck": "tsc -p tsconfig.web.json --noEmit && tsc -p tsconfig.build.json --noEmit",
     "test": "npm run build:server && node dist-server/server/src/tests/run.js",

@@ -388,4 +388,217 @@ export async function runBanChinhTests(t: BanChinhTestKit) {
       assert(kho.size === 0, `Sau khi chờ việc nền, kho phải trống — còn ${kho.size}`);
     } finally { datKhoTepChoKiemThu(null); }
   });
+
+  console.log('\nPR-Z2 · 5. Khởi tạo bản chính (init-ban-chinh) và thêm chi nhánh (them-chi-nhanh) — chạy trên FILE TẠM riêng');
+  const { initBanChinh, docDanhSachChiNhanh, themChiNhanh } = await import('../ops/initBanChinh.ts');
+  const { napDuLieuNen } = await import('../seed/duLieuNen.ts');
+  const cryptoMod = await import('node:crypto');
+  const schemaSql = fs.readFileSync(SCHEMA_PATH, 'utf8');
+  const moDbTam = () => {
+    const dir = fs.mkdtempSync(pathMod.join(os.tmpdir(), 'z2-init-'));
+    return { conn: new Database(pathMod.join(dir, 'x.sqlite')), dir };
+  };
+  const dongLai = (o: { conn: InstanceType<typeof Database>; dir: string }) => {
+    try { o.conn.close(); } catch { /* đã đóng */ }
+    try { fs.rmSync(o.dir, { recursive: true, force: true }); } catch { /* Windows còn giữ file — bỏ qua dọn dẹp */ }
+  };
+  const dem = (conn: InstanceType<typeof Database>, b: string) => (conn.prepare(`SELECT COUNT(*) n FROM "${b}"`).get() as any).n as number;
+  const cacBang = (conn: InstanceType<typeof Database>) =>
+    (conn.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' ORDER BY name").all() as any[]).map((x) => x.name as string);
+  /** Ảnh chụp TOÀN BỘ database: cấu trúc + mọi dòng của mọi bảng. Hai ảnh bằng nhau = không có gì bị ghi, xoá hay đổi. */
+  const anhChup = (conn: InstanceType<typeof Database>) => JSON.stringify({
+    cauTruc: conn.prepare("SELECT type, name, sql FROM sqlite_master ORDER BY type, name").all(),
+    dong: cacBang(conn).map((b) => [b, conn.prepare(`SELECT * FROM "${b}" ORDER BY rowid`).all()]),
+  });
+  const soLanGhi = (conn: InstanceType<typeof Database>) => (conn.prepare('SELECT total_changes() AS n').get() as any).n as number;
+  const MK = 'MatKhauManh2026';
+  const O = { adminEmail: 'quantri.pisa@gmail.com', adminPassword: MK, chiNhanh: [{ code: 'MB', name: 'Monbay' }, { code: 'BC', name: 'Bãi Cháy' }], now: '2026-09-21T00:00:00Z', schemaSql };
+
+  check('PR-Z2 · docDanhSachChiNhanh đọc "MB=Monbay; BC=Bãi Cháy" (mã viết hoa), từ chối chuỗi rỗng, mã trùng, thiếu tên, mã có dấu/khoảng trắng và mã TUTOR (đã là đơn vị Tutor)', () => {
+    const ds = docDanhSachChiNhanh('mb=Monbay; BC=Bãi Cháy;');
+    assert(ds.length === 2 && ds[0].code === 'MB' && ds[1].code === 'BC' && ds[1].name === 'Bãi Cháy', JSON.stringify(ds));
+    assertThrows(() => docDanhSachChiNhanh(''), /CHI_NHANH/, 'Rỗng phải báo lỗi');
+    assertThrows(() => docDanhSachChiNhanh('MB=A;MB=B'), /trùng/, 'Mã trùng phải báo lỗi');
+    assertThrows(() => docDanhSachChiNhanh('MB='), /tên/i, 'Thiếu tên phải báo lỗi');
+    assertThrows(() => docDanhSachChiNhanh('Monbay'), /MÃ=Tên/, 'Thiếu dấu = phải báo lỗi');
+    assertThrows(() => docDanhSachChiNhanh('BÃI CHÁY=Bãi Cháy'), /mã/i, 'Mã có dấu/khoảng trắng phải báo lỗi');
+    assertThrows(() => docDanhSachChiNhanh('TUTOR=Tutor'), /TUTOR/, 'Mã TUTOR đã dành cho đơn vị Tutor part-time');
+  });
+
+  check('PR-Z2 · init-ban-chinh trên database rỗng: đúng MỘT tài khoản (quản trị hệ thống, mật khẩu đã cho), đủ chi nhánh, dữ liệu nền GIỐNG HỆT bộ demo', () => {
+    const o = moDbTam();
+    try {
+      const r = initBanChinh(o.conn, O);
+      const c = o.conn;
+      assert(dem(c, 'users') === 1 && r.branchIds.length === 2 && dem(c, 'branches') === 2, `users=${dem(c, 'users')} branches=${dem(c, 'branches')}`);
+      const u = c.prepare('SELECT * FROM users WHERE id = ?').get(r.userId) as any;
+      assert(u.email === 'quantri.pisa@gmail.com' && u.code === 'NV001' && u.approval_state === 'approved' && u.status === 'active', JSON.stringify(u));
+      const bam = (mk: string) => cryptoMod.scryptSync(mk, u.password_salt, 64).toString('hex');
+      assert(u.password_hash === bam(MK), 'Mật khẩu quản trị phải là mật khẩu đã cho (băm scrypt như accounts.ts)');
+      assert(u.password_hash !== bam('pisa2026'), 'Không được là mật khẩu mặc định của bản demo');
+      const vai = c.prepare('SELECT r.key, ur.branch_id FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE ur.user_id = ?').all(r.userId) as any[];
+      assert(vai.length === 1 && vai[0].key === 'system_admin' && vai[0].branch_id === null, JSON.stringify(vai));
+      const dv = c.prepare('SELECT code, kind, branch_id FROM reporting_units ORDER BY seq').all() as any[];
+      assert(JSON.stringify(dv.map((x) => `${x.code}:${x.kind}`)) === '["MB:branch","BC:branch","TUTOR:department"]', `Đơn vị báo cáo: ${JSON.stringify(dv)}`);
+      /* Dữ liệu nền phải trùng bộ demo, từng dòng: so với napDuLieuNen (hàm seed.ts dùng) chạy trên một file tạm MỚI TINH.
+         Không so với database kiểm thử đang chạy — các phép khác đã thêm vào đó (ví dụ lộ trình thử LT9). */
+      const mau = moDbTam();
+      try {
+        mau.conn.exec(schemaSql);
+        napDuLieuNen(mau.conn, 'mốc-khác');
+        const khongGio = (conn: InstanceType<typeof Database>, b: string) => JSON.stringify(
+          (conn.prepare(`SELECT * FROM "${b}" ORDER BY rowid`).all() as any[]).map(({ created_at: _bo, ...r }) => r));
+        for (const b of ['permissions', 'roles', 'role_permissions', 'routes', 'programmes', 'programme_skills', 'programme_checkpoints']) {
+          assert(dem(c, b) > 0 && khongGio(c, b) === khongGio(mau.conn, b), `Bảng nền ${b}: bản chính ${dem(c, b)} dòng, bộ demo ${dem(mau.conn, b)} dòng — nội dung phải giống hệt`);
+        }
+      } finally { dongLai(mau); }
+      const seqHv = c.prepare('SELECT id, next_value FROM student_code_seq').all() as any[];
+      assert(JSON.stringify(seqHv) === '[{"id":1,"next_value":1}]', `Bộ đếm mã học viên phải có sẵn (1, 1) — không có thì học viên thứ hai trùng mã: ${JSON.stringify(seqHv)}`);
+    } finally { dongLai(o); }
+  });
+
+  check('PR-Z2 · init-ban-chinh KHÔNG tạo dữ liệu demo nào và KHÔNG đặt ngày demo: ngoài các bảng nền, MỌI bảng đều rỗng (kể cả demo_config)', () => {
+    const o = moDbTam();
+    try {
+      initBanChinh(o.conn, O);
+      const DUOC_CO_DONG = new Set(['permissions', 'roles', 'role_permissions', 'routes', 'programmes', 'programme_skills',
+        'programme_checkpoints', 'branches', 'reporting_units', 'users', 'user_roles', 'student_code_seq']);
+      const sai = cacBang(o.conn).filter((b) => !DUOC_CO_DONG.has(b) && dem(o.conn, b) > 0).map((b) => `${b}=${dem(o.conn, b)}`);
+      assert(sai.length === 0, `Bảng có dữ liệu không được phép: ${sai.join(', ')}`);
+      assert(cacBang(o.conn).includes('demo_config') && dem(o.conn, 'demo_config') === 0, 'demo_config phải rỗng: không ngày demo, không kịch bản, không seeded_at');
+      assert(cacBang(o.conn).length === cacBang(t.conn).length, `Phải có đủ bảng như schema: ${cacBang(o.conn).length} / ${cacBang(t.conn).length}`);
+    } finally { dongLai(o); }
+  });
+
+  check('PR-Z2 · init-ban-chinh TỪ CHỐI khi database đã có BẤT KỲ dữ liệu nào — và khi từ chối thì KHÔNG ghi gì (toàn bộ database giữ nguyên từng dòng, total_changes không đổi)', () => {
+    const tinhHuong: [string, (c: InstanceType<typeof Database>) => void][] = [
+      ['đã khởi tạo một lần (chạy nhầm lần hai)', (c) => initBanChinh(c, O)],
+      ['chỉ có MỘT dòng ở một bảng không phải users (demo_config)', (c) => { c.exec(schemaSql); c.prepare("INSERT INTO demo_config (key, value) VALUES ('x', 'y')").run(); }],
+      ['chỉ có một bảng lạ ngoài schema, có một dòng', (c) => { c.exec('CREATE TABLE ghi_chu (a TEXT); INSERT INTO ghi_chu VALUES (\'giữ tôi\')'); }],
+      ['chỉ có một người dùng', (c) => { c.exec(schemaSql); c.prepare("INSERT INTO users (code, full_name, created_at) VALUES ('NV009', 'Người thật', '2026-09-01')").run(); }],
+    ];
+    for (const [ten, dung] of tinhHuong) {
+      const o = moDbTam();
+      try {
+        dung(o.conn);
+        const truoc = anhChup(o.conn);
+        const ghiTruoc = soLanGhi(o.conn);
+        assertThrows(() => initBanChinh(o.conn, { ...O, adminEmail: 'khac.pisa@gmail.com', chiNhanh: [{ code: 'UB', name: 'Uông Bí' }] }),
+          /đã có dữ liệu/, `${ten}: phải từ chối`);
+        assert(soLanGhi(o.conn) === ghiTruoc, `${ten}: đã có câu lệnh ghi (total_changes ${ghiTruoc} → ${soLanGhi(o.conn)})`);
+        assert(anhChup(o.conn) === truoc, `${ten}: database đã bị thay đổi`);
+        assert(!o.conn.inTransaction, `${ten}: còn treo giao dịch`);
+      } finally { dongLai(o); }
+    }
+  });
+
+  check('PR-Z2 · init-ban-chinh từ chối mật khẩu yếu, mật khẩu mặc định của bản demo, email sai đuôi, danh sách chi nhánh rỗng — database vẫn trống trơn', () => {
+    const o = moDbTam();
+    try {
+      assertThrows(() => initBanChinh(o.conn, { ...O, adminPassword: '123' }), /ít nhất 6 ký tự/, 'Mật khẩu yếu (luật của accounts.ts)');
+      assertThrows(() => initBanChinh(o.conn, { ...O, adminPassword: 'pisa2026' }), /mặc định/, 'Mật khẩu mặc định ai cũng biết');
+      assertThrows(() => initBanChinh(o.conn, { ...O, adminEmail: 'quantri@gmail.com' }), /.pisa@gmail.com/, 'Email sai đuôi');
+      assertThrows(() => initBanChinh(o.conn, { ...O, chiNhanh: [] }), /chi nhánh/i, 'Không có chi nhánh');
+      assert(cacBang(o.conn).length === 0 && soLanGhi(o.conn) === 0, 'Từ chối thì không được tạo bảng hay ghi dòng nào');
+    } finally { dongLai(o); }
+  });
+
+  check('PR-Z2 · init-ban-chinh là MỘT giao dịch: hỏng giữa chừng (schema lỗi ở câu cuối) thì không để lại bảng hay dòng nào', () => {
+    const o = moDbTam();
+    try {
+      assertThrows(() => initBanChinh(o.conn, { ...O, schemaSql: schemaSql + '\nCREATE TABLE users (x);' }), /users/, 'Schema lỗi phải báo lỗi');
+      assert(cacBang(o.conn).length === 0, `Còn sót bảng sau khi hỏng: ${cacBang(o.conn).slice(0, 5).join(', ')}`);
+      assert(!o.conn.inTransaction, 'Còn treo giao dịch');
+    } finally { dongLai(o); }
+  });
+
+  check('PR-Z2 · themChiNhanh thêm chi nhánh + đơn vị báo cáo; mã đã có thì TỪ CHỐI và không ghi gì; database chưa khởi tạo thì báo rõ', () => {
+    const o = moDbTam();
+    try {
+      assertThrows(() => themChiNhanh(o.conn, { code: 'UB', name: 'Uông Bí' }, O.now), /init-ban-chinh/, 'Chưa khởi tạo phải chỉ đường');
+      assert(cacBang(o.conn).length === 0, 'Chưa khởi tạo thì không được tạo gì');
+      initBanChinh(o.conn, O);
+      const id = themChiNhanh(o.conn, { code: 'ub', name: 'Uông Bí' }, O.now);
+      const b = o.conn.prepare('SELECT * FROM branches WHERE id = ?').get(id) as any;
+      assert(b.code === 'UB' && b.name === 'Uông Bí' && b.status === 'active', JSON.stringify(b));
+      const u = o.conn.prepare("SELECT * FROM reporting_units WHERE code = 'UB'").get() as any;
+      assert(u && u.branch_id === id && u.kind === 'branch', `Đơn vị báo cáo: ${JSON.stringify(u)}`);
+      const truoc = anhChup(o.conn); const ghiTruoc = soLanGhi(o.conn);
+      assertThrows(() => themChiNhanh(o.conn, { code: 'MB', name: 'Tên khác' }, O.now), /đã có/, 'Mã đã có phải từ chối');
+      assertThrows(() => themChiNhanh(o.conn, { code: 'TUTOR', name: 'X' }, O.now), /TUTOR/, 'Mã TUTOR phải từ chối');
+      assert(anhChup(o.conn) === truoc && soLanGhi(o.conn) === ghiTruoc, 'Từ chối thì không được đổi gì (tên chi nhánh MB giữ nguyên)');
+    } finally { dongLai(o); }
+  });
+
+  /* LỆNH THẬT (`npm run init-ban-chinh`, `npm run them-chi-nhanh`) qua URL `file:` — đi đúng nhánh Turso của mã, không cần mạng. */
+  const initJs = pathMod.join(REPO, 'dist-server/server/src/ops/runInit.js');
+  const themJs = pathMod.join(REPO, 'dist-server/server/src/ops/themChiNhanh.js');
+  const TOKEN_GIA = 'tok-bi-mat-khong-duoc-in-ra';
+  const chayLenh = (js: string, env: Record<string, string>, args: string[] = []) => cp.spawnSync(process.execPath, [js, ...args], {
+    env: { ...process.env, TURSO_DATABASE_URL: '', TURSO_AUTH_TOKEN: '', ADMIN_EMAIL: '', ADMIN_PASSWORD: '', CHI_NHANH: '', BAN_CHINH: '', ...env },
+    encoding: 'utf8', timeout: 120_000,
+  });
+  const bamFile = (f: string) => cryptoMod.createHash('sha256').update(fs.readFileSync(f)).digest('hex');
+  check('PR-Z2 · Lệnh init-ban-chinh: thiếu biến nào thì in đúng tên biến đó và không tạo gì; chạy đúng thì in userId + chi nhánh, KHÔNG in token hay mật khẩu', () => {
+    const dir = fs.mkdtempSync(pathMod.join(os.tmpdir(), 'z2-lenh-'));
+    try {
+      const f = pathMod.join(dir, 'chinh.sqlite');
+      const thieu = chayLenh(initJs, { TURSO_DATABASE_URL: urlFile(f), TURSO_AUTH_TOKEN: TOKEN_GIA, ADMIN_PASSWORD: MK });
+      assert(thieu.status === 1 && /ADMIN_EMAIL/.test(thieu.stderr) && /CHI_NHANH/.test(thieu.stderr), `Thiếu biến: mã ${thieu.status}; ${String(thieu.stderr).slice(-300)}`);
+      assert(!fs.existsSync(f), 'Thiếu biến thì không được mở/tạo database');
+      const r = chayLenh(initJs, { TURSO_DATABASE_URL: urlFile(f), TURSO_AUTH_TOKEN: TOKEN_GIA, ADMIN_EMAIL: 'quantri.pisa@gmail.com', ADMIN_PASSWORD: MK, CHI_NHANH: 'MB=Monbay;BC=Bãi Cháy' });
+      const ra = String(r.stdout) + String(r.stderr);
+      assert(r.status === 0, `Mã thoát ${r.status}: ${ra.slice(-400)}`);
+      assert(/Sẽ khởi tạo database file:/.test(r.stdout) && /userId 1/.test(r.stdout) && /MB/.test(r.stdout) && /Bãi Cháy/.test(r.stdout), `Kết quả in ra: ${String(r.stdout).slice(-400)}`);
+      assert(!ra.includes(TOKEN_GIA) && !ra.includes(MK), 'Lệnh in lộ token hoặc mật khẩu');
+      const c = new Database(f);
+      try { assert(dem(c, 'users') === 1 && dem(c, 'branches') === 2, 'Database sau lệnh init phải có 1 người dùng, 2 chi nhánh'); } finally { c.close(); }
+    } finally { try { fs.rmSync(dir, { recursive: true, force: true }); } catch { /* Windows */ } }
+  });
+  check('PR-Z2 · Lệnh init-ban-chinh chạy nhầm lần hai: TỪ CHỐI, và file database giữ nguyên TỪNG BYTE', () => {
+    const dir = fs.mkdtempSync(pathMod.join(os.tmpdir(), 'z2-lenh-'));
+    try {
+      const f = pathMod.join(dir, 'chinh.sqlite');
+      const env = { TURSO_DATABASE_URL: urlFile(f), TURSO_AUTH_TOKEN: TOKEN_GIA, ADMIN_EMAIL: 'quantri.pisa@gmail.com', ADMIN_PASSWORD: MK, CHI_NHANH: 'MB=Monbay' };
+      assert(chayLenh(initJs, env).status === 0, 'Lần một phải chạy được');
+      const bam = bamFile(f);
+      const r = chayLenh(initJs, { ...env, ADMIN_EMAIL: 'khac.pisa@gmail.com', CHI_NHANH: 'UB=Uông Bí' });
+      assert(r.status === 1 && /TỪ CHỐI/.test(r.stderr) && /đã có dữ liệu/.test(r.stderr), `Lần hai: mã ${r.status}; ${String(r.stderr).slice(-300)}`);
+      assert(bamFile(f) === bam, 'File database đã bị thay đổi dù lệnh từ chối');
+    } finally { try { fs.rmSync(dir, { recursive: true, force: true }); } catch { /* Windows */ } }
+  });
+  check('PR-Z2 · Lệnh init-ban-chinh không có biến Turso (máy dev) → từ chối, không đụng database máy dev', () => {
+    const r = chayLenh(initJs, { ADMIN_EMAIL: 'quantri.pisa@gmail.com', ADMIN_PASSWORD: MK, CHI_NHANH: 'MB=Monbay' });
+    assert(r.status === 1 && /TURSO_DATABASE_URL/.test(r.stderr), `Mã ${r.status}; ${String(r.stderr).slice(-300)}`);
+  });
+  check('PR-Z2 · Lệnh them-chi-nhanh: `MÃ "Tên"` thêm được (tên có dấu, có khoảng trắng); mã đã có → TỪ CHỐI, file giữ nguyên từng byte', () => {
+    const dir = fs.mkdtempSync(pathMod.join(os.tmpdir(), 'z2-lenh-'));
+    try {
+      const f = pathMod.join(dir, 'chinh.sqlite');
+      const env = { TURSO_DATABASE_URL: urlFile(f), TURSO_AUTH_TOKEN: TOKEN_GIA };
+      assert(chayLenh(initJs, { ...env, ADMIN_EMAIL: 'quantri.pisa@gmail.com', ADMIN_PASSWORD: MK, CHI_NHANH: 'MB=Monbay' }).status === 0, 'init phải chạy được');
+      const r = chayLenh(themJs, env, ['UB', 'Uông Bí']);
+      assert(r.status === 0 && /UB/.test(r.stdout), `Thêm UB: mã ${r.status}; ${String(r.stdout).slice(-200)} ${String(r.stderr).slice(-200)}`);
+      assert(!(String(r.stdout) + String(r.stderr)).includes(TOKEN_GIA), 'Lệnh in lộ token');
+      const c = new Database(f);
+      try {
+        const b = c.prepare("SELECT name FROM branches WHERE code = 'UB'").get() as any;
+        assert(b?.name === 'Uông Bí', `Tên chi nhánh lưu sai: ${JSON.stringify(b)}`);
+      } finally { c.close(); }
+      const bam = bamFile(f);
+      const r2 = chayLenh(themJs, env, ['MB', 'Tên khác']);
+      assert(r2.status === 1 && /TỪ CHỐI/.test(r2.stderr), `Mã đã có: mã ${r2.status}; ${String(r2.stderr).slice(-200)}`);
+      assert(bamFile(f) === bam, 'File database đã bị thay đổi dù lệnh từ chối');
+      const r3 = chayLenh(themJs, env, []);
+      assert(r3.status === 1 && /them-chi-nhanh/.test(r3.stderr), 'Thiếu tham số phải chỉ cách gõ');
+    } finally { try { fs.rmSync(dir, { recursive: true, force: true }); } catch { /* Windows */ } }
+  });
+  check('PR-Z2 · Tên chi nhánh có dấu ^ hoặc " bị TỪ CHỐI (dấu vết thoát ký tự của npm/cmd trên Windows) — không bao giờ lưu tên hỏng', () => {
+    assertThrows(() => docDanhSachChiNhanh('UB=^Uông^ Bí^'), /\^/, 'Tên có ^ phải báo lỗi');
+    assertThrows(() => docDanhSachChiNhanh('UB="Uông Bí"'), /"/, 'Tên có " phải báo lỗi');
+  });
+  check('PR-Z2 · `npm run them-chi-nhanh -- UB "Uông Bí"` trên Windows: lệnh trong package.json phải BẮT ĐẦU bằng node — bắt đầu bằng npm (tệp .cmd) thì npm thoát kép tham số, tên thành "^Uông^ Bí^" (đã tái hiện 22/09)', () => {
+    const lenh = String(JSON.parse(fs.readFileSync(pathMod.join(REPO, 'package.json'), 'utf8')).scripts['them-chi-nhanh'] ?? '');
+    assert(/^node /.test(lenh) && /themChiNhanh\.js$/.test(lenh), `package.json "them-chi-nhanh" = ${lenh}`);
+  });
 }
