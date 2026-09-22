@@ -574,8 +574,9 @@ function CaseQueue({ view, branchId, q }: { view: string; branchId: number | nul
     ? data.rows.filter((r) => `${r.studentName ?? ''} ${r.studentCode ?? ''} ${r.classCode ?? ''}`.toLowerCase().includes(needle))
     : data.rows;
 
+  /* Tiêu đề thẻ chỉ hạ chữ cái đầu của nhãn — giữ "PA", "SOS", "MT", "Test" (PR-HV). */
   return (
-    <Card bodyClass="p-0" title={<span>{rows.length} {meta.label.toLowerCase()}</span>}>
+    <Card bodyClass="p-0" title={<span>{rows.length} {meta.label.charAt(0).toLowerCase() + meta.label.slice(1)}</span>}>
       <p className="px-4 pt-3 pb-1 text-xs text-slate-500 m-0">{meta.hint}</p>
       {rows.length === 0 ? (
         <Empty title="Không có case nào ở nhóm này" hint="Đổi bộ lọc hoặc bỏ từ khoá tìm để xem tiếp." />

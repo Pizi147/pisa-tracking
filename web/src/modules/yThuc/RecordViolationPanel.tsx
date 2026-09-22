@@ -18,7 +18,7 @@ import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
  * Không hỏi mức độ, không hỏi hạn, không hỏi ai xử lý, không hỏi biện pháp (V08) — ghi vi phạm không sinh gì khác.
  */
 export function RecordViolationPanel({
-  open, onClose, studentId, studentName, onDone, students, onPickStudent, violation,
+  open, onClose, studentId, studentName, onDone, students, onPickStudent, violation, onDelete,
 }: {
   open: boolean; onClose: () => void;
   studentId: number; studentName?: string;
@@ -30,6 +30,8 @@ export function RecordViolationPanel({
   violation?: {
     id: number; category: string; skill: string | null; occurredOn: string; description: string;
   } | null;
+  /** Xoá vi phạm đang SỬA (PR-HV, spec §4.3: xoá nằm trong form sửa) — nơi gọi mở hộp xác nhận một dòng. Chỉ hiện khi đang sửa. */
+  onDelete?: (violationId: number) => void;
 }) {
   const toast = useToast();
   const { homNay: today } = useNgayNghiepVu();
@@ -66,7 +68,7 @@ export function RecordViolationPanel({
 
   const minLen = category === 'other' ? VIOLATION_OTHER_DESCRIPTION_MIN : VIOLATION_DESCRIPTION_MIN;
   /* K2-3: ràng buộc nói TRƯỚC khi bấm — nút mờ + câu thiếu gì, không báo lỗi đỏ sau khi bấm. */
-  const missing = !studentId ? 'Hãy chọn học viên.'
+  const missing = !studentId ? 'Chọn học viên.'
     : description.trim().length < minLen ? `Mô tả cần ít nhất ${minLen} ký tự — nói rõ em đã làm gì, ở buổi nào.`
     : null;
 
@@ -92,9 +94,12 @@ export function RecordViolationPanel({
 
   return (
     <Modal open={open} onClose={onClose}
-      title={editing ? 'Sửa vi phạm' : `Ghi vi phạm${studentName ? ` · ${studentName}` : ''}`}
+      title={editing ? 'Sửa vi phạm' : `Ghi nhận vi phạm${studentName ? ` · ${studentName}` : ''}`}
       footer={
         <>
+          {editing && violation && onDelete && (
+            <button className="btn btn-ghost text-rose-200 mr-auto" onClick={() => { onClose(); onDelete(violation.id); }}>Xoá vi phạm</button>
+          )}
           <button className="btn" onClick={onClose}>Huỷ</button>
           <button className="btn btn-primary" disabled={busy || !!missing} title={missing ?? undefined} onClick={submit}>
             {editing ? 'Lưu' : 'Ghi vi phạm'}

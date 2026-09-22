@@ -195,20 +195,20 @@ lệch vài dòng là bình thường, lệch nội dung thì 🛑 hỏi.
 
 **Files:** chỉ đọc; tạo thư mục `thiet-ke/anh/pr-hv/`.
 
-- [ ] **Step 1:** Gọi `superpowers:using-git-worktrees`, tạo nhánh **`pr-hv-ho-so-hoc-vien`** từ `main` mới nhất
+- [x] **Step 1:** Gọi `superpowers:using-git-worktrees`, tạo nhánh **`pr-hv-ho-so-hoc-vien`** từ `main` mới nhất
       (`git fetch origin` trước). Kiểm worktree **có** ba file: `docs/superpowers/specs/2026-09-22-ho-so-hoc-vien-overhaul-design.md`,
       `thiet-ke/tham-khao/ho-so-hoc-vien-v3.html`, `thiet-ke/tham-khao/ho-so-lop-v3.html` (và chính plan này).
       Thiếu → 🛑 dừng, báo session planning: "spec/prototype chưa được đưa lên `main`".
-- [ ] **Step 2:** `npm install` rồi `npm run check`. Ghi `N0` (số phép kiểm) vào Nhật ký. (Sau PR-Z2a: 597; có thể hơn.)
-- [ ] **Step 3:** Ghi vào Nhật ký: `git log origin/main --oneline -5` và PR-Z2b đã merge chưa (`gh pr list --state merged --search "Z2b"`
+- [x] **Step 2:** `npm install` rồi `npm run check`. Ghi `N0` (số phép kiểm) vào Nhật ký. (Sau PR-Z2a: 597; có thể hơn.)
+- [x] **Step 3:** Ghi vào Nhật ký: `git log origin/main --oneline -5` và PR-Z2b đã merge chưa (`gh pr list --state merged --search "Z2b"`
       hoặc hỏi). Chưa merge là **bình thường** — Task 9 sẽ chờ.
-- [ ] **Step 4:** Đọc hết spec; mở hai prototype bằng trình duyệt (file tĩnh, không cần máy chủ); đọc
+- [x] **Step 4:** Đọc hết spec; mở hai prototype bằng trình duyệt (file tĩnh, không cần máy chủ); đọc
       `StudentDetailPage.tsx`, `SkillBoard.tsx`, `StudentYThucSection.tsx`, `ClassYThucCard.tsx`, `PhoiHopSosSection.tsx`,
       `ui.tsx` (dòng 1–240), `KetQuaDot.tsx`.
-- [ ] **Step 5: 🛑 Hỏi chủ sản phẩm trước khi bật máy chủ dev** (câu mẫu: "Tôi cần chạy bản demo trên máy để chụp ảnh
+- [x] **Step 5: 🛑 Hỏi chủ sản phẩm trước khi bật máy chủ dev** (câu mẫu: "Tôi cần chạy bản demo trên máy để chụp ảnh
       trước khi sửa. Anh/chị có đang mở bản demo không? Nếu có, xin tắt cửa sổ đó giúp tôi khoảng 30 phút."). Được phép thì:
       trong worktree `npm run seed`, rồi `preview_start` với cấu hình `dev` (`.claude/launch.json`).
-- [ ] **Step 6: Ảnh TRƯỚC** — lưu `thiet-ke/anh/pr-hv/truoc-<màn>-<vai>-<khổ>.png`, khổ `desktop` (1280 rộng) và `375`.
+- [x] **Step 6: Ảnh TRƯỚC** — lưu `thiet-ke/anh/pr-hv/truoc-<màn>-<vai>-<khổ>.png`, khổ `desktop` (1280 rộng) và `375`.
       Đổi vai ở thanh **Công cụ demo**. Tên học viên/giáo viên lấy từ bộ demo: GVCN **Trần Ngọc Hà**, GVBM **Phạm Thu
       Trang** (Speaking), Quản lý **Nguyễn Khánh Vy**. Sáu màn (spec §7):
       1. Hồ sơ **Lê Quang Huy** (`/hoc-vien/<id>` — tìm ở ô tìm kiếm đầu trang) — cả trang, cả ba khối tab hiện có.
@@ -236,7 +236,7 @@ lệch vài dòng là bình thường, lệch nội dung thì 🛑 hỏi.
   (kiểu `YThucTestKit` import từ `./yThuc.tests.ts`, như `sosV3.tests.ts` đang làm).
 - Produces: hằng `CHO_Z2B` trong file kiểm thử — danh sách file đóng băng được **tạm** loại khỏi phép quét, Task 9 xoá.
 
-- [ ] **Step 1: `TU_DIEN_VA_CHU.md`.**
+- [x] **Step 1: `TU_DIEN_VA_CHU.md`.**
   - Dòng 18 (bảng §1): cột "Chữ dùng trên web" thành `` `Phương án` (PA) — hỗ trợ học thuật; ở màn trộn: `PA học thuật` ``.
   - Dòng 135 (bảng §6): thay cả dòng bằng
     `| Việc GVCN làm để xử lý một nhóm vi phạm | `Phương án` (PA) trong tab Ý thức & Phối hợp · `PA xử lý` ở màn trộn · `phương án xử lý` trong câu báo từ máy chủ | "biện pháp", "BP", "phương án kỷ luật" |`
@@ -251,10 +251,10 @@ lệch vài dòng là bình thường, lệch nội dung thì 🛑 hỏi.
     `PA tiếp: hạn {ngày}`, `{a}/{b} việc hoàn thành`, `Hỗ trợ học thuật xem ở tab Học thuật`, `Học thuật theo dõi ở bảng
     kỹ năng`, `▸ {n} PA đã xong`, `▸ Bằng chứng ({n})`, `Chưa hoàn thành: …`, `Mở phương án`, `Tạo phương án`,
     `Không có cảnh báo`, `⚠ cũ nhất {k} ngày`, `⚠ đã {k} ngày`, `Lịch sử của riêng học viên này.`, `Tất cả thời gian`).
-- [ ] **Step 2: Khung `shared/domain/hoSoHocVien.ts`** — chỉ chú thích đầu file (vai trò: "luật hiển thị thuần của
+- [x] **Step 2: Khung `shared/domain/hoSoHocVien.ts`** — chỉ chú thích đầu file (vai trò: "luật hiển thị thuần của
       hồ sơ học viên PR-HV, giao diện chỉ vẽ") + `export {};` tạm; thêm `export * from './hoSoHocVien.ts';` vào cuối
       `shared/domain/index.ts`.
-- [ ] **Step 3: Phép quét chữ (TDD — viết trước, thấy đỏ).** Tạo `server/src/tests/hoSoHocVien.tests.ts`:
+- [x] **Step 3: Phép quét chữ (TDD — viết trước, thấy đỏ).** Tạo `server/src/tests/hoSoHocVien.tests.ts`:
   ```ts
   /**
    * PHÉP KIỂM PR-HV — hồ sơ học viên 3 tab + Ý thức & Phối hợp theo prototype v3 (spec 2026-09-22).
@@ -320,7 +320,7 @@ lệch vài dòng là bình thường, lệch nội dung thì 🛑 hỏi.
   `npm test` → phép này **đỏ** và liệt kê đúng các chỗ ở bảng 1A–1D. Dán số chỗ vào Nhật ký. Nếu nó báo chỗ **không**
   có trong bảng → sửa theo cùng luật và ghi Nhật ký; nếu báo một **tên trong mã** (không phải chữ hiển thị) → thêm vào
   `CHO_PHEP` kèm lý do, ghi Nhật ký.
-- [ ] **Step 4: Bảng 1A — web, D1 "biện pháp"/"BP" + A2.**
+- [x] **Step 4: Bảng 1A — web, D1 "biện pháp"/"BP" + A2.**
 
   | File:dòng | Cũ | Mới |
   |---|---|---|
@@ -343,7 +343,7 @@ lệch vài dòng là bình thường, lệch nội dung thì 🛑 hỏi.
   | `web/src/modules/yThuc/YThucAnalysisView.tsx:66` | `Biện pháp đã thực hiện theo loại` | `Phương án xử lý đã thực hiện theo loại` (màn trộn) |
   | `web/src/modules/yThuc/RecordViolationPanel.tsx:95` | `` `Ghi vi phạm${…}` `` | `` `Ghi nhận vi phạm${…}` `` (cùng chữ với nút mở nó; nút gửi `Ghi vi phạm` dòng 100 **giữ**) |
 
-- [ ] **Step 5: Bảng 1B — web, D3 "Hãy".** Bỏ `Hãy ` và viết hoa chữ kế tiếp:
+- [x] **Step 5: Bảng 1B — web, D3 "Hãy".** Bỏ `Hãy ` và viết hoa chữ kế tiếp:
 
   | File:dòng | Mới |
   |---|---|
@@ -365,7 +365,7 @@ lệch vài dòng là bình thường, lệch nội dung thì 🛑 hỏi.
   | `web/src/modules/yThuc/RecordViolationPanel.tsx:69` | `Chọn học viên.` |
   | `web/src/modules/platform/WelcomePage.tsx:55` | `… Nếu hiện chữ đỏ, chụp màn hình lại.` |
 
-- [ ] **Step 6: Bảng 1C — shared/domain.** (Mã chỉ số, khoá, tên hằng **không đổi**.)
+- [x] **Step 6: Bảng 1C — shared/domain.** (Mã chỉ số, khoá, tên hằng **không đổi**.)
 
   | File:dòng | Cũ → Mới |
   |---|---|
@@ -383,7 +383,7 @@ lệch vài dòng là bình thường, lệch nội dung thì 🛑 hỏi.
   | `shared/domain/people.ts:145` | `…tạo và xác nhận biện pháp xử lý` → `…tạo và xác nhận phương án xử lý` |
   | `shared/domain/sos.ts:122` | `'Trùng với Biện pháp khác'` → `'Trùng với phương án xử lý khác'` |
 
-- [ ] **Step 7: Bảng 1D — máy chủ KHÔNG đóng băng + script.** D1 ở câu báo máy chủ: `phương án xử lý`. D3: bỏ "Hãy".
+- [x] **Step 7: Bảng 1D — máy chủ KHÔNG đóng băng + script.** D1 ở câu báo máy chủ: `phương án xử lý`. D3: bỏ "Hãy".
 
   | File:dòng | Mới |
   |---|---|
@@ -434,7 +434,7 @@ lệch vài dòng là bình thường, lệch nội dung thì 🛑 hỏi.
 
   **KHÔNG đụng ở task này** (đóng băng, Task 9): `server/src/migrate.ts:46` (Hãy), `server/src/yThuc/measures.ts:176`
   (Hãy + biện pháp) và mọi "biện pháp" khác trong `measures.ts`, `migrate.ts`, `seed/*`.
-- [ ] **Step 8: Bảng 1E — phép kiểm khẳng định câu chữ (đổi hợp lệ vì D1).**
+- [x] **Step 8: Bảng 1E — phép kiểm khẳng định câu chữ (đổi hợp lệ vì D1).**
 
   | File:dòng | Cũ → Mới |
   |---|---|
@@ -445,7 +445,7 @@ lệch vài dòng là bình thường, lệch nội dung thì 🛑 hỏi.
   là **regex/so sánh trên thông báo lỗi** của một câu vừa đổi ở bảng 1C/1D → sửa theo chữ mới, ghi Nhật ký. (Đã soát
   22/09: ngoài hai dòng trên, các dòng `/loại biện pháp/i` 616, `/tên biện pháp/i` 617, `/tên biện pháp/` 667 bám
   `measures.ts` — **để Task 9**.)
-- [ ] **Step 9:** `npm run check` → xanh, phép quét PR-HV **xanh**. Số phép kiểm = `N0 + 1`. Commit:
+- [x] **Step 9:** `npm run check` → xanh, phép quét PR-HV **xanh**. Số phép kiểm = `N0 + 1`. Commit:
       `PR-HV (1): bộ chữ — "biện pháp" thành "phương án", bỏ "Hãy", phép quét chữ`.
 
 ---
@@ -481,11 +481,11 @@ lệch vài dòng là bình thường, lệch nội dung thì 🛑 hỏi.
   ```
 - Produces: `StudentYThucSection` nhận thêm `onGoAcademic?: () => void` (Task 4–5 dùng).
 
-- [ ] **Step 1 (TDD):** Thêm vào `hoSoHocVien.tests.ts`:
+- [x] **Step 1 (TDD):** Thêm vào `hoSoHocVien.tests.ts`:
   `check('PR-HV · A6 ?tab= đọc đúng ba giá trị, mọi giá trị khác về Học thuật', …)` — `parseHoSoTab('y-thuc') === 'y-thuc'`,
   `'hanh-trinh'`, `'hoc-thuat'`; `null`, `undefined`, `''`, `'Y-THUC'`, `'tong-quan'` → `'hoc-thuat'`. Dùng
   `const domain: any = await import('../../../shared/domain/index.ts');` như `sosV3.tests.ts`. Chạy → đỏ. Viết hàm → xanh.
-- [ ] **Step 2: `HangTab.tsx`.** Một `div role="tablist" aria-label={ariaLabel}` có
+- [x] **Step 2: `HangTab.tsx`.** Một `div role="tablist" aria-label={ariaLabel}` có
       `className="flex gap-1 overflow-x-auto border-b"` `style={{ borderColor: 'var(--line)' }}`; mỗi tab là
       `<button type="button" role="tab" aria-selected={active} onClick={() => onChange(t.key)}>` với lớp
       `whitespace-nowrap px-3 py-2 -mb-px border-b-2 font-semibold` + (`cap === 'con' ? 'text-xs' : 'text-sm'`) +
@@ -493,7 +493,7 @@ lệch vài dòng là bình thường, lệch nội dung thì 🛑 hỏi.
       Trong nhãn: `{t.label}`; `t.canhBao` → `<span className="ml-1 text-amber-300" aria-label="có cảnh báo">⚠</span>`;
       `t.so` > 0 → `<span className="ml-1.5 rounded-full px-1.5 text-[10px] tabular-nums bg-sky-300/15 text-sky-200">{t.so}</span>`.
       Không có số / số 0 → không vẽ gì.
-- [ ] **Step 3: `StudentDetailPage.tsx` — state và địa chỉ.**
+- [x] **Step 3: `StudentDetailPage.tsx` — state và địa chỉ.**
   - Xoá `tier3` (dòng 64). Thêm:
     ```ts
     const tab = parseHoSoTab(params.get('tab'));
@@ -507,7 +507,7 @@ lệch vài dòng là bình thường, lệch nội dung thì 🛑 hỏi.
     ```
     (hooks đặt **trước** các `return` sớm ở dòng 84–85.)
   - Import `parseHoSoTab, HO_SO_TAB_LABEL, type HoSoTab` từ `@shared/domain/index.ts`; `HangTab` từ `../../ui/HangTab.tsx`.
-- [ ] **Step 4: Bố cục mới** (thay dòng 169–306; giữ nguyên đầu trang 108–167 và các hộp thoại 308–343):
+- [x] **Step 4: Bố cục mới** (thay dòng 169–306; giữ nguyên đầu trang 108–167 và các hộp thoại 308–343):
   ```tsx
   {cy && <HeaderStats data={data} cy={cy} rows={skillRows} />}
 
@@ -552,7 +552,7 @@ lệch vài dòng là bình thường, lệch nội dung thì 🛑 hỏi.
   Ý thức và Hành trình vẫn mở được khi `!cy`; chỉ tab Học thuật hiện `Empty`. Ghi điều này vào Nhật ký (sửa lỗi phụ,
   không đổi luật). Card `Tiến độ và hỗ trợ…` giữ tiêu đề cũ. Xoá chú thích "TẦNG 3" (dòng 199–208) và sửa chú thích
   đầu file (dòng 30–35) cho đúng bố cục mới (đầu trang · 4 ô số · 3 tab).
-- [ ] **Step 5:** `npm run check` xanh. Bật máy chủ dev (đã được phép ở Task 0; nếu đã tắt thì hỏi lại) — mở
+- [x] **Step 5:** `npm run check` xanh. Bật máy chủ dev (đã được phép ở Task 0; nếu đã tắt thì hỏi lại) — mở
       `/hoc-vien/<Huy>`, `…?tab=y-thuc`, `…?tab=hanh-trinh`, `…?tab=abc` (→ Học thuật), bấm qua lại tab: địa chỉ đổi,
       nút Quay lại của trình duyệt **không** phải bấm nhiều lần (replace). 375px: hàng tab không đẩy trang cuộn ngang.
       Commit: `PR-HV (2): hồ sơ học viên 3 tab, nhớ tab qua ?tab=`.
@@ -589,19 +589,19 @@ lệch vài dòng là bình thường, lệch nội dung thì 🛑 hỏi.
 - Produces (server): `headline.next: { text: string; due: string | null; overdue: boolean } | null` với `text` **bắt
   đầu bằng động từ**.
 
-- [ ] **Step 1 (TDD, shared):** phép kiểm `PR-HV · Q7 Ô "Kết quả Test gần nhất"` với dữ liệu tự dựng (không cần DB):
+- [x] **Step 1 (TDD, shared):** phép kiểm `PR-HV · Q7 Ô "Kết quả Test gần nhất"` với dữ liệu tự dựng (không cần DB):
   (a) FT đủ 4, overall 6.0 ≥ kỳ vọng 5.5 → `dat === true`, `nhan === 'MT3 · W2 SEP'`; (b) FT đủ, overall < kỳ vọng →
   `false`; (c) FT mới 2/4 → `dat === null`, `coDiem 2`, `yeuCau 4`; (d) lượt mới nhất bị huỷ → lấy lượt trước; (e) lượt
   mới nhất `scored 0` → lấy lượt trước; (f) không lượt nào có điểm → `null`; (g) Normal đủ, `sosLevel 0` → `dat true`,
   `nhan` bắt đầu `Giữa khoá`; (h) Normal thiếu → `dat null`; (i) `required 5` → `dungKetQuaDot false`; (j) thứ tự vào
   tăng dần vẫn lấy đúng lượt số lớn nhất. Đỏ → viết hàm → xanh.
-- [ ] **Step 2 (TDD, server):** phép kiểm `PR-HV · Q7 Ô "Việc cần làm tiếp": câu bắt đầu bằng động từ, có cờ quá hạn đúng`:
+- [x] **Step 2 (TDD, server):** phép kiểm `PR-HV · Q7 Ô "Việc cần làm tiếp": câu bắt đầu bằng động từ, có cờ quá hạn đúng`:
   duyệt các học viên có case đang mở (`SELECT DISTINCT student_id, cycle_id FROM sos_cases WHERE status != 'done' AND id <= ?`
   với `seedMax.sos_cases` nếu có khoá đó, không có thì bỏ điều kiện), gọi `profile.studentProfile(P.admin, sid, cid)`;
   với mọi `next` khác null: `typeof next.overdue === 'boolean'`; `next.overdue === (next.due !== null && next.due < TODAY)`;
   `/^(Xác minh SOS|Đề ra PA|Làm PA|Chờ Quản lý duyệt PA|Cập nhật PA) /.test(next.text)`. Và phải có **ít nhất một** học
   viên có `next` (không thì phép kiểm vô nghĩa). Đỏ.
-- [ ] **Step 3: sửa `headlineOf`** (`profile.ts:455–488`). Chỉ đổi câu, thêm một ứng viên, thêm `overdue` — **không** đổi
+- [x] **Step 3: sửa `headlineOf`** (`profile.ts:455–488`). Chỉ đổi câu, thêm một ứng viên, thêm `overdue` — **không** đổi
       thứ tự ưu tiên hiện có:
   ```ts
   const sk = (r: any) => r.short ?? r.label;
@@ -624,7 +624,7 @@ lệch vài dòng là bình thường, lệch nội dung thì 🛑 hỏi.
   ```
   (`PA` ở đây đúng D1: đầu hồ sơ học viên là ngữ cảnh học thuật.) Xanh. **Kiểm ngược:** đổi `<` thành `<=` ở
   `overdue` → phép Step 2 phải đỏ; trả lại.
-- [ ] **Step 4: `HeaderStats` mới** — thay thân hàm (361–407). `Stat` thêm prop `nho?: boolean` (giá trị là chữ, dùng
+- [x] **Step 4: `HeaderStats` mới** — thay thân hàm (361–407). `Stat` thêm prop `nho?: boolean` (giá trị là chữ, dùng
       `text-sm font-semibold leading-snug` thay `text-lg`) và `sub?: ReactNode` (không chỉ string).
 
   | Ô (nhãn chính xác) | `value` | `tone` | `sub` | Nguồn |
@@ -637,7 +637,7 @@ lệch vài dòng là bình thường, lệch nội dung thì 🛑 hỏi.
   Lưới giữ `grid gap-3 grid-cols-2 lg:grid-cols-4`. Ô **không** bấm được (PR-R). Import `KetQuaDot` từ
   `../../ui/KetQuaDot.tsx`, `ketQuaTestGanNhat` từ shared. Xoá biến `latestNo/latestRow/worst` không dùng nữa, sửa
   chú thích hàm (bốn câu hỏi mới). Lớp Normal: ô 1 ra `Giữa khoá · W3 SEP` + câu `KetQuaDot` kiểu `2/4 kỹ năng có điểm`.
-- [ ] **Step 5:** `npm run check` xanh (số = trước + 2). Mở hồ sơ một em FT và một em Normal (ví dụ học viên lớp FOU/BE
+- [x] **Step 5:** `npm run check` xanh (số = trước + 2). Mở hồ sơ một em FT và một em Normal (ví dụ học viên lớp FOU/BE
       trong bộ demo): ô 1 có câu `KetQuaDot`, Normal **không** có chữ Overall/OVR; ô 4 có động từ + `hạn dd/mm/yyyy`,
       quá hạn thì đỏ. 375px: 2 cột, chữ ô 4 xuống dòng, không tràn. Commit: `PR-HV (3): Q7 bốn ô số mới đầu hồ sơ`.
 
@@ -700,11 +700,11 @@ lệch vài dòng là bình thường, lệch nội dung thì 🛑 hỏi.
   }): JSX.Element;
   ```
 
-- [ ] **Step 1 (TDD):** phép kiểm `PR-HV · A3 Đếm vi phạm theo nhóm: đúng thứ tự năm nhóm, bỏ nhóm 0` — đầu vào
+- [x] **Step 1 (TDD):** phép kiểm `PR-HV · A3 Đếm vi phạm theo nhóm: đúng thứ tự năm nhóm, bỏ nhóm 0` — đầu vào
       `[{category:'attendance'},{category:'homework'},{category:'homework'}]` → `tong 3`, `nhom` = BTVN 2 rồi Chuyên cần 1
       **theo thứ tự `VIOLATION_CATEGORIES`** (đọc hằng này, đừng đoán mã nhóm — nếu mã khác `homework/attendance` thì dùng
       mã thật), nhãn lấy từ `VIOLATION_CATEGORY_LABEL`; rỗng → `{tong:0, nhom:[]}`. Đỏ → viết → xanh.
-- [ ] **Step 2: `OSoNho.tsx`** —
+- [x] **Step 2: `OSoNho.tsx`** —
   ```tsx
   export function OSoNho({ nhan, so, tone }: { nhan: string; so: number | string; tone?: 'warn' | 'danger' }) {
     const mau = tone === 'danger' ? 'text-rose-200' : tone === 'warn' ? 'text-amber-200' : 'text-slate-100';
@@ -717,7 +717,7 @@ lệch vài dòng là bình thường, lệch nội dung thì 🛑 hỏi.
   }
   ```
   Nơi dùng bọc bằng `<div className="flex flex-wrap gap-2">`.
-- [ ] **Step 3: `DongThoiGian.tsx`.** Khung (lớp Tailwind **viết đủ, tĩnh**):
+- [x] **Step 3: `DongThoiGian.tsx`.** Khung (lớp Tailwind **viết đủ, tĩnh**):
   ```tsx
   const LUOI = {
     'day-du': {
@@ -742,7 +742,7 @@ lệch vài dòng là bình thường, lệch nội dung thì 🛑 hỏi.
   cuối `<span className={`flex flex-wrap gap-1.5 md:justify-end ${CUOI[bien][k]}`}>{cuoi}</span>`.
   Khung ngoài: `<ul className="list-none m-0 px-3 rounded-lg border" style={{ borderColor: 'var(--line)', background: 'var(--surface-2)' }}>`.
   `muc` rỗng → trả `rong`. Mô tả dài, tên GV dài: **không** `truncate` — `break-words` để xuống dòng.
-- [ ] **Step 4: `TheSos`** — đổi tên `TurnRow` (dòng 45–85) thành `export function TheSos`, giữ `ActionRow`, ba form con
+- [x] **Step 4: `TheSos`** — đổi tên `TurnRow` (dòng 45–85) thành `export function TheSos`, giữ `ActionRow`, ba form con
       và mọi quyền (`t.canAct`). Đầu thẻ:
   ```tsx
   <div role="button" tabIndex={0} aria-expanded={open}
@@ -773,10 +773,10 @@ lệch vài dòng là bình thường, lệch nội dung thì 🛑 hỏi.
   `removed` → `<Info>Đã bỏ</Info>` · `pending && canAct` → `Xác nhận` (`btn btn-sm btn-primary`) + `Bỏ ▾` (`btn btn-sm btn-ghost`) ·
   `pending && !canAct` → `<Status kind="waiting">Cần xử lý</Status>`. Form Xác nhận/Bỏ mở ngay dưới dòng, rộng hết thẻ.
   Giữ `+ Thêm việc` (canAct) ở cuối thân thẻ. Bỏ dòng "Hỗ trợ học thuật xem ở bảng kỹ năng." cũ (dòng 68) — nay ở cột 2.
-- [ ] **Step 5:** `PhoiHopSosSection` map `turns` → `<TheSos key t cot1 onGoAcademic onChanged />` trong
+- [x] **Step 5:** `PhoiHopSosSection` map `turns` → `<TheSos key t cot1 onGoAcademic onChanged />` trong
       `<div className="space-y-2">`; bỏ prop `showStudentName`. Sửa hai nơi gọi: `StudentYThucSection.tsx:178`
       `showStudentName={false}` → `cot1="luot" onGoAcademic={onGoAcademic}`; `ClassYThucCard.tsx:285` → `cot1="hocVien"`.
-- [ ] **Step 6:** `npm run check` xanh. Bấm thử `Phối hợp SOS` ở hồ sơ Huy và lớp MB-FT 101: mở/đóng bằng chuột và
+- [x] **Step 6:** `npm run check` xanh. Bấm thử `Phối hợp SOS` ở hồ sơ Huy và lớp MB-FT 101: mở/đóng bằng chuột và
       phím Enter; bấm link đổi sang tab Học thuật **không** làm thẻ mở/đóng; `Xác nhận` một việc (GVCN) chạy như cũ. 375px:
       cột 1 một hàng, cột 2 + 3 hàng dưới. Commit: `PR-HV (4): thành phần dùng chung OSoNho, DongThoiGian, TheSos`.
 
@@ -799,10 +799,10 @@ lệch vài dòng là bình thường, lệch nội dung thì 🛑 hỏi.
   onDelete?: (violationId: number) => void;   // chỉ hiện nút khi đang SỬA
   ```
 
-- [ ] **Step 1: `RecordViolationPanel`** — trong `footer` (dòng 96–102), khi `editing && violation && onDelete`: thêm
+- [x] **Step 1: `RecordViolationPanel`** — trong `footer` (dòng 96–102), khi `editing && violation && onDelete`: thêm
       bên trái `<button className="btn btn-ghost text-rose-200 mr-auto" onClick={() => { onClose(); onDelete(violation.id); }}>Xoá vi phạm</button>`.
       Hộp xác nhận một dòng (`DeleteViolationConfirm`) giữ nguyên, nơi gọi mở nó (spec §4.3: "xoá nằm trong form sửa").
-- [ ] **Step 2: `XemPhuongAnPanel.tsx`** — `useApi<any>(measureId ? `/measures/${measureId}` : null, [measureId])`;
+- [x] **Step 2: `XemPhuongAnPanel.tsx`** — `useApi<any>(measureId ? `/measures/${measureId}` : null, [measureId])`;
       `Modal` (`../../ui/Drawer.tsx`) `open={measureId !== null}` tiêu đề `` `${d.kindLabel} · ${d.studentName}` ``, footer
       một nút `Đóng`. Thân (dùng `Field` của `ui.tsx`, `as="div"`, chữ `text-sm text-slate-200`):
       `Trạng thái` = `statusLabel` · `Ngày thực hiện` = `fmtDate(performedOn)` · `Người thực hiện` =
@@ -811,7 +811,7 @@ lệch vài dòng là bình thường, lệch nội dung thì 🛑 hỏi.
       `fmtDate(occurredOn) · categoryLabel · description` · `Tệp hoặc liên kết` = `<BangChung ownerType="discipline_measure" ownerId={d.id} canEdit={d.canManage} tieuDe="" />`
       (B10: đã thực hiện vẫn bổ sung được tệp — quyền do máy chủ kiểm) · dòng cuối `text-[11px] text-slate-500`:
       `` `Xác nhận bởi ${confirmedByName} · ${fmtDate(confirmedAt)}` `` nếu có. Đang tải: `<Skeleton rows={4} />`.
-- [ ] **Step 3: `StudentYThucSection` — dữ liệu.** Giữ `warn`, `violations`, `measures`, quyền `canEditViolation`,
+- [x] **Step 3: `StudentYThucSection` — dữ liệu.** Giữ `warn`, `violations`, `measures`, quyền `canEditViolation`,
       `ticked`, các state panel. Đổi:
   - `coord` tải **luôn** (bỏ điều kiện `sub === 'coordination'`) để có số trên nhãn tab con (A5):
     `useApi<{ rows: CoordTurn[]; pendingCount: number }>(`/students/${studentId}/phoi-hop-sos`, [studentId])`.
@@ -821,7 +821,7 @@ lệch vài dòng là bình thường, lệch nội dung thì 🛑 hỏi.
   - Lọc nhóm cho dòng **phương án**: hiện khi `!category || m.violations.some((v) => v.category === category)` (trước
     đây mọi phương án bị ẩn khi chọn một nhóm — nay phương án chứa vi phạm của nhóm đó vẫn hiện; ghi Nhật ký).
     Kiểu `MeasureDetail` cục bộ (dòng 18–21) thêm `violations: { category: string }[]`.
-- [ ] **Step 4: `StudentYThucSection` — bố cục** (thay toàn bộ JSX trả về, dòng 92–199):
+- [x] **Step 4: `StudentYThucSection` — bố cục** (thay toàn bộ JSX trả về, dòng 92–199):
   ```
   ┌ đầu khối ─────────────────────────────────────────────── [+ Ghi nhận vi phạm] ┐   (nút: canRecordViolation, btn btn-primary btn-sm)
   │ h2 "Ý thức & Phối hợp" (text-base font-semibold) · p "Lịch sử của riêng học viên này." (text-xs text-slate-500) │
@@ -862,7 +862,7 @@ lệch vài dòng là bình thường, lệch nội dung thì 🛑 hỏi.
   ✎/🗑 cũ; `RecordViolationPanel` (sửa) nhận `onDelete={(id) => setDeleteId(id)}`. Xoá `summary` chuỗi cũ (dòng
   62–75). Thêm `<XemPhuongAnPanel measureId={xemId} onClose={() => setXemId(null)} />` cạnh các panel.
   Sửa chú thích đầu hàm (dòng 29–32) theo bố cục v3 (ô số nhỏ thay câu một dòng — A3).
-- [ ] **Step 5:** `npm run check` xanh. Bấm thử (vai GVCN Trần Ngọc Hà, hồ sơ Lê Quang Huy): lọc nhóm + thời gian; tick 2
+- [x] **Step 5:** `npm run check` xanh. Bấm thử (vai GVCN Trần Ngọc Hà, hồ sơ Lê Quang Huy): lọc nhóm + thời gian; tick 2
       vi phạm → nút `Tạo phương án từ 2 vi phạm` hiện → tạo (Lưu — Đang chuẩn bị) → dòng `Phương án` vàng + `Mở` → bấm
       `Mở` → xác nhận → dòng thành xám ✓ + `Xem` → bấm `Xem` thấy chi tiết chỉ đọc; `Sửa` một vi phạm → `Xoá vi phạm` →
       hộp xác nhận một dòng. Vai GVBM: không có ô tick, không có `Mở`, có `Xem`; nút `+ Ghi nhận vi phạm` còn nếu GVBM dạy
@@ -910,25 +910,25 @@ lệch vài dòng là bình thường, lệch nội dung thì 🛑 hỏi.
   `cho-duyet` / `Chờ Quản lý trả lời`, `due = approvalDue`; `dangChay` → `ghi-ket-qua` / `Ghi kết quả`, `due =
   actionDue`, `overdue = actionOverdue`; còn lại → `da-xong` / `Đã kết thúc`, `due = completedOn`.
 
-- [ ] **Step 1 (TDD, shared):** `PR-HV · Q8 Tiến độ case "k/n PA có kết quả" và việc tiếp theo` — (a) 2 PA, 1 có
+- [x] **Step 1 (TDD, shared):** `PR-HV · Q8 Tiến độ case "k/n PA có kết quả" và việc tiếp theo` — (a) 2 PA, 1 có
       `lastOutcome` → `'1/2 PA có kết quả'`; (b) 0 PA → `'Chưa có phương án'`, `tiep` theo `followUntil`; (c) PA gợi ý chưa
       xác nhận thắng PA có hạn; (d) hai PA đang chạy hạn 30/08 và 25/08 → `due '…-08-25'`; (e) PA chỉ có `followupDue`
       (không `actionDue`) → **không** lấy làm hạn; (f) case `done` → `tiep null`. `PR-HV · Q8 Việc tiếp theo của một PA` —
       bốn nhánh, mỗi nhánh một assert. Đỏ → viết → xanh.
-- [ ] **Step 2 (TDD, server):** `PR-HV · Q8 Thẻ case có số bằng chứng (attachmentCount) khớp bảng attachments` — lấy một
+- [x] **Step 2 (TDD, server):** `PR-HV · Q8 Thẻ case có số bằng chứng (attachmentCount) khớp bảng attachments` — lấy một
       học viên có case; đọc `cases.skillSupportBoard(P.admin, sid, cid).rows.flatMap(r => r.cases)`; mỗi case:
       `typeof c.attachmentCount === 'number'` và bằng `SELECT COUNT(*) n FROM attachments WHERE owner_type='sos_case' AND owner_id=?`.
       Để phép kiểm không chỉ so 0 với 0: nếu không case nào có tệp, chèn **một liên kết** bằng SQL vào `attachments` cho
       case đầu tiên (đọc cột bắt buộc trong `server/src/schema.sql`, bảng `attachments` — dùng `kind='link'`), kiểm số = 1,
       rồi `DELETE` dòng đó. Đỏ.
-- [ ] **Step 3: `caseCardOf`** — trong object trả về (sau `backfilledOn`), thêm:
+- [x] **Step 3: `caseCardOf`** — trong object trả về (sau `backfilledOn`), thêm:
   ```ts
   /* Số bằng chứng của case (PR-HV) — để nhãn "Bằng chứng (n)" thu gọn mà không phải tải danh sách tệp. */
   attachmentCount: (conn.prepare("SELECT COUNT(*) n FROM attachments WHERE owner_type = 'sos_case' AND owner_id = ?")
     .get(caseId) as any).n as number,
   ```
   (SQL tại chỗ — **không** import từ `platform/attachments.ts` để không dính file đóng băng.) Xanh.
-- [ ] **Step 4: `TheCase`** (thay `CaseCardView`, giữ **mọi** state và hộp thoại: `adding`, `completing`, `causeOpen`,
+- [x] **Step 4: `TheCase`** (thay `CaseCardView`, giữ **mọi** state và hộp thoại: `adding`, `completing`, `causeOpen`,
       `dismissOpen`, `ActionDialog`, `OutcomeDialog`, `CauseDeterminationPanel`, `DismissCaseForm`). Thêm state
       `moXong` (mặc định `c.status === 'done'`), `moBangChung` (mặc định `false`). `open` mặc định `c.status !== 'done'` (giữ).
   - **Đầu thẻ** — `<button type="button" aria-expanded={open} onClick={() => setOpen(!open)} className="w-full text-left appearance-none bg-transparent border-0 cursor-pointer">`
@@ -962,7 +962,7 @@ lệch vài dòng là bình thường, lệch nội dung thì 🛑 hỏi.
        `<span className="text-xs text-slate-400">Chưa hoàn thành: {c.closeBlockers.join(' · ')}</span>`. Dưới dãy nút:
        `DismissCaseForm` khi mở (giữ) và câu `!c.canClose` (giữ nguyên chữ dòng 401–402). **Bỏ** câu "Case đang xử lý,
        chưa kết luận." (dòng 361–363) — cột 3 đầu thẻ đã nói; ghi Nhật ký.
-- [ ] **Step 5: `KhoiPhuongAn`** (thay `PlanRow`, giữ state `editing`, `showHistory`, lịch sử dòng 495–523, `BangChung`
+- [x] **Step 5: `KhoiPhuongAn`** (thay `PlanRow`, giữ state `editing`, `showHistory`, lịch sử dòng 495–523, `BangChung`
       của phương án dòng 525–529, `InlineResult`). Khung: `<div className="rounded-lg border px-2.5 py-2" style={{ borderColor: 'var(--line)' }}>`
       chứa lưới `grid gap-x-3 gap-y-2 md:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_minmax(0,1fr)]`:
 
@@ -974,9 +974,9 @@ lệch vài dòng là bình thường, lệch nội dung thì 🛑 hỏi.
 
       Lịch sử (khi `showHistory`) và `InlineResult` (khi `editing`) vẽ **dưới lưới, rộng hết khối** (bỏ `ml-5` của
       `InlineResult` dòng 624 nếu làm lệch trên 375px — chỉnh lớp, không đổi logic). `outcomeTone` giữ.
-- [ ] **Step 6:** `SkillRow` dòng 233–235: gọi `<TheCase key={c.id} c={c} row={row} onChanged={onChanged} />`. Sửa chú
+- [x] **Step 6:** `SkillRow` dòng 233–235: gọi `<TheCase key={c.id} c={c} row={row} onChanged={onChanged} />`. Sửa chú
       thích đầu hai hàm (thay chú thích "MỘT THẺ CASE … PR-D" và "MỘT PHƯƠNG ÁN — MỘT DÒNG") cho đúng bố cục v3.
-- [ ] **Step 7:** `npm run check` xanh (số = trước + 3). Bấm thử (ba vai) trên: case có 2 PA song song + ghi chú dài +
+- [x] **Step 7:** `npm run check` xanh (số = trước + 3). Bấm thử (ba vai) trên: case có 2 PA song song + ghi chú dài +
       tên GV dài (màn 2 Task 0) — không tràn, không cắt ở desktop và 375px; `Ghi kết quả` → lưu → cột 2 cập nhật, tiến độ
       `k/n` tăng; PA đã xong thu gọn và mở được; case từ SOS chờ nguyên nhân (màn 3): khối vàng, `Xác định nguyên nhân`,
       PA `Gợi ý tự động · chờ xác nhận` với `Xác nhận/Sửa/Thay` ở cột 3, `Không cần theo dõi` ở chân; case đã hoàn thành
@@ -993,14 +993,14 @@ lệch vài dòng là bình thường, lệch nội dung thì 🛑 hỏi.
 **Interfaces:**
 - Consumes: `DongThoiGian` (`day-du` cho Theo thời gian, `gon` cho thẻ "Vi phạm gần đây"), `TheSos` qua `PhoiHopSosSection cot1="hocVien"`, `HangTab`, `demTheoNhomViPham`, `XemPhuongAnPanel`, `RecordViolationPanel.onDelete`.
 
-- [ ] **Step 1: Dữ liệu phụ.** `const rosterById = new Map((roster.data ?? []).map((r: any) => [r.id, r]));` — dòng phụ
+- [x] **Step 1: Dữ liệu phụ.** `const rosterById = new Map((roster.data ?? []).map((r: any) => [r.id, r]));` — dòng phụ
       cột 1: `` [r?.studentCode, r ? studentStatusLabel(r.status).toLowerCase() : null].filter(Boolean).join(' · ') ``
       (thay `FT · đang học` của prototype — cả lớp cùng chương trình nên chữ `FT` không phân biệt được ai; xem Self-review J4).
       `const prepOf = (sid: number) => d.preparing.filter((m) => m.studentId === sid);`
-- [ ] **Step 2: Đầu khối.** `Card title="Ý thức & Phối hợp"` giữ; `action` = nút `+ Ghi nhận vi phạm` (`btn btn-sm btn-primary`,
+- [x] **Step 2: Đầu khối.** `Card title="Ý thức & Phối hợp"` giữ; `action` = nút `+ Ghi nhận vi phạm` (`btn btn-sm btn-primary`,
       `d.canRecord`). Cảnh báo lớp giữ (dòng 128–130). Tab con bằng `HangTab cap="con"`: `Vi phạm & xử lý` `so={allCount}`
       · `Phối hợp SOS` `so={coord.data?.pendingCount ?? 0}` (giữ ý nghĩa số K3-3).
-- [ ] **Step 3: Theo học sinh — dòng học viên.** Mỗi em: khung `rounded-lg border` + đầu dòng là `<button type="button" aria-expanded>`
+- [x] **Step 3: Theo học sinh — dòng học viên.** Mỗi em: khung `rounded-lg border` + đầu dòng là `<button type="button" aria-expanded>`
       bọc lưới `grid gap-x-3 gap-y-1 items-center px-3 py-2.5 grid-cols-2 md:grid-cols-[minmax(0,13rem)_minmax(0,1fr)_minmax(0,12rem)_auto]`:
 
       | Cột | Nội dung |
@@ -1020,9 +1020,9 @@ lệch vài dòng là bình thường, lệch nội dung thì 🛑 hỏi.
         Không có → `Chưa có phương án đang chuẩn bị` + (`d.canManage && s.violations.length > 0`) nút `Tạo phương án` —
         mở `CreateMeasurePanel` với vi phạm **đã tick**, chưa tick thì **mọi vi phạm đang hiện** của em (panel cho bỏ bớt
         từng dòng; ghi Nhật ký). Rồi `Gần đây: …` (giữ dòng 234–239) và `<Link className="link text-xs" to={`/hoc-vien/${sid}?tab=y-thuc`}>Hồ sơ học viên →</Link>` (A6 — mở thẳng tab).
-- [ ] **Step 4: Theo thời gian.** Thay bảng dòng 249–273 bằng `<DongThoiGian bien="day-du" muc={timeline.map(v => ({ key: `v${v.id}`, ngay: v.occurredOn, cot2: <span className="text-sm text-slate-200">{v.studentName}</span>, tieuDe: v.description, dongPhu: [v.categoryLabel, v.reportedByName].filter(Boolean).join(' · '), cuoi: <><Info>{v.categoryLabel}</Info>{canEditViolation(v) && <button className="btn btn-sm" onClick={() => setEditViolation(v)}>Sửa</button>}</> }))} rong={<Empty title="Không còn vi phạm nào chưa xử lý." />} />`.
-- [ ] **Step 5: Phối hợp SOS.** Giữ nút `Chỉ hiện lượt chưa xong / Hiện cả lượt đã xong`; `PhoiHopSosSection cot1="hocVien"` (Task 4).
-- [ ] **Step 6:** `RecordViolationPanel` (sửa) nhận `onDelete={(id) => setDeleteId(id)}`; xoá mọi nút ✎/🗑; thêm
+- [x] **Step 4: Theo thời gian.** Thay bảng dòng 249–273 bằng `<DongThoiGian bien="day-du" muc={timeline.map(v => ({ key: `v${v.id}`, ngay: v.occurredOn, cot2: <span className="text-sm text-slate-200">{v.studentName}</span>, tieuDe: v.description, dongPhu: [v.categoryLabel, v.reportedByName].filter(Boolean).join(' · '), cuoi: <><Info>{v.categoryLabel}</Info>{canEditViolation(v) && <button className="btn btn-sm" onClick={() => setEditViolation(v)}>Sửa</button>}</> }))} rong={<Empty title="Không còn vi phạm nào chưa xử lý." />} />`.
+- [x] **Step 5: Phối hợp SOS.** Giữ nút `Chỉ hiện lượt chưa xong / Hiện cả lượt đã xong`; `PhoiHopSosSection cot1="hocVien"` (Task 4).
+- [x] **Step 6:** `RecordViolationPanel` (sửa) nhận `onDelete={(id) => setDeleteId(id)}`; xoá mọi nút ✎/🗑; thêm
       `XemPhuongAnPanel` + state `xemId`. `npm run check` xanh. Bấm thử MB-FT 101 (GVCN, GVBM, Quản lý): lọc từng nhóm —
       **số trên tab con không đổi theo nhóm** (K3-3), em chỉ có PA đang chuẩn bị ở nhóm khác không lọt vào nhóm đang chọn
       (K3-2) — so với ảnh trước; mở một em, tick, tạo, `Mở phương án`, xác nhận; Theo thời gian; Phối hợp SOS mở/xác nhận.
@@ -1041,7 +1041,7 @@ lệch vài dòng là bình thường, lệch nội dung thì 🛑 hỏi.
 Ở đây đổi phía **học thuật** — **chỉ nhãn, tiêu đề cột, nút, câu ngắn**; chú giải dài (`hint`, `SectionNote`) giữ
 "phương án" vì tiêu đề ngay trên đã phân biệt (Self-review J6).
 
-- [ ] **Step 1:** `rg -n "[Pp]hương án" server/src/worklist/mywork.ts web/src/modules/worklist/BranchPulse.tsx web/src/modules/cases/IssueAnalysis.tsx web/src/modules/cases/CaseBoardPage.tsx` — đối chiếu với bảng dưới (số dòng đo 22/09):
+- [x] **Step 1:** `rg -n "[Pp]hương án" server/src/worklist/mywork.ts web/src/modules/worklist/BranchPulse.tsx web/src/modules/cases/IssueAnalysis.tsx web/src/modules/cases/CaseBoardPage.tsx` — đối chiếu với bảng dưới (số dòng đo 22/09):
 
   | File:dòng | Cũ | Mới |
   |---|---|---|
@@ -1076,13 +1076,13 @@ lệch vài dòng là bình thường, lệch nội dung thì 🛑 hỏi.
   | `people.ts:141` | `'case.approve': 'Duyệt phương án hỗ trợ'` | `'Duyệt phương án học thuật'` |
 
   Mã chỉ số (`case-thieu-pa`, `pa-*`) và khoá (`noPlan`, `overdueUpdate`) **không đổi**.
-- [ ] **Step 2: Thông báo.** `rg -n -A4 "notify\(" server/src --glob '!**/tests/**'` — thông báo nào có "phương án"
+- [x] **Step 2: Thông báo.** `rg -n -A4 "notify\(" server/src --glob '!**/tests/**'` — thông báo nào có "phương án"
       (học thuật) trong `title`/`body` ở file **không đóng băng** → thêm "học thuật" (`PA học thuật`). Đã đổi ở Task 1:
       `sosAuto.ts:148`. Thông báo của `measures.ts:446` không chứa chữ cũ. Ghi danh sách đã đổi (hoặc "không có thêm") vào Nhật ký.
-- [ ] **Step 3:** `rg -n "Làm phương án đã hẹn|Thiếu phương án|Phương án cần cập nhật|Chưa có phương án hỗ trợ|Duyệt phương án hỗ trợ" server/src/tests shared web/src`
+- [x] **Step 3:** `rg -n "Làm phương án đã hẹn|Thiếu phương án|Phương án cần cập nhật|Chưa có phương án hỗ trợ|Duyệt phương án hỗ trợ" server/src/tests shared web/src`
       — phép kiểm nào **so sánh** đúng chữ vừa đổi → sửa theo chữ mới (hợp lệ, D1), ghi Nhật ký. (Soát 22/09: chỉ có chú
       thích và câu báo lỗi của assert — không phải so sánh.) Cập nhật `TU_DIEN_VA_CHU.md` §8 các chữ màn trộn.
-- [ ] **Step 4:** `npm run check` xanh. Bấm thử Tổng quan (Quản lý, GVCN) và `/hoc-thuat` hai góc. Commit:
+- [x] **Step 4:** `npm run check` xanh. Bấm thử Tổng quan (Quản lý, GVCN) và `/hoc-thuat` hai góc. Commit:
       `PR-HV (8): màn trộn ghi rõ PA học thuật / PA xử lý`.
 
 ---
@@ -1093,17 +1093,17 @@ lệch vài dòng là bình thường, lệch nội dung thì 🛑 hỏi.
 - Modify: `server/src/yThuc/measures.ts`, `server/src/migrate.ts`, `server/src/seed/seed.ts`
 - Modify: `server/src/tests/yThuc.tests.ts` (616, 617, 667 — số dòng có thể đổi sau khi gộp), `server/src/tests/hoSoHocVien.tests.ts`
 
-- [ ] **Step 1: 🛑 Kiểm điều kiện.** `git fetch origin` rồi xem PR-Z2b đã merge vào `origin/main` chưa (tìm commit merge
+- [x] **Step 1: 🛑 Kiểm điều kiện.** `git fetch origin` rồi xem PR-Z2b đã merge vào `origin/main` chưa (tìm commit merge
       "Z2b"/`pr-z2b-an-toan-du-lieu`, hoặc `gh pr view <số> --json state`). **Chưa merge → DỪNG task này**, làm Task 10
       Step 1–3 (phần không phụ thuộc), rồi báo chủ sản phẩm: "Phần giao diện xong. Còn một ít chữ trong 3 file máy chủ đang
       bị PR-Z2b sửa — tôi chờ PR-Z2b được gộp rồi làm nốt. Anh/chị báo tôi khi đã gộp PR-Z2b." **Không** mở PR khi Task 9 chưa xong.
-- [ ] **Step 2:** `git merge origin/main` vào nhánh (không rebase). Xung đột → giải quyết giữ **cả hai** bên, ghi Nhật
+- [x] **Step 2:** `git merge origin/main` vào nhánh (không rebase). Xung đột → giải quyết giữ **cả hai** bên, ghi Nhật
       ký. `npm run check` xanh (số ≥ trước + số phép Z2b thêm). Commit merge.
-- [ ] **Step 3 (TDD):** xoá hằng `CHO_Z2B` (để mảng rỗng) trong `hoSoHocVien.tests.ts`; thêm `'server/src/seed/'` vào một
+- [x] **Step 3 (TDD):** xoá hằng `CHO_Z2B` (để mảng rỗng) trong `hoSoHocVien.tests.ts`; thêm `'server/src/seed/'` vào một
       danh sách loại trừ **vĩnh viễn** có chú thích "dữ liệu kể chuyện của bộ demo, không phải chữ giao diện" — **trừ**
       `server/src/seed/seed.ts` và `server/src/seed/duLieuNen.ts` (vẫn quét — 🆕 22/09: `duLieuNen.ts` do PR-Z2b thêm là
       dữ liệu nền của **bản chính**, không phải chuyện kể demo). `npm test` → phép quét **đỏ**, liệt kê các chỗ dưới.
-- [ ] **Step 4: Đổi chữ** (tìm lại bằng `rg -n "[Bb]iện pháp|Hãy|hãy" server/src/yThuc/measures.ts server/src/migrate.ts server/src/seed/seed.ts` —
+- [x] **Step 4: Đổi chữ** (tìm lại bằng `rg -n "[Bb]iện pháp|Hãy|hãy" server/src/yThuc/measures.ts server/src/migrate.ts server/src/seed/seed.ts` —
       Z2b có thể đã đẩy dòng):
 
   | Chỗ (dòng đo 22/09) | Mới |
@@ -1128,11 +1128,11 @@ lệch vài dòng là bình thường, lệch nội dung thì 🛑 hỏi.
   | `seed/seed.ts:299` | `'Phương án xử lý': yThuc.measures,` (khoá in ra màn hình lệnh seed) |
 
   **Không** đổi logic/SQL nào khác trong ba file này. Không đụng phần Z2b vừa sửa (`deleteMeasure` ngoài câu 360).
-- [ ] **Step 5: Phép kiểm bám câu chữ** (đổi hợp lệ, D1): `yThuc.tests.ts` ~616 `/loại biện pháp/i` → `/loại phương án/i`;
+- [x] **Step 5: Phép kiểm bám câu chữ** (đổi hợp lệ, D1): `yThuc.tests.ts` ~616 `/loại biện pháp/i` → `/loại phương án/i`;
       ~617 và ~667 `/tên biện pháp/i`, `/tên biện pháp/` → `/tên phương án/i`, `/tên phương án/`. Rồi
       `rg -n "biện pháp" server/src/tests` tìm regex khác đang so với câu vừa đổi (ví dụ `/đã thực hiện/`, `/ít nhất một vi phạm/`
       vẫn khớp — không sửa). Ghi Nhật ký từng dòng đã sửa.
-- [ ] **Step 6:** `npm run check` xanh; phép quét PR-HV xanh **không còn** `CHO_Z2B`. `npm run migrate` trên database dev
+- [x] **Step 6:** `npm run check` xanh; phép quét PR-HV xanh **không còn** `CHO_Z2B`. `npm run migrate` trên database dev
       của worktree vẫn chạy (không lỗi). Commit: `PR-HV (9): chữ "phương án xử lý" ở measures/migrate/seed sau khi gộp Z2b`.
 
 ---
@@ -1143,7 +1143,7 @@ lệch vài dòng là bình thường, lệch nội dung thì 🛑 hỏi.
 - Create: `thiet-ke/anh/pr-hv/sau-*.png`
 - Modify: `plan.md`, `thiet-ke/BAN_DO_OVERHAUL.md`, `CODE_MAP.md`, plan này (Nhật ký)
 
-- [ ] **Step 1: Quét chữ bằng tay** (bổ sung cho phép kiểm tự động):
+- [x] **Step 1: Quét chữ bằng tay** (bổ sung cho phép kiểm tự động):
   ```
   rg -n "[Bb]iện pháp|BIỆN PHÁP" web/src shared server/src --glob '!**/tests/**'
   rg -nw "BP" web/src shared server/src --glob '!**/tests/**'
@@ -1152,7 +1152,7 @@ lệch vài dòng là bình thường, lệch nội dung thì 🛑 hỏi.
   **Chấp nhận được:** dòng nằm trong chú thích (`//`, `/* */`, `*` đầu dòng), chuỗi DDL đã ghi ở `CHO_PHEP`, dữ liệu kể
   chuyện trong `server/src/seed/` (trừ `seed.ts`), và (nếu Task 9 còn chờ) ba file đóng băng. **Không chấp nhận:** mọi
   chuỗi trong nháy/JSX mà người dùng thấy. Dán số dòng từng loại vào Nhật ký.
-- [ ] **Step 2: Nghiệm thu spec §7** — bật máy chủ dev (🛑 hỏi chủ sản phẩm như Task 0 Step 5), `npm run seed` mới, rồi
+- [x] **Step 2: Nghiệm thu spec §7** — bật máy chủ dev (🛑 hỏi chủ sản phẩm như Task 0 Step 5), `npm run seed` mới, rồi
       bấm thử **ba vai** (GVCN Trần Ngọc Hà · GVBM Phạm Thu Trang · Quản lý Nguyễn Khánh Vy), **desktop và 375px**, chụp
       `thiet-ke/anh/pr-hv/sau-<màn>-<vai>-<khổ>.png` cho đúng sáu màn ở Task 0 Step 6, và ghi từng dòng vào Nhật ký
       (ĐẠT/HỎNG + ghi chú):
@@ -1165,7 +1165,7 @@ lệch vài dòng là bình thường, lệch nội dung thì 🛑 hỏi.
       7. Màn trộn: Tổng quan/Việc cần làm và Phân tích của Quản lý ghi `PA học thuật` / `Phương án xử lý`.
       Kiểm console trình duyệt không có lỗi (`read_console_messages onlyErrors`). Mỗi màn: so với ảnh trước — mọi nút có
       trước đây vẫn còn (theo đúng vai). Thiếu nút nào → lỗi, sửa trước khi đi tiếp.
-- [ ] **Step 3: Tài liệu.**
+- [x] **Step 3: Tài liệu.**
   - `plan.md` §22.7: Q7 và Q8 đánh `[x]` kèm "→ làm ở **PR-HV** (D5, spec 2026-09-22)"; thêm một dòng dưới tiêu đề §22.7:
     "Q7, Q8 chuyển sang PR-HV (22/09/2026)". §12.15 (K2-6): đánh dấu nút `[Mở]/[Xem]` và số `Phối hợp SOS {n}` đã làm ở
     PR-HV. Ghi chú đảo K3-6 ("Hãy") theo D3.
@@ -1177,14 +1177,14 @@ lệch vài dòng là bình thường, lệch nội dung thì 🛑 hỏi.
   - `plan.md` §14: một dòng lịch sử `| 22/09/2026 (hoặc ngày thật) | Claude (session PR-HV, <model>) | … |` gồm: N0 → số cuối,
     số phép mới, dữ liệu đã thêm (`attachmentCount`, `headline.next.overdue`), các quyết định khi plan im lặng, việc chưa làm.
   Commit: `PR-HV (10): nghiệm thu, ảnh trước/sau, cập nhật plan và bản đồ`.
-- [ ] **Step 4:** `superpowers:requesting-code-review` — **một** agent rà toàn bộ diff nhánh theo plan này. Người rà là
+- [x] **Step 4:** `superpowers:requesting-code-review` — **một** agent rà toàn bộ diff nhánh theo plan này. Người rà là
       model **khác** người code (xem bảng đầu file). Câu hỏi cho người rà: (1) có nút/hành động nào **mất** hoặc đổi quyền
       so với `main`? (2) có chữ người dùng thấy nào còn "biện pháp"/"BP"/"Hãy", hoặc màn trộn ghi "phương án" trơn? (3) có
       luật nghiệp vụ nào bị đổi (đếm, hạn, trạng thái)? (4) 375px có chỗ nào tràn? (5) `TheSos` / dòng học viên lớp có nút
       lồng trong nút? Xử lý bằng `superpowers:receiving-code-review`; sửa mọi Critical/Important, ghi Nhật ký.
-- [ ] **Step 5:** `superpowers:verification-before-completion`: `npm run check` xanh (ghi số), phép quét PR-HV xanh,
+- [x] **Step 5:** `superpowers:verification-before-completion`: `npm run check` xanh (ghi số), phép quét PR-HV xanh,
       Task 9 đã xong.
-- [ ] **Step 6:** `superpowers:finishing-a-development-branch`: push, mở PR **không draft**, tiêu đề
+- [x] **Step 6:** `superpowers:finishing-a-development-branch`: push, mở PR **không draft**, tiêu đề
       `PR-HV: hồ sơ học viên 3 tab + Ý thức & Phối hợp theo prototype v3, "biện pháp" thành "phương án"`. Thân PR: tóm tắt
       D1–D5; bảng ảnh trước/sau (đường dẫn `thiet-ke/anh/pr-hv/`); số phép kiểm `N0 → cuối`; hai trường máy chủ mới; kết
       quả 7 dòng nghiệm thu; các quyết định khi plan im lặng; việc để lại (PR-R ô bấm được, PR-Q Q9 / 4 tab lớp). Kết thúc
@@ -1274,4 +1274,19 @@ danh sách ảnh.)*
 
 | Thời điểm | Task | Ghi chép |
 |---|---|---|
-| | 0 | `N0` = … · PR-Z2b đã merge? … · ảnh trước: … |
+| 22/09/2026 | 0 | Người code: **Fable 5.1** (model khuyến nghị). Worktree `.claude/worktrees/pr-hv-ho-so-hoc-vien`, nhánh `pr-hv-ho-so-hoc-vien` từ `main` @ `714739e` (đủ spec, hai prototype, plan). `N0` = **605** (npm run check xanh). `git log origin/main -5`: 714739e Merge #50 plan PR-HV · 9c12bc5 · b53c5d5 · 0f24805 Merge #48 (Z2a) · 8b3b476. PR-Z2b (#49) **OPEN** (`gh pr view 49`) → làm đúng kế hoạch, đóng băng tới Task 9. Step 5–6 (máy chủ dev, ảnh TRƯỚC) **hoãn**: chủ sản phẩm yêu cầu hỏi trước khi bật cổng 4000/5173; làm Task 1 trước (không cần máy chủ), ảnh TRƯỚC sẽ chụp từ commit gốc `714739e` (checkout tách rời tạm) khi được phép. |
+| 22/09/2026 | 1 | Phép quét (TDD) đỏ **97 chỗ** — trùng đúng bảng 1A–1D, không có tên-trong-mã nào cần `CHO_PHEP` (mảng rỗng). `CHO_Z2B` thêm `server/src/ops/` (đóng băng theo Global Constraints; `ops/initBanChinh.ts` có 2 chỗ "hãy" — Task 9). `accounts.ts` (Z2b sửa 2 dòng khác) đã đổi 8 chỗ "Hãy". Phép kiểm cũ bám câu chữ D3: `run.ts` [6.3] `/đặt tên/` → `/[Đđ]ặt tên/` (câu "Hãy đặt tên cho case" nay viết hoa Đ) — ngoài hai dòng bảng 1E. `TU_DIEN_VA_CHU.md`: luật D1 §1/§6, luật D3 §4, thêm §8 bảng chữ PR-HV. Số phép kiểm: **606** (= N0 + 1). |
+| 22/09/2026 | 0 (tiếp) | Chủ sản phẩm cho phép bật máy chủ dev (hai cổng đang rảnh). **Phát hiện:** `preview_start` (cấu hình `dev` trong `.claude/launch.json`) khởi động Vite/API từ **thư mục chính**, không phải worktree (API đọc database của thư mục chính; Vite trả mã của `main`) → tắt, bật lại bằng `npm run dev` chạy nền **trong worktree** (database riêng `data/pisa-demo.sqlite` của worktree, seed 04:49). Ảnh TRƯỚC chụp bằng Playwright (cài tạm `--no-save`, kênh Chrome có sẵn; script ở scratchpad, không vào repo) ở commit gốc `714739e` — 30 tệp `thiet-ke/anh/pr-hv/truoc-*.png`: `ho-so-huy` (gvcn/gvbm/ql) · `case-2pa` (admin — em Đinh Ngọc Quyên id 21, case 22 Writing Task 2 có 2 PA đang chạy, thuộc lớp CP-FT 110 nên GVCN Hà không xem được) · `case-sos-cho` (gvcn/gvbm — Đỗ Minh Khôi id 42, case 34) · `y-thuc-huy` + `-vi-pham` (gvcn/gvbm) · `lop-101` + `-theo-hs` (mở Nguyễn Minh An — Huy không có vi phạm chưa xử lý nên không nằm trong khối lớp) + `-theo-tg` (gvcn) · `phan-tich-ql` (ql) · `viec-can-lam` (ql/gvcn); mỗi tệp hai khổ desktop/375. Commit `c13fc7d`. |
+| 22/09/2026 | 2 | `parseHoSoTab` TDD đỏ → xanh. `HangTab.tsx` mới; `StudentDetailPage` bỏ `tier3`, ba tab đọc từ `?tab=` (replace), `warn` tải ở trang cho dấu ⚠ (A5). Sửa lỗi phụ J8: không có lộ trình vẫn mở được tab Ý thức/Hành trình. Bấm thử (Playwright, GVCN, 1280 + 375): `?tab=` ba giá trị + giá trị lạ về Học thuật ✓; bấm tab đổi địa chỉ, `history.length` không tăng (replace) ✓; scrollWidth = khổ (không cuộn ngang) ✓; console không lỗi ✓; ⚠ hiện ở em có cảnh báo 5 ngày (Nguyễn Minh An), không hiện ở Huy ✓. Số phép kiểm: **607**. |
+| 22/09/2026 | 3 | Hai phép TDD đỏ (`ketQuaTestGanNhat` chưa có; `next.overdue` chưa có, câu cũ "đề xuất L đang chờ…") → xanh. **Kiểm ngược `<`→`<=` KHÔNG đỏ**: bộ demo không có việc nào có hạn đúng bằng ngày demo nên hai phép so cho cùng kết quả → tách luật thành hàm thuần `quaHan(due, today)` ở `hoSoHocVien.ts` (profile.ts dùng nó) + phép kiểm biên riêng (hạn = hôm nay → chưa quá hạn) — thêm 1 phép ngoài kế hoạch. Thêm mục (k) "không có tuần → chỉ MT2". `HeaderStats` bốn ô mới, `Stat` có `nho`/`sub: ReactNode`. **Lưu ý vận hành:** API dev chỉ build lúc `npm run dev` khởi động — sửa máy chủ phải khởi động lại mới thấy (ô 4 lúc đầu vẫn chữ cũ). Bấm thử: Huy (FT, GVCN) ô 1 `MT2 · W3 AUG 2026` + KetQuaDot `Đã đủ điểm · SOS 1`; ô 4 `Làm PA L` · `quá hạn 30/08/2026` đỏ. Đỗ Gia Bảo (id 8, MB-FOU 12, Quản lý): ô 1 `Giữa khoá · W3 AUG 2026`, **không** có chữ Overall; ô 4 `Không có`. 375px: 2 cột, ô 4 xuống dòng, không tràn. Số phép kiểm: **610** (+3). |
+| 22/09/2026 | 4 | `demTheoNhomViPham` TDD đỏ → xanh; thứ tự thật của `VIOLATION_CATEGORIES` là attendance (Chuyên cần) **trước** homework (BTVN) — phép kiểm viết theo hằng thật, không theo ví dụ của plan; mã nhóm lạ vẫn tính vào `tong`. `OSoNho`, `DongThoiGian` mới; `TurnRow` → `TheSos` (đầu thẻ 3 cột `div role=button`, thân thẻ lưới việc), `PhoiHopSosSection` prop `cot1` thay `showStudentName`; bỏ import `Level`/`sosTone` không dùng. **Huy không có lượt Phối hợp SOS nào** (như ảnh trước) → bấm thử trên Đỗ Minh Khôi (id 42, MT2 · SOS 2): mở/đóng bằng chuột và Enter ✓; link "Hỗ trợ học thuật xem ở tab Học thuật" → tab Học thuật, bỏ `?tab=`, thẻ không bị mở/đóng ✓ (lưu ý cho script kiểm: `getByRole('button', {name})` khớp cả đầu thẻ vì tên gồm chữ bên trong — phải chọn `button.link`); GVCN Xác nhận "Trao đổi với gia đình" → `Đã xong` 1 → 2 ✓ (đã ghi vào database worktree); lớp MB-FT 101: 2 thẻ, cột 1 tên HV, dòng phụ "Học thuật theo dõi ở bảng kỹ năng" ✓; 375px không cuộn ngang, cột 1 một hàng, cột 2+3 hàng dưới ✓; console không lỗi ✓. Số phép kiểm: **611**. |
+| 22/09/2026 | 5 | `StudentYThucSection` viết lại phần vẽ theo §4.3 (đầu khối + nút, `HangTab cap="con"` với số lượt chưa xong, ô số nhỏ, hai dãy lọc, `DongThoiGian` có cột tick, nút Sửa/Mở/Xem); `coord` tải luôn (A5); `RANGES` đổi thứ tự/chữ; lọc nhóm giữ dòng PA chứa vi phạm của nhóm (J7); `XemPhuongAnPanel` mới; `RecordViolationPanel.onDelete` → nút `Xoá vi phạm` trong form sửa. **Huy không có vi phạm chưa xử lý** nên bấm thử luồng tạo PA trên **Nguyễn Minh An** (id 1, 4 vi phạm chưa xử lý, có ⚠): GVCN lọc BTVN 9→4 dòng, 7 ngày 5 dòng; tick 2 → `Tạo phương án từ 2 vi phạm` → panel `Tạo phương án · Nguyễn Minh An` → chọn GV trao đổi ngắn → `Lưu — Đang chuẩn bị` → dòng `◷ Phương án` + ô `PA đang chuẩn bị` + nút `Mở` → `Xác nhận đã thực hiện` → dòng `✓ Phương án` + nút `Xem` → hộp chỉ đọc đủ Trạng thái/Ngày/Người/Nội dung/2 vi phạm/Tệp/Xác nhận bởi ✓; `Sửa` → `Xoá vi phạm` → hộp `Xoá vi phạm này?` (Huỷ) ✓. GVBM (Trang): không ô tick, không `Mở`, có `Xem`, còn `+ Ghi nhận vi phạm` ✓. Quản lý (Vy, trên Khôi vì Minh An đã hết vi phạm chưa xử lý sau hai lần chạy script): ô tick 2, Sửa, Tạo phương án từ 1 vi phạm ✓. Khôi: tab con `Phối hợp SOS 1` ✓. 375px không cuộn ngang, dòng thời gian 3 cột + nút xuống hàng ✓. Console không lỗi ✓. (Script đã tạo + xác nhận 2 PA "GV trao đổi ngắn với HS" cho Minh An trong database worktree.) Số phép kiểm: **611** (không đổi — task giao diện). |
+| 22/09/2026 | 6 | Ba phép TDD đỏ → xanh (`tienDoCase`, `viecTiepPhuongAn`, `dangChay`, `attachmentCount` — phép server dùng `checkAsync` + `await import` vì harness là ESM; chèn 1 liên kết `kind='link'` vào `attachments` rồi xoá). `caseCardOf` thêm `attachmentCount` (SQL tại chỗ). `CaseCardView`→`TheCase`, `PlanRow`→`KhoiPhuongAn`; `InlineResult` bỏ `ml-5`. Dấu ✓ của PA đã xong đổi từ `text-emerald-300` sang `text-slate-400` (luật ui.tsx: xanh lá chỉ cho `<Outcome>`). Bỏ câu "Case đang xử lý, chưa kết luận." (cột 3 đầu thẻ đã nói). Bấm thử: Quyên (id 21, admin) case 22 có 2 PA: đầu thẻ `1/2 PA có kết quả` + `Chờ Quản lý trả lời: hạn 14/09/2026`, hai khối 3 phần, ghi chú dài không cắt, `▸ Bằng chứng (0)` mở ra BangChung, chân thẻ `+ Thêm phương án · Hoàn thành case (mờ) · Chưa hoàn thành: …`; `Ghi kết quả` → lưu → phần 2 hiện ghi chú, tiến độ giữ 1/2 (PA đó đã có kết quả) ✓. Khôi (id 42) case 34 chờ nguyên nhân: khối vàng, cột 2 `PA gợi ý chờ xác nhận`, phần 3 `Gợi ý tự động · chờ xác nhận` ✓; GVCN Hà và GVBM Trang **không** thấy nút Xác định nguyên nhân/Không cần theo dõi/Xác nhận — **giống ảnh trước** (không dạy Writing Task 2); GVBM Writing Task 2 Cao Khánh Linh (id 10) thấy đủ Xác định nguyên nhân · Không cần theo dõi · Xác nhận/Sửa/Thay · + Thêm phương án · Hoàn thành case ✓. Huy: case Reading đã hoàn thành đóng mặc định, cột 3 `Đã hoàn thành`, mở ra thì khối PA đã xong mở sẵn (`moXong` mặc định = case done), bấm nút thu gọn ✓. 375px: ba phần xếp dọc, không cuộn ngang ✓. Console không lỗi ✓. (Script ghi thêm 1 kết quả "Tiến bộ một phần" cho PA của Quyên trong database worktree.) Số phép kiểm: **614** (+3). |
+| 22/09/2026 | 7 | `ClassYThucCard` viết lại phần vẽ theo §4.5 (giữ nguyên `rowsForCategory`, sắp xếp, `allCount`, `timeline`, tick, panel). Dòng học viên lưới 4 cột (dòng phụ `{mã HV} · {trạng thái}` từ roster — J4), mở ra hai thẻ `Vi phạm gần đây` (`DongThoiGian bien="gon"` + tick + Sửa) | `Xử lý` (`Mở phương án` / `Xem` / `Tạo phương án` — J11: chưa tick thì đưa mọi vi phạm đang hiện; `measureFor` nay mang `violationIds`); `Theo thời gian` = `DongThoiGian bien="day-du"`; tab con `HangTab cap="con"` giữ nghĩa số K3-3; link `Hồ sơ học viên →` mở thẳng `?tab=y-thuc`; xoá `violationBreakdown` (dùng `demTheoNhomViPham`). Bấm thử MB-FT 101: không có nút lồng nút ✓; lọc BTVN — số trên tab con không đổi (3) ✓; dòng Khôi `PISA-000042 · đang học · 2 vi phạm · 1 Chuyên cần · 1 BTVN · Không có cảnh báo · 0 PA đang chuẩn bị · Mở` ✓; mở → hai thẻ, tick 1 → `Tạo phương án từ 1 vi phạm` → panel → Lưu — Đang chuẩn bị → `Mở phương án` + `1 PA đang chuẩn bị` → Xác nhận đã thực hiện ✓; Theo thời gian 2 dòng lưới có Sửa ✓; Phối hợp SOS thẻ + nút ẩn/hiện ✓. GVBM Trang: không tick, không Tạo/Mở, có + Ghi nhận vi phạm ✓. Quản lý ✓. 375 không cuộn ngang ✓. Console không lỗi ✓. (Script tạo + xác nhận 1 PA "GV meeting với HS" cho Khôi trong database worktree.) Số phép kiểm: **614**. |
+| 22/09/2026 | 8 | Bảng Task 8 áp đủ (31 chỗ, 6 file — số dòng khớp). **Thông báo:** ngoài `sosAuto.ts:148` (Task 1), `cases.ts` ~971–973 ba tiêu đề chuông duyệt PA (`PA học thuật của bạn đã được duyệt` / `không được duyệt` / `Quản lý góp ý về PA học thuật của bạn`) — đổi; tiêu đề mốc Hành trình cùng chỗ (`Quản lý duyệt phương án hỗ trợ`…) **giữ** (J6). **Thêm ngoài bảng** (cùng luật D1 màn trộn, phát hiện khi bấm thử `/hoc-thuat`): tiêu đề cột `Thiếu phương án` ở `server/src/worklist/summary.ts:104` (bảng Tổng hợp theo lớp) và `WeeklyBoard.tsx:69` (Theo tuần) → `Thiếu PA học thuật`; nhãn trạng thái `no_plan` của bảng case ở `cases.ts:1590` → `Chưa có PA học thuật` (khớp `CaseBoardPage.tsx:49`). **Không đổi** (ngoài phạm vi J6, ghi để chủ sản phẩm biết): `people.ts:184` nhãn bộ lọc danh sách học viên `Case thiếu phương án`; `chu.ts` `CHUA_CO_PHUONG_AN` chỉ dùng trong `CasePanel` (màn học thuật); `cases.ts:793` `Đề xuất phương án mới`; chú giải dài ở `WeeklyBoard.tsx:249`, bảng Tổng hợp theo lớp. **Phép kiểm bám chữ** (hợp lệ D1, ngoài soát 22/09 của plan): `sosV3.tests.ts` 675 `/phương án/` → `/PA học thuật/` và 688 `/Phương án/i` → `/PA học thuật/i` (lý do dòng việc S04 in câu `mywork.ts:790`). Bấm thử: Tổng quan (QL) bốn ô `Case thiếu PA học thuật` · `PA học thuật cần cập nhật`, bảng Việc cần lưu ý cột `Thiếu PA học thuật` · `PA học thuật cần cập nhật` ✓; `/hoc-thuat` Phân tích vấn đề cột `Thiếu PA học thuật` ✓. Số phép kiểm: **614**. |
+| 22/09/2026 | 9 🛑 | **Cửa mở:** `gh pr view 49` → MERGED 05:17Z (origin/main @ `25eec4c`, gồm cả PR #51 Z2b2). `git merge origin/main` **không xung đột** (commit `51caeab`); `npm run check` sau gộp **671** (Z2b/Z2b2 thêm 57). TDD: `CHO_Z2B = []`, thêm `LOAI_TRU` (seed/* trừ `seed.ts`, `duLieuNen.ts`), `CHO_PHEP` 4 chú thích SQL `-- …` trong chuỗi DDL của `migrate.ts` (plan ghi 1 dòng ~2525; ba dòng `--` kế bên cùng bản chất, cùng lý do) → quét đỏ **24 chỗ** (measures 13 dòng + 1 dòng trùng Hãy, migrate 6, seed.ts 1, initBanChinh 2) → đổi chữ đúng bảng Step 4 + hai dòng `initBanChinh.ts` (🆕 22/09) → xanh. `MANAGE_MESSAGE` theo chữ plan (`…tạo và thực hiện được phương án xử lý…`). `duLieuNen.ts` quét: không có chữ cần đổi. Phép kiểm bám chữ (D1): `yThuc.tests.ts` `/loại biện pháp/i` → `/loại phương án/i`, `/tên biện pháp/i` và `/tên biện pháp/` → `/tên phương án…/` (3 dòng, đúng plan; số dòng sau gộp: tìm bằng chuỗi). `npm run migrate` trên database worktree chạy không lỗi. Số phép kiểm: **671**. |
+| 22/09/2026 | 10 (1–3) | **Quét tay:** "BP" 0 · "Hãy " 0 · "biện pháp" chỉ còn **84 dòng chú thích** (`//`, `*`, `--` DDL) + chuyện kể/lỗi nội bộ của `seed/students.ts` (3) và `seed/yThucSeed.ts` (18) — đúng diện chấp nhận; `board.ts:73` là chú thích. **Nghiệm thu §7** (seed mới 06:33, Playwright, ba vai GVCN Hà · GVBM Trang · Quản lý Vy (+ GVBM W2 Linh, admin cho em lớp CP), desktop 1280 + 375; ảnh `thiet-ke/anh/pr-hv/sau-*.png`, 48 tệp): (1) Huy ba tab, `?tab=` mở thẳng, ⚠ ở em có cảnh báo — **ĐẠT** (Task 2); (2) case 2 PA song song + ghi chú dài + tên GV dài không tràn/cắt — **ĐẠT** (Task 6, Quyên id 21); (3) case từ SOS chờ nguyên nhân: khối vàng, nút, PA gợi ý cột 3 — **ĐẠT** (Khôi; nút chỉ với GVBM đúng môn — như trước); (4) tạo PA từ 2 vi phạm → xác nhận → `Xem` — **ĐẠT** (Task 5, Minh An); (5) Phối hợp SOS mở thẻ, xác nhận một việc, link về tab Học thuật — **ĐẠT** (Task 4, Khôi); (6) lớp MB-FT 101 Theo học sinh / Theo thời gian / Phối hợp SOS — **ĐẠT** (Task 7); (7) màn trộn `PA học thuật` / `Phương án xử lý` — **ĐẠT** (Task 8). Console không lỗi ở mọi lần chạy. Mọi nút có trước đây vẫn còn theo đúng vai (so ảnh trước: `+ Case`, `⋮`, `Lộ trình`, `+ Ghi nhận vi phạm`, `Sửa` (thay ✎/🗑 — xoá trong form sửa), `Mở`/`Xác nhận`, `+ Thêm phương án`, `Hoàn thành case`, `Xác định nguyên nhân`, `Không cần theo dõi`, `Xác nhận/Sửa/Thay`, `+ Thêm việc`, `Bỏ ▾`, `Hiện cả lượt đã xong`). **Lỗi có sẵn, ngoài phạm vi:** tab Hành trình ở 375px — một nhãn `dự kiến dd/mm` đặt tuyệt đối trong `JourneyTimeline.tsx` (không đổi so với gốc) lòi 23px ra ngoài `main` (main.scrollWidth 398) nhưng `document.scrollWidth` = 375, trang không cuộn ngang; để PR-Q (Q9 Hành trình). **Tài liệu:** `plan.md` §22.7 Q7/Q8 [x] → PR-HV, §12.15 ghi đảo K3-6 + hai việc K2-6 đã làm, §14 một dòng; `BAN_DO_OVERHAUL.md` §7 bảy dòng → ✅ PR-HV (dòng "bấm được" giữ PR-R); `CODE_MAP.md` Ý thức, Dùng chung, `hoSoHocVien.ts`. |
+| 22/09/2026 | 10 (4) rà soát | **Người rà: Opus 5** (một agent, đọc cả diff `25eec4c..e408c8d`, tự chạy `npm run check` 671 ✓). Kết luận: *With fixes* — 0 Critical, 2 Important, 9 Minor. **Đã sửa:** (I1) `headlineOf` — ứng viên mới "Cập nhật PA" chưa quá hạn CÓ hạn nên thắng ứng viên KHÔNG hạn (`Xác minh SOS` khi `verifyDue` null, `Đề ra PA`, `Chờ Quản lý duyệt`) ở `cands.sort` → đổi thành **dự phòng** `duPhong`, chỉ dùng khi `cands` rỗng (đây là lỗi trong đoạn mã mẫu của chính plan Step 3; thứ tự ưu tiên cũ nay giữ nguyên đúng nghĩa). Thêm bất biến vào phép kiểm Q7: ô ghi "Cập nhật PA" chưa quá hạn ⇒ bảng kỹ năng không còn việc ưu tiên hơn — **không đỏ trên dữ liệu demo** (không em nào vừa có việc dự phòng vừa có việc ưu tiên không hạn), sửa được xác nhận bằng đọc mã. (I2) nhãn `Không cần theo dõi · {lý do}` (nowrap) tràn cột ở 375px → tách: nhãn `Không cần theo dõi` + lý do ở dòng phụ xuống dòng. (M3) bỏ prop `cy` thừa của `HeaderStats`. (M4) `CODE_MAP.md` hai dòng còn `PlanRow`/`CaseCardView`. (M5) phép quét thêm `scripts/*.mjs`, "Hãy" trước dấu câu/cuối dòng. (M8) `XemPhuongAnPanel` hiện `ErrorState` khi tải lỗi. (M10) hai chú giải trích tên cột cũ (`WeeklyBoard.tsx:249`, `SummaryTable.tsx:232`) → `Thiếu PA học thuật` / `chưa có PA học thuật`. (M11) `TU_DIEN` §6: màn trộn ghi rõ `PA xử lý` (nhãn ngắn) hoặc `Phương án xử lý …` (tên chỉ số/tiêu đề — dạng PR-HV dùng). **Để lại, cần chủ sản phẩm quyết:** (M10b) `people.ts:184` bộ lọc danh sách học viên `Case thiếu phương án` (cùng khái niệm với `Case thiếu PA học thuật` ở Tổng quan); (M9) hai chỗ lặp chữ do bảng ánh xạ của plan (`Cần xử lý` dòng phụ + nhãn ở thẻ Phối hợp khi không có quyền; nhãn nhóm vừa ở dòng phụ vừa ở chip `Info` ở hồ sơ lớp); (M3b) bốn ô số vẫn ẩn khi không có lộ trình (plan `{cy && …}`, spec nói "luôn hiện"). **Để lại, ngoài phạm vi:** (M6) `HangTab` chưa đủ mẫu ARIA tab (aria-controls, phím mũi tên); (M7) link trong `div role=button` của `TheSos` (plan chọn có chủ đích). |
+| 22/09/2026 | 10 (5–6) | Sau sửa rà soát: `npm run check` **671** đạt, phép quét PR-HV xanh (không còn `CHO_Z2B`), Task 9 đã xong. Kiểm lại nhãn `Không cần theo dõi` ở 375px trên Vũ Ngọc Lan (case 38): nhãn + lý do `Tình huống đơn lẻ` hai dòng, không đè (`sau-case-khong-can-theo-doi-gvcn-*`). Đẩy nhánh, mở PR không draft, **không tự merge** → PR #52. |
+| 22/09/2026 | sau PR | Chủ sản phẩm: "cứ làm theo bạn đề xuất" cho ba điểm để ngỏ → (1) `people.ts` bộ lọc `Case thiếu phương án` → `Case thiếu PA học thuật` (cùng chữ với Tổng quan/Phân tích); (2) bốn ô số **luôn hiện** kể cả khi chưa có lộ trình (theo spec §4.1; `HeaderStats` đã xử lý `rows` null và `attempts` rỗng → `—`, `0`, `Không có`); (3) bỏ hai chỗ lặp chữ: thẻ Phối hợp không lặp `Cần xử lý` ở dòng phụ khi cột phải đã là nhãn (giữ khi có nút Xác nhận, đúng prototype); hồ sơ lớp nhãn nhóm chỉ còn ở chip `Info`, dòng phụ giữ kỹ năng · người ghi · ⚠ tuổi. Bảng ánh xạ Task 7 của plan bị lệch hai chỗ này — có chủ đích. Bấm thử lại: hồ sơ Dương Minh Quân (id 33, không lộ trình đang chạy, admin) bốn ô vẫn hiện; lớp MB-FT 101 dòng vi phạm chỉ còn chip nhóm; Khôi/GVBM Trang thẻ Phối hợp không lặp `Cần xử lý`; danh sách học viên bộ lọc `Case thiếu PA học thuật`. **Lỗi lộ ra khi bấm thử:** tiêu đề thẻ danh sách học viên hạ cả nhãn xuống chữ thường (`4 case thiếu pa học thuật`, và từ trước đã là `sos`, `mt`, `test`) → `StudentsPage.tsx` chỉ hạ chữ cái đầu. `npm run check` 671. |
+| 22/09/2026 | rà soát 2 (session planning, Opus) | Chín mục chủ sản phẩm giao, cùng nhánh/PR #52. **TDD** (đỏ trước, `npm test`: 669/3 đỏ): (1) `headlineOf` thêm `xacDinh` ("Xác định nguyên nhân {label}", hạn = `c.sos.dueOn`, chọn TRƯỚC `cands`/`duPhong`) và ứng viên "Xác nhận PA gợi ý {label}" (rank 1, không hạn; chỉ khi case không còn chờ nguyên nhân) — phép kiểm mới duyệt mọi em có case `awaitingCause` (demo: Khôi, Lan, Vy, Quyên) → ô không còn "Không có"; (2) `tienDoCase` thêm bậc đầu `quaHanRoi` (PA đang chạy có `actionOverdue`, sớm nhất) — ba assert (i)(j)(k); (3) `sk = r.label` + assert câu không kết thúc bằng mã tắt; ô Kỹ năng cần hỗ trợ dùng `r.label`. (4) `KetQuaDot`: `TONE_MARK.danger` = ● , ⚠ chỉ khi `overall === 'incomplete'` (áp cho mọi chỗ dùng `<KetQuaDot>` — cùng một câu ở mọi màn theo HE_GIAO_DIEN §5). (5) hàng tiêu đề ba phần chỉ khi `chay.length > 0`. (6) `BangChung`: `tieuDe=''` → không vẽ dòng tiêu đề (hết " · n"), `aria-label` mặc định "Bằng chứng — chọn tệp", prop `onChanged` gọi sau tải/thêm/gỡ → `TheCase` truyền `onChanged` nên `Bằng chứng (n)` cập nhật ngay (J10 hết hiệu lực). (7) nhãn `Vi phạm` trơn xanh dương (`NHAN_VI_PHAM`), `Đã kết thúc` không kèm " · —". (8) `ClassRoster`: `KetLuan` dựng từ `sosLevel/provisional/status` (`standingLine` của máy chủ không dùng nữa, máy chủ không đổi; `Đạt kỳ vọng · tạm thời` khi SOS 0 mà mới có một phần điểm — trường hợp plan không liệt kê, chọn cách nhất quán); `MissingBadge gon` → `⚠ {n}` (title + popover giữ; ba chỗ khác không đổi); cột Theo dõi dòng phụ `{n} case · {n} case bàn giao`, bỏ "quá hạn nhập điểm" và nhãn `Cần bàn giao` (chuyển thành `title`). (9) `plan.md` §12.18 ba việc để sau. Từ điển §8 thêm 6 dòng chữ mới (chữ do chủ sản phẩm giao — không cần chờ duyệt). |

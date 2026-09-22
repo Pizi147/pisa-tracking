@@ -28,3 +28,4 @@ export * from './policy.ts';
 export * from './attachments.ts';
 export * from './yThuc.ts';
 export * from './sos.ts';
+export * from './hoSoHocVien.ts';

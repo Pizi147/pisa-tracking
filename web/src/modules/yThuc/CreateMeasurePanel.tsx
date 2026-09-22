@@ -44,8 +44,8 @@ export function CreateMeasurePanel({
   const isLocked = (k: string) => availability.find((r) => r.kind === k)?.available === false;
   const lockReason = (k: string) => availability.find((r) => r.kind === k)?.reason ?? null;
   /* K2-3: ràng buộc nói TRƯỚC khi bấm — nút mờ + câu thiếu gì, không báo lỗi đỏ sau khi bấm. */
-  const missing = !list.length ? 'Cần ít nhất một vi phạm để tạo biện pháp.'
-    : kind === 'other' && !customName.trim() ? 'Loại "Khác" cần ghi tên biện pháp.'
+  const missing = !list.length ? 'Cần ít nhất một vi phạm để tạo phương án.'
+    : kind === 'other' && !customName.trim() ? 'Loại "Khác" cần ghi tên phương án.'
     : null;
 
   const create = async (confirmNow: boolean) => {
@@ -68,7 +68,7 @@ export function CreateMeasurePanel({
   };
 
   return (
-    <Modal open={open} onClose={onClose} title={`Tạo biện pháp xử lý · ${studentName}`}
+    <Modal open={open} onClose={onClose} title={`Tạo phương án · ${studentName}`}
       footer={
         <>
           <button className="btn" onClick={onClose}>Huỷ</button>
@@ -95,7 +95,7 @@ export function CreateMeasurePanel({
           )}
         </Field>
 
-        <Field label="Loại biện pháp" required hint="nhẹ ─────────────────────────── nặng · chọn thẳng cái nào cũng được (B05)">
+        <Field label="Loại phương án" required hint="nhẹ ─────────────────────────── nặng · chọn thẳng cái nào cũng được (B05)">
           <div className="space-y-1">
             {MEASURE_KINDS.map((k) => {
               const locked = isLocked(k);
@@ -113,7 +113,7 @@ export function CreateMeasurePanel({
         </Field>
 
         {kind === 'other' && (
-          <Field label="Tên biện pháp" required>
+          <Field label="Tên phương án" required>
             <input className="field" value={customName} onChange={(e) => setCustomName(e.target.value)} />
           </Field>
         )}

@@ -101,7 +101,7 @@ export function summaryColumns(): SummaryColumn[] {
         : `Case Học thuật ở ${CASE_CATEGORY_LABEL[s]} — tổng / chưa có phương án`,
     })),
     { key: 'working', label: 'Đang xử lý', group: 'total', hint: 'Case đã có phương án và đang theo dõi' },
-    { key: 'noPlan', label: 'Thiếu phương án', group: 'total', hint: 'Case chưa ai ghi sẽ làm gì cho em' },
+    { key: 'noPlan', label: 'Thiếu PA học thuật', group: 'total', hint: 'Case chưa ai ghi sẽ làm gì cho em' },
     { key: 'overdueReview', label: 'Cần cập nhật', group: 'total',
       hint: 'Đã qua hẹn xem lại mà chưa cập nhật tình hình hoặc kết quả' },
     { key: 'pendingApproval', label: 'Chờ duyệt', group: 'total',

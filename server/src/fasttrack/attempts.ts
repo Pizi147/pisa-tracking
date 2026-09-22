@@ -897,7 +897,7 @@ export function createAttempt(p: Principal, input: {
     'Chỉ Quản lý mới lập được kế hoạch tuần MT.');
 
   const cycle = input.cycleId ? cycleById(input.cycleId) : currentCycle(student.id);
-  if (!cycle) throw badRequest('Học viên chưa có lộ trình nào. Hãy mở lộ trình trước khi lên lịch MT.');
+  if (!cycle) throw badRequest('Học viên chưa có lộ trình nào. Mở lộ trình trước khi lên lịch MT.');
   const period = conn.prepare('SELECT * FROM report_periods WHERE id = ?').get(input.periodId) as any;
   if (!period) throw notFound('Không tìm thấy tuần kế hoạch');
 
@@ -907,7 +907,7 @@ export function createAttempt(p: Principal, input: {
   return tx(() => {
     const dup = conn.prepare('SELECT id FROM assessment_attempts WHERE cycle_id = ? AND attempt_no = ?')
       .get(cycle.id, attemptNo) as any;
-    if (dup) throw badRequest(`Lộ trình này đã có MT${attemptNo}. Hãy đổi tuần thay vì tạo mới.`);
+    if (dup) throw badRequest(`Lộ trình này đã có MT${attemptNo}. Đổi tuần thay vì tạo mới.`);
     const info = conn
       .prepare(
         `INSERT INTO assessment_attempts (cycle_id, student_id, attempt_no, kind, class_id, planned_period_id,
@@ -956,7 +956,7 @@ export function setPlanningWeek(p: Principal, attemptId: number, periodId: numbe
   const a = loadAttempt(attemptId);
   require_(p, PERMISSIONS.PLAN_WEEK, { classId: a.class_id, studentId: a.student_id },
     'Chỉ Quản lý mới chốt được tuần kế hoạch.');
-  if (a.status === 'cancelled') throw badRequest('Lượt này đã huỷ. Hãy mở lại trước khi đổi tuần.');
+  if (a.status === 'cancelled') throw badRequest('Lượt này đã huỷ. Mở lại trước khi đổi tuần.');
   const period = db().prepare('SELECT * FROM report_periods WHERE id = ?').get(periodId) as any;
   if (!period) throw notFound('Không tìm thấy tuần');
 
@@ -1156,7 +1156,7 @@ function reconcileCorrectedScores(p: Principal, attemptId: number, result: Attem
           userId: c.owner_user_id, kind: 'sos',
           title: `Xem lại case ${item.label} — ${st?.full_name ?? ''}`,
           body: 'Điểm nguồn đã được sửa thành đạt kỳ vọng. Case vẫn còn căn cứ khác; '
-            + 'hãy xem có cần theo tiếp không.',
+            + 'xem có cần theo tiếp không.',
           entityType: 'sos_case', entityId: item.caseId,
           dedupKey: `case_review:${item.caseId}:${attemptId}`,
         });
@@ -1218,12 +1218,12 @@ export function saveScore(
    * trước — sửa xong mới nhập được điểm, và lịch sử giữ cả hai lần.
    */
   if (scheduleRow.sit_status === 'cancelled') {
-    throw badRequest(`Phần thi ${assessed} của đợt này đã bị huỷ. Hãy khôi phục và đặt tuần mới trước khi nhập điểm.`);
+    throw badRequest(`Phần thi ${assessed} của đợt này đã bị huỷ. Khôi phục và đặt tuần mới trước khi nhập điểm.`);
   }
   if (scheduleRow.sit_status === 'absent') {
     throw badRequest(
       `${assessed} đang được ghi nhận là học viên đã vắng. Nếu thực ra em có thi, `
-      + 'hãy sửa trạng thái thi trước rồi mới nhập điểm.',
+      + 'sửa trạng thái thi trước rồi mới nhập điểm.',
     );
   }
 
@@ -1248,7 +1248,7 @@ export function saveScore(
       if (patch.noShow === true) {
         if (hasOfficial) {
           throw badRequest(
-            'Ô này đã có điểm chính thức — dấu "-" không xoá được điểm. Muốn sửa, hãy dùng hiệu chỉnh điểm có ghi lý do.',
+            'Ô này đã có điểm chính thức — dấu "-" không xoá được điểm. Muốn sửa, dùng hiệu chỉnh điểm có ghi lý do.',
           );
         }
         if (!scheduleRow.planned_period_id || !scheduleRow.week_end) {

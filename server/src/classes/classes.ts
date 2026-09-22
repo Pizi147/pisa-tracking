@@ -770,7 +770,7 @@ export function setClassTeachers(p: Principal, classId: number, input: { slots?:
     if (!teaches) {
       throw badRequest(
         'Giáo viên chủ nhiệm phải dạy ít nhất một kỹ năng ở lớp này. '
-        + 'Hãy xếp cho người đó một kỹ năng, hoặc chọn người khác làm chủ nhiệm.',
+        + 'Xếp cho người đó một kỹ năng, hoặc chọn người khác làm chủ nhiệm.',
       );
     }
   }

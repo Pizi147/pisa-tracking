@@ -43,7 +43,7 @@ function legacyEra(conn: any): boolean {
 export function migrate(): { applied: string[]; skipped: string[] } {
   const applied: string[] = [];
   const skipped: string[] = [];
-  if (!isInitialised()) return { applied, skipped: ['Database chưa có bảng nào — hãy chạy `npm run seed`.'] };
+  if (!isInitialised()) return { applied, skipped: ['Database chưa có bảng nào — chạy `npm run seed`.'] };
 
   const conn = db();
   const has = (table: string) =>
@@ -2477,7 +2477,7 @@ function migrateAttachments(conn: any, applied: string[]) {
     );
     CREATE INDEX idx_attachment_owner ON attachments(owner_type, owner_id);
   `);
-  applied.push('Thêm kho tệp và liên kết dùng chung (bảng attachments) cho bằng chứng của case, phương án, vi phạm và biện pháp. Chưa có tệp nào cũ nên không có gì được điền.');
+  applied.push('Thêm kho tệp và liên kết dùng chung (bảng attachments) cho bằng chứng của case, phương án, vi phạm và phương án xử lý. Chưa có tệp nào cũ nên không có gì được điền.');
 }
 
 /**
@@ -2602,7 +2602,7 @@ export function migrateYThuc(conn: any, applied: string[]) {
   const missing = ['violations', 'discipline_measures', 'measure_violations', 'violation_history'].filter((t) => !has(t));
   if (!missing.length) return;
   conn.exec(YTHUC_DDL);
-  applied.push('Thêm bốn bảng Ý thức mới: vi phạm, biện pháp xử lý, bảng nối nhiều–nhiều và nhật ký sửa vi phạm.');
+  applied.push('Thêm bốn bảng Ý thức mới: vi phạm, phương án xử lý, bảng nối nhiều–nhiều và nhật ký sửa vi phạm.');
 }
 
 /**
@@ -2702,7 +2702,7 @@ export function migrateLegacyDisciplineCases(conn: any, applied: string[]) {
       const kind = mapped ?? 'other';
       const customName = kind !== 'other' ? null
         : iv.kind === 'warning_letter' ? 'Thư cảnh cáo (dữ liệu cũ)'
-        : (String(iv.description ?? '').trim().slice(0, 60) || 'Biện pháp (dữ liệu cũ)');
+        : (String(iv.description ?? '').trim().slice(0, 60) || 'Phương án xử lý (dữ liệu cũ)');
       const done = iv.status === 'completed';
       const on = iv.completed_date ?? iv.started_date ?? iv.planned_date ?? String(iv.created_at).slice(0, 10);
       const performerUser = iv.performer_user_id ?? null;
@@ -2780,7 +2780,7 @@ export function migrateLegacyDisciplineCases(conn: any, applied: string[]) {
   conn.exec('DROP TABLE IF EXISTS case_reports');
 
   applied.push(
-    `Chuyển mô hình Case Ý thức sang Vi phạm và Biện pháp xử lý: ${violationsMade} vi phạm và ${measuresMade} biện pháp được giữ lại từ ${removed} case Ý thức cũ (${attachmentsKept} tệp/liên kết bằng chứng đi theo)`
+    `Chuyển mô hình Case Ý thức sang Vi phạm và Phương án xử lý: ${violationsMade} vi phạm và ${measuresMade} phương án xử lý được giữ lại từ ${removed} case Ý thức cũ (${attachmentsKept} tệp/liên kết bằng chứng đi theo)`
     + `, ${signalsGone} tín hiệu Ý thức cũ được gỡ; đã bỏ các cột track/episode_no/merge_until/urgency_raised_at và bảng case_reports`,
   );
 }
@@ -2886,7 +2886,7 @@ export function migrateDeleteInvalidViolations(conn: any, applied: string[]) {
       );
   }
   applied.push(
-    `PR-T (rulebook v3): xoá ${rows.length} vi phạm cũ đã "đánh dấu không chính xác" (kèm dòng nối, lịch sử sửa, tệp; mỗi vi phạm một dòng audit). Biện pháp giữ nguyên.`,
+    `PR-T (rulebook v3): xoá ${rows.length} vi phạm cũ đã "đánh dấu không chính xác" (kèm dòng nối, lịch sử sửa, tệp; mỗi vi phạm một dòng audit). Phương án xử lý giữ nguyên.`,
   );
 }
 

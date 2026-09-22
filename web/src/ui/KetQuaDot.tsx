@@ -5,8 +5,11 @@ import { SCORE_CHIP, type ScoreTone } from './ui.tsx';
 const TONE_FAMILY: Record<ProgressTone, ScoreTone> = {
   muted: 'slate', danger: 'rose', info: 'sky', ok: 'emerald',
 };
-/** Mỗi trạng thái có biểu tượng riêng — màu không bao giờ đứng một mình. */
-const TONE_MARK: Record<ProgressTone, string> = { muted: '·', danger: '⚠', info: '✓', ok: '✓' };
+/**
+ * Mỗi trạng thái có biểu tượng riêng — màu không bao giờ đứng một mình. Dấu ⚠ CHỈ khi đợt còn thiếu điểm (tạm thời);
+ * đợt đã đủ điểm mà có SOS thì màu đỏ + dấu ● — không dùng ⚠ đi với chữ "Đã đủ điểm" (chủ sản phẩm 22/09).
+ */
+const TONE_MARK: Record<ProgressTone, string> = { muted: '·', danger: '●', info: '✓', ok: '✓' };
 
 /**
  * MỘT CÂU DUY NHẤT CHO TIẾN ĐỘ MỘT ĐỢT TEST (HE_GIAO_DIEN §5, đóng MT-P01 và MT-P02).
@@ -37,7 +40,7 @@ export function KetQuaDot({ coDiem, yeuCau, dat, sos, phan = 'cau' }: {
 }) {
   const v = attemptProgressView({ scored: coDiem, required: yeuCau, passed: dat, sos });
   const tone: ProgressTone = phan === 'overall' && v.overall === 'incomplete' ? 'muted' : v.tone;
-  const mark = phan === 'overall' ? (v.passBadge ? '✓' : '·') : TONE_MARK[tone];
+  const mark = phan === 'overall' ? (v.passBadge ? '✓' : '·') : tone === 'danger' && v.overall === 'incomplete' ? '⚠' : TONE_MARK[tone];
   return (
     <span
       data-overall={v.overall} data-pass-badge={v.passBadge}

@@ -234,7 +234,7 @@ export function addCoordination(p: Principal, attemptId: number, input: { kind?:
   if (a.status === 'cancelled') throw badRequest('Lượt Mock Test này đã huỷ — không thêm việc phối hợp được.');
   const kind = String(input.kind ?? '');
   if (!(COORDINATION_KINDS as readonly string[]).includes(kind)) {
-    throw badRequest(`Hãy chọn loại việc: ${COORDINATION_KINDS.map((k) => COORDINATION_KIND_LABEL[k]).join(' · ')}.`);
+    throw badRequest(`Chọn loại việc: ${COORDINATION_KINDS.map((k) => COORDINATION_KIND_LABEL[k]).join(' · ')}.`);
   }
   const name = capText(input.customName, 100, 'Tên việc');
   if (kind === 'other' && !name) throw badRequest('Việc loại "Khác" cần ghi tên việc.');
@@ -300,7 +300,7 @@ export function removeCoordination(p: Principal, id: number, input: { reasonCode
   if (r.status !== 'pending') throw badRequest('Chỉ bỏ được việc đang ở trạng thái Cần xử lý — việc đã xong hoặc đã bỏ thì không bỏ nữa.');
   const code = String(input.reasonCode ?? '');
   if (!(COORDINATION_USER_REMOVE_REASONS as readonly string[]).includes(code)) {
-    throw badRequest(`Hãy chọn một lý do: ${COORDINATION_USER_REMOVE_REASONS.map((c) => COORDINATION_REMOVE_REASON_LABEL[c]).join(' · ')}.`);
+    throw badRequest(`Chọn một lý do: ${COORDINATION_USER_REMOVE_REASONS.map((c) => COORDINATION_REMOVE_REASON_LABEL[c]).join(' · ')}.`);
   }
   const text = capText(input.reasonText, 300, 'Lý do');
   if (reasonNeedsText(code) && !text) throw badRequest('Chọn "Khác" thì phải ghi rõ lý do bằng chữ.');

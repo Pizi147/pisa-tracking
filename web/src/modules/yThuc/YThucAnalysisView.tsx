@@ -63,7 +63,7 @@ export function YThucAnalysisView({ branchId }: { branchId: number | null }) {
       </div>
 
       <div>
-        <h3 className="text-sm font-semibold text-slate-200 mt-0 mb-2">Biện pháp đã thực hiện theo loại</h3>
+        <h3 className="text-sm font-semibold text-slate-200 mt-0 mb-2">Phương án xử lý đã thực hiện theo loại</h3>
         <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
           <SoLieu id="bien-phap-da-thuc-hien" giaTri={bienPhapDaThucHien.data?.n ?? 0} phamVi={{ branchId }} rong={bienPhapDaThucHien.data?.empty} extra={period} />
           <SoLieu id="bien-phap-dang-chuan-bi" giaTri={bienPhapDangChuanBi.data?.n ?? 0} phamVi={{ branchId }} rong={bienPhapDangChuanBi.data?.empty} extra={period} />

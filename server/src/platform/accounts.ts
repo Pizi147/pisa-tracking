@@ -39,7 +39,7 @@ export function normalizeEmail(raw: string): string {
 
 export function checkEmail(raw: string): string {
   const email = normalizeEmail(raw);
-  if (!email) throw badRequest('Hãy nhập email.');
+  if (!email) throw badRequest('Nhập email.');
   if (!email.endsWith(EMAIL_SUFFIX)) {
     throw badRequest(`Email của trung tâm phải có đuôi "${EMAIL_SUFFIX}", ví dụ dung${EMAIL_SUFFIX}.`);
   }
@@ -131,15 +131,15 @@ export function register(input: {
   const email = checkEmail(input.email);
   const password = checkPassword(input.password);
   const fullName = String(input.fullName ?? '').trim();
-  if (!fullName) throw badRequest('Hãy nhập họ tên.');
+  if (!fullName) throw badRequest('Nhập họ tên.');
 
   if (conn.prepare('SELECT 1 FROM users WHERE email = ?').get(email)) {
-    throw badRequest('Email này đã có tài khoản. Hãy đăng nhập, hoặc nhờ Quản trị hệ thống đặt lại mật khẩu.');
+    throw badRequest('Email này đã có tài khoản. Đăng nhập, hoặc nhờ Quản trị hệ thống đặt lại mật khẩu.');
   }
   const codes = (input.branches ?? []).map((c) => String(c).trim().toUpperCase()).filter(Boolean);
   const known = new Set((conn.prepare('SELECT code FROM branches').all() as any[]).map((b) => b.code));
   for (const c of codes) if (!known.has(c)) throw badRequest(`Không có chi nhánh mã "${c}".`);
-  if (!codes.length) throw badRequest('Hãy chọn ít nhất một chi nhánh bạn đang hoạt động.');
+  if (!codes.length) throw badRequest('Chọn ít nhất một chi nhánh bạn đang hoạt động.');
 
   return tx(() => {
     const { hash, salt } = hashPassword(password);
@@ -197,7 +197,7 @@ export function approve(p: Principal, userId: number, o: {
   if (!user) throw notFound('Không tìm thấy đăng ký nào đang chờ duyệt.');
   const role = o.role ?? 'teacher';
   const codes = (o.branches ?? JSON.parse(user.requested_branches ?? '[]')).map((c: string) => String(c).toUpperCase());
-  if (!codes.length) throw badRequest('Hãy chọn ít nhất một chi nhánh cho tài khoản này.');
+  if (!codes.length) throw badRequest('Chọn ít nhất một chi nhánh cho tài khoản này.');
 
   return tx(() => {
     grantRole(conn, userId, role, codes);
@@ -218,7 +218,7 @@ export function approve(p: Principal, userId: number, o: {
 export function decline(p: Principal, userId: number, reason: string) {
   require_(p, PERMISSIONS.ADMIN_CONFIG, { anyScope: true }, 'Chỉ Quản trị hệ thống từ chối được đăng ký.');
   const r = String(reason ?? '').trim();
-  if (!r) throw badRequest('Hãy ghi lý do không duyệt — người đăng ký cần biết vì sao.');
+  if (!r) throw badRequest('Ghi lý do không duyệt — người đăng ký cần biết vì sao.');
   const conn = db();
   const user = conn.prepare("SELECT * FROM users WHERE id = ? AND approval_state = 'pending'").get(userId) as any;
   if (!user) throw notFound('Không tìm thấy đăng ký nào đang chờ duyệt.');
@@ -280,11 +280,11 @@ export function createAccount(p: Principal, input: {
   const email = checkEmail(input.email);
   const password = checkPassword(input.password);
   const fullName = String(input.fullName ?? '').trim();
-  if (!fullName) throw badRequest('Hãy nhập họ tên.');
+  if (!fullName) throw badRequest('Nhập họ tên.');
   if (conn.prepare('SELECT 1 FROM users WHERE email = ?').get(email)) {
     throw badRequest('Email này đã có tài khoản.');
   }
-  if (!input.roles?.length) throw badRequest('Hãy cấp ít nhất một vai trò.');
+  if (!input.roles?.length) throw badRequest('Cấp ít nhất một vai trò.');
 
   return tx(() => {
     const { hash, salt } = hashPassword(password);

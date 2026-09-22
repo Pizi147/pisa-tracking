@@ -52,7 +52,7 @@ function SetupHelp({ serverDown, onRetry }: { serverDown: boolean; onRetry: () =
           <pre className="surface-2 mt-1.5 px-3 py-2 rounded text-sky-200 text-xs">npm run seed</pre>
           <div className="text-slate-400 text-xs mt-1">
             Đợi tới khi thấy dòng <span className="text-sky-200">Hoàn tất</span> kèm bảng liệt kê số lượng
-            (khoảng 62 học viên, 9 lớp). Nếu hiện chữ đỏ, hãy chụp màn hình lại.
+            (khoảng 62 học viên, 9 lớp). Nếu hiện chữ đỏ, chụp màn hình lại.
           </div>
         </li>
         <li>

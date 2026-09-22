@@ -62,7 +62,7 @@ export function canEditViolation(p: Principal, v: { student_id: number; reported
 }
 
 /** Khoá gửi lại (idempotency) đã gắn với bản ghi của người khác hoặc của học viên khác — không phát lại, để khỏi lộ dữ liệu ngoài phạm vi. */
-export const KEY_TAKEN_MESSAGE = 'Khoá gửi lại này đã được dùng cho một bản ghi khác — hãy tạo một lần gửi mới.';
+export const KEY_TAKEN_MESSAGE = 'Khoá gửi lại này đã được dùng cho một bản ghi khác — tạo một lần gửi mới.';
 
 export const EDIT_VIOLATION_MESSAGE =
   'Bạn không có quyền sửa vi phạm này — chỉ người ghi (với vi phạm của chính mình), giáo viên chủ nhiệm của lớp '
@@ -97,12 +97,12 @@ export function coordinationOwner(actionId: number) {
 /** Kho tệp: quyền của biện pháp làm chủ. Xem = quyền xem học viên; thêm/gỡ = quyền xử lý Ý thức (B10: vẫn bổ sung được khi đã thực hiện). */
 export function measureOwner(measureId: number) {
   const m = db().prepare('SELECT student_id FROM discipline_measures WHERE id = ?').get(measureId) as any;
-  if (!m) throw notFound('Không tìm thấy biện pháp xử lý');
+  if (!m) throw notFound('Không tìm thấy phương án xử lý');
   return {
     requireView: (p: Principal) => requireViewStudent(p, m.student_id),
     requireEdit: (p: Principal) => {
       requireViewStudent(p, m.student_id);
-      requireManageDiscipline(p, m.student_id, 'Bạn không có quyền đính kèm hoặc gỡ bằng chứng của biện pháp này.');
+      requireManageDiscipline(p, m.student_id, 'Bạn không có quyền đính kèm hoặc gỡ bằng chứng của phương án xử lý này.');
     },
   };
 }

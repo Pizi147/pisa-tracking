@@ -27,7 +27,7 @@ if (major < MIN) {
 if (major > MAX_TESTED) {
   console.warn(
     `[chú ý] Node.js v${process.versions.node} mới hơn phiên bản đã được kiểm thử (v${MAX_TESTED}). ` +
-    `Nếu gặp lỗi lạ, hãy cài Node.js bản LTS từ https://nodejs.org rồi thử lại.\n`,
+    `Nếu gặp lỗi lạ, cài Node.js bản LTS từ https://nodejs.org rồi thử lại.\n`,
   );
 }
 
@@ -39,7 +39,7 @@ try {
 } catch (err) {
   box('Chưa cài được thư viện database', `  Thư viện SQLite (libsql) chưa sẵn sàng nên chưa chạy được.
 
-  Hãy chạy lệnh sau, rồi thử lại:
+  Chạy lệnh sau, rồi thử lại:
 
       npm install
 

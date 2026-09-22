@@ -129,12 +129,12 @@ Phiên bản 1.0 · 21/09/2026 · **Sổ tra cứu, không phải sổ giao vi�
 | Yêu cầu | Tình trạng | Bằng chứng / còn thiếu | PR |
 |---|---|---|---|
 | Giữ hồ sơ A: header không sticky, điểm theo kỳ vọng, case mở tại chỗ | ✅ Đã làm | Quyết định 17/09 giữ hồ sơ A; PR18 + PR-D đã làm | — |
-| Bốn ô đầu đổi thành `Kết quả Test gần nhất / Kỹ năng cần hỗ trợ / Case đang mở / Việc cần làm tiếp` | ❌ Chưa làm | `StudentDetailPage.tsx` → `HeaderStats` còn bộ ô cũ | **PR-Q** |
-| Ô Test ghi đợt và ngày, OVR nếu đủ; Normal ghi đủ/thiếu bao nhiêu môn, **không bịa OVR** | 🟡 Một phần | `<KetQuaDot>` đã có luật và phép kiểm đúng, nhưng `plan.md` 12.7: **chưa màn thật nào dùng nó** | **PR-Q** |
-| Ô việc có động từ và hạn, không dùng một ngày cũ làm nội dung chính | ❌ Chưa làm | — | **PR-Q** |
+| Bốn ô đầu đổi thành `Kết quả Test gần nhất / Kỹ năng cần hỗ trợ / Case đang mở / Việc cần làm tiếp` | ✅ Đã làm | PR-HV (22/09/2026): `HeaderStats` mới, luật ở `shared/domain/hoSoHocVien.ts` | **PR-HV ✅** |
+| Ô Test ghi đợt và ngày, OVR nếu đủ; Normal ghi đủ/thiếu bao nhiêu môn, **không bịa OVR** | ✅ Đã làm | PR-HV: ô `Kết quả Test gần nhất` dùng `<KetQuaDot>` qua `ketQuaTestGanNhat` (Normal: "đạt" = đủ điểm và SOS 0, không Overall) | **PR-HV ✅** |
+| Ô việc có động từ và hạn, không dùng một ngày cũ làm nội dung chính | ✅ Đã làm | PR-HV: `headline.next` câu bắt đầu bằng động từ + `overdue`; ô `Việc cần làm tiếp` giá trị là câu, dòng phụ `hạn/quá hạn dd/mm/yyyy` | **PR-HV ✅** |
 | Bốn ô số phải **bấm được** để mở tab đợt | ❌ Chưa làm | `HeaderStats`/`Stat` là `<div>` tĩnh (`plan.md` 12.5) | **PR-R** |
-| Mỗi PA một khối ba phần: `Nội dung và người làm \| Kết quả gần nhất và ngày \| Việc tiếp theo và hạn` | 🟡 Một phần | PR-D đã gộp thành một khối case, mỗi PA một dòng, ghi kết quả tại dòng. Chưa đúng bố cục ba phần | **PR-Q** |
-| PA đã xong thu gọn phía dưới; không giấu PA đang chạy sau `và một việc nữa` | 🟡 Một phần | Case đóng/mở đã tách; cần kiểm lại ở mức PA | **PR-Q** |
+| Mỗi PA một khối ba phần: `Nội dung và người làm \| Kết quả gần nhất và ngày \| Việc tiếp theo và hạn` | ✅ Đã làm | PR-HV: `KhoiPhuongAn` trong `SkillBoard.tsx` (Q8); 375px xếp dọc | **PR-HV ✅** |
+| PA đã xong thu gọn phía dưới; không giấu PA đang chạy sau `và một việc nữa` | ✅ Đã làm | PR-HV: `TheCase` — PA đang chạy luôn hiện, PA đã xong sau nút `▸ n PA đã xong` (mở sẵn khi case đã hoàn thành) | **PR-HV ✅** |
 | Bỏ khung `CasePanel` thứ hai lặp case | ✅ Đã làm | PR-D (chặng 0, commit `b5a48ad`) đã gộp hai khối lồng nhau | — |
 | Bỏ nút `Mở trang riêng`, **giữ** route `/hoc-thuat/case/:id` | ✅ Đã làm | Quyết định 19/09, đã áp | — |
 | Bỏ ô điểm tự chấm khỏi cập nhật PA (CASE-05) | ✅ Đã làm | `MetricsField` đã gỡ; hình dạng cuối là `ComponentsField` ở màn Hoàn thành case | — |
@@ -219,8 +219,8 @@ Nguồn: `SOS_VA_PHOI_HOP_V3.md` · rule book mục 19 · `plan.md` mục 23.1. 
 | Yêu cầu | Tình trạng | Bằng chứng / còn thiếu | PR |
 |---|---|---|---|
 | Số Phối hợp SOS chia theo `SOS1`/`SOS2`/`SOS3` (§7.6 bảng 3) | ❌ Chưa làm | `phoiHopMetric` đếm gộp mọi mức, chưa cắt theo mức | **PR-P** |
-| Số `Phối hợp SOS {n}` trên nhãn sub-tab ở hồ sơ học viên (§7.3) | ❌ Chưa làm | `StudentYThucSection.tsx` — nhãn sub-tab chưa có số, khác hồ sơ lớp (đã có) | **PR-Q** |
-| Nút `[Mở]`/`[Xem]` biện pháp đã thực hiện ở dòng thời gian học viên (§7.3) | ❌ Chưa làm | `StudentYThucSection.tsx` — chỉ có `Xác nhận` cho biện pháp đang chuẩn bị | **PR-Q** |
+| Số `Phối hợp SOS {n}` trên nhãn sub-tab ở hồ sơ học viên (§7.3) | ✅ Đã làm | PR-HV: `HangTab` với `so = pendingCount` (số lượt chưa hoàn thành, cùng nghĩa hồ sơ lớp) | **PR-HV ✅** |
+| Nút `[Mở]`/`[Xem]` phương án ở dòng thời gian học viên (§7.3) | ✅ Đã làm | PR-HV: `Mở` (ConfirmMeasurePanel) cho PA đang chuẩn bị, `Xem` (`XemPhuongAnPanel.tsx`, chỉ đọc) cho PA đã thực hiện | **PR-HV ✅** |
 | Toast `Hoàn tác` sau khi ghi vi phạm (Y_THUC §7.2) | ❌ Chưa làm | `RecordViolationPanel.tsx` không có link hoàn tác | chưa gắn PR |
 | Máy chủ tự lấy người đang đăng nhập làm `performedBy` khi để trống | 🟡 Một phần | Giao diện vá tạm bằng gửi `session.user.id`; `measures.confirmMeasure` (`measures.ts` ~390) chưa tự mặc định | chưa gắn PR |
 | Lớp dùng kiểm `canRecordViolation` ở `profile.ts` ~891 có thể lệch `activeClassOf` sau khi HV chuyển lớp | 🟡 Một phần | Hai nguồn "lớp đang học" khác nhau (`current` cục bộ vs `activeClassOf` truy vấn mới) | chưa gắn PR |

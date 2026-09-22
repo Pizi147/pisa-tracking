@@ -366,7 +366,7 @@ export function reportIssue(p: Principal, input: {
    */
   const title = (input.title ?? '').trim();
   if (title.length < 6) {
-    throw badRequest('Hãy đặt tên cho case — một câu ngắn nói đúng vấn đề, ví dụ '
+    throw badRequest('Đặt tên cho case — một câu ngắn nói đúng vấn đề, ví dụ '
       + '"Reading: chưa xử lý được dạng True/False/Not Given".');
   }
   const summary = (input.summary ?? '').trim();
@@ -380,7 +380,7 @@ export function reportIssue(p: Principal, input: {
    */
   const topic = (input.topic ?? '').trim() || null;
   if (!topic) {
-    throw badRequest('Hãy chọn kỹ năng: Listening, Reading, Writing Task 1, Writing Task 2 hay Speaking.');
+    throw badRequest('Chọn kỹ năng: Listening, Reading, Writing Task 1, Writing Task 2 hay Speaking.');
   }
   if (!(ENTRY_SKILLS as readonly string[]).includes(topic)) throw badRequest(`Chủ đề không hợp lệ: ${topic}`);
   /* Hai mức, không ba: `attention` (hiện là "Bình thường" từ 21/09/2026 — chỉ đổi chữ, mã giữ nguyên) và `urgent` (Gấp). Không chọn thì là `attention`. */
@@ -422,7 +422,7 @@ export function reportIssue(p: Principal, input: {
    */
   const allowed = issuesForTopic(topic).map((i) => i.code);
   const primaryCode = (input.primaryCode ?? '').trim();
-  if (!primaryCode) throw badRequest('Hãy chọn phân loại vấn đề — đây là căn cứ để tổng hợp về sau.');
+  if (!primaryCode) throw badRequest('Chọn phân loại vấn đề — đây là căn cứ để tổng hợp về sau.');
   if (!allowed.includes(primaryCode)) {
     throw badRequest(`Phân loại "${primaryCode}" không thuộc bộ phân loại của ${topic}.`);
   }
@@ -913,7 +913,7 @@ export function respondToPlan(p: Principal, interventionId: number, input: {
   if (input.decision === 'declined' && !note) {
     throw badRequest('Không duyệt thì phải ghi lý do, để giáo viên biết nên làm gì tiếp.');
   }
-  if (input.decision === 'comment' && !note) throw badRequest('Hãy viết góp ý.');
+  if (input.decision === 'comment' && !note) throw badRequest('Viết góp ý.');
 
   return tx(() => {
     if (input.decision === 'comment') {
@@ -968,9 +968,9 @@ export function respondToPlan(p: Principal, interventionId: number, input: {
     if (iv.recorded_by && iv.recorded_by !== p.userId) {
       notify({
         userId: iv.recorded_by, kind: 'approval',
-        title: input.decision === 'approved' ? 'Phương án của bạn đã được duyệt'
-          : input.decision === 'declined' ? 'Phương án của bạn không được duyệt'
-          : 'Quản lý góp ý về phương án của bạn',
+        title: input.decision === 'approved' ? 'PA học thuật của bạn đã được duyệt'
+          : input.decision === 'declined' ? 'PA học thuật của bạn không được duyệt'
+          : 'Quản lý góp ý về PA học thuật của bạn',
         body: note ?? iv.description ?? null,
         entityType: 'sos_case', entityId: iv.case_id,
         dedupKey: `plan-reply:${interventionId}:${input.decision}`,
@@ -1010,7 +1010,7 @@ export function completeIntervention(p: Principal, interventionId: number, input
     'Bạn không có quyền cập nhật phương án của case này.');
 
   if (iv.preset === 1 && !iv.confirmed_at) {
-    throw badRequest('Phương án điền sẵn này chưa được xác nhận — hãy xác nhận (hoặc sửa / thay) trước khi ghi việc đã làm.');
+    throw badRequest('Phương án điền sẵn này chưa được xác nhận — xác nhận (hoặc sửa / thay) trước khi ghi việc đã làm.');
   }
   if (iv.approval_state === 'pending') {
     throw badRequest('Phương án này đang chờ Quản lý duyệt, chưa ghi là đã làm được.');
@@ -1201,7 +1201,7 @@ export function recordFollowUp(p: Principal, caseId: number, input: {
     const iv = conn.prepare('SELECT case_id, preset, confirmed_at FROM case_interventions WHERE id = ?').get(input.interventionId) as any;
     if (!iv || iv.case_id !== caseId) throw badRequest('Tác động không thuộc case này.');
     if (iv.preset === 1 && !iv.confirmed_at) {
-      throw badRequest('Phương án điền sẵn này chưa được xác nhận — hãy xác nhận (hoặc sửa / thay) trước khi ghi theo dõi.');
+      throw badRequest('Phương án điền sẵn này chưa được xác nhận — xác nhận (hoặc sửa / thay) trước khi ghi theo dõi.');
     }
   }
   // Bằng chứng phải là bài của CHÍNH học viên đó — không gắn nhầm sang em khác.
@@ -1587,7 +1587,7 @@ export type CaseFilters = {
 /** Ba trạng thái loại trừ nhau dùng cho màn tổng hợp của Quản lý. */
 export type CaseState = 'no_plan' | 'working' | 'done';
 export const CASE_STATE_LABEL: Record<CaseState, string> = {
-  no_plan: 'Chưa có phương án hỗ trợ',
+  no_plan: 'Chưa có PA học thuật',
   working: 'Đang xử lý',
   done: 'Đã xong',
 };
@@ -2374,6 +2374,9 @@ function caseCardOf(caseId: number, c: any) {
       ? ((conn.prepare('SELECT full_name FROM users WHERE id = ?').get(c.reported_by) as any)?.full_name ?? null)
       : null,
     backfilledOn: c.origin_kind === 'backfill' && c.created_at ? String(c.created_at).slice(0, 10) : null,
+    /* Số bằng chứng của case (PR-HV) — để nhãn "Bằng chứng (n)" thu gọn mà không phải tải danh sách tệp. */
+    attachmentCount: (conn.prepare("SELECT COUNT(*) n FROM attachments WHERE owner_type = 'sos_case' AND owner_id = ?")
+      .get(caseId) as any).n as number,
   };
 }
 
@@ -2570,7 +2573,7 @@ export function updateResult(p: Principal, interventionId: number, input: {
     'Bạn không có quyền cập nhật kết quả của case này.');
 
   if (iv.preset === 1 && !iv.confirmed_at) {
-    throw badRequest('Phương án điền sẵn này chưa được xác nhận — hãy xác nhận (hoặc sửa / thay) trước khi ghi kết quả.');
+    throw badRequest('Phương án điền sẵn này chưa được xác nhận — xác nhận (hoặc sửa / thay) trước khi ghi kết quả.');
   }
   if (iv.approval_state === 'pending') {
     throw badRequest('Phương án này đang chờ Quản lý duyệt — chu kỳ thực hiện chưa bắt đầu.');

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
-import { Alert, Empty, ExamPlanText, Outcome, Skeleton, Status, Task, Th } from '../../ui/ui.tsx';
+import { Empty, ExamPlanText, Outcome, Skeleton, Status, Task, Th } from '../../ui/ui.tsx';
 import { MissingBadge } from './MissingBadge.tsx';
 import { fmtBand } from '../../lib/format.ts';
 import {
@@ -165,24 +165,13 @@ export function ClassRoster({ classId, studentQuery, onAddStudents }: {
                   <td className="td">
                     <span className="flex flex-wrap items-center gap-1.5">
                       <Link className="link" to={`/hoc-vien/${s.id}`}>{s.fullName}</Link>
-                      <MissingBadge items={s.missing} />
+                      <MissingBadge items={s.missing} gon />
                     </span>
                     {/*
-                      MỘT CÂU DƯỚI TÊN, KHÔNG PHẢI BỐN NHÃN (mục 5.2).
-                      "Đạt kỳ vọng MT2" nói được chính xác căn cứ là gì; "Đúng tiến độ" thì
-                      không — và từ một kết quả đơn lẻ cũng không suy ra được em có kịp thi.
+                      DƯỚI TÊN CHỈ CÒN KẾT LUẬN — một nhãn nhỏ có màu (PR-HV, chủ sản phẩm 22/09): "MTx:", "mới có
+                      điểm k/n kỹ năng", "còn n case đang theo dõi" đã bỏ vì cột Mốc và cột Theo dõi đã nói.
                     */}
-                    {/*
-                      ĐÚNG MỘT CÂU, KHÔNG KÈM NHÃN SOS RIÊNG (mục 5.2).
-                      Câu này đã nói cả mức lẫn căn cứ — "MT2: SOS 3 · còn 5 case đang theo
-                      dõi" — nên một nhãn "SOS 3" ngay bên dưới chỉ là nói lại lần thứ hai.
-                    */}
-                    <span className={`block text-[11px] mt-0.5 ${
-                      s.status === 'active' && s.sosLevel !== null && s.sosLevel > 0
-                        ? 'text-amber-200/80' : 'text-slate-500'}`}>
-                      {s.status !== 'active' ? 'Đã kết thúc'
-                        : s.standingLine ?? 'Chưa có kết quả nào trong lộ trình này'}
-                    </span>
+                    <span className="block mt-1"><KetLuan row={s} /></span>
                   </td>
 
                   {!isRatio && (
@@ -247,6 +236,21 @@ export function ClassRoster({ classId, studentQuery, onAddStudents }: {
   );
 }
 
+/**
+ * KẾT LUẬN DƯỚI TÊN — dựng từ ba trường có sẵn (sosLevel · provisional · status), không gọi thêm máy chủ:
+ *   SOS {n} · tạm thời (vàng) · SOS {n} (vàng) · Đạt kỳ vọng (xám; thêm "· tạm thời" khi mới có một phần điểm)
+ *   · Chưa có kết quả (xám) · Đã kết thúc (xám).
+ */
+function KetLuan({ row }: { row: RosterRow }) {
+  const xam = 'inline-flex items-center rounded-md border px-1.5 py-0.5 text-[10px] font-medium whitespace-nowrap bg-slate-300/8 text-slate-400 border-slate-300/20';
+  const vang = 'inline-flex items-center rounded-md border px-1.5 py-0.5 text-[10px] font-medium whitespace-nowrap bg-amber-300/10 text-amber-200 border-amber-300/30';
+  if (row.status !== 'active') return <span className={xam}>Đã kết thúc</span>;
+  if (row.sosLevel === null) return <span className={xam}>Chưa có kết quả</span>;
+  const tamThoi = row.provisional ? ' · tạm thời' : '';
+  if (row.sosLevel > 0) return <span className={vang}>SOS {row.sosLevel}{tamThoi}</span>;
+  return <span className={xam}>Đạt kỳ vọng{tamThoi}</span>;
+}
+
 /** Các hàng con của một ô, cao bằng nhau để mọi cột thẳng hàng theo cùng một mốc. */
 function Stack({ children, n, align = 'left' }: {
   children: React.ReactNode[]; n: number; align?: 'left' | 'right';
@@ -298,10 +302,9 @@ function Ratio({ cell, faded }: {
  * Bản trước xếp chồng ba bốn nhãn cùng nói một chuyện: "Nhập điểm R", "Quá hạn nhập điểm",
  * "SOS 1", "2 case chưa xong". Nay:
  *
- *   dòng 1  MỘT việc chính, kèm mốc của nó
- *   dòng 2  quá hạn bao lâu · số case đang xử lý — là thông tin CỦA việc đó, không phải
- *           thêm một việc nữa
- *   dòng 3  "+N việc" khi còn việc khác, mở hồ sơ em để xem đủ
+ *   dòng 1  MỘT việc chính, kèm mốc của nó — màu đỏ = quá hạn (không lặp chữ "quá hạn nhập điểm")
+ *   dòng 2  "{n} case" · "{n} case bàn giao" — chỉ số đếm (PR-HV, chủ sản phẩm 22/09: bỏ nhãn "Cần bàn giao" riêng,
+ *           đã gộp vào dòng này)
  */
 function FollowCell({ row }: { row: RosterRow }) {
   if (row.status !== 'active') return <span className="text-xs text-slate-600">—</span>;
@@ -309,8 +312,7 @@ function FollowCell({ row }: { row: RosterRow }) {
   const overdue = row.timeline.some((t) => t.overdueSkills > 0);
   const here = row.openCases - (row.handoverCases ?? 0);
   const bits: string[] = [];
-  if (overdue) bits.push('quá hạn nhập điểm');
-  if (here > 0) bits.push(`${here} case đang xử lý`);
+  if (here > 0) bits.push(`${here} case`);
   if (row.handoverCases > 0) bits.push(`${row.handoverCases} case bàn giao`);
 
   /* Việc chính: nhập điểm kỹ năng của CHÍNH người đang xem, ở mốc đang chờ. */
@@ -330,12 +332,7 @@ function FollowCell({ row }: { row: RosterRow }) {
           ? <Status kind="doing">Đang theo dõi</Status>
           : null}
       {bits.length > 0 && (
-        <span className="text-[11px] text-slate-500">{bits.join(' · ')}</span>
-      )}
-      {row.handoverCases > 0 && (
-        <Alert tone="warn" title="Case còn dở từ lớp hoặc chương trình trước — cần bàn giao">
-          Cần bàn giao
-        </Alert>
+        <span className="text-[11px] text-slate-500" title={row.handoverCases > 0 ? 'Case còn dở từ lớp hoặc chương trình trước — cần bàn giao' : undefined}>{bits.join(' · ')}</span>
       )}
     </span>
   );

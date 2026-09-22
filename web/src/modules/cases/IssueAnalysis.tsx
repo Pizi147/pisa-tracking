@@ -135,7 +135,7 @@ export function IssueAnalysis({ branchId }: { branchId: number | null }) {
                 </Th>
                 <Th align="right" hint="Số case đang mở — một em có thể có hai case song song.">Case đang mở</Th>
                 <Th align="right" hint="Case đang mở mà chưa ai đề ra phương án nào. Đây là việc chặn.">
-                  Thiếu phương án
+                  Thiếu PA học thuật
                 </Th>
                 <Th align="right" hint="Case đang mở và có ít nhất một phương án chưa khép.">Đang hỗ trợ</Th>
                 <Th align="right" hint="Case đang mở nhưng chưa ai chọn phân loại vấn đề — phần lớn là dữ liệu cũ.">
@@ -247,7 +247,7 @@ export function IssueClassTable({ query, category, onOpenCases }: {
               <Th>Phân loại vấn đề</Th>
               <Th align="right" hint="Học viên ĐANG HỌC và có case chưa xong ở phân loại này (hiện trạng). Em chỉ có case đã đóng, hoặc đã kết thúc khoá, không tính ở bảng này. Một em hai case cùng loại vẫn là một em.">HV đang gặp</Th>
               <Th align="right" hint="Số case mang phân loại này; trong ngoặc là số case chưa xong.">Case</Th>
-              <Th align="right" hint="Số phương án đã đề ra cho các case đó. Một case có thể có nhiều phương án.">Phương án</Th>
+              <Th align="right" hint="Số phương án đã đề ra cho các case đó. Một case có thể có nhiều phương án.">PA học thuật</Th>
               <Th align="right" hint="Phương án chưa khép lại — vẫn đang làm hoặc đang chờ kết quả.">Đang theo dõi</Th>
               <Th align="right" hint="Phương án đã kết thúc với kết quả khá hơn hoặc đỡ một phần.">Thành công</Th>
               <Th align="right" hint="Phương án đã kết thúc với kết quả không đổi hoặc tệ hơn.">Không thành công</Th>
@@ -259,7 +259,7 @@ export function IssueClassTable({ query, category, onOpenCases }: {
                 <td className="td">
                   <span className="text-slate-100">{r.label}</span>
                   {r.noPlan > 0 && (
-                    <span className="block text-[10px] text-amber-300">{r.noPlan} case chưa có phương án</span>
+                    <span className="block text-[10px] text-amber-300">{r.noPlan} case chưa có PA học thuật</span>
                   )}
                 </td>
                 {cell(r.students, r.code, r.label)}
@@ -294,20 +294,20 @@ export function IssueClassTable({ query, category, onOpenCases }: {
       <NeedsEvaluation count={data.needsEvaluation.count} url={`/issue-board/needs-evaluation?${query}`} />
 
       <button type="button" className="btn btn-sm btn-ghost" onClick={() => setDetail(!detail)}>
-        {detail ? 'Ẩn hiệu quả từng loại phương án' : 'Xem hiệu quả từng loại phương án'}
+        {detail ? 'Ẩn hiệu quả từng loại PA học thuật' : 'Xem hiệu quả từng loại PA học thuật'}
       </button>
 
       {detail && (
         data.plans.length === 0 ? (
           <p className="text-xs text-slate-500 m-0">
-            Chưa có phương án nào kết thúc ở hạng mục này, nên chưa nói được loại nào hiệu quả.
+            Chưa có PA học thuật nào kết thúc ở hạng mục này, nên chưa nói được loại nào hiệu quả.
           </p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr>
-                  <Th>Loại phương án</Th>
+                  <Th>Loại PA học thuật</Th>
                   <Th align="right" hint="Phương án đã kết thúc với kết quả có tiến bộ rõ.">Có tiến bộ</Th>
                   <Th align="right" hint="Phương án đã kết thúc với kết quả tiến bộ một phần.">Tiến bộ một phần</Th>
                   <Th align="right" hint="Có tiến bộ + tiến bộ một phần, trên số phương án đã kết thúc CÓ kết quả xác định. Chưa đủ dữ liệu không vào mẫu số.">Có cải thiện</Th>
@@ -372,7 +372,7 @@ function CaseDrill({ drill, query, onClose }: {
                     <span className="block text-xs text-slate-300 mt-0.5">{r.title}</span>
                     <span className="block text-[11px] text-slate-500 mt-0.5">
                       {r.issueLabel} · mở {fmtDate(r.detectedAt)} ·{' '}
-                      {r.planCount ? `${r.planCount} phương án` : 'chưa có phương án'}
+                      {r.planCount ? `${r.planCount} PA học thuật` : 'chưa có PA học thuật'}
                     </span>
                   </button>
                 </li>

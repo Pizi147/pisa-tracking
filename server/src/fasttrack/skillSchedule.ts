@@ -529,7 +529,7 @@ export function setSkillWeek(p: Principal, attemptId: number, skill: string, per
     p, { classId: attempt.class_id, studentId: attempt.student_id, skill: row.skill },
     'Bạn không có quyền đổi lịch thi của kỹ năng này.',
   );
-  if (attempt.status === 'cancelled') throw badRequest('Đợt này đã huỷ. Hãy mở lại trước khi đổi lịch.');
+  if (attempt.status === 'cancelled') throw badRequest('Đợt này đã huỷ. Mở lại trước khi đổi lịch.');
   if (!row.required) throw badRequest(`Kỹ năng ${skill} không nằm trong phạm vi yêu cầu của đợt này.`);
 
   const period = db().prepare('SELECT * FROM report_periods WHERE id = ?').get(periodId) as any;
@@ -568,7 +568,7 @@ export function setSkillWeek(p: Principal, attemptId: number, skill: string, per
   if (waiting) {
     throw badRequest(
       `${skill} đang có một đề nghị dời do vắng chờ Quản lý trả lời (hạn ${waiting.decide_by}). `
-      + 'Hãy trả lời đề nghị đó thay vì đổi lịch ở đây — nếu không, em bị dời hai lần.',
+      + 'Trả lời đề nghị đó thay vì đổi lịch ở đây — nếu không, em bị dời hai lần.',
     );
   }
 
@@ -630,7 +630,7 @@ export function setSkillScope(p: Principal, attemptId: number, skill: string, re
     if (row.sit_status === 'absent') {
       throw badRequest(
         `${skill} đã được xác nhận vắng. Không bỏ môn khỏi phạm vi sau khi vắng — `
-        + 'hãy xếp lại lịch hoặc huỷ phần thi, đợt vẫn là đợt chưa đủ kết quả.',
+        + 'xếp lại lịch hoặc huỷ phần thi, đợt vẫn là đợt chưa đủ kết quả.',
       );
     }
     if (!reason?.trim()) throw badRequest('Cần ghi lý do khi bỏ một kỹ năng khỏi phạm vi yêu cầu.');

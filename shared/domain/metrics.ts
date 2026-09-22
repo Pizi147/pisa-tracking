@@ -79,28 +79,28 @@ export const METRICS: readonly ChiSo[] = [
     thoiGian: 'hien-trang', khuTrung: 'COUNT DISTINCT case_id', drilldown: '/metrics/case-cho-xac-dinh-nguyen-nhan',
   },
   {
-    id: 'case-thieu-pa', ten: 'Case thiếu phương án',
+    id: 'case-thieu-pa', ten: 'Case thiếu PA học thuật',
     cauHoi: 'Bao nhiêu case đang mở mà chưa có phương án hợp lệ nào?',
     donVi: 'case',
     tapDuDieuKien: 'Case HỌC THUẬT đang mở, đủ điều kiện cần hỗ trợ, chưa có phương án hợp lệ. Case CHỜ DUYỆT tách riêng, không quy chậm cho giáo viên.',
     thoiGian: 'hien-trang', khuTrung: 'COUNT DISTINCT case_id', drilldown: '/metrics/case-thieu-pa',
   },
   {
-    id: 'pa-can-cap-nhat', ten: 'Phương án cần cập nhật',
+    id: 'pa-can-cap-nhat', ten: 'PA học thuật cần cập nhật',
     cauHoi: 'Bao nhiêu phương án đang theo dõi mà đã quá hạn cập nhật kết quả tuần?',
     donVi: 'phuong-an',
     tapDuDieuKien: 'Phương án đang theo dõi, không chờ duyệt, không phải phương án điền sẵn chưa xác nhận, quá hạn cập nhật tuần. Khác "quá hạn làm" (F11).',
     thoiGian: 'hien-trang', khuTrung: 'COUNT DISTINCT intervention_id', drilldown: '/metrics/pa-can-cap-nhat',
   },
   {
-    id: 'pa-cho-duyet', ten: 'Phương án chờ duyệt',
+    id: 'pa-cho-duyet', ten: 'PA học thuật chờ duyệt',
     cauHoi: 'Bao nhiêu phương án giáo viên đề xuất đang chờ Quản lý trả lời?',
     donVi: 'phuong-an',
     tapDuDieuKien: 'Phương án đang chờ duyệt ở case đang mở trong phạm vi. Đếm phương án — không đếm case, không đếm học viên.',
     thoiGian: 'hien-trang', khuTrung: 'COUNT DISTINCT intervention_id', drilldown: '/metrics/pa-cho-duyet',
   },
   {
-    id: 'pa-co-ket-qua', ten: 'Phương án có kết quả xác định',
+    id: 'pa-co-ket-qua', ten: 'PA học thuật có kết quả xác định',
     cauHoi: 'Bao nhiêu phương án đã kết thúc và có kết quả rõ ràng?',
     donVi: 'phuong-an',
     tapDuDieuKien: 'Phương án đã kết thúc, kết quả thuộc {có tiến bộ, một phần, không tiến bộ, kém hơn}. Một phương án MỘT dòng cuối. Loại case nhập bù.',
@@ -141,9 +141,9 @@ export const METRICS: readonly ChiSo[] = [
   },
   {
     id: 'vi-pham-chua-xu-ly', ten: 'Vi phạm chưa xử lý',
-    cauHoi: 'Hiện có bao nhiêu vi phạm mà chưa nằm trong biện pháp nào?',
+    cauHoi: 'Hiện có bao nhiêu vi phạm mà chưa nằm trong phương án xử lý nào?',
     donVi: 'vi-pham',
-    tapDuDieuKien: 'Vi phạm KHÔNG có dòng nào trong bảng nối với biện pháp — kể cả biện pháp đang chuẩn bị (đã gom vào là GVCN đã bắt tay xử lý). Theo lớp học viên ĐANG học.',
+    tapDuDieuKien: 'Vi phạm KHÔNG có dòng nào trong bảng nối với phương án xử lý — kể cả phương án xử lý đang chuẩn bị (đã gom vào là GVCN đã bắt tay xử lý). Theo lớp học viên ĐANG học.',
     thoiGian: 'hien-trang', khuTrung: 'COUNT DISTINCT violation_id', drilldown: '/metrics/vi-pham-chua-xu-ly',
   },
   {
@@ -161,24 +161,24 @@ export const METRICS: readonly ChiSo[] = [
     thoiGian: 'hien-trang', khuTrung: 'COUNT DISTINCT student_id', drilldown: '/metrics/hv-can-xu-ly',
   },
   {
-    id: 'bien-phap-da-thuc-hien', ten: 'Biện pháp đã thực hiện',
-    cauHoi: 'Có bao nhiêu biện pháp xử lý đã được thực hiện trong kỳ?',
+    id: 'bien-phap-da-thuc-hien', ten: 'Phương án xử lý đã thực hiện',
+    cauHoi: 'Có bao nhiêu phương án xử lý đã được thực hiện trong kỳ?',
     donVi: 'bien-phap',
-    tapDuDieuKien: 'Biện pháp đã thực hiện, đếm theo NGÀY THỰC HIỆN thực tế. Một Report gom n vi phạm là MỘT biện pháp, không phải n. Thuộc lớp của biện pháp.',
+    tapDuDieuKien: 'Phương án xử lý đã thực hiện, đếm theo NGÀY THỰC HIỆN thực tế. Một Report gom n vi phạm là MỘT phương án xử lý, không phải n. Thuộc lớp của phương án xử lý.',
     thoiGian: 'ket-qua-trong-ky', khuTrung: 'COUNT DISTINCT measure_id', drilldown: '/metrics/bien-phap-da-thuc-hien',
   },
   {
-    id: 'bien-phap-dang-chuan-bi', ten: 'Biện pháp đang chuẩn bị',
-    cauHoi: 'Hiện có bao nhiêu biện pháp đã tạo mà chưa thực hiện?',
+    id: 'bien-phap-dang-chuan-bi', ten: 'Phương án xử lý đang chuẩn bị',
+    cauHoi: 'Hiện có bao nhiêu phương án xử lý đã tạo mà chưa thực hiện?',
     donVi: 'bien-phap',
-    tapDuDieuKien: 'Biện pháp ở trạng thái đang chuẩn bị. Biện pháp không có hạn nên không có khái niệm "quá hạn".',
+    tapDuDieuKien: 'Phương án xử lý ở trạng thái đang chuẩn bị. Phương án xử lý không có hạn nên không có khái niệm "quá hạn".',
     thoiGian: 'hien-trang', khuTrung: 'COUNT DISTINCT measure_id', drilldown: '/metrics/bien-phap-dang-chuan-bi',
   },
   {
-    id: 'bien-phap-theo-loai', ten: 'Biện pháp theo loại',
-    cauHoi: 'Trong kỳ đã thực hiện bao nhiêu biện pháp mỗi loại?',
+    id: 'bien-phap-theo-loai', ten: 'Phương án xử lý theo loại',
+    cauHoi: 'Trong kỳ đã thực hiện bao nhiêu phương án xử lý mỗi loại?',
     donVi: 'bien-phap',
-    tapDuDieuKien: 'Biện pháp đã thực hiện trong kỳ, tách CHÍN loại. Ba Thư cảnh cáo lần 1, 2, 3 tách riêng — không gộp thành một dòng. Có thể lọc một loại bằng tham số kind.',
+    tapDuDieuKien: 'Phương án xử lý đã thực hiện trong kỳ, tách CHÍN loại. Ba Thư cảnh cáo lần 1, 2, 3 tách riêng — không gộp thành một dòng. Có thể lọc một loại bằng tham số kind.',
     thoiGian: 'ket-qua-trong-ky', khuTrung: 'COUNT DISTINCT measure_id theo loại', drilldown: '/metrics/bien-phap-theo-loai',
   },
   /*
@@ -213,9 +213,9 @@ export const METRICS: readonly ChiSo[] = [
  * tuyệt đối không cộng vào nhau, nên mỗi con số PHẢI đi kèm đơn vị của nó.
  */
 export const METRIC_UNIT_LABEL: Record<ChiSo['donVi'], string> = {
-  'hoc-vien': 'học viên', case: 'case', 'phuong-an': 'phương án', 'bai-thi': 'bài thi',
+  'hoc-vien': 'học viên', case: 'case', 'phuong-an': 'PA học thuật', 'bai-thi': 'bài thi',
   'tin-hieu': 'tín hiệu', 'dot-test': 'đợt Test', 'nghia-vu': 'nghĩa vụ',
-  'vi-pham': 'vi phạm', 'bien-phap': 'biện pháp', 'luot-sos': 'lượt',
+  'vi-pham': 'vi phạm', 'bien-phap': 'phương án xử lý', 'luot-sos': 'lượt',
 };
 
 /** Tra một chỉ số theo mã; mã lạ trả null (không đoán). */
