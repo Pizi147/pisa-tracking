@@ -79,6 +79,79 @@ export async function runBanChinhTests(t: BanChinhTestKit) {
     assert(/NGUYÊN tên máy chủ/.test(r.stderr) && /pisatracking-demo-/.test(r.stderr), `Thiếu dòng chỉ cách seed database THỬ: ${String(r.stderr).slice(-300)}`);
   });
 
+  console.log('\nPR-Z2 · 1c. `npm run migrate` vào Turso: phải xác nhận, và không tạo tài khoản/mật khẩu mặc định của bản demo');
+  const fs = await import('node:fs');
+  const os = await import('node:os');
+  const { default: Database } = await import('libsql');
+  const { SCHEMA_PATH } = await import('../db.ts');
+  const { DEFAULT_ADMIN_EMAIL } = await import('../platform/accounts.ts');
+  const { choPhepMigrateTurso } = await import('../moiTruong.ts');
+  /** Đường `file:` cho libsql: libsql mở nó như file cục bộ, còn mã của ta coi như ĐANG Ở TURSO (có TURSO_DATABASE_URL) — thử nhánh Turso mà không cần mạng. */
+  const urlFile = (f: string) => 'file:' + f.replace(/\\/g, '/');
+  check('PR-Z2 · migrate vào Turso chỉ khi biến xác nhận là NGUYÊN tên máy chủ (bản chính cũng được — sau deploy phải nâng cấp được schema)', () => {
+    assert(choPhepMigrateTurso(CHINH, 'pisatracking-abc.turso.io') === true, 'đúng nguyên tên máy chủ bản chính → được');
+    assert(choPhepMigrateTurso(CHINH, 'pisatracking') === false, 'một phần tên → không');
+    assert(choPhepMigrateTurso(CHINH, undefined) === false && choPhepMigrateTurso(CHINH, '') === false, 'không có biến → không');
+  });
+  const migrateRunJs = pathMod.join(REPO, 'dist-server/server/src/migrate/run.js');
+  check('PR-Z2 · `npm run migrate` TỪ CHỐI khi trỏ tới Turso mà chưa xác nhận đúng nguyên tên — dừng TRƯỚC khi kết nối, nhắc sao lưu', () => {
+    for (const xacNhan of ['', 'pisatracking', 'turso.io']) {
+      const r = cp.spawnSync(process.execPath, [migrateRunJs], {
+        env: { ...process.env, TURSO_DATABASE_URL: 'libsql://khong-ton-tai.turso.io', TURSO_AUTH_TOKEN: 'x', PISA_CHO_PHEP_MIGRATE_TURSO: xacNhan },
+        encoding: 'utf8', timeout: 60_000,
+      });
+      assert(r.status !== 0 && r.status !== null && /TỪ CHỐI/.test(r.stderr),
+        `PISA_CHO_PHEP_MIGRATE_TURSO="${xacNhan}": mã thoát ${r.status}; stderr: ${String(r.stderr).slice(-300)}`);
+      assert(!/Nâng cấp dữ liệu đang có tại/.test(r.stdout) && !/Hrana|Host not found/i.test(r.stderr),
+        `Đã bắt đầu kết nối trước khi hỏi xác nhận: ${String(r.stdout).slice(-200)} ${String(r.stderr).slice(-200)}`);
+      assert(/sao-luu/.test(r.stderr), 'Thông báo từ chối phải nhắc sao lưu trước (npm run sao-luu)');
+    }
+  });
+  const migrateLibJs = (await import('node:url')).pathToFileURL(pathMod.join(REPO, 'dist-server/server/src/migrate.js')).href;
+  check('PR-Z2 · migrate trên database ở Turso KHÔNG tạo tài khoản quản trị mặc định và KHÔNG gán mật khẩu mặc định cho ai; máy dev (file) giữ hành vi cũ', () => {
+    const dir = fs.mkdtempSync(pathMod.join(os.tmpdir(), 'z2-migrate-'));
+    try {
+      const dung = (ten: string) => {
+        const f = pathMod.join(dir, ten);
+        const c = new Database(f);
+        c.exec(fs.readFileSync(SCHEMA_PATH, 'utf8'));
+        c.prepare(`INSERT INTO users (code, full_name, email, approval_state, status, created_at)
+                   VALUES ('NV001', 'Người cũ', 'nguoi.cu.pisa@gmail.com', 'approved', 'active', '2026-09-01T00:00:00Z')`).run();
+        c.close();
+        return f;
+      };
+      const goiMigrate = (env: Record<string, string>) => cp.spawnSync(process.execPath,
+        ['--input-type=module', '-e', `const m = await import(${JSON.stringify(migrateLibJs)}); m.migrate();`], {
+          env: { ...process.env, TURSO_DATABASE_URL: '', TURSO_AUTH_TOKEN: '', BAN_CHINH: '', ...env }, encoding: 'utf8', timeout: 60_000,
+        });
+      const doc = (f: string) => {
+        const c = new Database(f);
+        try {
+          return {
+            admin: !!c.prepare('SELECT 1 FROM users WHERE email = ?').get(DEFAULT_ADMIN_EMAIL),
+            matKhauCu: (c.prepare("SELECT password_hash FROM users WHERE code = 'NV001'").get() as any).password_hash as string | null,
+            soNguoi: (c.prepare('SELECT COUNT(*) n FROM users').get() as any).n as number,
+          };
+        } finally { c.close(); }
+      };
+
+      const fTurso = dung('turso.sqlite');
+      const r = goiMigrate({ TURSO_DATABASE_URL: urlFile(fTurso), TURSO_AUTH_TOKEN: 'x' });
+      assert(r.status === 0, `migrate (nhánh Turso) lỗi: ${String(r.stderr).slice(-300)}`);
+      const t = doc(fTurso);
+      assert(!t.admin && t.soNguoi === 1, `Turso: không được tạo tài khoản quản trị mặc định (có admin: ${t.admin}, số người ${t.soNguoi})`);
+      assert(!t.matKhauCu, 'Turso: không được gán mật khẩu mặc định cho tài khoản chưa có mật khẩu');
+      assert(/Turso: bỏ qua tài khoản\/mật khẩu mặc định của bản demo/.test(r.stdout), `Phải in dòng báo đã bỏ qua, nhận: ${String(r.stdout).slice(-300)}`);
+
+      /* Đối chứng: đúng database đó, chạy như máy dev → hành vi cũ. Chứng minh database thử ở trên THẬT SỰ đi qua bước tài khoản. */
+      const fFile = dung('file.sqlite');
+      const r2 = goiMigrate({ PISA_DB: fFile });
+      assert(r2.status === 0, `migrate (máy dev) lỗi: ${String(r2.stderr).slice(-300)}`);
+      const d = doc(fFile);
+      assert(d.admin && !!d.matKhauCu, 'Máy dev: migrate vẫn tạo quản trị mặc định và đặt mật khẩu cho tài khoản cũ như trước');
+    } finally { try { fs.rmSync(dir, { recursive: true, force: true }); } catch { /* Windows còn giữ file — bỏ qua dọn dẹp */ } }
+  });
+
   console.log('\nPR-Z2 · 2. Kho tệp');
   const { datKhoTepChoKiemThu } = await import('../platform/khoTep.ts');
   const khoGia = new Map<string, Buffer>();

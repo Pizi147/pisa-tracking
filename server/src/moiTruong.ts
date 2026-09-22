@@ -47,3 +47,12 @@ export function choPhepSeedTurso(url: string, choPhep: string | undefined): bool
   const ten = tenMayChuDb(url);
   return !!ten && !!choPhep && ten === choPhep.trim().toLowerCase();
 }
+
+/**
+ * Cho `npm run migrate` (nâng cấp schema, GIỮ dữ liệu) chạy vào Turso? Cùng luật "nguyên tên máy chủ" như seed, nhưng
+ * KHÔNG chặn tên bản chính — sau mỗi bản mới cần đổi schema, chính database bản chính phải nâng cấp được (có sao lưu trước).
+ */
+export function choPhepMigrateTurso(url: string, choPhep: string | undefined): boolean {
+  const ten = tenMayChuDb(url);
+  return !!ten && !!choPhep && ten === choPhep.trim().toLowerCase();
+}

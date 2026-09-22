@@ -1,4 +1,4 @@
-import { db, isInitialised } from './db.ts';
+import { db, isInitialised, laDbTuXa } from './db.ts';
 import { addDays, nowIso } from './util.ts';
 import { demoToday } from './demoConfig.ts';
 import crypto from 'node:crypto';
@@ -1206,6 +1206,17 @@ function migrateAccounts(conn: any, applied: string[]) {
     used.add(`${local}${EMAIL_SUFFIX}`);
     return `${local}${EMAIL_SUFFIX}`;
   };
+
+  /*
+   * TURSO (bản chính, PR-Z2 22/09): hai việc dưới đây là của BẢN DEMO — gán mật khẩu mặc định ai cũng biết cho tài khoản
+   * chưa có mật khẩu, và tạo tài khoản quản trị mặc định với mật khẩu đó. Trên dữ liệu thật đó là cửa sau, nên bỏ qua cả
+   * hai. Tài khoản thật luôn được tạo kèm mật khẩu (`createAccount`, `register`, `init-ban-chinh`).
+   */
+  if (laDbTuXa()) {
+    console.log('[migrate] Turso: bỏ qua tài khoản/mật khẩu mặc định của bản demo.');
+    if (routes) applied.push(`Tài khoản và đăng nhập: nạp ${routes} lộ trình`);
+    return;
+  }
 
   let fixed = 0;
   for (const u of conn.prepare('SELECT id, full_name, email, password_hash FROM users').all() as any[]) {

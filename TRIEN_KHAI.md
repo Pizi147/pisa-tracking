@@ -330,6 +330,40 @@ $env:NETLIFY_AUTH_TOKEN="<Personal access token>"
 | Lỡ tay làm hỏng dữ liệu | **Đừng làm gì thêm.** Gửi session thiết kế tên file sao lưu gần nhất ở Drive |
 | Netlify / Turso gửi email "sắp hết hạn mức miễn phí" | Gửi session thiết kế. Nâng gói là đổi gói, **không** phải chuyển dữ liệu |
 
+### 11.1. Nâng cấp database bản chính khi có bản mới cần
+
+**Chỉ làm khi session code yêu cầu** (nó sẽ nói rõ "bản này cần chạy migrate"). Bình thường deploy **không** cần bước này.
+Lệnh nâng cấp **giữ nguyên dữ liệu**, nhưng vẫn phải sao lưu trước. Mở PowerShell đúng thư mục, làm mục 0.4, rồi làm
+đúng ba bước (copy vào Notepad, thay `<...>`, dán sang):
+
+**Bước 1 — sao lưu trước** (như mục 10):
+
+```powershell
+$env:TURSO_DATABASE_URL="<URL database CHÍNH>"
+$env:TURSO_AUTH_TOKEN="<Token database CHÍNH>"
+$env:BACKUP_DIR="G:\My Drive\pisa-sao-luu"
+npm run sao-luu
+```
+
+Chờ tới khi báo sao lưu xong. Báo lỗi → **dừng**, không làm bước 2.
+
+**Bước 2 — xác nhận đúng database** (gõ tên máy chủ = URL database CHÍNH **bỏ chữ `libsql://` ở đầu**):
+
+```powershell
+$env:PISA_CHO_PHEP_MIGRATE_TURSO="<URL database CHÍNH, bỏ libsql:// ở đầu>"
+```
+
+> Ví dụ: URL là `libsql://pisatracking-xxx.aws-us-east-2.turso.io` → gõ `pisatracking-xxx.aws-us-east-2.turso.io`.
+
+**Bước 3 — nâng cấp:**
+
+```powershell
+npm run migrate
+```
+
+**Kết quả đúng:** có dòng `Turso: bỏ qua tài khoản/mật khẩu mặc định của bản demo` và dòng cuối `Hoàn tất` hoặc
+`Không có gì để nâng cấp`. Lệnh báo `TỪ CHỐI` → bước 2 gõ chưa đúng tên. Xong thì **đóng cửa sổ PowerShell**.
+
 ---
 
 ## 12. Bảng tra — mọi tên biến dùng trong file này
@@ -345,4 +379,5 @@ $env:NETLIFY_AUTH_TOKEN="<Personal access token>"
 | `BACKUP_DIR` | PowerShell, khi sao lưu | Thư mục Drive | 10 |
 | `NETLIFY_SITE_ID` | PowerShell, khi sao lưu (tuỳ chọn) | Site ID | 10 |
 | `NETLIFY_AUTH_TOKEN` | PowerShell, khi sao lưu (tuỳ chọn) | Personal access token | 10 |
+| `PISA_CHO_PHEP_MIGRATE_TURSO` | PowerShell, chỉ khi session code yêu cầu nâng cấp database | Tên máy chủ database (URL bỏ `libsql://`) | 11.1 |
 | `VITE_BAN_CHINH` | Đã có sẵn trong file `netlify.toml` — **bạn không cần đặt** | `1` | — |
