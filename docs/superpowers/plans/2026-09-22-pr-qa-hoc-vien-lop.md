@@ -1859,7 +1859,7 @@ Web không có bộ kiểm thử: luật đã kiểm ở Task 3; task này kiể
   `useThaoTacDongHocVien({ laLopThuong, quyen, onDone }) → { mucCua(d): MucMenu[]; panels: ReactNode }`,
   `nhapDiemCua(classId, laLopThuong, timeline) → DongChoMenu['nhapDiem']`
 
-- [ ] **Step 1: `web/src/ui/MenuDong.tsx`:**
+- [x] **Step 1: `web/src/ui/MenuDong.tsx`:**
 
 ```tsx
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
@@ -1942,7 +1942,7 @@ export function MenuDong({ muc, nhan = 'Thêm thao tác', bieuTuong = '⋯' }: {
 }
 ```
 
-- [ ] **Step 2: `web/src/modules/classes/TenGiaoVien.tsx`:**
+- [x] **Step 2: `web/src/modules/classes/TenGiaoVien.tsx`:**
 
 ```tsx
 import { Link } from 'react-router-dom';
@@ -1962,7 +1962,7 @@ export function TenGiaoVien({ id, ten }: { id: number | null; ten: string }) {
 }
 ```
 
-- [ ] **Step 3: `web/src/modules/classes/CanhBaoYThuc.tsx`:**
+- [x] **Step 3: `web/src/modules/classes/CanhBaoYThuc.tsx`:**
 
 ```tsx
 /**
@@ -1980,7 +1980,7 @@ export function CanhBaoYThuc({ cb }: { cb: { count: number; oldestAgeDays: numbe
 }
 ```
 
-- [ ] **Step 4: `web/src/modules/classes/thaoTacDongHocVien.tsx`:**
+- [x] **Step 4: `web/src/modules/classes/thaoTacDongHocVien.tsx`:**
 
 ```tsx
 import { useState, type ReactNode } from 'react';
@@ -2044,7 +2044,7 @@ export function useThaoTacDongHocVien({ laLopThuong, quyen, onDone }: {
 }
 ```
 
-- [ ] **Step 5: `MissingBadge.tsx`** — bỏ `import { Alert } from '../../ui/ui.tsx';` (dòng 2) và thay dòng 32
+- [x] **Step 5: `MissingBadge.tsx`** — bỏ `import { Alert } from '../../ui/ui.tsx';` (dòng 2) và thay dòng 32
   `<Alert tone="warn">{gon ? items.length : `Thiếu ${items.length} thông tin`}</Alert>` bằng:
 
 ```tsx
@@ -2055,9 +2055,9 @@ export function useThaoTacDongHocVien({ laLopThuong, quyen, onDone }: {
 ```
   Sửa chú thích prop `gon` (dòng 17) thành: `/** Dạng gọn cho bảng lớp: "Thiếu {n}"; rê chuột thấy danh sách, bấm mở popover như thường. */`
 
-- [ ] **Step 6:** `npm run typecheck` xanh. (QuickReport/RecordViolationPanel với `open=false` không vẽ gì — cùng cách
+- [x] **Step 6:** `npm run typecheck` xanh. (QuickReport/RecordViolationPanel với `open=false` không vẽ gì — cùng cách
   `ClassOverviewPage`/`ClassYThucCard` đang dùng.)
-- [ ] **Step 7: Commit.**
+- [x] **Step 7: Commit.**
 
 ```bash
 git add web/src/ui/MenuDong.tsx web/src/modules/classes/TenGiaoVien.tsx web/src/modules/classes/CanhBaoYThuc.tsx web/src/modules/classes/thaoTacDongHocVien.tsx web/src/modules/students/MissingBadge.tsx
