@@ -108,3 +108,53 @@ export function tabCongViecTuDuong(seg: string | undefined): TabCongViec | null 
 // ---------------------------------------------------------------- Tổng quan
 
 export const TAB_TONG_QUAN_LABEL: Record<TabTongQuan, string> = { 'tong-quan': 'Tổng quan', 'phan-tich': 'Phân tích' };
+
+// ---------------------------------------------------------------- Đường dẫn cũ
+
+const voiThamSo = (path: string, q: URLSearchParams) => {
+  const s = q.toString();
+  return s ? `${path}?${s}` : path;
+};
+
+/**
+ * ĐƯỜNG DẪN CŨ → MỚI (O5, O7). Link đã lưu, link trong thông báo và link máy chủ sinh ra vẫn mở đúng chỗ.
+ * Trả null khi đường dẫn đang dùng được. Mọi đích trả về đều không bị chuyển tiếp lần nữa (phép kiểm PR-O khẳng định).
+ */
+export function duongMoi(pathname: string, search: string): string | null {
+  const p = pathname.length > 1 ? pathname.replace(/\/+$/, '') : pathname;
+  const q = new URLSearchParams(search.startsWith('?') ? search.slice(1) : search);
+
+  if (p === '/tong-quan') return voiThamSo('/', q);
+  if (p === '/' && q.has('tab')) {
+    const tab = q.get('tab');
+    q.delete('tab');
+    return voiThamSo(tab === 'tinh-hinh' ? '/phan-tich' : '/', q);
+  }
+  if (p === '/hoc-thuat') return voiThamSo('/phan-tich', q);
+  if (p === '/tong-hop-tuan') {
+    const cn = q.get('branchId');
+    const moi = new URLSearchParams({ xem: 'tuan' });
+    if (cn) moi.set('cn', cn);
+    return voiThamSo('/phan-tich', moi);
+  }
+  if (p === '/tien-trinh' || p === '/hop-tuan') return voiThamSo('/cong-viec/bao-cao', q);
+  if (p === '/tien-do-cong-viec') {
+    const donVi = q.get('tab') === 'don-vi';
+    q.delete('tab');
+    const viec = q.get('viec');
+    if (viec) { q.delete('viec'); if (!q.has('open')) q.set('open', viec); }
+    return voiThamSo(donVi ? '/cong-viec/bao-cao' : '/cong-viec/van-hanh', q);
+  }
+  if (p === '/hoc-vien') {
+    const view = q.get('view');
+    if (view === 'my_scores' || view === 'no_plan') {
+      q.delete('view');
+      return voiThamSo(view === 'my_scores' ? DUONG_TAB_TEST['can-cham'] : DUONG_TAB_TEST['ke-hoach'], q);
+    }
+    return null;
+  }
+  if (p === '/mock-test') return '/hoc-vien';
+  const lop = /^\/mock-test\/lop\/([^/]+)$/.exec(p);
+  if (lop) return voiThamSo(`/nhap-diem/${lop[1]}`, q);
+  return null;
+}

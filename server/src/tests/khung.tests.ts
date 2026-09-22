@@ -85,4 +85,35 @@ export async function runKhungTests(t: YThucTestKit) {
     assert(d.DUONG_TAB_CONG_VIEC['ho-tro'] === '/cong-viec' && d.DUONG_TAB_CONG_VIEC['van-hanh'] === '/cong-viec/van-hanh', 'Đường dẫn tab');
     assert(Object.values(d.TAB_TONG_QUAN_LABEL).join(',') === 'Tổng quan,Phân tích', 'Chữ tab Tổng quan (O3)');
   });
+
+  check('PR-O · O5/O7 Mọi đường dẫn cũ về đúng chỗ, giữ bộ lọc, không vòng lặp', () => {
+    const cases: Array<[string, string, string | null]> = [
+      ['/tong-quan', '?cn=4', '/?cn=4'],
+      ['/', '?tab=tinh-hinh&cn=2&hang-doi=no_plan', '/phan-tich?cn=2&hang-doi=no_plan'],
+      ['/', '?tab=bao-cao', '/'],
+      ['/', '?cn=2', null], ['/', '', null],
+      ['/hoc-thuat', '', '/phan-tich'], ['/hoc-thuat/', '?goc=y-thuc&cn=2', '/phan-tich?goc=y-thuc&cn=2'],
+      ['/hoc-thuat/case/5', '', null],
+      ['/tong-hop-tuan', '?branchId=3', '/phan-tich?xem=tuan&cn=3'], ['/tong-hop-tuan', '', '/phan-tich?xem=tuan'],
+      ['/tien-trinh', '?periodId=9', '/cong-viec/bao-cao?periodId=9'], ['/hop-tuan', '', '/cong-viec/bao-cao'],
+      ['/tien-do-cong-viec', '', '/cong-viec/van-hanh'],
+      ['/tien-do-cong-viec', '?viec=12', '/cong-viec/van-hanh?open=12'],
+      ['/tien-do-cong-viec', '?open=7&tao=1&nhom=tutor', '/cong-viec/van-hanh?open=7&tao=1&nhom=tutor'],
+      ['/tien-do-cong-viec', '?tab=don-vi&cn=2', '/cong-viec/bao-cao?cn=2'],
+      ['/hoc-vien', '?view=my_scores&classId=7&scope=mine', '/test/can-cham?classId=7&scope=mine'],
+      ['/hoc-vien', 'view=no_plan', '/test/ke-hoach'],
+      ['/hoc-vien', '?view=sos', null], ['/hoc-vien', '', null], ['/hoc-vien/12', '?view=my_scores', null],
+      ['/mock-test', '?x=1', '/hoc-vien'], ['/mock-test/lop/12', '?a=1', '/nhap-diem/12?a=1'], ['/mock-test/33', '', null],
+      ['/test', '', null], ['/cong-viec/bao-cao', '?periodId=9', null], ['/phan-tich', '?xem=tuan', null],
+    ];
+    for (const [p, s, want] of cases) {
+      const got = d.duongMoi(p, s);
+      assert(got === want, `${p}${s} → ${got}, cần ${want}`);
+      if (got) {
+        const [gp, gs = ''] = got.split('?');
+        assert(d.duongMoi(gp, gs) === null, `Vòng lặp: ${got} lại bị chuyển tiếp`);
+        assert(d.khuVucCuaDuong(gp) !== null, `Đích ${gp} không thuộc khu vực nào`);
+      }
+    }
+  });
 }
