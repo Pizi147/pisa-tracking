@@ -328,15 +328,23 @@ export async function runTongQuanTests(t: YThucTestKit) {
   };
 
   check('PR-Pa · Bảng chi nhánh: bấm MỌI ô ra đúng số dòng đã ghi (G-10); hàng tổng là tập gốc của chỉ số', () => {
-    moiO(P.admin, { ct: 'ca-hai' }, (khoa, cot, o) => {
+    const b = moiO(P.admin, { ct: 'ca-hai' }, (khoa, cot, o) => {
       const r = bang.oBangChiNhanh(P.admin, { ct: 'ca-hai', cot, khoa });
       eq(r.rows.length, o.n, `Ô ${khoa}/${cot}`);
     });
+    assert(b.hang.length > 0, 'Bảng không có hàng nào — phép kiểm vô nghĩa');
     const t = bang.oBangChiNhanh(P.admin, { ct: 'ca-hai', cot: 'caseMo', khoa: 'tong' });
+    assert(t.rows.length > 0, 'Tổng Case mở rỗng — phép kiểm vô nghĩa');
     eq(t.rows.map((x: any) => x.id).sort((a: number, b: number) => a - b), ids('case-mo').slice().sort((a, b) => a - b), 'Tổng Case mở = case-mo');
-    const dd = bang.bangChiNhanh(P.admin, { ct: 'ca-hai' }).tong.duDuLieu;
+    const dd = b.tong.duDuLieu;
     const phu = metricsSvc.metricSet(P.admin, 'do-phu-danh-gia', {});
     eq([dd.n, dd.mau], [phu.numeratorIds.length, phu.n], 'Đủ dữ liệu = tử số / mẫu số của do-phu-danh-gia');
+    const idsO = (cot: string) => new Set<number>(bang.oBangChiNhanh(P.admin, { ct: 'ca-hai', cot, khoa: 'tong' }).rows.map((r: any) => r.id));
+    const hv = idsO('hocVien');
+    for (const cot of ['duoiKyVong', 'sos', 'duDuLieu']) {
+      const lot = [...idsO(cot)].filter((id) => !hv.has(id));
+      assert(lot.length === 0, `Tổng ${cot} có em ngoài tổng Học viên: ${JSON.stringify(lot)}`);
+    }
   });
 
   check('PR-Pa · Bảng chi nhánh: Quản trị không chọn chi nhánh → hàng chi nhánh mở xuống lớp; Quản lý một chi nhánh → bảng lớp luôn', () => {

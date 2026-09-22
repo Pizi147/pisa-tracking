@@ -5,6 +5,8 @@ import {
 import { forbidden, badRequest } from '../util.ts';
 import { scopeFor, type Principal } from '../permissions.ts';
 import { listCases } from '../cases/cases.ts';
+import { studentsInScope } from './danhGia.ts';
+import { locTheoChuongTrinh } from './chuongTrinh.ts';
 import { metricSet, rowsFor, type MetricRow } from './metrics.ts';
 
 /**
@@ -14,6 +16,9 @@ import { metricSet, rowsFor, type MetricRow } from './metrics.ts';
  * KHÔNG ĐẾM LẠI. Năm tập gốc lấy từ `metricSet` (cùng hàm, cùng quyền, cùng chương trình với ô số); bảng chỉ CHIA chúng về
  * lớp: học viên theo lớp ĐANG học, Case theo lớp nơi em đang được chăm sóc (`homeClassId`, như `branchpulse.ts`). Hàng tổng
  * là TẬP GỐC, không phải tổng các hàng — một em ở hai lớp có mặt ở cả hai hàng nhưng một lần ở tổng (HĐSL luật 4).
+ * Học viên ở hàng tổng = DÂN SỐ của các chỉ số (`studentsInScope`, cùng bộ lọc chương trình), nên mọi cột học viên của
+ * hàng tổng đều là tập con của nó; em mà lớp đang học không còn active có ở hàng tổng nhưng không ở hàng nào.
+ * Case mà lớp đang học không nằm trong danh sách lớp của bảng (đã đóng, hoặc khác chương trình đang lọc) chỉ có ở hàng tổng.
  * Mỗi ô mở được danh sách qua `oBangChiNhanh`, tính lại bằng CHÍNH hàm này — số và danh sách không thể lệch.
  */
 export type OBang = { n: number; mau?: number };
@@ -82,12 +87,13 @@ function tinh(p: Principal, f: { branchId?: number | null; ct: ChuongTrinh }) {
     }
   }
   const lopCuaCase = new Map<number, number | null>();
-  for (const c of listCases(p, { branchId: branchId ?? undefined }).rows as any[]) lopCuaCase.set(c.id, (c.homeClassId ?? c.classId) ?? null);
+  for (const c of listCases(p, { branchId: branchId ?? undefined }).rows as any[]) lopCuaCase.set(c.id, c.homeClassId ?? null);
   for (const id of caseMo.ids) { const l = lopCuaCase.get(id); if (l && tapLop.has(l)) tapLop.get(l)!.caseMo.add(id); }
   for (const id of thieu.ids) { const l = lopCuaCase.get(id); if (l && tapLop.has(l)) tapLop.get(l)!.thieuPa.add(id); }
 
   const tongTap = tapRong();
-  for (const t of tapLop.values()) for (const sid of t.hocVien) tongTap.hocVien.add(sid);
+  const danSo = new Set(locTheoChuongTrinh('hoc-vien', studentsInScope(p, branchId), f.ct));
+  danSo.forEach((x) => tongTap.hocVien.add(x));
   sDuoi.forEach((x) => tongTap.duoiKyVong.add(x)); sSos.forEach((x) => tongTap.sos.add(x));
   caseMo.ids.forEach((x) => tongTap.caseMo.add(x)); thieu.ids.forEach((x) => tongTap.thieuPa.add(x));
   sDu.forEach((x) => tongTap.duDuLieu.add(x)); sMau.forEach((x) => tongTap.duDuLieuMau.add(x));
