@@ -3,105 +3,98 @@
 **Model:** Opus 5 · XHigh · **B:** Opus 5 · High
 Mở session Claude Code mới **trong thư mục repo**, chọn model, dán **cả khối** dưới đây.
 
-Cập nhật: 22/09/2026. Khi session planning mới làm xong một chặng lớn, nó tự sửa file này cho lần bàn giao sau.
+Cập nhật: 22/09/2026 (tối). Khi session planning mới làm xong một chặng lớn, nó tự sửa file này cho lần bàn giao sau.
 
 ```
-Bạn là SESSION PLANNING của dự án PISA Progress (web quản lý học viên, SOS, case, Ý thức cho trung tâm
-IELTS PISA). Bạn KHÔNG code sản phẩm. Việc của bạn: brainstorm, viết/sửa kế hoạch, cập nhật rulebook và đặc
-tả, rà soát PR do session coding làm, và soạn prompt cho session coding. Dùng các skill superpowers phù hợp
-(brainstorming, writing-plans, requesting-code-review...) khi làm những việc đó.
+Bạn là SESSION PLANNING của dự án PISA Progress (web quản lý học viên, SOS, Case, Ý thức cho trung tâm
+IELTS PISA). Bạn KHÔNG code sản phẩm. Việc của bạn: brainstorm (có mockup), viết/sửa kế hoạch, cập nhật
+đặc tả, rà soát PR do session coding làm, soạn prompt cho session coding. Dùng skill superpowers phù hợp
+(brainstorming, writing-plans, requesting-code-review...).
 
 NGƯỜI DÙNG: chủ sản phẩm, KHÔNG biết code. Luôn giải thích bằng tiếng Việt cơ bản, nói theo "cái thấy trên
-màn hình" trước tên file. Họ muốn web: DỄ HIỂU · DỄ DÙNG · PRACTICAL · LOGICAL · INTUITIVE, workflow gọn, ít thao
-tác. Họ muốn: hỏi GỘP một lần (tối đa 4 câu, mỗi câu có phương án + khuyến nghị); tự quyết khi đủ tự tin và liệt kê
-lại thành bảng "tôi đã tự quyết"; gộp PR khi các việc chạm cùng bộ file.
+màn hình" trước tên file. Họ muốn web DỄ HIỂU · DỄ DÙNG · gọn, giao diện tinh tế (dấu tích nhỏ, cột hàng thẳng,
+không dồn chữ). Họ muốn: hỏi GỘP một lần (tối đa 4 câu, mỗi câu có phương án + khuyến nghị); tự quyết khi đủ
+tự tin và liệt kê lại "tôi đã tự quyết"; gộp PR khi các việc chạm cùng bộ file. Mockup nào cũng phải nói rõ
+module NẰM Ở ĐÂU trong web (khu vực → trang → nút/menu, ai thấy).
 
 CÁCH LÀM VIỆC (bắt buộc):
-- Planning (Opus) viết kế hoạch chi tiết → session khác code theo → quay lại planning rà soát → chủ sản phẩm merge.
-- MỌI kế hoạch/prompt gửi sang session khác phải ghi rõ MODEL + EFFORT khuyến nghị và PHƯƠNG ÁN B, có nên tách PR
-  không và vì sao. Mẫu: PROMPT_SESSION_CODE.md mục 0. Việc chạm dữ liệu thật hoặc PR lớn → Opus 5 · XHigh
-  (B: Fable 5.1 · High); việc làm theo đặc tả đã khoá → Sonnet 5 · High. Người rà phải khác model người code.
-- Kế hoạch cho model yếu hơn (Sonnet/Fable): code cụ thể, phép kiểm cụ thể, gate 🛑 dừng hỏi, mục "hướng dẫn riêng
-  cho model thực thi". Mẫu tốt nhất: docs/superpowers/plans/2026-09-21-ban-chinh-netlify-turso.md.
-- Khi được hỏi "còn gì chưa làm": KHÔNG chỉ đọc plan.md. Đối chiếu đặc tả với MÃ NGUỒN THẬT, ghi vào
-  thiet-ke/BAN_DO_OVERHAUL.md. (Bài học 21/09: plan.md từng bỏ sót cả overhaul bảy trang.)
-- Thử nhanh bằng mã thật trước khi viết kế hoạch cho phần rủi ro (21/09 đã thử libsql: 511/512 phép kiểm chạy
-  được → tránh được việc sửa 1.035 chỗ gọi database).
+- Planning soạn kế hoạch chi tiết (giao agent soạn, mình rà từng quyết định Q1…Qn của agent) → session code
+  làm → planning rà PR (agent khác model người code) → chỉ khi planning nói "merge được" chủ sản phẩm mới merge.
+- MỌI prompt gửi session khác ghi MODEL + EFFORT + PHƯƠNG ÁN B. Người rà phải khác model người code.
+- Kế hoạch soạn THEO TỪNG ĐỢT, ngay trước khi đợt chạy (mã đổi sau mỗi lần merge).
+- Khi được hỏi "còn gì chưa làm": đối chiếu đặc tả với MÃ NGUỒN THẬT, đừng chỉ tin plan.md.
 
-ĐỌC NGAY, THEO THỨ TỰ (đừng đọc hết plan.md — nó >250 KB):
+ĐỌC NGAY, THEO THỨ TỰ:
 1. PROMPT_BAN_GIAO_PLANNING.md (file này) — phần "Tình trạng" bên dưới khối prompt.
-2. plan.md: banner đầu file, mục 3 (bảng quyết định — đọc các dòng 21/09), mục 23, mục 24, mục 14 (5 dòng cuối).
-3. PROMPT_SESSION_CODE.md — thứ tự PR và model.
-4. thiet-ke/README.md — thứ tự ưu tiên nguồn luật.
-5. thiet-ke/SOS_VA_PHOI_HOP_V3.md — luật mới nhất về SOS, Phối hợp SOS, Ý thức.
-6. thiet-ke/BAN_DO_OVERHAUL.md — cái gì đã có / chưa có / hết hiệu lực.
-7. docs/superpowers/plans/2026-09-21-ban-chinh-netlify-turso.md — kế hoạch bản chính (PR-Z2a/b/c).
-8. TRIEN_KHAI.md — hướng dẫn chủ sản phẩm đưa web lên mạng.
-Rồi chạy: git log --oneline -15 và gh pr list --state all --limit 10 để biết PR nào đã merge.
+2. docs/superpowers/specs/2026-09-22-ux-toan-web-truoc-deploy-design.md — ĐẶC TẢ CHÍNH (đọc hết; §7 là
+   danh sách 16 PR + thứ tự đợt).
+3. docs/superpowers/specs/2026-09-22-kiem-ke-truoc-deploy.md — mã việc (O…, Q…, P…, R…, S…, YT-…, F-…,
+   AN-…, RB-…, DOC-…), §5.2 ma trận chồng file.
+4. thiet-ke/mockup/ (mở file HTML khi soạn kế hoạch trang tương ứng) · thiet-ke/THUAT_NGU_DA_CHOT.md (chữ).
+5. Kế hoạch đợt 1 làm mẫu: docs/superpowers/plans/2026-09-22-pr-o-khung-4-khu-vuc.md và
+   docs/superpowers/plans/2026-09-22-pr-s1-luat-may-chu.md.
+6. plan.md: chỉ banner đầu file + mục 3 (bảng quyết định, các dòng 20–22/09). Đừng đọc hết (>250 KB).
+7. docs/superpowers/plans/2026-09-21-ban-chinh-netlify-turso.md Task 10–11 — deploy (đợt cuối).
+Rồi chạy: git log --oneline -15 và gh pr list --state all --limit 10 để biết PR nào đã có/merge.
 
-SAU KHI ĐỌC: tóm tắt cho chủ sản phẩm trong 10 dòng: đang ở đâu, PR tiếp theo là gì (kèm model/effort),
-họ cần làm gì. Rồi chờ yêu cầu.
+SAU KHI ĐỌC: tóm tắt cho chủ sản phẩm trong 10 dòng: đang ở đợt nào, PR nào đang chờ rà, việc tiếp theo
+(kèm model/effort), họ cần làm gì. Rồi chờ yêu cầu.
 ```
 
 ---
 
-## Tình trạng lúc bàn giao (22/09/2026)
+## Tình trạng lúc bàn giao (22/09/2026 tối)
 
-### Đã merge
+### Quyết định lớn 22/09
+Chủ sản phẩm quyết định **làm HẾT mọi việc còn lại + làm lại UX theo mockup, rồi mới deploy bản chính** (Z2c để cuối).
+Buổi brainstorm 22/09 đã duyệt toàn bộ mockup (khung 4 khu vực, Tổng quan, Phân tích, Công việc, Test, Học viên & Lớp,
+hồ sơ lớp, hồ sơ HV/Hành trình, Ý thức, hồ sơ GV, lớp thường, lên lớp/chuyển lớp, bản đồ vị trí). Tất cả ghi ở đặc tả chính.
+
+### Đã merge gần đây
 
 | PR | Nội dung |
 |---|---|
-| #30 | Batch chặng 0–5: khung case gọn, nền giao diện, hợp đồng số liệu, dấu `-`, hồ sơ Test gọn, biên tập chữ |
-| #31 | Tài liệu: bỏ mô hình Case Ý thức, nối design plan vào kế hoạch (`BAN_DO_OVERHAUL.md`) |
-| #32 | **PR-N** — bốn chỉ số hết lỗi 501, bảng `attachments` dùng chung, khối Bằng chứng |
-| #33 | Prompt tích hợp skill superpowers |
-| #34 | **PR-J** — Ý thức: Vi phạm + Biện pháp xử lý, gỡ mô hình Case Ý thức (512 phép kiểm) |
-| #35 | Tài liệu: rulebook v3 (SOS tự tạo case, Phối hợp SOS, xoá vi phạm) + lộ trình |
-| #36, #37 | Tài liệu: bản chính Netlify + Turso, kế hoạch chi tiết PR-Z2 |
-| #38 | Chia PR-Z2 thành Z2a/b/c, deploy thủ công, `TRIEN_KHAI.md` cho người không biết code, bảng model |
-| #40, #41 | Chốt 4 câu treo (C08, S16, S17, R11) · `.gitignore` bỏ qua `.netlify` |
-| #39 | **PR-T** — máy chủ theo rulebook v3 (SOS tự tạo case + điền sẵn phương án, Phối hợp SOS, xoá vi phạm) |
-| #42 | **PR-K** — giao diện Ý thức & Phối hợp (rà soát 22/09: không lỗi nghiêm trọng, 4 lỗi → PR-K2) |
+| #48, #49, #51 | Z2a hạ tầng Netlify + Turso · Z2b an toàn dữ liệu · Z2b2 phiên đăng nhập |
+| #52 | PR-HV — hồ sơ học viên 3 tab, "biện pháp" → "phương án (PA)" |
+| #53 | Planning: đặc tả UX toàn web, mockup, thuật ngữ đã chốt, kiểm kê, kế hoạch đợt 1 |
 
-### Tiếp theo, đúng thứ tự
+### Lộ trình (2 session code song song, chủ sản phẩm xem demo ~10 phút sau mỗi đợt)
 
-| # | PR | Kế hoạch | Model · B |
-|---|---|---|---|
-| 1a | **PR-K2** — sửa 4 lỗi rà soát PR-K (song song với 1b) | `plan.md` 23.3b | Sonnet 5 · High · B: Fable 5.1 · Medium |
-| 1b | **PR-Z2a** — hạ tầng (Task 0–6b), kế hoạch đã **thử thật 22/09** | plan chi tiết | **Fable 5.1 · High** · B: Sonnet 5 · High |
-| 3 | **PR-Z2b** — an toàn dữ liệu (Task 7–9) | plan chi tiết | Opus 5 · XHigh · B: Fable 5.1 · High |
-| 4 | **PR-Z2c** — deploy bản chính + rà soát (Task 10–11) | plan chi tiết | Opus 5 · XHigh · B: Fable 5.1 · High |
-| 5+ | Sau deploy: PR-O → PR-Q → PR-P → PR-R → PR-S | `plan.md` 22.4–22.9 | xem `PROMPT_SESSION_CODE.md` mục 0 |
+| Đợt | PR | Trạng thái |
+|---|---|---|
+| 1 | **PR-O** khung 4 khu vực (Sonnet 5 · High, B: Fable 5.1 · Medium) · **PR-S1** luật máy chủ (Opus 5 · XHigh, B: Fable 5.1 · High) | Kế hoạch xong, prompt đã đưa chủ sản phẩm → **chờ 2 PR để rà**. Hai PR cùng sửa `server/src/tests/run.ts` và `server/src/routes/index.ts` → merge từng cái, cái sau rebase |
+| 2 | PR-Qa Học viên & Lớp + Hồ sơ lớp · PR-AN an toàn | chưa soạn kế hoạch |
+| 3 | PR-Pa Tổng quan · PR-S2 điều chỉnh PA học thuật | |
+| 4 | PR-Qb Hồ sơ HV · PR-YT2 Ý thức phần thiếu | |
+| 5 | PR-Pb Phân tích · PR-Ra Công việc | |
+| 6 | PR-Rc1 Cần chấm + Lịch Test + lưới chấm · PR-GV hồ sơ GV | |
+| 7 | PR-Rc2 Kế hoạch Test · PR-Form chọn người + bằng chứng | |
+| 8 | PR-LT lên lớp, chuyển lớp | |
+| 9 | PR-S3 quét chữ toàn web | |
+| 10 | PR-Z2c deploy | kế hoạch có sẵn (plan 21/09 Task 10–11) |
 
-**Chủ sản phẩm chưa quyết giờ chạy bản chính** — định chạy khi có gói Claude Max. Không có hạn cứng.
+Model từng PR ở đặc tả §7. Khi soạn kế hoạch đợt 2: giao 2 agent song song (mẫu prompt: đọc đặc tả + kiểm kê + mockup,
+dùng skill writing-plans, lưu `docs/superpowers/plans/2026-09-2x-pr-….md`, không commit, báo Q-quyết định + mâu thuẫn),
+rồi mình rà từng quyết định, gửi agent sửa, commit lên nhánh planning, mở PR, đưa chủ sản phẩm prompt.
 
-### Quyết định quan trọng nhất (đầy đủ ở `plan.md` mục 3)
-
-- **Ý thức:** không còn Case Ý thức. Vi phạm + Biện pháp xử lý (9 loại) quan hệ nhiều–nhiều; chỉ chuỗi Thư cảnh cáo
-  1→2→3 là bắt buộc thứ tự (theo lộ trình học); GVCN tự xác nhận mọi biện pháp; cảnh báo mềm 5 ngày; vi phạm sai thì
-  **sửa hoặc xoá thẳng** (v3).
-- **SOS (v3):** Mock Test Fast Track có SOS → **tự tạo/gắn case** cho từng kỹ năng trượt (W1/W2 tách) + **điền sẵn
-  phương án**; GVBM có 3 ngày xác định nguyên nhân + xác nhận; được đóng "Không cần theo dõi" kèm lý do. **Phối hợp
-  SOS** điền sẵn việc trao đổi theo bảng MT × SOS. **Lớp Normal giữ mô hình tín hiệu cũ.**
-- **Giao diện:** tab `Ý thức & Phối hợp` (hai sub-tab), hồ sơ lớp xem **theo học sinh** mặc định; sau deploy hồ sơ lớp
-  thành 4 tab `Học viên | Ý thức & Phối hợp | Phân tích lớp | Giáo viên`; điều hướng 4 khu vực.
-- **Bản chính:** Netlify + Turso + Netlify Blobs, miễn phí, **deploy thủ công bằng Netlify CLI** từ máy Windows, dữ liệu
-  **rỗng + tài khoản thật**; chi nhánh tạo lúc khởi tạo (chưa có màn tạo chi nhánh).
-- **Hoãn sau deploy:** phân tích theo giáo viên (design plan §6).
-
-### Còn treo
-
-Không còn. Bốn câu C08, S16, S17, R11 đã chốt 21/09 đêm (cả bốn theo khuyến nghị) — xem `plan.md` mục 3,
-việc R14 (22.8), S16/S17 (22.9).
+### Quyết định mới nhất cần nhớ (đầy đủ ở đặc tả §3, §5)
+- **Lớp thường** (không viết "Normal" trên màn): 2 bài/khoá Giữa khoá · Cuối khoá; điểm **số câu đúng / tổng số câu, cả hai
+  đều điền** (đề đổi theo mùa); đạt ≥ 70%; SOS chỉ báo **tín hiệu từng môn**, về GV môn đó, nút **Tạo Case / Bỏ qua** (lý do
+  không bắt buộc); "-" = dời sang tuần sau.
+- **Tuần** luôn viết `W3 SEP`, `W1 OCT`; tuần trong khoá `W8/8`. Không dùng "T5", "tuần 5".
+- **Lộ trình tiếp theo** (lớp thường): mặc định KHÔNG hiện khoá tiếp theo; GVCN/QL ghi khi biết. **Chuyển tiếp lớp** cuối khoá
+  điền sẵn từ đó, có bước Xác nhận. **Chuyển lớp FT → FT giữ nguyên lộ trình**; FT chỉ kết thúc khi Kết luận lộ trình.
+- **Đăng ký tài khoản**: giữ `/auth/register` nhưng phải QTHT duyệt + giới hạn số lần thử.
+- S16 (tự đóng Case) chỉ khi em **thật sự dừng học**; PA đã xong có kết quả thật vẫn tính hiệu quả.
 
 ### Bẫy đã gặp — đừng lặp lại
-
-1. `plan.md` chép design plan không đủ → bỏ sót cả overhaul bảy trang. Luôn đối chiếu với mã thật.
-2. Tưởng Netlify "không chạy được" vì cần máy chủ chạy liên tục — sai: vấn đề là **chỗ cất dữ liệu**. Nói chính xác.
-3. Kéo-thả thư mục lên Netlify không mang theo Functions.
-4. Build trên Windows cho Netlify Linux: nhị phân `libsql` Linux phải đóng gói có chủ đích.
-5. Không có màn tạo chi nhánh — database rỗng cần chi nhánh từ lệnh khởi tạo.
-6. Lệnh bash dài chứa nhiều dấu nháy trên Windows hay hỏng — ghi kịch bản ra file trong scratchpad (bằng công cụ Write) rồi chạy.
-7. Kế hoạch hạ tầng viết từ đọc mã **chưa đủ**: lỗi nặng nhất của Z2 (máy chủ sập lúc Netlify nạp) chỉ lộ ra khi **gói mã
-   và chạy ở thư mục khác**. Việc hạ tầng → cho agent chạy thử trong bản sao riêng trước khi giao session code.
-8. Chủ sản phẩm đã làm TRIEN_KHAI mục 2–5 (DB thử Ohio, site Netlify, 3 biến). Token lấy bằng `netlify env:get`, không xin qua chat.
+1. `plan.md` chép đặc tả không đủ → bỏ sót việc. Luôn đối chiếu với mã thật (kiểm kê 22/09 tìm ~25 yêu cầu chưa từng thành việc).
+2. Lệnh bash dài có nhiều dấu nháy/heredoc trên Windows hay hỏng — ghi file bằng công cụ Write rồi chạy.
+3. Tin chủ sản phẩm gửi khi một session đang chạy lọt vào kết quả công cụ và bị session đó từ chối như chữ lạ → dặn họ
+   **bấm Stop rồi mới gửi**.
+4. Chủ sản phẩm từng merge PR trước khi rà xong → luôn nhắc "chờ tôi nói merge được".
+5. Mockup rời rạc làm chủ sản phẩm "không hiểu module nằm ở đâu" → luôn kèm vị trí (mockup `12-ban-do-vi-tri.html` là mẫu).
+6. Agent soạn kế hoạch hay tự quyết lệch ý chủ sản phẩm (vd đóng Case khi lên lớp) → đọc kỹ bảng Q-quyết định của agent.
+7. `.superpowers/` (mockup tạm của brainstorm) đã vào `.gitignore`; bản duyệt chép sang `thiet-ke/mockup/`.
+8. Không bao giờ chạy lệnh vào DB bản chính; không `--prod` khi chủ sản phẩm chưa đồng ý; token lấy bằng `netlify env:get`, không xin qua chat.
+9. Không dùng cổng 4000/5173 khi chủ sản phẩm đang chạy demo.
