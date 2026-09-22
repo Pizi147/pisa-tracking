@@ -216,6 +216,8 @@ function queryPlans(sids: number[], scope: Scope) {
        * CHỐT 5 (PR-C mục 10.4): case NHẬP BÙ không vào mẫu số hiệu quả hỗ trợ — nó ghi lại
        * trí nhớ, không phải một phương án đang được theo dõi hôm nay. Vẫn hiện đủ trên hồ sơ
        * và hành trình theo tuần; chỉ loại khỏi phép tính tỷ lệ ở đây.
+       * S16/S17 (PR-S1): Case HỆ THỐNG tự đóng không có kết quả và PA bị huỷ vì việc đóng (`closed_reason = 'system_closed'`) không
+       * phải `completed` — nên tự nằm ngoài. PA đã xong có kết quả thật trước khi đóng VẪN tính (planning review 22/09, Q7).
        */
       `SELECT iv.id, iv.kind, iv.status, iv.closed_reason, iv.completed_date,
               ${SUPPORT_DAY} AS day,

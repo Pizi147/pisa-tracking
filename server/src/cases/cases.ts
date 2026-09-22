@@ -8,7 +8,8 @@ import {
   issuesForTopic,
   CASE_CATEGORY_SHORT, CASE_CATEGORIES, CASE_CATEGORY_LABEL, FOLLOWUP_OUTCOME_LABEL, ratioResult,
   caseCategoriesFor, componentsAreCounts, componentsFor, type CaseCategory,
-  CASE_OUTCOME_LABEL, caseCategoryLabel, caseDedupKey, caseHeadline, caseTitle, categoryOf,
+  CASE_OUTCOME_LABEL, SYSTEM_CLOSE_REASON_LABEL, caseCategoryLabel, caseDedupKey, caseHeadline, caseTitle, categoryOf,
+  type SystemCloseReason,
   NEXT_STEP_LABEL, cycleDeadline, isProposalKind, outcomeLabelFor,
   RESCHEDULE_TARGETS, RESCHEDULE_TARGET_LABEL, RESULT_MODES, RESULT_MODE_LABEL,
   canEndWithOutcome, planDueDate, planEndDefault, stepsForMode, weeklyUpdateDue,
@@ -1532,6 +1533,9 @@ export function caseDetail(p: Principal, caseId: number) {
       ? (conn.prepare('SELECT full_name FROM users WHERE id = ?').get(c.reported_by) as any)?.full_name ?? null
       : null,
     status: c.status,
+    /** S16/S17: Case do hệ thống tự đóng — mã và nhãn lý do. `null` khi người đóng hoặc chưa đóng. */
+    systemCloseReason: c.system_close_reason ?? null,
+    systemCloseLabel: c.system_close_reason ? SYSTEM_CLOSE_REASON_LABEL[c.system_close_reason as SystemCloseReason] ?? null : null,
     disposition: c.disposition,
     dispositionNote: c.disposition_note,
     closedAt: c.closed_at,

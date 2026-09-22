@@ -472,6 +472,20 @@ export const DISPOSITION_LABEL: Record<Disposition, string> = {
 };
 
 /**
+ * HỆ THỐNG TỰ ĐÓNG CASE — S16 (em kết thúc khoá) và S17 (em đổi chương trình), chủ sản phẩm chốt 21/09/2026 đêm; §3.9 bảng luật lộ
+ * trình thêm chiều lớp thường → FT. Case đóng kiểu này KHÔNG có kết quả: việc đóng không phải một kết quả hỗ trợ, và PA bị huỷ vì nó
+ * không tính. PA đã xong có kết quả thật trước đó VẪN tính hiệu quả (planning review 22/09, Q7). Lịch sử giữ nguyên.
+ * Chữ "lớp thường" thay "Normal" theo đặc tả §2 (không viết "Normal" trên màn).
+ */
+export const SYSTEM_CLOSE_REASONS = ['course_ended', 'moved_to_normal', 'moved_to_ft'] as const;
+export type SystemCloseReason = (typeof SYSTEM_CLOSE_REASONS)[number];
+export const SYSTEM_CLOSE_REASON_LABEL: Record<SystemCloseReason, string> = {
+  course_ended: 'Học viên kết thúc khoá',
+  moved_to_normal: 'Chuyển sang lớp thường',
+  moved_to_ft: 'Chuyển sang Fast Track',
+};
+
+/**
  * HAI HỌ VIỆC, TÁCH BẠCH — và chính sự tách bạch đó bỏ được một câu hỏi cho giáo viên.
  *
  * PHƯƠNG ÁN HỖ TRỢ là việc giáo viên tự xoay được. ĐỀ XUẤT là việc phải có Quản lý trả

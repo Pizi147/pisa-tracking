@@ -5,6 +5,7 @@ import { addDays, badRequest, isIsoDate, normalizeName, notFound, nowIso, padCod
 import { can, classScopeSql, require_, scopeFor, type Principal } from '../permissions.ts';
 import { addJourney, writeAudit } from '../platform/audit.ts';
 import { NOT_UNCONFIRMED_PRESET } from '../cases/sosState.ts';
+import { closeCasesBySystem } from '../cases/systemClose.ts';
 import { entryBandsOf, scoresOf, skipsOf } from '../fasttrack/attempts.ts';
 import { evaluateAttempt } from '../fasttrack/scoring.ts';
 import { currentCycle, cyclesOf, examPlanOf } from '../fasttrack/cycles.ts';
@@ -224,8 +225,8 @@ export function transferStudent(p: Principal, studentId: number, toClassId: numb
 
 /**
  * Trạng thái học viên chỉ có ba: active đang học · inactive tạm dừng · finished dừng hẳn.
- * Lưu trữ (archive) là cách ẩn khỏi danh sách, KHÔNG phải trạng thái thứ tư, và không
- * tự đóng lịch hay case còn dở.
+ * Lưu trữ (archive) là cách ẩn khỏi danh sách, KHÔNG phải trạng thái thứ tư, và không đóng gì.
+ * Kết thúc học (`finished`) thì Case còn mở được hệ thống tự đóng theo S16.
  */
 export function setStudentStatus(
   p: Principal, studentId: number, status: 'active' | 'inactive' | 'finished', date: string, reason?: string,
@@ -245,6 +246,10 @@ export function setStudentStatus(
     const enrollmentStatus = status === 'active' ? 'active' : status === 'inactive' ? 'paused' : 'completed';
     conn.prepare(`UPDATE enrollments SET status = ? WHERE student_id = ? AND status IN ('active','paused')`)
       .run(enrollmentStatus, studentId);
+    /* S16: em KẾT THÚC học → Case còn mở của em hệ thống tự đóng "Học viên kết thúc khoá". Tạm dừng thì không. */
+    if (status === 'finished') {
+      closeCasesBySystem({ actorUserId: p.userId, studentId, reason: 'course_ended', on: date });
+    }
     addJourney({
       studentId, eventType: status === 'inactive' ? 'pause' : status === 'active' ? 'resume' : 'finish',
       eventDate: date,

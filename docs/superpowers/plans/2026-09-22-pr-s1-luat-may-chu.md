@@ -1618,7 +1618,7 @@ cho phép kiểm cũ `/chủ nhiệm|Quản lý/`). Dòng 2234: `canClose: canCl
   - `export function closeCasesOnProgrammeSwitch(actorUserId: number | null, studentId: number, to: 'normal' | 'ft', on: string): { closedCaseIds: number[]; withdrawnSignalIds: number[] }`
   - Cờ `dongCaseKhiKetThuc?: boolean` trên `updateCycle(p, id, patch)` và `setOutcome(p, id, input)`: chỉ khi `true` mới đóng Case (S16). PR-LT truyền cờ khi em THÔI HỌC, KHÔNG truyền ở "Lên lớp thường tiếp".
 
-- [ ] **Step 1: Phép kiểm (đỏ).**
+- [x] **Step 1: Phép kiểm (đỏ).**
 
 ```ts
   // ================================================================== 12. S16 · S17
@@ -1731,8 +1731,8 @@ cho phép kiểm cũ `/chủ nhiệm|Quản lý/`). Dòng 2234: `canClose: canCl
   });
 ```
 
-- [ ] **Step 2: Chạy, đỏ.** Expected: phép "không cờ" ✓ (hành vi hiện tại đã giữ Case), bốn phép còn lại ✗ (thiếu mô-đun / Case vẫn mở).
-- [ ] **Step 3: Nhãn ở `shared/domain/cases.ts`** (sau `DISPOSITION_LABEL`):
+- [x] **Step 2: Chạy, đỏ.** Expected: phép "không cờ" ✓ (hành vi hiện tại đã giữ Case), bốn phép còn lại ✗ (thiếu mô-đun / Case vẫn mở).
+- [x] **Step 3: Nhãn ở `shared/domain/cases.ts`** (sau `DISPOSITION_LABEL`):
 
 ```ts
 /**
@@ -1750,7 +1750,7 @@ export const SYSTEM_CLOSE_REASON_LABEL: Record<SystemCloseReason, string> = {
 };
 ```
 
-- [ ] **Step 4: Tạo `server/src/cases/systemClose.ts`.**
+- [x] **Step 4: Tạo `server/src/cases/systemClose.ts`.**
 
 ```ts
 import { db, tx } from '../db.ts';
@@ -1894,7 +1894,7 @@ export function closeCasesOnProgrammeSwitch(actorUserId: number | null, studentI
 > Kiểm lại cột `journey_events.event_type 'case_closed'` và `case_milestones.dedup_key` có chỉ mục UNIQUE (câu `ON CONFLICT(dedup_key)` ở
 > `cases.ts:185-188` dùng y hệt — nên có). Nếu `addJourney` bắt `cycleId` khác kiểu → xem chữ ký ở `platform/audit.ts:27`.
 
-- [ ] **Step 5: `effectiveness.ts` — KHÔNG thêm bộ lọc (Q7 đã đổi ở planning review 22/09).** `queryPlans` chỉ lấy PA `status = 'completed'`;
+- [x] **Step 5: `effectiveness.ts` — KHÔNG thêm bộ lọc (Q7 đã đổi ở planning review 22/09).** `queryPlans` chỉ lấy PA `status = 'completed'`;
   PA bị hệ thống huỷ (`cancelled`, `system_closed`) tự nằm ngoài, PA đã xong có kết quả thật vẫn tính. Chỉ thêm một câu chú thích vào khối
   `/* CHỐT 5 … */` phía trên câu SQL (không đổi SQL):
 
@@ -1904,7 +1904,7 @@ export function closeCasesOnProgrammeSwitch(actorUserId: number | null, studentI
 ```
   Phép kiểm S16 ở Step 1 khoá cả hai chiều.
 
-- [ ] **Step 6: Gắn S16 — chỉ khi em THÔI HỌC (planning review 22/09, Q6).**
+- [x] **Step 6: Gắn S16 — chỉ khi em THÔI HỌC (planning review 22/09, Q6).**
 
 `cycles.ts` `updateCycle` — hoàn tất lộ trình KHÔNG tự đóng Case; chỉ đóng khi nơi gọi truyền cờ tường minh `dongCaseKhiKetThuc: true`
 (cờ đọc riêng, không phải cột — `map` bỏ qua khoá lạ nên không lọt vào câu UPDATE). Ngay sau `require_(...)` (dòng 138):
@@ -1968,9 +1968,9 @@ học (`finished`) thì Case còn mở được hệ thống tự đóng theo S1
     systemCloseLabel: c.system_close_reason ? SYSTEM_CLOSE_REASON_LABEL[c.system_close_reason as SystemCloseReason] ?? null : null,
 ```
 
-- [ ] **Step 7: Chạy, xanh** (Expected `709`). Phép kiểm cũ "Ba trạng thái học viên; lưu trữ chỉ ẩn…" (`run.ts:1159`) vẫn ✓ ở bước này (nó
+- [x] **Step 7: Chạy, xanh** (Expected `709`). Phép kiểm cũ "Ba trạng thái học viên; lưu trữ chỉ ẩn…" (`run.ts:1159`) vẫn ✓ ở bước này (nó
   không gọi `setStudentStatus`); Task 15 viết lại nó.
-- [ ] **Step 8: Commit.** `git add server/src/cases/systemClose.ts && git commit -am "PR-S1 (12): S16/S17 — một hàm đóng Case bởi hệ thống; thôi học tự đóng (setStudentStatus / cờ dongCaseKhiKetThuc)"`
+- [x] **Step 8: Commit.** `git add server/src/cases/systemClose.ts && git commit -am "PR-S1 (12): S16/S17 — một hàm đóng Case bởi hệ thống; thôi học tự đóng (setStudentStatus / cờ dongCaseKhiKetThuc)"`
 
 ---
 

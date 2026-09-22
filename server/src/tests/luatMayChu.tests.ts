@@ -21,9 +21,15 @@ export async function runLuatMayChuTests(t: YThucTestKit) {
   const { fileURLToPath } = await import('node:url');
   const { default: SqliteDb } = await import('libsql');
   const migrateMod: any = await import('../migrate.ts');
-  /** Mô-đun chưa có thì phép kiểm ĐỎ với câu nói rõ thiếu gì, không làm sập cả bộ. */
+  /**
+   * Mô-đun chưa có thì phép kiểm ĐỎ với câu nói rõ thiếu gì, không làm sập cả bộ. `then` trả `undefined`: `await` hỏi `then` để biết
+   * có phải promise không — ném lỗi ở đó thì chính `await load(...)` làm sập cả bộ.
+   */
   const load = async (p: string): Promise<any> => import(p).catch((e) =>
-    new Proxy({}, { get: (_x, k) => { throw new Error(`Chưa có mô-đun ${p} (${String(k)}) — ${e.message}`); } }));
+    new Proxy({}, { get: (_x, k) => {
+      if (k === 'then') return undefined;
+      throw new Error(`Chưa có mô-đun ${p} (${String(k)}) — ${e.message}`);
+    } }));
   const REPO = pathMod.resolve(fileURLToPath(new URL('../../../../', import.meta.url)));
   const NOW = new Date().toISOString();
   let soThuTu = 0;
@@ -540,6 +546,115 @@ export async function runLuatMayChuTests(t: YThucTestKit) {
     const card = (cases.skillSupportBoard(P.coreTeacher, hv.sid) as any).rows.flatMap((r: any) => r.cases);
     assert(card.find((x: any) => x.id === sp.id)?.canClose === false && card.find((x: any) => x.id === li.id)?.canClose === true,
       'Thẻ Case phải nói đúng quyền theo môn');
+  });
+
+  // ================================================================== 12. S16 · S17
+
+  console.log('\nPR-S1 · 12. S16 kết thúc khoá · S17 đổi chương trình — hệ thống tự đóng Case, có audit, xem lại được, PA đã xong vẫn tính hiệu quả');
+  const systemClose = await load('../cases/systemClose.ts');
+  const cycles: any = await import('../fasttrack/cycles.ts');
+  const students: any = await import('../students/students.ts');
+  const effectiveness: any = await import('../cases/effectiveness.ts');
+  /** Case lớp thường có một PA đã xong (kết quả "Tiến bộ rõ") và một PA chưa làm. */
+  const caseCoViec = (hv: HocVien) => {
+    diem(hv.attemptId, 'listening', 10, 40);
+    const c = caseTuTinHieu(pGvcnFou, tinHieu(hv.attemptId, 'listening'));
+    const done = Number(conn.prepare(`INSERT INTO case_interventions (case_id, kind, description, status, completed_date, created_at)
+      VALUES (?, 'self_study', 'Tự học nghe (PR-S1)', 'completed', ?, ?)`).run(c.id, TODAY, NOW).lastInsertRowid);
+    conn.prepare(`INSERT INTO case_followups (case_id, intervention_id, observed_on, outcome, note, created_at) VALUES (?,?,?, 'improved', 'Tiến bộ rõ', ?)`)
+      .run(c.id, done, TODAY, NOW);
+    const open = Number(conn.prepare(`INSERT INTO case_interventions (case_id, kind, description, status, created_at)
+      VALUES (?, 'tutor', 'Tutor nghe (PR-S1)', 'planned', ?)`).run(c.id, NOW).lastInsertRowid);
+    return { caseId: c.id as number, done, open };
+  };
+  const auditSys = (caseId: number) => auditN('case.system_close', caseId);
+
+  check('S16 · Hoàn tất lộ trình KHÔNG kèm cờ dongCaseKhiKetThuc (đường "Lên lớp thường tiếp" của PR-LT) → Case vẫn MỞ, đi theo em', () => {
+    const hv = taoHocVien({ classCode: 'MB-FOU 12', weekStart: '2026-09-07' });
+    const x = caseCoViec(hv);
+    cycles.updateCycle(P.mbManager, hv.cycleId, { status: 'completed' });
+    const c = conn.prepare('SELECT status, system_close_reason AS r FROM sos_cases WHERE id = ?').get(x.caseId) as any;
+    assert(c.status !== 'done' && c.r === null, `Hoàn tất lộ trình không cờ đã đóng Case: ${JSON.stringify(c)}`);
+    assert(auditSys(x.caseId) === 0, 'Không được có audit đóng bởi hệ thống');
+  });
+
+  check('S16 · Kết thúc học (cờ dongCaseKhiKetThuc) còn Case mở → Case đóng "Học viên kết thúc khoá": không có kết quả, PA chưa làm huỷ và KHÔNG tính, PA đã xong giữ và VẪN tính hiệu quả, audit + mốc + hành trình, tín hiệu chờ thu hồi', () => {
+    const hv = taoHocVien({ classCode: 'MB-FOU 12', weekStart: '2026-09-07' });
+    const x = caseCoViec(hv);
+    diem(hv.attemptId, 'reading', 10, 40);                              // tín hiệu Reading còn chờ
+    assert(effectiveness.planOutcomes({ studentIds: [hv.sid] }).some((r: any) => r.id === x.done), 'Tiền đề: PA đã xong phải vào thống kê trước');
+    cycles.updateCycle(P.mbManager, hv.cycleId, { status: 'completed', dongCaseKhiKetThuc: true });
+    const c = conn.prepare('SELECT * FROM sos_cases WHERE id = ?').get(x.caseId) as any;
+    assert(c.status === 'done' && c.system_close_reason === 'course_ended' && c.outcome === null && c.closed_at,
+      `Case: ${JSON.stringify({ status: c.status, reason: c.system_close_reason, outcome: c.outcome, closedAt: c.closed_at })}`);
+    assert(String(c.outcome_note).includes('Học viên kết thúc khoá'), `Ghi chú: ${c.outcome_note}`);
+    const iv = (id: number) => conn.prepare('SELECT status, closed_reason FROM case_interventions WHERE id = ?').get(id) as any;
+    assert(iv(x.open).status === 'cancelled' && iv(x.open).closed_reason === 'system_closed', `PA chưa làm: ${JSON.stringify(iv(x.open))}`);
+    assert(iv(x.done).status === 'completed', 'PA đã xong không được đụng');
+    /* Q7 (planning review 22/09): PA đã xong có kết quả thật VẪN tính; chỉ việc đóng và PA bị huỷ vì việc đóng thì không. */
+    const plans = effectiveness.planOutcomes({ studentIds: [hv.sid] }) as any[];
+    assert(plans.some((r) => r.id === x.done), 'PA đã xong có kết quả thật phải VẪN nằm trong thống kê hiệu quả');
+    assert(!plans.some((r) => r.id === x.open), 'PA bị huỷ vì hệ thống đóng Case không được tính');
+    assert(auditSys(x.caseId) === 1, 'Thiếu audit case.system_close');
+    assert((conn.prepare(`SELECT COUNT(*) n FROM case_milestones WHERE case_id = ? AND kind = 'closed'`).get(x.caseId) as any).n === 1, 'Thiếu mốc đóng');
+    assert((conn.prepare(`SELECT COUNT(*) n FROM journey_events WHERE ref_table = 'sos_cases' AND ref_id = ? AND event_type = 'case_closed'`).get(x.caseId) as any).n === 1, 'Thiếu mốc hành trình');
+    const r = tinHieu(hv.attemptId, 'reading');
+    assert(r.status === 'withdrawn' && r.withdrawn_reason === 'Học viên kết thúc khoá', `Tín hiệu chờ: ${JSON.stringify(r)}`);
+    const d = cases.caseDetail(P.mbManager, x.caseId) as any;
+    assert(d.status === 'done' && d.systemCloseReason === 'course_ended', 'Case đóng bởi hệ thống vẫn phải mở xem lại được, nói rõ lý do');
+    const again = systemClose.closeCasesBySystem({ actorUserId: P.admin.userId, studentId: hv.sid, reason: 'course_ended', on: TODAY, cycleIds: [hv.cycleId] });
+    assert(again.closedCaseIds.length === 0 && auditSys(x.caseId) === 1, 'Chạy lại không được đóng/ghi thêm');
+  });
+
+  check('S16 · Học viên chuyển "Đã kết thúc" → Case mở đóng "Học viên kết thúc khoá"; "Tạm dừng" thì KHÔNG đóng', () => {
+    const a = taoHocVien({ classCode: 'MB-FOU 12', weekStart: '2026-09-07' });
+    const b = taoHocVien({ classCode: 'MB-FOU 12', weekStart: '2026-09-07' });
+    const xa = caseCoViec(a), xb = caseCoViec(b);
+    students.setStudentStatus(P.mbManager, a.sid, 'finished', TODAY, 'Nghỉ học');
+    students.setStudentStatus(P.mbManager, b.sid, 'inactive', TODAY, 'Tạm nghỉ ốm');
+    const st = (id: number) => conn.prepare('SELECT status, system_close_reason AS r FROM sos_cases WHERE id = ?').get(id) as any;
+    assert(st(xa.caseId).status === 'done' && st(xa.caseId).r === 'course_ended', `Kết thúc: ${JSON.stringify(st(xa.caseId))}`);
+    assert(st(xb.caseId).status !== 'done', 'Tạm dừng không được đóng Case');
+  });
+
+  check('S16 · FT "Kết luận lộ trình": kèm cờ dongCaseKhiKetThuc (em thôi học) → đóng Case; không cờ (học tiếp) → Case giữ', () => {
+    const mk = () => {
+      const hv = taoHocVien({ classCode: 'MB-FT 101', weekStart: '2026-09-07' });
+      const c = cases.reportIssue(P.mbManager, {
+        studentId: hv.sid, cycleId: hv.cycleId, topic: 'reading', title: 'Reading (S16 FT)', summary: 'Case FT dựng cho phép kiểm kết luận lộ trình.',
+        primaryCode: domain.issuesForTopic('reading')[0].code, parallel: true,
+      }) as any;
+      return { hv, caseId: c.id as number };
+    };
+    const st = (id: number) => conn.prepare('SELECT status, system_close_reason AS r FROM sos_cases WHERE id = ?').get(id) as any;
+    const keep = mk();
+    cycles.setOutcome(P.mbManager, keep.hv.cycleId, { outcome: 'reached', score: 6.5, note: 'Đạt mục tiêu, học tiếp LT2' });
+    assert(st(keep.caseId).status !== 'done', 'Kết luận lộ trình không cờ đã đóng Case');
+    const end = mk();
+    cycles.setOutcome(P.mbManager, end.hv.cycleId, { outcome: 'reached', score: 6.5, note: 'Đạt mục tiêu, thôi học', dongCaseKhiKetThuc: true });
+    assert(st(end.caseId).status === 'done' && st(end.caseId).r === 'course_ended', `Kết luận + thôi học: ${JSON.stringify(st(end.caseId))}`);
+  });
+
+  check('S17 · Đổi chương trình: sang lớp thường đóng Case FT "Chuyển sang lớp thường"; sang FT đóng Case lớp thường "Chuyển sang Fast Track"; Case chương trình kia giữ', () => {
+    const hv = taoHocVien({ classCode: 'MB-FT 101', weekStart: '2026-09-07' });
+    const ftCase = cases.reportIssue(P.mbManager, {
+      studentId: hv.sid, cycleId: hv.cycleId, topic: 'writing1', title: 'Writing Task 1 (S17)', summary: 'Case FT dựng cho phép kiểm đổi chương trình.',
+      primaryCode: domain.issuesForTopic('writing1')[0].code, parallel: true,
+    }) as any;
+    const normalCycle = Number(conn.prepare(`INSERT INTO learning_cycles (student_id, seq, route, programme_code, started_at, status, created_at)
+      VALUES (?, 2, NULL, 'FOU', ?, 'active', ?)`).run(hv.sid, TODAY, NOW).lastInsertRowid);
+    const nCase = cases.reportIssue(P.mbManager, {
+      studentId: hv.sid, cycleId: normalCycle, topic: 'writing', title: 'Writing lớp thường (S17)', summary: 'Case lớp thường dựng cho phép kiểm đổi chương trình.',
+      primaryCode: domain.issuesForTopic('writing')[0].code, parallel: true,
+    }) as any;
+    assert(systemClose.programmeOfCase(conn.prepare('SELECT * FROM sos_cases WHERE id = ?').get(ftCase.id)) === 'band', 'Case W1 phải là FT');
+    const r1 = systemClose.closeCasesOnProgrammeSwitch(P.mbManager.userId, hv.sid, 'normal', TODAY);
+    const st = (id: number) => conn.prepare('SELECT status, system_close_reason AS r FROM sos_cases WHERE id = ?').get(id) as any;
+    assert(r1.closedCaseIds.includes(ftCase.id) && st(ftCase.id).r === 'moved_to_normal', `FT → lớp thường: ${JSON.stringify(st(ftCase.id))}`);
+    assert(st(nCase.id).status !== 'done', 'Case lớp thường không được đóng khi em SANG lớp thường');
+    assert(domain.SYSTEM_CLOSE_REASON_LABEL.moved_to_normal === 'Chuyển sang lớp thường', 'Không viết "Normal" trên màn (đặc tả §2)');
+    systemClose.closeCasesOnProgrammeSwitch(P.mbManager.userId, hv.sid, 'ft', TODAY);
+    assert(st(nCase.id).status === 'done' && st(nCase.id).r === 'moved_to_ft', `Lớp thường → FT: ${JSON.stringify(st(nCase.id))}`);
   });
 
   // ---- các task sau thêm phép kiểm NGAY TRÊN dòng này ----
