@@ -1058,18 +1058,18 @@ export function completeIntervention(p: Principal, interventionId: number, input
      * là hai vai khác nhau: Admin ghi hộ việc CS gọi phụ huynh thì người làm là CS.
      */
     const performerUserId = input.performerSelf ? p.userId : (input.performerUserId ?? iv.performer_user_id);
+    /* PR-S2 (S2): ghi chú KHÔNG ghi đè mô tả PA nữa (trước đây là ghi đè mất dấu). Ghi chú nằm ở hành trình và audit bên dưới. */
     conn
       .prepare(
         `UPDATE case_interventions
             SET status = 'completed', completed_date = ?,
                 started_date = COALESCE(started_date, ?),
                 performer_user_id = ?, performer_name = COALESCE(?, performer_name),
-                description = COALESCE(NULLIF(?, ''), description),
                 updated_at = ?
           WHERE id = ?`,
       )
       .run(doneOn, doneOn, performerUserId ?? null, input.performerName ?? null,
-           input.note ?? '', nowIso(), interventionId);
+           nowIso(), interventionId);
 
     /*
      * Case còn ở "chưa ai làm gì" mà vừa có một việc xong thì nó đang được xử lý — đổi

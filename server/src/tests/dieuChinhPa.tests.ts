@@ -326,5 +326,36 @@ export async function runDieuChinhPaTests(t: YThucTestKit) {
     assert(moi.revisions.length === 0 && moi.closedReason === null && moi.supersededBy === null, 'PA mới không được mang lịch sử của PA cũ');
   });
 
+  // ================================================================== 5. Gợi ý tự động và "Ghi đã làm"
+
+  console.log('\nPR-S2 · 5. Sửa gợi ý lúc xác nhận có lịch sử; "Ghi đã làm" không ghi đè mô tả');
+
+  check('PR-S2 · S2: Sửa gợi ý tự động lúc xác nhận ghi MỘT dòng lịch sử (bản gợi ý → bản đã sửa); xác nhận nguyên văn thì không', () => {
+    const goiY = (caseId: number) => Number(conn.prepare(
+      `INSERT INTO case_interventions (case_id, kind, description, status, preset, followup_due, created_at)
+       VALUES (?, 'self_study', 'Tự học 1 tháng', 'planned', 1, ?, ?)`,
+    ).run(caseId, addDays(TODAY, 30), NOW).lastInsertRowid);
+    const a = goiY(taoCase().caseId);
+    const b = goiY(taoCase().caseId);
+    const c = goiY(taoCase().caseId);
+    sosAuto.confirmPresetPlan(P.lrTeacher, a, { description: 'Tự học 1 tháng — nghe chép Section 2 mỗi ngày' });
+    sosAuto.confirmPresetPlan(P.lrTeacher, b);
+    sosAuto.confirmPresetPlan(P.lrTeacher, c, { followupDue: addDays(TODAY, 40), reason: 'Em thi muộn hơn nên kéo dài' });
+    const ra = revRows(a);
+    assert(ra.length === 1 && ra[0].source === 'confirm_edit' && ra[0].followup_id === null
+      && ra[0].old_description === 'Tự học 1 tháng' && ra[0].new_description === 'Tự học 1 tháng — nghe chép Section 2 mỗi ngày'
+      && ra[0].reason === domain.CONFIRM_EDIT_REASON, `Sửa lúc xác nhận ghi sai: ${JSON.stringify(ra)}`);
+    assert(revRows(b).length === 0, 'Xác nhận nguyên văn không được sinh lịch sử');
+    const rc = revRows(c);
+    assert(rc.length === 1 && rc[0].old_followup_due === addDays(TODAY, 30) && rc[0].new_followup_due === addDays(TODAY, 40)
+      && rc[0].reason === 'Em thi muộn hơn nên kéo dài', `Đổi ngày lúc xác nhận ghi sai: ${JSON.stringify(rc)}`);
+  });
+
+  check('PR-S2 · S2: "Ghi đã làm" kèm ghi chú không còn ghi đè mô tả phương án (cases.ts completeIntervention)', () => {
+    const { ivId } = taoCase();
+    cases.completeIntervention(P.lrTeacher, ivId, { doneOn: TODAY, note: 'Đã làm đủ bảy buổi', performerSelf: true });
+    assert(ivRow(ivId).description === 'Tự học Listening — nghe chép 15 phút mỗi ngày', `Mô tả bị ghi đè: ${ivRow(ivId).description}`);
+  });
+
   // ---- các task sau thêm phép kiểm NGAY TRÊN dòng này ----
 }

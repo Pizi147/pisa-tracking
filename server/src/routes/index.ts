@@ -1174,6 +1174,7 @@ api.post('/interventions/:id/confirm', requireAuth, wrap((req) => {
   const b = (req.body ?? {}) as Record<string, any>;
   return sosAutoSvc.confirmPresetPlan(principalOf(req), pInt(req, 'id'), {
     description: 'description' in b ? (b.description ?? null) : undefined, followupDue: 'followupDue' in b ? (b.followupDue ?? null) : undefined,
+    reason: typeof b.reason === 'string' ? b.reason : undefined,
   });
 }));
 api.post('/interventions/:id/replace', requireAuth, wrap((req) => {

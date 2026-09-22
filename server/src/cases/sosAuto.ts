@@ -1,6 +1,6 @@
 import { db, tx } from '../db.ts';
 import {
-  CASE_DISMISS_REASONS, CASE_DISMISS_REASON_LABEL, academicSupportFor, reasonNeedsText, sosPlanEndDate, weeklyUpdateDue,
+  CASE_DISMISS_REASONS, CASE_DISMISS_REASON_LABEL, CONFIRM_EDIT_REASON, academicSupportFor, reasonNeedsText, sosPlanEndDate, weeklyUpdateDue,
   type AcademicSupportPreset, type CaseDismissReason,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -11,6 +11,7 @@ import { suggestCaseOwner } from './owner.ts';
 import { examPlanOf } from '../fasttrack/cycles.ts';
 import { caseAccess, caseDetail, recordIntervention } from './cases.ts';
 import { UNCONFIRMED_PRESET, sosCaseState } from './sosState.ts';
+import { ghiBanDieuChinh } from './planRevisions.ts';
 
 export { UNCONFIRMED_PRESET, NOT_UNCONFIRMED_PRESET } from './sosState.ts';
 
@@ -181,7 +182,7 @@ function loadUnconfirmedPreset(p: Principal, interventionId: number, doing: stri
  *
  * Quyền: GVBM ĐÚNG kỹ năng của case (C02) + Quản lý trong phạm vi. Người thực hiện giữ nguyên (GVBM đúng kỹ năng); người xác nhận ghi ở `confirmed_by`.
  */
-export function confirmPresetPlan(p: Principal, interventionId: number, patch: { description?: string | null; followupDue?: string | null } = {}) {
+export function confirmPresetPlan(p: Principal, interventionId: number, patch: { description?: string | null; followupDue?: string | null; reason?: string | null } = {}) {
   const iv = loadUnconfirmedPreset(p, interventionId, 'xác nhận');
   let description = iv.description as string;
   if (patch.description !== undefined && patch.description !== null) {
@@ -204,6 +205,17 @@ export function confirmPresetPlan(p: Principal, interventionId: number, patch: {
           WHERE id = ?`,
       )
       .run(description, followupDue, today, today, weeklyUpdateDue(today), p.userId, nowIso(), nowIso(), interventionId);
+    /*
+     * PR-S2 (S2, Q7): GỢI Ý TỰ ĐỘNG là "phương án ban đầu" (nguồn §7). Sửa nó lúc xác nhận thì giữ bản gợi ý trong lịch sử.
+     * Xác nhận nguyên văn thì không có gì để ghi.
+     */
+    if (description !== iv.description || followupDue !== (iv.followup_due ?? null)) {
+      ghiBanDieuChinh({
+        iv, source: 'confirm_edit', on: today, actorUserId: p.userId, followupId: null,
+        reason: (patch.reason ?? '').trim() || CONFIRM_EDIT_REASON,
+        after: { description, performerUserId: iv.performer_user_id ?? null, performerName: iv.performer_name ?? null, followupDue },
+      });
+    }
     db().prepare("UPDATE sos_cases SET status = 'in_progress', updated_at = ? WHERE id = ? AND status = 'open'").run(nowIso(), iv.case_id);
     const c = db().prepare('SELECT student_id, cycle_id FROM sos_cases WHERE id = ?').get(iv.case_id) as any;
     addJourney({
