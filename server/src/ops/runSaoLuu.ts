@@ -23,7 +23,11 @@ if (!coTurso && process.env.BACKUP_DIR?.trim()) {
   process.exit(1);
 }
 
-const { DB_PATH, ROOT, closeDb, db, laDbTuXa } = await import('../db.ts');
+const dbMod = await import('../db.ts').catch((e: Error) => {
+  console.error(`[sao-luu] ${e.message} Chưa làm gì cả.`);
+  process.exit(1);
+});
+const { DB_PATH, ROOT, closeDb, db, laDbTuXa } = dbMod;
 const { giuBanMoiNhat, saoLuuRaFile, saoLuuTep, tenBanSaoLuu, tienToBanSaoLuu } = await import('./saoLuu.ts');
 const { tenKhoTep } = await import('../platform/khoTep.ts');
 

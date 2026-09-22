@@ -15,7 +15,11 @@ if (thieu.length) {
 }
 
 /* Đủ biến rồi mới nạp db.ts. Chưa mở kết nối cho tới lời gọi db(). */
-const { DB_PATH, SCHEMA_PATH, closeDb, db } = await import('../db.ts');
+const dbMod = await import('../db.ts').catch((e: Error) => {
+  console.error(`[init-ban-chinh] ${e.message} Chưa làm gì cả.`);
+  process.exit(1);
+});
+const { DB_PATH, SCHEMA_PATH, closeDb, db } = dbMod;
 const { docDanhSachChiNhanh, initBanChinh } = await import('./initBanChinh.ts');
 
 let chiNhanh: { code: string; name: string }[];
@@ -24,6 +28,8 @@ try { chiNhanh = docDanhSachChiNhanh(process.env.CHI_NHANH!); } catch (e) {
   process.exit(1);
 }
 const dsChiNhanh = chiNhanh.map((c) => `${c.code} (${c.name})`).join(', ');
+const { moTaDichDb } = await import('../moiTruong.ts');
+console.log(`[init-ban-chinh] Đích: ${moTaDichDb(DB_PATH)}`);
 console.log(`[init-ban-chinh] Sẽ khởi tạo database ${DB_PATH} (không in token) với các chi nhánh: ${dsChiNhanh}`);
 console.log('[init-ban-chinh] Đang kiểm database rồi ghi trong MỘT giao dịch — database ở xa nên có thể mất vài phút, đừng đóng cửa sổ.');
 

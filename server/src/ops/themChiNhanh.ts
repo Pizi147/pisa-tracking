@@ -18,8 +18,14 @@ if (thieu.length) {
 }
 
 /* Nạp db.ts SAU khi đủ biến: nó đọc cấu hình kết nối ngay lúc nạp. */
-const { DB_PATH, closeDb, db } = await import('../db.ts');
+const dbMod = await import('../db.ts').catch((e: Error) => {
+  console.error(`[them-chi-nhanh] ${e.message} Chưa làm gì cả.`);
+  process.exit(1);
+});
+const { DB_PATH, closeDb, db } = dbMod;
 const { themChiNhanh } = await import('./initBanChinh.ts');
+const { moTaDichDb } = await import('../moiTruong.ts');
+console.log(`[them-chi-nhanh] Đích: ${moTaDichDb(DB_PATH)}`);
 console.log(`[them-chi-nhanh] Sẽ thêm chi nhánh ${ma.trim().toUpperCase()} (${ten}) vào database ${DB_PATH} (không in token).`);
 try {
   const id = themChiNhanh(db(), { code: ma, name: ten }, new Date().toISOString());

@@ -26,6 +26,11 @@ export type CauHinhDb =
 export function cauHinhDb(env: NodeJS.ProcessEnv = process.env, macDinh = ''): CauHinhDb {
   const url = env.TURSO_DATABASE_URL?.trim();
   if (url) {
+    /* Thiếu "libsql://" thì libsql KHÔNG báo lỗi mà lặng lẽ mở/tạo một FILE cục bộ mang tên máy chủ (đã thử 22/09) —
+       init-ban-chinh sẽ báo "Xong" trên một file trong thư mục dự án. */
+    if (!/^(libsql|https?|wss?|file):/i.test(url)) {
+      throw new Error('TURSO_DATABASE_URL phải bắt đầu bằng libsql:// (copy nguyên dòng URL trên trang Turso) — không kết nối.');
+    }
     const authToken = env.TURSO_AUTH_TOKEN?.trim();
     if (!authToken) throw new Error('Có TURSO_DATABASE_URL nhưng thiếu TURSO_AUTH_TOKEN — không kết nối.');
     return { kieu: 'turso', url, authToken };
@@ -45,6 +50,14 @@ export function tenMayChuDb(url: string): string {
 export function laTenDbBanChinh(url: string): boolean {
   const ten = tenMayChuDb(url);
   return ten.startsWith('pisatracking-') && !ten.startsWith('pisatracking-demo-');
+}
+
+/** Một dòng cho người chạy lệnh ghi dữ liệu thấy ngay đích là database nào — dán nhầm URL là thấy trước khi ghi. */
+export function moTaDichDb(url: string): string {
+  const ten = tenMayChuDb(url);
+  if (laTenDbBanChinh(url)) return `database BẢN CHÍNH — dữ liệu thật (${ten})`;
+  if (ten.startsWith('pisatracking-demo-')) return `database THỬ (${ten})`;
+  return `KHÔNG RÕ — tên không bắt đầu bằng pisatracking- hay pisatracking-demo- (${ten || url.split(/[?#]/)[0]}). Kiểm lại URL`;
 }
 
 /**

@@ -12,7 +12,8 @@ export type BanChinhTestKit = {
 export async function runBanChinhTests(t: BanChinhTestKit) {
   const { check, checkAsync, assert, assertThrows } = t;
   console.log('\nPR-Z2 · 1. Cấu hình kết nối theo môi trường');
-  const { cauHinhDb } = await import('../moiTruong.ts');
+  const moiTruongModSom = await import('../moiTruong.ts');
+  const { cauHinhDb } = moiTruongModSom;
 
   check('PR-Z2 · Không có biến Turso → dùng file cục bộ như máy dev hiện tại', () => {
     const c = cauHinhDb({ PISA_DB: '/tmp/x.sqlite' });
@@ -25,6 +26,18 @@ export async function runBanChinhTests(t: BanChinhTestKit) {
   check('PR-Z2 · Có URL Turso mà thiếu token → từ chối rõ ràng, không lặng lẽ rơi về file', () => {
     assertThrows(() => cauHinhDb({ TURSO_DATABASE_URL: 'libsql://a.turso.io' }), /TURSO_AUTH_TOKEN/,
       'Thiếu token phải báo lỗi');
+  });
+  check('PR-Z2 · URL Turso dán thiếu "libsql://" → từ chối (libsql sẽ lặng lẽ tạo một FILE cục bộ mang tên máy chủ); các dạng hợp lệ vẫn nhận', () => {
+    assertThrows(() => cauHinhDb({ TURSO_DATABASE_URL: 'pisatracking-xxx.aws-us-east-2.turso.io', TURSO_AUTH_TOKEN: 'x' }), /libsql:\/\//, 'Thiếu libsql:// phải báo lỗi');
+    for (const u of ['libsql://a.turso.io', 'https://a.turso.io', 'wss://a.turso.io', 'file:C:/tam/x.sqlite']) {
+      assert(cauHinhDb({ TURSO_DATABASE_URL: u, TURSO_AUTH_TOKEN: 'x' }).kieu === 'turso', `Phải nhận ${u}`);
+    }
+  });
+  check('PR-Z2 · moTaDichDb nói rõ đích là database BẢN CHÍNH, THỬ hay KHÔNG RÕ — để thấy ngay khi dán nhầm URL', () => {
+    const { moTaDichDb } = moiTruongModSom;
+    assert(/BẢN CHÍNH/.test(moTaDichDb('libsql://pisatracking-pizi147.aws-us-east-2.turso.io')), 'bản chính');
+    assert(/THỬ/.test(moTaDichDb('libsql://pisatracking-demo-pizi147.aws-us-east-2.turso.io')), 'bản thử');
+    assert(/KHÔNG RÕ/.test(moTaDichDb('libsql://khac-pizi147.turso.io')) && /KHÔNG RÕ/.test(moTaDichDb('file:C:/tam/x.sqlite')), 'khác');
   });
 
   /* 🆕 22/09 — canh vá ở Task 1 Step 3b: libsql gắn `_metadata` vào dòng `.get()`. */
@@ -590,6 +603,7 @@ export async function runBanChinhTests(t: BanChinhTestKit) {
       const ra = String(r.stdout) + String(r.stderr);
       assert(r.status === 0, `Mã thoát ${r.status}: ${ra.slice(-400)}`);
       assert(/Sẽ khởi tạo database file:/.test(r.stdout) && /userId 1/.test(r.stdout) && /MB/.test(r.stdout) && /Bãi Cháy/.test(r.stdout), `Kết quả in ra: ${String(r.stdout).slice(-400)}`);
+      assert(/Đích: .*KHÔNG RÕ/.test(r.stdout), `Phải in rõ đích là database loại nào trước khi chạy: ${String(r.stdout).slice(0, 400)}`);
       assert(!ra.includes(TOKEN_GIA) && !ra.includes(MK), 'Lệnh in lộ token hoặc mật khẩu');
       /* PowerShell trong ngoặc kép nuốt `$…` — "QuangNinh$2026abc" thành "QuangNinh" (đã thử 22/09). In độ dài để người gõ thấy ngay. */
       assert(new RegExp(`mật khẩu quản trị dài ${MK.length} ký tự`).test(r.stdout), `Phải in độ dài mật khẩu đã lưu: ${String(r.stdout).slice(-300)}`);

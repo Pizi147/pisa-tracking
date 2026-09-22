@@ -271,6 +271,10 @@ npm run init-ban-chinh
 | `mật khẩu quản trị mới` | Mật khẩu **mạnh, mới** — dài ít nhất 10 ký tự, có cả chữ và số. **Không** dùng `pisa2026` (lệnh sẽ từ chối) | `PisaQN-2026-an-toan` |
 | `danh sách chi nhánh` | Mỗi chi nhánh viết `MÃ=Tên`, cách nhau bằng dấu `;`. Mã viết liền, không dấu. Không dùng mã `TUTOR` (đã dành cho Tutor part-time) | `MB=Monbay;BC=Bãi Cháy` |
 
+Dòng đầu tiên lệnh in ra cho biết **đích**: `Đích: database BẢN CHÍNH — dữ liệu thật (pisatracking-…)`. Thấy chữ
+`THỬ` hay `KHÔNG RÕ` mà bạn đang định khởi tạo bản chính → bấm **Ctrl+C** ngay (mọi thứ nằm trong một giao dịch chưa
+chốt, dừng giữa chừng là không có gì được ghi) rồi kiểm lại URL.
+
 Chờ vài phút (database ở Mỹ, mỗi lượt đi về mất nửa giây) — **đừng đóng cửa sổ** giữa chừng.
 
 **Kết quả đúng:** dòng cuối có dạng
