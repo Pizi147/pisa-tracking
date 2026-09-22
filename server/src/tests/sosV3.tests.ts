@@ -295,10 +295,16 @@ export async function runSosV3Tests(t: YThucTestKit) {
   const PAST_WEEK = weekSvc.mondayOf(addDays(TODAY, -14));
   const mkAttempt = (st: { id: number; cycleId: number }, no: number, weekStart: string = PAST_WEEK): any => attemptsSvc.createAttempt(P.admin, {
     studentId: st.id, cycleId: st.cycleId, classId: CLASS, attemptNo: no, periodId: weekSvc.ensurePeriod(weekStart).id });
-  const enter = (who: any, a: any, skill: string, band: number) => attemptsSvc.saveScore(who, a.id, skill,
-    skill === 'listening' ? { rawScore: scoring.LISTENING_BY_RAW.indexOf(band) }
-    : skill === 'reading' ? { rawScore: scoring.READING_BY_RAW.indexOf(band) }
-    : { criteria: [band, band, band, band] });
+  /*
+   * RB-5 (PR-Rc1): sửa một ô đã có điểm nay phải kèm lý do. Hàm này vừa nhập lần đầu vừa sửa điểm nguồn, nên LUÔN gửi
+   * một lý do — lần nhập đầu thì máy chủ bỏ qua nó. Luật "khi nào phải có lý do" có phép kiểm riêng ở chamDiem.tests.ts.
+   */
+  const enter = (who: any, a: any, skill: string, band: number) => attemptsSvc.saveScore(who, a.id, skill, {
+    ...(skill === 'listening' ? { rawScore: scoring.LISTENING_BY_RAW.indexOf(band) }
+      : skill === 'reading' ? { rawScore: scoring.READING_BY_RAW.indexOf(band) }
+      : { criteria: [band, band, band, band] }),
+    lyDo: 'Phép kiểm: sửa điểm nguồn',
+  });
   /** GVBM đang dạy đúng kỹ năng; chưa phân công ai thì GVCN (đúng luật `suggestCaseOwner`). */
   const teacherOf = (skill: string): number => (get("SELECT user_id AS n FROM teacher_assignments WHERE class_id = ? AND skill = ? AND status = 'active' LIMIT 1", CLASS, skill)
     ?? get("SELECT user_id AS n FROM teacher_assignments WHERE class_id = ? AND is_core = 1 AND status = 'active' LIMIT 1", CLASS)).n;

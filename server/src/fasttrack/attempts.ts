@@ -1,7 +1,7 @@
 import { db, tx } from '../db.ts';
 import {
   ASSESSED_SKILLS, ASSESSED_SKILL_LABEL, C10_NHAP_DAU_TRU_TUAN_QUA_KHU, ENTRY_SKILLS, ENTRY_SKILL_LABEL, MOCK_FT_STUDY_WEEK, NO_SHOW_OVERRIDDEN_NOTE,
-  PERMISSIONS, awaitingScore, noShowStateOf, noShowText, pendingSkillsOf,
+  PERMISSIONS, awaitingScore, kiemLyDo, noShowStateOf, noShowText, pendingSkillsOf,
   type AssessedSkill, type EntrySkill, type NoShowState, type PendingCell, type SkillProgress, type WorkScope,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -756,6 +756,8 @@ export function scoreHistoryOf(attemptId: number) {
       skillLabel: ENTRY_SKILL_LABEL[l.entity_label as EntrySkill] ?? l.entity_label,
       before: scoreSummaryText(before), after: afterText,
       actorName: l.actor_name as string | null, createdAt: l.created_at as string,
+      /* RB-5 — lý do hiệu chỉnh nằm ngay trong bản "sau" của nhật ký; lần nhập đầu không có. */
+      lyDo: (after && typeof after === 'object' ? (after as any).lyDo ?? null : null) as string | null,
     };
   });
 }
@@ -1083,6 +1085,12 @@ export type ScorePatch = {
    * khi tuần kết thúc). Không phải điểm 0, và không bao giờ xoá một điểm chính thức.
    */
   noShow?: boolean;
+  /**
+   * RB-5 — LÝ DO HIỆU CHỈNH. Bắt buộc khi ô ĐÃ CÓ điểm chính thức và lần ghi này làm đổi giá trị đó (kể cả xoá). Lần
+   * nhập đầu tiên không phải hiệu chỉnh nên không đòi; lưu lại đúng con số cũ (tự lưu) hay chỉ sửa ghi chú cũng không.
+   * Lý do đi vào nhật ký `score.edit`/`score.override` — chỗ `scoreHistoryOf` đang đọc — nên không cần bảng mới.
+   */
+  lyDo?: string | null;
 };
 
 /**
@@ -1287,6 +1295,25 @@ export function saveScore(
     }
 
     /*
+     * RB-5 — SỬA MỘT Ô ĐÃ CÓ ĐIỂM THÌ PHẢI NÓI VÌ SAO.
+     *
+     * Câu lỗi của dấu "-" đã nhắc tới "hiệu chỉnh điểm có ghi lý do" từ lâu mà đường ấy chưa tồn tại (kiểm kê RB-5).
+     * Nay nó tồn tại và là ĐƯỜNG DUY NHẤT: không có lý do thì không đổi được một con số mà người khác đã đọc. So trên
+     * giá trị SẼ ĐƯỢC LƯU (điểm thô / bốn tiêu chí / band), chưa ghi gì nên chặn ở đây là cuộn lại sạch. Lưu lại đúng
+     * con số cũ không phải hiệu chỉnh — tự lưu không bị hỏi lý do.
+     */
+    const daCoDiem = (existing?.band ?? null) !== null || (existing?.raw_score ?? null) !== null;
+    if (daCoDiem) {
+      const cu = [existing!.raw_score, existing!.c1, existing!.c2, existing!.c3, existing!.c4, existing!.band]
+        .map((v) => v ?? null);
+      const moi = [raw, ...crit, band].map((v) => v ?? null);
+      if (cu.some((v, i) => v !== moi[i])) {
+        const loi = kiemLyDo(patch.lyDo);
+        if (loi) throw badRequest(loi);
+      }
+    }
+
+    /*
      * NGƯỜI NHẬP CHỈ CÓ KHI Ô CÓ GIÁ TRỊ (MT-P09). Xoá điểm là một thao tác, nhưng KHÔNG phải một lần "nhập điểm":
      * ô trống mà còn ghi "Người nhập: X" là dùng tác giả của thao tác làm bằng chứng rằng đã có điểm. Ai đã sửa
      * gì, lúc nào vẫn nằm trong nhật ký (`score.edit`) — hiện ở "Lịch sử thay đổi" của hồ sơ Test.
@@ -1333,7 +1360,8 @@ export function saveScore(
     writeAudit({
       actorUserId: p.userId,
       action: path === 'override' ? 'score.override' : 'score.edit',
-      entityType: 'assessment_attempt', entityId: attemptId, entityLabel: skill, before, after,
+      entityType: 'assessment_attempt', entityId: attemptId, entityLabel: skill,
+      before, after: patch.lyDo ? { ...(after as any), lyDo: String(patch.lyDo).trim() } : after,
     });
 
     /*

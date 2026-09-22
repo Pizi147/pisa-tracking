@@ -631,7 +631,7 @@ check('GVCN chỉ đọc lịch: không chốt được tuần', () => {
 check('Nhập điểm KHÔNG kèm quyền sửa lịch: payload điểm không đụng tới tuần', () => {
   const a = conn.prepare(`SELECT * FROM assessment_attempts WHERE class_id = ? AND status='done' LIMIT 1`).get(mbClass) as any;
   const before = (conn.prepare('SELECT planned_period_id FROM assessment_attempts WHERE id = ?').get(a.id) as any).planned_period_id;
-  attempts.saveScore(P.w1Teacher, a.id, 'writing1', { criteria: [6, 6, 6, 6] });
+  attempts.saveScore(P.w1Teacher, a.id, 'writing1', { criteria: [6, 6, 6, 6], lyDo: 'Phép kiểm: sửa điểm đã có' });
   const after = (conn.prepare('SELECT planned_period_id FROM assessment_attempts WHERE id = ?').get(a.id) as any).planned_period_id;
   assert(before === after, 'Nhập điểm đã làm đổi tuần MT');
 });
@@ -702,7 +702,7 @@ check('Chỉ quản trị hệ thống nhập bù được, và đi nhật ký r
   const a = conn.prepare(`SELECT * FROM assessment_attempts WHERE class_id = ? AND status='done' LIMIT 1`).get(mbClass) as any;
   assertThrows(() => attempts.saveScore(P.coreTeacher, a.id, 'writing2', { criteria: [6, 6, 6, 6] }), /phân công/,
     'GVCN nhập bù điểm W2 của kỹ năng mình không dạy');
-  attempts.saveScore(P.admin, a.id, 'writing2', { criteria: [6, 6, 6, 6] });
+  attempts.saveScore(P.admin, a.id, 'writing2', { criteria: [6, 6, 6, 6], lyDo: 'Phép kiểm: sửa điểm đã có' });
   const log = conn.prepare(`SELECT * FROM audit_logs WHERE action='score.override' ORDER BY id DESC LIMIT 1`).get() as any;
   assert(log, 'Nhập bù không được ghi nhật ký riêng');
 });
@@ -1023,8 +1023,8 @@ check('[6.2→v3] Mock Test FT điểm dưới kỳ vọng: tín hiệu nối NG
     kind: 'teaching_adjust', description: 'GVCN điều chỉnh cách chữa bài cho em',
     performerSelf: true, status: 'completed', completedDate: TODAY,
   });
-  attempts.saveScore(t('writing1'), attempt.id, 'writing1', { criteria: [exp, exp, exp, exp] });
-  attempts.saveScore(t('writing2'), attempt.id, 'writing2', { criteria: [exp, exp, exp, exp] });
+  attempts.saveScore(t('writing1'), attempt.id, 'writing1', { criteria: [exp, exp, exp, exp], lyDo: 'Phép kiểm: sửa điểm đã có' });
+  attempts.saveScore(t('writing2'), attempt.id, 'writing2', { criteria: [exp, exp, exp, exp], lyDo: 'Phép kiểm: sửa điểm đã có' });
   const reread = attempts.attemptDetail(P.cpManager, attempt.id);
   assert(reread.result.sosLevel === 2, `Sau khi sửa Writing phải còn SOS 2, đang là ${reread.result.sosLevel}`);
 
@@ -1096,7 +1096,7 @@ check('[9.4] Case chỉ sống nhờ con số vừa sửa thì rút khỏi danh 
   const made = { id: sig.case_id } as any;
 
   /* Hoá ra điểm nhập sai: sửa lại thành đạt. */
-  attempts.saveScore(t('speaking'), attempt.id, 'speaking', { criteria: [exp, exp, exp, exp] });
+  attempts.saveScore(t('speaking'), attempt.id, 'speaking', { criteria: [exp, exp, exp, exp], lyDo: 'Phép kiểm: sửa điểm đã có' });
   const after = conn.prepare('SELECT * FROM sos_cases WHERE id = ?').get(made.id) as any;
   assert(after.status === 'done', 'Case chỉ dựa trên điểm sai vẫn nằm trong danh sách đang xử lý');
   assert(/sửa điểm/i.test(after.outcome_note ?? ''),
@@ -1130,7 +1130,7 @@ check('Bỏ một kỹ năng khỏi phạm vi sau khi đã có điểm thì gi�
 check('Gửi null xoá điểm về trống, không biến thành 0', () => {
   const a = conn.prepare(`SELECT * FROM assessment_attempts WHERE class_id = ? AND status='done' LIMIT 1`).get(mbClass) as any;
   const teacher = loadPrincipal(teacherOfSkill('MB-FT 101', 'listening'));
-  attempts.saveScore(teacher, a.id, 'listening', { rawScore: null });
+  attempts.saveScore(teacher, a.id, 'listening', { rawScore: null, lyDo: 'Phép kiểm: sửa điểm đã có' });
   const row = conn.prepare(`SELECT * FROM assessment_scores WHERE attempt_id = ? AND skill='listening'`).get(a.id) as any;
   assert(row.raw_score === null && row.band === null, 'Xoá điểm lại thành 0');
   attempts.saveScore(teacher, a.id, 'listening', { rawScore: 30 });
@@ -2062,7 +2062,7 @@ check('Sửa điểm làm đổi mức SOS thì GIỮ case và ghi lịch sử, 
   const prog = regular.programmeOfClass(target.class_id)!;
   // Nâng mọi kỹ năng lên mức đạt: SOS phải về 0 nhưng case vẫn còn để tra lịch sử.
   for (const skill of prog.skills) {
-    regular.saveRegularScore(P.admin, target.attempt_id, skill, { score: 38, total: 40 });
+    regular.saveRegularScore(P.admin, target.attempt_id, skill, { score: 38, total: 40, lyDo: 'Phép kiểm: sửa điểm đã có' });
   }
   const after = conn.prepare('SELECT * FROM sos_cases WHERE id = ?').get(target.case_id) as any;
   assert(after, 'Case bị xoá mất khi điểm đổi');
@@ -3273,7 +3273,7 @@ check('Sửa điểm lên thành đạt thì HẠ MỨC, không xoá mất việ
   const ivBefore = (conn.prepare('SELECT COUNT(*) n FROM case_interventions WHERE case_id = ?')
     .get(row.id) as any).n;
   const a = conn.prepare('SELECT * FROM assessment_attempts WHERE id = ?').get(row.attempt_id) as any;
-  attempts.saveScore(P.admin, a.id, 'listening', { rawScore: 40 });
+  attempts.saveScore(P.admin, a.id, 'listening', { rawScore: 40, lyDo: 'Phép kiểm: sửa điểm đã có' });
   const after = conn.prepare('SELECT * FROM sos_cases WHERE id = ?').get(row.id) as any;
   assert(after, 'Sửa điểm đã XOÁ mất vấn đề');
   assert(after.sos_level === 0, `Điểm đã đạt mà mức vẫn là ${after.sos_level}`);
@@ -4045,7 +4045,7 @@ check('Lớp Normal: chấm lại một bài CŨ vẫn hạ được mức của
     .prepare('SELECT raw_total FROM assessment_scores WHERE attempt_id = ? AND skill = ?')
     .get(row.attempt_id, row.topic) as any;
   const total = sc?.raw_total ?? 40;
-  regular.saveRegularScore(P.admin, row.attempt_id, row.topic, { score: total, total });
+  regular.saveRegularScore(P.admin, row.attempt_id, row.topic, { score: total, total, lyDo: 'Phép kiểm: sửa điểm đã có' });
 
   const after = conn.prepare('SELECT sos_level FROM sos_cases WHERE id = ?').get(row.id) as any;
   assert(after.sos_level === 0,
@@ -8634,7 +8634,7 @@ check('PR-I · Ô điểm bị xoá trống KHÔNG còn "người nhập": tác 
   const id = prgAttempts[3];                                   // Reading của B đã có điểm 30 từ phép kiểm PR-G
   const before = priCell(id, 'reading');
   assert(before.rawScore === 30 && before.enteredByName, `Tiền đề: Reading của B phải có điểm và người nhập, đang ${JSON.stringify(before)}`);
-  attempts.saveScore(P.lrTeacher, id, 'reading', { rawScore: null });
+  attempts.saveScore(P.lrTeacher, id, 'reading', { rawScore: null, lyDo: 'Phép kiểm: sửa điểm đã có' });
   const cleared = priCell(id, 'reading');
   assert(cleared.rawScore === null && cleared.band === null, 'Xoá xong ô phải trống');
   assert(cleared.enteredByName === null && cleared.enteredAt === null,
@@ -8649,7 +8649,7 @@ check('PR-I · Bài chỉ báo "-" hoặc mới gõ dở một tiêu chí: "-" k
   assert(dash.enteredByName === null && dash.enteredAt === null,
     `Báo "-" không phải nhập điểm nên không có người nhập: ${JSON.stringify([dash.noShow?.state, dash.enteredByName])}`);
   const id = prgAttempts[4];                                    // W1 của B: đang "-", chưa chốt vì tuần đã hết -> không dùng; dùng W2 đã có điểm
-  attempts.saveScore(prgWriting2, id, 'writing2', { criteria: [6, null, null, null] });
+  attempts.saveScore(prgWriting2, id, 'writing2', { criteria: [6, null, null, null], lyDo: 'Phép kiểm: sửa điểm đã có' });
   const partial = priCell(id, 'writing2');
   assert(partial.band === null && partial.criteria[0] === 6, 'Tiền đề: mới có một tiêu chí, chưa ra band');
   assert(partial.enteredByName, 'Đã có giá trị (dù dở dang) thì còn người nhập — chỉ ô HOÀN TOÀN trống mới hết tên');

@@ -534,6 +534,8 @@ api.put('/attempts/:id/scores/:skill', requireAuth, wrap((req) => {
   return attemptSvc.saveScore(principalOf(req), pInt(req, 'id'), skill, {
     rawScore: b.rawScore, rawTotal: b.rawTotal,
     criteria: b.criteria, resultDate: b.resultDate, note: b.note,
+    /* RB-5 — lý do hiệu chỉnh khi sửa ô đã có điểm; máy chủ tự quyết khi nào bắt buộc. */
+    lyDo: b.lyDo,
     /* Dấu '-' "không có bài" (PR-G) — chỉ nhận đúng true/false, không hiểu chuỗi lạ thành lệnh. */
     noShow: b.noShow === true ? true : b.noShow === false ? false : undefined,
   });

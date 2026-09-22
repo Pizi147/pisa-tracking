@@ -993,7 +993,7 @@ git commit -m "PR-Rc1 (4): trang thai Case theo hoc vien + hang muc, khong theo 
 - Produces: `saveScore(..., patch.lyDo)` và `saveRegularScore(..., patch.lyDo)`; `scoreHistoryOf` mỗi dòng thêm
   `lyDo: string | null`.
 
-- [ ] **Step 1: Phép kiểm (đỏ).**
+- [x] **Step 1: Phép kiểm (đỏ).**
 
 ```ts
   check('PR-Rc1 · RB-5 Sửa ô đã có điểm phải ghi lý do; lý do vào lịch sử điểm', () => {
@@ -1034,7 +1034,7 @@ git commit -m "PR-Rc1 (4): trang thai Case theo hoc vien + hang muc, khong theo 
   });
 ```
 
-- [ ] **Step 2: `ScorePatch` thêm `lyDo`.**
+- [x] **Step 2: `ScorePatch` thêm `lyDo`.**
 
 ```ts
   /**
@@ -1045,7 +1045,7 @@ git commit -m "PR-Rc1 (4): trang thai Case theo hoc vien + hang muc, khong theo 
   lyDo?: string | null;
 ```
 
-- [ ] **Step 3: Kiểm lý do trong `saveScore`.** Đặt **ngay trước** `return tx(() => {` (sau các lần chặn trạng thái
+- [x] **Step 3: Kiểm lý do trong `saveScore`.** Đặt **ngay trước** `return tx(() => {` (sau các lần chặn trạng thái
   thi), và sau khi đã đọc `existing`/`before` — nếu `existing` đang đọc trong `tx`, chuyển một câu đọc nhẹ ra trước:
 
 ```ts
@@ -1066,7 +1066,7 @@ git commit -m "PR-Rc1 (4): trang thai Case theo hoc vien + hang muc, khong theo 
   }
 ```
 
-- [ ] **Step 4: Ghi lý do vào nhật ký.** Ở `writeAudit` của `saveScore` (khối `score.edit`/`score.override`), đổi
+- [x] **Step 4: Ghi lý do vào nhật ký.** Ở `writeAudit` của `saveScore` (khối `score.edit`/`score.override`), đổi
   `after` thành:
 
 ```ts
@@ -1074,13 +1074,13 @@ git commit -m "PR-Rc1 (4): trang thai Case theo hoc vien + hang muc, khong theo 
       after: patch.lyDo ? { ...(after as any), lyDo: String(patch.lyDo).trim() } : after,
 ```
 
-- [ ] **Step 5: `scoreHistoryOf` trả `lyDo`.** Trong `rows.map`, thêm vào đối tượng trả về:
+- [x] **Step 5: `scoreHistoryOf` trả `lyDo`.** Trong `rows.map`, thêm vào đối tượng trả về:
 
 ```ts
       lyDo: (after && typeof after === 'object' ? (after as any).lyDo ?? null : null) as string | null,
 ```
 
-- [ ] **Step 6: Lớp thường cùng luật.** Trong `saveRegularScore`, sau khi tính `score`/`total` và trước `return tx(`:
+- [x] **Step 6: Lớp thường cùng luật.** Trong `saveRegularScore`, sau khi tính `score`/`total` và trước `return tx(`:
 
 ```ts
   /* RB-5 — cùng luật với Fast Track: đổi một điểm đã có thì phải ghi lý do. */
@@ -1092,14 +1092,14 @@ git commit -m "PR-Rc1 (4): trang thai Case theo hoc vien + hang muc, khong theo 
 ```
   và ở `writeAudit` của hàm này, `after: patch.lyDo ? { ...(after as any), lyDo: String(patch.lyDo).trim() } : after`.
 
-- [ ] **Step 7: Endpoint chuyển tiếp `lyDo`.** `PUT /attempts/:id/scores/:skill` thêm `lyDo: b.lyDo` vào đối tượng
+- [x] **Step 7: Endpoint chuyển tiếp `lyDo`.** `PUT /attempts/:id/scores/:skill` thêm `lyDo: b.lyDo` vào đối tượng
   patch (endpoint lớp thường đã thêm ở Task 2 Step 6).
 
-- [ ] **Step 8: Chạy.** Run: `npm test 2>&1 | tail -5`. Expected: `TẤT CẢ B+15 KIỂM TRA ĐỀU ĐẠT`.
+- [x] **Step 8: Chạy.** Run: `npm test 2>&1 | tail -5`. Expected: `TẤT CẢ B+15 KIỂM TRA ĐỀU ĐẠT`.
   🛑 Nếu phép kiểm cũ nào hỏng vì nay đòi lý do (phép kiểm cũ sửa điểm hai lần), **không nới luật**: sửa phép kiểm cũ
   bằng cách truyền `lyDo` và ghi việc đó vào Nhật ký.
 
-- [ ] **Step 9: Commit.**
+- [x] **Step 9: Commit.**
 
 ```bash
 git add server/src/fasttrack/attempts.ts server/src/normal/regular.ts server/src/routes/index.ts server/src/tests/chamDiem.tests.ts
@@ -1867,3 +1867,4 @@ git fetch origin && git rebase origin/main
 | 23/09 | 2 | Đỏ: 786 đạt, 5 hỏng (`reportRegularNoShow is not a function`, câu chặn cũ còn). Xanh: **791** (786 + 5; kế hoạch ghi 4 phép, thêm 1). Lệch kế hoạch: (a) Ruling 1 — phép quyền dùng Quản trị hệ thống ghi được + Quản lý bị chặn; (b) Ruling 2 — môn lấy từ `teacher_assignments` của GVBM, assert có môn và có môn không dạy (không bỏ qua im lặng); (c) thêm phép "dời bị chặn (vượt đợt kế tiếp) thì không còn dấu -": ghi dấu + dời chung một `tx` (kiểm đột biến: bỏ `tx` thì phép này đỏ); (d) Ruling 6 — ô môn của `regularSheet` thêm `noShow`, `movedFrom`, `canEdit`; (e) chặn gỡ dấu khi ô đã có điểm ở tuần mới (`hasScore` của setSkillWeek chỉ nhìn band nên không tự chặn); (f) run.ts phép PR-G "Normal KHÔNG dùng dấu" đổi tên + regex `/Normal/` → `/lớp thường/` theo câu chỉ đường mới (số phép không đổi). typecheck sạch. |
 | 23/09 | 3 | Đỏ: 791 đạt, 1 hỏng ("thao tác đáng lẽ phải bị từ chối nhưng lại thành công" — tạo canCham + endpoint trước, chặn sau). Xanh: **792**. Lệch kế hoạch: (a) regex phép kiểm `/lớp thường/` thêm cờ `i` — câu lỗi chép nguyên văn bắt đầu bằng "Lớp thường"; (b) canCham.ts bỏ import `badRequest` không dùng; (c) endpoint truyền `qInt(...) ?? null`, `qStr(...) ?? null` (helper trả `undefined`). Nơi gọi `classScoreSheet` cũ (run.ts ×3, luatMayChu.tests.ts) đều là lớp FT — không vỡ. Web: `ScoreSheetPage` (`/nhap-diem/:id`) giờ báo lỗi rõ khi mở lớp thường thay vì hiện nhầm lưới MT, tới khi Task 7–8 chuyển sang endpoint chung. typecheck sạch. |
 | 23/09 | 4 | Đỏ: 792 đạt, 1 hỏng (`dong.cases` chưa có). Xanh: **793**. Lệch kế hoạch: (a) Ruling 1 — bốn lần nhập điểm dùng `P.admin` (Quản lý không nhập điểm), đọc bảng vẫn `P.mbManager`; (b) môn trượt chỉ sinh TÍN HIỆU, không tự sinh Case → phép kiểm tạo Case Listening thật từ tín hiệu (`reportIssue` của GVCN, `fromSignalId`) và assert Case đó là hạng mục listening; (c) `attempt_id + 99999` vỡ khoá ngoại → trỏ sang một lượt Cuối khoá THẬT của cùng khoá (`taoLuot`); (d) phần tử `cases` thêm `skill` (môn trượt của dòng ứng với hạng mục) cho khớp Interfaces; Case trong dòng xếp theo luật Case đại diện mục 4.3 (`skillSupportBoard`): đang mở trước, id mới trước. **Sửa vòng 1:** bản đầu xếp `ORDER BY id` tăng dần → Case cũ đã xong che Case đang mở cùng môn; thêm 1 phép kiểm (Case done + Case mở cùng môn) → **794**. typecheck sạch. |
+| 23/09 | 5 | Đỏ: 794 đạt, 3 hỏng ("thao tác đáng lẽ phải bị từ chối nhưng lại thành công"). Xanh: **797** (794 + 2 phép của kế hoạch + 1 phép thêm). Lệch kế hoạch: (a) Ruling 1 — mọi lần ghi điểm trong phép kiểm dùng `P.admin` thay `P.mbManager`; (b) Ruling 8 — chỉ đòi lý do khi lần ghi ĐỔI hoặc XOÁ giá trị chính thức, ở cả FT lẫn lớp thường; FT so trong `tx` trên giá trị SẼ lưu (`raw_score`, c1–c4, `band`) sau khi tính band, trước mọi câu ghi (chặn thì cuộn lại sạch) thay vì đọc nhẹ trước `tx`; lớp thường so cả điểm lẫn tổng câu (đổi tổng là đổi tỉ lệ đạt); lưu lại đúng số cũ / chỉ sửa ghi chú không đòi lý do → phép thêm "Ghi lại đúng con số cũ…" (cả hai đường); (c) Ruling 3 — lượt FT chọn bằng `luotFtGhiDuoc()` (chưa huỷ, L+R trong phạm vi, không vắng/huỷ phần thi), phép kiểm tự xoá ô trước khi ghi; phép thứ hai thêm vế lớp thường "xoá điểm cũng phải có lý do". **Phép kiểm cũ phải kèm `lyDo` (không nới luật):** run.ts ×11 — "Nhập điểm KHÔNG kèm quyền sửa lịch" (W1), "Chỉ quản trị hệ thống nhập bù được" (W2), "[6.2→v3] Mock Test FT…" (W1, W2 thấp → đạt), "[9.4] Case chỉ sống nhờ…" (Speaking), "Gửi null xoá điểm về trống" (L → null), "Sửa điểm làm đổi mức SOS thì GIỮ case" (lớp thường), "Sửa điểm lên thành đạt thì HẠ MỨC" (L), "Lớp Normal: chấm lại một bài CŨ", "PR-I · Ô điểm bị xoá trống" (R → null), "PR-I · Bài chỉ báo -…" (W2 → một tiêu chí); sosV3.tests.ts hàm `enter` và luatMayChu.tests.ts hàm `diem` (dùng cho cả nhập lần đầu lẫn sửa) luôn kèm lý do — sửa 9 phép PR-T/S1/RB-8 hỏng dây chuyền. Web chưa gửi `lyDo` (Task 7 thêm hộp thoại): `ScoreEntry.tsx:106` (PUT `/attempts/:id/scores/:skill`, dùng ở MockDetailPage + ScoreSheetPage) và `RegularSheetPage.tsx:340` (PUT `/regular/attempts/:id/scores/:skill`) — đến Task 7, sửa ô đã có điểm trên web sẽ nhận lỗi 400 "Sửa điểm đã nhập thì phải ghi lý do.". typecheck sạch. |

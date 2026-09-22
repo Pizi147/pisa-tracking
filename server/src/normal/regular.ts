@@ -3,7 +3,7 @@ import { addMilestone, followUntilAfter } from '../cases/sos.ts';
 import { raiseSignal, reconcileCorrectedSignals } from '../cases/signals.ts';
 import {
   ATTEMPT_KIND_LABEL, PERMISSIONS, RATIO_PASS_THRESHOLD, REGULAR_SKILL_LABEL,
-  caseCategoriesFor, categoryOf, ratioResult, sosFromFailCount, tuanKeTiep,
+  caseCategoriesFor, categoryOf, kiemLyDo, ratioResult, sosFromFailCount, tuanKeTiep,
   type AttemptKind, type CaseCategory, type RatioOutcome, type SosLevel,
 } from '../../../shared/domain/index.ts';
 import { addDays, badRequest, isIsoDate, notFound, nowIso } from '../util.ts';
@@ -375,6 +375,17 @@ export function saveRegularScore(
     if (score > total) throw badRequest(`Điểm đạt (${score}) không thể lớn hơn tổng điểm (${total}).`);
   }
 
+  /*
+   * RB-5 — cùng luật với Fast Track: đổi (hay xoá) một điểm đã có thì phải ghi lý do. Điểm lớp thường là cặp
+   * "số câu đúng / tổng số câu" — đổi tổng là đổi tỉ lệ đạt, nên cũng tính là sửa. Lưu lại đúng cặp cũ thì không.
+   */
+  const doiGiaTri = (existing?.raw_score ?? null) !== null
+    && ((score ?? null) !== (existing?.raw_score ?? null) || (total ?? null) !== (existing?.raw_total ?? null));
+  if (doiGiaTri) {
+    const loi = kiemLyDo(patch.lyDo);
+    if (loi) throw badRequest(loi);
+  }
+
   return tx(() => {
     if (existing) {
       conn
@@ -396,7 +407,8 @@ export function saveRegularScore(
       .get(attemptId, skill);
     writeAudit({ actorUserId: p.userId, action: path === 'override' ? 'regular.score.override' : 'regular.score',
       entityType: 'assessment_score',
-      entityId: (after as any).id, entityLabel: `${prog.code} · ${skill}`, before, after });
+      entityId: (after as any).id, entityLabel: `${prog.code} · ${skill}`, before,
+      after: patch.lyDo ? { ...(after as any), lyDo: String(patch.lyDo).trim() } : after });
 
     refreshRegularOutcome(p, attemptId);
     return { score: after, result: regularResultOf(attemptId) };

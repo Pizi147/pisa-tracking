@@ -289,4 +289,81 @@ export async function runChamDiemTests(t: YThucTestKit) {
       `Case đầu tiên phải là Case đang mở: #${dong.cases[0].id} (${dong.cases[0].status})`);
     assert(dong.caseId === moi.id && dong.caseStatus === moiRow.status, `Trường cũ lấy Case đang mở: ${dong.caseStatus}`);
   });
+
+  /*
+   * RB-5 dùng một lượt Mock của lớp demo MB-FT 101 — chọn lượt GHI ĐƯỢC (chưa huỷ, L và R đều trong phạm vi, chưa bị
+   * ghi vắng/huỷ phần thi), không lấy "lượt đầu tiên" theo thứ tự seed. Mỗi phép kiểm tự xoá ô của mình trước khi ghi,
+   * nên không phụ thuộc điểm mà bộ demo đã có.
+   */
+  function luotFtGhiDuoc(boQua: number[] = []): number {
+    const ds = conn.prepare(
+      `SELECT id FROM assessment_attempts WHERE kind = 'mock' AND class_id = ? AND status != 'cancelled' ORDER BY id`,
+    ).all(classId('MB-FT 101')) as any[];
+    for (const { id } of ds) {
+      if (boQua.includes(id)) continue;
+      const rows = skillSched.ensureSkillRows(id) as any[];
+      const ok = ['listening', 'reading'].every((k) => {
+        const r = rows.find((x: any) => x.skill === k);
+        return r && r.required && r.sit_status !== 'cancelled' && r.sit_status !== 'absent';
+      });
+      if (ok) return id;
+    }
+    throw new Error('Seed: MB-FT 101 không còn lượt Mock nào ghi được L và R');
+  }
+  const xoaO = (attemptId: number, k: string) =>
+    conn.prepare('DELETE FROM assessment_scores WHERE attempt_id = ? AND skill = ?').run(attemptId, k);
+
+  check('PR-Rc1 · RB-5 Sửa ô đã có điểm phải ghi lý do; lý do vào lịch sử điểm', () => {
+    const { attemptId } = taoBaiThuong('2026-09-14');
+    /* Quản lý không nhập điểm (Ruling 1) — đường nhập bù của Quản trị hệ thống. */
+    regular.saveRegularScore(P.admin, attemptId, 'listening', { score: 30, total: 40 });
+    assertThrows(() => regular.saveRegularScore(P.admin, attemptId, 'listening', { score: 31, total: 40 }),
+      /lý do/, 'Sửa điểm đã có mà không ghi lý do thì bị chặn');
+    const ok = regular.saveRegularScore(P.admin, attemptId, 'listening',
+      { score: 31, total: 40, lyDo: 'Cộng nhầm một câu' });
+    assert((ok.score as any).raw_score === 31, 'Có lý do thì lưu được');
+    const lich = conn.prepare(
+      `SELECT after_json FROM audit_logs WHERE entity_type = 'assessment_score' AND action LIKE 'regular.score%' ORDER BY id DESC LIMIT 1`,
+    ).get() as any;
+    assert(String(lich.after_json).includes('Cộng nhầm'), 'Lý do phải nằm trong nhật ký');
+
+    /* Fast Track: cùng luật, và lịch sử điểm của hồ sơ đợt đọc được lý do. */
+    const ft = luotFtGhiDuoc();
+    xoaO(ft, 'listening');
+    attempts.saveScore(P.admin, ft, 'listening', { rawScore: 30 });
+    assertThrows(() => attempts.saveScore(P.admin, ft, 'listening', { rawScore: 31 }), /lý do/,
+      'Fast Track cũng đòi lý do khi sửa điểm đã có');
+    attempts.saveScore(P.admin, ft, 'listening', { rawScore: 31, lyDo: 'Chấm lại phần 3' });
+    const h = attempts.scoreHistoryOf(ft);
+    assert(h.some((x: any) => x.lyDo === 'Chấm lại phần 3'), 'Lịch sử điểm hiện lý do');
+  });
+
+  check('PR-Rc1 · RB-5 Không đòi lý do khi ô đang trống, và xoá điểm cũng phải có lý do', () => {
+    const ft = luotFtGhiDuoc();
+    xoaO(ft, 'reading');
+    attempts.saveScore(P.admin, ft, 'reading', { rawScore: 28 });   // lần đầu: không cần lý do
+    assertThrows(() => attempts.saveScore(P.admin, ft, 'reading', { rawScore: null }), /lý do/,
+      'Xoá một điểm đã có cũng là hiệu chỉnh');
+    const { attemptId } = taoBaiThuong('2026-09-14');
+    regular.saveRegularScore(P.admin, attemptId, 'reading', { score: 20, total: 40 });
+    assertThrows(() => regular.saveRegularScore(P.admin, attemptId, 'reading', { score: null }), /lý do/,
+      'Lớp thường: xoá điểm đã có cũng phải có lý do');
+  });
+
+  check('PR-Rc1 · RB-5 Ghi lại đúng con số cũ (tự lưu) hay chỉ sửa ghi chú thì không đòi lý do', () => {
+    const { attemptId } = taoBaiThuong('2026-09-14');
+    regular.saveRegularScore(P.admin, attemptId, 'writing', { score: 15, total: 20 });
+    const lai = regular.saveRegularScore(P.admin, attemptId, 'writing', { score: 15, total: 20 });
+    assert((lai.score as any).raw_score === 15, 'Lớp thường: lưu lại cùng điểm không bị chặn');
+    assertThrows(() => regular.saveRegularScore(P.admin, attemptId, 'writing', { score: 15, total: 25 }), /lý do/,
+      'Lớp thường: đổi tổng câu là đổi kết quả nên cũng phải có lý do');
+
+    const ft = luotFtGhiDuoc();
+    xoaO(ft, 'listening');
+    attempts.saveScore(P.admin, ft, 'listening', { rawScore: 25 });
+    attempts.saveScore(P.admin, ft, 'listening', { rawScore: 25 });
+    attempts.saveScore(P.admin, ft, 'listening', { note: 'Em làm bài đủ giờ' });
+    const o: any = dauCua(ft, 'listening');
+    assert(o.raw_score === 25 && o.note === 'Em làm bài đủ giờ', 'Fast Track: lưu lại cùng điểm và sửa ghi chú không bị chặn');
+  });
 }
