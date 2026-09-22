@@ -12,14 +12,14 @@ const THOI_GIAN_NHAN: Record<ChiSo['thoiGian'], string> = {
   'ket-qua-trong-ky': 'Kết quả trong kỳ',
 };
 
+export type PhamViSoLieu = { branchId?: number | null; chuongTrinh?: ChuongTrinh };
+export type DongSoLieu = { id: number; title: string; sub: string; href: string };
+
 type Drill = {
   id: string; unit: ChiSo['donVi']; n: number; numerator: number | null;
   empty: boolean; note: string | null; today: string;
-  rows?: { id: number; title: string; sub: string; href: string }[];
+  rows?: DongSoLieu[];
 };
-
-export type PhamViSoLieu = { branchId?: number | null; chuongTrinh?: ChuongTrinh };
-export type DongSoLieu = { id: number; title: string; sub: string; href: string };
 
 /** Tham số truy vấn của một lần mở danh sách — Y HỆT tham số đã dùng để tính con số. */
 export function qsSoLieu(phamVi?: PhamViSoLieu, extra?: Record<string, string>): string {

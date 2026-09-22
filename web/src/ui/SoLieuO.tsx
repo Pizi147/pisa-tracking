@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { metricById } from '@shared/domain/index.ts';
 import { useApi } from '../lib/useApi.ts';
 import { Drawer } from './Drawer.tsx';
 import { Empty, ErrorState, Skeleton } from './ui.tsx';
@@ -18,15 +19,18 @@ type Props = { giaTri: number; className?: string } & (
 export function SoLieuO(props: Props) {
   const [open, setOpen] = useState(false);
   const { giaTri, className = '' } = props;
+  // Mã không có trong sổ thì KHÔNG vẽ số (cùng luật với <SoLieu>).
+  if (props.id !== undefined && !metricById(props.id)) return <span className="text-xs text-rose-300">Chỉ số không có trong sổ: {props.id}</span>;
   if (giaTri <= 0) return <span className={`tabular-nums text-slate-600 ${className}`}>{giaTri}</span>;
+  const ten = props.id !== undefined ? (metricById(props.id)?.ten ?? props.id) : props.tieuDe;
   return (
     <>
       <button type="button" onClick={() => setOpen(true)}
         className={`appearance-none bg-transparent border-0 p-0 cursor-pointer tabular-nums underline decoration-dotted underline-offset-4 hover:text-white ${className}`}
-        aria-label={`${giaTri} — bấm để xem danh sách`}>{giaTri}</button>
-      {props.id
+        aria-label={`${giaTri} — ${ten}. Bấm để xem danh sách`}>{giaTri}</button>
+      {props.id !== undefined
         ? <DanhSachSoLieu id={props.id} giaTri={giaTri} phamVi={props.phamVi} extra={props.extra} open={open} onClose={() => setOpen(false)} />
-        : <DanhSachNguon nguon={props.nguon!} tieuDe={props.tieuDe!} open={open} onClose={() => setOpen(false)} />}
+        : <DanhSachNguon nguon={props.nguon} tieuDe={props.tieuDe} open={open} onClose={() => setOpen(false)} />}
     </>
   );
 }
