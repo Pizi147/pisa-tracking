@@ -247,6 +247,8 @@ Commit `PR-Form (4): chủ đề Case theo chương trình (F07), attemptKind ch
 **Xong khi:** `npm run check` xanh (typecheck). Không có phép kiểm máy chủ mới ở Task này (luật đã kiểm ở Task 1–2).
 Commit `PR-Form (5): ChonNguoi — tìm người ≥ 3 ký tự, Tôi, Người ngoài, bàn phím`.
 
+- [x] Task 5 xong — `npm run check` xanh (typecheck), 804 phép kiểm không đổi.
+
 ## Task 6 · Web: khối Bằng chứng G-9 + YT-5
 
 **Files:** `web/src/ui/BangChung.tsx`, `web/src/modules/yThuc/ConfirmMeasurePanel.tsx`.
