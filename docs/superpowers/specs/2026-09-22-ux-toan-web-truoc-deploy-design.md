@@ -200,7 +200,7 @@ Quyền phải khớp giữa menu, máy chủ và việc đỏ.
 |---|---|
 | 4.4 / Q-V3-1 | Lớp thường giữ tín hiệu, không tự tạo Case |
 | 4.11 | Giữ `/auth/register`, tài khoản phải QTHT duyệt; thêm giới hạn số lần thử |
-| Cách chạy | 2 session code song song, xem giao diện sau mỗi đợt |
+| Cách chạy | ~~2 session code song song~~ → **3 session song song, 7 đợt** (22/09 tối), xem giao diện sau mỗi đợt |
 | S1 | Bỏ qua tín hiệu: lý do không bắt buộc |
 
 **Session planning tự quyết (theo đề xuất ở kiểm kê §4):**
@@ -267,20 +267,24 @@ Tên file, mã việc và ma trận chồng file lấy ở kiểm kê §5. Bổ 
 | **S3** · Chữ cuối | quét THUAT_NGU_DA_CHOT toàn web, S7, S9, RB-2, RB-4, DS14, DS16, DOC-1…6 | Fable 5.1 · High (B: Sonnet 5 · High) | Opus 5 |
 | **Z2c** · Deploy | theo `docs/superpowers/plans/2026-09-21-ban-chinh-netlify-turso.md` Task 10–11 | Opus 5 · XHigh (B: Fable 5.1 · High) | Fable 5.1 |
 
-**Đợt** (không chạy song song hai PR cùng sửa một file ✖; hai PR có migrate không merge cùng lúc):
+**Đợt** — chủ sản phẩm chốt 22/09 tối: **7 đợt, 3 session code song song** (thay lịch 10 đợt · 2 session). Không chạy song song hai PR cùng sửa một file ✖; hai PR có migrate không merge cùng lúc (merge từng cái, cái sau rebase + chạy lại migrate lặp).
 
 ```
-Đợt 1:  O   ·  S1
-Đợt 2:  Qa  ·  AN
-Đợt 3:  Pa  ·  S2
-Đợt 4:  Qb  ·  YT2
-Đợt 5:  Pb  ·  Ra
-Đợt 6:  Rc1 ·  GV
-Đợt 7:  Rc2 ·  Form
-Đợt 8:  LT
-Đợt 9:  S3
-Đợt 10: Z2c
+Đợt 1:  O   ·  S1  ·  AN      (AN vào sau, cùng đợt; merge O → S1 → AN)
+Đợt 2:  Qa  ·  Pa  ·  S2
+Đợt 3:  Qb  ·  YT2 ·  Rc1
+Đợt 4:  Pb  ·  Ra  ·  Rc2
+Đợt 5:  GV  ·  Form·  LT
+Đợt 6:  S3
+Đợt 7:  Z2c
 ```
+
+Lý do xếp (phụ thuộc + ma trận chồng file kiểm kê §5.2):
+- Đợt 2: Qa cần O; Pa cần O + S1 (dòng tín hiệu); S2 cần S1 (migrate). Ba PR không chung file.
+- Đợt 3: Qb, YT2 cần Qa (`ClassRoster`, `ClassYThucCard`); Rc1 cần S1 + khung Test của O. AN-9 chỉ sửa ở `StudentDetailPage` (Qb), YT2 không chạm file đó.
+- Đợt 4: Ra cần Pa (`WorkList`); Rc2 cần Rc1 (`attempts.ts`, `permissions.ts`); Pb cần S1. Chỉ Ra có migrate.
+- Đợt 5: GV cần Pb (Theo giáo viên); Form cần S2, YT2, Ra (`CasePanel`, `ConfirmMeasurePanel`, `MgmtTasksPage`); LT cần Qa, Qb. Form và LT đều có thể có migrate → merge lần lượt. GV chỉ thêm trang + route; tên GV ở hồ sơ lớp đã là link từ Qa.
+- S3 chạm gần mọi JSX nên đứng một mình, trước deploy.
 
 Sau mỗi đợt: chủ sản phẩm xem demo khoảng 10 phút. Góp ý nhỏ thì đưa vào PR đợt sau; góp ý lớn thì mở PR sửa trước khi sang đợt kế.
 
