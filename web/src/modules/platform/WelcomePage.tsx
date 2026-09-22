@@ -97,11 +97,11 @@ function BanChinhChuaVaoDuoc({ chuaKhoiTao, onRetry }: { chuaKhoiTao: boolean; o
 }
 
 /**
- * Câu lỗi đọc được khi bấm Đăng nhập / Gửi đăng ký. Lỗi mạng hoặc ≥ 500 (trang lỗi của Netlify là HTML — không in ra) → một câu
- * chung; câu "Có lỗi · mã …" của máy chủ (AN-3) thì giữ để người dùng báo được mã.
+ * Câu lỗi đọc được khi bấm Đăng nhập / Gửi đăng ký. Lỗi mạng, ≥ 500, hoặc câu trả về là HTML ở bất kỳ mã nào (trang lỗi/404 của
+ * Netlify — không in ra) → một câu chung; câu "Có lỗi · mã …" của máy chủ (AN-3) thì giữ để người dùng báo được mã.
  */
 function cauLoiDeDoc(x: unknown): string {
-  if (x instanceof ApiError && (x.status < 500 || x.details?.ma)) return x.message;
+  if (x instanceof ApiError && !/^s*</.test(x.message) && (x.status < 500 || x.details?.ma)) return x.message;
   return 'Chưa kết nối được hệ thống dữ liệu. Thử lại sau ít phút.';
 }
 
@@ -121,7 +121,8 @@ export default function WelcomePage() {
   const info = useApi<AuthInfo>('/auth/info');
   /* AN-7: bản chính hỏi /api/health (máy dev vẫn suy từ /demo/accounts như cũ). */
   const suKhoe = useApi<SucKhoe>(LA_BAN_CHINH ? '/health' : null);
-  const banChinhHong = LA_BAN_CHINH && (!!suKhoe.error || suKhoe.data?.seeded === false);
+  /* Trả 200 mà không phải JSON sức khoẻ (trang index.html dự phòng) → thiếu ok → coi là chưa kết nối; đang tải thì vẫn hiện form. */
+  const banChinhHong = LA_BAN_CHINH && (!!suKhoe.error || (!!suKhoe.data && (suKhoe.data.ok !== true || suKhoe.data.seeded === false)));
   const [mode, setMode] = useState<'login' | 'register' | 'demo'>('login');
 
   const serverDown = accounts.error?.status === 500 || accounts.error?.status === 502;
@@ -141,7 +142,7 @@ export default function WelcomePage() {
 
         {banChinhHong ? (
           <div className="mt-4">
-            <BanChinhChuaVaoDuoc chuaKhoiTao={!suKhoe.error && suKhoe.data?.seeded === false} onRetry={suKhoe.reload} />
+            <BanChinhChuaVaoDuoc chuaKhoiTao={!suKhoe.error && suKhoe.data?.ok === true && suKhoe.data?.seeded === false} onRetry={suKhoe.reload} />
           </div>
         ) : noData ? (
           <div className="mt-4"><SetupHelp serverDown={!!serverDown} onRetry={accounts.reload} /></div>

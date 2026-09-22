@@ -358,8 +358,8 @@ export async function runAnToanTests(t: AnToanTestKit) {
     dbMod.tx(() => ghiThu('an5_ngoai'));
     assert(coKhoa('an5_ngoai'), 'Máy dev bị chặn');
     /* Giao dịch ngoài mở lúc còn giờ; giao dịch trong (savepoint) chạy dù đồng hồ đã qua ngưỡng — cắt giữa chừng mới là điều cần tránh. */
-    hg.chayVoiHan(Date.now() + 2_600, () => dbMod.tx(() => {
-      const cho = Date.now() + 200; while (Date.now() < cho) { /* đẩy đồng hồ qua ngưỡng 2,5 giây trong lúc giao dịch ngoài đang mở */ }
+    hg.chayVoiHan(Date.now() + 3_000, () => dbMod.tx(() => {
+      const cho = Date.now() + 600; while (Date.now() < cho) { /* đẩy đồng hồ qua ngưỡng 2,5 giây trong lúc giao dịch ngoài đang mở */ }
       dbMod.tx(() => ghiThu('an5_long'));
     }));
     assert(coKhoa('an5_long'), 'Savepoint trong giao dịch đã mở bị chặn');
@@ -368,10 +368,12 @@ export async function runAnToanTests(t: AnToanTestKit) {
 
   check('AN-5 · donGiaoDichTreo(): còn giao dịch bỏ dở trên kết nối thì cuộn lại, trả true; không có thì trả false', () => {
     conn.exec('BEGIN');
-    ghiThu('an5_treo');
-    assert(dbMod.donGiaoDichTreo() === true && !conn.inTransaction, 'Không dọn được giao dịch treo');
-    assert(!coKhoa('an5_treo'), 'Dòng của giao dịch treo vẫn còn');
-    assert(dbMod.donGiaoDichTreo() === false, 'Không có gì mà vẫn báo dọn');
+    try {
+      ghiThu('an5_treo');
+      assert(dbMod.donGiaoDichTreo() === true && !conn.inTransaction, 'Không dọn được giao dịch treo');
+      assert(!coKhoa('an5_treo'), 'Dòng của giao dịch treo vẫn còn');
+      assert(dbMod.donGiaoDichTreo() === false, 'Không có gì mà vẫn báo dọn');
+    } finally { if (conn.inTransaction) conn.exec('ROLLBACK'); /* hàm hỏng thì không để giao dịch treo đầu độc các phép sau */ }
   });
 
   check('AN-5 · demGio: bản chính gắn hạn 10 giây cho cả lời gọi; máy dev không gắn', () => {
