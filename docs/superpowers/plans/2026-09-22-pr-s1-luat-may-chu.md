@@ -2533,7 +2533,7 @@ Expected: lần một có dòng `✓ PR-S1: thêm 2 cột …` (nếu database d
   plan này, đặc tả §3.10/§5/§6/§7, bảng Quyết định Q1–Q13, `git diff main...HEAD`. Yêu cầu soi riêng: (a) mọi đường đổi `attempt_skills.sit_status` đều xử lý
   `absent_from_no_show`; (b) `closeCasesBySystem` không đóng nhầm Case khác chương trình / khác khoá; (c) `reportIssue` đổi thứ tự khối không làm hỏng gửi lại
   (`idempotencyKey`); (d) `scoreDebtCells` không chậm trên Turso (đếm số truy vấn cho một chi nhánh). Xử lý phản hồi theo `superpowers:receiving-code-review`.
-- [ ] **Step 5: PR.** `git push -u origin pr-s1-luat-may-chu`; `gh pr create` tiêu đề `PR-S1 · Luật máy chủ (S1, S11–S17, RB-3/6/8/9, AN-13, §6)`,
+- [x] **Step 5: PR.** `git push -u origin pr-s1-luat-may-chu`; `gh pr create` tiêu đề `PR-S1 · Luật máy chủ (S1, S11–S17, RB-3/6/8/9, AN-13, §6)`,
   thân: tóm tắt theo Task, bảng Q1–Q13, số phép kiểm 672 → N, "việc chuyển cho PR khác", dòng `🤖 Generated with [Claude Code](https://claude.com/claude-code)`.
   **Không tự merge.** Báo chủ sản phẩm bằng tiếng Việt đơn giản: làm gì, còn gì cho đợt sau.
 
