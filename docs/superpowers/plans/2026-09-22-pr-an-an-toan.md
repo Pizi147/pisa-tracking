@@ -1609,4 +1609,5 @@ song song trong cùng tiến trình sẽ thấy cờ; harness chạy tuần tự
 
 | Ngày | Task | Ghi chú (model người code · số phép kiểm · lệch plan · quyết định tại chỗ) |
 |---|---|---|
+| 22/09 | Task 0 | Opus 5 · worktree .claude/worktrees/pr-an-an-toan (nhánh pr-an-an-toan từ origin/main 79fd4e7) · sạch biến Turso · mốc **672** ✓ · Task 12 dùng cổng khác 4000/5173 theo lệnh người giao việc |
 | 22/09 | Task 1 | Opus 5 · 672 → 674 (2 phép `AN-1 ·` mới, đỏ rồi xanh) · lệch nhỏ: ở bước đỏ, phép đầu báo `Cột: ""` chứ không phải `no such table` (PRAGMA trên bảng chưa có trả rỗng, không ném) — không đổi gì · code chép nguyên văn từ plan |
