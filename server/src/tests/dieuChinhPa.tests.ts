@@ -280,5 +280,51 @@ export async function runDieuChinhPaTests(t: YThucTestKit) {
     assert(revRows(ivId).length === 0, 'Thay không ghi vào lịch sử điều chỉnh, nó là chuỗi Được thay thế');
   });
 
+  // ================================================================== 4. Đọc lịch sử
+
+  console.log('\nPR-S2 · 4. Đọc lịch sử: chi tiết Case và bảng kỹ năng (nguồn của Hành trình)');
+
+  check('PR-S2 · Đọc: chi tiết Case trả lịch sử điều chỉnh từng PA, và vấn đề còn tồn / lý do từng lần cập nhật', () => {
+    const { ivId, caseId } = taoCase();
+    cases.updateResult(P.lrTeacher, ivId, {
+      decision: 'adjust', outcome: 'partial', note: 'Đã khá hơn ở phần nghe số', remainingIssue: 'Tên riêng',
+      decisionNote: 'Chuyển sang nghe buổi sáng', adjust: { description: 'Tự học Listening — nghe chép buổi sáng 20 phút' },
+    });
+    const d = cases.caseDetail(P.lrTeacher, caseId) as any;
+    const iv = d.interventions.find((x: any) => x.id === ivId);
+    assert(iv.revisions?.length === 1, `Phải có 1 bản điều chỉnh: ${JSON.stringify(iv.revisions)}`);
+    const r = iv.revisions[0];
+    assert(r.on === TODAY && r.reason === 'Chuyển sang nghe buổi sáng' && r.source === 'adjust' && r.by, `Bản điều chỉnh sai: ${JSON.stringify(r)}`);
+    assert(r.before.description === 'Tự học Listening — nghe chép 15 phút mỗi ngày'
+      && r.after.description === 'Tự học Listening — nghe chép buổi sáng 20 phút', 'Bản cũ / bản mới sai');
+    assert(r.before.performer && r.before.performer === r.after.performer, 'Người thực hiện không đổi phải đọc ra cùng một tên');
+    const f = d.followups.find((x: any) => x.interventionId === ivId);
+    assert(f.remainingIssue === 'Tên riêng' && f.decisionNote === 'Chuyển sang nghe buổi sáng' && f.nextStep === 'adjust',
+      `Lần cập nhật sai: ${JSON.stringify(f)}`);
+  });
+
+  check('PR-S2 · Đọc: bảng kỹ năng trả lịch sử điều chỉnh, chuỗi Được thay thế và quyết định từng lần cập nhật (đủ cho PR-Qb vẽ khối PA nối nhau)', () => {
+    const { sid, ivId, caseId } = taoCase();
+    cases.updateResult(P.lrTeacher, ivId, {
+      decision: 'adjust', outcome: 'insufficient', note: 'Chưa có bài nghe mới để nhìn', decisionNote: 'Em đổi lịch nên học buổi sáng',
+      adjust: { description: 'Tự học Listening — nghe chép buổi sáng' },
+    });
+    cases.updateResult(P.lrTeacher, ivId, {
+      decision: 'replace', outcome: 'unchanged', note: 'Hai tuần vẫn sai như cũ', decisionNote: 'Tự học không đủ, chuyển sang tutor',
+      newPlan: { kind: 'tutor', description: 'Tutor Listening hai buổi mỗi tuần', performerSelf: true },
+    });
+    const board = cases.skillSupportBoard(P.lrTeacher, sid) as any;
+    const card = board.rows.flatMap((r: any) => r.cases).find((c: any) => c.id === caseId);
+    assert(card, 'Không thấy thẻ Case trên bảng kỹ năng');
+    const old = card.plans.find((p: any) => p.id === ivId);
+    const moi = card.plans.find((p: any) => p.id !== ivId);
+    assert(old && moi, 'Bảng kỹ năng phải có cả PA cũ (đã thay) và PA mới');
+    assert(old.closedReason === 'superseded' && old.supersededBy === moi.id, `Chuỗi thay sai: ${old.closedReason} / ${old.supersededBy}`);
+    assert(old.revisions.length === 1 && old.revisions[0].after.description === 'Tự học Listening — nghe chép buổi sáng', 'Lịch sử điều chỉnh sai');
+    assert(old.updates.map((u: any) => u.decision).join(',') === 'adjust,propose', `Quyết định từng lần: ${JSON.stringify(old.updates)}`);
+    assert(old.updates[1].decisionNote === 'Tự học không đủ, chuyển sang tutor', 'Lý do thay phải đọc được từ bảng kỹ năng');
+    assert(moi.revisions.length === 0 && moi.closedReason === null && moi.supersededBy === null, 'PA mới không được mang lịch sử của PA cũ');
+  });
+
   // ---- các task sau thêm phép kiểm NGAY TRÊN dòng này ----
 }

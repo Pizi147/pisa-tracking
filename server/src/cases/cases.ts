@@ -1405,6 +1405,8 @@ export function caseDetail(p: Principal, caseId: number) {
       byName: i.by_name ?? null,
     }));
 
+  /* PR-S2 (S2): lịch sử điều chỉnh của mọi PA trong Case, một truy vấn. */
+  const revs = lichSuDieuChinhCuaCase(caseId);
   const interventions = (conn
     .prepare(
       `SELECT iv.*, u.full_name AS performer_account, r.full_name AS recorder_name,
@@ -1462,6 +1464,8 @@ export function caseDetail(p: Principal, caseId: number) {
       approvalNote: iv.approval_note as string | null,
       approvedBy: iv.approver_name ?? null,
       approvalAt: iv.approval_at as string | null,
+      /** PR-S2 (S2): mỗi lần sửa nội dung PA, cũ trước mới sau. Hàng chính luôn là bản hiện tại. */
+      revisions: revs.get(iv.id) ?? [],
     }));
 
   const followups = (conn
@@ -1478,6 +1482,9 @@ export function caseDetail(p: Principal, caseId: number) {
       cycleDue: f.cycle_due ?? null, late: !!f.late,
       /* Điểm cô tự chấm kèm lần cập nhật này — KHÔNG phải điểm chính thức. */
       metrics: parseMetrics(f.metrics),
+      /* PR-S2 (S4): vấn đề còn tồn, và lý do (Điều chỉnh/Thay) hoặc ghi chú của quyết định. */
+      remainingIssue: (f.remaining_issue ?? null) as string | null,
+      decisionNote: (f.decision_note ?? null) as string | null,
     }));
 
   const history = conn
@@ -2342,6 +2349,8 @@ function caseCardOf(caseId: number, c: any, soBangChung: Map<number, number>) {
         WHERE fu.case_id = ? ORDER BY fu.observed_on DESC, fu.id DESC`,
     )
     .all(caseId) as any[];
+  /* PR-S2 (S2): lịch sử điều chỉnh, một truy vấn cho cả Case (gộp nhiều Case: xem plan PR-S2 Q18). */
+  const revs = lichSuDieuChinhCuaCase(caseId);
 
   const plans = ivs.map((iv) => {
     const last = follows.find((f) => f.intervention_id === iv.id && f.outcome) ?? null;
@@ -2368,6 +2377,14 @@ function caseCardOf(caseId: number, c: any, soBangChung: Map<number, number>) {
       followupOverdue: !!(open && iv.followup_due && iv.followup_due < today && !(iv.preset === 1 && !iv.confirmed_at)),
       pendingApproval: pending,
       approvalDue: pending ? iv.approval_due ?? null : null,
+      /*
+       * PR-S2: KHÉP LẠI VÌ SAO và PA NÀO THAY NÓ. `superseded` = Được thay thế; `supersededBy` trỏ PA mới.
+       * Hành trình (PR-Qb) nối các khối PA theo đúng chuỗi này.
+       */
+      closedReason: (iv.closed_reason ?? null) as string | null,
+      supersededBy: (iv.superseded_by ?? null) as number | null,
+      /** PR-S2 (S2): mỗi lần sửa nội dung PA: bản cũ, bản mới, ngày, ai, vì sao. Cũ trước mới sau. */
+      revisions: revs.get(iv.id) ?? [],
       lastOutcome: last?.outcome ?? null,
       lastOutcomeLabel: last?.outcome
         ? outcomeLabelFor(last.outcome) : null,
@@ -2382,6 +2399,8 @@ function caseCardOf(caseId: number, c: any, soBangChung: Map<number, number>) {
        */
       updates: follows
         .filter((f) => f.intervention_id === iv.id && f.outcome)
+        /* PR-S2: `follows` xếp MỚI trước; lật bản sao lại để hai lần CÙNG NGÀY (vd. Điều chỉnh rồi Thay) vẫn đúng thứ tự ghi (sort dưới giữ thứ tự khi trùng ngày). */
+        .reverse()
         .map((f) => ({
           on: f.observed_on as string,
           outcome: f.outcome as string,
@@ -2391,6 +2410,10 @@ function caseCardOf(caseId: number, c: any, soBangChung: Map<number, number>) {
           note: (f.note as string | null) ?? null,
           cycleNo: (f.cycle_no as number | null) ?? null,
           late: !!f.late,
+          /* PR-S2 (S4): quyết định của lần đó (continue | adjust | propose | complete | ask_manager | monitor), vấn đề còn tồn, lý do/ghi chú. */
+          decision: (f.next_step as string | null) ?? null,
+          remainingIssue: (f.remaining_issue as string | null) ?? null,
+          decisionNote: (f.decision_note as string | null) ?? null,
         }))
         .sort((a, b) => a.on.localeCompare(b.on)),
     };
