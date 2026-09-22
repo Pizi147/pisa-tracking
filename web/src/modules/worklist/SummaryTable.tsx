@@ -229,7 +229,7 @@ export function SummaryTable({ branchId, onPickBranch }: {
       <p className="px-4 py-2.5 text-[11px] text-slate-500 m-0 border-t" style={{ borderColor: 'var(--line)' }}>
         Ô dạng <span className="tabular-nums text-slate-300">12</span>
         <span className="tabular-nums text-amber-200">/5</span> nghĩa là{' '}
-        <strong>12 case, trong đó 5 chưa có phương án hỗ trợ</strong>. Mức SOS đếm{' '}
+        <strong>12 case, trong đó 5 chưa có PA học thuật</strong>. Mức SOS đếm{' '}
         <strong>học viên</strong> (một em SOS 2 vẫn là một em); các cột kỹ năng đếm{' '}
         <strong>case</strong> — nên hai cụm không cộng vào nhau được. Môn <strong>W</strong> của lớp
         Normal có cột riêng, KHÔNG gộp vào <strong>W2</strong> của Fast Track: hai môn đó chấm theo

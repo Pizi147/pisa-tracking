@@ -25,7 +25,7 @@ Nếu bạn nghĩ theo "cái tôi thấy trên màn hình" chứ không theo tê
 | Trang một lớp | `web/src/modules/classes/ClassOverviewPage.tsx` | `server/src/classes/classes.ts` |
 | **Hồ sơ một học viên** (đầu hồ sơ, bốn ô số, hai tab dưới) | `web/src/modules/students/StudentDetailPage.tsx` | `server/src/students/profile.ts` |
 | Bảng kỹ năng trong hồ sơ · **ô điểm bốn màu** | `web/src/modules/cases/SkillBoard.tsx` → `ScoreCell` | `server/src/cases/cases.ts` → `skillSupportBoard` |
-| **Thẻ case** và từng dòng phương án trong hồ sơ | `web/src/modules/cases/SkillBoard.tsx` → `PlanRow` | `server/src/cases/cases.ts` → `caseCardOf` |
+| **Thẻ case** và từng khối phương án ba phần trong hồ sơ (PR-HV Q8) | `web/src/modules/cases/SkillBoard.tsx` → `TheCase` · `KhoiPhuongAn` | `server/src/cases/cases.ts` → `caseCardOf` |
 | **Ghi kết quả ngay trong dòng phương án** | `web/src/modules/cases/SkillBoard.tsx` → `InlineResult` | `POST /interventions/:id/result` |
 | Tab **Hành trình học tập** — hai cách đọc | `web/src/modules/students/JourneyTimeline.tsx` | `server/src/students/profile.ts` + bảng kỹ năng |
 | Màn một lượt Test | `web/src/modules/fasttrack/MockDetailPage.tsx` | `server/src/fasttrack/attempts.ts` → `attemptDetail` |
@@ -204,7 +204,7 @@ loại dữ liệu mới** vào kịch bản thì thêm trường ở `server/sr
 | Vòng đời case, phương án, phê duyệt, kết quả | `server/src/cases/cases.ts` |
 | Màn một case | `web/src/modules/cases/CasePanel.tsx` |
 | Bảng theo dõi năm hạng mục ở hồ sơ | `web/src/modules/cases/SkillBoard.tsx` |
-| Case của em ở hồ sơ — **nằm ngay dưới hàng kỹ năng**, không còn khối danh sách riêng | `web/src/modules/cases/SkillBoard.tsx` → `CaseCardView` |
+| Case của em ở hồ sơ — **nằm ngay dưới hàng kỹ năng**, không còn khối danh sách riêng | `web/src/modules/cases/SkillBoard.tsx` → `TheCase` |
 | Luật hạn chu kỳ hai tuần / một tuần | `shared/domain/cases.ts` → `cycleDeadline` |
 | Năm kết quả và năm bước tiếp theo | `shared/domain/cases.ts` → `FOLLOWUP_OUTCOMES`, `nextStepsFor` |
 | Luật hiển thị thuần của hồ sơ học viên: tab từ `?tab=`, ô Test gần nhất, quá hạn, tiến độ case `k/n PA có kết quả`, việc tiếp của một PA, đếm vi phạm theo nhóm (PR-HV) | `shared/domain/hoSoHocVien.ts` → `parseHoSoTab`, `ketQuaTestGanNhat`, `quaHan`, `tienDoCase`, `viecTiepPhuongAn`, `demTheoNhomViPham` |

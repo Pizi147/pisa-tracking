@@ -1,6 +1,6 @@
 import { useApi } from '../../lib/useApi.ts';
 import { Modal } from '../../ui/Drawer.tsx';
-import { Field, Skeleton } from '../../ui/ui.tsx';
+import { ErrorState, Field, Skeleton } from '../../ui/ui.tsx';
 import { BangChung } from '../../ui/BangChung.tsx';
 import { fmtDate } from '../../lib/format.ts';
 
@@ -9,12 +9,12 @@ import { fmtDate } from '../../lib/format.ts';
  * Không sửa gì ở đây; riêng tệp/liên kết vẫn bổ sung được sau khi đã thực hiện (B10) — quyền do máy chủ kiểm.
  */
 export function XemPhuongAnPanel({ measureId, onClose }: { measureId: number | null; onClose: () => void }) {
-  const { data: d } = useApi<any>(measureId !== null ? `/measures/${measureId}` : null, [measureId]);
+  const { data: d, error, reload } = useApi<any>(measureId !== null ? `/measures/${measureId}` : null, [measureId]);
   if (measureId === null) return null;
   return (
     <Modal open onClose={onClose} title={d ? `${d.kindLabel} · ${d.studentName}` : 'Phương án'}
       footer={<button className="btn" onClick={onClose}>Đóng</button>}>
-      {!d ? <Skeleton rows={4} /> : (
+      {error ? <ErrorState message={error.message} onRetry={reload} /> : !d ? <Skeleton rows={4} /> : (
         <div className="space-y-3 text-sm text-slate-200">
           <Field label="Trạng thái" as="div">{d.statusLabel}</Field>
           <Field label="Ngày thực hiện" as="div">{fmtDate(d.performedOn)}</Field>

@@ -455,6 +455,9 @@ function headlineOf(p: Principal, studentId: number, cycleId: number | null) {
      đúng D1 — đầu hồ sơ học viên là ngữ cảnh học thuật. */
   type Next = { text: string; due: string | null; rank: number };
   const cands: Next[] = [];
+  /* DỰ PHÒNG (PR-HV, sửa sau rà soát 22/09): việc cập nhật hằng tuần CHƯA quá hạn CHỈ dùng khi không có việc nào khác —
+     nếu đưa vào `cands`, ứng viên có hạn sẽ thắng ứng viên không hạn ở `cands.sort` và chen trước "Xác minh SOS"/"Đề ra PA". */
+  const duPhong: Next[] = [];
   const sk = (r: any) => r.short ?? r.label;
   for (const r of rows) {
     if (r.signal) cands.push({ text: `Xác minh SOS ${sk(r)}`, due: r.signal.verifyDue ?? null, rank: 0 });
@@ -464,7 +467,7 @@ function headlineOf(p: Principal, studentId: number, cycleId: number | null) {
     if (r.followOverdue) cands.push({ text: `Cập nhật PA ${sk(r)}`, due: r.followUntil, rank: 1 });
     /* MỚI (PR-HV): việc cập nhật hằng tuần CHƯA quá hạn — để ô có "hạn 30/08" thay vì "Không có" khi mọi việc đang đúng hạn. */
     else if (r.followUntil && r.cases.some((c: any) => c.status !== 'done')) {
-      cands.push({ text: `Cập nhật PA ${sk(r)}`, due: r.followUntil, rank: 3 });
+      duPhong.push({ text: `Cập nhật PA ${sk(r)}`, due: r.followUntil, rank: 3 });
     }
   }
   cands.sort((a, b) => {
@@ -477,9 +480,11 @@ function headlineOf(p: Principal, studentId: number, cycleId: number | null) {
     return a.rank - b.rank;
   });
 
+  duPhong.sort((a, b) => (a.due! < b.due! ? -1 : 1));
+  const chon = cands[0] ?? duPhong[0] ?? null;
   return {
     below, signals, openCases: open,
-    next: cands[0] ? { text: cands[0].text, due: cands[0].due, overdue: quaHan(cands[0].due, today) } : null,
+    next: chon ? { text: chon.text, due: chon.due, overdue: quaHan(chon.due, today) } : null,
   };
 }
 

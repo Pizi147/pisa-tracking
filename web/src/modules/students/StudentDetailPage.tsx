@@ -178,7 +178,7 @@ export default function StudentDetailPage() {
       </div>
 
       {/* BỐN Ô SỐ (Q7) — bốn câu hỏi, không phải một phép chia. Luôn hiện phía trên hàng tab. */}
-      {cy && <HeaderStats data={data} cy={cy} rows={skillRows} />}
+      {cy && <HeaderStats data={data} rows={skillRows} />}
 
       {/* Xác minh SOS: giữ chỗ cũ — dưới 4 ô số, trên hàng tab; tự ẩn khi không có tín hiệu. */}
       <PendingSignals signals={data.pendingSignals ?? []} onVerify={(sg) => setVerify(sg)} />
@@ -365,7 +365,7 @@ export default function StudentDetailPage() {
  *
  * Mỗi ô nói ĐÚNG MỘT điều. Ô KHÔNG bấm được — ô bấm được là việc của PR-R.
  */
-function HeaderStats({ data, rows }: { data: any; cy: any; rows: SkillBoardRow[] | null }) {
+function HeaderStats({ data, rows }: { data: any; rows: SkillBoardRow[] | null }) {
   const scored = (rows ?? []).filter((r) => r.band !== null);
   const below = scored.filter((r) => r.missed === true);
   const openCases = (rows ?? []).flatMap((r) => r.cases).filter((c) => c.status !== 'done');

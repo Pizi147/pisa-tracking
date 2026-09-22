@@ -246,7 +246,7 @@ export function WeeklyBoard({ branchId }: { branchId: number | null }) {
               ba case là <em>một</em> học viên và <em>ba</em> case. Case thuộc về tuần của bài sinh ra
               nó, nên cộng các tuần lại vẫn là số case duy nhất.
               <br />
-              Hai cột cuối (<strong>Đang xử lý · Thiếu phương án</strong>) nói về những case sinh ra
+              Hai cột cuối (<strong>Đang xử lý · Thiếu PA học thuật</strong>) nói về những case sinh ra
               trong tuần đó, nhưng là <strong>tình trạng xử lý HIỆN TẠI</strong> của chúng — không phải
               ảnh chụp trạng thái vào cuối tuần ấy. Đề xuất đang chờ duyệt là chuyện của hôm nay chứ
               không thuộc tuần nào, nên nó nằm ở <strong>Theo chi nhánh</strong>, không nằm ở bảng này.

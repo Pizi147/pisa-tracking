@@ -37,7 +37,7 @@ function boChuThich(src: string): string {
 const CHU_CU: Array<[string, RegExp]> = [
   ['biện pháp', /[Bb]iện pháp|BIỆN PHÁP/],
   ['BP', /(^|[^A-Za-z0-9_])BP([^A-Za-z0-9_]|$)/],
-  ['Hãy', /(^|[^\p{L}])[Hh]ãy\s/u],
+  ['Hãy', /(^|[^\p{L}])[Hh]ãy(\s|\p{P}|$)/u],
 ];
 
 export async function runHoSoHocVienTests(t: YThucTestKit) {
@@ -48,9 +48,9 @@ export async function runHoSoHocVienTests(t: YThucTestKit) {
     const walk = (dir: string): string[] => fs.readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
       const p = path.join(dir, e.name);
       if (e.isDirectory()) return e.name === 'tests' || e.name === 'node_modules' ? [] : walk(p);
-      return /\.(ts|tsx)$/.test(e.name) ? [p] : [];
+      return /\.(ts|tsx|mjs)$/.test(e.name) ? [p] : [];
     });
-    const files = ['web/src', 'shared', 'server/src'].flatMap((d) => walk(path.join(ROOT, d)))
+    const files = ['web/src', 'shared', 'server/src', 'scripts'].flatMap((d) => walk(path.join(ROOT, d)))
       .map((f) => path.relative(ROOT, f).replace(/\\/g, '/'))
       .filter((f) => !CHO_Z2B.some((z) => f.startsWith(z)) && !LOAI_TRU(f));
     assert(files.length > 80, `Quét quá ít file (${files.length}) — sai ROOT?`);
@@ -119,6 +119,7 @@ export async function runHoSoHocVienTests(t: YThucTestKit) {
 
   await t.checkAsync('PR-HV · Q7 Ô "Việc cần làm tiếp": câu bắt đầu bằng động từ, có cờ quá hạn đúng', async () => {
     const profile: any = await import('../students/profile.ts');
+    const casesMod: any = await import('../cases/cases.ts');
     const max = t.seedMax.sos_cases ?? Number.MAX_SAFE_INTEGER;
     const pairs = t.conn.prepare("SELECT DISTINCT student_id, cycle_id FROM sos_cases WHERE status != 'done' AND id <= ?").all(max) as any[];
     assert(pairs.length > 0, 'Bộ demo phải có học viên đang có case mở');
@@ -130,6 +131,12 @@ export async function runHoSoHocVienTests(t: YThucTestKit) {
       assert(typeof next.overdue === 'boolean', `HV ${student_id}: next.overdue phải là boolean: ${JSON.stringify(next)}`);
       assert(next.overdue === (next.due !== null && next.due < t.TODAY), `HV ${student_id}: overdue phải = (due < hôm nay ${t.TODAY}): ${JSON.stringify(next)}`);
       assert(/^(Xác minh SOS|Đề ra PA|Làm PA|Chờ Quản lý duyệt PA|Cập nhật PA) /.test(next.text), `HV ${student_id}: câu phải bắt đầu bằng động từ: "${next.text}"`);
+      /* Rà soát 22/09: "Cập nhật PA" CHƯA quá hạn chỉ là dự phòng — không được chen trước việc khác (thứ tự ưu tiên cũ giữ nguyên). */
+      if (/^Cập nhật PA /.test(next.text) && !next.overdue) {
+        const rows = (casesMod.skillSupportBoard(t.P.admin, student_id, cycle_id) as any).rows as any[];
+        const viecKhac = rows.filter((r) => r.signal || r.state === 'no_plan' || r.overdueActionDue || r.pendingApproval || r.followOverdue);
+        assert(viecKhac.length === 0, `HV ${student_id}: ô ghi "${next.text}" (chưa quá hạn) nhưng vẫn còn việc ưu tiên hơn: ${JSON.stringify(viecKhac.map((r) => ({ kn: r.short, signal: !!r.signal, state: r.state, lamQuaHan: r.overdueActionDue, choDuyet: r.pendingApproval, capNhatQuaHan: r.followOverdue })))}`);
+      }
     }
     assert(coNext > 0, 'Phải có ít nhất một học viên có việc cần làm tiếp');
   });

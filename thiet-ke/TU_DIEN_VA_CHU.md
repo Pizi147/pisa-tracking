@@ -133,7 +133,7 @@ Mô hình Case Ý thức bị bỏ. Nguồn: `NGUON-Rule-Y-thuc-2026-09-21.md`; 
 | Khái niệm | Chữ dùng trên web | Tuyệt đối không viết |
 |---|---|---|
 | Một sự việc học viên vi phạm, do một GV ghi | `Vi phạm` | "case Ý thức", "đợt", "báo cáo Ý thức", "violation" |
-| Việc GVCN làm để xử lý một nhóm vi phạm | `Phương án` (PA) trong tab Ý thức & Phối hợp · `PA xử lý` ở màn trộn · `phương án xử lý` trong câu báo từ máy chủ | "biện pháp", "BP", "phương án kỷ luật" |
+| Việc GVCN làm để xử lý một nhóm vi phạm | `Phương án` (PA) trong tab Ý thức & Phối hợp · ở màn trộn: `PA xử lý` (nhãn ngắn) hoặc `Phương án xử lý …` (tên chỉ số, tiêu đề khối — PR-HV dùng dạng đủ) · `phương án xử lý` trong câu báo từ máy chủ | "biện pháp", "BP", "phương án kỷ luật" |
 | Phương án đã tạo, chưa làm xong, còn sửa được | `Đang chuẩn bị` | "nháp", "chờ duyệt", "đang xử lý" |
 | Phương án đã làm xong, đã có bằng chứng | `Đã thực hiện` | "hoàn thành", "đóng", "done" |
 | Vi phạm chưa gắn vào phương án nào | `Chưa xử lý` | "mới", "đang mở" |

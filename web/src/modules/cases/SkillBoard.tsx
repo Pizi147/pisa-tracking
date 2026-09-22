@@ -295,7 +295,12 @@ function TheCase({ c, row, onChanged }: {
           </span>
           <span className="justify-self-end flex flex-col items-end gap-1">
             {c.sos.dismissed
-              ? <Status kind="done">Không cần theo dõi · {c.sos.dismissed.label}</Status>
+              ? (
+                <>
+                  <Status kind="done">Không cần theo dõi</Status>
+                  <span className="text-[11px] text-slate-500 text-right break-words">{c.sos.dismissed.label}</span>
+                </>
+              )
               : c.status === 'done'
                 ? <Status kind="done">Đã hoàn thành</Status>
                 : (
