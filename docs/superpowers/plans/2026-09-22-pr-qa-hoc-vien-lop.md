@@ -1700,7 +1700,7 @@ git commit -m "PR-Qa (7): GET /classes/:id/phan-tich-lop — kỹ năng × đợ
 - Produces: `capNhatThongTinLop(p, classId, { code?, route?, note?, programmeCode? })` → dòng `classes` sau khi sửa.
   Lỗi (400/403) nói rõ vì sao. Ghi `audit_logs` action `class.info`.
 
-- [ ] **Step 1: Phép kiểm đỏ.**
+- [x] **Step 1: Phép kiểm đỏ.**
 
 ```ts
   // ------------------------------------------------------------------ Task 8 · Sửa thông tin lớp
@@ -1730,9 +1730,9 @@ git commit -m "PR-Qa (7): GET /classes/:id/phan-tich-lop — kỹ năng × đợ
   });
 ```
 
-- [ ] **Step 2:** `npm test` → hai phép kiểm ✗.
+- [x] **Step 2:** `npm test` → hai phép kiểm ✗.
 
-- [ ] **Step 3: Tạo `server/src/classes/thongTinLop.ts`:**
+- [x] **Step 3: Tạo `server/src/classes/thongTinLop.ts`:**
 
 ```ts
 /**
@@ -1820,7 +1820,7 @@ export function capNhatThongTinLop(
 }
 ```
 
-- [ ] **Step 4: Route.** Import `import * as thongTinLopSvc from '../classes/thongTinLop.ts';`; trong khối PR-Qa:
+- [x] **Step 4: Route.** Import `import * as thongTinLopSvc from '../classes/thongTinLop.ts';`; trong khối PR-Qa:
 
 ```ts
 /** ⋮ Sửa thông tin lớp: mã lớp, LT (FT), ghi chú; chương trình chỉ khi lớp chưa có học viên và bài Test. */
@@ -1829,8 +1829,8 @@ api.patch('/classes/:id/thong-tin', requireAuth, wrap((req) => {
   return thongTinLopSvc.capNhatThongTinLop(principalOf(req), pInt(req, 'id'), req.body ?? {});
 }));
 ```
-- [ ] **Step 5:** `npm run check` xanh (N+28).
-- [ ] **Step 6: Commit.**
+- [x] **Step 5:** `npm run check` xanh (N+28).
+- [x] **Step 6: Commit.**
 
 ```bash
 git add server/src/classes/thongTinLop.ts server/src/routes/index.ts server/src/tests/hocVienLop.tests.ts

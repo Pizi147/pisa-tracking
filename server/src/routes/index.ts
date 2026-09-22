@@ -46,6 +46,7 @@ import * as intakeSvc from '../classes/intake.ts';
 import * as transitionSvc from '../classes/transition.ts';
 import * as hocVienLopSvc from '../classes/hocVienLop.ts';
 import * as phanTichLopSvc from '../classes/phanTichLop.ts';
+import * as thongTinLopSvc from '../classes/thongTinLop.ts';
 import * as studentSvc from '../students/students.ts';
 import * as meetingSvc from '../worklist/meeting.ts';
 import * as dashboardSvc from '../worklist/dashboard.ts';
@@ -895,6 +896,12 @@ api.get('/hoc-vien-lop', requireAuth, wrap((req) => {
 api.get('/classes/:id/phan-tich-lop', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   return phanTichLopSvc.phanTichLop(principalOf(req), pInt(req, 'id'));
+}));
+
+/** ⋮ Sửa thông tin lớp: mã lớp, LT (FT), ghi chú; chương trình chỉ khi lớp chưa có học viên và bài Test. */
+api.patch('/classes/:id/thong-tin', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return thongTinLopSvc.capNhatThongTinLop(principalOf(req), pInt(req, 'id'), req.body ?? {});
 }));
 
 // ============================================================ Thêm học viên hàng loạt
