@@ -2397,11 +2397,11 @@ export function HocVienCanHoTro() {
 - Modify: `CODE_MAP.md` (dòng Tổng quan, Công việc › Hỗ trợ học viên, chỉ số)
 - Ảnh: `thiet-ke/anh/pr-pa/` (tạo thư mục)
 
-- [ ] **Step 1: CODE_MAP.** Sửa/thêm dòng: `| **Tổng quan** (QL: 4 ô · Cần xử lý · Điểm đáng chú ý · Lịch sắp tới · Theo chi nhánh; GV: Việc cần làm của tôi · Học viên cần hỗ trợ) | web/src/modules/worklist/OverviewPage.tsx | server/src/worklist/tongQuan.ts · bangChiNhanh.ts · metrics.ts (metricSet + chương trình) |` ·
+- [x] **Step 1: CODE_MAP.** Sửa/thêm dòng: `| **Tổng quan** (QL: 4 ô · Cần xử lý · Điểm đáng chú ý · Lịch sắp tới · Theo chi nhánh; GV: Việc cần làm của tôi · Học viên cần hỗ trợ) | web/src/modules/worklist/OverviewPage.tsx | server/src/worklist/tongQuan.ts · bangChiNhanh.ts · metrics.ts (metricSet + chương trình) |` ·
   `| Dòng tín hiệu SOS lớp thường (Tạo Case / Bỏ qua) | web/src/modules/worklist/DongTinHieu.tsx → QuickReport.tsx | /signals/pending/:id/dismiss · /cases/report |` ·
   `| Lọc chương trình Lớp thường / FT cho mọi chỉ số | shared/domain/tongQuan.ts | server/src/worklist/chuongTrinh.ts |`.
   Dòng cũ "Sự kiện nổi bật" → "Lịch sắp tới".
-- [ ] **Step 2: Bật máy thử trong worktree** (theo memory "Máy chủ dev trong worktree"; **không** `preview_start`, **không**
+- [x] **Step 2: Bật máy thử trong worktree** (theo memory "Máy chủ dev trong worktree"; **không** `preview_start`, **không**
   cổng 4000/5173): kiểm cổng trống `Get-NetTCPConnection -LocalPort 4127,5327 -ErrorAction SilentlyContinue` → rỗng.
   `npm run seed` → chạy nền `PORT=4127 node dist-server/server/src/index.js` → chép cấu hình Vite **tạm** vào gốc worktree
   (`vite.pa.config.ts`: root = worktree, alias `@shared`, `server: { port: 5327, strictPort: true, proxy: { '/api': { target: 'http://127.0.0.1:4127', changeOrigin: true } } }`)
@@ -2409,10 +2409,10 @@ export function HocVienCanHoTro() {
   `fetch('/api/demo/session', { method: 'POST', … body: {userId} })` trong trang. Quản trị = 1, QL Nguyễn Khánh Vy = 2,
   GVCN Trần Ngọc Hà = 7, GVBM Phạm Thu Trang = 9. Chụp ảnh: khung trình duyệt có sẵn, hoặc `npm i --no-save playwright` +
   `chromium.launch({ channel: 'chrome' })` (không tải trình duyệt).
-- [ ] **Step 3: Chuẩn bị tín hiệu lớp thường** (nếu GVCN 7 chưa có dòng "Chưa đạt"): đăng nhập Quản trị (1), mở Bảng điểm
+- [x] **Step 3: Chuẩn bị tín hiệu lớp thường** (nếu GVCN 7 chưa có dòng "Chưa đạt"): đăng nhập Quản trị (1), mở Bảng điểm
   lớp thường MB-FOU 12 (`/bang-diem-thuong/{id}?kind=progress`), nhập cho **hai** em: Listening `10/40` (về GVCN Hà) và
   Speaking `5/25` (về GVBM Speaking). Ghi tên em vào Nhật ký.
-- [ ] **Step 4: KIỂM — QL chi nhánh (2), 1440px.** Ghi ✓/✗ + ảnh:
+- [x] **Step 4: KIỂM — QL chi nhánh (2), 1440px.** Ghi ✓/✗ + ảnh:
   1. Thanh ngữ cảnh: **Lớp thường · Fast Track · Cả hai** (mặc định Cả hai), chọn chi nhánh (nếu > 1), hàng tab
      **Tổng quan | Phân tích** và bên phải "Dữ liệu đến 14/09/2026". Không chữ "Normal" nào trên màn.
   2. 4 ô: **Học viên dưới kỳ vọng** (dòng phụ "/ N đánh giá được") · **Học viên có Case đang mở** (dòng phụ "k Case", k bấm
@@ -2430,10 +2430,10 @@ export function HocVienCanHoTro() {
      phải, `tabular-nums`, hàng cao bằng nhau; bấm **mọi loại ô** (ít nhất một ô mỗi cột + hàng tổng) → đúng số dòng; ô Đủ
      dữ liệu "k/N" chỉ k bấm được. Tên lớp mở hồ sơ lớp. Nút **Theo giáo viên** vẫn mở bảng người cũ.
   8. Không lỗi đỏ console/network 4xx/5xx.
-- [ ] **Step 5: KIỂM — Quản trị (1), 1440px.** Không chọn chi nhánh → bảng **Theo chi nhánh**, mỗi hàng có ▸; bấm ▸ mở
+- [x] **Step 5: KIỂM — Quản trị (1), 1440px.** Không chọn chi nhánh → bảng **Theo chi nhánh**, mỗi hàng có ▸; bấm ▸ mở
   xuống các lớp (thụt vào); hàng "Tất cả chi nhánh" cuối; bấm tên chi nhánh → `/?cn=…` và bảng thành bảng lớp. Bấm một ô
   hàng chi nhánh và một ô hàng lớp con → đúng số dòng. Khối Cần xử lý có dòng "PA chờ Quản lý duyệt" nếu có.
-- [ ] **Step 6: KIỂM — GVCN Trần Ngọc Hà (7), 1440px.**
+- [x] **Step 6: KIỂM — GVCN Trần Ngọc Hà (7), 1440px.**
   1. Đầu trang "Chào Hà" + "Dữ liệu đến …"; **không** có thanh chương trình, 4 ô, Cần xử lý, bảng chi nhánh, tab Phân tích.
   2. **Việc cần làm của tôi**: các nhóm theo thứ tự Chấm điểm · Case học thuật · Ý thức & Phối hợp · Vận hành (chỉ nhóm có
      việc), mỗi nhóm có số; nhóm có việc quá hạn **tự mở**, nhóm khác gập; bấm header mở/gập. Hạn hiện qua `<Han>` (ví dụ
@@ -2448,17 +2448,17 @@ export function HocVienCanHoTro() {
   6. **Học viên cần hỗ trợ · lớp tôi dạy · n**: có em vừa nhập điểm thấp với nhãn "SOS …"; nút **Hồ sơ** mở hồ sơ em;
      "Xem thêm" nếu > 8.
   7. Công việc › Hỗ trợ học viên: dòng tín hiệu (nếu còn) cũng có hai nút (Q17).
-- [ ] **Step 7: KIỂM — GVBM Phạm Thu Trang (9), 1440px.** Thấy tín hiệu Speaking (nếu Trang dạy Speaking MB-FOU 12) với hai
+- [x] **Step 7: KIỂM — GVBM Phạm Thu Trang (9), 1440px.** Thấy tín hiệu Speaking (nếu Trang dạy Speaking MB-FOU 12) với hai
   nút; không thấy tín hiệu Listening của GVCN. Học viên cần hỗ trợ chỉ em lớp mình dạy.
-- [ ] **Step 8: KIỂM — 375×812** (QL 2 và GVCN 7). `document.documentElement.scrollWidth <= 375` ở `/` cả hai vai và
+- [x] **Step 8: KIỂM — 375×812** (QL 2 và GVCN 7). `document.documentElement.scrollWidth <= 375` ở `/` cả hai vai và
   `/?ct=thuong`. 4 ô xếp 2 cột; Cần xử lý và Điểm đáng chú ý xếp dọc; bảng chi nhánh **cuộn ngang trong thẻ**, cột tên
   dính trái; dòng tín hiệu: nút Tạo Case / ô lý do / Bỏ qua xuống hàng dưới thông tin, không đè chữ; thanh dưới 4 nút
   không che nội dung cuối trang; panel danh sách mở full màn.
-- [ ] **Step 9:** Lưu ảnh `thiet-ke/anh/pr-pa/{vai}-{man}-{1440|375}.png` (vai: `quantri`, `ql`, `gvcn`, `gvbm`; màn:
+- [x] **Step 9:** Lưu ảnh `thiet-ke/anh/pr-pa/{vai}-{man}-{1440|375}.png` (vai: `quantri`, `ql`, `gvcn`, `gvbm`; màn:
   `tongquan`, `tongquan-thuong`, `panel-o`, `bang-mo-lop`, `taocase`, `boqua`, `congviec`). Tắt máy, xoá `vite.pa.config.ts`,
   kiểm lại không còn tiến trình nghe 4127/5327.
-- [ ] **Step 10:** `npm run check` xanh lần cuối; ghi số phép kiểm (≥ mốc Task 0 + 20).
-- [ ] **Step 11: Commit.** `git add CODE_MAP.md thiet-ke/anh/pr-pa && git commit -m "PR-Pa (13): CODE_MAP + ảnh KIỂM bốn vai (1440px, 375px)"`
+- [x] **Step 10:** `npm run check` xanh lần cuối; ghi số phép kiểm (≥ mốc Task 0 + 20).
+- [x] **Step 11: Commit.** `git add CODE_MAP.md thiet-ke/anh/pr-pa && git commit -m "PR-Pa (13): CODE_MAP + ảnh KIỂM bốn vai (1440px, 375px)"`
 
 ---
 
@@ -2597,3 +2597,21 @@ export function HocVienCanHoTro() {
   NGHIÊM TRỌNG — plan chép `gomNhomViec(data.items, …)` nhưng `/my-work` khi GV không có phạm vi trả về không có `items`
   → sập cả trang GV thay vì "Bạn chưa được cấp phạm vi nào". Sửa `data.items ?? []`, dùng `summary.total` cho trạng thái
   trống, tooltip nhãn SOS/Ý thức (G-7), ẩn "· 0" ở tiêu đề khối rỗng, `aria-controls` (commit `4f57569`). Rà lại: đạt.
+- **Dọn ghi chú nhỏ (ngoài plan, trước Task 13):** commit `a4e0558` + `87f7e89` gom 16 ghi chú nhỏ giao diện của người rà
+  Task 10–11 để ảnh QA là trạng thái cuối: bảng chi nhánh có ErrorState (cả bảng Theo giáo viên), footer "Bấm số…" chỉ
+  dưới bảng lớp/chi nhánh và nằm ngoài vùng cuộn ngang, tiêu đề skeleton đúng chế độ, chi nhánh không có GV → thông báo
+  trống, a11y (aria-label ▸, aria-pressed, `role="group"` thay radiogroup), URL `ct` sạch, ẩn "Dữ liệu đến —" khi thiếu
+  ngày, `DongTinHieu` tự bảo vệ khi thiếu tín hiệu / thiếu HV. Rà lại (Opus 5): đạt. Chỉ typecheck + vite build cho
+  `87f7e89` (không đổi máy chủ); `npm run check` chạy lại ở Task 13.
+- **Task 13:** commit `6578004` — CODE_MAP + 21 ảnh `thiet-ke/anh/pr-pa/` (16 theo bộ tên của plan + 5 ảnh bằng chứng:
+  `ql-lich`, `ql-bang`, `ql-theo-gv`, `gvbm-tinhieu-ft`, `gvcn-tinhieu-375`, `gvcn-ythuc-375`). Máy thử: API 4127, Vite 5327
+  (file cấu hình tạm đã xoá, cổng đã trống). Điểm thấp nhập cho **Đỗ Gia Bảo** (Listening 10/40 giữa khoá → GVCN Hà; thêm
+  9/40 cuối khoá để thử Bỏ qua) và **Bùi Khánh Linh** (Speaking 5/25 → GVBM Trang). Tín hiệu hạn 16/09 > ngày demo 14/09
+  nên ô "Chờ xác minh quá hạn" = 0 ở mọi vai (bước 6.4 phần ô số không quan sát được trên seed; máy chủ đã có phép kiểm).
+  ~95 ✓ · không lỗi console/4xx/5xx · `npm run check` xanh **752**. ✗ tìm thấy: (F2) QL một chi nhánh mở `/` không thấy nút
+  Theo lớp/Theo giáo viên (chỉ hiện khi URL có `cn`); (F6) GV 375px mở nhóm Ý thức & Phối hợp → chip nowrap 334px làm
+  trang rộng 384 > 375 (G-11); (F1 nhỏ) ô 3 khi = 0 vẫn ghi "tín hiệu SOS lớp thường" thay vì "Không có mục nào"; (F3
+  nhỏ) hàng lớp cao hơn hàng tổng 1px vì chip FT/Lớp thường (G-2). Nghi vấn: dòng phụ việc ~80 ký tự xuống 2 dòng ở 375px
+  (không tránh được — chấp nhận, vẫn là MỘT dòng phụ theo G-3). Cho chủ sản phẩm: dòng tín hiệu Fast Track chỉ có nút Tạo
+  Case (`gvbm-tinhieu-ft-1440.png`). Không thử được trên seed: GV không phạm vi, GV không việc quá hạn, chi nhánh không GV.
+  → Vòng sửa gộp F1/F2/F3/F6 ngay sau.
