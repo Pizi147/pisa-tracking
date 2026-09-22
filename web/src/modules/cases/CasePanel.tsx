@@ -10,14 +10,14 @@ import { BangChung } from '../../ui/BangChung.tsx';
 import { CHUA_CO_PHUONG_AN, GOI_Y_THEM_PHUONG_AN } from '../../ui/chu.ts';
 import { caseStatusLabel, caseStatusTone, fmtBand, fmtDate, skillLabel, sosLabel, sosTone } from '../../lib/format.ts';
 import {
-  CASE_CATEGORY_LABEL, CASE_OUTCOMES, CASE_OUTCOME_LABEL, FOLLOWUP_OUTCOMES,
+  CASE_CATEGORY_LABEL, CASE_OUTCOMES, CASE_OUTCOME_LABEL,
   INTERVENTION_KIND_LABEL, INTERVENTION_STATUS_LABEL,
-  NEXT_STEP_HINT, NEXT_STEP_LABEL, OUTCOME_MARK, OUTCOME_TONE,
-  RESCHEDULE_TARGETS, RESCHEDULE_TARGET_LABEL, RESULT_MODES, RESULT_MODE_LABEL,
-  canEndWithOutcome, componentsAreCounts, componentsFor, interventionKindsFor,
-  isProposalKind, outcomeLabelFor, stepsForMode,
-  type NextStep,
+  NEXT_STEP_LABEL, OUTCOME_MARK, OUTCOME_TONE,
+  RESCHEDULE_TARGETS, RESCHEDULE_TARGET_LABEL,
+  componentsAreCounts, componentsFor, interventionKindsFor,
+  isProposalKind, outcomeLabelFor,
 } from '@shared/domain/index.ts';
+import { CapNhatTuanForm, LichSuDieuChinh, type BanDieuChinh } from './CapNhatTuan.tsx';
 
 /**
  * MỘT VẤN ĐỀ HỌC VỤ, kể theo bốn câu hỏi người đọc thực sự cần:
@@ -1040,240 +1040,20 @@ function ApprovalDialog({ open, onClose, intervention, onDone }: {
 }
 
 /**
- * CẬP NHẬT KẾT QUẢ — MỘT PANEL cho cả một chu kỳ xử lý (mục 7.7 [3], 7.9).
- *
- * Gộp ba nút cũ ("Đánh dấu đã làm" · "Ghi quan sát" · "Hướng xử lý") thành một luồng hỏi
- * đúng ba câu, theo đúng thứ tự người ta nghĩ:
- *
- *   1. Đợt vừa rồi kết quả ra sao?
- *   2. Ghi chú (không bắt buộc — bắt viết mỗi lần thì người ta gõ "ok" cho xong)
- *   3. Rồi sao nữa?
- *
- * LUẬT NẰM Ở CÂU 3: kết quả TỐT thì được khép lại hoặc theo dõi thêm; kết quả CHƯA TỐT thì
- * BẮT BUỘC chọn một trong ba đường đi tiếp. Không có đường "ghi nhận rồi thôi" — một kết
- * quả "Kém hơn" mà không ai phải làm gì tiếp là một kết quả sẽ bị quên.
+ * GHI KẾT QUẢ Ở NGĂN CASE (PR-S2): vỏ hộp thoại bọc đúng form của dòng PA ở hồ sơ học viên (`CapNhatTuanForm`).
+ * Một form cho hai chỗ, để hai nơi không bao giờ hỏi khác nhau.
  */
-/**
- * CẬP NHẬT KẾT QUẢ MỘT PHƯƠNG ÁN — HAI TAB (mục 9.1).
- *
- * Bản cũ bắt mọi lần ghi kết quả phải kèm một "bước tiếp theo". Nghe thì chặt chẽ, nhưng
- * tuần nào cũng phải khai một quyết định không có thật: người dạy chỉ muốn nói "tuần này em
- * khá hơn một chút, tôi làm tiếp" mà phải chọn giữa "kết thúc phương án" và "theo dõi
- * thêm". Ai chọn nhầm ô đầu là phương án bị khép lại, và case theo đó đóng sớm.
- *
- * Nay tách đúng hai việc:
- *
- *   · TIẾP TỤC THEO DÕI — kết quả + ghi chú, lưu là xong. Phương án vẫn chạy, hạn cập nhật
- *     chuyển sang Chủ nhật kế tiếp.
- *   · KẾT THÚC PHƯƠNG ÁN — thêm NGÀY HOÀN THÀNH THẬT và một bước tiếp theo.
- *
- * "Chưa đủ dữ liệu" chỉ ở được tab theo dõi: chưa có bài mới để nhìn thì đó là câu trả lời
- * trung thực, nhưng nó không phải một kết luận để khép việc lại.
- */
-export function ResultDialog({ iv, startMode = 'monitor', onClose, onDone }: {
-  iv: any | null;
-  /** Tab mở sẵn — dùng khi đi từ ô ghi nhanh sang đây vì kết quả chưa tốt phải chọn cách đi tiếp. */
-  startMode?: 'monitor' | 'end';
-  onClose: () => void; onDone: () => void;
+export function ResultDialog({ iv, onClose, onDone }: {
+  iv: any | null; onClose: () => void; onDone: () => void;
 }) {
-  const { session } = useSession();
-  const toast = useToast();
-  const today = session?.demoDate ?? '';
-  const [mode, setMode] = useState<'monitor' | 'end'>(startMode);
-  useEffect(() => { if (iv) setMode(startMode); }, [iv?.id, startMode]);
-  const [outcome, setOutcome] = useState('');
-  const [note, setNote] = useState('');
-  const [nextStep, setNextStep] = useState('');
-  const [observedOn, setObservedOn] = useState(today);
-  const [completedOn, setCompletedOn] = useState(today);
-  const [newKind, setNewKind] = useState('tutor');
-  const [newDesc, setNewDesc] = useState('');
-  const [newTarget, setNewTarget] = useState<string>('real_exam');
-  const [busy, setBusy] = useState(false);
-
-  const outcomes = FOLLOWUP_OUTCOMES.filter((o) => mode !== 'end' || canEndWithOutcome(o));
-  const steps = outcome ? stepsForMode(mode, outcome) : [];
-  const noteOk = note.trim().length >= 8;
-  const ready = !!outcome && noteOk && (mode === 'monitor' || !!nextStep)
-    && (nextStep !== 'propose' || newDesc.trim().length >= 8);
-
-  const close = () => {
-    onClose(); setMode(startMode); setOutcome(''); setNote(''); setNextStep('');
-    setNewDesc('');
-  };
-
-  const pickMode = (m: 'monitor' | 'end') => {
-    setMode(m); setNextStep('');
-    // "Chưa đủ dữ liệu" không kết thúc được phương án — bỏ chọn khi đổi sang tab kết thúc.
-    if (m === 'end' && outcome && !canEndWithOutcome(outcome)) setOutcome('');
-  };
-
-  const submit = async () => {
-    setBusy(true);
-    try {
-      await api.post(`/interventions/${iv.id}/result`, {
-        mode, outcome, note, observedOn: observedOn || undefined,
-        nextStep: mode === 'end' ? nextStep : undefined,
-        completedOn: mode === 'end' ? (completedOn || undefined) : undefined,
-        newPlan: mode === 'end' && nextStep === 'propose'
-          ? {
-            kind: newKind, description: newDesc,
-            rescheduleTarget: newKind === 'reschedule_mt' ? newTarget : null,
-          }
-          : null,
-      });
-      invalidate('/cases'); invalidate('/my-work'); invalidate('/students'); invalidate('/overview');
-      toast.push('ok', mode === 'end' ? 'Đã kết thúc phương án' : 'Đã cập nhật, phương án vẫn đang chạy');
-      onDone(); close();
-    } catch (e: any) { toast.push('error', e?.message ?? 'Không lưu được'); }
-    finally { setBusy(false); }
-  };
-
   return (
-    <Modal
-      open={iv !== null} onClose={close} width="max-w-lg"
-      title="Cập nhật kết quả"
-      footer={<>
-        <button className="btn" onClick={close} disabled={busy}>Huỷ</button>
-        <button className="btn btn-primary" disabled={busy || !ready} onClick={submit}>
-          {busy ? 'Đang lưu…' : mode === 'end' ? 'Kết thúc phương án' : 'Lưu, tiếp tục theo dõi'}
-        </button>
-      </>}
-    >
+    <Modal open={iv !== null} onClose={onClose} width="max-w-lg" title="Ghi kết quả">
       {iv && (
-        <div className="space-y-3">
-          <p className="text-xs text-slate-400 m-0">
-            {INTERVENTION_KIND_LABEL[iv.kind as keyof typeof INTERVENTION_KIND_LABEL] ?? iv.kind}
-            {iv.description ? ` · ${iv.description}` : ''}
-            {iv.cycleNo > 1 ? ` · chu kỳ ${iv.cycleNo}` : ''}
-            {iv.actionDue ? ` · hạn cập nhật ${fmtDate(iv.actionDue)}` : ''}
-            {iv.followupDue ? ` · dự kiến kết thúc ${fmtDate(iv.followupDue)}` : ''}
-          </p>
-
-          {/* HAI TAB — chọn trước, vì nó quyết định form hỏi gì. */}
-          <div className="flex gap-1.5">
-            {RESULT_MODES.map((m) => (
-              <button key={m} type="button"
-                className={`btn btn-sm ${mode === m ? 'btn-primary' : ''}`}
-                onClick={() => pickMode(m)}>
-                {RESULT_MODE_LABEL[m]}
-              </button>
-            ))}
-          </div>
-
-          <Field label="1. Kết quả sau chu kỳ vừa rồi">
-            <div className="flex flex-wrap gap-1.5">
-              {outcomes.map((o) => (
-                <button key={o} type="button"
-                  className={`btn btn-sm ${outcome === o ? 'btn-primary' : ''}`}
-                  onClick={() => { setOutcome(o); setNextStep(''); }}>
-                  {OUTCOME_MARK[o] ?? ''} {outcomeLabelFor(o)}
-                </button>
-              ))}
-            </div>
-            {mode === 'end' && (
-              <p className="text-[11px] text-slate-500 mt-1 mb-0">
-                “Chưa đủ dữ liệu” không kết thúc được phương án — chọn “Tiếp tục theo dõi”.
-              </p>
-            )}
-          </Field>
-
-          <Field label="2. Ghi chú" hint="Bắt buộc — tiến bộ ở đâu, còn kẹt chỗ nào, tuần tới làm gì.">
-            <textarea className="field" rows={2} value={note} onChange={(e) => setNote(e.target.value)}
-              placeholder="Ví dụ: em có làm bài nhưng chưa đều, còn sai dạng T/F/NG." />
-          </Field>
-
-          <Field label="Ngày cập nhật">
-            <input type="date" className="field" value={observedOn} max={today}
-              onChange={(e) => setObservedOn(e.target.value)} />
-          </Field>
-
-          {mode === 'monitor' ? (
-            <SectionNote>
-              Phương án <strong>vẫn đang chạy</strong>. Lần cập nhật sau đến hạn vào Chủ nhật kế
-              tiếp; ngày dự kiến kết thúc giữ nguyên, không bị đẩy lùi vì theo dõi thêm một tuần.
-            </SectionNote>
-          ) : (
-            <>
-              <Field label="Ngày hoàn thành thực tế"
-                hint="Ngày phương án thật sự xong. Không nhận ngày ở tương lai.">
-                <input type="date" className="field" value={completedOn} max={today}
-                  onChange={(e) => setCompletedOn(e.target.value)} />
-              </Field>
-
-              <Field
-                label="3. Bước tiếp theo"
-                hint={outcome && !['improved', 'partial'].includes(outcome)
-                  ? 'Kết quả chưa tốt thì không khép lại suông — phải nói rõ đi tiếp thế nào.'
-                  : 'Không cần hỗ trợ thêm, hay thay bằng phương án khác?'}
-              >
-                {!outcome ? (
-                  <p className="text-xs text-slate-500 m-0">Chọn kết quả ở trên trước.</p>
-                ) : (
-                  <div className="space-y-1.5">
-                    {steps.map((st: NextStep) => (
-                      <button key={st} type="button"
-                        className={`btn btn-sm w-full justify-start text-left ${nextStep === st ? 'btn-primary' : ''}`}
-                        onClick={() => setNextStep(st)}>
-                        <span className="flex flex-col items-start">
-                          <span>{NEXT_STEP_LABEL[st]}</span>
-                          <span className="text-[11px] opacity-70">{NEXT_STEP_HINT[st]}</span>
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </Field>
-
-              {nextStep === 'propose' && (
-                <div className="surface-2 rounded-lg p-3 space-y-2">
-                  <Field label="Phương án mới">
-                    <select className="field w-full" value={newKind}
-                      onChange={(e) => setNewKind(e.target.value)}>
-                      <optgroup label="Bạn tự làm được">
-                        {interventionKindsFor().selfServe.map((k) => (
-                          <option key={k} value={k}>{INTERVENTION_KIND_LABEL[k] ?? k}</option>
-                        ))}
-                      </optgroup>
-                      <optgroup label="Cần Quản lý duyệt">
-                        {interventionKindsFor().proposals.map((k) => (
-                          <option key={k} value={k}>{INTERVENTION_KIND_LABEL[k] ?? k}</option>
-                        ))}
-                      </optgroup>
-                    </select>
-                  </Field>
-                  {newKind === 'reschedule_mt' && (
-                    <Field label="Lùi cái gì">
-                      <select className="field w-full" value={newTarget}
-                        onChange={(e) => setNewTarget(e.target.value)}>
-                        {RESCHEDULE_TARGETS.map((t) => (
-                          <option key={t} value={t}>{RESCHEDULE_TARGET_LABEL[t]}</option>
-                        ))}
-                      </select>
-                    </Field>
-                  )}
-                  <Field label="Mô tả" hint="Bắt buộc — làm gì, bao nhiêu buổi, đến khi nào.">
-                    <input className="field w-full" value={newDesc} onChange={(e) => setNewDesc(e.target.value)}
-                      placeholder="Ví dụ: học tutor Reading hai buổi mỗi tuần, đến hết MT3" />
-                  </Field>
-                  <SectionNote>
-                    Phương án cũ được khép lại với lý do <strong>“Được thay thế”</strong> — KHÔNG đánh dấu là
-                    đã hoàn thành thành công, vì nó không thành công, đó là cả lý do phải thay. Kết quả kém
-                    của nó vẫn giữ nguyên trong lịch sử.
-                  </SectionNote>
-                </div>
-              )}
-
-              {nextStep === 'ask_manager' && (
-                <SectionNote>
-                  Phương án chuyển sang <strong>chờ Quản lý</strong>. Chu kỳ thực hiện dừng ở đây và chỉ chạy
-                  lại khi có quyết định — thời gian chờ tính cho Quản lý, không tính là bạn đã có thời gian làm.
-                  Phương án kế tiếp CHƯA chạy cho tới khi được duyệt.
-                </SectionNote>
-              )}
-            </>
-          )}
-        </div>
+        <CapNhatTuanForm
+          pa={{ id: iv.id, kind: iv.kind, description: iv.description ?? null, performer: iv.performer ?? null,
+                followupDue: iv.followupDue ?? null, actionDue: iv.actionDue ?? null, cycleNo: iv.cycleNo ?? null }}
+          onCancel={onClose}
+          onSaved={() => { onDone(); onClose(); }} />
       )}
     </Modal>
   );
