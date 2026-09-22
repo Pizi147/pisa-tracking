@@ -574,7 +574,8 @@ function InterventionBody({ iv, followups, data, act }: {
               {/* CÂU CỦA NGƯỜI DẠY đứng riêng — đó là phần duy nhất máy không viết được. */}
               {f.note && <p className="text-xs text-slate-300 mt-1 mb-0 leading-relaxed">{f.note}</p>}
               {f.remainingIssue && <p className="text-[11px] text-slate-400 mt-0.5 mb-0">Còn tồn: {f.remainingIssue}</p>}
-              {f.decisionNote && (
+              {/* Lý do của lần Điều chỉnh đã nằm trong bản điều chỉnh ở trên (kèm đổi gì), không nói lại lần hai. */}
+              {f.decisionNote && !(f.nextStep === 'adjust' && revisions.length > 0) && (
                 <p className="text-[11px] text-slate-400 mt-0.5 mb-0">
                   {f.nextStep === 'adjust' || f.nextStep === 'propose' ? 'Lý do' : 'Ghi chú'}: {f.decisionNote}
                 </p>
@@ -1075,7 +1076,8 @@ export function ResultDialog({ iv, onClose, onDone }: {
   return (
     <Modal open={iv !== null} onClose={onClose} width="max-w-lg" title="Ghi kết quả">
       {iv && (
-        <CapNhatTuanForm
+        /* `key`: đổi sang PA khác thì form mở lại từ đầu, không mang chữ đã gõ của PA trước. */
+        <CapNhatTuanForm key={iv.id} variant="dialog"
           pa={{ id: iv.id, kind: iv.kind, description: iv.description ?? null, performer: iv.performer ?? null,
                 followupDue: iv.followupDue ?? null, actionDue: iv.actionDue ?? null, cycleNo: iv.cycleNo ?? null }}
           onCancel={onClose}

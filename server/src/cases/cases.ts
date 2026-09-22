@@ -2650,7 +2650,11 @@ export function updateResult(p: Principal, interventionId: number, input: {
   remainingIssue?: string | null;
   /** PR-S2: lý do (bắt buộc khi Điều chỉnh hoặc Thay) hoặc ghi chú (tuỳ chọn). */
   decisionNote?: string | null;
-  /** PR-S2 (S2): nội dung mới khi Điều chỉnh. Trường không gửi = giữ nguyên. Không có `kind`: đổi loại là Thay. */
+  /**
+   * PR-S2 (S2): nội dung mới khi Điều chỉnh. Trường không gửi = giữ nguyên. Không có `kind`: đổi loại là Thay.
+   * Với `decision: 'adjust'`, `performerSelf`/`performerUserId`/`performerName` ở cấp ngoài bị bỏ qua (người thực hiện của
+   * Điều chỉnh thắng), và `followup_due` không đổi thì giữ đúng như cũ.
+   */
   adjust?: { description?: string | null; performerUserId?: number | null; performerName?: string | null; followupDue?: string | null } | null;
   /** Người thực hiện chu kỳ vừa rồi, nếu chưa ghi lúc lên kế hoạch. */
   performerSelf?: boolean; performerUserId?: number | null; performerName?: string | null;
@@ -2732,11 +2736,11 @@ export function updateResult(p: Principal, interventionId: number, input: {
    * PR-S2: VÌ SAO ĐỔI là điều luật bắt buộc audit (rulebook §18.2 điểm 2). Điều chỉnh và Thay phải có lý do.
    * Kiểm SAU các lỗi của `mode === 'end'` để câu "phương án mới là gì" vẫn báo trước (phép kiểm [9.1]).
    */
-  const decisionNote = (input.decisionNote ?? '').trim() || null;
+  const decisionNote = String(input.decisionNote ?? '').trim() || null;
   if ((nextStep === 'adjust' || nextStep === 'propose') && (decisionNote ?? '').length < 8) {
     throw badRequest('Điều chỉnh hoặc thay phương án thì phải ghi Lý do, ít nhất 8 ký tự.');
   }
-  const remainingIssue = (input.remainingIssue ?? '').trim() || null;
+  const remainingIssue = String(input.remainingIssue ?? '').trim() || null;
   if (remainingIssue && remainingIssue.length > 300) throw badRequest('Vấn đề còn tồn tối đa 300 ký tự.');
   /* Điều chỉnh: chuẩn hoá TRƯỚC giao dịch; sai thì không ghi gì. */
   const adjustPatch = nextStep === 'adjust' ? chuanHoaDieuChinh(iv, input.adjust, observedOn) : null;

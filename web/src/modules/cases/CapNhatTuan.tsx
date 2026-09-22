@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { api, invalidate } from '../../lib/api.ts';
 import { useSession } from '../../lib/session.tsx';
 import { useToast } from '../../ui/Toast.tsx';
@@ -39,9 +39,16 @@ const DA_LUU: Record<PlanDecision, string> = {
   ask_manager: 'Đã chuyển sang chờ Quản lý',
 };
 
-export function CapNhatTuanForm({ pa, onCancel, onSaved }: {
-  pa: PaCanCapNhat; onCancel: () => void; onSaved: () => void;
+/**
+ * `variant`:
+ *   'inline' (mặc định) · mở ngay dưới dòng PA ở hồ sơ học viên. Dòng PA ngay trên đã có tên và ngày, nên form không nhắc lại.
+ *   'dialog' · trong hộp thoại ở ngăn Case. Dòng đầu nói rõ đang ghi cho PA nào; hàng nút ghim ở chân vùng cuộn để nút Lưu
+ *             luôn thấy, kể cả màn thấp khi khối Điều chỉnh / Thay làm form dài ra.
+ */
+export function CapNhatTuanForm({ pa, variant = 'inline', onCancel, onSaved }: {
+  pa: PaCanCapNhat; variant?: 'inline' | 'dialog'; onCancel: () => void; onSaved: () => void;
 }) {
+  const hopThoai = variant === 'dialog';
   const { session } = useSession();
   const toast = useToast();
   const today = session?.demoDate ?? '';
@@ -127,13 +134,25 @@ export function CapNhatTuanForm({ pa, onCancel, onSaved }: {
     </span>
   );
 
+  /* Nhãn ô ngày không bao giờ gãy giữa chữ ("Dự kiến kết / thúc"); hàng hẹp thì ô ngày xuống dưới nhãn. */
+  const oNgay = (text: string, input: ReactNode) => (
+    <label className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[11px] text-slate-400">
+      <span className="whitespace-nowrap">{text}</span>
+      {input}
+    </label>
+  );
+
   return (
-    <div className="rounded-lg p-2.5 space-y-2.5" style={{ background: 'var(--surface-1)' }}>
-      <p className="text-[11px] text-slate-500 m-0">
-        {INTERVENTION_KIND_LABEL[pa.kind as keyof typeof INTERVENTION_KIND_LABEL] ?? pa.kind}
-        {pa.cycleNo && pa.cycleNo > 1 ? ` · Đợt ${pa.cycleNo}` : ''}
-        {pa.actionDue ? ` · hạn cập nhật ${fmtDate(pa.actionDue)}` : ''}
-      </p>
+    <div className={`space-y-2.5 ${hopThoai ? '' : 'rounded-lg p-2.5'}`} style={hopThoai ? undefined : { background: 'var(--surface-1)' }}>
+      {hopThoai && (
+        <p className="text-xs text-slate-500 m-0 leading-snug break-words">
+          <span className="text-slate-200">
+            {pa.description || (INTERVENTION_KIND_LABEL[pa.kind as keyof typeof INTERVENTION_KIND_LABEL] ?? pa.kind)}
+          </span>
+          {pa.cycleNo && pa.cycleNo > 1 ? ` · Đợt ${pa.cycleNo}` : ''}
+          {pa.actionDue ? ` · hạn cập nhật ${fmtDate(pa.actionDue)}` : ''}
+        </p>
+      )}
 
       <div>
         {nhan('1. Kết quả hiện tại')}
@@ -195,11 +214,9 @@ export function CapNhatTuanForm({ pa, onCancel, onSaved }: {
             {nhan('Người thực hiện mới', `để trống nếu không đổi · hiện: ${pa.performer ?? 'chưa có'}`)}
             <input className="field w-full" value={performer} onChange={(e) => setPerformer(e.target.value)} />
           </label>
-          <label className="flex items-center gap-1.5 text-[11px] text-slate-400">
-            Dự kiến kết thúc
+          {oNgay('Dự kiến kết thúc',
             <input type="date" className="field" style={{ width: '9.5rem' }} value={due} min={on || undefined}
-              onChange={(e) => setDue(e.target.value)} />
-          </label>
+              onChange={(e) => setDue(e.target.value)} />)}
         </div>
       )}
 
@@ -242,30 +259,36 @@ export function CapNhatTuanForm({ pa, onCancel, onSaved }: {
         <input className="field w-full" value={reason} onChange={(e) => setReason(e.target.value)} />
       </label>
 
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <span className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
-          <label className="flex items-center gap-1.5 text-[11px] text-slate-400">
-            Ngày cập nhật
-            <input type="date" className="field" style={{ width: '9.5rem' }} value={on} max={today}
-              onChange={(e) => setOn(e.target.value)} />
-          </label>
-          {decision === 'end' && (
-            <label className="flex items-center gap-1.5 text-[11px] text-slate-400">
-              Ngày kết thúc
-              <input type="date" className="field" style={{ width: '9.5rem' }} value={endOn} max={today}
-                onChange={(e) => setEndOn(e.target.value)} />
-            </label>
-          )}
-        </span>
-        <span className="flex gap-1.5">
+      {/* Ô ngày một hàng riêng; hàng nút riêng bên dưới, nên nút không đổi chỗ khi chữ nút dài ngắn khác nhau. */}
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+        {oNgay('Ngày cập nhật',
+          <input type="date" className="field" style={{ width: '9.5rem' }} value={on} max={today}
+            onChange={(e) => setOn(e.target.value)} />)}
+        {decision === 'end' && oNgay('Ngày kết thúc',
+          <input type="date" className="field" style={{ width: '9.5rem' }} value={endOn} max={today}
+            onChange={(e) => setEndOn(e.target.value)} />)}
+      </div>
+
+      {/*
+        Hàng nút luôn sát phải; câu báo thiếu đứng ngay bên trái nút Lưu (hàng hẹp thì nằm ngay trên nó). Câu báo cao dòng
+        14px: hai dòng vừa đúng chiều cao nút (28px), nên nút không nhích khi câu dài ngắn khác nhau.
+        Trong hộp thoại, hàng này ghim ở chân vùng cuộn: lề âm hai bên, lề dưới âm và `bottom` âm bù đúng khoảng đệm p-5 của
+        `Modal`, nên nó luôn nằm sát đáy hộp thoại như một chân trang, nội dung cuộn chui dưới nó. Lề dưới đặt bằng `style` vì
+        `space-y-*` của khối cha ghi đè `margin-bottom` của lớp tiện ích.
+      */}
+      <div className={`flex flex-wrap items-center justify-end gap-x-3 gap-y-1 ${
+        hopThoai ? 'sticky -bottom-5 z-10 -mx-5 px-5 py-3 border-t' : ''}`}
+        style={hopThoai ? { background: 'var(--surface)', borderColor: 'var(--line)', marginBottom: '-1.25rem' } : undefined}>
+        {missing && <span className="flex-1 basis-40 min-w-0 text-right text-[11px] leading-[14px] text-slate-500">{missing}</span>}
+        <span className="flex shrink-0 gap-1.5">
           <button type="button" className="btn btn-sm" onClick={onCancel} disabled={busy}>Huỷ</button>
           <button type="button" className="btn btn-sm btn-primary" disabled={busy || !!missing}
             title={missing ?? undefined} onClick={save}>
-            {busy ? 'Đang lưu…' : NUT_LUU[decision || 'keep']}
+            {/* Chưa chọn quyết định thì nói trung tính, không ngầm hiểu là Giữ nguyên. */}
+            {busy ? 'Đang lưu…' : decision ? NUT_LUU[decision] : 'Ghi kết quả'}
           </button>
         </span>
       </div>
-      {missing && <p className="text-[11px] text-slate-500 m-0">{missing}</p>}
     </div>
   );
 }
@@ -287,7 +310,8 @@ export function LichSuDieuChinh({ revisions }: { revisions: BanDieuChinh[] }) {
   return (
     <ol className="list-none p-0 m-0 space-y-1.5">
       {[...revisions].reverse().map((r) => (
-        <li key={r.id} className="pl-2.5 border-l text-xs" style={{ borderColor: 'var(--line)' }}>
+        /* Không viền trái riêng: danh sách ▸ bọc ngoài đã có một vạch dọc, hai vạch lồng nhau thành rối. */
+        <li key={r.id} className="text-xs">
           <span className="block text-[11px] text-slate-500 tabular-nums">
             {fmtDate(r.on)} · Điều chỉnh{r.source === 'confirm_edit' ? ' khi xác nhận gợi ý' : ''}{r.by ? ` · ${r.by}` : ''}
           </span>

@@ -12,7 +12,8 @@ import { badRequest, isIsoDate, nowIso } from '../util.ts';
  */
 
 export type DieuChinhPA = {
-  description: string; performerUserId: number | null; performerName: string | null; followupDue: string | null;
+  /** NULL chỉ khi PA vốn chưa có mô tả và lần này không đổi mô tả. */
+  description: string | null; performerUserId: number | null; performerName: string | null; followupDue: string | null;
 };
 export type DieuChinhVao = {
   description?: string | null; performerUserId?: number | null; performerName?: string | null; followupDue?: string | null;
@@ -57,7 +58,8 @@ export function chuanHoaDieuChinh(iv: any, input: DieuChinhVao | null | undefine
   if (same) {
     throw badRequest('Điều chỉnh thì phải đổi ít nhất một thứ: mô tả, người thực hiện hoặc ngày dự kiến kết thúc. Không đổi gì thì chọn Giữ nguyên.');
   }
-  return { description, performerUserId, performerName, followupDue };
+  /* Mô tả rỗng chỉ xảy ra khi KHÔNG đổi mô tả (mô tả mới phải ≥ 8 ký tự): giữ đúng bản cũ, PA chưa có mô tả thì vẫn NULL. */
+  return { description: description || (iv.description ?? null), performerUserId, performerName, followupDue };
 }
 
 /** Ghi MỘT dòng lịch sử. `iv` là dòng `case_interventions` ĐỌC TRƯỚC khi sửa (bản cũ). Trả id dòng vừa ghi. */
@@ -95,7 +97,10 @@ export function apDungDieuChinh(iv: any, patch: DieuChinhPA, ctx: {
   });
 }
 
-/** Mọi bản điều chỉnh của một Case, gom theo PA, cũ trước mới sau. MỘT câu truy vấn cho cả Case. */
+/**
+ * Mọi bản điều chỉnh của một Case, gom theo PA, cũ trước mới sau THEO THỨ TỰ GHI (`id`), không theo ngày cập nhật: lần sau có thể
+ * ghi ngày cập nhật sớm hơn lần trước, và bản cũ của lần sau luôn là bản mới của lần trước. MỘT câu truy vấn cho cả Case.
+ */
 export function lichSuDieuChinhCuaCase(caseId: number): Map<number, BanDieuChinh[]> {
   const rows = db()
     .prepare(
@@ -105,7 +110,7 @@ export function lichSuDieuChinhCuaCase(caseId: number): Map<number, BanDieuChinh
          LEFT JOIN users ou ON ou.id = r.old_performer_user_id
          LEFT JOIN users nu ON nu.id = r.new_performer_user_id
         WHERE r.case_id = ?
-        ORDER BY r.effective_on, r.id`,
+        ORDER BY r.id`,
     )
     .all(caseId) as any[];
   const out = new Map<number, BanDieuChinh[]>();

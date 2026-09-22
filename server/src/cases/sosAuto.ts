@@ -194,6 +194,9 @@ export function confirmPresetPlan(p: Principal, interventionId: number, patch: {
     if (patch.followupDue && !isIsoDate(patch.followupDue)) throw badRequest('Dự kiến kết thúc phương án không hợp lệ.');
     followupDue = patch.followupDue || null;
   }
+  /* `String(…)`: body gửi lý do không phải chữ thì vẫn đi đường 400, không vỡ thành 500. */
+  const reason = String(patch.reason ?? '').trim();
+  if (reason.length > 300) throw badRequest('Lý do tối đa 300 ký tự.');
   const today = demoToday();
   return tx(() => {
     db()
@@ -212,7 +215,7 @@ export function confirmPresetPlan(p: Principal, interventionId: number, patch: {
     if (description !== iv.description || followupDue !== (iv.followup_due ?? null)) {
       ghiBanDieuChinh({
         iv, source: 'confirm_edit', on: today, actorUserId: p.userId, followupId: null,
-        reason: (patch.reason ?? '').trim() || CONFIRM_EDIT_REASON,
+        reason: reason || CONFIRM_EDIT_REASON,
         after: { description, performerUserId: iv.performer_user_id ?? null, performerName: iv.performer_name ?? null, followupDue },
       });
     }

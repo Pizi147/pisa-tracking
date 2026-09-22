@@ -489,6 +489,12 @@ function KhoiPhuongAn({ p, plans, canEdit, onChanged }: {
   const v = viecTiepPhuongAn(p);
   const thayBang = p.supersededBy ? plans.find((x) => x.id === p.supersededBy) ?? null : null;
   const thayCho = plans.find((x) => x.supersededBy === p.id) ?? null;
+  const dongPhu = {
+    chinh: `${p.performer ?? 'chưa có người thực hiện'}${p.startedOn ? ` · từ ${fmtDate(p.startedOn)}` : ''}`
+      + `${p.completedOn ? ` → ${fmtDate(p.completedOn)}` : ''}`,
+    duoi: p.closedReason === 'superseded' ? 'được thay'
+      : p.revisions.length > 0 ? `điều chỉnh ${p.revisions.length} lần` : null,
+  };
 
   return (
     <div className="rounded-lg border px-2.5 py-2" style={{ borderColor: 'var(--line)' }}>
@@ -508,13 +514,13 @@ function KhoiPhuongAn({ p, plans, canEdit, onChanged }: {
               </span>
               {p.name}
             </span>
-            <span className="block text-[11px] text-slate-500 mt-0.5">
-              {p.performer ?? 'chưa có người thực hiện'}
-              {p.startedOn && <> · từ {fmtDate(p.startedOn)}</>}
-              {p.completedOn && <> → {fmtDate(p.completedOn)}</>}
-              {p.closedReason === 'superseded'
-                ? <> · được thay</>
-                : p.revisions.length > 0 && <> · điều chỉnh {p.revisions.length} lần</>}
+            {/*
+              G-3: dòng phụ luôn MỘT dòng, kể cả 375px và lưới 3 cột ở 768px. Phần người · ngày cắt bằng "…" (di chuột xem đủ),
+              phần đuôi "được thay" / "điều chỉnh n lần" không bao giờ bị cắt.
+            */}
+            <span className="flex min-w-0 text-[11px] text-slate-500 mt-0.5" title={dongPhu.duoi ? `${dongPhu.chinh} · ${dongPhu.duoi}` : dongPhu.chinh}>
+              <span className="min-w-0 truncate">{dongPhu.chinh}</span>
+              {dongPhu.duoi && <span className="shrink-0 whitespace-nowrap">&nbsp;· {dongPhu.duoi}</span>}
             </span>
           </span>
         </div>
@@ -591,7 +597,8 @@ function KhoiPhuongAn({ p, plans, canEdit, onChanged }: {
               </span>
               {u.note && <span className="block text-xs text-slate-300 mt-0.5 leading-relaxed break-words">“{u.note}”</span>}
               {u.remainingIssue && <span className="block text-[11px] text-slate-400 mt-0.5">Còn tồn: {u.remainingIssue}</span>}
-              {u.decisionNote && (
+              {/* Lý do của lần Điều chỉnh đã nằm trong bản điều chỉnh ở trên (kèm đổi gì), không nói lại lần hai. */}
+              {u.decisionNote && !(u.decision === 'adjust' && p.revisions.length > 0) && (
                 <span className="block text-[11px] text-slate-400 mt-0.5">
                   {u.decision === 'adjust' || u.decision === 'propose' ? 'Lý do' : 'Ghi chú'}: {u.decisionNote}
                 </span>

@@ -404,5 +404,30 @@ export async function runDieuChinhPaTests(t: YThucTestKit) {
     assert(need.count === 0 && !need.ids.includes(ivId), `PA đã bị thay không được nằm trong F05: ${JSON.stringify(need)}`);
   });
 
+  // ================================================================== 7. Sau rà cuối
+
+  console.log('\nPR-S2 · 7. Sau rà cuối: lịch sử điều chỉnh theo thứ tự ghi');
+
+  check('PR-S2 · Đọc: lịch sử điều chỉnh theo thứ tự GHI (cũ trước mới sau), kể cả khi lần sau ghi ngày cập nhật sớm hơn lần trước', () => {
+    const { ivId, caseId } = taoCase();
+    /* PA chạy từ 7 ngày trước, để ngày cập nhật lùi về trước vẫn nằm trong đời PA. */
+    conn.prepare('UPDATE case_interventions SET started_date = ?, cycle_started_on = ? WHERE id = ?')
+      .run(addDays(TODAY, -7), addDays(TODAY, -7), ivId);
+    cases.updateResult(P.lrTeacher, ivId, {
+      decision: 'adjust', outcome: 'partial', note: 'Buổi sáng em nghe đều hơn', observedOn: TODAY,
+      decisionNote: 'Đổi sang buổi sáng cho hợp lịch', adjust: { description: 'Tự học Listening — nghe chép buổi sáng 20 phút' },
+    });
+    cases.updateResult(P.lrTeacher, ivId, {
+      decision: 'adjust', outcome: 'partial', note: 'Ghi bù buổi xem lại hai hôm trước', observedOn: addDays(TODAY, -2),
+      decisionNote: 'Tăng thời lượng vì em theo kịp', adjust: { description: 'Tự học Listening — nghe chép buổi sáng 30 phút' },
+    });
+    const revs = (cases.caseDetail(P.lrTeacher, caseId) as any).interventions.find((x: any) => x.id === ivId).revisions as any[];
+    assert(revs.length === 2, `Phải có 2 bản điều chỉnh: ${JSON.stringify(revs)}`);
+    assert(revs[0].on === TODAY && revs[1].on === addDays(TODAY, -2),
+      `Phải theo thứ tự ghi, không theo ngày cập nhật: ${revs.map((r) => r.on).join(', ')}`);
+    assert(revs[1].before.description === revs[0].after.description,
+      `Chuỗi bản cũ → bản mới bị đứt: ${JSON.stringify(revs.map((r) => [r.before.description, r.after.description]))}`);
+  });
+
   // ---- các task sau thêm phép kiểm NGAY TRÊN dòng này ----
 }
