@@ -1,6 +1,18 @@
 import fs from 'node:fs';
-import { DB_PATH, closeDb, db } from '../db.ts';
+import { DB_PATH, closeDb, db, laDbTuXa } from '../db.ts';
 import { hasLegacyDisciplineModel, migrate } from '../migrate.ts';
+import { choPhepMigrateTurso } from '../moiTruong.ts';
+
+/*
+ * TURSO (bản chính / bản thử): nâng cấp chỉ khi người chạy XÁC NHẬN bằng đúng nguyên tên máy chủ của database — và phải
+ * hỏi TRƯỚC khi mở kết nối. Nâng cấp thì giữ dữ liệu, nhưng một bước nâng cấp hỏng trên dữ liệu thật chỉ cứu được bằng
+ * bản sao lưu, nên thông báo nhắc sao lưu trước.
+ */
+if (laDbTuXa() && !choPhepMigrateTurso(DB_PATH, process.env.PISA_CHO_PHEP_MIGRATE_TURSO)) {
+  console.error('[migrate] TỪ CHỐI: đang trỏ tới Turso. Muốn nâng cấp database này: SAO LƯU trước (npm run sao-luu), rồi đặt\n'
+    + '          PISA_CHO_PHEP_MIGRATE_TURSO bằng NGUYÊN tên máy chủ của nó.');
+  process.exit(1);
+}
 
 console.log(`[migrate] Nâng cấp dữ liệu đang có tại ${DB_PATH}`);
 

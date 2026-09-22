@@ -1894,11 +1894,31 @@ Phần A chỉ đổi nơi chạy và nơi cất dữ liệu. Những điều d�
 | Màn đăng nhập bản chính không hiện khối "máy chủ chưa chạy" khi máy chủ sập | `WelcomePage.tsx` suy `serverDown` từ lỗi của `/demo/accounts`; bản chính không gọi đường đó nữa. Form đăng nhập vẫn báo lỗi khi bấm | Suy `serverDown` từ `/auth/info` — PR giao diện sau deploy |
 | Dựng bộ demo lên Turso **từ máy ở Việt Nam** rất chậm (~0,5 giây mỗi câu lệnh, toàn bộ seed là một giao dịch) | Đúng bản chất "mỗi câu một lượt mạng". Chỉ ảnh hưởng database THỬ; bản chính bắt đầu rỗng | Không cần làm. Nếu còn phải seed database thử nhiều lần: chạy seed ra file rồi `turso db create --from-file` |
 | Khoá chặn "đường dẫn tệp nằm ngoài thư mục tải lên" giờ ném lỗi thường (500) thay vì 403 | Khoá chuyển vào `khoTepODia` theo plan; chỉ xảy ra khi cột `attachments.url` bị sửa tay trong database | Không ưu tiên |
-| **`npm run migrate` chưa có chốt chặn Turso** (rà soát Phần A) — chạy với biến Turso sẽ nâng cấp thẳng database thật và có thể tạo tài khoản quản trị mật khẩu mặc định | `migrate/run.ts` nằm ngoài phạm vi Phần A | **Phần B (PR-Z2b)**: từ chối khi `laDbTuXa()`, cùng kiểu `tuChoiXoaSachNeuTuXa` |
-| `DB_PATH` (giờ có thể là URL Turso) được in ở log seed/migrate — sẽ lộ token nếu ai đó nhét `?authToken=` vào URL | URL chuẩn của Turso không chứa token; TRIEN_KHAI tách token thành biến riêng | Phần B: cắt phần query trước khi in |
+| **`npm run migrate` chưa có chốt chặn Turso** (rà soát Phần A) — chạy với biến Turso sẽ nâng cấp thẳng database thật và có thể tạo tài khoản quản trị mật khẩu mặc định | `migrate/run.ts` nằm ngoài phạm vi Phần A | ✅ **Đã làm ở PR-Z2b (Task 6d):** Turso cần `PISA_CHO_PHEP_MIGRATE_TURSO` = nguyên tên máy chủ; bỏ tài khoản/mật khẩu mặc định |
+| `DB_PATH` (giờ có thể là URL Turso) được in ở log seed/migrate — sẽ lộ token nếu ai đó nhét `?authToken=` vào URL | URL chuẩn của Turso không chứa token; TRIEN_KHAI tách token thành biến riêng | ✅ **Đã làm ở PR-Z2b:** `DB_PATH` bỏ phần `?…`/`#…` (có phép kiểm) |
 | Netlify Blobs mặc định "nhất quán sau cùng": tải xuống NGAY sau khi tải lên có thể báo không thấy tệp trong vài chục giây | `connectLambda` 11.1.0 chưa bật được `consistency: strong` | Theo dõi ở Task 6b Step 6 / Task 10; nếu gặp thật thì xử lý ở Phần C |
 | Có sẵn từ trước, ngoài phạm vi: phiên đăng nhập không hết hạn; `/auth/register` mở cho mọi người (cần duyệt mới dùng được) | Không thuộc PR hạ tầng | Xem xét trước khi gửi link cho giáo viên |
 | File database ở **thư mục main gốc** trên máy chủ sản phẩm còn ở mô hình trước PR-J (cảnh báo khi `npm run dev`) | Không thuộc mã; chỉ là dữ liệu cũ trên máy | Chủ sản phẩm chạy `npm run seed` ở thư mục gốc khi tiện |
+
+### 12.17. PR-Z2b (an toàn dữ liệu bản chính) thấy nhưng KHÔNG sửa — 22/09/2026
+
+| Việc | Vì sao chưa làm | Làm ở đâu khi quay lại |
+|---|---|---|
+| `npm run sao-luu` chép các bảng **lần lượt**, không trong một giao dịch đọc — ai ghi giữa chừng thì bản sao có thể lệch vài dòng giữa các bảng | Một giao dịch dài trên Turso có thể chặn người đang ghi dữ liệu thật; chép từ Việt Nam mất ~2 phút | Lệnh in dòng nhắc "chạy lúc không ai nhập liệu". Nếu cần bản sao nhất quán tuyệt đối: dùng point-in-time của Turso |
+| Chi nhánh thêm bằng `them-chi-nhanh` có đơn vị báo cáo đứng **sau** "Tutor part-time" trong danh sách | Sửa thứ tự của dòng Tutor là sửa dữ liệu đã có — lệnh cố ý không sửa gì ngoài dòng mới | Nếu thứ tự hiển thị quan trọng: màn quản trị đơn vị báo cáo (chưa có) |
+| `migrate()` vẫn ghi vài **mốc nâng cấp** vào bảng `demo_config` (`migrated_at`, `normal_pass_threshold`…) kể cả trên Turso | Đó là mốc nâng cấp (và mốc đổi luật có audit), không phải ngày demo hay dữ liệu demo | Không cần làm. Nếu đổi tên bảng `demo_config` thì làm cùng |
+| Lệnh `netlify env:set` in lại **cả giá trị** vừa đặt ra màn hình (Netlify CLI 27.8.0) | Hành vi của Netlify CLI | `TRIEN_KHAI.md` mục 6 đã dặn đóng cửa sổ sau khi dán token |
+| PowerShell 5.1 hiện dòng `TỪ CHỐI` của các lệnh bằng chữ đỏ kèm `NativeCommandError` | Là cách PowerShell hiện stderr — đúng nghĩa "bị từ chối" | Không cần làm |
+| Đường **tải kho tệp** của lệnh `sao-luu` thật chưa chạy với Netlify Blobs THẬT (cần Personal access token của chủ sản phẩm) | Không xin token của chủ sản phẩm; phép kiểm chạy trên máy chủ Blobs cục bộ đúng giao thức `siteID + token` | **Phần C (Task 10)**: chủ sản phẩm chạy mục 10 có hai biến Netlify một lần, xem thư mục `…-tep` có tệp |
+| **(Chủ sản phẩm 22/09: không cần làm)** `init-ban-chinh` khi database có bảng nhưng rỗng: không đòi đủ bộ bảng của schema (bảng thiếu → lỗi lúc chèn → cuộn lại) | Database Turso mới tạo không có bảng nào; đường "có bảng rỗng" không xảy ra trong luồng thật | Không làm |
+| **(Chủ sản phẩm 22/09: không cần làm)** `migrate` chỉ tự sao lưu trước khi nâng cấp khi database là FILE cục bộ | TRIEN_KHAI 11.1 bắt chạy `sao-luu` trước; `migrate/run.ts` cũng nhắc | Không làm |
+| **CHỜ CHỦ SẢN PHẨM QUYẾT:** bản sao lưu chứa **mã phiên đăng nhập còn hiệu lực** (`demo_sessions.token`, lưu thẳng, không hết hạn) — ai có một file sao lưu là đăng nhập được như người đang đăng nhập, kể cả quản trị | Loại các dòng phiên khỏi bản sao lưu thì đổi tính chất (c) "mọi bảng đúng số dòng" mà chủ sản phẩm yêu cầu | Tuỳ quyết định: bỏ dòng `demo_sessions` khỏi bản sao lưu (khôi phục xong mọi người đăng nhập lại) + ghi ngoại lệ ở phép (c); hoặc giữ và coi file sao lưu nhạy cảm như mật khẩu quản trị |
+| `npm run dev` trong cửa sổ có biến Turso: máy chủ ở chế độ bản chính → kho tệp là Netlify Blobs, trên máy không có ngữ cảnh Blobs nên **tải tệp lên sẽ lỗi** | Cố ý: tệp của một database Turso không được nằm rải trên ổ đĩa máy dev. Tập dượt 7a chỉ cần đăng nhập | Nếu cần thử tệp với Turso trên máy: `netlify dev` |
+| Giao diện bản máy dev (không `VITE_BAN_CHINH`) + máy chủ chế độ bản chính → màn đăng nhập hiện khối "chưa có dữ liệu mẫu" **thay cho form đăng nhập** (`WelcomePage` suy từ lỗi `/demo/accounts`) | TRIEN_KHAI 7a đặt `VITE_BAN_CHINH='1'` trước `npm run dev` | Cùng việc ở 12.16: suy `serverDown`/`noData` từ `/auth/info` |
+| Mỗi lần `sao-luu` có hai biến Netlify là tải lại **toàn bộ** kho tệp (14 bản đầy đủ) | Tệp ≤ 4 MB, trung tâm nhỏ; đơn giản và mỗi bản tự đủ | Theo dõi dung lượng Drive; nếu lớn: chỉ tải tệp mới |
+| Khôi phục sang database MỚI → kho tệp theo tên database mới, đang trống (tệp cũ vẫn ở kho cũ) | Chủ sản phẩm chốt 22/09: chép kho tệp là việc tay | TRIEN_KHAI 11.2 bước 5; session code chép kho khi cần |
+| Phép kiểm cũ (Phần A) `db().name` luôn là `""` ở libsql 0.5.29 → nửa điều kiện "không mở database từ xa" không bao giờ đỏ | Nửa còn lại (không còn biến Turso trong môi trường) vẫn kiểm đúng | Kiểm bằng `DB_PATH` thay `db().name` khi quay lại |
+| Phép kiểm của Phần A còn dùng tên máy chủ giả `*.turso.io` (chỉ ra mạng nếu một chốt bị hỏng); phép của Phần B đã đổi sang `.invalid` | Không sửa phép cũ trong PR này | Đổi sang `.invalid` khi quay lại |
 
 ### 13.1. Trước mỗi commit
 
@@ -1989,6 +2009,7 @@ Nói **cái gì đổi trên màn hình**, bằng tiếng Việt, không tên h�
 | 22/09/2026 (sau) | Claude (session planning) | **Rà soát PR-K2 (#44), PR-K3 (#46): đạt.** **Rà soát độc lập Opus nhánh PR-Z2a:** không lỗi nghiêm trọng; 603/603; thử 14 kiểu lách `/demo` đều 404; kiểm phép kiểm không xanh giả. Còn phải có trước dữ liệu thật → thêm vào Phần B: Task 6c viết lại cho khớp mã (chốt đã nằm trong `recreateSchema`) + chặn cứng tên bản chính; **Task 6d** migrate vào Turso cần xác nhận, bỏ admin/mật khẩu mặc định; **Task 6e** bản nháp dùng database thử, kho tệp theo database, xoá tệp sau giao dịch ở `deleteMeasure`. Phần C: Task 10 đổi thứ tự (kiểm trên địa chỉ chính thức trước khi báo giáo viên), bật lại bảo vệ bản nháp, kiểm kết nối nguội > 10 phút |
 | 22/09/2026 (tối) | Claude (session planning) | **PR-HV lên kế hoạch.** Chủ sản phẩm gửi 2 prototype v3 và yêu cầu làm lại hồ sơ học viên, đổi "biện pháp" → "phương án", bỏ "Hãy". Session planning mở demo thật, chụp màn hiện tại, cho agent đọc mã (bản đồ file, 13+5 chỗ "biện pháp/BP" trên giao diện, 64 chỗ "Hãy"), hỏi gộp 3 câu (cả ba theo khuyến nghị) + chuyển Q7/Q8 từ PR-Q (chủ sản phẩm đồng ý). Viết đặc tả + kế hoạch 11 task (Fable 5.1 · High), cửa 🛑 cho file Z2b. Prototype chép vào `thiet-ke/tham-khao/` |
 | 22/09/2026 | Claude (session PR-K3, nhánh `pr-k3-gan-day-theo-hoc-vien`) | **PR-K3 — sáu lỗi/việc nhỏ sau rà soát PR-K2 (#44).** (1) §7.1 "Gần đây" của khu 3: `board.ts` thêm `recentByStudent: Record<number, MeasureDetail[]>` — tối đa 3 biện pháp mới nhất **của từng học viên** (dựng từ `done` đã tải, không thêm truy vấn; `done` đã sắp mới nhất trước nên chỉ cần lấy 3 phần tử đầu gặp mỗi học viên); `history.latest` (3 dòng của CẢ LỚP) giữ nguyên cho chỗ khác đang dùng. `ClassYThucCard.tsx` đọc `recentByStudent[studentId]` thay vì lọc `history.latest`. (2)+(3) Viết lại `rowsForCategory()` trong `ClassYThucCard.tsx`: một học viên chỉ hiện ở một nhóm nếu có vi phạm (chưa xử lý HOẶC nằm trong biện pháp Đang chuẩn bị) thuộc đúng nhóm đó — **bắt thêm một lỗi ngoài đặc tả lúc bấm thử**: code ban đầu (bám sát chữ "0 vi phạm chưa xử lý") vẫn để lọt học viên CÒN vi phạm chưa xử lý ở nhóm khác vào mọi nhóm chỉ vì có bất kỳ biện pháp Đang chuẩn bị nào (tái hiện bằng Nguyễn Minh An/MB-FT 101: 4 vi phạm BTVN+Chuyên cần+Thái độ, biện pháp cũng không có nhóm Kỷ luật, nhưng vẫn hiện ở bộ lọc "Kỷ luật lớp học") — sửa tổng quát theo đúng nguyên tắc "chỉ hiện đúng nhóm có vi phạm liên quan", không chỉ theo đúng câu chữ của việc 2. `allCount` (số nút sub-tab) = `rowsForCategory(null).length`, độc lập bộ lọc đang chọn. (4) Ẩn khung "Vi phạm" rỗng + nút "Tạo biện pháp từ 0 vi phạm đã chọn" khi học viên không còn vi phạm chưa xử lý (chỉ còn biện pháp Đang chuẩn bị); giữ cột "Xử lý". (5) canRecord của `classViolationBoard` **đã đúng sẵn** (dùng `can(p, VIOLATION_RECORD, {classId})`, GVBM trái môn → true qua `hasAssignment(..., 'any')`); chỉ thêm phép kiểm `K3-5` ghi lại hành vi (không sửa mã). (6) `RecordViolationPanel.tsx`: "Chọn học viên." → "Hãy chọn học viên." (khớp mẫu câu "Hãy chọn…" của các form khác). TDD: viết đỏ trước cho K3-1 (`recentByStudent` thiếu → lỗi) và K3-5 (K3-5 đã xanh ngay vì hành vi có sẵn), rồi sửa `board.ts` cho K3-1 xanh. Bộ phép kiểm máy chủ 581 → **583**. Bấm thử trình duyệt thật (GVCN Trần Ngọc Hà, lớp MB-FT 101, seed mới): "Gần đây" đúng theo từng em (Lê Quang Huy và Phạm Bảo Ngọc mỗi em 3 biện pháp riêng, không trộn); tick hết vi phạm của một em rồi tạo biện pháp `talk_short` → em còn "0 vi phạm, 1 BP đang chuẩn bị" chỉ hiện ở "Tất cả" và đúng nhóm (BTVN/Chuyên cần) của biện pháp, số nút sub-tab không đổi; khổ 375px không tràn ngang. `npm run check`: `tsc` sạch cả hai lệnh |
+| 22/09/2026 | Claude (session PR-Z2b, nhánh `pr-z2b-an-toan-du-lieu`, Opus 5) | **PR-Z2b — an toàn dữ liệu bản chính (Task 6c → 9 của kế hoạch Z2).** Phép kiểm **605 → 642**. Chốt seed so nguyên tên máy chủ + chặn cứng tên bản chính `pisatracking-…`; `migrate` vào Turso cần xác nhận, bỏ tài khoản/mật khẩu mặc định; bản nháp dùng database thử (biến Turso bản chính chỉ `--context production`, cú pháp đã thử bằng biến vô hại), kho tệp theo database; `init-ban-chinh`, `them-chi-nhanh`, `sao-luu`. **Bất ngờ:** (1) kế hoạch sót bộ đếm mã học viên `student_code_seq` — thiếu thì học viên thứ hai trùng mã (đã tái hiện); (2) `npm run` trên Windows thoát kép tham số khi script bắt đầu bằng `npm` → "Uông Bí" thành "^Uông^ Bí^"; (3) libsql trên Windows không nhả file sau `close()` nếu đã `prepare` → sao lưu ghi bằng `VACUUM INTO`; (4) `@netlify/blobs` có `siteID + token` thì luôn gọi API thật (bỏ qua biến ngữ cảnh). Ba lệnh đã chạy thật: máy dev, file tạm, và qua mạng với database THỬ (sao lưu 2.426 dòng; `init-ban-chinh`/`them-chi-nhanh` từ chối, database giữ nguyên từng byte). Việc thấy mà không sửa: mục 12.17 |
 ---
 
 ## 15. PR-E — Nền giao diện dùng chung
@@ -3157,33 +3178,37 @@ async. Supabase vẫn là lựa chọn tốt nếu sau này cần đăng nhập 
 > **511/512 đạt** sau ba sửa nhỏ (giao dịch lồng → savepoint; một câu `.run(null)`; dọn thư mục tạm trên Windows).
 > → **Không phải đổi 1.035 chỗ gọi DB sang async.** Còn phải chứng minh đường mạng tới Turso (gate Task 3).
 > Phát hiện thêm: **không có màn nào tạo chi nhánh** → lệnh khởi tạo nhận `CHI_NHANH`, thêm `npm run them-chi-nhanh`.
+>
+> **Tình trạng 22/09:** Z0–Z5 xong ở **PR-Z2a** (Z0 chọn đường **a** — `libsql` đồng bộ chạy qua mạng, nên **Z2 không
+> cần làm**). Z6, Z7 và phần tài liệu của Z9 xong ở **PR-Z2b**. **Z8 (deploy thật) là PR-Z2c.** Chi tiết + số đo: Nhật ký
+> cuối file kế hoạch chi tiết.
 
-- [ ] **Z0. Thử nhanh (≤ 45 phút) — chọn đường.** (a) Thư viện `libsql` (bản tương thích `better-sqlite3`, gọi
+- [x] **Z0. Thử nhanh (≤ 45 phút) — chọn đường.** (a) Thư viện `libsql` (bản tương thích `better-sqlite3`, gọi
       đồng bộ) có nối được Turso từ trong một Netlify Function không? Nếu **có** → không phải đổi 1.035 chỗ sang
       async, Z2 chỉ còn đổi chỗ khởi tạo kết nối. (b) Nếu **không** → dùng `@libsql/client` (bản `/web` hoặc
       `/http` trong Function để khỏi kéo mã native), đi Z2 đầy đủ. (c) Đo thời gian một câu `SELECT 1` từ
       Function tới Turso ở vùng đã chọn. **Ghi kết quả + đường đã chọn vào mục 14 trước khi làm tiếp.**
-- [ ] **Z1. Một cửa kết nối.** `server/src/db.ts` đọc `TURSO_DATABASE_URL` + `TURSO_AUTH_TOKEN`; máy dev và
+- [x] **Z1. Một cửa kết nối.** `server/src/db.ts` đọc `TURSO_DATABASE_URL` + `TURSO_AUTH_TOKEN`; máy dev và
       phép kiểm dùng `file:data/pisa-demo.sqlite` — **cùng một đường code**, không có nhánh riêng cho test.
-- [ ] **Z2. Đổi cách gọi DB** (chỉ khi Z0 chọn đường b). Làm **theo module**, mỗi module một lượt, chạy
+- [x] **Z2. Đổi cách gọi DB** (chỉ khi Z0 chọn đường b). Làm **theo module**, mỗi module một lượt, chạy
       `npm test` sau mỗi lượt: `platform` → `students` → `classes` → `fasttrack` → `normal` → `cases` →
       `yThuc` → `worklist` → `routes` → `seed` → `migrate`. `tx(...)` → giao dịch ghi của libSQL
       (`client.transaction('write')` hoặc `batch`). **Không** đổi luật nghiệp vụ nào; **không** gộp hay
       "tối ưu" truy vấn ở bước này — chỉ đổi cách gọi. Mọi phép kiểm cũ phải xanh nguyên số lượng.
-- [ ] **Z3. Máy chủ thành Netlify Function.** Bọc `server/src/app.ts` (đã tách ở PR-J) bằng `serverless-http`
+- [x] **Z3. Máy chủ thành Netlify Function.** Bọc `server/src/app.ts` (đã tách ở PR-J) bằng `serverless-http`
       thành `netlify/functions/api.ts`. `netlify.toml`: lệnh build, thư mục `dist`, chuyển `/api/*` →
       function, mọi đường khác → `index.html` (link sâu như `/hoc-vien/12` mở được).
       `npm run dev` ở máy dev **không đổi**.
-- [ ] **Z4. Tệp tải lên → Netlify Blobs** (`@netlify/blobs`), máy dev vẫn ghi `data/uploads`. Giới hạn
+- [x] **Z4. Tệp tải lên → Netlify Blobs** (`@netlify/blobs`), máy dev vẫn ghi `data/uploads`. Giới hạn
       **4 MB** ở `shared/domain/attachments.ts` (máy chủ và giao diện đọc chung). Luật quyền tải xuống giữ nguyên.
-- [ ] **Z5. Tắt mọi thứ của bản demo khi production** (như 23.2 Z3 cũ): route `/api/demo/*` trừ phần đăng nhập
+- [x] **Z5. Tắt mọi thứ của bản demo khi production** (như 23.2 Z3 cũ): route `/api/demo/*` trừ phần đăng nhập
       thật cần, "Vào nhanh bằng tài khoản demo", `DemoBar`, `/dev/thanh-phan`; `demoToday()` ra ngày thật;
       `scenario_mode` luôn `normal`; cookie `Secure` khi chạy https.
-- [ ] **Z6. `npm run init-ban-chinh`** — chạy **từ máy của chủ sản phẩm**, trỏ vào Turso qua biến môi trường:
+- [x] **Z6. `npm run init-ban-chinh`** — chạy **từ máy của chủ sản phẩm**, trỏ vào Turso qua biến môi trường:
       tạo bảng từ `schema.sql` + dữ liệu nền (vai trò, quyền, chương trình, danh mục — tách khỏi `seed.ts`
       thành hàm dùng chung) + **một** tài khoản quản trị từ `ADMIN_EMAIL`/`ADMIN_PASSWORD`.
       **Từ chối chạy nếu DB đã có dữ liệu.** Có phép kiểm cho việc từ chối này.
-- [ ] **Z7. `npm run sao-luu`** — chạy từ máy chủ sản phẩm: tải toàn bộ DB Turso về một file
+- [x] **Z7. `npm run sao-luu`** — chạy từ máy chủ sản phẩm: tải toàn bộ DB Turso về một file
       `pisa-YYYY-MM-DD-HHmm.sqlite` trong `BACKUP_DIR` (trỏ vào thư mục Google Drive được), giữ 14 bản.
       File đó mở lại được bằng chính mã hiện tại (`file:`) — có phép kiểm.
 - [ ] **Z8. Deploy thật + kiểm trên địa chỉ thật** (phần quan trọng nhất): init → đăng nhập quản trị → tạo chi
@@ -3191,7 +3216,7 @@ async. Supabase vẫn là lựa chọn tốt nếu sau này cần đăng nhập 
       điền sẵn + Phối hợp SOS → ghi vi phạm → tạo biện pháp → tải một tệp. Mọi màn chính mở được khi bảng
       rỗng. **Đo thời gian tải** hồ sơ học viên, bảng chấm cả lớp, Tổng quan, Thực trạng, tab Ý thức & Phối
       hợp của lớp: trang nào > 3 giây thì gộp truy vấn của **chính trang đó** (không tối ưu lan man).
-- [ ] **Z9.** Cập nhật `README.md` (máy dev vẫn như cũ + một mục "Bản chính"), `CODE_MAP.md`, mục 14.
+- [x] **Z9.** Cập nhật `README.md` (máy dev vẫn như cũ + một mục "Bản chính"), `CODE_MAP.md`, mục 14.
       Mở PR, **không tự merge**.
 
 ## 24.3. Thứ tự tối nay

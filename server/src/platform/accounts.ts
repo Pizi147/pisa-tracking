@@ -58,7 +58,7 @@ export function checkEmail(raw: string): string {
  * Không dùng một hàm băm nhanh (sha256) dù bản demo không có dữ liệu thật: cách lưu mật khẩu
  * là thứ người ta sao chép sang bản thật mà không đọc lại, nên nó phải đúng ngay từ đây.
  */
-function hashPassword(password: string, salt?: string): { hash: string; salt: string } {
+export function hashPassword(password: string, salt?: string): { hash: string; salt: string } {
   const s = salt ?? crypto.randomBytes(16).toString('hex');
   const hash = crypto.scryptSync(password, s, 64).toString('hex');
   return { hash, salt: s };

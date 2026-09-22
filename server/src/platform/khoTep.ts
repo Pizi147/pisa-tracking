@@ -4,7 +4,20 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
-import { laBanChinh } from '../moiTruong.ts';
+import { DB_PATH, laDbTuXa } from '../db.ts';
+import { laBanChinh, tenMayChuDb } from '../moiTruong.ts';
+
+/**
+ * TÊN KHO TỆP ĐI THEO DATABASE (PR-Z2 22/09). Kho Netlify Blobs dùng chung cả site cho MỌI loại deploy — bản nháp nối
+ * database thử mà ghi vào cùng kho với bản chính thì tệp thử lẫn vào tệp thật. Nên mỗi database một kho:
+ * `bang-chung-<phần đầu tên máy chủ>`, ví dụ `bang-chung-pisatracking-demo-pizi147`. Không có Turso (máy dev) → kho cục bộ.
+ * Không truyền `url` = database đang nối. Lệnh sao lưu dùng đúng hàm này để tải đúng kho.
+ * Netlify giới hạn tên kho 64 byte, không có `/` — phần đầu tên máy chủ chỉ có chữ thường, số, gạch ngang.
+ */
+export function tenKhoTep(url: string | null = laDbTuXa() ? DB_PATH : null): string {
+  const dau = url ? tenMayChuDb(url).split('.')[0] : '';
+  return dau ? `bang-chung-${dau}`.slice(0, 64) : 'bang-chung-cuc-bo';
+}
 
 export interface KhoTep {
   ghi(khoa: string, duLieu: Buffer, mime: string): Promise<void>;
@@ -30,16 +43,16 @@ export function khoTepNetlify(): KhoTep {
     async ghi(khoa, duLieu, mime) {
       const { getStore } = await import('@netlify/blobs');
       /* Kiểu của @netlify/blobs 11.1.0 chỉ nhận string | ArrayBuffer | Blob — đưa đúng một ArrayBuffer vừa khít nội dung. */
-      await getStore('bang-chung').set(khoa, new Uint8Array(duLieu).buffer, { metadata: { mime } });
+      await getStore(tenKhoTep()).set(khoa, new Uint8Array(duLieu).buffer, { metadata: { mime } });
     },
     async doc(khoa) {
       const { getStore } = await import('@netlify/blobs');
-      const ab = await getStore('bang-chung').get(khoa, { type: 'arrayBuffer' });
+      const ab = await getStore(tenKhoTep()).get(khoa, { type: 'arrayBuffer' });
       return ab ? Buffer.from(ab) : null;
     },
     async xoa(khoa) {
       const { getStore } = await import('@netlify/blobs');
-      await getStore('bang-chung').delete(khoa);
+      await getStore(tenKhoTep()).delete(khoa);
     },
   };
 }
