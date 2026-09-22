@@ -357,5 +357,52 @@ export async function runDieuChinhPaTests(t: YThucTestKit) {
     assert(ivRow(ivId).description === 'Tự học Listening — nghe chép 15 phút mỗi ngày', `Mô tả bị ghi đè: ${ivRow(ivId).description}`);
   });
 
+  // ================================================================== 6. Thống kê hiệu quả
+
+  console.log('\nPR-S2 · 6. Thống kê hiệu quả: PA có kết quả thật thì tính, một PA một kết quả cuối');
+
+  check('PR-S2 · Thống kê: Giữ nguyên + Điều chỉnh + Kết thúc là MỘT PA với MỘT kết quả cuối, đúng loại ban đầu', () => {
+    const { sid, ivId } = taoCase();
+    cases.updateResult(P.lrTeacher, ivId, { decision: 'keep', outcome: 'unchanged', note: 'Tuần đầu em chưa quen cách nghe chép' });
+    cases.updateResult(P.lrTeacher, ivId, {
+      decision: 'adjust', outcome: 'partial', note: 'Buổi sáng em làm đều hơn', decisionNote: 'Đổi sang buổi sáng cho hợp lịch',
+      adjust: { description: 'Tự học Listening — nghe chép buổi sáng 20 phút' },
+    });
+    cases.updateResult(P.lrTeacher, ivId, { decision: 'end', outcome: 'improved', note: 'Em nghe số và tên riêng đúng hết' });
+    const rows = effectiveness.planOutcomes({ studentIds: [sid] }) as any[];
+    assert(rows.length === 1 && rows[0].id === ivId && rows[0].kind === 'self_study' && rows[0].outcome === 'improved'
+      && rows[0].group === 'success', `Phải là đúng MỘT PA tự học, Tiến bộ rõ: ${JSON.stringify(rows)}`);
+  });
+
+  check('PR-S2 · Thống kê: Thay thì PA cũ tính với kết quả của lần thay (PA bị thay vẫn tính); PA mới chưa kết thúc thì chưa tính', () => {
+    const { sid, ivId } = taoCase();
+    cases.updateResult(P.lrTeacher, ivId, {
+      decision: 'replace', outcome: 'worse', note: 'Em sai nhiều hơn tuần trước', decisionNote: 'Tự học không hiệu quả, chuyển sang tutor',
+      newPlan: { kind: 'tutor', description: 'Tutor Listening hai buổi mỗi tuần', performerSelf: true },
+    });
+    const rows = effectiveness.planOutcomes({ studentIds: [sid] }) as any[];
+    assert(rows.length === 1 && rows[0].id === ivId && rows[0].group === 'failure' && rows[0].supersededBy === true,
+      `Chỉ PA cũ được tính, là Không cải thiện, cờ Được thay thế: ${JSON.stringify(rows)}`);
+  });
+
+  check('PR-S2 · Thống kê: Thay khi chưa đủ dữ liệu — PA cũ không vào thống kê hiệu quả (không vào mẫu số) và không vào "PA cần bổ sung đánh giá" (F05)', () => {
+    const { sid, ivId, caseId } = taoCase();
+    cases.updateResult(P.lrTeacher, ivId, {
+      decision: 'replace', outcome: 'insufficient', note: 'Tuần đầu em không làm bài nào',
+      decisionNote: 'Em không tự học được, chuyển ngay sang tutor',
+      newPlan: { kind: 'tutor', description: 'Tutor Listening hai buổi mỗi tuần', performerSelf: true },
+    });
+    const old = ivRow(ivId);
+    const moi = conn.prepare('SELECT id FROM case_interventions WHERE case_id = ? AND id != ?').get(caseId, ivId) as any;
+    assert(old.status === 'completed' && old.closed_reason === 'superseded' && old.superseded_by === moi?.id,
+      `PA cũ phải Được thay thế: ${JSON.stringify(old)}`);
+    assert(lastFollow(ivId).outcome === 'insufficient' && lastFollow(ivId).decision_note === 'Em không tự học được, chuyển ngay sang tutor',
+      'Kết quả cuối phải là Chưa đủ dữ liệu, lý do lưu ở lần cập nhật');
+    const rate = effectiveness.improvementRate({ studentIds: [sid] });
+    assert(rate.N === 0 && rate.n === 0, `PA chưa đủ dữ liệu không được vào mẫu số: ${JSON.stringify(rate)}`);
+    const need = effectiveness.plansNeedingEvaluation({ studentIds: [sid] });
+    assert(need.count === 0 && !need.ids.includes(ivId), `PA đã bị thay không được nằm trong F05: ${JSON.stringify(need)}`);
+  });
+
   // ---- các task sau thêm phép kiểm NGAY TRÊN dòng này ----
 }

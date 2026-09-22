@@ -294,7 +294,11 @@ export function planOutcomesUnattributed(scope: Scope) {
  * đây là một việc cần người làm. Hiện thành một liên kết ngoài bảng, có danh sách ID riêng.
  */
 export function plansNeedingEvaluation(scope: Scope & { category?: string | null }) {
-  const all = planOutcomes(scope).filter((r) => r.group === 'undetermined');
+  /*
+   * PR-S2 (Q2, planning review 22/09): PA ĐÃ BỊ THAY với kết quả "Chưa đủ dữ liệu" không ai bổ sung đánh giá được nữa — nó đã khép
+   * để nhường cho PA mới. Không đưa vào danh sách cần bổ sung; nó vẫn ngoài bảng và ngoài mẫu số như mọi kết quả không xác định (D03).
+   */
+  const all = planOutcomes(scope).filter((r) => r.group === 'undetermined' && !r.supersededBy);
   const rows = scope.category ? all.filter((r) => r.category === scope.category) : all;
   return { count: rows.length, ids: rows.map((r) => r.id) };
 }
