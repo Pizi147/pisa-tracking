@@ -39,4 +39,50 @@ export async function runKhungTests(t: YThucTestKit) {
     assert(d.tuanKhoa(3, 10) === 'W3/10', d.tuanKhoa(3, 10));
     assert(d.tuanKhoa(0, 8) === '—' && d.tuanKhoa(3, 0) === '—' && d.tuanKhoa(2.5, 8) === '—', 'Số không hợp lệ phải ra "—"');
   });
+
+  const nav = (over: Partial<import('../../../shared/domain/index.ts').NavQuyen>) => ({ ...d.NAV_RONG, ...over });
+  const QL = nav({ overview: true, students: true, analysis: true, test: true, testGrade: true, testSchedule: true,
+    testPlan: true, work: true, workSupport: true, workOps: true, workReports: true });
+  const GV = nav({ overview: true, students: true, test: true, testGrade: true, testSchedule: true, work: true, workSupport: true });
+
+  check('PR-O · O1/O6 Bốn khu vực đúng thứ tự, khu không có quyền thì bỏ hẳn', () => {
+    const keys = (n: any) => d.khuVucHienThi(n).map((k) => k.key).join(',');
+    assert(keys(QL) === 'tong-quan,hoc-vien,test,cong-viec', `QL: ${keys(QL)}`);
+    assert(keys(GV) === 'tong-quan,hoc-vien,test,cong-viec', `GV thấy cả Test và Công việc (spec §3.1): ${keys(GV)}`);
+    assert(keys(nav({ overview: true, students: true })) === 'tong-quan,hoc-vien', 'Không có Test/Công việc thì không hiện');
+    const labels = d.KHU_VUC.map((k) => `${k.label}|${k.labelNgan}`).join(',');
+    assert(labels === 'Tổng quan|Tổng quan,Học viên & Lớp|Học viên,Test|Test,Công việc|Công việc', `Chữ: ${labels}`);
+  });
+
+  check('PR-O · Khu vực của một đường dẫn (tô sáng đúng mục trên thanh)', () => {
+    const cases: Array<[string, string | null]> = [
+      ['/', 'tong-quan'], ['/phan-tich', 'tong-quan'], ['/hoc-thuat/case/3', 'tong-quan'],
+      ['/hoc-vien', 'hoc-vien'], ['/hoc-vien/12', 'hoc-vien'], ['/hoc-vien/lop/3', 'hoc-vien'],
+      ['/test', 'test'], ['/test/lich', 'test'], ['/nhap-diem/4', 'test'], ['/bang-diem-thuong/4', 'test'], ['/mock-test/9', 'test'],
+      ['/cong-viec', 'cong-viec'], ['/cong-viec/bao-cao', 'cong-viec'],
+      ['/quan-tri', null], ['/ho-so-ca-nhan', null], ['/hoc-vienx', null], ['/testing', null],
+    ];
+    for (const [p, want] of cases) assert(d.khuVucCuaDuong(p) === want, `${p} → ${d.khuVucCuaDuong(p)}, cần ${want}`);
+  });
+
+  check('PR-O · O2/O2b Tab Test theo quyền: GV chỉ Cần chấm + Lịch Test, mặc định Cần chấm; QL mặc định Lịch Test', () => {
+    assert(d.tabTestHienThi(QL).join(',') === 'can-cham,lich,ke-hoach', `QL: ${d.tabTestHienThi(QL)}`);
+    assert(d.tabTestHienThi(GV).join(',') === 'can-cham,lich', `GV: ${d.tabTestHienThi(GV)}`);
+    assert(d.tabTestMacDinh(GV) === 'can-cham', `GV mặc định: ${d.tabTestMacDinh(GV)}`);
+    assert(d.tabTestMacDinh(QL) === 'lich', `QL mặc định: ${d.tabTestMacDinh(QL)}`);
+    assert(d.tabTestMacDinh(d.NAV_RONG) === null, 'Không có tab nào thì không có mặc định');
+    assert(d.tabTestTuDuong('ke-hoach') === 'ke-hoach' && d.tabTestTuDuong(undefined) === null && d.tabTestTuDuong('x') === null, 'Đọc tab từ đường dẫn');
+    assert(Object.values(d.TAB_TEST_LABEL).join(',') === 'Cần chấm,Lịch Test,Kế hoạch Test', 'Chữ tab Test');
+    assert(d.DUONG_TAB_TEST.lich === '/test/lich', 'Đường dẫn tab Test');
+  });
+
+  check('PR-O · R1 Tab Công việc theo quyền: GV chỉ Hỗ trợ học viên', () => {
+    assert(d.tabCongViecHienThi(QL).join(',') === 'ho-tro,van-hanh,bao-cao', `QL: ${d.tabCongViecHienThi(QL)}`);
+    assert(d.tabCongViecHienThi(GV).join(',') === 'ho-tro', `GV: ${d.tabCongViecHienThi(GV)}`);
+    assert(d.tabCongViecTuDuong(undefined) === 'ho-tro' && d.tabCongViecTuDuong('bao-cao') === 'bao-cao'
+      && d.tabCongViecTuDuong('x') === null, 'Đọc tab từ đường dẫn (không có đoạn = tab 1)');
+    assert(Object.values(d.TAB_CONG_VIEC_LABEL).join(',') === 'Hỗ trợ học viên,Vận hành,Báo cáo đơn vị', 'Chữ tab Công việc');
+    assert(d.DUONG_TAB_CONG_VIEC['ho-tro'] === '/cong-viec' && d.DUONG_TAB_CONG_VIEC['van-hanh'] === '/cong-viec/van-hanh', 'Đường dẫn tab');
+    assert(Object.values(d.TAB_TONG_QUAN_LABEL).join(',') === 'Tổng quan,Phân tích', 'Chữ tab Tổng quan (O3)');
+  });
 }
