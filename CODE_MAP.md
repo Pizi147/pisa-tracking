@@ -83,7 +83,7 @@ ba nơi.
 | **Fast Track** | Tuần Mock Test, điểm band, mức SOS, dự kiến thi | `server/src/fasttrack/` | `web/src/modules/fasttrack/` |
 | **Normal** | FOU/BE/ELE, bốn môn L/R/W/S, điểm đạt/tổng điểm, chuyển tiếp lớp | `server/src/normal/` | `web/src/modules/normal/` |
 | **Case** | Vấn đề **học thuật** của em, phương án, phê duyệt, kết quả | `server/src/cases/` | `web/src/modules/cases/` |
-| **Ý thức** *(máy chủ xong · giao diện ở PR-K)* | Em vi phạm gì, đã xử lý bằng biện pháp nào, bằng chứng đâu; **Phối hợp SOS** của GVCN sau Mock có SOS (`yThuc/phoiHop.ts`, PR-T) | `server/src/yThuc/` | `web/src/modules/yThuc/` *(chưa có)* |
+| **Ý thức** *(máy chủ xong · giao diện ở PR-K)* | Em vi phạm gì, đã xử lý bằng biện pháp nào, bằng chứng đâu; **Phối hợp SOS** của GVCN sau Mock có SOS (`server/src/yThuc/phoiHop.ts`, PR-T) | `server/src/yThuc/` | `web/src/modules/yThuc/` *(chưa có)* |
 | **Tổng quan và công việc** | Ai phải làm gì, cả chi nhánh đang thế nào | `server/src/worklist/` | `web/src/modules/worklist/` |
 | **Nền tảng** | Tài khoản, quyền, tuần, danh mục, nhật ký thay đổi | `server/src/platform/` | `web/src/modules/platform/` |
 | **Dùng chung** | Badge, nút, panel, bảng, chọn tuần | — | `web/src/ui/` |
@@ -106,8 +106,8 @@ file, mỗi file một việc:
 | `server/src/seed/build.ts` | Đọc kịch bản rồi ghi xuống đúng các bảng, theo đúng thứ tự đời thật |
 | `server/src/seed/seed.ts` | Chi nhánh, vai trò, quyền, tài khoản, chương trình, tuần, công việc quản lý |
 
-Muốn **đổi một câu chuyện** thì sửa `students.ts` rồi chạy `npm run seed`. Muốn **thêm một
-loại dữ liệu mới** vào kịch bản thì thêm trường ở `journeys.ts` và xử lý ở `build.ts`.
+Muốn **đổi một câu chuyện** thì sửa `server/src/seed/students.ts` rồi chạy `npm run seed`. Muốn **thêm một
+loại dữ liệu mới** vào kịch bản thì thêm trường ở `server/src/seed/journeys.ts` và xử lý ở `server/src/seed/build.ts`.
 
 ---
 
@@ -268,6 +268,25 @@ loại dữ liệu mới** vào kịch bản thì thêm trường ở `journeys.
 | Hồ sơ cá nhân | `web/src/modules/platform/ProfilePage.tsx` |
 | Quy ước tuần, mã tuần (W2 SEP 2026) | `server/src/platform/week.ts` |
 | Nhật ký thay đổi | `server/src/platform/audit.ts` |
+
+### Bản chính (Netlify + Turso, PR-Z2)
+
+Hướng dẫn cho chủ sản phẩm: `TRIEN_KHAI.md`. Kế hoạch: `docs/superpowers/plans/2026-09-21-ban-chinh-netlify-turso.md`.
+
+| Muốn sửa | Mở file |
+|---|---|
+| Đọc biến môi trường (Turso, `BAN_CHINH`), luật "nguyên tên máy chủ" cho seed/migrate, nhận tên database bản chính | `server/src/moiTruong.ts` |
+| Mở kết nối (file cục bộ hay Turso), vá khác biệt của libsql, giao dịch lồng (savepoint), **chốt chặn xoá sạch database ở Turso** | `server/src/db.ts` → `db`, `tx`, `tuChoiXoaSachNeuTuXa` |
+| Nơi cất nội dung tệp: ổ đĩa (máy dev) hay Netlify Blobs (bản chính), tên kho theo database | `server/src/platform/khoTep.ts` → `khoTepHienTai`, `tenKhoTep` |
+| Tệp bằng chứng (thêm/mở/xoá, xoá SAU giao dịch) | `server/src/platform/attachments.ts` |
+| Máy chủ trên Netlify (bọc Express thành một Function) | `netlify/functions/api.ts` · `netlify.toml` |
+| Tắt mọi thứ của bản demo ở bản chính (giao diện) | `web/src/lib/banChinh.ts` |
+| Dữ liệu nền dùng chung cho bộ demo và bản chính (quyền, vai trò, lộ trình, chương trình) | `server/src/seed/duLieuNen.ts` → `napDuLieuNen` |
+| `npm run init-ban-chinh` — khởi tạo database rỗng; `npm run them-chi-nhanh` | `server/src/ops/initBanChinh.ts` (luật) · `server/src/ops/runInit.ts` · `server/src/ops/themChiNhanh.ts` (điểm chạy) |
+| `npm run sao-luu` — chép database + tải kho tệp, giữ 14 bản | `server/src/ops/saoLuu.ts` (luật) · `server/src/ops/runSaoLuu.ts` (điểm chạy) |
+| `npm run thu-turso` — thử đường mạng tới database THỬ | `server/src/ops/thuTurso.ts` |
+| `npm run migrate` vào Turso (xác nhận, bỏ tài khoản mặc định) | `server/src/migrate/run.ts` · `server/src/migrate.ts` → `migrateAccounts` |
+| Phép kiểm của bản chính | `server/src/tests/banChinh.tests.ts` |
 
 ### Dùng chung
 

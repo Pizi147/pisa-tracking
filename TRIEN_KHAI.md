@@ -247,11 +247,15 @@ npm run init-ban-chinh
 | `URL database CHÍNH` | URL ở mục 2 (dòng CHÍNH) — **không** có chữ `-demo` | `libsql://pisatracking-xxx.aws-us-east-2.turso.io` |
 | `Token database CHÍNH` | Token ở mục 2 (dòng CHÍNH) | `eyJ...` |
 | `email quản trị của bạn` | Email bạn dùng đăng nhập web. **Phải có đuôi `.pisa@gmail.com`** | `dovutuanphong95.pisa@gmail.com` |
-| `mật khẩu quản trị mới` | Mật khẩu **mạnh, mới** — dài ít nhất 10 ký tự, có cả chữ và số. **Không** dùng `pisa2026` | `PisaQN-2026-an-toan` |
-| `danh sách chi nhánh` | Mỗi chi nhánh viết `MÃ=Tên`, cách nhau bằng dấu `;`. Mã viết liền, không dấu | `MB=Monbay;BC=Bãi Cháy` |
+| `mật khẩu quản trị mới` | Mật khẩu **mạnh, mới** — dài ít nhất 10 ký tự, có cả chữ và số. **Không** dùng `pisa2026` (lệnh sẽ từ chối) | `PisaQN-2026-an-toan` |
+| `danh sách chi nhánh` | Mỗi chi nhánh viết `MÃ=Tên`, cách nhau bằng dấu `;`. Mã viết liền, không dấu. Không dùng mã `TUTOR` (đã dành cho Tutor part-time) | `MB=Monbay;BC=Bãi Cháy` |
 
-**Kết quả đúng:** dòng cuối báo đã tạo tài khoản quản trị và liệt kê các chi nhánh. Lệnh này **tự từ chối** nếu
-database đã có dữ liệu — không bao giờ xoá dữ liệu thật, nên chạy nhầm lần hai cũng không sao.
+Chờ vài phút (database ở Mỹ, mỗi lượt đi về mất nửa giây) — **đừng đóng cửa sổ** giữa chừng.
+
+**Kết quả đúng:** dòng cuối có dạng
+`[init-ban-chinh] Xong. Đã tạo tài khoản quản trị <email của bạn> (userId 1) và 2 chi nhánh: MB (Monbay), BC (Bãi Cháy).`
+Lệnh này **tự từ chối** nếu database đã có dữ liệu — không bao giờ xoá dữ liệu thật, nên chạy nhầm lần hai cũng không
+sao: nó hiện chữ đỏ `TỪ CHỐI: Database đã có dữ liệu …` và không ghi gì cả.
 
 **Sau khi chạy xong:** đóng cửa sổ PowerShell đó (để mật khẩu và token không còn nằm trong cửa sổ).
 
@@ -266,7 +270,8 @@ $env:TURSO_AUTH_TOKEN="<Token database CHÍNH>"
 npm run them-chi-nhanh -- <MÃ> "<Tên chi nhánh>"
 ```
 
-Ví dụ dòng cuối: `npm run them-chi-nhanh -- UB "Uông Bí"`.
+Ví dụ dòng cuối: `npm run them-chi-nhanh -- UB "Uông Bí"`. Kết quả đúng:
+`[them-chi-nhanh] Xong. Đã thêm chi nhánh UB (Uông Bí), id <số>.` Mã đã có → chữ đỏ `TỪ CHỐI`, không thêm, không sửa gì.
 
 ---
 
@@ -330,9 +335,15 @@ $env:BACKUP_DIR="G:\My Drive\pisa-sao-luu"
 npm run sao-luu
 ```
 
-Kết quả: một file `pisa-NĂM-THÁNG-NGÀY-GIỜPHÚT.sqlite` trong thư mục Drive. Máy tự giữ 14 bản mới nhất.
+Chờ khoảng 2–3 phút. Nên chạy lúc không ai đang nhập liệu. Lệnh chỉ **đọc** database, không sửa gì.
 
-**Muốn sao lưu cả ảnh / thư cảnh cáo đã tải lên**, thêm hai dòng này **trước** dòng `npm run sao-luu`:
+Kết quả: một file `pisa-NĂM-THÁNG-NGÀY-GIỜPHÚT.sqlite` trong thư mục Drive; dòng cuối
+`[sao-luu] Xong. Bản sao lưu: …`. Máy tự giữ 14 bản mới nhất (chỉ xoá bản sao lưu cũ của chính nó, không đụng file
+khác trong thư mục). Dòng `Chưa sao lưu tệp bằng chứng` là bình thường nếu bạn chưa thêm hai dòng ở dưới.
+Xong thì **đóng cửa sổ PowerShell** (để token không còn nằm trong cửa sổ).
+
+**Muốn sao lưu cả ảnh / thư cảnh cáo đã tải lên** (vào thư mục `pisa-NĂM-THÁNG-NGÀY-GIỜPHÚT-tep` cạnh file), thêm hai
+dòng này **trước** dòng `npm run sao-luu`:
 
 ```powershell
 $env:NETLIFY_SITE_ID="<Site ID>"
@@ -374,7 +385,7 @@ $env:BACKUP_DIR="G:\My Drive\pisa-sao-luu"
 npm run sao-luu
 ```
 
-Chờ tới khi báo sao lưu xong. Báo lỗi → **dừng**, không làm bước 2.
+Chờ tới dòng `[sao-luu] Xong. Bản sao lưu: …`. Báo lỗi → **dừng**, không làm bước 2.
 
 **Bước 2 — xác nhận đúng database** (gõ tên máy chủ = URL database CHÍNH **bỏ chữ `libsql://` ở đầu**):
 

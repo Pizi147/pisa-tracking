@@ -262,3 +262,23 @@ Tài liệu liên quan:
 - `DEMO.md` — **một tệp cho cả bản demo**: mười tám tình huống Ý thức, sáu hồ sơ nên mở đầu tiên, bảng kịch bản J01–J12,
   bốn màn nên mở, và (phần B) những điều đã chốt cùng những điểm còn treo
 - `CODE_MAP.md` — bản đồ mã nguồn, dành cho người sẽ tiếp tục xây phần mềm
+
+---
+
+## 11. Bản chính trên mạng (Netlify + Turso)
+
+Bản chính (giáo viên dùng thật) chạy trên **Netlify**, dữ liệu ở **Turso**, tệp tải lên ở **Netlify Blobs**. Mọi bước —
+tạo database, đặt biến môi trường, khởi tạo, deploy, sao lưu — nằm trong **`TRIEN_KHAI.md`**, viết cho người không cần
+biết code. Kế hoạch kỹ thuật: `docs/superpowers/plans/2026-09-21-ban-chinh-netlify-turso.md`.
+
+**Máy dev không đổi gì:** `npm run dev`, `npm run seed`, `npm test`, `npm run check`, `npm run migrate` vẫn chạy như trên
+với file `data/pisa-demo.sqlite`. Ba lệnh chỉ dùng cho bản chính:
+
+| Lệnh | Tác dụng |
+|---|---|
+| `npm run init-ban-chinh` | Khởi tạo database bản chính **rỗng** (bảng, vai trò, chi nhánh, một tài khoản quản trị). Database đã có dữ liệu → từ chối, không ghi gì |
+| `npm run them-chi-nhanh -- MÃ "Tên"` | Thêm một chi nhánh. Mã đã có → từ chối |
+| `npm run sao-luu` | Chép toàn bộ database (và tệp bằng chứng) ra một file `.sqlite`; giữ 14 bản. Chỉ đọc database |
+
+`npm run seed` **từ chối** chạy khi đang trỏ tới Turso (nó xoá sạch database); `npm run migrate` vào Turso cần xác nhận
+(`TRIEN_KHAI.md` mục 11.1).
