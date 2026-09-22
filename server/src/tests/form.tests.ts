@@ -363,4 +363,174 @@ export async function runFormTests(t: YThucTestKit) {
       assert(last.new_performer_user_id === P.w1Teacher.userId, `lịch sử đúng người mới: ${last.new_performer_user_id}`);
     });
   }
+
+  // ================================================================== 4. Chủ đề Case theo chương trình (F07), SkillBoard, Ý thức
+
+  console.log('\nPR-Form · 4. Chủ đề Case theo chương trình (F07), attemptKind cho SkillBoard, K2-6d, defaultSkill vi phạm');
+
+  {
+    const cases: any = await import('../cases/cases.ts');
+    const measSvc: any = await import('../yThuc/measures.ts');
+    const violSvc: any = await import('../yThuc/violations.ts');
+    const week: any = await import('../platform/week.ts');
+    const skillSchedule: any = await import('../fasttrack/skillSchedule.ts');
+    const regular: any = await import('../normal/regular.ts');
+
+    let soThuTu = 0;
+    const mbBranch = (conn.prepare(`SELECT id FROM branches WHERE code = 'MB'`).get() as any).id as number;
+    const NOW = new Date().toISOString();
+
+    /** Học viên mới ở một lớp có sẵn của bộ demo, kèm một lộ trình đang chạy — riêng cho phép kiểm Task 4. */
+    function taoHocVien(classCode: 'MB-FOU 12' | 'MB-FT 101'): { sid: number; cid: number; cycleId: number } {
+      soThuTu += 1;
+      const tag = `F4-${soThuTu}`;
+      const cid = t.classId(classCode);
+      const ft = classCode === 'MB-FT 101';
+      const sid = Number(conn.prepare(
+        `INSERT INTO students (student_code, full_name, normalized_name, branch_id, status, created_at) VALUES (?,?,?,?, 'active', ?)`,
+      ).run(`PISA-${tag}`, `Học viên ${tag}`, `hoc vien ${tag.toLowerCase()}`, mbBranch, NOW).lastInsertRowid);
+      conn.prepare(`INSERT INTO enrollments (student_id, class_id, status, started_at, created_at) VALUES (?,?, 'active', '2026-07-27', ?)`)
+        .run(sid, cid, NOW);
+      const cycleId = Number(conn.prepare(
+        `INSERT INTO learning_cycles (student_id, seq, route, programme_code, started_at, status, created_at)
+         VALUES (?, 1, ?, ?, '2026-07-27', 'active', ?)`,
+      ).run(sid, ft ? 'LT1' : null, ft ? null : 'FOU', NOW).lastInsertRowid);
+      return { sid, cid, cycleId };
+    }
+
+    check('PR-Form · caseTopicsOf: em lớp thường (MB-FOU 12) → ratio true, 4 môn; em Fast Track (MB-FT 101) → 5 ô', () => {
+      const fou = taoHocVien('MB-FOU 12');
+      const r1 = cases.caseTopicsOf(P.normalCoreTeacher, fou.sid) as any;
+      assert(r1.ratio === true, `FOU phải ratio=true: ${JSON.stringify(r1)}`);
+      assert(JSON.stringify(r1.topics) === JSON.stringify(['listening', 'reading', 'writing', 'speaking']), `FOU 4 môn L R W S: ${JSON.stringify(r1.topics)}`);
+
+      const ft = taoHocVien('MB-FT 101');
+      const r2 = cases.caseTopicsOf(P.lrTeacher, ft.sid) as any;
+      assert(r2.ratio === false, `FT phải ratio=false: ${JSON.stringify(r2)}`);
+      assert(
+        JSON.stringify(r2.topics) === JSON.stringify(['listening', 'reading', 'writing1', 'writing2', 'speaking']),
+        `FT 5 ô: ${JSON.stringify(r2.topics)}`,
+      );
+    });
+
+    check('PR-Form · reportIssue: em lớp thường mở Case topic "writing" thành công (F07)', () => {
+      const fou = taoHocVien('MB-FOU 12');
+      const c = cases.reportIssue(P.normalCoreTeacher, {
+        studentId: fou.sid, topic: 'writing', title: 'Case Writing lớp thường (PR-Form Task 4)',
+        summary: 'Em còn yếu tổ chức ý ở bài viết lớp thường, cần hỗ trợ thêm.',
+        primaryCode: domain.issuesForTopic('writing')[0].code,
+        idempotencyKey: `pr-form-t4-writing-${soThuTu}`,
+      }) as any;
+      assert(c.topic === 'writing', `Case phải mở đúng topic writing: ${c.topic}`);
+    });
+
+    check('PR-Form · S5: backfillCase lớp thường topic writing kèm metrics → case_followups.metrics đúng một mục', () => {
+      const fou = taoHocVien('MB-FOU 12');
+      /* Quản lý: mở → ghi phương án → đóng case đều đi qua được, không vướng C02 (đúng kỹ năng) lẫn "chỉ GVCN đóng case". */
+      const closed = cases.backfillCase(P.mbManager, {
+        studentId: fou.sid, topic: 'writing', primaryCode: domain.issuesForTopic('writing')[0].code,
+        title: 'Nhập bù Writing lớp thường (S5)', summary: 'Nhập bù case Writing với điểm chi tiết theo kỹ năng.',
+        fromDate: '2026-08-01', toDate: '2026-08-10',
+        actions: [{ description: 'Ôn luyện tổ chức ý bài viết', performerSelf: true, fromDate: '2026-08-01', toDate: '2026-08-10' }],
+        outcome: 'improved', note: 'Bài viết đã mạch lạc hơn rõ rệt sau đợt ôn.',
+        metrics: [{ skill: 'writing', score: 12, total: 20 }],
+      }) as any;
+      const follow = conn.prepare('SELECT metrics FROM case_followups WHERE case_id = ? ORDER BY id DESC LIMIT 1').get(closed.id) as any;
+      const metrics = JSON.parse(follow.metrics ?? '[]');
+      assert(Array.isArray(metrics) && metrics.length === 1, `phải đúng một mục metrics: ${follow.metrics}`);
+      assert(metrics[0].skill === 'writing' && metrics[0].score === 12 && metrics[0].total === 20, `mục metrics sai: ${JSON.stringify(metrics[0])}`);
+    });
+
+    check('PR-Form · skillSupportBoard: em lớp thường có attemptKind progress/final ở điểm', () => {
+      const fou = taoHocVien('MB-FOU 12');
+      const weekStart1 = '2026-08-03';
+      const weekStart2 = '2026-08-31';
+      const periodId1 = week.ensurePeriod(weekStart1).id;
+      const periodId2 = week.ensurePeriod(weekStart2).id;
+      const a1 = Number(conn.prepare(
+        `INSERT INTO assessment_attempts (cycle_id, student_id, attempt_no, kind, class_id, planned_period_id, status, created_at)
+         VALUES (?,?,1,'progress',?,?, 'planned', ?)`,
+      ).run(fou.cycleId, fou.sid, fou.cid, periodId1, NOW).lastInsertRowid);
+      skillSchedule.ensureSkillRows(a1);
+      regular.saveRegularScore(P.admin, a1, 'writing', { score: 14, total: 20 });
+      const a2 = Number(conn.prepare(
+        `INSERT INTO assessment_attempts (cycle_id, student_id, attempt_no, kind, class_id, planned_period_id, status, created_at)
+         VALUES (?,?,2,'final',?,?, 'planned', ?)`,
+      ).run(fou.cycleId, fou.sid, fou.cid, periodId2, NOW).lastInsertRowid);
+      skillSchedule.ensureSkillRows(a2);
+      regular.saveRegularScore(P.admin, a2, 'writing', { score: 17, total: 20 });
+
+      const board = cases.skillSupportBoard(P.normalCoreTeacher, fou.sid, fou.cycleId) as any;
+      const writingRow = board.rows.find((r: any) => r.category === 'writing');
+      const kinds = (writingRow?.points ?? []).map((pt: any) => pt.attemptKind);
+      assert(kinds.includes('progress') && kinds.includes('final'), `points phải mang attemptKind: ${JSON.stringify(kinds)}`);
+    });
+
+    check('PR-Form · K2-6d: confirmMeasure không người → performed_by = người xác nhận; performedBy tài khoản khoá → 400', () => {
+      const fou = taoHocVien('MB-FOU 12');
+      const v = violSvc.recordViolation(P.normalCoreTeacher, {
+        studentId: fou.sid, category: 'homework', description: 'Không nộp bài tập về nhà buổi này',
+        idempotencyKey: `pr-form-t4-viol-${soThuTu}`,
+      }) as any;
+      const m = measSvc.createMeasure(P.normalCoreTeacher, {
+        studentId: fou.sid, kind: 'talk_short', violationIds: [v.violation.id],
+      }) as any;
+      const done = measSvc.confirmMeasure(P.normalCoreTeacher, m.id, {
+        performedOn: TODAY, note: 'Đã trao đổi ngắn với em cuối buổi.',
+      }) as any;
+      assert(done.performedBy === P.normalCoreTeacher.userId, `K2-6d: performed_by phải là người xác nhận: ${done.performedBy}`);
+
+      const m2 = measSvc.createMeasure(P.normalCoreTeacher, {
+        studentId: fou.sid, kind: 'talk_short', violationIds: [v.violation.id],
+      }) as any;
+      const lockedId = P.w2Teacher.userId;
+      try {
+        conn.prepare(`UPDATE users SET status = 'inactive' WHERE id = ?`).run(lockedId);
+        assertThrows(
+          () => measSvc.confirmMeasure(P.normalCoreTeacher, m2.id, {
+            performedOn: TODAY, performedBy: lockedId, note: 'Đã trao đổi ngắn với em cuối buổi.',
+          }),
+          /nhân viên đang làm việc/,
+          'performedBy khoá phải 400',
+        );
+      } finally {
+        conn.prepare(`UPDATE users SET status = 'active' WHERE id = ?`).run(lockedId);
+      }
+    });
+
+    {
+      const { createApp } = await import('../app.ts');
+      const { createSession } = await import('../auth.ts');
+      const server = createApp().listen(0);
+      const port = (server.address() as any).port as number;
+      const call = async (who: { userId: number }, method: string, url: string, body?: unknown) => {
+        const headers: Record<string, string> = { 'content-type': 'application/json' };
+        headers.cookie = `pisa_demo_session=${createSession(who.userId)}`;
+        const res = await fetch(`http://127.0.0.1:${port}/api${url}`, { method, headers, body: body === undefined ? undefined : JSON.stringify(body) });
+        let json: any = null;
+        try { json = await res.json(); } catch { /* không có thân */ }
+        return { status: res.status, json };
+      };
+
+      const cid = t.classId('MB-FT 101');
+      const sid = Number(conn.prepare(
+        `INSERT INTO students (student_code, full_name, normalized_name, branch_id, status, created_at) VALUES (?,?,?,?, 'active', ?)`,
+      ).run(`PISA-F4-HTTP`, `Học viên F4 HTTP`, `hoc vien f4 http`, mbBranch, NOW).lastInsertRowid);
+      conn.prepare(`INSERT INTO enrollments (student_id, class_id, status, started_at, created_at) VALUES (?,?, 'active', '2026-07-27', ?)`)
+        .run(sid, cid, NOW);
+
+      const vRes = await call(P.w1Teacher, 'POST', '/violations', {
+        studentId: sid, category: 'homework', description: 'Không nộp bài Writing Task 1 buổi này',
+        idempotencyKey: 'pr-form-t4-http-skill',
+      });
+      const simRes = await call(P.w1Teacher, 'GET', `/violations/similar?studentId=${sid}&category=homework&occurredOn=${TODAY}`);
+      server.close();
+
+      check('PR-Form · HTTP POST /violations không có "skill" → tự điền theo môn GV dạy đúng một môn ở lớp; /violations/similar trả defaultSkill khớp', () => {
+        assert(vRes.status === 200, `POST /violations phải 200: ${vRes.status} ${JSON.stringify(vRes.json)}`);
+        assert(vRes.json?.violation?.skill === 'writing1', `skill phải tự điền writing1: ${JSON.stringify(vRes.json?.violation)}`);
+        assert(simRes.status === 200 && simRes.json?.defaultSkill === 'writing1', `defaultSkill phải writing1: ${JSON.stringify(simRes.json)}`);
+      });
+    }
+  }
 }

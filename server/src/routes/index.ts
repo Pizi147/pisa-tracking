@@ -17,6 +17,7 @@ import { navOf } from '../platform/nav.ts';
 import * as attachmentSvc from '../platform/attachments.ts';
 import * as timNguoiSvc from '../platform/timNguoi.ts';
 import * as violationSvc from '../yThuc/violations.ts';
+import * as accessSvc from '../yThuc/access.ts';
 import * as measureSvc from '../yThuc/measures.ts';
 import * as phoiHopSvc from '../yThuc/phoiHop.ts';
 import * as sosAutoSvc from '../cases/sosAuto.ts';
@@ -781,12 +782,20 @@ api.get('/y-thuc/my-coordination', requireAuth, wrap((req) => {
   return { rows: phoiHopSvc.myCoordinationLines(principalOf(req)) };
 }));
 
-/** Cảnh báo trùng mềm (V06) — form gọi trước khi ghi để hiện "Xem vi phạm đó" / "Vẫn ghi vi phạm mới". Không chặn gì. */
+/**
+ * Cảnh báo trùng mềm (V06) — form gọi trước khi ghi để hiện "Xem vi phạm đó" / "Vẫn ghi vi phạm mới". Không chặn gì.
+ * `defaultSkill` (YT-4) — môn tự điền theo phân công của người gọi ở lớp em đang học, để form điền sẵn ô Môn.
+ */
 api.get('/violations/similar', requireAuth, wrap((req) => {
   maybeSimulateReadError();
-  return { rows: violationSvc.similarViolations(principalOf(req), {
-    studentId: qInt(req, 'studentId') ?? 0, category: qStr(req, 'category') ?? '', occurredOn: qStr(req, 'occurredOn') ?? null,
-  }) };
+  const p = principalOf(req);
+  const studentId = qInt(req, 'studentId') ?? 0;
+  return {
+    rows: violationSvc.similarViolations(p, {
+      studentId, category: qStr(req, 'category') ?? '', occurredOn: qStr(req, 'occurredOn') ?? null,
+    }),
+    defaultSkill: violationSvc.defaultSkillFor(p, accessSvc.activeClassOf(studentId)),
+  };
 }));
 api.post('/violations', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
@@ -1319,6 +1328,10 @@ api.get('/students/:id/skill-board', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   return caseSvc.skillSupportBoard(principalOf(req), pInt(req, 'id'), qInt(req, 'cycleId'));
 }));
+
+/** Chủ đề Case mở được cho một học viên (F07) — form đọc route này thay vì tự đoán chương trình. */
+api.get('/students/:id/case-topics', requireAuth, wrap((req) =>
+  caseSvc.caseTopicsOf(principalOf(req), pInt(req, 'id'), qInt(req, 'cycleId'))));
 
 /** Ghi một lần xem lại sau hỗ trợ. Một tác động có thể xem lại nhiều lần. */
 api.post('/cases/:id/followups', requireAuth, wrap((req) => {

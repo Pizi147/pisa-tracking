@@ -222,6 +222,8 @@ là người xác nhận · `performedBy` là tài khoản khoá → 400 · HTTP
 
 Commit `PR-Form (4): chủ đề Case theo chương trình (F07), attemptKind cho SkillBoard, K2-6d, defaultSkill vi phạm`.
 
+- [x] Task 4 xong — `npm run check` xanh, **804 = 798 + 6**.
+
 ## Task 5 · Web: ô chọn người `ChonNguoi`
 
 **Files:** `web/src/ui/PeoplePicker.tsx` (thêm export `ChonNguoi`; `PersonPicker`/`FollowerPicker` giữ nguyên để

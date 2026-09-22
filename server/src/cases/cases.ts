@@ -15,6 +15,7 @@ import {
   canEndWithOutcome, planDueDate, planEndDefault, stepsForMode, weeklyUpdateDue,
   type NextStep, type RescheduleTarget,
   issueBranchOf, issueLabel, caseTopicLabel, urgencyFromSos,
+  caseTopicsFor,
   type CaseOutcome, type FollowUpOutcome, type InterventionKind,
 } from '../../../shared/domain/index.ts';
 import { addDays, badRequest, isIsoDate, notFound, nowIso } from '../util.ts';
@@ -431,7 +432,9 @@ export function reportIssue(p: Principal, input: {
   if (!topic) {
     throw badRequest('Chọn kỹ năng: Listening, Reading, Writing Task 1, Writing Task 2 hay Speaking.');
   }
-  const allowedTopics: readonly string[] = cycle && isRatioCycle(cycle) ? [...ENTRY_SKILLS, 'writing'] : ENTRY_SKILLS;
+  const ratioForTopics = !!(cycle && isRatioCycle(cycle));
+  const allowedTopics: readonly string[] = ratioForTopics
+    ? [...new Set([...caseTopicsFor(true), ...ENTRY_SKILLS])] : ENTRY_SKILLS;
   if (!allowedTopics.includes(topic)) throw badRequest(`Chủ đề không hợp lệ: ${topic}`);
   if (fromSignal && categoryOf(topic) !== (fromSignal.category ?? categoryOf(fromSignal.skill))) {
     throw badRequest('Case tạo từ tín hiệu phải đúng môn của tín hiệu đó.');
@@ -592,6 +595,28 @@ export function reportIssue(p: Principal, input: {
     if (input.fromSignalId) linkSignalToCase(p, input.fromSignalId, caseId, summary);
     return caseDetail(p, caseId);
   });
+}
+
+/**
+ * CHỦ ĐỀ CASE MỞ ĐƯỢC CHO MỘT HỌC VIÊN (F07) — máy chủ và form (`QuickReport.tsx`) đọc CÙNG một bộ.
+ *
+ * Lớp thường có bốn ô L · R · W · S; Fast Track có năm ô L · R · W1 · W2 · S — đúng bộ mà `reportIssue` đã chấp nhận
+ * (Q8), rút về một hàm để form không phải tự đoán lại chương trình của em.
+ */
+export function caseTopicsOf(p: Principal, studentId: number, cycleId?: number | null) {
+  const conn = db();
+  const student = conn.prepare('SELECT * FROM students WHERE id = ?').get(studentId) as any;
+  if (!student) throw notFound('Không tìm thấy học viên');
+  const enr = conn
+    .prepare(`SELECT class_id FROM enrollments WHERE student_id = ? AND status='active' ORDER BY id DESC LIMIT 1`)
+    .get(studentId) as any;
+  require_(p, PERMISSIONS.ATTEMPT_VIEW, { classId: enr?.class_id ?? null, studentId },
+    'Bạn không có quyền xem học viên này.');
+  const cycle = cycleId
+    ? (conn.prepare('SELECT * FROM learning_cycles WHERE id = ? AND student_id = ?').get(cycleId, studentId) as any)
+    : currentCycle(studentId);
+  const ratio = !!(cycle && isRatioCycle(cycle));
+  return { ratio, topics: caseTopicsFor(ratio) };
 }
 
 /**
@@ -2034,6 +2059,8 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
     attemptNo: number; attemptId: number; band: number; week: string | null; expectation: number | null;
     /* Lớp Normal: điểm đạt/tổng của chính đề đó. Fast Track để trống. */
     score: number | null; total: number | null; passed: boolean | null;
+    /** 'mock' | 'progress' | 'final' — lớp thường KHÔNG được gọi bài của mình là "MT" (PR-Form, SkillBoard). */
+    attemptKind: string | null;
   };
   const byCategory = new Map<string, Point[]>();
   for (const r of scoreRows) {
@@ -2052,6 +2079,7 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
       week: r.period_code ?? null,
       expectation: !ratio && r.target_at_attempt !== null && r.target_at_attempt !== undefined
         ? expectationFor(r.target_at_attempt, r.attempt_no) : null,
+      attemptKind: r.kind ?? null,
     });
     byCategory.set(cat, list);
   }
@@ -2201,7 +2229,7 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
        */
       points: points.slice(-4).map((pt) => ({
         attemptNo: pt.attemptNo, band: pt.band, expectation: pt.expectation,
-        score: pt.score, total: pt.total, passed: pt.passed,
+        score: pt.score, total: pt.total, passed: pt.passed, attemptKind: pt.attemptKind,
       })),
       /* Lớp Normal: điểm đạt/tổng của đề gần nhất, để giao diện ghi "21/40" chứ không ghi band. */
       score: latest?.score ?? null,
@@ -2426,17 +2454,17 @@ function caseCardOf(caseId: number, c: any, soBangChung: Map<number, number>) {
     };
   });
 
-  /* Lượt đánh giá mà case này đã đi qua — "MT2 · 17/08" ở chân thẻ. */
+  /* Lượt đánh giá mà case này đã đi qua — "MT2 · 17/08" ở chân thẻ (lớp thường: "Giữa khoá"/"Cuối khoá" thay MT{n}). */
   const attempts = (conn
     .prepare(
-      `SELECT DISTINCT m.attempt_no, rp.week_start FROM case_milestones m
+      `SELECT DISTINCT m.attempt_no, rp.week_start, a.kind AS attempt_kind FROM case_milestones m
          LEFT JOIN assessment_attempts a ON a.id = m.attempt_id
          LEFT JOIN report_periods rp ON rp.id = a.planned_period_id
         WHERE m.case_id = ? AND m.attempt_no IS NOT NULL
         ORDER BY m.attempt_no`,
     )
     .all(caseId) as any[])
-    .map((r) => ({ attemptNo: r.attempt_no as number, week: r.week_start ?? null }));
+    .map((r) => ({ attemptNo: r.attempt_no as number, week: r.week_start ?? null, attemptKind: r.attempt_kind ?? null }));
 
   return {
     /* Chủ đề gốc của case (§7.5, PR-K) — để giao diện mở đúng danh mục phân loại (`issuesForTopic`) khi "Xác định nguyên nhân". */
