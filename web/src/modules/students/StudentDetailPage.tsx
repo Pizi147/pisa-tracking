@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { Card, Empty, ErrorState, Info, Level, Outcome, SectionNote, Skeleton, Status, Th} from '../../ui/ui.tsx';
@@ -17,8 +17,9 @@ import {
   attemptHref,
   attemptStatusLabel, fmtBand, fmtDate, skillLabel, sosLabel, sosTone, studentStatusLabel,
 } from '../../lib/format.ts';
-import { HO_SO_TAB_LABEL, JOURNEY_EVENT_LABEL, parseHoSoTab, type HoSoTab } from '@shared/domain/index.ts';
+import { HO_SO_TAB_LABEL, JOURNEY_EVENT_LABEL, ketQuaTestGanNhat, parseHoSoTab, type HoSoTab } from '@shared/domain/index.ts';
 import { HangTab } from '../../ui/HangTab.tsx';
+import { KetQuaDot } from '../../ui/KetQuaDot.tsx';
 
 type Profile = any;
 
@@ -355,74 +356,68 @@ export default function StudentDetailPage() {
 // ==================================================================== khối nhỏ
 
 /**
- * BỐN Ô SỐ Ở ĐẦU HỒ SƠ — bốn câu hỏi khác nhau, cố ý không cộng thành gì.
+ * BỐN Ô SỐ Ở ĐẦU HỒ SƠ (Q7, spec PR-HV §4.1) — bốn câu hỏi khác nhau, cố ý không cộng thành gì.
  *
- *   MT gần nhất   bài vừa rồi ra sao
- *   Hiện tại      giờ đang yếu nhất ở đâu
- *   Case đang mở  còn bao nhiêu việc chưa xong
- *   Việc tiếp theo phải làm gì, trước ngày nào
+ *   Kết quả Test gần nhất   bài vừa rồi ra sao — đúng câu của <KetQuaDot>; lớp Normal KHÔNG bịa Overall
+ *   Kỹ năng cần hỗ trợ      giờ đang yếu ở đâu — số kỹ năng dưới kỳ vọng, kèm tên
+ *   Case đang mở            còn bao nhiêu việc chưa xong — số case, và số PA đang theo dõi
+ *   Việc cần làm tiếp       phải làm gì, trước ngày nào — câu có động từ do máy chủ dựng (`headline.next`)
  *
- * Mỗi ô nói ĐÚNG MỘT điều và nói bằng con số trước, chữ sau. Bản trước gói cả bốn vào năm
- * đoạn chữ chạy ngang, nên muốn biết "còn mấy case" thì phải đọc hết cả đoạn.
+ * Mỗi ô nói ĐÚNG MỘT điều. Ô KHÔNG bấm được — ô bấm được là việc của PR-R.
  */
-function HeaderStats({ data, cy, rows }: { data: any; cy: any; rows: SkillBoardRow[] | null }) {
+function HeaderStats({ data, rows }: { data: any; cy: any; rows: SkillBoardRow[] | null }) {
   const scored = (rows ?? []).filter((r) => r.band !== null);
-  const latestNo = scored.reduce((m, r) => Math.max(m, r.bandAttemptNo ?? 0), 0);
-  const latestRow = scored.find((r) => r.bandAttemptNo === latestNo) ?? null;
-
-  /* Ô "Hiện tại" lấy kỹ năng ĐANG YẾU NHẤT — thấp nhất trong những môn dưới kỳ vọng. */
-  const below = scored.filter((r) => r.missed === true).sort((a, b) => (a.band ?? 9) - (b.band ?? 9));
-  const worst = below[0] ?? null;
-
+  const below = scored.filter((r) => r.missed === true);
   const openCases = (rows ?? []).flatMap((r) => r.cases).filter((c) => c.status !== 'done');
   const runningPlans = openCases.flatMap((c) => c.plans)
     .filter((p) => p.status === 'planned' || p.status === 'started').length;
   const next = data.headline?.next ?? null;
+  const kq = ketQuaTestGanNhat(data.attempts ?? []);
 
   return (
     <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
-      <Stat label={cy.ratio ? 'Bài gần nhất' : 'MT gần nhất'}
-        value={latestRow
-          ? (cy.ratio ? (latestRow.bandWeek ?? '—') : `MT${latestNo}`)
-          : '—'}
-        sub={latestRow
-          ? (data.standing?.sosLevel !== null && data.standing?.sosLevel !== undefined
-            ? `${sosLabel(data.standing.sosLevel)}${data.standing.provisional ? ' tạm thời' : ''}`
-            : 'chưa kết luận')
+      <Stat label="Kết quả Test gần nhất"
+        value={kq ? kq.nhan : '—'}
+        sub={kq
+          ? (kq.dungKetQuaDot
+            ? <KetQuaDot coDiem={kq.coDiem} yeuCau={kq.yeuCau} dat={kq.dat} sos={kq.sos} />
+            : `${kq.coDiem}/${kq.yeuCau} phần có điểm`)
           : 'chưa có điểm nào'} />
 
-      <Stat label="Hiện tại"
-        value={worst ? (worst.ratio && worst.total ? `${worst.score}/${worst.total}` : fmtBand(worst.band)) : '—'}
-        tone={worst ? 'danger' : scored.length ? 'ok' : undefined}
-        sub={worst
-          ? `${worst.label} · dưới kỳ vọng`
+      <Stat label="Kỹ năng cần hỗ trợ"
+        value={String(below.length)}
+        tone={below.length ? 'danger' : scored.length ? 'ok' : undefined}
+        sub={below.length
+          ? below.map((r) => r.short ?? r.label).join(' · ')
           : scored.length ? 'mọi môn đạt kỳ vọng' : 'chưa có điểm nào'} />
 
       <Stat label="Case đang mở"
         value={String(openCases.length)}
         tone={openCases.length ? 'warn' : undefined}
-        sub={openCases.length
-          ? `${runningPlans} phương án đang theo dõi`
-          : 'không có việc nào đang tồn'} />
+        sub={openCases.length ? `${runningPlans} PA đang theo dõi` : 'không có case nào đang mở'} />
 
-      <Stat label="Việc tiếp theo"
-        value={next?.due ? fmtDate(next.due) : next ? '—' : 'Không có'}
+      <Stat label="Việc cần làm tiếp" nho
+        value={next?.text ?? 'Không có'}
         tone={next?.overdue ? 'danger' : undefined}
-        sub={next?.text ?? 'không có việc nào đang chờ'} />
+        sub={next?.due
+          ? `${next.overdue ? 'quá hạn' : 'hạn'} ${fmtDate(next.due)}`
+          : next ? 'chưa đặt hạn' : 'không có việc nào đang chờ'} />
     </div>
   );
 }
 
-function Stat({ label, value, sub, tone }: {
-  label: string; value: string; sub?: string; tone?: 'ok' | 'warn' | 'danger';
+function Stat({ label, value, sub, tone, nho }: {
+  label: string; value: string; sub?: ReactNode; tone?: 'ok' | 'warn' | 'danger';
+  /** Giá trị là một câu chữ (ô "Việc cần làm tiếp"): chữ nhỏ hơn, cho xuống dòng. */
+  nho?: boolean;
 }) {
   const color = tone === 'danger' ? 'text-rose-300'
     : tone === 'warn' ? 'text-amber-200'
     : tone === 'ok' ? 'text-emerald-300' : 'text-slate-100';
   return (
-    <div className="rounded-xl border px-3 py-2.5" style={{ borderColor: 'var(--line)' }}>
+    <div className="rounded-xl border px-3 py-2.5 min-w-0" style={{ borderColor: 'var(--line)' }}>
       <span className="block text-[11px] text-slate-500">{label}</span>
-      <span className={`block text-lg font-semibold leading-tight mt-0.5 ${color}`}>{value}</span>
+      <span className={`block font-semibold mt-0.5 break-words ${nho ? 'text-sm leading-snug' : 'text-lg leading-tight'} ${color}`}>{value}</span>
       {sub && <span className="block text-[11px] text-slate-500 mt-0.5">{sub}</span>}
     </div>
   );

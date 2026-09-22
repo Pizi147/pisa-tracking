@@ -2,7 +2,7 @@ import { db } from '../db.ts';
 import {
   ASSESSED_SKILLS, BASELINE_SOURCE_LABEL, CYCLE_OUTCOME_LABEL, ENTRY_SKILLS,
   ASSESSED_SKILL_LABEL, INTERVENTION_KIND_LABEL, JOURNEY_GROUP, PERMISSIONS,
-  caseHeadline, issueLabel, caseCategoryLabel, categoryOf,
+  caseHeadline, issueLabel, caseCategoryLabel, categoryOf, quaHan,
   type AssessedSkill, type EntrySkill, type InterventionKind,
 } from '../../../shared/domain/index.ts';
 import { outcomeGroup } from '../cases/effectiveness.ts';
@@ -451,26 +451,20 @@ function headlineOf(p: Principal, studentId: number, cycleId: number | null) {
    * VIỆC TIẾP THEO QUAN TRỌNG NHẤT — MỘT việc, chọn theo hạn sớm nhất và mức chặn nhiều
    * nhất. Bày ba việc ở đầu hồ sơ thì không việc nào được làm trước.
    */
+  /* Câu BẮT ĐẦU BẰNG ĐỘNG TỪ (PR-HV Q7): ô "Việc cần làm tiếp" đọc như một việc, không như một nhận xét. "PA" ở đây
+     đúng D1 — đầu hồ sơ học viên là ngữ cảnh học thuật. */
   type Next = { text: string; due: string | null; rank: number };
   const cands: Next[] = [];
+  const sk = (r: any) => r.short ?? r.label;
   for (const r of rows) {
-    if (r.signal) {
-      cands.push({
-        text: `xác minh tín hiệu ${r.short ?? r.label}`,
-        due: r.signal.verifyDue ?? null, rank: 0,
-      });
-    }
-    if (r.state === 'no_plan') {
-      cands.push({ text: `chưa có phương án cho ${r.short ?? r.label}`, due: null, rank: 1 });
-    }
-    if (r.overdueActionDue) {
-      cands.push({ text: `phương án ${r.short ?? r.label} quá hạn`, due: r.overdueActionDue, rank: 1 });
-    }
-    if (r.pendingApproval) {
-      cands.push({ text: `đề xuất ${r.short ?? r.label} đang chờ Quản lý duyệt`, due: null, rank: 2 });
-    }
-    if (r.followOverdue) {
-      cands.push({ text: `quá hạn báo kết quả ${r.short ?? r.label}`, due: r.followUntil, rank: 1 });
+    if (r.signal) cands.push({ text: `Xác minh SOS ${sk(r)}`, due: r.signal.verifyDue ?? null, rank: 0 });
+    if (r.state === 'no_plan') cands.push({ text: `Đề ra PA cho ${sk(r)}`, due: null, rank: 1 });
+    if (r.overdueActionDue) cands.push({ text: `Làm PA ${sk(r)}`, due: r.overdueActionDue, rank: 1 });
+    if (r.pendingApproval) cands.push({ text: `Chờ Quản lý duyệt PA ${sk(r)}`, due: null, rank: 2 });
+    if (r.followOverdue) cands.push({ text: `Cập nhật PA ${sk(r)}`, due: r.followUntil, rank: 1 });
+    /* MỚI (PR-HV): việc cập nhật hằng tuần CHƯA quá hạn — để ô có "hạn 30/08" thay vì "Không có" khi mọi việc đang đúng hạn. */
+    else if (r.followUntil && r.cases.some((c: any) => c.status !== 'done')) {
+      cands.push({ text: `Cập nhật PA ${sk(r)}`, due: r.followUntil, rank: 3 });
     }
   }
   cands.sort((a, b) => {
@@ -485,7 +479,7 @@ function headlineOf(p: Principal, studentId: number, cycleId: number | null) {
 
   return {
     below, signals, openCases: open,
-    next: cands[0] ? { text: cands[0].text, due: cands[0].due } : null,
+    next: cands[0] ? { text: cands[0].text, due: cands[0].due, overdue: quaHan(cands[0].due, today) } : null,
   };
 }
 

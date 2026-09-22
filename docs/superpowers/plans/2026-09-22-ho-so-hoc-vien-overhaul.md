@@ -589,19 +589,19 @@ lệch vài dòng là bình thường, lệch nội dung thì 🛑 hỏi.
 - Produces (server): `headline.next: { text: string; due: string | null; overdue: boolean } | null` với `text` **bắt
   đầu bằng động từ**.
 
-- [ ] **Step 1 (TDD, shared):** phép kiểm `PR-HV · Q7 Ô "Kết quả Test gần nhất"` với dữ liệu tự dựng (không cần DB):
+- [x] **Step 1 (TDD, shared):** phép kiểm `PR-HV · Q7 Ô "Kết quả Test gần nhất"` với dữ liệu tự dựng (không cần DB):
   (a) FT đủ 4, overall 6.0 ≥ kỳ vọng 5.5 → `dat === true`, `nhan === 'MT3 · W2 SEP'`; (b) FT đủ, overall < kỳ vọng →
   `false`; (c) FT mới 2/4 → `dat === null`, `coDiem 2`, `yeuCau 4`; (d) lượt mới nhất bị huỷ → lấy lượt trước; (e) lượt
   mới nhất `scored 0` → lấy lượt trước; (f) không lượt nào có điểm → `null`; (g) Normal đủ, `sosLevel 0` → `dat true`,
   `nhan` bắt đầu `Giữa khoá`; (h) Normal thiếu → `dat null`; (i) `required 5` → `dungKetQuaDot false`; (j) thứ tự vào
   tăng dần vẫn lấy đúng lượt số lớn nhất. Đỏ → viết hàm → xanh.
-- [ ] **Step 2 (TDD, server):** phép kiểm `PR-HV · Q7 Ô "Việc cần làm tiếp": câu bắt đầu bằng động từ, có cờ quá hạn đúng`:
+- [x] **Step 2 (TDD, server):** phép kiểm `PR-HV · Q7 Ô "Việc cần làm tiếp": câu bắt đầu bằng động từ, có cờ quá hạn đúng`:
   duyệt các học viên có case đang mở (`SELECT DISTINCT student_id, cycle_id FROM sos_cases WHERE status != 'done' AND id <= ?`
   với `seedMax.sos_cases` nếu có khoá đó, không có thì bỏ điều kiện), gọi `profile.studentProfile(P.admin, sid, cid)`;
   với mọi `next` khác null: `typeof next.overdue === 'boolean'`; `next.overdue === (next.due !== null && next.due < TODAY)`;
   `/^(Xác minh SOS|Đề ra PA|Làm PA|Chờ Quản lý duyệt PA|Cập nhật PA) /.test(next.text)`. Và phải có **ít nhất một** học
   viên có `next` (không thì phép kiểm vô nghĩa). Đỏ.
-- [ ] **Step 3: sửa `headlineOf`** (`profile.ts:455–488`). Chỉ đổi câu, thêm một ứng viên, thêm `overdue` — **không** đổi
+- [x] **Step 3: sửa `headlineOf`** (`profile.ts:455–488`). Chỉ đổi câu, thêm một ứng viên, thêm `overdue` — **không** đổi
       thứ tự ưu tiên hiện có:
   ```ts
   const sk = (r: any) => r.short ?? r.label;
@@ -624,7 +624,7 @@ lệch vài dòng là bình thường, lệch nội dung thì 🛑 hỏi.
   ```
   (`PA` ở đây đúng D1: đầu hồ sơ học viên là ngữ cảnh học thuật.) Xanh. **Kiểm ngược:** đổi `<` thành `<=` ở
   `overdue` → phép Step 2 phải đỏ; trả lại.
-- [ ] **Step 4: `HeaderStats` mới** — thay thân hàm (361–407). `Stat` thêm prop `nho?: boolean` (giá trị là chữ, dùng
+- [x] **Step 4: `HeaderStats` mới** — thay thân hàm (361–407). `Stat` thêm prop `nho?: boolean` (giá trị là chữ, dùng
       `text-sm font-semibold leading-snug` thay `text-lg`) và `sub?: ReactNode` (không chỉ string).
 
   | Ô (nhãn chính xác) | `value` | `tone` | `sub` | Nguồn |
@@ -637,7 +637,7 @@ lệch vài dòng là bình thường, lệch nội dung thì 🛑 hỏi.
   Lưới giữ `grid gap-3 grid-cols-2 lg:grid-cols-4`. Ô **không** bấm được (PR-R). Import `KetQuaDot` từ
   `../../ui/KetQuaDot.tsx`, `ketQuaTestGanNhat` từ shared. Xoá biến `latestNo/latestRow/worst` không dùng nữa, sửa
   chú thích hàm (bốn câu hỏi mới). Lớp Normal: ô 1 ra `Giữa khoá · W3 SEP` + câu `KetQuaDot` kiểu `2/4 kỹ năng có điểm`.
-- [ ] **Step 5:** `npm run check` xanh (số = trước + 2). Mở hồ sơ một em FT và một em Normal (ví dụ học viên lớp FOU/BE
+- [x] **Step 5:** `npm run check` xanh (số = trước + 2). Mở hồ sơ một em FT và một em Normal (ví dụ học viên lớp FOU/BE
       trong bộ demo): ô 1 có câu `KetQuaDot`, Normal **không** có chữ Overall/OVR; ô 4 có động từ + `hạn dd/mm/yyyy`,
       quá hạn thì đỏ. 375px: 2 cột, chữ ô 4 xuống dòng, không tràn. Commit: `PR-HV (3): Q7 bốn ô số mới đầu hồ sơ`.
 
@@ -1278,3 +1278,4 @@ danh sách ảnh.)*
 | 22/09/2026 | 1 | Phép quét (TDD) đỏ **97 chỗ** — trùng đúng bảng 1A–1D, không có tên-trong-mã nào cần `CHO_PHEP` (mảng rỗng). `CHO_Z2B` thêm `server/src/ops/` (đóng băng theo Global Constraints; `ops/initBanChinh.ts` có 2 chỗ "hãy" — Task 9). `accounts.ts` (Z2b sửa 2 dòng khác) đã đổi 8 chỗ "Hãy". Phép kiểm cũ bám câu chữ D3: `run.ts` [6.3] `/đặt tên/` → `/[Đđ]ặt tên/` (câu "Hãy đặt tên cho case" nay viết hoa Đ) — ngoài hai dòng bảng 1E. `TU_DIEN_VA_CHU.md`: luật D1 §1/§6, luật D3 §4, thêm §8 bảng chữ PR-HV. Số phép kiểm: **606** (= N0 + 1). |
 | 22/09/2026 | 0 (tiếp) | Chủ sản phẩm cho phép bật máy chủ dev (hai cổng đang rảnh). **Phát hiện:** `preview_start` (cấu hình `dev` trong `.claude/launch.json`) khởi động Vite/API từ **thư mục chính**, không phải worktree (API đọc database của thư mục chính; Vite trả mã của `main`) → tắt, bật lại bằng `npm run dev` chạy nền **trong worktree** (database riêng `data/pisa-demo.sqlite` của worktree, seed 04:49). Ảnh TRƯỚC chụp bằng Playwright (cài tạm `--no-save`, kênh Chrome có sẵn; script ở scratchpad, không vào repo) ở commit gốc `714739e` — 30 tệp `thiet-ke/anh/pr-hv/truoc-*.png`: `ho-so-huy` (gvcn/gvbm/ql) · `case-2pa` (admin — em Đinh Ngọc Quyên id 21, case 22 Writing Task 2 có 2 PA đang chạy, thuộc lớp CP-FT 110 nên GVCN Hà không xem được) · `case-sos-cho` (gvcn/gvbm — Đỗ Minh Khôi id 42, case 34) · `y-thuc-huy` + `-vi-pham` (gvcn/gvbm) · `lop-101` + `-theo-hs` (mở Nguyễn Minh An — Huy không có vi phạm chưa xử lý nên không nằm trong khối lớp) + `-theo-tg` (gvcn) · `phan-tich-ql` (ql) · `viec-can-lam` (ql/gvcn); mỗi tệp hai khổ desktop/375. Commit `c13fc7d`. |
 | 22/09/2026 | 2 | `parseHoSoTab` TDD đỏ → xanh. `HangTab.tsx` mới; `StudentDetailPage` bỏ `tier3`, ba tab đọc từ `?tab=` (replace), `warn` tải ở trang cho dấu ⚠ (A5). Sửa lỗi phụ J8: không có lộ trình vẫn mở được tab Ý thức/Hành trình. Bấm thử (Playwright, GVCN, 1280 + 375): `?tab=` ba giá trị + giá trị lạ về Học thuật ✓; bấm tab đổi địa chỉ, `history.length` không tăng (replace) ✓; scrollWidth = khổ (không cuộn ngang) ✓; console không lỗi ✓; ⚠ hiện ở em có cảnh báo 5 ngày (Nguyễn Minh An), không hiện ở Huy ✓. Số phép kiểm: **607**. |
+| 22/09/2026 | 3 | Hai phép TDD đỏ (`ketQuaTestGanNhat` chưa có; `next.overdue` chưa có, câu cũ "đề xuất L đang chờ…") → xanh. **Kiểm ngược `<`→`<=` KHÔNG đỏ**: bộ demo không có việc nào có hạn đúng bằng ngày demo nên hai phép so cho cùng kết quả → tách luật thành hàm thuần `quaHan(due, today)` ở `hoSoHocVien.ts` (profile.ts dùng nó) + phép kiểm biên riêng (hạn = hôm nay → chưa quá hạn) — thêm 1 phép ngoài kế hoạch. Thêm mục (k) "không có tuần → chỉ MT2". `HeaderStats` bốn ô mới, `Stat` có `nho`/`sub: ReactNode`. **Lưu ý vận hành:** API dev chỉ build lúc `npm run dev` khởi động — sửa máy chủ phải khởi động lại mới thấy (ô 4 lúc đầu vẫn chữ cũ). Bấm thử: Huy (FT, GVCN) ô 1 `MT2 · W3 AUG 2026` + KetQuaDot `Đã đủ điểm · SOS 1`; ô 4 `Làm PA L` · `quá hạn 30/08/2026` đỏ. Đỗ Gia Bảo (id 8, MB-FOU 12, Quản lý): ô 1 `Giữa khoá · W3 AUG 2026`, **không** có chữ Overall; ô 4 `Không có`. 375px: 2 cột, ô 4 xuống dòng, không tràn. Số phép kiểm: **610** (+3). |
