@@ -50,7 +50,9 @@ export function ViecCuaToi() {
                   <ul id={`nhom-${g.key}`} className="list-none m-0 p-0 pb-2">
                     {nhac.map((l, i) => (
                       <li key={`${l.classId}-${i}`} className="px-4 py-1.5">
-                        <Link to={`/hoc-vien/lop/${l.classId}`} className="no-underline"><Status kind="idle">{l.text}</Status></Link>
+                        <Link to={`/hoc-vien/lop/${l.classId}`} className="block no-underline text-xs text-slate-300 leading-snug hover:text-slate-100">
+                          <Status kind="idle">Nhắc</Status> {l.text}
+                        </Link>
                       </li>
                     ))}
                   </ul>

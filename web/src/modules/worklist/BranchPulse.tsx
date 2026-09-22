@@ -13,10 +13,10 @@ import { thamSoCt, type ChuongTrinh, type CotBang } from '@shared/domain/index.t
  * cũng bấm được và mở đúng danh sách tạo ra nó (`/tong-quan/chi-nhanh/o`, G-10). Các cột cũ "PA học thuật cần cập
  * nhật / Đề xuất chờ duyệt" nay nằm ở ô số đầu trang và khối Cần xử lý, không lặp lại ở đây.
  *
- * Bảng THEO GIÁO VIÊN (`BangTheoGiaoVien`) giữ nguyên từ bản trước, chỉ hiện khi đã chọn MỘT chi nhánh (Q10 — giữ tạm
- * tới PR-GV). Nó KHÔNG tô màu tốt/xấu và KHÔNG xếp hạng. Một bảng "giáo viên nào chậm nhất" là thứ ai cũng hiểu ngay
- * và không ai muốn bị đưa vào — nó biến công cụ điều phối thành công cụ đánh giá, và người ta sẽ học cách làm đẹp số
- * thay vì làm việc.
+ * Bảng THEO GIÁO VIÊN (`BangTheoGiaoVien`) giữ nguyên từ bản trước, chỉ hiện khi bảng đang ở chế độ LỚP — tức đã chọn
+ * một chi nhánh, hoặc QL chỉ có một chi nhánh nên server tự khoanh (Q10 — giữ tạm tới PR-GV). Nó KHÔNG tô màu tốt/xấu
+ * và KHÔNG xếp hạng. Một bảng "giáo viên nào chậm nhất" là thứ ai cũng hiểu ngay và không ai muốn bị đưa vào — nó biến
+ * công cụ điều phối thành công cụ đánh giá, và người ta sẽ học cách làm đẹp số thay vì làm việc.
  */
 
 type OBang = { n: number; mau?: number };
@@ -32,6 +32,8 @@ const COT: { key: CotBang; nhan: (ct: ChuongTrinh) => string; goiY: string }[] =
   { key: 'thieuPa', nhan: () => 'Thiếu PA học thuật', goiY: 'Case đã mở nhưng chưa ai ghi sẽ làm gì cho em.' },
   { key: 'duDuLieu', nhan: () => 'Đủ dữ liệu đánh giá', goiY: 'Em đã chấm đủ mọi kỹ năng ở đợt đã đến lịch mới nhất / em cần được đánh giá.' },
 ];
+/** Mọi hàng thân bảng cao bằng nhau (G-2): nhãn FT / Lớp thường 11px không được nâng hàng lớp cao hơn hàng tổng. */
+const HANG = '2.5rem';
 
 export function BranchPulse({ branchId, ct }: { branchId: number | null; ct: ChuongTrinh }) {
   const navigate = useNavigate();
@@ -43,7 +45,7 @@ export function BranchPulse({ branchId, ct }: { branchId: number | null; ct: Chu
   if (error) return <Card title={tieuDeTam}><ErrorState message={error.message} hint={error.hint} onRetry={reload} /></Card>;
   if (loading) return <Card title={tieuDeTam}><Skeleton rows={3} /></Card>;
   if (!data) return null;
-  const coGv = data.cheDo === 'lop' && branchId !== null;       // Q10 — giữ tạm tới PR-GV
+  const coGv = data.cheDo === 'lop';                            // Q10 — giữ tạm tới PR-GV; QL một chi nhánh không có `cn` trên URL, server tự khoanh phạm vi
   const o = (h: { khoa: string; nhan: string }, c: CotBang, x: OBang) => (
     <td key={c} className="td text-right tabular-nums">
       <SoLieuO giaTri={x.n} tieuDe={`${COT.find((k) => k.key === c)!.nhan(ct)} · ${h.nhan}`}
@@ -52,7 +54,7 @@ export function BranchPulse({ branchId, ct }: { branchId: number | null; ct: Chu
     </td>
   );
   const hangTong = (nhan: string) => (
-    <tr className="bg-white/5">
+    <tr className="bg-white/5" style={{ height: HANG }}>
       <td className="td sticky-col whitespace-nowrap font-medium text-slate-100">{nhan}</td>
       {COT.map((c) => o({ khoa: 'tong', nhan }, c.key, data.tong[c.key]))}
     </tr>
@@ -60,7 +62,7 @@ export function BranchPulse({ branchId, ct }: { branchId: number | null; ct: Chu
   const tenLop = (h: Hang) => (
     <span className="whitespace-nowrap">
       <Link to={`/hoc-vien/lop/${h.id}`} className="link">{h.nhan}</Link>
-      {ct === 'ca-hai' && h.laFt !== null && <span className="text-[11px] text-slate-500 ml-1.5">{h.laFt ? 'FT' : 'Lớp thường'}</span>}
+      {ct === 'ca-hai' && h.laFt !== null && <span className="text-[11px] leading-none align-middle text-slate-500 ml-1.5">{h.laFt ? 'FT' : 'Lớp thường'}</span>}
     </span>
   );
   return (
@@ -85,7 +87,7 @@ export function BranchPulse({ branchId, ct }: { branchId: number | null; ct: Chu
               {data.cheDo === 'lop' && hangTong(data.tenChiNhanh ? `Cả ${data.tenChiNhanh}` : 'Cả chi nhánh')}
               {data.hang.map((h) => (
                 <Fragment key={h.khoa}>
-                  <tr className="row-hover">
+                  <tr className="row-hover" style={{ height: HANG }}>
                     <td className="td sticky-col">
                       {h.loai === 'chi-nhanh' ? (
                         <span className="flex items-center gap-1.5 whitespace-nowrap">
@@ -103,7 +105,7 @@ export function BranchPulse({ branchId, ct }: { branchId: number | null; ct: Chu
                     {COT.map((c) => o(h, c.key, h.o[c.key]))}
                   </tr>
                   {h.loai === 'chi-nhanh' && mo.has(h.khoa) && (h.lop ?? []).map((l) => (
-                    <tr key={l.khoa} className="row-hover">
+                    <tr key={l.khoa} className="row-hover" style={{ height: HANG }}>
                       <td className="td sticky-col pl-8">{tenLop(l)}</td>
                       {COT.map((c) => o(l, c.key, l.o[c.key]))}
                     </tr>
