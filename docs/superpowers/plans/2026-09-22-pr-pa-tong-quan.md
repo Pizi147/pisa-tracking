@@ -2464,13 +2464,13 @@ export function HocVienCanHoTro() {
 
 ### Task 14: Rà soát, rebase, mở PR
 
-- [ ] **Step 1:** superpowers:requesting-code-review — người rà **Opus 5** (hoặc Fable 5.1 nếu người code là Opus 5) rà cả
+- [x] **Step 1:** superpowers:requesting-code-review — người rà **Opus 5** (hoặc Fable 5.1 nếu người code là Opus 5) rà cả
   diff `git diff origin/main...HEAD`, nhấn vào: (a) có con số nào trên Tổng quan **không** đi qua `metricSet`/tập chia từ
   nó, hoặc số ≠ số dòng khi bấm; (b) bộ lọc chương trình có lọt phần tử sai chương trình, lọc thiếu tử/mẫu số; (c) GV có
   gọi được `/tong-quan/quan-ly`, `/tong-quan/chi-nhanh[/o]` (phải 403); `oBangChiNhanh` có mở rộng phạm vi; (d) file ngoài
   ranh giới đợt 2 bị chạm (`cases.ts`, `CasePanel`, `SkillBoard`, `hienThiNgay.ts`, `display.ts`, file Qa); (e) chữ mới đúng
   THUAT_NGU, không "Normal", không chuỗi cấm; (f) truy vấn N+1 mới trên Turso. Xử lý theo superpowers:receiving-code-review.
-- [ ] **Step 2: Rebase `main` mới nhất.** `git fetch origin && git rebase origin/main`. Xung đột:
+- [x] **Step 2: Rebase `main` mới nhất.** `git fetch origin && git rebase origin/main`. Xung đột:
   - `server/src/tests/run.ts` → giữ **cả** khối PR-AN / PR-S2 / PR-Qa (nếu đã merge) **và** 3 dòng PR-Pa; phép sổ chỉ số:
     nếu PR khác cũng thêm chỉ số → cộng dồn con số và mảng `expected`.
   - `server/src/routes/index.ts` → giữ cả hai khối; kiểm dòng import không trùng.
@@ -2634,3 +2634,8 @@ export function HocVienCanHoTro() {
   assertThrows`, `c.kind` thừa, chú thích "bộ kiểm này phải chạy cuối". Người rà đồng ý mọi ruling; sửa lý do F4: dòng
   phụ vượt ngân sách ~60 ký tự của G-3, PR-Ra rút gọn. Triage ghi chú nhỏ để dành: phần lớn DROP/DEFER (S3, Ra, Form,
   Pb, Z2c) — chi tiết ở thân PR.
+- **Task 14 — sửa sau rà + rebase:** commit `f905ca1` (bảng trả `branchId` đã giải → "Theo giáo viên" của QL một chi
+  nhánh gọi đúng chi nhánh; assert không rỗng cho Cần xử lý / Điểm đáng chú ý; dọn `void`, `c.kind`, chú thích "phải chạy
+  cuối"); rà lại có phạm vi: đạt. Rebase lên `origin/main` @ `61ae2dd` (đã có PR-S2 #64 + PR-AN): xung đột duy nhất ở
+  `server/src/tests/run.ts` — giữ cả khối PR-S2, PR-AN và đặt khối PR-Pa CUỐI CÙNG (bộ này tạo dữ liệu thật). Không đổi
+  `package-lock.json` nên không cần `npm ci`. `npm run check` sau rebase: **TẤT CẢ 801 KIỂM TRA ĐỀU ĐẠT** (779 của main + 22).
