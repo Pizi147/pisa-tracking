@@ -437,4 +437,21 @@ export async function runHocVienLopTests(t: YThucTestKit) {
     taoHocVien({ cid: coEm, ft: true });
     assertThrows(() => ttl.capNhatThongTinLop(P.admin, coEm, { programmeCode: 'FOU' }), /đã có học viên/, 'Lớp có học viên');
   });
+
+  check('PR-Qa · Q8 đổi chương trình: phân công kỹ năng KHÔNG còn ở chương trình mới bị KẾT THÚC (không xoá); phân công vẫn khớp thì giữ nguyên', () => {
+    const cid = taoLop('MB-FT QA7', 'FT');
+    // writing1 chỉ có ở FT, không có ở FOU (REGULAR_SKILLS = listening/reading/writing/speaking) → phải bị kết thúc.
+    const idMat = Number(conn.prepare(
+      `INSERT INTO teacher_assignments (class_id, user_id, skill, is_core, status, effective_from, created_at) VALUES (?, ?, 'writing1', 0, 'active', '2026-08-03', ?)`,
+    ).run(cid, P.sTeacher.userId, NOW).lastInsertRowid);
+    // listening có ở cả FT lẫn FOU → vẫn còn khớp, không được đụng tới.
+    const idConKhop = Number(conn.prepare(
+      `INSERT INTO teacher_assignments (class_id, user_id, skill, is_core, status, effective_from, created_at) VALUES (?, ?, 'listening', 1, 'active', '2026-08-03', ?)`,
+    ).run(cid, P.coreTeacher.userId, NOW).lastInsertRowid);
+    ttl.capNhatThongTinLop(P.admin, cid, { programmeCode: 'FOU' });
+    const mat = conn.prepare('SELECT status, effective_to FROM teacher_assignments WHERE id = ?').get(idMat) as any;
+    eq([mat?.status, mat?.effective_to], ['ended', TODAY], 'writing1 kết thúc đúng ngày, KHÔNG bị xoá (dòng vẫn còn)');
+    const conKhop = conn.prepare('SELECT status, effective_to FROM teacher_assignments WHERE id = ?').get(idConKhop) as any;
+    eq([conKhop?.status, conKhop?.effective_to], ['active', null], 'listening vẫn khớp chương trình mới nên giữ nguyên active');
+  });
 }
