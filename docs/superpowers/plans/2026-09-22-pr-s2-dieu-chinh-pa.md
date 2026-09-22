@@ -1860,9 +1860,9 @@ export function ResultDialog({ iv, onClose, onDone }: {
 
 ### Task 11: Nghiệm thu: kiểm đủ, migrate lặp trên bản sao, KIỂM bấm thử, rà soát, rebase, mở PR
 
-- [ ] **Step 1: Chuỗi kiểm đầy đủ.** Run: `npm run check`. Expected: build sạch, `TẤT CẢ B+21 KIỂM TRA ĐỀU ĐẠT` (~740), typecheck sạch. Ghi số vào Nhật ký.
+- [x] **Step 1: Chuỗi kiểm đầy đủ.** Run: `npm run check`. Expected: build sạch, `TẤT CẢ B+21 KIỂM TRA ĐỀU ĐẠT` (~740), typecheck sạch. Ghi số vào Nhật ký.
 
-- [ ] **Step 2: Migrate lặp trên BẢN SAO database dev** (không bao giờ trên file gốc, không bao giờ trên Turso). Bash, trong worktree:
+- [x] **Step 2: Migrate lặp trên BẢN SAO database dev** (không bao giờ trên file gốc, không bao giờ trên Turso). Bash, trong worktree:
 
 ```bash
 SCR="$(node -e "console.log(require('os').tmpdir())")/pr-s2-migrate"
@@ -1876,7 +1876,7 @@ PISA_DB="$SCR/ban-sao.sqlite" npm run migrate
   Expected: lần một có dòng `✓ PR-S2: thêm bảng case_intervention_revisions, case_followups.remaining_issue, case_followups.decision_note…`
   (nếu database dev còn cũ) hoặc không có gì; lần hai **không** có dòng PR-S2.
 
-- [ ] **Step 3: Chuẩn bị bấm thử** trên database **riêng** của worktree, **không** dùng cổng 4000 và 5173:
+- [x] **Step 3: Chuẩn bị bấm thử** trên database **riêng** của worktree, **không** dùng cổng 4000 và 5173:
 
 ```bash
 KIEM="$(node -e "console.log(require('os').tmpdir())")/pr-s2-kiem.sqlite"
@@ -1892,7 +1892,7 @@ export default { ...base, server: { port: 5327, strictPort: true, proxy: { '/api
   Mở `http://localhost:5327` (Playwright kênh Chrome, theo bộ nhớ "Máy chủ dev trong worktree"; **không** dùng `preview_start` vì nó chạy từ thư mục chính).
   Tài khoản demo: xem `DEMO.md`.
 
-- [ ] **Step 4: KIỂM, bấm thử ba vai.** Ghi kết quả từng ý vào Nhật ký (chữ đọc được từ trang là đủ; có ảnh chụp thì tốt hơn).
+- [x] **Step 4: KIỂM, bấm thử ba vai.** Ghi kết quả từng ý vào Nhật ký (chữ đọc được từ trang là đủ; có ảnh chụp thì tốt hơn).
   1. **GVBM Listening MB-FT 101** › Hồ sơ một học viên có Case Listening đang có PA chạy › thẻ Case › dòng PA › **Ghi kết quả**:
      - Form hiện đúng 5 mục theo thứ tự. Chưa chọn kết quả thì 4 nút quyết định mờ, rê chuột có `title` "Chọn kết quả trước.".
      - Chọn **Chưa đủ dữ liệu**: **Giữ nguyên**, **Điều chỉnh**, **Thay phương án** sáng; "Kết thúc phương án" mờ, rê chuột thấy câu chặn; không có nút "Xin hỗ trợ từ Quản lý".
@@ -1915,7 +1915,7 @@ export default { ...base, server: { port: 5327, strictPort: true, proxy: { '/api
   7. Màn 375px (G-11): form không tràn ngang; dòng phụ PA không xuống hai dòng.
   Xong: dừng hai tiến trình, **xoá** `vite.kiem.config.ts`, xoá file `$KIEM` nếu muốn. `git status` phải sạch.
 
-- [ ] **Step 5: Rà soát code.** REQUIRED SUB-SKILL: `superpowers:requesting-code-review`. Người rà: **Fable 5.1** (nếu code bằng Fable thì **Opus 5**).
+- [x] **Step 5: Rà soát code.** REQUIRED SUB-SKILL: `superpowers:requesting-code-review`. Người rà: **Fable 5.1** (nếu code bằng Fable thì **Opus 5**).
   Đưa cho người rà: plan này, đặc tả §1–§2, §7 dòng S2, bảng Q1–Q18, `git diff main...HEAD`. Yêu cầu soi riêng:
   (a) Điều chỉnh bị từ chối **không** để lại dòng nào (kiểm tra hàm chuẩn hoá chạy **trước** giao dịch);
   (b) bản "cũ" ghi vào lịch sử đúng là dòng **đọc trước khi sửa**, kể cả khi nhánh `continue` cũng ghi `performer_user_id`;
@@ -1925,7 +1925,7 @@ export default { ...base, server: { port: 5327, strictPort: true, proxy: { '/api
   (e) diff không chạm vùng PR-AN trong `caseCardOf` (dòng khai báo, `attachmentCount`) và không chạm file PR-O.
   Xử lý phản hồi theo `superpowers:receiving-code-review`; ghi kết luận vào Nhật ký.
 
-- [ ] **Step 6: Rebase lên `main` mới nhất.** PR-S2 **merge SAU PR-AN**. Kiểm: `gh pr list --state merged --search "PR-AN" --limit 5`.
+- [x] **Step 6: Rebase lên `main` mới nhất.** PR-S2 **merge SAU PR-AN**. Kiểm: `gh pr list --state merged --search "PR-AN" --limit 5`.
   - Nếu PR-AN **đã merge**: `git fetch origin && git rebase origin/main`. Gỡ xung đột bằng **giữ cả hai khối**:
     - `server/src/migrate.ts`: chỗ gọi, giữ **cả hai** dòng gọi (`migrateAuthAttempts(conn, applied);` của AN và `migrateDieuChinhPa(conn, applied);` của S2);
       cuối file giữ **cả hai** hàm.
@@ -1957,7 +1957,10 @@ Dữ liệu đã có sẵn ở `GET /students/:id/skill-board` → `rows[].cases
 - **Điều chỉnh không phải khối mới:** `revisions[]` (`on`, `reason`, `by`, `before`, `after`) là **mốc nhỏ trên cùng một khối** (ví dụ vạch mảnh có tooltip
   "Điều chỉnh {dd/mm}: {lý do}"). Loại PA không đổi trong một khối.
 - **Mỗi lần cập nhật:** `updates[]` có `on`, `outcome`, `decision` (`continue` = Giữ nguyên, `adjust`, `propose` = Thay, `complete`, `ask_manager`, `monitor` cũ),
-  `remainingIssue`, `decisionNote`, `cycleNo`, `late`. Chỉ gồm lần **có kết quả**.
+  `remainingIssue`, `decisionNote`, `cycleNo`, `late`. Chỉ gồm lần **có kết quả**. *(Bổ sung khi code:)* `updates[]` xếp **cũ trước mới sau**, hai lần
+  cùng ngày xếp theo thứ tự ghi (id tăng dần); `revisions[]` cũng theo thứ tự ghi, kể cả khi "Ngày cập nhật" bị lùi.
+- *(Bổ sung khi code:)* Mỗi lần Điều chỉnh mở **một đợt mới** (Q3), nên hai lần điều chỉnh trong một ngày thành "Đợt 2", "Đợt 3". Hành trình nên vẽ
+  theo ngày, không theo số đợt.
 - PA gợi ý tự động bị thay **trước khi xác nhận** là `cancelled`, không có trong `plans` (đúng: nó chưa từng chạy).
 - Bấm khối PA mở ngăn Case và cuộn tới PA (§3.8): khối PA trong `CasePanel` đã có `revisions` và dòng "Thay cho / Được thay bằng".
 
@@ -1970,10 +1973,17 @@ Dữ liệu đã có sẵn ở `GET /students/:id/skill-board` → `rows[].cases
 - `CASE_OUTCOME_LABEL` (kết quả **cả Case**, `shared/domain/cases.ts:245-250`) vẫn là "Đã tốt hơn hẳn / Có tiến bộ / Chưa chuyển biến / Tệ hơn"; theo
   THUAT_NGU g8-128…131 phải về bộ chữ Tiến bộ rõ · … · Kém hơn. PR-S2 không chạm hộp thoại chốt Case.
 - `SectionNote` còn lại trong `CasePanel.tsx` (ví dụ ~280) theo G-5.
+- *(Bổ sung khi code, thấy lúc bấm thử:)* ngăn Case vẫn ghi "hẹn xem lại {ngày}" ngay dưới khối lịch sử ghi "Dự kiến kết thúc" — hai tên cho một mốc.
+  PA bị thay có dòng phụ "được thay" nhưng cột trạng thái vẫn "Đã kết thúc" (`shared/domain/hoSoHocVien.ts` ~92) — nên là "Được thay thế" (g6-090).
+  Câu "…chu kỳ thực hiện chưa bắt đầu…" (`CasePanel.tsx` ~609), `NEXT_STEP_HINT.monitor` và chú thích cũ quanh `NEXT_STEPS` còn chữ "chu kỳ".
+- *(Bổ sung khi code:)* form Ghi kết quả vẫn hiện nút chữ "Xin hỗ trợ từ Quản lý" với kết quả **tốt** (theo `endStepsFor` có sẵn). Cần chủ sản phẩm
+  xác nhận có giữ không.
 
 ### Chuyển cho PR-Z2c (deploy)
 - `caseCardOf` thêm **một** truy vấn mỗi Case (`lichSuDieuChinhCuaCase`). Đo trên Turso cùng lúc đo các trang chậm; nếu cần thì gộp theo danh sách Case như
   `demBangChungCase` của PR-AN.
+- *(Bổ sung khi code, người rà cuối nhấn mạnh:)* chi tiết Case và bảng kỹ năng **đọc** bảng `case_intervention_revisions` → phải chạy `npm run migrate`
+  lên Turso (hoặc dựng từ `schema.sql`) **trước hoặc cùng lúc** deploy mã này, nếu không hồ sơ học viên và ngăn Case sẽ lỗi khi đọc.
 
 ---
 
@@ -2033,3 +2043,4 @@ làm mất lối "Thay bằng phương án khác hoặc nhờ Quản lý" cũ; f
 | 22/09 | 8 | Opus 5 (subagent, một lượt với Task 9) · 116c675 · **751** ✓, kiểm kiểu sạch, vite build sạch · lệch nhỏ có lợi: bỏ hai chú thích cũ trên ResultDialog · rà (Opus 5): cần sửa 1 (form chưa báo trước lỗi "ngày dự kiến kết thúc sớm hơn ngày cập nhật") → vòng sửa 1 (bc55f75): thêm kiểm ngày đó + ngày cập nhật/ngày kết thúc không sau hôm nay + `title` cho nút Ghi kết quả (G-7) → rà lại: đạt |
 | 22/09 | 9 | Opus 5 (subagent) · c64c4bb · **751** ✓ · `plans={c.plans}` thêm ở CẢ HAI chỗ gọi KhoiPhuongAn · lệch nhỏ có lợi: PA giữa chuỗi A→B→C hiện đủ "Thay cho: A · Được thay bằng: C"; ▸ của PA bị thay không lặp dòng "kết thúc phương án" cùng ngày với "Được thay bằng"; `tabular-nums` · rà: đạt sau vòng sửa 1 |
 | 22/09 | 10 | Opus 5 (subagent) · 59b4007 + d178eb8 · tick S2, S4 ở plan.md §22.9 (dấu `*(PR-S2)*` đặt sau tiêu đề in đậm như kiểu PR-S1); CODE_MAP thêm hai dòng · thêm (quyết định tại chỗ): CODE_MAP "năm bước" → "sáu bước" (có `adjust`), xoá dòng CODE_MAP trỏ tới `InlineResult` đã xoá · rà: duyệt |
+| 22/09 | 11 | Rebase lên main 67e79c5 (đã có PR-AN #61) làm TRƯỚC bước 1–5 để mọi kiểm chạy trên đúng bản sẽ merge; 1 xung đột (migrate.ts: giữ cả migrateAuthAttempts và migrateDieuChinhPa). **Bước 1:** `npm run check` sạch, **778** = 757 (main) + 21. **Bước 2:** migrate hai lần trên BẢN SAO database dev của thư mục chính (mở chỉ đọc, VACUUM INTO): lần 1 có dòng PR-S2 (bảng + 2 cột), lần 2 không có. **Bước 3–4 (bấm thử, Opus 5, API 4127 + Vite 5327, Playwright kênh Chrome):** ý 1–6 ĐẠT; ý 7 lỗi một phần (dòng phụ PA xuống 2 dòng ở 375/390/768px) + nhận xét giao diện (nút Lưu khuất trong hộp thoại 1366×768, "Lý do" lặp hai lần, hai vạch viền lồng nhau, nút Huỷ/Lưu nhảy chỗ). **Bước 5 (rà cuối: Fable 5.1):** merge được; 1 việc quan trọng (lịch sử xếp theo thứ tự ghi) + ghi chú deploy. **Một lượt sửa cuối** (84ba5bc, Opus 5) gộp rà cuối + bấm thử: `ORDER BY r.id` (+1 phép kiểm → **779**), `String(…)` cho lý do/còn tồn, lý do xác nhận ≤ 300 ký tự, `key`, tiêu đề hộp thoại có tên PA, dòng phụ PA luôn một dòng (đuôi không bị cắt), nút Lưu ghim ở chân hộp thoại, bỏ lặp "Lý do", một vạch viền, nhãn nút "Ghi kết quả" khi chưa chọn, nhãn ngày không gãy dòng; bấm thử lại đạt · rà lại (Opus 5): đạt; thêm 7d2f1a0 bo góc dưới hộp thoại + nút không nhích · mục "Chuyển cho PR khác" bổ sung (PR-Qb, PR-S3, PR-Z2c) |
