@@ -58,22 +58,19 @@ hồ sơ lớp, hồ sơ HV/Hành trình, Ý thức, hồ sơ GV, lớp thườn
 | #52 | PR-HV — hồ sơ học viên 3 tab, "biện pháp" → "phương án (PA)" |
 | #53 | Planning: đặc tả UX toàn web, mockup, thuật ngữ đã chốt, kiểm kê, kế hoạch đợt 1 |
 
-### Lộ trình (2 session code song song, chủ sản phẩm xem demo ~10 phút sau mỗi đợt)
+### Lộ trình — 7 đợt, 3 session code song song (chủ sản phẩm chốt 22/09 tối; xem demo ~10 phút sau mỗi đợt)
 
 | Đợt | PR | Trạng thái |
 |---|---|---|
-| 1 | **PR-O** khung 4 khu vực (Sonnet 5 · High, B: Fable 5.1 · Medium) · **PR-S1** luật máy chủ (Opus 5 · XHigh, B: Fable 5.1 · High) | Kế hoạch xong, prompt đã đưa chủ sản phẩm → **chờ 2 PR để rà**. Hai PR cùng sửa `server/src/tests/run.ts` và `server/src/routes/index.ts` → merge từng cái, cái sau rebase |
-| 2 | PR-Qa Học viên & Lớp + Hồ sơ lớp · PR-AN an toàn | chưa soạn kế hoạch |
-| 3 | PR-Pa Tổng quan · PR-S2 điều chỉnh PA học thuật | |
-| 4 | PR-Qb Hồ sơ HV · PR-YT2 Ý thức phần thiếu | |
-| 5 | PR-Pb Phân tích · PR-Ra Công việc | |
-| 6 | PR-Rc1 Cần chấm + Lịch Test + lưới chấm · PR-GV hồ sơ GV | |
-| 7 | PR-Rc2 Kế hoạch Test · PR-Form chọn người + bằng chứng | |
-| 8 | PR-LT lên lớp, chuyển lớp | |
-| 9 | PR-S3 quét chữ toàn web | |
-| 10 | PR-Z2c deploy | kế hoạch có sẵn (plan 21/09 Task 10–11) |
+| 1 | **PR-O** khung 4 khu vực (Sonnet 5 · High, B: Fable 5.1 · Medium) · **PR-S1** luật máy chủ (Opus 5 · XHigh, B: Fable 5.1 · High) · **PR-AN** an toàn (Opus 5 · High, B: Fable 5.1 · High) | O và S1 đang code (22/09 19:45: O xong 3/10 task — commit ghi **Haiku 4.5**, lệch kế hoạch; S1 xong 8/20). AN: kế hoạch đang soạn. Merge **O → S1 → AN**, cái sau rebase (chung `run.ts`, `routes/index.ts`) |
+| 2 | PR-Qa Học viên & Lớp + Hồ sơ lớp · PR-Pa Tổng quan · PR-S2 điều chỉnh PA học thuật | chưa soạn kế hoạch |
+| 3 | PR-Qb Hồ sơ HV · PR-YT2 Ý thức phần thiếu · PR-Rc1 Cần chấm + Lịch Test + lưới chấm | |
+| 4 | PR-Pb Phân tích · PR-Ra Công việc · PR-Rc2 Kế hoạch Test | |
+| 5 | PR-GV hồ sơ GV · PR-Form chọn người + bằng chứng · PR-LT lên lớp, chuyển lớp | |
+| 6 | PR-S3 quét chữ toàn web | |
+| 7 | PR-Z2c deploy | kế hoạch có sẵn (plan 21/09 Task 10–11) |
 
-Model từng PR ở đặc tả §7. Khi soạn kế hoạch đợt 2: giao 2 agent song song (mẫu prompt: đọc đặc tả + kiểm kê + mockup,
+Lý do xếp đợt ở đặc tả §7. Model từng PR ở đặc tả §7. Khi soạn kế hoạch đợt mới: giao 3 agent song song (mẫu prompt: đọc đặc tả + kiểm kê + mockup,
 dùng skill writing-plans, lưu `docs/superpowers/plans/2026-09-2x-pr-….md`, không commit, báo Q-quyết định + mâu thuẫn),
 rồi mình rà từng quyết định, gửi agent sửa, commit lên nhánh planning, mở PR, đưa chủ sản phẩm prompt.
 
