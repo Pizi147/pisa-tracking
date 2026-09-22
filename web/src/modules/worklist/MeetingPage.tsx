@@ -31,23 +31,8 @@ type Board = {
   editWindow: { open: boolean; reason: string | null; opensOn: string } | null;
 };
 
-export default function MeetingPage() {
-  return (
-    <div className="page space-y-4">
-      <div>
-        <h1 className="text-lg font-semibold text-slate-100 m-0">Báo cáo tuần chi nhánh</h1>
-        <p className="text-xs text-slate-500 mt-0.5 mb-0">
-          Hệ thống tổng hợp dữ liệu, quản lý bổ sung nhận định — thay cho việc chép lại số liệu vào workbook.
-        </p>
-      </div>
-      <MeetingBoard />
-    </div>
-  );
-}
-
 /**
- * Thân màn Báo cáo tuần, dùng CHUNG cho trang riêng `/tien-trinh` và cho tab thứ ba của
- * Tổng quan. Một bản cài đặt, một cách đọc số — hai màn hình không bao giờ lệch nhau.
+ * Thân màn Báo cáo đơn vị — Công việc › Báo cáo đơn vị (`/cong-viec/bao-cao`).
  */
 export function MeetingBoard() {
   const [periodId, setPeriodId] = useState<number | null>(null);

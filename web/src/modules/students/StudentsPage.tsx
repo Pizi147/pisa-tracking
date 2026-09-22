@@ -9,7 +9,6 @@ import type { Branch } from '../../ui/Filters.tsx';
 import { IntakePanel } from './IntakePanel.tsx';
 import { ClassCreatePanel } from '../classes/ClassCreatePanel.tsx';
 import { ClassRoster } from './ClassRoster.tsx';
-import { MockPlanPanel } from '../fasttrack/MockPlanPanel.tsx';
 import { MissingBadge } from './MissingBadge.tsx';
 import {
   PERMISSIONS, STUDENT_FILTERS, WORK_SCOPES, WORK_SCOPE_HINT, WORK_SCOPE_LABEL, needScoresText, skillShort,
@@ -56,8 +55,9 @@ export type ClassSummary = {
 export default function StudentsPage() {
   const { session, can, branchCount } = useSession();
   const [params, setParams] = useSearchParams();
+  /* Cần chấm và Kế hoạch Test nay ở khu Test (spec §4, G-12); đường dẫn cũ `?view=my_scores|no_plan` được chuyển hướng. */
   const views = useMemo(
-    () => STUDENT_FILTERS.filter((f) => !f.needs || can(f.needs)),
+    () => STUDENT_FILTERS.filter((f) => f.key !== 'my_scores' && f.key !== 'no_plan' && (!f.needs || can(f.needs))),
     [can],
   );
   const rawView = (params.get('view') ?? 'classes') as StudentFilterKey;
@@ -82,7 +82,6 @@ export default function StudentsPage() {
     [params],
   );
   const [intakeOpen, setIntakeOpen] = useState(false);
-  const [planOpen, setPlanOpen] = useState(false);
   const [classCreate, setClassCreate] = useState(false);
   const [intakeFor, setIntakeFor] = useState<ClassSummary | null>(null);
   const [draftQ, setDraftQ] = useState(q);
@@ -117,7 +116,7 @@ export default function StudentsPage() {
     <div className="page space-y-4">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-lg font-semibold text-slate-100">Học viên</h1>
+          <h1 className="text-lg font-semibold text-slate-100">Học viên & Lớp</h1>
         </div>
         <div className="flex flex-wrap items-end gap-2">
           <label className="block">
@@ -181,9 +180,6 @@ export default function StudentsPage() {
           </span>
         )}
         <div className="flex-1" />
-        {can(PERMISSIONS.PLAN_WEEK) && (
-          <button className="btn btn-sm" onClick={() => setPlanOpen(true)}>Kế hoạch Test</button>
-        )}
         {can(PERMISSIONS.STUDENT_EDIT) && view === 'classes' && (
           <button className="btn btn-sm" onClick={() => setClassCreate(true)}>Tạo lớp</button>
         )}
@@ -194,16 +190,7 @@ export default function StudentsPage() {
         )}
       </div>
 
-      {view === 'no_plan' && (
-        <Card title="Chưa có tuần MT tiếp theo" bodyClass="p-4">
-          <p className="text-sm text-slate-400 mb-3">
-            Đây là việc của <strong>Quản lý</strong>: quyết định em sẽ MT tiếp theo vào tuần nào.
-            Lên kế hoạch cho nhiều em một lần thay vì mở từng hồ sơ.
-          </p>
-          <button className="btn btn-primary btn-sm" onClick={() => setPlanOpen(true)}>Kế hoạch Test</button>
-        </Card>
-      )}
-      {(view === 'my_scores' || view === 'sos') && <WorkQueue view={view} branchId={branchId} q={q} scope={scope} />}
+      {view === 'sos' && <WorkQueue view={view} branchId={branchId} q={q} scope={scope} />}
       {/*
         BA BỘ LỌC CASE (mục 6, số 3–5) dùng CHUNG một danh sách, chỉ đổi hàng đợi. Ba bảng
         riêng cho ba câu hỏi rất giống nhau là ba chỗ để số liệu lệch nhau.
@@ -247,15 +234,6 @@ export default function StudentsPage() {
             </Card>
           )}
         </>
-      )}
-
-      {planOpen && (
-        <MockPlanPanel
-          branchId={branchId}
-          classId={params.get('classId') ? Number(params.get('classId')) : null}
-          onClose={() => setPlanOpen(false)}
-          onDone={() => { invalidate('/classes'); invalidate('/attempts'); classes.reload(); }}
-        />
       )}
 
       {classCreate && (
