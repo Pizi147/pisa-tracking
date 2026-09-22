@@ -129,6 +129,8 @@ Số dòng đo trên `main` @ `37786fd` (779 phép kiểm, gọi là **B = 779**
 
 **Xong khi:** `npm run check` xanh, số phép kiểm = B + mới. Commit `PR-Form (1): luật thuần chọn người, bằng chứng, chủ đề Case`.
 
+- [x] Task 1 xong — `npm run check` xanh, **785 = 779 + 6**.
+
 ## Task 2 · Máy chủ: tìm người `GET /ref/nguoi`
 
 **Files:** tạo `server/src/platform/timNguoi.ts`; route trong `routes/index.ts` cạnh `/ref/people` (dòng 262-264).
