@@ -14,7 +14,8 @@ import {
 import {
   attemptHref, attemptStatusLabel, fmtBand, fmtDate, fmtDateTime, progressLabel, skillLabel,
 } from '../../lib/format.ts';
-import { ASSESSED_SKILL_LABEL } from '@shared/domain/index.ts';
+import { ASSESSED_SKILL_LABEL, ATTEMPT_KIND_SHORT, tuanLich, type AttemptKind } from '@shared/domain/index.ts';
+import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { KIEM_TRA_LAI_KY_NANG, KY_NANG_KHONG_KIEM_TRA, TOOLTIP_TUAN_HOAN_TAT } from '../../ui/chu.ts';
 import { usePeriods } from '../../ui/Filters.tsx';
 
@@ -68,6 +69,12 @@ type SkillRow = {
   pendingMove: { id: number; decideBy: string; toWeek: string | null; moveNo: number } | null;
 };
 
+/** Một đợt của học viên trong `GET /attempts?studentId=` — đủ để dựng nhãn và đường dẫn của bộ chọn đợt (R15). */
+type DotCuaHv = {
+  id: number; kind: string; classId: number | null; attemptNo: number; status: string;
+  period: { id: number; weekStart: string } | null;
+};
+
 /** Năm cột làm việc — một dòng mỗi bài nhập. Dưới `md` mỗi bài là một thẻ xếp dọc, không có cột. */
 const ROW_GRID = 'md:grid md:grid-cols-[6.5rem_9.5rem_minmax(14rem,1.2fr)_minmax(13rem,1fr)_11rem] md:gap-x-3';
 
@@ -77,6 +84,9 @@ export default function MockDetailPage() {
   const toast = useToast();
   const { data, loading, error, reload } = useApi<Detail>(id ? `/attempts/${id}` : null);
   const { save } = useSaveScore(Number(id), reload);
+  const { homNay } = useNgayNghiepVu();
+  /* R15 — các đợt của CHÍNH học viên này, để chuyển đợt ngay trên trang (không phải quay lại hồ sơ). */
+  const dsDot = useApi<{ rows: DotCuaHv[] }>(data ? `/attempts?studentId=${data.student.id}` : null);
   const [showHistory, setShowHistory] = useState(false);
   const [weekOpen, setWeekOpen] = useState(false);
   const [deadlineOpen, setDeadlineOpen] = useState(false);
@@ -141,10 +151,13 @@ export default function MockDetailPage() {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <button className="btn btn-sm btn-ghost mb-1" onClick={() => navigate(-1)}>← Quay lại</button>
-          <h1 className="text-lg font-semibold text-slate-100">
-            {d.student.name} <span className="text-slate-500 text-sm">· {d.student.code}</span>
-            <span className="text-slate-300 text-base font-medium"> · MT{d.attemptNo}</span>
-          </h1>
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+            <h1 className="text-lg font-semibold text-slate-100">
+              {d.student.name} <span className="text-slate-500 text-sm">· {d.student.code}</span>
+              <span className="text-slate-300 text-base font-medium"> · MT{d.attemptNo}</span>
+            </h1>
+            <ChonDot hienTai={d.id} ds={dsDot.data?.rows ?? []} homNay={homNay} onChon={(r) => navigate(attemptHref(r))} />
+          </div>
           <p className="text-xs text-slate-500 mt-0.5">
             Lớp lúc đánh giá: {d.classCode ?? '—'} · {d.branchName ?? '—'}
             {d.cycle.route && ` · Lộ trình ${d.cycle.route}`}
@@ -153,7 +166,11 @@ export default function MockDetailPage() {
         <div className="flex flex-wrap items-center gap-2">
           <Link className="btn no-underline" to={`/hoc-vien/${d.student.id}`}>Hồ sơ học viên</Link>
           {d.classId && (
-            <Link className="btn no-underline" to={`/nhap-diem/${d.classId}`}>Nhập điểm cả lớp</Link>
+            /* R16 — mở lưới cả lớp đúng TUẦN của đợt đang xem, không phải tuần hôm nay. */
+            <Link className="btn no-underline"
+              to={`/nhap-diem/${d.classId}${d.period ? `?periodId=${d.period.id}` : ''}`}>
+              Nhập điểm cả lớp
+            </Link>
           )}
           <Menu label="Chỉnh lịch" items={headerItems} className="btn" />
         </div>
@@ -215,6 +232,31 @@ export default function MockDetailPage() {
       <CancelDialog open={cancelOpen} onClose={() => setCancelOpen(false)} attemptId={d.id}
         attemptNo={d.attemptNo} scoredSkills={d.result.scoredRequired} onDone={reload} />
     </div>
+  );
+}
+
+/**
+ * R15 — CHỌN ĐỢT KHÁC của cùng học viên, cạnh tiêu đề. Nhãn `MT{n} · W3 SEP` (Mock Test) hoặc `Giữa khoá · W3 SEP` /
+ * `Cuối khoá · W3 SEP` (lớp thường); đi bằng `attemptHref` nên bài lớp thường mở đúng lưới lớp thường. Đợt đang xem chọn
+ * sẵn; chỉ có một đợt thì không hiện.
+ */
+function ChonDot({ hienTai, ds, homNay, onChon }: {
+  hienTai: number; ds: DotCuaHv[]; homNay: string; onChon: (r: DotCuaHv) => void;
+}) {
+  if (ds.length < 2 || !ds.some((r) => r.id === hienTai)) return null;
+  const xep = [...ds].sort((a, b) =>
+    (a.period?.weekStart ?? '9999').localeCompare(b.period?.weekStart ?? '9999') || a.attemptNo - b.attemptNo || a.id - b.id);
+  const nhan = (r: DotCuaHv) => {
+    const ten = r.kind === 'mock' || !r.kind ? `MT${r.attemptNo}` : ATTEMPT_KIND_SHORT[r.kind as AttemptKind] ?? r.kind;
+    const tuan = r.period ? tuanLich(r.period.weekStart, homNay) : 'chưa chốt tuần';
+    return `${ten} · ${tuan}${r.status === 'cancelled' ? ` · ${attemptStatusLabel(r.status)}` : ''}`;
+  };
+  return (
+    <select className="field w-44" value={hienTai} aria-label="Chọn đợt khác của học viên này"
+      title="Mở đợt khác của cùng học viên"
+      onChange={(e) => { const r = xep.find((x) => x.id === Number(e.target.value)); if (r && r.id !== hienTai) onChon(r); }}>
+      {xep.map((r) => <option key={r.id} value={r.id}>{nhan(r)}</option>)}
+    </select>
   );
 }
 
