@@ -605,7 +605,7 @@ export function overdueNormalSignalIds(p: Principal, f: { branchId?: number | nu
   - `tachTheoLop(unit: ChiSo['donVi'], ids: number[], toiDa?: number): string` — `"MB-FT 101 (8) · CP-FT 110 (4) · +2 lớp"`
   - `metricSet(p, id, f)` với `f.program?: ChuongTrinh | null` (vắng = Cả hai, như cũ).
 
-- [ ] **Step 1: Phép kiểm (đỏ).** Thêm trợ giúp tạo học viên (ngay sau khối trợ giúp của Task 2):
+- [x] **Step 1: Phép kiểm (đỏ).** Thêm trợ giúp tạo học viên (ngay sau khối trợ giúp của Task 2):
 
 ```ts
   const { loadPrincipal } = await import('../permissions.ts');
@@ -701,9 +701,9 @@ export function overdueNormalSignalIds(p: Principal, f: { branchId?: number | nu
   Ghi chú: `taoHocVien` dùng trong phép thứ nhất phải khai báo **trước** phép kiểm (khối trợ giúp ở trên). Đầu hàm
   `runTongQuanTests` lấy thêm `checkAsync` từ `t`: `const { check, checkAsync, assert, assertThrows, conn, TODAY, P, classId } = t;`.
 
-- [ ] **Step 2: Chạy, đỏ.** Expected: 3 phép ✗ (`metricSet` bỏ qua `program`; route chưa đọc `ct`; chưa có mô-đun).
+- [x] **Step 2: Chạy, đỏ.** Expected: 3 phép ✗ (`metricSet` bỏ qua `program`; route chưa đọc `ct`; chưa có mô-đun).
 
-- [ ] **Step 3: Tạo `server/src/worklist/chuongTrinh.ts`:**
+- [x] **Step 3: Tạo `server/src/worklist/chuongTrinh.ts`:**
 
 ```ts
 import { db } from '../db.ts';
@@ -836,7 +836,7 @@ export function tachTheoLop(unit: ChiSo['donVi'], ids: number[], toiDa = 2): str
   > chạy. Nếu `tsc`/node báo lỗi vòng import → chuyển `obligationId`/`parseObligation` sang `chuongTrinh.ts` và
   > `metrics.ts` import lại từ đó (ghi Nhật ký).
 
-- [ ] **Step 4: `metricSet` nhận `program`.** Ở `metrics.ts`:
+- [x] **Step 4: `metricSet` nhận `program`.** Ở `metrics.ts`:
   - import: `import { locTheoChuongTrinh } from './chuongTrinh.ts';` và thêm `type ChuongTrinh` vào dòng import từ shared.
   - Đổi tên hàm hiện có `export function metricSet(` (dòng 345) thành `function metricSetGoc(` (bỏ `export`), giữ nguyên
     thân. Thêm **ngay trước** nó:
@@ -869,11 +869,11 @@ export function metricSet(
   Chữ ký của `metricSetGoc` giữ kiểu `f` cũ (không cần `program`). Mọi nơi khác gọi `metricSet` (branchpulse, routes,
   yThuc…) không đổi.
 
-- [ ] **Step 5: Route.** `server/src/routes/index.ts` ~850-857, trong object truyền cho `metricSet` thêm một dòng
+- [x] **Step 5: Route.** `server/src/routes/index.ts` ~850-857, trong object truyền cho `metricSet` thêm một dòng
   `program: chuongTrinhTuThamSo(qStr(req, 'ct')),` và thêm `chuongTrinhTuThamSo` vào import từ `shared/domain/index.ts`
   (dòng import có sẵn ở đầu file; không có thì thêm một dòng import mới).
-- [ ] **Step 6: Chạy, xanh** (mốc + 7). Phép kiểm cũ về `metricSet`/bảng chi nhánh vẫn ✓.
-- [ ] **Step 7: Commit.** `git commit -am "PR-Pa (3): lọc chương trình Lớp thường/Fast Track một chỗ trong metricSet; /metrics nhận ct"` (nhớ `git add server/src/worklist/chuongTrinh.ts`).
+- [x] **Step 6: Chạy, xanh** (mốc + 7). Phép kiểm cũ về `metricSet`/bảng chi nhánh vẫn ✓.
+- [x] **Step 7: Commit.** `git commit -am "PR-Pa (3): lọc chương trình Lớp thường/Fast Track một chỗ trong metricSet; /metrics nhận ct"` (nhớ `git add server/src/worklist/chuongTrinh.ts`).
 
 ---
 
@@ -2535,3 +2535,10 @@ export function HocVienCanHoTro() {
   `S1 · Chỉ số tin-hieu-qua-han…` vẫn ✓. `REPO` đi lên 4 cấp là đúng vì harness chạy từ `dist-server/`. Rà (Opus 5): đạt;
   chứng minh tập giống hệt (bốn LEFT JOIN bỏ đi đều theo khoá duy nhất, không lọc không nhân dòng). Ghi chú nhỏ để dành:
   phép so tập chưa assert tập admin > 0; `JOIN students s` trông thừa nhưng giữ để ngang hàng `SIGNAL_SELECT`.
+- **Task 3:** commit `2d77aca` + `dcf6cba` (vòng sửa 1). Đỏ hai bậc: `tsc` TS2307 vì thiếu mô-đun (`.catch` không đỡ được lỗi
+  biên dịch) → tạo file → 2 ✗ đúng dự kiến → xanh **738**. Vòng import `chuongTrinh.ts` ↔ `metrics.ts` chạy sạch, không cần
+  phương án B. Rà (Opus 5): 1 quan trọng — phép kiểm "mẫu số cũng được lọc" có thể xanh rỗng → thêm `assert(mau.length > 0)`
+  (mẫu số thật sự có em trên bộ demo), thêm assert "+1 lớp" với `toiDa = 1`, sửa chú thích `metricSetGoc`. Rà lại: đạt.
+  Ghi nhận (giữ theo Q2, không đổi luật): vi phạm / PA xử lý gán chương trình theo lớp HV đang học chứ không theo `class_id`
+  ghi lúc vi phạm; Case theo lớp của lượt Test (cùng `classKind`) chứ không theo `homeClassId` mà bảng chi nhánh dùng —
+  hai chỗ này ghi vào "Chuyển cho PR khác". `tongQuan.tests.ts` tạo dữ liệu thật nên phải luôn là bộ chạy cuối.
