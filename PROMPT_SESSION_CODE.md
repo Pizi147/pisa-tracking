@@ -20,6 +20,7 @@ chút trên giao diện — chọn mức **gần nhất**.
 | **PR-K** | Giao diện Ý thức & Phối hợp | Sonnet 5 · High | Fable 5.1 · High | Không | Làm giao diện theo bố cục đã khoá, chữ đã viết sẵn |
 | **PR-K2** | Sửa 4 lỗi sau rà soát PR-K (`plan.md` 23.3b) | Sonnet 5 · High | Fable 5.1 · Medium | Có — PR riêng | Nhỏ, chỉ giao diện, chạy song song với Z2a |
 | **PR-Z2a** | Hạ tầng Netlify + Turso (Task 0–6b) | **Fable 5.1 · High** *(đổi 22/09)* | Sonnet 5 · High | Không | Thử thật 22/09: lỗi nặng nhất chỉ lộ sau khi gói mã; có 2 cửa dừng + deploy nháp thật → cần phán đoán tốt. Người rà: session planning (Opus) |
+| **PR-HV** | Hồ sơ học viên + Ý thức & Phối hợp theo prototype v3, đổi "biện pháp" → "phương án", bỏ "Hãy" | **Fable 5.1 · High** | Opus 5 · High | Không | Giao diện lớn, thành phần dùng chung hai trang; đổi chữ phải vào cùng lúc. Song song Z2b; Z2c đợi PR này |
 | **PR-Z2b** | An toàn dữ liệu bản chính (Task 6c–9) | **Opus 5 · XHigh** | Fable 5.1 · High | — | Một quyết định sai ở đây có thể chạm **dữ liệu thật** → dùng model mạnh |
 | **PR-Z2c** | Deploy bản chính + đo tốc độ + rà soát (Task 10–11) | **Opus 5 · XHigh** | Fable 5.1 · High | — | Chạm dữ liệu thật + quyết định tối ưu trang chậm. **Người rà phải khác model đã code Z2a/Z2b** |
 | *Rà soát sau mỗi PR* | Dán vào session planning | Opus 5 · High | Opus 5 · XHigh (PR lớn) | — | Người rà khác người code |
@@ -42,12 +43,13 @@ PR-T  → rà soát → merge                       ✅ #39
 PR-K  → rà soát → merge                       ✅ #42
 PR-K2  ┐ chạy SONG SONG được (khác bộ file) → rà soát → merge (K2 trước nếu xong cùng lúc)
 PR-Z2a ┘ (không hỏi token — bạn đã làm TRIEN_KHAI mục 2-5; chỉ dừng nếu cửa 🛑 không đạt)
-PR-Z2b → rà soát → merge
-PR-Z2c → rà soát → merge        (sẽ dừng hỏi bạn: database Turso CHÍNH; TRIEN_KHAI mục 6-7; xin phép đưa lên chính thức)
+PR-Z2b ┐ chạy SONG SONG (PR-HV đóng băng các file của Z2b tới Task 9)
+PR-HV  ┘ → rà soát → merge
+PR-Z2c → rà soát → merge        (CHỈ sau khi PR-Z2b VÀ PR-HV đã merge — chủ sản phẩm chốt 22/09; sẽ dừng hỏi bạn: database Turso CHÍNH; TRIEN_KHAI mục 6-7; xin phép đưa lên chính thức)
 ```
 
 **Không chạy song song** hai PR nào ở trên — mỗi PR dựa vào PR trước đã merge. **Ngoại lệ duy nhất:** PR-K2 và PR-Z2a
-(khác bộ file, đã kiểm 22/09).
+(khác bộ file, đã kiểm 22/09), và PR-Z2b với PR-HV (PR-HV đóng băng file của Z2b tới Task 9).
 Merge xong một PR thì **mở session mới** cho PR sau — đừng dán tiếp vào session cũ.
 
 **Có gộp Z2b + Z2c thành một mạch không? — Không (chốt 22/09).** Cùng model (Opus 5 · XHigh) thì được, nhưng **giữa hai
@@ -222,6 +224,56 @@ KHI XONG, báo tôi bằng tiếng Việt cơ bản: link PR; địa chỉ bản
 
 ---
 
+## PR-HV — Hồ sơ học viên + Ý thức & Phối hợp theo prototype v3  *(chạy song song với PR-Z2b; Z2c đợi PR này)*
+
+**Model:** **Fable 5.1 · High** · **B:** Opus 5 · High (nếu dùng B thì người rà là Fable/Sonnet, không phải Opus)
+**Tách PR:** không — thành phần dùng chung cho cả hồ sơ học viên lẫn hồ sơ lớp, và đổi chữ "biện pháp" → "phương án"
+phải vào cùng lúc trên mọi màn (tách ra thì có lúc màn này ghi "biện pháp", màn kia ghi "phương án" cho cùng một thứ).
+**Để sẵn:** ~4–5 giờ. Session sẽ dừng hỏi bạn: (1) trước khi chạy bản demo trên máy (nếu bạn đang mở demo thì tắt);
+(2) ở Task 9 — chỉ làm tiếp khi **PR-Z2b đã merge**.
+
+```
+Làm PR-HV theo kế hoạch docs/superpowers/plans/2026-09-22-ho-so-hoc-vien-overhaul.md (Task 0 → Task 10).
+Đặc tả đã duyệt: docs/superpowers/specs/2026-09-22-ho-so-hoc-vien-overhaul-design.md.
+Hình của chủ sản phẩm: thiet-ke/tham-khao/ho-so-hoc-vien-v3.html và thiet-ke/tham-khao/ho-so-lop-v3.html.
+Đọc HẾT kế hoạch và đặc tả trước khi gõ lệnh đầu tiên — nhất là "Global Constraints", "Hướng dẫn riêng cho model
+thực thi", "Kiểu dữ liệu thật mà giao diện dùng".
+
+MỤC TIÊU (tiếng thường): hồ sơ học viên thành 3 tab ngay dưới đầu trang (Học thuật · Ý thức & Phối hợp · Hành trình),
+4 ô số mới, thẻ case học thuật gọn kiểu thẻ SOS với mỗi phương án một khối 3 phần, tab Ý thức & Phối hợp của hồ sơ
+học viên và hồ sơ lớp làm theo prototype v3; đổi mọi chữ "biện pháp"/"BP" người dùng thấy thành "phương án"/"PA"
+(màn trộn: "PA xử lý" / "PA học thuật"); bỏ "Hãy" ở đầu câu nhắc.
+
+CHẠY SONG SONG VỚI PR-Z2b (hạ tầng bản chính). TUYỆT ĐỐI không sửa trước Task 9: server/src/db.ts,
+server/src/migrate.ts, server/src/migrate/run.ts, server/src/moiTruong.ts, server/src/platform/khoTep.ts,
+server/src/platform/attachments.ts, server/src/yThuc/measures.ts, server/src/ops/*, server/src/seed/*,
+server/src/tests/banChinh.tests.ts, TRIEN_KHAI.md, package.json. Task 9 là cửa 🛑: chỉ làm khi PR-Z2b ĐÃ merge vào
+main (gộp main vào nhánh trước). Chưa merge → dừng, báo tôi.
+
+Lưu ý: tôi có thể đang mở bản demo bằng npm run dev ở thư mục chính (cổng 4000 và 5173). Trước khi chạy npm run dev
+hoặc bất cứ thứ gì dùng hai cổng đó, DỪNG và nhắn tôi tắt demo — đừng chạy song song.
+
+SKILL SUPERPOWERS (bảng đầy đủ ở "Hướng dẫn riêng cho model thực thi"):
+- using-git-worktrees (nhánh pr-hv-ho-so-hoc-vien) · executing-plans (suốt quá trình, tick từng bước trong file kế hoạch)
+- test-driven-development: mọi hàm thuần ở shared/domain/hoSoHocVien.ts và mọi trường máy chủ mới — đỏ trước, rồi xanh.
+- frontend-design: CHỈ cho quyết định hình ảnh nằm trong khuôn đặc tả (khoảng cách, cỡ chữ, màu từ ui.tsx) — không đổi thiết kế.
+- systematic-debugging: khi đỏ/lỗi chưa rõ. KHÔNG sửa phép kiểm cũ cho xanh (trừ phép bám câu chữ đã đổi — kế hoạch liệt kê).
+- verification-before-completion: ảnh trước/sau ở thiet-ke/anh/pr-hv/ (desktop + 375px, ba vai), dán kết quả lệnh thật.
+- requesting-code-review (một agent rà cả diff) → receiving-code-review, trước khi mở PR.
+- finishing-a-development-branch: PR không draft, KHÔNG tự merge.
+
+BA ĐIỀU TUYỆT ĐỐI:
+1. KHÔNG đổi luật nghiệp vụ, quyền, API hay tên trong mã/database. Chỉ đổi giao diện và chữ hiển thị (+ hai trường
+   chỉ-đọc kế hoạch đã nêu: attachmentCount, headline.next.overdue).
+2. Chữ lấy từ đặc tả §5 và thiet-ke/TU_DIEN_VA_CHU.md — không tự sáng tác. Thiếu câu → ghi TU_DIEN kèm "(PR-HV, chờ duyệt)".
+3. Dữ liệu thật thiếu trường mà thiết kế cần, hoặc phải chọn giữa hai cách → dừng, ghi Nhật ký, hỏi tôi. Đừng đoán.
+
+KHI XONG, báo tôi bằng tiếng Việt cơ bản: link PR; ảnh trước/sau đã lưu ở đâu; vai nào đã bấm thử; số phép kiểm
+trước/sau; Task 9 đã làm chưa; góp ý rà soát đã xử lý; cái gì chưa làm.
+```
+
+---
+
 ## PR-Z2b — An toàn dữ liệu bản chính  *(sau khi PR-Z2a đã merge)*
 
 **Model:** **Opus 5 · XHigh** · **B:** Fable 5.1 · High
@@ -275,7 +327,7 @@ trước/sau; câu trả lời cho "có đường nào ghi đè dữ liệu khô
 
 ---
 
-## PR-Z2c — Deploy bản chính + rà soát độc lập  *(sau khi PR-Z2b đã merge)*
+## PR-Z2c — Deploy bản chính + rà soát độc lập  *(sau khi PR-Z2b VÀ PR-HV đã merge)*
 
 **Model:** **Opus 5 · XHigh** · **B:** Fable 5.1 · High
 **Quan trọng:** chọn model **khác** model đã code PR-Z2a/Z2b (ví dụ Z2a dùng Sonnet, Z2b dùng Opus → Z2c dùng Fable;

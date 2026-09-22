@@ -3,10 +3,10 @@
   "configurations": [
     {
       "name": "dev",
-      "runtimeExecutable": "npm",
+      "runtimeExecutable": "node",
       "runtimeArgs": [
-        "run",
-        "dev"
+        "-e",
+        "process.env.PORT='4000'; require('child_process').spawn('npm', ['run', 'dev'], { stdio: 'inherit', shell: true }).on('exit', (c) => process.exit(c ?? 0))"
       ],
       "port": 5173
     }
