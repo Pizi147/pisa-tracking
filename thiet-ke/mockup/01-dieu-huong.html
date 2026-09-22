@@ -1,0 +1,70 @@
+<style>
+  .pp{--bg:#0d1423;--top:#09111f;--s:#111b2d;--s2:#162238;--line:#293852;--tx:#e8eef7;--mu:#8f9db4;--bl:#84baff;--bb:#173451;--gr:#73d9a5;--yl:#e5c66a;--rd:#ff9a9a;
+      background:var(--bg);color:var(--tx);font:12px Inter,Segoe UI,Arial,sans-serif;border-radius:8px;overflow:hidden;border:1px solid var(--line)}
+  .pp .top{height:42px;background:var(--top);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:6px;padding:0 12px}
+  .pp .brand{font-weight:800;margin-right:10px}.pp .brand span{color:var(--bl)}
+  .pp .nav{padding:6px 10px;border-radius:7px;color:var(--mu);font-weight:700}
+  .pp .nav.on{background:var(--bb);color:var(--bl)}
+  .pp .sp{flex:1}.pp .inp{border:1px solid var(--line);border-radius:7px;padding:5px 9px;color:var(--mu);width:170px}
+  .pp .chip{border:1px solid var(--line);border-radius:7px;padding:4px 8px;color:var(--tx)}
+  .pp .b{display:inline-block;padding:1px 6px;border-radius:999px;background:#3b2126;color:var(--rd);font-size:10px;font-weight:800;margin-left:4px}
+  .pp .body{padding:12px;display:flex;gap:10px}
+  .pp .side{width:170px;background:var(--s);border-right:1px solid var(--line);padding:10px 8px}
+  .pp .si{padding:6px 8px;border-radius:6px;color:var(--mu);font-weight:700}.pp .si.on{background:var(--bb);color:var(--bl)}
+  .pp .sub{padding:4px 8px 4px 20px;color:var(--mu);font-size:11px}
+  .pp .card{flex:1;background:var(--s);border:1px solid var(--line);border-radius:9px;padding:10px;color:var(--mu)}
+  .pp .tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:8px}
+  .pp .tab{padding:6px 10px;color:var(--mu);font-weight:800;border-bottom:3px solid transparent}.pp .tab.on{color:var(--tx);border-color:var(--bl)}
+  .pp .mob{width:230px;margin:0 auto;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--bg)}
+  .pp .bar{display:flex;border-top:1px solid var(--line);background:var(--top)}
+  .pp .bi{flex:1;text-align:center;padding:7px 0;font-size:10px;color:var(--mu)}.pp .bi.on{color:var(--bl);font-weight:800}
+  table.m{width:100%;border-collapse:collapse;font-size:12px}table.m td,table.m th{border:1px solid #d0d7e2;padding:6px;vertical-align:top;text-align:left}
+</style>
+
+<h2>1 · Thanh điều hướng 4 khu vực</h2>
+<p class="subtitle">Đây là khung chung cho MỌI trang sắp làm. Chọn một kiểu (bấm vào A hoặc B), rồi trả lời trong khung chat. Nội dung từng khu vực theo vai ở bảng cuối trang.</p>
+
+<div class="options">
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Thanh ngang trên cùng (khuyến nghị)</h3>
+      <p>Giữ kiểu hiện tại, thêm khu vực <b>Test</b>. Mỗi khu vực có tab ngay dưới tiêu đề trang. Điện thoại: thanh 4 nút ở đáy màn.</p>
+      <div class="pp" style="margin-top:8px">
+        <div class="top"><div class="brand">PISA <span>Progress</span></div>
+          <div class="nav">Tổng quan</div><div class="nav on">Học viên &amp; Lớp</div><div class="nav">Test <span class="b">12</span></div><div class="nav">Công việc <span class="b">5</span></div>
+          <div class="sp"></div><div class="inp">Tìm học viên, lớp, GV…</div><div class="chip">🔔 3</div><div class="chip">Trần Ngọc Hà</div></div>
+        <div class="body"><div class="card"><div class="tabs"><div class="tab on">Học viên</div><div class="tab">Lớp</div></div>Nội dung trang — rộng hết màn, không mất chỗ cho thanh bên.</div></div>
+      </div>
+      <div class="pp mob" style="margin-top:8px"><div style="padding:10px;color:#8f9db4;height:70px">Nội dung trang (điện thoại)</div>
+        <div class="bar"><div class="bi">Tổng quan</div><div class="bi on">Học viên</div><div class="bi">Test ⁽¹²⁾</div><div class="bi">Công việc</div></div></div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Thanh bên trái có mục con</h3>
+      <p>4 khu vực xếp dọc, mục con hiện sẵn (Tổng quan › Phân tích; Test › Chấm điểm · Lịch · Kế hoạch). Thấy hết đường đi, nhưng mất ~170px chiều ngang — bảng điểm nhiều cột sẽ chật hơn. Điện thoại: menu ☰ trượt ra.</p>
+      <div class="pp" style="margin-top:8px">
+        <div class="top"><div class="brand">PISA <span>Progress</span></div><div class="sp"></div><div class="inp">Tìm học viên, lớp, GV…</div><div class="chip">🔔 3</div></div>
+        <div style="display:flex"><div class="side">
+          <div class="si">Tổng quan</div><div class="sub">Phân tích</div>
+          <div class="si on">Học viên &amp; Lớp</div><div class="sub">Học viên</div><div class="sub">Lớp</div>
+          <div class="si">Test <span class="b">12</span></div><div class="sub">Chấm điểm</div><div class="sub">Lịch Test</div><div class="sub">Kế hoạch Test</div>
+          <div class="si">Công việc <span class="b">5</span></div></div>
+          <div class="body" style="flex:1"><div class="card">Nội dung trang — hẹp hơn A.</div></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<h3 style="margin-top:22px">Mỗi khu vực chứa gì (giống nhau ở cả A và B)</h3>
+<table class="m">
+  <tr><th>Khu vực</th><th>Quản lý / Quản trị thấy</th><th>Giáo viên (GVCN, GVBM) thấy</th></tr>
+  <tr><td><b>Tổng quan</b></td><td>Tab <b>Tổng quan</b> (4 ô số, Cần xử lý, Điểm đáng chú ý, bảng chi nhánh) · tab <b>Phân tích</b> (Vấn đề HV · Kết quả hỗ trợ · Theo tuần · Ý thức &amp; Phối hợp)</td><td>Việc cần làm của tôi (5–8 dòng) + Học viên cần hỗ trợ. Không có bảng chi nhánh, không có tab Phân tích</td></tr>
+  <tr><td><b>Học viên &amp; Lớp</b></td><td>Danh sách học viên · danh sách lớp → hồ sơ lớp 4 tab · hồ sơ học viên 3 tab</td><td>Như Quản lý nhưng chỉ lớp/học viên mình dạy</td></tr>
+  <tr><td><b>Test</b> (mới)</td><td>Lịch Test toàn chi nhánh · Kế hoạch Test · bài chờ chấm của mọi lớp</td><td><b>Bài của tôi cần chấm</b> (mở thẳng lưới chấm) · lịch Test lớp mình</td></tr>
+  <tr><td><b>Công việc</b></td><td>3 tab: Hỗ trợ học viên · Vận hành · Báo cáo đơn vị</td><td>Hỗ trợ học viên (việc của tôi) · Vận hành nếu được giao</td></tr>
+</table>
+<p class="subtitle" style="margin-top:8px">Số đỏ trên nút = việc đang chờ (bài chưa chấm, việc quá hạn). Mục không có quyền thì <b>ẩn hẳn</b>, không hiện ô khoá.</p>

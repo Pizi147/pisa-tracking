@@ -14,3 +14,6 @@ data/*.bak
 
 # Local Netlify folder
 .netlify
+
+# Mockup tạm của buổi brainstorm (bản duyệt đã chép sang thiet-ke/mockup/)
+.superpowers/
