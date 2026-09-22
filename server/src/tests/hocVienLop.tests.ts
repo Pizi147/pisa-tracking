@@ -65,4 +65,14 @@ export async function runHocVienLopTests(t: YThucTestKit) {
     assert(/chưa có hạn/.test(d.deadlineView({ kind: 'nhap-diem', due: '2026-02-31', today: '2026-09-14' }).text),
       'Hạn là ngày không tồn tại = chưa có hạn');
   });
+
+  // ------------------------------------------------------------------ Task 2 · nợ PR-O
+
+  check('PR-Qa · Nợ PR-O: tiêu đề tab trình duyệt "PISA Progress"; thanh dưới điện thoại z-30', () => {
+    const html = fsMod.readFileSync(pathMod.join(REPO, 'index.html'), 'utf8');
+    assert(/<title>PISA Progress<\/title>/.test(html) && !/Bản demo nội bộ/.test(html), 'index.html còn tiêu đề cũ');
+    const app = fsMod.readFileSync(pathMod.join(REPO, 'web/src/App.tsx'), 'utf8');
+    const dong = app.split('\n').find((l) => l.includes('md:hidden fixed bottom-0'));
+    assert(!!dong && /\bz-30\b/.test(dong) && !/\bz-40\b/.test(dong), `Thanh dưới: ${dong}`);
+  });
 }

@@ -427,7 +427,7 @@ git commit -m "PR-Qa (1): G-6 ngày theo giờ Việt Nam, từ chối ngày kh�
 - Modify: `web/src/App.tsx:126-127`
 - Test: `server/src/tests/hocVienLop.tests.ts`
 
-- [ ] **Step 1: Phép kiểm đỏ.** Nối vào cuối thân `runHocVienLopTests`:
+- [x] **Step 1: Phép kiểm đỏ.** Nối vào cuối thân `runHocVienLopTests`:
 
 ```ts
   // ------------------------------------------------------------------ Task 2 · nợ PR-O
@@ -441,10 +441,10 @@ git commit -m "PR-Qa (1): G-6 ngày theo giờ Việt Nam, từ chối ngày kh�
   });
 ```
 
-- [ ] **Step 2:** `npm test` → phép kiểm này ✗.
-- [ ] **Step 3:** `index.html:7` → `    <title>PISA Progress</title>` (bắt buộc trước deploy: tab trình duyệt của bản chính không được ghi
+- [x] **Step 2:** `npm test` → phép kiểm này ✗.
+- [x] **Step 3:** `index.html:7` → `    <title>PISA Progress</title>` (bắt buộc trước deploy: tab trình duyệt của bản chính không được ghi
   "Bản demo nội bộ").
-- [ ] **Step 4:** `web/src/App.tsx:126-127` — chú thích và lớp:
+- [x] **Step 4:** `web/src/App.tsx:126-127` — chú thích và lớp:
 
 ```tsx
       {/* Điện thoại: thanh dưới 4 nút (G-11). z-30 — dưới menu tài khoản/thông báo ở đầu trang (z-40), Drawer/Modal (z-50),
@@ -452,8 +452,8 @@ git commit -m "PR-Qa (1): G-6 ngày theo giờ Việt Nam, từ chối ngày kh�
       <nav aria-label="Điều hướng chính" className="md:hidden fixed bottom-0 inset-x-0 z-30 flex border-t bg-[color:var(--surface)]"
 ```
   (dòng `style=…` giữ nguyên; không đổi gì khác ở `App.tsx`.)
-- [ ] **Step 5:** `npm run check` xanh (N+3).
-- [ ] **Step 6: Commit.**
+- [x] **Step 5:** `npm run check` xanh (N+3).
+- [x] **Step 6: Commit.**
 
 ```bash
 git add index.html web/src/App.tsx server/src/tests/hocVienLop.tests.ts

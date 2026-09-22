@@ -123,8 +123,9 @@ export default function App() {
         </Routes>
       </main>
 
-      {/* Điện thoại: thanh dưới 4 nút (G-11). z-40 — dưới Drawer/Modal (z-50) và Toast (z-[100]). */}
-      <nav aria-label="Điều hướng chính" className="md:hidden fixed bottom-0 inset-x-0 z-40 flex border-t bg-[color:var(--surface)]"
+      {/* Điện thoại: thanh dưới 4 nút (G-11). z-30 — dưới menu tài khoản/thông báo ở đầu trang (z-40), Drawer/Modal (z-50),
+          menu ⋯ của dòng (z-[60]) và Toast (z-[100]). */}
+      <nav aria-label="Điều hướng chính" className="md:hidden fixed bottom-0 inset-x-0 z-30 flex border-t bg-[color:var(--surface)]"
         style={{ borderColor: 'var(--line)', paddingBottom: 'env(safe-area-inset-bottom)' }}>
         {items.map((m) => <NutDay key={m.key} muc={m} active={dangO === m.key} />)}
       </nav>
