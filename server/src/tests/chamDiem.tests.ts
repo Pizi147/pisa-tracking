@@ -400,6 +400,12 @@ export async function runChamDiemTests(t: YThucTestKit) {
     for (const d of dong.filter((x: any) => x.mode === 'ielts_band')) {
       assert(/[?&]periodId=\d+/.test(d.href), `Dòng FT phải mang periodId: ${d.href}`);
     }
+    /* Bấm thử A2: dòng nào cũng mang `kn` = môn còn nợ đầu tiên theo thứ tự L · R · W · S — kể cả dòng nhiều môn. */
+    for (const d of dong) {
+      const kn = new URLSearchParams(d.href.split('?')[1] ?? '').get('kn');
+      assert(kn === d.kyNang[0], `Dòng ${d.key} phải mang kn=${d.kyNang[0]}: ${d.href}`);
+    }
+    assert(dong.some((d: any) => d.kyNang.length > 1), 'Seed: phải có dòng nhiều môn để kiểm kn');
     assert(r.tong === dong.reduce((n: number, d: any) => n + d.conBai, 0), 'Tổng = cộng các dòng');
   });
 

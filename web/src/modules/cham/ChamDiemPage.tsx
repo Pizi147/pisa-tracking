@@ -47,7 +47,8 @@ function useManHinhHep() {
  * "Xem dạng bảng" vẫn mở được lưới trên điện thoại (cuộn ngang TRONG THẺ, G-11); "Chấm từng kỹ năng" để quay lại.
  *
  * Đường dẫn mang ngữ cảnh (Q12): `?periodId=` (tuần của lưới FT), `?kind=` (Giữa khoá / Cuối khoá của lớp thường),
- * `?kn=` (kỹ năng — cuộn tới và đặt con trỏ vào em đầu tiên chưa có điểm của cột đó), `?hv=` (một học viên).
+ * `?kn=` (kỹ năng — cuộn tới và đặt con trỏ vào em đầu tiên chưa có điểm của cột đó), `?hv=` (một học viên). Không có
+ * `kn` lẫn `hv` thì con trỏ đứng ở ô trống đầu tiên mình được sửa.
  */
 export default function ChamDiemPage() {
   const { classId } = useParams();
@@ -92,12 +93,16 @@ export default function ChamDiemPage() {
     [data?.thuong, kindChon],
   );
 
-  /* Q12 / Task 7 Step 6 — cuộn tới ô trống đầu tiên của cột `kn` (hoặc dòng `hv`) MỘT LẦN cho mỗi ngữ cảnh mở trang. */
+  /*
+   * Q12 / Task 7 Step 6 — cuộn tới ô trống đầu tiên của cột `kn` (hoặc dòng `hv`) MỘT LẦN cho mỗi ngữ cảnh mở trang.
+   * Không có cả hai (gõ thẳng đường dẫn) thì đặt con trỏ vào ô trống ĐẦU TIÊN mình sửa được, môn nào cũng được —
+   * `data-trong` chỉ gắn cho ô còn trống VÀ mình được sửa, nên ô trống đầu tiên trên trang là đúng ô cần chấm.
+   */
   const khung = useRef<HTMLDivElement>(null);
   const daCuon = useRef<string | null>(null);
   const khoaCuon = `${classId}|${periodId}|${kindChon}|${kn}|${hv}`;
   useEffect(() => {
-    if (!data || (!kn && hv === null) || daCuon.current === khoaCuon) return;
+    if (!data || daCuon.current === khoaCuon) return;
     const id = requestAnimationFrame(() => {
       daCuon.current = khoaCuon;
       const root = khung.current;
@@ -109,7 +114,7 @@ export default function ChamDiemPage() {
         ? tim(`${hang}[data-kn="${kn}"][data-trong]`)
           ?? (kn === 'writing' ? tim(`${hang}[data-kn^="writing"][data-trong]`) : null)
           ?? (hang ? tim(`[data-kn="${kn}"][data-trong]`) : null)
-        : tim(`[data-hv="${hv}"]`);
+        : hv !== null ? tim(`[data-hv="${hv}"]`) : tim('[data-trong]');
       if (!o) return;
       o.scrollIntoView({ block: 'center', inline: 'nearest' });
       const f = o.querySelector<HTMLElement>('input:not([readonly]):not([disabled]), button:not([disabled]), input');

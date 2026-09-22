@@ -381,7 +381,7 @@ function DongThuong({ row, rowIndex, sheet, active, tongCot, dien, onReload, reg
               }}
             />
             {quaHan && (
-              <div className="text-[10px] text-slate-500 leading-tight mt-0.5"
+              <div className="text-[10px] text-slate-500 leading-none mt-0.5"
                 title={`${sheet.skillLabels[k] ?? skillLabel(k)}: hạn chấm ${ngay(s!.deadline, homNay)} đã qua`}>{quaHan}</div>
             )}
           </td>

@@ -629,8 +629,34 @@ export function SuaDiemCoLyDo({ tieuDe, moTaCu, children, onLuu, onDong, loiGiaT
   );
 }
 
-/** Tỉ lệ để HIỆN (tooltip). Làm tròn chỉ để hiện — xét đạt/chưa đạt đã làm ở máy chủ trên số chính xác. */
-const phanTram = (r: number | null | undefined) => (r === null || r === undefined ? null : `${Math.round(r * 1000) / 10}%`);
+/**
+ * Tỉ lệ để HIỆN, viết kiểu Việt: dấu phẩy thập phân ("82,5%"). Làm tròn chỉ để hiện — xét đạt/chưa đạt đã làm ở máy
+ * chủ trên số chính xác.
+ */
+const phanTram = (r: number | null | undefined) =>
+  (r === null || r === undefined ? null : `${String(Math.round(r * 1000) / 10).replace('.', ',')}%`);
+
+/** "Đạt · 82,5%" / "Chưa đạt · 67,5%" — chữ kết quả đứng trước (bấm thử C10). Chưa có kết quả thì null. */
+export function datPhanTram(ketQua: 'pass' | 'fail' | 'missing' | undefined, tiLe: number | null | undefined): string | null {
+  const chu = ketQua === 'pass' ? 'Đạt' : ketQua === 'fail' ? 'Chưa đạt' : null;
+  const pt = phanTram(tiLe);
+  return chu && pt ? `${chu} · ${pt}` : null;
+}
+
+/**
+ * DÒNG PHỤ DUY NHẤT dưới hai số của ô đã có điểm trên LƯỚI (G-3). Ô chưa có điểm không bao giờ có dòng này, nên không
+ * tranh chỗ với "Quá hạn dd/mm" (chỉ hiện khi CHƯA có điểm). `leading-none` để ô hai dòng vẫn vừa hàng cao 56px — mọi
+ * dòng của lưới cao bằng nhau (G-2). Màn điện thoại (`lon`) không vẽ dòng này dưới ô: câu đó nằm ở dòng phụ dưới tên em.
+ */
+function DongDatPhanTram({ ketQua, tiLe }: { ketQua?: 'pass' | 'fail' | 'missing'; tiLe?: number | null }) {
+  const chu = datPhanTram(ketQua, tiLe);
+  if (!chu) return null;
+  return (
+    <span className={`block text-[10px] leading-none mt-0.5 whitespace-nowrap tabular-nums ${ketQua === 'fail' ? 'text-rose-300/80' : 'text-slate-500'}`}>
+      {chu}
+    </span>
+  );
+}
 const SO_NGUYEN = /^\d+$/;
 
 /**
@@ -764,9 +790,10 @@ export function ODiemThuong({
     const khongDay = 'Bạn không được phân công kỹ năng này.';
     if (coDiem) {
       return (
-        <span className="inline-flex items-center justify-center tabular-nums text-slate-400"
-          title={[khongDay, pt && ketQuaChu ? `${pt} · ${ketQuaChu}.` : '', lamBu].filter(Boolean).join(' ')}>
+        <span className="inline-flex flex-col items-center justify-center tabular-nums text-slate-400"
+          title={[khongDay, pt && ketQuaChu ? `${ketQuaChu} · ${pt}.` : '', lamBu].filter(Boolean).join(' ')}>
           <span className={cell.ketQua === 'fail' ? 'text-rose-300' : ''}>{o.hien || `${cell.diem}/?`}</span>
+          {!lon && <DongDatPhanTram ketQua={cell.ketQua} tiLe={cell.tiLe} />}
         </span>
       );
     }
@@ -790,48 +817,51 @@ export function ODiemThuong({
       if ((d === '' ? null : Number(d)) === cell.diem && (t === '' ? null : Number(t)) === cell.tong) return 'Chưa đổi gì.';
       return null;
     })();
-    const title = [pt && ketQuaChu ? `${pt} · ${ketQuaChu}.` : '', 'Đã có điểm — bấm để sửa, phải ghi lý do.', lamBu]
+    const title = [pt && ketQuaChu ? `${ketQuaChu} · ${pt}.` : '', 'Đã có điểm — bấm để sửa, phải ghi lý do.', lamBu]
       .filter(Boolean).join(' ');
     return (
-      <span className="inline-flex items-center justify-center gap-1" title={title}>
-        <input ref={inputRef} readOnly className={`${oSo} cursor-pointer ${cell.ketQua === 'fail' ? 'text-rose-300' : ''}`}
-          value={String(cell.diem)} aria-label={`${tenMon} — số câu đúng (đã có điểm, sửa phải ghi lý do)`}
-          onClick={() => mo(String(cell.diem))}
-          onKeyDown={(e) => {
-            if (/^[0-9]$/.test(e.key)) { e.preventDefault(); mo(e.key); return; }
-            if (e.key === 'Backspace' || e.key === 'Delete') { e.preventDefault(); mo(''); return; }
-            if (e.key === 'F2') { e.preventDefault(); mo(String(cell.diem)); return; }
-            onKeyDown?.(e);
-          }} />
-        <span className="text-slate-600">/</span>
-        <input readOnly tabIndex={-1} className={`${oSo} cursor-pointer ${o.vienVang ? 'border-amber-400/80' : ''}`}
-          value={tongDaLuu()} placeholder="?" aria-label={`${tenMon} — tổng số câu`}
-          title={o.vienVang ? `Khác tổng của cột (${tongCot}) — em làm đề khác.` : undefined}
-          onClick={() => mo(String(cell.diem))} />
-        {sua && (
-          <SuaDiemCoLyDo
-            tieuDe={`Sửa ${tenMon}${tenHv ? ` · ${tenHv}` : ''}`}
-            moTaCu={`Đang lưu: ${cell.diem}/${cell.tong ?? '?'}${pt ? ` (${pt})` : ''}`}
-            loiGiaTri={loiGiaTri}
-            onDong={() => setSua(null)}
-            onLuu={async (lyDo) => {
-              const d = sua.diem.trim(); const t = sua.tong.trim();
-              const ok = await onSave({ score: d === '' ? null : Number(d), total: t === '' ? null : Number(t), lyDo }, { nem: true });
-              if (ok) setSua(null);
-              return ok;
-            }}
-          >
-            <div className="flex items-center gap-1.5">
-              <span className="text-[11px] text-slate-500 w-20">Giá trị mới</span>
-              <input className={oSo} inputMode="numeric" value={sua.diem} aria-label={`${tenMon} — số câu đúng mới`}
-                onChange={(e) => setSua({ ...sua, diem: e.target.value })} />
-              <span className="text-slate-600">/</span>
-              <input className={oSo} inputMode="numeric" value={sua.tong} aria-label={`${tenMon} — tổng số câu mới`}
-                onChange={(e) => setSua({ ...sua, tong: e.target.value })} />
-              {sua.diem.trim() === '' && <span className="text-[11px] text-slate-500">xoá điểm</span>}
-            </div>
-          </SuaDiemCoLyDo>
-        )}
+      <span className="inline-flex flex-col items-center justify-center" title={title}>
+        <span className="inline-flex items-center justify-center gap-1">
+          <input ref={inputRef} readOnly className={`${oSo} cursor-pointer ${cell.ketQua === 'fail' ? 'text-rose-300' : ''}`}
+            value={String(cell.diem)} aria-label={`${tenMon} — số câu đúng (đã có điểm, sửa phải ghi lý do)`}
+            onClick={() => mo(String(cell.diem))}
+            onKeyDown={(e) => {
+              if (/^[0-9]$/.test(e.key)) { e.preventDefault(); mo(e.key); return; }
+              if (e.key === 'Backspace' || e.key === 'Delete') { e.preventDefault(); mo(''); return; }
+              if (e.key === 'F2') { e.preventDefault(); mo(String(cell.diem)); return; }
+              onKeyDown?.(e);
+            }} />
+          <span className="text-slate-600">/</span>
+          <input readOnly tabIndex={-1} className={`${oSo} cursor-pointer ${o.vienVang ? 'border-amber-400/80' : ''}`}
+            value={tongDaLuu()} placeholder="?" aria-label={`${tenMon} — tổng số câu`}
+            title={o.vienVang ? `Khác tổng của cột (${tongCot}) — em làm đề khác.` : undefined}
+            onClick={() => mo(String(cell.diem))} />
+          {sua && (
+            <SuaDiemCoLyDo
+              tieuDe={`Sửa ${tenMon}${tenHv ? ` · ${tenHv}` : ''}`}
+              moTaCu={`Đang lưu: ${cell.diem}/${cell.tong ?? '?'}${pt ? ` (${pt})` : ''}`}
+              loiGiaTri={loiGiaTri}
+              onDong={() => setSua(null)}
+              onLuu={async (lyDo) => {
+                const d = sua.diem.trim(); const t = sua.tong.trim();
+                const ok = await onSave({ score: d === '' ? null : Number(d), total: t === '' ? null : Number(t), lyDo }, { nem: true });
+                if (ok) setSua(null);
+                return ok;
+              }}
+            >
+              <div className="flex items-center gap-1.5">
+                <span className="text-[11px] text-slate-500 w-20">Giá trị mới</span>
+                <input className={oSo} inputMode="numeric" value={sua.diem} aria-label={`${tenMon} — số câu đúng mới`}
+                  onChange={(e) => setSua({ ...sua, diem: e.target.value })} />
+                <span className="text-slate-600">/</span>
+                <input className={oSo} inputMode="numeric" value={sua.tong} aria-label={`${tenMon} — tổng số câu mới`}
+                  onChange={(e) => setSua({ ...sua, tong: e.target.value })} />
+                {sua.diem.trim() === '' && <span className="text-[11px] text-slate-500">xoá điểm</span>}
+              </div>
+            </SuaDiemCoLyDo>
+          )}
+        </span>
+        {!lon && <DongDatPhanTram ketQua={cell.ketQua} tiLe={cell.tiLe} />}
       </span>
     );
   }

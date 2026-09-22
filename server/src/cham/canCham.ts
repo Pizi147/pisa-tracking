@@ -241,9 +241,11 @@ export function canChamList(
     rest.kyNang = [...d.kyNang].sort(theoThuTu);
     const qs = new URLSearchParams();
     if (d.kind !== 'mock') qs.set('kind', d.kind);
-    /* Q12: FT mở lưới đúng tuần của ô còn nợ gấp nhất; một môn thì mở thẳng môn đó. */
+    /* Q12: FT mở lưới đúng tuần của ô còn nợ gấp nhất. Luôn kèm `kn` = môn còn nợ ĐẦU TIÊN theo thứ tự chương trình
+       (dòng Cần chấm đã lọc theo phạm vi người xem) để con trỏ đặt sẵn vào ô trống đầu tiên của môn đó — kể cả GV dạy
+       nhiều môn của cùng lớp. */
     if (d.mode === 'ielts_band' && _periodId) qs.set('periodId', String(_periodId));
-    if (rest.kyNang.length === 1) qs.set('kn', rest.kyNang[0]);
+    if (rest.kyNang.length) qs.set('kn', rest.kyNang[0]);
     const q = qs.toString();
     return {
       ...rest,

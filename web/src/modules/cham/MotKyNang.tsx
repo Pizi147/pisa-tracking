@@ -14,7 +14,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ENTRY_SKILLS } from '@shared/domain/index.ts';
 import { fmtBand, skillLabel, skillShort } from '../../lib/format.ts';
-import { CriteriaButton, ODiemThuong, RawScoreInput, useSaveScore, type Cell } from '../fasttrack/ScoreEntry.tsx';
+import { CriteriaButton, ODiemThuong, RawScoreInput, datPhanTram, useSaveScore, type Cell } from '../fasttrack/ScoreEntry.tsx';
 import { DauLuu, LuoiFT, khopKn, oTrongFt, type FtSheet } from './LuoiFT.tsx';
 import {
   LuoiThuong, ketQuaCua, lichCua, oThuong, tongPhoBien, useLuuThuong, type ThuongSheet,
@@ -90,9 +90,9 @@ function useDiChuyen() {
 }
 
 /** Một dòng học viên: tên + TỐI ĐA một dòng phụ ngắn bên trái (G-3), một ô to bên phải. */
-function DongHv({ studentId, active, ten, href, phu, phuTitle, luu, children }: {
+function DongHv({ studentId, active, ten, href, phu, phuTitle, phuDo = false, luu, children }: {
   studentId: number; active: boolean; ten: string; href: string;
-  phu: string; phuTitle?: string; luu: React.ReactNode; children: React.ReactNode;
+  phu: string; phuTitle?: string; phuDo?: boolean; luu: React.ReactNode; children: React.ReactNode;
 }) {
   return (
     <li data-hv={studentId}
@@ -101,7 +101,7 @@ function DongHv({ studentId, active, ten, href, phu, phuTitle, luu, children }: 
       <div className="min-w-0 flex-1">
         <Link className="link block truncate" to={href} title={ten}>{ten}</Link>
         <div className="flex items-center gap-1.5 text-[11px] text-slate-500 min-w-0 tabular-nums">
-          <span className="truncate" title={phuTitle}>{phu}</span>
+          <span className={`truncate ${phuDo ? 'text-rose-300/80' : ''}`} title={phuTitle}>{phu}</span>
           {luu}
         </div>
       </div>
@@ -240,15 +240,18 @@ function DongThuongMot({ row, k, sheet, tongCot, active, onReload, inputRef, onK
   const tenMon = sheet.skillLabels[k] ?? skillLabel(k);
   /*
    * MỘT dòng phụ (G-3): ô mang "-" nói tuần mới (Q17: lớp thường không đếm ngược) → quá hạn chấm → chưa tới tuần thi
-   * → mã học viên.
+   * → kết quả của ô đã có điểm ("Đạt · 82,5%" — trên lưới câu này nằm dưới hai số; ở đây nằm dưới tên để mọi dòng cao
+   * bằng nhau) → mã học viên.
    */
+  const ketQua = datPhanTram(cell.ketQua, cell.tiLe);
   const phu = (cell.dau && cell.diem === null && cell.tuanHienTai ? `Đã dời sang ${cell.tuanHienTai}` : null)
     ?? quaHan
     ?? (cell.chuaToiTuan && cell.tuanHienTai ? `Thi ${cell.tuanHienTai}` : null)
+    ?? ketQua
     ?? row.studentCode;
   return (
     <DongHv studentId={row.studentId} active={active} ten={row.studentName} href={`/hoc-vien/${row.studentId}`}
-      phu={phu} phuTitle={`${tenMon} · ${row.studentCode}`}
+      phu={phu} phuTitle={`${tenMon} · ${row.studentCode}`} phuDo={phu === ketQua && cell.ketQua === 'fail'}
       luu={<DauLuu status={status} error={lastError} onRetry={retry} />}>
       <div className="shrink-0 flex justify-end" data-kn={k} data-trong={trong ? '1' : undefined}>
         {dung || !s ? (

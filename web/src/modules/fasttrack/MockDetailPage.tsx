@@ -53,6 +53,8 @@ type Detail = {
 type ScoreHistoryRow = {
   id: number; kind: 'edit' | 'override' | 'no_show'; skill: string; skillLabel: string;
   before: string; after: string; actorName: string | null; createdAt: string;
+  /** RB-5 — lý do sửa điểm đã nhập (lần nhập đầu không có). */
+  lyDo: string | null;
 };
 
 type SkillRow = {
@@ -576,7 +578,7 @@ function HistoryCard({ d, open, onToggle }: { d: Detail; open: boolean; onToggle
     ...d.scoreHistory.map((h) => ({
       key: `c${h.id}`, at: h.createdAt, who: h.actorName,
       what: `${h.kind === 'override' ? 'Hiệu chỉnh điểm' : h.kind === 'no_show' ? 'Dấu "-"' : 'Sửa điểm'} · ${h.skillLabel}`,
-      change: `${h.before} → ${h.after}`, reason: null as string | null,
+      change: `${h.before} → ${h.after}`, reason: h.lyDo ?? null,
     })),
   ].sort((a, b) => (a.at < b.at ? 1 : a.at > b.at ? -1 : 0));
 
@@ -595,7 +597,12 @@ function HistoryCard({ d, open, onToggle }: { d: Detail; open: boolean; onToggle
                 <span className="text-slate-600">{h.at ? fmtDateTime(h.at) : '—'} · </span>
                 <span className="text-slate-200">{h.what}</span>
                 {h.change && <> · {h.change}</>}
-                {h.reason && <> · {h.reason}</>}
+                {/* Lý do trên MỘT dòng (G-3): dài thì cắt, rê chuột đọc đủ. */}
+                {h.reason && (
+                  <> · <span className="inline-block max-w-full sm:max-w-[24rem] truncate align-bottom" title={`Lý do: ${h.reason}`}>
+                    Lý do: {h.reason}
+                  </span></>
+                )}
                 <span className="text-slate-600"> · {h.who ?? '—'}</span>
               </li>
             ))}
