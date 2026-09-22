@@ -4,13 +4,14 @@ import { demoToday } from '../demoConfig.ts';
 import { scopeFor, type Principal } from '../permissions.ts';
 import { badRequest, forbidden, HttpError, notFound } from '../util.ts';
 import { listCases } from '../cases/cases.ts';
-import { listSignals, overdueNormalSignalIds } from '../cases/signals.ts';
+import { labelOf, listSignals, overdueNormalSignalIds } from '../cases/signals.ts';
 import { NOT_UNCONFIRMED_PRESET, awaitingCauseCaseIds } from '../cases/sosState.ts';
 import { improvementRate, planOutcomes } from '../cases/effectiveness.ts';
 import { doPhuDanhGia, hvDuoiKyVongMon, hvSosHienTai } from './danhGia.ts';
 import { isYThucMetric, yThucMetric, YTHUC_METRIC_IDS } from '../yThuc/thongKe.ts';
 import { PHOI_HOP_METRIC_IDS, isPhoiHopMetric, phoiHopMetric } from '../yThuc/phoiHop.ts';
 import { locTheoChuongTrinh } from './chuongTrinh.ts';
+import { scoreDebtCells } from './scoreDebt.ts';
 
 /**
  * TẬP ID CỦA TỪNG CHỈ SỐ — nơi duy nhất sinh ra cả CON SỐ lẫn DANH SÁCH KHI BẤM VÀO (hợp đồng số liệu).
@@ -90,7 +91,7 @@ export function rowsFor(unit: ChiSo['donVi'], ids: number[]): MetricRow[] {
       ).all(...chunk) as any[]) {
         byId.set(r.id, { id: r.id, title: r.title, sub: [r.full_name, r.student_code].filter(Boolean).join(' · '), href: `/hoc-thuat/case/${r.case_id}` });
       }
-    } else if (unit === 'dot-test') {
+    } else if (unit === 'dot-test' || unit === 'bai-thi') {
       /* Lượt Test: FT mở hồ sơ Test; bài của lớp Normal mở bảng điểm thường của lớp. */
       for (const r of conn.prepare(
         `SELECT a.id, a.kind, a.attempt_no, a.class_id, s.full_name, s.student_code, c.code AS class_code, pr.code AS period_code
@@ -159,7 +160,7 @@ export function rowsFor(unit: ChiSo['donVi'], ids: number[]): MetricRow[] {
         `SELECT sg.id, sg.student_id, sg.skill, sg.verify_due, s.full_name, s.student_code
            FROM case_signals sg JOIN students s ON s.id = sg.student_id WHERE sg.id IN (${ph})`,
       ).all(...chunk) as any[]) {
-        byId.set(r.id, { id: r.id, title: `Tín hiệu cần xác minh · ${r.skill ?? 'chưa rõ kỹ năng'}`, sub: [r.full_name, r.student_code, `hạn ${String(r.verify_due).slice(8, 10)}/${String(r.verify_due).slice(5, 7)}`].filter(Boolean).join(' · '), href: `/hoc-vien/${r.student_id}` });
+        byId.set(r.id, { id: r.id, title: `Tín hiệu cần xác minh · ${labelOf(r)}`, sub: [r.full_name, r.student_code, `hạn ${String(r.verify_due).slice(8, 10)}/${String(r.verify_due).slice(5, 7)}`].filter(Boolean).join(' · '), href: `/hoc-vien/${r.student_id}` });
       }
     }
   }
@@ -191,6 +192,7 @@ export function metricResponse(r: MetricResult, withRows: boolean) {
 /** Các chỉ số ĐÃ CÓ hàm tập ID. Chỉ số khác trong sổ chưa dùng được. */
 export const LISTED_METRICS: readonly string[] = [
   'hv-sos-hien-tai', 'hv-duoi-ky-vong-mon', 'hv-co-case-mo', 'case-mo', 'tin-hieu-cho-xac-minh', 'tin-hieu-qua-han',
+  'case-xac-dinh-nguyen-nhan-qua-han', 'bai-qua-han-nhap-diem', 'case-chua-co-nguoi-phu-trach',
   'case-cho-xac-dinh-nguyen-nhan', 'case-thieu-pa', 'pa-can-cap-nhat', 'pa-cho-duyet', 'pa-co-ket-qua', 'ty-le-co-cai-thien',
   'dung-han-cap-nhat', 'do-phu-danh-gia',
   ...YTHUC_METRIC_IDS,
@@ -364,6 +366,46 @@ export function metricSet(
   };
 }
 
+/** Case chờ xác định nguyên nhân mà hạn 3 ngày của tín hiệu đã nối (sớm nhất) đã qua — cùng hạn `mywork.ts` dùng cho dòng `cause`. */
+function causeOverdue(caseIds: number[], today: string): number[] {
+  const out: number[] = [];
+  for (let i = 0; i < caseIds.length; i += 400) {
+    const chunk = caseIds.slice(i, i + 400);
+    out.push(...(db().prepare(
+      `SELECT case_id AS id FROM case_signals WHERE status = 'linked' AND case_id IN (${chunk.map(() => '?').join(',')})
+        GROUP BY case_id HAVING MIN(verify_due) < ? ORDER BY case_id`,
+    ).all(...chunk, today) as any[]).map((r) => r.id as number));
+  }
+  return out;
+}
+
+/**
+ * Lượt có ô điểm QUÁ HẠN nhập, trong phạm vi. `scoreDebtCells` lọc theo chi nhánh; giáo viên (phạm vi theo LỚP) lọc thêm theo
+ * lớp — không được đổi quyền theo lớp thành quyền cả chi nhánh.
+ */
+function overdueScoreAttempts(p: Principal, branchId: number | null, today: string): number[] {
+  const sc = scopeFor(p, PERMISSIONS.ATTEMPT_VIEW);
+  if (sc.none) return [];
+  let branches: number[] | null = null;
+  if (branchId) branches = [branchId];
+  else if (!sc.all) {
+    const set = new Set<number>(sc.branchIds);
+    if (sc.classIds.length) {
+      for (const r of db().prepare(`SELECT DISTINCT branch_id FROM classes WHERE id IN (${sc.classIds.map(() => '?').join(',')})`)
+        .all(...sc.classIds) as any[]) set.add(r.branch_id);
+    }
+    branches = [...set];
+  }
+  const onlyClasses = !sc.all && !sc.branchIds.length ? new Set<number>(sc.classIds) : null;
+  const ids = new Set<number>();
+  for (const x of scoreDebtCells(p, today, branches)) {
+    if (!x.overdue) continue;
+    if (onlyClasses && !onlyClasses.has(x.classId)) continue;
+    ids.add(x.attemptId);
+  }
+  return [...ids].sort((a, b) => a - b);
+}
+
 /**
  * LÕI CHƯA LỌC CHƯƠNG TRÌNH của `metricSet`: một chỉ số → một tập ID đã áp quyền của người gọi. Chỉ `metricSet` gọi hàm này;
  * mọi nơi khác đi qua `metricSet` để bộ lọc chương trình chỉ có một chỗ.
@@ -418,6 +460,12 @@ function metricSetGoc(
       return done(listSignals(p, { branchId, status: 'open' }).rows.map((s) => s.id));
     case 'tin-hieu-qua-han':
       return done(overdueNormalSignalIds(p, { branchId: branchId ?? null, today }));
+    case 'case-xac-dinh-nguyen-nhan-qua-han':
+      return done(causeOverdue(awaitingCauseCaseIds(openCases().map((c: any) => c.id as number)), today));
+    case 'bai-qua-han-nhap-diem':
+      return done(overdueScoreAttempts(p, scope.branchId, today));
+    case 'case-chua-co-nguoi-phu-trach':
+      return done(openCases().filter((c: any) => !c.ownerUserId).map((c: any) => c.id as number));
     case 'case-cho-xac-dinh-nguyen-nhan':
       /* Case TỪ SOS (rulebook v3) đang mở mà chưa có nguyên nhân HOẶC còn phương án điền sẵn chưa xác nhận — cùng định nghĩa với `caseDetail().sos`. */
       return done(awaitingCauseCaseIds(openCases().map((c: any) => c.id as number)));

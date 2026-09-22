@@ -58,7 +58,7 @@ export async function runTongQuanTests(t: YThucTestKit) {
     primaryCode: d.issuesForTopic(topic)[0].code,
   }) as any;
   const ids = (id: string, f: any = {}) => (metricsSvc.metricSet(P.admin, id, f).ids as number[]);
-  void loadPrincipal; void assertThrows; void tinHieu; void diem;
+  void loadPrincipal; void assertThrows;
 
   // ================================================================== 1. Luật thuần
   check('PR-Pa · Chương trình: đọc tham số ct; mặc định Cả hai; không có chữ "Normal" trên màn', () => {
@@ -186,5 +186,50 @@ export async function runTongQuanTests(t: YThucTestKit) {
     eq(chuongTrinh.tachTheoLop('hoc-vien', []), '', 'Rỗng');
     const m = chuongTrinh.lopCuaTap('hoc-vien', [a.sid, c.sid]);
     eq([m.get(a.sid).isFt, m.get(c.sid).isFt], [false, true], 'isFt theo lớp đang học');
+  });
+
+  // ================================================================== 4. Ba chỉ số mới
+  check('PR-Pa · Chỉ số case-chua-co-nguoi-phu-trach: Case mở không người phụ trách có; gán người thì hết; luôn ⊆ case-mo', () => {
+    const hv = taoHocVien({ classCode: 'MB-FOU 12', weekStart: '2026-09-07' });
+    const c = moCase(hv.sid, 'reading');
+    conn.prepare('UPDATE sos_cases SET owner_user_id = NULL WHERE id = ?').run(c.id);
+    assert(ids('case-chua-co-nguoi-phu-trach').includes(c.id), 'Case không người phụ trách phải có');
+    conn.prepare('UPDATE sos_cases SET owner_user_id = ? WHERE id = ?').run(P.normalCoreTeacher.userId, c.id);
+    assert(!ids('case-chua-co-nguoi-phu-trach').includes(c.id), 'Đã có người phụ trách thì không đếm');
+    const mo = ids('case-mo');
+    assert(ids('case-chua-co-nguoi-phu-trach').every((x) => mo.includes(x)), 'Phải là tập con của Case đang mở');
+  });
+
+  check('PR-Pa · Chỉ số case-xac-dinh-nguyen-nhan-qua-han = Case chờ xác định nguyên nhân mà hạn 3 ngày của tín hiệu nối đã qua', () => {
+    const cho = ids('case-cho-xac-dinh-nguyen-nhan');
+    const quaHan = cho.filter((id) => {
+      const r = conn.prepare(`SELECT MIN(verify_due) AS due FROM case_signals WHERE case_id = ? AND status = 'linked'`).get(id) as any;
+      return r?.due && r.due < TODAY;
+    }).sort((a, b) => a - b);
+    eq(ids('case-xac-dinh-nguyen-nhan-qua-han'), quaHan, 'Lệch tập');
+  });
+
+  await checkAsync('PR-Pa · Chỉ số bai-qua-han-nhap-diem = lượt có ô điểm quá hạn (cùng hàm scoreDebtCells của bảng chấm); GV chỉ thấy lớp mình', async () => {
+    const debt: any = await import('../worklist/scoreDebt.ts');
+    const want = [...new Set((debt.scoreDebtCells(P.admin, TODAY, null) as any[]).filter((x) => x.overdue).map((x) => x.attemptId))]
+      .sort((a: number, b: number) => a - b);
+    eq(ids('bai-qua-han-nhap-diem'), want, 'Quản trị');
+    const gv = metricsSvc.metricSet(P.lrTeacher, 'bai-qua-han-nhap-diem', {}).ids as number[];
+    const lopGv = new Set((conn.prepare(`SELECT class_id FROM teacher_assignments WHERE user_id = ? AND status = 'active'`)
+      .all(P.lrTeacher.userId) as any[]).map((r) => r.class_id));
+    for (const a of gv) {
+      const cl = (conn.prepare('SELECT class_id FROM assessment_attempts WHERE id = ?').get(a) as any).class_id;
+      assert(lopGv.has(cl), `GV thấy lượt của lớp không dạy: ${a}`);
+    }
+  });
+
+  check('PR-Pa · rowsFor: tín hiệu ghi tên môn (không chữ thô "listening"); bài thi có dòng', () => {
+    const hv = taoHocVien({ classCode: 'MB-FOU 12', weekStart: '2026-09-07' });
+    diem(hv.attemptId, 'listening', 10, 40);
+    const sg = tinHieu(hv.attemptId, 'listening');
+    const row = metricsSvc.rowsFor('tin-hieu', [sg.id])[0];
+    assert(/Listening/.test(row.title) && !/listening/.test(row.title), `Chữ thô: ${row.title}`);
+    const bai = metricsSvc.rowsFor('bai-thi', [hv.attemptId])[0];
+    assert(bai.href !== '#' && /Giữa khoá|Bài/.test(bai.title), `Bài thi không có dòng: ${JSON.stringify(bai)}`);
   });
 }
