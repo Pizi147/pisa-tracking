@@ -3518,13 +3518,15 @@ playwright, `git status` sạch trước khi commit.
   - `shared/domain/hienThiNgay.ts` / `display.ts` → PR-Qa sở hữu; nếu PR khác đã sửa, 🛑 hỏi trước khi chọn bên.
   - PR-S2/AN có migrate → chạy `npm run migrate` trên **bản sao** DB dev nếu cần seed lại; không đụng DB bản chính.
   Sau rebase: `npm ci` (nếu `package-lock.json` đổi), `npm run check` xanh, ghi số phép kiểm.
-- [ ] **Step 3:** superpowers:finishing-a-development-branch — `git push -u origin pr-qa-hoc-vien-lop --force-with-lease`, mở PR
+- [x] **Step 3:** superpowers:finishing-a-development-branch — `git push -u origin pr-qa-hoc-vien-lop --force-with-lease`, mở PR
   **không draft** bằng `gh pr create`, tiêu đề `PR-Qa · Học viên & Lớp + Hồ sơ lớp`. Thân PR: phạm vi (§3.6, §3.7, Q1–Q5, Q10–Q13,
   K2-6a, YT-8, ba nợ PR-O), bảng Q1–Q21 "chỗ tự quyết", "Không migrate; 3 route mới: `GET /hoc-vien-lop`,
   `GET /classes/:id/phan-tich-lop`, `PATCH /classes/:id/thong-tin`", việc để lại cho PR sau (PR-LT bật `MENU_DONG_CHO_PR_LT` + dữ liệu
   "tiếp theo: …" cho `khoaLopThuong`; PR-GV bật `CO_TRANG_HO_SO_GIAO_VIEN`; PR-Rc1 quyết badge "bài chưa chấm" trên hộp lớp), số phép
   kiểm, link ảnh KIỂM, model thật đã code và model rà. Cuối thân: `🤖 Generated with [Claude Code](https://claude.com/claude-code)`.
   **Không tự merge.** Báo chủ sản phẩm link PR.
+  → Đã push, mở **PR #69**: https://github.com/Pizi147/pisa-tracking/pull/69 (không draft, base `main`, head
+  `pr-qa-hoc-vien-lop`). Chưa merge — chờ session planning rà và nói "merge được".
 
 ---
 
