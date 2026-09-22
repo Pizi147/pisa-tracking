@@ -70,7 +70,8 @@ Một hàng chọn góc nhìn + bộ lọc chung. Bỏ "Việc đã giao" và `/
 - **Báo cáo đơn vị (phương án A):** ma trận đơn vị × hạng mục ở trên cùng; trạng thái Đã nộp / Nháp · chưa nộp / Chưa báo cáo; bấm ô mở panel bên phải (trạng thái, nội dung, liên kết việc Vận hành, **bằng chứng** theo G-9). Lưu nháp lúc nào cũng được; ngoài cửa sổ nộp chỉ khoá nút "Nộp".
 
 ### 3.5. Test — `05a-test-cham-diem.html`, `05a2-can-cham-v2.html`, `05b-ke-hoach-test.html`, `10b-lop-thuong-v2.html` §2, §4
-- Tab **Cần chấm · Lịch Test · Kế hoạch Test**. GV chỉ thấy hai tab đầu.
+- Tab **Cần chấm · Lịch Test · Kế hoạch Test**. GV chỉ thấy hai tab đầu. Tab mặc định: GV → Cần chấm; người xếp lịch được → Lịch Test.
+- **Lịch Test:** danh sách các lượt Test của một tuần (chọn tuần `W3 SEP`), nhóm theo lớp: lớp · đợt (MT{n} / Giữa khoá / Cuối khoá) · kỹ năng · số HV · trạng thái chấm; bấm dòng mở lưới chấm. PR-O dựng bản tối thiểu chỉ đọc; PR-Rc1 hoàn thiện.
 - **Cần chấm (05a2 phương án A):** các mục Quá hạn / Tuần này / Sắp tới. Mỗi dòng: lớp + đợt · kỹ năng · còn n bài · nút **Chấm**, bấm vào mở thẳng lưới chấm. Hạn tự đúng theo loại lớp (lớp thường: Chủ nhật của tuần thi môn đó; FT: thứ Tư tuần sau).
 - **Lưới chấm chung FT và lớp thường (05a §2):** ô môn mình dạy sửa được, môn khác chỉ đọc; cột kết quả tính ngay; tự lưu; Enter sang ô kế; luật đưa vào ⓘ.
   - FT: một số band mỗi ô; "-" = vắng, theo luật FT hiện có.
@@ -235,7 +236,7 @@ Quyền phải khớp giữa menu, máy chủ và việc đỏ.
 | Máy chủ từ chối "-" cho lớp thường (C08) | `attempts.ts:1191-1195` | Rc1 |
 | Ghi chú sai "phải đủ bốn môn mới… sinh case SOS" | `RegularSheetPage.tsx:196-200` | Rc1 |
 | Trạng thái Case theo `attempt_id` mất ở dòng cũ | `regular.ts:578` | Rc1 |
-| Không tạo được Case Writing lớp thường (F07) | `QuickReport.tsx:91`, `cases.ts:383-385` | Form |
+| Không tạo được Case Writing lớp thường (F07) | máy chủ `cases.ts:383-385` · form `QuickReport.tsx:91` | S1 (máy chủ) · Form (form) |
 | "Đạt kỳ vọng", "MT{n}", "Số MT đánh lại từ 1" trên màn lớp thường | `SkillBoard.tsx:203,412,917`, `StudentDetailPage.tsx:232-236,387,490`, `ClassRoster.tsx:244-252`, `display.ts:152` | Qb (hồ sơ HV), Qa (roster) |
 | Chữ thô `writing` | `ClassRoster.tsx:322`, `StudentsPage.tsx:481` | Qa |
 | "tỷ lệ câu đúng" | `CaseBoardPage.tsx:44`, `CatalogAdmin` | Pb |
@@ -258,11 +259,11 @@ Tên file, mã việc và ma trận chồng file lấy ở kiểm kê §5. Bổ 
 | **YT2** · Ý thức phần thiếu | §3.11, YT-1…14, K2-6b…f | Sonnet 5 · High (B: Opus 5 · High) | Opus 5 |
 | **Pb** · Phân tích | §3.3 (trừ Theo giáo viên nếu PR-GV nhận), P7–P15 | Opus 5 · XHigh (B: Fable 5.1 · High) | Fable 5.1 |
 | **Ra** · Công việc | §3.4, R2–R6, R3b, Q6 | Opus 5 · XHigh (B: Fable 5.1 · High) | Fable 5.1 |
-| **Rc1** · Cần chấm + lưới chấm | §3.5 Cần chấm, lưới chung, mobile, lớp thường (đúng/tổng, "-" dời tuần), R8 phần lưới, R13, R15, R16, RB-5, DS02, lỗi §6 gắn Rc1 | Opus 5 · XHigh (B: Fable 5.1 · High) | Fable 5.1 |
+| **Rc1** · Cần chấm + Lịch Test + lưới chấm | §3.5 Cần chấm, Lịch Test, lưới chung, mobile, lớp thường (đúng/tổng, "-" dời tuần), R8 phần lưới, R13, R15, R16, RB-5, DS02, lỗi §6 gắn Rc1 | Opus 5 · XHigh (B: Fable 5.1 · High) | Fable 5.1 |
 | **GV** · Hồ sơ GV + Theo giáo viên | §3.12, §3.3 Theo giáo viên | Fable 5.1 · High (B: Opus 5 · High) | Opus 5 |
 | **Rc2** · Kế hoạch Test | §3.5 Kế hoạch Test (FT + lớp thường), R9–R12, R14 phần lịch, T9 (`standing.ts:222` dùng `target_at_attempt`), T15 chặn trùng | Opus 5 · XHigh (B: Fable 5.1 · High) | Fable 5.1 |
 | **Form** · Chọn người + bằng chứng | §3.13, F-1, F-2, F-3, S5, F07, YT-9 nếu còn | Opus 5 · High (B: Fable 5.1 · High) | Fable 5.1 |
-| **LT** · Lên lớp, chuyển lớp | §3.9 toàn bộ (gồm việc nhắc "Chưa có lộ trình tiếp theo") + Lịch sử lớp ở §3.8 | Opus 5 · XHigh (B: Fable 5.1 · High) | Fable 5.1 |
+| **LT** · Lên lớp, chuyển lớp | §3.9 toàn bộ, nút Tạm dừng/Kết thúc/Lưu trữ HV (máy chủ lưu trữ làm ở S1) (gồm việc nhắc "Chưa có lộ trình tiếp theo") + Lịch sử lớp ở §3.8 | Opus 5 · XHigh (B: Fable 5.1 · High) | Fable 5.1 |
 | **S3** · Chữ cuối | quét THUAT_NGU_DA_CHOT toàn web, S7, S9, RB-2, RB-4, DS14, DS16, DOC-1…6 | Fable 5.1 · High (B: Sonnet 5 · High) | Opus 5 |
 | **Z2c** · Deploy | theo `docs/superpowers/plans/2026-09-21-ban-chinh-netlify-turso.md` Task 10–11 | Opus 5 · XHigh (B: Fable 5.1 · High) | Fable 5.1 |
 
