@@ -487,7 +487,7 @@ git commit -m "PR-Qa (2): tiêu đề tab PISA Progress, thanh dưới điện t
 - `CO_TRANG_HO_SO_GIAO_VIEN = false`, `duongHoSoGiaoVien(gvId, nguoiXem, coTrang?)`
 - `TAB_HO_SO_LOP`, `type TabHoSoLop`, `TAB_HO_SO_LOP_NHAN`, `tabHoSoLop(s)`
 
-- [ ] **Step 1: Phép kiểm đỏ.** Nối vào cuối thân `runHocVienLopTests`:
+- [x] **Step 1: Phép kiểm đỏ.** Nối vào cuối thân `runHocVienLopTests`:
 
 ```ts
   // ------------------------------------------------------------------ Task 3 · luật thuần
@@ -633,9 +633,9 @@ git commit -m "PR-Qa (2): tiêu đề tab PISA Progress, thanh dưới điện t
   });
 ```
 
-- [ ] **Step 2:** `npm test 2>&1 | grep -E "PR-Qa|KIỂM TRA"` → 12 phép kiểm mới ✗ (`is not a function` / `undefined`).
+- [x] **Step 2:** `npm test 2>&1 | grep -E "PR-Qa|KIỂM TRA"` → 12 phép kiểm mới ✗ (`is not a function` / `undefined`).
 
-- [ ] **Step 3: Tạo `shared/domain/hocVienLop.ts`:**
+- [x] **Step 3: Tạo `shared/domain/hocVienLop.ts`:**
 
 ```ts
 /**
@@ -923,7 +923,7 @@ export function tabHoSoLop(s: string | null | undefined): TabHoSoLop {
 }
 ```
 
-- [ ] **Step 4:** `shared/domain/fasttrack.ts:84-88` — đổi chữ (giữ khoá):
+- [x] **Step 4:** `shared/domain/fasttrack.ts:84-88` — đổi chữ (giữ khoá):
 
 ```ts
   progress_soon: 'Tuần sau thi Giữa khoá',
@@ -934,9 +934,9 @@ export function tabHoSoLop(s: string | null | undefined): TabHoSoLop {
 ```
   Kiểm: `grep -rn "Đã hết chương trình\|Progress Test tuần này\|Final Test tuần này" server/src/tests web/src shared` → không còn phép
   kiểm nào đòi chữ cũ. Phép kiểm `run.ts:4133` (`pr.label.includes('tuần')`) vẫn đạt.
-- [ ] **Step 5:** thêm `export * from './hocVienLop.ts';` vào `shared/domain/index.ts` sau `export * from './dieuHuong.ts';`.
-- [ ] **Step 6:** `npm test` → mọi `PR-Qa ·` xanh (N+15). `npm run check` xanh. Ghi Nhật ký.
-- [ ] **Step 7: Commit.**
+- [x] **Step 5:** thêm `export * from './hocVienLop.ts';` vào `shared/domain/index.ts` sau `export * from './dieuHuong.ts';`.
+- [x] **Step 6:** `npm test` → mọi `PR-Qa ·` xanh (N+15). `npm run check` xanh. Ghi Nhật ký.
+- [x] **Step 7: Commit.**
 
 ```bash
 git add shared/domain/hocVienLop.ts shared/domain/index.ts shared/domain/fasttrack.ts server/src/tests/hocVienLop.tests.ts
