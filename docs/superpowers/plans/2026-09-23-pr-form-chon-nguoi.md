@@ -152,6 +152,8 @@ các GV đang dạy lớp đó, `cungLop = true`.
 
 Commit `PR-Form (2): GET /ref/nguoi — tìm người không dấu, ≥ 3 ký tự, gợi ý GV lớp của em`.
 
+- [x] Task 2 xong — `npm run check` xanh, **791 = 785 + 6**.
+
 ## Task 3 · Máy chủ: người thực hiện lưu ID, kiểm ở một chỗ (F-2) + ngày Điều chỉnh (nợ S2)
 
 **Files:** tạo `server/src/cases/nguoiThucHien.ts`; sửa `cases.ts` (`recordIntervention` 803-806 và 847-855,

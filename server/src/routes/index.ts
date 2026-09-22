@@ -15,6 +15,7 @@ import { can, loadPrincipal, permissionSummary, require_, scopeFor } from '../pe
 import { writeAudit } from '../platform/audit.ts';
 import { navOf } from '../platform/nav.ts';
 import * as attachmentSvc from '../platform/attachments.ts';
+import * as timNguoiSvc from '../platform/timNguoi.ts';
 import * as violationSvc from '../yThuc/violations.ts';
 import * as measureSvc from '../yThuc/measures.ts';
 import * as phoiHopSvc from '../yThuc/phoiHop.ts';
@@ -264,6 +265,19 @@ api.post('/ref/periods/resolve', requireAuth, wrap((req) => {
 /** Danh sách người cho ô chọn Người phụ trách / Người theo dõi — gõ để lọc. */
 api.get('/ref/people', requireAuth, wrap((req) =>
   meetingSvc.searchPeople(principalOf(req), qStr(req, 'q'))));
+
+/**
+ * Danh sách người cho ô `ChonNguoi` (PR-Form F-2) — khác `/ref/people`: không đòi `MEETING_VIEW`
+ * (mọi giáo viên tự chọn được người thực hiện), có ngưỡng ≥ 3 ký tự và tìm không dấu (Q2).
+ */
+api.get('/ref/nguoi', requireAuth, wrap((req) => {
+  const nhom = qStr(req, 'nhom');
+  return timNguoiSvc.timNguoi(principalOf(req), {
+    q: qStr(req, 'q'),
+    nhom: nhom === 'nhan_vien' ? 'nhan_vien' : 'giao_vien',
+    studentId: qInt(req, 'studentId'),
+  });
+}));
 
 api.get('/ref/users', requireAuth, wrap((req) => {
   const p = principalOf(req);
