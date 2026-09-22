@@ -1,0 +1,73 @@
+<style>
+  .pp{--bg:#0d1423;--s:#111b2d;--line:#293852;--tx:#e8eef7;--mu:#8f9db4;--bl:#84baff;--bb:#173451;--gr:#73d9a5;--gb:#15362a;--yl:#e5c66a;--yb:#3a3219;--rd:#ff9a9a;--rb:#3b2126;
+      background:var(--bg);color:var(--tx);font:12px Inter,Segoe UI,Arial,sans-serif;border-radius:8px;overflow:hidden;border:1px solid var(--line)}
+  .pp .w{padding:12px}.pp .mu{color:var(--mu);font-size:11px}.pp .sp{flex:1}
+  .pp h4{margin:0 0 6px;font-size:15px}.pp h5{margin:0 0 6px;font-size:12px}
+  .pp .tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin:0 0 10px}
+  .pp .tab{padding:6px 10px;color:var(--mu);font-weight:800;border-bottom:3px solid transparent}.pp .tab.on{color:var(--tx);border-color:var(--bl)}
+  .pp .fl{display:flex;gap:6px;align-items:center;margin-bottom:8px;flex-wrap:wrap}.pp .sel{border:1px solid var(--line);border-radius:7px;padding:4px 8px}
+  .pp .btn{border:1px solid var(--line);border-radius:6px;padding:4px 9px;font-weight:700;font-size:11px}.pp .btn.p{background:#82b9f6;color:#0c1726;border-color:#82b9f6}
+  .pp table{width:100%;border-collapse:collapse}.pp th{color:var(--mu);font-size:10px;padding:5px;font-weight:700;text-align:center}.pp th.l,.pp td.l{text-align:left}
+  .pp td{padding:5px;border-top:1px solid #22314a;text-align:center;vertical-align:middle}
+  .pp .slot{display:block;border:1px solid var(--line);border-radius:6px;padding:2px 4px;margin:2px 0;font-size:10px;text-align:left}
+  .pp .done{background:#15362a;color:#73d9a5;border-color:#1f4a3a}.pp .plan{background:#173451;color:#84baff;border-color:#24507a}.pp .empty{border-style:dashed;color:#5c6f8f}
+  .pp .late{background:#3a3219;color:#e5c66a;border-color:#5a4b22}
+  .pp .card{background:var(--s);border:1px solid var(--line);border-radius:9px;padding:10px;margin-bottom:8px}
+  .pp .step{display:grid;grid-template-columns:22px 1fr;gap:8px;padding:8px 0;border-top:1px solid #22314a}.pp .step:first-of-type{border-top:0}
+  .pp .num{width:20px;height:20px;border-radius:50%;background:#173451;color:#84baff;font-weight:800;display:flex;align-items:center;justify-content:center;font-size:11px}
+  .pp .chip{border:1px solid var(--line);border-radius:999px;padding:3px 8px;color:var(--mu);font-weight:700}.pp .chip.on{background:var(--bb);color:var(--bl)}
+  .pp .modal{border:1px solid var(--line);border-radius:10px;background:#121d31;padding:10px;width:250px}
+  .pp .diff td{text-align:left}
+</style>
+
+<h2>5b · Kế hoạch Test (Quản lý)</h2>
+<p class="subtitle">(1) Lưới lịch cả lớp — xem và sửa từng ô. (2) Xếp lịch hàng loạt — 5 bước. Chọn A hoặc B cho cách mở phần (2). Lớp Normal: cùng lưới, chỉ khác tên đợt (Giữa khoá / Cuối khoá) và có nút "Dời một kỹ năng".</p>
+
+<h3>(1) Lưới lịch cả lớp — một bản</h3>
+<div class="pp"><div class="w">
+ <h4>Test</h4><div class="tabs"><div class="tab">Cần chấm</div><div class="tab">Lịch Test</div><div class="tab on">Kế hoạch Test</div></div>
+ <div class="fl"><span class="sel">Lớp: MB-FT 101 ▾</span><span class="mu">8 học viên · lịch mặc định MT1 tuần 6 · MT2 tuần 12 · MT3 tuần 16…</span><span class="sp"></span><span class="btn p">Xếp lịch hàng loạt…</span></div>
+ <table>
+  <tr><th class="l">Học viên</th><th>MT1</th><th>MT2</th><th>MT3</th><th>MT4</th><th>MT5</th></tr>
+  <tr><td class="l">Bùi Thảo Vy</td>
+   <td><span class="slot done">RLW · W2 JUL ✓</span><span class="slot done">S · W2 JUL ✓</span></td>
+   <td><span class="slot done">RLW · W3 AUG ✓</span><span class="slot done">S · W3 AUG ✓</span></td>
+   <td><span class="slot plan">RLW · W3 SEP</span><span class="slot plan">S · W4 SEP</span></td>
+   <td><span class="slot empty">+ xếp</span></td><td><span class="slot empty">+ xếp</span></td></tr>
+  <tr><td class="l">Đỗ Minh Khôi</td>
+   <td><span class="slot done">RLW · W2 JUL ✓</span><span class="slot done">S · W2 JUL ✓</span></td>
+   <td><span class="slot done">RLW · W3 AUG ✓</span><span class="slot late">S · dời → W3 SEP</span></td>
+   <td><span class="slot plan">RLW · W3 SEP</span><span class="slot plan">S · W4 SEP</span></td>
+   <td><span class="slot empty">+ xếp</span></td><td><span class="slot empty">+ xếp</span></td></tr>
+  <tr><td class="l">Vũ Ngọc Lan <span class="mu">(vào muộn)</span></td>
+   <td><span class="slot done">RLW · W4 AUG ✓</span><span class="slot done">S · W4 AUG ✓</span></td>
+   <td><span class="slot empty">+ xếp</span></td><td><span class="slot empty">+ xếp</span></td><td></td><td></td></tr>
+ </table>
+ <div class="mu" style="margin-top:6px">Mỗi đợt có 2 hàng: <b>RLW</b> (Listening, Reading, Writing — thi cùng tuần) và <b>S</b> (Speaking — có thể khác tuần). Xanh lá = đã thi xong (chỉ xem) · xanh dương = đã xếp · vàng = đã dời · nét đứt = chưa xếp. Bấm ô xanh dương → sửa tuần ngay (hộp nhỏ bên dưới).</div>
+ <div style="display:flex;justify-content:flex-end;margin-top:8px"><div class="modal"><b>Sửa lịch · Bùi Thảo Vy · MT3 · RLW</b>
+  <div class="fl" style="margin:8px 0"><span class="mu">Tuần</span><span class="sel">‹ W3 SEP (15–21/09) ›</span></div>
+  <div class="mu">Speaking vẫn giữ W4 SEP. Không trùng tuần MT2/MT4.</div>
+  <div class="fl" style="margin-top:8px"><span class="btn">Huỷ</span><span class="btn p">Lưu</span></div></div></div>
+</div></div>
+
+<h3 style="margin-top:22px">(2) Xếp lịch hàng loạt — chọn cách mở</h3>
+<div class="options">
+ <div class="option" data-choice="a" onclick="toggleSelect(this)"><div class="letter">A</div><div class="content">
+  <h3>Ngăn trượt bên phải, 5 bước trên một màn (khuyến nghị)</h3>
+  <p>Lưới vẫn thấy bên trái để đối chiếu. Làm từ trên xuống, không phải bấm "Tiếp" nhiều lần. Bước 4 cho xem trước thay đổi trước khi lưu.</p>
+  <div class="pp" style="margin-top:8px"><div class="w" style="display:flex;gap:10px">
+   <div style="flex:1;opacity:.45"><div class="card">Lưới lịch cả lớp (mờ đi, vẫn thấy)</div></div>
+   <div class="card" style="width:300px"><h5>Xếp lịch hàng loạt · MB-FT 101</h5>
+    <div class="step"><span class="num">1</span><div><b>Đợt</b><div class="fl" style="margin:4px 0 0"><span class="chip">MT3</span><span class="chip on">MT4</span><span class="chip">MT5</span></div></div></div>
+    <div class="step"><span class="num">2</span><div><b>Học viên</b> <span class="mu">7/8 đã chọn</span><div class="mu">Mặc định cả lớp · bỏ tick em không thi · em đã có lịch MT4 được đánh dấu</div></div></div>
+    <div class="step"><span class="num">3</span><div><b>Tuần</b><div class="fl" style="margin:4px 0 0"><span class="mu" style="width:38px">RLW</span><span class="sel">‹ W3 OCT ›</span></div><div class="fl" style="margin:0"><span class="mu" style="width:38px">S</span><span class="sel">‹ W4 OCT ›</span><span class="mu">☐ cùng tuần RLW</span></div></div></div>
+    <div class="step"><span class="num">4</span><div><b>Xem trước</b><table class="diff"><tr><td>6 em</td><td class="mu">chưa có → W3/W4 OCT</td></tr><tr><td>1 em</td><td class="mu" style="color:#e5c66a">W2 OCT → W3 OCT (đổi)</td></tr></table></div></div>
+    <div class="step"><span class="num">5</span><div><span class="btn p">Lưu lịch cho 7 em</span></div></div>
+   </div></div></div>
+ </div></div>
+ <div class="option" data-choice="b" onclick="toggleSelect(this)"><div class="letter">B</div><div class="content">
+  <h3>Hộp thoại giữa màn, từng bước một</h3>
+  <p>Mỗi bước một màn, nút "Tiếp / Quay lại". Tập trung hơn nhưng che mất lưới, và phải bấm nhiều lần.</p>
+  <div class="pp" style="margin-top:8px"><div class="w"><div class="card" style="max-width:320px;margin:0 auto"><div class="mu">Bước 3/5</div><h5>Chọn tuần</h5><div class="fl"><span class="mu">RLW</span><span class="sel">‹ W3 OCT ›</span></div><div class="fl"><span class="mu">S</span><span class="sel">‹ W4 OCT ›</span></div><div class="fl"><span class="btn">Quay lại</span><span class="sp"></span><span class="btn p">Tiếp</span></div></div></div></div>
+ </div></div>
+</div>

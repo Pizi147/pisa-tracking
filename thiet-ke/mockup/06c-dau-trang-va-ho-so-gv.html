@@ -1,0 +1,90 @@
+<style>
+  .pp{--bg:#0d1423;--s:#111b2d;--line:#293852;--tx:#e8eef7;--mu:#8f9db4;--bl:#84baff;--bb:#173451;--gr:#73d9a5;--gb:#15362a;--yl:#e5c66a;--yb:#3a3219;--rd:#ff9a9a;--rb:#3b2126;
+      background:var(--bg);color:var(--tx);font:12px Inter,Segoe UI,Arial,sans-serif;border-radius:8px;overflow:hidden;border:1px solid var(--line);font-variant-numeric:tabular-nums}
+  .pp .w{padding:12px}.pp .mu{color:var(--mu);font-size:11px}.pp .sp{flex:1}
+  .pp .hero{background:var(--s);border:1px solid var(--line);border-radius:10px;padding:12px;display:flex;align-items:flex-start;gap:8px;margin-bottom:10px}
+  .pp h4{margin:0 0 4px;font-size:17px}
+  .pp .btn{border:1px solid var(--line);border-radius:7px;padding:5px 10px;font-weight:700;font-size:11px;white-space:nowrap}.pp .btn.p{background:#82b9f6;color:#0c1726;border-color:#82b9f6}
+  .pp .more{display:inline-block;width:26px;height:26px;line-height:24px;text-align:center;border:1px solid var(--line);border-radius:7px;color:var(--mu)}
+  .pp .info{display:flex;align-items:center;gap:8px;flex-wrap:nowrap}
+  .pp .box{border:1px solid #2c3d5a;border-radius:6px;padding:1px 7px;font-size:11px;color:#c9d4e6;background:#0f1828;white-space:nowrap}
+  .pp .gvline{display:flex;gap:14px;margin-top:6px;white-space:nowrap;overflow:hidden;font-size:11px}
+  .pp .gvline b{color:#6f819e;font-weight:600;margin-right:4px}.pp .gvline a{color:#c9d4e6;text-decoration:underline dotted #5c6f8f;text-underline-offset:3px}
+  .pp .n{display:inline-block;padding:2px 7px;border-radius:999px;font-size:10px;font-weight:800}
+  .pp .r{background:var(--rb);color:var(--rd)}.pp .y{background:var(--yb);color:var(--yl)}.pp .bl{background:var(--bb);color:var(--bl)}.pp .g{background:var(--gb);color:var(--gr)}.pp .gy{background:#1d2a40;color:#b7c2d6}
+  .pp .tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:10px}
+  .pp .tab{padding:7px 12px;color:var(--mu);font-weight:800;border-bottom:3px solid transparent}.pp .tab.on{color:var(--tx);border-color:var(--bl)}
+  .pp .tiles{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:10px}
+  .pp .tile{background:var(--s);border:1px solid var(--line);border-radius:9px;padding:8px 10px}.pp .tile b{display:block;font-size:17px;margin:2px 0}
+  .pp .card{background:var(--s);border:1px solid var(--line);border-radius:9px;padding:10px;margin-bottom:10px}
+  .pp table{width:100%;border-collapse:collapse;table-layout:fixed}
+  .pp th{color:var(--mu);font-size:10px;padding:6px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;border-bottom:1px solid var(--line);text-align:right}
+  .pp td{padding:0 6px;height:38px;border-bottom:1px solid #22314a;vertical-align:middle;text-align:right}
+  .pp th.l,.pp td.l{text-align:left}
+  .pp .fl{display:flex;gap:6px;align-items:center;margin-bottom:8px;flex-wrap:wrap}.pp .sel{border:1px solid var(--line);border-radius:7px;padding:4px 8px}
+  .pp .bar{height:7px;border-radius:4px;background:#22314a;overflow:hidden;width:70px;display:inline-block;vertical-align:middle;margin-right:4px}.pp .bar i{display:block;height:100%;background:#73d9a5}
+</style>
+
+<h2>6c · Đầu trang hồ sơ lớp (bản sửa 2) + Hồ sơ giáo viên (thử)</h2>
+<p class="subtitle">(1) Đầu trang lớp theo góp ý — góp ý thẳng. (2) Hồ sơ giáo viên — chọn cách bố trí A hoặc B. (3) Danh sách giáo viên cho Quản lý — góp ý thẳng. Nút trên từng dòng học viên: đã chốt "bấm ra menu nhỏ".</p>
+
+<h3>(1) Đầu trang hồ sơ lớp — GVCN vào hộp nhỏ cùng dòng, giáo viên bộ môn một dòng không xuống hàng</h3>
+<div class="pp"><div class="w">
+ <div class="hero" style="display:block">
+   <div style="display:flex;align-items:flex-end;gap:8px"><div><div class="mu">Hồ sơ lớp</div><h4 style="margin:0">MB-FT 101 · Fast Track</h4></div><div class="sp"></div>
+    <span class="btn">Lộ trình lớp</span><span class="btn">Chuyển tiếp lớp</span><span class="btn">+ Case</span><span class="btn">+ Học viên</span><span class="btn p">Nhập điểm Test</span><span class="more">⋮</span></div>
+   <div class="info mu" style="margin-top:6px"><span>Monbay · LT1 · 8 học viên · khai giảng 01/06/2026</span><span class="box">GVCN <a style="color:#c9d4e6;text-decoration:underline dotted #5c6f8f">Trần Ngọc Hà</a></span></div>
+   <div class="gvline"><span><b>L · R</b><a>Trần Ngọc Hà</a></span><span><b>W1</b><a>Lê Minh Khoa</a></span><span><b>W2</b><a>Cao Khánh Linh</a></span><span><b>S</b><a>Phạm Thu Trang</a></span></div>
+   <div style="display:flex;gap:6px;margin-top:8px"><span class="n y">12 bài chưa nhập điểm</span><span class="n r">6 case đang mở</span></div></div>
+ <div class="mu">Giáo viên dạy nhiều kỹ năng được gộp ("L · R  Trần Ngọc Hà") nên dòng ngắn. Kỹ năng viết tắt L/R/W1/W2/S ở dòng này (rê chuột ra tên đầy đủ). Màn hẹp quá thì dòng tự cắt và hiện "+2" — bấm ra đủ danh sách, không bao giờ xuống hàng.</div>
+</div></div>
+
+<h3 style="margin-top:22px">(2) Hồ sơ giáo viên — hồ sơ chuyên môn, không phải hồ sơ nhân sự</h3>
+<p class="subtitle">Ai xem được: Quản lý xem giáo viên trong chi nhánh mình · giáo viên chỉ xem hồ sơ của chính mình (tên đồng nghiệp không bấm được). Không có điểm tổng, không xếp hạng, số nào cũng kèm mẫu số.</p>
+<div class="options">
+ <div class="option" data-choice="a" onclick="toggleSelect(this)"><div class="letter">A</div><div class="content">
+  <h3>3 tab theo 3 góc nhìn (khuyến nghị)</h3>
+  <p>Học viên đang dạy · Case phụ trách · Hỗ trợ đã thực hiện — đúng 3 góc nhìn của design plan §6, mỗi tab trả lời một câu hỏi, không trộn trách nhiệm.</p>
+  <div class="pp" style="margin-top:8px"><div class="w">
+   <div class="hero"><div style="flex:1"><div class="mu">Hồ sơ giáo viên</div><h4>Trần Ngọc Hà</h4>
+     <div class="info mu"><span>Monbay · Giáo viên · dạy từ 03/2025</span><span class="box">GVCN MB-FT 101</span></div>
+     <div class="gvline"><span><b>MB-FT 101</b>Listening, Reading</span><span><b>MB-N 204</b>Listening</span><span><b>CP-FT 110</b>Reading</span></div></div>
+    <span class="mu" style="align-self:flex-start">Lịch sử phân công ▸</span></div>
+   <div class="tiles">
+    <div class="tile"><span class="mu">Học viên đang dạy</span><b>29</b><span class="mu">3 lớp</span></div>
+    <div class="tile"><span class="mu">Có kết quả gần nhất</span><b>26 / 29</b><span class="mu">độ phủ đánh giá</span></div>
+    <div class="tile"><span class="mu">Dưới kỳ vọng (môn mình dạy)</span><b>7 / 26</b><span class="mu">L 4 · R 3</span></div>
+    <div class="tile"><span class="mu">PA cập nhật đúng hạn</span><b>18 / 21</b><span class="mu">30 ngày</span></div>
+    <div class="tile"><span class="mu">PA có kết quả</span><b>12</b><span class="mu">8 có cải thiện</span></div></div>
+   <div class="tabs"><div class="tab on">Học viên đang dạy</div><div class="tab">Case phụ trách <span class="n y">5</span></div><div class="tab">Hỗ trợ đã thực hiện</div></div>
+   <table><colgroup><col style="width:22%"><col style="width:14%"><col style="width:12%"><col style="width:14%"><col style="width:16%"><col style="width:22%"></colgroup>
+    <tr><th class="l">Lớp · môn</th><th>Học viên</th><th>Đã đánh giá</th><th>Dưới kỳ vọng</th><th>Case thiếu PA</th><th class="l">Lỗi gặp nhiều</th></tr>
+    <tr><td class="l">MB-FT 101 · Listening</td><td>8</td><td>7</td><td>3 / 7</td><td>0</td><td class="l mu">Tư duy &amp; kỹ năng làm bài</td></tr>
+    <tr><td class="l">MB-FT 101 · Reading</td><td>8</td><td>7</td><td>1 / 7</td><td>0</td><td class="l mu">Quản lý thời gian</td></tr>
+    <tr><td class="l">MB-N 204 · Listening</td><td>12</td><td>11</td><td>2 / 11</td><td>1</td><td class="l mu">Tâm lý &amp; độ tập trung</td></tr>
+    <tr><td class="l">CP-FT 110 · Reading</td><td>9</td><td>8</td><td>1 / 8</td><td>0</td><td class="l mu">Từ vựng / ngữ pháp</td></tr></table>
+   <div class="mu" style="margin-top:6px">SOS toàn phần của học viên chỉ hiện ở lớp mình làm GVCN (làm bối cảnh); với môn bộ môn chỉ tính dưới kỳ vọng đúng môn — không quy SOS 3 của cả em cho giáo viên Listening.</div>
+  </div></div>
+ </div></div>
+ <div class="option" data-choice="b" onclick="toggleSelect(this)"><div class="letter">B</div><div class="content">
+  <h3>Một trang cuộn, 3 khối xếp dọc</h3>
+  <p>Không có tab — cuộn xuống là thấy cả 3 phần. Nhanh khi chỉ lướt, nhưng trang dài và dễ đọc lẫn trách nhiệm giữa các khối.</p>
+  <div class="pp" style="margin-top:8px"><div class="w">
+   <div class="card"><b>Học viên đang dạy</b> <span class="mu">29 · bảng như A</span></div>
+   <div class="card"><b>Case phụ trách</b> <span class="mu">5 đang mở · 1 quá hạn</span></div>
+   <div class="card"><b>Hỗ trợ đã thực hiện</b> <span class="mu">12 PA có kết quả</span></div></div></div>
+ </div></div>
+</div>
+
+<h3 style="margin-top:22px">(3) Danh sách giáo viên cho Quản lý — thêm tab "Giáo viên" trong khu vực Học viên &amp; Lớp</h3>
+<div class="pp"><div class="w">
+ <div class="tabs"><div class="tab">Học viên</div><div class="tab">Lớp</div><div class="tab on">Giáo viên</div></div>
+ <div class="fl"><span class="sel">Monbay ▾</span><span class="sel">Fast Track ▾</span><span class="sel">30 ngày ▾</span><span class="sp"></span><span class="mu">Không xếp hạng · sắp xếp theo tên</span></div>
+ <table><colgroup><col style="width:18%"><col style="width:20%"><col style="width:10%"><col style="width:12%"><col style="width:13%"><col style="width:12%"><col style="width:15%"></colgroup>
+  <tr><th class="l">Giáo viên</th><th class="l">Lớp · môn</th><th>Học viên</th><th>Đã đánh giá</th><th>Dưới kỳ vọng</th><th>Case thiếu PA</th><th>PA đúng hạn</th></tr>
+  <tr><td class="l"><a style="color:#e8eef7;text-decoration:underline dotted #5c6f8f">Cao Khánh Linh</a></td><td class="l mu">MB-FT 101 · W2 +1</td><td>17</td><td>15</td><td>8 / 15</td><td>1</td><td>6 / 9</td></tr>
+  <tr><td class="l"><a style="color:#e8eef7;text-decoration:underline dotted #5c6f8f">Lê Minh Khoa</a></td><td class="l mu">MB-FT 101 · W1</td><td>8</td><td>6</td><td>1 / 6</td><td>0</td><td>2 / 2</td></tr>
+  <tr><td class="l"><a style="color:#e8eef7;text-decoration:underline dotted #5c6f8f">Phạm Thu Trang</a></td><td class="l mu">MB-FT 101 · S +2</td><td>27</td><td>25</td><td>5 / 25</td><td>0</td><td>9 / 10</td></tr>
+  <tr><td class="l"><a style="color:#e8eef7;text-decoration:underline dotted #5c6f8f">Trần Ngọc Hà</a></td><td class="l mu">MB-FT 101 · L, R +2</td><td>29</td><td>26</td><td>7 / 26</td><td>1</td><td>18 / 21</td></tr></table>
+ <div class="mu" style="margin-top:6px">Đúng các cột design plan §6.2. Bấm tên → hồ sơ giáo viên. Giáo viên (không phải Quản lý) không thấy tab này.</div>
+</div></div>
