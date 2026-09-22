@@ -1586,7 +1586,7 @@ api.get('/tong-quan/chi-nhanh/o', requireAuth, wrap((req) => {
   - `qsSoLieu(phamVi?, extra?): string` — `rows=1&branchId=…&ct=…&skill=…`.
   - `SoLieuO(props: { giaTri: number; className?: string } & ({ id: string; phamVi?; extra? } | { nguon: string; tieuDe: string }))`.
 
-- [ ] **Step 1: Sửa `SoLieu.tsx`.** Giữ nguyên chú thích đầu file. Cấu trúc mới:
+- [x] **Step 1: Sửa `SoLieu.tsx`.** Giữ nguyên chú thích đầu file. Cấu trúc mới:
 
 ```tsx
 import { useState, type ReactNode } from 'react';
@@ -1704,7 +1704,7 @@ export function SoLieu({ id, giaTri, phamVi, rong, className = '', extra, nhan, 
 ```
   Kiểm lại mọi nơi đang dùng `SoLieu` (`grep -rn "<SoLieu" web/src`) — prop cũ vẫn hợp lệ (`phamVi={{ branchId }}`).
 
-- [ ] **Step 2: Tạo `web/src/ui/SoLieuO.tsx`:**
+- [x] **Step 2: Tạo `web/src/ui/SoLieuO.tsx`:**
 
 ```tsx
 import { useState } from 'react';
@@ -1753,8 +1753,8 @@ function DanhSachNguon({ nguon, tieuDe, open, onClose }: { nguon: string; tieuDe
 }
 ```
 
-- [ ] **Step 3:** `npm run typecheck` xanh; `npm run check` xanh.
-- [ ] **Step 4: Commit.** `"PR-Pa (9): SoLieu tách panel danh sách; SoLieuO số nhỏ bấm được; chữ Cách tính theo THUAT_NGU"`
+- [x] **Step 3:** `npm run typecheck` xanh; `npm run check` xanh.
+- [x] **Step 4: Commit.** `"PR-Pa (9): SoLieu tách panel danh sách; SoLieuO số nhỏ bấm được; chữ Cách tính theo THUAT_NGU"`
 
 ---
 
@@ -2570,3 +2570,7 @@ export function HocVienCanHoTro() {
   → tín hiệu về GVCN → `myWork` có dòng với `['create_case','dismiss']` → `reportIssue(fromSignalId, idempotencyKey)`
   thành công, gửi lại cùng khoá ra cùng Case, tín hiệu `linked`, dòng biến mất → khôi phục phân công. Cửa 🛑 không xảy ra,
   không chạm `cases.ts`/`signals.ts`. Tổng **752**.
+- **Task 9:** commit `28e6b62`. Session bị ngắt giữa chừng (đã tạo `SoLieuO.tsx`, chưa sửa `SoLieu.tsx`) → nối lại
+  cùng subagent làm nốt. `SoLieuO.tsx` chép nguyên văn; `SoLieu.tsx` chỉ khác plan ở hai chỗ `/* giữ nguyên */` (chép từ
+  file cũ) và giữ JSDoc đầu file. `npm run check` xanh (752 + typecheck). Prop mới (`nhan`/`phu`/`tone`/`chuongTrinh`) và
+  `SoLieuO` chưa có người gọi cho tới Task 10 — kiểm giao diện dồn về Task 13.
