@@ -85,6 +85,7 @@ export async function runChamDiemTests(t: YThucTestKit) {
   const skillSched: any = await import('../fasttrack/skillSchedule.ts');
   const attempts: any = await import('../fasttrack/attempts.ts');
   const cham: any = await import('../cham/canCham.ts');
+  const casesSvc: any = await import('../cases/cases.ts');
   const NOW = new Date().toISOString();
   const LOP = classId('MB-FOU 12');
   const BON_MON = ['listening', 'reading', 'writing', 'speaking'];
@@ -221,5 +222,44 @@ export async function runChamDiemTests(t: YThucTestKit) {
     assert(!JSON.stringify(a.thuong.rows).includes('"MT'), 'Không có chữ MT nào trong dữ liệu lớp thường');
     const b = cham.chamSheet(P.mbManager, lopFT, {});
     assert(b.mode === 'ielts_band' && b.ft && !b.thuong, `Lớp FT phải ra lưới Mock Test: ${b.mode}`);
+  });
+
+  check('PR-Rc1 · §6 Trạng thái Case không biến mất ở dòng bài cũ khi bài sau chạm vào cùng Case', () => {
+    const { sid, cycleId, attemptId } = taoBaiThuong('2026-09-14');
+    const a: any = conn.prepare('SELECT * FROM assessment_attempts WHERE id = ?').get(attemptId);
+    /* Giữa khoá: trượt Listening → sinh tín hiệu cho môn đó. Quản lý không nhập điểm — dùng đường nhập bù của Quản trị. */
+    for (const [k, s] of [['listening', 10], ['reading', 35], ['writing', 16], ['speaking', 8]] as const) {
+      regular.saveRegularScore(P.admin, attemptId, k, { score: s, total: k === 'writing' ? 20 : k === 'speaking' ? 10 : 40 });
+    }
+    /*
+     * Môn trượt chỉ sinh TÍN HIỆU, không tự sinh Case (mục 6.2). Case ra đời khi giáo viên bấm "Tạo Case" từ tín hiệu —
+     * đi đúng đường đó (GVCN của lớp), để Case là Case Listening thật của chính dòng này.
+     */
+    const sg: any = conn.prepare(`SELECT * FROM case_signals WHERE attempt_id = ? AND skill = 'listening'`).get(attemptId);
+    assert(sg && sg.status === 'pending', 'Môn trượt phải sinh tín hiệu đang chờ');
+    casesSvc.reportIssue(P.normalCoreTeacher, {
+      studentId: a.student_id, topic: 'listening', fromSignalId: sg.id,
+      title: 'Listening dưới ngưỡng (PR-Rc1)', summary: 'Đã xem lại bài, em vướng đúng phần nghe này của môn.',
+      primaryCode: d.issuesForTopic('listening')[0].code,
+    });
+    const caseRow: any = conn.prepare(
+      `SELECT id, category, topic FROM sos_cases WHERE student_id = ? AND status != 'done' ORDER BY id DESC LIMIT 1`,
+    ).get(a.student_id);
+    const caseId = Number(caseRow?.id ?? 0);
+    assert(caseId > 0, 'Phải có Case cho môn trượt');
+    assert((caseRow.category ?? caseRow.topic) === 'listening', `Case phải là Case Listening: ${caseRow.category ?? caseRow.topic}`);
+    /*
+     * Bài Cuối khoá chạm vào cùng Case → cột attempt_id của Case trỏ sang lượt mới. Lượt mới là lượt THẬT của cùng khoá
+     * (cột có khoá ngoại tới `assessment_attempts`, không trỏ được vào một số bịa).
+     */
+    const cuoiKhoa = taoLuot(cycleId, sid, 2, 'final', '2026-09-28');
+    conn.prepare('UPDATE sos_cases SET attempt_id = ? WHERE id = ?').run(cuoiKhoa, caseId);
+    const sheet = regular.regularSheet(P.mbManager, classId('MB-FOU 12'));
+    const dong = sheet.rows.find((r: any) => r.attemptId === attemptId);
+    assert(dong, 'Dòng vẫn còn trong bảng');
+    assert(dong.cases.length > 0 && dong.cases[0].id === caseId,
+      'Dòng cũ vẫn thấy Case của chính môn mình, dù attempt_id của Case đã trỏ chỗ khác');
+    assert(dong.cases[0].category === 'listening' && dong.cases[0].skill === 'listening', 'Case gắn đúng môn trượt');
+    assert(dong.caseStatus !== null, 'Trường cũ vẫn có giá trị để nơi gọi cũ không vỡ');
   });
 }

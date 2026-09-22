@@ -899,7 +899,7 @@ git commit -m "PR-Rc1 (3): mot cua cho bang cham; bang Mock Test khong nhan lop 
   (các Case gắn với **các môn chưa đạt của chính dòng đó**), và giữ `caseId/caseStatus/caseLevel` = Case đầu tiên để
   không vỡ nơi gọi cũ.
 
-- [ ] **Step 1: Phép kiểm (đỏ).**
+- [x] **Step 1: Phép kiểm (đỏ).**
 
 ```ts
   check('PR-Rc1 · §6 Trạng thái Case không biến mất ở dòng bài cũ khi bài sau chạm vào cùng Case', () => {
@@ -924,7 +924,7 @@ git commit -m "PR-Rc1 (3): mot cua cho bang cham; bang Mock Test khong nhan lop 
   });
 ```
 
-- [ ] **Step 2: Sửa truy vấn Case.** Thay khối `const cases = new Map<number, any>(); …` (`regular.ts:581-587`) bằng:
+- [x] **Step 2: Sửa truy vấn Case.** Thay khối `const cases = new Map<number, any>(); …` (`regular.ts:581-587`) bằng:
 
 ```ts
   /*
@@ -955,7 +955,7 @@ git commit -m "PR-Rc1 (3): mot cua cho bang cham; bang Mock Test khong nhan lop 
   };
 ```
 
-- [ ] **Step 3: Dùng ở từng dòng.** Trong `rows: attempts.map((a) => { … })`, thay `const c = cases.get(a.id);` bằng:
+- [x] **Step 3: Dùng ở từng dòng.** Trong `rows: attempts.map((a) => { … })`, thay `const c = cases.get(a.id);` bằng:
 
 ```ts
       const failing = result.skills.filter((s) => s.outcome === 'fail').map((s) => s.skill);
@@ -969,9 +969,9 @@ git commit -m "PR-Rc1 (3): mot cua cho bang cham; bang Mock Test khong nhan lop 
         caseId: c?.id ?? null, caseStatus: c?.status ?? null, caseLevel: c?.level ?? null,
 ```
 
-- [ ] **Step 4: Chạy.** Run: `npm test 2>&1 | tail -5`. Expected: `TẤT CẢ B+13 KIỂM TRA ĐỀU ĐẠT`.
+- [x] **Step 4: Chạy.** Run: `npm test 2>&1 | tail -5`. Expected: `TẤT CẢ B+13 KIỂM TRA ĐỀU ĐẠT`.
 
-- [ ] **Step 5: Commit.**
+- [x] **Step 5: Commit.**
 
 ```bash
 git add server/src/normal/regular.ts server/src/tests/chamDiem.tests.ts
@@ -1866,3 +1866,4 @@ git fetch origin && git rebase origin/main
 | 23/09 | 1 | Đỏ: 779 đạt, 7 hỏng (`d.mucCanCham is not a function`…). Xanh: 786 (B=779 + 7). Chép đúng mã kế hoạch, không lệch; móc run.ts đặt sau khối PR-AN, trước khối in tổng kết. `npm run typecheck` sạch. |
 | 23/09 | 2 | Đỏ: 786 đạt, 5 hỏng (`reportRegularNoShow is not a function`, câu chặn cũ còn). Xanh: **791** (786 + 5; kế hoạch ghi 4 phép, thêm 1). Lệch kế hoạch: (a) Ruling 1 — phép quyền dùng Quản trị hệ thống ghi được + Quản lý bị chặn; (b) Ruling 2 — môn lấy từ `teacher_assignments` của GVBM, assert có môn và có môn không dạy (không bỏ qua im lặng); (c) thêm phép "dời bị chặn (vượt đợt kế tiếp) thì không còn dấu -": ghi dấu + dời chung một `tx` (kiểm đột biến: bỏ `tx` thì phép này đỏ); (d) Ruling 6 — ô môn của `regularSheet` thêm `noShow`, `movedFrom`, `canEdit`; (e) chặn gỡ dấu khi ô đã có điểm ở tuần mới (`hasScore` của setSkillWeek chỉ nhìn band nên không tự chặn); (f) run.ts phép PR-G "Normal KHÔNG dùng dấu" đổi tên + regex `/Normal/` → `/lớp thường/` theo câu chỉ đường mới (số phép không đổi). typecheck sạch. |
 | 23/09 | 3 | Đỏ: 791 đạt, 1 hỏng ("thao tác đáng lẽ phải bị từ chối nhưng lại thành công" — tạo canCham + endpoint trước, chặn sau). Xanh: **792**. Lệch kế hoạch: (a) regex phép kiểm `/lớp thường/` thêm cờ `i` — câu lỗi chép nguyên văn bắt đầu bằng "Lớp thường"; (b) canCham.ts bỏ import `badRequest` không dùng; (c) endpoint truyền `qInt(...) ?? null`, `qStr(...) ?? null` (helper trả `undefined`). Nơi gọi `classScoreSheet` cũ (run.ts ×3, luatMayChu.tests.ts) đều là lớp FT — không vỡ. Web: `ScoreSheetPage` (`/nhap-diem/:id`) giờ báo lỗi rõ khi mở lớp thường thay vì hiện nhầm lưới MT, tới khi Task 7–8 chuyển sang endpoint chung. typecheck sạch. |
+| 23/09 | 4 | Đỏ: 792 đạt, 1 hỏng (`dong.cases` chưa có). Xanh: **793**. Lệch kế hoạch: (a) Ruling 1 — bốn lần nhập điểm dùng `P.admin` (Quản lý không nhập điểm), đọc bảng vẫn `P.mbManager`; (b) môn trượt chỉ sinh TÍN HIỆU, không tự sinh Case → phép kiểm tạo Case Listening thật từ tín hiệu (`reportIssue` của GVCN, `fromSignalId`) và assert Case đó là hạng mục listening; (c) `attempt_id + 99999` vỡ khoá ngoại → trỏ sang một lượt Cuối khoá THẬT của cùng khoá (`taoLuot`); (d) phần tử `cases` thêm `skill` (môn trượt của dòng ứng với hạng mục) cho khớp Interfaces; câu SELECT Case có `ORDER BY id` để Case đầu tiên ổn định. typecheck sạch. |

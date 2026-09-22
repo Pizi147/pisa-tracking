@@ -695,13 +695,38 @@ export function regularSheet(p: Principal, classId: number, kind?: string) {
     }
   }
 
-  const cases = new Map<number, any>();
-  if (attempts.length) {
-    const ids = attempts.map((a) => a.id);
-    for (const c of conn
-      .prepare(`SELECT * FROM sos_cases WHERE attempt_id IN (${ids.map(() => '?').join(',')})`)
-      .all(...ids) as any[]) cases.set(c.attempt_id, c);
-  }
+  /*
+   * CASE CỦA MỘT DÒNG TÌM THEO HỌC VIÊN + KHOÁ + HẠNG MỤC, KHÔNG THEO `attempt_id`.
+   *
+   * `sos_cases.attempt_id` luôn trỏ tới LƯỢT MỚI NHẤT đã chạm vào Case (xem `refreshRegularOutcome`). Tìm theo cột đó
+   * thì bài Giữa khoá mất sạch trạng thái Case ngay khi bài Cuối khoá được chấm — đúng lỗi đã ghi ở đặc tả §6. Case
+   * sống suốt khoá và gắn với một HẠNG MỤC (môn), nên câu hỏi đúng là "môn này của em có Case nào đang mở không".
+   */
+  const studentIds = [...new Set(attempts.map((a) => a.student_id as number))];
+  const caseRows = studentIds.length
+    ? (conn
+        .prepare(`SELECT * FROM sos_cases WHERE student_id IN (${studentIds.map(() => '?').join(',')}) ORDER BY id`)
+        .all(...studentIds) as any[])
+    : [];
+  const casesOf = (studentId: number, cycleId: number | null, failing: string[]) => {
+    /* Hạng mục → môn trượt của chính dòng này; lớp thường thì hai tên trùng nhau (L · R · W · S). */
+    const skillOfCat = new Map<string, string>();
+    for (const k of failing) {
+      const cat = categoryOf(k);
+      if (cat && !skillOfCat.has(cat)) skillOfCat.set(cat, k);
+    }
+    return caseRows
+      .filter((c) => c.student_id === studentId
+        && (c.cycle_id ?? 0) === (cycleId ?? 0)
+        && skillOfCat.has(c.category ?? categoryOf(c.topic) ?? ''))
+      .map((c) => {
+        const category = (c.category ?? categoryOf(c.topic)) as string;
+        return {
+          id: c.id as number, status: c.status as string, level: (c.sos_level ?? null) as number | null,
+          skill: skillOfCat.get(category)!, category,
+        };
+      });
+  };
 
   const editable = editableSkills(p, classId, prog.skills);
   /* Quyền sửa ô tính MỘT lần cho mỗi môn — cùng cửa với `saveRegularScore`, không hỏi lại theo từng dòng. */
@@ -728,7 +753,9 @@ export function regularSheet(p: Principal, classId: number, kind?: string) {
     rows: attempts.map((a) => {
       const rows = byAttempt.get(a.id) ?? [];
       const result = evaluateRegular(prog.skills, rows);
-      const c = cases.get(a.id);
+      const failing = result.skills.filter((s) => s.outcome === 'fail').map((s) => s.skill);
+      const dongCases = casesOf(a.student_id, a.cycle_id ?? null, failing);
+      const c = dongCases[0] ?? null;
       const views = regularSkillViews({ ...a, period_start: a.week_start }, skillRows.get(a.id), rows as any, demoToday());
       /*
        * HẠN CỦA CẢ BÀI chỉ còn là hạn MUỘN NHẤT trong các môn còn phải chấm — một con số
@@ -780,7 +807,9 @@ export function regularSheet(p: Principal, classId: number, kind?: string) {
         periodCode: a.period_code ?? null,
         status: a.status,
         result,
-        caseId: c?.id ?? null, caseStatus: c?.status ?? null, caseLevel: c?.sos_level ?? null,
+        /** Các Case gắn với những môn CHƯA ĐẠT của chính dòng này (theo học viên + khoá + hạng mục). */
+        cases: dongCases,
+        caseId: c?.id ?? null, caseStatus: c?.status ?? null, caseLevel: c?.level ?? null,
       };
     }),
     today: demoToday(),
