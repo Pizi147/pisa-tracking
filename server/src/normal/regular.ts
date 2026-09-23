@@ -12,6 +12,7 @@ import { demoToday } from '../demoConfig.ts';
 import { addJourney, writeAudit } from '../platform/audit.ts';
 import { ensurePeriod, mondayOf } from '../platform/week.ts';
 import { regularSkillViews, weekStartOf } from '../fasttrack/attempts.ts';
+import { nho } from '../platform/nguCanhRequest.ts';
 import { ensureSkillRows, loadSkillRows, setSkillWeek } from '../fasttrack/skillSchedule.ts';
 
 /**
@@ -42,22 +43,25 @@ export type ProgrammeInfo = {
  * Danh sách lớp hỏi chương trình của từng dòng, nên đọc lẻ là đúng cái bẫy N+1 mà cả
  * màn hình này được dựng để tránh.
  */
+/** PR-TD: ba câu SQL cho CẢ hệ thống chương trình, nhớ trong request GET — gọi lặp mỗi lớp/mỗi lượt trong một request. */
 export function allProgrammes(): Map<string, ProgrammeInfo> {
-  const conn = db();
-  const out = new Map<string, ProgrammeInfo>();
-  for (const p of conn.prepare(`SELECT * FROM programmes WHERE status = 'active'`).all() as any[]) {
-    out.set(p.code, {
-      code: p.code, name: p.name, weeks: p.weeks, scoringMode: p.scoring_mode,
-      skills: [], checkpoints: [],
-    });
-  }
-  for (const r of conn.prepare('SELECT programme_code, skill FROM programme_skills ORDER BY seq, skill').all() as any[]) {
-    out.get(r.programme_code)?.skills.push(r.skill);
-  }
-  for (const r of conn.prepare('SELECT programme_code, kind, study_week FROM programme_checkpoints ORDER BY study_week').all() as any[]) {
-    out.get(r.programme_code)?.checkpoints.push({ kind: r.kind as AttemptKind, studyWeek: r.study_week });
-  }
-  return out;
+  return nho('chuong-trinh', () => {
+    const conn = db();
+    const out = new Map<string, ProgrammeInfo>();
+    for (const p of conn.prepare(`SELECT * FROM programmes WHERE status = 'active'`).all() as any[]) {
+      out.set(p.code, {
+        code: p.code, name: p.name, weeks: p.weeks, scoringMode: p.scoring_mode,
+        skills: [], checkpoints: [],
+      });
+    }
+    for (const r of conn.prepare('SELECT programme_code, skill FROM programme_skills ORDER BY seq, skill').all() as any[]) {
+      out.get(r.programme_code)?.skills.push(r.skill);
+    }
+    for (const r of conn.prepare('SELECT programme_code, kind, study_week FROM programme_checkpoints ORDER BY study_week').all() as any[]) {
+      out.get(r.programme_code)?.checkpoints.push({ kind: r.kind as AttemptKind, studyWeek: r.study_week });
+    }
+    return out;
+  });
 }
 
 export function programmeByCode(code: string | null | undefined): ProgrammeInfo | null {

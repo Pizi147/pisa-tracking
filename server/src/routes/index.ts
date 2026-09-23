@@ -111,16 +111,25 @@ api.get('/demo/session', wrap((req) => {
   const p = req.principal;
   if (!p) return { authenticated: false, demoDate: demoToday(), scenario: scenarioMode() };
   const conn = db();
+  /* PR-TD: một câu IN cho mọi mã lớp của phân công, thay vì một câu mỗi phân công. */
+  const maLopCua = new Map<number, string>();
+  const lopIds = [...new Set(p.assignments.map((a) => a.classId))];
+  if (lopIds.length) {
+    for (const r of conn
+      .prepare(`SELECT id, code FROM classes WHERE id IN (${lopIds.map(() => '?').join(',')})`)
+      .all(...lopIds) as any[]) {
+      maLopCua.set(r.id, r.code);
+    }
+  }
   return {
     authenticated: true,
     user: { id: p.userId, code: p.code, fullName: p.fullName, title: p.title },
     roles: p.roleKeys,
     roleLabels: p.roleKeys.map((r) => ROLE_LABEL[r as Role] ?? r),
     grants: permissionSummary(p),
-    assignments: p.assignments.map((a) => {
-      const c = conn.prepare('SELECT code FROM classes WHERE id = ?').get(a.classId) as any;
-      return { classId: a.classId, classCode: c?.code ?? null, skill: a.skill, isCore: a.isCore };
-    }),
+    assignments: p.assignments.map((a) => (
+      { classId: a.classId, classCode: maLopCua.get(a.classId) ?? null, skill: a.skill, isCore: a.isCore }
+    )),
     demoDate: demoToday(),
     scenario: scenarioMode(),
     /*

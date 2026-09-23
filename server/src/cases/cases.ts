@@ -1806,8 +1806,14 @@ function caseTrongPhamVi(p: Principal, f: CaseFilters): MappedCase[] {
     skillsByCase.set(r.case_id, cur);
   }
 
-  /* PR-TD: nạp trước chi nhánh/lớp của MỌI HV trong một lô, để `can()` dưới đây không hỏi DB từng dòng một. */
-  napTruocPhamVi(rows.map((r) => r.eff_student_id));
+  /*
+   * PR-TD: nạp trước chi nhánh/lớp của MỌI HV trong một lô, để `can()` dưới đây không hỏi DB từng dòng một.
+   * BỎ QUA khi vai đang có phạm vi TOÀN HỆ THỐNG (`scope.all`, ví dụ Quản trị hệ thống): `can()` luôn `true` ngay ở
+   * grant `branchId = null` (`grantCovers`), không bao giờ chạm `branchOfClass`/`branchesOfStudent` — nạp trước ở
+   * đây chỉ tốn thêm hai câu SQL mà không có gì để lợi (đã tự bắt gặp lúc rà bằng `PR-Qa (17, fix planning) ·
+   * classOverview`: nạp trước cho `P.admin` làm số câu tăng dù `can()` chưa từng cần dữ liệu đó).
+   */
+  if (!scopeFor(p, PERMISSIONS.ATTEMPT_VIEW).all) napTruocPhamVi(rows.map((r) => r.eff_student_id));
 
   const all: MappedCase[] = rows
     .filter((r) => can(p, PERMISSIONS.ATTEMPT_VIEW, { classId: r.eff_class_id, studentId: r.eff_student_id }))
