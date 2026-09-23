@@ -3603,3 +3603,33 @@ playwright, `git status` sạch trước khi commit.
   Ghi chú của người rà cuối: mục Nhật ký thực thi này trước khi bổ sung chỉ có Task 0/1/16/17 — các task 2-15 đã được
   code/review đầy đủ (xem ledger SDD) nhưng không phải task nào cũng tự chép lại vào file plan này; đã bổ sung tóm tắt ở
   trên để người đọc plan không phải mở file ledger riêng mới biết đã có review.
+
+- **PR #69 — vòng sửa theo session planning + xung đột merge với main:** Sau khi mở PR #69, session planning rà và trả
+  lời "MERGE ĐƯỢC SAU KHI SỬA" với 2 việc: (1) [Important] `soCaseMoTheoLop` gọi `listCases(p, {})` quét toàn hệ thống —
+  chậm trên Turso; (2) [Minor] 3 chỗ chữ/màu ở `ClassRoster.tsx`/`BangDiemLopThuong.tsx`. Model thật: Sonnet 5 (fix),
+  Opus 5 (review — vẫn giữ nguyên tắc khác model người code cho mọi vòng rà nhạy cảm về quyền/hiệu năng).
+  - Fix round 1 (`3f951e3`): xoá hẳn `soCaseMoTheoLop`; `classOverview` gọi `listCases(p,{classId})` trực tiếp;
+    `danhSachHocVienLop` gọi `listCases` một lần cho mỗi chi nhánh có trong danh sách lớp (không phải toàn hệ thống,
+    không gọi hai lần); 3 fix chữ/màu; bấm thử vai GVBM/QL qua server tạm 4137/5337, dọn dẹp sạch. 813/813 đạt.
+  - Review round 1 (Opus): Needs fixes — 2 Important MỚI phát hiện (tự tái hiện bằng cách đảo code, không suy đoán):
+    (a) `classOverview` badge lệch "Cần hỗ trợ" khi học viên bị tạm dừng (paused) còn Case mở — quirk khác của
+    `cases.ts` (không sửa file đó) va chạm với cách tính mới; (b) 2 phép kiểm đếm truy vấn mới dùng `P.admin` (grant
+    `branchId: null` không hỏi DB) nên không bắt được nếu code quay lại quét toàn hệ thống — tự chứng minh bằng cách
+    đảo code, test vẫn xanh.
+  - **Đồng thời:** Auto-fix CI báo PR #69 xung đột merge với `main` (PR-Pa #68 vừa merge). Xử lý SAU khi fix round 1 đã
+    push (không phá việc đang chạy dở): `git fetch origin main && git merge FETCH_HEAD` (KHÔNG rebase, KHÔNG
+    force-push — đúng chỉ dẫn Auto-fix cho PR đã mở công khai). Xung đột DUY NHẤT: `shared/domain/index.ts` (cộng dồn
+    `export *` cho `hocVienLop.ts` và `tongQuan.ts` của PR-Pa) — giữ cả hai dòng. Mọi file khác tự merge sạch. Không
+    trùng tên export giữa hai module mới. `npm run check` sau merge: 835/835 (813 PR-Qa + 22 PR-Pa). Commit merge
+    `75694f3`, push thường.
+  - Fix round 2 (`46a8051`): `classOverview.soCaseMo` lọc thêm theo học viên đang active/không lưu trữ của ĐÚNG lớp
+    trước khi đếm (một câu SQL hằng số, khớp cách `lopCuaHv` đã làm đúng ở `danhSachHocVienLop`); test mới tái hiện
+    đúng kịch bản paused; 2 test đếm truy vấn đổi/thêm dùng `P.mbManager` + Case ở chi nhánh khác để "có răng" thật.
+    837/837 đạt.
+  - Re-review round 2 (Opus): **All findings addressed** — xác minh bằng cách đảo code lại 3 lần (mỗi lần một chỗ),
+    thấy đúng test tương ứng đỏ, rồi khôi phục sạch. Không breakage mới. Park (không chặn): số câu `prepare` NỀN còn
+    cao (~660-734, không tăng theo Case) — nghi từ `listClassSummaries`/`can()` từng lớp, để PR-TD (tốc độ Turso) đo
+    sau; 1 nit đặt tên biến test; nợ gốc `cases.ts` (fallback lớp lúc đánh giá cho học viên paused) vẫn còn, đã ghi rõ
+    trong test là hành vi né tránh phía PR-Qa, không phải sửa gốc.
+  - **PR #69 sau cùng:** `mergeStateStatus: CLEAN`, `mergeable: MERGEABLE`. Đã push đủ 3 commit
+    (`3f951e3`, `75694f3`, `46a8051`) lên `origin/pr-qa-hoc-vien-lop`. Chưa merge — chờ session planning xác nhận lại.
