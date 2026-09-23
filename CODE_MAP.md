@@ -32,7 +32,7 @@ Nếu bạn nghĩ theo "cái tôi thấy trên màn hình" chứ không theo tê
 | **Thẻ case** và từng khối phương án ba phần trong hồ sơ (PR-HV Q8) | `web/src/modules/cases/SkillBoard.tsx` → `TheCase` · `KhoiPhuongAn` | `server/src/cases/cases.ts` → `caseCardOf` |
 | **Ghi kết quả PA** (cập nhật tuần 5 mục; Giữ nguyên / Điều chỉnh / Thay / Kết thúc) | `web/src/modules/cases/CapNhatTuan.tsx` → `CapNhatTuanForm` | `server/src/cases/cases.ts` → `updateResult` |
 | **Lịch sử điều chỉnh PA** (bản cũ · khi nào · ai · vì sao) | `web/src/modules/cases/CapNhatTuan.tsx` → `LichSuDieuChinh` | `server/src/cases/planRevisions.ts` |
-| Tab **Hành trình** — trục tuần theo giai đoạn, mỗi kỹ năng một hộp (PR-Qb) | `web/src/modules/students/HanhTrinh.tsx` · `NganCase.tsx` | `server/src/students/hanhTrinh.ts` · `shared/domain/hanhTrinh.ts`, `duongHoSo.ts` |
+| Tab **Hành trình** — một lưới trải rộng, chuỗi điểm ▲▼ trong cột tên, màu ghim N-1b, Xem gọn (PR-Qb, PR-UX5) | `web/src/modules/students/HanhTrinh.tsx` · `NganCase.tsx` · `web/src/lib/cuonOnDinh.ts` (`?dot=` cuộn ổn định) | `server/src/students/hanhTrinh.ts` · `shared/domain/hanhTrinh.ts`, `duongHoSo.ts` |
 | Thông báo trên thanh đầu, mở đúng chỗ theo loại | `web/src/modules/platform/Header.tsx` | `server/src/platform/thongBao.ts` |
 | Màn một lượt Test (chọn đợt khác cạnh tiêu đề; nút nhập điểm mở lưới đúng tuần của đợt) | `web/src/modules/fasttrack/MockDetailPage.tsx` | `server/src/fasttrack/attempts.ts` → `attemptDetail` |
 | **Bảng nhập điểm cả lớp** — một lưới cho hai loại lớp, máy chủ trả `mode` | `web/src/modules/cham/ChamDiemPage.tsx` (lưới dùng chung cho trang này và Lịch Test: `web/src/modules/cham/LuoiChamLop.tsx`; `web/src/modules/cham/LuoiFT.tsx` · `web/src/modules/cham/LuoiThuong.tsx`; điện thoại `web/src/modules/cham/MotKyNang.tsx`) | `server/src/cham/canCham.ts` → `chamSheet` (`GET /classes/:classId/cham`) |
@@ -129,7 +129,7 @@ loại dữ liệu mới** vào kịch bản thì thêm trường ở `server/sr
 | Dữ liệu đổ vào bảng đó | `server/src/classes/classes.ts` → `classRoster` |
 | Trang hồ sơ một em | `web/src/modules/students/StudentDetailPage.tsx` |
 | Panel "Quản lý học viên" (kế hoạch · đầu vào · mục tiêu · kết luận · chuyển lớp) | `web/src/modules/students/StudentManagePanel.tsx` |
-| Tab Hành trình — trục tuần theo giai đoạn, mỗi kỹ năng một hộp | `web/src/modules/students/HanhTrinh.tsx` · `server/src/students/hanhTrinh.ts` |
+| Tab Hành trình — một lưới, chuỗi điểm ▲▼, màu ghim N-1b, Xem gọn (luật thuần `shared/domain/hanhTrinh.ts`: `chuoiDiem`, `nhanGhim`, `boCucHanhTrinh`, `xepHangLuoi`) | `web/src/modules/students/HanhTrinh.tsx` · `server/src/students/hanhTrinh.ts` |
 | Dữ liệu hồ sơ | `server/src/students/profile.ts` |
 | Danh sách lớp, nhóm theo lớp, 6 chip lọc | `web/src/modules/students/StudentsPage.tsx` → `BangHocVienLop.tsx` |
 | Tên và điều kiện của 6 chip lọc | `shared/domain/hocVienLop.ts` → `LOC_HOC_VIEN` · `LOC_HOC_VIEN_NHAN` |
@@ -250,7 +250,7 @@ loại dữ liệu mới** vào kịch bản thì thêm trường ở `server/sr
 | Điểm giáo viên tự chấm | `server/src/cases/cases.ts` → `normalizeMetrics`, `parseMetrics` |
 | **Cách đếm hiệu quả phương án** — thành công/thất bại/chưa xác định, n/N, mẫu nhỏ | `server/src/cases/effectiveness.ts` (nơi sở hữu duy nhất; bảng của lớp và góc nhìn Kết quả hỗ trợ đều gọi vào đây) |
 | **Phân tích vấn đề — góc nhìn Kết quả hỗ trợ** — Fast Track/Lớp thường, hàng kỹ năng, bấm số ra case | `web/src/modules/cases/IssueAnalysis.tsx` · `server/src/cases/effectiveness.ts` → `issueSkillRows`, `issueBoard`, `issueBoardCases` |
-| **Khối phương án theo tầng** ở tab Hành trình (trục tuần, màu theo kết quả) | `web/src/modules/students/HanhTrinh.tsx` → `KhoiPa` · luật xếp tầng `shared/domain/hanhTrinh.ts` → `xepTang` |
+| **Khối phương án theo tầng** ở tab Hành trình (một lưới, dấu + màu theo kết quả, hẹp chỉ hiện dấu) | `web/src/modules/students/HanhTrinh.tsx` → `KhoiPa` · luật xếp tầng `shared/domain/hanhTrinh.ts` → `xepTang` |
 | Khung Phân tích (hàng góc nhìn + bộ lọc chung), Danh sách Case và bộ lọc | `web/src/modules/phanTich/PhanTich.tsx` · `web/src/modules/cases/CaseBoardPage.tsx` (`DanhSachCase`) |
 
 ### Ý thức
