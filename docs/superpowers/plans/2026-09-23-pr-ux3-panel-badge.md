@@ -435,3 +435,11 @@ Không làm → ghi "Chuyển cho" trong thân PR. Commit `PR-UX3 (9): Thêm HV 
 
 | Ngày | Task | Ghi |
 |---|---|---|
+
+## Bổ sung 24/09 — Xoá lớp / Kết thúc lớp (chủ sản phẩm chốt)
+
+**Chỉ Quản trị hệ thống (system admin)** — kiểm ở MÁY CHỦ bằng quyền quản trị (ADMIN_CONFIG / vai system_admin), không chỉ ẩn nút. QL chi nhánh, GV: không thấy nút, gọi API trả 403.
+**Vị trí:** Hồ sơ lớp → nút ⋮ (góc đầu trang) → cuối menu, sau đường kẻ. Bảng định vị §4 thêm dòng "Xoá lớp / Kết thúc lớp | ⋮ Hồ sơ lớp | Quản trị hệ thống".
+- **Xoá lớp** — chỉ hiện (và máy chủ chỉ cho) khi lớp **chưa có học viên nào từng ghi danh** và **chưa có lượt Test / điểm / Case / vi phạm** gắn lớp. Mở panel (KhungPanel) xác nhận: nêu mã lớp + chi nhánh + "Không hoàn tác được", ô **gõ lại mã lớp** mới bật nút đỏ "Xoá lớp". Xoá hẳn trong một tx: phân công GV, lịch kỹ năng/đợt rỗng, dòng lớp; ghi audit_logs (ai, lúc nào, mã lớp). Lớp có dữ liệu → nút không hiện; gọi API → 400 "Lớp đã có dữ liệu — dùng Kết thúc lớp".
+- **Kết thúc lớp** — cho lớp đã có dữ liệu: panel xác nhận; nếu còn học viên đang học thì CHẶN và chỉ dẫn "Còn n học viên đang học — chuyển tiếp lớp hoặc chuyển lớp trước". Không còn ai → `status='finished'`, `finished_at` = hôm nay (cùng luật lớp tự kết thúc của PR-LT), lớp vào khu Lưu trữ, hồ sơ chỉ xem; ghi audit_logs.
+- Phép kiểm: QL/GV → 403 cả hai đường; admin xoá lớp rỗng → dòng lớp mất + audit; lớp có 1 HV từng học / 1 lượt Test → 400; kết thúc lớp còn HV đang học → 400; kết thúc lớp rỗng → finished + vào /hoc-vien-lop/luu-tru. Đường mới vào tocDoDuong.ts.
