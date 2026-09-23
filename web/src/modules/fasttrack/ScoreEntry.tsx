@@ -307,8 +307,10 @@ export function RawScoreInput({ cell, onSave, inputRef, onKeyDown, lon = false }
   };
 
   if (!cell.canEdit || lockedByNoShow(cell)) {
+    /* Điện thoại: dồn phải cả cụm — dòng đếm ngược "Còn 6 ngày để sửa" rộng hơn "-" + chỗ nút, dồn trái thì dòng này
+       lệch khỏi cột của các dòng khác. */
     return (
-      <span className="inline-flex flex-col items-start gap-0.5">
+      <span className={`inline-flex flex-col ${lon ? 'items-end' : 'items-start'} gap-0.5`}>
         <span className="inline-flex items-center gap-1.5">
           <span className="tabular-nums text-slate-300"
             title={lockedByNoShow(cell) ? 'Đã chốt — cần Quản lý hiệu chỉnh' : 'Bạn không được phân công kỹ năng này'}>
@@ -832,6 +834,7 @@ export function ODiemThuong({
   lon?: boolean;
   tongLaySan?: boolean;
 }) {
+  const toast = useToast();
   const dau = cell.dau ?? cell.tuanDoiTu !== null;
   const coDiem = cell.diem !== null;
   const diemDaLuu = () => (coDiem ? String(cell.diem) : dau ? '-' : '');
@@ -848,6 +851,7 @@ export function ODiemThuong({
   const lanDaDien = useRef(dienTong?.lan ?? 0);
   /* Ô trái vừa được GÕ thật — ↓ điền tổng hay con trỏ đi qua không bao giờ tính là gõ lại "-". */
   const goDiem = useRef(false);
+  const daBaoChuaToi = useRef(false);
 
   useEffect(() => {
     if (!dirty) { setDiem(diemDaLuu()); setTong(tongDaLuu()); }
@@ -889,8 +893,16 @@ export function ODiemThuong({
     if (d === '-') {
       /* Đã mang dấu: chỉ dời tiếp khi tuần mới đã tới VÀ người dùng thật sự gõ lại "-" (Q4). */
       if (dau && (cell.chuaToiTuan || !goDiem.current)) { setDirty(false); goDiem.current = false; return; }
-      /* Chưa tới tuần thi: không ghi "-" lần đầu — ô về như cũ, nói lý do ngay tại ô. */
-      if (cell.chuaToiTuan) { setDirty(false); goDiem.current = false; setCanhBao({ o: 'diem', cau: chuaToiCau }); return; }
+      /* Chưa tới tuần thi: không ghi "-" lần đầu, không gửi gì — ô về như cũ, báo bằng toast như một lần máy chủ từ chối
+         (Enter còn đưa con trỏ xuống dòng dưới, nên tooltip/viền tại ô không ai thấy). */
+      if (cell.chuaToiTuan) {
+        /* Enter gọi commit rồi con trỏ rời ô gọi commit lần nữa trước khi `dirty` kịp đổi — chỉ báo MỘT lần. */
+        if (daBaoChuaToi.current) return;
+        daBaoChuaToi.current = true;
+        setDirty(false); goDiem.current = false; setCanhBao(null);
+        toast.push('error', `${tenMon}: ${chuaToiCau}`);
+        return;
+      }
       setCanhBao(null);
       return gui(() => onDau(true), true);
     }
@@ -1065,7 +1077,7 @@ export function ODiemThuong({
           const v = e.target.value.trim();
           /* Dự phòng: "--" lọt vào ô (bàn phím ảo không cho chặn trước) → giữ "-", đi đúng đường gõ lại "-". */
           if (goLai.doi(v)) return;
-          setDiem(e.target.value); setDirty(true); goDiem.current = true;
+          setDiem(e.target.value); setDirty(true); goDiem.current = true; daBaoChuaToi.current = false;
           if (canhBao?.o === 'diem') setCanhBao(null);
         }} onKeyDown={phim} />
       <span className="text-slate-600">/</span>
