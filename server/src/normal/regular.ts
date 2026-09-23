@@ -229,7 +229,12 @@ export function regularResultOf(attemptId: number): RegularResult {
  * Tuần học 4 nghĩa là tuần thứ tư kể từ ngày khai giảng, KHÔNG phải "W4" của một tháng.
  * Không có ngày khai giảng thì không đoán — báo lỗi để người dùng điền vào trước.
  */
-export function planRegularTests(p: Principal, classId: number) {
+export function planRegularTests(p: Principal, classId: number, opts: {
+  /** Chỉ tạo cho các em này (Kế hoạch Test xếp từng em — PR-UX2). Không truyền = cả lớp. */
+  studentIds?: number[];
+  /** Chỉ tạo các mốc này. Không truyền = mọi mốc của chương trình. */
+  kinds?: Array<'progress' | 'final'>;
+} = {}) {
   const conn = db();
   const cls = conn.prepare('SELECT * FROM classes WHERE id = ?').get(classId) as any;
   if (!cls) throw notFound('Không tìm thấy lớp');
@@ -252,13 +257,15 @@ export function planRegularTests(p: Principal, classId: number) {
   }
   if (!prog.checkpoints.length) throw badRequest(`Chương trình ${prog.code} chưa khai báo mốc kiểm tra nào.`);
 
+  const chonEm = opts.studentIds?.length ? opts.studentIds : null;
   const students = conn
     .prepare(
       `SELECT s.id FROM students s
          JOIN enrollments e ON e.student_id = s.id AND e.status = 'active'
-        WHERE e.class_id = ? AND s.archived_at IS NULL AND s.status = 'active'`,
+        WHERE e.class_id = ? AND s.archived_at IS NULL AND s.status = 'active'${
+          chonEm ? ` AND s.id IN (${chonEm.map(() => '?').join(',')})` : ''}`,
     )
-    .all(classId) as any[];
+    .all(classId, ...(chonEm ?? [])) as any[];
 
   const created: number[] = [];
   return tx(() => {
@@ -299,6 +306,7 @@ export function planRegularTests(p: Principal, classId: number) {
       }
 
       for (const cp of prog.checkpoints) {
+        if (opts.kinds && !opts.kinds.includes(cp.kind as 'progress' | 'final')) continue;
         const dup = conn
           .prepare(`SELECT id FROM assessment_attempts WHERE cycle_id = ? AND kind = ?`)
           .get(cycle.id, cp.kind) as any;

@@ -511,48 +511,66 @@ api.get('/ke-hoach-test/lop', requireAuth, wrap((req) =>
 api.get('/ke-hoach-test/ft/:classId', requireAuth, wrap((req) =>
   keHoachSvc.luoiFT(principalOf(req), pInt(req, 'classId'))));
 
-api.post('/ke-hoach-test/nhom/kiem', requireAuth, wrap((req) => {
+/** Đọc object tuần `{ listening: periodId, … }` — từng giá trị qua `toInt`, kỹ năng lạ bị bỏ. */
+function tuanTheoKyNang(v: any): Record<string, number> {
+  const out: Record<string, number> = {};
+  if (!v || typeof v !== 'object') return out;
+  for (const k of ['listening', 'reading', 'writing', 'speaking']) {
+    const n = toInt(v[k]);
+    if (n) out[k] = n;
+  }
+  return out;
+}
+
+api.post('/ke-hoach-test/dot/kiem', requireAuth, wrap((req) => {
   const attemptId = toInt(req.body?.attemptId);
-  const periodId = toInt(req.body?.periodId);
-  if (!attemptId || !periodId || !req.body?.nhom) throw badRequest('Thiếu tham số kiểm tuần.');
-  return keHoachSvc.kiemTuanNhom(principalOf(req), { attemptId, periodId, nhom: req.body.nhom });
+  if (!attemptId || !Array.isArray(req.body?.kyNang)) throw badRequest('Thiếu đợt hoặc kỹ năng cần kiểm.');
+  const kyNang = req.body.kyNang.map((k: any) => ({ skill: String(k?.skill ?? ''), periodId: toInt(k?.periodId) }));
+  if (kyNang.some((k: any) => !k.periodId)) throw badRequest('Thiếu tuần của một kỹ năng.');
+  return keHoachSvc.kiemDot(principalOf(req), { attemptId, kyNang });
 }));
 
-api.post('/ke-hoach-test/nhom', requireAuth, wrap((req) => {
+api.post('/ke-hoach-test/dot', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   const attemptId = toInt(req.body?.attemptId);
-  const periodId = toInt(req.body?.periodId);
-  if (!attemptId || !periodId || !req.body?.nhom) throw badRequest('Thiếu tham số đặt tuần.');
-  return keHoachSvc.datTuanNhom(principalOf(req), { ...req.body, attemptId, periodId });
+  if (!attemptId || !Array.isArray(req.body?.kyNang)) throw badRequest('Thiếu đợt hoặc kỹ năng cần đặt.');
+  const kyNang = req.body.kyNang.map((k: any) => ({
+    skill: String(k?.skill ?? ''), periodId: toInt(k?.periodId), bo: typeof k?.bo === 'boolean' ? k.bo : undefined,
+  }));
+  return keHoachSvc.luuDot(principalOf(req), {
+    attemptId, kyNang, lyDoBo: req.body.lyDoBo ?? null, force: !!req.body.force, reason: req.body.reason ?? null,
+  });
 }));
 
 api.post('/ke-hoach-test/xep-moi', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   const studentId = toInt(req.body?.studentId);
-  const rlwPeriodId = toInt(req.body?.rlwPeriodId);
-  if (!studentId || !rlwPeriodId) throw badRequest('Thiếu học viên hoặc tuần RLW.');
-  return keHoachSvc.xepMoi(principalOf(req), { ...req.body, studentId, rlwPeriodId });
+  if (!studentId) throw badRequest('Thiếu học viên.');
+  const tuan = tuanTheoKyNang(req.body?.tuan);
+  if (req.body?.kind) {
+    const classId = toInt(req.body?.classId);
+    if (!classId) throw badRequest('Thiếu lớp.');
+    return keHoachSvc.xepMoiThuong(principalOf(req), { classId, studentId, kind: req.body.kind, tuan, force: !!req.body.force });
+  }
+  return keHoachSvc.xepMoi(principalOf(req), {
+    studentId, attemptNo: toInt(req.body?.attemptNo) ?? undefined, tuan, bo: Array.isArray(req.body?.bo) ? req.body.bo : [],
+    lyDoBo: req.body?.lyDoBo ?? null, force: !!req.body?.force,
+  });
 }));
 
 api.post('/ke-hoach-test/hang-loat', requireAuth, wrap((req) => {
   if (!req.body?.xemTruoc) maybeSimulateSaveFailure();
   const classId = toInt(req.body?.classId);
-  const attemptNo = toInt(req.body?.attemptNo);
-  const rlwPeriodId = toInt(req.body?.rlwPeriodId);
-  if (!classId || !attemptNo || !rlwPeriodId) throw badRequest('Thiếu lớp, đợt hoặc tuần RLW.');
-  return keHoachSvc.xepHangLoat(principalOf(req), { ...req.body, classId, attemptNo, rlwPeriodId });
+  if (!classId) throw badRequest('Thiếu lớp.');
+  return keHoachSvc.xepHangLoat(principalOf(req), {
+    classId, attemptNo: toInt(req.body?.attemptNo) ?? undefined, kind: req.body?.kind || undefined,
+    studentIds: Array.isArray(req.body?.studentIds) ? req.body.studentIds.map((x: any) => toInt(x)).filter(Boolean) : [],
+    tuan: tuanTheoKyNang(req.body?.tuan), force: !!req.body?.force, xemTruoc: !!req.body?.xemTruoc,
+  });
 }));
 
-api.get('/ke-hoach-test/thuong', requireAuth, wrap((req) =>
-  keHoachSvc.bangThuong(principalOf(req), { branchId: toInt(req.query?.branchId) })));
-
-api.post('/ke-hoach-test/thuong/doi-lich', requireAuth, wrap((req) => {
-  if (!req.body?.xemTruoc) maybeSimulateSaveFailure();
-  const classId = toInt(req.body?.classId);
-  const periodId = toInt(req.body?.periodId);
-  if (!classId || !periodId || !req.body?.kind || !req.body?.skill) throw badRequest('Thiếu lớp, đợt, môn hoặc tuần.');
-  return keHoachSvc.doiLichThuong(principalOf(req), { ...req.body, classId, periodId });
-}));
+api.get('/ke-hoach-test/thuong/:classId', requireAuth, wrap((req) =>
+  keHoachSvc.luoiThuong(principalOf(req), pInt(req, 'classId'))));
 
 /** Tổng hợp theo tuần cho Quản lý: mỗi tuần một dòng, mọi con số bấm được. */
 api.get('/weekly-rollup', requireAuth, wrap((req) => weeklyRollup(principalOf(req), {

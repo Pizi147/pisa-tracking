@@ -158,7 +158,10 @@ export const DUONG_DO: MucDo[] = [
     trang: 'Kế hoạch Test', vai: ['QL', 'QT', 'GVCN', 'GVBM', 'GVCN_THUONG'], url: '/ke-hoach-test/ft/{lopFT}',
     maChuDich: { GVCN: 403, GVBM: 403, GVCN_THUONG: 403 },
   },
-  { trang: 'Kế hoạch Test', vai: ['QL', 'QT'], url: '/ke-hoach-test/thuong?branchId={cn}' },
+  {
+    trang: 'Kế hoạch Test', vai: ['QL', 'QT', 'GVCN', 'GVBM', 'GVCN_THUONG'], url: '/ke-hoach-test/thuong/{lopThuong}',
+    maChuDich: { GVCN: 403, GVBM: 403, GVCN_THUONG: 403 },
+  },
 
   // ---------------------------------------------------------------- Công việc · Vận hành (PR-Ra)
   /* GVCN không vào được tab Vận hành, nhưng `listMgmtTasks` trả `scopeEmpty` chứ không 403 — mã thật là 200. */
@@ -408,8 +411,9 @@ export const TRAN: Record<string, number> = {
   'QT /ke-hoach-test/lop?branchId=1': 21,
   'QL /ke-hoach-test/ft/3': 29,
   'QT /ke-hoach-test/ft/3': 29,
-  'QL /ke-hoach-test/thuong?branchId=1': 34,
-  'QT /ke-hoach-test/thuong?branchId=1': 34,
+  // PR-UX2: lưới lớp thường theo HV × kỹ năng — đo 25/24 câu, trần = max(đo+10, ⌈đo×1.3⌉).
+  'QL /ke-hoach-test/thuong/5': 35,
+  'QT /ke-hoach-test/thuong/5': 34,
   // PR-LT (rà PR #86) — mốc chốt trên số đo sau khi rà, giống công thức chung: max(sau+10, ⌈sau×1.3⌉).
   'QL /hoc-vien-lop/luu-tru': 22,
   'GVCN /hoc-vien-lop/luu-tru': 22,
