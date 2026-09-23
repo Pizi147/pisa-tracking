@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
-import { Alert, Card, Empty, ErrorState, Info, Skeleton } from '../../ui/ui.tsx';
+import { Card, Empty, ErrorState, Info, Skeleton } from '../../ui/ui.tsx';
+import { Nhan } from '../../ui/Nhan.tsx';
 import { HangTab } from '../../ui/HangTab.tsx';
 import { DongThoiGian } from '../../ui/DongThoiGian.tsx';
 import { fmtDate, studentStatusLabel } from '../../lib/format.ts';
@@ -87,6 +88,7 @@ export function ClassYThucCard({ classId }: { classId: number }) {
 
   const { mo, moPhuongAn, panels } = usePanelYThuc({
     canManage: !!board.data?.canManage,
+    maLop: (board.data as { classCode?: string } | undefined)?.classCode ?? null,
     onDone: board.reload,
     roster: (roster.data ?? []).map((r: any) => ({ id: r.id, name: r.fullName, code: r.studentCode ?? null })),
   });
@@ -176,7 +178,7 @@ export function ClassYThucCard({ classId }: { classId: number }) {
       action={d.canRecord ? <button className="btn btn-sm btn-primary" onClick={() => mo({ loai: 'ghi', studentId: 0 })}>+ Ghi nhận vi phạm</button> : undefined}
       bodyClass="p-0">
       {d.warning.message && (
-        <div className="px-4 pt-3"><Alert tone="warn">{d.warning.message.replace(/^⚠\s*/, '')}</Alert></div>
+        <div className="px-4 pt-3"><p className="m-0 text-xs text-soon">{d.warning.message}</p></div>
       )}
 
       <div className="px-4 pt-3">
@@ -256,7 +258,7 @@ export function ClassYThucCard({ classId }: { classId: number }) {
                           <span className="min-w-0">
                             <span className="block">
                               {s.warningActive
-                                ? <Alert tone="warn">cũ nhất {s.oldestAgeDays} ngày</Alert>
+                                ? <Nhan tone="soon">cũ nhất {s.oldestAgeDays} ngày</Nhan>
                                 : <span className="text-xs text-slate-500">Không có cảnh báo</span>}
                             </span>
                             {/* YT-7 dòng HV: một PA → tên loại; nhiều PA → đếm. */}
@@ -285,7 +287,7 @@ export function ClassYThucCard({ classId }: { classId: number }) {
                                 tieuDe: v.description,
                                 dongPhu: dangChuanBi
                                   ? `Đang chuẩn bị · ${dangChuanBi.kindLabel}`
-                                  : [v.skillLabel, v.reportedByName, v.ageLabel ? `⚠ đã ${v.ageDays} ngày` : null].filter(Boolean).join(' · '),
+                                  : [v.skillLabel, v.reportedByName, v.ageLabel ? `${v.ageDays} ngày` : null].filter(Boolean).join(' · '),
                                 cuoi: <Info>{v.categoryLabel}</Info>,
                                 mo: moViPhamId === v.id,
                                 onMo: () => setMoViPhamId((cur) => (cur === v.id ? null : v.id)),

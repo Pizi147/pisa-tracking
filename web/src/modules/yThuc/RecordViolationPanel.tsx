@@ -2,8 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { api, invalidate } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { useToast } from '../../ui/Toast.tsx';
-import { Modal } from '../../ui/Drawer.tsx';
-import { Field } from '../../ui/ui.tsx';
+import { Hang2, Khoi, KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
+import { ChonNgayGan } from '../../ui/ChonNgay.tsx';
 import { BangChung } from '../../ui/BangChung.tsx';
 import {
   VIOLATION_CATEGORIES, VIOLATION_CATEGORY_LABEL, VIOLATION_DESCRIPTION_MIN, VIOLATION_OTHER_DESCRIPTION_MIN,
@@ -12,19 +12,21 @@ import {
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 
 /**
- * PANEL `GHI VI PHẠM` (bố cục mockup 09c khối trái, kế hoạch PR-YT2 Task 4) — GVBM/GVCN/QL ghi một sự việc.
+ * PANEL `GHI NHẬN VI PHẠM` (PR-UX3, N-4, mockup 15 §6) — GVBM/GVCN/QL ghi một sự việc.
  *
- * Cũng dùng để SỬA vi phạm (V09): truyền `violation` thì form nạp sẵn bốn trường sửa được và gọi PATCH thay vì POST.
- * Không hỏi mức độ, không hỏi hạn, không hỏi ai xử lý, không hỏi biện pháp (V08) — ghi vi phạm không sinh gì khác.
+ * Cũng dùng để SỬA vi phạm (V09): truyền `violation` thì form nạp sẵn bốn trường sửa được và gọi PATCH thay vì POST; chân trái là
+ * `Xoá vi phạm` (viền đỏ). Không hỏi mức độ, hạn, ai xử lý, biện pháp (V08) — ghi vi phạm không sinh gì khác.
  *
- * K2-6f (Q4) LƯU TRƯỚC, BẰNG CHỨNG SAU — như `QuickReport.tsx` cho Case: ghi mới xong panel KHÔNG đóng, chuyển sang
- * bước "✓ Đã ghi" + khối Bằng chứng; `Hoàn tác` xoá thẳng vi phạm vừa tạo (chưa nằm trong phương án nào, xoá được).
+ * K2-6f (Q4) LƯU TRƯỚC, BẰNG CHỨNG SAU — như `QuickReport.tsx`: ghi mới xong panel KHÔNG đóng, chuyển sang bước "✓ Đã ghi" + Bằng
+ * chứng; `Hoàn tác` xoá thẳng vi phạm vừa tạo (chưa nằm trong phương án nào). Lỗi chỉ hiện SAU khi bấm Lưu (`Còn thiếu: …`).
  */
 export function RecordViolationPanel({
-  open, onClose, studentId, studentName, onDone, students, onPickStudent, violation, onDelete,
+  open, onClose, studentId, studentName, lop, onDone, students, onPickStudent, violation, onDelete,
 }: {
   open: boolean; onClose: () => void;
   studentId: number; studentName?: string;
+  /** Mã lớp hiện ở đầu ngăn (`Ghi nhận vi phạm · Tên HV · MB-FOU 12`). */
+  lop?: string | null;
   onDone?: () => void;
   /** Mở từ trang lớp: chọn học viên ngay ở đầu form (như QuickReport). */
   students?: { id: number; name: string; code?: string | null }[];
@@ -46,6 +48,7 @@ export function RecordViolationPanel({
   const [occurredOn, setOccurredOn] = useState(today);
   const [description, setDescription] = useState('');
   const [busy, setBusy] = useState(false);
+  const [daBam, setDaBam] = useState(false);
   /* K2-6f (Q4): ghi mới xong không đóng — chuyển sang bước "Đã ghi" + Bằng chứng. */
   const [daGhi, setDaGhi] = useState<{ id: number; studentName: string } | null>(null);
   const [xemTrung, setXemTrung] = useState(false);
@@ -57,7 +60,7 @@ export function RecordViolationPanel({
 
   const reset = () => {
     setCategory('homework'); setSkill(''); setOccurredOn(today); setDescription(''); setDaChonMon(false);
-    setDaGhi(null); setXemTrung(false);
+    setDaGhi(null); setXemTrung(false); setDaBam(false);
   };
 
   useEffect(() => {
@@ -89,10 +92,10 @@ export function RecordViolationPanel({
   const displaySkill = daChonMon ? skill : (defaultSkill ?? skill);
 
   const minLen = category === 'other' ? VIOLATION_OTHER_DESCRIPTION_MIN : VIOLATION_DESCRIPTION_MIN;
-  /* K2-3: ràng buộc nói TRƯỚC khi bấm — nút mờ + câu thiếu gì, không báo lỗi đỏ sau khi bấm. */
-  const missing = !studentId ? 'Chọn học viên.'
-    : description.trim().length < minLen ? `Mô tả cần ít nhất ${minLen} ký tự — nói rõ em đã làm gì, ở buổi nào.`
-    : null;
+  /* Gom NHÃN ô còn thiếu, chỉ hiện SAU khi bấm Lưu (Q4). */
+  const thieu: string[] = [];
+  if (!studentId) thieu.push('Học viên');
+  if (description.trim().length < minLen) thieu.push(`Mô tả (ít nhất ${minLen} ký tự)`);
 
   const hoanTac = async (id: number) => {
     try {
@@ -112,7 +115,7 @@ export function RecordViolationPanel({
   };
 
   /*
-   * dong() DÙNG CHUNG cho ✕ / Esc / bấm nền / nút `Xong` (như `QuickReport.tsx:145-154`):
+   * dong() DÙNG CHUNG cho ✕ / Esc / bấm nền / nút `Xong`:
    *   · Đã ghi → panel đóng THẬT, `onDone` chạy lúc này, VÀ toast 10 giây có nút `Hoàn tác`.
    *   · Chưa ghi (đang sửa, hoặc huỷ form ghi mới) → đóng như trước, không có gì để báo lại.
    */
@@ -128,7 +131,8 @@ export function RecordViolationPanel({
   };
 
   const submit = async () => {
-    if (missing) return;
+    setDaBam(true);
+    if (thieu.length > 0) return;
     setBusy(true);
     try {
       if (editing && violation) {
@@ -152,103 +156,94 @@ export function RecordViolationPanel({
     } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
   };
 
+  if (!open) return null;
+
+  const tieuDe = editing ? 'Sửa vi phạm' : 'Ghi nhận vi phạm';
+  const tenChon = (students ?? []).find((st) => st.id === studentId)?.name ?? studentName;
+
+  if (daGhi) {
+    return (
+      <KhungPanel tieuDe={tieuDe} hocVien={daGhi.studentName} lop={lop} onDong={dong}
+        chan={{
+          huy: { nhan: 'Hoàn tác', onClick: hoanTacTrongPanel },
+          chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={dong}>Xong</button>,
+        }}>
+        <Khoi tieuDe="Đã ghi">
+          <p className="m-0 text-sm text-slate-200">✓ Đã ghi vi phạm cho {daGhi.studentName}</p>
+        </Khoi>
+        <Khoi tieuDe="Bằng chứng · không bắt buộc">
+          <BangChung ownerType="violation" ownerId={daGhi.id} canEdit tieuDe="" />
+        </Khoi>
+      </KhungPanel>
+    );
+  }
+
   return (
-    <Modal open={open} onClose={dong}
-      title={editing ? 'Sửa vi phạm' : `Ghi nhận vi phạm${studentName ? ` · ${studentName}` : ''}`}
-      footer={
-        daGhi ? (
-          <>
-            <button className="btn btn-ghost mr-auto" onClick={hoanTacTrongPanel}>Hoàn tác</button>
-            <button className="btn btn-primary" onClick={dong}>Xong</button>
-          </>
-        ) : (
-          <>
-            {editing && violation && onDelete && (
-              /* Chỉ gọi onDelete — nơi gọi (usePanelYThuc) tự đóng form này VÀ quyết định lúc nào mở lại panel trước đó (sau khi hộp xác nhận xoá đóng), không phải ở đây. */
-              <button className="btn btn-ghost text-rose-200 mr-auto" onClick={() => onDelete(violation.id)}>Xoá vi phạm</button>
-            )}
-            <button className="btn" onClick={dong}>Huỷ</button>
-            <button className="btn btn-primary" disabled={busy || !!missing} title={missing ?? undefined} onClick={submit}>Lưu</button>
-          </>
-        )
-      }>
-      {daGhi ? (
-        <div className="space-y-3">
-          <p className="text-sm text-slate-400 m-0">✓ Đã ghi vi phạm cho {daGhi.studentName}</p>
-          <BangChung ownerType="violation" ownerId={daGhi.id} canEdit tieuDe="Bằng chứng" />
-        </div>
-      ) : (
-      <div className="space-y-3">
+    <KhungPanel tieuDe={tieuDe} hocVien={tenChon} lop={lop} onDong={dong}
+      chan={{
+        /* Sửa: chân trái là `Xoá vi phạm` (viền đỏ). Nơi gọi tự đóng form này và quyết định lúc nào mở lại panel trước đó. */
+        xoa: editing && violation && onDelete ? { nhan: 'Xoá vi phạm', onClick: () => onDelete(violation.id) } : undefined,
+        conThieu: daBam ? thieu : undefined,
+        chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={submit}>Lưu</button>,
+      }}>
+      <Khoi tieuDe="Vi phạm">
         {students && !editing && (
-          <Field label="Học viên" required>
-            <select className="field" value={studentId || ''}
-              onChange={(e) => onPickStudent?.(Number(e.target.value) || 0)}>
-              <option value="">Chọn học viên…</option>
-              {students.map((st) => (
-                <option key={st.id} value={st.id}>{st.name}{st.code ? ` · ${st.code}` : ''}</option>
-              ))}
+          <Truong nhan="Học viên" batBuoc>
+            <select className="field w-full" value={studentId || ''} onChange={(e) => onPickStudent?.(Number(e.target.value) || 0)}>
+              <option value="">Chọn học viên</option>
+              {students.map((st) => <option key={st.id} value={st.id}>{st.name}{st.code ? ` · ${st.code}` : ''}</option>)}
             </select>
-          </Field>
+          </Truong>
         )}
 
-        <div className="grid grid-cols-2 gap-2">
-          <Field label="Ngày xảy ra" required>
-            <input type="date" className="field" value={occurredOn} max={today}
-              onChange={(e) => setOccurredOn(e.target.value)} />
-          </Field>
-          <Field label="Môn">
-            <select className="field" value={displaySkill} onChange={(e) => { setSkill(e.target.value); setDaChonMon(true); }}>
-              <option value="">— để trống —</option>
-              {VIOLATION_SKILLS.map((s) => (
-                <option key={s} value={s}>{VIOLATION_SKILL_LABEL[s] ?? s}</option>
-              ))}
+        <Hang2>
+          <Truong nhan="Ngày" batBuoc>
+            <ChonNgayGan value={occurredOn} onChange={setOccurredOn} soNgay={21} />
+          </Truong>
+          <Truong nhan="Môn" phu={!daChonMon && defaultSkill ? 'Tự điền môn bạn dạy lớp này' : undefined}>
+            <select className="field w-full" value={displaySkill} onChange={(e) => { setSkill(e.target.value); setDaChonMon(true); }}>
+              <option value="">Chưa chọn</option>
+              {VIOLATION_SKILLS.map((s) => <option key={s} value={s}>{VIOLATION_SKILL_LABEL[s] ?? s}</option>)}
             </select>
-          </Field>
-        </div>
+          </Truong>
+        </Hang2>
 
-        <Field label="Nhóm vi phạm" required>
-          <div className="flex gap-1 flex-wrap">
+        {/* Năm nhóm: danh sách hai hàng (≤ 4 nút/hàng), nút cao 44px ở điện thoại. */}
+        <Truong nhan="Nhóm" batBuoc as="div">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
             {VIOLATION_CATEGORIES.map((c) => (
-              <button key={c} type="button" className={`btn btn-sm ${category === c ? 'btn-primary' : ''}`}
-                onClick={() => setCategory(c)}>
+              <button key={c} type="button" aria-pressed={category === c}
+                className={`btn min-h-[44px] justify-center sm:min-h-0 ${category === c ? 'btn-primary' : ''}`} onClick={() => setCategory(c)}>
                 {VIOLATION_CATEGORY_LABEL[c as ViolationCategory]}
               </button>
             ))}
           </div>
-        </Field>
+        </Truong>
 
-        <Field label="Mô tả" required>
-          <textarea className="field" rows={3} value={description} autoFocus
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="Không nộp bài Writing Task 2 buổi 21/09" />
-        </Field>
+        <Truong nhan="Mô tả" batBuoc>
+          <textarea className="field w-full" rows={3} value={description} onChange={(e) => setDescription(e.target.value)}
+            placeholder="Ví dụ: không nộp bài Reading buổi 12/09" />
+        </Truong>
 
-        {editing && violation && (
-          <Field label="Bằng chứng" as="div">
-            <BangChung ownerType="violation" ownerId={violation.id} canEdit tieuDe="" />
-          </Field>
-        )}
-
-        {/* K2-6b (Q6): một dòng nhỏ, không chặn Lưu — "Xem" mở ngay dưới dòng, không mở panel thứ hai. */}
+        {/* K2-6b (Q6): MỘT dòng vàng, không chặn Lưu — "Xem" mở ngay dưới dòng, không mở panel thứ hai. */}
         {cauTrung && (
-          <div className="text-xs text-amber-200/90">
+          <div className="text-xs text-soon">
             <span>{cauTrung}</span>{' · '}
-            <button type="button" className="text-sky-300 hover:underline" aria-expanded={xemTrung} onClick={() => setXemTrung((v) => !v)}>
-              Xem
-            </button>
+            <button type="button" className="link appearance-none border-0 bg-transparent p-0" aria-expanded={xemTrung} onClick={() => setXemTrung((v) => !v)}>Xem</button>
             {xemTrung && (
-              <ul className="list-none p-0 m-0 mt-1 space-y-0.5 text-[11px] text-slate-400">
-                {trungRows.map((r) => (
-                  <li key={r.id}>{r.description} · {r.reportedByName ?? 'một giáo viên'} · {r.stateLabel}</li>
-                ))}
+              <ul className="m-0 mt-1 list-none space-y-0.5 p-0 text-[11px] text-slate-400">
+                {trungRows.map((r) => <li key={r.id}>{r.description} · {r.reportedByName ?? 'một giáo viên'} · {r.stateLabel}</li>)}
               </ul>
             )}
           </div>
         )}
+      </Khoi>
 
-        {missing && <p className="text-xs text-amber-200/90 m-0">{missing}</p>}
-      </div>
+      {editing && violation && (
+        <Khoi tieuDe="Bằng chứng · không bắt buộc">
+          <BangChung ownerType="violation" ownerId={violation.id} canEdit tieuDe="" />
+        </Khoi>
       )}
-    </Modal>
+    </KhungPanel>
   );
 }

@@ -1,14 +1,14 @@
 import { useState } from 'react';
-import { Empty, ErrorState, Level, SCORE_CHIP, SCORE_TEXT, Skeleton, Status, type ScoreTone } from '../../ui/ui.tsx';
-import { fmtBand, fmtDate, sosLabel, sosTone } from '../../lib/format.ts';
-import { Han } from '../../ui/Han.tsx';
-import { BangChung } from '../../ui/BangChung.tsx';
-import { ActionDialog, OutcomeDialog } from './CasePanel.tsx';
-import { CapNhatTuanForm, LichSuDieuChinh, type BanDieuChinh } from './CapNhatTuan.tsx';
+import { Empty, ErrorState, Level, Outcome, SCORE_CHIP, SCORE_TEXT, Skeleton, type ScoreTone } from '../../ui/ui.tsx';
+import { fmtBand, sosLabel, sosTone } from '../../lib/format.ts';
+import { HangCon, HangNhom } from '../../ui/HangNhom.tsx';
+import { Nhan, QuaHan } from '../../ui/Nhan.tsx';
+import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
+import { type BanDieuChinh } from './CapNhatTuan.tsx';
 import { CauseDeterminationPanel, DismissCaseForm, PresetPlanActions } from '../yThuc/CaseSosControls.tsx';
 import {
-  ATTEMPT_KIND_SHORT, NEXT_STEP_LABEL, OUTCOME_MARK, dangChay, ngay, tienDoCase, viecTiepPhuongAn,
-  type AttemptKind,
+  ATTEMPT_KIND_SHORT, OUTCOME_MARK, OUTCOME_TONE, dangChay, deadlineView, tienDoCase, viecTiepPhuongAn,
+  type AttemptKind, type DeadlineView,
 } from '@shared/domain/index.ts';
 
 /**
@@ -115,7 +115,10 @@ const STATE_KIND: Record<Row['state'], 'doing' | 'waiting' | 'done' | 'idle'> = 
   none: 'idle', no_plan: 'waiting', working: 'doing', done: 'done',
 };
 
-export function SkillBoard({ rows, loading, error, onRetry, selected, onPick, onReport, onChanged }: {
+/** Việc mở ngăn Case từ bảng này (Q3): không còn form trải trong trang. `viec` không có = mở view Case. */
+export type MoCase = { viec?: 'ghi-ket-qua' | 'them-pa'; paId?: number };
+
+export function SkillBoard({ rows, loading, error, onRetry, selected, onPick, onReport, onChanged, onMoCase }: {
   rows: Row[] | null;
   loading?: boolean;
   error?: { message: string; hint?: string } | null;
@@ -124,30 +127,51 @@ export function SkillBoard({ rows, loading, error, onRetry, selected, onPick, on
   onPick: (category: string | null) => void;
   onReport?: (category: string) => void;
   onChanged?: () => void;
+  /** Mở ngăn Case (một panel) — Ghi kết quả / Thêm PA / xem Case đều đi qua đây. */
+  onMoCase: (caseId: number, o?: MoCase) => void;
 }) {
   if (error) return <ErrorState message={error.message} hint={error.hint} onRetry={onRetry} />;
   if (loading || !rows) return <Skeleton rows={6} />;
   if (!rows.length) return <Empty title="Chưa có hạng mục nào để theo dõi" />;
 
+  /* MỘT bảng, tiêu đề cột MỘT lần, mỗi kỹ năng một <tbody> (hàng lớn + hàng con khi mở) — cùng khuôn với Học viên & Lớp. */
   return (
-    <div>
-      {rows.map((r) => (
-        <SkillRow key={r.category} row={r}
-          open={selected === r.category}
-          onToggle={() => onPick(selected === r.category ? null : r.category)}
-          onReport={onReport}
-          onChanged={onChanged} />
-      ))}
+    <div className="overflow-x-auto">
+      <table className="w-full min-w-[680px] table-fixed text-sm">
+        <colgroup><col className="w-[24%]" /><col className="w-[17%]" /><col className="w-[28%]" /><col className="w-[31%]" /></colgroup>
+        <thead>
+          <tr><th className="th">Kỹ năng</th><th className="th">Gần nhất</th><th className="th">Case</th><th className="th">Việc tiếp</th></tr>
+        </thead>
+        {rows.map((r) => (
+          <tbody key={r.category}>
+            <SkillRows row={r} open={selected === r.category}
+              onToggle={() => onPick(selected === r.category ? null : r.category)}
+              onReport={onReport} onChanged={onChanged} onMoCase={onMoCase} />
+          </tbody>
+        ))}
+      </table>
     </div>
   );
 }
 
-function SkillRow({ row, open, onToggle, onReport, onChanged }: {
+/** Hạn của việc tiếp theo, một dòng dưới chữ việc: "⚠ quá hạn 15 ngày" (đỏ) · "hôm nay" (vàng) · "hạn CN 30/08" (mờ). Chỗ DUY NHẤT nói quá hạn của kỹ năng. */
+function DongHan({ v }: { v: DeadlineView | null }) {
+  if (!v || v.han === 'chưa có hạn') return null;
+  return (
+    <span className="block whitespace-nowrap text-[11px] font-normal">
+      {v.tone === 'overdue' ? <QuaHan ngay={v.daysOverdue} />
+        : v.homNay ? <span className="font-semibold text-soon">hôm nay</span>
+        : <span className="text-slate-500">{v.han}</span>}
+    </span>
+  );
+}
+
+function SkillRows({ row, open, onToggle, onReport, onChanged, onMoCase }: {
   row: Row; open: boolean; onToggle: () => void;
-  onReport?: (category: string) => void;
-  onChanged?: () => void;
+  onReport?: (category: string) => void; onChanged?: () => void;
+  onMoCase: (caseId: number, o?: MoCase) => void;
 }) {
-  const bodyId = `skill-${row.category}`;
+  const { homNay, ngan } = useNgayNghiepVu();
   const expandable = row.cases.length > 0 || row.band !== null || !!row.signal;
   /* Đang xử lý / mới cập nhật lên trước, đã hoàn thành xuống dưới. */
   const ordered = [...row.cases].sort((a, b) => {
@@ -155,515 +179,230 @@ function SkillRow({ row, open, onToggle, onReport, onChanged }: {
     if (done(a) !== done(b)) return done(a) - done(b);
     return (b.touchedOn ?? '').localeCompare(a.touchedOn ?? '') || b.id - a.id;
   });
-  const next = nextStepOf(row);
+  const buoc = nextStepOf(row, homNay);
 
   return (
-    <div className="border-b last:border-b-0" style={{ borderColor: 'var(--line)' }}>
-      <button
-        type="button" id={`${bodyId}-btn`} aria-expanded={open} aria-controls={bodyId}
-        disabled={!expandable} onClick={onToggle}
-        className={`w-full text-left appearance-none border-0 bg-transparent p-0 ${
-          expandable ? 'cursor-pointer row-hover' : 'cursor-default'}`}
-      >
-        <div className="grid gap-x-3 gap-y-1 px-3 py-3 items-center
-                        grid-cols-[1fr_auto] md:grid-cols-[minmax(8rem,1fr)_7rem_minmax(10rem,1.4fr)_minmax(0,1fr)]">
-          {/* 1 — hạng mục */}
-          <div className="min-w-0">
-            <span className="text-sm font-semibold text-slate-100">{row.label}</span>
+    <>
+      <HangNhom mo={open && expandable} onMo={() => { if (expandable) onToggle(); }} nhan={row.label}
+        tieuDe={(
+          <span className="block min-w-0 font-normal">
+            <span className="text-sm font-extrabold text-slate-100">{row.label}</span>
             <Trend row={row} />
-          </div>
+          </span>
+        )}>
+        <td className="px-3 font-normal"><ScoreCell row={row} /></td>
+        <td className="px-3 font-normal"><CotCase row={row} /></td>
+        <td className="px-3 font-normal">
+          {buoc ? (
+            <span className="block min-w-0 font-normal" title={buoc.title}>
+              <span className="block truncate text-xs text-slate-100">{buoc.viec}</span>
+              <DongHan v={buoc.han} />
+            </span>
+          ) : <span className="text-xs text-slate-600">—</span>}
+        </td>
+      </HangNhom>
 
-          {/* 2 — ô điểm gọn: điểm/kỳ vọng và chênh lệch */}
-          <ScoreCell row={row} />
-
-          {/* 3 — vấn đề đang theo dõi */}
-          <div className="min-w-0">
-            {row.signal ? (
-              <>
-                <span className={`block text-xs font-medium truncate ${
-                  row.signal.overdue ? 'text-rose-200' : 'text-amber-200'}`}>
-                  Xác minh SOS
-                </span>
-                <span className="mt-0.5 flex flex-wrap items-center gap-x-1.5 text-[10px] text-slate-500">
-                  <Han loai="xac-minh-sos" han={row.signal.verifyDue} />
-                  {row.signal.ownerName && <span>{row.signal.ownerName}</span>}
-                </span>
-              </>
-            ) : row.caseTitle ? (
-              <>
-                <span className="block text-xs text-slate-200 truncate" title={row.caseTitle}>
-                  {row.caseTitle}
-                </span>
-                <span className="flex flex-wrap items-center gap-x-1.5 text-[10px] text-slate-500 mt-1">
-                  <Status kind={STATE_KIND[row.state]}>{STATE_LABEL[row.state]}</Status>
-                  {row.parallelCount > 1 && <span>{row.parallelCount} case song song</span>}
-                  {row.carriedOver && <span>từ lộ trình trước</span>}
-                </span>
-              </>
-            ) : (
-              <>
-                <span className="block text-xs text-slate-500">Không có case đang mở</span>
-                {row.band !== null && (
-                  <span className="inline-flex mt-1">
-                    <Status kind={row.missed ? 'waiting' : 'done'}>
-                      {row.missed ? 'Đang theo dõi' : row.ratio ? 'Đạt' : 'Đạt kỳ vọng'}
-                    </Status>
-                  </span>
-                )}
-              </>
-            )}
-          </div>
-
-          {/* 4 — việc tiếp theo */}
-          <div className="min-w-0 col-span-2 md:col-span-1">
-            {next ? (
-              <span className={`block text-xs truncate ${next.overdue ? 'text-rose-300' : 'text-slate-300'}`}>
-                {next.text}
-                {next.due && <span className={next.overdue ? '' : 'text-slate-500'}> · {fmtDate(next.due)}</span>}
-              </span>
-            ) : <span className="text-xs text-slate-600">—</span>}
-          </div>
-        </div>
-      </button>
-
-      {open && (
-        <div id={bodyId} className="px-3 pb-3 space-y-2">
-          {ordered.length === 0 ? (
-            <p className="text-xs text-slate-400 m-0 py-1">
+      {open && expandable && (
+        ordered.length === 0 ? (
+          <HangCon>
+            <td className="td text-xs font-normal text-slate-400" colSpan={4}>
               Không có vấn đề nào đang theo dõi ở {row.label}.
               {onReport && (
-                <button type="button" className="btn btn-sm ml-2" onClick={() => onReport(row.category)}>
-                  + Case cho {row.label}
-                </button>
+                <button type="button" className="btn btn-sm ml-2" onClick={() => onReport(row.category)}>+ Case cho {row.label}</button>
               )}
-            </p>
-          ) : ordered.map((c) => (
-            <TheCase key={c.id} c={c} row={row} onChanged={onChanged} />
-          ))}
-        </div>
+            </td>
+          </HangCon>
+        ) : ordered.map((c) => (
+          <HangCaseVaPa key={c.id} c={c} ngan={ngan} onChanged={onChanged} onMoCase={onMoCase} />
+        ))
       )}
-    </div>
+    </>
+  );
+}
+
+/** Cột Case của hàng lớn: tên Case + MỘT badge trạng thái (B-1). Tín hiệu SOS chưa mở Case thì để "chưa mở Case" (việc nói ở cột Việc tiếp). */
+function CotCase({ row }: { row: Row }) {
+  if (row.signal) return <span className="text-xs font-normal text-slate-500">chưa mở Case</span>;
+  if (row.caseTitle) {
+    return (
+      <span className="block min-w-0 font-normal">
+        <span className="block truncate text-xs text-slate-200" title={row.caseTitle}>{row.caseTitle}</span>
+        <span className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[10px] text-slate-500">
+          <Nhan tone={row.state === 'done' ? 'done' : row.state === 'no_plan' ? 'wait' : 'doing'}>{STATE_LABEL[row.state]}</Nhan>
+          {row.parallelCount > 1 && <span>{row.parallelCount} Case song song</span>}
+          {row.carriedOver && <span>từ lộ trình trước</span>}
+        </span>
+      </span>
+    );
+  }
+  return (
+    <span className="block font-normal">
+      <span className="block text-xs text-slate-500">Không có Case mở</span>
+      {row.band !== null && (
+        <span className="mt-1 inline-flex">
+          <Nhan tone={row.missed ? 'wait' : 'ok'}>{row.missed ? 'Đang theo dõi' : row.ratio ? 'Đạt' : 'Đạt kỳ vọng'}</Nhan>
+        </span>
+      )}
+    </span>
   );
 }
 
 /**
- * MỘT THẺ CASE — KIỂU THẺ SOS (PR-HV Q8, spec 2026-09-22 §4.2).
- *
- * Đầu thẻ 3 cột bấm mở/đóng: `{kỹ năng} · {tên}` + phân loại/ngày mở · `{k}/{n} PA có kết quả` + việc gần nhất có hạn ·
- * nhãn (SOS mức / Đang xử lý / Đã hoàn thành / Không cần theo dõi). Thân thẻ: khối chờ xác định nguyên nhân (nếu có),
- * mô tả, MỖI PHƯƠNG ÁN MỘT KHỐI BA PHẦN (`KhoiPhuongAn`) — PA đang chạy không bao giờ ẩn, PA đã xong thu gọn —, Bằng
- * chứng thu gọn, kết luận, dãy MT, và CHÂN THẺ gom mọi nút (lý do chưa hoàn thành nói cạnh nút mờ).
- *
- * Hai việc thật — thêm phương án, hoàn thành case — vẫn gọi đúng hộp thoại `CasePanel` dùng ở trang riêng, không viết
- * luồng thứ hai. Mở mặc định: case chưa xong; đóng mặc định: case đã xong.
+ * MỘT CASE = MỘT HÀNG CON (không khung) + mỗi PA đang chạy một hàng con. PA đã xong thu gọn sau "▸ n PA đã xong". Khối SOS chờ
+ * nguyên nhân / Không cần theo dõi / PA gợi ý (`CaseSosControls`) giữ TẠI CHỖ — đó không phải form panel. Thêm PA, Hoàn thành,
+ * Ghi kết quả, lịch sử, Bằng chứng: ở ngăn Case (một panel).
  */
-function TheCase({ c, row, onChanged }: {
-  c: CaseCard; row: Row;
-  onChanged?: () => void;
+function HangCaseVaPa({ c, ngan, onChanged, onMoCase }: {
+  c: CaseCard; ngan: (d: string | null | undefined) => string; onChanged?: () => void;
+  onMoCase: (caseId: number, o?: MoCase) => void;
 }) {
-  const [open, setOpen] = useState(c.status !== 'done');
-  const [adding, setAdding] = useState(false);
-  const [completing, setCompleting] = useState(false);
   const [causeOpen, setCauseOpen] = useState(false);
   const [dismissOpen, setDismissOpen] = useState(false);
-  const [moXong, setMoXong] = useState(c.status === 'done');
-  const [moBangChung, setMoBangChung] = useState(false);
-  const blocked = c.closeBlockers.length > 0;
+  const [moXong, setMoXong] = useState(false);
   const td = tienDoCase(c.plans, c);
   const chay = c.plans.filter(dangChay);
   const xong = c.plans.filter((p) => !dangChay(p));
+  const daXong = c.status === 'done';
+  const ghiChuDong = [
+    c.issueLabel ?? 'Chưa phân loại vấn đề',
+    c.openedOn ? `mở ${ngan(c.openedOn)}` : null,
+    c.carriedOver ? 'từ lộ trình trước' : null,
+    c.parallel ? 'Case song song' : null,
+    c.backfilledOn ? `nhập bù${c.backfilledBy ? ` · ${c.backfilledBy}` : ''} ghi ngày ${ngan(c.backfilledOn)}` : null,
+  ].filter(Boolean).join(' · ');
 
   return (
-    <div className="rounded-lg border" style={{ borderColor: 'var(--line)', background: 'var(--surface-2)' }}>
-      <button type="button" onClick={() => setOpen(!open)} aria-expanded={open}
-        className="w-full text-left appearance-none bg-transparent border-0 cursor-pointer">
-        <span className="grid gap-x-3 gap-y-1 items-center px-3 py-2.5 grid-cols-2 md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_auto]">
-          <span className="col-span-2 md:col-span-1 min-w-0 flex items-start gap-2">
-            <span className="text-slate-500 text-xs select-none mt-0.5" aria-hidden
-              style={{ transform: open ? 'rotate(90deg)' : 'none', display: 'inline-block' }}>›</span>
-            <span className="min-w-0">
-              <span className="block text-sm text-slate-100 break-words">{row.label} · {c.title}</span>
-              <span className="block text-[11px] text-slate-500">
-                {c.issueLabel ?? 'Chưa phân loại vấn đề'}{c.openedOn ? ` · mở ${fmtDate(c.openedOn)}` : ''}
-              </span>
-            </span>
-          </span>
-          <span className="min-w-0">
-            <span className={`block text-xs font-semibold ${td.tong === 0 ? 'text-amber-200' : 'text-slate-200'}`}>{td.text}</span>
-            {td.tiep ? (
-              <span className={`block text-[11px] ${td.tiep.overdue ? 'text-rose-300' : 'text-slate-500'}`}>
-                {td.tiep.text}{td.tiep.due ? `: hạn ${fmtDate(td.tiep.due)}` : ''}{td.tiep.overdue ? ' · quá hạn' : ''}
-              </span>
-            ) : c.status === 'done' && c.outcomeLabel ? (
-              <span className="block text-[11px] text-slate-500">Kết luận: {c.outcomeLabel}</span>
-            ) : null}
-          </span>
-          <span className="justify-self-end flex flex-col items-end gap-1">
+    <>
+      <HangCon title={c.summary ?? undefined}>
+        <td className="td" colSpan={2}>
+          <span className="block truncate text-xs font-semibold text-slate-100" title={c.title}>Case · {c.title}</span>
+          <span className="block truncate text-[11px] text-slate-500" title={ghiChuDong}>{ghiChuDong}</span>
+        </td>
+        <td className="td">
+          <span className="block text-xs text-slate-200">{td.text}</span>
+          <span className="mt-0.5 flex flex-wrap items-center gap-1">
             {c.sos.dismissed
-              ? (
+              ? <Nhan tone="muted" title={c.sos.dismissed.text ?? undefined}>Không cần theo dõi</Nhan>
+              : daXong ? <Nhan tone="done">Đã hoàn thành</Nhan>
+              : (
                 <>
-                  <Status kind="done">Không cần theo dõi</Status>
-                  <span className="text-[11px] text-slate-500 text-right break-words">{c.sos.dismissed.label}</span>
+                  {c.sosLevel !== null && c.sosLevel > 0 && <Level tone={sosTone(c.sosLevel)}>{sosLabel(c.sosLevel)}</Level>}
+                  <Nhan tone={c.plans.length === 0 ? 'wait' : 'doing'}>{c.plans.length === 0 ? 'Chưa có PA' : 'Đang xử lý'}</Nhan>
                 </>
-              )
-              : c.status === 'done'
-                ? <Status kind="done">Đã hoàn thành</Status>
-                : (
-                  <>
-                    {c.sosLevel !== null && c.sosLevel > 0 && <Level tone={sosTone(c.sosLevel)}>{sosLabel(c.sosLevel)}</Level>}
-                    <Status kind="doing">Đang xử lý</Status>
-                  </>
-                )}
+              )}
           </span>
-        </span>
-      </button>
+        </td>
+        <td className="td">
+          <span className="flex flex-wrap items-center gap-1.5">
+            <button type="button" className="btn btn-sm" onClick={() => onMoCase(c.id)}>Mở Case</button>
+            {c.canEdit && !daXong && c.plans.length === 0 && (
+              <button type="button" className="btn btn-sm" onClick={() => onMoCase(c.id, { viec: 'them-pa' })}>+ Thêm PA</button>
+            )}
+          </span>
+          {daXong && c.outcomeLabel && <span className="mt-0.5 block text-[11px] text-slate-500">Kết luận: {c.outcomeLabel}</span>}
+        </td>
+      </HangCon>
 
-      {open && (
-        <div className="px-3 pb-3 space-y-2.5">
-          {/* CASE TỪ SOS CHỜ XÁC ĐỊNH NGUYÊN NHÂN (§7.5, S04, PR-K) — hạn 3 ngày, chỉ hiện khi còn chờ. */}
-          {c.sos.awaitingCause && (
-            <div className="rounded-lg border px-2.5 py-2 space-y-1.5" style={{ borderColor: 'var(--warn)', background: 'rgba(240, 201, 135, 0.08)' }}>
-              <p className="text-xs text-amber-100 m-0">
-                Chờ GVBM xác định nguyên nhân{c.sos.dueOn && ` · hạn ${fmtDate(c.sos.dueOn)}`}
-              </p>
-              {c.canEdit && !causeOpen && !c.sos.hasCause && (
-                <button type="button" className="btn btn-sm btn-primary" onClick={() => setCauseOpen(true)}>
-                  Xác định nguyên nhân
-                </button>
-              )}
-              {causeOpen && (
-                <CauseDeterminationPanel caseId={c.id} topic={c.topic} currentCode={c.issueCode}
-                  onClose={() => setCauseOpen(false)} onDone={onChanged} />
-              )}
-            </div>
-          )}
-          {/* CASE ĐÓNG "KHÔNG CẦN THEO DÕI" (§3.2, S05, K2-4) — chữ tự gõ của lý do Khác chỉ hiện ở đây. */}
-          {c.sos.dismissed && (
-            <p className="text-xs text-slate-300 m-0">
-              Không cần theo dõi · {c.sos.dismissed.text || c.sos.dismissed.label}
-            </p>
-          )}
-          {(c.carriedOver || c.parallel || c.backfilledOn) && (
-            <p className="text-[11px] text-slate-500 m-0 flex flex-wrap gap-x-1.5">
-              {c.carriedOver && <span>từ lộ trình trước</span>}
-              {c.parallel && <span>case song song</span>}
-              {/* NHẬP BÙ (mục 10.3 Step 5) — ghi rõ ngay trên thẻ case, không giấu trong tooltip. */}
-              {c.backfilledOn && (
-                <span className="text-amber-200/80">
-                  nhập bù{c.backfilledBy ? ` · ${c.backfilledBy}` : ''} ghi ngày {fmtDate(c.backfilledOn)}
-                </span>
-              )}
-            </p>
-          )}
-          {c.summary && (
-            <p className="text-sm text-slate-300 m-0 leading-relaxed break-words">
-              <span className="text-slate-500">Mô tả: </span>{c.summary}
-            </p>
-          )}
+      {/* CASE TỪ SOS CHỜ XÁC ĐỊNH NGUYÊN NHÂN (§7.5, S04, PR-K) — hạn 3 ngày, chỉ hiện khi còn chờ. */}
+      {(c.sos.awaitingCause || c.sos.dismissed) && (
+        <HangCon>
+          <td className="td" colSpan={4}>
+            {c.sos.awaitingCause && (
+              <div className="space-y-1.5">
+                <p className="m-0 text-xs text-soon">
+                  Chờ GVBM xác định nguyên nhân{c.sos.dueOn && ` · hạn ${ngan(c.sos.dueOn)}`}
+                </p>
+                {c.canEdit && !causeOpen && !c.sos.hasCause && (
+                  <span className="flex flex-wrap gap-2">
+                    <button type="button" className="btn btn-sm btn-primary" onClick={() => setCauseOpen(true)}>Xác định nguyên nhân</button>
+                    {!dismissOpen && (
+                      <button type="button" className="btn btn-sm btn-ghost" onClick={() => setDismissOpen(true)}>Không cần theo dõi</button>
+                    )}
+                  </span>
+                )}
+                {causeOpen && (
+                  <CauseDeterminationPanel caseId={c.id} topic={c.topic} currentCode={c.issueCode}
+                    onClose={() => setCauseOpen(false)} onDone={onChanged} />
+                )}
+                {dismissOpen && <DismissCaseForm caseId={c.id} onClose={() => setDismissOpen(false)} onDone={onChanged} />}
+              </div>
+            )}
+            {/* CASE ĐÓNG "KHÔNG CẦN THEO DÕI" (§3.2, S05, K2-4) — chữ tự gõ của lý do Khác chỉ hiện ở đây. */}
+            {c.sos.dismissed && <p className="m-0 text-xs text-slate-300">Không cần theo dõi · {c.sos.dismissed.text || c.sos.dismissed.label}</p>}
+          </td>
+        </HangCon>
+      )}
 
-          {/* MỖI PHƯƠNG ÁN MỘT KHỐI BA PHẦN — PA đang chạy luôn hiện; PA đã xong thu gọn sau một nút. */}
-          {c.plans.length === 0 ? (
-            <p className="text-xs text-amber-200/90 m-0">Chưa có phương án nào — case này đang chờ người quyết.</p>
-          ) : (
-            <div className="space-y-1.5">
-              {chay.length > 0 && (
-                <div className="hidden md:grid md:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_minmax(0,1fr)] gap-x-3 px-2.5 text-[10px] uppercase tracking-wide text-slate-500">
-                  <span>Phương án</span><span>Kết quả gần nhất</span><span>Việc tiếp theo</span>
-                </div>
-              )}
-              {chay.map((p) => (
-                <KhoiPhuongAn key={p.id} p={p} plans={c.plans} canEdit={c.canEdit} onChanged={onChanged} />
-              ))}
-              {xong.length > 0 && (
-                <>
-                  <button type="button" className="btn btn-sm btn-ghost" aria-expanded={moXong} onClick={() => setMoXong(!moXong)}>
-                    {moXong ? '▾' : '▸'} {xong.length} PA đã xong
-                  </button>
-                  {moXong && xong.map((p) => (
-                    <KhoiPhuongAn key={p.id} p={p} plans={c.plans} canEdit={c.canEdit} onChanged={onChanged} />
-                  ))}
-                </>
-              )}
-            </div>
-          )}
-
-          {/*
-            BẰNG CHỨNG CỦA CASE (CASE-04, PR-N) — thu gọn sau nhãn "Bằng chứng (n)"; số là số lúc tải bảng (J10). Khối có
-            trạng thái riêng — lỗi tải tệp không đụng tới ô nào đang nhập ở thẻ này.
-          */}
-          <div>
-            <button type="button" className="btn btn-sm btn-ghost" aria-expanded={moBangChung} onClick={() => setMoBangChung(!moBangChung)}>
-              {moBangChung ? '▾' : '▸'} Bằng chứng ({c.attachmentCount})
+      {chay.map((p) => <HangPa key={p.id} p={p} c={c} ngan={ngan} onChanged={onChanged} onMoCase={onMoCase} />)}
+      {xong.length > 0 && (
+        <HangCon>
+          <td className="td" colSpan={4}>
+            <button type="button" className="link appearance-none border-0 bg-transparent p-0 text-[11px]" aria-expanded={moXong}
+              onClick={() => setMoXong(!moXong)}>
+              {moXong ? '▾' : '▸'} {xong.length} PA đã xong
             </button>
-            {moBangChung && (
-              <div className="mt-1.5">
-                <BangChung ownerType="sos_case" ownerId={c.id} canEdit={c.canEdit} tieuDe="" onChanged={onChanged} />
-              </div>
-            )}
-          </div>
-
-          {/* Kết luận của case đã hoàn thành — đọc lại được, không bị giấu. */}
-          {c.status === 'done' && (c.outcomeLabel || c.outcomeNote) && (
-            <p className="text-xs text-slate-300 m-0">
-              Kết luận{c.outcomeLabel && <>: <strong>{c.outcomeLabel}</strong></>}
-              {c.closedOn && <span className="text-slate-500"> · {fmtDate(c.closedOn)}</span>}
-              {c.outcomeNote && <span className="block text-slate-400 mt-0.5">{c.outcomeNote}</span>}
-            </p>
-          )}
-
-          {(c.attempts.length > 0 || (c.followUntil && c.status !== 'done')) && (
-            <div className="flex flex-wrap items-center gap-1.5">
-              {c.attempts.map((a) => (
-                <Chip key={a.attemptNo}>
-                  {a.attemptKind && a.attemptKind !== 'mock' ? ATTEMPT_KIND_SHORT[a.attemptKind as AttemptKind] : `MT${a.attemptNo}`}
-                  {a.week ? ` · ${ngay(a.week)}` : ''}
-                </Chip>
-              ))}
-              {/* NGHĨA VỤ CẬP NHẬT KẾT QUẢ hằng tuần — một đồng hồ riêng, không lẫn với "dự kiến kết thúc" (F11). */}
-              {c.followUntil && c.status !== 'done' && <Han loai="cap-nhat-pa" han={c.followUntil} />}
-            </div>
-          )}
-
-          {/* CHÂN THẺ — mọi nút gom ở đây; lý do chưa hoàn thành nói NGAY CẠNH nút mờ. */}
-          <div className="space-y-1.5">
-            {c.canEdit && (
-              <div className="flex flex-wrap items-center gap-2">
-                <button type="button" className="btn btn-sm" onClick={() => setAdding(true)}>
-                  + Thêm phương án
-                </button>
-                {c.status !== 'done' && (
-                  <button type="button" className="btn btn-sm btn-primary"
-                    disabled={blocked || !c.canClose}
-                    title={!c.canClose
-                      ? 'Chỉ Quản lý, hoặc GVCN dạy đúng môn của Case, mới hoàn thành được Case này.'
-                      : undefined}
-                    onClick={() => setCompleting(true)}>
-                    Hoàn thành case
-                  </button>
-                )}
-                {/* `Không cần theo dõi` (S05, Q-V3-4) — chỉ case tự tạo từ SOS còn chờ xác định nguyên nhân. */}
-                {c.sos.awaitingCause && !dismissOpen && (
-                  <button type="button" className="btn btn-sm btn-ghost" onClick={() => setDismissOpen(true)}>
-                    Không cần theo dõi
-                  </button>
-                )}
-                {c.status !== 'done' && blocked && (
-                  <span className="text-xs text-slate-400">Chưa hoàn thành: {c.closeBlockers.join(' · ')}</span>
-                )}
-              </div>
-            )}
-            {dismissOpen && (
-              <DismissCaseForm caseId={c.id} onClose={() => setDismissOpen(false)} onDone={onChanged} />
-            )}
-            {c.canEdit && c.status !== 'done' && !c.canClose && (
-              <p className="text-xs text-slate-500 m-0">
-                Chỉ Quản lý, hoặc GVCN dạy đúng môn của Case, mới hoàn thành được Case này. Bạn vẫn cập
-                nhật được kết quả của từng phương án.
-              </p>
-            )}
-          </div>
-
-          <ActionDialog open={adding} onClose={() => setAdding(false)} caseId={c.id}
-            onDone={() => onChanged?.()} />
-          <OutcomeDialog open={completing} onClose={() => setCompleting(false)} caseId={c.id}
-            category={row.category} categoryLabel={row.label}
-            ratio={row.ratio} onDone={() => onChanged?.()} />
-        </div>
+          </td>
+        </HangCon>
       )}
-    </div>
+      {moXong && xong.map((p) => <HangPa key={p.id} p={p} c={c} ngan={ngan} onChanged={onChanged} onMoCase={onMoCase} />)}
+    </>
   );
 }
 
 /**
- * MỘT PHƯƠNG ÁN — MỘT KHỐI BA PHẦN (PR-HV Q8): Phương án (tên · người · từ ngày; mũi tên mở lịch sử tại chỗ) · Kết quả
- * gần nhất (nhãn + ghi chú, KHÔNG cắt) · Việc tiếp theo (gợi ý chờ xác nhận / chờ Quản lý / Ghi kết quả + hạn / Đã kết
- * thúc). Trên 375px ba phần xếp dọc, phần 2–3 có nhãn nhỏ. Lịch sử và ô Ghi kết quả mở DƯỚI lưới, rộng hết khối.
- *
- * Hạn LÀM và hạn DỰ KIẾN XONG vẫn là hai mốc khác nhau và vẫn có nhãn riêng (`<PlanDue>`, F11). Dấu ✓ của PA đã xong
- * màu xám — xanh lá chỉ dành cho kết quả học tập (`<Outcome>`).
+ * MỘT PA = MỘT HÀNG CON: `PA · {loại} — mô tả` + `người · 24/08 → 14/09` · kết quả gần nhất · `hạn CN 30/08` (hạn gốc của PA, KHÔNG lặp
+ * ⚠ — quá hạn đã nói ở hàng kỹ năng, B-5) + nút `Ghi kết quả`. Bấm tên PA → ngăn Case cuộn tới PA đó.
  */
-function KhoiPhuongAn({ p, plans, canEdit, onChanged }: {
-  p: Plan; plans: Plan[]; canEdit: boolean; onChanged?: () => void;
+function HangPa({ p, c, ngan, onChanged, onMoCase }: {
+  p: Plan; c: CaseCard; ngan: (d: string | null | undefined) => string; onChanged?: () => void;
+  onMoCase: (caseId: number, o?: MoCase) => void;
 }) {
-  const [editing, setEditing] = useState(false);
-  const [showHistory, setShowHistory] = useState(false);
+  const { homNay } = useNgayNghiepVu();
   const running = dangChay(p);
-  const historyId = `plan-${p.id}-history`;
-  /* Mới nhất lên trên: người mở hỏi "giờ đang thế nào", không hỏi "tháng trước bắt đầu ra sao". */
-  const updates = [...p.updates].reverse();
   const v = viecTiepPhuongAn(p);
-  const thayBang = p.supersededBy ? plans.find((x) => x.id === p.supersededBy) ?? null : null;
-  const thayCho = plans.find((x) => x.supersededBy === p.id) ?? null;
-  const dongPhu = {
-    chinh: `${p.performer ?? 'chưa có người thực hiện'}${p.startedOn ? ` · từ ${fmtDate(p.startedOn)}` : ''}`
-      + `${p.completedOn ? ` → ${fmtDate(p.completedOn)}` : ''}`,
-    duoi: p.closedReason === 'superseded' ? 'được thay'
-      : p.revisions.length > 0 ? `điều chỉnh ${p.revisions.length} lần` : null,
-  };
-
+  const han = p.actionDue ? deadlineView({ kind: 'cap-nhat-pa', due: p.actionDue, today: homNay }) : null;
+  const khoang = p.startedOn
+    ? `${ngan(p.startedOn)}${p.completedOn ? ` → ${ngan(p.completedOn)}` : p.followupDue ? ` → ${ngan(p.followupDue)}` : ''}`
+    : null;
+  const dongPhu = [p.performer ?? 'chưa có người làm', khoang,
+    p.closedReason === 'superseded' ? 'được thay' : p.revisions.length > 0 ? `điều chỉnh ${p.revisions.length} lần` : null].filter(Boolean).join(' · ');
   return (
-    <div className="rounded-lg border px-2.5 py-2" style={{ borderColor: 'var(--line)' }}>
-      <div className="grid gap-x-3 gap-y-2 md:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_minmax(0,1fr)]">
-        {/* 1 · Phương án */}
-        <div className="min-w-0 flex items-start gap-1.5">
-          <button type="button" aria-expanded={showHistory} aria-controls={historyId}
-            aria-label={showHistory ? 'Đóng lịch sử phương án' : 'Mở lịch sử phương án'}
-            onClick={() => setShowHistory(!showHistory)}
-            className="appearance-none bg-transparent border-0 p-0 cursor-pointer text-xs leading-5 text-slate-400 text-left shrink-0">
-            {showHistory ? '▾' : '▸'}
-          </button>
-          <span className="min-w-0">
-            <span className={`block text-sm leading-snug break-words ${running ? 'text-slate-100' : 'text-slate-300'}`}>
-              <span aria-hidden className={`mr-1.5 text-xs ${running ? 'text-sky-300' : 'text-slate-400'}`}>
-                {running ? '▶' : '✓'}
-              </span>
-              {p.name}
-            </span>
-            {/*
-              G-3: dòng phụ luôn MỘT dòng, kể cả 375px và lưới 3 cột ở 768px. Phần người · ngày cắt bằng "…" (di chuột xem đủ),
-              phần đuôi "được thay" / "điều chỉnh n lần" không bao giờ bị cắt.
-            */}
-            <span className="flex min-w-0 text-[11px] text-slate-500 mt-0.5" title={dongPhu.duoi ? `${dongPhu.chinh} · ${dongPhu.duoi}` : dongPhu.chinh}>
-              <span className="min-w-0 truncate">{dongPhu.chinh}</span>
-              {dongPhu.duoi && <span className="shrink-0 whitespace-nowrap">&nbsp;· {dongPhu.duoi}</span>}
-            </span>
+    <HangCon>
+      <td className="td" colSpan={2}>
+        <button type="button" onClick={() => onMoCase(c.id, { paId: p.id })} title="Mở PA trong ngăn Case"
+          className="block max-w-full appearance-none truncate border-0 bg-transparent p-0 text-left text-xs text-slate-100 hover:underline">
+          <span aria-hidden className={`mr-1.5 ${running ? 'text-doing' : 'text-slate-500'}`}>{running ? '▶' : '✓'}</span>PA · {p.name}
+        </button>
+        <span className="block truncate text-[11px] text-slate-500" title={dongPhu}>{dongPhu}</span>
+      </td>
+      <td className="td">
+        {p.lastOutcomeLabel ? (
+          <Outcome tone={OUTCOME_TONE[p.lastOutcome ?? ''] ?? 'muted'} mark={OUTCOME_MARK[p.lastOutcome ?? '']} title={p.lastNote ?? undefined}>
+            {p.lastOutcomeLabel}{p.lastOutcomeOn ? ` · ${ngan(p.lastOutcomeOn)}` : ''}
+          </Outcome>
+        ) : <span className="text-[11px] text-slate-500">Chưa có kết quả</span>}
+      </td>
+      <td className="td">
+        {v.loai === 'goi-y' ? (
+          <span className="flex flex-col items-start gap-1">
+            <span className="text-[11px] text-soon">{v.text}</span>
+            {c.canEdit && <PresetPlanActions interventionId={p.id} description={p.name} followupDue={p.followupDue} onDone={onChanged} />}
           </span>
-        </div>
-
-        {/* 2 · Kết quả gần nhất */}
-        <div className="min-w-0">
-          <span className="md:hidden block text-[10px] uppercase tracking-wide text-slate-500">Kết quả gần nhất</span>
-          {p.lastOutcomeLabel ? (
-            <>
-              <span className={`inline-block text-[11px] rounded px-1.5 py-0.5 border ${outcomeTone(p.lastOutcome)}`}
-                style={{ borderColor: 'var(--line)' }}>
-                {OUTCOME_MARK[p.lastOutcome ?? ''] ?? ''} {p.lastOutcomeLabel}
-                <span className="text-slate-500"> · {fmtDate(p.lastOutcomeOn)}</span>
-              </span>
-              {p.lastNote && <span className="block text-xs text-slate-300 mt-1 leading-relaxed break-words">{p.lastNote}</span>}
-            </>
-          ) : <span className="text-xs text-slate-500">Chưa có kết quả</span>}
-        </div>
-
-        {/* 3 · Việc tiếp theo */}
-        <div className="min-w-0 flex flex-col items-start gap-1">
-          <span className="md:hidden block text-[10px] uppercase tracking-wide text-slate-500">Việc tiếp theo</span>
-          {v.loai === 'goi-y' ? (
-            <>
-              <span className="text-[11px] text-amber-200/80">{v.text}</span>
-              {canEdit && <PresetPlanActions interventionId={p.id} description={p.name} followupDue={p.followupDue} onDone={onChanged} />}
-            </>
-          ) : v.loai === 'cho-duyet' ? (
-            <>
-              <span className="text-[11px] text-sky-300">{v.text}</span>
-              {v.due && <span className="text-[11px] text-slate-500">hạn {fmtDate(v.due)}</span>}
-            </>
-          ) : v.loai === 'ghi-ket-qua' ? (
-            <>
-              <PlanDue p={p} />
-              {canEdit && !editing && (
-                <button type="button" className="btn btn-sm" onClick={() => setEditing(true)}
-                  title="Ghi kết quả tuần này: kết quả, tiến triển, và quyết định Giữ nguyên / Điều chỉnh / Thay / Kết thúc">
-                  Ghi kết quả
-                </button>
-              )}
-            </>
-          ) : (
-            <span className="text-xs text-slate-500">{v.text}{v.due ? ` · ${fmtDate(v.due)}` : ''}</span>
-          )}
-        </div>
-      </div>
-
-      {showHistory && (
-        <ol id={historyId} className="list-none m-0 mt-2 pl-3 space-y-2 border-l"
-          style={{ borderColor: 'var(--line)' }}>
-          {thayBang && (
-            <li className="text-[11px] text-slate-400 tabular-nums">
-              {p.completedOn ? `${fmtDate(p.completedOn)} · ` : ''}Được thay bằng: {thayBang.name}
-            </li>
-          )}
-          {p.revisions.length > 0 && <li><LichSuDieuChinh revisions={p.revisions} /></li>}
-          {/* PA bị thay đã có dòng "Được thay bằng" cùng ngày ở trên, không nói lại "kết thúc phương án". */}
-          {p.completedOn && !running && !thayBang && (
-            <li className="text-[11px] text-slate-400 tabular-nums">
-              {fmtDate(p.completedOn)} · kết thúc phương án
-            </li>
-          )}
-          {updates.map((u, i) => (
-            <li key={`${u.on}-${i}`}>
-              <span className="block text-[11px] text-slate-500 tabular-nums">
-                {fmtDate(u.on)}
-                {u.cycleNo ? ` · Đợt ${u.cycleNo}` : ''}
-                {' · '}
-                <span className={outcomeTone(u.outcome)}>{OUTCOME_MARK[u.outcome] ?? ''} {u.label}</span>
-                {u.late && <span className="text-amber-300"> · ⚠ cập nhật trễ</span>}
-                {u.by && <span> · {u.by} ghi</span>}
-                {u.decision && NEXT_STEP_LABEL[u.decision as keyof typeof NEXT_STEP_LABEL] && <span> · → {NEXT_STEP_LABEL[u.decision as keyof typeof NEXT_STEP_LABEL]}</span>}
-              </span>
-              {u.note && <span className="block text-xs text-slate-300 mt-0.5 leading-relaxed break-words">“{u.note}”</span>}
-              {u.remainingIssue && <span className="block text-[11px] text-slate-400 mt-0.5">Còn tồn: {u.remainingIssue}</span>}
-              {/* Lý do của lần Điều chỉnh đã nằm trong bản điều chỉnh ở trên (kèm đổi gì), không nói lại lần hai. */}
-              {u.decisionNote && !(u.decision === 'adjust' && p.revisions.length > 0) && (
-                <span className="block text-[11px] text-slate-400 mt-0.5">
-                  {u.decision === 'adjust' || u.decision === 'propose' ? 'Lý do' : 'Ghi chú'}: {u.decisionNote}
-                </span>
-              )}
-            </li>
-          ))}
-          {p.startedOn && (
-            <li className="text-[11px] text-slate-500 tabular-nums">{fmtDate(p.startedOn)} · bắt đầu thực hiện</li>
-          )}
-          {thayCho && <li className="text-[11px] text-slate-500">Thay cho: {thayCho.name}</li>}
-          {updates.length === 0 && !p.startedOn && (
-            <li className="text-[11px] text-slate-500">Chưa có cập nhật nào cho phương án này.</li>
-          )}
-        </ol>
-      )}
-      {/* BẰNG CHỨNG CỦA PHƯƠNG ÁN (CASE-04): mở cùng lịch sử, chỉ tải danh sách khi người dùng mở khối này. */}
-      {showHistory && (
-        <div className="mt-2 pl-3">
-          <BangChung ownerType="case_intervention" ownerId={p.id} canEdit={canEdit} tieuDe="Bằng chứng của phương án" />
-        </div>
-      )}
-
-      {editing && (
-        <div className="mt-2">
-          <CapNhatTuanForm
-            pa={{ id: p.id, kind: p.kind, description: p.name, performer: p.performer,
-                  followupDue: p.followupDue, actionDue: p.actionDue }}
-            onCancel={() => setEditing(false)}
-            onSaved={() => { setEditing(false); onChanged?.(); }} />
-        </div>
-      )}
-    </div>
-  );
-}
-
-/**
- * HẠN LÀM và NGÀY DỰ KIẾN XONG — hai mốc, hai loại, không gộp (F11).
- *
- * "Dự kiến kết thúc" từng bị trình bày như một hạn phải làm — tô đỏ, đếm "quá hạn" — dù không ai trễ một ngày dự kiến.
- * Nay đi qua `<Han>`: hạn làm là hạn thật; ngày dự kiến xong LUÔN trung tính.
- */
-function PlanDue({ p }: { p: Plan }) {
-  if (!p.actionDue && !p.followupDue) {
-    return <span className="text-[11px] text-slate-600">chưa đặt hạn</span>;
-  }
-  return (
-    <span className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[11px]">
-      {p.actionDue && <Han loai="cap-nhat-pa" han={p.actionDue} />}
-      {p.followupDue && <Han loai="du-kien-ket-thuc" han={p.followupDue} />}
-    </span>
-  );
-}
-
-function Chip({ children, tone }: { children: React.ReactNode; tone?: 'danger' }) {
-  return (
-    <span className={`text-[11px] rounded px-1.5 py-0.5 border ${
-      tone === 'danger' ? 'text-rose-200' : 'text-slate-400'}`}
-      style={{ borderColor: tone === 'danger' ? 'var(--danger)' : 'var(--line)' }}>
-      {children}
-    </span>
+        ) : v.loai === 'cho-duyet' ? (
+          <span className="block text-[11px] text-wait">{v.text}{v.due ? <span className="text-slate-500"> · hạn {ngan(v.due)}</span> : null}</span>
+        ) : v.loai === 'ghi-ket-qua' ? (
+          <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+            {han && <span className="text-[11px] text-slate-500">{han.han}</span>}
+            {c.canEdit && (
+              <button type="button" className="btn btn-sm" onClick={() => onMoCase(c.id, { viec: 'ghi-ket-qua', paId: p.id })}
+                title="Ghi kết quả tuần này: kết quả, tiến triển, và quyết định Giữ nguyên / Điều chỉnh / Thay / Kết thúc">
+                Ghi kết quả
+              </button>
+            )}
+          </span>
+        ) : <span className="text-[11px] text-slate-500">{v.text}</span>}
+      </td>
+    </HangCon>
   );
 }
 
@@ -687,6 +426,7 @@ function Chip({ children, tone }: { children: React.ReactNode; tone?: 'danger' }
  *           còn dưới kỳ vọng mà tô mũi tên xanh vì nó nhích lên là khen sớm.
  */
 function ScoreCell({ row }: { row: Row }) {
+  const { homNay } = useNgayNghiepVu();
   const chip = scoreTone(row);
   if (row.band === null) {
     return (
@@ -708,7 +448,7 @@ function ScoreCell({ row }: { row: Row }) {
         <span className={`text-[11px] ml-1.5 font-medium ${scoreToneText(row)}`}>{gapText(g)}</span>
       )}
       <span className="block text-[10px] text-slate-500 mt-0.5">
-        {row.bandAttemptNo ? (row.ratio ? row.bandWeek ?? '' : `MT${row.bandAttemptNo}`) : ''}
+        {row.bandAttemptNo ? (row.ratio ? boNamCungNam(row.bandWeek, homNay) : `MT${row.bandAttemptNo}`) : ''}
         {row.ratio
           ? (row.missed === false ? ' · đạt' : row.missed === true ? ' · chưa đạt' : '')
           : row.expectation !== null ? ` · kỳ vọng ${fmtBand(row.expectation)}` : ''}
@@ -720,6 +460,13 @@ function ScoreCell({ row }: { row: Row }) {
       )}
     </div>
   );
+}
+
+/** Mã tuần "W1 SEP 2026" → "W1 SEP" khi cùng năm với hôm nay (G-6: chỉ hiện năm khi khác năm). */
+function boNamCungNam(code: string | null, homNay: string): string {
+  if (!code) return '';
+  const m = /^(.*\S)\s(\d{4})$/.exec(code);
+  return m && m[2] === homNay.slice(0, 4) ? m[1] : code;
 }
 
 function gapText(gap: number): string {
@@ -763,22 +510,23 @@ function outcomeTone(outcome: string | null): string {
   return 'text-amber-200';
 }
 
-/** Việc tiếp theo của cả hàng — một câu, lấy việc gấp nhất đang tồn. */
-function nextStepOf(row: Row): { text: string; due: string | null; overdue: boolean } | null {
+/** Việc tiếp theo của cả hàng — MỘT việc (động từ + đối tượng) + hạn tách riêng (B-2/B-3), lấy việc gấp nhất đang tồn. */
+function nextStepOf(row: Row, homNay: string): { viec: string; han: DeadlineView | null; title: string } | null {
+  const dong = (viec: string, han: DeadlineView | null) => ({ viec, han, title: han && han.han !== 'chưa có hạn' ? han.text : viec });
   if (row.signal) {
-    return { text: 'Xác minh SOS', due: row.signal.verifyDue, overdue: row.signal.overdue };
+    return dong('Xác minh SOS', deadlineView({ kind: 'xac-minh-sos', due: row.signal.verifyDue, today: homNay }));
   }
   const open = row.cases.filter((c) => c.status !== 'done');
-  const plans = open.flatMap((c) => c.plans).filter((p) => p.status === 'planned' || p.status === 'started');
   if (!open.length) return null;
-  if (!plans.length) return { text: 'Đề ra phương án', due: null, overdue: false };
+  const plans = open.flatMap((c) => c.plans).filter(dangChay);
+  if (!plans.length) return dong('Đề ra PA', null);
   const pending = plans.find((p) => p.pendingApproval);
-  if (pending) return { text: 'Chờ Quản lý trả lời', due: pending.approvalDue, overdue: false };
-  const due = plans
-    .map((p) => ({ on: p.actionDue ?? p.followupDue, overdue: p.actionOverdue || p.followupOverdue }))
-    .filter((x) => x.on)
-    .sort((a, b) => (a.on ?? '').localeCompare(b.on ?? ''))[0];
-  return { text: 'Cập nhật PA', due: due?.on ?? null, overdue: !!due?.overdue };
+  if (pending) {
+    return dong('Chờ QL trả lời', pending.approvalDue ? deadlineView({ kind: 'viec-van-hanh', due: pending.approvalDue, today: homNay }) : null);
+  }
+  /* Hạn ghi kết quả hằng tuần của PA (Q1) — `followupDue` là ngày DỰ KIẾN kết thúc, không phải hạn (F11). */
+  const due = plans.map((p) => p.actionDue).filter((x): x is string => !!x).sort()[0] ?? null;
+  return dong('Ghi kết quả PA', due ? deadlineView({ kind: 'cap-nhat-pa', due, today: homNay }) : null);
 }
 
 /**
@@ -788,6 +536,7 @@ function nextStepOf(row: Row): { text: string; due: string | null; overdue: bool
  * vọng MT1 thấp hơn kỳ vọng MT3, nên lấy một cái thước chung là kết luận sai cho quá khứ.
  */
 function Trend({ row }: { row: Row }) {
+  const { homNay } = useNgayNghiepVu();
   const pts = row.points ?? [];
   if (!pts.length) {
     return (
@@ -800,7 +549,7 @@ function Trend({ row }: { row: Row }) {
     return (
       <span className="block text-[10px] text-slate-500">
         {row.ratio ? 'mới có một bài' : `mới có MT${pts[0].attemptNo}`}
-        {row.bandWeek ? ` · ${row.bandWeek}` : ''}
+        {row.bandWeek ? ` · ${boNamCungNam(row.bandWeek, homNay)}` : ''}
       </span>
     );
   }

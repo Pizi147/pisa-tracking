@@ -148,7 +148,7 @@ export async function runYThucTests(t: YThucTestKit) {
     const w = warningsFor([AN, HA, HUY, NGOC, VAN, YEN, KIEN], TODAY);
     const active = [AN, VAN, YEN].filter((s) => w.get(s)?.active);
     assert(active.length === 3, `Nguyễn Minh An, Đặng Thu Vân, Ngô Hải Yến phải đang có cảnh báo; có ${active.length}`);
-    assert(w.get(AN)!.oldestAgeDays === 9 && w.get(AN)!.count === 4 && w.get(AN)!.message === '⚠ 4 vi phạm chưa được xử lý — vi phạm cũ nhất: 9 ngày trước', `An: ${w.get(AN)!.message}`);
+    assert(w.get(AN)!.oldestAgeDays === 9 && w.get(AN)!.count === 4 && w.get(AN)!.message === 'Chưa xử lý 4 vi phạm · cũ nhất 9 ngày', `An: ${w.get(AN)!.message}`);
     assert(w.get(VAN)!.oldestAgeDays === 8, `Vân phải 8 ngày, đang ${w.get(VAN)!.oldestAgeDays}`);
     assert(w.get(YEN)!.oldestAgeDays === 6, `Yến phải 6 ngày, đang ${w.get(YEN)!.oldestAgeDays}`);
     for (const s of [HA, KIEN]) assert(w.get(s)!.oldestAgeDays === 5 && !w.get(s)!.active, 'Vi phạm chưa xử lý đúng 5 ngày thì CHƯA cảnh báo (ngưỡng là quá 5 ngày)');
@@ -219,7 +219,7 @@ export async function runYThucTests(t: YThucTestKit) {
     assert(JSON.stringify(domain.MEASURE_KINDS) === JSON.stringify([
       'talk_short', 'meeting_student', 'family_report', 'warning_1', 'meeting_cx', 'warning_2', 'suspension', 'warning_3', 'other',
     ]), `Chín loại sai thứ tự: ${JSON.stringify(domain.MEASURE_KINDS)}`);
-    assert(domain.MEASURE_KIND_LABEL.warning_1 === 'Thư cảnh cáo lần 1' && domain.MEASURE_KIND_LABEL.meeting_cx === 'CX / GĐCN meeting với HS / PH'
+    assert(domain.MEASURE_KIND_LABEL.warning_1 === 'Thư cảnh cáo lần 1' && domain.MEASURE_KIND_LABEL.meeting_cx === 'CX / GĐCN meeting với HV / PH'
       && domain.MEASURE_KIND_LABEL.suspension === 'Đình chỉ học', 'Nhãn sai');
     for (const k of domain.MEASURE_KINDS) assert(domain.MEASURE_KIND_LABEL[k], `Loại ${k} thiếu nhãn`);
   });
@@ -277,8 +277,8 @@ export async function runYThucTests(t: YThucTestKit) {
     assert(w(['2026-09-16']).active === false, 'Đúng 5 ngày: chưa quá 5 ngày');
     const six = w(['2026-09-15', '2026-09-20', '2026-09-21', '2026-09-17']);
     assert(six.active && six.count === 4 && six.oldestAgeDays === 6 && six.oldestOn === '2026-09-15', `Sai: ${JSON.stringify(six)}`);
-    assert(six.message === '⚠ 4 vi phạm chưa được xử lý — vi phạm cũ nhất: 6 ngày trước', `Câu cảnh báo sai: ${six.message}`);
-    assert(domain.violationAgeLabel(9) === '⚠9n' && domain.violationAgeLabel(2) === '', 'W06: tuổi ⚠9n cạnh từng vi phạm quá 5 ngày');
+    assert(six.message === 'Chưa xử lý 4 vi phạm · cũ nhất 6 ngày', `Câu cảnh báo sai: ${six.message}`);
+    assert(domain.violationAgeLabel(9) === '9 ngày' && domain.violationAgeLabel(2) === '', 'W06: tuổi ⚠9n cạnh từng vi phạm quá 5 ngày');
   });
   console.log('\nPR-J · 2. Bốn bảng mới (J1)');
 
@@ -898,7 +898,7 @@ export async function runYThucTests(t: YThucTestKit) {
     const s = withUnhandled('W01', [9, 7, 6, 1]);
     const w = warn.studentWarning(gvcn, s.id) as any;
     assert(w.active && w.count === 4 && w.oldestAgeDays === 9 && w.oldestOn === addDays(TODAY, -9), `Cảnh báo sai: ${JSON.stringify(w)}`);
-    assert(w.message === '⚠ 4 vi phạm chưa được xử lý — vi phạm cũ nhất: 9 ngày trước', `Câu cảnh báo sai: ${w.message}`);
+    assert(w.message === 'Chưa xử lý 4 vi phạm · cũ nhất 9 ngày', `Câu cảnh báo sai: ${w.message}`);
     const five = withUnhandled('W01 đúng năm', [5, 2]);
     assert((warn.studentWarning(gvcn, five.id) as any).active === false, 'Đúng 5 ngày thì chưa cảnh báo (phải QUÁ 5 ngày)');
     const six = withUnhandled('W01 sáu', [6]);
@@ -955,7 +955,7 @@ export async function runYThucTests(t: YThucTestKit) {
     /* (1) Đầu tab Ý thức của lớp. */
     const board = warn.classWarning(gvcnOfCls, cls.id) as any;
     assert(board.activeCount === 2 && board.students.length === 2, `Tab Ý thức: 2 học viên quá 5 ngày, thấy ${board.activeCount}`);
-    assert(board.message === '⚠ 2 học viên có vi phạm chưa xử lý quá 5 ngày', `Câu đầu tab sai: ${board.message}`);
+    assert(board.message === '2 học viên có vi phạm chưa xử lý quá 5 ngày', `Câu đầu tab sai: ${board.message}`);
     const rowA = board.students.find((x: any) => x.studentId === a.id);
     assert(rowA.count === 4 && rowA.oldestAgeDays === 9, 'Học viên A: 4 vi phạm, cũ nhất 9 ngày');
     /* (2) Nhãn nhỏ ở dòng học viên: cùng dữ liệu, không tính lại. */
@@ -977,9 +977,9 @@ export async function runYThucTests(t: YThucTestKit) {
     const s = withUnhandled('W06', [9, 6, 2]);
     const rows = (viol.listViolations(gvcn, { studentId: s.id }) as any).rows as any[];
     const by = (id: number) => rows.find((r) => r.id === id);
-    assert(by(s.ids[0]).ageLabel === '⚠9n' && by(s.ids[1]).ageLabel === '⚠6n' && by(s.ids[2]).ageLabel === '', `Nhãn tuổi sai: ${rows.map((r) => r.ageLabel).join(' | ')}`);
+    assert(by(s.ids[0]).ageLabel === '9 ngày' && by(s.ids[1]).ageLabel === '6 ngày' && by(s.ids[2]).ageLabel === '', `Nhãn tuổi sai: ${rows.map((r) => r.ageLabel).join(' | ')}`);
     mk(gvcn, s.id, 'talk_short', [s.ids[0]]);
-    assert(by(s.ids[0]).ageLabel === '⚠9n' && (viol.listViolations(gvcn, { studentId: s.id }) as any).rows.find((r: any) => r.id === s.ids[0]).ageLabel === '',
+    assert(by(s.ids[0]).ageLabel === '9 ngày' && (viol.listViolations(gvcn, { studentId: s.id }) as any).rows.find((r: any) => r.id === s.ids[0]).ageLabel === '',
       'Vi phạm vào biện pháp rồi thì không còn nhãn tuổi');
   });
 
@@ -1193,8 +1193,8 @@ export async function runYThucTests(t: YThucTestKit) {
     assert(!bd.unhandled.students.some((s: any) => s.studentId === empty.id), 'Học viên không có vi phạm không xuất hiện');
     const rowA = bd.unhandled.students[0];
     assert(rowA.count === 3 && rowA.oldestAgeDays === 9 && rowA.warningActive && rowA.violations.length === 3, 'Học viên A: 3 vi phạm, cũ nhất 9 ngày, có cảnh báo');
-    assert(rowA.violations.map((v: any) => v.ageLabel).join() === '⚠9n,⚠6n,', `Tuổi cạnh từng vi phạm (W06): ${rowA.violations.map((v: any) => v.ageLabel).join()}`);
-    assert(bd.warning.activeCount === 2 && bd.warning.message === '⚠ 2 học viên có vi phạm chưa xử lý quá 5 ngày', `Đầu tab: ${bd.warning.message}`);
+    assert(rowA.violations.map((v: any) => v.ageLabel).join() === '9 ngày,6 ngày,', `Tuổi cạnh từng vi phạm (W06): ${rowA.violations.map((v: any) => v.ageLabel).join()}`);
+    assert(bd.warning.activeCount === 2 && bd.warning.message === '2 học viên có vi phạm chưa xử lý quá 5 ngày', `Đầu tab: ${bd.warning.message}`);
     assert(JSON.stringify(bd.warning.activeCount) === JSON.stringify((warn.classWarning(who, cls.id) as any).activeCount), 'Khớp cảnh báo 5 ngày (cùng hàm)');
     /* Tạo biện pháp cho A: các vi phạm ra khỏi khu 1, biện pháp vào khu 2. */
     const m = mk(who, a.id, 'family_report', a.ids.slice(0, 2));

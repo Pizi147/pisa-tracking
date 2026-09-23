@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useApi } from '../../lib/useApi.ts';
 import { useSession } from '../../lib/session.tsx';
-import { Alert, Empty, ErrorState, Skeleton, Status } from '../../ui/ui.tsx';
+import { Empty, ErrorState, Skeleton, Status } from '../../ui/ui.tsx';
 import { HangTab } from '../../ui/HangTab.tsx';
 import { OSoNho } from '../../ui/OSoNho.tsx';
 import { DongThoiGian, type DongThoiGianMuc } from '../../ui/DongThoiGian.tsx';
@@ -52,7 +52,7 @@ export function StudentYThucSection({ studentId, studentName, canRecordViolation
   /** Đổi sang tab Học thuật của hồ sơ (link trong thẻ Phối hợp SOS). */
   onGoAcademic?: () => void;
   /**
-   * CẢNH BÁO ĐÃ TẢI SẴN Ở TRANG CHA (AN-9) — trang cha cũng cần con số này cho dấu ⚠ trên tab, nên chỉ
+   * CẢNH BÁO ĐÃ TẢI SẴN Ở TRANG CHA (AN-9) — trang cha cũng cần con số này cho chấm nhắc trên tab, nên chỉ
    * MỘT nơi được gọi `/violation-warning`. Có truyền prop này (kể cả `null`) thì component KHÔNG tự gọi lại;
    * không truyền (`undefined`) thì tự tải như cũ, cho chỗ khác chưa kịp gom lại vẫn chạy đúng.
    */
@@ -119,10 +119,10 @@ export function StudentYThucSection({ studentId, studentName, canRecordViolation
         chon: canManageDiscipline && v.state === 'unhandled'
           ? { checked: ticked.has(v.id), onChange: () => toggle(v.id), nhanDoc: `Chọn vi phạm ${fmtDate(v.occurredOn)}` }
           : null,
-        cot2: v.ageLabel ? <Alert tone="danger">Vi phạm</Alert> : NHAN_VI_PHAM,
+        cot2: NHAN_VI_PHAM,
         tieuDe: v.description,
         dongPhu: [v.categoryLabel, v.skillLabel, v.reportedByName, v.state !== 'unhandled' ? v.stateLabel : null,
-          v.ageLabel ? `⚠ đã ${v.ageDays} ngày` : null].filter(Boolean).join(' · '),
+          v.ageLabel ? `${v.ageDays} ngày` : null].filter(Boolean).join(' · '),
         mo: moViPhamId === v.id,
         onMo: () => setMoViPhamId((cur) => (cur === v.id ? null : v.id)),
         chiTiet: (
@@ -171,7 +171,7 @@ export function StudentYThucSection({ studentId, studentName, canRecordViolation
 
       {sub === 'violations' ? (
         <>
-          {warnMessage && <Alert tone="warn">{warnMessage.replace(/^⚠\s*/, '')}</Alert>}
+          {warnMessage && <p className="m-0 text-xs text-soon">{warnMessage}</p>}
 
           {/* A3 — ô số nhỏ: Vi phạm · từng nhóm có số > 0 · PA đang chuẩn bị (đếm hết) · Thư cảnh cáo gần nhất — bốn ô đầu đếm theo chu kỳ (Q14). */}
           <div className="flex flex-wrap items-center gap-2">

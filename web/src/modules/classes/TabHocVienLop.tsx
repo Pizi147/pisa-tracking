@@ -31,10 +31,10 @@ export function TabHocVienLop({ lop, cheDo, onCheDo, onDoi, onThemHocVien }: {
         ))}
       </div>
       {cheDo === 'can-ho-tro'
-        ? <BangCanHoTro classId={lop.id} laLopThuong={thuong} quyen={quyen} onDoi={onDoi} />
+        ? <BangCanHoTro classId={lop.id} maLop={lop.code} laLopThuong={thuong} quyen={quyen} onDoi={onDoi} />
         : thuong
-          ? <BangDiemLopThuong classId={lop.id} quyen={quyen} onDoi={onDoi} />
-          : <ClassRoster classId={lop.id} quyen={quyen} onDoi={onDoi} onAddStudents={lop.viewer.canAddStudents ? onThemHocVien : undefined} />}
+          ? <BangDiemLopThuong classId={lop.id} maLop={lop.code} quyen={quyen} onDoi={onDoi} />
+          : <ClassRoster classId={lop.id} maLop={lop.code} quyen={quyen} onDoi={onDoi} onAddStudents={lop.viewer.canAddStudents ? onThemHocVien : undefined} />}
     </div>
   );
 }

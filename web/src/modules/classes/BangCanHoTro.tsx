@@ -1,7 +1,8 @@
 import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
-import { Empty, ErrorState, Skeleton, Task } from '../../ui/ui.tsx';
+import { Empty, ErrorState, Skeleton } from '../../ui/ui.tsx';
+import { ViecTiep } from '../../ui/ViecTiep.tsx';
 import { MenuDong } from '../../ui/MenuDong.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { nhapDiemCua, useThaoTacDongHocVien, type QuyenDong } from './thaoTacDongHocVien.tsx';
@@ -18,13 +19,13 @@ type CaseDong = {
  * bước tiếp theo + hạn. Chỉ em có Case đang mở (Case theo `/cases?classId=` — lớp em ĐANG học). Case nói trước chọn bằng
  * `chonCaseChinh` (quá hạn → chưa có PA → mức SOS). Badge "n Case đang mở" ở đầu trang mở chế độ này (Q5).
  */
-export function BangCanHoTro({ classId, laLopThuong, quyen, onDoi }: {
-  classId: number; laLopThuong: boolean; quyen: QuyenDong; onDoi: () => void;
+export function BangCanHoTro({ classId, maLop, laLopThuong, quyen, onDoi }: {
+  classId: number; maLop?: string; laLopThuong: boolean; quyen: QuyenDong; onDoi: () => void;
 }) {
   const { homNay } = useNgayNghiepVu();
   const roster = useApi<any[]>(`/classes/${classId}/roster`, [classId]);
   const cases = useApi<{ rows: CaseDong[] }>(`/cases?classId=${classId}`, [classId]);
-  const tt = useThaoTacDongHocVien({ laLopThuong, quyen, onDone: () => { roster.reload(); cases.reload(); onDoi(); } });
+  const tt = useThaoTacDongHocVien({ laLopThuong, quyen, maLop, onDone: () => { roster.reload(); cases.reload(); onDoi(); } });
   const theoEm = useMemo(() => {
     const m = new Map<number, CaseDong[]>();
     for (const c of cases.data?.rows ?? []) {
@@ -78,7 +79,7 @@ export function BangCanHoTro({ classId, laLopThuong, quyen, onDoi }: {
                       ? <span className="block truncate text-slate-300" title={c.currentPlan}>{c.currentPlan}</span>
                       : <span className="text-xs text-amber-200">Chưa có PA học thuật</span>}
                   </td>
-                  <td className="td">{buoc ? <Task tone={buoc.tone}>{buoc.nhan}</Task> : <span className="text-xs text-slate-500">Đang theo dõi</span>}</td>
+                  <td className="td">{buoc ? <ViecTiep v={buoc} /> : <span className="text-xs text-slate-500">Đang theo dõi</span>}</td>
                   <td className="td text-center">
                     <MenuDong muc={tt.mucCua({ id: s.id, ten: s.fullName, dangHoc: s.status === 'active', nhapDiem: nhapDiemCua(classId, laLopThuong, s.timeline ?? []) })} />
                   </td>

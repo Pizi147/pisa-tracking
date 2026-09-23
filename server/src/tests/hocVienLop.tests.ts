@@ -106,7 +106,7 @@ export async function runHocVienLopTests(t: YThucTestKit) {
     eq(d.ketQuaGanNhat(ft), { chinh: '6.0', thieu: 'Thiếu 0.5', dat: false, sos: 'SOS 1', phu: 'MT2 · kỳ vọng 6.5 · Thiếu L 5.5' }, 'Đủ điểm');
     eq(d.ketQuaGanNhat({ ...ft, overall: null, scored: 2, sosLevel: 2, provisional: true,
       belowSkills: [{ skill: 'writing', band: 5.5 }, { skill: 'speaking', band: 6.0 }] }),
-      { chinh: '—', thieu: null, dat: false, sos: 'SOS 2 · tạm thời', phu: 'MT2 · kỳ vọng 6.5 · mới có 2/4 kỹ năng · Thiếu W 5.5, S 6.0' }, 'Tạm thời');
+      { chinh: '—', thieu: null, dat: false, sos: 'SOS 2', phu: 'MT2 · kỳ vọng 6.5 · mới có 2/4 kỹ năng · Thiếu W 5.5, S 6.0', sosTamThoi: true }, 'Tạm thời');
     eq(d.ketQuaGanNhat({ ...ft, overall: 6.5, expectation: 6.0, sosLevel: 0, belowSkills: [] }),
       { chinh: '6.5', thieu: null, dat: true, sos: null, phu: 'MT2 · kỳ vọng 6.0' }, 'Đạt: chỉ ✓ nhỏ');
     eq(d.ketQuaGanNhat(null), { chinh: '—', thieu: null, dat: false, sos: null, phu: 'Chưa có kết quả' }, 'Chưa thi');
@@ -187,10 +187,10 @@ export async function runHocVienLopTests(t: YThucTestKit) {
       homNay: '2026-09-14',
     });
     eq(v, [
-      { nhan: 'L · Ghi kết quả PA · hạn CN 13/09 · quá hạn 1 ngày', tone: 'danger' },
-      { nhan: 'Nhập điểm L, W · Giữa khoá', tone: 'warn' },
-      { nhan: 'Xác định nguyên nhân W2', tone: 'warn' },
-      { nhan: 'R · Ghi kết quả PA · hạn CN 20/09', tone: 'info' },
+      { viec: 'Ghi kết quả L', han: 'CN 13/09', quaHanNgay: 1, tone: 'danger', title: 'Ghi kết quả PA L · hạn CN 13/09 · quá hạn 1 ngày' },
+      { viec: 'Nhập điểm L, W · Giữa khoá', han: null, quaHanNgay: null, tone: 'warn', title: 'Nhập điểm L, W · Giữa khoá' },
+      { viec: 'Đề ra PA W2', han: null, quaHanNgay: null, tone: 'warn', title: 'Đề ra PA W2' },
+      { viec: 'Ghi kết quả R', han: 'CN 20/09', quaHanNgay: null, tone: 'info', title: 'Ghi kết quả PA R · hạn CN 20/09' },
     ], 'Thứ tự và chữ');
     eq(d.chonCaseChinh([
       { id: 5, topic: 'reading', state: 'working', nextDue: null, dueOverdue: false, sosLevel: 3 },
@@ -363,10 +363,10 @@ export async function runHocVienLopTests(t: YThucTestKit) {
     const at = themLuot({ ...b, cid: LOP_THUONG, no: 1, kind: 'progress', weekStart: '2026-09-07' });
     diemThuong(at, { listening: [30, 40], reading: [32, 40], speaking: [8, 10] });
     const row = classes.classRoster(P.admin, LOP_THUONG).find((s: any) => s.id === b.sid);
-    eq(row.viecTiepTheo[0], { nhan: 'Nhập điểm W · Giữa khoá', tone: 'danger' }, 'Writing tuần 07/09 chưa có điểm, hạn CN 13/09 đã qua');
+    eq(row.viecTiepTheo[0], { viec: 'Nhập điểm W · Giữa khoá', han: null, quaHanNgay: null, tone: 'danger', title: 'Nhập điểm W · Giữa khoá · quá hạn' }, 'Writing tuần 07/09 chưa có điểm, hạn CN 13/09 đã qua');
     const t = row.timeline.find((x: any) => x.kind === 'progress');
     eq(t.tuanMon.writing, '2026-09-07', 'Tuần thi của môn Writing');
-    assert(row.viecTiepTheo.every((v: any) => !/MT\d|kỳ vọng/.test(v.nhan)), 'Chữ FT lọt vào lớp thường');
+    assert(row.viecTiepTheo.every((v: any) => !/MT\d|kỳ vọng/.test(v.viec)), 'Chữ FT lọt vào lớp thường');
   });
 
   check('PR-Qa · Q4/K2-6a hồ sơ lớp: cờ nút theo quyền, số Case đang mở, cảnh báo Ý thức của tab', () => {

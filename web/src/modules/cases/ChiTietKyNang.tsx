@@ -42,8 +42,8 @@ export function ComponentsField({ label, components, counts, value, onChange, bu
       </div>
       <div className="space-y-1.5">
         {components.map((c) => (
-          <div key={c} className="flex items-center gap-2">
-            <span className="text-xs text-slate-300 w-52 shrink-0">{c}</span>
+          <div key={c} className="flex flex-wrap items-center gap-2">
+            <span className="w-full shrink-0 text-xs text-slate-300 sm:w-52">{c}</span>
             <input className="field max-w-[6rem]" type="number" inputMode="decimal"
               step={counts ? 1 : 0.5} min={0} max={counts ? undefined : 9}
               placeholder={counts ? 'đạt' : 'band'}

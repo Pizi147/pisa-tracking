@@ -113,11 +113,11 @@ export const MEASURE_KINDS = [
 ] as const;
 export type MeasureKind = (typeof MEASURE_KINDS)[number];
 export const MEASURE_KIND_LABEL: Record<MeasureKind, string> = {
-  talk_short: 'GV trao đổi ngắn với HS',
-  meeting_student: 'GV meeting với HS',
+  talk_short: 'GV trao đổi ngắn với HV',
+  meeting_student: 'GV meeting với HV',
   family_report: 'Report cho gia đình',
   warning_1: 'Thư cảnh cáo lần 1',
-  meeting_cx: 'CX / GĐCN meeting với HS / PH',
+  meeting_cx: 'CX / GĐCN meeting với HV / PH',
   warning_2: 'Thư cảnh cáo lần 2',
   suspension: 'Đình chỉ học',
   warning_3: 'Thư cảnh cáo lần 3',
@@ -228,11 +228,11 @@ export function violationWarning(unhandledDates: readonly string[], today: strin
   const active = oldestAgeDays > CANH_BAO_NGAY;
   return {
     active, count, oldestOn, oldestAgeDays,
-    message: active ? `⚠ ${count} vi phạm chưa được xử lý — vi phạm cũ nhất: ${oldestAgeDays} ngày trước` : '',
+    message: active ? `Chưa xử lý ${count} vi phạm · cũ nhất ${oldestAgeDays} ngày` : '',
   };
 }
 
-/** W06: tuổi `⚠9n` cạnh TỪNG vi phạm chưa xử lý quá 5 ngày — để không ai phải tự trừ ngày. */
+/** W06: tuổi `9 ngày` (không ⚠ — nhắc mềm, không phải quá hạn) cạnh TỪNG vi phạm chưa xử lý quá 5 ngày — để không ai phải tự trừ ngày. */
 export function violationAgeLabel(ageDays: number): string {
-  return ageDays > CANH_BAO_NGAY ? `⚠${ageDays}n` : '';
+  return ageDays > CANH_BAO_NGAY ? `${ageDays} ngày` : '';
 }

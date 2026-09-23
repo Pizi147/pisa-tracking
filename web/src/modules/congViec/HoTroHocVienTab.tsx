@@ -10,7 +10,7 @@ import { fmtTime } from '../../lib/format.ts';
 import { NhomViec } from '../worklist/NhomViec.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import type { WorkGroup, WorkItem } from '../worklist/WorkList.tsx';
-import { ApprovalDialog } from '../cases/CasePanel.tsx';
+import { TraLoiDeXuatPanel } from '../cases/ThaoTacCase.tsx';
 import { NganViecVanHanh } from '../worklist/MgmtTasksPage.tsx';
 import { useNhacYThuc } from '../yThuc/YThucReminders.tsx';
 import { ChonPhuTrach, type NguoiPhuTrach } from './ChonPhuTrach.tsx';
@@ -156,12 +156,14 @@ export function HoTroHocVienTab() {
         </Card>
       )}
 
-      <ApprovalDialog
-        open={!!duyetDong}
-        onClose={() => setDuyetDong(null)}
-        intervention={duyetDong?.duyet ? { id: duyetDong.duyet.interventionId, kind: duyetDong.duyet.kind, description: duyetDong.duyet.description } : null}
-        onDone={() => invalidate('/my-work')}
-      />
+      {duyetDong?.duyet && (
+        <TraLoiDeXuatPanel
+          hocVien={duyetDong.studentName} lop={duyetDong.classCode}
+          iv={{ id: duyetDong.duyet.interventionId, kind: duyetDong.duyet.kind, description: duyetDong.duyet.description }}
+          onClose={() => setDuyetDong(null)}
+          onSaved={() => { invalidate('/my-work'); setDuyetDong(null); }}
+        />
+      )}
 
       {/*
         PR-Ra, nợ PR-O (#58): GV mở được việc Vận hành giao cho mình mà không cần vào tab Vận

@@ -2,8 +2,10 @@ import { useEffect, useMemo, useState } from 'react';
 import { api, invalidate } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { useToast } from '../../ui/Toast.tsx';
-import { Modal } from '../../ui/Drawer.tsx';
-import { Field } from '../../ui/ui.tsx';
+import { Hang2, Khoi, KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
+import { HangTab } from '../../ui/HangTab.tsx';
+import { ChonTuan, NgayDoiDuoc } from '../../ui/ChonNgay.tsx';
+import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { BangChung } from '../../ui/BangChung.tsx';
 import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
 import { ComponentsField, componentsPayload } from './ChiTietKyNang.tsx';
@@ -11,7 +13,7 @@ import {
   ENTRY_SKILL_LABEL, URGENCY_LEVELS, URGENCY_LABEL, issuesForTopic, DEFAULT_URGENCY,
   CASE_OUTCOMES, CASE_OUTCOME_LABEL, REGULAR_SKILL_LABEL,
   categoryOf, componentsFor, componentsAreCounts,
-  nguoiThanhPayload, nguoiThieu, type NguoiChon,
+  nguoiThanhPayload, nguoiThieu, skillShort, tuanLich, type NguoiChon,
 } from '@shared/domain/index.ts';
 
 type DaLuu = { id: number; tieuDe: string; gop: boolean; canEdit: boolean };
@@ -35,9 +37,11 @@ type BfAction = { description: string; nguoi: NguoiChon; fromDate: string; toDat
  * độ…) là Vi phạm — có form riêng ở phần Ý thức, không đi qua cửa case.
  */
 export function QuickReport({
-  open, onClose, studentId, studentName, cycleId, onDone, signal, students, onPickStudent,
+  open, onClose, studentId, studentName, lop, cycleId, onDone, signal, students, onPickStudent,
 }: {
   open: boolean; onClose: () => void;
+  /** Mã lớp hiện ở đầu ngăn (`Tạo Case · Tên HV · MB-FOU 12`); không có thì bỏ phần lớp. */
+  lop?: string | null;
   studentId: number; studentName?: string; cycleId?: number | null;
   onDone?: (caseId: number) => void;
   /**
@@ -70,7 +74,11 @@ export function QuickReport({
   const [primaryCode, setPrimaryCode] = useState('');
   const [detectedAt, setDetectedAt] = useState('');
   const [busy, setBusy] = useState(false);
-  const [more, setMore] = useState(false);
+  /* Lỗi chỉ hiện SAU khi bấm nút chính (Q4): `Còn thiếu: …` ở chân. */
+  const [daBam, setDaBam] = useState(false);
+  /* Các dòng PA đã áp dụng đang mở để sửa (dòng còn trống luôn mở). */
+  const [moSua, setMoSua] = useState<number[]>([]);
+  const { homNay, ngan } = useNgayNghiepVu();
 
   /* F-1 (mục 4.8): sau khi lưu, panel KHÔNG đóng — chuyển sang bước "Đã lưu" + khối Bằng chứng. */
   const [daLuu, setDaLuu] = useState<DaLuu | null>(null);
@@ -127,10 +135,13 @@ export function QuickReport({
   const topicLabel = (k: string) => ENTRY_SKILL_LABEL[k as keyof typeof ENTRY_SKILL_LABEL]
     ?? REGULAR_SKILL_LABEL[k as keyof typeof REGULAR_SKILL_LABEL] ?? k;
   const causes = topic ? issuesForTopic(topic) : [];
+  /* Nút kỹ năng một hàng chia đều: viết tắt L R W W1 W2 S (tooltip là tên đầy đủ). */
+  const topicShort = (k: string) => skillShort(k);
+  const nguoiNhan = (n: NguoiChon | null) => (!n || n.kieu === 'toi' ? 'tôi' : n.ten);
 
   const reset = () => {
     setSummary(''); setUrgency(DEFAULT_URGENCY); setTopic('');
-    setTitle(''); setPrimaryCode(''); setDetectedAt(''); setMore(false); setDup(null);
+    setTitle(''); setPrimaryCode(''); setDetectedAt(''); setDup(null); setDaBam(false); setMoSua([]);
     setMode('now'); setBfFrom(''); setBfTo('');
     setBfActions([{ description: '', nguoi: { kieu: 'toi' }, fromDate: '', toDate: '' }]);
     setBfErrors({}); setBfOutcome(''); setBfNote(''); setBfMetrics({}); setBfDup(null);
@@ -186,23 +197,10 @@ export function QuickReport({
     } finally { setBusy(false); }
   };
 
+  /* Bấm nút chính: còn thiếu thì chỉ hiện `Còn thiếu: …` ở chân (không toast, không gửi). Đủ rồi mới gửi; máy chủ vẫn kiểm lại. */
   const submit = async () => {
-    /*
-     * BỐN TRƯỜNG BẮT BUỘC (mục 6.3). Kiểm ngay ở đây chứ không chỉ chờ máy chủ báo lỗi:
-     * người dùng đang gõ dở, nói cho họ biết thiếu gì trước khi bấm rẻ hơn nhiều.
-     */
-    if (title.trim().length < 6) { toast.push('error', 'Đặt tên cho case.'); return; }
-    if (summary.trim().length < 15) {
-      toast.push('error', 'Mô tả cụ thể hơn: em sai ở đâu, sai như thế nào.'); return;
-    }
-    if (!topic) {
-      toast.push('error', 'Chọn kỹ năng em đang vướng.');
-      return;
-    }
-    if (!primaryCode) { toast.push('error', 'Chọn phân loại vấn đề.'); return; }
-    if (primaryCode.endsWith('.other') && summary.trim().length < 30) {
-      toast.push('error', 'Chọn "Khác" thì mô tả phải nói rõ vấn đề cụ thể là gì.'); return;
-    }
+    setDaBam(true);
+    if (thieu.length > 0) return;
     await send();
   };
 
@@ -217,7 +215,7 @@ export function QuickReport({
         fromDate: bfFrom, toDate: bfTo,
         actions: bfActions.map((a) => ({
           description: a.description.trim(), ...nguoiThanhPayload(a.nguoi),
-          fromDate: a.fromDate, toDate: a.toDate,
+          fromDate: a.fromDate || bfFrom, toDate: a.toDate || bfTo,
         })),
         outcome: bfOutcome, note: bfNote,
         /* S5 — điểm giáo viên tự chấm theo kỹ năng, luôn TUỲ CHỌN. */
@@ -236,40 +234,25 @@ export function QuickReport({
   };
 
   const submitBackfill = async () => {
-    if (title.trim().length < 6) { toast.push('error', 'Đặt tên cho case.'); return; }
-    if (summary.trim().length < 15) {
-      toast.push('error', 'Mô tả cụ thể hơn: khi đó em vướng gì.'); return;
-    }
-    if (!topic) {
-      toast.push('error', 'Chọn kỹ năng.');
-      return;
-    }
-    if (!primaryCode) { toast.push('error', 'Chọn phân loại vấn đề.'); return; }
-    if (primaryCode.endsWith('.other') && summary.trim().length < 30) {
-      toast.push('error', 'Chọn "Khác" thì mô tả phải nói rõ vấn đề cụ thể là gì.'); return;
-    }
-    if (!bfFrom || !bfTo) { toast.push('error', 'Ghi từ ngày nào đến ngày nào.'); return; }
-    if (bfFrom > bfTo) { toast.push('error', 'Ngày bắt đầu phải trước ngày kết thúc.'); return; }
-
+    setDaBam(true);
+    if (thieu.length > 0) return;
     /*
-     * F-3 (§22.4): mỗi thẻ kiểm RIÊNG, lỗi hiện NGAY DƯỚI thẻ đó — không đẩy lệch thẻ khác
-     * bằng một toast chung chung "có dòng sai". Thẻ chưa gõ gì (mô tả rỗng) thì bỏ qua, không kiểm.
+     * F-3 (§22.4): mỗi thẻ kiểm RIÊNG, lỗi hiện NGAY DƯỚI thẻ đó. Thẻ chưa gõ gì (mô tả rỗng) thì bỏ qua. Khoảng tuần của thẻ
+     * mặc định là khoảng chung (Q7); ô người thực hiện phải đủ.
      */
     const filled = bfActions.filter((a) => a.description.trim());
-    if (!filled.length) { toast.push('error', 'Ghi ít nhất một dòng "đã làm gì".'); return; }
     const errors: Record<number, string> = {};
     bfActions.forEach((a, i) => {
       if (!a.description.trim()) return;
       if (a.description.trim().length < 3) { errors[i] = 'Phải nói rõ đã làm gì.'; return; }
-      const thieu = nguoiThieu(a.nguoi, true);
-      if (thieu) { errors[i] = thieu; return; }
-      if (!a.fromDate || !a.toDate) { errors[i] = 'Cần từ ngày → đến ngày.'; return; }
-      if (a.fromDate > a.toDate) { errors[i] = 'Ngày bắt đầu phải trước ngày kết thúc.'; return; }
+      const thieuNguoi = nguoiThieu(a.nguoi, true);
+      if (thieuNguoi) { errors[i] = thieuNguoi; return; }
+      const tu = a.fromDate || bfFrom;
+      const den = a.toDate || bfTo;
+      if (tu > den) { errors[i] = 'Từ tuần phải trước Đến tuần.'; return; }
     });
-    if (Object.keys(errors).length) { setBfErrors(errors); return; }
+    if (Object.keys(errors).length) { setBfErrors(errors); setMoSua(Object.keys(errors).map(Number)); return; }
     setBfErrors({});
-    if (!bfOutcome) { toast.push('error', 'Chọn kết quả cuối.'); return; }
-    if (bfNote.trim().length < 10) { toast.push('error', 'Ghi chú kết luận — ít nhất 10 ký tự.'); return; }
     setBfActions(filled);
     await sendBackfill();
   };
@@ -278,339 +261,256 @@ export function QuickReport({
   const bfComponents = componentsFor(category, chuDe.data?.ratio ? 'ratio' : 'band');
   const bfCounts = componentsAreCounts(category);
 
-  return (
-    <Modal open={open} onClose={dong}
-      width={mode === 'backfill' ? 'max-w-xl' : undefined}
-      title={signal?.kind === 'normal'
-        ? `Tạo Case · ${signal.label}${studentName ? ` · ${studentName}` : ''}`
-        : signal
-          ? `Xác minh tín hiệu ${signal.label}${studentName ? ` · ${studentName}` : ''}`
-          : (studentName ? `+ Case · ${studentName}` : '+ Case')}
-      footer={
-        daLuu ? (
-          <button className="btn btn-primary" onClick={dong}>Xong</button>
-        ) : (
-          <>
-            <button className="btn" onClick={dong}>Huỷ</button>
-            {mode === 'now'
-              ? <button className="btn btn-primary" disabled={busy || !studentId} onClick={submit}>Ghi nhận</button>
-              : <button className="btn btn-primary" disabled={busy || !studentId} onClick={submitBackfill}>Ghi lại Case đã xong</button>}
-          </>
-        )
-      }>
-      {daLuu ? (
-        /*
-         * F-1 (mục 4.8): bước "Đã lưu" — panel không đóng, hiện dấu ✓ rồi khối Bằng chứng của
-         * CHÍNH Case vừa tạo, để đính kèm ngay tại chỗ thay vì phải mở lại case sau.
-         */
-        <div className="space-y-3">
-          <p className="text-sm text-slate-400 m-0">
+  /* Gom NHÃN ô còn thiếu — hiện ở chân SAU khi bấm nút chính (Q4), không toast trước khi gửi. */
+  const thieu: string[] = [];
+  if (students && !studentId) thieu.push('Học viên');
+  if (!topic) thieu.push('Kỹ năng');
+  if (!primaryCode) thieu.push('Phân loại vấn đề');
+  if (title.trim().length < 6) thieu.push('Tên Case');
+  if (summary.trim().length < 15) thieu.push('Mô tả');
+  else if (primaryCode.endsWith('.other') && summary.trim().length < 30) thieu.push('Mô tả rõ hơn (chọn "Khác")');
+  if (mode === 'backfill') {
+    if (!bfFrom) thieu.push('Từ tuần');
+    if (!bfTo) thieu.push('Đến tuần');
+    if (bfFrom && bfTo && bfFrom > bfTo) thieu.push('Đến tuần không trước Từ tuần');
+    if (!bfActions.some((a) => a.description.trim())) thieu.push('Phương án đã áp dụng');
+    if (!bfOutcome) thieu.push('Kết quả cuối');
+    if (bfNote.trim().length < 10) thieu.push('Vì sao kết luận vậy');
+  }
+
+  if (!open) return null;
+
+  const tieuDe = signal?.kind === 'normal' ? `Tạo Case ${signal.label}`
+    : signal ? `Xác minh SOS ${signal.label}` : 'Tạo Case';
+  const tenChon = (students ?? []).find((st) => st.id === studentId)?.name ?? studentName;
+  const nhanTuan = (iso: string) => (iso ? tuanLich(iso, homNay) : '');
+
+  /* ─────────────── bước "Đã lưu": không đóng — Bằng chứng của CHÍNH Case vừa tạo (F-1, §3.13), chân chỉ còn "Xong". */
+  if (daLuu) {
+    return (
+      <KhungPanel tieuDe={tieuDe} hocVien={tenChon} lop={lop} onDong={dong} chan={{ huy: { nhan: 'Xong', onClick: dong } }}>
+        <Khoi tieuDe="Đã lưu">
+          <p className="m-0 text-sm text-slate-200">
             {daLuu.gop ? <>✓ Đã ghi vào Case đang có «{daLuu.tieuDe}»</> : <>✓ Đã lưu Case «{daLuu.tieuDe}»</>}
           </p>
+        </Khoi>
+        <Khoi tieuDe="Bằng chứng">
           {daLuu.canEdit ? (
-            <BangChung ownerType="sos_case" ownerId={daLuu.id} canEdit={daLuu.canEdit} tieuDe="Bằng chứng" />
+            <BangChung ownerType="sos_case" ownerId={daLuu.id} canEdit={daLuu.canEdit} tieuDe="" />
           ) : (
-            /* GVCN mở Case môn mình không dạy (vd Writing) — không đính kèm được ở đây; nói rõ ai sẽ thêm, không vẽ khối trống. */
-            <p className="text-xs text-slate-500 m-0">
-              Bạn không có quyền đính kèm cho Case môn này — GV dạy môn đó hoặc Quản lý sẽ thêm bằng chứng.
-            </p>
+            /* GVCN mở Case môn mình không dạy — không đính kèm được ở đây; nói rõ ai sẽ thêm, không vẽ khối trống. */
+            <p className="m-0 text-xs text-slate-500">Bạn không có quyền đính kèm cho Case môn này. GV dạy môn đó hoặc Quản lý sẽ thêm.</p>
           )}
-        </div>
-      ) : (
-      <div className="space-y-3">
-        {/*
-          HAI TAB (mục 10.3): "Đang gặp vấn đề" (đường thường) và "Đã xong từ trước" (nhập
-          bù). Không hiện khi mở từ một tín hiệu — xác minh tín hiệu luôn là chuyện đang xảy
-          ra, không phải chuyện đã xong từ lâu.
-        */}
-        {!signal && (
-          <div className="flex gap-1.5 items-center flex-wrap">
-            <button type="button" className={`btn btn-sm ${mode === 'now' ? 'btn-primary' : ''}`}
-              onClick={() => setMode('now')}>
-              Đang gặp vấn đề
-            </button>
-            <span className="text-slate-500 text-xs cursor-help" aria-label="Không tạo bài đánh giá, không có mức SOS."
-              title="Không tạo bài đánh giá, không có mức SOS.">ⓘ</span>
-            <button type="button" className={`btn btn-sm ${mode === 'backfill' ? 'btn-primary' : ''}`}
-              onClick={() => setMode('backfill')}>
-              Đã xong từ trước
-            </button>
-            <span className="text-slate-500 text-xs cursor-help"
-              aria-label="Nhập bù không có hạn, không tính vào tỷ lệ hiệu quả — đây là trí nhớ, không phải phương án đang chạy."
-              title="Nhập bù không có hạn, không tính vào tỷ lệ hiệu quả — đây là trí nhớ, không phải phương án đang chạy.">ⓘ</span>
-          </div>
-        )}
+        </Khoi>
+      </KhungPanel>
+    );
+  }
 
-        {/* ĐIỂM CỦA TÍN HIỆU — phần máy biết chắc, hiện ra để người dạy khỏi mở bài lên dò. */}
-        {signal?.scoreText && (
-          <p className="m-0 text-xs text-slate-400">
-            Điểm: <span className="text-slate-200">{signal.contextLabel ?? signal.label}</span>{' '}
-            <span className="tabular-nums text-rose-200">{signal.scoreText}</span>
-          </p>
-        )}
-
-        {/*
-          CHỌN HỌC VIÊN — chỉ khi mở từ trang lớp (mục 13.1). Ở hồ sơ một em thì không hỏi
-          lại: người dùng đã đứng sẵn trong hồ sơ của em đó rồi.
-        */}
+  return (
+    <KhungPanel tieuDe={tieuDe} hocVien={tenChon} lop={lop} onDong={dong}
+      /* Điểm của tín hiệu = phần máy biết chắc, hiện ở dòng ngữ cảnh (≤ 1 dòng) để khỏi mở bài lên dò. */
+      ngCanh={signal?.scoreText ? (
+        <span>Điểm {signal.contextLabel ?? signal.label}: <span className="tabular-nums text-late">{signal.scoreText}</span></span>
+      ) : undefined}
+      tabs={!signal ? (
+        <HangTab cap="con" ariaLabel="Loại Case" value={mode} onChange={(k) => { setMode(k); setDaBam(false); }}
+          tabs={[{ key: 'now', label: 'Đang gặp vấn đề' }, { key: 'backfill', label: 'Đã xong từ trước' }]} />
+      ) : undefined}
+      chan={{
+        conThieu: daBam ? thieu : undefined,
+        chinh: (
+          <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={mode === 'now' ? submit : submitBackfill}>
+            {mode === 'now' ? 'Tạo Case' : 'Ghi lại Case đã xong'}
+          </button>
+        ),
+      }}>
+      <Khoi tieuDe="Vấn đề"
+        luat={mode === 'backfill'
+          ? 'Nhập bù không có hạn và không tính vào tỷ lệ hiệu quả: đây là trí nhớ, không phải PA đang chạy. Không tạo bài đánh giá, không có mức SOS.'
+          : 'Hệ thống chỉ đọc được con số. Phần này là quan sát của bạn: em sai ở đâu, bài hay buổi nào.'}>
+        {/* CHỌN HỌC VIÊN — chỉ khi mở từ trang lớp (mục 13.1); ở hồ sơ một em thì không hỏi lại. */}
         {students && (
-          <Field label="Học viên" required hint="Case thuộc về một em cụ thể trong lớp này.">
-            <select className="field" value={studentId || ''}
-              onChange={(e) => onPickStudent?.(Number(e.target.value) || 0)}>
-              <option value="">Chọn học viên…</option>
-              {students.map((st) => (
-                <option key={st.id} value={st.id}>{st.name}{st.code ? ` · ${st.code}` : ''}</option>
-              ))}
+          <Truong nhan="Học viên" batBuoc>
+            <select className="field w-full" value={studentId || ''} onChange={(e) => onPickStudent?.(Number(e.target.value) || 0)}>
+              <option value="">Chọn học viên</option>
+              {students.map((st) => <option key={st.id} value={st.id}>{st.name}{st.code ? ` · ${st.code}` : ''}</option>)}
             </select>
-          </Field>
+          </Truong>
         )}
 
-        {/*
-          TÊN CASE DO NGƯỜI TẠO ĐẶT (mục 7.3).
-          Case sinh từ điểm có tên suy ra được ("MT2 - Reading dưới kỳ vọng"); case tạo tay
-          thì không có gì để suy, và hệ thống KHÔNG được tự gán "… dưới kỳ vọng" cho nó.
-        */}
-        <Field label="Tên case" required
-          hint="Một câu ngắn nói đúng vấn đề, để sau này nhìn danh sách là nhận ra ngay.">
-          <input className="field" value={title} onChange={(e) => setTitle(e.target.value)}
-            placeholder="Ví dụ: Reading — chưa xử lý được dạng True/False/Not Given" />
-        </Field>
+        {/* Kỹ năng BẮT BUỘC: không có nó, vấn đề rơi vào "chưa phân loại" và biến mất khỏi bảng tổng hợp theo kỹ năng. */}
+        <Truong nhan="Kỹ năng" batBuoc as="div">
+          {!studentId ? (
+            <div className="grid grid-cols-4 gap-2 opacity-40" aria-hidden>
+              {['L', 'R', 'W', 'S'].map((k) => <span key={k} className="btn justify-center">{k}</span>)}
+            </div>
+          ) : !signal && chuDe.loading && !chuDe.data ? (
+            <div className="h-[34px] animate-pulse rounded-md" style={{ background: 'var(--surface-2)' }} />
+          ) : (
+            <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${Math.max(topics.length, 1)}, minmax(0, 1fr))` }}>
+              {topics.map((k) => (
+                <button key={k} type="button" aria-pressed={topic === k} title={topicLabel(k)}
+                  className={`btn min-h-[44px] justify-center px-1 sm:min-h-0 ${topic === k ? 'btn-primary' : ''}`}
+                  onClick={() => { setTopic(k); setPrimaryCode(''); }}>
+                  {topicShort(k)}
+                </button>
+              ))}
+            </div>
+          )}
+        </Truong>
 
-        {/*
-          "MÔ TẢ VẤN ĐỀ + DẪN CHỨNG CỤ THỂ" — nhãn nói rõ đang xin HAI thứ.
-          Một ô tên là "Mô tả" thì nhận được "em yếu Reading", và ba tuần sau không ai suy ra
-          được đã quan sát thấy gì. Xin luôn dẫn chứng thì người viết nhớ kể ra bài nào, câu
-          nào, buổi nào — đó mới là thứ người tiếp nhận case dùng được.
-        */}
-        <Field label="Mô tả vấn đề + dẫn chứng cụ thể" required
-          hint="Em sai ở đâu, sai thế nào, và bạn thấy điều đó ở bài nào/buổi nào. Hệ thống chỉ đọc được con số — phần này là quan sát của bạn.">
-          <textarea className="field" rows={3} value={summary} autoFocus
-            onChange={(e) => setSummary(e.target.value)}
-            placeholder="MT2 Reading: hết giờ khi còn hai câu cuối của Passage 3; dạng Not Given sai 4/5 câu. Buổi 12/08 chữa bài em cũng đoán chứ không tìm được căn cứ trong bài." />
-        </Field>
+        {/* Phân loại BẮT BUỘC (máy chủ cần `primaryCode`): select ≥ 5 lựa chọn, gợi ý của lựa chọn nằm ở `title` (Q6). */}
+        <Truong nhan="Phân loại vấn đề" batBuoc>
+          <select className="field w-full" value={primaryCode} disabled={!topic}
+            title={causes.find((i) => i.code === primaryCode)?.hint}
+            onChange={(e) => setPrimaryCode(e.target.value)}>
+            <option value="">{topic ? 'Chọn phân loại' : ''}</option>
+            {causes.map((i) => <option key={i.code} value={i.code} title={i.hint}>{i.label}</option>)}
+          </select>
+        </Truong>
 
-        {/* F-1: người dùng biết trước — ảnh/tệp/liên kết KHÔNG có ở đây, mà thêm ngay sau khi lưu. */}
-        <p className="text-[11px] text-slate-500 m-0">Ảnh, tệp, liên kết: thêm ngay sau khi lưu.</p>
-
-        {/* Nhập bù là chuyện ĐÃ XONG — không còn "mức độ gấp" để mà xin. */}
+        {/* Nhập bù là chuyện ĐÃ XONG — không còn "mức độ" để xin. */}
         {mode === 'now' && (
-          <Field label="Mức độ" required
-            hint="Hai bậc, và mỗi bậc dẫn tới một hạn khác nhau. Đây là nhận định của người báo, KHÔNG phải mức SOS tính từ điểm.">
-            <div className="flex gap-1 flex-wrap">
+          <Truong nhan="Mức độ" batBuoc phu="Nhận định của người báo, không phải mức SOS" as="div">
+            <div className="grid grid-cols-2 gap-2">
               {URGENCY_LEVELS.map((u) => (
-                <button key={u} type="button"
-                  className={`btn btn-sm ${urgency === u ? 'btn-primary' : ''}`}
-                  onClick={() => setUrgency(u)}>
+                <button key={u} type="button" aria-pressed={urgency === u}
+                  className={`btn min-h-[44px] justify-center sm:min-h-0 ${urgency === u ? 'btn-primary' : ''}`} onClick={() => setUrgency(u)}>
                   {URGENCY_LABEL[u]}
                 </button>
               ))}
             </div>
-          </Field>
+          </Truong>
         )}
 
-        {/*
-          KỸ NĂNG LÀ BẮT BUỘC, nên để ngay đây chứ không giấu dưới "xem thêm": một vấn đề không
-          có chỗ cất sẽ không bao giờ hiện lên bảng tổng hợp theo kỹ năng.
+        {/* TÊN CASE DO NGƯỜI TẠO ĐẶT (mục 7.3): Case tạo tay không có gì để suy, hệ thống không được tự gán "… dưới kỳ vọng". */}
+        <Truong nhan="Tên Case" batBuoc>
+          <input className="field w-full" value={title} onChange={(e) => setTitle(e.target.value)}
+            placeholder="Ví dụ: Reading — sai dạng True/False/Not Given" />
+        </Truong>
+        <Truong nhan="Mô tả và dẫn chứng" batBuoc phu="Sai ở đâu, bài hay buổi nào">
+          <textarea className="field w-full" rows={3} value={summary} onChange={(e) => setSummary(e.target.value)}
+            placeholder="Ví dụ: Giữa khoá sai 4/5 câu Not Given" />
+        </Truong>
+      </Khoi>
 
-          F07: bộ kỹ năng theo đúng chương trình em đang học — hỏi máy chủ (`case-topics`) thay
-          vì luôn giả định năm ô Fast Track, để lớp thường mở được Case Writing (`writing`).
-        */}
-        <Field label="Kỹ năng nào" required>
-          {!studentId ? (
-            <p className="text-xs text-slate-500 m-0">Chọn học viên trước.</p>
-          ) : !signal && chuDe.loading && !chuDe.data ? (
-            <p className="text-xs text-slate-500 m-0">Đang tải…</p>
-          ) : (
-            <div className="flex gap-1 flex-wrap">
-              {topics.map((k) => (
-                <button key={k} type="button"
-                  className={`btn btn-sm ${topic === k ? 'btn-primary' : ''}`}
-                  onClick={() => { setTopic(k); setPrimaryCode(''); }}>
-                  {topicLabel(k)}
-                </button>
-              ))}
-            </div>
-          )}
-        </Field>
+      {mode === 'now' && (
+        <Khoi tieuDe="Theo dõi">
+          <NgayDoiDuoc tien="Bắt đầu theo dõi" value={detectedAt || homNay} onChange={setDetectedAt} soNgay={30} />
+        </Khoi>
+      )}
 
-        {/*
-          PHÂN LOẠI LÀ BẮT BUỘC, nên nó nằm NGAY ĐÂY, không giấu dưới "xem thêm" (mục 6.3).
-          Trước đây nó là ô "Vì sao" không bắt buộc với lựa chọn mặc định "Chưa rõ" — và
-          "Chưa rõ" chính là thứ làm mọi bảng tổng hợp nguyên nhân trở nên vô dụng.
-        */}
-        {topic && (
-          <Field label="Phân loại vấn đề" required
-            hint="Căn cứ để sau này trả lời được: trung tâm mình hay vướng cái gì nhất.">
-            <div className="flex gap-1 flex-wrap">
-              {causes.map((i) => (
-                <button key={i.code} type="button" title={i.hint}
-                  className={`btn btn-sm ${primaryCode === i.code ? 'btn-primary' : ''}`}
-                  onClick={() => setPrimaryCode(i.code)}>
-                  {i.label}
-                </button>
-              ))}
-            </div>
-            {causes.find((i) => i.code === primaryCode)?.hint && (
-              <p className="text-xs text-slate-500 mt-1 mb-0">
-                {causes.find((i) => i.code === primaryCode)!.hint}
-              </p>
-            )}
-            {primaryCode.endsWith('.other') && (
-              <p className="text-xs text-amber-200 mt-1 mb-0">
-                Chọn "Khác" thì mô tả phải nói rõ vấn đề cụ thể là gì.
-              </p>
-            )}
-          </Field>
-        )}
-
-        {mode === 'now' && !more && (
-          <button type="button" className="btn btn-sm btn-ghost" onClick={() => setMore(true)}>
-            + Theo dõi từ ngày khác hôm nay
-          </button>
-        )}
-
-        {mode === 'now' && more && (
-          <Field label="Theo dõi từ ngày" hint="Bỏ trống thì lấy hôm nay.">
-            <input type="date" className="field" value={detectedAt} onChange={(e) => setDetectedAt(e.target.value)} />
-          </Field>
-        )}
-
-        {/*
-          TAB "ĐÃ XONG TỪ TRƯỚC" (mục 10.3) — chỗ DUY NHẤT được nhập ngày quá khứ, Không có ô "Mức độ": việc đã xong rồi thì không còn gì
-          để mà gấp.
-        */}
-        {mode === 'backfill' && (
-          <>
-            <Field label="Khoảng thời gian" required
-              hint="Khoảng thời gian vấn đề thật sự diễn ra, không phải hôm nay.">
-              <div className="grid grid-cols-2 gap-2">
-                <label className="block">
-                  <span className="text-[11px] text-slate-500 block">Từ ngày</span>
-                  <input type="date" className="field" value={bfFrom} onChange={(e) => setBfFrom(e.target.value)} />
-                </label>
-                <label className="block">
-                  <span className="text-[11px] text-slate-500 block">Đến ngày</span>
-                  <input type="date" className="field" value={bfTo} onChange={(e) => setBfTo(e.target.value)} />
-                </label>
-              </div>
-            </Field>
-
-            {/*
-              F-3 (§22.4): mỗi thẻ ba dòng cố định — mô tả, người thực hiện (ChonNguoi), khoảng
-              ngày. Lỗi hiện NGAY DƯỚI thẻ của chính nó, không đẩy lệch các thẻ khác.
-            */}
-            <Field label="Phương án đã áp dụng" required hint="Mỗi thẻ một phương án: mô tả, người thực hiện, từ ngày → đến ngày.">
-              <div className="space-y-2">
-                {bfActions.map((a, i) => (
-                  <div key={i} className="surface-2 rounded-lg p-2.5 space-y-1.5">
-                    {bfActions.length > 1 && (
-                      <div className="flex justify-end">
-                        <button type="button" className="btn btn-sm btn-ghost"
-                          onClick={() => setBfActions(bfActions.filter((_, j) => j !== i))}>
-                          Xoá
-                        </button>
+      {/* TAB "ĐÃ XONG TỪ TRƯỚC" (mục 10.3) — chỗ DUY NHẤT được nhập thời gian quá khứ; tuần thay ngày (Q7). */}
+      {mode === 'backfill' && (
+        <>
+          <Khoi tieuDe="Đã áp dụng">
+            <Hang2>
+              <Truong nhan="Từ tuần" batBuoc>
+                <ChonTuan moc="dau" lui={26} toi={0} value={bfFrom} onChange={setBfFrom} chuaChon="Chọn tuần" />
+              </Truong>
+              <Truong nhan="Đến tuần" batBuoc>
+                <ChonTuan moc="cuoi" lui={26} toi={0} value={bfTo} onChange={setBfTo} chuaChon="Chọn tuần" />
+              </Truong>
+            </Hang2>
+            <div className="space-y-2">
+              {bfActions.map((a, i) => {
+                const dangSua = moSua.includes(i) || !a.description.trim();
+                const tu = a.fromDate || bfFrom;
+                const den = a.toDate || bfTo;
+                const doiKhoang = (part: 'fromDate' | 'toDate') => (v: string) =>
+                  setBfActions(bfActions.map((x, j) => (j === i ? { ...x, [part]: v } : x)));
+                return (
+                  <div key={i} className="rounded-lg border px-2.5 py-2" style={{ borderColor: 'var(--line)' }}>
+                    {dangSua ? (
+                      <div className="space-y-2">
+                        <input className="field w-full" placeholder="Ví dụ: tutor Listening mỗi tuần" value={a.description}
+                          onChange={(e) => setBfActions(bfActions.map((x, j) => (j === i ? { ...x, description: e.target.value } : x)))} />
+                        <ChonNguoi nhom="giao_vien" studentId={studentId} value={a.nguoi}
+                          onChange={(v) => setBfActions(bfActions.map((x, j) => (j === i ? { ...x, nguoi: v ?? { kieu: 'toi' } } : x)))} />
+                        <Hang2>
+                          <ChonTuan moc="dau" lui={26} toi={0} value={a.fromDate} onChange={doiKhoang('fromDate')} chuaChon="Từ tuần: như trên" ariaLabel="Từ tuần" />
+                          <ChonTuan moc="cuoi" lui={26} toi={0} value={a.toDate} onChange={doiKhoang('toDate')} chuaChon="Đến tuần: như trên" ariaLabel="Đến tuần" />
+                        </Hang2>
+                        <span className="flex gap-2">
+                          {a.description.trim() && (
+                            <button type="button" className="btn btn-sm" onClick={() => setMoSua(moSua.filter((x) => x !== i))}>Xong</button>
+                          )}
+                          {bfActions.length > 1 && (
+                            <button type="button" className="btn btn-sm btn-ghost" onClick={() => setBfActions(bfActions.filter((_, j) => j !== i))}>Xoá</button>
+                          )}
+                        </span>
                       </div>
+                    ) : (
+                      <p className="m-0 flex flex-wrap items-baseline gap-x-1.5 text-xs text-slate-300">
+                        <span className="min-w-0 truncate text-slate-100" title={a.description}>{a.description}</span>
+                        <span className="text-slate-500">· {nguoiNhan(a.nguoi)}</span>
+                        {tu && den && <span className="text-slate-500">· {nhanTuan(tu)} → {nhanTuan(den)}</span>}
+                        <button type="button" className="link appearance-none border-0 bg-transparent p-0" onClick={() => setMoSua([...moSua, i])}>Sửa</button>
+                      </p>
                     )}
-                    <input className="field" placeholder="Phương án đã áp dụng (ví dụ: tutor Listening mỗi tuần)"
-                      value={a.description}
-                      onChange={(e) => setBfActions(bfActions.map((x, j) => j === i ? { ...x, description: e.target.value } : x))} />
-                    <ChonNguoi nhom="giao_vien" studentId={studentId} value={a.nguoi}
-                      onChange={(v) => setBfActions(bfActions.map((x, j) => j === i ? { ...x, nguoi: v ?? { kieu: 'toi' } } : x))} />
-                    <div className="grid grid-cols-2 gap-2">
-                      <label className="block">
-                        <span className="text-[11px] text-slate-500 block">Từ ngày</span>
-                        <input type="date" className="field" value={a.fromDate}
-                          onChange={(e) => setBfActions(bfActions.map((x, j) => j === i ? { ...x, fromDate: e.target.value } : x))} />
-                      </label>
-                      <label className="block">
-                        <span className="text-[11px] text-slate-500 block">Đến ngày</span>
-                        <input type="date" className="field" value={a.toDate}
-                          onChange={(e) => setBfActions(bfActions.map((x, j) => j === i ? { ...x, toDate: e.target.value } : x))} />
-                      </label>
-                    </div>
-                    {bfErrors[i] && <p className="text-[11px] text-rose-300 m-0">{bfErrors[i]}</p>}
+                    {bfErrors[i] && <p className="m-0 mt-1 text-[11px] text-late">{bfErrors[i]}</p>}
                   </div>
-                ))}
-                <button type="button" className="btn btn-sm btn-ghost"
-                  onClick={() => setBfActions([...bfActions, { description: '', nguoi: { kieu: 'toi' }, fromDate: '', toDate: '' }])}>
-                  + Thêm phương án
-                </button>
-              </div>
-            </Field>
+                );
+              })}
+              <button type="button" className="btn btn-sm btn-ghost"
+                onClick={() => setBfActions([...bfActions, { description: '', nguoi: { kieu: 'toi' }, fromDate: '', toDate: '' }])}>
+                + Thêm PA đã áp dụng
+              </button>
+            </div>
+          </Khoi>
 
-            <Field label="Kết quả cuối" required>
-              <div className="flex gap-1 flex-wrap">
+          <Khoi tieuDe="Kết quả">
+            <Truong nhan="Kết quả cuối" batBuoc as="div">
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                 {CASE_OUTCOMES.map((o) => (
-                  <button key={o} type="button"
-                    className={`btn btn-sm ${bfOutcome === o ? 'btn-primary' : ''}`}
-                    onClick={() => setBfOutcome(o)}>
+                  <button key={o} type="button" aria-pressed={bfOutcome === o}
+                    className={`btn min-h-[44px] justify-center sm:min-h-0 ${bfOutcome === o ? 'btn-primary' : ''}`} onClick={() => setBfOutcome(o)}>
                     {CASE_OUTCOME_LABEL[o]}
                   </button>
                 ))}
               </div>
-            </Field>
-
-            {/* S5 — điểm giáo viên tự chấm theo đúng kỹ năng của case, luôn TUỲ CHỌN. */}
+            </Truong>
+            {/* S5 — điểm giáo viên tự chấm theo đúng kỹ năng của Case, luôn TUỲ CHỌN. */}
             {bfComponents.length > 0 && (
               <ComponentsField label={topicLabel(topic)} components={bfComponents} counts={bfCounts}
-                value={bfMetrics} onChange={setBfMetrics}
-                buttonLabel="+ Điểm chi tiết theo kỹ năng (không bắt buộc)" />
+                value={bfMetrics} onChange={setBfMetrics} buttonLabel="+ Điểm chi tiết theo kỹ năng" />
             )}
-
-            <Field label="Ghi chú" required hint="Ngày quá khứ không tự chứng minh hiệu quả — nói rõ vì sao kết luận vậy.">
-              <textarea className="field" rows={2} value={bfNote} onChange={(e) => setBfNote(e.target.value)} />
-            </Field>
-
-            {bfDup && (
-              <div className="mt-2 rounded-lg border p-3"
-                   style={{ borderColor: 'var(--warn)', background: 'rgba(240, 201, 135, 0.08)' }}>
-                <p className="text-sm text-slate-100 m-0">
-                  Học viên này đã có một case nhập bù <strong>"{bfDup.title}"</strong> trùng
-                  khoảng {bfDup.from} → {bfDup.to}. Có phải cùng một lần không?
-                </p>
-                <div className="flex flex-wrap gap-2 mt-2">
-                  <button className="btn btn-sm" disabled={busy}
-                    onClick={() => sendBackfill({ confirmDuplicate: true })}>
-                    Đây là lần khác, vẫn ghi riêng
-                  </button>
-                </div>
-              </div>
-            )}
-          </>
-        )}
-      </div>
+            <Truong nhan="Vì sao kết luận vậy" batBuoc>
+              <textarea className="field w-full" rows={2} value={bfNote} onChange={(e) => setBfNote(e.target.value)}
+                placeholder="Ví dụ: MT3 Listening lên 6.0" />
+            </Truong>
+          </Khoi>
+        </>
       )}
 
-      {/*
-        POP-UP CẢNH BÁO CASE TRÙNG — đè lên form, không thay thế form.
+      {/* F-1: người dùng biết trước — ảnh/tệp/liên kết KHÔNG có ở đây, mà thêm ngay sau khi lưu. */}
+      <Khoi tieuDe="Bằng chứng">
+        <p className="m-0 text-xs text-slate-500">Ảnh, tệp, liên kết — thêm được ngay sau khi tạo</p>
+      </Khoi>
 
-        Người dùng vẫn thấy chữ mình vừa gõ ở phía sau, nên chọn xong là hiểu mình vừa quyết
-        định gì. Nút trái là vế MẶC ĐỊNH vì nó đúng trong đa số trường hợp; vế phải hợp lệ
-        nhưng phải là quyết định có ý thức.
-      */}
-      {dup && !daLuu && (
-        <div className="mt-4 rounded-lg border p-3"
-             style={{ borderColor: 'var(--warn)', background: 'rgba(240, 201, 135, 0.08)' }}>
-          <p className="text-sm text-slate-100 m-0">
-            Học viên này đang có case <strong>“{dup.title}”</strong> chưa xử lý xong
-            ở hạng mục {dup.categoryLabel}.
+      {/* CẢNH BÁO CASE TRÙNG (mục 7.13) — MỘT khối vàng, hai nút, ngay trong thân; chữ vừa gõ vẫn còn. */}
+      {mode === 'backfill' && bfDup && (
+        <div className="mt-3.5 rounded-lg border p-3" style={{ borderColor: 'var(--soon-line)', background: 'var(--soon-bg)' }}>
+          <p className="m-0 text-sm text-slate-100">
+            Đã có Case nhập bù <strong>“{bfDup.title}”</strong> trùng khoảng {ngan(bfDup.from)} → {ngan(bfDup.to)}. Cùng một lần?
           </p>
-          <p className="text-xs text-slate-400 mt-1 mb-2">
-            Mở từ {dup.detectedAt}
-            {dup.interventionCount > 0 ? ` · đã có ${dup.interventionCount} phương án` : ' · chưa có phương án nào'}.
-          </p>
-          <div className="flex flex-wrap gap-2">
-            <button className="btn btn-primary btn-sm" disabled={busy}
-              onClick={() => send({ mergeIntoExisting: true })}>
-              Ghi vào case đang có
-            </button>
-            <button className="btn btn-sm" disabled={busy}
-              onClick={() => send({ parallel: true })}>
-              Đây là vấn đề khác, mở case riêng
-            </button>
+          <div className="mt-2 flex flex-wrap gap-2">
+            <button type="button" className="btn btn-sm" disabled={busy} onClick={() => sendBackfill({ confirmDuplicate: true })}>Lần khác, vẫn ghi riêng</button>
           </div>
         </div>
       )}
-    </Modal>
+      {mode === 'now' && dup && (
+        <div className="mt-3.5 rounded-lg border p-3" style={{ borderColor: 'var(--soon-line)', background: 'var(--soon-bg)' }}>
+          <p className="m-0 text-sm text-slate-100">
+            Đã có Case <strong>“{dup.title}”</strong> chưa xử lý xong ở {dup.categoryLabel}.
+            <span className="text-slate-400"> Mở {ngan(dup.detectedAt)}{dup.interventionCount > 0 ? ` · ${dup.interventionCount} PA` : ' · chưa có PA'}.</span>
+          </p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            <button type="button" className="btn btn-primary btn-sm" disabled={busy} onClick={() => send({ mergeIntoExisting: true })}>Ghi vào Case đang có</button>
+            <button type="button" className="btn btn-sm" disabled={busy} onClick={() => send({ parallel: true })}>Vấn đề khác, mở Case riêng</button>
+          </div>
+        </div>
+      )}
+    </KhungPanel>
   );
 }

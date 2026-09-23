@@ -55,6 +55,7 @@ import * as hocVienLopSvc from '../classes/hocVienLop.ts';
 import * as luuTruSvc from '../classes/luuTru.ts';
 import * as phanTichLopSvc from '../classes/phanTichLop.ts';
 import * as thongTinLopSvc from '../classes/thongTinLop.ts';
+import * as xoaKetThucLopSvc from '../classes/xoaKetThucLop.ts';
 import * as studentSvc from '../students/students.ts';
 import * as meetingSvc from '../worklist/meeting.ts';
 import * as dashboardSvc from '../worklist/dashboard.ts';
@@ -1160,6 +1161,17 @@ api.get('/classes/:id/phan-tich-lop', requireAuth, wrap((req) => {
 api.patch('/classes/:id/thong-tin', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return thongTinLopSvc.capNhatThongTinLop(principalOf(req), pInt(req, 'id'), req.body ?? {});
+}));
+
+/** ⋮ Hồ sơ lớp › Xoá lớp / Kết thúc lớp — CHỈ Quản trị hệ thống (máy chủ kiểm `admin.config`, PR-UX3). */
+api.get('/classes/:id/xoa-ket-thuc', requireAuth, wrap((req) => xoaKetThucLopSvc.xemXoaKetThuc(principalOf(req), pInt(req, 'id'))));
+api.post('/classes/:id/xoa', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return xoaKetThucLopSvc.xoaLop(principalOf(req), pInt(req, 'id'), req.body ?? {});
+}));
+api.post('/classes/:id/ket-thuc', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return xoaKetThucLopSvc.ketThucLop(principalOf(req), pInt(req, 'id'));
 }));
 
 // ============================================================ Thêm học viên hàng loạt

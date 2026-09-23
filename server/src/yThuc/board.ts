@@ -11,7 +11,7 @@ import { violationsByIds, type ViolationView } from './violations.ts';
 /**
  * DỮ LIỆU BA KHU VỰC Ý THỨC CỦA MỘT LỚP (đặc tả §7.3, Y03) — viết lại từ bảng "số đợt case từng nhóm" của mô hình cũ.
  *
- *   1. VI PHẠM CHƯA XỬ LÝ — gom theo HỌC VIÊN, không theo ngày: đơn vị ra quyết định là *em nào*. Mỗi vi phạm kèm tuổi `⚠9n` (W06).
+ *   1. VI PHẠM CHƯA XỬ LÝ — gom theo HỌC VIÊN, không theo ngày: đơn vị ra quyết định là *em nào*. Mỗi vi phạm kèm tuổi `9 ngày` (W06).
  *   2. BIỆN PHÁP ĐANG CHUẨN BỊ — luôn đầy đủ, không cắt: đó là việc đang dở của GVCN, giấu nó là cách chắc chắn nhất để nó bị quên.
  *   3. LỊCH SỬ XỬ LÝ — chỉ vài dòng gần nhất; lịch sử cần CÓ, không cần chiếm màn.
  *
@@ -26,7 +26,7 @@ export type ClassViolationBoard = {
   canManage: boolean;
   /** Người xem có ghi vi phạm được ở lớp này không (K2-5b) — cùng quyền `violation.record` mà route ghi vi phạm dùng. */
   canRecord: boolean;
-  /** Đầu tab: `⚠ 3 học viên có vi phạm chưa xử lý quá 5 ngày`. */
+  /** Đầu tab: `3 học viên có vi phạm chưa xử lý quá 5 ngày`. */
   warning: { activeCount: number; message: string };
   unhandled: {
     /** Tổng số vi phạm chưa xử lý của cả lớp (đơn vị: vi phạm). */
@@ -85,7 +85,7 @@ export function classViolationBoard(p: Principal, classId: number, today = demoT
     canRecord: can(p, PERMISSIONS.VIOLATION_RECORD, { classId }),
     warning: {
       activeCount: activeWarnings,
-      message: activeWarnings > 0 ? `⚠ ${activeWarnings} học viên có vi phạm chưa xử lý quá ${CANH_BAO_NGAY} ngày` : '',
+      message: activeWarnings > 0 ? `${activeWarnings} học viên có vi phạm chưa xử lý quá ${CANH_BAO_NGAY} ngày` : '',
     },
     unhandled: {
       total: students.reduce((n, s) => n + s.count, 0), studentCount: students.length, students,

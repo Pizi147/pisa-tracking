@@ -2,7 +2,9 @@ import { useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
-import { Empty, Level, Skeleton, Task } from '../../ui/ui.tsx';
+import { Empty, Level, Skeleton } from '../../ui/ui.tsx';
+import { Nhan } from '../../ui/Nhan.tsx';
+import { DanhSachViecTiep } from '../../ui/ViecTiep.tsx';
 import { MenuDong } from '../../ui/MenuDong.tsx';
 import { HangCon } from '../../ui/HangNhom.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
@@ -31,7 +33,7 @@ export type DongRoster = {
 };
 
 export type LopChoBang = {
-  id: number; programmeCode: string | null; scoringMode: string | null;
+  id: number; code?: string; programmeCode: string | null; scoringMode: string | null;
   currentWeek: number | null; totalWeeks: number | null; tuanKetThuc: string | null;
   viewer: QuyenDong;
   /** PR-LT: lớp đang trong hai tuần cuối khoá — chỉ khi đó mới nhắc "chưa có lộ trình tiếp theo" (Q5). */
@@ -51,7 +53,7 @@ export function BangHocVienLop({ lop, chiHien, sapXep, onDoi, soCot }: {
   const { homNay } = useNgayNghiepVu();
   const thuong = lop.scoringMode === 'ratio';
   const { data, loading, error, reload } = useApi<DongRoster[]>(`/classes/${lop.id}/roster`, [lop.id]);
-  const tt = useThaoTacDongHocVien({ laLopThuong: thuong, quyen: lop.viewer, onDone: () => { reload(); onDoi(); } });
+  const tt = useThaoTacDongHocVien({ laLopThuong: thuong, quyen: lop.viewer, maLop: lop.code, onDone: () => { reload(); onDoi(); } });
   const rows = useMemo(() => sapXepHocVien(
     (data ?? [])
       .filter((s) => !s.archived && (!chiHien || chiHien.has(s.id)))
@@ -103,7 +105,9 @@ export function BangHocVienLop({ lop, chiHien, sapXep, onDoi, soCot }: {
                 <span className="text-sm font-bold tabular-nums text-slate-100">{k.chinh}</span>
                 {k.thieu && <span className="text-[11px] font-semibold text-bad">{k.thieu}</span>}
                 {k.dat && <span className="text-[10px] text-slate-400" title={thuong ? 'Đạt mọi môn' : 'Đạt kỳ vọng'}>✓</span>}
-                {k.sos && <Level tone={sosTone(s.standing?.sosLevel ?? null)}>{k.sos}</Level>}
+                {k.sos && (k.sosTamThoi
+                  ? <Nhan tone="muted" dut title="Tạm thời: chưa đủ điểm các môn">{k.sos}</Nhan>
+                  : <Level tone={sosTone(s.standing?.sosLevel ?? null)}>{k.sos}</Level>)}
               </span>
               {k.phu && <span className="block truncate text-[11px] text-slate-500" title={k.phu}>{k.phu}</span>}
             </td>
@@ -120,16 +124,7 @@ export function BangHocVienLop({ lop, chiHien, sapXep, onDoi, soCot }: {
               {s.openCases || <span className="text-slate-600">—</span>}
             </td>
             <td className="td">
-              {s.viecTiepTheo.length === 0 ? <span className="text-slate-600">—</span> : (
-                <span className="flex flex-col items-start gap-1">
-                  {s.viecTiepTheo.slice(0, 2).map((v) => <Task key={v.nhan} tone={v.tone}>{v.nhan}</Task>)}
-                  {s.viecTiepTheo.length > 2 && (
-                    <span className="text-[10px] text-slate-500" title={s.viecTiepTheo.slice(2).map((v) => v.nhan).join(' · ')}>
-                      +{s.viecTiepTheo.length - 2} việc
-                    </span>
-                  )}
-                </span>
-              )}
+              <DanhSachViecTiep viec={s.viecTiepTheo} />
             </td>
             <td className="td text-center">
               <MenuDong muc={tt.mucCua({

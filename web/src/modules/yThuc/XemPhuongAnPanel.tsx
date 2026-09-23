@@ -2,18 +2,20 @@ import { useEffect, useState } from 'react';
 import { api, invalidate } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { useToast } from '../../ui/Toast.tsx';
-import { Modal } from '../../ui/Drawer.tsx';
-import { ErrorState, Field, Skeleton } from '../../ui/ui.tsx';
+import { Khoi, KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
+import { ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { BangChung } from '../../ui/BangChung.tsx';
-import { fmtDate } from '../../lib/format.ts';
+import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
+import { ngay } from '@shared/domain/index.ts';
 
 /**
- * HỘP CHỈ ĐỌC MỘT PHƯƠNG ÁN XỬ LÝ (PR-HV, spec §4.3 — nút `Xem`, việc K2-6 đã hoãn). Dữ liệu từ `GET /measures/:id`.
+ * PANEL CHỈ ĐỌC MỘT PA XỬ LÝ (PR-HV, spec §4.3 — nút `Xem`; PR-UX3: cùng vỏ `KhungPanel`). Dữ liệu từ `GET /measures/:id`.
  * Không sửa gì ở đây, TRỪ ghi chú khi đã thực hiện (YT-10, Q9): GVCN/Quản lý bổ sung được sau khi việc đã xong; riêng
  * tệp/liên kết vẫn bổ sung được sau khi đã thực hiện (B10) — quyền do máy chủ kiểm.
  */
 export function XemPhuongAnPanel({ measureId, onClose }: { measureId: number | null; onClose: () => void }) {
   const toast = useToast();
+  const { homNay } = useNgayNghiepVu();
   const { data: d, error, reload } = useApi<any>(measureId !== null ? `/measures/${measureId}` : null, [measureId]);
   const [suaGhiChu, setSuaGhiChu] = useState(false);
   const [note, setNote] = useState('');
@@ -35,51 +37,54 @@ export function XemPhuongAnPanel({ measureId, onClose }: { measureId: number | n
   };
 
   return (
-    <Modal open onClose={onClose} title={d ? `${d.kindLabel} · ${d.studentName}` : 'Phương án'}
-      footer={<button className="btn" onClick={onClose}>Đóng</button>}>
-      {error ? <ErrorState message={error.message} onRetry={reload} /> : !d ? <Skeleton rows={4} /> : (
-        <div className="space-y-3 text-sm text-slate-200">
-          <Field label="Trạng thái" as="div">{d.statusLabel}</Field>
-          <Field label="Ngày thực hiện" as="div">{fmtDate(d.performedOn)}</Field>
-          <Field label="Người thực hiện" as="div">{d.performedByName ?? d.performerName ?? '—'}</Field>
-          {d.ownerName && <Field label="Phụ trách" as="div">{d.ownerName}</Field>}
-          {d.participants && <Field label="Người tham gia" as="div">{d.participants}</Field>}
-          <Field label="Lý do / nội dung" as="div">
-            {suaGhiChu ? (
-              <div className="space-y-2">
-                <textarea className="field" rows={3} value={note} onChange={(e) => setNote(e.target.value)} autoFocus />
-                <div className="flex gap-2">
-                  <button type="button" className="btn btn-sm" disabled={busy} onClick={() => setSuaGhiChu(false)}>Huỷ</button>
-                  <button type="button" className="btn btn-sm btn-primary" disabled={busy} onClick={luuGhiChu}>Lưu</button>
+    <KhungPanel tieuDe={d ? d.kindLabel : 'Phương án xử lý'} hocVien={d?.studentName} onDong={onClose}
+      ngCanh={d ? <span className="truncate">{d.statusLabel}{d.ownerName ? ` · phụ trách ${d.ownerName}` : ''}</span> : undefined}
+      chan={{ huy: { nhan: 'Đóng', onClick: onClose } }}>
+      {error ? <div className="pt-3"><ErrorState message={error.message} onRetry={reload} /></div> : !d ? <div className="pt-3"><Skeleton rows={4} /></div> : (
+        <>
+          <Khoi tieuDe="Đã thực hiện">
+            <div className="grid grid-cols-2 gap-3 text-sm text-slate-200">
+              <Truong nhan="Ngày thực hiện" as="div">{ngay(d.performedOn, homNay)}</Truong>
+              <Truong nhan="Người thực hiện" as="div">{d.performedByName ?? d.performerName ?? '—'}</Truong>
+            </div>
+            {d.participants && <Truong nhan="Người tham gia" as="div"><span className="text-sm text-slate-200">{d.participants}</span></Truong>}
+            <Truong nhan="Lý do / nội dung" as="div">
+              {suaGhiChu ? (
+                <div className="space-y-2">
+                  <textarea className="field w-full" rows={3} value={note} onChange={(e) => setNote(e.target.value)} autoFocus />
+                  <div className="flex gap-2">
+                    <button type="button" className="btn btn-sm" disabled={busy} onClick={() => setSuaGhiChu(false)}>Huỷ</button>
+                    <button type="button" className="btn btn-sm btn-primary" disabled={busy} onClick={luuGhiChu}>Lưu</button>
+                  </div>
                 </div>
-              </div>
-            ) : (
-              <>
-                <p className="m-0 whitespace-pre-wrap break-words">{d.note ?? '—'}</p>
-                {d.status === 'done' && d.canManage && (
-                  <button type="button" className="text-xs text-sky-300 hover:underline mt-1"
-                    onClick={() => { setNote(d.note ?? ''); setSuaGhiChu(true); }}>
-                    Sửa ghi chú
-                  </button>
-                )}
-              </>
-            )}
-          </Field>
-          <Field label={`${(d.violations ?? []).length} vi phạm được xử lý bằng phương án này`} as="div">
-            <ul className="list-none p-0 m-0 space-y-0.5 text-xs text-slate-400">
+              ) : (
+                <>
+                  <p className="m-0 whitespace-pre-wrap break-words text-sm text-slate-200">{d.note ?? '—'}</p>
+                  {d.status === 'done' && d.canManage && (
+                    <button type="button" className="link mt-1 appearance-none border-0 bg-transparent p-0 text-xs"
+                      onClick={() => { setNote(d.note ?? ''); setSuaGhiChu(true); }}>
+                      Sửa ghi chú
+                    </button>
+                  )}
+                </>
+              )}
+            </Truong>
+          </Khoi>
+          <Khoi tieuDe={`Vi phạm được xử lý · ${(d.violations ?? []).length}`}>
+            <ul className="m-0 list-none space-y-1 p-0 text-xs text-slate-400">
               {(d.violations ?? []).map((v: any) => (
-                <li key={v.id} className="break-words">{fmtDate(v.occurredOn)} · {v.categoryLabel} · {v.description}</li>
+                <li key={v.id} className="break-words">{ngay(v.occurredOn, homNay)} · {v.categoryLabel} · {v.description}</li>
               ))}
             </ul>
-          </Field>
-          <Field label="Tệp hoặc liên kết" as="div">
+          </Khoi>
+          <Khoi tieuDe="Tệp hoặc liên kết">
             <BangChung ownerType="discipline_measure" ownerId={d.id} canEdit={!!d.canManage} tieuDe="" />
-          </Field>
+          </Khoi>
           {d.confirmedByName && (
-            <p className="text-[11px] text-slate-500 m-0">Xác nhận bởi {d.confirmedByName} · {fmtDate(d.confirmedAt)}</p>
+            <p className="mt-3.5 text-[11px] text-slate-500">Xác nhận bởi {d.confirmedByName} · {ngay(d.confirmedAt, homNay)}</p>
           )}
-        </div>
+        </>
       )}
-    </Modal>
+    </KhungPanel>
   );
 }

@@ -148,6 +148,10 @@ export type AttemptProgressView = {
   overallText: string;
   /** CHỈ true khi đủ điểm VÀ Overall đạt kỳ vọng. Chưa đủ điểm thì luôn false, bất kể `passed`. */
   passBadge: boolean;
+  /** SOS mới chấm một phần (chưa đủ điểm): số còn đổi được — vẽ viền nét đứt + `title`, không ⚠ (PR-UX3 Q13, B-7). */
+  tamThoi?: boolean;
+  /** Câu giải thích cho tooltip khi `tamThoi`: "Tạm thời: 1/3 môn có điểm". */
+  title?: string;
 };
 
 /**
@@ -181,9 +185,11 @@ export function attemptProgressView(i: AttemptProgressInput): AttemptProgressVie
 
   if (scored < required) {
     if (sos !== null && sos > 0) {
-      if (ratio) return incomplete(`Đạt ${scored - sos}/${scored} ${donVi} đã chấm · còn ${required - scored} ${donVi}`, 'danger');
-      /* Chữ "tạm thời" KHÔNG được bỏ: mới chấm một phần, mức SOS còn có thể đổi khi đủ điểm. */
-      return incomplete(`SOS ${sos} tạm thời · ${scored}/${required} ${donVi} có điểm`, 'danger');
+      /* Số tạm KHÔNG được nói như số cuối: mới chấm một phần, mức SOS còn có thể đổi khi đủ điểm. Chữ "tạm thời" ở tooltip
+         + viền nét đứt ở `KetQuaDot`; câu chính gọn (PR-UX3 Q13). */
+      const tam = { tamThoi: true, title: `Tạm thời: ${scored}/${required} ${donVi} có điểm` };
+      if (ratio) return { ...incomplete(`Đạt ${scored - sos}/${scored} ${donVi}`, 'danger'), ...tam };
+      return { ...incomplete(`SOS ${sos}`, 'danger'), ...tam };
     }
     if (sos === 0) {
       return incomplete(ratio

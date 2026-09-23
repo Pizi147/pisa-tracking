@@ -1454,6 +1454,8 @@ export function caseDetail(p: Principal, caseId: number) {
     .all(caseId) as any[]).map((iv) => ({
       id: iv.id, kind: iv.kind, description: iv.description, status: iv.status,
       performer: iv.performer_account ?? iv.performer_name ?? null,
+      /** Tài khoản người làm hiện tại — panel Điều chỉnh lấy làm giá trị đầu (PR-UX3 Q15); null khi người làm ngoài hệ thống. */
+      performerUserId: iv.performer_user_id ?? null,
       // Người ghi khác người làm thì nói rõ, để không đọc nhầm ai đã làm việc đó.
       recordedBy: iv.recorder_name ?? null,
       byProxy: !iv.performer_user_id && !!iv.performer_name,

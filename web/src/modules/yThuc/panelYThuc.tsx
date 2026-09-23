@@ -26,9 +26,11 @@ export type PanelYThuc =
  *
  * `sua` đóng (lưu HAY huỷ đều gọi `onClose`) mà có `quayVe` → mở lại đúng PA đó (không mất chỗ đang xem).
  */
-export function usePanelYThuc({ canManage, onDone, roster }: {
+export function usePanelYThuc({ canManage, onDone, roster, maLop }: {
   canManage: boolean;
   onDone: () => void;
+  /** Mã lớp hiện ở đầu các ngăn (`Ghi nhận vi phạm · Tên HV · MB-FOU 12`). */
+  maLop?: string | null;
   /** Mở `+ Ghi nhận vi phạm` từ trang lớp: cho chọn học viên ngay trong form. */
   roster?: { id: number; name: string; code?: string | null }[];
 }): { mo: (p: PanelYThuc) => void; moPhuongAn: (m: { id: number; status: string }) => void; panels: ReactNode } {
@@ -69,6 +71,7 @@ export function usePanelYThuc({ canManage, onDone, roster }: {
         open={panel?.loai === 'ghi'} onClose={dong}
         studentId={panel?.loai === 'ghi' ? panel.studentId : 0}
         studentName={panel?.loai === 'ghi' ? panel.studentName : undefined}
+        lop={maLop}
         students={panel?.loai === 'ghi' ? roster : undefined}
         onPickStudent={(id) => mo({ loai: 'ghi', studentId: id, studentName: roster?.find((r) => r.id === id)?.name })}
         onDone={xong}
@@ -76,14 +79,14 @@ export function usePanelYThuc({ canManage, onDone, roster }: {
       <RecordViolationPanel
         open={panel?.loai === 'sua'} onClose={suaDong}
         studentId={panel?.loai === 'sua' ? panel.v.studentId : 0}
-        violation={panel?.loai === 'sua' ? panel.v : null}
+        violation={panel?.loai === 'sua' ? panel.v : null} lop={maLop}
         onDone={onDone}
         onDelete={suaXoa}
       />
       <CreateMeasurePanel
         open={panel?.loai === 'tao-pa'} onClose={dong}
         studentId={panel?.loai === 'tao-pa' ? panel.studentId : 0}
-        studentName={panel?.loai === 'tao-pa' ? panel.studentName : ''}
+        studentName={panel?.loai === 'tao-pa' ? panel.studentName : ''} lop={maLop}
         violations={panel?.loai === 'tao-pa' ? panel.violations : []}
         onDone={xong}
         onConfirmNow={(id) => mo({ loai: 'xac-nhan', id })}

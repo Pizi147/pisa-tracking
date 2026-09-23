@@ -27,8 +27,10 @@ export function nhapDiemCua(
  * viên của hồ sơ lớp. Mục nào hiện do `mucMenuDongHocVien` (shared) quyết; panel do hook này giữ, một panel một lúc (G-8).
  * "Lộ trình tiếp theo" và "Chuyển lớp" (PR-LT, `MENU_DONG_CHO_PR_LT = true`): `LoTrinhTiepPanel`/`ChuyenLopPanel`.
  */
-export function useThaoTacDongHocVien({ laLopThuong, quyen, onDone }: {
+export function useThaoTacDongHocVien({ laLopThuong, quyen, onDone, maLop }: {
   laLopThuong: boolean; quyen: QuyenDong; onDone: () => void;
+  /** Mã lớp hiện ở đầu các ngăn mở từ dòng học viên (`Tên HV · MB-FOU 12`). */
+  maLop?: string | null;
 }): { mucCua: (d: DongChoMenu) => MucMenu[]; panels: ReactNode } {
   const navigate = useNavigate();
   const [mo, setMo] = useState<{ viec: 'case' | 'vi-pham' | 'lo-trinh-tiep' | 'chuyen-lop'; id: number; ten: string } | null>(null);
@@ -52,13 +54,13 @@ export function useThaoTacDongHocVien({ laLopThuong, quyen, onDone }: {
   const panels = (
     <>
       <QuickReport open={mo?.viec === 'case'} onClose={() => setMo(null)}
-        studentId={mo?.id ?? 0} studentName={mo?.ten} onDone={xong} />
+        studentId={mo?.id ?? 0} studentName={mo?.ten} lop={maLop} onDone={xong} />
       <RecordViolationPanel open={mo?.viec === 'vi-pham'} onClose={() => setMo(null)}
-        studentId={mo?.id ?? 0} studentName={mo?.ten} onDone={xong} />
+        studentId={mo?.id ?? 0} studentName={mo?.ten} lop={maLop} onDone={xong} />
       <LoTrinhTiepPanel open={mo?.viec === 'lo-trinh-tiep'} onClose={() => setMo(null)}
-        studentId={mo?.id ?? 0} studentName={mo?.ten} onDone={xong} />
+        studentId={mo?.id ?? 0} studentName={mo?.ten} lop={maLop} onDone={xong} />
       <ChuyenLopPanel open={mo?.viec === 'chuyen-lop'} onClose={() => setMo(null)}
-        studentId={mo?.id ?? 0} studentName={mo?.ten} onDone={xong} />
+        studentId={mo?.id ?? 0} studentName={mo?.ten} lop={maLop} onDone={xong} />
     </>
   );
   return { mucCua, panels };
