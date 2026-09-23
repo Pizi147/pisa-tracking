@@ -445,6 +445,15 @@ api.post('/ke-hoach-test/xep-moi', requireAuth, wrap((req) => {
   return keHoachSvc.xepMoi(principalOf(req), { ...req.body, studentId, rlwPeriodId });
 }));
 
+api.post('/ke-hoach-test/hang-loat', requireAuth, wrap((req) => {
+  if (!req.body?.xemTruoc) maybeSimulateSaveFailure();
+  const classId = toInt(req.body?.classId);
+  const attemptNo = toInt(req.body?.attemptNo);
+  const rlwPeriodId = toInt(req.body?.rlwPeriodId);
+  if (!classId || !attemptNo || !rlwPeriodId) throw badRequest('Thiếu lớp, đợt hoặc tuần RLW.');
+  return keHoachSvc.xepHangLoat(principalOf(req), { ...req.body, classId, attemptNo, rlwPeriodId });
+}));
+
 /** Tổng hợp theo tuần cho Quản lý: mỗi tuần một dòng, mọi con số bấm được. */
 api.get('/weekly-rollup', requireAuth, wrap((req) => weeklyRollup(principalOf(req), {
   branchId: toInt(req.query?.branchId),

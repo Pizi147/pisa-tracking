@@ -342,6 +342,105 @@ export async function runKeHoachTestTests(t: YThucTestKit) {
     assert(soLuongTruoc === soLuongSau, 'Bị chặn mà vẫn tạo thêm lượt');
   });
 
+  check('PR-Rc2 · Task5(a)(c) xepHangLoat: xemTruoc không ghi, phân đúng tao/doi/giu; lưu thì doi đổi tuần, giu không đổi', () => {
+    const students3 = conn.prepare(
+      `SELECT DISTINCT s.id, s.full_name FROM students s
+         JOIN enrollments e ON e.student_id = s.id AND e.status = 'active'
+         JOIN learning_cycles cy ON cy.student_id = s.id AND cy.status = 'active'
+        WHERE e.class_id = ? AND s.status = 'active' AND s.archived_at IS NULL
+        ORDER BY s.id LIMIT 3`,
+    ).all(mbClass) as any[];
+    assert(students3.length === 3, 'Seed thiếu ít nhất 3 HV đang học ở MB-FT 101 để kiểm Task5');
+    const [hvA, hvB, hvC] = students3;
+    const attemptNo = 90; // số MT ảo, chắc chắn chưa em nào có, tránh đụng lịch thật
+    const far0 = week.ensurePeriod('2029-06-04'); // Thứ Hai
+    const far1 = week.ensurePeriod('2030-01-07'); // Thứ Hai, mục tiêu của lô
+
+    /* B: đã có lượt attemptNo 90 ở far0, CHƯA có điểm → phải là 'doi' khi lô nhắm tới far1. */
+    keHoachMod.xepMoi(P.mbManager, { studentId: hvB.id, attemptNo, rlwPeriodId: far0.id, force: true });
+    /* C: đã có lượt attemptNo 90 ở far0, ĐÃ đủ điểm → phải là 'giu', không đổi tuần dù lô nhắm far1. */
+    const attC = keHoachMod.xepMoi(P.mbManager, { studentId: hvC.id, attemptNo, rlwPeriodId: far0.id, force: true }) as any;
+    const insBand = conn.prepare(`INSERT INTO assessment_scores (attempt_id, skill, band, raw_score, entered_at) VALUES (?,?,?,?,?)`);
+    insBand.run(attC.id, 'listening', 6.5, 30, '2026-04-01');
+    insBand.run(attC.id, 'reading', 6.5, 30, '2026-04-01');
+    const insCrit = conn.prepare(`INSERT INTO assessment_scores (attempt_id, skill, c1, c2, c3, c4, band, entered_at) VALUES (?,?,?,?,?,?,?,?)`);
+    insCrit.run(attC.id, 'writing1', 6, 6, 6, 6, 6, '2026-04-01');
+    insCrit.run(attC.id, 'writing2', 6, 6, 6, 6, 6, '2026-04-01');
+    insCrit.run(attC.id, 'speaking', 6, 6, 6, 6, 6, '2026-04-01');
+
+    const soLuongTruoc = (conn.prepare('SELECT COUNT(*) n FROM assessment_attempts').get() as any).n;
+    const capNhatTruoc = (conn.prepare('SELECT MAX(updated_at) t FROM attempt_skills').get() as any).t;
+    const xt = keHoachMod.xepHangLoat(P.mbManager, {
+      classId: mbClass, attemptNo, studentIds: [hvA.id, hvB.id, hvC.id],
+      rlwPeriodId: far1.id, xemTruoc: true,
+    });
+    const soLuongSau = (conn.prepare('SELECT COUNT(*) n FROM assessment_attempts').get() as any).n;
+    const capNhatSau = (conn.prepare('SELECT MAX(updated_at) t FROM attempt_skills').get() as any).t;
+    assert(soLuongTruoc === soLuongSau, 'xemTruoc đã tạo/xoá lượt');
+    assert(capNhatTruoc === capNhatSau, 'xemTruoc đã ghi vào attempt_skills');
+    const dongA = xt.dong.find((d: any) => d.studentId === hvA.id)!;
+    const dongB = xt.dong.find((d: any) => d.studentId === hvB.id)!;
+    const dongC = xt.dong.find((d: any) => d.studentId === hvC.id)!;
+    assert(dongA.hanhDong === 'tao', `A chưa có lượt phải là 'tao', đang là ${dongA.hanhDong}`);
+    assert(dongB.hanhDong === 'doi', `B có lượt chưa xong phải là 'doi', đang là ${dongB.hanhDong}`);
+    assert(dongC.hanhDong === 'giu', `C đã xong phải là 'giu', đang là ${dongC.hanhDong}`);
+
+    const luu = keHoachMod.xepHangLoat(P.mbManager, {
+      classId: mbClass, attemptNo, studentIds: [hvA.id, hvB.id, hvC.id],
+      rlwPeriodId: far1.id, force: true, xemTruoc: false,
+    });
+    assert(luu.daLuu === 2, `daLuu phải đếm A (tao) + B (doi), đang là ${luu.daLuu}`);
+    const cyA = conn.prepare(`SELECT id FROM learning_cycles WHERE student_id=? AND status='active'`).get(hvA.id) as any;
+    const aRow = conn.prepare(`SELECT id FROM assessment_attempts WHERE cycle_id=? AND attempt_no=?`).get(cyA.id, attemptNo) as any;
+    assert(aRow, 'A (tao) phải được tạo lượt mới');
+    const bWeek = conn.prepare(
+      `SELECT pr.week_start w FROM attempt_skills ask JOIN assessment_attempts a ON a.id=ask.attempt_id
+         JOIN report_periods pr ON pr.id=ask.planned_period_id
+        WHERE a.student_id=? AND a.attempt_no=? AND ask.skill='listening'`,
+    ).get(hvB.id, attemptNo) as any;
+    assert(bWeek.w === far1.weekStart, `B (doi) phải đổi sang tuần mới, đang ở ${bWeek.w}`);
+    const cWeek = conn.prepare(
+      `SELECT pr.week_start w FROM attempt_skills ask JOIN report_periods pr ON pr.id = ask.planned_period_id
+        WHERE ask.attempt_id=? AND ask.skill='listening'`,
+    ).get(attC.id) as any;
+    assert(cWeek.w === far0.weekStart, `C (giu) không được đổi tuần, đang ở ${cWeek.w}`);
+  });
+
+  check('PR-Rc2 · Task5(b) Lưu một phần: em bị chặn (T15) giữ nguyên trong "loi", em khác vẫn lưu; lưu lại tuần khác thì được (R9b)', () => {
+    const students2 = conn.prepare(
+      `SELECT DISTINCT s.id FROM students s
+         JOIN enrollments e ON e.student_id = s.id AND e.status = 'active'
+         JOIN learning_cycles cy ON cy.student_id = s.id AND cy.status = 'active'
+        WHERE e.class_id = ? AND s.status = 'active' AND s.archived_at IS NULL
+        ORDER BY s.id DESC LIMIT 2`,
+    ).all(mbClass) as any[];
+    assert(students2.length === 2, 'Seed thiếu ít nhất 2 HV để kiểm Task5(b)');
+    const [hvOk, hvLoi] = students2;
+    const attemptNo = 92;
+    const target = week.ensurePeriod('2030-03-04');
+    const target2 = week.ensurePeriod('2030-02-04'); // trước `target` — attemptNo 92 < 93 nên phải xếp trước MT93
+    /* Dựng chặn cho hvLoi: đã có MT93 đúng ngay tuần `target` — attemptNo 92 xếp vào `target` sẽ TRÙNG (T15). */
+    keHoachMod.xepMoi(P.mbManager, { studentId: hvLoi.id, attemptNo: attemptNo + 1, rlwPeriodId: target.id, force: true });
+
+    const luu = keHoachMod.xepHangLoat(P.mbManager, {
+      classId: mbClass, attemptNo, studentIds: [hvOk.id, hvLoi.id], rlwPeriodId: target.id, force: true, xemTruoc: false,
+    });
+    assert(luu.daLuu === 1, `Chỉ hvOk lưu được, đang ra daLuu=${luu.daLuu}`);
+    const dongLoi = luu.dong.find((d: any) => d.studentId === hvLoi.id)!;
+    assert(dongLoi.hanhDong === 'loi' && !!dongLoi.loi, `hvLoi phải ở hàng "loi", đang ra ${JSON.stringify(dongLoi)}`);
+    const cyOk = conn.prepare(`SELECT id FROM learning_cycles WHERE student_id=? AND status='active'`).get(hvOk.id) as any;
+    assert(
+      conn.prepare(`SELECT id FROM assessment_attempts WHERE cycle_id=? AND attempt_no=?`).get(cyOk.id, attemptNo),
+      'hvOk phải được lưu dù hvLoi lỗi',
+    );
+
+    /* R9b: gọi lại CHỈ hvLoi với tuần khác → lưu được. */
+    const luuLai = keHoachMod.xepHangLoat(P.mbManager, {
+      classId: mbClass, attemptNo, studentIds: [hvLoi.id], rlwPeriodId: target2.id, force: true, xemTruoc: false,
+    });
+    assert(luuLai.daLuu === 1, `Lưu lại với tuần khác phải thành công, đang ra ${JSON.stringify(luuLai)}`);
+  });
+
   check('PR-Rc2 · Q2 dotDaHoanTat — biên hoàn tất, dấu "-", Chủ nhật, kỹ năng huỷ', () => {
     const skillDiem = (coDiem: boolean, coDau = false, huy = false) => (
       { batBuoc: true, huy, coDiem, coDau }

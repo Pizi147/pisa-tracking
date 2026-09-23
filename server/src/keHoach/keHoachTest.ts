@@ -17,6 +17,7 @@ import { entrySkillsOf } from '../fasttrack/scoring.ts';
 import { createAttempt, loadBundle } from '../fasttrack/attempts.ts';
 import { currentCycle } from '../fasttrack/cycles.ts';
 import { checkWeekVsNeighbours, loadSkillRows, setSkillWeek } from '../fasttrack/skillSchedule.ts';
+import { writeAudit } from '../platform/audit.ts';
 
 // ---------------------------------------------------------------- danh sách lớp
 
@@ -76,6 +77,21 @@ const CAC_NHOM = ['rlw', 's'] as const;
 function xongKyNang(assessed: string, scoreRows: Array<{ skill: string; band: number | null }>): boolean {
   const entryKeys = entrySkillsOf(assessed as any);
   return entryKeys.every((k) => scoreRows.some((r) => r.skill === k && r.band !== null));
+}
+
+/** Trạng thái + tuần đa số của MỘT nhóm (RLW hoặc S) của một đợt — dùng chung cho `luoiFT` và `xepHangLoat`. */
+function trangThaiVaTuanCuaNhom(
+  attemptId: number, nhom: 'rlw' | 's',
+  skillRows: Map<number, any[]>, scoreRows: any[],
+): { trangThai: TrangThaiO; tuan: string | null } {
+  const skills = NHOM_KY_NANG[nhom] as readonly string[];
+  const rows = (skillRows.get(attemptId) ?? []).filter((r: any) => skills.includes(r.skill));
+  const kn = rows.map((r: any) => ({
+    batBuoc: r.required === 1, tuan: r.week_start ?? null,
+    xong: xongKyNang(r.skill, scoreRows), daDoi: (r.absence_move_count ?? 0) > 0,
+  }));
+  const { tuan } = tuanDaSo(kn.map((k) => k.tuan));
+  return { trangThai: trangThaiNhom(kn), tuan };
 }
 
 export function luoiFT(p: Principal, classId: number, today: string = demoToday()) {
@@ -264,4 +280,137 @@ export function xepMoi(p: Principal, i: {
     }
     return created;
   });
+}
+
+// ---------------------------------------------------------------- xếp lịch hàng loạt (R9, R9b)
+
+export type DongHangLoat = {
+  studentId: number; ten: string; hanhDong: 'tao' | 'doi' | 'giu' | 'loi';
+  tu: { rlw: string | null; s: string | null }; den: { rlw: string | null; s: string | null };
+  canhBao: string[]; loi: string | null;
+};
+
+/** Phân loại MỘT em cho màn xem trước — KHÔNG ghi gì. */
+function xetMotEmHangLoat(p: Principal, i: {
+  studentId: number; ten: string; attemptNo: number; rlwWeek: string; sWeek: string;
+  rlwPeriodId: number; sPeriodId: number;
+}): DongHangLoat {
+  const conn = db();
+  const den = { rlw: i.rlwWeek, s: i.sWeek };
+  const cycle = currentCycle(i.studentId);
+  if (!cycle) {
+    return { studentId: i.studentId, ten: i.ten, hanhDong: 'loi', tu: { rlw: null, s: null }, den, canhBao: [], loi: 'Học viên chưa có lộ trình đang chạy.' };
+  }
+  const existing = conn
+    .prepare(`SELECT * FROM assessment_attempts WHERE cycle_id = ? AND attempt_no = ? AND status != 'cancelled'`)
+    .get(cycle.id, i.attemptNo) as any;
+
+  if (!existing) {
+    const blockers: string[] = [];
+    const warnings: string[] = [];
+    for (const w of new Set([i.rlwWeek, i.sWeek])) {
+      const c = checkWeekVsNeighbours({ cycleId: cycle.id, attemptNo: i.attemptNo, excludeAttemptId: null, newWeekStart: w });
+      blockers.push(...c.blockers); warnings.push(...c.warnings);
+    }
+    if (blockers.length) {
+      return { studentId: i.studentId, ten: i.ten, hanhDong: 'loi', tu: { rlw: null, s: null }, den, canhBao: warnings, loi: blockers.join(' ') };
+    }
+    return { studentId: i.studentId, ten: i.ten, hanhDong: 'tao', tu: { rlw: null, s: null }, den, canhBao: warnings, loi: null };
+  }
+
+  const skillRows = loadSkillRows([existing.id]);
+  const scoreRows = loadBundle([existing.id]).scores.get(existing.id) ?? [];
+  const rlwNow = trangThaiVaTuanCuaNhom(existing.id, 'rlw', skillRows, scoreRows);
+  const sNow = trangThaiVaTuanCuaNhom(existing.id, 's', skillRows, scoreRows);
+  const tu = { rlw: rlwNow.tuan, s: sNow.tuan };
+  const daXong = (t: TrangThaiO) => t === 'xong' || t === 'khong-yeu-cau';
+
+  if (daXong(rlwNow.trangThai) && daXong(sNow.trangThai)) {
+    return { studentId: i.studentId, ten: i.ten, hanhDong: 'giu', tu, den, canhBao: [], loi: null };
+  }
+  if (tu.rlw === i.rlwWeek && tu.s === i.sWeek) {
+    return { studentId: i.studentId, ten: i.ten, hanhDong: 'giu', tu, den, canhBao: [], loi: null };
+  }
+
+  const kiemRlw = kiemTuanNhom(p, { attemptId: existing.id, nhom: 'rlw', periodId: i.rlwPeriodId });
+  const kiemS = kiemTuanNhom(p, { attemptId: existing.id, nhom: 's', periodId: i.sPeriodId });
+  const blockers = [...kiemRlw.blockers, ...kiemS.blockers];
+  const warnings = [...kiemRlw.warnings, ...kiemS.warnings];
+  if (blockers.length) {
+    return { studentId: i.studentId, ten: i.ten, hanhDong: 'loi', tu, den, canhBao: warnings, loi: blockers.join(' ') };
+  }
+  if (!kiemRlw.seDoi.length && !kiemS.seDoi.length) {
+    return { studentId: i.studentId, ten: i.ten, hanhDong: 'giu', tu, den, canhBao: [], loi: null };
+  }
+  return { studentId: i.studentId, ten: i.ten, hanhDong: 'doi', tu, den, canhBao: warnings, loi: null };
+}
+
+/** Lưu MỘT em đã được phân loại — trong `tx` riêng, để lỗi của em này không huỷ các em khác (R9b). */
+function luuMotEmHangLoat(p: Principal, dong: DongHangLoat, i: { attemptNo: number; rlwPeriodId: number; sPeriodId: number }): void {
+  if (dong.hanhDong === 'tao') {
+    xepMoi(p, { studentId: dong.studentId, attemptNo: i.attemptNo, rlwPeriodId: i.rlwPeriodId, sPeriodId: i.sPeriodId, force: true });
+    return;
+  }
+  if (dong.hanhDong === 'doi') {
+    const cycle = currentCycle(dong.studentId)!;
+    const existing = db()
+      .prepare(`SELECT id FROM assessment_attempts WHERE cycle_id = ? AND attempt_no = ? AND status != 'cancelled'`)
+      .get(cycle.id, i.attemptNo) as any;
+    tx(() => {
+      for (const nhom of CAC_NHOM) {
+        datTuanNhom(p, { attemptId: existing.id, nhom, periodId: nhom === 'rlw' ? i.rlwPeriodId : i.sPeriodId, force: true });
+      }
+    });
+  }
+}
+
+export function xepHangLoat(p: Principal, i: {
+  classId: number; attemptNo: number; studentIds: number[]; rlwPeriodId: number; sPeriodId?: number | null;
+  force?: boolean; xemTruoc?: boolean;
+}): { dong: DongHangLoat[]; daLuu: number } {
+  const conn = db();
+  require_(p, PERMISSIONS.PLAN_WEEK, { classId: i.classId }, 'Chỉ Quản lý xếp được lịch Test.');
+  const rlwPeriod = conn.prepare('SELECT * FROM report_periods WHERE id = ?').get(i.rlwPeriodId) as any;
+  if (!rlwPeriod) throw notFound('Không tìm thấy tuần RLW');
+  const sPeriodId = i.sPeriodId ?? i.rlwPeriodId;
+  const sPeriod = sPeriodId === i.rlwPeriodId ? rlwPeriod : (conn.prepare('SELECT * FROM report_periods WHERE id = ?').get(sPeriodId) as any);
+  if (!sPeriod) throw notFound('Không tìm thấy tuần Speaking');
+  if (!i.studentIds?.length) throw badRequest('Chưa chọn học viên nào.');
+
+  const names = new Map<number, string>(
+    (conn.prepare(`SELECT id, full_name FROM students WHERE id IN (${i.studentIds.map(() => '?').join(',')})`)
+      .all(...i.studentIds) as any[]).map((s) => [s.id, s.full_name]),
+  );
+
+  const dong = i.studentIds.map((studentId) => xetMotEmHangLoat(p, {
+    studentId, ten: names.get(studentId) ?? '', attemptNo: i.attemptNo,
+    rlwWeek: rlwPeriod.week_start, sWeek: sPeriod.week_start, rlwPeriodId: i.rlwPeriodId, sPeriodId,
+  }));
+
+  if (i.xemTruoc) return { dong, daLuu: 0 };
+
+  let daLuu = 0;
+  const ketQua = dong.map((d) => {
+    if (d.hanhDong === 'giu' || d.hanhDong === 'loi') return d;
+    if (d.canhBao.length && !i.force) {
+      return { ...d, hanhDong: 'loi' as const, loi: `${d.canhBao.join(' ')} Xác nhận lại nếu vẫn muốn xếp vào tuần này.` };
+    }
+    try {
+      luuMotEmHangLoat(p, d, { attemptNo: i.attemptNo, rlwPeriodId: i.rlwPeriodId, sPeriodId });
+      daLuu += 1;
+      return d;
+    } catch (e: any) {
+      /* AN-5: `chanGiaoDichNeuSapHetGio` (db.ts) có thể từ chối một `tx` khi sắp hết giờ — lỗi đó cũng rơi vào
+       * đúng dòng này, không làm hỏng cả lô. Người dùng bấm Lưu lại cho các dòng còn lỗi (R9b). */
+      return { ...d, hanhDong: 'loi' as const, loi: e?.message ?? 'Không lưu được.' };
+    }
+  });
+
+  writeAudit({
+    actorUserId: p.userId, action: 'ke_hoach.hang_loat', entityType: 'class', entityId: i.classId,
+    entityLabel: `MT${i.attemptNo}`,
+    before: null, after: { daLuu, loi: ketQua.filter((d) => d.hanhDong === 'loi').map((d) => ({ studentId: d.studentId, loi: d.loi })) },
+  });
+
+  return { dong: ketQua, daLuu };
 }
