@@ -49,7 +49,7 @@ Chủ sản phẩm chốt 23/09:
 
 ## 5. Hành trình học viên (PR-UX5 — chờ mockup 18a)
 
-Giữ mô hình hiện tại. Sửa: điểm **lên/xuống rõ** (▲ xanh / ▼ đỏ / = xám + mức chênh, điểm dưới kỳ vọng đỏ, ghim đợt Test ghi điểm); **trải hết chiều ngang** (cột tuần giãn theo màn), công tắc "Xem gọn" mới thu hẹp; **không chữ bị cắt/chồng** (tên vấn đề 1 dòng + tooltip, dòng phụ riêng, khối PA hẹp chỉ hiện dấu kết quả).
+Giữ mô hình hiện tại. **Không vẽ đường điểm (sparkline)** — chủ sản phẩm bỏ 23/09. Sửa: điểm **lên/xuống rõ ngay trong chuỗi điểm** (▲ xanh / ▼ đỏ / = xám + mức chênh, điểm dưới kỳ vọng đỏ, màu kết quả theo N-1b, ghim đợt Test ghi điểm); **trải hết chiều ngang** (cột tuần giãn theo màn), công tắc "Xem gọn" mới thu hẹp; **không chữ bị cắt/chồng** (tên vấn đề 1 dòng + tooltip, dòng phụ riêng, khối PA hẹp chỉ hiện dấu kết quả).
 
 ## 6. Chia PR và thứ tự
 
