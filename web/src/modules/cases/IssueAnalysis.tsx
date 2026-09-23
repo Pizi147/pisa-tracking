@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
-import { useSession } from '../../lib/session.tsx';
 import { Drawer } from '../../ui/Drawer.tsx';
 import { Empty, ErrorState, SectionNote, Skeleton, Status, Th } from '../../ui/ui.tsx';
 import { CasePanel } from './CasePanel.tsx';
@@ -9,6 +8,7 @@ import { caseStatusLabel, fmtDate, sosLabel, sosTone } from '../../lib/format.ts
 import { Level } from '../../ui/ui.tsx';
 import { TyLe } from '../../ui/TyLe.tsx';
 import { NeedsEvaluation } from './NeedsEvaluation.tsx';
+import { ngay, type ChuongTrinh } from '@shared/domain/index.ts';
 
 /* ─────────────────────────────── kiểu dữ liệu trả về từ máy chủ ─────────────── */
 
@@ -59,64 +59,37 @@ type CaseRow = {
  * nhớ mình vừa xem nhóm vấn đề nào rồi tự tìm lại nhóm đó ở một bảng khác; nay hiệu quả
  * phương án nằm trong phần mở rộng của CHÍNH nhóm đang xem.
  */
-/**
- * KHOẢNG BÁO CÁO CỦA PHẦN HIỆU QUẢ — mục 15.3, mặc định 12 tuần gần nhất.
- *
- * Nó CHỈ áp cho hai cột kết quả phương án. Hiện trạng vấn đề — HV đang gặp, case đang mở,
- * thiếu phương án — LUÔN là hiện tại (mục 15.2), vì "tuần trước có mấy case đang mở" không
- * phải câu ai hỏi. Hai phạm vi này được ghi ngay chỗ đọc để không ai đọc lẫn.
- */
-const WINDOWS = [
-  { key: '12', label: '12 tuần gần nhất', weeks: 12 },
-  { key: '24', label: '24 tuần gần nhất', weeks: 24 },
-  { key: 'all', label: 'Cả khoá', weeks: 0 },
-] as const;
-
-export function IssueAnalysis({ branchId }: { branchId: number | null }) {
-  const { session } = useSession();
-  const [ratio, setRatio] = useState(false);
+export function IssueAnalysis({ branchId, ct, from, classId }: {
+  branchId: number | null; ct: ChuongTrinh; from: string | null; classId: number | null;
+}) {
+  const [ratioCaHai, setRatioCaHai] = useState(false);
   const [cat, setCat] = useState<string | null>(null);
-  const [win, setWin] = useState<string>('12');
   const [drill, setDrill] = useState<{ category: string; code: string | null; label: string } | null>(null);
-
-  const weeks = WINDOWS.find((w) => w.key === win)?.weeks ?? 12;
-  const from = (() => {
-    if (!weeks || !session?.demoDate) return null;
-    const ms = Date.parse(`${session.demoDate}T00:00:00Z`) - weeks * 7 * 86_400_000;
-    return new Date(ms).toISOString().slice(0, 10);
-  })();
+  /* Chương trình đến từ bộ lọc chung (Q4); "Cả hai" vẫn cần chọn MỘT phía để đọc đúng bảng (hai bên khác bộ môn). */
+  const ratio = ct === 'ca-hai' ? ratioCaHai : ct === 'thuong';
 
   const q = new URLSearchParams();
   if (branchId) q.set('branchId', String(branchId));
   q.set('lop', ratio ? 'normal' : 'ft');
   if (from) q.set('from', from);
+  if (classId) q.set('classId', String(classId));
   const query = q.toString();
 
   const skills = useApi<{ rows: SkillRow[] }>(`/issue-board/skills?${query}`, [query]);
 
   return (
     <div className="space-y-3">
-      {/* ───── bước 1: hai tab loại lớp ───── */}
-      <div className="flex flex-wrap items-center gap-1">
-        <Seg active={!ratio} onClick={() => { setRatio(false); setCat(null); }}>Fast Track</Seg>
-        <Seg active={ratio} onClick={() => { setRatio(true); setCat(null); }}>Normal</Seg>
-        <span className="text-[11px] text-slate-500 ml-2">
-          Hai loại lớp có bộ môn khác nhau nên không gộp vào một bảng.
-        </span>
-        <span className="flex-1" />
-        <label className="flex items-center gap-1.5">
-          <span className="text-[11px] text-slate-500">Khoảng báo cáo hiệu quả</span>
-          <select className="field w-40 text-xs" value={win} onChange={(e) => setWin(e.target.value)}>
-            {WINDOWS.map((w) => <option key={w.key} value={w.key}>{w.label}</option>)}
-          </select>
-        </label>
-      </div>
+      {/* ───── bước 1: hai tab loại lớp — chỉ hiện khi chương trình chung đang là "Cả hai" ───── */}
+      {ct === 'ca-hai' && (
+        <div className="flex flex-wrap items-center gap-1">
+          <Seg active={!ratioCaHai} onClick={() => { setRatioCaHai(false); setCat(null); }}>Fast Track</Seg>
+          <Seg active={ratioCaHai} onClick={() => { setRatioCaHai(true); setCat(null); }}>Lớp thường</Seg>
+        </div>
+      )}
 
-      {/* HAI PHẠM VI, GHI NGAY CHỖ ĐỌC — đọc lẫn hai cái này là hiểu sai cả bảng (mục 15.2). */}
+      {/* HIỆN TRẠNG VẤN ĐỀ luôn là hiện tại (mục 15.2); kết quả phương án tính từ mốc của khung Phân tích (Q5). */}
       <p className="text-[11px] text-slate-500 m-0">
-        Hiện trạng vấn đề là <strong>hiện tại</strong>. Hai cột kết quả phương án tính trong{' '}
-        <strong>{WINDOWS.find((w) => w.key === win)?.label.toLowerCase()}</strong>
-        {from ? ` (từ ${from.split('-').reverse().join('/')})` : ''}.
+        Hiện trạng tính đến hôm nay · kết quả PA từ {from ? ngay(from) : '—'}.
       </p>
 
       {/* ───── bước 2: hàng kỹ năng ───── */}
@@ -137,7 +110,7 @@ export function IssueAnalysis({ branchId }: { branchId: number | null }) {
                 <Th align="right" hint="Case đang mở mà chưa ai đề ra phương án nào. Đây là việc chặn.">
                   Thiếu PA học thuật
                 </Th>
-                <Th align="right" hint="Case đang mở và có ít nhất một phương án chưa khép.">Đang hỗ trợ</Th>
+                <Th align="right" hint="Case đang mở và có ít nhất một phương án chưa khép.">Đang theo dõi</Th>
                 <Th align="right" hint="Case đang mở nhưng chưa ai chọn phân loại vấn đề — phần lớn là dữ liệu cũ.">
                   Chưa phân loại
                 </Th>
@@ -209,7 +182,7 @@ function Num({ n, tone }: { n: number; tone?: string }) {
 }
 
 /**
- * BẢNG PHÂN LOẠI VẤN ĐỀ CỦA MỘT HẠNG MỤC — dùng chung cho trang Thực trạng và cho hồ sơ lớp.
+ * BẢNG PHÂN LOẠI VẤN ĐỀ CỦA MỘT HẠNG MỤC — dùng chung cho góc nhìn Kết quả hỗ trợ (Phân tích) và cho hồ sơ lớp.
  *
  * Năm con số mỗi hàng thuộc NĂM ĐƠN VỊ KHÁC NHAU (mục 15.2) nên bảng không chia chéo chúng:
  * một case có thể có ba phương án. Tỷ lệ chỉ xuất hiện ở phần mở rộng, theo LOẠI phương án,

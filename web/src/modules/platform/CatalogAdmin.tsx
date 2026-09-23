@@ -97,7 +97,7 @@ export function CatalogAdmin() {
                   <td className="td text-slate-300">
                     {p.name}
                     <span className="block text-[11px] text-slate-500">
-                      {p.scoringMode === 'ratio' ? 'chấm theo tỷ lệ câu đúng' : 'chấm theo band IELTS'}
+                      {p.scoringMode === 'ratio' ? 'chấm theo số câu đúng / tổng số câu' : 'chấm theo band IELTS'}
                       {' · '}{p.skills.map(skillLabel).join(' · ')}
                     </span>
                   </td>

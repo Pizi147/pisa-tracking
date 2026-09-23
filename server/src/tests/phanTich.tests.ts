@@ -413,4 +413,18 @@ export async function runPhanTichTests(t: YThucTestKit) {
       conn.prepare('DELETE FROM sos_coordination_actions WHERE id = ?').run(info.lastInsertRowid);
     }
   });
+
+  // ================================================================== Task 5 — khung Phân tích: ánh xạ bộ lọc chung → /cases
+
+  console.log('\nPR-Pb · Khung Phân tích — bộ lọc chung ánh xạ vào Danh sách Case');
+  const caseSvc: any = await import('../cases/cases.ts');
+
+  check("PR-Pb · Danh sách Case: listCases({ classKind: 'normal', classId }) chỉ trả Case của đúng lớp đó", () => {
+    const cid = classId('MB-FOU 12');
+    const r = caseSvc.listCases(P.mbManager, { classKind: 'normal', classId: cid });
+    assert(!r.scopeEmpty, 'QL Monbay phải có phạm vi');
+    for (const row of r.rows) {
+      assert(row.homeClassId === cid, `Case #${row.id} không thuộc lớp ${cid}: homeClassId=${row.homeClassId}`);
+    }
+  });
 }
