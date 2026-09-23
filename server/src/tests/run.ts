@@ -124,6 +124,19 @@ const TODAY = demoToday();
 const classId = (code: string) => (conn.prepare('SELECT id FROM classes WHERE code = ?').get(code) as any).id;
 /* Tuần chưa từng dùng tới thì chưa có trong bảng — tạo luôn, đúng như hệ thống vẫn làm. */
 const periodOf = (weekStart: string) => week.ensurePeriod(weekStart).id;
+/*
+ * R11 (23/09): đợt đủ điểm + qua Chủ nhật của tuần bắt buộc muộn nhất nay CHẶN GVBM sửa điểm. Một số phép kiểm
+ * cũ (quyền theo vai trò, xoá điểm về trống…) cố ý lấy một đợt `status='done'` bất kỳ — với `demoToday()` thật
+ * (đã qua rất nhiều tuần), đợt đó tình cờ đã hoàn tất. Dùng ĐÚNG Chủ nhật của đợt đó làm `today` cho các lệnh
+ * `saveScore` không liên quan tới R11, thay vì nới luật.
+ */
+function chuNhatCuoiOf(attemptId: number): string {
+  const row = conn.prepare(
+    `SELECT MAX(pr.week_end) w FROM attempt_skills ask JOIN report_periods pr ON pr.id = ask.planned_period_id
+      WHERE ask.attempt_id = ? AND ask.required = 1 AND ask.sit_status != 'cancelled'`,
+  ).get(attemptId) as any;
+  return row?.w ?? demoToday();
+}
 
 function userByRole(roleKey: string, branchCode: string | null) {
   const row = conn
@@ -631,7 +644,7 @@ check('GVCN chỉ đọc lịch: không chốt được tuần', () => {
 check('Nhập điểm KHÔNG kèm quyền sửa lịch: payload điểm không đụng tới tuần', () => {
   const a = conn.prepare(`SELECT * FROM assessment_attempts WHERE class_id = ? AND status='done' LIMIT 1`).get(mbClass) as any;
   const before = (conn.prepare('SELECT planned_period_id FROM assessment_attempts WHERE id = ?').get(a.id) as any).planned_period_id;
-  attempts.saveScore(P.w1Teacher, a.id, 'writing1', { criteria: [6, 6, 6, 6], lyDo: 'Phép kiểm: sửa điểm đã có' });
+  attempts.saveScore(P.w1Teacher, a.id, 'writing1', { criteria: [6, 6, 6, 6], lyDo: 'Phép kiểm: sửa điểm đã có' }, chuNhatCuoiOf(a.id));
   const after = (conn.prepare('SELECT planned_period_id FROM assessment_attempts WHERE id = ?').get(a.id) as any).planned_period_id;
   assert(before === after, 'Nhập điểm đã làm đổi tuần MT');
 });
@@ -682,7 +695,7 @@ check('GVBM chỉ sửa kỹ năng được phân công, vẫn đọc kỹ năng
   assert(!can(P.w1Teacher, PERMISSIONS.SCORE_EDIT, { classId: mbClass, skill: 'writing2' }), 'GV W1 không được sửa W2');
   assert(can(P.w1Teacher, PERMISSIONS.ATTEMPT_VIEW, { classId: mbClass }), 'GV phải xem được lớp mình dạy');
   const a = conn.prepare(`SELECT * FROM assessment_attempts WHERE class_id = ? AND status='done' LIMIT 1`).get(mbClass) as any;
-  assertThrows(() => attempts.saveScore(P.w1Teacher, a.id, 'writing2', { criteria: [6, 6, 6, 6] }), /phân công/,
+  assertThrows(() => attempts.saveScore(P.w1Teacher, a.id, 'writing2', { criteria: [6, 6, 6, 6] }, chuNhatCuoiOf(a.id)), /phân công/,
     'GV W1 nhập điểm W2');
 });
 check('GVCN không vì chủ nhiệm mà sửa được mọi kỹ năng', () => {
@@ -700,9 +713,10 @@ check('Chỉ quản trị hệ thống nhập bù được, và đi nhật ký r
   assert(!can(P.coreTeacher, PERMISSIONS.SCORE_OVERRIDE, { classId: mbClass }), 'GVCN không có đường nhập bù điểm');
   assert(can(P.admin, PERMISSIONS.SCORE_OVERRIDE, { classId: mbClass }), 'Quản trị hệ thống phải nhập bù được');
   const a = conn.prepare(`SELECT * FROM assessment_attempts WHERE class_id = ? AND status='done' LIMIT 1`).get(mbClass) as any;
-  assertThrows(() => attempts.saveScore(P.coreTeacher, a.id, 'writing2', { criteria: [6, 6, 6, 6] }), /phân công/,
+  const chuNhat = chuNhatCuoiOf(a.id);
+  assertThrows(() => attempts.saveScore(P.coreTeacher, a.id, 'writing2', { criteria: [6, 6, 6, 6] }, chuNhat), /phân công/,
     'GVCN nhập bù điểm W2 của kỹ năng mình không dạy');
-  attempts.saveScore(P.admin, a.id, 'writing2', { criteria: [6, 6, 6, 6], lyDo: 'Phép kiểm: sửa điểm đã có' });
+  attempts.saveScore(P.admin, a.id, 'writing2', { criteria: [6, 6, 6, 6], lyDo: 'Phép kiểm: sửa điểm đã có' }, chuNhat);
   const log = conn.prepare(`SELECT * FROM audit_logs WHERE action='score.override' ORDER BY id DESC LIMIT 1`).get() as any;
   assert(log, 'Nhập bù không được ghi nhật ký riêng');
 });
@@ -1130,10 +1144,11 @@ check('Bỏ một kỹ năng khỏi phạm vi sau khi đã có điểm thì gi�
 check('Gửi null xoá điểm về trống, không biến thành 0', () => {
   const a = conn.prepare(`SELECT * FROM assessment_attempts WHERE class_id = ? AND status='done' LIMIT 1`).get(mbClass) as any;
   const teacher = loadPrincipal(teacherOfSkill('MB-FT 101', 'listening'));
-  attempts.saveScore(teacher, a.id, 'listening', { rawScore: null, lyDo: 'Phép kiểm: sửa điểm đã có' });
+  const chuNhat = chuNhatCuoiOf(a.id);
+  attempts.saveScore(teacher, a.id, 'listening', { rawScore: null, lyDo: 'Phép kiểm: sửa điểm đã có' }, chuNhat);
   const row = conn.prepare(`SELECT * FROM assessment_scores WHERE attempt_id = ? AND skill='listening'`).get(a.id) as any;
   assert(row.raw_score === null && row.band === null, 'Xoá điểm lại thành 0');
-  attempts.saveScore(teacher, a.id, 'listening', { rawScore: 30 });
+  attempts.saveScore(teacher, a.id, 'listening', { rawScore: 30 }, chuNhat);
   const back = conn.prepare(`SELECT * FROM assessment_scores WHERE attempt_id = ? AND skill='listening'`).get(a.id) as any;
   assert(back.band === scoring.bandFromRaw('listening', 30) && back.entered_by === teacher.userId, 'Nhập lại không lưu đúng');
 });
