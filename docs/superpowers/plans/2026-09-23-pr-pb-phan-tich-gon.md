@@ -533,3 +533,33 @@ chi nhánh" như Task 6). Không có ô khoảng thời gian (Q5).
   hoạch đã lường trước (`server/src/tests/run.ts`, `shared/domain/index.ts` ở Task 1; `server/src/routes/index.ts`
   không xung đột thực tế dù cùng nằm trong danh sách file thay đổi ở main), giữ cả hai khối. `npm ci` lại,
   `npm run check` cuối cùng: **897 phép kiểm đều đạt** (main sau rebase có 866, PR-Pb đóng góp 31).
+
+## Sửa sau rà planning (PR #73)
+
+Planning rà PR #73: **MERGE ĐƯỢC SAU KHI SỬA**. Năm điểm, sửa hết trên nhánh `pr-pb-phan-tich-gon`:
+
+1. **[Important] Kẹt ở Danh sách Case.** `gocNhinTuThamSo` (`shared/domain/phanTich.ts`) OR `coBoLocDanhSach` vào
+   nhánh `'danh-sach'` mà không có nhánh riêng cho `goc=tong-hop` tường minh — bấm "Tổng hợp" trong khi `tinh-hinh`
+   còn sót trên URL thì bị suy ngược lại thành Danh sách Case. Sửa: `goc` tường minh (kể cả `tong-hop`) luôn thắng;
+   thêm `thamSoXoaKhiDoiGoc(goc)` để `setGoc` (`PhanTich.tsx`) dọn `hang-doi`/`tinh-hinh`/`ky-nang` khi rời Danh sách
+   Case. Phép kiểm mới mô phỏng đúng chuỗi bấm `?tinh-hinh=no_plan` → "Tổng hợp" → phải sang Tổng hợp.
+2. **[Important] Lớp thường còn "Dưới kỳ vọng".** `NHOM_NHAN_NGAN` cục bộ ở `TongHopTestSos.tsx` không theo `ct`
+   (khác `nhomCotLabel` dùng cho Excel, vốn đã đúng). Thêm `nhomCotNhanNgan(nhom, ct)` (export ở `phanTich.ts`) cho
+   nhãn nhóm cột + menu "Cột hiện"; tooltip cột kỹ năng (`cotKyNangFor`) đổi động từ theo `ct` ("chưa đạt" khi
+   `thuong`, "dưới kỳ vọng" khi `ft`, cả hai khi `ca-hai`).
+3. **"Đang xử lý" đếm cả Case đã xong.** `trangThaiXuLy` (dùng chung với `weekly.ts`, KHÔNG sửa hàm này) vốn không tự
+   loại Case `status='done'`. Sửa ở nơi gọi của `tongHop.ts` (~dòng 220): chỉ tính vào `dangXuLy` khi
+   `trang === 'dangXuLy' && r.status !== 'done'`; cột `case`/`hvCoCase` không đổi (vẫn đếm mọi Case sinh từ lượt trong
+   dòng, đúng "case" ban đầu). `weekly.ts` không đụng, phép kiểm mục 15 vẫn xanh nguyên.
+4. **Tiêu đề cột bị cắt ở 1440px.** Nới cột nhóm Xử lý lên 88px + `whitespace-normal` cho tiêu đề nhóm này (utility
+   Tailwind ở `@layer utilities` thắng `.th`'s `white-space: nowrap` ở `@layer components`) — tiêu đề xuống nhiều
+   dòng, không còn bị cắt kể cả cột cuối cùng (đo bằng `scrollWidth` qua Browser pane, xác nhận hết tràn).
+5. **[Minor] "Lỗi phổ biến nhất" và thứ tự cột ma trận.** `vanDe.ts`: loại thêm mã "Khác" (kiểm `nhan !== 'Khác'`,
+   không chỉ `CHUA_PHAN_LOAI`) khỏi ứng viên "lỗi phổ biến nhất"; `cotDs` xếp theo `branch_id` rồi `class_code` (thêm
+   `colMeta`) thay vì `khoa.localeCompare` (chuỗi kỹ thuật `lop:{id}`/`cn:{id}`, không theo nghĩa).
+
+897 → **901** phép kiểm (4 phép kiểm mới, #1/#2 gộp một `check`, #3, #5). Bấm thử lại bằng Browser pane (cổng
+4177/5377 tạm, cùng bộ demo): cả năm điểm đều đúng như mong đợi — ảnh xem trong phiên, không lưu file (công cụ chụp
+không xuất file). Rebase lần hai lên `origin/main` (PR-Form #72 vừa merge, +17 commit) — xung đột đúng một chỗ đã
+lường trước (`run.ts`), giữ cả hai khối; `npm ci` lại; **`npm run check` cuối: 926 phép kiểm đều đạt** (PR-Pb đóng
+góp 35). Đã push (`force-with-lease`, an toàn sau rebase).
