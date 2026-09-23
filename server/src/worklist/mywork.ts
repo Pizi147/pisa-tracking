@@ -2,7 +2,7 @@ import { db } from '../db.ts';
 import {
   ASSESSED_SKILL_LABEL, ATTEMPT_KIND_SHORT, ENTRY_SKILL_LABEL,
   INTERVENTION_KIND_LABEL, PERMISSIONS,
-  REGULAR_SKILL_LABEL, SOS_LABEL, URGENCY_LABEL, caseHeadline, caseTopicLabel, cycleDeadline,
+  REGULAR_SKILL_LABEL, SOS_LABEL, URGENCY_LABEL, caseHeadline, caseTopicLabel, cycleDeadline, duongLichTest,
   planDueDate, trongHaiTuanCuoi, tuanLich, urgencyFromSos,
   type AssessedSkill, type AttemptKind, type EntrySkill, type InterventionKind,
 } from '../../../shared/domain/index.ts';
@@ -359,7 +359,9 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
         b = {
           classId: d.classId, classCode: d.classCode, attemptNo: d.attemptNo,
           kind: d.kind, testLabel, skill: d.skill, skillLabel,
-          students: new Map(), due: null, href: attemptHref({ id: d.attemptId, kind: d.kind, classId: d.classId }),
+          /* PR-UX1 Q13: bấm Chấm mở Lịch Test đúng lớp, con trỏ vào môn này; bài không có lớp giữ hồ sơ lượt. */
+          students: new Map(), due: null,
+          href: d.classId ? duongLichTest({ classId: d.classId, kn: d.skill }) : attemptHref({ id: d.attemptId, kind: d.kind, classId: d.classId }),
           attemptId: d.attemptId, ownerId: d.ownerId,
         };
         buckets.set(k, b);

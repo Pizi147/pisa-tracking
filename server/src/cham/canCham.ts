@@ -106,7 +106,7 @@ function theoLo<T>(ids: T[], hoi: (lo: T[], ph: string) => void) {
 }
 
 /**
- * Dựng dòng phụ "lùi lịch" cho từng dòng Cần chấm từ các ô có bằng chứng dời. Một dòng chỉ có MỘT dòng phụ: môn lùi
+ * Dựng dòng phụ "lùi lịch" cho từng dòng Nợ tuần trước từ các ô có bằng chứng dời. Một dòng chỉ có MỘT dòng phụ: môn lùi
  * gặp đầu tiên; `hv` là mọi em của dòng có CHÍNH môn đó bị dời (Q15).
  *
  * Tuần cũ: dấu "-" mang sẵn id tuần cũ; dời do vắng thì đọc dòng `skill_week_moved_absence` MỚI NHẤT của lịch sử đợt
