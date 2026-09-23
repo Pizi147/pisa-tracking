@@ -104,7 +104,7 @@ export async function runYThucGonTests(t: YThucTestKit) {
     assert(domain.hopBoLocPhu('chua-xu-ly', vp) === false, 'chua-xu-ly vp false');
     assert(domain.hopBoLocPhu('co-pa-dang-chuan-bi', vp) === true, 'co-pa-dang-chuan-bi vp true');
     assert(domain.hopBoLocPhu('qua-5-ngay', vp) === false, 'qua-5-ngay vp false (ageLabel rỗng)');
-    assert(domain.hopBoLocPhu('qua-5-ngay', { state: 'unhandled', ageLabel: '⚠9n' }) === true, 'qua-5-ngay vp true khi có ageLabel');
+    assert(domain.hopBoLocPhu('qua-5-ngay', { state: 'unhandled', ageLabel: '9 ngày' }) === true, 'qua-5-ngay vp true khi có ageLabel');
   });
 
   check('PR-YT2 · trongChuKyHienTai: FT so cycleId, lớp thường so classId', () => {

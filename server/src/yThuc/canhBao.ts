@@ -29,7 +29,7 @@ export type StudentWarning = {
   oldestAgeDays: number;
   /** Bật khi tập không rỗng và cái cũ nhất quá 5 ngày. */
   active: boolean;
-  /** `⚠ {n} vi phạm chưa được xử lý — vi phạm cũ nhất: {k} ngày trước` (W01); rỗng khi không bật. */
+  /** `Chưa xử lý {n} vi phạm · cũ nhất {k} ngày` (W01); rỗng khi không bật. */
   message: string;
   /** Mã các vi phạm thuộc tập cần xử lý, cũ trước mới sau. */
   violationIds: number[];
@@ -85,7 +85,7 @@ export function studentWarning(p: Principal, studentId: number, today = demoToda
   return warningsFor([studentId], today).get(studentId)!;
 }
 
-const classSentence = (n: number) => (n > 0 ? `⚠ ${n} học viên có vi phạm chưa xử lý quá ${CANH_BAO_NGAY} ngày` : '');
+const classSentence = (n: number) => (n > 0 ? `${n} học viên có vi phạm chưa xử lý quá ${CANH_BAO_NGAY} ngày` : '');
 
 /** Đầu tab Ý thức của hồ sơ lớp: bao nhiêu học viên đang bị cảnh báo, và là những em nào. */
 export function classWarning(p: Principal, classId: number, today = demoToday()) {

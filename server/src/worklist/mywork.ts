@@ -3,7 +3,7 @@ import {
   ASSESSED_SKILL_LABEL, ATTEMPT_KIND_SHORT, ENTRY_SKILL_LABEL,
   INTERVENTION_KIND_LABEL, PERMISSIONS,
   REGULAR_SKILL_LABEL, SOS_LABEL, URGENCY_LABEL, caseHeadline, caseTopicLabel, cycleDeadline,
-  planDueDate, trongHaiTuanCuoi, tuanLich, urgencyFromSos,
+  duongHoSoHocVien, nhanDotNgan, planDueDate, trongHaiTuanCuoi, tuanLich, urgencyFromSos,
   type AssessedSkill, type AttemptKind, type EntrySkill, type InterventionKind,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -168,7 +168,7 @@ const GROUP_META: Record<WorkGroupKey, { label: string; hint: string }> = {
     hint: 'Vấn đề đã mở nhưng chưa ai ghi sẽ làm gì cho em.',
   },
   result: {
-    label: 'Cập nhật kết quả',
+    label: 'Ghi kết quả',
     hint: 'Đã tới hẹn xem lại: ghi lại sau khi hỗ trợ em có tiến bộ không, rồi chọn bước tiếp theo.',
   },
 
@@ -245,8 +245,7 @@ const duoiKyNang = (topic: string | null | undefined) => (topic ? ` ${caseTopicL
  * lớp thường không còn hiện "MT1".
  */
 function nhanDot(kind: string | null | undefined, no: number | null | undefined, macDinh = 'Case'): string {
-  if (kind && kind !== 'mock') return ATTEMPT_KIND_SHORT[kind as AttemptKind] ?? 'Bài kiểm tra';
-  return no ? `MT${no}` : macDinh;
+  return nhanDotNgan(kind, no) ?? macDinh;
 }
 
 export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi' | 'tat-ca' } = {}) {
@@ -799,9 +798,12 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       count: null,
       tieuDe: `Ghi kết quả PA${duoiKyNang(iv.topic)}`,
       actionLabel: 'Ghi kết quả',
-      href: iv.eff_student_id ? `/hoc-vien/${iv.eff_student_id}` : `/hoc-thuat/case/${iv.case_id}`,
+      /* PR-UX3 Q3: mở thẳng ngăn Case ở view Ghi kết quả của đúng PA này, không trải form trong trang. */
+      href: iv.eff_student_id
+        ? duongHoSoHocVien(iv.eff_student_id, { caseId: iv.case_id, paId: iv.id, viec: 'ghi-ket-qua' })
+        : `/hoc-thuat/case/${iv.case_id}`,
       ownerId: iv.owner_id ?? null, owner: null, mine,
-      due: iv.followup_due ?? null, statusLabel: 'Chờ cập nhật kết quả',
+      due: iv.followup_due ?? null, statusLabel: 'Chờ ghi kết quả',
     });
   }
 

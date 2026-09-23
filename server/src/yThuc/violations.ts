@@ -40,7 +40,7 @@ export type ViolationView = {
   state: ViolationState; stateLabel: string;
   /** Số ngày từ ngày xảy ra tới hôm nay — chỉ có nghĩa với vi phạm chưa xử lý (W06). */
   ageDays: number;
-  /** `⚠9n` khi vi phạm CHƯA XỬ LÝ đã quá 5 ngày, ngược lại rỗng (W06). */
+  /** `9 ngày` khi vi phạm CHƯA XỬ LÝ đã quá 5 ngày, ngược lại rỗng (W06). */
   ageLabel: string;
   createdAt: string; updatedAt: string | null;
 };

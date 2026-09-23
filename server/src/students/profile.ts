@@ -471,13 +471,13 @@ function headlineOf(p: Principal, studentId: number, cycleId: number | null) {
       else if (c.sos?.unconfirmedPlanId) cands.push({ text: `Xác nhận PA gợi ý ${sk(r)}`, due: null, rank: 1, category: r.category });
     }
     if (r.signal) cands.push({ text: `Xác minh SOS ${sk(r)}`, due: r.signal.verifyDue ?? null, rank: 0, category: r.category });
-    if (r.state === 'no_plan') cands.push({ text: `Đề ra PA cho ${sk(r)}`, due: null, rank: 1, category: r.category });
-    if (r.overdueActionDue) cands.push({ text: `Làm PA ${sk(r)}`, due: r.overdueActionDue, rank: 1, category: r.category });
+    if (r.state === 'no_plan') cands.push({ text: `Đề ra PA ${sk(r)}`, due: null, rank: 1, category: r.category });
+    if (r.overdueActionDue) cands.push({ text: `Ghi kết quả PA ${sk(r)}`, due: r.overdueActionDue, rank: 1, category: r.category });
     if (r.pendingApproval) cands.push({ text: `Chờ Quản lý duyệt PA ${sk(r)}`, due: null, rank: 2, category: r.category });
-    if (r.followOverdue) cands.push({ text: `Cập nhật PA ${sk(r)}`, due: r.followUntil, rank: 1, category: r.category });
+    if (r.followOverdue) cands.push({ text: `Ghi kết quả PA ${sk(r)}`, due: r.followUntil, rank: 1, category: r.category });
     /* MỚI (PR-HV): việc cập nhật hằng tuần CHƯA quá hạn — để ô có "hạn 30/08" thay vì "Không có" khi mọi việc đang đúng hạn. */
     else if (r.followUntil && r.cases.some((c: any) => c.status !== 'done')) {
-      duPhong.push({ text: `Cập nhật PA ${sk(r)}`, due: r.followUntil, rank: 3, category: r.category });
+      duPhong.push({ text: `Ghi kết quả PA ${sk(r)}`, due: r.followUntil, rank: 3, category: r.category });
     }
   }
   cands.sort((a, b) => {

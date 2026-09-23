@@ -1,7 +1,8 @@
 import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
-import { Empty, ErrorState, Skeleton, Task } from '../../ui/ui.tsx';
+import { Empty, ErrorState, Skeleton } from '../../ui/ui.tsx';
+import { ViecTiep } from '../../ui/ViecTiep.tsx';
 import { MenuDong } from '../../ui/MenuDong.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { nhapDiemCua, useThaoTacDongHocVien, type QuyenDong } from './thaoTacDongHocVien.tsx';
@@ -78,7 +79,7 @@ export function BangCanHoTro({ classId, laLopThuong, quyen, onDoi }: {
                       ? <span className="block truncate text-slate-300" title={c.currentPlan}>{c.currentPlan}</span>
                       : <span className="text-xs text-amber-200">Chưa có PA học thuật</span>}
                   </td>
-                  <td className="td">{buoc ? <Task tone={buoc.tone}>{buoc.nhan}</Task> : <span className="text-xs text-slate-500">Đang theo dõi</span>}</td>
+                  <td className="td">{buoc ? <ViecTiep v={buoc} /> : <span className="text-xs text-slate-500">Đang theo dõi</span>}</td>
                   <td className="td text-center">
                     <MenuDong muc={tt.mucCua({ id: s.id, ten: s.fullName, dangHoc: s.status === 'active', nhapDiem: nhapDiemCua(classId, laLopThuong, s.timeline ?? []) })} />
                   </td>

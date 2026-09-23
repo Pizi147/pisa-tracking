@@ -87,13 +87,18 @@ export type KetQuaVao = {
   belowSkills: { skill: string; band: number }[];
   failedSkills: { skill: string; score: number; total: number }[];
 };
-export type KetQuaHien = { chinh: string; thieu: string | null; dat: boolean; sos: string | null; phu: string | null };
+export type KetQuaHien = {
+  chinh: string; thieu: string | null; dat: boolean; sos: string | null; phu: string | null;
+  /** Chỉ có (true) khi SOS mới chấm một phần, còn đổi được khi đủ điểm: vẽ viền nét đứt, không ⚠ (⚠ chỉ nghĩa quá hạn). */
+  sosTamThoi?: boolean;
+};
 
 const band1 = (n: number) => n.toFixed(1);
 
 export function ketQuaGanNhat(k: KetQuaVao | null): KetQuaHien {
   if (!k || !k.attemptLabel) return { chinh: '—', thieu: null, dat: false, sos: null, phu: 'Chưa có kết quả' };
-  const sos = k.sosLevel !== null && k.sosLevel > 0 ? `SOS ${k.sosLevel}${k.provisional ? ' · tạm thời' : ''}` : null;
+  const sos = k.sosLevel !== null && k.sosLevel > 0 ? `SOS ${k.sosLevel}` : null;
+  const sosTamThoi = sos !== null && k.provisional;
   const dat = k.sosLevel === 0 && !k.provisional;
   if (k.mode === 'ratio') {
     const soDat = k.scored - (k.failed ?? 0);
@@ -101,7 +106,7 @@ export function ketQuaGanNhat(k: KetQuaVao | null): KetQuaHien {
     const truot = k.failedSkills.map((f) => `${skillShort(f.skill)} ${f.score}/${f.total}`).join(', ');
     const phu = [k.attemptLabel, truot ? `chưa đạt ${truot}` : null,
       k.scored < k.required ? `còn ${k.required - k.scored} môn chưa có điểm` : null].filter(Boolean).join(' · ');
-    return { chinh, thieu: null, dat: dat && k.scored === k.required, sos, phu: catDongPhu(phu) };
+    return { chinh, thieu: null, dat: dat && k.scored === k.required, sos, phu: catDongPhu(phu), ...(sosTamThoi ? { sosTamThoi } : {}) };
   }
   const chinh = k.overall !== null ? band1(k.overall) : '—';
   const thieu = k.overall !== null && k.expectation !== null && k.overall < k.expectation
@@ -110,7 +115,7 @@ export function ketQuaGanNhat(k: KetQuaVao | null): KetQuaHien {
   if (k.expectation !== null) phu.push(`kỳ vọng ${band1(k.expectation)}`);
   if (k.scored < k.required) phu.push(`mới có ${k.scored}/${k.required} kỹ năng`);
   if (k.belowSkills.length) phu.push(`Thiếu ${k.belowSkills.map((b) => `${skillShort(b.skill)} ${band1(b.band)}`).join(', ')}`);
-  return { chinh, thieu, dat, sos, phu: catDongPhu(phu.join(' · ')) };
+  return { chinh, thieu, dat, sos, phu: catDongPhu(phu.join(' · ')), ...(sosTamThoi ? { sosTamThoi } : {}) };
 }
 
 // ---------------------------------------------------------------- cột Khoá lớp thường (§3.6, Q21)
@@ -237,7 +242,14 @@ export function lopMoSan(i: { thamSoOpen: number[] | null; lopHien: number[]; da
 export type CaseChoViec = {
   id?: number; topic: string | null; state: string; nextDue: string | null; dueOverdue: boolean; sosLevel?: number | null;
 };
-export type ViecTiepTheo = { nhan: string; tone: 'danger' | 'warn' | 'info' };
+/**
+ * Một việc ở cột "Việc tiếp theo" (PR-UX3, B-2/B-3, mockup 17 #14–#15): `viec` là chữ chính (động từ + đối tượng), hạn là
+ * mẩu riêng (`han` = "CN 14/09", `quaHanNgay` = số ngày trễ) — giao diện nối "⚠ 3 ngày" đỏ hoặc "· CN 14/09" mờ, không nhét hạn vào chữ việc.
+ * `title` là câu đầy đủ cho tooltip.
+ */
+export type ViecTiepTheo = {
+  viec: string; han: string | null; quaHanNgay: number | null; tone: 'danger' | 'warn' | 'info'; title: string;
+};
 
 const nhanKyNang = (topic: string | null) => (topic ? skillShort(topic) : 'Case');
 
@@ -248,18 +260,28 @@ export function viecTiepTheoCua(i: {
 }): ViecTiepTheo[] {
   const out: ViecTiepTheo[] = [];
   if (i.nhapDiem && i.nhapDiem.kyNang.length) {
+    const viec = `Nhập điểm ${i.nhapDiem.kyNang.map(skillShort).join(', ')}${i.nhapDiem.dot ? ` · ${i.nhapDiem.dot}` : ''}`;
     out.push({
-      nhan: `Nhập điểm ${i.nhapDiem.kyNang.map(skillShort).join(', ')}${i.nhapDiem.dot ? ` · ${i.nhapDiem.dot}` : ''}`,
-      tone: i.nhapDiem.quaHan ? 'danger' : 'warn',
+      viec, han: null, quaHanNgay: null, tone: i.nhapDiem.quaHan ? 'danger' : 'warn',
+      title: i.nhapDiem.quaHan ? `${viec} · quá hạn` : viec,
     });
   }
   for (const c of i.cases) {
     if (c.state === 'done') continue;
-    if (c.state === 'no_plan') { out.push({ nhan: `Xác định nguyên nhân ${nhanKyNang(c.topic)}`, tone: 'warn' }); continue; }
+    if (c.state === 'no_plan') {
+      /* Danh sách chưa có hạn lập PA (PR-UX3 Q11) nên không kèm số ngày. */
+      const viec = `Đề ra PA ${nhanKyNang(c.topic)}`;
+      out.push({ viec, han: null, quaHanNgay: null, tone: 'warn', title: viec });
+      continue;
+    }
     if (!c.nextDue) continue;
-    /* Cùng câu với <Han loai="cap-nhat-pa"> (G-10): một hàm `deadlineView` cho mọi chỗ hiện hạn. */
+    /* Cùng luật với <Han loai="cap-nhat-pa"> (G-10): một hàm `deadlineView` cho mọi chỗ hiện hạn. */
     const v = deadlineView({ kind: 'cap-nhat-pa', due: c.nextDue, today: i.homNay });
-    out.push({ nhan: `${nhanKyNang(c.topic)} · ${v.text}`, tone: v.tone === 'overdue' ? 'danger' : 'info' });
+    const viec = `Ghi kết quả ${nhanKyNang(c.topic)}`;
+    out.push({
+      viec, han: v.han.replace(/^hạn /, ''), quaHanNgay: v.daysOverdue, tone: v.tone === 'overdue' ? 'danger' : 'info',
+      title: `Ghi kết quả PA ${nhanKyNang(c.topic)} · ${v.han}${v.quaHan ? ` · ${v.quaHan}` : ''}`,
+    });
   }
   const hang = { danger: 0, warn: 1, info: 2 } as const;
   return out.map((v, idx) => ({ v, idx })).sort((a, b) => hang[a.v.tone] - hang[b.v.tone] || a.idx - b.idx).map((x) => x.v);

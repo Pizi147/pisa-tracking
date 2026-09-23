@@ -56,7 +56,7 @@ export function KetQuaDot({ coDiem, yeuCau, dat, sos, phan = 'cau', cheDo, soMon
   const mau = hoMau(tone, v.overall, soMon);
   return (
     <span
-      data-overall={v.overall} data-pass-badge={v.passBadge}
+      data-overall={v.overall} data-pass-badge={v.passBadge} title={v.title}
       className={`inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs font-medium ${SCORE_CHIP[mau]}`}>
       <span aria-hidden>{mark}</span>
       {phan === 'overall' ? v.overallText : v.text}

@@ -255,10 +255,10 @@ export function caseTitle(c: {
 export const CASE_OUTCOMES = ['much_better', 'improved', 'unchanged', 'worse'] as const;
 export type CaseOutcome = (typeof CASE_OUTCOMES)[number];
 export const CASE_OUTCOME_LABEL: Record<CaseOutcome, string> = {
-  much_better: 'Đã tốt hơn hẳn',
-  improved: 'Có tiến bộ',
-  unchanged: 'Chưa chuyển biến',
-  worse: 'Tệ hơn',
+  much_better: 'Tiến bộ rõ',
+  improved: 'Tiến bộ một phần',
+  unchanged: 'Không tiến bộ',
+  worse: 'Kém hơn',
 };
 export const CASE_OUTCOME_TONE: Record<CaseOutcome, 'ok' | 'info' | 'warn' | 'danger'> = {
   much_better: 'ok', improved: 'info', unchanged: 'warn', worse: 'danger',
@@ -912,6 +912,22 @@ export const PLAN_DECISION_HINT: Record<PlanDecision, string> = {
   replace: 'Khép phương án này (Được thay thế) và mở phương án mới. Đổi loại phương án thì chọn ở đây.',
   end: 'Khép phương án này. Case chỉ hoàn thành được khi mọi phương án đã khép.',
   ask_manager: 'Chuyển sang chờ Quản lý quyết định. Thời gian chờ tính cho Quản lý.',
+};
+
+/** Bản NGẮN cho danh sách dọc trong panel Ghi kết quả (PR-UX3, mockup 15 §4): tên một dòng + `PLAN_DECISION_NGHIA` một dòng nghĩa. */
+export const PLAN_DECISION_NGAN: Record<PlanDecision, string> = {
+  keep: 'Giữ nguyên', adjust: 'Điều chỉnh', replace: 'Thay PA', end: 'Kết thúc PA', ask_manager: 'Xin hỗ trợ QL',
+};
+export const PLAN_DECISION_NGHIA: Record<PlanDecision, string> = {
+  keep: 'Tiếp tục PA này, hẹn ghi kết quả tuần sau',
+  adjust: 'Cùng PA, sửa nội dung, người làm hoặc hạn',
+  replace: 'Khép PA này, mở PA khác thay vào',
+  end: 'Khép PA này; Case chỉ xong khi mọi PA đã khép',
+  ask_manager: 'Chuyển Quản lý quyết định',
+};
+/** Nút chính ở chân panel theo quyết định đang chọn. */
+export const NUT_LUU_KET_QUA: Record<PlanDecision, string> = {
+  keep: 'Lưu kết quả', adjust: 'Lưu điều chỉnh', replace: 'Thay PA', end: 'Kết thúc PA', ask_manager: 'Gửi Quản lý',
 };
 
 export function decisionToStep(d: PlanDecision): { mode: ResultMode; nextStep: NextStep } {
