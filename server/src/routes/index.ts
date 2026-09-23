@@ -74,7 +74,8 @@ import * as tongQuanSvc from '../worklist/tongQuan.ts';
 import * as bangSvc from '../worklist/bangChiNhanh.ts';
 import { weeklyDrill, weeklyRollup } from '../worklist/weekly.ts';
 import * as tongHopSvc from '../phanTich/tongHop.ts';
-import * as vanDeSvc from '../phanTich/vanDe.ts';
+import * as vanDeHvSvc from '../phanTich/vanDeHv.ts';
+import * as hieuQuaPaSvc from '../phanTich/hieuQuaPa.ts';
 import { metricResponse, metricSet, rowsFor } from '../worklist/metrics.ts';
 import { myWork } from '../worklist/mywork.ts';
 import { nhacViec } from '../worklist/nhacViec.ts';
@@ -577,8 +578,8 @@ api.get('/weekly-rollup/ids', requireAuth, wrap((req) => {
 }));
 
 /*
- * PHÂN TÍCH (PR-Pb, §3.3) — Tổng hợp Test + SOS và Vấn đề học viên. `theo`/`cot` chỉ có nghĩa với Tổng hợp;
- * Vấn đề học viên dùng `cot` riêng (lop|cn). Quyền `meeting.view` được kiểm ngay trong `tongHopSvc`/`vanDeSvc`.
+ * PHÂN TÍCH (PR-Pb, §3.3; PR-UX4) — Tổng hợp Test + SOS, Tổng hợp vấn đề HV, Hiệu quả PA, Ý thức, Bỏ quên.
+ * Quyền `meeting.view` được kiểm ngay trong từng dịch vụ (`phanTich/phamVi.ts` cho các đường mới).
  */
 const filterTongHopOf = (req: Request) => ({
   branchId: qInt(req, 'branchId') ?? null, ct: chuongTrinhTuThamSo(qStr(req, 'ct')),
@@ -595,18 +596,35 @@ api.get('/phan-tich/tong-hop/o', requireAuth, wrap((req) => {
     ...filterTongHopOf(req), khoa: qStr(req, 'khoa') ?? '', cot: qStr(req, 'cot') ?? '',
   });
 }));
-const filterVanDeOf = (req: Request) => ({
+/* Tổng hợp vấn đề HV (PR-UX4): đếm HV theo loại lỗi. `loi=chinh` chỉ lỗi chính; `gop=1` gộp theo loại lỗi chung. */
+const filterVanDeHvOf = (req: Request) => ({
   branchId: qInt(req, 'branchId') ?? null, ct: chuongTrinhTuThamSo(qStr(req, 'ct')),
-  classId: qInt(req, 'lop') ?? null, cot: qStr(req, 'cot') === 'cn' ? ('cn' as const) : ('lop' as const),
+  classId: qInt(req, 'lop') ?? null, soTuan: khoangTuThamSo(qStr(req, 'tg')),
+  chiChinh: qStr(req, 'loi') === 'chinh', gop: qStr(req, 'gop') === '1',
 });
-api.get('/phan-tich/van-de', requireAuth, wrap((req) => {
+api.get('/phan-tich/van-de-hv', requireAuth, wrap((req) => {
   maybeSimulateReadError();
-  return vanDeSvc.maTranVanDe(principalOf(req), filterVanDeOf(req));
+  return vanDeHvSvc.vanDeHv(principalOf(req), filterVanDeHvOf(req));
 }));
-api.get('/phan-tich/van-de/o', requireAuth, wrap((req) => {
+api.get('/phan-tich/van-de-hv/o', requireAuth, wrap((req) => {
   maybeSimulateReadError();
-  return vanDeSvc.oVanDe(principalOf(req), {
-    ...filterVanDeOf(req), kn: qStr(req, 'kn') ?? '', ma: qStr(req, 'ma') ?? null, khoaCot: qStr(req, 'khoaCot') ?? '',
+  return vanDeHvSvc.oVanDeHv(principalOf(req), {
+    ...filterVanDeHvOf(req), dong: qStr(req, 'dong') ?? '', cot: qStr(req, 'cot') ?? '',
+  });
+}));
+/* Hiệu quả PA (PR-UX4): vấn đề (lỗi chính) → loại PA, kèm cỡ mẫu. */
+const filterHieuQuaPaOf = (req: Request) => ({
+  branchId: qInt(req, 'branchId') ?? null, ct: chuongTrinhTuThamSo(qStr(req, 'ct')),
+  classId: qInt(req, 'lop') ?? null, soTuan: khoangTuThamSo(qStr(req, 'tg')),
+});
+api.get('/phan-tich/hieu-qua-pa', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return hieuQuaPaSvc.hieuQuaPa(principalOf(req), filterHieuQuaPaOf(req));
+}));
+api.get('/phan-tich/hieu-qua-pa/o', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return hieuQuaPaSvc.oHieuQuaPa(principalOf(req), {
+    ...filterHieuQuaPaOf(req), dong: qStr(req, 'dong') ?? '', cot: qStr(req, 'cot') ?? '',
   });
 }));
 

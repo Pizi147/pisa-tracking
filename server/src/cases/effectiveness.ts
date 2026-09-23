@@ -221,10 +221,14 @@ function queryPlans(sids: number[], scope: Scope) {
        */
       `SELECT iv.id, iv.kind, iv.status, iv.closed_reason, iv.completed_date,
               ${SUPPORT_DAY} AS day,
+              COALESCE(iv.started_date, iv.planned_date) AS started_on,
               sc.id AS case_id, sc.student_id, sc.category, sc.topic,
               (SELECT fu.outcome FROM case_followups fu
                 WHERE fu.intervention_id = iv.id AND fu.outcome IS NOT NULL
-                ORDER BY fu.observed_on DESC, fu.id DESC LIMIT 1) AS final_outcome
+                ORDER BY fu.observed_on DESC, fu.id DESC LIMIT 1) AS final_outcome,
+              (SELECT fu.observed_on FROM case_followups fu
+                WHERE fu.intervention_id = iv.id AND fu.outcome IS NOT NULL
+                ORDER BY fu.observed_on DESC, fu.id DESC LIMIT 1) AS outcome_on
          FROM case_interventions iv
          JOIN sos_cases sc ON sc.id = iv.case_id
         WHERE sc.student_id IN (${ph})
@@ -249,6 +253,9 @@ function shapePlan(r: any) {
     group: outcomeGroup(r.final_outcome),
     /** Ngày phương án xảy ra — căn cứ để gán đơn vị (F03). */
     day: r.day as string,
+    /** Ngày bắt đầu (hoặc dự kiến) và ngày ghi kết quả cuối — cho "Thời gian trung bình" của Hiệu quả PA (PR-UX4, Q10). */
+    startedOn: (r.started_on ?? null) as string | null,
+    outcomeOn: (r.outcome_on ?? null) as string | null,
   };
 }
 

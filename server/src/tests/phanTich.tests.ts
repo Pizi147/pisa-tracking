@@ -306,135 +306,409 @@ export async function runPhanTichTests(t: YThucTestKit) {
     assert(n4 <= 12, `Quá nhiều câu SQL cho một lần tính Tổng hợp: ${n4} (tối đa 12)`);
   });
 
-  // ================================================================== Task 3 — máy chủ Vấn đề học viên (ma trận)
+  // ================================================================== Task 2 — Tổng hợp vấn đề HV (PR-UX4)
 
-  console.log('\nPR-Pb · Vấn đề học viên (ma trận)');
-  const vanDeSvc: any = await import('../phanTich/vanDe.ts');
-
-  check('PR-Pb · Vấn đề học viên: mọi ô n ≤ N (kỹ năng và Tổng), ba giá trị ct, hai cách xếp cột', () => {
-    for (const ct of ['ft', 'thuong', 'ca-hai'] as const) {
-      for (const cot of ['lop', 'cn'] as const) {
-        const kq = vanDeSvc.maTranVanDe(P.admin, { branchId: null, ct, classId: null, cot });
-        for (const h of kq.hang) {
-          for (const c of kq.cotDs) {
-            const cell = h.o[c.khoa];
-            if (cell) assert(cell.n <= cell.N, `${ct}/${cot} "${h.nhan}" · ${c.nhan}: n=${cell.n} > N=${cell.N}`);
-          }
-          assert(h.tong.n <= h.tong.N, `${ct}/${cot} "${h.nhan}" Tổng: n=${h.tong.n} > N=${h.tong.N}`);
-        }
-      }
-    }
-  });
-
-  check('PR-Pb · Vấn đề học viên: ct=thuong không có dòng W1/W2; ct=ft không có dòng W (lớp thường)', () => {
-    const thuong = vanDeSvc.maTranVanDe(P.admin, { branchId: null, ct: 'thuong', classId: null, cot: 'lop' }).hang.map((h: any) => h.kn);
-    assert(!thuong.includes('writing1') && !thuong.includes('writing2'), `Lớp thường không được có dòng W1/W2: ${thuong}`);
-    const ft = vanDeSvc.maTranVanDe(P.admin, { branchId: null, ct: 'ft', classId: null, cot: 'lop' }).hang.map((h: any) => h.kn);
-    assert(!ft.includes('writing'), `FT không được có dòng W (lớp thường): ${ft}`);
-  });
-
-  check('PR-Pb · oVanDe: n khớp đúng số trong bảng và rows.length === n — ô kỹ năng, ô loại lỗi, và cột Tổng', () => {
-    const kq = vanDeSvc.maTranVanDe(P.admin, { branchId: null, ct: 'ca-hai', classId: null, cot: 'lop' });
-    let kiemDuocGi = false;
-    for (const h of kq.hang) {
-      for (const c of kq.cotDs) {
-        const cell = h.o[c.khoa];
-        if (cell && cell.n > 0) {
-          const o = vanDeSvc.oVanDe(P.admin, { branchId: null, ct: 'ca-hai', classId: null, cot: 'lop', kn: h.kn, khoaCot: c.khoa });
-          assert(o.n === cell.n && o.rows.length === o.n, `Ô kỹ năng "${h.nhan}" · ${c.nhan}: ${o.n} ≠ ${cell.n} hoặc rows lệch`);
-          kiemDuocGi = true;
-        }
-      }
-      if (h.tong.n > 0) {
-        const oTong = vanDeSvc.oVanDe(P.admin, { branchId: null, ct: 'ca-hai', classId: null, cot: 'lop', kn: h.kn, khoaCot: 'tong' });
-        assert(oTong.n === h.tong.n && oTong.rows.length === oTong.n, `Ô Tổng "${h.nhan}": ${oTong.n} ≠ ${h.tong.n} hoặc rows lệch`);
-        kiemDuocGi = true;
-      }
-      for (const con of h.con) {
-        if (con.tong > 0) {
-          const oMa = vanDeSvc.oVanDe(P.admin, { branchId: null, ct: 'ca-hai', classId: null, cot: 'lop', kn: h.kn, ma: con.ma, khoaCot: 'tong' });
-          assert(oMa.n === con.tong && oMa.rows.length === oMa.n, `Ô loại lỗi "${con.nhan}" (Tổng): ${oMa.n} ≠ ${con.tong} hoặc rows lệch`);
-          kiemDuocGi = true;
-        }
-      }
-    }
-    assert(kiemDuocGi, 'Bộ demo phải có ít nhất một ô khác 0 để kiểm — nếu seed thay đổi, xem lại phép kiểm này');
-  });
-
-  check('PR-Pb · Vấn đề học viên: loiNhieuNhat khớp đúng dòng con lớn nhất ở cột Tổng (không tính Chưa phân loại)', () => {
-    const kq = vanDeSvc.maTranVanDe(P.admin, { branchId: null, ct: 'ca-hai', classId: null, cot: 'lop' });
-    for (const h of kq.hang) {
-      const ungVien = h.con.filter((c: any) => c.ma !== '__chua-phan-loai__' && c.tong > 0);
-      if (!h.loiNhieuNhat) { assert(ungVien.length === 0, `"${h.nhan}" không có loiNhieuNhat nhưng có ứng viên: ${JSON.stringify(ungVien)}`); continue; }
-      const max = Math.max(...ungVien.map((c: any) => c.tong));
-      assert(h.loiNhieuNhat.n === max, `"${h.nhan}": loiNhieuNhat.n=${h.loiNhieuNhat.n} ≠ lớn nhất thực ${max}`);
-    }
-  });
-
-  check('PR-Pb · Vấn đề học viên: Case chưa xong — em có trong ô (kỹ năng, lớp đang học); đóng Case thì em biến mất khỏi ô', () => {
-    const ung = conn
-      .prepare(
-        `SELECT sc.id, sc.status, sc.student_id, sc.category, sc.topic, e.class_id
-           FROM sos_cases sc
-           JOIN enrollments e ON e.student_id = sc.student_id AND e.status = 'active'
-           JOIN classes c ON c.id = e.class_id AND c.status = 'active'
-          WHERE sc.status != 'done'`,
-      )
-      .all() as any[];
-    let found: any = null;
-    for (const r of ung) {
-      const hangMuc = r.category || d.categoryOf(r.topic);
-      if (hangMuc) { found = { ...r, hangMuc }; break; }
-    }
-    assert(found, 'Bộ demo phải có ít nhất một Case chưa xong với hạng mục suy ra được, thuộc em đang học một lớp');
-    const khoaCot = `lop:${found.class_id}`;
-    const bo = { branchId: null, ct: 'ca-hai' as const, classId: null, cot: 'lop' as const, kn: found.hangMuc, khoaCot };
-    const truoc = vanDeSvc.oVanDe(P.admin, bo);
-    assert(truoc.rows.some((r: any) => r.id === found.student_id), `Em #${found.student_id} phải có trong ô (${found.hangMuc}, ${khoaCot}) khi Case đang mở`);
-    conn.prepare(`UPDATE sos_cases SET status = 'done' WHERE id = ?`).run(found.id);
-    try {
-      const sau = vanDeSvc.oVanDe(P.admin, bo);
-      assert(!sau.rows.some((r: any) => r.id === found.student_id), `Đóng Case xong thì em #${found.student_id} phải biến mất khỏi ô (${found.hangMuc}, ${khoaCot})`);
-    } finally {
-      conn.prepare(`UPDATE sos_cases SET status = ? WHERE id = ?`).run(found.status, found.id);
-    }
-  });
-
-  check('PR-Pb · Vấn đề học viên: cột Tổng đếm DUY NHẤT — em học hai lớp cùng lúc không bị đếm hai lần', () => {
-    const cid1 = classId('MB-FT 101');
-    const khac = conn.prepare(`SELECT id FROM classes WHERE is_fast_track = 1 AND status = 'active' AND id != ?`).get(cid1) as any;
-    const enr = conn.prepare(`SELECT student_id FROM enrollments WHERE class_id = ? AND status = 'active' LIMIT 1`).get(cid1) as any;
-    if (!khac || !enr) { console.log('  (bỏ qua: seed không có đủ lớp FT thứ hai + học viên để dựng tình huống)'); return; }
-    const daHoc = conn.prepare(`SELECT 1 FROM enrollments WHERE student_id = ? AND class_id = ? AND status = 'active'`).get(enr.student_id, khac.id);
-    if (daHoc) { console.log('  (bỏ qua: em đã học sẵn cả hai lớp)'); return; }
+  console.log('\nPR-UX4 · Tổng hợp vấn đề HV');
+  const vanDeHvSvc: any = await import('../phanTich/vanDeHv.ts');
+  const FV = (o: Record<string, unknown> = {}) => ({ branchId: null, ct: 'ca-hai', classId: null, soTuan: 8, chiChinh: false, gop: false, ...o });
+  const moiHang = (kq: any): any[] => kq.hang.flatMap((h: any) => [h, ...(h.con ?? [])]);
+  const timHang = (kq: any, khoa: string) => moiHang(kq).find((h) => h.khoa === khoa);
+  const soHvCua = (kq: any, khoa: string): number => timHang(kq, khoa)?.soHv ?? 0;
+  const ISS = {
+    wGram: 'student.writing.grammar', wLex: 'student.writing.lexical', wOrg: 'student.writing.organisation', wOther: 'student.writing.other',
+    rLang: 'student.reading.language', sGram: 'student.speaking.grammar', sPron: 'student.speaking.pronunciation',
+  };
+  const baiTapUx4 = () => {
+    const tao = { hv: [] as number[], ca: [] as number[], luot: [] as number[], chuKy: [] as number[] };
     const now = new Date().toISOString();
-    const info = conn.prepare(`INSERT INTO enrollments (student_id, class_id, status, started_at, created_at) VALUES (?,?, 'active', '2026-07-27', ?)`)
-      .run(enr.student_id, khac.id, now);
+    return {
+      /** Một học viên mới đang học lớp `cid` (kèm một lộ trình để gắn lượt Test giả). */
+      hv(cid: number, tag: string): number {
+        const cls = conn.prepare('SELECT branch_id FROM classes WHERE id = ?').get(cid) as any;
+        const ma = `UX4-${tag}-${Date.now()}-${tao.hv.length}`;
+        const sid = Number(conn.prepare(
+          `INSERT INTO students (student_code, full_name, normalized_name, branch_id, status, created_at) VALUES (?,?,?,?, 'active', ?)`,
+        ).run(`PISA-${ma}`, `Học viên ${ma}`, `hoc vien ${ma.toLowerCase()}`, cls.branch_id, now).lastInsertRowid);
+        conn.prepare(`INSERT INTO enrollments (student_id, class_id, status, started_at, created_at) VALUES (?,?, 'active', '2026-07-27', ?)`).run(sid, cid, now);
+        tao.hv.push(sid);
+        return sid;
+      },
+      ca(sid: number, category: string, issues: [string, 'primary' | 'secondary'][],
+        o: { status?: string; closedAt?: string | null; attemptId?: number | null } = {}): number {
+        const id = Number(conn.prepare(
+          `INSERT INTO sos_cases (attempt_id, student_id, category, status, sos_level, closed_at, created_at) VALUES (?,?,?,?, 1, ?, ?)`,
+        ).run(o.attemptId ?? null, sid, category, o.status ?? 'open', o.closedAt ?? null, now).lastInsertRowid);
+        for (const [ma, vai] of issues) {
+          conn.prepare(`INSERT INTO case_issues (case_id, role, taxonomy_code, created_at) VALUES (?,?,?,?)`).run(id, vai, ma, now);
+        }
+        tao.ca.push(id);
+        return id;
+      },
+      /** Một lượt MT có điểm của học viên ở lớp `cid`, xếp vào tuần `weekStart`. */
+      luot(sid: number, cid: number, attemptNo: number, weekStart: string): number {
+        const cyc = Number(conn.prepare(
+          `INSERT INTO learning_cycles (student_id, seq, route, programme_code, started_at, status, created_at) VALUES (?, ?, 'LT1', NULL, '2026-07-27', 'active', ?)`,
+        ).run(sid, attemptNo, now).lastInsertRowid);
+        tao.chuKy.push(cyc);
+        const periodId = week.ensurePeriod(weekStart).id;
+        const id = Number(conn.prepare(
+          `INSERT INTO assessment_attempts (cycle_id, student_id, attempt_no, kind, class_id, planned_period_id, target_at_attempt, status, created_at)
+           VALUES (?, ?, ?, 'mock', ?, ?, 6.0, 'planned', ?)`,
+        ).run(cyc, sid, attemptNo, cid, periodId, now).lastInsertRowid);
+        conn.prepare(`INSERT INTO assessment_scores (attempt_id, skill, band, entered_at) VALUES (?, 'listening', 5.0, ?)`).run(id, now);
+        tao.luot.push(id);
+        return id;
+      },
+      don() {
+        for (const id of tao.ca) { conn.prepare('DELETE FROM case_issues WHERE case_id = ?').run(id); conn.prepare('DELETE FROM sos_cases WHERE id = ?').run(id); }
+        for (const id of tao.luot) { conn.prepare('DELETE FROM assessment_scores WHERE attempt_id = ?').run(id); conn.prepare('DELETE FROM assessment_attempts WHERE id = ?').run(id); }
+        for (const id of tao.chuKy) conn.prepare('DELETE FROM learning_cycles WHERE id = ?').run(id);
+        for (const id of tao.hv) { conn.prepare('DELETE FROM enrollments WHERE student_id = ?').run(id); conn.prepare('DELETE FROM students WHERE id = ?').run(id); }
+      },
+    };
+  };
+  const cong = (iso: string, n: number) => new Date(Date.parse(`${iso}T00:00:00Z`) + n * 86400000).toISOString().slice(0, 10);
+  const CID_FT = classId('MB-FT 101');
+
+  check('UX4 · Vấn đề HV: ct=ft/thuong/ca-hai chỉ có 4 hàng kỹ năng, không W1/W2 riêng', () => {
+    const kit = baiTapUx4();
     try {
-      const kq = vanDeSvc.maTranVanDe(P.admin, { branchId: null, ct: 'ft', classId: null, cot: 'lop' });
-      const dong = kq.hang.find((h: any) => h.kn === 'listening');
-      const congCot = kq.cotDs.reduce((s: number, c: any) => s + (dong.o[c.khoa]?.N ?? 0), 0);
-      assert(dong.tong.N <= congCot, `Tổng N (${dong.tong.N}) phải ≤ cộng các cột (${congCot}) — em học hai lớp không được đếm hai lần ở Tổng`);
-    } finally {
-      conn.prepare(`DELETE FROM enrollments WHERE id = ?`).run(info.lastInsertRowid);
+      const sid = kit.hv(CID_FT, 'ct');
+      kit.ca(sid, 'writing1', [[ISS.wGram, 'primary']]);
+      kit.ca(sid, 'writing2', [[ISS.wOrg, 'primary']]);
+      for (const ct of ['ft', 'thuong', 'ca-hai']) {
+        const kq = vanDeHvSvc.vanDeHv(P.admin, FV({ ct }));
+        for (const h of kq.hang) assert(['kn:listening', 'kn:reading', 'kn:writing', 'kn:speaking'].includes(h.khoa), `${ct}: hàng lạ "${h.khoa}"`);
+        assert(!JSON.stringify(kq).includes('writing1') && !JSON.stringify(kq).includes('writing2'), `${ct}: không được lộ W1/W2 riêng`);
+        if (ct !== 'thuong') assert(soHvCua(kq, 'kn:writing') >= 1, `${ct}: Case W1 + W2 của em phải gộp vào hàng Writing`);
+      }
+    } finally { kit.don(); }
+  });
+
+  check('UX4 · Vấn đề HV: oVanDeHv n === rows.length, bằng soHv/soLop ở hàng lớn, hàng con, chip top3, Chưa phân loại', () => {
+    const kit = baiTapUx4();
+    try {
+      const a = kit.hv(CID_FT, 'o1'), b = kit.hv(CID_FT, 'o2');
+      kit.ca(a, 'writing2', [[ISS.wGram, 'primary'], [ISS.wLex, 'secondary']]);
+      kit.ca(b, 'writing1', [[ISS.wGram, 'primary']]);
+      kit.ca(a, 'speaking', []);   // Case chưa phân loại
+      const f = FV();
+      const kq = vanDeHvSvc.vanDeHv(P.admin, f);
+      let kiem = 0;
+      for (const h of moiHang(kq)) {
+        const oHv = vanDeHvSvc.oVanDeHv(P.admin, { ...f, dong: h.khoa, cot: 'hv' });
+        assert(oHv.n === h.soHv && oHv.rows.length === oHv.n, `"${h.khoa}" · hv: ${oHv.n}/${oHv.rows.length} ≠ soHv ${h.soHv}`);
+        const oLop = vanDeHvSvc.oVanDeHv(P.admin, { ...f, dong: h.khoa, cot: 'lop' });
+        assert(oLop.n === h.soLop && oLop.rows.length === oLop.n, `"${h.khoa}" · lop: ${oLop.n}/${oLop.rows.length} ≠ soLop ${h.soLop}`);
+        for (const chip of h.top3) {
+          const oChip = vanDeHvSvc.oVanDeHv(P.admin, { ...f, dong: h.khoa, cot: `lop:${chip.classId}` });
+          assert(oChip.n === chip.n && oChip.rows.length === oChip.n, `"${h.khoa}" · chip ${chip.ma}: ${oChip.n} ≠ ${chip.n}`);
+        }
+        kiem += 1;
+      }
+      assert(kiem >= 3, 'phải kiểm được ít nhất kn:writing + hai hàng con');
+      for (const cot of ['case', 'hv', 'lop']) {
+        const o = vanDeHvSvc.oVanDeHv(P.admin, { ...f, dong: 'chua-phan-loai', cot });
+        const want = kq.chuaPhanLoai[cot];
+        assert(o.n === want && o.rows.length === o.n && want >= 1, `Chưa phân loại · ${cot}: ${o.n}/${o.rows.length} ≠ ${want}`);
+      }
+      const ca = vanDeHvSvc.oVanDeHv(P.admin, { ...f, dong: 'chua-phan-loai', cot: 'case' });
+      assert(ca.rows.every((r: any) => r.href.startsWith('/hoc-thuat/case/')), 'dòng Chưa phân loại mở Case');
+      const hv = vanDeHvSvc.oVanDeHv(P.admin, { ...f, dong: 'kn:writing', cot: 'hv' });
+      assert(hv.rows.every((r: any) => r.sub.length <= 60 && r.href.startsWith('/hoc-vien/')), 'dòng HV: sub ≤ 60 ký tự, mở hồ sơ');
+      assert(/^(Lỗi chính|Lỗi phụ) · /.test(hv.rows[0].sub), `sub phải bắt đầu bằng vai lỗi: ${hv.rows[0].sub}`);
+      for (const bad of [{ dong: 'kn:xyz', cot: 'hv' }, { dong: 'kn:writing', cot: 'xyz' }, { dong: 'chua-phan-loai', cot: 'xyz' }]) {
+        let s = 0; try { vanDeHvSvc.oVanDeHv(P.admin, { ...f, ...bad }); } catch (e: any) { s = e?.status; }
+        assert(s === 400, `khoá lạ ${JSON.stringify(bad)} phải 400, ra ${s}`);
+      }
+    } finally { kit.don(); }
+  });
+
+  check('UX4 · Vấn đề HV: hàng lớn = hợp (≤ tổng con), em hai lỗi cùng kỹ năng đếm 1', () => {
+    const kit = baiTapUx4();
+    try {
+      const truoc = vanDeHvSvc.vanDeHv(P.admin, FV());
+      const sid = kit.hv(CID_FT, 'hop');
+      kit.ca(sid, 'writing2', [[ISS.wGram, 'primary'], [ISS.wLex, 'secondary']]);
+      const sau = vanDeHvSvc.vanDeHv(P.admin, FV());
+      eq(soHvCua(sau, 'kn:writing') - soHvCua(truoc, 'kn:writing'), 1, 'hàng Writing chỉ +1 dù em có hai lỗi');
+      eq(soHvCua(sau, `kn:writing|${ISS.wGram}`) - soHvCua(truoc, `kn:writing|${ISS.wGram}`), 1, 'con Ngữ pháp +1');
+      eq(soHvCua(sau, `kn:writing|${ISS.wLex}`) - soHvCua(truoc, `kn:writing|${ISS.wLex}`), 1, 'con Từ vựng +1');
+      for (const h of sau.hang) {
+        const tongCon = (h.con ?? []).reduce((s: number, c: any) => s + c.soHv, 0);
+        const maxCon = Math.max(0, ...(h.con ?? []).map((c: any) => c.soHv));
+        assert(h.soHv <= tongCon && h.soHv >= maxCon, `"${h.khoa}": ${h.soHv} phải nằm trong [${maxCon}, ${tongCon}]`);
+      }
+    } finally { kit.don(); }
+  });
+
+  check('UX4 · Vấn đề HV: gop — Ngữ pháp đếm duy nhất; em có W.grammar + R.language tính 1; R.language có ở cả Ngữ pháp và Từ vựng', () => {
+    const kit = baiTapUx4();
+    try {
+      const truoc = vanDeHvSvc.vanDeHv(P.admin, FV({ gop: true }));
+      const sid = kit.hv(CID_FT, 'gop');
+      kit.ca(sid, 'writing2', [[ISS.wGram, 'primary']]);
+      kit.ca(sid, 'reading', [[ISS.rLang, 'primary']]);
+      const sau = vanDeHvSvc.vanDeHv(P.admin, FV({ gop: true }));
+      eq(soHvCua(sau, 'chung:ngu-phap') - soHvCua(truoc, 'chung:ngu-phap'), 1, 'Ngữ pháp: em có hai mã ngữ pháp chỉ tính 1');
+      eq(soHvCua(sau, 'chung:tu-vung') - soHvCua(truoc, 'chung:tu-vung'), 1, 'R.language cũng nằm ở Từ vựng');
+      assert(!!timHang(sau, `chung:ngu-phap|reading|${ISS.rLang}`) && !!timHang(sau, `chung:tu-vung|reading|${ISS.rLang}`), 'R.language có con ở cả hai nhóm');
+      const nhomNguPhap = sau.hang.find((h: any) => h.khoa === 'chung:ngu-phap');
+      assert(!!nhomNguPhap.goiY && nhomNguPhap.goiY.includes('Từ vựng / ngữ pháp'), 'hàng Ngữ pháp có ⓘ nói rõ mục chung');
+      assert(nhomNguPhap.phu !== undefined, 'có cột "Kỹ năng nhiều nhất"');
+      for (const h of sau.hang) if (h.loai === 'chung') {
+        const tongCon = (h.con ?? []).reduce((s: number, c: any) => s + c.soHv, 0);
+        assert(h.soHv <= tongCon, `"${h.khoa}" ≤ tổng con`);
+      }
+      for (const h of sau.hang) assert(h.khoa.startsWith('chung:') || h.khoa.startsWith('gom:'), `chế độ gộp không còn hàng kỹ năng: ${h.khoa}`);
+    } finally { kit.don(); }
+  });
+
+  check('UX4 · Vấn đề HV: chiChinh — bỏ lỗi phụ, số ≤ chế độ đủ; Chưa phân loại không đổi', () => {
+    const kit = baiTapUx4();
+    try {
+      const sid = kit.hv(CID_FT, 'chinh');
+      kit.ca(sid, 'writing2', [[ISS.wGram, 'primary'], [ISS.wLex, 'secondary']]);
+      kit.ca(sid, 'speaking', [[ISS.sPron, 'secondary']]);
+      const du = vanDeHvSvc.vanDeHv(P.admin, FV());
+      const chinh = vanDeHvSvc.vanDeHv(P.admin, FV({ chiChinh: true }));
+      for (const h of moiHang(chinh)) assert(h.soHv <= soHvCua(du, h.khoa), `chiChinh "${h.khoa}": ${h.soHv} > ${soHvCua(du, h.khoa)}`);
+      assert(soHvCua(chinh, `kn:writing|${ISS.wLex}`) < soHvCua(du, `kn:writing|${ISS.wLex}`), 'lỗi phụ Từ vựng phải giảm khi chỉ lỗi chính');
+      assert(soHvCua(chinh, `kn:speaking|${ISS.sPron}`) < soHvCua(du, `kn:speaking|${ISS.sPron}`), 'lỗi phụ Phát âm phải giảm');
+      eq(chinh.chuaPhanLoai, du.chuaPhanLoai, 'Chưa phân loại không đổi theo công tắc');
+      eq(chinh.chiChinh, true, 'kết quả ghi lại công tắc');
+    } finally { kit.don(); }
+  });
+
+  check('UX4 · Vấn đề HV: Case đóng trước khoảng biến mất, đóng trong khoảng còn', () => {
+    const kit = baiTapUx4();
+    try {
+      const cu = kit.hv(CID_FT, 'dongcu'), moi = kit.hv(CID_FT, 'dongmoi'), mo = kit.hv(CID_FT, 'dangmo');
+      kit.ca(cu, 'writing2', [[ISS.wOther, 'primary']], { status: 'done', closedAt: cong(TODAY, -200) });
+      kit.ca(moi, 'writing2', [[ISS.wOther, 'primary']], { status: 'done', closedAt: TODAY });
+      kit.ca(mo, 'writing2', [[ISS.wOther, 'primary']]);
+      const o = vanDeHvSvc.oVanDeHv(P.admin, { ...FV(), dong: 'kn:writing', cot: 'hv' });
+      const ids = o.rows.map((r: any) => r.id);
+      assert(!ids.includes(cu), 'Case đóng cách đây 200 ngày (ngoài 8 tuần) phải biến mất');
+      assert(ids.includes(moi) && ids.includes(mo), 'Case đóng trong khoảng và Case đang mở phải còn');
+      const oRong = vanDeHvSvc.oVanDeHv(P.admin, { ...FV({ soTuan: 26 }), dong: 'kn:writing', cot: 'hv' });
+      assert(!oRong.rows.some((r: any) => r.id === cu), '200 ngày vẫn ngoài khoảng 6 tháng (26 tuần ≈ 182 ngày)');
+    } finally { kit.don(); }
+  });
+
+  check('UX4 · Vấn đề HV: phu = con lớn nhất trừ Khác', () => {
+    const kq = vanDeHvSvc.vanDeHv(P.admin, FV());
+    for (const h of kq.hang) {
+      const ungVien = (h.con ?? []).filter((c: any) => c.nhan !== 'Khác');
+      if (!ungVien.length) { eq(h.phu ?? null, null, `"${h.khoa}" chỉ có Khác → không có Lỗi phổ biến`); continue; }
+      const max = Math.max(...ungVien.map((c: any) => c.soHv));
+      const cung = ungVien.filter((c: any) => c.soHv === max).map((c: any) => c.nhan).sort((x: string, y: string) => x.localeCompare(y));
+      eq(h.phu, cung[0], `"${h.khoa}" Lỗi phổ biến`);
     }
+    const kit = baiTapUx4();
+    try {
+      const sid = kit.hv(CID_FT, 'phu');
+      kit.ca(sid, 'writing2', [[ISS.wOther, 'primary']]);
+      const truoc = vanDeHvSvc.vanDeHv(P.admin, FV());
+      const w = truoc.hang.find((h: any) => h.khoa === 'kn:writing');
+      assert(w.phu !== 'Khác', 'Khác không bao giờ là Lỗi phổ biến');
+    } finally { kit.don(); }
   });
 
-  check('PR-Pb · Vấn đề học viên — Quyền: GV không có meeting.view bị 403; QL Monbay hỏi chi nhánh CP → rỗng (không phải toàn hệ thống)', () => {
-    let bi403 = false;
-    try { vanDeSvc.maTranVanDe(P.coreTeacher, { branchId: null, ct: 'ca-hai', classId: null, cot: 'lop' }); }
-    catch (e: any) { bi403 = e?.status === 403; }
-    assert(bi403, 'Giáo viên không có meeting.view phải bị 403');
-    const kqCp = vanDeSvc.maTranVanDe(P.mbManager, { branchId: cpBranch, ct: 'ca-hai', classId: null, cot: 'lop' });
-    assert(kqCp.cotDs.length === 0 && kqCp.hang.every((h: any) => h.tong.N === 0),
-      `QL Monbay hỏi chi nhánh CP phải ra rỗng, đang có ${kqCp.cotDs.length} cột`);
+  check('UX4 · Vấn đề HV: soVoiTruoc — dựng 2 đợt giả một lớp, Case ở đợt mới +1 → +1', () => {
+    const kit = baiTapUx4();
+    try {
+      /* Xếp hai đợt giả SAU mọi tuần đã có — chúng chắc chắn là hai đợt mới nhất của lớp, dù các phép kiểm trước để lại gì. */
+      const tuanCuoi = (conn.prepare('SELECT MAX(week_start) AS m FROM report_periods').get() as any).m as string;
+      const tuanCu = week.mondayOf(cong(tuanCuoi, 7)), tuanMoi = week.mondayOf(cong(tuanCuoi, 14));
+      const sid = kit.hv(CID_FT, 'sosanh');
+      const luotCu = kit.luot(sid, CID_FT, 97, tuanCu);
+      const luotMoi = kit.luot(sid, CID_FT, 98, tuanMoi);
+      const khoa = `kn:writing|${ISS.wGram}`;
+      const dv = (kq: any) => timHang(kq, khoa)?.soVoiTruoc ?? 0;
+      const goc = vanDeHvSvc.vanDeHv(P.admin, FV());
+      kit.ca(sid, 'writing2', [[ISS.wGram, 'primary']], { attemptId: luotMoi });
+      const sau = vanDeHvSvc.vanDeHv(P.admin, FV());
+      eq(dv(sau) - dv(goc), 1, 'Case sinh từ đợt mới → +1 so với lần Test trước');
+      kit.ca(sid, 'writing2', [[ISS.wGram, 'primary']], { attemptId: luotCu });
+      const sau2 = vanDeHvSvc.vanDeHv(P.admin, FV());
+      eq(dv(sau2), dv(goc), 'thêm Case ở đợt liền trước → hiệu số về lại');
+    } finally { kit.don(); }
   });
 
-  await checkAsync('PR-Pb · Không N+1: ma trận Vấn đề học viên ≤ 6 câu SQL, không đổi khi đổi cách xếp cột', async () => {
-    const nLop = await demCauHoi(() => vanDeSvc.maTranVanDe(P.admin, { branchId: null, ct: 'ca-hai', classId: null, cot: 'lop' }));
-    const nCn = await demCauHoi(() => vanDeSvc.maTranVanDe(P.admin, { branchId: null, ct: 'ca-hai', classId: null, cot: 'cn' }));
-    assert(nLop <= 6, `Quá nhiều câu SQL cho ma trận Vấn đề học viên: ${nLop} (tối đa 6)`);
-    assert(nLop === nCn, `Số câu SQL đổi theo cách xếp cột: theo lớp ${nLop}, theo chi nhánh ${nCn}`);
+  check('UX4 · Vấn đề HV — quyền: GVCN 403; QL Monbay branchId=CP 403; lớp ngoài phạm vi 403', () => {
+    const boi = (fn: () => unknown): number => { try { fn(); return 200; } catch (e: any) { return e?.status ?? 500; } };
+    eq(boi(() => vanDeHvSvc.vanDeHv(P.coreTeacher, FV())), 403, 'GVCN vanDeHv');
+    eq(boi(() => vanDeHvSvc.oVanDeHv(P.coreTeacher, { ...FV(), dong: 'chua-phan-loai', cot: 'case' })), 403, 'GVCN oVanDeHv');
+    eq(boi(() => vanDeHvSvc.vanDeHv(P.mbManager, FV({ branchId: cpBranch }))), 403, 'QL Monbay hỏi chi nhánh CP');
+    const lopCp = (conn.prepare('SELECT id FROM classes WHERE branch_id = ? LIMIT 1').get(cpBranch) as any).id as number;
+    eq(boi(() => vanDeHvSvc.vanDeHv(P.mbManager, FV({ classId: lopCp }))), 403, 'QL Monbay hỏi lớp CP');
+    eq(boi(() => vanDeHvSvc.vanDeHv(P.mbManager, FV({ branchId: mbBranch }))), 200, 'QL Monbay hỏi chi nhánh mình');
+    eq(boi(() => vanDeHvSvc.vanDeHv(P.admin, FV({ branchId: cpBranch }))), 200, 'Quản trị hỏi chi nhánh bất kỳ');
+  });
+
+  await checkAsync('UX4 · Vấn đề HV: không N+1 — số câu SQL bằng nhau với tg=4 và tg=26, ≤ 12', async () => {
+    const n4 = await demCauHoi(() => vanDeHvSvc.vanDeHv(P.admin, FV({ soTuan: 4 })));
+    const n26 = await demCauHoi(() => vanDeHvSvc.vanDeHv(P.admin, FV({ soTuan: 26 })));
+    const nGop = await demCauHoi(() => vanDeHvSvc.vanDeHv(P.admin, FV({ soTuan: 26, gop: true })));
+    assert(n4 === n26 && n26 === nGop, `số câu SQL đổi: tg=4 → ${n4}, tg=26 → ${n26}, gộp → ${nGop}`);
+    assert(n4 <= 12, `quá nhiều câu SQL: ${n4} (tối đa 12)`);
+  });
+
+  // ================================================================== Task 3 — Hiệu quả PA (PR-UX4)
+
+  console.log('\nPR-UX4 · Hiệu quả PA');
+  const hieuQuaSvc: any = await import('../phanTich/hieuQuaPa.ts');
+  const effSvc: any = await import('../cases/effectiveness.ts');
+  const FQ = (o: Record<string, unknown> = {}) => ({ branchId: null, ct: 'ca-hai', classId: null, soTuan: 8, ...o });
+  const boiHttp = (fn: () => unknown): number => { try { fn(); return 200; } catch (e: any) { return e?.status ?? 500; } };
+  const moiDongPa = (kq: any): any[] => [...kq.hang, ...(kq.gom?.hang ?? [])].flatMap((h: any) => [h, ...(h.con ?? [])]);
+  const nowPa = new Date().toISOString();
+  /** Một PA đã kết thúc của Case `caseId`: bắt đầu `batDau`, ghi kết quả `ketQua` (null = xong nhưng chưa ghi) vào `ngayKq`. */
+  const dungPa = (bo: { pa: number[]; fu: number[] }, caseId: number, kind: string, ketQua: string | null, batDau: string, ngayKq: string) => {
+    const id = Number(conn.prepare(
+      `INSERT INTO case_interventions (case_id, kind, status, started_date, completed_date, created_at) VALUES (?,?, 'completed', ?, ?, ?)`,
+    ).run(caseId, kind, batDau, ngayKq, nowPa).lastInsertRowid);
+    bo.pa.push(id);
+    if (ketQua) {
+      bo.fu.push(Number(conn.prepare(
+        `INSERT INTO case_followups (case_id, intervention_id, observed_on, outcome, created_at) VALUES (?,?,?,?,?)`,
+      ).run(caseId, id, ngayKq, ketQua, nowPa).lastInsertRowid));
+    }
+    return id;
+  };
+  const donPa = (bo: { pa: number[]; fu: number[] }) => {
+    for (const id of bo.fu) conn.prepare('DELETE FROM case_followups WHERE id = ?').run(id);
+    for (const id of bo.pa) conn.prepare('DELETE FROM case_interventions WHERE id = ?').run(id);
+  };
+  /** Chọn một (kind, mã lỗi) mà bảng hiện có ≤ `toiDa` PA — để phép kiểm biên 4/5 không bị dữ liệu demo làm nhiễu. */
+  const chonO = (toiDa: number): { kind: string; ma: string } => {
+    const kq = hieuQuaSvc.hieuQuaPa(P.admin, FQ());
+    const cur = new Map<string, number>(moiDongPa(kq).map((h: any) => [h.khoa, h.soPa] as [string, number]));
+    for (const ma of ['student.speaking.pronunciation', 'student.listening.focus', 'student.reading.time', 'student.reading.logic']) {
+      for (const kind of ['tutor', 'self_study', 'teaching_adjust', 'extra_homework']) {
+        if ((cur.get(`vd:${ma}|${kind}`) ?? 0) <= toiDa && (cur.get(`vd:${ma}`) ?? 0) <= toiDa) return { kind, ma };
+      }
+    }
+    throw new Error('Không tìm được ô trống để dựng phép kiểm Hiệu quả PA');
+  };
+  const NGAY_BD = cong(TODAY, -30);
+
+  check('UX4 · Hiệu quả PA: Σ soPa hàng lớn + gom = tomTat.paCoKetQua; con cộng đúng bằng cha; không có cột "không cải thiện"', () => {
+    const kit = baiTapUx4(); const bo = { pa: [] as number[], fu: [] as number[] };
+    try {
+      const { kind, ma } = chonO(0);
+      for (let i = 0; i < 6; i++) {
+        const sid = kit.hv(CID_FT, `pa${i}`);
+        const c = kit.ca(sid, 'speaking', [[ma, 'primary']], { status: 'done', closedAt: TODAY });
+        dungPa(bo, c, kind, i < 4 ? 'improved' : 'unchanged', NGAY_BD, cong(TODAY, -2));
+      }
+      const kq = hieuQuaSvc.hieuQuaPa(P.admin, FQ());
+      const tong = [...kq.hang, ...(kq.gom?.hang ?? [])].reduce((s: number, h: any) => s + h.soPa, 0);
+      eq(tong, kq.tomTat.paCoKetQua, 'Σ soPa hàng lớn + gom = paCoKetQua');
+      eq([...kq.hang, ...(kq.gom?.hang ?? [])].reduce((s: number, h: any) => s + h.caiThien, 0), kq.tomTat.caiThien, 'Σ caiThien = tomTat.caiThien');
+      for (const h of [...kq.hang, ...(kq.gom?.hang ?? [])]) {
+        eq((h.con ?? []).reduce((s: number, c: any) => s + c.soPa, 0), h.soPa, `"${h.khoa}": con cộng đúng cha (soPa)`);
+        eq((h.con ?? []).reduce((s: number, c: any) => s + c.caiThien, 0), h.caiThien, `"${h.khoa}": con cộng đúng cha (caiThien)`);
+        assert(h.caiThien <= h.soPa, `"${h.khoa}": caiThien ≤ soPa`);
+      }
+      const json = JSON.stringify(kq);
+      assert(!/khongCaiThien|khong-cai-thien|failure|unchanged/i.test(json), 'không có cột/khoá "không cải thiện"');
+      eq(kq.tomTat.vanDeDuDuLieu, kq.hang.filter((h: any) => h.soPa >= 5).length + (kq.gom?.hang ?? []).filter((h: any) => h.soPa >= 5).length, 'vanDeDuDuLieu = số hàng lớn ≥ 5 PA');
+      assert(kq.hang.every((h: any) => h.soPa > 2) && (kq.gom?.hang ?? []).every((h: any) => h.soPa <= 2), 'hàng lớn > 2 PA; ≤ 2 PA vào gom');
+    } finally { donPa(bo); kit.don(); }
+  });
+
+  check('UX4 · Hiệu quả PA: itDuLieu đúng biên 5; tbTuan null khi < 5; nenDung chỉ ở hàng con đủ Q9', () => {
+    const kit = baiTapUx4(); const bo = { pa: [] as number[], fu: [] as number[] };
+    try {
+      const { kind, ma } = chonO(0);
+      const them = (n: number, ketQua: string, bd: string, kq: string) => {
+        for (let i = 0; i < n; i++) {
+          const sid = kit.hv(CID_FT, `bien${i}-${bo.pa.length}`);
+          const c = kit.ca(sid, 'speaking', [[ma, 'primary']], { status: 'done', closedAt: TODAY });
+          dungPa(bo, c, kind, ketQua, bd, kq);
+        }
+      };
+      const dong = () => moiDongPa(hieuQuaSvc.hieuQuaPa(P.admin, FQ())).find((h: any) => h.khoa === `vd:${ma}|${kind}`);
+      them(4, 'improved', cong(TODAY, -30), cong(TODAY, -9));     // 21 ngày → 3 tuần
+      const bon = dong();
+      eq([bon.soPa, bon.itDuLieu, bon.tbTuan, bon.nenDung], [4, true, null, false], '4 PA: Ít dữ liệu, không thời gian, không Nên dùng');
+      them(1, 'improved', cong(TODAY, -30), cong(TODAY, -9));
+      const nam = dong();
+      eq([nam.soPa, nam.itDuLieu, nam.tbTuan, nam.nenDung], [5, false, 3, true], '5 PA cải thiện 100%: đủ dữ liệu, 3 tuần, Nên dùng');
+      const cha = moiDongPa(hieuQuaSvc.hieuQuaPa(P.admin, FQ())).find((h: any) => h.khoa === `vd:${ma}`);
+      eq(cha.nenDung, false, 'hàng lớn không bao giờ "Nên dùng"');
+      them(3, 'unchanged', cong(TODAY, -30), cong(TODAY, -9));
+      const tam = dong();
+      eq([tam.soPa, tam.nenDung], [8, false], '5/8 = 62% < 70% → không Nên dùng');
+    } finally { donPa(bo); kit.don(); }
+  });
+
+  check('UX4 · Hiệu quả PA: oHieuQuaPa n === rows.length cho pa, cai-thien, chua-ghi-ket-qua, case-chua-phan-loai; chuaGhiKetQua = plansNeedingEvaluation', () => {
+    const kit = baiTapUx4(); const bo = { pa: [] as number[], fu: [] as number[] };
+    try {
+      const { kind, ma } = chonO(0);
+      for (let i = 0; i < 3; i++) {
+        const sid = kit.hv(CID_FT, `o${i}`);
+        const c = kit.ca(sid, 'speaking', [[ma, 'primary']], { status: 'done', closedAt: TODAY });
+        dungPa(bo, c, kind, i === 0 ? 'unchanged' : 'partial', NGAY_BD, cong(TODAY, -3));
+      }
+      const sid2 = kit.hv(CID_FT, 'chuaghi');
+      const c2 = kit.ca(sid2, 'speaking', [[ma, 'primary']], { status: 'done', closedAt: TODAY });
+      dungPa(bo, c2, kind, null, NGAY_BD, cong(TODAY, -3));                       // xong nhưng chưa ghi kết quả
+      const sid3 = kit.hv(CID_FT, 'khongloi');
+      const c3 = kit.ca(sid3, 'speaking', [], { status: 'done', closedAt: TODAY });  // không có lỗi chính
+      dungPa(bo, c3, kind, 'improved', NGAY_BD, cong(TODAY, -3));
+      const kq = hieuQuaSvc.hieuQuaPa(P.admin, FQ());
+      const f = FQ();
+      let dem = 0;
+      for (const h of moiDongPa(kq)) {
+        for (const [cot, want] of [['pa', h.soPa], ['cai-thien', h.caiThien]] as const) {
+          const o = hieuQuaSvc.oHieuQuaPa(P.admin, { ...f, dong: h.khoa, cot });
+          assert(o.n === want && o.rows.length === o.n, `"${h.khoa}" · ${cot}: ${o.n}/${o.rows.length} ≠ ${want}`);
+          dem += 1;
+        }
+      }
+      assert(dem >= 4, 'phải kiểm được ít nhất hàng lớn + hàng con');
+      const oGhi = hieuQuaSvc.oHieuQuaPa(P.admin, { ...f, dong: 'chua-ghi-ket-qua', cot: '' });
+      assert(oGhi.n === kq.chuaGhiKetQua && oGhi.rows.length === oGhi.n && oGhi.n >= 1, `chưa ghi kết quả: ${oGhi.n}/${oGhi.rows.length} ≠ ${kq.chuaGhiKetQua}`);
+      const oCase = hieuQuaSvc.oHieuQuaPa(P.admin, { ...f, dong: 'case-chua-phan-loai', cot: '' });
+      assert(oCase.n === kq.caseChuaPhanLoai && oCase.rows.length === oCase.n && oCase.n >= 1, `Case chưa phân loại: ${oCase.n}/${oCase.rows.length} ≠ ${kq.caseChuaPhanLoai}`);
+      assert(oCase.rows.some((r: any) => r.id === c3), 'Case không có lỗi chính phải nằm trong danh sách chưa phân loại');
+      const scope = { branchIds: null, ratio: null, classId: null, fromDate: d.tuDauKhoang(TODAY, 8) };
+      eq(kq.chuaGhiKetQua, effSvc.plansNeedingEvaluation(scope).count, 'chuaGhiKetQua = plansNeedingEvaluation(cùng scope).count');
+      let s = 0; try { hieuQuaSvc.oHieuQuaPa(P.admin, { ...f, dong: 'vd:khong-co', cot: 'pa' }); } catch (e: any) { s = e?.status; }
+      eq(s, 400, 'khoá lạ → 400');
+    } finally { donPa(bo); kit.don(); }
+  });
+
+  check('UX4 · Hiệu quả PA: effectiveness.planOutcomes có startedOn/outcomeOn, phép kiểm hiệu quả cũ vẫn xanh', () => {
+    const kit = baiTapUx4(); const bo = { pa: [] as number[], fu: [] as number[] };
+    try {
+      const sid = kit.hv(CID_FT, 'eff');
+      const c = kit.ca(sid, 'speaking', [['student.speaking.fluency', 'primary']], { status: 'done', closedAt: TODAY });
+      const id = dungPa(bo, c, 'tutor', 'improved', cong(TODAY, -20), cong(TODAY, -5));
+      const r = effSvc.planOutcomes({ studentIds: [sid] }).find((x: any) => x.id === id);
+      eq([r.startedOn, r.outcomeOn], [cong(TODAY, -20), cong(TODAY, -5)], 'startedOn / outcomeOn');
+      eq(r.group, 'success', 'nhóm kết quả không đổi');
+    } finally { donPa(bo); kit.don(); }
+  });
+
+  check('UX4 · Hiệu quả PA — quyền: GVCN 403; QL chi nhánh khác 403; lớp ngoài phạm vi 403', () => {
+    eq(boiHttp(() => hieuQuaSvc.hieuQuaPa(P.coreTeacher, FQ())), 403, 'GVCN hieuQuaPa');
+    eq(boiHttp(() => hieuQuaSvc.oHieuQuaPa(P.coreTeacher, { ...FQ(), dong: 'chua-ghi-ket-qua', cot: '' })), 403, 'GVCN oHieuQuaPa');
+    eq(boiHttp(() => hieuQuaSvc.hieuQuaPa(P.mbManager, FQ({ branchId: cpBranch }))), 403, 'QL Monbay hỏi CP');
+    const lopCp = (conn.prepare('SELECT id FROM classes WHERE branch_id = ? LIMIT 1').get(cpBranch) as any).id as number;
+    eq(boiHttp(() => hieuQuaSvc.hieuQuaPa(P.mbManager, FQ({ classId: lopCp }))), 403, 'QL Monbay hỏi lớp CP');
+    eq(boiHttp(() => hieuQuaSvc.hieuQuaPa(P.mbManager, FQ())), 200, 'QL Monbay hỏi phạm vi mình');
+  });
+
+  await checkAsync('UX4 · Hiệu quả PA: không N+1 — số câu SQL không đổi theo khoảng và ≤ 12', async () => {
+    const n4 = await demCauHoi(() => hieuQuaSvc.hieuQuaPa(P.admin, FQ({ soTuan: 4 })));
+    const n26 = await demCauHoi(() => hieuQuaSvc.hieuQuaPa(P.admin, FQ({ soTuan: 26 })));
+    assert(n4 === n26, `số câu SQL đổi theo khoảng: ${n4} → ${n26}`);
+    assert(n4 <= 12, `quá nhiều câu SQL: ${n4} (tối đa 12)`);
   });
 
   // ================================================================== Task 4 — P15: Phối hợp SOS chia SOS 1/2/3, bỏ N+1
@@ -556,25 +830,6 @@ export async function runPhanTichTests(t: YThucTestKit) {
     } finally {
       conn.prepare('DELETE FROM case_interventions WHERE id = ?').run(ivId);
       conn.prepare('DELETE FROM sos_cases WHERE id = ?').run(caseId);
-    }
-  });
-
-  check('PR-Pb · #5: "Lỗi phổ biến nhất" loại cả "Khác" lẫn "Chưa phân loại"; ma trận xếp cột theo chi nhánh rồi mã lớp', () => {
-    const kq = vanDeSvc.maTranVanDe(P.admin, { branchId: null, ct: 'ca-hai', classId: null, cot: 'lop' });
-    for (const h of kq.hang) {
-      if (h.loiNhieuNhat) {
-        assert(h.loiNhieuNhat.nhan !== 'Khác' && h.loiNhieuNhat.nhan !== 'Chưa phân loại',
-          `"${h.nhan}": loiNhieuNhat không được là "Khác"/"Chưa phân loại", đang là "${h.loiNhieuNhat.nhan}"`);
-      }
-    }
-    const cotDs = kq.cotDs as { khoa: string; nhan: string }[];
-    for (let i = 1; i < cotDs.length; i++) {
-      const truoc = conn.prepare('SELECT branch_id FROM classes WHERE id = ?').get(Number(cotDs[i - 1].khoa.split(':')[1])) as any;
-      const sau = conn.prepare('SELECT branch_id FROM classes WHERE id = ?').get(Number(cotDs[i].khoa.split(':')[1])) as any;
-      assert(
-        truoc.branch_id < sau.branch_id || (truoc.branch_id === sau.branch_id && cotDs[i - 1].nhan.localeCompare(cotDs[i].nhan) <= 0),
-        `Cột "${cotDs[i - 1].nhan}" (chi nhánh ${truoc.branch_id}) phải đứng trước "${cotDs[i].nhan}" (chi nhánh ${sau.branch_id}) theo đúng thứ tự chi nhánh rồi mã lớp`,
-      );
     }
   });
 }

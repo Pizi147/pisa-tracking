@@ -242,6 +242,9 @@ export const LOI_CHUNG: readonly { khoa: string; nhan: string; ma: readonly stri
 ];
 
 export type HoKyNang = 'listening' | 'reading' | 'writing' | 'speaking';
+export const NHAN_HO_KY_NANG: Record<HoKyNang, string> = {
+  listening: 'Listening', reading: 'Reading', writing: 'Writing', speaking: 'Speaking',
+};
 
 /** Họ kỹ năng của một hạng mục Case (W1/W2/Writing → writing); mã lạ → null. Dùng cho Q5 (Vấn đề HV) lẫn Q18 (Bỏ quên). */
 export function hoKyNang(k: string | null | undefined): HoKyNang | null {
@@ -322,23 +325,6 @@ export type TongHopKetQua = {
   hang: DongTongHop[];
   /** Dòng Tổng = HỢP các tập (đếm duy nhất), không phải cộng các dòng — nhất là các cột học viên. */
   tong: Record<string, number>;
-  scopeEmpty: boolean;
-};
-
-/* TẠM (bỏ ở Task 2 cùng `server/src/phanTich/vanDe.ts`): kiểu của ma trận Vấn đề học viên cũ. */
-export type ONhietVanDe = { n: number; N: number } | null;
-export type DongLoiVanDe = { ma: string; nhan: string; o: Record<string, number | null>; tong: number };
-export type HangKyNangVanDe = {
-  kn: string; nhan: string;
-  o: Record<string, ONhietVanDe>;
-  tong: { n: number; N: number };
-  loiNhieuNhat: { code: string; nhan: string; n: number } | null;
-  con: DongLoiVanDe[];
-};
-export type MaTranVanDe = {
-  cot: 'lop' | 'cn';
-  cotDs: { khoa: string; nhan: string }[];
-  hang: HangKyNangVanDe[];
   scopeEmpty: boolean;
 };
 

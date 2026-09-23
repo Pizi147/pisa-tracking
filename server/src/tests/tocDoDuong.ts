@@ -50,6 +50,19 @@ export const DUONG_DO: MucDo[] = [
   { trang: 'Phân tích Ý thức QL', vai: ['QL', 'QT'], url: '/metrics/vi-pham-theo-nhom' },
   { trang: 'Phân tích Ý thức QL', vai: ['QL', 'QT'], url: '/metrics/vi-pham-tong?classId={lopFT}' },
 
+  // ---------------------------------------------------------------- Phân tích v2 cho QL (PR-UX4) — GV không có meeting.view nên 403
+  {
+    trang: 'Phân tích QL', vai: ['QL', 'QT', 'GVCN'], url: '/phan-tich/van-de-hv',
+    maChuDich: { GVCN: 403 },
+  },
+  { trang: 'Phân tích QL', vai: ['QL', 'QT'], url: '/phan-tich/van-de-hv?gop=1' },
+  { trang: 'Phân tích QL', vai: ['QL', 'QT'], url: '/phan-tich/van-de-hv/o?dong=chua-phan-loai&cot=case' },
+  {
+    trang: 'Phân tích QL', vai: ['QL', 'QT', 'GVCN'], url: '/phan-tich/hieu-qua-pa',
+    maChuDich: { GVCN: 403 },
+  },
+  { trang: 'Phân tích QL', vai: ['QL', 'QT'], url: '/phan-tich/hieu-qua-pa?tg=26' },
+
   // ---------------------------------------------------------------- Tổng quan · Giáo viên
   { trang: 'Tổng quan GV', vai: ['GVCN', 'GVBM', 'GVCN_THUONG'], url: '/my-work' },
   /* PR-Ra: trang "Công việc" — Hỗ trợ học viên dùng lại `/my-work`, nay có thêm `nguoi`. */
@@ -200,6 +213,19 @@ export const TRAN: Record<string, number> = {
   'QT /metrics/vi-pham-theo-nhom': 21,
   'QL /metrics/vi-pham-tong?classId=3': 22,
   'QT /metrics/vi-pham-tong?classId=3': 22,
+  // PR-UX4 (2)(3), 24/09/2026 — mốc chốt ngay sau khi thêm đường (đo 13–16 câu): max(sau+10, ⌈sau×1.3⌉).
+  'QL /phan-tich/van-de-hv': 25,
+  'QT /phan-tich/van-de-hv': 25,
+  'GVCN /phan-tich/van-de-hv': 20,
+  'QL /phan-tich/van-de-hv?gop=1': 25,
+  'QT /phan-tich/van-de-hv?gop=1': 25,
+  'QL /phan-tich/van-de-hv/o?dong=chua-phan-loai&cot=case': 26,
+  'QT /phan-tich/van-de-hv/o?dong=chua-phan-loai&cot=case': 26,
+  'QL /phan-tich/hieu-qua-pa': 24,
+  'QT /phan-tich/hieu-qua-pa': 23,
+  'GVCN /phan-tich/hieu-qua-pa': 20,
+  'QL /phan-tich/hieu-qua-pa?tg=26': 24,
+  'QT /phan-tich/hieu-qua-pa?tg=26': 23,
   'GVCN /my-work': 60,
   'GVBM /my-work': 62,
   'GVCN_THUONG /my-work': 60,
