@@ -1750,6 +1750,14 @@ api.put('/meeting/units/:unitId/reports/:categoryKey', requireAuth, wrap((req) =
     String(req.params.categoryKey), req.body ?? {});
 }));
 
+/** PR-Ra R6: nối/gỡ một việc Vận hành thật vào một ô báo cáo đơn vị (thay gợi ý tự động cũ). */
+api.post('/meeting/reports/:reportId/tasks', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return meetingSvc.linkReportTask(principalOf(req), pInt(req, 'reportId'), toInt(req.body?.taskId) ?? 0);
+}));
+api.delete('/meeting/reports/:reportId/tasks/:taskId', requireAuth, wrap((req) =>
+  meetingSvc.unlinkReportTask(principalOf(req), pInt(req, 'reportId'), pInt(req, 'taskId'))));
+
 api.get('/tasks', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   return meetingSvc.listTasks(principalOf(req), {

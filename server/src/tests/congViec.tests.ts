@@ -640,6 +640,147 @@ export async function runCongViecTests(t: YThucTestKit) {
     assertThrows(() => mgmt.editMgmtTask(P.mbManager, v.id, { assigneeUserId: motHocVien }),
       /không hợp lệ/i, 'Sửa việc với assigneeUserId là học viên phải 400');
   });
+
+  // ================================================================== 6. Máy chủ: Báo cáo đơn vị
+
+  console.log('\nPR-Ra · 6. Máy chủ Báo cáo đơn vị — nháp/nộp theo D04, nối việc thật, bằng chứng, gộp truy vấn');
+
+  const meetingSvc: any = await import('../worklist/meeting.ts');
+  const attachmentSvc: any = await import('../platform/attachments.ts');
+  const signalsSvc: any = await import('../worklist/signals.ts');
+
+  const curPeriodId = week.ensurePeriod(TODAY).id;   // W3 SEP — chưa tới cửa sổ (mở từ 19/09), nhưng ĐÃ bắt đầu (14/09).
+  const prevPeriodId = (conn.prepare(`SELECT id FROM report_periods WHERE week_start < ? ORDER BY week_start DESC LIMIT 1`).get(TODAY) as any).id as number;
+  const mbUnit = (conn.prepare(`SELECT * FROM reporting_units WHERE code = 'MB'`).get() as any);
+  const bcUnit = (conn.prepare(`SELECT * FROM reporting_units WHERE code = 'BC'`).get() as any);
+
+  const demTruyVan = (fn: () => void): number => {
+    let n = 0;
+    const orig = conn.prepare.bind(conn);
+    (conn as any).prepare = (sql: string) => { n += 1; return orig(sql); };
+    try { fn(); } finally { (conn as any).prepare = orig; }
+    return n;
+  };
+
+  /*
+   * ĐẶT TRƯỚC MỌI PHÉP KIỂM KHÁC trong mục này: các phép kiểm dưới đây NỘP/SỬA báo cáo của
+   * MB và BC ở đúng hai kỳ này, nên phải soi ĐÚNG dữ liệu bộ demo trước khi bất kỳ ai đụng vào.
+   */
+  check('PR-Ra Q12 · meetingBoard: đơn vị đủ 3 ô nộp → Đã nộp; có nháp/thiếu → Nháp · chưa nộp kèm "đã nộp n/3"; trống → Chưa báo cáo', () => {
+    const prevBoard = meetingSvc.meetingBoard(P.admin, prevPeriodId) as any;
+    const mbPrevRow = prevBoard.units.find((u: any) => u.unitId === mbUnit.id);
+    assert(mbPrevRow.trangThai.ma === 'da-nop', `Kỳ trước (mọi ô đã nộp theo bộ demo) phải là Đã nộp: ${JSON.stringify(mbPrevRow.trangThai)}`);
+
+    const curBoard = meetingSvc.meetingBoard(P.admin, curPeriodId) as any;
+    const mbCurRow = curBoard.units.find((u: any) => u.unitId === mbUnit.id);
+    assert(mbCurRow.trangThai.ma === 'chua', `MB cố tình bỏ trống ở kỳ hiện tại (bộ demo Q12) phải là Chưa báo cáo: ${JSON.stringify(mbCurRow.trangThai)}`);
+
+    const bcCurRow = curBoard.units.find((u: any) => u.unitId === bcUnit.id);
+    assert(bcCurRow.trangThai.ma === 'nhap' && bcCurRow.trangThai.phu === 'đã nộp 2/3',
+      `BC kỳ hiện tại (bộ demo: hai ô đã nộp, một ô chưa báo) phải là Nháp kèm "đã nộp 2/3": ${JSON.stringify(bcCurRow.trangThai)}`);
+  });
+
+  check('PR-Ra Q13 · Nháp khi cửa sổ đóng vẫn lưu được (tuần đã bắt đầu) — submitted_at NULL', () => {
+    const saved = meetingSvc.saveUnitReport(P.mbManager, mbUnit.id, curPeriodId, 'curriculum', { status: 'watch', note: 'Đang theo dõi tiến độ giáo trình mới.' });
+    assert(saved.submitted_at === null, `Lưu nháp không được tự thành đã nộp: ${JSON.stringify(saved)}`);
+  });
+
+  check('PR-Ra Q13 · Nộp ngoài cửa sổ → 400; nộp không mức → 400; nộp trong cửa sổ → đã nộp, history kind="nop"', () => {
+    assertThrows(() => meetingSvc.saveUnitReport(P.mbManager, mbUnit.id, curPeriodId, 'curriculum', { status: 'watch', nop: true }),
+      /mở từ|quá hạn|Quản trị hệ thống/, 'Nộp ngoài cửa sổ (tuần chưa tới cửa sổ) phải 400');
+
+    /* Kỳ TRƯỚC (W2 SEP) đang trong hai ngày bù, cửa sổ đang MỞ. */
+    const emptyCat = 'students';
+    conn.prepare(`DELETE FROM unit_reports WHERE reporting_unit_id = ? AND period_id = ? AND category_key = ?`).run(mbUnit.id, prevPeriodId, emptyCat);
+    assertThrows(() => meetingSvc.saveUnitReport(P.mbManager, mbUnit.id, prevPeriodId, emptyCat, { nop: true }),
+      /Chọn mức/i, 'Nộp không mức phải 400');
+
+    const submitted = meetingSvc.saveUnitReport(P.mbManager, mbUnit.id, prevPeriodId, emptyCat, { status: 'ok', nop: true });
+    assert(submitted.submitted_at, 'Nộp trong cửa sổ phải ghi submitted_at');
+    const hist = conn.prepare(
+      `SELECT * FROM unit_report_history WHERE reporting_unit_id = ? AND period_id = ? AND category_key = ? ORDER BY id DESC LIMIT 1`,
+    ).get(mbUnit.id, prevPeriodId, emptyCat) as any;
+    assert(hist.kind === 'nop', `Lịch sử của lần nộp phải ghi kind='nop': ${JSON.stringify(hist)}`);
+  });
+
+  check('PR-Ra Q13 · Sửa ô đã nộp: trong cửa sổ → thành nháp; ngoài cửa sổ → 400 (không được "rút" báo cáo)', () => {
+    const cat = 'teachers';
+    meetingSvc.saveUnitReport(P.mbManager, mbUnit.id, prevPeriodId, cat, { status: 'ok', nop: true });   // đảm bảo đã nộp
+    const back = meetingSvc.saveUnitReport(P.mbManager, mbUnit.id, prevPeriodId, cat, { status: 'watch' });   // sửa, không nộp lại
+    assert(back.submitted_at === null, 'Sửa ô đã nộp trong cửa sổ phải thành nháp (submitted_at NULL)');
+
+    /* Một tuần đã khoá hẳn: unlock tạm để nộp, khoá lại, rồi thử sửa (không nộp lại) → 400. */
+    const old = conn.prepare(`SELECT * FROM report_periods WHERE week_end < ? ORDER BY week_end DESC LIMIT 1`).get(addDaysStr(TODAY, -10)) as any;
+    assert(old, 'Cần một tuần đã khoá hẳn để đối chứng');
+    week.setPeriodUnlocked(old.id, true, P.admin.userId);
+    meetingSvc.saveUnitReport(P.admin, mbUnit.id, old.id, 'curriculum', { status: 'ok', nop: true });
+    week.setPeriodUnlocked(old.id, false, P.admin.userId);
+    assertThrows(() => meetingSvc.saveUnitReport(P.admin, mbUnit.id, old.id, 'curriculum', { status: 'watch' }),
+      /đã nộp và tuần đã khoá/i, 'Sửa ô đã nộp ngoài cửa sổ phải 400');
+  });
+
+  check('PR-Ra · Tuần tương lai vẫn từ chối cả nháp lẫn nộp (giữ luật cũ)', () => {
+    const future = conn.prepare(`SELECT * FROM report_periods WHERE week_start > ? ORDER BY week_start DESC LIMIT 1`).get(TODAY) as any;
+    if (future) {
+      assertThrows(() => meetingSvc.saveUnitReport(P.mbManager, mbUnit.id, future.id, 'teachers', { status: 'ok' }),
+        /chưa bắt đầu|chưa có gì/, 'Tuần tương lai (nháp) phải bị chặn');
+    }
+  });
+
+  check('PR-Ra R6 · meetingBoard: nối việc khác chi nhánh → 400; đúng chi nhánh → hiện ở linkedTasks', () => {
+    const cpUnit = (conn.prepare(`SELECT id FROM reporting_units WHERE code = 'CP'`).get() as any).id as number;
+    const cpBranchId = (conn.prepare(`SELECT id FROM branches WHERE code = 'CP'`).get() as any).id as number;
+    const cpReport = (conn.prepare(
+      `SELECT id FROM unit_reports WHERE reporting_unit_id = ? AND period_id = ? ORDER BY id LIMIT 1`,
+    ).get(cpUnit, curPeriodId) as any)?.id as number | undefined;
+    assert(cpReport, 'Cần một ô báo cáo của CP ở kỳ hiện tại để đối chứng');
+
+    const mbTask = mgmt.createMgmtTask(P.mbManager, { title: 'Việc thử nối báo cáo (MB)', group: 'teacher', branchId: mbBranchId });
+    /* Dùng P.admin (mọi phạm vi) để phép thử này chạm đúng luật "khác chi nhánh" — không lẫn với luật quyền của QL từng chi nhánh. */
+    assertThrows(() => meetingSvc.linkReportTask(P.admin, cpReport, mbTask.id), /chi nhánh/i, 'Nối việc khác chi nhánh với báo cáo phải 400');
+
+    const cpTask = mgmt.createMgmtTask(P.admin, { title: 'Việc thử nối báo cáo (CP)', group: 'teacher', branchId: cpBranchId });
+    meetingSvc.linkReportTask(P.admin, cpReport, cpTask.id);
+    const board = meetingSvc.meetingBoard(P.admin, curPeriodId) as any;
+    const cpRow = board.units.find((u: any) => u.unitId === cpUnit);
+    const cell = cpRow.cells.find((c: any) => c.reportId === cpReport);
+    assert(cell.linkedTasks.some((t: any) => t.id === cpTask.id), `Việc vừa nối phải hiện ở linkedTasks: ${JSON.stringify(cell.linkedTasks)}`);
+
+    meetingSvc.unlinkReportTask(P.admin, cpReport, cpTask.id);
+    const board2 = meetingSvc.meetingBoard(P.admin, curPeriodId) as any;
+    const cell2 = board2.units.find((u: any) => u.unitId === cpUnit).cells.find((c: any) => c.reportId === cpReport);
+    assert(!cell2.linkedTasks.some((t: any) => t.id === cpTask.id), 'Gỡ nối rồi vẫn còn trong linkedTasks');
+  });
+
+  check('PR-Ra Q15 · Đính kèm bằng chứng owner_type="unit_report": Quản lý sửa được, GV bị 403', () => {
+    const reportId = (conn.prepare(`SELECT id FROM unit_reports WHERE reporting_unit_id = ? AND period_id = ? LIMIT 1`).get(mbUnit.id, prevPeriodId) as any).id as number;
+    const ok = attachmentSvc.addLink(P.mbManager, { ownerType: 'unit_report', ownerId: reportId, url: 'https://example.com/bang-chung-pr-ra' });
+    assert(ok.ownerType === 'unit_report' && ok.ownerId === reportId, 'Quản lý phải đính kèm được bằng chứng cho báo cáo đơn vị');
+    assertThrows(() => attachmentSvc.addLink(gvMB, { ownerType: 'unit_report', ownerId: reportId, url: 'https://example.com/khac' }),
+      /quyền/i, 'Giáo viên đính kèm bằng chứng báo cáo đơn vị phải 403');
+  });
+
+  check('PR-Ra Q13 · Tín hiệu report_due KHÔNG đếm ô nháp là "đã báo cáo"', () => {
+    /*
+     * `report_due` đếm ĐƠN VỊ không còn ô nào đã nộp (không phải đếm từng ô) — sửa CẢ BA hạng
+     * mục của MB về nháp (mọi ô của bộ demo đã nộp sẵn ở kỳ trước) để đơn vị này không còn ô
+     * đã nộp nào, rồi kiểm tín hiệu vẫn phải thấy MB còn thiếu — dù cả ba ô đều CÓ mức (nháp),
+     * không phải trống trơn.
+     */
+    for (const cat of ['teachers', 'students', 'curriculum']) {
+      meetingSvc.saveUnitReport(P.admin, mbUnit.id, prevPeriodId, cat, { status: 'watch' });   // không nop → thành nháp
+    }
+    const rows = signalsSvc.signalsFor(P.admin, { periodId: prevPeriodId }) as any[];
+    const due = rows.find((r: any) => r.kind === 'report_due' && r.branchId === mbBranchId);
+    assert(due && due.count >= 1, `MB không còn ô nào đã nộp (chỉ còn nháp) — report_due phải vẫn đếm thiếu: ${JSON.stringify(rows.filter((r) => r.kind === 'report_due'))}`);
+  });
+
+  check('PR-Ra · meetingBoard: số câu SQL không tăng theo số đơn vị (N+1)', () => {
+    const truoc = demTruyVan(() => { meetingSvc.meetingBoard(P.admin, curPeriodId); });
+    conn.prepare(`INSERT INTO reporting_units (code, name, kind, branch_id, seq, status) VALUES ('PR-RA-TMP','Đơn vị tạm PR-Ra','branch',?,99,'active')`).run(mbBranchId);
+    const sau = demTruyVan(() => { meetingSvc.meetingBoard(P.admin, curPeriodId); });
+    assert(sau <= truoc + 1, `Thêm một đơn vị khiến meetingBoard tăng từ ${truoc} lên ${sau} câu lệnh — nghi vấn N+1`);
+  });
 }
 
 function addDaysStr(iso: string, n: number): string {

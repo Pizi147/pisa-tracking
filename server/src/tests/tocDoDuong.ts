@@ -126,6 +126,7 @@ export const DUONG_DO: MucDo[] = [
   /* GVCN không vào được tab Vận hành, nhưng `listMgmtTasks` trả `scopeEmpty` chứ không 403 — mã thật là 200. */
   { trang: 'Công việc', vai: ['QL', 'QT', 'GVCN'], url: '/mgmt-tasks' },
   { trang: 'Công việc', vai: ['QL', 'QT'], url: '/mgmt-tasks?hang=qua-han' },
+  { trang: 'Công việc', vai: ['QL', 'QT'], url: '/meeting/board' },
 ];
 
 /**
@@ -196,6 +197,8 @@ export const TRAN: Record<string, number> = {
   'GVCN /mgmt-tasks': 18,
   'QL /mgmt-tasks?hang=qua-han': 23,
   'QT /mgmt-tasks?hang=qua-han': 23,
+  'QL /meeting/board': 30,
+  'QT /meeting/board': 30,
   'QL /tong-quan/hoc-vien-can-ho-tro': 42,
   'QT /tong-quan/hoc-vien-can-ho-tro': 39,
   'GVCN /tong-quan/hoc-vien-can-ho-tro': 42,

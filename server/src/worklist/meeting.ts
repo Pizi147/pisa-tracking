@@ -2,13 +2,14 @@ import { db, tx } from '../db.ts';
 import {
   BRANCH_REPORT_CATEGORIES, ENTRY_SKILLS, ENTRY_SKILL_LABEL, PERMISSIONS,
   TASK_PROGRESS, TASK_PROGRESS_LABEL, TASK_TYPES,
-  TUTOR_REPORT_CATEGORIES, UNIT_STATUSES, type DueState,
+  TUTOR_REPORT_CATEGORIES, UNIT_STATUSES, trangThaiDonVi, trangThaiO, type DueState,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { badRequest, diffDays, isIsoDate, notFound, nowIso, padCode } from '../util.ts';
 import { can, require_, scopeFor, type Principal } from '../permissions.ts';
 import { writeAudit } from '../platform/audit.ts';
 import { owningMonth, periodById, reportEditWindow } from '../platform/week.ts';
+import { countAttachments } from '../platform/attachments.ts';
 
 export const DUE_SOON_DAYS = 3;
 
@@ -55,6 +56,18 @@ export function visibleUnits(p: Principal) {
  *   · Kỳ tháng KHÔNG sửa được. Một nhận định thuộc về tuần người ta viết nó; cho sửa ở tầng
  *     tháng thì không biết phải ghi vào tuần nào.
  */
+/**
+ * PR-Ra: viết lại theo "một câu cho mỗi thứ", không còn một câu SQL mỗi Ô (mỗi đơn vị × mỗi
+ * hạng mục trước đây tự hỏi báo cáo, tên người, việc gợi ý, lịch sử — bốn câu MỖI Ô, nhân với
+ * cỡ chục ô là hàng chục câu):
+ *
+ *   (1) `visibleUnits` — đã một câu từ trước.
+ *   (2) MỘT câu mọi `unit_reports` của mọi đơn vị trong (các) kỳ đang xem.
+ *   (3) MỘT câu lịch sử (chỉ kỳ tuần đang xem — kỳ tháng không hiện lịch sử).
+ *   (4) MỘT câu nối việc (JOIN `tasks` qua `unit_report_task_links`).
+ *   (5) `countAttachments` — một câu đếm bằng chứng.
+ *   (6) MỘT câu tên người (người báo cáo + người nộp).
+ */
 export function meetingBoard(p: Principal, periodId: number, opts: { month?: string | null } = {}) {
   require_(p, PERMISSIONS.MEETING_VIEW, { anyScope: true }, 'Bạn không có quyền xem họp tuần.');
   const period = periodById(periodId);
@@ -71,81 +84,122 @@ export function meetingBoard(p: Principal, periodId: number, opts: { month?: str
         })
     : [];
   const monthIds = monthPeriods.map((r) => r.id);
+  const scope = monthIds.length
+    ? { kind: 'month' as const, month: opts.month!, weeks: monthPeriods.map((r) => r.code), editable: false }
+    : { kind: 'week' as const, month: null, weeks: [period.code], editable: true };
 
+  if (!units.length) {
+    return { period, scope, units: [], totals: { total: 0, ok: 0, watch: 0, problem: 0, notReported: 0, daNop: 0, nhap: 0, chua: 0 } };
+  }
+  const unitIds = units.map((u) => u.id);
+  const periodIdsToQuery = monthIds.length ? monthIds : [periodId];
+
+  // (2) mọi unit_reports của mọi đơn vị trong (các) kỳ đang xem.
+  const allReports = conn
+    .prepare(
+      `SELECT ur.* FROM unit_reports ur
+        WHERE ur.reporting_unit_id IN (${unitIds.map(() => '?').join(',')})
+          AND ur.period_id IN (${periodIdsToQuery.map(() => '?').join(',')})`,
+    )
+    .all(...unitIds, ...periodIdsToQuery) as any[];
+  const reportsByUnit = new Map<number, any[]>();
+  for (const r of allReports) {
+    (reportsByUnit.get(r.reporting_unit_id) ?? reportsByUnit.set(r.reporting_unit_id, []).get(r.reporting_unit_id)!).push(r);
+  }
+
+  // (3) lịch sử — chỉ kỳ TUẦN đang xem (kỳ tháng không hiện lịch sử, đọc `scope.editable`).
+  const histByKey = new Map<string, any[]>();
+  if (!monthIds.length && unitIds.length) {
+    for (const h of conn
+      .prepare(
+        `SELECT h.reporting_unit_id, h.category_key, h.status, h.note, h.at, h.kind, us.full_name AS actor
+           FROM unit_report_history h LEFT JOIN users us ON us.id = h.actor_user_id
+          WHERE h.reporting_unit_id IN (${unitIds.map(() => '?').join(',')}) AND h.period_id = ?
+          ORDER BY h.id DESC`,
+      )
+      .all(...unitIds, periodId) as any[]) {
+      const key = `${h.reporting_unit_id}|${h.category_key}`;
+      (histByKey.get(key) ?? histByKey.set(key, []).get(key)!).push(h);
+    }
+  }
+
+  /*
+   * Việc nối/bằng chứng cần TRUY VẤN sẵn cho MỌI dòng đã tải (không chỉ dòng "đại diện" của kỳ
+   * tháng) — rẻ hơn nhiều so với một câu SQL riêng mỗi lần chọn dòng đại diện, và dữ liệu vẫn
+   * đúng vì mỗi dòng chỉ đọc lại đúng khoá `reportId` của chính nó.
+   */
+  const repIds = allReports.map((r) => r.id);
+
+  // (4) nối việc.
+  const linksByReport = new Map<number, any[]>();
+  if (repIds.length) {
+    for (const l of conn
+      .prepare(
+        `SELECT l.unit_report_id, t.id, t.code, t.title, t.progress, t.due_date
+           FROM unit_report_task_links l JOIN tasks t ON t.id = l.task_id
+          WHERE l.unit_report_id IN (${repIds.map(() => '?').join(',')})
+          ORDER BY l.unit_report_id, l.created_at`,
+      )
+      .all(...repIds) as any[]) {
+      (linksByReport.get(l.unit_report_id) ?? linksByReport.set(l.unit_report_id, []).get(l.unit_report_id)!).push({
+        id: l.id, code: l.code, title: l.title, progress: l.progress,
+        progressLabel: TASK_PROGRESS_LABEL[l.progress as keyof typeof TASK_PROGRESS_LABEL] ?? l.progress,
+        due: l.due_date ?? null,
+        overdue: !['done', 'stopped'].includes(l.progress) && !!l.due_date && l.due_date < demoToday(),
+      });
+    }
+  }
+
+  // (5) bằng chứng.
+  const evidenceOf = repIds.length ? countAttachments('unit_report', repIds) : new Map<number, number>();
+
+  // (6) tên người — báo cáo + nộp, một câu cho cả hai.
+  const peopleIds = [...new Set(allReports.flatMap((r) => [r.reporter_user_id, r.submitted_by]).filter((x): x is number => !!x))];
+  const nameOf = new Map<number, string>();
+  if (peopleIds.length) {
+    for (const r of conn
+      .prepare(`SELECT id, full_name FROM users WHERE id IN (${peopleIds.map(() => '?').join(',')})`)
+      .all(...peopleIds) as any[]) nameOf.set(r.id, r.full_name);
+  }
+
+  const RANK: Record<string, number> = { ok: 1, watch: 2, problem: 3 };
   const unitRows = units.map((u) => {
     const cats = categoriesFor(u);
-    /* Kỳ tháng đọc TẤT CẢ các tuần của tháng; kỳ tuần đọc đúng một tuần. */
-    const saved = monthIds.length
-      ? (conn
-          .prepare(
-            `SELECT ur.*, rp.week_start FROM unit_reports ur
-               JOIN report_periods rp ON rp.id = ur.period_id
-              WHERE ur.reporting_unit_id = ? AND ur.period_id IN (${monthIds.map(() => '?').join(',')})
-              ORDER BY rp.week_start`,
-          )
-          .all(u.id, ...monthIds) as any[])
-      : (conn
-          .prepare('SELECT * FROM unit_reports WHERE reporting_unit_id = ? AND period_id = ?')
-          .all(u.id, periodId) as any[]);
+    const saved = reportsByUnit.get(u.id) ?? [];
     const cells = cats.map((c) => {
       const mineAll = saved.filter((x) => x.category_key === c.key);
-      /* Kỳ tháng: lần báo cáo GẦN NHẤT là điều đơn vị nói sau cùng. */
+      /* Kỳ tháng: lần báo cáo GẦN NHẤT là điều đơn vị nói sau cùng (đã tới theo period_id tăng dần từ query (2)). */
       const r = monthIds.length ? mineAll[mineAll.length - 1] : mineAll[0];
-      const RANK: Record<string, number> = { ok: 1, watch: 2, problem: 3 };
       const worstStatus = monthIds.length
         ? mineAll.map((x) => x.status).filter(Boolean)
           .sort((a, b) => (RANK[b] ?? 0) - (RANK[a] ?? 0))[0] ?? null
         : null;
-      /*
-       * CÔNG VIỆC LIÊN QUAN của chính ô này (mục 14.2), lấy theo NHÓM và CHI NHÁNH — không
-       * dựng thêm một bảng liên kết, và cũng không tạo lại một việc mới mỗi kỳ. Một việc
-       * sống xuyên nhiều kỳ thì mọi kỳ đều nhìn thấy đúng nó, với TRẠNG THÁI HIỆN TẠI.
-       */
       const group = TASK_GROUP_OF_CATEGORY[c.key] ?? null;
-      const tasks = group
-        ? (conn
-            .prepare(
-              `SELECT id, code, title, progress, due_date FROM tasks
-                WHERE kind = 'branch_ops' AND parent_task_id IS NULL AND group_key = ?
-                  AND (branch_id IS ? OR branch_id = ?)
-                ORDER BY progress IN ('done','stopped'), due_date IS NULL, due_date LIMIT 6`,
-            )
-            .all(group, u.branch_id, u.branch_id) as any[])
-          .map((t) => ({
-            id: t.id, code: t.code, title: t.title,
-            progress: t.progress,
-            progressLabel: TASK_PROGRESS_LABEL[t.progress as keyof typeof TASK_PROGRESS_LABEL] ?? t.progress,
-            due: t.due_date ?? null,
-            /* TRẠNG THÁI HIỆN TẠI, không phải trạng thái ở cuối kỳ đang xem (mục 14.2). */
-            overdue: !['done', 'stopped'].includes(t.progress) && !!t.due_date && t.due_date < demoToday(),
-          }))
-        : [];
+      const hist = (histByKey.get(`${u.id}|${c.key}`) ?? [])
+        .map((h) => ({ status: h.status ?? null, note: h.note ?? null, at: h.at, actor: h.actor ?? null, kind: h.kind ?? null }))
+        .slice(0, 10);
       return {
         key: c.key, label: c.label, hint: c.hint,
         status: r?.status ?? null,          // null = chưa báo cáo
         note: r?.note ?? null,
-        reporterName: r?.reporter_user_id
-          ? (conn.prepare('SELECT full_name FROM users WHERE id = ?').get(r.reporter_user_id) as any)?.full_name ?? null
-          : null,
+        reporterName: r?.reporter_user_id ? nameOf.get(r.reporter_user_id) ?? null : null,
         updatedAt: r?.updated_at ?? null,
         /* Ngày báo cáo, tách khỏi dấu thời gian đầy đủ để giao diện khỏi tự cắt chuỗi. */
         reportedOn: r?.updated_at ? String(r.updated_at).slice(0, 10) : null,
         reportId: r?.id ?? null,
+        /* PR-Ra Q12/Q13: trạng thái theo `submitted_at`, không theo `status` thô. */
+        trangThai: trangThaiO({ status: r?.status ?? null, note: r?.note ?? null, submittedAt: r?.submitted_at ?? null }),
+        submittedAt: r?.submitted_at ?? null,
+        submittedBy: r?.submitted_by ? nameOf.get(r.submitted_by) ?? null : null,
         taskGroup: group,
-        tasks,
+        /* PR-Ra R6: việc NỐI THẬT qua `unit_report_task_links` — thay gợi ý tự động "cùng nhóm + CN". */
+        linkedTasks: r ? linksByReport.get(r.id) ?? [] : [],
+        evidenceCount: r ? evidenceOf.get(r.id) ?? 0 : 0,
         /* Chỉ có ở kỳ tháng: tuần nặng nhất đã xuất hiện, và đã báo cáo mấy tuần trên mấy. */
         worstStatus,
         weeksReported: monthIds.length ? mineAll.filter((x) => x.status).length : null,
         weeksTotal: monthIds.length ? monthIds.length : null,
-        history: (conn
-          .prepare(
-            `SELECT h.status, h.note, h.at, us.full_name AS actor
-               FROM unit_report_history h LEFT JOIN users us ON us.id = h.actor_user_id
-              WHERE h.reporting_unit_id = ? AND h.period_id = ? AND h.category_key = ?
-              ORDER BY h.id DESC LIMIT 10`,
-          )
-          .all(u.id, periodId, c.key) as any[])
-          .map((h) => ({ status: h.status ?? null, note: h.note ?? null, at: h.at, actor: h.actor ?? null })),
+        history: hist,
       };
     });
     return {
@@ -153,6 +207,8 @@ export function meetingBoard(p: Principal, periodId: number, opts: { month?: str
       cells,
       reported: cells.filter((c) => c.status !== null).length,
       total: cells.length,
+      /* PR-Ra Q12: trạng thái hàng đơn vị suy từ trạng thái từng ô — theo Ô, không theo ô nào "đại diện". */
+      trangThai: trangThaiDonVi(cells.map((c) => ({ status: c.status, note: c.note, submittedAt: c.submittedAt }))),
       canEdit: can(p, PERMISSIONS.MEETING_EDIT, { branchId: u.branch_id, anyScope: u.branch_id === null }),
     };
   });
@@ -165,26 +221,41 @@ export function meetingBoard(p: Principal, periodId: number, opts: { month?: str
         else if (c.status === 'problem') acc.problem += 1;
         else if (c.status === 'watch') acc.watch += 1;
         else acc.ok += 1;
+        /* PR-Ra Q13: `ok`/`watch`/`problem` ở trên giữ NGUYÊN ý cũ (đếm theo `status` thô, cho phép kiểm [18.2-14]).
+           `daNop`/`nhap`/`chua` là ba số MỚI, chỉ đếm ô ĐÃ NỘP là "đã báo cáo". */
+        if (c.trangThai === 'da-nop') acc.daNop += 1;
+        else if (c.trangThai === 'nhap') acc.nhap += 1;
+        else acc.chua += 1;
       }
       return acc;
     },
-    { total: 0, ok: 0, watch: 0, problem: 0, notReported: 0 },
+    { total: 0, ok: 0, watch: 0, problem: 0, notReported: 0, daNop: 0, nhap: 0, chua: 0 },
   );
 
   return {
     period,
     /* Nói rõ mình đang đọc ở tầng nào, để không ai tưởng ô tháng sửa được. */
-    scope: monthIds.length
-      ? { kind: 'month' as const, month: opts.month!, weeks: monthPeriods.map((r) => r.code), editable: false }
-      : { kind: 'week' as const, month: null, weeks: [period.code], editable: true },
+    scope,
     units: unitRows,
     totals,
   };
 }
 
+/**
+ * PR-Ra Q13: LƯU NHÁP và NỘP là hai việc khác nhau, và `reportEditWindow` chỉ can thiệp vào
+ * đúng hai chỗ:
+ *
+ *   NHÁP (không `nop`)  chỉ chặn khi tuần CHƯA BẮT ĐẦU, hoặc khi ô đang sửa ĐÃ NỘP mà cửa sổ
+ *                        đã đóng (không được lén sửa một báo cáo đã nộp sau khi khoá).
+ *   NỘP (`nop: true`)   luôn cần cửa sổ đang mở (hoặc Quản trị hệ thống đã mở lại), và phải
+ *                        đã có mức — không nộp một ô rỗng.
+ *
+ * Nháp cho tuần đã khoá KHÔNG bị chặn — người dùng vẫn ghi lại được điều họ quan sát, chỉ là
+ * không "chốt" được nữa; đó là lý do D04 tách nháp khỏi nộp thay vì chặn cả ô.
+ */
 export function saveUnitReport(
   p: Principal, unitId: number, periodId: number, categoryKey: string,
-  patch: { status?: string | null; note?: string | null },
+  patch: { status?: string | null; note?: string | null; nop?: boolean },
 ) {
   const conn = db();
   const unit = conn.prepare('SELECT * FROM reporting_units WHERE id = ?').get(unitId) as any;
@@ -194,54 +265,110 @@ export function saveUnitReport(
   const cat = categoriesFor(unit).find((c) => c.key === categoryKey);
   if (!cat) throw badRequest('Nhóm báo cáo không thuộc đơn vị này.');
 
-  /*
-   * Cửa sổ thời gian được kiểm ở ĐÂY, tại máy chủ — không chỉ làm mờ nút ở giao diện.
-   * Nút mờ chặn được người dùng bình thường, không chặn được một request gửi thẳng.
-   */
   const period = conn.prepare('SELECT * FROM report_periods WHERE id = ?').get(periodId) as any;
   if (!period) throw notFound('Không tìm thấy tuần báo cáo');
-  const window = reportEditWindow(period);
-  if (!window.open) throw badRequest(window.reason ?? 'Ngoài thời gian cập nhật báo cáo tuần.');
   if (patch.status && !(UNIT_STATUSES as readonly string[]).includes(patch.status)) {
     throw badRequest('Tình trạng không hợp lệ.');
   }
 
   const before = conn
     .prepare('SELECT * FROM unit_reports WHERE reporting_unit_id = ? AND period_id = ? AND category_key = ?')
-    .get(unitId, periodId, categoryKey);
+    .get(unitId, periodId, categoryKey) as any;
+  const window = reportEditWindow(period);
 
+  if (patch.nop) {
+    if (!window.open) throw badRequest(window.reason ?? 'Ngoài thời gian nộp báo cáo tuần.');
+    const effectiveStatus = patch.status !== undefined ? patch.status : (before?.status ?? null);
+    if (!effectiveStatus) throw badRequest('Chọn mức trước khi nộp.');
+  } else {
+    if (demoToday() < period.week_start) {
+      throw badRequest(window.reason ?? `Tuần ${period.code ?? ''} chưa bắt đầu — chưa có gì để báo cáo.`.trim());
+    }
+    if (before?.submitted_at && !window.open) {
+      throw badRequest('Báo cáo này đã nộp và tuần đã khoá — chỉ Quản trị hệ thống mở lại được.');
+    }
+  }
+
+  const submittedAt = patch.nop ? nowIso() : null;
+  const submittedBy = patch.nop ? p.userId : null;
   conn
     .prepare(
-      `INSERT INTO unit_reports (reporting_unit_id, period_id, category_key, category_label, status, note, reporter_user_id, updated_at)
-       VALUES (?,?,?,?,?,?,?,?)
+      `INSERT INTO unit_reports (reporting_unit_id, period_id, category_key, category_label, status, note,
+                                 reporter_user_id, updated_at, submitted_at, submitted_by)
+       VALUES (?,?,?,?,?,?,?,?,?,?)
        ON CONFLICT(reporting_unit_id, period_id, category_key) DO UPDATE SET
          status = CASE WHEN excluded.status IS NOT NULL OR ? THEN excluded.status ELSE unit_reports.status END,
          note = CASE WHEN ? THEN excluded.note ELSE unit_reports.note END,
          reporter_user_id = excluded.reporter_user_id,
-         updated_at = excluded.updated_at`,
+         updated_at = excluded.updated_at,
+         submitted_at = excluded.submitted_at,
+         submitted_by = excluded.submitted_by`,
     )
     .run(unitId, periodId, categoryKey, cat.label,
-         patch.status ?? null, patch.note ?? null, p.userId, nowIso(),
+         patch.status ?? null, patch.note ?? null, p.userId, nowIso(), submittedAt, submittedBy,
          patch.status !== undefined ? 1 : 0, patch.note !== undefined ? 1 : 0);
 
   const after = conn
     .prepare('SELECT * FROM unit_reports WHERE reporting_unit_id = ? AND period_id = ? AND category_key = ?')
     .get(unitId, periodId, categoryKey) as any;
   /*
-   * LỊCH SỬ CHỈNH SỬA (mục 14.2) — một dòng cho mỗi lần lưu.
-   *
-   * Một ô đổi từ "Có vấn đề" sang "Ổn" ngay trước giờ họp là chuyện phải truy lại được, và
-   * nhật ký hệ thống thì người dùng không mở. Nên lịch sử nằm ngay trong ô, cạnh nội dung.
+   * LỊCH SỬ CHỈNH SỬA (mục 14.2) — một dòng cho mỗi lần lưu, kèm `kind` (PR-Ra) để phân biệt
+   * nháp/nộp. Một ô đổi từ "Có vấn đề" sang "Ổn" ngay trước giờ họp là chuyện phải truy lại
+   * được, và nhật ký hệ thống thì người dùng không mở.
    */
   conn
     .prepare(
-      `INSERT INTO unit_report_history (reporting_unit_id, period_id, category_key, status, note, actor_user_id, at)
-       VALUES (?,?,?,?,?,?,?)`,
+      `INSERT INTO unit_report_history (reporting_unit_id, period_id, category_key, status, note, actor_user_id, at, kind)
+       VALUES (?,?,?,?,?,?,?,?)`,
     )
-    .run(unitId, periodId, categoryKey, after.status ?? null, after.note ?? null, p.userId, nowIso());
+    .run(unitId, periodId, categoryKey, after.status ?? null, after.note ?? null, p.userId, nowIso(),
+         patch.nop ? 'nop' : 'nhap');
   writeAudit({ actorUserId: p.userId, action: 'unit_report.save', entityType: 'unit_report',
     entityId: (after as any).id, entityLabel: `${unit.name} · ${cat.label}`, before, after });
   return after;
+}
+
+function reportBranchCtx(reportId: number): { branchId: number | null; unitKind: string } {
+  const row = db()
+    .prepare(
+      `SELECT ru.branch_id AS unit_branch_id, ru.kind AS unit_kind
+         FROM unit_reports ur JOIN reporting_units ru ON ru.id = ur.reporting_unit_id WHERE ur.id = ?`,
+    )
+    .get(reportId) as any;
+  if (!row) throw notFound('Không tìm thấy báo cáo đơn vị.');
+  return { branchId: row.unit_branch_id, unitKind: row.unit_kind };
+}
+
+/**
+ * NỐI MỘT VIỆC VẬN HÀNH THẬT vào một ô báo cáo (PR-Ra R6, Q14) — thay gợi ý tự động cũ.
+ * Việc phải LÀ VIỆC VẬN HÀNH (`branch_ops`, không phải việc giao giáo viên) và CÙNG CHI NHÁNH
+ * với đơn vị báo cáo (đơn vị Tutor không có chi nhánh, nên việc nối cũng phải là việc "Toàn
+ * hệ thống" — `branch_id IS NULL`).
+ */
+export function linkReportTask(p: Principal, reportId: number, taskId: number) {
+  const conn = db();
+  const { branchId, unitKind } = reportBranchCtx(reportId);
+  require_(p, PERMISSIONS.MEETING_EDIT, { branchId, anyScope: branchId === null },
+    'Bạn không có quyền nối việc vào báo cáo này.');
+  const task = conn.prepare('SELECT * FROM tasks WHERE id = ?').get(taskId) as any;
+  if (!task) throw notFound('Không tìm thấy công việc.');
+  if (task.kind !== 'branch_ops') throw badRequest('Chỉ nối được việc Vận hành.');
+  const wantBranch = unitKind === 'department' ? null : branchId;
+  if (task.branch_id !== wantBranch) throw badRequest('Việc phải cùng chi nhánh với đơn vị báo cáo.');
+  conn
+    .prepare('INSERT OR IGNORE INTO unit_report_task_links (unit_report_id, task_id, created_by, created_at) VALUES (?,?,?,?)')
+    .run(reportId, taskId, p.userId, nowIso());
+  writeAudit({ actorUserId: p.userId, action: 'unit_report.link_task', entityType: 'unit_report', entityId: reportId, entityLabel: task.title });
+  return { ok: true };
+}
+
+export function unlinkReportTask(p: Principal, reportId: number, taskId: number) {
+  const { branchId } = reportBranchCtx(reportId);
+  require_(p, PERMISSIONS.MEETING_EDIT, { branchId, anyScope: branchId === null },
+    'Bạn không có quyền gỡ việc khỏi báo cáo này.');
+  db().prepare('DELETE FROM unit_report_task_links WHERE unit_report_id = ? AND task_id = ?').run(reportId, taskId);
+  writeAudit({ actorUserId: p.userId, action: 'unit_report.unlink_task', entityType: 'unit_report', entityId: reportId, entityLabel: String(taskId) });
+  return { ok: true };
 }
 
 // ---------------------------------------------------------------- công việc
