@@ -142,7 +142,7 @@ export function CasePanel({ caseId, compact = false, hideHeader = false, onChang
             <Level tone={sosTone(data.sosLevel)}>{sosLabel(data.sosLevel)}</Level>
           )}
           {/* Case bị máy tự đóng khi em chuyển lớp/khoá (S16/S17) — không phải GV kết luận. */}
-          {data.systemCloseLabel && <Info>{data.systemCloseLabel}</Info>}
+          {data.systemCloseLabel && <Info>{`Hệ thống tự đóng · ${data.systemCloseLabel}`}</Info>}
           {/*
             KHÔNG CÓ BADGE "GẤP" Ở ĐÂY NỮA (mục 6.1).
             Mức độ ưu tiên là một con số được suy ra lúc case sinh, và nó không đổi theo việc thực

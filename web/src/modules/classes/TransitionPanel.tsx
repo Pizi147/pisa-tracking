@@ -194,7 +194,7 @@ export function TransitionPanel({ classId, open, onClose, onDone }: {
               </thead>
               <tbody>
                 {rows.map(({ s, d, loi }) => (
-                  <DongBang key={s.id} s={s} d={d} loi={loi} suaDong={(p) => suaDong(s.id, p)} lopHopLe={lopHopLe} newCode={newCode} />
+                  <DongBang key={s.id} s={s} d={d} loi={loi} suaDong={(p) => suaDong(s.id, p)} lopHopLe={lopHopLe} newCode={newCode} fromMa={data.from.programmeCode} />
                 ))}
               </tbody>
             </table>
@@ -203,7 +203,7 @@ export function TransitionPanel({ classId, open, onClose, onDone }: {
               {rows.map(({ s, d, loi }) => (
                 <div key={s.id} className="p-3 space-y-2">
                   <div className="text-sm text-slate-100">{s.fullName}</div>
-                  <DongThe s={s} d={d} loi={loi} suaDong={(p) => suaDong(s.id, p)} lopHopLe={lopHopLe} newCode={newCode} />
+                  <DongThe s={s} d={d} loi={loi} suaDong={(p) => suaDong(s.id, p)} lopHopLe={lopHopLe} newCode={newCode} fromMa={data.from.programmeCode} />
                 </div>
               ))}
             </div>
@@ -292,8 +292,9 @@ function OLopDich({ d, suaDong, lopHopLe, newCode }: {
   );
 }
 
-function DongBang({ s, d, loi, suaDong, lopHopLe, newCode }: {
+function DongBang({ s, d, loi, suaDong, lopHopLe, newCode, fromMa }: {
   s: any; d: Dong; loi: string | null; suaDong: (p: Partial<Dong>) => void; lopHopLe: (h: Huong | '') => any[]; newCode: string;
+  fromMa: string | null;
 }) {
   const trong = !d.huong;
   return (
@@ -306,7 +307,7 @@ function DongBang({ s, d, loi, suaDong, lopHopLe, newCode }: {
       <td className="td" style={trong ? { boxShadow: 'inset 0 0 0 1px var(--warn, #fbbf24)', borderRadius: 6 } : undefined}>
         <select className="field w-full" value={d.huong} onChange={(e) => suaDong({ huong: e.target.value as Huong, toClassId: '' })}>
           <option value="">Chưa chọn</option>
-          {HUONG_CHUYEN_TIEP.map((h) => <option key={h} value={h}>{nhanHuongNgan(h, { ma: s.programmeCode ?? null, maKe: null })}</option>)}
+          {HUONG_CHUYEN_TIEP.map((h) => <option key={h} value={h}>{nhanHuongNgan(h, { ma: fromMa as any, maKe: null })}</option>)}
         </select>
       </td>
       <td className="td"><OLopDich d={d} suaDong={suaDong} lopHopLe={lopHopLe} newCode={newCode} /></td>
@@ -315,14 +316,15 @@ function DongBang({ s, d, loi, suaDong, lopHopLe, newCode }: {
   );
 }
 
-function DongThe({ s, d, loi, suaDong, lopHopLe, newCode }: {
+function DongThe({ s, d, loi, suaDong, lopHopLe, newCode, fromMa }: {
   s: any; d: Dong; loi: string | null; suaDong: (p: Partial<Dong>) => void; lopHopLe: (h: Huong | '') => any[]; newCode: string;
+  fromMa: string | null;
 }) {
   return (
     <div className="space-y-1.5">
       <select className="field w-full" value={d.huong} onChange={(e) => suaDong({ huong: e.target.value as Huong, toClassId: '' })}>
         <option value="">Chưa chọn hướng</option>
-        {HUONG_CHUYEN_TIEP.map((h) => <option key={h} value={h}>{nhanHuong(h, { ma: s.programmeCode ?? null, maKe: null })}</option>)}
+        {HUONG_CHUYEN_TIEP.map((h) => <option key={h} value={h}>{nhanHuong(h, { ma: fromMa as any, maKe: null })}</option>)}
       </select>
       <OLopDich d={d} suaDong={suaDong} lopHopLe={lopHopLe} newCode={newCode} />
       <CanDienThem s={s} d={d} suaDong={suaDong} />
