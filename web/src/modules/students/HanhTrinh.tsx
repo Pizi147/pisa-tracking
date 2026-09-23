@@ -178,9 +178,9 @@ export function HanhTrinh({ studentId, active, episodes, allEpisodes, onOpenCase
                   <button key={g.attemptId} type="button"
                     className="mx-auto my-auto rounded px-1.5 py-0.5 text-[10px] whitespace-nowrap"
                     title={nhan.day}
-                    style={{ gridRow: hangGhim, gridColumn: col + 2, background: toneBg(nhan.tone), color: 'var(--accent-ink)' }}
+                    style={{ gridRow: hangGhim, gridColumn: col + 2, background: toneBg(nhan.mau === 'dat' ? 'ok' : nhan.mau === 'tam' ? 'muted' : 'danger'), color: 'var(--accent-ink)' }}
                     onClick={() => navigate(duongHoSoHocVien(studentId, { dot: g.attemptId }))}>
-                    {nhan.ngan}
+                    {nhan.chu}
                   </button>
                 );
               })}
@@ -340,14 +340,14 @@ function KhoiPa({ p, hang, truc, onOpenCase }: { p: Pa; hang: number; truc: Truc
   return (
     <button type="button" onClick={onOpenCase}
       data-pa-id={p.id}
-      title={`${nhan.chu} · ${ngay(p.tu)} → ${ngay(p.den)}`}
+      title={nhan.day}
       className="rounded px-1.5 text-[10px] truncate text-left appearance-none flex items-center"
       style={{
         gridRow: hang, gridColumn: `${a + 2} / ${b + 3}`,
         background: khoiPaBg(nhan.tone), color: 'var(--accent-ink)',
         border: late ? '1px solid var(--danger)' : undefined,
       }}>
-      {nhan.chu}
+      {nhan.ten}
     </button>
   );
 }
