@@ -56,6 +56,7 @@ import * as luuTruSvc from '../classes/luuTru.ts';
 import * as phanTichLopSvc from '../classes/phanTichLop.ts';
 import * as thongTinLopSvc from '../classes/thongTinLop.ts';
 import * as xoaKetThucLopSvc from '../classes/xoaKetThucLop.ts';
+import * as xoaHocVienSvc from '../students/xoaHocVien.ts';
 import * as studentSvc from '../students/students.ts';
 import * as meetingSvc from '../worklist/meeting.ts';
 import * as dashboardSvc from '../worklist/dashboard.ts';
@@ -1737,6 +1738,13 @@ api.get('/students/:id/handover', requireAuth, wrap((req) => {
   const id = pInt(req, 'id');
   require_(p, PERMISSIONS.STUDENT_VIEW, { studentId: id }, 'Học viên này nằm ngoài phạm vi bạn được xem.');
   return studentSvc.handoverBrief(id);
+}));
+
+/** ⋮ Hồ sơ HV › Xoá học viên — CHỈ Quản trị hệ thống (máy chủ kiểm `admin.config`, PR-XOA). Xoá hẳn trong một giao dịch. */
+api.get('/students/:id/xoa', requireAuth, wrap((req) => xoaHocVienSvc.xemXoaHocVien(principalOf(req), pInt(req, 'id'))));
+api.post('/students/:id/xoa', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return xoaHocVienSvc.xoaHocVien(principalOf(req), pInt(req, 'id'), req.body ?? {});
 }));
 
 api.post('/students/:id/status', requireAuth, wrap((req) => {
