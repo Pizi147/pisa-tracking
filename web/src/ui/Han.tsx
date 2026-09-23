@@ -1,5 +1,5 @@
 import { deadlineView, type DeadlineKind } from '@shared/domain/index.ts';
-import { Alert, Info, Status } from './ui.tsx';
+import { QuaHan } from './Nhan.tsx';
 import { useNgayNghiepVu } from './ngayNghiepVu.ts';
 
 /**
@@ -12,13 +12,16 @@ import { useNgayNghiepVu } from './ngayNghiepVu.ts';
  * phải một cảnh báo lúc chạy. Sáu loại là sáu đồng hồ khác nhau trong rule book; ngày trần
  * ("30/08") không nói được người đọc đang trễ việc gì.
  *
- * `du-kien-ket-thuc` KHÔNG PHẢI HẠN: luôn trung tính, không bao giờ đỏ, không bao giờ "quá hạn".
+ * PR-UX0 (B-2/B-3): việc là TIÊU ĐỀ DÒNG ở chỗ gọi, nên hạn chỉ là chữ mờ "hạn CN 30/08"; quá hạn nối
+ * ngay sau BẰNG CHỮ ("⚠ quá hạn 15 ngày", đỏ cam, không nền, không khung); đúng hạn hôm nay là "hôm nay"
+ * (vàng, không ⚠). Chỗ không có tiêu đề nói việc thì truyền `coViec` để hiện lại tên việc. Bản đầy đủ nằm ở tooltip.
+ *
+ * `du-kien-ket-thuc` KHÔNG PHẢI HẠN: luôn trung tính, không bao giờ quá hạn, không bao giờ đỏ.
  *
  * Toàn bộ luật (câu chữ, đếm quá hạn từ hạn GỐC, hiện cả hẹn xử lý) nằm ở `deadlineView` trong
  * `shared/domain/display.ts` — kiểm được bằng bộ kiểm thử máy chủ. Component này chỉ vẽ.
- * Trạng thái luôn có chữ (⚠ / ◷): màu không bao giờ là tín hiệu duy nhất.
  */
-export function Han({ loai, han, hanGoc, hen, tienTo, ghiChu }: {
+export function Han({ loai, han, hanGoc, hen, tienTo, ghiChu, coViec, haiDong }: {
   loai: DeadlineKind;
   /** Hạn đang hiệu lực, dạng `2026-09-23`. `null` = chưa đặt. */
   han: string | null;
@@ -30,12 +33,28 @@ export function Han({ loai, han, hanGoc, hen, tienTo, ghiChu }: {
   tienTo?: string;
   /** Chữ đứng sau, ví dụ nguồn hạn: `riêng môn này`. */
   ghiChu?: string;
+  /** Hiện tên việc ("Nhập điểm · hạn 23/09") — chỉ cho chỗ không có tiêu đề nói việc. */
+  coViec?: boolean;
+  /** Phần "quá hạn"/"hôm nay" xuống dòng riêng (cột hạn hẹp, cột thẳng hàng). */
+  haiDong?: boolean;
 }) {
   const { homNay } = useNgayNghiepVu();
   const v = deadlineView({ kind: loai, due: han, originalDue: hanGoc, reschedule: hen, today: homNay });
-  const text = [tienTo, v.text, ghiChu].filter(Boolean).join(' · ');
-  const title = v.title ?? undefined;
-  if (v.tone === 'overdue') return <Alert title={title}>{text}</Alert>;
-  if (v.tone === 'waiting') return <Status kind="waiting" title={title}>{text}</Status>;
-  return <Info title={title}>{text}</Info>;
+  const title = v.text + (v.title ? ` · ${v.title}` : '');
+  const tinHieu = (
+    <>
+      {v.tone === 'overdue' && <QuaHan ngay={v.daysOverdue} />}
+      {v.homNay && <span className="font-semibold text-soon">hôm nay</span>}
+    </>
+  );
+  const coTinHieu = v.tone === 'overdue' || v.homNay;
+  return (
+    <span title={title} className="text-[11px] text-slate-500">
+      {[tienTo, coViec && loai !== 'du-kien-ket-thuc' ? v.viec : null].filter(Boolean).map((x) => `${x} · `).join('')}
+      {v.han}
+      {coTinHieu && (haiDong ? <span className="block">{tinHieu}</span> : <> {tinHieu}</>)}
+      {v.hen && <> · {v.hen}</>}
+      {ghiChu && <> · {ghiChu}</>}
+    </span>
+  );
 }

@@ -388,7 +388,7 @@ export function WorkQueue({ view, branchId, q, scope }: {
                         </span>
                       </div>
                     )}
-                    {r.overdueSkills > 0 && <Alert>Quá hạn {r.overdueSkills}</Alert>}
+                    {r.overdueSkills > 0 && <Alert quaHan>Quá hạn {r.overdueSkills}</Alert>}
                   </td>
                 </tr>
               ))}

@@ -65,7 +65,7 @@ export const SCORE_TEXT: Record<ScoreTone, string> = {
  *   <Level>   pill nền sẫm, bo tròn hẳn — mức SOS, mức độ ưu tiên: tình trạng của một đứa trẻ
  *   <Status>  nền nhẹ + biểu tượng      — TRẠNG THÁI CÔNG VIỆC: đang làm · chờ · xong
  *   <Task>    viền vuông, gạch dọc trái — VIỆC PHẢI LÀM, bấm được
- *   <Alert>   dấu ⚠ + màu mạnh          — quá hạn, thiếu thông tin
+ *   <Alert>   nền sẫm + màu mạnh, ⚠ chỉ khi quá hạn — mức khẩn, thiếu thông tin
  *   <Outcome> biểu tượng kết quả        — KẾT QUẢ học tập: tiến bộ · chưa đổi · kém hơn
  *   <Info>    chữ mờ, viền mảnh         — chỉ để biết: vai trò, kỹ năng, mã lớp
  *
@@ -190,14 +190,16 @@ export function Status({ kind, children, title }: {
 }
 
 /**
- * CẢNH BÁO — quá hạn, thiếu thông tin (mục 2.1).
+ * CẢNH BÁO — mức khẩn, thiếu thông tin (mục 2.1; PR-UX0 B-4).
  *
- * Luôn có dấu tam giác đứng trước, nên đọc được cả khi người xem không phân biệt màu, và
- * phân biệt được với trạng thái xử lý ngay cả khi hai nhãn đứng cạnh nhau.
+ * ⚠ CHỈ NGHĨA QUÁ HẠN (G-4). Nhắc mềm, lưu lỗi, dữ liệu demo, mức khẩn thì KHÔNG có ⚠ — màu đủ nói.
+ * Chữ bắt đầu "Quá hạn" tự có ⚠ (chỗ cũ như `CasePanel` không phải sửa); chỗ khác truyền `quaHan`
+ * để ép bật/tắt. Quá hạn dùng màu `late` (đỏ cam), khác `bad` của SOS 3 / Chưa đạt.
  */
-export function Alert({ tone = 'danger', children, title }: {
-  tone?: 'danger' | 'warn'; children: ReactNode; title?: string;
+export function Alert({ tone = 'danger', children, title, quaHan }: {
+  tone?: 'danger' | 'warn'; children: ReactNode; title?: string; quaHan?: boolean;
 }) {
+  const coDau = quaHan ?? (typeof children === 'string' && /^quá hạn/i.test(children));
   return (
     <span title={title}
       className={`inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[11px] font-semibold whitespace-nowrap ${
@@ -205,7 +207,7 @@ export function Alert({ tone = 'danger', children, title }: {
           ? 'bg-late-bg text-late border-late-line'
           : 'bg-soon-bg text-soon border-soon-line'
       }`}>
-      <span aria-hidden>⚠</span>
+      {coDau && <span aria-hidden>⚠</span>}
       {children}
     </span>
   );

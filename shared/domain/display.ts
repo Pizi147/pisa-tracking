@@ -237,18 +237,27 @@ export const DEADLINE_KINDS = [
 ] as const;
 export type DeadlineKind = (typeof DEADLINE_KINDS)[number];
 
-/** Nhãn từng loại — MỘT nơi duy nhất, khớp bảng ở HE_GIAO_DIEN §4. */
-const DEADLINE_LABEL: Record<DeadlineKind, (date: string) => string> = {
-  'xac-minh-sos': (d) => `Xác minh nguyên nhân · hạn ${d}`,
-  'lap-pa': (d) => `Cần có phương án · hạn ${d}`,
-  'cap-nhat-pa': (d) => `Cập nhật kết quả · trước CN ${d}`,
-  'thuc-hien-y-thuc': (d) => `Thực hiện xong · hạn ${d}`,
-  'hoan-thanh-y-thuc': (d) => `Kết luận đợt · hạn ${d}`,
-  'nhap-diem': (d) => `Hạn nhập điểm ${d}`,
-  'du-kien-ket-thuc': (d) => `Dự kiến kết thúc ${d}`,
+/**
+ * Việc + tiền tố hạn của từng loại — MỘT nơi duy nhất, khớp bảng ở HE_GIAO_DIEN §4.
+ * PR-UX0 (B-2/B-3): "việc" là tiêu đề dòng ở chỗ hiện hạn, còn `<Han>` chỉ nói mốc ("hạn CN 30/08").
+ */
+const DEADLINE_VIEC: Record<DeadlineKind, { viec: string; tien: 'hạn' | 'hạn CN' | 'dự kiến kết thúc' }> = {
+  'xac-minh-sos': { viec: 'Xác minh nguyên nhân', tien: 'hạn' },
+  'lap-pa': { viec: 'Đề ra PA', tien: 'hạn' },
+  'cap-nhat-pa': { viec: 'Ghi kết quả PA', tien: 'hạn CN' },
+  'thuc-hien-y-thuc': { viec: 'Thực hiện xong', tien: 'hạn' },
+  'hoan-thanh-y-thuc': { viec: 'Kết luận đợt', tien: 'hạn' },
+  'nhap-diem': { viec: 'Nhập điểm', tien: 'hạn' },
+  'du-kien-ket-thuc': { viec: 'Dự kiến kết thúc', tien: 'dự kiến kết thúc' },
   /* PR-Ra Q9: quá hạn tính theo hạn HIỆN TẠI — hạn gốc/lý do dời hiện ở dòng phụ riêng (`dongHanDaDoi`), không qua `originalDue` ở đây. */
-  'viec-van-hanh': (d) => `Hạn ${d}`,
+  'viec-van-hanh': { viec: 'Việc', tien: 'hạn' },
 };
+
+/** "quá hạn 15 ngày" · gọn: "15 ngày" · không biết số ngày: "quá hạn". */
+export function nhanQuaHan(n: number | null, gon = false): string {
+  if (n === null) return 'quá hạn';
+  return gon ? `${n} ngày` : `quá hạn ${n} ngày`;
+}
 
 /** `neutral` = không phải hạn hoặc chưa đến hạn; `overdue` = quá hạn thật; `waiting` = hạn đang chạy. */
 export type DeadlineTone = 'neutral' | 'waiting' | 'overdue';
@@ -266,41 +275,59 @@ export type DeadlineInput = {
 };
 
 export type DeadlineView = {
+  /** Câu đầy đủ cho tooltip: "Ghi kết quả PA · hạn CN 30/08 · quá hạn 15 ngày". */
   text: string;
   tone: DeadlineTone;
-  /** Số ngày quá hạn tính từ hạn gốc; null khi không quá hạn hoặc không áp dụng (dự kiến, cập nhật PA). */
+  /** Số ngày quá hạn tính từ hạn gốc; null khi không quá hạn hoặc không áp dụng (dự kiến). */
   daysOverdue: number | null;
   /** Ghi chú phụ cho tooltip — ví dụ hạn gốc khi hạn đã dời. */
   title: string | null;
+  /** Việc: "Ghi kết quả PA". */
+  viec: string;
+  /** Mốc: "hạn CN 30/08" · "hạn 09/09" · "dự kiến kết thúc 14/09" · "chưa có hạn". */
+  han: string;
+  /** Đúng ngày hạn, chưa quá (không bao giờ true với `du-kien-ket-thuc`). */
+  homNay: boolean;
+  /** "quá hạn 15 ngày" — nối ngay sau mốc, không nền, không khung. */
+  quaHan: string | null;
+  /** "hẹn xử lý 30/09". */
+  hen: string | null;
 };
 
+/**
+ * LUẬT HIỆN HẠN (PR-UX0, B-3): việc · mốc · quá hạn/hôm nay · hẹn — mỗi thông tin nói MỘT lần.
+ * Quá hạn đếm số ngày từ hạn GỐC cho mọi loại, kể cả `cap-nhat-pa` (mockup 17 #1, #21).
+ */
 export function deadlineView(i: DeadlineInput): DeadlineView {
-  const label = DEADLINE_LABEL[i.kind];
+  const { viec, tien } = DEADLINE_VIEC[i.kind];
   if (!validIso(i.due)) {
-    const bare = label('').replace(/\s*·?\s*(hạn|trước CN)?\s*$/, '').trim();
-    return { text: `${bare} · chưa có hạn`, tone: 'neutral', daysOverdue: null, title: null };
+    return {
+      text: `${viec} · chưa có hạn`, tone: 'neutral', daysOverdue: null, title: null,
+      viec, han: 'chưa có hạn', homNay: false, quaHan: null, hen: null,
+    };
   }
-  const parts = [label(shortDate(i.due, i.today))];
+  const han = `${tien} ${shortDate(i.due, i.today)}`;
   const base = validIso(i.originalDue) ? i.originalDue : i.due;
+  const duKien = i.kind === 'du-kien-ket-thuc';
   let daysOverdue: number | null = null;
-  let tone: DeadlineTone = i.kind === 'du-kien-ket-thuc' ? 'neutral' : 'waiting';
+  let quaHan: string | null = null;
+  let tone: DeadlineTone = duKien ? 'neutral' : 'waiting';
 
   /* "Dự kiến kết thúc" không bao giờ quá hạn — nó không phải một nghĩa vụ. */
-  if (i.kind !== 'du-kien-ket-thuc' && i.today > base.slice(0, 10)) {
+  if (!duKien && i.today > base.slice(0, 10)) {
     tone = 'overdue';
-    if (i.kind === 'cap-nhat-pa') {
-      /* Mốc Chủ nhật, không phải số ngày còn lại (HE_GIAO_DIEN §4) — không ghi "n ngày". */
-      parts.push('quá hạn');
-    } else {
-      daysOverdue = daysBetween(base, i.today);
-      parts.push(`quá hạn ${daysOverdue} ngày`);
-    }
+    daysOverdue = daysBetween(base, i.today);
+    quaHan = nhanQuaHan(daysOverdue);
   }
-  if (validIso(i.reschedule)) parts.push(`Hẹn xử lý ${shortDate(i.reschedule, i.today)}`);
+  const homNay = !duKien && i.today === base.slice(0, 10);
+  const hen = validIso(i.reschedule) ? `hẹn xử lý ${shortDate(i.reschedule, i.today)}` : null;
+  const text = duKien
+    ? [han.charAt(0).toUpperCase() + han.slice(1), hen].filter(Boolean).join(' · ')
+    : [viec, han, quaHan, homNay ? 'hôm nay' : null, hen].filter(Boolean).join(' · ');
 
   const moved = validIso(i.originalDue) && i.originalDue.slice(0, 10) !== i.due.slice(0, 10);
   return {
-    text: parts.join(' · '), tone, daysOverdue,
+    text, tone, daysOverdue, quaHan, homNay, hen, viec, han,
     title: moved ? `Hạn gốc ${shortDate(i.originalDue, i.today)}` : null,
   };
 }

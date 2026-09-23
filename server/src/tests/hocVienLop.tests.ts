@@ -187,10 +187,10 @@ export async function runHocVienLopTests(t: YThucTestKit) {
       homNay: '2026-09-14',
     });
     eq(v, [
-      { nhan: 'L · Cập nhật kết quả · trước CN 13/09 · quá hạn', tone: 'danger' },
+      { nhan: 'L · Ghi kết quả PA · hạn CN 13/09 · quá hạn 1 ngày', tone: 'danger' },
       { nhan: 'Nhập điểm L, W · Giữa khoá', tone: 'warn' },
       { nhan: 'Xác định nguyên nhân W2', tone: 'warn' },
-      { nhan: 'R · Cập nhật kết quả · trước CN 20/09', tone: 'info' },
+      { nhan: 'R · Ghi kết quả PA · hạn CN 20/09', tone: 'info' },
     ], 'Thứ tự và chữ');
     eq(d.chonCaseChinh([
       { id: 5, topic: 'reading', state: 'working', nextDue: null, dueOverdue: false, sosLevel: 3 },

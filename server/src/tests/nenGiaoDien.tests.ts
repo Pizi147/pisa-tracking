@@ -62,4 +62,23 @@ export async function runNenGiaoDienTests(t: YThucTestKit) {
     }
     assert(hong.length === 0, hong.join(' · '));
   });
+
+  const KINDS = ['xac-minh-sos', 'lap-pa', 'cap-nhat-pa', 'thuc-hien-y-thuc', 'hoan-thanh-y-thuc', 'nhap-diem', 'du-kien-ket-thuc', 'viec-van-hanh'] as const;
+
+  check('UX0 · N-3: hạn hôm nay là "hôm nay", không quá hạn, không ⚠', () => {
+    const v = d.deadlineView({ kind: 'nhap-diem', due: '2026-09-23', today: '2026-09-23' });
+    assert(v.homNay === true && v.tone !== 'overdue' && v.quaHan === null, `homNay=${v.homNay} tone=${v.tone}`);
+    assert(!/⚠/.test(v.text) && /hôm nay/.test(v.text), `text: "${v.text}"`);
+    assert(d.deadlineView({ kind: 'du-kien-ket-thuc', due: '2026-09-23', today: '2026-09-23' }).homNay === false, 'dự kiến không có "hôm nay"');
+  });
+
+  check('UX0 · N-3: không mảnh nào lặp chữ "quá hạn" hai lần và không có năm khi cùng năm', () => {
+    for (const kind of KINDS) {
+      for (const due of ['2026-10-05', '2026-09-23', '2026-09-08']) {
+        const v = d.deadlineView({ kind, due, reschedule: '2026-10-12', today: '2026-09-23' });
+        assert((v.text.match(/quá hạn/g) ?? []).length <= 1, `${kind} ${due}: "${v.text}"`);
+        assert(!/\/2026/.test(v.text) && !/\/2026/.test(v.han), `${kind} ${due}: có năm trong "${v.text}"`);
+      }
+    }
+  });
 }
