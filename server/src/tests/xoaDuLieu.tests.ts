@@ -536,4 +536,206 @@ export async function runXoaDuLieuTests(t: YThucTestKit) {
     assert(/coTheXoa: !!data\.viewer\.coTheXoa/.test(trang) && /danger: m\.nguyHiem, keTruoc: m\.keTruoc/.test(trang), 'Hồ sơ HV chưa nối cờ Xoá vào ⋮');
     assert(/keTruoc\?: boolean/.test(docNguon('web/src/ui/Menu.tsx')), 'Menu thiếu keTruoc');
   });
+
+  // ==================================================================== Task 4 — xoá tài khoản
+
+  console.log('\nPR-XOA (4) · Máy chủ: xoá tài khoản — xoá hẳn nếu chưa có dấu vết, xoá mềm nếu có; chặn và cảnh báo');
+
+  const xoaTK = await import('../platform/xoaTaiKhoan.ts');
+  const accounts = await import('../platform/accounts.ts');
+  const auth = await import('../auth.ts');
+  const timNguoiSvc = await import('../platform/timNguoi.ts');
+  const meetingSvc = await import('../worklist/meeting.ts');
+  const classesSvc = await import('../classes/classes.ts');
+  const casesSvc = await import('../cases/cases.ts');
+  const { loadPrincipal } = await import('../permissions.ts');
+
+  const COT_USERS = CANH.filter((x) => x.toi === 'users').map((x) => `${x.bang}.${x.cot}`);
+  const demTro = (uid: number) => COT_USERS.reduce((s, k) => {
+    const [bang, cot] = k.split('.');
+    return s + (conn.prepare(`SELECT COUNT(*) AS n FROM ${bang} WHERE ${cot} = ?`).get(uid) as any).n;
+  }, 0);
+  const demDauVetThat = (uid: number) => xoaTK.COT_TRO_TAI_KHOAN.filter((x) => x.loai === 'dau_vet')
+    .reduce((s, x) => s + (conn.prepare(`SELECT COUNT(*) AS n FROM ${x.bang} WHERE ${x.cot} = ?`).get(uid) as any).n, 0);
+  const user = (uid: number) => conn.prepare('SELECT * FROM users WHERE id = ?').get(uid) as any;
+  let tkSeq = 0;
+  const taoTK = (ten: string, matKhau = 'matkhau-cu') => {
+    tkSeq += 1;
+    const email = `thu.xoa${tkSeq}.${ten}.pisa@gmail.com`;
+    const { userId } = accounts.createAccount(P.admin, {
+      email, password: matKhau, fullName: `Thu Xoa ${ten} ${tkSeq}`, roles: [{ role: 'teacher', branches: ['MB'] }],
+    }) as { userId: number };
+    return { id: userId, email, ten: `Thu Xoa ${ten} ${tkSeq}` };
+  };
+
+  check('PR-XOA T1 · COT_TRO_TAI_KHOAN (68) BẰNG ĐÚNG tập cột FK trỏ users; đúng 9 cột thiết lập', () => {
+    const coDinh = xoaTK.COT_TRO_TAI_KHOAN.map((x) => `${x.bang}.${x.cot}`);
+    const thieu = COT_USERS.filter((k) => !coDinh.includes(k));
+    const thua = coDinh.filter((k) => !COT_USERS.includes(k));
+    assert(!thieu.length, thieu.map((k) => `Phân loại cột ${k} (dấu vết hay thiết lập)`).join('; '));
+    assert(!thua.length && coDinh.length === 68 && new Set(coDinh).size === 68, `thừa/trùng: ${thua.join(', ')} · ${coDinh.length}`);
+    const tl = xoaTK.COT_TRO_TAI_KHOAN.filter((x) => x.loai === 'thiet_lap').map((x) => `${x.bang}.${x.cot}`).sort();
+    assert(JSON.stringify(tl) === JSON.stringify(['demo_sessions.user_id', 'notifications.user_id', 'task_followers.user_id', 'teacher_assignments.user_id',
+      'user_emails.user_id', 'user_permissions.user_id', 'user_prefs.user_id', 'user_roles.user_id', 'user_skills.user_id']), tl.join());
+  });
+
+  check('PR-XOA T2 · Tài khoản mới, chưa làm gì → cach "han"; xoá xong: dòng users mất, không dòng nào ở 68 cột trỏ id đó', () => {
+    const a = taoTK('han');
+    auth.createSession(a.id);
+    const x = xoaTK.xemXoaTaiKhoan(P.admin, a.id);
+    assert(x.cach === 'han' && x.soDauVet === 0 && x.chan === null && x.email === a.email, JSON.stringify(x));
+    const r = xoaTK.xoaTaiKhoan(P.admin, a.id, { emailXacNhan: a.email.toUpperCase() });
+    assert(r.cach === 'han', JSON.stringify(r));
+    assert(!user(a.id) && demTro(a.id) === 0, `còn dòng trỏ tài khoản đã xoá hẳn: ${demTro(a.id)}`);
+  });
+
+  /* GVBM thử: có điểm đã nhập + Case báo và đang phụ trách + dạy Reading MB-FT 101; có phiên đang mở. */
+  let gv = { id: 0, email: '', ten: '' };
+  let tokenGv = '';
+  let caseGv = 0;
+  let dauVetTruoc = 0;
+
+  check('PR-XOA T3 · GVBM có điểm đã nhập → cach "mem"; xoá xong: deleted, deleted_at, tên (đã xoá), email giải phóng, không mật khẩu/phiên/vai/phân công; dấu vết giữ nguyên', () => {
+    gv = taoTK('gvbm');
+    conn.prepare(`INSERT INTO teacher_assignments (user_id, class_id, skill, is_core, effective_from, status, created_at)
+                  VALUES (?, ?, 'reading', 0, '2026-01-01', 'active', ?)`).run(gv.id, FT, new Date().toISOString());
+    const diem = conn.prepare('SELECT id FROM assessment_scores ORDER BY id LIMIT 1').get() as any;
+    conn.prepare('UPDATE assessment_scores SET entered_by = ? WHERE id = ?').run(gv.id, diem.id);
+    caseGv = (conn.prepare(`SELECT id FROM sos_cases WHERE status != 'done' ORDER BY id LIMIT 1`).get() as any).id;
+    conn.prepare('UPDATE sos_cases SET reported_by = ?, owner_user_id = ? WHERE id = ?').run(gv.id, gv.id, caseGv);
+    tokenGv = auth.createSession(gv.id);
+    const x = xoaTK.xemXoaTaiKhoan(P.admin, gv.id);
+    assert(x.cach === 'mem' && x.soDauVet >= 3 && x.chan === null, JSON.stringify(x));
+    assert(x.chiTiet.some((c) => c.nhan === 'điểm đã nhập' && c.so === 1) && x.chiTiet.some((c) => c.nhan === 'Case'), JSON.stringify(x.chiTiet));
+    dauVetTruoc = demDauVetThat(gv.id);
+    const r = xoaTK.xoaTaiKhoan(P.admin, gv.id, { emailXacNhan: ` ${gv.email} ` });
+    assert(r.cach === 'mem', JSON.stringify(r));
+    const u = user(gv.id);
+    assert(u.status === 'deleted' && !!u.deleted_at && u.full_name === `${gv.ten} (đã xoá)` && u.email === `da-xoa-${gv.id}@invalid`
+      && u.password_hash === null && u.password_salt === null, JSON.stringify(u));
+    const dem = (sql: string) => (conn.prepare(sql).get(gv.id) as any).n;
+    assert(dem('SELECT COUNT(*) AS n FROM demo_sessions WHERE user_id = ?') === 0, 'còn phiên');
+    assert(dem(`SELECT COUNT(*) AS n FROM user_roles WHERE user_id = ? AND status = 'active'`) === 0, 'còn vai active');
+    assert(dem(`SELECT COUNT(*) AS n FROM teacher_assignments WHERE user_id = ? AND status = 'active'`) === 0, 'còn phân công active');
+    const ta = conn.prepare('SELECT status, effective_to FROM teacher_assignments WHERE user_id = ?').get(gv.id) as any;
+    assert(ta.status === 'ended' && ta.effective_to === TODAY, JSON.stringify(ta));
+    assert(demDauVetThat(gv.id) === dauVetTruoc, `dấu vết đổi: ${dauVetTruoc} → ${demDauVetThat(gv.id)}`);
+  });
+
+  check('PR-XOA T4 · Tạo lại tài khoản ĐÚNG email cũ được; đăng nhập email cũ + mật khẩu cũ → "Email hoặc mật khẩu không đúng."', () => {
+    const { userId } = accounts.createAccount(P.admin, {
+      email: gv.email, password: 'matkhau-moi', fullName: 'Nguoi Moi Cung Email', roles: [{ role: 'teacher', branches: ['MB'] }],
+    }) as { userId: number };
+    assert(userId !== gv.id, 'phải là tài khoản mới');
+    t.assertThrows(() => accounts.login(gv.email, 'matkhau-cu'), /Email hoặc mật khẩu không đúng\./, 'mật khẩu cũ vẫn vào được');
+    assert(accounts.login(gv.email, 'matkhau-moi').userId === userId, 'tài khoản mới đăng nhập được');
+  });
+
+  check('PR-XOA T5 · Người đã xoá ẩn khỏi mọi ô chọn: /ref/nguoi, /ref/people, /ref/users, /ref/teachers, ứng viên phân công; phiên cũ hết', () => {
+    const q = 'Thu Xoa gvbm';
+    /* Đối chứng: một GV còn hoạt động cùng tên gần giống PHẢI hiện — để "không thấy" dưới đây không phải vì ô tìm trả rỗng. */
+    const conDung = taoTK('gvbm');
+    assert(timNguoiSvc.timNguoi(P.admin, { q }).some((r) => r.id === conDung.id), 'đối chứng: timNguoi không thấy GV còn hoạt động');
+    assert((meetingSvc.searchPeople(P.admin, q) as any[]).some((r) => r.id === conDung.id), 'đối chứng: searchPeople');
+    assert(classesSvc.classTeachers(P.admin, FT).candidates.some((r: any) => r.id === conDung.id), 'đối chứng: ứng viên phân công');
+    assert(!timNguoiSvc.timNguoi(P.admin, { q }).some((r) => r.id === gv.id), 'timNguoi còn người đã xoá');
+    assert(!(meetingSvc.searchPeople(P.admin, q) as any[]).some((r) => r.id === gv.id), 'searchPeople còn người đã xoá');
+    assert(!classesSvc.classTeachers(P.admin, FT).candidates.some((r: any) => r.id === gv.id), 'ứng viên phân công còn người đã xoá');
+    /* /ref/users, /ref/teachers viết thẳng trong routes — khẳng định câu lọc người còn hoạt động. */
+    const routes = docNguon('server/src/routes/index.ts');
+    const khoi = (duong: string) => routes.slice(routes.indexOf(`api.get('${duong}'`), routes.indexOf(`api.get('${duong}'`) + 1200);
+    assert(/status\s*=\s*'active'/.test(khoi('/ref/users')) && /u\.status = 'active'/.test(khoi('/ref/teachers')), '/ref/users hoặc /ref/teachers không lọc active');
+    assert(auth.resolveSession(tokenGv) === null, 'phiên cũ vẫn dùng được');
+  });
+
+  check('PR-XOA T6 · Lịch sử giữ tên kèm "(đã xoá)": Case người đó từng báo', () => {
+    const d6 = casesSvc.caseDetail(P.admin, caseGv) as any;
+    assert(typeof d6.reportedBy === 'string' && d6.reportedBy.endsWith(' (đã xoá)'), `reportedBy = ${d6.reportedBy}`);
+  });
+
+  check('PR-XOA T7 · Chặn: tự xoá mình; Quản trị hệ thống cuối cùng; GVCN lớp đang học ("Đổi GVCN lớp … trước.") — không gì đổi', () => {
+    const tuXoa = xoaTK.xemXoaTaiKhoan(P.admin, P.admin.userId);
+    assert(tuXoa.chan === 'Không tự xoá tài khoản của chính mình.', String(tuXoa.chan));
+    assert(maLoi(() => xoaTK.xoaTaiKhoan(P.admin, P.admin.userId, { emailXacNhan: user(P.admin.userId).email })) === 400, 'tự xoá phải 400');
+    /* QT thứ hai xoá QT gốc: được khi còn QT khác; hết QT khác (vai QT thứ hai tạm kết thúc) → chặn. */
+    const q2 = accounts.createAccount(P.admin, {
+      email: `thu.xoa.qt${Date.now() % 100000}.pisa@gmail.com`, password: 'matkhau-qt', fullName: 'Thu Xoa QT', roles: [{ role: 'system_admin', branches: [] }],
+    }) as { userId: number };
+    const pQ2 = loadPrincipal(q2.userId);
+    assert(xoaTK.xemXoaTaiKhoan(pQ2, P.admin.userId).chan === null, 'còn QT khác thì không chặn "QT cuối"');
+    conn.prepare(`UPDATE user_roles SET status = 'ended' WHERE user_id = ?`).run(q2.userId);
+    try {
+      assert(xoaTK.xemXoaTaiKhoan(pQ2, P.admin.userId).chan === 'Đây là Quản trị hệ thống cuối cùng.', 'phải chặn QT cuối');
+    } finally { conn.prepare(`UPDATE user_roles SET status = 'active' WHERE user_id = ?`).run(q2.userId); }
+    const gvcnId = P.normalCoreTeacher.userId;
+    const truoc = JSON.stringify(user(gvcnId));
+    const x = xoaTK.xemXoaTaiKhoan(P.admin, gvcnId);
+    assert(/^Đổi GVCN lớp .*MB-FOU 12.* trước\.$/.test(String(x.chan)), String(x.chan));
+    assert(maLoi(() => xoaTK.xoaTaiKhoan(P.admin, gvcnId, { emailXacNhan: user(gvcnId).email })) === 400, 'GVCN phải 400');
+    assert(JSON.stringify(user(gvcnId)) === truoc, 'bị chặn mà vẫn đổi');
+  });
+
+  check('PR-XOA T8 · Cảnh báo: GVBM → "Lớp … sẽ thiếu GV môn …"; việc đang giao có số', () => {
+    const g = taoTK('canhbao');
+    conn.prepare(`INSERT INTO teacher_assignments (user_id, class_id, skill, is_core, effective_from, status, created_at)
+                  VALUES (?, ?, 'reading', 0, '2026-01-01', 'active', ?)`).run(g.id, FT, new Date().toISOString());
+    const cs = conn.prepare(`SELECT id FROM sos_cases WHERE status != 'done' AND id != ? ORDER BY id DESC LIMIT 2`).all(caseGv) as any[];
+    for (const r of cs) conn.prepare('UPDATE sos_cases SET owner_user_id = ? WHERE id = ?').run(g.id, r.id);
+    const x = xoaTK.xemXoaTaiKhoan(P.admin, g.id);
+    assert(x.canhBao.includes('Lớp MB-FT 101 sẽ thiếu GV môn Reading.'), x.canhBao.join(' | '));
+    assert(x.canhBao.some((c) => c === `Còn ${cs.length} Case/việc đang giao cho người này — đổi người phụ trách sau khi xoá.`), x.canhBao.join(' | '));
+  });
+
+  check('PR-XOA T9 · Quyền: QL → 403 cả xem và xoá; email sai → 400; xoá lần hai → 400 "Tài khoản đã xoá."', () => {
+    const a = taoTK('quyen');
+    assert(maLoi(() => xoaTK.xemXoaTaiKhoan(P.mbManager, a.id)) === 403, 'QL xem phải 403');
+    assert(maLoi(() => xoaTK.xoaTaiKhoan(P.mbManager, a.id, { emailXacNhan: a.email })) === 403, 'QL xoá phải 403');
+    assert(maLoi(() => xoaTK.xoaTaiKhoan(P.admin, a.id, { emailXacNhan: 'sai.pisa@gmail.com' })) === 400, 'email sai phải 400');
+    assert(!!user(a.id), 'email sai mà vẫn xoá');
+    t.assertThrows(() => xoaTK.xoaTaiKhoan(P.admin, gv.id, { emailXacNhan: `da-xoa-${gv.id}@invalid` }), /Tài khoản đã xoá\./, 'xoá lần hai');
+    t.assertThrows(() => xoaTK.xemXoaTaiKhoan(P.admin, gv.id), /Tài khoản đã xoá\./, 'xem tài khoản đã xoá');
+  });
+
+  check('PR-XOA T10 · listAccounts có dòng đã xoá kèm deletedAt; setRoles / resetPassword / quyền riêng trên tài khoản đã xoá → 400', () => {
+    const row = accounts.listAccounts(P.admin).find((r) => r.id === gv.id);
+    assert(!!row && row.status === 'deleted' && !!row.deletedAt, JSON.stringify(row));
+    t.assertThrows(() => accounts.setRoles(P.admin, gv.id, [{ role: 'teacher', branches: ['MB'] }]), /Tài khoản đã xoá\./, 'setRoles');
+    t.assertThrows(() => accounts.resetPassword(P.admin, gv.id, 'matkhau-xyz'), /Tài khoản đã xoá\./, 'resetPassword');
+    t.assertThrows(() => accounts.setUserPermissions(P.admin, gv.id, []), /Tài khoản đã xoá\./, 'setUserPermissions');
+  });
+
+  check('PR-XOA T11 · Số câu SQL: xem trước ≤ 8, xoá mềm ≤ 15, xoá hẳn ≤ 15', () => {
+    const han = taoTK('demhan');
+    const mem = taoTK('demmem');
+    conn.prepare(`INSERT INTO audit_logs (actor_user_id, action, entity_type, created_at) VALUES (?, 'thu', 'thu', ?)`).run(mem.id, new Date().toISOString());
+    const nXem = demTruyVan(() => { xoaTK.xemXoaTaiKhoan(P.admin, mem.id); });
+    const nMem = demTruyVan(() => { xoaTK.xoaTaiKhoan(P.admin, mem.id, { emailXacNhan: mem.email }); });
+    const nHan = demTruyVan(() => { xoaTK.xoaTaiKhoan(P.admin, han.id, { emailXacNhan: han.email }); });
+    assert(user(mem.id)?.status === 'deleted' && !user(han.id), 'tiền đề: một mềm một hẳn');
+    assert(nXem <= 8 && nMem <= 15 && nHan <= 15, `xem ${nXem}, mềm ${nMem}, hẳn ${nHan}`);
+  });
+
+  check('PR-XOA T12 · audit user.delete đúng một dòng mỗi lần xoá (tên cũ, cách xoá, số dấu vết)', () => {
+    /* Lọc theo tên cũ: SQLite cấp lại id của tài khoản đã xoá HẲN ở T2 cho tài khoản tạo sau (xem X14). */
+    const rows = conn.prepare(`SELECT actor_user_id, entity_label, after_json FROM audit_logs WHERE action = 'user.delete' AND entity_id = ? AND entity_label = ?`)
+      .all(gv.id, gv.ten) as any[];
+    assert(rows.length === 1, `số dòng: ${rows.length}`);
+    const a = JSON.parse(rows[0].after_json);
+    assert(rows[0].entity_label === gv.ten && rows[0].actor_user_id === P.admin.userId && a.cach === 'mem' && a.soDauVet === dauVetTruoc,
+      JSON.stringify(rows[0]));
+  });
+
+  const attemptsSvc = await import('../fasttrack/attempts.ts');
+  check('PR-XOA X14 · Id lượt Test của em đã xoá được cấp lại cho lượt mới → lịch sử điểm của lượt mới KHÔNG lẫn nhật ký cũ (Q1 giữ nhật ký)', () => {
+    const e = taoHocVienDuDuLieu();
+    conn.prepare(`INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, entity_label, after_json, created_at)
+                  VALUES (?, 'score.edit', 'assessment_attempt', ?, 'cũ', '{}', ?)`).run(U, e.a2, new Date().toISOString());
+    assert(attemptsSvc.scoreHistoryOf(e.a2).length === 1, 'tiền đề: lượt cũ có một dòng lịch sử điểm');
+    xoaHV.xoaHocVien(P.admin, e.sid, { maXacNhan: e.ma });
+    const moi = taoHV(taoLop(3));
+    const cy = (conn.prepare('SELECT id FROM learning_cycles WHERE student_id = ?').get(moi) as any).id;
+    conn.prepare(`INSERT INTO assessment_attempts (id, cycle_id, student_id, attempt_no, created_at) VALUES (?,?,?,1,?)`)
+      .run(e.a2, cy, moi, new Date(Date.now() + 1_000).toISOString());
+    assert(attemptsSvc.scoreHistoryOf(e.a2).length === 0, 'lượt mới hiện lịch sử điểm của em đã xoá');
+  });
 }
