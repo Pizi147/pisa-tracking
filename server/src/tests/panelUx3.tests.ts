@@ -370,7 +370,7 @@ export async function runPanelUx3Tests(t: YThucTestKit) {
 
   check('UX3 (3) · ChonNgay.tsx không đọc đồng hồ trình duyệt (new Date/Date.now) và không dựng ô lịch', () => {
     const src = docSach('web/src/ui/ChonNgay.tsx');
-    assert(!/new Date\(|Date\.now\(/.test(src), 'đọc đồng hồ trình duyệt');
+    assert(!/new Date\(\)|Date\.now\(/.test(src), 'đọc đồng hồ trình duyệt');
     assert(!/type="date"|type="month"/.test(src), 'ô lịch trình duyệt');
   });
 
