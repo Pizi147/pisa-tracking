@@ -71,6 +71,12 @@ export function coNho(): boolean {
   return !!s && s.nho !== null;
 }
 
+/** Khoá này đã có giá trị nhớ chưa? Dùng để bỏ bớt phần tử đã nạp khi nạp trước theo lô (`napTruocPhamVi`). */
+export function coKhoa(khoa: string): boolean {
+  const s = kho.getStore();
+  return !!s && s.nho !== null && s.nho.has(khoa);
+}
+
 /** Xoá sạch bộ nhớ hiện có (không đóng kho — bộ đếm câu vẫn tiếp tục cộng dồn cho request). */
 export function xoaNho(): void {
   const s = kho.getStore();

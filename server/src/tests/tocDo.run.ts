@@ -28,6 +28,8 @@ const { createSession } = await import('../auth.ts');
 const {
   chayTrongRequest, nho, coNho, trongBoNho, soCauSql, demHienTai,
 } = await import('../platform/nguCanhRequest.ts');
+const { loadPrincipal, can, napTruocPhamVi } = await import('../permissions.ts');
+const { PERMISSIONS } = await import('../../../shared/domain/index.ts');
 const { DUONG_DO } = await import('./tocDoDuong.ts');
 
 runSeed();
@@ -111,6 +113,8 @@ const USER: Record<Vai, number> = {
   GVCN_THUONG: coreTeacherOf('MB-FOU 12'),
   QT: userByRole('system_admin', null),
 };
+/** Quản lý chi nhánh CP — dùng riêng ở Task 2 phép kiểm (c)/(e) (chi nhánh KHÁC với MB của mọi vai trên). */
+const QL_CP = userByRole('manager', 'CP');
 
 const server = createApp().listen(0);
 const port = (server.address() as any).port as number;
@@ -124,15 +128,19 @@ function urlFor(mau: string): string {
     .replace('{cn}', String(CN));
 }
 
-async function callHttp(vai: Vai, method: string, url: string, body?: unknown) {
+async function callHttpUser(userId: number, method: string, url: string, body?: unknown) {
   const headers: Record<string, string> = { 'content-type': 'application/json' };
-  headers.cookie = `pisa_demo_session=${createSession(USER[vai])}`;
+  headers.cookie = `pisa_demo_session=${createSession(userId)}`;
   const res = await fetch(`http://127.0.0.1:${port}/api${url}`, {
     method, headers, body: body === undefined ? undefined : JSON.stringify(body),
   });
-  let json: unknown = null;
+  let json: any = null;
   try { json = await res.json(); } catch { /* không có thân */ }
   return { status: res.status, json };
+}
+
+async function callHttp(vai: Vai, method: string, url: string, body?: unknown) {
+  return callHttpUser(USER[vai], method, url, body);
 }
 
 /** Đếm câu SQL của MỘT lượt gọi HTTP — gọi TUẦN TỰ (không song song, để số không lẫn giữa các lượt gọi). */
@@ -238,6 +246,129 @@ await checkAsync('PR-TD Task1(g) · mọi đường trong DUONG_DO × vai của 
     }
   }
   assert(sai.length === 0, `Có đường sai mã:\n${sai.join('\n')}`);
+});
+
+// ==================================================================== Task 2 — quyền & ngày nghiệp vụ qua bộ nhớ
+
+const TOAN_BO_HV = (conn.prepare('SELECT id FROM students').all() as any[]).map((r) => r.id as number);
+const TOAN_BO_LOP = (conn.prepare('SELECT id FROM classes').all() as any[]).map((r) => r.id as number);
+const TOAN_BO_TK = (conn.prepare(`SELECT id FROM users WHERE approval_state = 'approved'`).all() as any[]).map((r) => r.id as number);
+const PRINCIPAL_CUA = new Map<number, ReturnType<typeof loadPrincipal>>();
+for (const uid of TOAN_BO_TK) PRINCIPAL_CUA.set(uid, loadPrincipal(uid));
+
+check('PR-TD Task2(a) · can(p, q, {studentId}) trong kho GET sau napTruocPhamVi(mọi HV) bằng HỆT ngoài kho — mọi tài khoản × mọi HV × 4 quyền chính', () => {
+  const QUYEN = [PERMISSIONS.ATTEMPT_VIEW, PERMISSIONS.STUDENT_VIEW, PERMISSIONS.SOS_REPORT, PERMISSIONS.STUDENT_EDIT];
+  const doiChieu = new Map<string, boolean>();
+  for (const uid of TOAN_BO_TK) {
+    const p = PRINCIPAL_CUA.get(uid)!;
+    for (const sid of TOAN_BO_HV) {
+      for (const q of QUYEN) doiChieu.set(`${uid}|${sid}|${q}`, can(p, q, { studentId: sid }));
+    }
+  }
+  chayTrongRequest('GET', () => {
+    napTruocPhamVi(TOAN_BO_HV);
+    const saiLech: string[] = [];
+    for (const uid of TOAN_BO_TK) {
+      const p = PRINCIPAL_CUA.get(uid)!;
+      for (const sid of TOAN_BO_HV) {
+        for (const q of QUYEN) {
+          const trongKho = can(p, q, { studentId: sid });
+          const ngoaiKho = doiChieu.get(`${uid}|${sid}|${q}`);
+          if (trongKho !== ngoaiKho) saiLech.push(`user=${uid} sid=${sid} q=${q}: kho=${trongKho} ngoài=${ngoaiKho}`);
+        }
+      }
+    }
+    assert(saiLech.length === 0, `Có ${saiLech.length} lệch giữa trong/ngoài bộ nhớ:\n${saiLech.slice(0, 20).join('\n')}`);
+  });
+});
+
+check('PR-TD Task2(a2) · can(p, q, {classId}) trong kho GET bằng HỆT ngoài kho — mọi tài khoản × mọi lớp × 5 quyền (gồm SCHEDULE_MOVE, dùng classIsFastTrack qua bộ nhớ)', () => {
+  const QUYEN = [
+    PERMISSIONS.ATTEMPT_VIEW, PERMISSIONS.STUDENT_VIEW, PERMISSIONS.SOS_REPORT,
+    PERMISSIONS.STUDENT_EDIT, PERMISSIONS.SCHEDULE_MOVE,
+  ];
+  const doiChieu = new Map<string, boolean>();
+  for (const uid of TOAN_BO_TK) {
+    const p = PRINCIPAL_CUA.get(uid)!;
+    for (const cid of TOAN_BO_LOP) {
+      for (const q of QUYEN) doiChieu.set(`${uid}|${cid}|${q}`, can(p, q, { classId: cid }));
+    }
+  }
+  chayTrongRequest('GET', () => {
+    const saiLech: string[] = [];
+    for (const uid of TOAN_BO_TK) {
+      const p = PRINCIPAL_CUA.get(uid)!;
+      for (const cid of TOAN_BO_LOP) {
+        for (const q of QUYEN) {
+          const trongKho = can(p, q, { classId: cid });
+          const ngoaiKho = doiChieu.get(`${uid}|${cid}|${q}`);
+          if (trongKho !== ngoaiKho) saiLech.push(`user=${uid} cid=${cid} q=${q}: kho=${trongKho} ngoài=${ngoaiKho}`);
+        }
+      }
+    }
+    assert(saiLech.length === 0, `Có ${saiLech.length} lệch giữa trong/ngoài bộ nhớ:\n${saiLech.slice(0, 20).join('\n')}`);
+  });
+});
+
+check('PR-TD Task2(b) · HV có branch_id trên bảng students nhưng KHÔNG ghi danh lớp nào — vẫn tính đúng phạm vi qua bộ nhớ', () => {
+  const info = conn
+    .prepare(`INSERT INTO students (student_code, full_name, normalized_name, branch_id, status, created_at) VALUES (?,?,?,?, 'active', ?)`)
+    .run('PR-TD-B1', 'PR TD B1', 'pr td b1', CN, new Date().toISOString());
+  const hvB = Number(info.lastInsertRowid);
+  const qlMb = PRINCIPAL_CUA.get(USER.QL)!;
+  const ngoai = can(qlMb, PERMISSIONS.ATTEMPT_VIEW, { studentId: hvB });
+  chayTrongRequest('GET', () => {
+    napTruocPhamVi([hvB]);
+    const trongKho = can(qlMb, PERMISSIONS.ATTEMPT_VIEW, { studentId: hvB });
+    assert(trongKho === ngoai, `Phải khớp ngoài bộ nhớ (ngoài=${ngoai}, trongKho=${trongKho})`);
+    assert(trongKho === true, 'Quản lý MB phải thấy HV có branch_id = MB dù không ghi danh lớp nào');
+  });
+});
+
+check('PR-TD Task2(c) · HV có ghi danh CŨ ở chi nhánh khác branch_id hiện tại — branchesOfStudent tính CẢ HAI chi nhánh, luật can() cũ giữ nguyên qua bộ nhớ (một chi nhánh riêng lẻ không đủ phủ HV có mặt ở CẢ HAI — grantCovers so khớp TOÀN BỘ branches của ngữ cảnh; chỉ vai phạm vi toàn hệ thống mới thấy)', () => {
+  const now = new Date().toISOString();
+  const info = conn
+    .prepare(`INSERT INTO students (student_code, full_name, normalized_name, branch_id, status, created_at) VALUES (?,?,?,?, 'active', ?)`)
+    .run('PR-TD-C1', 'PR TD C1', 'pr td c1', CN, now); // branch_id HIỆN TẠI = MB
+  const hvC = Number(info.lastInsertRowid);
+  const lopCp = classId('CP-FT 110'); // ghi danh CŨ ở CP — chi nhánh KHÁC branch_id hiện tại
+  conn
+    .prepare(`INSERT INTO enrollments (student_id, class_id, status, started_at, ended_at, created_at) VALUES (?,?, 'transferred', ?, ?, ?)`)
+    .run(hvC, lopCp, '2026-01-01', '2026-02-01', now);
+
+  const qlMb = PRINCIPAL_CUA.get(USER.QL)!;
+  const qlCp = PRINCIPAL_CUA.get(QL_CP)!;
+  const qt = PRINCIPAL_CUA.get(USER.QT)!;
+  const ngoaiMb = can(qlMb, PERMISSIONS.ATTEMPT_VIEW, { studentId: hvC });
+  const ngoaiCp = can(qlCp, PERMISSIONS.ATTEMPT_VIEW, { studentId: hvC });
+  const ngoaiQt = can(qt, PERMISSIONS.ATTEMPT_VIEW, { studentId: hvC });
+  chayTrongRequest('GET', () => {
+    napTruocPhamVi([hvC]);
+    const trongMb = can(qlMb, PERMISSIONS.ATTEMPT_VIEW, { studentId: hvC });
+    const trongCp = can(qlCp, PERMISSIONS.ATTEMPT_VIEW, { studentId: hvC });
+    const trongQt = can(qt, PERMISSIONS.ATTEMPT_VIEW, { studentId: hvC });
+    assert(
+      trongMb === ngoaiMb && trongCp === ngoaiCp && trongQt === ngoaiQt,
+      `Phải khớp ngoài bộ nhớ (mb: kho=${trongMb} ngoài=${ngoaiMb}; cp: kho=${trongCp} ngoài=${ngoaiCp}; qt: kho=${trongQt} ngoài=${ngoaiQt})`,
+    );
+    assert(trongQt === true, 'Vai phạm vi toàn hệ thống (QT) phải luôn thấy được HV, bất kể ghi danh cũ ở chi nhánh nào');
+    assert(
+      trongMb === false && trongCp === false,
+      'Một chi nhánh riêng lẻ (chi nhánh hiện tại HOẶC chi nhánh ghi danh cũ) không đủ phủ HV có mặt ở CẢ HAI chi nhánh — đúng luật can() cũ',
+    );
+  });
+});
+
+await checkAsync("PR-TD Task2(d) · qua HTTP, hai request liền nhau: PUT /demo/config đổi demoDate rồi GET /demo/config thấy ngày mới ngay — không dính bộ nhớ cũ giữa hai request", async () => {
+  const truoc = await callHttp('QT', 'GET', '/demo/config');
+  const explicitCu = (truoc.json?.demoDateExplicit as string | null) ?? '';
+  const ngayMoi = '2026-11-11';
+  const put = await callHttp('QT', 'PUT', '/demo/config', { demoDate: ngayMoi });
+  assert(put.status === 200, `PUT /demo/config phải 200, được ${put.status}`);
+  const sau = await callHttp('QT', 'GET', '/demo/config');
+  assert(sau.json?.demoDate === ngayMoi, `GET sau PUT (request khác) phải thấy ngày mới ngay: được ${sau.json?.demoDate}`);
+  const khoiPhuc = await callHttp('QT', 'PUT', '/demo/config', { demoDate: explicitCu });
+  assert(khoiPhuc.status === 200, 'Phải đặt lại được ngày demo cũ sau phép kiểm');
 });
 
 console.log('\nBảng đo (vai · url → mã HTTP · số câu SQL):');
