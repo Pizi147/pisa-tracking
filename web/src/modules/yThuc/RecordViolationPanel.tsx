@@ -68,12 +68,13 @@ export function RecordViolationPanel({
   useEffect(() => { setForceNew(false); }, [category, occurredOn, studentId]);
   const dup = !editing && !forceNew ? (similar.data?.rows ?? [])[0] : null;
 
-  /* YT-4: chưa đụng ô Môn mà máy chủ biết bạn dạy đúng một môn ở lớp này → điền sẵn, để người dùng thấy trước khi lưu. */
-  const defaultSkill = similar.data?.defaultSkill ?? null;
-  useEffect(() => {
-    if (editing || daChonMon || !defaultSkill) return;
-    setSkill(defaultSkill);
-  }, [editing, daChonMon, defaultSkill]);
+  /*
+   * YT-4: chưa đụng ô Môn mà máy chủ biết bạn dạy đúng một môn ở lớp này → điền sẵn, để người dùng thấy trước khi lưu.
+   * TÍNH TRỰC TIẾP (không qua `useEffect` + `setSkill`): ô chọn hiện `defaultSkill` cho tới khi người dùng thật sự đụng
+   * vào nó (`daChonMon`) — tránh việc effect ghi đè `skill` không đúng lúc khi `similar` chạy lại (đổi ngày/nhóm).
+   */
+  const defaultSkill = editing ? null : (similar.data?.defaultSkill ?? null);
+  const displaySkill = daChonMon ? skill : (defaultSkill ?? skill);
 
   const minLen = category === 'other' ? VIOLATION_OTHER_DESCRIPTION_MIN : VIOLATION_DESCRIPTION_MIN;
   /* K2-3: ràng buộc nói TRƯỚC khi bấm — nút mờ + câu thiếu gì, không báo lỗi đỏ sau khi bấm. */
@@ -149,7 +150,7 @@ export function RecordViolationPanel({
         </Field>
 
         <Field label="Môn" hint="Tự điền theo môn bạn dạy lớp này; để trống được.">
-          <select className="field" value={skill} onChange={(e) => { setSkill(e.target.value); setDaChonMon(true); }}>
+          <select className="field" value={displaySkill} onChange={(e) => { setSkill(e.target.value); setDaChonMon(true); }}>
             <option value="">— để trống —</option>
             {VIOLATION_SKILLS.map((s) => (
               <option key={s} value={s}>{VIOLATION_SKILL_LABEL[s] ?? s}</option>
