@@ -132,12 +132,12 @@ export async function runHocVienLopTests(t: YThucTestKit) {
   });
 
   check('PR-Qa · Q7 hộp lớp: tối đa 2 badge theo thứ tự ưu tiên, phần còn lại gom "+n"', () => {
-    const b = d.badgeLop({ needsPlacement: true, canXepLop: 4, missingSkills: ['writing'], needScoresText: 'Lớp còn 3 bài chưa nhập điểm',
+    const b = d.badgeLop({ needsPlacement: true, canXepLop: 4, missingSkills: ['writing'], soBaiChoCham: 3, needScoresTitle: 'Lớp còn 3 bài chưa nhập điểm',
       soCaseMo: 2, phase: 'final_week', missingCount: 1 });
-    eq(b.hien.map((x: any) => x.nhan), ['Hết khoá · 4 HV cần xếp lớp tiếp', 'Thiếu GV W'], 'Hai badge đầu');
+    eq(b.hien.map((x: any) => x.nhan), ['4 HV chờ xếp lớp', 'Thiếu GV W'], 'Hai badge đầu');
     eq(b.an.map((x: any) => x.key), ['cham', 'case', 'chang', 'thieu-tt'], 'Phần gom');
-    const c = d.badgeLop({ needsPlacement: false, canXepLop: 8, missingSkills: [], needScoresText: null, soCaseMo: 6, phase: 'running', missingCount: 0 });
-    eq(c.hien, [{ key: 'case', nhan: '6 Case đang mở', tone: 'danger' }], 'Chỉ Case');
+    const c = d.badgeLop({ needsPlacement: false, canXepLop: 8, missingSkills: [], soBaiChoCham: 0, needScoresTitle: null, soCaseMo: 6, phase: 'running', missingCount: 0 });
+    eq(c.hien, [{ key: 'case', nhan: '6 Case mở', tone: 'muted' }], 'Chỉ Case');
     assert(!/Progress|Final/.test(Object.values(d.CLASS_PHASE_LABEL).join(' ')), 'CLASS_PHASE_LABEL còn Progress/Final');
     eq(d.CLASS_PHASE_LABEL.progress_week, 'Thi Giữa khoá tuần này', 'Chữ chặng thi');
   });
@@ -187,10 +187,10 @@ export async function runHocVienLopTests(t: YThucTestKit) {
       homNay: '2026-09-14',
     });
     eq(v, [
-      { nhan: 'L · Cập nhật kết quả · trước CN 13/09 · quá hạn', tone: 'danger' },
+      { nhan: 'L · Ghi kết quả PA · hạn CN 13/09 · quá hạn 1 ngày', tone: 'danger' },
       { nhan: 'Nhập điểm L, W · Giữa khoá', tone: 'warn' },
       { nhan: 'Xác định nguyên nhân W2', tone: 'warn' },
-      { nhan: 'R · Cập nhật kết quả · trước CN 20/09', tone: 'info' },
+      { nhan: 'R · Ghi kết quả PA · hạn CN 20/09', tone: 'info' },
     ], 'Thứ tự và chữ');
     eq(d.chonCaseChinh([
       { id: 5, topic: 'reading', state: 'working', nextDue: null, dueOverdue: false, sosLevel: 3 },

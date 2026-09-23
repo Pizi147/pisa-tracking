@@ -3023,23 +3023,23 @@ check('Quản lý thấy nhóm "Chờ tôi xử lý", giáo viên thì không', 
   assert(Array.isArray(mgrGroups), 'myWork không trả về nhóm');
 });
 
-check('Mỗi việc quá hạn nói rõ quá hạn CÁI GÌ', () => {
-  const seen = new Set<string>();
+check('Việc quá hạn: tiêu đề nói việc gì, hạn nói quá hạn — không nhãn "Quá hạn …" riêng', () => {
+  let coQuaHan = 0;
   for (const b of ['MB', 'CP', 'BC', 'HD', 'TL']) {
     let m;
     try { m = loadPrincipal(userByRole('manager', b)); } catch { continue; }
     for (const g of mywork.myWork(m).groups) {
       for (const it of g.items) {
-        if (it.urgency === 'overdue') {
-          assert(it.overdueLabel && /^Quá hạn /.test(it.overdueLabel),
-            `Việc quá hạn ở nhóm ${g.key} không ghi rõ quá hạn gì: ${it.overdueLabel}`);
-          seen.add(it.overdueLabel ?? "");
+        assert(typeof it.tieuDe === 'string' && it.tieuDe.trim() !== '', `Việc ở nhóm ${g.key} không có tiêu đề`);
+        assert(!('overdueLabel' in it), `Việc ở nhóm ${g.key} còn nhãn quá hạn riêng`);
+        for (const f of ['reason', 'statusLabel', 'tieuDe']) {
+          assert(!/quá hạn/i.test((it as any)[f] ?? ''), `Việc ở nhóm ${g.key}: ${f} còn chữ "quá hạn": "${(it as any)[f]}"`);
         }
-        if (it.urgency === 'normal') assert(!it.overdueLabel, `Việc chưa tới hạn lại gắn nhãn ${it.overdueLabel}`);
+        if (it.urgency === 'overdue' && it.due) coQuaHan++;
       }
     }
   }
-  assert(seen.size >= 2, `Chỉ có ${seen.size} kiểu nhãn quá hạn — đáng lẽ mỗi loại việc một kiểu`);
+  assert(coQuaHan >= 1, 'Dữ liệu mẫu phải có ít nhất một việc quá hạn có hạn');
 });
 
 check('Kết quả sau hỗ trợ là việc của NGƯỜI THỰC HIỆN; quá hạn thì Quản lý cũng thấy', () => {
@@ -3051,7 +3051,7 @@ check('Kết quả sau hỗ trợ là việc của NGƯỜI THỰC HIỆN; quá 
   const gvItems = reviewOf(gv);
   const mgrItems = reviewOf(mgr);
   assert(gvItems.length > 0, 'Người ghi phương án không thấy việc cập nhật kết quả của mình');
-  assert(gvItems.every((i: any) => i.actionLabel === 'Cập nhật kết quả'), 'Nhãn hành động không đúng');
+  assert(gvItems.every((i: any) => i.actionLabel === 'Ghi kết quả'), 'Nhãn hành động không đúng');
   const overdueForManager = mgrItems.filter((i: any) => i.urgency === 'overdue');
   assert(overdueForManager.length === mgrItems.length,
     'Quản lý đang thấy cả việc CHƯA quá hạn của người khác — chỉ quá hạn mới đến tay Quản lý');
@@ -8021,14 +8021,14 @@ check('PR-E · <KetQuaDot>: đủ điểm nhưng thiếu kỳ vọng thì không
   assert(/Đã đủ điểm/.test(v.text), `Câu phải nói đã đủ điểm: "${v.text}"`);
 });
 
-check('PR-E · <Han>: sáu loại hạn có sáu nhãn khác nhau, đúng bảng HE_GIAO_DIEN §4', () => {
+check('PR-E · <Han>: sáu loại hạn có sáu nhãn khác nhau, đúng bảng HE_GIAO_DIEN §4 (việc · mốc, PR-UX0 B-3)', () => {
   const t = (loai: any, han = '2026-09-23') => domain.deadlineView({ kind: loai, due: han, today: '2026-09-14' }).text;
   assert(t('xac-minh-sos') === 'Xác minh nguyên nhân · hạn 23/09', `xac-minh-sos: "${t('xac-minh-sos')}"`);
-  assert(t('lap-pa') === 'Cần có phương án · hạn 23/09', `lap-pa: "${t('lap-pa')}"`);
-  assert(t('cap-nhat-pa') === 'Cập nhật kết quả · trước CN 23/09', `cap-nhat-pa: "${t('cap-nhat-pa')}"`);
+  assert(t('lap-pa') === 'Đề ra PA · hạn 23/09', `lap-pa: "${t('lap-pa')}"`);
+  assert(t('cap-nhat-pa') === 'Ghi kết quả PA · hạn CN 23/09', `cap-nhat-pa: "${t('cap-nhat-pa')}"`);
   assert(t('thuc-hien-y-thuc') === 'Thực hiện xong · hạn 23/09', `thuc-hien-y-thuc: "${t('thuc-hien-y-thuc')}"`);
   assert(t('hoan-thanh-y-thuc') === 'Kết luận đợt · hạn 23/09', `hoan-thanh-y-thuc: "${t('hoan-thanh-y-thuc')}"`);
-  assert(t('nhap-diem') === 'Hạn nhập điểm 23/09', `nhap-diem: "${t('nhap-diem')}"`);
+  assert(t('nhap-diem') === 'Nhập điểm · hạn 23/09', `nhap-diem: "${t('nhap-diem')}"`);
   assert(t('du-kien-ket-thuc') === 'Dự kiến kết thúc 23/09', `du-kien-ket-thuc: "${t('du-kien-ket-thuc')}"`);
   const all = ['xac-minh-sos', 'lap-pa', 'cap-nhat-pa', 'thuc-hien-y-thuc', 'hoan-thanh-y-thuc', 'nhap-diem', 'du-kien-ket-thuc'].map((k) => t(k));
   assert(new Set(all).size === 7, 'Có hai loại hạn dùng chung một câu — chúng là sáu đồng hồ khác nhau');
@@ -8036,8 +8036,8 @@ check('PR-E · <Han>: sáu loại hạn có sáu nhãn khác nhau, đúng bảng
 
 check('PR-E · <Han>: quá hạn ghi rõ số ngày và đếm từ HẠN GỐC, không từ hạn đã dời', () => {
   const v = domain.deadlineView({ kind: 'nhap-diem', due: '2026-09-23', today: '2026-09-25' });
-  assert(v.text === 'Hạn nhập điểm 23/09 · quá hạn 2 ngày' && v.tone === 'overdue' && v.daysOverdue === 2,
-    `Đang ghi "${v.text}" (${v.tone}, ${v.daysOverdue})`);
+  assert(v.text === 'Nhập điểm · hạn 23/09 · quá hạn 2 ngày' && v.quaHan === 'quá hạn 2 ngày' && v.tone === 'overdue' && v.daysOverdue === 2,
+    `Đang ghi "${v.text}" (${v.tone}, ${v.daysOverdue}, ${v.quaHan})`);
   // Hạn đã dời sang 30/09 nhưng hạn gốc 23/09 đã qua 2 ngày: vẫn đếm từ 23/09.
   const moved = domain.deadlineView({ kind: 'nhap-diem', due: '2026-09-30', originalDue: '2026-09-23', today: '2026-09-25' });
   assert(moved.daysOverdue === 2, `Phải đếm từ hạn gốc (2 ngày), đang là ${moved.daysOverdue}`);
@@ -8048,24 +8048,24 @@ check('PR-E · <Han>: quá hạn ghi rõ số ngày và đếm từ HẠN GỐC,
 
 check('PR-E · <Han>: có hẹn xử lý thì hiện CẢ HAI, không ghi đè hạn gốc', () => {
   const v = domain.deadlineView({ kind: 'nhap-diem', due: '2026-09-23', reschedule: '2026-09-30', today: '2026-09-14' });
-  assert(v.text === 'Hạn nhập điểm 23/09 · Hẹn xử lý 30/09', `Đang ghi "${v.text}"`);
+  assert(v.text === 'Nhập điểm · hạn 23/09 · hẹn xử lý 30/09' && v.hen === 'hẹn xử lý 30/09', `Đang ghi "${v.text}"`);
 });
 
 check('PR-E · <Han>: "Dự kiến kết thúc" KHÔNG phải hạn — không bao giờ quá hạn, không bao giờ đỏ (F11)', () => {
   const v = domain.deadlineView({ kind: 'du-kien-ket-thuc', due: '2026-08-30', today: '2026-09-14' });
-  assert(v.tone === 'neutral' && v.daysOverdue === null, `Đang là ${v.tone}, quá hạn ${v.daysOverdue}`);
+  assert(v.tone === 'neutral' && v.daysOverdue === null && v.quaHan === null && !v.homNay, `Đang là ${v.tone}, quá hạn ${v.daysOverdue}`);
   assert(!/quá hạn/.test(v.text), `Ngày dự kiến bị ghi là quá hạn: "${v.text}"`);
 });
 
-check('PR-E · <Han>: cập nhật phương án là mốc Chủ nhật — không có đơn vị "ngày"', () => {
+check('PR-E · <Han>: cập nhật phương án cũng đếm số ngày quá hạn từ mốc Chủ nhật (đổi nghĩa PR-UX0, mockup 17 #1)', () => {
   const v = domain.deadlineView({ kind: 'cap-nhat-pa', due: '2026-09-06', today: '2026-09-14' });
-  assert(v.tone === 'overdue' && /quá hạn/.test(v.text), `Phải báo quá hạn: "${v.text}"`);
-  assert(!/\d+ ngày/.test(v.text), `cap-nhat-pa không được đếm số ngày: "${v.text}"`);
+  assert(v.tone === 'overdue' && v.daysOverdue === 8 && v.quaHan === 'quá hạn 8 ngày' && v.han === 'hạn CN 06/09',
+    `Phải báo quá hạn 8 ngày: "${v.text}" (${v.daysOverdue}, ${v.han})`);
 });
 
 check('PR-E · <Han>: thiếu ngày hạn thì nói thẳng là chưa có hạn, không vẽ "Invalid Date"', () => {
   const v = domain.deadlineView({ kind: 'nhap-diem', due: null, today: '2026-09-14' });
-  assert(/chưa có hạn/.test(v.text) && !/Invalid|NaN|undefined/.test(v.text), `Đang ghi "${v.text}"`);
+  assert(/chưa có hạn/.test(v.text) && v.han === 'chưa có hạn' && !/Invalid|NaN|undefined/.test(v.text), `Đang ghi "${v.text}"`);
 });
 
 check('PR-E · Ngày viết ngắn 14/09 trong cùng năm, có năm khi qua năm khác', () => {
@@ -9633,6 +9633,11 @@ await runCongViecTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P
 
 const { runLenLopTests } = await import('./lenLop.tests.ts');
 await runLenLopTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
+
+// ==================================================================== PR-UX0 (Nền giao diện: màu nghĩa, hàng lớn/nhỏ, badge, khuôn panel)
+
+const { runNenGiaoDienTests } = await import('./nenGiaoDien.tests.ts');
+await runNenGiaoDienTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0

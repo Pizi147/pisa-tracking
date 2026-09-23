@@ -23,13 +23,44 @@
     --accent-line: rgba(125, 179, 240, 0.38);
 
     --text: #dde5f2;
-    --text-dim: #93a3c0;
-    --text-faint: #6c7c9c;
 
-    --ok: #7fd6bb;
-    --warn: #f0c987;
-    --danger: #f2a1a1;
-    --info: #9db8ec;
+    /*
+     * TOKEN MÀU NGHĨA — MỘT CHỖ KHAI BÁO (PR-UX0, N-1; bảng màu cuối = mockup 18 (b4)).
+     * Bộ ba RGB (`--x-rgb`) để Tailwind ghép độ trong (`bg-bad/15`); mỗi nghĩa có chữ · nền · viền.
+     * `tailwind.config.js` ánh xạ tên (`text-ok`, `bg-bad-bg`, `border-late-line`), `ui.tsx` chỉ dùng tên đó.
+     * Chữ ≥ 4.5:1 trên nền riêng và mọi nền trang — phép kiểm `nenGiaoDien.tests.ts` đọc chính khối này.
+     */
+    --ok-rgb: 111 220 159;    --ok-bg-rgb: 18 53 38;     --ok-line-rgb: 43 112 80;     /* đạt · tiến bộ · ổn */
+    --bad-rgb: 255 154 162;   --bad-bg-rgb: 60 29 36;    --bad-line-rgb: 136 64 74;    /* chưa đạt · SOS 3 */
+    --late-rgb: 255 145 102;  --late-bg-rgb: 62 31 19;   --late-line-rgb: 154 74 42;   /* quá hạn (luôn kèm ⚠) */
+    --soon-rgb: 242 196 80;   --soon-bg-rgb: 53 43 16;   --soon-line-rgb: 122 98 34;   /* sắp tới hạn · hôm nay · chờ · SOS 1 */
+    --doing-rgb: 128 184 255; --doing-bg-rgb: 19 44 77;  --doing-line-rgb: 47 93 149;  /* đang làm */
+    --done-rgb: 169 181 200;  --done-bg-rgb: 26 36 54;   --done-line-rgb: 52 68 95;    /* đã xong */
+    --wait-rgb: 196 169 255;  --wait-bg-rgb: 39 32 67;   --wait-line-rgb: 87 74 138;   /* chờ người khác */
+    --muted-rgb: 201 212 230; --muted-bg-rgb: 29 42 64;  --muted-line-rgb: 52 68 95;   /* trung tính · thông tin · chip */
+    --text-dim-rgb: 147 163 192;    /* chữ phụ quan trọng */
+    --text-faint-rgb: 130 146 174;  /* chữ phụ nhỏ (cũ #6c7c9c chỉ 4.0:1) */
+    /* N-1b — màu KẾT QUẢ Test, đọc như nhau ở mọi nơi: Đạt xanh lá · SOS 1 vàng · SOS 2 cam · SOS 3 đỏ.
+       Tạm thời / Chưa đủ điểm = muted viền đứt (không cần bí danh). */
+    --dat-rgb: var(--ok-rgb);    --dat-bg-rgb: var(--ok-bg-rgb);    --dat-line-rgb: var(--ok-line-rgb);
+    --sos1-rgb: var(--soon-rgb); --sos1-bg-rgb: var(--soon-bg-rgb); --sos1-line-rgb: var(--soon-line-rgb);
+    --sos2-rgb: var(--late-rgb); --sos2-bg-rgb: var(--late-bg-rgb); --sos2-line-rgb: var(--late-line-rgb);
+    --sos3-rgb: var(--bad-rgb);  --sos3-bg-rgb: var(--bad-bg-rgb);  --sos3-line-rgb: var(--bad-line-rgb);
+
+    /* Tên cũ giữ làm bí danh để chỗ đang dùng không vỡ. */
+    --ok: rgb(var(--ok-rgb));
+    --warn: rgb(var(--soon-rgb));
+    --danger: rgb(var(--bad-rgb));
+    --info: rgb(var(--doing-rgb));
+    --text-dim: rgb(var(--text-dim-rgb));
+    --text-faint: rgb(var(--text-faint-rgb));
+
+    /* N-2 — hàng lớn / hàng con (bảng, danh sách). Vạch trái luôn xanh trung tính, không màu trạng thái. */
+    --hang-lon-bg: #172640;       --hang-lon-vach: #7db3f0;
+    --hang-lon-dong-bg: #131f35;  --hang-lon-dong-vach: #3a4f72;
+    --hang-con-bg: #0b1322;       --hang-con-chu: #c9d4e6;
+    /* Ô sửa được / chỉ đọc (lưới chấm) */
+    --o-sua-vien: #3d5f8f;        --o-sua-nen: #0e1a2e;
   }
   html, body, #root { height: 100%; }
   body {
@@ -99,8 +130,8 @@
     background: var(--accent); border-color: var(--accent-strong); color: var(--accent-ink); font-weight: 600;
   }
   .btn-primary:hover:not(:disabled) { background: var(--accent-strong); color: var(--accent-ink); }
-  .btn-danger { border-color: rgba(242,161,161,0.42); color: var(--danger); }
-  .btn-danger:hover:not(:disabled) { background: rgba(242,161,161,0.12); }
+  .btn-danger { border-color: rgb(var(--bad-rgb) / 0.42); color: var(--danger); }
+  .btn-danger:hover:not(:disabled) { background: rgb(var(--bad-rgb) / 0.12); }
   .btn-sm { padding: 0.25rem 0.6rem; font-size: 12px; border-radius: 0.4rem; }
   .btn-ghost { background: transparent; border-color: transparent; }
   .btn-ghost:hover:not(:disabled) { background: rgba(160,178,214,0.1); }
@@ -130,6 +161,31 @@
 
   .sticky-col { position: sticky; left: 0; z-index: 5; background: var(--surface); }
   .th.sticky-col { z-index: 15; background: var(--surface-2); }
+
+  /*
+   * HÀNG LỚN / HÀNG CON (PR-UX0, N-2 — mockup 17 phương án A). Hàng lớn: nền sáng hơn một bậc, vạch 3px trái luôn
+   * xanh trung tính (không màu trạng thái), chữ đậm 12.5px, cao 38px; đang đóng thì mờ hơn. Hàng con: thụt 16px
+   * sau cột mũi tên 16px, nền tối hơn, chữ 11.5px, cao tối thiểu 32px. Số tổng thẳng cột với số con vì cùng bảng.
+   */
+  .hang-lon > td { background: var(--hang-lon-bg); font-weight: 800; font-size: 12.5px; height: 38px; }
+  .hang-lon > td:first-child { box-shadow: inset 3px 0 0 var(--hang-lon-vach); }
+  .hang-lon.dong > td { background: var(--hang-lon-dong-bg); }
+  .hang-lon.dong > td:first-child { box-shadow: inset 3px 0 0 var(--hang-lon-dong-vach); }
+  .hang-con > td { background: var(--hang-con-bg); font-size: 11.5px; color: var(--hang-con-chu); height: 32px; }
+  .hang-con > td:first-child { padding-left: calc(0.75rem + 32px); }
+  /* Cùng kiểu cho danh sách (không phải bảng): đầu nhóm + thân nhóm. */
+  .khoi-nhom-dau {
+    display: flex; align-items: center; gap: 8px; min-height: 38px; padding: 0 12px;
+    background: var(--hang-lon-bg); box-shadow: inset 3px 0 0 var(--hang-lon-vach);
+    font-weight: 800; font-size: 12.5px; cursor: pointer;
+  }
+  .khoi-nhom-dau.dong { background: var(--hang-lon-dong-bg); box-shadow: inset 3px 0 0 var(--hang-lon-dong-vach); }
+  .khoi-nhom-con { background: var(--hang-con-bg); font-size: 11.5px; color: var(--hang-con-chu); padding-left: 28px; }
+
+  /* Ô điểm/ô nhập: sửa được có viền + nền riêng, chỉ đọc thì không viền, nền trong suốt. */
+  .o-sua { border: 1px solid var(--o-sua-vien); background: var(--o-sua-nen); border-radius: 0.375rem; }
+  .o-sua:focus, .o-sua:focus-within { border-color: #84baff; box-shadow: 0 0 0 3px rgba(132, 186, 255, 0.22); outline: none; }
+  .o-doc { border: 1px solid transparent; background: transparent; }
 
   .link { color: var(--accent); text-decoration: none; }
   .link:hover { text-decoration: underline; }

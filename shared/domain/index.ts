@@ -43,3 +43,5 @@ export * from './hanhTrinh.ts';
 export * from './keHoachTest.ts';
 export * from './congViec.ts';
 export * from './lenLop.ts';
+export * from './mauNghia.ts';
+export * from './khoPanel.ts';

@@ -18,31 +18,40 @@ export function Card({ title, action, children, className = '', bodyClass = 'p-4
 }
 
 type Tone = 'ok' | 'warn' | 'danger' | 'info' | 'neutral' | 'muted';
+/** `<Level>` còn nhận màu KẾT QUẢ Test (N-1b): Đạt xanh lá · SOS 1 vàng · SOS 2 cam · SOS 3 đỏ. */
+export type LevelTone = Tone | 'sos1' | 'sos2' | 'sos3';
 
 /**
- * BỐN MÀU ĐIỂM — MỘT BẢNG DUY NHẤT (HE_GIAO_DIEN §2, chốt 17/09).
+ * MÀU ĐIỂM — MỘT BẢNG DUY NHẤT (HE_GIAO_DIEN §2, chốt 17/09; màu đọc từ token N-1 ở `index.css`).
  *
  *   rose     dưới kỳ vọng     — điểm tăng mà vẫn dưới kỳ vọng VẪN ĐỎ
  *   sky      bằng kỳ vọng
- *   emerald  vượt kỳ vọng     — không dùng xanh lá cho bất kỳ nghĩa nào khác trên ô điểm
+ *   emerald  vượt kỳ vọng / Đạt — xanh lá chỉ dành cho kết quả học tập
  *   slate    thiếu dữ liệu    — khác điểm 0, khác ô trống
+ *   sos1/2/3 mức SOS (N-1b)   — vàng · cam · đỏ, đọc như nhau ở mọi nơi hiện kết quả Test
+ *   tam      tạm thời / chưa đủ điểm — xám, viền đứt
  *
  * Trước đây bảng này được chép ở `SkillBoard.tsx`, và mỗi component mới sẽ tự chép thêm một
  * bản với sắc hơi khác. Nay `SkillBoard`, `KetQuaDot` và mọi ô điểm về sau đọc từ đây.
  *
  * CHIP CÓ NỀN thay vì chữ màu trơn: chữ màu trơn trên nền tối tương phản yếu (yêu cầu riêng của
- * chủ sản phẩm). Viền + nền nhạt cùng họ màu + chữ đậm — cùng kiểu với `Status`/`Alert`.
+ * chủ sản phẩm). Nền sẫm đặc + chữ màu + viền cùng họ — cùng kiểu với `Status`/`Alert`.
  */
-export type ScoreTone = 'rose' | 'sky' | 'emerald' | 'slate';
+export type ScoreTone = 'rose' | 'sky' | 'emerald' | 'slate' | 'sos1' | 'sos2' | 'sos3' | 'tam';
 export const SCORE_CHIP: Record<ScoreTone, string> = {
-  rose: 'bg-rose-300/15 text-rose-200 border-rose-300/40',
-  sky: 'bg-sky-300/15 text-sky-200 border-sky-300/40',
-  emerald: 'bg-emerald-300/15 text-emerald-200 border-emerald-300/40',
-  slate: 'bg-slate-300/8 text-slate-400 border-slate-300/20',
+  rose: 'bg-bad-bg text-bad border-bad-line',
+  sky: 'bg-doing-bg text-doing border-doing-line',
+  emerald: 'bg-dat-bg text-dat border-dat-line',
+  slate: 'bg-muted-bg text-muted border-muted-line',
+  sos1: 'bg-sos1-bg text-sos1 border-sos1-line',
+  sos2: 'bg-sos2-bg text-sos2 border-sos2-line',
+  sos3: 'bg-sos3-bg text-sos3 border-sos3-line',
+  tam: 'bg-transparent text-muted border-dashed border-muted-line',
 };
 /** Chữ trơn cùng họ màu — cho dòng phụ ngắn cạnh số điểm (không phải chip). */
 export const SCORE_TEXT: Record<ScoreTone, string> = {
-  rose: 'text-rose-300', sky: 'text-sky-300', emerald: 'text-emerald-300', slate: 'text-slate-500',
+  rose: 'text-bad', sky: 'text-doing', emerald: 'text-dat', slate: 'text-faint',
+  sos1: 'text-sos1', sos2: 'text-sos2', sos3: 'text-sos3', tam: 'text-muted',
 };
 
 /**
@@ -53,18 +62,19 @@ export const SCORE_TEXT: Record<ScoreTone, string> = {
  * cùng viền, cùng bo góc, cùng cỡ chữ, màu thì mỗi màn tự chọn. Mắt không tách được cái nào
  * ra cái nào, nên nhìn một dòng lớp chỉ thấy một đám nhãn màu.
  *
- *   <Level>   nền ĐẶC, bo tròn hẳn      — mức SOS, mức độ ưu tiên: tình trạng của một đứa trẻ
+ *   <Level>   pill nền sẫm, bo tròn hẳn — mức SOS, mức độ ưu tiên: tình trạng của một đứa trẻ
  *   <Status>  nền nhẹ + biểu tượng      — TRẠNG THÁI CÔNG VIỆC: đang làm · chờ · xong
  *   <Task>    viền vuông, gạch dọc trái — VIỆC PHẢI LÀM, bấm được
- *   <Alert>   dấu ⚠ + màu mạnh          — quá hạn, thiếu thông tin
+ *   <Alert>   nền sẫm + màu mạnh, ⚠ chỉ khi quá hạn — mức khẩn, thiếu thông tin
  *   <Outcome> biểu tượng kết quả        — KẾT QUẢ học tập: tiến bộ · chưa đổi · kém hơn
  *   <Info>    chữ mờ, viền mảnh         — chỉ để biết: vai trò, kỹ năng, mã lớp
  *
  * HAI LUẬT MÀU KHÔNG ĐƯỢC PHÁ (mục 2.2):
  *
- *   · XANH LÁ CHỈ DÀNH CHO `<Outcome>`. Xanh lá là một lời khen, và chỉ kết quả học tập mới
- *     có căn cứ để khen. "Đã lưu", "đã kết thúc phương án", "không có case" đều KHÔNG phải
- *     là tin tốt — chúng chỉ là việc đã xong hoặc chưa có tin gì.
+ *   · XANH LÁ CHỈ DÀNH CHO KẾT QUẢ (`<Outcome>`, Đạt, mức SOS 0). Xanh lá là một lời khen, và chỉ
+ *     kết quả học tập mới có căn cứ để khen. "Đã lưu", "đã kết thúc phương án", "không có case" đều
+ *     KHÔNG phải là tin tốt — chúng chỉ là việc đã xong (xám `done`) hoặc chưa có tin gì. Bảng màu
+ *     cuối = mockup 18 (b4): việc xong là xám, xanh lá dành cho kết quả.
  *   · MÀU KHÔNG BAO GIỜ ĐỨNG MỘT MÌNH. Mỗi họ có hình dạng và biểu tượng riêng, nên người
  *     không phân biệt được màu vẫn đọc ra nghĩa.
  *
@@ -72,24 +82,27 @@ export const SCORE_TEXT: Record<ScoreTone, string> = {
  * tình trạng học viên > cảnh báo > việc phải làm > kết quả > trạng thái > thông tin nền.
  */
 
-/** Nền đặc nên chữ phải là màu tối, và phải đủ tương phản để đọc được. */
-const LEVEL_CLASS: Record<Tone, string> = {
-  ok: 'bg-emerald-300 text-slate-900',
-  info: 'bg-sky-300 text-slate-900',
-  warn: 'bg-amber-300 text-slate-900',
-  danger: 'bg-rose-300 text-slate-900',
-  neutral: 'bg-slate-300 text-slate-900',
-  muted: 'bg-transparent text-slate-400 border border-dashed border-slate-500/40',
+/** Pill nền sẫm cùng họ màu + chữ màu (token N-1); `muted` = viền đứt (số tạm / chưa đủ). */
+const LEVEL_CLASS: Record<LevelTone, string> = {
+  ok: 'bg-ok-bg text-ok',
+  info: 'bg-doing-bg text-doing',
+  warn: 'bg-soon-bg text-soon',
+  danger: 'bg-bad-bg text-bad',
+  neutral: 'bg-muted-bg text-muted',
+  muted: 'bg-transparent text-muted border border-dashed border-muted-line',
+  sos1: 'bg-sos1-bg text-sos1',
+  sos2: 'bg-sos2-bg text-sos2',
+  sos3: 'bg-sos3-bg text-sos3',
 };
 
 /**
  * MỨC ĐỘ của một học viên — SOS 1/2/3, hay mức độ ưu tiên do giáo viên nhận định.
  * Nặng nhất về thị giác vì đây là tình trạng của một đứa trẻ, không phải một con số vận hành.
  */
-export function Level({ tone = 'neutral', children, title }: { tone?: Tone; children: ReactNode; title?: string }) {
+export function Level({ tone = 'neutral', children, title }: { tone?: LevelTone; children: ReactNode; title?: string }) {
   return (
     <span title={title}
-      className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-bold tracking-[0.01em] whitespace-nowrap ${LEVEL_CLASS[tone]}`}>
+      className={`inline-flex items-center gap-1 rounded-full px-2 py-px text-[11px] font-bold tracking-[0.01em] whitespace-nowrap ${LEVEL_CLASS[tone]}`}>
       {children}
     </span>
   );
@@ -98,10 +111,10 @@ export function Level({ tone = 'neutral', children, title }: { tone?: Tone; chil
 const TASK_CLASS: Record<Tone, { box: string; bar: string }> = {
   neutral: { box: 'border-[color:var(--accent-line)] bg-[color:var(--accent-soft)] text-[color:var(--accent-strong)]', bar: 'bg-[color:var(--accent)]' },
   info: { box: 'border-[color:var(--accent-line)] bg-[color:var(--accent-soft)] text-[color:var(--accent-strong)]', bar: 'bg-[color:var(--accent)]' },
-  warn: { box: 'border-amber-300/45 bg-amber-300/10 text-amber-200', bar: 'bg-amber-300' },
-  danger: { box: 'border-rose-300/45 bg-rose-300/10 text-rose-200', bar: 'bg-rose-300' },
-  ok: { box: 'border-slate-300/20 bg-transparent text-slate-500', bar: 'bg-slate-500/50' },
-  muted: { box: 'border-slate-300/20 bg-transparent text-slate-500', bar: 'bg-slate-500/50' },
+  warn: { box: 'border-soon-line bg-soon-bg text-soon', bar: 'bg-soon' },
+  danger: { box: 'border-late-line bg-late-bg text-late', bar: 'bg-late' },
+  ok: { box: 'border-muted-line bg-transparent text-faint', bar: 'bg-faint/50' },
+  muted: { box: 'border-muted-line bg-transparent text-faint', bar: 'bg-faint/50' },
 };
 
 /**
@@ -137,7 +150,7 @@ export function Info({ children, title, pending }: { children: ReactNode; title?
   return (
     <span title={title}
       className={`inline-flex items-center gap-1 rounded border px-2 py-0.5 text-[11px] whitespace-nowrap ${
-        pending ? 'border-dashed border-slate-500/40 text-slate-500' : 'border-slate-300/20 text-slate-400'
+        pending ? 'border-dashed border-muted-line text-faint' : 'border-muted-line text-dim'
       }`}>
       {children}
     </span>
@@ -147,22 +160,22 @@ export function Info({ children, title, pending }: { children: ReactNode; title?
 /**
  * TRẠNG THÁI XỬ LÝ — một việc đang ở đâu trong quy trình (mục 2.1).
  *
- * Nền nhẹ, có biểu tượng, và CỐ Ý KHÔNG BAO GIỜ MÀU XANH LÁ. "Đã hoàn thành" là một trạng
+ * Nền sẫm, có biểu tượng, và CỐ Ý KHÔNG BAO GIỜ MÀU XANH LÁ. "Đã hoàn thành" là một trạng
  * thái công việc, không phải một kết quả tốt: một phương án hoàn thành với kết quả "Kém hơn"
  * mà hiện màu xanh là nói dối người đọc. Kết quả có họ nhãn riêng ở ngay bên dưới.
  *
  *   xanh dương  đang thực hiện
  *   vàng        đang chờ (chờ duyệt, chờ tới hạn)
- *   xám         đã hoàn thành, hoặc chưa bắt đầu
+ *   xám         đã hoàn thành; viền đứt = chưa bắt đầu
  */
 const STATUS_MARK: Record<'doing' | 'waiting' | 'done' | 'idle', string> = {
   doing: '▶', waiting: '◷', done: '✓', idle: '·',
 };
 const STATUS_CLASS: Record<'doing' | 'waiting' | 'done' | 'idle', string> = {
-  doing: 'bg-sky-300/10 text-sky-200 border-sky-300/30',
-  waiting: 'bg-amber-300/10 text-amber-200 border-amber-300/30',
-  done: 'bg-slate-300/8 text-slate-400 border-slate-300/20',
-  idle: 'bg-transparent text-slate-500 border-dashed border-slate-500/35',
+  doing: 'bg-doing-bg text-doing border-doing-line',
+  waiting: 'bg-soon-bg text-soon border-soon-line',
+  done: 'bg-done-bg text-done border-done-line',
+  idle: 'bg-transparent text-faint border-dashed border-muted-line',
 };
 export function Status({ kind, children, title }: {
   kind: 'doing' | 'waiting' | 'done' | 'idle'; children: ReactNode; title?: string;
@@ -177,22 +190,24 @@ export function Status({ kind, children, title }: {
 }
 
 /**
- * CẢNH BÁO — quá hạn, thiếu thông tin (mục 2.1).
+ * CẢNH BÁO — mức khẩn, thiếu thông tin (mục 2.1; PR-UX0 B-4).
  *
- * Luôn có dấu tam giác đứng trước, nên đọc được cả khi người xem không phân biệt màu, và
- * phân biệt được với trạng thái xử lý ngay cả khi hai nhãn đứng cạnh nhau.
+ * ⚠ CHỈ NGHĨA QUÁ HẠN (G-4). Nhắc mềm, lưu lỗi, dữ liệu demo, mức khẩn thì KHÔNG có ⚠ — màu đủ nói.
+ * Chữ bắt đầu "Quá hạn" tự có ⚠ (chỗ cũ như `CasePanel` không phải sửa); chỗ khác truyền `quaHan`
+ * để ép bật/tắt. Quá hạn dùng màu `late` (đỏ cam), khác `bad` của SOS 3 / Chưa đạt.
  */
-export function Alert({ tone = 'danger', children, title }: {
-  tone?: 'danger' | 'warn'; children: ReactNode; title?: string;
+export function Alert({ tone = 'danger', children, title, quaHan }: {
+  tone?: 'danger' | 'warn'; children: ReactNode; title?: string; quaHan?: boolean;
 }) {
+  const coDau = quaHan ?? (typeof children === 'string' && /^quá hạn/i.test(children));
   return (
     <span title={title}
       className={`inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[11px] font-semibold whitespace-nowrap ${
         tone === 'danger'
-          ? 'bg-rose-300/15 text-rose-200 border-rose-300/45'
-          : 'bg-amber-300/15 text-amber-200 border-amber-300/45'
+          ? 'bg-late-bg text-late border-late-line'
+          : 'bg-soon-bg text-soon border-soon-line'
       }`}>
-      <span aria-hidden>⚠</span>
+      {coDau && <span aria-hidden>⚠</span>}
       {children}
     </span>
   );
@@ -207,14 +222,14 @@ export function Alert({ tone = 'danger', children, title }: {
  *   Kém hơn          đỏ     + mũi tên xuống
  *   Không đủ căn cứ  xám    + dấu hỏi
  *
- * Đây là họ nhãn DUY NHẤT được dùng màu xanh lá. Xanh lá ở chỗ khác là một lời khen không
- * ai kiểm chứng.
+ * Cùng `Level` Đạt và `SCORE_CHIP.emerald`, đây là chỗ được dùng màu xanh lá. Xanh lá ở chỗ khác
+ * là một lời khen không ai kiểm chứng.
  */
 const OUTCOME_CLASS: Record<string, string> = {
-  ok: 'bg-emerald-300/12 text-emerald-200 border-emerald-300/35',
-  warn: 'bg-amber-300/12 text-amber-200 border-amber-300/35',
-  danger: 'bg-rose-300/12 text-rose-200 border-rose-300/35',
-  muted: 'bg-transparent text-slate-400 border-slate-500/35',
+  ok: 'bg-ok-bg text-ok border-ok-line',
+  warn: 'bg-soon-bg text-soon border-soon-line',
+  danger: 'bg-bad-bg text-bad border-bad-line',
+  muted: 'bg-transparent text-dim border-muted-line',
 };
 export function Outcome({ tone, mark, children, title }: {
   tone: 'ok' | 'warn' | 'danger' | 'muted'; mark?: string; children: ReactNode; title?: string;
@@ -241,7 +256,7 @@ export function Empty({ title, hint, action }: { title: string; hint?: string; a
 export function ErrorState({ message, hint, onRetry }: { message: string; hint?: string; onRetry?: () => void }) {
   return (
     <div className="flex flex-col items-center justify-center gap-2 py-10 px-6 text-center">
-      <div className="text-rose-200 font-medium">{message}</div>
+      <div className="text-bad font-medium">{message}</div>
       {hint && <p className="text-slate-400 text-xs max-w-md">{hint}</p>}
       {onRetry && <button className="btn btn-sm mt-2" onClick={onRetry}>Thử lại</button>}
     </div>
@@ -251,7 +266,7 @@ export function ErrorState({ message, hint, onRetry }: { message: string; hint?:
 export function Forbidden({ message, hint }: { message?: string; hint?: string }) {
   return (
     <div className="card p-6 text-center">
-      <div className="text-amber-200 font-medium">{message ?? 'Bạn không có quyền xem nội dung này'}</div>
+      <div className="text-soon font-medium">{message ?? 'Bạn không có quyền xem nội dung này'}</div>
       <p className="text-slate-400 text-xs mt-1 max-w-lg mx-auto">{hint ?? 'Quyền được xác định theo vai trò, phạm vi và phân công của tài khoản đang dùng.'}</p>
     </div>
   );
@@ -271,13 +286,13 @@ export function KpiTile({ label, value, tone = 'neutral', to, sub }: {
   label: string; value: ReactNode; tone?: Tone; to?: string; sub?: string;
 }) {
   const inner = (
-    <div className={`card p-4 h-full transition-colors ${to ? 'hover:border-sky-300/40 cursor-pointer' : ''}`}>
+    <div className={`card p-4 h-full transition-colors ${to ? 'hover:border-doing/40 cursor-pointer' : ''}`}>
       <div className="text-[11px] uppercase tracking-wide text-slate-400 font-semibold">{label}</div>
       <div className={`mt-2 text-2xl font-semibold tabular-nums ${
-        tone === 'danger' ? 'text-rose-200' : tone === 'warn' ? 'text-amber-200' : tone === 'ok' ? 'text-sky-200' : 'text-slate-100'
+        tone === 'danger' ? 'text-bad' : tone === 'warn' ? 'text-soon' : tone === 'ok' ? 'text-doing' : 'text-slate-100'
       }`}>{value}</div>
       {sub && <div className="text-[11px] text-slate-500 mt-1">{sub}</div>}
-      {to && <div className="text-[11px] text-sky-300 mt-2">Xem danh sách →</div>}
+      {to && <div className="text-[11px] text-doing mt-2">Xem danh sách →</div>}
     </div>
   );
   return to ? <Link to={to} className="block h-full no-underline">{inner}</Link> : inner;
@@ -296,7 +311,7 @@ export function Field({ label, children, hint, required, as = 'label' }: {
   const Wrap = as;
   return (
     <Wrap className="block">
-      <span className="label">{label}{required && <span className="text-rose-300"> *</span>}</span>
+      <span className="label">{label}{required && <span className="text-bad"> *</span>}</span>
       {children}
       {hint && <span className="block text-[11px] text-slate-500 mt-1">{hint}</span>}
     </Wrap>
@@ -383,7 +398,7 @@ export function BandCell({ cell, target }: {
 }) {
   if (!cell || cell.now === null) return <span className="text-slate-700">–</span>;
   const met = target == null ? null : cell.now >= target;
-  const tone = met === null ? 'text-slate-100' : met ? 'text-emerald-200' : 'text-rose-200';
+  const tone = met === null ? 'text-slate-100' : met ? 'text-ok' : 'text-bad';
   const delta = cell.prev === null ? null : Math.round((cell.now - cell.prev) * 10) / 10;
   return (
     <span className="inline-flex items-baseline gap-1 whitespace-nowrap"
@@ -391,7 +406,7 @@ export function BandCell({ cell, target }: {
         : `Lượt trước ${cell.prev} → lượt này ${cell.now}`}>
       <span className={`tabular-nums ${tone}`}>{cell.now}</span>
       {delta !== null && delta !== 0 && (
-        <span className={`text-[10px] ${cell.dir > 0 ? 'text-emerald-300/70' : 'text-rose-300/70'}`}>
+        <span className={`text-[10px] ${cell.dir > 0 ? 'text-ok/70' : 'text-bad/70'}`}>
           {cell.dir > 0 ? '▲' : '▼'}{Math.abs(delta)}
         </span>
       )}

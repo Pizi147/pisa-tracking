@@ -191,7 +191,7 @@ export function BangChung({ ownerType, ownerId, canEdit, tieuDe = 'Bằng chứn
       </div>
 
       {error && (
-        <p className="text-[11px] text-rose-300 m-0 mt-1.5">
+        <p className="text-[11px] text-bad m-0 mt-1.5">
           Không tải được danh sách bằng chứng. <button type="button" className="link appearance-none bg-transparent border-0 p-0 cursor-pointer" onClick={reload}>Tải lại</button>
         </p>
       )}
@@ -214,18 +214,18 @@ export function BangChung({ ownerType, ownerId, canEdit, tieuDe = 'Bằng chứn
                 {[r.kind === 'file' ? fmtSize(r.sizeBytes) : 'liên kết', r.uploadedByName, fmtDate(r.createdAt)].filter(Boolean).join(' · ')}
               </span>
               {canEdit && confirmId !== r.id && (
-                <button type="button" className="appearance-none bg-transparent border-0 p-0 cursor-pointer text-slate-500 hover:text-rose-300"
+                <button type="button" className="appearance-none bg-transparent border-0 p-0 cursor-pointer text-slate-500 hover:text-bad"
                   onClick={() => { setConfirmId(r.id); setRowError(null); }} aria-label={`Gỡ ${r.displayName}`}>Gỡ</button>
               )}
               {confirmId === r.id && (
-                <span className="inline-flex items-center gap-1.5 text-amber-200">
+                <span className="inline-flex items-center gap-1.5 text-soon">
                   Gỡ “{r.displayName}”? Việc này được ghi lại.
                   <button type="button" className="btn btn-sm btn-danger" onClick={() => void remove(r.id)}>Gỡ</button>
                   <button type="button" className="btn btn-sm btn-ghost" onClick={() => setConfirmId(null)}>Không</button>
                 </span>
               )}
             </span>
-            {rowError?.id === r.id && <span className="block text-[11px] text-rose-300">{rowError.message}</span>}
+            {rowError?.id === r.id && <span className="block text-[11px] text-bad">{rowError.message}</span>}
           </li>
         ))}
 
@@ -236,10 +236,10 @@ export function BangChung({ ownerType, ownerId, canEdit, tieuDe = 'Bằng chứn
               <span aria-hidden>📎</span>
               <span className="text-slate-300">{u.file.name}</span>
               <span className="text-slate-500">{fmtSize(u.file.size)}</span>
-              {u.state === 'uploading' && <span className="text-sky-300">Đang tải…</span>}
+              {u.state === 'uploading' && <span className="text-doing">Đang tải…</span>}
               {u.state === 'error' && (
                 <>
-                  <span className="text-rose-300" role="alert">{u.message}</span>
+                  <span className="text-bad" role="alert">{u.message}</span>
                   <button type="button" className="btn btn-sm btn-ghost" onClick={() => void send(u.key, u.file)}>Thử lại</button>
                   <button type="button" className="btn btn-sm btn-ghost" onClick={() => setUploads((l) => l.filter((x) => x.key !== u.key))}>Bỏ</button>
                 </>
@@ -265,7 +265,7 @@ export function BangChung({ ownerType, ownerId, canEdit, tieuDe = 'Bằng chứn
             </button>
             <button type="button" className="btn btn-sm" disabled={linkBusy} onClick={() => { setLinkOpen(false); setLinkError(null); }}>Huỷ</button>
           </span>
-          {linkError && <p className="text-[11px] text-rose-300 m-0 sm:col-span-3" role="alert">{linkError}</p>}
+          {linkError && <p className="text-[11px] text-bad m-0 sm:col-span-3" role="alert">{linkError}</p>}
         </div>
       )}
     </div>

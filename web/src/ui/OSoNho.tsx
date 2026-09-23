@@ -4,7 +4,7 @@
  * Nơi dùng bọc bằng `<div className="flex flex-wrap gap-2">`.
  */
 export function OSoNho({ nhan, so, tone }: { nhan: string; so: number | string; tone?: 'warn' | 'danger' }) {
-  const mau = tone === 'danger' ? 'text-rose-200' : tone === 'warn' ? 'text-amber-200' : 'text-slate-100';
+  const mau = tone === 'danger' ? 'text-bad' : tone === 'warn' ? 'text-soon' : 'text-slate-100';
   return (
     <div className="rounded-lg border px-3 py-2 min-w-[7rem]" style={{ borderColor: 'var(--line)', background: 'var(--surface-2)' }}>
       <span className="block text-[11px] text-slate-500">{nhan}</span>

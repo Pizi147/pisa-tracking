@@ -21,9 +21,9 @@ export function HangTab<K extends string>({ tabs, value, onChange, ariaLabel, ca
               cap === 'con' ? 'text-xs' : 'text-sm'
             } ${active ? 'border-[color:var(--accent)] text-slate-100' : 'border-transparent text-slate-400 hover:text-slate-200'}`}>
             {t.label}
-            {t.canhBao && <span className="ml-1 text-amber-300" aria-label="có cảnh báo">⚠</span>}
+            {t.canhBao && <span className="ml-1 text-soon" aria-label="có cảnh báo">⚠</span>}
             {!!t.so && t.so > 0 && (
-              <span className="ml-1.5 rounded-full px-1.5 text-[10px] tabular-nums bg-sky-300/15 text-sky-200">{t.so}</span>
+              <span className="ml-1.5 rounded-full px-1.5 text-[10px] tabular-nums bg-doing-bg text-doing">{t.so}</span>
             )}
           </button>
         );

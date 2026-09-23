@@ -1,13 +1,19 @@
 import { attemptProgressView, type ProgressTone } from '@shared/domain/index.ts';
 import { SCORE_CHIP, type ScoreTone } from './ui.tsx';
 
-/** Bốn tone của luật ↔ bốn họ màu điểm ở `ui.tsx`. Một chỗ nối, không chép bảng màu. */
-const TONE_FAMILY: Record<ProgressTone, ScoreTone> = {
-  muted: 'slate', danger: 'rose', info: 'sky', ok: 'emerald',
-};
 /**
- * Mỗi trạng thái có biểu tượng riêng — màu không bao giờ đứng một mình. Dấu ⚠ CHỈ khi đợt còn thiếu điểm (tạm thời);
- * đợt đã đủ điểm mà có SOS thì màu đỏ + dấu ● — không dùng ⚠ đi với chữ "Đã đủ điểm" (chủ sản phẩm 22/09).
+ * Màu kết quả Test (N-1b) ↔ họ màu điểm ở `ui.tsx`. Một chỗ nối, không chép bảng màu:
+ * Đạt xanh lá · SOS 1 vàng · SOS 2 cam · SOS 3 (hay Overall chưa đạt) đỏ · tạm thời / chưa đủ điểm xám viền đứt.
+ */
+function hoMau(tone: ProgressTone, overall: string, soMon: number | null): ScoreTone {
+  if (overall === 'incomplete') return 'tam';
+  if (tone === 'danger') return soMon === 1 ? 'sos1' : soMon === 2 ? 'sos2' : 'rose';
+  if (tone === 'info' || tone === 'ok') return 'emerald';
+  return 'slate';
+}
+/**
+ * Mỗi trạng thái có biểu tượng riêng — màu không bao giờ đứng một mình. Số tạm thời (đợt còn thiếu điểm) dùng ◌ + viền đứt;
+ * đợt đã đủ điểm mà có SOS thì màu theo mức SOS + dấu ● — ⚠ chỉ dành cho quá hạn (G-4).
  */
 const TONE_MARK: Record<ProgressTone, string> = { muted: '·', danger: '●', info: '✓', ok: '✓' };
 
@@ -44,11 +50,14 @@ export function KetQuaDot({ coDiem, yeuCau, dat, sos, phan = 'cau', cheDo, soMon
 }) {
   const v = attemptProgressView({ scored: coDiem, required: yeuCau, passed: dat, sos, cheDo, soMonChuaDat });
   const tone: ProgressTone = phan === 'overall' && v.overall === 'incomplete' ? 'muted' : v.tone;
-  const mark = phan === 'overall' ? (v.passBadge ? '✓' : '·') : tone === 'danger' && v.overall === 'incomplete' ? '⚠' : TONE_MARK[tone];
+  /* ⚠ chỉ nghĩa quá hạn (G-4): số tạm thời dùng ◌ (viền đứt), không dùng ⚠. */
+  const mark = phan === 'overall' ? (v.passBadge ? '✓' : '·') : tone === 'danger' && v.overall === 'incomplete' ? '◌' : TONE_MARK[tone];
+  const soMon = cheDo === 'ratio' ? (soMonChuaDat ?? sos) : sos;
+  const mau = hoMau(tone, v.overall, soMon);
   return (
     <span
       data-overall={v.overall} data-pass-badge={v.passBadge}
-      className={`inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs font-medium ${SCORE_CHIP[TONE_FAMILY[tone]]}`}>
+      className={`inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs font-medium ${SCORE_CHIP[mau]}`}>
       <span aria-hidden>{mark}</span>
       {phan === 'overall' ? v.overallText : v.text}
     </span>

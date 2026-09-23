@@ -7,7 +7,6 @@ import {
   type AssessedSkill, type AttemptKind, type EntrySkill, type InterventionKind,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
-import { diffDays } from '../util.ts';
 import { can, napTruocPhamVi, scopeFor, teachesClass, type Principal } from '../permissions.ts';
 import { attemptHref, listAttempts } from '../fasttrack/attempts.ts';
 import { classAlerts } from '../classes/schedule.ts';
@@ -52,12 +51,13 @@ export type WorkItem = {
   /** Nhãn MỨC ĐỘ của học viên — chỉ có ở việc liên quan tới một vấn đề đang mở. */
   level: { tone: 'ok' | 'info' | 'warn' | 'danger'; text: string } | null;
   reason: string;
+  /** Nút động từ ngắn: "Nhập điểm", "Đề ra PA", "Ghi kết quả". */
   actionLabel: string;
   /**
-   * Chữ trên nhãn quá hạn. "Quá hạn" trơ trọi thì phải đọc tiếp mới biết quá hạn CÁI GÌ —
-   * mỗi loại việc nói thẳng ra: quá hạn nhập điểm, quá hạn hỗ trợ, quá hạn duyệt.
+   * TIÊU ĐỀ DÒNG (PR-UX0, B-2): động từ + đối tượng — "Nhập điểm L, R", "Ghi kết quả PA Reading". Việc cần làm là
+   * tiêu đề, không nằm trong badge. Quá hạn KHÔNG có nhãn riêng: `urgency` + `due` đủ để giao diện nối "⚠ quá hạn n ngày" sau hạn.
    */
-  overdueLabel: string | null;
+  tieuDe: string;
   href: string;
   /*
    * NĂM Ô CỦA MỘT DÒNG VIỆC (mục 5.3): học viên/lớp · việc cần làm · người phụ trách · hạn ·
@@ -116,7 +116,7 @@ export type WorkGroupKey =
  * Nhãn cộc lốc kiểu "Ghi kết quả" bắt người đọc tự đoán chuyện gì đã xảy ra và mình phải
  * làm gì. Một dòng giải thích ở đầu nhóm rẻ hơn nhiều so với việc mỗi người tự hiểu một kiểu.
  */
-const GROUP_META: Record<WorkGroupKey, { label: string; hint: string; overdue: string }> = {
+const GROUP_META: Record<WorkGroupKey, { label: string; hint: string }> = {
   /*
    * NHÓM ĐẦU TIÊN, VÌ NÓ ĐỨNG TRƯỚC MỌI THỨ KHÁC (mục 6.2).
    *
@@ -129,7 +129,6 @@ const GROUP_META: Record<WorkGroupKey, { label: string; hint: string; overdue: s
     hint: 'Kết quả của em dưới kỳ vọng ở kỹ năng này. Hệ thống chỉ báo con số — bạn xem lại bài '
       + 'rồi mở case với tên và mô tả cụ thể. Hạn ba ngày kể từ lúc tín hiệu được ghi nhận, '
       + 'tính cả ngày đầu.',
-    overdue: 'Quá hạn xác minh',
   },
 
   /*
@@ -143,7 +142,6 @@ const GROUP_META: Record<WorkGroupKey, { label: string; hint: string; overdue: s
     label: 'Xác định nguyên nhân',
     hint: 'Mock Test có SOS đã tự tạo case cho kỹ năng này. Bạn có ba ngày (tính cả ngày đầu) để chọn nguyên nhân và xác nhận, sửa hoặc thay PA học thuật gợi ý — '
       + 'hoặc đóng `Không cần theo dõi` nếu em không cần theo dõi. Quản lý chỉ thấy dòng này khi đã quá hạn.',
-    overdue: 'Quá hạn xác định nguyên nhân',
   },
 
   /*
@@ -158,70 +156,54 @@ const GROUP_META: Record<WorkGroupKey, { label: string; hint: string; overdue: s
     hint: 'Em đã vắng và đã dời một lần rồi, nên lần này cần bạn quyết. Phải trả lời TRƯỚC khi '
       + 'tuần mới bắt đầu — từ chối hoặc để quá hạn thì phần thi (Fast Track) hoặc lịch hẹn '
       + '(Normal) bị huỷ, và chỉ Quản lý mới khôi phục được.',
-    overdue: 'Quá hạn trả lời — phần thi đã huỷ',
   },
 
   /* ---------------------------------------------------- ba nhóm học thuật chính (mục 3.2) */
   score: {
     label: 'Nhập điểm Test',
     hint: 'Học viên đã làm bài rồi mà kỹ năng này chưa có điểm. Các em cùng lớp, cùng bài, cùng kỹ năng gom thành một dòng để nhập một lượt.',
-    overdue: 'Quá hạn nhập điểm',
   },
   no_plan: {
     label: 'Thiếu PA học thuật',
     hint: 'Vấn đề đã mở nhưng chưa ai ghi sẽ làm gì cho em.',
-    overdue: 'Quá hạn đề xuất PA học thuật',
   },
   result: {
     label: 'Cập nhật kết quả',
     hint: 'Đã tới hẹn xem lại: ghi lại sau khi hỗ trợ em có tiến bộ không, rồi chọn bước tiếp theo.',
-    overdue: 'Quá hạn cập nhật kết quả',
   },
 
   /* ------------------------------------------------------- việc chỉ Quản lý làm được */
   decide: {
     label: 'Chờ tôi xử lý',
     hint: 'Đề xuất PA học thuật cần bạn duyệt, và những case giáo viên đã xin ý kiến Quản lý. Chừng nào chưa có câu trả lời thì bên kia không đi tiếp được.',
-    overdue: 'Quá hạn trả lời',
   },
 
   /* --------------------------------------------- những nghĩa vụ khác, vẫn phải thấy được */
   do_plan: {
     label: 'Làm PA học thuật đã hẹn',
     hint: 'PA học thuật đã lên kế hoạch và tới ngày phải làm. Làm xong thì đánh dấu đã hoàn thành kèm ngày thực hiện.',
-    overdue: 'Quá hạn làm',
   },
   no_owner: {
     label: 'Chưa có người phụ trách',
     hint: 'Case đang mở mà chưa ai nhận điều phối. Chọn người phụ trách trước, vì mọi việc sau đó đều treo vào chỗ này.',
-    overdue: 'Quá hạn phân công người phụ trách',
   },
   placement: {
     label: 'Cần xếp lớp tiếp',
     hint: 'Lớp đã học hết chương trình. Học viên còn đang học phải được xếp lớp tiếp, việc này không tự xảy ra.',
-    overdue: 'Quá hạn xếp lớp tiếp',
   },
   next_step: {
     label: 'Chưa có lộ trình tiếp theo',
     hint: 'Lớp sắp hết khoá. Ghi cho từng em sẽ học gì tiếp, để Quản lý xếp lớp.',
-    overdue: 'Lớp đã hết khoá',
   },
   missing_data: {
     label: 'Thiếu dữ liệu cần cho đánh giá',
     hint: 'Thiếu những thông tin mà không có thì không đánh giá hay lên kế hoạch được: bài chưa xếp vào tuần nào, lớp chưa có tuần bắt đầu, học viên FT chưa có mục tiêu.',
-    overdue: 'Quá hạn bổ sung dữ liệu',
   },
   mgmt: {
     label: 'Công việc được giao',
     hint: 'Công việc quản lý hoặc việc con được giao cho bạn ở bảng Tiến độ công việc.',
-    overdue: 'Quá hạn hoàn thành',
   },
 };
-
-/** Nhãn hiện trên dòng việc: quá hạn thì nói rõ quá hạn gì, tới hạn hôm nay thì nói vậy. */
-function badge(g: WorkGroupKey, u: WorkUrgency): string | null {
-  return u === 'overdue' ? GROUP_META[g].overdue : u === 'today' ? 'Hạn hôm nay' : null;
-}
 
 /**
  * Hạn xử lý một vấn đề suy thẳng từ mức độ ưu tiên: 7 · 5 · 3 ngày (owner chốt 10/09/2026).
@@ -255,9 +237,16 @@ function urgencyOf(date: string | null, today: string): WorkUrgency {
   return 'normal';
 }
 
-function lateText(date: string, today: string): string {
-  const n = diffDays(today, date);
-  return n <= 0 ? 'hạn hôm nay' : n === 1 ? 'quá hạn 1 ngày' : `quá hạn ${n} ngày`;
+/** Đuôi tiêu đề: " Reading" hay "" khi case không có kỹ năng. */
+const duoiKyNang = (topic: string | null | undefined) => (topic ? ` ${caseTopicLabel(topic)}` : '');
+
+/**
+ * Nhãn đợt (mockup 17 #13): bài không phải Mock thì gọi đúng tên ("Giữa khoá", "Cuối khoá"), Mock thì "MT{n}" —
+ * lớp thường không còn hiện "MT1".
+ */
+function nhanDot(kind: string | null | undefined, no: number | null | undefined, macDinh = 'Case'): string {
+  if (kind && kind !== 'mock') return ATTEMPT_KIND_SHORT[kind as AttemptKind] ?? 'Bài kiểm tra';
+  return no ? `MT${no}` : macDinh;
 }
 
 export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi' | 'tat-ca' } = {}) {
@@ -297,16 +286,16 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
         ? `${sg.label} chưa đạt${sg.score !== null && sg.total !== null ? ` (${sg.score}/${sg.total})` : ''}.`
         : `${sg.label} dưới kỳ vọng${sg.band !== null ? ` (${sg.band} so với ${sg.expectation ?? '—'})` : ''}.`
           + ' Xem lại bài rồi xác minh.',
+      tieuDe: `Xác minh SOS ${sg.label}`,
       actionLabel: sg.kind === 'normal' ? 'Tạo Case' : 'Mở Case',
       signal: {
         id: sg.id, kind: sg.kind, skill: sg.skill, skillLabel: sg.label,
         score: sg.score, total: sg.total, deadline: sg.verifyDue, actions: sg.actions,
       },
-      overdueLabel: badge('verify', u),
       href: `/hoc-vien/${sg.studentId}`,
       ownerId: sg.ownerUserId, owner: null, mine,
       due: sg.verifyDue,
-      statusLabel: u === 'overdue' ? `Chờ xác minh · ${lateText(sg.verifyDue, today)}` : 'Chờ xác minh',
+      statusLabel: 'Chờ xác minh',
       contextLabel: sg.attemptNo
         ? (sg.attemptKind && sg.attemptKind !== 'mock'
             ? `${ATTEMPT_KIND_SHORT[sg.attemptKind as AttemptKind] ?? 'Bài kiểm tra'} · ${sg.label}`
@@ -414,9 +403,9 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
         attemptId: first.attemptId, attemptNo: first.attemptNo, caseId: null, level: null,
         contextLabel: first.testLabel,
         count: students.size,
-        reason: u === 'overdue' && first.due ? `${skills} — ${lateText(first.due, today)}` : skills,
-        actionLabel: `Nhập điểm ${skills}`,
-        overdueLabel: badge('score', u),
+        reason: skills,
+        tieuDe: `Nhập điểm ${skills}`,
+        actionLabel: 'Nhập điểm',
         href: first.href,
         ownerId: first.ownerId, owner: null, mine: first.ownerId === p.userId,
         due: first.due,
@@ -479,12 +468,12 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   const pendingPlans = conn
     .prepare(
       `SELECT iv.id, iv.case_id, iv.kind, iv.description, iv.approval_due,
-              sc.sos_level, sc.urgency, sc.summary, sc.origin_kind, sc.attempt_id,
+              sc.sos_level, sc.urgency, sc.summary, sc.origin_kind, sc.attempt_id, sc.topic,
               COALESCE(sc.student_id, a.student_id) AS eff_student_id,
               COALESCE(a.class_id, cur.class_id) AS eff_class_id,
               COALESCE(ac.branch_id, cc.branch_id) AS eff_branch_id,
               COALESCE(ac.code, cc.code) AS class_code,
-              s.full_name, a.attempt_no,
+              s.full_name, a.attempt_no, a.kind AS attempt_kind,
               pu.full_name AS proposer_name,
               EXISTS (SELECT 1 FROM case_followups fu
                        WHERE fu.intervention_id = iv.id AND fu.next_step = 'ask_manager')
@@ -513,7 +502,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       classId: iv.eff_class_id ?? null, classCode: iv.class_code ?? null,
       attemptId: iv.attempt_id ?? null, attemptNo: iv.attempt_no ?? null,
       caseId: iv.case_id as number, level: levelOf(iv),
-      contextLabel: iv.attempt_no ? `MT${iv.attempt_no}` : 'Case',
+      contextLabel: nhanDot(iv.attempt_kind, iv.attempt_no),
       count: null,
       /*
        * HAI LOẠI VIỆC TRONG CÙNG MỘT NHÓM, và câu lý do phải phân biệt được:
@@ -521,14 +510,11 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
        *   - giáo viên đã làm rồi nhưng XIN Ý KIẾN Quản lý vì tự mình không quyết được.
        * Cùng là "bên kia đang chờ tôi", nhưng người đọc cần biết mình đang được hỏi gì.
        */
-      reason: [
-        iv.asked_manager
-          ? `${iv.proposer_name ?? 'Giáo viên'} xin ý kiến: ${what}`
-          : (iv.proposer_name ? `${iv.proposer_name} đề xuất: ${what}` : `Đề xuất: ${what}`),
-        u === 'overdue' && iv.approval_due ? lateText(iv.approval_due, today) : null,
-      ].filter(Boolean).join(' — '),
+      reason: iv.asked_manager
+        ? `${iv.proposer_name ?? 'Giáo viên'} xin ý kiến: ${what}`
+        : (iv.proposer_name ? `${iv.proposer_name} đề xuất: ${what}` : `Đề xuất: ${what}`),
+      tieuDe: iv.asked_manager ? 'Trả lời giáo viên' : `Duyệt PA học thuật${duoiKyNang(iv.topic)}`,
       actionLabel: iv.asked_manager ? 'Trả lời giáo viên' : 'Duyệt PA học thuật',
-      overdueLabel: badge('decide', u),
       href: iv.eff_student_id ? `/hoc-vien/${iv.eff_student_id}` : `/hoc-thuat/case/${iv.case_id}`,
       /* Việc này là của QUẢN LÝ đang xem, dù người đề xuất là giáo viên khác. */
       ownerId: p.userId, owner: null, mine: true,
@@ -580,16 +566,15 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       classId: r.class_id ?? null, classCode: r.class_code ?? null,
       attemptId: r.attempt_id, attemptNo: r.attempt_no ?? null,
       caseId: null, level: { tone: u === 'overdue' ? 'danger' : 'warn', text: `Lần dời ${r.move_no}` },
-      contextLabel: r.attempt_no ? `MT${r.attempt_no}` : 'Lịch thi',
+      contextLabel: nhanDot(r.kind, r.attempt_no, 'Lịch thi'),
       count: null,
       reason: [
         `${r.asker_name ?? 'GVCN'} đề nghị dời ${ASSESSED_SKILL_LABEL[r.skill as AssessedSkill] ?? r.skill}`
         + `${r.to_week ? ` sang tuần ${r.to_week}` : ''} (lần ${r.move_no} do vắng)`,
         r.reason ? `Lý do: ${r.reason}` : null,
-        u === 'overdue' && r.decide_by ? lateText(r.decide_by, today) : null,
       ].filter(Boolean).join(' — '),
+      tieuDe: `Duyệt dời ${ASSESSED_SKILL_LABEL[r.skill as AssessedSkill] ?? r.skill}`,
       actionLabel: 'Trả lời đề nghị',
-      overdueLabel: badge('decide_move', u),
       /* Đi thẳng vào bảng lịch kỹ năng của đợt đó — nơi có nút trả lời đề nghị. */
       href: attemptHref({ id: r.attempt_id, kind: r.kind, classId: r.class_id }),
       ownerId: p.userId, owner: null, mine: true,
@@ -616,7 +601,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
               sc.topic, sc.category, sc.attempt_id, sc.sos_level,
               COALESCE(sc.student_id, a.student_id) AS eff_student_id,
               COALESCE(a.class_id, cur.class_id) AS eff_class_id,
-              s.full_name, cl.code AS class_code, cl.branch_id, a.attempt_no
+              s.full_name, cl.code AS class_code, cl.branch_id, a.attempt_no, a.kind AS attempt_kind
          FROM case_interventions iv
          JOIN sos_cases sc ON sc.id = iv.case_id
          LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
@@ -652,11 +637,11 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       classId: iv.eff_class_id ?? null, classCode: iv.class_code ?? null,
       attemptId: iv.attempt_id ?? null, attemptNo: iv.attempt_no ?? null,
       caseId: iv.case_id, level: null,
-      contextLabel: iv.attempt_no ? `MT${iv.attempt_no}` : 'Case',
+      contextLabel: nhanDot(iv.attempt_kind, iv.attempt_no),
       count: null,
-      reason: what + (u === 'overdue' ? ` — ${lateText(iv.action_due, today)}` : ''),
-      actionLabel: 'Đánh dấu đã làm',
-      overdueLabel: badge('do_plan', u),
+      reason: what,
+      tieuDe: `Làm PA: ${what}`,
+      actionLabel: 'Đã làm',
       href: iv.eff_student_id ? `/hoc-vien/${iv.eff_student_id}` : `/hoc-thuat/case/${iv.case_id}`,
       /*
        * NGƯỜI PHỤ TRÁCH có thể là một tài khoản, hoặc chỉ là một cái tên ai đó gõ vào (người
@@ -694,18 +679,18 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
     if (!can(p, PERMISSIONS.CLASS_EDIT, { classId })) continue;
     const cls = conn.prepare('SELECT code FROM classes WHERE id = ?').get(classId) as any;
     items.push({
-      key: `class:${classId}`, group: 'placement', urgency: 'overdue',
+      key: `class:${classId}`, group: 'placement', urgency: 'normal',
       studentId: null, studentName: `Lớp ${cls.code}`,
       classId, classCode: cls.code,
       attemptId: null, attemptNo: null, caseId: null, level: null,
       contextLabel: `Hết ${pr.totalWeeks} tuần`, count: pr.canXepLop,
       reason: `${pr.canXepLop} học viên chưa có hướng học tiếp`,
+      tieuDe: 'Xếp lớp tiếp',
       actionLabel: 'Xếp lớp tiếp theo',
-      overdueLabel: badge('placement', 'overdue'),
       href: `/hoc-vien/lop/${classId}?viec=chuyen-tiep`,
       /* Việc của cả lớp, không của riêng ai — nên không gán người phụ trách. */
       ownerId: null, owner: null, mine: false,
-      due: null, statusLabel: 'Đã hết chương trình',
+      due: null, statusLabel: 'Chờ xếp lớp',
     });
   }
 
@@ -734,7 +719,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
         const n = soChua.get(classId) ?? 0;
         if (n === 0) continue;
         const cls = conn.prepare('SELECT code FROM classes WHERE id = ?').get(classId) as any;
-        const urgency: WorkUrgency = pr.phase === 'finished' ? 'overdue' : 'normal';
+        const urgency: WorkUrgency = 'normal';   // không có hạn để quá (G-4) — hết khoá chỉ đổi chữ trạng thái
         items.push({
           key: `class-next-step:${classId}`, group: 'next_step', urgency,
           studentId: null, studentName: `Lớp ${cls.code}`,
@@ -743,8 +728,8 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
           contextLabel: pr.finalWeekStart ? `hết khoá ${tuanLich(pr.finalWeekStart, today)}` : null,
           count: n,
           reason: `${n} HV chưa có lộ trình tiếp theo`,
+          tieuDe: 'Ghi lộ trình tiếp theo',
           actionLabel: 'Ghi lộ trình tiếp theo',
-          overdueLabel: badge('next_step', urgency),
           href: `/hoc-vien?open=${classId}`,
           ownerId: p.userId, owner: null, mine: true,
           due: null, statusLabel: pr.phase === 'finished' ? 'Đã hết khoá' : 'Sắp hết khoá',
@@ -763,7 +748,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   const dueReviews = conn
     .prepare(
       `SELECT iv.id, iv.case_id, iv.kind, iv.description, iv.followup_due,
-              COALESCE(iv.performer_user_id, iv.recorded_by) AS owner_id,
+              COALESCE(iv.performer_user_id, iv.recorded_by) AS owner_id, a.kind AS attempt_kind,
               sc.topic, sc.sos_level, sc.urgency, sc.summary, sc.origin_kind, sc.attempt_id,
               COALESCE(sc.student_id, a.student_id) AS eff_student_id,
               COALESCE(a.class_id, cur.class_id) AS eff_class_id,
@@ -808,12 +793,12 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       caseId: iv.case_id as number, level: levelOf(iv),
       reason: [
         (iv.description ?? '').trim() || INTERVENTION_KIND_LABEL[iv.kind as InterventionKind] || 'Đã hỗ trợ',
-        u === 'overdue' ? lateText(iv.followup_due, today) : null,
         mine ? null : 'người thực hiện chưa cập nhật',
       ].filter(Boolean).join(' — '),
-      contextLabel: iv.attempt_no ? `MT${iv.attempt_no}` : 'Case',
+      contextLabel: nhanDot(iv.attempt_kind, iv.attempt_no),
       count: null,
-      actionLabel: 'Cập nhật kết quả', overdueLabel: badge('result', u),
+      tieuDe: `Ghi kết quả PA${duoiKyNang(iv.topic)}`,
+      actionLabel: 'Ghi kết quả',
       href: iv.eff_student_id ? `/hoc-vien/${iv.eff_student_id}` : `/hoc-thuat/case/${iv.case_id}`,
       ownerId: iv.owner_id ?? null, owner: null, mine,
       due: iv.followup_due ?? null, statusLabel: 'Chờ cập nhật kết quả',
@@ -871,7 +856,6 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
      * mức độ chỉ còn hai bậc, mỗi bậc một con số.
      */
     const detected = c.detected_at ?? (c.created_at ?? '').slice(0, 10);
-    const days = detected ? diffDays(today, detected) : 0;
     const deadline = detected
       ? planDueDate(detected, c.urgency ?? urgencyFromSos(c.sos_level ?? null))
       : null;
@@ -886,12 +870,11 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       classId: c.eff_class_id ?? null, classCode: c.class_code ?? null,
       attemptId: c.attempt_id ?? null, attemptNo: c.attempt_no ?? null,
       caseId: c.id as number, level: levelOf(c),
-      reason: u === 'overdue'
-        ? `${head} — chưa có PA học thuật ${days} ngày`
-        : `${head} — chưa có PA học thuật`,
-      contextLabel: c.attempt_no ? `MT${c.attempt_no}` : 'Case',
+      reason: head,
+      contextLabel: nhanDot(c.attempt_kind, c.attempt_no),
       count: null,
-      actionLabel: 'Đề xuất PA học thuật', overdueLabel: badge('no_plan', u),
+      tieuDe: `Đề ra PA học thuật${duoiKyNang(c.topic)}`,
+      actionLabel: 'Đề ra PA',
       href: c.eff_student_id ? `/hoc-vien/${c.eff_student_id}` : `/hoc-thuat/case/${c.id}`,
       /* Chưa ai nhận — và đó chính là vấn đề, nên để trống chứ không gán bừa cho người xem. */
       ownerId: null, owner: null, mine: false,
@@ -913,7 +896,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
               COALESCE(a.class_id, cur.class_id) AS eff_class_id,
               COALESCE(ac.branch_id, cc.branch_id) AS eff_branch_id,
               COALESCE(ac.code, cc.code) AS class_code,
-              s.full_name, a.attempt_no,
+              s.full_name, a.attempt_no, a.kind AS attempt_kind,
               (SELECT MIN(g.verify_due) FROM case_signals g WHERE g.case_id = sc.id AND g.status = 'linked') AS due,
               EXISTS (SELECT 1 FROM case_issues ci WHERE ci.case_id = sc.id AND ci.role = 'primary') AS has_cause,
               EXISTS (SELECT 1 FROM case_interventions un WHERE un.case_id = sc.id AND ${UNCONFIRMED_PRESET('un')} AND un.status = 'planned') AS has_unconfirmed
@@ -948,14 +931,14 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       classId: c.eff_class_id ?? null, classCode: c.class_code ?? null,
       attemptId: c.attempt_id ?? null, attemptNo: c.attempt_no ?? null,
       caseId: c.id as number, level: levelOf(c),
-      contextLabel: c.attempt_no ? `MT${c.attempt_no}` : 'Case',
+      contextLabel: nhanDot(c.attempt_kind, c.attempt_no),
       count: null,
       reason: [
         `${skillLabel} dưới kỳ vọng — ${missing.join(' và ')}`,
-        u === 'overdue' && c.due ? lateText(c.due, today) : null,
         mine ? null : 'người phụ trách chưa làm',
       ].filter(Boolean).join(' — '),
-      actionLabel: 'Xác định nguyên nhân', overdueLabel: badge('cause', u),
+      tieuDe: `Xác định nguyên nhân ${skillLabel}`,
+      actionLabel: 'Xác định nguyên nhân',
       href: c.eff_student_id ? `/hoc-vien/${c.eff_student_id}` : `/hoc-thuat/case/${c.id}`,
       ownerId: c.owner_user_id ?? null, owner: null, mine,
       due: c.due ?? null, statusLabel: 'Chờ xác định nguyên nhân',
@@ -971,9 +954,10 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       studentId: a.studentId, studentName: a.studentName,
       classId: a.classId ?? null, classCode: a.classCode ?? null,
       attemptId: a.id, attemptNo: a.attemptNo, caseId: null, level: null,
-      contextLabel: `MT${a.attemptNo}`, count: null,
+      contextLabel: nhanDot(a.kind, a.attemptNo), count: null,
       reason: 'Bài chưa được xếp vào tuần nào nên chưa tính được hạn nhập điểm',
-      actionLabel: 'Chốt tuần MT', overdueLabel: null, href: attemptHref(a),
+      tieuDe: 'Chốt tuần MT',
+      actionLabel: 'Chốt tuần MT', href: attemptHref(a),
       ownerId: p.userId, owner: null, mine: true,
       due: null, statusLabel: 'Chưa có tuần',
     });
@@ -1021,10 +1005,11 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       classId: c.eff_class_id ?? null, classCode: c.class_code ?? null,
       attemptId: c.attempt_id ?? null, attemptNo: c.attempt_no ?? null,
       caseId: c.id as number, level: levelOf(c),
-      contextLabel: c.attempt_no ? `MT${c.attempt_no}` : 'Case',
+      contextLabel: nhanDot(c.attempt_kind, c.attempt_no),
       count: null,
       reason: `${head} — chưa ai nhận điều phối`,
-      actionLabel: 'Chọn người phụ trách', overdueLabel: null,
+      tieuDe: 'Chọn người phụ trách',
+      actionLabel: 'Chọn người phụ trách',
       href: c.eff_student_id ? `/hoc-vien/${c.eff_student_id}` : `/hoc-thuat/case/${c.id}`,
       ownerId: null, owner: null, mine: false,
       due: null, statusLabel: 'Chưa có người phụ trách',
@@ -1047,8 +1032,9 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       attemptId: null, attemptNo: null, caseId: null, level: null,
       contextLabel: t.parentTitle ? `Việc con của: ${t.parentTitle}` : 'Công việc quản lý',
       count: null,
-      reason: t.due && u === 'overdue' ? `${t.progressLabel} — ${lateText(t.due, today)}` : t.progressLabel,
-      actionLabel: 'Cập nhật tiến độ', overdueLabel: badge('mgmt', u),
+      reason: t.progressLabel,
+      tieuDe: t.title,
+      actionLabel: 'Cập nhật',
       href: `/cong-viec?mo-viec=${t.id}`,
       ownerId: p.userId, owner: null, mine: true,
       due: t.due, statusLabel: t.progressLabel,

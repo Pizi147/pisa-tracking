@@ -3,7 +3,9 @@ import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { useSession } from '../../lib/session.tsx';
 import { invalidate } from '../../lib/api.ts';
-import { Alert, Card, Empty, ErrorState, Level, SectionNote, Skeleton, Status, Task, Th } from '../../ui/ui.tsx';
+import { Alert, Card, Empty, ErrorState, Level, SectionNote, Skeleton, Status, Th } from '../../ui/ui.tsx';
+import { Nhan, toneNhanTuBadge } from '../../ui/Nhan.tsx';
+import { HangNhom } from '../../ui/HangNhom.tsx';
 import { attemptHref, caseStatusLabel, sosTone } from '../../lib/format.ts';
 import type { Branch } from '../../ui/Filters.tsx';
 import { MenuDong, type MucMenu } from '../../ui/MenuDong.tsx';
@@ -190,13 +192,30 @@ export default function StudentsPage() {
               : 'Bỏ bớt từ khoá, đổi chip lọc hoặc đổi phạm vi.'} />
         </Card>
       ) : (
-        <div className="space-y-2">
-          {lopHien.map((c) => (
-            <HopLop key={c.id} lop={c} mo={openIds.includes(c.id)} onDoiMo={() => doiMo(c.id)}
-              chiHien={dangLoc ? (idsTheoLop.get(c.id) ?? new Set()) : null} sapXep={sapXep}
-              chiMinh={pv?.dangDung === 'toi'}
-              onThemHocVien={() => setThem({ id: c.id, code: c.code })} onDoi={trang.reload} />
-          ))}
+        /* MỘT bảng, tiêu đề cột MỘT lần, mỗi lớp một <tbody> (hàng lớn + hàng con) — PR-UX0, N-2. Menu ⋯ vẽ ra ngoài bảng (portal). */
+        <div className="card overflow-x-auto">
+          <table className="w-full min-w-[780px] table-fixed text-sm">
+            <colgroup>
+              <col className="w-[28%]" /><col className="w-[22%]" /><col className="w-[14%]" />
+              <col className="w-[7%]" /><col className="w-[25%]" /><col className="w-12" />
+            </colgroup>
+            <thead>
+              <tr>
+                <th className="th">Học viên</th>
+                <th className="th">Kết quả gần nhất</th>
+                <th className="th">{lopHien.some((c) => c.scoringMode === 'ratio') ? (lopHien.some((c) => c.scoringMode !== 'ratio') ? 'Mục tiêu / Khoá' : 'Khoá') : 'Mục tiêu'}</th>
+                <th className="th text-right">Case</th>
+                <th className="th">Việc tiếp theo</th>
+                <th className="th"><span className="sr-only">Thao tác</span></th>
+              </tr>
+            </thead>
+            {lopHien.map((c) => (
+              <HopLop key={c.id} lop={c} mo={openIds.includes(c.id)} onDoiMo={() => doiMo(c.id)}
+                chiHien={dangLoc ? (idsTheoLop.get(c.id) ?? new Set()) : null} sapXep={sapXep}
+                chiMinh={pv?.dangDung === 'toi'}
+                onThemHocVien={() => setThem({ id: c.id, code: c.code })} onDoi={trang.reload} />
+            ))}
+          </table>
         </div>
       ))}
 
@@ -213,7 +232,7 @@ export default function StudentsPage() {
 }
 
 /**
- * HỘP LỚP (đặc tả §3.6): ▸ · mã (mở Hồ sơ lớp) · chương trình · n học viên · GVCN · tối đa 2 badge (+n) · ⋯.
+ * HÀNG LỚN của một lớp (đặc tả §3.6; PR-UX0 N-2): ▸ · mã (mở Hồ sơ lớp) · chương trình · n HV · GVCN · tối đa 2 badge (+n) · ⋯.
  * ⋯ của lớp: Hồ sơ lớp · Nhập điểm Test (Q11, Q6) · + Học viên — chỉ mục người xem làm được.
  */
 function HopLop({ lop, mo, onDoiMo, chiHien, sapXep, chiMinh, onThemHocVien, onDoi }: {
@@ -226,7 +245,8 @@ function HopLop({ lop, mo, onDoiMo, chiHien, sapXep, chiMinh, onThemHocVien, onD
   const thuong = lop.scoringMode === 'ratio';
   const b = badgeLop({
     needsPlacement: lop.needsPlacement, canXepLop: lop.canXepLop, missingSkills: lop.missingSkills,
-    needScoresText: lop.needScores > 0 ? needScoresText(lop.workScope, lop.needScores) : null,
+    soBaiChoCham: lop.needScores,
+    needScoresTitle: lop.needScores > 0 ? needScoresText(lop.workScope, lop.needScores) : null,
     soCaseMo: lop.soCaseMo, phase: lop.phase,
     missingCount: lop.missing.filter((m) => m.key !== 'teachers').length, soChuaLoTrinhTiep: lop.soChuaLoTrinhTiep,
   });
@@ -244,32 +264,37 @@ function HopLop({ lop, mo, onDoiMo, chiHien, sapXep, chiMinh, onThemHocVien, onD
   ];
 
   return (
-    <section className="card overflow-hidden">
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 px-3 py-2.5 sm:px-4 surface-2">
-        <button type="button" onClick={onDoiMo} aria-expanded={mo} title={mo ? 'Thu gọn' : 'Mở danh sách học viên'}
-          aria-label={`${mo ? 'Thu gọn' : 'Mở'} danh sách học viên lớp ${lop.code}`}
-          className="w-5 border-0 bg-transparent p-0 text-slate-400 cursor-pointer">{mo ? '▾' : '▸'}</button>
-        <Link to={`/hoc-vien/lop/${lop.id}`} className="font-semibold text-slate-100 underline decoration-dotted underline-offset-4">
-          {lop.code}
-        </Link>
-        <span className="min-w-0 text-xs text-slate-400">
-          {lop.programmeName ?? '—'} · {lop.studentCount} học viên
-          {lop.gvcn && <> · <abbr title="Giáo viên chủ nhiệm" className="no-underline">GVCN</abbr> <TenGiaoVien id={lop.gvcn.id} ten={lop.gvcn.name} /></>}
-        </span>
-        <span className="flex-1" />
-        {b.hien.map((x) => {
-          const den = denBadge(x);
-          return den
-            ? <Task key={x.key} tone={x.tone} as="button" onClick={(e) => { e.stopPropagation(); navigate(den); }}>{x.nhan}</Task>
-            : <Task key={x.key} tone={x.tone}>{x.nhan}</Task>;
-        })}
-        {b.an.length > 0 && (
-          <span className="text-[11px] text-slate-500" title={b.an.map((x) => x.nhan).join(' · ')}>+{b.an.length}</span>
-        )}
-        <MenuDong muc={mucLop} nhan="Thao tác với lớp" />
-      </div>
-      {mo && <BangHocVienLop lop={lop} chiHien={chiHien} sapXep={sapXep} onDoi={onDoi} />}
-    </section>
+    <tbody>
+      <HangNhom mo={mo} onMo={onDoiMo} nhan={`lớp ${lop.code}`} soCotDau={3}
+        tieuDe={
+          <span className="flex min-w-0 items-baseline gap-2">
+            <Link to={`/hoc-vien/lop/${lop.id}`} className="shrink-0 font-extrabold text-slate-100 underline decoration-dotted underline-offset-4">
+              {lop.code}
+            </Link>
+            <span className="min-w-0 truncate text-[11px] font-normal text-slate-400"
+              title={`${lop.programmeName ?? '—'} · ${lop.studentCount} HV${lop.gvcn ? ` · GVCN ${lop.gvcn.name}` : ''}`}>
+              {lop.programmeName ?? '—'} · {lop.studentCount} HV
+              {lop.gvcn && <> · <abbr title="Giáo viên chủ nhiệm" className="no-underline">GVCN</abbr> <TenGiaoVien id={lop.gvcn.id} ten={lop.gvcn.name} /></>}
+            </span>
+          </span>
+        }>
+        <td className="px-3" colSpan={2}>
+          <span className="flex items-center justify-end gap-1.5">
+            {b.hien.map((x) => {
+              const den = denBadge(x);
+              return den
+                ? <Nhan key={x.key} tone={toneNhanTuBadge(x.tone)} title={x.title} onClick={() => navigate(den)}>{x.nhan}</Nhan>
+                : <Nhan key={x.key} tone={toneNhanTuBadge(x.tone)} title={x.title}>{x.nhan}</Nhan>;
+            })}
+            {b.an.length > 0 && (
+              <span className="text-[11px] font-normal text-slate-500" title={b.an.map((x) => x.nhan).join(' · ')}>+{b.an.length}</span>
+            )}
+          </span>
+        </td>
+        <td className="px-2 text-center"><MenuDong muc={mucLop} nhan="Thao tác với lớp" /></td>
+      </HangNhom>
+      {mo && <BangHocVienLop lop={lop} chiHien={chiHien} sapXep={sapXep} onDoi={onDoi} soCot={6} />}
+    </tbody>
   );
 }
 
@@ -388,7 +413,7 @@ export function WorkQueue({ view, branchId, q, scope }: {
                         </span>
                       </div>
                     )}
-                    {r.overdueSkills > 0 && <Alert>Quá hạn {r.overdueSkills}</Alert>}
+                    {r.overdueSkills > 0 && <Alert quaHan>Quá hạn {r.overdueSkills}</Alert>}
                   </td>
                 </tr>
               ))}

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { DaiChiXem, Task } from '../../ui/ui.tsx';
+import { DaiChiXem } from '../../ui/ui.tsx';
+import { Nhan, toneNhanTuBadge } from '../../ui/Nhan.tsx';
 import { MenuDong, type MucMenu } from '../../ui/MenuDong.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { TenGiaoVien } from './TenGiaoVien.tsx';
@@ -56,7 +57,8 @@ export function DauTrangLop({ data, periodId, onViec, onCheDoCanHoTro }: {
   const nhom = nhomGiaoVienBoMon(data.skills.map((x) => x.skill), data.skillTeachers);
   const b = badgeLop({
     needsPlacement: !!s?.needsPlacement, canXepLop: s?.canXepLop ?? 0, missingSkills: s?.missingSkills ?? [],
-    needScoresText: s && s.needScores > 0 ? needScoresText(s.workScope, s.needScores) : null,
+    soBaiChoCham: s?.needScores ?? 0,
+    needScoresTitle: s && s.needScores > 0 ? needScoresText(s.workScope, s.needScores) : null,
     soCaseMo: data.soCaseMo, phase: s?.phase ?? 'running',
     missingCount: (s?.missing ?? []).filter((m) => m.key !== 'teachers').length,
     soChuaLoTrinhTiep: s?.soChuaLoTrinhTiep ?? 0,
@@ -118,8 +120,8 @@ export function DauTrangLop({ data, periodId, onViec, onCheDoCanHoTro }: {
           {b.hien.map((x) => {
             const bam = bamBadge(x);
             return bam
-              ? <Task key={x.key} tone={x.tone} as="button" onClick={bam}>{x.nhan}</Task>
-              : <Task key={x.key} tone={x.tone}>{x.nhan}</Task>;
+              ? <Nhan key={x.key} tone={toneNhanTuBadge(x.tone)} title={x.title} onClick={bam}>{x.nhan}</Nhan>
+              : <Nhan key={x.key} tone={toneNhanTuBadge(x.tone)} title={x.title}>{x.nhan}</Nhan>;
           })}
           {b.an.length > 0 && <span className="text-[11px] text-slate-500" title={b.an.map((x) => x.nhan).join(' · ')}>+{b.an.length}</span>}
         </div>
