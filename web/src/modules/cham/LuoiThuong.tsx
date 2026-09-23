@@ -9,10 +9,10 @@ import { useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
-import { Empty, Info, Outcome, Status } from '../../ui/ui.tsx';
+import { Empty, Info, Level, Status } from '../../ui/ui.tsx';
 import type { SaveStatus } from '../../ui/SaveState.tsx';
 import { ODiemThuong, laTuChoi, type SaveOpts } from '../fasttrack/ScoreEntry.tsx';
-import { caseStatusLabel, skillLabel, skillShort, sosLabel } from '../../lib/format.ts';
+import { caseStatusLabel, skillLabel, skillShort, sosLabel, sosTone } from '../../lib/format.ts';
 import { ATTEMPT_KIND_SHORT, ketQuaThuong, ngay, tuanLich, type AttemptKind } from '@shared/domain/index.ts';
 import { DauLuu } from './LuoiFT.tsx';
 
@@ -466,17 +466,19 @@ function KetQua({ row, sheet }: { row: Row; sheet: ThuongSheet }) {
       : null;
 
   const chiTiet = r.skills.map((s) => `${skillShort(s.skill)} ${s.score === null ? '—' : `${s.score}/${s.total ?? '?'}`}`).join(' · ');
+  /* N-1b: màu kết quả Test — Đạt xanh lá · SOS 1 vàng · SOS 2 cam · SOS 3 đỏ · chưa đủ điểm xám. */
+  const tone = truot ? (r.sosLevel ? sosTone(r.sosLevel) : 'sos3') : r.complete ? 'ok' : 'muted';
   const chinh = r.scored === 0
     ? <span className="text-xs text-slate-500">{kq.chinh}</span>
     : (
-      <Outcome tone={truot ? 'danger' : 'ok'} title={chiTiet}>
+      <Level tone={tone} title={chiTiet}>
         {kq.chinh}
         {truot && r.sosLevel ? (
           <span title={`${sosLabel(r.sosLevel)} — mức cần hỗ trợ theo số môn chưa đạt (${r.failedCount} môn)`}>
             {` · ${sosLabel(r.sosLevel)}`}
           </span>
         ) : null}
-      </Outcome>
+      </Level>
     );
 
   /* Nhãn Case: một nhãn cho cả dòng, liệt kê môn; tooltip "Case Listening · Đang xử lý" cho từng Case. */

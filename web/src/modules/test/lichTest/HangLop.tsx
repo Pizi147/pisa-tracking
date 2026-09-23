@@ -1,0 +1,127 @@
+import { Link } from 'react-router-dom';
+import { HangCon, HangNhom } from '../../../ui/HangNhom.tsx';
+import { Nhan } from '../../../ui/Nhan.tsx';
+import { Han } from '../../../ui/Han.tsx';
+import { skillLabel, skillShort } from '../../../lib/format.ts';
+import { BON_MON, TONE_NHAN_LOP, type LopLichTest } from './kieu.ts';
+import { LuoiNhung } from './LuoiNhung.tsx';
+
+/** Một badge cho hàng lớp (N-3). "Đã chấm" thêm ✓ nhỏ, mảnh (G-1). */
+function NhanLop({ l }: { l: LopLichTest }) {
+  return (
+    <Nhan tone={TONE_NHAN_LOP[l.nhan.loai]}>
+      {l.nhan.chu}
+      {l.nhan.loai === 'da-cham' && <span className="ml-1 font-normal" aria-hidden>✓</span>}
+    </Nhan>
+  );
+}
+
+/** L R W S — môn không thi tuần này mờ đi (tooltip tên đủ, G-7). */
+function KyNang({ l }: { l: LopLichTest }) {
+  return (
+    <span className="inline-flex gap-1.5 font-semibold tabular-nums">
+      {BON_MON.map((k) => {
+        const co = l.kyNangTuan.includes(k);
+        return (
+          <span key={k} className={co ? 'text-slate-200' : 'text-slate-600'}
+            title={co ? skillLabel(k) : `${skillLabel(k)} — không thi tuần này`}>
+            {skillShort(k)}
+          </span>
+        );
+      })}
+    </span>
+  );
+}
+
+const TienDo = ({ l }: { l: LopLichTest }) => (
+  <span className="tabular-nums text-slate-200" title={`Đã chấm ${l.daCham} trong ${l.tong} bài của tuần này`}>
+    {l.daCham}/{l.tong} <span className="text-[11px] font-normal text-slate-500">bài</span>
+  </span>
+);
+
+/**
+ * DANH SÁCH LỚP của một tab (PR-UX1, N-2): MỘT bảng, tiêu đề cột một lần; mỗi lớp một hàng lớn (`HangNhom`) thu gọn,
+ * mở ra là lưới chấm tại chỗ trong `HangCon`. Cột cố định (G-2). Màn hẹp: hàng lớp gập hai dòng
+ * `▾ mã · đợt · x/y` + `hạn · trạng thái` (G-3), lưới tự sang một kỹ năng một lúc.
+ */
+export function HangLop({ lop, moCua, onMo, coChiNhanh, hep, periodId, tuanDangXem, urlClassId, urlKn, conTro, onDaLuu }: {
+  lop: LopLichTest[];
+  moCua: (l: LopLichTest) => boolean;
+  onMo: (l: LopLichTest) => void;
+  coChiNhanh: boolean; hep: boolean;
+  periodId: number; tuanDangXem: string;
+  urlClassId: number | null; urlKn: string | null;
+  /** Lớp được đặt con trỏ khi mở (mở bằng tay, hoặc lớp trên đường dẫn) — lớp tự mở thì không, trang khỏi nhảy. */
+  conTro: ReadonlySet<string>;
+  onDaLuu: () => void;
+}) {
+  const cot = hep
+    ? [null]
+    : [190, 120, ...(coChiNhanh ? [110] : []), 110, 96, 190, 130, 44];
+  const soCot = cot.length;
+
+  return (
+    <div className="card overflow-hidden p-0">
+      <table className="w-full text-sm" style={{ tableLayout: 'fixed' }}>
+        <colgroup>{cot.map((w, i) => <col key={i} style={w ? { width: w } : undefined} />)}</colgroup>
+        {!hep && (
+          <thead>
+            <tr>
+              <th className="th">Lớp</th>
+              <th className="th">Đợt</th>
+              {coChiNhanh && <th className="th">Chi nhánh</th>}
+              <th className="th" title="Môn thi tuần này — môn mờ là không thi tuần này">Kỹ năng</th>
+              <th className="th" title="Số bài đã chấm / số bài của tuần này">Tiến độ</th>
+              <th className="th">Hạn chấm</th>
+              <th className="th"><span className="sr-only">Trạng thái</span></th>
+              <th className="th"><span className="sr-only">Mở lưới đầy đủ</span></th>
+            </tr>
+          </thead>
+        )}
+        {lop.map((l) => {
+          const mo = moCua(l);
+          return (
+            <tbody key={l.key}>
+              <HangNhom mo={mo} onMo={() => onMo(l)} nhan={`lớp ${l.classCode}`}
+                tieuDe={hep ? (
+                  <span className="block min-w-0 py-1">
+                    <span className="block truncate">
+                      {l.classCode} · {l.dotLabel} · <TienDo l={l} />
+                    </span>
+                    <span className="flex min-w-0 items-center gap-2 font-normal">
+                      <Han loai="nhap-diem" han={l.han} />
+                      <NhanLop l={l} />
+                    </span>
+                  </span>
+                ) : <span className="block truncate" title={l.classCode}>{l.classCode}</span>}>
+                {!hep && (
+                  <>
+                    <td className="px-3 whitespace-nowrap font-semibold text-slate-200">{l.dotLabel}</td>
+                    {coChiNhanh && <td className="px-3 truncate font-normal text-slate-400" title={l.branchName}>{l.branchName}</td>}
+                    <td className="px-3"><KyNang l={l} /></td>
+                    <td className="px-3"><TienDo l={l} /></td>
+                    <td className="px-3 whitespace-nowrap font-normal"><Han loai="nhap-diem" han={l.han} /></td>
+                    <td className="px-3"><NhanLop l={l} /></td>
+                    <td className="px-1 text-center">
+                      <Link to={l.hrefDayDu} title="Mở lưới đầy đủ" aria-label={`Mở lưới đầy đủ lớp ${l.classCode}`}
+                        className="inline-flex h-8 w-8 items-center justify-center font-normal text-slate-400 no-underline hover:text-slate-100">↗</Link>
+                    </td>
+                  </>
+                )}
+              </HangNhom>
+              {mo && (
+                <HangCon>
+                  <td colSpan={soCot} style={{ paddingLeft: hep ? 0 : 16, paddingRight: 0 }}>
+                    <LuoiNhung classId={l.classId} periodId={l.mode === 'ielts_band' ? periodId : null} kind={l.kind}
+                      tuanDangXem={tuanDangXem} kn={l.classId === urlClassId ? urlKn : null} hrefDayDu={l.hrefDayDu}
+                      datConTro={conTro.has(l.key)} onDaLuu={onDaLuu} />
+                  </td>
+                </HangCon>
+              )}
+            </tbody>
+          );
+        })}
+      </table>
+    </div>
+  );
+}
