@@ -205,4 +205,107 @@ export async function runHanhTrinhTests(t: YThucTestKit) {
     const dangChay = d.nhanGiaiDoan({ loai: 'ft', tu: '2026-10-05', den: null }, '2026-09-22');
     assert(dangChay === 'Fast Track · từ W2 OCT', `Giai đoạn đang chạy: ${dangChay}`);
   });
+
+  // ==================================================================== Task 2 — máy chủ GET /students/:id/hanh-trinh
+
+  const { conn, P, TODAY } = t;
+  const { hanhTrinhHocVien } = await import('../students/hanhTrinh.ts');
+  /* HV 1 (seed): FOU → BE → FT, Case Reading mở ở lộ trình BE. HV 40 (seed): FT LT1 → LT2. */
+  const HV1 = 1;
+  const HV40 = 40;
+
+  check('PR-Qb (2) · HV1 (FOU→BE→FT): cacGiaiDoan có cả hai, mặc định giai đoạn của lộ trình đang chạy (ft)', () => {
+    const r = hanhTrinhHocVien(P.admin, HV1, null);
+    const loai = r.cacGiaiDoan.map((g: any) => g.loai).sort().join(',');
+    assert(loai === 'ft,thuong', `Phải có cả hai giai đoạn: ${loai}`);
+    assert(r.giaiDoan === 'ft', `Mặc định phải là giai đoạn của lộ trình đang xem (FT đang chạy): ${r.giaiDoan}`);
+  });
+
+  check('PR-Qb (2) · HV1 giai đoạn "thuong": 2 đoạn FOU→BE đúng thứ tự, 4 hộp L/R/W/S, không hộp nào có hạng mục Ý thức', () => {
+    const r = hanhTrinhHocVien(P.admin, HV1, 'thuong');
+    assert(r.doan.length === 2, `2 đoạn: ${JSON.stringify(r.doan)}`);
+    assert(r.doan[0].tu < r.doan[1].tu, `Đúng thứ tự thời gian: ${JSON.stringify(r.doan)}`);
+    assert(r.doan.every((x: any) => x.loai === 'khoa'), 'Lớp thường ghi đoạn "khoa"');
+    const kyNang = r.hop.map((h: any) => h.kyNang);
+    assert(kyNang.join(',') === 'listening,reading,writing,speaking', `4 hộp L/R/W/S: ${kyNang}`);
+    const HANG_MUC_HOP_LE = new Set(['listening', 'reading', 'writing', 'writing1', 'writing2', 'speaking']);
+    assert(kyNang.every((k: string) => HANG_MUC_HOP_LE.has(k)), 'Không hộp nào ngoài bộ kỹ năng (không Ý thức)');
+  });
+
+  check('PR-Qb (2) · HV1: Case Reading của lộ trình BE nằm ở hộp Reading của "thuong", không lộ sang "ft"', () => {
+    const thuong = hanhTrinhHocVien(P.admin, HV1, 'thuong');
+    const ft = hanhTrinhHocVien(P.admin, HV1, 'ft');
+    const readingThuong = thuong.hop.find((h: any) => h.kyNang === 'reading')!;
+    const readingFt = ft.hop.find((h: any) => h.kyNang === 'reading')!;
+    const caseBe = conn.prepare(`SELECT id FROM sos_cases WHERE student_id = ? AND cycle_id = 2 AND category = 'reading'`).get(HV1) as any;
+    assert(!!caseBe, 'Seed phải có Case Reading ở lộ trình BE (cycle_id=2) của HV1');
+    assert(readingThuong.vanDe.some((v: any) => v.caseId === caseBe.id), 'Case của BE phải nằm ở hộp Reading của "thuong"');
+    assert(!readingFt.vanDe.some((v: any) => v.caseId === caseBe.id), 'Case của BE KHÔNG được lộ sang hộp Reading của "ft"');
+  });
+
+  check('PR-Qb (2) · HV1 giai đoạn "ft": 5 hộp L/R/W1/W2/S', () => {
+    const r = hanhTrinhHocVien(P.admin, HV1, 'ft');
+    const kyNang = r.hop.map((h: any) => h.kyNang);
+    assert(kyNang.join(',') === 'listening,reading,writing1,writing2,speaking', `5 hộp FT: ${kyNang}`);
+  });
+
+  check('PR-Qb (2) · HV40 (LT1→LT2): doan có 2 lộ trình, nhãn không rỗng', () => {
+    const r = hanhTrinhHocVien(P.admin, HV40, null);
+    assert(r.giaiDoan === 'ft', `HV40 chỉ có FT: ${r.giaiDoan}`);
+    assert(r.doan.length === 2 && r.doan.every((x: any) => x.loai === 'lo-trinh'), `2 lộ trình: ${JSON.stringify(r.doan)}`);
+    assert(r.doan.every((x: any) => x.nhan), 'Mỗi lộ trình phải có nhãn');
+    assert(r.doan[0].tu < r.doan[1].tu, 'Đúng thứ tự thời gian');
+  });
+
+  check('PR-Qb (2) · Giáo viên/Quản lý ngoài phạm vi bị từ chối xem hành trình', () => {
+    let threw = false;
+    try { hanhTrinhHocVien(P.cpManager, HV1, null); } catch { threw = true; }
+    assert(threw, 'QL chi nhánh CP không được xem hành trình của học viên chi nhánh MB');
+  });
+
+  check('PR-Qb (2) · xếp tầng: một Case có 2 phương án chồng thời gian ra đúng 2 tầng khi xếp bằng xepTang', () => {
+    const caseBe = conn.prepare(`SELECT id FROM sos_cases WHERE student_id = ? AND cycle_id = 2 AND category = 'reading'`).get(HV1) as any;
+    const now = new Date().toISOString();
+    const ins = conn.prepare(
+      `INSERT INTO case_interventions (case_id, kind, status, planned_date, started_date, completed_date, created_at)
+       VALUES (?, 'tutor', 'completed', ?, ?, ?, ?)`,
+    );
+    const iv1 = ins.run(caseBe.id, '2026-03-01', '2026-03-01', '2026-03-15', now).lastInsertRowid as number;
+    const iv2 = ins.run(caseBe.id, '2026-03-08', '2026-03-08', '2026-03-22', now).lastInsertRowid as number;
+    try {
+      const r = hanhTrinhHocVien(P.admin, HV1, 'thuong');
+      const vanDe = r.hop.find((h: any) => h.kyNang === 'reading')!.vanDe.find((v: any) => v.caseId === caseBe.id)!;
+      const pa = vanDe.pa.filter((x: any) => x.id === iv1 || x.id === iv2);
+      assert(pa.length === 2, `Phải thấy đủ 2 PA vừa chèn: ${JSON.stringify(vanDe.pa)}`);
+      const tang = d.xepTang(pa);
+      assert(new Set(tang.values()).size === 2, `2 PA chồng tuần (01-15/03 và 08-22/03) phải ra 2 tầng: ${JSON.stringify([...tang])}`);
+    } finally {
+      conn.prepare('DELETE FROM case_interventions WHERE id IN (?, ?)').run(iv1, iv2);
+    }
+  });
+
+  check('PR-Qb (2) · số câu lệnh không tăng theo số Case (1 Case vs 3 Case chênh ≤ số đợt)', () => {
+    const demTruyVan = (fn: () => void): number => {
+      let n = 0;
+      const orig = conn.prepare.bind(conn);
+      (conn as any).prepare = (sql: string) => { n += 1; return orig(sql); };
+      try { fn(); } finally { (conn as any).prepare = orig; }
+      return n;
+    };
+    const soDot = conn.prepare(`SELECT COUNT(*) n FROM assessment_attempts WHERE cycle_id = 2`).get() as any;
+    const truoc = demTruyVan(() => { hanhTrinhHocVien(P.admin, HV1, 'thuong'); });
+    const now = new Date().toISOString();
+    const ins = conn.prepare(
+      `INSERT INTO sos_cases (student_id, cycle_id, category, topic, origin_kind, status, sos_level, detected_at, created_at)
+       VALUES (?, 2, 'writing', 'writing', 'teacher_report', 'open', 1, ?, ?)`,
+    );
+    const idsMoi = [ins.run(HV1, TODAY, now).lastInsertRowid, ins.run(HV1, TODAY, now).lastInsertRowid] as number[];
+    try {
+      const sau = demTruyVan(() => { hanhTrinhHocVien(P.admin, HV1, 'thuong'); });
+      assert(sau <= truoc + soDot.n,
+        `Thêm 2 Case (1→3) khiến số câu lệnh tăng từ ${truoc} lên ${sau} — chênh phải ≤ số đợt (${soDot.n}), nghi vấn quét theo Case (N+1)`);
+    } finally {
+      conn.prepare(`DELETE FROM sos_cases WHERE id IN (${idsMoi.map(() => '?').join(',')})`).run(...idsMoi);
+    }
+  });
 }

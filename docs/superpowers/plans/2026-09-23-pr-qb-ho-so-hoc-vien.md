@@ -404,3 +404,14 @@ Commit `PR-Qb (8): 375px hồ sơ học viên, bảng định vị, CODE_MAP, đ
   thuẫn nhau. Giữ đúng kiểu trả về đã ghi (`number`, kẹp `[0, soTuan-1]`), bỏ phần "cờ cắt" — việc phát hiện Case
   nằm ngoài khoảng đang xem (Q22, "+{n} vấn đề cũ hơn") để Task 2 tự so ngày ở máy chủ, không phụ thuộc `cotCua`.
   `npm run check` xanh, **853 = 837 + 16** (đủ ≥16). Commit `PR-Qb (1)`.
+- **Task 2:** `server/src/students/hanhTrinh.ts` + route `GET /students/:id/hanh-trinh`. Ba chỗ tự quyết:
+  (1) Kế hoạch liệt kê "lớp lấy từ `enrollments` trùng thời gian" cho nhãn đoạn lớp thường, nhưng bảng
+  `enrollments` KHÔNG nằm trong danh sách 6 truy vấn cố định của chính kế hoạch — thêm một truy vấn riêng cho
+  việc này phá vỡ ngân sách. Chọn: lấy mã lớp từ `class_code` của lượt gần nhất trong lộ trình đó (đã có sẵn ở
+  truy vấn (2)), không có lượt nào thì lấy tên chương trình — không cần truy vấn thêm.
+  (2) "Tuần cuối theo chương trình" (`den` của đoạn lớp thường khi lộ trình chưa có `ended_at`) cần một truy vấn
+  `report_periods` theo TỪNG lộ trình — đây là chi phí phụ thêm ngoài 6 câu cố định, nhưng bị chặn bởi SỐ LỘ
+  TRÌNH (luôn nhỏ, 1–3), không bởi số Case, nên không phạm tinh thần "không N+1 theo Case" mà phép kiểm hiệu năng
+  đang bắt.
+  (3) `caseTitleOf` trong bản đặc tả không tồn tại (đã ghi ở Task 1) — dùng `caseTitle`.
+  `npm run check` xanh, **861 = 853 + 8** (đủ ≥8). Commit `PR-Qb (2)`.

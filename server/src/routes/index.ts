@@ -42,6 +42,7 @@ import * as summarySvc from '../worklist/summary.ts';
 import * as pulseSvc from '../worklist/branchpulse.ts';
 import * as prefSvc from '../platform/prefs.ts';
 import * as profileSvc from '../students/profile.ts';
+import { hanhTrinhHocVien } from '../students/hanhTrinh.ts';
 import * as classSvc from '../classes/classes.ts';
 import * as scheduleSvc from '../classes/schedule.ts';
 import * as intakeSvc from '../classes/intake.ts';
@@ -1434,6 +1435,13 @@ api.get('/students/:id/skill-board', requireAuth, wrap((req) => {
 /** Chủ đề Case mở được cho một học viên (F07) — form đọc route này thay vì tự đoán chương trình. */
 api.get('/students/:id/case-topics', requireAuth, wrap((req) =>
   caseSvc.caseTopicsOf(principalOf(req), pInt(req, 'id'), qInt(req, 'cycleId'))));
+
+/** Tab Hành trình (PR-Qb): trục tuần theo giai đoạn (lớp thường | Fast Track), một câu trả lời cho cả giai đoạn. */
+api.get('/students/:id/hanh-trinh', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  const gd = qStr(req, 'giai-doan');
+  return hanhTrinhHocVien(principalOf(req), pInt(req, 'id'), gd === 'thuong' || gd === 'ft' ? gd : null);
+}));
 
 /** Ghi một lần xem lại sau hỗ trợ. Một tác động có thể xem lại nhiều lần. */
 api.post('/cases/:id/followups', requireAuth, wrap((req) => {
