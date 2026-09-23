@@ -21,7 +21,16 @@ export default function CongViecPage() {
   const tab = tabCongViecTuDuong(seg);
 
   if (!tabs.length) return <Navigate to="/" replace />;
-  if (!tab || !tabs.includes(tab)) return <Navigate to={DUONG_TAB_CONG_VIEC[tabs[0]]} replace />;
+  if (!tab || !tabs.includes(tab)) {
+    /*
+     * NỢ PR-O (#58): tab "Vận hành" giao cho GV mà GV không có quyền vào cả tab — thay vì
+     * đẩy về tab đầu tiên và MẤT hẳn việc đang mở, giữ đúng việc đó bằng tham số `mo-viec`
+     * (tab Hỗ trợ học viên tự mở panel Vận hành tại chỗ khi thấy tham số này).
+     */
+    const open = params.get('open');
+    if (open) return <Navigate to={`/cong-viec?mo-viec=${open}`} replace />;
+    return <Navigate to={DUONG_TAB_CONG_VIEC[tabs[0]]} replace />;
+  }
 
   const cn = params.get('cn');
   const go = (k: TabCongViec) => navigate(`${DUONG_TAB_CONG_VIEC[k]}${cn ? `?cn=${cn}` : ''}`);

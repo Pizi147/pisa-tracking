@@ -40,6 +40,14 @@ export function fmtDateTime(d?: string | null): string {
   return `${fmtDate(d)} ${String(dt.getHours()).padStart(2, '0')}:${String(dt.getMinutes()).padStart(2, '0')}`;
 }
 
+/** Chỉ giờ:phút — dòng "✓ Đã nhắc HH:mm" (PR-Ra G-1) không cần lặp lại ngày (luôn là hôm nay). */
+export function fmtTime(d?: string | null): string {
+  if (!d) return '—';
+  const dt = new Date(d);
+  if (Number.isNaN(dt.getTime())) return '—';
+  return `${String(dt.getHours()).padStart(2, '0')}:${String(dt.getMinutes()).padStart(2, '0')}`;
+}
+
 /** Band trống KHÁC điểm 0 — luôn hiện dấu gạch, không bao giờ hiện 0 thay cho ô trống. */
 export function fmtBand(n: number | null | undefined): string {
   return n === null || n === undefined ? '—' : Number(n).toFixed(1);

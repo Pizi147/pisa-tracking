@@ -937,7 +937,7 @@ export function ActionDialog({ open, onClose, caseId, studentId, onDone }: {
  * Không duyệt thì BẮT BUỘC ghi lý do: bác một phương án mà không nói vì sao thì giáo viên
  * không biết nên làm gì tiếp.
  */
-function ApprovalDialog({ open, onClose, intervention, onDone }: {
+export function ApprovalDialog({ open, onClose, intervention, onDone }: {
   open: boolean; onClose: () => void; intervention: any | null; onDone: () => void;
 }) {
   const toast = useToast();

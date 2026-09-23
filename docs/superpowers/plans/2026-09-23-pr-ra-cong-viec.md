@@ -462,3 +462,18 @@ Kịch bản (mỗi kịch bản ≥ 1 ảnh `thiet-ke/anh/pr-ra/NN-ten.png`):
 
 ## Nhật ký
 
+- **Task 0–5 (máy chủ):** mốc kiểm sau từng Task — B=926, (0)=926, (1)=938, (2)=948, (3)=957, (4)=966, (5)=975.
+- **Task 4, `updateMgmtTask`:** test cũ `run.ts:5419` "Người theo dõi xem được nhưng không cập nhật hộ" chọn "người khác" bằng
+  `SELECT id FROM users WHERE id != assigneeUserId LIMIT 1` — sau khi thêm `laNguoiHopLe(…, 'nhan_vien')` cho
+  assignee/watcher, ID đầu tiên đó thường rơi vào tài khoản Quản trị hệ thống (không có vai `nhan_vien`) nên 400. Sửa câu
+  chọn fixture để lấy đúng một tài khoản `teacher`/`manager` — hành vi MỚI (bắt buộc ID hợp lệ) đúng theo kế hoạch, phép
+  kiểm chỉ cần chọn dữ liệu đối chứng khác.
+- **Task 5, `meetingBoard`:** khi viết câu nối việc (`unit_report_task_links`), lỡ để `ORDER BY l.id` trong khi bảng này
+  không có cột `id` (khoá chính là `unit_report_id, task_id`) — SQLite báo "no such column: l.id". Vì `dashboard.overview`
+  gọi `meetingBoard` bên trong, lỗi này làm SẬP hàng loạt phép kiểm không liên quan (Toàn cảnh, KPI…). Sửa thành
+  `ORDER BY l.unit_report_id, l.created_at`.
+- **Task 6, điểm 7 (`duongThongBao` case `'nhac_viec'`):** kế hoạch ghi "Qb chưa merge → để Task này cuối cùng, rebase
+  rồi làm". Qb #75 và Rc2 #76 đã merge vào `origin/main` từ lúc bắt đầu Task 6 (kiểm bằng `git fetch`), nhưng NHÁNH của
+  PR-Ra chưa rebase — rebase giữa chừng khi Task 7–8 chưa xong rủi ro cao hơn lợi ích của việc làm sớm một dòng. Giữ
+  đúng phương án dự phòng của kế hoạch: hoãn điểm 7 tới lúc rebase cuối PR (Task 9).
+
