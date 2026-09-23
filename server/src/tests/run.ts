@@ -94,7 +94,7 @@ runSeed();
 const SEED_MAX: Record<string, number> = {};
 {
   const { db: seedDb } = await import('../db.ts');
-  for (const t of ['sos_cases', 'case_interventions', 'case_followups', 'assessment_scores', 'unit_reports', 'violations', 'discipline_measures']) {
+  for (const t of ['sos_cases', 'case_interventions', 'case_followups', 'assessment_scores', 'unit_reports', 'violations', 'discipline_measures', 'tasks']) {
     SEED_MAX[t] = ((seedDb().prepare(`SELECT COALESCE(MAX(id),0) m FROM ${t}`).get() as any).m) as number;
   }
 }
@@ -9571,6 +9571,11 @@ await runYThucGonTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P
 
 const { runKeHoachTestTests } = await import('./keHoachTest.tests.ts');
 await runKeHoachTestTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
+
+// ==================================================================== PR-Ra (Công việc: Hỗ trợ học viên · Vận hành · Báo cáo đơn vị)
+
+const { runCongViecTests } = await import('./congViec.tests.ts');
+await runCongViecTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0

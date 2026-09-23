@@ -316,31 +316,42 @@ function seedMeeting(conn: any, ctx: {
     const day = !p?.week_end || p.week_end > DEMO_DATE ? DEMO_DATE : p.week_end;
     return `${day}T09:00:00.000Z`;
   };
-  const save = (unit: any, periodId: number, key: string, label: string, status: string | null, note: string | null, by: number) =>
+  const save = (
+    unit: any, periodId: number, key: string, label: string, status: string | null, note: string | null,
+    by: number, submittedAt: string | null, submittedBy: number | null,
+  ) =>
     conn
       .prepare(
         `INSERT INTO unit_reports (period_id, reporting_unit_id, category_key, category_label,
-                                   status, note, reporter_user_id, updated_at)
-         VALUES (?,?,?,?,?,?,?,?)`,
+                                   status, note, reporter_user_id, updated_at, submitted_at, submitted_by)
+         VALUES (?,?,?,?,?,?,?,?,?,?)`,
       )
-      .run(periodId, unit.id, key, label, status, note, by, reportedAt(periodId));
+      .run(periodId, unit.id, key, label, status, note, by, reportedAt(periodId), submittedAt, submittedBy);
 
   units.forEach((u, ui) => {
     const reporter = u.branch_id
       ? (ctx.managers.get([...branchId.entries()].find(([, id]) => id === u.branch_id)?.[0] ?? '')?.[0] ?? adminId)
       : adminId;
-    /* Kỳ trước: báo cáo đầy đủ, để so với kỳ hiện tại còn ô "Chưa báo cáo". */
+    /* Kỳ trước: báo cáo đầy đủ và ĐÃ NỘP, để so với kỳ hiện tại còn ô "Chưa báo cáo"/"Nháp". */
     if (prev) {
       cellsOf(u).forEach((cat, ci) => {
         const status = ci === 2 && ui % 2 === 0 ? 'problem' : ci === 1 ? 'watch' : 'ok';
-        save(u, prev.id, cat.key, cat.label, status, NOTES[status][ci % 2], reporter);
+        save(u, prev.id, cat.key, cat.label, status, NOTES[status][ci % 2], reporter, reportedAt(prev.id), reporter);
       });
     }
-    /* Kỳ hiện tại: cố tình để trống một số ô. Ô trống là CHƯA BÁO CÁO, không phải "Ổn". */
+    /*
+     * Kỳ hiện tại (Q12, phương án A): đơn vị đầu tiên bỏ TRỐNG hẳn (Chưa báo cáo); các đơn vị
+     * còn lại vẫn để trống một ô như trước (Chưa báo cáo ở mức ô) — trong hai ô còn lại, đơn vị
+     * lẻ đã NỘP cả hai (Đã nộp), đơn vị chẵn chỉ lưu NHÁP (Nháp · chưa nộp, có mức nhưng
+     * submitted_at NULL — không được tự nộp giùm).
+     */
+    if (ui === 0) return;
+    const submitted = ui % 2 === 1;
     cellsOf(u).forEach((cat, ci) => {
       if ((ui + ci) % 3 === 0) return;
       const status = (ui + ci) % 4 === 1 ? 'problem' : (ui + ci) % 4 === 2 ? 'watch' : 'ok';
-      save(u, currentPeriodId, cat.key, cat.label, status, NOTES[status][ci % 2], reporter);
+      save(u, currentPeriodId, cat.key, cat.label, status, NOTES[status][ci % 2], reporter,
+           submitted ? reportedAt(currentPeriodId) : null, submitted ? reporter : null);
     });
   });
 
@@ -364,6 +375,7 @@ function seedMeeting(conn: any, ctx: {
     completedAt?: string | null;
     group: string; parentId?: number | null; watcher?: string | null;
     stopReason?: string | null; reviewOn?: string | null;
+    helpUser?: string | null; helpName?: string | null;
     updates?: { progress: string; note?: string | null; on: string; by?: string }[];
     cases?: number[];
   }): number => {
@@ -373,14 +385,16 @@ function seedMeeting(conn: any, ctx: {
         .prepare(
           `INSERT INTO tasks (code, period_id, task_type, title, reporting_unit_id, branch_id, assignee_user_id,
                               due_date, progress, note, source_type, created_by, created_at, completed_at,
-                              group_key, parent_task_id, watcher_user_id, stop_reason, review_on)
-           VALUES (?,?,?,?,?,?,?,?,?,?, 'manual', ?,?,?,?,?,?,?,?)`,
+                              group_key, parent_task_id, watcher_user_id, stop_reason, review_on,
+                              help_user_id, help_name)
+           VALUES (?,?,?,?,?,?,?,?,?,?, 'manual', ?,?,?,?,?,?,?,?,?,?)`,
         )
         .run(padCode('CV', n, 4), t.periodId, t.type, t.title, t.unit?.id ?? null,
              t.branch ? branchId.get(t.branch)! : null, userId.get(t.assignee) ?? adminId,
              t.due, t.progress, t.note ?? null, adminId, NOW, t.completedAt ?? null,
              t.group, t.parentId ?? null, t.watcher ? userId.get(t.watcher) ?? null : null,
-             t.stopReason ?? null, t.reviewOn ?? null).lastInsertRowid,
+             t.stopReason ?? null, t.reviewOn ?? null,
+             t.helpUser ? userId.get(t.helpUser) ?? null : null, t.helpName ?? null).lastInsertRowid,
     );
     for (const u of t.updates ?? []) {
       conn
@@ -448,7 +462,8 @@ function seedMeeting(conn: any, ctx: {
   });
 
   /* ── 3. Việc chạy qua BA TUẦN, vẫn MỘT định danh, không nhân bản theo tuần ── */
-  addTask({
+  /* VIỆC ĐÃ DỜI HẠN: hạn gốc 11/09, dời sang 18/09, có lý do — cột Hạn phải hiện "đã dời từ 11/09". */
+  const callParents = addTask({
     title: 'Gọi phụ huynh xác nhận danh sách thi thật tháng 11',
     unit: unitOf('CP'), branch: 'CP', assignee: 'MGR_CP', due: '2026-09-18',
     progress: 'doing', type: 'in_period', periodId: currentPeriodId, group: 'student_parent',
@@ -458,6 +473,10 @@ function seedMeeting(conn: any, ctx: {
       { progress: 'doing', note: 'Gọi thêm 3 em. Còn 6 em chưa liên lạc được.', on: '2026-09-11' },
     ],
   });
+  conn.prepare(
+    `INSERT INTO task_history (task_id, field, old_value, new_value, reason, actor_user_id, created_at)
+     VALUES (?, 'due_date', '2026-09-11', '2026-09-18', 'Còn nhiều phụ huynh chưa liên lạc được, xin thêm một tuần.', ?, ?)`,
+  ).run(callParents, userId.get('MGR_CP') ?? adminId, '2026-09-11T09:00:00.000Z');
 
   /* ── 4. Việc TẠM NGƯNG có lý do và có ngày xem lại ── */
   addTask({
@@ -465,9 +484,22 @@ function seedMeeting(conn: any, ctx: {
     assignee: 'MGR_MB', due: '2026-09-11', progress: 'paused', type: 'in_period',
     periodId: prevId, group: 'teacher',
     stopReason: 'Chờ báo giá nhà cung cấp, dự kiến có trong tháng 10.', reviewOn: '2026-10-05',
+    helpName: 'Tổ chuyên môn',
     updates: [
       { progress: 'doing', note: 'Đã thử hai phần mềm, cả hai đều thiếu phần chấm theo tiêu chí.', on: '2026-09-04' },
       { progress: 'paused', note: 'Chờ báo giá nhà cung cấp, dự kiến có trong tháng 10.', on: '2026-09-11' },
+    ],
+  });
+  /* Việc TẠM NGƯNG đã TỚI/QUA ngày xem lại — rơi vào hàng số "Cần quyết định" (Q8), người cần hỗ trợ là một tài khoản. */
+  addTask({
+    title: 'Xin ngân sách in giáo trình Writing bản mới', unit: unitOf('CP'), branch: 'CP',
+    assignee: 'MGR_CP', due: '2026-09-20', progress: 'paused', type: 'in_period',
+    periodId: currentPeriodId, group: 'curriculum',
+    stopReason: 'Chờ duyệt ngân sách từ kế toán.', reviewOn: '2026-09-11',
+    helpUser: 'MGR_MB',
+    updates: [
+      { progress: 'doing', note: 'Đã gửi báo giá in cho kế toán.', on: '2026-09-07' },
+      { progress: 'paused', note: 'Chờ duyệt ngân sách từ kế toán.', on: '2026-09-09' },
     ],
   });
 
@@ -536,7 +568,7 @@ function seedMeeting(conn: any, ctx: {
         ORDER BY sc.id LIMIT 4`,
     )
     .all() as any[]).map((r) => r.id);
-  addTask({
+  const tutorSchedule = addTask({
     title: 'Xếp lịch tutor tháng 10 cho các em đang cần hỗ trợ',
     unit: unitOf('CP'), branch: 'CP', assignee: 'MGR_CP', due: '2026-09-25',
     progress: 'doing', type: 'in_period', periodId: currentPeriodId, group: 'student_parent',
@@ -544,6 +576,16 @@ function seedMeeting(conn: any, ctx: {
     cases: tutorCases,
     updates: [{ progress: 'doing', note: `Đã rà ${tutorCases.length} case đang dùng tutor, còn chờ phòng trống.`, on: '2026-09-11' }],
   });
+
+  /* NỐI VIỆC ↔ BÁO CÁO ĐƠN VỊ (R6): việc trên là căn cứ cho ô báo cáo Học viên/Phụ huynh của CP kỳ này. */
+  const cpReport = conn.prepare(
+    `SELECT id FROM unit_reports WHERE reporting_unit_id = ? AND period_id = ? ORDER BY id LIMIT 1`,
+  ).get(unitOf('CP').id, currentPeriodId) as any;
+  if (cpReport) {
+    conn.prepare(
+      `INSERT INTO unit_report_task_links (unit_report_id, task_id, created_by, created_at) VALUES (?,?,?,?)`,
+    ).run(cpReport.id, tutorSchedule, adminId, NOW);
+  }
 
   return n;
 }
