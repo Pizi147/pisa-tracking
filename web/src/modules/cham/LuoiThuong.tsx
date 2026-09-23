@@ -9,7 +9,7 @@ import { useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
-import { Empty, Outcome, Status } from '../../ui/ui.tsx';
+import { Empty, Info, Outcome, Status } from '../../ui/ui.tsx';
 import type { SaveStatus } from '../../ui/SaveState.tsx';
 import { ODiemThuong, laTuChoi, type SaveOpts } from '../fasttrack/ScoreEntry.tsx';
 import { caseStatusLabel, skillLabel, skillShort, sosLabel } from '../../lib/format.ts';
@@ -27,12 +27,16 @@ type SkillSchedule = {
   periodCode: string | null; weekRange: string | null; weekStart: string | null;
   deadline: string | null; progress: string; sitStatus: string; overdue: boolean;
   noShow: boolean; movedFrom: string | null; movedFromStart: string | null; canEdit: boolean;
+  /** R11: đợt đã hoàn tất — khoá với người không có `PLAN_WEEK`/`SCORE_OVERRIDE`. */
+  khoa?: boolean;
 };
 type Row = {
   attemptId: number; kind: AttemptKind; kindLabel: string;
   studentId: number; studentName: string; studentCode: string; studentStatus: string;
   periodCode: string | null; status: string;
   deadline: string | null; overdue: boolean;
+  /** R11: đợt đã đủ điểm và qua Chủ nhật của tuần bắt buộc muộn nhất — chỉ Quản lý sửa được điểm nữa. */
+  hoanTat?: boolean; chuNhatCuoi?: string | null;
   skillSchedule: SkillSchedule[];
   result: {
     skills: SkillResult[]; scored: number; required: number; complete: boolean;
@@ -79,6 +83,7 @@ export function oThuong(r: Row, k: string, homNay: string) {
     tuanHienTai: s?.weekStart ? tuanLich(s.weekStart, homNay) : null,
     chuaToiTuan: s?.progress === 'upcoming',
     tiLe: kq?.ratio ?? null, ketQua: kq?.outcome,
+    khoa: s?.khoa,
   };
   return { s, kq, canEdit, trong, dung, chuDung, quaHan, cell };
 }
@@ -353,7 +358,14 @@ function DongThuong({ row, rowIndex, sheet, active, tongCot, dien, onReload, reg
     <tr className={`row-hover h-14 ${row.studentStatus !== 'active' ? 'row-muted' : ''} ${active ? 'row-active' : ''}`}
       data-hv={row.studentId}>
       <td className="td py-1.5 sticky-col">
-        <Link className="link block truncate" to={`/hoc-vien/${row.studentId}`} title={row.studentName}>{row.studentName}</Link>
+        <div className="flex items-center gap-1 min-w-0">
+          <Link className="link block truncate" to={`/hoc-vien/${row.studentId}`} title={row.studentName}>{row.studentName}</Link>
+          {row.hoanTat && (
+            <Info title={`Hết Chủ nhật ${ngay(row.chuNhatCuoi)}. Chỉ Quản lý sửa được điểm — nhờ Quản lý hiệu chỉnh, kèm lý do.`}>
+              Đã hoàn tất
+            </Info>
+          )}
+        </div>
         {/* Trạng thái lưu RIÊNG TỪNG DÒNG — lỗi nói rõ ở dòng nào, có nút Thử lại. */}
         <div className="flex items-center gap-1.5 text-[11px] text-slate-500 min-w-0">
           <span className="shrink-0">{row.studentCode}</span>

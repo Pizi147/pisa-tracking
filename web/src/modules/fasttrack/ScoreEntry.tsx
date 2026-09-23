@@ -30,6 +30,8 @@ export type Cell = {
   overdue: boolean;
   progress: string;
   canEdit: boolean;
+  /** R11: đợt đã hoàn tất (hết Chủ nhật của tuần bắt buộc muộn nhất) — khoá với người không có `PLAN_WEEK`/`SCORE_OVERRIDE`. */
+  khoa?: boolean;
   /** Tuần thi riêng của môn này. W1 và W2 dùng chung lịch của môn Writing. */
   periodId?: number | null;
   periodCode?: string | null;
@@ -64,6 +66,9 @@ export const coDiemChinhThuc = (cell: Cell) => cell.band !== null || cell.rawSco
 /** Ô đã chốt "không dự thi" hoặc đang chờ Quản lý: người nhập điểm không sửa được nữa (phải qua Quản lý). */
 export const lockedByNoShow = (cell: Cell) =>
   cell.noShow?.state === 'khong-du-thi' || cell.noShow?.state === 'cho-ql-hieu-chinh';
+
+/** R11 — ô của một đợt đã hoàn tất mà người xem không sửa được: thay cho câu "không được phân công". */
+export const KHOA_HOAN_TAT_HINT = 'Đợt này đã hoàn tất. Chỉ Quản lý sửa được điểm — nhờ Quản lý hiệu chỉnh, kèm lý do.';
 
 /**
  * Chữ người dùng gõ ở ô SỐ CÂU ĐÚNG → lệnh gửi máy chủ. '-' LÀ MỘT LỆNH, KHÔNG PHẢI MỘT SỐ (rule book §17.1): "học
@@ -313,7 +318,8 @@ export function RawScoreInput({ cell, onSave, inputRef, onKeyDown, lon = false }
       <span className={`inline-flex flex-col ${lon ? 'items-end' : 'items-start'} gap-0.5`}>
         <span className="inline-flex items-center gap-1.5">
           <span className="tabular-nums text-slate-300"
-            title={lockedByNoShow(cell) ? 'Đã chốt — cần Quản lý hiệu chỉnh' : 'Bạn không được phân công kỹ năng này'}>
+            title={lockedByNoShow(cell) ? 'Đã chốt — cần Quản lý hiệu chỉnh'
+              : cell.khoa ? KHOA_HOAN_TAT_HINT : 'Bạn không được phân công kỹ năng này'}>
             {cell.rawScore === null ? (cell.noShow ? '-' : '—') : cell.rawScore}
             {!cell.noShow && <span className="text-slate-500 text-[11px] ml-1">({fmtBand(cell.band)})</span>}
           </span>
@@ -406,7 +412,8 @@ export function CriteriaButton({ cell, onSave, buttonRef, lon = false }: {
         className={`btn ${lon ? 'min-h-[44px] min-w-[60px] justify-center text-base font-semibold' : 'btn-sm'} tabular-nums ${editable ? '' : 'opacity-70 cursor-default'}`}
         onClick={() => editable && setOpen(true)}
         title={editable ? (hieuChinh ? 'Sửa bốn tiêu chí — đã có điểm nên phải ghi lý do.' : `Mở bốn tiêu chí. ${NO_SHOW_HINT}`)
-          : lockedByNoShow(cell) ? 'Đã chốt — cần Quản lý hiệu chỉnh' : 'Bạn không được phân công kỹ năng này'}
+          : lockedByNoShow(cell) ? 'Đã chốt — cần Quản lý hiệu chỉnh'
+          : cell.khoa ? KHOA_HOAN_TAT_HINT : 'Bạn không được phân công kỹ năng này'}
       >
         {cell.noShow ? '-' : lon && cell.band === null && nhanDau ? '' : fmtBand(cell.band)}
         {editable && <span className="text-slate-500 text-[10px]">sửa</span>}
@@ -821,6 +828,8 @@ export function ODiemThuong({
   cell: {
     diem: number | null; tong: number | null; tuanDoiTu: string | null; tuanHienTai: string | null;
     dau?: boolean; chuaToiTuan?: boolean; tiLe?: number | null; ketQua?: 'pass' | 'fail' | 'missing';
+    /** R11: đợt đã hoàn tất — khoá với người không có `PLAN_WEEK`/`SCORE_OVERRIDE`. */
+    khoa?: boolean;
   };
   tongCot: number | null;
   canEdit: boolean;
@@ -970,7 +979,7 @@ export function ODiemThuong({
 
   /* ---- Chỉ đọc: môn không được phân công. */
   if (!canEdit) {
-    const khongDay = 'Bạn không được phân công kỹ năng này.';
+    const khongDay = cell.khoa ? KHOA_HOAN_TAT_HINT : 'Bạn không được phân công kỹ năng này.';
     if (coDiem) {
       return (
         <span className="inline-flex flex-col items-center justify-center tabular-nums text-slate-400"

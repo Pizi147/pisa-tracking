@@ -12,9 +12,12 @@
  */
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ENTRY_SKILLS } from '@shared/domain/index.ts';
+import { ENTRY_SKILLS, ngay } from '@shared/domain/index.ts';
 import { fmtBand, skillLabel, skillShort } from '../../lib/format.ts';
-import { ChoNutDau, CriteriaButton, ODiemThuong, RawScoreInput, datPhanTram, useSaveScore, type Cell } from '../fasttrack/ScoreEntry.tsx';
+import { Info } from '../../ui/ui.tsx';
+import {
+  ChoNutDau, CriteriaButton, KHOA_HOAN_TAT_HINT, ODiemThuong, RawScoreInput, datPhanTram, useSaveScore, type Cell,
+} from '../fasttrack/ScoreEntry.tsx';
 import { DauLuu, LuoiFT, khopKn, oTrongFt, type FtSheet } from './LuoiFT.tsx';
 import {
   LuoiThuong, ketQuaCua, lichCua, oThuong, tongPhoBien, useLuuThuong, type ThuongSheet,
@@ -90,16 +93,21 @@ function useDiChuyen() {
 }
 
 /** Một dòng học viên: tên + TỐI ĐA một dòng phụ ngắn bên trái (G-3), một ô to bên phải. */
-function DongHv({ studentId, active, ten, href, phu, phuTitle, phuDo = false, luu, children }: {
+function DongHv({ studentId, active, ten, href, phu, phuTitle, phuDo = false, luu, children, nhan }: {
   studentId: number; active: boolean; ten: string; href: string;
   phu: string; phuTitle?: string; phuDo?: boolean; luu: React.ReactNode; children: React.ReactNode;
+  /** R11: nhãn "Đã hoàn tất" cạnh tên khi đợt/bài của dòng này đã hoàn tất. */
+  nhan?: React.ReactNode;
 }) {
   return (
     <li data-hv={studentId}
       className={`flex items-center gap-3 px-3 py-2 min-h-[60px] border-t ${active ? 'row-active' : ''}`}
       style={{ borderColor: 'var(--line)' }}>
       <div className="min-w-0 flex-1">
-        <Link className="link block truncate" to={href} title={ten}>{ten}</Link>
+        <div className="flex items-center gap-1 min-w-0">
+          <Link className="link block truncate" to={href} title={ten}>{ten}</Link>
+          {nhan}
+        </div>
         <div className="flex items-center gap-1.5 text-[11px] text-slate-500 min-w-0 tabular-nums">
           <span className={`truncate ${phuDo ? 'text-rose-300/80' : ''}`} title={phuTitle}>{phu}</span>
           {luu}
@@ -108,6 +116,12 @@ function DongHv({ studentId, active, ten, href, phu, phuTitle, phuDo = false, lu
       {children}
     </li>
   );
+}
+
+/** R11: nhãn "Đã hoàn tất" cạnh tên — dùng chung cho dòng FT và dòng lớp thường của `MotKyNang`. */
+function NhanHoanTat({ hoanTat, chuNhatCuoi }: { hoanTat?: boolean; chuNhatCuoi?: string | null }) {
+  if (!hoanTat) return null;
+  return <Info title={`Hết Chủ nhật ${ngay(chuNhatCuoi)}. ${KHOA_HOAN_TAT_HINT}`}>Đã hoàn tất</Info>;
 }
 
 /* ------------------------------------------------------------------ Lớp Fast Track */
@@ -161,7 +175,8 @@ function DongFt({ row, k, nhieuMt, active, onReload, inputRef, onKeyDown }: {
   return (
     <DongHv studentId={row.studentId} active={active} ten={row.studentName} href={`/mock-test/${row.attemptId}`}
       phu={phu} phuTitle={kv !== null ? `Kỳ vọng (KV) của lượt này: ${fmtBand(kv)} · ${row.studentCode}` : undefined}
-      luu={<DauLuu status={status} error={lastError} onRetry={retry} />}>
+      luu={<DauLuu status={status} error={lastError} onRetry={retry} />}
+      nhan={<NhanHoanTat hoanTat={row.hoanTat} chuNhatCuoi={row.chuNhatCuoi} />}>
       <div className="shrink-0 flex justify-end" data-kn={k} data-trong={c && oTrongFt(c) ? '1' : undefined}>
         {!c ? <span className="inline-flex items-center gap-1.5"><span className="text-slate-600">—</span><ChoNutDau /></span>
           : laSoCau
@@ -252,7 +267,8 @@ function DongThuongMot({ row, k, sheet, tongCot, active, onReload, inputRef, onK
   return (
     <DongHv studentId={row.studentId} active={active} ten={row.studentName} href={`/hoc-vien/${row.studentId}`}
       phu={phu} phuTitle={`${tenMon} · ${row.studentCode}`} phuDo={phu === ketQua && cell.ketQua === 'fail'}
-      luu={<DauLuu status={status} error={lastError} onRetry={retry} />}>
+      luu={<DauLuu status={status} error={lastError} onRetry={retry} />}
+      nhan={<NhanHoanTat hoanTat={row.hoanTat} chuNhatCuoi={row.chuNhatCuoi} />}>
       <div className="shrink-0 flex justify-end" data-kn={k} data-trong={trong ? '1' : undefined}>
         {dung || !s ? (
           <span className="inline-flex items-center gap-1">
