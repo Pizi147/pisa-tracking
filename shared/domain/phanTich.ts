@@ -37,10 +37,16 @@ export type KetQuaGocNhinTuThamSo = { goc: GocNhin; ct: ChuongTrinh | null; boTh
 export function gocNhinTuThamSo(params: { get(key: string): string | null }): KetQuaGocNhinTuThamSo {
   const gocParam = params.get('goc');
   const coBoLocDanhSach = !!(params.get('hang-doi') || params.get('tinh-hinh') || params.get('ky-nang'));
+  /*
+   * `goc` TƯỜNG MINH LUÔN THẮNG (kể cả `tong-hop`, vốn không có tham số riêng — vắng `goc` mới
+   * là lúc suy theo bộ lọc Danh sách Case). Thiếu nhánh này thì bấm "Tổng hợp" trong khi
+   * `hang-doi`/`tinh-hinh`/`ky-nang` còn sót trên URL sẽ kẹt mãi ở Danh sách Case.
+   */
   const goc: GocNhin =
     gocParam === 'y-thuc' ? 'y-thuc'
     : gocParam === 'van-de' ? 'van-de'
     : gocParam === 'ket-qua' ? 'ket-qua'
+    : gocParam === 'tong-hop' ? 'tong-hop'
     : gocParam === 'danh-sach' || coBoLocDanhSach ? 'danh-sach'
     : GOC_NHIN_MAC_DINH;
   const boThamSo: string[] = [];
@@ -52,6 +58,14 @@ export function gocNhinTuThamSo(params: { get(key: string): string | null }): Ke
     boThamSo.push('loai-lop');
   }
   return { goc, ct, boThamSo };
+}
+
+/**
+ * THAM SỐ CẦN XOÁ KHI BẤM SANG MỘT GÓC NHÌN KHÁC — `hang-doi`/`tinh-hinh`/`ky-nang` là bộ lọc RIÊNG của Danh sách
+ * Case; rời màn đó mà không dọn thì lần bấm kế tiếp lại bị `gocNhinTuThamSo` suy nhầm về Danh sách Case.
+ */
+export function thamSoXoaKhiDoiGoc(goc: GocNhin): readonly string[] {
+  return goc === 'danh-sach' ? [] : ['hang-doi', 'tinh-hinh', 'ky-nang'];
 }
 
 // ------------------------------------------------------------------ khoảng thời gian (Q5)
@@ -143,6 +157,17 @@ export function nhomCotLabel(nhom: NhomCot, ct: ChuongTrinh): string {
   return NHAN_NHOM_KY_NANG[ct];
 }
 
+/** Động từ của nhóm "dưới kỳ vọng"/"chưa đạt" theo chương trình — dùng cho tooltip cột kỹ năng và các nhãn ngắn. */
+const DONG_TU_KY_NANG: Record<ChuongTrinh, string> = {
+  ft: 'dưới kỳ vọng', thuong: 'chưa đạt', 'ca-hai': 'dưới kỳ vọng / chưa đạt',
+};
+/** Nhãn NGẮN của nhóm cột (đầu đề bảng, menu "Cột hiện") — cùng luật ct với `nhomCotLabel`, chỉ ngắn hơn. */
+export function nhomCotNhanNgan(nhom: NhomCot, ct: ChuongTrinh): string {
+  if (nhom === 'ket-qua') return 'Kết quả';
+  if (nhom === 'xu-ly') return 'Xử lý';
+  return ct === 'ft' ? 'Dưới kỳ vọng' : ct === 'thuong' ? 'Chưa đạt' : 'Dưới kỳ vọng / chưa đạt';
+}
+
 export type CotTongHop = {
   khoa: string; nhom: NhomCot; donVi: 'dot-test' | 'hoc-vien' | 'case';
   nhan: (ct: ChuongTrinh) => string;
@@ -178,7 +203,7 @@ export function cotKyNangFor(ct: ChuongTrinh): CotTongHop[] {
   return kyNangTheoCt(ct).map((cat) => ({
     khoa: `kn:${cat}`, nhom: 'ky-nang' as const, donVi: 'hoc-vien' as const,
     nhan: () => CASE_CATEGORY_SHORT[cat],
-    goiY: `${kyNangTooltip(cat, ct)} dưới kỳ vọng — đếm học viên, không đếm lượt.`,
+    goiY: `${kyNangTooltip(cat, ct)} ${DONG_TU_KY_NANG[ct]} — đếm học viên, không đếm lượt.`,
   }));
 }
 

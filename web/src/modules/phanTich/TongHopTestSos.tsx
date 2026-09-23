@@ -6,13 +6,12 @@ import { Card, Empty, ErrorState, Skeleton, Th } from '../../ui/ui.tsx';
 import { SoLieuO } from '../../ui/SoLieuO.tsx';
 import {
   CHUONG_TRINH_LABEL, KHOANG_LABEL, KHOANG_MAC_DINH, THEO_DONG, THEO_DONG_COT_DAU, THEO_DONG_DANH_TU, THEO_DONG_LABEL,
-  bangXuatTongHop, cotTongHopFor, ngay,
+  bangXuatTongHop, cotTongHopFor, ngay, nhomCotNhanNgan,
   type ChuongTrinh, type CotTongHop, type DongTongHop, type Khoang, type NhomCot, type TheoDong, type TongHopKetQua,
 } from '@shared/domain/index.ts';
 
 const KHOA_LUU_COT_HIEN = 'pisa.phan-tich.tong-hop.cot-hien';
 const NHOM_MAC_DINH: readonly NhomCot[] = ['ket-qua', 'ky-nang', 'xu-ly'];
-const NHOM_NHAN_NGAN: Record<NhomCot, string> = { 'ket-qua': 'Kết quả', 'ky-nang': 'Dưới kỳ vọng', 'xu-ly': 'Xử lý' };
 
 function docCotHien(): Set<NhomCot> {
   try {
@@ -156,7 +155,7 @@ export function TongHopTestSos({ branchId, ct, tg, classId }: {
                 {NHOM_MAC_DINH.map((n) => (
                   <label key={n} className="flex items-center gap-2 text-xs text-slate-300 cursor-pointer">
                     <input type="checkbox" checked={cotHien.has(n)} onChange={() => toggleCotHien(n)} />
-                    {NHOM_NHAN_NGAN[n]}
+                    {nhomCotNhanNgan(n, ct)}
                   </label>
                 ))}
               </div>
@@ -176,19 +175,24 @@ export function TongHopTestSos({ branchId, ct, tg, classId }: {
             <table className="w-full text-sm" style={{ tableLayout: 'fixed' }}>
               <colgroup>
                 <col style={{ width: 180 }} />
-                {cols.map((c) => <col key={c.khoa} style={{ width: 64 }} />)}
+                {/* Nhóm Xử lý cần rộng hơn — tiêu đề "HV có Case"/"Đang xử lý"/"Thiếu PA học thuật" bị cắt ở 64px. */}
+                {cols.map((c) => <col key={c.khoa} style={{ width: c.nhom === 'xu-ly' ? 88 : 64 }} />)}
               </colgroup>
               <thead>
                 <tr>
                   <th rowSpan={2} className="th sticky-col text-left">{THEO_DONG_COT_DAU[theo]}</th>
                   {nhomChay.map((g, i) => (
                     <th key={g.nhom + i} colSpan={g.cols.length} className={`th text-center ${i > 0 ? 'border-l' : ''}`} style={{ borderColor: 'var(--line-strong)' }}>
-                      {NHOM_NHAN_NGAN[g.nhom]}
+                      {nhomCotNhanNgan(g.nhom, ct)}
                     </th>
                   ))}
                 </tr>
                 <tr>
-                  {cols.map((c) => <Th key={c.khoa} align="right" hint={c.goiY}>{c.nhan(ct)}</Th>)}
+                  {cols.map((c) => (
+                    <Th key={c.khoa} align="right" hint={c.goiY} className={c.nhom === 'xu-ly' ? 'whitespace-normal leading-tight' : ''}>
+                      {c.nhan(ct)}
+                    </Th>
+                  ))}
                 </tr>
               </thead>
               <tbody>

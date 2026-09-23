@@ -46,6 +46,7 @@ function tinh(p: Principal, f: FilterVanDe) {
     .all(...args) as any[];
 
   const colLabel = new Map<string, string>();
+  const colMeta = new Map<string, { branchId: number; classCode: string }>();
   const colsOfStudent = new Map<number, Set<string>>();
   const N = new Map<string, ONhiet>();   // khoá `${skill}|${colKey}`
   const khoaCua = (skill: string, colKey: string) => `${skill}|${colKey}`;
@@ -58,7 +59,10 @@ function tinh(p: Principal, f: FilterVanDe) {
 
   for (const r of enrollments) {
     const colKey = f.cot === 'lop' ? `lop:${r.class_id}` : `cn:${r.branch_id}`;
-    if (!colLabel.has(colKey)) colLabel.set(colKey, f.cot === 'lop' ? (r.class_code ?? `#${r.class_id}`) : (r.branch_name ?? `#${r.branch_id}`));
+    if (!colLabel.has(colKey)) {
+      colLabel.set(colKey, f.cot === 'lop' ? (r.class_code ?? `#${r.class_id}`) : (r.branch_name ?? `#${r.branch_id}`));
+      colMeta.set(colKey, { branchId: r.branch_id, classCode: r.class_code ?? '' });
+    }
     if (!colsOfStudent.has(r.student_id)) colsOfStudent.set(r.student_id, new Set());
     colsOfStudent.get(r.student_id)!.add(colKey);
     for (const skill of caseCategoriesFor(r.scoring_mode)) oCua(skill, colKey).N.add(r.student_id);
@@ -114,7 +118,13 @@ function tinh(p: Principal, f: FilterVanDe) {
     for (const colKey of info.colKeys) themLoi(info.hangMuc, colKey, CHUA_PHAN_LOAI, info.studentId);
   }
 
-  const cotDs = [...colLabel.entries()].map(([khoa, nhan]) => ({ khoa, nhan })).sort((a, b) => a.khoa.localeCompare(b.khoa));
+  /* Xếp cột theo chi nhánh rồi mã lớp (Q11) — không theo chuỗi khoá kỹ thuật `lop:{id}`/`cn:{id}`. */
+  const cotDs = [...colLabel.entries()]
+    .map(([khoa, nhan]) => ({ khoa, nhan }))
+    .sort((a, b) => {
+      const ma = colMeta.get(a.khoa)!, mb = colMeta.get(b.khoa)!;
+      return ma.branchId !== mb.branchId ? ma.branchId - mb.branchId : ma.classCode.localeCompare(mb.classCode);
+    });
   return { skills: kyNangTheoCt(f.ct), cotDs, N, loi, scopeEmpty: !scope.all && scope.branchIds.length === 0 && scope.classIds.length === 0 };
 }
 
@@ -148,7 +158,8 @@ export function maTranVanDe(p: Principal, f: FilterVanDe): MaTranVanDe {
       return { ma, nhan: ma === CHUA_PHAN_LOAI ? 'Chưa phân loại' : issueLabel(ma), o: oCon, tong };
     }).sort((a, b) => (a.ma === CHUA_PHAN_LOAI ? 1 : b.ma === CHUA_PHAN_LOAI ? -1 : b.tong - a.tong));
 
-    const ungVien = con.filter((c) => c.ma !== CHUA_PHAN_LOAI);
+    /* "Khác" cũng mơ hồ như "Chưa phân loại" — không đáng là "lỗi phổ biến nhất" (Q11). */
+    const ungVien = con.filter((c) => c.ma !== CHUA_PHAN_LOAI && c.nhan !== 'Khác');
     const nhieuNhat = ungVien.length
       ? ungVien.reduce((best, c) => (c.tong > best.tong || (c.tong === best.tong && c.nhan.localeCompare(best.nhan) < 0) ? c : best))
       : null;

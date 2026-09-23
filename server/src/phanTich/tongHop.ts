@@ -39,7 +39,12 @@ export function phanLoaiLuot(ev: { sosLevel: number | null; complete: boolean })
 
 export type TrangThaiXuLy = 'dangXuLy' | 'thieuPa' | null;
 
-/** Đúng luật của `weekly.ts`: đã có hỗ trợ thực sự diễn ra → đang xử lý; không thì thiếu PA nếu đủ điều kiện `isNoPlanCase`. */
+/**
+ * Đúng luật của `weekly.ts`: đã có hỗ trợ thực sự diễn ra → đang xử lý; không thì thiếu PA nếu đủ điều kiện
+ * `isNoPlanCase`. GIỮ NGUYÊN hệt `weekly.ts` (dùng chung hàm này, không sửa `weekly.ts`) — kể cả việc `dangXuLy`
+ * không tự loại case đã `status = 'done'`. Bảng Tổng hợp cần đúng "tình trạng hiện tại" hơn (nhóm Xử lý), nên tự
+ * lọc thêm `status` ở nơi gọi (`tinh()` dưới đây) thay vì đổi hàm thuần này.
+ */
 export function trangThaiXuLy(
   c: { supportDone: string | null; status: string; disposition: string | null; ivCount: number },
   today: string,
@@ -214,10 +219,12 @@ function tinh(p: Principal, f: FilterTongHop) {
       if (!dong) continue;
       const cha = hangMap.get(dong.cha)!, con = cha.con.get(dong.con)!;
       const trang = trangThaiXuLy({ supportDone: r.support_done, status: r.status, disposition: r.disposition, ivCount: r.iv_count }, today);
+      /* Nhóm Xử lý là "tình trạng HIỆN TẠI" (Q18) — Case đã status='done' không còn "đang xử lý" dù từng có hỗ trợ. */
+      const dangXuLyThat = trang === 'dangXuLy' && r.status !== 'done';
       for (const tap of [cha.tap, con.tap, tongTap]) {
         them(tap, 'case', r.case_id);
         if (r.student_id) them(tap, 'hvCoCase', r.student_id);
-        if (trang === 'dangXuLy') them(tap, 'dangXuLy', r.case_id);
+        if (dangXuLyThat) them(tap, 'dangXuLy', r.case_id);
         else if (trang === 'thieuPa') them(tap, 'thieuPa', r.case_id);
       }
     }

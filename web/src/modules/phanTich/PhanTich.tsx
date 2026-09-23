@@ -11,7 +11,7 @@ import { TongHopTestSos } from './TongHopTestSos.tsx';
 import { VanDeHocVien } from './VanDeHocVien.tsx';
 import {
   GOC_NHIN, GOC_NHIN_LABEL, KHOANG, KHOANG_LABEL, KHOANG_MAC_DINH,
-  chuongTrinhTuThamSo, gocNhinTuThamSo, khoangTuThamSo, ngay, tuDauKhoang,
+  chuongTrinhTuThamSo, gocNhinTuThamSo, khoangTuThamSo, ngay, thamSoXoaKhiDoiGoc, tuDauKhoang,
   type ChuongTrinh, type GocNhin,
 } from '@shared/domain/index.ts';
 
@@ -58,6 +58,8 @@ export function PhanTich() {
   const setGoc = (k: GocNhin) => {
     const next = new URLSearchParams(params);
     if (k === 'tong-hop') next.delete('goc'); else next.set('goc', k);
+    /* Rời Danh sách Case thì dọn bộ lọc riêng của nó — không thì lần bấm sau lại bị suy nhầm về Danh sách Case. */
+    for (const p of thamSoXoaKhiDoiGoc(k)) next.delete(p);
     setParams(next, { replace: false });
   };
   const setCt = (v: ChuongTrinh) => {

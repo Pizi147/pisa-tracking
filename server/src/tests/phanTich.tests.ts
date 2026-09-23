@@ -427,4 +427,84 @@ export async function runPhanTichTests(t: YThucTestKit) {
       assert(row.homeClassId === cid, `Case #${row.id} không thuộc lớp ${cid}: homeClassId=${row.homeClassId}`);
     }
   });
+
+  // ================================================================== Sửa sau rà planning (PR #73)
+
+  console.log('\nPR-Pb · Sửa sau rà planning (PR #73)');
+
+  check('PR-Pb · #1: chọn góc nhìn khác Danh sách Case thì xoá hang-doi/tinh-hinh/ky-nang — không kẹt lại ở Danh sách Case', () => {
+    // Mô phỏng đúng những gì setGoc('tong-hop') làm khi bấm "Tổng hợp" từ URL ?tinh-hinh=no_plan.
+    const p1 = new URLSearchParams('tinh-hinh=no_plan');
+    eq(d.gocNhinTuThamSo(p1).goc, 'danh-sach', 'Trước khi bấm: tinh-hinh một mình cũng vào Danh sách Case');
+    const next = new URLSearchParams(p1);
+    next.delete('goc');
+    for (const k of d.thamSoXoaKhiDoiGoc('tong-hop')) next.delete(k);
+    eq(d.gocNhinTuThamSo(next).goc, 'tong-hop', 'Sau khi bấm Tổng hợp: phải sang Tổng hợp, không kẹt lại Danh sách Case');
+    eq(d.thamSoXoaKhiDoiGoc('danh-sach'), [], 'Ở lại/quay về Danh sách Case thì không xoá gì');
+    eq(d.thamSoXoaKhiDoiGoc('van-de'), ['hang-doi', 'tinh-hinh', 'ky-nang'], 'Sang góc nhìn khác cũng xoá y hệt');
+    // gocNhinTuThamSo tự nó cũng phải để `goc` tường minh thắng heuristic, không cần chờ dọn tham số.
+    eq(d.gocNhinTuThamSo(new URLSearchParams('goc=tong-hop&tinh-hinh=no_plan')).goc, 'tong-hop',
+      'goc=tong-hop tường minh phải thắng dù tinh-hinh còn sót trên URL');
+  });
+
+  check('PR-Pb · #2: nhãn nhóm cột "Dưới kỳ vọng" theo chương trình — "Chưa đạt" khi ct=thuong', () => {
+    eq(d.nhomCotNhanNgan('ky-nang', 'ft'), 'Dưới kỳ vọng', 'FT');
+    eq(d.nhomCotNhanNgan('ky-nang', 'thuong'), 'Chưa đạt', 'lớp thường');
+    eq(d.nhomCotNhanNgan('ky-nang', 'ca-hai'), 'Dưới kỳ vọng / chưa đạt', 'Cả hai');
+    eq(d.nhomCotNhanNgan('ket-qua', 'thuong'), 'Kết quả', 'nhóm Kết quả không đổi theo ct');
+    const cotFt = d.cotTongHopFor('ft').find((c: any) => c.khoa === 'kn:listening');
+    const cotThuong = d.cotTongHopFor('thuong').find((c: any) => c.khoa === 'kn:listening');
+    assert(cotFt.goiY.includes('dưới kỳ vọng') && !cotFt.goiY.includes('chưa đạt'), `Tooltip FT: ${cotFt.goiY}`);
+    assert(cotThuong.goiY.includes('chưa đạt') && !cotThuong.goiY.includes('dưới kỳ vọng'), `Tooltip lớp thường: ${cotThuong.goiY}`);
+  });
+
+  check("PR-Pb · #3: \"Đang xử lý\" không đếm Case đã status='done' dù từng có hỗ trợ; \"Case\" vẫn đếm", () => {
+    const attempt = conn
+      .prepare(
+        `SELECT a.id, a.student_id FROM assessment_attempts a
+           JOIN assessment_scores s ON s.attempt_id = a.id
+          WHERE a.status != 'cancelled' LIMIT 1`,
+      )
+      .get() as any;
+    assert(attempt, 'Bộ demo phải có ít nhất một lượt đã chấm');
+    const now = new Date().toISOString();
+    const caseId = Number(
+      conn
+        .prepare(`INSERT INTO sos_cases (attempt_id, student_id, category, status, sos_level, created_at) VALUES (?,?, 'listening', 'done', 1, ?)`)
+        .run(attempt.id, attempt.student_id, now).lastInsertRowid,
+    );
+    const ivId = Number(
+      conn.prepare(`INSERT INTO case_interventions (case_id, kind, status, completed_date, created_at) VALUES (?, 'self_study', 'completed', ?, ?)`)
+        .run(caseId, TODAY, now).lastInsertRowid,
+    );
+    try {
+      const bo = { branchId: null, ct: 'ca-hai' as const, soTuan: 52, classId: null, theo: 'tuan' as const };
+      const oCase = tongHopSvc.oTongHop(P.admin, { ...bo, khoa: 'tong', cot: 'case' });
+      const oDangXuLy = tongHopSvc.oTongHop(P.admin, { ...bo, khoa: 'tong', cot: 'dangXuLy' });
+      assert(oCase.rows.some((r: any) => r.id === caseId), 'Case đã đóng vẫn phải có mặt ở cột "Case" (tập lượt sinh ra)');
+      assert(!oDangXuLy.rows.some((r: any) => r.id === caseId), `Case đã status='done' không được tính vào "Đang xử lý": ${JSON.stringify(oDangXuLy.rows.map((r: any) => r.id))}`);
+    } finally {
+      conn.prepare('DELETE FROM case_interventions WHERE id = ?').run(ivId);
+      conn.prepare('DELETE FROM sos_cases WHERE id = ?').run(caseId);
+    }
+  });
+
+  check('PR-Pb · #5: "Lỗi phổ biến nhất" loại cả "Khác" lẫn "Chưa phân loại"; ma trận xếp cột theo chi nhánh rồi mã lớp', () => {
+    const kq = vanDeSvc.maTranVanDe(P.admin, { branchId: null, ct: 'ca-hai', classId: null, cot: 'lop' });
+    for (const h of kq.hang) {
+      if (h.loiNhieuNhat) {
+        assert(h.loiNhieuNhat.nhan !== 'Khác' && h.loiNhieuNhat.nhan !== 'Chưa phân loại',
+          `"${h.nhan}": loiNhieuNhat không được là "Khác"/"Chưa phân loại", đang là "${h.loiNhieuNhat.nhan}"`);
+      }
+    }
+    const cotDs = kq.cotDs as { khoa: string; nhan: string }[];
+    for (let i = 1; i < cotDs.length; i++) {
+      const truoc = conn.prepare('SELECT branch_id FROM classes WHERE id = ?').get(Number(cotDs[i - 1].khoa.split(':')[1])) as any;
+      const sau = conn.prepare('SELECT branch_id FROM classes WHERE id = ?').get(Number(cotDs[i].khoa.split(':')[1])) as any;
+      assert(
+        truoc.branch_id < sau.branch_id || (truoc.branch_id === sau.branch_id && cotDs[i - 1].nhan.localeCompare(cotDs[i].nhan) <= 0),
+        `Cột "${cotDs[i - 1].nhan}" (chi nhánh ${truoc.branch_id}) phải đứng trước "${cotDs[i].nhan}" (chi nhánh ${sau.branch_id}) theo đúng thứ tự chi nhánh rồi mã lớp`,
+      );
+    }
+  });
 }
