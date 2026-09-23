@@ -95,6 +95,7 @@ ba nơi.
 | **Tổng quan và công việc** | Ai phải làm gì, cả chi nhánh đang thế nào | `server/src/worklist/` | `web/src/modules/worklist/` |
 | **Nền tảng** | Tài khoản, quyền, tuần, danh mục, nhật ký thay đổi | `server/src/platform/` | `web/src/modules/platform/` |
 | **Dùng chung** | Badge, nút, panel, bảng, chọn tuần; hàng tab gạch chân `HangTab.tsx`, ô số nhỏ `OSoNho.tsx`, dòng thời gian lưới `DongThoiGian.tsx` (PR-HV) | — | `web/src/ui/` |
+| **Nền giao diện (PR-UX0)** — token màu nghĩa **một chỗ**: `web/src/index.css :root` (`--ok/bad/late/soon/doing/done/wait/muted-rgb` + `-bg`/`-line`, alias kết quả Test `--dat/--sos1/--sos2/--sos3`, hàng lớn/con `--hang-*`, ô sửa/đọc `.o-sua/.o-doc`); `tailwind.config.js` ánh xạ (`text-ok`, `bg-bad-bg`, `border-late-line`) và ghi đè `rose/amber/sky/emerald-200/300`, `slate-400/500` | `web/src/ui/Nhan.tsx` (`Nhan`, `QuaHan`, `toneNhanTuBadge`) · `HangNhom.tsx` (`HangNhom`, `HangCon`, `KhoiNhom`, `MuiTenMo`) · `KhungPanel.tsx` (`KhungPanel`, `Khoi`, `Truong`, `Hang2`, `khoPanelChung`) | `shared/domain/mauNghia.ts` (`docMauCss`, `tuongPhan`) · `shared/domain/khoPanel.ts` (`taoKhoPanel`, một panel một lúc) · `display.ts` `deadlineView` (mảnh hạn) · `worklist/mywork.ts` (`tieuDe`, bỏ `overdueLabel`) | `web/src/ui/` · phép kiểm `server/src/tests/nenGiaoDien.tests.ts` |
 
 Từ vựng nghiệp vụ (nhãn, hằng số, luật thuần) nằm ở `shared/domain/`, chia theo **đúng chín
 module trên**. Cả máy chủ lẫn giao diện đọc chung một bộ, nên không có chuyện hai bên gọi

@@ -58,7 +58,7 @@ export function DongViec({ it, onOpen, nutPhu }: {
     it.owner ?? (it.ownerId === null && !it.mine && it.group !== 'placement' && it.group !== 'next_step' ? 'chưa ai phụ trách' : null),
   ].filter(Boolean).join(' · ');
   return (
-    <div className="grid grid-cols-1 gap-x-3 gap-y-1 py-2 pr-3 hover:bg-white/5 sm:grid-cols-[minmax(0,1fr)_150px_auto] sm:items-center" title={it.reason}>
+    <div className="grid grid-cols-1 gap-x-3 gap-y-1 py-2 pr-3 hover:bg-white/5 sm:grid-cols-[minmax(0,1fr)_150px_230px] sm:items-center" title={it.reason}>
       <button type="button" className="min-w-0 appearance-none border-0 bg-transparent p-0 text-left cursor-pointer" onClick={() => onOpen(it.href)}>
         <span className="flex min-w-0 items-center gap-2">
           <span className="truncate text-[13px] font-semibold text-slate-100">{it.tieuDe}</span>
