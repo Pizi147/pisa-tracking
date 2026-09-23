@@ -469,6 +469,14 @@ $env:NETLIFY_AUTH_TOKEN='<Personal access token>'
 Lệnh nâng cấp **giữ nguyên dữ liệu**, nhưng vẫn phải sao lưu trước. Mở PowerShell đúng thư mục, làm mục 0.4, rồi làm
 đúng ba bước (copy vào Notepad, thay `<...>`, dán sang):
 
+> **Database THỬ cũng phải nâng cấp — và phải làm TRƯỚC khi deploy nháp.** Khi bản mới cần migrate (session code sẽ nói,
+> ví dụ các PR Ra, LT), làm ba bước dưới **hai lần**: lần đầu với URL, token, tên máy chủ của database **THỬ**
+> (`pisatracking-demo-…`) — **trước** `netlify deploy --build` (mục 8.1); không làm thì bản nháp báo "Có lỗi · mã …" vì
+> thiếu bảng mới. Lần sau với database **CHÍNH** — trước `--prod` (mục 8.2).
+>
+> **Lệnh chạy khoảng 3 phút** (database ở Mỹ, mỗi bước kiểm là một lượt đi về) — kể cả khi cuối cùng báo `Không có gì để
+> nâng cấp`. Đừng đóng cửa sổ giữa chừng. Chạy lại lần hai cũng không sao.
+
 **Bước 1 — sao lưu trước** (như mục 10):
 
 ```powershell

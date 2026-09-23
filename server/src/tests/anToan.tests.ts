@@ -531,6 +531,85 @@ export async function runAnToanTests(t: AnToanTestKit) {
     assert(!/settleNoShows/.test(ham), 'Hàm Netlify không gọi thẳng settleNoShows — đi qua chotVangDinhKy');
   });
 
+  // ================================================================== PR-Z2c-b · Mất luồng Turso ("stream not found")
+
+  console.log('\nPR-Z2c-b · Mất luồng Turso: GET mở lại kết nối và thử lại đúng một lần; ghi thì không');
+  /* `dbMod`, `appMod` đã import ở phần AN-4/AN-5 phía trên. */
+  /** Đúng dạng lỗi đã gặp trên bản nháp 23/09 (log `mã 17476fd8`). */
+  const LOI_LUONG = 'Hrana(Api("status=404 Not Found, body={\\"error\\":\\"stream not found: 196a113c:65993a\\"}"))';
+  /**
+   * Gài lỗi vào `prepare` của kết nối đang dùng: câu SQL khớp `khop` ném `loi` ở lần khớp thứ nhất, các lần sau chạy thật.
+   * Sau fn: gỡ chỗ gài, đóng kết nối mới (nếu máy chủ đã mở lại) và đặt lại kết nối cũ — các phép sau dùng `conn` của harness.
+   */
+  const giaLoi = async <T>(khop: RegExp, loi: string, fn: (cu: any) => Promise<T>): Promise<{ kq: T; log: string; moLai: boolean }> => {
+    const cu = dbMod.db();
+    const goc = cu.prepare;
+    let daNem = false;
+    cu.prepare = function (this: unknown, ...a: unknown[]) {
+      if (!daNem && khop.test(String(a[0]))) { daNem = true; throw new Error(loi); }
+      return goc.apply(this, a);
+    };
+    try {
+      const { kq, log } = await batLog(() => fn(cu));
+      return { kq, log, moLai: dbMod.db() !== cu };
+    } finally {
+      delete cu.prepare;
+      const moi = dbMod.db();
+      if (moi !== cu) { try { moi.close(); } catch { /* đã đóng */ } }
+      dbMod.datKetNoiChoPhepKiem(cu);
+    }
+  };
+  const tkLuong = taoTaiKhoan('anz2b.luong');
+  const cookieLuong = String((await dangNhap(tkLuong, '203.0.113.61')).setCookie).split(';')[0];
+
+  await checkAsync('Z2c-b · GET mất luồng ở bước kiểm phiên (attachPrincipal) → mở lại kết nối, thử lại một lần → 200 vẫn đăng nhập; log đúng một dòng [turso]', async () => {
+    const { kq: r, log, moLai } = await giaLoi(/FROM demo_sessions/, LOI_LUONG, () => goi('GET', '/demo/session', { cookie: cookieLuong }));
+    assert(r.status === 200 && r.json?.authenticated === true && r.json?.user?.fullName === 'Thử anz2b.luong',
+      `Phải vẫn đăng nhập (không coi là đã đăng xuất): ${r.status} ${JSON.stringify(r.json).slice(0, 160)}`);
+    assert(moLai, 'Phải bỏ kết nối cũ và mở kết nối mới');
+    assert((log.match(/\[turso\]/g) ?? []).length === 1 && /GET \/api\/demo\/session/.test(log), `Log: ${log}`);
+  });
+
+  await checkAsync('Z2c-b · GET mất luồng ở câu SQL của chính trang (/ref/branches) → thử lại một lần → 200 đúng danh sách chi nhánh', async () => {
+    const mau = await goi('GET', '/ref/branches', { cookie: cookieLuong });
+    const { kq: r, log, moLai } = await giaLoi(/FROM branches WHERE status='active'/, LOI_LUONG, () => goi('GET', '/ref/branches', { cookie: cookieLuong }));
+    assert(mau.status === 200 && r.status === 200 && JSON.stringify(r.json) === JSON.stringify(mau.json), `${r.status} ${JSON.stringify(r.json).slice(0, 160)}`);
+    assert(moLai && (log.match(/\[turso\]/g) ?? []).length === 1, `moLai=${moLai} log: ${log}`);
+  });
+
+  await checkAsync('Z2c-b · GET gặp lỗi KHÁC (không phải mất luồng) → vẫn 500 "Có lỗi · mã …", không thử lại, không mở lại kết nối', async () => {
+    const { kq: r, log, moLai } = await giaLoi(/FROM branches WHERE status='active'/, 'SQLITE_IOERR: hỏng đĩa giả', () => goi('GET', '/ref/branches', { cookie: cookieLuong }));
+    assert(r.status === 500 && /Có lỗi · mã/.test(r.json?.error ?? ''), `${r.status} ${JSON.stringify(r.json)}`);
+    assert(!moLai && !/\[turso\]/.test(log) && /hỏng đĩa giả/.test(log), `moLai=${moLai} log: ${log}`);
+  });
+
+  await checkAsync('Z2c-b · POST mất luồng → KHÔNG thử lại (tránh ghi hai lần): 500 có mã, không mở lại kết nối, không ghi dòng nào', async () => {
+    const tk = taoTaiKhoan('anz2b.post');
+    const dem = () => JSON.stringify([
+      (conn.prepare('SELECT COUNT(*) n FROM auth_attempts').get() as any).n,
+      (conn.prepare('SELECT COUNT(*) n FROM demo_sessions').get() as any).n,
+    ]);
+    const truoc = dem();
+    const { kq: r, log, moLai } = await giaLoi(/auth_attempts/, LOI_LUONG, () => dangNhap(tk, '203.0.113.62'));
+    assert(r.status === 500 && /Có lỗi · mã/.test(r.json?.error ?? '') && !r.setCookie, `${r.status} ${JSON.stringify(r.json)}`);
+    assert(!moLai && !/\[turso\]/.test(log), `moLai=${moLai} log: ${log}`);
+    assert(dem() === truoc, `Đã ghi: ${truoc} → ${dem()}`);
+  });
+
+  check('Z2c-b · Lỗi mất luồng xảy ra TRONG giao dịch (tx) được đánh dấu → bộ thử lại bỏ qua kể cả với GET; lỗi thường không bị nhận nhầm', () => {
+    let trong: unknown = null;
+    try { dbMod.tx(() => { throw new Error(LOI_LUONG); }); } catch (e) { trong = e; }
+    assert(dbMod.laLoiMatLuongTurso(trong) && dbMod.loiTrongGiaoDich(trong), 'Lỗi ném trong tx phải được nhận là mất luồng VÀ trong giao dịch');
+    const ngoai = new Error(LOI_LUONG);
+    assert(dbMod.laLoiMatLuongTurso(ngoai) && !dbMod.loiTrongGiaoDich(ngoai), 'Lỗi ngoài tx không mang dấu giao dịch');
+    assert(!dbMod.laLoiMatLuongTurso(new Error('SQLITE_BUSY: database is locked')) && !dbMod.laLoiMatLuongTurso(null), 'Lỗi khác không phải mất luồng');
+    let goiLai = 0;
+    let chuyenTiep: unknown = null;
+    const thuLai = appMod.thuLaiKhiMatLuong(() => { goiLai++; });
+    thuLai(trong, { method: 'GET', path: '/x' }, { headersSent: false }, (e: unknown) => { chuyenTiep = e; });
+    assert(goiLai === 0 && chuyenTiep === trong, `GET nhưng lỗi trong giao dịch: không được chạy lại (goiLai=${goiLai})`);
+  });
+
   // ---- các task sau thêm phép kiểm NGAY TRÊN dòng này ----
 
   may.close();

@@ -8,7 +8,7 @@ import { HttpError } from './util.ts';
 import { taoSuKhoe } from './platform/suKhoe.ts';
 import { HAN_HAM_NETLIFY_MS, LOG_CHAM_MS, chayVoiHan } from './platform/hanGio.ts';
 import { chayTrongRequest, demHienTai } from './platform/nguCanhRequest.ts';
-import { donGiaoDichTreo } from './db.ts';
+import { donGiaoDichTreo, laLoiMatLuongTurso, loiTrongGiaoDich, moLaiKetNoi } from './db.ts';
 import { laBanChinh } from './moiTruong.ts';
 
 /**
@@ -33,14 +33,17 @@ export function createApp() {
   app.use(moNguCanhRequest);
   /* AN-4: đặt trước attachPrincipal — gọi health kèm cookie cũ cũng không tốn một lượt hỏi phiên. */
   app.get('/api/health', taoSuKhoe());
-  app.use(attachPrincipal);
 
-  app.use('/api', api);
-
-  app.use('/api', (_req, res) => {
+  /* Phần chạy lại được khi mất luồng Turso (PR-Z2c-b): kiểm phiên + mọi đường API. */
+  const luong = express.Router();
+  luong.use(attachPrincipal);
+  luong.use('/api', api);
+  luong.use('/api', (_req, res) => {
     res.status(404).json({ error: 'Không tìm thấy endpoint.' });
   });
+  app.use(luong);
 
+  app.use(thuLaiKhiMatLuong(luong));
   app.use(traLoiLoi);
 
   return app;
@@ -78,6 +81,30 @@ function moNguCanhRequest(req: Request, res: Response, next: NextFunction): void
     }
     next();
   });
+}
+
+const DA_THU_LAI = Symbol('daThuLaiMatLuong');
+
+/**
+ * MẤT LUỒNG TURSO → THỬ LẠI MỘT LẦN (PR-Z2c-b). Lỗi `stream not found` nghĩa là kết nối Turso giữ ở cấp module đã chết (xem
+ * db.ts). Chỉ chạy lại khi an toàn:
+ *   · request GET (POST/PUT/DELETE có thể đã ghi — chạy lại là ghi hai lần), chưa thử lại lần nào, chưa gửi gì về;
+ *   · lỗi KHÔNG ném ra từ trong tx() (giao dịch có thể đã ghi dở).
+ * Khi đó: bỏ kết nối cũ, ghi log một dòng, chạy lại kiểm phiên + đường API trong một ngữ cảnh request mới (bộ nhớ tra cứu
+ * trống). Lần hai vẫn lỗi → lỗi đi thẳng tới traLoiLoi như cũ (người dùng thấy "Có lỗi · mã …"). Lỗi khác không bị đụng tới.
+ */
+export function thuLaiKhiMatLuong(luong: (req: Request, res: Response, next: NextFunction) => void) {
+  return (err: unknown, req: Request, res: Response, next: NextFunction): void => {
+    const r = req as Request & { [DA_THU_LAI]?: true };
+    if (req.method !== 'GET' || r[DA_THU_LAI] || res.headersSent || !laLoiMatLuongTurso(err) || loiTrongGiaoDich(err)) {
+      next(err);
+      return;
+    }
+    r[DA_THU_LAI] = true;
+    moLaiKetNoi();
+    console.warn(`[turso] mất luồng (stream not found) — đã mở lại kết nối, thử lại ${req.method} ${req.path} một lần`);
+    chayTrongRequest(req.method, () => luong(req, res, next));
+  };
 }
 
 /**

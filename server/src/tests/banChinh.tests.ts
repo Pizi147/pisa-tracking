@@ -531,11 +531,33 @@ export async function runBanChinhTests(t: BanChinhTestKit) {
     try {
       initBanChinh(o.conn, O);
       const DUOC_CO_DONG = new Set(['permissions', 'roles', 'role_permissions', 'routes', 'programmes', 'programme_skills',
-        'programme_checkpoints', 'branches', 'reporting_units', 'users', 'user_roles', 'student_code_seq']);
+        'programme_checkpoints', 'branches', 'reporting_units', 'users', 'user_roles', 'student_code_seq',
+        'demo_config']);   // PR-Z2c-b: chỉ dòng dấu ngưỡng — nội dung kiểm CHÍNH XÁC ở dưới
       const sai = cacBang(o.conn).filter((b) => !DUOC_CO_DONG.has(b) && dem(o.conn, b) > 0).map((b) => `${b}=${dem(o.conn, b)}`);
       assert(sai.length === 0, `Bảng có dữ liệu không được phép: ${sai.join(', ')}`);
-      assert(cacBang(o.conn).includes('demo_config') && dem(o.conn, 'demo_config') === 0, 'demo_config phải rỗng: không ngày demo, không kịch bản, không seeded_at');
+      /* PR-Z2c-b: demo_config chỉ được có đúng dòng dấu ngưỡng đạt lớp Normal (napDuLieuNen ghi — để migrate lần đầu không ghi
+         audit "đổi luật" sai). Vẫn: không ngày demo, không kịch bản, không seeded_at. */
+      const cauHinh = cacBang(o.conn).includes('demo_config') ? o.conn.prepare('SELECT key, value FROM demo_config').all() : null;
+      assert(JSON.stringify(cauHinh) === '[{"key":"normal_pass_threshold","value":"0.7"}]', `demo_config chỉ được có dấu ngưỡng 0.7: ${JSON.stringify(cauHinh)}`);
       assert(cacBang(o.conn).length === cacBang(t.conn).length, `Phải có đủ bảng như schema: ${cacBang(o.conn).length} / ${cacBang(t.conn).length}`);
+    } finally { dongLai(o); }
+  });
+
+  check('Z2c-b · init-ban-chinh rồi `migrate` (nhánh Turso, như bản chính) → không bước "Ngưỡng đạt lớp Normal", không dòng audit đổi ngưỡng', () => {
+    const o = moDbTam();
+    try {
+      initBanChinh(o.conn, O);
+      o.conn.close();
+      const f = pathMod.join(o.dir, 'x.sqlite');
+      const r = cp.spawnSync(process.execPath,
+        ['--input-type=module', '-e', `const m = await import(${JSON.stringify(migrateLibJs)}); console.log(JSON.stringify(m.migrate().applied));`], {
+          env: { ...process.env, TURSO_DATABASE_URL: urlFile(f), TURSO_AUTH_TOKEN: 'x', BAN_CHINH: '', PISA_DB: '' }, encoding: 'utf8', timeout: 60_000,
+        });
+      assert(r.status === 0, `migrate lỗi: ${String(r.stderr).slice(-300)}`);
+      assert(!/Ngưỡng đạt lớp Normal/.test(r.stdout), `migrate lần đầu vẫn chạy bước đổi ngưỡng: ${String(r.stdout).slice(-300)}`);
+      o.conn = new Database(f);
+      const audit = o.conn.prepare("SELECT COUNT(*) n FROM audit_logs WHERE action = 'rule.changed'").get() as any;
+      assert(audit.n === 0, `Có ${audit.n} dòng audit "đổi luật" sai sự thật`);
     } finally { dongLai(o); }
   });
 

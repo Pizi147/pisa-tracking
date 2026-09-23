@@ -1,6 +1,6 @@
 import type { NextFunction, Request, Response } from 'express';
 import crypto from 'node:crypto';
-import { db } from './db.ts';
+import { db, laLoiMatLuongTurso } from './db.ts';
 import { loadPrincipal, type Principal } from './permissions.ts';
 import { HttpError, nowIso } from './util.ts';
 
@@ -70,7 +70,9 @@ export function attachPrincipal(req: Request, _res: Response, next: NextFunction
       req.principal = principal;
       req.sessionToken = token;
     }
-  } catch {
+  } catch (e) {
+    /* PR-Z2c-b: mất luồng Turso KHÔNG phải "chưa đăng nhập" — nuốt đi là người dùng bị đẩy ra màn đăng nhập. Đưa sang bộ thử lại. */
+    if (laLoiMatLuongTurso(e)) { next(e); return; }
     /* session trỏ tới user đã bị xoá sau khi reset seed */
   }
   next();
