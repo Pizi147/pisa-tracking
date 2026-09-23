@@ -9,7 +9,7 @@ import { badRequest, isIsoDate, notFound, nowIso } from '../util.ts';
 import { demoToday } from '../demoConfig.ts';
 import { writeAudit } from '../platform/audit.ts';
 import { countAttachments } from '../platform/attachments.ts';
-import { resultOf } from '../fasttrack/attempts.ts';
+import { loadBundle, resultOf } from '../fasttrack/attempts.ts';
 import { branchSql, statScope } from './thongKe.ts';
 import { canManageDiscipline, requireManageDiscipline, requireViewClass, requireViewStudent } from './access.ts';
 
@@ -331,8 +331,16 @@ export const isPhoiHopMetric = (id: string): boolean => (PHOI_HOP_METRIC_IDS as 
  *   phoi-hop-hoan-thanh    trong đó, lượt có ≥1 việc và mọi việc `done` hoặc `removed`
  *
  * Phạm vi xem như thống kê Ý thức: chỉ Quản lý (chi nhánh của họ) và Quản trị; GVBM/GVCN nhận tập rỗng có nhãn. Kỳ (`from`/`to`) tính theo TUẦN của lượt.
+ *
+ * P15 (PR-Pb, Q15): còn trả `byKind` — ba tập con theo mức SOS (1 / 2 / ≥ 3) của CHÍNH `ids`, để dòng phụ "SOS 1 · SOS 2 ·
+ * SOS 3" ở web bấm ra đúng từng phần; `kind` lọc `ids` xuống đúng một mức khi bấm số con. Không N+1 (trước đây `resultOf`
+ * và một câu SQL trạng thái chạy MỖI LƯỢT — Turso mỗi câu một vòng mạng): nạp điểm bằng `loadBundle` một lần, đọc trạng
+ * thái phối hợp bằng một câu theo lô 400.
  */
-export function phoiHopMetric(p: Principal, id: string, f: { branchId?: number | null; from?: string | null; to?: string | null } = {}): { none: boolean; ids: number[] } {
+export function phoiHopMetric(
+  p: Principal, id: string,
+  f: { branchId?: number | null; from?: string | null; to?: string | null; kind?: string | null } = {},
+): { none: boolean; ids: number[]; byKind?: { sos1: number[]; sos2: number[]; sos3: number[] } } {
   const scope = statScope(p, f.branchId ?? null);
   if (scope.none) return { none: true, ids: [] };
   const b = branchSql('c.branch_id', scope.branchIds);
@@ -347,13 +355,32 @@ export function phoiHopMetric(p: Principal, id: string, f: { branchId?: number |
         WHERE a.status != 'cancelled' AND ${b.sql}${period} ORDER BY a.id`,
     )
     .all(...args) as any[];
-  const ids: number[] = [];
-  for (const a of attempts) {
-    const level = resultOf(a).sosLevel;
-    if (level === null || level < 1) continue;
-    const st = (db().prepare('SELECT status FROM sos_coordination_actions WHERE attempt_id = ?').all(a.id) as any[]).map((r) => r.status as string);
-    const sum = coordinationSummary(st);
-    if (id === 'phoi-hop-luot-sos' || (id === 'phoi-hop-dang-xu-ly' && sum.pending > 0) || (id === 'phoi-hop-hoan-thanh' && sum.complete)) ids.push(a.id);
+
+  const bundle = loadBundle(attempts.map((a) => a.id));
+  const statusByAttempt = new Map<number, string[]>();
+  for (let i = 0; i < attempts.length; i += 400) {
+    const chunk = attempts.slice(i, i + 400).map((a) => a.id);
+    if (!chunk.length) continue;
+    for (const r of db()
+      .prepare(`SELECT attempt_id, status FROM sos_coordination_actions WHERE attempt_id IN (${chunk.map(() => '?').join(',')})`)
+      .all(...chunk) as any[]) {
+      if (!statusByAttempt.has(r.attempt_id)) statusByAttempt.set(r.attempt_id, []);
+      statusByAttempt.get(r.attempt_id)!.push(r.status);
+    }
   }
-  return { none: false, ids };
+
+  const ids: number[] = [];
+  const byKind = { sos1: [] as number[], sos2: [] as number[], sos3: [] as number[] };
+  for (const a of attempts) {
+    const level = resultOf(a, bundle.scores.get(a.id) ?? [], bundle.skips.get(a.id) ?? []).sosLevel;
+    if (level === null || level < 1) continue;
+    const sum = coordinationSummary(statusByAttempt.get(a.id) ?? []);
+    const khop = id === 'phoi-hop-luot-sos' || (id === 'phoi-hop-dang-xu-ly' && sum.pending > 0) || (id === 'phoi-hop-hoan-thanh' && sum.complete);
+    if (!khop) continue;
+    const kind = level === 1 ? 'sos1' : level === 2 ? 'sos2' : 'sos3';
+    if (f.kind && f.kind !== kind) continue;
+    ids.push(a.id);
+    byKind[kind].push(a.id);
+  }
+  return { none: false, ids, byKind };
 }

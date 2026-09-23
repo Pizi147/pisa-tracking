@@ -366,4 +366,51 @@ export async function runPhanTichTests(t: YThucTestKit) {
     assert(nLop <= 6, `Quá nhiều câu SQL cho ma trận Vấn đề học viên: ${nLop} (tối đa 6)`);
     assert(nLop === nCn, `Số câu SQL đổi theo cách xếp cột: theo lớp ${nLop}, theo chi nhánh ${nCn}`);
   });
+
+  // ================================================================== Task 4 — P15: Phối hợp SOS chia SOS 1/2/3, bỏ N+1
+
+  console.log('\nPR-Pb · P15 — Phối hợp SOS chia SOS 1/2/3');
+  const metricsSvc: any = await import('../worklist/metrics.ts');
+  const phoiHopSvc: any = await import('../yThuc/phoiHop.ts');
+  const sapXep = (xs: number[]) => [...xs].sort((a, b) => a - b);
+
+  check('PR-Pb · P15: byKind.sos1 ∪ sos2 ∪ sos3 = ids, rời nhau — cho cả ba chỉ số phối hợp', () => {
+    for (const metricId of ['phoi-hop-luot-sos', 'phoi-hop-dang-xu-ly', 'phoi-hop-hoan-thanh']) {
+      const r = phoiHopSvc.phoiHopMetric(P.admin, metricId, {});
+      eq(sapXep([...r.byKind.sos1, ...r.byKind.sos2, ...r.byKind.sos3]), sapXep(r.ids), `${metricId}: hợp byKind phải bằng ids`);
+      const s1 = new Set(r.byKind.sos1), s2 = new Set(r.byKind.sos2), s3 = new Set(r.byKind.sos3);
+      assert(![...s1].some((x) => s2.has(x) || s3.has(x)) && ![...s2].some((x) => s3.has(x)), `${metricId}: ba tập phải rời nhau`);
+    }
+  });
+
+  check("PR-Pb · P15: metricSet(P.admin, 'phoi-hop-luot-sos', {kind:'sos2'}).ids = byKind.sos2", () => {
+    const r = phoiHopSvc.phoiHopMetric(P.admin, 'phoi-hop-luot-sos', {});
+    const viaMetric = metricsSvc.metricSet(P.admin, 'phoi-hop-luot-sos', { kind: 'sos2' }).ids as number[];
+    eq(sapXep(viaMetric), sapXep(r.byKind.sos2), 'metricSet kind=sos2 phải khớp byKind.sos2');
+  });
+
+  await checkAsync('PR-Pb · P15: không N+1 — số câu SQL của phoiHopMetric không đổi khi thêm một lượt có phối hợp', async () => {
+    const n1 = await demCauHoi(() => phoiHopSvc.phoiHopMetric(P.admin, 'phoi-hop-luot-sos', {}));
+    const semLuot = conn
+      .prepare(
+        `SELECT id, student_id FROM assessment_attempts a
+          WHERE a.status != 'cancelled' AND NOT EXISTS (SELECT 1 FROM sos_coordination_actions x WHERE x.attempt_id = a.id)
+          LIMIT 1`,
+      )
+      .get() as any;
+    assert(semLuot, 'Bộ demo phải có ít nhất một lượt chưa có việc Phối hợp SOS để dựng tình huống');
+    const now = new Date().toISOString();
+    const info = conn
+      .prepare(
+        `INSERT INTO sos_coordination_actions (attempt_id, student_id, kind, custom_name, preset, status, created_at)
+         VALUES (?, ?, 'talk_student', NULL, 0, 'pending', ?)`,
+      )
+      .run(semLuot.id, semLuot.student_id, now);
+    try {
+      const n2 = await demCauHoi(() => phoiHopSvc.phoiHopMetric(P.admin, 'phoi-hop-luot-sos', {}));
+      assert(n1 === n2, `Số câu SQL đổi khi thêm một lượt có phối hợp: ${n1} → ${n2}`);
+    } finally {
+      conn.prepare('DELETE FROM sos_coordination_actions WHERE id = ?').run(info.lastInsertRowid);
+    }
+  });
 }

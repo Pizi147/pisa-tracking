@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useApi } from '../../lib/useApi.ts';
 import { SoLieu } from '../../ui/SoLieu.tsx';
+import { SoLieuO } from '../../ui/SoLieuO.tsx';
 import { SectionNote } from '../../ui/ui.tsx';
 import { MEASURE_KINDS, MEASURE_KIND_LABEL } from '@shared/domain/index.ts';
 
@@ -81,7 +82,14 @@ export function YThucAnalysisView({ branchId }: { branchId: number | null }) {
       <div>
         <h3 className="text-sm font-semibold text-slate-200 mt-0 mb-2">Phối hợp SOS</h3>
         <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
-          <SoLieu id="phoi-hop-luot-sos" giaTri={phoiHopLuotSos.data?.n ?? 0} phamVi={{ branchId }} rong={phoiHopLuotSos.data?.empty} extra={period} />
+          <SoLieu id="phoi-hop-luot-sos" giaTri={phoiHopLuotSos.data?.n ?? 0} phamVi={{ branchId }} rong={phoiHopLuotSos.data?.empty} extra={period}
+            phu={phoiHopLuotSos.data && phoiHopLuotSos.data.n > 0 ? (
+              <>
+                SOS 1 · <SoLieuO id="phoi-hop-luot-sos" giaTri={phoiHopLuotSos.data.byKind?.sos1 ?? 0} phamVi={{ branchId }} extra={{ ...period, kind: 'sos1' }} />
+                {'  '}SOS 2 · <SoLieuO id="phoi-hop-luot-sos" giaTri={phoiHopLuotSos.data.byKind?.sos2 ?? 0} phamVi={{ branchId }} extra={{ ...period, kind: 'sos2' }} />
+                {'  '}SOS 3 · <SoLieuO id="phoi-hop-luot-sos" giaTri={phoiHopLuotSos.data.byKind?.sos3 ?? 0} phamVi={{ branchId }} extra={{ ...period, kind: 'sos3' }} />
+              </>
+            ) : undefined} />
           <SoLieu id="phoi-hop-dang-xu-ly" giaTri={phoiHopDangXuLy.data?.n ?? 0} phamVi={{ branchId }} rong={phoiHopDangXuLy.data?.empty} extra={period} />
           <SoLieu id="phoi-hop-hoan-thanh" giaTri={phoiHopHoanThanh.data?.n ?? 0} phamVi={{ branchId }} rong={phoiHopHoanThanh.data?.empty} extra={period} />
           <SoLieu id="case-cho-xac-dinh-nguyen-nhan" giaTri={caseChoXacDinh.data?.n ?? 0} phamVi={{ branchId }} rong={caseChoXacDinh.data?.empty} extra={period} />
