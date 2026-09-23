@@ -695,20 +695,16 @@ export async function runKeHoachTestTests(t: YThucTestKit) {
     assert(d.laVaoMuon(null, '2026-09-10') === false, 'Thiếu ngày vào lớp thì không suy diễn');
   });
 
-  check('PR-Rc2 · tomTatXemTruoc — gộp câu tạo/đổi/lỗi, không tự đọc ngày', () => {
-    const tuanLich = (dt: string | null) => (dt === '2026-10-19' ? 'W3 OCT' : dt === '2026-10-26' ? 'W4 OCT' : dt === '2026-09-21' ? 'W1 SEP' : dt === '2026-09-28' ? 'W2 SEP' : '');
-    const dong: any[] = [
-      { hanhDong: 'tao', den: { rlw: '2026-10-19', s: '2026-10-26' } },
-      { hanhDong: 'tao', den: { rlw: '2026-10-19', s: '2026-10-26' } },
-      { hanhDong: 'doi', tu: { rlw: '2026-09-21' }, den: { rlw: '2026-09-28' } },
-      { hanhDong: 'giu' },
-      { hanhDong: 'loi' },
-    ];
-    const cau = d.tomTatXemTruoc(dong, tuanLich);
-    assert(cau.some((c: string) => c === '2 em chưa có → W3/W4 OCT'), `Thiếu câu "tạo" gộp đúng tháng, ra ${JSON.stringify(cau)}`);
-    assert(cau.some((c: string) => c === '1 em W1 SEP → W2 SEP (đổi)'), `Thiếu câu "đổi", ra ${JSON.stringify(cau)}`);
-    assert(cau.some((c: string) => c === '1 em không xếp được'), `Thiếu câu "lỗi", ra ${JSON.stringify(cau)}`);
-    assert(cau.length === 3, `Dòng "giu" không sinh câu nào, tổng phải đúng 3, ra ${cau.length}`);
+  check('UX2 · gomBaiXemTruoc — cùng tu/den/ghiChu gộp, khác ghiChu tách', () => {
+    const bai = (skill: string, tu: string | null, den: string | null, ghiChu: string) => ({ skill, tu, den, ghiChu, cau: null });
+    const g = d.gomBaiXemTruoc([
+      bai('speaking', '2026-10-26', '2026-11-02', 'doi'),
+      bai('listening', null, '2026-10-19', 'moi'), bai('reading', null, '2026-10-19', 'moi'), bai('writing', null, '2026-10-19', 'canh-bao'),
+    ]);
+    assert(g.length === 3, `L R (moi), W (canh-bao), S (doi) phải là 3 dòng, ra ${g.length}`);
+    assert(g[0].kyNang.join() === 'listening,reading' && g[0].ghiChu === 'moi', 'L R cùng tuần + ghi chú gộp một dòng');
+    assert(g[1].kyNang.join() === 'writing' && g[1].ghiChu === 'canh-bao', 'Khác ghi chú thì tách dù cùng tuần');
+    assert(g[2].kyNang.join() === 'speaking' && g[2].tu === '2026-10-26', 'S đổi tuần đứng riêng, giữ tuần cũ');
   });
 
   check('PR-Rc2 · Rà planning(1) Lớp đã kết thúc không hiện ở danhSachLop (cả FT lẫn lớp thường)', () => {

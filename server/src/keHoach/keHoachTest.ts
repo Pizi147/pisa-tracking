@@ -174,7 +174,8 @@ function oKyNangCua(cheDo: CheDo, row: any, scores: any[], daDoi: boolean, doiTu
   const batBuoc = row.required === 1;
   return {
     trangThai: trangThaiKyNang({ batBuoc, tuan: row.week_start ?? null, xong: xongKyNang(cheDo, row.skill, scores), daDoi }),
-    tuan: row.week_start ?? null, doiTu: daDoi ? doiTu : null, batBuoc, khoa: khoaCua(cheDo, row, scores),
+    tuan: row.week_start ?? null, periodId: row.planned_period_id ?? null, doiTu: daDoi ? doiTu : null, batBuoc,
+    khoa: khoaCua(cheDo, row, scores),
   };
 }
 

@@ -1,9 +1,9 @@
 /**
  * LUẬT THUẦN CỦA KẾ HOẠCH TEST — khu vực Test (spec §3.5 "Kế hoạch Test").
  *
- * Ở đây chỉ có luật KHÔNG ĐỌC DATABASE và KHÔNG TỰ ĐỌC NGÀY GIỜ: trạng thái một nhóm kỹ năng (RLW/S) trên lưới Fast
- * Track, tuần đa số của một nhóm học viên, đợt đã hoàn tất hay chưa (R11), tiêu đề tab theo phạm vi lớp, tóm tắt màn
- * xem trước của Xếp lịch hàng loạt, và "vào muộn". Máy chủ và giao diện cùng gọi một nơi.
+ * Ở đây chỉ có luật KHÔNG ĐỌC DATABASE và KHÔNG TỰ ĐỌC NGÀY GIỜ: trạng thái một kỹ năng (và nhóm kỹ năng) trên lưới,
+ * gộp chip L · R · W · S theo tuần, nhãn tuần trong khoá, tuần đa số, đợt đã hoàn tất hay chưa (R11), tiêu đề tab theo
+ * phạm vi lớp, tóm tắt màn xem trước của Xếp lịch hàng loạt, và "vào muộn". Máy chủ và giao diện cùng gọi một nơi.
  */
 
 import { studyWeekOf } from './fasttrack.ts';
@@ -26,9 +26,6 @@ export function trangThaiNhom(
   if (batBuoc.some((k) => k.daDoi)) return 'da-doi';
   return 'da-xep';
 }
-
-/** Hai nhóm kỹ năng của lưới Fast Track (mockup 05b): RLW gộp một ô, Speaking một ô riêng (G-7). */
-export const NHOM_KY_NANG = { rlw: ['listening', 'reading', 'writing'], s: ['speaking'] } as const;
 
 /**
  * TUẦN NHIỀU EM NHẤT của một nhóm (dùng cho ô nhóm RLW khi L/R/W lệch tuần — Q6). Hoà phiếu thì chọn tuần SỚM HƠN:
@@ -87,59 +84,6 @@ export function laVaoMuon(vaoLop: string | null, khaiGiang: string | null): bool
   return soNgay > 14;
 }
 
-export type DongXemTruoc = {
-  hanhDong: 'tao' | 'doi' | 'giu' | 'loi';
-  tu?: { rlw: string | null; s: string | null } | null;
-  den?: { rlw: string | null; s: string | null } | null;
-};
-
-/** Gộp tuần RLW và S thành một chuỗi: cùng tháng thì gộp "W3/W4 OCT", khác tháng thì viết đủ cả hai. */
-function ganTuan(rlw: string | null, s: string | null, tuanLich: (d: string | null) => string): string {
-  if (!rlw) return s ? tuanLich(s) : '';
-  const trlw = tuanLich(rlw);
-  if (!s || s === rlw) return trlw;
-  const ts = tuanLich(s);
-  const [wR, ...restR] = trlw.split(' ');
-  const [wS, ...restS] = ts.split(' ');
-  if (restR.join(' ') === restS.join(' ')) return `${wR}/${wS} ${restR.join(' ')}`;
-  return `${trlw}/${ts}`;
-}
-
-/**
- * TÓM TẮT MÀN XEM TRƯỚC của Xếp lịch hàng loạt (bước 4, R9): gộp các dòng `tao`/`doi` theo cùng tuần đích thành
- * một câu, cộng một câu cho các dòng `loi`. KHÔNG tự đọc ngày — nhận `tuanLich` qua tham số để giữ hàm thuần.
- */
-export function tomTatXemTruoc(dong: DongXemTruoc[], tuanLich: (d: string | null) => string): string[] {
-  const cau: string[] = [];
-
-  const nhomTao = new Map<string, number>();
-  for (const d of dong) {
-    if (d.hanhDong !== 'tao') continue;
-    const key = `${d.den?.rlw ?? ''}|${d.den?.s ?? ''}`;
-    nhomTao.set(key, (nhomTao.get(key) ?? 0) + 1);
-  }
-  for (const [key, n] of nhomTao) {
-    const [rlw, s] = key.split('|');
-    cau.push(`${n} em chưa có → ${ganTuan(rlw || null, s || null, tuanLich)}`);
-  }
-
-  const nhomDoi = new Map<string, number>();
-  for (const d of dong) {
-    if (d.hanhDong !== 'doi') continue;
-    const key = `${d.tu?.rlw ?? ''}→${d.den?.rlw ?? ''}`;
-    nhomDoi.set(key, (nhomDoi.get(key) ?? 0) + 1);
-  }
-  for (const [key, n] of nhomDoi) {
-    const [tu, den] = key.split('→');
-    cau.push(`${n} em ${tuanLich(tu || null)} → ${tuanLich(den || null)} (đổi)`);
-  }
-
-  const loi = dong.filter((d) => d.hanhDong === 'loi').length;
-  if (loi > 0) cau.push(`${loi} em không xếp được`);
-
-  return cau;
-}
-
 // ---------------------------------------------------------------- PR-UX2: bốn kỹ năng L · R · W · S riêng
 
 /** Bốn kỹ năng của Kế hoạch Test. W = chấm cả W1 và W2 — một lịch W đặt cho cả hai (G-7). */
@@ -147,9 +91,12 @@ export const KY_NANG_KE_HOACH = ['listening', 'reading', 'writing', 'speaking'] 
 export type KyNangKH = (typeof KY_NANG_KE_HOACH)[number];
 export const CHU_KY_NANG: Record<KyNangKH, 'L' | 'R' | 'W' | 'S'> = { listening: 'L', reading: 'R', writing: 'W', speaking: 'S' };
 
-/** Một kỹ năng của một đợt: `khoa` != null → dòng chỉ đọc (đã có điểm / đã thi / đã huỷ phần thi). */
+/**
+ * Một kỹ năng của một đợt: `khoa` != null → dòng chỉ đọc (đã có điểm / đã thi / đã huỷ phần thi). `periodId` là tuần hiện có
+ * — hộp sửa dùng nó làm giá trị ban đầu của bộ chọn tuần (Bổ sung sau rà #87: không để bộ chọn tự phát "tuần này").
+ */
 export type OKyNang = {
-  trangThai: TrangThaiO; tuan: string | null; doiTu: string | null; batBuoc: boolean;
+  trangThai: TrangThaiO; tuan: string | null; periodId: number | null; doiTu: string | null; batBuoc: boolean;
   khoa: 'đã có điểm' | 'đã thi' | 'đã huỷ phần thi' | null;
 };
 
