@@ -78,6 +78,28 @@ export const METRICS: readonly ChiSo[] = [
     tapDuDieuKien: 'Tín hiệu của LỚP THƯỜNG còn chờ (chưa thành Case, chưa bỏ qua, chưa thu hồi) mà hạn xác minh 3 ngày, tính cả ngày đầu, đã qua. Fast Track tự tạo Case nên không có ở đây.',
     thoiGian: 'hien-trang', khuTrung: 'COUNT DISTINCT signal_id', drilldown: '/metrics/tin-hieu-qua-han',
   },
+  /* Ba chỉ số của khối Cần xử lý (PR-Pa, đặc tả §3.2) — mỗi dòng của khối là một chỉ số, để bấm vào ra đúng tập. */
+  {
+    id: 'case-xac-dinh-nguyen-nhan-qua-han', ten: 'Case quá hạn xác định nguyên nhân',
+    cauHoi: 'Bao nhiêu Case SOS tự tạo đã quá hạn 3 ngày mà GVBM chưa xác định nguyên nhân hoặc chưa xác nhận PA gợi ý?',
+    donVi: 'case',
+    tapDuDieuKien: 'Trong tập "Case chờ xác định nguyên nhân": Case mà hạn 3 ngày của tín hiệu đã nối (sớm nhất) đã qua. Hết ngày hạn mới tính quá hạn.',
+    thoiGian: 'hien-trang', khuTrung: 'COUNT DISTINCT case_id', drilldown: '/metrics/case-xac-dinh-nguyen-nhan-qua-han',
+  },
+  {
+    id: 'bai-qua-han-nhap-diem', ten: 'Bài chưa nhập điểm quá hạn',
+    cauHoi: 'Bao nhiêu lượt Test có ô điểm đã quá hạn nhập mà người được phân công chưa nhập?',
+    donVi: 'bai-thi',
+    tapDuDieuKien: 'Lượt Test (không huỷ, lớp đang hoạt động) có ít nhất một ô điểm còn nợ đã quá hạn — cùng luật với ô ở bảng chấm: lớp thường theo số câu đúng, hạn Chủ nhật tuần thi môn đó; Fast Track theo band, dấu "-" theo cặp W1/W2. Vắng đã xác nhận, huỷ phần thi, chờ duyệt dời không phải nợ.',
+    thoiGian: 'hien-trang', khuTrung: 'COUNT DISTINCT attempt_id', drilldown: '/metrics/bai-qua-han-nhap-diem',
+  },
+  {
+    id: 'case-chua-co-nguoi-phu-trach', ten: 'Case chưa có người phụ trách',
+    cauHoi: 'Bao nhiêu Case đang mở mà chưa ai nhận điều phối?',
+    donVi: 'case',
+    tapDuDieuKien: 'Case HỌC THUẬT chưa kết luận trong phạm vi mà chưa có người phụ trách.',
+    thoiGian: 'hien-trang', khuTrung: 'COUNT DISTINCT case_id', drilldown: '/metrics/case-chua-co-nguoi-phu-trach',
+  },
   {
     id: 'case-cho-xac-dinh-nguyen-nhan', ten: 'Case chờ xác định nguyên nhân',
     cauHoi: 'Bao nhiêu case SOS tự tạo đang chờ GVBM xác định nguyên nhân hoặc xác nhận phương án điền sẵn?',

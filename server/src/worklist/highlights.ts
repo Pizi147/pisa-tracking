@@ -1,5 +1,5 @@
 import { db } from '../db.ts';
-import { PERMISSIONS } from '../../../shared/domain/index.ts';
+import { PERMISSIONS, type ChuongTrinh } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addDays } from '../util.ts';
 import { scopeFor, type Principal } from '../permissions.ts';
@@ -59,27 +59,28 @@ export type Highlights = {
   scopeEmpty: boolean;
 };
 
-/** Lớp mà người đang xem được nhìn, đã lọc theo chi nhánh đang chọn. */
-function visibleClasses(p: Principal, branchId: number | null) {
+/** Lớp mà người đang xem được nhìn, đã lọc theo chi nhánh và chương trình đang chọn. */
+function visibleClasses(p: Principal, branchId: number | null, program: ChuongTrinh = 'ca-hai') {
   const scope = scopeFor(p, PERMISSIONS.STUDENT_VIEW);
   if (scope.none) return null;
   const conn = db();
   const where: string[] = ["c.status = 'active'"];
   const args: any[] = [];
   if (branchId) { where.push('c.branch_id = ?'); args.push(branchId); }
+  if (program !== 'ca-hai') { where.push('c.is_fast_track = ?'); args.push(program === 'ft' ? 1 : 0); }
   if (!scope.all && scope.branchIds?.length) {
     where.push(`c.branch_id IN (${scope.branchIds.map(() => '?').join(',')})`);
     args.push(...scope.branchIds);
   }
   return conn
-    .prepare(`SELECT c.id, c.code, c.kind, c.branch_id FROM classes c WHERE ${where.join(' AND ')}`)
+    .prepare(`SELECT c.id, c.code, c.is_fast_track, c.branch_id FROM classes c WHERE ${where.join(' AND ')}`)
     .all(...args) as any[];
 }
 
-export function highlights(p: Principal, f: { branchId?: number | null } = {}): Highlights {
+export function highlights(p: Principal, f: { branchId?: number | null; program?: ChuongTrinh | null } = {}): Highlights {
   const conn = db();
   const today = demoToday();
-  const classes = visibleClasses(p, f.branchId ?? null);
+  const classes = visibleClasses(p, f.branchId ?? null, f.program ?? 'ca-hai');
   if (classes === null) return { weeks: [], examMonthOnly: { months: [], students: 0 }, scopeEmpty: true };
 
   const thisMonday = mondayOf(today);
@@ -114,7 +115,7 @@ export function highlights(p: Principal, f: { branchId?: number | null } = {}): 
     };
 
     for (const c of classes) {
-      if (c.kind === 'ft') continue;
+      if (c.is_fast_track) continue;
       const pr = progress.get(c.id);
       if (!pr) continue;
       const row = { id: c.id, code: c.code, students: size.get(c.id) ?? 0 };
