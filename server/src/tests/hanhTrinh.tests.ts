@@ -416,4 +416,16 @@ export async function runHanhTrinhTests(t: YThucTestKit) {
     assert(!doc('web/src/modules/students/StudentDetailPage.tsx').includes('Các mốc đã qua'), 'Chữ cũ phải hết');
     assert(doc('web/src/modules/students/HanhTrinh.tsx').includes('Mốc học tập'), 'Chữ mới phải có ở HanhTrinh.tsx');
   });
+
+  // ==================================================================== Task 5 — R7/R8c (quét nguồn)
+
+  check('PR-Qb (5) · StudentDetailPage.tsx gọi docThamSoHoSo để đọc tham số hồ sơ', () => {
+    assert(doc('web/src/modules/students/StudentDetailPage.tsx').includes('docThamSoHoSo'), 'Phải gọi docThamSoHoSo');
+  });
+
+  check('PR-Qb (5) · StudentDetailPage.tsx không còn đọc lẻ params.get(\'lo-trinh\'|\'tab\')', () => {
+    const src = doc('web/src/modules/students/StudentDetailPage.tsx');
+    assert(!/params\.get\(['"]lo-trinh['"]\)/.test(src), 'Không còn đọc lẻ params.get(\'lo-trinh\')');
+    assert(!/params\.get\(['"]tab['"]\)/.test(src), 'Không còn đọc lẻ params.get(\'tab\')');
+  });
 }

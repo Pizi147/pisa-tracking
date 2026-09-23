@@ -430,3 +430,11 @@ Commit `PR-Qb (8): 375px hồ sơ học viên, bảng định vị, CODE_MAP, đ
   `StudentDetailPage.tsx` (import vòng an toàn vì chỉ gọi trong JSX, không gọi lúc nạp module). `npm run check`
   xanh, **870 = 867 + 3** (đủ ≥3). Chưa bấm thử trên trình duyệt — để dành đúng một lần ở Task 9 theo quy trình
   nhanh. Commit `PR-Qb (4)`.
+- **Task 5:** `StudentDetailPage.tsx` — đọc mọi tham số qua `docThamSoHoSo`; `?dot=` không có `lo-trinh` gọi
+  `attemptId`; `?dot=`/`?kn=` ép tab Học thuật + cuộn một lần (hiệu ứng khoá theo `[!!data, p.dot, p.kn]`, không
+  khoá theo tham chiếu `data` để tránh cuộn lại mỗi lần tải nền); bảng lượt thêm `id="dot-{id}"` + nền nhấn +
+  link "Hồ sơ đợt ›"; bốn ô số (`Stat`) nhận `onClick` thành nút thật; `?case=`/`?pa=` mở `NganCase`, đóng thì
+  xoá khỏi URL. Tự quyết: `kn` ↔ hạng mục bảng kỹ năng dùng hàm `anhXaKyNang` cục bộ trong file (ghép
+  writing↔writing1 khi lệch bộ lớp thường/FT) — không đưa vào `shared/domain` vì đây thuần là quyết định vẽ
+  UI, không phải luật máy chủ cần kiểm bằng harness. `npm run check` xanh, **872 = 870 + 2** (đủ ≥2). Commit
+  `PR-Qb (5)`.

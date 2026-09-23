@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { Card, Empty, ErrorState, Info, Level, Outcome, SectionNote, Skeleton, Status, Th} from '../../ui/ui.tsx';
@@ -18,7 +18,8 @@ import {
   attemptStatusLabel, fmtBand, fmtDate, skillLabel, sosLabel, sosTone, studentStatusLabel,
 } from '../../lib/format.ts';
 import {
-  HO_SO_TAB_LABEL, JOURNEY_EVENT_LABEL, ketQuaTestGanNhat, ngay, parseHoSoTab, type HoSoTab,
+  HO_SO_TAB_LABEL, JOURNEY_EVENT_LABEL, caseCategoriesFor, docThamSoHoSo, duongHoSoHocVien,
+  ketQuaTestGanNhat, ngay, type HoSoTab,
 } from '@shared/domain/index.ts';
 import { HangTab } from '../../ui/HangTab.tsx';
 import { KetQuaDot } from '../../ui/KetQuaDot.tsx';
@@ -54,15 +55,16 @@ export default function StudentDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
-  const cycleParam = params.get('lo-trinh');
-  const q = cycleParam ? `?cycleId=${cycleParam}` : '';
-  const { data, loading, error, reload } = useApi<Profile>(id ? `/students/${id}${q}` : null, [cycleParam]);
+  /* R7/R8c/Q9/Q10 (PR-Qb): MỘT hàm đọc mọi tham số của hồ sơ — không còn đọc lẻ từng khoá. */
+  const p = docThamSoHoSo((k) => params.get(k));
+  const q = p.loTrinh ? `?cycleId=${p.loTrinh}` : p.dot != null ? `?attemptId=${p.dot}` : '';
+  const { data, loading, error, reload } = useApi<Profile>(id ? `/students/${id}${q}` : null, [p.loTrinh, p.dot]);
   const [manageOpen, setManageOpen] = useState(false);
   const [planOpen, setPlanOpen] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
   /** Tín hiệu đang được xác minh — mở form case với đầu mục và kỹ năng điền sẵn. */
   const [verify, setVerify] = useState<any | null>(null);
-  /** Ngăn Case (Q9) — case + phương án đang cuộn tới, nếu có. */
+  /** Ngăn Case (Q9) mở do BẤM trong trang (khối PA, ⋮ …) — mở do URL (`?case=`) đọc thẳng từ `p`. */
   const [openCase, setOpenCase] = useState<OpenCase>(null);
   /*
    * HẠNG MỤC ĐANG LỌC — một state duy nhất nối bảng kỹ năng với khối case bên dưới.
@@ -85,20 +87,57 @@ export default function StudentDetailPage() {
     [id, boardCycleId],
   );
   const skillRows = board.data?.rows ?? null;
-  /* Tab đang xem đọc từ địa chỉ (A6); đổi tab là `replace` để nút Quay lại của trình duyệt không phải bấm nhiều lần. */
-  const tab = parseHoSoTab(params.get('tab'));
+  /*
+   * TAB ĐANG XEM đọc từ địa chỉ (A6); có `dot`/`kn` thì LUÔN Học thuật (R7, Q10) — hai tham số đó
+   * chỉ có nghĩa ở tab này. Đổi tab là `replace` để nút Quay lại của trình duyệt không phải bấm
+   * nhiều lần, và xoá `dot`/`kn` vì người xem đã chủ động rời khỏi thứ hai tham số đó đang trỏ tới.
+   */
+  const tab: HoSoTab = p.dot != null || p.kn ? 'hoc-thuat' : p.tab ?? 'hoc-thuat';
   const setTab = (t: HoSoTab) => {
     const next = new URLSearchParams(params);          // giữ nguyên 'lo-trinh'
+    next.delete('dot'); next.delete('kn');
     if (t === 'hoc-thuat') next.delete('tab'); else next.set('tab', t);
     setParams(next, { replace: true });
   };
   /* A5: dấu ⚠ trên tab Ý thức. Cùng đường với khối bên trong — useApi tự tải lại khi '/students' bị vô hiệu. */
   const warn = useApi<{ message: string }>(id ? `/students/${id}/violation-warning` : null, [id]);
 
+  /*
+   * MỞ ĐÚNG ĐỢT / ĐÚNG KỸ NĂNG (R7, R8c) — cuộn một lần khi dữ liệu vừa có cho ĐÚNG cặp `dot`/`kn`
+   * đang xem (đổi tham số thì cuộn lại; tải lại nền cùng tham số thì không cuộn lần hai).
+   */
+  useEffect(() => {
+    if (!data) return;
+    if (p.dot != null) {
+      requestAnimationFrame(() => document.getElementById(`dot-${p.dot}`)?.scrollIntoView({ block: 'center' }));
+    } else if (p.kn && data.cycle) {
+      const boHop = caseCategoriesFor(data.cycle.ratio ? 'ratio' : 'ielts_band');
+      const mapped = anhXaKyNang(p.kn, boHop);
+      if (mapped) setSkillPick(mapped);
+      requestAnimationFrame(() => document.getElementById('bang-ky-nang')?.scrollIntoView({ block: 'center' }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [!!data, p.dot, p.kn]);
+
   if (error) return <ErrorState message={error.message} hint={error.hint} onRetry={reload} />;
   if (loading || !data) return <Skeleton rows={10} />;
 
   const cy = data.cycle;
+  /* Mở đúng đợt (`?dot=`) hoặc do bấm trong trang — ngăn Case dùng chung một chỗ (Q9). */
+  const ngan: OpenCase = p.caseId != null ? { caseId: p.caseId, paId: p.paId } : openCase;
+  const dongNgan = () => {
+    setOpenCase(null);
+    if (p.caseId != null) {
+      const next = new URLSearchParams(params);
+      next.delete('case'); next.delete('pa');
+      setParams(next, { replace: true });
+    }
+  };
+  /** Bấm một ô số (R8c, Q11): về tab Học thuật, chọn kỹ năng, cuộn tới bảng. */
+  const moKyNang = (kn: string | null | undefined) => {
+    if (!kn) return;
+    navigate(duongHoSoHocVien(data.id, { kn }));
+  };
 
   const setCycle = (cid: number) => {
     const next = new URLSearchParams(params);
@@ -180,8 +219,10 @@ export default function StudentDetailPage() {
         </div>
       </div>
 
-      {/* BỐN Ô SỐ (Q7) — bốn câu hỏi, không phải một phép chia. LUÔN hiện phía trên hàng tab, kể cả khi chưa có lộ trình (spec §4.1; chủ sản phẩm chốt 22/09 sau rà soát). */}
-      <HeaderStats data={data} rows={skillRows} />
+      {/* BỐN Ô SỐ (Q7, R8c/Q11) — bốn câu hỏi, không phải một phép chia. LUÔN hiện phía trên hàng tab, kể cả khi chưa có lộ trình (spec §4.1; chủ sản phẩm chốt 22/09 sau rà soát). */}
+      <HeaderStats data={data} rows={skillRows}
+        onOpenDot={(attemptId) => navigate(duongHoSoHocVien(data.id, { dot: attemptId }))}
+        onOpenKn={moKyNang} />
 
       {/* Xác minh SOS: giữ chỗ cũ — dưới 4 ô số, trên hàng tab; tự ẩn khi không có tín hiệu. */}
       <PendingSignals signals={data.pendingSignals ?? []} onVerify={(sg) => setVerify(sg)} />
@@ -210,16 +251,19 @@ export default function StudentDetailPage() {
             mà bảng này vừa tóm tắt, nên cùng một case hiện hai lần trên một trang, và bấm
             một hàng ở đây thì phải cuộn xuống chỗ khác mới thấy kết quả.
           */}
-          <Card title="Tiến độ và hỗ trợ theo kỹ năng"
-            action={<span className="text-xs text-slate-500">Bấm một hàng để mở chi tiết ngay bên dưới</span>}
-            bodyClass="p-0">
-            <SkillBoard rows={skillRows}
-              loading={board.loading} error={board.error} onRetry={board.reload}
-              selected={skillPick}
-              onPick={setSkillPick}
-              onReport={() => setReportOpen(true)}
-              onChanged={() => { board.reload(); reload(); }} />
-          </Card>
+          {/* id để R8c/kn cuộn tới đúng khung này (Task 5) — không sửa SkillBoard. */}
+          <div id="bang-ky-nang">
+            <Card title="Tiến độ và hỗ trợ theo kỹ năng"
+              action={<span className="text-xs text-slate-500">Bấm một hàng để mở chi tiết ngay bên dưới</span>}
+              bodyClass="p-0">
+              <SkillBoard rows={skillRows}
+                loading={board.loading} error={board.error} onRetry={board.reload}
+                selected={skillPick}
+                onPick={setSkillPick}
+                onReport={() => setReportOpen(true)}
+                onChanged={() => { board.reload(); reload(); }} />
+            </Card>
+          </div>
 
           {/*
             TÊN KHỐI GỌI ĐÚNG THEO CHƯƠNG TRÌNH (mục 7.11): lớp Fast Track là "Mock Test",
@@ -229,8 +273,8 @@ export default function StudentDetailPage() {
           <Card title={cy.ratio ? 'Kết quả kiểm tra' : 'Mock Test'} bodyClass="p-0">
             {data.attempts.length === 0 ? (
               <div className="p-4"><Empty title="Chưa có lượt đánh giá nào trong lộ trình này" /></div>
-            ) : cy.ratio ? <RatioAttempts attempts={data.attempts} onOpen={(a) => navigate(attemptHref(a))} />
-              : <IeltsAttempts attempts={data.attempts} onOpen={(a) => navigate(attemptHref(a))} />}
+            ) : cy.ratio ? <RatioAttempts attempts={data.attempts} dotId={p.dot} onOpen={(a) => navigate(attemptHref(a))} />
+              : <IeltsAttempts attempts={data.attempts} dotId={p.dot} onOpen={(a) => navigate(attemptHref(a))} />}
             <div className="p-3">
               <SectionNote>
                 Lớp ghi ở đây là lớp TẠI LÚC ĐÁNH GIÁ — chuyển lớp không viết lại lịch sử này.
@@ -305,10 +349,9 @@ export default function StudentDetailPage() {
         signal={verify}
         onDone={(cid) => { setVerify(null); reload(); setOpenCase({ caseId: cid }); }} />
 
-      {/* Ngăn Case (Q9) — không đổi tab; cuộn tới đúng PA khi mở kèm `paId`. */}
-      {openCase && (
-        <NganCase caseId={openCase.caseId} paId={openCase.paId} studentName={data.fullName}
-          onClose={() => setOpenCase(null)} />
+      {/* Ngăn Case (Q9) — không đổi tab; cuộn tới đúng PA khi mở kèm `paId`. Mở do `?case=` thì đóng cũng xoá URL. */}
+      {ngan && (
+        <NganCase caseId={ngan.caseId} paId={ngan.paId} studentName={data.fullName} onClose={dongNgan} />
       )}
 
       <StudentManagePanel
@@ -334,12 +377,17 @@ export default function StudentDetailPage() {
  *   Case đang mở            còn bao nhiêu việc chưa xong — số case, và số PA đang theo dõi
  *   Việc cần làm tiếp       phải làm gì, trước ngày nào — câu có động từ do máy chủ dựng (`headline.next`)
  *
- * Mỗi ô nói ĐÚNG MỘT điều. Ô KHÔNG bấm được — ô bấm được là việc của PR-R.
+ * Mỗi ô nói ĐÚNG MỘT điều. BỐN Ô ĐỀU BẤM ĐƯỢC (R8c, Q11) — mỗi ô dẫn đúng chỗ tạo ra con số đó.
+ * Giá trị `—`/`0` không bấm được (không có gì để mở).
  */
-function HeaderStats({ data, rows }: { data: any; rows: SkillBoardRow[] | null }) {
+function HeaderStats({ data, rows, onOpenDot, onOpenKn }: {
+  data: any; rows: SkillBoardRow[] | null;
+  onOpenDot: (attemptId: number) => void; onOpenKn: (kn: string | null | undefined) => void;
+}) {
   const scored = (rows ?? []).filter((r) => r.band !== null);
   const below = scored.filter((r) => r.missed === true);
-  const openCases = (rows ?? []).flatMap((r) => r.cases).filter((c) => c.status !== 'done');
+  const openCases = (rows ?? []).flatMap((r) => r.cases.map((c) => ({ ...c, category: r.category })))
+    .filter((c) => c.status !== 'done');
   const runningPlans = openCases.flatMap((c) => c.plans)
     .filter((p) => p.status === 'planned' || p.status === 'started').length;
   const next = data.headline?.next ?? null;
@@ -349,6 +397,8 @@ function HeaderStats({ data, rows }: { data: any; rows: SkillBoardRow[] | null }
     <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
       <Stat label="Kết quả Test gần nhất"
         value={kq ? kq.nhan : '—'}
+        onClick={kq ? () => onOpenDot(kq.attemptId) : undefined}
+        title="Mở đợt Test này ở bảng Học thuật"
         sub={kq
           ? (kq.dungKetQuaDot
             ? <KetQuaDot coDiem={kq.coDiem} yeuCau={kq.yeuCau} dat={kq.dat} sos={kq.sos} />
@@ -358,6 +408,8 @@ function HeaderStats({ data, rows }: { data: any; rows: SkillBoardRow[] | null }
       <Stat label="Kỹ năng cần hỗ trợ"
         value={String(below.length)}
         tone={below.length ? 'danger' : scored.length ? 'ok' : undefined}
+        onClick={below.length ? () => onOpenKn(below[0].category) : undefined}
+        title="Mở bảng kỹ năng ở đúng môn chưa đạt đầu tiên"
         sub={below.length
           ? below.map((r) => r.label).join(' · ')
           : scored.length ? 'mọi môn đạt kỳ vọng' : 'chưa có điểm nào'} />
@@ -365,11 +417,15 @@ function HeaderStats({ data, rows }: { data: any; rows: SkillBoardRow[] | null }
       <Stat label="Case đang mở"
         value={String(openCases.length)}
         tone={openCases.length ? 'warn' : undefined}
+        onClick={openCases.length ? () => onOpenKn(openCases[0].category) : undefined}
+        title="Mở bảng kỹ năng ở kỹ năng của Case mở đầu tiên"
         sub={openCases.length ? `${runningPlans} PA đang theo dõi` : 'không có case nào đang mở'} />
 
       <Stat label="Việc cần làm tiếp" nho
         value={next?.text ?? 'Không có'}
         tone={next?.overdue ? 'danger' : undefined}
+        onClick={next ? () => onOpenKn(next.category) : undefined}
+        title="Mở bảng kỹ năng ở đúng kỹ năng của việc này"
         sub={next?.due
           ? `${next.overdue ? 'quá hạn' : 'hạn'} ${fmtDate(next.due)}`
           : next ? 'chưa đặt hạn' : 'không có việc nào đang chờ'} />
@@ -377,24 +433,29 @@ function HeaderStats({ data, rows }: { data: any; rows: SkillBoardRow[] | null }
   );
 }
 
-function Stat({ label, value, sub, tone, nho }: {
+function Stat({ label, value, sub, tone, nho, onClick, title }: {
   label: string; value: string; sub?: ReactNode; tone?: 'ok' | 'warn' | 'danger';
   /** Giá trị là một câu chữ (ô "Việc cần làm tiếp"): chữ nhỏ hơn, cho xuống dòng. */
   nho?: boolean;
+  /** Có thì cả ô vẽ thành nút bấm được (R8c) — không có thì vẫn là thẻ tĩnh như cũ. */
+  onClick?: () => void; title?: string;
 }) {
   const color = tone === 'danger' ? 'text-rose-300'
     : tone === 'warn' ? 'text-amber-200'
     : tone === 'ok' ? 'text-emerald-300' : 'text-slate-100';
+  const Khung = onClick ? 'button' : 'div';
   return (
-    <div className="rounded-xl border px-3 py-2.5 min-w-0" style={{ borderColor: 'var(--line)' }}>
+    <Khung type={onClick ? 'button' : undefined} onClick={onClick}
+      className={`rounded-xl border px-3 py-2.5 min-w-0 text-left w-full appearance-none bg-transparent group ${onClick ? '' : ''}`}
+      style={{ borderColor: 'var(--line)' }} title={onClick ? title : undefined}>
       <span className="block text-[11px] text-slate-500">{label}</span>
-      <span className={`block font-semibold mt-0.5 break-words ${nho ? 'text-sm leading-snug' : 'text-lg leading-tight'} ${color}`}>{value}</span>
+      <span className={`block font-semibold mt-0.5 break-words ${nho ? 'text-sm leading-snug' : 'text-lg leading-tight'} ${color} ${onClick ? 'group-hover:underline' : ''}`}>{value}</span>
       {sub && <span className="block text-[11px] text-slate-500 mt-0.5">{sub}</span>}
-    </div>
+    </Khung>
   );
 }
 
-function IeltsAttempts({ attempts, onOpen }: { attempts: any[]; onOpen: (a: any) => void }) {
+function IeltsAttempts({ attempts, dotId, onOpen }: { attempts: any[]; dotId?: number; onOpen: (a: any) => void }) {
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
@@ -412,7 +473,8 @@ function IeltsAttempts({ attempts, onOpen }: { attempts: any[]; onOpen: (a: any)
         </thead>
         <tbody>
           {attempts.map((a) => (
-            <tr key={a.id} className="row-hover cursor-pointer" onClick={() => onOpen(a)}>
+            <tr key={a.id} id={`dot-${a.id}`} className="row-hover cursor-pointer" onClick={() => onOpen(a)}
+              style={a.id === dotId ? { background: 'var(--accent-soft)' } : undefined}>
               <td className="td tabular-nums">MT{a.attemptNo}</td>
               <td className="td text-slate-300">{a.classCode ?? '—'}</td>
               <td className="td whitespace-nowrap">
@@ -435,6 +497,7 @@ function IeltsAttempts({ attempts, onOpen }: { attempts: any[]; onOpen: (a: any)
                 </Level>
                 {a.provisional && <div className="text-[10px] text-slate-500">mới {a.scored}/{a.required} kỹ năng</div>}
                 {a.scopeNote && <div className="text-[10px] text-slate-500">{a.scopeNote}</div>}
+                <Link to={attemptHref(a)} className="link text-[10px]" onClick={(e) => e.stopPropagation()}>Hồ sơ đợt ›</Link>
               </td>
             </tr>
           ))}
@@ -448,7 +511,7 @@ function IeltsAttempts({ attempts, onOpen }: { attempts: any[]; onOpen: (a: any)
  * Lớp Normal chấm theo ĐIỂM ĐẠT / TỔNG ĐIỂM — không có band, không có Overall, không có
  * kỳ vọng IELTS. Bấm một dòng ở đây mở BẢNG ĐIỂM LỚP NORMAL, không phải màn Mock Test.
  */
-function RatioAttempts({ attempts, onOpen }: { attempts: any[]; onOpen: (a: any) => void }) {
+function RatioAttempts({ attempts, dotId, onOpen }: { attempts: any[]; dotId?: number; onOpen: (a: any) => void }) {
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
@@ -463,7 +526,8 @@ function RatioAttempts({ attempts, onOpen }: { attempts: any[]; onOpen: (a: any)
         </thead>
         <tbody>
           {attempts.map((a) => (
-            <tr key={a.id} className="row-hover cursor-pointer" onClick={() => onOpen(a)}>
+            <tr key={a.id} id={`dot-${a.id}`} className="row-hover cursor-pointer" onClick={() => onOpen(a)}
+              style={a.id === dotId ? { background: 'var(--accent-soft)' } : undefined}>
               <td className="td whitespace-nowrap">{a.kind === 'final' ? 'Cuối khoá' : 'Giữa khoá'}</td>
               <td className="td text-slate-300">{a.classCode ?? '—'}</td>
               <td className="td whitespace-nowrap">
@@ -483,6 +547,7 @@ function RatioAttempts({ attempts, onOpen }: { attempts: any[]; onOpen: (a: any)
                   {a.sosLevel === null ? `Chờ ${a.required - a.scored} phần` : sosLabel(a.sosLevel)}
                 </Level>
                 {a.provisional && <div className="text-[10px] text-slate-500">mới {a.scored}/{a.required} phần</div>}
+                <Link to={attemptHref(a)} className="link text-[10px]" onClick={(e) => e.stopPropagation()}>Hồ sơ đợt ›</Link>
               </td>
             </tr>
           ))}
@@ -554,6 +619,20 @@ export function Episode({ ep, onOpenCase }: { ep: any; onOpenCase: (id: number) 
 }
 
 export { skillLabel };
+
+/**
+ * `kn=` TRÊN URL ↔ HẠNG MỤC BẢNG KỸ NĂNG CỦA LỘ TRÌNH ĐANG XEM (R7, Task 5).
+ *
+ * `kn` là kỹ năng NĂM Ô (writing1/writing2 tách với writing) vì đó là bộ URL dùng chung của
+ * `duongHoSo.ts`. Bảng kỹ năng của lớp thường chỉ có "writing" gộp; của FT có W1/W2 riêng —
+ * ghép khi cần, không khớp thì bỏ (không đoán bừa Task 1 hay Task 2).
+ */
+function anhXaKyNang(kn: string, boHop: readonly string[]): string | null {
+  if (boHop.includes(kn)) return kn;
+  if ((kn === 'writing1' || kn === 'writing2') && boHop.includes('writing')) return 'writing';
+  if (kn === 'writing' && boHop.includes('writing1')) return 'writing1';
+  return null;
+}
 
 /**
  * TÍN HIỆU CHỜ XÁC MINH — khối riêng, đặt TRƯỚC bảng tiến độ và danh sách case.
