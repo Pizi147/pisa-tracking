@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from 'react';
 import { RecordViolationPanel } from './RecordViolationPanel.tsx';
 import { CreateMeasurePanel } from './CreateMeasurePanel.tsx';
+import { PhuongAnPanel } from './PhuongAnPanel.tsx';
 import { ConfirmMeasurePanel } from './ConfirmMeasurePanel.tsx';
 import { XemPhuongAnPanel } from './XemPhuongAnPanel.tsx';
 import { DeleteViolationConfirm } from './DeleteViolationConfirm.tsx';
@@ -74,9 +75,11 @@ export function usePanelYThuc({ canManage, onDone, roster }: {
         onDone={xong}
         onConfirmNow={(id) => mo({ loai: 'xac-nhan', id })}
       />
-      {/* `pa` (sửa PA đang chuẩn bị) trỏ tạm vào ConfirmMeasurePanel — Task 5 thay bằng `PhuongAnPanel` thật. */}
-      <ConfirmMeasurePanel open={panel?.loai === 'pa'} onClose={dong}
-        measureId={panel?.loai === 'pa' ? panel.id : null} onDone={xong} />
+      {panel?.loai === 'pa' && (
+        <PhuongAnPanel measureId={panel.id} onClose={dong} onDone={xong}
+          onXacNhan={(id) => mo({ loai: 'xac-nhan', id })}
+          onSuaViPham={(v, mid) => mo({ loai: 'sua', v, quayVe: mid })} />
+      )}
       <ConfirmMeasurePanel open={panel?.loai === 'xac-nhan'} onClose={dong}
         measureId={panel?.loai === 'xac-nhan' ? panel.id : null} onDone={xong} />
       <XemPhuongAnPanel measureId={panel?.loai === 'xem-pa' ? panel.id : null} onClose={dong} />

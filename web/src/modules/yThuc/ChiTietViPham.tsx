@@ -32,7 +32,7 @@ export function ChiTietViPham({
   choSuaXoa?: boolean;
   onSua: (v: ViolationDetail) => void;
   onDaXoa: () => void;
-  onMoPhuongAn: (measureId: number) => void;
+  onMoPhuongAn: (m: { id: number; status: string }) => void;
 }) {
   const toast = useToast();
   const { homNay } = useNgayNghiepVu();
@@ -72,7 +72,7 @@ export function ChiTietViPham({
         {d.measures.filter((m) => m.id !== boQuaPhuongAnId).length === 0 ? <p className="text-slate-400 m-0">—</p> : (
           <div className="flex flex-wrap gap-x-3 gap-y-1">
             {d.measures.filter((m) => m.id !== boQuaPhuongAnId).map((m) => (
-              <button key={m.id} type="button" className="text-sky-300 hover:underline" onClick={() => onMoPhuongAn(m.id)}>
+              <button key={m.id} type="button" className="text-sky-300 hover:underline" onClick={() => onMoPhuongAn(m)}>
                 {m.kindLabel} · {m.statusLabel.toLowerCase()}
               </button>
             ))}
