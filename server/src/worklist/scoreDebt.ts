@@ -76,6 +76,7 @@ export function scoreDebtCells(p: Principal, today: string, branchIds: number[] 
         if (userId) out.push({ attemptId: a.id, classId: a.class_id, skill, userId, overdue: v.overdue });
       }
     } else {
+      /* Không truyền `hoanTat` (R11) có chủ ý: nợ điểm đọc band/noShow/lịch, không đọc canEdit/khoa — đỡ 3 câu SQL. */
       for (const c of skillCells(p, a, scores, bundle.skips.get(a.id) ?? [], today, skillRows)) {
         if (!c.required || c.band !== null || c.noShow !== null || !c.weekStart || c.weekStart > today || NOT_DEBT.has(c.progress)) continue;
         const userId = teacherOf.get(`${a.class_id}|${c.skill}`);

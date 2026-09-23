@@ -92,16 +92,20 @@ const DA_THU_LAI = Symbol('daThuLaiMatLuong');
  *   · lỗi KHÔNG ném ra từ trong tx() (giao dịch có thể đã ghi dở).
  * Khi đó: bỏ kết nối cũ, ghi log một dòng, chạy lại kiểm phiên + đường API trong một ngữ cảnh request mới (bộ nhớ tra cứu
  * trống). Lần hai vẫn lỗi → lỗi đi thẳng tới traLoiLoi như cũ (người dùng thấy "Có lỗi · mã …"). Lỗi khác không bị đụng tới.
+ * Không thử lại (POST, lỗi trong tx(), lần hai) vẫn BỎ kết nối chết (Z2c-c, A2): giữ nó thì mọi lời gọi sau trên cùng bản hàm
+ * cũng hỏng theo, tới khi có một GET đi qua đường thử lại.
  */
 export function thuLaiKhiMatLuong(luong: (req: Request, res: Response, next: NextFunction) => void) {
   return (err: unknown, req: Request, res: Response, next: NextFunction): void => {
+    if (!laLoiMatLuongTurso(err)) { next(err); return; }
+    moLaiKetNoi();
     const r = req as Request & { [DA_THU_LAI]?: true };
-    if (req.method !== 'GET' || r[DA_THU_LAI] || res.headersSent || !laLoiMatLuongTurso(err) || loiTrongGiaoDich(err)) {
+    if (req.method !== 'GET' || r[DA_THU_LAI] || res.headersSent || loiTrongGiaoDich(err)) {
+      console.warn(`[turso] mất luồng (stream not found) — đã mở lại kết nối, KHÔNG thử lại ${req.method} ${req.path}`);
       next(err);
       return;
     }
     r[DA_THU_LAI] = true;
-    moLaiKetNoi();
     console.warn(`[turso] mất luồng (stream not found) — đã mở lại kết nối, thử lại ${req.method} ${req.path} một lần`);
     chayTrongRequest(req.method, () => luong(req, res, next));
   };

@@ -861,6 +861,7 @@ export function ODiemThuong({
   /* Ô trái vừa được GÕ thật — ↓ điền tổng hay con trỏ đi qua không bao giờ tính là gõ lại "-". */
   const goDiem = useRef(false);
   const daBaoChuaToi = useRef(false);
+  const tongRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!dirty) { setDiem(diemDaLuu()); setTong(tongDaLuu()); }
@@ -895,6 +896,15 @@ export function ODiemThuong({
   };
   const chuaToiCau = `Chưa tới tuần thi${cell.tuanHienTai ? ` ${cell.tuanHienTai}` : ''} — chưa ghi "-" được.`;
 
+  /** Lỗi nhập của cặp ô chưa có điểm (ngoài lệnh "-") — một luật cho `commit` và cho phím Enter (A5). */
+  const loiNhap = (d: string, t: string): { o: 'diem' | 'tong'; cau: string } | null => {
+    if (d !== '' && !SO_NGUYEN.test(d)) return { o: 'diem', cau: 'Số câu đúng là số nguyên, hoặc "-" nếu em không làm bài.' };
+    if (t !== '' && (!SO_NGUYEN.test(t) || Number(t) <= 0)) return { o: 'tong', cau: 'Tổng số câu là số nguyên lớn hơn 0.' };
+    if (d !== '' && t === '') return { o: 'tong', cau: 'Nhập cả tổng số câu.' };
+    if (d !== '' && Number(d) > Number(t)) return { o: 'diem', cau: `Số câu đúng (${d}) không thể lớn hơn tổng (${t}).` };
+    return null;
+  };
+
   const commit = async () => {
     if (!dirty || dangGui.current || coDiem) return;
     const d = diem.trim();
@@ -916,12 +926,8 @@ export function ODiemThuong({
       return gui(() => onDau(true), true);
     }
     if (d === '' && dau) { setCanhBao(null); return gui(() => onDau(false), true); }
-    if (d !== '' && !SO_NGUYEN.test(d)) {
-      setCanhBao({ o: 'diem', cau: 'Số câu đúng là số nguyên, hoặc "-" nếu em không làm bài.' }); return;
-    }
-    if (t !== '' && (!SO_NGUYEN.test(t) || Number(t) <= 0)) {
-      setCanhBao({ o: 'tong', cau: 'Tổng số câu là số nguyên lớn hơn 0.' }); return;
-    }
+    const loi = loiNhap(d, t);
+    if (loi) { setCanhBao(loi); return; }
     /*
      * Ô CHƯA CÓ ĐIỂM mà số câu đúng vẫn trống: không gửi gì. Lưới máy tính GIỮ bản nháp để tổng vừa ↓ điền còn hiện
      * (lưu cùng số câu đúng khi gõ); điện thoại thì ô tổng trống tự hiện lại tổng của cột nên bỏ bản nháp luôn.
@@ -930,10 +936,6 @@ export function ODiemThuong({
       setCanhBao(null);
       if (tongLaySan && cell.tong === null) setDirty(false);
       return;
-    }
-    if (d !== '' && t === '') { setCanhBao({ o: 'tong', cau: 'Nhập cả tổng số câu.' }); return; }
-    if (d !== '' && Number(d) > Number(t)) {
-      setCanhBao({ o: 'diem', cau: `Số câu đúng (${d}) không thể lớn hơn tổng (${t}).` }); return;
     }
     const score = d === '' ? null : Number(d);
     const total = t === '' ? null : Number(t);
@@ -965,7 +967,20 @@ export function ODiemThuong({
   const phim = (e: React.KeyboardEvent<HTMLInputElement>) => {
     /* Ô tổng bị khoá khi ô trái đang là "-", nên phím này chỉ có thể tới từ ô trái. */
     if (goLai.phim(e)) return;
-    if (e.key === 'Enter') void commit();
+    if (e.key === 'Enter') {
+      void commit();
+      /*
+       * A5 (Z2c-c): cặp ô còn lỗi (thiếu tổng, sai số…) thì Enter KHÔNG nhảy dòng — câu cảnh báo nằm ở ô vừa rời thì không
+       * ai thấy, dễ bỏ sót cả em đó. Thiếu hoặc sai tổng thì đưa con trỏ sang ô tổng.
+       */
+      const d = diem.trim();
+      const loi = dirty && !coDiem && d !== '-' && !(d === '' && dau) ? loiNhap(d, tong.trim()) : null;
+      if (loi) {
+        e.preventDefault();
+        if (loi.o === 'tong') tongRef.current?.focus();
+        return;
+      }
+    }
     /* Esc HUỶ ô đang sửa: trả về giá trị đã lưu, không gửi gì lên máy chủ. */
     if (e.key === 'Escape' && dirty) { e.preventDefault(); huy(); }
     onKeyDown?.(e);
@@ -1090,7 +1105,7 @@ export function ODiemThuong({
           if (canhBao?.o === 'diem') setCanhBao(null);
         }} onKeyDown={phim} />
       <span className="text-slate-600">/</span>
-      <input className={`${oSo} ${canhBao?.o === 'tong' ? 'border-rose-400/70' : o.vienVang ? 'border-amber-400/80' : ''}`}
+      <input ref={tongRef} className={`${oSo} ${canhBao?.o === 'tong' ? 'border-rose-400/70' : o.vienVang ? 'border-amber-400/80' : ''}`}
         inputMode="numeric" value={dangDau ? '' : tong} disabled={busy || dangDau} placeholder={dangDau ? '' : 'tổng'}
         title={dangDau ? 'Ô mang dấu "-" chưa cần tổng.' : titleTong}
         aria-label={`${tenMon} — tổng số câu`}
