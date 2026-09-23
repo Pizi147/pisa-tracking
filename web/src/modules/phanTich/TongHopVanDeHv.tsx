@@ -116,10 +116,10 @@ export function TongHopVanDeHv(props: PhamViPhanTich) {
                 </NutLuat>
               )} />
             <div className="table-scroll">
-              <table className="w-full text-sm" style={{ tableLayout: 'fixed', minWidth: 780 }}>
+              <table className="w-full text-sm" style={{ tableLayout: 'fixed', minWidth: 830 }}>
                 <colgroup>
                   <col style={{ width: '30%' }} /><col style={{ width: 72 }} /><col style={{ width: 72 }} />
-                  <col /><col style={{ width: 110 }} /><col style={{ width: 170 }} />
+                  <col /><col style={{ width: 160 }} /><col style={{ width: 170 }} />
                 </colgroup>
                 <thead>
                   <tr>
@@ -155,7 +155,7 @@ export function TongHopVanDeHv(props: PhamViPhanTich) {
                       </td>
                       <td className="text-right tabular-nums"><SoLieuO giaTri={data.chuaPhanLoai.hv} nguon={nguon('chua-phan-loai', 'hv')} tieuDe="Chưa phân loại · học viên" /></td>
                       <td className="text-right tabular-nums"><SoLieuO giaTri={data.chuaPhanLoai.lop} nguon={nguon('chua-phan-loai', 'lop')} tieuDe="Chưa phân loại · lớp" /></td>
-                      <td colSpan={3} className="text-xs font-normal">
+                      <td colSpan={3} className="pl-6 text-xs font-normal">
                         <NutMoDanhSach nguon={nguon('chua-phan-loai', 'case')} tieuDe="Chưa phân loại · Case">
                           Mở danh sách Case cần GV phân loại →
                         </NutMoDanhSach>

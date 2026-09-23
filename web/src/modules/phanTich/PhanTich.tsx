@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { useSession } from '../../lib/session.tsx';
@@ -45,6 +45,15 @@ export function PhanTich() {
     setParams(next, { replace: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [boThamSo.join('|'), ctTuLoaiLop, gocMoi]);
+
+  /* 375px: hàng góc nhìn cuộn ngang trong chính nó — cuộn tới nút đang chọn để không bị che (Danh sách Case nằm cuối hàng). */
+  const hangGoc = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const nut = hangGoc.current?.querySelector<HTMLElement>('[aria-checked="true"]');
+    const hang = hangGoc.current;
+    if (!nut || !hang) return;
+    hang.scrollLeft = Math.max(0, nut.offsetLeft - (hang.clientWidth - nut.offsetWidth) / 2);
+  }, [goc]);
 
   const branches = useApi<any[]>('/ref/branches');
   /*
@@ -107,7 +116,7 @@ export function PhanTich() {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <div role="radiogroup" aria-label="Góc nhìn" className="inline-flex rounded-lg border overflow-x-auto max-w-full"
+        <div ref={hangGoc} role="radiogroup" aria-label="Góc nhìn" className="relative inline-flex rounded-lg border overflow-x-auto max-w-full"
           style={{ borderColor: 'var(--line)' }}>
           {GOC_NHIN.map((k) => (
             <button key={k} type="button" role="radio" aria-checked={goc === k} onClick={() => setGoc(k)}

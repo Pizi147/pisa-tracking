@@ -82,7 +82,9 @@ function tinh(p: Principal, branchId: number | null, today: string): Record<Loai
     for (const r of conn.prepare(
       `SELECT sg.student_id, sg.attempt_id, sg.skill, sg.category, sg.resolved_at
          FROM case_signals sg JOIN classes c ON c.id = sg.class_id
-        WHERE sg.status = 'noted' AND c.is_fast_track = 0 AND sg.student_id IN (${marks(chunk.length)})`,
+        WHERE sg.status = 'noted' AND c.is_fast_track = 0 AND sg.student_id IN (${marks(chunk.length)})
+          AND EXISTS (SELECT 1 FROM enrollments e2 JOIN classes c2 ON c2.id = e2.class_id
+                       WHERE e2.student_id = sg.student_id AND e2.status = 'active' AND c2.is_fast_track = 0)`,
     ).all(...chunk) as any[]) {
       const ho = hoKyNang(r.skill ?? r.category);
       if (!ho || !r.attempt_id) continue;
@@ -97,7 +99,7 @@ function tinh(p: Principal, branchId: number | null, today: string): Record<Loai
   for (const [sid, list] of luotCua) {
     const hopLe = list.filter((a) => evOf(a).scored > 0);          // mới nhất trước
     // 1) hai lượt hợp lệ mới nhất cùng dưới kỳ vọng / chưa đạt một họ, không Case mở cùng họ
-    if (hopLe.length >= 2) {
+    if (hopLe.length >= 2 && laLopThuong(hopLe[0]) === laLopThuong(hopLe[1])) {   // hai lượt phải CÙNG chương trình (FT không "trượt liền" với lượt lớp thường cũ)
       const [moi, cu] = hopLe;
       const ho = THU_TU_HO.filter((h) => duoi(evOf(moi), h) && duoi(evOf(cu), h) && !coCaseMo(sid, h));
       if (ho.length) {
@@ -113,6 +115,7 @@ function tinh(p: Principal, branchId: number | null, today: string): Record<Loai
         const i = hopLe.findIndex((a) => a.id === t.attemptId);
         if (i <= 0) continue;                                       // không có lượt hợp lệ NGAY SAU (mới hơn)
         const tiep = hopLe[i - 1];
+        if (!laLopThuong(tiep)) continue;                          // lượt ngay sau phải là lớp thường (em đã lên FT thì hết "bỏ quên")
         if (!duoi(evOf(tiep), t.ho) || coCaseMo(sid, t.ho)) continue;
         if (!ho.includes(t.ho)) ho.push(t.ho);
         if (!sau || (tiep.period_start ?? '') > (sau.period_start ?? '')) { sau = tiep; ngayBoQua = t.resolvedAt; }

@@ -938,6 +938,28 @@ export async function runPhanTichTests(t: YThucTestKit) {
     } finally { b.don(); }
   });
 
+  check('UX4 · Bỏ quên: em đã lên FT có tín hiệu lớp thường cũ bị Bỏ qua → không vào tập; hai lượt khác chương trình → không tính "2 lần liền"', () => {
+    const b = taoBoQuen();
+    try {
+      // z: đang học FT (không còn ghi danh lớp thường), tín hiệu Bỏ qua từ lớp thường cũ + lượt sau (lớp thường) vẫn chưa đạt
+      const z = b.kit.hv(CID_FT, 'bq7z');
+      const zCu = b.thuong(z, 'progress', 1, 2); b.thuong(z, 'final', 2, 3);
+      b.tinHieu(z, CID_THUONG, zCu, 'noted', cong(TODAY, -10));
+      assert(!hangCua('bo-qua-van-can-ho-tro', z), 'em đã chuyển FT: tín hiệu Bỏ qua ở lớp thường cũ không được vào tập');
+      for (const ct of ['ca-hai', 'ft', 'thuong']) {
+        const dk = boQuenSvc.danhSachBoQuen(P.admin, { branchId: null, ct, loai: 'bo-qua-van-can-ho-tro' }, TODAY);
+        assert(!dk.rows.some((r: any) => r.studentId === z), `không hiện ở ct=${ct}`);
+      }
+      // y: đang học FT, một lượt lớp thường cũ chưa đạt + một lượt FT chưa đạt → không phải "2 lần liền" cùng chương trình
+      const y = b.kit.hv(CID_FT, 'bq7y');
+      b.thuong(y, 'progress', 1, 2); b.ft(y, 5, 2, 3.0);
+      assert(!hangCua('can-ho-tro-2-lan', y), 'lượt lớp thường + lượt FT không tính "2 lần liền"');
+      // đối chứng: cùng chương trình thì vẫn có
+      const x = b.kit.hv(CID_FT, 'bq7x'); b.ft(x, 4, 1, 3.0); b.ft(x, 5, 2, 3.0);
+      assert(!!hangCua('can-ho-tro-2-lan', x), 'đối chứng: hai lượt FT cùng chương trình → có');
+    } finally { b.don(); }
+  });
+
   check('UX4 · Bỏ quên: lượt sau đạt → không có; chỉ một lượt → không có; Case mở khác họ kỹ năng không chặn', () => {
     const b = taoBoQuen();
     try {
