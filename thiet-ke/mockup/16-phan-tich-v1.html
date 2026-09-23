@@ -1,0 +1,337 @@
+<style>
+  .pp{--bg:#0d1423;--s:#111b2d;--line:#293852;--tx:#e8eef7;--mu:#8f9db4;--bl:#84baff;--bb:#173451;--gr:#73d9a5;--gb:#15362a;--yl:#e5c66a;--yb:#3a3219;--rd:#ff9a9a;--rb:#3b2126;--or:#f0a04b;
+      background:var(--bg);color:var(--tx);font:12px Inter,Segoe UI,Arial,sans-serif;border-radius:8px;overflow:hidden;border:1px solid var(--line);font-variant-numeric:tabular-nums;margin-top:8px}
+  .pp .w{padding:12px}.pp .mu{color:var(--mu);font-size:11px}.pp .sp{flex:1}
+  .pp .scr{overflow-x:auto}
+  .pp table{width:100%;border-collapse:collapse;table-layout:fixed;min-width:560px;color:var(--tx);font:inherit;font-variant-numeric:tabular-nums}
+  .pp th{color:#6f819e;font-size:10px;padding:6px 8px;font-weight:700;text-transform:uppercase;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .pp th.r,.pp td.r{text-align:right}.pp th.c,.pp td.c{text-align:center}
+  .pp td{padding:0 8px;border-bottom:1px solid #1d2a40;vertical-align:middle;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  /* LUẬT HÀNG: hàng lớn sáng hơn một bậc + vạch màu mảnh bên trái + chữ đậm · hàng con thụt, tối hơn, chữ nhỏ hơn */
+  .pp tr.g td{background:#15223a;height:40px;font-weight:700}
+  .pp tr.g td:first-child{box-shadow:inset 3px 0 0 var(--vc,#84baff)}
+  .pp tr.g.hot{--vc:#ff9a9a}.pp tr.g.warm{--vc:#e5c66a}.pp tr.g.cool{--vc:#5c6f8f}.pp tr.g.okc{--vc:#73d9a5}
+  .pp tr.c td{background:#0a111e;height:32px;font-size:11px;color:#c9d4e6;font-weight:400}
+  .pp tr.c td:first-child{padding-left:26px}
+  .pp table.wr td{white-space:normal;padding:6px 8px;line-height:1.4}
+  .pp tr.more td{background:#0a111e;height:30px;color:#6f819e;font-size:11px}
+  .pp .nm{font-weight:700}.pp .sub{display:block;font-size:10px;color:#6f819e;font-weight:400;margin-top:1px}
+  .pp .lk{color:var(--tx);text-decoration:underline dotted #5c6f8f;text-underline-offset:3px;cursor:pointer}
+  .pp .of{color:#6f819e;font-weight:400}
+  .pp .up{color:var(--rd)}.pp .dn{color:var(--gr)}.pp .eq{color:#5c6f8f}
+  .pp .n{display:inline-block;padding:1px 6px;border-radius:999px;font-size:10px;font-weight:700;white-space:nowrap;vertical-align:1px}
+  .pp .y{background:var(--yb);color:var(--yl)}.pp .bl{background:var(--bb);color:var(--bl)}.pp .gy{background:#1d2a40;color:#b7c2d6}.pp .rr{background:var(--rb);color:var(--rd)}.pp .gg{background:var(--gb);color:var(--gr)}
+  .pp .btn{border:1px solid var(--line);border-radius:6px;padding:3px 8px;font-weight:700;font-size:11px;white-space:nowrap;display:inline-block;cursor:pointer}
+  .pp .btn.p{background:#82b9f6;color:#0c1726;border-color:#82b9f6}
+  .pp .fl{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:8px}
+  .pp .sel{border:1px solid var(--line);border-radius:7px;padding:4px 8px;white-space:nowrap}
+  .pp .seg{display:inline-flex;border:1px solid var(--line);border-radius:7px;overflow:hidden}.pp .seg span{padding:4px 9px;color:var(--mu);font-weight:700;white-space:nowrap}.pp .seg .on{background:var(--bb);color:var(--bl)}
+  .pp .gocs{display:flex;gap:2px;border-bottom:1px solid var(--line);margin:0 0 8px;overflow-x:auto}
+  .pp .gocs span{padding:6px 10px;color:var(--mu);font-weight:700;border-bottom:2px solid transparent;white-space:nowrap}
+  .pp .gocs .on{color:var(--tx);border-color:var(--bl)}.pp .gocs .cnt{color:var(--yl);margin-left:4px}
+  .pp .top{display:flex;align-items:center;gap:16px;background:#09111f;border-bottom:1px solid var(--line);padding:8px 12px;font-weight:700;color:var(--mu)}
+  .pp .top .on{color:var(--tx);border-bottom:2px solid var(--bl);padding-bottom:3px}
+  .pp .tt{display:flex;align-items:baseline;gap:8px;margin:2px 0 8px}.pp .tt b{font-size:14px}
+  .pp .bar{display:inline-block;width:64px;height:7px;border-radius:4px;background:#22314a;overflow:hidden;vertical-align:middle;margin-right:6px}
+  .pp .bar i{display:block;height:100%;background:#73d9a5}.pp .bar.w i{background:#e5c66a}
+  .pp .strip{display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:#111b2d;border:1px solid var(--line);border-radius:8px;padding:7px 10px;margin-top:8px}
+  .pp .chip{display:inline-flex;gap:6px;align-items:center;border:1px solid var(--line);border-radius:999px;padding:3px 10px;white-space:nowrap}
+  .pp .chip b{font-size:13px}.pp .chip.on{border-color:var(--bl);background:#12233d}
+  .pp .panel{background:#111b2d;border:1px solid #3a5178;border-radius:10px;padding:10px 12px;margin-top:10px}
+  .pp .fld{display:grid;grid-template-columns:96px 1fr;gap:6px;align-items:center;padding:3px 0}
+  .pp .inp{border:1px solid #3a5178;border-radius:6px;padding:3px 8px;background:#0e1829}
+  .pp .ck{color:var(--mu)}
+  .pp .h3{font-size:12px;font-weight:800;margin:14px 0 6px;color:#c9d4e6}
+  .vt{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;background:#2a1f10;border:1px solid #5a4020;border-left:3px solid #f0a04b;border-radius:6px;padding:6px 10px;margin:8px 0 4px;font:12px Inter,Segoe UI,Arial,sans-serif;color:#f3dcb8}
+  .vt b.lbl{color:#f0a04b;letter-spacing:.06em;font-size:10px}
+  .vt .ai{color:#d9c3a0}
+  .ab16{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start}
+  .ab16 > .option{min-width:0}
+  .ab16.wideA{grid-template-columns:1.1fr .9fr}
+  @media (max-width:1280px){.ab16,.ab16.wideA{grid-template-columns:1fr}}
+  .kn{background:#13233a;border:1px solid #2c4a73;border-left:3px solid #84baff;border-radius:6px;padding:7px 10px;margin:8px 0 18px;font:12px Inter,Segoe UI,Arial,sans-serif;color:#dbe7f7}
+  .kn b{color:#84baff}
+</style>
+<script>window.toggleSelect = window.toggleSelect || function (el) { el.classList.toggle('selected'); };</script>
+
+<h2>16 (v1, đã thay bằng 16-phan-tich.html) · Phân tích — làm lại theo câu hỏi của Quản lý</h2>
+<p class="subtitle">Mỗi góc nhìn trả lời <b>một câu hỏi</b> Quản lý hỏi mỗi tuần, xếp theo <b>mức cần xử lý</b> (nóng nhất lên đầu, dòng ổn thu gọn), mỗi dòng có số bấm được (G-10) và một nút hành động. Không còn ma trận đầy ô "0" hay "1/4". Dữ liệu mẫu theo bộ demo, ngày 23/09.</p>
+
+<!-- ============================================================ 0. CÂU HỎI → GÓC NHÌN -->
+<h3>0 · Câu hỏi Quản lý cần trả lời → góc nhìn nào trả lời</h3>
+<div class="pp"><div class="w"><div class="scr"><table class="wr">
+ <colgroup><col style="width:52%"><col style="width:48%"></colgroup>
+ <tr><th>Câu hỏi mỗi tuần</th><th>Mở ở đâu</th></tr>
+ <tr><td>Tuần này <b>chỗ nào đang nóng</b>? Lớp nào, kỹ năng nào nhiều em cần hỗ trợ, tăng hay giảm so với đợt trước?</td><td><b>Điểm nóng</b> <span class="mu">(mới, thay Vấn đề học viên)</span></td></tr>
+ <tr><td><b>Nhiều em cùng mắc một lỗi</b> ở một lớp → xử lý cả lớp được không?</td><td><b>Điểm nóng</b> · badge <span class="n y">Cụm</span> + nút <b>Giao bổ trợ</b></td></tr>
+ <tr><td>Một lỗi <b>lan ra nhiều lớp</b> → cần họp chuyên môn?</td><td><b>Điểm nóng</b> · "+3 lớp" trên dòng kỹ năng (hoặc cách xếp B)</td></tr>
+ <tr><td>Test tuần này ra sao: bao nhiêu lượt, bao nhiêu SOS, bao nhiêu em đã có Case?</td><td><b>Tổng hợp Test + SOS</b> <span class="mu">(giữ nguyên)</span></td></tr>
+ <tr><td>Em nào <b>đang bị bỏ quên</b> — không ai nhận, hoặc trượt lại sau khi đã đóng Case?</td><td><b>Chưa ai nhận</b> <span class="mu">(mới)</span></td></tr>
+ <tr><td>Việc <b>có người phụ trách nhưng quá hạn</b> (PA quá hạn cập nhật, chờ xác minh quá hạn)</td><td>Công việc › Hỗ trợ học viên · lọc Quá hạn + Người phụ trách · nút <b>Nhắc</b> <span class="mu">(đã có — Phân tích không làm lại)</span></td></tr>
+ <tr><td><b>Loại PA nào thật sự hiệu quả</b> cho loại vấn đề nào — để hướng dẫn GV chọn PA?</td><td><b>Hiệu quả PA</b> <span class="mu">(mới, thay Kết quả hỗ trợ)</span></td></tr>
+ <tr><td>PA nào đã xong mà <b>chưa ai ghi kết quả</b> (làm số liệu hiệu quả thiếu)?</td><td><b>Hiệu quả PA</b> · dải dưới bảng · nút <b>Nhắc GV</b></td></tr>
+ <tr><td>Lớp nào nhiều vi phạm? Em nào lặp lại, <b>sắp tới thư cảnh cáo lần 3</b>? Phối hợp SOS nào chưa xong?</td><td><b>Ý thức &amp; Phối hợp</b> <span class="mu">(làm lại)</span></td></tr>
+ <tr><td>GV nào đang có nhiều em chưa đạt ở môn mình dạy, PA có hiệu quả không?</td><td><b>Theo giáo viên</b> <span class="mu">(giữ, mockup 06e)</span></td></tr>
+ <tr><td>Tìm một Case cụ thể / đích của mọi số bấm về Case</td><td><b>Danh sách Case</b> <span class="mu">(giữ, đưa về cuối hàng)</span></td></tr>
+</table></div></div></div>
+
+<!-- ============================================================ 1. HÀNG GÓC NHÌN -->
+<h3 style="margin-top:22px">1 · Hàng góc nhìn mới + bộ lọc chung</h3>
+<div class="pp">
+ <div class="top"><span style="color:#84baff">PISA</span><span class="on">Tổng quan</span><span>Học viên &amp; Lớp</span><span>Test</span><span>Công việc</span><span class="sp"></span><span class="mu">Nguyễn Thị Quản lý ▾</span></div>
+ <div class="w">
+  <div class="gocs" style="margin-bottom:4px"><span>Tổng quan</span><span class="on">Phân tích</span></div>
+  <div class="gocs">
+   <span class="on" title="Lớp / kỹ năng nào nhiều em cần hỗ trợ — mặc định">Điểm nóng</span>
+   <span>Tổng hợp Test + SOS</span>
+   <span title="Loại PA nào hiệu quả cho loại vấn đề nào">Hiệu quả PA</span>
+   <span title="Việc không ai nhận">Chưa ai nhận<span class="cnt">9</span></span>
+   <span>Ý thức &amp; Phối hợp</span>
+   <span>Theo giáo viên</span>
+   <span>Danh sách Case</span>
+  </div>
+  <div class="fl"><span class="sel">Mọi chi nhánh ▾</span><span class="seg"><span title="Lớp thường">Lớp thường</span><span title="Fast Track">FT</span><span class="on">Cả hai</span></span><span class="sel">4 tuần ▾</span><span class="sel">Mọi lớp ▾</span><span class="sp"></span><span class="mu">Dữ liệu đến 23/09</span></div>
+  <div class="scr"><table class="wr">
+   <colgroup><col style="width:22%"><col style="width:26%"><col style="width:12%"><col style="width:40%"></colgroup>
+   <tr><th>Góc nhìn</th><th>Thay cho</th><th>Trạng thái</th><th>Ghi chú</th></tr>
+   <tr><td class="nm">Điểm nóng</td><td>Vấn đề học viên (ma trận kỹ năng × lớp)</td><td><span class="n bl">Mới</span></td><td class="mu">Đề nghị làm góc nhìn mặc định</td></tr>
+   <tr><td class="nm">Tổng hợp Test + SOS</td><td>—</td><td><span class="n gy">Giữ</span></td><td class="mu">Như 03b (3), đã dùng được</td></tr>
+   <tr><td class="nm">Hiệu quả PA</td><td>Kết quả hỗ trợ (bảng PA theo kỹ năng)</td><td><span class="n bl">Mới</span></td><td class="mu">Hàng = loại vấn đề, con = loại PA</td></tr>
+   <tr><td class="nm">Chưa ai nhận</td><td>Kết quả hỗ trợ (bảng hạng mục × HV đang gặp…)</td><td><span class="n bl">Mới</span></td><td class="mu">Số trên tab = tổng việc chưa ai nhận</td></tr>
+   <tr><td class="nm">Ý thức &amp; Phối hợp</td><td>Bảng nhóm × trạng thái, 9 loại biện pháp</td><td><span class="n y">Làm lại</span></td><td class="mu">3 danh sách: em cần leo thang · lớp · GVCN</td></tr>
+   <tr><td class="nm">Theo giáo viên</td><td>—</td><td><span class="n gy">Giữ</span></td><td class="mu">Mockup 06e (A), không xếp hạng</td></tr>
+   <tr><td class="nm">Danh sách Case</td><td>—</td><td><span class="n gy">Giữ</span></td><td class="mu">Tra cứu; đích của mọi số bấm về Case</td></tr>
+   <tr><td class="nm" style="color:#ff9a9a">Bỏ</td><td colspan="3">Ma trận Vấn đề học viên · bảng "hạng mục × HV đang gặp / Case mở / thiếu PA / đang theo dõi / chưa phân loại" · bảng phân loại vấn đề riêng. Số của chúng chuyển về: Case mở, Thiếu PA → Tổng hợp Test + SOS (nhóm Xử lý) và 4 ô Tổng quan; chưa phân loại → Chưa ai nhận; loại lỗi → Điểm nóng; kết quả PA → Hiệu quả PA.</td></tr>
+  </table></div>
+ </div>
+</div>
+
+<!-- ============================================================ 2. ĐIỂM NÓNG -->
+<h3 style="margin-top:26px">2 · Điểm nóng — "Tuần này chỗ nào đang nóng?" (thay Vấn đề học viên)</h3>
+<div class="vt"><b class="lbl">VỊ TRÍ</b><span>Tổng quan → tab <b>Phân tích</b> → góc nhìn <b>Điểm nóng</b> (mặc định)</span><span class="ai">Ai thấy: Quản lý (chi nhánh mình) · Quản trị (mọi chi nhánh)</span><span class="ai">Lối vào khác: Hồ sơ lớp › Phân tích lớp (lọc sẵn lớp đó)</span></div>
+<p class="subtitle">"Cần hỗ trợ" = FT: dưới kỳ vọng · Lớp thường: chưa đạt — ở <b>đợt Test gần nhất của lớp</b>, so với <b>đợt ngay trước của chính lớp đó</b> (lớp học lệch tuần nhau vẫn so đúng). Chỉ hiện lớp/kỹ năng vượt ngưỡng; lớp ổn gom vào một dòng cuối. Ngưỡng nằm ở ⓘ: <b>Nóng</b> = ≥ 30% lớp cần hỗ trợ ở một kỹ năng hoặc ≥ 3 em cùng một loại lỗi; <b>Theo dõi</b> = tăng so với đợt trước.</p>
+
+<div class="options ab16 wideA">
+ <div class="option" data-choice="a" onclick="toggleSelect(this)"><div class="letter">A</div><div class="content">
+  <h3>Xếp theo lớp → kỹ năng (khuyến nghị)</h3>
+  <div class="pp"><div class="w">
+   <div class="gocs"><span class="on">Điểm nóng</span><span>Tổng hợp Test + SOS</span><span>Hiệu quả PA</span><span>Chưa ai nhận<span class="cnt">9</span></span><span>…</span></div>
+   <div class="fl"><span class="sel">Mọi chi nhánh ▾</span><span class="seg"><span>Lớp thường</span><span>FT</span><span class="on">Cả hai</span></span><span class="sel">4 tuần ▾</span><span class="sel">Mọi lớp ▾</span><span class="sp"></span><span class="seg" title="Đổi cách xếp"><span class="on">Theo lớp</span><span>Lỗi chung</span></span></div>
+   <div class="tt"><b>4 lớp cần chú ý</b><span class="mu">· 2 nóng · 2 theo dõi · 9 lớp ổn</span><span class="mu" title="Ngưỡng Nóng / Theo dõi">ⓘ</span></div>
+   <div class="scr"><table>
+    <colgroup><col style="width:23%"><col style="width:8%"><col style="width:7%"><col style="width:32%"><col style="width:16%"><col style="width:14%"></colgroup>
+    <tr><th>Lớp / kỹ năng</th><th class="r" title="FT: dưới kỳ vọng · Lớp thường: chưa đạt">Cần HT</th><th class="r" title="So với đợt Test trước của lớp">± đợt</th><th>Lỗi nhiều nhất</th><th>GV</th><th></th></tr>
+
+    <tr class="g hot"><td><span class="nm">MB-FT 101</span> <span class="n rr">Nóng</span><span class="sub">Monbay · MT3 · 8 HV</span></td><td class="r"><span class="lk">6</span><span class="of">/8</span></td><td class="r up">▲2</td><td class="mu">2 kỹ năng vượt ngưỡng</td><td class="mu" title="GVCN">Phạm Thu Trang</td><td class="r"><span class="btn">Xem HV</span></td></tr>
+    <tr class="c"><td title="Writing Task 2">W2</td><td class="r"><span class="lk">5</span><span class="of">/8</span></td><td class="r up">▲3</td><td>Tổ chức bài / liên kết ý · <span class="lk">4 em</span> <span class="n y" title="4 em cùng một loại lỗi — nên xử lý cả lớp">Cụm</span> <span class="lk mu" title="Cùng lỗi ở CP-FT 110, BC-FT 205, HD-FT 302">+3 lớp</span></td><td>Cao Khánh Linh</td><td class="r"><span class="btn p">Giao bổ trợ</span></td></tr>
+    <tr class="c"><td title="Listening">L</td><td class="r"><span class="lk">2</span><span class="of">/8</span></td><td class="r eq">=</td><td title="Nhận diện âm, nối âm, trọng âm, tốc độ lời nói">Ngôn ngữ · <span class="lk">2 em</span></td><td>Trần Ngọc Hà</td><td class="r"><span class="btn">Xem HV</span></td></tr>
+
+    <tr class="g hot"><td><span class="nm">CP-FT 110</span> <span class="n rr">Nóng</span><span class="sub">Cẩm Phả · MT2 · 12 HV</span></td><td class="r"><span class="lk">5</span><span class="of">/12</span></td><td class="r up">▲3</td><td class="mu">1 kỹ năng vượt ngưỡng</td><td class="mu">Ngô Bảo Nam</td><td class="r"><span class="btn">Xem HV</span></td></tr>
+    <tr class="c"><td title="Reading">R</td><td class="r"><span class="lk">4</span><span class="of">/12</span></td><td class="r up">▲3</td><td>Quản lý thời gian · <span class="lk">3 em</span> <span class="n y">Cụm</span></td><td>Ngô Bảo Nam</td><td class="r"><span class="btn p">Giao bổ trợ</span></td></tr>
+    <tr class="c"><td title="Speaking">S</td><td class="r"><span class="lk">2</span><span class="of">/12</span></td><td class="r dn">▼1</td><td>Phát âm · <span class="lk">1 em</span></td><td>Hoàng Quang Dũng</td><td class="r"><span class="btn">Xem HV</span></td></tr>
+
+    <tr class="g warm"><td><span class="nm">MB-FOU 12</span> <span class="n y">Theo dõi</span><span class="sub" title="Lớp thường">Monbay · Giữa khoá · 4 HV</span></td><td class="r"><span class="lk">2</span><span class="of">/4</span></td><td class="r up">▲1</td><td class="mu">—</td><td class="mu">Lê Minh Khoa</td><td class="r"><span class="btn">Xem HV</span></td></tr>
+    <tr class="c"><td title="Writing">W</td><td class="r"><span class="lk">2</span><span class="of">/4</span></td><td class="r up">▲1</td><td><span class="n bl">Chờ xác minh</span> · <span class="lk">2 tín hiệu</span></td><td>Lê Minh Khoa</td><td class="r"><span class="btn">Xem HV</span></td></tr>
+
+    <tr class="g warm"><td><span class="nm">BC-FT 205</span> <span class="n y">Theo dõi</span><span class="sub">Bãi Cháy · MT3 · 10 HV</span></td><td class="r"><span class="lk">3</span><span class="of">/10</span></td><td class="r dn">▼2</td><td class="mu">—</td><td class="mu">Vũ Gia Hân</td><td class="r"><span class="btn">Xem HV</span></td></tr>
+    <tr class="c"><td title="Writing Task 1">W1</td><td class="r"><span class="lk">2</span><span class="of">/10</span></td><td class="r up">▲1</td><td>Đáp ứng yêu cầu đề · <span class="lk">2 em</span></td><td>Vũ Gia Hân</td><td class="r"><span class="btn">Xem HV</span></td></tr>
+
+    <tr class="more"><td colspan="6">▸ 9 lớp ổn — không kỹ năng nào vượt ngưỡng · MB-FT 102, HD-FT 302, UB-FT 401, MB-BE 08…</td></tr>
+   </table></div>
+
+   <div class="panel">
+    <div style="display:flex;align-items:center"><b>Giao bổ trợ · MB-FT 101 · W2</b><span class="sp"></span><span class="mu">ngăn trượt khi bấm "Giao bổ trợ" ✕</span></div>
+    <div class="fld"><span class="mu">Giao cho</span><span class="inp">Cao Khánh Linh ▾ <span class="mu">· GV W2 của lớp</span></span></div>
+    <div class="fld"><span class="mu">Việc</span><span class="inp">Buổi bổ trợ cả lớp: Tổ chức bài / liên kết ý</span></div>
+    <div class="fld"><span class="mu">Học viên</span><span><span class="n gy">Dương Minh Quân</span> <span class="n gy">Lý Thanh Trúc</span> <span class="n gy">Mai Ngọc Diệp</span> <span class="n gy">Phan Hải Anh</span> <span class="mu">+ thêm</span></span></div>
+    <div class="fld"><span class="mu">Hạn</span><span class="inp" style="width:70px">30/09</span></div>
+    <div class="fld"><span></span><span class="ck">☑ Ghi thành PA "Điều chỉnh cách dạy" vào Case W2 của 4 em <span class="mu" title="Để Hiệu quả PA đo được kết quả buổi bổ trợ">ⓘ</span></span></div>
+    <div style="text-align:right;margin-top:4px"><span class="btn">Huỷ</span> <span class="btn p">Giao</span></div>
+   </div>
+  </div></div>
+ </div></div>
+
+ <div class="option" data-choice="b" onclick="toggleSelect(this)"><div class="letter">B</div><div class="content">
+  <h3>Xếp theo lỗi chung → lớp</h3>
+  <div class="pp"><div class="w">
+   <div class="gocs"><span class="on">Điểm nóng</span><span>Tổng hợp Test + SOS</span><span>Hiệu quả PA</span><span>Chưa ai nhận<span class="cnt">9</span></span><span>…</span></div>
+   <div class="fl"><span class="sel">Mọi chi nhánh ▾</span><span class="seg"><span>Lớp thường</span><span>FT</span><span class="on">Cả hai</span></span><span class="sel">4 tuần ▾</span><span class="sel">Mọi lớp ▾</span><span class="sp"></span><span class="seg"><span>Theo lớp</span><span class="on">Lỗi chung</span></span></div>
+   <div class="tt"><b>4 lỗi nhiều em mắc</b><span class="mu">· 1 lỗi lan ≥ 3 lớp</span><span class="mu">ⓘ</span></div>
+   <div class="scr"><table style="min-width:640px">
+    <colgroup><col style="width:36%"><col style="width:7%"><col style="width:7%"><col style="width:7%"><col style="width:18%"><col style="width:25%"></colgroup>
+    <tr><th>Loại lỗi / lớp</th><th class="r">Số em</th><th class="r">Số lớp</th><th class="r">± đợt</th><th>GV</th><th></th></tr>
+
+    <tr class="g hot"><td><span class="nm">W2 · Tổ chức bài / liên kết ý</span> <span class="n rr">Lan rộng</span></td><td class="r"><span class="lk">9</span></td><td class="r">4</td><td class="r up">▲4</td><td class="mu">—</td><td class="r"><span class="btn p">Họp chuyên môn</span></td></tr>
+    <tr class="c"><td>MB-FT 101 <span class="n y">Cụm</span></td><td class="r"><span class="lk">4</span></td><td></td><td class="r up">▲3</td><td>Cao Khánh Linh</td><td class="r"><span class="btn">Giao bổ trợ</span></td></tr>
+    <tr class="c"><td>CP-FT 110</td><td class="r"><span class="lk">2</span></td><td></td><td class="r up">▲1</td><td>Hoàng Quang Dũng</td><td class="r"><span class="btn">Xem HV</span></td></tr>
+    <tr class="c"><td>BC-FT 205</td><td class="r"><span class="lk">2</span></td><td></td><td class="r eq">=</td><td>Vũ Gia Hân</td><td class="r"><span class="btn">Xem HV</span></td></tr>
+    <tr class="c"><td>HD-FT 302</td><td class="r"><span class="lk">1</span></td><td></td><td class="r eq">=</td><td>Bùi Hải Yến</td><td class="r"><span class="btn">Xem HV</span></td></tr>
+
+    <tr class="g hot"><td><span class="nm">R · Quản lý thời gian</span></td><td class="r"><span class="lk">6</span></td><td class="r">3</td><td class="r up">▲3</td><td class="mu">—</td><td class="r"><span class="btn">Xem HV</span></td></tr>
+    <tr class="c"><td>CP-FT 110 <span class="n y">Cụm</span></td><td class="r"><span class="lk">3</span></td><td></td><td class="r up">▲2</td><td>Ngô Bảo Nam</td><td class="r"><span class="btn">Giao bổ trợ</span></td></tr>
+    <tr class="c"><td>MB-FT 102</td><td class="r"><span class="lk">2</span></td><td></td><td class="r up">▲1</td><td>Lê Minh Khoa</td><td class="r"><span class="btn">Xem HV</span></td></tr>
+
+    <tr class="g warm"><td><span class="nm" title="Nhận diện âm, nối âm, trọng âm, tốc độ lời nói">L · Ngôn ngữ</span></td><td class="r"><span class="lk">4</span></td><td class="r">2</td><td class="r eq">=</td><td class="mu">—</td><td class="r"><span class="btn">Xem HV</span></td></tr>
+    <tr class="g cool"><td><span class="nm">W1 · Đáp ứng yêu cầu đề</span></td><td class="r"><span class="lk">3</span></td><td class="r">2</td><td class="r dn">▼1</td><td class="mu">—</td><td class="r"><span class="btn">Xem HV</span></td></tr>
+
+    <tr class="more"><td colspan="6">▸ 7 loại lỗi khác, mỗi loại ≤ 2 em · <span class="lk">3 Case chưa phân loại</span> → Chưa ai nhận</td></tr>
+   </table></div>
+  </div></div>
+ </div></div>
+</div>
+<div class="kn"><b>Khuyến nghị: A</b> — Quản lý giao việc theo lớp và GV, nên xếp theo lớp; điều B cho thấy (lỗi lan nhiều lớp) đã nằm trên dòng A dạng "+3 lớp", còn B giữ làm nút đổi cách xếp (cùng dữ liệu, thêm ít công).</div>
+
+<!-- ============================================================ 3. HIỆU QUẢ PA -->
+<h3 style="margin-top:26px">3 · Hiệu quả PA — "Loại PA nào thật sự hiệu quả cho loại vấn đề nào?" (thay Kết quả hỗ trợ)</h3>
+<div class="vt"><b class="lbl">VỊ TRÍ</b><span>Tổng quan → tab <b>Phân tích</b> → góc nhìn <b>Hiệu quả PA</b></span><span class="ai">Ai thấy: Quản lý (chi nhánh mình) · Quản trị (mọi chi nhánh)</span><span class="ai">Kết quả tính theo nơi em học lúc làm PA (F03)</span></div>
+<p class="subtitle">"Có cải thiện" = Tiến bộ rõ + Tiến bộ một phần, trên các PA đã kết thúc có kết quả xác định ("Chưa đủ dữ liệu" không vào mẫu số). Dưới 5 PA ghi <b>Ít dữ liệu</b>, không vẽ thanh, không gắn nhãn. <b>Nên dùng</b> chỉ gắn khi ≥ 5 PA, tỷ lệ cao nhất trong vấn đề đó và ≥ 60%.</p>
+
+<div class="options ab16">
+ <div class="option" data-choice="a" onclick="toggleSelect(this)"><div class="letter">A</div><div class="content">
+  <h3>Theo vấn đề → loại PA, có cỡ mẫu (khuyến nghị)</h3>
+  <div class="pp"><div class="w">
+   <div class="gocs"><span>Điểm nóng</span><span>Tổng hợp Test + SOS</span><span class="on">Hiệu quả PA</span><span>Chưa ai nhận<span class="cnt">9</span></span><span>…</span></div>
+   <div class="fl"><span class="sel">Mọi chi nhánh ▾</span><span class="seg"><span>Lớp thường</span><span>FT</span><span class="on">Cả hai</span></span><span class="sel">6 tháng ▾</span><span class="sel">Mọi lớp ▾</span></div>
+   <div class="tt"><b>38 PA có kết quả</b><span class="mu">· 24 có cải thiện · 4 vấn đề đủ dữ liệu</span></div>
+   <div class="scr"><table>
+    <colgroup><col style="width:33%"><col style="width:9%"><col style="width:24%"><col style="width:11%"><col style="width:10%"><col style="width:13%"></colgroup>
+    <tr><th>Vấn đề / loại PA</th><th class="r" title="PA đã kết thúc có kết quả xác định">PA</th><th>Có cải thiện</th><th class="r" title="Không tiến bộ + Kém hơn">Không</th><th class="r" title="Thời gian thường mất">Thường mất</th><th></th></tr>
+
+    <tr class="g"><td><span class="nm">W2 · Tổ chức bài / liên kết ý</span></td><td class="r"><span class="lk">14</span></td><td><span class="bar"><i style="width:57%"></i></span><span class="lk">8</span><span class="of">/14</span></td><td class="r"><span class="lk">6</span></td><td class="r">4 tuần</td><td></td></tr>
+    <tr class="c"><td>Học tutor</td><td class="r"><span class="lk">6</span></td><td><span class="bar"><i style="width:83%"></i></span><span class="lk">5</span><span class="of">/6</span></td><td class="r">1</td><td class="r">3 tuần</td><td><span class="n gg">Nên dùng</span></td></tr>
+    <tr class="c"><td>Điều chỉnh cách dạy</td><td class="r"><span class="lk">5</span></td><td><span class="bar w"><i style="width:40%"></i></span><span class="lk">2</span><span class="of">/5</span></td><td class="r">3</td><td class="r">5 tuần</td><td></td></tr>
+    <tr class="c"><td>Tăng cường bài tập</td><td class="r"><span class="lk">3</span></td><td class="mu"><span class="lk">1</span>/3</td><td class="r">2</td><td class="r mu">—</td><td><span class="n gy">Ít dữ liệu</span></td></tr>
+
+    <tr class="g"><td><span class="nm" title="Nhận diện âm, nối âm, trọng âm, tốc độ lời nói">L · Ngôn ngữ</span></td><td class="r"><span class="lk">9</span></td><td><span class="bar"><i style="width:67%"></i></span><span class="lk">6</span><span class="of">/9</span></td><td class="r"><span class="lk">3</span></td><td class="r">3 tuần</td><td></td></tr>
+    <tr class="c"><td>Xếp tự học</td><td class="r"><span class="lk">5</span></td><td><span class="bar"><i style="width:80%"></i></span><span class="lk">4</span><span class="of">/5</span></td><td class="r">1</td><td class="r">3 tuần</td><td><span class="n gg">Nên dùng</span></td></tr>
+    <tr class="c"><td>Học tutor</td><td class="r"><span class="lk">4</span></td><td class="mu"><span class="lk">2</span>/4</td><td class="r">2</td><td class="r mu">—</td><td><span class="n gy">Ít dữ liệu</span></td></tr>
+
+    <tr class="g"><td><span class="nm">R · Quản lý thời gian</span></td><td class="r"><span class="lk">6</span></td><td><span class="bar w"><i style="width:50%"></i></span><span class="lk">3</span><span class="of">/6</span></td><td class="r"><span class="lk">3</span></td><td class="r">4 tuần</td><td></td></tr>
+    <tr class="c"><td>Tăng cường bài tập</td><td class="r"><span class="lk">6</span></td><td><span class="bar w"><i style="width:50%"></i></span><span class="lk">3</span><span class="of">/6</span></td><td class="r">3</td><td class="r">4 tuần</td><td></td></tr>
+
+    <tr class="g cool"><td><span class="nm">S · Phát âm</span></td><td class="r"><span class="lk">3</span></td><td class="mu"><span class="lk">2</span>/3</td><td class="r">1</td><td class="r mu">—</td><td><span class="n gy">Ít dữ liệu</span></td></tr>
+    <tr class="more"><td colspan="6">▸ 6 vấn đề khác, mỗi vấn đề ≤ 2 PA có kết quả</td></tr>
+   </table></div>
+   <div class="strip"><span class="mu">Để số liệu đủ tin:</span>
+    <span class="chip"><b class="lk">7</b> PA đã xong chưa ghi kết quả</span><span class="btn">Nhắc GV</span>
+    <span class="chip"><b class="lk">2</b> PA chưa xác định nguồn</span></div>
+  </div></div>
+ </div></div>
+
+ <div class="option" data-choice="b" onclick="toggleSelect(this)"><div class="letter">B</div><div class="content">
+  <h3>Bảng gợi ý: mỗi vấn đề một dòng "nên thử / ít hiệu quả"</h3>
+  <div class="pp"><div class="w">
+   <div class="gocs"><span>Điểm nóng</span><span>Tổng hợp Test + SOS</span><span class="on">Hiệu quả PA</span><span>Chưa ai nhận<span class="cnt">9</span></span><span>…</span></div>
+   <div class="fl"><span class="sel">Mọi chi nhánh ▾</span><span class="seg"><span>Lớp thường</span><span>FT</span><span class="on">Cả hai</span></span><span class="sel">6 tháng ▾</span><span class="sel">Mọi lớp ▾</span></div>
+   <div class="tt"><b>Gợi ý chọn PA</b><span class="mu">· từ 38 PA có kết quả</span></div>
+   <div class="scr"><table>
+    <colgroup><col style="width:30%"><col style="width:25%"><col style="width:25%"><col style="width:9%"><col style="width:11%"></colgroup>
+    <tr><th>Vấn đề</th><th>Nên thử trước</th><th>Ít hiệu quả</th><th class="r">PA</th><th></th></tr>
+    <tr class="g"><td class="nm">W2 · Tổ chức bài / liên kết ý</td><td class="dn">Học tutor · <span class="lk">5</span>/6</td><td class="up">Điều chỉnh cách dạy · <span class="lk">2</span>/5</td><td class="r"><span class="lk">14</span></td><td class="r"><span class="btn">Xem PA</span></td></tr>
+    <tr class="g"><td class="nm">L · Ngôn ngữ</td><td class="dn">Xếp tự học · <span class="lk">4</span>/5</td><td class="mu">—</td><td class="r"><span class="lk">9</span></td><td class="r"><span class="btn">Xem PA</span></td></tr>
+    <tr class="g"><td class="nm">R · Quản lý thời gian</td><td class="mu" title="Chưa loại nào ≥ 5 PA đạt ≥ 60%">Chưa rõ</td><td class="mu">—</td><td class="r"><span class="lk">6</span></td><td class="r"><span class="btn">Xem PA</span></td></tr>
+    <tr class="g cool"><td class="nm">S · Phát âm</td><td colspan="2"><span class="n gy">Ít dữ liệu</span></td><td class="r"><span class="lk">3</span></td><td class="r"><span class="btn">Xem PA</span></td></tr>
+    <tr class="g cool"><td class="nm">W1 · Đáp ứng yêu cầu đề</td><td colspan="2"><span class="n gy">Ít dữ liệu</span></td><td class="r"><span class="lk">2</span></td><td class="r"><span class="btn">Xem PA</span></td></tr>
+    <tr class="more"><td colspan="5">▸ 5 vấn đề khác chưa có PA nào kết thúc</td></tr>
+   </table></div>
+   <div class="strip"><span class="mu">Để số liệu đủ tin:</span><span class="chip"><b class="lk">7</b> PA đã xong chưa ghi kết quả</span><span class="btn">Nhắc GV</span></div>
+   <div class="mu" style="margin-top:6px">Bảng này sau có thể hiện nhỏ trong form "+ PA" của GV (gợi ý theo vấn đề của Case).</div>
+  </div></div>
+ </div></div>
+</div>
+<div class="kn"><b>Khuyến nghị: A</b> — bản chính mới bắt đầu, dữ liệu còn mỏng: B sẽ gần như toàn "Ít dữ liệu" và dễ bị đọc thành mệnh lệnh; A cho thấy cỡ mẫu từng loại PA. Để B sau khoảng 3 tháng, đưa vào form "+ PA".</div>
+
+<!-- ============================================================ 4. CHƯA AI NHẬN -->
+<h3 style="margin-top:26px">4 · Chưa ai nhận — "Em nào đang bị bỏ quên?"</h3>
+<div class="vt"><b class="lbl">VỊ TRÍ</b><span>Tổng quan → tab <b>Phân tích</b> → góc nhìn <b>Chưa ai nhận</b> (số trên tab)</span><span class="ai">Ai thấy: Quản lý (chi nhánh mình) · Quản trị</span><span class="ai">Lối vào khác: một dòng "n việc chưa ai nhận" trong khối Cần xử lý của Tổng quan</span></div>
+<p class="subtitle">Chỉ gom những gì <b>không nằm trong Việc cần làm của ai</b>. Việc đã có người phụ trách mà quá hạn thì đã có ở Công việc › Hỗ trợ học viên (lọc Quá hạn, nút Nhắc) — không làm lại ở đây.</p>
+<div class="pp"><div class="w">
+ <div class="gocs"><span>Điểm nóng</span><span>Tổng hợp Test + SOS</span><span>Hiệu quả PA</span><span class="on">Chưa ai nhận<span class="cnt">9</span></span><span>Ý thức &amp; Phối hợp</span><span>…</span></div>
+ <div class="fl"><span class="sel">Monbay ▾</span><span class="seg"><span>Lớp thường</span><span>FT</span><span class="on">Cả hai</span></span><span class="sel">Hiện trạng · đến 23/09</span><span class="sel">Mọi lớp ▾</span><span class="sp"></span><span class="mu">Việc có người phụ trách đang quá hạn → <span class="lk" style="color:#84baff">Công việc › Hỗ trợ học viên</span></span></div>
+ <div class="scr"><table>
+  <colgroup><col style="width:30%"><col style="width:14%"><col style="width:10%"><col style="width:22%"><col style="width:10%"><col style="width:14%"></colgroup>
+  <tr><th>Loại / học viên</th><th>Lớp</th><th>Kỹ năng</th><th>Chi tiết</th><th class="r">Từ</th><th></th></tr>
+
+  <tr class="g hot"><td>Cần hỗ trợ 2 đợt liền, không có Case mở</td><td></td><td></td><td class="mu" title="Kể cả em đã đóng Case rồi đợt sau trượt lại">gồm 2 em trượt lại sau khi đóng Case</td><td></td><td class="r"><span class="lk">3</span> em</td></tr>
+  <tr class="c"><td>Dương Ngọc Ánh</td><td>MB-FT 101</td><td>W2</td><td>MT2, MT3 dưới KV · Case đóng 05/09</td><td class="r">W3 SEP</td><td class="r"><span class="btn p">+ Case</span></td></tr>
+  <tr class="c"><td>Hoàng Thanh Mai</td><td>MB-FT 102</td><td>R</td><td>MT2, MT3 dưới KV · Case đóng 29/08</td><td class="r">W3 SEP</td><td class="r"><span class="btn p">+ Case</span></td></tr>
+  <tr class="c"><td>Lê Quang Huy</td><td>MB-FOU 12</td><td>W</td><td>Tín hiệu đã bỏ qua 10/09 · Giữa khoá chưa đạt</td><td class="r">W2 SEP</td><td class="r"><span class="btn p">+ Case</span></td></tr>
+
+  <tr class="g warm"><td>Case chưa có người phụ trách</td><td></td><td></td><td></td><td></td><td class="r"><span class="lk">2</span> Case</td></tr>
+  <tr class="c"><td>Ngô Quang Vinh</td><td>MB-FT 102</td><td>L</td><td>Case từ SOS 2 · chưa ai nhận</td><td class="r">18/09</td><td class="r"><span class="btn">Giao người</span></td></tr>
+  <tr class="c"><td>Chu Minh Hiếu</td><td>MB-FT 101</td><td>S</td><td>GV Speaking chuyển lớp 16/09</td><td class="r">16/09</td><td class="r"><span class="btn">Giao người</span></td></tr>
+
+  <tr class="g cool"><td>Case chưa phân loại vấn đề</td><td></td><td></td><td class="mu">không vào được Điểm nóng / Hiệu quả PA</td><td></td><td class="r"><span class="lk">3</span> Case</td></tr>
+  <tr class="c"><td>Bùi Khánh Linh</td><td>MB-FT 101</td><td>W1</td><td>Người phụ trách: Cao Khánh Linh</td><td class="r">12/09</td><td class="r"><span class="btn">Nhắc</span></td></tr>
+  <tr class="more"><td colspan="6">▸ 2 Case khác</td></tr>
+
+  <tr class="g cool"><td>PA đã xong chưa ghi kết quả</td><td></td><td></td><td class="mu">cũng hiện ở Hiệu quả PA</td><td></td><td class="r"><span class="lk">1</span> PA</td></tr>
+ </table></div>
+ <div class="mu" style="margin-top:6px">Thứ tự nhóm cố định theo mức nguy hiểm: em đang trượt mà không ai lo → Case không người lo → số liệu thiếu. Nhóm không có việc thì ẩn hẳn.</div>
+</div></div>
+
+<!-- ============================================================ 5. Ý THỨC & PHỐI HỢP -->
+<h3 style="margin-top:26px">5 · Ý thức &amp; Phối hợp — một phương án</h3>
+<div class="vt"><b class="lbl">VỊ TRÍ</b><span>Tổng quan → tab <b>Phân tích</b> → góc nhìn <b>Ý thức &amp; Phối hợp</b></span><span class="ai">Ai thấy: Quản lý (chi nhánh mình) · Quản trị — GV xem trong tab Ý thức &amp; Phối hợp của lớp</span></div>
+<p class="subtitle">Ba danh sách xếp từ trên xuống theo việc Quản lý phải làm: <b>em cần leo thang</b> (quyết biện pháp nặng) → <b>lớp nhiều vi phạm</b> (nói chuyện với GVCN) → <b>Phối hợp SOS chưa xong</b> (nhắc GVCN). Không có hạn/quá hạn (nhắc mềm 5 ngày, P10) nên không dùng ⚠.</p>
+<div class="pp"><div class="w">
+ <div class="gocs"><span>Điểm nóng</span><span>Tổng hợp Test + SOS</span><span>Hiệu quả PA</span><span>Chưa ai nhận<span class="cnt">9</span></span><span class="on">Ý thức &amp; Phối hợp</span><span>…</span></div>
+ <div class="fl"><span class="sel">Mọi chi nhánh ▾</span><span class="seg"><span>Lớp thường</span><span>FT</span><span class="on">Cả hai</span></span><span class="sel">30 ngày ▾</span><span class="sel">Mọi lớp ▾</span><span class="sp"></span><span class="sel">⤓ Xuất Excel</span></div>
+
+ <div class="h3">Em cần leo thang <span class="mu">· ≥ 3 vi phạm trong 30 ngày, hoặc vi phạm mới sau Thư cảnh cáo</span></div>
+ <div class="scr"><table>
+  <colgroup><col style="width:21%"><col style="width:12%"><col style="width:9%"><col style="width:10%"><col style="width:18%"><col style="width:9%"><col style="width:21%"></colgroup>
+  <tr><th>Học viên</th><th>Lớp</th><th class="r" title="Trong khoảng đang lọc">Vi phạm</th><th class="r">Chưa xử lý</th><th>Biện pháp gần nhất</th><th class="r">Ngày</th><th>Bước tiếp theo</th></tr>
+  <tr class="g hot"><td>Dương Minh Quân</td><td>MB-FT 101</td><td class="r"><span class="lk">5</span></td><td class="r"><span class="lk">2</span></td><td><span class="n gy" title="Thư cảnh cáo lần 2">Thư CC lần 2</span></td><td class="r">12/09</td><td><span class="n rr" title="Đã có thư lần 2, lại có vi phạm mới">Sắp lần 3</span> <span class="btn">+ Biện pháp</span></td></tr>
+  <tr class="g warm"><td>Lê Thu Thảo</td><td>BC-FT 205</td><td class="r"><span class="lk">4</span></td><td class="r"><span class="lk">3</span></td><td><span class="n gy">Report gia đình</span></td><td class="r">05/09</td><td><span class="n y" title="Vi phạm cũ nhất chưa xử lý: 7 ngày">Chưa xử lý 7 ngày</span> <span class="btn">+ Biện pháp</span></td></tr>
+  <tr class="g cool"><td>Cao Minh Tuấn</td><td>CP-FT 110</td><td class="r"><span class="lk">3</span></td><td class="r">0</td><td><span class="n gy">Thư CC lần 1</span></td><td class="r">18/09</td><td class="mu">Theo dõi</td></tr>
+ </table></div>
+
+ <div class="h3">Lớp nhiều vi phạm <span class="mu">· xếp theo vi phạm chưa xử lý</span></div>
+ <div class="scr"><table>
+  <colgroup><col style="width:27%"><col style="width:11%"><col style="width:12%"><col style="width:13%"><col style="width:10%"><col style="width:13%"><col style="width:14%"></colgroup>
+  <tr><th>Lớp / nhóm vi phạm</th><th class="r">Vi phạm</th><th class="r">Chưa xử lý</th><th class="r">HV có VP</th><th class="r">± kỳ trước</th><th>GVCN</th><th></th></tr>
+  <tr class="g hot"><td><span class="nm">MB-FT 101</span><span class="sub">Monbay · 8 HV</span></td><td class="r"><span class="lk">11</span></td><td class="r"><span class="lk">4</span></td><td class="r"><span class="lk">5</span><span class="of">/8</span></td><td class="r up">▲4</td><td>Phạm Thu Trang</td><td class="r"><span class="btn">Mở lớp</span></td></tr>
+  <tr class="c"><td>BTVN</td><td class="r"><span class="lk">6</span></td><td class="r"><span class="lk">3</span></td><td class="r"><span class="lk">4</span></td><td class="r up">▲3</td><td></td><td></td></tr>
+  <tr class="c"><td>Chuyên cần</td><td class="r"><span class="lk">3</span></td><td class="r"><span class="lk">1</span></td><td class="r"><span class="lk">2</span></td><td class="r up">▲1</td><td></td><td></td></tr>
+  <tr class="c"><td>Thái độ / hành vi</td><td class="r"><span class="lk">2</span></td><td class="r">0</td><td class="r"><span class="lk">1</span></td><td class="r eq">=</td><td></td><td></td></tr>
+  <tr class="g warm"><td><span class="nm">BC-FT 205</span><span class="sub">Bãi Cháy · 10 HV</span></td><td class="r"><span class="lk">7</span></td><td class="r"><span class="lk">3</span></td><td class="r"><span class="lk">3</span><span class="of">/10</span></td><td class="r eq">=</td><td>Vũ Gia Hân</td><td class="r"><span class="btn">Mở lớp</span></td></tr>
+  <tr class="g cool"><td><span class="nm">CP-FT 110</span><span class="sub">Cẩm Phả · 12 HV</span></td><td class="r"><span class="lk">4</span></td><td class="r">0</td><td class="r"><span class="lk">2</span><span class="of">/12</span></td><td class="r dn">▼3</td><td>Ngô Bảo Nam</td><td class="r"><span class="btn">Mở lớp</span></td></tr>
+  <tr class="more"><td colspan="7">▸ 10 lớp khác · ≤ 2 vi phạm, đã xử lý hết</td></tr>
+ </table></div>
+
+ <div class="h3">Phối hợp SOS chưa xong <span class="mu">· theo GVCN, không có hạn</span></div>
+ <div class="scr"><table>
+  <colgroup><col style="width:24%"><col style="width:16%"><col style="width:14%"><col style="width:14%"><col style="width:16%"><col style="width:16%"></colgroup>
+  <tr><th>GVCN</th><th>Lớp</th><th class="r">Lượt chưa xong</th><th class="r">Việc còn lại</th><th class="r">Lượt cũ nhất</th><th></th></tr>
+  <tr class="g warm"><td>Phạm Thu Trang</td><td>MB-FT 101</td><td class="r"><span class="lk">3</span></td><td class="r"><span class="lk">5</span></td><td class="r">W2 SEP</td><td class="r"><span class="btn">Nhắc GVCN</span></td></tr>
+  <tr class="g cool"><td>Vũ Gia Hân</td><td>BC-FT 205</td><td class="r"><span class="lk">1</span></td><td class="r"><span class="lk">2</span></td><td class="r">W3 SEP</td><td class="r"><span class="btn">Nhắc GVCN</span></td></tr>
+  <tr class="g cool"><td>Ngô Bảo Nam</td><td>CP-FT 110</td><td class="r"><span class="lk">1</span></td><td class="r"><span class="lk">1</span></td><td class="r">W3 SEP</td><td class="r"><span class="btn">Nhắc GVCN</span></td></tr>
+ </table></div>
+ <div class="mu" style="margin-top:6px">Bảng 9 loại biện pháp cũ → chuyển vào ⤓ Xuất Excel. Bấm số vi phạm / HV → đúng danh sách đó (G-10).</div>
+</div></div>
+
+<!-- ============================================================ 6. SỐ LIỆU MÁY CHỦ -->
+<h3 style="margin-top:26px">6 · Số liệu máy chủ đã có / còn thiếu</h3>
+<div class="pp"><div class="w"><div class="scr"><table class="wr">
+ <colgroup><col style="width:16%"><col style="width:40%"><col style="width:30%"><col style="width:14%"></colgroup>
+ <tr><th>Góc nhìn</th><th>Số liệu</th><th>Tình trạng</th><th class="c">Cỡ</th></tr>
+ <tr class="g"><td>Điểm nóng</td><td>HV cần hỗ trợ theo lớp × kỹ năng</td><td class="dn">Có · <span class="mu">phanTich/tongHop.ts (theo lớp)</span></td><td class="c">—</td></tr>
+ <tr class="c"><td></td><td>Loại lỗi chính theo lớp × kỹ năng</td><td class="dn">Có · <span class="mu">phanTich/vanDe.ts</span></td><td class="c">—</td></tr>
+ <tr class="c"><td></td><td>So với đợt Test trước của chính lớp</td><td class="up">Thiếu</td><td class="c">S</td></tr>
+ <tr class="c"><td></td><td>Luật Nóng / Theo dõi / Cụm / "+n lớp" (hàm thuần shared)</td><td class="up">Thiếu</td><td class="c">S</td></tr>
+ <tr class="c"><td></td><td>Giao bổ trợ: việc giao kèm lớp + kỹ năng + danh sách HV; ghi PA vào nhiều Case một lần</td><td class="up">Thiếu · <span class="mu">tasks có, chưa gắn HV / PA</span></td><td class="c">M</td></tr>
+ <tr class="g"><td>Hiệu quả PA</td><td>Kết quả theo hạng mục × loại PA</td><td class="dn">Có · <span class="mu">planEffectiveness</span></td><td class="c">—</td></tr>
+ <tr class="c"><td></td><td>Kết quả theo <b>loại vấn đề</b> × loại PA</td><td class="up">Thiếu · <span class="mu">dùng lại planOutcomes + case_issues</span></td><td class="c">S–M</td></tr>
+ <tr class="c"><td></td><td>Thời gian thường mất</td><td class="up">Thiếu</td><td class="c">S</td></tr>
+ <tr class="c"><td></td><td>PA đã xong chưa ghi kết quả + Nhắc gộp theo GV</td><td><span class="dn">Có tập</span> · <span class="up">Nhắc gộp thiếu</span> <span class="mu">(nhacViec chỉ nhận 1 dòng)</span></td><td class="c">S</td></tr>
+ <tr class="g"><td>Chưa ai nhận</td><td>Case chưa có người phụ trách · Case chưa phân loại</td><td class="dn">Có · <span class="mu">chỉ số + vanDe</span></td><td class="c">—</td></tr>
+ <tr class="c"><td></td><td>Cần hỗ trợ 2 đợt liền mà không có Case mở</td><td class="up">Thiếu</td><td class="c">M</td></tr>
+ <tr class="c"><td></td><td>Tín hiệu đã bỏ qua rồi bài sau vẫn chưa đạt (lớp thường)</td><td class="up">Thiếu</td><td class="c">S–M</td></tr>
+ <tr class="g"><td>Ý thức &amp; PH</td><td>Vi phạm / chưa xử lý / HV có VP / biện pháp</td><td class="dn">Có · <span class="mu">yThuc/thongKe.ts</span></td><td class="c">—</td></tr>
+ <tr class="c"><td></td><td>Gom theo lớp một lần + so kỳ trước</td><td class="up">Thiếu</td><td class="c">S</td></tr>
+ <tr class="c"><td></td><td>Biện pháp cao nhất đã làm + "bước tiếp theo" (thang 9 loại)</td><td class="up">Thiếu</td><td class="c">S</td></tr>
+ <tr class="c"><td></td><td>Phối hợp chưa xong gom theo GVCN + lượt cũ nhất</td><td><span class="dn">Có theo lớp</span> · <span class="up">gom GVCN thiếu</span></td><td class="c">S</td></tr>
+</table></div>
+<div class="mu" style="margin-top:6px">S ≈ dưới 100 dòng máy chủ · M ≈ 150–300 dòng. Cộng lại khoảng một PR máy chủ cỡ M–L (~700–1.000 dòng kể cả test) + một PR giao diện. Mọi số mới đi theo cách "một hàm trả tập ID, số = độ dài tập" như tongHop.ts để giữ G-10.</div>
+</div></div>
