@@ -2,6 +2,7 @@ import { db } from './db.ts';
 import { C02_GVCN_XU_LY_CASE_TRAI_MON, PERMISSIONS, type WorkScope } from '../../shared/domain/index.ts';
 import { demoToday } from './demoConfig.ts';
 import { forbidden } from './util.ts';
+import { coKhoa, coNho, datNho, nho } from './platform/nguCanhRequest.ts';
 
 /**
  * Quyền = Permission của role × Phạm vi chi nhánh của CHÍNH grant đó × Phân công lớp/kỹ năng.
@@ -137,31 +138,99 @@ export function loadPrincipal(userId: number): Principal {
 const activeAt = (a: Assignment, date: string) =>
   a.effectiveFrom <= date && (!a.effectiveTo || a.effectiveTo >= date);
 
+/**
+ * PR-TD: bảng lớp CẢ BẢNG, nạp một câu lần đầu cần trong request (bảng nhỏ, vài trăm dòng — khác hẳn ghi danh, lớn
+ * dần theo năm, nên KHÔNG nạp cả bảng đó). `branchOfClass`/`classIsFastTrack` không nhận `p` (đặc tả hàm cũ) nên
+ * không đi qua đối tượng principal được — đọc thẳng bộ nhớ request qua `nho`/`coNho`.
+ */
+function bangLop(): Map<number, { branchId: number | null; isFastTrack: boolean }> {
+  return nho('bang-lop', () => {
+    const map = new Map<number, { branchId: number | null; isFastTrack: boolean }>();
+    for (const r of db().prepare('SELECT id, branch_id, is_fast_track FROM classes').all() as any[]) {
+      map.set(r.id, { branchId: r.branch_id, isFastTrack: !!r.is_fast_track });
+    }
+    return map;
+  });
+}
+
 function branchOfClass(classId: number): number | null {
+  if (coNho()) return bangLop().get(classId)?.branchId ?? null;
   const r = db().prepare('SELECT branch_id FROM classes WHERE id = ?').get(classId) as any;
   return r?.branch_id ?? null;
 }
 
 /** Fast Track hay Normal — sổ SCH-01: quyền dời lịch của giáo viên chỉ mở cho lớp Normal. */
 function classIsFastTrack(classId: number): boolean {
+  if (coNho()) return bangLop().get(classId)?.isFastTrack ?? false;
   const r = db().prepare('SELECT is_fast_track FROM classes WHERE id = ?').get(classId) as any;
   return !!r?.is_fast_track;
 }
 
 function branchesOfStudent(studentId: number): number[] {
-  const rows = db()
-    .prepare(
-      `SELECT DISTINCT c.branch_id AS b FROM enrollments e JOIN classes c ON c.id = e.class_id
-        WHERE e.student_id = ?
-       UNION SELECT branch_id AS b FROM students WHERE id = ? AND branch_id IS NOT NULL`,
-    )
-    .all(studentId, studentId) as any[];
-  return rows.map((r) => r.b).filter((b) => b != null);
+  return nho('hv-cn:' + studentId, () => {
+    const rows = db()
+      .prepare(
+        `SELECT DISTINCT c.branch_id AS b FROM enrollments e JOIN classes c ON c.id = e.class_id
+          WHERE e.student_id = ?
+         UNION SELECT branch_id AS b FROM students WHERE id = ? AND branch_id IS NOT NULL`,
+      )
+      .all(studentId, studentId) as any[];
+    return rows.map((r) => r.b).filter((b) => b != null);
+  });
 }
 
 function classesOfStudent(studentId: number): number[] {
-  return (db().prepare('SELECT DISTINCT class_id FROM enrollments WHERE student_id = ?').all(studentId) as any[])
-    .map((r) => r.class_id);
+  return nho('hv-lop:' + studentId, () =>
+    (db().prepare('SELECT DISTINCT class_id FROM enrollments WHERE student_id = ?').all(studentId) as any[])
+      .map((r) => r.class_id));
+}
+
+/**
+ * NẠP TRƯỚC PHẠM VI của một lô HV — chỉ có tác dụng TRONG một request GET (`coNho()` mở); ngoài đó `return` ngay,
+ * không tốn một câu SQL nào (phép kiểm gọi thẳng `listCases`/`can` ngoài request vẫn đi từng dòng như trước PR này).
+ *
+ * Nạp ĐÚNG hai thứ mà `classesOfStudent`/`branchesOfStudent` tính — cùng luật, chỉ đổi nguồn dữ liệu:
+ *   · lớp của HV = MỌI ghi danh, mọi trạng thái (không lọc status, y hệt `classesOfStudent`).
+ *   · chi nhánh của HV = chi nhánh các lớp đó (bỏ NULL) ∪ `students.branch_id` (khi khác NULL) — y hệt
+ *     `branchesOfStudent`.
+ * Mỗi id trong lô ĐỀU được `datNho` (kể cả em không có ghi danh nào → mảng rỗng `[]`), để lần gọi
+ * `classesOfStudent`/`branchesOfStudent` sau đó (cùng request) không hỏi DB nữa dù kết quả rỗng. Theo lô 400 id một
+ * lần hỏi (giới hạn tham số của một câu `IN`); bỏ id rỗng/trùng/đã có trong bộ nhớ trước khi hỏi.
+ */
+export function napTruocPhamVi(studentIds: readonly (number | null | undefined)[]): void {
+  if (!coNho()) return;
+  const idsCanNap = [...new Set(studentIds.filter((id): id is number => id != null))]
+    .filter((id) => !coKhoa('hv-lop:' + id) || !coKhoa('hv-cn:' + id));
+  if (!idsCanNap.length) return;
+
+  const lopCua = new Map<number, number[]>();
+  const cnCua = new Map<number, Set<number>>();
+  for (const id of idsCanNap) { lopCua.set(id, []); cnCua.set(id, new Set()); }
+
+  for (let i = 0; i < idsCanNap.length; i += 400) {
+    const lo = idsCanNap.slice(i, i + 400);
+    const cho = lo.map(() => '?').join(',');
+    for (const r of db()
+      .prepare(
+        `SELECT e.student_id AS sid, e.class_id AS cid, c.branch_id AS bid
+           FROM enrollments e LEFT JOIN classes c ON c.id = e.class_id
+          WHERE e.student_id IN (${cho})`,
+      )
+      .all(...lo) as any[]) {
+      lopCua.get(r.sid)!.push(r.cid);
+      if (r.bid != null) cnCua.get(r.sid)!.add(r.bid);
+    }
+    for (const r of db()
+      .prepare(`SELECT id, branch_id AS bid FROM students WHERE id IN (${cho}) AND branch_id IS NOT NULL`)
+      .all(...lo) as any[]) {
+      cnCua.get(r.id)!.add(r.bid);
+    }
+  }
+
+  for (const id of idsCanNap) {
+    datNho('hv-lop:' + id, lopCua.get(id)!);
+    datNho('hv-cn:' + id, [...cnCua.get(id)!]);
+  }
 }
 
 /** Chi nhánh mà ngữ cảnh đang nói tới. */

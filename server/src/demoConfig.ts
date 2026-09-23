@@ -1,6 +1,7 @@
 import { db } from './db.ts';
 import { nowIso, todayInBusinessTz, isIsoDate } from './util.ts';
 import { laBanChinh } from './moiTruong.ts';
+import { nho } from './platform/nguCanhRequest.ts';
 
 /**
  * Đồng hồ demo: mọi phép tính hạn/tuần dùng ngày này thay cho ngày thật,
@@ -14,17 +15,24 @@ const DEFAULTS: Record<string, string> = {
   seeded_at: '',
 };
 
+/**
+ * PR-TD: qua bộ nhớ request (GET) — `demoToday()`/`scenarioMode()` gọi hàm này liên tục trong một lượt (mỗi tra cứu
+ * hạn, mỗi dòng danh sách…), mỗi lần một câu SQL. Ngoài request GET (không có kho, hoặc có ghi ở giữa) vẫn hỏi DB
+ * mỗi lần như cũ — `setConfig` đi qua `run()` nên tự làm mất bộ nhớ, không cần lo đọc phải giá trị cũ.
+ */
 export function getConfig(key: string): string {
-  // Database có thể chưa được seed (chưa có bảng nào). Khi đó dùng giá trị mặc định
-  // thay vì ném lỗi, để ứng dụng vẫn mở được và hiển thị hướng dẫn tạo dữ liệu.
-  try {
-    const row = db().prepare('SELECT value FROM demo_config WHERE key = ?').get(key) as
-      | { value: string }
-      | undefined;
-    return row?.value ?? DEFAULTS[key] ?? '';
-  } catch {
-    return DEFAULTS[key] ?? '';
-  }
+  return nho('cfg:' + key, () => {
+    // Database có thể chưa được seed (chưa có bảng nào). Khi đó dùng giá trị mặc định
+    // thay vì ném lỗi, để ứng dụng vẫn mở được và hiển thị hướng dẫn tạo dữ liệu.
+    try {
+      const row = db().prepare('SELECT value FROM demo_config WHERE key = ?').get(key) as
+        | { value: string }
+        | undefined;
+      return row?.value ?? DEFAULTS[key] ?? '';
+    } catch {
+      return DEFAULTS[key] ?? '';
+    }
+  });
 }
 
 export function setConfig(key: string, value: string) {

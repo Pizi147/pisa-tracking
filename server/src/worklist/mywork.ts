@@ -8,7 +8,7 @@ import {
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { diffDays } from '../util.ts';
-import { can, scopeFor, teachesClass, type Principal } from '../permissions.ts';
+import { can, napTruocPhamVi, scopeFor, teachesClass, type Principal } from '../permissions.ts';
 import { attemptHref, listAttempts } from '../fasttrack/attempts.ts';
 import { classAlerts } from '../classes/schedule.ts';
 import { myMgmtTasks } from './mgmttasks.ts';
@@ -417,6 +417,7 @@ export function myWork(p: Principal, f: { branchId?: number | null } = {}) {
     )
     .all() as any[];
 
+  napTruocPhamVi(pendingPlans.map((r) => r.eff_student_id));
   for (const iv of pendingPlans) {
     if (f.branchId && iv.eff_branch_id !== f.branchId) continue;
     if (!can(p, PERMISSIONS.CASE_APPROVE, { classId: iv.eff_class_id, studentId: iv.eff_student_id })) continue;
@@ -479,6 +480,7 @@ export function myWork(p: Principal, f: { branchId?: number | null } = {}) {
     )
     .all() as any[];
 
+  napTruocPhamVi(pendingMoves.map((r) => r.student_id));
   for (const r of pendingMoves) {
     if (f.branchId && r.branch_id !== f.branchId) continue;
     if (!can(p, PERMISSIONS.PLAN_WEEK, { classId: r.class_id, studentId: r.student_id })) continue;
@@ -540,6 +542,7 @@ export function myWork(p: Principal, f: { branchId?: number | null } = {}) {
           AND s.archived_at IS NULL`,
     )
     .all(today) as any[];
+  napTruocPhamVi(dueActions.map((r) => r.eff_student_id));
   for (const iv of dueActions) {
     if (f.branchId && iv.branch_id !== f.branchId) continue;
     if (!can(p, PERMISSIONS.SOS_EDIT, {
@@ -651,6 +654,7 @@ export function myWork(p: Principal, f: { branchId?: number | null } = {}) {
     )
     .all(today) as any[];
 
+  napTruocPhamVi(dueReviews.map((r) => r.eff_student_id));
   const reviewedCases = new Set<number>();
   for (const iv of dueReviews) {
     if (f.branchId && iv.eff_branch_id !== f.branchId) continue;
@@ -707,6 +711,7 @@ export function myWork(p: Principal, f: { branchId?: number | null } = {}) {
     )
     .all() as any[];
 
+  napTruocPhamVi(caseRows.map((r) => r.eff_student_id));
   for (const c of caseRows) {
     if (f.branchId && c.eff_branch_id !== f.branchId) continue;
     if (c.iv_count > 0 || reviewedCases.has(c.id)) continue;
@@ -791,6 +796,7 @@ export function myWork(p: Principal, f: { branchId?: number | null } = {}) {
     )
     .all() as any[];
   const waiting = new Set(awaitingCauseCaseIds(causeCandidates.map((c) => c.id as number)));
+  napTruocPhamVi(causeCandidates.map((r) => r.eff_student_id));
   for (const c of causeCandidates) {
     if (!waiting.has(c.id)) continue;
     if (f.branchId && c.eff_branch_id !== f.branchId) continue;
@@ -868,6 +874,7 @@ export function myWork(p: Principal, f: { branchId?: number | null } = {}) {
           AND s.archived_at IS NULL`,
     )
     .all() as any[];
+  napTruocPhamVi(ownerless.map((r) => r.eff_student_id));
   for (const c of ownerless) {
     if (f.branchId && c.eff_branch_id !== f.branchId) continue;
     if (!can(p, PERMISSIONS.CASE_APPROVE, { classId: c.eff_class_id, studentId: c.eff_student_id })

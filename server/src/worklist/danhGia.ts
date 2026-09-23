@@ -3,6 +3,7 @@ import { PERMISSIONS } from '../../../shared/domain/index.ts';
 import { classScopeSql, scopeFor, type Principal } from '../permissions.ts';
 import { loadBundle, resultOf, type AttemptBundle } from '../fasttrack/attempts.ts';
 import { allProgrammes, evaluateRegular, type ProgrammeInfo } from '../normal/regular.ts';
+import { nho } from '../platform/nguCanhRequest.ts';
 
 /**
  * KẾT QUẢ TEST CỦA TỪNG HỌC VIÊN — nền của ba chỉ số hiện trạng (hv-sos-hien-tai · hv-duoi-ky-vong-mon ·
@@ -73,22 +74,28 @@ export function evaluateAttemptRow(
   };
 }
 
-/** Học viên ĐANG HỌC trong phạm vi của người xem (và chi nhánh được hỏi). Phạm vi rỗng trả rỗng. */
+/**
+ * Học viên ĐANG HỌC trong phạm vi của người xem (và chi nhánh được hỏi). Phạm vi rỗng trả rỗng.
+ * PR-TD: nhớ trong request GET theo (người xem, chi nhánh) — gọi lặp lại ở `hvSosHienTai`/`hvDuoiKyVongMon`/
+ * `doPhuDanhGia` (mỗi cái một chỉ số của Tổng quan, ~12 lượt gọi `metricSet` mỗi request) với CÙNG `branchId`.
+ */
 export function studentsInScope(p: Principal, branchId: number | null): number[] {
-  const scope = scopeFor(p, PERMISSIONS.ATTEMPT_VIEW);
-  if (scope.none) return [];
-  const cs = classScopeSql(scope);
-  const where = [cs.sql, `e.status = 'active'`, 's.archived_at IS NULL'];
-  const params: unknown[] = [...cs.params];
-  if (branchId) { where.push('c.branch_id = ?'); params.push(branchId); }
-  return (db()
-    .prepare(
-      `SELECT DISTINCT s.id FROM enrollments e
-         JOIN students s ON s.id = e.student_id
-         JOIN classes c ON c.id = e.class_id
-        WHERE ${where.join(' AND ')} ORDER BY s.id`,
-    )
-    .all(...params) as any[]).map((r) => r.id as number);
+  return nho(`hv-pv:${p.userId}:${branchId}`, () => {
+    const scope = scopeFor(p, PERMISSIONS.ATTEMPT_VIEW);
+    if (scope.none) return [];
+    const cs = classScopeSql(scope);
+    const where = [cs.sql, `e.status = 'active'`, 's.archived_at IS NULL'];
+    const params: unknown[] = [...cs.params];
+    if (branchId) { where.push('c.branch_id = ?'); params.push(branchId); }
+    return (db()
+      .prepare(
+        `SELECT DISTINCT s.id FROM enrollments e
+           JOIN students s ON s.id = e.student_id
+           JOIN classes c ON c.id = e.class_id
+          WHERE ${where.join(' AND ')} ORDER BY s.id`,
+      )
+      .all(...params) as any[]).map((r) => r.id as number);
+  });
 }
 
 /** Các đợt (không huỷ) của một nhóm học viên, đã xếp MỚI NHẤT TRƯỚC cho từng em. */
@@ -119,25 +126,29 @@ function attemptsNewestFirst(studentIds: number[]): Map<number, any[]> {
 /**
  * ĐỢT MỚI NHẤT của mỗi em theo `pick`: 'valid' (đã có điểm) hoặc 'due' (đã đến lịch, kể cả chưa chấm).
  * Em không có đợt nào thoả thì không có mục trong kết quả.
+ * PR-TD: nhớ trong request GET theo (pick, today, tập id đã sắp — thứ tự không đổi khoá vì nơi gọi luôn truyền
+ * `studentsInScope(...)` là cùng một mảng cho cùng người xem/chi nhánh trong một request).
  */
 export function latestAttempts(studentIds: number[], pick: 'valid' | 'due', today: string): Map<number, AttemptEval> {
-  const byStudent = attemptsNewestFirst(studentIds);
-  const all = [...byStudent.values()].flat();
-  const bundle = loadBundle(all.map((a) => a.id));
-  const programmes = allProgrammes();
-  const out = new Map<number, AttemptEval>();
-  for (const [sid, list] of byStudent) {
-    for (const a of list) {
-      if (pick === 'due' && !(a.period_start && a.period_start <= today)) continue;
-      const ev = evaluateAttemptRow(a, bundle, programmes);
-      if (pick === 'valid' && ev.scored === 0) continue;
-      out.set(sid, {
-        attemptId: a.id, studentId: sid, kind: a.kind, weekStart: a.period_start ?? null, attemptNo: a.attempt_no, ...ev,
-      });
-      break;
+  return nho(`luot-moi:${pick}:${today}:${studentIds.join(',')}`, () => {
+    const byStudent = attemptsNewestFirst(studentIds);
+    const all = [...byStudent.values()].flat();
+    const bundle = loadBundle(all.map((a) => a.id));
+    const programmes = allProgrammes();
+    const out = new Map<number, AttemptEval>();
+    for (const [sid, list] of byStudent) {
+      for (const a of list) {
+        if (pick === 'due' && !(a.period_start && a.period_start <= today)) continue;
+        const ev = evaluateAttemptRow(a, bundle, programmes);
+        if (pick === 'valid' && ev.scored === 0) continue;
+        out.set(sid, {
+          attemptId: a.id, studentId: sid, kind: a.kind, weekStart: a.period_start ?? null, attemptNo: a.attempt_no, ...ev,
+        });
+        break;
+      }
     }
-  }
-  return out;
+    return out;
+  });
 }
 
 const sortIds = (ids: Iterable<number>) => [...ids].sort((x, y) => x - y);

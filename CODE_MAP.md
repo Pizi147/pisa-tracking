@@ -299,6 +299,20 @@ loại dữ liệu mới** vào kịch bản thì thêm trường ở `server/sr
 | Quy ước tuần, mã tuần (W2 SEP 2026) | `server/src/platform/week.ts` |
 | Nhật ký thay đổi | `server/src/platform/audit.ts` |
 
+### Tốc độ (PR-TD, tốc độ trên Turso)
+
+Kế hoạch: `docs/superpowers/plans/2026-09-23-pr-td-toc-do.md`.
+
+| Muốn sửa | Mở file |
+|---|---|
+| Ngữ cảnh request: bộ nhớ tra cứu lặp (chỉ mở cho GET, tự xoá khi request chạy một lệnh ghi) + bộ đếm câu SQL | `server/src/platform/nguCanhRequest.ts` → `chayTrongRequest`, `nho`, `datNho`, `trongBoNho`, `napTruocPhamVi` (permissions.ts) |
+| Cách đếm một câu SQL (`get`/`run`/`iterate`; KHÔNG đếm `all` vì nó tự gọi lại `iterate`) | `server/src/db.ts` (khối vá đầu file) |
+| Bật log `[sql] METHOD url n câu` mỗi request (đặt `PISA_DEM_SQL=1`, không có trên bản chính) | `server/src/app.ts` → `moNguCanhRequest` |
+| Danh sách đường đo (route × vai) + trần câu SQL của từng đường — **PR sau thêm đường mới vào đây** | `server/src/tests/tocDoDuong.ts` → `DUONG_DO`, `TRAN` |
+| Phép kiểm ĐO (hạ tầng bộ nhớ, mọi đường×vai đúng mã, trần câu SQL, nhân dữ liệu ×3) — chạy tiến trình riêng, DB riêng, nối vào `npm test` sau `run.js` | `server/src/tests/tocDo.run.ts` |
+| Chụp JSON mọi (đường × vai) của một cây mã bất kỳ đã build, so trước/sau — dùng `--db`/`--khong-seed` để hai lượt chụp dùng chung một lần seed (tránh lệch giờ các trường ghi `new Date()` lúc seed) | `scripts/chup-api.mjs` |
+| **Luật bắt buộc:** không sửa mảng/đối tượng nhận về từ `listCases`/các hàm có `nho()` (giá trị dùng chung trong request — sửa tại chỗ gọi thì phải copy trước) | xem chú thích đầu `nguCanhRequest.ts`; đặt `PISA_DONG_BANG_NHO=1` trong phép kiểm để lộ chỗ sửa nhầm (ném lỗi thay vì âm thầm sai) |
+
 ### Bản chính (Netlify + Turso, PR-Z2)
 
 Hướng dẫn cho chủ sản phẩm: `TRIEN_KHAI.md`. Kế hoạch: `docs/superpowers/plans/2026-09-21-ban-chinh-netlify-turso.md`.

@@ -16,6 +16,7 @@ import {
   failingEntrySkills, isCriteriaSkill, isRawSkill, type AttemptResult,
 } from './scoring.ts';
 import { weekInfo } from '../platform/week.ts';
+import { nho } from '../platform/nguCanhRequest.ts';
 import {
   completionWeekOf, ensureSkillRows, loadSkillRows, logSchedule, recomputeCompletionWeek, scoringModeOf,
   setSkillScope, setSkillWeek, skillScheduleOf, skippedSkillsOf, viewSkill,
@@ -39,13 +40,14 @@ export type ScoreRow = {
   no_show_late?: number | null; no_show_settled_at?: string | null;
 };
 
+/** PR-TD: nhớ trong request GET theo attemptId — hồ sơ HV gọi lặp cho mỗi lượt của em (`profile.ts`, `students.ts`). */
 export function scoresOf(attemptId: number): ScoreRow[] {
-  return db()
+  return nho(`diem:${attemptId}`, () => db()
     .prepare(
       `SELECT s.*, u.full_name AS entered_by_name FROM assessment_scores s
          LEFT JOIN users u ON u.id = s.entered_by WHERE s.attempt_id = ?`,
     )
-    .all(attemptId) as ScoreRow[];
+    .all(attemptId) as ScoreRow[]);
 }
 
 /**
@@ -55,11 +57,13 @@ export function scoresOf(attemptId: number): ScoreRow[] {
  * Bảng cũ vẫn được giữ đồng bộ để nhật ký và dữ liệu chưa di trú đọc ra cùng một kết luận.
  */
 export function skipsOf(attemptId: number): AssessedSkill[] {
-  const rows = db().prepare('SELECT skill, required FROM attempt_skills WHERE attempt_id = ?').all(attemptId) as any[];
-  if (rows.length) return rows.filter((r) => !r.required).map((r) => r.skill as AssessedSkill);
-  return (db().prepare('SELECT skill FROM attempt_skill_skips WHERE attempt_id = ?').all(attemptId) as any[])
-    .map((r) => r.skill as AssessedSkill)
-    .filter((s) => (ASSESSED_SKILLS as readonly string[]).includes(s));
+  return nho(`bo-mon:${attemptId}`, () => {
+    const rows = db().prepare('SELECT skill, required FROM attempt_skills WHERE attempt_id = ?').all(attemptId) as any[];
+    if (rows.length) return rows.filter((r) => !r.required).map((r) => r.skill as AssessedSkill);
+    return (db().prepare('SELECT skill FROM attempt_skill_skips WHERE attempt_id = ?').all(attemptId) as any[])
+      .map((r) => r.skill as AssessedSkill)
+      .filter((s) => (ASSESSED_SKILLS as readonly string[]).includes(s));
+  });
 }
 
 /**
