@@ -34,7 +34,7 @@ export function MotKyNang(p: Chung & ({ mode: 'ielts_band'; data: FtSheet } | { 
 }
 
 /**
- * KỸ NĂNG ĐANG CHỌN. Mở từ Cần chấm với `?kn=` thì chọn sẵn kỹ năng đó (`writing` = W1 của FT); không thì kỹ năng đầu
+ * KỸ NĂNG ĐANG CHỌN. Mở từ Lịch Test / Việc cần làm với `?kn=` thì chọn sẵn kỹ năng đó (`writing` = W1 của FT); không thì kỹ năng đầu
  * tiên của mình còn ô trống, rồi kỹ năng đầu tiên của mình, rồi kỹ năng đầu tiên.
  */
 function useKyNangChon(dsKn: string[], cuaMinh: (k: string) => boolean, conTrong: (k: string) => boolean, kn: string | null) {

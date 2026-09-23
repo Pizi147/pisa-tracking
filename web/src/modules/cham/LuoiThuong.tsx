@@ -183,7 +183,9 @@ export function useLuuThuong(attemptId: number, onReload: () => void) {
     setStatus('saving');
     try {
       const r = await api.put<any>(`/regular/attempts/${attemptId}/scores/${skill}`, body);
-      invalidate('/regular'); invalidate('/classes'); invalidate('/attempts'); invalidate('/cham');
+      /* Không `invalidate('/cham')`: Lịch Test tự tải lại dải số GỘP 1,5 s sau lần lưu cuối (PR-UX1 Q14) qua `onReload` —
+         tải lại mỗi ô làm nặng Turso. Lưới (`/classes/:id/cham`) vẫn tải lại qua `/classes`. */
+      invalidate('/regular'); invalidate('/classes'); invalidate('/attempts');
       invalidate('/students'); invalidate('/overview');
       failed.current = null;
       setStatus('saved'); setLastError(undefined);
@@ -227,8 +229,12 @@ export function useLuuThuong(attemptId: number, onReload: () => void) {
   return { luu, dau, status, lastError, retry };
 }
 
-export function LuoiThuong({ data, onReload, kn = null, hv = null }: {
-  data: ThuongSheet; onReload: () => void; kn?: string | null; hv?: number | null;
+/**
+ * `tuanDangXem` (Lịch Test, PR-UX1 Q10): ô chưa có điểm của môn thi tuần khác → chữ mờ `W4 SEP`, không ô nhập — chưa
+ * phải việc của tuần đang xem. Môn mang "-" giữ nguyên ô (có `→ tuần mới`).
+ */
+export function LuoiThuong({ data, onReload, kn = null, hv = null, tuanDangXem = null }: {
+  data: ThuongSheet; onReload: () => void; kn?: string | null; hv?: number | null; tuanDangXem?: string | null;
 }) {
   const toast = useToast();
   const skills = data.programme.skills;
@@ -330,7 +336,7 @@ export function LuoiThuong({ data, onReload, kn = null, hv = null }: {
               <DongThuong
                 key={r.attemptId} row={r} rowIndex={ri} sheet={data}
                 active={hv !== null && r.studentId === hv}
-                tongCot={soTong} dien={dien} onReload={onReload}
+                tongCot={soTong} dien={dien} onReload={onReload} tuanDangXem={tuanDangXem}
                 register={(ci, el) => { grid.current[ri] = grid.current[ri] ?? []; grid.current[ri][ci] = el; }}
                 onMove={move}
               />
@@ -343,8 +349,8 @@ export function LuoiThuong({ data, onReload, kn = null, hv = null }: {
   );
 }
 
-function DongThuong({ row, rowIndex, sheet, active, tongCot, dien, onReload, register, onMove }: {
-  row: Row; rowIndex: number; sheet: ThuongSheet; active: boolean;
+function DongThuong({ row, rowIndex, sheet, active, tongCot, dien, onReload, tuanDangXem, register, onMove }: {
+  row: Row; rowIndex: number; sheet: ThuongSheet; active: boolean; tuanDangXem: string | null;
   tongCot: (k: string) => number | null;
   dien: Record<string, { gt: number; lan: number }>;
   onReload: () => void;
@@ -378,6 +384,14 @@ function DongThuong({ row, rowIndex, sheet, active, tongCot, dien, onReload, reg
          * MÔN VẮNG / ĐÃ HUỶ PHẦN THI mà chưa có điểm: không phải một ô trống chờ nhập — hiện đúng trạng thái, không có ô
          * nhập (việc tiếp theo là xếp lại lịch, không phải chấm). Đã có điểm thì vẫn là ô điểm như thường.
          */
+        if (tuanDangXem && s?.weekStart && s.weekStart !== tuanDangXem && cell.diem === null && !s.noShow) {
+          return (
+            <td key={k} className="td py-1.5 text-center text-slate-500" data-kn={k}
+              title={`${sheet.skillLabels[k] ?? skillLabel(k)}: thi tuần ${tuanLich(s.weekStart, homNay)}`}>
+              {tuanLich(s.weekStart, homNay)}
+            </td>
+          );
+        }
         if (dung) {
           return (
             <td key={k} className="td py-1.5 text-center" data-kn={k}>

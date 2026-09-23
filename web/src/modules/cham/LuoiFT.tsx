@@ -8,7 +8,7 @@ import {
 import {
   attemptStatusLabel, fmtBand, skillLabel, skillShort, sosLabel, sosTone,
 } from '../../lib/format.ts';
-import { ENTRY_SKILLS, ngay } from '@shared/domain/index.ts';
+import { ENTRY_SKILLS, ngay, tuanLich } from '@shared/domain/index.ts';
 
 /** Dữ liệu lưới FT — chính là `cham.ft` (`classScoreSheet` ở máy chủ). */
 export type FtSheet = {
@@ -27,13 +27,20 @@ export type FtSheet = {
 const RAW_SKILLS = ENTRY_SKILLS.filter((s) => s === 'listening' || s === 'reading');
 const CRIT_SKILLS = ENTRY_SKILLS.filter((s) => s !== 'listening' && s !== 'reading');
 
-/** `?kn=writing` (kỹ năng đánh giá) khớp cả hai cột W1, W2 — Cần chấm gom Writing thành một môn. */
+/** `?kn=writing` (kỹ năng đánh giá) khớp cả hai cột W1, W2 — Lịch Test / Việc cần làm gom Writing thành một môn. */
 export const khopKn = (skill: string, kn: string | null | undefined) =>
   !!kn && (skill === kn || (kn === 'writing' && skill.startsWith('writing')));
 
 /** Ô CÒN PHẢI NHẬP của người đang xem — dùng để cuộn tới em đầu tiên chưa có điểm (Q12). */
 export const oTrongFt = (c: Cell) => c.required && c.canEdit && c.band === null && !c.noShow
   && c.progress !== 'cancelled' && c.progress !== 'absent';
+
+/**
+ * Ô THI TUẦN KHÁC tuần đang xem mà chưa có điểm (Lịch Test, PR-UX1 Q10): chưa phải việc của tuần này — hiện chữ mờ
+ * `W4 SEP`, không có ô nhập, không `data-trong` (con trỏ không nhảy vào).
+ */
+export const khacTuanFt = (c: Cell, tuanDangXem: string | null | undefined) =>
+  !!tuanDangXem && !!c.weekStart && c.weekStart !== tuanDangXem && c.band === null && !c.noShow;
 
 /** Hạn nhập điểm sớm nhất còn nợ trên cả lưới — cho `<Han>` ở đầu trang (mockup 05a §2). */
 export function hanSomNhatFt(data: FtSheet | null | undefined): string | null {
@@ -53,20 +60,34 @@ export const tenDotFt = (data: FtSheet | null | undefined) =>
  * ĐỘ RỘNG CỘT CỐ ĐỊNH (G-2): `table-layout: fixed` + `colgroup`, nên cột và hàng thẳng dù dòng nào nhiều chữ hơn.
  * Tổng rộng là chiều rộng tối thiểu của bảng — màn hẹp hơn thì cuộn ngang TRONG THẺ (G-11), trang không cuộn ngang.
  */
-const COT = [190, 56, 118, 200, 104, 104, 104, 104, 104, 72, 72, 176];
-const RONG = COT.reduce((a, b) => a + b, 0);
+const COT_HV = 190, COT_MT = 56, COT_TT = 118, COT_HAN = 200, COT_KN = 104, COT_SO = 72, COT_KQ = 176;
 
 /**
  * LƯỚI CHẤM LỚP FAST TRACK — phần bảng của màn nhập điểm cả lớp trong một tuần (dời nguyên từ `ScoreSheetPage`).
  * Trang bao (`ChamDiemPage`) tải dữ liệu, dựng đầu trang và bộ chọn tuần; ở đây chỉ còn bảng.
  *
  * Điều hướng bàn phím: Enter/↓ xuống ô cùng cột ở em kế tiếp, ↑ lên, Esc huỷ ô đang sửa. `kn` tô cột kỹ năng đang
- * được mở từ Cần chấm; `hv` tô dòng của một học viên.
+ * được mở từ Lịch Test; `hv` tô dòng của một học viên.
+ *
+ * Lịch Test (PR-UX1 Q10): `gon` bỏ cột Trạng thái và Hạn (hàng lớp đã nói), bỏ cột MT khi cả lưới cùng một lượt;
+ * `tuanDangXem` làm mờ ô thi tuần khác (`khacTuanFt`).
  */
-export function LuoiFT({ data, onReload, kn = null, hv = null }: {
+export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuanDangXem = null }: {
   data: FtSheet; onReload: () => void; kn?: string | null; hv?: number | null;
+  gon?: boolean; tuanDangXem?: string | null;
 }) {
   const grid = useRef<(HTMLInputElement | null)[][]>([]);
+  const cot = {
+    mt: !gon || new Set(data.rows.map((r) => r.attemptNo)).size > 1,
+    trangThai: !gon,
+    han: !gon,
+  };
+  /* Cột theo đúng những cột đang hiện — `colgroup` khớp số cột (G-2). */
+  const COT = [
+    COT_HV, ...(cot.mt ? [COT_MT] : []), ...(cot.trangThai ? [COT_TT] : []), ...(cot.han ? [COT_HAN] : []),
+    ...ENTRY_SKILLS.map(() => COT_KN), COT_SO, COT_SO, COT_KQ,
+  ];
+  const RONG = COT.reduce((a, b) => a + b, 0);
 
   if (data.rows.length === 0) {
     return (
@@ -92,9 +113,9 @@ export function LuoiFT({ data, onReload, kn = null, hv = null }: {
         <thead>
           <tr>
             <Th className="sticky-col" hint="Cột này đứng yên khi cuộn ngang, để không lạc mất đang nhập cho em nào.">Học viên</Th>
-            <Th hint="Số thứ tự lượt Mock Test (MT) trong lộ trình của em.">MT</Th>
-            <Th hint="Lượt đã chấm xong, đang chờ, hay đã huỷ.">Trạng thái</Th>
-            <Th hint="Hạn chấm tính riêng cho từng môn, từ tuần thi của chính môn đó: hết thứ Tư của tuần kế tiếp. Quản lý đặt được hạn riêng.">Hạn nhập</Th>
+            {cot.mt && <Th hint="Số thứ tự lượt Mock Test (MT) trong lộ trình của em.">MT</Th>}
+            {cot.trangThai && <Th hint="Lượt đã chấm xong, đang chờ, hay đã huỷ.">Trạng thái</Th>}
+            {cot.han && <Th hint="Hạn chấm tính riêng cho từng môn, từ tuần thi của chính môn đó: hết thứ Tư của tuần kế tiếp. Quản lý đặt được hạn riêng.">Hạn nhập</Th>}
             {RAW_SKILLS.map((s) => (
               <Th key={s} className={toCot(s)} hint={`${skillLabel(s)} — nhập số câu đúng (0–40), máy tự quy ra band.`}>
                 {skillShort(s)} <span className="normal-case text-slate-500">(số câu)</span>
@@ -117,6 +138,7 @@ export function LuoiFT({ data, onReload, kn = null, hv = null }: {
               row={r}
               rowIndex={ri}
               active={hv !== null && r.studentId === hv}
+              cot={cot} tuanDangXem={tuanDangXem}
               onReload={onReload}
               register={(ci, el) => {
                 grid.current[ri] = grid.current[ri] ?? [];
@@ -176,14 +198,20 @@ function DeadlineSummary({ cells }: { cells: Cell[] }) {
   );
 }
 
-function SheetRow({ row, rowIndex, active, onReload, register, onMove }: {
+function SheetRow({ row, rowIndex, active, cot, tuanDangXem, onReload, register, onMove }: {
   row: FtSheet['rows'][number]; rowIndex: number; active: boolean;
+  cot: { mt: boolean; trangThai: boolean; han: boolean }; tuanDangXem: string | null;
   onReload: () => void;
   register: (col: number, el: HTMLInputElement | null) => void;
   onMove: (row: number, col: number, dr: number) => void;
 }) {
   const { save, status, lastError, retry } = useSaveScore(row.attemptId, onReload);
   const cellOf = (skill: string) => row.cells.find((c) => c.skill === skill);
+  const oKhacTuan = (s: string, cell: Cell) => (
+    <td key={s} className="td py-1.5 text-slate-500" data-kn={s} title={`${skillLabel(s)}: thi tuần ${tuanLich(cell.weekStart)}`}>
+      {tuanLich(cell.weekStart)}
+    </td>
+  );
 
   return (
     <tr className={`row-hover h-16 ${active ? 'row-active' : ''}`} data-hv={row.studentId}>
@@ -200,24 +228,29 @@ function SheetRow({ row, rowIndex, active, onReload, register, onMove }: {
           <DauLuu status={status} error={lastError} onRetry={retry} />
         </div>
       </td>
-      <td className="td py-1.5 whitespace-nowrap" title={`Mock Test lượt ${row.attemptNo}`}>MT{row.attemptNo}</td>
-      <td className="td py-1.5 whitespace-nowrap text-xs text-slate-400">
-        <Status kind={row.status === 'done' ? 'done' : row.status === 'cancelled' ? 'idle' : 'doing'}>
-          {attemptStatusLabel(row.status)}
-        </Status>
-      </td>
+      {cot.mt && <td className="td py-1.5 whitespace-nowrap" title={`Mock Test lượt ${row.attemptNo}`}>MT{row.attemptNo}</td>}
+      {cot.trangThai && (
+        <td className="td py-1.5 whitespace-nowrap text-xs text-slate-400">
+          <Status kind={row.status === 'done' ? 'done' : row.status === 'cancelled' ? 'idle' : 'doing'}>
+            {attemptStatusLabel(row.status)}
+          </Status>
+        </td>
+      )}
       {/*
         HẠN SỚM NHẤT CÒN NỢ, kèm tên môn khi đợt tách tuần.
         Từ vòng 7 mỗi môn có tuần thi riêng nên có thể có nhiều hạn khác nhau trên một dòng.
         In cả năm cái là nhiễu; in một cái mà không nói của môn nào thì người đọc tưởng nó
         áp cho cả dòng. Nên: hạn gần nhất trong các môn CÒN NỢ, và gọi tên môn đó.
       */}
-      <td className="td py-1.5 whitespace-nowrap">
-        <DeadlineSummary cells={row.cells} />
-      </td>
+      {cot.han && (
+        <td className="td py-1.5 whitespace-nowrap">
+          <DeadlineSummary cells={row.cells} />
+        </td>
+      )}
       {RAW_SKILLS.map((s, ci) => {
         const cell = cellOf(s);
         if (!cell) return <td key={s} className="td py-1.5 text-slate-600">—</td>;
+        if (khacTuanFt(cell, tuanDangXem)) return oKhacTuan(s, cell);
         return (
           <td key={s} className="td py-1.5" data-kn={s} data-trong={oTrongFt(cell) ? '1' : undefined}>
             <RawScoreInput
@@ -235,6 +268,7 @@ function SheetRow({ row, rowIndex, active, onReload, register, onMove }: {
       {CRIT_SKILLS.map((s) => {
         const cell = cellOf(s);
         if (!cell) return <td key={s} className="td py-1.5 text-slate-600">—</td>;
+        if (khacTuanFt(cell, tuanDangXem)) return oKhacTuan(s, cell);
         return (
           <td key={s} className="td py-1.5" data-kn={s} data-trong={oTrongFt(cell) ? '1' : undefined}>
             <CriteriaButton cell={cell} onSave={(p, o) => save(s, p, o)} />
