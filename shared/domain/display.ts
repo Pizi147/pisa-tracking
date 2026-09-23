@@ -22,17 +22,46 @@ function daysBetween(from: string, to: string): number {
   return Math.round(dayNumber(to) - dayNumber(from));
 }
 
-const validIso = (s: string | null | undefined): s is string => !!s && /^\d{4}-\d{2}-\d{2}/.test(s) && !Number.isNaN(Date.parse(s.slice(0, 10)));
+/** Ngày theo lịch có thật không — `Date.parse` tự lăn 31/02 thành 03/03 nên không dùng được một mình. */
+function ngayCoThat(y: number, m: number, d: number): boolean {
+  const t = new Date(Date.UTC(y, m - 1, d));
+  return t.getUTCFullYear() === y && t.getUTCMonth() === m - 1 && t.getUTCDate() === d;
+}
+
+/**
+ * NGÀY THẬT CỦA MỘT CHUỖI, THEO GIỜ VIỆT NAM (G-6, nợ sau rà PR-O #58) — `YYYY-MM-DD` hoặc `null`.
+ *
+ *   ngày trần            giữ nguyên (sau khi kiểm ngày có thật)
+ *   có giờ, có múi giờ    đổi về +7 rồi lấy ngày
+ *   có giờ, không múi giờ coi là UTC — `nowIso()` và `datetime('now')` của SQLite đều ghi UTC
+ *
+ * 31/02, 29/02 năm thường, tháng 13, giờ 25 → `null`. Mọi hàm hiện ngày đi qua đây, nên 20:00 UTC ngày 22 hiện là 23/09.
+ */
+export function ngayTheoGioVN(s: string | null | undefined): string | null {
+  if (!s) return null;
+  const m = /^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2})(?::(\d{2})(?:\.\d+)?)?(Z|[+-]\d{2}:?\d{2})?)?$/.exec(s.trim());
+  if (!m) return null;
+  const [, y, mo, d, hh, mi, ss, tz] = m;
+  if (!ngayCoThat(Number(y), Number(mo), Number(d))) return null;
+  if (hh === undefined) return `${y}-${mo}-${d}`;
+  const muiGio = !tz || tz === 'Z' ? 'Z' : tz.includes(':') ? tz : `${tz.slice(0, 3)}:${tz.slice(3)}`;
+  const t = Date.parse(`${y}-${mo}-${d}T${hh}:${mi}:${ss ?? '00'}${muiGio}`);
+  if (Number.isNaN(t)) return null;
+  return new Date(t + 7 * 3_600_000).toISOString().slice(0, 10);
+}
+
+const validIso = (s: string | null | undefined): s is string => ngayTheoGioVN(s) !== null;
 
 /**
  * NGÀY VIẾT NGẮN: `14/09` khi cùng năm với `today`, `05/01/2027` khi sang năm khác — để một
- * cột ngày không bao giờ khiến người đọc phải đoán năm nào (HE_GIAO_DIEN §2).
+ * cột ngày không bao giờ khiến người đọc phải đoán năm nào (HE_GIAO_DIEN §2). Cả hai tham số đi qua giờ Việt Nam.
  */
 export function shortDate(iso: string | null | undefined, today: string): string {
-  if (!validIso(iso)) return '—';
-  const s = iso.slice(0, 10);
+  const s = ngayTheoGioVN(iso);
+  if (!s) return '—';
   const dm = `${s.slice(8, 10)}/${s.slice(5, 7)}`;
-  return s.slice(0, 4) === today.slice(0, 4) ? dm : `${dm}/${s.slice(0, 4)}`;
+  const nam = (ngayTheoGioVN(today) ?? today).slice(0, 4);
+  return s.slice(0, 4) === nam ? dm : `${dm}/${s.slice(0, 4)}`;
 }
 
 // ====================================================================== <TyLe>

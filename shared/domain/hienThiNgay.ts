@@ -7,27 +7,27 @@
  *   tuần học      W{n}/{tổng} — "W8/8", tuần thứ n của một khoá lớp thường.
  *
  * Màn mới dùng ba hàm này; màn cũ chuyển dần ở các PR sau. Khoá dữ liệu (thứ Hai, mã tuần có năm) vẫn ở week.ts.
+ * Chuỗi có giờ đổi sang giờ Việt Nam trước khi lấy ngày; ngày không tồn tại ra "—" (ngayTheoGioVN, display.ts).
  */
-import { shortDate } from './display.ts';
+import { ngayTheoGioVN, shortDate } from './display.ts';
 import { MONTH_CODE, mondayOfDate, owningMonthOf, weekNumberInMonthOf } from './week.ts';
 
-const hopLe = (s: string | null | undefined): s is string =>
-  !!s && /^\d{4}-\d{2}-\d{2}/.test(s) && !Number.isNaN(Date.parse(`${s.slice(0, 10)}T00:00:00Z`));
-
 export function ngay(d: string | null | undefined, homNay?: string | null): string {
-  if (!hopLe(d)) return '—';
-  if (hopLe(homNay)) return shortDate(d, homNay);
-  const s = d.slice(0, 10);
+  const s = ngayTheoGioVN(d);
+  if (!s) return '—';
+  if (ngayTheoGioVN(homNay)) return shortDate(s, homNay as string);
   return `${s.slice(8, 10)}/${s.slice(5, 7)}/${s.slice(0, 4)}`;
 }
 
 export function tuanLich(d: string | null | undefined, homNay?: string | null): string {
-  if (!hopLe(d)) return '—';
-  const start = mondayOfDate(d);
+  const s = ngayTheoGioVN(d);
+  if (!s) return '—';
+  const start = mondayOfDate(s);
   const { year, month } = owningMonthOf(start);
   const ma = `W${weekNumberInMonthOf(start)} ${MONTH_CODE[month - 1]}`;
-  if (!hopLe(homNay)) return ma;
-  return owningMonthOf(mondayOfDate(homNay)).year === year ? ma : `${ma} ${year}`;
+  const h = ngayTheoGioVN(homNay);
+  if (!h) return ma;
+  return owningMonthOf(mondayOfDate(h)).year === year ? ma : `${ma} ${year}`;
 }
 
 export function tuanKhoa(n: number, tong: number): string {

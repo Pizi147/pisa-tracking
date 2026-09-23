@@ -46,6 +46,9 @@ import * as classSvc from '../classes/classes.ts';
 import * as scheduleSvc from '../classes/schedule.ts';
 import * as intakeSvc from '../classes/intake.ts';
 import * as transitionSvc from '../classes/transition.ts';
+import * as hocVienLopSvc from '../classes/hocVienLop.ts';
+import * as phanTichLopSvc from '../classes/phanTichLop.ts';
+import * as thongTinLopSvc from '../classes/thongTinLop.ts';
 import * as studentSvc from '../students/students.ts';
 import * as meetingSvc from '../worklist/meeting.ts';
 import * as dashboardSvc from '../worklist/dashboard.ts';
@@ -68,6 +71,7 @@ import { myWork } from '../worklist/mywork.ts';
 import * as caseSvc from '../cases/cases.ts';
 import * as caseSignalSvc from '../cases/signals.ts';
 import * as regularSvc from '../normal/regular.ts';
+import * as chamSvc from '../cham/canCham.ts';
 
 export const api = Router();
 
@@ -550,6 +554,8 @@ api.put('/attempts/:id/scores/:skill', requireAuth, wrap((req) => {
   return attemptSvc.saveScore(principalOf(req), pInt(req, 'id'), skill, {
     rawScore: b.rawScore, rawTotal: b.rawTotal,
     criteria: b.criteria, resultDate: b.resultDate, note: b.note,
+    /* RB-5 — lý do hiệu chỉnh khi sửa ô đã có điểm; máy chủ tự quyết khi nào bắt buộc. */
+    lyDo: b.lyDo,
     /* Dấu '-' "không có bài" (PR-G) — chỉ nhận đúng true/false, không hiểu chuỗi lạ thành lệnh. */
     noShow: b.noShow === true ? true : b.noShow === false ? false : undefined,
   });
@@ -571,6 +577,31 @@ api.post('/attempts/:id/scores/:skill/no-show/resolve', requireAuth, wrap((req) 
 api.get('/classes/:id/score-sheet', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   return attemptSvc.classScoreSheet(principalOf(req), pInt(req, 'id'), qInt(req, 'periodId') ?? null);
+}));
+/**
+ * MỘT CỬA CHO BẢNG CHẤM (spec §3.5): máy chủ chọn đúng bảng theo loại lớp, giao diện không phải đoán. Mở
+ * `/nhap-diem/:id` của một lớp thường thì đây là chỗ trả về lưới lớp thường.
+ */
+api.get('/classes/:classId/cham', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return chamSvc.chamSheet(principalOf(req), pInt(req, 'classId'), {
+    periodId: qInt(req, 'periodId') ?? null, kind: qStr(req, 'kind') ?? null,
+  });
+}));
+
+/** Cần chấm — mockup 05a2 phương án A: ba mục Quá hạn / Tuần này / Sắp tới, mỗi dòng một lớp + một đợt. */
+api.get('/cham/can-cham', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return chamSvc.canChamList(principalOf(req), {
+    branchId: qInt(req, 'branchId'), classId: qInt(req, 'classId'), scope: qScope(req),
+  });
+}));
+
+/** Lịch Test — các lượt Test của một tuần, nhóm theo lớp. Không truyền tuần thì lấy tuần hiện tại. */
+api.get('/cham/lich-test', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  const periodId = qInt(req, 'periodId') ?? ensurePeriod(demoToday()).id;
+  return chamSvc.lichTest(principalOf(req), periodId, qInt(req, 'branchId'));
 }));
 
 // ============================================================ Lớp (Học viên lấy lớp làm gốc)
@@ -905,6 +936,28 @@ api.post('/classes', requireAuth, wrap((req) => {
   return intakeSvc.createClass(principalOf(req), req.body ?? {});
 }));
 
+// ============================================================ Học viên & Lớp · hồ sơ lớp (PR-Qa)
+
+/** Trang Học viên & Lớp: lớp + số đếm chip + cờ lọc từng học viên — một request cho cả trang (đặc tả §3.6). */
+api.get('/hoc-vien-lop', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return hocVienLopSvc.danhSachHocVienLop(principalOf(req), {
+    branchId: qInt(req, 'branchId') ?? null, q: qStr(req, 'q') ?? null, phamVi: qStr(req, 'phamVi') ?? null,
+  });
+}));
+
+/** Tab Phân tích lớp: kỹ năng × đợt, mỗi ô "số HV đạt / số HV có điểm" (đặc tả §3.7). */
+api.get('/classes/:id/phan-tich-lop', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return phanTichLopSvc.phanTichLop(principalOf(req), pInt(req, 'id'));
+}));
+
+/** ⋮ Sửa thông tin lớp: mã lớp, LT (FT), ghi chú; chương trình chỉ khi lớp chưa có học viên và bài Test. */
+api.patch('/classes/:id/thong-tin', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return thongTinLopSvc.capNhatThongTinLop(principalOf(req), pInt(req, 'id'), req.body ?? {});
+}));
+
 // ============================================================ Thêm học viên hàng loạt
 
 /** Tách dòng từ nội dung dán ở Excel/Google Sheets. Không ghi gì vào database. */
@@ -957,10 +1010,14 @@ api.post('/regular/classes/:classId/plan', requireAuth, wrap((req) => {
   return regularSvc.planRegularTests(principalOf(req), pInt(req, 'classId'));
 }));
 
-/** Nhập điểm một môn: cả điểm đạt và tổng điểm, không tự điền tổng. */
+/** Nhập điểm một môn (cả điểm đạt và tổng), hoặc ghi/gỡ dấu "-" (C08 — môn đó tự dời sang tuần sau). */
 api.put('/regular/attempts/:id/scores/:skill', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
-  return regularSvc.saveRegularScore(principalOf(req), pInt(req, 'id'), req.params.skill, req.body ?? {});
+  const b = req.body ?? {};
+  return regularSvc.saveRegularScore(principalOf(req), pInt(req, 'id'), req.params.skill, {
+    score: b.score, total: b.total, note: b.note, lyDo: b.lyDo,
+    noShow: b.noShow === true ? true : b.noShow === false ? false : undefined,
+  });
 }));
 
 /** Danh sách chương trình học đang dùng. */

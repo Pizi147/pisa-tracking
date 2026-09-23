@@ -218,24 +218,24 @@ sửa thì 🛑 hỏi trước).
 
 **Files:** không sửa mã.
 
-- [ ] **Step 1: Worktree.** Từ `main` mới nhất (`git fetch origin && git log -1 origin/main` phải là merge PR #64):
+- [x] **Step 1: Worktree.** Từ `main` mới nhất (`git fetch origin && git log -1 origin/main` phải là merge PR #64):
   tạo worktree nhánh `pr-rc1-cham-diem` (skill `superpowers:using-git-worktrees`), ví dụ
   `.claude/worktrees/pr-rc1-cham-diem`. **Không checkout nhánh khác trong thư mục chính.** `npm ci` trong worktree nếu
   chưa có `node_modules`.
 
-- [ ] **Step 2: Kiểm không có biến Turso.**
+- [x] **Step 2: Kiểm không có biến Turso.**
 
 ```bash
 node -e "for (const k of ['TURSO_DATABASE_URL','TURSO_AUTH_TOKEN','BAN_CHINH','PISA_CHO_PHEP_MIGRATE_TURSO','PISA_CHO_PHEP_SEED_TURSO']) if (process.env[k]) { console.error('CÓ BIẾN', k); process.exit(1) } ; console.log('sạch')"
 ```
 Expected: `sạch`. Có biến thì đóng cửa sổ, mở cửa sổ mới.
 
-- [ ] **Step 3: Mốc phép kiểm.** Run: `npm test 2>&1 | tail -3`. Expected: `TẤT CẢ 779 KIỂM TRA ĐỀU ĐẠT` (hoặc số lớn
+- [x] **Step 3: Mốc phép kiểm.** Run: `npm test 2>&1 | tail -3`. Expected: `TẤT CẢ 779 KIỂM TRA ĐỀU ĐẠT` (hoặc số lớn
   hơn nếu `main` đã nhận PR khác). Ghi con số vào Nhật ký — gọi là **B**; mọi "Expected" bên dưới tính cộng dồn từ B.
 
-- [ ] **Step 4: Đọc Global Constraints và bảng Q1–Q22.** Thấy Q nào sai với đặc tả thì 🛑 hỏi trước khi code.
+- [x] **Step 4: Đọc Global Constraints và bảng Q1–Q22.** Thấy Q nào sai với đặc tả thì 🛑 hỏi trước khi code.
 
-- [ ] **Step 5: Xem hiện trạng để không sửa nhầm.** Mở đọc (không sửa):
+- [x] **Step 5: Xem hiện trạng để không sửa nhầm.** Mở đọc (không sửa):
   `web/src/modules/fasttrack/ScoreSheetPage.tsx`, `web/src/modules/normal/RegularSheetPage.tsx`,
   `server/src/fasttrack/attempts.ts` (`saveScore` ~1141, `classScoreSheet` ~1358, `listAttempts` ~487),
   `server/src/normal/regular.ts`, `server/src/fasttrack/skillSchedule.ts` (`setSkillWeek` ~525).
@@ -262,7 +262,7 @@ Expected: `sạch`. Có biến thì đóng cửa sổ, mở cửa sổ mới.
   - `trangThaiChamLabel(i: { conBai: number; tong: number; quaHan: boolean; chuaToiHan: boolean }): string`
   - `LY_DO_TOI_THIEU = 5`; `kiemLyDo(s: string | null | undefined): string | null` (trả câu lỗi, `null` = hợp lệ)
 
-- [ ] **Step 1: Viết file phép kiểm (đỏ).** Tạo `server/src/tests/chamDiem.tests.ts`:
+- [x] **Step 1: Viết file phép kiểm (đỏ).** Tạo `server/src/tests/chamDiem.tests.ts`:
 
 ```ts
 /**
@@ -349,7 +349,7 @@ export async function runChamDiemTests(t: YThucTestKit) {
 }
 ```
 
-- [ ] **Step 2: Nối vào harness.** Cuối `server/src/tests/run.ts`, **ngay trước** khối `console.log('\n' + '='.repeat(60))`,
+- [x] **Step 2: Nối vào harness.** Cuối `server/src/tests/run.ts`, **ngay trước** khối `console.log('\n' + '='.repeat(60))`,
   sau khối PR-AN:
 
 ```ts
@@ -359,10 +359,10 @@ const { runChamDiemTests } = await import('./chamDiem.tests.ts');
 await runChamDiemTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 ```
 
-- [ ] **Step 3: Chạy cho đỏ.** Run: `npm test 2>&1 | tail -20`. Expected: hỏng ở khối `PR-Rc1` với lỗi kiểu
+- [x] **Step 3: Chạy cho đỏ.** Run: `npm test 2>&1 | tail -20`. Expected: hỏng ở khối `PR-Rc1` với lỗi kiểu
   `d.mucCanCham is not a function`.
 
-- [ ] **Step 4: Viết `shared/domain/chamDiem.ts`.**
+- [x] **Step 4: Viết `shared/domain/chamDiem.ts`.**
 
 ```ts
 /**
@@ -478,15 +478,15 @@ export function kiemLyDo(s: string | null | undefined): string | null {
 }
 ```
 
-- [ ] **Step 5: Thêm dòng xuất.** `shared/domain/index.ts`, ngay sau `export * from './dieuHuong.ts';`:
+- [x] **Step 5: Thêm dòng xuất.** `shared/domain/index.ts`, ngay sau `export * from './dieuHuong.ts';`:
 
 ```ts
 export * from './chamDiem.ts';
 ```
 
-- [ ] **Step 6: Chạy lại.** Run: `npm test 2>&1 | tail -5`. Expected: `TẤT CẢ B+7 KIỂM TRA ĐỀU ĐẠT`.
+- [x] **Step 6: Chạy lại.** Run: `npm test 2>&1 | tail -5`. Expected: `TẤT CẢ B+7 KIỂM TRA ĐỀU ĐẠT`.
 
-- [ ] **Step 7: Commit.**
+- [x] **Step 7: Commit.**
 
 ```bash
 git add shared/domain/chamDiem.ts shared/domain/index.ts server/src/tests/chamDiem.tests.ts server/src/tests/run.ts
@@ -509,7 +509,7 @@ git commit -m "PR-Rc1 (1): luật thuần của việc chấm điểm + khung ph
 - Produces: `export function reportRegularNoShow(p: Principal, attemptId: number, skill: string, bat: boolean, today?: string):
   { moved: boolean; tuanCu: string | null; tuanMoi: string | null; result: RegularResult }`.
 
-- [ ] **Step 1: Phép kiểm (đỏ).** Thêm vào cuối `runChamDiemTests` trong `server/src/tests/chamDiem.tests.ts`:
+- [x] **Step 1: Phép kiểm (đỏ).** Thêm vào cuối `runChamDiemTests` trong `server/src/tests/chamDiem.tests.ts`:
 
 ```ts
   // ---------------------------------------------------------------- C08: dấu "-" của lớp thường
@@ -605,9 +605,9 @@ git commit -m "PR-Rc1 (1): luật thuần của việc chấm điểm + khung ph
 > import khác — viết như trên chỉ để nêu rõ ý phép kiểm. Đặt `const attempts: any = await import('../fasttrack/attempts.ts');`
 > cạnh `const regular` ở Step 1 rồi dùng lại.)*
 
-- [ ] **Step 2: Chạy cho đỏ.** Run: `npm test 2>&1 | tail -20`. Expected: `regular.reportRegularNoShow is not a function`.
+- [x] **Step 2: Chạy cho đỏ.** Run: `npm test 2>&1 | tail -20`. Expected: `regular.reportRegularNoShow is not a function`.
 
-- [ ] **Step 3: Viết `reportRegularNoShow`.** Trong `server/src/normal/regular.ts`, ngay sau `saveRegularScore`:
+- [x] **Step 3: Viết `reportRegularNoShow`.** Trong `server/src/normal/regular.ts`, ngay sau `saveRegularScore`:
 
 ```ts
 /**
@@ -719,7 +719,7 @@ import { ensureSkillRows, loadSkillRows, setSkillWeek } from '../fasttrack/skill
 import { tuanKeTiep } from '../../../shared/domain/index.ts';   // gộp vào khối import shared đang có
 ```
 
-- [ ] **Step 4: `saveRegularScore` nhận `noShow`.** Ở đầu thân `saveRegularScore` (sau khi kiểm `prog`/`skill`, trước
+- [x] **Step 4: `saveRegularScore` nhận `noShow`.** Ở đầu thân `saveRegularScore` (sau khi kiểm `prog`/`skill`, trước
   khối quyền), thêm:
 
 ```ts
@@ -735,7 +735,7 @@ import { tuanKeTiep } from '../../../shared/domain/index.ts';   // gộp vào kh
   và mở rộng kiểu `patch`: `{ score?: number | null; total?: number | null; note?: string | null; noShow?: boolean; lyDo?: string | null }`.
   *(Trường `lyDo` dùng ở Task 5 — khai báo luôn để không sửa chữ ký hai lần.)*
 
-- [ ] **Step 5: Bỏ câu chặn ở `attempts.ts`.** Thay khối `attempts.ts:1148-1153`:
+- [x] **Step 5: Bỏ câu chặn ở `attempts.ts`.** Thay khối `attempts.ts:1148-1153`:
 
 ```ts
   /*
@@ -748,7 +748,7 @@ import { tuanKeTiep } from '../../../shared/domain/index.ts';   // gộp vào kh
   }
 ```
 
-- [ ] **Step 6: Endpoint nhận `noShow`.** `server/src/routes/index.ts`, khối `/regular/attempts/:id/scores/:skill`:
+- [x] **Step 6: Endpoint nhận `noShow`.** `server/src/routes/index.ts`, khối `/regular/attempts/:id/scores/:skill`:
 
 ```ts
 /** Nhập điểm một môn (cả điểm đạt và tổng), hoặc ghi/gỡ dấu "-" (C08 — môn đó tự dời sang tuần sau). */
@@ -762,9 +762,9 @@ api.put('/regular/attempts/:id/scores/:skill', requireAuth, wrap((req) => {
 }));
 ```
 
-- [ ] **Step 7: Chạy.** Run: `npm test 2>&1 | tail -5`. Expected: `TẤT CẢ B+11 KIỂM TRA ĐỀU ĐẠT`.
+- [x] **Step 7: Chạy.** Run: `npm test 2>&1 | tail -5`. Expected: `TẤT CẢ B+11 KIỂM TRA ĐỀU ĐẠT`.
 
-- [ ] **Step 8: Commit.**
+- [x] **Step 8: Commit.**
 
 ```bash
 git add server/src/normal/regular.ts server/src/fasttrack/attempts.ts server/src/routes/index.ts server/src/tests/chamDiem.tests.ts
@@ -785,7 +785,7 @@ git commit -m "PR-Rc1 (2): C08 — lop thuong ghi dau '-' thi mon do tu doi sang
 - Produces: `chamSheet(p, classId, opts: { periodId?: number | null; kind?: string | null }, today?: string)` trả
   `{ mode: 'ielts_band' | 'ratio'; classId; classCode; branchName; canPlanWeek; ft?: <kết quả classScoreSheet>; thuong?: <kết quả regularSheet> }`.
 
-- [ ] **Step 1: Phép kiểm (đỏ).**
+- [x] **Step 1: Phép kiểm (đỏ).**
 
 ```ts
   check('PR-Rc1 · §6 Lưới FT KHÔNG mở được cho lớp thường; endpoint chung trả đúng loại lưới', () => {
@@ -803,7 +803,7 @@ git commit -m "PR-Rc1 (2): C08 — lop thuong ghi dau '-' thi mon do tu doi sang
   });
 ```
 
-- [ ] **Step 2: Chặn ở `classScoreSheet`.** Ngay sau `require_(p, PERMISSIONS.ATTEMPT_VIEW, …)` trong
+- [x] **Step 2: Chặn ở `classScoreSheet`.** Ngay sau `require_(p, PERMISSIONS.ATTEMPT_VIEW, …)` trong
   `classScoreSheet`:
 
 ```ts
@@ -819,7 +819,7 @@ git commit -m "PR-Rc1 (2): C08 — lop thuong ghi dau '-' thi mon do tu doi sang
   Import `isRatioClass` từ `../normal/regular.ts` (attempts.ts đã import từ đó `allProgrammes`, `evaluateRegular` —
   thêm vào cùng dòng; nếu phát sinh vòng import thì dùng `programmeOfClass(...)?.scoringMode === 'ratio'` tại chỗ).
 
-- [ ] **Step 3: Viết `server/src/cham/canCham.ts` (phần `chamSheet`).**
+- [x] **Step 3: Viết `server/src/cham/canCham.ts` (phần `chamSheet`).**
 
 ```ts
 /**
@@ -861,7 +861,7 @@ export function chamSheet(
 }
 ```
 
-- [ ] **Step 4: Endpoint.** `server/src/routes/index.ts`, **ngay sau** khối `api.get('/classes/:id/score-sheet', …)`:
+- [x] **Step 4: Endpoint.** `server/src/routes/index.ts`, **ngay sau** khối `api.get('/classes/:id/score-sheet', …)`:
 
 ```ts
 /**
@@ -877,9 +877,9 @@ api.get('/classes/:classId/cham', requireAuth, wrap((req) => {
 ```
   Thêm `import * as chamSvc from '../cham/canCham.ts';` vào khối import đầu file (cạnh `regularSvc`).
 
-- [ ] **Step 5: Chạy.** Run: `npm test 2>&1 | tail -5`. Expected: `TẤT CẢ B+12 KIỂM TRA ĐỀU ĐẠT`.
+- [x] **Step 5: Chạy.** Run: `npm test 2>&1 | tail -5`. Expected: `TẤT CẢ B+12 KIỂM TRA ĐỀU ĐẠT`.
 
-- [ ] **Step 6: Commit.**
+- [x] **Step 6: Commit.**
 
 ```bash
 git add server/src/cham/canCham.ts server/src/fasttrack/attempts.ts server/src/routes/index.ts server/src/tests/chamDiem.tests.ts
@@ -899,7 +899,7 @@ git commit -m "PR-Rc1 (3): mot cua cho bang cham; bang Mock Test khong nhan lop 
   (các Case gắn với **các môn chưa đạt của chính dòng đó**), và giữ `caseId/caseStatus/caseLevel` = Case đầu tiên để
   không vỡ nơi gọi cũ.
 
-- [ ] **Step 1: Phép kiểm (đỏ).**
+- [x] **Step 1: Phép kiểm (đỏ).**
 
 ```ts
   check('PR-Rc1 · §6 Trạng thái Case không biến mất ở dòng bài cũ khi bài sau chạm vào cùng Case', () => {
@@ -924,7 +924,7 @@ git commit -m "PR-Rc1 (3): mot cua cho bang cham; bang Mock Test khong nhan lop 
   });
 ```
 
-- [ ] **Step 2: Sửa truy vấn Case.** Thay khối `const cases = new Map<number, any>(); …` (`regular.ts:581-587`) bằng:
+- [x] **Step 2: Sửa truy vấn Case.** Thay khối `const cases = new Map<number, any>(); …` (`regular.ts:581-587`) bằng:
 
 ```ts
   /*
@@ -955,7 +955,7 @@ git commit -m "PR-Rc1 (3): mot cua cho bang cham; bang Mock Test khong nhan lop 
   };
 ```
 
-- [ ] **Step 3: Dùng ở từng dòng.** Trong `rows: attempts.map((a) => { … })`, thay `const c = cases.get(a.id);` bằng:
+- [x] **Step 3: Dùng ở từng dòng.** Trong `rows: attempts.map((a) => { … })`, thay `const c = cases.get(a.id);` bằng:
 
 ```ts
       const failing = result.skills.filter((s) => s.outcome === 'fail').map((s) => s.skill);
@@ -969,9 +969,9 @@ git commit -m "PR-Rc1 (3): mot cua cho bang cham; bang Mock Test khong nhan lop 
         caseId: c?.id ?? null, caseStatus: c?.status ?? null, caseLevel: c?.level ?? null,
 ```
 
-- [ ] **Step 4: Chạy.** Run: `npm test 2>&1 | tail -5`. Expected: `TẤT CẢ B+13 KIỂM TRA ĐỀU ĐẠT`.
+- [x] **Step 4: Chạy.** Run: `npm test 2>&1 | tail -5`. Expected: `TẤT CẢ B+13 KIỂM TRA ĐỀU ĐẠT`.
 
-- [ ] **Step 5: Commit.**
+- [x] **Step 5: Commit.**
 
 ```bash
 git add server/src/normal/regular.ts server/src/tests/chamDiem.tests.ts
@@ -993,7 +993,7 @@ git commit -m "PR-Rc1 (4): trang thai Case theo hoc vien + hang muc, khong theo 
 - Produces: `saveScore(..., patch.lyDo)` và `saveRegularScore(..., patch.lyDo)`; `scoreHistoryOf` mỗi dòng thêm
   `lyDo: string | null`.
 
-- [ ] **Step 1: Phép kiểm (đỏ).**
+- [x] **Step 1: Phép kiểm (đỏ).**
 
 ```ts
   check('PR-Rc1 · RB-5 Sửa ô đã có điểm phải ghi lý do; lý do vào lịch sử điểm', () => {
@@ -1034,7 +1034,7 @@ git commit -m "PR-Rc1 (4): trang thai Case theo hoc vien + hang muc, khong theo 
   });
 ```
 
-- [ ] **Step 2: `ScorePatch` thêm `lyDo`.**
+- [x] **Step 2: `ScorePatch` thêm `lyDo`.**
 
 ```ts
   /**
@@ -1045,7 +1045,7 @@ git commit -m "PR-Rc1 (4): trang thai Case theo hoc vien + hang muc, khong theo 
   lyDo?: string | null;
 ```
 
-- [ ] **Step 3: Kiểm lý do trong `saveScore`.** Đặt **ngay trước** `return tx(() => {` (sau các lần chặn trạng thái
+- [x] **Step 3: Kiểm lý do trong `saveScore`.** Đặt **ngay trước** `return tx(() => {` (sau các lần chặn trạng thái
   thi), và sau khi đã đọc `existing`/`before` — nếu `existing` đang đọc trong `tx`, chuyển một câu đọc nhẹ ra trước:
 
 ```ts
@@ -1066,7 +1066,7 @@ git commit -m "PR-Rc1 (4): trang thai Case theo hoc vien + hang muc, khong theo 
   }
 ```
 
-- [ ] **Step 4: Ghi lý do vào nhật ký.** Ở `writeAudit` của `saveScore` (khối `score.edit`/`score.override`), đổi
+- [x] **Step 4: Ghi lý do vào nhật ký.** Ở `writeAudit` của `saveScore` (khối `score.edit`/`score.override`), đổi
   `after` thành:
 
 ```ts
@@ -1074,13 +1074,13 @@ git commit -m "PR-Rc1 (4): trang thai Case theo hoc vien + hang muc, khong theo 
       after: patch.lyDo ? { ...(after as any), lyDo: String(patch.lyDo).trim() } : after,
 ```
 
-- [ ] **Step 5: `scoreHistoryOf` trả `lyDo`.** Trong `rows.map`, thêm vào đối tượng trả về:
+- [x] **Step 5: `scoreHistoryOf` trả `lyDo`.** Trong `rows.map`, thêm vào đối tượng trả về:
 
 ```ts
       lyDo: (after && typeof after === 'object' ? (after as any).lyDo ?? null : null) as string | null,
 ```
 
-- [ ] **Step 6: Lớp thường cùng luật.** Trong `saveRegularScore`, sau khi tính `score`/`total` và trước `return tx(`:
+- [x] **Step 6: Lớp thường cùng luật.** Trong `saveRegularScore`, sau khi tính `score`/`total` và trước `return tx(`:
 
 ```ts
   /* RB-5 — cùng luật với Fast Track: đổi một điểm đã có thì phải ghi lý do. */
@@ -1092,14 +1092,14 @@ git commit -m "PR-Rc1 (4): trang thai Case theo hoc vien + hang muc, khong theo 
 ```
   và ở `writeAudit` của hàm này, `after: patch.lyDo ? { ...(after as any), lyDo: String(patch.lyDo).trim() } : after`.
 
-- [ ] **Step 7: Endpoint chuyển tiếp `lyDo`.** `PUT /attempts/:id/scores/:skill` thêm `lyDo: b.lyDo` vào đối tượng
+- [x] **Step 7: Endpoint chuyển tiếp `lyDo`.** `PUT /attempts/:id/scores/:skill` thêm `lyDo: b.lyDo` vào đối tượng
   patch (endpoint lớp thường đã thêm ở Task 2 Step 6).
 
-- [ ] **Step 8: Chạy.** Run: `npm test 2>&1 | tail -5`. Expected: `TẤT CẢ B+15 KIỂM TRA ĐỀU ĐẠT`.
+- [x] **Step 8: Chạy.** Run: `npm test 2>&1 | tail -5`. Expected: `TẤT CẢ B+15 KIỂM TRA ĐỀU ĐẠT`.
   🛑 Nếu phép kiểm cũ nào hỏng vì nay đòi lý do (phép kiểm cũ sửa điểm hai lần), **không nới luật**: sửa phép kiểm cũ
   bằng cách truyền `lyDo` và ghi việc đó vào Nhật ký.
 
-- [ ] **Step 9: Commit.**
+- [x] **Step 9: Commit.**
 
 ```bash
 git add server/src/fasttrack/attempts.ts server/src/normal/regular.ts server/src/routes/index.ts server/src/tests/chamDiem.tests.ts
@@ -1128,7 +1128,7 @@ git commit -m "PR-Rc1 (5): RB-5 — duong hieu chinh diem co ly do cho giao vien
   - `lichTest(p, periodId: number, branchId?: number | null, today?)` →
     `{ scopeEmpty: boolean; lop: Array<{ classId: number; classCode: string; mode; branchName: string; dong: Array<{ key; dotLabel; kyNang: string[]; kyNangLabel; soHv: number; conBai: number; trangThai: string; href: string }> }> }`
 
-- [ ] **Step 1: Phép kiểm (đỏ).**
+- [x] **Step 1: Phép kiểm (đỏ).**
 
 ```ts
   check('PR-Rc1 · Q11 Cần chấm: một dòng = một lớp + một đợt, đếm đúng số ô còn phải chấm', () => {
@@ -1173,7 +1173,7 @@ git commit -m "PR-Rc1 (5): RB-5 — duong hieu chinh diem co ly do cho giao vien
   });
 ```
 
-- [ ] **Step 2: `listAttempts` trả `pendingDetail`.** Ở nhánh **lớp thường**, ngay sau `pendingSkills: pending,` thêm:
+- [x] **Step 2: `listAttempts` trả `pendingDetail`.** Ở nhánh **lớp thường**, ngay sau `pendingSkills: pending,` thêm:
 
 ```ts
         /* Hạn của CHÍNH các môn còn nợ theo phạm vi đang xem — Cần chấm cần hạn của cả dòng, không chỉ phần của tôi. */
@@ -1190,7 +1190,7 @@ git commit -m "PR-Rc1 (5): RB-5 — duong hieu chinh diem co ly do cho giao vien
       }),
 ```
 
-- [ ] **Step 3: `canChamList` và `lichTest`.** Thêm vào `server/src/cham/canCham.ts`:
+- [x] **Step 3: `canChamList` và `lichTest`.** Thêm vào `server/src/cham/canCham.ts`:
 
 ```ts
 export type DongCanCham = {
@@ -1350,7 +1350,7 @@ export function lichTest(p: Principal, periodId: number, branchId?: number | nul
   `allProgrammes` (từ `../normal/regular.ts`), `weekInfo` (từ `../platform/week.ts`), và từ `shared/domain/index.ts`:
   `ATTEMPT_KIND_LABEL`, `SKILL_SHORT`, `nhomCanCham`, `trangThaiChamLabel`, `type AttemptKind`, `type WorkScope`.
 
-- [ ] **Step 4: Hai endpoint.** Thêm vào **cùng khối** với endpoint ở Task 3:
+- [x] **Step 4: Hai endpoint.** Thêm vào **cùng khối** với endpoint ở Task 3:
 
 ```ts
 /** Cần chấm — mockup 05a2 phương án A: ba mục Quá hạn / Tuần này / Sắp tới, mỗi dòng một lớp + một đợt. */
@@ -1369,9 +1369,9 @@ api.get('/cham/lich-test', requireAuth, wrap((req) => {
 }));
 ```
 
-- [ ] **Step 5: Chạy.** Run: `npm test 2>&1 | tail -5`. Expected: `TẤT CẢ B+18 KIỂM TRA ĐỀU ĐẠT`.
+- [x] **Step 5: Chạy.** Run: `npm test 2>&1 | tail -5`. Expected: `TẤT CẢ B+18 KIỂM TRA ĐỀU ĐẠT`.
 
-- [ ] **Step 6: Commit.**
+- [x] **Step 6: Commit.**
 
 ```bash
 git add server/src/cham/canCham.ts server/src/fasttrack/attempts.ts server/src/routes/index.ts server/src/tests/chamDiem.tests.ts
@@ -1394,11 +1394,11 @@ git commit -m "PR-Rc1 (6): du lieu Can cham + Lich Test"
 - Produces: `ChamDiemPage` (default export) · `LuoiFT({ data, onReload, kn, hv })` · `LuoiThuong({ data, onReload, kn, hv })` ·
   `ODiemThuong`, `SuaDiemCoLyDo` (export từ `ScoreEntry.tsx`).
 
-- [ ] **Step 1: Dời lưới FT.** Tạo `web/src/modules/cham/LuoiFT.tsx` = phần bảng của `ScoreSheetPage.tsx` hiện tại
+- [x] **Step 1: Dời lưới FT.** Tạo `web/src/modules/cham/LuoiFT.tsx` = phần bảng của `ScoreSheetPage.tsx` hiện tại
   (`SheetRow`, `DeadlineSummary`, điều hướng bàn phím, `Th` các cột), nhận `data` (chính là `cham.ft`) qua props thay
   vì tự gọi API. **Bỏ** khối `<SectionNote>` cuối trang (G-5) — nội dung chuyển vào ⓘ ở Task 7 Step 4.
 
-- [ ] **Step 2: Dời lưới lớp thường.** Tạo `web/src/modules/cham/LuoiThuong.tsx` từ `RegularSheetPage.tsx`, với năm
+- [x] **Step 2: Dời lưới lớp thường.** Tạo `web/src/modules/cham/LuoiThuong.tsx` từ `RegularSheetPage.tsx`, với năm
   thay đổi:
 
 ```tsx
@@ -1418,7 +1418,7 @@ git commit -m "PR-Rc1 (6): du lieu Can cham + Lich Test"
      môn dưới ngưỡng, xem `evaluateRegular`). Nội dung đúng chuyển vào ⓘ ở Step 4.
   5. Bảng dùng `table-layout: fixed` + `colgroup` và `tabular-nums` (G-2); bọc trong `overflow-x-auto` (G-11).
 
-- [ ] **Step 3: Ô điểm lớp thường + hộp lý do + đếm ngược.** Thêm vào `web/src/modules/fasttrack/ScoreEntry.tsx`:
+- [x] **Step 3: Ô điểm lớp thường + hộp lý do + đếm ngược.** Thêm vào `web/src/modules/fasttrack/ScoreEntry.tsx`:
 
 ```tsx
 /**
@@ -1450,7 +1450,7 @@ export function SuaDiemCoLyDo({ tieuDe, moTaCu, children, onLuu, onDong }: {
   `{demNguocSuaDau(cell.noShow?.editableUntil ?? null, demoDate)}` — chữ xám `text-[10px] text-slate-400`,
   **không tô đỏ** (DS02, Q17). Ô **đã có điểm** đổi nút sửa sang `SuaDiemCoLyDo`.
 
-- [ ] **Step 4: Khung chung + ⓘ.** Tạo `web/src/modules/cham/ChamDiemPage.tsx`:
+- [x] **Step 4: Khung chung + ⓘ.** Tạo `web/src/modules/cham/ChamDiemPage.tsx`:
 
 ```tsx
 /**
@@ -1474,7 +1474,7 @@ export default function ChamDiemPage() { /* … */ }
   - Lớp Fast Track: *"Gõ `-` khi em có lịch mà không làm bài; sửa lại được đến hết Chủ nhật của tuần thi, còn nguyên
     thì thành Không dự thi."*
 
-- [ ] **Step 5: Đổi route.** `web/src/App.tsx`:
+- [x] **Step 5: Đổi route.** `web/src/App.tsx`:
 
 ```tsx
 import ChamDiemPage from './modules/cham/ChamDiemPage.tsx';
@@ -1485,13 +1485,13 @@ import ChamDiemPage from './modules/cham/ChamDiemPage.tsx';
 ```
   Xoá hai dòng import cũ và hai file cũ.
 
-- [ ] **Step 6: Cuộn tới em đầu tiên chưa có điểm.** `ChamDiemPage` đọc `?kn=` (kỹ năng) và cuộn tới ô trống đầu tiên
+- [x] **Step 6: Cuộn tới em đầu tiên chưa có điểm.** `ChamDiemPage` đọc `?kn=` (kỹ năng) và cuộn tới ô trống đầu tiên
   của cột đó sau khi dữ liệu tải xong (`requestAnimationFrame` + `scrollIntoView({ block: 'center' })`), rồi `focus()`.
 
-- [ ] **Step 7: Kiểm bằng mắt + typecheck.** Run: `npm run typecheck && npm run build:web 2>&1 | tail -5`.
+- [x] **Step 7: Kiểm bằng mắt + typecheck.** Run: `npm run typecheck && npm run build:web 2>&1 | tail -5`.
   Expected: sạch. Bấm thử để ở Task 13 (không chạy máy chủ ở bước này cũng được).
 
-- [ ] **Step 8: Commit.**
+- [x] **Step 8: Commit.**
 
 ```bash
 git add web/src/modules/cham web/src/modules/fasttrack/ScoreEntry.tsx web/src/App.tsx
@@ -1509,7 +1509,7 @@ git commit -m "PR-Rc1 (7): mot luoi cham cho ca lop FT va lop thuong"
 **Interfaces:**
 - Consumes: `GET /cham/can-cham?branchId=&classId=&scope=` (Task 6); `MUC_CAN_CHAM_LABEL`.
 
-- [ ] **Step 1: Viết lại `CanChamTab`.**
+- [x] **Step 1: Viết lại `CanChamTab`.**
 
 ```tsx
 /**
@@ -1525,7 +1525,7 @@ git commit -m "PR-Rc1 (7): mot luoi cham cho ca lop FT va lop thuong"
   Mục rỗng vẫn hiện tiêu đề + `0`; cả ba mục rỗng thì `<Empty title="Không còn bài nào cần chấm" hint="Lịch Test gần
   nhất ở tab Lịch Test." action={<Link…>Mở Lịch Test</Link>} />`.
 
-- [ ] **Step 2: Chip "đang lọc theo lớp" (nợ sau rà PR-O, Q13).**
+- [x] **Step 2: Chip "đang lọc theo lớp" (nợ sau rà PR-O, Q13).**
 
 ```tsx
 {data.lop && (
@@ -1538,12 +1538,12 @@ git commit -m "PR-Rc1 (7): mot luoi cham cho ca lop FT va lop thuong"
 ```
   Giữ nguyên hàng bộ lọc phạm vi (`WORK_SCOPES`) và `<BranchFilter>` đang có; `set('classId', null)` chỉ xoá `classId`.
 
-- [ ] **Step 3: 375px (G-11).** Dòng chuyển thành hai hàng (tên + nút ở hàng dưới), không cuộn ngang trang; nút `Chấm`
+- [x] **Step 3: 375px (G-11).** Dòng chuyển thành hai hàng (tên + nút ở hàng dưới), không cuộn ngang trang; nút `Chấm`
   cao ≥ 44px.
 
-- [ ] **Step 4: Kiểm.** Run: `npm run typecheck`. Expected: sạch.
+- [x] **Step 4: Kiểm.** Run: `npm run typecheck`. Expected: sạch.
 
-- [ ] **Step 5: Commit.** `git commit -m "PR-Rc1 (8): tab Can cham theo mockup 05a2 phuong an A"`
+- [x] **Step 5: Commit.** `git commit -m "PR-Rc1 (8): tab Can cham theo mockup 05a2 phuong an A"`
 
 ---
 
@@ -1553,12 +1553,12 @@ git commit -m "PR-Rc1 (7): mot luoi cham cho ca lop FT va lop thuong"
 - Modify: `web/src/modules/test/LichTestTab.tsx` (viết lại)
 - Modify: `web/src/ui/Filters.tsx` (R13 — mã tuần theo G-6)
 
-- [ ] **Step 1: Viết lại `LichTestTab`.** Gọi `GET /cham/lich-test?periodId=&branchId=`; mỗi lớp một thẻ
+- [x] **Step 1: Viết lại `LichTestTab`.** Gọi `GET /cham/lich-test?periodId=&branchId=`; mỗi lớp một thẻ
   (`<Card title={`${classCode} · ${branchName}`}>`), trong thẻ là bảng: `Đợt · Kỹ năng · Số HV · Trạng thái chấm`, mỗi
   dòng bấm được → `href` của dòng (mở lưới). Tiêu đề tuần dùng `tuanLich(weekStart, session?.demoDate)` → `W3 SEP`.
   Rỗng: `<Empty title="Tuần này không có lượt Test nào" hint="Đổi tuần ở trên, hoặc mở Kế hoạch Test để xếp lịch." />`.
 
-- [ ] **Step 2: R13 — mã tuần trong bộ chọn tuần (G-6).** Trong `web/src/ui/Filters.tsx`, thay ba chỗ dùng
+- [x] **Step 2: R13 — mã tuần trong bộ chọn tuần (G-6).** Trong `web/src/ui/Filters.tsx`, thay ba chỗ dùng
   `weekCodeOf(...)` để **hiển thị** (trường tuần và hai tooltip mũi tên) bằng `tuanLich(ws, today)`:
 
 ```tsx
@@ -1570,10 +1570,10 @@ import { mondayOfDate, owningMonthOf, tuanLich } from '@shared/domain/index.ts';
 ```
   **Không** đổi `weekCodeOf` ở chỗ nào khác (nó là mã dữ liệu, có năm).
 
-- [ ] **Step 3: Chạy.** Run: `npm run typecheck`. Expected: sạch. Ghi vào Nhật ký: R13 còn phần **bấm thử** ở Task 13
+- [x] **Step 3: Chạy.** Run: `npm run typecheck`. Expected: sạch. Ghi vào Nhật ký: R13 còn phần **bấm thử** ở Task 13
   (600px · trong ngăn/hộp thoại · 375px).
 
-- [ ] **Step 4: Commit.** `git commit -m "PR-Rc1 (9): Lich Test theo lop + ma tuan W3 SEP o bo chon tuan"`
+- [x] **Step 4: Commit.** `git commit -m "PR-Rc1 (9): Lich Test theo lop + ma tuan W3 SEP o bo chon tuan"`
 
 ---
 
@@ -1583,7 +1583,7 @@ import { mondayOfDate, owningMonthOf, tuanLich } from '@shared/domain/index.ts';
 - Create: `web/src/modules/cham/MotKyNang.tsx`
 - Modify: `web/src/modules/cham/ChamDiemPage.tsx`
 
-- [ ] **Step 1: Viết `MotKyNang`.**
+- [x] **Step 1: Viết `MotKyNang`.**
 
 ```tsx
 /**
@@ -1601,14 +1601,14 @@ export function MotKyNang({ mode, data, onReload }: { /* … */ }) { /* … */ }
   - Gõ `-` hoạt động y hệt trên máy tính.
   - `inputMode="numeric"`, ô cao ≥ 44px, nút và chip cao ≥ 44px.
 
-- [ ] **Step 2: Nối vào `ChamDiemPage`.** Dùng `window.matchMedia('(max-width: 767px)')` trong một hook nhỏ
+- [x] **Step 2: Nối vào `ChamDiemPage`.** Dùng `window.matchMedia('(max-width: 767px)')` trong một hook nhỏ
   `useManHinhHep()` (đặt ngay trong `ChamDiemPage.tsx`, có `addEventListener('change')` và dọn dẹp). Màn hẹp → render
   `<MotKyNang>`; màn rộng → lưới. Có nút chữ nhỏ "Xem dạng bảng" để vẫn mở được lưới trên điện thoại (cuộn ngang
   **trong thẻ**, G-11).
 
-- [ ] **Step 3: Chạy.** Run: `npm run typecheck && npm run build:web 2>&1 | tail -3`. Expected: sạch.
+- [x] **Step 3: Chạy.** Run: `npm run typecheck && npm run build:web 2>&1 | tail -3`. Expected: sạch.
 
-- [ ] **Step 4: Commit.** `git commit -m "PR-Rc1 (10): cham tren dien thoai — mot ky nang mot luc"`
+- [x] **Step 4: Commit.** `git commit -m "PR-Rc1 (10): cham tren dien thoai — mot ky nang mot luc"`
 
 ---
 
@@ -1617,7 +1617,7 @@ export function MotKyNang({ mode, data, onReload }: { /* … */ }) { /* … */ }
 **Files:**
 - Modify: `web/src/modules/fasttrack/MockDetailPage.tsx` (~150-160)
 
-- [ ] **Step 1: R16 — nút "Nhập điểm cả lớp" mang theo đợt/tuần.**
+- [x] **Step 1: R16 — nút "Nhập điểm cả lớp" mang theo đợt/tuần.**
 
 ```tsx
           {d.classId && (
@@ -1628,15 +1628,15 @@ export function MotKyNang({ mode, data, onReload }: { /* … */ }) { /* … */ }
           )}
 ```
 
-- [ ] **Step 2: R15 — chọn đợt khác ngay trên trang.** Cạnh tiêu đề, thêm một `<select className="field w-44">` liệt kê
+- [x] **Step 2: R15 — chọn đợt khác ngay trên trang.** Cạnh tiêu đề, thêm một `<select className="field w-44">` liệt kê
   các đợt **của chính học viên đó** (gọi `/attempts?studentId={id}`, đã có sẵn), chọn thì `navigate(attemptHref(dòng))`
   — dùng `attemptHref` của `web/src/lib/format.ts` để bài của lớp thường về đúng bảng lớp thường. Nhãn mỗi lựa chọn:
   `MT{n} · {tuanLich(weekStart, demoDate)}` (FT) hoặc `Giữa khoá · {tuần}` / `Cuối khoá · {tuần}`. Đợt đang mở được
   chọn sẵn; chỉ một đợt thì **không** hiện ô chọn.
 
-- [ ] **Step 3: Chạy.** Run: `npm run typecheck`. Expected: sạch.
+- [x] **Step 3: Chạy.** Run: `npm run typecheck`. Expected: sạch.
 
-- [ ] **Step 4: Commit.** `git commit -m "PR-Rc1 (11): R15 chon dot khac tren trang, R16 nut nhap diem mang dot"`
+- [x] **Step 4: Commit.** `git commit -m "PR-Rc1 (11): R15 chon dot khac tren trang, R16 nut nhap diem mang dot"`
 
 ---
 
@@ -1644,37 +1644,37 @@ export function MotKyNang({ mode, data, onReload }: { /* … */ }) { /* … */ }
 
 **Files:** `CODE_MAP.md`, `plan.md`, `shared/domain/policy.ts` (chú thích)
 
-- [ ] **Step 1: `CODE_MAP.md`.** Thêm `shared/domain/chamDiem.ts`, `server/src/cham/canCham.ts`,
+- [x] **Step 1: `CODE_MAP.md`.** Thêm `shared/domain/chamDiem.ts`, `server/src/cham/canCham.ts`,
   `web/src/modules/cham/*`; xoá `ScoreSheetPage.tsx`, `RegularSheetPage.tsx`; ghi rõ "một lưới cho hai loại lớp, máy
   chủ trả `mode`".
 
-- [ ] **Step 2: `shared/domain/policy.ts`.** Cập nhật hai chỗ nói C08 chưa nối dây:
+- [x] **Step 2: `shared/domain/policy.ts`.** Cập nhật hai chỗ nói C08 chưa nối dây:
   - Khối TRẠNG THÁI đầu file: chuyển C08 sang nhóm "NỐI DÂY".
   - Chú thích của `C08_HAN_CHAM_NORMAL`: thay đoạn "CHƯA NỐI DÂY phần dấu '-'…" bằng:
     *"ĐÃ NỐI DÂY (PR-Rc1): lớp thường ghi '-' thì môn đó tự dời sang tuần sau — `normal/regular.ts`
     (`reportRegularNoShow`), dùng lại `setSkillWeek`. `attempts.ts` chỉ chỉ đường sang đó."*
 
-- [ ] **Step 3: `plan.md`.** Tick các mục PR-Rc1 đã xong (R8 phần lưới, R13, R15, R16, RB-5, R14 phần dấu "-",
+- [x] **Step 3: `plan.md`.** Tick các mục PR-Rc1 đã xong (R8 phần lưới, R13, R15, R16, RB-5, R14 phần dấu "-",
   DS02) và ghi một dòng ngày 23/09 ở §3 nếu mục đó đang có dòng nhật ký. **Không** tick R9–R12, R14 phần lịch, T15
   (Rc2).
 
-- [ ] **Step 4: Commit.** `git commit -m "PR-Rc1 (12): CODE_MAP, chu thich C08, o tick plan.md"`
+- [x] **Step 4: Commit.** `git commit -m "PR-Rc1 (12): CODE_MAP, chu thich C08, o tick plan.md"`
 
 ---
 
 ### Task 13: Nghiệm thu — kiểm đủ, KIỂM bấm thử, rà soát, rebase, mở PR
 
-- [ ] **Step 1: Chuỗi kiểm đầy đủ.** Run: `npm run check`. Expected: build sạch, `TẤT CẢ B+18 KIỂM TRA ĐỀU ĐẠT`
+- [x] **Step 1: Chuỗi kiểm đầy đủ.** Run: `npm run check`. Expected: build sạch, `TẤT CẢ B+18 KIỂM TRA ĐỀU ĐẠT`
   (≈ 797), typecheck sạch. Ghi số vào Nhật ký.
 
-- [ ] **Step 2: Không migrate — kiểm lại cho chắc.** Run:
+- [x] **Step 2: Không migrate — kiểm lại cho chắc.** Run:
 
 ```bash
 git diff main...HEAD --stat -- server/src/schema.sql server/src/migrate.ts
 ```
   Expected: **không có dòng nào**. Có dòng nào thì 🛑 dừng: PR này không được có migrate (Q18).
 
-- [ ] **Step 3: Chuẩn bị bấm thử** trên database **riêng** của worktree, cổng **4147 / 5347**:
+- [x] **Step 3: Chuẩn bị bấm thử** trên database **riêng** của worktree, cổng **4147 / 5347**:
 
 ```bash
 KIEM="$(node -e "console.log(require('os').tmpdir())")/pr-rc1-kiem.sqlite"
@@ -1690,7 +1690,7 @@ export default { ...base, server: { port: 5347, strictPort: true, proxy: { '/api
   `npx vite --config vite.kiem.config.ts`. Mở `http://localhost:5347` (Playwright kênh Chrome, theo bộ nhớ "Máy chủ
   dev trong worktree"; **không** dùng `preview_start` vì nó chạy từ thư mục chính). Tài khoản demo: `DEMO.md`.
 
-- [ ] **Step 4: KIỂM — bấm thử bốn vai, hai loại lớp, hai bề rộng.** Ghi kết quả từng ý vào Nhật ký; ảnh chụp lưu
+- [x] **Step 4: KIỂM — bấm thử bốn vai, hai loại lớp, hai bề rộng.** Ghi kết quả từng ý vào Nhật ký; ảnh chụp lưu
   **`thiet-ke/anh/pr-rc1/`** (đặt tên theo ý, ví dụ `04-luoi-lop-thuong-1440.png`).
 
   **A. GVBM đúng môn (GV Listening của MB-FT 101) — 1440px**
@@ -1738,7 +1738,7 @@ export default { ...base, server: { port: 5347, strictPort: true, proxy: { '/api
   Xong: dừng hai tiến trình, **xoá** `vite.kiem.config.ts`, xoá `$KIEM` nếu muốn. `git status` phải sạch (trừ ảnh
   trong `thiet-ke/anh/pr-rc1/` — nhớ `git add` chúng).
 
-- [ ] **Step 5: Rà soát code.** REQUIRED SUB-SKILL: `superpowers:requesting-code-review`. Người rà: **Fable 5.1** (nếu
+- [x] **Step 5: Rà soát code.** REQUIRED SUB-SKILL: `superpowers:requesting-code-review`. Người rà: **Fable 5.1** (nếu
   code bằng Fable thì **Opus 5**). Đưa cho người rà: plan này, đặc tả §1, §2, §3.5, §4, §6, §7 dòng Rc1, bảng Q1–Q22,
   `git diff main...HEAD`. Yêu cầu soi riêng:
   (a) dấu `-` lớp thường **không** đụng bộ đếm `absence_move_count` và **không** đi qua `settleNoShows`;
@@ -1751,7 +1751,7 @@ export default { ...base, server: { port: 5347, strictPort: true, proxy: { '/api
   (g) `lyDo` chỉ bị đòi khi ô **đã có** điểm — lần nhập đầu không bị chặn.
   Xử lý phản hồi theo `superpowers:receiving-code-review`; ghi kết luận vào Nhật ký.
 
-- [ ] **Step 6: Rebase lên `main` mới nhất.** PR-Rc1 không phụ thuộc Qa/Pa, merge trước hay sau đều được; ai merge
+- [x] **Step 6: Rebase lên `main` mới nhất.** PR-Rc1 không phụ thuộc Qa/Pa, merge trước hay sau đều được; ai merge
   trước thì người sau rebase.
 
 ```bash
@@ -1766,7 +1766,7 @@ git fetch origin && git rebase origin/main
   - `server/src/fasttrack/attempts.ts`: chỉ Rc1 sửa — xung đột ở đây nghĩa là có PR ngoài kế hoạch chạm vào, 🛑 hỏi.
   Sau rebase: `npm run check` (xanh, số phép kiểm = của `main` + 18).
 
-- [ ] **Step 7: PR.** `git push -u origin pr-rc1-cham-diem`; `gh pr create` tiêu đề
+- [x] **Step 7: PR.** `git push -u origin pr-rc1-cham-diem`; `gh pr create` tiêu đề
   `PR-Rc1 · Cần chấm + Lịch Test + lưới chấm`, thân gồm: tóm tắt theo Task; bảng Q1–Q22; số phép kiểm B → B+18;
   **"Không có migrate"**; ảnh trong `thiet-ke/anh/pr-rc1/`; mục "Chuyển cho PR khác" (bên dưới); dòng cuối
   `🤖 Generated with [Claude Code](https://claude.com/claude-code)`.
@@ -1861,4 +1861,22 @@ git fetch origin && git rebase origin/main
 
 | Ngày | Task | Ghi chú |
 |---|---|---|
-| | | |
+| 23/09 | 0 | Worktree `.claude/worktrees/pr-rc1-cham-diem` từ main @ 236920d; không có biến Turso; **B = 779**. Session code Opus 5.5, subagent Opus (không Haiku). |
+| 23/09 | Gate Q | Rà Q1–Q22 với đặc tả + mockup: Q15, Q19 lệch → hỏi chủ sản phẩm. **Q15:** dòng phụ Cần chấm `{Kỹ năng} · lùi lịch của {tên HV}` (1 em) / `{Kỹ năng} · lùi lịch · {n} HV`, tooltip `Lùi lịch từ {tuần đợt} sang {tuần môn}` (thay chữ "bài dời"). **Q19:** Rc1 thêm dòng vào §4 đặc tả. Tự quyết theo mockup: tên mục Cần chấm kèm hạn + số; đầu lưới lớp thường ghi tuần từng môn; cột Kết quả ghi `{K} dời sang {tuần}`. **Quyền:** Quản lý không nhập điểm (run.ts "Chỉ quản trị hệ thống nhập bù được") → mọi phép kiểm/KIỂM "Quản lý nhập/ghi -" đổi sang Quản trị hệ thống; không nới quyền. |
+| 23/09 | 1 | Đỏ: 779 đạt, 7 hỏng (`d.mucCanCham is not a function`…). Xanh: 786 (B=779 + 7). Chép đúng mã kế hoạch, không lệch; móc run.ts đặt sau khối PR-AN, trước khối in tổng kết. `npm run typecheck` sạch. |
+| 23/09 | 2 | Đỏ: 786 đạt, 5 hỏng (`reportRegularNoShow is not a function`, câu chặn cũ còn). Xanh: **791** (786 + 5; kế hoạch ghi 4 phép, thêm 1). Lệch kế hoạch: (a) Ruling 1 — phép quyền dùng Quản trị hệ thống ghi được + Quản lý bị chặn; (b) Ruling 2 — môn lấy từ `teacher_assignments` của GVBM, assert có môn và có môn không dạy (không bỏ qua im lặng); (c) thêm phép "dời bị chặn (vượt đợt kế tiếp) thì không còn dấu -": ghi dấu + dời chung một `tx` (kiểm đột biến: bỏ `tx` thì phép này đỏ); (d) Ruling 6 — ô môn của `regularSheet` thêm `noShow`, `movedFrom`, `canEdit`; (e) chặn gỡ dấu khi ô đã có điểm ở tuần mới (`hasScore` của setSkillWeek chỉ nhìn band nên không tự chặn); (f) run.ts phép PR-G "Normal KHÔNG dùng dấu" đổi tên + regex `/Normal/` → `/lớp thường/` theo câu chỉ đường mới (số phép không đổi). typecheck sạch. |
+| 23/09 | 3 | Đỏ: 791 đạt, 1 hỏng ("thao tác đáng lẽ phải bị từ chối nhưng lại thành công" — tạo canCham + endpoint trước, chặn sau). Xanh: **792**. Lệch kế hoạch: (a) regex phép kiểm `/lớp thường/` thêm cờ `i` — câu lỗi chép nguyên văn bắt đầu bằng "Lớp thường"; (b) canCham.ts bỏ import `badRequest` không dùng; (c) endpoint truyền `qInt(...) ?? null`, `qStr(...) ?? null` (helper trả `undefined`). Nơi gọi `classScoreSheet` cũ (run.ts ×3, luatMayChu.tests.ts) đều là lớp FT — không vỡ. Web: `ScoreSheetPage` (`/nhap-diem/:id`) giờ báo lỗi rõ khi mở lớp thường thay vì hiện nhầm lưới MT, tới khi Task 7–8 chuyển sang endpoint chung. typecheck sạch. |
+| 23/09 | 4 | Đỏ: 792 đạt, 1 hỏng (`dong.cases` chưa có). Xanh: **793**. Lệch kế hoạch: (a) Ruling 1 — bốn lần nhập điểm dùng `P.admin` (Quản lý không nhập điểm), đọc bảng vẫn `P.mbManager`; (b) môn trượt chỉ sinh TÍN HIỆU, không tự sinh Case → phép kiểm tạo Case Listening thật từ tín hiệu (`reportIssue` của GVCN, `fromSignalId`) và assert Case đó là hạng mục listening; (c) `attempt_id + 99999` vỡ khoá ngoại → trỏ sang một lượt Cuối khoá THẬT của cùng khoá (`taoLuot`); (d) phần tử `cases` thêm `skill` (môn trượt của dòng ứng với hạng mục) cho khớp Interfaces; Case trong dòng xếp theo luật Case đại diện mục 4.3 (`skillSupportBoard`): đang mở trước, id mới trước. **Sửa vòng 1:** bản đầu xếp `ORDER BY id` tăng dần → Case cũ đã xong che Case đang mở cùng môn; thêm 1 phép kiểm (Case done + Case mở cùng môn) → **794**. typecheck sạch. |
+| 23/09 | 5 | Đỏ: 794 đạt, 3 hỏng ("thao tác đáng lẽ phải bị từ chối nhưng lại thành công"). Xanh: **797** (794 + 2 phép của kế hoạch + 1 phép thêm). Lệch kế hoạch: (a) quyết định của session code: Quản lý không nhập điểm (phép cũ "Chỉ quản trị hệ thống nhập bù được") — mọi lần ghi điểm trong phép kiểm dùng `P.admin` thay `P.mbManager`; (b) quyết định của session code: "sửa" nghĩa là làm đổi giá trị — chỉ đòi lý do khi lần ghi ĐỔI hoặc XOÁ giá trị chính thức, ở cả FT lẫn lớp thường; FT so trong `tx` trên giá trị SẼ lưu (`raw_score`, c1–c4, `band`) sau khi tính band, trước mọi câu ghi (chặn thì cuộn lại sạch) thay vì đọc nhẹ trước `tx`; lớp thường so cả điểm lẫn tổng câu (đổi tổng là đổi tỉ lệ đạt); lưu lại đúng số cũ / chỉ sửa ghi chú không đòi lý do → phép thêm "Ghi lại đúng con số cũ…" (cả hai đường); (c) quyết định của session code: phép kiểm cần một lượt FT chắc chắn ghi được — lượt FT chọn bằng `luotFtGhiDuoc()` (chưa huỷ, L+R trong phạm vi, không vắng/huỷ phần thi), phép kiểm tự xoá ô trước khi ghi; phép thứ hai thêm vế lớp thường "xoá điểm cũng phải có lý do". **Phép kiểm cũ phải kèm `lyDo` (không nới luật):** run.ts ×11 — "Nhập điểm KHÔNG kèm quyền sửa lịch" (W1), "Chỉ quản trị hệ thống nhập bù được" (W2), "[6.2→v3] Mock Test FT…" (W1, W2 thấp → đạt), "[9.4] Case chỉ sống nhờ…" (Speaking), "Gửi null xoá điểm về trống" (L → null), "Sửa điểm làm đổi mức SOS thì GIỮ case" (lớp thường), "Sửa điểm lên thành đạt thì HẠ MỨC" (L), "Lớp Normal: chấm lại một bài CŨ", "PR-I · Ô điểm bị xoá trống" (R → null), "PR-I · Bài chỉ báo -…" (W2 → một tiêu chí); sosV3.tests.ts hàm `enter` và luatMayChu.tests.ts hàm `diem` (dùng cho cả nhập lần đầu lẫn sửa) luôn kèm lý do — sửa 9 phép PR-T/S1/RB-8 hỏng dây chuyền. Web chưa gửi `lyDo` (Task 7 thêm hộp thoại): `ScoreEntry.tsx:106` (PUT `/attempts/:id/scores/:skill`, dùng ở MockDetailPage + ScoreSheetPage) và `RegularSheetPage.tsx:340` (PUT `/regular/attempts/:id/scores/:skill`) — đến Task 7, sửa ô đã có điểm trên web sẽ nhận lỗi 400 "Sửa điểm đã nhập thì phải ghi lý do.". typecheck sạch. |
+| 23/09 | 6 | Đỏ: 797 đạt, 4 hỏng (`cham.canChamList is not a function`, `cham.lichTest is not a function`). Xanh: **801** (797 + 3 phép kế hoạch + 1 phép Q15). Lệch kế hoạch: (a) Ruling 1 — ghi "-" trong Q14 dùng `P.admin`; (b) Ruling 9/Q15 — `tuanKhac` thay bằng `luiLich { kyNang, hv, tuTuan, sangTuan, tuTuanStart, sangTuanStart }`; so với TUẦN ĐẦU của đợt (`tuanDau` = tuần sớm nhất của các môn bắt buộc, trường mới của `listAttempts`), KHÔNG so với `period`: `planned_period_id` là tuần HOÀN TẤT (muộn nhất, mục 10.7) nên dời một môn thì `period` đi theo môn đó — so với nó thì các môn không dời bị báo nhầm; (c) Ruling 4 — `daBatDau` từ trường mới `scoredInScope` của `listAttempts` (ô đã chấm trong phạm vi); canChamList đọc `listAttempts` KHÔNG `need` rồi lọc bằng `conBaiCanCham` (luật `my_scores` xuất ra, switch cũ dùng chung) để thấy cả em đã chấm xong; (d) Ruling 3 — mỗi mục có `han` (hạn sớm nhất); (e) Ruling 7 — href FT kèm `periodId` (Cần chấm: tuần của đợt; Lịch Test: tuần đang xem), `kn` khi một môn; (f) `dotLabel` lớp thường dùng `ATTEMPT_KIND_SHORT` ("Giữa khoá") — `ATTEMPT_KIND_LABEL` ra "Bài kiểm tra giữa khoá", trái phép kiểm của chính kế hoạch; (g) Ruling 5 — lichTest bỏ `|| true`: `chuaToiHan` = tuần xem sau tuần hôm nay, `quaHan` = còn bài và hạn (riêng môn → riêng đợt → mặc định theo tuần môn) đã qua; ô đã báo "-" ở chính tuần đó và ô vắng/huỷ không tính còn bài; Writing FT xong khi W1 và W2 cùng có band; (h) `pendingDetail` thêm `weekStart`; kỹ năng trong dòng xếp L·R·W·S. typecheck sạch. **Sửa vòng 1:** (1) "lùi lịch" CHỈ dựa bằng chứng dời thật — `pendingDetail[].moved` = dấu "-" lớp thường (`no_show_period_id` khác tuần hiện tại, cùng luật `movedFrom`) hoặc dời do vắng (`absence_move_count > 0`, tuần cũ đọc `skill_week_moved_absence` mới nhất của lịch sử đợt); bỏ luật "tuần sau tuần đầu" và bỏ `tuanDau` (tách tuần theo kế hoạch bị báo nhầm); (2) `periodId` của dòng FT = tuần của ô còn nợ có hạn sớm nhất (ô đặt `han`), không phải tuần hoàn tất của em đầu tiên; (3) Lịch Test chỉ đếm lượt `scheduled`/`sat` (em vắng/huỷ không vào `soHv`, dòng không còn ai thì không hiện); (4) phép kiểm: Q11 bắt buộc có dòng lớp thường; thêm "tách tuần theo kế hoạch không phải lùi lịch", "GVBM chỉ thấy môn mình", "Lịch Test: tuần chưa tới + em vắng" (kiểm đột biến: bỏ lọc `scheduled`/`sat` thì phép này đỏ) → **804**. typecheck sạch. |
+| 23/09 | 7 | Không thêm phép kiểm: **804** (giữ nguyên). Máy chủ thêm tối thiểu `weekStart` + `movedFromStart` vào từng môn của `regularSheet` (đầu lưới và dòng "dời sang" viết bằng `tuanLich`, không hiện mã tuần có năm) — thêm assert vào phép C08 sẵn có. Lệch kế hoạch: (a) lưới lớp thường một lần chỉ hiện MỘT bài (Giữa khoá/Cuối khoá, `?kind=` hoặc bài có môn nợ gấp nhất), bỏ cột Bài/Tuần cũ vì trùng tiêu đề và đầu lưới; (b) nút ↓ chỉ điền bản nháp ô còn trống tổng, lưu khi rời cặp ô; (c) ô FT có "-" chỉ giữ MỘT dòng phụ: đếm ngược DS02 thay câu dài (câu dài vào tooltip); (d) `InlineScoreEditor` (hồ sơ Test) thêm ô lý do khi sửa ô đã có điểm — nếu không trang đó dính 400 RB-5; (e) ⓘ hiện câu chung + đúng phần của loại lớp đang mở; (f) không có script `build:web` → kiểm bằng `npx vite build` ra thư mục tạm. typecheck + build sạch. **Sửa vòng 1:** Case ra khỏi hàng ưu tiên dòng phụ → nhãn `Case L` cạnh dòng chính (tooltip từng Case); ô môn vắng/huỷ phần thi hiện chữ trạng thái thay ô nhập, môn quá hạn có dòng `Quá hạn dd/mm`; câu "Không dự thi · Tuần …" bỏ năm tại nguồn (`attempts.ts` truyền `tuanLich(weekStart)` cho `noShowText`, sửa 1 assert run.ts PR-G); tooltip SOS/Case; "Đã lưu" chỉ sau khi lưu điểm. Vẫn 804. |
+| 23/09 | 8 | Không thêm phép kiểm: **804**. Viết lại `CanChamTab` trên `GET /cham/can-cham` (bỏ `WorkQueue`). Lệch kế hoạch: (a) Q15 chủ sản phẩm chốt — dòng phụ `{Kỹ năng} · lùi lịch của {tên}` / `· lùi lịch · {n} HV`, tooltip `Lùi lịch từ {tuần} sang {tuần}` (bỏ `từ …` khi thiếu; nhiều em thì tooltip thêm tên; dòng nhiều môn thì tooltip thêm `Còn nợ: …`), không dùng chữ "bài dời"; (b) Ruling 3 — tên mục `Tuần này · hạn Thứ Tư 16/09 · 4` (tên thứ đầy đủ đặt tại chỗ vì `hienThiNgay.ts` thuộc PR-Qa; `ngay` cho ngày), dòng không còn nhãn hạn; (c) ≥ sm: bốn cột thẳng hàng (lớp·đợt 13rem · dòng phụ · `còn n bài` 6.5rem canh phải · nút 6.5rem); 375px: tên + dòng phụ ở trên, `còn n bài` + nút cao 44px ở dưới, không cuộn ngang; (d) tooltip: viết tắt L R W1 W2 S → tên đầy đủ, MT → Mock Test, `còn n bài` → số HV; (e) phạm vi rỗng hiện `Bạn chưa được cấp phạm vi nào`. Thử tay API 4147 / Vite 5347 (database tạm): chip ✕ chỉ bỏ `classId` (còn `?scope=mine`), `Chấm`/`Chấm tiếp` đúng `daBatDau`. typecheck + `npx vite build` sạch. |
+| 23/09 | 9 | Không thêm phép kiểm: **804**. Viết lại `LichTestTab` trên `GET /cham/lich-test`: mỗi lớp một thẻ `{mã lớp} · {chi nhánh}`, bảng `Đợt · Kỹ năng · Số HV · Trạng thái chấm` (`colgroup` + `table-layout: fixed`, số canh phải `tabular-nums`, bảng tối thiểu 500px cuộn ngang trong thẻ), bấm dòng → `href`. Lệch kế hoạch: (a) cột Kỹ năng ghi tên đầy đủ (Listening…) thay vì viết tắt — đủ chỗ, khỏi tooltip; (b) trên các thẻ có dòng `Tuần W3 SEP · {n} lớp` (`tuanLich(weekStart, demoDate)`); (c) `Đã chấm xong` có ✓ nhỏ cùng màu chữ phụ, `Quá hạn · …` chữ đỏ, không nền; (d) phạm vi rỗng hiện `Bạn chưa được cấp phạm vi nào`. R13: `Filters.tsx` chỉ đổi phần HIỂN THỊ (trường tuần + hai tooltip mũi tên) sang `tuanLich(ws, today)`; `weekCodeOf` bỏ khỏi import vì file không còn dùng. Thử tay 4147/5347: `W3 SEP`, tooltip `Tuần trước · W2 SEP`, tuần trống ra đúng câu rỗng, 375px không cuộn ngang trang. **R13 còn phần bấm thử ở Task 13** (600px · trong ngăn/hộp thoại · 375px). typecheck + `npx vite build` sạch. |
+| 23/09 | 10 | Không thêm phép kiểm: **804**. `MotKyNang.tsx` mới: hàng chip `L 3/5` (tooltip tên đầy đủ; kỹ năng mình dạy đứng trước, kỹ năng khác viền đứt, ô chỉ đọc), mỗi em một dòng: tên + MỘT dòng phụ (FT `KV 6.5`; lớp thường `Đã dời sang …` / `Quá hạn dd/mm` / `Thi …` / mã HV) + một ô to. Dùng lại nguyên ô của lưới (`RawScoreInput`, `CriteriaButton`, `ODiemThuong`) + `useSaveScore` / `useLuuThuong` — không có luật lưu, "-", lý do thứ hai. Lệch kế hoạch: (a) ba ô thêm prop `lon` (60×44px / 52×44px); `ODiemThuong` thêm `tongLaySan` — ô tổng còn trống hiện sẵn tổng của cột mà không thành bản nháp; màn điện thoại có ô `Tổng số câu của đề` (lấy sẵn tổng hay gặp nhất) thay ô tổng + ↓ đầu cột; (b) `LuoiThuong` tách `oThuong()` (dữ liệu một ô) dùng chung lưới + điện thoại, xuất `useLuuThuong`, `lichCua`, `ketQuaCua`, `tongPhoBien`; `LuoiFT` xuất `oTrongFt`; (c) bộ chọn cuộn/đặt con trỏ `?kn=`/`?hv=` của `ChamDiemPage` bỏ tên thẻ (`[data-kn]` thay `td[data-kn]`) để chạy cho cả hai dạng; (d) sửa thêm: khối bộ chọn tuần đầu trang tràn 57px ở 375px (trang cuộn ngang) → `min-w-0 max-w-full`; (e) nút "Xem dạng bảng" ↔ "Chấm từng kỹ năng"; lớp thường ở dạng điện thoại không có nút "Tạo bài kiểm tra theo chương trình" (vẫn có ở dạng bảng). Thử tay 4147/5347 ở 375px: chip một hàng, ô 60×44 `numeric`, lưu + ✓, "-" FT ra `Còn 6 ngày để sửa`, "-" lớp thường dời + toast, sửa ô đã có điểm mở hộp lý do, dạng bảng cuộn trong thẻ, trang không cuộn ngang. typecheck + `npx vite build` sạch. |
+| 23/09 | 11 | Không thêm phép kiểm: **804**. R16: `Nhập điểm cả lớp` → `/nhap-diem/{lớp}?periodId={tuần hoàn tất của đợt}` (đợt chưa chốt tuần thì không kèm). R15: `<select className="field w-44">` cạnh tiêu đề, gọi `GET /attempts?studentId=` (trả `{ rows }`, mỗi dòng có `id, kind, classId, attemptNo, status, period.weekStart`), xếp theo tuần tăng dần, nhãn `MT{n} · W3 SEP` / `Giữa khoá · W3 MAR` (`ATTEMPT_KIND_SHORT` + `tuanLich(weekStart, demoDate)`; khác năm thì `W4 DEC 2025`; đợt huỷ thêm `· Đã huỷ`), chọn → `navigate(attemptHref(dòng))`; dưới hai đợt thì không hiện. Lệch kế hoạch: (a) `MockDetailPage` tự chuyển bài lớp thường sang `/bang-diem-thuong/…` nên R16 chỉ có nhánh FT (`?periodId=`), không cần nhánh `?kind=`; (b) thêm tên kiểu `DotCuaHv` + hàm `ChonDot` trong cùng file. Thử tay 4147/5347 (HV có 4 bài lớp thường + 3 MT): đủ 7 lựa chọn, MT3 chọn sẵn; chọn MT2 → `/mock-test/6` (link thành `?periodId=38`); chọn Giữa khoá → `/bang-diem-thuong/2?kind=progress`. typecheck + `npx vite build` sạch. |
+| 23/09 | 12 | Không thêm phép kiểm: **804**; typecheck sạch. `CODE_MAP.md`: bỏ `ScoreSheetPage.tsx`/`RegularSheetPage.tsx`, thêm `chamDiem.ts`, `cham/canCham.ts`, `web/src/modules/cham/*` + mục "Chấm điểm" (một lưới cho hai loại lớp, máy chủ trả `mode`); Cần chấm/Lịch Test trỏ sang `canChamList`/`lichTest`. `policy.ts` chỉ chú thích: C08 sang nhóm NỐI DÂY. `plan.md`: tick R13 (phần bấm thử để KIỂM Task 13); R8, R14 lẫn phần của PR khác → ghi chú, không tick; DS02 ghi đã làm ở cột "Nên làm khi nào" (bảng không có ô tick); R15/R16/RB-5 không có dòng trong `plan.md` → ghi ở dòng mục 14; thêm dòng 23/09 ở mục 3 (C08) và mục 14. Chủ sản phẩm Q19: thêm lối vào ô lớp → Cần chấm lọc theo lớp vào ô "Chấm điểm" của §4 đặc tả UX (§7 không có ô trạng thái → không sửa). Sửa dòng nhật ký Task 5: bỏ số hiệu quyết định, ghi bằng lời. |
+| 23/09 | 13 (rà toàn nhánh) | Fable 5.1 rà: không lỗi nghiêm trọng; (a)–(g) đạt; sửa 4 mục quan trọng + 5 mục nhỏ: `MockDetailPage` hiện tuần bằng `tuanLich` (cả tuần hoàn tất ở đầu trang và danh sách tuần trong các hộp đổi lịch — cùng lỗi G-6), bộ chọn đợt không cắt chữ; chip lọc lớp ở Cần chấm hiện theo `classId` trên đường dẫn (`#id` khi máy chủ không biết lớp); nhóm Quá hạn bỏ "· hạn …"; điện thoại gõ-rồi-xoá ở ô trống không ghi dòng chỉ có tổng; tooltip môn không có lịch; `title` cho cột Kỹ năng ở Lịch Test; bộ so sánh `localeCompare`; `plan.md` R12 chỉ sang `LuoiThuong.tsx`; mốc spec §4. Thêm một assert `absence_move_count` = 0 trong phép kiểm C08 — vẫn **804**. |
+| 23/09 | 13 (bấm thử) | 21/24 đạt lần đầu; sửa A2, A5, C10; bấm lại: **3/3 đạt**. (A2) `href` của Cần chấm LUÔN kèm `kn` = môn còn nợ đầu tiên theo thứ tự L·R·W·S (thêm assert vào phép Q11, bắt buộc seed có dòng nhiều môn); `ChamDiemPage` không có `kn` lẫn `hv` thì đặt con trỏ vào ô `data-trong` đầu tiên (ô trống mình sửa được) — lưới và màn một kỹ năng. (A5) `HistoryCard` lấy `lyDo` của `scoreHistory`, hiện `Lý do: …` một dòng (cắt + tooltip); lớp thường không có trang lịch sử riêng (`/mock-test/:id` của bài lớp thường tự chuyển sang `/bang-diem-thuong/…`) nên không có chỗ thứ hai phải sửa. (C10) `phanTram` viết dấu phẩy (`82,5%`, cả tooltip và hộp lý do), thêm `datPhanTram` → ô đã có điểm của lưới có một dòng phụ `Đạt · 82,5%` / `Chưa đạt · 67,5%` (đỏ) dưới hai số, `leading-none` để mọi dòng vẫn cao 56px; mockup 10b §2 không vẽ dòng này — theo mục 10 của bước bấm thử. Dòng phụ này và `Quá hạn dd/mm` không bao giờ cùng lúc (một bên cần có điểm, một bên cần chưa có). Điện thoại: câu đó nằm ở dòng phụ dưới tên em (thứ tự: dời → quá hạn → thi → kết quả → mã HV) để mọi dòng cao bằng nhau (61px). Vẫn **804**; typecheck + `npx vite build` sạch. |
+| 23/09 | 13 (rebase) | Rebase lên main @ 61ae2dd (kế hoạch deploy sớm, không xung đột). `npm run check` xanh: **804** (B=779, +25). Không migrate (diff schema.sql/migrate.ts rỗng). Không chạm 18 file của PR-Qa/PR-Pa, không chạm permissions.ts/skillSchedule.ts. Rà toàn nhánh bằng Fable 5.1 (khác model người code Opus 5.5). |
+| 23/09 | 13 (PR) | Mở PR #70 (không draft, không tự merge). Chờ session planning rà. |
+| 23/09 | Sửa sau rà planning #70 | **806** (804 + 2 phép Q4). (1) Q4 "-" lần hai: `reportRegularNoShow` — ô đã mang dấu mà tuần hiện tại của môn ĐÃ TỚI (`week_start` ≤ `today`) thì là lần vắng mới: dấu chuyển sang tuần hiện tại, dời tiếp, thêm một dòng nhật ký `regular.no_show`, cùng một `tx`; tuần mới chưa tới thì vẫn vô hại; gỡ dấu lần hai chỉ về tuần vừa dời khỏi. Phép kiểm "vắng hai tuần liên tiếp → 28/09" (kèm ghi lại khi tuần mới chưa tới không dời, 2 dòng nhật ký, `absence_move_count` = 0) và "gỡ dấu lần hai → 21/09". Web `ODiemThuong`: gõ lại "-" dời tiếp khi `chuaToiTuan` sai và người dùng thật sự gõ ô trái (↓ điền tổng / con trỏ đi qua không dời); tooltip nói cách dời tiếp. (2a) ô chưa có điểm mà số câu đúng trống thì không gửi gì (lưới giữ tổng ↓ trong bản nháp, lưu cùng số câu đúng). (2b) Cần chấm lọc lớp ngoài phạm vi → `lop: null` (`can(ATTEMPT_VIEW, {classId})`), thêm assert vào phép Q13. (2c) Lịch Test lớp thường kèm `kn` = môn của dòng, thêm assert vào phép Q14. (2d) Cần chấm: dòng lớp thường có tooltip `Hạn Chủ nhật dd/mm` ở "còn n bài", không thêm dòng. typecheck + `npx vite build` sạch; không bấm thử trên trình duyệt. **Sửa sau rà lại (807):** (I-1) gõ "-" lên ô đang hiện "-" (đè lên "-" đang chọn không đổi giá trị, hoặc thành "--") — `phim` chặn phím và coi là lệnh gõ lại: tuần mới đã tới → dời tiếp ngay, chưa tới → không làm gì; (M-1) thêm điều kiện "dấu cũ ghi trước khi tuần hiện tại bắt đầu" rồi **bỏ lại theo phán quyết controller**: luật của planning là nguyên văn (tuần hiện tại ≠ tuần của dấu và đã tới → vắng mới), điều kiện đó chặn việc ghi bù hai tuần vắng liền nhau; rủi ro gửi lặp đã có chốt ở web (`dangGui`/`goDiem`). `regular.ts` về đúng bản 4b99f7f (`no_show_at` = `nowIso()`); phép M-1 thay bằng phép "ghi bù: 05/10 ghi hai lần → 21/09 rồi 28/09" → vẫn **807**. **Sửa sau rà lại I-1 (sau merge main: 829):** gõ "-" lên ô "-" đi đúng một trong ba lối — `keydown` (bỏ qua Ctrl/Cmd/Alt + "-"), `beforeinput` (bàn phím ảo Android báo phím "Unidentified"), `onChange` thấy "--" (dự phòng); màn điện thoại có nút "−" 44px cạnh ô điểm (bàn phím số iPhone không có "-") cho lớp thường (`ODiemThuong`) và FT (`RawScoreInput`, `CriteriaButton`), cùng một lệnh với gõ "-", ô không nhận "-" thì nút ẩn nhưng giữ chỗ; máy tính không đổi. Không thêm phép kiểm (thành phần web). **Vòng cuối (830):** (1) ô FT cũng không bao giờ thành "--" (cùng hook `useGoLaiDau`, FT không có "dời tiếp"); `rawPatchFrom`/`criteriaPatchFrom` trả `null` với chữ không hợp lệ → không gửi (trước đây NaN thành `null` = xoá ô); (2) máy chủ từ chối (4xx) lệnh "-" → toast đúng câu máy chủ, ô về giá trị đã lưu, không có "Thử lại" (lỗi mạng/5xx vẫn có) — lớp thường và FT; (3) phán quyết controller: "-" lần ĐẦU cũng cần tuần thi đã tới — máy chủ `Chưa tới tuần thi {tuanLich} — chưa ghi "-" được.`, web ẩn nút "−" và báo tại ô; phép kiểm mới; không phép cũ nào phải sửa (đều ghi "-" trong/sau tuần thi); (4) dòng chỉ đọc/khoá/chữ trạng thái ở điện thoại giữ chỗ nút "−" (`ChoNutDau`); (5) ô FT trống ở điện thoại bỏ "—" cạnh nút "−". **Sau bấm thử kiem5 (830):** gõ "-" ở ô chưa tới tuần thi báo bằng toast đúng câu (một lần — Enter rồi rời ô không báo hai lần), không PUT; dòng FT chỉ đọc mang "-" + đếm ngược ở điện thoại dồn phải (`items-end`) nên thẳng cột. Bấm thử 4147/5347 (database tạm kiem6): 1 toast/0 PUT; mép phải chỗ nút 346 ở cả 10 dòng FT (sửa được, chỉ đọc, chỉ đọc "-" + đếm ngược, khoá, không có ô); FT nhập 27 → 1 PUT. |

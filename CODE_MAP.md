@@ -20,20 +20,21 @@ Nếu bạn nghĩ theo "cái tôi thấy trên màn hình" chứ không theo tê
 
 | Trên màn hình | File chính | Dữ liệu từ |
 |---|---|---|
-| Danh sách lớp, các bộ lọc, badge "n bài cần chấm" | `web/src/modules/students/StudentsPage.tsx` | `server/src/classes/classes.ts` → `listClassSummaries` |
-| Test › **Cần chấm** (bọc hàng đợi chấm) | `web/src/modules/test/CanChamTab.tsx` → `StudentsPage.tsx` → `WorkQueue` | `server/src/fasttrack/attempts.ts` → `listAttempts` |
+| **Học viên & Lớp** (một trang, nhóm theo lớp, chip lọc, Phạm vi) | `web/src/modules/students/StudentsPage.tsx` → `BangHocVienLop.tsx` | `GET /hoc-vien-lop` → `server/src/classes/hocVienLop.ts` |
+| Test › **Cần chấm** (ba mục Quá hạn · Tuần này · Sắp tới; mỗi dòng một lớp + đợt, nút Chấm) | `web/src/modules/test/CanChamTab.tsx` | `server/src/cham/canCham.ts` → `canChamList` (`GET /cham/can-cham`) |
 | **Khung 4 khu vực**, thanh dưới điện thoại, chuyển hướng đường dẫn cũ | `web/src/App.tsx` + `shared/domain/dieuHuong.ts` | `server/src/platform/nav.ts` → `navOf` |
-| Test › Lịch Test · Kế hoạch Test | `web/src/modules/test/` | `/attempts?periodId=` · `/attempts/no-plan` |
-| Trang một lớp | `web/src/modules/classes/ClassOverviewPage.tsx` | `server/src/classes/classes.ts` |
+| Test › **Lịch Test** (mỗi lớp một thẻ) · Kế hoạch Test | `web/src/modules/test/LichTestTab.tsx` · `web/src/modules/test/KeHoachTestTab.tsx` | `server/src/cham/canCham.ts` → `lichTest` (`GET /cham/lich-test`) · `/attempts/no-plan` |
+| **Hồ sơ lớp** (đầu trang, 3 tab, ⋮) | `web/src/modules/classes/ClassOverviewPage.tsx` → `DauTrangLop` · `TabHocVienLop` · `PhanTichLopTab` | `/classes/:id/overview` · `/roster` · `/phan-tich-lop` · `PATCH /thong-tin` |
+| Menu ⋯ dòng học viên (Hồ sơ · + Ghi nhận vi phạm · + Case · Nhập điểm) | `web/src/modules/classes/thaoTacDongHocVien.tsx` + `shared/domain/hocVienLop.ts` (`mucMenuDongHocVien`) | — |
+| Luật hiển thị Học viên & Lớp (kết quả gần nhất, khoá, badge lớp, việc tiếp theo) | `shared/domain/hocVienLop.ts` | `server/src/classes/dongHocVien.ts` |
 | **Hồ sơ một học viên** (đầu hồ sơ, bốn ô số, hai tab dưới) | `web/src/modules/students/StudentDetailPage.tsx` | `server/src/students/profile.ts` |
 | Bảng kỹ năng trong hồ sơ · **ô điểm bốn màu** | `web/src/modules/cases/SkillBoard.tsx` → `ScoreCell` | `server/src/cases/cases.ts` → `skillSupportBoard` |
 | **Thẻ case** và từng khối phương án ba phần trong hồ sơ (PR-HV Q8) | `web/src/modules/cases/SkillBoard.tsx` → `TheCase` · `KhoiPhuongAn` | `server/src/cases/cases.ts` → `caseCardOf` |
 | **Ghi kết quả PA** (cập nhật tuần 5 mục; Giữ nguyên / Điều chỉnh / Thay / Kết thúc) | `web/src/modules/cases/CapNhatTuan.tsx` → `CapNhatTuanForm` | `server/src/cases/cases.ts` → `updateResult` |
 | **Lịch sử điều chỉnh PA** (bản cũ · khi nào · ai · vì sao) | `web/src/modules/cases/CapNhatTuan.tsx` → `LichSuDieuChinh` | `server/src/cases/planRevisions.ts` |
 | Tab **Hành trình học tập** — hai cách đọc | `web/src/modules/students/JourneyTimeline.tsx` | `server/src/students/profile.ts` + bảng kỹ năng |
-| Màn một lượt Test | `web/src/modules/fasttrack/MockDetailPage.tsx` | `server/src/fasttrack/attempts.ts` → `attemptDetail` |
-| **Bảng nhập điểm cả lớp** | `web/src/modules/fasttrack/ScoreSheetPage.tsx` | `server/src/fasttrack/attempts.ts` → `classScoreSheet` |
-| Bảng nhập điểm lớp Normal | `web/src/modules/normal/RegularSheetPage.tsx` | `server/src/normal/regular.ts` |
+| Màn một lượt Test (chọn đợt khác cạnh tiêu đề; nút nhập điểm mở lưới đúng tuần của đợt) | `web/src/modules/fasttrack/MockDetailPage.tsx` | `server/src/fasttrack/attempts.ts` → `attemptDetail` |
+| **Bảng nhập điểm cả lớp** — một lưới cho hai loại lớp, máy chủ trả `mode` | `web/src/modules/cham/ChamDiemPage.tsx` (lưới `web/src/modules/cham/LuoiFT.tsx` · `web/src/modules/cham/LuoiThuong.tsx`; điện thoại `web/src/modules/cham/MotKyNang.tsx`) | `server/src/cham/canCham.ts` → `chamSheet` (`GET /classes/:classId/cham`) |
 | **Công việc** › Hỗ trợ học viên · Vận hành · Báo cáo đơn vị | `web/src/modules/congViec/CongViecPage.tsx` (bọc `WorkList` · `TasksBoard` · `MeetingBoard`) | `mywork.ts` · `mgmttasks.ts` · `meeting.ts` |
 | **Tổng quan** (QL: 4 ô · Cần xử lý · Điểm đáng chú ý · Lịch sắp tới · Theo chi nhánh; GV: Việc cần làm của tôi · Học viên cần hỗ trợ) | `web/src/modules/worklist/OverviewPage.tsx` | `server/src/worklist/tongQuan.ts` · `bangChiNhanh.ts` · `metrics.ts` (metricSet + chương trình) |
 | Dòng tín hiệu SOS lớp thường (Tạo Case / Bỏ qua) | `web/src/modules/worklist/DongTinHieu.tsx` → `QuickReport.tsx` | `/signals/pending/:id/dismiss` · `/cases/report` |
@@ -128,8 +129,8 @@ loại dữ liệu mới** vào kịch bản thì thêm trường ở `server/sr
 | Panel "Quản lý học viên" (kế hoạch · đầu vào · mục tiêu · kết luận · chuyển lớp) | `web/src/modules/students/StudentManagePanel.tsx` |
 | Tab Hành trình học tập — **hai cách đọc**: "Điểm và can thiệp" · "Dòng sự kiện" | `web/src/modules/students/JourneyTimeline.tsx` · `server/src/students/profile.ts` → `progressOf` |
 | Dữ liệu hồ sơ | `server/src/students/profile.ts` |
-| Danh sách lớp và tám bộ lọc | `web/src/modules/students/StudentsPage.tsx` |
-| Tên và điều kiện của tám bộ lọc | `shared/domain/people.ts` → `STUDENT_FILTERS` |
+| Danh sách lớp, nhóm theo lớp, 6 chip lọc | `web/src/modules/students/StudentsPage.tsx` → `BangHocVienLop.tsx` |
+| Tên và điều kiện của 6 chip lọc | `shared/domain/hocVienLop.ts` → `LOC_HOC_VIEN` · `LOC_HOC_VIEN_NHAN` |
 | Thêm học viên, nhập Excel | `web/src/modules/students/IntakePanel.tsx` · `server/src/classes/intake.ts` |
 | Badge "Thiếu thông tin" (chỉ thiếu sót CẢN TRỞ chuyên môn) | `web/src/modules/students/MissingBadge.tsx` · `server/src/classes/schedule.ts` → `missingForStudent` |
 | Câu tình trạng đầu hồ sơ ("MT2 đạt kỳ vọng · còn 2 case…") | `server/src/students/standing.ts` |
@@ -140,7 +141,6 @@ loại dữ liệu mới** vào kịch bản thì thêm trường ở `server/sr
 
 | Muốn sửa | Mở file |
 |---|---|
-| Trang một lớp | `web/src/modules/classes/ClassOverviewPage.tsx` |
 | Tạo lớp | `web/src/modules/classes/ClassCreatePanel.tsx` · `server/src/classes/intake.ts` → `createClass` |
 | Phân công giáo viên, ba luật phân công | `server/src/classes/classes.ts` → `setClassTeachers` |
 | Tuần khai giảng, tuần Progress/Final Test | `web/src/modules/classes/ClassProgressPanel.tsx` · `server/src/classes/schedule.ts` |
@@ -159,7 +159,7 @@ loại dữ liệu mới** vào kịch bản thì thêm trường ở `server/sr
 | Bảng quy đổi số câu đúng → band | `server/src/fasttrack/scoring.ts` |
 | Cách tính mức SOS | `server/src/fasttrack/scoring.ts` → `resultOf` |
 | Màn một lượt MT | `web/src/modules/fasttrack/MockDetailPage.tsx` |
-| Bảng nhập điểm cả lớp | `web/src/modules/fasttrack/ScoreSheetPage.tsx` · `server/src/fasttrack/attempts.ts` → `classScoreSheet` |
+| Bảng nhập điểm cả lớp (lưới FT) | `web/src/modules/cham/LuoiFT.tsx` · `server/src/fasttrack/attempts.ts` → `classScoreSheet` — xem mục "Chấm điểm" bên dưới |
 | **Hàng nào hiện ra ở bảng chấm của một tuần** — lọc theo lịch TỪNG KỸ NĂNG, không theo tuần cả đợt | `server/src/fasttrack/attempts.ts` → `classScoreSheet` |
 | **Luật đếm "bài cần chấm"** — badge và danh sách đều gọi vào đây | `shared/domain/fasttrack.ts` → `pendingSkillsOf` |
 | Hai phạm vi công việc và nhãn của chúng | `shared/domain/people.ts` → `WORK_SCOPES`, `WORK_SCOPE_LABEL`, `WORK_SCOPE_HINT` |
@@ -182,10 +182,28 @@ loại dữ liệu mới** vào kịch bản thì thêm trường ở `server/sr
 | Bốn môn của Normal (L/R/W/S) | `shared/domain/normal.ts` → `REGULAR_SKILLS` |
 | Số tuần và mốc kiểm tra từng chương trình | `shared/domain/normal.ts` → `PROGRAMME_TEMPLATES` |
 | Ngưỡng đạt (70%) và cách chấm theo tỷ lệ | `shared/domain/normal.ts` → `ratioResult` · `RATIO_PASS_THRESHOLD` |
-| Bảng nhập điểm Progress/Final Test | `web/src/modules/normal/RegularSheetPage.tsx` |
+| Bảng nhập điểm Progress/Final Test (lưới lớp thường) | `web/src/modules/cham/LuoiThuong.tsx` · `server/src/normal/regular.ts` → `regularSheet` — xem mục "Chấm điểm" bên dưới |
 | Xử lý điểm và sinh case của Normal | `server/src/normal/regular.ts` |
+| **Lớp thường ghi "-"** thì môn đó tự dời sang tuần sau (C08) | `server/src/normal/regular.ts` → `reportRegularNoShow` (dùng lại `setSkillWeek`) |
 | Chuyển tiếp lớp FOU → BE → Fast Track | `server/src/classes/transition.ts` · `web/src/modules/classes/TransitionPanel.tsx` |
 | Bài nào mở màn nào (Mock Test hay bảng điểm Normal) | `server/src/fasttrack/attempts.ts` → `attemptHref` · `web/src/lib/format.ts` |
+
+### Chấm điểm — chung cho lớp FT và lớp thường (PR-Rc1)
+
+> **Một lưới cho hai loại lớp, máy chủ trả `mode`.** Trang không tự đoán loại lớp: `chamSheet` trả `mode`
+> (`ielts_band` hay `ratio`) rồi trang chọn lưới. `/nhap-diem/:classId` và `/bang-diem-thuong/:classId` cùng mở
+> `ChamDiemPage`. Hai lưới vẫn là hai file riêng — đúng nguyên tắc "Fast Track và Normal có form riêng" ở cuối file.
+
+| Muốn sửa | Mở file |
+|---|---|
+| Trang lưới chấm: chọn lưới theo `mode`, tham số đường dẫn `?periodId=` `?kind=` `?kn=` `?hv=` | `web/src/modules/cham/ChamDiemPage.tsx` |
+| Lưới lớp Fast Track (band, dấu "-" chờ chốt Chủ nhật) | `web/src/modules/cham/LuoiFT.tsx` |
+| Lưới lớp thường (điểm đạt/tổng điểm, dấu "-" dời tuần sau) | `web/src/modules/cham/LuoiThuong.tsx` |
+| Chấm trên điện thoại — một kỹ năng một lúc (< 768px) | `web/src/modules/cham/MotKyNang.tsx` |
+| Dữ liệu cho ba câu hỏi đọc: lưới một lớp · Cần chấm · Lịch Test | `server/src/cham/canCham.ts` → `chamSheet` · `canChamList` · `lichTest` |
+| Luật thuần: ba mục Quá hạn / Tuần này / Sắp tới, chữ trạng thái chấm, ô lưới thường, độ dài tối thiểu của lý do | `shared/domain/chamDiem.ts` |
+| **Sửa điểm đã có phải ghi lý do** (RB-5) — cả hai cửa lưu điểm | `web/src/modules/fasttrack/ScoreEntry.tsx` → `SuaDiemCoLyDo` · `server/src/fasttrack/attempts.ts` → `saveScore` · `server/src/normal/regular.ts` → `saveRegularScore` |
+| Ô điểm lớp thường dùng chung (lưới và điện thoại) | `web/src/modules/fasttrack/ScoreEntry.tsx` → `ODiemThuong` |
 
 ### Case
 

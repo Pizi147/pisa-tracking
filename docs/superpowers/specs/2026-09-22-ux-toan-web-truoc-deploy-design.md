@@ -186,9 +186,9 @@ Quyền phải khớp giữa menu, máy chủ và việc đỏ.
 | Lịch sử lớp | đầu tab Hành trình | trong phạm vi |
 | Kết luận lộ trình | ⋮ Hồ sơ HV | GVCN, QL · FT |
 | Tín hiệu SOS lớp thường | Việc cần làm › Case học thuật · hộp môn ở Hồ sơ HV · badge Hồ sơ lớp | GV môn đó |
-| Chấm điểm | Test › Cần chấm → lưới · nút Nhập điểm Test ở Hồ sơ lớp · ⋯ dòng HV · ⋯ hộp lớp ở Học viên & Lớp (Q11, thêm 22/09) | GV môn đó, QL |
+| Chấm điểm | Test › Cần chấm → lưới · nút Nhập điểm Test ở Hồ sơ lớp · ⋯ dòng HV · ⋯ hộp lớp ở Học viên & Lớp (Q11, thêm 22/09) · ô `Lớp còn {n} bài chưa nhập điểm` (tên cũ `Bạn cần chấm: {n} bài`) trên dòng lớp ở Học viên & Lớp → Test › Cần chấm lọc theo lớp (`/test/can-cham?classId=…&scope=…`, chip `Đang lọc: lớp {mã} ✕`) (đích dựng ở PR-Rc1 23/09; đổi link: PR-Qa) | GV môn đó, QL |
 | Kế hoạch Test | Test › Kế hoạch Test | QL |
-| Hồ sơ GV | tên GV ở Hồ sơ lớp · Phân tích › Theo giáo viên | QL trong phạm vi · GV (chính mình) |
+| Hồ sơ GV | tên GV ở Hồ sơ lớp · Phân tích › Theo giáo viên (tên chỉ thành link khi PR-GV bật `CO_TRANG_HO_SO_GIAO_VIEN`) | QL trong phạm vi · GV (chính mình) |
 | Ghi nhận vi phạm | ⋯ dòng HV · tab Ý thức & Phối hợp của lớp và của HV | GV |
 | Báo cáo đơn vị | Công việc › Báo cáo đơn vị | QL |
 
@@ -285,11 +285,19 @@ Tên file, mã việc và ma trận chồng file lấy ở kiểm kê §5. Bổ 
 
 ```
 Đang chạy:      Qa  ·  Pa  ·  Rc1
-Trước deploy:   Form (sau Pa) · Pb-gọn (sau Pa) · Qb (sau Qa) · Rc2 (sau Rc1)
+Trước deploy:   Form (sau Pa) · Pb-gọn (sau Pa) · Qb (sau Qa) · Rc2 (sau Rc1) · TD (sau Pa, Qa, Rc1)
 Deploy:         Z2c
 Sau deploy:     Ra · GV · YT2 · LT · S3 · phần còn lại của Pb
 ```
-Kế hoạch: `docs/superpowers/plans/2026-09-23-pr-{form-chon-nguoi,pb-phan-tich-gon,qb-ho-so-hoc-vien,rc2-ke-hoach-test}.md`. Cả bốn không migrate.
+Kế hoạch: `docs/superpowers/plans/2026-09-23-pr-{form-chon-nguoi,pb-phan-tich-gon,qb-ho-so-hoc-vien,rc2-ke-hoach-test,td-toc-do}.md`. Cả năm không migrate.
+
+**PR-TD · Tốc độ trên Turso** (thêm 23/09 sau rà Qa, Pa): `can()` tra lại lớp/chi nhánh/ngày nghiệp vụ từng dòng → Tổng quan QL ~623 truy vấn, Học viên & Lớp GV ~800, Cần chấm GV ~690 (Turso ~20–50 ms/truy vấn, Netlify dừng sau 10 s). Nhớ tạm trong một request GET, `listCases` kiểm quyền theo lô, phép kiểm đo có trần. Coder Opus 5.5 · High (B: Opus 5 · XHigh) · rà Fable 5.1.
+
+**Việc theo sau rà đợt 2 (#68 Pa, #69 Qa, #70 Rc1 — 23/09):**
+- Đã giao sửa trước merge: Qa `soCaseMoTheoLop` gọi `listCases(p, {})`; "case" → "Case" `ClassRoster.tsx:271-272`; màu đỏ ô chưa đạt; ô quá tuần thi chưa có điểm. Rc1 "-" lần hai không dời tiếp; ô chỉ đi qua không gửi; `/cham/can-cham` lớp ngoài phạm vi trả `lop: null`; link Lịch Test kèm `kn`; hạn riêng lớp thường ở Cần chấm.
+- **S3:** nhãn "n Case đang mở" ở hộp lớp lệch tổng cột Case (hai nguồn đếm, G-10); `thongTinLop.ts:31` trùng mã lớp phân biệt hoa/thường; `deadlineView` so quá hạn cắt theo UTC; ô Chờ xác minh "tín hiệu" lặp chữ + panel ghi "dưới kỳ vọng" khi chọn Lớp thường; dòng tín hiệu nói "quá hạn" 3 lần (G-3, `display.ts`); bảng chi nhánh xếp Case theo lớp đang học còn bộ lọc chương trình theo lớp của bài Test; lưới chấm Enter khi thiếu tổng vẫn nhảy dòng.
+- **Pb-gọn:** link `view=sos` từ WeeklyBoard (lượt SOS) mở chip "Đang SOS" (số HV).
+- **Chờ chủ sản phẩm:** QL hiện không nhập điểm (chỉ xem; Rc2 cho QL sửa đợt đã hoàn tất có lý do) trong khi §4 ghi "GV môn đó, QL".
 
 Lý do xếp (phụ thuộc + ma trận chồng file kiểm kê §5.2):
 - Đợt 2: Qa cần O; Pa cần O + S1 (dòng tín hiệu); S2 cần S1 (migrate). Ba PR không chung file.

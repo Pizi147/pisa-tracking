@@ -7,8 +7,7 @@ import { Header } from './modules/platform/Header.tsx';
 import { Skeleton } from './ui/ui.tsx';
 import OverviewPage from './modules/worklist/OverviewPage.tsx';
 import MockDetailPage from './modules/fasttrack/MockDetailPage.tsx';
-import ScoreSheetPage from './modules/fasttrack/ScoreSheetPage.tsx';
-import RegularSheetPage from './modules/normal/RegularSheetPage.tsx';
+import ChamDiemPage from './modules/cham/ChamDiemPage.tsx';
 import StudentsPage from './modules/students/StudentsPage.tsx';
 import ClassOverviewPage from './modules/classes/ClassOverviewPage.tsx';
 import StudentDetailPage from './modules/students/StudentDetailPage.tsx';
@@ -104,9 +103,9 @@ export default function App() {
           {/* Trang riêng của một Case — máy chủ sinh link này trong thông báo và Việc cần làm, nên phải giữ. */}
           <Route path="/hoc-thuat/case/:id" element={<CaseRoutePage />} />
           <Route path="/test/:tab?" element={nav.test ? <TestPage /> : <Navigate to="/" replace />} />
-          <Route path="/nhap-diem/:classId" element={<ScoreSheetPage />} />
-          {/* Lớp thường chấm theo điểm đạt/tổng điểm nên có bảng điểm riêng, không dùng bảng band IELTS. */}
-          <Route path="/bang-diem-thuong/:classId" element={<RegularSheetPage />} />
+          {/* Một trang lưới cho cả hai loại lớp — máy chủ trả `mode`, trang chọn lưới đúng (đặc tả §3.5, §6). */}
+          <Route path="/nhap-diem/:classId" element={<ChamDiemPage />} />
+          <Route path="/bang-diem-thuong/:classId" element={<ChamDiemPage />} />
           <Route path="/mock-test/:id" element={<MockDetailPage />} />
           <Route path="/cong-viec/:tab?" element={nav.work ? <CongViecPage /> : <Navigate to="/" replace />} />
           {/*
@@ -123,8 +122,9 @@ export default function App() {
         </Routes>
       </main>
 
-      {/* Điện thoại: thanh dưới 4 nút (G-11). z-40 — dưới Drawer/Modal (z-50) và Toast (z-[100]). */}
-      <nav aria-label="Điều hướng chính" className="md:hidden fixed bottom-0 inset-x-0 z-40 flex border-t bg-[color:var(--surface)]"
+      {/* Điện thoại: thanh dưới 4 nút (G-11). z-30 — dưới menu tài khoản/thông báo ở đầu trang (z-40), Drawer/Modal (z-50),
+          menu ⋯ của dòng (z-[60]) và Toast (z-[100]). */}
+      <nav aria-label="Điều hướng chính" className="md:hidden fixed bottom-0 inset-x-0 z-30 flex border-t bg-[color:var(--surface)]"
         style={{ borderColor: 'var(--line)', paddingBottom: 'env(safe-area-inset-bottom)' }}>
         {items.map((m) => <NutDay key={m.key} muc={m} active={dangO === m.key} />)}
       </nav>
