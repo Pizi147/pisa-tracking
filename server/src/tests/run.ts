@@ -9479,6 +9479,11 @@ await runTongQuanTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P
 const { runChamDiemTests } = await import('./chamDiem.tests.ts');
 await runChamDiemTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
+// ==================================================================== PR-Form (chọn người, bằng chứng trong form)
+
+const { runFormTests } = await import('./form.tests.ts');
+await runFormTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
+
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`

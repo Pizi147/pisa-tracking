@@ -2,7 +2,7 @@ import { useRef, useState } from 'react';
 import { ApiError, api, invalidate } from '../lib/api.ts';
 import { useApi } from '../lib/useApi.ts';
 import { fmtDate } from '../lib/format.ts';
-import { ATTACHMENT_EXTENSIONS, ATTACHMENT_MAX_BYTES } from '@shared/domain/index.ts';
+import { ATTACHMENT_EXTENSIONS, ATTACHMENT_MAX_BYTES, CHU_KHOI_BANG_CHUNG, laLienKet, tenAnhDan } from '@shared/domain/index.ts';
 
 type Row = {
   id: number; kind: 'file' | 'link'; displayName: string; href: string;
@@ -49,6 +49,7 @@ export function BangChung({ ownerType, ownerId, canEdit, tieuDe = 'Bằng chứn
   const [linkError, setLinkError] = useState<string | null>(null);
   const [confirmId, setConfirmId] = useState<number | null>(null);
   const [rowError, setRowError] = useState<{ id: number; message: string } | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const seq = useRef(0);
 
@@ -78,13 +79,67 @@ export function BangChung({ ownerType, ownerId, canEdit, tieuDe = 'Bằng chứn
     }
   };
 
-  const pick = (files: FileList | null) => {
-    if (!files?.length) return;
-    const file = files[0];
+  /** Bắt đầu tải một tệp — dùng chung cho chọn tệp, kéo thả, và dán ảnh (Ctrl+V). */
+  const upload1 = (file: File) => {
     const key = (seq.current += 1);
     setUploads((list) => [...list, { key, file, state: 'uploading' }]);
     void send(key, file);
+  };
+
+  /** Chọn tệp / kéo thả: tải MỌI tệp, không chỉ tệp đầu (G-9). */
+  const pick = (files: FileList | Iterable<File> | null) => {
+    if (!files) return;
+    const list = Array.from(files);
+    if (!list.length) return;
+    for (const f of list) upload1(f);
     if (fileRef.current) fileRef.current.value = '';
+  };
+
+  /** Ảnh dán từ clipboard không có tên rõ nghĩa ("image.png" mặc định của trình duyệt) → đặt tên có ngày giờ. */
+  const renameIfPastedImage = (file: File): File => {
+    if (!file.type.startsWith('image/')) return file;
+    if (file.name && file.name !== 'image.png') return file;
+    return new File([file], tenAnhDan(new Date(), file.type), { type: file.type });
+  };
+
+  /**
+   * Q11: chỉ bắt Ctrl+V khi khối này (hay con của nó) đang được chọn — không bắt dán toàn trang, và không cướp việc dán
+   * chữ bình thường vào hai ô "Địa chỉ liên kết" / "Tên hiển thị" bên dưới.
+   */
+  const onPaste = (e: React.ClipboardEvent<HTMLDivElement>) => {
+    if (!canEdit) return;
+    if ((e.target as HTMLElement).closest('input, textarea')) return;
+    const fromFiles = Array.from(e.clipboardData.files);
+    const fromItems = fromFiles.length ? [] : Array.from(e.clipboardData.items)
+      .filter((it) => it.kind === 'file' && it.type.startsWith('image/'))
+      .map((it) => it.getAsFile())
+      .filter((f): f is File => !!f);
+    const files = fromFiles.length ? fromFiles : fromItems;
+    if (files.length) {
+      e.preventDefault();
+      for (const f of files) upload1(renameIfPastedImage(f));
+      return;
+    }
+    /* Không có tệp mà chữ dán là một liên kết → mở ô liên kết, điền sẵn (không tự lưu). Chữ thường → bỏ qua, không preventDefault. */
+    const text = e.clipboardData.getData('text/plain');
+    if (text && laLienKet(text)) {
+      e.preventDefault();
+      setLinkOpen(true);
+      setUrl(text.trim());
+    }
+  };
+
+  const onDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    if (!canEdit) return;
+    e.preventDefault();
+    setIsDragging(true);
+  };
+  const onDragLeave = () => setIsDragging(false);
+  const onDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    if (!canEdit) return;
+    e.preventDefault();
+    setIsDragging(false);
+    pick(e.dataTransfer.files);
   };
 
   const saveLink = async () => {
@@ -108,7 +163,17 @@ export function BangChung({ ownerType, ownerId, canEdit, tieuDe = 'Bằng chứn
   const rows = data?.rows ?? [];
 
   return (
-    <div className="rounded-lg border px-2.5 py-2" style={{ borderColor: 'var(--line)' }} data-bang-chung={`${ownerType}:${ownerId}`}>
+    <div
+      className={`rounded-lg border px-2.5 py-2${canEdit ? ' border-dashed' : ''}`}
+      style={{ borderColor: isDragging ? 'var(--line-strong)' : 'var(--line)' }}
+      data-bang-chung={`${ownerType}:${ownerId}`}
+      tabIndex={0}
+      aria-label="Bằng chứng — dán ảnh, kéo thả tệp"
+      onPaste={onPaste}
+      onDragOver={onDragOver}
+      onDragLeave={onDragLeave}
+      onDrop={onDrop}
+    >
       <div className="flex flex-wrap items-center justify-between gap-2">
         {tieuDe ? (
           <span className="text-[10px] uppercase tracking-wide text-slate-500">
@@ -119,7 +184,7 @@ export function BangChung({ ownerType, ownerId, canEdit, tieuDe = 'Bằng chứn
           <span className="flex flex-wrap items-center gap-1.5">
             <button type="button" className="btn btn-sm btn-ghost" onClick={() => fileRef.current?.click()}>+ Đính kèm tệp</button>
             <button type="button" className="btn btn-sm btn-ghost" onClick={() => setLinkOpen((o) => !o)} aria-expanded={linkOpen}>+ Thêm liên kết</button>
-            <input ref={fileRef} type="file" accept={ACCEPT} className="hidden" aria-label={`${tieuDe || 'Bằng chứng'} — chọn tệp`}
+            <input ref={fileRef} type="file" accept={ACCEPT} multiple className="hidden" aria-label={`${tieuDe || 'Bằng chứng'} — chọn tệp`}
               onChange={(e) => pick(e.target.files)} />
           </span>
         )}
@@ -133,7 +198,7 @@ export function BangChung({ ownerType, ownerId, canEdit, tieuDe = 'Bằng chứn
       {loading && !data && <p className="text-[11px] text-slate-500 m-0 mt-1.5">Đang tải…</p>}
       {data && rows.length === 0 && uploads.length === 0 && !linkOpen && (
         <p className="text-[11px] text-slate-500 m-0 mt-1.5">
-          Chưa có bằng chứng nào.{canEdit ? ' Đính kèm tệp hoặc thêm liên kết khi cần.' : ''}
+          {canEdit ? CHU_KHOI_BANG_CHUNG : 'Chưa có bằng chứng nào.'}
         </p>
       )}
 

@@ -7,6 +7,7 @@ import { useToast } from '../../ui/Toast.tsx';
 import { Alert, Card, Empty, ErrorState, Field, Info, Level, Outcome, SectionNote, Skeleton, Status } from '../../ui/ui.tsx';
 import { Modal } from '../../ui/Drawer.tsx';
 import { BangChung } from '../../ui/BangChung.tsx';
+import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
 import { CHUA_CO_PHUONG_AN, GOI_Y_THEM_PHUONG_AN } from '../../ui/chu.ts';
 import { caseStatusLabel, caseStatusTone, fmtBand, fmtDate, skillLabel, sosLabel, sosTone } from '../../lib/format.ts';
 import {
@@ -16,8 +17,10 @@ import {
   RESCHEDULE_TARGETS, RESCHEDULE_TARGET_LABEL,
   componentsAreCounts, componentsFor, interventionKindsFor,
   isProposalKind, outcomeLabelFor,
+  nguoiThanhPayload, type NguoiChon,
 } from '@shared/domain/index.ts';
 import { CapNhatTuanForm, LichSuDieuChinh, type BanDieuChinh } from './CapNhatTuan.tsx';
+import { ComponentsField, componentsPayload } from './ChiTietKyNang.tsx';
 
 /**
  * MỘT VẤN ĐỀ HỌC VỤ, kể theo bốn câu hỏi người đọc thực sự cần:
@@ -193,7 +196,7 @@ export function CasePanel({ caseId, compact = false, hideHeader = false, onChang
           <ol className="list-none p-0 m-0 relative pl-6"
               style={{ borderLeft: '2px solid var(--line-strong)', marginLeft: '5px' }}>
             {timeline.map((ev) => (
-              <li key={ev.key} className="relative pb-4 last:pb-1">
+              <li key={ev.key} className="relative pb-4 last:pb-1" data-pa-id={ev.paId ?? undefined}>
                 {/* Chấm mốc: đặc = chuyện xảy ra với em, rỗng = việc mình làm. */}
                 <span className="absolute rounded-full"
                       style={{
@@ -291,7 +294,7 @@ export function CasePanel({ caseId, compact = false, hideHeader = false, onChang
       <OutcomeDialog open={outcome} onClose={() => setOutcome(false)} caseId={caseId}
         category={data.category} categoryLabel={data.categoryLabel}
         ratio={!!data.ratio} onDone={reload} />
-      <ActionDialog open={addAction} onClose={() => setAddAction(false)} caseId={caseId} onDone={reload} />
+      <ActionDialog open={addAction} onClose={() => setAddAction(false)} caseId={caseId} studentId={data.student?.id} onDone={reload} />
       <ApprovalDialog open={respondTo !== null} onClose={() => setRespondTo(null)}
         intervention={respondTo} onDone={reload} />
       <ResultDialog iv={resultFor}
@@ -331,6 +334,11 @@ type TimelineItem = {
   card?: boolean;
   /** Thứ tự phụ trong cùng một ngày: chuyện xảy ra trước, việc mình làm sau. */
   rank: number;
+  /**
+   * GIAO KÈO VỚI PR-Qb (Hành trình): chỉ mục PA học thuật mang `data-pa-id={paId}` trên `<li>`, để Hành trình mở ngăn
+   * Case rồi cuộn tới đúng PA bằng `querySelector('[data-pa-id="…"]')`. Mục khác (mốc, quan sát) không có.
+   */
+  paId?: number;
 };
 
 const MILESTONE_TITLE: Record<string, string> = {
@@ -392,7 +400,7 @@ function buildTimeline(data: any, act: TimelineActions): TimelineItem[] {
     const on = iv.completedDate ?? iv.startedDate ?? iv.plannedDate ?? iv.actionDue ?? data.detectedAt;
     const mine = (data.followups ?? []).filter((f: any) => f.interventionId === iv.id);
     items.push({
-      key: `i${iv.id}`, on, attemptNo: null, rank: 1, card: true,
+      key: `i${iv.id}`, on, attemptNo: null, rank: 1, card: true, paId: iv.id,
       dotFill: 'var(--surface)',
       dotEdge: iv.status === 'completed' ? 'var(--accent)' : 'var(--line-strong)',
       title: (
@@ -724,83 +732,6 @@ export function OutcomeDialog({ open, onClose, caseId, category, categoryLabel, 
 }
 
 /**
- * GHI CHI TIẾT THEO THÀNH PHẦN CỦA KỸ NĂNG (mục 9.3) — luôn TUỲ CHỌN, và chỉ hiện đúng bộ
- * của kỹ năng case đang nói tới: Section 1–4 cho Listening, bốn tiêu chí band cho Speaking.
- *
- * L/R ghi ĐẠT/TỔNG chứ không ghi band: "Section 3: 5.0" sẽ bị đọc thành band 5 ở Section 3,
- * một con số không tồn tại trong IELTS.
- */
-function ComponentsField({ label, components, counts, value, onChange }: {
-  label: string; components: readonly string[]; counts: boolean;
-  value: Record<string, { score: string; total: string }>;
-  onChange: (v: Record<string, { score: string; total: string }>) => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const set = (key: string, part: 'score' | 'total', v: string) => {
-    const cur = value[key] ?? { score: '', total: '' };
-    onChange({ ...value, [key]: { ...cur, [part]: v } });
-  };
-
-  if (!open) {
-    return (
-      <button type="button" className="btn btn-sm btn-ghost" onClick={() => setOpen(true)}>
-        + Ghi chi tiết {label} (không bắt buộc)
-      </button>
-    );
-  }
-  return (
-    <div className="surface-2 rounded-lg p-3 space-y-2">
-      <div className="flex items-center justify-between gap-2">
-        <span className="label m-0">Chi tiết {label}</span>
-        <button type="button" className="btn btn-sm btn-ghost"
-          onClick={() => { setOpen(false); onChange({}); }}>
-          Bỏ phần này
-        </button>
-      </div>
-      <div className="space-y-1.5">
-        {components.map((c) => (
-          <div key={c} className="flex items-center gap-2">
-            <span className="text-xs text-slate-300 w-52 shrink-0">{c}</span>
-            <input className="field max-w-[6rem]" type="number" inputMode="decimal"
-              step={counts ? 1 : 0.5} min={0} max={counts ? undefined : 9}
-              placeholder={counts ? 'đạt' : 'band'}
-              value={value[c]?.score ?? ''} onChange={(e) => set(c, 'score', e.target.value)} />
-            {counts && (
-              <>
-                <span className="text-slate-500">/</span>
-                <input className="field max-w-[6rem]" type="number" min={1} placeholder="tổng"
-                  value={value[c]?.total ?? ''} onChange={(e) => set(c, 'total', e.target.value)} />
-              </>
-            )}
-          </div>
-        ))}
-      </div>
-      <SectionNote>
-        Chỉ điền phần bạn thật sự đánh giá — để trống phần không xem tới. Đây là quan sát của
-        bạn, không ghi đè điểm Test chính thức và không đổi mức SOS.
-      </SectionNote>
-    </div>
-  );
-}
-
-/** Đổi các ô chi tiết đã nhập thành danh sách gửi lên máy chủ; ô để trống thì bỏ qua. */
-function componentsPayload(
-  category: string | null,
-  v: Record<string, { score: string; total: string }>,
-  counts: boolean,
-) {
-  if (!category) return undefined;
-  const out = Object.entries(v)
-    .filter(([, m]) => m.score !== '' && m.score !== undefined)
-    .map(([component, m]) => ({
-      skill: category, component,
-      score: Number(m.score),
-      total: counts && m.total !== '' ? Number(m.total) : null,
-    }));
-  return out.length ? out : undefined;
-}
-
-/**
  * FORM THÊM PHƯƠNG ÁN (mục 8.2).
  *
  * Bốn thay đổi so với bản trước, và mỗi cái sửa một chỗ nói dối:
@@ -816,8 +747,8 @@ function componentsPayload(
  *   · "Hẹn xem lại" → **Dự kiến kết thúc phương án**. Đây là hạn HOÀN THÀNH, không phải một
  *     cái nhắc; bỏ trống thì lấy Chủ nhật tuần tiếp theo.
  */
-export function ActionDialog({ open, onClose, caseId, onDone }: {
-  open: boolean; onClose: () => void; caseId: number; onDone: () => void;
+export function ActionDialog({ open, onClose, caseId, studentId, onDone }: {
+  open: boolean; onClose: () => void; caseId: number; studentId?: number | null; onDone: () => void;
 }) {
   const toast = useToast();
   const catalogue = interventionKindsFor();
@@ -825,7 +756,7 @@ export function ActionDialog({ open, onClose, caseId, onDone }: {
   const [description, setDescription] = useState('');
   /* Mặc định ĐANG THEO DÕI: phương án vừa lập thì đang chạy, không phải đã xong. */
   const [status, setStatus] = useState('started');
-  const [performerName, setPerformerName] = useState('');
+  const [nguoi, setNguoi] = useState<NguoiChon | null>({ kieu: 'toi' });
   const [completedDate, setCompletedDate] = useState('');
   const [startedDate, setStartedDate] = useState('');
   const [followupDue, setFollowupDue] = useState('');
@@ -861,8 +792,7 @@ export function ActionDialog({ open, onClose, caseId, onDone }: {
     try {
       await api.post(`/cases/${caseId}/interventions`, {
         kind, description, status,
-        performerSelf: !performerName.trim(),
-        performerName: performerName.trim() || undefined,
+        ...nguoiThanhPayload(nguoi),
         completedDate: status === 'completed' ? completedDate || undefined : undefined,
         startedDate: startedDate || undefined,
         followupDue: followupDue || undefined,
@@ -871,7 +801,7 @@ export function ActionDialog({ open, onClose, caseId, onDone }: {
       });
       invalidate('/cases'); invalidate('/students'); invalidate('/overview');
       onDone(); onClose();
-      setDescription(''); setPerformerName(''); setCompletedDate(''); setFollowupDue('');
+      setDescription(''); setNguoi({ kieu: 'toi' }); setCompletedDate(''); setFollowupDue('');
       toast.push('ok', alwaysNeedsApproval || (canPropose && needsApproval)
         ? 'Đã gửi Quản lý duyệt' : 'Đã ghi lại');
       setNeedsApproval(false);
@@ -951,15 +881,12 @@ export function ActionDialog({ open, onClose, caseId, onDone }: {
           </Field>
         )}
         {/*
-          NGƯỜI THỰC HIỆN — một ô, không phải một câu hỏi.
-          Bỏ trống nghĩa là chính bạn làm. Điền tên nghĩa là người đó làm còn bạn ghi lại —
-          hai vai luôn được lưu riêng, nên Quản lý giao việc cho giáo viên thì không bị ghi
-          thành người đã làm.
+          NGƯỜI THỰC HIỆN (PR-Form F-2) — chọn tài khoản, lưu ID thay vì chữ tự do (Q2, Q5).
+          Không có `studentId` (mở từ trang case, không rõ học viên trước khi tải) thì
+          `ChonNguoi` không gợi ý trước khi gõ — chấp nhận được, chỉ mất bước gõ ≥ 3 ký tự.
         */}
-        <Field label="Người thực hiện"
-          hint="Bỏ trống nếu chính bạn làm. Điền tên nếu bạn đang ghi lại việc của người khác.">
-          <input className="field" value={performerName} onChange={(e) => setPerformerName(e.target.value)}
-            placeholder="Ví dụ: cô Trang (GV Speaking)" />
+        <Field label="Người thực hiện">
+          <ChonNguoi nhom="giao_vien" studentId={studentId} value={nguoi} onChange={setNguoi} />
         </Field>
         <Field label="Dự kiến kết thúc phương án"
           hint="Đây là hạn HOÀN THÀNH, không phải một cái nhắc. Bỏ trống thì lấy Chủ nhật tuần tiếp theo.">

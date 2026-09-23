@@ -7,7 +7,8 @@ import { ActionDialog, OutcomeDialog } from './CasePanel.tsx';
 import { CapNhatTuanForm, LichSuDieuChinh, type BanDieuChinh } from './CapNhatTuan.tsx';
 import { CauseDeterminationPanel, DismissCaseForm, PresetPlanActions } from '../yThuc/CaseSosControls.tsx';
 import {
-  NEXT_STEP_LABEL, OUTCOME_MARK, dangChay, tienDoCase, viecTiepPhuongAn,
+  ATTEMPT_KIND_SHORT, NEXT_STEP_LABEL, OUTCOME_MARK, dangChay, ngay, tienDoCase, viecTiepPhuongAn,
+  type AttemptKind,
 } from '@shared/domain/index.ts';
 
 /**
@@ -66,7 +67,7 @@ type CaseCard = {
   /** Người xem chốt được case không, và còn gì đang chặn — thẻ tự nói, không phải mở khối thứ hai. */
   canClose: boolean; closeBlockers: string[];
   plans: Plan[];
-  attempts: { attemptNo: number; week: string | null }[];
+  attempts: { attemptNo: number; week: string | null; attemptKind?: string | null }[];
   followUntil: string | null; followOverdue: boolean;
   outcomeLabel: string | null; outcomeNote: string | null; closedOn: string | null;
   /** NHẬP BÙ (PR-C Task 3, chốt 7) — ai ghi lại, ghi lúc nào. Null khi ghi tại chỗ như bình thường. */
@@ -94,6 +95,7 @@ export type Row = {
   points: {
     attemptNo: number; band: number; expectation: number | null;
     score: number | null; total: number | null; passed: boolean | null;
+    attemptKind?: string | null;
   }[];
   score: number | null; total: number | null; ratio: boolean;
   signal: {
@@ -204,7 +206,7 @@ function SkillRow({ row, open, onToggle, onReport, onChanged }: {
                 {row.band !== null && (
                   <span className="inline-flex mt-1">
                     <Status kind={row.missed ? 'waiting' : 'done'}>
-                      {row.missed ? 'Đang theo dõi' : 'Đạt kỳ vọng'}
+                      {row.missed ? 'Đang theo dõi' : row.ratio ? 'Đạt' : 'Đạt kỳ vọng'}
                     </Status>
                   </span>
                 )}
@@ -412,7 +414,10 @@ function TheCase({ c, row, onChanged }: {
           {(c.attempts.length > 0 || (c.followUntil && c.status !== 'done')) && (
             <div className="flex flex-wrap items-center gap-1.5">
               {c.attempts.map((a) => (
-                <Chip key={a.attemptNo}>MT{a.attemptNo}{a.week ? ` · ${fmtDate(a.week)}` : ''}</Chip>
+                <Chip key={a.attemptNo}>
+                  {a.attemptKind && a.attemptKind !== 'mock' ? ATTEMPT_KIND_SHORT[a.attemptKind as AttemptKind] : `MT${a.attemptNo}`}
+                  {a.week ? ` · ${ngay(a.week)}` : ''}
+                </Chip>
               ))}
               {/* NGHĨA VỤ CẬP NHẬT KẾT QUẢ hằng tuần — một đồng hồ riêng, không lẫn với "dự kiến kết thúc" (F11). */}
               {c.followUntil && c.status !== 'done' && <Han loai="cap-nhat-pa" han={c.followUntil} />}
@@ -805,7 +810,9 @@ function Trend({ row }: { row: Row }) {
         <span key={pt.attemptNo} className="inline-flex items-center gap-1">
           {i > 0 && <span className="text-slate-700">→</span>}
           <span className={`tabular-nums ${pointTone(pt, row.ratio)}`}
-            title={`MT${pt.attemptNo}${pt.expectation !== null ? ` · kỳ vọng ${fmtBand(pt.expectation)}` : ''}`}>
+            title={row.ratio
+              ? (pt.attemptKind ? ATTEMPT_KIND_SHORT[pt.attemptKind as AttemptKind] : '')
+              : `MT${pt.attemptNo}${pt.expectation !== null ? ` · kỳ vọng ${fmtBand(pt.expectation)}` : ''}`}>
             {row.ratio && pt.total ? `${pt.score}/${pt.total}` : fmtBand(pt.band)}
           </span>
         </span>

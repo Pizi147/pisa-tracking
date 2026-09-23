@@ -3,12 +3,13 @@ import { api, invalidate } from '../../lib/api.ts';
 import { useSession } from '../../lib/session.tsx';
 import { useToast } from '../../ui/Toast.tsx';
 import { fmtDate } from '../../lib/format.ts';
+import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
 import {
   FOLLOWUP_OUTCOMES, INTERVENTION_KIND_LABEL, OUTCOME_MARK,
   PLAN_DECISION_CHIPS, PLAN_DECISION_HINT, PLAN_DECISION_LABEL,
   RESCHEDULE_TARGETS, RESCHEDULE_TARGET_LABEL,
   decisionBlockedReason, decisionNeedsReason, decisionsFor, interventionKindsFor, outcomeLabelFor,
-  type PlanDecision,
+  nguoiThanhPayload, type NguoiChon, type PlanDecision,
 } from '@shared/domain/index.ts';
 
 /**
@@ -59,15 +60,15 @@ export function CapNhatTuanForm({ pa, variant = 'inline', onCancel, onSaved }: {
   const [reason, setReason] = useState('');
   const [on, setOn] = useState(today);
   const [endOn, setEndOn] = useState(today);
-  /* Điều chỉnh: mặc định là bản hiện tại. */
+  /* Điều chỉnh: mặc định là bản hiện tại. `null` = không đổi người thực hiện (PR-Form F-2). */
   const [desc, setDesc] = useState(pa.description ?? '');
-  const [performer, setPerformer] = useState('');
+  const [nguoi, setNguoi] = useState<NguoiChon | null>(null);
   const [due, setDue] = useState(pa.followupDue ?? '');
   /* Thay */
   const kinds = interventionKindsFor();
   const [newKind, setNewKind] = useState<string>(kinds.selfServe[0]);
   const [newDesc, setNewDesc] = useState('');
-  const [newPerformer, setNewPerformer] = useState('');
+  const [newNguoi, setNewNguoi] = useState<NguoiChon | null>({ kieu: 'toi' });
   const [newTarget, setNewTarget] = useState<string>(RESCHEDULE_TARGETS[0]);
   const [busy, setBusy] = useState(false);
 
@@ -79,7 +80,7 @@ export function CapNhatTuanForm({ pa, variant = 'inline', onCancel, onSaved }: {
   const needReason = !!decision && decisionNeedsReason(decision);
   const descChanged = desc.trim() !== (pa.description ?? '').trim();
   const dueChanged = !!due && due !== (pa.followupDue ?? '');
-  const adjustChanged = descChanged || performer.trim() !== '' || dueChanged;
+  const adjustChanged = descChanged || nguoi !== null || dueChanged;
 
   const missing =
     !outcome ? 'Chọn kết quả hiện tại.'
@@ -107,15 +108,14 @@ export function CapNhatTuanForm({ pa, variant = 'inline', onCancel, onSaved }: {
       if (decision === 'adjust') {
         body.adjust = {
           description: descChanged ? desc : undefined,
-          performerName: performer.trim() || undefined,
+          ...nguoiThanhPayload(nguoi),
           followupDue: dueChanged ? due : undefined,
         };
       }
       if (decision === 'replace') {
         body.newPlan = {
           kind: newKind, description: newDesc,
-          /* Để trống = chính người đang ghi. Khai rõ bằng `performerSelf`, máy chủ không tự suy (Q13). */
-          performerSelf: !newPerformer.trim(), performerName: newPerformer.trim() || undefined,
+          ...nguoiThanhPayload(newNguoi),
           rescheduleTarget: newKind === 'reschedule_mt' ? newTarget : null,
         };
       }
@@ -211,8 +211,8 @@ export function CapNhatTuanForm({ pa, variant = 'inline', onCancel, onSaved }: {
             <textarea className="field w-full" rows={2} value={desc} onChange={(e) => setDesc(e.target.value)} />
           </label>
           <label className="block">
-            {nhan('Người thực hiện mới', `để trống nếu không đổi · hiện: ${pa.performer ?? 'chưa có'}`)}
-            <input className="field w-full" value={performer} onChange={(e) => setPerformer(e.target.value)} />
+            {nhan('Người thực hiện mới')}
+            <ChonNguoi nhom="giao_vien" value={nguoi} onChange={setNguoi} khongDoi={pa.performer ?? 'chưa có'} />
           </label>
           {oNgay('Dự kiến kết thúc',
             <input type="date" className="field" style={{ width: '9.5rem' }} value={due} min={on || undefined}
@@ -247,8 +247,8 @@ export function CapNhatTuanForm({ pa, variant = 'inline', onCancel, onSaved }: {
               placeholder="Làm gì, bao nhiêu buổi, đến khi nào" />
           </label>
           <label className="block">
-            {nhan('Người thực hiện', 'để trống = bạn')}
-            <input className="field w-full" value={newPerformer} onChange={(e) => setNewPerformer(e.target.value)} />
+            {nhan('Người thực hiện')}
+            <ChonNguoi nhom="giao_vien" value={newNguoi} onChange={setNewNguoi} />
           </label>
         </div>
       )}

@@ -15,6 +15,7 @@ import {
   canEndWithOutcome, planDueDate, planEndDefault, stepsForMode, weeklyUpdateDue,
   type NextStep, type RescheduleTarget,
   issueBranchOf, issueLabel, caseTopicLabel, urgencyFromSos,
+  caseTopicsFor,
   type CaseOutcome, type FollowUpOutcome, type InterventionKind,
 } from '../../../shared/domain/index.ts';
 import { addDays, badRequest, isIsoDate, notFound, nowIso } from '../util.ts';
@@ -29,6 +30,7 @@ import { linkSignalToCase, loadSignal } from './signals.ts';
 import { NOT_UNCONFIRMED_PRESET, sosCaseState } from './sosState.ts';
 import { PLAN_DECISIONS, decisionToStep, type PlanDecision } from '../../../shared/domain/index.ts';
 import { apDungDieuChinh, chuanHoaDieuChinh, lichSuDieuChinhCuaCase } from './planRevisions.ts';
+import { chuanHoaNguoiThucHien } from './nguoiThucHien.ts';
 
 /**
  * CASE HỌC VỤ — một vòng đời cho cả hai nguồn.
@@ -430,7 +432,9 @@ export function reportIssue(p: Principal, input: {
   if (!topic) {
     throw badRequest('Chọn kỹ năng: Listening, Reading, Writing Task 1, Writing Task 2 hay Speaking.');
   }
-  const allowedTopics: readonly string[] = cycle && isRatioCycle(cycle) ? [...ENTRY_SKILLS, 'writing'] : ENTRY_SKILLS;
+  const ratioForTopics = !!(cycle && isRatioCycle(cycle));
+  const allowedTopics: readonly string[] = ratioForTopics
+    ? [...new Set([...caseTopicsFor(true), ...ENTRY_SKILLS])] : ENTRY_SKILLS;
   if (!allowedTopics.includes(topic)) throw badRequest(`Chủ đề không hợp lệ: ${topic}`);
   if (fromSignal && categoryOf(topic) !== (fromSignal.category ?? categoryOf(fromSignal.skill))) {
     throw badRequest('Case tạo từ tín hiệu phải đúng môn của tín hiệu đó.');
@@ -591,6 +595,28 @@ export function reportIssue(p: Principal, input: {
     if (input.fromSignalId) linkSignalToCase(p, input.fromSignalId, caseId, summary);
     return caseDetail(p, caseId);
   });
+}
+
+/**
+ * CHỦ ĐỀ CASE MỞ ĐƯỢC CHO MỘT HỌC VIÊN (F07) — máy chủ và form (`QuickReport.tsx`) đọc CÙNG một bộ.
+ *
+ * Lớp thường có bốn ô L · R · W · S; Fast Track có năm ô L · R · W1 · W2 · S — đúng bộ mà `reportIssue` đã chấp nhận
+ * (Q8), rút về một hàm để form không phải tự đoán lại chương trình của em.
+ */
+export function caseTopicsOf(p: Principal, studentId: number, cycleId?: number | null) {
+  const conn = db();
+  const student = conn.prepare('SELECT * FROM students WHERE id = ?').get(studentId) as any;
+  if (!student) throw notFound('Không tìm thấy học viên');
+  const enr = conn
+    .prepare(`SELECT class_id FROM enrollments WHERE student_id = ? AND status='active' ORDER BY id DESC LIMIT 1`)
+    .get(studentId) as any;
+  require_(p, PERMISSIONS.ATTEMPT_VIEW, { classId: enr?.class_id ?? null, studentId },
+    'Bạn không có quyền xem học viên này.');
+  const cycle = cycleId
+    ? (conn.prepare('SELECT * FROM learning_cycles WHERE id = ? AND student_id = ?').get(cycleId, studentId) as any)
+    : currentCycle(studentId);
+  const ratio = !!(cycle && isRatioCycle(cycle));
+  return { ratio, topics: caseTopicsFor(ratio) };
 }
 
 /**
@@ -800,11 +826,9 @@ export function recordIntervention(p: Principal, caseId: number, input: {
   if (needsApproval && input.completedDate) {
     throw badRequest('Việc đã làm xong rồi thì không còn gì để duyệt — phương án cần duyệt phải ở "đã lên kế hoạch".');
   }
-  const performerUserId = input.performerUserId
-    ?? (input.performerSelf && !input.performerName?.trim() ? p.userId : null);
-  if (!performerUserId && !input.performerName?.trim() && status !== 'planned') {
-    throw badRequest('Cần ghi ai là người thực hiện — người nhập không mặc định là người làm.');
-  }
+  const nguoi = chuanHoaNguoiThucHien(p, input, { nhom: 'giao_vien', batBuoc: status !== 'planned' });
+  const performerUserId = nguoi?.userId ?? null;
+  const performerName = nguoi?.name ?? null;
 
   return tx(() => {
     /*
@@ -852,12 +876,16 @@ export function recordIntervention(p: Principal, caseId: number, input: {
          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,1,?,?,?,?,?,?)`,
       )
       .run(caseId, input.kind, description,
-           performerUserId, input.performerName?.trim() || null, p.userId, effStatus,
+           performerUserId, performerName, p.userId, effStatus,
            input.plannedDate ?? null, input.startedDate ?? null, input.completedDate ?? null,
            planEnd, cycleDue, cycleStart,
            needsApproval ? 1 : 0, needsApproval ? 'pending' : null, approvalDue,
            rescheduleTarget, nowIso());
     const id = Number(info.lastInsertRowid);
+    const performerDisplayName = performerName
+      ?? (performerUserId
+        ? ((conn.prepare('SELECT full_name FROM users WHERE id = ?').get(performerUserId) as any)?.full_name ?? null)
+        : null);
 
     /*
      * BÁO CHO QUẢN LÝ TRONG MỌI TRƯỜNG HỢP (owner chốt 10/09/2026).
@@ -880,7 +908,7 @@ export function recordIntervention(p: Principal, caseId: number, input: {
       studentId: c.eff_student_id, cycleId: c.eff_cycle_id,
       eventType: 'intervention', eventDate: input.completedDate ?? input.startedDate ?? today,
       title: `${input.backfill ? '(nhập bù) ' : ''}Hỗ trợ: ${description.slice(0, 60) || input.kind}`,
-      detail: input.performerName ?? null,
+      detail: performerDisplayName,
       refTable: 'case_interventions', refId: id, createdBy: p.userId,
       dedupKey: `intervention:${id}`,
     });
@@ -1115,7 +1143,10 @@ export function backfillCase(p: Principal, input: {
   topic: string; primaryCode: string;
   title?: string | null; summary: string;
   fromDate: string; toDate: string;
-  actions: { description: string; performerName?: string | null; fromDate: string; toDate: string }[];
+  actions: {
+    description: string; performerSelf?: boolean; performerUserId?: number | null; performerName?: string | null;
+    fromDate: string; toDate: string;
+  }[];
   outcome: string; note: string;
   metrics?: unknown;
   /** Người dùng đã thấy cảnh báo trùng nhập bù (chốt 6) và xác nhận đây là lần khác. */
@@ -1137,7 +1168,7 @@ export function backfillCase(p: Principal, input: {
     if (a.fromDate > a.toDate) throw badRequest('Một dòng "đã làm gì" có ngày bắt đầu sau ngày kết thúc.');
     if (a.toDate > today) throw badRequest('Không ghi được một việc đã xong ở ngày tương lai.');
     if ((a.description ?? '').trim().length < 3) throw badRequest('Mỗi dòng "đã làm gì" phải nói rõ đã làm gì.');
-    if (!(a.performerName ?? '').trim()) throw badRequest('Mỗi dòng "đã làm gì" phải ghi người làm.');
+    chuanHoaNguoiThucHien(p, a, { nhom: 'giao_vien', batBuoc: true });
   }
   const note = (input.note ?? '').trim();
   /*
@@ -1195,7 +1226,8 @@ export function backfillCase(p: Principal, input: {
 
     for (const a of input.actions) {
       recordIntervention(p, created.id, {
-        kind: 'other', description: a.description, performerName: a.performerName,
+        kind: 'other', description: a.description,
+        performerSelf: a.performerSelf, performerUserId: a.performerUserId, performerName: a.performerName,
         status: 'completed', startedDate: a.fromDate, completedDate: a.toDate,
         backfill: true,
       });
@@ -2027,6 +2059,8 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
     attemptNo: number; attemptId: number; band: number; week: string | null; expectation: number | null;
     /* Lớp Normal: điểm đạt/tổng của chính đề đó. Fast Track để trống. */
     score: number | null; total: number | null; passed: boolean | null;
+    /** 'mock' | 'progress' | 'final' — lớp thường KHÔNG được gọi bài của mình là "MT" (PR-Form, SkillBoard). */
+    attemptKind: string | null;
   };
   const byCategory = new Map<string, Point[]>();
   for (const r of scoreRows) {
@@ -2045,6 +2079,7 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
       week: r.period_code ?? null,
       expectation: !ratio && r.target_at_attempt !== null && r.target_at_attempt !== undefined
         ? expectationFor(r.target_at_attempt, r.attempt_no) : null,
+      attemptKind: r.kind ?? null,
     });
     byCategory.set(cat, list);
   }
@@ -2194,7 +2229,7 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
        */
       points: points.slice(-4).map((pt) => ({
         attemptNo: pt.attemptNo, band: pt.band, expectation: pt.expectation,
-        score: pt.score, total: pt.total, passed: pt.passed,
+        score: pt.score, total: pt.total, passed: pt.passed, attemptKind: pt.attemptKind,
       })),
       /* Lớp Normal: điểm đạt/tổng của đề gần nhất, để giao diện ghi "21/40" chứ không ghi band. */
       score: latest?.score ?? null,
@@ -2419,17 +2454,17 @@ function caseCardOf(caseId: number, c: any, soBangChung: Map<number, number>) {
     };
   });
 
-  /* Lượt đánh giá mà case này đã đi qua — "MT2 · 17/08" ở chân thẻ. */
+  /* Lượt đánh giá mà case này đã đi qua — "MT2 · 17/08" ở chân thẻ (lớp thường: "Giữa khoá"/"Cuối khoá" thay MT{n}). */
   const attempts = (conn
     .prepare(
-      `SELECT DISTINCT m.attempt_no, rp.week_start FROM case_milestones m
+      `SELECT DISTINCT m.attempt_no, rp.week_start, a.kind AS attempt_kind FROM case_milestones m
          LEFT JOIN assessment_attempts a ON a.id = m.attempt_id
          LEFT JOIN report_periods rp ON rp.id = a.planned_period_id
         WHERE m.case_id = ? AND m.attempt_no IS NOT NULL
         ORDER BY m.attempt_no`,
     )
     .all(caseId) as any[])
-    .map((r) => ({ attemptNo: r.attempt_no as number, week: r.week_start ?? null }));
+    .map((r) => ({ attemptNo: r.attempt_no as number, week: r.week_start ?? null, attemptKind: r.attempt_kind ?? null }));
 
   return {
     /* Chủ đề gốc của case (§7.5, PR-K) — để giao diện mở đúng danh mục phân loại (`issuesForTopic`) khi "Xác định nguyên nhân". */
@@ -2655,7 +2690,11 @@ export function updateResult(p: Principal, interventionId: number, input: {
    * Với `decision: 'adjust'`, `performerSelf`/`performerUserId`/`performerName` ở cấp ngoài bị bỏ qua (người thực hiện của
    * Điều chỉnh thắng), và `followup_due` không đổi thì giữ đúng như cũ.
    */
-  adjust?: { description?: string | null; performerUserId?: number | null; performerName?: string | null; followupDue?: string | null } | null;
+  adjust?: {
+    description?: string | null;
+    performerSelf?: boolean; performerUserId?: number | null; performerName?: string | null;
+    followupDue?: string | null;
+  } | null;
   /** Người thực hiện chu kỳ vừa rồi, nếu chưa ghi lúc lên kế hoạch. */
   performerSelf?: boolean; performerUserId?: number | null; performerName?: string | null;
   /** Điểm GIÁO VIÊN TỰ CHẤM kèm theo — không phải điểm chính thức. */
@@ -2743,7 +2782,7 @@ export function updateResult(p: Principal, interventionId: number, input: {
   const remainingIssue = String(input.remainingIssue ?? '').trim() || null;
   if (remainingIssue && remainingIssue.length > 300) throw badRequest('Vấn đề còn tồn tối đa 300 ký tự.');
   /* Điều chỉnh: chuẩn hoá TRƯỚC giao dịch; sai thì không ghi gì. */
-  const adjustPatch = nextStep === 'adjust' ? chuanHoaDieuChinh(iv, input.adjust, observedOn) : null;
+  const adjustPatch = nextStep === 'adjust' ? chuanHoaDieuChinh(p, iv, input.adjust, observedOn) : null;
   const metrics = normalizeMetrics(input.metrics);
   if (input.evidenceAttemptId) {
     const a = conn.prepare('SELECT student_id FROM assessment_attempts WHERE id = ?').get(input.evidenceAttemptId) as any;
@@ -2770,7 +2809,16 @@ export function updateResult(p: Principal, interventionId: number, input: {
            remainingIssue, decisionNote, nowIso());
     const followupId = Number(fInfo.lastInsertRowid);
 
-    const performerUserId = input.performerSelf ? p.userId : (input.performerUserId ?? iv.performer_user_id);
+    /*
+     * PR-Form: CHỈ CHUẨN HOÁ VÀ GHI ĐÈ KHI BODY THẬT SỰ GỬI MỘT TRONG BA TRƯỜNG NGƯỜI THỰC HIỆN. Trước đây
+     * `performer_name = COALESCE(?, performer_name)` giữ tên cũ khi chỉ gửi `performerUserId` — kết quả là CẢ HAI cột
+     * cùng có giá trị, phá luật "chỉ một trong hai" (Q5). Nay không gửi gì thì giữ nguyên cả hai cột đúng như cũ.
+     */
+    const nguoiGuiLen = input.performerSelf || input.performerUserId != null || (input.performerName ?? '').trim()
+      ? chuanHoaNguoiThucHien(p, input, { nhom: 'giao_vien', batBuoc: false })
+      : null;
+    const performerUserId = nguoiGuiLen ? nguoiGuiLen.userId : iv.performer_user_id;
+    const performerNameToSave = nguoiGuiLen ? nguoiGuiLen.name : iv.performer_name;
     let created: number | null = null;
 
     if (nextStep === 'complete') {
@@ -2780,11 +2828,11 @@ export function updateResult(p: Principal, interventionId: number, input: {
           `UPDATE case_interventions
               SET status = 'completed', completed_date = ?, closed_reason = 'done',
                   started_date = COALESCE(started_date, cycle_started_on, ?),
-                  performer_user_id = ?, performer_name = COALESCE(?, performer_name),
+                  performer_user_id = ?, performer_name = ?,
                   updated_at = ?
             WHERE id = ?`,
         )
-        .run(completedOn, completedOn, performerUserId ?? null, input.performerName ?? null,
+        .run(completedOn, completedOn, performerUserId ?? null, performerNameToSave ?? null,
              nowIso(), interventionId);
     } else if (nextStep === 'monitor' || nextStep === 'continue' || nextStep === 'adjust') {
       /*
@@ -2805,12 +2853,12 @@ export function updateResult(p: Principal, interventionId: number, input: {
               SET status = 'started', cycle_no = ?, cycle_started_on = ?, action_due = ?,
                   followup_due = COALESCE(followup_due, ?),
                   started_date = COALESCE(started_date, ?),
-                  performer_user_id = ?, performer_name = COALESCE(?, performer_name),
+                  performer_user_id = ?, performer_name = ?,
                   updated_at = ?
             WHERE id = ?`,
         )
         .run(cycleNo + 1, observedOn, nextDue, planEndDefault(observedOn), observedOn,
-             performerUserId ?? null, input.performerName ?? null, nowIso(), interventionId);
+             performerUserId ?? null, performerNameToSave ?? null, nowIso(), interventionId);
       /* PR-S2 (S2): Điều chỉnh = cùng PA, đợt mới như Giữ nguyên, rồi đưa bản mới vào và ghi MỘT dòng lịch sử (bản cũ là `iv`). */
       if (nextStep === 'adjust') {
         apDungDieuChinh(iv, adjustPatch!, { followupId, actorUserId: p.userId, reason: decisionNote!, on: observedOn });

@@ -1,6 +1,8 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { api } from '../lib/api.ts';
 import { Info } from './ui.tsx';
+import { skillShort, type NguoiChon } from '@shared/domain/index.ts';
+import { useSession } from '../lib/session.tsx';
 
 export type Person = { id: number; name: string; title: string | null; role: string | null; branches: string[] };
 
@@ -133,6 +135,201 @@ export function FollowerPicker({ value, onChange, autoNames = [], disabled }: {
           placeholder="Thêm người theo dõi…"
           onChange={(_, p) => { if (p && !chosen.has(p.id)) onChange([...value, p]); }}
         />
+      )}
+    </div>
+  );
+}
+
+// =========================================================================== ChonNguoi (PR-Form F-2)
+
+type NguoiKetQua = { id: number; name: string; role: string | null; branches: string[]; cungLop: boolean; monDay: string[] };
+
+function useNguoiSearch(term: string, nhom: 'giao_vien' | 'nhan_vien', studentId: number | null | undefined, active: boolean) {
+  const [rows, setRows] = useState<NguoiKetQua[]>([]);
+  const [loading, setLoading] = useState(false);
+  const seq = useRef(0);
+  useEffect(() => {
+    if (!active) { setRows([]); return; }
+    const my = ++seq.current;
+    setLoading(true);
+    const t = setTimeout(async () => {
+      try {
+        const qs = new URLSearchParams({ q: term.trim(), nhom });
+        if (studentId) qs.set('studentId', String(studentId));
+        const r = await api.get<NguoiKetQua[]>(`/ref/nguoi?${qs.toString()}`);
+        if (my === seq.current) setRows(r);          // bỏ qua kết quả của lượt gõ cũ
+      } catch { if (my === seq.current) setRows([]); } finally { if (my === seq.current) setLoading(false); }
+    }, 250);
+    return () => clearTimeout(t);
+  }, [term, nhom, studentId, active]);
+  return { rows, loading };
+}
+
+/** `dạy L · R lớp này` · hoặc `vai · chi nhánh` cho một dòng kết quả tìm. */
+function nguoiContextOf(r: NguoiKetQua): string {
+  if (r.cungLop && r.monDay.length) return `dạy ${r.monDay.map(skillShort).join(' · ')} lớp này`;
+  return [r.role, r.branches.join('/')].filter(Boolean).join(' · ') || (r.cungLop ? 'dạy lớp này' : '—');
+}
+
+type ChonNguoiOption =
+  | { kind: 'toi' }
+  | { kind: 'nguoi'; row: NguoiKetQua }
+  | { kind: 'ngoai'; text: string };
+
+/**
+ * Ô chọn MỘT người thực hiện/phụ trách — dùng chung cho case học thuật và Ý thức (PR-Form F-2, §22.5).
+ *
+ * Khác `PersonPicker` (gọi `/ref/people`, đòi `MEETING_VIEW`): đây gọi `/ref/nguoi` — mọi người đăng nhập gọi được,
+ * ngưỡng gõ ≥ 3 ký tự, tìm không dấu, và gợi ý sẵn giáo viên đang dạy lớp của em khi biết `studentId` (Q6).
+ */
+export function ChonNguoi({
+  value, onChange, nhom, studentId, choToi = true, choNgoai = true, khongDoi, macDinhTrong, ariaLabel, disabled,
+}: {
+  value: NguoiChon | null;
+  onChange: (v: NguoiChon | null) => void;
+  nhom: 'giao_vien' | 'nhan_vien';
+  studentId?: number | null;
+  choToi?: boolean; choNgoai?: boolean;
+  /** Ô Điều chỉnh: khi `value = null` hiện "Không đổi · hiện: {khongDoi}". */
+  khongDoi?: string;
+  /** Ô Phụ trách: khi `value = null` hiện nguyên câu này (ví dụ "Mặc định: GVCN của lớp"). */
+  macDinhTrong?: string;
+  ariaLabel?: string;
+  disabled?: boolean;
+}) {
+  const { session } = useSession();
+  const [editing, setEditing] = useState(!value && khongDoi === undefined && macDinhTrong === undefined);
+  const [term, setTerm] = useState('');
+  const [open, setOpen] = useState(true);
+  const [activeIndex, setActiveIndex] = useState(-1);
+  const box = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const uid = useId();
+  const { rows, loading } = useNguoiSearch(term, nhom, studentId, editing);
+
+  useEffect(() => {
+    if (!editing) return;
+    setOpen(true);
+    setActiveIndex(-1);
+    inputRef.current?.focus();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editing]);
+
+  useEffect(() => {
+    if (!editing) return;
+    const away = (e: MouseEvent) => {
+      if (box.current && !box.current.contains(e.target as Node)) {
+        setOpen(false);
+        if (value || khongDoi !== undefined || macDinhTrong !== undefined) setEditing(false);
+      }
+    };
+    document.addEventListener('mousedown', away);
+    return () => document.removeEventListener('mousedown', away);
+  }, [editing, value, khongDoi, macDinhTrong]);
+
+  const options = useMemo<ChonNguoiOption[]>(() => {
+    const out: ChonNguoiOption[] = [];
+    if (choToi) out.push({ kind: 'toi' });
+    for (const r of rows) out.push({ kind: 'nguoi', row: r });
+    if (choNgoai && term.trim().length >= 2) out.push({ kind: 'ngoai', text: term.trim() });
+    return out;
+  }, [choToi, rows, choNgoai, term]);
+
+  const chon = (opt: ChonNguoiOption) => {
+    if (opt.kind === 'toi') onChange({ kieu: 'toi' });
+    else if (opt.kind === 'nguoi') onChange({ kieu: 'tai_khoan', id: opt.row.id, ten: opt.row.name, phu: nguoiContextOf(opt.row) });
+    else onChange({ kieu: 'ngoai', ten: opt.text });
+    setTerm('');
+    setOpen(false);
+    setEditing(false);
+  };
+
+  const nguoiLabel = nhom === 'giao_vien' ? 'giáo viên' : 'người';
+
+  if (!editing) {
+    let chinh: string; let phu: string;
+    if (value?.kieu === 'toi') { chinh = 'Tôi'; phu = session?.user?.fullName ?? ''; }
+    else if (value?.kieu === 'tai_khoan') { chinh = value.ten; phu = value.phu ?? ''; }
+    else if (value?.kieu === 'ngoai') { chinh = value.ten; phu = 'người ngoài'; }
+    else if (khongDoi !== undefined) { chinh = `Không đổi · hiện: ${khongDoi}`; phu = ''; }
+    else { chinh = macDinhTrong ?? '—'; phu = ''; }
+
+    return (
+      <div className="field flex items-center justify-between gap-2">
+        <span className="min-w-0 truncate">
+          <span className="text-slate-100">{chinh}</span>
+          {phu && <span className="text-slate-500 text-[11px]"> · {phu}</span>}
+        </span>
+        {!disabled && <button type="button" className="btn btn-sm shrink-0" onClick={() => setEditing(true)}>Đổi</button>}
+      </div>
+    );
+  }
+
+  const activeId = activeIndex >= 0 && activeIndex < options.length ? `${uid}-opt-${activeIndex}` : undefined;
+
+  return (
+    <div ref={box}>
+      <input
+        ref={inputRef}
+        className="field"
+        role="combobox"
+        aria-expanded={open}
+        aria-controls={`${uid}-listbox`}
+        aria-activedescendant={activeId}
+        aria-label={ariaLabel ?? 'Chọn người'}
+        autoComplete="off"
+        value={term}
+        disabled={disabled}
+        placeholder={nhom === 'giao_vien' ? 'Gõ tên giáo viên…' : 'Gõ tên…'}
+        onFocus={() => setOpen(true)}
+        onChange={(e) => { setTerm(e.target.value); setOpen(true); setActiveIndex(-1); }}
+        onKeyDown={(e) => {
+          if (e.key === 'ArrowDown') { e.preventDefault(); setOpen(true); setActiveIndex((i) => Math.min(i + 1, options.length - 1)); }
+          else if (e.key === 'ArrowUp') { e.preventDefault(); setActiveIndex((i) => Math.max(i - 1, 0)); }
+          else if (e.key === 'Enter') {
+            if (activeIndex >= 0 && activeIndex < options.length) { e.preventDefault(); chon(options[activeIndex]); }
+          } else if (e.key === 'Escape') {
+            e.stopPropagation();
+            setOpen(false);
+          }
+        }}
+      />
+      {open && (
+        <div id={`${uid}-listbox`} role="listbox" className="mt-1 max-h-56 overflow-y-auto surface-2 rounded-lg border" style={{ borderColor: 'var(--line-strong)' }}>
+          {options.map((opt, i) => (
+            <button
+              key={opt.kind === 'nguoi' ? `u${opt.row.id}` : opt.kind === 'toi' ? 'toi' : `ngoai:${opt.text}`}
+              id={`${uid}-opt-${i}`}
+              role="option"
+              aria-selected={i === activeIndex}
+              type="button"
+              className={`w-full text-left px-3 py-2 appearance-none bg-transparent border-0 ${i === activeIndex ? 'bg-white/5' : 'hover:bg-white/5'}`}
+              onMouseEnter={() => setActiveIndex(i)}
+              onClick={() => chon(opt)}
+            >
+              {opt.kind === 'toi' && (
+                <>
+                  <div className="text-sm text-slate-100">Tôi</div>
+                  {session?.user?.fullName && <div className="text-[11px] text-slate-500">{session.user.fullName}</div>}
+                </>
+              )}
+              {opt.kind === 'nguoi' && (
+                <>
+                  <div className="text-sm text-slate-100">{opt.row.name}</div>
+                  <div className="text-[11px] text-slate-500">{nguoiContextOf(opt.row)}</div>
+                </>
+              )}
+              {opt.kind === 'ngoai' && <div className="text-sm text-slate-100">Người ngoài: «{opt.text}»</div>}
+            </button>
+          ))}
+          {term.trim().length < 3 && (
+            <div className="px-3 py-2 text-[11px] text-slate-500">Nhập ít nhất 3 ký tự để tìm {nguoiLabel}</div>
+          )}
+          {term.trim().length >= 3 && loading && <div className="px-3 py-2 text-[11px] text-slate-500">Đang tìm…</div>}
+          {term.trim().length >= 3 && !loading && rows.length === 0 && (
+            <div className="px-3 py-2 text-[11px] text-slate-500">Không tìm thấy {nguoiLabel} phù hợp</div>
+          )}
+        </div>
       )}
     </div>
   );

@@ -1,8 +1,20 @@
 /** CASE — hạng mục, phân loại nguyên nhân, phương án, phê duyệt và kết quả. */
 
-import { ENTRY_SKILL_LABEL, type EntrySkill } from './skills.ts';
+import { ENTRY_SKILLS, ENTRY_SKILL_LABEL, type EntrySkill } from './skills.ts';
+import { REGULAR_SKILLS } from './normal.ts';
 
 // ------------------------------------------------ Chủ đề của một case học thuật
+
+/**
+ * CHỦ ĐỀ CASE THEO CHƯƠNG TRÌNH (F07) — MỘT hàm cho cả máy chủ (`reportIssue`,
+ * `GET /students/:id/case-topics`) và form (`QuickReport.tsx`), để hai nơi không lệch bộ.
+ *
+ * `ratio` = lớp thường (chấm theo tỷ lệ đạt/tổng): bốn môn L · R · W · S, đúng thứ tự này.
+ * Không phải lớp thường (Fast Track): năm ô L · R · W1 · W2 · S.
+ */
+export function caseTopicsFor(ratio: boolean): readonly string[] {
+  return ratio ? REGULAR_SKILLS : ENTRY_SKILLS;
+}
 
 /*
  * CASE CHỈ CÒN LÀ HỌC THUẬT (chốt 21/09/2026, rule book mục 18).

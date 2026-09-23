@@ -12,6 +12,7 @@ import { purgeAttachmentsOf, xoaTepSauGiaoDich } from '../platform/attachments.t
 import { currentCycle } from '../fasttrack/cycles.ts';
 import { KEY_TAKEN_MESSAGE, activeClassOf, canManageDiscipline, requireManageDiscipline, requireViewClass, requireViewStudent } from './access.ts';
 import { noteMeasureChange, violationsByIds, type ViolationView } from './violations.ts';
+import { laNguoiHopLe } from '../platform/timNguoi.ts';
 
 /**
  * BIỆN PHÁP XỬ LÝ — VIỆC GVCN LÀM ĐỂ XỬ LÝ MỘT NHÓM VI PHẠM (đặc tả §4.2–§4.3 và §5.3–§5.4, nguồn mục 17–28).
@@ -187,9 +188,9 @@ function checkCustomName(kind: MeasureKind, name: unknown): string | null {
 
 function checkOwner(userId: unknown): number | null {
   if (userId === null || userId === undefined || userId === '') return null;
-  const u = db().prepare('SELECT id FROM users WHERE id = ?').get(Number(userId)) as any;
-  if (!u) throw badRequest('Người phụ trách không tồn tại.');
-  return u.id;
+  const id = Number(userId);
+  if (!laNguoiHopLe(id, 'nhan_vien')) throw badRequest('Người phụ trách phải là nhân viên đang làm việc.');
+  return id;
 }
 
 /** GVCN đang phụ trách lớp của em; không có thì người tạo. */
@@ -389,9 +390,17 @@ export function confirmMeasure(p: Principal, id: number, input: {
   if (row.status !== 'preparing') throw badRequest('Phương án xử lý này đã thực hiện rồi.');
 
   const note = input.note === undefined ? (row.note ?? '') : String(input.note ?? '').trim();
-  const performerName = String(input.performerName ?? '').trim() || null;
-  const performedBy = input.performedBy ? Number(input.performedBy) : null;
-  if (performedBy && !db().prepare('SELECT id FROM users WHERE id = ?').get(performedBy)) throw badRequest('Người thực hiện không tồn tại.');
+  let performerName = String(input.performerName ?? '').trim() || null;
+  let performedBy = input.performedBy ? Number(input.performedBy) : null;
+  if (performedBy) {
+    if (!laNguoiHopLe(performedBy, 'nhan_vien')) {
+      throw badRequest('Người thực hiện phải là nhân viên đang làm việc. Người ngoài thì chọn "Người ngoài" và gõ tên.');
+    }
+    performerName = null; // Q5: có ID thì không ghi kèm tên tự do — một trong hai, không cả hai.
+  } else if (!performerName) {
+    /* K2-6d: thiếu người thực hiện thì máy chủ tự lấy người đang xác nhận — không còn báo lỗi. */
+    performedBy = p.userId;
+  }
 
   const missing = measureMissing(row.kind as MeasureKind, {
     performedOn: input.performedOn || null, content: note, attachments: attachmentCountOf(id),

@@ -101,11 +101,11 @@ Số dòng đo trên `main` @ `37786fd` (779 phép kiểm, gọi là **B = 779**
 
 ## Task 0 · Worktree, nhánh, mốc
 
-- [ ] `git fetch origin`; kiểm `git log origin/main --oneline | grep -i "PR-Pa"` đã có merge của Pa.
+- [x] `git fetch origin`; kiểm `git log origin/main --oneline | grep -i "PR-Pa"` đã có merge của Pa.
   **Chưa có** → vẫn làm Task 1–6 (không chạm `QuickReport.tsx`), rebase lên `origin/main` sau khi Pa merge rồi mới làm Task 7.
-- [ ] `git worktree add .claude/worktrees/pr-form-chon-nguoi -b pr-form-chon-nguoi origin/main`
-- [ ] Chép file kế hoạch này vào nhánh, `npm ci` nếu cần, `npm run check` → ghi mốc B (dự kiến 779 + phép kiểm của Pa/Qa/Rc1 đã merge).
-- [ ] Commit `PR-Form (0): kế hoạch + mốc {B} phép kiểm`.
+- [x] `git worktree add .claude/worktrees/pr-form-chon-nguoi -b pr-form-chon-nguoi origin/main`
+- [x] Chép file kế hoạch này vào nhánh, `npm ci` nếu cần, `npm run check` → ghi mốc B (dự kiến 779 + phép kiểm của Pa/Qa/Rc1 đã merge).
+- [x] Commit `PR-Form (0): kế hoạch + mốc {B} phép kiểm`.
 
 ## Task 1 · Luật thuần dùng chung (shared)
 
@@ -129,6 +129,8 @@ Số dòng đo trên `main` @ `37786fd` (779 phép kiểm, gọi là **B = 779**
 
 **Xong khi:** `npm run check` xanh, số phép kiểm = B + mới. Commit `PR-Form (1): luật thuần chọn người, bằng chứng, chủ đề Case`.
 
+- [x] Task 1 xong — `npm run check` xanh, **785 = 779 + 6**.
+
 ## Task 2 · Máy chủ: tìm người `GET /ref/nguoi`
 
 **Files:** tạo `server/src/platform/timNguoi.ts`; route trong `routes/index.ts` cạnh `/ref/people` (dòng 262-264).
@@ -149,6 +151,8 @@ có; tài khoản bị khoá (UPDATE `status` tạm, trả lại trong `finally`
 các GV đang dạy lớp đó, `cungLop = true`.
 
 Commit `PR-Form (2): GET /ref/nguoi — tìm người không dấu, ≥ 3 ký tự, gợi ý GV lớp của em`.
+
+- [x] Task 2 xong — `npm run check` xanh, **791 = 785 + 6**.
 
 ## Task 3 · Máy chủ: người thực hiện lưu ID, kiểm ở một chỗ (F-2) + ngày Điều chỉnh (nợ S2)
 
@@ -188,6 +192,8 @@ Commit `PR-Form (2): GET /ref/nguoi — tìm người không dấu, ≥ 3 ký t�
 
 Commit `PR-Form (3): người thực hiện PA học thuật lưu ID, kiểm một chỗ; Điều chỉnh giữ ngày mặc định`.
 
+- [x] Task 3 xong — `npm run check` xanh, **798 = 791 + 7**.
+
 ## Task 4 · Máy chủ: chủ đề Case theo chương trình (F07), SkillBoard lớp thường, Ý thức (K2-6d, YT-4)
 
 **Files:** `cases.ts`, `measures.ts`, `violations.ts`, `routes/index.ts`, `tests/yThuc.tests.ts:767`.
@@ -216,6 +222,8 @@ là người xác nhận · `performedBy` là tài khoản khoá → 400 · HTTP
 
 Commit `PR-Form (4): chủ đề Case theo chương trình (F07), attemptKind cho SkillBoard, K2-6d, defaultSkill vi phạm`.
 
+- [x] Task 4 xong — `npm run check` xanh, **804 = 798 + 6**.
+
 ## Task 5 · Web: ô chọn người `ChonNguoi`
 
 **Files:** `web/src/ui/PeoplePicker.tsx` (thêm export `ChonNguoi`; `PersonPicker`/`FollowerPicker` giữ nguyên để
@@ -239,6 +247,8 @@ Commit `PR-Form (4): chủ đề Case theo chương trình (F07), attemptKind ch
 **Xong khi:** `npm run check` xanh (typecheck). Không có phép kiểm máy chủ mới ở Task này (luật đã kiểm ở Task 1–2).
 Commit `PR-Form (5): ChonNguoi — tìm người ≥ 3 ký tự, Tôi, Người ngoài, bàn phím`.
 
+- [x] Task 5 xong — `npm run check` xanh (typecheck), 804 phép kiểm không đổi.
+
 ## Task 6 · Web: khối Bằng chứng G-9 + YT-5
 
 **Files:** `web/src/ui/BangChung.tsx`, `web/src/modules/yThuc/ConfirmMeasurePanel.tsx`.
@@ -257,6 +267,8 @@ Commit `PR-Form (5): ChonNguoi — tìm người ≥ 3 ký tự, Tôi, Người 
   để `attachmentCount` cập nhật và nút "Xác nhận đã thực hiện" sáng ngay sau khi tải thư. (Người thực hiện ở Task 9.)
 
 **Xong khi:** typecheck xanh; bấm thử ở Task 11. Commit `PR-Form (6): Bằng chứng nhận Ctrl+V, kéo thả, nhiều tệp; nút Xác nhận sáng sau khi tải thư (YT-5)`.
+
+- [x] Task 6 xong — `npm run check` xanh, 804 phép kiểm không đổi. Bấm thử để Task 11.
 
 ## Task 7 · Web: `QuickReport` — F07, lưu trước đính kèm sau (F-1), thẻ nhập bù (F-3), điểm chi tiết (S5)
 
@@ -299,6 +311,12 @@ onPickStudent` không đổi; `signal` có thể mang `kind`, `scoreText`, `cont
 **Xong khi:** typecheck xanh; mở form từ hồ sơ HV FT, HV lớp thường, trang lớp (chưa chọn em), dòng tín hiệu của Pa đều chạy
 đúng ở Task 11. Commit `PR-Form (7): form Case — lớp thường có Writing, lưu rồi đính kèm tại chỗ, thẻ nhập bù 3 dòng, điểm chi tiết`.
 
+- [x] Task 7 xong — `npm run check` xanh, 826 phép kiểm không đổi (không có phép kiểm máy chủ mới ở Task này). Tách
+  `ComponentsField`/`componentsPayload` sang `ChiTietKyNang.tsx`, `CasePanel.tsx` import lại — `OutcomeDialog` không đổi hành vi
+  (thêm `buttonLabel?` tuỳ chọn, mặc định giữ nguyên chữ cũ). Ba caller (`ClassOverviewPage`, `StudentDetailPage` × 2,
+  `DongTinHieu`) không cần sửa: `onClose` đã đóng panel trước khi `onDone` chạy (bên trong `dong()` mới), nơi gọi đóng lại
+  trong `onDone` là vô hại (idempotent). Bấm thử để Task 11.
+
 ## Task 8 · Web: người thực hiện PA học thuật + nút Sửa có lý do (nợ S2)
 
 **Files:** `CasePanel.tsx` (ActionDialog 819-980), `CapNhatTuan.tsx` (64, 70, 82, 104-120, 212-216, 248-252),
@@ -327,6 +345,12 @@ onPickStudent` không đổi; `signal` có thể mang `kind`, `scoreText`, `cont
 
 **Xong khi:** typecheck xanh. Commit `PR-Form (8): chọn người thực hiện khi lập, Điều chỉnh, Thay PA; Sửa gợi ý có lý do; data-pa-id cho Qb`.
 
+- [x] Task 8 xong — `npm run check` xanh, 826 phép kiểm không đổi. Lệch kế hoạch có chủ ý: `CapNhatTuan` Điều chỉnh dùng
+  `...nguoiThanhPayload(nguoi)` cho cả `toi` (gửi `performerSelf: true`) thay vì gửi thẳng `performerUserId: session.user.id`
+  như bản kế hoạch gợi ý — vì `performerUserId` bị `laNguoiHopLe(..., 'giao_vien')` kiểm, QL tự ghi PA học thuật (được phép
+  qua `SOS_EDIT anyScope`) sẽ bị 400 nếu gửi ID của chính họ; `performerSelf` cố tình bỏ qua kiểm vai (Task 3, "giữ hành vi
+  cũ khi QL tự ghi"). Ghi vào đây theo đúng chỉ dẫn khi thấy kế hoạch lệch mã thật.
+
 ## Task 9 · Web: Ý thức — người thực hiện, Phụ trách (YT-9), Môn tự điền (YT-4)
 
 **Files:** `ConfirmMeasurePanel.tsx`, `CreateMeasurePanel.tsx`, `XemPhuongAnPanel.tsx`, `RecordViolationPanel.tsx`.
@@ -346,6 +370,10 @@ onPickStudent` không đổi; `signal` có thể mang `kind`, `scoreText`, `cont
 
 **Xong khi:** typecheck xanh. Commit `PR-Form (9): Ý thức — chọn người thực hiện, Phụ trách PA xử lý, Môn tự điền`.
 
+- [x] Task 9 xong — `npm run check` xanh, 826 phép kiểm không đổi. `CreateMeasurePanel` giữ lại nửa sau của `SectionNote` cũ
+  (câu về hai nút Lưu/Xác nhận — không liên quan phụ trách) thay vì xoá cả khối, chỉ bỏ đúng câu về người phụ trách mặc
+  định như kế hoạch nói.
+
 ## Task 10 · Web: chữ lớp thường ở `SkillBoard.tsx`
 
 **Files:** `web/src/modules/cases/SkillBoard.tsx` (chỉ thêm trường vào kiểu, không đổi tên kiểu `SkillBoardRow` —
@@ -362,6 +390,9 @@ Dòng đo trên main (đặc tả §6 ghi 203/412/917 — lệch, xem mục mâu
 - "Số MT đánh lại từ 1" nằm ở `StudentDetailPage.tsx:234` (Qb) — **không** sửa ở đây.
 
 Commit `PR-Form (10): SkillBoard lớp thường — Đạt, Giữa khoá/Cuối khoá thay MT{n}`.
+
+- [x] Task 10 xong — `npm run check` xanh, 826 phép kiểm không đổi. Grep lại file: mọi `kỳ vọng`/`MT\$\{` còn hiện đều đã có
+  điều kiện `row.ratio`/`attemptKind` bảo vệ, không lộ cho lớp thường; FT giữ nguyên chữ cũ.
 
 ## Task 11 · Bấm thử theo vai + 375px (một lần), đẩy PR
 
@@ -386,7 +417,8 @@ Kịch bản (mỗi kịch bản ≥ 1 ảnh `thiet-ke/anh/pr-form/NN-ten.png`):
 8. Hồ sơ HV lớp thường → bảng kỹ năng không còn "Đạt kỳ vọng", chip ghi "Giữa khoá".
 9. **375px:** kịch bản 1 và 3 — Modal không cuộn ngang, danh sách chọn người không bị cắt, thẻ nhập bù ba dòng không vỡ.
 
-- [ ] `npm run check` xanh lần cuối, ghi số phép kiểm (≥ B + 25).
+- [x] `npm run check` xanh lần cuối — **826 = 779 + 47** (≥ B + 25 đạt). Bấm thử theo vai đủ 9 kịch bản, ảnh ở
+  `thiet-ke/anh/pr-form/` (29 ảnh). Tìm và SỬA một lỗi thật khi bấm thử (xem Nhật ký).
 - [ ] Push, mở PR (tiêu đề `PR-Form: chọn người lưu ID, bằng chứng ngay trong form, Case Writing lớp thường`), mô tả gồm
   bảng Q, danh sách ảnh, và dòng "Không migrate". Báo planning (không tự merge, không tự rà).
 
@@ -417,3 +449,12 @@ Kịch bản (mỗi kịch bản ≥ 1 ảnh `thiet-ke/anh/pr-form/NN-ten.png`):
 | Việc | Giao | Ghi chú |
 |---|---|---|
 | Ô "Người tiếp nhận" ở `StudentManagePanel.tsx:345` (panel chuyển lớp) gọi `/ref/people` → GVCN bị từ chối (403), ô rỗng | **PR-LT** (sau deploy) | LT nên dùng đường `/ref/nguoi` mới của PR-Form (nhóm `nhan_vien` hoặc `giao_vien` theo luật chuyển lớp) + ô `ChonNguoi`; PR-Form **không** chạm file này |
+
+## Nhật ký
+
+| Ngày | Task | Ghi chú (model người code · số phép kiểm · lệch plan · quyết định tại chỗ) |
+|---|---|---|
+| 23/09 | 0 | Sonnet 5 (session code). Worktree `.claude/worktrees/pr-form-chon-nguoi` từ `origin/main` 61ae2dd. PR-Pa **chưa merge** vào `origin/main` (chỉ mới kế hoạch #62; code Pa đang ở repo phụ `pisa-pr-pa` nhánh `pr-pa-tong-quan`, chưa vào `main`) → làm Task 1–6 trước, không chạm `QuickReport.tsx`; kiểm lại trước Task 7. `npm ci` xong, `npm run check` → **B = 779** đúng như dự kiến. |
+| 23/09 | 1–6 | Sonnet 5. Task 1 (785=779+6), Task 2 (791=785+6), Task 3 (798=791+7), Task 4 (804=798+6), Task 5 (typecheck, không phép kiểm mới), Task 6 (typecheck, không phép kiểm mới) — tất cả xanh, mỗi Task một commit. Trước Task 7: `git fetch origin` lại — PR-Pa **vẫn chưa merge** (đầu `origin/main` vẫn là #67, không có commit merge Pa nào). **Dừng theo đúng chỉ dẫn, báo planning** — chưa làm Task 7 (đụng `QuickReport.tsx`). |
+| 23/09 | 6→7 | Sonnet 5. Chủ sản phẩm báo Pa đã merge (PR #68). `git fetch origin` xác nhận; `git rebase origin/main` — xung đột duy nhất ở `shared/domain/index.ts` (thêm dòng export cạnh dòng Pa thêm) và `run.ts` (khối gọi test cạnh khối Pa thêm), cả hai giữ CẢ HAI khối, không mất gì. `npm run check` sau rebase → **826 = 804 + 22 (test Pa)** xanh, typecheck xanh. `origin/main` sau đó có thêm 2 commit đặc tả (không đụng code) — không rebase lại. Tiếp Task 7. |
+| 23/09 | 11 | Sonnet 5. Máy chủ dev worktree: `npm run seed`, API nền cổng 4167, Vite tạm cổng 5367 (proxy `/api`, alias `@shared`), dùng Chrome thật qua Playwright (`channel: 'chrome'`, cài tạm bằng `npm install --no-save playwright`, không cần tải Chromium vì máy đã có Chrome) — Browser pane có sẵn dùng để đăng nhập/điều tra song song. Bấm đủ 9 kịch bản theo vai (GVBM 9, GVCN 7, QL 2), cả hai ở 375px (kịch bản 1, 3) — không cuộn ngang, danh sách `ChonNguoi` không bị cắt trong Modal. 29 ảnh vào `thiet-ke/anh/pr-form/`. Tín hiệu lớp thường không có sẵn trong bộ demo (chỉ có tín hiệu FT) — nạp một dòng `case_signals` cũ (id 30, đã `noted`) về `pending` với `raised_on`/`verify_due` mới để thử kịch bản 4 (chỉ sửa `data/pisa-demo.sqlite` của worktree, không đụng bản chính). **Bắt được 1 lỗi thật khi bấm thử:** ô "Môn" của `RecordViolationPanel` (YT-4) không tự điền dù máy chủ trả đúng `defaultSkill` — do dùng `useEffect` gọi `setSkill(defaultSkill)`, bị một effect khác (`[open, violation?.id]`) ghi đè lại `''` sau đó trong một số vòng render (xác nhận bằng console log runtime, không phải StrictMode). Sửa: bỏ effect, tính `displaySkill` trực tiếp từ `daChonMon ? skill : (defaultSkill ?? skill)`, chỉ gán vào `<select value>`; `skill` (state thật) giữ nguyên cho lúc gửi. `npm run check` lại xanh **826** sau sửa. Dọn: xoá 3 file Playwright tạm + file Vite tạm, tắt hai server (cổng 4167/5367), giữ lại 29 ảnh. |

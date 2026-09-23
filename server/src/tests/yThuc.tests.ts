@@ -764,7 +764,16 @@ export async function runYThucTests(t: YThucTestKit) {
     const ids = violations(st.id, 2);
     const talk = mk(gvcn, st.id, 'talk_short', ids);
     assertThrows(() => meas.confirmMeasure(gvcn, talk.id, { performerName: 'Cô Thu', note: 'Gặp em cuối buổi' } as any), /Cần chọn ngày thực hiện/, 'Thiếu ngày');
-    assertThrows(() => meas.confirmMeasure(gvcn, talk.id, { performedOn: TODAY, note: 'Gặp em cuối buổi' } as any), /người thực hiện/, 'Thiếu người thực hiện');
+    /*
+     * K2-6d (PR-Form, Q9): thiếu người thực hiện KHÔNG còn báo lỗi — máy chủ tự lấy người đang xác nhận.
+     * Dùng một biện pháp KHÁC (`talk2`) để không tiêu thụ mất `talk`, thứ các dòng dưới còn cần dùng tiếp.
+     */
+    const talk2 = mk(gvcn, st.id, 'talk_short', ids);
+    const noPerformer = meas.confirmMeasure(gvcn, talk2.id, { performedOn: TODAY, note: 'Gặp em cuối buổi' } as any) as any;
+    assert(
+      noPerformer.status === 'done' && noPerformer.performedBy === gvcn.userId,
+      `K2-6d: thiếu người thì performed_by = người xác nhận: ${JSON.stringify(noPerformer)}`,
+    );
     assertThrows(() => meas.confirmMeasure(gvcn, talk.id, { performedOn: TODAY, performerName: 'Cô Thu' } as any), /Cần ghi nội dung hoặc ghi chú/, 'Thiếu nội dung');
     const ok = meas.confirmMeasure(gvcn, talk.id, { performedOn: TODAY, performerName: 'Cô Thu', note: 'Gặp em cuối buổi' } as any) as any;
     assert(ok.status === 'done' && ok.performedOn === TODAY && ok.performerName === 'Cô Thu' && ok.confirmedBy === gvcn.userId && ok.confirmedAt, `Chưa lưu đủ thông tin thực tế: ${JSON.stringify(ok)}`);
