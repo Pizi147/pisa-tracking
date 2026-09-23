@@ -1,9 +1,9 @@
 import { db } from '../db.ts';
 import { demoToday } from '../demoConfig.ts';
 import { normalizeName } from '../util.ts';
-import type { Principal } from '../permissions.ts';
+import { scopeFor, type Principal } from '../permissions.ts';
 import { activeClassOf } from '../yThuc/access.ts';
-import type { NhomNguoi } from '../../../shared/domain/index.ts';
+import { PERMISSIONS, type NhomNguoi } from '../../../shared/domain/index.ts';
 
 /**
  * TÌM NGƯỜI CHO Ô CHỌN `ChonNguoi` — `GET /ref/nguoi` (PR-Form F-2, Q2).
@@ -58,10 +58,15 @@ type HangNguoiTho = { id: number; full_name: string; code: string; role: string 
  * Vai + chi nhánh gộp thẳng vào câu truy vấn chính (mẫu `searchPeople`, `worklist/meeting.ts:594-599`) — trước đây gọi
  * riêng `roleAndBranchesOf` cho từng dòng kết quả, tốn một truy vấn mỗi dòng (~15 truy vấn mỗi lần gõ trên Turso).
  */
-function nguoiHopLe(nhom: NhomNguoi, ids: readonly number[] | null): HangNguoiTho[] {
+function nguoiHopLe(nhom: NhomNguoi, ids: readonly number[] | null, branchIds: readonly number[] | null): HangNguoiTho[] {
   const keys = ROLE_KEYS_OF[nhom];
   const keyPlaceholders = keys.map(() => '?').join(',');
   const idClause = ids ? ` AND u.id IN (${ids.map(() => '?').join(',')})` : '';
+  /* PR-Ra (`trongPhamVi`, Task 3): chỉ người có vai đang hoạt động ở MỘT chi nhánh thuộc phạm vi người xem. */
+  const branchClause = branchIds
+    ? ` AND EXISTS (SELECT 1 FROM user_roles ur4 WHERE ur4.user_id = u.id AND ur4.status = 'active'
+          AND ur4.branch_id IN (${branchIds.map(() => '?').join(',')}))`
+    : '';
   return db()
     .prepare(
       `SELECT DISTINCT u.id, u.full_name, u.code,
@@ -73,14 +78,14 @@ function nguoiHopLe(nhom: NhomNguoi, ids: readonly number[] | null): HangNguoiTh
          FROM users u
          JOIN user_roles ur ON ur.user_id = u.id AND ur.status = 'active'
          JOIN roles r ON r.id = ur.role_id
-        WHERE u.status = 'active' AND r.key IN (${keyPlaceholders})${idClause}`,
+        WHERE u.status = 'active' AND r.key IN (${keyPlaceholders})${idClause}${branchClause}`,
     )
-    .all(...keys, ...keys, ...(ids ?? [])) as HangNguoiTho[];
+    .all(...keys, ...keys, ...(ids ?? []), ...(branchIds ?? [])) as HangNguoiTho[];
 }
 
 export function timNguoi(
-  _p: Principal,
-  opts: { q?: string; nhom?: NhomNguoi; studentId?: number | null },
+  p: Principal,
+  opts: { q?: string; nhom?: NhomNguoi; studentId?: number | null; trongPhamVi?: boolean },
 ): HangNguoi[] {
   const nhom: NhomNguoi = opts.nhom === 'nhan_vien' ? 'nhan_vien' : 'giao_vien';
   const term = (opts.q ?? '').trim();
@@ -93,6 +98,10 @@ export function timNguoi(
   }
   const cungLopIds = new Set(gv.map((g) => g.userId));
 
+  /* QT (`scope.all`) không giới hạn; các vai khác chỉ thấy người trong đúng chi nhánh mình quản lý. */
+  const scope = opts.trongPhamVi ? scopeFor(p, PERMISSIONS.ATTEMPT_VIEW) : null;
+  const branchIds = scope && !scope.all ? scope.branchIds : null;
+
   const build = (row: HangNguoiTho): HangNguoi => ({
     id: row.id, name: row.full_name, role: row.role,
     branches: row.branches ? row.branches.split(',') : [],
@@ -101,14 +110,14 @@ export function timNguoi(
 
   if (term.length < 3) {
     if (!cungLopIds.size) return [];
-    return nguoiHopLe(nhom, [...cungLopIds])
+    return nguoiHopLe(nhom, [...cungLopIds], branchIds)
       .map(build)
       .sort((a, b) => a.name.localeCompare(b.name, 'vi'))
       .slice(0, 6);
   }
 
   const needle = normalizeName(term);
-  const matched = nguoiHopLe(nhom, null)
+  const matched = nguoiHopLe(nhom, null, branchIds)
     .filter((r) => normalizeName(r.full_name).includes(needle) || normalizeName(r.code).includes(needle));
   return matched
     .map(build)

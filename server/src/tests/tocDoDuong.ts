@@ -52,6 +52,13 @@ export const DUONG_DO: MucDo[] = [
 
   // ---------------------------------------------------------------- Tổng quan · Giáo viên
   { trang: 'Tổng quan GV', vai: ['GVCN', 'GVBM', 'GVCN_THUONG'], url: '/my-work' },
+  /* PR-Ra: trang "Công việc" — Hỗ trợ học viên dùng lại `/my-work`, nay có thêm `nguoi`. */
+  { trang: 'Công việc', vai: ['QL', 'QT'], url: '/my-work' },
+  {
+    trang: 'Công việc', vai: ['QL', 'QT', 'GVCN'], url: '/my-work?nguoi=tat-ca',
+    maChuDich: { GVCN: 403 },
+  },
+  { trang: 'Công việc', vai: ['QL'], url: '/my-work?nguoi={gv}' },
   { trang: 'Tổng quan GV', vai: ['QL', 'QT', 'GVCN', 'GVBM', 'GVCN_THUONG'], url: '/tong-quan/hoc-vien-can-ho-tro' },
   { trang: 'Tổng quan GV', vai: ['GVCN', 'GVBM', 'GVCN_THUONG'], url: '/highlights' },
   { trang: 'Tổng quan GV', vai: ['GVCN'], url: '/y-thuc/my-warnings' },
@@ -172,6 +179,13 @@ export const TRAN: Record<string, number> = {
   'GVCN /my-work': 60,
   'GVBM /my-work': 62,
   'GVCN_THUONG /my-work': 60,
+  /* PR-Ra: trang "Công việc" dùng lại /my-work cho QL·QT, cộng chế độ nguoi=tat-ca/{gv} (Q1–Q2). */
+  'QL /my-work': 62,
+  'QT /my-work': 68,
+  'QL /my-work?nguoi=tat-ca': 75,
+  'QT /my-work?nguoi=tat-ca': 75,
+  'GVCN /my-work?nguoi=tat-ca': 19,
+  'QL /my-work?nguoi=7': 69,
   'QL /tong-quan/hoc-vien-can-ho-tro': 42,
   'QT /tong-quan/hoc-vien-can-ho-tro': 39,
   'GVCN /tong-quan/hoc-vien-can-ho-tro': 42,

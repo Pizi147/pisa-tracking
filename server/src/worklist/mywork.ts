@@ -90,6 +90,10 @@ export type WorkItem = {
     id: number; kind: 'normal' | 'ft'; skill: string | null; skillLabel: string;
     score: number | null; total: number | null; deadline: string; actions: SignalAction[];
   } | null;
+  /** PR-Ra Q6: dòng đề xuất PA học thuật chờ duyệt — đủ để mở `ApprovalDialog` ngay trên dòng. */
+  duyet?: { interventionId: number; kind: string; description: string } | null;
+  /** PR-Ra Q5: chỉ dòng có người phụ trách là TÀI KHOẢN KHÁC người xem, và người xem là QL/QT. */
+  nhac?: { ownerId: number; daNhacLuc: string | null } | null;
 };
 
 /**
@@ -250,15 +254,21 @@ function lateText(date: string, today: string): string {
   return n <= 0 ? 'hạn hôm nay' : n === 1 ? 'quá hạn 1 ngày' : `quá hạn ${n} ngày`;
 }
 
-export function myWork(p: Principal, f: { branchId?: number | null } = {}) {
+export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi' | 'tat-ca' } = {}) {
   const today = demoToday();
   const scope = scopeFor(p, PERMISSIONS.ATTEMPT_VIEW);
-  if (scope.none) return { summary: { total: 0, overdue: 0, today: 0 }, groups: [], scopeEmpty: true };
+  if (scope.none) return { summary: { total: 0, overdue: 0, today: 0 }, groups: [], scopeEmpty: true, xemNguoiKhac: false };
 
   const conn = db();
   const items: WorkItem[] = [];
   const attempts = listAttempts(p, { branchId: f.branchId ?? undefined }).rows
     .filter((a: any) => a.status !== 'cancelled');
+  /*
+   * PR-Ra: "Tất cả trong phạm vi" (Q1) — chỉ người xem được người khác (Quản lý/Quản trị) mới
+   * có chế độ này; GV luôn chỉ thấy việc của mình dù có gửi `nguoi=tat-ca` lên (chặn ở route).
+   */
+  const xemNguoiKhac = can(p, PERMISSIONS.CASE_APPROVE, { anyScope: true });
+  const tatCa = f.nguoi === 'tat-ca' && xemNguoiKhac;
 
   // ---------------------------------------------------------------- 0. xác minh tín hiệu
   /*
@@ -268,7 +278,7 @@ export function myWork(p: Principal, f: { branchId?: number | null } = {}) {
    * nhận định riêng về một em và một kỹ năng. Gom sáu em vào một dòng "xác minh Reading" sẽ
    * mời người ta bấm một nút cho cả sáu, mà đó đúng là thứ mục 6.2 muốn bỏ.
    */
-  for (const sg of listSignals(p, { status: 'pending', branchId: f.branchId ?? undefined, mine: true }).rows) {
+  const pushVerifyItem = (sg: any, mine: boolean) => {
     const u = urgencyOf(sg.verifyDue, today);
     items.push({
       key: `verify:${sg.id}`,
@@ -288,7 +298,7 @@ export function myWork(p: Principal, f: { branchId?: number | null } = {}) {
       },
       overdueLabel: badge('verify', u),
       href: `/hoc-vien/${sg.studentId}`,
-      ownerId: sg.ownerUserId, owner: null, mine: true,
+      ownerId: sg.ownerUserId, owner: null, mine,
       due: sg.verifyDue,
       statusLabel: u === 'overdue' ? `Chờ xác minh · ${lateText(sg.verifyDue, today)}` : 'Chờ xác minh',
       contextLabel: sg.attemptNo
@@ -298,6 +308,16 @@ export function myWork(p: Principal, f: { branchId?: number | null } = {}) {
         : sg.label,
       count: null,
     });
+  };
+  for (const sg of listSignals(p, { status: 'pending', branchId: f.branchId ?? undefined, mine: true }).rows) {
+    pushVerifyItem(sg, true);
+  }
+  /* PR-Ra Q1: "Tất cả trong phạm vi" cộng thêm tín hiệu chờ xác minh của NGƯỜI KHÁC trong phạm vi. */
+  if (tatCa) {
+    for (const sg of listSignals(p, { status: 'pending', branchId: f.branchId ?? undefined }).rows) {
+      if (sg.ownerUserId === p.userId) continue;   // đã có ở trên
+      pushVerifyItem(sg, false);
+    }
   }
 
   // ---------------------------------------------------------------- 1. nhập điểm
@@ -316,74 +336,132 @@ export function myWork(p: Principal, f: { branchId?: number | null } = {}) {
   type ScoreBucket = {
     classId: number | null; classCode: string | null; attemptNo: number | null;
     kind: string | null; testLabel: string; skill: string; skillLabel: string;
-    students: Map<number, string>; due: string | null; href: string; attemptId: number;
+    students: Map<number, string>; due: string | null; href: string; attemptId: number; ownerId: number | null;
   };
-  const scoreBuckets = new Map<string, ScoreBucket>();
-  for (const a of attempts as any[]) {
-    const mine: any[] = a.myPendingDetail ?? [];
-    if (!mine.length) continue;
-    const testLabel = a.kind && a.kind !== 'mock'
-      ? (ATTEMPT_KIND_SHORT[a.kind as AttemptKind] ?? 'Bài kiểm tra')
-      : `MT${a.attemptNo}`;
-    for (const c of mine) {
-      const skillLabel = ENTRY_SKILL_LABEL[c.skill as EntrySkill]
-        ?? REGULAR_SKILL_LABEL[c.skill as keyof typeof REGULAR_SKILL_LABEL]
-        ?? c.skill;
-      const k = `${a.classId ?? 0}|${a.kind ?? 'mock'}|${a.attemptNo ?? 0}|${c.skill}`;
-      let b = scoreBuckets.get(k);
+  type BaiChuaCham = {
+    classId: number | null; classCode: string | null; attemptNo: number | null; kind: string | null;
+    attemptId: number; studentId: number; studentName: string;
+    skill: string; deadline: string | null; ownerId: number | null;
+  };
+  /*
+   * PR-Ra Q1: tách phần gom thành một hàm dùng chung cho "việc của mình" (ownerId luôn là
+   * chính người xem) và "việc của người khác trong phạm vi" (ownerId theo `teacher_assignments`).
+   * KHOÁ mỗi dòng kèm hậu tố người phụ trách (`|u…`) — để cùng một khoá dù nhìn từ Quản lý hay
+   * từ chính giáo viên (nút Nhắc dựa vào khoá này để tìm lại đúng dòng).
+   */
+  const gomBaiChuaCham = (dongs: BaiChuaCham[]): WorkItem[] => {
+    const buckets = new Map<string, ScoreBucket>();
+    for (const d of dongs) {
+      const testLabel = d.kind && d.kind !== 'mock'
+        ? (ATTEMPT_KIND_SHORT[d.kind as AttemptKind] ?? 'Bài kiểm tra')
+        : `MT${d.attemptNo}`;
+      const skillLabel = ENTRY_SKILL_LABEL[d.skill as EntrySkill]
+        ?? REGULAR_SKILL_LABEL[d.skill as keyof typeof REGULAR_SKILL_LABEL]
+        ?? d.skill;
+      const k = `${d.classId ?? 0}|${d.kind ?? 'mock'}|${d.attemptNo ?? 0}|${d.skill}|u${d.ownerId ?? 0}`;
+      let b = buckets.get(k);
       if (!b) {
         b = {
-          classId: a.classId ?? null, classCode: a.classCode ?? null, attemptNo: a.attemptNo ?? null,
-          kind: a.kind ?? null, testLabel, skill: c.skill, skillLabel,
-          students: new Map(), due: null, href: attemptHref(a), attemptId: a.id,
+          classId: d.classId, classCode: d.classCode, attemptNo: d.attemptNo,
+          kind: d.kind, testLabel, skill: d.skill, skillLabel,
+          students: new Map(), due: null, href: attemptHref({ id: d.attemptId, kind: d.kind, classId: d.classId }),
+          attemptId: d.attemptId, ownerId: d.ownerId,
         };
-        scoreBuckets.set(k, b);
+        buckets.set(k, b);
       }
-      b.students.set(a.studentId, a.studentName);
-      if (c.deadline && (!b.due || c.deadline < b.due)) b.due = c.deadline;
+      b.students.set(d.studentId, d.studentName);
+      if (d.deadline && (!b.due || d.deadline < b.due)) b.due = d.deadline;
+    }
+    /*
+     * MỘT LỚP · MỘT BÀI · NHIỀU KỸ NĂNG · CÙNG NGƯỜI PHỤ TRÁCH vẫn nên là MỘT dòng nếu cùng
+     * hạn — người nhập mở đúng một bảng điểm và gõ cả hai cột. Khác người phụ trách thì KHÔNG
+     * gộp, dù cùng lớp cùng hạn — mỗi dòng chỉ một nút Nhắc cho đúng một người.
+     */
+    const byTest = new Map<string, ScoreBucket[]>();
+    for (const b of buckets.values()) {
+      const k = `${b.classId ?? 0}|${b.kind ?? 'mock'}|${b.attemptNo ?? 0}|${b.due ?? ''}|u${b.ownerId ?? 0}`;
+      (byTest.get(k) ?? byTest.set(k, []).get(k)!).push(b);
+    }
+    const out: WorkItem[] = [];
+    for (const [k, list] of byTest) {
+      const first = list[0];
+      const skills = list.map((b) => b.skillLabel).join(', ');
+      const students = new Map<number, string>();
+      for (const b of list) for (const [sid, name] of b.students) students.set(sid, name);
+      const u = urgencyOf(first.due, today);
+      /*
+       * ĐÚNG MỘT EM thì gọi tên em, không nói "Lớp X" — người đọc đi tìm một cái tên, và
+       * "cả lớp" cho một học viên là một câu nói vòng vo.
+       */
+      const only = students.size === 1 ? [...students.entries()][0] : null;
+      const where = only ? only[1] : (first.classCode ? `Lớp ${first.classCode}` : 'Bài đánh giá');
+      out.push({
+        key: `score:${k}`,
+        group: 'score', urgency: u,
+        /*
+         * Ô ĐẦU là LỚP, không phải một em đại diện: việc này làm cho cả nhóm cùng lúc. Chỉ khi
+         * đúng một em còn thiếu thì mới nói tên em — lúc đó "lớp" là cách nói vòng vo.
+         */
+        studentId: only ? only[0] : null,
+        studentName: where,
+        classId: first.classId, classCode: first.classCode,
+        attemptId: first.attemptId, attemptNo: first.attemptNo, caseId: null, level: null,
+        contextLabel: first.testLabel,
+        count: students.size,
+        reason: u === 'overdue' && first.due ? `${skills} — ${lateText(first.due, today)}` : skills,
+        actionLabel: `Nhập điểm ${skills}`,
+        overdueLabel: badge('score', u),
+        href: first.href,
+        ownerId: first.ownerId, owner: null, mine: first.ownerId === p.userId,
+        due: first.due,
+        statusLabel: first.ownerId === null ? 'Chưa phân công giáo viên' : 'Chưa nhập điểm',
+      });
+    }
+    return out;
+  };
+
+  const minhDongs: BaiChuaCham[] = [];
+  for (const a of attempts as any[]) {
+    for (const c of (a.myPendingDetail ?? []) as any[]) {
+      minhDongs.push({
+        classId: a.classId ?? null, classCode: a.classCode ?? null, attemptNo: a.attemptNo ?? null,
+        kind: a.kind ?? null, attemptId: a.id, studentId: a.studentId, studentName: a.studentName,
+        skill: c.skill, deadline: c.deadline, ownerId: p.userId,
+      });
     }
   }
-  /*
-   * MỘT LỚP · MỘT BÀI · NHIỀU KỸ NĂNG vẫn nên là MỘT dòng nếu cùng hạn — người nhập mở đúng
-   * một bảng điểm và gõ cả hai cột. Gộp ở bước này, sau khi đã biết đủ số em của từng kỹ năng.
-   */
-  const byTest = new Map<string, ScoreBucket[]>();
-  for (const b of scoreBuckets.values()) {
-    const k = `${b.classId ?? 0}|${b.kind ?? 'mock'}|${b.attemptNo ?? 0}|${b.due ?? ''}`;
-    (byTest.get(k) ?? byTest.set(k, []).get(k)!).push(b);
-  }
-  for (const [k, list] of byTest) {
-    const first = list[0];
-    const skills = list.map((b) => b.skillLabel).join(', ');
-    const students = new Map<number, string>();
-    for (const b of list) for (const [sid, name] of b.students) students.set(sid, name);
-    const u = urgencyOf(first.due, today);
-    /*
-     * ĐÚNG MỘT EM thì gọi tên em, không nói "Lớp X" — người đọc đi tìm một cái tên, và
-     * "cả lớp" cho một học viên là một câu nói vòng vo.
-     */
-    const only = students.size === 1 ? [...students.entries()][0] : null;
-    const where = only ? only[1] : (first.classCode ? `Lớp ${first.classCode}` : 'Bài đánh giá');
-    items.push({
-      key: `score:${k}`,
-      group: 'score', urgency: u,
-      /*
-       * Ô ĐẦU là LỚP, không phải một em đại diện: việc này làm cho cả nhóm cùng lúc. Chỉ khi
-       * đúng một em còn thiếu thì mới nói tên em — lúc đó "lớp" là cách nói vòng vo.
-       */
-      studentId: only ? only[0] : null,
-      studentName: where,
-      classId: first.classId, classCode: first.classCode,
-      attemptId: first.attemptId, attemptNo: first.attemptNo, caseId: null, level: null,
-      contextLabel: first.testLabel,
-      count: students.size,
-      reason: u === 'overdue' && first.due ? `${skills} — ${lateText(first.due, today)}` : skills,
-      actionLabel: `Nhập điểm ${skills}`,
-      overdueLabel: badge('score', u),
-      href: first.href,
-      ownerId: p.userId, owner: null, mine: true,
-      due: first.due, statusLabel: 'Chưa nhập điểm',
-    });
+  items.push(...gomBaiChuaCham(minhDongs));
+
+  /* PR-Ra Q1: "Tất cả trong phạm vi" cộng thêm bài chưa chấm của GIÁO VIÊN KHÁC trong phạm vi. */
+  if (tatCa) {
+    const managedAttempts = listAttempts(p, { branchId: f.branchId ?? undefined, scope: 'managed' }).rows
+      .filter((a: any) => a.status !== 'cancelled');
+    const classIds = [...new Set(managedAttempts.map((a: any) => a.classId).filter((x: any): x is number => x !== null))];
+    /* Người phụ trách môn — môn trùng người (nhiều giáo viên cùng dạy một kỹ năng) thì người ĐẦU thắng. */
+    const ownerOf = new Map<string, number>();
+    if (classIds.length) {
+      const ph = classIds.map(() => '?').join(',');
+      for (const r of conn
+        .prepare(`SELECT class_id, skill, user_id FROM teacher_assignments
+                    WHERE class_id IN (${ph}) AND status = 'active' AND skill IS NOT NULL ORDER BY id`)
+        .all(...classIds) as any[]) {
+        const key = `${r.class_id}|${r.skill}`;
+        if (!ownerOf.has(key)) ownerOf.set(key, r.user_id);
+      }
+    }
+    const khacDongs: BaiChuaCham[] = [];
+    for (const a of managedAttempts as any[]) {
+      for (const c of (a.pendingDetail ?? []) as any[]) {
+        const ownerId = a.classId ? (ownerOf.get(`${a.classId}|${c.skill}`) ?? null) : null;
+        if (ownerId === p.userId) continue;   // đã có ở phần "của mình"
+        khacDongs.push({
+          classId: a.classId ?? null, classCode: a.classCode ?? null, attemptNo: a.attemptNo ?? null,
+          kind: a.kind ?? null, attemptId: a.id, studentId: a.studentId, studentName: a.studentName,
+          skill: c.skill, deadline: c.deadline, ownerId,
+        });
+      }
+    }
+    items.push(...gomBaiChuaCham(khacDongs));
   }
 
   // ------------------------------------------------- 2. phương án đang chờ Quản lý duyệt
@@ -450,6 +528,11 @@ export function myWork(p: Principal, f: { branchId?: number | null } = {}) {
       ownerId: p.userId, owner: null, mine: true,
       due: iv.approval_due ?? null,
       statusLabel: iv.asked_manager ? 'Chờ Quản lý trả lời' : 'Chờ Quản lý duyệt',
+      /*
+       * PR-Ra Q6: dòng ĐỀ XUẤT (không xin ý kiến) có đủ để mở thẳng `ApprovalDialog` trên dòng,
+       * không cần mở hồ sơ học viên. Dòng "xin ý kiến" giữ hành vi cũ (mở hồ sơ để đọc ngữ cảnh).
+       */
+      duyet: iv.asked_manager ? null : { interventionId: iv.id as number, kind: iv.kind as string, description: what },
     });
   }
 
@@ -917,7 +1000,7 @@ export function myWork(p: Principal, f: { branchId?: number | null } = {}) {
       count: null,
       reason: t.due && u === 'overdue' ? `${t.progressLabel} — ${lateText(t.due, today)}` : t.progressLabel,
       actionLabel: 'Cập nhật tiến độ', overdueLabel: badge('mgmt', u),
-      href: `/tien-do-cong-viec?viec=${t.id}`,
+      href: `/cong-viec?mo-viec=${t.id}`,
       ownerId: p.userId, owner: null, mine: true,
       due: t.due, statusLabel: t.progressLabel,
     });
@@ -958,6 +1041,25 @@ export function myWork(p: Principal, f: { branchId?: number | null } = {}) {
       if (it.ownerId === null) continue;   // đã có tên chữ, hoặc thật sự chưa có ai
       it.owner = it.ownerId === p.userId ? 'Bạn' : (names.get(it.ownerId) ?? null);
       it.mine = it.ownerId === p.userId;
+    }
+  }
+
+  /*
+   * PR-Ra Q5: nút NHẮC — chỉ QL/QT (xem được người khác), chỉ dòng có người phụ trách là một
+   * TÀI KHOẢN KHÁC người xem. "Một lần/dòng/ngày": đọc lại đã nhắc lúc nào bằng MỘT câu, không
+   * hỏi từng dòng — cùng lý do với khối tên người ở trên.
+   */
+  if (xemNguoiKhac) {
+    const nhacToday = new Map<string, string>();
+    for (const r of conn
+      .prepare(`SELECT dedup_key, created_at FROM notifications WHERE kind = 'nhac_viec' AND dedup_key LIKE ?`)
+      .all(`nhac:%:${today}`) as any[]) {
+      const m = /^nhac:(.+):[^:]+$/.exec(r.dedup_key);
+      if (m) nhacToday.set(m[1], r.created_at);
+    }
+    for (const it of items) {
+      if (it.ownerId === null || it.ownerId === p.userId) continue;
+      it.nhac = { ownerId: it.ownerId, daNhacLuc: nhacToday.get(it.key) ?? null };
     }
   }
 
@@ -1008,5 +1110,6 @@ export function myWork(p: Principal, f: { branchId?: number | null } = {}) {
     items: flat,
     groups,
     scopeEmpty: false,
+    xemNguoiKhac,
   };
 }

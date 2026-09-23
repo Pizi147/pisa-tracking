@@ -126,7 +126,8 @@ function urlFor(mau: string): string {
     .replace('{lopThuong}', String(LOP_THUONG))
     .replace('{hv}', String(HV))
     .replace('{case}', String(KASE))
-    .replace('{cn}', String(CN));
+    .replace('{cn}', String(CN))
+    .replace('{gv}', String(USER.GVCN));
 }
 
 async function callHttpUser(userId: number, method: string, url: string, body?: unknown) {
