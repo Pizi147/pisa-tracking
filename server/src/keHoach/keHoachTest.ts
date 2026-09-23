@@ -208,8 +208,10 @@ export function kiemTuanNhom(p: Principal, i: { attemptId: number; nhom: 'rlw' |
   if (!period) throw notFound('Không tìm thấy tuần');
 
   const rows = loadSkillRows([i.attemptId]).get(i.attemptId) ?? [];
-  const blockers: string[] = [];
-  const warnings: string[] = [];
+  /* Cả nhóm (vd RLW = ba kỹ năng) thường xếp CHUNG một tuần đích — dùng Set để cùng một câu blocker/warning
+   * (so với cùng một đợt lân cận) không lặp lại theo từng kỹ năng. */
+  const blockers = new Set<string>();
+  const warnings = new Set<string>();
   const seDoi: string[] = [];
   const giuNguyen: Array<{ skill: string; vi: string }> = [];
   const scores = loadBundle([i.attemptId]).scores.get(i.attemptId) ?? [];
@@ -224,11 +226,11 @@ export function kiemTuanNhom(p: Principal, i: { attemptId: number; nhom: 'rlw' |
     const check = checkWeekVsNeighbours({
       cycleId: a.cycle_id, attemptNo: a.attempt_no, excludeAttemptId: i.attemptId, newWeekStart: period.week_start,
     });
-    blockers.push(...check.blockers);
-    warnings.push(...check.warnings);
+    check.blockers.forEach((b) => blockers.add(b));
+    check.warnings.forEach((wa) => warnings.add(wa));
     seDoi.push(skill);
   }
-  return { blockers, warnings, seDoi, giuNguyen };
+  return { blockers: [...blockers], warnings: [...warnings], seDoi, giuNguyen };
 }
 
 export function datTuanNhom(p: Principal, i: {
@@ -309,16 +311,18 @@ function xetMotEmHangLoat(p: Principal, i: {
     .get(cycle.id, i.attemptNo) as any;
 
   if (!existing) {
-    const blockers: string[] = [];
-    const warnings: string[] = [];
+    /* RLW và S có thể trùng tuần với nhau (Q7 mặc định) — gom qua Set để cùng MỘT câu blocker/warning không lặp lại
+     * khi cả hai tuần cùng va một đợt lân cận. */
+    const blockers = new Set<string>();
+    const warnings = new Set<string>();
     for (const w of new Set([i.rlwWeek, i.sWeek])) {
       const c = checkWeekVsNeighbours({ cycleId: cycle.id, attemptNo: i.attemptNo, excludeAttemptId: null, newWeekStart: w });
-      blockers.push(...c.blockers); warnings.push(...c.warnings);
+      c.blockers.forEach((b) => blockers.add(b)); c.warnings.forEach((wa) => warnings.add(wa));
     }
-    if (blockers.length) {
-      return { studentId: i.studentId, ten: i.ten, hanhDong: 'loi', tu: { rlw: null, s: null }, den, canhBao: warnings, loi: blockers.join(' ') };
+    if (blockers.size) {
+      return { studentId: i.studentId, ten: i.ten, hanhDong: 'loi', tu: { rlw: null, s: null }, den, canhBao: [...warnings], loi: [...blockers].join(' ') };
     }
-    return { studentId: i.studentId, ten: i.ten, hanhDong: 'tao', tu: { rlw: null, s: null }, den, canhBao: warnings, loi: null };
+    return { studentId: i.studentId, ten: i.ten, hanhDong: 'tao', tu: { rlw: null, s: null }, den, canhBao: [...warnings], loi: null };
   }
 
   const skillRows = loadSkillRows([existing.id]);

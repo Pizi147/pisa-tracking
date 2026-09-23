@@ -129,6 +129,7 @@ function HopXepMoi({ studentId, ten, attemptNo, onClose, onSaved, toast, busy, s
   const [rlwPeriodId, setRlwPeriodId] = useState<number | null>(null);
   const [sPeriodId, setSPeriodId] = useState<number | null>(null);
   const [cungTuan, setCungTuan] = useState(false);
+  const [canhBao, setCanhBao] = useState<string | null>(null);
   const rlwWin = usePeriodWindow(rlwPeriodId, 'planning');
   const rlwWeek = rlwWin.data?.find((p) => p.isAnchor)?.weekStart ?? null;
 
@@ -141,19 +142,25 @@ function HopXepMoi({ studentId, ten, attemptNo, onClose, onSaved, toast, busy, s
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rlwWeek, cungTuan]);
+  /* Đổi tuần lại thì cảnh báo cũ (nếu có) không còn đúng — hỏi lại từ đầu. */
+  useEffect(() => { setCanhBao(null); }, [rlwPeriodId, sPeriodId, cungTuan]);
 
-  const luu = async () => {
+  const luu = async (force = false) => {
     if (!rlwPeriodId || busy) return;
     setBusy(true);
     try {
       await api.post('/ke-hoach-test/xep-moi', {
-        studentId, attemptNo, rlwPeriodId, sPeriodId: cungTuan ? rlwPeriodId : sPeriodId,
+        studentId, attemptNo, rlwPeriodId, sPeriodId: cungTuan ? rlwPeriodId : sPeriodId, force,
       });
       toast.push('ok', 'Đã xếp lịch mới.');
       invalidate('/ke-hoach-test'); invalidate('/attempts'); invalidate('/cham');
       onSaved(); onClose();
     } catch (e: any) {
-      toast.push('error', e.message ?? 'Không xếp được — thử lại.');
+      const msg = e.message ?? 'Không xếp được — thử lại.';
+      /* CẢNH BÁO (cách một tuần) khác BLOCKER (trùng/vượt tuần) — máy chủ đòi `force` mới cho qua cảnh báo,
+       * nên giữ hộp mở và đổi nút thành "Vẫn xếp vào tuần này" thay vì chỉ báo lỗi rồi thôi. */
+      if (!force && /Xác nhận lại/.test(msg)) setCanhBao(msg);
+      else toast.push('error', msg);
     } finally {
       setBusy(false);
     }
@@ -165,8 +172,8 @@ function HopXepMoi({ studentId, ten, attemptNo, onClose, onSaved, toast, busy, s
       footer={
         <>
           <button className="btn" onClick={onClose} disabled={busy}>Huỷ</button>
-          <button className="btn btn-primary" onClick={() => void luu()} disabled={busy || !rlwPeriodId}>
-            {busy ? 'Đang lưu…' : 'Lưu'}
+          <button className="btn btn-primary" onClick={() => void luu(!!canhBao)} disabled={busy || !rlwPeriodId}>
+            {busy ? 'Đang lưu…' : canhBao ? 'Vẫn xếp vào tuần này' : 'Lưu'}
           </button>
         </>
       }
@@ -186,6 +193,7 @@ function HopXepMoi({ studentId, ten, attemptNo, onClose, onSaved, toast, busy, s
             RLW {tuanLich(rlwWeek)}{!cungTuan && sPeriodId ? ' · Speaking tuần sau (đã tự đặt, sửa được ở trên).' : ''}
           </p>
         )}
+        {canhBao && <p className="text-xs text-amber-200">{canhBao}</p>}
       </div>
     </Modal>
   );

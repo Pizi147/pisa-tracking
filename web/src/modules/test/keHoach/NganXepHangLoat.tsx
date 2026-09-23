@@ -119,8 +119,8 @@ export function NganXepHangLoat({ classId, classCode, luoi, onClose, onDone }: {
       title={`Xếp lịch hàng loạt · ${classCode}`}
       footer={
         <>
-          <button className="btn" onClick={onClose} disabled={busy}>Đóng</button>
-          <button className="btn btn-primary" onClick={() => void luu()}
+          <button className="btn min-h-[44px]" onClick={onClose} disabled={busy}>Đóng</button>
+          <button className="btn btn-primary min-h-[44px]" onClick={() => void luu()}
             disabled={busy || !attemptNo || !rlwPeriodId || soLuu === 0}>
             {busy ? 'Đang lưu…' : `Lưu lịch cho ${soLuu} em`}
           </button>
@@ -133,7 +133,7 @@ export function NganXepHangLoat({ classId, classCode, luoi, onClose, onDone }: {
           <div className="flex flex-wrap gap-1.5">
             {dots.map((n) => (
               <button key={n} type="button"
-                className={`btn btn-sm ${attemptNo === n ? 'btn-primary' : ''}`}
+                className={`btn min-h-[44px] ${attemptNo === n ? 'btn-primary' : ''}`}
                 onClick={() => setAttemptNo(n)}>MT{n}</button>
             ))}
             {!dots.length && <span className="text-xs text-slate-500">Lớp đã xong mọi đợt.</span>}
@@ -147,7 +147,7 @@ export function NganXepHangLoat({ classId, classCode, luoi, onClose, onDone }: {
               const d = h.dot[attemptNo ?? -1];
               const daCoLich = d?.attemptId && (d.rlw.tuan || d.s.tuan);
               return (
-                <label key={h.studentId} className="flex items-center gap-2 py-1 text-sm text-slate-200">
+                <label key={h.studentId} className="flex items-center gap-2 py-1 min-h-[44px] text-sm text-slate-200">
                   <input type="checkbox" className="accent-sky-400" checked={ticked.has(h.studentId)}
                     onChange={(e) => setTicked((s) => {
                       const n = new Set(s);
