@@ -1,6 +1,6 @@
 import { db, tx } from '../db.ts';
 import {
-  ATTEMPT_KIND_SHORT, ENTRY_SKILLS, PERMISSIONS, awaitingScore, pendingSkillsOf,
+  ATTEMPT_KIND_SHORT, ENTRY_SKILLS, PERMISSIONS, awaitingScore, pendingSkillsOf, viecTiepTheoCua,
   type AssessedSkill, type AttemptKind, type PendingCell, type WorkScope,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -16,6 +16,9 @@ import { standingFor, standingLine } from '../students/standing.ts';
 import { allProgrammes, evaluateRegular, programmeOfClass } from '../normal/regular.ts';
 import { classProgressMany, missingForClasses, missingForStudent } from './schedule.ts';
 import { SKILL_SHORT } from '../../../shared/domain/index.ts';
+import { canhBaoTheoHocVien, caseMoTheoHocVien } from './dongHocVien.ts';
+import { classWarning } from '../yThuc/canhBao.ts';
+import { listCases } from '../cases/cases.ts';
 
 /**
  * Màn Học viên lấy LỚP làm gốc.
@@ -346,6 +349,10 @@ export function classRoster(p: Principal, classId: number, q?: string) {
    */
   const standing = standingFor(sids);
 
+  /* PR-Qa: nhãn cảnh báo Ý thức 5 ngày (YT-8) và Case đang mở cho "Việc tiếp theo" — mỗi thứ MỘT lần cho cả lớp. */
+  const canhBao = canhBaoTheoHocVien(p, classId);
+  const caseMo = caseMoTheoHocVien(p, classId);
+
   return students.map((s) => {
     /*
      * CHỈ CÁC BÀI CỦA LỘ TRÌNH ĐANG CHẠY.
@@ -405,6 +412,8 @@ export function classRoster(p: Principal, classId: number, q?: string) {
             const scored = row?.raw_score !== null && row?.raw_score !== undefined;
             return !scored && !!regViews.get(k)?.overdue;
           }).length,
+          /* Tuần thi của TỪNG môn (thứ Hai) — ô chưa có điểm ở bảng lớp thường ghi tuần này (đặc tả §3.7, 10b A). */
+          tuanMon: Object.fromEntries(prog!.skills.map((k) => [k, regViews.get(k)?.weekStart ?? null])),
         };
       }
 
@@ -548,6 +557,18 @@ export function classRoster(p: Principal, classId: number, q?: string) {
       next: timeline.find((t) => t.status === 'planned') ?? null,
       timeline,
       myPending: [...new Set(timeline.flatMap((t) => t.myPending))],
+      canhBaoYThuc: canhBao.get(s.id) ?? null,
+      /* Cột "Việc tiếp theo" (Q13): nhập điểm của CHÍNH người xem ở đợt đang chờ + việc của từng Case chưa xong. */
+      viecTiepTheo: viecTiepTheoCua({
+        nhapDiem: (() => {
+          const cho = [...new Set(timeline.flatMap((t) => t.myPending))];
+          if (!cho.length) return null;
+          const dot = timeline.find((t) => t.myPending.length > 0) ?? null;
+          return { kyNang: cho, dot: dot?.kindLabel ?? null, quaHan: timeline.some((t) => t.overdueSkills > 0) };
+        })(),
+        cases: caseMo.get(s.id) ?? [],
+        homNay: today,
+      }),
     };
   });
 }
@@ -586,6 +607,33 @@ export function classOverview(p: Principal, classId: number) {
     skills: skills.map((s) => ({ skill: s.skill, sessionsPerWeek: s.sessions_per_week })),
     coreTeachers: assignments.filter((a) => a.is_core === 1).map((a) => ({ id: a.user_id, name: a.full_name })),
     skillTeachers: assignments.filter((a) => a.skill).map((a) => ({ skill: a.skill, id: a.user_id, name: a.full_name })),
+    /**
+     * "n Case đang mở" ở đầu hồ sơ lớp — cùng tập với cột Case của tab Học viên (Q5).
+     *
+     * PR-Qa (17, sửa theo rà soát planning): gọi thẳng `listCases(p, { classId })` — ĐÚNG tập mà
+     * `BangCanHoTro.tsx` (chế độ "Cần hỗ trợ") gọi qua `GET /cases?classId=`, nên số này TỰ ĐỘNG khớp,
+     * không cần một hàm quét toàn hệ thống rồi lọc lại (hàm dựng riêng cũ đã bỏ — chậm trên Turso vì
+     * `listCases(p, {})` không lọc phạm vi gì, quét MỌI Case rồi gọi `can()` từng dòng).
+     *
+     * PR-Qa (17, fix round 2 — review Opus): `listCases(p, { classId })` lọc theo
+     * `COALESCE(cur.class_id, a.class_id)`, và `cur` chỉ join enrollment `status = 'active'` — với một em đã
+     * TẠM DỪNG (`paused`) mà vẫn còn Case, `cur.class_id` là NULL nên bộ lọc rơi về LỚP LÚC ĐÁNH GIÁ
+     * (`a.class_id`), Case đó vẫn có thể khớp `classId` đang xem. Nhưng "Cần hỗ trợ" (`BangCanHoTro.tsx`) chỉ
+     * hiện học viên có trong ROSTER (đang active, không lưu trữ) nên KHÔNG hiện em đã tạm dừng — lọc thêm
+     * theo đúng tập học viên ĐANG HỌC của `classId` để badge khớp lại với danh sách mở ra.
+     */
+    soCaseMo: (() => {
+      const activeIds = new Set(
+        conn.prepare(
+          `SELECT e.student_id FROM enrollments e JOIN students s ON s.id = e.student_id
+            WHERE e.class_id = ? AND e.status = 'active' AND s.archived_at IS NULL`,
+        ).all(classId).map((r: any) => r.student_id as number),
+      );
+      return listCases(p, { classId }).rows
+        .filter((c) => c.status !== 'done' && c.studentId !== null && activeIds.has(c.studentId)).length;
+    })(),
+    /** Số học viên có vi phạm chưa xử lý quá 5 ngày — dấu ⚠ trên tab Ý thức & Phối hợp (Q15). */
+    canhBaoYThuc: can(p, PERMISSIONS.STUDENT_VIEW, { classId }) ? classWarning(p, classId).activeCount : 0,
     viewer: {
       canPlanWeek: can(p, PERMISSIONS.PLAN_WEEK, { classId }),
       canAddStudents: can(p, PERMISSIONS.STUDENT_EDIT, { classId }),
@@ -594,6 +642,10 @@ export function classOverview(p: Principal, classId: number) {
       canEditProgress: can(p, PERMISSIONS.CLASS_EDIT, { classId }),
       editableSkills: editableSkills(p, classId, classSkills),
       isCoreTeacher: isCoreTeacherOf(p, classId),
+      /** Nút đầu trang và menu ⋯ dòng học viên chỉ hiện khi làm được (Q9) — máy chủ vẫn chặn lại. */
+      canReportCase: can(p, PERMISSIONS.SOS_REPORT, { classId }),
+      canRecordViolation: can(p, PERMISSIONS.VIOLATION_RECORD, { classId }),
+      canEnterScores: editableSkills(p, classId, classSkills).length > 0,
     },
   };
 }

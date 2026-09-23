@@ -4,6 +4,8 @@ import { useApi } from '../../lib/useApi.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { Drawer } from '../../ui/Drawer.tsx';
 import { Outcome, SectionNote, Th} from '../../ui/ui.tsx';
+import { ngay } from '@shared/domain/index.ts';
+import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 
 
 type Row = {
@@ -80,6 +82,7 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
   onDone: () => void;
 }) {
   const toast = useToast();
+  const { homNay } = useNgayNghiepVu();
   const classes = useApi<any[]>('/ref/classes');
   /*
    * LỚP CHỌN MỘT LẦN, Ở ĐẦU PANEL (mục 12.1). Mở từ hồ sơ lớp thì chọn sẵn đúng lớp đó.
@@ -175,7 +178,7 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
     <Drawer
       open
       onClose={onClose}
-      width="max-w-5xl"
+      width="max-w-[1440px]"
       title={cls ? `Thêm học viên vào ${cls.code}` : 'Thêm học viên'}
       subtitle="Chọn lớp, rồi dán từ Excel/Google Sheets hoặc gõ thẳng vào lưới"
       footer={
@@ -208,12 +211,12 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
             </span>
           </label>
           <label className="block">
-            <span className="label">Tuần bắt đầu học — mặc định cho cả lô</span>
+            <span className="label">Tuần bắt đầu học</span>
             <input type="date" className="field w-full" value={startWeek}
               onChange={(e) => { setStartWeek(e.target.value); setPreview(null); }} />
             <span className="block text-[11px] text-slate-500 mt-1">
               {pv?.defaultStartWeek
-                ? `Đang dùng tuần bắt đầu ${pv.defaultStartWeek}. Có thể chọn tuần bắt đầu riêng cho từng học viên.`
+                ? `Đang dùng tuần bắt đầu ${ngay(pv.defaultStartWeek, homNay)}. Có thể chọn tuần bắt đầu riêng cho từng học viên.`
                 : 'Bỏ trống thì lấy ngày bắt đầu của lớp. Có thể chọn tuần bắt đầu riêng cho từng học viên.'}
             </span>
           </label>
@@ -291,8 +294,11 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
                             className={`field ${c.width} ${issue && !isWarning(issue.message) ? 'border-rose-300/60' : ''}`}
                             value={String((r as any)[c.key] ?? '')}
                             disabled={skipped}
-                            /* Ô tuần bỏ trống thì hiện tuần mặc định của cả lô, để không ai phải đoán. */
-                            placeholder={c.key === 'startWeek' ? (pv?.defaultStartWeek ?? '') : undefined}
+                            /* Ô tuần bỏ trống thì hiện tuần mặc định của cả lô, để không ai phải đoán.
+                               G-6: không hiện ISO — ngay() đổi "2026-07-27" thành "27/07/2026". */
+                            placeholder={c.key === 'startWeek'
+                              ? (pv?.defaultStartWeek ? ngay(pv.defaultStartWeek, homNay) : '')
+                              : undefined}
                             aria-label={`${c.label} dòng ${i + 1}`}
                             onChange={(e) => setCell(i, c.key, e.target.value)}
                           />

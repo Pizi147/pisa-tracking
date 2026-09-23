@@ -44,6 +44,9 @@ import * as classSvc from '../classes/classes.ts';
 import * as scheduleSvc from '../classes/schedule.ts';
 import * as intakeSvc from '../classes/intake.ts';
 import * as transitionSvc from '../classes/transition.ts';
+import * as hocVienLopSvc from '../classes/hocVienLop.ts';
+import * as phanTichLopSvc from '../classes/phanTichLop.ts';
+import * as thongTinLopSvc from '../classes/thongTinLop.ts';
 import * as studentSvc from '../students/students.ts';
 import * as meetingSvc from '../worklist/meeting.ts';
 import * as dashboardSvc from '../worklist/dashboard.ts';
@@ -908,6 +911,28 @@ api.put('/classes/:id/teachers', requireAuth, wrap((req) => {
 api.post('/classes', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return intakeSvc.createClass(principalOf(req), req.body ?? {});
+}));
+
+// ============================================================ Học viên & Lớp · hồ sơ lớp (PR-Qa)
+
+/** Trang Học viên & Lớp: lớp + số đếm chip + cờ lọc từng học viên — một request cho cả trang (đặc tả §3.6). */
+api.get('/hoc-vien-lop', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return hocVienLopSvc.danhSachHocVienLop(principalOf(req), {
+    branchId: qInt(req, 'branchId') ?? null, q: qStr(req, 'q') ?? null, phamVi: qStr(req, 'phamVi') ?? null,
+  });
+}));
+
+/** Tab Phân tích lớp: kỹ năng × đợt, mỗi ô "số HV đạt / số HV có điểm" (đặc tả §3.7). */
+api.get('/classes/:id/phan-tich-lop', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return phanTichLopSvc.phanTichLop(principalOf(req), pInt(req, 'id'));
+}));
+
+/** ⋮ Sửa thông tin lớp: mã lớp, LT (FT), ghi chú; chương trình chỉ khi lớp chưa có học viên và bài Test. */
+api.patch('/classes/:id/thong-tin', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return thongTinLopSvc.capNhatThongTinLop(principalOf(req), pInt(req, 'id'), req.body ?? {});
 }));
 
 // ============================================================ Thêm học viên hàng loạt

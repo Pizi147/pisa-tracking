@@ -12,7 +12,7 @@ export async function runKhungTests(t: YThucTestKit) {
   check('PR-O · G-6 ngày: dd/mm cùng năm, dd/mm/yyyy khác năm, không bao giờ ISO', () => {
     const eq = (got: string, want: string, m: string) => assert(got === want, `${m}: "${got}" ≠ "${want}"`);
     eq(d.ngay('2026-09-22', '2026-09-22'), '22/09', 'Cùng năm');
-    eq(d.ngay('2026-09-22T10:00:00Z', '2026-01-01'), '22/09', 'Có giờ vẫn chỉ lấy ngày');
+    eq(d.ngay('2026-09-22T18:30:00Z', '2026-01-01'), '23/09', 'Có giờ (UTC) đổi sang giờ Việt Nam rồi mới lấy ngày');
     eq(d.ngay('2027-01-04', '2026-09-22'), '04/01/2027', 'Khác năm phải có năm');
     eq(d.ngay('2026-09-22'), '22/09/2026', 'Không biết hôm nay thì ghi đủ năm');
     eq(d.ngay(null, '2026-09-22'), '—', 'Trống');

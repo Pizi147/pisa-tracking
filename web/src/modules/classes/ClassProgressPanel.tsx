@@ -5,8 +5,9 @@ import { Drawer } from '../../ui/Drawer.tsx';
 import { WeekPicker } from '../../ui/Filters.tsx';
 import { useToast } from '../../ui/Toast.tsx';
 import { Field, SectionNote, Skeleton, Status } from '../../ui/ui.tsx';
-import { fmtDate } from '../../lib/format.ts';
+import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { MOC_KIEM_TRA_FT, MOC_KIEM_TRA_NORMAL } from '../../ui/chu.ts';
+import { ngay, tuanLich } from '@shared/domain/index.ts';
 
 type Progress = {
   programmeCode: string | null; programmeName: string | null;
@@ -25,7 +26,7 @@ type Progress = {
 /**
  * TIẾN ĐỘ CỦA MỘT LỚP — mục 7.6, quyền của Admin CN và Quản lý CN.
  *
- * Ba ô: tuần khai giảng, tuần Progress Test, tuần Final Test. Hai ô sau tính sẵn theo
+ * Ba ô: tuần khai giảng, tuần thi Giữa khoá, tuần thi Cuối khoá. Hai ô sau tính sẵn theo
  * chương trình, nên phần lớn lớp không ai phải đụng vào — chỉ lớp nghỉ lễ hoặc học bù mới
  * cần xê dịch. Đặt ô về trống là QUAY LẠI mốc mặc định, không phải xoá mốc: cần có đường
  * quay lại, nếu không thì một lần gõ nhầm là lớp đó vĩnh viễn lệch chuẩn.
@@ -33,10 +34,11 @@ type Progress = {
  * Phần dưới cùng là thứ owner yêu cầu thêm ngày 13/09/2026: khi lớp đã hết chương trình,
  * panel nói thẳng còn bao nhiêu em cần xếp lớp và hai đường đi tiếp của các em.
  */
-export function ClassProgressPanel({ classId, classCode, onClose, onDone }: {
-  classId: number; classCode: string; onClose: () => void; onDone?: () => void;
+export function ClassProgressPanel({ classId, classCode, tieuDe, onClose, onDone }: {
+  classId: number; classCode: string; tieuDe: string; onClose: () => void; onDone?: () => void;
 }) {
   const toast = useToast();
+  const { homNay } = useNgayNghiepVu();
   const { data, loading, reload } = useApi<Progress>(`/classes/${classId}/progress`, [classId]);
   const [startPeriodId, setStartPeriodId] = useState<number | null>(null);
   const [progressWeek, setProgressWeek] = useState<string>('');
@@ -65,12 +67,12 @@ export function ClassProgressPanel({ classId, classCode, onClose, onDone }: {
     } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
   };
 
-  const isNormal = !!data?.totalWeeks;
+  const laLopThuong = !!data?.totalWeeks;
 
   return (
     <Drawer
       open onClose={onClose} width="max-w-xl"
-      title="Lộ trình"
+      title={tieuDe}
       subtitle={classCode}
       footer={
         <>
@@ -84,26 +86,26 @@ export function ClassProgressPanel({ classId, classCode, onClose, onDone }: {
           <div className="rounded-lg border p-3" style={{ borderColor: 'var(--line)' }}>
             <p className="text-sm text-slate-100 m-0">{data.label ?? 'Chưa tính được tiến độ'}</p>
             {data.startWeekStart && (
-              <p className="text-xs text-slate-500 mt-1 mb-0">Khai giảng tuần bắt đầu {fmtDate(data.startWeekStart)}</p>
+              <p className="text-xs text-slate-500 mt-1 mb-0">Khai giảng {tuanLich(data.startWeekStart, homNay)} · {ngay(data.startWeekStart, homNay)}</p>
             )}
           </div>
 
-          <Field as="div" label="Tuần khai giảng" required={isNormal}
-            hint={`Tuần này là tuần học thứ 1 của lớp. ${isNormal ? MOC_KIEM_TRA_NORMAL : MOC_KIEM_TRA_FT}`}>
+          <Field as="div" label="Tuần khai giảng" required={laLopThuong}
+            hint={`Tuần này là tuần học thứ 1 của lớp. ${laLopThuong ? MOC_KIEM_TRA_NORMAL : MOC_KIEM_TRA_FT}`}>
             <WeekPicker periodId={startPeriodId} label={null} scope="planning"
               onPeriod={(id) => { setTouched(true); setStartPeriodId(id); }} />
           </Field>
 
-          {isNormal ? (
+          {laLopThuong ? (
             <>
               <div className="grid gap-3 sm:grid-cols-2">
-                <Field label="Tuần Progress Test"
+                <Field label="Tuần thi Giữa khoá (tuần học thứ)"
                   hint={`Mặc định của ${data.programmeCode}: tuần ${data.progressOverridden ? '—' : data.progressWeek ?? '—'}. Để trống là dùng mặc định.`}>
                   <input type="number" min={1} max={data.totalWeeks ?? undefined} className="field w-full"
                     value={progressWeek} placeholder={String(data.progressWeek ?? '')}
                     onChange={(e) => { setTouched(true); setProgressWeek(e.target.value); }} />
                 </Field>
-                <Field label="Tuần Final Test"
+                <Field label="Tuần thi Cuối khoá (tuần học thứ)"
                   hint="Để trống là dùng mốc mặc định của chương trình.">
                   <input type="number" min={1} max={data.totalWeeks ?? undefined} className="field w-full"
                     value={finalWeek} placeholder={String(data.finalWeek ?? '')}
@@ -114,13 +116,13 @@ export function ClassProgressPanel({ classId, classCode, onClose, onDone }: {
               <div className="flex flex-wrap gap-2">
                 {data.progressWeekStart && (
                   <Status kind={data.phase === 'progress_week' ? 'doing' : 'idle'}>
-                    Progress Test: tuần {data.progressWeek} · {fmtDate(data.progressWeekStart)}
+                    Giữa khoá: {tuanLich(data.progressWeekStart, homNay)} (tuần học {data.progressWeek})
                     {data.progressOverridden ? ' · đã xếp lại' : ''}
                   </Status>
                 )}
                 {data.finalWeekStart && (
                   <Status kind={data.phase === 'final_week' ? 'doing' : 'idle'}>
-                    Final Test: tuần {data.finalWeek} · {fmtDate(data.finalWeekStart)}
+                    Cuối khoá: {tuanLich(data.finalWeekStart, homNay)} (tuần học {data.finalWeek})
                     {data.finalOverridden ? ' · đã xếp lại' : ''}
                   </Status>
                 )}
@@ -150,7 +152,7 @@ export function ClassProgressPanel({ classId, classCode, onClose, onDone }: {
             </>
           ) : (
             <SectionNote>
-              Đây là lớp Fast Track nên không có mốc Progress/Final Test chung cho cả lớp — lịch MT
+              Đây là lớp Fast Track nên không có mốc thi Giữa khoá/Cuối khoá chung cho cả lớp — lịch MT
               đi theo <strong>từng em</strong>, tính từ tuần em vào học. Mở hồ sơ một em rồi bấm
               “Kế hoạch học” để xem và xếp lịch MT của em đó.
             </SectionNote>

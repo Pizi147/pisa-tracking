@@ -3,7 +3,7 @@ import { useApi } from '../../lib/useApi.ts';
 import { ErrorState, SectionNote, Skeleton, Th } from '../../ui/ui.tsx';
 import { TyLe } from '../../ui/TyLe.tsx';
 import { NeedsEvaluation } from '../cases/NeedsEvaluation.tsx';
-import { issueBoardCategoriesFor, caseCategoryLabel, CASE_CATEGORY_SHORT } from '@shared/domain/index.ts';
+import { caseCategoryLabel } from '@shared/domain/index.ts';
 
 type Row = {
   code: string; label: string;
@@ -28,60 +28,7 @@ type Board = {
   needsEvaluation: { count: number; ids: number[] };
 };
 
-/**
- * BẢNG PHÂN TÍCH VẤN ĐỀ CỦA MỘT LỚP — mục 13.4.
- *
- * Ba quyết định của bảng này, và lý do:
- *
- * 1. MẶC ĐỊNH THU GỌN. Danh sách học viên là thứ người ta mở trang lớp để xem; một bảng
- *    phân tích năm cột đặt mở sẵn sẽ đẩy danh sách xuống dưới màn hình mỗi lần vào lớp.
- *
- * 2. TAB KỸ NĂNG CỐ ĐỊNH theo chương trình: Normal bốn tab L/R/W/S, Fast Track năm tab có
- *    cả W1 và W2. Tab được dựng từ chương trình chứ không từ dữ liệu đang có, nên kỹ năng
- *    chưa có case nào vẫn còn tab và nói "chưa có case", thay vì lặng lẽ biến mất.
- *
- * 3. NĂM CON SỐ LÀ NĂM ĐƠN VỊ KHÁC NHAU, và bảng không chia chéo chúng. Số phương án thành
- *    công KHÔNG chia cho số case: một case có thể có ba phương án, nên tỷ lệ đó không trả
- *    lời được câu hỏi nào. Tỷ lệ chỉ xuất hiện ở phần mở rộng, theo LOẠI phương án, và luôn
- *    hiện n/N trước khi hiện phần trăm.
- */
-export function ClassIssueBoard({ classId, ratio }: { classId: number; ratio: boolean }) {
-  const [open, setOpen] = useState(false);
-  const cats = issueBoardCategoriesFor(ratio ? 'ratio' : 'ielts_band');
-  const [cat, setCat] = useState<string>(cats[0]);
-
-  return (
-    <div className="surface-2 rounded-lg">
-      <button type="button" onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between gap-2 bg-transparent border-0 px-3 py-2.5 text-left cursor-pointer">
-        <span className="text-sm text-slate-100">Phân tích vấn đề của lớp</span>
-        <span className="text-xs text-slate-500">
-          {open ? 'Thu gọn ▲' : 'Mở ra ▼'}
-        </span>
-      </button>
-      {open && (
-        <div className="px-3 pb-3 space-y-2">
-          <div className="flex flex-wrap gap-1">
-            {cats.map((c) => (
-              <button key={c} type="button" onClick={() => setCat(c)}
-                title={caseCategoryLabel(c)}
-                className={`px-2.5 py-1 rounded-lg text-xs border transition-colors ${
-                  c === cat
-                    ? 'bg-[color:var(--accent-soft)] text-[color:var(--accent-strong)] border-[color:var(--accent-line)]'
-                    : 'text-slate-300 border-transparent hover:bg-white/5'
-                }`}>
-                {CASE_CATEGORY_SHORT[c] ?? c}
-              </button>
-            ))}
-          </div>
-          <IssueTable classId={classId} category={cat} />
-        </div>
-      )}
-    </div>
-  );
-}
-
-function IssueTable({ classId, category }: { classId: number; category: string }) {
+export function IssueTable({ classId, category }: { classId: number; category: string }) {
   const [detail, setDetail] = useState(false);
   const { data, loading, error, reload } = useApi<Board>(
     `/classes/${classId}/issue-board?category=${category}`, [classId, category],

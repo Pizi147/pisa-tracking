@@ -2,12 +2,12 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { Empty, ExamPlanText, Outcome, Skeleton, Status, Task, Th } from '../../ui/ui.tsx';
+import { MenuDong } from '../../ui/MenuDong.tsx';
 import { MissingBadge } from './MissingBadge.tsx';
+import { CanhBaoYThuc } from '../classes/CanhBaoYThuc.tsx';
+import { nhapDiemCua, useThaoTacDongHocVien, type QuyenDong } from '../classes/thaoTacDongHocVien.tsx';
 import { fmtBand } from '../../lib/format.ts';
-import {
-  ENTRY_SKILL_SHORT, REGULAR_SKILL_LABEL,
-  type EntrySkill, type ExamPlan,
-} from '@shared/domain/index.ts';
+import { ENTRY_SKILL_LABEL, maHocVienNgan, skillShort, type EntrySkill, type ExamPlan } from '@shared/domain/index.ts';
 
 type Timeline = {
   id: number; attemptNo: number; cycleSeq: number; route: string | null;
@@ -20,20 +20,18 @@ type Timeline = {
   caseStatus: string | null; myPending: string[]; overdueSkills: number;
 };
 
-/** Một mốc trong lịch sử điểm: FT mang `bands`, Normal mang `ratios`. */
+/** Một mốc trong lịch sử điểm của lớp Fast Track — lớp thường có bảng riêng (`BangDiemLopThuong`, không dùng type này). */
 type HistoryRow = {
   id: number; label: string; kind: string; periodCode: string | null;
   sosLevel: number | null; evaluable: boolean;
   scoredRequired: number; requiredCount: number;
   overall: number | null;
   bands: Record<string, number | null> | null;
-  ratios: Record<string, { score: number | null; total: number | null; outcome: string }> | null;
 };
 
 type RosterRow = {
   missing: { key: string; label: string; who: string }[];
   id: number; studentCode: string; fullName: string; status: string; archived: boolean;
-  scoring: 'ratio' | 'band';
   skills: string[] | null;
   cycle: { id: number; seq: number; route: string | null; target: number | null } | null;
   standingLine: string | null;
@@ -42,42 +40,33 @@ type RosterRow = {
   latest: Timeline | null; next: Timeline | null; timeline: Timeline[];
   history: HistoryRow[];
   myPending: string[];
+  canhBaoYThuc: { count: number; oldestAgeDays: number; message: string } | null;
 };
 
-/** Bộ cột điểm của hai loại lớp — mục 5.1 và 5.2. */
-const FT_SKILLS = ['listening', 'reading', 'speaking', 'writing1', 'writing2'] as const;
-const NORMAL_SKILLS = ['listening', 'reading', 'writing', 'speaking'] as const;
+/** Bộ cột điểm của lớp Fast Track — mục 5.2: Target · Dự kiến thi · Mốc · OVR · L · R · W1 · W2 · S. */
+const FT_SKILLS = ['listening', 'reading', 'writing1', 'writing2', 'speaking'] as const;
 
 /**
- * BẢNG HỌC VIÊN CỦA MỘT LỚP — làm lại theo mục 5.
- *
- * HAI BỘ CỘT, vì hai loại lớp trả lời hai câu hỏi khác nhau:
- *
- *   Normal      Học viên · Mốc kiểm tra · L · R · W · S · Theo dõi
- *   Fast Track  Học viên · Target · Dự kiến thi · Mốc · OVR · L · R · S · W1 · W2 · Theo dõi
- *
- * Lớp Normal KHÔNG có Target và Dự kiến thi: các em đó chưa thi IELTS và chưa có mục tiêu
- * band, nên hai cột ấy là hai cột trống vĩnh viễn — và một cột trống vĩnh viễn dạy người
- * dùng bỏ qua cả bảng.
+ * TAB HỌC VIÊN · CHẾ ĐỘ ĐIỂM · LỚP FAST TRACK (đặc tả §3.7 "FT: như hiện có (đợt MT)", mockup 06).
+ * Lớp thường dùng bảng riêng — `BangDiemLopThuong`.
  *
  * LỊCH SỬ ĐIỂM 2–3 MỐC (mục 5.4): mỗi ô điểm là một cột dọc, mốc mới nhất trên cùng và đậm
  * hơn, mốc cũ nhạt dần. Không có mũi tên tăng/giảm trên từng ô — các hàng đã thẳng cột với
  * nhau nên mắt tự so được, và thêm chục mũi tên thì cả bảng lại đầy nhãn.
  *
  * Ô TRỐNG NGHĨA LÀ CHƯA NHẬP, và nó giữ nguyên là ô trống: không lấy điểm mốc cũ lấp vào ô
- * thiếu của mốc mới, không ghép điểm khác lượt thành Overall, không nối chuỗi điểm Normal
- * với điểm Fast Track.
+ * thiếu của mốc mới, không ghép điểm khác lượt thành Overall.
  */
-export function ClassRoster({ classId, studentQuery, onAddStudents }: {
-  classId: number; studentQuery?: string; onAddStudents?: () => void;
+export function ClassRoster({ classId, quyen, onDoi, onAddStudents }: {
+  classId: number; quyen: QuyenDong; onDoi: () => void; onAddStudents?: () => void;
 }) {
-  const path = `/classes/${classId}/roster${studentQuery?.trim() ? `?q=${encodeURIComponent(studentQuery.trim())}` : ''}`;
-  const { data, loading, error, reload } = useApi<RosterRow[]>(path);
+  const { data, loading, error, reload } = useApi<RosterRow[]>(`/classes/${classId}/roster`, [classId]);
   /*
    * MẬT ĐỘ: Gọn = 2 mốc, Đầy đủ = 3 mốc (mục 5.4). Mặc định Gọn — hai mốc đủ trả lời "em
    * đang lên hay xuống", còn mốc thứ ba là để đọc kỹ chứ không phải để liếc.
    */
   const [depth, setDepth] = useState<2 | 3>(2);
+  const tt = useThaoTacDongHocVien({ laLopThuong: false, quyen, onDone: () => { reload(); onDoi(); } });
 
   if (loading) return <div className="surface-2 rounded-lg p-3"><Skeleton rows={3} /></div>;
   if (error) {
@@ -92,20 +81,15 @@ export function ClassRoster({ classId, studentQuery, onAddStudents }: {
     return (
       <div className="surface-2 rounded-lg">
         <Empty
-          title={studentQuery ? 'Không có học viên nào khớp từ khoá trong lớp này' : 'Lớp chưa có học viên'}
+          title="Lớp chưa có học viên"
           action={onAddStudents && <button className="btn btn-sm" onClick={onAddStudents}>Thêm học viên</button>}
         />
       </div>
     );
   }
 
-  const isRatio = data[0]?.scoring === 'ratio';
-  const skills: readonly string[] = isRatio
-    ? (data[0]?.skills ?? NORMAL_SKILLS)
-    : FT_SKILLS;
-  const skillLabel = (k: string) => (isRatio
-    ? (REGULAR_SKILL_LABEL[k as keyof typeof REGULAR_SKILL_LABEL] ?? k).slice(0, 1)
-    : ENTRY_SKILL_SHORT[k as EntrySkill] ?? k);
+  const skills = FT_SKILLS;
+  const skillLabel = skillShort;
 
   return (
     <div className="surface-2 rounded-lg">
@@ -113,7 +97,6 @@ export function ClassRoster({ classId, studentQuery, onAddStudents }: {
         style={{ borderColor: 'var(--line)' }}>
         <span className="text-[11px] text-slate-500">
           Điểm của {depth} mốc gần nhất, mốc mới nhất ở trên.
-          {isRatio && ' Lớp Normal chấm theo điểm đạt / tổng điểm.'}
         </span>
         <span className="flex gap-1">
           <button className={`btn btn-sm ${depth === 2 ? 'btn-primary' : ''}`} onClick={() => setDepth(2)}>Gọn</button>
@@ -122,38 +105,34 @@ export function ClassRoster({ classId, studentQuery, onAddStudents }: {
       </div>
 
       <div className="overflow-x-auto">
-        <table className="w-full text-sm">
+        <table className="w-full min-w-[940px] table-fixed text-sm">
+          <colgroup>
+            <col className="w-[22%]" /><col className="w-[6%]" /><col className="w-[9%]" /><col className="w-[7%]" /><col className="w-[6%]" />
+            {skills.map((k) => <col key={k} className="w-[6%]" />)}
+            <col className="w-[14%]" /><col className="w-12" />
+          </colgroup>
           <thead>
             <tr>
               <Th hint="Tên em, và một câu về kết quả mốc gần nhất của em.">Học viên</Th>
-              {!isRatio && (
-                <>
-                  <Th align="right" hint="Điểm mục tiêu của lộ trình em đang học.">Target</Th>
-                  <Th hint="Kỳ thi IELTS thật, ở đúng mức chắc chắn đang biết: tuần, hoặc mới có tháng, hoặc chưa xác định.">
-                    Dự kiến thi
-                  </Th>
-                </>
-              )}
-              <Th hint={isRatio
-                ? 'Bài kiểm tra ứng với mỗi hàng điểm bên phải — mốc mới nhất ở trên.'
-                : 'Lượt MT ứng với mỗi hàng điểm bên phải — mốc mới nhất ở trên.'}>
-                {isRatio ? 'Mốc kiểm tra' : 'Mốc'}
+              <Th align="right" hint="Điểm mục tiêu của lộ trình em đang học.">Target</Th>
+              <Th hint="Kỳ thi IELTS thật, ở đúng mức chắc chắn đang biết: tuần, hoặc mới có tháng, hoặc chưa xác định.">
+                Dự kiến thi
               </Th>
-              {!isRatio && (
-                <Th align="right" hint="Overall — chỉ có khi đợt Test đó đủ cả bốn kỹ năng. Không ghép điểm của đợt khác thành Overall.">
-                  OVR
-                </Th>
-              )}
+              <Th hint="Lượt MT ứng với mỗi hàng điểm bên phải — mốc mới nhất ở trên.">
+                Mốc
+              </Th>
+              <Th align="right" hint="Overall — chỉ có khi đợt Test đó đủ cả bốn kỹ năng. Không ghép điểm của đợt khác thành Overall.">
+                OVR
+              </Th>
               {skills.map((k) => (
-                <Th key={k} align="right" hint={isRatio
-                  ? `${REGULAR_SKILL_LABEL[k as keyof typeof REGULAR_SKILL_LABEL] ?? k} — điểm đạt / tổng điểm`
-                  : `${k === 'writing1' ? 'Writing Task 1' : k === 'writing2' ? 'Writing Task 2' : k} ở từng mốc`}>
+                <Th key={k} align="right" hint={`${ENTRY_SKILL_LABEL[k as EntrySkill] ?? k} ở từng mốc`}>
                   {skillLabel(k)}
                 </Th>
               ))}
-              <Th hint="Một việc chính nếu có, kèm số case đang xử lý. Quá hạn là thông tin của việc đó, không phải một việc riêng.">
+              <Th hint="Một việc chính nếu có, kèm số Case đang xử lý. Quá hạn là thông tin của việc đó, không phải một việc riêng.">
                 Theo dõi
               </Th>
+              <th className="th"><span className="sr-only">Thao tác</span></th>
             </tr>
           </thead>
           <tbody>
@@ -163,9 +142,11 @@ export function ClassRoster({ classId, studentQuery, onAddStudents }: {
               return (
                 <tr key={s.id} className={`row-hover align-top ${s.status !== 'active' ? 'row-muted' : ''}`}>
                   <td className="td">
-                    <span className="flex flex-wrap items-center gap-1.5">
+                    <span className="flex min-w-0 flex-wrap items-center gap-1.5">
                       <Link className="link" to={`/hoc-vien/${s.id}`}>{s.fullName}</Link>
+                      <span className="text-[10px] tabular-nums text-slate-500">{maHocVienNgan(s.studentCode)}</span>
                       <MissingBadge items={s.missing} gon />
+                      <CanhBaoYThuc cb={s.canhBaoYThuc} />
                     </span>
                     {/*
                       DƯỚI TÊN CHỈ CÒN KẾT LUẬN — một nhãn nhỏ có màu (PR-HV, chủ sản phẩm 22/09): "MTx:", "mới có
@@ -174,12 +155,8 @@ export function ClassRoster({ classId, studentQuery, onAddStudents }: {
                     <span className="block mt-1"><KetLuan row={s} /></span>
                   </td>
 
-                  {!isRatio && (
-                    <>
-                      <td className="td text-right tabular-nums whitespace-nowrap">{fmtBand(s.cycle?.target ?? null)}</td>
-                      <td className="td whitespace-nowrap text-xs"><ExamPlanText plan={s.examPlan} /></td>
-                    </>
-                  )}
+                  <td className="td text-right tabular-nums whitespace-nowrap">{fmtBand(s.cycle?.target ?? null)}</td>
+                  <td className="td whitespace-nowrap text-xs"><ExamPlanText plan={s.examPlan} /></td>
 
                   {/* ─── các cột điểm: mỗi mốc một hàng con, thẳng cột với nhau ─── */}
                   <td className="td p-0">
@@ -202,36 +179,37 @@ export function ClassRoster({ classId, studentQuery, onAddStudents }: {
                     </Stack>
                   </td>
 
-                  {!isRatio && (
-                    <td className="td p-0 text-right">
-                      <Stack n={span} align="right">
-                        {rows.length === 0 ? [<Dash key="none" />]
-                          : rows.map((h, i) => (
-                            <Band key={h.id} v={h.overall} target={s.cycle?.target ?? null} faded={i > 0} />
-                          ))}
-                      </Stack>
-                    </td>
-                  )}
+                  <td className="td p-0 text-right">
+                    <Stack n={span} align="right">
+                      {rows.length === 0 ? [<Dash key="none" />]
+                        : rows.map((h, i) => (
+                          <Band key={h.id} v={h.overall} target={s.cycle?.target ?? null} faded={i > 0} />
+                        ))}
+                    </Stack>
+                  </td>
 
                   {skills.map((k) => (
                     <td key={k} className="td p-0 text-right">
                       <Stack n={span} align="right">
                         {rows.length === 0 ? [<Dash key="none" />]
-                          : rows.map((h, i) => (isRatio
-                            ? <Ratio key={h.id} cell={h.ratios?.[k]} faded={i > 0} />
-                            : <Band key={h.id} v={h.bands?.[k] ?? null} target={s.cycle?.target ?? null} faded={i > 0} />
+                          : rows.map((h, i) => (
+                            <Band key={h.id} v={h.bands?.[k] ?? null} target={s.cycle?.target ?? null} faded={i > 0} />
                           ))}
                       </Stack>
                     </td>
                   ))}
 
                   <td className="td"><FollowCell row={s} /></td>
+                  <td className="td text-center">
+                    <MenuDong muc={tt.mucCua({ id: s.id, ten: s.fullName, dangHoc: s.status === 'active', nhapDiem: nhapDiemCua(classId, false, s.timeline) })} />
+                  </td>
                 </tr>
               );
             })}
           </tbody>
         </table>
       </div>
+      {tt.panels}
     </div>
   );
 }
@@ -275,28 +253,6 @@ function Band({ v, target, faded }: { v: number | null; target: number | null; f
 }
 
 /**
- * MỘT Ô ĐIỂM LỚP NORMAL — dạng ĐIỂM ĐẠT / TỔNG ĐIỂM (mục 5.1).
- *
- * Ba tình trạng, ba cách hiện, và chúng phải phân biệt được bằng mắt trong một giây:
- *   đạt        điểm màu xanh
- *   chưa đạt   điểm màu đỏ
- *   chưa nhập  một gạch ngang — CHƯA NHẬP khác hẳn TRƯỢT, và không bao giờ được trộn
- */
-function Ratio({ cell, faded }: {
-  cell?: { score: number | null; total: number | null; outcome: string }; faded: boolean;
-}) {
-  if (!cell || cell.score === null || cell.total === null) return <Dash />;
-  const tone = cell.outcome === 'pass' ? 'text-emerald-200'
-    : cell.outcome === 'fail' ? 'text-rose-200' : 'text-slate-100';
-  return (
-    <span className={`tabular-nums text-xs whitespace-nowrap ${tone} ${faded ? 'opacity-55' : ''}`}
-      title={cell.outcome === 'pass' ? 'Đạt' : cell.outcome === 'fail' ? 'Chưa đạt' : 'Chưa kết luận'}>
-      {cell.score}<span className="opacity-60">/{cell.total}</span>
-    </span>
-  );
-}
-
-/**
  * CỘT THEO DÕI — MỘT hành động chính, rồi mới tới thông tin phụ (mục 5.2).
  *
  * Bản trước xếp chồng ba bốn nhãn cùng nói một chuyện: "Nhập điểm R", "Quá hạn nhập điểm",
@@ -312,14 +268,14 @@ function FollowCell({ row }: { row: RosterRow }) {
   const overdue = row.timeline.some((t) => t.overdueSkills > 0);
   const here = row.openCases - (row.handoverCases ?? 0);
   const bits: string[] = [];
-  if (here > 0) bits.push(`${here} case`);
-  if (row.handoverCases > 0) bits.push(`${row.handoverCases} case bàn giao`);
+  if (here > 0) bits.push(`${here} Case`);
+  if (row.handoverCases > 0) bits.push(`${row.handoverCases} Case bàn giao`);
 
   /* Việc chính: nhập điểm kỹ năng của CHÍNH người đang xem, ở mốc đang chờ. */
   const pending = row.myPending;
   const at = row.timeline.find((t) => t.myPending.length > 0);
   const main = pending.length > 0
-    ? `Nhập điểm ${pending.map((k) => ENTRY_SKILL_SHORT[k as EntrySkill] ?? k).join(', ')}`
+    ? `Nhập điểm ${pending.map(skillShort).join(', ')}`
     : null;
 
   if (!main && bits.length === 0) return <span className="text-xs text-slate-600">—</span>;

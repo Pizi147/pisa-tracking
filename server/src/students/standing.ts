@@ -58,6 +58,14 @@ export type Standing = {
   /** Lớp thường: số môn chưa đạt của lượt đó (để nói "Đạt 3/4 môn"). FT: null. */
   failed: number | null;
 
+  /** FT: Overall của lượt đó (chỉ khi đủ bốn kỹ năng) và kỳ vọng CỦA CHÍNH lượt đó (MT1 −1.0, MT2 −0.5). Lớp thường: null. */
+  overall: number | null;
+  expectation: number | null;
+  /** FT: kỹ năng ĐÁNH GIÁ (L · R · W · S) dưới kỳ vọng của lượt đó, kèm band. Lớp thường: []. */
+  belowSkills: { skill: string; band: number }[];
+  /** Lớp thường: môn chưa đạt của lượt đó, kèm điểm đúng/tổng — cột "Kết quả gần nhất" ghi "chưa đạt W 12/20". FT: []. */
+  failedSkills: { skill: string; score: number; total: number }[];
+
   /** Lượt kế tiếp đã lên kế hoạch mà chưa có điểm — để nói "đang chờ kết quả MT3". */
   nextAttemptNo: number | null;
   nextAttemptLabel: string | null;
@@ -101,6 +109,7 @@ const EMPTY = (studentId: number, cycleId: number | null): Standing => ({
   studentId, cycleId, mode: null,
   attemptId: null, attemptNo: null, attemptKind: null, attemptLabel: null, periodCode: null,
   sosLevel: null, provisional: false, scored: 0, required: 0, failed: null,
+  overall: null, expectation: null, belowSkills: [], failedSkills: [],
   nextAttemptNo: null, nextAttemptLabel: null, nextPeriodCode: null,
   openCases: 0, handoverCases: 0,
 });
@@ -221,6 +230,9 @@ export function standingFor(studentIds: number[]): Map<number, Standing> {
         s.scored = r.scored;
         s.required = r.required;
         s.failed = r.failedCount;
+        s.failedSkills = r.skills
+          .filter((x) => x.outcome === 'fail' && x.score !== null && x.total !== null)
+          .map((x) => ({ skill: x.skill, score: x.score as number, total: x.total as number }));
       } else {
         const skips = bundle.skips.get(a.id) ?? [];
         const r = evaluateAttempt(
@@ -231,6 +243,11 @@ export function standingFor(studentIds: number[]): Map<number, Standing> {
         s.provisional = r.provisional;
         s.scored = r.scoredRequired;
         s.required = r.required.length;
+        s.overall = r.overall;
+        s.expectation = r.expectation;
+        s.belowSkills = r.verdicts
+          .filter((v) => v.passed === false && v.band !== null)
+          .map((v) => ({ skill: v.skill, band: v.band as number }));
       }
       break;
     }
