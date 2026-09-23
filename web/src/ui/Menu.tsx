@@ -7,6 +7,8 @@ export type MenuItem = {
   danger?: boolean;
   /** Một dòng nói rõ việc này làm gì — hiện dưới nhãn. */
   hint?: string;
+  /** Đường kẻ NGAY TRÊN mục này (tách nhóm việc hiếm/nặng ở cuối menu) — như `MenuDong`. */
+  keTruoc?: boolean;
 };
 
 /**
@@ -50,7 +52,9 @@ export function Menu({ label, items, align = 'right', className = 'btn btn-sm bt
           style={{ borderColor: 'var(--line)', [align]: 0 }}>
           {items.map((it) => (
             <button key={it.label} type="button" role="menuitem"
-              className={`block w-full rounded-md px-3 py-1.5 text-left text-sm hover:bg-white/5 ${it.danger ? 'text-rose-200' : 'text-slate-200'}`}
+              className={`block w-full rounded-md px-3 py-1.5 text-left text-sm hover:bg-white/5 ${it.danger ? 'text-rose-200' : 'text-slate-200'} ${
+                it.keTruoc ? 'mt-1 rounded-t-none pt-2' : ''}`}
+              style={it.keTruoc ? { borderTop: '1px solid var(--line)' } : undefined}
               onClick={() => { setOpen(false); it.onClick(); }}>
               {it.label}
               {it.hint && <span className="block text-[11px] text-slate-500">{it.hint}</span>}

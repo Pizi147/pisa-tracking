@@ -498,4 +498,42 @@ export async function runXoaDuLieuTests(t: YThucTestKit) {
     assert(rows[0].entity_label === `${S.ten} · ${S.ma}` && rows[0].actor_user_id === P.admin.userId, JSON.stringify(rows[0]));
     assert(after.soDong?.luotTest === 2 && after.soTep === 5, rows[0].after_json);
   });
+
+  // ==================================================================== Task 3 — ⋮ Hồ sơ HV › Xoá học viên
+
+  console.log('\nPR-XOA (3) · Giao diện: ⋮ Hồ sơ HV › Xoá học viên (cuối menu, sau đường kẻ, chữ đỏ)');
+
+  const d = await import('../../../shared/domain/index.ts');
+  /** Nguồn web đã bỏ chú thích — để quét "không có X" không vấp chữ trong chú thích. */
+  const docNguon = (rel: string) => fsMod.readFileSync(pathMod.join(REPO, rel), 'utf8')
+    .replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '').replace(/\{\/\*[\s\S]*?\*\/\}/g, '');
+  const quyenDu = { ghiLoTrinhTiep: true, chuyenLop: true, tamDung: true, quayLai: false, ketThuc: true, luuTru: false, boLuuTru: false };
+
+  check('PR-XOA (3) · mucQuanLyHocVien + coTheXoa: "Xoá học viên" là mục CUỐI, nguyHiem + keTruoc; mục khác không có cờ', () => {
+    const ds = d.mucQuanLyHocVien({ canEdit: true, lopHoc: { quyen: quyenDu }, cycle: { ratio: false }, status: 'active', coTheXoa: true });
+    const cuoi = ds[ds.length - 1];
+    assert(cuoi.key === 'xoa-hoc-vien' && cuoi.nhan === 'Xoá học viên' && cuoi.nguyHiem === true && cuoi.keTruoc === true, JSON.stringify(cuoi));
+    assert(ds.slice(0, -1).every((m) => !m.nguyHiem && !m.keTruoc), 'chỉ mục Xoá mới đỏ và có đường kẻ');
+  });
+
+  check('PR-XOA (3) · không coTheXoa → không có mục Xoá; GVBM (không mục nào) + coTheXoa false → menu rỗng', () => {
+    const ds = d.mucQuanLyHocVien({ canEdit: true, lopHoc: { quyen: quyenDu }, cycle: null, status: 'active', coTheXoa: false });
+    assert(!ds.some((m) => m.key === 'xoa-hoc-vien'), 'QL/GVCN không được thấy Xoá học viên');
+    assert(d.mucQuanLyHocVien({ canEdit: false, lopHoc: null, cycle: null, status: 'active', coTheXoa: false }).length === 0, 'GVBM phải rỗng');
+    /* Em đã lưu trữ (chỉ xem) vẫn xoá được — QT dọn dữ liệu thử. */
+    const chiXem = d.mucQuanLyHocVien({ canEdit: true, lopHoc: { quyen: { ...quyenDu, ghiLoTrinhTiep: false, chuyenLop: false, tamDung: false, ketThuc: false, boLuuTru: true } },
+      cycle: null, status: 'finished', coTheXoa: true }).map((m) => m.key);
+    assert(chiXem.join() === 'info,bo-luu-tru,xoa-hoc-vien', chiXem.join());
+  });
+
+  check('PR-XOA (3) · XoaHocVienPanel theo khuôn: KhungPanel, nút đỏ tắt tới khi gõ đúng mã, dòng sao lưu nguyên văn; không SectionNote/fmtDate/Modal', () => {
+    const pn = docNguon('web/src/modules/students/XoaHocVienPanel.tsx');
+    assert(/<KhungPanel\b/.test(pn) && /btn btn-danger/.test(pn) && /disabled=\{busy \|\| !khop\}/.test(pn), 'thiếu khuôn / nút đỏ theo mã');
+    assert(pn.includes('Nên sao lưu trước lần xoá đầu (npm run sao-luu)') && pn.includes('Không khôi phục được (trừ từ bản sao lưu).'), 'thiếu dòng nhắc');
+    assert(!/SectionNote|fmtDate\(|<Modal\b/.test(pn), 'panel xoá HV dùng thứ bị cấm');
+    assert(/tabular-nums/.test(pn), 'cột số phải tabular-nums');
+    const trang = docNguon('web/src/modules/students/StudentDetailPage.tsx');
+    assert(/coTheXoa: !!data\.viewer\.coTheXoa/.test(trang) && /danger: m\.nguyHiem, keTruoc: m\.keTruoc/.test(trang), 'Hồ sơ HV chưa nối cờ Xoá vào ⋮');
+    assert(/keTruoc\?: boolean/.test(docNguon('web/src/ui/Menu.tsx')), 'Menu thiếu keTruoc');
+  });
 }

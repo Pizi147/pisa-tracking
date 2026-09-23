@@ -2,7 +2,8 @@
  * MENU ⋮ Ở HỒ SƠ HỌC VIÊN (PR-UX3, Q10) — luật thuần: mục nào hiện, theo quyền và tình trạng. Web (`StudentManagePanel.tsx`) chỉ vẽ menu thả
  * và mở THẲNG panel của mục được chọn. Ẩn một mục không phải là chặn nó: máy chủ vẫn kiểm quyền.
  */
-export type ViecQuanLy = 'info' | 'lo-trinh-tiep' | 'lo-trinh' | 'chuyen-lop' | 'outcome' | 'tam-dung' | 'quay-lai' | 'ket-thuc' | 'luu-tru' | 'bo-luu-tru';
+export type ViecQuanLy = 'info' | 'lo-trinh-tiep' | 'lo-trinh' | 'chuyen-lop' | 'outcome' | 'tam-dung' | 'quay-lai' | 'ket-thuc' | 'luu-tru' | 'bo-luu-tru'
+  | 'xoa-hoc-vien';
 
 export const NHAN_VIEC_QUAN_LY: Record<ViecQuanLy, string> = {
   info: 'Thông tin học viên',
@@ -15,6 +16,7 @@ export const NHAN_VIEC_QUAN_LY: Record<ViecQuanLy, string> = {
   'ket-thuc': 'Kết thúc học',
   'luu-tru': 'Lưu trữ',
   'bo-luu-tru': 'Bỏ lưu trữ',
+  'xoa-hoc-vien': 'Xoá học viên',
 };
 
 export type LopHocQuyen = {
@@ -24,14 +26,17 @@ export type LopHocQuyen = {
 
 /**
  * Các mục của menu ⋮, đúng thứ tự PR-LT: Thông tin · Lộ trình tiếp theo (lớp thường) · Lộ trình (FT) · Chuyển lớp · Kết luận lộ trình (CHỈ FT,
- * Q15/Q18) · Tạm dừng/Quay lại/Kết thúc học · Lưu trữ/Bỏ lưu trữ. Không có mục nào → nơi gọi không vẽ ⋮ (GVBM không có mục nào).
+ * Q15/Q18) · Tạm dừng/Quay lại/Kết thúc học · Lưu trữ/Bỏ lưu trữ · (PR-XOA) Xoá học viên — CUỐI CÙNG, sau đường kẻ, chữ đỏ, chỉ Quản trị
+ * hệ thống (`coTheXoa` = `viewer.coTheXoa`). Không có mục nào → nơi gọi không vẽ ⋮ (GVBM không có mục nào).
  */
-export function mucQuanLyHocVien({ canEdit, lopHoc, cycle, status }: {
+export function mucQuanLyHocVien({ canEdit, lopHoc, cycle, status, coTheXoa }: {
   canEdit: boolean;
   lopHoc?: { quyen: LopHocQuyen } | null;
   cycle: { ratio?: boolean } | null;
   status?: string;
-}): { key: ViecQuanLy; nhan: string }[] {
+  /** PR-XOA: chỉ Quản trị hệ thống. */
+  coTheXoa?: boolean;
+}): { key: ViecQuanLy; nhan: string; nguyHiem?: boolean; keTruoc?: boolean }[] {
   const quyen = lopHoc?.quyen;
   const ratio = !!cycle?.ratio;
   const dangHoc = status === 'active';
@@ -46,5 +51,8 @@ export function mucQuanLyHocVien({ canEdit, lopHoc, cycle, status }: {
   if (quyen?.ketThuc && status !== 'finished') ds.push('ket-thuc');
   if (quyen?.luuTru) ds.push('luu-tru');
   if (quyen?.boLuuTru) ds.push('bo-luu-tru');
-  return ds.map((key) => ({ key, nhan: NHAN_VIEC_QUAN_LY[key] }));
+  if (coTheXoa) ds.push('xoa-hoc-vien');
+  return ds.map((key) => (key === 'xoa-hoc-vien'
+    ? { key, nhan: NHAN_VIEC_QUAN_LY[key], nguyHiem: true, keTruoc: true }
+    : { key, nhan: NHAN_VIEC_QUAN_LY[key] }));
 }
