@@ -186,7 +186,7 @@ Quyền phải khớp giữa menu, máy chủ và việc đỏ.
 | Lịch sử lớp | đầu tab Hành trình | trong phạm vi |
 | Kết luận lộ trình | ⋮ Hồ sơ HV | GVCN, QL · FT |
 | Tín hiệu SOS lớp thường | Việc cần làm › Case học thuật · hộp môn ở Hồ sơ HV · badge Hồ sơ lớp | GV môn đó |
-| Chấm điểm | Test › Cần chấm → lưới · nút Nhập điểm Test ở Hồ sơ lớp · ⋯ dòng HV · ⋯ hộp lớp ở Học viên & Lớp (Q11, thêm 22/09) · ô `Lớp còn {n} bài chưa nhập điểm` (tên cũ `Bạn cần chấm: {n} bài`) trên dòng lớp ở Học viên & Lớp → Test › Cần chấm lọc theo lớp (`/test/can-cham?classId=…&scope=…`, chip `Đang lọc: lớp {mã} ✕`) (đích dựng ở PR-Rc1 23/09; đổi link: PR-Qa) | GV môn đó, QL |
+| Chấm điểm | Test › Cần chấm → lưới · nút Nhập điểm Test ở Hồ sơ lớp · ⋯ dòng HV · ⋯ hộp lớp ở Học viên & Lớp (Q11, thêm 22/09) · ô `Lớp còn {n} bài chưa nhập điểm` (tên cũ `Bạn cần chấm: {n} bài`) trên dòng lớp ở Học viên & Lớp → Test › Cần chấm lọc theo lớp (`/test/can-cham?classId=…&scope=…`, chip `Đang lọc: lớp {mã} ✕`) (đích dựng ở PR-Rc1 23/09; đổi link: PR-Qa) | GV môn đó nhập · QL chỉ xem (sửa đợt đã hoàn tất, bắt buộc lý do — R11; chủ sản phẩm 23/09) |
 | Kế hoạch Test | Test › Kế hoạch Test | QL |
 | Hồ sơ GV | tên GV ở Hồ sơ lớp · Phân tích › Theo giáo viên (tên chỉ thành link khi PR-GV bật `CO_TRANG_HO_SO_GIAO_VIEN`) | QL trong phạm vi · GV (chính mình) |
 | Ghi nhận vi phạm | ⋯ dòng HV · tab Ý thức & Phối hợp của lớp và của HV | GV |
