@@ -80,6 +80,8 @@ export function attachPrincipal(req: Request, _res: Response, next: NextFunction
   } catch (e) {
     /* PR-Z2c-b: mất luồng Turso KHÔNG phải "chưa đăng nhập" — nuốt đi là người dùng bị đẩy ra màn đăng nhập. Đưa sang bộ thử lại. */
     if (laLoiMatLuongTurso(e)) { next(e); return; }
+    /* Z2c-e: 503 "đang bận" (chờ khoá ghi quá hạn, db.ts) cũng không phải "chưa đăng nhập" — trả đúng câu đó. */
+    if (e instanceof HttpError) { next(e); return; }
     /* session trỏ tới user đã bị xoá sau khi reset seed */
   }
   next();
