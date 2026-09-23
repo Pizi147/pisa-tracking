@@ -24,15 +24,16 @@ export function lichSuLop(p: Principal, studentId: number) {
     .all(studentId) as any[];
   if (!enrollments.length) return [];
 
-  // Câu 2: lượt Giữa/Cuối khoá (kèm điểm) của CHÍNH các lớp đó — ưu tiên final, không có thì progress.
+  // Câu 2: lượt Giữa/Cuối khoá ĐÃ CHẤM của CHÍNH EM NÀY ở các lớp đó — ưu tiên final, không có thì progress.
   const classIds = [...new Set(enrollments.map((e) => e.class_id))];
   const ph = classIds.map(() => '?').join(',');
   const attemptRows = conn
     .prepare(
-      `SELECT * FROM assessment_attempts WHERE class_id IN (${ph}) AND kind IN ('final','progress')
+      `SELECT * FROM assessment_attempts
+        WHERE class_id IN (${ph}) AND student_id = ? AND kind IN ('final','progress') AND status = 'done'
         ORDER BY class_id, (kind = 'final') DESC, attempt_no DESC`,
     )
-    .all(...classIds) as any[];
+    .all(...classIds, studentId) as any[];
   const attemptOfClass = new Map<number, any>();
   for (const a of attemptRows) if (!attemptOfClass.has(a.class_id)) attemptOfClass.set(a.class_id, a);
 

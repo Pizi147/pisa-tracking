@@ -125,7 +125,7 @@ export function thongBaoChuyenVao(i: {
   const ql = conn
     .prepare(
       `SELECT DISTINCT ur.user_id FROM user_roles ur JOIN roles r ON r.id = ur.role_id
-        WHERE r.key = 'manager' AND (ur.branch_id = ? OR ur.branch_id IS NULL)`,
+        WHERE r.key = 'manager' AND ur.status = 'active' AND (ur.branch_id = ? OR ur.branch_id IS NULL)`,
     )
     .all(branchDest?.branch_id ?? i.denLop.branchId) as any[];
   const body = `Từ ${i.tuMa} (${i.tuChiNhanh})${i.lyDo ? ` · ${i.lyDo}` : ''}`;
@@ -244,10 +244,10 @@ export function apDungMotDong(p: Principal, d: DongApDung): { luat: LuatDoiLop |
     const startPeriodId = denLop.ft ? ensurePeriod(mondayOf(d.ngay)).id : (toClass.start_period_id ?? null);
     conn
       .prepare(
-        `INSERT INTO learning_cycles (student_id, seq, route, programme_code, target_score, start_period_id, started_at, status, created_at)
-         VALUES (?,?,?,?,?,?,?, 'active', ?)`,
+        `INSERT INTO learning_cycles (student_id, seq, route, programme_code, target_score, exam_month, start_period_id, started_at, status, created_at)
+         VALUES (?,?,?,?,?,?,?,?, 'active', ?)`,
       )
-      .run(d.sid, seq, route, denLop.ma, d.mucTieu ?? null, startPeriodId, d.ngay, nowIso());
+      .run(d.sid, seq, route, denLop.ma, d.mucTieu ?? null, d.thangThi ?? null, startPeriodId, d.ngay, nowIso());
   }
 
   /* Q12: bài chưa làm CHỈ đi theo em khi GIỮ khoá — đóng khoá thì lượt planned ở lại lớp cũ. */
@@ -341,6 +341,7 @@ export type DongCaLop = {
   sid: number; huong: 'len_lop' | 'hoc_lai' | 'fast_track';
   toClassId: number; toClass: { ma: ProgrammeCode | null; ft: boolean; branchId: number; code: string };
   mucTieu?: number | null;
+  thangThi?: string | null;
 };
 
 /**
@@ -418,14 +419,14 @@ export function apDungCaLop(p: Principal, o: {
     /* Cùng một ngày hiệu lực cho cả lớp — chỉ cần MỘT lần ensurePeriod cho mọi em sang FT. */
     const ftPeriodId = o.dongs.some((d) => d.toClass.ft) ? ensurePeriod(mondayOf(o.ngay)).id : null;
 
-    const rows = o.dongs.map(() => '(?,?,?,?,?,?,?,\'active\',?)').join(',');
+    const rows = o.dongs.map(() => '(?,?,?,?,?,?,?,?,\'active\',?)').join(',');
     const params = o.dongs.flatMap((d) => [
-      d.sid, (seqOf.get(d.sid) ?? 0) + 1, d.toClass.ft ? 'LT1' : null, d.toClass.ma, d.mucTieu ?? null,
+      d.sid, (seqOf.get(d.sid) ?? 0) + 1, d.toClass.ft ? 'LT1' : null, d.toClass.ma, d.mucTieu ?? null, d.thangThi ?? null,
       d.toClass.ft ? ftPeriodId : (startPeriodOf.get(d.toClassId) ?? null), o.ngay, now,
     ]);
     conn
       .prepare(
-        `INSERT INTO learning_cycles (student_id, seq, route, programme_code, target_score, start_period_id, started_at, status, created_at)
+        `INSERT INTO learning_cycles (student_id, seq, route, programme_code, target_score, exam_month, start_period_id, started_at, status, created_at)
          VALUES ${rows}`,
       )
       .run(...params);
@@ -454,22 +455,34 @@ export function apDungCaLop(p: Principal, o: {
   }
 }
 
-/** Bảo lưu cả lô — MỘT UPDATE học viên, MỘT UPDATE enrollment, MỘT INSERT hành trình. */
-export function apDungBaoLuuCaLop(o: { fromClassId: number; ngay: string; dongs: { sid: number; lyDo: string }[] }): void {
+/**
+ * Bảo lưu cả lô — MỘT UPDATE học viên, ghi `end_reason` THEO NHÓM lý do (số nhóm bị chặn bởi số
+ * lý do KHÁC NHAU trong lô, không phải theo từng em), MỘT INSERT hành trình. Ghi `created_by`
+ * đúng người bấm xác nhận (sửa sau rà PR #86, vấn đề 7c — trước đây ghi NULL).
+ */
+export function apDungBaoLuuCaLop(p: Principal, o: { fromClassId: number; ngay: string; dongs: { sid: number; lyDo: string }[] }): void {
   if (!o.dongs.length) return;
   const conn = db();
   const now = nowIso();
   const ids = o.dongs.map((d) => d.sid);
   const ph = ids.map(() => '?').join(',');
   conn.prepare(`UPDATE students SET status = 'inactive' WHERE id IN (${ph})`).run(...ids);
-  conn
-    .prepare(
-      `UPDATE enrollments SET status = 'paused', end_kind = 'bao_luu'
-        WHERE class_id = ? AND status = 'active' AND student_id IN (${ph})`,
-    )
-    .run(o.fromClassId, ...ids);
+  const byLyDo = new Map<string, number[]>();
+  for (const d of o.dongs) {
+    if (!byLyDo.has(d.lyDo)) byLyDo.set(d.lyDo, []);
+    byLyDo.get(d.lyDo)!.push(d.sid);
+  }
+  for (const [lyDo, sids] of byLyDo) {
+    const ph2 = sids.map(() => '?').join(',');
+    conn
+      .prepare(
+        `UPDATE enrollments SET status = 'paused', end_kind = 'bao_luu', end_reason = ?
+          WHERE class_id = ? AND status = 'active' AND student_id IN (${ph2})`,
+      )
+      .run(lyDo, o.fromClassId, ...sids);
+  }
   const rows = o.dongs.map(() => '(?,?,?,?,NULL,NULL,?,?)').join(',');
-  const params = o.dongs.flatMap((d) => [d.sid, 'pause', o.ngay, `Bảo lưu — ${d.lyDo}`, null, now]);
+  const params = o.dongs.flatMap((d) => [d.sid, 'pause', o.ngay, `Bảo lưu — ${d.lyDo}`, p.userId, now]);
   conn
     .prepare(
       `INSERT INTO journey_events (student_id, event_type, event_date, title, ref_table, ref_id, created_by, created_at)

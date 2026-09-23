@@ -220,7 +220,26 @@ export function applyTransition(p: Principal, input: TransitionInput) {
       }
     }
 
-    /* Đọc thông tin lớp đích THEO LÔ — một câu cho mọi lớp đích khác nhau, không hỏi lại theo từng em. */
+    /*
+     * TẬP HỌC VIÊN HỢP LỆ — đúng em còn ghi danh `active` ở LỚP NGUỒN (cùng tập `transitionPlan`
+     * đọc), không phải "mọi id gửi lên". Không có kiểm này thì một `studentId` không thuộc lớp
+     * (khác chi nhánh, đã rời lớp…) vẫn lọt qua bước 1 (đóng enrollment — 0 dòng khớp) rồi bị
+     * bước 2 CHÈN THẲNG một enrollment mới vào lớp đích, xếp nhầm em chưa từng ở lớp này.
+     */
+    const eligibleIds = new Set(
+      (conn
+        .prepare(
+          `SELECT s.id FROM enrollments e JOIN students s ON s.id = e.student_id
+            WHERE e.class_id = ? AND e.status = 'active' AND s.status = 'active' AND s.archived_at IS NULL`,
+        )
+        .all(input.fromClassId) as any[]).map((r) => r.id as number),
+    );
+
+    /*
+     * Đọc thông tin lớp đích THEO LÔ — một câu cho mọi lớp đích khác nhau, không hỏi lại theo
+     * từng em. Chỉ lớp CÒN HOẠT ĐỘNG và KHÁC lớp nguồn mới hợp lệ — lớp đã kết thúc/id không
+     * tồn tại thì `classInfoOf` không có, dòng đó rơi vào "Lớp đích không hợp lệ" bên dưới.
+     */
     const rawToClassIds = new Set<number>();
     for (const m of input.moves ?? []) if (!m.toNewClass && m.toClassId) rawToClassIds.add(m.toClassId);
     for (const d of input.dongs ?? []) if (!d.toNewClass && d.toClassId) rawToClassIds.add(d.toClassId);
@@ -228,8 +247,11 @@ export function applyTransition(p: Principal, input: TransitionInput) {
     if (rawToClassIds.size) {
       const ids = [...rawToClassIds];
       for (const c of conn
-        .prepare(`SELECT id, code, programme_code, is_fast_track, branch_id FROM classes WHERE id IN (${ids.map(() => '?').join(',')})`)
-        .all(...ids) as any[]) {
+        .prepare(
+          `SELECT id, code, programme_code, is_fast_track, branch_id FROM classes
+            WHERE id IN (${ids.map(() => '?').join(',')}) AND status = 'active' AND id != ?`,
+        )
+        .all(...ids, input.fromClassId) as any[]) {
         classInfoOf.set(c.id, { ma: (c.programme_code ?? null) as ProgrammeCode | null, ft: !!c.is_fast_track, code: c.code, branchId: c.branch_id });
       }
     }
@@ -258,8 +280,10 @@ export function applyTransition(p: Principal, input: TransitionInput) {
     const doneList: { studentId: number; toClassId: number }[] = [];
 
     for (const dg of dongs) {
+      if (!eligibleIds.has(dg.studentId)) { failed.push({ studentId: dg.studentId, message: 'Học viên không thuộc lớp này.' }); continue; }
       const toClassId = dg.toNewClass ? created?.id ?? null : dg.toClassId ?? null;
       const toClass = toClassId ? classInfoOf.get(toClassId) ?? null : null;
+      if (toClassId && !dg.toNewClass && !toClass) { failed.push({ studentId: dg.studentId, message: 'Lớp đích không hợp lệ.' }); continue; }
       const kiemTra: DongChuyenTiep = {
         huong: dg.huong ?? null, toClassId, toClass, toNewClass: dg.toNewClass,
         mucTieu: dg.mucTieu ?? null, thangThi: dg.thangThi ?? null, lyDo: dg.lyDo ?? null, ngayXemLai: dg.ngayXemLai ?? null,
@@ -269,7 +293,7 @@ export function applyTransition(p: Principal, input: TransitionInput) {
 
       const huong = dg.huong as Huong;
       if (huong === 'len_lop' || huong === 'hoc_lai' || huong === 'fast_track') {
-        okChuyenLop.push({ sid: dg.studentId, huong, toClassId: toClassId!, toClass: toClass!, mucTieu: dg.mucTieu ?? null });
+        okChuyenLop.push({ sid: dg.studentId, huong, toClassId: toClassId!, toClass: toClass!, mucTieu: dg.mucTieu ?? null, thangThi: dg.thangThi ?? null });
         doneList.push({ studentId: dg.studentId, toClassId: toClassId! });
       } else if (huong === 'bao_luu') {
         okBaoLuu.push({ sid: dg.studentId, lyDo: dg.lyDo! });
@@ -282,7 +306,7 @@ export function applyTransition(p: Principal, input: TransitionInput) {
     }
 
     if (okChuyenLop.length) apDungCaLop(p, { fromClass: { id: from.id, code: from.code }, ngay: input.effectiveDate, dongs: okChuyenLop });
-    if (okBaoLuu.length) apDungBaoLuuCaLop({ fromClassId: from.id, ngay: input.effectiveDate, dongs: okBaoLuu });
+    if (okBaoLuu.length) apDungBaoLuuCaLop(p, { fromClassId: from.id, ngay: input.effectiveDate, dongs: okBaoLuu });
     /* Dừng học = Kết thúc học — ngoại lệ đi từng em (hiếm, thường 0-1 em mỗi đợt), tái dùng đúng một luật S16. */
     for (const d of okDungHoc) setStudentStatus(p, d.sid, 'finished', input.effectiveDate, d.lyDo, 'dung_hoc');
 

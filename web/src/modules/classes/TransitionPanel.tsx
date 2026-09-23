@@ -51,9 +51,19 @@ export function TransitionPanel({ classId, open, onClose, onDone }: {
   /** Hướng/lớp đích MẶC ĐỊNH của một em: dự định đã ghi (Lộ trình tiếp theo), rồi mới tới lớp đích chung (chỉ khi hướng là "Lên …"). */
   const dongCua = (s: any): Dong => {
     const banGhi = s.loTrinhTiep;
+    const macDinhHuong = (banGhi?.huong && banGhi.huong !== 'chua_ro' ? banGhi.huong : '') as Huong | '';
+    /*
+     * Lớp dự kiến đã ghi lúc "Lộ trình tiếp theo" có thể KHÔNG còn là ứng viên hợp lệ nữa (lớp
+     * đã hết khoá/đóng từ đó tới nay, đổi chương trình…) — không điền sẵn ngầm một id không còn
+     * đúng: BỎ CHỌN, để dòng hiện rõ lỗi "Thiếu lớp đích" thay vì gửi lên một lớp đích sai
+     * (sửa sau rà PR #86, vấn đề 7a).
+     */
+    const lopDuKienGhiSan = banGhi?.lopDuKienId ?? '';
+    const macDinhToClassId = lopDuKienGhiSan && lopHopLe(macDinhHuong).some((c: any) => c.id === lopDuKienGhiSan)
+      ? lopDuKienGhiSan : '';
     const macDinh: Dong = {
-      huong: (banGhi?.huong && banGhi.huong !== 'chua_ro' ? banGhi.huong : '') as Huong | '',
-      toClassId: banGhi?.lopDuKienId ?? '',
+      huong: macDinhHuong,
+      toClassId: macDinhToClassId,
       mucTieu: banGhi?.mucTieu != null ? String(banGhi.mucTieu) : '',
       thangThi: banGhi?.thangThi ?? '',
       lyDo: banGhi?.lyDo ?? '', ngayXemLai: banGhi?.ngayXemLai ?? '',
@@ -100,7 +110,8 @@ export function TransitionPanel({ classId, open, onClose, onDone }: {
       baiChuaLam: r.s.baiChuaLam ?? 0,
     })),
   );
-  const soDoiLop = rows.filter((r) => r.d.huong && r.d.huong !== 'xep_sau').length;
+  /* Nút "Xác nhận chuyển n HV" chỉ đếm em THẬT SỰ đổi lớp — bảo lưu/dừng học/xếp sau không đổi lớp (sửa sau rà PR #86, vấn đề 7b). */
+  const soDoiLop = rows.filter((r) => r.d.huong === 'len_lop' || r.d.huong === 'hoc_lai' || r.d.huong === 'fast_track').length;
 
   const submit = async () => {
     setBusy(true);
