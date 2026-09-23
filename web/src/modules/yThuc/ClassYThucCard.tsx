@@ -1,22 +1,23 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
-import { useSession } from '../../lib/session.tsx';
 import { Alert, Card, Empty, ErrorState, Info, Skeleton } from '../../ui/ui.tsx';
 import { HangTab } from '../../ui/HangTab.tsx';
 import { DongThoiGian } from '../../ui/DongThoiGian.tsx';
 import { fmtDate, studentStatusLabel } from '../../lib/format.ts';
-import { VIOLATION_CATEGORIES, VIOLATION_CATEGORY_LABEL, demTheoNhomViPham, type ViolationCategory } from '@shared/domain/index.ts';
-import { RecordViolationPanel } from './RecordViolationPanel.tsx';
-import { CreateMeasurePanel } from './CreateMeasurePanel.tsx';
-import { ConfirmMeasurePanel } from './ConfirmMeasurePanel.tsx';
-import { DeleteViolationConfirm } from './DeleteViolationConfirm.tsx';
-import { XemPhuongAnPanel } from './XemPhuongAnPanel.tsx';
+import {
+  VIOLATION_CATEGORIES, VIOLATION_CATEGORY_LABEL, demTheoNhomViPham, type ViolationCategory,
+  BO_LOC_PHU, hopBoLocPhu, tuNgayTheoKhoang, type BoLocPhu,
+} from '@shared/domain/index.ts';
+import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
+import { usePanelYThuc } from './panelYThuc.tsx';
+import { ChiTietViPham } from './ChiTietViPham.tsx';
 import { PhoiHopSosSection, type CoordTurn } from './PhoiHopSosSection.tsx';
 
 type ViolationView = {
   id: number; studentId: number; category: string; categoryLabel: string; skill: string | null; skillLabel: string | null;
   occurredOn: string; description: string; reportedBy: number; reportedByName: string | null; ageDays: number; ageLabel: string;
+  state: string; stateLabel: string;
 };
 type MeasureDetail = {
   id: number; studentId: number; studentName: string; kindLabel: string; statusLabel: string; status: string;
@@ -32,19 +33,25 @@ type Board = {
   };
   preparing: MeasureDetail[];
   history: { total: number; latest: MeasureDetail[] };
-  recentByStudent: Record<number, MeasureDetail[]>;
+  /** YT-14: chỉ ba trường cần cho một dòng chữ (Task 2 — không còn `MeasureDetail` đầy đủ). */
+  recentByStudent: Record<number, Array<{ id: number; kindLabel: string; performedOn: string | null }>>;
 };
 
+const BO_LOC_PHU_LABEL: Record<BoLocPhu, string> = {
+  'tat-ca': 'Tất cả', 'chua-xu-ly': 'Chưa xử lý', 'co-pa-dang-chuan-bi': 'Có PA đang chuẩn bị', 'qua-5-ngay': '> 5 ngày',
+};
+const KHOANG_LABEL: Record<'7' | '30' | 'all', string> = { '7': '7 ngày', '30': '30 ngày', all: 'Tất cả thời gian' };
+
 /**
- * `Ý THỨC & PHỐI HỢP` CỦA HỒ SƠ LỚP — theo prototype v3 `thiet-ke/tham-khao/ho-so-lop-v3.html` (spec PR-HV §4.5, A7):
- * dòng học viên là LƯỚI 4 cột (tên + mã/trạng thái · số vi phạm chia nhóm · cảnh báo + PA đang chuẩn bị · nút Mở); mở ra
- * hai thẻ `Vi phạm gần đây` | `Xử lý`; `Theo thời gian` là một dòng thời gian lưới; `Phối hợp SOS` dạng thẻ (`TheSos`).
+ * `Ý THỨC & PHỐI HỢP` CỦA HỒ SƠ LỚP — theo prototype v3 `thiet-ke/tham-khao/ho-so-lop-v3.html` (spec PR-HV §4.5, A7);
+ * kế hoạch PR-YT2 Task 6: mở PA để sửa (YT-2/3), dòng vi phạm mở tại chỗ (YT-1), Theo thời gian đủ mọi trạng thái
+ * (YT-6), bốn chip bộ lọc phụ (YT-12, Q13), Gần đây mở đúng PA (YT-11), Vi phạm gần đây gộp cả PA đang chuẩn bị (YT-7).
  *
- * GVCN nhìn THEO HỌC SINH trước (nguyên tắc §7). Mặc định Theo học sinh, KHÔNG nhớ lựa chọn (Q-V3-7): mỗi lần mở lại
- * trang lớp, component này mount lại từ đầu nên tự về đúng mặc định. Logic lọc/hợp của K2/K3 giữ nguyên.
+ * GVCN nhìn THEO HỌC VIÊN trước (nguyên tắc §7, g2-006). Mặc định Theo học viên, KHÔNG nhớ lựa chọn (Q-V3-7): mỗi lần
+ * mở lại trang lớp, component này mount lại từ đầu nên tự về đúng mặc định.
  */
 export function ClassYThucCard({ classId }: { classId: number }) {
-  const { session } = useSession();
+  const { homNay } = useNgayNghiepVu();
   const board = useApi<Board>(`/classes/${classId}/y-thuc`);
   const [sub, setSub] = useState<'violations' | 'coordination'>('violations');
   const [includeDone, setIncludeDone] = useState(false);
@@ -55,15 +62,24 @@ export function ClassYThucCard({ classId }: { classId: number }) {
 
   const [mode, setMode] = useState<'byStudent' | 'byTime'>('byStudent');
   const [category, setCategory] = useState<string | null>(null);
+  const [boLocPhu, setBoLocPhu] = useState<BoLocPhu>('tat-ca');
+  const [khoang, setKhoang] = useState<'7' | '30' | 'all'>('30');
   const [expanded, setExpanded] = useState<Set<number>>(new Set());
   const [ticked, setTicked] = useState<Map<number, Set<number>>>(new Map());
-  const [reportFor, setReportFor] = useState<number | null>(null);
-  const [editViolation, setEditViolation] = useState<ViolationView | null>(null);
-  const [deleteId, setDeleteId] = useState<number | null>(null);
-  /** Vi phạm đưa vào panel Tạo phương án: đã tick, hoặc (J11) mọi vi phạm đang hiện của em khi chưa tick. */
-  const [measureFor, setMeasureFor] = useState<{ studentId: number; studentName: string; violationIds: number[] } | null>(null);
-  const [confirmMeasureId, setConfirmMeasureId] = useState<number | null>(null);
-  const [xemId, setXemId] = useState<number | null>(null);
+  /** YT-1/YT-13: một dòng vi phạm mở tại chỗ tại mọi thời điểm — dùng chung cho cả hai chế độ. */
+  const [moViPhamId, setMoViPhamId] = useState<number | null>(null);
+
+  const tuNgay = tuNgayTheoKhoang(homNay, khoang);
+  const byTime = useApi<{ rows: ViolationView[] }>(
+    mode === 'byTime' ? `/classes/${classId}/violations${tuNgay ? `?from=${tuNgay}` : ''}` : null,
+    [mode, classId, tuNgay],
+  );
+
+  const { mo, moPhuongAn, panels } = usePanelYThuc({
+    canManage: !!board.data?.canManage,
+    onDone: board.reload,
+    roster: (roster.data ?? []).map((r: any) => ({ id: r.id, name: r.fullName, code: r.studentCode ?? null })),
+  });
 
   const tickOf = (studentId: number) => ticked.get(studentId) ?? new Set<number>();
   const toggleTick = (studentId: number, violationId: number) => {
@@ -79,10 +95,10 @@ export function ClassYThucCard({ classId }: { classId: number }) {
 
   /**
    * K3-2/K3-3: một em chỉ hiện ở một nhóm nếu có VI PHẠM (chưa xử lý, hoặc đã gom vào phương án Đang
-   * chuẩn bị — K2-2) thuộc đúng nhóm đó; bộ lọc "Tất cả" luôn hiện đủ. Không xét theo nhóm KHÁC của em
-   * (vd còn vi phạm BTVN chưa xử lý không kéo em vào nhóm Kỷ luật lớp học nếu phương án không có vi phạm đó).
+   * chuẩn bị — K2-2) thuộc đúng nhóm đó; bộ lọc "Tất cả" luôn hiện đủ. Q13 (YT-12): bốn chip bộ lọc phụ
+   * lọc THÊM trên tập này, ở máy khách, không request thêm.
    */
-  const rowsForCategory = (cat: string | null) => {
+  const rowsForCategory = (cat: string | null, boLoc: BoLocPhu) => {
     const unhandledByStudent = new Map((board.data?.unhandled.students ?? []).map((s) => [s.studentId, s]));
     const preparingByStudent = new Map<number, MeasureDetail[]>();
     (board.data?.preparing ?? []).forEach((m) => {
@@ -91,53 +107,63 @@ export function ClassYThucCard({ classId }: { classId: number }) {
       preparingByStudent.set(m.studentId, arr);
     });
     const studentIds = new Set([...unhandledByStudent.keys(), ...preparingByStudent.keys()]);
-    const rows: Array<{ studentId: number; studentName: string; count: number; oldestAgeDays: number; warningActive: boolean; violations: ViolationView[] }> = [];
+    const rows: Array<{ studentId: number; studentName: string; count: number; oldestAgeDays: number; warningActive: boolean; violations: ViolationView[]; preps: MeasureDetail[] }> = [];
     for (const studentId of studentIds) {
       const s = unhandledByStudent.get(studentId);
       const ms = preparingByStudent.get(studentId) ?? [];
       const violations = s ? (cat ? s.violations.filter((v) => v.category === cat) : s.violations) : [];
       const hasPreparingInCat = cat ? ms.some((m) => (m.violations ?? []).some((v) => v.category === cat)) : ms.length > 0;
       if (violations.length === 0 && !hasPreparingInCat) continue;
-      rows.push({
+      const row = {
         studentId, studentName: s?.studentName ?? ms[0].studentName,
         count: s?.count ?? 0, oldestAgeDays: s?.oldestAgeDays ?? 0, warningActive: s?.warningActive ?? false,
-        violations,
-      });
+        violations, preps: ms,
+      };
+      if (!hopBoLocPhu(boLoc, { coChuaXuLy: violations.length > 0, coPaDangChuanBi: ms.length > 0, canhBao: row.warningActive })) continue;
+      rows.push(row);
     }
     return rows;
   };
 
-  const students = useMemo(() => rowsForCategory(category).sort((a, b) => (
+  const students = useMemo(() => rowsForCategory(category, boLocPhu).sort((a, b) => (
     Number(b.warningActive) - Number(a.warningActive)
     || b.violations.length - a.violations.length
     || a.studentName.localeCompare(b.studentName, 'vi')
-  )), [board.data, category]);
-  /* K3-3: số trên tab con = đúng số dòng hiện ở bộ lọc "Tất cả", bất kể nhóm đang chọn. */
-  const allCount = useMemo(() => rowsForCategory(null).length, [board.data]);
+  )), [board.data, category, boLocPhu]);
+  /* K3-3: số trên tab con = đúng số dòng hiện ở bộ lọc "Tất cả" (không tính bốn chip phụ), bất kể nhóm đang chọn. */
+  const allCount = useMemo(() => rowsForCategory(null, 'tat-ca').length, [board.data]);
 
+  /* YT-6: mọi vi phạm (mọi trạng thái) của HV đang học ở lớp trong khoảng thời gian — lọc nhóm và bốn chip phụ ở máy khách. */
   const timeline = useMemo(() => {
-    const all = (board.data?.unhandled.students ?? []).flatMap((s) => s.violations.map((v) => ({ ...v, studentName: s.studentName })));
-    const filtered = category ? all.filter((v) => v.category === category) : all;
-    return filtered.sort((a, b) => b.occurredOn.localeCompare(a.occurredOn) || b.id - a.id);
-  }, [board.data, category]);
+    const rows = byTime.data?.rows ?? [];
+    const byCategory = category ? rows.filter((v) => v.category === category) : rows;
+    return byCategory.filter((v) => hopBoLocPhu(boLocPhu, { state: v.state as any, ageLabel: v.ageLabel }))
+      .sort((a, b) => b.occurredOn.localeCompare(a.occurredOn) || b.id - a.id);
+  }, [byTime.data, category, boLocPhu]);
 
   if (board.error) return <ErrorState message={board.error.message} hint={board.error.hint} onRetry={board.reload} />;
   if (board.loading || !board.data) return <Card title="Ý thức & Phối hợp"><Skeleton rows={4} /></Card>;
 
   const d = board.data;
-  const rosterOptions = (roster.data ?? []).map((r: any) => ({ id: r.id, name: r.fullName, code: r.studentCode ?? null }));
-  /* J4: dòng phụ `{mã HV} · {trạng thái}` lấy từ roster đã tải — máy chủ không trả chương trình theo em. */
   const rosterById = new Map<number, any>((roster.data ?? []).map((r: any) => [r.id, r]));
-  const prepOf = (sid: number) => d.preparing.filter((m) => m.studentId === sid);
-  /* V10: sửa/xoá được — người ghi (của mình) · GVCN của lớp · Quản lý trong phạm vi. Máy chủ vẫn kiểm lại; đây chỉ để ẩn nút cho gọn mắt. */
-  const canEditViolation = (v: ViolationView) => d.canManage || v.reportedBy === session?.user?.id;
-  const suaBtn = (v: ViolationView) => canEditViolation(v)
-    ? <button type="button" className="btn btn-sm" onClick={() => setEditViolation(v)}>Sửa</button>
-    : null;
+
+  /* YT-7: "Vi phạm gần đây" gộp CHƯA XỬ LÝ + vi phạm đang nằm trong PA đang chuẩn bị của em — không request thêm. */
+  const vpGanDay = (s: { studentId: number; violations: ViolationView[]; preps: MeasureDetail[] }) => {
+    const chuaXuLy = s.violations.map((v) => ({ v, dangChuanBi: null as { id: number; kindLabel: string } | null }));
+    const dangChuanBi = s.preps.flatMap((m) => (m.violations ?? []).map((v) => ({ v, dangChuanBi: { id: m.id, kindLabel: m.kindLabel } })));
+    return [...chuaXuLy, ...dangChuanBi].sort((a, b) => b.v.occurredOn.localeCompare(a.v.occurredOn) || b.v.id - a.v.id);
+  };
+
+  const chiTietCuaDong = (v: ViolationView) => (
+    <ChiTietViPham violationId={v.id} canManage={d.canManage}
+      onSua={(vv) => mo({ loai: 'sua', v: vv })}
+      onDaXoa={() => { setMoViPhamId(null); board.reload(); }}
+      onMoPhuongAn={moPhuongAn} />
+  );
 
   return (
     <Card title="Ý thức & Phối hợp"
-      action={d.canRecord ? <button className="btn btn-sm btn-primary" onClick={() => setReportFor(0)}>+ Ghi nhận vi phạm</button> : undefined}
+      action={d.canRecord ? <button className="btn btn-sm btn-primary" onClick={() => mo({ loai: 'ghi', studentId: 0 })}>+ Ghi nhận vi phạm</button> : undefined}
       bodyClass="p-0">
       {d.warning.message && (
         <div className="px-4 pt-3"><Alert tone="warn">{d.warning.message.replace(/^⚠\s*/, '')}</Alert></div>
@@ -163,10 +189,31 @@ export function ClassYThucCard({ classId }: { classId: number }) {
               ))}
             </div>
             <div className="flex gap-1">
-              <button className={`btn btn-sm ${mode === 'byStudent' ? 'btn-primary' : ''}`} onClick={() => setMode('byStudent')}>Theo học sinh</button>
+              <button className={`btn btn-sm ${mode === 'byStudent' ? 'btn-primary' : ''}`} onClick={() => setMode('byStudent')}>Theo học viên</button>
               <button className={`btn btn-sm ${mode === 'byTime' ? 'btn-primary' : ''}`} onClick={() => setMode('byTime')}>Theo thời gian</button>
             </div>
           </div>
+
+          {/* YT-12 (Q13): bốn chip bộ lọc phụ, áp cho cả hai chế độ. */}
+          <div className="flex flex-wrap gap-1">
+            {BO_LOC_PHU.map((b) => (
+              <button key={b} className={`btn btn-sm ${boLocPhu === b ? 'btn-primary' : ''}`}
+                title={b === 'qua-5-ngay' ? 'Vi phạm chưa xử lý quá 5 ngày' : undefined}
+                onClick={() => setBoLocPhu(b)}>
+                {BO_LOC_PHU_LABEL[b]}
+              </button>
+            ))}
+          </div>
+
+          {mode === 'byTime' && (
+            <div className="flex flex-wrap gap-1">
+              {(['7', '30', 'all'] as const).map((k) => (
+                <button key={k} className={`btn btn-sm ${khoang === k ? 'btn-primary' : ''}`} onClick={() => setKhoang(k)}>
+                  {KHOANG_LABEL[k]}
+                </button>
+              ))}
+            </div>
+          )}
 
           {mode === 'byStudent' ? (
             students.length === 0 ? <Empty title="Không còn vi phạm nào chưa xử lý." /> : (
@@ -174,13 +221,13 @@ export function ClassYThucCard({ classId }: { classId: number }) {
                 {students.map((s) => {
                   const r = rosterById.get(s.studentId);
                   const dem = demTheoNhomViPham(s.violations);
-                  const preps = prepOf(s.studentId);
-                  const mo = expanded.has(s.studentId);
+                  const mo_ = expanded.has(s.studentId);
                   const ticks = tickOf(s.studentId);
+                  const recent = d.recentByStudent[s.studentId] ?? [];
                   return (
                     <li key={s.studentId} className="rounded-lg border" style={{ borderColor: 'var(--line)' }}>
                       {/* Đầu dòng là MỘT nút; nút Mở/Đóng bên trong chỉ là chữ (span) — không có nút lồng nút. */}
-                      <button type="button" aria-expanded={mo}
+                      <button type="button" aria-expanded={mo_}
                         onClick={() => setExpanded((set) => {
                           const next = new Set(set); if (next.has(s.studentId)) next.delete(s.studentId); else next.add(s.studentId); return next;
                         })}
@@ -202,46 +249,60 @@ export function ClassYThucCard({ classId }: { classId: number }) {
                                 ? <Alert tone="warn">cũ nhất {s.oldestAgeDays} ngày</Alert>
                                 : <span className="text-xs text-slate-500">Không có cảnh báo</span>}
                             </span>
-                            <span className="block text-[11px] text-slate-500 mt-0.5">{preps.length} PA đang chuẩn bị</span>
+                            {/* YT-7 dòng HV: một PA → tên loại; nhiều PA → đếm. */}
+                            {s.preps.length > 0 && (
+                              <span className="block text-[11px] text-slate-500 mt-0.5">
+                                {s.preps.length === 1 ? `PA: ${s.preps[0].kindLabel}` : `${s.preps.length} PA đang chuẩn bị`}
+                              </span>
+                            )}
                           </span>
                           <span className="justify-self-end">
-                            <span className="btn btn-sm" aria-hidden>{mo ? 'Đóng' : 'Mở'}</span>
+                            <span className="btn btn-sm" aria-hidden>{mo_ ? 'Đóng' : 'Mở'}</span>
                           </span>
                         </span>
                       </button>
 
-                      {mo && (
+                      {mo_ && (
                         <div className="px-3 pb-3 grid gap-3 md:grid-cols-[1.15fr_0.85fr]">
                           <div className="rounded-lg border p-2.5" style={{ borderColor: 'var(--line)' }}>
                             <p className="text-[11px] uppercase tracking-wide text-slate-500 m-0 mb-1.5">Vi phạm gần đây</p>
                             <DongThoiGian bien="gon" coCotChon={d.canManage}
-                              muc={s.violations.map((v) => ({
+                              muc={vpGanDay(s).map(({ v, dangChuanBi }) => ({
                                 key: `v${v.id}`, ngay: v.occurredOn,
-                                chon: d.canManage
+                                chon: d.canManage && !dangChuanBi
                                   ? { checked: ticks.has(v.id), onChange: () => toggleTick(s.studentId, v.id), nhanDoc: `Chọn vi phạm ${fmtDate(v.occurredOn)}` }
                                   : null,
                                 tieuDe: v.description,
-                                dongPhu: [v.skillLabel, v.reportedByName, v.ageLabel ? `⚠ đã ${v.ageDays} ngày` : null].filter(Boolean).join(' · '),
-                                cuoi: <><Info>{v.categoryLabel}</Info>{suaBtn(v)}</>,
+                                dongPhu: dangChuanBi
+                                  ? `Đang chuẩn bị · ${dangChuanBi.kindLabel}`
+                                  : [v.skillLabel, v.reportedByName, v.ageLabel ? `⚠ đã ${v.ageDays} ngày` : null].filter(Boolean).join(' · '),
+                                cuoi: <Info>{v.categoryLabel}</Info>,
+                                mo: moViPhamId === v.id,
+                                onMo: () => setMoViPhamId((cur) => (cur === v.id ? null : v.id)),
+                                chiTiet: chiTietCuaDong(v),
                               }))}
-                              rong={<p className="text-xs text-slate-500 m-0">Không có vi phạm chưa xử lý ở nhóm này.</p>} />
+                              rong={<p className="text-xs text-slate-500 m-0">Không có vi phạm ở nhóm này.</p>} />
                             {d.canManage && ticks.size > 0 && (
                               <button type="button" className="btn btn-sm btn-primary mt-2"
-                                onClick={() => setMeasureFor({ studentId: s.studentId, studentName: s.studentName, violationIds: [...ticks] })}>
+                                onClick={() => mo({
+                                  loai: 'tao-pa', studentId: s.studentId, studentName: s.studentName,
+                                  violations: s.violations.filter((v) => ticks.has(v.id)).map((v) => ({ id: v.id, occurredOn: v.occurredOn, categoryLabel: v.categoryLabel, description: v.description })),
+                                })}>
                                 Tạo phương án từ {ticks.size} vi phạm
                               </button>
                             )}
                           </div>
                           <div className="rounded-lg border p-2.5" style={{ borderColor: 'var(--line)' }}>
                             <p className="text-[11px] uppercase tracking-wide text-slate-500 m-0 mb-1.5">Xử lý</p>
-                            {preps.length === 0 ? (
+                            {s.preps.length === 0 ? (
                               <>
                                 <p className="text-xs text-slate-500 m-0">Chưa có phương án đang chuẩn bị</p>
                                 {d.canManage && s.violations.length > 0 && (
                                   <button type="button" className="btn btn-sm btn-primary mt-2"
-                                    onClick={() => setMeasureFor({
-                                      studentId: s.studentId, studentName: s.studentName,
-                                      violationIds: ticks.size > 0 ? [...ticks] : s.violations.map((v) => v.id),
+                                    onClick={() => mo({
+                                      loai: 'tao-pa', studentId: s.studentId, studentName: s.studentName,
+                                      violations: (ticks.size > 0 ? s.violations.filter((v) => ticks.has(v.id)) : s.violations)
+                                        .map((v) => ({ id: v.id, occurredOn: v.occurredOn, categoryLabel: v.categoryLabel, description: v.description })),
                                     })}>
                                     Tạo phương án
                                   </button>
@@ -249,24 +310,30 @@ export function ClassYThucCard({ classId }: { classId: number }) {
                               </>
                             ) : (
                               <ul className="list-none p-0 m-0 space-y-2">
-                                {preps.map((m) => (
+                                {s.preps.map((m) => (
                                   <li key={m.id}>
                                     <span className="block text-sm font-medium text-slate-100">{m.kindLabel}</span>
                                     <span className="block text-[11px] text-slate-500">Đang chuẩn bị · {m.violationCount} vi phạm</span>
                                     <span className="block mt-1">
-                                      {d.canManage
-                                        ? <button type="button" className="btn btn-sm btn-primary" onClick={() => setConfirmMeasureId(m.id)}>Mở phương án</button>
-                                        : <button type="button" className="btn btn-sm" onClick={() => setXemId(m.id)}>Xem</button>}
+                                      <button type="button" className={`btn btn-sm ${d.canManage ? 'btn-primary' : ''}`} onClick={() => moPhuongAn(m)}>
+                                        {d.canManage ? 'Mở phương án' : 'Xem'}
+                                      </button>
                                     </span>
                                   </li>
                                 ))}
                               </ul>
                             )}
+                            {/* YT-11: mỗi tên PA gần đây là nút chữ mở đúng PA đó (chỉ đọc). */}
                             <p className="text-xs text-slate-500 m-0 mt-2">
-                              Gần đây: {(() => {
-                                const recent = d.recentByStudent[s.studentId] ?? [];
-                                return recent.length === 0 ? '—' : recent.map((m) => m.kindLabel).join(', ');
-                              })()}
+                              Gần đây:{' '}
+                              {recent.length === 0 ? '—' : recent.map((m, i) => (
+                                <span key={m.id}>
+                                  {i > 0 && ', '}
+                                  <button type="button" className="text-sky-300 hover:underline" onClick={() => mo({ loai: 'xem-pa', id: m.id })}>
+                                    {m.kindLabel}
+                                  </button>
+                                </span>
+                              ))}
                             </p>
                             <Link className="link text-xs block mt-2" to={`/hoc-vien/${s.studentId}?tab=y-thuc`}>Hồ sơ học viên →</Link>
                           </div>
@@ -281,12 +348,15 @@ export function ClassYThucCard({ classId }: { classId: number }) {
             <DongThoiGian bien="day-du"
               muc={timeline.map((v) => ({
                 key: `v${v.id}`, ngay: v.occurredOn,
-                cot2: <span className="text-sm text-slate-200">{v.studentName}</span>,
+                cot2: <span className="text-sm text-slate-200">{rosterById.get(v.studentId)?.fullName ?? `#${v.studentId}`}</span>,
                 tieuDe: v.description,
-                dongPhu: v.reportedByName ?? undefined,
-                cuoi: <><Info>{v.categoryLabel}</Info>{suaBtn(v)}</>,
+                dongPhu: [v.reportedByName, v.stateLabel].filter(Boolean).join(' · '),
+                cuoi: <Info>{v.categoryLabel}</Info>,
+                mo: moViPhamId === v.id,
+                onMo: () => setMoViPhamId((cur) => (cur === v.id ? null : v.id)),
+                chiTiet: chiTietCuaDong(v),
               }))}
-              rong={<Empty title="Không còn vi phạm nào chưa xử lý." />} />
+              rong={<Empty title="Không có vi phạm nào trong khoảng này." />} />
           )}
         </div>
       )}
@@ -302,26 +372,7 @@ export function ClassYThucCard({ classId }: { classId: number }) {
         </div>
       )}
 
-      <RecordViolationPanel open={reportFor !== null} onClose={() => setReportFor(null)}
-        studentId={reportFor ?? 0} students={rosterOptions}
-        onPickStudent={setReportFor} onDone={board.reload} />
-      <RecordViolationPanel open={!!editViolation} onClose={() => setEditViolation(null)}
-        studentId={editViolation?.studentId ?? 0} violation={editViolation}
-        onDone={board.reload} onDelete={(id) => setDeleteId(id)} />
-      <DeleteViolationConfirm violationId={deleteId} onClose={() => setDeleteId(null)} onDone={board.reload} />
-      {measureFor && (
-        <CreateMeasurePanel open={!!measureFor} onClose={() => setMeasureFor(null)}
-          studentId={measureFor.studentId} studentName={measureFor.studentName}
-          violations={measureFor.violationIds.map((id) => {
-            const v = students.find((s) => s.studentId === measureFor.studentId)?.violations.find((x) => x.id === id);
-            return v ? { id: v.id, occurredOn: v.occurredOn, categoryLabel: v.categoryLabel, description: v.description } : null;
-          }).filter(Boolean) as any}
-          onDone={() => { clearTick(measureFor.studentId); board.reload(); }}
-          onConfirmNow={(id) => { clearTick(measureFor.studentId); board.reload(); setConfirmMeasureId(id); }} />
-      )}
-      <ConfirmMeasurePanel open={confirmMeasureId !== null} onClose={() => setConfirmMeasureId(null)}
-        measureId={confirmMeasureId} onDone={board.reload} />
-      <XemPhuongAnPanel measureId={xemId} onClose={() => setXemId(null)} />
+      {panels}
     </Card>
   );
 }
