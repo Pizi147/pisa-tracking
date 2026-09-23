@@ -2040,6 +2040,7 @@ Nói **cái gì đổi trên màn hình**, bằng tiếng Việt, không tên h�
 | 22/09/2026 | Claude (session PR-HV, nhánh `pr-hv-ho-so-hoc-vien`, Fable 5.1) | **PR-HV — hồ sơ học viên 3 tab + Ý thức & Phối hợp theo prototype v3; "biện pháp" → "phương án"; bỏ "Hãy".** Phép kiểm **605 → 614** (+9: phép quét chữ D1/D3, `parseHoSoTab`, `ketQuaTestGanNhat`, `quaHan`, `headline.next` có động từ + `overdue`, `demTheoNhomViPham`, `tienDoCase`, `viecTiepPhuongAn`, `attachmentCount`) → gộp `main` (Z2b, Z2b2) → **671**. Hai trường máy chủ **chỉ đọc** thêm: `attachmentCount` trên thẻ case (`caseCardOf`), `headline.next.overdue` + câu bắt đầu bằng động từ (`headlineOf`, thêm ứng viên "Cập nhật PA" chưa quá hạn — trước đây ô ghi "Không có" khi mọi việc đúng hạn, và giao diện đọc cờ `overdue` chưa hề tồn tại). Luật hiển thị thuần ở `shared/domain/hoSoHocVien.ts`. Thành phần mới `HangTab`, `OSoNho`, `DongThoiGian`, `TheSos`, `TheCase`/`KhoiPhuongAn`, `XemPhuongAnPanel`. **Quyết định khi plan im lặng:** (1) `ops/` cũng đóng băng tới Task 9 (`initBanChinh.ts` 2 chỗ "hãy"); (2) kiểm ngược `<`→`<=` không đỏ vì demo không có hạn = hôm nay → tách `quaHan` + phép biên; (3) thứ tự nhóm vi phạm theo hằng thật (Chuyên cần trước BTVN); (4) dấu ✓ PA đã xong xám thay xanh lá (luật `ui.tsx`); (5) màn trộn thêm ngoài bảng: cột `Thiếu phương án` ở `summary.ts`/`WeeklyBoard.tsx`, `no_plan` ở `cases.ts:1590`, ba tiêu đề chuông duyệt PA; (6) `preview_start` chạy từ thư mục chính → dùng `npm run dev` trong worktree; ảnh chụp bằng Playwright (cài tạm, không vào repo). **Không đổi:** `people.ts` nhãn bộ lọc `Case thiếu phương án`, `chu.ts` (CasePanel), tiêu đề mốc Hành trình, chú giải dài (J6). **Chưa làm (đúng phạm vi):** ô số bấm được (PR-R), Q9 Hành trình và hồ sơ lớp 4 tab (PR-Q), toast Hoàn tác và nút Ghi vi phạm ở `ClassRoster` (K2-6 còn lại). Ảnh trước/sau: `thiet-ke/anh/pr-hv/` |
 | 22/09/2026 | Claude (session PR-S1, nhánh `pr-s1-luat-may-chu`, Opus 5) | **PR-S1 — luật máy chủ (đợt 1, song song PR-O).** Phép kiểm **672 → 719**. Tín hiệu SOS lớp thường từng môn có hai lối ra **Tạo Case** (đúng môn, đúng khoá, mốc mở mang điểm; Case Writing lớp thường — nửa máy chủ F07) và **Bỏ qua** (một bấm, lý do không bắt buộc, audit; nhãn "Đã bỏ qua"); dòng việc `verify` + `SignalView` mang sẵn `kind/score/total/actions/caseDraft`; chỉ số mới `tin-hieu-qua-han` ("Chờ xác minh quá hạn"). S16/S17: một hàm `cases/systemClose.ts` (hệ thống tự đóng Case, cột `sos_cases.system_close_reason`) — thôi học tự đóng; hoàn tất khoá không cờ giữ Case. S11 cột `attempt_skills.absent_from_no_show`; S12 + §6 ô nợ điểm đi qua hàm bảng chấm (`worklist/scoreDebt.ts`); S13 dòng giải thích; RB-3 lý do chọn nhanh + "Không có lưu ý"; RB-6 GVCN chỉ hoàn thành Case đúng môn; RB-8 lớp thường đối soát sau sửa điểm bằng hàm chung với FT; RB-9 lưu trữ chỉ khi Quản lý bấm (`/students/:id/archive`); AN-13; chữ lớp thường ở `caseHeadline`/`standingLine`; seed 70%. Quyết định Q1–Q13 ghi ở plan PR-S1. **Chuyển cho PR khác:** nút Lưu trữ + lựa chọn "em thôi học" (cờ `dongCaseKhiKetThuc`) → LT; giao diện dòng tín hiệu → Pa; luồng gọi S17 (`closeCasesOnProgrammeSwitch`) → LT; dấu "-" lớp thường → Rc1; nửa giao diện F07 → Form. |
 | 23/09/2026 | Claude (session PR-Rc1, nhánh `pr-rc1-cham-diem`, Opus 5.5) | **PR-Rc1 — chấm điểm: Cần chấm, Lịch Test, một lưới chấm chung.** Phép kiểm **779 → 804**. Luật thuần `shared/domain/chamDiem.ts`; máy chủ `server/src/cham/canCham.ts` (`chamSheet` · `canChamList` · `lichTest`) — một lưới cho hai loại lớp, máy chủ trả `mode`; giao diện `web/src/modules/cham/` thay `ScoreSheetPage.tsx` và `RegularSheetPage.tsx` (đã xoá), điện thoại chấm một kỹ năng một lúc. C08 dấu `-` lớp thường nối dây (mục 3, 23/09); RB-5 sửa ô đã có điểm phải ghi lý do (cả hai cửa lưu); R15 chọn đợt khác trên hồ sơ Test; R16 nút nhập điểm mang đợt; DS02 đếm ngược ô `-` (chỉ FT). Tick R13; ghi chú (chưa tick) ở R8, R14. R15, R16, RB-5 không có ô riêng trong file này — nguồn ở `docs/superpowers/specs/2026-09-22-kiem-ke-truoc-deploy.md` §1.4, §1.7. Chưa làm (PR-Rc2): R9–R12, R14 phần lịch, T15. Kế hoạch và nhật ký: `docs/superpowers/plans/2026-09-22-pr-rc1-cham-diem.md` |
+| 23/09/2026 | Claude (session PR-Rc2, nhánh `pr-rc2-ke-hoach-test`, Sonnet 5) | **PR-Rc2 — Kế hoạch Test: lưới cả lớp FT, xếp lịch hàng loạt, lớp thường theo lớp, R11.** Phép kiểm **866 → 888**. Luật thuần `shared/domain/keHoachTest.ts` (trạng thái ô nhóm, đợt hoàn tất, tuần đa số, tóm tắt xem trước); máy chủ `server/src/keHoach/keHoachTest.ts` — **chỉ gọi lại** `createAttempt`/`setSkillWeek`/`planRegularTests`, không dựng đường ghi lịch thứ hai; R11 ở file riêng `server/src/fasttrack/hoanTat.ts` (suy mỗi lần đọc, **không migrate** — Q14). **T15** (trùng tuần với đợt lân cận → CHẶN cả hai chiều, không còn chỉ cảnh báo) ở `checkWeekVsNeighbours` (tách từ `checkSkillWeekMove`, kiểm được cả đợt CHƯA tạo). **T9** (`standing.ts` dùng `target_at_attempt` thay vì target hiện tại của lộ trình). Giao diện `web/src/modules/test/keHoach/`: `LuoiFT.tsx` · `HopSuaTuan.tsx` · `NganXepHangLoat.tsx` (5 bước một màn, xem trước, lưu một phần giữ hàng lỗi — R9b) · `BangThuong.tsx` · `HopDoiLichThuong.tsx`; xoá `MockPlanPanel.tsx`; tách `NutLuat` (ⓘ) dùng chung ra `web/src/ui/NutLuat.tsx`. Tick R9, R9b, R10, R11, R12, R14 (phần lịch). Quyết định Q1–Q16 ghi ở kế hoạch PR-Rc2. Kế hoạch và nhật ký: `docs/superpowers/plans/2026-09-23-pr-rc2-ke-hoach-test.md` |
 ---
 
 ## 15. PR-E — Nền giao diện dùng chung
@@ -2857,31 +2858,45 @@ Tình trạng từng dòng: `BAN_DO_OVERHAUL.md` mục 5 và mục 8.
       *(23/09, PR-Rc1: **phần lưới xong** — một lưới chấm chung `/nhap-diem/:classId` nhận `?periodId=` `?kind=`
       `?kn=` `?hv=`; Test › Cần chấm lọc theo lớp có chip bỏ lọc. Chưa tick: đổi đích badge lớp + nút mang `scope`
       (a), (b)–(d) và `/notifications` thuộc PR-Qa/Qb.)*
-- [ ] **R9. Kế hoạch Test — panel mới** năm phần: `Lớp và học viên → Lượt Test và lịch hiện tại →
+- [x] **R9. Kế hoạch Test — panel mới** năm phần: `Lớp và học viên → Lượt Test và lịch hiện tại →
       Lịch mới → Kiểm tra thay đổi → Lưu`. Bỏ bố cục `một tuần chung + bốn checkbox + dãy MT1–MT7`
       làm đường thao tác mặc định; dãy lượt vào phần lịch sử thu gọn.
       Hai hàng lịch nhanh **RLW** và **Speaking** tách riêng.
       Cấu hình kỹ năng bắt buộc **tách khỏi** sửa lịch, để không bỏ môn nhầm khi chỉ dời tuần.
-- [ ] **R10. Ô đã có lịch mở chỉnh sửa** với tuần cũ → mới, **không** cho chọn rồi báo lỗi trùng.
+      *(23/09, PR-Rc2: lưới cả lớp FT (`web/src/modules/test/KeHoachTestTab.tsx` + `keHoach/LuoiFT.tsx`), hai hàng
+      RLW/S đúng ý; xếp lịch hàng loạt 5 bước có xem trước, lưu một phần giữ hàng lỗi (`NganXepHangLoat.tsx`, R9b);
+      cấu hình kỹ năng bắt buộc giữ tách riêng (`setSkillSkip`, hồ sơ đợt) như kế hoạch nói.)*
+- [x] **R10. Ô đã có lịch mở chỉnh sửa** với tuần cũ → mới, **không** cho chọn rồi báo lỗi trùng.
       Hiện panel chỉ gọi `bulkPlan` → `createAttempt` (luôn INSERT); sửa thật phải gọi
       `setSkillWeek` cho từng kỹ năng, mở modal cùng kiểu `SkillWeekModal` đã có preview và quyền.
-- [ ] **R11. "Đợt hoàn tất thì chỉ đọc"** — `assessment_attempts.status` **không** có giá trị
+      *(23/09, PR-Rc2: `HopSuaTuan.tsx` — bấm ô đã xếp mở hộp sửa, xem trước qua `/ke-hoach-test/nhom/kiem`
+      (`kiemTuanNhom` → `checkWeekVsNeighbours`), lưu qua `setSkillWeek`.)*
+- [x] **R11. "Đợt hoàn tất thì chỉ đọc"** — `assessment_attempts.status` **không** có giá trị
       riêng cho "hoàn tất"; trạng thái này đang được **suy ra** từ đủ điểm required.
       **Định nghĩa rõ ở tầng dữ liệu trước khi chặn**, vì chặn nhầm khoá luôn việc hiệu chỉnh hợp lệ.
       Nếu chưa chắc thì **để ngỏ và ghi vào mục 12**, đừng đoán.
       **R11 chốt (21/09 đêm):** đợt Test **hoàn tất** = mọi kỹ năng bắt buộc đã có điểm **hoặc** dấu `-` **và** đã hết Chủ nhật của tuần thi. Trước đó GV có quyền sửa bình thường; sau đó **chỉ Quản lý** sửa được, mỗi lần sửa ghi `audit_logs`. Khớp luật đã chốt "sau cuối tuần chỉ Quản lý sửa kết luận".
-- [ ] **R12. Nút dời lịch một kỹ năng cho lớp Normal** — hiện **không có ở bất kỳ đâu**.
+      *(23/09, PR-Rc2: **suy mỗi lần đọc, không lưu cột riêng** (Q14, không migrate) — `server/src/fasttrack/hoanTat.ts`
+      → `dotHoanTat`/`dotHoanTatMany`/`quyenSuaSauHoanTat` (Quản lý sửa được qua `PLAN_WEEK`, không cấp `score.override`
+      — Q1). Nối vào `saveScore`, `saveRegularScore`, `reportRegularNoShow`; nhật ký `score.override` kèm `sauHoanTat: true`.
+      Web: nhãn "Đã hoàn tất" + `SkillCell.khoa` ở `cham/LuoiFT.tsx` · `LuoiThuong.tsx` · `MotKyNang.tsx`.)*
+- [x] **R12. Nút dời lịch một kỹ năng cho lớp Normal** — hiện **không có ở bất kỳ đâu**.
       Quyền `schedule.move` đã mở đúng ở máy chủ (12 phép kiểm). Dựng UI ở
       `RegularSheetPage.tsx`, tái dùng `moveableSkills`/`canMoveSkillSchedule` đã có.
       *(23/09, PR-Rc1: `RegularSheetPage.tsx` đã xoá; lưới lớp thường nay ở `web/src/modules/cham/LuoiThuong.tsx` — dựng nút ở đó.)*
+      *(23/09, PR-Rc2: nút dời lịch của R12 **chuyển vào Kế hoạch Test** (§4 đặc tả — GV lớp thường không dời lịch ở
+      đây nữa, chỉ Quản lý; GV dời bằng dấu `-` ở lưới chấm) — `keHoach/HopDoiLichThuong.tsx` (Q11, mở từ ô hoặc từ
+      nút "Dời một môn"), máy chủ `doiLichThuong` gọi `setSkillWeek`.)*
 - [x] **R13. Bộ chọn tuần** — kiểm ở panel 600px, modal rộng và mobile (§22.8 điểm 3).
       Nút **không** rớt hàng ngẫu nhiên; popover **không** bị cắt bởi z-index.
       *(23/09, PR-Rc1: mã tuần trong bộ chọn theo G-6 — `W3 SEP`, không kèm năm; bấm thử ba khổ ở bước KIỂM cuối PR-Rc1.)*
-- [ ] **R14. Dấu `-` cho lớp Normal (C08).** **C08 đóng (21/09 đêm):** lớp Normal **có dùng** dấu `-`. **Giáo viên** ghi `-` khi em chưa làm bài của tuần (máy KHÔNG tự thêm); ghi `-` thì kỹ năng đó **tự dời sang tuần sau**. Hạn chấm Normal vẫn hết Chủ nhật tuần thi. Tái dùng luật dấu `-` của Fast Track (PR-G)
+- [x] **R14. Dấu `-` cho lớp Normal (C08).** **C08 đóng (21/09 đêm):** lớp Normal **có dùng** dấu `-`. **Giáo viên** ghi `-` khi em chưa làm bài của tuần (máy KHÔNG tự thêm); ghi `-` thì kỹ năng đó **tự dời sang tuần sau**. Hạn chấm Normal vẫn hết Chủ nhật tuần thi. Tái dùng luật dấu `-` của Fast Track (PR-G)
       và `canMoveSkillSchedule` của R12; khác FT ở chỗ: Normal ghi `-` là **dời lịch**, không xác lập
       "không dự thi". Phép kiểm máy chủ: ghi `-` → lịch kỹ năng sang tuần sau; không ghi gì → máy không tự thêm.
       *(23/09, PR-Rc1: **phần dấu `-` xong** — `normal/regular.ts` → `reportRegularNoShow`, dùng lại `setSkillWeek`,
       có phép kiểm máy chủ. Chưa tick: phần lịch dựa trên nút dời lịch của R12 — PR-Rc2.)*
+      *(23/09, PR-Rc2: **phần lịch xong** — Kế hoạch Test lớp thường (`bangThuong`) gộp em bị dấu `-` dời tuần vào
+      cột `khac` của đúng môn đó (R14 phần lịch); `BangThuong.tsx` hiện dòng phụ vàng "{n} HV → {tuần}" kèm tên em.)*
 
 ### Nghiệm thu PR-R
 1. Ba tab một nơi, tên đúng §18.4. 2. Bảng báo cáo đơn vị hiện ngay màn đầu desktop.

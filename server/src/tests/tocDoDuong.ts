@@ -101,6 +101,14 @@ export const DUONG_DO: MucDo[] = [
   // ---------------------------------------------------------------- Việc cần làm
   { trang: 'Việc cần làm', vai: MOI_VAI, url: '/tasks' },
   { trang: 'Việc cần làm', vai: ['QL', 'QT'], url: '/mgmt-tasks/mine' },
+
+  // ---------------------------------------------------------------- Kế hoạch Test (PR-Rc2)
+  { trang: 'Kế hoạch Test', vai: MOI_VAI, url: '/ke-hoach-test/lop?branchId={cn}' },
+  {
+    trang: 'Kế hoạch Test', vai: ['QL', 'QT', 'GVCN', 'GVBM', 'GVCN_THUONG'], url: '/ke-hoach-test/ft/{lopFT}',
+    maChuDich: { GVCN: 403, GVBM: 403, GVCN_THUONG: 403 },
+  },
+  { trang: 'Kế hoạch Test', vai: ['QL', 'QT'], url: '/ke-hoach-test/thuong?branchId={cn}' },
 ];
 
 /**
@@ -285,4 +293,13 @@ export const TRAN: Record<string, number> = {
   'QT /tasks': 23,
   'QL /mgmt-tasks/mine': 20,
   'QT /mgmt-tasks/mine': 20,
+  'QL /ke-hoach-test/lop?branchId=1': 21,
+  'GVCN /ke-hoach-test/lop?branchId=1': 21,
+  'GVBM /ke-hoach-test/lop?branchId=1': 21,
+  'GVCN_THUONG /ke-hoach-test/lop?branchId=1': 21,
+  'QT /ke-hoach-test/lop?branchId=1': 21,
+  'QL /ke-hoach-test/ft/3': 29,
+  'QT /ke-hoach-test/ft/3': 29,
+  'QL /ke-hoach-test/thuong?branchId=1': 34,
+  'QT /ke-hoach-test/thuong?branchId=1': 34,
 };

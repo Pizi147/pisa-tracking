@@ -3,17 +3,19 @@ import { addMilestone, followUntilAfter } from '../cases/sos.ts';
 import { raiseSignal, reconcileCorrectedSignals } from '../cases/signals.ts';
 import {
   ATTEMPT_KIND_LABEL, PERMISSIONS, RATIO_PASS_THRESHOLD, REGULAR_SKILL_LABEL,
-  caseCategoriesFor, categoryOf, kiemLyDo, ratioResult, sosFromFailCount, tuanKeTiep, tuanLich,
-  type AttemptKind, type CaseCategory, type RatioOutcome, type SosLevel,
+  caseCategoriesFor, categoryOf, kiemLyDo, ngay, ratioResult, sosFromFailCount, tuanKeTiep, tuanLich,
+  type AssessedSkill, type AttemptKind, type CaseCategory, type RatioOutcome, type SosLevel,
 } from '../../../shared/domain/index.ts';
-import { addDays, badRequest, isIsoDate, notFound, nowIso } from '../util.ts';
+import { addDays, badRequest, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
 import { can, editableSkills, require_, scoreEditPath, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addJourney, writeAudit } from '../platform/audit.ts';
-import { ensurePeriod, mondayOf } from '../platform/week.ts';
+import { ensurePeriod } from '../platform/week.ts';
 import { regularSkillViews, weekStartOf } from '../fasttrack/attempts.ts';
 import { nho } from '../platform/nguCanhRequest.ts';
-import { ensureSkillRows, loadSkillRows, setSkillWeek } from '../fasttrack/skillSchedule.ts';
+import { checkSkillWeekMove, ensureSkillRows, loadSkillRows, setSkillWeek } from '../fasttrack/skillSchedule.ts';
+import { dotHoanTat, dotHoanTatMany, quyenSuaSauHoanTat } from '../fasttrack/hoanTat.ts';
+import { classProgress } from '../classes/schedule.ts';
 
 /**
  * LỚP THƯỜNG (Foundation / Beginner / Elementary).
@@ -238,7 +240,16 @@ export function planRegularTests(p: Principal, classId: number) {
   if (!prog || prog.scoringMode !== 'ratio') {
     throw badRequest('Lớp này không phải lớp thường. Lớp FT dùng lịch Mock Test.');
   }
-  if (!cls.start_date) throw badRequest('Lớp chưa có ngày khai giảng nên chưa tính được mốc tuần học.');
+  /*
+   * Q13 (23/09): tuần mốc lấy từ `classProgress` — CÙNG nguồn với "đề xuất" của Kế hoạch Test
+   * (`bangThuong`, `classes/schedule.ts:199`), tính từ `start_period_id` + mốc Quản lý đã sửa riêng
+   * (`progress_week_override`/`final_week_override`). Trước đây hàm này tự tính từ `start_date`, bỏ qua mốc
+   * đã sửa — tạo ra khác đề xuất là lỗi thầm lặng.
+   */
+  const progress = classProgress(classId);
+  if (!progress.progressWeekStart && !progress.finalWeekStart) {
+    throw badRequest('Lớp chưa có ngày khai giảng nên chưa tính được mốc tuần học.');
+  }
   if (!prog.checkpoints.length) throw badRequest(`Chương trình ${prog.code} chưa khai báo mốc kiểm tra nào.`);
 
   const students = conn
@@ -293,8 +304,8 @@ export function planRegularTests(p: Principal, classId: number) {
           .get(cycle.id, cp.kind) as any;
         if (dup) continue;
 
-        // Tuần học N bắt đầu sau (N-1) tuần kể từ ngày khai giảng.
-        const week = mondayOf(addDays(cls.start_date, (cp.studyWeek - 1) * 7));
+        const week = cp.kind === 'progress' ? progress.progressWeekStart : progress.finalWeekStart;
+        if (!week) throw badRequest(`Chưa tính được tuần ${ATTEMPT_KIND_LABEL[cp.kind]} của lớp — thiếu mốc tuần học.`);
         const period = ensurePeriod(week);
         const nextNo = ((conn.prepare('SELECT MAX(attempt_no) m FROM assessment_attempts WHERE cycle_id = ?')
           .get(cycle.id) as any)?.m ?? 0) + 1;
@@ -333,6 +344,7 @@ export function planRegularTests(p: Principal, classId: number) {
 export function saveRegularScore(
   p: Principal, attemptId: number, skill: string,
   patch: { score?: number | null; total?: number | null; note?: string | null; noShow?: boolean; lyDo?: string | null },
+  today: string = demoToday(),
 ) {
   const conn = db();
   const a = conn.prepare('SELECT * FROM assessment_attempts WHERE id = ?').get(attemptId) as any;
@@ -349,15 +361,27 @@ export function saveRegularScore(
     if (patch.score !== undefined || patch.total !== undefined) {
       throw badRequest('Một lần gửi chỉ làm một việc: nhập điểm, hoặc ghi/gỡ dấu "-".');
     }
-    return reportRegularNoShow(p, attemptId, skill, patch.noShow === true);
+    return reportRegularNoShow(p, attemptId, skill, patch.noShow === true, today);
   }
   /*
    * Cùng hai đường vào như lớp FT: giáo viên nhập kỹ năng MÌNH ĐƯỢC PHÂN CÔNG, còn Admin
    * chi nhánh và Quản trị hệ thống nhập bù qua quyền riêng (`score.override`) khi giáo viên
    * vắng. Hai đường ghi nhật ký khác nhau để sau này còn siết lại được.
+   *
+   * R11 (23/09): bài đã hoàn tất (hết Chủ nhật của môn bắt buộc muộn nhất) thì chỉ người có
+   * `PLAN_WEEK`/`SCORE_OVERRIDE` sửa được, luôn qua đường `override` — GVBM bị chặn hẳn.
    */
-  const path = a.class_id ? scoreEditPath(p, a.class_id, skill) : null;
-  if (!path) {
+  const hoanTat = dotHoanTat(attemptId, today);
+  let path = a.class_id ? scoreEditPath(p, a.class_id, skill) : null;
+  if (hoanTat.hoanTat) {
+    if (!a.class_id || !quyenSuaSauHoanTat(p, a.class_id)) {
+      throw forbidden(
+        `Đợt này đã hoàn tất (hết Chủ nhật ${ngay(hoanTat.chuNhatCuoi)}). `
+        + 'Chỉ Quản lý sửa được điểm — nhờ Quản lý hiệu chỉnh, kèm lý do.',
+      );
+    }
+    path = 'override';
+  } else if (!path) {
     require_(p, PERMISSIONS.SCORE_EDIT, { classId: a.class_id, studentId: a.student_id, skill },
       'Bạn chỉ nhập được điểm của kỹ năng mình được phân công.');
   }
@@ -409,10 +433,17 @@ export function saveRegularScore(
     }
     const after = conn.prepare('SELECT * FROM assessment_scores WHERE attempt_id = ? AND skill = ?')
       .get(attemptId, skill);
+    const afterGhi = (patch.lyDo || hoanTat.hoanTat)
+      ? {
+          ...(after as any),
+          ...(patch.lyDo ? { lyDo: String(patch.lyDo).trim() } : {}),
+          ...(hoanTat.hoanTat ? { sauHoanTat: true } : {}),
+        }
+      : after;
     writeAudit({ actorUserId: p.userId, action: path === 'override' ? 'regular.score.override' : 'regular.score',
       entityType: 'assessment_score',
       entityId: (after as any).id, entityLabel: `${prog.code} · ${skill}`, before,
-      after: patch.lyDo ? { ...(after as any), lyDo: String(patch.lyDo).trim() } : after });
+      after: afterGhi });
 
     refreshRegularOutcome(p, attemptId);
     return { score: after, result: regularResultOf(attemptId) };
@@ -450,9 +481,22 @@ export function reportRegularNoShow(
   if (!prog || prog.scoringMode !== 'ratio') throw badRequest('Lượt này không thuộc lớp thường.');
   if (!prog.skills.includes(skill)) throw badRequest(`Chương trình ${prog.code} không có kỹ năng "${skill}".`);
 
-  /* Ghi dấu là việc của NGƯỜI CHẤM môn đó (hoặc người nhập bù) — cùng cửa với nhập điểm. */
-  const path = scoreEditPath(p, a.class_id, skill);
-  if (!path) {
+  /*
+   * Ghi dấu là việc của NGƯỜI CHẤM môn đó (hoặc người nhập bù) — cùng cửa với nhập điểm.
+   * R11: đợt đã hoàn tất thì chỉ người có `PLAN_WEEK`/`SCORE_OVERRIDE` — trên thực tế môn đang ghi "-" chưa có
+   * điểm nên đợt hiếm khi đã hoàn tất, nhưng vẫn kiểm để không có đường vòng qua dấu "-".
+   */
+  const hoanTat = dotHoanTat(attemptId, today);
+  let path = scoreEditPath(p, a.class_id, skill);
+  if (hoanTat.hoanTat) {
+    if (!quyenSuaSauHoanTat(p, a.class_id)) {
+      throw forbidden(
+        `Đợt này đã hoàn tất (hết Chủ nhật ${ngay(hoanTat.chuNhatCuoi)}). `
+        + 'Chỉ Quản lý sửa được điểm — nhờ Quản lý hiệu chỉnh, kèm lý do.',
+      );
+    }
+    path = 'override';
+  } else if (!path) {
     require_(p, PERMISSIONS.SCORE_EDIT, { classId: a.class_id, studentId: a.student_id, skill },
       'Bạn chỉ ghi được dấu "-" cho kỹ năng mình được phân công.');
   }
@@ -499,6 +543,16 @@ export function reportRegularNoShow(
       }
       const cu = { id: row.planned_period_id, code: row.period_code, weekStart: row.week_start };
       const moi = ensurePeriod(tuanKeTiep(cu.weekStart));
+      /*
+       * Kiểm T15 TRƯỚC khi ghi gì (đọc thuần, không đụng DB) — dấu "-" tự dời sang tuần sau, nhưng tuần đó có
+       * thể trùng/vượt một đợt khác (vd Cuối khoá cùng lộ trình). Giữ NGUYÊN câu chặn gốc của `checkSkillWeekMove`
+       * (test PR-Rc1 C08 còn kiểm đúng chữ "vượt qua đợt kế tiếp") — chỉ nối thêm một câu chỉ đường: GV không
+       * sửa được lịch ở đây, chỉ Quản lý mới xếp lại được, và chỗ xếp lại là Kế hoạch Test.
+       */
+      const check = checkSkillWeekMove({ attemptId, skill: skill as AssessedSkill, newWeekStart: moi.weekStart });
+      if (check.blockers.length) {
+        throw badRequest(`${check.blockers.join(' ')} Nhờ Quản lý dời lịch ở Kế hoạch Test.`);
+      }
       if (existing) {
         conn.prepare(
           `UPDATE assessment_scores SET no_show_period_id = ?, no_show_by = ?, no_show_at = ?, no_show_late = 0 WHERE id = ?`,
@@ -681,7 +735,7 @@ export function refreshRegularOutcome(p: Principal, attemptId: number) {
  * Cho phép đặt TỔNG SỐ CÂU CHUNG cho cả lớp rồi sửa lại ở dòng có đề khác — cả lớp thường
  * làm cùng một đề, gõ lại "40" bốn mươi lần là bắt làm một việc máy đã biết.
  */
-export function regularSheet(p: Principal, classId: number, kind?: string) {
+export function regularSheet(p: Principal, classId: number, kind?: string, today: string = demoToday()) {
   const conn = db();
   const cls = conn
     .prepare('SELECT c.*, b.name AS branch_name FROM classes c JOIN branches b ON b.id = c.branch_id WHERE c.id = ?')
@@ -768,6 +822,9 @@ export function regularSheet(p: Principal, classId: number, kind?: string) {
   const editable = editableSkills(p, classId, prog.skills);
   /* Quyền sửa ô tính MỘT lần cho mỗi môn — cùng cửa với `saveRegularScore`, không hỏi lại theo từng dòng. */
   const canEditSkill = new Map(prog.skills.map((k) => [k, scoreEditPath(p, classId, k) !== null]));
+  /* R11: một câu hỏi cho cả bảng (`dotHoanTatMany`) — không hỏi lẻ từng dòng. */
+  const hoanTatOf = dotHoanTatMany(attempts.map((a) => a.id), today);
+  const suaSauHoanTat = quyenSuaSauHoanTat(p, classId);
   /* Lịch và hạn chấm RIÊNG từng môn — một bài có thể trải hai ba tuần (mục 10.1). */
   const skillRows = loadSkillRows(attempts.map((a) => a.id));
   /* Mã tuần mà dấu "-" đã dời môn đi (C08) — đọc gộp một lần cho cả bảng. */
@@ -810,10 +867,13 @@ export function regularSheet(p: Principal, classId: number, kind?: string) {
       const dl = pending.length
         ? pending.map((x) => x.v!.deadline!).sort().slice(-1)[0]
         : null;
+      const hoanTat = hoanTatOf.get(a.id) ?? { hoanTat: false, chuNhatCuoi: null };
       return {
         attemptId: a.id,
         deadline: dl,
         deadlineSource: dl ? 'week_end' : 'none',
+        hoanTat: hoanTat.hoanTat,
+        chuNhatCuoi: hoanTat.chuNhatCuoi,
         /** Hạn chấm CỦA TỪNG MÔN, kèm tuần thi và trạng thái — mục 10.5. */
         skillSchedule: prog.skills.map((k) => {
           const v = views.get(k)!;
@@ -833,7 +893,9 @@ export function regularSheet(p: Principal, classId: number, kind?: string) {
             /** Thứ Hai của tuần `movedFrom` — để lưới viết "trả lịch về W3 SEP" bằng `tuanLich`. */
             movedFromStart: row?.no_show_period_id ? periodStart.get(row.no_show_period_id) ?? null : null,
             /** Người đang xem có nhập được điểm / ghi được "-" ở ô này không (phân công hoặc nhập bù). */
-            canEdit: canEditSkill.get(k) ?? false,
+            canEdit: hoanTat.hoanTat ? suaSauHoanTat : (canEditSkill.get(k) ?? false),
+            /* R11: đánh dấu "bài đã hoàn tất" cho MỌI người xem — Quản lý vẫn `khoa && canEdit` (sửa qua hộp lý do). */
+            khoa: hoanTat.hoanTat,
           };
         }),
         // Quá hạn khi có ÍT NHẤT MỘT môn đã tới hạn mà chưa chấm — không xét theo cả bài.

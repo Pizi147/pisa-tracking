@@ -38,3 +38,4 @@ export * from './nguoiThucHien.ts';
 export * from './bangChung.ts';
 export * from './chamDiem.ts';
 export * from './phanTich.ts';
+export * from './keHoachTest.ts';

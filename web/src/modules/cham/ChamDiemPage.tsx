@@ -4,6 +4,7 @@ import { useApi } from '../../lib/useApi.ts';
 import { Card, ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { useCurrentPeriod, WeekPicker } from '../../ui/Filters.tsx';
 import { Han } from '../../ui/Han.tsx';
+import { NutLuat } from '../../ui/NutLuat.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { skillLabel, skillShort } from '../../lib/format.ts';
 import { LuoiFT, hanSomNhatFt, tenDotFt, type FtSheet } from './LuoiFT.tsx';
@@ -141,7 +142,28 @@ export default function ChamDiemPage() {
           <Link className="btn btn-sm btn-ghost mb-1 no-underline" to="/test" title="Về khu vực Test">← Test</Link>
           <h1 className="text-lg font-semibold text-slate-100 flex items-center gap-2 m-0">
             <span className="truncate">{data.classCode}{tenDot ? ` · ${tenDot}` : ''}</span>
-            <NutLuat laFt={laFt} />
+            <NutLuat label="Luật chấm điểm">
+              <span className="block">
+                Ô để trống là chưa nhập, không phải 0 điểm. Chỉ kỹ năng bạn được phân công mới sửa được; kỹ năng khác
+                vẫn đọc được để đối chiếu. Enter hoặc ↓ xuống em kế tiếp, Esc huỷ ô đang sửa. Mỗi môn có tuần thi và
+                hạn chấm riêng.
+              </span>
+              {laFt ? (
+                <span className="block">
+                  Gõ <kbd className="px-1 rounded border text-slate-200" style={{ borderColor: 'var(--line-strong)' }}>-</kbd> khi
+                  em có lịch mà không làm bài; sửa lại được đến hết Chủ nhật của tuần thi, còn nguyên thì thành Không
+                  dự thi.
+                </span>
+              ) : (
+                <span className="block">
+                  Mỗi ô hai số: số câu đúng / tổng số câu, cả hai đều điền. Writing và Speaking chấm theo thang điểm
+                  thì điền điểm đạt / tổng điểm. Ô tổng đầu cột để điền nhanh cả cột; em làm đề khác thì sửa riêng ô đó
+                  (viền vàng). Đạt từ 70% trở lên. Thiếu điểm khác chưa đạt. Gõ
+                  {' '}<kbd className="px-1 rounded border text-slate-200" style={{ borderColor: 'var(--line-strong)' }}>-</kbd>{' '}
+                  khi em không làm bài: môn đó tự dời sang tuần sau.
+                </span>
+              )}
+            </NutLuat>
           </h1>
           <p className="text-xs text-slate-500 mt-0.5 mb-0">
             {data.branchName}
@@ -198,51 +220,5 @@ export default function ChamDiemPage() {
         </Card>
       </div>
     </div>
-  );
-}
-
-/**
- * ⓘ LUẬT CHẤM — thay cho mọi khối chữ giải thích dưới bảng (G-5). Một câu chung + đúng phần của loại lớp đang mở.
- * Hộp nổi nhỏ neo dưới nút; Esc hoặc bấm ra ngoài thì đóng.
- */
-function NutLuat({ laFt }: { laFt: boolean }) {
-  const [mo, setMo] = useState(false);
-  const hop = useRef<HTMLSpanElement>(null);
-  useEffect(() => {
-    if (!mo) return;
-    const away = (e: MouseEvent) => { if (hop.current && !hop.current.contains(e.target as Node)) setMo(false); };
-    const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') setMo(false); };
-    document.addEventListener('mousedown', away);
-    document.addEventListener('keydown', esc);
-    return () => { document.removeEventListener('mousedown', away); document.removeEventListener('keydown', esc); };
-  }, [mo]);
-  const dau = <kbd className="px-1 rounded border text-slate-200" style={{ borderColor: 'var(--line-strong)' }}>-</kbd>;
-  return (
-    <span ref={hop} className="relative inline-flex">
-      <button type="button" className="text-slate-500 hover:text-slate-200 text-sm font-normal leading-none"
-        title="Luật chấm điểm" aria-label="Luật chấm điểm" aria-expanded={mo} onClick={() => setMo((v) => !v)}>ⓘ</button>
-      {mo && (
-        <span role="dialog" aria-label="Luật chấm điểm"
-          className="absolute left-0 top-full mt-2 z-30 w-[22rem] max-w-[calc(100vw-2rem)] surface-2 rounded-lg border shadow-xl p-3 space-y-2 text-xs font-normal text-slate-300 leading-relaxed"
-          style={{ borderColor: 'var(--line-strong)' }}>
-          <span className="block">
-            Ô để trống là chưa nhập, không phải 0 điểm. Chỉ kỹ năng bạn được phân công mới sửa được; kỹ năng khác vẫn
-            đọc được để đối chiếu. Enter hoặc ↓ xuống em kế tiếp, Esc huỷ ô đang sửa. Mỗi môn có tuần thi và hạn chấm riêng.
-          </span>
-          {laFt ? (
-            <span className="block">
-              Gõ {dau} khi em có lịch mà không làm bài; sửa lại được đến hết Chủ nhật của tuần thi, còn nguyên thì thành
-              Không dự thi.
-            </span>
-          ) : (
-            <span className="block">
-              Mỗi ô hai số: số câu đúng / tổng số câu, cả hai đều điền. Writing và Speaking chấm theo thang điểm thì điền
-              điểm đạt / tổng điểm. Ô tổng đầu cột để điền nhanh cả cột; em làm đề khác thì sửa riêng ô đó (viền vàng).
-              Đạt từ 70% trở lên. Thiếu điểm khác chưa đạt. Gõ {dau} khi em không làm bài: môn đó tự dời sang tuần sau.
-            </span>
-          )}
-        </span>
-      )}
-    </span>
   );
 }
