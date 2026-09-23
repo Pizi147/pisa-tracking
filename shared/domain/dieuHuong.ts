@@ -5,7 +5,7 @@
  * có quyền thì bỏ hẳn, không hiện ô khoá. Quyền thật vẫn do API chặn.
  */
 export type KhuVuc = 'tong-quan' | 'hoc-vien' | 'test' | 'cong-viec';
-export type TabTest = 'can-cham' | 'lich' | 'ke-hoach';
+export type TabTest = 'lich' | 'ke-hoach';
 export type TabCongViec = 'ho-tro' | 'van-hanh' | 'bao-cao';
 export type TabTongQuan = 'tong-quan' | 'phan-tich';
 
@@ -60,11 +60,12 @@ export function khuVucCuaDuong(pathname: string): KhuVuc | null {
 
 // ---------------------------------------------------------------- Test
 
-const TAB_TEST: readonly TabTest[] = ['can-cham', 'lich', 'ke-hoach'];
-export const TAB_TEST_LABEL: Record<TabTest, string> = { 'can-cham': 'Cần chấm', lich: 'Lịch Test', 'ke-hoach': 'Kế hoạch Test' };
-export const DUONG_TAB_TEST: Record<TabTest, string> = { 'can-cham': '/test/can-cham', lich: '/test/lich', 'ke-hoach': '/test/ke-hoach' };
+const TAB_TEST: readonly TabTest[] = ['lich', 'ke-hoach'];
+export const TAB_TEST_LABEL: Record<TabTest, string> = { lich: 'Lịch Test', 'ke-hoach': 'Kế hoạch Test' };
+export const DUONG_TAB_TEST: Record<TabTest, string> = { lich: '/test/lich', 'ke-hoach': '/test/ke-hoach' };
+/** PR-UX1 Q16: Cần chấm gộp vào Lịch Test — ai chấm được (`testGrade`) hay xếp được lịch (`testSchedule`) đều thấy. */
 const HIEN_TEST: Record<TabTest, (n: NavQuyen) => boolean> = {
-  'can-cham': (n) => n.testGrade, lich: (n) => n.testSchedule, 'ke-hoach': (n) => n.testPlan,
+  lich: (n) => n.testSchedule || n.testGrade, 'ke-hoach': (n) => n.testPlan,
 };
 
 export function tabTestHienThi(nav: NavQuyen): TabTest[] {
@@ -73,14 +74,24 @@ export function tabTestHienThi(nav: NavQuyen): TabTest[] {
 export function tabTestTuDuong(seg: string | undefined): TabTest | null {
   return (TAB_TEST as readonly string[]).includes(seg ?? '') ? (seg as TabTest) : null;
 }
-/**
- * O2b: người xếp lịch (Quản lý, Quản trị) mở vào Lịch Test; giáo viên mở vào Cần chấm.
- * Tab mặc định luôn là một tab người đó thấy được.
- */
+/** PR-UX1: ai cũng mở Test vào Lịch Test (Cần chấm đã gộp vào đó). Tab mặc định luôn là một tab người đó thấy được. */
 export function tabTestMacDinh(nav: NavQuyen): TabTest | null {
   const tabs = tabTestHienThi(nav);
-  const muon: TabTest = nav.testPlan ? 'lich' : 'can-cham';
-  return tabs.includes(muon) ? muon : tabs[0] ?? null;
+  return tabs.includes('lich') ? 'lich' : tabs[0] ?? null;
+}
+
+/**
+ * ĐƯỜNG DẪN LỊCH TEST (PR-UX1 Q11) — mọi lối vào "chấm điểm" dùng hàm này. Thứ tự tham số cố định để link so được
+ * bằng chuỗi; tham số rỗng thì bỏ. `classId` → Lịch Test lọc đúng lớp và mở sẵn; `kn` → con trỏ vào ô trống đầu
+ * của môn đó.
+ */
+export function duongLichTest(o: { classId?: number | null; periodId?: number | null; kn?: string | null; branchId?: number | null } = {}) {
+  const q = new URLSearchParams();
+  if (o.branchId) q.set('branchId', String(o.branchId));
+  if (o.periodId) q.set('periodId', String(o.periodId));
+  if (o.classId) q.set('classId', String(o.classId));
+  if (o.kn) q.set('kn', o.kn);
+  return voiThamSo(DUONG_TAB_TEST.lich, q);
 }
 
 // ---------------------------------------------------------------- Công việc
@@ -124,6 +135,9 @@ export function duongMoi(pathname: string, search: string): string | null {
   const p = pathname.length > 1 ? pathname.replace(/\/+$/, '') : pathname;
   const q = new URLSearchParams(search.startsWith('?') ? search.slice(1) : search);
 
+  /* PR-UX1 Q12: Cần chấm đã gộp vào Lịch Test. Giữ `classId`, `kn`, `branchId`; `scope` không còn nghĩa (Lịch Test
+     tự mở "Lớp tôi dạy" cho người có phân công). */
+  if (p === '/test/can-cham') { q.delete('scope'); return voiThamSo(DUONG_TAB_TEST.lich, q); }
   if (p === '/tong-quan') return voiThamSo('/', q);
   if (p === '/' && q.has('tab')) {
     const tab = q.get('tab');
@@ -149,7 +163,8 @@ export function duongMoi(pathname: string, search: string): string | null {
     const view = q.get('view');
     if (view === 'my_scores' || view === 'no_plan') {
       q.delete('view');
-      return voiThamSo(view === 'my_scores' ? DUONG_TAB_TEST['can-cham'] : DUONG_TAB_TEST['ke-hoach'], q);
+      if (view === 'my_scores') q.delete('scope');
+      return voiThamSo(view === 'my_scores' ? DUONG_TAB_TEST.lich : DUONG_TAB_TEST['ke-hoach'], q);
     }
     return null;
   }

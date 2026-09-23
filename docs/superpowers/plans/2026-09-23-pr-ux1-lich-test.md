@@ -482,3 +482,5 @@ cap="con"`, `NutLuat`, component hàng/badge UX0, `tuanLich`, `ngay`, `skillLabe
 
 | Ngày | Task | Ghi chú |
 |---|---|---|
+| 23/09 | 0 | Worktree `.claude/worktrees/pr-ux1-lich-test`, nhánh từ `origin/main` @ `d0462b0` (đã có UX0 #89, Z2c-c #87). Kế hoạch đã có sẵn trên main → không chép lại. **B = 1186** (+ 20 tốc độ). Đối chiếu: (a) `HangNhom({mo,onMo,nhan,tieuDe,soCotDau})`, `HangCon`, `KhoiNhom({mo,onMo,nhan,tieuDe,dem,phu,id})`, `MuiTenMo`; `Nhan({tone})` tone `ok/done/bad/soon/doing/wait/muted`, `QuaHan`; `Han({loai,han,…})` ở `web/src/ui/Han.tsx`. (e) lớp FT phân công theo môn nhập `writing1`/`writing2` (`seed.ts` dùng `ENTRY_SKILLS`) → `mySkills(p, lop, ['writing1','writing2'])` cho ô Writing FT |
+| 23/09 | 1 | Lệch kế hoạch: xoá khối Cần chấm ở `chamDiem.ts` ngay Task 1 làm vỡ `canCham.ts` (máy chủ còn `nhomCanCham`) → giữ tạm khối đó, bỏ ở Task 2 cùng `canChamList`. 1188 (B+2) |

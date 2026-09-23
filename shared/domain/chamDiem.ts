@@ -1,12 +1,35 @@
 /**
  * LUẬT THUẦN CỦA VIỆC CHẤM ĐIỂM — khu vực Test (spec §3.5).
  *
- * Ở đây chỉ có luật KHÔNG ĐỌC DATABASE: xếp việc chấm vào ba mục theo hạn, dựng ô của lưới lớp thường, đếm ngược cửa
+ * Ở đây chỉ có luật KHÔNG ĐỌC DATABASE: nhãn hàng lớp của Lịch Test, dựng ô của lưới lớp thường, đếm ngược cửa
  * sổ sửa dấu "-", tính tuần kế tiếp, và luật lý do hiệu chỉnh điểm. Máy chủ và giao diện cùng gọi một nơi, nên hai
  * bên không thể nói hai con số khác nhau — và harness kiểm được mà không cần mở trình duyệt.
  */
 import { mondayOfDate } from './week.ts';
 
+/** Lịch Test lọc lớp nào (PR-UX1 Q4): lớp người xem có phân công, hay cả phạm vi được xem. */
+export type PhamViLichTest = 'cua-toi' | 'tat-ca';
+
+export type LoaiNhanLop = 'da-cham' | 'chua-toi-han' | 'cho-ban' | 'cho-gv-khac' | 'cho-cham';
+
+/**
+ * NHÃN MỘT HÀNG LỚP Ở LỊCH TEST (PR-UX1 Q6, Q7) — một trạng thái, ≤ 3 từ, nói bài còn lại là của ai. Quá hạn KHÔNG
+ * nằm ở đây: cột Hạn đã nói (mockup 17 B-5, quá hạn nói một lần). Người không chấm (Quản lý) thấy "Chờ chấm" — với họ
+ * "GV khác" sai nghĩa.
+ */
+export function nhanLopLichTest(i: { conBai: number; conBaiCuaToi: number; chuaToiHan: boolean; coDayLop: boolean })
+  : { loai: LoaiNhanLop; chu: string } {
+  if (i.conBai === 0) return { loai: 'da-cham', chu: 'Đã chấm' };          // web thêm ✓ nhỏ (G-1)
+  if (i.chuaToiHan) return { loai: 'chua-toi-han', chu: 'Chưa tới hạn' };
+  if (i.conBaiCuaToi > 0) return { loai: 'cho-ban', chu: 'Chờ bạn chấm' };
+  return i.coDayLop ? { loai: 'cho-gv-khac', chu: 'Chờ GV khác' } : { loai: 'cho-cham', chu: 'Chờ chấm' };
+}
+
+/** Lớp nào tự mở khi vào Lịch Test (Q8): người có phân công — lớp còn bài của mình; Quản lý — lớp còn bài. */
+export const lopTuMo = (i: { conBai: number; conBaiCuaToi: number; coPhanCong: boolean }) =>
+  (i.coPhanCong ? i.conBaiCuaToi > 0 : i.conBai > 0);
+
+// TẠM (PR-UX1 Task 1 → bỏ ở Task 2 cùng `canChamList`).
 export type MucCanCham = 'qua-han' | 'tuan-nay' | 'sap-toi';
 
 export const MUC_CAN_CHAM: readonly MucCanCham[] = ['qua-han', 'tuan-nay', 'sap-toi'] as const;
@@ -93,7 +116,7 @@ export function tuanKeTiep(weekStart: string): string {
   return new Date(Date.parse(`${monday}T00:00:00Z`) + 7 * 86400000).toISOString().slice(0, 10);
 }
 
-/** Một câu trạng thái chấm cho Lịch Test và cho dòng Cần chấm. */
+/** Một câu trạng thái chấm cho dòng kỹ năng của Lịch Test. */
 export function trangThaiChamLabel(i: { conBai: number; tong: number; quaHan: boolean; chuaToiHan: boolean }): string {
   if (i.conBai === 0) return 'Đã chấm xong';
   if (i.chuaToiHan) return 'Chưa tới hạn';

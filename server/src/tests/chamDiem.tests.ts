@@ -12,23 +12,38 @@ export async function runChamDiemTests(t: YThucTestKit) {
   const d: any = await import('../../../shared/domain/index.ts');
   console.log('\nPR-Rc1 · Cần chấm + Lịch Test + lưới chấm');
 
-  check('PR-Rc1 · Q10 Nhóm Cần chấm: quá hạn / tuần này / sắp tới; chưa có hạn là "Sắp tới"', () => {
-    const eq = (got: string, want: string, m: string) => assert(got === want, `${m}: "${got}" ≠ "${want}"`);
-    // Hôm nay 22/09/2026 (thứ Ba), tuần lịch 21/09 – 27/09.
-    const homNay = '2026-09-22'; const cuoi = '2026-09-27';
-    eq(d.mucCanCham('2026-09-21', homNay, cuoi), 'qua-han', 'Hạn hôm qua');
-    eq(d.mucCanCham('2026-09-22', homNay, cuoi), 'tuan-nay', 'Hạn đúng hôm nay vẫn còn kịp');
-    eq(d.mucCanCham('2026-09-27', homNay, cuoi), 'tuan-nay', 'Hạn Chủ nhật cuối tuần này');
-    eq(d.mucCanCham('2026-09-28', homNay, cuoi), 'sap-toi', 'Hạn tuần sau');
-    eq(d.mucCanCham(null, homNay, cuoi), 'sap-toi', 'Chưa có hạn thì KHÔNG phải quá hạn');
-    const nhom = d.nhomCanCham(
-      [{ han: '2026-09-28' }, { han: null }, { han: '2026-09-21' }, { han: '2026-09-23' }],
-      { homNay, cuoiTuanNay: cuoi },
-    );
-    eq(nhom.map((x: any) => `${x.muc}:${x.dong.length}`).join(','), 'qua-han:1,tuan-nay:1,sap-toi:2', 'Thứ tự và số dòng');
-    eq(nhom[0].nhan, 'Quá hạn', 'Chữ mục 1');
-    eq(nhom[1].nhan, 'Tuần này', 'Chữ mục 2');
-    eq(nhom[2].nhan, 'Sắp tới', 'Chữ mục 3');
+  check('PR-UX1 · Nhãn hàng lớp Lịch Test: một trạng thái, nói của ai', () => {
+    const n = (conBai: number, conBaiCuaToi: number, chuaToiHan: boolean, coDayLop: boolean) =>
+      d.nhanLopLichTest({ conBai, conBaiCuaToi, chuaToiHan, coDayLop });
+    const eq = (got: any, want: string, m: string) => assert(`${got.loai}|${got.chu}` === want, `${m}: ${got.loai}|${got.chu} ≠ ${want}`);
+    eq(n(0, 0, true, true), 'da-cham|Đã chấm', 'Hết bài thì "Đã chấm" dù tuần chưa tới');
+    eq(n(3, 3, true, true), 'chua-toi-han|Chưa tới hạn', 'Tuần sau: chưa ai nợ gì');
+    eq(n(3, 1, false, true), 'cho-ban|Chờ bạn chấm', 'Còn bài của tôi');
+    eq(n(3, 0, false, true), 'cho-gv-khac|Chờ GV khác', 'Tôi dạy lớp nhưng bài còn lại của người khác');
+    eq(n(3, 0, false, false), 'cho-cham|Chờ chấm', 'Quản lý (không dạy lớp) không thấy chữ "GV khác"');
+    for (const x of [n(0, 0, false, false), n(2, 0, true, false), n(2, 2, false, true), n(2, 0, false, true), n(2, 0, false, false)]) {
+      assert(x.chu.split(' ').length <= 3, `Badge dài hơn 3 từ: ${x.chu}`);
+      assert(!/quá hạn/i.test(x.chu), `Quá hạn nói ở cột Hạn, không ở badge: ${x.chu}`);
+    }
+  });
+
+  check('PR-UX1 · Lớp tự mở: GV theo bài của mình, QL theo bài còn lại', () => {
+    assert(d.lopTuMo({ conBai: 5, conBaiCuaToi: 2, coPhanCong: true }) === true, 'GV còn bài của mình → mở');
+    assert(d.lopTuMo({ conBai: 5, conBaiCuaToi: 0, coPhanCong: true }) === false, 'GV: bài còn lại của người khác → thu');
+    assert(d.lopTuMo({ conBai: 5, conBaiCuaToi: 0, coPhanCong: false }) === true, 'QL: lớp còn bài → mở');
+    assert(d.lopTuMo({ conBai: 0, conBaiCuaToi: 0, coPhanCong: false }) === false, 'QL: lớp xong → thu');
+  });
+
+  check('PR-UX1 · duongLichTest giữ thứ tự tham số, bỏ tham số rỗng', () => {
+    const eq = (got: string, want: string) => assert(got === want, `${got} ≠ ${want}`);
+    eq(d.duongLichTest(), '/test/lich');
+    eq(d.duongLichTest({ classId: null, kn: '' }), '/test/lich');
+    eq(d.duongLichTest({ kn: 'reading', classId: 7, periodId: 40, branchId: 2 }), '/test/lich?branchId=2&periodId=40&classId=7&kn=reading');
+    eq(d.duongLichTest({ classId: 7 }), '/test/lich?classId=7');
+    for (const x of [d.duongLichTest(), d.duongLichTest({ classId: 7, kn: 'listening' })]) {
+      const [p, q = ''] = x.split('?');
+      assert(d.duongMoi(p, q) === null, `Đích Lịch Test không được bị chuyển tiếp: ${x}`);
+    }
   });
 
   check('PR-Rc1 · Q7 Ô lưới lớp thường: hai số, viền vàng khi tổng khác tổng của cột', () => {

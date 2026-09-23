@@ -51,7 +51,7 @@ export type DocLoc = { loc: LocHocVien } | { chuyenDen: string };
 export function docThamSoLoc(view: string | null | undefined): DocLoc {
   if (view === 'sos' || view === 'sos_open') return { loc: 'sos' };
   if (view === 'case_working' || view === 'case_no_plan' || view === 'case_overdue' || view === 'thieu_tt') return { loc: view };
-  if (view === 'missing_scores') return { chuyenDen: '/test/can-cham' };
+  if (view === 'missing_scores') return { chuyenDen: '/test/lich' };
   return { loc: 'tat-ca' };
 }
 

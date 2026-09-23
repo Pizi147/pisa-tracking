@@ -1,7 +1,6 @@
 import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useSession } from '../../lib/session.tsx';
 import { HangTab } from '../../ui/HangTab.tsx';
-import { CanChamTab } from './CanChamTab.tsx';
 import { LichTestTab } from './LichTestTab.tsx';
 import { KeHoachTestTab } from './KeHoachTestTab.tsx';
 import {
@@ -36,7 +35,6 @@ export default function TestPage() {
       <h1 className="text-lg font-semibold text-slate-100 m-0">Test</h1>
       <HangTab ariaLabel="Test" value={tab} onChange={go}
         tabs={tabs.map((k) => ({ key: k, label: TAB_TEST_LABEL[k] }))} />
-      {tab === 'can-cham' && <CanChamTab />}
       {tab === 'lich' && <LichTestTab />}
       {tab === 'ke-hoach' && <KeHoachTestTab />}
     </div>
