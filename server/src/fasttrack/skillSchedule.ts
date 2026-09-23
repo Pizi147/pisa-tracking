@@ -1,6 +1,6 @@
 import { db, tx } from '../db.ts';
 import {
-  ASSESSED_SKILLS, PERMISSIONS, SIT_STATUSES,
+  ASSESSED_SKILLS, PERMISSIONS, SIT_STATUSES, tuanLich,
   type AssessedSkill, type SitStatus, type SkillProgress,
 } from '../../../shared/domain/index.ts';
 import { badRequest, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
@@ -429,19 +429,31 @@ export type ScheduleCheck = { blockers: string[]; warnings: string[] };
  *     để người có quyền tự xử lý.
  *   · Không bịa giới hạn khi đợt lân cận chưa có lịch. Chưa có căn cứ thì không chặn.
  *
- * Hai đợt cách nhau đúng một tuần thì CẢNH BÁO, không chặn: người có quyền xác nhận được.
+ * Hai đợt cách nhau đúng một tuần thì CẢNH BÁO, không chặn: người có quyền xác nhận được. Hai đợt CÙNG một tuần thì
+ * CHẶN cả hai chiều (T15, Q3 — chốt 23/09): trùng là một sự thật đối xứng, chặn một chiều thì cùng tình huống lúc
+ * được lúc không tuỳ ô nào bấm trước.
  * R/L/W và Speaking của CÙNG một đợt không bao giờ bị gọi là "hai MT quá gần".
  */
-export function checkSkillWeekMove(input: {
-  attemptId: number;
-  skill: AssessedSkill;
+function labelDot(n: number, kind: string): string {
+  if (kind === 'mock') return `MT${n}`;
+  if (kind === 'progress') return 'Giữa khoá';
+  if (kind === 'final') return 'Cuối khoá';
+  return `đợt ${n}`;
+}
+
+/**
+ * PHẦN SO VỚI ĐỢT LÂN CẬN của `checkSkillWeekMove`, tách riêng để kiểm được cả một đợt CHƯA TẠO (`xepMoi`, PR-Rc2
+ * Task 4): gọi thẳng bằng `cycleId` + `attemptNo` dự kiến, không cần một `attemptId` đã có trong bảng.
+ */
+export function checkWeekVsNeighbours(input: {
+  cycleId: number;
+  attemptNo: number;
+  excludeAttemptId: number | null;
   newWeekStart: string;
 }): ScheduleCheck {
   const conn = db();
   const blockers: string[] = [];
   const warnings: string[] = [];
-  const a = conn.prepare('SELECT * FROM assessment_attempts WHERE id = ?').get(input.attemptId) as any;
-  if (!a) return { blockers: ['Không tìm thấy đợt kiểm tra'], warnings };
 
   /* Lịch hợp nhất của các đợt khác trong CÙNG lộ trình, bỏ đợt đã huỷ. */
   const others = conn
@@ -454,36 +466,54 @@ export function checkSkillWeekMove(input: {
         WHERE a.cycle_id = ? AND a.id != ? AND a.status != 'cancelled'
         GROUP BY a.id`,
     )
-    .all(a.cycle_id, input.attemptId) as any[];
-
-  const label = (n: number, kind: string) => (kind === 'mock' ? `MT${n}` : `đợt ${n}`);
+    .all(input.cycleId, input.excludeAttemptId ?? -1) as any[];
 
   for (const o of others) {
-    if (o.attempt_no < a.attempt_no) {
+    if (o.attempt_no < input.attemptNo) {
       if (input.newWeekStart < o.last_week) {
         blockers.push(
-          `${label(o.attempt_no, o.kind)} có phần thi ở tuần ${weekInfo(o.last_week).code}. `
+          `${labelDot(o.attempt_no, o.kind)} có phần thi ở tuần ${tuanLich(o.last_week)}. `
           + 'Phần thi của đợt sau không được xếp trước phần cuối của đợt trước.',
         );
       } else if (input.newWeekStart === o.last_week) {
-        warnings.push(`Trùng tuần với phần cuối của ${label(o.attempt_no, o.kind)}.`);
+        blockers.push(
+          `Trùng tuần ${tuanLich(o.last_week)} với ${labelDot(o.attempt_no, o.kind)}. `
+          + 'Hai đợt không thi cùng một tuần.',
+        );
       } else if (daysBetween(o.last_week, input.newWeekStart) === 7) {
-        warnings.push(`Chỉ cách ${label(o.attempt_no, o.kind)} đúng một tuần.`);
+        warnings.push(`Chỉ cách ${labelDot(o.attempt_no, o.kind)} đúng một tuần.`);
       }
-    } else if (o.attempt_no > a.attempt_no) {
+    } else if (o.attempt_no > input.attemptNo) {
       if (input.newWeekStart > o.first_week) {
         blockers.push(
-          `${label(o.attempt_no, o.kind)} đã có phần thi ở tuần ${weekInfo(o.first_week).code}. `
+          `${labelDot(o.attempt_no, o.kind)} đã có phần thi ở tuần ${tuanLich(o.first_week)}. `
           + 'Phần thi của đợt trước không được xếp vượt qua đợt kế tiếp.',
         );
       } else if (input.newWeekStart === o.first_week) {
-        warnings.push(`Trùng tuần với phần đầu của ${label(o.attempt_no, o.kind)}.`);
+        blockers.push(
+          `Trùng tuần ${tuanLich(o.first_week)} với ${labelDot(o.attempt_no, o.kind)}. `
+          + 'Hai đợt không thi cùng một tuần.',
+        );
       } else if (daysBetween(input.newWeekStart, o.first_week) === 7) {
-        warnings.push(`Chỉ cách ${label(o.attempt_no, o.kind)} đúng một tuần.`);
+        warnings.push(`Chỉ cách ${labelDot(o.attempt_no, o.kind)} đúng một tuần.`);
       }
     }
   }
   return { blockers, warnings };
+}
+
+export function checkSkillWeekMove(input: {
+  attemptId: number;
+  skill: AssessedSkill;
+  newWeekStart: string;
+}): ScheduleCheck {
+  const conn = db();
+  const a = conn.prepare('SELECT * FROM assessment_attempts WHERE id = ?').get(input.attemptId) as any;
+  if (!a) return { blockers: ['Không tìm thấy đợt kiểm tra'], warnings: [] };
+  return checkWeekVsNeighbours({
+    cycleId: a.cycle_id, attemptNo: a.attempt_no, excludeAttemptId: input.attemptId,
+    newWeekStart: input.newWeekStart,
+  });
 }
 
 function daysBetween(a: string, b: string): number {

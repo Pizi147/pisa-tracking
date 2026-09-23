@@ -6206,10 +6206,35 @@ function takePlannedAttempt() {
  * trên cùng một điểm xuất phát: em vắng buổi đó, tuần đích còn ở tương lai, và bộ đếm dời
  * bắt đầu từ con số đã khai.
  */
+/** Tuần cách hôm nay `weeksAhead` tuần có bị T15 chặn với lộ trình của `a` không. */
+function weekClashesFor(a: any, weeksAhead: number): boolean {
+  return skillSchedule.checkWeekVsNeighbours({
+    cycleId: a.cycle_id, attemptNo: a.attempt_no, excludeAttemptId: a.id,
+    newWeekStart: addDays(demoToday(), weeksAhead * 7),
+  }).blockers.length > 0;
+}
+
+/**
+ * TUẦN SẠCH gần `weeksAhead` nhất (dò LÙI trước — đợt đang kiểm thường xếp trước một đợt khác của lộ
+ * trình — rồi mới TIẾN), để các phép kiểm 10.6 (vắng, dời, khôi phục) không tình cờ chạm T15 (23/09: trùng
+ * tuần với đợt lân cận nay CHẶN thay vì chỉ cảnh báo). `caKeTiep` = true thì tuần liền sau cũng phải sạch
+ * (dùng cho `absentSkill`, nơi lần dời đầu tự động nhảy +7 ngày).
+ */
+function cleanWeeksAhead(a: any, weeksAhead: number, caKeTiep = false): number {
+  const sach = (w: number) => !weekClashesFor(a, w) && (!caKeTiep || !weekClashesFor(a, w + 1));
+  if (sach(weeksAhead)) return weeksAhead;
+  for (let d = 1; d <= 20; d++) {
+    if (weeksAhead - d >= 1 && sach(weeksAhead - d)) return weeksAhead - d;
+    if (sach(weeksAhead + d)) return weeksAhead + d;
+  }
+  return weeksAhead;
+}
+
 function absentSkill(skill: string, weeksAhead = 3, startCount = 0) {
   const a = takePlannedAttempt();
   const mgr = loadPrincipal(userByRole('manager', a.branch_code));
-  skillSchedule.setSkillWeek(mgr, a.id, skill, periodOf(addDays(demoToday(), weeksAhead * 7)),
+  const week0 = cleanWeeksAhead(a, weeksAhead, true);
+  skillSchedule.setSkillWeek(mgr, a.id, skill, periodOf(addDays(demoToday(), week0 * 7)),
     { reason: 'Xếp lịch cho phép kiểm', force: true });
   conn.prepare('UPDATE attempt_skills SET absence_move_count = ? WHERE attempt_id = ? AND skill = ?')
     .run(startCount, a.id, skill);
@@ -6339,9 +6364,9 @@ check('[10.6] Quản lý từ chối: Fast Track huỷ PHẦN THI, giữ nguyên
     /đã bị huỷ/, 'Nhập được điểm vào phần thi đã huỷ',
   );
 
-  /* KHÔI PHỤC là việc của Quản lý, VÀ phải đặt luôn tuần mới trong cùng thao tác. */
-  const back = absence.restoreCancelledSkill(mgr, a.id, 'speaking', periodOf(addDays(demoToday(), 28)),
-    { reason: 'Xếp lại cho em thi bù' });
+  /* KHÔI PHỤC là việc của Quản lý, VÀ phải đặt luôn tuần mới trong cùng thao tác — tuần đó cũng phải sạch T15. */
+  const back = absence.restoreCancelledSkill(mgr, a.id, 'speaking',
+    periodOf(addDays(demoToday(), cleanWeeksAhead(a, 4) * 7)), { reason: 'Xếp lại cho em thi bù' });
   assert(back.ok, 'Không khôi phục được phần thi đã huỷ');
   const after = conn
     .prepare(`SELECT sit_status, absence_move_count AS n FROM attempt_skills WHERE attempt_id = ? AND skill = 'speaking'`)
@@ -7623,14 +7648,13 @@ check('T13 · Dời MT2 VƯỢT quá tuần đầu MT3 (đợt sau) bị CHẶN,
   assert(check.blockers.length > 0, `Dời MT2 vượt quá tuần đầu MT3 phải bị CHẶN, đang ra: ${JSON.stringify(check)}`);
 });
 
-check('T13 · Dời MT2 TRÙNG đúng tuần đầu MT3 chỉ CẢNH BÁO, không chặn', () => {
+check('T15 · Dời MT2 TRÙNG đúng tuần đầu MT3 bị CHẶN (chốt 23/09: trùng tuần là chặn, không còn chỉ cảnh báo)', () => {
   const [mt1, mt2, mt3] = threeConsecutiveMocks();
   const mt3Week = week.periodById(mt3.planned_period_id)!.week_start;
   const check = skillSchedule.checkSkillWeekMove({
     attemptId: mt2.attemptId, skill: 'listening', newWeekStart: mt3Week,
   });
-  assert(check.blockers.length === 0, `Trùng tuần (chưa vượt) không được CHẶN, đang ra: ${JSON.stringify(check)}`);
-  assert(check.warnings.length > 0, 'Trùng đúng tuần đầu đợt sau phải có CẢNH BÁO');
+  assert(check.blockers.length > 0, `Trùng đúng tuần đầu đợt sau phải bị CHẶN, đang ra: ${JSON.stringify(check)}`);
 });
 
 check('T13 · Hai đợt MT cách nhau đúng một tuần chỉ CẢNH BÁO, không chặn', () => {
