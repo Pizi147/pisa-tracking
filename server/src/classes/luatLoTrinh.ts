@@ -334,3 +334,146 @@ export function xemChuyenLop(p: Principal, sid: number, toClassId?: number | nul
     luat, canLuuY: openCases.length === 0, doiChiNhanh,
   };
 }
+
+// ---------------------------------------------------------------- Chuyển tiếp CẢ LỚP (Task 5, Q20 — ghi theo nhóm)
+
+export type DongCaLop = {
+  sid: number; huong: 'len_lop' | 'hoc_lai' | 'fast_track';
+  toClassId: number; toClass: { ma: ProgrammeCode | null; ft: boolean; branchId: number; code: string };
+  mucTieu?: number | null;
+};
+
+/**
+ * ÁP DỤNG "lên lớp / học lại / sang Fast Track" cho CẢ LÔ học viên của một lớp đã hết khoá —
+ * ghi THEO NHÓM (Q20), không một câu SQL nào lặp theo từng em, TRỪ `closeCasesOnProgrammeSwitch`
+ * của những em sang FT (ngoại lệ duy nhất được phép, S17).
+ *
+ * Mọi dòng trong `dongs` đứng CÙNG lớp nguồn (`boiCanh = 'cuoi-khoa'`, từ luôn là lớp thường) —
+ * nên `luatDoiLop` luôn ra `khoa = 'dong-mo'` bất kể lớp đích, và lượt Test chưa làm luôn Ở LẠI
+ * lớp cũ (Q12) — không cần đọc/ghi `assessment_attempts` ở đây.
+ */
+export function apDungCaLop(p: Principal, o: {
+  fromClass: { id: number; code: string };
+  ngay: string;
+  dongs: DongCaLop[];
+}): void {
+  if (!o.dongs.length) return;
+  const conn = db();
+  const now = nowIso();
+
+  // 1) Đóng enrollment cũ — nhóm theo end_kind (tối đa 3 câu, không phụ thuộc số em).
+  for (const huong of ['len_lop', 'hoc_lai', 'fast_track'] as const) {
+    const ids = o.dongs.filter((d) => d.huong === huong).map((d) => d.sid);
+    if (!ids.length) continue;
+    const endKind = huong === 'fast_track' ? 'sang_ft' : huong;
+    const ph = ids.map(() => '?').join(',');
+    conn
+      .prepare(
+        `UPDATE enrollments SET status = 'transferred', ended_at = ?, end_kind = ?
+          WHERE class_id = ? AND status = 'active' AND student_id IN (${ph})`,
+      )
+      .run(o.ngay, endKind, o.fromClass.id, ...ids);
+  }
+
+  // 2) Mở enrollment mới — MỘT INSERT nhiều dòng.
+  {
+    const rows = o.dongs.map(() => '(?,?,\'active\',?,?)').join(',');
+    const params = o.dongs.flatMap((d) => [d.sid, d.toClassId, o.ngay, now]);
+    conn.prepare(`INSERT INTO enrollments (student_id, class_id, status, started_at, created_at) VALUES ${rows}`).run(...params);
+  }
+
+  // 3) students.branch_id — nhóm theo chi nhánh đích (thường chỉ 1).
+  {
+    const byBranch = new Map<number, number[]>();
+    for (const d of o.dongs) {
+      if (!byBranch.has(d.toClass.branchId)) byBranch.set(d.toClass.branchId, []);
+      byBranch.get(d.toClass.branchId)!.push(d.sid);
+    }
+    for (const [branchId, ids] of byBranch) {
+      const ph = ids.map(() => '?').join(',');
+      conn.prepare(`UPDATE students SET branch_id = ? WHERE id IN (${ph})`).run(branchId, ...ids);
+    }
+  }
+
+  // 4) Đóng khoá đang chạy — MỘT UPDATE (mọi dòng ở đây đều dong-mo).
+  {
+    const sids = o.dongs.map((d) => d.sid);
+    const ph = sids.map(() => '?').join(',');
+    conn.prepare(`UPDATE learning_cycles SET status = 'completed', ended_at = ? WHERE student_id IN (${ph}) AND status = 'active'`)
+      .run(o.ngay, ...sids);
+  }
+
+  // 5) Mở khoá mới — đọc seq theo lô (MỘT câu), rồi MỘT INSERT nhiều dòng.
+  {
+    const sids = o.dongs.map((d) => d.sid);
+    const ph = sids.map(() => '?').join(',');
+    const seqRows = conn
+      .prepare(`SELECT student_id, MAX(seq) n FROM learning_cycles WHERE student_id IN (${ph}) GROUP BY student_id`)
+      .all(...sids) as any[];
+    const seqOf = new Map(seqRows.map((r) => [r.student_id, r.n as number]));
+    const toClassIds = [...new Set(o.dongs.map((d) => d.toClassId))];
+    const ph2 = toClassIds.map(() => '?').join(',');
+    const toClassRows = conn.prepare(`SELECT id, start_period_id FROM classes WHERE id IN (${ph2})`).all(...toClassIds) as any[];
+    const startPeriodOf = new Map(toClassRows.map((r) => [r.id, r.start_period_id as number | null]));
+    /* Cùng một ngày hiệu lực cho cả lớp — chỉ cần MỘT lần ensurePeriod cho mọi em sang FT. */
+    const ftPeriodId = o.dongs.some((d) => d.toClass.ft) ? ensurePeriod(mondayOf(o.ngay)).id : null;
+
+    const rows = o.dongs.map(() => '(?,?,?,?,?,?,?,\'active\',?)').join(',');
+    const params = o.dongs.flatMap((d) => [
+      d.sid, (seqOf.get(d.sid) ?? 0) + 1, d.toClass.ft ? 'LT1' : null, d.toClass.ma, d.mucTieu ?? null,
+      d.toClass.ft ? ftPeriodId : (startPeriodOf.get(d.toClassId) ?? null), o.ngay, now,
+    ]);
+    conn
+      .prepare(
+        `INSERT INTO learning_cycles (student_id, seq, route, programme_code, target_score, start_period_id, started_at, status, created_at)
+         VALUES ${rows}`,
+      )
+      .run(...params);
+  }
+
+  // 6) Case: chỉ em sang FT đóng Case lớp thường — ngoại lệ per-em DUY NHẤT được phép (S17).
+  for (const d of o.dongs) {
+    if (d.huong === 'fast_track') closeCasesOnProgrammeSwitch(p.userId, d.sid, 'ft', o.ngay);
+  }
+
+  // 7) Hành trình — MỘT INSERT nhiều dòng.
+  {
+    const rows = o.dongs.map(() => '(?,?,?,?,NULL,NULL,?,?)').join(',');
+    const params = o.dongs.flatMap((d) => [
+      d.sid, 'promote', o.ngay,
+      d.huong === 'fast_track' ? `Chuyển sang Fast Track ${d.toClass.code}`
+        : d.huong === 'hoc_lai' ? `Học lại ${d.toClass.code}` : `Lên lớp ${d.toClass.code}`,
+      p.userId, now,
+    ]);
+    conn
+      .prepare(
+        `INSERT INTO journey_events (student_id, event_type, event_date, title, ref_table, ref_id, created_by, created_at)
+         VALUES ${rows}`,
+      )
+      .run(...params);
+  }
+}
+
+/** Bảo lưu cả lô — MỘT UPDATE học viên, MỘT UPDATE enrollment, MỘT INSERT hành trình. */
+export function apDungBaoLuuCaLop(o: { fromClassId: number; ngay: string; dongs: { sid: number; lyDo: string }[] }): void {
+  if (!o.dongs.length) return;
+  const conn = db();
+  const now = nowIso();
+  const ids = o.dongs.map((d) => d.sid);
+  const ph = ids.map(() => '?').join(',');
+  conn.prepare(`UPDATE students SET status = 'inactive' WHERE id IN (${ph})`).run(...ids);
+  conn
+    .prepare(
+      `UPDATE enrollments SET status = 'paused', end_kind = 'bao_luu'
+        WHERE class_id = ? AND status = 'active' AND student_id IN (${ph})`,
+    )
+    .run(o.fromClassId, ...ids);
+  const rows = o.dongs.map(() => '(?,?,?,?,NULL,NULL,?,?)').join(',');
+  const params = o.dongs.flatMap((d) => [d.sid, 'pause', o.ngay, `Bảo lưu — ${d.lyDo}`, null, now]);
+  conn
+    .prepare(
+      `INSERT INTO journey_events (student_id, event_type, event_date, title, ref_table, ref_id, created_by, created_at)
+       VALUES ${rows}`,
+    )
+    .run(...params);
+}

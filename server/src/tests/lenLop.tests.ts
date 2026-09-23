@@ -708,4 +708,161 @@ export async function runLenLopTests(t: YThucTestKit) {
     try { timNguoiSvc4.timNguoi(gvcn, { q: 'nguyen', nhom: 'giao_vien', studentId: null }); } catch { threw = true; }
     assert(!threw, '/ref/nguoi không được đòi MEETING_VIEW (khác /ref/people) — GVCN phải gọi được');
   });
+
+  // ==================================================================== Task 5 — Chuyển tiếp lớp (cả lớp)
+
+  console.log('\nPR-LT (5) · Máy chủ: Chuyển tiếp lớp theo hướng từng em, sửa tuần khai giảng, quyền QL, ghi theo lô');
+
+  const transitionSvc = await import('../classes/transition.ts');
+  const nguCanhReq = await import('../platform/nguCanhRequest.ts');
+
+  function taoLopHetKhoa5(tuanHienTai: number, soHV: number): { cls: number; sids: number[] } {
+    const cls = taoLop4({ branchId: MB3, kind: 'FOU', ft: false, tuanHienTai });
+    const sids: number[] = [];
+    for (let i = 0; i < soHV; i += 1) sids.push(taoHV4({ clsId: cls, ma: 'FOU', ft: false }).sid);
+    return { cls, sids };
+  }
+  const demTruyVan5 = (fn: () => void): number => {
+    let n = 0;
+    const orig = conn.prepare.bind(conn);
+    (conn as any).prepare = (sql: string) => { n += 1; return orig(sql); };
+    try { fn(); } finally { (conn as any).prepare = orig; }
+    return n;
+  };
+
+  check('PR-LT (5) · applyTransition: tuần khai giảng lớp mới ĐÚNG tuần gửi lên qua startPeriodId (sửa lỗi §6)', () => {
+    const { cls, sids } = taoLopHetKhoa5(9, 1);
+    ganGVCN3(cls, P.normalCoreTeacher.userId);
+    const tuanKhaiGiang = week.ensurePeriod(mondayForWeek3(2)).id;
+    const r = transitionSvc.applyTransition(P.mbManager, {
+      fromClassId: cls, effectiveDate: TODAY3,
+      newClass: { code: `MB-LT5-${Date.now()}`, programme: 'BE', startPeriodId: tuanKhaiGiang },
+      dongs: [{ studentId: sids[0], huong: 'len_lop', toNewClass: true }],
+    }) as any;
+    const created = conn.prepare('SELECT start_period_id FROM classes WHERE id = ?').get(r.newClass.id) as any;
+    assert(created.start_period_id === tuanKhaiGiang, `Tuần khai giảng phải đúng tuần gửi lên: ${created.start_period_id} vs ${tuanKhaiGiang}`);
+  });
+
+  check('PR-LT (5) · applyTransition: GVCN lớp (không có CLASS_EDIT) → 403', () => {
+    const { cls, sids } = taoLopHetKhoa5(9, 1);
+    const gvcn = ganGVCN3(cls, P.normalCoreTeacher.userId);
+    assertThrows(() => transitionSvc.applyTransition(gvcn, {
+      fromClassId: cls, effectiveDate: TODAY3, dongs: [{ studentId: sids[0], huong: 'len_lop', toClassId: cls }],
+    }), /quyền/, 'GVCN không có CLASS_EDIT phải 403');
+  });
+
+  check('PR-LT (5) · Kịch bản mockup 11-2: 2 lên BE, 1 sang FT (mục tiêu 6.5, Case Writing đóng moved_to_ft), 1 bảo lưu; lớp cũ hết em → finished', () => {
+    const { cls } = taoLopHetKhoa5(9, 0);
+    const { sid: s1 } = taoHV4({ clsId: cls, ma: 'FOU', ft: false });
+    const { sid: s2 } = taoHV4({ clsId: cls, ma: 'FOU', ft: false });
+    const { sid: s3, cycleId: c3 } = taoHV4({ clsId: cls, ma: 'FOU', ft: false });
+    const case3 = taoCase4(s3, c3, 'writing');
+    const { sid: s4 } = taoHV4({ clsId: cls, ma: 'FOU', ft: false });
+    const be = taoLop4({ branchId: MB3, kind: 'BE', ft: false, tuanHienTai: 1 });
+    const ft = taoLop4({ branchId: MB3, kind: 'FT', ft: true });
+
+    const r = transitionSvc.applyTransition(P.mbManager, {
+      fromClassId: cls, effectiveDate: TODAY3,
+      dongs: [
+        { studentId: s1, huong: 'len_lop', toClassId: be },
+        { studentId: s2, huong: 'len_lop', toClassId: be },
+        { studentId: s3, huong: 'fast_track', toClassId: ft, mucTieu: 6.5 },
+        { studentId: s4, huong: 'bao_luu', lyDo: 'Ốm dài ngày', ngayXemLai: addDays3(TODAY3, 30) },
+      ],
+    }) as any;
+    assert(r.done.length === 3 && r.failed.length === 0, `done=${r.done.length} failed=${JSON.stringify(r.failed)}`);
+    assert(activeCycleCount(s1) === 1 && activeCycleCount(s2) === 1, 'Mỗi em phải đúng một lộ trình active sau khi lên lớp');
+    const cyc1 = conn.prepare(`SELECT programme_code FROM learning_cycles WHERE student_id=? AND status='active'`).get(s1) as any;
+    assert(cyc1.programme_code === 'BE', `Khoá mới của s1 phải là BE: ${cyc1.programme_code}`);
+    const cycFt = conn.prepare(`SELECT programme_code, target_score FROM learning_cycles WHERE student_id=? AND status='active'`).get(s3) as any;
+    assert(cycFt.target_score === 6.5, `Mục tiêu FT: ${cycFt.target_score}`);
+    assert(caseStatus(case3).status === 'done' && caseStatus(case3).system_close_reason === 'moved_to_ft',
+      `Case Writing phải đóng moved_to_ft: ${JSON.stringify(caseStatus(case3))}`);
+    const s4row = conn.prepare('SELECT status FROM students WHERE id = ?').get(s4) as any;
+    assert(s4row.status === 'inactive', 's4 phải inactive (bảo lưu)');
+    const s4enr = conn.prepare(`SELECT status FROM enrollments WHERE student_id=? ORDER BY id DESC LIMIT 1`).get(s4) as any;
+    assert(s4enr.status === 'paused', 's4 enrollment phải paused');
+    const clsRow = conn.prepare('SELECT status FROM classes WHERE id = ?').get(cls) as any;
+    assert(clsRow.status === 'finished', 'Lớp cũ hết học viên (mọi em đã có hướng) phải thành finished');
+  });
+
+  check('PR-LT (5) · Xếp sau với ngày xem lại tương lai: chỉ ghi dự định, KHÔNG đổi enrollment, lớp CHƯA finished', () => {
+    const { cls } = taoLopHetKhoa5(9, 0);
+    const { sid } = taoHV4({ clsId: cls, ma: 'FOU', ft: false });
+    const r = transitionSvc.applyTransition(P.mbManager, {
+      fromClassId: cls, effectiveDate: TODAY3,
+      dongs: [{ studentId: sid, huong: 'xep_sau', lyDo: 'Chờ phụ huynh', ngayXemLai: addDays3(TODAY3, 14) }],
+    }) as any;
+    assert(r.done.length === 0 && r.failed.length === 0, `xep_sau không nằm trong done lẫn failed: ${JSON.stringify(r)}`);
+    const enr = conn.prepare(`SELECT status FROM enrollments WHERE student_id=?`).get(sid) as any;
+    assert(enr.status === 'active', 'xep_sau không được đổi enrollment');
+    const clsRow = conn.prepare('SELECT status FROM classes WHERE id = ?').get(cls) as any;
+    assert(clsRow.status === 'active', 'Lớp còn em active (xep_sau) thì chưa finished');
+    const banGhi = conn.prepare(`SELECT huong, da_ap_dung_luc FROM lo_trinh_tiep_theo WHERE student_id=? AND class_id=?`).get(sid, cls) as any;
+    assert(banGhi.huong === 'xep_sau' && banGhi.da_ap_dung_luc === null, `Dự định phải ghi, chưa áp dụng: ${JSON.stringify(banGhi)}`);
+  });
+
+  check('PR-LT (5) · Dòng thiếu lý do (bảo lưu không ghi lý do) vào failed, dòng khác vẫn xong', () => {
+    const { cls } = taoLopHetKhoa5(9, 0);
+    const { sid: sOk } = taoHV4({ clsId: cls, ma: 'FOU', ft: false });
+    const { sid: sBad } = taoHV4({ clsId: cls, ma: 'FOU', ft: false });
+    const be = taoLop4({ branchId: MB3, kind: 'BE', ft: false, tuanHienTai: 1 });
+    const r = transitionSvc.applyTransition(P.mbManager, {
+      fromClassId: cls, effectiveDate: TODAY3,
+      dongs: [
+        { studentId: sOk, huong: 'len_lop', toClassId: be },
+        { studentId: sBad, huong: 'bao_luu' },
+      ],
+    }) as any;
+    assert(r.done.length === 1 && r.done[0].studentId === sOk, 'Dòng đúng phải xong');
+    assert(r.failed.length === 1 && r.failed[0].studentId === sBad, 'Dòng thiếu lý do phải vào failed');
+  });
+
+  check('PR-LT (5) · "+ Mở lớp mới": GVCN được gán ngay khi tạo lớp', () => {
+    const { cls, sids } = taoLopHetKhoa5(9, 1);
+    const r = transitionSvc.applyTransition(P.mbManager, {
+      fromClassId: cls, effectiveDate: TODAY3,
+      newClass: { code: `MB-LT5-${Date.now()}`, programme: 'BE', gvcnUserId: P.normalCoreTeacher.userId },
+      dongs: [{ studentId: sids[0], huong: 'len_lop', toNewClass: true }],
+    }) as any;
+    const gv = conn.prepare(`SELECT user_id FROM teacher_assignments WHERE class_id=? AND is_core=1 AND status='active'`).get(r.newClass.id) as any;
+    assert(gv?.user_id === P.normalCoreTeacher.userId, `GVCN phải được gán: ${JSON.stringify(gv)}`);
+  });
+
+  check('PR-LT (5) · Đếm câu SQL (Q20): chuyển tiếp 4 em và 8 em, không em nào sang FT — không truy vấn theo từng em', () => {
+    const { cls: cls4, sids: sids4 } = taoLopHetKhoa5(9, 4);
+    const be4 = taoLop4({ branchId: MB3, kind: 'BE', ft: false, tuanHienTai: 1 });
+    const n4 = demTruyVan5(() => {
+      transitionSvc.applyTransition(P.mbManager, {
+        fromClassId: cls4, effectiveDate: TODAY3,
+        dongs: sids4.map((sid) => ({ studentId: sid, huong: 'len_lop' as const, toClassId: be4 })),
+      });
+    });
+    const { cls: cls8, sids: sids8 } = taoLopHetKhoa5(9, 8);
+    const be8 = taoLop4({ branchId: MB3, kind: 'BE', ft: false, tuanHienTai: 1 });
+    const n8 = demTruyVan5(() => {
+      transitionSvc.applyTransition(P.mbManager, {
+        fromClassId: cls8, effectiveDate: TODAY3,
+        dongs: sids8.map((sid) => ({ studentId: sid, huong: 'len_lop' as const, toClassId: be8 })),
+      });
+    });
+    assert(n8 - n4 <= 6, `8 em (không FT) không được tăng nhiều câu SQL hơn 4 em: ${n4} → ${n8}`);
+  });
+
+  check('PR-LT (5) · transitionPlan: chỉ đọc (không tạo lớp mới), số câu không tăng nhiều theo số lớp ứng viên (N+1 fix)', () => {
+    const { cls } = taoLopHetKhoa5(9, 2);
+    const before = (conn.prepare('SELECT COUNT(*) n FROM classes').get() as any).n;
+    /*
+     * `classProgressMany` gọi `demoToday()` một lần MỖI LỚP ứng viên; ngoài `chayTrongRequest`
+     * (bộ nhớ request PR-TD) mỗi lần đó là một câu SQL riêng — ĐÚNG kiểu N+1 mà phép kiểm này
+     * dò, nhưng chỉ hiện ra khi gọi trực tiếp như test đơn vị. Ngoài đời route luôn bọc trong
+     * `chayTrongRequest('GET', …)` (`wrap()` ở routes/index.ts) nên demo_config chỉ đọc một lần
+     * cho cả request — đo đúng như production bằng cách bọc lại ở đây.
+     */
+    const n1 = demTruyVan5(() => { nguCanhReq.chayTrongRequest('GET', () => { transitionSvc.transitionPlan(P.admin, cls); }); });
+    for (let i = 0; i < 5; i += 1) taoLop4({ branchId: MB3, kind: 'BE', ft: false, tuanHienTai: 1 });
+    const n2 = demTruyVan5(() => { nguCanhReq.chayTrongRequest('GET', () => { transitionSvc.transitionPlan(P.admin, cls); }); });
+    assert((conn.prepare('SELECT COUNT(*) n FROM classes').get() as any).n === before + 5, 'Tiền đề: đã thêm đúng 5 lớp, không tạo thêm gì khác');
+    assert(n2 <= n1 + 2, `Thêm 5 lớp ứng viên không được tăng nhiều câu (N+1): ${n1} → ${n2}`);
+  });
 }
