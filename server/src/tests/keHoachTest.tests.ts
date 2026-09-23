@@ -739,4 +739,72 @@ export async function runKeHoachTestTests(t: YThucTestKit) {
       /Chưa chọn học viên/, 'Gửi toàn HV ngoài lớp phải bị coi như chưa chọn ai',
     );
   });
+
+  // ------------------------------------------------------------ PR-UX2 · luật thuần (Task 1)
+  const okn = (trangThai: string, tuan: string | null, doiTu: string | null = null, batBuoc = true) => (
+    { trangThai, tuan, doiTu, batBuoc, khoa: null }
+  );
+
+  check('UX2 · gomChip — cùng tuần gộp, khác tuần tách, xong gọn, bỏ khong-yeu-cau, them', () => {
+    const A = '2026-10-19', B = '2026-10-26';
+    const cungTuan = d.gomChip({ listening: okn('da-xep', A), reading: okn('da-xep', A), writing: okn('da-xep', A), speaking: okn('da-xep', A) });
+    assert(cungTuan.chip.length === 1 && cungTuan.chip[0].kyNang.join() === 'listening,reading,writing,speaking' && cungTuan.them === 0,
+      `4 kỹ năng cùng tuần phải một chip, ra ${JSON.stringify(cungTuan)}`);
+    const haiNhom = d.gomChip({ listening: okn('da-xep', A), reading: okn('da-xep', A), writing: okn('da-xep', A), speaking: okn('da-xep', B) });
+    assert(haiNhom.chip.length === 2 && haiNhom.chip[0].kyNang.join() === 'listening,reading,writing' && haiNhom.chip[1].kyNang.join() === 'speaking',
+      `L R W tuần A + S tuần B phải hai chip, ra ${JSON.stringify(haiNhom)}`);
+    const bonTuan = d.gomChip({ listening: okn('da-xep', '2026-10-05'), reading: okn('da-xep', '2026-10-12'), writing: okn('da-xep', A), speaking: okn('da-xep', B) });
+    assert(bonTuan.chip.length === 4 && bonTuan.them === 2, `4 tuần khác nhau phải them = 2, ra ${bonTuan.them}`);
+    const xong = d.gomChip({ listening: okn('xong', '2026-10-05'), reading: okn('xong', A), writing: okn('xong', '2026-10-12'), speaking: okn('xong', B) });
+    assert(xong.xong === true && xong.tuanXong === B && xong.chip.length === 0, `Cả 4 xong phải xong ở tuần muộn nhất, ra ${JSON.stringify(xong)}`);
+    const boS = d.gomChip({ listening: okn('xong', A), reading: okn('xong', A), writing: okn('xong', A), speaking: okn('khong-yeu-cau', null, null, false) });
+    assert(boS.xong === true, 'S khong-yeu-cau + L R W xong phải là xong');
+    const roi = d.gomChip({ listening: okn('da-xep', A), speaking: okn('khong-yeu-cau', null, null, false) });
+    assert(roi.chip.length === 1 && roi.chip[0].kyNang.join() === 'listening', 'khong-yeu-cau không được vẽ chip');
+    assert(d.gomChip({}).chip.length === 0 && d.gomChip({}).xong === false, 'Ô không có kỹ năng nào thì không vẽ gì');
+  });
+
+  check('UX2 · nhanTuanKhoa — FOU W4/8, W8/8; ELE W5/10, W10/10; sau khoá; trước khai giảng null', () => {
+    const kg = '2026-09-07';   // Thứ Hai
+    assert(d.nhanTuanKhoa('2026-09-28', kg, 8) === 'W4/8', 'W4/8');
+    assert(d.nhanTuanKhoa('2026-10-26', kg, 8) === 'W8/8', 'W8/8');
+    assert(d.nhanTuanKhoa('2026-10-05', kg, 10) === 'W5/10', 'W5/10');
+    assert(d.nhanTuanKhoa('2026-11-09', kg, 10) === 'W10/10', 'W10/10');
+    assert(d.nhanTuanKhoa('2026-11-02', kg, 8) === 'sau khoá', 'Tuần sau hết khoá phải là "sau khoá"');
+    assert(d.nhanTuanKhoa('2026-08-31', kg, 8) === null, 'Trước khai giảng thì không nhãn');
+    assert(d.nhanTuanKhoa('2026-09-28', null, 8) === null && d.nhanTuanKhoa(null, kg, 8) === null && d.nhanTuanKhoa('2026-09-28', kg, null) === null,
+      'Thiếu một trong ba thì null');
+  });
+
+  const baiMau = (skill: string, ghiChu: string, tu: string | null = null, den: string | null = '2026-10-19', cau: string | null = null) => (
+    { skill, tu, den, ghiChu, cau }
+  );
+
+  check('UX2 · tomTatHangLoat — em có bài chặn không tính vào lưu được (Q1)', () => {
+    const dong: any[] = [
+      { studentId: 1, ten: 'A', hanhDong: 'tao', bai: ['listening', 'reading', 'writing', 'speaking'].map((s) => baiMau(s, 'moi')), loi: null },
+      { studentId: 2, ten: 'B', hanhDong: 'doi', bai: [baiMau('listening', 'canh-bao'), baiMau('reading', 'doi'), baiMau('writing', 'giu'), baiMau('speaking', 'doi')], loi: null },
+      { studentId: 3, ten: 'C', hanhDong: 'loi', bai: [baiMau('listening', 'moi'), baiMau('reading', 'moi'), baiMau('writing', 'moi'), baiMau('speaking', 'chan', null, '2026-10-19', 'Trùng tuần')], loi: 'Trùng tuần' },
+      { studentId: 4, ten: 'D', hanhDong: 'giu', bai: [baiMau('listening', 'giu')], loi: null },
+    ];
+    const t = d.tomTatHangLoat(dong);
+    assert(t.tongBai === 11, `tongBai: 4 + 3 (bài giu không đếm) + 4 = 11, ra ${t.tongBai}`);
+    assert(t.luuDuoc === 7 && t.soBaiLuu === 7, `luuDuoc chỉ đếm dòng không loi: 4 + 3 = 7, ra ${t.luuDuoc}`);
+    assert(t.coCanhBao === 1 && t.biChan === 1 && t.soEmLuu === 2, `coCanhBao/biChan/soEmLuu = 1/1/2, ra ${JSON.stringify(t)}`);
+  });
+
+  check('UX2 · emGiuLaiSauLuu chỉ trả em lỗi; gomBaiXemTruoc gộp cùng tu/den/ghiChu', () => {
+    const dong: any[] = [
+      { studentId: 1, ten: 'A', hanhDong: 'tao', bai: [], loi: null },
+      { studentId: 2, ten: 'B', hanhDong: 'loi', bai: [], loi: 'x' },
+      { studentId: 3, ten: 'C', hanhDong: 'giu', bai: [], loi: null },
+      { studentId: 4, ten: 'D', hanhDong: 'loi', bai: [], loi: 'y' },
+    ];
+    assert(d.emGiuLaiSauLuu(dong).join() === '2,4', 'R9b: chỉ em lỗi còn ở lại');
+    const g = d.gomBaiXemTruoc([baiMau('writing', 'moi'), baiMau('listening', 'moi'), baiMau('speaking', 'chan', null, '2026-10-19', 'Trùng'), baiMau('reading', 'moi')]);
+    assert(g.length === 2 && g[0].kyNang.join() === 'listening,reading,writing' && g[1].ghiChu === 'chan' && g[1].cau === 'Trùng',
+      `L R W gộp một dòng, S chặn tách dòng, ra ${JSON.stringify(g)}`);
+    assert(d.tomTatLopFT({ dangThi: 3, chuaXep: { dot: 4, soEm: 4 } }) === 'MT3 đang thi · MT4 chưa xếp 4 em', 'tomTatLopFT đủ hai vế');
+    assert(d.tomTatLopFT({ dangThi: null, chuaXep: { dot: 2, soEm: 0 } }) === '', 'tomTatLopFT bỏ vế trống');
+  });
 }

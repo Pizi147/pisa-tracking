@@ -482,6 +482,8 @@ này dịch được riêng).
 
 | Ngày | Task | Ghi chú |
 |---|---|---|
+| 23/09 | 0 | Worktree từ origin/main `d0462b0` (UX0 #89 + Z2c-c #87 đã merge). Model thật: **Sonnet 5** (phương án B của kế hoạch), không subagent. Không có biến Turso. Mốc **B = 1186** (`run.js`) + 20 (`tocDo`). Con trỏ: `KhungPanel` (`web/src/ui/KhungPanel.tsx`) nhận `rong='rong'` = 720px, có `Khoi`/`Truong`, chân `chan={huy,phu,chinh,conThieu}`, `onDong`; `HangNhom` là `<tr>` (`mo,onMo,nhan,tieuDe,soCotDau`) + `HangCon`; `Nhan tone=ok/done/bad/soon/doing/wait/muted`. Mã khớp kế hoạch (`keHoachTest.ts:27-619`, routes `:505-552`, `skillSchedule.ts:448-503`, `regular.ts:232`). |
+| 23/09 | 1 | Luật thuần thêm vào `shared/domain/keHoachTest.ts` (chưa xoá gì). `tomTatHangLoat`: bài `giu` không tính là bài. Bộ kiểm 1186 → **1190** (B+4). |
 
 ## Bổ sung sau rà #87 (planning 23/09)
 
