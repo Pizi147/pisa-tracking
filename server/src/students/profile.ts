@@ -18,7 +18,7 @@ import { standingFor, standingLine } from './standing.ts';
 import { missingForStudent, suggestedMockWeeks } from '../classes/schedule.ts';
 import { listSignals } from '../cases/signals.ts';
 import { ensurePeriod, mondayOf } from '../platform/week.ts';
-import { canManageDiscipline } from '../yThuc/access.ts';
+import { activeClassOf, canManageDiscipline } from '../yThuc/access.ts';
 
 /**
  * HỒ SƠ HỌC VIÊN — phần trả lời câu hỏi "em này đang thế nào" trong khoảng ba mươi giây.
@@ -926,15 +926,23 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
     /* Mặc định chỉ mốc xuyên chương trình; giao diện mở được toàn bộ khi cần tra lại. */
     episodes: episodesOf(milestoneRows),
     allEpisodes: episodesOf(journeyRowsKhongYThuc),
-    viewer: {
-      canEdit: can(p, PERMISSIONS.STUDENT_EDIT, { studentId }),
-      canPlanWeek: can(p, PERMISSIONS.PLAN_WEEK, { studentId }),
-      canReport: can(p, PERMISSIONS.SOS_REPORT, { classId: current?.class_id ?? null, studentId }),
-      /* RB-6 (PR-S1): quyền hoàn thành Case tính theo MÔN của từng Case — xem `canClose` trên từng thẻ Case, không có cờ chung ở đây. */
-      /* Ý thức & Phối hợp (PR-K): ghi vi phạm — mọi GV dạy lớp em đang học (V01, C02 không áp cho Ý thức); xử lý — GVCN của lớp + Quản lý. */
-      canRecordViolation: can(p, PERMISSIONS.VIOLATION_RECORD, { classId: current?.class_id ?? null, studentId }),
-      canManageDiscipline: canManageDiscipline(p, studentId),
-    },
+    viewer: (() => {
+      /*
+       * K2-6e (Q16) — MỘT NGUỒN "lớp đang học": `activeClassOf` (bảng `enrollments`, xếp theo `id DESC`), không phải
+       * `current` ở trên (xếp theo `started_at DESC`) — hai cách xếp lệch NHAU THẬT khi em chuyển lớp cùng ngày. `current`
+       * vẫn giữ nguyên cho phần hiển thị (ngày bắt đầu, mã lớp…) — chỉ hai quyền dưới đây đổi nguồn.
+       */
+      const lopDangHoc = activeClassOf(studentId);
+      return {
+        canEdit: can(p, PERMISSIONS.STUDENT_EDIT, { studentId }),
+        canPlanWeek: can(p, PERMISSIONS.PLAN_WEEK, { studentId }),
+        canReport: can(p, PERMISSIONS.SOS_REPORT, { classId: lopDangHoc, studentId }),
+        /* RB-6 (PR-S1): quyền hoàn thành Case tính theo MÔN của từng Case — xem `canClose` trên từng thẻ Case, không có cờ chung ở đây. */
+        /* Ý thức & Phối hợp (PR-K): ghi vi phạm — mọi GV dạy lớp em đang học (V01, C02 không áp cho Ý thức); xử lý — GVCN của lớp + Quản lý. */
+        canRecordViolation: can(p, PERMISSIONS.VIOLATION_RECORD, { classId: lopDangHoc, studentId }),
+        canManageDiscipline: canManageDiscipline(p, studentId),
+      };
+    })(),
   };
 }
 
