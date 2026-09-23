@@ -398,3 +398,9 @@ Commit `PR-Qb (8): 375px hồ sơ học viên, bảng định vị, CODE_MAP, đ
 - **Task 0:** Model thật = Sonnet 5. Qa (#69) đã merge trên `origin/main` (69910fd) — 3 điều kiện kiểm đều đạt. Worktree
   `.claude/worktrees/pr-qb-ho-so-hoc-vien` tạo từ `origin/main`, `npm ci` xong. Biến Turso: sạch. `npm test` → **B = 837**
   kiểm tra đạt. File kế hoạch đã có sẵn trên `main` (không cần chép thêm) — không có gì khác để commit ở bước này.
+- **Task 1:** `duongHoSo.ts` + `hanhTrinh.ts` tạo đúng bản đồ file. Hai chỗ tự quyết vì kế hoạch không nói rõ mã thật:
+  (1) `caseTitleOf` không tồn tại trong `cases.ts` — hàm đúng tên là `caseTitle`; Task 2 sẽ dùng tên này.
+  (2) `cotCua` — kế hoạch ghi "ngoài trục trả thêm cờ `cat`" nhưng cũng ghi kiểu trả về là `number`; hai câu mâu
+  thuẫn nhau. Giữ đúng kiểu trả về đã ghi (`number`, kẹp `[0, soTuan-1]`), bỏ phần "cờ cắt" — việc phát hiện Case
+  nằm ngoài khoảng đang xem (Q22, "+{n} vấn đề cũ hơn") để Task 2 tự so ngày ở máy chủ, không phụ thuộc `cotCua`.
+  `npm run check` xanh, **853 = 837 + 16** (đủ ≥16). Commit `PR-Qb (1)`.
