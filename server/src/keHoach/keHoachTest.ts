@@ -9,7 +9,7 @@ import { db, tx } from '../db.ts';
 import {
   NHOM_KY_NANG, PERMISSIONS, REGULAR_SKILLS, laVaoMuon, tieuDeKeHoach,
   tuanDaSo, tuanKhoa as tuanKhoaCua, trangThaiNhom,
-  type TrangThaiO,
+  type AssessedSkill, type TrangThaiO,
 } from '../../../shared/domain/index.ts';
 import { badRequest, notFound } from '../util.ts';
 import { can, require_, type Principal } from '../permissions.ts';
@@ -17,7 +17,7 @@ import { demoToday } from '../demoConfig.ts';
 import { entrySkillsOf } from '../fasttrack/scoring.ts';
 import { createAttempt, loadBundle } from '../fasttrack/attempts.ts';
 import { currentCycle } from '../fasttrack/cycles.ts';
-import { checkWeekVsNeighbours, loadSkillRows, setSkillWeek } from '../fasttrack/skillSchedule.ts';
+import { checkSkillWeekMove, checkWeekVsNeighbours, loadSkillRows, setSkillWeek } from '../fasttrack/skillSchedule.ts';
 import { writeAudit } from '../platform/audit.ts';
 import { classProgressMany } from '../classes/schedule.ts';
 import { allProgrammes } from '../normal/regular.ts';
@@ -27,7 +27,7 @@ import { allProgrammes } from '../normal/regular.ts';
 export function danhSachLop(p: Principal, i: { branchId?: number | null } = {}) {
   const conn = db();
   const params: unknown[] = [];
-  let where = '1=1';
+  let where = "c.status = 'active'";
   if (i.branchId) { where += ' AND c.branch_id = ?'; params.push(i.branchId); }
 
   const rows = conn
@@ -384,12 +384,25 @@ export function xepHangLoat(p: Principal, i: {
   if (!sPeriod) throw notFound('Không tìm thấy tuần Speaking');
   if (!i.studentIds?.length) throw badRequest('Chưa chọn học viên nào.');
 
+  /* Chỉ nhận HV đang học ĐÚNG lớp này — id ngoài lớp (vd lớp/chi nhánh khác) bị bỏ qua âm thầm,
+   * không trả tên (tránh lộ tên HV ngoài phạm vi qua id đoán mò). */
+  const inClassIds = new Set(
+    (conn
+      .prepare(
+        `SELECT student_id FROM enrollments WHERE class_id = ? AND status = 'active'
+           AND student_id IN (${i.studentIds.map(() => '?').join(',')})`,
+      )
+      .all(i.classId, ...i.studentIds) as any[]).map((r) => r.student_id as number),
+  );
+  const studentIds = i.studentIds.filter((id) => inClassIds.has(id));
+  if (!studentIds.length) throw badRequest('Chưa chọn học viên nào.');
+
   const names = new Map<number, string>(
-    (conn.prepare(`SELECT id, full_name FROM students WHERE id IN (${i.studentIds.map(() => '?').join(',')})`)
-      .all(...i.studentIds) as any[]).map((s) => [s.id, s.full_name]),
+    (conn.prepare(`SELECT id, full_name FROM students WHERE id IN (${studentIds.map(() => '?').join(',')})`)
+      .all(...studentIds) as any[]).map((s) => [s.id, s.full_name]),
   );
 
-  const dong = i.studentIds.map((studentId) => xetMotEmHangLoat(p, {
+  const dong = studentIds.map((studentId) => xetMotEmHangLoat(p, {
     studentId, ten: names.get(studentId) ?? '', attemptNo: i.attemptNo,
     rlwWeek: rlwPeriod.week_start, sWeek: sPeriod.week_start, rlwPeriodId: i.rlwPeriodId, sPeriodId,
   }));
@@ -429,7 +442,7 @@ const KIND_NHAN: Record<'progress' | 'final', string> = { progress: 'Giữa kho�
 export function bangThuong(p: Principal, i: { branchId?: number | null } = {}, today: string = demoToday()) {
   const conn = db();
   const params: unknown[] = [];
-  let where = `pg.scoring_mode = 'ratio'`;
+  let where = `pg.scoring_mode = 'ratio' AND c.status = 'active'`;
   if (i.branchId) { where += ' AND c.branch_id = ?'; params.push(i.branchId); }
   const classes = conn
     .prepare(`SELECT c.* FROM classes c LEFT JOIN programmes pg ON pg.code = c.programme_code WHERE ${where} ORDER BY c.code`)
@@ -572,6 +585,18 @@ export function doiLichThuong(p: Principal, i: {
     }
     if (!row) return { studentId: a.student_id, ten: a.full_name, tu: null, den: null, loi: `Chưa có dòng lịch cho ${i.skill}.`, giu: null };
     if (row.planned_period_id === i.periodId) return { studentId: a.student_id, ten: a.full_name, tu, den: tu, loi: null, giu: 'đã ở đúng tuần' };
+    /* Chạy CÙNG phép kiểm T15 với lúc lưu (`setSkillWeek` → `checkSkillWeekMove`) — để xem trước không nói
+     * "được" rồi lưu lại mới báo chặn/cảnh báo. */
+    const check = checkSkillWeekMove({ attemptId: a.id, skill: i.skill as AssessedSkill, newWeekStart: period.week_start });
+    if (check.blockers.length) {
+      return { studentId: a.student_id, ten: a.full_name, tu, den: tu, loi: check.blockers.join(' '), giu: null };
+    }
+    if (check.warnings.length && !i.force) {
+      return {
+        studentId: a.student_id, ten: a.full_name, tu, den: tu,
+        loi: `${check.warnings.join(' ')} Xác nhận lại nếu vẫn muốn xếp vào tuần này.`, giu: null,
+      };
+    }
     return { studentId: a.student_id, ten: a.full_name, tu, den: period.week_start, loi: null, giu: null };
   });
 

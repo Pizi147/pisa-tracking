@@ -4,7 +4,7 @@ import { raiseSignal, reconcileCorrectedSignals } from '../cases/signals.ts';
 import {
   ATTEMPT_KIND_LABEL, PERMISSIONS, RATIO_PASS_THRESHOLD, REGULAR_SKILL_LABEL,
   caseCategoriesFor, categoryOf, kiemLyDo, ngay, ratioResult, sosFromFailCount, tuanKeTiep, tuanLich,
-  type AttemptKind, type CaseCategory, type RatioOutcome, type SosLevel,
+  type AssessedSkill, type AttemptKind, type CaseCategory, type RatioOutcome, type SosLevel,
 } from '../../../shared/domain/index.ts';
 import { addDays, badRequest, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
 import { can, editableSkills, require_, scoreEditPath, type Principal } from '../permissions.ts';
@@ -13,7 +13,7 @@ import { addJourney, writeAudit } from '../platform/audit.ts';
 import { ensurePeriod } from '../platform/week.ts';
 import { regularSkillViews, weekStartOf } from '../fasttrack/attempts.ts';
 import { nho } from '../platform/nguCanhRequest.ts';
-import { ensureSkillRows, loadSkillRows, setSkillWeek } from '../fasttrack/skillSchedule.ts';
+import { checkSkillWeekMove, ensureSkillRows, loadSkillRows, setSkillWeek } from '../fasttrack/skillSchedule.ts';
 import { dotHoanTat, dotHoanTatMany, quyenSuaSauHoanTat } from '../fasttrack/hoanTat.ts';
 import { classProgress } from '../classes/schedule.ts';
 
@@ -543,6 +543,16 @@ export function reportRegularNoShow(
       }
       const cu = { id: row.planned_period_id, code: row.period_code, weekStart: row.week_start };
       const moi = ensurePeriod(tuanKeTiep(cu.weekStart));
+      /*
+       * Kiểm T15 TRƯỚC khi ghi gì (đọc thuần, không đụng DB) — dấu "-" tự dời sang tuần sau, nhưng tuần đó có
+       * thể trùng/vượt một đợt khác (vd Cuối khoá cùng lộ trình). Giữ NGUYÊN câu chặn gốc của `checkSkillWeekMove`
+       * (test PR-Rc1 C08 còn kiểm đúng chữ "vượt qua đợt kế tiếp") — chỉ nối thêm một câu chỉ đường: GV không
+       * sửa được lịch ở đây, chỉ Quản lý mới xếp lại được, và chỗ xếp lại là Kế hoạch Test.
+       */
+      const check = checkSkillWeekMove({ attemptId, skill: skill as AssessedSkill, newWeekStart: moi.weekStart });
+      if (check.blockers.length) {
+        throw badRequest(`${check.blockers.join(' ')} Nhờ Quản lý dời lịch ở Kế hoạch Test.`);
+      }
       if (existing) {
         conn.prepare(
           `UPDATE assessment_scores SET no_show_period_id = ?, no_show_by = ?, no_show_at = ?, no_show_late = 0 WHERE id = ?`,

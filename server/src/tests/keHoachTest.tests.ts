@@ -647,4 +647,53 @@ export async function runKeHoachTestTests(t: YThucTestKit) {
     assert(cau.some((c: string) => c === '1 em không xếp được'), `Thiếu câu "lỗi", ra ${JSON.stringify(cau)}`);
     assert(cau.length === 3, `Dòng "giu" không sinh câu nào, tổng phải đúng 3, ra ${cau.length}`);
   });
+
+  check('PR-Rc2 · Rà planning(1) Lớp đã kết thúc không hiện ở danhSachLop lẫn bangThuong', () => {
+    /* MB-FOU 03, MB-BE 08 là hai lớp `status='ended'` có sẵn trong seed (giữ lại để tra lịch sử — journeys.ts). */
+    const dsLop = keHoachMod.danhSachLop(P.mbManager, {});
+    const maLop = dsLop.lop.map((l: any) => l.code);
+    assert(!maLop.includes('MB-FOU 03') && !maLop.includes('MB-BE 08'),
+      `Lớp đã kết thúc không được hiện ở danhSachLop, đang có: ${JSON.stringify(maLop)}`);
+    const thuong = keHoachMod.bangThuong(P.mbManager, {});
+    const maThuong = thuong.lop.map((l: any) => l.code);
+    assert(!maThuong.includes('MB-FOU 03') && !maThuong.includes('MB-BE 08'),
+      `Lớp đã kết thúc không được hiện ở bangThuong, đang có: ${JSON.stringify(maThuong)}`);
+  });
+
+  check('PR-Rc2 · Rà planning(2) xepHangLoat bỏ qua HV ngoài lớp (chi nhánh khác), không lộ tên', () => {
+    const outside = conn.prepare(
+      `SELECT s.id, s.full_name FROM students s
+         JOIN enrollments e ON e.student_id = s.id AND e.status = 'active'
+         JOIN classes c ON c.id = e.class_id
+        WHERE c.code = 'CP-FT 110' AND s.status = 'active' AND s.archived_at IS NULL
+        LIMIT 1`,
+    ).get() as any;
+    assert(outside, 'Seed thiếu HV đang học ở CP-FT 110 (chi nhánh khác) để kiểm lọc studentIds');
+
+    const inside = conn.prepare(
+      `SELECT DISTINCT s.id FROM students s
+         JOIN enrollments e ON e.student_id = s.id AND e.status = 'active'
+         JOIN learning_cycles cy ON cy.student_id = s.id AND cy.status = 'active'
+        WHERE e.class_id = ? AND s.status = 'active' AND s.archived_at IS NULL
+        ORDER BY s.id LIMIT 1`,
+    ).get(mbClass) as any;
+    assert(inside, 'Seed thiếu HV đang học ở MB-FT 101 để kiểm lọc studentIds');
+
+    const attemptNo = 91; // số MT ảo, chắc chắn chưa em nào có, tránh đụng lịch thật
+    const far = week.ensurePeriod('2029-08-06'); // Thứ Hai, xa mọi lịch thật
+
+    const xt = keHoachMod.xepHangLoat(P.mbManager, {
+      classId: mbClass, attemptNo, studentIds: [inside.id, outside.id], rlwPeriodId: far.id, xemTruoc: true,
+    });
+    assert(xt.dong.length === 1 && xt.dong[0].studentId === inside.id,
+      `Chỉ HV trong lớp được xử lý, đang ra ${JSON.stringify(xt.dong.map((dd: any) => dd.studentId))}`);
+    assert(!JSON.stringify(xt.dong).includes(outside.full_name), 'Không được lộ tên HV ngoài lớp qua kết quả xem trước');
+
+    assertThrows(
+      () => keHoachMod.xepHangLoat(P.mbManager, {
+        classId: mbClass, attemptNo, studentIds: [outside.id], rlwPeriodId: far.id, xemTruoc: true,
+      }),
+      /Chưa chọn học viên/, 'Gửi toàn HV ngoài lớp phải bị coi như chưa chọn ai',
+    );
+  });
 }
