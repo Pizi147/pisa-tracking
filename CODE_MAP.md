@@ -21,9 +21,8 @@ Nếu bạn nghĩ theo "cái tôi thấy trên màn hình" chứ không theo tê
 | Trên màn hình | File chính | Dữ liệu từ |
 |---|---|---|
 | **Học viên & Lớp** (một trang, nhóm theo lớp, chip lọc, Phạm vi) | `web/src/modules/students/StudentsPage.tsx` → `BangHocVienLop.tsx` | `GET /hoc-vien-lop` → `server/src/classes/hocVienLop.ts` |
-| Test › **Cần chấm** (ba mục Quá hạn · Tuần này · Sắp tới; mỗi dòng một lớp + đợt, nút Chấm) | `web/src/modules/test/CanChamTab.tsx` | `server/src/cham/canCham.ts` → `canChamList` (`GET /cham/can-cham`) |
 | **Khung 4 khu vực**, thanh dưới điện thoại, chuyển hướng đường dẫn cũ | `web/src/App.tsx` + `shared/domain/dieuHuong.ts` | `server/src/platform/nav.ts` → `navOf` |
-| Test › **Lịch Test** (mỗi lớp một thẻ) | `web/src/modules/test/LichTestTab.tsx` | `server/src/cham/canCham.ts` → `lichTest` (`GET /cham/lich-test`) |
+| Test › **Lịch Test** — lối vào "Chấm điểm" (PR-UX1 gộp tab Cần chấm cũ; `/test/can-cham` tự chuyển về đây): dải số · Nợ tuần trước · hàng lớp thu gọn, tự mở lớp còn bài của người xem, mở ra là lưới chấm tại chỗ | `web/src/modules/test/LichTestTab.tsx` + `web/src/modules/test/lichTest/` (`DaiSo.tsx` · `KhoiNo.tsx` · `HangLop.tsx` · `LuoiNhung.tsx` · `moLop.ts` · `kieu.ts`) | `server/src/cham/canCham.ts` → `lichTest` · `noTuanTruoc` (`GET /cham/lich-test?periodId&branchId&phamVi&classId`) — MỘT lời gọi đủ cho cả màn |
 | Test › **Kế hoạch Test** — CHỈ Quản lý: lưới cả lớp FT (mỗi đợt 2 hàng RLW/S), xếp lịch hàng loạt (5 bước, xem trước), lớp thường xếp theo lớp | `web/src/modules/test/KeHoachTestTab.tsx` (`web/src/modules/test/keHoach/`: `LuoiFT.tsx` · `HopSuaTuan.tsx` · `NganXepHangLoat.tsx` · `BangThuong.tsx` · `HopDoiLichThuong.tsx`) | `server/src/keHoach/keHoachTest.ts` (`GET /ke-hoach-test/lop`, `/ft/:classId`, `/thuong`; `POST /nhom/kiem`, `/nhom`, `/xep-moi`, `/hang-loat`, `/thuong/doi-lich`) — **chỉ gọi lại** `createAttempt` / `setSkillWeek` / `planRegularTests`, không dựng đường ghi lịch thứ hai |
 | **Hồ sơ lớp** (đầu trang, 3 tab, ⋮) | `web/src/modules/classes/ClassOverviewPage.tsx` → `DauTrangLop` · `TabHocVienLop` · `PhanTichLopTab` | `/classes/:id/overview` · `/roster` · `/phan-tich-lop` · `PATCH /thong-tin` |
 | Menu ⋯ dòng học viên (Hồ sơ · + Ghi nhận vi phạm · + Case · Nhập điểm) | `web/src/modules/classes/thaoTacDongHocVien.tsx` + `shared/domain/hocVienLop.ts` (`mucMenuDongHocVien`) | — |
@@ -36,7 +35,7 @@ Nếu bạn nghĩ theo "cái tôi thấy trên màn hình" chứ không theo tê
 | Tab **Hành trình** — trục tuần theo giai đoạn, mỗi kỹ năng một hộp (PR-Qb) | `web/src/modules/students/HanhTrinh.tsx` · `NganCase.tsx` | `server/src/students/hanhTrinh.ts` · `shared/domain/hanhTrinh.ts`, `duongHoSo.ts` |
 | Thông báo trên thanh đầu, mở đúng chỗ theo loại | `web/src/modules/platform/Header.tsx` | `server/src/platform/thongBao.ts` |
 | Màn một lượt Test (chọn đợt khác cạnh tiêu đề; nút nhập điểm mở lưới đúng tuần của đợt) | `web/src/modules/fasttrack/MockDetailPage.tsx` | `server/src/fasttrack/attempts.ts` → `attemptDetail` |
-| **Bảng nhập điểm cả lớp** — một lưới cho hai loại lớp, máy chủ trả `mode` | `web/src/modules/cham/ChamDiemPage.tsx` (lưới `web/src/modules/cham/LuoiFT.tsx` · `web/src/modules/cham/LuoiThuong.tsx`; điện thoại `web/src/modules/cham/MotKyNang.tsx`) | `server/src/cham/canCham.ts` → `chamSheet` (`GET /classes/:classId/cham`) |
+| **Bảng nhập điểm cả lớp** — một lưới cho hai loại lớp, máy chủ trả `mode` | `web/src/modules/cham/ChamDiemPage.tsx` (lưới dùng chung cho trang này và Lịch Test: `web/src/modules/cham/LuoiChamLop.tsx`; `web/src/modules/cham/LuoiFT.tsx` · `web/src/modules/cham/LuoiThuong.tsx`; điện thoại `web/src/modules/cham/MotKyNang.tsx`) | `server/src/cham/canCham.ts` → `chamSheet` (`GET /classes/:classId/cham`) |
 | **Công việc** (3 tab: Hỗ trợ học viên · Vận hành · Báo cáo đơn vị, PR-Ra) | `web/src/modules/congViec/CongViecPage.tsx` (bọc `HoTroHocVienTab.tsx` · `worklist/MgmtTasksPage.tsx` → `TasksBoard`/`NganViecVanHanh` · `worklist/MeetingPage.tsx` → `MeetingBoard`) | `worklist/mywork.ts` (`nguoi`, `nhacViec.ts`) · `worklist/mgmttasks.ts` · `worklist/meeting.ts` · luật thuần `shared/domain/congViec.ts` (lọc nhanh, hàng số Vận hành, trạng thái báo cáo) · nâng cấp `migrate.ts` → `migrateCongViec` |
 | **Tổng quan** (QL: 4 ô · Cần xử lý · Điểm đáng chú ý · Lịch sắp tới · Theo chi nhánh; GV: Việc cần làm của tôi · Học viên cần hỗ trợ) | `web/src/modules/worklist/OverviewPage.tsx` | `server/src/worklist/tongQuan.ts` · `bangChiNhanh.ts` · `metrics.ts` (metricSet + chương trình) |
 | Dòng tín hiệu SOS lớp thường (Tạo Case / Bỏ qua) | `web/src/modules/worklist/DongTinHieu.tsx` → `QuickReport.tsx` | `/signals/pending/:id/dismiss` · `/cases/report` |
@@ -206,12 +205,13 @@ loại dữ liệu mới** vào kịch bản thì thêm trường ở `server/sr
 
 | Muốn sửa | Mở file |
 |---|---|
-| Trang lưới chấm: chọn lưới theo `mode`, tham số đường dẫn `?periodId=` `?kind=` `?kn=` `?hv=` | `web/src/modules/cham/ChamDiemPage.tsx` |
+| Trang lưới chấm: đầu trang, chọn tuần/bài, tham số đường dẫn `?periodId=` `?kind=` `?kn=` `?hv=` | `web/src/modules/cham/ChamDiemPage.tsx` |
+| Phần lưới dùng chung (chọn lưới theo `mode`, màn hẹp một kỹ năng một lúc, đặt con trỏ; Lịch Test thêm `gon` · `tuanDangXem` · `chiAttempt`) | `web/src/modules/cham/LuoiChamLop.tsx` |
 | Lưới lớp Fast Track (band, dấu "-" chờ chốt Chủ nhật) | `web/src/modules/cham/LuoiFT.tsx` |
 | Lưới lớp thường (điểm đạt/tổng điểm, dấu "-" dời tuần sau) | `web/src/modules/cham/LuoiThuong.tsx` |
 | Chấm trên điện thoại — một kỹ năng một lúc (< 768px) | `web/src/modules/cham/MotKyNang.tsx` |
-| Dữ liệu cho ba câu hỏi đọc: lưới một lớp · Cần chấm · Lịch Test | `server/src/cham/canCham.ts` → `chamSheet` · `canChamList` · `lichTest` |
-| Luật thuần: ba mục Quá hạn / Tuần này / Sắp tới, chữ trạng thái chấm, ô lưới thường, độ dài tối thiểu của lý do | `shared/domain/chamDiem.ts` |
+| Dữ liệu cho các câu hỏi đọc: lưới một lớp · Lịch Test (kèm Nợ tuần trước) | `server/src/cham/canCham.ts` → `chamSheet` · `lichTest` · `noTuanTruoc` |
+| Luật thuần: nhãn hàng lớp Lịch Test (`nhanLopLichTest`), lớp tự mở (`lopTuMo`), chữ trạng thái chấm, ô lưới thường, độ dài tối thiểu của lý do · đường dẫn Lịch Test `duongLichTest` | `shared/domain/chamDiem.ts` · `shared/domain/dieuHuong.ts` |
 | **Sửa điểm đã có phải ghi lý do** (RB-5) — cả hai cửa lưu điểm | `web/src/modules/fasttrack/ScoreEntry.tsx` → `SuaDiemCoLyDo` · `server/src/fasttrack/attempts.ts` → `saveScore` · `server/src/normal/regular.ts` → `saveRegularScore` |
 | Ô điểm lớp thường dùng chung (lưới và điện thoại) | `web/src/modules/fasttrack/ScoreEntry.tsx` → `ODiemThuong` |
 | **R11 — đợt/bài đã hoàn tất thì chỉ Quản lý sửa điểm (có lý do)** — "hoàn tất" suy từ điểm + lịch mỗi lần đọc, không lưu cột riêng (PR-Rc2) | `server/src/fasttrack/hoanTat.ts` → `dotHoanTat` / `dotHoanTatMany` / `quyenSuaSauHoanTat` — nối vào `saveScore`, `saveRegularScore`, `reportRegularNoShow`, `skillCells`, `regularSheet`; web đọc `SkillCell.khoa` + nhãn "Đã hoàn tất" ở `cham/LuoiFT.tsx` · `cham/LuoiThuong.tsx` · `cham/MotKyNang.tsx` |

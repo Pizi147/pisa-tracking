@@ -1,0 +1,41 @@
+ĐẠT  GVBM: /test → /test/lich
+ĐẠT  GVBM: không có hàng tab Test (một tab)
+ĐẠT  GVBM: dải số 4 ô — Tuần này đã chấm 6/30 bài | Còn phải chấm 24 bài | Nợ tuần trước 29 bài · 3 lớp | Quá hạn 5 bài
+ĐẠT  GVBM: không có nút Lớp tôi dạy/Tất cả (hai tập như nhau)
+ĐẠT  GVBM: lớp còn bài của mình tự mở, lớp khác thu — ▾ MB-FT 101 MT3 Monbay L R W S…[true] ; ▾ MB-FT 102 MT2 Monbay L R W S…[true]
+ĐẠT  GVBM: "đã chấm" = cộng các hàng 6/30
+ĐẠT  GVBM: ô thi tuần khác hiện chữ mờ "W4 SEP" (5 ô)
+ĐẠT  GVBM (dạy S): ô L không phải ô mình nhập
+ĐẠT  GVBM 1440: chữ sạch (không ISO/Normal/tuần 36/Cần chấm/badge > 3 từ) 
+ĐẠT  Khối Nợ: lưới dưới dòng chỉ các em còn nợ (4 em = 4)
+ĐẠT  Khối Nợ: con trỏ đặt sẵn vào ô cần chấm (BUTTON)
+ĐẠT  Quá hạn → chip "Chỉ quá hạn", còn 4 dòng
+ĐẠT  Đổi tuần + F5 giữ tuần (?periodId=41)
+ĐẠT  Gõ L + Enter: con trỏ xuống em kế tiếp cùng cột (listening)
+ĐẠT  Lưu một ô: ~1,5 s sau dải số đổi (Tuần này đã chấm 2/25 bài → Tuần này đã chấm 3/25 bài)
+ĐẠT  Dấu ✓ nhỏ ở dòng vừa lưu
+ĐẠT  ⓘ cạnh "Lớp thường" nói đủ luật lưới
+ĐẠT  "-" ở L → ô ghi tuần mới (Bùi Khánh Linh PISA-000010 ✓ / / W4 SEP W1 OCT Chưa nhập điểm L dời sang W4 SEP)
+ĐẠT  ↗ mở đúng bài (/nhap-diem/5?kind=final)
+ĐẠT  Việc cần làm › Nhập điểm → /test/lich?classId=3&kn=listening, chip lọc lớp, con trỏ cột listening
+ĐẠT  Badge "bài chờ chấm" → /test/lich?classId=5
+ĐẠT  Chip ✕ bỏ lọc lớp
+ĐẠT  /test/can-cham?classId=3&scope=mine → /test/lich?classId=3
+ĐẠT  GVCN: chữ sạch (không ISO/Normal/tuần 36/Cần chấm/badge > 3 từ) 
+ĐẠT  QL: hai tab Lịch Test · Kế hoạch Test
+ĐẠT  QL: không có nút Lớp tôi dạy
+ĐẠT  QL: nhãn "Chờ chấm", không "GV khác"/"bạn chấm"
+ĐẠT  QL: lớp còn bài tự mở
+ĐẠT  QL: không ô nào là ô nhập của mình (0)
+ĐẠT  QL: chữ sạch (không ISO/Normal/tuần 36/Cần chấm/badge > 3 từ) 
+ĐẠT  QT: đổi chi nhánh → số đổi (Tuần này đã chấm 7/53 bài → Tuần này đã chấm 0/12 bài)
+ĐẠT  375 gvbm: không cuộn ngang ({"sw":375,"iw":375,"main":[375,375]})
+ĐẠT  375 gvbm: dải số 2×2 (2 hàng)
+ĐẠT  375 gvbm: lưới mở là một kỹ năng một lúc (2)
+ĐẠT  375 gvbm: nút ≥ 44px 
+ĐẠT  375 gvbm: hàng lớp gập (một ô, hai dòng)
+ĐẠT  375 ql: không cuộn ngang ({"sw":375,"iw":375,"main":[375,375]})
+ĐẠT  375 ql: dải số 2×2 (2 hàng)
+ĐẠT  375 ql: lưới mở là một kỹ năng một lúc (2)
+ĐẠT  375 ql: nút ≥ 44px 
+ĐẠT  375 ql: hàng lớp gập (một ô, hai dòng)
