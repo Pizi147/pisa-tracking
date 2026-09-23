@@ -2,12 +2,13 @@ import { useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { useSession } from '../../lib/session.tsx';
-import { Card, Empty } from '../../ui/ui.tsx';
+import { Card } from '../../ui/ui.tsx';
 import { ChonChuongTrinh } from '../worklist/ChonChuongTrinh.tsx';
 import { DanhSachCase } from '../cases/CaseBoardPage.tsx';
 import { IssueAnalysis } from '../cases/IssueAnalysis.tsx';
 import { YThucAnalysisView } from '../yThuc/YThucAnalysisView.tsx';
 import { TongHopTestSos } from './TongHopTestSos.tsx';
+import { VanDeHocVien } from './VanDeHocVien.tsx';
 import {
   GOC_NHIN, GOC_NHIN_LABEL, KHOANG, KHOANG_LABEL, KHOANG_MAC_DINH,
   chuongTrinhTuThamSo, gocNhinTuThamSo, khoangTuThamSo, ngay, tuDauKhoang,
@@ -124,9 +125,8 @@ export function PhanTich() {
         </div>
       </div>
 
-      {/* Vấn đề học viên — Task 7 thay chỗ giữ chỗ này bằng ma trận thật. */}
       {goc === 'tong-hop' && <TongHopTestSos branchId={branchId} ct={ct} tg={tg} classId={classId} />}
-      {goc === 'van-de' && <Card bodyClass="p-4"><Empty title="Đang xây dựng — xem tiếp ở PR-Pb Task 7" /></Card>}
+      {goc === 'van-de' && <VanDeHocVien branchId={branchId} ct={ct} classId={classId} />}
       {goc === 'danh-sach' && <DanhSachCase branchId={branchId} ct={ct} classId={classId} />}
       {goc === 'ket-qua' && (
         <Card title="Kết quả hỗ trợ" bodyClass="p-3">
