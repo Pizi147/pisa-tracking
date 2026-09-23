@@ -614,8 +614,24 @@ export function classOverview(p: Principal, classId: number) {
      * `BangCanHoTro.tsx` (chế độ "Cần hỗ trợ") gọi qua `GET /cases?classId=`, nên số này TỰ ĐỘNG khớp,
      * không cần một hàm quét toàn hệ thống rồi lọc lại (hàm dựng riêng cũ đã bỏ — chậm trên Turso vì
      * `listCases(p, {})` không lọc phạm vi gì, quét MỌI Case rồi gọi `can()` từng dòng).
+     *
+     * PR-Qa (17, fix round 2 — review Opus): `listCases(p, { classId })` lọc theo
+     * `COALESCE(cur.class_id, a.class_id)`, và `cur` chỉ join enrollment `status = 'active'` — với một em đã
+     * TẠM DỪNG (`paused`) mà vẫn còn Case, `cur.class_id` là NULL nên bộ lọc rơi về LỚP LÚC ĐÁNH GIÁ
+     * (`a.class_id`), Case đó vẫn có thể khớp `classId` đang xem. Nhưng "Cần hỗ trợ" (`BangCanHoTro.tsx`) chỉ
+     * hiện học viên có trong ROSTER (đang active, không lưu trữ) nên KHÔNG hiện em đã tạm dừng — lọc thêm
+     * theo đúng tập học viên ĐANG HỌC của `classId` để badge khớp lại với danh sách mở ra.
      */
-    soCaseMo: listCases(p, { classId }).rows.filter((c) => c.status !== 'done').length,
+    soCaseMo: (() => {
+      const activeIds = new Set(
+        conn.prepare(
+          `SELECT e.student_id FROM enrollments e JOIN students s ON s.id = e.student_id
+            WHERE e.class_id = ? AND e.status = 'active' AND s.archived_at IS NULL`,
+        ).all(classId).map((r: any) => r.student_id as number),
+      );
+      return listCases(p, { classId }).rows
+        .filter((c) => c.status !== 'done' && c.studentId !== null && activeIds.has(c.studentId)).length;
+    })(),
     /** Số học viên có vi phạm chưa xử lý quá 5 ngày — dấu ⚠ trên tab Ý thức & Phối hợp (Q15). */
     canhBaoYThuc: can(p, PERMISSIONS.STUDENT_VIEW, { classId }) ? classWarning(p, classId).activeCount : 0,
     viewer: {

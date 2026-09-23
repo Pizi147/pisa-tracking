@@ -559,4 +559,78 @@ export async function runHocVienLopTests(t: YThucTestKit) {
       `Thêm 15 Case khiến classOverview tăng từ ${truoc} lên ${sau} câu lệnh — nghi vấn quét theo từng Case (N+1)`);
     eq(classes.classOverview(P.admin, cid).soCaseMo, 15, 'Số Case đang mở phải khớp đúng 15 Case vừa thêm');
   });
+
+  // ------------------------------------------------------------------ Task 17 (fix round 2 — review Opus) · phép kiểm hiệu năng "có răng"
+
+  /*
+   * `P.admin` KHÔNG bắt được lỗi "quét toàn hệ thống thay vì theo phạm vi": grant của Quản trị hệ thống có
+   * `branchId: null`, nên `can()` (`permissions.ts` — `grantCovers`: `if (g.branchId === null) return true;`)
+   * trả `true` NGAY, không hỏi database (không qua `branchOfClass`/`branchesOfStudent`) — số câu `prepare` của
+   * Quản trị không đổi dù `listCases` bên trong có quét toàn hệ thống hay không. Hai phép kiểm trên vẫn giữ lại
+   * (chứng minh không có N+1 tuyệt đối — số câu không tỉ lệ với số Case), nhưng cần THÊM một phép kiểm dùng vai
+   * KHÔNG PHẢI Quản trị: `P.mbManager` (grant `branchId` = MB cụ thể) — mỗi Case cần `can()` đều phải hỏi
+   * database thật (`branchOfClass`/`branchesOfStudent`), nên nếu code quay lại quét toàn hệ thống, thêm Case ở
+   * một CHI NHÁNH KHÁC (ngoài phạm vi QL MB) sẽ vẫn làm số câu `prepare` tăng — bắt đúng lỗi planning lo ngại.
+   */
+
+  /** Thêm N Case ở một lớp thuộc một CHI NHÁNH cụ thể — học viên tạo MỚI, gắn thẳng branchId đó (không mượn `taoHocVien`, vốn luôn gắn branch_id = MB). */
+  function themNhieuCaseTaiChiNhanh(cid: number, branchId: number, soLuong: number) {
+    for (let i = 0; i < soLuong; i += 1) {
+      soThuTu += 1;
+      const tag = `QA17R2-${soThuTu}`;
+      const ten = `Hoc vien ${tag}`;
+      const sid = Number(conn.prepare(
+        `INSERT INTO students (student_code, full_name, normalized_name, branch_id, status, created_at) VALUES (?,?,?,?, 'active', ?)`,
+      ).run(`PISA-${tag}`, ten, ten.toLowerCase(), branchId, NOW).lastInsertRowid);
+      conn.prepare(`INSERT INTO enrollments (student_id, class_id, status, started_at, created_at) VALUES (?,?, 'active', '2026-08-03', ?)`)
+        .run(sid, cid, NOW);
+      conn.prepare(
+        `INSERT INTO sos_cases (student_id, topic, category, origin_kind, status, sos_level, title, detected_at, created_at)
+         VALUES (?, 'listening', 'listening', 'teacher_report', 'open', 1, 'PR-Qa T17-fix round2 đếm truy vấn', ?, ?)`,
+      ).run(sid, TODAY, NOW);
+    }
+  }
+
+  check('PR-Qa (17, fix round 2) · vai QL chi nhánh MB: thêm Case ở CHI NHÁNH KHÁC không làm tăng số câu lệnh', () => {
+    const mbClass = classId('MB-FT 101');
+    const CP = (conn.prepare(`SELECT id FROM branches WHERE code = 'CP'`).get() as any).id as number;
+    assert(CP && CP !== MB, `Cần một chi nhánh KHÁC MB để phép kiểm có ý nghĩa (CP=${CP}, MB=${MB})`);
+    // taoLop (helper của file này) luôn gắn branch_id = MB — tạo thẳng bằng intake.createClass với branchId = CP
+    // để có một lớp THẬT SỰ thuộc chi nhánh khác (mã lớp phải bắt đầu bằng đúng mã chi nhánh CP).
+    const cpClass = (intake.createClass(P.admin, {
+      code: 'CP-FT QA17R2', branchId: CP, kind: 'FT', isFastTrack: true, startDate: '2026-08-03',
+    }) as any).id as number;
+
+    const truocDsHv = demTruyVan(() => { hvl.danhSachHocVienLop(P.mbManager, {}); });
+    const truocOverview = demTruyVan(() => { classes.classOverview(P.mbManager, mbClass); });
+    themNhieuCaseTaiChiNhanh(cpClass, CP, 15); // 15 Case ở lớp thuộc CP — ngoài phạm vi QL MB.
+    const sauDsHv = demTruyVan(() => { hvl.danhSachHocVienLop(P.mbManager, {}); });
+    const sauOverview = demTruyVan(() => { classes.classOverview(P.mbManager, mbClass); });
+
+    assert(sauDsHv <= truocDsHv + 3,
+      `Thêm 15 Case ở chi nhánh CP khiến danhSachHocVienLop (QL MB) tăng từ ${truocDsHv} lên ${sauDsHv} câu lệnh — nghi vấn quét ngoài phạm vi chi nhánh`);
+    assert(sauOverview <= truocOverview + 3,
+      `Thêm 15 Case ở chi nhánh CP khiến classOverview (QL MB, lớp MB) tăng từ ${truocOverview} lên ${sauOverview} câu lệnh — nghi vấn quét ngoài phạm vi chi nhánh`);
+  });
+
+  // ------------------------------------------------------------------ Task 17 (fix round 2 — review Opus) · badge lệch khi học viên tạm dừng
+
+  check('PR-Qa (17, fix round 2) · classOverview: học viên đã TẠM DỪNG không được tính vào "n Case đang mở" (khớp lại "Cần hỗ trợ")', () => {
+    const cid = taoLop('MB-FT QA17E', 'FT');
+    const a = taoHocVien({ cid, ft: true, target: 6.5 });
+    const at = themLuot({ ...a, cid, no: 2, kind: 'mock', weekStart: '2026-09-07' });
+    conn.prepare(
+      `INSERT INTO sos_cases (student_id, cycle_id, attempt_id, topic, category, origin_kind, status, sos_level, title, detected_at, created_at)
+       VALUES (?, ?, ?, 'listening', 'listening', 'teacher_report', 'open', 1, 'PR-Qa T17R2 paused', ?, ?)`,
+    ).run(a.sid, a.cycleId, at, TODAY, NOW);
+    eq(classes.classOverview(P.admin, cid).soCaseMo, 1, 'Trước khi tạm dừng: 1 Case đang mở, đúng bằng danh sách "Cần hỗ trợ"');
+
+    // Không có hàm nghiệp vụ sẵn để "tạm dừng" một enrollment (đã tìm trong students.ts/intake.ts/transition.ts) — cập nhật thẳng cột trạng thái.
+    conn.prepare(`UPDATE enrollments SET status = 'paused' WHERE student_id = ? AND class_id = ?`).run(a.sid, cid);
+
+    const roster = casesMod.listCases(P.admin, { classId: cid }).rows.filter((c: any) => c.status !== 'done').length;
+    eq(classes.classOverview(P.admin, cid).soCaseMo, 0,
+      'Em đã tạm dừng không còn trong roster "Cần hỗ trợ" — badge phải về 0, không đếm Case của em qua fallback lớp lúc đánh giá');
+    eq(roster, 1, 'Nợ để lại quirk cases.ts: listCases({classId}) vẫn trả case này qua fallback a.class_id — badge KHÔNG được dùng con số này thẳng');
+  });
 }
