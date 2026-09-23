@@ -11,6 +11,7 @@ import ChamDiemPage from './modules/cham/ChamDiemPage.tsx';
 import StudentsPage from './modules/students/StudentsPage.tsx';
 import ClassOverviewPage from './modules/classes/ClassOverviewPage.tsx';
 import StudentDetailPage from './modules/students/StudentDetailPage.tsx';
+import LuuTruPage from './modules/students/LuuTruPage.tsx';
 import { CaseRoutePage } from './modules/cases/CaseBoardPage.tsx';
 import TestPage from './modules/test/TestPage.tsx';
 import CongViecPage from './modules/congViec/CongViecPage.tsx';
@@ -99,6 +100,7 @@ export default function App() {
             element={nav.analysis ? <OverviewPage tab="phan-tich" /> : <Navigate to="/" replace />} />
           <Route path="/hoc-vien" element={<StudentsPage />} />
           <Route path="/hoc-vien/lop/:classId" element={<ClassOverviewPage />} />
+          <Route path="/hoc-vien/luu-tru" element={<LuuTruPage />} />
           <Route path="/hoc-vien/:id" element={<StudentDetailPage />} />
           {/* Trang riêng của một Case — máy chủ sinh link này trong thông báo và Việc cần làm, nên phải giữ. */}
           <Route path="/hoc-thuat/case/:id" element={<CaseRoutePage />} />

@@ -939,4 +939,95 @@ export async function runLenLopTests(t: YThucTestKit) {
     const n2 = demTruyVan5(() => { lichSuLopSvc.lichSuLop(P.admin, sid); });
     assert(n2 - n1 <= 1, `Thêm 6 lớp cũ không được tăng nhiều câu SQL (ba câu cố định): ${n1} → ${n2}`);
   });
+
+  // ==================================================================== Task 9 — Khu Lưu trữ + chế độ chỉ xem
+
+  console.log('\nPR-LT (9) · Máy chủ: khu Lưu trữ — lớp đã kết thúc, HV đã lưu trữ, chế độ chỉ xem (Q16, Q22)');
+
+  const luuTruSvc = await import('../classes/luuTru.ts');
+  const hocVienLopSvc = await import('../classes/hocVienLop.ts');
+
+  /** Một lớp thường ĐÃ HẾT CHƯƠNG TRÌNH (tuần 9 > 8 tuần của FOU) với đúng một em — kết thúc học em đó thì lớp tự đóng. */
+  function taoLopVaKetThuc9(): { cls: number; sid: number } {
+    const { cls } = taoLopHetKhoa5(9, 0);
+    const { sid } = taoHV4({ clsId: cls, ma: 'FOU', ft: false });
+    studentsSvc4.setStudentStatus(P.mbManager, sid, 'finished', TODAY3, 'Nghỉ hẳn');
+    return { cls, sid };
+  }
+
+  check('PR-LT (9) · Lớp vừa finished rời /hoc-vien-lop và có ở /hoc-vien-lop/luu-tru kèm finishedAt', () => {
+    const { cls } = taoLopVaKetThuc9();
+    const trang = hocVienLopSvc.danhSachHocVienLop(P.mbManager, {});
+    assert(!trang.rows.some((r) => r.id === cls), 'Lớp đã finished phải rời danh sách chính');
+    const luuTru = luuTruSvc.danhSachLuuTru(P.mbManager, {});
+    const row = luuTru.lop.find((l) => l.id === cls);
+    assert(!!row && row.finishedAt === TODAY3, `Lớp phải có ở khu Lưu trữ với finishedAt: ${JSON.stringify(row)}`);
+  });
+
+  check('PR-LT (9) · HV lưu trữ có ở tab HV, bỏ lưu trữ thì rời', () => {
+    const { sid } = taoLopVaKetThuc9();
+    studentsSvc4.archiveStudent(P.mbManager, sid);
+    const truoc = luuTruSvc.danhSachLuuTru(P.mbManager, {});
+    assert(truoc.hocVien.some((h) => h.id === sid), 'HV vừa lưu trữ phải có ở tab Học viên đã lưu trữ');
+    studentsSvc4.unarchiveStudent(P.mbManager, sid);
+    const sau = luuTruSvc.danhSachLuuTru(P.mbManager, {});
+    assert(!sau.hocVien.some((h) => h.id === sid), 'HV vừa bỏ lưu trữ phải rời khu Lưu trữ');
+  });
+
+  check('PR-LT (9) · demLuuTru (menu ⋯ trang chính) khớp đúng độ dài hai danh sách của /hoc-vien-lop/luu-tru (G-10)', () => {
+    const { sid } = taoLopVaKetThuc9();
+    studentsSvc4.archiveStudent(P.mbManager, sid);
+    const trang = hocVienLopSvc.danhSachHocVienLop(P.mbManager, {});
+    const luuTru = luuTruSvc.danhSachLuuTru(P.mbManager, {});
+    assert(trang.demLuuTru.lop === luuTru.lop.length, `demLuuTru.lop (${trang.demLuuTru.lop}) phải khớp luuTru.lop.length (${luuTru.lop.length})`);
+    assert(trang.demLuuTru.hv === luuTru.hocVien.length, `demLuuTru.hv (${trang.demLuuTru.hv}) phải khớp luuTru.hocVien.length (${luuTru.hocVien.length})`);
+  });
+
+  check('PR-LT (9) · Tập HV lưu trữ trả về khớp can(STUDENT_VIEW) từng em: QL chi nhánh khác không thấy; GV không dạy lớp em không thấy', () => {
+    const { sid } = taoLopVaKetThuc9();
+    studentsSvc4.archiveStudent(P.mbManager, sid);
+    assert(luuTruSvc.danhSachLuuTru(P.mbManager, {}).hocVien.some((h) => h.id === sid), 'QL chi nhánh MB phải thấy em của chính chi nhánh mình');
+    assert(!luuTruSvc.danhSachLuuTru(P.cpManager, {}).hocVien.some((h) => h.id === sid), 'QL chi nhánh CP không được thấy em MB');
+    assert(!luuTruSvc.danhSachLuuTru(P.subjectTeacher, {}).hocVien.some((h) => h.id === sid), 'GV không dạy lớp của em (lớp FT khác) không được thấy');
+  });
+
+  check('PR-LT (9) · classOverview lớp finished: mọi cờ viewer thao tác false, kể cả với QT (phạm vi toàn hệ thống)', () => {
+    const { cls } = taoLopVaKetThuc9();
+    const ov = classesSvc.classOverview(P.admin, cls) as any;
+    assert(ov.status === 'finished', `status phải finished: ${ov.status}`);
+    const v = ov.viewer;
+    assert(
+      v.canPlanWeek === false && v.canAddStudents === false && v.canAssign === false && v.canEditProgress === false
+        && v.canReportCase === false && v.canRecordViolation === false && v.canEnterScores === false && v.coTheChuyenTiep === false,
+      `Mọi cờ viewer phải false: ${JSON.stringify(v)}`,
+    );
+  });
+
+  check('PR-LT (9) · classRoster lớp finished: có em đã rời kèm ketThucVi', () => {
+    const { cls, sid } = taoLopVaKetThuc9();
+    const roster = classesSvc.classRoster(P.admin, cls) as any[];
+    const row = roster.find((r) => r.id === sid);
+    assert(!!row, 'Em đã kết thúc học vẫn phải xuất hiện ở bảng lớp đã finished');
+    assert(row.ketThucVi === 'Kết thúc học', `ketThucVi phải "Kết thúc học": ${row.ketThucVi}`);
+  });
+
+  check('PR-LT (9) · POST unarchive: GVCN 403, QL 200', () => {
+    const { sid } = taoLopVaKetThuc9();
+    studentsSvc4.archiveStudent(P.mbManager, sid);
+    const gvcn = loadPrincipal(P.normalCoreTeacher.userId);
+    assertThrows(() => studentsSvc4.unarchiveStudent(gvcn, sid), /Quản lý/, 'GVCN không được bỏ lưu trữ');
+    const r = studentsSvc4.unarchiveStudent(P.mbManager, sid) as any;
+    assert(r.archived_at === null, 'QL bỏ lưu trữ phải thành công');
+  });
+
+  check('PR-LT (9) · Đếm câu SQL /hoc-vien-lop/luu-tru: không tăng nhiều khi nhân số lớp/HV lưu trữ', () => {
+    taoLopVaKetThuc9();
+    const n1 = demTruyVan5(() => { nguCanhReq.chayTrongRequest('GET', () => { luuTruSvc.danhSachLuuTru(P.admin, {}); }); });
+    for (let i = 0; i < 5; i += 1) {
+      const { sid } = taoLopVaKetThuc9();
+      studentsSvc4.archiveStudent(P.mbManager, sid);
+    }
+    const n2 = demTruyVan5(() => { nguCanhReq.chayTrongRequest('GET', () => { luuTruSvc.danhSachLuuTru(P.admin, {}); }); });
+    assert(n2 - n1 <= 3, `Thêm 5 lớp+HV lưu trữ không được tăng nhiều câu SQL: ${n1} → ${n2}`);
+  });
 }

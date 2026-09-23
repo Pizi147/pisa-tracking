@@ -34,7 +34,15 @@ type TrangHocVienLop = {
   hocVien: { id: number; classId: number; loc: LocHocVien[] }[];
   /** Người xem có tạo được lớp MỚI ở chi nhánh nào không — không gắn với lớp đã tồn tại nào (điểm a rà soát cuối). */
   coTheTaoLop: boolean;
+  /** Số ở mục ⋯ "Lưu trữ" đầu trang (PR-LT, Q16). */
+  demLuuTru: { lop: number; hv: number };
 };
+
+/** "Lưu trữ · {n} lớp · {m} HV" — bỏ phần số 0, cả hai 0 thì chỉ "Lưu trữ" (§3.6, G-12). */
+function nhanLuuTru(dem: { lop: number; hv: number }): string {
+  const phan = [dem.lop > 0 ? `${dem.lop} lớp` : null, dem.hv > 0 ? `${dem.hv} HV` : null].filter(Boolean);
+  return phan.length ? `Lưu trữ · ${phan.join(' · ')}` : 'Lưu trữ';
+}
 
 /**
  * HỌC VIÊN & LỚP (đặc tả §3.6, mockup 07b phương án A) — một trang, học viên nằm dưới lớp của mình.
@@ -42,6 +50,7 @@ type TrangHocVienLop = {
  * Mọi trạng thái nằm trên URL: tải lại trang và nút Back giữ đúng chỗ đang đứng.
  */
 export default function StudentsPage() {
+  const navigate = useNavigate();
   const { can } = useSession();
   const [params, setParams] = useSearchParams();
   const doc = docThamSoLoc(params.get('view'));
@@ -124,6 +133,9 @@ export default function StudentsPage() {
         {(data?.rows ?? []).some((r) => r.viewer.coTheSuaHocVien) && (
           <button type="button" className="btn btn-sm btn-primary" onClick={() => setThem(null)}>+ Học viên</button>
         )}
+        <MenuDong nhan="Thao tác trang" muc={[
+          { key: 'luu-tru', nhan: nhanLuuTru(data?.demLuuTru ?? { lop: 0, hv: 0 }), onChon: () => navigate('/hoc-vien/luu-tru') },
+        ]} />
       </div>
 
       <div className="flex flex-wrap items-center gap-2">

@@ -52,6 +52,7 @@ import * as loTrinhTiepSvc from '../classes/loTrinhTiep.ts';
 import * as luatLoTrinhSvc from '../classes/luatLoTrinh.ts';
 import * as lichSuLopSvc from '../classes/lichSuLop.ts';
 import * as hocVienLopSvc from '../classes/hocVienLop.ts';
+import * as luuTruSvc from '../classes/luuTru.ts';
 import * as phanTichLopSvc from '../classes/phanTichLop.ts';
 import * as thongTinLopSvc from '../classes/thongTinLop.ts';
 import * as studentSvc from '../students/students.ts';
@@ -1145,6 +1146,12 @@ api.get('/hoc-vien-lop', requireAuth, wrap((req) => {
   return hocVienLopSvc.danhSachHocVienLop(principalOf(req), {
     branchId: qInt(req, 'branchId') ?? null, q: qStr(req, 'q') ?? null, phamVi: qStr(req, 'phamVi') ?? null,
   });
+}));
+
+/** Khu Lưu trữ (PR-LT, Q16/Q22): lớp đã kết thúc · học viên đã lưu trữ — ⋯ góc phải trang Học viên & Lớp. */
+api.get('/hoc-vien-lop/luu-tru', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return luuTruSvc.danhSachLuuTru(principalOf(req), { branchId: qInt(req, 'branchId') ?? null, q: qStr(req, 'q') ?? null });
 }));
 
 /** Tab Phân tích lớp: kỹ năng × đợt, mỗi ô "số HV đạt / số HV có điểm" (đặc tả §3.7). */

@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
-import { Card, Empty, ErrorState, Info, Level, Outcome, Skeleton, Status, Th} from '../../ui/ui.tsx';
+import { Card, DaiChiXem, Empty, ErrorState, Info, Level, Outcome, Skeleton, Status, Th} from '../../ui/ui.tsx';
 import { Modal } from '../../ui/Drawer.tsx';
 import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
@@ -167,7 +167,10 @@ export default function StudentDetailPage() {
       */}
       <div>
         <button className="btn btn-sm btn-ghost mb-1.5" onClick={() => navigate(-1)}>← Quay lại</button>
-        <div className="rounded-xl border p-3 sm:p-4"
+        {data.lopHoc?.chiXem && (
+          <DaiChiXem>Học viên đã lưu trữ{data.archivedAt ? ` ${fmtDate(data.archivedAt)}` : ''} — chỉ xem</DaiChiXem>
+        )}
+        <div className="rounded-xl border p-3 sm:p-4 mt-1.5"
              style={{ borderColor: 'var(--line-strong)', background: 'var(--surface)' }}>
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0">
@@ -219,7 +222,7 @@ export default function StudentDetailPage() {
                 <button className={`btn ${cycleOpen ? 'btn-primary' : ''}`}
                   onClick={() => setCycleOpen(!cycleOpen)}>Lộ trình</button>
               )}
-              {data.viewer.canReport && (
+              {data.viewer.canReport && !data.lopHoc?.chiXem && (
                 <button className="btn btn-primary" onClick={() => setReportOpen(true)}>+ Case</button>
               )}
               <button className="btn" title="Quản lý học viên" aria-label="Quản lý học viên"

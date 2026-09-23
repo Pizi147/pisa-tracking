@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Task } from '../../ui/ui.tsx';
+import { DaiChiXem, Task } from '../../ui/ui.tsx';
 import { MenuDong, type MucMenu } from '../../ui/MenuDong.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { TenGiaoVien } from './TenGiaoVien.tsx';
@@ -80,6 +80,9 @@ export function DauTrangLop({ data, periodId, onViec, onCheDoCanHoTro }: {
 
   return (
     <header className="card space-y-2 p-3 sm:p-4">
+      {data.status === 'finished' && (
+        <DaiChiXem>Lớp đã kết thúc{data.finishedAt ? ` ${ngay(data.finishedAt, homNay)}` : ''} — chỉ xem</DaiChiXem>
+      )}
       <div className="flex flex-wrap items-end gap-2">
         <div className="min-w-0">
           <div className="text-[11px] text-slate-500">Hồ sơ lớp</div>

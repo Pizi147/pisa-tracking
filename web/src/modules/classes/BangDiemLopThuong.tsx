@@ -18,6 +18,8 @@ type DongThuong = {
   missing: { key: string; label: string; who: string }[];
   canhBaoYThuc: { count: number; oldestAgeDays: number; message: string } | null;
   timeline: LuotThuong[];
+  /** "Kết thúc vì" (Q18/Q22) — chỉ có ở bảng lớp ĐÃ KẾT THÚC. */
+  ketThucVi?: string | null;
 };
 
 const MON_MAC_DINH = ['listening', 'reading', 'writing', 'speaking'];
@@ -71,6 +73,7 @@ export function BangDiemLopThuong({ classId, quyen, onDoi }: { classId: number; 
                   <MissingBadge items={s.missing} gon />
                   <CanhBaoYThuc cb={s.canhBaoYThuc} />
                 </span>
+                {s.ketThucVi && <span className="block mt-0.5 text-[10px] text-slate-500">{s.ketThucVi}</span>}
               </td>
               {BAI.flatMap((b) => {
                 const t = s.timeline.find((x) => x.kind === b.kind) ?? null;
