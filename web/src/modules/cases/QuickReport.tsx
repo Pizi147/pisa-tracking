@@ -307,7 +307,14 @@ export function QuickReport({
           <p className="text-sm text-slate-400 m-0">
             {daLuu.gop ? <>✓ Đã ghi vào Case đang có «{daLuu.tieuDe}»</> : <>✓ Đã lưu Case «{daLuu.tieuDe}»</>}
           </p>
-          <BangChung ownerType="sos_case" ownerId={daLuu.id} canEdit={daLuu.canEdit} tieuDe="Bằng chứng" />
+          {daLuu.canEdit ? (
+            <BangChung ownerType="sos_case" ownerId={daLuu.id} canEdit={daLuu.canEdit} tieuDe="Bằng chứng" />
+          ) : (
+            /* GVCN mở Case môn mình không dạy (vd Writing) — không đính kèm được ở đây; nói rõ ai sẽ thêm, không vẽ khối trống. */
+            <p className="text-xs text-slate-500 m-0">
+              Bạn không có quyền đính kèm cho Case môn này — GV dạy môn đó hoặc Quản lý sẽ thêm bằng chứng.
+            </p>
+          )}
         </div>
       ) : (
       <div className="space-y-3">

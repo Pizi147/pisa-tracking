@@ -52,35 +52,30 @@ function dangDayLop(classId: number): HangDangDay[] {
 
 type HangNguoi = { id: number; name: string; role: string | null; branches: string[]; cungLop: boolean; monDay: string[] };
 
-function nguoiHopLe(nhom: NhomNguoi, ids: readonly number[] | null): { id: number; full_name: string; code: string }[] {
+type HangNguoiTho = { id: number; full_name: string; code: string; role: string | null; branches: string | null };
+
+/**
+ * Vai + chi nhánh gộp thẳng vào câu truy vấn chính (mẫu `searchPeople`, `worklist/meeting.ts:594-599`) — trước đây gọi
+ * riêng `roleAndBranchesOf` cho từng dòng kết quả, tốn một truy vấn mỗi dòng (~15 truy vấn mỗi lần gõ trên Turso).
+ */
+function nguoiHopLe(nhom: NhomNguoi, ids: readonly number[] | null): HangNguoiTho[] {
   const keys = ROLE_KEYS_OF[nhom];
   const keyPlaceholders = keys.map(() => '?').join(',');
   const idClause = ids ? ` AND u.id IN (${ids.map(() => '?').join(',')})` : '';
   return db()
     .prepare(
-      `SELECT DISTINCT u.id, u.full_name, u.code
+      `SELECT DISTINCT u.id, u.full_name, u.code,
+              (SELECT r2.name_vi FROM user_roles ur2 JOIN roles r2 ON r2.id = ur2.role_id
+                WHERE ur2.user_id = u.id AND ur2.status = 'active' AND r2.key IN (${keyPlaceholders})
+                ORDER BY ur2.id LIMIT 1) AS role,
+              (SELECT GROUP_CONCAT(DISTINCT b.code) FROM user_roles ur3 JOIN branches b ON b.id = ur3.branch_id
+                WHERE ur3.user_id = u.id AND ur3.status = 'active') AS branches
          FROM users u
          JOIN user_roles ur ON ur.user_id = u.id AND ur.status = 'active'
          JOIN roles r ON r.id = ur.role_id
         WHERE u.status = 'active' AND r.key IN (${keyPlaceholders})${idClause}`,
     )
-    .all(...keys, ...(ids ?? [])) as { id: number; full_name: string; code: string }[];
-}
-
-function roleAndBranchesOf(userId: number, nhom: NhomNguoi): { role: string | null; branches: string[] } {
-  const keys = ROLE_KEYS_OF[nhom];
-  const keyPlaceholders = keys.map(() => '?').join(',');
-  const row = db()
-    .prepare(
-      `SELECT r.name_vi AS role,
-              (SELECT GROUP_CONCAT(DISTINCT b.code) FROM user_roles ur2 JOIN branches b ON b.id = ur2.branch_id
-                WHERE ur2.user_id = ? AND ur2.status = 'active') AS branches
-         FROM user_roles ur JOIN roles r ON r.id = ur.role_id
-        WHERE ur.user_id = ? AND ur.status = 'active' AND r.key IN (${keyPlaceholders})
-        ORDER BY ur.id LIMIT 1`,
-    )
-    .get(userId, userId, ...keys) as any;
-  return { role: row?.role ?? null, branches: row?.branches ? String(row.branches).split(',') : [] };
+    .all(...keys, ...keys, ...(ids ?? [])) as HangNguoiTho[];
 }
 
 export function timNguoi(
@@ -98,10 +93,11 @@ export function timNguoi(
   }
   const cungLopIds = new Set(gv.map((g) => g.userId));
 
-  const build = (row: { id: number; full_name: string; code: string }): HangNguoi => {
-    const { role, branches } = roleAndBranchesOf(row.id, nhom);
-    return { id: row.id, name: row.full_name, role, branches, cungLop: cungLopIds.has(row.id), monDay: monDayOf.get(row.id) ?? [] };
-  };
+  const build = (row: HangNguoiTho): HangNguoi => ({
+    id: row.id, name: row.full_name, role: row.role,
+    branches: row.branches ? row.branches.split(',') : [],
+    cungLop: cungLopIds.has(row.id), monDay: monDayOf.get(row.id) ?? [],
+  });
 
   if (term.length < 3) {
     if (!cungLopIds.size) return [];
