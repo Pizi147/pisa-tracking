@@ -715,6 +715,46 @@ export async function runAnToanTests(t: AnToanTestKit) {
     assert(r2.status === 200 && Date.now() - Date.parse(docMoc()) < 60_000, `11 phút: phải ghi lại mốc mới (${docMoc()})`);
   });
 
+  // ------------------------------------------------------------------ PR-Z2c-e (góp ý rà #91)
+
+  const hanGioMod: any = await import('../platform/hanGio.ts');
+
+  await checkAsync('Z2c-e · Kiểm phiên gặp 503 "đang bận" (chờ khoá quá hạn) → trả 503, KHÔNG coi là chưa đăng nhập', async () => {
+    const tk = taoTaiKhoan('anz2e.ban');
+    const ck = String((await dangNhap(tk, '203.0.113.72')).setCookie).split(';')[0];
+    const token = decodeURIComponent(ck.split('=')[1]);
+    /* Mốc cũ hơn 10 phút → kiểm phiên phải ghi lại — đúng câu có thể phải chờ khoá. */
+    conn.prepare('UPDATE demo_sessions SET last_seen_at = ? WHERE token = ?').run(new Date(Date.now() - 11 * 60_000).toISOString(), token);
+    const goc = conn.prepare;
+    conn.prepare = function (this: unknown, sql: string, ...r: unknown[]) {
+      if (/UPDATE demo_sessions SET last_seen_at/.test(String(sql))) throw new LoiHttp(503, 'Máy chủ đang bận, chưa lưu gì. Thử lại sau ít phút.');
+      return goc.call(this, sql, ...r);
+    };
+    let r: any;
+    try { r = await goi('GET', '/demo/session', { cookie: ck }); } finally { delete (conn as any).prepare; }
+    assert(r.status === 503 && /đang bận/.test(r.json?.error ?? ''), `Phải 503 "đang bận", đang ra ${r.status} ${JSON.stringify(r.json).slice(0, 120)}`);
+  });
+
+  check('Z2c-e · Có khoá ghi rồi mà lời gọi chỉ còn < 1,5 s (Turso chờ khoá ngay ở BEGIN IMMEDIATE) → ROLLBACK + 503, fn không chạy', () => {
+    const ngu = (ms: number) => Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+    const goc = conn.exec;
+    conn.exec = function (this: unknown, sql: string) {
+      if (/BEGIN IMMEDIATE/.test(String(sql))) ngu(1200);   // giả Turso giữ câu BEGIN IMMEDIATE 1,2 s chờ khoá
+      return goc.call(this, sql);
+    };
+    const truoc = demKhoa('sat-han');
+    let chay = false;
+    let loi: any = null;
+    try {
+      hanGioMod.chayVoiHan(Date.now() + 2_600, () => dbMod.tx(() => {
+        chay = true;
+        conn.prepare('INSERT INTO _thu_khoa (ai) VALUES (?)').run('sat-han');
+      }));
+    } catch (e) { loi = e; } finally { delete (conn as any).exec; }
+    assert(loi?.status === 503 && /đang bận, chưa lưu gì/.test(loi.message ?? ''), `Phải 503: ${loi?.status} ${loi?.message}`);
+    assert(!chay && demKhoa('sat-han') === truoc && !conn.inTransaction, `fn không được chạy (chay=${chay}), không ghi, không để giao dịch treo`);
+  });
+
   conn.exec('DROP TABLE IF EXISTS _thu_khoa');
 
   // ---- các task sau thêm phép kiểm NGAY TRÊN dòng này ----

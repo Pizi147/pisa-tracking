@@ -201,6 +201,11 @@ export function recreateSchema() {
  * CHO_KHOA_GHI_MS và không quá hạn của lời gọi (AN-5). Thử lại an toàn: câu bị BUSY chưa ghi gì, fn chưa chạy.
  */
 export const CHO_KHOA_GHI_MS = 5_000;
+/**
+ * Z2c-e: trên Turso chính câu BEGIN IMMEDIATE có thể nằm chờ khoá phía sqld. Có khoá rồi mà lời gọi còn ít hơn chừng này thì
+ * không chạy fn (bị Netlify cắt giữa giao dịch là giữ khoá tới khi Turso tự huỷ) — cuộn lại, trả "đang bận".
+ */
+export const CON_TOI_THIEU_SAU_KHOA_MS = 1_500;
 
 export function laLoiBan(e: unknown): boolean {
   const x = e as { code?: unknown; message?: unknown } | null;
@@ -245,6 +250,12 @@ export function tx<T>(fn: () => T): T {
     /* AN-5: giao dịch NGOÀI chỉ mở khi lời gọi còn đủ giờ; savepoint bên trong một giao dịch đã mở thì không hỏi lại. */
     chanGiaoDichNeuSapHetGio();
     choKhoaGhi(() => conn.exec('BEGIN IMMEDIATE'));   // Z2c-d: xin khoá ghi trước mọi câu (xem trên)
+    const con = conLaiMs();
+    if (con !== null && con < CON_TOI_THIEU_SAU_KHOA_MS) {
+      try { conn.exec('ROLLBACK'); } catch { /* không có gì để giữ */ }
+      console.warn(`[turso] có khoá ghi nhưng lời gọi chỉ còn ${con} ms — cuộn lại, chưa ghi gì`);
+      throw new HttpError(503, 'Máy chủ đang bận, chưa lưu gì. Thử lại sau ít phút.');
+    }
     try {
       const out = fn();
       conn.exec('COMMIT');

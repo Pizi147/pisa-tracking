@@ -162,7 +162,7 @@ export function Header() {
                   onClick={() => setOpenMenu(null)}>Quản trị hệ thống</Link>
               )}
             </div>
-            <button className="btn btn-sm w-full justify-center" onClick={signOut}>Thoát tài khoản demo</button>
+            <button className="btn btn-sm w-full justify-center" onClick={signOut}>Đăng xuất</button>
           </div>
         )}
       </div>
