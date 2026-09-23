@@ -31,4 +31,5 @@ export * from './sos.ts';
 export * from './hoSoHocVien.ts';
 export * from './hienThiNgay.ts';
 export * from './dieuHuong.ts';
+export * from './tongQuan.ts';
 export * from './chamDiem.ts';

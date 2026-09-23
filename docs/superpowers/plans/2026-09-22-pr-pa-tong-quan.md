@@ -208,19 +208,19 @@ file xem lại — lệch vài dòng là bình thường; **lệch nội dung** 
 
 **Files:** không sửa mã.
 
-- [ ] **Step 1:** Dùng superpowers:using-git-worktrees: `git fetch origin && git worktree add ../pisa-pr-pa -b pr-pa-tong-quan origin/main`.
+- [x] **Step 1:** Dùng superpowers:using-git-worktrees: `git fetch origin && git worktree add ../pisa-pr-pa -b pr-pa-tong-quan origin/main`.
   Mọi lệnh sau chạy trong worktree. **Không** checkout nhánh khác trong thư mục chính (session khác đang dùng).
-- [ ] **Step 2: Kiểm môi trường không có biến Turso.**
+- [x] **Step 2: Kiểm môi trường không có biến Turso.**
 
 ```bash
 node -e "for (const k of ['TURSO_DATABASE_URL','TURSO_AUTH_TOKEN','BAN_CHINH','PISA_CHO_PHEP_MIGRATE_TURSO','PISA_CHO_PHEP_SEED_TURSO']) if (process.env[k]) { console.error('CÓ BIẾN', k); process.exit(1) } ; console.log('sạch')"
 ```
 Expected: `sạch`.
 
-- [ ] **Step 3:** `npm ci` rồi `npm run check`. Ghi vào Nhật ký số ở dòng `TẤT CẢ N KIỂM TRA ĐỀU ĐẠT`. Đỏ ngay từ đầu → 🛑.
-- [ ] **Step 4:** `git diff 7843875..HEAD --stat -- web/src/modules/worklist server/src/worklist server/src/cases/signals.ts web/src/ui/SoLieu.tsx web/src/modules/cases/QuickReport.tsx shared/domain/metrics.ts server/src/routes/index.ts`
+- [x] **Step 3:** `npm ci` rồi `npm run check`. Ghi vào Nhật ký số ở dòng `TẤT CẢ N KIỂM TRA ĐỀU ĐẠT`. Đỏ ngay từ đầu → 🛑.
+- [x] **Step 4:** `git diff 7843875..HEAD --stat -- web/src/modules/worklist server/src/worklist server/src/cases/signals.ts web/src/ui/SoLieu.tsx web/src/modules/cases/QuickReport.tsx shared/domain/metrics.ts server/src/routes/index.ts`
   — có thay đổi (ví dụ PR-AN đã merge) thì mở file xem lại số dòng; lệch nội dung ở chỗ plan sửa → 🛑.
-- [ ] **Step 5:** Đọc: spec §1–§4, §7 dòng Pa; kiểm kê §1.3; bốn mockup; Global Constraints + bảng Q1–Q25 ở trên. Có Q nào
+- [x] **Step 5:** Đọc: spec §1–§4, §7 dòng Pa; kiểm kê §1.3; bốn mockup; Global Constraints + bảng Q1–Q25 ở trên. Có Q nào
   bạn thấy sai với đặc tả → 🛑 hỏi trước khi code.
 
 ---
@@ -247,7 +247,7 @@ Expected: `sạch`.
   - `COT_BANG`, `type CotBang`, `COT_BANG_DON_VI: Record<CotBang, 'hoc-vien' | 'case'>`.
   - `runTongQuanTests(t: YThucTestKit): Promise<void>` trong `tongQuan.tests.ts` (các task sau thêm phép kiểm vào đây).
 
-- [ ] **Step 1: Viết phép kiểm đỏ.** Tạo `server/src/tests/tongQuan.tests.ts`:
+- [x] **Step 1: Viết phép kiểm đỏ.** Tạo `server/src/tests/tongQuan.tests.ts`:
 
 ```ts
 /**
@@ -348,9 +348,9 @@ const { runTongQuanTests } = await import('./tongQuan.tests.ts');
 await runTongQuanTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 ```
 
-- [ ] **Step 2: Chạy, thấy đỏ.** `npm test` — Expected: FAIL (`d.chuongTrinhTuThamSo is not a function` …, 4 phép ✗).
+- [x] **Step 2: Chạy, thấy đỏ.** `npm test` — Expected: FAIL (`d.chuongTrinhTuThamSo is not a function` …, 4 phép ✗).
 
-- [ ] **Step 3: Cài đặt.** Tạo `shared/domain/tongQuan.ts`:
+- [x] **Step 3: Cài đặt.** Tạo `shared/domain/tongQuan.ts`:
 
 ```ts
 /**
@@ -498,8 +498,8 @@ export const COT_BANG_DON_VI: Record<CotBang, 'hoc-vien' | 'case'> = {
 
   `shared/domain/index.ts` — thêm dòng cuối: `export * from './tongQuan.ts';`
 
-- [ ] **Step 4: Chạy, xanh.** `npm test` — Expected: 4 phép kiểm PR-Pa ✓, tổng = mốc + 4.
-- [ ] **Step 5: Commit.**
+- [x] **Step 4: Chạy, xanh.** `npm test` — Expected: 4 phép kiểm PR-Pa ✓, tổng = mốc + 4.
+- [x] **Step 5: Commit.**
 
 ```bash
 git add shared/domain/tongQuan.ts shared/domain/index.ts server/src/tests/tongQuan.tests.ts server/src/tests/run.ts
@@ -518,7 +518,7 @@ git commit -m "PR-Pa (1): luật thuần Tổng quan — chương trình, 4 nhó
 - Consumes: `scopeFor`, `classScopeSql` (`permissions.ts`), `demoToday`.
 - Produces: `overdueNormalSignalIds(p, f)` — chữ ký **giữ nguyên**, kết quả **giống hệt** cách cũ.
 
-- [ ] **Step 1: Phép kiểm (đỏ).** Thêm vào `runTongQuanTests` (cuối hàm). Khai báo trợ giúp ngay đầu hàm, sau dòng `eq`:
+- [x] **Step 1: Phép kiểm (đỏ).** Thêm vào `runTongQuanTests` (cuối hàm). Khai báo trợ giúp ngay đầu hàm, sau dòng `eq`:
 
 ```ts
   const signals: any = await import('../cases/signals.ts');
@@ -548,8 +548,8 @@ git commit -m "PR-Pa (1): luật thuần Tổng quan — chương trình, 4 nhó
 
   Ghi chú cho người làm: phép so tập có thể xanh ngay (hàm cũ đúng); phần kiểm nguồn phải **đỏ**.
 
-- [ ] **Step 2: Chạy, đỏ** ở câu "vẫn gọi quyền từng tín hiệu".
-- [ ] **Step 3: Cài đặt.** Thay nguyên hàm `overdueNormalSignalIds` (`signals.ts:317-326`, cả khối chú thích) bằng:
+- [x] **Step 2: Chạy, đỏ** ở câu "vẫn gọi quyền từng tín hiệu".
+- [x] **Step 3: Cài đặt.** Thay nguyên hàm `overdueNormalSignalIds` (`signals.ts:317-326`, cả khối chú thích) bằng:
 
 ```ts
 /**
@@ -583,8 +583,8 @@ export function overdueNormalSignalIds(p: Principal, f: { branchId?: number | nu
 ```
   `scopeFor`, `classScopeSql`, `demoToday`, `db`, `PERMISSIONS` đã import sẵn ở đầu `signals.ts` — kiểm lại.
 
-- [ ] **Step 4: Chạy, xanh.** Phép kiểm cũ `S1 · Chỉ số tin-hieu-qua-han…` (`luatMayChu.tests.ts`) vẫn ✓. Đỏ → 🛑.
-- [ ] **Step 5: Commit.** `git commit -am "PR-Pa (2): nợ S1 — Chờ xác minh quá hạn đọc thẳng SQL trong phạm vi, bỏ quyền từng tín hiệu"`
+- [x] **Step 4: Chạy, xanh.** Phép kiểm cũ `S1 · Chỉ số tin-hieu-qua-han…` (`luatMayChu.tests.ts`) vẫn ✓. Đỏ → 🛑.
+- [x] **Step 5: Commit.** `git commit -am "PR-Pa (2): nợ S1 — Chờ xác minh quá hạn đọc thẳng SQL trong phạm vi, bỏ quyền từng tín hiệu"`
 
 ---
 
@@ -605,7 +605,7 @@ export function overdueNormalSignalIds(p: Principal, f: { branchId?: number | nu
   - `tachTheoLop(unit: ChiSo['donVi'], ids: number[], toiDa?: number): string` — `"MB-FT 101 (8) · CP-FT 110 (4) · +2 lớp"`
   - `metricSet(p, id, f)` với `f.program?: ChuongTrinh | null` (vắng = Cả hai, như cũ).
 
-- [ ] **Step 1: Phép kiểm (đỏ).** Thêm trợ giúp tạo học viên (ngay sau khối trợ giúp của Task 2):
+- [x] **Step 1: Phép kiểm (đỏ).** Thêm trợ giúp tạo học viên (ngay sau khối trợ giúp của Task 2):
 
 ```ts
   const { loadPrincipal } = await import('../permissions.ts');
@@ -701,9 +701,9 @@ export function overdueNormalSignalIds(p: Principal, f: { branchId?: number | nu
   Ghi chú: `taoHocVien` dùng trong phép thứ nhất phải khai báo **trước** phép kiểm (khối trợ giúp ở trên). Đầu hàm
   `runTongQuanTests` lấy thêm `checkAsync` từ `t`: `const { check, checkAsync, assert, assertThrows, conn, TODAY, P, classId } = t;`.
 
-- [ ] **Step 2: Chạy, đỏ.** Expected: 3 phép ✗ (`metricSet` bỏ qua `program`; route chưa đọc `ct`; chưa có mô-đun).
+- [x] **Step 2: Chạy, đỏ.** Expected: 3 phép ✗ (`metricSet` bỏ qua `program`; route chưa đọc `ct`; chưa có mô-đun).
 
-- [ ] **Step 3: Tạo `server/src/worklist/chuongTrinh.ts`:**
+- [x] **Step 3: Tạo `server/src/worklist/chuongTrinh.ts`:**
 
 ```ts
 import { db } from '../db.ts';
@@ -836,7 +836,7 @@ export function tachTheoLop(unit: ChiSo['donVi'], ids: number[], toiDa = 2): str
   > chạy. Nếu `tsc`/node báo lỗi vòng import → chuyển `obligationId`/`parseObligation` sang `chuongTrinh.ts` và
   > `metrics.ts` import lại từ đó (ghi Nhật ký).
 
-- [ ] **Step 4: `metricSet` nhận `program`.** Ở `metrics.ts`:
+- [x] **Step 4: `metricSet` nhận `program`.** Ở `metrics.ts`:
   - import: `import { locTheoChuongTrinh } from './chuongTrinh.ts';` và thêm `type ChuongTrinh` vào dòng import từ shared.
   - Đổi tên hàm hiện có `export function metricSet(` (dòng 345) thành `function metricSetGoc(` (bỏ `export`), giữ nguyên
     thân. Thêm **ngay trước** nó:
@@ -869,11 +869,11 @@ export function metricSet(
   Chữ ký của `metricSetGoc` giữ kiểu `f` cũ (không cần `program`). Mọi nơi khác gọi `metricSet` (branchpulse, routes,
   yThuc…) không đổi.
 
-- [ ] **Step 5: Route.** `server/src/routes/index.ts` ~850-857, trong object truyền cho `metricSet` thêm một dòng
+- [x] **Step 5: Route.** `server/src/routes/index.ts` ~850-857, trong object truyền cho `metricSet` thêm một dòng
   `program: chuongTrinhTuThamSo(qStr(req, 'ct')),` và thêm `chuongTrinhTuThamSo` vào import từ `shared/domain/index.ts`
   (dòng import có sẵn ở đầu file; không có thì thêm một dòng import mới).
-- [ ] **Step 6: Chạy, xanh** (mốc + 7). Phép kiểm cũ về `metricSet`/bảng chi nhánh vẫn ✓.
-- [ ] **Step 7: Commit.** `git commit -am "PR-Pa (3): lọc chương trình Lớp thường/Fast Track một chỗ trong metricSet; /metrics nhận ct"` (nhớ `git add server/src/worklist/chuongTrinh.ts`).
+- [x] **Step 6: Chạy, xanh** (mốc + 7). Phép kiểm cũ về `metricSet`/bảng chi nhánh vẫn ✓.
+- [x] **Step 7: Commit.** `git commit -am "PR-Pa (3): lọc chương trình Lớp thường/Fast Track một chỗ trong metricSet; /metrics nhận ct"` (nhớ `git add server/src/worklist/chuongTrinh.ts`).
 
 ---
 
@@ -890,7 +890,7 @@ export function metricSet(
 - Produces: chỉ số `case-xac-dinh-nguyen-nhan-qua-han` (case), `bai-qua-han-nhap-diem` (bai-thi),
   `case-chua-co-nguoi-phu-trach` (case) — dùng được qua `metricSet` và `/metrics/:id`.
 
-- [ ] **Step 1: Phép kiểm (đỏ).**
+- [x] **Step 1: Phép kiểm (đỏ).**
 
 ```ts
   // ================================================================== 4. Ba chỉ số mới
@@ -940,8 +940,8 @@ export function metricSet(
 ```
   > `check` nhận hàm đồng bộ; phép nào có `await` dùng `await checkAsync(...)`.
 
-- [ ] **Step 2: Chạy, đỏ** (`Không tìm thấy chỉ số` / 501; chữ thô).
-- [ ] **Step 3: Sổ chỉ số.** `shared/domain/metrics.ts`, thêm ngay sau khối `tin-hieu-qua-han`:
+- [x] **Step 2: Chạy, đỏ** (`Không tìm thấy chỉ số` / 501; chữ thô).
+- [x] **Step 3: Sổ chỉ số.** `shared/domain/metrics.ts`, thêm ngay sau khối `tin-hieu-qua-han`:
 
 ```ts
   /* Ba chỉ số của khối Cần xử lý (PR-Pa, đặc tả §3.2) — mỗi dòng của khối là một chỉ số, để bấm vào ra đúng tập. */
@@ -968,7 +968,7 @@ export function metricSet(
   },
 ```
 
-- [ ] **Step 4: Hàm tập ID** (`server/src/worklist/metrics.ts`):
+- [x] **Step 4: Hàm tập ID** (`server/src/worklist/metrics.ts`):
   - `LISTED_METRICS`: thêm `'case-xac-dinh-nguyen-nhan-qua-han', 'bai-qua-han-nhap-diem', 'case-chua-co-nguoi-phu-trach',` sau `'tin-hieu-qua-han',`.
   - import: `import { scoreDebtCells } from './scoreDebt.ts';` · `labelOf` thêm vào import từ `'../cases/signals.ts'`.
   - Thêm hai trợ giúp trên `metricSetGoc`:
@@ -1027,12 +1027,12 @@ function overdueScoreAttempts(p: Principal, branchId: number | null, today: stri
   - `rowsFor`: dòng 92 `} else if (unit === 'dot-test') {` → `} else if (unit === 'dot-test' || unit === 'bai-thi') {`.
     Dòng tín hiệu (~158): `title: \`Tín hiệu cần xác minh · ${r.skill ?? 'chưa rõ kỹ năng'}\`` →
     `title: \`Tín hiệu cần xác minh · ${labelOf(r)}\``.
-- [ ] **Step 5: Phép kiểm sổ chỉ số cũ** (`run.ts` ~7973-7978): đổi `list.length === 24` → `=== 27`; câu thông báo
+- [x] **Step 5: Phép kiểm sổ chỉ số cũ** (`run.ts` ~7973-7978): đổi `list.length === 24` → `=== 27`; câu thông báo
   "Phải có hai mươi bốn chỉ số (…)" → "Phải có hai mươi bảy chỉ số (… + một của PR-S1: tin-hieu-qua-han + ba của PR-Pa:
   case-xac-dinh-nguyen-nhan-qua-han, bai-qua-han-nhap-diem, case-chua-co-nguoi-phu-trach)"; thêm ba mã vào mảng
   `expected` sau `'tin-hieu-qua-han',`. Tên phép kiểm giữ nguyên. Nếu có phép kiểm khác đếm `LISTED_METRICS` → sửa tương
   tự, ghi Nhật ký.
-- [ ] **Step 6: Chạy, xanh** (mốc + 11). **Step 7: Commit.** `git commit -am "PR-Pa (4): ba chỉ số của khối Cần xử lý; rowsFor bài thi; chữ môn ở dòng tín hiệu"`
+- [x] **Step 6: Chạy, xanh** (mốc + 11). **Step 7: Commit.** ✓ `git commit -am "PR-Pa (4): ba chỉ số của khối Cần xử lý; rowsFor bài thi; chữ môn ở dòng tín hiệu"`
 
 ---
 
@@ -1052,7 +1052,7 @@ function overdueScoreAttempts(p: Principal, branchId: number | null, today: stri
     `DongHvCanHoTro = { studentId: number; ten: string; lop: string | null; huyHieu: { text: string; tone: 'info' | 'warn' | 'danger' } | null; phu: string }`.
   - Route `GET /tong-quan/quan-ly?branchId=&ct=` · `GET /tong-quan/hoc-vien-can-ho-tro`.
 
-- [ ] **Step 1: Phép kiểm (đỏ).** (thêm `const tq: any = await import('../worklist/tongQuan.ts').catch(() => ({}));` ở đầu hàm)
+- [x] **Step 1: Phép kiểm (đỏ).** (thêm `const tq: any = await import('../worklist/tongQuan.ts').catch(() => ({}));` ở đầu hàm)
 
 ```ts
   // ================================================================== 5. Cần xử lý · Điểm đáng chú ý · HV cần hỗ trợ
@@ -1107,8 +1107,8 @@ function overdueScoreAttempts(p: Principal, branchId: number | null, today: stri
   > Phép "Bảng chi nhánh … Quản lý một chi nhánh" giả định `P.mbManager` chỉ có chi nhánh MB; nếu phạm vi có > 1 chi nhánh
   > thì đổi kỳ vọng thành `cheDo === 'chi-nhanh'` khi không chọn và `'lop'` khi truyền `branchId: mbBranch`; ghi Nhật ký.
 
-- [ ] **Step 2: Chạy, đỏ.**
-- [ ] **Step 3: Tạo `server/src/worklist/tongQuan.ts`:**
+- [x] **Step 2: Chạy, đỏ.**
+- [x] **Step 3: Tạo `server/src/worklist/tongQuan.ts`:**
 
 ```ts
 import { db } from '../db.ts';
@@ -1239,7 +1239,7 @@ export function hocVienCanHoTro(p: Principal): { rows: DongHvCanHoTro[]; tong: n
   return { rows: out, tong: out.length };
 }
 ```
-- [ ] **Step 4: Route** — thêm khối mới ngay sau route `/highlights` (~1141):
+- [x] **Step 4: Route** — thêm khối mới ngay sau route `/highlights` (~1141):
 
 ```ts
 // ============================================================ Tổng quan (PR-Pa, đặc tả §3.2)
@@ -1260,7 +1260,7 @@ api.get('/tong-quan/hoc-vien-can-ho-tro', requireAuth, wrap((req) => {
 ```
   Import ở đầu file (cạnh `highlightSvc`): `import * as tongQuanSvc from '../worklist/tongQuan.ts';`.
 
-- [ ] **Step 5: Chạy, xanh** (mốc + 15). **Step 6: Commit** (thêm file mới vào `git add`):
+- [x] **Step 5: Chạy, xanh** (mốc + 15). **Step 6: Commit** (thêm file mới vào `git add`): ✓
   `"PR-Pa (5): máy chủ khối Cần xử lý, Điểm đáng chú ý, Học viên cần hỗ trợ — số lấy từ metricSet"`
 
 ---
@@ -1282,7 +1282,7 @@ api.get('/tong-quan/hoc-vien-can-ho-tro', requireAuth, wrap((req) => {
   - Khoá ô: `'tong'` · `'cn:{id}'` · `'lop:{id}'`.
   - Route `GET /tong-quan/chi-nhanh?branchId=&ct=` · `GET /tong-quan/chi-nhanh/o?cot=&khoa=&branchId=&ct=`.
 
-- [ ] **Step 1: Phép kiểm (đỏ).** (`const bang: any = await import('../worklist/bangChiNhanh.ts').catch(() => ({}));` ở đầu hàm)
+- [x] **Step 1: Phép kiểm (đỏ).** (`const bang: any = await import('../worklist/bangChiNhanh.ts').catch(() => ({}));` ở đầu hàm)
 
 ```ts
   // ================================================================== 6. Bảng Theo chi nhánh
@@ -1322,8 +1322,8 @@ api.get('/tong-quan/hoc-vien-can-ho-tro', requireAuth, wrap((req) => {
   });
 ```
 
-- [ ] **Step 2: Chạy, đỏ.**
-- [ ] **Step 3: Tạo `server/src/worklist/bangChiNhanh.ts`:**
+- [x] **Step 2: Chạy, đỏ.**
+- [x] **Step 3: Tạo `server/src/worklist/bangChiNhanh.ts`:**
 
 ```ts
 import { db } from '../db.ts';
@@ -1471,7 +1471,7 @@ export function oBangChiNhanh(p: Principal, f: { branchId?: number | null; ct: C
 ```
   `type MetricRow` đã export ở `metrics.ts:56`.
 
-- [ ] **Step 4: Route** — thêm vào khối Tổng quan (Task 5):
+- [x] **Step 4: Route** — thêm vào khối Tổng quan (Task 5):
 
 ```ts
 /** Bảng Theo chi nhánh → lớp. Chỉ số của từng ô; danh sách ô ở route dưới. */
@@ -1491,8 +1491,8 @@ api.get('/tong-quan/chi-nhanh/o', requireAuth, wrap((req) => {
 ```
   Import: `import * as bangSvc from '../worklist/bangChiNhanh.ts';`.
 
-- [ ] **Step 5: Chạy, xanh** (mốc + 18). Nếu phép "mọi ô" chậm (> 20 s cả bộ) → không sao, ghi thời gian vào Nhật ký cho PR-Z2c.
-- [ ] **Step 6: Commit.** `"PR-Pa (6): máy chủ bảng Theo chi nhánh mở xuống lớp; mỗi ô mở đúng danh sách"`
+- [x] **Step 5: Chạy, xanh** (mốc + 18). Nếu phép "mọi ô" chậm (> 20 s cả bộ) → không sao, ghi thời gian vào Nhật ký cho PR-Z2c.
+- [x] **Step 6: Commit.** `"PR-Pa (6): máy chủ bảng Theo chi nhánh mở xuống lớp; mỗi ô mở đúng danh sách"`
 
 ---
 
@@ -1503,7 +1503,7 @@ api.get('/tong-quan/chi-nhanh/o', requireAuth, wrap((req) => {
 - Modify: `server/src/routes/index.ts` (`/highlights` ~1138-1141 thêm `program`)
 - Test: `server/src/tests/tongQuan.tests.ts`
 
-- [ ] **Step 1: Phép kiểm (đỏ).**
+- [x] **Step 1: Phép kiểm (đỏ).**
 
 ```ts
   // ================================================================== 7. Lịch sắp tới
@@ -1515,14 +1515,14 @@ api.get('/tong-quan/chi-nhanh/o', requireAuth, wrap((req) => {
     assert(th.weeks.every((w: any) => !w.ft.mockClasses.length && w.ft.examStudents === 0) && th.examMonthOnly.students === 0, 'Lớp thường lẫn FT');
   });
 ```
-- [ ] **Step 2: Chạy, đỏ.**
-- [ ] **Step 3:** `highlights.ts`: `visibleClasses(p, branchId)` thêm tham số `program: ChuongTrinh = 'ca-hai'` và điều kiện
+- [x] **Step 2: Chạy, đỏ.**
+- [x] **Step 3:** `highlights.ts`: `visibleClasses(p, branchId)` thêm tham số `program: ChuongTrinh = 'ca-hai'` và điều kiện
   `if (program !== 'ca-hai') { where.push('c.is_fast_track = ?'); args.push(program === 'ft' ? 1 : 0); }`; SELECT thêm
   `c.is_fast_track`. `highlights(p, f: { branchId?: number | null; program?: ChuongTrinh | null } = {})` truyền
   `f.program ?? 'ca-hai'`. Trong vòng lớp thường (dòng ~116-117) đổi `if (c.kind === 'ft') continue;` thành
   `if (c.is_fast_track) continue;` (một định nghĩa chương trình — Q2; ghi Nhật ký nếu số mốc lớp thường ở demo đổi).
   Route `/highlights`: truyền `program: chuongTrinhTuThamSo(qStr(req, 'ct'))`.
-- [ ] **Step 4: Chạy, xanh** (mốc + 19). **Step 5: Commit.** `"PR-Pa (7): Lịch sắp tới lọc theo chương trình"`
+- [x] **Step 4: Chạy, xanh** (mốc + 19). **Step 5: Commit.** `"PR-Pa (7): Lịch sắp tới lọc theo chương trình"`
 
 ---
 
@@ -1531,7 +1531,7 @@ api.get('/tong-quan/chi-nhanh/o', requireAuth, wrap((req) => {
 **Files:**
 - Test: `server/src/tests/tongQuan.tests.ts`
 
-- [ ] **Step 1: Phép kiểm.** Thêm ở đầu hàm (cạnh các `await import` khác): `const mywork: any = await import('../worklist/mywork.ts');`
+- [x] **Step 1: Phép kiểm.** Thêm ở đầu hàm (cạnh các `await import` khác): `const mywork: any = await import('../worklist/mywork.ts');`
 
 ```ts
   // ================================================================== 8. Nợ S1 (2)
@@ -1566,9 +1566,9 @@ api.get('/tong-quan/chi-nhanh/o', requireAuth, wrap((req) => {
     }
   });
 ```
-- [ ] **Step 2: Chạy.** Kỳ vọng **xanh** ngay (máy chủ S1 đã làm). Nếu **đỏ** vì `reportIssue` / quyền từ chối GVCN →
+- [x] **Step 2: Chạy.** Kỳ vọng **xanh** ngay (máy chủ S1 đã làm). Nếu **đỏ** vì `reportIssue` / quyền từ chối GVCN →
   🛑 **dừng**: sửa nằm ở `cases.ts` (file PR-S2/AN đang sửa) — báo chủ sản phẩm kèm câu lỗi; không tự sửa `cases.ts`.
-- [ ] **Step 3: Commit.** `"PR-Pa (8): nợ S1 — phép kiểm GVCN nhận tín hiệu Speaking tạo Case thành công"`
+- [x] **Step 3: Commit.** `"PR-Pa (8): nợ S1 — phép kiểm GVCN nhận tín hiệu Speaking tạo Case thành công"`
 
 ---
 
@@ -1586,7 +1586,7 @@ api.get('/tong-quan/chi-nhanh/o', requireAuth, wrap((req) => {
   - `qsSoLieu(phamVi?, extra?): string` — `rows=1&branchId=…&ct=…&skill=…`.
   - `SoLieuO(props: { giaTri: number; className?: string } & ({ id: string; phamVi?; extra? } | { nguon: string; tieuDe: string }))`.
 
-- [ ] **Step 1: Sửa `SoLieu.tsx`.** Giữ nguyên chú thích đầu file. Cấu trúc mới:
+- [x] **Step 1: Sửa `SoLieu.tsx`.** Giữ nguyên chú thích đầu file. Cấu trúc mới:
 
 ```tsx
 import { useState, type ReactNode } from 'react';
@@ -1704,7 +1704,7 @@ export function SoLieu({ id, giaTri, phamVi, rong, className = '', extra, nhan, 
 ```
   Kiểm lại mọi nơi đang dùng `SoLieu` (`grep -rn "<SoLieu" web/src`) — prop cũ vẫn hợp lệ (`phamVi={{ branchId }}`).
 
-- [ ] **Step 2: Tạo `web/src/ui/SoLieuO.tsx`:**
+- [x] **Step 2: Tạo `web/src/ui/SoLieuO.tsx`:**
 
 ```tsx
 import { useState } from 'react';
@@ -1753,8 +1753,8 @@ function DanhSachNguon({ nguon, tieuDe, open, onClose }: { nguon: string; tieuDe
 }
 ```
 
-- [ ] **Step 3:** `npm run typecheck` xanh; `npm run check` xanh.
-- [ ] **Step 4: Commit.** `"PR-Pa (9): SoLieu tách panel danh sách; SoLieuO số nhỏ bấm được; chữ Cách tính theo THUAT_NGU"`
+- [x] **Step 3:** `npm run typecheck` xanh; `npm run check` xanh.
+- [x] **Step 4: Commit.** `"PR-Pa (9): SoLieu tách panel danh sách; SoLieuO số nhỏ bấm được; chữ Cách tính theo THUAT_NGU"`
 
 ---
 
@@ -1772,7 +1772,7 @@ function DanhSachNguon({ nguon, tieuDe, open, onClose }: { nguon: string; tieuDe
 - Produces: `ChonChuongTrinh({ value, onChange })`, `MetricTiles({ branchId, ct })`, `KhoiCanXuLy({ branchId, ct })`,
   `LichSapToi({ branchId, ct })` (export từ `Highlights.tsx`), `BranchPulse({ branchId, ct })`.
 
-- [ ] **Step 1: `ChonChuongTrinh.tsx`:**
+- [x] **Step 1: `ChonChuongTrinh.tsx`:**
 
 ```tsx
 import { CHUONG_TRINH, CHUONG_TRINH_LABEL, type ChuongTrinh } from '@shared/domain/index.ts';
@@ -1792,7 +1792,7 @@ export function ChonChuongTrinh({ value, onChange }: { value: ChuongTrinh; onCha
 }
 ```
 
-- [ ] **Step 2: `MetricTiles.tsx`** (viết lại, giữ chú thích đầu cập nhật đúng bốn ô):
+- [x] **Step 2: `MetricTiles.tsx`** (viết lại, giữ chú thích đầu cập nhật đúng bốn ô):
 
 ```tsx
 import { useApi } from '../../lib/useApi.ts';
@@ -1839,7 +1839,7 @@ export function MetricTiles({ branchId, ct }: { branchId: number | null; ct: Chu
 ```
   (Import `type ReactNode` thay cho `React.ReactNode` nếu tsconfig không có namespace `React` toàn cục.)
 
-- [ ] **Step 3: `KhoiCanXuLy.tsx`:**
+- [x] **Step 3: `KhoiCanXuLy.tsx`:**
 
 ```tsx
 import { useState } from 'react';
@@ -1912,7 +1912,7 @@ export function KhoiCanXuLy({ branchId, ct }: { branchId: number | null; ct: Chu
 }
 ```
 
-- [ ] **Step 4: `Highlights.tsx` → `LichSapToi`.** Giữ cấu trúc; sửa:
+- [x] **Step 4: `Highlights.tsx` → `LichSapToi`.** Giữ cấu trúc; sửa:
   - `export function Highlights({ branchId })` → `export function LichSapToi({ branchId, ct }: { branchId: number | null; ct: ChuongTrinh })`;
     URL `/highlights?${branchId ? `branchId=${branchId}` : ''}${thamSoCt(ct)}` (bỏ `&` đầu nếu không có chi nhánh).
   - Tiêu đề `Sự kiện nổi bật` → `Lịch sắp tới` (cả chỗ Skeleton). Dòng thu gọn: thay `tuần này: ${summaryLine(thisWeek)}` bằng
@@ -1924,7 +1924,7 @@ export function KhoiCanXuLy({ branchId, ct }: { branchId: number | null; ct: Chu
   - Cột: `Lớp Normal` → `Lớp thường`; `Bài kiểm tra giữa khoá` → `Giữa khoá`; `Bài kiểm tra cuối khoá` → `Cuối khoá`.
     Ẩn cột Lớp thường khi `ct === 'ft'`, ẩn cột Fast Track khi `ct === 'thuong'` (grid còn một cột).
   - Chú thích đầu file: "LỊCH SẮP TỚI (PR-Pa, §3.2; trước đây 'Sự kiện nổi bật')".
-- [ ] **Step 5: `BranchPulse.tsx`.** Giữ nguyên phần **Theo giáo viên** (`PersonRow`, `PEOPLE_COLS`, bảng người, đoạn
+- [x] **Step 5: `BranchPulse.tsx`.** Giữ nguyên phần **Theo giáo viên** (`PersonRow`, `PEOPLE_COLS`, bảng người, đoạn
   chú thích không xếp hạng) — chuyển nó vào function `BangTheoGiaoVien({ branchId })` trong cùng file, tự gọi
   `useApi<Pulse | null>('/branch-pulse?branchId=…')` và chỉ dùng `data.people`. Thay phần bảng lớp/chi nhánh bằng:
 
@@ -2032,7 +2032,7 @@ export function BranchPulse({ branchId, ct }: { branchId: number | null; ct: Chu
   Xoá `CLASS_COLS`, `COL_STUDENTS`, `COL_WORK`, `FragmentRows`, prop `activeGroup/onGroup` (hết người dùng). Cập nhật chú
   thích đầu file: bảng "Theo chi nhánh" (mockup 02 A); cột cũ "PA học thuật cần cập nhật / Đề xuất chờ duyệt" nay ở ô số
   và Cần xử lý.
-- [ ] **Step 6: `OverviewPage.tsx`.** Giữ: import, `canSeeBoard`, `goTab`, chú thích tab/`cn`. Bỏ: `useApi('/my-work')`,
+- [x] **Step 6: `OverviewPage.tsx`.** Giữ: import, `canSeeBoard`, `goTab`, chú thích tab/`cn`. Bỏ: `useApi('/my-work')`,
   `workGroup`/`setWorkGroup`, `WorkList`, `YThucReminders`, khối Empty. Thân mới:
 
 ```tsx
@@ -2094,9 +2094,9 @@ export function BranchPulse({ branchId, ct }: { branchId: number | null; ct: Chu
   component trả `null` ở task này rồi viết thật ở Task 12; chọn cách nào ghi Nhật ký), `chuongTrinhTuThamSo`,
   `type ChuongTrinh`. Chú thích đầu component cập nhật: "TỔNG QUAN (§3.2): Quản lý — thanh ngữ cảnh, 4 ô, Cần xử lý cạnh
   Điểm đáng chú ý, Lịch sắp tới, bảng chi nhánh. Giáo viên — Việc cần làm của tôi, Học viên cần hỗ trợ."
-- [ ] **Step 7:** `npm run check` xanh. `grep -rn "Normal\b" web/src/modules/worklist/*.tsx | grep -v "^\s*//\|\*"` — không
+- [x] **Step 7:** `npm run check` xanh. `grep -rn "Normal\b" web/src/modules/worklist/*.tsx | grep -v "^\s*//\|\*"` — không
   còn chữ "Normal" trên màn trong các file PR này chạm.
-- [ ] **Step 8: Commit.** `"PR-Pa (10): Tổng quan Quản lý — thanh ngữ cảnh, 4 ô, Cần xử lý + Điểm đáng chú ý, Lịch sắp tới, bảng chi nhánh mở xuống lớp"`
+- [x] **Step 8: Commit.** `"PR-Pa (10): Tổng quan Quản lý — thanh ngữ cảnh, 4 ô, Cần xử lý + Điểm đáng chú ý, Lịch sắp tới, bảng chi nhánh mở xuống lớp"`
 
 ---
 
@@ -2113,7 +2113,7 @@ export function BranchPulse({ branchId, ct }: { branchId: number | null; ct: Chu
 - Produces: `WorkItem.signal` ở kiểu web; `export function DongViec({ it, onOpen })`; `DongTinHieu({ it })`;
   `QuickReport` prop `signal` mở rộng `{ id; skill; label; kind?: 'normal' | 'ft'; scoreText?: string | null; contextLabel?: string | null }`.
 
-- [ ] **Step 1: `WorkList.tsx`.**
+- [x] **Step 1: `WorkList.tsx`.**
   - Kiểu `WorkItem` (dòng 7-20) thêm:
     `signal?: { id: number; kind: 'normal' | 'ft'; skill: string | null; skillLabel: string; score: number | null; total: number | null; deadline: string; actions: ('create_case' | 'dismiss')[] } | null;`
   - Tách thân `<li>` (dòng 169-214) thành component export (thẻ ngoài là `div`, không lồng `button` trong `button`):
@@ -2142,7 +2142,7 @@ export function DongViec({ it, onOpen }: { it: WorkItem; onOpen: (href: string) 
   (chép nguyên khối "Ô 1–2" từ dòng 176-194 cũ vào vị trí chú thích; giữ chú thích cũ về LỚP/BÀI.) Trong `WorkList`,
   `visible.map` thành `<li key={it.key}><DongViec it={it} onOpen={navigate} /></li>`. Bỏ import `fmtDate` nếu hết dùng;
   thêm `Han`, `useNgayNghiepVu`, `ngay`, `LOAI_HAN_CUA_VIEC`, `DongTinHieu`.
-- [ ] **Step 2: `DongTinHieu.tsx`:**
+- [x] **Step 2: `DongTinHieu.tsx`:**
 
 ```tsx
 import { useState } from 'react';
@@ -2195,7 +2195,7 @@ export function DongTinHieu({ it }: { it: WorkItem }) {
   );
 }
 ```
-- [ ] **Step 3: `QuickReport.tsx`.**
+- [x] **Step 3: `QuickReport.tsx`.**
   - Prop `signal` (dòng 48): `signal?: { id: number; skill: string | null; label: string; kind?: 'normal' | 'ft'; scoreText?: string | null; contextLabel?: string | null } | null;`
   - Dòng 91-92 thay bằng: kỹ năng khi mở từ tín hiệu là **đúng một** kỹ năng của tín hiệu (kể cả `writing` lớp thường):
 
@@ -2220,8 +2220,8 @@ export function DongTinHieu({ it }: { it: WorkItem }) {
 ```
   - `SectionNote` (dòng 355-360): điều kiện `mode === 'now' && !signal` (G-5; khi mở từ tín hiệu đã có bài và mức SOS).
   - **Không** tự điền tên/mô tả Case (Q16).
-- [ ] **Step 4:** `npm run check` xanh.
-- [ ] **Step 5: Commit.** `"PR-Pa (11): dòng tín hiệu SOS lớp thường — Tạo Case điền sẵn điểm, Bỏ qua một bấm; hạn qua Han"`
+- [x] **Step 4:** `npm run check` xanh.
+- [x] **Step 5: Commit.** `"PR-Pa (11): dòng tín hiệu SOS lớp thường — Tạo Case điền sẵn điểm, Bỏ qua một bấm; hạn qua Han"`
 
 ---
 
@@ -2236,7 +2236,7 @@ export function DongTinHieu({ it }: { it: WorkItem }) {
   (Task 1); `DongViec` (Task 11).
 - Produces: `ViecCuaToi()`, `HocVienCanHoTro()`, `useNhacYThuc(): { classId: number; className: string; text: string }[]`.
 
-- [ ] **Step 1: `YThucReminders.tsx`** — tách hook, component giữ nguyên hành vi:
+- [x] **Step 1: `YThucReminders.tsx`** — tách hook, component giữ nguyên hành vi:
 
 ```tsx
 export type NhacYThuc = { classId: number; className: string; text: string };
@@ -2252,7 +2252,7 @@ export function YThucReminders() {
   /* …phần vẽ giữ nguyên… */
 }
 ```
-- [ ] **Step 2: `ViecCuaToi.tsx`:**
+- [x] **Step 2: `ViecCuaToi.tsx`:**
 
 ```tsx
 import { useMemo, useState } from 'react';
@@ -2337,7 +2337,7 @@ export function ViecCuaToi() {
   );
 }
 ```
-- [ ] **Step 3: `HocVienCanHoTro.tsx`:**
+- [x] **Step 3: `HocVienCanHoTro.tsx`:**
 
 ```tsx
 import { useState } from 'react';
@@ -2386,8 +2386,8 @@ export function HocVienCanHoTro() {
 }
 ```
   > G-10: số `· {tong}` ở tiêu đề = số dòng của chính khối (bấm "Xem thêm" ra đủ); không phải số dashboard mở nơi khác.
-- [ ] **Step 4:** Nối import GV vào `OverviewPage.tsx` (nếu Task 10 để tạm). `npm run check` xanh.
-- [ ] **Step 5: Commit.** `"PR-Pa (12): Tổng quan giáo viên — Việc cần làm của tôi gom 4 nhóm, Học viên cần hỗ trợ"`
+- [x] **Step 4:** Nối import GV vào `OverviewPage.tsx` (nếu Task 10 để tạm). `npm run check` xanh.
+- [x] **Step 5: Commit.** `"PR-Pa (12): Tổng quan giáo viên — Việc cần làm của tôi gom 4 nhóm, Học viên cần hỗ trợ"`
 
 ---
 
@@ -2397,11 +2397,11 @@ export function HocVienCanHoTro() {
 - Modify: `CODE_MAP.md` (dòng Tổng quan, Công việc › Hỗ trợ học viên, chỉ số)
 - Ảnh: `thiet-ke/anh/pr-pa/` (tạo thư mục)
 
-- [ ] **Step 1: CODE_MAP.** Sửa/thêm dòng: `| **Tổng quan** (QL: 4 ô · Cần xử lý · Điểm đáng chú ý · Lịch sắp tới · Theo chi nhánh; GV: Việc cần làm của tôi · Học viên cần hỗ trợ) | web/src/modules/worklist/OverviewPage.tsx | server/src/worklist/tongQuan.ts · bangChiNhanh.ts · metrics.ts (metricSet + chương trình) |` ·
+- [x] **Step 1: CODE_MAP.** Sửa/thêm dòng: `| **Tổng quan** (QL: 4 ô · Cần xử lý · Điểm đáng chú ý · Lịch sắp tới · Theo chi nhánh; GV: Việc cần làm của tôi · Học viên cần hỗ trợ) | web/src/modules/worklist/OverviewPage.tsx | server/src/worklist/tongQuan.ts · bangChiNhanh.ts · metrics.ts (metricSet + chương trình) |` ·
   `| Dòng tín hiệu SOS lớp thường (Tạo Case / Bỏ qua) | web/src/modules/worklist/DongTinHieu.tsx → QuickReport.tsx | /signals/pending/:id/dismiss · /cases/report |` ·
   `| Lọc chương trình Lớp thường / FT cho mọi chỉ số | shared/domain/tongQuan.ts | server/src/worklist/chuongTrinh.ts |`.
   Dòng cũ "Sự kiện nổi bật" → "Lịch sắp tới".
-- [ ] **Step 2: Bật máy thử trong worktree** (theo memory "Máy chủ dev trong worktree"; **không** `preview_start`, **không**
+- [x] **Step 2: Bật máy thử trong worktree** (theo memory "Máy chủ dev trong worktree"; **không** `preview_start`, **không**
   cổng 4000/5173): kiểm cổng trống `Get-NetTCPConnection -LocalPort 4127,5327 -ErrorAction SilentlyContinue` → rỗng.
   `npm run seed` → chạy nền `PORT=4127 node dist-server/server/src/index.js` → chép cấu hình Vite **tạm** vào gốc worktree
   (`vite.pa.config.ts`: root = worktree, alias `@shared`, `server: { port: 5327, strictPort: true, proxy: { '/api': { target: 'http://127.0.0.1:4127', changeOrigin: true } } }`)
@@ -2409,10 +2409,10 @@ export function HocVienCanHoTro() {
   `fetch('/api/demo/session', { method: 'POST', … body: {userId} })` trong trang. Quản trị = 1, QL Nguyễn Khánh Vy = 2,
   GVCN Trần Ngọc Hà = 7, GVBM Phạm Thu Trang = 9. Chụp ảnh: khung trình duyệt có sẵn, hoặc `npm i --no-save playwright` +
   `chromium.launch({ channel: 'chrome' })` (không tải trình duyệt).
-- [ ] **Step 3: Chuẩn bị tín hiệu lớp thường** (nếu GVCN 7 chưa có dòng "Chưa đạt"): đăng nhập Quản trị (1), mở Bảng điểm
+- [x] **Step 3: Chuẩn bị tín hiệu lớp thường** (nếu GVCN 7 chưa có dòng "Chưa đạt"): đăng nhập Quản trị (1), mở Bảng điểm
   lớp thường MB-FOU 12 (`/bang-diem-thuong/{id}?kind=progress`), nhập cho **hai** em: Listening `10/40` (về GVCN Hà) và
   Speaking `5/25` (về GVBM Speaking). Ghi tên em vào Nhật ký.
-- [ ] **Step 4: KIỂM — QL chi nhánh (2), 1440px.** Ghi ✓/✗ + ảnh:
+- [x] **Step 4: KIỂM — QL chi nhánh (2), 1440px.** Ghi ✓/✗ + ảnh:
   1. Thanh ngữ cảnh: **Lớp thường · Fast Track · Cả hai** (mặc định Cả hai), chọn chi nhánh (nếu > 1), hàng tab
      **Tổng quan | Phân tích** và bên phải "Dữ liệu đến 14/09/2026". Không chữ "Normal" nào trên màn.
   2. 4 ô: **Học viên dưới kỳ vọng** (dòng phụ "/ N đánh giá được") · **Học viên có Case đang mở** (dòng phụ "k Case", k bấm
@@ -2430,10 +2430,10 @@ export function HocVienCanHoTro() {
      phải, `tabular-nums`, hàng cao bằng nhau; bấm **mọi loại ô** (ít nhất một ô mỗi cột + hàng tổng) → đúng số dòng; ô Đủ
      dữ liệu "k/N" chỉ k bấm được. Tên lớp mở hồ sơ lớp. Nút **Theo giáo viên** vẫn mở bảng người cũ.
   8. Không lỗi đỏ console/network 4xx/5xx.
-- [ ] **Step 5: KIỂM — Quản trị (1), 1440px.** Không chọn chi nhánh → bảng **Theo chi nhánh**, mỗi hàng có ▸; bấm ▸ mở
+- [x] **Step 5: KIỂM — Quản trị (1), 1440px.** Không chọn chi nhánh → bảng **Theo chi nhánh**, mỗi hàng có ▸; bấm ▸ mở
   xuống các lớp (thụt vào); hàng "Tất cả chi nhánh" cuối; bấm tên chi nhánh → `/?cn=…` và bảng thành bảng lớp. Bấm một ô
   hàng chi nhánh và một ô hàng lớp con → đúng số dòng. Khối Cần xử lý có dòng "PA chờ Quản lý duyệt" nếu có.
-- [ ] **Step 6: KIỂM — GVCN Trần Ngọc Hà (7), 1440px.**
+- [x] **Step 6: KIỂM — GVCN Trần Ngọc Hà (7), 1440px.**
   1. Đầu trang "Chào Hà" + "Dữ liệu đến …"; **không** có thanh chương trình, 4 ô, Cần xử lý, bảng chi nhánh, tab Phân tích.
   2. **Việc cần làm của tôi**: các nhóm theo thứ tự Chấm điểm · Case học thuật · Ý thức & Phối hợp · Vận hành (chỉ nhóm có
      việc), mỗi nhóm có số; nhóm có việc quá hạn **tự mở**, nhóm khác gập; bấm header mở/gập. Hạn hiện qua `<Han>` (ví dụ
@@ -2448,29 +2448,29 @@ export function HocVienCanHoTro() {
   6. **Học viên cần hỗ trợ · lớp tôi dạy · n**: có em vừa nhập điểm thấp với nhãn "SOS …"; nút **Hồ sơ** mở hồ sơ em;
      "Xem thêm" nếu > 8.
   7. Công việc › Hỗ trợ học viên: dòng tín hiệu (nếu còn) cũng có hai nút (Q17).
-- [ ] **Step 7: KIỂM — GVBM Phạm Thu Trang (9), 1440px.** Thấy tín hiệu Speaking (nếu Trang dạy Speaking MB-FOU 12) với hai
+- [x] **Step 7: KIỂM — GVBM Phạm Thu Trang (9), 1440px.** Thấy tín hiệu Speaking (nếu Trang dạy Speaking MB-FOU 12) với hai
   nút; không thấy tín hiệu Listening của GVCN. Học viên cần hỗ trợ chỉ em lớp mình dạy.
-- [ ] **Step 8: KIỂM — 375×812** (QL 2 và GVCN 7). `document.documentElement.scrollWidth <= 375` ở `/` cả hai vai và
+- [x] **Step 8: KIỂM — 375×812** (QL 2 và GVCN 7). `document.documentElement.scrollWidth <= 375` ở `/` cả hai vai và
   `/?ct=thuong`. 4 ô xếp 2 cột; Cần xử lý và Điểm đáng chú ý xếp dọc; bảng chi nhánh **cuộn ngang trong thẻ**, cột tên
   dính trái; dòng tín hiệu: nút Tạo Case / ô lý do / Bỏ qua xuống hàng dưới thông tin, không đè chữ; thanh dưới 4 nút
   không che nội dung cuối trang; panel danh sách mở full màn.
-- [ ] **Step 9:** Lưu ảnh `thiet-ke/anh/pr-pa/{vai}-{man}-{1440|375}.png` (vai: `quantri`, `ql`, `gvcn`, `gvbm`; màn:
+- [x] **Step 9:** Lưu ảnh `thiet-ke/anh/pr-pa/{vai}-{man}-{1440|375}.png` (vai: `quantri`, `ql`, `gvcn`, `gvbm`; màn:
   `tongquan`, `tongquan-thuong`, `panel-o`, `bang-mo-lop`, `taocase`, `boqua`, `congviec`). Tắt máy, xoá `vite.pa.config.ts`,
   kiểm lại không còn tiến trình nghe 4127/5327.
-- [ ] **Step 10:** `npm run check` xanh lần cuối; ghi số phép kiểm (≥ mốc Task 0 + 20).
-- [ ] **Step 11: Commit.** `git add CODE_MAP.md thiet-ke/anh/pr-pa && git commit -m "PR-Pa (13): CODE_MAP + ảnh KIỂM bốn vai (1440px, 375px)"`
+- [x] **Step 10:** `npm run check` xanh lần cuối; ghi số phép kiểm (≥ mốc Task 0 + 20).
+- [x] **Step 11: Commit.** `git add CODE_MAP.md thiet-ke/anh/pr-pa && git commit -m "PR-Pa (13): CODE_MAP + ảnh KIỂM bốn vai (1440px, 375px)"`
 
 ---
 
 ### Task 14: Rà soát, rebase, mở PR
 
-- [ ] **Step 1:** superpowers:requesting-code-review — người rà **Opus 5** (hoặc Fable 5.1 nếu người code là Opus 5) rà cả
+- [x] **Step 1:** superpowers:requesting-code-review — người rà **Opus 5** (hoặc Fable 5.1 nếu người code là Opus 5) rà cả
   diff `git diff origin/main...HEAD`, nhấn vào: (a) có con số nào trên Tổng quan **không** đi qua `metricSet`/tập chia từ
   nó, hoặc số ≠ số dòng khi bấm; (b) bộ lọc chương trình có lọt phần tử sai chương trình, lọc thiếu tử/mẫu số; (c) GV có
   gọi được `/tong-quan/quan-ly`, `/tong-quan/chi-nhanh[/o]` (phải 403); `oBangChiNhanh` có mở rộng phạm vi; (d) file ngoài
   ranh giới đợt 2 bị chạm (`cases.ts`, `CasePanel`, `SkillBoard`, `hienThiNgay.ts`, `display.ts`, file Qa); (e) chữ mới đúng
   THUAT_NGU, không "Normal", không chuỗi cấm; (f) truy vấn N+1 mới trên Turso. Xử lý theo superpowers:receiving-code-review.
-- [ ] **Step 2: Rebase `main` mới nhất.** `git fetch origin && git rebase origin/main`. Xung đột:
+- [x] **Step 2: Rebase `main` mới nhất.** `git fetch origin && git rebase origin/main`. Xung đột:
   - `server/src/tests/run.ts` → giữ **cả** khối PR-AN / PR-S2 / PR-Qa (nếu đã merge) **và** 3 dòng PR-Pa; phép sổ chỉ số:
     nếu PR khác cũng thêm chỉ số → cộng dồn con số và mảng `expected`.
   - `server/src/routes/index.ts` → giữ cả hai khối; kiểm dòng import không trùng.
@@ -2478,7 +2478,7 @@ export function HocVienCanHoTro() {
   - `shared/domain/index.ts` → giữ mọi dòng `export *`.
   Sau rebase: `npm ci` (nếu `package-lock.json` đổi) + `npm run check` xanh. Đỏ vì thay đổi của PR khác (ví dụ PR-Qa sửa
   `ngay`) → sửa phía PR-Pa nếu là dùng sai; nếu là luật mới của PR khác → 🛑 hỏi.
-- [ ] **Step 3:** superpowers:finishing-a-development-branch — `git push -u origin pr-pa-tong-quan`, mở PR **không draft**,
+- [x] **Step 3:** superpowers:finishing-a-development-branch — `git push -u origin pr-pa-tong-quan`, mở PR **không draft**,
   tiêu đề `PR-Pa · Tổng quan`, thân PR: việc đã làm theo mã (§3.2, P1–P6, P6b, P6c, §3.10 dòng tín hiệu, nợ S1 ×2), bảng
   Q1–Q25 rút gọn, mục Mâu thuẫn, "Chuyển cho PR khác", số phép kiểm trước → sau, ảnh KIỂM (link thư mục), "Không có migrate".
   Cuối thân PR: `🤖 Generated with [Claude Code](https://claude.com/claude-code)`. **Không tự merge.**
@@ -2521,4 +2521,123 @@ export function HocVienCanHoTro() {
 
 *(Người thực thi ghi sau mỗi task: số phép kiểm, điều bất ngờ, chỗ phải tự quyết, model thật đang chạy.)*
 
-- **Task 0:**
+- **Task 0:** (22/09/2026, session Fable 5.1 · High; subagent cài đặt = Fable 5.1, người rà từng task và cuối = Opus 5)
+  worktree `../pisa-pr-pa` nhánh `pr-pa-tong-quan` từ `origin/main` @ `a0937ef`. Env sạch (không biến Turso). `npm ci` +
+  `npm run check` xanh: **mốc 730 phép kiểm**. `git diff 7843875..HEAD` trên các file plan chạm: không có thay đổi (chỉ thêm
+  file plan này). Đọc spec §1–§5, §7 dòng Pa; Q1–Q25 không thấy trái đặc tả §3.2/§3.10. Quyết định nhỏ: Task 10 sẽ tạo hai
+  file stub `ViecCuaToi.tsx` / `HocVienCanHoTro.tsx` (component trả `null`) để typecheck xanh, Task 12 viết thật. Ghi chú:
+  `web/src/ui/OSoNho.tsx` (PR-HV) là ô nhãn+số không bấm được, khác `SoLieuO` — không trùng.
+- **Task 1:** commit `721c90f`. Đỏ đúng 4 phép (`is not a function`) → xanh **734**. Mã chép nguyên văn plan; bốn giá trị
+  `DeadlineKind` đều có trong `DEADLINE_KINDS`. Rà (Opus 5): đạt, không lỗi; ghi chú nhỏ để dành: giới hạn 8/3 là no-op khi
+  danh sách có đúng 8/3 mục (phép kiểm "tối đa 8" chưa thật sự kiểm), `mau` trùng tên (màu / mẫu số), thiếu assert
+  `thamSoCt` dấu `&`.
+- **Task 2:** commit `22c27f4`. Đỏ đúng chỗ quét nguồn (phần so tập xanh sẵn vì hàm cũ đúng) → xanh **735**; phép cũ
+  `S1 · Chỉ số tin-hieu-qua-han…` vẫn ✓. `REPO` đi lên 4 cấp là đúng vì harness chạy từ `dist-server/`. Rà (Opus 5): đạt;
+  chứng minh tập giống hệt (bốn LEFT JOIN bỏ đi đều theo khoá duy nhất, không lọc không nhân dòng). Ghi chú nhỏ để dành:
+  phép so tập chưa assert tập admin > 0; `JOIN students s` trông thừa nhưng giữ để ngang hàng `SIGNAL_SELECT`.
+- **Task 3:** commit `2d77aca` + `dcf6cba` (vòng sửa 1). Đỏ hai bậc: `tsc` TS2307 vì thiếu mô-đun (`.catch` không đỡ được lỗi
+  biên dịch) → tạo file → 2 ✗ đúng dự kiến → xanh **738**. Vòng import `chuongTrinh.ts` ↔ `metrics.ts` chạy sạch, không cần
+  phương án B. Rà (Opus 5): 1 quan trọng — phép kiểm "mẫu số cũng được lọc" có thể xanh rỗng → thêm `assert(mau.length > 0)`
+  (mẫu số thật sự có em trên bộ demo), thêm assert "+1 lớp" với `toiDa = 1`, sửa chú thích `metricSetGoc`. Rà lại: đạt.
+  Ghi nhận (giữ theo Q2, không đổi luật): vi phạm / PA xử lý gán chương trình theo lớp HV đang học chứ không theo `class_id`
+  ghi lúc vi phạm; Case theo lớp của lượt Test (cùng `classKind`) chứ không theo `homeClassId` mà bảng chi nhánh dùng —
+  hai chỗ này ghi vào "Chuyển cho PR khác". `tongQuan.tests.ts` tạo dữ liệu thật nên phải luôn là bộ chạy cuối.
+- **Task 4:** commit `8b6173e` + `5d07a60` (vòng sửa 1). Đỏ 5 phép đúng dự kiến → xanh **742**. Chỉ `run.ts:7975` đếm sổ
+  (24 → 27); phép `run.ts:8320` so `LISTED_METRICS` với sổ theo kiểu tương đối nên tự phủ ba chỉ số mới. Rà (Opus 5): 1 quan
+  trọng — `overdueScoreAttempts` nới phạm vi cho người vừa dạy lớp vừa có quyền chi nhánh (bỏ lọc lớp khi `branchIds` khác
+  rỗng) → sửa theo đúng luật OR của `classScopeSql` (lớp mình dạy HOẶC chi nhánh mình quản), thêm phép kiểm principal lai
+  (GV MB không dạy MB-FOU 12 + quyền QL CP tạm) → **743**. Ghi nhận: `scoreDebtCells` gọi `settleNoShows` (ghi) và quét
+  nặng — nay chạy mỗi lần mở Tổng quan (chuyển Z2c); tên phép kiểm `run.ts:7973` "hai mươi chỉ số" đã lệch 27 (plan bảo giữ).
+- **Task 5:** commit `0c010eb`. Đỏ (TS2307 rồi 4 ✗ `is not a function`) → xanh **747**. `P.w2Teacher` (user 10, Cao Khánh
+  Linh) đúng là không dạy MB-FOU 12 — dùng như plan. `P.mbManager` chỉ có chi nhánh MB (ghi cho Task 6). Ba tổ hợp Cần xử lý
+  đều có dòng (6/4/4). Rà (Opus 5): đạt; hướng `tu`/`mau` đúng cho cả ba luật (với `ty-le-co-cai-thien` và
+  `dung-han-cap-nhat`, `ids` là mẫu số). Ghi nhận: `DiemChuY.extra` không mang chi nhánh/chương trình — web phải gắn
+  `phamVi` khi mở (Task 10 đã dự tính); mỗi lần mở khối QL chạy ~6 lượt `listCases` + 4 lượt `latestAttempts` (chuyển Z2c);
+  bộ demo cho "0/14 lần cập nhật PA đúng hạn" — đúng luật, chỉ trông gắt.
+- **Task 6:** commit `c439650` + `b3c57e3` (vòng sửa 1). Đỏ 3 ✗ → xanh **750**; bộ kiểm chậm thêm ~8 s (52 → 60 s) vì phép
+  "bấm mọi ô" tính lại bảng cho từng ô (ghi cho Z2c). Rà (Opus 5): hai lỗ hổng ở TẦNG KẾ HOẠCH — (A) hàng tổng cột Học
+  viên là hợp các hàng (lớp đang hoạt động) còn năm cột kia là tập gốc của chỉ số (dân số `studentsInScope`, không lọc
+  trạng thái lớp) → cột con có thể lớn hơn Học viên. **Tự quyết:** hàng tổng Học viên = dân số của chỉ số
+  (`studentsInScope` lọc chương trình), thêm assert các cột HV của hàng tổng ⊆ Học viên. (B) Case mà lớp đang học không
+  nằm trong danh sách lớp của bảng (em chuyển chương trình / lớp đóng) chỉ có ở hàng tổng, nên hàng `cn:X` có thể nhỏ
+  hơn tổng khi chọn chính X. **Tự quyết: không sửa trong PR** — thêm hàng "Chưa xếp lớp" là đổi hình dạng bảng; ghi chú
+  thích trong file và nêu ở thân PR để session planning quyết. Bộ demo không có trường hợp nào của A/B.
+- **Task 7:** commit `ae71240`. Đỏ 1 ✗ ("FT lẫn lớp thường") → xanh **751**. Đổi `c.kind === 'ft'` → `c.is_fast_track`
+  KHÔNG đổi số mốc demo (đo trước/sau giống hệt): seed ghi `kind = 'FT'` viết hoa nên điều kiện cũ chưa từng khớp — lớp FT
+  chỉ thoát vòng lớp thường nhờ không có mốc; điều kiện mới mới là thật. Rà (Opus 5): đạt; ghi chú `c.kind` còn trong SELECT
+  nhưng hết người dùng.
+- **Task 8:** commit `9d2e3d1`. Phép kiểm đầu–cuối **xanh ngay** (máy chủ S1 đúng): tạm ngừng phân công Speaking MB-FOU 12
+  → tín hiệu về GVCN → `myWork` có dòng với `['create_case','dismiss']` → `reportIssue(fromSignalId, idempotencyKey)`
+  thành công, gửi lại cùng khoá ra cùng Case, tín hiệu `linked`, dòng biến mất → khôi phục phân công. Cửa 🛑 không xảy ra,
+  không chạm `cases.ts`/`signals.ts`. Tổng **752**.
+- **Task 9:** commit `28e6b62`. Session bị ngắt giữa chừng (đã tạo `SoLieuO.tsx`, chưa sửa `SoLieu.tsx`) → nối lại
+  cùng subagent làm nốt. `SoLieuO.tsx` chép nguyên văn; `SoLieu.tsx` chỉ khác plan ở hai chỗ `/* giữ nguyên */` (chép từ
+  file cũ) và giữ JSDoc đầu file. `npm run check` xanh (752 + typecheck). Prop mới (`nhan`/`phu`/`tone`/`chuongTrinh`) và
+  `SoLieuO` chưa có người gọi cho tới Task 10 — kiểm giao diện dồn về Task 13. Rà (Opus 5): 1 quan trọng — `SoLieuO` vẽ
+  số bấm được cho mã ngoài sổ (bấm không ra gì) → thêm guard như `SoLieu`; phân biệt `id`/`nguon` bằng `!== undefined`;
+  aria-label có tên chỉ số (commit `2c196e0`). Rà lại: đạt.
+- **Task 10:** commit `9d831ac` (8 file). `npm run check` xanh (752), `vite build` xanh, không còn "Normal" trong file
+  PR chạm. Hai stub `ViecCuaToi.tsx` / `HocVienCanHoTro.tsx` trả `null` (Task 12 viết thật). Lệch nhỏ so với plan: giữ
+  `React.ReactNode` (repo đã dùng namespace toàn cục); ẩn cả ghi chú "Chưa xác định tuần" khi `ct=thuong`; kiểu `Pulse`
+  của bảng Theo giáo viên rút gọn còn `{ people }`. Rà (Opus 5): đạt — G-10 đúng theo cấu trúc (ô bảng dùng đúng chuỗi
+  `q` đã tải bảng); `useApi` đổi đường dẫn khi đổi `ct` nên số cũ không lọt dưới nhãn mới; không Drawer chồng Drawer.
+  Ghi chú nhỏ (gom sửa trước Task 13): BranchPulse chưa có ErrorState, footer "Bấm số…" hiện dưới bảng GV, URL `?&ct=`
+  ở KhoiCanXuLy, a11y nút ▸ / radiogroup / aria-pressed. `YThucReminders.tsx` mồ côi — Task 12 quyết.
+- **Task 11:** commit `a8ba39d` (3 file). `npm run check` xanh (752), `vite build` xanh. Không lệch plan: `QuickReport` đã
+  có `idempotencyKey` theo lần mở; Toast có `'ok' | 'error' | 'info'` đúng như plan; `HoTroHocVienTab` không cần sửa vì
+  cùng đi qua `DongViec` (Q17). `writing` lớp thường không nằm trong `ENTRY_SKILLS` nhưng `issuesForTopic('writing')`
+  vẫn ra danh mục, nhãn lấy từ `REGULAR_SKILL_LABEL` — một nút kỹ năng duy nhất hoạt động. Rà (Opus 5): đạt; máy chủ
+  nhận `topic: 'writing'` khi chu kỳ chấm theo tỷ lệ; `invalidate` theo tiền tố nên dòng tự biến mất. **Lưu ý cho chủ sản
+  phẩm:** dòng tín hiệu **Fast Track** đang chờ (máy chủ S1 trả `actions: ['create_case']`) nay cũng hiện nút Tạo Case mở
+  form thay cho nhãn "Mở Case" cũ — tự quyết giữ theo máy chủ (nút do máy chủ quyết, Q17); nếu không muốn thì thêm điều
+  kiện `kind === 'normal'` là xong.
+- **Task 12:** commit `905c5f1` (3 file; `OverviewPage.tsx` không cần sửa vì Task 10 đã nối import). `npm run check`
+  xanh (752), `vite build` xanh. `YThucReminders` giữ component (hết người dùng — PR-S3 dọn), thêm hook `useNhacYThuc`.
+  Lưu ý: `gomNhomViec` bỏ nhóm `n = 0` nên GV có thể thấy ít hơn 4 tiêu đề nhóm (đúng luật Task 1). Rà (Opus 5): 1
+  NGHIÊM TRỌNG — plan chép `gomNhomViec(data.items, …)` nhưng `/my-work` khi GV không có phạm vi trả về không có `items`
+  → sập cả trang GV thay vì "Bạn chưa được cấp phạm vi nào". Sửa `data.items ?? []`, dùng `summary.total` cho trạng thái
+  trống, tooltip nhãn SOS/Ý thức (G-7), ẩn "· 0" ở tiêu đề khối rỗng, `aria-controls` (commit `4f57569`). Rà lại: đạt.
+- **Dọn ghi chú nhỏ (ngoài plan, trước Task 13):** commit `a4e0558` + `87f7e89` gom 16 ghi chú nhỏ giao diện của người rà
+  Task 10–11 để ảnh QA là trạng thái cuối: bảng chi nhánh có ErrorState (cả bảng Theo giáo viên), footer "Bấm số…" chỉ
+  dưới bảng lớp/chi nhánh và nằm ngoài vùng cuộn ngang, tiêu đề skeleton đúng chế độ, chi nhánh không có GV → thông báo
+  trống, a11y (aria-label ▸, aria-pressed, `role="group"` thay radiogroup), URL `ct` sạch, ẩn "Dữ liệu đến —" khi thiếu
+  ngày, `DongTinHieu` tự bảo vệ khi thiếu tín hiệu / thiếu HV. Rà lại (Opus 5): đạt. Chỉ typecheck + vite build cho
+  `87f7e89` (không đổi máy chủ); `npm run check` chạy lại ở Task 13.
+- **Task 13:** commit `6578004` — CODE_MAP + 21 ảnh `thiet-ke/anh/pr-pa/` (16 theo bộ tên của plan + 5 ảnh bằng chứng:
+  `ql-lich`, `ql-bang`, `ql-theo-gv`, `gvbm-tinhieu-ft`, `gvcn-tinhieu-375`, `gvcn-ythuc-375`). Máy thử: API 4127, Vite 5327
+  (file cấu hình tạm đã xoá, cổng đã trống). Điểm thấp nhập cho **Đỗ Gia Bảo** (Listening 10/40 giữa khoá → GVCN Hà; thêm
+  9/40 cuối khoá để thử Bỏ qua) và **Bùi Khánh Linh** (Speaking 5/25 → GVBM Trang). Tín hiệu hạn 16/09 > ngày demo 14/09
+  nên ô "Chờ xác minh quá hạn" = 0 ở mọi vai (bước 6.4 phần ô số không quan sát được trên seed; máy chủ đã có phép kiểm).
+  ~95 ✓ · không lỗi console/4xx/5xx · `npm run check` xanh **752**. ✗ tìm thấy: (F2) QL một chi nhánh mở `/` không thấy nút
+  Theo lớp/Theo giáo viên (chỉ hiện khi URL có `cn`); (F6) GV 375px mở nhóm Ý thức & Phối hợp → chip nowrap 334px làm
+  trang rộng 384 > 375 (G-11); (F1 nhỏ) ô 3 khi = 0 vẫn ghi "tín hiệu SOS lớp thường" thay vì "Không có mục nào"; (F3
+  nhỏ) hàng lớp cao hơn hàng tổng 1px vì chip FT/Lớp thường (G-2). Nghi vấn: dòng phụ việc ~80 ký tự xuống 2 dòng ở 375px
+  (không tránh được — chấp nhận, vẫn là MỘT dòng phụ theo G-3). Cho chủ sản phẩm: dòng tín hiệu Fast Track chỉ có nút Tạo
+  Case (`gvbm-tinhieu-ft-1440.png`). Không thử được trên seed: GV không phạm vi, GV không việc quá hạn, chi nhánh không GV.
+  → Vòng sửa gộp F1/F2/F3/F6 ngay sau.
+- **Task 13 (sửa sau KIỂM):** commit `1ac74da` (13b: `coGv` theo chế độ bảng thay vì theo `cn`; nhắc Ý thức là chữ
+  xuống dòng được + chip "Nhắc" ngắn; ô 3 dòng phụ chỉ khi > 0; mọi hàng bảng cao 2.5rem, chip `leading-none`) rồi QA
+  chụp lại `5c82783` (13c): F1 ✓ ("0 tín hiệu · Không có mục nào"), F2 ✓ (QL tại `/` thấy nút, bảng GV 4 hàng), F3 ✓
+  (Cả Monbay / MB-FOU 12 / MB-FT 101 / MB-FT 102 đều 40.00px), F6 ✓ (`scrollWidth` 375). Không lỗi console/4xx.
+- **Task 13 (rà — Opus 5):** CODE_MAP đúng, hygiene sạch. Báo cáo QA bị bắt lỗi: 9 dòng ✗ trong log được báo ✓ mà không
+  ghi lý do (đa số là script so chữ sai — đã bổ sung bảng "✗ trong log → vì sao ✓"), hai ảnh dẫn chứng chụp sau khi script
+  đã bấm (Xem thêm / mở nhóm Ý thức). Ba lỗi giao diện QA bỏ sót, sửa ở `44dce40` (13d): ⚠ hiện ở "Hạn hôm nay" (G-4) →
+  chỉ quá hạn mới ⚠, hạn hôm nay dùng nhãn vàng không biểu tượng; ô dính cột đầu của hàng tổng hở viền → cùng nền hàng;
+  "Chưa có người phụ trách" lặp hai lần trên một dòng phụ của việc `no_owner`. **Tự quyết:** 4 đoạn hướng dẫn dưới ô nhập
+  của form Tạo Case là hint có từ trước, thuộc PR-Form — không sửa ở đây.
+- **Task 14 — rà toàn nhánh (Opus 5, gói 40 commit / 50 file):** "Ready after the listed fixes". Không lỗi đúng/sai,
+  quyền hay hợp đồng số liệu: (a) mọi số đi qua `metricSet` và danh sách mở ra tính lại bằng cùng hàm; (b) bộ lọc chương
+  trình một chỗ, phủ đủ `ids`/tử/mẫu/`splits`/`byKind`; (c) GV bị 403 ở ba route Quản lý; (d) không chạm file của PR song
+  song; (e) không chuỗi cấm, không "Normal"; (f) Turso: GET Tổng quan nay có ghi (`settleNoShows`) + quét nặng — chuyển
+  Z2c. Phải sửa trước merge: bảng chi nhánh trả `branchId` đã giải để "Theo giáo viên" của QL một chi nhánh gọi đúng
+  chi nhánh (đường mới lộ ra sau 13b); siết hai phép kiểm Cần xử lý / Điểm đáng chú ý (assert không rỗng); dọn `void
+  assertThrows`, `c.kind` thừa, chú thích "bộ kiểm này phải chạy cuối". Người rà đồng ý mọi ruling; sửa lý do F4: dòng
+  phụ vượt ngân sách ~60 ký tự của G-3, PR-Ra rút gọn. Triage ghi chú nhỏ để dành: phần lớn DROP/DEFER (S3, Ra, Form,
+  Pb, Z2c) — chi tiết ở thân PR.
+- **Task 14 — sửa sau rà + rebase:** commit `f905ca1` (bảng trả `branchId` đã giải → "Theo giáo viên" của QL một chi
+  nhánh gọi đúng chi nhánh; assert không rỗng cho Cần xử lý / Điểm đáng chú ý; dọn `void`, `c.kind`, chú thích "phải chạy
+  cuối"); rà lại có phạm vi: đạt. Rebase lên `origin/main` @ `61ae2dd` (đã có PR-S2 #64 + PR-AN): xung đột duy nhất ở
+  `server/src/tests/run.ts` — giữ cả khối PR-S2, PR-AN và đặt khối PR-Pa CUỐI CÙNG (bộ này tạo dữ liệu thật). Không đổi
+  `package-lock.json` nên không cần `npm ci`. `npm run check` sau rebase: **TẤT CẢ 801 KIỂM TRA ĐỀU ĐẠT** (779 của main + 22). `vite build` xanh.
+  Đẩy nhánh, mở **PR #68** (không draft, không tự merge) — https://github.com/Pizi147/pisa-tracking/pull/68. Chờ session
+  planning rà.

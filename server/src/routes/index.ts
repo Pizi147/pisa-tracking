@@ -4,7 +4,7 @@ import { db, isInitialised } from '../db.ts';
 import { laBanChinh } from '../moiTruong.ts';
 import {
   ENTRY_SKILLS, ENTRY_SKILL_LABEL, ISSUE_TAXONOMY,
-  PERMISSIONS, REGULAR_SKILLS, ROLE_LABEL, WORK_SCOPES,
+  PERMISSIONS, REGULAR_SKILLS, ROLE_LABEL, WORK_SCOPES, chuongTrinhTuThamSo,
   type Role, type WorkScope,
 } from '../../../shared/domain/index.ts';
 import { transferReasonText } from '../../../shared/domain/index.ts';
@@ -58,6 +58,8 @@ import * as gioiHan from '../platform/gioiHanThu.ts';
 import * as sysconfigSvc from '../platform/sysconfig.ts';
 import * as mgmtSvc from '../worklist/mgmttasks.ts';
 import * as highlightSvc from '../worklist/highlights.ts';
+import * as tongQuanSvc from '../worklist/tongQuan.ts';
+import * as bangSvc from '../worklist/bangChiNhanh.ts';
 import { weeklyDrill, weeklyRollup } from '../worklist/weekly.ts';
 import { metricResponse, metricSet, rowsFor } from '../worklist/metrics.ts';
 import { myWork } from '../worklist/mywork.ts';
@@ -881,6 +883,7 @@ api.get('/metrics/:id', requireAuth, wrap((req) => {
   const r = metricSet(principalOf(req), String(req.params.id), {
     branchId: qInt(req, 'branchId'), skill: qStr(req, 'skill') ?? null,
     from: qStr(req, 'from') ?? null, to: qStr(req, 'to') ?? null, kind: qStr(req, 'kind') ?? null,
+    program: chuongTrinhTuThamSo(qStr(req, 'ct')),
   });
   return metricResponse(r, qStr(req, 'rows') === '1');
 }));
@@ -1170,7 +1173,38 @@ api.get('/branch-pulse', requireAuth, wrap((req) => {
  */
 api.get('/highlights', requireAuth, wrap((req) => {
   maybeSimulateReadError();
-  return highlightSvc.highlights(principalOf(req), { branchId: qInt(req, 'branchId') });
+  return highlightSvc.highlights(principalOf(req), { branchId: qInt(req, 'branchId'), program: chuongTrinhTuThamSo(qStr(req, 'ct')) });
+}));
+
+// ============================================================ Tổng quan (PR-Pa, đặc tả §3.2)
+
+/** Khối Quản lý: Cần xử lý + Điểm đáng chú ý. Mọi số đi qua `metricSet` — cùng số với `/metrics/:id`. */
+api.get('/tong-quan/quan-ly', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return tongQuanSvc.tongQuanQuanLy(principalOf(req), {
+    branchId: qInt(req, 'branchId') ?? null, ct: chuongTrinhTuThamSo(qStr(req, 'ct')),
+  });
+}));
+
+/** Khối giáo viên: Học viên cần hỗ trợ (lớp tôi dạy). */
+api.get('/tong-quan/hoc-vien-can-ho-tro', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return tongQuanSvc.hocVienCanHoTro(principalOf(req));
+}));
+
+/** Bảng Theo chi nhánh → lớp. Chỉ số của từng ô; danh sách ô ở route dưới. */
+api.get('/tong-quan/chi-nhanh', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return bangSvc.bangChiNhanh(principalOf(req), { branchId: qInt(req, 'branchId') ?? null, ct: chuongTrinhTuThamSo(qStr(req, 'ct')) });
+}));
+
+/** Danh sách đúng những bản ghi tạo nên MỘT ô của bảng (G-10). */
+api.get('/tong-quan/chi-nhanh/o', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return bangSvc.oBangChiNhanh(principalOf(req), {
+    branchId: qInt(req, 'branchId') ?? null, ct: chuongTrinhTuThamSo(qStr(req, 'ct')),
+    cot: qStr(req, 'cot') ?? '', khoa: qStr(req, 'khoa') ?? '',
+  });
 }));
 
 /** Lựa chọn hiển thị riêng của từng người — bộ cột đang xem, chi nhánh xem lần cuối… */

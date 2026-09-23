@@ -34,7 +34,9 @@ Nếu bạn nghĩ theo "cái tôi thấy trên màn hình" chứ không theo tê
 | Màn một lượt Test (chọn đợt khác cạnh tiêu đề; nút nhập điểm mở lưới đúng tuần của đợt) | `web/src/modules/fasttrack/MockDetailPage.tsx` | `server/src/fasttrack/attempts.ts` → `attemptDetail` |
 | **Bảng nhập điểm cả lớp** — một lưới cho hai loại lớp, máy chủ trả `mode` | `web/src/modules/cham/ChamDiemPage.tsx` (lưới `web/src/modules/cham/LuoiFT.tsx` · `web/src/modules/cham/LuoiThuong.tsx`; điện thoại `web/src/modules/cham/MotKyNang.tsx`) | `server/src/cham/canCham.ts` → `chamSheet` (`GET /classes/:classId/cham`) |
 | **Công việc** › Hỗ trợ học viên · Vận hành · Báo cáo đơn vị | `web/src/modules/congViec/CongViecPage.tsx` (bọc `WorkList` · `TasksBoard` · `MeetingBoard`) | `mywork.ts` · `mgmttasks.ts` · `meeting.ts` |
-| Màn Tổng quan | `web/src/modules/worklist/OverviewPage.tsx` | `server/src/worklist/mywork.ts` |
+| **Tổng quan** (QL: 4 ô · Cần xử lý · Điểm đáng chú ý · Lịch sắp tới · Theo chi nhánh; GV: Việc cần làm của tôi · Học viên cần hỗ trợ) | `web/src/modules/worklist/OverviewPage.tsx` | `server/src/worklist/tongQuan.ts` · `bangChiNhanh.ts` · `metrics.ts` (metricSet + chương trình) |
+| Dòng tín hiệu SOS lớp thường (Tạo Case / Bỏ qua) | `web/src/modules/worklist/DongTinHieu.tsx` → `QuickReport.tsx` | `/signals/pending/:id/dismiss` · `/cases/report` |
+| Lọc chương trình Lớp thường / FT cho mọi chỉ số | `shared/domain/tongQuan.ts` | `server/src/worklist/chuongTrinh.ts` |
 | Tổng quan › **Phân tích** (`/phan-tich`) — phân tích vấn đề | `web/src/modules/cases/IssueAnalysis.tsx` | `server/src/cases/effectiveness.ts` |
 | Hàm chung ngày/tuần G-6 (`ngay`, `tuanLich`, `tuanKhoa`) | `shared/domain/hienThiNgay.ts` | — |
 | Form **+ Case** | `web/src/modules/cases/QuickReport.tsx` | `server/src/cases/cases.ts` → `reportIssue` |
@@ -261,14 +263,16 @@ loại dữ liệu mới** vào kịch bản thì thêm trường ở `server/sr
 | Muốn sửa | Mở file |
 |---|---|
 | Danh sách việc của người đang xem | `server/src/worklist/mywork.ts` |
-| Màn Tổng quan | `web/src/modules/worklist/OverviewPage.tsx` |
+| Màn Tổng quan (QL: 4 ô · Cần xử lý · Điểm đáng chú ý · Lịch sắp tới · Theo chi nhánh; GV: Việc cần làm của tôi · Học viên cần hỗ trợ) | `web/src/modules/worklist/OverviewPage.tsx` · `server/src/worklist/tongQuan.ts` · `metrics.ts` (metricSet + chương trình) |
+| Dòng tín hiệu SOS lớp thường (Tạo Case / Bỏ qua) | `web/src/modules/worklist/DongTinHieu.tsx` → `QuickReport.tsx` · `/signals/pending/:id/dismiss` · `/cases/report` |
+| Lọc chương trình Lớp thường / FT cho mọi chỉ số | `shared/domain/tongQuan.ts` · `server/src/worklist/chuongTrinh.ts` |
 | Khu "Việc cần làm" — bộ lọc, phân trang, năm ô của một dòng | `web/src/modules/worklist/WorkList.tsx` |
-| Bảng "Việc cần lưu ý" | `web/src/modules/worklist/BranchPulse.tsx` · `server/src/worklist/branchpulse.ts` |
+| Bảng "Theo chi nhánh" / "Theo lớp" (Việc cần lưu ý) | `web/src/modules/worklist/BranchPulse.tsx` · `server/src/worklist/bangChiNhanh.ts` (bảng **Theo giáo viên** vẫn ở `branchpulse.ts`) |
 | **Ô điểm còn nợ** của bảng chi nhánh — đi qua đúng hàm của bảng chấm (S12, §6) | `server/src/worklist/scoreDebt.ts` → `scoreDebtCells` |
 | Bảng tổng hợp chi nhánh/lớp | `web/src/modules/worklist/SummaryTable.tsx` · `server/src/worklist/summary.ts` |
 | Bảng tổng hợp theo tuần | `web/src/modules/worklist/WeeklyBoard.tsx` · `server/src/worklist/weekly.ts` |
 | Quản lý giao việc cho giáo viên | `web/src/modules/worklist/ManagerTasks.tsx` · `server/src/worklist/meeting.ts` |
-| Khối "Sự kiện nổi bật" (tuần này · tuần tới · tuần nữa) | `web/src/modules/worklist/Highlights.tsx` · `server/src/worklist/highlights.ts` |
+| Khối "Lịch sắp tới" (tuần này · tuần tới · tuần nữa; cột Lớp thường / Fast Track) | `web/src/modules/worklist/Highlights.tsx` · `server/src/worklist/highlights.ts` |
 | Bảng "Phương án và kết quả" của tab Thực trạng | `web/src/modules/cases/IssueAnalysis.tsx` · `server/src/cases/effectiveness.ts` |
 | Tên và ý nghĩa của chín nhóm việc | `server/src/worklist/mywork.ts` → `GROUP_META` |
 | "Việc của tôi" khác "tôi sửa được" | `server/src/permissions.ts` → `mySkills` vs `editableSkills` |
