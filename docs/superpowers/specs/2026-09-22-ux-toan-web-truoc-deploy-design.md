@@ -298,7 +298,7 @@ Kế hoạch: `docs/superpowers/plans/2026-09-23-pr-{form-chon-nguoi,pb-phan-tic
 - Đã giao sửa trước merge: Qa `soCaseMoTheoLop` gọi `listCases(p, {})`; "case" → "Case" `ClassRoster.tsx:271-272`; màu đỏ ô chưa đạt; ô quá tuần thi chưa có điểm. Rc1 "-" lần hai không dời tiếp; ô chỉ đi qua không gửi; `/cham/can-cham` lớp ngoài phạm vi trả `lop: null`; link Lịch Test kèm `kn`; hạn riêng lớp thường ở Cần chấm.
 - **S3:** nhãn "n Case đang mở" ở hộp lớp lệch tổng cột Case (hai nguồn đếm, G-10); `thongTinLop.ts:31` trùng mã lớp phân biệt hoa/thường; `deadlineView` so quá hạn cắt theo UTC; ô Chờ xác minh "tín hiệu" lặp chữ + panel ghi "dưới kỳ vọng" khi chọn Lớp thường; dòng tín hiệu nói "quá hạn" 3 lần (G-3, `display.ts`); bảng chi nhánh xếp Case theo lớp đang học còn bộ lọc chương trình theo lớp của bài Test; lưới chấm Enter khi thiếu tổng vẫn nhảy dòng.
 - **Pb-gọn:** link `view=sos` từ WeeklyBoard (lượt SOS) mở chip "Đang SOS" (số HV).
-- **Chờ chủ sản phẩm:** QL hiện không nhập điểm (chỉ xem; Rc2 cho QL sửa đợt đã hoàn tất có lý do) trong khi §4 ghi "GV môn đó, QL".
+- **Chủ sản phẩm chốt 23/09:** Quản lý **chỉ xem** lưới chấm, không nhập điểm; ngoại lệ duy nhất là sửa đợt đã hoàn tất có lý do (R11, đã làm ở Rc2 #76).
 
 Lý do xếp (phụ thuộc + ma trận chồng file kiểm kê §5.2):
 - Đợt 2: Qa cần O; Pa cần O + S1 (dòng tín hiệu); S2 cần S1 (migrate). Ba PR không chung file.
