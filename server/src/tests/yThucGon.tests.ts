@@ -419,4 +419,57 @@ export async function runYThucGonTests(t: YThucTestKit) {
     const d2 = soCauSql() - before2;
     assert(d2 <= d1 + 1, `số câu SQL không được tăng theo số vi phạm: trước ${d1}, sau khi thêm 20 vi phạm ${d2}`);
   });
+
+  // ==================================================================== 4. Hồ sơ HV — K2-6e (Q16), Task 7
+
+  console.log('\nPR-YT2 · 4. K2-6e (Q16): profile.ts dùng activeClassOf làm MỘT nguồn "lớp đang học"');
+
+  const intake = await import('../classes/intake.ts');
+  const profileSvc = await import('../students/profile.ts');
+  const accessSvc = await import('../yThuc/access.ts');
+
+  /**
+   * Dựng một học viên có HAI ghi danh active mà thứ tự `started_at` NGƯỢC thứ tự `id`: lớp A ghi danh TRƯỚC (id thấp
+   * hơn) nhưng `started_at` MUỘN hơn; lớp B ghi danh SAU (id cao hơn) nhưng `started_at` SỚM hơn. `profile.ts` (xếp
+   * `started_at DESC`) ra lớp A; `activeClassOf` (xếp `id DESC`) ra lớp B — đúng tình huống K2-6e/Q16 mô tả.
+   */
+  function taoHVHaiGhiDanhLech(tag: string): { sid: number; classA: number; classB: number; teacherA: number; teacherB: number } {
+    /* Hai tài khoản giáo viên THẬT đã có sẵn trong bộ demo (dùng khắp các phép kiểm khác) — tránh dò user_id bằng tay. */
+    const teacherA = P.coreTeacher.userId;
+    const teacherB = P.w1Teacher.userId;
+    const now = new Date().toISOString();
+    const classA = (intake.createClass(P.admin, { code: `MB-FT ${tag}A`, branchId: mbBranch, kind: 'FT', isFastTrack: true, startDate: '2026-08-03' }) as any).id as number;
+    const classB = (intake.createClass(P.admin, { code: `MB-FT ${tag}B`, branchId: mbBranch, kind: 'FT', isFastTrack: true, startDate: '2026-08-03' }) as any).id as number;
+    conn.prepare(`INSERT INTO teacher_assignments (class_id, user_id, skill, is_core, status, effective_from, created_at) VALUES (?, ?, NULL, 1, 'active', '2026-01-01', ?)`).run(classA, teacherA, now);
+    conn.prepare(`INSERT INTO teacher_assignments (class_id, user_id, skill, is_core, status, effective_from, created_at) VALUES (?, ?, NULL, 1, 'active', '2026-01-01', ?)`).run(classB, teacherB, now);
+    const sid = Number(conn.prepare(
+      `INSERT INTO students (student_code, full_name, normalized_name, branch_id, status, created_at) VALUES (?,?,?,?, 'active', ?)`,
+    ).run(`PISA-${tag}`, `HV ${tag}`, `hv ${tag.toLowerCase()}`, mbBranch, now).lastInsertRowid);
+    conn.prepare(`INSERT INTO enrollments (student_id, class_id, status, started_at, created_at) VALUES (?,?, 'active', '2026-06-01', ?)`).run(sid, classA, now);
+    conn.prepare(`INSERT INTO enrollments (student_id, class_id, status, started_at, created_at) VALUES (?,?, 'active', '2026-01-01', ?)`).run(sid, classB, now);
+    return { sid, classA, classB, teacherA, teacherB };
+  }
+
+  /*
+   * `studentProfile` còn gọi `skillSupportBoard` bên trong, và hàm đó TỰ kiểm `ATTEMPT_VIEW` theo đúng công thức
+   * `id DESC` (activeClassOf) — có TRƯỚC K2-6e. Nên GV chỉ dạy lớp A (current cũ, started_at) không những
+   * `canRecordViolation`/`canReport` sai mà còn bị `studentProfile` từ chối thẳng — đúng ý "một nguồn lớp đang học"
+   * cho CẢ hồ sơ, không riêng hai cờ đó. GV dạy lớp B (activeClassOf) xem được và có đủ hai quyền.
+   */
+  check('PR-YT2 · K2-6e (Q16): viewer.canRecordViolation theo đúng lớp của activeClassOf; GV chỉ dạy lớp current (started_at) cũ bị từ chối cả hồ sơ', () => {
+    const s = taoHVHaiGhiDanhLech('K16RV');
+    assert(accessSvc.activeClassOf(s.sid) === s.classB, `activeClassOf phải ra lớp ghi danh SAU (id cao hơn): ${accessSvc.activeClassOf(s.sid)}`);
+    const profB = profileSvc.studentProfile(loadPrincipal(s.teacherB), s.sid) as any;
+    assert(profB.viewer.canRecordViolation === true, `GV dạy lớp B (đúng lớp đang học thật theo activeClassOf) phải true: ${JSON.stringify(profB.viewer)}`);
+    assertThrows(() => profileSvc.studentProfile(loadPrincipal(s.teacherA), s.sid), /quyền|phạm vi/,
+      'GV chỉ dạy lớp A (không phải lớp đang học thật) phải bị từ chối xem hồ sơ');
+  });
+
+  check('PR-YT2 · K2-6e (Q16): viewer.canReport cùng luật activeClassOf như canRecordViolation', () => {
+    const s = taoHVHaiGhiDanhLech('K16CR');
+    const profB = profileSvc.studentProfile(loadPrincipal(s.teacherB), s.sid) as any;
+    assert(profB.viewer.canReport === true, `GV dạy lớp B (đúng lớp đang học thật) phải canReport true: ${JSON.stringify(profB.viewer)}`);
+    assertThrows(() => profileSvc.studentProfile(loadPrincipal(s.teacherA), s.sid), /quyền|phạm vi/,
+      'GV chỉ dạy lớp A phải bị từ chối xem hồ sơ (cùng luật)');
+  });
 }
