@@ -510,6 +510,95 @@ export async function runHanhTrinhTests(t: YThucTestKit) {
     }
   });
 
+  // ==================================================================== PR-UX5 (2) — máy chủ thêm trường, không thêm câu SQL
+
+  /* Đo trên DB seed sạch của `origin/main` (Task 0 kế hoạch PR-UX5): số `prepare` của hanhTrinhHocVien(admin, HV1, …). */
+  const SO_CAU_FT = 31;
+  const SO_CAU_THUONG = 33;
+
+  check('PR-UX5 (2) · HV1 "ft": mỗi điểm có attemptNo/kind, ≥ 1 kyVong, chuaDat ⇔ gt < kyVong', () => {
+    const r = hanhTrinhHocVien(P.admin, HV1, 'ft');
+    const moc = r.hop.flatMap((h: any) => h.diem);
+    assert(moc.length > 0, 'HV1 phải có điểm ở hộp Fast Track');
+    assert(moc.every((x: any) => typeof x.attemptNo === 'number' && typeof x.kind === 'string'), 'Mọi điểm phải có attemptNo/kind');
+    assert(moc.some((x: any) => x.kyVong != null), 'Có ít nhất một mốc đã biết kỳ vọng');
+    for (const x of moc) if (x.kyVong != null) assert(x.chuaDat === (x.gt < x.kyVong), `chuaDat lệch kyVong: ${JSON.stringify(x)}`);
+  });
+
+  check('PR-UX5 (2) · HV1 "thuong": kyVong === null (ngưỡng ở shared), maLop là chuỗi khác rỗng', () => {
+    const r = hanhTrinhHocVien(P.admin, HV1, 'thuong');
+    const moc = r.hop.flatMap((h: any) => h.diem);
+    assert(moc.length > 0, 'HV1 phải có điểm ở hộp lớp thường');
+    assert(moc.every((x: any) => x.kyVong === null), 'Lớp thường không có kỳ vọng band');
+    assert(moc.every((x: any) => typeof x.maLop === 'string' && x.maLop.length > 0), 'Mọi điểm lớp thường có mã lớp');
+  });
+
+  check('PR-UX5 (2) · ghim có kyNangChuaDat (mã thuộc ASSESSED_SKILLS) ở cả hai giai đoạn, và dotCho của hộp có "?"', () => {
+    const hop = new Set<string>(d.ASSESSED_SKILLS);
+    for (const gd of ['ft', 'thuong'] as const) {
+      const r = hanhTrinhHocVien(P.admin, HV1, gd);
+      assert(r.ghim.length > 0, `Giai đoạn ${gd} phải có ghim`);
+      for (const g of r.ghim as any[]) {
+        assert(Array.isArray(g.kyNangChuaDat) && g.kyNangChuaDat.every((k: string) => hop.has(k)), `kyNangChuaDat: ${JSON.stringify(g)}`);
+        assert('maLop' in g && 'kyVong' in g, 'Ghim phải có maLop và kyVong');
+      }
+      for (const h of r.hop as any[]) assert(h.conCho ? h.dotCho && typeof h.dotCho.attemptNo === 'number' : h.dotCho === null, `dotCho ↔ conCho: ${h.kyNang}`);
+    }
+  });
+
+  check('PR-UX5 (2) · hai đợt cùng tuần: ghim ra 2 phần tử cùng tuần và gomGhimTheoTuan gom thành 1 nhóm 2 ghim', () => {
+    const r = hanhTrinhHocVien(P.admin, HV1, 'ft');
+    const goc = conn.prepare('SELECT * FROM assessment_attempts WHERE id = ?').get(r.ghim[0].attemptId) as any;
+    const max = (conn.prepare('SELECT MAX(attempt_no) n FROM assessment_attempts WHERE cycle_id = ?').get(goc.cycle_id) as any).n;
+    const id = conn.prepare(
+      `INSERT INTO assessment_attempts (cycle_id, student_id, attempt_no, kind, class_id, planned_period_id, status, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, 'planned', ?)`,
+    ).run(goc.cycle_id, goc.student_id, max + 1, goc.kind, goc.class_id, goc.planned_period_id, new Date().toISOString()).lastInsertRowid as number;
+    try {
+      const sau = hanhTrinhHocVien(P.admin, HV1, 'ft');
+      const tuanGoc = d.mondayOfDate(r.ghim[0].tuan);
+      const cungTuan = sau.ghim.filter((g: any) => d.mondayOfDate(g.tuan) === tuanGoc);
+      assert(cungTuan.length === 2, `Hai đợt cùng tuần ${tuanGoc}: ${cungTuan.length}`);
+      const nhom = d.gomGhimTheoTuan(sau.ghim).filter((n) => n.tuan === tuanGoc);
+      assert(nhom.length === 1 && nhom[0].ghim.length === 2 && nhom[0].ghim[0].attemptNo < nhom[0].ghim[1].attemptNo, `Gom: ${JSON.stringify(nhom)}`);
+    } finally {
+      conn.prepare('DELETE FROM assessment_attempts WHERE id = ?').run(id);
+    }
+  });
+
+  check('PR-UX5 (2) · PA quá hạn có soNgayQuaHan > 0 (khớp followupOverdue), PA không quá hạn có null', () => {
+    const homNay = (hanhTrinhHocVien(P.admin, HV1, null) as any).homNay as string;
+    const row = conn.prepare(
+      `SELECT sc.student_id AS sid FROM case_interventions ci JOIN sos_cases sc ON sc.id = ci.case_id
+        WHERE ci.status NOT IN ('completed', 'cancelled') AND ci.action_due IS NOT NULL AND ci.action_due < ? LIMIT 1`,
+    ).get(homNay) as any;
+    assert(row, 'Seed phải có một PA quá hạn cập nhật');
+    let quaHan = 0;
+    for (const gd of ['ft', 'thuong'] as const) {
+      const r = hanhTrinhHocVien(P.admin, row.sid, gd);
+      for (const h of r.hop as any[]) for (const v of h.vanDe) for (const pa of v.pa) {
+        assert('soNgayQuaHan' in pa, 'Mọi PA phải có soNgayQuaHan');
+        if (pa.followupOverdue) { quaHan += 1; assert(pa.soNgayQuaHan > 0, `PA quá hạn phải > 0 ngày: ${JSON.stringify(pa)}`); }
+        else assert(pa.soNgayQuaHan === null, `PA không quá hạn phải null: ${JSON.stringify(pa)}`);
+      }
+    }
+    assert(quaHan > 0, 'Phải thấy ít nhất một PA quá hạn trong hành trình của học viên đó');
+  });
+
+  check('PR-UX5 (2) · số câu lệnh không tăng so với mốc origin/main (FT ≤ 31, lớp thường ≤ 33)', () => {
+    const demTruyVan = (fn: () => void): number => {
+      let n = 0;
+      const orig = conn.prepare.bind(conn);
+      (conn as any).prepare = (sql: string) => { n += 1; return orig(sql); };
+      try { fn(); } finally { (conn as any).prepare = orig; }
+      return n;
+    };
+    const ft = demTruyVan(() => { hanhTrinhHocVien(P.admin, HV1, 'ft'); });
+    const thuong = demTruyVan(() => { hanhTrinhHocVien(P.admin, HV1, 'thuong'); });
+    assert(ft <= SO_CAU_FT, `Fast Track: ${ft} câu > mốc ${SO_CAU_FT}`);
+    assert(thuong <= SO_CAU_THUONG, `Lớp thường: ${thuong} câu > mốc ${SO_CAU_THUONG}`);
+  });
+
   // ==================================================================== Task 3 — hồ sơ mở đúng đợt, khoá đang học, thông báo
 
   const { studentProfile } = await import('../students/profile.ts');

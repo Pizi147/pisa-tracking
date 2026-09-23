@@ -1,6 +1,7 @@
 import { db } from '../db.ts';
 import {
   CASE_CATEGORY_LABEL, INTERVENTION_KIND_LABEL, PERMISSIONS, caseCategoriesFor, caseTitle, type CaseCategory,
+  type DiemMoc, type DotRef,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { require_, type Principal } from '../permissions.ts';
@@ -193,6 +194,8 @@ export function hanhTrinhHocVien(p: Principal, studentId: number, giaiDoanMuon: 
           attemptId: a.id, tuan: a.week_start,
           cheDo: 'ratio' as const, attemptNo: a.attempt_no, kind: a.kind,
           overall: null, sosLevel: r.sosLevel, soDat, soYeuCau: r.required, soCoDiem: r.scored,
+          maLop: (a.class_code as string | null) ?? null, kyVong: null as number | null,
+          kyNangChuaDat: r.skills.filter((s) => s.outcome === 'fail').map((s) => s.skill as string),
         };
       }
       const r = t.ft!;
@@ -200,26 +203,41 @@ export function hanhTrinhHocVien(p: Principal, studentId: number, giaiDoanMuon: 
         attemptId: a.id, tuan: a.week_start,
         cheDo: 'ielts' as const, attemptNo: a.attempt_no, kind: a.kind,
         overall: r.overall, sosLevel: r.sosLevel, soDat: null, soYeuCau: r.required.length, soCoDiem: r.scoredRequired,
+        maLop: (a.class_code as string | null) ?? null, kyVong: r.expectation,
+        kyNangChuaDat: r.verdicts.filter((v) => v.passed === false).map((v) => v.skill as string),
       };
     });
 
   // -------------------------------------------------------------- hop (hộp kỹ năng)
   const boHop = caseCategoriesFor(ratio ? 'ratio' : 'ielts_band');
   const hop = boHop.map((kyNang) => {
-    const diem: { gt: number; tong?: number | null; chuaDat: boolean }[] = [];
+    const diem: DiemMoc[] = [];
     let conCho = false;
+    let dotCho: DotRef | null = null;
+    /* Lượt `planned` ĐẦU TIÊN chưa có điểm kỹ năng này — mốc "?" gọi tên đợt đó. */
+    const choDiem = (a: any, cheDo: DotRef['cheDo']) => {
+      if (a.status !== 'planned') return;
+      if (!conCho) dotCho = { cheDo, attemptNo: a.attempt_no, kind: a.kind, maLop: a.class_code ?? null };
+      conCho = true;
+    };
     for (const a of attemptRows) {
       const t = typed.get(a.id)!;
       if (t.mode === 'ratio') {
         const s = t.ratio!.skills.find((x) => x.skill === kyNang);
         if (!s) continue;
-        if (s.score === null) { if (a.status === 'planned') conCho = true; continue; }
-        diem.push({ gt: s.score, tong: s.total, chuaDat: s.outcome === 'fail' });
+        if (s.score === null) { choDiem(a, 'ratio'); continue; }
+        diem.push({
+          gt: s.score, tong: s.total, chuaDat: s.outcome === 'fail',
+          attemptNo: a.attempt_no, kind: a.kind, maLop: a.class_code ?? null, kyVong: null,
+        });
       } else {
         const band = scoresByAttempt.get(a.id)?.find((x) => x.skill === kyNang)?.band ?? null;
-        if (band === null) { if (a.status === 'planned') conCho = true; continue; }
+        if (band === null) { choDiem(a, 'ielts'); continue; }
         const exp = t.ft!.expectation;
-        diem.push({ gt: band, tong: null, chuaDat: exp !== null && band < exp });
+        diem.push({
+          gt: band, tong: null, chuaDat: exp !== null && band < exp,
+          attemptNo: a.attempt_no, kind: a.kind, maLop: a.class_code ?? null, kyVong: exp,
+        });
       }
     }
     const diemCuoiChuaDat = diem.length ? diem[diem.length - 1].chuaDat : null;
@@ -245,6 +263,9 @@ export function hanhTrinhHocVien(p: Principal, studentId: number, giaiDoanMuon: 
         status: iv.status,
         lastOutcome: lastOutcomeOf.get(iv.id) ?? null,
         followupOverdue: iv.status !== 'completed' && !!iv.action_due && iv.action_due < homNay,
+        soNgayQuaHan: iv.status !== 'completed' && iv.action_due && iv.action_due < homNay
+          ? Math.max(1, Math.round((Date.parse(homNay) - Date.parse(iv.action_due)) / 86_400_000))
+          : null,
         supersededBy: iv.superseded_by ?? null,
         noiTiepTu: noiTiepTuOf.get(iv.id) ?? null,
       }));
@@ -262,7 +283,7 @@ export function hanhTrinhHocVien(p: Principal, studentId: number, giaiDoanMuon: 
 
     return {
       kyNang, nhan: CASE_CATEGORY_LABEL[kyNang], cheDo: ratio ? ('ratio' as const) : ('ielts' as const),
-      diem, conCho, caseMo, coTungCase, diemCuoiChuaDat, xongGanNhat, vanDe,
+      diem, conCho, dotCho: dotCho as DotRef | null, caseMo, coTungCase, diemCuoiChuaDat, xongGanNhat, vanDe,
     };
   });
 
