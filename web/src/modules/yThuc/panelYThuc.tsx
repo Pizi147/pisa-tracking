@@ -34,6 +34,8 @@ export function usePanelYThuc({ canManage, onDone, roster }: {
 }): { mo: (p: PanelYThuc) => void; moPhuongAn: (m: { id: number; status: string }) => void; panels: ReactNode } {
   const [panel, setPanel] = useState<PanelYThuc>(null);
   const [deleteId, setDeleteId] = useState<number | null>(null);
+  /** Đang xoá vi phạm từ TRONG form Sửa (mở từ một PA) — nhớ PA để quay lại SAU KHI hộp xác nhận xoá đóng, không mở chồng lên nó. */
+  const [pendingQuayVe, setPendingQuayVe] = useState<number | undefined>(undefined);
 
   const mo = (p: PanelYThuc) => setPanel(p);
   const dong = () => setPanel(null);
@@ -48,6 +50,17 @@ export function usePanelYThuc({ canManage, onDone, roster }: {
     const quayVe = panel?.loai === 'sua' ? panel.quayVe : undefined;
     dong();
     if (quayVe) mo({ loai: 'pa', id: quayVe });
+  };
+
+  /* YT-13: "Xoá vi phạm" trong form Sửa (mở từ PA) — đóng form Sửa NGAY, KHÔNG mở lại PA cho tới khi hộp xác nhận xoá đóng (tránh hai panel chồng nhau). */
+  const suaXoa = (id: number) => {
+    setPendingQuayVe(panel?.loai === 'sua' ? panel.quayVe : undefined);
+    dong();
+    setDeleteId(id);
+  };
+  const deleteDong = () => {
+    setDeleteId(null);
+    if (pendingQuayVe) { mo({ loai: 'pa', id: pendingQuayVe }); setPendingQuayVe(undefined); }
   };
 
   const panels = (
@@ -65,7 +78,7 @@ export function usePanelYThuc({ canManage, onDone, roster }: {
         studentId={panel?.loai === 'sua' ? panel.v.studentId : 0}
         violation={panel?.loai === 'sua' ? panel.v : null}
         onDone={onDone}
-        onDelete={(id) => setDeleteId(id)}
+        onDelete={suaXoa}
       />
       <CreateMeasurePanel
         open={panel?.loai === 'tao-pa'} onClose={dong}
@@ -78,12 +91,13 @@ export function usePanelYThuc({ canManage, onDone, roster }: {
       {panel?.loai === 'pa' && (
         <PhuongAnPanel measureId={panel.id} onClose={dong} onDone={xong}
           onXacNhan={(id) => mo({ loai: 'xac-nhan', id })}
-          onSuaViPham={(v, mid) => mo({ loai: 'sua', v, quayVe: mid })} />
+          onSuaViPham={(v, mid) => mo({ loai: 'sua', v, quayVe: mid })}
+          onMoPhuongAnKhac={moPhuongAn} />
       )}
       <ConfirmMeasurePanel open={panel?.loai === 'xac-nhan'} onClose={dong}
         measureId={panel?.loai === 'xac-nhan' ? panel.id : null} onDone={xong} />
       <XemPhuongAnPanel measureId={panel?.loai === 'xem-pa' ? panel.id : null} onClose={dong} />
-      <DeleteViolationConfirm violationId={deleteId} onClose={() => setDeleteId(null)} onDone={onDone} />
+      <DeleteViolationConfirm violationId={deleteId} onClose={deleteDong} onDone={onDone} />
     </>
   );
 

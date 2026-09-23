@@ -120,7 +120,8 @@ export function RecordViolationPanel({
     if (daGhi) {
       const { id, studentName: sn } = daGhi;
       reset(); onClose(); onDone?.();
-      toast.push('info', `Đã ghi vi phạm cho ${sn}`, { ms: 10000, hanhDong: { nhan: 'Hoàn tác', onBam: () => hoanTac(id) } });
+      /* `key` cố định — ghi hai vi phạm liên tiếp thì toast MỚI thay toast CŨ, không chồng hai toast Hoàn tác cùng lúc. */
+      toast.push('info', `Đã ghi vi phạm cho ${sn}`, { ms: 10000, hanhDong: { nhan: 'Hoàn tác', onBam: () => hoanTac(id) }, key: 'ghi-vi-pham' });
     } else {
       onClose();
     }
@@ -163,7 +164,8 @@ export function RecordViolationPanel({
         ) : (
           <>
             {editing && violation && onDelete && (
-              <button className="btn btn-ghost text-rose-200 mr-auto" onClick={() => { onClose(); onDelete(violation.id); }}>Xoá vi phạm</button>
+              /* Chỉ gọi onDelete — nơi gọi (usePanelYThuc) tự đóng form này VÀ quyết định lúc nào mở lại panel trước đó (sau khi hộp xác nhận xoá đóng), không phải ở đây. */
+              <button className="btn btn-ghost text-rose-200 mr-auto" onClick={() => onDelete(violation.id)}>Xoá vi phạm</button>
             )}
             <button className="btn" onClick={dong}>Huỷ</button>
             <button className="btn btn-primary" disabled={busy || !!missing} title={missing ?? undefined} onClick={submit}>Lưu</button>

@@ -28,12 +28,14 @@ type MeasureDetail = {
  * phạm TẠI CHỖ, một lần Lưu (Q1/Q2). Sửa một vi phạm bên trong: đóng panel này → mở form Sửa → xong quay lại đúng đây
  * (Q3, xử lý ở `usePanelYThuc`). Danh sách vi phạm có thay đổi CHƯA LƯU thì khoá Sửa/Xoá của từng vi phạm.
  */
-export function PhuongAnPanel({ measureId, onClose, onDone, onXacNhan, onSuaViPham }: {
+export function PhuongAnPanel({ measureId, onClose, onDone, onXacNhan, onSuaViPham, onMoPhuongAnKhac }: {
   measureId: number;
   onClose: () => void;
   onDone?: () => void;
   onXacNhan: (measureId: number) => void;
   onSuaViPham: (v: { id: number; studentId: number; category: string; skill: string | null; occurredOn: string; description: string }, measureId: number) => void;
+  /** Vi phạm này còn nằm ở MỘT phương án KHÁC — mở đúng phương án đó (đóng PA đang xem trước). */
+  onMoPhuongAnKhac: (m: { id: number; status: string }) => void;
 }) {
   const toast = useToast();
   const { session } = useSession();
@@ -67,7 +69,14 @@ export function PhuongAnPanel({ measureId, onClose, onDone, onXacNhan, onSuaViPh
   const byId = new Map((allV.data?.rows ?? []).map((v) => [v.id, v]));
   const list = [...picked].map((id) => byId.get(id)).filter((v): v is ViolationRow => !!v)
     .sort((a, b) => b.occurredOn.localeCompare(a.occurredOn) || b.id - a.id);
-  const them = chiaThemViPham(allV.data?.rows ?? [], picked);
+  /*
+   * Bỏ tích một vi phạm ĐANG thuộc PA này (nằm trong `d.violations` gốc) thì coi là "chưa xử lý" cho mục "Thêm vi phạm" —
+   * lưu xong nó sẽ thật sự rời PA và về lại tập chưa xử lý; xếp nó vào "Xem thêm … (đã xử lý)" theo `state` máy chủ
+   * (vẫn 'preparing' vì CHƯA lưu) là sai chỗ.
+   */
+  const gocIds = new Set(d.violations.map((v) => v.id));
+  const rowsChoThem = (allV.data?.rows ?? []).map((v) => (gocIds.has(v.id) ? { ...v, state: 'unhandled' as const } : v));
+  const them = chiaThemViPham(rowsChoThem, picked);
   const laDuyNhat = picked.size === 1;
 
   const goc: PatchPhuongAnGoc = {
@@ -80,7 +89,8 @@ export function PhuongAnPanel({ measureId, onClose, onDone, onXacNhan, onSuaViPh
     ownerUserId, violationIds: [...picked],
   });
   const dirty = patch !== null;
-  const choSuaXoa = !dirty && !laDuyNhat;
+  const choSua = !dirty;
+  const choXoa = !dirty && !laDuyNhat;
 
   const isLocked = (k: string) => (kinds.data?.rows ?? []).find((r) => r.kind === k)?.available === false;
   const lockReason = (k: string) => (kinds.data?.rows ?? []).find((r) => r.kind === k)?.reason ?? null;
@@ -191,10 +201,14 @@ export function PhuongAnPanel({ measureId, onClose, onDone, onXacNhan, onSuaViPh
                 </div>
                 {moChiTiet === v.id && (
                   <div className="mt-1.5 ml-6 border-l pl-3" style={{ borderColor: 'var(--line)' }}>
-                    <ChiTietViPham violationId={v.id} canManage={d.canManage} boQuaPhuongAnId={measureId} choSuaXoa={choSuaXoa}
+                    <ChiTietViPham violationId={v.id} canManage={d.canManage} boQuaPhuongAnId={measureId} choSua={choSua} choXoa={choXoa}
                       onSua={(vv) => onSuaViPham({ ...vv }, measureId)}
-                      onDaXoa={() => { setMoChiTiet(null); reload(); }}
-                      onMoPhuongAn={() => {}} />
+                      onDaXoa={() => {
+                        setPicked((s) => { const n = new Set(s); n.delete(v.id); return n; });
+                        setMoChiTiet(null);
+                        reload();
+                      }}
+                      onMoPhuongAn={onMoPhuongAnKhac} />
                   </div>
                 )}
               </li>

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { api } from '../../lib/api.ts';
+import { api, invalidate } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { Modal } from '../../ui/Drawer.tsx';
@@ -27,6 +27,7 @@ export function XemPhuongAnPanel({ measureId, onClose }: { measureId: number | n
     setBusy(true);
     try {
       await api.patch(`/measures/${measureId}`, { note: note.trim() || null });
+      invalidate('/measures'); invalidate('/classes'); invalidate('/students'); invalidate('/y-thuc');
       toast.push('ok', 'Đã lưu ghi chú');
       setSuaGhiChu(false);
       reload();

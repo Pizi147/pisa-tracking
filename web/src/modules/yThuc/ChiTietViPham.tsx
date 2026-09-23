@@ -21,15 +21,17 @@ export type ViolationDetail = {
  * Bốn khối: Bằng chứng · Phương án (nút mở đúng PA) · Đã sửa {n} lần · Xem · Sửa/Xoá tại dòng.
  */
 export function ChiTietViPham({
-  violationId, canManage, boQuaPhuongAnId, choSuaXoa, onSua, onDaXoa, onMoPhuongAn,
+  violationId, canManage, boQuaPhuongAnId, choSua, choXoa, onSua, onDaXoa, onMoPhuongAn,
 }: {
   violationId: number;
   /** Chưa dùng trực tiếp — quyền Sửa/Xoá lấy từ `d.canEdit` do máy chủ tính đúng theo người ghi/GVCN/Quản lý; giữ tham số để nơi gọi truyền cho khớp chữ ký kế hoạch. */
   canManage: boolean;
   /** PA đang mở sẵn (không hiện nút mở lại chính nó). */
   boQuaPhuongAnId?: number | null;
-  /** `false` khi PA cha đang có thay đổi chưa lưu — khoá Sửa/Xoá của vi phạm (Q3). */
-  choSuaXoa?: boolean;
+  /** `false` khi PA cha đang có thay đổi chưa lưu — khoá Sửa (Q3). Mặc định cho sửa. */
+  choSua?: boolean;
+  /** `false` khi PA cha đang có thay đổi chưa lưu, HOẶC đây là vi phạm duy nhất của PA — khoá Xoá (không khoá Sửa). Mặc định cho xoá. */
+  choXoa?: boolean;
   onSua: (v: ViolationDetail) => void;
   onDaXoa: () => void;
   onMoPhuongAn: (m: { id: number; status: string }) => void;
@@ -45,7 +47,8 @@ export function ChiTietViPham({
   if (!d) return <Skeleton rows={3} />;
 
   const soLanSua = demLanSua(d.history);
-  const xoaDuoc = d.canEdit && choSuaXoa !== false;
+  const suaDuoc = d.canEdit && choSua !== false;
+  const xoaDuoc = d.canEdit && choXoa !== false;
 
   const xoa = async () => {
     setBusy(true); setErrXoa(null);
@@ -103,22 +106,18 @@ export function ChiTietViPham({
       )}
 
       <div className="flex items-center gap-2 pt-1">
-        {xoaDuoc ? (
-          <>
-            <button type="button" className="btn btn-sm" onClick={() => onSua(d)}>Sửa</button>
-            {!hoiXoa ? (
-              <button type="button" className="btn btn-sm btn-ghost text-rose-200" onClick={() => setHoiXoa(true)}>Xoá</button>
-            ) : (
-              <span className="flex flex-wrap items-center gap-2 text-xs text-amber-200/90">
-                Xoá vi phạm này? Nó sẽ bị gỡ khỏi {d.measures.length} phương án.
-                <button type="button" className="btn btn-sm btn-ghost" disabled={busy} onClick={() => { setHoiXoa(false); setErrXoa(null); }}>Huỷ</button>
-                <button type="button" className="btn btn-sm text-rose-200" disabled={busy} onClick={xoa}>Xoá</button>
-              </span>
-            )}
-          </>
+        {suaDuoc && <button type="button" className="btn btn-sm" onClick={() => onSua(d)}>Sửa</button>}
+        {xoaDuoc && (!hoiXoa ? (
+          <button type="button" className="btn btn-sm btn-ghost text-rose-200" onClick={() => setHoiXoa(true)}>Xoá</button>
         ) : (
-          choSuaXoa === false && <span className="text-[11px] text-amber-200/80" title="Lưu phương án trước">Sửa · Xoá — lưu phương án trước</span>
-        )}
+          <span className="flex flex-wrap items-center gap-2 text-xs text-amber-200/90">
+            Xoá vi phạm này? Nó sẽ bị gỡ khỏi {d.measures.length} phương án.
+            <button type="button" className="btn btn-sm btn-ghost" disabled={busy} onClick={() => { setHoiXoa(false); setErrXoa(null); }}>Huỷ</button>
+            <button type="button" className="btn btn-sm text-rose-200" disabled={busy} onClick={xoa}>Xoá</button>
+          </span>
+        ))}
+        {/* Chỉ dirty (chưa lưu) mới nói "lưu phương án trước" — vi phạm duy nhất (chỉ khoá Xoá) không có gì chưa lưu thì im lặng. */}
+        {d.canEdit && choSua === false && <span className="text-[11px] text-amber-200/80" title="Lưu phương án trước">Sửa · Xoá — lưu phương án trước</span>}
       </div>
       {errXoa && <p className="text-xs text-rose-300 m-0">{errXoa}</p>}
     </div>

@@ -41,6 +41,16 @@ const BO_LOC_PHU_LABEL: Record<BoLocPhu, string> = {
   'tat-ca': 'Tất cả', 'chua-xu-ly': 'Chưa xử lý', 'co-pa-dang-chuan-bi': 'Có PA đang chuẩn bị', 'qua-5-ngay': '> 5 ngày',
 };
 const KHOANG_LABEL: Record<'7' | '30' | 'all', string> = { '7': '7 ngày', '30': '30 ngày', all: 'Tất cả thời gian' };
+/** Câu rỗng nói ĐÚNG chip đang lọc — thay vì một câu chung chung khi rõ ràng là do bốn chip phụ (YT-12) lọc hết. */
+const RONG_THEO_CHIP: Record<Exclude<BoLocPhu, 'tat-ca'>, string> = {
+  'chua-xu-ly': 'chưa xử lý', 'co-pa-dang-chuan-bi': 'có PA đang chuẩn bị', 'qua-5-ngay': 'quá 5 ngày',
+};
+function rongVi(boLoc: BoLocPhu, macDinh: string): string {
+  return boLoc === 'tat-ca' ? macDinh : `Không có vi phạm nào ${RONG_THEO_CHIP[boLoc]}.`;
+}
+function rongHocVien(boLoc: BoLocPhu, macDinh: string): string {
+  return boLoc === 'tat-ca' ? macDinh : `Không có học viên nào ${RONG_THEO_CHIP[boLoc] === 'chưa xử lý' ? 'có vi phạm chưa xử lý' : RONG_THEO_CHIP[boLoc]}.`;
+}
 
 /**
  * `Ý THỨC & PHỐI HỢP` CỦA HỒ SƠ LỚP — theo prototype v3 `thiet-ke/tham-khao/ho-so-lop-v3.html` (spec PR-HV §4.5, A7);
@@ -216,7 +226,7 @@ export function ClassYThucCard({ classId }: { classId: number }) {
           )}
 
           {mode === 'byStudent' ? (
-            students.length === 0 ? <Empty title="Không còn vi phạm nào chưa xử lý." /> : (
+            students.length === 0 ? <Empty title={rongHocVien(boLocPhu, 'Không còn vi phạm nào chưa xử lý.')} /> : (
               <ul className="list-none p-0 m-0 space-y-1.5">
                 {students.map((s) => {
                   const r = rosterById.get(s.studentId);
@@ -356,7 +366,7 @@ export function ClassYThucCard({ classId }: { classId: number }) {
                 onMo: () => setMoViPhamId((cur) => (cur === v.id ? null : v.id)),
                 chiTiet: chiTietCuaDong(v),
               }))}
-              rong={<Empty title="Không có vi phạm nào trong khoảng này." />} />
+              rong={<Empty title={rongVi(boLocPhu, 'Không có vi phạm nào trong khoảng này.')} />} />
           )}
         </div>
       )}

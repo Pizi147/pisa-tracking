@@ -33,6 +33,9 @@ export function YThucAnalysisView({ branchId, ct, from, classId }: {
   branchId: number | null; ct: ChuongTrinh; from: string | null; classId: number | null;
 }) {
   const extra: Record<string, string> = { ...(from ? { from } : {}), ...(classId ? { classId: String(classId) } : {}) };
+  /* `case-cho-xac-dinh-nguyen-nhan` là chỉ số HỌC THUẬT (Case), không thuộc Ý thức/Phối hợp — máy chủ từ chối `classId` (400).
+     Dùng riêng `extra` KHÔNG có `classId` cho ô này, và nói rõ bằng ⓘ để không ai tưởng nó đã lọc theo lớp đang chọn. */
+  const extraKhongLop: Record<string, string> = from ? { from } : {};
   const phamVi = { branchId, chuongTrinh: ct };
 
   const hvCoViPham = useMetric('hv-co-vi-pham', branchId, ct, extra);
@@ -43,7 +46,7 @@ export function YThucAnalysisView({ branchId, ct, from, classId }: {
   const phoiHopLuotSos = useMetric('phoi-hop-luot-sos', branchId, ct, extra);
   const phoiHopDangXuLy = useMetric('phoi-hop-dang-xu-ly', branchId, ct, extra);
   const phoiHopHoanThanh = useMetric('phoi-hop-hoan-thanh', branchId, ct, extra);
-  const caseChoXacDinh = useMetric('case-cho-xac-dinh-nguyen-nhan', branchId, ct, extra);
+  const caseChoXacDinh = useMetric('case-cho-xac-dinh-nguyen-nhan', branchId, ct, extraKhongLop);
 
   const nhomByKind = viPhamTheoNhom.data?.byKind ?? {};
   const dangChuanBiByKind = bienPhapDangChuanBi.data?.byKind ?? {};
@@ -147,7 +150,9 @@ export function YThucAnalysisView({ branchId, ct, from, classId }: {
             ) : undefined} />
           <SoLieu id="phoi-hop-dang-xu-ly" giaTri={phoiHopDangXuLy.data?.n ?? 0} phamVi={phamVi} rong={phoiHopDangXuLy.data?.empty} extra={extra} />
           <SoLieu id="phoi-hop-hoan-thanh" giaTri={phoiHopHoanThanh.data?.n ?? 0} phamVi={phamVi} rong={phoiHopHoanThanh.data?.empty} extra={extra} />
-          <SoLieu id="case-cho-xac-dinh-nguyen-nhan" giaTri={caseChoXacDinh.data?.n ?? 0} phamVi={phamVi} rong={caseChoXacDinh.data?.empty} extra={extra} />
+          <SoLieu id="case-cho-xac-dinh-nguyen-nhan" giaTri={caseChoXacDinh.data?.n ?? 0} phamVi={phamVi} rong={caseChoXacDinh.data?.empty}
+            extra={extraKhongLop}
+            phu={classId ? <span title="Chỉ số học thuật, máy chủ chưa lọc theo lớp — luôn tính cả chi nhánh đang xem.">ⓘ Không lọc theo lớp</span> : undefined} />
         </div>
       </div>
 

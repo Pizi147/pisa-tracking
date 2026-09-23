@@ -2,8 +2,9 @@ import { createContext, useCallback, useContext, useMemo, useState, type ReactNo
 
 /** PR-YT2 Q5: nút trong toast (ví dụ `Hoàn tác`) — bấm thì chạy `onBam` rồi gỡ toast luôn, không chờ hết `ms`. */
 type HanhDong = { nhan: string; onBam: () => void };
-type Toast = { id: number; kind: 'ok' | 'error' | 'info'; text: string; hanhDong?: HanhDong };
-type PushOpts = { hanhDong?: HanhDong; ms?: number };
+type Toast = { id: number; kind: 'ok' | 'error' | 'info'; text: string; hanhDong?: HanhDong; key?: string };
+/** `key` — cùng khoá thì toast MỚI thay toast CŨ (không chồng hai toast của cùng một việc, ví dụ ghi hai vi phạm liên tiếp). */
+type PushOpts = { hanhDong?: HanhDong; ms?: number; key?: string };
 type Ctx = { push: (kind: Toast['kind'], text: string, opts?: PushOpts) => void };
 
 const ToastCtx = createContext<Ctx>({ push: () => {} });
@@ -13,7 +14,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<Toast[]>([]);
   const push = useCallback((kind: Toast['kind'], text: string, opts?: PushOpts) => {
     const id = Date.now() + Math.random();
-    setItems((s) => [...s, { id, kind, text, hanhDong: opts?.hanhDong }]);
+    setItems((s) => [...(opts?.key ? s.filter((t) => t.key !== opts.key) : s), { id, kind, text, hanhDong: opts?.hanhDong, key: opts?.key }]);
     const ms = opts?.ms ?? (kind === 'error' ? 7000 : 3500);
     setTimeout(() => setItems((s) => s.filter((t) => t.id !== id)), ms);
   }, []);
