@@ -621,3 +621,15 @@ Commit `PR-Qb (8): 375px hồ sơ học viên, bảng định vị, CODE_MAP, đ
 
   `git status` sạch trừ ảnh mới + sửa mã (không còn file Vite/DB tạm — `data/` đã gitignore, dừng hẳn dev
   server sau khi chụp xong). Push, cập nhật PR #75. Báo planning.
+
+- **Xung đột merge với `main` ngay sau khi push (Auto-fix pull requests báo):** PR-Rc2 (#76, Kế hoạch Test)
+  merge vào `main` đúng lúc giữa hai lần push của round trên. Theo đúng hướng dẫn của sự kiện (không rebase,
+  không force-push lần này — MERGE để giữ đúng lịch sử đã push): `sync_with_base_branch` từ chối vì worktree
+  này không phải do app tạo (worktree thủ công từ đầu phiên) — tự làm bằng `git fetch origin main && git merge
+  FETCH_HEAD`. Bốn xung đột, đều "chỉ thêm khối" (Rc2 thêm entry riêng cạnh entry của Qb, không sửa cùng dòng):
+  `shared/domain/index.ts` (export `keHoachTest.ts` của Rc2 + `duongHoSo.ts`/`hanhTrinh.ts` của Qb),
+  `server/src/tests/run.ts` (khối `runKeHoachTestTests` của Rc2 + `runHanhTrinhTests` của Qb),
+  `server/src/tests/tocDoDuong.ts` (đường + trần của cả hai PR), `plan.md` (mục R7/R8 Qb đánh dấu xong nằm
+  sát mục R9 mà Rc2 cũng vừa đánh dấu xong — giữ CẢ HAI, không phải chọn một). `npm run check`: **995 kiểm tra
+  đều đạt** (971 của Qb + 24 của Rc2's `keHoachTest.tests.ts`). Merge commit (không rebase), push thường (không
+  force). `gh pr view 75` xác nhận `mergeable: MERGEABLE`, `mergeStateStatus: CLEAN`.
