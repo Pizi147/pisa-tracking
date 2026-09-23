@@ -211,10 +211,11 @@ function HopLop({ lop, mo, onDoiMo, chiHien, sapXep, chiMinh, onThemHocVien, onD
   const navigate = useNavigate();
   const thuong = lop.scoringMode === 'ratio';
   const b = badgeLop({
-    needsPlacement: lop.needsPlacement, studentCount: lop.studentCount, missingSkills: lop.missingSkills,
+    // canXepLop/soChuaLoTrinhTiep: 0 tạm — Task 3 (PR-LT) nối số thật từ GET /hoc-vien-lop.
+    needsPlacement: lop.needsPlacement, canXepLop: 0, missingSkills: lop.missingSkills,
     needScoresText: lop.needScores > 0 ? needScoresText(lop.workScope, lop.needScores) : null,
     soCaseMo: lop.soCaseMo, phase: lop.phase,
-    missingCount: lop.missing.filter((m) => m.key !== 'teachers').length,
+    missingCount: lop.missing.filter((m) => m.key !== 'teachers').length, soChuaLoTrinhTiep: 0,
   });
   const denBadge = (x: BadgeLop): string | null =>
     x.key === 'cham' ? `/test/can-cham?classId=${lop.id}${chiMinh ? '&scope=mine' : ''}`

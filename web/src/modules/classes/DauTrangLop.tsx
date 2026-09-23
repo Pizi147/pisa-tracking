@@ -50,10 +50,11 @@ export function DauTrangLop({ data, periodId, onViec, onCheDoCanHoTro }: {
   const gvcn = data.coreTeachers[0] ?? null;
   const nhom = nhomGiaoVienBoMon(data.skills.map((x) => x.skill), data.skillTeachers);
   const b = badgeLop({
-    needsPlacement: !!s?.needsPlacement, studentCount: s?.studentCount ?? 0, missingSkills: s?.missingSkills ?? [],
+    // canXepLop/soChuaLoTrinhTiep: 0 tạm — Task 3 (PR-LT) nối số thật từ classOverview.summary.
+    needsPlacement: !!s?.needsPlacement, canXepLop: 0, missingSkills: s?.missingSkills ?? [],
     needScoresText: s && s.needScores > 0 ? needScoresText(s.workScope, s.needScores) : null,
     soCaseMo: data.soCaseMo, phase: s?.phase ?? 'running',
-    missingCount: (s?.missing ?? []).filter((m) => m.key !== 'teachers').length,
+    missingCount: (s?.missing ?? []).filter((m) => m.key !== 'teachers').length, soChuaLoTrinhTiep: 0,
   });
   const bamBadge = (x: BadgeLop): (() => void) | null =>
     x.key === 'case' ? onCheDoCanHoTro

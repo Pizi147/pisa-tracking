@@ -9589,6 +9589,11 @@ await runKeHoachTestTests({ check, checkAsync, assert, assertThrows, conn, TODAY
 const { runCongViecTests } = await import('./congViec.tests.ts');
 await runCongViecTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
+// ==================================================================== PR-LT (Lên lớp, chuyển lớp)
+
+const { runLenLopTests } = await import('./lenLop.tests.ts');
+await runLenLopTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
+
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`
