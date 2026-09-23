@@ -3,8 +3,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { cauHinhDb, choPhepSeedTurso, coCoBanChinh } from './moiTruong.ts';
-import { chanGiaoDichNeuSapHetGio } from './platform/hanGio.ts';
+import { chanGiaoDichNeuSapHetGio, conLaiMs, KHONG_MO_GIAO_DICH_KHI_CON_MS } from './platform/hanGio.ts';
 import { demCau, xoaNho } from './platform/nguCanhRequest.ts';
+import { HttpError } from './util.ts';
 
 /*
  * libsql gắn thêm `_metadata: { duration }` vào MỖI dòng `.get()` trả về (better-sqlite3 thì không). Khoá này lọt
@@ -34,7 +35,10 @@ import { demCau, xoaNho } from './platform/nguCanhRequest.ts';
     }
     proto[ten] = function (this: unknown, ...args: unknown[]) {
       if (ten === 'run') xoaNho();
-      const out = goc.apply(this, motNull(args));
+      /* Z2c-d: ghi lẻ NGOÀI giao dịch (mốc dùng phiên, lần thử đăng nhập…) gặp khoá của người khác thì chờ như tx(). */
+      const out = ten === 'run' && !instance?.inTransaction
+        ? choKhoaGhi(() => goc.apply(this, motNull(args)))
+        : goc.apply(this, motNull(args));
       demCau();
       return out;
     };
@@ -189,6 +193,46 @@ export function recreateSchema() {
 }
 
 /*
+ * GHI ĐỒNG THỜI (PR-Z2c-d). Bản chính 24/09 (log `mã 77e7df8f`): gõ điểm L rồi Tab sang R → hai lần lưu gần như cùng lúc trên
+ * hai bản hàm Netlify. Giao dịch mở bằng BEGIN thường chỉ xin khoá ghi ở câu GHI đầu tiên; lúc đó bên kia đang giữ khoá và
+ * SQLite trả SQLITE_BUSY NGAY (không chờ được khi nâng từ đọc lên ghi) → giáo viên mất điểm vừa gõ.
+ * Nay giao dịch ngoài mở bằng BEGIN IMMEDIATE: xin khoá ghi TRƯỚC mọi câu. Turso tự chờ khoá ở câu này (đo trên DB thử 24/09);
+ * file cục bộ thì không chờ (libsql không đặt busy_timeout) — nên vẫn tự thử lại ở đây, nghỉ ngắn dần dài, tối đa
+ * CHO_KHOA_GHI_MS và không quá hạn của lời gọi (AN-5). Thử lại an toàn: câu bị BUSY chưa ghi gì, fn chưa chạy.
+ */
+export const CHO_KHOA_GHI_MS = 5_000;
+
+export function laLoiBan(e: unknown): boolean {
+  const x = e as { code?: unknown; message?: unknown } | null;
+  return !!x && (x.code === 'SQLITE_BUSY' || /SQLITE_BUSY|database is locked/i.test(String(x.message ?? '')));
+}
+
+const O_NGU = new Int32Array(new SharedArrayBuffer(4));
+/** Nghỉ đồng bộ — libsql chạy đồng bộ nên cả lời gọi vốn đã chặn; một bản hàm Netlify chỉ phục vụ một lời gọi mỗi lúc. */
+function ngu(ms: number): void { Atomics.wait(O_NGU, 0, 0, ms); }
+
+function choKhoaGhi<T>(lam: () => T): T {
+  const batDau = Date.now();
+  for (let lan = 0; ; lan++) {
+    try {
+      const out = lam();
+      if (lan > 0) console.warn(`[turso] chờ khoá ghi ${Date.now() - batDau} ms (${lan} lần bận) rồi ghi được`);
+      return out;
+    } catch (e) {
+      if (!laLoiBan(e)) throw e;
+      const daCho = Date.now() - batDau;
+      const nghi = Math.min(50 * 2 ** lan, 400);
+      const con = conLaiMs();
+      if (daCho + nghi > CHO_KHOA_GHI_MS || (con !== null && con - nghi < KHONG_MO_GIAO_DICH_KHI_CON_MS)) {
+        console.warn(`[turso] database bận quá ${daCho} ms (${lan + 1} lần) — trả "máy chủ đang bận", chưa ghi gì`);
+        throw new HttpError(503, 'Máy chủ đang bận, chưa lưu gì. Thử lại sau ít phút.');
+      }
+      ngu(nghi);
+    }
+  }
+}
+
+/*
  * GIAO DỊCH LỒNG. `better-sqlite3` tự biến giao dịch lồng thành SAVEPOINT; `libsql` thì báo lỗi
  * "cannot start a transaction within a transaction". Làm lại đúng hành vi cũ: vòng ngoài là giao dịch
  * thật, vòng trong là savepoint — lỗi ở vòng trong chỉ cuộn lại phần của nó rồi ném tiếp lên.
@@ -200,9 +244,14 @@ export function tx<T>(fn: () => T): T {
   if (!conn.inTransaction) {
     /* AN-5: giao dịch NGOÀI chỉ mở khi lời gọi còn đủ giờ; savepoint bên trong một giao dịch đã mở thì không hỏi lại. */
     chanGiaoDichNeuSapHetGio();
+    choKhoaGhi(() => conn.exec('BEGIN IMMEDIATE'));   // Z2c-d: xin khoá ghi trước mọi câu (xem trên)
     try {
-      return conn.transaction(fn)();
+      const out = fn();
+      conn.exec('COMMIT');
+      return out;
     } catch (e) {
+      /* Cuộn lại hỏng (mạng Turso đứt…) thì vẫn ném LỖI GỐC. */
+      try { if (conn.inTransaction) conn.exec('ROLLBACK'); } catch { /* giữ lỗi gốc */ }
       if (typeof e === 'object' && e !== null) loiTuGiaoDich.add(e);   // PR-Z2c-b: không thử lại
       throw e;
     }

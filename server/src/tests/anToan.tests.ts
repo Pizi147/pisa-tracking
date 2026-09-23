@@ -633,6 +633,90 @@ export async function runAnToanTests(t: AnToanTestKit) {
     assert(chuyenTiep === trong && !moLai, `chuyenTiep đúng=${chuyenTiep === trong} moLai=${moLai}`);
   });
 
+  // ================================================================== PR-Z2c-d · Ghi đồng thời ("database is locked")
+
+  console.log('\nPR-Z2c-d · Ghi đồng thời: người khác đang ghi thì CHỜ khoá, không báo "database is locked"');
+  /*
+   * Bản chính 24/09 (log `mã 77e7df8f`): gõ L rồi Tab sang R → hai lần lưu gần như cùng lúc, hai bản hàm Netlify, hai giao dịch
+   * Turso. Giao dịch mở bằng BEGIN thường chỉ xin khoá ghi ở câu ghi đầu tiên — lúc đó bên kia đang giữ khoá nên SQLite trả
+   * SQLITE_BUSY NGAY (không chờ được khi nâng từ đọc lên ghi). Tái hiện bằng một tiến trình con giữ khoá ghi trên CÙNG file.
+   */
+  const cp = await import('node:child_process');
+  conn.exec('CREATE TABLE IF NOT EXISTS _thu_khoa (ai TEXT)');
+  const demKhoa = (ai: string) => (conn.prepare('SELECT COUNT(*) n FROM _thu_khoa WHERE ai = ?').get(ai) as any).n as number;
+  /** Tiến trình con mở cùng file database, giữ khoá ghi `giuMs` ms rồi chốt. Trả khi nó ĐÃ giữ khoá. */
+  const giuKhoa = async (giuMs: number) => {
+    const con = cp.spawn(process.execPath, ['-e', `
+      const D = require('libsql'); const d = new D(process.argv[1]);
+      d.exec('BEGIN IMMEDIATE'); d.prepare('INSERT INTO _thu_khoa (ai) VALUES (?)').run('con');
+      process.stdout.write('giu\\n');
+      setTimeout(() => { d.exec('COMMIT'); d.close(); }, Number(process.argv[2]));
+    `, dbMod.DB_PATH, String(giuMs)], { stdio: ['ignore', 'pipe', 'inherit'] });
+    await new Promise<void>((ok, loi) => {
+      con.stdout!.once('data', () => ok());
+      con.once('exit', (c) => loi(new Error(`tiến trình giữ khoá thoát sớm (${c})`)));
+    });
+    const xong = new Promise<void>((ok) => { if (con.exitCode !== null) ok(); else con.once('exit', () => ok()); });
+    return { xong };
+  };
+
+  await checkAsync('Z2c-d · tx() khi tiến trình khác đang giữ khoá ghi: CHỜ tới khi được rồi ghi — không ném SQLITE_BUSY (đọc trước, ghi sau)', async () => {
+    const { xong } = await giuKhoa(800);
+    const truoc = demKhoa('cha');
+    let loi: unknown = null;
+    const { log } = await batLog(async () => {
+      try {
+        dbMod.tx(() => {
+          conn.prepare('SELECT COUNT(*) n FROM _thu_khoa').get();          // đọc trước — đúng khuôn saveScore
+          conn.prepare('INSERT INTO _thu_khoa (ai) VALUES (?)').run('cha');
+        });
+      } catch (e) { loi = e; }
+    });
+    await xong;
+    assert(!loi, `tx phải chờ khoá rồi ghi được, đang ném: ${(loi as Error)?.message}`);
+    assert(demKhoa('cha') === truoc + 1 && demKhoa('con') >= 1, 'Cả hai lần ghi phải còn');
+    assert(/\[turso\] chờ khoá ghi/.test(log), `Phải có một dòng log [turso] chờ khoá ghi: ${log}`);
+  });
+
+  await checkAsync('Z2c-d · Ghi lẻ một câu (ngoài tx, ví dụ mốc dùng phiên) khi tiến trình khác đang giữ khoá: chờ rồi ghi', async () => {
+    const { xong } = await giuKhoa(600);
+    const truoc = demKhoa('le');
+    let loi: unknown = null;
+    try { conn.prepare('INSERT INTO _thu_khoa (ai) VALUES (?)').run('le'); } catch (e) { loi = e; }
+    await xong;
+    assert(!loi && demKhoa('le') === truoc + 1, `Ghi lẻ phải chờ khoá, đang ném: ${(loi as Error)?.message}`);
+  });
+
+  await checkAsync('Z2c-d · Bận quá lâu → 503 "Máy chủ đang bận, chưa lưu gì" (không treo, không ghi dở)', async () => {
+    const { xong } = await giuKhoa(dbMod.CHO_KHOA_GHI_MS + 1500);
+    const truoc = demKhoa('lau');
+    const batDau = Date.now();
+    let loi: any = null;
+    try { dbMod.tx(() => { conn.prepare('INSERT INTO _thu_khoa (ai) VALUES (?)').run('lau'); }); } catch (e) { loi = e; }
+    const ms = Date.now() - batDau;
+    await xong;
+    assert(loi?.status === 503 && /đang bận, chưa lưu gì/.test(loi.message), `Phải 503 câu "đang bận": ${loi?.status} ${loi?.message}`);
+    assert(ms >= dbMod.CHO_KHOA_GHI_MS - 200 && ms < dbMod.CHO_KHOA_GHI_MS + 1200, `Phải bỏ cuộc đúng hạn chờ, mất ${ms} ms`);
+    assert(demKhoa('lau') === truoc && !conn.inTransaction, 'Không được ghi dở, không để giao dịch treo');
+  });
+
+  await checkAsync('Z2c-d · Mốc "dùng phiên cuối" chỉ ghi lại khi đã cũ hơn 10 phút — mở trang không ghi database mỗi lần', async () => {
+    const tk = taoTaiKhoan('anz2d.phien');
+    const ck = String((await dangNhap(tk, '203.0.113.71')).setCookie).split(';')[0];
+    const token = decodeURIComponent(ck.split('=')[1]);
+    const moc = (phut: number) => new Date(Date.now() - phut * 60_000).toISOString();
+    const docMoc = () => (conn.prepare('SELECT last_seen_at FROM demo_sessions WHERE token = ?').get(token) as any)?.last_seen_at as string;
+    conn.prepare('UPDATE demo_sessions SET last_seen_at = ? WHERE token = ?').run(moc(3), token);
+    const giu = docMoc();
+    const r1 = await goi('GET', '/demo/session', { cookie: ck });
+    assert(r1.status === 200 && r1.json?.authenticated === true && docMoc() === giu, `3 phút: không ghi lại (${giu} → ${docMoc()})`);
+    conn.prepare('UPDATE demo_sessions SET last_seen_at = ? WHERE token = ?').run(moc(11), token);
+    const r2 = await goi('GET', '/demo/session', { cookie: ck });
+    assert(r2.status === 200 && Date.now() - Date.parse(docMoc()) < 60_000, `11 phút: phải ghi lại mốc mới (${docMoc()})`);
+  });
+
+  conn.exec('DROP TABLE IF EXISTS _thu_khoa');
+
   // ---- các task sau thêm phép kiểm NGAY TRÊN dòng này ----
 
   may.close();
