@@ -29,39 +29,6 @@ export function nhanLopLichTest(i: { conBai: number; conBaiCuaToi: number; chuaT
 export const lopTuMo = (i: { conBai: number; conBaiCuaToi: number; coPhanCong: boolean }) =>
   (i.coPhanCong ? i.conBaiCuaToi > 0 : i.conBai > 0);
 
-// TẠM (PR-UX1 Task 1 → bỏ ở Task 2 cùng `canChamList`).
-export type MucCanCham = 'qua-han' | 'tuan-nay' | 'sap-toi';
-
-export const MUC_CAN_CHAM: readonly MucCanCham[] = ['qua-han', 'tuan-nay', 'sap-toi'] as const;
-
-export const MUC_CAN_CHAM_LABEL: Record<MucCanCham, string> = {
-  'qua-han': 'Quá hạn',
-  'tuan-nay': 'Tuần này',
-  'sap-toi': 'Sắp tới',
-};
-
-/**
- * Một việc chấm thuộc mục nào. CHƯA CÓ HẠN KHÔNG PHẢI QUÁ HẠN: môn chưa tới tuần thi thì chưa nợ ai cái gì, xếp nó
- * vào "Quá hạn" là vu oan cho người chấm.
- */
-export function mucCanCham(han: string | null, homNay: string, cuoiTuanNay: string): MucCanCham {
-  if (!han) return 'sap-toi';
-  const d = han.slice(0, 10);
-  if (d < homNay.slice(0, 10)) return 'qua-han';
-  return d <= cuoiTuanNay.slice(0, 10) ? 'tuan-nay' : 'sap-toi';
-}
-
-/** Ba mục cố định, luôn đủ ba (mục rỗng vẫn hiện với số 0 — mockup 05a2 phương án A). */
-export function nhomCanCham<T extends { han: string | null }>(
-  dong: T[], o: { homNay: string; cuoiTuanNay: string },
-): Array<{ muc: MucCanCham; nhan: string; dong: T[] }> {
-  return MUC_CAN_CHAM.map((muc) => ({
-    muc,
-    nhan: MUC_CAN_CHAM_LABEL[muc],
-    dong: dong.filter((x) => mucCanCham(x.han, o.homNay, o.cuoiTuanNay) === muc),
-  }));
-}
-
 /**
  * MỘT Ô CỦA LƯỚI LỚP THƯỜNG: số câu đúng / tổng số câu (Writing và Speaking chấm theo thang điểm thì là điểm đạt /
  * tổng điểm — cùng hai ô, xem ⓘ của lưới).
