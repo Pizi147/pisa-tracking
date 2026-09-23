@@ -1,6 +1,7 @@
 import { type ReactNode } from 'react';
 import { Alert, Info, Level, Status, Task } from '../../ui/ui.tsx';
 import { Han } from '../../ui/Han.tsx';
+import { toneTheoNhan } from '../../lib/format.ts';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { LOAI_HAN_CUA_VIEC, ngay } from '@shared/domain/index.ts';
 import { DongTinHieu } from './DongTinHieu.tsx';
@@ -60,7 +61,7 @@ export function DongViec({ it, onOpen, nutPhu }: {
             {it.count !== null && it.count > 1 && (
               <span className="text-[11px] text-slate-500 tabular-nums">{it.count} học viên</span>
             )}
-            {it.level && <Level tone={it.level.tone}>{it.level.text}</Level>}
+            {it.level && <Level tone={toneTheoNhan(it.level.text, it.level.tone)}>{it.level.text}</Level>}
             {/* ⚠ chỉ nghĩa là QUÁ HẠN (G-4): "Hạn hôm nay" là nhãn vàng không dấu. */}
             {it.overdueLabel && (
               it.urgency === 'overdue'

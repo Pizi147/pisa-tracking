@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { Card, Level, Skeleton, ErrorState } from '../../ui/ui.tsx';
+import { toneTheoNhan } from '../../lib/format.ts';
 
 /** HỌC VIÊN CẦN HỖ TRỢ — Tổng quan giáo viên (§3.2, mockup 02 bản GV). Số trong tiêu đề = số dòng của chính khối này. */
 type Dong = { studentId: number; ten: string; lop: string | null; huyHieu: { text: string; tone: 'info' | 'warn' | 'danger' } | null; phu: string };
@@ -27,7 +28,7 @@ export function HocVienCanHoTro() {
               <span className="min-w-0">
                 <span className="flex flex-wrap items-center gap-2">
                   <span className="text-sm text-slate-100 font-medium">{r.ten}</span>
-                  {r.huyHieu && <Level tone={r.huyHieu.tone} title={giaiThichNhan(r.huyHieu.text)}>{r.huyHieu.text}</Level>}
+                  {r.huyHieu && <Level tone={toneTheoNhan(r.huyHieu.text, r.huyHieu.tone)} title={giaiThichNhan(r.huyHieu.text)}>{r.huyHieu.text}</Level>}
                 </span>
                 <span className="block text-[11px] text-slate-500 truncate">{[r.lop, r.phu].filter(Boolean).join(' · ')}</span>
               </span>

@@ -74,9 +74,16 @@ export function addDaysStr(d: string, days: number): string {
 
 export type Tone = 'ok' | 'warn' | 'danger' | 'info' | 'neutral' | 'muted';
 
-export function sosTone(level: number | null): Tone {
+/** Màu KẾT QUẢ Test (N-1b): Đạt xanh lá · SOS 1 vàng · SOS 2 cam · SOS 3 đỏ — cùng bảng ở `index.css`. */
+export type SosTone = 'ok' | 'sos1' | 'sos2' | 'sos3' | 'muted';
+export function sosTone(level: number | null): SosTone {
   if (level === null) return 'muted';
-  return level === 0 ? 'ok' : level === 1 ? 'info' : level === 2 ? 'warn' : 'danger';
+  return level === 0 ? 'ok' : level === 1 ? 'sos1' : level === 2 ? 'sos2' : 'sos3';
+}
+/** Nhãn do máy chủ gửi kèm tone chung: nếu là "SOS n" thì đổi sang màu SOS đúng bảng, còn lại giữ nguyên. */
+export function toneTheoNhan<T extends string>(text: string, tone: T): T | SosTone {
+  const m = /^SOS\s*([123])/.exec(text);
+  return m ? sosTone(Number(m[1])) : tone;
 }
 /** Ba trạng thái case phải khác nhau ngay từ màu, không cần mở chi tiết mới biết. */
 export function caseStatusTone(status: string | null): Tone {

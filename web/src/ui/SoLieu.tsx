@@ -105,10 +105,10 @@ export function SoLieu({ id, giaTri, phamVi, rong, className = '', extra, nhan, 
   const cs = metricById(id);
   const [open, setOpen] = useState(false);
   const [howTo, setHowTo] = useState(false);
-  if (!cs) return <span className="text-xs text-rose-300">Chỉ số không có trong sổ: {id}</span>;
+  if (!cs) return <span className="text-xs text-bad">Chỉ số không có trong sổ: {id}</span>;
   const dv = METRIC_UNIT_LABEL[cs.donVi];
   const clickable = giaTri > 0;
-  const mau = tone === 'danger' ? 'text-rose-200' : tone === 'warn' ? 'text-amber-200' : 'text-slate-100';
+  const mau = tone === 'danger' ? 'text-bad' : tone === 'warn' ? 'text-soon' : 'text-slate-100';
   return (
     <div className={`card p-4 h-full ${className}`}>
       <div className="flex items-start justify-between gap-2">

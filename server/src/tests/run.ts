@@ -9634,6 +9634,11 @@ await runCongViecTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P
 const { runLenLopTests } = await import('./lenLop.tests.ts');
 await runLenLopTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
+// ==================================================================== PR-UX0 (Nền giao diện: màu nghĩa, hàng lớn/nhỏ, badge, khuôn panel)
+
+const { runNenGiaoDienTests } = await import('./nenGiaoDien.tests.ts');
+await runNenGiaoDienTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
+
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`

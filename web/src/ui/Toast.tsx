@@ -29,10 +29,10 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             key={t.id}
             className={`card px-4 py-3 shadow-xl text-sm border flex items-center gap-3 ${
               t.kind === 'error'
-                ? 'border-rose-300/40 text-red-200'
+                ? 'border-bad-line text-bad'
                 : t.kind === 'ok'
-                  ? 'border-sky-300/40 text-sky-200'
-                  : 'border-sky-300/40 text-sky-200'
+                  ? 'border-doing/40 text-doing'
+                  : 'border-doing/40 text-doing'
             }`}
           >
             <span className="flex-1">{t.text}</span>

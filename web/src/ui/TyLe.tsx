@@ -18,7 +18,7 @@ import { Info } from './ui.tsx';
 export function TyLe({ n, N, nhan }: { n: number; N: number; nhan?: string }) {
   const v = rateView(n, N);
   if (v.kind === 'no-data') return <span className="text-xs text-slate-500">Chưa có dữ liệu</span>;
-  if (v.kind === 'invalid') return <span className="text-xs text-rose-300">Số liệu không hợp lệ</span>;
+  if (v.kind === 'invalid') return <span className="text-xs text-bad">Số liệu không hợp lệ</span>;
   return (
     <span className="inline-flex flex-wrap items-baseline gap-x-1.5 tabular-nums">
       <span>
