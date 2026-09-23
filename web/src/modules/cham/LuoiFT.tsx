@@ -1,14 +1,14 @@
 import { useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { Empty, Level, Status, Th } from '../../ui/ui.tsx';
+import { Empty, Info, Level, Status, Th } from '../../ui/ui.tsx';
 import { SaveIndicator } from '../../ui/SaveState.tsx';
 import {
-  CriteriaButton, DeadlinePill, RawScoreInput, useSaveScore, type Cell,
+  CriteriaButton, DeadlinePill, KHOA_HOAN_TAT_HINT, RawScoreInput, useSaveScore, type Cell,
 } from '../fasttrack/ScoreEntry.tsx';
 import {
   attemptStatusLabel, fmtBand, skillLabel, skillShort, sosLabel, sosTone,
 } from '../../lib/format.ts';
-import { ENTRY_SKILLS } from '@shared/domain/index.ts';
+import { ENTRY_SKILLS, ngay } from '@shared/domain/index.ts';
 
 /** Dữ liệu lưới FT — chính là `cham.ft` (`classScoreSheet` ở máy chủ). */
 export type FtSheet = {
@@ -18,6 +18,8 @@ export type FtSheet = {
   rows: {
     attemptId: number; studentId: number; studentName: string; studentCode: string;
     attemptNo: number; status: string;
+    /** R11: đợt đã đủ điểm và qua Chủ nhật của tuần bắt buộc muộn nhất — chỉ Quản lý sửa được điểm nữa. */
+    hoanTat?: boolean; chuNhatCuoi?: string | null;
     cells: Cell[]; result: any;
   }[];
 };
@@ -186,7 +188,12 @@ function SheetRow({ row, rowIndex, active, onReload, register, onMove }: {
   return (
     <tr className={`row-hover h-16 ${active ? 'row-active' : ''}`} data-hv={row.studentId}>
       <td className="td py-1.5 sticky-col">
-        <Link className="link block truncate" to={`/mock-test/${row.attemptId}`} title={row.studentName}>{row.studentName}</Link>
+        <div className="flex items-center gap-1 min-w-0">
+          <Link className="link block truncate" to={`/mock-test/${row.attemptId}`} title={row.studentName}>{row.studentName}</Link>
+          {row.hoanTat && (
+            <Info title={`Hết Chủ nhật ${ngay(row.chuNhatCuoi)}. ${KHOA_HOAN_TAT_HINT}`}>Đã hoàn tất</Info>
+          )}
+        </div>
         {/* Trạng thái lưu RIÊNG TỪNG DÒNG — lỗi nói rõ ở dòng nào, có nút Thử lại. */}
         <div className="flex items-center gap-1.5 text-[11px] text-slate-500 min-w-0">
           <span className="shrink-0">{row.studentCode}</span>

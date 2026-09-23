@@ -1,11 +1,12 @@
 import { db, tx } from '../db.ts';
 import {
   ASSESSED_SKILLS, ASSESSED_SKILL_LABEL, C10_NHAP_DAU_TRU_TUAN_QUA_KHU, ENTRY_SKILLS, ENTRY_SKILL_LABEL, MOCK_FT_STUDY_WEEK, NO_SHOW_OVERRIDDEN_NOTE,
-  PERMISSIONS, awaitingScore, kiemLyDo, noShowStateOf, noShowText, pendingSkillsOf, tuanLich,
+  PERMISSIONS, awaitingScore, kiemLyDo, ngay, noShowStateOf, noShowText, pendingSkillsOf, tuanLich,
   type AssessedSkill, type EntrySkill, type NoShowState, type PendingCell, type SkillProgress, type WorkScope,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
-import { badRequest, isIsoDate, notFound, nowIso } from '../util.ts';
+import { badRequest, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
+import { dotHoanTat, dotHoanTatMany, quyenSuaSauHoanTat } from './hoanTat.ts';
 import {
   can, classScopeSql, defaultWorkScope, editableSkills, moveableSkills, mySkills, require_, scopeFor, scoreEditPath,
   type Principal,
@@ -200,6 +201,8 @@ export type SkillCell = {
   overdue: boolean;
   progress: SkillProgress;
   canEdit: boolean;
+  /** R11: đợt đã hoàn tất nên ô bị khoá với người không có `PLAN_WEEK`/`SCORE_OVERRIDE` — khác lý do khoá khác (huỷ, ngoài phạm vi…). */
+  khoa: boolean;
   /** Kỹ năng NÀY được phân công cho chính người đang xem — khác với "được phép sửa". */
   mine: boolean;
   /** TUẦN THI CỦA CHÍNH KỸ NĂNG NÀY — W1 và W2 dùng chung lịch của môn Writing. */
@@ -246,12 +249,15 @@ export function pendingInputOf(cells: SkillCell[]): PendingCell[] {
 export function skillCells(
   p: Principal, attempt: any, rows: ScoreRow[], skips: AssessedSkill[],
   today = demoToday(), skillRows?: SkillRow[],
+  /** R11: truyền từ nơi gọi (`dotHoanTatMany` cho cả bảng) — không tự hỏi lại lẻ từng dòng ở đây. */
+  hoanTat: { hoanTat: boolean; chuNhatCuoi: string | null } = { hoanTat: false, chuNhatCuoi: null },
 ): SkillCell[] {
   const editable = attempt.class_id ? editableSkills(p, attempt.class_id, ENTRY_SKILLS) : [];
   const mine = attempt.class_id ? mySkills(p, attempt.class_id, ENTRY_SKILLS) : [];
   const mode = scoringModeOf(attempt);
   const schedule = skillScheduleOf(attempt, skillRows);
   const cancelled = attempt.status === 'cancelled';
+  const suaSauHoanTat = hoanTat.hoanTat && attempt.class_id ? quyenSuaSauHoanTat(p, attempt.class_id) : false;
 
   /* Một kỹ năng đánh giá coi là ĐÃ CÓ ĐIỂM khi mọi ô nhập của nó đã có band (W cần cả W1 và W2). */
   const scoredAssessed = (assessed: AssessedSkill): boolean =>
@@ -351,7 +357,10 @@ export function skillCells(
         /* Đã báo "không có bài" thì không nợ điểm ở ô này — hạn nhập điểm chỉ áp cho bài CÓ thực hiện. */
         && noShow === null,
       progress,
-      canEdit: required && !cancelled && view.sitStatus !== 'cancelled' && editable.includes(skill),
+      canEdit: required && !cancelled && view.sitStatus !== 'cancelled'
+        && (hoanTat.hoanTat ? suaSauHoanTat : editable.includes(skill)),
+      /* R11: đánh dấu "đợt đã hoàn tất" cho MỌI người xem — Quản lý vẫn `khoa && canEdit` (sửa qua hộp lý do). */
+      khoa: hoanTat.hoanTat,
       /*
        * "TÔI SỬA ĐƯỢC" KHÁC "ĐÂY LÀ VIỆC CỦA TÔI" (mục 3.3).
        * Người có quyền sửa hộ vẫn bấm vào ô được, nhưng không vì thế mà nợ việc đó.
@@ -1222,8 +1231,22 @@ export function saveScore(
     throw badRequest('Bài của lớp thường ghi dấu "-" ở bảng điểm lớp thường — ở đó môn được ghi "-" tự dời sang tuần sau.');
   }
 
-  const path = a.class_id ? scoreEditPath(p, a.class_id, skill) : null;
-  if (!path) {
+  /*
+   * R11 (23/09) — ĐỢT ĐÃ HOÀN TẤT (hết Chủ nhật của tuần bắt buộc muộn nhất) THÌ CHỈ NGƯỜI CÓ `PLAN_WEEK` HOẶC
+   * `SCORE_OVERRIDE` SỬA ĐƯỢC, qua đúng đường `path = 'override'` (nhật ký `score.override`, RB-5 đòi lý do —
+   * xem dưới). GVBM bị chặn hẳn, không còn đường `assigned` nữa dù đúng môn mình phụ trách.
+   */
+  const hoanTat = dotHoanTat(attemptId, today);
+  let path = a.class_id ? scoreEditPath(p, a.class_id, skill) : null;
+  if (hoanTat.hoanTat) {
+    if (!a.class_id || !quyenSuaSauHoanTat(p, a.class_id)) {
+      throw forbidden(
+        `Đợt này đã hoàn tất (hết Chủ nhật ${ngay(hoanTat.chuNhatCuoi)}). `
+        + 'Chỉ Quản lý sửa được điểm — nhờ Quản lý hiệu chỉnh, kèm lý do.',
+      );
+    }
+    path = 'override';
+  } else if (!path) {
     require_(p, PERMISSIONS.SCORE_EDIT, { classId: a.class_id, studentId: a.student_id, skill },
       'Bạn chỉ nhập được điểm của kỹ năng mình được phân công.');
   }
@@ -1417,11 +1440,18 @@ export function saveScore(
     }
 
     const after = conn.prepare('SELECT * FROM assessment_scores WHERE attempt_id = ? AND skill = ?').get(attemptId, skill);
+    const afterGhi = (patch.lyDo || hoanTat.hoanTat)
+      ? {
+          ...(after as any),
+          ...(patch.lyDo ? { lyDo: String(patch.lyDo).trim() } : {}),
+          ...(hoanTat.hoanTat ? { sauHoanTat: true } : {}),
+        }
+      : after;
     writeAudit({
       actorUserId: p.userId,
       action: path === 'override' ? 'score.override' : 'score.edit',
       entityType: 'assessment_attempt', entityId: attemptId, entityLabel: skill,
-      before, after: patch.lyDo ? { ...(after as any), lyDo: String(patch.lyDo).trim() } : after,
+      before, after: afterGhi,
     });
 
     /*
@@ -1494,9 +1524,12 @@ export function classScoreSheet(
     editableSkills: editableSkills(p, classId, ENTRY_SKILLS),
     rows: (() => {
       const bundle = loadBundle(attempts.map((a) => a.id));
+      /* R11: một câu hỏi cho cả bảng (`dotHoanTatMany`) — không hỏi lẻ từng dòng. */
+      const hoanTatOf = dotHoanTatMany(attempts.map((a) => a.id), today);
       return attempts.map((a) => {
       const scores = bundle.scores.get(a.id) ?? [];
       const skips = bundle.skips.get(a.id) ?? [];
+      const hoanTat = hoanTatOf.get(a.id) ?? { hoanTat: false, chuNhatCuoi: null };
       return {
         attemptId: a.id,
         studentId: a.student_id,
@@ -1504,8 +1537,10 @@ export function classScoreSheet(
         studentCode: a.student_code,
         attemptNo: a.attempt_no,
         status: a.status,
-        cells: skillCells(p, a, scores, skips, today, bundle.skillRows.get(a.id)),
+        cells: skillCells(p, a, scores, skips, today, bundle.skillRows.get(a.id), hoanTat),
         result: resultOf(a, scores, skips),
+        hoanTat: hoanTat.hoanTat,
+        chuNhatCuoi: hoanTat.chuNhatCuoi,
       };
       });
     })(),

@@ -23,7 +23,8 @@ Nếu bạn nghĩ theo "cái tôi thấy trên màn hình" chứ không theo tê
 | **Học viên & Lớp** (một trang, nhóm theo lớp, chip lọc, Phạm vi) | `web/src/modules/students/StudentsPage.tsx` → `BangHocVienLop.tsx` | `GET /hoc-vien-lop` → `server/src/classes/hocVienLop.ts` |
 | Test › **Cần chấm** (ba mục Quá hạn · Tuần này · Sắp tới; mỗi dòng một lớp + đợt, nút Chấm) | `web/src/modules/test/CanChamTab.tsx` | `server/src/cham/canCham.ts` → `canChamList` (`GET /cham/can-cham`) |
 | **Khung 4 khu vực**, thanh dưới điện thoại, chuyển hướng đường dẫn cũ | `web/src/App.tsx` + `shared/domain/dieuHuong.ts` | `server/src/platform/nav.ts` → `navOf` |
-| Test › **Lịch Test** (mỗi lớp một thẻ) · Kế hoạch Test | `web/src/modules/test/LichTestTab.tsx` · `web/src/modules/test/KeHoachTestTab.tsx` | `server/src/cham/canCham.ts` → `lichTest` (`GET /cham/lich-test`) · `/attempts/no-plan` |
+| Test › **Lịch Test** (mỗi lớp một thẻ) | `web/src/modules/test/LichTestTab.tsx` | `server/src/cham/canCham.ts` → `lichTest` (`GET /cham/lich-test`) |
+| Test › **Kế hoạch Test** — CHỈ Quản lý: lưới cả lớp FT (mỗi đợt 2 hàng RLW/S), xếp lịch hàng loạt (5 bước, xem trước), lớp thường xếp theo lớp | `web/src/modules/test/KeHoachTestTab.tsx` (`web/src/modules/test/keHoach/`: `LuoiFT.tsx` · `HopSuaTuan.tsx` · `NganXepHangLoat.tsx` · `BangThuong.tsx` · `HopDoiLichThuong.tsx`) | `server/src/keHoach/keHoachTest.ts` (`GET /ke-hoach-test/lop`, `/ft/:classId`, `/thuong`; `POST /nhom/kiem`, `/nhom`, `/xep-moi`, `/hang-loat`, `/thuong/doi-lich`) — **chỉ gọi lại** `createAttempt` / `setSkillWeek` / `planRegularTests`, không dựng đường ghi lịch thứ hai |
 | **Hồ sơ lớp** (đầu trang, 3 tab, ⋮) | `web/src/modules/classes/ClassOverviewPage.tsx` → `DauTrangLop` · `TabHocVienLop` · `PhanTichLopTab` | `/classes/:id/overview` · `/roster` · `/phan-tich-lop` · `PATCH /thong-tin` |
 | Menu ⋯ dòng học viên (Hồ sơ · + Ghi nhận vi phạm · + Case · Nhập điểm) | `web/src/modules/classes/thaoTacDongHocVien.tsx` + `shared/domain/hocVienLop.ts` (`mucMenuDongHocVien`) | — |
 | Luật hiển thị Học viên & Lớp (kết quả gần nhất, khoá, badge lớp, việc tiếp theo) | `shared/domain/hocVienLop.ts` | `server/src/classes/dongHocVien.ts` |
@@ -166,12 +167,12 @@ loại dữ liệu mới** vào kịch bản thì thêm trường ở `server/sr
 | Hai phạm vi công việc và nhãn của chúng | `shared/domain/people.ts` → `WORK_SCOPES`, `WORK_SCOPE_LABEL`, `WORK_SCOPE_HINT` |
 | Phạm vi mở ra mặc định theo vai | `server/src/permissions.ts` → `defaultWorkScope` |
 | Ai phụ trách từng bài còn thiếu (cột GV ở hàng đợi) | `server/src/fasttrack/attempts.ts` → `ownersOf` |
-| Panel "Lên kế hoạch MT" | `web/src/modules/fasttrack/MockPlanPanel.tsx` · `server/src/fasttrack/planning.ts` |
+| Xếp tuần MT — UI hiện tại là Test › **Kế hoạch Test** (xem bảng màn hình ở trên); `server/src/fasttrack/planning.ts` (`/attempts/no-plan`, `/attempts/bulk-plan`) giữ lại cho đường dẫn cũ và phép kiểm, không còn màn riêng gọi tới |
 | Nhãn "Dự kiến thi" (tuần / chỉ tháng / chưa biết) | `server/src/fasttrack/cycles.ts` → `examPlanOf` · `web/src/ui/ui.tsx` → `ExamPlanText` |
 | **Lịch thi, phạm vi, trạng thái thi và hạn chấm CỦA TỪNG KỸ NĂNG** | `server/src/fasttrack/skillSchedule.ts` |
 | Hạn chấm của một kỹ năng (FT thứ Tư tuần sau · Normal Chủ nhật cùng tuần) | `server/src/platform/week.ts` → `skillScoreDeadline` · `effectiveSkillDeadline` |
 | Tuần kế hoạch hoàn tất của một đợt | `server/src/fasttrack/skillSchedule.ts` → `completionWeekOf` · `recomputeCompletionWeek` |
-| Ràng buộc thứ tự đợt khi đổi lịch một kỹ năng | `server/src/fasttrack/skillSchedule.ts` → `checkSkillWeekMove` |
+| Ràng buộc thứ tự đợt khi đổi lịch một kỹ năng (T15: trùng tuần với đợt lân cận thì CHẶN, cách đúng một tuần thì CẢNH BÁO) | `server/src/fasttrack/skillSchedule.ts` → `checkSkillWeekMove` (một kỹ năng, đợt đã có) gọi `checkWeekVsNeighbours` (cycleId + attemptNo, kiểm được cả đợt CHƯA tạo — dùng ở `keHoach/keHoachTest.ts`) |
 | Bảng "Lịch thi theo kỹ năng" trong màn một lượt MT | `web/src/modules/fasttrack/MockDetailPage.tsx` → `SkillScheduleCard` |
 | Lịch MT tự đề xuất | `server/src/classes/schedule.ts` → `suggestedMockWeeks` |
 | Lộ trình học của một em, target, dự kiến thi | `server/src/fasttrack/cycles.ts` |
@@ -205,6 +206,7 @@ loại dữ liệu mới** vào kịch bản thì thêm trường ở `server/sr
 | Luật thuần: ba mục Quá hạn / Tuần này / Sắp tới, chữ trạng thái chấm, ô lưới thường, độ dài tối thiểu của lý do | `shared/domain/chamDiem.ts` |
 | **Sửa điểm đã có phải ghi lý do** (RB-5) — cả hai cửa lưu điểm | `web/src/modules/fasttrack/ScoreEntry.tsx` → `SuaDiemCoLyDo` · `server/src/fasttrack/attempts.ts` → `saveScore` · `server/src/normal/regular.ts` → `saveRegularScore` |
 | Ô điểm lớp thường dùng chung (lưới và điện thoại) | `web/src/modules/fasttrack/ScoreEntry.tsx` → `ODiemThuong` |
+| **R11 — đợt/bài đã hoàn tất thì chỉ Quản lý sửa điểm (có lý do)** — "hoàn tất" suy từ điểm + lịch mỗi lần đọc, không lưu cột riêng (PR-Rc2) | `server/src/fasttrack/hoanTat.ts` → `dotHoanTat` / `dotHoanTatMany` / `quyenSuaSauHoanTat` — nối vào `saveScore`, `saveRegularScore`, `reportRegularNoShow`, `skillCells`, `regularSheet`; web đọc `SkillCell.khoa` + nhãn "Đã hoàn tất" ở `cham/LuoiFT.tsx` · `cham/LuoiThuong.tsx` · `cham/MotKyNang.tsx` |
 
 ### Case
 

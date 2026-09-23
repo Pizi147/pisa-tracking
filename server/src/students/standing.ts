@@ -236,7 +236,10 @@ export function standingFor(studentIds: number[]): Map<number, Standing> {
       } else {
         const skips = bundle.skips.get(a.id) ?? [];
         const r = evaluateAttempt(
-          cycle.target_score ?? null, a.attempt_no,
+          /* T9 (23/09): kết quả gần nhất dùng mục tiêu TẠI THỜI ĐIỂM THI, không phải mục tiêu hiện tại của lộ
+           * trình — đúng như `resultOf` ở `attempts.ts:155` đã làm, để SOS/kỳ vọng không đổi ngược khi hồ sơ sửa
+           * mục tiêu sau này. */
+          a.target_at_attempt ?? cycle.target_score ?? null, a.attempt_no,
           entryBandsOf(scores as any), skips.map((x: any) => x.skill ?? x),
         );
         s.sosLevel = r.sosLevel;
