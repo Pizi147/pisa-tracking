@@ -549,3 +549,4 @@ Kịch bản (mỗi kịch bản ≥ 1 ảnh `thiet-ke/anh/pr-lt/NN-ten.png`):
 
 | Ngày | Task | Ghi |
 |---|---|---|
+| 23/09 | 0 | Qb #75 đã ở `origin/main` khi bắt đầu; kế hoạch này đã có sẵn trên `main` (PR #79, không cần chép). Trong lúc dựng worktree, PR-YT2 #77 merge vào `origin/main` — fast-forward nhánh lên `origin/main` mới nhất (`835f077`) trước khi đo. Mốc **B = 1026** phép kiểm (KHÔNG phải số đo trên `origin/pr-qb-ho-so-hoc-vien@64074c8` như dòng "Số dòng" ở đầu file — số dòng tham chiếu trong kế hoạch có thể lệch vài dòng so với mã thật do YT2 chèn thêm; mở file xem lại trước khi sửa theo đúng lời dặn). |
