@@ -57,7 +57,7 @@ export function usePanelYThuc({ canManage, onDone, roster }: {
         studentId={panel?.loai === 'ghi' ? panel.studentId : 0}
         studentName={panel?.loai === 'ghi' ? panel.studentName : undefined}
         students={panel?.loai === 'ghi' ? roster : undefined}
-        onPickStudent={(id) => mo({ loai: 'ghi', studentId: id })}
+        onPickStudent={(id) => mo({ loai: 'ghi', studentId: id, studentName: roster?.find((r) => r.id === id)?.name })}
         onDone={xong}
       />
       <RecordViolationPanel
