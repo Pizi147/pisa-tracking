@@ -1,17 +1,21 @@
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react';
 
-type Toast = { id: number; kind: 'ok' | 'error' | 'info'; text: string };
-type Ctx = { push: (kind: Toast['kind'], text: string) => void };
+/** PR-YT2 Q5: nút trong toast (ví dụ `Hoàn tác`) — bấm thì chạy `onBam` rồi gỡ toast luôn, không chờ hết `ms`. */
+type HanhDong = { nhan: string; onBam: () => void };
+type Toast = { id: number; kind: 'ok' | 'error' | 'info'; text: string; hanhDong?: HanhDong };
+type PushOpts = { hanhDong?: HanhDong; ms?: number };
+type Ctx = { push: (kind: Toast['kind'], text: string, opts?: PushOpts) => void };
 
 const ToastCtx = createContext<Ctx>({ push: () => {} });
 export const useToast = () => useContext(ToastCtx);
 
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<Toast[]>([]);
-  const push = useCallback((kind: Toast['kind'], text: string) => {
+  const push = useCallback((kind: Toast['kind'], text: string, opts?: PushOpts) => {
     const id = Date.now() + Math.random();
-    setItems((s) => [...s, { id, kind, text }]);
-    setTimeout(() => setItems((s) => s.filter((t) => t.id !== id)), kind === 'error' ? 7000 : 3500);
+    setItems((s) => [...s, { id, kind, text, hanhDong: opts?.hanhDong }]);
+    const ms = opts?.ms ?? (kind === 'error' ? 7000 : 3500);
+    setTimeout(() => setItems((s) => s.filter((t) => t.id !== id)), ms);
   }, []);
   const value = useMemo(() => ({ push }), [push]);
 
@@ -22,7 +26,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         {items.map((t) => (
           <div
             key={t.id}
-            className={`card px-4 py-3 shadow-xl text-sm border ${
+            className={`card px-4 py-3 shadow-xl text-sm border flex items-center gap-3 ${
               t.kind === 'error'
                 ? 'border-rose-300/40 text-red-200'
                 : t.kind === 'ok'
@@ -30,7 +34,19 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                   : 'border-sky-300/40 text-sky-200'
             }`}
           >
-            {t.text}
+            <span className="flex-1">{t.text}</span>
+            {t.hanhDong && (
+              <button
+                type="button"
+                className="btn btn-sm btn-ghost shrink-0"
+                onClick={() => {
+                  t.hanhDong!.onBam();
+                  setItems((s) => s.filter((x) => x.id !== t.id));
+                }}
+              >
+                {t.hanhDong.nhan}
+              </button>
+            )}
           </div>
         ))}
       </div>
