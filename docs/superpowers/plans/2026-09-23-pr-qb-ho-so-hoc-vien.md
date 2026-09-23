@@ -462,3 +462,52 @@ Commit `PR-Qb (8): 375px hồ sơ học viên, bảng định vị, CODE_MAP, đ
   `2026-09-22-kiem-ke-truoc-deploy.md` đổi Q9/R7/R8/AN-9/AN-10 từ ❌ sang ✅ kèm "PR-Qb". `npm run check` xanh,
   **879** (không đổi số phép kiểm — Task này chỉ có một dòng CSS + tài liệu, không thêm luật mới). Commit
   `PR-Qb (8)`.
+- **Task 9:** `npm run check` cuối cùng: **879 = B(837) + 42** (đủ ≥ B+40). `git diff origin/main...HEAD --stat --
+  server/src/schema.sql server/src/migrate.ts` → rỗng (không đổi schema/migrate).
+
+  **Máy chủ thử:** DB riêng seed ở thư mục scratch (`PISA_DB=…/pr-qb-kiem.sqlite npm run seed`), `PORT=4157
+  npm run dev:api` nền, Vite tạm `vite.pr-qb.config.ts` ở gốc worktree (cổng **5357**, proxy `/api` →
+  `127.0.0.1:4157`) — đã xoá sau khi xong, không commit. Dùng khung Browser (không có Playwright cài trong repo)
+  qua `POST /api/demo/session`.
+
+  **KIỂM** (vai admin = HV1, vai GVCN/GV Trần Ngọc Hà = MB-FOU 12 & MB-FT 101):
+  1. HV1: hai nút giai đoạn hiện đúng (`Lớp thường · W1 DEC 2025 – W4 APR` / `Fast Track · từ W1 JUN`); FT trục
+     13 tuần JUL–SEP, cột tuần này (W3 SEP) tô sáng; ghim `MT1 · 5.5 · SOS 1`, `MT2 · 6.0`, `MT3` (chưa điểm);
+     5 hộp L R W1 W2 S đúng thứ tự. ĐẠT.
+  2. Chọn "Lớp thường": hàng Khoá `MB-FOU 03 · 8 tuần` → `MB-BE 08 · 10 tuần` đúng thứ tự; ghim `Giữa`/`Cuối`
+     (không "MT"); chuỗi `%` (`65% → 68% → 63% → 55%`); 4 hộp; hộp Reading có vấn đề "Cuối khoá - Reading dưới
+     kỳ vọng" + khối PA `Xếp tự học · Đang thực hiện · Quá hạn cập nhật`. ĐẠT.
+  3. Bấm khối PA → ngăn Case mở (`NganCase`), tab Hành trình không đổi, case đúng ("Reading cuối khoá Beginner
+     còn dưới ngưỡng"). Bấm ghim (qua ô "Kết quả Test gần nhất") → sang Học thuật, dòng `dot-6` (MT2) tô nền
+     `--accent-soft`, có link "Hồ sơ đợt ›". ĐẠT — không kiểm riêng nút Back (logic tham số URL đối xứng, không
+     có state ẩn).
+  4. Bốn ô số: "Kết quả Test gần nhất" → `?dot=6` + tô đúng dòng; "Kỹ năng cần hỗ trợ" → `?kn=writing1` + mở
+     đúng hàng Writing Task 1; "Case đang mở" → `?kn=reading`; "Việc cần làm tiếp" → `?kn=reading`. ĐẠT cả 4.
+     (`attemptId` của lộ trình cũ → chọn đúng lộ trình đã có phép kiểm tự động ở Task 3, không lặp lại bằng tay.)
+  5. GVCN lớp thường MB-FOU 12 (HV9): đầu hồ sơ `MB-FOU 12 · GVCN Trần Ngọc Hà · FOU · W8/8 · kết thúc W3 SEP`
+     (không "mục tiêu"); ô Kết quả `Chưa đạt 3/4 môn · SOS 3`; bảng "Kết quả kiểm tra" tuần dạng `W3 AUG`/
+     `W1 OCT` (không năm, không ISO); chèn tạm một tín hiệu lớp thường (dữ liệu demo không sẵn có tín hiệu nào
+     kiểu lớp thường — DB tạm, không ảnh hưởng bản chính) → khối SOS đúng `Listening 26/40 · Giữa khoá`, hai nút
+     `Bỏ qua`/`Tạo Case`; bấm `Bỏ qua` → khối biến mất (route dismiss có sẵn chạy đúng). ĐẠT.
+  6. GV Listening MB-FT 101 (Trần Ngọc Hà): hồ sơ lớp tab Học viên, nhãn `MT2` của Nguyễn Minh An có href
+     `/hoc-vien/1?dot=6` — đúng `duongHoSoHocVien`. Chuông thông báo: bấm "SOS 1 — Bùi Thảo Vy" (loại
+     `assessment_attempt`, `kind=sos`) → điều hướng đúng `/hoc-vien/44?dot=118`. `GET /notifications` trả kèm
+     `student_id`/`attempt_id` cho mọi dòng (xác nhận JOIN của Task 3). Badge "Bạn cần chấm: N bài" ở
+     `StudentsPage` mang `&scope=mine` đúng khi Phạm vi = "Lớp tôi dạy". ĐẠT.
+  7. Tab mạng: mỗi lần điều hướng đầy đủ trang gọi `/violation-warning` đúng **một lần về mặt logic** (React
+     StrictMode của môi trường dev nhân đôi mọi hiệu ứng — 2 lần quan sát được mỗi lượt điều hướng, ĐÚNG bằng
+     một nửa so với trước khi sửa AN-9 vốn sẽ ra 4 lần/lượt do gọi ở cả `StudentDetailPage` lẫn
+     `StudentYThucSection`). ĐẠT theo đúng tinh thần AN-9.
+  8. 375px: đo `document.documentElement.scrollWidth` và `main.scrollWidth <= main.clientWidth` ở cả ba tab
+     (Học thuật/Ý thức/Hành trình) của hồ sơ HV1 và ở hồ sơ lớp MB-FT 101 — cả bốn đều **không cuộn ngang**
+     (`scrollWidth` khớp `375`/`365`). Lưới Hành trình cuộn ngang ĐÚNG BÊN TRONG khung thẻ (cột tên đứng yên).
+     ĐẠT.
+  9. Chữ: không thấy "Đạt kỳ vọng" ở màn lớp thường của PR này (chỉ "Đạt X/Y môn"/"Chưa đạt"); không ngày ISO;
+     mọi mã tuần hiện không kèm năm khi cùng năm 2026 (`W3 SEP`, `W1 OCT`…). ĐẠT.
+
+  **Chưa làm:** ảnh chụp `thiet-ke/anh/pr-qb/*-1440.png`/`-375.png` — khung Browser trong môi trường này không
+  có primitive lưu ảnh ra đĩa (Playwright không có sẵn trong repo); đã xác nhận đúng bằng đọc DOM/mạng thay vì
+  bằng mắt, planning xem lại nếu cần ảnh thật.
+
+  `git status` sạch (file Vite tạm và sửa `launch.json` tạm thời đã bỏ, không commit). `git fetch origin &&
+  git rebase origin/main` — [ghi kết quả rebase thực tế bên dưới].
