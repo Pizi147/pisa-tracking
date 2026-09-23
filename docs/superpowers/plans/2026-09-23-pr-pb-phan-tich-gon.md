@@ -487,3 +487,49 @@ chi nhánh" như Task 6). Không có ô khoảng thời gian (Q5).
   câu tóm tắt trong kế hoạch — cần thêm `ct` vì `loai-lop=normal|ft` phải đổi thành tham số chương trình mới, không chỉ
   xoá tham số cũ. `COT_TONG_HOP` xếp cột `luot` vào cùng nhóm `ket-qua` với sáu cột Đạt…Chưa đủ điểm (kế hoạch liệt kê
   chung một chỗ); "Cột hiện" ẩn nhóm Kết quả thì ẩn luôn cột Lượt — hợp lý vì không còn gì để đối chiếu với nó.
+- **Task 2:** 807 → **820** phép kiểm. Lớp thường "kỹ năng dưới kỳ vọng" đọc lại từ `ev.skills` mà `evaluateAttemptRow`
+  đã tự tính (nội bộ đã gọi `evaluateRegular` với cùng `scores`) thay vì gọi `evaluateRegular` lần hai như câu chữ kế
+  hoạch — cùng kết quả, đỡ một lượt tính. Không N+1 khi đổi `soTuan` (4 và 26 ra cùng số câu SQL, ≤ 12).
+- **Task 3:** 820 → **828** phép kiểm. `MaTranVanDe.hang[].o` và `con[].o` KHÔNG nhét thêm khoá `"tong"` vào chính nó
+  (khác một cách đọc có thể có của câu kế hoạch) — cột Tổng chỉ nằm ở trường `tong` riêng, để `khoaCot` luôn đúng bằng
+  các cột thật trong `cotDs`. ≤ 6 câu SQL, không đổi theo cách xếp cột.
+- **Task 4:** 828 → **831** phép kiểm. `phoiHopMetric` bỏ N+1 (`loadBundle` một lần + một câu trạng thái theo lô 400
+  thay `resultOf` và một câu SQL mỗi lượt); `byKind` cho cả ba chỉ số phối hợp.
+- **Task 5:** 831 → **832** phép kiểm (+1: `listCases({classKind,classId})` chỉ trả đúng lớp). Khung `PhanTich.tsx` +
+  `DanhSachCase` tách khỏi `CaseBoardPage.tsx` (vòng import CaseBoardPage ↔ PhanTich — ES module xử lý được vì cả hai
+  chỉ dùng nhau bên trong hàm render, không dùng ở top-level). Bỏ hẳn `counts` (`/cases/queues`) khỏi Danh sách Case —
+  đã không dùng ở đâu trong bản gốc.
+- **Task 6:** 832 phép kiểm (không thêm — web). `npm run build` xác nhận `xlsx` tách chunk riêng 429 kB, không vào
+  bundle chính (675 kB, cảnh báo >500 kB là cảnh báo cũ, không phải do PR-Pb).
+- **Task 7:** 832 phép kiểm (không thêm — web).
+- **Task 8 — bấm thử một lần** (Quản trị, Quản lý Monbay, GV Trần Ngọc Hà; cổng API 4177 / Vite 5377 tạm, dữ liệu
+  seed mặc định; dùng Browser pane tích hợp thay Playwright kênh Chrome ngoài — không có ảnh lưu vào
+  `thiet-ke/anh/pr-pb/` do công cụ chụp không xuất ra file, kết quả ghi lại bằng chữ dưới đây):
+  1. ✓ Quản trị: `/phan-tich` mở thẳng Tổng hợp Test + SOS; tuần "W3 SEP · 14/09/2026–20/09/2026 · tuần này", không
+     ISO. Bốn cách xếp dòng đều đúng dữ liệu (Cộng 31 lượt khớp cả bốn cách). Mở ▸ một dòng ra dòng con. Bấm số (HV có
+     Case) → panel đúng tên + mã học viên. Cột hiện: tắt được từng nhóm, không tắt được cả ba (đã thử tắt hết còn một
+     — bị chặn). Xuất Excel chạy không lỗi console, tải `xlsx` thành chunk riêng. Không thấy "Normal", "Thực trạng",
+     "Việc đã giao", "+ Giao việc".
+  2. ✓ Vấn đề học viên: Theo lớp/chi nhánh đổi được; ô n/N có nền tô theo mức nhiệt; mở ▸ Listening ra đúng bốn dòng
+     loại lỗi + Chưa phân loại; bấm ô Tổng → panel "N học viên — Listening · Tổng" liệt kê đúng N em ở N lớp khác
+     nhau (không trùng); chữ "Hiện trạng · đến 14/09/2026", không có ô khoảng thời gian.
+  3. ✓ Kết quả hỗ trợ: đổi chương trình/khoảng thời gian → số và câu "kết quả PA từ …" đổi theo; "Cả hai" hiện hai nút
+     Fast Track/**Lớp thường** (không phải "Normal"), không còn câu giải thích. Ý thức & Phối hợp: không có ô lớp; ô
+     Lượt SOS có dòng phụ "SOS 1 · … SOS 2 · … SOS 3 · …", bấm một số ra đúng lượt (kiểm với Đỗ Minh Khôi, MT2, SOS2 —
+     khớp DEMO.md mục 9).
+  4. ✓ QL Monbay (Nguyễn Khánh Vy): không có ô chi nhánh (một chi nhánh duy nhất), "Theo chi nhánh" ẩn khỏi thanh cách
+     xếp dòng của Tổng hợp và Vấn đề học viên.
+  5. ✓ GV (Trần Ngọc Hà — GVCN MB-FT 101): không có tab Phân tích trên Tổng quan; gõ thẳng `/phan-tich` → về `/`;
+     `fetch('/api/phan-tich/tong-hop')` → 403 "Phân tích dành cho Quản lý.".
+  6. ✓ 375px (Quản trị): `document.documentElement.scrollWidth === innerWidth` (không cuộn ngang trang); hàng góc
+     nhìn và bảng Tổng hợp đều cuộn ngang **trong khối của chúng**, cột đầu dính khi cuộn.
+  7. ✓ `/tong-hop-tuan` → `/phan-tich` mở Tổng hợp Test + SOS, URL sạch (`location.href` không còn `xem`).
+  7b. ✓ `/phan-tich?hang-doi=review` và `/phan-tich?goc=danh-sach&tinh-hinh=no_plan` đều mở đúng Danh sách Case, chip
+     "Đang lọc" đúng nhãn ("Mức cao hoặc gấp" / "Chưa có PA học thuật"), số dòng khớp ô trạng thái.
+  8. Tốc độ: không đo trên Turso thật (máy dev, SQLite cục bộ) — để PR-Z2c đo lại trên bản chính.
+  - **Một lỗi phát hiện khi bấm thử, đã sửa (commit riêng):** menu "Cột hiện ▾" của bảng Tổng hợp bị chính hàng tiêu
+    đề dính (`sticky`, `z-index` 10–15) của bảng đè lên, không thấy được — nâng `z-index` của menu lên 20.
+- **Cuối PR:** `git fetch && git rebase origin/main` (62 commit mới, gồm PR-Rc1 vừa merge) — xung đột đúng ba chỗ kế
+  hoạch đã lường trước (`server/src/tests/run.ts`, `shared/domain/index.ts` ở Task 1; `server/src/routes/index.ts`
+  không xung đột thực tế dù cùng nằm trong danh sách file thay đổi ở main), giữ cả hai khối. `npm ci` lại,
+  `npm run check` cuối cùng: **897 phép kiểm đều đạt** (main sau rebase có 866, PR-Pb đóng góp 31).
