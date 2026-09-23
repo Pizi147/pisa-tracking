@@ -395,3 +395,4 @@ Commit `PR-UX5 (5): ?dot= cuộn lại khi bảng kỹ năng tải xong (không 
 
 | Ngày | Task | Ghi |
 |---|---|---|
+| 24/09 | 0 | Worktree `pr-ux5-hanh-trinh` từ origin/main a8d7260 (UX0 #89 đã có). Mốc **B = 1186 + 20 (tocDo)**, `npm run check` xanh. Tên thật khớp kế hoạch: `Nhan`/`ToneNhan`/`toneNhanTuBadge` (`web/src/ui/Nhan.tsx`), `SCORE_CHIP`/`ScoreTone` gồm `sos1 sos2 sos3 tam emerald` (`ui.tsx`), token `late/doing/done/dat/sos1-3` có trong `tailwind.config.js`. `SO_CAU_FT = 31`, `SO_CAU_THUONG = 33` (đếm `prepare` của `hanhTrinhHocVien(admin, 1, 'ft'|'thuong')` trên DB seed sạch). HV1 = Nguyễn Minh An, HV3 = Lê Quang Huy; GVCN = user 7, GVBM = user 9, QL = user 2 (đều `teacher`/`manager`). |
