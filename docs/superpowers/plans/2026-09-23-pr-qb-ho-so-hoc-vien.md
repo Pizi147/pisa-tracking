@@ -510,4 +510,9 @@ Commit `PR-Qb (8): 375px hồ sơ học viên, bảng định vị, CODE_MAP, đ
   bằng mắt, planning xem lại nếu cần ảnh thật.
 
   `git status` sạch (file Vite tạm và sửa `launch.json` tạm thời đã bỏ, không commit). `git fetch origin &&
-  git rebase origin/main` — [ghi kết quả rebase thực tế bên dưới].
+  git rebase origin/main` (từ `48baefc`, sau khi PR-Rc1 #70 / PR-Form #72 / PR-TD #74 đã merge): xung đột đúng ở
+  ba chỗ "chỉ thêm khối" như dự đoán — `shared/domain/index.ts`, `server/src/tests/run.ts` (giữ cả hai nhánh
+  export/gọi test) và thêm hai chỗ tài liệu không nằm trong dự đoán ban đầu (`CODE_MAP.md`, `plan.md` mục R7/R8 —
+  PR-Rc1 đã tự ghi chú "phần lưới xong" ở R8, gộp làm một ghi chú lịch sử thay vì xoá). `npm run check` sau rebase:
+  **933 kiểm tra đều đạt** (toàn repo, gồm cả các PR khác vừa merge). Push, mở PR
+  [#75](https://github.com/Pizi147/pisa-tracking/pull/75). Báo planning.
