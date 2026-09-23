@@ -391,6 +391,9 @@ Dòng đo trên main (đặc tả §6 ghi 203/412/917 — lệch, xem mục mâu
 
 Commit `PR-Form (10): SkillBoard lớp thường — Đạt, Giữa khoá/Cuối khoá thay MT{n}`.
 
+- [x] Task 10 xong — `npm run check` xanh, 826 phép kiểm không đổi. Grep lại file: mọi `kỳ vọng`/`MT\$\{` còn hiện đều đã có
+  điều kiện `row.ratio`/`attemptKind` bảo vệ, không lộ cho lớp thường; FT giữ nguyên chữ cũ.
+
 ## Task 11 · Bấm thử theo vai + 375px (một lần), đẩy PR
 
 Máy chủ thử (theo ghi nhớ "máy chủ dev trong worktree"): trong worktree `npm run seed` → `PORT=4167 node
