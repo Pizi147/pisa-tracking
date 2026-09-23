@@ -8,7 +8,7 @@ import {
 export type KnO = Partial<Record<KyNangKH, OKyNang>>;
 
 export type LopKH = {
-  id: number; code: string; loai: 'ft' | 'thuong'; chiNhanh: string; soHv: number;
+  id: number; code: string; loai: 'ft' | 'thuong'; chiNhanh: string; chuongTrinh: string | null; soHv: number;
   chuaCoLichTiep: number; hvChuaCoLich: number; tomTat: string;
 };
 export type DanhSachLop = { tieuDe: string; lop: LopKH[] };

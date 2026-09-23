@@ -51,6 +51,7 @@ export function KeHoachTestTab() {
   }, [data, daMoSan]);   // eslint-disable-line react-hooks/exhaustive-deps
 
   const setLoai = (k: 'ft' | 'thuong') => {
+    setChu('');      // chữ tìm của loại lớp này không có nghĩa với loại kia
     const next = new URLSearchParams(params);
     next.set('loai', k); next.delete('classId');
     setParams(next, { replace: true });
@@ -99,10 +100,12 @@ export function KeHoachTestTab() {
             </details>
           </>
         )}
-        <TimLop lop={data.lop} value={chu} onChange={setChu} onChon={chonLop} className="min-w-[10rem] flex-1 sm:w-56 sm:flex-none" />
+        <TimLop lop={data.lop} value={chu} onChange={setChu} onChon={chonLop} className="min-w-0 basis-full sm:basis-auto sm:w-56" />
         {coCaHai && (
-          <HangTab ariaLabel="Loại lớp" cap="con" value={loai} onChange={setLoai}
-            tabs={[{ key: 'ft', label: 'Fast Track' }, { key: 'thuong', label: 'Lớp thường' }]} />
+          <div className="min-w-0">
+            <HangTab ariaLabel="Loại lớp" cap="con" value={loai} onChange={setLoai}
+              tabs={[{ key: 'ft', label: 'Fast Track' }, { key: 'thuong', label: 'Lớp thường' }]} />
+          </div>
         )}
         <span className="pb-2">
           <NutLuat label="Luật xếp lịch Test">
@@ -121,7 +124,7 @@ export function KeHoachTestTab() {
         <span className="flex-1" />
         <button type="button" className="btn btn-primary btn-sm min-h-[44px] sm:min-h-0" disabled={!!lyDoTat} title={lyDoTat}
           onClick={() => lopChon && setHangLoat({ loai: lopChon.loai, classId: lopChon.id, code: lopChon.code })}>
-          Xếp lịch hàng loạt…
+          <span className="hidden sm:inline">Xếp lịch hàng loạt…</span><span className="sm:hidden">Xếp hàng loạt…</span>
         </button>
       </div>
 

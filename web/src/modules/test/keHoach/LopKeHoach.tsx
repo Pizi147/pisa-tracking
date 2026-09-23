@@ -9,7 +9,7 @@ import type { LopKH, LuoiFTData, LuoiThuongData } from './kieu.ts';
 
 /**
  * MỘT LỚP TRONG KẾ HOẠCH TEST: hàng lớn `HangNhom` (N-2 — `▾/▸ {mã}` · `{chi nhánh} · {n} HV` · bên phải tóm tắt: FT
- * `MT3 đang thi · MT4 chưa xếp 4 em`, lớp thường `FOU · đang W8/8`) rồi lưới HV × đợt khi mở. Lưới chỉ được tải khi mở lớp.
+ * `MT3 đang thi · MT4 chưa xếp 4 em`, lớp thường `đang W8/8`) rồi lưới HV × đợt khi mở. Lưới chỉ được tải khi mở lớp.
  * Lớp thường còn em chưa có bài → nút nhỏ `Xếp cả lớp theo đề xuất`.
  */
 export function LopKeHoach({ lop, mo, onToggle, onHienDien }: {
@@ -46,12 +46,13 @@ export function LopKeHoach({ lop, mo, onToggle, onHienDien }: {
               <span className="block min-w-0">
                 <span className="flex flex-wrap items-baseline gap-x-2">
                   <span>{lop.code}</span>
-                  <span className="text-[11px] font-normal text-slate-400">{lop.chiNhanh}{lop.chiNhanh && ' · '}{lop.soHv} HV</span>
+                  <span className="text-[11px] font-normal text-slate-400">{[lop.chiNhanh, lop.chuongTrinh].filter(Boolean).join(' · ')}{(lop.chiNhanh || lop.chuongTrinh) && ' · '}{lop.soHv} HV</span>
                 </span>
                 <span className="block truncate text-[11px] font-normal text-slate-400 sm:hidden">{lop.tomTat}{nutXep}</span>
               </span>
             )}>
-            <td className="hidden pr-3 text-right text-[11px] font-normal text-slate-300 sm:table-cell">{lop.tomTat}{nutXep}</td>
+            {/* `.hang-lon > td` đặt chữ đậm 12.5px với độ ưu tiên cao hơn tiện ích Tailwind — chữ phụ phải đặt thẳng vào style. */}
+            <td className="hidden pr-3 text-right text-slate-300 sm:table-cell" style={{ fontWeight: 400, fontSize: 11.5 }}>{lop.tomTat}{nutXep}</td>
           </HangNhom>
         </tbody>
       </table>

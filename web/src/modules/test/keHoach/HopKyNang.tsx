@@ -3,14 +3,14 @@ import { createPortal } from 'react-dom';
 import { api, invalidate } from '../../../lib/api.ts';
 import { useSession } from '../../../lib/session.tsx';
 import { addDaysStr } from '../../../lib/format.ts';
-import { WeekPicker, resolveWeek } from '../../../ui/Filters.tsx';
 import { useToast } from '../../../ui/Toast.tsx';
 import {
   gomBaiXemTruoc, mondayOfDate, nhanTuanKhoa, tuanLich, type BaiXemTruoc, type DongHangLoat, type KyNangKH, type OKyNang,
 } from '@shared/domain/index.ts';
 import { KY, TEN_KY_NANG, chuKyNang, thanDot, type DotChon, type KnO } from './kieu.ts';
+import { TuanNho, resolveTuan, type Tuan } from './TuanNho.tsx';
 
-type Dong = { tick: boolean; periodId: number | null };
+type Dong = { tick: boolean; periodId: number | null; weekStart: string | null };
 
 /**
  * HỘP KỸ NĂNG (mockup 14 (1), Q19) — hộp nhỏ NEO CẠNH chip vừa bấm (portal, `position: fixed`, kẹp trong màn); 375px thì
@@ -35,7 +35,7 @@ export function HopKyNang({ anchor, tieuDe, loai, classId, studentId, dot, attem
 
   const khoiTao = (): Record<KyNangKH, Dong> => {
     const o = {} as Record<KyNangKH, Dong>;
-    for (const k of KY) o[k] = moi ? { tick: true, periodId: null } : { tick: kn[k]?.batBuoc ?? false, periodId: kn[k]?.periodId ?? null };
+    for (const k of KY) o[k] = moi ? { tick: true, periodId: null, weekStart: null } : { tick: kn[k]?.batBuoc ?? false, periodId: kn[k]?.periodId ?? null, weekStart: kn[k]?.tuan ?? null };
     return o;
   };
   const [rows, setRows] = useState<Record<KyNangKH, Dong>>(khoiTao);
@@ -54,9 +54,10 @@ export function HopKyNang({ anchor, tieuDe, loai, classId, studentId, dot, attem
     const lam = async () => {
       const goc = loai === 'thuong' ? (deXuat ?? homNay) : homNay;
       if (!goc) return;
-      const lrw = (await resolveWeek(goc)).id;
-      const s = loai === 'thuong' ? lrw : (await resolveWeek(addDaysStr(goc, 7))).id;
-      if (!huy) setRows({ listening: { tick: true, periodId: lrw }, reading: { tick: true, periodId: lrw }, writing: { tick: true, periodId: lrw }, speaking: { tick: true, periodId: s } });
+      const lrw = await resolveTuan(goc);
+      const s = loai === 'thuong' ? lrw : await resolveTuan(addDaysStr(goc, 7));
+      const dong = (t: Tuan): Dong => ({ tick: true, periodId: t.periodId, weekStart: t.weekStart });
+      if (!huy) setRows({ listening: dong(lrw), reading: dong(lrw), writing: dong(lrw), speaking: dong(s) });
     };
     void lam().catch(() => { /* người dùng vẫn chọn tay được */ });
     return () => { huy = true; };
@@ -161,7 +162,7 @@ export function HopKyNang({ anchor, tieuDe, loai, classId, studentId, dot, attem
   const dat = () => {
     if (dienThoai) return;
     const r = anchor.getBoundingClientRect();
-    const rong = 352;
+    const rong = 372;
     const cao = box.current?.offsetHeight ?? 360;
     const left = Math.min(Math.max(8, r.left), window.innerWidth - rong - 8);
     const duoi = r.bottom + 4;
@@ -185,7 +186,7 @@ export function HopKyNang({ anchor, tieuDe, loai, classId, studentId, dot, attem
   const nutLuu = canhBao.length && !force ? 'Vẫn xếp vào tuần này' : 'Lưu';
   return createPortal(
     <div ref={box} role="dialog" aria-label={`Lịch ${tieuDe}`}
-      className={`surface-2 z-[60] border shadow-2xl ${dienThoai ? 'fixed inset-x-0 bottom-0 rounded-t-xl' : 'fixed w-[352px] rounded-lg'}`}
+      className={`surface-2 z-[60] border shadow-2xl ${dienThoai ? 'fixed inset-x-0 bottom-0 rounded-t-xl' : 'fixed w-[372px] rounded-lg'}`}
       style={{ borderColor: 'var(--line-strong)', ...(dienThoai ? {} : { top: pos?.top ?? 0, left: pos?.left ?? 0, visibility: pos ? 'visible' : 'hidden' }) }}>
       <div className="flex items-center justify-between gap-2 border-b px-3 py-2" style={{ borderColor: 'var(--line)' }}>
         <div className="min-w-0 truncate text-sm font-bold text-slate-100" title={tieuDe}>{tieuDe}</div>
@@ -196,7 +197,7 @@ export function HopKyNang({ anchor, tieuDe, loai, classId, studentId, dot, attem
           <DongKyNangHop key={k} k={k} o={kn[k]} khoa={laKhoa(k)} moi={moi} loai={loai} d={cauHinh(k)}
             noiBat={k === kyNangDau} khaiGiang={khaiGiang} tongTuan={tongTuan}
             onTick={(v) => setRows((s) => ({ ...s, [k]: { ...s[k], tick: v } }))}
-            onPeriod={(id) => setRows((s) => ({ ...s, [k]: { ...s[k], periodId: id } }))} />
+            onTuan={(t) => setRows((s) => ({ ...s, [k]: { ...s[k], periodId: t.periodId, weekStart: t.weekStart } }))} goc={homNay} />
         ))}
         {bo.length > 0 && (
           <label className="block">
@@ -219,15 +220,15 @@ export function HopKyNang({ anchor, tieuDe, loai, classId, studentId, dot, attem
   );
 }
 
-function DongKyNangHop({ k, o, khoa, moi, loai, d, noiBat, khaiGiang, tongTuan, onTick, onPeriod }: {
+function DongKyNangHop({ k, o, khoa, moi, loai, d, noiBat, khaiGiang, tongTuan, onTick, onTuan, goc }: {
   k: KyNangKH; o?: OKyNang; khoa: boolean; moi: boolean; loai: 'ft' | 'thuong'; d: Dong; noiBat: boolean;
-  khaiGiang?: string | null; tongTuan?: number | null; onTick: (v: boolean) => void; onPeriod: (id: number | null) => void;
+  khaiGiang?: string | null; tongTuan?: number | null; onTick: (v: boolean) => void; onTuan: (t: Tuan) => void; goc: string | null;
 }) {
   const coTick = loai === 'ft' && !moi && !khoa;     // lớp thường luôn đủ 4 môn — không có ô tích (Q3)
   const bo = !d.tick;
-  const nhanTuan = loai === 'thuong' && o?.tuan ? nhanTuanKhoa(o.tuan, khaiGiang ?? null, tongTuan ?? null) : null;
+  const nhanTuan = loai === 'thuong' && d.weekStart ? nhanTuanKhoa(d.weekStart, khaiGiang ?? null, tongTuan ?? null) : null;
   return (
-    <div className={`grid items-start gap-2 rounded px-1 py-0.5 ${noiBat ? 'bg-white/5' : ''}`} style={{ gridTemplateColumns: coTick ? '20px 88px minmax(0,1fr)' : '0px 88px minmax(0,1fr)' }}>
+    <div className={`grid items-start gap-2 rounded px-1 py-0.5 ${noiBat ? 'bg-white/5' : ''}`} style={{ gridTemplateColumns: coTick ? '20px 80px minmax(0,1fr)' : '0px 80px minmax(0,1fr)' }}>
       {coTick ? (
         <input type="checkbox" className="mt-3 accent-sky-400" checked={d.tick} onChange={(e) => onTick(e.target.checked)}
           aria-label={`${TEN_KY_NANG[k]} — ${d.tick ? 'bỏ khỏi đợt' : 'đưa lại vào đợt'}`} title={d.tick ? 'Bỏ khỏi đợt' : 'Đưa lại vào đợt'} />
@@ -243,8 +244,7 @@ function DongKyNangHop({ k, o, khoa, moi, loai, d, noiBat, khaiGiang, tongTuan, 
           <div className="mt-2.5 text-xs text-slate-500">Bỏ khỏi đợt</div>
         ) : (
           <>
-            <WeekPicker periodId={d.periodId} onPeriod={onPeriod} label={null} scope="planning" />
-            {nhanTuan && <div className="mt-0.5 text-[11px] text-slate-500">{nhanTuan}</div>}
+            <TuanNho d={d} goc={goc} onTuan={onTuan} nhanKhoa={nhanTuan} />
           </>
         )}
       </div>

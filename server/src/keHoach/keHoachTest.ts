@@ -121,15 +121,13 @@ export function danhSachLop(p: Principal, i: { branchId?: number | null } = {}) 
       )
       .all(...thuongIds) as any[]) hvChuaCoLich.set(r.class_id, r.n);
   }
+  /** Lớp thường: `đang W8/8` (chương trình đi riêng ở `chuongTrinh`, hiện cạnh chi nhánh). */
   const tomTatThuong = (classId: number): string => {
     const pr = progressAll.get(classId);
-    const ct = pr?.programmeCode ?? '';
-    if (pr?.currentWeek && pr.totalWeeks) {
-      if (pr.currentWeek < 1) return `${ct} · chưa khai giảng`.trim();
-      if (pr.currentWeek > pr.totalWeeks) return `${ct} · đã hết khoá`.trim();
-      return `${ct} · đang ${tuanKhoaCua(pr.currentWeek, pr.totalWeeks)}`.trim();
-    }
-    return `${ct} · chưa có ngày khai giảng`.trim();
+    if (!pr?.currentWeek || !pr.totalWeeks) return 'chưa có ngày khai giảng';
+    if (pr.currentWeek < 1) return 'chưa khai giảng';
+    if (pr.currentWeek > pr.totalWeeks) return 'đã hết khoá';
+    return `đang ${tuanKhoaCua(pr.currentWeek, pr.totalWeeks)}`;
   };
 
   const coFT = inScope.some((r) => r.mode !== 'ratio');
@@ -140,6 +138,7 @@ export function danhSachLop(p: Principal, i: { branchId?: number | null } = {}) 
       const loai = (r.mode === 'ratio' ? 'thuong' : 'ft') as 'ft' | 'thuong';
       return {
         id: r.id as number, code: r.code as string, loai, chiNhanh: (r.chi_nhanh ?? '') as string,
+        chuongTrinh: loai === 'thuong' ? (progressAll.get(r.id)?.programmeCode ?? null) : null,
         soHv: r.so_hv as number,
         chuaCoLichTiep: chuaCoLichTiep.get(r.id) ?? 0,
         hvChuaCoLich: hvChuaCoLich.get(r.id) ?? 0,

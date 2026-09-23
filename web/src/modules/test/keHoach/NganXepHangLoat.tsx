@@ -5,7 +5,6 @@ import { useSession } from '../../../lib/session.tsx';
 import { addDaysStr } from '../../../lib/format.ts';
 import { KhungPanel, Khoi } from '../../../ui/KhungPanel.tsx';
 import { Nhan, type ToneNhan } from '../../../ui/Nhan.tsx';
-import { WeekPicker, resolveWeek, usePeriodWindow } from '../../../ui/Filters.tsx';
 import { useToast } from '../../../ui/Toast.tsx';
 import {
   emGiuLaiSauLuu, gomBaiXemTruoc, gomChip, mondayOfDate, nhanTuanKhoa, tomTatHangLoat, tuanLich,
@@ -15,6 +14,7 @@ import {
   KY, TEN_KY_NANG, chuKyNang, chuTinhTrang, dotCuaEm, emXongDot, khoaDot, nhanDot, thanDot,
   type DotChon, type LuoiFTData, type LuoiThuongData,
 } from './kieu.ts';
+import { TuanNho, resolveTuan, type Tuan } from './TuanNho.tsx';
 
 const TONE_GHI_CHU: Record<BaiXemTruoc['ghiChu'], { tone: ToneNhan; chu: string }> = {
   moi: { tone: 'muted', chu: 'Mới' }, doi: { tone: 'doing', chu: 'Đổi' }, giu: { tone: 'muted', chu: 'Giữ' },
@@ -81,16 +81,17 @@ export function NganXepHangLoat({ loai, classId, classCode, onClose, onDone }: {
 
   /* Kỹ năng + tuần. Mặc định theo Q18 (đặt lại mỗi lần đổi đợt). */
   const [chonKn, setChonKn] = useState<Record<KyNangKH, boolean>>({ listening: true, reading: true, writing: true, speaking: true });
-  const [tuan, setTuan] = useState<Record<KyNangKH, number | null>>({ listening: null, reading: null, writing: null, speaking: null });
-  const [apId, setApId] = useState<number | null>(null);
+  const [tuan, setTuan] = useState<Record<KyNangKH, Tuan | null>>({ listening: null, reading: null, writing: null, speaking: null });
+  const [ap, setAp] = useState<Tuan | null>(null);
   const homNay = session?.demoDate ? mondayOfDate(session.demoDate) : null;
   useEffect(() => {
     if (!dotKey || !dot) return;
     let huy = false;
     const dat = (sIso: string | null, lrwIso: string | null) => {
       const lam = async () => {
-        const s = sIso ? (await resolveWeek(sIso)).id : null;
-        const l = lrwIso ? (lrwIso === sIso ? s : (await resolveWeek(lrwIso)).id) : null;
+        const s = sIso ? await resolveTuan(sIso) : null;
+        const l = lrwIso ? (lrwIso === sIso ? s : await resolveTuan(lrwIso)) : null;
+        if (!huy && l) setAp(l);
         if (!huy) setTuan({ listening: l, reading: l, writing: l, speaking: s });
       };
       void lam().catch(() => { /* người dùng vẫn chọn tay được */ });
@@ -114,7 +115,7 @@ export function NganXepHangLoat({ loai, classId, classCode, onClose, onDone }: {
   const studentIds = dsEm.filter((h) => ticked.has(h.studentId)).map((h) => h.studentId);
   const tuanGui = useMemo(() => {
     const o: Partial<Record<KyNangKH, number>> = {};
-    for (const k of KY) if (chonKn[k] && tuan[k]) o[k] = tuan[k]!;
+    for (const k of KY) if (chonKn[k] && tuan[k]) o[k] = tuan[k]!.periodId;
     return o;
   }, [chonKn, tuan]);
   const khoaTuan = JSON.stringify(tuanGui);
@@ -237,21 +238,21 @@ export function NganXepHangLoat({ loai, classId, classCode, onClose, onDone }: {
             </label>
             {KY.map((k) => (
               <DongKyNang key={k} k={k} tick={chonKn[k]} onTick={(v) => setChonKn((s) => ({ ...s, [k]: v }))}
-                periodId={tuan[k]} onPeriod={(id) => setTuan((s) => ({ ...s, [k]: id }))}
-                nhanKhoa={dot?.loai === 'thuong'
-                  ? (w) => nhanTuanKhoa(w, th.data?.khaiGiang ?? null, th.data?.tongTuan ?? null)
-                  : undefined} />
+                tuan={tuan[k]} goc={homNay} onTuan={(t) => setTuan((s) => ({ ...s, [k]: t }))}
+                nhanKhoa={dot?.loai === 'thuong' && tuan[k]
+                  ? nhanTuanKhoa(tuan[k]!.weekStart, th.data?.khaiGiang ?? null, th.data?.tongTuan ?? null) : null} />
             ))}
-            <div className="rounded-lg border p-2" style={{ borderColor: 'var(--line)' }}>
-              <WeekPicker periodId={apId} onPeriod={setApId} label="Áp một tuần cho mọi kỹ năng đã chọn" scope="planning" />
-              <div className="mt-2 flex justify-end">
-                <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={!apId}
-                  onClick={() => setTuan((s) => {
-                    const n = { ...s };
-                    for (const k of KY) if (chonKn[k]) n[k] = apId;
-                    return n;
-                  })}>Áp</button>
+            <div className="grid items-start gap-2" style={{ gridTemplateColumns: 'minmax(0,1fr) auto' }}>
+              <div className="min-w-0">
+                <span className="mb-1 block text-[11.5px] font-bold text-slate-200">Áp một tuần cho mọi kỹ năng đã chọn</span>
+                <TuanNho d={ap ?? { periodId: null, weekStart: null }} goc={homNay} onTuan={setAp} />
               </div>
+              <button type="button" className="btn mt-[22px] min-h-[44px] sm:min-h-[32px]" disabled={!ap}
+                onClick={() => setTuan((s) => {
+                  const n = { ...s };
+                  for (const k of KY) if (chonKn[k]) n[k] = ap;
+                  return n;
+                })}>Áp</button>
             </div>
           </Khoi>
 
@@ -297,25 +298,21 @@ export function NganXepHangLoat({ loai, classId, classCode, onClose, onDone }: {
   );
 }
 
-/** Một dòng kỹ năng: ô tích · chữ · bộ chọn tuần (+ nhãn tuần trong khoá của lớp thường). */
-function DongKyNang({ k, tick, onTick, periodId, onPeriod, nhanKhoa }: {
-  k: KyNangKH; tick: boolean; onTick: (v: boolean) => void; periodId: number | null; onPeriod: (id: number | null) => void;
-  nhanKhoa?: (weekStart: string | null) => string | null;
+/** Một dòng kỹ năng: ô tích · chữ · bộ chọn tuần gọn (+ nhãn tuần trong khoá của lớp thường). */
+function DongKyNang({ k, tick, onTick, tuan, goc, onTuan, nhanKhoa }: {
+  k: KyNangKH; tick: boolean; onTick: (v: boolean) => void; tuan: Tuan | null; goc: string | null;
+  onTuan: (t: Tuan) => void; nhanKhoa: string | null;
 }) {
-  const win = usePeriodWindow(nhanKhoa ? periodId : null, 'planning');
-  const w = nhanKhoa ? (win.data?.find((p) => p.isAnchor)?.weekStart ?? null) : null;
-  const nhan = nhanKhoa && w ? nhanKhoa(w) : null;
   return (
-    <div className={`grid items-start gap-2 ${tick ? '' : 'opacity-50'}`} style={{ gridTemplateColumns: '20px 108px minmax(0,1fr)' }}>
-      <input type="checkbox" className="mt-3.5 accent-sky-400" checked={tick} onChange={(e) => onTick(e.target.checked)}
+    <div className={`grid grid-cols-[20px_92px_minmax(0,1fr)] items-start gap-2 sm:grid-cols-[20px_108px_minmax(0,1fr)] ${tick ? '' : 'opacity-50'}`}>
+      <input type="checkbox" className="mt-3 accent-sky-400" checked={tick} onChange={(e) => onTick(e.target.checked)}
         aria-label={`Chọn ${TEN_KY_NANG[k]}`} />
-      <div className="mt-2.5 text-sm text-slate-200">
+      <div className="mt-2 text-sm text-slate-200">
         <b title={TEN_KY_NANG[k]}>{chuKyNang(k)}</b> <span className="text-slate-400">{TEN_KY_NANG[k]}</span>
         {k === 'writing' && <span className="ml-1 cursor-help text-slate-500" title="W = chấm cả W1 và W2">ⓘ</span>}
       </div>
-      <div className={`min-w-0 ${tick ? '' : 'pointer-events-none'}`}>
-        <WeekPicker periodId={periodId} onPeriod={onPeriod} label={null} scope="planning" />
-        {nhan && <div className="mt-0.5 text-[11px] text-slate-500">{nhan}</div>}
+      <div className={`min-w-0 max-w-[320px] ${tick ? '' : 'pointer-events-none'}`}>
+        <TuanNho d={tuan ?? { periodId: null, weekStart: null }} goc={goc} onTuan={onTuan} nhanKhoa={nhanKhoa} />
       </div>
     </div>
   );
