@@ -1,7 +1,10 @@
 import { db } from '../db.ts';
-import { MEASURE_KINDS, PERMISSIONS, type MeasureKind } from '../../../shared/domain/index.ts';
+import {
+  MEASURE_KINDS, PERMISSIONS, NHOM_TRANG_THAI_KHOA, khoaNhomTrangThai, violationState,
+  type MeasureKind, type NhomViPhamKhoa, type TrangThaiViPhamKhoa,
+} from '../../../shared/domain/index.ts';
 import { scopeFor, type Principal } from '../permissions.ts';
-import { badRequest, forbidden, isIsoDate } from '../util.ts';
+import { badRequest, forbidden, isIsoDate, notFound } from '../util.ts';
 import { demoToday } from '../demoConfig.ts';
 import { warningsFor } from './canhBao.ts';
 
@@ -27,7 +30,7 @@ import { warningsFor } from './canhBao.ts';
 
 export const YTHUC_METRIC_IDS = [
   'vi-pham-tong', 'vi-pham-chua-xu-ly', 'hv-co-vi-pham', 'hv-can-xu-ly',
-  'bien-phap-da-thuc-hien', 'bien-phap-dang-chuan-bi', 'bien-phap-theo-loai',
+  'bien-phap-da-thuc-hien', 'bien-phap-dang-chuan-bi', 'bien-phap-theo-loai', 'vi-pham-theo-nhom',
 ] as const;
 
 export const isYThucMetric = (id: string): boolean => (YTHUC_METRIC_IDS as readonly string[]).includes(id);
@@ -49,6 +52,26 @@ export function statScope(p: Principal, branchId: number | null): { none: boolea
 export const branchSql = (col: string, branchIds: number[] | null): { sql: string; args: number[] } =>
   branchIds === null ? { sql: '1 = 1', args: [] } : { sql: `${col} IN (${branchIds.map(() => '?').join(',') || 'NULL'})`, args: branchIds };
 
+/**
+ * Q19 (P14) — lọc THÊM theo MỘT lớp, dùng chung cho Ý thức và Phối hợp. `classId` phải nằm trong phạm vi chi nhánh
+ * đang xem (`statScope`) — hỏi lớp ngoài phạm vi thì TỪ CHỐI (403), không âm thầm bỏ qua bộ lọc.
+ */
+export function checkClassInScope(classId: number, branchIds: number[] | null): void {
+  const cls = db().prepare('SELECT branch_id FROM classes WHERE id = ?').get(classId) as any;
+  if (!cls) throw notFound('Không tìm thấy lớp');
+  if (branchIds !== null && !branchIds.includes(cls.branch_id)) throw forbidden('Lớp này nằm ngoài phạm vi bạn được xem.');
+}
+
+/** Chỉ số theo lớp GHI (`v.class_id`/`m.class_id`/`a.class_id`) — không lọc gì khi không hỏi theo lớp. */
+export const classSql = (col: string, classId: number | null | undefined): { sql: string; args: number[] } =>
+  classId ? { sql: `${col} = ?`, args: [classId] } : { sql: '1 = 1', args: [] };
+
+/** Chỉ số HIỆN TRẠNG (`vi-pham-chua-xu-ly`, `hv-can-xu-ly`): học viên ĐANG HỌC ở lớp — không phải "ghi ở lớp lúc đó". */
+const activeInClassSql = (classId: number | null | undefined): { sql: string; args: number[] } =>
+  classId
+    ? { sql: `v.student_id IN (SELECT student_id FROM enrollments WHERE class_id = ? AND status = 'active')`, args: [classId] }
+    : { sql: '1 = 1', args: [] };
+
 /** Chi nhánh của lớp học viên ĐANG học — dùng cho chỉ số HIỆN TRẠNG (em chuyển chi nhánh thì hiện trạng sang nơi mới). */
 const NOW_BRANCH = `(SELECT c2.branch_id FROM enrollments e2 JOIN classes c2 ON c2.id = e2.class_id
                       WHERE e2.student_id = v.student_id AND e2.status = 'active' ORDER BY e2.id DESC LIMIT 1)`;
@@ -62,10 +85,11 @@ export type YThucMetricResult = { none: boolean; ids: number[]; byKind?: Record<
 
 export function yThucMetric(
   p: Principal, id: string,
-  f: { branchId?: number | null; from?: string | null; to?: string | null; kind?: string | null } = {},
+  f: { branchId?: number | null; from?: string | null; to?: string | null; kind?: string | null; classId?: number | null } = {},
 ): YThucMetricResult {
   const scope = statScope(p, f.branchId ?? null);
   if (scope.none) return { none: true, ids: [] };
+  if (f.classId) checkClassInScope(f.classId, scope.branchIds);
   checkPeriod(f.from, f.to);
   const today = demoToday();
   const all = (sql: string, ...args: unknown[]) => (db().prepare(sql).all(...args) as any[]).map((r) => r.id as number);
@@ -76,58 +100,101 @@ export function yThucMetric(
 
   switch (id) {
     case 'vi-pham-tong': {
-      const b = branchSql('c.branch_id', scope.branchIds), t = period('v.occurred_on');
+      const b = branchSql('c.branch_id', scope.branchIds), t = period('v.occurred_on'), cl = classSql('v.class_id', f.classId);
       return { none: false, ids: all(
         `SELECT v.id FROM violations v LEFT JOIN classes c ON c.id = v.class_id
-          WHERE ${b.sql}${t.sql} ORDER BY v.id`, ...b.args, ...t.args) };
+          WHERE ${b.sql}${t.sql} AND ${cl.sql} ORDER BY v.id`, ...b.args, ...t.args, ...cl.args) };
     }
     case 'vi-pham-chua-xu-ly': {
-      const b = branchSql(NOW_BRANCH, scope.branchIds);
+      const b = branchSql(NOW_BRANCH, scope.branchIds), ac = activeInClassSql(f.classId);
       return { none: false, ids: all(
         `SELECT v.id FROM violations v
-          WHERE ${b.sql}
-            AND NOT EXISTS (SELECT 1 FROM measure_violations mv WHERE mv.violation_id = v.id) ORDER BY v.id`, ...b.args) };
+          WHERE ${b.sql} AND ${ac.sql}
+            AND NOT EXISTS (SELECT 1 FROM measure_violations mv WHERE mv.violation_id = v.id) ORDER BY v.id`, ...b.args, ...ac.args) };
     }
     case 'hv-co-vi-pham': {
-      const b = branchSql('c.branch_id', scope.branchIds), t = period('v.occurred_on');
+      const b = branchSql('c.branch_id', scope.branchIds), t = period('v.occurred_on'), cl = classSql('v.class_id', f.classId);
       return { none: false, ids: all(
         `SELECT DISTINCT v.student_id AS id FROM violations v LEFT JOIN classes c ON c.id = v.class_id
-          WHERE ${b.sql}${t.sql} ORDER BY v.student_id`, ...b.args, ...t.args) };
+          WHERE ${b.sql}${t.sql} AND ${cl.sql} ORDER BY v.student_id`, ...b.args, ...t.args, ...cl.args) };
     }
     case 'hv-can-xu-ly': {
-      /* Ứng viên: em đang học trong phạm vi có ít nhất một vi phạm chưa xử lý. Rồi hỏi CHÍNH hàm cảnh báo — không đếm riêng. */
-      const b = branchSql(NOW_BRANCH, scope.branchIds);
+      /* Ứng viên: em đang học trong phạm vi (và, có hỏi lớp, đang học đúng lớp đó) có ít nhất một vi phạm chưa xử lý.
+         Rồi hỏi CHÍNH hàm cảnh báo — không đếm riêng. */
+      const b = branchSql(NOW_BRANCH, scope.branchIds), ac = activeInClassSql(f.classId);
       const candidates = all(
         `SELECT DISTINCT v.student_id AS id FROM violations v
-          WHERE ${b.sql}
-            AND NOT EXISTS (SELECT 1 FROM measure_violations mv WHERE mv.violation_id = v.id) ORDER BY v.student_id`, ...b.args);
+          WHERE ${b.sql} AND ${ac.sql}
+            AND NOT EXISTS (SELECT 1 FROM measure_violations mv WHERE mv.violation_id = v.id) ORDER BY v.student_id`, ...b.args, ...ac.args);
       const warned = warningsFor(candidates, today);
       return { none: false, ids: candidates.filter((s) => warned.get(s)?.active) };
     }
     case 'bien-phap-dang-chuan-bi': {
-      const b = branchSql('c.branch_id', scope.branchIds);
-      return { none: false, ids: all(
-        `SELECT m.id FROM discipline_measures m LEFT JOIN classes c ON c.id = m.class_id
-          WHERE m.status = 'preparing' AND ${b.sql} ORDER BY m.id`, ...b.args) };
+      /* Q18: byKind chín loại — cùng cách `bien-phap-theo-loai`, cho bảng "Phương án xử lý theo loại" cột Đang chuẩn bị. */
+      if (f.kind && !(MEASURE_KINDS as readonly string[]).includes(f.kind)) throw badRequest('Loại phương án xử lý không hợp lệ.');
+      const b = branchSql('c.branch_id', scope.branchIds), cl = classSql('m.class_id', f.classId);
+      const rows = db()
+        .prepare(
+          `SELECT m.id, m.kind FROM discipline_measures m LEFT JOIN classes c ON c.id = m.class_id
+            WHERE m.status = 'preparing' AND ${b.sql} AND ${cl.sql} ORDER BY m.id`,
+        )
+        .all(...b.args, ...cl.args) as any[];
+      const byKind = Object.fromEntries(MEASURE_KINDS.map((k) => [k, [] as number[]])) as Record<MeasureKind, number[]>;
+      for (const r of rows) byKind[r.kind as MeasureKind]?.push(r.id);
+      const picked = f.kind ? { [f.kind]: byKind[f.kind as MeasureKind] } : byKind;
+      return { none: false, byKind: picked as Record<string, number[]>, ids: Object.values(picked).flat().sort((x, y) => x - y) };
     }
     case 'bien-phap-da-thuc-hien':
     case 'bien-phap-theo-loai': {
       if (id === 'bien-phap-theo-loai' && f.kind && !(MEASURE_KINDS as readonly string[]).includes(f.kind)) {
         throw badRequest('Loại phương án xử lý không hợp lệ.');
       }
-      const b = branchSql('c.branch_id', scope.branchIds), t = period('m.performed_on');
+      const b = branchSql('c.branch_id', scope.branchIds), t = period('m.performed_on'), cl = classSql('m.class_id', f.classId);
       const rows = db()
         .prepare(
           `SELECT m.id, m.kind FROM discipline_measures m LEFT JOIN classes c ON c.id = m.class_id
-            WHERE m.status = 'done' AND ${b.sql}${t.sql} ORDER BY m.id`,
+            WHERE m.status = 'done' AND ${b.sql}${t.sql} AND ${cl.sql} ORDER BY m.id`,
         )
-        .all(...b.args, ...t.args) as any[];
+        .all(...b.args, ...t.args, ...cl.args) as any[];
       if (id === 'bien-phap-da-thuc-hien') return { none: false, ids: rows.map((r) => r.id as number) };
       /* Chín loại, tách riêng ba thư cảnh cáo — không gộp. `ids` là hợp của các phần (hoặc đúng loại được lọc). */
       const byKind = Object.fromEntries(MEASURE_KINDS.map((k) => [k, [] as number[]])) as Record<MeasureKind, number[]>;
       for (const r of rows) byKind[r.kind as MeasureKind]?.push(r.id);
       const picked = f.kind ? { [f.kind]: byKind[f.kind as MeasureKind] } : byKind;
       return { none: false, byKind: picked as Record<string, number[]>, ids: Object.values(picked).flat().sort((x, y) => x - y) };
+    }
+    case 'vi-pham-theo-nhom': {
+      /*
+       * P13 (Q17) — MỘT câu SQL: đúng điều kiện của `vi-pham-tong` (phạm vi, kỳ, lớp) cộng `category` và hai `EXISTS`
+       * giống `SELECT` của `violations.ts:48-58` để suy `ViolationState` bằng CHÍNH `violationState` dùng chung. `byKind`
+       * đủ 24 khoá `{nhom}:{trangThai}` (Q17) — mỗi vi phạm rơi vào đúng một trạng thái riêng và cả hai khoá gộp
+       * (`{nhom}:tat-ca`, `tat-ca:{trangThai}`, `tat-ca:tat-ca`), nên hợp các khoá luôn khớp `vi-pham-tong`.
+       */
+      if (f.kind && !(NHOM_TRANG_THAI_KHOA as readonly string[]).includes(f.kind)) throw badRequest('Khoá nhóm × trạng thái không hợp lệ.');
+      const b = branchSql('c.branch_id', scope.branchIds), t = period('v.occurred_on'), cl = classSql('v.class_id', f.classId);
+      const rows = db()
+        .prepare(
+          `SELECT v.id, v.category,
+                  EXISTS (SELECT 1 FROM measure_violations mv JOIN discipline_measures m ON m.id = mv.measure_id
+                           WHERE mv.violation_id = v.id AND m.status = 'done') AS in_done,
+                  EXISTS (SELECT 1 FROM measure_violations mv JOIN discipline_measures m ON m.id = mv.measure_id
+                           WHERE mv.violation_id = v.id AND m.status = 'preparing') AS in_preparing
+             FROM violations v LEFT JOIN classes c ON c.id = v.class_id
+            WHERE ${b.sql}${t.sql} AND ${cl.sql} ORDER BY v.id`,
+        )
+        .all(...b.args, ...t.args, ...cl.args) as any[];
+      const byKind = Object.fromEntries(NHOM_TRANG_THAI_KHOA.map((k) => [k, [] as number[]])) as Record<string, number[]>;
+      for (const r of rows) {
+        const state = violationState({ inDone: !!r.in_done, inPreparing: !!r.in_preparing });
+        const trangThai: TrangThaiViPhamKhoa = state === 'handled' ? 'done' : state;
+        const nhom = r.category as NhomViPhamKhoa;
+        byKind[khoaNhomTrangThai(nhom, trangThai)].push(r.id);
+        byKind[khoaNhomTrangThai(nhom, 'tat-ca')].push(r.id);
+        byKind[khoaNhomTrangThai('tat-ca', trangThai)].push(r.id);
+        byKind[khoaNhomTrangThai('tat-ca', 'tat-ca')].push(r.id);
+      }
+      if (f.kind) return { none: false, byKind: { [f.kind]: byKind[f.kind] }, ids: byKind[f.kind] };
+      return { none: false, byKind, ids: rows.map((r) => r.id as number) };
     }
     default:
       throw badRequest(`Không có chỉ số Ý thức "${id}".`);

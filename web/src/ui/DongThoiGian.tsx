@@ -23,6 +23,12 @@ export type DongThoiGianMuc = {
   dongPhu?: ReactNode;
   /** Cột cuối: nút `Sửa`/`Mở`/`Xem`, hoặc nhãn nhóm. */
   cuoi?: ReactNode;
+  /** PR-YT2 YT-1/YT-13: dòng đang mở tại chỗ (có `chiTiet` vẽ ngay dưới). */
+  mo?: boolean;
+  /** Có hàm này thì `tieuDe` vẽ thành nút bấm mở/đóng tại chỗ thay vì chữ tĩnh. */
+  onMo?: () => void;
+  /** Khối vẽ ngay dưới dòng khi `mo` — thẳng mép cột nội dung (mockup `.exp`). */
+  chiTiet?: ReactNode;
 };
 
 const LUOI = {
@@ -39,6 +45,11 @@ const LUOI = {
 const CUOI = {
   'day-du': { khong: 'col-start-3 md:col-start-auto', chon: 'col-start-4 md:col-start-auto' },
   gon: { khong: 'col-start-2 md:col-start-auto', chon: 'col-start-3 md:col-start-auto' },
+} as const;
+/** YT-1/YT-13: lề trái của khối mở tại chỗ — đúng mép cột nội dung ở cả hai bề rộng (cùng số đo với `LUOI` ở trên). */
+const LE_CHI_TIET = {
+  'day-du': { khong: 'pl-[3.25rem] md:pl-[12rem]', chon: 'pl-[4.5rem] md:pl-[13.25rem]' },
+  gon: { khong: 'pl-[3.25rem] md:pl-[4rem]', chon: 'pl-[4.5rem] md:pl-[5.25rem]' },
 } as const;
 
 export function DongThoiGian({ muc, bien = 'day-du', coCotChon = false, rong }: {
@@ -62,10 +73,26 @@ export function DongThoiGian({ muc, bien = 'day-du', coCotChon = false, rong }: 
           <span className="text-[11px] text-slate-500 tabular-nums pt-0.5" title={fmtDate(m.ngay)}>{fmtDate(m.ngay).slice(0, 5)}</span>
           {bien === 'day-du' && <span className="min-w-0">{m.cot2}</span>}
           <span className="min-w-0 break-words">
-            <span className="block text-sm font-medium text-slate-100">{m.tieuDe}</span>
+            {m.onMo ? (
+              <button
+                type="button"
+                className="block w-full text-left text-sm font-medium text-slate-100 hover:underline underline-offset-2"
+                aria-expanded={!!m.mo}
+                onClick={m.onMo}
+              >
+                {m.tieuDe}
+              </button>
+            ) : (
+              <span className="block text-sm font-medium text-slate-100">{m.tieuDe}</span>
+            )}
             {m.dongPhu && <span className="block text-[11px] text-slate-500 mt-0.5">{m.dongPhu}</span>}
           </span>
           <span className={`flex flex-wrap gap-1.5 md:justify-end ${CUOI[bien][k]}`}>{m.cuoi}</span>
+          {m.mo && m.chiTiet && (
+            <div className={`col-span-full ${LE_CHI_TIET[bien][k]}`}>
+              <div className="min-w-0 border-t pt-2 mt-1" style={{ borderColor: 'var(--line)' }}>{m.chiTiet}</div>
+            </div>
+          )}
         </li>
       ))}
     </ul>

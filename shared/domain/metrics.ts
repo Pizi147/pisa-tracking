@@ -169,6 +169,13 @@ export const METRICS: readonly ChiSo[] = [
     thoiGian: 'phat-sinh-trong-ky', khuTrung: 'COUNT DISTINCT violation_id', drilldown: '/metrics/vi-pham-tong',
   },
   {
+    id: 'vi-pham-theo-nhom', ten: 'Vi phạm theo nhóm',
+    cauHoi: 'Trong kỳ, mỗi nhóm vi phạm có bao nhiêu vi phạm — chia theo trạng thái tính đến hôm nay?',
+    donVi: 'vi-pham',
+    tapDuDieuKien: 'ĐÚNG TẬP của `vi-pham-tong` (xảy ra trong kỳ, thuộc lớp GHI LÚC ĐÓ), chia theo NHÓM (`category`) và TRẠNG THÁI TÍNH ĐẾN NGÀY DỮ LIỆU (chưa xử lý · đang chuẩn bị · đã xử lý — không phải trạng thái lúc xảy ra). Lọc một khoá `{nhóm}:{trạng thái}` bằng tham số kind (P13, Q17).',
+    thoiGian: 'phat-sinh-trong-ky', khuTrung: 'COUNT DISTINCT violation_id', drilldown: '/metrics/vi-pham-theo-nhom',
+  },
+  {
     id: 'vi-pham-chua-xu-ly', ten: 'Vi phạm chưa xử lý',
     cauHoi: 'Hiện có bao nhiêu vi phạm mà chưa nằm trong phương án xử lý nào?',
     donVi: 'vi-pham',

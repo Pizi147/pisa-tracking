@@ -8041,11 +8041,11 @@ const branchIdOf = (code: string) => (conn.prepare('SELECT id FROM branches WHER
 
 check('PR-F · Sổ chỉ số: đúng hai mươi chỉ số (PR-N thêm pa-cho-duyet; PR-J thêm tám chỉ số Ý thức), mỗi chỉ số đủ tám trường (thiếu một trường thì không được lên dashboard)', () => {
   const list = domain.METRICS as readonly any[];
-  assert(list.length === 27, `Phải có hai mươi bảy chỉ số (mười hai của PR-F/PR-N + bảy của PR-J còn lại sau khi PR-T bỏ vi-pham-khong-hieu-luc + bốn của PR-T: case-cho-xac-dinh-nguyen-nhan và ba phoi-hop-* + một của PR-S1: tin-hieu-qua-han + ba của PR-Pa: case-xac-dinh-nguyen-nhan-qua-han, bai-qua-han-nhap-diem, case-chua-co-nguoi-phu-trach), đang có ${list.length}`);
+  assert(list.length === 28, `Phải có hai mươi tám chỉ số (mười hai của PR-F/PR-N + bảy của PR-J còn lại sau khi PR-T bỏ vi-pham-khong-hieu-luc + bốn của PR-T: case-cho-xac-dinh-nguyen-nhan và ba phoi-hop-* + một của PR-S1: tin-hieu-qua-han + ba của PR-Pa: case-xac-dinh-nguyen-nhan-qua-han, bai-qua-han-nhap-diem, case-chua-co-nguoi-phu-trach + một của PR-YT2: vi-pham-theo-nhom), đang có ${list.length}`);
   const expected = ['hv-sos-hien-tai', 'hv-duoi-ky-vong-mon', 'hv-co-case-mo', 'case-mo', 'tin-hieu-cho-xac-minh', 'tin-hieu-qua-han',
     'case-xac-dinh-nguyen-nhan-qua-han', 'bai-qua-han-nhap-diem', 'case-chua-co-nguoi-phu-trach', 'case-cho-xac-dinh-nguyen-nhan',
     'case-thieu-pa', 'pa-can-cap-nhat', 'pa-cho-duyet', 'pa-co-ket-qua', 'ty-le-co-cai-thien', 'dung-han-cap-nhat', 'do-phu-danh-gia',
-    'vi-pham-tong', 'vi-pham-chua-xu-ly', 'hv-co-vi-pham', 'hv-can-xu-ly',
+    'vi-pham-tong', 'vi-pham-theo-nhom', 'vi-pham-chua-xu-ly', 'hv-co-vi-pham', 'hv-can-xu-ly',
     'bien-phap-da-thuc-hien', 'bien-phap-dang-chuan-bi', 'bien-phap-theo-loai',
     'phoi-hop-luot-sos', 'phoi-hop-dang-xu-ly', 'phoi-hop-hoan-thanh'];
   for (const id of expected) assert(list.some((m) => m.id === id), `Thiếu chỉ số ${id}`);
@@ -9561,6 +9561,11 @@ await runPhanTichTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P
 
 const { runHanhTrinhTests } = await import('./hanhTrinh.tests.ts');
 await runHanhTrinhTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
+
+// ==================================================================== PR-YT2 (Ý thức đầy đủ)
+
+const { runYThucGonTests } = await import('./yThucGon.tests.ts');
+await runYThucGonTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
 // ==================================================================== PR-Rc2 (Kế hoạch Test)
 

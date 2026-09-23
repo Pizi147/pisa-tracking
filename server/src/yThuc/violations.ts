@@ -3,7 +3,7 @@ import {
   VIOLATION_CATEGORIES, VIOLATION_CATEGORY_LABEL, VIOLATION_DESCRIPTION_MIN, VIOLATION_OTHER_DESCRIPTION_MIN,
   VIOLATION_SKILLS, VIOLATION_SKILL_LABEL, VIOLATION_STATE_LABEL, MEASURE_KIND_LABEL, MEASURE_STATUS_LABEL,
   violationAgeDays, violationAgeLabel, violationState,
-  type ViolationCategory, type ViolationState,
+  type ViolationCategory, type ViolationState, type MeasureKind,
 } from '../../../shared/domain/index.ts';
 import type { Principal } from '../permissions.ts';
 import { badRequest, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
@@ -306,6 +306,25 @@ export function deleteViolation(p: Principal, id: number): { ok: true; removedFr
   requireViewStudent(p, row.student_id);
   if (!canEditViolation(p, row)) throw forbidden(EDIT_VIOLATION_MESSAGE);
 
+  /*
+   * Q15 — B02 đòi PA phải có ít nhất một vi phạm: PA ĐANG CHUẨN BỊ mà vi phạm này là DUY NHẤT thì chặn xoá (xoá phương án
+   * trước, hoặc thêm vi phạm khác). PA ĐÃ THỰC HIỆN không chặn — V14′ giữ việc đã làm thật, hiện 0 vi phạm nếu xoá hết.
+   */
+  const soleOfPreparing = db()
+    .prepare(
+      `SELECT m.kind, m.custom_name
+         FROM measure_violations mv JOIN discipline_measures m ON m.id = mv.measure_id
+        WHERE mv.violation_id = ? AND m.status = 'preparing'
+          AND (SELECT COUNT(*) FROM measure_violations WHERE measure_id = m.id) = 1`,
+    )
+    .get(id) as any;
+  if (soleOfPreparing) {
+    const label = soleOfPreparing.kind === 'other' && soleOfPreparing.custom_name
+      ? soleOfPreparing.custom_name
+      : MEASURE_KIND_LABEL[soleOfPreparing.kind as MeasureKind] ?? soleOfPreparing.kind;
+    throw badRequest(`Đây là vi phạm duy nhất của phương án «${label}» đang chuẩn bị — xoá phương án trước, hoặc thêm vi phạm khác vào phương án.`);
+  }
+
   /* Tệp trong kho chỉ xoá SAU KHI giao dịch chốt — giao dịch lui thì dòng còn mà tệp mất là không hoàn tác được. */
   const khoaTep: string[] = [];
   const result = tx(() => {
@@ -336,6 +355,8 @@ export type ViolationFilter = {
   studentId?: number | null;
   /** Nhật ký vi phạm GHI Ở LỚP NÀY (cột `class_id` lúc ghi). Khác với bảng Ý thức của lớp, nơi vấn đề chưa xử lý đi theo học viên sang lớp mới. */
   classId?: number | null;
+  /** YT-6 "Theo thời gian" — HV ĐANG HỌC ở lớp này, MỌI trạng thái (không phải "ghi ở lớp lúc đó" như `classId`). */
+  activeInClassId?: number | null;
   state?: ViolationState | null;
   category?: string | null;
   from?: string | null;
@@ -347,19 +368,21 @@ export type ViolationFilter = {
  * gạch ngang kèm lý do); người gọi lọc bằng `state`.
  */
 export function listViolations(p: Principal, f: ViolationFilter): { rows: ViolationView[] } {
-  if (!f.studentId && !f.classId) throw badRequest('Cần chọn học viên hoặc lớp để xem danh sách vi phạm.');
+  const classId = f.classId ?? f.activeInClassId ?? null;
+  if (!f.studentId && !classId) throw badRequest('Cần chọn học viên hoặc lớp để xem danh sách vi phạm.');
   if (f.studentId) {
     loadStudent(f.studentId);
     requireViewStudent(p, f.studentId);
   } else {
-    const cls = db().prepare('SELECT id FROM classes WHERE id = ?').get(f.classId) as any;
+    const cls = db().prepare('SELECT id FROM classes WHERE id = ?').get(classId) as any;
     if (!cls) throw notFound('Không tìm thấy lớp');
-    requireViewClass(p, f.classId!);
+    requireViewClass(p, classId!);
   }
   const where: string[] = [];
   const args: unknown[] = [];
   if (f.studentId) { where.push('v.student_id = ?'); args.push(f.studentId); }
   if (f.classId) { where.push('v.class_id = ?'); args.push(f.classId); }
+  if (f.activeInClassId) { where.push(`v.student_id IN (SELECT student_id FROM enrollments WHERE class_id = ? AND status = 'active')`); args.push(f.activeInClassId); }
   if (f.category) { where.push('v.category = ?'); args.push(f.category); }
   if (f.from) { where.push('v.occurred_on >= ?'); args.push(f.from); }
   if (f.to) { where.push('v.occurred_on <= ?'); args.push(f.to); }

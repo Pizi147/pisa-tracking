@@ -998,18 +998,21 @@ export async function runSosV3Tests(t: YThucTestKit) {
     }
   });
 
-  check('PR-T · V12′ Xoá được ở mọi nơi — kể cả vi phạm đang nằm trong biện pháp ĐANG CHUẨN BỊ hay ĐÃ THỰC HIỆN; thao tác đi qua danh sách lớp, hồ sơ học viên (cùng hàm)', () => {
+  check('PR-T · V12′ Xoá được ở mọi nơi — kể cả vi phạm đang nằm trong biện pháp ĐANG CHUẨN BỊ hay ĐÃ THỰC HIỆN; thao tác đi qua danh sách lớp, hồ sơ học viên (cùng hàm); Q15 chặn xoá vi phạm DUY NHẤT còn lại của PA đang chuẩn bị', () => {
     const st = makeStudent('V12p'); const ids = recordMany(st.id, 4);
     const prep = mkMeasure(st.id, 'talk_short', [ids[0], ids[1]]);
     const done = doneMeasure(st.id, [ids[2], ids[3]]);
     violSvc.deleteViolation(gvcn, ids[0]); violSvc.deleteViolation(gvcn, ids[2]);
     assert(count('SELECT COUNT(*) n FROM measure_violations WHERE measure_id = ?', prep.id) === 1 && count('SELECT COUNT(*) n FROM measure_violations WHERE measure_id = ?', done.id) === 1, 'Đã gỡ khỏi cả hai biện pháp');
     assert(get('SELECT status FROM discipline_measures WHERE id = ?', done.id).status === 'done', 'Biện pháp đã thực hiện còn nguyên');
-    /* Biện pháp ĐANG CHUẨN BỊ mất hết vi phạm: KHÔNG bị xoá ngầm (bản nháp của GVCN); hiện 0 vi phạm và KHÔNG xác nhận được cho tới khi có vi phạm. */
-    violSvc.deleteViolation(gvcn, ids[1]);
-    const empty = measSvc.measureDetail(gvcn, prep.id) as any;
-    assert(empty.status === 'preparing' && empty.violationCount === 0, `Biện pháp nháp mất hết vi phạm: ${JSON.stringify({ s: empty.status, c: empty.violationCount })}`);
-    assertThrows(() => measSvc.confirmMeasure(gvcn, prep.id, { performedOn: TODAY, performedBy: gvcn.userId, note: 'Xác nhận thử' }), /ít nhất một vi phạm/, 'Xác nhận biện pháp rỗng');
+    /* Q15 (rulebook thay đổi 23/09/2026): PA ĐANG CHUẨN BỊ chỉ còn MỘT vi phạm — xoá nó bị CHẶN (B02: PA phải có ít nhất một vi phạm), không còn để PA nháp mất hết vi phạm ngầm như trước. */
+    assertThrows(
+      () => violSvc.deleteViolation(gvcn, ids[1]),
+      /vi phạm duy nhất của phương án.*đang chuẩn bị/,
+      'Xoá vi phạm duy nhất của PA đang chuẩn bị phải bị chặn (Q15)',
+    );
+    const stillThere = measSvc.measureDetail(gvcn, prep.id) as any;
+    assert(stillThere.status === 'preparing' && stillThere.violationCount === 1, `Dữ liệu không đổi sau khi bị chặn: ${JSON.stringify({ s: stillThere.status, c: stillThere.violationCount })}`);
   });
 
   check('PR-T · V14′ (§10#9) Xoá vi phạm nằm trong Report gia đình ĐÃ THỰC HIỆN: Report còn (việc đã làm thật), số vi phạm của biện pháp là số ĐANG GẮN (giảm 1, không phải ảnh chụp), thống kê giảm 1, có dòng audit', () => {
@@ -1056,10 +1059,10 @@ export async function runSosV3Tests(t: YThucTestKit) {
     assert(!(violSvc as any).invalidateViolation, 'Không còn hàm hủy');
   });
 
-  check('PR-T · Chỉ số `vi-pham-khong-hieu-luc` đã BỎ khỏi sổ chỉ số và khỏi hàm thống kê Ý thức (không còn trạng thái đó); bảy chỉ số Ý thức còn lại', () => {
+  check('PR-T · Chỉ số `vi-pham-khong-hieu-luc` đã BỎ khỏi sổ chỉ số và khỏi hàm thống kê Ý thức (không còn trạng thái đó); tám chỉ số Ý thức còn lại (bảy của PR-J + `vi-pham-theo-nhom` của PR-YT2)', () => {
     assert(domain.metricById('vi-pham-khong-hieu-luc') === null && !domain.METRICS.some((m: any) => m.id === 'vi-pham-khong-hieu-luc'), 'Sổ chỉ số vẫn còn');
     const thongKe: any = thongKeSvc;
-    assert(!thongKe.YTHUC_METRIC_IDS.includes('vi-pham-khong-hieu-luc') && thongKe.YTHUC_METRIC_IDS.length === 7, `Ý thức: ${thongKe.YTHUC_METRIC_IDS}`);
+    assert(!thongKe.YTHUC_METRIC_IDS.includes('vi-pham-khong-hieu-luc') && thongKe.YTHUC_METRIC_IDS.length === 8, `Ý thức: ${thongKe.YTHUC_METRIC_IDS}`);
     assertThrows(() => metricsSvc.metricSet(P.mbManager, 'vi-pham-khong-hieu-luc', {}), /Không tìm thấy/, 'Hỏi chỉ số đã bỏ');
   });
 

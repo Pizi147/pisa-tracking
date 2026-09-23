@@ -27,6 +27,7 @@ export * from './metrics.ts';
 export * from './policy.ts';
 export * from './attachments.ts';
 export * from './yThuc.ts';
+export * from './yThucGon.ts';
 export * from './sos.ts';
 export * from './hoSoHocVien.ts';
 export * from './hienThiNgay.ts';

@@ -83,30 +83,80 @@ function violationIdsOf(measureId: number): number[] {
     .map((r) => r.violation_id as number);
 }
 
-function buildDetail(p: Principal, r: any): MeasureDetail {
-  const violations = violationsByIds(violationIdsOf(r.id));
-  const attachmentCount = attachmentCountOf(r.id);
-  const spec = MEASURE_REQUIRED_FIELDS[r.kind as MeasureKind];
-  const needsFile = r.status === 'preparing' && spec?.attachment === 'required' && attachmentCount < 1;
-  return {
-    id: r.id,
-    studentId: r.student_id, studentName: r.student_name, studentCode: r.student_code,
-    classId: r.class_id ?? null, classCode: r.class_code ?? null, cycleId: r.cycle_id ?? null,
-    kind: r.kind, kindLabel: kindLabelOf(r.kind, r.custom_name ?? null), customName: r.custom_name ?? null,
-    status: r.status, statusLabel: MEASURE_STATUS_LABEL[r.status as MeasureStatus] ?? r.status,
-    ownerUserId: r.owner_user_id ?? null, ownerName: r.owner_name ?? null,
-    note: r.note ?? null,
-    performedOn: r.performed_on ?? null, performedBy: r.performed_by ?? null, performedByName: r.performed_by_name ?? null,
-    performerName: r.performer_name ?? null, participants: r.participants ?? null,
-    confirmedBy: r.confirmed_by ?? null, confirmedByName: r.confirmed_by_name ?? null, confirmedAt: r.confirmed_at ?? null,
-    createdAt: r.created_at, createdBy: r.created_by, createdByName: r.created_by_name ?? null, updatedAt: r.updated_at ?? null,
-    violations, violationCount: violations.length,
-    attachmentCount,
-    evidenceHint: needsFile
-      ? (r.kind === 'suspension' ? 'Cần đính kèm tệp hoặc liên kết quyết định đình chỉ học' : 'Cần đính kèm tệp hoặc liên kết thư cảnh cáo')
-      : null,
-    canManage: canManageDiscipline(p, r.student_id),
+/**
+ * Q10 — DỰNG THEO LÔ cho `listMeasures`: MỘT câu `measure_violations … IN (…)` cho mọi PA (thay vì một câu mỗi PA),
+ * MỘT `violationsByIds` cho cả tập, MỘT `SELECT … GROUP BY owner_id` cho số tệp, quyền `canManage` nhớ theo `studentId`.
+ * JSON từng phần tử PHẢI giống hệt gọi `buildDetail` lẻ cho từng dòng — `buildDetail` chỉ là `buildDetailMany([r])[0]`.
+ */
+function buildDetailMany(p: Principal, rows: any[]): MeasureDetail[] {
+  if (!rows.length) return [];
+  const ids = rows.map((r) => r.id as number);
+
+  const violationIdsOfMeasure = new Map<number, number[]>();
+  for (let i = 0; i < ids.length; i += 400) {
+    const chunk = ids.slice(i, i + 400);
+    for (const r of db()
+      .prepare(`SELECT measure_id, violation_id FROM measure_violations WHERE measure_id IN (${chunk.map(() => '?').join(',')}) ORDER BY violation_id`)
+      .all(...chunk) as any[]) {
+      const arr = violationIdsOfMeasure.get(r.measure_id) ?? [];
+      arr.push(r.violation_id);
+      violationIdsOfMeasure.set(r.measure_id, arr);
+    }
+  }
+  const allViolationIds = [...new Set([...violationIdsOfMeasure.values()].flat())];
+  const violationById = new Map(violationsByIds(allViolationIds).map((v) => [v.id, v]));
+
+  const attachmentCountOfMeasure = new Map<number, number>();
+  for (let i = 0; i < ids.length; i += 400) {
+    const chunk = ids.slice(i, i + 400);
+    for (const r of db()
+      .prepare(`SELECT owner_id, COUNT(*) n FROM attachments WHERE owner_type = 'discipline_measure' AND owner_id IN (${chunk.map(() => '?').join(',')}) GROUP BY owner_id`)
+      .all(...chunk) as any[]) {
+      attachmentCountOfMeasure.set(r.owner_id, r.n);
+    }
+  }
+
+  const canManageOfStudent = new Map<number, boolean>();
+  const canManageOf = (studentId: number): boolean => {
+    if (!canManageOfStudent.has(studentId)) canManageOfStudent.set(studentId, canManageDiscipline(p, studentId));
+    return canManageOfStudent.get(studentId)!;
   };
+
+  /* Cùng thứ tự sắp xếp mà `violationsByIds` dùng, để mỗi PA ra ĐÚNG như gọi lẻ. */
+  const sortViolations = (a: ViolationView, b: ViolationView) => a.occurredOn.localeCompare(b.occurredOn) || a.id - b.id;
+
+  return rows.map((r) => {
+    const violations = (violationIdsOfMeasure.get(r.id) ?? [])
+      .map((vid) => violationById.get(vid))
+      .filter((v): v is ViolationView => !!v)
+      .sort(sortViolations);
+    const attachmentCount = attachmentCountOfMeasure.get(r.id) ?? 0;
+    const spec = MEASURE_REQUIRED_FIELDS[r.kind as MeasureKind];
+    const needsFile = r.status === 'preparing' && spec?.attachment === 'required' && attachmentCount < 1;
+    return {
+      id: r.id,
+      studentId: r.student_id, studentName: r.student_name, studentCode: r.student_code,
+      classId: r.class_id ?? null, classCode: r.class_code ?? null, cycleId: r.cycle_id ?? null,
+      kind: r.kind, kindLabel: kindLabelOf(r.kind, r.custom_name ?? null), customName: r.custom_name ?? null,
+      status: r.status, statusLabel: MEASURE_STATUS_LABEL[r.status as MeasureStatus] ?? r.status,
+      ownerUserId: r.owner_user_id ?? null, ownerName: r.owner_name ?? null,
+      note: r.note ?? null,
+      performedOn: r.performed_on ?? null, performedBy: r.performed_by ?? null, performedByName: r.performed_by_name ?? null,
+      performerName: r.performer_name ?? null, participants: r.participants ?? null,
+      confirmedBy: r.confirmed_by ?? null, confirmedByName: r.confirmed_by_name ?? null, confirmedAt: r.confirmed_at ?? null,
+      createdAt: r.created_at, createdBy: r.created_by, createdByName: r.created_by_name ?? null, updatedAt: r.updated_at ?? null,
+      violations, violationCount: violations.length,
+      attachmentCount,
+      evidenceHint: needsFile
+        ? (r.kind === 'suspension' ? 'Cần đính kèm tệp hoặc liên kết quyết định đình chỉ học' : 'Cần đính kèm tệp hoặc liên kết thư cảnh cáo')
+        : null,
+      canManage: canManageOf(r.student_id),
+    };
+  });
+}
+
+function buildDetail(p: Principal, r: any): MeasureDetail {
+  return buildDetailMany(p, [r])[0];
 }
 
 export function measureDetail(p: Principal, id: number): MeasureDetail {
@@ -313,19 +363,22 @@ export function removeViolation(p: Principal, id: number, violationId: number): 
 }
 
 /**
- * B09/B10/B11 — sửa. `preparing`: đổi loại (kiểm lại chuỗi Thư cảnh cáo với loại mới), tên, ghi chú, người phụ trách. `done`: chỉ
- * sửa ghi chú (và tệp qua kho tệp), có audit — đó là bổ sung bằng chứng, không phải viết lại phạm vi.
+ * B09/B10/B11, Q1/Q2 — sửa. `preparing`: đổi loại (kiểm lại chuỗi Thư cảnh cáo với loại mới), tên, ghi chú, người phụ
+ * trách VÀ danh sách vi phạm (`violationIds` — tập ĐẦY ĐỦ mong muốn, một giao dịch cùng loại/nội dung/phụ trách thay vì
+ * gọi lẻ `addViolations`/`removeViolation` nhiều lần). `checkViolationSet` không lọc trạng thái nên gắn được cả vi phạm
+ * đã nằm ở biện pháp khác (§3.11). `done`: chỉ sửa ghi chú (và tệp qua kho tệp), có audit — bổ sung bằng chứng, không
+ * viết lại phạm vi. Không đổi gì (kể cả danh sách vi phạm) thì không ghi audit.
  */
 export function updateMeasure(p: Principal, id: number, patch: {
-  kind?: string; customName?: string | null; note?: string | null; ownerUserId?: number | null;
+  kind?: string; customName?: string | null; note?: string | null; ownerUserId?: number | null; violationIds?: number[];
 }): MeasureDetail {
   const row = loadRow(id);
   requireManageDiscipline(p, row.student_id, MANAGE_MESSAGE);
   const label = `${row.student_code} · ${kindLabelOf(row.kind, row.custom_name)}`;
 
   if (row.status === 'done') {
-    if (patch.kind !== undefined || patch.customName !== undefined || patch.ownerUserId !== undefined) {
-      throw badRequest('Phương án xử lý này đã thực hiện — loại và người phụ trách đã khóa. Chỉ bổ sung được ghi chú và tệp.');
+    if (patch.kind !== undefined || patch.customName !== undefined || patch.ownerUserId !== undefined || patch.violationIds !== undefined) {
+      requirePreparing(row, 'loại, người phụ trách và danh sách vi phạm');
     }
     if (patch.note !== undefined) {
       const note = String(patch.note ?? '').trim() || null;
@@ -346,11 +399,39 @@ export function updateMeasure(p: Principal, id: number, patch: {
   }
   const note = patch.note === undefined ? row.note : (String(patch.note ?? '').trim() || null);
   const owner = patch.ownerUserId === undefined ? row.owner_user_id : checkOwner(patch.ownerUserId);
-  db()
-    .prepare('UPDATE discipline_measures SET kind = ?, custom_name = ?, note = ?, owner_user_id = ?, updated_at = ? WHERE id = ?')
-    .run(kind, customName, note ?? null, owner ?? null, nowIso(), id);
-  writeAudit({ actorUserId: p.userId, action: 'measure.edit', entityType: 'discipline_measure', entityId: id, entityLabel: label,
-    before: { kind: row.kind, note: row.note ?? null, owner: row.owner_user_id ?? null }, after: { kind, note, owner } });
+
+  const currentIds = violationIdsOf(id);
+  let newIds: number[] | null = null;
+  let toAdd: number[] = [];
+  let toRemove: number[] = [];
+  if (patch.violationIds !== undefined) {
+    newIds = checkViolationSet(row.student_id, patch.violationIds);
+    const next = new Set(newIds);
+    const cur = new Set(currentIds);
+    toAdd = newIds.filter((v) => !cur.has(v));
+    toRemove = currentIds.filter((v) => !next.has(v));
+  }
+
+  const fieldsChanged = kind !== row.kind || customName !== (row.custom_name ?? null) || note !== (row.note ?? null)
+    || (owner ?? null) !== (row.owner_user_id ?? null);
+  if (!fieldsChanged && !toAdd.length && !toRemove.length) return buildDetail(p, row);
+
+  tx(() => {
+    db()
+      .prepare('UPDATE discipline_measures SET kind = ?, custom_name = ?, note = ?, owner_user_id = ?, updated_at = ? WHERE id = ?')
+      .run(kind, customName, note ?? null, owner ?? null, nowIso(), id);
+    if (toAdd.length || toRemove.length) {
+      const link = db().prepare('INSERT INTO measure_violations (measure_id, violation_id, added_by, added_at) VALUES (?,?,?,?)');
+      for (const v of toAdd) { link.run(id, v, p.userId, nowIso()); noteMeasureChange(v, null, id, p.userId); }
+      const unlink = db().prepare('DELETE FROM measure_violations WHERE measure_id = ? AND violation_id = ?');
+      for (const v of toRemove) { unlink.run(id, v); noteMeasureChange(v, id, null, p.userId); }
+    }
+    writeAudit({
+      actorUserId: p.userId, action: 'measure.edit', entityType: 'discipline_measure', entityId: id, entityLabel: label,
+      before: { kind: row.kind, note: row.note ?? null, owner: row.owner_user_id ?? null, violations: currentIds },
+      after: { kind, note, owner, violations: newIds ?? currentIds },
+    });
+  });
   return buildDetail(p, loadRow(id));
 }
 
@@ -483,5 +564,14 @@ export function listMeasures(p: Principal, f: MeasureFilter): { rows: MeasureDet
   const rows = db()
     .prepare(`${SELECT} WHERE ${where.join(' AND ')} ORDER BY COALESCE(m.performed_on, m.created_at) DESC, m.id DESC`)
     .all(...args) as any[];
-  return { rows: rows.filter((r) => { try { requireViewStudent(p, r.student_id); return true; } catch { return false; } }).map((r) => buildDetail(p, r)) };
+  /* Q10: quyền xem nhớ theo studentId — một lớp có nhiều PA của cùng học viên thì chỉ kiểm một lần. */
+  const canViewOfStudent = new Map<number, boolean>();
+  const canView = (studentId: number): boolean => {
+    if (!canViewOfStudent.has(studentId)) {
+      try { requireViewStudent(p, studentId); canViewOfStudent.set(studentId, true); }
+      catch { canViewOfStudent.set(studentId, false); }
+    }
+    return canViewOfStudent.get(studentId)!;
+  };
+  return { rows: buildDetailMany(p, rows.filter((r) => canView(r.student_id))) };
 }

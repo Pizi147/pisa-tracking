@@ -46,6 +46,10 @@ export const DUONG_DO: MucDo[] = [
   { trang: 'Tổng quan QL', vai: ['QL', 'QT'], url: '/metrics/do-phu-danh-gia' },
   { trang: 'Tổng quan QL', vai: ['QL', 'QT'], url: '/summary' },
 
+  // ---------------------------------------------------------------- Phân tích Ý thức cho QL (PR-YT2, P13/P14)
+  { trang: 'Phân tích Ý thức QL', vai: ['QL', 'QT'], url: '/metrics/vi-pham-theo-nhom' },
+  { trang: 'Phân tích Ý thức QL', vai: ['QL', 'QT'], url: '/metrics/vi-pham-tong?classId={lopFT}' },
+
   // ---------------------------------------------------------------- Tổng quan · Giáo viên
   { trang: 'Tổng quan GV', vai: ['GVCN', 'GVBM', 'GVCN_THUONG'], url: '/my-work' },
   { trang: 'Tổng quan GV', vai: ['QL', 'QT', 'GVCN', 'GVBM', 'GVCN_THUONG'], url: '/tong-quan/hoc-vien-can-ho-tro' },
@@ -65,6 +69,7 @@ export const DUONG_DO: MucDo[] = [
   { trang: 'Hồ sơ lớp FT', vai: MOI_VAI, url: '/classes/{lopFT}/issue-board?category=listening' },
   { trang: 'Hồ sơ lớp FT', vai: MOI_VAI, url: '/classes/{lopFT}/phan-tich-lop' },
   { trang: 'Hồ sơ lớp FT', vai: MOI_VAI, url: '/classes/{lopFT}/y-thuc' },
+  { trang: 'Hồ sơ lớp FT', vai: MOI_VAI, url: '/classes/{lopFT}/violations' },
   { trang: 'Hồ sơ lớp FT', vai: MOI_VAI, url: '/classes/{lopFT}/cham' },
   { trang: 'Hồ sơ lớp FT', vai: MOI_VAI, url: '/cases?classId={lopFT}' },
 
@@ -159,6 +164,11 @@ export const TRAN: Record<string, number> = {
   'QT /metrics/do-phu-danh-gia': 29,
   'QL /summary': 40,
   'QT /summary': 37,
+  // PR-YT2 (8), 23/09/2026 — mốc chốt ngay sau khi thêm đường, đo được 11/12 câu: max(sau+10, ⌈sau×1.3⌉).
+  'QL /metrics/vi-pham-theo-nhom': 21,
+  'QT /metrics/vi-pham-theo-nhom': 21,
+  'QL /metrics/vi-pham-tong?classId=3': 22,
+  'QT /metrics/vi-pham-tong?classId=3': 22,
   'GVCN /my-work': 60,
   'GVBM /my-work': 62,
   'GVCN_THUONG /my-work': 60,
@@ -211,6 +221,12 @@ export const TRAN: Record<string, number> = {
   'GVBM /classes/3/y-thuc': 88,
   'GVCN_THUONG /classes/3/y-thuc': 88,
   'QT /classes/3/y-thuc': 81,
+  // PR-YT2 (2), 23/09/2026 — mốc chốt ngay sau khi thêm đường, đo được 13 câu (QT 12 câu): max(sau+10, ⌈sau×1.3⌉).
+  'QL /classes/3/violations': 23,
+  'GVCN /classes/3/violations': 23,
+  'GVBM /classes/3/violations': 23,
+  'GVCN_THUONG /classes/3/violations': 23,
+  'QT /classes/3/violations': 22,
   'QL /classes/3/cham': 35,
   'GVCN /classes/3/cham': 35,
   'GVBM /classes/3/cham': 35,

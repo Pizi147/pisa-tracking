@@ -349,7 +349,12 @@ function effectivenessScopes(p: Principal, branchId: number | null): Array<{ bra
  */
 export function metricSet(
   p: Principal, id: string,
-  f: { branchId?: number | null; skill?: string | null; from?: string | null; to?: string | null; kind?: string | null; program?: ChuongTrinh | null } = {},
+  f: {
+    branchId?: number | null; skill?: string | null; from?: string | null; to?: string | null; kind?: string | null;
+    program?: ChuongTrinh | null;
+    /** Q19 (P14) — CHỈ Ý thức và Phối hợp SOS nhận lớp; chỉ số khác có `classId` → 400 (không âm thầm bỏ qua). */
+    classId?: number | null;
+  } = {},
 ): MetricResult {
   const r = metricSetGoc(p, id, f);
   const ct = f.program ?? 'ca-hai';
@@ -425,13 +430,15 @@ function overdueScoreAttempts(p: Principal, branchId: number | null, today: stri
  */
 function metricSetGoc(
   p: Principal, id: string,
-  f: { branchId?: number | null; skill?: string | null; from?: string | null; to?: string | null; kind?: string | null } = {},
+  f: { branchId?: number | null; skill?: string | null; from?: string | null; to?: string | null; kind?: string | null; classId?: number | null } = {},
 ): MetricResult {
   const metric = metricById(id);
   if (!metric) throw notFound(`Không tìm thấy chỉ số "${id}".`);
   if (!LISTED_METRICS.includes(id)) {
     throw new HttpError(501, `Chỉ số "${metric.ten}" đã được khai báo nhưng chưa có danh sách — chưa dùng được ở màn hình.`);
   }
+  /* Q19: chỉ Ý thức và Phối hợp SOS lọc theo lớp — chỉ số khác nhận `classId` thì từ chối thẳng, không âm thầm bỏ qua. */
+  if (f.classId && !isYThucMetric(id) && !isPhoiHopMetric(id)) throw badRequest('Chỉ số này chưa lọc theo lớp.');
   const today = demoToday();
   const scope = resolveScope(p, f.branchId);
   const done = (ids: number[], extra: Partial<MetricResult> = {}): MetricResult => ({
@@ -442,14 +449,14 @@ function metricSetGoc(
 
   /* Ý thức (PR-J): phạm vi và hàm tập ID riêng — GVBM/GVCN không có quyền xem thống kê chi nhánh nên nhận tập rỗng có nhãn. */
   if (isYThucMetric(id)) {
-    const r = yThucMetric(p, id, { branchId: scope.branchId, from: f.from ?? null, to: f.to ?? null, kind: f.kind ?? null });
+    const r = yThucMetric(p, id, { branchId: scope.branchId, from: f.from ?? null, to: f.to ?? null, kind: f.kind ?? null, classId: f.classId ?? null });
     if (r.none) return { ...done([]), empty: true, note: EMPTY_NOTE };
     return done(r.ids, r.byKind ? { byKind: r.byKind } : {});
   }
 
   /* Phối hợp SOS (PR-T): cùng phạm vi thống kê với Ý thức — chỉ Quản lý và Quản trị; GVBM/GVCN nhận tập rỗng có nhãn. Đơn vị: lượt. */
   if (isPhoiHopMetric(id)) {
-    const r = phoiHopMetric(p, id, { branchId: scope.branchId, from: f.from ?? null, to: f.to ?? null, kind: f.kind ?? null });
+    const r = phoiHopMetric(p, id, { branchId: scope.branchId, from: f.from ?? null, to: f.to ?? null, kind: f.kind ?? null, classId: f.classId ?? null });
     if (r.none) return { ...done([]), empty: true, note: EMPTY_NOTE };
     return done(r.ids, r.byKind ? { byKind: r.byKind } : {});
   }

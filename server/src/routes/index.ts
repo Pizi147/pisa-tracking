@@ -873,10 +873,19 @@ const yThucBody = (req: Request) => (req.body ?? {}) as Record<string, any>;
 
 api.get('/students/:id/violations', requireAuth, wrap((req) => {
   maybeSimulateReadError();
-  return violationSvc.listViolations(principalOf(req), {
-    studentId: pInt(req, 'id'), state: (qStr(req, 'state') as any) ?? null, category: qStr(req, 'category') ?? null,
+  const id = pInt(req, 'id');
+  const result = violationSvc.listViolations(principalOf(req), {
+    studentId: id, state: (qStr(req, 'state') as any) ?? null, category: qStr(req, 'category') ?? null,
     from: qStr(req, 'from') ?? null, to: qStr(req, 'to') ?? null,
   });
+  /*
+   * Q14: chu kỳ hiện tại của em — FT theo lộ trình (`cycleId`), lớp thường theo khoá đang học (`classId`). MỌI học viên có
+   * một dòng `learning_cycles` (intake.ts: "mở lộ trình cho mọi em"), nhưng chỉ FT có `route` (LT1/LT2…) — lớp thường có
+   * `programme_code` mà `route = null` (đúng cách `cycleLabel` ở `students/profile.ts:48` phân biệt hai loại), nên `cycleId`
+   * chỉ lấy khi `route` có; không thì `trongChuKyHienTai` phải rơi về so `classId`.
+   */
+  const cyc = cycleSvc.currentCycle(id);
+  return { ...result, chuKy: { cycleId: cyc?.route ? cyc.id : null, classId: accessSvc.activeClassOf(id) } };
 }));
 api.get('/students/:id/measures', requireAuth, wrap((req) => {
   maybeSimulateReadError();
@@ -885,7 +894,7 @@ api.get('/students/:id/measures', requireAuth, wrap((req) => {
 /** Chín loại biện pháp kèm dòng nào khóa và VÌ SAO — để form nói lý do ngay tại dòng, không báo lỗi sau khi bấm. */
 api.get('/students/:id/measure-kinds', requireAuth, wrap((req) => {
   maybeSimulateReadError();
-  return { rows: measureSvc.measureKindAvailability(principalOf(req), pInt(req, 'id')) };
+  return { rows: measureSvc.measureKindAvailability(principalOf(req), pInt(req, 'id'), { excludeMeasureId: qInt(req, 'excludeMeasureId') ?? undefined }) };
 }));
 api.get('/students/:id/violation-warning', requireAuth, wrap((req) => {
   maybeSimulateReadError();
@@ -900,6 +909,14 @@ api.get('/classes/:id/y-thuc', requireAuth, wrap((req) => {
 api.get('/classes/:id/violation-warning', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   return warningSvc.classWarning(principalOf(req), pInt(req, 'id'));
+}));
+/** YT-6 "Theo thời gian" — HV ĐANG HỌC ở lớp, MỌI trạng thái (khác ba khu vực của `/classes/:id/y-thuc`, đi theo học viên). */
+api.get('/classes/:id/violations', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return violationSvc.listViolations(principalOf(req), {
+    activeInClassId: pInt(req, 'id'), state: (qStr(req, 'state') as any) ?? null, category: qStr(req, 'category') ?? null,
+    from: qStr(req, 'from') ?? null, to: qStr(req, 'to') ?? null,
+  });
 }));
 /** Một dòng trong Việc cần làm của GVCN (đặc tả 7.10). */
 api.get('/y-thuc/my-warnings', requireAuth, wrap((req) => {
@@ -972,6 +989,7 @@ api.patch('/measures/:id', requireAuth, wrap((req) => {
   return measureSvc.updateMeasure(principalOf(req), pInt(req, 'id'), {
     kind: b.kind, customName: 'customName' in b ? (b.customName ?? null) : undefined, note: 'note' in b ? (b.note ?? null) : undefined,
     ownerUserId: 'ownerUserId' in b ? (toInt(b.ownerUserId) ?? null) : undefined,
+    violationIds: Array.isArray(b.violationIds) ? b.violationIds : undefined,
   });
 }));
 api.post('/measures/:id/violations', requireAuth, wrap((req) => {
@@ -1009,6 +1027,7 @@ api.get('/metrics/:id', requireAuth, wrap((req) => {
     branchId: qInt(req, 'branchId'), skill: qStr(req, 'skill') ?? null,
     from: qStr(req, 'from') ?? null, to: qStr(req, 'to') ?? null, kind: qStr(req, 'kind') ?? null,
     program: chuongTrinhTuThamSo(qStr(req, 'ct')),
+    classId: qInt(req, 'classId'),
   });
   return metricResponse(r, qStr(req, 'rows') === '1');
 }));
