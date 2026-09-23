@@ -758,4 +758,17 @@ export async function runXoaDuLieuTests(t: YThucTestKit) {
     assert(/u\.status === 'deleted' \? \(\s*<span[^>]*>Đã xoá \{ngay\(u\.deletedAt\)\}/.test(ad), 'dòng đã xoá phải ghi "Đã xoá {ngày}" thay cho Sửa/⋯');
     assert(/nguyHiem\?: boolean/.test(docNguon('web/src/ui/MenuDong.tsx')), 'MenuDong thiếu nguyHiem');
   });
+
+  // ==================================================================== Task 6 — lệnh kiểm chỉ đọc
+
+  console.log('\nPR-XOA (6) · npm run kiem-sau-xoa — CHỈ ĐỌC');
+
+  check('PR-XOA (6) · kiemSauXoa.ts (bỏ chú thích) không có .run( / .exec( / INSERT / UPDATE / DELETE; package.json có lệnh', () => {
+    const nguon = docNguon('server/src/ops/kiemSauXoa.ts');
+    const cam = ['.run(', '.exec(', 'INSERT', 'UPDATE', 'DELETE'].filter((x) => nguon.includes(x));
+    assert(!cam.length, `lệnh chỉ đọc có câu ghi: ${cam.join(', ')}`);
+    assert(/prepare\('PRAGMA foreign_key_check'\)/.test(nguon) && nguon.includes('deleted_at'), 'thiếu mục (4) hoặc (6)');
+    const pkg = JSON.parse(fsMod.readFileSync(pathMod.join(REPO, 'package.json'), 'utf8'));
+    assert(/ops\/kiemSauXoa\.js$/.test(pkg.scripts?.['kiem-sau-xoa'] ?? ''), 'package.json thiếu kiem-sau-xoa');
+  });
 }
