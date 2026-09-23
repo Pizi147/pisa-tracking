@@ -62,6 +62,10 @@ export const DUONG_DO: MucDo[] = [
     maChuDich: { GVCN: 403 },
   },
   { trang: 'Phân tích QL', vai: ['QL', 'QT'], url: '/phan-tich/hieu-qua-pa?tg=26' },
+  {
+    trang: 'Phân tích QL', vai: ['QL', 'QT', 'GVCN'], url: '/phan-tich/y-thuc',
+    maChuDich: { GVCN: 403 },
+  },
 
   // ---------------------------------------------------------------- Tổng quan · Giáo viên
   { trang: 'Tổng quan GV', vai: ['GVCN', 'GVBM', 'GVCN_THUONG'], url: '/my-work' },
@@ -226,6 +230,9 @@ export const TRAN: Record<string, number> = {
   'GVCN /phan-tich/hieu-qua-pa': 20,
   'QL /phan-tich/hieu-qua-pa?tg=26': 24,
   'QT /phan-tich/hieu-qua-pa?tg=26': 23,
+  'QL /phan-tich/y-thuc': 26,
+  'QT /phan-tich/y-thuc': 26,
+  'GVCN /phan-tich/y-thuc': 20,
   'GVCN /my-work': 60,
   'GVBM /my-work': 62,
   'GVCN_THUONG /my-work': 60,

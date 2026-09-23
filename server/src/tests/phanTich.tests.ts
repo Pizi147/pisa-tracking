@@ -711,6 +711,159 @@ export async function runPhanTichTests(t: YThucTestKit) {
     assert(n4 <= 12, `quá nhiều câu SQL: ${n4} (tối đa 12)`);
   });
 
+  // ================================================================== Task 4 — Ý thức & Phối hợp gọn (PR-UX4)
+
+  console.log('\nPR-UX4 · Ý thức & Phối hợp gọn');
+  const yThucSvc: any = await import('../phanTich/yThucPhanTich.ts');
+  const metricsUx4: any = await import('../worklist/metrics.ts');
+  const FY = (o: Record<string, unknown> = {}) => ({ branchId: null, ct: 'ca-hai', classId: null, from: d.tuDauKhoang(TODAY, 8), to: TODAY, ...o });
+  const dungYThuc = () => {
+    const tao = { vp: [] as number[], bp: [] as number[] };
+    const now = new Date().toISOString();
+    return {
+      vp(sid: number, cid: number, ngay: string, cat = 'homework'): number {
+        const id = Number(conn.prepare(
+          `INSERT INTO violations (student_id, class_id, category, occurred_on, reported_on, reported_by, description, created_at) VALUES (?,?,?,?,?,?,?,?)`,
+        ).run(sid, cid, cat, ngay, ngay, P.admin.userId, 'Vi phạm dựng cho phép kiểm UX4', now).lastInsertRowid);
+        tao.vp.push(id);
+        return id;
+      },
+      bp(sid: number, cid: number, kind: string, ngay: string, viIds: number[] = []): number {
+        const id = Number(conn.prepare(
+          `INSERT INTO discipline_measures (student_id, class_id, kind, status, performed_on, created_at, created_by) VALUES (?,?,?, 'done', ?, ?, ?)`,
+        ).run(sid, cid, kind, ngay, now, P.admin.userId).lastInsertRowid);
+        tao.bp.push(id);
+        for (const v of viIds) conn.prepare(`INSERT INTO measure_violations (measure_id, violation_id, added_by, added_at) VALUES (?,?,?,?)`).run(id, v, P.admin.userId, now);
+        return id;
+      },
+      don() {
+        for (const id of tao.bp) { conn.prepare('DELETE FROM measure_violations WHERE measure_id = ?').run(id); conn.prepare('DELETE FROM discipline_measures WHERE id = ?').run(id); }
+        for (const id of tao.vp) { conn.prepare('DELETE FROM measure_violations WHERE violation_id = ?').run(id); conn.prepare('DELETE FROM violations WHERE id = ?').run(id); }
+      },
+    };
+  };
+  const mocHv = () => {
+    const kit = baiTapUx4(); const yt = dungYThuc();
+    const a = kit.hv(CID_FT, 'ya'), b = kit.hv(CID_FT, 'yb'), c = kit.hv(CID_FT, 'yc'), dd = kit.hv(CID_FT, 'yd'), e = kit.hv(CID_FT, 'ye');
+    // a: 3 vi phạm, chưa xử lý, chưa thư → "Sắp Thư CC lần 1"
+    yt.vp(a, CID_FT, cong(TODAY, -3)); yt.vp(a, CID_FT, cong(TODAY, -2)); yt.vp(a, CID_FT, cong(TODAY, -1));
+    // b: đã Thư CC lần 1, rồi vi phạm tiếp → "Sắp Thư CC lần 2"
+    const b1 = yt.vp(b, CID_FT, cong(TODAY, -25)); yt.bp(b, CID_FT, 'warning_1', cong(TODAY, -20), [b1]); yt.vp(b, CID_FT, cong(TODAY, -5));
+    // c: 2 vi phạm → không đủ điều kiện
+    yt.vp(c, CID_FT, cong(TODAY, -3)); yt.vp(c, CID_FT, cong(TODAY, -2));
+    // d: 3 vi phạm nhưng đã xử lý hết → "Theo dõi"
+    const d1 = yt.vp(dd, CID_FT, cong(TODAY, -4)), d2 = yt.vp(dd, CID_FT, cong(TODAY, -3)), d3 = yt.vp(dd, CID_FT, cong(TODAY, -2));
+    yt.bp(dd, CID_FT, 'talk_short', cong(TODAY, -1), [d1, d2, d3]);
+    // e: đủ ba thư, rồi vi phạm tiếp → "Đã Thư CC lần 3"
+    const e1 = yt.vp(e, CID_FT, cong(TODAY, -40));
+    yt.bp(e, CID_FT, 'warning_1', cong(TODAY, -38), [e1]); yt.bp(e, CID_FT, 'warning_2', cong(TODAY, -30)); yt.bp(e, CID_FT, 'warning_3', cong(TODAY, -25));
+    yt.vp(e, CID_FT, cong(TODAY, -3));
+    return { kit, yt, a, b, c, dd, e, don: () => { yt.don(); kit.don(); } };
+  };
+
+  check('UX4 · Ý thức: mọi HV cần chú ý thoả laHvCanChuY; buocTiep khớp Q14; xếp "Sắp…" trước rồi chưa xử lý', () => {
+    const m = mocHv();
+    try {
+      const kq = yThucSvc.yThucPhanTich(P.admin, FY());
+      const dong = (id: number) => kq.hvCanChuY.find((x: any) => x.studentId === id);
+      eq(dong(m.a)?.buocTiep, 'sap-thu-1', 'a: chưa thư, ≥ 3 vi phạm chưa xử lý');
+      eq([dong(m.a)?.viPham, dong(m.a)?.chuaXuLy], [3, 3], 'a: 3 vi phạm, 3 chưa xử lý');
+      eq(dong(m.b)?.buocTiep, 'sap-thu-2', 'b: Thư CC 1 rồi vi phạm tiếp');
+      eq(dong(m.b)?.bienPhapGanNhat, 'Thư cảnh cáo lần 1', 'b: PA xử lý gần nhất');
+      eq(dong(m.b)?.ngay, cong(TODAY, -20), 'b: ngày thực hiện');
+      assert(!dong(m.c), 'c: 2 vi phạm, chưa thư → không vào danh sách');
+      eq(dong(m.dd)?.buocTiep, 'theo-doi', 'd: 3 vi phạm đã xử lý hết');
+      eq(dong(m.dd)?.chuaXuLy, 0, 'd: chưa xử lý 0');
+      eq(dong(m.e)?.buocTiep, 'da-thu-3', 'e: đủ ba thư rồi vi phạm tiếp');
+      for (const r of kq.hvCanChuY) {
+        assert(r.viPham >= 3 || r.buocTiep !== 'theo-doi', `"${r.ten}" phải thoả laHvCanChuY (viPham=${r.viPham}, bước=${r.buocTiep})`);
+        assert(r.lop === null || typeof r.lop === 'string', 'lop là mã lớp');
+      }
+      const vt = (id: number) => kq.hvCanChuY.findIndex((x: any) => x.studentId === id);
+      assert(vt(m.a) < vt(m.dd) && vt(m.b) < vt(m.dd) && vt(m.b) < vt(m.e), 'xếp "Sắp…" trước "Theo dõi"/"Đã Thư CC lần 3"');
+      assert(vt(m.a) < vt(m.b), 'cùng "Sắp…": nhiều vi phạm chưa xử lý (3) trước ít (1)');
+    } finally { m.don(); }
+  });
+
+  check("UX4 · Ý thức: tổng vi phạm các lớp + gom = metricSet('vi-pham-tong', cùng from/to/branch).n; con cộng đúng cha; ± kỳ trước", () => {
+    const m = mocHv();
+    try {
+      for (const branchId of [null, mbBranch]) {
+        const f = FY({ branchId });
+        const kq = yThucSvc.yThucPhanTich(P.admin, f);
+        const tong = kq.lop.reduce((s: number, x: any) => s + x.viPham, 0) + (kq.gom?.hang ?? []).reduce((s: number, x: any) => s + x.viPham, 0);
+        const so = metricsUx4.metricSet(P.admin, 'vi-pham-tong', { branchId, from: f.from, to: f.to }).n;
+        eq(tong, so, `branch=${branchId}: Σ lớp + gom = vi-pham-tong`);
+        for (const x of [...kq.lop, ...(kq.gom?.hang ?? [])]) {
+          eq((x.con ?? []).reduce((s: number, c: any) => s + c.viPham, 0), x.viPham, `"${x.nhan}": con cộng đúng cha (viPham)`);
+          eq((x.con ?? []).reduce((s: number, c: any) => s + c.chuaXuLy, 0), x.chuaXuLy, `"${x.nhan}": con cộng đúng cha (chưa xử lý)`);
+        }
+        assert((kq.gom?.hang ?? []).every((x: any) => x.viPham <= 2 && x.chuaXuLy === 0), 'gom: chỉ lớp ≤ 2 vi phạm đã xử lý hết');
+        assert(kq.lop.every((x: any) => x.viPham >= 3 || x.chuaXuLy > 0), 'hiện rõ: ≥ 3 vi phạm hoặc còn chưa xử lý');
+        eq(kq.gom ? kq.gom.soLop : 0, (kq.gom?.hang ?? []).length, 'gom.soLop');
+      }
+      const dongLop = (kq: any) => kq.lop.find((x: any) => x.classId === CID_FT);
+      const truoc = dongLop(yThucSvc.yThucPhanTich(P.admin, FY()));
+      assert(!!truoc, 'lớp FT MB-FT 101 phải hiện rõ (có vi phạm chưa xử lý)');
+      m.yt.vp(m.c, CID_FT, cong(d.tuDauKhoang(TODAY, 8), -3));       // một vi phạm ở KỲ TRƯỚC
+      const sau = dongLop(yThucSvc.yThucPhanTich(P.admin, FY()));
+      eq(sau.soVoiTruoc, truoc.soVoiTruoc - 1, 'thêm một vi phạm kỳ trước → "± kỳ trước" giảm 1, số vi phạm kỳ này giữ nguyên');
+      eq(sau.viPham, truoc.viPham, 'vi phạm kỳ này không đổi');
+    } finally { m.don(); }
+  });
+
+  check('UX4 · Ý thức: o n === rows.length (hv, lớp, hàng con, gom)', () => {
+    const m = mocHv();
+    try {
+      const f = FY();
+      const kq = yThucSvc.yThucPhanTich(P.admin, f);
+      let dem = 0;
+      const kiem = (dong: string, cot: string, want: number, nhan: string) => {
+        const o = yThucSvc.oYThucPhanTich(P.admin, { ...f, dong, cot });
+        assert(o.n === want && o.rows.length === o.n, `${nhan} · ${cot}: ${o.n}/${o.rows.length} ≠ ${want}`);
+        dem += 1;
+      };
+      for (const h of kq.hvCanChuY) {
+        kiem(`hv:${h.studentId}`, 'vi-pham', h.viPham, h.ten);
+        kiem(`hv:${h.studentId}`, 'chua-xu-ly', h.chuaXuLy, h.ten);
+      }
+      for (const x of kq.lop) {
+        kiem(x.khoa, 'vi-pham', x.viPham, x.nhan); kiem(x.khoa, 'chua-xu-ly', x.chuaXuLy, x.nhan); kiem(x.khoa, 'hv-co-vi-pham', x.hvCoViPham, x.nhan);
+        for (const c of x.con ?? []) { kiem(c.khoa, 'vi-pham', c.viPham, `${x.nhan}/${c.nhan}`); kiem(c.khoa, 'hv-co-vi-pham', c.hvCoViPham, `${x.nhan}/${c.nhan}`); }
+      }
+      if (kq.gom) kiem('gom', 'vi-pham', kq.gom.hang.reduce((s: number, x: any) => s + x.viPham, 0), 'gom');
+      assert(dem >= 10, `phải kiểm được nhiều ô (chỉ ${dem})`);
+      for (const bad of [{ dong: 'hv:999999', cot: 'vi-pham' }, { dong: 'lop:999999', cot: 'vi-pham' }, { dong: 'hv:1', cot: 'xyz' }, { dong: 'xyz', cot: 'vi-pham' }]) {
+        let s = 0; try { yThucSvc.oYThucPhanTich(P.admin, { ...f, ...bad }); } catch (e2: any) { s = e2?.status; }
+        assert(s === 400, `khoá lạ ${JSON.stringify(bad)} phải 400, ra ${s}`);
+      }
+    } finally { m.don(); }
+  });
+
+  check('UX4 · Ý thức: không còn khoá/trường phối hợp SOS, không bảng 9 loại PA xử lý ở kết quả bảng', () => {
+    const kq = yThucSvc.yThucPhanTich(P.admin, FY());
+    assert(!/phoiHop|phoi-hop|coordination/i.test(JSON.stringify(Object.keys(kq))), `không được có khoá phối hợp: ${Object.keys(kq)}`);
+    eq(Object.keys(kq).sort(), ['bienPhapTheoLoai', 'gom', 'hvCanChuY', 'lop', 'scopeEmpty'], 'đúng các khoá đã chốt');
+    for (const k of Object.keys(kq.bienPhapTheoLoai)) assert(d.MEASURE_KINDS.includes(k), `bienPhapTheoLoai chỉ có loại PA xử lý hợp lệ: ${k}`);
+  });
+
+  check('UX4 · Ý thức — quyền: GVCN 403; QL chi nhánh khác 403; classId ngoài phạm vi 403', () => {
+    eq(boiHttp(() => yThucSvc.yThucPhanTich(P.coreTeacher, FY())), 403, 'GVCN yThucPhanTich');
+    eq(boiHttp(() => yThucSvc.oYThucPhanTich(P.coreTeacher, { ...FY(), dong: 'gom', cot: 'vi-pham' })), 403, 'GVCN oYThucPhanTich');
+    eq(boiHttp(() => yThucSvc.yThucPhanTich(P.mbManager, FY({ branchId: cpBranch }))), 403, 'QL Monbay hỏi CP');
+    const lopCp = (conn.prepare('SELECT id FROM classes WHERE branch_id = ? LIMIT 1').get(cpBranch) as any).id as number;
+    eq(boiHttp(() => yThucSvc.yThucPhanTich(P.mbManager, FY({ classId: lopCp }))), 403, 'QL Monbay hỏi lớp CP');
+    eq(boiHttp(() => yThucSvc.yThucPhanTich(P.mbManager, FY({ branchId: mbBranch }))), 200, 'QL Monbay hỏi chi nhánh mình');
+    eq(boiHttp(() => yThucSvc.yThucPhanTich(P.admin, FY({ classId: lopCp }))), 200, 'Quản trị hỏi lớp bất kỳ');
+  });
+
+  await checkAsync('UX4 · Ý thức: không N+1 — số câu SQL không đổi theo khoảng và ≤ 12', async () => {
+    const n4 = await demCauHoi(() => yThucSvc.yThucPhanTich(P.admin, FY({ from: d.tuDauKhoang(TODAY, 4) })));
+    const n26 = await demCauHoi(() => yThucSvc.yThucPhanTich(P.admin, FY({ from: d.tuDauKhoang(TODAY, 26) })));
+    assert(n4 === n26, `số câu SQL đổi theo khoảng: ${n4} → ${n26}`);
+    assert(n4 <= 12, `quá nhiều câu SQL: ${n4} (tối đa 12)`);
+  });
+
   // ================================================================== Task 4 — P15: Phối hợp SOS chia SOS 1/2/3, bỏ N+1
 
   console.log('\nPR-Pb · P15 — Phối hợp SOS chia SOS 1/2/3');

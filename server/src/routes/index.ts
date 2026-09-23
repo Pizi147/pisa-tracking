@@ -4,7 +4,7 @@ import { db, isInitialised } from '../db.ts';
 import { laBanChinh } from '../moiTruong.ts';
 import {
   ENTRY_SKILLS, ENTRY_SKILL_LABEL, ISSUE_TAXONOMY, THEO_DONG,
-  PERMISSIONS, REGULAR_SKILLS, ROLE_LABEL, WORK_SCOPES, chuongTrinhTuThamSo, khoangTuThamSo, thamSoNguoi,
+  PERMISSIONS, REGULAR_SKILLS, ROLE_LABEL, WORK_SCOPES, chuongTrinhTuThamSo, khoangTuThamSo, thamSoNguoi, tuDauKhoang,
   type Role, type TheoDong, type WorkScope,
 } from '../../../shared/domain/index.ts';
 import { transferReasonText } from '../../../shared/domain/index.ts';
@@ -76,6 +76,7 @@ import { weeklyDrill, weeklyRollup } from '../worklist/weekly.ts';
 import * as tongHopSvc from '../phanTich/tongHop.ts';
 import * as vanDeHvSvc from '../phanTich/vanDeHv.ts';
 import * as hieuQuaPaSvc from '../phanTich/hieuQuaPa.ts';
+import * as yThucPhanTichSvc from '../phanTich/yThucPhanTich.ts';
 import { metricResponse, metricSet, rowsFor } from '../worklist/metrics.ts';
 import { myWork } from '../worklist/mywork.ts';
 import { nhacViec } from '../worklist/nhacViec.ts';
@@ -625,6 +626,21 @@ api.get('/phan-tich/hieu-qua-pa/o', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   return hieuQuaPaSvc.oHieuQuaPa(principalOf(req), {
     ...filterHieuQuaPaOf(req), dong: qStr(req, 'dong') ?? '', cot: qStr(req, 'cot') ?? '',
+  });
+}));
+/* Ý thức & Phối hợp (PR-UX4): Học viên cần chú ý + Lớp nhiều vi phạm. Kỳ = từ đầu khoảng `tg` đến hôm nay. */
+const filterYThucPhanTichOf = (req: Request) => ({
+  branchId: qInt(req, 'branchId') ?? null, ct: chuongTrinhTuThamSo(qStr(req, 'ct')), classId: qInt(req, 'lop') ?? null,
+  from: tuDauKhoang(demoToday(), khoangTuThamSo(qStr(req, 'tg'))), to: demoToday(),
+});
+api.get('/phan-tich/y-thuc', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return yThucPhanTichSvc.yThucPhanTich(principalOf(req), filterYThucPhanTichOf(req));
+}));
+api.get('/phan-tich/y-thuc/o', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return yThucPhanTichSvc.oYThucPhanTich(principalOf(req), {
+    ...filterYThucPhanTichOf(req), dong: qStr(req, 'dong') ?? '', cot: qStr(req, 'cot') ?? '',
   });
 }));
 
