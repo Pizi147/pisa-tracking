@@ -50,6 +50,7 @@ import * as intakeSvc from '../classes/intake.ts';
 import * as transitionSvc from '../classes/transition.ts';
 import * as loTrinhTiepSvc from '../classes/loTrinhTiep.ts';
 import * as luatLoTrinhSvc from '../classes/luatLoTrinh.ts';
+import * as lichSuLopSvc from '../classes/lichSuLop.ts';
 import * as hocVienLopSvc from '../classes/hocVienLop.ts';
 import * as phanTichLopSvc from '../classes/phanTichLop.ts';
 import * as thongTinLopSvc from '../classes/thongTinLop.ts';
@@ -1595,6 +1596,12 @@ api.get('/students/:id/hanh-trinh', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   const gd = qStr(req, 'giai-doan');
   return hanhTrinhHocVien(principalOf(req), pInt(req, 'id'), gd === 'thuong' || gd === 'ft' ? gd : null);
+}));
+
+/** Lịch sử lớp (PR-LT, Q18) — đầu tab Hành trình: mỗi enrollment một dòng, kết thúc vì, kết quả. */
+api.get('/students/:id/lich-su-lop', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return lichSuLopSvc.lichSuLop(principalOf(req), pInt(req, 'id'));
 }));
 
 /** Ghi một lần xem lại sau hỗ trợ. Một tác động có thể xem lại nhiều lần. */

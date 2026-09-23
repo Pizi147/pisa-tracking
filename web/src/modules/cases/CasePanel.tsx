@@ -60,6 +60,8 @@ type CaseDetail = {
   /** Kết quả chung đã chốt. */
   outcome: string | null; outcomeLabel: string | null;
   outcomeNote: string | null; outcomeDecision: string | null; outcomeAt: string | null;
+  /** Case bị PR-LT tự đóng khi em chuyển khỏi lớp/khoá (S16/S17) — không phải GV kết luận. */
+  systemCloseLabel: string | null;
   /** Mọi phương án đã có kết quả chưa — điều kiện để chốt kết quả chung. */
   canFinish: boolean;
   /** Các mốc trong vòng đời case. Giao diện xếp MỚI NHẤT LÊN ĐẦU (mục 4.3). */
@@ -139,6 +141,8 @@ export function CasePanel({ caseId, compact = false, hideHeader = false, onChang
           {data.sosLevel !== null && data.status !== 'done' && (
             <Level tone={sosTone(data.sosLevel)}>{sosLabel(data.sosLevel)}</Level>
           )}
+          {/* Case bị máy tự đóng khi em chuyển lớp/khoá (S16/S17) — không phải GV kết luận. */}
+          {data.systemCloseLabel && <Info>{data.systemCloseLabel}</Info>}
           {/*
             KHÔNG CÓ BADGE "GẤP" Ở ĐÂY NỮA (mục 6.1).
             Mức độ ưu tiên là một con số được suy ra lúc case sinh, và nó không đổi theo việc thực

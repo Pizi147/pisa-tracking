@@ -865,4 +865,78 @@ export async function runLenLopTests(t: YThucTestKit) {
     assert((conn.prepare('SELECT COUNT(*) n FROM classes').get() as any).n === before + 5, 'Tiền đề: đã thêm đúng 5 lớp, không tạo thêm gì khác');
     assert(n2 <= n1 + 2, `Thêm 5 lớp ứng viên không được tăng nhiều câu (N+1): ${n1} → ${n2}`);
   });
+
+  // ==================================================================== Task 8 — Lịch sử lớp
+
+  console.log('\nPR-LT (8) · Máy chủ: Lịch sử lớp ở tab Hành trình (Q18)');
+
+  const lichSuLopSvc = await import('../classes/lichSuLop.ts');
+
+  check('PR-LT (8) · em lên lớp: hai dòng, dòng cũ "Lên lớp" + "Cuối khoá đạt n/4 môn"', () => {
+    const { cls } = taoLopHetKhoa5(9, 0);
+    const { sid, cycleId } = taoHV4({ clsId: cls, ma: 'FOU', ft: false });
+    const attemptId = Number(conn.prepare(
+      `INSERT INTO assessment_attempts (cycle_id, student_id, attempt_no, kind, class_id, status, created_at)
+       VALUES (?,?,1,'final',?, 'done', ?)`,
+    ).run(cycleId, sid, cls, new Date().toISOString()).lastInsertRowid);
+    const insScore = conn.prepare(`INSERT INTO assessment_scores (attempt_id, skill, raw_score, raw_total, entered_at) VALUES (?,?,?,?,?)`);
+    for (const sk of ['listening', 'reading', 'writing', 'speaking']) insScore.run(attemptId, sk, 10, 10, TODAY3);
+    const be = taoLop4({ branchId: MB3, kind: 'BE', ft: false, tuanHienTai: 1 });
+    transitionSvc.applyTransition(P.mbManager, {
+      fromClassId: cls, effectiveDate: TODAY3, dongs: [{ studentId: sid, huong: 'len_lop', toClassId: be }],
+    });
+    const rows = lichSuLopSvc.lichSuLop(P.admin, sid) as any[];
+    assert(rows.length === 2, `Phải đúng 2 dòng: ${rows.length}`);
+    assert(rows[0].lop.id === be && rows[0].dangHoc === true, `Dòng mới nhất phải là lớp mới, đang học: ${JSON.stringify(rows[0])}`);
+    assert(rows[1].lop.id === cls && rows[1].ketThucVi === 'Lên lớp', `Dòng cũ phải "Lên lớp": ${JSON.stringify(rows[1])}`);
+    assert(rows[1].ketQua === 'Cuối khoá đạt 4/4 môn', `Kết quả dòng cũ: ${rows[1].ketQua}`);
+  });
+
+  check('PR-LT (8) · em chuyển lớp: "Chuyển lớp" + đúng lý do đã ghi lúc chuyển', () => {
+    const from = taoLop4({ branchId: MB3, kind: 'FOU', ft: false, tuanHienTai: 3 });
+    const to = taoLop4({ branchId: MB3, kind: 'FOU', ft: false, tuanHienTai: 3 });
+    const { sid } = taoHV4({ clsId: from, ma: 'FOU', ft: false });
+    const gvcn = ganGVCN3(from, P.normalCoreTeacher.userId);
+    studentsSvc4.transferStudent(gvcn, sid, to, TODAY3, 'Đổi lịch học', { noNote: true });
+    const rows = lichSuLopSvc.lichSuLop(P.admin, sid) as any[];
+    assert(rows.length === 2, `Phải đúng 2 dòng: ${rows.length}`);
+    assert(rows[1].lop.id === from && rows[1].ketThucVi === 'Chuyển lớp', `Dòng cũ phải "Chuyển lớp": ${JSON.stringify(rows[1])}`);
+    assert(rows[1].ketQua === 'Đổi lịch học', `Kết quả dòng cũ phải là lý do đã ghi lúc chuyển: ${rows[1].ketQua}`);
+  });
+
+  check('PR-LT (8) · dòng cũ (trước PR-LT) không có end_kind vẫn suy đúng "Kết thúc vì" theo status cũ (Q18)', () => {
+    const cls1 = taoLop4({ branchId: MB3, kind: 'FOU', ft: false, tuanHienTai: 2 });
+    const cls2 = taoLop4({ branchId: MB3, kind: 'BE', ft: false, tuanHienTai: 2 });
+    const { sid } = taoHV4({ clsId: cls1, ma: 'FOU', ft: false });
+    const now = new Date().toISOString();
+    // Giả lập enrollment cũ (trước khi có cột end_kind của PR-LT): status='completed', end_kind NULL.
+    conn.prepare(
+      `INSERT INTO enrollments (student_id, class_id, status, started_at, ended_at, created_at) VALUES (?,?, 'completed', ?, ?, ?)`,
+    ).run(sid, cls2, addDays3(TODAY3, -60), addDays3(TODAY3, -30), now);
+    const rows = lichSuLopSvc.lichSuLop(P.admin, sid) as any[];
+    const oldRow = rows.find((r) => r.lop.id === cls2);
+    assert(oldRow?.ketThucVi === 'Kết thúc học', `Dòng cũ 'completed' không end_kind phải suy "Kết thúc học": ${JSON.stringify(oldRow)}`);
+  });
+
+  check('PR-LT (8) · GV ngoài phạm vi (chi nhánh khác) xem lịch sử lớp → 403', () => {
+    const cls = taoLop4({ branchId: MB3, kind: 'FOU', ft: false, tuanHienTai: 2 });
+    const { sid } = taoHV4({ clsId: cls, ma: 'FOU', ft: false });
+    assertThrows(() => lichSuLopSvc.lichSuLop(P.cpManager, sid), /phạm vi/, 'QL chi nhánh CP không được xem lịch sử lớp em ở MB');
+  });
+
+  check('PR-LT (8) · Đếm câu SQL: ba câu cố định, không tăng theo số lớp em đã học qua', () => {
+    const cls = taoLop4({ branchId: MB3, kind: 'FOU', ft: false, tuanHienTai: 2 });
+    const { sid } = taoHV4({ clsId: cls, ma: 'FOU', ft: false });
+    const n1 = demTruyVan5(() => { lichSuLopSvc.lichSuLop(P.admin, sid); });
+    const now = new Date().toISOString();
+    for (let i = 0; i < 6; i += 1) {
+      const clsX = taoLop4({ branchId: MB3, kind: 'FOU', ft: false, tuanHienTai: 2 });
+      conn.prepare(
+        `INSERT INTO enrollments (student_id, class_id, status, started_at, ended_at, end_kind, created_at)
+         VALUES (?,?, 'transferred', ?, ?, 'chuyen_lop', ?)`,
+      ).run(sid, clsX, addDays3(TODAY3, -100 + i), addDays3(TODAY3, -90 + i), now);
+    }
+    const n2 = demTruyVan5(() => { lichSuLopSvc.lichSuLop(P.admin, sid); });
+    assert(n2 - n1 <= 1, `Thêm 6 lớp cũ không được tăng nhiều câu SQL (ba câu cố định): ${n1} → ${n2}`);
+  });
 }

@@ -7,6 +7,7 @@ import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { SkillBoard, type SkillBoardRow } from '../cases/SkillBoard.tsx';
 import { HanhTrinh } from './HanhTrinh.tsx';
+import { LichSuLop } from './LichSuLop.tsx';
 import { NganCase } from './NganCase.tsx';
 import { MissingBadge } from './MissingBadge.tsx';
 import { StudentPlanPanel } from './StudentPlanPanel.tsx';
@@ -341,6 +342,8 @@ export default function StudentDetailPage() {
 
       {tab === 'hanh-trinh' && (
         <Card title="Hành trình học tập" bodyClass="p-4 space-y-4">
+          {/* LỊCH SỬ LỚP (PR-LT, §3.8 dòng cuối) — đứng TRÊN trục tuần, mỗi lớp em từng học một dòng. */}
+          <LichSuLop studentId={data.id} active={tab === 'hanh-trinh'} />
           {/*
             TRỤC TUẦN THEO LỊCH THẬT, MỖI GIAI ĐOẠN MỘT TRỤC (§3.8, PR-Qb) — thay dòng thời gian
             cũ vẽ lại đúng biểu đồ điểm đã có ở khối trên. Tự gọi máy chủ riêng theo giai đoạn
