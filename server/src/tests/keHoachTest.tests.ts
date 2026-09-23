@@ -807,4 +807,56 @@ export async function runKeHoachTestTests(t: YThucTestKit) {
     assert(d.tomTatLopFT({ dangThi: 3, chuaXep: { dot: 4, soEm: 4 } }) === 'MT3 đang thi · MT4 chưa xếp 4 em', 'tomTatLopFT đủ hai vế');
     assert(d.tomTatLopFT({ dangThi: null, chuaXep: { dot: 2, soEm: 0 } }) === '', 'tomTatLopFT bỏ vế trống');
   });
+
+  // ------------------------------------------------------------ PR-UX2 · Task 2
+
+  check('UX2 · T15 từng kỹ năng: trùng tuần S của đợt trước thì chặn, câu nêu "(S)"; tuần cách một thì chỉ cảnh báo', () => {
+    const hv = conn.prepare(
+      `SELECT DISTINCT s.id FROM students s
+         JOIN enrollments e ON e.student_id = s.id AND e.status = 'active'
+         JOIN learning_cycles cy ON cy.student_id = s.id AND cy.status = 'active'
+        WHERE e.class_id = ? AND s.status = 'active' AND s.archived_at IS NULL ORDER BY s.id LIMIT 1`,
+    ).get(mbClass) as any;
+    assert(hv, 'Seed thiếu HV ở MB-FT 101');
+    const A = week.ensurePeriod('2027-03-01');
+    const A7 = week.ensurePeriod('2027-03-08');
+    const mt = attemptsMod.createAttempt(P.mbManager, { studentId: hv.id, attemptNo: 80, periodId: A.id }) as any;
+    skillSchedule.setSkillWeek(P.mbManager, mt.id, 'speaking', A7.id, { force: true });
+    /* MT81 (chưa tạo) vào đúng tuần S của MT80 → chặn, câu nêu kỹ năng ở tuần đó. */
+    const trung = skillSchedule.checkWeekVsNeighbours({ cycleId: mt.cycle_id, attemptNo: 81, excludeAttemptId: null, newWeekStart: A7.weekStart });
+    assert(trung.blockers.length === 1 && /Trùng tuần .* \(S\)/.test(trung.blockers[0]), `Phải chặn và nêu "(S)", ra ${JSON.stringify(trung)}`);
+    /* MT79 vào tuần L R W của MT80 thì câu KHÔNG nêu S — chỉ kỹ năng ở tuần đó. */
+    const trungLrw = skillSchedule.checkWeekVsNeighbours({ cycleId: mt.cycle_id, attemptNo: 79, excludeAttemptId: null, newWeekStart: A.weekStart });
+    assert(trungLrw.blockers.length === 1 && /\(L R W\)/.test(trungLrw.blockers[0]) && !/\(S\)/.test(trungLrw.blockers[0]),
+      `Trùng tuần đầu phải nêu (L R W), ra ${JSON.stringify(trungLrw)}`);
+    const A14 = week.ensurePeriod('2027-03-15');
+    const cach = skillSchedule.checkWeekVsNeighbours({ cycleId: mt.cycle_id, attemptNo: 81, excludeAttemptId: null, newWeekStart: A14.weekStart });
+    assert(cach.blockers.length === 0 && cach.warnings.length === 1, `Cách đúng một tuần chỉ cảnh báo, ra ${JSON.stringify(cach)}`);
+  });
+
+  check('UX2 · planRegularTests opts.studentIds chỉ tạo bài cho em được chọn', () => {
+    const branch = conn.prepare('SELECT branch_id AS id FROM classes WHERE id = ?').get(mbClass) as any;
+    const now = new Date().toISOString();
+    const info = conn.prepare(
+      `INSERT INTO classes (code, branch_id, kind, programme_code, route, is_fast_track, start_date,
+                            start_period_id, status, note, created_at)
+       VALUES (?,?,?,?,NULL,0,?,?, 'active', 'Phép kiểm UX2 Task2', ?)`,
+    ).run('QA-FOU 91', branch.id, 'FOU', 'FOU', '2029-06-04', week.ensurePeriod('2029-06-04').id, now);
+    const lopMoi = Number(info.lastInsertRowid);
+    const [em1, em2] = conn.prepare(
+      `SELECT id FROM students WHERE status='active' AND archived_at IS NULL
+          AND NOT EXISTS (SELECT 1 FROM learning_cycles lc WHERE lc.student_id = students.id AND lc.route IS NULL)
+        ORDER BY id LIMIT 2`,
+    ).all() as any[];
+    assert(em1 && em2, 'Seed thiếu 2 HV chưa có lộ trình lớp thường');
+    for (const em of [em1, em2]) {
+      conn.prepare(`INSERT INTO enrollments (student_id, class_id, status, started_at, created_at) VALUES (?,?,'active',?,?)`)
+        .run(em.id, lopMoi, '2029-06-04', now);
+    }
+    const ket = regularMod.planRegularTests(P.mbManager, lopMoi, { studentIds: [em1.id], kinds: ['final'] });
+    assert(ket.created === 1, `Chỉ 1 bài (em 1, Cuối khoá), ra ${ket.created}`);
+    const dem = (em: number, kind: string) => (conn.prepare('SELECT COUNT(*) n FROM assessment_attempts WHERE class_id=? AND student_id=? AND kind=?').get(lopMoi, em, kind) as any).n;
+    assert(dem(em1.id, 'final') === 1 && dem(em1.id, 'progress') === 0, 'Em 1 phải có đúng 1 bài Cuối khoá, không có Giữa khoá');
+    assert(dem(em2.id, 'final') === 0 && dem(em2.id, 'progress') === 0, 'Em 2 không được có bài nào');
+  });
 }

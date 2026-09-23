@@ -1,6 +1,6 @@
 import { db, tx } from '../db.ts';
 import {
-  ASSESSED_SKILLS, PERMISSIONS, SIT_STATUSES, tuanLich,
+  ASSESSED_SKILLS, CHU_KY_NANG, KY_NANG_KE_HOACH, PERMISSIONS, SIT_STATUSES, tuanLich,
   type AssessedSkill, type SitStatus, type SkillProgress,
 } from '../../../shared/domain/index.ts';
 import { badRequest, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
@@ -455,18 +455,34 @@ export function checkWeekVsNeighbours(input: {
   const blockers: string[] = [];
   const warnings: string[] = [];
 
-  /* Lịch hợp nhất của các đợt khác trong CÙNG lộ trình, bỏ đợt đã huỷ. */
-  const others = conn
+  /* Lịch hợp nhất của các đợt khác trong CÙNG lộ trình, bỏ đợt đã huỷ. Đọc THEO TỪNG KỸ NĂNG (không GROUP BY) để câu chặn
+   * nêu được kỹ năng nào của đợt lân cận đang ở tuần đó (PR-UX2, Q17) — gom min/max ngay trong JS. */
+  const skillRows = conn
     .prepare(
-      `SELECT a.id, a.attempt_no, a.kind,
-              MIN(pr.week_start) AS first_week, MAX(pr.week_start) AS last_week
+      `SELECT a.id, a.attempt_no, a.kind, ask.skill, pr.week_start
          FROM assessment_attempts a
          JOIN attempt_skills ask ON ask.attempt_id = a.id AND ask.required = 1 AND ask.sit_status != 'cancelled'
          JOIN report_periods pr ON pr.id = ask.planned_period_id
-        WHERE a.cycle_id = ? AND a.id != ? AND a.status != 'cancelled'
-        GROUP BY a.id`,
+        WHERE a.cycle_id = ? AND a.id != ? AND a.status != 'cancelled'`,
     )
     .all(input.cycleId, input.excludeAttemptId ?? -1) as any[];
+  const thuTuKn = (k: string) => (KY_NANG_KE_HOACH as readonly string[]).indexOf(k);
+  const byAttempt = new Map<number, {
+    attempt_no: number; kind: string; first_week: string; last_week: string; rows: Array<{ skill: string; week: string }>;
+  }>();
+  for (const r of skillRows) {
+    const g = byAttempt.get(r.id);
+    if (!g) byAttempt.set(r.id, { attempt_no: r.attempt_no, kind: r.kind, first_week: r.week_start, last_week: r.week_start, rows: [{ skill: r.skill, week: r.week_start }] });
+    else {
+      g.rows.push({ skill: r.skill, week: r.week_start });
+      if (r.week_start < g.first_week) g.first_week = r.week_start;
+      if (r.week_start > g.last_week) g.last_week = r.week_start;
+    }
+  }
+  const knTai = (g: { rows: Array<{ skill: string; week: string }> }, week: string) => g.rows
+    .filter((x) => x.week === week).map((x) => x.skill).sort((a, b) => thuTuKn(a) - thuTuKn(b))
+    .map((k) => (CHU_KY_NANG as Record<string, string>)[k] ?? k).join(' ');
+  const others = [...byAttempt.values()];
 
   for (const o of others) {
     if (o.attempt_no < input.attemptNo) {
@@ -477,7 +493,7 @@ export function checkWeekVsNeighbours(input: {
         );
       } else if (input.newWeekStart === o.last_week) {
         blockers.push(
-          `Trùng tuần ${tuanLich(o.last_week)} với ${labelDot(o.attempt_no, o.kind)}. `
+          `Trùng tuần ${tuanLich(o.last_week)} với ${labelDot(o.attempt_no, o.kind)} (${knTai(o, o.last_week)}). `
           + 'Hai đợt không thi cùng một tuần.',
         );
       } else if (daysBetween(o.last_week, input.newWeekStart) === 7) {
@@ -491,7 +507,7 @@ export function checkWeekVsNeighbours(input: {
         );
       } else if (input.newWeekStart === o.first_week) {
         blockers.push(
-          `Trùng tuần ${tuanLich(o.first_week)} với ${labelDot(o.attempt_no, o.kind)}. `
+          `Trùng tuần ${tuanLich(o.first_week)} với ${labelDot(o.attempt_no, o.kind)} (${knTai(o, o.first_week)}). `
           + 'Hai đợt không thi cùng một tuần.',
         );
       } else if (daysBetween(input.newWeekStart, o.first_week) === 7) {
