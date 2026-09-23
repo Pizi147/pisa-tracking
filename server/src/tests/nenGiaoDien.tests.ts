@@ -81,4 +81,41 @@ export async function runNenGiaoDienTests(t: YThucTestKit) {
       }
     }
   });
+
+  // ---------------------------------------------------------------- Việc cần làm (máy chủ)
+  const { conn } = t;
+  const myworkSvc: any = await import('../worklist/mywork.ts');
+  const nguoiXem = Object.entries(t.P).filter(([k]) => /manager|teacher/i.test(k)).map(([, v]) => v);
+
+  check('UX0 · N-3: "Xếp lớp tiếp" và "Ghi lộ trình tiếp theo" không bao giờ quá hạn', () => {
+    let thay = 0;
+    for (const who of nguoiXem) {
+      for (const g of myworkSvc.myWork(who, {}).groups as any[]) {
+        if (g.key !== 'placement' && g.key !== 'next_step') continue;
+        for (const it of g.items) {
+          thay++;
+          assert(it.urgency !== 'overdue', `${g.key} ${it.key} đang quá hạn dù không có hạn`);
+          assert(!/quá hạn/i.test(`${it.reason} ${it.statusLabel} ${it.tieuDe}`), `${it.key}: còn chữ "quá hạn"`);
+        }
+      }
+    }
+    assert(thay >= 1, 'Dữ liệu mẫu phải có ít nhất một việc xếp lớp / lộ trình để kiểm');
+  });
+
+  check('UX0 · #13: việc của lớp thường ghi Giữa khoá/Cuối khoá, không "MT"', () => {
+    const ratio = new Set((conn.prepare(
+      `SELECT c.id FROM classes c JOIN programmes p ON p.code = c.programme_code WHERE p.scoring_mode = 'ratio'`,
+    ).all() as any[]).map((r) => r.id as number));
+    assert(ratio.size >= 1, 'Dữ liệu mẫu phải có lớp thường (scoring_mode = ratio)');
+    let thay = 0;
+    for (const who of nguoiXem) {
+      for (const it of (myworkSvc.myWork(who, {}).groups as any[]).flatMap((g) => g.items)) {
+        if (it.classId === null || !ratio.has(it.classId) || !it.contextLabel) continue;
+        thay++;
+        assert(!/^MT\d/.test(it.contextLabel), `${it.key} của lớp thường còn nhãn "${it.contextLabel}"`);
+      }
+    }
+    assert(thay >= 1, 'Dữ liệu mẫu phải có việc của lớp thường có nhãn đợt để kiểm');
+  });
 }
+

@@ -3023,23 +3023,23 @@ check('Quản lý thấy nhóm "Chờ tôi xử lý", giáo viên thì không', 
   assert(Array.isArray(mgrGroups), 'myWork không trả về nhóm');
 });
 
-check('Mỗi việc quá hạn nói rõ quá hạn CÁI GÌ', () => {
-  const seen = new Set<string>();
+check('Việc quá hạn: tiêu đề nói việc gì, hạn nói quá hạn — không nhãn "Quá hạn …" riêng', () => {
+  let coQuaHan = 0;
   for (const b of ['MB', 'CP', 'BC', 'HD', 'TL']) {
     let m;
     try { m = loadPrincipal(userByRole('manager', b)); } catch { continue; }
     for (const g of mywork.myWork(m).groups) {
       for (const it of g.items) {
-        if (it.urgency === 'overdue') {
-          assert(it.overdueLabel && /^Quá hạn /.test(it.overdueLabel),
-            `Việc quá hạn ở nhóm ${g.key} không ghi rõ quá hạn gì: ${it.overdueLabel}`);
-          seen.add(it.overdueLabel ?? "");
+        assert(typeof it.tieuDe === 'string' && it.tieuDe.trim() !== '', `Việc ở nhóm ${g.key} không có tiêu đề`);
+        assert(!('overdueLabel' in it), `Việc ở nhóm ${g.key} còn nhãn quá hạn riêng`);
+        for (const f of ['reason', 'statusLabel', 'tieuDe']) {
+          assert(!/quá hạn/i.test((it as any)[f] ?? ''), `Việc ở nhóm ${g.key}: ${f} còn chữ "quá hạn": "${(it as any)[f]}"`);
         }
-        if (it.urgency === 'normal') assert(!it.overdueLabel, `Việc chưa tới hạn lại gắn nhãn ${it.overdueLabel}`);
+        if (it.urgency === 'overdue' && it.due) coQuaHan++;
       }
     }
   }
-  assert(seen.size >= 2, `Chỉ có ${seen.size} kiểu nhãn quá hạn — đáng lẽ mỗi loại việc một kiểu`);
+  assert(coQuaHan >= 1, 'Dữ liệu mẫu phải có ít nhất một việc quá hạn có hạn');
 });
 
 check('Kết quả sau hỗ trợ là việc của NGƯỜI THỰC HIỆN; quá hạn thì Quản lý cũng thấy', () => {
@@ -3051,7 +3051,7 @@ check('Kết quả sau hỗ trợ là việc của NGƯỜI THỰC HIỆN; quá 
   const gvItems = reviewOf(gv);
   const mgrItems = reviewOf(mgr);
   assert(gvItems.length > 0, 'Người ghi phương án không thấy việc cập nhật kết quả của mình');
-  assert(gvItems.every((i: any) => i.actionLabel === 'Cập nhật kết quả'), 'Nhãn hành động không đúng');
+  assert(gvItems.every((i: any) => i.actionLabel === 'Ghi kết quả'), 'Nhãn hành động không đúng');
   const overdueForManager = mgrItems.filter((i: any) => i.urgency === 'overdue');
   assert(overdueForManager.length === mgrItems.length,
     'Quản lý đang thấy cả việc CHƯA quá hạn của người khác — chỉ quá hạn mới đến tay Quản lý');
