@@ -772,4 +772,50 @@ export async function runHanhTrinhTests(t: YThucTestKit) {
   check('PR-Qb (7) · Header.tsx dùng duongThongBao để điều hướng thông báo', () => {
     assert(doc('web/src/modules/platform/Header.tsx').includes('duongThongBao'), 'Phải gọi duongThongBao');
   });
+
+  // ==================================================================== PR-UX5 (5) — ?dot= cuộn ổn định (quét nguồn)
+
+  check('PR-UX5 (5) · cuonOnDinh.ts: có ResizeObserver, setTimeout (tối đa ms), trả hàm dọn', () => {
+    const src = doc('web/src/lib/cuonOnDinh.ts');
+    assert(src.includes('ResizeObserver'), 'Phải cuộn lại khi bảng phía trên đổi cỡ (ResizeObserver)');
+    assert(src.includes('setTimeout'), 'Phải có hạn chót (setTimeout)');
+    assert(/return \(\) =>/.test(src) && src.includes('removeEventListener'), 'Phải trả hàm dọn và gỡ sự kiện người dùng cuộn');
+  });
+
+  check('PR-UX5 (5) · StudentDetailPage.tsx gọi cuonOnDinh(, không còn requestAnimationFrame cuộn `dot-` một lần', () => {
+    const src = doc('web/src/modules/students/StudentDetailPage.tsx');
+    assert(src.includes('cuonOnDinh('), 'Phải gọi cuonOnDinh');
+    assert(!src.includes('requestAnimationFrame(() => document.getElementById(`dot-'), 'Cách cuộn một lần cũ phải hết');
+  });
+
+  // ==================================================================== PR-UX5 (6) — HanhTrinh.tsx (quét nguồn)
+
+  const boChuThich = (src: string): string => src
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/(^|[^:\\])\/\/.*$/gm, '$1');
+
+  check('PR-UX5 (6) · HanhTrinh.tsx: không nền đặc pastel, không màu cũ, không đường điểm, không fmtDate', () => {
+    const src = boChuThich(doc('web/src/modules/students/HanhTrinh.tsx'));
+    for (const cam of ['toneBg', 'khoiPaBg', 'var(--danger)', 'var(--accent-ink)', 'text-slate-600', 'fmtDate', '<svg', '<polyline', '<path']) {
+      assert(!src.includes(cam), `HanhTrinh.tsx còn "${cam}"`);
+    }
+  });
+
+  check('PR-UX5 (6) · HanhTrinh.tsx: 40px chỉ đến từ boCucHanhTrinh (không ", 40px)" cứng trong mẫu cột)', () => {
+    assert(!boChuThich(doc('web/src/modules/students/HanhTrinh.tsx')).includes(', 40px)'), 'Cột tuần 40px chỉ được đặt trong boCucHanhTrinh');
+  });
+
+  check('PR-UX5 (6) · HanhTrinh.tsx: giữ data-pa-id, công tắc role="switch", và gọi các luật thuần mới', () => {
+    const src = boChuThich(doc('web/src/modules/students/HanhTrinh.tsx'));
+    for (const can of ['data-pa-id', 'role="switch"', 'xepHangLuoi(', 'gomGhimTheoTuan(', 'denKhoiPa(', 'boCucHanhTrinh(']) {
+      assert(src.includes(can), `HanhTrinh.tsx thiếu "${can}"`);
+    }
+  });
+
+  check('PR-UX5 (6) · HanhTrinh.tsx: chỉ MỘT lưới CSS (một `grid` có gridTemplateColumns) — thành phần con không tự chia cột tuần', () => {
+    const src = boChuThich(doc('web/src/modules/students/HanhTrinh.tsx'));
+    const soLuoi = (src.match(/gridTemplateColumns:\s*`\$\{boCuc\.cotTen\}px/g) ?? []).length;
+    assert(soLuoi === 1, `Phải đúng 1 lưới cột tuần: ${soLuoi}`);
+    assert(!/colTemplate/.test(src), 'Không còn khuôn cột cố định cũ (colTemplate)');
+  });
 }
