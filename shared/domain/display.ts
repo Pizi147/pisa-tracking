@@ -131,6 +131,12 @@ export type AttemptProgressInput = {
    * hay "kỳ vọng" — lớp thường chỉ có ĐẠT hay CHƯA ĐẠT từng môn.
    */
   cheDo?: 'ielts' | 'ratio';
+  /**
+   * CHỈ `cheDo: 'ratio'` — số môn chưa đạt THẬT, đủ điểm cả 4 môn. `sos` (`sosLevel`) bị chặn
+   * trần ở 3 nên KHÔNG dùng được để dựng "Đạt {k}/{n} môn" khi trượt cả 4 — thiếu trường này thì
+   * tạm lấy `sos` (sai khi trượt ≥ 3 môn); luôn truyền khi biết được.
+   */
+  soMonChuaDat?: number | null;
 };
 
 export type AttemptProgressView = {
@@ -154,7 +160,7 @@ export type AttemptProgressView = {
  *       đếm bài nhập (W1/W2) thay vì kỹ năng — báo lỗi, không vẽ "1/5 kỹ năng" (MT-P02).
  */
 export function attemptProgressView(i: AttemptProgressInput): AttemptProgressView {
-  const { scored, required, passed, sos, cheDo = 'ielts' } = i;
+  const { scored, required, passed, sos, cheDo = 'ielts', soMonChuaDat } = i;
   const ratio = cheDo === 'ratio';
   const donVi = ratio ? 'môn' : 'kỹ năng';
   const bad = (why: string): AttemptProgressView => ({
@@ -191,8 +197,9 @@ export function attemptProgressView(i: AttemptProgressInput): AttemptProgressVie
 
   /* Đủ điểm. */
   if (sos !== null && sos > 0) {
+    const soChuaDatThat = ratio ? (soMonChuaDat ?? sos) : sos;
     return {
-      text: ratio ? `Chưa đạt ${sos}/${required} ${donVi} · SOS ${sos}` : `Đã đủ điểm · SOS ${sos}`,
+      text: ratio ? `Chưa đạt ${soChuaDatThat}/${required} ${donVi} · SOS ${sos}` : `Đã đủ điểm · SOS ${sos}`,
       tone: 'danger', overall: 'not-passed', overallText: ratio ? 'Chưa đạt' : 'Chưa đạt kỳ vọng', passBadge: false,
     };
   }

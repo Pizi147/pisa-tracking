@@ -100,6 +100,17 @@ export async function runHanhTrinhTests(t: YThucTestKit) {
     assert(d.cotCua('2027-01-01', truc) === truc.tuan.length - 1, 'Sau trục → kẹp về cột cuối');
   });
 
+  check('PR-Qb · sửa sau rà #75 (2): giaoKhoangXem — hoàn toàn ngoài khoảng thì KHÔNG giao, giao một phần hoặc trọn thì có', () => {
+    const khoang = { tu: '2026-09-28', den: '2026-10-26' };
+    assert(d.giaoKhoangXem('2026-06-01', '2026-07-13', khoang) === false, 'Hoàn toàn trước khoảng → không giao');
+    assert(d.giaoKhoangXem('2026-12-01', '2027-01-13', khoang) === false, 'Hoàn toàn sau khoảng → không giao');
+    assert(d.giaoKhoangXem('2026-08-01', '2026-10-05', khoang) === true, 'Giao một phần ở đầu → có giao');
+    assert(d.giaoKhoangXem('2026-10-19', '2026-12-01', khoang) === true, 'Giao một phần ở cuối → có giao');
+    assert(d.giaoKhoangXem('2026-01-01', null, khoang) === true, 'Còn mở (den=null), bắt đầu trước khoảng → coi như chạy tới hết khoảng, có giao');
+    assert(d.giaoKhoangXem('2027-01-01', null, khoang) === false, 'Còn mở nhưng bắt đầu SAU khi khoảng đã kết thúc → không giao');
+    assert(d.giaoKhoangXem('2026-01-01', '2026-08-01', khoang) === false, 'Đã đóng, kết thúc trước khoảng → không giao');
+  });
+
   check('PR-Qb (1) · khoangTruc: 3 tháng của giai đoạn đang chạy và đã kết thúc', () => {
     const running = d.khoangTruc({ tu: '2026-01-05', den: null }, '2026-09-22', '3-thang');
     assert(running.den === '2026-09-28', `den = tuần sau tuần này: ${running.den}`);
@@ -231,6 +242,11 @@ export async function runHanhTrinhTests(t: YThucTestKit) {
     assert(r.doan.length === 2, `2 đoạn: ${JSON.stringify(r.doan)}`);
     assert(r.doan[0].tu < r.doan[1].tu, `Đúng thứ tự thời gian: ${JSON.stringify(r.doan)}`);
     assert(r.doan.every((x: any) => x.loai === 'khoa'), 'Lớp thường ghi đoạn "khoa"');
+    // Sửa sau rà #75 (7): đếm TRỌN tuần chứa `tu` và tuần chứa `den` — thiếu +1 thì mọi khoá đều báo ít hơn 1 tuần.
+    for (const x of r.doan) {
+      const soTuanKyVong = Math.max(1, Math.round((Date.parse(x.den) - Date.parse(x.tu)) / (7 * 86_400_000)) + 1);
+      assert(x.nhan.endsWith(`${soTuanKyVong} tuần`), `Đoạn "${x.nhan}" phải đếm đủ +1 tuần (kỳ vọng ${soTuanKyVong} tuần)`);
+    }
     const kyNang = r.hop.map((h: any) => h.kyNang);
     assert(kyNang.join(',') === 'listening,reading,writing,speaking', `4 hộp L/R/W/S: ${kyNang}`);
     const HANG_MUC_HOP_LE = new Set(['listening', 'reading', 'writing', 'writing1', 'writing2', 'speaking']);
@@ -449,6 +465,20 @@ export async function runHanhTrinhTests(t: YThucTestKit) {
     assert(cu.text === 'Đã đủ điểm · Đạt kỳ vọng', `FT phải giữ nguyên chữ cũ: ${cu.text}`);
     const cu2 = d.attemptProgressView({ scored: 2, required: 4, passed: null, sos: null });
     assert(cu2.text === '2/4 kỹ năng có điểm', `FT chưa đủ điểm giữ nguyên chữ cũ: ${cu2.text}`);
+  });
+
+  // ==================================================================== Sửa sau rà PR #75 — Vấn đề 3
+
+  check('PR-Qb · sửa sau rà #75 (3): trượt cả 4/4 môn → "Chưa đạt 4/4 môn", không lấy sosLevel (chặn trần 3) làm số môn', () => {
+    // sosLevel thật sự chặn trần ở 3 (sosFromFailCount) dù trượt cả 4 môn — phải truyền soMonChuaDat riêng.
+    const v = d.attemptProgressView({ scored: 4, required: 4, passed: false, sos: 3, cheDo: 'ratio', soMonChuaDat: 4 });
+    assert(v.text === 'Chưa đạt 4/4 môn · SOS 3', `Chữ: ${v.text}`);
+    assert(!v.text.includes('3/4'), `Không được lấy nhầm mức SOS 3 làm số môn: ${v.text}`);
+  });
+
+  check('PR-Qb · sửa sau rà #75 (3): thiếu soMonChuaDat → tạm lấy sos (không vỡ giao diện cũ)', () => {
+    const v = d.attemptProgressView({ scored: 4, required: 4, passed: false, sos: 2, cheDo: 'ratio' });
+    assert(v.text === 'Chưa đạt 2/4 môn · SOS 2', `Chữ: ${v.text}`);
   });
 
   check('PR-Qb (6) · StudentDetailPage.tsx không còn chữ cấm §6: "Số MT đánh lại", "Progress Test", "Final Test", "Lớp Normal", "Mở case"', () => {

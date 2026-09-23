@@ -106,10 +106,14 @@ export type LuotTomTat = {
   weekStart: string | null;
   mode: string; scored: number; required: number; complete: boolean;
   overall: number | null; expectation: number | null; sosLevel: number | null;
+  /** Chỉ lớp thường — dùng để đếm số môn chưa đạt THẬT (`sosLevel` bị chặn trần ở 3, không dùng được khi trượt cả 4). */
+  skills?: { outcome: string }[] | null;
 };
 export type KetQuaTestGanNhat = {
   attemptId: number; nhan: string; coDiem: number; yeuCau: number;
   dat: boolean | null; sos: number | null;
+  /** Chỉ lớp thường — số môn chưa đạt THẬT (không bị chặn trần như `sos`); FT luôn `null`. */
+  soMonChuaDat: number | null;
   /** `<KetQuaDot>` chỉ nhận 1–4 kỹ năng (ATTEMPT_SKILL_UNITS); ngoài khoảng đó giao diện ghi `{có}/{cần} phần có điểm`. */
   dungKetQuaDot: boolean;
 };
@@ -132,8 +136,9 @@ export function ketQuaTestGanNhat(attempts: readonly LuotTomTat[], homNay?: stri
   const dat = ratio
     ? (a.complete ? a.sosLevel === 0 : null)
     : (a.complete && a.overall !== null && a.expectation !== null ? a.overall >= a.expectation : null);
+  const soMonChuaDat = ratio ? (a.skills ?? []).filter((s) => s.outcome === 'fail').length : null;
   return {
-    attemptId: a.id, nhan, coDiem: a.scored, yeuCau: a.required, dat, sos: a.sosLevel,
+    attemptId: a.id, nhan, coDiem: a.scored, yeuCau: a.required, dat, sos: a.sosLevel, soMonChuaDat,
     dungKetQuaDot: a.required >= 1 && a.required <= ATTEMPT_SKILL_UNITS,
   };
 }

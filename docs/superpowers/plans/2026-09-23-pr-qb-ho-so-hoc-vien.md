@@ -516,3 +516,108 @@ Commit `PR-Qb (8): 375px hồ sơ học viên, bảng định vị, CODE_MAP, đ
   PR-Rc1 đã tự ghi chú "phần lưới xong" ở R8, gộp làm một ghi chú lịch sử thay vì xoá). `npm run check` sau rebase:
   **933 kiểm tra đều đạt** (toàn repo, gồm cả các PR khác vừa merge). Push, mở PR
   [#75](https://github.com/Pizi147/pisa-tracking/pull/75). Báo planning.
+
+- **Sửa sau rà PR #75 (planning: "CHƯA MERGE"):** Trước hết `git fetch origin && git rebase origin/main`
+  (từ `48baefc`, lần này thêm PR-Pb #73 đã merge sau khi PR #75 mở) — xung đột đúng ba chỗ "chỉ thêm khối" như
+  dự đoán, giữ CẢ HAI nhánh: `shared/domain/index.ts` (khối `phanTich.ts` của Pb trước, `duongHoSo.ts`/`hanhTrinh.ts`
+  của Qb sau), `server/src/tests/run.ts` (khối `runPhanTichTests` trước, `runHanhTrinhTests` sau), `CODE_MAP.md`
+  (lấy nguyên ba dòng của Pb — Kết quả hỗ trợ, khung Phân tích, Danh sách Case — cộng dòng Hành trình bản Qb
+  `HanhTrinh.tsx → KhoiPa`, bỏ dòng "Bảng Vấn đề - Case" cũ vì trùng). **Lưu ý cho lần sau:** con số "933 kiểm
+  tra đều đạt" ở mục Task 9 phía trên đã LỖI THỜI sau lần rebase này (`git rebase` phát lại đúng commit cũ, không
+  tự sửa số ghi trong nội dung) — số đúng của nhánh SAU rebase lần này, trước khi sửa 7 vấn đề dưới, là **968**.
+  `npm run check` xanh ngay sau rebase.
+
+  Bảy vấn đề planning nêu, mỗi vấn đề một đoạn (không tách commit riêng — bảy chỗ đan xen nhiều vào cùng vài
+  file, tách nhỏ chỉ sinh xung đột dòng giả):
+
+  1. **[Nghiêm trọng] Lệch cột trục tuần** (`HanhTrinh.tsx`) — nguyên nhân đúng như planning chỉ ra: `--cot-ten`
+     chỉ khai báo trên khung của TRỤC, không phải tổ tiên chung của trục lẫn từng hộp kỹ năng (biến CSS không
+     truyền sang phần tử anh em); mỗi hộp lại có `overflow-x-auto` VÀ đệm ngang (`p-2.5`) riêng nên dù sửa được
+     biến, mép lưới của hộp vẫn lệch mép lưới của trục đúng đúng bằng bề rộng đệm. Sửa: (a) `--cot-ten` chuyển
+     lên khung NGOÀI CÙNG bọc cả trục lẫn danh sách hộp; (b) MỘT `overflow-x-auto` duy nhất ở khung đó — trục và
+     mỗi hộp là khối `min-w-max` bên trong (tự giãn đúng bề rộng lưới của nó, không còn tự cuộn riêng); (c) cột
+     tuần đổi từ `minmax(40px,1fr)` sang **40px cố định** — nhiều lưới CSS riêng biệt (trục + một lưới/vấn đề)
+     dùng `1fr` có thể giãn ra pixel khác nhau tuỳ bối cảnh bố cục dù cùng `colTemplate`, cột cố định thì khớp
+     tuyệt đối bất kể lưới nào; (d) bỏ đệm ngang khỏi phần lưới của hộp (đệm chỉ còn ở đầu hộp, không phải phần
+     grid); (e) đầu hộp (tên · chuỗi điểm · badge) đổi từ hàng `justify-between` full-width sang khối GHIM TRÁI
+     (`sticky-col`, tự co theo nội dung) để còn đọc được khi đã cuộn ngang — kéo theo bỏ `justify-between`, badge
+     giờ nằm ngay sau chuỗi điểm thay vì đẩy sát mép phải (đổi giao diện nhỏ, ghi chú để planning xem lại nếu
+     không ưng). Tự quyết thêm: ô tên vấn đề (`VanDeHang`) cũng thêm `sticky-col` cho nhất quán với cột tên của
+     trục — planning không yêu cầu riêng nhưng bỏ qua sẽ tạo một điểm KHÔNG NHẤT QUÁN ngay khi vừa thống nhất
+     khung cuộn (tên hộp ghim được mà tên vấn đề thì không). **Kiểm bằng ảnh thật + `getBoundingClientRect`**
+     (Playwright kênh Chrome, xem bên dưới): HV1 hộp Reading, PA "Học tutor" 15/07→05/08 — mép trái khớp mép
+     trái JUL W3 (x=318), mép phải khớp mép phải AUG W1 (x=478), TRÙNG TUYỆT ĐỐI ở cả khung Browser lẫn Chrome
+     thật.
+  2. **[Quan trọng] Mục ngoài khoảng xem bị kẹp vào mép** — `cotCua` một mình chỉ biết KẸP về mép, không biết
+     một mục nằm HẲN NGOÀI khoảng để ẩn. Thêm `giaoKhoangXem(tu, den, khoang)` (`shared/domain/hanhTrinh.ts`) —
+     mục còn mở (`den=null`) luôn coi là chạy tới hết khoảng đang xem. Gọi hàm này TRƯỚC khi vẽ để lọc cả `doan`
+     (khoá/lộ trình) lẫn `vanDe` (Case) — mục giao MỘT PHẦN vẫn vẽ (và vẫn kẹp mép như cũ qua `cotCua`), mục
+     KHÔNG GIAO thì ẩn hẳn. Làm luôn Q22: hộp có vấn đề bị ẩn thì thêm một dòng mờ cuối hộp
+     `+{n} vấn đề cũ hơn — chọn "Cả giai đoạn"`, bấm vào tự đổi `cheDoKhoang` sang `ca-giai-doan`. **Kiểm bằng
+     ảnh thật + gọi API trực tiếp**: HV1 lớp thường, "3 tháng gần nhất" — khoá `MB-FOU 03` (kết thúc
+     `2026-01-25`, tuần chứa `2026-01-19`) hết HẲN trước khoảng đang xem (`tu=2026-01-26`) → ẩn sạch, không còn
+     cảnh dính mép giả ở JAN W5 như planning mô tả; chuyển "Cả giai đoạn" thì hiện lại đủ cả FOU lẫn BE.
+  3. **[Quan trọng] SOS dùng mức chặn trần làm số môn** — `attemptProgressView` dùng thẳng `sos` (= `sosLevel`,
+     bị `sosFromFailCount` chặn trần ở 3) làm số môn chưa đạt trong câu "Chưa đạt {k}/{n} môn", nên trượt cả 4
+     môn vẫn ghi "Chưa đạt 3/4 môn". Thêm tham số `soMonChuaDat` (số môn chưa đạt THẬT, không chặn trần) —
+     `AttemptProgressInput`/`KetQuaDot`/`KetQuaTestGanNhat`/`LuotTomTat` đều thêm trường này (ratio-only, `null`
+     ở FT); `ketQuaTestGanNhat` (`hoSoHocVien.ts`) tính từ `skills[].outcome==='fail'` của lượt đã chọn — dữ
+     liệu này `profile.ts` đã có sẵn trong `attempts[]` (không thêm truy vấn). Thiếu `soMonChuaDat` (gọi cũ) thì
+     tạm lấy `sos` như trước — không vỡ các chỗ gọi khác chưa kịp truyền. Chỉ MỘT nhánh cần sửa (đủ điểm, SOS>0)
+     — nhánh "chưa đủ điểm" luôn có `scored ≤ 3` (còn thiếu ít nhất 1/4) nên mức SOS không thể vượt số môn đã
+     chấm, không bị chặn trần sai ở đó. Thêm hai phép kiểm (`hanhTrinh.tests.ts`): trượt 4/4 môn ra đúng
+     "Chưa đạt 4/4 môn", và trường hợp thiếu `soMonChuaDat` vẫn chạy được (không vỡ).
+  4. **[Quan trọng] Tên Case tự sinh bỏ qua tên người tạo đặt** — `hanhTrinh.ts` (máy chủ) dùng thẳng
+     `caseTitle(...)` cho mọi vấn đề, bỏ qua `c.title` (tên tay). Sửa `(c.title ?? '').trim() || caseTitle(...)`
+     — ĐÃ CÓ SẴN `c.title` từ câu `SELECT sc.*` gốc, không cần câu SQL mới (khác `caseTitleOf` ở
+     `server/src/cases/cases.ts:58` — hàm đó tự truy vấn DB theo `case.id`, gọi trong vòng lặp nhiều Case sẽ vỡ
+     ngân sách truy vấn "6 câu cố định" của chính file này — planning nêu tên hàm đó chỉ để chỉ ra QUY TẮC
+     "tên tay thắng tên suy ra", không phải bảo gọi thẳng hàm đó). Đồng thời "lớp thường không được ra chữ
+     'kỳ vọng'": `caseTitle` (dùng chung toàn hệ thống, nằm ngoài phạm vi PR này, KHÔNG được sửa) luôn gắn đuôi
+     "… dưới kỳ vọng" bất kể lớp thường/FT — tự quyết KHÔNG sửa hàm dùng chung mà thêm nhánh RIÊNG cho lớp
+     thường ngay tại nơi gọi: tên tự sinh của lớp thường đổi thành `"{Tên môn} chưa đạt"` (không mượn chữ FT).
+  5. **[Quan trọng] Ngân sách truy vấn** — thêm `/students/{hv}/hanh-trinh` (cả `?giai-doan=thuong`) và
+     `/notifications` vào `tocDoDuong.ts`; đo lần đầu (chưa có trần) ra 27–30 câu và 9 câu, áp công thức có sẵn
+     `max(sau+10, ⌈sau×1.3⌉)` → trần 37–40 và 19 (khớp đúng gợi ý "~40 và ~19" của planning). `profile.ts:754`
+     (khối `currentClass.khoa`) gọi `isRatioClass` (tự query `programme_code` lại — TRÙNG câu `programmeOfClass`
+     đã gọi ngay phía trên cho `programme.name`) rồi `classProgressMany([id])` (ba câu: `classes`,
+     `report_periods`, đếm học viên — tính dư thừa `activeStudents`/`needsPlacement`… mà khối này không dùng
+     tới). Sửa: gọi `programmeOfClass` MỘT LẦN (`progHienTai`), dùng lại cho cả `programme.name` lẫn
+     `scoringMode==='ratio'`; widen câu SELECT `enrollments` có sẵn (JOIN thêm `report_periods` lấy
+     `class_start_week`, KHÔNG thêm câu SQL mới) rồi tính `tuanHienTai`/`tuanKetThuc` thẳng bằng `studyWeekOf`/
+     `addDays` (đã có ở `shared/domain`) — bỏ hẳn `isRatioClass`/`classProgressMany` khỏi khối này. `{hv}` của
+     `tocDo.run.ts` là học viên lớp FT (không rơi vào nhánh ratio) nên bảng đo không thấy trực tiếp số 72→76 kể
+     lại của planning; xác nhận đúng cơ chế qua đọc mã (mỗi query TRÙNG bị bỏ khớp chính xác 1 hoặc 4 câu tuỳ
+     ratio hay không).
+  6. **[Quan trọng] Bấm ô số nhảy khỏi lộ trình đang xem** — `moKyNang` (`StudentDetailPage.tsx`) thiếu
+     `loTrinh: p.loTrinh` khi gọi `duongHoSoHocVien` — sửa một dòng.
+  7. **[Nhỏ, làm vì cùng luồng SOS] Khối xác minh SOS + tuần thiếu 1** — `PendingSignals` tự viết lại thiếu ba
+     thứ so với `DongTinHieu.tsx` (cùng luồng, khác chỗ hiển thị): không có ô lý do, không chặn bấm hai lần,
+     không bắt lỗi, chỉ làm mới hồ sơ hiện tại (không `invalidate('/my-work')`/`'/signals'`). Tách một hàng
+     thành `TinHieuHang` (component riêng, có state riêng — `PendingSignals` là danh sách nên không tự có hook
+     theo từng dòng được) chép lại ĐÚNG bốn hành vi đó của `DongTinHieu`; nút "Tạo Case" giờ truyền thêm
+     `scoreText` (`"{score}/{total}"`, `QuickReport` tự thêm nhãn "Điểm:") giống hệt cách `DongTinHieu` làm.
+     Đoạn khoá đang chạy thiếu 1 tuần: `server/src/students/hanhTrinh.ts` tính `soTuan` bằng hiệu ngày
+     (`tu`→`den`, cả hai đều là NGÀY THỨ HAI của tuần) rồi chia 7 — thiếu tuần đầu vì đây là hiệu số TUẦN ĐÃ
+     TRÔI QUA giữa hai mốc, không phải số tuần được đếm (khoá W8/8 ra "7 tuần"); sửa `+1`. Thêm phép kiểm
+     tự-đối-chiếu (`hanhTrinh.tests.ts`): mọi `doan` của HV1 lớp thường đều khớp công thức `+1` — bắt được ngay
+     nếu ai lỡ bỏ `+1` sau này.
+
+  `npm run check` (chỉ chạy MỘT LẦN một lúc như dặn): **971 = 968 + 3** (hai phép kiểm SOS 4/4 môn + `giaoKhoangXem`,
+  một phép kiểm tự-đối-chiếu `+1 tuần` gộp vào phép kiểm `doan` có sẵn nên không cộng thêm dòng riêng), trần
+  truy vấn của hai đường mới không vỡ, không phép kiểm nào đỏ.
+
+  **Bấm thử lại bằng ẢNH THẬT** (không chỉ đọc DOM lần này) — dev server chạy tay trong worktree
+  (`npm run dev`, cổng mặc định 4000/5173, không đụng máy chính), `npm run seed` lại DB worktree (trống lúc
+  vừa `npm ci` xong), đăng nhập Quản trị hệ thống. Chụp bằng **Playwright kênh Chrome** (`npx playwright`, bản
+  đã cache sẵn ở máy — không cài thêm gói, không đụng `package.json`) vì khung Browser tích hợp không có chỗ
+  lưu ảnh ra đĩa (ghi nhận đúng như Task 9 nêu) — script chạy một lần, không commit vào repo, kết quả lưu
+  `thiet-ke/anh/pr-qb/`:
+    - `sau-hanh-trinh-hv1-ft-3thang-desktop.png` — giai đoạn FT, khối PA "Học tutor" khớp trục JUL W3→AUG W1.
+    - `sau-hanh-trinh-hv1-thuong-3thang-desktop.png` — giai đoạn lớp thường, khoá FOU (hết hạn trước khoảng
+      xem) ẩn sạch, chỉ còn BE; vấn đề Reading không còn chữ "kỳ vọng".
+    - `sau-hanh-trinh-hv1-thuong-ca-giai-doan-desktop.png` — đối chứng, hiện đủ cả FOU lẫn BE khi chọn "Cả
+      giai đoạn".
+
+  `git status` sạch trừ ảnh mới + sửa mã (không còn file Vite/DB tạm — `data/` đã gitignore, dừng hẳn dev
+  server sau khi chụp xong). Push, cập nhật PR #75. Báo planning.

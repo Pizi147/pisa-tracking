@@ -172,7 +172,9 @@ export function hanhTrinhHocVien(p: Principal, studentId: number, giaiDoanMuon: 
       const maLop = attemptsOfCycle[attemptsOfCycle.length - 1]?.class_code
         ?? programmeByCode(c.programme_code ?? programmeCodeOfCycle(c.id))?.name ?? '—';
       const den = c.ended_at ?? tuanCuoiChuongTrinh(conn, c) ?? homNay;
-      const soTuan = Math.max(1, Math.round((Date.parse(den) - Date.parse(c.started_at)) / (7 * 86_400_000)));
+      // +1: đếm TRỌN tuần chứa `tu` VÀ tuần chứa `den` — hiệu hai mốc chỉ ra số tuần ĐÃ TRÔI QUA
+      // giữa hai tuần đó, thiếu tuần đầu (sửa sau rà #75, vấn đề 7: khoá W8/8 hiện sai "7 tuần").
+      const soTuan = Math.max(1, Math.round((Date.parse(den) - Date.parse(c.started_at)) / (7 * 86_400_000)) + 1);
       doan.push({ loai: 'khoa', nhan: `${maLop} · ${soTuan} tuần`, tu: c.started_at, den });
     }
   } else if (chonCycles.length >= 2) {
@@ -248,7 +250,11 @@ export function hanhTrinhHocVien(p: Principal, studentId: number, giaiDoanMuon: 
       }));
       return {
         caseId: c.id,
-        ten: caseTitle({ category: c.category ?? c.topic, latestAttemptNo: c.attempt_no, latestAttemptKind: c.attempt_kind }),
+        // Tên người tạo đặt thắng tên suy ra (như caseTitleOf, server/src/cases/cases.ts:58); lớp
+        // thường không mượn "… dưới kỳ vọng" của Fast Track — chấm theo môn đạt/chưa đạt, không có kỳ vọng band.
+        ten: (c.title ?? '').trim() || (ratio
+          ? `${CASE_CATEGORY_LABEL[(c.category ?? c.topic) as CaseCategory] ?? (c.category ?? c.topic ?? '')} chưa đạt`
+          : caseTitle({ category: c.category ?? c.topic, latestAttemptNo: c.attempt_no, latestAttemptKind: c.attempt_kind })),
         mo: c.detected_at, dong: c.status === 'done' ? (c.closed_at ?? c.outcome_at ?? null) : null,
         soPa: pa.length, pa,
       };

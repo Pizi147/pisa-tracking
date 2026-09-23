@@ -141,7 +141,8 @@ export default function StudentDetailPage() {
   /** Bấm một ô số (R8c, Q11): về tab Học thuật, chọn kỹ năng, cuộn tới bảng. */
   const moKyNang = (kn: string | null | undefined) => {
     if (!kn) return;
-    navigate(duongHoSoHocVien(data.id, { kn }));
+    // Giữ nguyên lộ trình đang xem — không để bấm ô số làm nhảy về lộ trình mặc định.
+    navigate(duongHoSoHocVien(data.id, { kn, loTrinh: p.loTrinh }));
   };
 
   const setCycle = (cid: number) => {
@@ -424,7 +425,7 @@ function HeaderStats({ data, rows, homNay, onOpenDot, onOpenKn }: {
         title="Mở đợt Test này ở bảng Học thuật"
         sub={kq
           ? (kq.dungKetQuaDot
-            ? <KetQuaDot coDiem={kq.coDiem} yeuCau={kq.yeuCau} dat={kq.dat} sos={kq.sos} cheDo={cheDo} />
+            ? <KetQuaDot coDiem={kq.coDiem} yeuCau={kq.yeuCau} dat={kq.dat} sos={kq.sos} cheDo={cheDo} soMonChuaDat={kq.soMonChuaDat} />
             : `${kq.coDiem}/${kq.yeuCau} phần có điểm`)
           : 'chưa có điểm nào'} />
 
@@ -679,54 +680,74 @@ function anhXaKyNang(kn: string, boHop: readonly string[]): string | null {
 function PendingSignals({ signals, onVerify, onReload }: {
   signals: any[]; onVerify: (sg: any) => void; onReload: () => void;
 }) {
-  const toast = useToast();
   if (!signals.length) return null;
-
   const overdue = signals.filter((s) => s.overdue).length;
-  const boQua = async (sg: any) => {
-    await api.post(`/signals/pending/${sg.id}/dismiss`, {});
-    toast.push('ok', 'Đã bỏ qua tín hiệu.');
-    onReload();
-  };
   return (
     <Card title={<>Xác minh vấn đề SOS <Info title="Tín hiệu chờ người dạy xem bài; hạn 3 ngày.">ⓘ</Info></>}
       action={<span className="text-xs text-slate-500">
         {signals.length} tín hiệu{overdue > 0 ? ` · ${overdue} quá hạn` : ''}
       </span>}>
       <ul className="space-y-2 list-none p-0 m-0">
-        {signals.map((sg) => (
-          <li key={sg.id} className="surface-2 rounded-lg p-3 flex flex-wrap items-start justify-between gap-3">
-            <div className="min-w-0">
-              <div className="text-sm text-slate-100">
-                {/* Q19: lớp thường ghi {môn} {đúng}/{tổng} · Giữa|Cuối khoá — không "MT{n}", không "so với kỳ vọng". */}
-                {sg.kind === 'normal'
-                  ? <>{sg.label} {sg.score}/{sg.total} · {sg.attemptKind === 'final' ? 'Cuối khoá' : 'Giữa khoá'}</>
-                  : <>
-                      {sg.label}
-                      {sg.band !== null && sg.expectation !== null && (
-                        <span className="text-slate-400"> · {fmtBand(sg.band)} so với kỳ vọng {fmtBand(sg.expectation)}</span>
-                      )}
-                      {sg.attemptNo && <span className="text-slate-500 text-xs"> · MT{sg.attemptNo}</span>}
-                    </>}
-              </div>
-              <div className="text-xs mt-1">
-                {sg.overdue
-                  ? <span className="text-rose-300">Quá hạn xác minh {fmtDate(sg.verifyDue)}</span>
-                  : <span className="text-slate-400">Hạn xác minh {fmtDate(sg.verifyDue)}</span>}
-                {sg.ownerName && <span className="text-slate-500"> · {sg.ownerName}</span>}
-              </div>
-            </div>
-            {sg.canResolve && (
-              <span className="flex gap-2">
-                {sg.actions?.includes('dismiss') && (
-                  <button className="btn btn-sm btn-ghost" onClick={() => boQua(sg)}>Bỏ qua</button>
-                )}
-                <button className="btn btn-sm btn-primary" onClick={() => onVerify(sg)}>Tạo Case</button>
-              </span>
-            )}
-          </li>
-        ))}
+        {signals.map((sg) => <TinHieuHang key={sg.id} sg={sg} onVerify={onVerify} onReload={onReload} />)}
       </ul>
     </Card>
+  );
+}
+
+/**
+ * Một tín hiệu — sửa sau rà #75 (7): làm Y HỆT `DongTinHieu.tsx` (cùng luồng SOS lớp thường) thay vì
+ * tự viết lại thiếu: ô lý do KHÔNG bắt buộc, chặn bấm hai lần khi đang gửi, báo lỗi ra toast, làm mới
+ * cả `/my-work` và `/signals` (không chỉ hồ sơ này) sau khi xử lý xong.
+ */
+function TinHieuHang({ sg, onVerify, onReload }: { sg: any; onVerify: (sg: any) => void; onReload: () => void }) {
+  const toast = useToast();
+  const [lyDo, setLyDo] = useState('');
+  const [busy, setBusy] = useState(false);
+  const boQua = async () => {
+    setBusy(true);
+    try {
+      await api.post(`/signals/pending/${sg.id}/dismiss`, { reason: lyDo.trim() || null });
+      toast.push('ok', 'Đã bỏ qua tín hiệu.');
+      invalidate('/my-work'); invalidate('/signals');
+      onReload();
+    } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
+  };
+  // form Tạo Case mở từ hồ sơ phải điền sẵn điểm ("Điểm: 26/40") — QuickReport tự thêm nhãn "Điểm:".
+  const moCase = () => onVerify({ ...sg, scoreText: sg.score !== null && sg.total !== null ? `${sg.score}/${sg.total}` : null });
+  return (
+    <li className="surface-2 rounded-lg p-3 flex flex-wrap items-start justify-between gap-3">
+      <div className="min-w-0">
+        <div className="text-sm text-slate-100">
+          {/* Q19: lớp thường ghi {môn} {đúng}/{tổng} · Giữa|Cuối khoá — không "MT{n}", không "so với kỳ vọng". */}
+          {sg.kind === 'normal'
+            ? <>{sg.label} {sg.score}/{sg.total} · {sg.attemptKind === 'final' ? 'Cuối khoá' : 'Giữa khoá'}</>
+            : <>
+                {sg.label}
+                {sg.band !== null && sg.expectation !== null && (
+                  <span className="text-slate-400"> · {fmtBand(sg.band)} so với kỳ vọng {fmtBand(sg.expectation)}</span>
+                )}
+                {sg.attemptNo && <span className="text-slate-500 text-xs"> · MT{sg.attemptNo}</span>}
+              </>}
+        </div>
+        <div className="text-xs mt-1">
+          {sg.overdue
+            ? <span className="text-rose-300">Quá hạn xác minh {fmtDate(sg.verifyDue)}</span>
+            : <span className="text-slate-400">Hạn xác minh {fmtDate(sg.verifyDue)}</span>}
+          {sg.ownerName && <span className="text-slate-500"> · {sg.ownerName}</span>}
+        </div>
+      </div>
+      {sg.canResolve && (
+        <span className="flex flex-wrap items-center gap-1.5 justify-end">
+          {sg.actions?.includes('dismiss') && (
+            <>
+              <input className="field h-7 text-xs w-36" value={lyDo} maxLength={200} onChange={(e) => setLyDo(e.target.value)}
+                placeholder="Lý do (không bắt buộc)" aria-label="Lý do bỏ qua (không bắt buộc)" />
+              <button className="btn btn-sm btn-ghost" disabled={busy} onClick={boQua}>Bỏ qua</button>
+            </>
+          )}
+          <button className="btn btn-sm btn-primary" onClick={moCase}>Tạo Case</button>
+        </span>
+      )}
+    </li>
   );
 }

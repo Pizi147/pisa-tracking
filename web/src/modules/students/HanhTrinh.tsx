@@ -5,7 +5,7 @@ import { Empty, ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { Episode } from './StudentDetailPage.tsx';
 import {
   CASE_CATEGORY_LABEL, CASE_CATEGORY_SHORT, type CaseCategory,
-  chuoiDiem, cotCua, duongHoSoHocVien, khoangTruc, ngay, nhanGhim, nhanGiaiDoan, nhanKhoiPa,
+  chuoiDiem, cotCua, duongHoSoHocVien, giaoKhoangXem, khoangTruc, ngay, nhanGhim, nhanGiaiDoan, nhanKhoiPa,
   trangThaiHop, trucTuan, xepTang, type CheDoKhoang,
 } from '@shared/domain/index.ts';
 
@@ -63,7 +63,15 @@ export function HanhTrinh({ studentId, active, episodes, allEpisodes, onOpenCase
   const giaiDoanDangXem = data.giaiDoan ? data.cacGiaiDoan.find((g) => g.loai === data.giaiDoan)! : data.cacGiaiDoan[0];
   const khoang = khoangTruc(giaiDoanDangXem, data.homNay, cheDoKhoang);
   const truc = trucTuan(khoang.tu, khoang.den, data.homNay);
-  const colTemplate = `var(--cot-ten) repeat(${truc.tuan.length}, minmax(40px, 1fr))`;
+  /*
+   * CỘT TUẦN RỘNG CỐ ĐỊNH (sửa sau rà #75, vấn đề 1) — trục và mỗi hộp kỹ năng là NHIỀU lưới
+   * CSS riêng (không phải một lưới liên tục), nên `minmax(…, 1fr)` giãn theo bề rộng khả dụng của
+   * TỪNG lưới sẽ ra pixel khác nhau nếu bối cảnh bố cục khác nhau dù cùng `colTemplate`. Cột rộng
+   * cố định thì mọi lưới ra đúng cùng một bề rộng, khớp tuyệt đối bất kể lưới nào.
+   */
+  const colTemplate = `var(--cot-ten) repeat(${truc.tuan.length}, 40px)`;
+  /* Ẩn hẳn đoạn khoá/lộ trình KHÔNG giao khoảng đang xem — cotCua kẹp mép sẽ vẽ dính mép giả nếu không lọc trước (vấn đề 2). */
+  const doanHienThi = data.doan.filter((dg) => giaoKhoangXem(dg.tu, dg.den, khoang));
 
   const setGiaiDoan = (loai: 'thuong' | 'ft') => {
     const next = new URLSearchParams(params);
@@ -75,7 +83,7 @@ export function HanhTrinh({ studentId, active, episodes, allEpisodes, onOpenCase
 
   /* Số hàng cố định của phần đầu lưới: tháng, tuần, rồi Khoá/Lộ trình và Đợt Test nếu có. */
   let hang = 2;
-  const hangDoan = data.doan.length ? ++hang : null;
+  const hangDoan = doanHienThi.length ? ++hang : null;
   const hangGhim = data.ghim.length ? ++hang : null;
 
   return (
@@ -105,8 +113,14 @@ export function HanhTrinh({ studentId, active, episodes, allEpisodes, onOpenCase
         </select>
       </div>
 
+      {/*
+        MỘT KHUNG CUỘN NGANG DUY NHẤT cho cả trục lẫn mọi hộp kỹ năng (sửa sau rà #75, vấn đề 1) —
+        `--cot-ten` khai báo Ở ĐÂY để mọi lưới con (trục, từng hộp) đọc được cùng một giá trị; mỗi
+        khối `min-w-max` bên trong tự giãn theo đúng bề rộng lưới của nó, khung ngoài cuộn chung.
+      */}
+      <div className="space-y-3 overflow-x-auto sm:[--cot-ten:200px] [--cot-ten:128px]">
       {/* Lưới: trục tháng/tuần · hàng Khoá/Lộ trình · hàng Đợt Test — cùng một khuôn cột */}
-      <div className="rounded-lg border overflow-x-auto sm:[--cot-ten:200px] [--cot-ten:128px]" style={{ borderColor: 'var(--line)' }}>
+      <div className="rounded-lg border min-w-max" style={{ borderColor: 'var(--line)' }}>
         <div className="grid text-xs" style={{ gridTemplateColumns: colTemplate }}>
           <div className="sticky-col" style={{ gridRow: 1, gridColumn: 1 }} />
           {truc.thang.map((th) => (
@@ -136,9 +150,9 @@ export function HanhTrinh({ studentId, active, episodes, allEpisodes, onOpenCase
             <>
               <div className="sticky-col px-2 py-1.5 text-slate-500 border-b"
                 style={{ gridRow: hangDoan, gridColumn: 1, borderColor: 'var(--line)' }}>
-                {data.doan[0].loai === 'khoa' ? 'Khoá' : 'Lộ trình'}
+                {doanHienThi[0].loai === 'khoa' ? 'Khoá' : 'Lộ trình'}
               </div>
-              {data.doan.map((d, di) => {
+              {doanHienThi.map((d, di) => {
                 const a = cotCua(d.tu, truc);
                 const b = cotCua(d.den, truc);
                 return (
@@ -175,12 +189,11 @@ export function HanhTrinh({ studentId, active, episodes, allEpisodes, onOpenCase
         </div>
       </div>
 
-      {/* Hộp kỹ năng */}
-      <div className="space-y-3">
-        {hopHienThi.map((h) => (
-          <HopKyNang key={h.kyNang} hop={h} truc={truc} colTemplate={colTemplate} homNay={data.homNay}
-            onOpenCase={onOpenCase} />
-        ))}
+      {/* Hộp kỹ năng — cùng khung cuộn với trục ở trên (vấn đề 1) */}
+      {hopHienThi.map((h) => (
+        <HopKyNang key={h.kyNang} hop={h} truc={truc} khoang={khoang} colTemplate={colTemplate} homNay={data.homNay}
+          onOpenCase={onOpenCase} onXemCaGiaiDoan={() => setCheDoKhoang('ca-giai-doan')} />
+      ))}
       </div>
 
       {/* Chú thích */}
@@ -224,30 +237,36 @@ function toneBg(tone: string): string {
   return 'var(--line-strong)';
 }
 
-/** Đầu hộp: tên đầy đủ · chuỗi điểm · badge trạng thái; dưới đó mỗi vấn đề một khối lưới riêng, cùng khuôn cột. */
-function HopKyNang({ hop, truc, colTemplate, homNay, onOpenCase }: {
-  hop: Hop; truc: Truc; colTemplate: string; homNay: string;
-  onOpenCase: (caseId: number, paId?: number) => void;
+/**
+ * Đầu hộp: tên đầy đủ · chuỗi điểm · badge trạng thái — GHIM TRÁI (`sticky-col`, tự co theo nội
+ * dung) để còn đọc được khi đã cuộn ngang sang phải xem khối PA. Dưới đó mỗi vấn đề một khối lưới
+ * riêng, cùng khuôn cột `colTemplate` với trục — KHÔNG đệm ngang, KHÔNG tự cuộn riêng (vấn đề 1: cả
+ * khối này nằm trong khung cuộn chung của `HanhTrinh`, mép trái phải khớp trục tuyệt đối).
+ */
+function HopKyNang({ hop, truc, khoang, colTemplate, homNay, onOpenCase, onXemCaGiaiDoan }: {
+  hop: Hop; truc: Truc; khoang: { tu: string; den: string }; colTemplate: string; homNay: string;
+  onOpenCase: (caseId: number, paId?: number) => void; onXemCaGiaiDoan: () => void;
 }) {
   const moc = chuoiDiem(hop.diem, hop.cheDo === 'ratio' ? 'ratio' : 'ielts', hop.conCho);
   const badge = trangThaiHop({ caseMo: hop.caseMo, coTungCase: hop.coTungCase, diemCuoiChuaDat: hop.diemCuoiChuaDat, xongGanNhat: hop.xongGanNhat }, homNay);
+  // Vấn đề 2 + Q22: ẩn hẳn vấn đề không giao khoảng đang xem, đếm số bị ẩn để gợi ý "Cả giai đoạn".
+  const vanDeHienThi = hop.vanDe.filter((v) => giaoKhoangXem(v.mo, v.dong, khoang));
+  const soAn = hop.vanDe.length - vanDeHienThi.length;
 
   return (
-    <div className="rounded-lg border p-2.5" style={{ borderColor: 'var(--line)' }}>
-      <div className="flex flex-wrap items-center justify-between gap-2 mb-1.5">
-        <div className="flex items-baseline gap-2 min-w-0">
-          <span className="text-sm text-slate-100">{hop.nhan}</span>
-          <span className="text-xs tabular-nums">
-            {moc.length === 0
-              ? <span className="text-slate-600">chưa có điểm</span>
-              : moc.map((m, i) => (
-                <span key={i}>
-                  {i > 0 && <span className="text-slate-600"> → </span>}
-                  <span className={m.xau ? 'text-rose-300' : 'text-slate-300'}>{m.chu}</span>
-                </span>
-              ))}
-          </span>
-        </div>
+    <div className="rounded-lg border min-w-max" style={{ borderColor: 'var(--line)' }}>
+      <div className="sticky-col flex flex-wrap items-center gap-2 px-2.5 pt-2.5 pb-1.5" style={{ width: 'max-content', maxWidth: '100%' }}>
+        <span className="text-sm text-slate-100">{hop.nhan}</span>
+        <span className="text-xs tabular-nums">
+          {moc.length === 0
+            ? <span className="text-slate-600">chưa có điểm</span>
+            : moc.map((m, i) => (
+              <span key={i}>
+                {i > 0 && <span className="text-slate-600"> → </span>}
+                <span className={m.xau ? 'text-rose-300' : 'text-slate-300'}>{m.chu}</span>
+              </span>
+            ))}
+        </span>
         {badge ? (
           <span className="text-[11px] rounded px-1.5 py-0.5" style={{ background: toneBg2(badge.tone) }}>{badge.chu}</span>
         ) : (
@@ -255,10 +274,16 @@ function HopKyNang({ hop, truc, colTemplate, homNay, onOpenCase }: {
         )}
       </div>
 
-      {hop.vanDe.length > 0 && (
-        <div className="overflow-x-auto space-y-1">
-          {hop.vanDe.map((v) => <VanDeHang key={v.caseId} v={v} truc={truc} colTemplate={colTemplate} homNay={homNay} onOpenCase={onOpenCase} />)}
+      {vanDeHienThi.length > 0 && (
+        <div className="space-y-1 pb-2.5">
+          {vanDeHienThi.map((v) => <VanDeHang key={v.caseId} v={v} truc={truc} colTemplate={colTemplate} homNay={homNay} onOpenCase={onOpenCase} />)}
         </div>
+      )}
+      {soAn > 0 && (
+        <button type="button" onClick={onXemCaGiaiDoan}
+          className="block text-left appearance-none bg-transparent border-0 px-2.5 pb-2.5 text-[11px] text-slate-500 hover:underline">
+          +{soAn} vấn đề cũ hơn — chọn "Cả giai đoạn"
+        </button>
       )}
     </div>
   );
@@ -268,7 +293,7 @@ function toneBg2(tone: 'ok' | 'warn' | 'danger'): string {
   return tone === 'ok' ? 'var(--ok)' : tone === 'danger' ? 'var(--danger)' : 'var(--warn)';
 }
 
-/** Một vấn đề: LƯỚI RIÊNG cùng khuôn cột — ô tên (bấm mở Case, spans mọi tầng) + các tầng khối phương án (`xepTang`). */
+/** Một vấn đề: LƯỚI RIÊNG cùng khuôn cột — ô tên (bấm mở Case, spans mọi tầng, GHIM TRÁI) + các tầng khối phương án (`xepTang`). */
 function VanDeHang({ v, truc, colTemplate, homNay, onOpenCase }: {
   v: VanDe; truc: Truc; colTemplate: string; homNay: string;
   onOpenCase: (caseId: number, paId?: number) => void;
@@ -279,7 +304,7 @@ function VanDeHang({ v, truc, colTemplate, homNay, onOpenCase }: {
 
   return (
     <div className="grid gap-y-0.5" style={{ gridTemplateColumns: colTemplate, gridTemplateRows: `repeat(${soTang}, 20px)` }}>
-      <div className="py-0.5 pr-2 min-w-0" style={{ gridRow: `1 / span ${soTang}`, gridColumn: 1 }}>
+      <div className="sticky-col py-0.5 pr-2 min-w-0" style={{ gridRow: `1 / span ${soTang}`, gridColumn: 1 }}>
         <button type="button" className="text-left appearance-none bg-transparent border-0 p-0 group w-full"
           onClick={() => onOpenCase(v.caseId)}>
           <span className="block text-xs text-slate-200 truncate group-hover:underline">{v.ten}</span>

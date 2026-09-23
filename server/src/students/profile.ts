@@ -2,7 +2,7 @@ import { db } from '../db.ts';
 import {
   ASSESSED_SKILLS, BASELINE_SOURCE_LABEL, CYCLE_OUTCOME_LABEL, ENTRY_SKILLS,
   ASSESSED_SKILL_LABEL, INTERVENTION_KIND_LABEL, JOURNEY_GROUP, PERMISSIONS,
-  caseHeadline, issueLabel, caseCategoryLabel, categoryOf, quaHan,
+  caseHeadline, issueLabel, caseCategoryLabel, categoryOf, quaHan, studyWeekOf,
   type AssessedSkill, type EntrySkill, type InterventionKind,
 } from '../../../shared/domain/index.ts';
 import { outcomeGroup } from '../cases/effectiveness.ts';
@@ -11,13 +11,13 @@ import { addDays, diffDays, notFound } from '../util.ts';
 import { can, require_, type Principal } from '../permissions.ts';
 import { entryBandsOf, scoresOf, skipsOf } from '../fasttrack/attempts.ts';
 import { assessedBands, evaluateAttempt } from '../fasttrack/scoring.ts';
-import { evaluateRegular, isRatioClass, isRatioCycle, programmeByCode, programmeCodeOfCycle, programmeOfClass } from '../normal/regular.ts';
+import { evaluateRegular, isRatioCycle, programmeByCode, programmeCodeOfCycle, programmeOfClass } from '../normal/regular.ts';
 import { cycleById, cyclesOf, currentCycle, examPlanOf, targetRevisions } from '../fasttrack/cycles.ts';
 import { parseMetrics, skillSupportBoard } from '../cases/cases.ts';
 import { standingFor, standingLine } from './standing.ts';
-import { classProgressMany, missingForStudent, suggestedMockWeeks } from '../classes/schedule.ts';
+import { missingForStudent, suggestedMockWeeks } from '../classes/schedule.ts';
 import { listSignals } from '../cases/signals.ts';
-import { ensurePeriod } from '../platform/week.ts';
+import { ensurePeriod, mondayOf } from '../platform/week.ts';
 import { canManageDiscipline } from '../yThuc/access.ts';
 
 /**
@@ -519,10 +519,14 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
     ?? null;
   if (selected && selected.student_id !== studentId) throw notFound('Lộ trình không thuộc học viên này');
 
+  // NGÂN SÁCH TRUY VẤN (sửa sau rà #75, vấn đề 5): widen JOIN có sẵn để lấy tuần bắt đầu của lớp
+  // — tránh gọi riêng `classProgressMany`/`isRatioClass` (bốn câu SQL cho một lớp) ở khối "khoa" dưới.
   const enrollments = conn
     .prepare(
-      `SELECT e.*, c.code AS class_code, c.kind AS class_kind, b.name AS branch_name
+      `SELECT e.*, c.code AS class_code, c.kind AS class_kind, b.name AS branch_name,
+              rp.week_start AS class_start_week
          FROM enrollments e JOIN classes c ON c.id = e.class_id JOIN branches b ON b.id = c.branch_id
+         LEFT JOIN report_periods rp ON rp.id = c.start_period_id
         WHERE e.student_id = ? ORDER BY e.started_at DESC, e.id DESC`,
     )
     .all(studentId) as any[];
@@ -730,6 +734,10 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
    */
   const signals = listSignals(p, { studentId, status: 'pending' }).rows;
 
+  // Đọc MỘT LẦN, dùng lại cho cả `programme` lẫn khối `khoa` dưới — tránh gọi lại `programmeOfClass`
+  // (và qua đó `isRatioClass`) hai lần cho cùng một lớp (sửa sau rà #75, vấn đề 5).
+  const progHienTai = current ? programmeOfClass(current.class_id) : null;
+
   return {
     id: s.id, studentCode: s.student_code, fullName: s.full_name, dob: s.dob,
     status: s.status, finishedAt: s.finished_at, archivedAt: s.archived_at,
@@ -740,7 +748,7 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
         id: current.class_id, code: current.class_code, kind: current.class_kind,
         branchName: current.branch_name,
         /* Chương trình của LỚP, và GVCN — hai thứ đầu hồ sơ phải nói ngay (mục 6.2 A). */
-        programme: programmeOfClass(current.class_id)?.name ?? null,
+        programme: progHienTai?.name ?? null,
         coreTeacher: (conn
           .prepare(
             `SELECT u.full_name FROM teacher_assignments t JOIN users u ON u.id = t.user_id
@@ -750,19 +758,17 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
         /*
          * KHOÁ ĐANG HỌC (Q18, PR-Qb) — chỉ lớp thường có, FT không có "tuần học của khoá" cố định.
          * Cùng cách tính `tuanKetThuc` với `hocVienLop.ts` (PR-Qa): tuần bắt đầu + (tổng tuần − 1) × 7 ngày.
+         * Tính thẳng từ `progHienTai` + `class_start_week` (đã lấy sẵn ở JOIN của `enrollments` phía
+         * trên) — KHÔNG gọi `isRatioClass`/`classProgressMany` riêng (bốn câu SQL thừa cho một lớp).
          */
-        khoa: isRatioClass(current.class_id)
-          ? (() => {
-            const prog = classProgressMany([current.class_id]).get(current.class_id);
-            if (!prog) return null;
-            return {
-              ma: prog.programmeCode,
-              tuanHienTai: prog.currentWeek,
-              tongTuan: prog.totalWeeks,
-              tuanKetThuc: prog.startWeekStart && prog.totalWeeks
-                ? addDays(prog.startWeekStart, (prog.totalWeeks - 1) * 7) : null,
-            };
-          })()
+        khoa: progHienTai?.scoringMode === 'ratio'
+          ? {
+            ma: progHienTai.code,
+            tuanHienTai: studyWeekOf(current.class_start_week, mondayOf(demoToday())),
+            tongTuan: progHienTai.weeks,
+            tuanKetThuc: current.class_start_week && progHienTai.weeks
+              ? addDays(current.class_start_week, (progHienTai.weeks - 1) * 7) : null,
+          }
           : null,
       }
       : null,

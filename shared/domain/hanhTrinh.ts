@@ -90,6 +90,18 @@ export function cotCua(ngay: string, truc: TrucTuan): number {
   return tuan < truc.tuan[0].thuHai ? 0 : truc.tuan.length - 1;
 }
 
+/**
+ * `tu..den` có GIAO khoảng đang xem không (sửa sau rà #75, vấn đề 2) — `cotCua` một mình chỉ biết
+ * KẸP về mép, không biết một mục NẰM HẲN NGOÀI khoảng để giao diện ẨN thay vì vẽ dính mép giả (mục
+ * hoàn toàn ở tháng 12 vẽ dính vào JAN W5 trông như nó đang chạy ở tuần đó). Gọi hàm này TRƯỚC
+ * `cotCua` để quyết định ẩn hay vẽ; mục còn mở (`den` = null) luôn coi là chạy tới hết khoảng đang xem.
+ */
+export function giaoKhoangXem(tu: string, den: string | null, khoang: { tu: string; den: string }): boolean {
+  const batDau = mondayOfDate(tu);
+  const ketThuc = den ? mondayOfDate(den) : khoang.den;
+  return batDau <= khoang.den && ketThuc >= khoang.tu;
+}
+
 // ====================================================================== tầng khối phương án (Q5)
 
 export type KhoiThoiGian = { id: number; tu: string; den: string | null; noiTiepTu?: number | null };

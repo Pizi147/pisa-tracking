@@ -88,6 +88,9 @@ export const DUONG_DO: MucDo[] = [
   { trang: 'Hồ sơ HV', vai: ['QL', 'QT', 'GVCN', 'GVBM'], url: '/students/{hv}/skill-board' },
   { trang: 'Hồ sơ HV', vai: ['QL', 'QT', 'GVCN', 'GVBM'], url: '/students/{hv}/violation-warning' },
   { trang: 'Hồ sơ HV', vai: ['QL', 'QT', 'GVCN', 'GVBM'], url: '/cases/{case}' },
+  /* PR-Qb (sửa sau rà #75, vấn đề 5) — tab Hành trình, cả giai đoạn mặc định lẫn ?giai-doan=thuong. */
+  { trang: 'Hồ sơ HV', vai: ['QL', 'QT', 'GVCN', 'GVBM'], url: '/students/{hv}/hanh-trinh' },
+  { trang: 'Hồ sơ HV', vai: ['QL', 'QT', 'GVCN', 'GVBM'], url: '/students/{hv}/hanh-trinh?giai-doan=thuong' },
 
   // ---------------------------------------------------------------- Danh sách Case
   { trang: 'Danh sách Case', vai: MOI_VAI, url: '/cases' },
@@ -96,6 +99,8 @@ export const DUONG_DO: MucDo[] = [
   // ---------------------------------------------------------------- Việc cần làm
   { trang: 'Việc cần làm', vai: MOI_VAI, url: '/tasks' },
   { trang: 'Việc cần làm', vai: ['QL', 'QT'], url: '/mgmt-tasks/mine' },
+  /* PR-Qb (sửa sau rà #75, vấn đề 5). */
+  { trang: 'Việc cần làm', vai: MOI_VAI, url: '/notifications' },
 ];
 
 /**
@@ -252,6 +257,15 @@ export const TRAN: Record<string, number> = {
   'QT /cases/1': 40,
   'GVCN /cases/1': 42,
   'GVBM /cases/1': 42,
+  // PR-Qb (sửa sau rà #75, vấn đề 5) — trần đo NGAY SAU khi bỏ isRatioClass/classProgressMany thừa ở profile.ts.
+  'QL /students/1/hanh-trinh': 39,
+  'QT /students/1/hanh-trinh': 38,
+  'GVCN /students/1/hanh-trinh': 40,
+  'GVBM /students/1/hanh-trinh': 40,
+  'QL /students/1/hanh-trinh?giai-doan=thuong': 38,
+  'QT /students/1/hanh-trinh?giai-doan=thuong': 37,
+  'GVCN /students/1/hanh-trinh?giai-doan=thuong': 39,
+  'GVBM /students/1/hanh-trinh?giai-doan=thuong': 39,
   'QL /cases': 28,
   'GVCN /cases': 28,
   'GVBM /cases': 28,
@@ -269,4 +283,10 @@ export const TRAN: Record<string, number> = {
   'QT /tasks': 23,
   'QL /mgmt-tasks/mine': 20,
   'QT /mgmt-tasks/mine': 20,
+  // PR-Qb (sửa sau rà #75, vấn đề 5).
+  'QL /notifications': 19,
+  'GVCN /notifications': 19,
+  'GVBM /notifications': 19,
+  'GVCN_THUONG /notifications': 19,
+  'QT /notifications': 19,
 };
