@@ -1,0 +1,46 @@
+ĐẠT  · QT: ⋮ mục cuối là "Xoá học viên" (Thông tin học viên · Lộ trình · Chuyển lớp · Kết luận lộ trình · Tạm dừng học · Kết thúc học · Xoá học viên)
+ĐẠT  · QT: có đường kẻ trên mục Xoá (màu chữ rgb(255, 154, 162))
+ĐẠT  · Panel: nút "Xoá vĩnh viễn" tắt khi chưa gõ mã
+ĐẠT  · Panel: gõ sai mã → nút vẫn tắt
+ĐẠT  · Panel: gõ đúng mã → nút bật
+ĐẠT  · Sau xoá: GET hồ sơ → 404
+ĐẠT  · Sau xoá: tìm mã ở Học viên & Lớp không thấy
+ĐẠT  · Sau xoá: khu Lưu trữ không thấy
+ĐẠT  · Kết thúc học → hồ sơ hiện dải "Học viên đã lưu trữ … chỉ xem"
+ĐẠT  · Em vừa kết thúc học có ở khu Lưu trữ
+ĐẠT  · Hồ sơ chỉ xem: ⋮ = Thông tin học viên · Lộ trình · Kết luận lộ trình · Bỏ lưu trữ · Xoá học viên
+ĐẠT  · Bỏ lưu trữ vẫn chạy (archived_at = NULL)
+ĐẠT  · QL: ⋮ không có Xoá học viên (Thông tin học viên · Lộ trình · Chuyển lớp · Kết luận lộ trình · Tạm dừng học · Kết thúc học)
+ĐẠT  · QL: GET /api/students/1/xoa → 403
+ĐẠT  · QL: POST xoá → 403
+ĐẠT  · GVCN: ⋮ không có Xoá học viên (Thông tin học viên · Lộ trình · Chuyển lớp · Kết luận lộ trình · Tạm dừng học · Kết thúc học)
+ĐẠT  · GVCN: GET /api/students/1/xoa → 403
+ĐẠT  · GVCN: POST xoá → 403
+ĐẠT  · GVBM: hồ sơ HV không có ⋮
+ĐẠT  · GVBM: GET xoá → 403
+ĐẠT  · GV có dấu vết → panel báo xoá mềm
+ĐẠT  · Panel cảnh báo lớp thiếu GV môn
+ĐẠT  · Nút Xoá tài khoản tắt khi chưa gõ email
+ĐẠT  · Gõ email (khác hoa thường) → nút bật
+ĐẠT  · Dòng GV rời "Đang dùng"
+ĐẠT  · Dòng GV có ở "Đã xoá" với tên (đã xoá)
+ĐẠT  · Sửa phân công: ô chọn không có GV đã xoá
+ĐẠT  · API ứng viên phân công không có GV đã xoá
+ĐẠT  · Case #4 người đó báo → tên "(đã xoá)"
+ĐẠT  · Tạo tài khoản mới → 200
+ĐẠT  · Tài khoản mới → "Chưa có dấu vết → xoá hẳn"
+ĐẠT  · Xoá hẳn: dòng users mất
+ĐẠT  · GVCN lớp đang học → dòng chặn, nút tắt
+ĐẠT  · Chính mình → chặn
+ĐẠT  · 375px: panel xoá HV toàn màn (rộng 375)
+ĐẠT  · 375px: panel xoá HV không cuộn ngang
+ĐẠT  · 375px: trang Tài khoản không cuộn ngang cả trang
+ĐẠT  · 375px: cuộn bảng tới cột ⋯ vẫn không cuộn ngang cả trang
+ĐẠT  · 375px: panel xoá tài khoản không cuộn ngang
+
+Lỗi console: [1] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2] Failed to load resource: the server responded with a status of 403 (Forbidden)
+[2] Failed to load resource: the server responded with a status of 403 (Forbidden)
+[7] Failed to load resource: the server responded with a status of 403 (Forbidden)
+[7] Failed to load resource: the server responded with a status of 403 (Forbidden)
+[9] Failed to load resource: the server responded with a status of 403 (Forbidden)

@@ -683,6 +683,12 @@ export async function runXoaDuLieuTests(t: YThucTestKit) {
     for (const r of cs) conn.prepare('UPDATE sos_cases SET owner_user_id = ? WHERE id = ?').run(g.id, r.id);
     const x = xoaTK.xemXoaTaiKhoan(P.admin, g.id);
     assert(x.canhBao.includes('Lớp MB-FT 101 sẽ thiếu GV môn Reading.'), x.canhBao.join(' | '));
+    /* Cùng môn ở lớp thứ hai → vẫn MỘT dòng, gộp mã lớp. */
+    conn.prepare(`INSERT INTO teacher_assignments (user_id, class_id, skill, is_core, effective_from, status, created_at)
+                  VALUES (?, ?, 'reading', 0, '2026-01-01', 'active', ?)`).run(g.id, t.classId('MB-FOU 12'), new Date().toISOString());
+    const x2 = xoaTK.xemXoaTaiKhoan(P.admin, g.id);
+    assert(x2.canhBao.includes('Lớp MB-FOU 12, MB-FT 101 sẽ thiếu GV môn Reading.') && x2.canhBao.filter((c) => /thiếu GV môn/.test(c)).length === 1,
+      x2.canhBao.join(' | '));
     assert(x.canhBao.some((c) => c === `Còn ${cs.length} Case/việc đang giao cho người này — đổi người phụ trách sau khi xoá.`), x.canhBao.join(' | '));
   });
 

@@ -143,9 +143,10 @@ export function xemXoaTaiKhoan(p: Principal, userId: number): XemXoaTaiKhoan {
         AND (ta.effective_to IS NULL OR ta.effective_to >= @homNay)
       ORDER BY c.code, ta.skill`,
   ).all({ u: userId, homNay }) as { code: string; skill: string }[];
-  const theoLop = new Map<string, string[]>();
-  for (const m of mon) theoLop.set(m.code, [...(theoLop.get(m.code) ?? []), tenKyNang(m.skill)]);
-  for (const [lop, ds] of theoLop) canhBao.push(`Lớp ${lop} sẽ thiếu GV môn ${ds.join(', ')}.`);
+  /* Gộp theo môn — một GV Speaking dạy 4 lớp là MỘT dòng "Lớp A, B, C, D sẽ thiếu GV môn Speaking.", không phải bốn. */
+  const theoMon = new Map<string, string[]>();
+  for (const m of mon) theoMon.set(m.skill, [...(theoMon.get(m.skill) ?? []), m.code]);
+  for (const [skill, lop] of theoMon) canhBao.push(`Lớp ${lop.join(', ')} sẽ thiếu GV môn ${tenKyNang(skill)}.`);
   /* Q12: việc đang giao cho người này. */
   const viec = (conn.prepare(
     `SELECT (SELECT COUNT(*) FROM sos_cases WHERE owner_user_id = @u AND status != 'done')
