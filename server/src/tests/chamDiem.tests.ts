@@ -218,21 +218,24 @@ export async function runChamDiemTests(t: YThucTestKit) {
     assert(demDoi === 0, `absence_move_count giữ 0 sau hai lần "-": ${demDoi}`);
   });
 
-  check('PR-Rc1 · Q4 Ghi "-" MUỘN (tuần mới đã qua) rồi gửi lại cùng lệnh thì không dời lần hai', () => {
+  check('PR-Rc1 · Q4 Ghi "-" bù (tuần mới đã qua): ghi lại cùng ngày thì dời tiếp — em vắng cả tuần đó', () => {
     assert(monCuaGv.length > 0, 'Seed: GVBM của MB-FOU 12 phải được phân công ít nhất một môn');
     const k = monCuaGv[0];
     const { attemptId } = taoBaiThuong('2026-09-14');
     const tuanMon = () => tuanCuaMon(skillSched.loadSkillRows([attemptId]).get(attemptId), k);
-    /* Hôm nay 05/10: cả 14/09 lẫn 21/09 đều đã qua. */
-    assert(regular.reportRegularNoShow(P.normalSubjectTeacher, attemptId, k, true, '2026-10-05').moved, 'Lần báo muộn vẫn dời');
-    assert(tuanMon() === '2026-09-21', `Báo muộn vẫn dời sang tuần kế của tuần thi: ${tuanMon()}`);
-    assert(String(dauCua(attemptId, k).no_show_at).slice(0, 10) === '2026-10-05', 'Ngày ghi dấu là ngày nghiệp vụ');
-    const lai = regular.reportRegularNoShow(P.normalSubjectTeacher, attemptId, k, true, '2026-10-05');
-    assert(!lai.moved && tuanMon() === '2026-09-21', `Gửi lại lệnh muộn là vô hại: ${tuanMon()}`);
+    /* Hôm nay 05/10: cả 14/09 lẫn 21/09 đều đã qua — giáo viên ghi bù hai tuần vắng liền nhau. */
+    assert(regular.reportRegularNoShow(P.normalSubjectTeacher, attemptId, k, true, '2026-10-05').moved, 'Lần ghi bù đầu vẫn dời');
+    assert(tuanMon() === '2026-09-21', `Dời sang tuần kế của tuần thi: ${tuanMon()}`);
+    assert(regular.reportRegularNoShow(P.normalSubjectTeacher, attemptId, k, true, '2026-10-05').moved,
+      'Tuần 21/09 đã tới → ghi lại là một lần vắng mới');
+    assert(tuanMon() === '2026-09-28', `Ghi bù lần hai sang 28/09: ${tuanMon()}`);
     const nk = (conn.prepare(
       `SELECT COUNT(*) AS n FROM audit_logs WHERE action = 'regular.no_show' AND entity_type = 'assessment_attempt' AND entity_id = ?`,
     ).get(attemptId) as any).n;
-    assert(nk === 1, `Chỉ một dòng nhật ký: ${nk}`);
+    assert(nk === 2, `Hai lần dời, hai dòng nhật ký: ${nk}`);
+    const demDoi = (conn.prepare('SELECT absence_move_count AS n FROM attempt_skills WHERE attempt_id = ? AND skill = ?')
+      .get(attemptId, k) as any)?.n;
+    assert(demDoi === 0, `absence_move_count giữ 0: ${demDoi}`);
   });
 
   check('PR-Rc1 · Q3+Q4 Gỡ dấu sau lần dời thứ hai chỉ lùi về 21/09 (tuần vừa dời khỏi), không về 14/09', () => {
