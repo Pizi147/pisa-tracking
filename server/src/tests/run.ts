@@ -9489,6 +9489,11 @@ await runFormTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, ad
 const { runPhanTichTests } = await import('./phanTich.tests.ts');
 await runPhanTichTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
+// ==================================================================== PR-YT2 (Ý thức đầy đủ)
+
+const { runYThucGonTests } = await import('./yThucGon.tests.ts');
+await runYThucGonTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
+
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`
