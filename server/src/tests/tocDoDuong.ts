@@ -66,6 +66,9 @@ export const DUONG_DO: MucDo[] = [
     trang: 'Phân tích QL', vai: ['QL', 'QT', 'GVCN'], url: '/phan-tich/y-thuc',
     maChuDich: { GVCN: 403 },
   },
+  { trang: 'Phân tích QL', vai: ['QL', 'QT'], url: '/phan-tich/bo-quen?loai=can-ho-tro-2-lan' },
+  { trang: 'Phân tích QL', vai: ['QL', 'QT'], url: '/metrics/hv-can-ho-tro-2-lan-chua-case' },
+  { trang: 'Phân tích QL', vai: ['QL', 'QT'], url: '/metrics/hv-bo-qua-van-can-ho-tro' },
 
   // ---------------------------------------------------------------- Tổng quan · Giáo viên
   { trang: 'Tổng quan GV', vai: ['GVCN', 'GVBM', 'GVCN_THUONG'], url: '/my-work' },
@@ -233,6 +236,13 @@ export const TRAN: Record<string, number> = {
   'QL /phan-tich/y-thuc': 26,
   'QT /phan-tich/y-thuc': 26,
   'GVCN /phan-tich/y-thuc': 20,
+  // PR-UX4 (5): boQuen dùng chung cho đường, hai chỉ số và hai dòng Cần xử lý — đo 22 câu (một lượt gọi, không nhân theo số HV).
+  'QL /phan-tich/bo-quen?loai=can-ho-tro-2-lan': 32,
+  'QT /phan-tich/bo-quen?loai=can-ho-tro-2-lan': 32,
+  'QL /metrics/hv-can-ho-tro-2-lan-chua-case': 32,
+  'QT /metrics/hv-can-ho-tro-2-lan-chua-case': 32,
+  'QL /metrics/hv-bo-qua-van-can-ho-tro': 32,
+  'QT /metrics/hv-bo-qua-van-can-ho-tro': 32,
   'GVCN /my-work': 60,
   'GVBM /my-work': 62,
   'GVCN_THUONG /my-work': 60,

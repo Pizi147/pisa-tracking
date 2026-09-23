@@ -98,8 +98,15 @@ export function studentsInScope(p: Principal, branchId: number | null): number[]
   });
 }
 
-/** Các đợt (không huỷ) của một nhóm học viên, đã xếp MỚI NHẤT TRƯỚC cho từng em. */
-function attemptsNewestFirst(studentIds: number[]): Map<number, any[]> {
+/**
+ * Các đợt (không huỷ) của một nhóm học viên, đã xếp MỚI NHẤT TRƯỚC cho từng em.
+ * PR-UX4: xuất ra để `phanTich/boQuen.ts` dùng, và nhớ trong request (cùng kiểu `latestAttempts`) — hai nơi cùng một request
+ * (Tổng quan QL gọi cả ba chỉ số hiện trạng lẫn hai chỉ số "bỏ quên") chỉ đọc lượt MỘT lần. Người gọi KHÔNG được sửa kết quả.
+ */
+export function attemptsNewestFirst(studentIds: number[]): Map<number, any[]> {
+  return nho(`luot-hv:${studentIds.join(',')}`, () => attemptsNewestFirstGoc(studentIds));
+}
+function attemptsNewestFirstGoc(studentIds: number[]): Map<number, any[]> {
   const out = new Map<number, any[]>();
   for (let i = 0; i < studentIds.length; i += 400) {
     const chunk = studentIds.slice(i, i + 400);

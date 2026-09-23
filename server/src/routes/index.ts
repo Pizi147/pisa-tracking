@@ -4,7 +4,7 @@ import { db, isInitialised } from '../db.ts';
 import { laBanChinh } from '../moiTruong.ts';
 import {
   ENTRY_SKILLS, ENTRY_SKILL_LABEL, ISSUE_TAXONOMY, THEO_DONG,
-  PERMISSIONS, REGULAR_SKILLS, ROLE_LABEL, WORK_SCOPES, chuongTrinhTuThamSo, khoangTuThamSo, thamSoNguoi, tuDauKhoang,
+  PERMISSIONS, REGULAR_SKILLS, ROLE_LABEL, WORK_SCOPES, chuongTrinhTuThamSo, khoangTuThamSo, laLoaiBoQuen, thamSoNguoi, tuDauKhoang,
   type Role, type TheoDong, type WorkScope,
 } from '../../../shared/domain/index.ts';
 import { transferReasonText } from '../../../shared/domain/index.ts';
@@ -77,6 +77,7 @@ import * as tongHopSvc from '../phanTich/tongHop.ts';
 import * as vanDeHvSvc from '../phanTich/vanDeHv.ts';
 import * as hieuQuaPaSvc from '../phanTich/hieuQuaPa.ts';
 import * as yThucPhanTichSvc from '../phanTich/yThucPhanTich.ts';
+import * as boQuenSvc from '../phanTich/boQuen.ts';
 import { metricResponse, metricSet, rowsFor } from '../worklist/metrics.ts';
 import { myWork } from '../worklist/mywork.ts';
 import { nhacViec } from '../worklist/nhacViec.ts';
@@ -642,6 +643,15 @@ api.get('/phan-tich/y-thuc/o', requireAuth, wrap((req) => {
   return yThucPhanTichSvc.oYThucPhanTich(principalOf(req), {
     ...filterYThucPhanTichOf(req), dong: qStr(req, 'dong') ?? '', cot: qStr(req, 'cot') ?? '',
   });
+}));
+/* Hai việc "bỏ quên" (PR-UX4, Q17–Q19): bộ lọc ở Danh sách Case, cùng tập với hai dòng Cần xử lý ở Tổng quan. */
+api.get('/phan-tich/bo-quen', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  const loai = qStr(req, 'loai');
+  if (!laLoaiBoQuen(loai)) throw badRequest('Loại danh sách không hợp lệ.');
+  return boQuenSvc.danhSachBoQuen(principalOf(req), {
+    branchId: qInt(req, 'branchId') ?? null, ct: chuongTrinhTuThamSo(qStr(req, 'ct')), loai,
+  }, demoToday());
 }));
 
 /** Việc sinh ra từ dữ liệu — tự hết khi nguồn được xử lý, không có nút đóng giả. */

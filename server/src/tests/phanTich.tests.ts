@@ -864,6 +864,164 @@ export async function runPhanTichTests(t: YThucTestKit) {
     assert(n4 <= 12, `quá nhiều câu SQL: ${n4} (tối đa 12)`);
   });
 
+  // ================================================================== Task 5 — hai dòng "bỏ quên" (PR-UX4)
+
+  console.log('\nPR-UX4 · Bỏ quên: Cần xử lý + bộ lọc Danh sách Case');
+  const boQuenSvc: any = await import('../phanTich/boQuen.ts');
+  const tongQuanSvc: any = await import('../worklist/tongQuan.ts');
+  const CID_THUONG = classId('MB-FOU 12');
+  const LOAI_BQ = ['can-ho-tro-2-lan', 'bo-qua-van-can-ho-tro'] as const;
+  const METRIC_BQ = { 'can-ho-tro-2-lan': 'hv-can-ho-tro-2-lan-chua-case', 'bo-qua-van-can-ho-tro': 'hv-bo-qua-van-can-ho-tro' } as const;
+  const taoBoQuen = () => {
+    const kit = baiTapUx4();
+    const tao = { luot: [] as number[], chuKy: [] as number[], tinHieu: [] as number[] };
+    const now = new Date().toISOString();
+    const tuanCuoi = (conn.prepare('SELECT MAX(week_start) AS m FROM report_periods').get() as any).m as string;
+    const tuan = (k: number) => week.mondayOf(cong(tuanCuoi, 7 * k));
+    const luot = (sid: number, cid: number, kind: string, no: number, k: number, diem: Record<string, any>): number => {
+      const cyc = Number(conn.prepare(
+        `INSERT INTO learning_cycles (student_id, seq, route, programme_code, started_at, status, created_at) VALUES (?, ?, 'LT1', NULL, '2026-07-27', 'active', ?)`,
+      ).run(sid, no, now).lastInsertRowid);
+      tao.chuKy.push(cyc);
+      const id = Number(conn.prepare(
+        `INSERT INTO assessment_attempts (cycle_id, student_id, attempt_no, kind, class_id, planned_period_id, target_at_attempt, status, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, 6.0, 'planned', ?)`,
+      ).run(cyc, sid, no, kind, cid, week.ensurePeriod(tuan(k)).id, now).lastInsertRowid);
+      for (const [skill, v] of Object.entries(diem)) {
+        conn.prepare(`INSERT INTO assessment_scores (attempt_id, skill, band, raw_score, raw_total, entered_at) VALUES (?,?,?,?,?,?)`)
+          .run(id, skill, v.band ?? null, v.raw ?? null, v.tong ?? null, now);
+      }
+      tao.luot.push(id);
+      return id;
+    };
+    return {
+      kit, tuan,
+      /** Lượt MT của lớp FT với Writing W1 = W2 = `w` (dưới kỳ vọng nếu thấp). */
+      ft: (sid: number, no: number, k: number, w: number) => luot(sid, CID_FT, 'mock', no, k, { writing1: { band: w }, writing2: { band: w } }),
+      /** Lượt Giữa/Cuối khoá của lớp thường với Writing `dung/tong`. */
+      thuong: (sid: number, kind: 'progress' | 'final', k: number, dung: number, tong = 10) =>
+        luot(sid, CID_THUONG, kind, kind === 'progress' ? 1 : 2, k, { writing: { raw: dung, tong } }),
+      tinHieu(sid: number, cid: number, attemptId: number, status: string, resolvedAt: string | null): number {
+        const id = Number(conn.prepare(
+          `INSERT INTO case_signals (student_id, attempt_id, class_id, skill, category, detected_on, raised_on, verify_due, status, resolved_at, created_at)
+           VALUES (?,?,?, 'writing', 'writing', ?, ?, ?, ?, ?, ?)`,
+        ).run(sid, attemptId, cid, TODAY, TODAY, TODAY, status, resolvedAt, now).lastInsertRowid);
+        tao.tinHieu.push(id);
+        return id;
+      },
+      don() {
+        for (const id of tao.tinHieu) conn.prepare('DELETE FROM case_signals WHERE id = ?').run(id);
+        for (const id of tao.luot) { conn.prepare('DELETE FROM assessment_scores WHERE attempt_id = ?').run(id); conn.prepare('DELETE FROM assessment_attempts WHERE id = ?').run(id); }
+        for (const id of tao.chuKy) conn.prepare('DELETE FROM learning_cycles WHERE id = ?').run(id);
+        kit.don();     // Case + học viên (Case của kit không gắn lượt nên xoá sau lượt được)
+      },
+    };
+  };
+  const hangCua = (loai: string, sid: number, p = P.admin) => boQuenSvc.boQuen(p, null, TODAY)[loai].find((r: any) => r.studentId === sid);
+
+  check('UX4 · Bỏ quên: FT hai lượt dưới kỳ vọng cùng Writing, không Case → có; Case mở writing2 → mất; Case đóng → có lại, chiTiet "Case đóng"', () => {
+    const b = taoBoQuen();
+    try {
+      const x = b.kit.hv(CID_FT, 'bq1');
+      b.ft(x, 4, 1, 3.0); b.ft(x, 5, 2, 3.0);
+      const r = hangCua('can-ho-tro-2-lan', x);
+      assert(!!r, 'em có hai lượt Writing dưới kỳ vọng, chưa Case → phải có');
+      eq([r.kyNang, r.chiTiet, r.tu], ['W', 'MT4, MT5 dưới kỳ vọng · chưa có Case', d.tuanLich(b.tuan(2))], 'dòng chi tiết');
+      assert(r.chiTiet.length <= 60 && typeof r.lop === 'string', 'chiTiet ≤ 60 ký tự, có lớp');
+      const caId = b.kit.ca(x, 'writing2', [], { status: 'open' });
+      assert(!hangCua('can-ho-tro-2-lan', x), 'Case mở writing2 (cùng họ Writing với W1/W2) → mất');
+      conn.prepare(`UPDATE sos_cases SET status = 'done', closed_at = ? WHERE id = ?`).run(cong(TODAY, -3), caId);
+      const lai = hangCua('can-ho-tro-2-lan', x);
+      assert(!!lai, 'Case đã đóng thì không chặn → có lại');
+      assert(lai.chiTiet.includes(`Case đóng ${d.ngay(cong(TODAY, -3))}`), `chiTiet phải nói Case đóng: ${lai.chiTiet}`);
+      assert(!hangCua('bo-qua-van-can-ho-tro', x), 'FT không có bước Bỏ qua → không vào dòng 2');
+    } finally { b.don(); }
+  });
+
+  check('UX4 · Bỏ quên: lượt sau đạt → không có; chỉ một lượt → không có; Case mở khác họ kỹ năng không chặn', () => {
+    const b = taoBoQuen();
+    try {
+      const a = b.kit.hv(CID_FT, 'bq2a'), c = b.kit.hv(CID_FT, 'bq2c'), e = b.kit.hv(CID_FT, 'bq2e');
+      b.ft(a, 4, 1, 3.0); b.ft(a, 5, 2, 9.0);      // lượt mới nhất đạt
+      b.ft(c, 5, 2, 3.0);                          // chỉ một lượt
+      b.ft(e, 4, 1, 3.0); b.ft(e, 5, 2, 3.0);
+      b.kit.ca(e, 'listening', [], { status: 'open' });   // Case mở của Listening, không phải Writing
+      assert(!hangCua('can-ho-tro-2-lan', a), 'lượt mới nhất đạt → không');
+      assert(!hangCua('can-ho-tro-2-lan', c), 'một lượt → không');
+      assert(!!hangCua('can-ho-tro-2-lan', e), 'Case mở khác họ kỹ năng → vẫn có');
+    } finally { b.don(); }
+  });
+
+  check('UX4 · Bỏ quên: tín hiệu noted + lượt sau chưa đạt cùng họ → có; lượt sau đạt → không; Case mở → không; lớp thường nói "Giữa khoá, Cuối khoá chưa đạt"', () => {
+    const b = taoBoQuen();
+    try {
+      const z = b.kit.hv(CID_THUONG, 'bq3z'), y = b.kit.hv(CID_THUONG, 'bq3y'), w = b.kit.hv(CID_THUONG, 'bq3w');
+      const zCu = b.thuong(z, 'progress', 1, 2); b.thuong(z, 'final', 2, 3);       // 2/10 rồi 3/10: chưa đạt hai lần
+      b.tinHieu(z, CID_THUONG, zCu, 'noted', cong(TODAY, -10));
+      const yCu = b.thuong(y, 'progress', 1, 2); b.thuong(y, 'final', 2, 9);       // lần sau đạt
+      b.tinHieu(y, CID_THUONG, yCu, 'noted', cong(TODAY, -10));
+      const wCu = b.thuong(w, 'progress', 1, 2); b.thuong(w, 'final', 2, 3);
+      b.tinHieu(w, CID_THUONG, wCu, 'noted', cong(TODAY, -10));
+      b.kit.ca(w, 'writing', [], { status: 'open' });
+      const r1 = hangCua('can-ho-tro-2-lan', z), r2 = hangCua('bo-qua-van-can-ho-tro', z);
+      assert(!!r1 && !!r2, 'z có ở cả hai dòng');
+      eq(r1.chiTiet, 'Giữa khoá, Cuối khoá chưa đạt · chưa có Case', 'lớp thường nói "chưa đạt"');
+      eq(r2.chiTiet, `Bỏ qua ${d.ngay(cong(TODAY, -10))} · Cuối khoá vẫn chưa đạt`, 'chi tiết dòng 2');
+      eq(r2.kyNang, 'W', 'kỹ năng');
+      assert(!hangCua('bo-qua-van-can-ho-tro', y), 'lượt sau đạt → không');
+      assert(!hangCua('bo-qua-van-can-ho-tro', w) && !hangCua('can-ho-tro-2-lan', w), 'Case mở cùng họ → không cả hai');
+    } finally { b.don(); }
+  });
+
+  check("UX4 · Bỏ quên: n của /phan-tich/bo-quen = metricSet(...).n cho 2 loại × 3 ct; Cần xử lý hiện 2 dòng khi n>0, số = metricSet", () => {
+    const b = taoBoQuen();
+    try {
+      const x = b.kit.hv(CID_FT, 'bq4x'); b.ft(x, 4, 1, 3.0); b.ft(x, 5, 2, 3.0);
+      const z = b.kit.hv(CID_THUONG, 'bq4z'); const zCu = b.thuong(z, 'progress', 1, 2); b.thuong(z, 'final', 2, 3);
+      b.tinHieu(z, CID_THUONG, zCu, 'noted', cong(TODAY, -10));
+      for (const loai of LOAI_BQ) {
+        for (const ct of ['ca-hai', 'ft', 'thuong']) {
+          const dk = boQuenSvc.danhSachBoQuen(P.admin, { branchId: null, ct, loai }, TODAY);
+          const so = metricsUx4.metricSet(P.admin, METRIC_BQ[loai], { program: ct });
+          eq([dk.n, dk.rows.length], [so.n, so.ids.length], `${loai} × ${ct}: đường Danh sách Case = sổ chỉ số`);
+          eq([...dk.rows.map((r: any) => r.studentId)].sort((p, q) => p - q), so.ids, `${loai} × ${ct}: cùng tập HV`);
+        }
+      }
+      assert(!!hangCua('can-ho-tro-2-lan', x) && !!hangCua('bo-qua-van-can-ho-tro', z), 'dữ liệu dựng phải vào hai danh sách');
+      const tq = tongQuanSvc.tongQuanQuanLy(P.admin, { ct: 'ca-hai' });
+      for (const loai of LOAI_BQ) {
+        const dong = tq.canXuLy.find((r: any) => r.metricId === METRIC_BQ[loai]);
+        assert(!!dong, `Cần xử lý phải hiện dòng ${METRIC_BQ[loai]} khi n > 0`);
+        eq(dong.n, metricsUx4.metricSet(P.admin, METRIC_BQ[loai], { program: 'ca-hai' }).n, `${loai}: số dòng = metricSet`);
+        eq([dong.denLoc, dong.nut, dong.mau], [loai, 'Xem', 'vang'], `${loai}: nút Xem → bộ lọc, màu vàng`);
+      }
+      assert(tq.canXuLy.length <= 10, 'Cần xử lý tối đa 10 dòng');
+      const chiNhanh = boQuenSvc.danhSachBoQuen(P.mbManager, { branchId: mbBranch, ct: 'ca-hai', loai: 'can-ho-tro-2-lan' }, TODAY);
+      eq(chiNhanh.n, metricsUx4.metricSet(P.mbManager, METRIC_BQ['can-ho-tro-2-lan'], { branchId: mbBranch, program: 'ca-hai' }).n, 'QL chi nhánh: cùng số với sổ');
+    } finally { b.don(); }
+  });
+
+  check('UX4 · Bỏ quên — quyền: GVCN 403; QL chi nhánh khác 403', () => {
+    eq(boiHttp(() => boQuenSvc.danhSachBoQuen(P.coreTeacher, { branchId: null, ct: 'ca-hai', loai: 'can-ho-tro-2-lan' }, TODAY)), 403, 'GVCN');
+    eq(boiHttp(() => boQuenSvc.danhSachBoQuen(P.mbManager, { branchId: cpBranch, ct: 'ca-hai', loai: 'can-ho-tro-2-lan' }, TODAY)), 403, 'QL Monbay hỏi CP');
+    eq(boiHttp(() => boQuenSvc.danhSachBoQuen(P.mbManager, { branchId: mbBranch, ct: 'ca-hai', loai: 'bo-qua-van-can-ho-tro' }, TODAY)), 200, 'QL Monbay hỏi mình');
+    assert(d.laLoaiBoQuen('can-ho-tro-2-lan') && !d.laLoaiBoQuen('xyz'), 'laLoaiBoQuen');
+  });
+
+  await checkAsync('UX4 · Bỏ quên: không N+1 — thêm nhiều HV có lượt thì số câu SQL của boQuen gần như không đổi', async () => {
+    const b = taoBoQuen();
+    try {
+      const n1 = await demCauHoi(() => boQuenSvc.boQuen(P.admin, null, TODAY));
+      for (let i = 0; i < 6; i++) {
+        const x = b.kit.hv(CID_FT, `bq6-${i}`);
+        b.ft(x, 4, 1, 3.0); b.ft(x, 5, 2, 3.0);
+      }
+      const n2 = await demCauHoi(() => boQuenSvc.boQuen(P.admin, null, TODAY));
+      assert(n2 <= n1 + 2, `số câu SQL tăng theo số HV: ${n1} → ${n2}`);
+      assert(n2 <= 16, `quá nhiều câu SQL: ${n2} (tối đa 16)`);
+    } finally { b.don(); }
+  });
+
   // ================================================================== Task 4 — P15: Phối hợp SOS chia SOS 1/2/3, bỏ N+1
 
   console.log('\nPR-Pb · P15 — Phối hợp SOS chia SOS 1/2/3');
