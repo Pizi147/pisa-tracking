@@ -404,3 +404,4 @@ Kịch bản (mỗi kịch bản ≥ 1 ảnh `thiet-ke/anh/pr-yt2/NN-ten.png`):
 
 | Ngày | Task | Ghi |
 |---|---|---|
+| 23/09 | 2 | Kế hoạch ghi `chuKy.cycleId = currentCycle(id)?.id ?? null` cho MỌI học viên. Mã thật (`intake.ts` dòng ~430 "mở lộ trình cho mọi em") tạo `learning_cycles` cho CẢ lớp thường, chỉ khác là `route = null` (lớp thường dùng `programme_code`) — `cycleLabel` ở `students/profile.ts:48` cũng phân biệt hai loại bằng `route`. Nếu giữ nguyên như kế hoạch, `cycleId` sẽ khác `null` cho lớp thường, phá luật Q14 ("lớp thường = khoá đang học"). Sửa thành `cyc?.route ? cyc.id : null`. |

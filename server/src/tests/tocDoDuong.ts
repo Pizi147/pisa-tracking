@@ -65,6 +65,7 @@ export const DUONG_DO: MucDo[] = [
   { trang: 'Hồ sơ lớp FT', vai: MOI_VAI, url: '/classes/{lopFT}/issue-board?category=listening' },
   { trang: 'Hồ sơ lớp FT', vai: MOI_VAI, url: '/classes/{lopFT}/phan-tich-lop' },
   { trang: 'Hồ sơ lớp FT', vai: MOI_VAI, url: '/classes/{lopFT}/y-thuc' },
+  { trang: 'Hồ sơ lớp FT', vai: MOI_VAI, url: '/classes/{lopFT}/violations' },
   { trang: 'Hồ sơ lớp FT', vai: MOI_VAI, url: '/classes/{lopFT}/cham' },
   { trang: 'Hồ sơ lớp FT', vai: MOI_VAI, url: '/cases?classId={lopFT}' },
 
@@ -198,6 +199,12 @@ export const TRAN: Record<string, number> = {
   'GVBM /classes/3/y-thuc': 88,
   'GVCN_THUONG /classes/3/y-thuc': 88,
   'QT /classes/3/y-thuc': 81,
+  // PR-YT2 (2), 23/09/2026 — mốc chốt ngay sau khi thêm đường, đo được 13 câu (QT 12 câu): max(sau+10, ⌈sau×1.3⌉).
+  'QL /classes/3/violations': 23,
+  'GVCN /classes/3/violations': 23,
+  'GVBM /classes/3/violations': 23,
+  'GVCN_THUONG /classes/3/violations': 23,
+  'QT /classes/3/violations': 22,
   'QL /classes/3/cham': 35,
   'GVCN /classes/3/cham': 35,
   'GVBM /classes/3/cham': 35,
