@@ -1,12 +1,11 @@
 /**
- * PHÉP KIỂM PR-LT — Lên lớp, chuyển lớp: luật thuần (Task 1, `shared/domain/lenLop.ts`).
- * Harness (`check`, `assert`, dữ liệu demo) do `run.ts` sở hữu và truyền vào — file này không tự mở database
- * ở Task 1 (không cần `conn`).
+ * PHÉP KIỂM PR-LT — Lên lớp, chuyển lớp.
+ * Harness (`check`, `assert`, dữ liệu demo) do `run.ts` sở hữu và truyền vào.
  */
 import type { YThucTestKit } from './yThuc.tests.ts';
 
 export async function runLenLopTests(t: YThucTestKit) {
-  const { check, assert } = t;
+  const { check, assert, conn } = t;
   const d = await import('../../../shared/domain/index.ts');
   console.log('\nPR-LT · Lên lớp, chuyển lớp: luật thuần');
 
@@ -191,5 +190,89 @@ export async function runLenLopTests(t: YThucTestKit) {
       assert(!/Normal/i.test(day) && !/^MT\d/.test(day), `Nhãn đầy đủ "${day}" dính chữ cấm`);
       assert(!/Normal/i.test(ngan) && !/^MT\d/.test(ngan), `Nhãn ngắn "${ngan}" dính chữ cấm`);
     }
+  });
+
+  // ==================================================================== Task 2 — Migrate + schema
+
+  console.log('\nPR-LT (2) · Migrate — bảng lo_trinh_tiep_theo, cột enrollments.end_kind, classes.finished_at');
+
+  const fsMod = await import('node:fs');
+  const pathMod = await import('node:path');
+  const { fileURLToPath } = await import('node:url');
+  const { default: SqliteDb } = await import('libsql');
+  const migrateMod: any = await import('../migrate.ts');
+  const REPO = pathMod.resolve(fileURLToPath(new URL('../../../../', import.meta.url)));
+  const SCHEMA = fsMod.readFileSync(pathMod.join(REPO, 'server/src/schema.sql'), 'utf8');
+  const colsOf = (db: any, table: string): string[] =>
+    (db.prepare(`PRAGMA table_info(${table})`).all() as any[]).map((c) => `${c.name}:${c.type}:${c.notnull}`);
+  const idxOf = (db: any, table: string): string[] =>
+    (db.prepare(`PRAGMA index_list(${table})`).all() as any[]).map((i) => i.name).sort();
+  /** Database THỜI TRƯỚC PR-LT: schema hiện tại, gỡ đúng bảng + hai cột + chỉ mục PR-LT thêm. */
+  const preLT = () => {
+    const m = new SqliteDb(':memory:');
+    m.exec(SCHEMA);
+    m.exec(`DROP TABLE lo_trinh_tiep_theo;
+            DROP INDEX idx_class_status;
+            ALTER TABLE enrollments DROP COLUMN end_kind;
+            ALTER TABLE classes DROP COLUMN finished_at;`);
+    return m;
+  };
+
+  check('PR-LT (2) · Migrate: database dựng từ schema.sql có bảng lo_trinh_tiep_theo và hai cột mới', () => {
+    const cols = colsOf(conn, 'lo_trinh_tiep_theo').map((c) => c.split(':')[0]);
+    for (const c of ['student_id', 'class_id', 'huong', 'lop_du_kien_id', 'muc_tieu', 'thang_thi', 'ghi_chu', 'ly_do',
+      'ngay_xem_lai', 'da_ap_dung_luc', 'updated_by', 'created_at', 'updated_at']) {
+      assert(cols.includes(c), `lo_trinh_tiep_theo thiếu cột ${c}`);
+    }
+    assert(colsOf(conn, 'enrollments').map((c) => c.split(':')[0]).includes('end_kind'), 'enrollments thiếu end_kind');
+    assert(colsOf(conn, 'classes').map((c) => c.split(':')[0]).includes('finished_at'), 'classes thiếu finished_at');
+  });
+
+  check('PR-LT (2) · Migrate: database cũ được nâng cấp đúng bảng/cột/chỉ mục như schema.sql (cùng tên, kiểu, chỉ mục)', () => {
+    const m = preLT();
+    const applied: string[] = [];
+    migrateMod.migrateLenLop(m, applied);
+    assert(applied.length === 1 && /PR-LT/.test(applied[0]), `Phải báo đúng một dòng PR-LT: ${applied.join(' | ')}`);
+    const fresh = new SqliteDb(':memory:');
+    fresh.exec(SCHEMA);
+    for (const tb of ['lo_trinh_tiep_theo', 'enrollments', 'classes']) {
+      assert(JSON.stringify(colsOf(m, tb)) === JSON.stringify(colsOf(fresh, tb)),
+        `${tb} sau nâng cấp khác schema.sql:\n  ${colsOf(m, tb).join(',')}\n  ${colsOf(fresh, tb).join(',')}`);
+    }
+    for (const tb of ['lo_trinh_tiep_theo', 'classes']) {
+      assert(JSON.stringify(idxOf(m, tb)) === JSON.stringify(idxOf(fresh, tb)), `Chỉ mục của ${tb} khác schema.sql`);
+    }
+  });
+
+  check('PR-LT (2) · Migrate: chạy lần hai không làm gì; database mới từ schema.sql không có gì để nâng cấp; UNIQUE(student_id, class_id) chặn trùng', () => {
+    const m = preLT();
+    migrateMod.migrateLenLop(m, []);
+    const again: string[] = [];
+    migrateMod.migrateLenLop(m, again);
+    assert(again.length === 0, `Lần hai phải không làm gì: ${again.join(' | ')}`);
+    const fresh = new SqliteDb(':memory:');
+    fresh.exec(SCHEMA);
+    const none: string[] = [];
+    migrateMod.migrateLenLop(fresh, none);
+    assert(none.length === 0, `Database mới không được có gì để nâng cấp: ${none.join(' | ')}`);
+    const now = new Date().toISOString();
+    m.pragma('foreign_keys = OFF');   // chỉ kiểm UNIQUE của lo_trinh_tiep_theo, không cần dựng đủ branch/class thật
+    m.prepare(`INSERT INTO students (student_code, full_name, normalized_name, branch_id, status, created_at) VALUES ('PISA-LT2','x','x',1,'active',?)`).run(now);
+    m.prepare(`INSERT INTO classes (code, branch_id, kind, status, created_at) VALUES ('PISA-LT2-CLS',1,'FOU','active',?)`).run(now);
+    const sid = (m.prepare('SELECT id FROM students ORDER BY id DESC LIMIT 1').get() as any).id;
+    const cid = (m.prepare('SELECT id FROM classes ORDER BY id DESC LIMIT 1').get() as any).id;
+    const ins = () => m.prepare(
+      `INSERT INTO lo_trinh_tiep_theo (student_id, class_id, huong, created_at, updated_at) VALUES (?,?,'chua_ro',?,?)`,
+    ).run(sid, cid, now, now);
+    ins();
+    let threw = false;
+    try { ins(); } catch { threw = true; }
+    assert(threw, 'UNIQUE(student_id, class_id) phải chặn dòng trùng');
+  });
+
+  check('PR-LT (2) · Migrate: `migrate()` trọn chuỗi chạy hai lần trên database đang dùng, lần hai không áp lại bước PR-LT', () => {
+    migrateMod.migrate();
+    const second = migrateMod.migrate();
+    assert(!second.applied.some((x: string) => /PR-LT/.test(x)), `Lần hai áp lại PR-LT: ${second.applied.join(' | ')}`);
   });
 }

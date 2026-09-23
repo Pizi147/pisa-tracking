@@ -446,6 +446,8 @@ function migrateCaseEngine(applied: string[], skipped: string[]) {
     migrateDieuChinhPa(conn, applied);
     /* PR-Ra: người cần hỗ trợ khi Tạm ngưng, lý do dời hạn, nháp/nộp báo cáo, nối báo cáo ↔ việc. */
     migrateCongViec(conn, applied);
+    /* PR-LT: Lộ trình tiếp theo, end_kind, khu Lưu trữ. */
+    migrateLenLop(conn, applied);
 
     /*
      * Case đã đóng theo hệ thống cũ mà không có hướng xử lý: ghi rõ là "đóng theo hệ thống
@@ -3216,4 +3218,49 @@ export function migrateCongViec(conn: any, applied: string[]) {
   }
   if (!done.length) return;
   applied.push(`PR-Ra: thêm ${done.join(', ')}. Dữ liệu cũ giữ nguyên.`);
+}
+
+/**
+ * PR-LT: bảng `lo_trinh_tiep_theo` (Q1) + cột `enrollments.end_kind` (Q18) + `classes.finished_at` (Q16).
+ * Câu CREATE giống hệt `schema.sql` — chạy lặp không làm gì, không điền dữ liệu cũ.
+ */
+export function migrateLenLop(conn: any, applied: string[]) {
+  const hasTable = (t: string) => !!conn.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name = ?").get(t);
+  const cols = (t: string): string[] => (conn.prepare(`PRAGMA table_info(${t})`).all() as any[]).map((c: any) => c.name);
+  if (!hasTable('classes') || !hasTable('enrollments') || !hasTable('students')) return;
+  const done: string[] = [];
+  if (!hasTable('lo_trinh_tiep_theo')) {
+    conn.exec(`
+      CREATE TABLE lo_trinh_tiep_theo (
+        id INTEGER PRIMARY KEY,
+        student_id INTEGER NOT NULL REFERENCES students(id),
+        class_id INTEGER NOT NULL REFERENCES classes(id),
+        huong TEXT NOT NULL,
+        lop_du_kien_id INTEGER REFERENCES classes(id),
+        muc_tieu REAL,
+        thang_thi TEXT,
+        ghi_chu TEXT,
+        ly_do TEXT,
+        ngay_xem_lai TEXT,
+        da_ap_dung_luc TEXT,
+        updated_by INTEGER REFERENCES users(id),
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        UNIQUE (student_id, class_id)
+      );
+      CREATE INDEX idx_ltt_class ON lo_trinh_tiep_theo(class_id);
+    `);
+    done.push('bảng lo_trinh_tiep_theo');
+  }
+  if (!cols('enrollments').includes('end_kind')) {
+    conn.exec(`ALTER TABLE enrollments ADD COLUMN end_kind TEXT`);
+    done.push('enrollments.end_kind');
+  }
+  if (!cols('classes').includes('finished_at')) {
+    conn.exec(`ALTER TABLE classes ADD COLUMN finished_at TEXT`);
+    done.push('classes.finished_at');
+  }
+  conn.exec(`CREATE INDEX IF NOT EXISTS idx_class_status ON classes(status)`);
+  if (!done.length) return;
+  applied.push('PR-LT: thêm bảng lo_trinh_tiep_theo, cột enrollments.end_kind, classes.finished_at. Dữ liệu cũ giữ nguyên.');
 }
