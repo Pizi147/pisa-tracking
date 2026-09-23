@@ -15,6 +15,7 @@ export async function runKeHoachTestTests(t: YThucTestKit) {
   const standingMod: any = await import('../students/standing.ts');
   const hoanTatMod: any = await import('../fasttrack/hoanTat.ts');
   const regularMod: any = await import('../normal/regular.ts');
+  const keHoachMod: any = await import('../keHoach/keHoachTest.ts');
   const { can } = await import('../permissions.ts');
   console.log('\nPR-Rc2 · Kế hoạch Test');
 
@@ -199,6 +200,146 @@ export async function runKeHoachTestTests(t: YThucTestKit) {
     const cellTeacher = sheetTeacher.rows.find((r: any) => r.attemptId === attemptId).cells.find((c: any) => c.skill === 'listening');
     assert(cellTeacher.canEdit === false && cellTeacher.khoa === true,
       `GVBM: ô đợt hoàn tất phải canEdit=false, khoa=true — đang ra ${JSON.stringify(cellTeacher)}`);
+  });
+
+  /**
+   * TUẦN SẠCH T15 gần `anchorWeekStart` nhất, dò theo từng tuần về phía `huong` (+1 tiến, -1 lùi) — dùng để tìm
+   * chỗ trống quanh MỘT MỐC THẬT (tuần của MT1/MT3…) thay vì đoán từ "hôm nay", vì khoảng cách từ hôm nay tới
+   * lịch MT của một lộ trình demo không cố định (có thể đã quá hoặc còn rất xa).
+   */
+  function tuanSachTu(cycleId: number, attemptNo: number, anchorWeekStart: string, huong: 1 | -1 = 1): string {
+    for (let i = 0; i <= 40; i++) {
+      const candidate = addDays(anchorWeekStart, huong * i * 7);
+      const clean = skillSchedule.checkWeekVsNeighbours({
+        cycleId, attemptNo, excludeAttemptId: null, newWeekStart: candidate,
+      }).blockers.length === 0;
+      if (clean) return candidate;
+    }
+    return anchorWeekStart;
+  }
+
+  check('PR-Rc2 · Task4(a) luoiFT: số hàng = số HV đang học; đủ cột RLW/S; GVBM bị chặn quyền', () => {
+    const luoi = keHoachMod.luoiFT(P.mbManager, mbClass);
+    const soHv = (conn.prepare(
+      `SELECT COUNT(*) n FROM students s JOIN enrollments e ON e.student_id=s.id AND e.status='active'
+        WHERE e.class_id=? AND s.status='active' AND s.archived_at IS NULL`,
+    ).get(mbClass) as any).n;
+    assert(luoi.hang.length === soHv, `Số hàng phải bằng số HV đang học (${soHv}), đang ra ${luoi.hang.length}`);
+    assert(luoi.cot.length >= 5 && luoi.cot[0] === 1, 'Cột MT phải có ít nhất MT1..MT5');
+    for (const hang of luoi.hang) {
+      for (const n of luoi.cot) {
+        const o = hang.dot[n];
+        assert(o && o.rlw && o.s, `Thiếu ô RLW/S ở MT${n} của ${hang.ten}`);
+      }
+    }
+    assertThrows(() => keHoachMod.luoiFT(P.lrTeacher, mbClass), /Quản lý|quyền/, 'GVBM gọi luoiFT phải bị chặn quyền');
+  });
+
+  check('PR-Rc2 · Task4(b) datTuanNhom: nhóm RLW đổi L,R,W, không đổi S; kỹ năng đã có điểm giữ nguyên', () => {
+    const [mt1, mt2, mt3] = threeConsecutiveMocks();
+    /* Dựng đúng biên: listening/reading CHƯA có điểm, CHƯA thi (sẽ đổi), writing ĐÃ có điểm (phải giữ nguyên tuần). */
+    conn.prepare(`DELETE FROM assessment_scores WHERE attempt_id=? AND skill IN ('listening','reading')`).run(mt2.attemptId);
+    conn.prepare(`UPDATE attempt_skills SET sit_status='scheduled' WHERE attempt_id=? AND skill IN ('listening','reading')`)
+      .run(mt2.attemptId);
+    conn.prepare('DELETE FROM assessment_scores WHERE attempt_id=? AND skill IN (\'writing1\',\'writing2\')').run(mt2.attemptId);
+    const insC = conn.prepare(`INSERT INTO assessment_scores (attempt_id, skill, c1, c2, c3, c4, band, entered_at) VALUES (?,?,?,?,?,?,?,?)`);
+    insC.run(mt2.attemptId, 'writing1', 6, 6, 6, 6, 6, '2026-04-01');
+    insC.run(mt2.attemptId, 'writing2', 6, 6, 6, 6, 6, '2026-04-01');
+
+    const mt1Week = week.periodById(mt1.planned_period_id)!.week_start;
+    const target = tuanSachTu(mt2.cycle_id, mt2.attempt_no, addDays(mt1Week, 7), 1);
+    const per = week.ensurePeriod(target);
+    const writingBefore = conn.prepare(`SELECT planned_period_id FROM attempt_skills WHERE attempt_id=? AND skill='writing'`)
+      .get(mt2.attemptId) as any;
+    const sBefore = conn.prepare(`SELECT planned_period_id FROM attempt_skills WHERE attempt_id=? AND skill='speaking'`)
+      .get(mt2.attemptId) as any;
+    const r = keHoachMod.datTuanNhom(P.mbManager, { attemptId: mt2.attemptId, nhom: 'rlw', periodId: per.id, force: true });
+    assert(r.doiSkills.includes('listening') && r.doiSkills.includes('reading'), `listening, reading phải đổi tuần, đang ra ${JSON.stringify(r)}`);
+    assert(!r.doiSkills.includes('writing'), 'writing đã có điểm mà vẫn đổi tuần');
+    for (const sk of ['listening', 'reading']) {
+      const row = conn.prepare(`SELECT planned_period_id FROM attempt_skills WHERE attempt_id=? AND skill=?`)
+        .get(mt2.attemptId, sk) as any;
+      assert(row.planned_period_id === per.id, `${sk} phải đổi sang tuần mới`);
+    }
+    const writingAfter = conn.prepare(`SELECT planned_period_id FROM attempt_skills WHERE attempt_id=? AND skill='writing'`)
+      .get(mt2.attemptId) as any;
+    assert(writingAfter.planned_period_id === writingBefore.planned_period_id, 'writing đã có điểm phải giữ nguyên tuần');
+    const sAfter = conn.prepare(`SELECT planned_period_id FROM attempt_skills WHERE attempt_id=? AND skill='speaking'`)
+      .get(mt2.attemptId) as any;
+    assert(sAfter.planned_period_id === sBefore.planned_period_id, 'datTuanNhom nhóm RLW không được đụng Speaking');
+  });
+
+  check('PR-Rc2 · Task4(c) kiemTuanNhom trùng tuần đợt sau → blocker (T15); datTuanNhom ném, không đổi gì', () => {
+    const [mt1, mt2, mt3] = threeConsecutiveMocks();
+    /* Seed MT2 có thể đã có điểm RLW — kiemTuanNhom coi "đã có điểm" là giuNguyen, bỏ qua T15. Xoá điểm để
+       kiểm ĐÚNG nhánh T15 (kỹ năng còn xếp được), không phải nhánh "giữ vì đã có điểm". */
+    conn.prepare(`DELETE FROM assessment_scores WHERE attempt_id=? AND skill IN ('listening','reading','writing1','writing2')`)
+      .run(mt2.attemptId);
+    conn.prepare(`UPDATE attempt_skills SET sit_status='scheduled' WHERE attempt_id=? AND skill='listening'`)
+      .run(mt2.attemptId);
+    const mt3Week = week.periodById(mt3.planned_period_id)!.week_start;
+    const per = week.ensurePeriod(mt3Week);
+    const kiem = keHoachMod.kiemTuanNhom(P.mbManager, { attemptId: mt2.attemptId, nhom: 'rlw', periodId: per.id });
+    assert(kiem.blockers.length > 0, `Trùng tuần đầu MT3 phải là blocker (T15), đang ra ${JSON.stringify(kiem)}`);
+    const before = conn.prepare(`SELECT planned_period_id FROM attempt_skills WHERE attempt_id=? AND skill='listening'`)
+      .get(mt2.attemptId) as any;
+    assertThrows(
+      () => keHoachMod.datTuanNhom(P.mbManager, { attemptId: mt2.attemptId, nhom: 'rlw', periodId: per.id, force: true }),
+      /Trùng tuần|vượt qua/, 'datTuanNhom phải ném khi có blocker',
+    );
+    const after = conn.prepare(`SELECT planned_period_id FROM attempt_skills WHERE attempt_id=? AND skill='listening'`)
+      .get(mt2.attemptId) as any;
+    assert(after.planned_period_id === before.planned_period_id, 'Bị chặn mà lịch vẫn đổi');
+  });
+
+  check('PR-Rc2 · Task4(d) xepMoi: hai tuần RLW/S khác nhau tạo đúng lịch; trùng tuần MT trước → ném, không tạo lượt nào', () => {
+    /*
+     * `xepMoi` chọn lộ trình bằng `currentCycle(studentId)` — CÙNG cách `createAttempt` chọn. `threeConsecutiveMocks`
+     * chỉ tìm MỘT lộ trình có 3 MT liên tiếp bất kỳ ở lớp, có thể KHÔNG phải lộ trình đang chạy của chính em đó
+     * (em đã sang lộ trình khác). Dò tới khi tìm được một bộ ba mà `currentCycle` khớp đúng `cycle_id` đó, để
+     * phép kiểm và hàm thật cùng nhìn về một lộ trình — không thì tuần "trùng" so sai lộ trình.
+     */
+    let found: { mt1: any; mt2: any; mt3: any } | null = null;
+    const rows = conn.prepare(
+      `SELECT a.id AS attemptId, a.attempt_no, a.cycle_id, a.student_id, s.planned_period_id
+         FROM assessment_attempts a JOIN attempt_skills s ON s.attempt_id = a.id
+        WHERE a.class_id = ? AND a.status != 'cancelled' AND s.required = 1 AND s.skill = 'listening'
+          AND s.planned_period_id IS NOT NULL
+        ORDER BY a.cycle_id, a.attempt_no`,
+    ).all(mbClass) as any[];
+    const byCycle = new Map<number, any[]>();
+    for (const r of rows) { if (!byCycle.has(r.cycle_id)) byCycle.set(r.cycle_id, []); byCycle.get(r.cycle_id)!.push(r); }
+    for (const list of byCycle.values()) {
+      if (list.length < 3) continue;
+      const cur = conn.prepare(
+        `SELECT id FROM learning_cycles WHERE student_id = ? ORDER BY (status = 'active') DESC, seq DESC LIMIT 1`,
+      ).get(list[0].student_id) as any;
+      if (cur?.id === list[0].cycle_id) { found = { mt1: list[0], mt2: list[1], mt3: list[2] }; break; }
+    }
+    assert(found, 'Seed thiếu một lộ trình ĐANG CHẠY có đủ MT1-MT3 để kiểm xepMoi');
+    const { mt3 } = found!;
+
+    const mt3Week = week.periodById(mt3.planned_period_id)!.week_start;
+    const rlwWeek = tuanSachTu(mt3.cycle_id, mt3.attempt_no + 1, addDays(mt3Week, 7), 1);
+    const rlwPer = week.ensurePeriod(rlwWeek);
+    const sPer = week.ensurePeriod(addDays(rlwWeek, 7));
+    const created = keHoachMod.xepMoi(P.mbManager, {
+      studentId: mt3.student_id, attemptNo: mt3.attempt_no + 1, rlwPeriodId: rlwPer.id, sPeriodId: sPer.id, force: true,
+    });
+    const rowsOfNew = conn.prepare(`SELECT skill, planned_period_id FROM attempt_skills WHERE attempt_id=?`).all(created.id) as any[];
+    for (const sk of ['listening', 'reading', 'writing']) {
+      assert(rowsOfNew.find((r) => r.skill === sk)?.planned_period_id === rlwPer.id, `${sk} phải ở tuần RLW`);
+    }
+    assert(rowsOfNew.find((r) => r.skill === 'speaking')?.planned_period_id === sPer.id, 'Speaking phải ở tuần S riêng');
+
+    /* Trùng tuần MT vừa tạo (cùng lộ trình) → chặn (T15), không tạo thêm lượt nào. */
+    const soLuongTruoc = (conn.prepare('SELECT COUNT(*) n FROM assessment_attempts').get() as any).n;
+    assertThrows(
+      () => keHoachMod.xepMoi(P.mbManager, { studentId: mt3.student_id, rlwPeriodId: rlwPer.id, sPeriodId: sPer.id }),
+      /không được xếp|không thi cùng/, 'Trùng lịch với đợt vừa tạo (T15) phải bị chặn',
+    );
+    const soLuongSau = (conn.prepare('SELECT COUNT(*) n FROM assessment_attempts').get() as any).n;
+    assert(soLuongTruoc === soLuongSau, 'Bị chặn mà vẫn tạo thêm lượt');
   });
 
   check('PR-Rc2 · Q2 dotDaHoanTat — biên hoàn tất, dấu "-", Chủ nhật, kỹ năng huỷ', () => {

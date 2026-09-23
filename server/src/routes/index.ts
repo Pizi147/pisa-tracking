@@ -57,6 +57,7 @@ import {
   ensurePeriod, listPeriods, periodById, periodWindow, reportEditWindow, setPeriodUnlocked,
 } from '../platform/week.ts';
 import * as planningSvc from '../fasttrack/planning.ts';
+import * as keHoachSvc from '../keHoach/keHoachTest.ts';
 import { signalsFor } from '../worklist/signals.ts';
 import * as accountSvc from '../platform/accounts.ts';
 import * as gioiHan from '../platform/gioiHanThu.ts';
@@ -411,6 +412,37 @@ api.post('/attempts/bulk-plan', requireAuth, wrap((req) => {
   const periodId = toInt(req.body?.periodId);
   if (!periodId) throw badRequest('Cần chọn tuần kế hoạch.');
   return planningSvc.bulkPlan(principalOf(req), { ...req.body, periodId });
+}));
+
+// -------------------------------------------------------------- PR-Rc2: Kế hoạch Test
+
+api.get('/ke-hoach-test/lop', requireAuth, wrap((req) =>
+  keHoachSvc.danhSachLop(principalOf(req), { branchId: toInt(req.query?.branchId) })));
+
+api.get('/ke-hoach-test/ft/:classId', requireAuth, wrap((req) =>
+  keHoachSvc.luoiFT(principalOf(req), pInt(req, 'classId'))));
+
+api.post('/ke-hoach-test/nhom/kiem', requireAuth, wrap((req) => {
+  const attemptId = toInt(req.body?.attemptId);
+  const periodId = toInt(req.body?.periodId);
+  if (!attemptId || !periodId || !req.body?.nhom) throw badRequest('Thiếu tham số kiểm tuần.');
+  return keHoachSvc.kiemTuanNhom(principalOf(req), { attemptId, periodId, nhom: req.body.nhom });
+}));
+
+api.post('/ke-hoach-test/nhom', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  const attemptId = toInt(req.body?.attemptId);
+  const periodId = toInt(req.body?.periodId);
+  if (!attemptId || !periodId || !req.body?.nhom) throw badRequest('Thiếu tham số đặt tuần.');
+  return keHoachSvc.datTuanNhom(principalOf(req), { ...req.body, attemptId, periodId });
+}));
+
+api.post('/ke-hoach-test/xep-moi', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  const studentId = toInt(req.body?.studentId);
+  const rlwPeriodId = toInt(req.body?.rlwPeriodId);
+  if (!studentId || !rlwPeriodId) throw badRequest('Thiếu học viên hoặc tuần RLW.');
+  return keHoachSvc.xepMoi(principalOf(req), { ...req.body, studentId, rlwPeriodId });
 }));
 
 /** Tổng hợp theo tuần cho Quản lý: mỗi tuần một dòng, mọi con số bấm được. */
