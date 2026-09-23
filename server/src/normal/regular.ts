@@ -3,7 +3,7 @@ import { addMilestone, followUntilAfter } from '../cases/sos.ts';
 import { raiseSignal, reconcileCorrectedSignals } from '../cases/signals.ts';
 import {
   ATTEMPT_KIND_LABEL, PERMISSIONS, RATIO_PASS_THRESHOLD, REGULAR_SKILL_LABEL,
-  caseCategoriesFor, categoryOf, kiemLyDo, ratioResult, sosFromFailCount, tuanKeTiep,
+  caseCategoriesFor, categoryOf, kiemLyDo, ratioResult, sosFromFailCount, tuanKeTiep, tuanLich,
   type AttemptKind, type CaseCategory, type RatioOutcome, type SosLevel,
 } from '../../../shared/domain/index.ts';
 import { addDays, badRequest, isIsoDate, notFound, nowIso } from '../util.ts';
@@ -484,6 +484,14 @@ export function reportRegularNoShow(
         && String(row.week_start) > today) {
         return { moved: false, tuanCu: tuanCua(existing.no_show_period_id)?.code ?? null,
           tuanMoi: row.period_code, result: regularResultOf(attemptId) };
+      }
+      /*
+       * Lần ghi ĐẦU cũng cần tuần thi của môn đã tới (phán quyết controller, cùng điều kiện với lần hai): chưa tới tuần
+       * thi thì em chưa có dịp vắng — ghi "-" lúc đó là dời lịch trước, việc của đổi lịch. Báo tuần bằng `tuanLich`
+       * (không có năm nếu cùng năm), không hiện ngày ISO.
+       */
+      if (String(row.week_start) > today) {
+        throw badRequest(`Chưa tới tuần thi ${tuanLich(row.week_start, today)} — chưa ghi "-" được.`);
       }
       const cu = { id: row.planned_period_id, code: row.period_code, weekStart: row.week_start };
       const moi = ensurePeriod(tuanKeTiep(cu.weekStart));

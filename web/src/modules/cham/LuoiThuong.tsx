@@ -11,7 +11,7 @@ import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { Empty, Outcome, Status } from '../../ui/ui.tsx';
 import type { SaveStatus } from '../../ui/SaveState.tsx';
-import { ODiemThuong, type SaveOpts } from '../fasttrack/ScoreEntry.tsx';
+import { ODiemThuong, laTuChoi, type SaveOpts } from '../fasttrack/ScoreEntry.tsx';
 import { caseStatusLabel, skillLabel, skillShort, sosLabel } from '../../lib/format.ts';
 import { ATTEMPT_KIND_SHORT, ketQuaThuong, ngay, tuanLich, type AttemptKind } from '@shared/domain/index.ts';
 import { DauLuu } from './LuoiFT.tsx';
@@ -187,6 +187,16 @@ export function useLuuThuong(attemptId: number, onReload: () => void) {
     } catch (e: any) {
       /* Hộp lý do đang mở: câu lỗi hiện trong hộp, dòng không bật "Lưu lỗi + Thử lại". */
       if (opts.nem) { setStatus('idle'); throw e; }
+      /*
+       * Máy chủ TỪ CHỐI lệnh "-" (ví dụ Q5: dời vượt qua đợt kế tiếp; chưa tới tuần thi): gửi lại y nguyên không bao giờ
+       * thành — báo đúng câu của máy chủ, ô về giá trị đã lưu, không có "Lưu lỗi · Thử lại". Lỗi mạng / 5xx vẫn có.
+       */
+      if ('noShow' in body && laTuChoi(e)) {
+        failed.current = null;
+        setStatus('idle'); setLastError(undefined);
+        toast.push('error', `${skillLabel(skill)}: ${e.message}`);
+        return null;
+      }
       failed.current = { skill, body };
       setStatus('error'); setLastError(e.message);
       toast.push('error', `${skillLabel(skill)}: ${e.message}`);

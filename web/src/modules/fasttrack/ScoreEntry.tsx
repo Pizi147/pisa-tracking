@@ -69,9 +69,14 @@ export const lockedByNoShow = (cell: Cell) =>
  * Chữ người dùng gõ ở ô SỐ CÂU ĐÚNG → lệnh gửi máy chủ. '-' LÀ MỘT LỆNH, KHÔNG PHẢI MỘT SỐ (rule book §17.1): "học
  * viên có lịch mà không làm bài". Ô trống vẫn chỉ là chưa nhập; xoá ô đang có dấu '-' là gỡ dấu, không phải chấm điểm.
  * MỘT hàm cho mọi nơi nhập (bảng cả lớp, hồ sơ Test) — không có luật thứ hai.
+ *
+ * `null` = chữ không hợp lệ ("--", "abc", "7.5"…): KHÔNG gửi gì. Trước đây `Number("--")` ra NaN, lên máy chủ thành
+ * `null` — tức là xoá ô mà không ai định xoá.
  */
-export function rawPatchFrom(text: string, cell: Cell): SavePatch {
+export const LOI_SO_CAU = 'Số câu đúng là số nguyên, hoặc "-" nếu học viên không làm bài.';
+export function rawPatchFrom(text: string, cell: Cell): SavePatch | null {
   const t = text.trim();
+  if (t !== '' && t !== '-' && !/^\d+$/.test(t)) return null;
   return t === '-' ? { noShow: true }
     : t === '' && cell.noShow ? { noShow: false }
     : { rawScore: t === '' ? null : Number(t) };
@@ -81,8 +86,14 @@ export function rawPatchFrom(text: string, cell: Cell): SavePatch {
  * Bốn ô tiêu chí → lệnh gửi máy chủ + band xem trước. MỘT DẤU '-' TRONG BỐN Ô LÀ ĐỦ báo chưa có bài cho ĐÚNG BÀI NÀY:
  * không ghi các tiêu chí thành 0, không xoá bài khác. Xoá sạch bốn ô của bài đang có dấu '-' là GỠ dấu; xoá bốn ô
  * của bài có điểm là xoá điểm như cũ.
+ *
+ * `patch: null` = có ô không hợp lệ (không phải số, không phải đúng một "-", ví dụ "--"): KHÔNG gửi gì — trước đây ô
+ * đó thành NaN rồi thành `null` trên máy chủ, tức là xoá tiêu chí mà không ai định xoá.
  */
-export function criteriaPatchFrom(vals: string[], cell: Cell): { dash: boolean; preview: number | null; patch: SavePatch } {
+export const LOI_TIEU_CHI = 'Mỗi tiêu chí là một số, hoặc "-" nếu học viên không làm bài.';
+export function criteriaPatchFrom(vals: string[], cell: Cell): { dash: boolean; preview: number | null; patch: SavePatch | null } {
+  const hong = vals.some((v) => { const t = v.trim(); return t !== '' && t !== '-' && !Number.isFinite(Number(t)); });
+  if (hong) return { dash: false, preview: null, patch: null };
   const dash = vals.some((v) => v.trim() === '-');
   const nums = vals.map((v) => (v.trim() === '' || v.trim() === '-' ? null : Number(v)));
   const filled = nums.filter((v) => v !== null) as number[];
@@ -131,6 +142,16 @@ export function useSaveScore(attemptId: number, onSaved?: () => void) {
        * dùng sửa ngay trong hộp; Huỷ là bỏ, không còn gì để thử lại).
        */
       if (opts.nem) { setStatus('idle'); throw e; }
+      /*
+       * Máy chủ TỪ CHỐI lệnh "-" (sai luật lịch, quá hạn sửa dấu…): gửi lại y nguyên không bao giờ thành — báo đúng câu
+       * của máy chủ, ô giữ nguyên, không có "Lưu lỗi · Thử lại". Lỗi mạng / 5xx vẫn có "Thử lại".
+       */
+      if (patch.noShow !== undefined && laTuChoi(e)) {
+        failed.current = null;
+        setStatus('idle'); setLastError(undefined);
+        toast.push('error', `${skillLabel(skill)}: ${e.message}`);
+        return false;
+      }
       failed.current = { skill, patch };
       setStatus('error'); setLastError(e.message);
       toast.push('error', `${skillLabel(skill)}: ${e.message}`);
@@ -180,6 +201,57 @@ function NutDau({ title, an, tat, onBam }: { title: string; an: boolean; tat: bo
 }
 const NUT_DAU_FT = 'Không có bài — em có lịch mà không làm bài';
 
+/** Chỗ trống đúng bằng nút "−" — dòng chỉ đọc / dòng chữ trạng thái của màn điện thoại vẫn thẳng cột với dòng có nút. */
+export function ChoNutDau() {
+  return <span aria-hidden className="inline-block shrink-0 w-11 h-11" />;
+}
+
+/**
+ * GÕ "-" LÊN Ô SỐ ĐANG HIỆN "-": giá trị không đổi (đè lên "-" đang chọn) hoặc thành "--" (con trỏ sau "-") — cả hai
+ * đều không phải điều người dùng muốn. Ô không bao giờ thành "--"; phím đó gọi `khiGoLai` (lớp thường: dời tiếp khi
+ * được; FT: không làm gì — FT không có "dời tiếp").
+ *
+ * BA LỐI VÀO, MỖI PHÍM ĐI ĐÚNG MỘT LỐI: `phim` (keydown máy tính, bỏ qua Ctrl/Cmd/Alt + "-" là phím thu nhỏ trang —
+ * chặn phím thì không còn `beforeinput`/`input`); `beforeinput` gắn qua `gan` (bàn phím ảo Android báo `key:
+ * 'Unidentified'` nên keydown không nhận ra — chặn được thì không còn `input`); `doi` (onChange thấy "--": dự phòng khi
+ * `beforeinput` không chặn được — lúc đó lối trước đã bỏ qua). `phim`/`doi` trả `true` khi đã xử lý.
+ */
+function useGoLaiDau(giaTri: string, khiGoLai: () => void, inputRef?: (el: HTMLInputElement | null) => void) {
+  const moi = useRef({ giaTri, khiGoLai });
+  moi.current = { giaTri, khiGoLai };
+  const o = useRef<HTMLInputElement | null>(null);
+  const nghe = useRef((ev: Event) => {
+    const e = ev as InputEvent;
+    if (!e.cancelable || e.data !== '-' || moi.current.giaTri.trim() !== '-') return;
+    e.preventDefault();
+    moi.current.khiGoLai();
+  }).current;
+  const gan = (el: HTMLInputElement | null) => {
+    if (o.current !== el) {
+      o.current?.removeEventListener('beforeinput', nghe);
+      el?.addEventListener('beforeinput', nghe);
+      o.current = el;
+    }
+    inputRef?.(el);
+  };
+  const phim = (e: React.KeyboardEvent<HTMLInputElement>): boolean => {
+    if (e.key !== '-' || e.ctrlKey || e.metaKey || e.altKey || giaTri.trim() !== '-') return false;
+    e.preventDefault();
+    khiGoLai();
+    return true;
+  };
+  const doi = (v: string): boolean => {
+    const t = v.trim();
+    if (giaTri.trim() !== '-' || t.length < 2 || !/^-+$/.test(t)) return false;
+    khiGoLai();
+    return true;
+  };
+  return { gan, phim, doi };
+}
+
+/** Lỗi máy chủ TỪ CHỐI (4xx: sai luật, thiếu quyền…) — thử lại y nguyên không bao giờ thành, nên không có "Thử lại". */
+export const laTuChoi = (e: any) => typeof e?.status === 'number' && e.status >= 400 && e.status < 500;
+
 /**
  * Ô nhập số câu đúng 0–40. Trống KHÁC 0: xoá ô là xoá điểm, không phải chấm 0.
  * `lon` = cỡ điện thoại (ô rộng 60px, cao 44px — chấm một kỹ năng một lúc); luật lưu, "-" và lý do y hệt.
@@ -198,6 +270,7 @@ export function RawScoreInput({ cell, onSave, inputRef, onKeyDown, lon = false }
   const [busy, setBusy] = useState(false);
   /* RB-5: ô ĐÃ CÓ điểm mà con số đổi (hoặc bị xoá) thì không lưu thẳng — mở hộp lý do ngay tại ô. */
   const [hoiLyDo, setHoiLyDo] = useState(false);
+  const [loi, setLoi] = useState<string | null>(null);
 
   useEffect(() => {
     if (!dirty) setDraft(shown());
@@ -207,6 +280,8 @@ export function RawScoreInput({ cell, onSave, inputRef, onKeyDown, lon = false }
   const commit = async () => {
     if (!dirty || busy || hoiLyDo) return;
     const patch = rawPatchFrom(draft, cell);
+    if (!patch) { setLoi(LOI_SO_CAU); return; }     // "--", "abc"…: không gửi gì
+    setLoi(null);
     if (coDiemChinhThuc(cell) && 'rawScore' in patch && patch.rawScore !== cell.rawScore) {
       setHoiLyDo(true);
       return;
@@ -215,8 +290,12 @@ export function RawScoreInput({ cell, onSave, inputRef, onKeyDown, lon = false }
     const ok = await onSave(patch);
     setBusy(false);
     if (ok) setDirty(false);       // lỗi thì giữ nguyên bản nháp để người dùng sửa và thử lại
+    /* Lệnh "-" không thành (máy chủ từ chối, hay lỗi mạng — "Thử lại" ở dòng gửi lại chính lệnh đó): ô về giá trị đã lưu. */
+    else if (patch.noShow !== undefined) { setDraft(shown()); setDirty(false); }
   };
-  const huy = () => { setDraft(shown()); setDirty(false); setHoiLyDo(false); };
+  const huy = () => { setDraft(shown()); setDirty(false); setHoiLyDo(false); setLoi(null); };
+  /* FT không có "dời tiếp": gõ "-" lên ô đang là "-" chỉ không được thành "--". */
+  const goLai = useGoLaiDau(draft, () => undefined, inputRef);
   /* Nút − (điện thoại): đúng lệnh của gõ "-". Ô đã có điểm (sửa phải qua lý do) hoặc đã mang dấu thì không nhận. */
   const nhanDau = !coDiemChinhThuc(cell) && !cell.noShow;
   const bamDau = async () => {
@@ -230,10 +309,13 @@ export function RawScoreInput({ cell, onSave, inputRef, onKeyDown, lon = false }
   if (!cell.canEdit || lockedByNoShow(cell)) {
     return (
       <span className="inline-flex flex-col items-start gap-0.5">
-        <span className="tabular-nums text-slate-300"
-          title={lockedByNoShow(cell) ? 'Đã chốt — cần Quản lý hiệu chỉnh' : 'Bạn không được phân công kỹ năng này'}>
-          {cell.rawScore === null ? (cell.noShow ? '-' : '—') : cell.rawScore}
-          {!cell.noShow && <span className="text-slate-500 text-[11px] ml-1">({fmtBand(cell.band)})</span>}
+        <span className="inline-flex items-center gap-1.5">
+          <span className="tabular-nums text-slate-300"
+            title={lockedByNoShow(cell) ? 'Đã chốt — cần Quản lý hiệu chỉnh' : 'Bạn không được phân công kỹ năng này'}>
+            {cell.rawScore === null ? (cell.noShow ? '-' : '—') : cell.rawScore}
+            {!cell.noShow && <span className="text-slate-500 text-[11px] ml-1">({fmtBand(cell.band)})</span>}
+          </span>
+          {lon && <ChoNutDau />}
         </span>
         <DongDau cell={cell} />
       </span>
@@ -245,23 +327,25 @@ export function RawScoreInput({ cell, onSave, inputRef, onKeyDown, lon = false }
     <span className="inline-flex flex-col items-start gap-0.5">
       <span className="inline-flex items-center gap-1.5">
         <input
-          ref={inputRef}
-          className={`field ${lon ? 'w-[60px] h-11 text-base font-semibold' : 'w-16'} text-center tabular-nums ${dirty ? 'border-amber-500/60' : ''}`}
+          ref={goLai.gan}
+          className={`field ${lon ? 'w-[60px] h-11 text-base font-semibold' : 'w-16'} text-center tabular-nums ${loi ? 'border-rose-400/70' : dirty ? 'border-amber-500/60' : ''}`}
           inputMode="numeric"
           value={draft}
           disabled={busy}
-          title={coDiemChinhThuc(cell) ? `Đã có điểm — sửa thì phải ghi lý do. ${NO_SHOW_HINT}` : NO_SHOW_HINT}
+          title={loi ?? (coDiemChinhThuc(cell) ? `Đã có điểm — sửa thì phải ghi lý do. ${NO_SHOW_HINT}` : NO_SHOW_HINT)}
           aria-label={`${skillLabel(cell.skill)} — số câu đúng. ${NO_SHOW_HINT}`}
-          onChange={(e) => { setDraft(e.target.value); setDirty(true); }}
+          onChange={(e) => { if (goLai.doi(e.target.value)) return; setDraft(e.target.value); setDirty(true); setLoi(null); }}
           onBlur={commit}
           onKeyDown={(e) => {
+            if (goLai.phim(e)) return;
             if (e.key === 'Enter') { void commit(); }
             /* Esc HUỶ ô đang sửa: trả về giá trị đã lưu, không gửi gì lên máy chủ. */
             if (e.key === 'Escape' && dirty) { e.preventDefault(); huy(); }
             onKeyDown?.(e);
           }}
         />
-        <span className="tabular-nums text-slate-400 text-xs w-8">{cell.noShow ? '' : fmtBand(cell.band)}</span>
+        {/* Điện thoại: ô trống không ghi "—" cạnh nút "−" (trông như hai gạch). */}
+        <span className="tabular-nums text-slate-400 text-xs w-8">{cell.noShow || (lon && cell.band === null) ? '' : fmtBand(cell.band)}</span>
         {lon && <NutDau title={NUT_DAU_FT} an={!nhanDau} tat={busy} onBam={() => void bamDau()} />}
       </span>
       <DongDau cell={cell} />
@@ -272,7 +356,9 @@ export function RawScoreInput({ cell, onSave, inputRef, onKeyDown, lon = false }
           loiGiaTri={moi === '' || /^\d+$/.test(moi) ? null : 'Số câu đúng là số nguyên từ 0 đến 40.'}
           onDong={huy}
           onLuu={async (lyDo) => {
-            const ok = await onSave({ ...rawPatchFrom(draft, cell), lyDo }, { nem: true });
+            const p = rawPatchFrom(draft, cell);
+            if (!p) return false;
+            const ok = await onSave({ ...p, lyDo }, { nem: true });
             if (ok) { setDirty(false); setHoiLyDo(false); }
             return ok;
           }}
@@ -320,7 +406,7 @@ export function CriteriaButton({ cell, onSave, buttonRef, lon = false }: {
         title={editable ? (hieuChinh ? 'Sửa bốn tiêu chí — đã có điểm nên phải ghi lý do.' : `Mở bốn tiêu chí. ${NO_SHOW_HINT}`)
           : lockedByNoShow(cell) ? 'Đã chốt — cần Quản lý hiệu chỉnh' : 'Bạn không được phân công kỹ năng này'}
       >
-        {cell.noShow ? '-' : fmtBand(cell.band)}
+        {cell.noShow ? '-' : lon && cell.band === null && nhanDau ? '' : fmtBand(cell.band)}
         {editable && <span className="text-slate-500 text-[10px]">sửa</span>}
       </button>
       {lon && <NutDau title={NUT_DAU_FT} an={!nhanDau} tat={dangBao} onBam={() => void bamDau()} />}
@@ -344,9 +430,10 @@ function SuaTieuChi({ cell, onSave, onClose }: {
     <SuaDiemCoLyDo
       tieuDe={`Sửa ${skillLabel(cell.skill)}`}
       moTaCu={`Đang lưu: band ${fmtBand(cell.band)} (${cell.criteria.map((v) => v ?? '—').join(' · ')})`}
-      loiGiaTri={dash ? 'Ô đã có điểm không nhận dấu "-".' : !doi ? 'Chưa đổi tiêu chí nào.' : null}
+      loiGiaTri={!patch ? LOI_TIEU_CHI : dash ? 'Ô đã có điểm không nhận dấu "-".' : !doi ? 'Chưa đổi tiêu chí nào.' : null}
       onDong={onClose}
       onLuu={async (lyDo) => {
+        if (!patch) return false;
         const ok = await onSave({ ...patch, lyDo }, { nem: true });
         if (ok) onClose();
         return ok;
@@ -383,6 +470,7 @@ export function CriteriaModal({ cell, onSave, onClose }: {
   const { dash, preview, patch } = criteriaPatchFrom(vals, cell);
 
   const submit = async () => {
+    if (!patch) return;
     setBusy(true);
     const ok = await onSave(patch);
     setBusy(false);
@@ -393,7 +481,9 @@ export function CriteriaModal({ cell, onSave, onClose }: {
     <Modal open onClose={onClose} title={`${skillLabel(cell.skill)} — bốn tiêu chí`} width="max-w-md"
       footer={<>
         <button className="btn" onClick={onClose} disabled={busy}>Đóng</button>
-        <button className="btn btn-primary" onClick={submit} disabled={busy}>{busy ? 'Đang lưu…' : 'Lưu'}</button>
+        <button className="btn btn-primary" onClick={submit} disabled={busy || !patch} title={patch ? undefined : LOI_TIEU_CHI}>
+          {busy ? 'Đang lưu…' : 'Lưu'}
+        </button>
       </>}>
       <div className="space-y-3">
         {CRITERIA[set].map((label, i) => (
@@ -413,6 +503,7 @@ export function CriteriaModal({ cell, onSave, onClose }: {
           <span className="text-sm text-slate-400">Band kỹ năng</span>
           <strong className="tabular-nums text-lg">{dash ? '-' : fmtBand(preview)}</strong>
         </div>
+        {!patch && <p className="text-xs text-rose-300 m-0">{LOI_TIEU_CHI}</p>}
         {dash && (
           <p className="text-xs text-slate-300 m-0">
             Sẽ lưu là <strong>Không có bài</strong> cho đúng bài này. Sửa lại được đến hết Chủ nhật của tuần thi;
@@ -456,10 +547,10 @@ export function InlineScoreEditor({ cell, onSave, onClose }: {
   const canLyDo = coDiemChinhThuc(cell) && !built.dash && (isRaw
     ? (vals[0].trim() === '' ? null : Number(vals[0])) !== cell.rawScore
     : vals.some((v, i) => (v.trim() === '' ? null : Number(v)) !== cell.criteria[i]));
-  const loiLyDo = canLyDo ? kiemLyDo(lyDo) : null;
+  const loiLyDo = !built.patch ? (isRaw ? LOI_SO_CAU : LOI_TIEU_CHI) : canLyDo ? kiemLyDo(lyDo) : null;
 
   const submit = async () => {
-    if (busy || loiLyDo) return;
+    if (busy || loiLyDo || !built.patch) return;
     setBusy(true);
     const ok = await onSave(canLyDo ? { ...built.patch, lyDo: lyDo.trim() } : built.patch);
     setBusy(false);
@@ -705,7 +796,8 @@ const SO_NGUYEN = /^\d+$/;
  * Gõ "-" ở ô trái là một LỆNH, không phải một số: em không làm bài → môn này dời sang tuần sau (C08). Xoá dấu "-"
  * đang có là gỡ dấu và trả lịch về tuần cũ. Ô đã có điểm thì không nhận dấu "-" — muốn sửa phải qua hộp lý do.
  * Ô đang mang dấu mà tuần thi mới ĐÃ TỚI: gõ lại "-" là em lại không làm bài — môn dời tiếp (Q4). Tuần mới chưa tới
- * thì gõ lại không làm gì.
+ * thì gõ lại không làm gì. Ô CHƯA TỚI TUẦN THI không nhận "-" lần đầu (phán quyết controller, máy chủ cũng chặn).
+ * Máy chủ từ chối lệnh "-" (ví dụ Q5: vượt qua đợt kế tiếp) → câu của máy chủ hiện ở toast, ô về giá trị đã lưu.
  *
  * KHÔNG BAO GIỜ GỬI một ô chưa có điểm mà ô số câu đúng vẫn trống: con trỏ đi qua ô vừa được ↓ điền tổng không được
  * thành một dòng chỉ có tổng (và người nhập) cho bài chưa chấm. Tổng vừa điền vẫn hiện trong ô, lưu cùng số câu đúng.
@@ -756,7 +848,6 @@ export function ODiemThuong({
   const lanDaDien = useRef(dienTong?.lan ?? 0);
   /* Ô trái vừa được GÕ thật — ↓ điền tổng hay con trỏ đi qua không bao giờ tính là gõ lại "-". */
   const goDiem = useRef(false);
-  const oTrai = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     if (!dirty) { setDiem(diemDaLuu()); setTong(tongDaLuu()); }
@@ -780,14 +871,16 @@ export function ODiemThuong({
   const lamBu = dau && coDiem && cell.tuanHienTai
     ? `Làm bù ở ${cell.tuanHienTai}${cell.tuanDoiTu ? ` (dời từ ${cell.tuanDoiTu})` : ''}.` : '';
 
-  const gui = async (lam: () => Promise<boolean>) => {
+  /* `laDau` = lệnh "-" (ghi/gỡ dấu): không thành thì ô về giá trị đã lưu — không để một "-" nằm đó như đã ghi. */
+  const gui = async (lam: () => Promise<boolean>, laDau = false) => {
     dangGui.current = true;
     setBusy(true);
     const ok = await lam();
     dangGui.current = false;
     setBusy(false);
-    if (ok) { setDirty(false); goDiem.current = false; }   // lỗi thì giữ nguyên bản nháp để sửa và thử lại
+    if (ok || laDau) { setDirty(false); goDiem.current = false; }   // lỗi điểm thì giữ bản nháp để sửa và thử lại
   };
+  const chuaToiCau = `Chưa tới tuần thi${cell.tuanHienTai ? ` ${cell.tuanHienTai}` : ''} — chưa ghi "-" được.`;
 
   const commit = async () => {
     if (!dirty || dangGui.current || coDiem) return;
@@ -796,10 +889,12 @@ export function ODiemThuong({
     if (d === '-') {
       /* Đã mang dấu: chỉ dời tiếp khi tuần mới đã tới VÀ người dùng thật sự gõ lại "-" (Q4). */
       if (dau && (cell.chuaToiTuan || !goDiem.current)) { setDirty(false); goDiem.current = false; return; }
+      /* Chưa tới tuần thi: không ghi "-" lần đầu — ô về như cũ, nói lý do ngay tại ô. */
+      if (cell.chuaToiTuan) { setDirty(false); goDiem.current = false; setCanhBao({ o: 'diem', cau: chuaToiCau }); return; }
       setCanhBao(null);
-      return gui(() => onDau(true));
+      return gui(() => onDau(true), true);
     }
-    if (d === '' && dau) { setCanhBao(null); return gui(() => onDau(false)); }
+    if (d === '' && dau) { setCanhBao(null); return gui(() => onDau(false), true); }
     if (d !== '' && !SO_NGUYEN.test(d)) {
       setCanhBao({ o: 'diem', cau: 'Số câu đúng là số nguyên, hoặc "-" nếu em không làm bài.' }); return;
     }
@@ -829,49 +924,26 @@ export function ODiemThuong({
 
   /*
    * LỆNH "-" KHÔNG QUA CHỮ TRONG Ô — một đường cho nút − của điện thoại và cho "gõ '-' lên ô đang hiện '-'". Ghi ngay
-   * (có toast báo). Không nhận khi: ô đã có điểm, đang gửi, hoặc đang mang dấu mà tuần mới CHƯA TỚI (Q4).
+   * (có toast báo). Không nhận khi: ô đã có điểm, đang gửi, hoặc tuần thi hiện tại của môn CHƯA TỚI (lần đầu: phán
+   * quyết controller; lần hai: Q4).
    */
-  const nhanDau = !coDiem && !(dau && cell.chuaToiTuan);
+  const nhanDau = !coDiem && !cell.chuaToiTuan;
   const ghiDau = () => {
     if (!nhanDau || dangGui.current) return;
     setCanhBao(null);
-    void gui(() => onDau(true));
+    void gui(() => onDau(true), true);
   };
   /*
    * GÕ "-" LÊN Ô ĐANG HIỆN "-": giá trị không đổi (đè lên "-" đang chọn) hoặc thành "--" (con trỏ sau "-") — cả hai
    * đều không phải điều người dùng muốn. Ô mang dấu → đó là lệnh gõ lại "-" (dời tiếp khi tuần mới đã tới); "-" đang gõ
-   * dở của ô chưa có dấu → chỉ chặn "--", "-" đó lưu khi rời ô như thường.
-   *
-   * BA LỐI VÀO, MỖI PHÍM ĐI ĐÚNG MỘT LỐI: `keydown` (máy tính — chặn phím thì không còn `beforeinput`/`input`);
-   * `beforeinput` (bàn phím ảo Android báo `key: 'Unidentified'` nên `keydown` không nhận ra — chặn được thì không còn
-   * `input`); `onChange` thấy "--" (dự phòng khi `beforeinput` không chặn được — lúc đó lối trước đã bỏ qua).
+   * dở của ô chưa có dấu → chỉ chặn "--", "-" đó lưu khi rời ô như thường. Ba lối vào: xem `useGoLaiDau`.
    */
   const goLaiDau = () => { if (dau) ghiDau(); };
-  const moi = useRef({ diem, goLaiDau });
-  moi.current = { diem, goLaiDau };
-  const ngheBeforeInput = useRef((ev: Event) => {
-    const e = ev as InputEvent;
-    if (!e.cancelable || e.data !== '-' || moi.current.diem.trim() !== '-') return;
-    e.preventDefault();
-    moi.current.goLaiDau();
-  }).current;
-  const ganOTrai = (el: HTMLInputElement | null) => {
-    if (oTrai.current !== el) {
-      oTrai.current?.removeEventListener('beforeinput', ngheBeforeInput);
-      el?.addEventListener('beforeinput', ngheBeforeInput);
-      oTrai.current = el;
-    }
-    inputRef?.(el);
-  };
+  const goLai = useGoLaiDau(diem, goLaiDau, inputRef);
 
   const phim = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    /* Ô tổng bị khoá khi ô trái đang là "-", nên phím này chỉ có thể tới từ ô trái. Ctrl/Cmd/Alt + "-" là phím thu nhỏ
-       trang của trình duyệt — không đụng tới. */
-    if (e.key === '-' && !e.ctrlKey && !e.metaKey && !e.altKey && diem.trim() === '-') {
-      e.preventDefault();
-      goLaiDau();
-      return;
-    }
+    /* Ô tổng bị khoá khi ô trái đang là "-", nên phím này chỉ có thể tới từ ô trái. */
+    if (goLai.phim(e)) return;
     if (e.key === 'Enter') void commit();
     /* Esc HUỶ ô đang sửa: trả về giá trị đã lưu, không gửi gì lên máy chủ. */
     if (e.key === 'Escape' && dirty) { e.preventDefault(); huy(); }
@@ -891,7 +963,10 @@ export function ODiemThuong({
       return (
         <span className="inline-flex flex-col items-center justify-center tabular-nums text-slate-400"
           title={[khongDay, pt && ketQuaChu ? `${ketQuaChu} · ${pt}.` : '', lamBu].filter(Boolean).join(' ')}>
-          <span className={cell.ketQua === 'fail' ? 'text-rose-300' : ''}>{o.hien || `${cell.diem}/?`}</span>
+          <span className="inline-flex items-center gap-1">
+            <span className={cell.ketQua === 'fail' ? 'text-rose-300' : ''}>{o.hien || `${cell.diem}/?`}</span>
+            {lon && <ChoNutDau />}
+          </span>
           {!lon && <DongDatPhanTram ketQua={cell.ketQua} tiLe={cell.tiLe} />}
         </span>
       );
@@ -899,7 +974,9 @@ export function ODiemThuong({
     const chu = dau ? '-' : cell.chuaToiTuan && cell.tuanHienTai ? cell.tuanHienTai : '—';
     const title = dau && cell.tuanHienTai ? `${khongDay} Đã dời sang ${cell.tuanHienTai}.`
       : cell.chuaToiTuan && cell.tuanHienTai ? `${khongDay} Thi ${cell.tuanHienTai}.` : khongDay;
-    return <span className="text-[11px] text-slate-500 tabular-nums" title={title}>{chu}</span>;
+    const chuDoc = <span className="text-[11px] text-slate-500 tabular-nums" title={title}>{chu}</span>;
+    /* Điện thoại: giữ chỗ nút "−" để chữ thẳng cột với ô nhập của các dòng khác. */
+    return lon ? <span className="inline-flex items-center gap-1">{chuDoc}<ChoNutDau /></span> : chuDoc;
   }
 
   /* ---- Ô đã có điểm: hai ô chỉ đọc; bấm (hoặc gõ số) mở hộp lý do ngay tại ô (RB-5). */
@@ -973,21 +1050,23 @@ export function ODiemThuong({
     : dau && !cell.chuaToiTuan
       ? `Đã dời sang ${cell.tuanHienTai ?? 'tuần này'} (từ ${cell.tuanDoiTu ?? 'tuần cũ'}). Gõ số khi em đã làm bài; em lại không làm bài thì gõ lại "-" để dời tiếp.`
     : dau ? `Đã dời sang ${cell.tuanHienTai ?? 'tuần sau'}. Xoá dấu "-" để trả lịch về ${cell.tuanDoiTu ?? 'tuần cũ'}; gõ số khi em đã làm bài.`
-    : `Số câu đúng. Gõ "-" nếu em không làm bài: môn này dời sang tuần sau.${cell.chuaToiTuan && cell.tuanHienTai ? ` Thi ${cell.tuanHienTai}.` : ''}`;
+    : cell.chuaToiTuan ? `Số câu đúng. Thi ${cell.tuanHienTai ?? 'tuần sau'} — tới tuần thi mới ghi được "-".`
+    : 'Số câu đúng. Gõ "-" nếu em không làm bài: môn này dời sang tuần sau.';
   const titleTong = canhBao?.o === 'tong' ? canhBao.cau
     : o.vienVang ? `Khác tổng của cột (${tongCot}) — em làm đề khác.` : 'Tổng số câu của đề em làm.';
   return (
     <span ref={cap} className="inline-flex items-center justify-center gap-1"
       onBlur={(e) => { if (!cap.current?.contains(e.relatedTarget as Node)) void commit(); }}>
-      <input ref={ganOTrai}
+      <input ref={goLai.gan}
         className={`${oSo} ${canhBao?.o === 'diem' ? 'border-rose-400/70' : ''} ${dangDau ? 'text-slate-400' : ''}`}
         inputMode="numeric" value={diem} disabled={busy} title={titleDiem}
         aria-label={`${tenMon} — số câu đúng. Gõ "-" nếu em không làm bài`}
         onChange={(e) => {
           const v = e.target.value.trim();
           /* Dự phòng: "--" lọt vào ô (bàn phím ảo không cho chặn trước) → giữ "-", đi đúng đường gõ lại "-". */
-          if (diem.trim() === '-' && v.length > 1 && /^-+$/.test(v)) { goLaiDau(); return; }
+          if (goLai.doi(v)) return;
           setDiem(e.target.value); setDirty(true); goDiem.current = true;
+          if (canhBao?.o === 'diem') setCanhBao(null);
         }} onKeyDown={phim} />
       <span className="text-slate-600">/</span>
       <input className={`${oSo} ${canhBao?.o === 'tong' ? 'border-rose-400/70' : o.vienVang ? 'border-amber-400/80' : ''}`}

@@ -14,7 +14,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ENTRY_SKILLS } from '@shared/domain/index.ts';
 import { fmtBand, skillLabel, skillShort } from '../../lib/format.ts';
-import { CriteriaButton, ODiemThuong, RawScoreInput, datPhanTram, useSaveScore, type Cell } from '../fasttrack/ScoreEntry.tsx';
+import { ChoNutDau, CriteriaButton, ODiemThuong, RawScoreInput, datPhanTram, useSaveScore, type Cell } from '../fasttrack/ScoreEntry.tsx';
 import { DauLuu, LuoiFT, khopKn, oTrongFt, type FtSheet } from './LuoiFT.tsx';
 import {
   LuoiThuong, ketQuaCua, lichCua, oThuong, tongPhoBien, useLuuThuong, type ThuongSheet,
@@ -163,7 +163,7 @@ function DongFt({ row, k, nhieuMt, active, onReload, inputRef, onKeyDown }: {
       phu={phu} phuTitle={kv !== null ? `Kỳ vọng (KV) của lượt này: ${fmtBand(kv)} · ${row.studentCode}` : undefined}
       luu={<DauLuu status={status} error={lastError} onRetry={retry} />}>
       <div className="shrink-0 flex justify-end" data-kn={k} data-trong={c && oTrongFt(c) ? '1' : undefined}>
-        {!c ? <span className="text-slate-600">—</span>
+        {!c ? <span className="inline-flex items-center gap-1.5"><span className="text-slate-600">—</span><ChoNutDau /></span>
           : laSoCau
             ? <RawScoreInput lon cell={c} onSave={(p, o) => save(k, p, o)} inputRef={inputRef} onKeyDown={onKeyDown} />
             : <CriteriaButton lon cell={c} onSave={(p, o) => save(k, p, o)} />}
@@ -255,8 +255,12 @@ function DongThuongMot({ row, k, sheet, tongCot, active, onReload, inputRef, onK
       luu={<DauLuu status={status} error={lastError} onRetry={retry} />}>
       <div className="shrink-0 flex justify-end" data-kn={k} data-trong={trong ? '1' : undefined}>
         {dung || !s ? (
-          <span className="text-[11px] text-slate-500" title={`${tenMon}: ${chuDung ?? 'không có lịch'}`}>
-            {chuDung ?? '—'}
+          <span className="inline-flex items-center gap-1">
+            <span className="text-[11px] text-slate-500" title={`${tenMon}: ${chuDung ?? 'không có lịch'}`}>
+              {chuDung ?? '—'}
+            </span>
+            {/* Giữ chỗ nút "−" để chữ trạng thái thẳng cột với ô nhập của các dòng khác. */}
+            <ChoNutDau />
           </span>
         ) : (
           <ODiemThuong lon tongLaySan cell={cell} tongCot={tongCot} canEdit={canEdit} tenMon={tenMon} tenHv={row.studentName}
