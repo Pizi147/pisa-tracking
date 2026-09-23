@@ -404,6 +404,21 @@ export async function runCongViecTests(t: YThucTestKit) {
     assert(scoreOf(P.mbManager).length === 0, 'Quản lý không được phân công dạy thì mặc định không có dòng chấm điểm (giữ luật cũ)');
   });
 
+  await checkAsync('PR-UX1 · Việc cần làm › Chấm điểm mở Lịch Test đúng lớp + môn', async () => {
+    const { duongMoi } = await import('../../../shared/domain/index.ts');
+    for (const p of [P.subjectTeacher, gvMB]) {
+      const items = (mywork.myWork(p, {}).items ?? []).filter((i: any) => i.group === 'score' && i.classId);
+      assert(items.length > 0, `GV ${p.userId} phải có dòng chấm điểm có lớp`);
+      for (const it of items) {
+        assert(it.href.startsWith('/test/lich?'), `Chấm điểm phải mở Lịch Test: ${it.href}`);
+        const q = new URLSearchParams(it.href.split('?')[1]);
+        assert(q.get('classId') === String(it.classId), `Đúng lớp: ${it.href} (lớp ${it.classId})`);
+        assert(!!q.get('kn'), `Có môn để đặt con trỏ: ${it.href}`);
+        assert(duongMoi('/test/lich', it.href.split('?')[1]) === null, `Không bị chuyển tiếp: ${it.href}`);
+      }
+    }
+  });
+
   check('PR-Ra · myWork(QT) mặc định: vẫn không có dòng chấm điểm dù có quyền sửa điểm mọi nơi (giữ luật cũ run.ts:5474-5482)', () => {
     const adminScore = (mywork.myWork(P.admin, {}).items ?? []).filter((i: any) => i.group === 'score');
     assert(adminScore.length === 0, `Quản trị hệ thống không được là người nợ điểm: ${adminScore.length} dòng`);

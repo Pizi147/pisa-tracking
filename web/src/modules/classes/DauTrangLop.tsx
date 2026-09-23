@@ -8,7 +8,7 @@ import { useApi } from '../../lib/useApi.ts';
 import { TenGiaoVien } from './TenGiaoVien.tsx';
 import type { TinhTrangXoaKetThuc } from './XoaKetThucLopPanel.tsx';
 import {
-  badgeLop, needScoresText, ngay, nhomGiaoVienBoMon, tuanKhoa, type BadgeLop, type NhomGiaoVien, type WorkScope,
+  badgeLop, duongLichTest, needScoresText, ngay, nhomGiaoVienBoMon, tuanKhoa, type BadgeLop, type NhomGiaoVien, type WorkScope,
 } from '@shared/domain/index.ts';
 
 /** `GET /classes/:id/overview` (server/src/classes/classes.ts → classOverview). */
@@ -69,7 +69,7 @@ export function DauTrangLop({ data, periodId, onViec, onCheDoCanHoTro }: {
   });
   const bamBadge = (x: BadgeLop): (() => void) | null =>
     x.key === 'case' ? onCheDoCanHoTro
-      : x.key === 'cham' ? () => navigate(`/test/can-cham?classId=${data.id}`)
+      : x.key === 'cham' ? () => navigate(duongLichTest({ classId: data.id }))
       : x.key === 'het-khoa' && data.viewer.coTheChuyenTiep ? () => onViec('chuyen-tiep')
       : null;
   /* Chỉ Quản trị hệ thống mới gọi được đường này (403 với người khác) — nên chỉ hỏi khi có cờ. */

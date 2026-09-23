@@ -101,8 +101,13 @@ export async function runTongQuanTests(t: YThucTestKit) {
   check('PR-Pa · Cần xử lý: đúng thứ tự design §4.1, bỏ dòng 0, tối đa 8, "PA chờ Quản lý duyệt" chỉ khi duyệt được', () => {
     eq(d.CAN_XU_LY.map((x: any) => x.metricId), [
       'tin-hieu-qua-han', 'case-xac-dinh-nguyen-nhan-qua-han', 'pa-cho-duyet', 'case-chua-co-nguoi-phu-trach',
+      'hv-can-ho-tro-2-lan-chua-case', 'hv-bo-qua-van-can-ho-tro',
       'case-thieu-pa', 'pa-can-cap-nhat', 'bai-qua-han-nhap-diem', 'hv-can-xu-ly',
-    ], 'Thứ tự');
+    ], 'Thứ tự (PR-UX4 chèn hai dòng "bỏ quên" sau Case chưa có người phụ trách)');
+    eq(d.CAN_XU_LY.filter((x: any) => x.denLoc).map((x: any) => [x.metricId, x.denLoc, x.nut, x.mau]), [
+      ['hv-can-ho-tro-2-lan-chua-case', 'can-ho-tro-2-lan', 'Xem', 'vang'],
+      ['hv-bo-qua-van-can-ho-tro', 'bo-qua-van-can-ho-tro', 'Xem', 'vang'],
+    ], 'Hai dòng mới: nút Xem, màu vàng, mở bộ lọc Danh sách Case');
     const dem = { 'pa-can-cap-nhat': 3, 'tin-hieu-qua-han': 2, 'pa-cho-duyet': 1, 'case-thieu-pa': 0 };
     const co = d.sapCanXuLy(dem, true);
     eq(co.map((x: any) => [x.metricId, x.n]), [['tin-hieu-qua-han', 2], ['pa-cho-duyet', 1], ['pa-can-cap-nhat', 3]], 'Có quyền duyệt');
@@ -110,7 +115,9 @@ export async function runTongQuanTests(t: YThucTestKit) {
     eq(co[0].nhan, 'tín hiệu cần xác minh quá hạn', 'Chữ g11-041 + g8-070');
     eq(co[1].nut, 'Duyệt', 'Nút g3-020');
     const all = Object.fromEntries(d.CAN_XU_LY.map((x: any) => [x.metricId, 5]));
-    assert(d.sapCanXuLy(all, true).length === d.CAN_XU_LY_TOI_DA && d.CAN_XU_LY_TOI_DA === 8, 'Tối đa 8 dòng');
+    assert(d.sapCanXuLy(all, true).length === d.CAN_XU_LY_TOI_DA && d.CAN_XU_LY_TOI_DA === 10, 'Tối đa 10 dòng (8 + hai dòng "bỏ quên")');
+    eq(d.sapCanXuLy({ 'hv-bo-qua-van-can-ho-tro': 2 }, false)[0].denLoc, 'bo-qua-van-can-ho-tro', 'denLoc đi kèm dòng');
+    assert(!('denLoc' in d.sapCanXuLy({ 'case-thieu-pa': 1 }, false)[0]), 'Dòng thường không có denLoc');
   });
 
   check('PR-Pa · Điểm đáng chú ý: tối đa 3; dưới ngưỡng thì bỏ; lớp thường nói "chưa đạt"; link ghi đúng số dòng sẽ mở', () => {
@@ -276,7 +283,7 @@ export async function runTongQuanTests(t: YThucTestKit) {
     for (const [who, f] of [[P.admin, { ct: 'ca-hai' }], [P.mbManager, { branchId: mb, ct: 'thuong' }], [P.mbManager, { ct: 'ft' }]] as const) {
       const r = tq.tongQuanQuanLy(who, f);
       if (who === P.admin && f.ct === 'ca-hai') assert(r.canXuLy.length > 0, 'Cần xử lý (admin, Cả hai) phải có dòng — nếu rỗng thì vòng kiểm bên dưới vô nghĩa');
-      assert(r.canXuLy.length <= 8, 'Quá 8 dòng');
+      assert(r.canXuLy.length <= 10, 'Quá 10 dòng');
       const thuTu = d.CAN_XU_LY.map((x: any) => x.metricId);
       let truoc = -1;
       for (const dong of r.canXuLy) {

@@ -80,6 +80,8 @@ export function attachPrincipal(req: Request, _res: Response, next: NextFunction
   } catch (e) {
     /* PR-Z2c-b: mất luồng Turso KHÔNG phải "chưa đăng nhập" — nuốt đi là người dùng bị đẩy ra màn đăng nhập. Đưa sang bộ thử lại. */
     if (laLoiMatLuongTurso(e)) { next(e); return; }
+    /* Z2c-e: 503 "đang bận" (chờ khoá ghi quá hạn, db.ts) cũng không phải "chưa đăng nhập" — trả đúng câu đó. */
+    if (e instanceof HttpError) { next(e); return; }
     /* session trỏ tới user đã bị xoá sau khi reset seed */
   }
   next();
@@ -87,7 +89,7 @@ export function attachPrincipal(req: Request, _res: Response, next: NextFunction
 
 export function requireAuth(req: Request, _res: Response, next: NextFunction) {
   if (!req.principal) {
-    next(new HttpError(401, 'Chưa chọn tài khoản demo. Chọn một tài khoản ở thanh Công cụ demo.'));
+    next(new HttpError(401, 'Chưa đăng nhập, hoặc phiên đăng nhập đã hết hạn. Đăng nhập lại.'));
     return;
   }
   next();

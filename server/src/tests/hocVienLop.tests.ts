@@ -78,14 +78,14 @@ export async function runHocVienLopTests(t: YThucTestKit) {
 
   // ------------------------------------------------------------------ Task 3 · luật thuần
 
-  check('PR-Qa · Q4 chip lọc: nhãn THUAT_NGU, khoá URL cũ vẫn mở đúng chip, missing_scores sang Test › Cần chấm', () => {
+  check('PR-Qa · Q4 chip lọc: nhãn THUAT_NGU, khoá URL cũ vẫn mở đúng chip, missing_scores sang Test › Lịch Test', () => {
     eq(d.LOC_HOC_VIEN.map((k: string) => d.LOC_HOC_VIEN_NHAN[k].nhan),
       ['Tất cả', 'Đang SOS', 'Có Case đang xử lý', 'Case thiếu PA học thuật', 'Case quá hạn cập nhật', 'Thiếu thông tin'], 'Nhãn chip');
     eq(d.docThamSoLoc(null), { loc: 'tat-ca' }, 'Không có view');
     eq(d.docThamSoLoc('classes'), { loc: 'tat-ca' }, 'view=classes cũ');
     eq(d.docThamSoLoc('sos_open'), { loc: 'sos' }, 'signals.ts dùng sos_open');
     eq(d.docThamSoLoc('case_no_plan'), { loc: 'case_no_plan' }, 'WeeklyBoard');
-    eq(d.docThamSoLoc('missing_scores'), { chuyenDen: '/test/can-cham' }, 'Việc nhập điểm nằm ở khu Test');
+    eq(d.docThamSoLoc('missing_scores'), { chuyenDen: '/test/lich' }, 'Việc nhập điểm nằm ở khu Test');
     eq(d.docThamSoLoc('la'), { loc: 'tat-ca' }, 'Khoá lạ');
   });
 

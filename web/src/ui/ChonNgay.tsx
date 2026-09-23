@@ -22,13 +22,58 @@ function Chon({ ds, value, onChange, disabled, ariaLabel, chuaChon }: {
   );
 }
 
-/** Ngày trong `soNgay` ngày gần nhất: "Hôm nay, 14/09" · "Hôm qua, 13/09" · "Thứ Bảy, 12/09". */
+const KHAC = '__khac__';
+const ISO = /^\d{4}-\d{2}-\d{2}$/;
+
+/** "12/09" hoặc "12/09/2025" → ISO; năm bỏ trống = năm của hôm nay. Ngày không có thật → `null`. */
+function docNgayGo(text: string, homNay: string): string | null {
+  const m = /^\s*(\d{1,2})\/(\d{1,2})(?:\/(\d{4}))?\s*$/.exec(text);
+  if (!m) return null;
+  const iso = `${m[3] ?? homNay.slice(0, 4)}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`;
+  const d = new Date(`${iso}T00:00:00Z`);
+  return Number.isNaN(d.getTime()) || d.toISOString().slice(0, 10) !== iso ? null : iso;
+}
+
+/**
+ * Ngày: gợi ý nhanh trong `soNgay` ngày gần nhất ("Hôm nay, 14/09" · "Hôm qua, 13/09" · "Thứ Bảy, 12/09") + mục "Ngày khác…" để gõ BẤT KỲ
+ * ngày nào không quá hôm nay (`dd/mm` hoặc `dd/mm/yyyy`) — ngày trong lộ trình có thể cách xa hơn danh sách gợi ý. Không ô lịch trình duyệt.
+ */
 export function ChonNgayGan({ value, onChange, soNgay = 14, disabled, ariaLabel, chuaChon }: {
   value: string; onChange: (v: string) => void; soNgay?: number; disabled?: boolean; ariaLabel?: string; chuaChon?: string;
 }) {
   const { homNay } = useNgayNghiepVu();
   const ds = useMemo(() => dsNgayGan(homNay, soNgay), [homNay, soNgay]);
-  return <Chon ds={ds} value={value} onChange={onChange} disabled={disabled} ariaLabel={ariaLabel} chuaChon={chuaChon} />;
+  /* Đã có ngày ngoài danh sách gợi ý (dữ liệu cũ hoặc vừa gõ) thì mở sẵn ô gõ. */
+  const ngoaiDs = !!value && ISO.test(value) && !ds.some((x) => x.giaTri === value);
+  const [go, setGo] = useState(ngoaiDs);
+  const [text, setText] = useState(ngoaiDs ? ngay(value, homNay) : '');
+  const iso = go && text.trim() ? docNgayGo(text, homNay) : null;
+  const loi = go && text.trim() && (iso === null ? 'Gõ dạng dd/mm hoặc dd/mm/yyyy' : iso > homNay ? 'Không được sau hôm nay' : null);
+  const dsKhac: LuaChon[] = [...ds, { giaTri: KHAC, nhan: 'Ngày khác…' }];
+  return (
+    <span className="block">
+      <select className="field w-full" value={go ? KHAC : value} disabled={disabled} aria-label={ariaLabel}
+        onChange={(e) => {
+          if (e.target.value === KHAC) { setGo(true); return; }
+          setGo(false); setText(''); onChange(e.target.value);
+        }}>
+        {chuaChon && <option value="">{chuaChon}</option>}
+        {dsKhac.map((x) => <option key={x.giaTri} value={x.giaTri}>{x.nhan}</option>)}
+      </select>
+      {go && (
+        <>
+          <input className="field mt-1.5 w-full" inputMode="numeric" value={text} disabled={disabled} placeholder="Ví dụ: 12/09 hoặc 12/09/2025"
+            aria-label={ariaLabel ? `${ariaLabel} (gõ ngày)` : 'Gõ ngày'}
+            onChange={(e) => {
+              setText(e.target.value);
+              const v = docNgayGo(e.target.value, homNay);
+              if (v && v <= homNay) onChange(v);
+            }} />
+          {loi && <span className="mt-1 block text-[11px] text-late">{loi}</span>}
+        </>
+      )}
+    </span>
+  );
 }
 
 /**
@@ -72,7 +117,7 @@ export function NgayDoiDuoc({ tien, value, onChange, soNgay = 14, khiMo }: {
     return (
       <label className="block">
         <span className="mb-1 block text-[11.5px] font-bold text-slate-200">{tien}</span>
-        <Chon ds={ds} value={value} onChange={onChange} ariaLabel={tien} />
+        <ChonNgayGan value={value} onChange={onChange} soNgay={soNgay} ariaLabel={tien} />
       </label>
     );
   }

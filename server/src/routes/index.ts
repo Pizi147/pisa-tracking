@@ -4,7 +4,7 @@ import { db, isInitialised } from '../db.ts';
 import { laBanChinh } from '../moiTruong.ts';
 import {
   ENTRY_SKILLS, ENTRY_SKILL_LABEL, ISSUE_TAXONOMY, THEO_DONG,
-  PERMISSIONS, REGULAR_SKILLS, ROLE_LABEL, WORK_SCOPES, chuongTrinhTuThamSo, khoangTuThamSo, thamSoNguoi,
+  PERMISSIONS, REGULAR_SKILLS, ROLE_LABEL, WORK_SCOPES, chuongTrinhTuThamSo, khoangTuThamSo, laLoaiBoQuen, thamSoNguoi, tuDauKhoang,
   type Role, type TheoDong, type WorkScope,
 } from '../../../shared/domain/index.ts';
 import { transferReasonText } from '../../../shared/domain/index.ts';
@@ -75,7 +75,10 @@ import * as tongQuanSvc from '../worklist/tongQuan.ts';
 import * as bangSvc from '../worklist/bangChiNhanh.ts';
 import { weeklyDrill, weeklyRollup } from '../worklist/weekly.ts';
 import * as tongHopSvc from '../phanTich/tongHop.ts';
-import * as vanDeSvc from '../phanTich/vanDe.ts';
+import * as vanDeHvSvc from '../phanTich/vanDeHv.ts';
+import * as hieuQuaPaSvc from '../phanTich/hieuQuaPa.ts';
+import * as yThucPhanTichSvc from '../phanTich/yThucPhanTich.ts';
+import * as boQuenSvc from '../phanTich/boQuen.ts';
 import { metricResponse, metricSet, rowsFor } from '../worklist/metrics.ts';
 import { myWork } from '../worklist/mywork.ts';
 import { nhacViec } from '../worklist/nhacViec.ts';
@@ -509,48 +512,66 @@ api.get('/ke-hoach-test/lop', requireAuth, wrap((req) =>
 api.get('/ke-hoach-test/ft/:classId', requireAuth, wrap((req) =>
   keHoachSvc.luoiFT(principalOf(req), pInt(req, 'classId'))));
 
-api.post('/ke-hoach-test/nhom/kiem', requireAuth, wrap((req) => {
+/** Đọc object tuần `{ listening: periodId, … }` — từng giá trị qua `toInt`, kỹ năng lạ bị bỏ. */
+function tuanTheoKyNang(v: any): Record<string, number> {
+  const out: Record<string, number> = {};
+  if (!v || typeof v !== 'object') return out;
+  for (const k of ['listening', 'reading', 'writing', 'speaking']) {
+    const n = toInt(v[k]);
+    if (n) out[k] = n;
+  }
+  return out;
+}
+
+api.post('/ke-hoach-test/dot/kiem', requireAuth, wrap((req) => {
   const attemptId = toInt(req.body?.attemptId);
-  const periodId = toInt(req.body?.periodId);
-  if (!attemptId || !periodId || !req.body?.nhom) throw badRequest('Thiếu tham số kiểm tuần.');
-  return keHoachSvc.kiemTuanNhom(principalOf(req), { attemptId, periodId, nhom: req.body.nhom });
+  if (!attemptId || !Array.isArray(req.body?.kyNang)) throw badRequest('Thiếu đợt hoặc kỹ năng cần kiểm.');
+  const kyNang = req.body.kyNang.map((k: any) => ({ skill: String(k?.skill ?? ''), periodId: toInt(k?.periodId) }));
+  if (kyNang.some((k: any) => !k.periodId)) throw badRequest('Thiếu tuần của một kỹ năng.');
+  return keHoachSvc.kiemDot(principalOf(req), { attemptId, kyNang });
 }));
 
-api.post('/ke-hoach-test/nhom', requireAuth, wrap((req) => {
+api.post('/ke-hoach-test/dot', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   const attemptId = toInt(req.body?.attemptId);
-  const periodId = toInt(req.body?.periodId);
-  if (!attemptId || !periodId || !req.body?.nhom) throw badRequest('Thiếu tham số đặt tuần.');
-  return keHoachSvc.datTuanNhom(principalOf(req), { ...req.body, attemptId, periodId });
+  if (!attemptId || !Array.isArray(req.body?.kyNang)) throw badRequest('Thiếu đợt hoặc kỹ năng cần đặt.');
+  const kyNang = req.body.kyNang.map((k: any) => ({
+    skill: String(k?.skill ?? ''), periodId: toInt(k?.periodId), bo: typeof k?.bo === 'boolean' ? k.bo : undefined,
+  }));
+  return keHoachSvc.luuDot(principalOf(req), {
+    attemptId, kyNang, lyDoBo: req.body.lyDoBo ?? null, force: !!req.body.force, reason: req.body.reason ?? null,
+  });
 }));
 
 api.post('/ke-hoach-test/xep-moi', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   const studentId = toInt(req.body?.studentId);
-  const rlwPeriodId = toInt(req.body?.rlwPeriodId);
-  if (!studentId || !rlwPeriodId) throw badRequest('Thiếu học viên hoặc tuần RLW.');
-  return keHoachSvc.xepMoi(principalOf(req), { ...req.body, studentId, rlwPeriodId });
+  if (!studentId) throw badRequest('Thiếu học viên.');
+  const tuan = tuanTheoKyNang(req.body?.tuan);
+  if (req.body?.kind) {
+    const classId = toInt(req.body?.classId);
+    if (!classId) throw badRequest('Thiếu lớp.');
+    return keHoachSvc.xepMoiThuong(principalOf(req), { classId, studentId, kind: req.body.kind, tuan, force: !!req.body.force });
+  }
+  return keHoachSvc.xepMoi(principalOf(req), {
+    studentId, attemptNo: toInt(req.body?.attemptNo) ?? undefined, tuan, bo: Array.isArray(req.body?.bo) ? req.body.bo : [],
+    lyDoBo: req.body?.lyDoBo ?? null, force: !!req.body?.force,
+  });
 }));
 
 api.post('/ke-hoach-test/hang-loat', requireAuth, wrap((req) => {
   if (!req.body?.xemTruoc) maybeSimulateSaveFailure();
   const classId = toInt(req.body?.classId);
-  const attemptNo = toInt(req.body?.attemptNo);
-  const rlwPeriodId = toInt(req.body?.rlwPeriodId);
-  if (!classId || !attemptNo || !rlwPeriodId) throw badRequest('Thiếu lớp, đợt hoặc tuần RLW.');
-  return keHoachSvc.xepHangLoat(principalOf(req), { ...req.body, classId, attemptNo, rlwPeriodId });
+  if (!classId) throw badRequest('Thiếu lớp.');
+  return keHoachSvc.xepHangLoat(principalOf(req), {
+    classId, attemptNo: toInt(req.body?.attemptNo) ?? undefined, kind: req.body?.kind || undefined,
+    studentIds: Array.isArray(req.body?.studentIds) ? req.body.studentIds.map((x: any) => toInt(x)).filter(Boolean) : [],
+    tuan: tuanTheoKyNang(req.body?.tuan), force: !!req.body?.force, xemTruoc: !!req.body?.xemTruoc,
+  });
 }));
 
-api.get('/ke-hoach-test/thuong', requireAuth, wrap((req) =>
-  keHoachSvc.bangThuong(principalOf(req), { branchId: toInt(req.query?.branchId) })));
-
-api.post('/ke-hoach-test/thuong/doi-lich', requireAuth, wrap((req) => {
-  if (!req.body?.xemTruoc) maybeSimulateSaveFailure();
-  const classId = toInt(req.body?.classId);
-  const periodId = toInt(req.body?.periodId);
-  if (!classId || !periodId || !req.body?.kind || !req.body?.skill) throw badRequest('Thiếu lớp, đợt, môn hoặc tuần.');
-  return keHoachSvc.doiLichThuong(principalOf(req), { ...req.body, classId, periodId });
-}));
+api.get('/ke-hoach-test/thuong/:classId', requireAuth, wrap((req) =>
+  keHoachSvc.luoiThuong(principalOf(req), pInt(req, 'classId'))));
 
 /** Tổng hợp theo tuần cho Quản lý: mỗi tuần một dòng, mọi con số bấm được. */
 api.get('/weekly-rollup', requireAuth, wrap((req) => weeklyRollup(principalOf(req), {
@@ -578,8 +599,8 @@ api.get('/weekly-rollup/ids', requireAuth, wrap((req) => {
 }));
 
 /*
- * PHÂN TÍCH (PR-Pb, §3.3) — Tổng hợp Test + SOS và Vấn đề học viên. `theo`/`cot` chỉ có nghĩa với Tổng hợp;
- * Vấn đề học viên dùng `cot` riêng (lop|cn). Quyền `meeting.view` được kiểm ngay trong `tongHopSvc`/`vanDeSvc`.
+ * PHÂN TÍCH (PR-Pb, §3.3; PR-UX4) — Tổng hợp Test + SOS, Tổng hợp vấn đề HV, Hiệu quả PA, Ý thức, Bỏ quên.
+ * Quyền `meeting.view` được kiểm ngay trong từng dịch vụ (`phanTich/phamVi.ts` cho các đường mới).
  */
 const filterTongHopOf = (req: Request) => ({
   branchId: qInt(req, 'branchId') ?? null, ct: chuongTrinhTuThamSo(qStr(req, 'ct')),
@@ -596,19 +617,60 @@ api.get('/phan-tich/tong-hop/o', requireAuth, wrap((req) => {
     ...filterTongHopOf(req), khoa: qStr(req, 'khoa') ?? '', cot: qStr(req, 'cot') ?? '',
   });
 }));
-const filterVanDeOf = (req: Request) => ({
+/* Tổng hợp vấn đề HV (PR-UX4): đếm HV theo loại lỗi. `loi=chinh` chỉ lỗi chính; `gop=1` gộp theo loại lỗi chung. */
+const filterVanDeHvOf = (req: Request) => ({
   branchId: qInt(req, 'branchId') ?? null, ct: chuongTrinhTuThamSo(qStr(req, 'ct')),
-  classId: qInt(req, 'lop') ?? null, cot: qStr(req, 'cot') === 'cn' ? ('cn' as const) : ('lop' as const),
+  classId: qInt(req, 'lop') ?? null, soTuan: khoangTuThamSo(qStr(req, 'tg')),
+  chiChinh: qStr(req, 'loi') === 'chinh', gop: qStr(req, 'gop') === '1',
 });
-api.get('/phan-tich/van-de', requireAuth, wrap((req) => {
+api.get('/phan-tich/van-de-hv', requireAuth, wrap((req) => {
   maybeSimulateReadError();
-  return vanDeSvc.maTranVanDe(principalOf(req), filterVanDeOf(req));
+  return vanDeHvSvc.vanDeHv(principalOf(req), filterVanDeHvOf(req));
 }));
-api.get('/phan-tich/van-de/o', requireAuth, wrap((req) => {
+api.get('/phan-tich/van-de-hv/o', requireAuth, wrap((req) => {
   maybeSimulateReadError();
-  return vanDeSvc.oVanDe(principalOf(req), {
-    ...filterVanDeOf(req), kn: qStr(req, 'kn') ?? '', ma: qStr(req, 'ma') ?? null, khoaCot: qStr(req, 'khoaCot') ?? '',
+  return vanDeHvSvc.oVanDeHv(principalOf(req), {
+    ...filterVanDeHvOf(req), dong: qStr(req, 'dong') ?? '', cot: qStr(req, 'cot') ?? '',
   });
+}));
+/* Hiệu quả PA (PR-UX4): vấn đề (lỗi chính) → loại PA, kèm cỡ mẫu. */
+const filterHieuQuaPaOf = (req: Request) => ({
+  branchId: qInt(req, 'branchId') ?? null, ct: chuongTrinhTuThamSo(qStr(req, 'ct')),
+  classId: qInt(req, 'lop') ?? null, soTuan: khoangTuThamSo(qStr(req, 'tg')),
+});
+api.get('/phan-tich/hieu-qua-pa', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return hieuQuaPaSvc.hieuQuaPa(principalOf(req), filterHieuQuaPaOf(req));
+}));
+api.get('/phan-tich/hieu-qua-pa/o', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return hieuQuaPaSvc.oHieuQuaPa(principalOf(req), {
+    ...filterHieuQuaPaOf(req), dong: qStr(req, 'dong') ?? '', cot: qStr(req, 'cot') ?? '',
+  });
+}));
+/* Ý thức & Phối hợp (PR-UX4): Học viên cần chú ý + Lớp nhiều vi phạm. Kỳ = từ đầu khoảng `tg` đến hôm nay. */
+const filterYThucPhanTichOf = (req: Request) => ({
+  branchId: qInt(req, 'branchId') ?? null, ct: chuongTrinhTuThamSo(qStr(req, 'ct')), classId: qInt(req, 'lop') ?? null,
+  from: tuDauKhoang(demoToday(), khoangTuThamSo(qStr(req, 'tg'))), to: demoToday(),
+});
+api.get('/phan-tich/y-thuc', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return yThucPhanTichSvc.yThucPhanTich(principalOf(req), filterYThucPhanTichOf(req));
+}));
+api.get('/phan-tich/y-thuc/o', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return yThucPhanTichSvc.oYThucPhanTich(principalOf(req), {
+    ...filterYThucPhanTichOf(req), dong: qStr(req, 'dong') ?? '', cot: qStr(req, 'cot') ?? '',
+  });
+}));
+/* Hai việc "bỏ quên" (PR-UX4, Q17–Q19): bộ lọc ở Danh sách Case, cùng tập với hai dòng Cần xử lý ở Tổng quan. */
+api.get('/phan-tich/bo-quen', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  const loai = qStr(req, 'loai');
+  if (!laLoaiBoQuen(loai)) throw badRequest('Loại danh sách không hợp lệ.');
+  return boQuenSvc.danhSachBoQuen(principalOf(req), {
+    branchId: qInt(req, 'branchId') ?? null, ct: chuongTrinhTuThamSo(qStr(req, 'ct')), loai,
+  }, demoToday());
 }));
 
 /** Việc sinh ra từ dữ liệu — tự hết khi nguồn được xử lý, không có nút đóng giả. */
@@ -773,19 +835,17 @@ api.get('/classes/:classId/cham', requireAuth, wrap((req) => {
   });
 }));
 
-/** Cần chấm — mockup 05a2 phương án A: ba mục Quá hạn / Tuần này / Sắp tới, mỗi dòng một lớp + một đợt. */
-api.get('/cham/can-cham', requireAuth, wrap((req) => {
-  maybeSimulateReadError();
-  return chamSvc.canChamList(principalOf(req), {
-    branchId: qInt(req, 'branchId'), classId: qInt(req, 'classId'), scope: qScope(req),
-  });
-}));
-
-/** Lịch Test — các lượt Test của một tuần, nhóm theo lớp. Không truyền tuần thì lấy tuần hiện tại. */
+/**
+ * Lịch Test (PR-UX1) — MỘT lời gọi đủ cho màn: dải số, Nợ tuần trước, mỗi lớp một hàng. Không truyền tuần thì lấy tuần
+ * hiện tại. `phamVi` = "Lớp tôi dạy" (`cua-toi`) / "Tất cả" (`tat-ca`); `classId` = đang lọc một lớp.
+ */
 api.get('/cham/lich-test', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   const periodId = qInt(req, 'periodId') ?? ensurePeriod(demoToday()).id;
-  return chamSvc.lichTest(principalOf(req), periodId, qInt(req, 'branchId'));
+  const pv = qStr(req, 'phamVi');
+  return chamSvc.lichTest(principalOf(req), periodId, qInt(req, 'branchId'), demoToday(), {
+    phamVi: pv === 'cua-toi' || pv === 'tat-ca' ? pv : null, classId: qInt(req, 'classId') ?? null,
+  });
 }));
 
 // ============================================================ Lớp (Học viên lấy lớp làm gốc)
@@ -817,70 +877,6 @@ api.get('/classes/:id/issue-board', requireAuth, wrap((req) => {
   const category = qStr(req, 'category');
   if (!category) throw badRequest('Chưa chọn kỹ năng để phân tích.');
   return effectiveness.classIssueBoard(id, category, { fromDate: qStr(req, 'from') ?? null });
-}));
-
-/*
- * BẢNG PHÂN TÍCH VẤN ĐỀ Ở PHẠM VI CHI NHÁNH — trang Thực trạng (mục 15).
- *
- * Ba đường dưới đây dùng CHUNG một bộ lọc phạm vi và CHUNG một cách đếm với bảng của từng
- * lớp (mục 13.4). Số tổng, bảng phân loại và danh sách khi bấm số vì thế không thể lệch
- * nhau — đó là cả lý do chúng gọi vào cùng một nơi thay vì mỗi màn tự đếm lấy.
- */
-function issueScopeOf(req: any) {
-  const p = principalOf(req);
-  const sc = scopeFor(p, PERMISSIONS.CASE_VIEW);
-  if (sc.none) throw forbidden('Bạn không có quyền xem thực trạng.');
-  const asked = qInt(req, 'branchId') ?? null;
-  /* Không có quyền toàn hệ thống thì phạm vi luôn là giao của quyền và ô người dùng chọn. */
-  const allowed = sc.all ? null : sc.branchIds;
-  const branchIds: number[] | null = asked !== null
-    ? (allowed && !allowed.includes(asked) ? [] : [asked])
-    : allowed;
-  const classId = qInt(req, 'classId');
-  /* Hỏi theo LỚP thì lớp đó phải nằm trong phạm vi — không được vượt quyền bằng cách truyền classId. */
-  if (classId) require_(p, PERMISSIONS.CASE_VIEW, { classId }, 'Lớp này nằm ngoài phạm vi bạn được xem.');
-  return {
-    classId: classId ?? null,
-    branchIds: classId ? null : branchIds,
-    ratio: qStr(req, 'lop') === 'normal',
-    fromDate: qStr(req, 'from') ?? null,
-    toDate: qStr(req, 'to') ?? null,
-  };
-}
-
-/** Hàng kỹ năng: mỗi hạng mục một hàng, kể cả hạng mục chưa có case nào (mục 15.1). */
-api.get('/issue-board/skills', requireAuth, wrap((req) => {
-  maybeSimulateReadError();
-  return { rows: effectiveness.issueSkillRows(issueScopeOf(req)) };
-}));
-
-/** Bảng phân loại vấn đề của MỘT hạng mục, kèm hiệu quả theo loại phương án. */
-api.get('/issue-board', requireAuth, wrap((req) => {
-  maybeSimulateReadError();
-  const category = qStr(req, 'category');
-  if (!category) throw badRequest('Chưa chọn kỹ năng để phân tích.');
-  return effectiveness.issueBoard(issueScopeOf(req), category);
-}));
-
-/** Bấm một số thì ra đúng tập bản ghi tạo nên số đó (mục 15.2). */
-api.get('/issue-board/cases', requireAuth, wrap((req) => {
-  maybeSimulateReadError();
-  const category = qStr(req, 'category');
-  if (!category) throw badRequest('Chưa chọn kỹ năng để xem chi tiết.');
-  return effectiveness.issueBoardCases(issueScopeOf(req), category, qStr(req, 'code'));
-}));
-
-/**
- * PHƯƠNG ÁN CẦN BỔ SUNG ĐÁNH GIÁ (F05) — đã kết thúc nhưng chưa có kết quả xác định. Không nằm trong
- * bảng hiệu quả và không vào mẫu số, nhưng cũng không được biến mất: đây là danh sách việc cần làm.
- * Cùng bộ lọc phạm vi với bảng vừa bấm, nên số ghi ở liên kết và danh sách mở ra là một.
- */
-api.get('/issue-board/needs-evaluation', requireAuth, wrap((req) => {
-  maybeSimulateReadError();
-  const category = qStr(req, 'category');
-  if (!category) throw badRequest('Chưa chọn kỹ năng để xem chi tiết.');
-  const need = effectiveness.plansNeedingEvaluation({ ...issueScopeOf(req), category });
-  return { count: need.count, rows: rowsFor('phuong-an', need.ids) };
 }));
 
 api.get('/classes/:id/issue-board/needs-evaluation', requireAuth, wrap((req) => {

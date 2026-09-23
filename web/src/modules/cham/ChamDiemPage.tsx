@@ -1,42 +1,16 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
-import { Card, ErrorState, Skeleton } from '../../ui/ui.tsx';
+import { ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { useCurrentPeriod, WeekPicker } from '../../ui/Filters.tsx';
 import { Han } from '../../ui/Han.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { skillLabel, skillShort } from '../../lib/format.ts';
-import { LuoiFT, hanSomNhatFt, tenDotFt, type FtSheet } from './LuoiFT.tsx';
-import {
-  LuoiThuong, hanSomNhatThuong, kindMacDinh, kindsThuong, tuanThiTheoMon, type ThuongSheet,
-} from './LuoiThuong.tsx';
-import { MotKyNang } from './MotKyNang.tsx';
-
-/** Trả lời của `GET /classes/:classId/cham` (`chamSheet` ở server/src/cham/canCham.ts). */
-type Cham = {
-  classId: number; classCode: string; branchName: string; canPlanWeek: boolean; today: string;
-  mode: 'ielts_band' | 'ratio';
-  ft: FtSheet | null;
-  thuong: ThuongSheet | null;
-};
-
-/**
- * MÀN HẸP (Q16): < 768px — cùng ngưỡng `md` của Tailwind, cho cả lớp FT và lớp thường. Theo dõi `change` của
- * `matchMedia` nên xoay ngang điện thoại hay kéo hẹp cửa sổ là đổi chế độ ngay.
- */
-const MAN_HEP = '(max-width: 767px)';
-function useManHinhHep() {
-  const [hep, setHep] = useState(() => typeof window !== 'undefined' && window.matchMedia(MAN_HEP).matches);
-  useEffect(() => {
-    const m = window.matchMedia(MAN_HEP);
-    const doi = () => setHep(m.matches);
-    doi();
-    m.addEventListener('change', doi);
-    return () => m.removeEventListener('change', doi);
-  }, []);
-  return hep;
-}
+import { chuOChuaLuu } from '@shared/domain/index.ts';
+import { hanSomNhatFt, tenDotFt } from './LuoiFT.tsx';
+import { hanSomNhatThuong, kindMacDinh, kindsThuong, tuanThiTheoMon, type ThuongSheet } from './LuoiThuong.tsx';
+import { LuoiChamLop, duongCham, thuongTheoBai, type Cham } from './LuoiChamLop.tsx';
 
 /**
  * LƯỚI CHẤM — MỘT TRANG CHO CẢ LỚP FAST TRACK VÀ LỚP THƯỜNG (spec §3.5, mockup 05a §2).
@@ -44,8 +18,8 @@ function useManHinhHep() {
  * Trang này KHÔNG tự đoán loại lớp: máy chủ trả `mode` ở `/classes/:id/cham` và trang chọn lưới theo đó. Nhờ vậy mở
  * `/nhap-diem/:id` của một lớp thường không còn ra lưới Mock Test (đặc tả §6) — và ngược lại.
  *
- * Màn hẹp (< 768px) chuyển sang chế độ MỘT KỸ NĂNG MỘT LÚC (`MotKyNang`) — đúng cách giáo viên chấm thật. Nút chữ nhỏ
- * "Xem dạng bảng" vẫn mở được lưới trên điện thoại (cuộn ngang TRONG THẺ, G-11); "Chấm từng kỹ năng" để quay lại.
+ * Phần lưới (chọn lưới theo loại lớp, màn hẹp một kỹ năng một lúc, đặt con trỏ) nằm ở `LuoiChamLop` — dùng chung với
+ * lưới mở tại chỗ của Lịch Test (PR-UX1). Trang này chỉ còn đầu trang: tên lớp + đợt, luật ⓘ, chọn tuần/bài, hạn.
  *
  * Đường dẫn mang ngữ cảnh (Q12): `?periodId=` (tuần của lưới FT), `?kind=` (Giữa khoá / Cuối khoá của lớp thường),
  * `?kn=` (kỹ năng — cuộn tới và đặt con trỏ vào em đầu tiên chưa có điểm của cột đó), `?hv=` (một học viên). Không có
@@ -56,8 +30,6 @@ export default function ChamDiemPage() {
   const [params, setParams] = useSearchParams();
   const current = useCurrentPeriod();
   const { homNay } = useNgayNghiepVu();
-  const hep = useManHinhHep();
-  const [xemBang, setXemBang] = useState(false);
 
   const periodParam = params.get('periodId') ? Number(params.get('periodId')) : null;
   const kindParam = params.get('kind');
@@ -70,11 +42,13 @@ export default function ChamDiemPage() {
    */
   const periodId = periodParam ?? current.data?.id ?? null;
   const choTuan = periodParam === null && !current.data && !current.error;
-  const path = classId && !choTuan ? `/classes/${classId}/cham${periodId ? `?periodId=${periodId}` : ''}` : null;
+  const path = classId && !choTuan ? duongCham(Number(classId), { periodId }) : null;
   const { data, error, reload } = useApi<Cham>(path);
 
   /* "Đã lưu 10:31 ✓" ở đầu trang: giờ của lần lưu thành công gần nhất trên cả lưới. */
   const [luuLuc, setLuuLuc] = useState<Date | null>(null);
+  /* PR-UX1: còn ô lưu hỏng thì đầu trang nói "n ô chưa lưu" thay cho "Đã lưu hh:mm ✓" — không để giờ lưu cuối che ô hỏng. */
+  const [chuaLuu, setChuaLuu] = useState(0);
   const onReload = () => { setLuuLuc(new Date()); reload(); };
 
   /** Đổi tham số trên đường dẫn (replace) — tải lại (F5) và Back không nhảy tuần / nhảy bài. */
@@ -89,41 +63,7 @@ export default function ChamDiemPage() {
   const kindChon = data?.thuong
     ? (kindParam && kinds.some((k) => k.kind === kindParam) ? kindParam : kindMacDinh(data.thuong))
     : null;
-  const thuong = useMemo<ThuongSheet | null>(
-    () => (data?.thuong ? { ...data.thuong, rows: data.thuong.rows.filter((r) => !kindChon || r.kind === kindChon) } : null),
-    [data?.thuong, kindChon],
-  );
-
-  /*
-   * Q12 / Task 7 Step 6 — cuộn tới ô trống đầu tiên của cột `kn` (hoặc dòng `hv`) MỘT LẦN cho mỗi ngữ cảnh mở trang.
-   * Không có cả hai (gõ thẳng đường dẫn) thì đặt con trỏ vào ô trống ĐẦU TIÊN mình sửa được, môn nào cũng được —
-   * `data-trong` chỉ gắn cho ô còn trống VÀ mình được sửa, nên ô trống đầu tiên trên trang là đúng ô cần chấm.
-   */
-  const khung = useRef<HTMLDivElement>(null);
-  const daCuon = useRef<string | null>(null);
-  const khoaCuon = `${classId}|${periodId}|${kindChon}|${kn}|${hv}`;
-  useEffect(() => {
-    if (!data || daCuon.current === khoaCuon) return;
-    const id = requestAnimationFrame(() => {
-      daCuon.current = khoaCuon;
-      const root = khung.current;
-      if (!root) return;
-      /* Không gắn tên thẻ: cùng bộ chọn cho lưới (tr/td) và màn điện thoại (li/div). */
-      const hang = hv !== null ? `[data-hv="${hv}"] ` : '';
-      const tim = (chon: string) => root.querySelector<HTMLElement>(chon);
-      const o = kn
-        ? tim(`${hang}[data-kn="${kn}"][data-trong]`)
-          ?? (kn === 'writing' ? tim(`${hang}[data-kn^="writing"][data-trong]`) : null)
-          ?? (hang ? tim(`[data-kn="${kn}"][data-trong]`) : null)
-        : hv !== null ? tim(`[data-hv="${hv}"]`) : tim('[data-trong]');
-      if (!o) return;
-      o.scrollIntoView({ block: 'center', inline: 'nearest' });
-      const f = o.querySelector<HTMLElement>('input:not([readonly]):not([disabled]), button:not([disabled]), input');
-      f?.focus();
-      if (f instanceof HTMLInputElement) f.select();
-    });
-    return () => cancelAnimationFrame(id);
-  }, [data, thuong, kn, hv, khoaCuon]);
+  const thuong = useMemo<ThuongSheet | null>(() => thuongTheoBai(data?.thuong, kindChon), [data?.thuong, kindChon]);
 
   if (error) return <ErrorState message={error.message} hint={error.hint} onRetry={reload} />;
   if (!data) return <div className="page"><Skeleton rows={8} /></div>;
@@ -133,7 +73,6 @@ export default function ChamDiemPage() {
   const han = laFt ? hanSomNhatFt(data.ft) : hanSomNhatThuong(thuong);
   const tuanMon = laFt ? null : tuanThiTheoMon(thuong, homNay || data.today);
   const nhapDuoc = (laFt ? data.ft?.editableSkills : data.thuong?.editableSkills) ?? [];
-  const tungKyNang = hep && !xemBang;
 
   return (
     <div className="page space-y-4">
@@ -192,7 +131,13 @@ export default function ChamDiemPage() {
             </label>
           )}
           {han && <div className="pb-2"><Han loai="nhap-diem" han={han} /></div>}
-          {luuLuc && (
+          {chuaLuu > 0 && (
+            <span className="pb-2 text-[11px] font-semibold text-bad whitespace-nowrap" role="alert"
+              title="Ô viền đỏ chưa lưu được — bấm Lưu lại ở ô đó.">
+              {chuOChuaLuu(chuaLuu)}
+            </span>
+          )}
+          {luuLuc && chuaLuu === 0 && (
             <span className="pb-2 text-[11px] text-slate-500 tabular-nums whitespace-nowrap"
               title="Mỗi ô tự lưu khi rời ô hoặc bấm Enter.">
               Đã lưu {String(luuLuc.getHours()).padStart(2, '0')}:{String(luuLuc.getMinutes()).padStart(2, '0')} ✓
@@ -201,24 +146,7 @@ export default function ChamDiemPage() {
         </div>
       </div>
 
-      {/* Q16 — màn hẹp: một kỹ năng một lúc; nút chữ nhỏ đổi qua lại với lưới (lưới cuộn ngang trong thẻ, G-11). */}
-      <div ref={khung}>
-        {hep && (
-          <div className="flex justify-end">
-            <button type="button" className="min-h-[44px] px-1 text-xs text-slate-500 hover:text-slate-200"
-              onClick={() => setXemBang((v) => !v)}
-              title={xemBang ? 'Quay lại chấm từng kỹ năng, mỗi em một ô to' : 'Mở lưới đủ các cột; lưới cuộn ngang trong thẻ'}>
-              {xemBang ? 'Chấm từng kỹ năng' : 'Xem dạng bảng'}
-            </button>
-          </div>
-        )}
-        <Card bodyClass="p-0">
-          {tungKyNang && laFt && data.ft && <MotKyNang mode="ielts_band" data={data.ft} onReload={onReload} kn={kn} hv={hv} />}
-          {tungKyNang && !laFt && thuong && <MotKyNang mode="ratio" data={thuong} onReload={onReload} kn={kn} hv={hv} />}
-          {!tungKyNang && laFt && data.ft && <LuoiFT data={data.ft} onReload={onReload} kn={kn} hv={hv} />}
-          {!tungKyNang && !laFt && thuong && <LuoiThuong data={thuong} onReload={onReload} kn={kn} hv={hv} />}
-        </Card>
-      </div>
+      <LuoiChamLop data={data} kind={kindChon} kn={kn} hv={hv} onReload={onReload} onSoOChuaLuu={setChuaLuu} />
     </div>
   );
 }

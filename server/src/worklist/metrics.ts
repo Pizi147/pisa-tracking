@@ -1,5 +1,5 @@
 import { db } from '../db.ts';
-import { MEASURE_KIND_LABEL, PERMISSIONS, VIOLATION_CATEGORY_LABEL, metricById, type ChiSo, type ChuongTrinh } from '../../../shared/domain/index.ts';
+import { MEASURE_KIND_LABEL, PERMISSIONS, VIOLATION_CATEGORY_LABEL, metricById, type ChiSo, type ChuongTrinh, type LoaiBoQuen } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { scopeFor, type Principal } from '../permissions.ts';
 import { badRequest, forbidden, HttpError, notFound } from '../util.ts';
@@ -12,6 +12,7 @@ import { isYThucMetric, yThucMetric, YTHUC_METRIC_IDS } from '../yThuc/thongKe.t
 import { PHOI_HOP_METRIC_IDS, isPhoiHopMetric, phoiHopMetric } from '../yThuc/phoiHop.ts';
 import { locTheoChuongTrinh } from './chuongTrinh.ts';
 import { scoreDebtCells } from './scoreDebt.ts';
+import { boQuen } from '../phanTich/boQuen.ts';
 
 /**
  * TẬP ID CỦA TỪNG CHỈ SỐ — nơi duy nhất sinh ra cả CON SỐ lẫn DANH SÁCH KHI BẤM VÀO (hợp đồng số liệu).
@@ -194,7 +195,7 @@ export const LISTED_METRICS: readonly string[] = [
   'hv-sos-hien-tai', 'hv-duoi-ky-vong-mon', 'hv-co-case-mo', 'case-mo', 'tin-hieu-cho-xac-minh', 'tin-hieu-qua-han',
   'case-xac-dinh-nguyen-nhan-qua-han', 'bai-qua-han-nhap-diem', 'case-chua-co-nguoi-phu-trach',
   'case-cho-xac-dinh-nguyen-nhan', 'case-thieu-pa', 'pa-can-cap-nhat', 'pa-cho-duyet', 'pa-co-ket-qua', 'ty-le-co-cai-thien',
-  'dung-han-cap-nhat', 'do-phu-danh-gia',
+  'dung-han-cap-nhat', 'do-phu-danh-gia', 'hv-can-ho-tro-2-lan-chua-case', 'hv-bo-qua-van-can-ho-tro',
   ...YTHUC_METRIC_IDS,
   ...PHOI_HOP_METRIC_IDS,
 ];
@@ -508,6 +509,12 @@ function metricSetGoc(
     case 'do-phu-danh-gia': {
       const r = doPhuDanhGia(p, branchId ?? null, today);
       return done(r.ids, { numeratorIds: r.numeratorIds });
+    }
+    case 'hv-can-ho-tro-2-lan-chua-case':
+    case 'hv-bo-qua-van-can-ho-tro': {
+      /* PR-UX4: một hàm `boQuen` tính cả hai, nhớ trong request — số ở Cần xử lý, danh sách Danh sách Case và bảng đều cùng tập. */
+      const loai: LoaiBoQuen = id === 'hv-bo-qua-van-can-ho-tro' ? 'bo-qua-van-can-ho-tro' : 'can-ho-tro-2-lan';
+      return done(boQuen(p, branchId ?? null, today)[loai].map((r) => r.studentId).sort((a, b) => a - b));
     }
     case 'dung-han-cap-nhat': {
       /* Nghĩa vụ của MỌI case học thuật trong phạm vi — kể cả case đã đóng: nghĩa vụ đã đến hạn vẫn là chuyện đã xảy ra. */

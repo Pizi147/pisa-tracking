@@ -6,6 +6,7 @@
  * Không có con số nào được tính ở đây — số luôn đến từ `metricSet` (hợp đồng số liệu luật 1).
  */
 import type { DeadlineKind } from './display.ts';
+import type { LoaiBoQuen } from './phanTich.ts';
 
 // ------------------------------------------------------------------ chương trình
 export const CHUONG_TRINH = ['thuong', 'ft', 'ca-hai'] as const;
@@ -67,7 +68,8 @@ export function gomNhomViec<T extends ViecGom>(items: T[], soNhacYThuc = 0): Nho
 // ------------------------------------------------------------------ Cần xử lý (Quản lý)
 export type MaCanXuLy =
   | 'tin-hieu-qua-han' | 'case-xac-dinh-nguyen-nhan-qua-han' | 'pa-cho-duyet' | 'case-chua-co-nguoi-phu-trach'
-  | 'case-thieu-pa' | 'pa-can-cap-nhat' | 'bai-qua-han-nhap-diem' | 'hv-can-xu-ly';
+  | 'case-thieu-pa' | 'pa-can-cap-nhat' | 'bai-qua-han-nhap-diem' | 'hv-can-xu-ly'
+  | 'hv-can-ho-tro-2-lan-chua-case' | 'hv-bo-qua-van-can-ho-tro';
 
 /**
  * MỖI DÒNG LÀ MỘT CHỈ SỐ TRONG SỔ — bấm số hay bấm nút đều mở đúng tập đó (G-10).
@@ -76,23 +78,29 @@ export type MaCanXuLy =
  */
 export const CAN_XU_LY: readonly {
   metricId: MaCanXuLy; nhan: string; nut: 'Mở' | 'Xem' | 'Duyệt'; mau: 'do' | 'vang' | 'xanh'; canQuyenDuyet?: true;
+  /** PR-UX4: nút Xem mở Danh sách Case với bộ lọc `hang-doi=<denLoc>` (Phân tích › Danh sách Case), không mở ngăn số. */
+  denLoc?: LoaiBoQuen;
 }[] = [
   { metricId: 'tin-hieu-qua-han', nhan: 'tín hiệu cần xác minh quá hạn', nut: 'Mở', mau: 'do' },
   { metricId: 'case-xac-dinh-nguyen-nhan-qua-han', nhan: 'Case quá hạn xác định nguyên nhân', nut: 'Mở', mau: 'do' },
   { metricId: 'pa-cho-duyet', nhan: 'PA chờ Quản lý duyệt', nut: 'Duyệt', mau: 'vang', canQuyenDuyet: true },
   { metricId: 'case-chua-co-nguoi-phu-trach', nhan: 'Case chưa có người phụ trách', nut: 'Xem', mau: 'vang' },
+  { metricId: 'hv-can-ho-tro-2-lan-chua-case', nhan: 'học viên cần hỗ trợ 2 lần Test liền, chưa có Case mở', nut: 'Xem', mau: 'vang', denLoc: 'can-ho-tro-2-lan' },
+  { metricId: 'hv-bo-qua-van-can-ho-tro', nhan: 'học viên bị Bỏ qua tín hiệu, lần Test sau vẫn chưa đạt', nut: 'Xem', mau: 'vang', denLoc: 'bo-qua-van-can-ho-tro' },
   { metricId: 'case-thieu-pa', nhan: 'Case thiếu PA học thuật', nut: 'Xem', mau: 'vang' },
   { metricId: 'pa-can-cap-nhat', nhan: 'PA học thuật quá hạn cập nhật', nut: 'Xem', mau: 'do' },
   { metricId: 'bai-qua-han-nhap-diem', nhan: 'bài chưa nhập điểm quá hạn', nut: 'Xem', mau: 'do' },
   { metricId: 'hv-can-xu-ly', nhan: 'học viên có vi phạm quá 5 ngày chưa xử lý', nut: 'Xem', mau: 'xanh' },
 ];
-export const CAN_XU_LY_TOI_DA = 8;
-export type DongCanXuLyGoc = { metricId: MaCanXuLy; n: number; nhan: string; nut: 'Mở' | 'Xem' | 'Duyệt'; mau: 'do' | 'vang' | 'xanh' };
+export const CAN_XU_LY_TOI_DA = 10;
+export type DongCanXuLyGoc = {
+  metricId: MaCanXuLy; n: number; nhan: string; nut: 'Mở' | 'Xem' | 'Duyệt'; mau: 'do' | 'vang' | 'xanh'; denLoc?: LoaiBoQuen;
+};
 export function sapCanXuLy(dem: Partial<Record<MaCanXuLy, number>>, coQuyenDuyet: boolean): DongCanXuLyGoc[] {
   return CAN_XU_LY
     .filter((x) => (dem[x.metricId] ?? 0) > 0 && (!x.canQuyenDuyet || coQuyenDuyet))
     .slice(0, CAN_XU_LY_TOI_DA)
-    .map((x) => ({ metricId: x.metricId, n: dem[x.metricId]!, nhan: x.nhan, nut: x.nut, mau: x.mau }));
+    .map((x) => ({ metricId: x.metricId, n: dem[x.metricId]!, nhan: x.nhan, nut: x.nut, mau: x.mau, ...(x.denLoc ? { denLoc: x.denLoc } : {}) }));
 }
 
 // ------------------------------------------------------------------ Điểm đáng chú ý (Quản lý)

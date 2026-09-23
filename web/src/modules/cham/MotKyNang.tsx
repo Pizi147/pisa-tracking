@@ -18,7 +18,7 @@ import { Info } from '../../ui/ui.tsx';
 import {
   ChoNutDau, CriteriaButton, KHOA_HOAN_TAT_HINT, ODiemThuong, RawScoreInput, datPhanTram, useSaveScore, type Cell,
 } from '../fasttrack/ScoreEntry.tsx';
-import { DauLuu, LuoiFT, khopKn, oTrongFt, type FtSheet } from './LuoiFT.tsx';
+import { DauLuu, DauO, LuoiFT, VIEN_LOI, khopKn, oTrongFt, type FtSheet } from './LuoiFT.tsx';
 import {
   LuoiThuong, ketQuaCua, lichCua, oThuong, tongPhoBien, useLuuThuong, type ThuongSheet,
 } from './LuoiThuong.tsx';
@@ -34,7 +34,7 @@ export function MotKyNang(p: Chung & ({ mode: 'ielts_band'; data: FtSheet } | { 
 }
 
 /**
- * KỸ NĂNG ĐANG CHỌN. Mở từ Cần chấm với `?kn=` thì chọn sẵn kỹ năng đó (`writing` = W1 của FT); không thì kỹ năng đầu
+ * KỸ NĂNG ĐANG CHỌN. Mở từ Lịch Test / Việc cần làm với `?kn=` thì chọn sẵn kỹ năng đó (`writing` = W1 của FT); không thì kỹ năng đầu
  * tiên của mình còn ô trống, rồi kỹ năng đầu tiên của mình, rồi kỹ năng đầu tiên.
  */
 function useKyNangChon(dsKn: string[], cuaMinh: (k: string) => boolean, conTrong: (k: string) => boolean, kn: string | null) {
@@ -166,7 +166,7 @@ function DongFt({ row, k, nhieuMt, active, onReload, inputRef, onKeyDown }: {
   row: FtSheet['rows'][number]; k: string; nhieuMt: boolean; active: boolean; onReload: () => void;
   inputRef: (el: HTMLInputElement | null) => void; onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => void;
 }) {
-  const { save, status, lastError, retry } = useSaveScore(row.attemptId, onReload);
+  const { save, status, lastError, retry, o, loi, luuLai, soLoi } = useSaveScore(row.attemptId, onReload);
   const c = oCua(row, k);
   const kv = row.result?.expectation ?? null;
   const phu = [nhieuMt ? `MT${row.attemptNo}` : null, kv !== null ? `KV ${fmtBand(kv)}` : row.studentCode]
@@ -175,9 +175,11 @@ function DongFt({ row, k, nhieuMt, active, onReload, inputRef, onKeyDown }: {
   return (
     <DongHv studentId={row.studentId} active={active} ten={row.studentName} href={`/mock-test/${row.attemptId}`}
       phu={phu} phuTitle={kv !== null ? `Kỳ vọng (KV) của lượt này: ${fmtBand(kv)} · ${row.studentCode}` : undefined}
-      luu={<DauLuu status={status} error={lastError} onRetry={retry} />}
+      luu={<DauLuu lon status={status} error={lastError} onRetry={retry} soLoi={soLoi} />}
       nhan={<NhanHoanTat hoanTat={row.hoanTat} chuNhatCuoi={row.chuNhatCuoi} />}>
-      <div className="shrink-0 flex justify-end" data-kn={k} data-trong={c && oTrongFt(c) ? '1' : undefined}>
+      <div className={`shrink-0 flex items-center justify-end gap-1 rounded-md ${o[k] === 'loi' ? VIEN_LOI : ''}`} data-kn={k}
+        data-trong={c && oTrongFt(c) ? '1' : undefined} data-luu={o[k]}>
+        <DauO lon tt={o[k]} loi={loi[k]} onLuuLai={() => luuLai(k)} />
         {!c ? <span className="inline-flex items-center gap-1.5"><span className="text-slate-600">—</span><ChoNutDau /></span>
           : laSoCau
             ? <RawScoreInput lon cell={c} onSave={(p, o) => save(k, p, o)} inputRef={inputRef} onKeyDown={onKeyDown} />
@@ -250,7 +252,7 @@ function DongThuongMot({ row, k, sheet, tongCot, active, onReload, inputRef, onK
   row: DongThuongRow; k: string; sheet: ThuongSheet; tongCot: number | null; active: boolean; onReload: () => void;
   inputRef: (el: HTMLInputElement | null) => void; onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => void;
 }) {
-  const { luu, dau, status, lastError, retry } = useLuuThuong(row.attemptId, onReload);
+  const { luu, dau, status, lastError, retry, o, loi, luuLai, soLoi } = useLuuThuong(row.attemptId, onReload);
   const { s, canEdit, trong, dung, chuDung, quaHan, cell } = oThuong(row, k, sheet.today);
   const tenMon = sheet.skillLabels[k] ?? skillLabel(k);
   /*
@@ -267,9 +269,11 @@ function DongThuongMot({ row, k, sheet, tongCot, active, onReload, inputRef, onK
   return (
     <DongHv studentId={row.studentId} active={active} ten={row.studentName} href={`/hoc-vien/${row.studentId}`}
       phu={phu} phuTitle={`${tenMon} · ${row.studentCode}`} phuDo={phu === ketQua && cell.ketQua === 'fail'}
-      luu={<DauLuu status={status} error={lastError} onRetry={retry} />}
+      luu={<DauLuu lon status={status} error={lastError} onRetry={retry} soLoi={soLoi} />}
       nhan={<NhanHoanTat hoanTat={row.hoanTat} chuNhatCuoi={row.chuNhatCuoi} />}>
-      <div className="shrink-0 flex justify-end" data-kn={k} data-trong={trong ? '1' : undefined}>
+      <div className={`shrink-0 flex items-center justify-end gap-1 rounded-md ${o[k] === 'loi' ? VIEN_LOI : ''}`} data-kn={k}
+        data-trong={trong ? '1' : undefined} data-luu={o[k]}>
+        <DauO lon tt={o[k]} loi={loi[k]} onLuuLai={() => luuLai(k)} />
         {dung || !s ? (
           <span className="inline-flex items-center gap-1">
             <span className="text-[11px] text-slate-500" title={`${tenMon}: ${chuDung ?? 'không có lịch'}`}>

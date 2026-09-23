@@ -482,6 +482,22 @@ này dịch được riêng).
 
 | Ngày | Task | Ghi chú |
 |---|---|---|
+| 23/09 | 0 | Worktree từ origin/main `d0462b0` (UX0 #89 + Z2c-c #87 đã merge). Model thật: **Sonnet 5** (phương án B của kế hoạch), không subagent. Không có biến Turso. Mốc **B = 1186** (`run.js`) + 20 (`tocDo`). Con trỏ: `KhungPanel` (`web/src/ui/KhungPanel.tsx`) nhận `rong='rong'` = 720px, có `Khoi`/`Truong`, chân `chan={huy,phu,chinh,conThieu}`, `onDong`; `HangNhom` là `<tr>` (`mo,onMo,nhan,tieuDe,soCotDau`) + `HangCon`; `Nhan tone=ok/done/bad/soon/doing/wait/muted`. Mã khớp kế hoạch (`keHoachTest.ts:27-619`, routes `:505-552`, `skillSchedule.ts:448-503`, `regular.ts:232`). |
+| 23/09 | 1 | Luật thuần thêm vào `shared/domain/keHoachTest.ts` (chưa xoá gì). `tomTatHangLoat`: bài `giu` không tính là bài. Bộ kiểm 1186 → **1190** (B+4). |
+| 23/09 | 2 | `checkWeekVsNeighbours` đọc theo từng kỹ năng, câu trùng tuần nêu `(L R W)`/`(S)`; `planRegularTests(p, classId, { studentIds, kinds })`. 1190 → **1192** (B+6). Phép `UX2 · T15` dựng MT80 ở 2027 để khỏi đụng lịch seed. |
+| 23/09 | 3–5 | **Gộp ba Task máy chủ một commit** (`a29dbbb`): `xepHangLoat` (Task 5) dựa trên `kiemDot/luuDot` (Task 3) và `luoiThuong` (Task 4), tách ra thì commit giữa chừng không dựng được. `luuDot` nhận thêm `bo: false` (đưa kỹ năng đã bỏ trở lại) — `kiemDotNoi` có tham số `duaLai` để không coi dòng "không thi" là `giu`. `xepMoiThuong` kiểm "em đã có bài" **trước** T15 (không thì em đã có bài báo "Trùng tuần" thay vì "đã có bài"). Phép kiểm dùng HV không có lộ trình lớp thường và có ghi danh mới nhất ở MB-FT 101 (`hvFT`), vì các phép Task 2/Task 6 tạo lộ trình `route IS NULL` làm `currentCycle` của em đổi. 1192 → **1201** (B+15). **Tốc độ** (`tocDo.run.js`, đo lại): `/ke-hoach-test/lop` QL **17** · QT 16 (trần cũ 21); `/ft/3` QL **19** · QT 18 (trần cũ 29); `/thuong/5` QL **25** · QT 24 → trần mới 35/34, xoá khoá `/thuong?branchId=1` (trần cũ 34). Không khoá nào bị nâng. |
+| 23/09 | 6–7 | **Gộp hai Task web một commit** (`5d99f85`): panel hàng loạt và lưới/hộp chip dùng chung `kieu.ts` và bộ chọn tuần. Phép `PR-Rc2 · tomTatXemTruoc` đổi thành `UX2 · gomBaiXemTruoc` (số phép giữ 1201). |
+| 24/09 | 9 | Bấm thử bằng Playwright kênh Chrome, DB tạm + API 4407 + Vite 5607, ảnh ở `thiet-ke/anh/pr-ux2/` (1440 + 375). **QL (2):** hàng điều khiển (tìm lớp · tab · ⓘ · nút); gõ `ft10` → gợi ý MB-FT 101/102; lưới MB-FT 101 ô cùng tuần 1 chip, khác tuần 2 dòng, `Xong … ✓`, ô cao bằng nhau; bấm chip → hộp: Lưu mờ ban đầu (Bổ sung sau rà #87 ✓), lùi 4 tuần → `Chặn: Trùng tuần W3 AUG với MT2 (L R W S)` Lưu tắt, lùi 3 → `Chỉ cách MT2 đúng một tuần` + nút `Vẫn xếp vào tuần này`, hợp lệ → `L: W3 SEP → W2 SEP · không trùng đợt khác`, lưu → chỉ L đổi; bỏ tích S không lý do → Lưu tắt, có lý do → S biến khỏi ô; `+ xếp` một em → 4 tuần mặc định (L R W tuần này, S tuần sau). **Hàng loạt:** MT4 cho 8 em → 3 em lưu, panel **giữ đúng 5 em lỗi** (R9b ✓, không tick lại cả lớp). **Lớp thường:** MB-FOU 12 `đề xuất W4/8`/`W8/8`, chip có `W…/8`, `sau khoá`; đổi S của Bùi Khánh Linh chỉ em đó đổi, hộp không có ô tích. **GVCN (7), GVBM (9):** không có tab, `/test/ke-hoach` → `/test/can-cham`. **375px:** `scrollWidth === innerWidth` (375), lưới cuộn ngang trong thẻ, cột tên dính, hộp là tấm dưới đáy, panel toàn màn, nút Lưu cao 44px dính đáy. Không thấy ISO, "Normal", "tuần 5", "RLW", ⚠. Chưa bấm: BC-ELE 01 (chi nhánh khác QL Monbay; kiểm bằng phép `UX2 · nhãn tuần n/N`) và nút `Xếp cả lớp theo đề xuất` (không lớp nào có em chưa có bài trong seed; `planRegularTests` có phép). |
+
+### Lệch so với kế hoạch (sửa theo mã/đặc tả, không đổi hình dạng)
+
+- `OKyNang` thêm `periodId` (tuần hiện có) — để hộp sửa khởi tạo bằng tuần hiện có (Bổ sung sau rà #87).
+- `danhSachLop` thêm `chuongTrinh`; `tomTat` lớp thường chỉ còn `đang W8/8` (mockup: chương trình đứng cạnh chi nhánh: `Monbay · FOU · 4 HV`).
+- Hộp kỹ năng dùng **bộ chọn tuần gọn** `TuanNho` (`‹ W3 SEP ›`, bấm giữa mở `WeekPicker` đầy đủ) thay vì bốn `WeekPicker` nguyên bản — `WeekPicker` cao 44px và `Tuần này` xuống dòng, hộp 4 dòng cao ~500px. Panel hàng loạt cũng dùng `TuanNho`.
+- Đợt chưa có → hộp xem trước qua `/hang-loat` `xemTruoc` một em (không có route kiểm riêng cho đợt chưa tạo).
+- Cột đợt lớp thường rộng 208px (kế hoạch 176px) để đủ chỗ nhãn `W8/8`; hộp rộng 372px.
+- Xem trước hàng loạt: ô `Vẫn xếp {n} bài có cảnh báo` tick sẵn (như mockup); bỏ tick thì em có cảnh báo tính vào số "không lưu".
+- Đổi loại lớp (Fast Track ↔ Lớp thường) xoá chữ tìm lớp.
 
 ## Bổ sung sau rà #87 (planning 23/09)
 

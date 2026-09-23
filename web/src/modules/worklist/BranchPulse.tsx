@@ -2,7 +2,9 @@ import { Fragment, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { Card, Empty, ErrorState, Skeleton, Th } from '../../ui/ui.tsx';
+import { HangCon, HangNhom } from '../../ui/HangNhom.tsx';
 import { SoLieuO } from '../../ui/SoLieuO.tsx';
+import { DINH_TRAI } from '../phanTich/dungChung.tsx';
 import { thamSoCt, type ChuongTrinh, type CotBang } from '@shared/domain/index.ts';
 
 /**
@@ -89,28 +91,27 @@ export function BranchPulse({ branchId, ct }: { branchId: number | null; ct: Chu
               {data.cheDo === 'lop' && hangTong(data.tenChiNhanh ? `Cả ${data.tenChiNhanh}` : 'Cả chi nhánh')}
               {data.hang.map((h) => (
                 <Fragment key={h.khoa}>
-                  <tr className="row-hover" style={{ height: HANG }}>
-                    <td className="td sticky-col">
-                      {h.loai === 'chi-nhanh' ? (
-                        <span className="flex items-center gap-1.5 whitespace-nowrap">
-                          <button type="button" aria-expanded={mo.has(h.khoa)} title="Mở xuống từng lớp"
-                            aria-label={`${mo.has(h.khoa) ? 'Thu gọn' : 'Mở xuống lớp của'} ${h.nhan}`}
-                            className="appearance-none bg-transparent border-0 p-0 cursor-pointer text-slate-500"
-                            onClick={() => setMo((s) => { const n = new Set(s); n.has(h.khoa) ? n.delete(h.khoa) : n.add(h.khoa); return n; })}>
-                            {mo.has(h.khoa) ? '▾' : '▸'}
-                          </button>
-                          <button type="button" className="link appearance-none bg-transparent border-0 p-0 cursor-pointer"
-                            onClick={() => navigate(`/?cn=${h.id}${thamSoCt(ct)}`)}>{h.nhan}</button>
-                        </span>
-                      ) : tenLop(h)}
-                    </td>
-                    {COT.map((c) => o(h, c.key, h.o[c.key]))}
-                  </tr>
-                  {h.loai === 'chi-nhanh' && mo.has(h.khoa) && (h.lop ?? []).map((l) => (
-                    <tr key={l.khoa} className="row-hover" style={{ height: HANG }}>
-                      <td className="td sticky-col pl-8">{tenLop(l)}</td>
-                      {COT.map((c) => o(l, c.key, l.o[c.key]))}
+                  {h.loai === 'chi-nhanh' ? (
+                    /* PR-UX4 (Q22, N-2): hàng chi nhánh là hàng lớn, hàng lớp mở xuống là hàng con — cùng component với mọi bảng có mở rộng. */
+                    <HangNhom mo={mo.has(h.khoa)} onMo={() => setMo((s) => { const n = new Set(s); n.has(h.khoa) ? n.delete(h.khoa) : n.add(h.khoa); return n; })}
+                      nhan={h.nhan} className={DINH_TRAI}
+                      tieuDe={(
+                        <button type="button" className="link appearance-none bg-transparent border-0 p-0 cursor-pointer font-extrabold"
+                          onClick={() => navigate(`/?cn=${h.id}${thamSoCt(ct)}`)}>{h.nhan}</button>
+                      )}>
+                      {COT.map((c) => o(h, c.key, h.o[c.key]))}
+                    </HangNhom>
+                  ) : (
+                    <tr className="row-hover" style={{ height: HANG }}>
+                      <td className="td sticky-col">{tenLop(h)}</td>
+                      {COT.map((c) => o(h, c.key, h.o[c.key]))}
                     </tr>
+                  )}
+                  {h.loai === 'chi-nhanh' && mo.has(h.khoa) && (h.lop ?? []).map((l) => (
+                    <HangCon key={l.khoa} className={DINH_TRAI}>
+                      <td>{tenLop(l)}</td>
+                      {COT.map((c) => o(l, c.key, l.o[c.key]))}
+                    </HangCon>
                   ))}
                 </Fragment>
               ))}

@@ -14,7 +14,7 @@ import { ClassCreatePanel } from '../classes/ClassCreatePanel.tsx';
 import { TenGiaoVien } from '../classes/TenGiaoVien.tsx';
 import { BangHocVienLop } from './BangHocVienLop.tsx';
 import {
-  LOC_HOC_VIEN, LOC_HOC_VIEN_NHAN, PHAM_VI_NHAN, badgeLop, docThamSoLoc, lopMoSan, needScoresText, skillShort,
+  LOC_HOC_VIEN, LOC_HOC_VIEN_NHAN, PHAM_VI_NHAN, badgeLop, docThamSoLoc, duongLichTest, lopMoSan, needScoresText, skillShort,
   type BadgeLop, type LocHocVien, type PhamVi, type SapXep, type WorkScope,
 } from '@shared/domain/index.ts';
 
@@ -212,7 +212,6 @@ export default function StudentsPage() {
             {lopHien.map((c) => (
               <HopLop key={c.id} lop={c} mo={openIds.includes(c.id)} onDoiMo={() => doiMo(c.id)}
                 chiHien={dangLoc ? (idsTheoLop.get(c.id) ?? new Set()) : null} sapXep={sapXep}
-                chiMinh={pv?.dangDung === 'toi'}
                 onThemHocVien={() => setThem({ id: c.id, code: c.code })} onDoi={trang.reload} />
             ))}
           </table>
@@ -235,10 +234,8 @@ export default function StudentsPage() {
  * HÀNG LỚN của một lớp (đặc tả §3.6; PR-UX0 N-2): ▸ · mã (mở Hồ sơ lớp) · chương trình · n HV · GVCN · tối đa 2 badge (+n) · ⋯.
  * ⋯ của lớp: Hồ sơ lớp · Nhập điểm Test (Q11, Q6) · + Học viên — chỉ mục người xem làm được.
  */
-function HopLop({ lop, mo, onDoiMo, chiHien, sapXep, chiMinh, onThemHocVien, onDoi }: {
+function HopLop({ lop, mo, onDoiMo, chiHien, sapXep, onThemHocVien, onDoi }: {
   lop: LopTrenTrang; mo: boolean; onDoiMo: () => void; chiHien: Set<number> | null; sapXep: SapXep;
-  /** Phạm vi đang chọn = "Lớp tôi dạy" (R8a, PR-Qb) — badge "Cần chấm" mang thêm `&scope=mine`. */
-  chiMinh: boolean;
   onThemHocVien: () => void; onDoi: () => void;
 }) {
   const navigate = useNavigate();
@@ -251,7 +248,8 @@ function HopLop({ lop, mo, onDoiMo, chiHien, sapXep, chiMinh, onThemHocVien, onD
     missingCount: lop.missing.filter((m) => m.key !== 'teachers').length, soChuaLoTrinhTiep: lop.soChuaLoTrinhTiep,
   });
   const denBadge = (x: BadgeLop): string | null =>
-    x.key === 'cham' ? `/test/can-cham?classId=${lop.id}${chiMinh ? '&scope=mine' : ''}`
+    /* PR-UX1: badge "n bài chờ chấm" mở Lịch Test lọc đúng lớp (Lịch Test tự mở "Lớp tôi dạy" cho GV). */
+    x.key === 'cham' ? duongLichTest({ classId: lop.id })
       : x.key === 'case' ? `/hoc-vien/lop/${lop.id}?che-do=can-ho-tro`
       : x.key === 'het-khoa' ? (lop.viewer.coTheChuyenTiep ? `/hoc-vien/lop/${lop.id}?viec=chuyen-tiep` : `/hoc-vien/lop/${lop.id}`)
       : null;
