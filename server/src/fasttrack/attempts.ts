@@ -684,6 +684,7 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
     }
 
     const result = resultOf(a, scores, skips);
+    /* Không truyền `hoanTat` (R11) có chủ ý: dòng này chỉ đọc band/noShow/mine/lịch, không đọc canEdit/khoa — đỡ 3 câu SQL. */
     const cells = skillCells(p, a, scores, skips, today, bundle.skillRows.get(a.id));
     const active = cells.filter((c) => c.required);
     const pending = pendingSkillsOf(pendingInputOf(cells), workScope);
@@ -848,7 +849,9 @@ export function attemptDetail(p: Principal, attemptId: number) {
   const skillRows = ensureSkillRows(attemptId);
   const skips = skippedSkillsOf(skillRows);
   const result = resultOf(a, scores, skips);
-  const cells = skillCells(p, a, scores, skips, demoToday(), skillRows);
+  const today = demoToday();
+  /* R11 (Z2c-c, A3): đợt đã hoàn tất thì ô chỉ sửa được bởi Quản lý — thiếu dòng này GVBM thấy nút "Sửa điểm" rồi bị máy chủ chặn. */
+  const cells = skillCells(p, a, scores, skips, today, skillRows, dotHoanTat(attemptId, today));
   const mode = scoringModeOf(a);
   const completion = completionWeekOf(skillRows);
   const scheduleRows = ASSESSED_SKILLS.map((skill) => {

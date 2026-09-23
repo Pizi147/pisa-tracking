@@ -9,7 +9,7 @@ import { ConfirmDialog, Modal } from '../../ui/Drawer.tsx';
 import { KetQuaDot } from '../../ui/KetQuaDot.tsx';
 import { Menu, type MenuItem } from '../../ui/Menu.tsx';
 import {
-  DeadlinePill, InlineScoreEditor, lockedByNoShow, useSaveScore, type Cell, type SavePatch,
+  DeadlinePill, InlineScoreEditor, KHOA_HOAN_TAT_HINT, lockedByNoShow, useSaveScore, type Cell, type SavePatch,
 } from './ScoreEntry.tsx';
 import {
   attemptHref, attemptStatusLabel, fmtBand, fmtDate, fmtDateTime, progressLabel, skillLabel,
@@ -482,7 +482,7 @@ function SkillWorkTable({ d, save, onDone, onOpenHistory }: {
             <span className="text-[11px] text-slate-500">Xử lý ở dòng W1</span>
           )}
           {!primary && c.required && !c.canEdit && !cancelled && (
-            <span className="text-[11px] text-slate-500" title="Bạn không được phân công kỹ năng này">Chỉ xem</span>
+            <span className="text-[11px] text-slate-500" title={c.khoa ? KHOA_HOAN_TAT_HINT : 'Bạn không được phân công kỹ năng này'}>Chỉ xem</span>
           )}
           {ownsSchedule && <Menu label="Thêm" items={items} />}
         </div>

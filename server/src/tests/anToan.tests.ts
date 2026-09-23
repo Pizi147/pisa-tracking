@@ -583,7 +583,7 @@ export async function runAnToanTests(t: AnToanTestKit) {
     assert(!moLai && !/\[turso\]/.test(log) && /hỏng đĩa giả/.test(log), `moLai=${moLai} log: ${log}`);
   });
 
-  await checkAsync('Z2c-b · POST mất luồng → KHÔNG thử lại (tránh ghi hai lần): 500 có mã, không mở lại kết nối, không ghi dòng nào', async () => {
+  await checkAsync('Z2c-b/c · POST mất luồng → KHÔNG thử lại (tránh ghi hai lần): 500 có mã, không ghi dòng nào — nhưng VẪN bỏ kết nối chết (A2), log một dòng [turso] "KHÔNG thử lại"', async () => {
     const tk = taoTaiKhoan('anz2b.post');
     const dem = () => JSON.stringify([
       (conn.prepare('SELECT COUNT(*) n FROM auth_attempts').get() as any).n,
@@ -592,11 +592,12 @@ export async function runAnToanTests(t: AnToanTestKit) {
     const truoc = dem();
     const { kq: r, log, moLai } = await giaLoi(/auth_attempts/, LOI_LUONG, () => dangNhap(tk, '203.0.113.62'));
     assert(r.status === 500 && /Có lỗi · mã/.test(r.json?.error ?? '') && !r.setCookie, `${r.status} ${JSON.stringify(r.json)}`);
-    assert(!moLai && !/\[turso\]/.test(log), `moLai=${moLai} log: ${log}`);
+    assert(moLai, 'POST mất luồng phải bỏ kết nối chết — giữ lại thì lời gọi sau cũng hỏng');
+    assert((log.match(/\[turso\]/g) ?? []).length === 1 && /KHÔNG thử lại POST \/api\/auth\/login/.test(log), `Log: ${log}`);
     assert(dem() === truoc, `Đã ghi: ${truoc} → ${dem()}`);
   });
 
-  check('Z2c-b · Lỗi mất luồng xảy ra TRONG giao dịch (tx) được đánh dấu → bộ thử lại bỏ qua kể cả với GET; lỗi thường không bị nhận nhầm', () => {
+  check('Z2c-b/c · Lỗi mất luồng xảy ra TRONG giao dịch (tx) được đánh dấu → bộ thử lại bỏ qua kể cả với GET, nhưng vẫn bỏ kết nối chết (A2); lỗi thường không bị nhận nhầm', () => {
     let trong: unknown = null;
     try { dbMod.tx(() => { throw new Error(LOI_LUONG); }); } catch (e) { trong = e; }
     assert(dbMod.laLoiMatLuongTurso(trong) && dbMod.loiTrongGiaoDich(trong), 'Lỗi ném trong tx phải được nhận là mất luồng VÀ trong giao dịch');
@@ -606,8 +607,30 @@ export async function runAnToanTests(t: AnToanTestKit) {
     let goiLai = 0;
     let chuyenTiep: unknown = null;
     const thuLai = appMod.thuLaiKhiMatLuong(() => { goiLai++; });
-    thuLai(trong, { method: 'GET', path: '/x' }, { headersSent: false }, (e: unknown) => { chuyenTiep = e; });
+    const cu = dbMod.db();
+    let moLai = false;
+    try {
+      thuLai(trong, { method: 'GET', path: '/x' }, { headersSent: false }, (e: unknown) => { chuyenTiep = e; });
+      moLai = dbMod.db() !== cu;
+    } finally {
+      const moi = dbMod.db();
+      if (moi !== cu) { try { moi.close(); } catch { /* đã đóng */ } }
+      dbMod.datKetNoiChoPhepKiem(cu);
+    }
     assert(goiLai === 0 && chuyenTiep === trong, `GET nhưng lỗi trong giao dịch: không được chạy lại (goiLai=${goiLai})`);
+    assert(moLai, 'Lỗi mất luồng trong tx: không thử lại nhưng phải bỏ kết nối chết');
+  });
+
+  check('Z2c-c · Lỗi KHÁC ở POST / trong tx → không đụng kết nối (chỉ lỗi mất luồng mới bỏ kết nối)', () => {
+    const cu = dbMod.db();
+    let trong: unknown = null;
+    try { dbMod.tx(() => { throw new Error('SQLITE_IOERR: hỏng đĩa giả'); }); } catch (e) { trong = e; }
+    const thuLai = appMod.thuLaiKhiMatLuong(() => { throw new Error('không được gọi'); });
+    let chuyenTiep: unknown = null;
+    thuLai(trong, { method: 'POST', path: '/x' }, { headersSent: false }, (e: unknown) => { chuyenTiep = e; });
+    const moLai = dbMod.db() !== cu;
+    if (moLai) dbMod.datKetNoiChoPhepKiem(cu);
+    assert(chuyenTiep === trong && !moLai, `chuyenTiep đúng=${chuyenTiep === trong} moLai=${moLai}`);
   });
 
   // ---- các task sau thêm phép kiểm NGAY TRÊN dòng này ----

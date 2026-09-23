@@ -143,6 +143,20 @@ export function WeekPicker({ periodId, onPeriod, label = 'Tuần', scope, cleara
   const shownStart = anchored?.weekStart ?? (periodId === null && !clearable && todayWeekStart ? todayWeekStart : null);
   const shown = shownStart ? { weekStart: shownStart } : null;
 
+  /*
+   * ĐANG VẼ MỘT TUẦN THÌ NƠI GỌI PHẢI NHẬN ĐÚNG TUẦN ĐÓ (Z2c-c, A4). Không clearable mà `periodId` còn null: trường tuần đã
+   * hiện tuần hiện tại nhưng nơi gọi vẫn giữ null — ngăn Xếp lịch hàng loạt không xem trước, nút Lưu khoá tới khi bấm ‹ ›.
+   * Phát tuần neo một lần; tuần chưa có hàng (`id` null) thì hỏi `resolveWeek` như khi bấm chọn.
+   */
+  useEffect(() => {
+    if (periodId !== null || clearable || !anchored) return;
+    if (anchored.id !== null) { onPeriod(anchored.id); return; }
+    let cancelled = false;
+    resolveWeek(anchored.weekStart).then((r) => { if (!cancelled) onPeriod(r.id); }).catch(() => { /* người dùng vẫn bấm chọn được */ });
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- onPeriod thường là hàm mới mỗi lần vẽ; chỉ phát khi tuần neo đổi
+  }, [periodId, clearable, anchored?.id, anchored?.weekStart]);
+
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [calYear, setCalYear] = useState(() => owningMonthOf(shown?.weekStart ?? todayWeekStart).year);
@@ -242,13 +256,13 @@ export function WeekPicker({ periodId, onPeriod, label = 'Tuần', scope, cleara
         {/* NHÓM KHÔNG TÁCH HÀNG: mũi tên · trường tuần · mũi tên. */}
         <div className="flex flex-1 basis-[17rem] min-w-0 items-stretch gap-2">
           <button
-            type="button" className="btn flex-none h-10 px-3" disabled={busy}
+            type="button" className="btn flex-none h-11 px-3" disabled={busy}
             onClick={() => goAdjacent(-1)} aria-label="Tuần trước"
             title={shown ? `Tuần trước · ${tuanLich(addDaysStr(shown.weekStart, -7), today)}` : 'Tuần trước'}
           >‹</button>
           <button
             ref={field} type="button"
-            className="field flex-1 min-w-0 h-10 text-left flex items-center justify-between gap-2"
+            className="field flex-1 min-w-0 h-11 text-left flex items-center justify-between gap-2"
             aria-haspopup="dialog" aria-expanded={open}
             onClick={() => setOpen((v) => !v)} disabled={busy}
           >
@@ -262,16 +276,16 @@ export function WeekPicker({ periodId, onPeriod, label = 'Tuần', scope, cleara
             )}
           </button>
           <button
-            type="button" className="btn flex-none h-10 px-3" disabled={busy}
+            type="button" className="btn flex-none h-11 px-3" disabled={busy}
             onClick={() => goAdjacent(1)} aria-label="Tuần sau"
             title={shown ? `Tuần sau · ${tuanLich(addDaysStr(shown.weekStart, 7), today)}` : 'Tuần sau'}
           >›</button>
         </div>
-        <button type="button" className="btn flex-none h-10" disabled={busy} onClick={() => void pick(todayWeekStart)}>
+        <button type="button" className="btn flex-none h-11" disabled={busy} onClick={() => void pick(todayWeekStart)}>
           Tuần này
         </button>
         {clearable && shown && (
-          <button type="button" className="btn btn-ghost flex-none h-10" onClick={() => onPeriod(null)}>Bỏ chọn</button>
+          <button type="button" className="btn btn-ghost flex-none h-11" onClick={() => onPeriod(null)}>Bỏ chọn</button>
         )}
       </div>
 

@@ -16,6 +16,8 @@ export async function runKeHoachTestTests(t: YThucTestKit) {
   const hoanTatMod: any = await import('../fasttrack/hoanTat.ts');
   const regularMod: any = await import('../normal/regular.ts');
   const keHoachMod: any = await import('../keHoach/keHoachTest.ts');
+  const classesMod: any = await import('../classes/classes.ts');
+  const { demoToday } = await import('../demoConfig.ts');
   const { can } = await import('../permissions.ts');
   console.log('\nPR-Rc2 · Kế hoạch Test');
 
@@ -93,10 +95,15 @@ export async function runKeHoachTestTests(t: YThucTestKit) {
   });
 
   /** Dựng một đợt FT "đã hoàn tất": ghi đè lịch + điểm của MT1 có sẵn (chưa ai dùng riêng ở các phép T15/T9 trên). */
-  function dungDotHoanTatFT() {
+  function dungDotHoanTatFT(chiEmDangHoc = false) {
+    /* `chiEmDangHoc`: MT1 của em còn học lớp này, đúng lộ trình đang chạy — bảng lớp (classRoster) chỉ hiện những đợt đó. */
     const row = conn.prepare(
-      `SELECT id AS attemptId, class_id, cycle_id FROM assessment_attempts
-        WHERE class_id = ? AND status != 'cancelled' AND kind = 'mock' AND attempt_no = 1 LIMIT 1`,
+      `SELECT a.id AS attemptId, a.class_id, a.cycle_id FROM assessment_attempts a
+        WHERE a.class_id = ? AND a.status != 'cancelled' AND a.kind = 'mock' AND a.attempt_no = 1
+          ${chiEmDangHoc ? `AND EXISTS (SELECT 1 FROM enrollments e WHERE e.student_id = a.student_id AND e.class_id = a.class_id AND e.status = 'active')
+          AND EXISTS (SELECT 1 FROM learning_cycles cy WHERE cy.id = a.cycle_id AND cy.status = 'active')
+        ORDER BY a.id` : ''}
+        LIMIT 1`,
     ).get(mbClass) as any;
     assert(row, 'Seed thiếu một MT1 ở MB-FT 101 để dựng đợt hoàn tất (R11)');
     const per = week.ensurePeriod('2026-05-04');
@@ -200,6 +207,42 @@ export async function runKeHoachTestTests(t: YThucTestKit) {
     const cellTeacher = sheetTeacher.rows.find((r: any) => r.attemptId === attemptId).cells.find((c: any) => c.skill === 'listening');
     assert(cellTeacher.canEdit === false && cellTeacher.khoa === true,
       `GVBM: ô đợt hoàn tất phải canEdit=false, khoa=true — đang ra ${JSON.stringify(cellTeacher)}`);
+  });
+
+  check('Z2c-c · A3 attemptDetail (màn chi tiết lượt MT): ô đợt hoàn tất — GVBM canEdit=false khoa=true, Quản lý canEdit=true khoa=true', () => {
+    /* Đợt dựng ở tuần 04/05/2026; ngày demo của bộ kiểm (14/09) đã qua Chủ nhật đó → hoàn tất. */
+    const { attemptId } = dungDotHoanTatFT();
+    const oCua = (p: any) => attemptsMod.attemptDetail(p, attemptId).cells.find((c: any) => c.skill === 'listening');
+    const gv = oCua(P.lrTeacher);
+    assert(gv.canEdit === false && gv.khoa === true, `GVBM: đang ra canEdit=${gv.canEdit} khoa=${gv.khoa}`);
+    const ql = oCua(P.mbManager);
+    assert(ql.canEdit === true && ql.khoa === true, `Quản lý: đang ra canEdit=${ql.canEdit} khoa=${ql.khoa}`);
+  });
+
+  check('Z2c-c · A3 classRoster (bảng lớp): đợt hoàn tất mà W1 "-" còn W2 trống → GVBM W2 KHÔNG thấy W2 là việc chấm (không sửa được); Quản lý thấy', () => {
+    const { attemptId } = dungDotHoanTatFT(true);
+    const per = conn.prepare(`SELECT planned_period_id AS id FROM attempt_skills WHERE attempt_id = ? AND skill = 'writing'`).get(attemptId) as any;
+    conn.prepare(`UPDATE assessment_scores SET c1=NULL, c2=NULL, c3=NULL, c4=NULL, band=NULL, no_show_period_id=? WHERE attempt_id=? AND skill='writing1'`)
+      .run(per.id, attemptId);
+    conn.prepare(`UPDATE assessment_scores SET c1=NULL, c2=NULL, c3=NULL, c4=NULL, band=NULL WHERE attempt_id=? AND skill='writing2'`)
+      .run(attemptId);
+    try {
+      assert(hoanTatMod.dotHoanTat(attemptId, demoToday()).hoanTat === true, 'Đợt dựng phải được coi là hoàn tất');
+      const cuaDot = (p: any) => {
+        for (const s of classesMod.classRoster(p, mbClass)) {
+          const t = (s.timeline ?? []).find((x: any) => x.id === attemptId);
+          if (t) return t;
+        }
+        return null;
+      };
+      const gv = cuaDot(P.w2Teacher);
+      assert(gv, 'classRoster không trả về đợt vừa dựng');
+      assert(!gv.myPending.includes('writing2'), `GVBM W2 không sửa được đợt hoàn tất mà vẫn thấy W2 là việc chấm: ${JSON.stringify(gv.myPending)}`);
+      const ql = cuaDot(P.mbManager);
+      assert(ql.myPending.includes('writing2'), `Quản lý sửa được (qua lý do) nên phải thấy W2: ${JSON.stringify(ql.myPending)}`);
+    } finally {
+      dungDotHoanTatFT(true);   // trả MT1 về đủ điểm — không để dấu "-" lẻ cho các phép sau
+    }
   });
 
   /**

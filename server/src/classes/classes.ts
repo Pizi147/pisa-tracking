@@ -13,6 +13,7 @@ import {
 import { writeAudit } from '../platform/audit.ts';
 import { loadBundle, pendingInputOf, regularSkillViews, resultOf, skillCells } from '../fasttrack/attempts.ts';
 import { examPlanOf } from '../fasttrack/cycles.ts';
+import { dotHoanTatMany, type HoanTatInfo } from '../fasttrack/hoanTat.ts';
 import { standingFor, standingLine } from '../students/standing.ts';
 import { allProgrammes, evaluateRegular, programmeOfClass } from '../normal/regular.ts';
 import { classProgressMany, missingForClasses, missingForStudent } from './schedule.ts';
@@ -214,6 +215,7 @@ export function listClassSummaries(p: Principal, f: { branchId?: number; q?: str
       continue;
     }
 
+    /* Không truyền `hoanTat` (R11) có chủ ý: chỉ đếm ô chưa có điểm theo band/noShow/mine, không đọc canEdit/khoa — đỡ 3 câu SQL. */
     const cells = skillCells(p, a, bundle.scores.get(a.id) ?? [], bundle.skips.get(a.id) ?? [], today, bundle.skillRows.get(a.id));
     const pending = pendingSkillsOf(pendingInputOf(cells), workScope);
     if (pending.length) bump(needScores, a.class_id, pending.length);
@@ -333,6 +335,11 @@ export function classRoster(p: Principal, classId: number, q?: string) {
   /* Chỉ lớp FT mới bị nhắc tháng thi và Target — lớp Normal chưa thi IELTS. */
   const isFt = prog?.code === 'FT';
   const myRegularSkills = isRatio ? editableSkills(p, classId, prog!.skills) : [];
+  /*
+   * R11 (Z2c-c, A3): `myPending` của lớp FT đọc canEdit — đợt đã hoàn tất thì chỉ Quản lý còn sửa được. Một câu hỏi cho cả
+   * lớp; lớp thường không dùng (nhánh của nó đọc `editableSkills`, và đợt đủ điểm thì không còn ô trống nào).
+   */
+  const hoanTatOf = isRatio ? new Map<number, HoanTatInfo>() : dotHoanTatMany(attempts.map((a) => a.id), today);
 
   /*
    * CASE ĐANG MỞ của cả lớp, lấy MỘT LẦN. Hỏi từng em một thì một lớp ba mươi em sinh ba
@@ -447,7 +454,8 @@ export function classRoster(p: Principal, classId: number, q?: string) {
 
       const skips = bundle.skips.get(a.id) ?? [];
       const result = resultOf(a, scores, skips);
-      const cells = skillCells(p, a, scores, skips, today, bundle.skillRows.get(a.id));
+      const cells = skillCells(p, a, scores, skips, today, bundle.skillRows.get(a.id),
+        hoanTatOf.get(a.id) ?? { hoanTat: false, chuNhatCuoi: null });
       return {
         id: a.id, attemptNo: a.attempt_no, cycleSeq: a.cycle_seq, route: a.route,
         periodCode: a.period_code,

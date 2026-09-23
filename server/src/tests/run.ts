@@ -1305,10 +1305,15 @@ check('Luật đếm bài cần chấm — một hàm, hai phạm vi', () => {
     `managed phải ra listening,reading, đang ra: ${managed.join(',')}`,
   );
 });
+const { dotHoanTat } = await import('../fasttrack/hoanTat.ts');
 check('Ô điểm nói rõ kỹ năng có bắt buộc, độc lập với quyền người xem', () => {
-  const a = conn
-    .prepare(`SELECT a.* FROM assessment_attempts a WHERE a.status != 'cancelled' LIMIT 1`)
-    .get() as any;
+  /*
+   * Đợt CHƯA hoàn tất: từ R11 (và Z2c-c A3 — màn chi tiết đọc đúng luật đó) Quản lý sửa được đợt đã hoàn tất, kèm lý do.
+   * Phép này kiểm "bắt buộc" không phụ thuộc quyền, nên cần một đợt mà Quản lý thật sự không sửa được.
+   */
+  const a = (conn
+    .prepare(`SELECT a.* FROM assessment_attempts a WHERE a.status != 'cancelled' ORDER BY a.id`)
+    .all() as any[]).find((x) => !dotHoanTat(x.id, TODAY).hoanTat);
   const d = attempts.attemptDetail(P.mbManager, a.id);
   assert(d.cells.length > 0, 'Không lấy được ô điểm nào để kiểm');
   assert(
